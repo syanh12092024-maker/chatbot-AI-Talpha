@@ -1,0 +1,8 @@
+node_modules/
+.env
+*.log
+
+tokens.json
+kb-overrides.json
+sheet.json
+cloudflared

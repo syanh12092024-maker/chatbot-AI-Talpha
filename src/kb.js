@@ -1,0 +1,185 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import xlsx from 'xlsx';
+import { config } from './config.js';
+import { fetchTabRows } from './sheets.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const OVERRIDES_FILE = path.resolve(__dirname, '..', 'kb-overrides.json'); // sửa từ dashboard
+
+function readOverrides() {
+  try { return fs.existsSync(OVERRIDES_FILE) ? JSON.parse(fs.readFileSync(OVERRIDES_FILE, 'utf8')) : {}; }
+  catch { return {}; }
+}
+function writeOverrides(o) { try { fs.writeFileSync(OVERRIDES_FILE, JSON.stringify(o, null, 2)); } catch (e) { console.error('[kb] lưu override lỗi', e.message); } }
+
+// Hỗ trợ 2 chế độ:
+//  - ĐA-PAGE: sheet "Sản phẩm theo Page" (cột Page ID) → mỗi page 1 KB riêng.
+//  - 1 KB CHUNG: sheet "Sản phẩm & Giá" (file cũ) → mọi page dùng chung.
+// Chính sách / FAQ / Xử lý phản đối dùng chung cho mọi page.
+
+let pageMap = new Map();   // pageId -> { products, text, pageName }
+let singleKB = null;       // dùng khi file kiểu cũ
+let sharedText = '';
+
+function rows(wb, name) {
+  const ws = wb.Sheets[name];
+  if (!ws) return [];
+  const r = xlsx.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  return r.slice(1).filter((x) => x.some((c) => String(c).trim() !== ''));
+}
+function num(v) {
+  const n = Number(String(v).replace(/[^\d.-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+// Parsers dùng chung cho cả Excel lẫn Google Sheet (cùng layout cột).
+function parsePolicies(r) { return r.map((x) => ({ topic: String(x[0]).trim(), content: String(x[1]).trim() })).filter((p) => p.topic); }
+function parseFaqs(r) { return r.map((x) => ({ q: String(x[0]).trim(), a: String(x[2]).trim() })).filter((f) => f.q); }
+function parseObjections(r) { return r.map((x) => ({ type: String(x[0]).trim(), says: String(x[1]).trim(), reply: String(x[2]).trim() })).filter((o) => o.type); }
+function groupsFromRows(rws) {
+  const groups = new Map();
+  for (const r of rws) {
+    const pageId = String(r[0]).trim();
+    if (!pageId) continue;
+    const prod = {
+      id: String(r[5]).trim(), name: String(r[6]).trim(), desc: String(r[7]).trim(), variant: String(r[8]).trim(),
+      price1: num(r[9]), combo2: num(r[10]), combo3: num(r[11]), currency: String(r[12]).trim() || 'AED',
+      stock: num(r[13]), image: String(r[14]).trim(), landing: String(r[15]).trim(), note: String(r[16]).trim(),
+    };
+    if (!groups.has(pageId)) groups.set(pageId, { name: String(r[1]).trim(), market: String(r[2]).trim(), category: String(r[3]).trim(), marketer: String(r[4]).trim(), products: [] });
+    if (prod.id || prod.name) groups.get(pageId).products.push(prod);
+  }
+  return groups;
+}
+function ingest({ groups, policies, faqs, objections }) {
+  sharedText = buildShared(policies, faqs, objections);
+  pageMap = new Map();
+  for (const [pageId, g] of groups) {
+    pageMap.set(pageId, { products: g.products, pageName: g.name, market: g.market, category: g.category, marketer: g.marketer, text: pageText(g.market, g.category, g.products) });
+  }
+  applyOverrides();
+}
+function pageText(market, category, products) {
+  const ctx = `# BỐI CẢNH PAGE\nThị trường: ${market || '?'} · Ngành hàng: ${category || '?'}\n\n`;
+  return ctx + buildProductText(products) + '\n' + sharedText;
+}
+
+// Nạp kịch bản từ Google Sheet (tab sản phẩm bắt buộc; các tab khác tùy chọn).
+export async function syncFromSheet(id) {
+  const t = config.sheetTabs;
+  const pp = await fetchTabRows(id, t.products);
+  const [pol, fq, ob] = await Promise.all([
+    fetchTabRows(id, t.policies).catch(() => []),
+    fetchTabRows(id, t.faq).catch(() => []),
+    fetchTabRows(id, t.obj).catch(() => []),
+  ]);
+  singleKB = null;
+  ingest({ groups: groupsFromRows(pp), policies: parsePolicies(pol), faqs: parseFaqs(fq), objections: parseObjections(ob) });
+  console.log(`[kb] Đa-page (Sheet): ${pageMap.size} page.`);
+  return { mode: 'multi', pages: pageMap.size };
+}
+
+export function loadKB(kbPath = config.kbPath) {
+  if (!fs.existsSync(kbPath)) throw new Error(`Không tìm thấy file KB: ${kbPath}`);
+  const wb = xlsx.readFile(kbPath);
+
+  const policies = parsePolicies(rows(wb, 'Chính sách'));
+  const faqs = parseFaqs(rows(wb, 'FAQ'));
+  const objections = parseObjections(rows(wb, 'Xử lý phản đối'));
+  sharedText = buildShared(policies, faqs, objections);
+
+  const perPage = rows(wb, 'Sản phẩm theo Page');
+  if (perPage.length) {
+    singleKB = null;
+    ingest({ groups: groupsFromRows(perPage), policies, faqs, objections });
+    console.log(`[kb] Đa-page (Excel): ${pageMap.size} page.`);
+    return { mode: 'multi', pages: pageMap.size };
+  }
+
+  // Fallback file cũ (1 KB chung)
+  const products = rows(wb, 'Sản phẩm & Giá').map((r) => ({
+    id: String(r[0]).trim(), name: String(r[1]).trim(), desc: String(r[2]).trim(), variant: String(r[3]).trim(),
+    price1: num(r[4]), combo2: num(r[5]), combo3: num(r[6]), currency: String(r[7]).trim() || 'AED', stock: num(r[8]), image: String(r[9]).trim(),
+  })).filter((p) => p.id);
+  singleKB = { products, pageName: '', text: buildProductText(products) + '\n' + sharedText };
+  pageMap = new Map();
+  console.log(`[kb] 1 KB chung: ${products.length} sản phẩm.`);
+  return { mode: 'single', products: products.length };
+}
+
+// Lấy KB cho page nhận tin. Có dữ liệu page → dùng; chưa có → đánh dấu noData.
+export function getKBForPage(pageId) {
+  if (singleKB) return singleKB;
+  const e = pageMap.get(String(pageId));
+  if (e && e.products.length) return e;
+  return { products: [], pageName: e?.pageName || '', text: `# CHƯA CÓ SẢN PHẨM CHO PAGE NÀY\nHãy xin lỗi và chuyển nhân viên (gọi tool handoff_human).\n${sharedText}`, noData: true };
+}
+
+export function getPageList() {
+  if (singleKB) return [{ id: 'default', name: '(KB chung)' }];
+  return [...pageMap].map(([id, v]) => ({ id, name: v.pageName, market: v.market || '', category: v.category || '', marketer: v.marketer || '', products: v.products.length }));
+}
+
+// ----- Sửa KB từ dashboard (lưu overlay kb-overrides.json) -----
+function applyOverrides() {
+  const ov = readOverrides();
+  for (const [pageId, data] of Object.entries(ov)) {
+    if (!data?.products) continue;
+    const cur = pageMap.get(String(pageId)) || { pageName: '', products: [] };
+    cur.products = data.products;
+    cur.text = pageText(cur.market, cur.category, data.products);
+    pageMap.set(String(pageId), cur);
+  }
+}
+
+export function getPageProductsRaw(pageId) {
+  return (pageMap.get(String(pageId))?.products || []).map((p) => ({ ...p }));
+}
+
+export function updatePageProducts(pageId, products) {
+  const clean = (products || []).map((p) => ({
+    id: String(p.id || '').trim(), name: String(p.name || '').trim(), desc: String(p.desc || '').trim(),
+    variant: String(p.variant || '').trim(),
+    price1: numOrNull(p.price1), combo2: numOrNull(p.combo2), combo3: numOrNull(p.combo3),
+    currency: String(p.currency || 'AED').trim(), stock: numOrNull(p.stock), image: String(p.image || '').trim(),
+  })).filter((p) => p.id || p.name);
+  const ov = readOverrides();
+  ov[String(pageId)] = { products: clean };
+  writeOverrides(ov);
+  const cur = pageMap.get(String(pageId)) || { pageName: '', products: [] };
+  cur.products = clean;
+  cur.text = pageText(cur.market, cur.category, clean);
+  pageMap.set(String(pageId), cur);
+  return { ok: true, products: clean.length };
+}
+function numOrNull(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
+
+function buildProductText(products) {
+  const out = ['# SẢN PHẨM & GIÁ (nguồn sự thật duy nhất — không bịa)'];
+  if (!products.length) out.push('(chưa điền)');
+  for (const p of products) {
+    const head = [`- [${p.id}] ${p.name}`]; if (p.variant) head.push(`(${p.variant})`); if (p.desc) head.push(`— ${p.desc}`);
+    out.push(head.join(' '));
+    const pr = [];
+    if (p.price1 != null) pr.push(`1 cái: ${p.price1} ${p.currency}`);
+    if (p.combo2 != null) pr.push(`combo 2: ${p.combo2} ${p.currency}`);
+    if (p.combo3 != null) pr.push(`combo 3: ${p.combo3} ${p.currency}`);
+    if (pr.length) out.push(`    Giá — ${pr.join(' | ')}`);
+    if (p.stock != null) out.push(`    Tồn kho: ${p.stock}`);
+    if (p.image) out.push(`    Ảnh: ${p.image}`);
+  }
+  return out.join('\n');
+}
+
+function buildShared(policies, faqs, objections) {
+  const out = [];
+  out.push('# CHÍNH SÁCH');
+  for (const p of policies) out.push(`- ${p.topic}: ${p.content}`);
+  out.push('\n# FAQ');
+  for (const f of faqs) out.push(`- Hỏi: ${f.q}\n  Đáp: ${f.a}`);
+  out.push('\n# XỬ LÝ PHẢN ĐỐI');
+  for (const o of objections) out.push(`- ${o.type} (khách: "${o.says}") → ${o.reply}`);
+  return out.join('\n');
+}

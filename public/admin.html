@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Closer — Dashboard</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --panel:#fff; --ink:#0f172a; --muted:#667085; --line:#e6eaef;
+    --pri:#0e7c86; --priSoft:#e6f4f5; --ok:#16a34a; --okSoft:#e7f6ec; --bad:#dc2626; --badSoft:#fdecec; --warn:#c2740a; --warnSoft:#fbf0e0;
+    --side:#10262b; --sideMut:#7fa3a8; --sideAct:#163a40;
+    --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.07);
+  }
+  *{box-sizing:border-box} html,body{margin:0;height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  .app{display:flex;height:100vh;overflow:hidden}
+  /* sidebar */
+  .side{width:224px;background:var(--side);color:#fff;display:flex;flex-direction:column;flex-shrink:0}
+  .brand{display:flex;align-items:center;gap:10px;padding:18px 18px 16px;font-weight:700;font-size:16px;letter-spacing:.2px}
+  .brand .logo{width:30px;height:30px;border-radius:8px;background:var(--pri);display:flex;align-items:center;justify-content:center}
+  .nav{display:flex;flex-direction:column;gap:2px;padding:6px 10px}
+  .nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--sideMut);cursor:pointer;font-weight:500;font-size:14px}
+  .nav a svg{width:18px;height:18px;flex-shrink:0}
+  .nav a:hover{background:var(--sideAct);color:#fff}
+  .nav a.active{background:var(--pri);color:#fff}
+  .side .foot{margin-top:auto;padding:14px 18px;font-size:11.5px;color:var(--sideMut);border-top:1px solid #1c3a40}
+  /* main */
+  .wrap{flex:1;display:flex;flex-direction:column;min-width:0}
+  .top{height:60px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 22px;flex-shrink:0}
+  .top h1{font-size:16px;margin:0;font-weight:650}
+  .top .sp{flex:1}
+  .stat{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);background:#f7f9fa;border:1px solid var(--line);padding:5px 11px;border-radius:20px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--okSoft)}
+  .dot.bad{background:var(--bad);box-shadow:0 0 0 3px var(--badSoft)}
+  .iconbtn{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
+  .iconbtn:hover{background:#f5f6f7;color:var(--ink)}
+  .content{flex:1;overflow:auto;padding:22px}
+  h2{font-size:18px;margin:0 0 4px} .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+  /* cards */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px;margin-bottom:20px}
+  .mc{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px;box-shadow:var(--sh);cursor:pointer;transition:.12s}
+  .mc:hover{transform:translateY(-2px);border-color:#cfd8df}
+  .mc .ic{width:34px;height:34px;border-radius:9px;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+  .mc .l{font-size:12.5px;color:var(--muted)} .mc .v{font-size:27px;font-weight:700;margin-top:2px;line-height:1.1}
+  .mc .d{font-size:11.5px;color:var(--muted);margin-top:5px}
+  /* table */
+  .tablecard{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)} th{background:#fafbfc;color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+  tbody tr:hover{background:#fafcfc} tr:last-child td{border-bottom:none}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:3px 10px;border-radius:20px;font-weight:600}
+  .pill.ok{background:var(--okSoft);color:var(--ok)} .pill.bad{background:var(--badSoft);color:var(--bad)} .pill.warn{background:var(--warnSoft);color:var(--warn)} .pill.mut{background:#eef1f3;color:var(--muted)}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{background:#f5f6f7} .btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)} .btn.pri:hover{background:#0c6c75} .btn.sm{padding:5px 9px;font-size:12.5px} .btn svg{width:15px;height:15px}
+  input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13.5px;font-family:inherit;outline:none;background:#fff} input:focus,select:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--priSoft)}
+  .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .toggle{width:40px;height:23px;border-radius:13px;background:#cbd5db;position:relative;transition:.15s;cursor:pointer;flex-shrink:0}
+  .toggle.on{background:var(--ok)} .toggle::after{content:'';position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)} .toggle.on::after{left:18px}
+  .search{position:relative;max-width:280px} .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted)} .search input{padding-left:34px;width:100%}
+  .muted{color:var(--muted)} .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--muted)}
+  /* conversations */
+  .convo{display:grid;grid-template-columns:330px 1fr;gap:16px;height:calc(100vh - 200px)}
+  @media(max-width:880px){.convo{grid-template-columns:1fr;height:auto}}
+  .list{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);overflow:auto}
+  .ci{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+  .ci:hover{background:#fafcfc} .ci.sel{background:var(--priSoft)}
+  .av{width:34px;height:34px;border-radius:50%;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+  .ci .t{font-weight:600;font-size:13px;display:flex;justify-content:space-between;gap:6px} .ci .s{font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);display:flex;flex-direction:column;overflow:hidden}
+  .phd{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .tr{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:16px}
+  .bub{max-width:78%;padding:9px 13px;border-radius:15px;font-size:13.5px;white-space:pre-wrap;line-height:1.45}
+  .bub.customer{align-self:flex-start;background:#eef1f4;border-bottom-left-radius:5px}
+  .bub.ai{align-self:flex-end;background:var(--pri);color:#fff;border-bottom-right-radius:5px}
+  .bub.agent{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:5px}
+  .bub.system{align-self:center;background:var(--warnSoft);color:var(--warn);font-size:12px}
+  .composer{padding:12px;border-top:1px solid var(--line);display:flex;gap:9px}
+  .empty{padding:48px 20px;text-align:center;color:var(--muted)}
+  /* toast */
+  #toast{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:50}
+  .tt{background:#10262b;color:#fff;padding:11px 16px;border-radius:10px;font-size:13.5px;box-shadow:0 6px 24px rgba(0,0,0,.18);display:flex;align-items:center;gap:8px;animation:in .2s}
+  .tt.ok{background:#0e7c86} .tt.bad{background:#dc2626}
+  @keyframes in{from{opacity:0;transform:translateY(8px)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="logo">🤖</span> AI Closer</div>
+    <nav class="nav" id="nav"></nav>
+    <div class="foot">Pilot · Messenger PH/ME<br>v0.2 · dashboard</div>
+  </aside>
+  <div class="wrap">
+    <header class="top">
+      <h1 id="ttl">Tổng quan</h1>
+      <div class="sp"></div>
+      <div class="stat"><span class="dot" id="sdot"></span><span id="sstat">server</span></div>
+      <div class="stat" id="stok">— token</div>
+      <div class="stat" id="spage">— page</div>
+      <div class="iconbtn" title="Làm mới" onclick="go(tab)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></div>
+    </header>
+    <main class="content" id="content"></main>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+const API='/admin/api';
+const j=(u,o)=>fetch(API+u,o).then(r=>r.json());
+const post=(u,b)=>j(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});
+const del=u=>j(u,{method:'DELETE'});
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ago=t=>{if(!t)return'';const d=(Date.now()-t)/1000;if(d<60)return Math.round(d)+'s';if(d<3600)return Math.round(d/60)+'m';return Math.round(d/3600)+'h';};
+const ini=s=>(String(s||'?').trim()[0]||'?').toUpperCase();
+function toast(m,type='ok'){const e=document.createElement('div');e.className='tt '+type;e.textContent=m;document.getElementById('toast').appendChild(e);setTimeout(()=>e.remove(),2600);}
+const IC={overview:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>',pages:'<path d="M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',msgs:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',kb:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>',tokens:'<path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/>'};
+const svg=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const search=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>`;
+
+const TABS=[['overview','Tổng quan'],['pages','Pages'],['msgs','Tin nhắn'],['kb','Kịch bản / KB'],['tokens','API / Token']];
+let tab='overview', ctx={pageId:'',pageName:''}, selPsid=null, timer=null;
+const content=document.getElementById('content');
+document.getElementById('nav').innerHTML=TABS.map(([k,l])=>`<a data-k="${k}" onclick="go('${k}')">${svg(IC[k])} ${l}</a>`).join('');
+
+function go(k){tab=k;clearInterval(timer);selPsid=k==='msgs'?selPsid:null;
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k));
+  document.getElementById('ttl').textContent=TABS.find(t=>t[0]===k)[1];
+  ({overview:rOverview,pages:rPages,msgs:rMsgs,kb:rKB,tokens:rTokens})[k]();
+}
+async function topStatus(){try{const o=await j('/overview');
+  document.getElementById('sstat').textContent='server online';
+  document.getElementById('sdot').className='dot'+(o.tokensHealthy<o.tokensTotal?' bad':'');
+  document.getElementById('stok').textContent=o.tokensHealthy+'/'+o.tokensTotal+' token';
+  document.getElementById('spage').textContent=o.pages+' page';
+}catch{document.getElementById('sstat').textContent='mất kết nối';document.getElementById('sdot').className='dot bad';}}
+
+async function rOverview(){const o=await j('/overview');
+  const cards=[
+    ['pages','Pages kết nối',o.pages,'pages','xem danh sách'],
+    ['kb','Page đã có KB',o.pagesWithKB+' / '+o.pages,'kb','điền kịch bản'],
+    ['tokens','Token khỏe',o.tokensHealthy+' / '+o.tokensTotal,'tokens','quản lý app'],
+    ['msgs','Hội thoại',o.conversations,'msgs','xem tin nhắn'],
+    ['pages','Page tắt AI',o.aiDisabled,'pages','nhân viên tự lo'],
+  ];
+  content.innerHTML=`<h2>Tổng quan</h2><p class="sub">Trạng thái hệ thống — bấm thẻ để vào chi tiết.</p>
+   <div class="cards">${cards.map(c=>`<div class="mc" onclick="go('${c[3]}')"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[4]} →</div></div>`).join('')}</div>
+   <div class="tablecard" style="padding:16px"><b>Hành động nhanh</b><div class="row" style="margin-top:12px">
+     <button class="btn" onclick="go('kb')">${svg(IC.kb)} Điền KB</button>
+     <button class="btn" onclick="go('tokens')">${svg(IC.tokens)} Thêm app dự phòng</button>
+     <button class="btn" onclick="reloadAll()">${svg('<path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/>')} Nạp lại token & page</button>
+     <a class="btn" href="http://localhost:3101" target="_blank">↗ Mở sandbox test</a>
+   </div></div>`;
+}
+window.reloadAll=async()=>{toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();go('overview');};
+
+async function rPages(){const list=await j('/pages');window._pages=list;
+  content.innerHTML=`<h2>Pages</h2><p class="sub">${list.length} page kết nối · bật/tắt AI, xem chat hoặc sửa KB từng page.</p>
+   <div class="row" style="margin-bottom:14px"><div class="search">${search}<input placeholder="Tìm theo tên / thị trường / ngành / MKT..." oninput="filterPages(this.value)"></div></div>
+   <div class="tablecard"><table><thead><tr><th>Page</th><th>Thị trường</th><th>Ngành</th><th>MKT</th><th>KB</th><th>App</th><th>AI</th><th></th></tr></thead><tbody id="pbody"></tbody></table></div>`;
+  drawPages(list);
+}
+function drawPages(list){document.getElementById('pbody').innerHTML=list.map(p=>`<tr>
+   <td><div class="row" style="gap:10px"><div class="av">${ini(p.name)}</div><div><b>${esc(p.name)}</b><div class="mono">${p.id}</div></div></div></td>
+   <td>${p.market?`<span class="pill mut">${esc(p.market)}</span>`:'<span class="muted">—</span>'}</td>
+   <td>${esc(p.category)||'<span class="muted">—</span>'}</td>
+   <td>${esc(p.marketer)||'<span class="muted">—</span>'}</td>
+   <td>${p.products>0?`<span class="pill ok">${p.products} SP</span>`:`<span class="pill warn">chưa có</span>`}</td>
+   <td>${p.redundancy>1?`<span class="pill ok">${p.redundancy}</span>`:`<span class="pill mut">1</span>`}</td>
+   <td><div class="toggle ${p.aiEnabled?'on':''}" onclick="toggleAi('${p.id}',${!p.aiEnabled},this)"></div></td>
+   <td class="row" style="border:none"><button class="btn sm" onclick="openPageChat('${p.id}','${esc(p.name)}')">${svg(IC.msgs)}</button><button class="btn sm" onclick="openPageKB('${p.id}','${esc(p.name)}')">${svg(IC.kb)}</button></td>
+ </tr>`).join('')||'<tr><td colspan=8 class="empty">Chưa có page.</td></tr>';}
+window.filterPages=v=>{const q=v.toLowerCase();drawPages((window._pages||[]).filter(p=>[p.name,p.id,p.market,p.category,p.marketer].some(x=>String(x||'').toLowerCase().includes(q))));};
+window.toggleAi=async(id,on,el)=>{el.className='toggle '+(on?'on':'');await post('/pages/'+id+'/ai',{on});toast(on?'Đã bật AI':'Đã tắt AI cho page');};
+window.openPageChat=(id,name)=>{ctx={pageId:id,pageName:name};go('msgs');};
+window.openPageKB=(id,name)=>{ctx={pageId:id,pageName:name};go('kb');};
+
+async function rMsgs(){
+  const pages=await j('/pages');
+  content.innerHTML=`<h2>Tin nhắn</h2><p class="sub">Theo dõi hội thoại live · tiếp quản hoặc trả lời tay.</p>
+   <div class="row" style="margin-bottom:14px"><select id="pf" style="min-width:240px"><option value="">Tất cả page</option>${pages.map(p=>`<option value="${p.id}" ${p.id===ctx.pageId?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
+   <span class="pill mut"><span class="dot" style="width:6px;height:6px;box-shadow:none"></span> live</span></div>
+   <div class="convo"><div class="list" id="clist"></div><div class="panel" id="cpanel"><div class="empty">Chọn 1 hội thoại bên trái.</div></div></div>`;
+  document.getElementById('pf').onchange=e=>{ctx.pageId=e.target.value;loadConvos();};
+  await loadConvos(); timer=setInterval(loadConvos,5000);
+}
+async function loadConvos(){const el=document.getElementById('clist');if(!el)return;
+  const list=await j('/conversations'+(ctx.pageId?'?pageId='+ctx.pageId:''));
+  el.innerHTML=list.length?list.map(c=>`<div class="ci ${c.psid===selPsid?'sel':''}" onclick="openConvo('${c.psid}')">
+    <div class="av">${ini(c.pageName)}</div><div style="flex:1;min-width:0">
+    <div class="t"><span>${esc(c.pageName||c.pageId||'?')}</span><span class="muted" style="font-size:11.5px">${ago(c.lastAt)}</span></div>
+    <div class="s">${c.handoff?'👤 ':''}${esc(c.lastText||'(chưa có)')}</div></div></div>`).join('')
+    :'<div class="empty">Chưa có hội thoại.</div>';
+}
+window.openConvo=async psid=>{selPsid=psid;const c=await j('/conversation/'+psid);
+  document.querySelectorAll('.ci').forEach(e=>e.classList.toggle('sel',e.getAttribute('onclick').includes(psid)));
+  const p=document.getElementById('cpanel');
+  p.innerHTML=`<div class="phd"><div><b>${esc(c.pageName||c.pageId)}</b> <span class="mono">${psid}</span></div>
+   <div class="row">${c.handoff?`<span class="pill warn">đang là người</span><button class="btn sm" onclick="release('${psid}')">↩ Trả AI</button>`:`<button class="btn sm" onclick="takeover('${psid}')">✋ Tiếp quản</button>`}</div></div>
+   <div class="tr" id="tr">${c.transcript.map(m=>`<div class="bub ${m.who}">${esc(m.text)}</div>`).join('')||'<div class="empty">Chưa có tin.</div>'}</div>
+   <div class="composer"><input id="amsg" placeholder="Nhân viên trả lời..." style="flex:1" onkeydown="if(event.key==='Enter')sendAgent('${psid}')"><button class="btn pri" onclick="sendAgent('${psid}')">Gửi</button></div>`;
+  const tr=document.getElementById('tr');tr.scrollTop=tr.scrollHeight;
+};
+window.takeover=async p=>{await post('/conversation/'+p+'/takeover');toast('Bạn đã tiếp quản');openConvo(p);loadConvos();};
+window.release=async p=>{await post('/conversation/'+p+'/release');toast('Đã trả lại AI');openConvo(p);loadConvos();};
+window.sendAgent=async p=>{const i=document.getElementById('amsg');const t=i.value.trim();if(!t)return;i.value='';await post('/conversation/'+p+'/send',{text:t});openConvo(p);loadConvos();};
+
+async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/sheet')]);
+  const banner=sheet.url
+   ? `<div class="tablecard" style="padding:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+       <div><b>📄 Kịch bản đang lấy từ Google Sheet</b><div class="muted" style="font-size:12.5px">Cả team điền chung trên Sheet · server tự đồng bộ mỗi 5 phút</div></div>
+       <div class="row"><a class="btn pri" href="${esc(sheet.url)}" target="_blank">↗ Mở Sheet</a><button class="btn" onclick="reloadSheet()">↻ Nạp lại từ Sheet</button><button class="btn" onclick="connectSheet(1)">Đổi link</button></div></div>`
+   : `<div class="tablecard" style="padding:14px;margin-bottom:16px"><b>📄 Kết nối Google Sheet kịch bản</b>
+       <div class="muted" style="font-size:12.5px;margin:4px 0 10px">Cả team điền kịch bản chung trên 1 Sheet, server tự đọc làm KB. Dán link Sheet (đã chia sẻ "Bất kỳ ai có link → Người xem").</div>
+       <div class="row"><input id="shurl" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1"><button class="btn pri" onclick="connectSheet()">Kết nối</button></div></div>`;
+  content.innerHTML=`<h2>Kịch bản / KB theo page</h2><p class="sub">Nguồn kịch bản: Google Sheet (cả team) hoặc sửa nhanh từng page bên dưới.</p>${banner}
+   <div class="row" style="margin-bottom:14px"><select id="kbpage" style="min-width:300px">${pages.map(p=>`<option value="${p.id}" ${p.id===ctx.pageId?'selected':''}>${esc(p.name)} ${p.products>0?'· '+p.products+' SP':'· trống'}</option>`).join('')}</select></div>
+   <div class="tablecard" id="kbedit" style="padding:0"></div>
+   <div class="row" style="margin-top:12px"><button class="btn" onclick="addKbRow()">+ Thêm dòng</button><button class="btn pri" onclick="saveKB()">💾 Lưu</button><span id="kbmsg" class="muted"></span></div>`;
+  document.getElementById('kbpage').onchange=loadKBPage; loadKBPage();
+}
+window.connectSheet=async(change)=>{ let url; if(change){url=prompt('Dán link Google Sheet mới:');} else {url=document.getElementById('shurl').value.trim();} if(!url)return; toast('Đang đọc Sheet...'); const r=await post('/sheet',{url}); if(r.error){toast(r.error,'bad');return;} toast('✓ Đọc '+r.pages+' page từ Sheet'); rKB(); };
+window.reloadSheet=async()=>{ toast('Đang nạp lại...'); const r=await post('/sheet/reload'); if(r.error){toast(r.error,'bad');return;} toast('✓ '+r.pages+' page từ Sheet'); rKB(); };
+const KBC=[['id','Mã',70],['name','Tên SP',160],['desc','Mô tả',150],['variant','Variant',80],['price1','Giá 1',64],['combo2','Combo2',64],['combo3','Combo3',64],['currency','Tiền',54],['stock','Tồn',54],['image','Link ảnh',150]];
+window.loadKBPage=async()=>{const pid=document.getElementById('kbpage').value;const d=await j('/kb/'+pid);
+  const rows=d.products.length?d.products:[{}];
+  document.getElementById('kbedit').innerHTML=`<table id="kbt"><thead><tr>${KBC.map(c=>`<th>${c[1]}</th>`).join('')}<th></th></tr></thead><tbody>${rows.map(r=>kbRow(r)).join('')}</tbody></table>`;
+};
+function kbRow(r){return '<tr>'+KBC.map(c=>`<td><input value="${esc(r[c[0]]??'')}" data-k="${c[0]}" style="width:${c[2]}px"></td>`).join('')+'<td><button class="btn sm" onclick="this.closest(\'tr\').remove()">✕</button></td></tr>';}
+window.addKbRow=()=>document.querySelector('#kbt tbody').insertAdjacentHTML('beforeend',kbRow({}));
+window.saveKB=async()=>{const pid=document.getElementById('kbpage').value;
+  const products=[...document.querySelectorAll('#kbt tbody tr')].map(tr=>{const o={};tr.querySelectorAll('input').forEach(i=>o[i.dataset.k]=i.value);return o;});
+  const r=await post('/kb/'+pid,{products});toast('✓ Đã lưu '+r.products+' sản phẩm');document.getElementById('kbmsg').textContent='Cập nhật lúc '+new Date().toLocaleTimeString();};
+
+async function rTokens(){const ts=await j('/tokens');
+  content.innerHTML=`<h2>API / Token Meta <span class="pill ok" style="vertical-align:middle">failover</span></h2>
+   <p class="sub">Nuôi nhiều System Token (nhiều app). App bị FB khóa → tự đánh dấu hỏng & dùng app khác cho page có dự phòng.</p>
+   <div class="tablecard" style="margin-bottom:16px"><table><thead><tr><th>Nhãn</th><th>Token</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+   ${ts.map(t=>`<tr><td><b>${esc(t.label)}</b></td><td class="mono">${esc(t.tail)}</td><td>${t.healthy?'<span class="pill ok">● khỏe</span>':'<span class="pill bad">● hỏng</span>'}</td><td><button class="btn sm" onclick="rmToken('${t.id}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan=4 class="empty">Chưa có token.</td></tr>'}
+   </tbody></table></div>
+   <div class="tablecard" style="padding:16px;max-width:620px"><b>Thêm System Token (app khác)</b>
+     <div class="row" style="margin-top:10px"><input id="tlabel" placeholder="Nhãn (vd App dự phòng 1)" style="width:200px"><input id="ttoken" placeholder="System User token (EAA...)" style="flex:1"></div>
+     <div class="row" style="margin-top:10px"><button class="btn pri" onclick="addTk()">+ Thêm & nạp page</button><button class="btn" onclick="reloadTk()">↻ Nạp lại</button><span id="tkmsg" class="muted"></span></div>
+   </div>`;
+}
+window.addTk=async()=>{const label=document.getElementById('tlabel').value.trim();const token=document.getElementById('ttoken').value.trim();if(!token){toast('Thiếu token','bad');return;}document.getElementById('tkmsg').textContent='đang nạp...';const r=await post('/tokens',{label,token});toast('✓ Nạp '+r.pages+' page');topStatus();rTokens();};
+window.rmToken=async id=>{if(!confirm('Xóa token này?'))return;await del('/tokens/'+id);toast('Đã xóa token');topStatus();rTokens();};
+window.reloadTk=async()=>{document.getElementById('tkmsg').textContent='đang nạp...';const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();rTokens();};
+
+topStatus();setInterval(topStatus,12000);go('overview');
+</script>
+</body>
+</html>

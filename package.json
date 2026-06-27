@@ -1,0 +1,21 @@
+{
+  "name": "messenger-ai-closer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI chat closer cho Facebook Messenger (thị trường ME / COD) — Claude + n8n-style orchestration",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "web": "node src/web.js",
+    "chat": "node src/local-chat.js",
+    "subscribe": "node src/subscribe-pages.js",
+    "pages": "node -e \"import('./src/pages.js').then(async m=>{const n=await m.loadPageTokens();console.log('Tổng page:',n);for(const [id,v] of m.getStore())console.log(' -',id,v.name)})\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "xlsx": "^0.18.5"
+  }
+}
