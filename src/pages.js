@@ -44,29 +44,57 @@ export function removeToken(id) { tokens = tokens.filter((t) => t.id !== id); sa
 export function setTokenHealthy(id, ok) { const t = tokens.find((x) => x.id === id); if (t) { t.healthy = ok; saveTokensFile(); } }
 function isHealthy(id) { const t = tokens.find((x) => x.id === id); return !!t && t.healthy !== false; }
 
+// Gom page từ 1 edge (me/accounts, owned_pages, client_pages) — theo phân trang.
+async function collectPagesFrom(url, next, tk) {
+  let count = 0, guard = 0;
+  while (url && guard++ < 200) {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.error) throw Object.assign(new Error(data.error.message), { fb: data.error });
+    for (const p of data.data || []) {
+      if (!p.id || !p.access_token) continue;
+      const e = next.get(String(p.id)) || { name: p.name || '', sources: [] };
+      if (!e.sources.some((s) => s.tokenId === tk.id)) e.sources.push({ tokenId: tk.id, token: p.access_token });
+      if (p.name) e.name = p.name;
+      next.set(String(p.id), e);
+      count++;
+    }
+    url = data.paging?.next || null;
+  }
+  return count;
+}
+
 export async function loadPageTokens() {
   loadTokensFile();
   if (!tokens.length) { console.warn('[pages] Chưa có System Token nào.'); return 0; }
   const next = new Map();
   for (const tk of tokens) {
     let healthy = true;
-    let url = graph(`me/accounts?fields=id,name,access_token&limit=100&access_token=${tk.token}`);
-    let guard = 0;
     try {
-      while (url && guard++ < 60) {
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.error) { healthy = false; console.warn(`[pages] token "${tk.label}" lỗi: ${data.error.message}`); break; }
-        for (const p of data.data || []) {
-          if (!p.id || !p.access_token) continue;
-          const e = next.get(String(p.id)) || { name: p.name || '', sources: [] };
-          e.sources.push({ tokenId: tk.id, token: p.access_token });
-          if (p.name) e.name = p.name;
-          next.set(String(p.id), e);
-        }
-        url = data.paging?.next || null;
+      // Cách tin cậy: liệt kê qua Business (owned_pages + client_pages) — cần scope business_management.
+      // me/accounts thường BÁO THIẾU với System User nên chỉ dùng làm fallback.
+      let usedBusiness = false;
+      // Business-id: ưu tiên khai báo sẵn trong tokens.json (tk.businesses), vì me/businesses
+      // thường trả rỗng với System User. Nếu trống thì thử me/businesses.
+      let bizIds = Array.isArray(tk.businesses) ? tk.businesses.map(String).filter(Boolean) : [];
+      if (!bizIds.length) {
+        const bizRes = await fetch(graph(`me/businesses?fields=id&limit=100&access_token=${tk.token}`));
+        const bizData = await bizRes.json();
+        if (!bizData.error && Array.isArray(bizData.data)) bizIds = bizData.data.map((b) => String(b.id));
+        else if (bizData.error) console.warn(`[pages] token "${tk.label}" me/businesses lỗi: ${bizData.error.message}`);
       }
-    } catch (e) { healthy = false; console.warn(`[pages] token "${tk.label}" exception: ${e.message}`); }
+      for (const bid of bizIds) {
+        for (const edge of ['owned_pages', 'client_pages']) {
+          try {
+            await collectPagesFrom(graph(`${bid}/${edge}?fields=id,name,access_token&limit=100&access_token=${tk.token}`), next, tk);
+            usedBusiness = true;
+          } catch (e) { console.warn(`[pages] business ${bid}/${edge}: ${e.message}`); }
+        }
+      }
+      // Fallback (hoặc bổ sung) qua me/accounts.
+      await collectPagesFrom(graph(`me/accounts?fields=id,name,access_token&limit=100&access_token=${tk.token}`), next, tk);
+      if (!usedBusiness) console.warn('[pages] Nên thêm quyền business_management vào token để lấy ĐỦ page.');
+    } catch (e) { healthy = false; console.warn(`[pages] token "${tk.label}" lỗi: ${e.message}`); }
     tk.healthy = healthy;
   }
   saveTokensFile();

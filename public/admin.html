@@ -81,6 +81,25 @@
   .tt{background:#10262b;color:#fff;padding:11px 16px;border-radius:10px;font-size:13.5px;box-shadow:0 6px 24px rgba(0,0,0,.18);display:flex;align-items:center;gap:8px;animation:in .2s}
   .tt.ok{background:#0e7c86} .tt.bad{background:#dc2626}
   @keyframes in{from{opacity:0;transform:translateY(8px)}}
+  /* KB product cards */
+  .pcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);padding:18px;margin-bottom:14px}
+  .pcard .fh{display:flex;gap:12px;align-items:flex-end;margin-bottom:14px}
+  .fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .fld>label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  .fld input,.fld textarea,.fld select{width:100%}
+  .pcard textarea{resize:vertical;min-height:46px;line-height:1.45}
+  .grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px}
+  .imgbox2{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+  .imglist{display:flex;flex-direction:column;gap:9px;margin-bottom:11px}
+  .imrow{display:flex;align-items:center;gap:11px}
+  .imrow img.thumb{width:54px;height:54px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#f7f9fa;flex-shrink:0}
+  .imrow .imlabel{flex:1;max-width:280px}
+  .rmx{width:30px;height:30px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--muted);flex-shrink:0}
+  .rmx:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
+  .kbbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 16px;position:sticky;top:0;z-index:8}
+  .combo-drop{position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(16,24,40,.14);max-height:340px;overflow:auto;margin-top:5px;display:none}
+  .ci2{padding:9px 13px;cursor:pointer;font-size:13.5px;border-bottom:1px solid #f1f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ci2:hover{background:var(--priSoft)} .ci2:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -139,7 +158,7 @@ async function rOverview(){const o=await j('/overview');
     ['kb','Page đã có KB',o.pagesWithKB+' / '+o.pages,'kb','điền kịch bản'],
     ['tokens','Token khỏe',o.tokensHealthy+' / '+o.tokensTotal,'tokens','quản lý app'],
     ['msgs','Hội thoại',o.conversations,'msgs','xem tin nhắn'],
-    ['pages','Page tắt AI',o.aiDisabled,'pages','nhân viên tự lo'],
+    ['pages','Page đang bật AI',(o.aiEnabled||0)+' / '+o.pages,'pages','mặc định tắt'],
   ];
   content.innerHTML=`<h2>Tổng quan</h2><p class="sub">Trạng thái hệ thống — bấm thẻ để vào chi tiết.</p>
    <div class="cards">${cards.map(c=>`<div class="mc" onclick="go('${c[3]}')"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[4]} →</div></div>`).join('')}</div>
@@ -211,23 +230,94 @@ async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/shee
    : `<div class="tablecard" style="padding:14px;margin-bottom:16px"><b>📄 Kết nối Google Sheet kịch bản</b>
        <div class="muted" style="font-size:12.5px;margin:4px 0 10px">Cả team điền kịch bản chung trên 1 Sheet, server tự đọc làm KB. Dán link Sheet (đã chia sẻ "Bất kỳ ai có link → Người xem").</div>
        <div class="row"><input id="shurl" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1"><button class="btn pri" onclick="connectSheet()">Kết nối</button></div></div>`;
+  KBPAGES=pages;
+  const sel=pages.find(p=>String(p.id)===String(ctx.pageId))||pages[0]||{};
   content.innerHTML=`<h2>Kịch bản / KB theo page</h2><p class="sub">Nguồn kịch bản: Google Sheet (cả team) hoặc sửa nhanh từng page bên dưới.</p>${banner}
-   <div class="row" style="margin-bottom:14px"><select id="kbpage" style="min-width:300px">${pages.map(p=>`<option value="${p.id}" ${p.id===ctx.pageId?'selected':''}>${esc(p.name)} ${p.products>0?'· '+p.products+' SP':'· trống'}</option>`).join('')}</select></div>
-   <div class="tablecard" id="kbedit" style="padding:0"></div>
-   <div class="row" style="margin-top:12px"><button class="btn" onclick="addKbRow()">+ Thêm dòng</button><button class="btn pri" onclick="saveKB()">💾 Lưu</button><span id="kbmsg" class="muted"></span></div>`;
+   <div class="kbbar">
+     <div class="fld combo" style="flex:1;min-width:260px;position:relative">
+       <label>Chọn page — gõ để tìm (${pages.length} page)</label>
+       <input id="kbsearch" autocomplete="off" placeholder="Tìm page theo tên..." value="${esc(sel.name||'')}" oninput="kbFilter()" onfocus="kbFilter(1)" onkeydown="kbKey(event)">
+       <input type="hidden" id="kbpage" value="${esc(sel.id||'')}">
+       <div id="kbdrop" class="combo-drop"></div>
+     </div>
+     <button class="btn" onclick="addKbCard()">＋ Thêm sản phẩm</button>
+     <button class="btn pri" onclick="saveKB()">💾 Lưu tất cả</button>
+     <span id="kbmsg" class="muted" style="font-size:12.5px"></span>
+   </div>
+   <div id="kblist"></div>`;
   document.getElementById('kbpage').onchange=loadKBPage; loadKBPage();
 }
 window.connectSheet=async(change)=>{ let url; if(change){url=prompt('Dán link Google Sheet mới:');} else {url=document.getElementById('shurl').value.trim();} if(!url)return; toast('Đang đọc Sheet...'); const r=await post('/sheet',{url}); if(r.error){toast(r.error,'bad');return;} toast('✓ Đọc '+r.pages+' page từ Sheet'); rKB(); };
 window.reloadSheet=async()=>{ toast('Đang nạp lại...'); const r=await post('/sheet/reload'); if(r.error){toast(r.error,'bad');return;} toast('✓ '+r.pages+' page từ Sheet'); rKB(); };
-const KBC=[['id','Mã',70],['name','Tên SP',160],['desc','Mô tả',150],['variant','Variant',80],['price1','Giá 1',64],['combo2','Combo2',64],['combo3','Combo3',64],['currency','Tiền',54],['stock','Tồn',54],['image','Link ảnh',150]];
+let KBPAGES=[];
+window.kbFilter=(showAll)=>{const inp=document.getElementById('kbsearch');if(!inp)return;const q=(showAll?'':inp.value).trim().toLowerCase();
+  const drop=document.getElementById('kbdrop');
+  const list=KBPAGES.filter(p=>!q||(p.name||'').toLowerCase().includes(q)).slice(0,80);
+  drop.innerHTML=list.map(p=>`<div class="ci2" data-id="${p.id}" onmousedown="kbPick('${p.id}')">${esc(p.name)} <span class="muted" style="font-size:11.5px">${p.products>0?'· '+p.products+' SP':'· trống'}</span></div>`).join('')||'<div class="ci2 muted">Không tìm thấy page</div>';
+  drop.style.display='block';};
+window.kbPick=(id)=>{const p=KBPAGES.find(x=>String(x.id)===String(id));if(!p)return;
+  document.getElementById('kbpage').value=p.id;document.getElementById('kbsearch').value=p.name;
+  document.getElementById('kbdrop').style.display='none';loadKBPage();};
+window.kbKey=(e)=>{if(e.key==='Enter'){e.preventDefault();const f=document.querySelector('#kbdrop .ci2[data-id]');if(f)kbPick(f.dataset.id);}else if(e.key==='Escape'){const d=document.getElementById('kbdrop');if(d)d.style.display='none';}};
+document.addEventListener('mousedown',e=>{const d=document.getElementById('kbdrop');if(d&&!e.target.closest('.combo'))d.style.display='none';});
+const IMG_LABELS=['Ảnh sản phẩm','Feedback','Thành phần','Công dụng','Cách dùng','Chứng nhận'];
 window.loadKBPage=async()=>{const pid=document.getElementById('kbpage').value;const d=await j('/kb/'+pid);
   const rows=d.products.length?d.products:[{}];
-  document.getElementById('kbedit').innerHTML=`<table id="kbt"><thead><tr>${KBC.map(c=>`<th>${c[1]}</th>`).join('')}<th></th></tr></thead><tbody>${rows.map(r=>kbRow(r)).join('')}</tbody></table>`;
+  document.getElementById('kblist').innerHTML=
+    `<datalist id="imglabels">${IMG_LABELS.map(l=>`<option value="${l}">`).join('')}</datalist>`
+    +rows.map(r=>kbCard(r)).join('');
 };
-function kbRow(r){return '<tr>'+KBC.map(c=>`<td><input value="${esc(r[c[0]]??'')}" data-k="${c[0]}" style="width:${c[2]}px"></td>`).join('')+'<td><button class="btn sm" onclick="this.closest(\'tr\').remove()">✕</button></td></tr>';}
-window.addKbRow=()=>document.querySelector('#kbt tbody').insertAdjacentHTML('beforeend',kbRow({}));
+function fld(label,k,val,ph){return `<div class="fld"><label>${label}</label><input data-k="${k}" value="${esc(val??'')}" placeholder="${ph||''}"></div>`;}
+function imgRow(im){im=im||{};const u=im.url||'';
+  return `<div class="imrow">
+   <img class="thumb" src="${esc(u)}" onclick="if(this.getAttribute('src'))window.open(this.src)" style="${u?'':'display:none'}">
+   <input type="hidden" data-img-url value="${esc(u)}">
+   <input class="imlabel" data-img-label list="imglabels" value="${esc(im.label||'')}" placeholder="Loại ảnh (vd: Feedback)">
+   <button class="rmx" title="Gỡ ảnh" onclick="this.closest('.imrow').remove()">✕</button>
+  </div>`;}
+function kbCard(r){r=r||{};const imgs=(r.images&&r.images.length)?r.images:(r.image?[{url:r.image,label:'Ảnh sản phẩm'}]:[]);
+  return `<div class="pcard">
+   <div class="fh">
+     <div class="fld" style="width:130px"><label>Mã SP</label><input data-k="id" value="${esc(r.id??'')}" placeholder="VD: SU01"></div>
+     <div class="fld" style="flex:1"><label>Tên sản phẩm (khách thấy)</label><input data-k="name" value="${esc(r.name??'')}" placeholder="Tên sản phẩm, nên viết English/Tagalog"></div>
+     <button class="rmx" title="Xóa sản phẩm" onclick="this.closest('.pcard').remove()">✕</button>
+   </div>
+   <div class="fld" style="margin-bottom:14px"><label>Mô tả ngắn (bán hàng)</label><textarea data-k="desc" placeholder="Điểm mạnh, công dụng chính...">${esc(r.desc??'')}</textarea></div>
+   <div class="grid5">
+     ${fld('Variant','variant',r.variant,'Màu/loại')}
+     ${fld('Giá lẻ','price1',r.price1,'149')}
+     ${fld('Combo 2','combo2',r.combo2,'249')}
+     ${fld('Combo 3','combo3',r.combo3,'329')}
+     ${fld('Tiền tệ','currency',r.currency,'AED')}
+     ${fld('Tồn kho','stock',r.stock,'')}
+   </div>
+   <div class="imgbox2">
+     <div class="muted" style="font-size:12px;margin-bottom:9px"><b>Ảnh sản phẩm</b> — bot gửi cho khách. Thêm nhiều loại: Ảnh sản phẩm, Feedback, Thành phần, Công dụng…</div>
+     <div class="imglist">${imgs.map(im=>imgRow(im)).join('')}</div>
+     <button class="btn" onclick="addKbImg(this)" style="margin-top:4px">📷 Thêm ảnh</button>
+   </div>
+  </div>`;}
+window.addKbCard=()=>document.getElementById('kblist').insertAdjacentHTML('beforeend',kbCard({}));
+window.addKbImg=(btn)=>{const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+  inp.onchange=async()=>{const f=inp.files[0];if(!f)return;
+    if(f.size>10*1024*1024){toast('Ảnh quá lớn (>10MB)','bad');return;}
+    const card=btn.closest('.pcard');
+    const pageId=document.getElementById('kbpage').value;
+    const productId=card.querySelector('input[data-k=id]')?.value||'';
+    toast('Đang tải ảnh...');
+    const dataUrl=await new Promise(r=>{const rd=new FileReader();rd.onload=()=>r(rd.result);rd.readAsDataURL(f);});
+    const res=await post('/upload-image',{dataUrl,pageId,productId});
+    if(res.error){toast(res.error,'bad');return;}
+    const list=card.querySelector('.imglist');
+    const dflt=list.querySelector('.imrow')?'':'Ảnh sản phẩm'; // ảnh đầu tiên mặc định nhãn "Ảnh sản phẩm"
+    list.insertAdjacentHTML('beforeend',imgRow({url:res.url,label:dflt}));
+    toast(res.absolute?'✓ Đã thêm ảnh':'✓ Đã thêm (cần PUBLIC_URL để bot gửi được)','ok');};
+  inp.click();};
 window.saveKB=async()=>{const pid=document.getElementById('kbpage').value;
-  const products=[...document.querySelectorAll('#kbt tbody tr')].map(tr=>{const o={};tr.querySelectorAll('input').forEach(i=>o[i.dataset.k]=i.value);return o;});
+  const products=[...document.querySelectorAll('#kblist .pcard')].map(card=>{
+    const o={};card.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.value);
+    o.images=[...card.querySelectorAll('.imrow')].map(row=>({url:row.querySelector('[data-img-url]').value,label:row.querySelector('[data-img-label]').value})).filter(im=>im.url);
+    return o;}).filter(p=>p.name||p.id);
   const r=await post('/kb/'+pid,{products});toast('✓ Đã lưu '+r.products+' sản phẩm');document.getElementById('kbmsg').textContent='Cập nhật lúc '+new Date().toLocaleTimeString();};
 
 async function rTokens(){const ts=await j('/tokens');

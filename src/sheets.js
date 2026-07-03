@@ -8,13 +8,25 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SHEET_FILE = path.resolve(__dirname, '..', 'sheet.json');
 
 let sheetId = config.googleSheetId || '';
-try { if (fs.existsSync(SHEET_FILE)) sheetId = JSON.parse(fs.readFileSync(SHEET_FILE, 'utf8')).id || sheetId; } catch {}
+let sheetUrl = ''; // link gốc người dùng dán (giữ nguyên gid để nút mở đúng tab)
+try {
+  if (fs.existsSync(SHEET_FILE)) {
+    const j = JSON.parse(fs.readFileSync(SHEET_FILE, 'utf8'));
+    sheetId = j.id || sheetId;
+    sheetUrl = j.url || '';
+  }
+} catch {}
 
 export function getSheetId() { return sheetId; }
-export function getSheetUrl() { return sheetId ? `https://docs.google.com/spreadsheets/d/${sheetId}/edit` : ''; }
+// Ưu tiên link gốc (đủ gid). Nếu chỉ có id thì dựng link /edit.
+export function getSheetUrl() {
+  if (sheetUrl) return sheetUrl;
+  return sheetId ? `https://docs.google.com/spreadsheets/d/${sheetId}/edit` : '';
+}
 export function setSheetId(idOrUrl) {
   sheetId = extractSheetId(idOrUrl);
-  try { fs.writeFileSync(SHEET_FILE, JSON.stringify({ id: sheetId }, null, 2)); } catch (e) { console.error('[sheet] lưu lỗi', e.message); }
+  sheetUrl = /^https?:\/\//i.test(String(idOrUrl || '')) ? String(idOrUrl).trim() : '';
+  try { fs.writeFileSync(SHEET_FILE, JSON.stringify({ id: sheetId, url: sheetUrl }, null, 2)); } catch (e) { console.error('[sheet] lưu lỗi', e.message); }
   return sheetId;
 }
 export function extractSheetId(s) {
@@ -22,15 +34,22 @@ export function extractSheetId(s) {
   return m ? m[1] : String(s || '').trim();
 }
 
-// Lấy 1 tab dưới dạng mảng-các-mảng (đã bỏ dòng tiêu đề), khớp với loader Excel.
-export async function fetchTabRows(id, tabName) {
+// Lấy toàn bộ 1 tab (GỒM dòng tiêu đề) dạng mảng-các-mảng.
+// LƯU Ý: gviz khi tab KHÔNG tồn tại vẫn trả 200 + nội dung tab ĐẦU TIÊN.
+// → Người gọi phải tự kiểm tra header để biết tab có thật hay không.
+export async function fetchTabMatrix(id, tabName) {
   const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}`;
   const res = await fetch(url);
   const text = await res.text();
   if (!res.ok || text.trim().startsWith('<')) {
     throw new Error(`Không đọc được tab "${tabName}". Hãy chia sẻ Sheet ở chế độ "Bất kỳ ai có đường liên kết → Người xem".`);
   }
-  return parseCsv(text).slice(1);
+  return parseCsv(text);
+}
+
+// Lấy 1 tab đã bỏ dòng tiêu đề (dùng cho các tab dùng chung: Chính sách/FAQ/...).
+export async function fetchTabRows(id, tabName) {
+  return (await fetchTabMatrix(id, tabName)).slice(1);
 }
 
 function parseCsv(text) {

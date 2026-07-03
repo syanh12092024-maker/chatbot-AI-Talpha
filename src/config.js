@@ -15,11 +15,17 @@ export const config = {
   pageAccessToken: process.env.PAGE_ACCESS_TOKEN,
   metaSystemToken: process.env.META_SYSTEM_TOKEN || '', // System User token (Business Manager) — đa-page
   graphVersion: process.env.GRAPH_VERSION || 'v21.0',
+  publicUrl: (process.env.PUBLIC_URL || '').replace(/\/$/, ''), // URL công khai (cloudflared/ngrok) để host ảnh cho Messenger tải về
   verifyToken: process.env.VERIFY_TOKEN || 'changeme',
   appSecret: process.env.APP_SECRET || '',
   kbPath: resolveKbPath(process.env.KB_PATH),
   googleSheetId: process.env.GOOGLE_SHEET_ID || '', // kịch bản trên Google Sheet (tùy chọn)
-  sheetTabs: { products: 'Sản phẩm theo Page', policies: 'Chính sách', faq: 'FAQ', obj: 'Xử lý phản đối' },
+  sheetTabs: {
+    // Sản phẩm tách theo thị trường (mỗi tab 1 nước) — bot đọc & gộp hết.
+    productTabs: ['UAE', 'KSA', 'Kuwait', 'Qatar', 'Oman', 'Bahrain', 'Khác'],
+    products: 'Sản phẩm theo Page', // fallback: tab gộp cũ nếu chưa tách thị trường
+    policies: 'Chính sách', faq: 'FAQ', obj: 'Xử lý phản đối',
+  },
   modelCloser: process.env.MODEL_CLOSER || 'claude-sonnet-4-6',
   modelClassifier: process.env.MODEL_CLASSIFIER || 'claude-haiku-4-5',
   port: Number(process.env.PORT || 3100),

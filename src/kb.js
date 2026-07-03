@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import xlsx from 'xlsx';
 import { config } from './config.js';
-import { fetchTabRows } from './sheets.js';
+import { fetchTabRows, fetchTabMatrix } from './sheets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OVERRIDES_FILE = path.resolve(__dirname, '..', 'kb-overrides.json'); // sửa từ dashboard
@@ -67,9 +67,37 @@ function pageText(market, category, products) {
 }
 
 // Nạp kịch bản từ Google Sheet (tab sản phẩm bắt buộc; các tab khác tùy chọn).
+// Tab sản phẩm hợp lệ khi ô đầu header = "Page ID". (gviz trả tab mặc định cho
+// tab không tồn tại → phải lọc bằng header, nếu không sẽ gộp nhầm dữ liệu.)
+function isProductMatrix(m) {
+  return Array.isArray(m) && m.length > 0 && String(m[0][0]).trim().toLowerCase() === 'page id';
+}
+
+// Đọc sản phẩm: ưu tiên các tab theo thị trường (productTabs), gộp lại.
+// Nếu không tab thị trường nào tồn tại → fallback tab gộp cũ (t.products).
+async function fetchProductRows(id, t) {
+  const tabs = Array.isArray(t.productTabs) && t.productTabs.length ? t.productTabs : [];
+  let all = [];
+  const okTabs = [];
+  for (const name of tabs) {
+    try {
+      const m = await fetchTabMatrix(id, name);
+      if (!isProductMatrix(m)) continue; // tab không có thật (gviz trả tab mặc định) → bỏ
+      all = all.concat(m.slice(1));
+      okTabs.push(name);
+    } catch { /* bỏ qua */ }
+  }
+  if (!okTabs.length) {
+    const m = await fetchTabMatrix(id, t.products); // fallback tab gộp cũ
+    return isProductMatrix(m) ? m.slice(1) : [];
+  }
+  console.log(`[kb] Đọc sản phẩm từ tab thị trường: ${okTabs.join(', ')}`);
+  return all;
+}
+
 export async function syncFromSheet(id) {
   const t = config.sheetTabs;
-  const pp = await fetchTabRows(id, t.products);
+  const pp = await fetchProductRows(id, t);
   const [pol, fq, ob] = await Promise.all([
     fetchTabRows(id, t.policies).catch(() => []),
     fetchTabRows(id, t.faq).catch(() => []),
@@ -134,17 +162,30 @@ function applyOverrides() {
   }
 }
 
+// Ảnh sản phẩm: chuẩn hoá về mảng [{url,label}]. Tương thích cả field `image` cũ (1 ảnh).
+export function productImages(p) {
+  if (Array.isArray(p.images) && p.images.length) {
+    return p.images.map((im) => ({ url: String(im.url || '').trim(), label: String(im.label || '').trim() })).filter((im) => im.url);
+  }
+  if (p.image) return [{ url: String(p.image).trim(), label: 'Ảnh sản phẩm' }];
+  return [];
+}
+
 export function getPageProductsRaw(pageId) {
-  return (pageMap.get(String(pageId))?.products || []).map((p) => ({ ...p }));
+  return (pageMap.get(String(pageId))?.products || []).map((p) => ({ ...p, images: productImages(p) }));
 }
 
 export function updatePageProducts(pageId, products) {
-  const clean = (products || []).map((p) => ({
-    id: String(p.id || '').trim(), name: String(p.name || '').trim(), desc: String(p.desc || '').trim(),
-    variant: String(p.variant || '').trim(),
-    price1: numOrNull(p.price1), combo2: numOrNull(p.combo2), combo3: numOrNull(p.combo3),
-    currency: String(p.currency || 'AED').trim(), stock: numOrNull(p.stock), image: String(p.image || '').trim(),
-  })).filter((p) => p.id || p.name);
+  const clean = (products || []).map((p) => {
+    const images = productImages(p);
+    return {
+      id: String(p.id || '').trim(), name: String(p.name || '').trim(), desc: String(p.desc || '').trim(),
+      variant: String(p.variant || '').trim(),
+      price1: numOrNull(p.price1), combo2: numOrNull(p.combo2), combo3: numOrNull(p.combo3),
+      currency: String(p.currency || 'AED').trim(), stock: numOrNull(p.stock),
+      images, image: images[0]?.url || '', // image: giữ lại 1 ảnh chính cho tương thích ngược
+    };
+  }).filter((p) => p.id || p.name);
   const ov = readOverrides();
   ov[String(pageId)] = { products: clean };
   writeOverrides(ov);
@@ -168,7 +209,11 @@ function buildProductText(products) {
     if (p.combo3 != null) pr.push(`combo 3: ${p.combo3} ${p.currency}`);
     if (pr.length) out.push(`    Giá — ${pr.join(' | ')}`);
     if (p.stock != null) out.push(`    Tồn kho: ${p.stock}`);
-    if (p.image) out.push(`    Ảnh: ${p.image}`);
+    const imgs = productImages(p);
+    if (imgs.length) {
+      const byLabel = imgs.map((im) => im.label || 'Ảnh SP');
+      out.push(`    Ảnh có sẵn (dùng tool send_product_image để gửi): ${[...new Set(byLabel)].join(', ')}`);
+    }
   }
   return out.join('\n');
 }

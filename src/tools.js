@@ -1,4 +1,6 @@
 import { createOrder } from './pancake.js';
+import { sendImage } from './messenger.js';
+import { productImages } from './kb.js';
 
 // Định nghĩa tool (function calling) cho closer.
 export const toolDefs = [
@@ -45,6 +47,18 @@ export const toolDefs = [
         cod_confirmed: { type: 'boolean', description: 'Khách đã xác nhận thanh toán khi nhận hàng' },
       },
       required: ['name', 'phone', 'address', 'city', 'product_id', 'qty', 'cod_confirmed'],
+    },
+  },
+  {
+    name: 'send_product_image',
+    description: 'Gửi ẢNH sản phẩm cho khách xem. Mỗi SP có thể có nhiều loại ảnh (Ảnh sản phẩm, Feedback, Thành phần, Công dụng...). Để trống category = gửi ảnh sản phẩm chính; truyền category để gửi đúng loại khách hỏi (vd "feedback", "thành phần").',
+    input_schema: {
+      type: 'object',
+      properties: {
+        product_id: { type: 'string', description: 'Mã SP cần gửi ảnh' },
+        category: { type: 'string', description: 'Loại ảnh muốn gửi (khớp theo nhãn): vd "feedback", "thành phần", "công dụng". Bỏ trống = ảnh sản phẩm chính.' },
+      },
+      required: ['product_id'],
     },
   },
   {
@@ -103,6 +117,21 @@ export async function executeTool(name, input, ctx) {
         const order = await createOrder(input, ctx);
         state.orderId = order.id;
         return { content: JSON.stringify({ ok: true, order_id: order.id }) };
+      }
+      case 'send_product_image': {
+        const p = findProduct(kb, input.product_id);
+        if (!p) return { content: `Không tìm thấy sản phẩm ${input.product_id}.`, isError: true };
+        const all = productImages(p);
+        if (!all.length) return { content: `Sản phẩm ${p.id} chưa có ảnh. Cứ tư vấn bằng lời.`, isError: true };
+        const norm = (s) => String(s || '').toLowerCase();
+        const cat = norm(input.category);
+        let pick = cat ? all.filter((im) => norm(im.label).includes(cat)) : all.filter((im) => norm(im.label).includes('sản phẩm'));
+        if (!pick.length) pick = cat ? [] : all.slice(0, 1); // không khớp category → báo lại; không có category → ảnh đầu
+        if (!pick.length) {
+          return { content: `Sản phẩm ${p.id} không có ảnh loại "${input.category}". Các loại có: ${[...new Set(all.map((im) => im.label || 'Ảnh SP'))].join(', ')}.`, isError: true };
+        }
+        for (const im of pick.slice(0, 6)) await sendImage(state.psid, im.url, state.pageId);
+        return { content: `Đã gửi ${pick.length} ảnh (${input.category || 'sản phẩm'}) cho khách.` };
       }
       case 'handoff_human': {
         state.handoff = true;

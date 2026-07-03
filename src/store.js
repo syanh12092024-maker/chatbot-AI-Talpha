@@ -1,7 +1,28 @@
 // Trạng thái hội thoại theo PSID + transcript để dashboard hiển thị (in-memory cho pilot).
 // TODO production: chuyển sang Redis/DB để bền & scale nhiều instance.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const sessions = new Map();
-const aiDisabledPages = new Set(); // pageId bị TẮT AI (nhân viên tự lo)
+
+// AI MẶC ĐỊNH TẮT: chỉ page nào nằm trong set này mới cho AI tự trả.
+// Lưu ra file để restart không mất trạng thái bật.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const AI_FILE = path.resolve(__dirname, '..', 'ai-enabled.json');
+const aiEnabledPages = new Set();
+(function loadAiEnabled() {
+  try {
+    if (fs.existsSync(AI_FILE)) {
+      const arr = JSON.parse(fs.readFileSync(AI_FILE, 'utf8'));
+      if (Array.isArray(arr)) arr.forEach((id) => aiEnabledPages.add(String(id)));
+    }
+  } catch { /* để trống = tất cả tắt */ }
+})();
+function saveAiEnabled() {
+  try { fs.writeFileSync(AI_FILE, JSON.stringify([...aiEnabledPages], null, 2)); }
+  catch (e) { console.error('[ai] lưu trạng thái lỗi:', e.message); }
+}
 
 function ts() { try { return Date.now(); } catch { return 0; } }
 
@@ -65,7 +86,10 @@ export function setHandoff(psid, on = true, reason = 'manual') {
   return s;
 }
 
-// Bật/tắt AI theo page.
-export function isAiEnabled(pageId) { return !aiDisabledPages.has(String(pageId)); }
-export function setAiEnabled(pageId, on) { if (on) aiDisabledPages.delete(String(pageId)); else aiDisabledPages.add(String(pageId)); }
-export function listAiDisabled() { return [...aiDisabledPages]; }
+// Bật/tắt AI theo page — MẶC ĐỊNH TẮT (chỉ bật thủ công khi cần).
+export function isAiEnabled(pageId) { return aiEnabledPages.has(String(pageId)); }
+export function setAiEnabled(pageId, on) {
+  if (on) aiEnabledPages.add(String(pageId)); else aiEnabledPages.delete(String(pageId));
+  saveAiEnabled();
+}
+export function listAiEnabled() { return [...aiEnabledPages]; }

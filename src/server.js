@@ -25,7 +25,10 @@ loadPageTokens().catch((e) => console.error('[pages] lỗi nạp token:', e.mess
 setInterval(() => loadPageTokens().catch((e) => console.error('[pages] refresh lỗi:', e.message)), 6 * 60 * 60 * 1000);
 
 const app = express();
-app.use(express.json({ verify: (req, _res, buf) => { req.rawBody = buf; } }));
+app.use(express.json({ limit: '12mb', verify: (req, _res, buf) => { req.rawBody = buf; } }));
+
+// Ảnh sản phẩm upload từ dashboard — host công khai để Messenger tải về.
+app.use('/uploads', express.static(path.resolve(__dirname, '..', 'public', 'uploads')));
 
 // Dashboard quản trị
 app.use('/admin/api', adminRouter);

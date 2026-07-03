@@ -1,11 +1,15 @@
 import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { config } from './config.js';
 import {
   listTokens, addToken, removeToken, loadPageTokens, pageCount, getPageMeta, getStore,
 } from './pages.js';
 import { getPageList, getPageProductsRaw, updatePageProducts, syncFromSheet } from './kb.js';
 import { getSheetId, getSheetUrl, setSheetId } from './sheets.js';
 import {
-  listConversations, getConversation, setHandoff, isAiEnabled, setAiEnabled, listAiDisabled,
+  listConversations, getConversation, setHandoff, isAiEnabled, setAiEnabled, listAiEnabled,
 } from './store.js';
 import { sendText } from './messenger.js';
 import { recordOutbound } from './store.js';
@@ -23,7 +27,7 @@ adminRouter.get('/overview', (_req, res) => {
     tokensTotal: tokens.length,
     tokensHealthy: tokens.filter((t) => t.healthy).length,
     conversations: listConversations().length,
-    aiDisabled: listAiDisabled().length,
+    aiEnabled: listAiEnabled().length,
   });
 });
 
@@ -71,6 +75,27 @@ adminRouter.post('/conversation/:psid/send', async (req, res) => {
   recordOutbound(req.params.psid, text, 'agent');
   await sendText(req.params.psid, text, c.pageId);
   res.json({ ok: true });
+});
+
+// ---- Upload ảnh sản phẩm (base64 từ dashboard → lưu file → trả URL công khai) ----
+const UPLOAD_DIR = path.resolve(fileURLToPath(new URL('..', import.meta.url)), 'public', 'uploads');
+const EXT_BY_MIME = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+adminRouter.post('/upload-image', (req, res) => {
+  try {
+    const { dataUrl, pageId, productId } = req.body || {};
+    const m = /^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/.exec(String(dataUrl || ''));
+    if (!m) return res.status(400).json({ error: 'Ảnh không hợp lệ (chỉ nhận jpg/png/webp/gif).' });
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > 10 * 1024 * 1024) return res.status(400).json({ error: 'Ảnh quá lớn (>10MB).' });
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    const safe = String(productId || 'img').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 20) || 'img';
+    const file = `${String(pageId || 'p').replace(/[^0-9]/g, '')}-${safe}-${Date.now()}.${EXT_BY_MIME[m[1]]}`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, file), buf);
+    const url = (config.publicUrl ? config.publicUrl : '') + '/uploads/' + file;
+    res.json({ ok: true, url, absolute: !!config.publicUrl });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ---- Kịch bản / KB ----
