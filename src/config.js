@@ -14,6 +14,7 @@ export const config = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   pageAccessToken: process.env.PAGE_ACCESS_TOKEN,
   metaSystemToken: process.env.META_SYSTEM_TOKEN || '', // System User token (Business Manager) — đa-page
+  metaBusinessIds: (process.env.META_BUSINESS_IDS || '').split(',').map((s) => s.trim()).filter(Boolean), // BM id để liệt kê owned_pages (deploy không có tokens.json)
   graphVersion: process.env.GRAPH_VERSION || 'v21.0',
   publicUrl: (process.env.PUBLIC_URL || '').replace(/\/$/, ''), // URL công khai (cloudflared/ngrok) để host ảnh cho Messenger tải về
   verifyToken: process.env.VERIFY_TOKEN || 'changeme',

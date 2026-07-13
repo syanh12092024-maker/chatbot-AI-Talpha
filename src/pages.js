@@ -23,7 +23,7 @@ function loadTokensFile() {
   catch { tokens = []; }
   if (!Array.isArray(tokens)) tokens = [];
   if (!tokens.length && config.metaSystemToken) {
-    tokens = [{ id: 'env', label: 'Token .env', token: config.metaSystemToken, healthy: true }];
+    tokens = [{ id: 'env', label: 'Token .env', token: config.metaSystemToken, businesses: config.metaBusinessIds, healthy: true }];
     saveTokensFile();
   }
 }
