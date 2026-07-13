@@ -8,3 +8,5 @@ sheet.json
 ai-enabled.json
 cloudflared
 public/uploads/
+server.log
+*.command

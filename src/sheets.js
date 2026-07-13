@@ -38,7 +38,9 @@ export function extractSheetId(s) {
 // LƯU Ý: gviz khi tab KHÔNG tồn tại vẫn trả 200 + nội dung tab ĐẦU TIÊN.
 // → Người gọi phải tự kiểm tra header để biết tab có thật hay không.
 export async function fetchTabMatrix(id, tabName) {
-  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}`;
+  // headers=1: ép gviz coi ĐÚNG 1 dòng đầu là tiêu đề. Nếu không, khi tab có cột lạ
+  // (vd thêm "Công dụng"), gviz tự đoán sai số dòng header → dữ liệu dồn cục.
+  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(tabName)}`;
   const res = await fetch(url);
   const text = await res.text();
   if (!res.ok || text.trim().startsWith('<')) {

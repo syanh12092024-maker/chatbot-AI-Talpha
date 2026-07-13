@@ -26,7 +26,7 @@ export const config = {
     products: 'Sản phẩm theo Page', // fallback: tab gộp cũ nếu chưa tách thị trường
     policies: 'Chính sách', faq: 'FAQ', obj: 'Xử lý phản đối',
   },
-  modelCloser: process.env.MODEL_CLOSER || 'claude-sonnet-4-6',
+  modelCloser: process.env.MODEL_CLOSER || 'claude-haiku-4-5', // Haiku toàn bộ — tiết kiệm chi phí
   modelClassifier: process.env.MODEL_CLASSIFIER || 'claude-haiku-4-5',
   port: Number(process.env.PORT || 3100),
   pancake: {

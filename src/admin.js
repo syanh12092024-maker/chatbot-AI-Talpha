@@ -11,7 +11,7 @@ import { getSheetId, getSheetUrl, setSheetId } from './sheets.js';
 import {
   listConversations, getConversation, setHandoff, isAiEnabled, setAiEnabled, listAiEnabled,
 } from './store.js';
-import { sendText } from './messenger.js';
+import { sendText, subscribePage } from './messenger.js';
 import { recordOutbound } from './store.js';
 
 export const adminRouter = express.Router();
@@ -32,21 +32,35 @@ adminRouter.get('/overview', (_req, res) => {
 });
 
 // ---- Pages ----
+// Danh sách page lấy từ FACEBOOK (token store) — page MKT mới thêm vào BM tự xuất hiện
+// (server quét lại 10 phút/lần). KB Sheet chỉ bổ sung thông tin kịch bản.
 adminRouter.get('/pages', (_req, res) => {
-  const list = getPageList().map((p) => {
-    const meta = getPageMeta(p.id) || {};
-    return {
-      id: p.id, name: p.name, products: p.products || 0,
-      market: p.market || '', category: p.category || '', marketer: p.marketer || '',
-      aiEnabled: isAiEnabled(p.id),
-      redundancy: meta.redundancy || 0, // số app dự phòng (failover)
-    };
-  });
+  const kbById = new Map(getPageList().map((p) => [String(p.id), p]));
+  const list = [];
+  for (const [id, v] of getStore()) {
+    const kb = kbById.get(String(id)) || {};
+    kbById.delete(String(id));
+    list.push({
+      id, name: v.name || kb.name || '', products: kb.products || 0,
+      market: kb.market || '', category: kb.category || '', marketer: kb.marketer || '',
+      aiEnabled: isAiEnabled(id),
+      redundancy: (getPageMeta(id) || {}).redundancy || 0, // số app dự phòng (failover)
+    });
+  }
+  // Page có trong KB nhưng token chưa thấy (vd chưa vào BM) — vẫn liệt kê để biết.
+  for (const [id, kb] of kbById) {
+    list.push({ id, name: kb.name || '', products: kb.products || 0, market: kb.market || '', category: kb.category || '', marketer: kb.marketer || '', aiEnabled: isAiEnabled(id), redundancy: 0 });
+  }
+  list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   res.json(list);
 });
-adminRouter.post('/pages/:id/ai', (req, res) => {
-  setAiEnabled(req.params.id, req.body?.on !== false);
-  res.json({ ok: true, aiEnabled: isAiEnabled(req.params.id) });
+adminRouter.post('/pages/:id/ai', async (req, res) => {
+  const on = req.body?.on !== false;
+  setAiEnabled(req.params.id, on);
+  // Bật AI → tự đăng ký webhook cho page (page mới của MKT chưa subscribe thì tin nhắn không về).
+  let subscribed;
+  if (on) subscribed = await subscribePage(req.params.id);
+  res.json({ ok: true, aiEnabled: isAiEnabled(req.params.id), subscribed });
 });
 
 // ---- Tin nhắn / hội thoại ----

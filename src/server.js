@@ -20,15 +20,19 @@ if (getSheetId()) {
   setInterval(() => syncFromSheet(getSheetId()).catch((e) => console.error('[sheet] refresh lỗi:', e.message)), 5 * 60 * 1000);
 }
 
-// Nạp token tất cả page (đa-page). Refresh định kỳ 6h.
+// Nạp token tất cả page (đa-page). Refresh 10 phút/lần — MKT tạo page mới trong BM
+// là tự xuất hiện trên dashboard, không cần bấm gì.
 loadPageTokens().catch((e) => console.error('[pages] lỗi nạp token:', e.message));
-setInterval(() => loadPageTokens().catch((e) => console.error('[pages] refresh lỗi:', e.message)), 6 * 60 * 60 * 1000);
+setInterval(() => loadPageTokens().catch((e) => console.error('[pages] refresh lỗi:', e.message)), 10 * 60 * 1000);
 
 const app = express();
 app.use(express.json({ limit: '12mb', verify: (req, _res, buf) => { req.rawBody = buf; } }));
 
 // Ảnh sản phẩm upload từ dashboard — host công khai để Messenger tải về.
 app.use('/uploads', express.static(path.resolve(__dirname, '..', 'public', 'uploads')));
+
+// Trang chính sách quyền riêng tư (Meta yêu cầu để go-live).
+app.get('/privacy', (_req, res) => res.sendFile(path.resolve(__dirname, '..', 'docs', 'index.html')));
 
 // Dashboard quản trị
 app.use('/admin/api', adminRouter);

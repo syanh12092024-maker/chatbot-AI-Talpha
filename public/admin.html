@@ -188,7 +188,10 @@ function drawPages(list){document.getElementById('pbody').innerHTML=list.map(p=>
    <td class="row" style="border:none"><button class="btn sm" onclick="openPageChat('${p.id}','${esc(p.name)}')">${svg(IC.msgs)}</button><button class="btn sm" onclick="openPageKB('${p.id}','${esc(p.name)}')">${svg(IC.kb)}</button></td>
  </tr>`).join('')||'<tr><td colspan=8 class="empty">Chưa có page.</td></tr>';}
 window.filterPages=v=>{const q=v.toLowerCase();drawPages((window._pages||[]).filter(p=>[p.name,p.id,p.market,p.category,p.marketer].some(x=>String(x||'').toLowerCase().includes(q))));};
-window.toggleAi=async(id,on,el)=>{el.className='toggle '+(on?'on':'');await post('/pages/'+id+'/ai',{on});toast(on?'Đã bật AI':'Đã tắt AI cho page');};
+window.toggleAi=async(id,on,el)=>{el.className='toggle '+(on?'on':'');const r=await post('/pages/'+id+'/ai',{on});
+  if(!on){toast('Đã tắt AI cho page');return;}
+  if(r.subscribed&&r.subscribed.ok===false){toast('Đã bật AI nhưng đăng ký webhook lỗi: '+r.subscribed.error,'bad');}
+  else toast('Đã bật AI + đăng ký webhook cho page');};
 window.openPageChat=(id,name)=>{ctx={pageId:id,pageName:name};go('msgs');};
 window.openPageKB=(id,name)=>{ctx={pageId:id,pageName:name};go('kb');};
 

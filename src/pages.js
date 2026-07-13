@@ -98,6 +98,12 @@ export async function loadPageTokens() {
     tk.healthy = healthy;
   }
   saveTokensFile();
+  // Chống ghi đè khi quét LỖI GIỮA CHỪNG (vd rate limit #4): kết quả mới ít hơn hẳn
+  // lần trước → giữ danh sách cũ, chờ chu kỳ sau quét lại đủ.
+  if (pageMap.size > 0 && next.size < pageMap.size * 0.7) {
+    console.warn(`[pages] Quét mới chỉ được ${next.size}/${pageMap.size} page (nghi rate-limit) → GIỮ danh sách cũ.`);
+    return pageMap.size;
+  }
   pageMap = next;
   lastLoaded = nowSafe();
   const ok = tokens.filter((t) => t.healthy !== false).length;

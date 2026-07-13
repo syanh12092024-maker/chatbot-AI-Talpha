@@ -73,6 +73,15 @@ function isProductMatrix(m) {
   return Array.isArray(m) && m.length > 0 && String(m[0][0]).trim().toLowerCase() === 'page id';
 }
 
+// Thứ tự cột chuẩn (khớp groupsFromRows). Ánh xạ theo TÊN header nên tab có thể
+// thêm/đổi/chèn cột (vd "Công dụng", "Thành phần") mà không vỡ dữ liệu.
+const CANON_COLS = ['Page ID', 'Tên Page', 'Thị trường', 'Ngành hàng', 'Tên MKT', 'Mã SP', 'Tên SP', 'Mô tả ngắn', 'Variant', 'Giá lẻ', 'Combo 2', 'Combo 3', 'Tiền tệ', 'Tồn kho', 'Link ảnh SP', 'Link landing', 'Ghi chú'];
+function normalizeMatrix(m) {
+  const header = m[0].map((h) => String(h).trim().toLowerCase());
+  const idx = CANON_COLS.map((name) => header.indexOf(name.toLowerCase()));
+  return m.slice(1).map((row) => idx.map((i) => (i >= 0 ? (row[i] ?? '') : '')));
+}
+
 // Đọc sản phẩm: ưu tiên các tab theo thị trường (productTabs), gộp lại.
 // Nếu không tab thị trường nào tồn tại → fallback tab gộp cũ (t.products).
 async function fetchProductRows(id, t) {
@@ -83,13 +92,13 @@ async function fetchProductRows(id, t) {
     try {
       const m = await fetchTabMatrix(id, name);
       if (!isProductMatrix(m)) continue; // tab không có thật (gviz trả tab mặc định) → bỏ
-      all = all.concat(m.slice(1));
+      all = all.concat(normalizeMatrix(m));
       okTabs.push(name);
     } catch { /* bỏ qua */ }
   }
   if (!okTabs.length) {
     const m = await fetchTabMatrix(id, t.products); // fallback tab gộp cũ
-    return isProductMatrix(m) ? m.slice(1) : [];
+    return isProductMatrix(m) ? normalizeMatrix(m) : [];
   }
   console.log(`[kb] Đọc sản phẩm từ tab thị trường: ${okTabs.join(', ')}`);
   return all;

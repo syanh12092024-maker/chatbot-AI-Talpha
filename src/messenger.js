@@ -62,6 +62,19 @@ export async function sendTyping(psid, on, pageId) {
   }).catch(() => {});
 }
 
+// Đăng ký webhook (subscribed_apps) cho 1 page — cần trước khi page nhận được tin nhắn.
+export async function subscribePage(pageId) {
+  const token = getPageToken(pageId);
+  if (!token) return { ok: false, error: 'chưa có token cho page' };
+  try {
+    const url = `${GRAPH}/${pageId}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,messaging_optins&access_token=${token}`;
+    const res = await fetch(url, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) return { ok: true };
+    return { ok: false, error: data.error?.message || JSON.stringify(data) };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
 // Xác thực chữ ký webhook X-Hub-Signature-256.
 export function verifySignature(rawBody, signatureHeader) {
   if (!config.appSecret) return true; // chưa cấu hình -> bỏ qua (chỉ nên cho dev)
