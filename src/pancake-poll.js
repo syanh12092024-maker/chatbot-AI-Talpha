@@ -1,0 +1,58 @@
+// Vòng lặp hỏi Pancake tin mới → AI trả lời → gửi lại qua Pancake.
+// KHÔNG cần webhook/URL công khai/tunnel/App Review — chỉ cần internet ra ngoài.
+import { config } from './config.js';
+import { pkGetConversations, pkGetMessages, pkSendReply, refreshPancakePages } from './pancake.js';
+import { listAiEnabled } from './store.js';
+import { handleIncoming } from './handler.js';
+import { incReply } from './stats.js';
+
+// convId -> mốc last_customer_interactive_at đã xử lý (chống trả lời lặp)
+const seen = new Map();
+const primedPages = new Set(); // page đã "ghi mốc lần đầu" — tránh trả lời loạt hội thoại cũ khi mới bật AI
+
+export function startPancakePolling() {
+  if (!config.pancakeToken) { console.warn('[pancake] chưa có PANCAKE_TOKEN → không bật polling.'); return; }
+  console.log(`[pancake] Bật polling mỗi ${config.pancakePollMs / 1000}s (nhận/gửi tin qua Pancake, không cần webhook FB).`);
+  // Nạp danh sách page từ Pancake (nguồn chính cho dashboard) + làm mới mỗi 10 phút.
+  refreshPancakePages().then((n) => console.log(`[pancake] ${n} page từ Pancake.`));
+  setInterval(() => refreshPancakePages(), 10 * 60 * 1000);
+  const tick = () => pollAll().catch((e) => console.warn('[pancake] poll lỗi:', e.message));
+  tick();
+  setInterval(tick, config.pancakePollMs);
+}
+
+async function pollAll() {
+  const pages = listAiEnabled(); // chỉ page bật AI (id = FB page id = Pancake page id)
+  for (const pageId of pages) {
+    try { await pollPage(pageId); } catch (e) { console.warn(`[pancake] page ${pageId}:`, e.message); }
+  }
+}
+
+async function pollPage(pageId) {
+  const convs = await pkGetConversations(pageId);
+  const firstTime = !primedPages.has(pageId); // lần đầu page này được quét → chỉ ghi mốc
+  for (const c of convs) {
+    const psid = c.from_psid;
+    const custId = (c.customers || [])[0]?.id;
+    if (!psid || !custId) continue;
+    const mark = c.last_customer_interactive_at || c.updated_at || '';
+    if (seen.get(c.id) === mark) continue; // mốc này đã xử lý
+    seen.set(c.id, mark);
+    if (firstTime) continue; // page mới bật AI: chỉ ghi mốc hội thoại cũ, không trả lời
+
+    // Chỉ trả lời khi TIN CUỐI là của khách (không phải page/Botcake).
+    const msgs = await pkGetMessages(pageId, c.id, custId);
+    const last = msgs[msgs.length - 1];
+    if (!last) continue;
+    if (String(last.from?.id) === String(pageId)) continue; // page/botcake đã nói cuối → bỏ
+    const text = (last.original_message || last.message || '').trim();
+    if (!text) continue;
+
+    const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId });
+    if (!reply) continue;
+    const r = await pkSendReply(pageId, c.id, custId, reply);
+    if (r.ok) { try { incReply(pageId); } catch { /* thống kê không chặn gửi tin */ } }
+    console.log(`[pancake] ${c.from?.name || psid}: "${text.slice(0, 30)}" → AI: "${reply.slice(0, 40)}" ${r.ok ? '✓' : '✗ ' + r.error}`);
+  }
+  if (firstTime) { primedPages.add(pageId); console.log(`[pancake] page ${pageId} đã ghi mốc — từ giờ chỉ trả lời tin MỚI.`); }
+}

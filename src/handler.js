@@ -5,9 +5,12 @@ import { getKBForPage } from './kb.js';
 import { config } from './config.js';
 
 // Xử lý 1 tin nhắn đến. Trả về { reply, handoff } — reply=null nghĩa là không tự trả.
-export async function handleIncoming({ psid, text, pageId, kb }) {
+export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustId }) {
   const state = getState(psid);
   state.psid = psid;
+  state.pageId = pageId;                       // để tool gửi ảnh biết page nào
+  if (pkConvId) state.pkConvId = pkConvId;      // ngữ cảnh Pancake để gửi ảnh cùng kênh
+  if (pkCustId) state.pkCustId = pkCustId;
 
   kb = kb || getKBForPage(pageId);
   recordInbound(psid, { pageId, pageName: kb.pageName, text });

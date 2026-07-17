@@ -34,6 +34,11 @@ export const config = {
     apiKey: process.env.PANCAKE_API_KEY || '',
     shopId: process.env.PANCAKE_SHOP_ID || '',
   },
+  pancakeToken: process.env.PANCAKE_TOKEN || '',       // JWT pages.fm — bot nhận/gửi tin qua Pancake
+  pancakePollMs: Number(process.env.PANCAKE_POLL_MS || 6000), // chu kỳ hỏi tin mới
+  // Đăng nhập dashboard (Basic Auth) — BẮT BUỘC đặt khi chạy trên IP công khai (VPS).
+  adminUser: process.env.ADMIN_USER || '',
+  adminPass: process.env.ADMIN_PASS || '',
   // Circuit breakers
   maxAiTurnsBeforeHandoff: 6, // không tự trả quá N lượt/khách khi chưa có người duyệt
   maxToolIterations: 5,       // giới hạn vòng lặp tool-use mỗi lượt

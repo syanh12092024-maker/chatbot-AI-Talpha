@@ -10,3 +10,4 @@ cloudflared
 public/uploads/
 server.log
 *.command
+stats.json

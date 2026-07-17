@@ -8,6 +8,7 @@ import { handleIncoming } from './handler.js';
 import { sendText, sendTyping, verifySignature } from './messenger.js';
 import { loadPageTokens, pageCount } from './pages.js';
 import { adminRouter } from './admin.js';
+import { startPancakePolling } from './pancake-poll.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,7 +35,21 @@ app.use('/uploads', express.static(path.resolve(__dirname, '..', 'public', 'uplo
 // Trang chính sách quyền riêng tư (Meta yêu cầu để go-live).
 app.get('/privacy', (_req, res) => res.sendFile(path.resolve(__dirname, '..', 'docs', 'index.html')));
 
-// Dashboard quản trị
+// Bảo vệ dashboard bằng Basic Auth. Nếu chưa đặt ADMIN_USER/ADMIN_PASS (chạy local) → không chặn.
+// Trên VPS công khai PHẢI đặt 2 biến này trong .env.
+function adminAuth(req, res, next) {
+  const { adminUser: u, adminPass: p } = config;
+  if (!u || !p) return next();
+  const m = /^Basic (.+)$/.exec(req.get('authorization') || '');
+  if (m) {
+    const [ru, rp] = Buffer.from(m[1], 'base64').toString().split(':');
+    if (ru === u && rp === p) return next();
+  }
+  res.set('WWW-Authenticate', 'Basic realm="AI Closer"').status(401).send('Cần đăng nhập.');
+}
+
+// Dashboard quản trị (đăng nhập bảo vệ cả trang lẫn API)
+app.use('/admin', adminAuth);
 app.use('/admin/api', adminRouter);
 app.get('/admin', (_req, res) => res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html')));
 
@@ -51,7 +66,9 @@ app.get('/webhook', (req, res) => {
 
 // Nhận sự kiện tin nhắn — 1 webhook phục vụ TẤT CẢ page.
 app.post('/webhook', (req, res) => {
+  console.log('[webhook] ⬅️ nhận POST | object=', req.body?.object, '| body=', JSON.stringify(req.body || {}).slice(0, 400));
   if (!verifySignature(req.rawBody, req.get('x-hub-signature-256'))) {
+    console.log('[webhook] ❌ sai chữ ký → 403');
     return res.sendStatus(403);
   }
   const body = req.body;
@@ -102,3 +119,6 @@ async function processMessage(psid, text, pageId) {
 app.listen(config.port, () => {
   console.log(`[server] Đang chạy tại http://localhost:${config.port}  (webhook: /webhook)`);
 });
+
+// Nhận/gửi tin qua Pancake (song song với webhook FB) — không cần URL công khai.
+startPancakePolling();

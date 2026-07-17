@@ -1,25 +1,17 @@
-import { createOrder } from './pancake.js';
+import { createOrder, pkSendImage } from './pancake.js';
 import { sendImage } from './messenger.js';
 import { productImages } from './kb.js';
+import { incOrder } from './stats.js';
 
 // Định nghĩa tool (function calling) cho closer.
 export const toolDefs = [
   {
     name: 'get_price',
-    description: 'Lấy giá lẻ và giá combo của một sản phẩm từ Knowledge Base. Dùng khi cần báo giá chính xác.',
+    description: 'Lấy giá lẻ và giá combo sản phẩm của page từ Knowledge Base. Page chỉ bán 1 SP nên KHÔNG cần mã — cứ gọi tool, tool tự lấy đúng sản phẩm. TUYỆT ĐỐI không hỏi khách mã/loại sản phẩm.',
     input_schema: {
       type: 'object',
-      properties: { product_id: { type: 'string', description: 'Mã SP, ví dụ SP001' } },
-      required: ['product_id'],
-    },
-  },
-  {
-    name: 'check_stock',
-    description: 'Kiểm tra tồn kho của một sản phẩm.',
-    input_schema: {
-      type: 'object',
-      properties: { product_id: { type: 'string' } },
-      required: ['product_id'],
+      properties: { product_id: { type: 'string', description: 'Bỏ trống — page chỉ có 1 SP, tool tự lấy.' } },
+      required: [],
     },
   },
   {
@@ -41,24 +33,24 @@ export const toolDefs = [
         phone: { type: 'string' },
         address: { type: 'string', description: 'Địa chỉ chi tiết' },
         city: { type: 'string' },
-        product_id: { type: 'string' },
-        variant: { type: 'string' },
+        product_id: { type: 'string', description: 'Bỏ trống — page chỉ có 1 SP, tool tự điền.' },
+        variant: { type: 'string', description: 'Gói/combo khách chọn (vd "combo 2"), nếu có.' },
         qty: { type: 'integer' },
         cod_confirmed: { type: 'boolean', description: 'Khách đã xác nhận thanh toán khi nhận hàng' },
       },
-      required: ['name', 'phone', 'address', 'city', 'product_id', 'qty', 'cod_confirmed'],
+      required: ['name', 'phone', 'address', 'city', 'qty', 'cod_confirmed'],
     },
   },
   {
     name: 'send_product_image',
-    description: 'Gửi ẢNH sản phẩm cho khách xem. Mỗi SP có thể có nhiều loại ảnh (Ảnh sản phẩm, Feedback, Thành phần, Công dụng...). Để trống category = gửi ảnh sản phẩm chính; truyền category để gửi đúng loại khách hỏi (vd "feedback", "thành phần").',
+    description: 'Gửi ẢNH sản phẩm của page cho khách xem. Page chỉ bán 1 SP nên KHÔNG cần mã. Mỗi SP có thể có nhiều loại ảnh (Ảnh sản phẩm, Feedback, Thành phần, Công dụng...). Để trống category = gửi ảnh sản phẩm chính; truyền category để gửi đúng loại khách hỏi (vd "feedback", "thành phần").',
     input_schema: {
       type: 'object',
       properties: {
-        product_id: { type: 'string', description: 'Mã SP cần gửi ảnh' },
+        product_id: { type: 'string', description: 'Bỏ trống — page chỉ có 1 SP, tool tự lấy.' },
         category: { type: 'string', description: 'Loại ảnh muốn gửi (khớp theo nhãn): vd "feedback", "thành phần", "công dụng". Bỏ trống = ảnh sản phẩm chính.' },
       },
-      required: ['product_id'],
+      required: [],
     },
   },
   {
@@ -72,8 +64,15 @@ export const toolDefs = [
   },
 ];
 
+// Mỗi page chỉ bán 1 SP. Nếu không truyền id (hoặc id không khớp) → tự lấy SP của page.
+// Nhờ vậy AI KHÔNG BAO GIỜ phải hỏi khách "chọn mã sản phẩm".
 function findProduct(kb, id) {
-  return kb.products.find((p) => p.id.toLowerCase() === String(id).toLowerCase());
+  const list = kb.products || [];
+  if (id) {
+    const hit = list.find((p) => String(p.id).toLowerCase() === String(id).toLowerCase());
+    if (hit) return hit;
+  }
+  return list[0]; // page 1 sản phẩm → luôn là sản phẩm này
 }
 
 // Thực thi tool. Trả về { content: string, isError?: bool }.
@@ -83,18 +82,13 @@ export async function executeTool(name, input, ctx) {
     switch (name) {
       case 'get_price': {
         const p = findProduct(kb, input.product_id);
-        if (!p) return { content: `Không tìm thấy sản phẩm ${input.product_id} trong KB.`, isError: true };
+        if (!p) return { content: 'Page này chưa có sản phẩm trong KB. Hãy tư vấn chung, đừng hỏi khách chọn mã.', isError: true };
         return {
           content: JSON.stringify({
             product_id: p.id, name: p.name, currency: p.currency,
             price1: p.price1, combo2: p.combo2, combo3: p.combo3,
           }),
         };
-      }
-      case 'check_stock': {
-        const p = findProduct(kb, input.product_id);
-        if (!p) return { content: `Không tìm thấy sản phẩm ${input.product_id}.`, isError: true };
-        return { content: JSON.stringify({ product_id: p.id, stock: p.stock ?? 'không rõ' }) };
       }
       case 'score_lead': {
         // Heuristic đơn giản — thay bằng model/logic riêng nếu cần.
@@ -114,13 +108,17 @@ export async function executeTool(name, input, ctx) {
         if (!input.address || input.address.trim().length < 6) {
           return { content: 'Từ chối tạo đơn: địa chỉ chưa đủ cụ thể. Hãy hỏi địa chỉ chi tiết hơn.', isError: true };
         }
+        // Page 1 SP: tự điền sản phẩm nếu AI không truyền mã (không bắt khách chọn).
+        const prod = findProduct(kb, input.product_id);
+        if (prod) { input.product_id = prod.id; input.product_name = prod.name; }
         const order = await createOrder(input, ctx);
         state.orderId = order.id;
+        try { incOrder(state.pageId); } catch { /* thống kê không chặn tạo đơn */ }
         return { content: JSON.stringify({ ok: true, order_id: order.id }) };
       }
       case 'send_product_image': {
         const p = findProduct(kb, input.product_id);
-        if (!p) return { content: `Không tìm thấy sản phẩm ${input.product_id}.`, isError: true };
+        if (!p) return { content: 'Page này chưa có sản phẩm trong KB nên chưa có ảnh. Cứ tư vấn bằng lời.', isError: true };
         const all = productImages(p);
         if (!all.length) return { content: `Sản phẩm ${p.id} chưa có ảnh. Cứ tư vấn bằng lời.`, isError: true };
         const norm = (s) => String(s || '').toLowerCase();
@@ -130,8 +128,20 @@ export async function executeTool(name, input, ctx) {
         if (!pick.length) {
           return { content: `Sản phẩm ${p.id} không có ảnh loại "${input.category}". Các loại có: ${[...new Set(all.map((im) => im.label || 'Ảnh SP'))].join(', ')}.`, isError: true };
         }
-        for (const im of pick.slice(0, 6)) await sendImage(state.psid, im.url, state.pageId);
-        return { content: `Đã gửi ${pick.length} ảnh (${input.category || 'sản phẩm'}) cho khách.` };
+        // Gửi cùng kênh với tin chữ: có ngữ cảnh Pancake → gửi qua Pancake; nếu không → Facebook Messenger.
+        // Giới hạn 2 ảnh/lượt để tránh Facebook đánh dấu spam (lỗi #2022 khóa gửi tin).
+        const viaPancake = state.pkConvId && state.pkCustId;
+        const toSend = pick.slice(0, 2);
+        let sent = 0, lastErr = '';
+        for (const im of toSend) {
+          if (viaPancake) {
+            const r = await pkSendImage(state.pageId, state.pkConvId, state.pkCustId, im.url);
+            if (r.ok) sent++; else lastErr = r.error;
+          } else { await sendImage(state.psid, im.url, state.pageId); sent++; }
+        }
+        console.log(`[img] page ${state.pageId} ${viaPancake ? 'Pancake' : 'Messenger'} gửi ${sent}/${toSend.length} ảnh (${input.category || 'sản phẩm'})${sent ? ' ✓' : ' ✗ ' + lastErr}`);
+        if (!sent) return { content: `Gửi ảnh thất bại (${lastErr || 'không rõ'}). Cứ tư vấn bằng lời, đừng hứa gửi ảnh nữa.`, isError: true };
+        return { content: `Đã gửi ${sent} ảnh (${input.category || 'sản phẩm'}) cho khách qua ${viaPancake ? 'Pancake' : 'Messenger'}.` };
       }
       case 'handoff_human': {
         state.handoff = true;

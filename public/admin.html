@@ -83,6 +83,12 @@
   @keyframes in{from{opacity:0;transform:translateY(8px)}}
   /* KB product cards */
   .pcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);padding:18px;margin-bottom:14px}
+  /* KB editor: gộp cấu hình AI + sản phẩm trong 1 khung */
+  .kbeditor{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);padding:2px 20px 16px}
+  .cfgsec{padding:16px 0 4px;border-left:3px solid var(--pri);padding-left:14px;margin-top:8px}
+  .kbsec{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;padding:14px 0 2px;border-top:1px solid var(--line);margin-top:14px}
+  .kbeditor .pcard{border:none;box-shadow:none;border-radius:0;margin:0;padding:16px 0;border-top:1px dashed var(--line)}
+  .kbeditor .pcard:first-of-type{border-top:none;padding-top:8px}
   .pcard .fh{display:flex;gap:12px;align-items:flex-end;margin-bottom:14px}
   .fld{display:flex;flex-direction:column;gap:5px;min-width:0}
   .fld>label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
@@ -90,16 +96,50 @@
   .pcard textarea{resize:vertical;min-height:46px;line-height:1.45}
   .grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px}
   .imgbox2{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
-  .imglist{display:flex;flex-direction:column;gap:9px;margin-bottom:11px}
-  .imrow{display:flex;align-items:center;gap:11px}
-  .imrow img.thumb{width:54px;height:54px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#f7f9fa;flex-shrink:0}
-  .imrow .imlabel{flex:1;max-width:280px}
+  .imglist{display:flex;flex-wrap:wrap;gap:10px}
+  .imtile{width:92px;position:relative}
+  .imtile .imthumb{width:92px;height:92px;border-radius:10px;border:1px solid var(--line);background:#f7f9fa center/cover no-repeat;cursor:pointer}
+  .imtile .imlabel{width:92px;margin-top:5px;padding:4px 6px;font-size:11px;text-align:center}
+  .imtile .imx{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;border:none;background:var(--bad);color:#fff;cursor:pointer;font-size:12px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .imadd .imthumb{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:12px;gap:3px;border-style:dashed}
+  .imadd .imthumb:hover{background:var(--priSoft);color:var(--pri);border-color:var(--pri)}
+  /* product card header + actions */
+  .phead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;cursor:pointer}
+  .ptitle{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ptitle .num{color:var(--muted);font-weight:500;margin-right:6px}
+  .pacts{display:flex;gap:6px;flex-shrink:0}
+  .actbtn{width:32px;height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center}
+  .actbtn:hover{background:#f5f6f7;color:var(--ink)} .actbtn.del:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
+  .pcard.collapsed .pbody{display:none}
+  .caret{transition:.15s;display:inline-block;color:var(--muted)} .pcard.collapsed .caret{transform:rotate(-90deg)}
   .rmx{width:30px;height:30px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--muted);flex-shrink:0}
   .rmx:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
   .kbbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 16px;position:sticky;top:0;z-index:8}
   .combo-drop{position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(16,24,40,.14);max-height:340px;overflow:auto;margin-top:5px;display:none}
   .ci2{padding:9px 13px;cursor:pointer;font-size:13.5px;border-bottom:1px solid #f1f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ci2:hover{background:var(--priSoft)} .ci2:last-child{border-bottom:none}
+  /* filter chips */
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--muted);font-weight:500}
+  .chip:hover{background:#f5f6f7} .chip.act{background:var(--pri);color:#fff;border-color:var(--pri)}
+  /* page management cards */
+  .pglist{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:14px}
+  @media(max-width:1000px){.pglist{grid-template-columns:1fr}}
+  .pg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);overflow:hidden;transition:.12s}
+  .pg:hover{border-color:#cfd8df;box-shadow:0 5px 16px rgba(16,24,40,.08)}
+  .pg.on{border-left:3px solid var(--ok)}
+  .pgacts{display:flex;flex-direction:column;gap:7px;padding:14px 12px;background:#fafbfc;border-right:1px solid var(--line);width:116px;flex-shrink:0}
+  .pgbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 6px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--ink);font-weight:500}
+  .pgbtn svg{width:14px;height:14px} .pgbtn:hover{background:#eef1f3}
+  .pgbtn.ai{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:600} .pgbtn.ai:hover{background:#138a3d}
+  .pgbtn.aioff{color:var(--muted)}
+  .pgbody{flex:1;min-width:0;padding:14px 16px;display:flex;flex-direction:column;gap:9px}
+  .pghd{display:flex;align-items:center;gap:10px}
+  .pgname{font-weight:650;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pgtags{display:flex;gap:6px;flex-wrap:wrap}
+  .pgprev{font-size:12.5px;color:var(--muted);background:#f7f9fa;border-radius:8px;padding:8px 11px;line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .pgfoot{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:auto;padding-top:2px}
+  .pgfoot b{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -131,67 +171,114 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const ago=t=>{if(!t)return'';const d=(Date.now()-t)/1000;if(d<60)return Math.round(d)+'s';if(d<3600)return Math.round(d/60)+'m';return Math.round(d/3600)+'h';};
 const ini=s=>(String(s||'?').trim()[0]||'?').toUpperCase();
 function toast(m,type='ok'){const e=document.createElement('div');e.className='tt '+type;e.textContent=m;document.getElementById('toast').appendChild(e);setTimeout(()=>e.remove(),2600);}
-const IC={overview:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>',pages:'<path d="M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',msgs:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',kb:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>',tokens:'<path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/>'};
+const IC={overview:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>',pages:'<path d="M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',msgs:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',kb:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>',tokens:'<path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/>',stats:'<path d="M3 3v18h18M7 16v-6M12 16V8M17 16v-3"/>'};
 const svg=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const search=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>`;
 
-const TABS=[['overview','Tổng quan'],['pages','Pages'],['msgs','Tin nhắn'],['kb','Kịch bản / KB'],['tokens','API / Token']];
+// Menu chỉ còn 4 mục. 'kb' vẫn mở được từ nút KB trên thẻ page (không nằm trong menu).
+const TABS=[['overview','Tổng quan'],['pages','Pages'],['msgs','Tin nhắn'],['tokens','API / Token']];
+const TITLES={overview:'Tổng quan',pages:'Pages',msgs:'Tin nhắn',kb:'Kịch bản / KB',tokens:'API / Token'};
 let tab='overview', ctx={pageId:'',pageName:''}, selPsid=null, timer=null;
 const content=document.getElementById('content');
 document.getElementById('nav').innerHTML=TABS.map(([k,l])=>`<a data-k="${k}" onclick="go('${k}')">${svg(IC[k])} ${l}</a>`).join('');
 
 function go(k){tab=k;clearInterval(timer);selPsid=k==='msgs'?selPsid:null;
-  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k));
-  document.getElementById('ttl').textContent=TABS.find(t=>t[0]===k)[1];
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k||(k==='kb'&&a.dataset.k==='pages')));
+  document.getElementById('ttl').textContent=TITLES[k]||k;
   ({overview:rOverview,pages:rPages,msgs:rMsgs,kb:rKB,tokens:rTokens})[k]();
 }
 async function topStatus(){try{const o=await j('/overview');
   document.getElementById('sstat').textContent='server online';
-  document.getElementById('sdot').className='dot'+(o.tokensHealthy<o.tokensTotal?' bad':'');
-  document.getElementById('stok').textContent=o.tokensHealthy+'/'+o.tokensTotal+' token';
+  document.getElementById('sdot').className='dot';
+  document.getElementById('stok').textContent=o.source==='pancake'?'Pancake':'FB';
   document.getElementById('spage').textContent=o.pages+' page';
 }catch{document.getElementById('sstat').textContent='mất kết nối';document.getElementById('sdot').className='dot bad';}}
 
-async function rOverview(){const o=await j('/overview');
+function agoVi(ts){if(!ts)return 'chưa có';const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return s+' giây trước';if(s<3600)return Math.floor(s/60)+' phút trước';
+  if(s<86400)return Math.floor(s/3600)+' giờ trước';return Math.floor(s/86400)+' ngày trước';}
+function statRow(p){return `<tr>
+   <td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">${p.id}</div></td>
+   <td>${p.aiEnabled?'<span class="pill ok">● Đang bật</span>':'<span class="pill mut">tắt</span>'}</td>
+   <td>${p.hasKb?'<span class="pill ok">✓ có KB</span>':'<span class="pill warn">chưa</span>'}</td>
+   <td style="text-align:right;font-weight:700">${p.replies||0}</td>
+   <td style="text-align:right;font-weight:700">${p.orders||0}</td>
+   <td><button class="btn sm" onclick="ctx={pageId:'${p.id}',pageName:'${esc(p.name).replace(/'/g,"\\'")}'};go('kb')">Sửa KB</button></td>
+ </tr>`;}
+function statRows(pages){return (pages||[]).map(statRow).join('')||`<tr><td colspan="6" class="empty">Chưa có page nào bật AI hoặc có hoạt động.</td></tr>`;}
+
+// Tổng quan = trạng thái hệ thống + thống kê (gộp chung 1 trang).
+async function rOverview(){const [o,s]=await Promise.all([j('/overview'),j('/stats').catch(()=>({pages:[]}))]);
   const cards=[
-    ['pages','Pages kết nối',o.pages,'pages','xem danh sách'],
-    ['kb','Page đã có KB',o.pagesWithKB+' / '+o.pages,'kb','điền kịch bản'],
-    ['tokens','Token khỏe',o.tokensHealthy+' / '+o.tokensTotal,'tokens','quản lý app'],
-    ['msgs','Hội thoại',o.conversations,'msgs','xem tin nhắn'],
-    ['pages','Page đang bật AI',(o.aiEnabled||0)+' / '+o.pages,'pages','mặc định tắt'],
+    ['pages','Pages kết nối',o.pages,'pages',o.source==='pancake'?'nguồn Pancake':'nguồn FB'],
+    ['pages','Page đang bật AI',(o.aiEnabled||0)+' / '+o.pages,'pages','bot trả lời qua Pancake'],
+    ['stats','Tin AI trả lời hôm nay',s.todayReplies||0,'','tổng: '+(s.totalReplies||0)+' tin'],
+    ['kb','Đơn AI đã tạo',s.totalOrders||0,'','hôm nay: '+(s.todayOrders||0)],
   ];
-  content.innerHTML=`<h2>Tổng quan</h2><p class="sub">Trạng thái hệ thống — bấm thẻ để vào chi tiết.</p>
-   <div class="cards">${cards.map(c=>`<div class="mc" onclick="go('${c[3]}')"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[4]} →</div></div>`).join('')}</div>
-   <div class="tablecard" style="padding:16px"><b>Hành động nhanh</b><div class="row" style="margin-top:12px">
-     <button class="btn" onclick="go('kb')">${svg(IC.kb)} Điền KB</button>
-     <button class="btn" onclick="go('tokens')">${svg(IC.tokens)} Thêm app dự phòng</button>
-     <button class="btn" onclick="reloadAll()">${svg('<path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/>')} Nạp lại token & page</button>
-     <a class="btn" href="http://localhost:3101" target="_blank">↗ Mở sandbox test</a>
-   </div></div>`;
+  content.innerHTML=`<h2>Tổng quan</h2><p class="sub">Trạng thái hệ thống & thống kê · số liệu lưu bền không mất khi restart · tin cuối: <b>${agoVi(s.lastReplyAt)}</b>. <button class="btn sm" onclick="go('overview')">↻ Làm mới</button></p>
+   <div class="cards">${cards.map(c=>`<div class="mc"${c[3]?` onclick="go('${c[3]}')" style="cursor:pointer"`:' style="cursor:default"'}><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[4]}${c[3]?' →':''}</div></div>`).join('')}</div>
+   <div class="row" style="justify-content:space-between;align-items:center;margin:6px 0 12px">
+     <b style="font-size:14px">Hoạt động theo page</b>
+     <div class="row"><button class="btn sm" onclick="go('pages')">${svg(IC.pages)} Quản lý page</button><button class="btn sm" onclick="reloadAll()">↻ Nạp lại token & page</button></div>
+   </div>
+   <div class="tablecard"><table><thead><tr><th>Page</th><th>AI</th><th>KB</th><th style="text-align:right">Tin AI trả lời</th><th style="text-align:right">Đơn</th><th></th></tr></thead><tbody id="sbody">${statRows(s.pages)}</tbody></table></div>`;
+  // Tự làm mới bảng mỗi 10s khi đang ở Tổng quan.
+  timer=setInterval(async()=>{if(tab!=='overview')return;try{const s2=await j('/stats');const tb=document.getElementById('sbody');if(tb)tb.innerHTML=statRows(s2.pages);}catch{}},10000);
 }
 window.reloadAll=async()=>{toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();go('overview');};
 
-async function rPages(){const list=await j('/pages');window._pages=list;
-  content.innerHTML=`<h2>Pages</h2><p class="sub">${list.length} page kết nối · bật/tắt AI, xem chat hoặc sửa KB từng page.</p>
-   <div class="row" style="margin-bottom:14px"><div class="search">${search}<input placeholder="Tìm theo tên / thị trường / ngành / MKT..." oninput="filterPages(this.value)"></div></div>
-   <div class="tablecard"><table><thead><tr><th>Page</th><th>Thị trường</th><th>Ngành</th><th>MKT</th><th>KB</th><th>App</th><th>AI</th><th></th></tr></thead><tbody id="pbody"></tbody></table></div>`;
-  drawPages(list);
+const PGCHIPS=[['all','Tất cả'],['on','Đang bật AI'],['kb','Có kịch bản'],['nokb','Chưa có KB']];
+async function rPages(){
+  const [list, st]=await Promise.all([j('/pages'), j('/stats').catch(()=>({pages:[]}))]);
+  const sm={}; (st.pages||[]).forEach(p=>sm[p.id]={replies:p.replies,orders:p.orders});
+  window._pages=list.map(p=>({...p, replies:(sm[p.id]||{}).replies||0, orders:(sm[p.id]||{}).orders||0}));
+  window._pgFilter=window._pgFilter||'all';
+  const on=list.filter(p=>p.aiEnabled).length, kbn=list.filter(p=>p.hasKb).length;
+  content.innerHTML=`<h2>Pages</h2><p class="sub">${list.length} page kết nối · <b>${on}</b> đang bật AI · <b>${kbn}</b> đã có kịch bản. Mỗi thẻ = 1 page: bật/tắt AI, xem chat, sửa kịch bản.</p>
+   <div class="row" style="margin-bottom:16px;justify-content:space-between;align-items:center">
+     <div class="chips" id="pgtabs">${PGCHIPS.map(c=>`<button class="chip ${c[0]===window._pgFilter?'act':''}" data-f="${c[0]}" onclick="setPgFilter('${c[0]}')">${c[1]}</button>`).join('')}</div>
+     <div class="search">${search}<input id="pgq" placeholder="Tìm tên / thị trường / ngành / MKT..." oninput="drawPages()"></div>
+   </div>
+   <div class="pglist" id="pbody"></div>`;
+  drawPages();
 }
-function drawPages(list){document.getElementById('pbody').innerHTML=list.map(p=>`<tr>
-   <td><div class="row" style="gap:10px"><div class="av">${ini(p.name)}</div><div><b>${esc(p.name)}</b><div class="mono">${p.id}</div></div></div></td>
-   <td>${p.market?`<span class="pill mut">${esc(p.market)}</span>`:'<span class="muted">—</span>'}</td>
-   <td>${esc(p.category)||'<span class="muted">—</span>'}</td>
-   <td>${esc(p.marketer)||'<span class="muted">—</span>'}</td>
-   <td>${p.products>0?`<span class="pill ok">${p.products} SP</span>`:`<span class="pill warn">chưa có</span>`}</td>
-   <td>${p.redundancy>1?`<span class="pill ok">${p.redundancy}</span>`:`<span class="pill mut">1</span>`}</td>
-   <td><div class="toggle ${p.aiEnabled?'on':''}" onclick="toggleAi('${p.id}',${!p.aiEnabled},this)"></div></td>
-   <td class="row" style="border:none"><button class="btn sm" onclick="openPageChat('${p.id}','${esc(p.name)}')">${svg(IC.msgs)}</button><button class="btn sm" onclick="openPageKB('${p.id}','${esc(p.name)}')">${svg(IC.kb)}</button></td>
- </tr>`).join('')||'<tr><td colspan=8 class="empty">Chưa có page.</td></tr>';}
-window.filterPages=v=>{const q=v.toLowerCase();drawPages((window._pages||[]).filter(p=>[p.name,p.id,p.market,p.category,p.marketer].some(x=>String(x||'').toLowerCase().includes(q))));};
-window.toggleAi=async(id,on,el)=>{el.className='toggle '+(on?'on':'');const r=await post('/pages/'+id+'/ai',{on});
-  if(!on){toast('Đã tắt AI cho page');return;}
-  if(r.subscribed&&r.subscribed.ok===false){toast('Đã bật AI nhưng đăng ký webhook lỗi: '+r.subscribed.error,'bad');}
-  else toast('Đã bật AI + đăng ký webhook cho page');};
+function pgFiltered(){
+  const q=(document.getElementById('pgq')?.value||'').toLowerCase().trim();
+  const f=window._pgFilter;
+  return (window._pages||[]).filter(p=>{
+    if(f==='on'&&!p.aiEnabled)return false;
+    if(f==='kb'&&!p.hasKb)return false;
+    if(f==='nokb'&&p.hasKb)return false;
+    return !q||[p.name,p.id,p.market,p.category,p.marketer].some(x=>String(x||'').toLowerCase().includes(q));
+  });
+}
+function pgCard(p){const on=p.aiEnabled, nm=esc(p.name)||'(chưa tên)';
+  return `<div class="pg ${on?'on':''}">
+   <div class="pgacts">
+     <button class="pgbtn ${on?'ai':'aioff'}" onclick="toggleAiCard('${p.id}',${!on})">${on?'● AI Bật':'AI Tắt'}</button>
+     <button class="pgbtn" onclick="openPageChat('${p.id}','${nm.replace(/'/g,"\\'")}')">${svg(IC.msgs)} Chat</button>
+     <button class="pgbtn" onclick="openPageKB('${p.id}','${nm.replace(/'/g,"\\'")}')">${svg(IC.kb)} KB</button>
+   </div>
+   <div class="pgbody">
+     <div class="pghd"><div class="av">${ini(p.name)}</div>
+       <div style="flex:1;min-width:0"><div class="pgname">${nm}</div><div class="mono">${p.id}</div></div>
+       ${on?'<span class="pill ok">● Đang chạy</span>':'<span class="pill mut">Tắt</span>'}</div>
+     <div class="pgtags">
+       ${p.hasKb?`<span class="pill ok">✓ ${p.products||0} SP</span>`:'<span class="pill warn">chưa có KB</span>'}
+       ${p.market?`<span class="pill mut">${esc(p.market)}</span>`:''}
+       ${p.category?`<span class="pill mut">${esc(p.category)}</span>`:''}
+       ${p.marketer?`<span class="pill mut">MKT: ${esc(p.marketer)}</span>`:''}</div>
+     <div class="pgprev">${p.preview?('💬 '+esc(p.preview)):'<span class="muted">Chưa có kịch bản — bấm KB để thêm lời chào & sản phẩm.</span>'}</div>
+     <div class="pgfoot"><span>📨 <b>${p.replies||0}</b> tin AI trả lời</span><span>🛒 <b>${p.orders||0}</b> đơn</span></div>
+   </div></div>`;
+}
+function drawPages(){const el=document.getElementById('pbody');if(!el)return;
+  const list=pgFiltered();
+  el.innerHTML=list.length?list.map(pgCard).join(''):'<div class="empty" style="grid-column:1/-1">Không có page nào khớp bộ lọc.</div>';}
+window.setPgFilter=f=>{window._pgFilter=f;document.querySelectorAll('#pgtabs .chip').forEach(b=>b.classList.toggle('act',b.dataset.f===f));drawPages();};
+window.toggleAiCard=async(id,on)=>{await post('/pages/'+id+'/ai',{on});
+  const p=(window._pages||[]).find(x=>x.id===id);if(p)p.aiEnabled=on;
+  toast(on?'✓ Đã bật AI — bot tự trả lời khách qua Pancake':'Đã tắt AI cho page');drawPages();};
 window.openPageChat=(id,name)=>{ctx={pageId:id,pageName:name};go('msgs');};
 window.openPageKB=(id,name)=>{ctx={pageId:id,pageName:name};go('kb');};
 
@@ -238,16 +325,21 @@ async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/shee
   content.innerHTML=`<h2>Kịch bản / KB theo page</h2><p class="sub">Nguồn kịch bản: Google Sheet (cả team) hoặc sửa nhanh từng page bên dưới.</p>${banner}
    <div class="kbbar">
      <div class="fld combo" style="flex:1;min-width:260px;position:relative">
-       <label>Chọn page — gõ để tìm (${pages.length} page)</label>
+       <label>Chọn page — gõ để tìm (${pages.length} page · <span style="color:var(--ok)">${pages.filter(p=>p.hasKb).length} đã cấu hình</span>)</label>
        <input id="kbsearch" autocomplete="off" placeholder="Tìm page theo tên..." value="${esc(sel.name||'')}" oninput="kbFilter()" onfocus="kbFilter(1)" onkeydown="kbKey(event)">
        <input type="hidden" id="kbpage" value="${esc(sel.id||'')}">
        <div id="kbdrop" class="combo-drop"></div>
      </div>
+     <button class="btn" onclick="importScript()" title="Nhập file quick_replies xuất từ Pancake → tự sinh prompt + sản phẩm">📥 Nhập kịch bản Pancake</button>
      <button class="btn" onclick="addKbCard()">＋ Thêm sản phẩm</button>
      <button class="btn pri" onclick="saveKB()">💾 Lưu tất cả</button>
      <span id="kbmsg" class="muted" style="font-size:12.5px"></span>
    </div>
-   <div id="kblist"></div>`;
+   <div class="kbeditor">
+     <div id="kbcfg"></div>
+     <div class="kbsec">Sản phẩm</div>
+     <div id="kblist"></div>
+   </div>`;
   document.getElementById('kbpage').onchange=loadKBPage; loadKBPage();
 }
 window.connectSheet=async(change)=>{ let url; if(change){url=prompt('Dán link Google Sheet mới:');} else {url=document.getElementById('shurl').value.trim();} if(!url)return; toast('Đang đọc Sheet...'); const r=await post('/sheet',{url}); if(r.error){toast(r.error,'bad');return;} toast('✓ Đọc '+r.pages+' page từ Sheet'); rKB(); };
@@ -255,8 +347,9 @@ window.reloadSheet=async()=>{ toast('Đang nạp lại...'); const r=await post(
 let KBPAGES=[];
 window.kbFilter=(showAll)=>{const inp=document.getElementById('kbsearch');if(!inp)return;const q=(showAll?'':inp.value).trim().toLowerCase();
   const drop=document.getElementById('kbdrop');
-  const list=KBPAGES.filter(p=>!q||(p.name||'').toLowerCase().includes(q)).slice(0,80);
-  drop.innerHTML=list.map(p=>`<div class="ci2" data-id="${p.id}" onmousedown="kbPick('${p.id}')">${esc(p.name)} <span class="muted" style="font-size:11.5px">${p.products>0?'· '+p.products+' SP':'· trống'}</span></div>`).join('')||'<div class="ci2 muted">Không tìm thấy page</div>';
+  const list=KBPAGES.filter(p=>!q||(p.name||'').toLowerCase().includes(q))
+    .sort((a,b)=>(b.hasKb?1:0)-(a.hasKb?1:0)||(a.name||'').localeCompare(b.name||'')).slice(0,80);
+  drop.innerHTML=list.map(p=>`<div class="ci2" data-id="${p.id}" onmousedown="kbPick('${p.id}')">${p.hasKb?'<span style="color:var(--ok)">●</span> ':'<span style="color:#cbd5db">○</span> '}${esc(p.name)} <span class="muted" style="font-size:11.5px">${p.hasKb?'· đã cấu hình'+(p.products>0?' ('+p.products+' SP)':''):'· chưa set'}</span></div>`).join('')||'<div class="ci2 muted">Không tìm thấy page</div>';
   drop.style.display='block';};
 window.kbPick=(id)=>{const p=KBPAGES.find(x=>String(x.id)===String(id));if(!p)return;
   document.getElementById('kbpage').value=p.id;document.getElementById('kbsearch').value=p.name;
@@ -265,42 +358,78 @@ window.kbKey=(e)=>{if(e.key==='Enter'){e.preventDefault();const f=document.query
 document.addEventListener('mousedown',e=>{const d=document.getElementById('kbdrop');if(d&&!e.target.closest('.combo'))d.style.display='none';});
 const IMG_LABELS=['Ảnh sản phẩm','Feedback','Thành phần','Công dụng','Cách dùng','Chứng nhận'];
 window.loadKBPage=async()=>{const pid=document.getElementById('kbpage').value;const d=await j('/kb/'+pid);
+  const cfg=d.config||{};
+  document.getElementById('kbcfg').innerHTML=`
+   <div class="cfgsec">
+     <div style="font-weight:600;margin-bottom:3px">🤖 Hướng dẫn AI cho page này</div>
+     <div class="muted" style="font-size:12px;margin-bottom:14px">Điều khiển cách AI chào hỏi, giọng điệu, và cách bán riêng cho page. Để trống = dùng mặc định chung.</div>
+     <div class="fh" style="align-items:flex-start">
+       <div class="fld" style="flex:1"><label>Câu chào mở đầu</label><input id="cfgGreeting" value="${esc(cfg.greeting||'')}" placeholder="VD: Hello po! Welcome sa Light Step Care 😊"></div>
+       <div class="fld" style="flex:1"><label>Giọng điệu / phong cách</label><input id="cfgTone" value="${esc(cfg.tone||'')}" placeholder="VD: Thân thiện, nhiệt tình / Sang trọng, chuyên nghiệp"></div>
+     </div>
+     <div class="fld" style="margin-top:12px"><label>Hướng dẫn bán hàng riêng (prompt) — AI ưu tiên tuân theo</label>
+       <textarea id="cfgSales" style="min-height:90px" placeholder="VD:&#10;- Nhấn mạnh combo 2 tiết kiệm ~20%, đẩy khách mua số lượng.&#10;- Khách lo giao hàng → cam kết COD 2-4 ngày, trả tiền khi nhận.&#10;- Khách chê đắt → nêu chất lượng + bảo hành + feedback thật.&#10;- Luôn xin tên + SĐT + địa chỉ cụ thể trước khi chốt.">${esc(cfg.salesPrompt||'')}</textarea></div>
+   </div>`;
   const rows=d.products.length?d.products:[{}];
   document.getElementById('kblist').innerHTML=
     `<datalist id="imglabels">${IMG_LABELS.map(l=>`<option value="${l}">`).join('')}</datalist>`
     +rows.map(r=>kbCard(r)).join('');
 };
 function fld(label,k,val,ph){return `<div class="fld"><label>${label}</label><input data-k="${k}" value="${esc(val??'')}" placeholder="${ph||''}"></div>`;}
-function imgRow(im){im=im||{};const u=im.url||'';
-  return `<div class="imrow">
-   <img class="thumb" src="${esc(u)}" onclick="if(this.getAttribute('src'))window.open(this.src)" style="${u?'':'display:none'}">
+function imgTile(im){im=im||{};const u=im.url||'';
+  return `<div class="imtile">
+   <button class="imx" title="Gỡ ảnh" onclick="this.closest('.imtile').remove()">✕</button>
+   <div class="imthumb" ${u?`style="background-image:url('${esc(u)}')"`:''} onclick="const v=this.parentNode.querySelector('[data-img-url]').value;if(v)window.open(v)"></div>
    <input type="hidden" data-img-url value="${esc(u)}">
-   <input class="imlabel" data-img-label list="imglabels" value="${esc(im.label||'')}" placeholder="Loại ảnh (vd: Feedback)">
-   <button class="rmx" title="Gỡ ảnh" onclick="this.closest('.imrow').remove()">✕</button>
+   <input class="imlabel" data-img-label list="imglabels" value="${esc(im.label||'')}" placeholder="Loại">
   </div>`;}
+function addTile(){return `<div class="imtile imadd"><div class="imthumb" onclick="addKbImg(this)"><b style="font-size:22px;font-weight:400;line-height:1">＋</b>Thêm ảnh</div></div>`;}
 function kbCard(r){r=r||{};const imgs=(r.images&&r.images.length)?r.images:(r.image?[{url:r.image,label:'Ảnh sản phẩm'}]:[]);
+  const nm=esc(r.name||'')||'(sản phẩm mới)';
   return `<div class="pcard">
-   <div class="fh">
-     <div class="fld" style="width:130px"><label>Mã SP</label><input data-k="id" value="${esc(r.id??'')}" placeholder="VD: SU01"></div>
-     <div class="fld" style="flex:1"><label>Tên sản phẩm (khách thấy)</label><input data-k="name" value="${esc(r.name??'')}" placeholder="Tên sản phẩm, nên viết English/Tagalog"></div>
-     <button class="rmx" title="Xóa sản phẩm" onclick="this.closest('.pcard').remove()">✕</button>
+   <div class="phead" onclick="if(!event.target.closest('.pacts'))this.closest('.pcard').classList.toggle('collapsed')">
+     <div class="ptitle"><span class="caret">▾</span> <span class="pname">${nm}</span></div>
+     <div class="pacts">
+       <button class="actbtn" title="Nhân bản" onclick="dupCard(this)">⧉</button>
+       <button class="actbtn del" title="Xoá sản phẩm" onclick="this.closest('.pcard').remove()">🗑</button>
+     </div>
    </div>
-   <div class="fld" style="margin-bottom:14px"><label>Mô tả ngắn (bán hàng)</label><textarea data-k="desc" placeholder="Điểm mạnh, công dụng chính...">${esc(r.desc??'')}</textarea></div>
-   <div class="grid5">
-     ${fld('Variant','variant',r.variant,'Màu/loại')}
-     ${fld('Giá lẻ','price1',r.price1,'149')}
-     ${fld('Combo 2','combo2',r.combo2,'249')}
-     ${fld('Combo 3','combo3',r.combo3,'329')}
-     ${fld('Tiền tệ','currency',r.currency,'AED')}
-     ${fld('Tồn kho','stock',r.stock,'')}
-   </div>
-   <div class="imgbox2">
-     <div class="muted" style="font-size:12px;margin-bottom:9px"><b>Ảnh sản phẩm</b> — bot gửi cho khách. Thêm nhiều loại: Ảnh sản phẩm, Feedback, Thành phần, Công dụng…</div>
-     <div class="imglist">${imgs.map(im=>imgRow(im)).join('')}</div>
-     <button class="btn" onclick="addKbImg(this)" style="margin-top:4px">📷 Thêm ảnh</button>
+   <div class="pbody">
+     <div class="fh">
+       <div class="fld" style="width:130px"><label>Mã SP</label><input data-k="id" value="${esc(r.id??'')}" placeholder="VD: SU01"></div>
+       <div class="fld" style="flex:1"><label>Tên sản phẩm (khách thấy)</label><input data-k="name" value="${esc(r.name??'')}" placeholder="Tên sản phẩm, nên viết English/Tagalog" oninput="const t=this.closest('.pcard').querySelector('.pname');if(t)t.textContent=this.value||'(sản phẩm mới)'"></div>
+     </div>
+     <div class="fld" style="margin-bottom:14px"><label>Mô tả ngắn (bán hàng)</label><textarea data-k="desc" placeholder="Điểm mạnh, công dụng chính...">${esc(r.desc??'')}</textarea></div>
+     <div class="grid5">
+       ${fld('Variant','variant',r.variant,'Màu/loại')}
+       ${fld('Giá lẻ','price1',r.price1,'149')}
+       ${fld('Combo 2','combo2',r.combo2,'249')}
+       ${fld('Combo 3','combo3',r.combo3,'329')}
+       ${fld('Tiền tệ','currency',r.currency,'AED')}
+     </div>
+     <div class="imgbox2">
+       <div class="muted" style="font-size:12px;margin-bottom:11px"><b>Ảnh sản phẩm</b> — bot gửi cho khách. Đặt nhãn từng ảnh: Ảnh sản phẩm, Feedback, Thành phần, Công dụng…</div>
+       <div class="imglist">${imgs.map(imgTile).join('')}${addTile()}</div>
+     </div>
    </div>
   </div>`;}
+function readCard(card){const o={};card.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.value);
+  o.images=[...card.querySelectorAll('.imtile:not(.imadd)')].map(t=>({url:t.querySelector('[data-img-url]').value,label:t.querySelector('[data-img-label]').value})).filter(im=>im.url);return o;}
 window.addKbCard=()=>document.getElementById('kblist').insertAdjacentHTML('beforeend',kbCard({}));
+window.dupCard=(btn)=>{const card=btn.closest('.pcard');card.classList.remove('collapsed');card.insertAdjacentHTML('afterend',kbCard(readCard(card)));toast('Đã nhân bản — nhớ đổi Mã SP');};
+window.importScript=()=>{const inp=document.createElement('input');inp.type='file';inp.accept='.xlsx,.xls';
+  inp.onchange=async()=>{const f=inp.files[0];if(!f)return;
+    toast('Đang phân tích kịch bản Pancake...');
+    const dataBase64=await new Promise(r=>{const rd=new FileReader();rd.onload=()=>r(rd.result);rd.readAsDataURL(f);});
+    const d=await post('/import-script',{dataBase64});
+    if(d.error){toast(d.error,'bad');return;}
+    if(document.getElementById('cfgGreeting')){document.getElementById('cfgGreeting').value=d.greeting||'';document.getElementById('cfgSales').value=d.salesPrompt||'';}
+    const list=document.getElementById('kblist');
+    [...list.querySelectorAll('.pcard')].forEach(c=>{if(!c.querySelector('input[data-k=id]').value.trim()&&!c.querySelector('input[data-k=name]').value.trim())c.remove();});
+    list.insertAdjacentHTML('beforeend',kbCard(d.product));
+    toast(`✓ Đã nhập: ${d.stats.topics} chủ đề · ${d.stats.images} ảnh · giá ${(d.stats.prices||[]).join('/')||'?'}. Điền TÊN sản phẩm rồi bấm Lưu.`,'ok');
+  };
+  inp.click();};
 window.addKbImg=(btn)=>{const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
   inp.onchange=async()=>{const f=inp.files[0];if(!f)return;
     if(f.size>10*1024*1024){toast('Ảnh quá lớn (>10MB)','bad');return;}
@@ -312,16 +441,17 @@ window.addKbImg=(btn)=>{const inp=document.createElement('input');inp.type='file
     const res=await post('/upload-image',{dataUrl,pageId,productId});
     if(res.error){toast(res.error,'bad');return;}
     const list=card.querySelector('.imglist');
-    const dflt=list.querySelector('.imrow')?'':'Ảnh sản phẩm'; // ảnh đầu tiên mặc định nhãn "Ảnh sản phẩm"
-    list.insertAdjacentHTML('beforeend',imgRow({url:res.url,label:dflt}));
+    const dflt=list.querySelector('.imtile:not(.imadd)')?'':'Ảnh sản phẩm'; // ảnh đầu mặc định nhãn "Ảnh sản phẩm"
+    list.querySelector('.imadd').insertAdjacentHTML('beforebegin',imgTile({url:res.url,label:dflt}));
     toast(res.absolute?'✓ Đã thêm ảnh':'✓ Đã thêm (cần PUBLIC_URL để bot gửi được)','ok');};
   inp.click();};
 window.saveKB=async()=>{const pid=document.getElementById('kbpage').value;
-  const products=[...document.querySelectorAll('#kblist .pcard')].map(card=>{
-    const o={};card.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.value);
-    o.images=[...card.querySelectorAll('.imrow')].map(row=>({url:row.querySelector('[data-img-url]').value,label:row.querySelector('[data-img-label]').value})).filter(im=>im.url);
-    return o;}).filter(p=>p.name||p.id);
-  const r=await post('/kb/'+pid,{products});toast('✓ Đã lưu '+r.products+' sản phẩm');document.getElementById('kbmsg').textContent='Cập nhật lúc '+new Date().toLocaleTimeString();};
+  const products=[...document.querySelectorAll('#kblist .pcard')].map(card=>readCard(card)).filter(p=>p.name||p.id);
+  // Lưu cấu hình AI (lời chào/giọng/hướng dẫn) + sản phẩm.
+  const config={greeting:document.getElementById('cfgGreeting')?.value||'',tone:document.getElementById('cfgTone')?.value||'',salesPrompt:document.getElementById('cfgSales')?.value||''};
+  await post('/kb/'+pid+'/config',config);
+  const r=await post('/kb/'+pid,{products});
+  toast('✓ Đã lưu cấu hình AI + '+r.products+' sản phẩm');document.getElementById('kbmsg').textContent='Cập nhật lúc '+new Date().toLocaleTimeString();};
 
 async function rTokens(){const ts=await j('/tokens');
   content.innerHTML=`<h2>API / Token Meta <span class="pill ok" style="vertical-align:middle">failover</span></h2>

@@ -6,61 +6,97 @@ import { config } from './config.js';
 import {
   listTokens, addToken, removeToken, loadPageTokens, pageCount, getPageMeta, getStore,
 } from './pages.js';
-import { getPageList, getPageProductsRaw, updatePageProducts, syncFromSheet } from './kb.js';
+import { getPageList, getPageProductsRaw, updatePageProducts, updatePageConfig, getPageConfig, syncFromSheet } from './kb.js';
 import { getSheetId, getSheetUrl, setSheetId } from './sheets.js';
 import {
   listConversations, getConversation, setHandoff, isAiEnabled, setAiEnabled, listAiEnabled,
 } from './store.js';
-import { sendText, subscribePage } from './messenger.js';
+import { sendText } from './messenger.js';
+import { pancakePages, pancakePageCount } from './pancake.js';
+import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
+import { getStats } from './stats.js';
 
 export const adminRouter = express.Router();
 
 // ---- Tổng quan ----
 adminRouter.get('/overview', (_req, res) => {
-  const tokens = listTokens();
-  const pages = getPageList();
-  const withKB = pages.filter((p) => (p.products || 0) > 0).length;
+  const withKB = getPageList().filter((p) => (p.products || 0) > 0).length;
   res.json({
-    pages: pageCount(),
+    pages: pancakePageCount() || pageCount(),
     pagesWithKB: withKB,
-    tokensTotal: tokens.length,
-    tokensHealthy: tokens.filter((t) => t.healthy).length,
+    source: pancakePageCount() ? 'pancake' : 'facebook',
     conversations: listConversations().length,
     aiEnabled: listAiEnabled().length,
   });
 });
 
+// ---- Thống kê (bền, lưu file stats.json) ----
+adminRouter.get('/stats', (_req, res) => {
+  const st = getStats();
+  const pk = pancakePages();
+  const kbById = new Map(getPageList().map((p) => [String(p.id), p]));
+  // Gộp: mọi page đang bật AI + mọi page từng có tin/đơn.
+  const ids = new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)]);
+  const pages = [...ids].map((id) => {
+    const b = st.byPage[id] || { replies: 0, orders: 0 };
+    const cfg = getPageConfig(id);
+    const hasKb = ((kbById.get(id) || {}).products || 0) > 0 || !!(cfg.greeting || cfg.tone || cfg.salesPrompt);
+    return {
+      id,
+      name: pk.get(id)?.name || (kbById.get(id) || {}).name || id,
+      aiEnabled: isAiEnabled(id),
+      replies: b.replies || 0,
+      orders: b.orders || 0,
+      hasKb,
+    };
+  });
+  pages.sort((a, b) => (b.replies - a.replies) || String(a.name).localeCompare(String(b.name)));
+  res.json({
+    totalPages: pancakePageCount() || pageCount(),
+    pagesWithKB: getPageList().filter((p) => (p.products || 0) > 0).length,
+    aiEnabled: listAiEnabled().length,
+    todayReplies: st.todayReplies, todayOrders: st.todayOrders,
+    totalReplies: st.totalReplies, totalOrders: st.totalOrders,
+    lastReplyAt: st.lastReplyAt,
+    pages,
+  });
+});
+
 // ---- Pages ----
-// Danh sách page lấy từ FACEBOOK (token store) — page MKT mới thêm vào BM tự xuất hiện
-// (server quét lại 10 phút/lần). KB Sheet chỉ bổ sung thông tin kịch bản.
+// Danh sách page lấy từ PANCAKE (nguồn tin chính). KB Sheet bổ sung kịch bản.
 adminRouter.get('/pages', (_req, res) => {
   const kbById = new Map(getPageList().map((p) => [String(p.id), p]));
+  const source = pancakePages().size
+    ? pancakePages()
+    : new Map([...getStore()].map(([id, v]) => [String(id), { id, name: v.name }]));
   const list = [];
-  for (const [id, v] of getStore()) {
+  for (const [id, p] of source) {
     const kb = kbById.get(String(id)) || {};
     kbById.delete(String(id));
+    const cfg = getPageConfig(id);
+    const hasKb = (kb.products || 0) > 0 || !!(cfg.greeting || cfg.tone || cfg.salesPrompt);
+    const preview = String(cfg.greeting || cfg.salesPrompt || '').replace(/\s+/g, ' ').trim().slice(0, 120);
     list.push({
-      id, name: v.name || kb.name || '', products: kb.products || 0,
+      id, name: p.name || kb.name || '', products: kb.products || 0, hasKb, preview,
       market: kb.market || '', category: kb.category || '', marketer: kb.marketer || '',
-      aiEnabled: isAiEnabled(id),
-      redundancy: (getPageMeta(id) || {}).redundancy || 0, // số app dự phòng (failover)
+      aiEnabled: isAiEnabled(id), redundancy: 0,
     });
   }
-  // Page có trong KB nhưng token chưa thấy (vd chưa vào BM) — vẫn liệt kê để biết.
-  for (const [id, kb] of kbById) {
-    list.push({ id, name: kb.name || '', products: kb.products || 0, market: kb.market || '', category: kb.category || '', marketer: kb.marketer || '', aiEnabled: isAiEnabled(id), redundancy: 0 });
+  // Chỉ khi CHƯA có Pancake mới liệt kê thêm page KB (fallback). Có Pancake → chỉ hiện
+  // page Pancake thật sự phục vụ được, tránh rối vì page trong Sheet nhưng không ở Pancake.
+  if (!pancakePages().size) {
+    for (const [id, kb] of kbById) {
+      list.push({ id, name: kb.name || '', products: kb.products || 0, market: kb.market || '', category: kb.category || '', marketer: kb.marketer || '', aiEnabled: isAiEnabled(id), redundancy: 0 });
+    }
   }
   list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   res.json(list);
 });
-adminRouter.post('/pages/:id/ai', async (req, res) => {
-  const on = req.body?.on !== false;
-  setAiEnabled(req.params.id, on);
-  // Bật AI → tự đăng ký webhook cho page (page mới của MKT chưa subscribe thì tin nhắn không về).
-  let subscribed;
-  if (on) subscribed = await subscribePage(req.params.id);
-  res.json({ ok: true, aiEnabled: isAiEnabled(req.params.id), subscribed });
+// Bật/tắt AI cho page — điều khiển thẳng vòng lặp Pancake (không cần webhook FB).
+adminRouter.post('/pages/:id/ai', (req, res) => {
+  setAiEnabled(req.params.id, req.body?.on !== false);
+  res.json({ ok: true, aiEnabled: isAiEnabled(req.params.id) });
 });
 
 // ---- Tin nhắn / hội thoại ----
@@ -114,12 +150,31 @@ adminRouter.post('/upload-image', (req, res) => {
 
 // ---- Kịch bản / KB ----
 adminRouter.get('/kb/:pageId', (req, res) => {
+  const pancake = pancakePages().get(String(req.params.pageId));
   const page = getPageList().find((p) => String(p.id) === String(req.params.pageId));
-  res.json({ pageId: req.params.pageId, pageName: page?.name || '', products: getPageProductsRaw(req.params.pageId) });
+  res.json({
+    pageId: req.params.pageId,
+    pageName: pancake?.name || page?.name || '',
+    products: getPageProductsRaw(req.params.pageId),
+    config: getPageConfig(req.params.pageId),
+  });
 });
 adminRouter.post('/kb/:pageId', (req, res) => {
   const r = updatePageProducts(req.params.pageId, req.body?.products || []);
   res.json(r);
+});
+// Cấu hình AI theo page (lời chào / giọng điệu / hướng dẫn bán hàng riêng).
+adminRouter.post('/kb/:pageId/config', (req, res) => {
+  const r = updatePageConfig(req.params.pageId, req.body || {});
+  res.json(r);
+});
+// Nhập kịch bản Pancake (.xlsx base64) → trả nháp {greeting, tone, salesPrompt, product}.
+adminRouter.post('/import-script', (req, res) => {
+  try {
+    const b64 = String(req.body?.dataBase64 || '').replace(/^data:.*?;base64,/, '');
+    if (!b64) return res.status(400).json({ error: 'Thiếu file.' });
+    res.json({ ok: true, ...parsePancakeScript(b64) });
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 // ---- Google Sheet kịch bản ----

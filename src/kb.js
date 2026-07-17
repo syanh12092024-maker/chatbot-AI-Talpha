@@ -119,7 +119,14 @@ export async function syncFromSheet(id) {
 }
 
 export function loadKB(kbPath = config.kbPath) {
-  if (!fs.existsSync(kbPath)) throw new Error(`Không tìm thấy file KB: ${kbPath}`);
+  // File Excel nền là TÙY CHỌN. Khi deploy (VPS) chỉ dùng Google Sheet + kb-overrides.json,
+  // không có file này → không sập, vẫn nạp cấu hình page từ overrides.
+  if (!fs.existsSync(kbPath)) {
+    console.warn(`[kb] Không có file Excel nền (${kbPath}) — dùng Google Sheet + overrides.`);
+    singleKB = null; pageMap = new Map(); sharedText = '';
+    applyOverrides();
+    return { mode: 'no-base', pages: pageMap.size };
+  }
   const wb = xlsx.readFile(kbPath);
 
   const policies = parsePolicies(rows(wb, 'Chính sách'));
@@ -147,11 +154,13 @@ export function loadKB(kbPath = config.kbPath) {
 }
 
 // Lấy KB cho page nhận tin. Có dữ liệu page → dùng; chưa có → đánh dấu noData.
+// Luôn kèm `config` (lời chào/giọng điệu/hướng dẫn bán hàng riêng) để prompt dùng.
 export function getKBForPage(pageId) {
   if (singleKB) return singleKB;
   const e = pageMap.get(String(pageId));
-  if (e && e.products.length) return e;
-  return { products: [], pageName: e?.pageName || '', text: `# CHƯA CÓ SẢN PHẨM CHO PAGE NÀY\nHãy xin lỗi và chuyển nhân viên (gọi tool handoff_human).\n${sharedText}`, noData: true };
+  const config = e?.config || {};
+  if (e && e.products.length) return { ...e, config };
+  return { products: [], pageName: e?.pageName || '', config, text: `# CHƯA CÓ SẢN PHẨM CHO PAGE NÀY\nHãy xin lỗi và chuyển nhân viên (gọi tool handoff_human).\n${sharedText}`, noData: true };
 }
 
 export function getPageList() {
@@ -163,10 +172,10 @@ export function getPageList() {
 function applyOverrides() {
   const ov = readOverrides();
   for (const [pageId, data] of Object.entries(ov)) {
-    if (!data?.products) continue;
+    if (!data?.products && !data?.config) continue;
     const cur = pageMap.get(String(pageId)) || { pageName: '', products: [] };
-    cur.products = data.products;
-    cur.text = pageText(cur.market, cur.category, data.products);
+    if (data.products) { cur.products = data.products; cur.text = pageText(cur.market, cur.category, data.products); }
+    if (data.config) cur.config = data.config;
     pageMap.set(String(pageId), cur);
   }
 }
@@ -178,6 +187,26 @@ export function productImages(p) {
   }
   if (p.image) return [{ url: String(p.image).trim(), label: 'Ảnh sản phẩm' }];
   return [];
+}
+
+// Cấu hình AI theo page (lời chào / giọng điệu / hướng dẫn bán hàng riêng).
+export function getPageConfig(pageId) {
+  const c = pageMap.get(String(pageId))?.config || readOverrides()[String(pageId)]?.config || {};
+  return { greeting: c.greeting || '', tone: c.tone || '', salesPrompt: c.salesPrompt || '' };
+}
+export function updatePageConfig(pageId, config) {
+  const clean = {
+    greeting: String(config?.greeting || '').trim(),
+    tone: String(config?.tone || '').trim(),
+    salesPrompt: String(config?.salesPrompt || '').trim(),
+  };
+  const ov = readOverrides();
+  ov[String(pageId)] = { ...(ov[String(pageId)] || {}), config: clean };
+  writeOverrides(ov);
+  const cur = pageMap.get(String(pageId)) || { pageName: '', products: [] };
+  cur.config = clean;
+  pageMap.set(String(pageId), cur);
+  return { ok: true };
 }
 
 export function getPageProductsRaw(pageId) {
@@ -196,7 +225,7 @@ export function updatePageProducts(pageId, products) {
     };
   }).filter((p) => p.id || p.name);
   const ov = readOverrides();
-  ov[String(pageId)] = { products: clean };
+  ov[String(pageId)] = { ...(ov[String(pageId)] || {}), products: clean }; // GIỮ config đã lưu
   writeOverrides(ov);
   const cur = pageMap.get(String(pageId)) || { pageName: '', products: [] };
   cur.products = clean;
@@ -217,7 +246,6 @@ function buildProductText(products) {
     if (p.combo2 != null) pr.push(`combo 2: ${p.combo2} ${p.currency}`);
     if (p.combo3 != null) pr.push(`combo 3: ${p.combo3} ${p.currency}`);
     if (pr.length) out.push(`    Giá — ${pr.join(' | ')}`);
-    if (p.stock != null) out.push(`    Tồn kho: ${p.stock}`);
     const imgs = productImages(p);
     if (imgs.length) {
       const byLabel = imgs.map((im) => im.label || 'Ảnh SP');
