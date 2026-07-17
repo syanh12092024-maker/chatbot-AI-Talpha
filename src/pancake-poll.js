@@ -4,7 +4,7 @@ import { config } from './config.js';
 import { pkGetConversations, pkGetMessages, pkSendReply, refreshPancakePages } from './pancake.js';
 import { listAiEnabled } from './store.js';
 import { handleIncoming } from './handler.js';
-import { incReply } from './stats.js';
+import { incReply, incLead } from './stats.js';
 
 // convId -> mốc last_customer_interactive_at đã xử lý (chống trả lời lặp)
 const seen = new Map();
@@ -51,7 +51,7 @@ async function pollPage(pageId) {
     const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId });
     if (!reply) continue;
     const r = await pkSendReply(pageId, c.id, custId, reply);
-    if (r.ok) { try { incReply(pageId); } catch { /* thống kê không chặn gửi tin */ } }
+    if (r.ok) { try { incReply(pageId); incLead(pageId, custId); } catch { /* thống kê không chặn gửi tin */ } }
     console.log(`[pancake] ${c.from?.name || psid}: "${text.slice(0, 30)}" → AI: "${reply.slice(0, 40)}" ${r.ok ? '✓' : '✗ ' + r.error}`);
   }
   if (firstTime) { primedPages.add(pageId); console.log(`[pancake] page ${pageId} đã ghi mốc — từ giờ chỉ trả lời tin MỚI.`); }

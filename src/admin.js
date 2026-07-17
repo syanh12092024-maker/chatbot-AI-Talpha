@@ -38,8 +38,9 @@ adminRouter.get('/stats', (_req, res) => {
   const kbById = new Map(getPageList().map((p) => [String(p.id), p]));
   // Gộp: mọi page đang bật AI + mọi page từng có tin/đơn.
   const ids = new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)]);
+  const rate = (orders, leads) => (leads > 0 ? Math.round((orders / leads) * 100) : 0); // tỉ lệ chốt %
   const pages = [...ids].map((id) => {
-    const b = st.byPage[id] || { replies: 0, orders: 0 };
+    const b = st.byPage[id] || { replies: 0, orders: 0, leads: 0 };
     const cfg = getPageConfig(id);
     const hasKb = ((kbById.get(id) || {}).products || 0) > 0 || !!(cfg.greeting || cfg.tone || cfg.salesPrompt);
     return {
@@ -47,7 +48,9 @@ adminRouter.get('/stats', (_req, res) => {
       name: pk.get(id)?.name || (kbById.get(id) || {}).name || id,
       aiEnabled: isAiEnabled(id),
       replies: b.replies || 0,
+      leads: b.leads || 0,
       orders: b.orders || 0,
+      closeRate: rate(b.orders || 0, b.leads || 0),
       hasKb,
     };
   });
@@ -56,8 +59,9 @@ adminRouter.get('/stats', (_req, res) => {
     totalPages: pancakePageCount() || pageCount(),
     pagesWithKB: getPageList().filter((p) => (p.products || 0) > 0).length,
     aiEnabled: listAiEnabled().length,
-    todayReplies: st.todayReplies, todayOrders: st.todayOrders,
-    totalReplies: st.totalReplies, totalOrders: st.totalOrders,
+    todayReplies: st.todayReplies, todayOrders: st.todayOrders, todayLeads: st.todayLeads,
+    totalReplies: st.totalReplies, totalOrders: st.totalOrders, totalLeads: st.totalLeads,
+    closeRate: rate(st.totalOrders, st.totalLeads),
     lastReplyAt: st.lastReplyAt,
     pages,
   });
