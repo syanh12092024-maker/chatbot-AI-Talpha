@@ -39,7 +39,12 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     state.handoff = true; state.handoffReason = 'complaint';
     return reply(psid, holdingMessage(cls.lang), true);
   }
-  if (cls.lang === 'other') {
+  // Tin quá ngắn/tầm thường ("hm", "hi", "ok", "?", emoji...) hay bị đoán nhầm là "ngôn ngữ lạ".
+  // KHÔNG chuyển người trong trường hợp này — cứ để closer chào & tư vấn (mặc định English/Taglish),
+  // tránh mất khách ngay câu đầu khi họ vừa bấm vào quảng cáo.
+  const letters = text.trim().replace(/[^\p{L}]/gu, '');
+  const trivialMsg = letters.length <= 12 || text.trim().split(/\s+/).length <= 2;
+  if (cls.lang === 'other' && !trivialMsg) {
     state.handoff = true; state.handoffReason = 'lang_unknown';
     return reply(psid, holdingMessage(cls.lang), true);
   }
