@@ -12,6 +12,9 @@ let s = {
 try { if (fs.existsSync(FILE)) s = { ...s, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) }; } catch { /* mặc định */ }
 // Set để tra "khách này đã tính lead chưa" trong O(1); đồng bộ với mảng leadKeys khi lưu.
 const leadSet = new Set(s.leadKeys || []);
+// Backfill khi nạp file cũ (chưa có trường leads) để không ra undefined/NaN.
+s.today.replies = s.today.replies || 0; s.today.orders = s.today.orders || 0; s.today.leads = s.today.leads || 0;
+if (!Array.isArray(s.leadKeys)) s.leadKeys = [];
 
 function save() { try { fs.writeFileSync(FILE, JSON.stringify(s)); } catch (e) { console.error('[stats] lưu lỗi', e.message); } }
 function today() { return new Date().toISOString().slice(0, 10); }
