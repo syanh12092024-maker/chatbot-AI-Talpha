@@ -1,6 +1,6 @@
 import { createOrder, pkSendImage } from './pancake.js';
 import { sendImage } from './messenger.js';
-import { productImages } from './kb.js';
+import { productImages, productTiers } from './kb.js';
 import { incOrder } from './stats.js';
 
 // Định nghĩa tool (function calling) cho closer.
@@ -86,7 +86,8 @@ export async function executeTool(name, input, ctx) {
         return {
           content: JSON.stringify({
             product_id: p.id, name: p.name, currency: p.currency,
-            price1: p.price1, combo2: p.combo2, combo3: p.combo3,
+            // Bảng gói giá: mỗi mục {qty, price} = mua bao nhiêu cái, giá bao nhiêu.
+            price_tiers: productTiers(p),
           }),
         };
       }

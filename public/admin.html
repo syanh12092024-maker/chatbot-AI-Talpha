@@ -103,6 +103,15 @@
   .imtile .imx{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;border:none;background:var(--bad);color:#fff;cursor:pointer;font-size:12px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.25)}
   .imadd .imthumb{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:12px;gap:3px;border-style:dashed}
   .imadd .imthumb:hover{background:var(--priSoft);color:var(--pri);border-color:var(--pri)}
+  /* bảng gói giá linh hoạt */
+  .pricebox{margin:4px 0 14px;padding:14px 16px;background:#fafbfc;border:1px solid var(--line);border-radius:10px}
+  .pricebox>.pblabel{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:11px}
+  .tierrow{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:13.5px;flex-wrap:wrap}
+  .tierrow input{padding:7px 9px}
+  .tierrow .tq{width:60px;text-align:center} .tierrow .tp{width:110px}
+  .tierx{width:28px;height:28px;border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer;color:var(--muted);flex-shrink:0}
+  .tierx:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
+  .imtile select.imlabel{width:92px;font-size:11px;padding:4px 4px;border-radius:7px;cursor:pointer}
   /* product card header + actions */
   .phead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;cursor:pointer}
   .ptitle{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -379,45 +388,55 @@ window.loadKBPage=async()=>{const pid=document.getElementById('kbpage').value;co
     `<datalist id="imglabels">${IMG_LABELS.map(l=>`<option value="${l}">`).join('')}</datalist>`
     +rows.map(r=>kbCard(r)).join('');
 };
-function fld(label,k,val,ph){return `<div class="fld"><label>${label}</label><input data-k="${k}" value="${esc(val??'')}" placeholder="${ph||''}"></div>`;}
-function imgTile(im){im=im||{};const u=im.url||'';
+const IMG_CATS=['Ảnh sản phẩm','Feedback khách','Thành phần','Công dụng','Ảnh quảng cáo (FB)','Chứng nhận','Khác'];
+const CURRENCIES=['AED','SAR','KWD','QAR','OMR','BHD','USD'];
+function imgTile(im){im=im||{};const u=im.url||'';const lbl=im.label||'Ảnh sản phẩm';
+  const opts=[...IMG_CATS];if(!opts.includes(lbl))opts.unshift(lbl);
   return `<div class="imtile">
    <button class="imx" title="Gỡ ảnh" onclick="this.closest('.imtile').remove()">✕</button>
    <div class="imthumb" ${u?`style="background-image:url('${esc(u)}')"`:''} onclick="const v=this.parentNode.querySelector('[data-img-url]').value;if(v)window.open(v)"></div>
    <input type="hidden" data-img-url value="${esc(u)}">
-   <input class="imlabel" data-img-label list="imglabels" value="${esc(im.label||'')}" placeholder="Loại">
+   <select class="imlabel" data-img-label title="Loại ảnh này là gì">${opts.map(c=>`<option ${lbl===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
   </div>`;}
 function addTile(){return `<div class="imtile imadd"><div class="imthumb" onclick="addKbImg(this)"><b style="font-size:22px;font-weight:400;line-height:1">＋</b>Thêm ảnh</div></div>`;}
+// Bảng gói giá: lấy từ r.tiers (mới) hoặc suy từ price1/combo2/combo3 (dữ liệu cũ).
+function tiersOf(r){
+  if(Array.isArray(r.tiers)&&r.tiers.length)return r.tiers.filter(t=>+t.price>0).map(t=>({qty:+t.qty||1,price:+t.price}));
+  const out=[];[[1,r.price1],[2,r.combo2],[3,r.combo3]].forEach(([q,v])=>{if(+v>0)out.push({qty:q,price:+v});});
+  return out.length?out:[{qty:1,price:''}];
+}
+function tierRow(t){t=t||{};return `<div class="tierrow"><span>Mua</span><input class="tq" type="number" min="1" value="${t.qty||1}"><span>cái — giá</span><input class="tp" type="number" min="0" value="${t.price??''}" placeholder="0"><button class="tierx" title="Xoá gói" onclick="this.closest('.tierrow').remove()">✕</button></div>`;}
+window.addTierRow=(btn)=>btn.closest('.pricebox').querySelector('.tiers').insertAdjacentHTML('beforeend',tierRow({}));
 function kbCard(r){r=r||{};const imgs=(r.images&&r.images.length)?r.images:(r.image?[{url:r.image,label:'Ảnh sản phẩm'}]:[]);
-  const nm=esc(r.name||'')||'(sản phẩm mới)';
+  const cur=r.currency||'AED';const curOpts=[...CURRENCIES];if(!curOpts.includes(cur))curOpts.unshift(cur);
   return `<div class="pcard">
    <div class="phead" onclick="if(!event.target.closest('.pacts'))this.closest('.pcard').classList.toggle('collapsed')">
-     <div class="ptitle"><span class="caret">▾</span> <span class="pname">${nm}</span></div>
+     <div class="ptitle"><span class="caret">▾</span> <span class="pname">Thông tin sản phẩm</span></div>
      <div class="pacts">
-       <button class="actbtn" title="Nhân bản" onclick="dupCard(this)">⧉</button>
        <button class="actbtn del" title="Xoá sản phẩm" onclick="this.closest('.pcard').remove()">🗑</button>
      </div>
    </div>
    <div class="pbody">
-     <div class="fh">
-       <div class="fld" style="width:130px"><label>Mã SP</label><input data-k="id" value="${esc(r.id??'')}" placeholder="VD: SU01"></div>
-       <div class="fld" style="flex:1"><label>Tên sản phẩm (khách thấy)</label><input data-k="name" value="${esc(r.name??'')}" placeholder="Tên sản phẩm, nên viết English/Tagalog" oninput="const t=this.closest('.pcard').querySelector('.pname');if(t)t.textContent=this.value||'(sản phẩm mới)'"></div>
-     </div>
+     <input type="hidden" data-k="id" value="${esc(r.id||'SP01')}">
      <div class="fld" style="margin-bottom:14px"><label>Mô tả ngắn (bán hàng)</label><textarea data-k="desc" placeholder="Điểm mạnh, công dụng chính...">${esc(r.desc??'')}</textarea></div>
-     <div class="grid5">
-       ${fld('Variant','variant',r.variant,'Màu/loại')}
-       ${fld('Giá lẻ','price1',r.price1,'149')}
-       ${fld('Combo 2','combo2',r.combo2,'249')}
-       ${fld('Combo 3','combo3',r.combo3,'329')}
-       ${fld('Tiền tệ','currency',r.currency,'AED')}
+     <div class="fld" style="margin-bottom:14px"><label>Phân loại (màu / mẫu)</label><input data-k="variant" value="${esc(r.variant||'')}" placeholder="vd: Red, Pink, Nude — để trống nếu chỉ 1 loại"></div>
+     <div class="pricebox">
+       <span class="pblabel">Bảng giá — mua càng nhiều càng rẻ</span>
+       <div class="tiers">${tiersOf(r).map(tierRow).join('')}</div>
+       <div class="row" style="margin-top:4px">
+         <button class="btn sm" onclick="addTierRow(this)">➕ Thêm gói giá</button>
+         <div class="fld" style="width:130px;margin-left:auto"><label>Tiền tệ</label><select data-k="currency">${curOpts.map(c=>`<option ${cur===c?'selected':''}>${c}</option>`).join('')}</select></div>
+       </div>
      </div>
      <div class="imgbox2">
-       <div class="muted" style="font-size:12px;margin-bottom:11px"><b>Ảnh sản phẩm</b> — bot gửi cho khách. Đặt nhãn từng ảnh: Ảnh sản phẩm, Feedback, Thành phần, Công dụng…</div>
+       <div class="muted" style="font-size:12px;margin-bottom:11px"><b>Ảnh sản phẩm</b> — chọn LOẠI từng ảnh (menu dưới ảnh). AI gửi đúng loại khi khách hỏi (feedback, thành phần…).</div>
        <div class="imglist">${imgs.map(imgTile).join('')}${addTile()}</div>
      </div>
    </div>
   </div>`;}
 function readCard(card){const o={};card.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.value);
+  if(!o.id)o.id='SP01';
+  o.tiers=[...card.querySelectorAll('.tierrow')].map(r=>({qty:+r.querySelector('.tq').value||1,price:+r.querySelector('.tp').value||0})).filter(t=>t.price>0);
   o.images=[...card.querySelectorAll('.imtile:not(.imadd)')].map(t=>({url:t.querySelector('[data-img-url]').value,label:t.querySelector('[data-img-label]').value})).filter(im=>im.url);return o;}
 window.addKbCard=()=>document.getElementById('kblist').insertAdjacentHTML('beforeend',kbCard({}));
 window.dupCard=(btn)=>{const card=btn.closest('.pcard');card.classList.remove('collapsed');card.insertAdjacentHTML('afterend',kbCard(readCard(card)));toast('Đã nhân bản — nhớ đổi Mã SP');};
@@ -429,9 +448,10 @@ window.importScript=()=>{const inp=document.createElement('input');inp.type='fil
     if(d.error){toast(d.error,'bad');return;}
     if(document.getElementById('cfgGreeting')){document.getElementById('cfgGreeting').value=d.greeting||'';document.getElementById('cfgSales').value=d.salesPrompt||'';}
     const list=document.getElementById('kblist');
-    [...list.querySelectorAll('.pcard')].forEach(c=>{if(!c.querySelector('input[data-k=id]').value.trim()&&!c.querySelector('input[data-k=name]').value.trim())c.remove();});
+    // Xoá card trống (chưa có giá & chưa có ảnh) trước khi chèn sản phẩm vừa nhập.
+    [...list.querySelectorAll('.pcard')].forEach(c=>{const hasPrice=[...c.querySelectorAll('.tierrow .tp')].some(i=>+i.value>0);const hasImg=c.querySelector('.imtile:not(.imadd)');if(!hasPrice&&!hasImg)c.remove();});
     list.insertAdjacentHTML('beforeend',kbCard(d.product));
-    toast(`✓ Đã nhập: ${d.stats.topics} chủ đề · ${d.stats.images} ảnh · giá ${(d.stats.prices||[]).join('/')||'?'}. Điền TÊN sản phẩm rồi bấm Lưu.`,'ok');
+    toast(`✓ Đã nhập: ${d.stats.topics} chủ đề · ${d.stats.images} ảnh · giá ${(d.stats.prices||[]).join('/')||'?'}. Kiểm tra giá & loại ảnh rồi bấm Lưu.`,'ok');
   };
   inp.click();};
 window.addKbImg=(btn)=>{const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
@@ -450,7 +470,7 @@ window.addKbImg=(btn)=>{const inp=document.createElement('input');inp.type='file
     toast(res.absolute?'✓ Đã thêm ảnh':'✓ Đã thêm (cần PUBLIC_URL để bot gửi được)','ok');};
   inp.click();};
 window.saveKB=async()=>{const pid=document.getElementById('kbpage').value;
-  const products=[...document.querySelectorAll('#kblist .pcard')].map(card=>readCard(card)).filter(p=>p.name||p.id);
+  const products=[...document.querySelectorAll('#kblist .pcard')].map(card=>readCard(card)).filter(p=>(p.tiers&&p.tiers.length)||(p.images&&p.images.length)||p.desc);
   // Lưu cấu hình AI (lời chào/giọng/hướng dẫn) + sản phẩm.
   const config={greeting:document.getElementById('cfgGreeting')?.value||'',tone:document.getElementById('cfgTone')?.value||'',salesPrompt:document.getElementById('cfgSales')?.value||''};
   await post('/kb/'+pid+'/config',config);

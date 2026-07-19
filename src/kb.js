@@ -210,20 +210,27 @@ export function updatePageConfig(pageId, config) {
 }
 
 export function getPageProductsRaw(pageId) {
-  return (pageMap.get(String(pageId))?.products || []).map((p) => ({ ...p, images: productImages(p) }));
+  // Kèm tiers đã chuẩn hoá để form hiển thị bảng gói giá (kể cả dữ liệu cũ price1/combo2/combo3).
+  return (pageMap.get(String(pageId))?.products || []).map((p) => ({ ...p, images: productImages(p), tiers: productTiers(p) }));
 }
 
 export function updatePageProducts(pageId, products) {
   const clean = (products || []).map((p) => {
     const images = productImages(p);
+    const tiers = (Array.isArray(p.tiers) ? p.tiers : [])
+      .map((t) => ({ qty: Number(t.qty) || 1, price: numOrNull(t.price) }))
+      .filter((t) => t.price != null && t.price > 0).sort((a, b) => a.qty - b.qty);
+    const byQty = (q) => (tiers.find((t) => t.qty === q) || {}).price ?? null;
     return {
-      id: String(p.id || '').trim(), name: String(p.name || '').trim(), desc: String(p.desc || '').trim(),
+      id: String(p.id || '').trim() || 'SP01', name: String(p.name || '').trim(), desc: String(p.desc || '').trim(),
       variant: String(p.variant || '').trim(),
-      price1: numOrNull(p.price1), combo2: numOrNull(p.combo2), combo3: numOrNull(p.combo3),
-      currency: String(p.currency || 'AED').trim(), stock: numOrNull(p.stock),
-      images, image: images[0]?.url || '', // image: giữ lại 1 ảnh chính cho tương thích ngược
+      tiers, // bảng gói giá mới
+      // Tương thích ngược: suy price1/combo2/combo3 từ tiers theo số lượng.
+      price1: byQty(1) ?? (tiers[0]?.price ?? null), combo2: byQty(2), combo3: byQty(3),
+      currency: String(p.currency || 'AED').trim(),
+      images, image: images[0]?.url || '', // image: giữ 1 ảnh chính cho tương thích ngược
     };
-  }).filter((p) => p.id || p.name);
+  }).filter((p) => p.name || p.desc || (p.tiers && p.tiers.length) || (p.images && p.images.length));
   const ov = readOverrides();
   ov[String(pageId)] = { ...(ov[String(pageId)] || {}), products: clean }; // GIỮ config đã lưu
   writeOverrides(ov);
@@ -235,16 +242,27 @@ export function updatePageProducts(pageId, products) {
 }
 function numOrNull(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
 
+// Chuẩn hoá BẢNG GÓI GIÁ: [{qty, price}] (mua bao nhiêu cái = giá bao nhiêu).
+// Ưu tiên p.tiers (thiết kế mới); fallback price1/combo2/combo3 (dữ liệu cũ) để tương thích.
+export function productTiers(p) {
+  if (Array.isArray(p.tiers) && p.tiers.length) {
+    return p.tiers.map((t) => ({ qty: Number(t.qty) || 1, price: numOrNull(t.price) }))
+      .filter((t) => t.price != null && t.price > 0).sort((a, b) => a.qty - b.qty);
+  }
+  const out = [];
+  if (p.price1 != null && p.price1 > 0) out.push({ qty: 1, price: p.price1 });
+  if (p.combo2 != null && p.combo2 > 0) out.push({ qty: 2, price: p.combo2 });
+  if (p.combo3 != null && p.combo3 > 0) out.push({ qty: 3, price: p.combo3 });
+  return out;
+}
+
 function buildProductText(products) {
   const out = ['# SẢN PHẨM & GIÁ (nguồn sự thật duy nhất — không bịa)'];
   if (!products.length) out.push('(chưa điền)');
   for (const p of products) {
-    const head = [`- [${p.id}] ${p.name}`]; if (p.variant) head.push(`(${p.variant})`); if (p.desc) head.push(`— ${p.desc}`);
+    const head = [`- [${p.id}]${p.name ? ' ' + p.name : ''}`]; if (p.variant) head.push(`(phân loại: ${p.variant})`); if (p.desc) head.push(`— ${p.desc}`);
     out.push(head.join(' '));
-    const pr = [];
-    if (p.price1 != null) pr.push(`1 cái: ${p.price1} ${p.currency}`);
-    if (p.combo2 != null) pr.push(`combo 2: ${p.combo2} ${p.currency}`);
-    if (p.combo3 != null) pr.push(`combo 3: ${p.combo3} ${p.currency}`);
+    const pr = productTiers(p).map((t) => `${t.qty} cái: ${t.price} ${p.currency}`);
     if (pr.length) out.push(`    Giá — ${pr.join(' | ')}`);
     const imgs = productImages(p);
     if (imgs.length) {
