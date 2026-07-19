@@ -108,7 +108,7 @@
   .pricebox>.pblabel{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:11px}
   .tierrow{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:13.5px;flex-wrap:wrap}
   .tierrow input{padding:7px 9px}
-  .tierrow .tq{width:60px;text-align:center} .tierrow .tp{width:110px}
+  .tierrow .tl{flex:1;min-width:150px} .tierrow .tp{width:110px}
   .tierx{width:28px;height:28px;border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer;color:var(--muted);flex-shrink:0}
   .tierx:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
   .imtile select.imlabel{width:92px;font-size:11px;padding:4px 4px;border-radius:7px;cursor:pointer}
@@ -401,11 +401,11 @@ function imgTile(im){im=im||{};const u=im.url||'';const lbl=im.label||'Ảnh s�
 function addTile(){return `<div class="imtile imadd"><div class="imthumb" onclick="addKbImg(this)"><b style="font-size:22px;font-weight:400;line-height:1">＋</b>Thêm ảnh</div></div>`;}
 // Bảng gói giá: lấy từ r.tiers (mới) hoặc suy từ price1/combo2/combo3 (dữ liệu cũ).
 function tiersOf(r){
-  if(Array.isArray(r.tiers)&&r.tiers.length)return r.tiers.filter(t=>+t.price>0).map(t=>({qty:+t.qty||1,price:+t.price}));
-  const out=[];[[1,r.price1],[2,r.combo2],[3,r.combo3]].forEach(([q,v])=>{if(+v>0)out.push({qty:q,price:+v});});
-  return out.length?out:[{qty:1,price:''}];
+  if(Array.isArray(r.tiers)&&r.tiers.length)return r.tiers.filter(t=>+t.price>0).map(t=>({label:t.label!=null?t.label:(t.qty?`Mua ${t.qty} cái`:''),price:+t.price}));
+  const out=[];[['Mua 1 cái',r.price1],['Combo 2 cái',r.combo2],['Combo 3 cái',r.combo3]].forEach(([l,v])=>{if(+v>0)out.push({label:l,price:+v});});
+  return out.length?out:[{label:'',price:''}];
 }
-function tierRow(t){t=t||{};return `<div class="tierrow"><span>Mua</span><input class="tq" type="number" min="1" value="${t.qty||1}"><span>cái — giá</span><input class="tp" type="number" min="0" value="${t.price??''}" placeholder="0"><button class="tierx" title="Xoá gói" onclick="this.closest('.tierrow').remove()">✕</button></div>`;}
+function tierRow(t){t=t||{};return `<div class="tierrow"><input class="tl" value="${esc(t.label||'')}" placeholder="Mô tả gói: Mua 1 cái / Mua 1 tặng 1 / Combo 2..."><span>—</span><input class="tp" type="number" min="0" value="${t.price??''}" placeholder="giá"><button class="tierx" title="Xoá gói" onclick="this.closest('.tierrow').remove()">✕</button></div>`;}
 window.addTierRow=(btn)=>btn.closest('.pricebox').querySelector('.tiers').insertAdjacentHTML('beforeend',tierRow({}));
 function kbCard(r){r=r||{};const imgs=(r.images&&r.images.length)?r.images:(r.image?[{url:r.image,label:'Ảnh sản phẩm'}]:[]);
   const cur=r.currency||'AED';const curOpts=[...CURRENCIES];if(!curOpts.includes(cur))curOpts.unshift(cur);
@@ -421,7 +421,7 @@ function kbCard(r){r=r||{};const imgs=(r.images&&r.images.length)?r.images:(r.im
      <div class="fld" style="margin-bottom:14px"><label>Mô tả ngắn (bán hàng)</label><textarea data-k="desc" placeholder="Điểm mạnh, công dụng chính...">${esc(r.desc??'')}</textarea></div>
      <div class="fld" style="margin-bottom:14px"><label>Phân loại (màu / mẫu)</label><input data-k="variant" value="${esc(r.variant||'')}" placeholder="vd: Red, Pink, Nude — để trống nếu chỉ 1 loại"></div>
      <div class="pricebox">
-       <span class="pblabel">Bảng giá — mua càng nhiều càng rẻ</span>
+       <span class="pblabel">Bảng giá / ưu đãi — mô tả gói tự do (Mua 1 cái, Mua 1 tặng 1, Combo 2…) + giá</span>
        <div class="tiers">${tiersOf(r).map(tierRow).join('')}</div>
        <div class="row" style="margin-top:4px">
          <button class="btn sm" onclick="addTierRow(this)">➕ Thêm gói giá</button>
@@ -436,7 +436,7 @@ function kbCard(r){r=r||{};const imgs=(r.images&&r.images.length)?r.images:(r.im
   </div>`;}
 function readCard(card){const o={};card.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.value);
   if(!o.id)o.id='SP01';
-  o.tiers=[...card.querySelectorAll('.tierrow')].map(r=>({qty:+r.querySelector('.tq').value||1,price:+r.querySelector('.tp').value||0})).filter(t=>t.price>0);
+  o.tiers=[...card.querySelectorAll('.tierrow')].map(r=>({label:r.querySelector('.tl').value.trim(),price:+r.querySelector('.tp').value||0})).filter(t=>t.price>0);
   o.images=[...card.querySelectorAll('.imtile:not(.imadd)')].map(t=>({url:t.querySelector('[data-img-url]').value,label:t.querySelector('[data-img-label]').value})).filter(im=>im.url);return o;}
 window.addKbCard=()=>document.getElementById('kblist').insertAdjacentHTML('beforeend',kbCard({}));
 window.dupCard=(btn)=>{const card=btn.closest('.pcard');card.classList.remove('collapsed');card.insertAdjacentHTML('afterend',kbCard(readCard(card)));toast('Đã nhân bản — nhớ đổi Mã SP');};

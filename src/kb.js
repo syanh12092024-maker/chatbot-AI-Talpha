@@ -218,15 +218,13 @@ export function updatePageProducts(pageId, products) {
   const clean = (products || []).map((p) => {
     const images = productImages(p);
     const tiers = (Array.isArray(p.tiers) ? p.tiers : [])
-      .map((t) => ({ qty: Number(t.qty) || 1, price: numOrNull(t.price) }))
-      .filter((t) => t.price != null && t.price > 0).sort((a, b) => a.qty - b.qty);
-    const byQty = (q) => (tiers.find((t) => t.qty === q) || {}).price ?? null;
+      .map((t) => ({ label: String(t.label != null ? t.label : (t.qty ? `Mua ${t.qty} cái` : '')).trim(), price: numOrNull(t.price) }))
+      .filter((t) => t.price != null && t.price > 0);
     return {
       id: String(p.id || '').trim() || 'SP01', name: String(p.name || '').trim(), desc: String(p.desc || '').trim(),
       variant: String(p.variant || '').trim(),
-      tiers, // bảng gói giá mới
-      // Tương thích ngược: suy price1/combo2/combo3 từ tiers theo số lượng.
-      price1: byQty(1) ?? (tiers[0]?.price ?? null), combo2: byQty(2), combo3: byQty(3),
+      tiers, // bảng gói giá (mô tả tự do + giá)
+      price1: tiers[0]?.price ?? null, // giữ 1 giá đại diện cho code cũ (nếu còn đọc)
       currency: String(p.currency || 'AED').trim(),
       images, image: images[0]?.url || '', // image: giữ 1 ảnh chính cho tương thích ngược
     };
@@ -242,17 +240,20 @@ export function updatePageProducts(pageId, products) {
 }
 function numOrNull(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
 
-// Chuẩn hoá BẢNG GÓI GIÁ: [{qty, price}] (mua bao nhiêu cái = giá bao nhiêu).
-// Ưu tiên p.tiers (thiết kế mới); fallback price1/combo2/combo3 (dữ liệu cũ) để tương thích.
+// Chuẩn hoá BẢNG GÓI GIÁ: [{label, price}]. label là MÔ TẢ TỰ DO ưu đãi
+// (vd "Mua 1 cái", "Mua 1 tặng 1", "Combo 2 cái"...). Giữ thứ tự người dùng nhập.
+// Ưu tiên p.tiers (mới); fallback price1/combo2/combo3 hoặc tiers kiểu {qty} cũ để tương thích.
 export function productTiers(p) {
   if (Array.isArray(p.tiers) && p.tiers.length) {
-    return p.tiers.map((t) => ({ qty: Number(t.qty) || 1, price: numOrNull(t.price) }))
-      .filter((t) => t.price != null && t.price > 0).sort((a, b) => a.qty - b.qty);
+    return p.tiers.map((t) => ({
+      label: String(t.label != null ? t.label : (t.qty ? `Mua ${t.qty} cái` : '')).trim(),
+      price: numOrNull(t.price),
+    })).filter((t) => t.price != null && t.price > 0);
   }
   const out = [];
-  if (p.price1 != null && p.price1 > 0) out.push({ qty: 1, price: p.price1 });
-  if (p.combo2 != null && p.combo2 > 0) out.push({ qty: 2, price: p.combo2 });
-  if (p.combo3 != null && p.combo3 > 0) out.push({ qty: 3, price: p.combo3 });
+  if (p.price1 != null && p.price1 > 0) out.push({ label: 'Mua 1 cái', price: p.price1 });
+  if (p.combo2 != null && p.combo2 > 0) out.push({ label: 'Combo 2 cái', price: p.combo2 });
+  if (p.combo3 != null && p.combo3 > 0) out.push({ label: 'Combo 3 cái', price: p.combo3 });
   return out;
 }
 
@@ -262,7 +263,7 @@ function buildProductText(products) {
   for (const p of products) {
     const head = [`- [${p.id}]${p.name ? ' ' + p.name : ''}`]; if (p.variant) head.push(`(phân loại: ${p.variant})`); if (p.desc) head.push(`— ${p.desc}`);
     out.push(head.join(' '));
-    const pr = productTiers(p).map((t) => `${t.qty} cái: ${t.price} ${p.currency}`);
+    const pr = productTiers(p).map((t) => `${t.label ? t.label + ': ' : ''}${t.price} ${p.currency}`);
     if (pr.length) out.push(`    Giá — ${pr.join(' | ')}`);
     const imgs = productImages(p);
     if (imgs.length) {
