@@ -48,6 +48,12 @@ async function pollPage(pageId) {
     const text = (last.original_message || last.message || '').trim();
     if (!text) continue;
 
+    // NHƯỜNG TIN ĐẦU cho Botcake: Botcake luôn bắn câu chào đầu tiên. Nếu khách MỚI
+    // gửi đúng 1 tin (đây là tin mở đầu) → AI im lặng, để Botcake chào; AI chỉ vào cuộc
+    // từ tin thứ 2 của khách trở đi (lúc khách thực sự hỏi/trao đổi).
+    const custMsgCount = msgs.filter((m) => String(m.from?.id) !== String(pageId) && (m.original_message || m.message || '').trim()).length;
+    if (custMsgCount <= 1) { console.log(`[pancake] ${c.from?.name || psid}: tin đầu "${text.slice(0, 24)}" → nhường Botcake chào`); continue; }
+
     const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId });
     if (!reply) continue;
     const r = await pkSendReply(pageId, c.id, custId, reply);
