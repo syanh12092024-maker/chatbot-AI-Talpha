@@ -193,10 +193,14 @@ const search=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 // 1 TRANG CUỘN DỌC: tất cả section trên cùng 1 trang. Menu chỉ giữ lối tắt tới Cài đặt
 // (nằm cuối trang) — 3 mục Tổng quan/Pages/Tin nhắn đã gộp nên bỏ khỏi menu.
 const NAV=[['tokens','Cài đặt / Token','tokens']];
+// Tool "bắn bot khách cũ" (LEVELUP) chạy riêng trên cùng máy, cổng 3001 → mở tab mới.
+const BROADCAST_URL=`http://${location.hostname}:3001`;
+const IC_MEGA='<path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6"/>';
 let ctx={pageId:'',pageName:''}, selPsid=null, statsTimer=null, msgsTimer=null, RANGE={key:'all',from:null,to:null};
 const content=document.getElementById('content');
 const sec=id=>document.getElementById('sec-'+id);
-document.getElementById('nav').innerHTML=NAV.map(([k,l,ic])=>`<a data-k="${k}" onclick="jumpTo('${k}')">${svg(IC[ic])} ${l}</a>`).join('');
+document.getElementById('nav').innerHTML=NAV.map(([k,l,ic])=>`<a data-k="${k}" onclick="jumpTo('${k}')">${svg(IC[ic])} ${l}</a>`).join('')
+  +`<a title="Bắn tin hàng loạt cho khách cũ (mở tab mới)" onclick="window.open(BROADCAST_URL,'_blank')" style="margin-top:6px;color:#7fdcc0">${svg(IC_MEGA)} 📢 Bắn bot khách cũ</a>`;
 function setActiveNav(k){document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k));}
 window.jumpTo=k=>{const e=sec(k);if(e){e.scrollIntoView({behavior:'smooth',block:'start'});setActiveNav(k);}};
 
