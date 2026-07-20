@@ -127,6 +127,12 @@
   .combo-drop{position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(16,24,40,.14);max-height:340px;overflow:auto;margin-top:5px;display:none}
   .ci2{padding:9px 13px;cursor:pointer;font-size:13.5px;border-bottom:1px solid #f1f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ci2:hover{background:var(--priSoft)} .ci2:last-child{border-bottom:none}
+  /* 1 trang cuộn dọc: mỗi section cách nhau + chừa chỗ khi cuộn tới */
+  .hsec{display:block;scroll-margin-top:16px} .hsec+.hsec{margin-top:38px;padding-top:30px;border-top:1px solid var(--line)}
+  .hsec:empty{display:none}
+  /* bộ lọc ngày */
+  .drange{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+  .drange input[type=date]{padding:6px 9px;font-size:12.5px}
   /* filter chips */
   .chips{display:flex;gap:6px;flex-wrap:wrap}
   .chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--muted);font-weight:500}
@@ -160,12 +166,12 @@
   </aside>
   <div class="wrap">
     <header class="top">
-      <h1 id="ttl">Tổng quan</h1>
+      <h1 id="ttl">Bảng điều khiển</h1>
       <div class="sp"></div>
       <div class="stat"><span class="dot" id="sdot"></span><span id="sstat">server</span></div>
       <div class="stat" id="stok">— token</div>
       <div class="stat" id="spage">— page</div>
-      <div class="iconbtn" title="Làm mới" onclick="go(tab)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></div>
+      <div class="iconbtn" title="Làm mới" onclick="renderHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></div>
     </header>
     <main class="content" id="content"></main>
   </div>
@@ -184,17 +190,20 @@ const IC={overview:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"
 const svg=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const search=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>`;
 
-// Menu chỉ còn 4 mục. 'kb' vẫn mở được từ nút KB trên thẻ page (không nằm trong menu).
-const TABS=[['overview','Tổng quan'],['pages','Pages'],['msgs','Tin nhắn'],['tokens','API / Token']];
-const TITLES={overview:'Tổng quan',pages:'Pages',msgs:'Tin nhắn',kb:'Kịch bản / KB',tokens:'API / Token'};
-let tab='overview', ctx={pageId:'',pageName:''}, selPsid=null, timer=null;
+// 1 TRANG CUỘN DỌC: các mục là section xếp chồng; menu bên trái = nhảy tới section.
+const NAV=[['stats','Tổng quan','overview'],['pages','Pages','pages'],['msgs','Tin nhắn','msgs'],['tokens','Cài đặt / Token','tokens']];
+let ctx={pageId:'',pageName:''}, selPsid=null, statsTimer=null, msgsTimer=null, RANGE={key:'all',from:null,to:null};
 const content=document.getElementById('content');
-document.getElementById('nav').innerHTML=TABS.map(([k,l])=>`<a data-k="${k}" onclick="go('${k}')">${svg(IC[k])} ${l}</a>`).join('');
+const sec=id=>document.getElementById('sec-'+id);
+document.getElementById('nav').innerHTML=NAV.map(([k,l,ic])=>`<a data-k="${k}" onclick="jumpTo('${k}')">${svg(IC[ic])} ${l}</a>`).join('');
+function setActiveNav(k){document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k));}
+window.jumpTo=k=>{const e=sec(k);if(e){e.scrollIntoView({behavior:'smooth',block:'start'});setActiveNav(k);}};
 
-function go(k){tab=k;clearInterval(timer);selPsid=k==='msgs'?selPsid:null;
-  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k||(k==='kb'&&a.dataset.k==='pages')));
-  document.getElementById('ttl').textContent=TITLES[k]||k;
-  ({overview:rOverview,pages:rPages,msgs:rMsgs,kb:rKB,tokens:rTokens})[k]();
+// Dựng 1 trang gồm 4 section, mỗi phần tự nạp dữ liệu + tự làm mới.
+function renderHome(){
+  clearInterval(statsTimer);clearInterval(msgsTimer);
+  content.innerHTML=`<section id="sec-stats" class="hsec"></section><section id="sec-pages" class="hsec"></section><section id="sec-msgs" class="hsec"></section><section id="sec-tokens" class="hsec"></section>`;
+  rOverview();rPages();rMsgs();rTokens();setActiveNav('stats');
 }
 async function topStatus(){try{const o=await j('/overview');
   document.getElementById('sstat').textContent='server online';
@@ -215,30 +224,56 @@ function statRow(p){return `<tr>
    <td style="text-align:right;font-weight:700">${p.leads||0}</td>
    <td style="text-align:right;font-weight:700">${p.orders||0}</td>
    <td style="text-align:right">${rateBadge(p.closeRate)}</td>
-   <td><button class="btn sm" onclick="ctx={pageId:'${p.id}',pageName:'${esc(p.name).replace(/'/g,"\\'")}'};go('kb')">Sửa KB</button></td>
+   <td><button class="btn sm" onclick="openPageKB('${p.id}','${esc(p.name).replace(/'/g,"\\'")}')">Sửa KB</button></td>
  </tr>`;}
 function statRows(pages){return (pages||[]).map(statRow).join('')||`<tr><td colspan="8" class="empty">Chưa có page nào bật AI hoặc có hoạt động.</td></tr>`;}
 
-// Tổng quan = trạng thái hệ thống + thống kê (gộp chung 1 trang).
-async function rOverview(){const [o,s]=await Promise.all([j('/overview'),j('/stats').catch(()=>({pages:[]}))]);
+// ---- Bộ lọc ngày ----
+const RANGE_PRESETS=[['today','Hôm nay'],['7','7 ngày'],['30','30 ngày'],['all','Tất cả']];
+function rangeQ(){return RANGE.from?`?from=${RANGE.from}&to=${RANGE.to}`:'';}
+function rangeLabel(){if(RANGE.key==='all')return 'toàn thời gian';if(RANGE.key==='today')return 'hôm nay';if(RANGE.key==='custom')return RANGE.from+' → '+RANGE.to;return RANGE.from+' → '+RANGE.to;}
+const _ymd=d=>d.toISOString().slice(0,10);
+window.setRange=k=>{const t=new Date();
+  if(k==='all')RANGE={key:'all',from:null,to:null};
+  else if(k==='today')RANGE={key:'today',from:_ymd(t),to:_ymd(t)};
+  else{const f=new Date();f.setDate(f.getDate()-(+k-1));RANGE={key:k,from:_ymd(f),to:_ymd(t)};}
+  document.querySelectorAll('#drange .chip').forEach(b=>b.classList.toggle('act',b.dataset.r===k));
+  fillStatsBody();};
+window.applyCustomRange=()=>{const f=document.getElementById('rfrom').value,to=document.getElementById('rto').value;
+  if(!f||!to){toast('Chọn cả 2 ngày','bad');return;}RANGE={key:'custom',from:f,to:to};
+  document.querySelectorAll('#drange .chip').forEach(b=>b.classList.remove('act'));fillStatsBody();};
+
+// Section TỔNG QUAN: khung + bộ lọc (giữ nguyên), phần số liệu nạp riêng để làm mới không giật.
+async function rOverview(){
+  sec('stats').innerHTML=`<h2>Tổng quan</h2><p class="sub">Trạng thái hệ thống & thống kê (lưu bền) — lọc theo ngày ở dưới.</p>
+   <div class="drange" id="drange">
+     ${RANGE_PRESETS.map(([k,l])=>`<button class="chip ${RANGE.key===k?'act':''}" data-r="${k}" onclick="setRange('${k}')">${l}</button>`).join('')}
+     <span class="muted" style="margin:0 4px">·</span>
+     <span class="muted" style="font-size:12.5px">Từ</span> <input type="date" id="rfrom" value="${RANGE.from||''}">
+     <span class="muted" style="font-size:12.5px">đến</span> <input type="date" id="rto" value="${RANGE.to||''}">
+     <button class="btn sm" onclick="applyCustomRange()">Lọc</button>
+   </div>
+   <div id="statsbody"></div>`;
+  fillStatsBody();
+  clearInterval(statsTimer);statsTimer=setInterval(()=>{if(sec('stats'))fillStatsBody();},12000);
+}
+async function fillStatsBody(){const el=document.getElementById('statsbody');if(!el)return;
+  const [o,s]=await Promise.all([j('/overview'),j('/stats'+rangeQ()).catch(()=>({pages:[]}))]);
   const cards=[
-    ['pages','Pages kết nối',o.pages,'pages',o.source==='pancake'?'nguồn Pancake':'nguồn FB'],
-    ['pages','Page đang bật AI',(o.aiEnabled||0)+' / '+o.pages,'pages','bot trả lời qua Pancake'],
-    ['msgs','Khách đã tư vấn',s.totalLeads||0,'','hôm nay: '+(s.todayLeads||0)],
-    ['kb','Đơn đã chốt',s.totalOrders||0,'','hôm nay: '+(s.todayOrders||0)],
-    ['stats','Tỉ lệ chốt',(s.closeRate||0)+'%','',(s.totalOrders||0)+' đơn / '+(s.totalLeads||0)+' khách'],
+    ['pages','Pages kết nối',o.pages,'nguồn Pancake'],
+    ['pages','Page đang bật AI',(o.aiEnabled||0)+' / '+o.pages,'bot qua Pancake'],
+    ['msgs','Khách đã tư vấn',s.leads||0,rangeLabel()],
+    ['kb','Đơn đã chốt',s.orders||0,rangeLabel()],
+    ['stats','Tỉ lệ chốt',(s.closeRate||0)+'%',(s.orders||0)+' đơn / '+(s.leads||0)+' khách'],
   ];
-  content.innerHTML=`<h2>Tổng quan</h2><p class="sub">Trạng thái hệ thống & thống kê · số liệu lưu bền không mất khi restart · tin cuối: <b>${agoVi(s.lastReplyAt)}</b>. <button class="btn sm" onclick="go('overview')">↻ Làm mới</button></p>
-   <div class="cards">${cards.map(c=>`<div class="mc"${c[3]?` onclick="go('${c[3]}')" style="cursor:pointer"`:' style="cursor:default"'}><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[4]}${c[3]?' →':''}</div></div>`).join('')}</div>
+  el.innerHTML=`<div class="cards">${cards.map(c=>`<div class="mc" style="cursor:default"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[3]}</div></div>`).join('')}</div>
    <div class="row" style="justify-content:space-between;align-items:center;margin:6px 0 12px">
-     <b style="font-size:14px">Hoạt động theo page</b>
-     <div class="row"><button class="btn sm" onclick="go('pages')">${svg(IC.pages)} Quản lý page</button><button class="btn sm" onclick="reloadAll()">↻ Nạp lại token & page</button></div>
+     <b style="font-size:14px">Hoạt động theo page <span class="muted" style="font-weight:400;font-size:12px">(${rangeLabel()})</span></b>
+     <div class="row"><button class="btn sm" onclick="jumpTo('pages')">${svg(IC.pages)} Quản lý page</button><button class="btn sm" onclick="reloadAll()">↻ Nạp lại</button></div>
    </div>
    <div class="tablecard"><table><thead><tr><th>Page</th><th>AI</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right">Đơn chốt</th><th style="text-align:right">Tỉ lệ chốt</th><th></th></tr></thead><tbody id="sbody">${statRows(s.pages)}</tbody></table></div>`;
-  // Tự làm mới bảng mỗi 10s khi đang ở Tổng quan.
-  timer=setInterval(async()=>{if(tab!=='overview')return;try{const s2=await j('/stats');const tb=document.getElementById('sbody');if(tb)tb.innerHTML=statRows(s2.pages);}catch{}},10000);
 }
-window.reloadAll=async()=>{toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();go('overview');};
+window.reloadAll=async()=>{toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();fillStatsBody();};
 
 const PGCHIPS=[['all','Tất cả'],['on','Đang bật AI'],['kb','Có kịch bản'],['nokb','Chưa có KB']];
 async function rPages(){
@@ -247,7 +282,7 @@ async function rPages(){
   window._pages=list.map(p=>({...p, replies:(sm[p.id]||{}).replies||0, orders:(sm[p.id]||{}).orders||0}));
   window._pgFilter=window._pgFilter||'all';
   const on=list.filter(p=>p.aiEnabled).length, kbn=list.filter(p=>p.hasKb).length;
-  content.innerHTML=`<h2>Pages</h2><p class="sub">${list.length} page kết nối · <b>${on}</b> đang bật AI · <b>${kbn}</b> đã có kịch bản. Mỗi thẻ = 1 page: bật/tắt AI, xem chat, sửa kịch bản.</p>
+  sec('pages').innerHTML=`<h2>Pages</h2><p class="sub">${list.length} page kết nối · <b>${on}</b> đang bật AI · <b>${kbn}</b> đã có kịch bản. Mỗi thẻ = 1 page: bật/tắt AI, xem chat, sửa kịch bản.</p>
    <div class="row" style="margin-bottom:16px;justify-content:space-between;align-items:center">
      <div class="chips" id="pgtabs">${PGCHIPS.map(c=>`<button class="chip ${c[0]===window._pgFilter?'act':''}" data-f="${c[0]}" onclick="setPgFilter('${c[0]}')">${c[1]}</button>`).join('')}</div>
      <div class="search">${search}<input id="pgq" placeholder="Tìm tên / thị trường / ngành / MKT..." oninput="drawPages()"></div>
@@ -292,17 +327,17 @@ window.setPgFilter=f=>{window._pgFilter=f;document.querySelectorAll('#pgtabs .ch
 window.toggleAiCard=async(id,on)=>{await post('/pages/'+id+'/ai',{on});
   const p=(window._pages||[]).find(x=>x.id===id);if(p)p.aiEnabled=on;
   toast(on?'✓ Đã bật AI — bot tự trả lời khách qua Pancake':'Đã tắt AI cho page');drawPages();};
-window.openPageChat=(id,name)=>{ctx={pageId:id,pageName:name};go('msgs');};
-window.openPageKB=(id,name)=>{ctx={pageId:id,pageName:name};go('kb');};
+window.openPageChat=(id,name)=>{ctx.pageId=id;ctx.pageName=name;const pf=document.getElementById('pf');if(pf)pf.value=id;loadConvos();jumpTo('msgs');};
+window.openPageKB=(id,name)=>{ctx={pageId:id,pageName:name};rKB();};
 
 async function rMsgs(){
   const pages=await j('/pages');
-  content.innerHTML=`<h2>Tin nhắn</h2><p class="sub">Theo dõi hội thoại live · tiếp quản hoặc trả lời tay.</p>
+  sec('msgs').innerHTML=`<h2>Tin nhắn</h2><p class="sub">Theo dõi hội thoại live · tiếp quản hoặc trả lời tay.</p>
    <div class="row" style="margin-bottom:14px"><select id="pf" style="min-width:240px"><option value="">Tất cả page</option>${pages.map(p=>`<option value="${p.id}" ${p.id===ctx.pageId?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
    <span class="pill mut"><span class="dot" style="width:6px;height:6px;box-shadow:none"></span> live</span></div>
    <div class="convo"><div class="list" id="clist"></div><div class="panel" id="cpanel"><div class="empty">Chọn 1 hội thoại bên trái.</div></div></div>`;
   document.getElementById('pf').onchange=e=>{ctx.pageId=e.target.value;loadConvos();};
-  await loadConvos(); timer=setInterval(loadConvos,5000);
+  await loadConvos(); clearInterval(msgsTimer);msgsTimer=setInterval(()=>{if(sec('msgs'))loadConvos();},5000);
 }
 async function loadConvos(){const el=document.getElementById('clist');if(!el)return;
   const list=await j('/conversations'+(ctx.pageId?'?pageId='+ctx.pageId:''));
@@ -335,7 +370,9 @@ async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/shee
        <div class="row"><input id="shurl" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1"><button class="btn pri" onclick="connectSheet()">Kết nối</button></div></div>`;
   KBPAGES=pages;
   const sel=pages.find(p=>String(p.id)===String(ctx.pageId))||pages[0]||{};
-  content.innerHTML=`<h2>Kịch bản / KB theo page</h2><p class="sub">Nguồn kịch bản: Google Sheet (cả team) hoặc sửa nhanh từng page bên dưới.</p>${banner}
+  clearInterval(statsTimer);clearInterval(msgsTimer); // rời trang chủ → dừng auto-refresh
+  content.innerHTML=`<button class="btn sm" style="margin-bottom:12px" onclick="renderHome()">← Quay lại bảng điều khiển</button>
+   <h2>Kịch bản / KB theo page</h2><p class="sub">Nguồn kịch bản: Google Sheet (cả team) hoặc sửa nhanh từng page bên dưới.</p>${banner}
    <div class="kbbar">
      <div class="fld combo" style="flex:1;min-width:260px;position:relative">
        <label>Chọn page — gõ để tìm (${pages.length} page · <span style="color:var(--ok)">${pages.filter(p=>p.hasKb).length} đã cấu hình</span>)</label>
@@ -478,7 +515,7 @@ window.saveKB=async()=>{const pid=document.getElementById('kbpage').value;
   toast('✓ Đã lưu cấu hình AI + '+r.products+' sản phẩm');document.getElementById('kbmsg').textContent='Cập nhật lúc '+new Date().toLocaleTimeString();};
 
 async function rTokens(){const ts=await j('/tokens');
-  content.innerHTML=`<h2>API / Token Meta <span class="pill ok" style="vertical-align:middle">failover</span></h2>
+  sec('tokens').innerHTML=`<h2>⚙️ Cài đặt · API / Token Meta <span class="pill ok" style="vertical-align:middle">failover</span></h2>
    <p class="sub">Nuôi nhiều System Token (nhiều app). App bị FB khóa → tự đánh dấu hỏng & dùng app khác cho page có dự phòng.</p>
    <div class="tablecard" style="margin-bottom:16px"><table><thead><tr><th>Nhãn</th><th>Token</th><th>Trạng thái</th><th></th></tr></thead><tbody>
    ${ts.map(t=>`<tr><td><b>${esc(t.label)}</b></td><td class="mono">${esc(t.tail)}</td><td>${t.healthy?'<span class="pill ok">● khỏe</span>':'<span class="pill bad">● hỏng</span>'}</td><td><button class="btn sm" onclick="rmToken('${t.id}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan=4 class="empty">Chưa có token.</td></tr>'}
@@ -492,7 +529,7 @@ window.addTk=async()=>{const label=document.getElementById('tlabel').value.trim(
 window.rmToken=async id=>{if(!confirm('Xóa token này?'))return;await del('/tokens/'+id);toast('Đã xóa token');topStatus();rTokens();};
 window.reloadTk=async()=>{document.getElementById('tkmsg').textContent='đang nạp...';const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();rTokens();};
 
-topStatus();setInterval(topStatus,12000);go('overview');
+topStatus();setInterval(topStatus,12000);renderHome();
 </script>
 </body>
 </html>

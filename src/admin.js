@@ -31,9 +31,12 @@ adminRouter.get('/overview', (_req, res) => {
   });
 });
 
-// ---- Thống kê (bền, lưu file stats.json) ----
-adminRouter.get('/stats', (_req, res) => {
-  const st = getStats();
+// ---- Thống kê (bền). Lọc theo ngày: ?from=YYYY-MM-DD&to=YYYY-MM-DD (bỏ trống = tất cả) ----
+adminRouter.get('/stats', (req, res) => {
+  const rgx = /^\d{4}-\d{2}-\d{2}$/;
+  const from = rgx.test(req.query.from || '') ? req.query.from : undefined;
+  const to = rgx.test(req.query.to || '') ? req.query.to : undefined;
+  const st = getStats({ from, to });
   const pk = pancakePages();
   const kbById = new Map(getPageList().map((p) => [String(p.id), p]));
   // Gộp: mọi page đang bật AI + mọi page từng có tin/đơn.
@@ -59,9 +62,9 @@ adminRouter.get('/stats', (_req, res) => {
     totalPages: pancakePageCount() || pageCount(),
     pagesWithKB: getPageList().filter((p) => (p.products || 0) > 0).length,
     aiEnabled: listAiEnabled().length,
-    todayReplies: st.todayReplies, todayOrders: st.todayOrders, todayLeads: st.todayLeads,
-    totalReplies: st.totalReplies, totalOrders: st.totalOrders, totalLeads: st.totalLeads,
-    closeRate: rate(st.totalOrders, st.totalLeads),
+    range: { from: from || null, to: to || null },
+    replies: st.replies, orders: st.orders, leads: st.leads,
+    closeRate: rate(st.orders, st.leads),
     lastReplyAt: st.lastReplyAt,
     pages,
   });
