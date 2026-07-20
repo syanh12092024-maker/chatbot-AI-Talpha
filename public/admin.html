@@ -190,8 +190,9 @@ const IC={overview:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"
 const svg=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const search=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>`;
 
-// 1 TRANG CUỘN DỌC: các mục là section xếp chồng; menu bên trái = nhảy tới section.
-const NAV=[['stats','Tổng quan','overview'],['pages','Pages','pages'],['msgs','Tin nhắn','msgs'],['tokens','Cài đặt / Token','tokens']];
+// 1 TRANG CUỘN DỌC: tất cả section trên cùng 1 trang. Menu chỉ giữ lối tắt tới Cài đặt
+// (nằm cuối trang) — 3 mục Tổng quan/Pages/Tin nhắn đã gộp nên bỏ khỏi menu.
+const NAV=[['tokens','Cài đặt / Token','tokens']];
 let ctx={pageId:'',pageName:''}, selPsid=null, statsTimer=null, msgsTimer=null, RANGE={key:'all',from:null,to:null};
 const content=document.getElementById('content');
 const sec=id=>document.getElementById('sec-'+id);
