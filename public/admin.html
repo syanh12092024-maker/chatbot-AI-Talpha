@@ -193,8 +193,8 @@ const search=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 // 1 TRANG CUỘN DỌC: tất cả section trên cùng 1 trang. Menu chỉ giữ lối tắt tới Cài đặt
 // (nằm cuối trang) — 3 mục Tổng quan/Pages/Tin nhắn đã gộp nên bỏ khỏi menu.
 const NAV=[['tokens','Cài đặt / Token','tokens']];
-// Tool "bắn bot khách cũ" (LEVELUP) chạy riêng trên cùng máy, cổng 3001 → mở tab mới.
-const BROADCAST_URL=`http://${location.hostname}:3001`;
+// Tool "bắn bot khách cũ" (Gửi tin hàng loạt) chạy riêng trên cùng VPS, cổng 3002 → mở tab mới.
+const BROADCAST_URL=`http://${location.hostname}:3002`;
 const IC_MEGA='<path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6"/>';
 let ctx={pageId:'',pageName:''}, selPsid=null, statsTimer=null, msgsTimer=null, RANGE={key:'all',from:null,to:null};
 const content=document.getElementById('content');
