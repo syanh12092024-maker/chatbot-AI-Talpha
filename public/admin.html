@@ -217,10 +217,11 @@ const content=document.getElementById('content');
 const sec=id=>document.getElementById('sec-'+id);
 const extArrow='<svg class="extarrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>';
 document.getElementById('nav').innerHTML=
-  `<div class="navlabel">Công cụ</div>`
-  +`<a class="ext" title="Bắn tin hàng loạt cho khách cũ (mở tab mới)" onclick="window.open(BROADCAST_URL,'_blank')">${svg(IC_MEGA)} <span>Bắn bot khách cũ</span> ${extArrow}</a>`
-  +`<div class="navlabel">Hệ thống</div>`
-  +NAV.map(([k,l,ic])=>`<a data-k="${k}" onclick="jumpTo('${k}')">${svg(IC[ic])} ${l}</a>`).join('');
+  `<div class="navlabel">🤖 Chat Bot AI</div>`
+  +`<a data-k="stats" onclick="jumpTo('stats')">${svg(IC.overview)} Tổng quan</a>`
+  +`<a data-k="tokens" onclick="jumpTo('tokens')">${svg(IC.tokens)} Cài đặt / Token</a>`
+  +`<div class="navlabel">📢 Tool Bắn Bot</div>`
+  +`<a class="ext" title="Bắn tin hàng loạt cho khách cũ (mở tab mới)" onclick="window.open(BROADCAST_URL,'_blank')">${svg(IC_MEGA)} <span>Bắn bot khách cũ</span> ${extArrow}</a>`;
 function setActiveNav(k){document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k));}
 window.jumpTo=k=>{const e=sec(k);if(e){e.scrollIntoView({behavior:'smooth',block:'start'});setActiveNav(k);}};
 

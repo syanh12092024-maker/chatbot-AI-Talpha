@@ -9,7 +9,9 @@ let s = { days: {}, leadKeys: [], lastReplyAt: 0 };
 try { if (fs.existsSync(FILE)) s = { ...s, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) }; } catch { /* mặc định */ }
 if (!s.days) s.days = {};
 if (!Array.isArray(s.leadKeys)) s.leadKeys = [];
+if (!Array.isArray(s.orderKeys)) s.orderKeys = [];
 const leadSet = new Set(s.leadKeys);
+const orderSet = new Set(s.orderKeys); // mỗi khách chỉ tính 1 đơn chốt (chống đếm trùng)
 
 function save() { try { fs.writeFileSync(FILE, JSON.stringify(s)); } catch (e) { console.error('[stats] lưu lỗi', e.message); } }
 function today() { return new Date().toISOString().slice(0, 10); }
@@ -49,7 +51,10 @@ function pg(map, id) { const k = String(id); if (!map[k]) map[k] = { replies: 0,
 
 function bump(field, pageId) { const b = bucket(); b[field]++; pg(b.byPage, pageId)[field]++; }
 export function incReply(pageId) { bump('replies', pageId); s.lastReplyAt = Date.now(); save(); }
-export function incOrder(pageId) { bump('orders', pageId); save(); }
+export function incOrder(pageId, custKey) {
+  if (custKey) { const k = `${pageId}:${custKey}`; if (orderSet.has(k)) return; orderSet.add(k); s.orderKeys.push(k); }
+  bump('orders', pageId); save();
+}
 // Đếm KHÁCH duy nhất (mỗi page+khách 1 lần) → tính TỈ LỆ CHỐT = đơn / khách.
 export function incLead(pageId, custKey) {
   const key = `${pageId}:${custKey}`;

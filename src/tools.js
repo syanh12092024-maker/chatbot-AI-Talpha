@@ -112,10 +112,11 @@ export async function executeTool(name, input, ctx) {
         // Page 1 SP: tự điền sản phẩm nếu AI không truyền mã (không bắt khách chọn).
         const prod = findProduct(kb, input.product_id);
         if (prod) { input.product_id = prod.id; input.product_name = prod.name; }
-        const order = await createOrder(input, ctx);
-        state.orderId = order.id;
-        try { incOrder(state.pageId); } catch { /* thống kê không chặn tạo đơn */ }
-        return { content: JSON.stringify({ ok: true, order_id: order.id }) };
+        await createOrder(input, ctx); // ghi nhận nội bộ (chưa đấu nối đơn thật Pancake)
+        state.closed = true;
+        try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
+        // KHÔNG trả mã đơn giả — nhân viên tạo đơn thật trong Pancake. AI chỉ xác nhận đã nhận.
+        return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã ghi nhận đủ thông tin đơn. Nhân viên sẽ tạo đơn thật & liên hệ giao. TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn (Order ID) cho khách.' }) };
       }
       case 'send_product_image': {
         const p = findProduct(kb, input.product_id);
