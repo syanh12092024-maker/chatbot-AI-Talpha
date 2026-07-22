@@ -306,11 +306,16 @@ async function fillStatsBody(){const el=document.getElementById('statsbody');if(
   el.innerHTML=`<div class="cards">${cards.map(c=>`<div class="mc" style="cursor:default"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[3]}</div></div>`).join('')}</div>
    <div class="row" style="justify-content:space-between;align-items:center;margin:6px 0 12px">
      <b style="font-size:14px">Hoạt động theo page <span class="muted" style="font-weight:400;font-size:12px">(${rangeLabel()})</span></b>
-     <div class="row"><button class="btn sm" onclick="jumpTo('pages')">${svg(IC.pages)} Quản lý page</button><button class="btn sm" onclick="reloadAll()">↻ Nạp lại</button></div>
+     <div class="row"><button class="btn sm" onclick="auditCheck()" title="Tính lại số liệu từ Sổ AI (audit log) để đối chiếu">🔍 Đối chiếu Sổ AI</button><button class="btn sm" onclick="jumpTo('pages')">${svg(IC.pages)} Quản lý page</button><button class="btn sm" onclick="reloadAll()">↻ Nạp lại</button></div>
    </div>
    <div class="tablecard"><table><thead><tr><th>Page</th><th>AI</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right">Đơn chốt</th><th style="text-align:right">Tỉ lệ chốt</th><th></th></tr></thead><tbody id="sbody">${statRows(s.pages)}</tbody></table></div>`;
 }
 window.reloadAll=async()=>{toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();fillStatsBody();};
+window.auditCheck=async()=>{try{
+  const [a,s]=await Promise.all([j('/audit'+rangeQ()),j('/stats'+rangeQ())]);
+  const same=a.replies===s.replies&&a.leads===s.leads&&a.orders===s.orders;
+  toast(`📒 Sổ AI (${rangeLabel()}): ${a.events} sự kiện · ${a.replies} tin · ${a.leads} khách · ${a.orders} đơn — ${same?'✓ KHỚP số hiện tại':'⚠ lệch: hiện '+s.replies+'/'+s.leads+'/'+s.orders}`, same?'ok':'bad');
+}catch(e){toast('Lỗi đọc Sổ AI: '+e.message,'bad');}};
 
 const PGCHIPS=[['all','Tất cả'],['on','Đang bật AI'],['kb','Có kịch bản'],['nokb','Chưa có KB']];
 async function rPages(){
