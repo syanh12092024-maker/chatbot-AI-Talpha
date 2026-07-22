@@ -16,6 +16,7 @@ import { pancakePages, pancakePageCount } from './pancake.js';
 import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
+import { recount } from './ai-log.js';
 
 export const adminRouter = express.Router();
 
@@ -66,6 +67,28 @@ adminRouter.get('/stats', (req, res) => {
     replies: st.replies, orders: st.orders, leads: st.leads,
     closeRate: rate(st.orders, st.leads),
     lastReplyAt: st.lastReplyAt,
+    pages,
+  });
+});
+
+// ---- Sổ AI: thống kê lại CHÍNH XÁC từ audit log (ai-messages.jsonl) ----
+// ?from&to (YYYY-MM-DD). Đây là con số kiểm chứng được, tính lại từ mọi hành động AI đã ghi.
+adminRouter.get('/audit', (req, res) => {
+  const rgx = /^\d{4}-\d{2}-\d{2}$/;
+  const from = rgx.test(req.query.from || '') ? req.query.from : undefined;
+  const to = rgx.test(req.query.to || '') ? req.query.to : undefined;
+  const r = recount({ from, to });
+  const pk = pancakePages();
+  const kbById = new Map(getPageList().map((p) => [String(p.id), p]));
+  const rate = (o, l) => (l > 0 ? Math.round((o / l) * 100) : 0);
+  const pages = Object.entries(r.byPage).map(([id, b]) => ({
+    id, name: pk.get(id)?.name || (kbById.get(id) || {}).name || id,
+    replies: b.replies, leads: b.leads, orders: b.orders, images: b.images, handoffs: b.handoffs,
+    closeRate: rate(b.orders, b.leads),
+  })).sort((a, b) => b.replies - a.replies);
+  res.json({
+    source: 'audit-log', events: r.events, lastAt: r.lastAt,
+    replies: r.replies, leads: r.leads, orders: r.orders, closeRate: rate(r.orders, r.leads),
     pages,
   });
 });

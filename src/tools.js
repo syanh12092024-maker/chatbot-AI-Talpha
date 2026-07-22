@@ -2,6 +2,7 @@ import { createOrder, pkSendImage } from './pancake.js';
 import { sendImage } from './messenger.js';
 import { productImages, productTiers } from './kb.js';
 import { incOrder } from './stats.js';
+import { logAi } from './ai-log.js';
 
 // Định nghĩa tool (function calling) cho closer.
 export const toolDefs = [
@@ -115,6 +116,7 @@ export async function executeTool(name, input, ctx) {
         await createOrder(input, ctx); // ghi nhận nội bộ (chưa đấu nối đơn thật Pancake)
         state.closed = true;
         try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
+        try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty }); } catch { /* sổ AI không chặn */ }
         // KHÔNG trả mã đơn giả — nhân viên tạo đơn thật trong Pancake. AI chỉ xác nhận đã nhận.
         return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã ghi nhận đủ thông tin đơn. Nhân viên sẽ tạo đơn thật & liên hệ giao. TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn (Order ID) cho khách.' }) };
       }
@@ -143,11 +145,13 @@ export async function executeTool(name, input, ctx) {
         }
         console.log(`[img] page ${state.pageId} ${viaPancake ? 'Pancake' : 'Messenger'} gửi ${sent}/${toSend.length} ảnh (${input.category || 'sản phẩm'})${sent ? ' ✓' : ' ✗ ' + lastErr}`);
         if (!sent) return { content: `Gửi ảnh thất bại (${lastErr || 'không rõ'}). Cứ tư vấn bằng lời, đừng hứa gửi ảnh nữa.`, isError: true };
+        try { logAi(state.pageId, state.pkCustId, 'image', { cat: input.category || 'sản phẩm', n: sent }); } catch { /* sổ AI không chặn */ }
         return { content: `Đã gửi ${sent} ảnh (${input.category || 'sản phẩm'}) cho khách qua ${viaPancake ? 'Pancake' : 'Messenger'}.` };
       }
       case 'handoff_human': {
         state.handoff = true;
         state.handoffReason = input.reason || '';
+        try { logAi(state.pageId, state.pkCustId, 'handoff', { reason: input.reason || '' }); } catch { /* sổ AI không chặn */ }
         return { content: 'Đã chuyển cho nhân viên. Hãy báo khách sẽ có người hỗ trợ ngay.' };
       }
       default:

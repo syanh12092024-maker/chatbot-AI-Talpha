@@ -11,3 +11,4 @@ public/uploads/
 server.log
 *.command
 stats.json
+ai-messages.jsonl
