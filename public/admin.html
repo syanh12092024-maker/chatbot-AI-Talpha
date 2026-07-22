@@ -143,8 +143,11 @@
   .hsec{display:block;scroll-margin-top:16px} .hsec+.hsec{margin-top:38px;padding-top:30px;border-top:1px solid var(--line)}
   .hsec:empty{display:none}
   /* bộ lọc ngày */
-  .drange{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:16px}
-  .drange input[type=date]{padding:6px 9px;font-size:12.5px}
+  .stashead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .drange{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .drange .chip{padding:6px 12px}
+  .drange-cx{display:inline-flex;align-items:center;gap:6px;padding-left:6px;margin-left:2px;border-left:1px solid var(--line)}
+  .drange input[type=date]{padding:5px 8px;font-size:12.5px}
   /* filter chips */
   .chips{display:flex;gap:6px;flex-wrap:wrap}
   .chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--muted);font-weight:500}
@@ -266,25 +269,31 @@ window.setRange=k=>{const t=new Date();
   else if(k==='today')RANGE={key:'today',from:_ymd(t),to:_ymd(t)};
   else{const f=new Date();f.setDate(f.getDate()-(+k-1));RANGE={key:k,from:_ymd(f),to:_ymd(t)};}
   document.querySelectorAll('#drange .chip').forEach(b=>b.classList.toggle('act',b.dataset.r===k));
+  const cst=document.getElementById('drangeCustom');if(cst)cst.style.display='none';
   fillStatsBody();};
 window.applyCustomRange=()=>{const f=document.getElementById('rfrom').value,to=document.getElementById('rto').value;
   if(!f||!to){toast('Chọn cả 2 ngày','bad');return;}RANGE={key:'custom',from:f,to:to};
-  document.querySelectorAll('#drange .chip').forEach(b=>b.classList.remove('act'));fillStatsBody();};
+  document.querySelectorAll('#drange .chip').forEach(b=>b.classList.toggle('act',b.id==='rangeCustomBtn'));fillStatsBody();};
 
 // Section TỔNG QUAN: khung + bộ lọc (giữ nguyên), phần số liệu nạp riêng để làm mới không giật.
 async function rOverview(){
-  sec('stats').innerHTML=`<h2>Tổng quan</h2><p class="sub">Trạng thái hệ thống & thống kê (lưu bền) — lọc theo ngày ở dưới.</p>
-   <div class="drange" id="drange">
-     ${RANGE_PRESETS.map(([k,l])=>`<button class="chip ${RANGE.key===k?'act':''}" data-r="${k}" onclick="setRange('${k}')">${l}</button>`).join('')}
-     <span class="muted" style="margin:0 4px">·</span>
-     <span class="muted" style="font-size:12.5px">Từ</span> <input type="date" id="rfrom" value="${RANGE.from||''}">
-     <span class="muted" style="font-size:12.5px">đến</span> <input type="date" id="rto" value="${RANGE.to||''}">
-     <button class="btn sm" onclick="applyCustomRange()">Lọc</button>
+  const cx=RANGE.key==='custom';
+  sec('stats').innerHTML=`<div class="stashead">
+     <h2 style="margin:0">Tổng quan</h2>
+     <div class="drange" id="drange">
+       ${RANGE_PRESETS.map(([k,l])=>`<button class="chip ${RANGE.key===k?'act':''}" data-r="${k}" onclick="setRange('${k}')">${l}</button>`).join('')}
+       <button class="chip ${cx?'act':''}" id="rangeCustomBtn" onclick="toggleCustomRange()">📅 Khác</button>
+       <span class="drange-cx" id="drangeCustom" style="display:${cx?'inline-flex':'none'}">
+         <input type="date" id="rfrom" value="${RANGE.from||''}"><span class="muted">→</span><input type="date" id="rto" value="${RANGE.to||''}">
+         <button class="btn sm pri" onclick="applyCustomRange()">Áp dụng</button>
+       </span>
+     </div>
    </div>
    <div id="statsbody"></div>`;
   fillStatsBody();
   clearInterval(statsTimer);statsTimer=setInterval(()=>{if(sec('stats'))fillStatsBody();},12000);
 }
+window.toggleCustomRange=()=>{const e=document.getElementById('drangeCustom');if(e)e.style.display=e.style.display==='none'?'inline-flex':'none';};
 async function fillStatsBody(){const el=document.getElementById('statsbody');if(!el)return;
   const [o,s]=await Promise.all([j('/overview'),j('/stats'+rangeQ()).catch(()=>({pages:[]}))]);
   const cards=[
