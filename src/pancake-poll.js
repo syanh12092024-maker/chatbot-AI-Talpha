@@ -41,6 +41,10 @@ async function pollPage(pageId) {
     seen.set(c.id, mark);
     if (firstTime) continue; // page mới bật AI: chỉ ghi mốc hội thoại cũ, không trả lời
 
+    // NHƯỜNG NHÂN VIÊN: hội thoại đã được GÁN cho 1 nhân viên (assignee) → sale đang lo,
+    // AI IM HẲN (không đè). Sale bỏ gán là AI tự trả lại luồng.
+    if ((c.assignee_ids || []).length > 0) { console.log(`[pancake] ${c.from?.name || psid}: đã gán nhân viên → AI nhường`); continue; }
+
     // Chỉ trả lời khi TIN CUỐI là của khách (không phải page/Botcake).
     const msgs = await pkGetMessages(pageId, c.id, custId);
     const last = msgs[msgs.length - 1];
