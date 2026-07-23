@@ -6,6 +6,7 @@ import { listAiEnabled } from './store.js';
 import { handleIncoming } from './handler.js';
 import { incReply, incLead } from './stats.js';
 import { logAi } from './ai-log.js';
+import { addAiConv } from './ai-convs.js';
 
 // convId -> mốc last_customer_interactive_at đã xử lý (chống trả lời lặp)
 const seen = new Map();
@@ -64,6 +65,7 @@ async function pollPage(pageId) {
     const r = await pkSendReply(pageId, c.id, custId, reply);
     if (r.ok) {
       try { incReply(pageId); incLead(pageId, custId); } catch { /* thống kê không chặn gửi tin */ }
+      try { addAiConv(pageId, c.id); } catch { /* ghi hội thoại AI để khớp đơn */ }
       try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80) }); } catch { /* sổ AI không chặn */ }
     }
     console.log(`[pancake] ${c.from?.name || psid}: "${text.slice(0, 30)}" → AI: "${reply.slice(0, 40)}" ${r.ok ? '✓' : '✗ ' + r.error}`);

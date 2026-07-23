@@ -17,7 +17,8 @@ import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
 import { recount } from './ai-log.js';
-import { realOrdersMulti, ordersEnabled } from './pancake-orders.js';
+import { ordersEnabled, aiOrderStats } from './pancake-orders.js';
+import { getAiConvSet } from './ai-convs.js';
 
 export const adminRouter = express.Router();
 
@@ -94,19 +95,29 @@ adminRouter.get('/audit', (req, res) => {
   });
 });
 
-// ---- Đơn hàng THẬT từ Pancake POS (theo page + khoảng ngày) ----
+// ---- ĐƠN TỪ KHÁCH AI: khớp đơn Pancake với hội thoại AI đã tư vấn → tỉ lệ chốt thật ----
+const _ordCache = new Map();
 adminRouter.get('/orders', async (req, res) => {
   if (!ordersEnabled()) return res.json({ enabled: false, pages: {} });
   const rgx = /^\d{4}-\d{2}-\d{2}$/;
   const from = rgx.test(req.query.from || '') ? req.query.from : undefined;
   const to = rgx.test(req.query.to || '') ? req.query.to : undefined;
+  const cacheKey = `${from || ''}|${to || ''}`;
+  const hit = _ordCache.get(cacheKey);
+  if (hit && Date.now() - hit.t < 60000) return res.json(hit.data);
   const st = getStats();
   const ids = [...new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)])];
   try {
-    const data = await realOrdersMulti(ids, { from, to });
-    let total = 0, successful = 0, cod = 0;
-    for (const v of Object.values(data)) { total += v.total; successful += v.successful; cod += v.cod; }
-    res.json({ enabled: true, total, successful, cod, pages: data });
+    const pages = {};
+    await Promise.all(ids.map(async (id) => {
+      const r = await aiOrderStats(id, getAiConvSet(id), { from, to });
+      pages[id] = { aiOrders: r.customers, aiOrderCount: r.orders };
+    }));
+    let totalAiOrders = 0;
+    for (const v of Object.values(pages)) totalAiOrders += v.aiOrders;
+    const data = { enabled: true, aiOrders: totalAiOrders, pages };
+    _ordCache.set(cacheKey, { t: Date.now(), data });
+    res.json(data);
   } catch (e) { res.status(500).json({ enabled: true, error: e.message }); }
 });
 

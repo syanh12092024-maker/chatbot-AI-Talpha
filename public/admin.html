@@ -253,8 +253,8 @@ function statRow(p){return `<tr>
    <td>${p.hasKb?'<span class="pill ok">✓ có KB</span>':'<span class="pill warn">chưa</span>'}</td>
    <td style="text-align:right;font-weight:700">${p.replies||0}</td>
    <td style="text-align:right;font-weight:700">${p.leads||0}</td>
-   <td style="text-align:right;font-weight:700">${p.realOrders!=null?p.realOrders:'<span class="muted">…</span>'}</td>
-   <td style="text-align:right;color:var(--muted)">${p.cod!=null?p.cod.toLocaleString():''}</td>
+   <td style="text-align:right;font-weight:700">${p.aiOrders!=null?p.aiOrders:'<span class="muted">…</span>'}</td>
+   <td style="text-align:right">${rateBadge(p.closeRate)}</td>
    <td><button class="btn sm" onclick="openPageKB('${p.id}','${esc(p.name).replace(/'/g,"\\'")}')">Sửa KB</button></td>
  </tr>`;}
 function statRows(pages){return (pages||[]).map(statRow).join('')||`<tr><td colspan="8" class="empty">Chưa có page nào bật AI hoặc có hoạt động.</td></tr>`;}
@@ -298,22 +298,23 @@ async function fillStatsBody(){const el=document.getElementById('statsbody');if(
   const [o,s,ord]=await Promise.all([j('/overview'),j('/stats'+rangeQ()).catch(()=>({pages:[]})),j('/orders'+rangeQ()).catch(()=>({enabled:false,pages:{}}))]);
   // Gộp ĐƠN THẬT (Pancake POS) vào từng page + tính tỉ lệ chốt thật = đơn thật / khách.
   (s.pages||[]).forEach(p=>{const r=(ord.pages||{})[p.id];
-    p.realOrders=r?r.successful:null; p.cod=r?r.cod:null;});
-  const realTot=ord.enabled?(ord.successful||0):null;
-  const cod=ord.enabled?(ord.cod||0):0;
+    p.aiOrders=r?r.aiOrders:null;
+    p.closeRate=(r&&p.leads>0)?Math.round(r.aiOrders/p.leads*100):0;});
+  const aiOrdTot=ord.enabled?(ord.aiOrders||0):null;
+  const totLeads=s.leads||0;
   const cards=[
     ['pages','Pages kết nối',o.pages,'nguồn Pancake'],
-    ['msgs','Khách AI tư vấn',s.leads||0,rangeLabel()],
+    ['msgs','Khách AI tư vấn',totLeads,rangeLabel()],
     ['stats','Tin AI trả lời',s.replies||0,rangeLabel()],
-    ['kb','Đơn thật (Pancake)',realTot!=null?realTot:'…',rangeLabel()],
-    ['stats','Doanh thu COD',realTot!=null?cod.toLocaleString():'…','đơn thành công · '+rangeLabel()],
+    ['kb','Đơn từ khách AI',aiOrdTot!=null?aiOrdTot:'…','khách AI có đặt đơn'],
+    ['stats','Tỉ lệ chốt',(aiOrdTot!=null&&totLeads>0?Math.round(aiOrdTot/totLeads*100):0)+'%',(aiOrdTot!=null?aiOrdTot:'…')+' đơn / '+totLeads+' khách'],
   ];
   el.innerHTML=`<div class="cards">${cards.map(c=>`<div class="mc" style="cursor:default"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[3]}</div></div>`).join('')}</div>
    <div class="row" style="justify-content:space-between;align-items:center;margin:6px 0 12px">
      <b style="font-size:14px">Hoạt động theo page <span class="muted" style="font-weight:400;font-size:12px">(${rangeLabel()})</span></b>
      <div class="row"><button class="btn sm" onclick="auditCheck()" title="Tính lại số liệu từ Sổ AI (audit log) để đối chiếu">🔍 Đối chiếu Sổ AI</button><button class="btn sm" onclick="jumpTo('pages')">${svg(IC.pages)} Quản lý page</button><button class="btn sm" onclick="reloadAll()">↻ Nạp lại</button></div>
    </div>
-   <div class="tablecard"><table><thead><tr><th>Page</th><th>AI</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right">Đơn thật</th><th style="text-align:right">Doanh thu COD</th><th></th></tr></thead><tbody id="sbody">${statRows(s.pages)}</tbody></table></div>`;
+   <div class="tablecard"><table><thead><tr><th>Page</th><th>AI</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right">Đơn khách AI</th><th style="text-align:right">Tỉ lệ chốt</th><th></th></tr></thead><tbody id="sbody">${statRows(s.pages)}</tbody></table></div>`;
 }
 window.reloadAll=async()=>{toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();fillStatsBody();};
 window.auditCheck=async()=>{try{

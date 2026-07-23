@@ -57,6 +57,27 @@ export async function realOrders(pageId, { from, to } = {}) {
   } catch { return { total: 0, successful: 0, cod: 0, market: s.market }; }
 }
 
+// ĐƠN TỪ KHÁCH AI: khớp order.conversation_id với tập hội thoại AI đã trả lời (convSet).
+// Trả { customers: số khách AI có đặt đơn, orders: số đơn khớp } trong khoảng ngày.
+export async function aiOrderStats(pageId, convSet, { from, to } = {}) {
+  const s = await shopOf(pageId);
+  if (!s || !convSet || convSet.size === 0) return { customers: 0, orders: 0 };
+  const matched = new Set(); let orders = 0;
+  let base = `api_key=${s.api_key}&page_id=${pageId}&page_size=100`;
+  if (from) base += `&startDateTime=${unix(from)}`;
+  if (to) base += `&endDateTime=${unix(to, true)}`;
+  for (let pn = 1; pn <= 12; pn++) {
+    let j;
+    try { j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?${base}&page_number=${pn}`); } catch { break; }
+    const d = j.data || []; if (!d.length) break;
+    for (const o of d) {
+      if (convSet.has(o.conversation_id) && !CANCEL.has(String(o.status))) { matched.add(o.conversation_id); orders++; }
+    }
+    if (d.length < 100) break;
+  }
+  return { customers: matched.size, orders };
+}
+
 // Đơn thật cho nhiều page cùng lúc (có cache ngắn để không gọi API dồn dập).
 const _cache = new Map(); // key -> {t, data}
 export async function realOrdersMulti(pageIds, range = {}) {
