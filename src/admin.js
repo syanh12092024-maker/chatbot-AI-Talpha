@@ -109,10 +109,10 @@ adminRouter.get('/orders', async (req, res) => {
   const ids = [...new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)])];
   try {
     const pages = {};
-    await Promise.all(ids.map(async (id) => {
+    for (const id of ids) { // tuần tự để không làm nghẽn API Pancake
       const r = await aiOrderStats(id, getAiConvSet(id), { from, to });
       pages[id] = { aiOrders: r.customers, aiOrderCount: r.orders };
-    }));
+    }
     let totalAiOrders = 0;
     for (const v of Object.values(pages)) totalAiOrders += v.aiOrders;
     const data = { enabled: true, aiOrders: totalAiOrders, pages };

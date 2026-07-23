@@ -27,6 +27,7 @@ async function fetchJson(url, ms = 12000) {
 export function ordersEnabled() { return SHOPS.length > 0; }
 
 const unix = (ymd, end) => Math.floor(new Date(`${ymd}T${end ? '23:59:59' : '00:00:00'}Z`).getTime() / 1000);
+const ymdDaysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
 
 // Tìm shop chứa page (dò các shop 1 lần, nhớ vào cache).
 async function shopOf(pageId) {
@@ -63,8 +64,9 @@ export async function aiOrderStats(pageId, convSet, { from, to } = {}) {
   const s = await shopOf(pageId);
   if (!s || !convSet || convSet.size === 0) return { customers: 0, orders: 0 };
   const matched = new Set(); let orders = 0;
-  let base = `api_key=${s.api_key}&page_id=${pageId}&page_size=100`;
-  if (from) base += `&startDateTime=${unix(from)}`;
+  // Đơn của khách AI luôn gần đây → nếu không chỉ định from, chỉ quét 60 ngày gần nhất (nhanh).
+  const f = from || ymdDaysAgo(60);
+  let base = `api_key=${s.api_key}&page_id=${pageId}&page_size=100&startDateTime=${unix(f)}`;
   if (to) base += `&endDateTime=${unix(to, true)}`;
   for (let pn = 1; pn <= 12; pn++) {
     let j;
