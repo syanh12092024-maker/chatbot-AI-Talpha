@@ -17,6 +17,7 @@ import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
 import { recount } from './ai-log.js';
+import { realOrdersMulti, ordersEnabled } from './pancake-orders.js';
 
 export const adminRouter = express.Router();
 
@@ -91,6 +92,22 @@ adminRouter.get('/audit', (req, res) => {
     replies: r.replies, leads: r.leads, orders: r.orders, closeRate: rate(r.orders, r.leads),
     pages,
   });
+});
+
+// ---- Đơn hàng THẬT từ Pancake POS (theo page + khoảng ngày) ----
+adminRouter.get('/orders', async (req, res) => {
+  if (!ordersEnabled()) return res.json({ enabled: false, pages: {} });
+  const rgx = /^\d{4}-\d{2}-\d{2}$/;
+  const from = rgx.test(req.query.from || '') ? req.query.from : undefined;
+  const to = rgx.test(req.query.to || '') ? req.query.to : undefined;
+  const st = getStats();
+  const ids = [...new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)])];
+  try {
+    const data = await realOrdersMulti(ids, { from, to });
+    let total = 0, successful = 0, cod = 0;
+    for (const v of Object.values(data)) { total += v.total; successful += v.successful; cod += v.cod; }
+    res.json({ enabled: true, total, successful, cod, pages: data });
+  } catch (e) { res.status(500).json({ enabled: true, error: e.message }); }
 });
 
 // ---- Pages ----
