@@ -16,6 +16,14 @@ let pageShop = {};
 try { pageShop = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')); } catch { pageShop = {}; }
 const saveCache = () => { try { fs.writeFileSync(CACHE_FILE, JSON.stringify(pageShop)); } catch { /* bỏ qua */ } };
 
+// fetch có timeout — 1 call chậm/treo không kéo sập cả request.
+async function fetchJson(url, ms = 12000) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms);
+  try { const r = await fetch(url, { signal: ac.signal }); return await r.json(); }
+  finally { clearTimeout(t); }
+}
+
 export function ordersEnabled() { return SHOPS.length > 0; }
 
 const unix = (ymd, end) => Math.floor(new Date(`${ymd}T${end ? '23:59:59' : '00:00:00'}Z`).getTime() / 1000);
@@ -26,7 +34,7 @@ async function shopOf(pageId) {
   if (pageShop[k]) return pageShop[k];
   for (const s of SHOPS) {
     try {
-      const j = await (await fetch(`${POS}/shops/${s.shop_id}/orders?api_key=${s.api_key}&page_id=${pageId}&page_number=1`)).json();
+      const j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?api_key=${s.api_key}&page_id=${pageId}&page_number=1`);
       if (j && j.total_entries != null && j.total_entries > 0) { pageShop[k] = s; saveCache(); return s; }
     } catch { /* thử shop kế */ }
   }
@@ -41,7 +49,7 @@ export async function realOrders(pageId, { from, to } = {}) {
   if (from) q += `&startDateTime=${unix(from)}`;
   if (to) q += `&endDateTime=${unix(to, true)}`;
   try {
-    const j = await (await fetch(`${POS}/shops/${s.shop_id}/orders?${q}`)).json();
+    const j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?${q}`);
     const buckets = j.aggs?.status?.buckets || [];
     const cancel = buckets.filter((b) => CANCEL.has(String(b.key))).reduce((a, b) => a + b.doc_count, 0);
     const total = j.total_entries || 0;
