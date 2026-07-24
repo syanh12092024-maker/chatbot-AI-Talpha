@@ -3,6 +3,7 @@ import { sendImage } from './messenger.js';
 import { productImages, productTiers } from './kb.js';
 import { incOrder } from './stats.js';
 import { logAi } from './ai-log.js';
+import { createPancakeOrder, ordersEnabled } from './pancake-orders.js';
 
 // Định nghĩa tool (function calling) cho closer.
 export const toolDefs = [
@@ -110,15 +111,29 @@ export async function executeTool(name, input, ctx) {
         if (!input.address || input.address.trim().length < 6) {
           return { content: 'Từ chối tạo đơn: địa chỉ chưa đủ cụ thể. Hãy hỏi địa chỉ chi tiết hơn.', isError: true };
         }
+        // Số điện thoại phải hợp lệ (tránh tạo đơn rác).
+        if (!input.phone || String(input.phone).replace(/\D/g, '').length < 7) {
+          return { content: 'Từ chối tạo đơn: số điện thoại chưa hợp lệ. Hãy xin lại SĐT liên hệ.', isError: true };
+        }
         // Page 1 SP: tự điền sản phẩm nếu AI không truyền mã (không bắt khách chọn).
         const prod = findProduct(kb, input.product_id);
         if (prod) { input.product_id = prod.id; input.product_name = prod.name; }
-        await createOrder(input, ctx); // ghi nhận nội bộ (chưa đấu nối đơn thật Pancake)
+        // TẠO ĐƠN THẬT trong Pancake (trạng thái Chờ xác nhận) nếu đã cấu hình shop; nếu không → ghi nhận nội bộ.
+        let dedup = false;
+        if (ordersEnabled()) {
+          const r = await createPancakeOrder(state.pageId, input, state.pkConvId);
+          if (!r.ok) return { content: `Chưa tạo được đơn Pancake (${r.error}). TUYỆT ĐỐI chưa báo khách "đã đặt". Xin lại thông tin thiếu rồi thử lại, hoặc chuyển nhân viên.`, isError: true };
+          dedup = !!r.dedup;
+        } else {
+          await createOrder(input, ctx);
+        }
         state.closed = true;
-        try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
-        try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty }); } catch { /* sổ AI không chặn */ }
-        // KHÔNG trả mã đơn giả — nhân viên tạo đơn thật trong Pancake. AI chỉ xác nhận đã nhận.
-        return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã ghi nhận đủ thông tin đơn. Nhân viên sẽ tạo đơn thật & liên hệ giao. TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn (Order ID) cho khách.' }) };
+        if (!dedup) { // hội thoại đã có đơn → không đếm lại
+          try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
+          try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty }); } catch { /* sổ AI không chặn */ }
+        }
+        // KHÔNG trả mã đơn cho khách. AI chỉ xác nhận đã nhận đơn, nhân viên sẽ liên hệ.
+        return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã tạo đơn (Chờ xác nhận) trong hệ thống. Báo khách "đã nhận đơn, nhân viên sẽ liên hệ xác nhận & giao 2-5 ngày". TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn cho khách.' }) };
       }
       case 'send_product_image': {
         const p = findProduct(kb, input.product_id);

@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 const DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SHOPS_FILE = path.join(DIR, 'pancake-shops.json');   // [{market, shop_id, api_key}] — KHÔNG commit
 const CACHE_FILE = path.join(DIR, 'page-shop-cache.json'); // pageId -> shop (dò 1 lần rồi nhớ)
+const PROD_FILE = path.join(DIR, 'page-product-cache.json'); // pageId -> {variation_id, warehouse_id} (rút từ đơn cũ)
+const CREATED_FILE = path.join(DIR, 'ai-created-orders.json'); // convId đã tạo đơn (chống trùng)
 const POS = 'https://pos.pages.fm/api/v1';
 const CANCEL = new Set(['4', '5', '6', '7', '8']); // đang hoàn / đã hoàn / hủy / xóa / chuyển hoàn
 
@@ -78,6 +80,63 @@ export async function aiOrderStats(pageId, convSet, { from, to } = {}) {
     if (d.length < 100) break;
   }
   return { customers: matched.size, orders };
+}
+
+// ===== TẠO ĐƠN TỰ ĐỘNG khi AI chốt (trạng thái "Chờ xác nhận" = status 0) =====
+let pageProd = {}; try { pageProd = JSON.parse(fs.readFileSync(PROD_FILE, 'utf8')); } catch { pageProd = {}; }
+let createdConvs = new Set();
+try { createdConvs = new Set(JSON.parse(fs.readFileSync(CREATED_FILE, 'utf8'))); } catch { /* rỗng */ }
+const saveCreated = () => { try { fs.writeFileSync(CREATED_FILE, JSON.stringify([...createdConvs])); } catch { /* bỏ qua */ } };
+
+// Rút variation_id + warehouse_id của page từ đơn cũ (mỗi page 1 SP) → nhớ lại.
+async function productRef(pageId) {
+  const k = String(pageId);
+  if (pageProd[k]) return pageProd[k];
+  const s = await shopOf(pageId);
+  if (!s) return null;
+  try {
+    const j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?api_key=${s.api_key}&page_id=${pageId}&page_number=1&page_size=8`);
+    for (const o of (j.data || [])) {
+      const it = (o.items || [])[0];
+      if (it?.variation_id && o.warehouse_id) {
+        pageProd[k] = { shop_id: s.shop_id, api_key: s.api_key, variation_id: it.variation_id, warehouse_id: o.warehouse_id };
+        try { fs.writeFileSync(PROD_FILE, JSON.stringify(pageProd)); } catch { /* bỏ qua */ }
+        return pageProd[k];
+      }
+    }
+  } catch { /* bỏ qua */ }
+  return null;
+}
+
+// Tạo đơn thật. input: {name, phone, address, city, qty}. convId = conversation_id để gắn + chống trùng.
+export async function createPancakeOrder(pageId, input, convId) {
+  const ref = await productRef(pageId);
+  if (!ref) return { ok: false, error: 'chưa map được sản phẩm/kho của shop cho page này' };
+  if (convId && createdConvs.has(convId)) return { ok: true, dedup: true }; // hội thoại đã tạo đơn → không tạo lại
+  const addr = [input.address, input.city].filter(Boolean).join(', ');
+  const payload = {
+    page_id: String(pageId),
+    bill_full_name: input.name || '',
+    bill_phone_number: input.phone || '',
+    shipping_address: { full_name: input.name || '', phone_number: input.phone || '', address: addr },
+    items: [{ variation_id: ref.variation_id, quantity: Number(input.qty) || 1 }],
+    status: 0, // Mới / Chờ xác nhận — nhân viên duyệt
+    warehouse_id: ref.warehouse_id,
+    is_free_shipping: true,
+    note: 'Đơn do AI chốt — chờ nhân viên xác nhận',
+    ...(convId ? { conversation_id: convId } : {}),
+  };
+  try {
+    const r = await fetch(`${POS}/shops/${ref.shop_id}/orders?api_key=${ref.api_key}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.status >= 200 && r.status < 300 && res.data?.id) {
+      if (convId) { createdConvs.add(convId); saveCreated(); }
+      return { ok: true, id: res.data.id };
+    }
+    return { ok: false, error: (res.message || JSON.stringify(res)).slice(0, 160) };
+  } catch (e) { return { ok: false, error: e.message }; }
 }
 
 // Đơn thật cho nhiều page cùng lúc (có cache ngắn để không gọi API dồn dập).
