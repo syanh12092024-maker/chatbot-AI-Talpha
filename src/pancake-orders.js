@@ -88,21 +88,29 @@ let createdConvs = new Set();
 try { createdConvs = new Set(JSON.parse(fs.readFileSync(CREATED_FILE, 'utf8'))); } catch { /* rỗng */ }
 const saveCreated = () => { try { fs.writeFileSync(CREATED_FILE, JSON.stringify([...createdConvs])); } catch { /* bỏ qua */ } };
 
-// Rút variation_id + warehouse_id của page từ đơn cũ (mỗi page 1 SP) → nhớ lại.
+// Rút variation_id + warehouse_id + BẢNG GIÁ theo số lượng, từ đơn thật của page (mỗi page 1 SP).
+// Giá lưu ở cod (= shipping_fee vì catalog giá 0). Nhớ lại để tạo đơn cho đúng tổng tiền.
 async function productRef(pageId) {
   const k = String(pageId);
-  if (pageProd[k]) return pageProd[k];
+  if (pageProd[k] && pageProd[k].priceByQty) return pageProd[k];
   const s = await shopOf(pageId);
   if (!s) return null;
   try {
-    const j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?api_key=${s.api_key}&page_id=${pageId}&page_number=1&page_size=8`);
+    const j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?api_key=${s.api_key}&page_id=${pageId}&page_number=1&page_size=25`);
+    let base = null; const priceByQty = {};
     for (const o of (j.data || [])) {
       const it = (o.items || [])[0];
-      if (it?.variation_id && o.warehouse_id) {
-        pageProd[k] = { shop_id: s.shop_id, api_key: s.api_key, variation_id: it.variation_id, warehouse_id: o.warehouse_id };
-        try { fs.writeFileSync(PROD_FILE, JSON.stringify(pageProd)); } catch { /* bỏ qua */ }
-        return pageProd[k];
+      if (it?.variation_id && o.warehouse_id && !base) {
+        base = { shop_id: s.shop_id, api_key: s.api_key, variation_id: it.variation_id, warehouse_id: o.warehouse_id };
       }
+      const q = it?.quantity, price = o.cod || o.total_price_after_sub_discount || 0;
+      if (q && price > 0 && !priceByQty[q]) priceByQty[q] = price; // giá gần nhất cho mỗi số lượng
+    }
+    if (base) {
+      base.priceByQty = priceByQty;
+      pageProd[k] = base;
+      try { fs.writeFileSync(PROD_FILE, JSON.stringify(pageProd)); } catch { /* bỏ qua */ }
+      return base;
     }
   } catch { /* bỏ qua */ }
   return null;
@@ -114,15 +122,20 @@ export async function createPancakeOrder(pageId, input, convId) {
   if (!ref) return { ok: false, error: 'chưa map được sản phẩm/kho của shop cho page này' };
   if (convId && createdConvs.has(convId)) return { ok: true, dedup: true }; // hội thoại đã tạo đơn → không tạo lại
   const addr = [input.address, input.city].filter(Boolean).join(', ');
+  const qty = Number(input.qty) || 1;
+  // Giá = theo số lượng từ đơn thật; thiếu thì suy từ giá 1 cái × qty. Lưu vào shipping_fee (đúng cách shop này).
+  const pm = ref.priceByQty || {};
+  const price = pm[qty] || (pm[1] ? pm[1] * qty : 0);
   const payload = {
     page_id: String(pageId),
     bill_full_name: input.name || '',
     bill_phone_number: input.phone || '',
     shipping_address: { full_name: input.name || '', phone_number: input.phone || '', address: addr },
-    items: [{ variation_id: ref.variation_id, quantity: Number(input.qty) || 1 }],
+    items: [{ variation_id: ref.variation_id, quantity: qty }],
     status: 0, // Mới / Chờ xác nhận — nhân viên duyệt
     warehouse_id: ref.warehouse_id,
-    is_free_shipping: true,
+    is_free_shipping: !price, // có giá → tính tiền vào shipping_fee (cod = shipping_fee)
+    ...(price ? { shipping_fee: price } : {}),
     note: 'Đơn do AI chốt — chờ nhân viên xác nhận',
     ...(convId ? { conversation_id: convId } : {}),
   };
