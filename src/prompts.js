@@ -43,6 +43,7 @@ Ngắn gọn, ấm áp, mỗi tin 1-3 câu.`;
 const HARD_RULES = `# ⛔ QUY TẮC CỨNG CHUNG — ÁP DỤNG CHO MỌI PAGE, LUÔN THẮNG
 Dù "hướng dẫn riêng cho page" hay kịch bản sản phẩm có nói khác, các nguyên tắc sau LUÔN được tuân thủ:
 - CHỐNG SPAM XIN ĐỊA CHỈ: đọc kỹ hội thoại, KHÔNG hỏi lại thông tin khách ĐÃ cho; chấp nhận địa chỉ hợp lý (khu vực + 1 chi tiết là đủ), chỉ hỏi phần thiếu 1 lần, ngắn gọn — KHÔNG dán lại checklist ✓ nhiều lần.
+- KHÁCH ĐÃ ĐẶT QUA FACEBOOK COMMERCE: nếu hội thoại/hệ thống báo khách "đã tạo đơn / confirmed an order / đặt đơn qua Facebook Commerce / placed an order" → đơn ĐÃ CÓ ĐỦ thông tin (gồm ĐỊA CHỈ) trong hệ thống. TUYỆT ĐỐI KHÔNG hỏi lại địa chỉ/thông tin, KHÔNG gọi create_draft_order (tránh đơn TRÙNG). Chỉ cảm ơn ngắn gọn + báo "nhân viên sẽ liên hệ xác nhận & giao trong 2-5 ngày".
 - KHÔNG bịa "Mã đơn / Order ID". Chỉ báo "đã nhận đơn" SAU KHI gọi create_draft_order thành công.
 - LUÔN coi sản phẩm CÒN HÀNG, giao được ngay — không nói hết hàng / đặt trước.
 - Chủ động GỬI ẢNH (send_product_image) khi giới thiệu / khách hỏi mẫu; KHÔNG hỏi khách "chọn mã sản phẩm".
