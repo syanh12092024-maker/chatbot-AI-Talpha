@@ -41,6 +41,9 @@ export const config = {
   adminPass: process.env.ADMIN_PASS || '',
   // Tự tạo đơn thật trong Pancake khi AI chốt. MẶC ĐỊNH TẮT — bật bằng AUTO_CREATE_ORDER=1 trong .env.
   autoCreateOrder: process.env.AUTO_CREATE_ORDER === '1',
+  // Né hội thoại đã gán cho nhân viên. MẶC ĐỊNH TẮT vì Pancake TỰ ĐỘNG gán hội thoại cho NV
+  // → bật sẽ làm AI im gần hết. Bật bằng RESPECT_ASSIGNEE=1 nếu sale thực sự chat tay.
+  respectAssignee: process.env.RESPECT_ASSIGNEE === '1',
   // Circuit breakers
   maxAiTurnsBeforeHandoff: 6, // không tự trả quá N lượt/khách khi chưa có người duyệt
   maxToolIterations: 5,       // giới hạn vòng lặp tool-use mỗi lượt
