@@ -51,6 +51,20 @@ export async function pkSendImage(pageId, convId, custId, url) {
   return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 140) };
 }
 
+// Ghi GHI CHÚ vào hồ sơ khách trong Pancake (sale mở chat là thấy ở panel "Ghi chú").
+// Dùng để báo sale: AI đã chốt đơn / cần người tiếp quản.
+export async function pkAddNote(pageId, custId, message) {
+  if (!custId || !message) return { ok: false, error: 'thiếu customer_id/nội dung' };
+  try {
+    const res = await fetch(`${PK_BASE}/pages/${pageId}/customers/${custId}/notes?access_token=${pkTok()}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    });
+    const j = await res.json().catch(() => ({}));
+    return j.success === false ? { ok: false, error: j.message || 'lỗi' } : { ok: true };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
 // Tạo đơn trong Pancake. Hiện là STUB (log + sinh id giả) để chạy/test ngay.
 // TODO: đấu nối API Pancake thật — thay phần dưới bằng fetch tới endpoint tạo đơn của bạn.
 export async function createOrder(input, ctx) {

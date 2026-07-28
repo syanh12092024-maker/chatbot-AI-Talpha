@@ -1,4 +1,4 @@
-import { createOrder, pkSendImage } from './pancake.js';
+import { createOrder, pkSendImage, pkAddNote } from './pancake.js';
 import { sendImage } from './messenger.js';
 import { productImages, productTiers } from './kb.js';
 import { incOrder } from './stats.js';
@@ -133,6 +133,14 @@ export async function executeTool(name, input, ctx) {
         if (!dedup) { // hội thoại đã có đơn → không đếm lại
           try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
           try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty }); } catch { /* sổ AI không chặn */ }
+          // Báo SALE ngay trong Pancake: ghi chú tóm tắt đơn vào hồ sơ khách.
+          const noteLines = [
+            '🤖 AI ĐÃ CHỐT ĐƠN — cần sale xác nhận',
+            `👤 ${input.name || '?'} · ☎ ${input.phone || '?'}`,
+            `📍 ${[input.address, input.city].filter(Boolean).join(', ') || '?'}`,
+            `📦 SL ${input.qty || 1}${input.variant ? ' · ' + input.variant : ''} · 💵 COD (khách đã xác nhận)`,
+          ];
+          try { await pkAddNote(state.pageId, state.pkCustId, noteLines.join('\n')); } catch { /* ghi chú không chặn */ }
         }
         // KHÔNG trả mã đơn cho khách. AI chỉ xác nhận đã nhận thông tin, nhân viên sẽ liên hệ.
         return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã ghi nhận đủ thông tin đơn. Báo khách "đã nhận đơn, nhân viên sẽ liên hệ xác nhận & giao 2-5 ngày". TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn cho khách.' }) };
@@ -169,6 +177,8 @@ export async function executeTool(name, input, ctx) {
         state.handoff = true;
         state.handoffReason = input.reason || '';
         try { logAi(state.pageId, state.pkCustId, 'handoff', { reason: input.reason || '' }); } catch { /* sổ AI không chặn */ }
+        // Báo SALE ngay trong Pancake để biết hội thoại này cần người.
+        try { await pkAddNote(state.pageId, state.pkCustId, `🙋 AI CHUYỂN NGƯỜI — cần sale vào hỗ trợ\nLý do: ${input.reason || 'không rõ'}`); } catch { /* không chặn */ }
         return { content: 'Đã chuyển cho nhân viên. Hãy báo khách sẽ có người hỗ trợ ngay.' };
       }
       default:
