@@ -23,6 +23,26 @@ export function readLog() {
   } catch { return []; }
 }
 
+// Danh sách việc CẦN SALE: các sự kiện AI chốt đơn / cần người, trong N giờ gần nhất.
+// Mỗi mục kèm link mở thẳng hội thoại Pancake để sale vào nắm thông tin.
+export function needSale({ hours = 48, types = ['order', 'handoff'] } = {}) {
+  const since = Date.now() - hours * 3600 * 1000;
+  const rows = readLog().filter((r) => r.t >= since && types.includes(r.type));
+  // mới nhất trước; mỗi (page,khách,loại) chỉ lấy bản mới nhất
+  const seen = new Set(); const out = [];
+  for (const r of rows.reverse()) {
+    const k = `${r.page}:${r.cust}:${r.type}`;
+    if (seen.has(k)) continue; seen.add(k);
+    out.push({
+      t: r.t, page: r.page, cust: r.cust, type: r.type,
+      name: r.name || '', phone: r.phone || '', city: r.city || '', qty: r.qty || null,
+      reason: r.reason || '',
+      link: r.cust ? `https://pancake.vn/${r.page}?customer_id=${r.cust}` : `https://pancake.vn/${r.page}`,
+    });
+  }
+  return out;
+}
+
 // Tính lại thống kê CHÍNH XÁC từ sổ (dedup khách & đơn theo page+khách).
 // from/to = 'YYYY-MM-DD' (tùy chọn). Trả { replies, leads, orders, byPage, events, lastAt }.
 export function recount({ from, to } = {}) {

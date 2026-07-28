@@ -16,7 +16,7 @@ import { pancakePages, pancakePageCount } from './pancake.js';
 import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
-import { recount } from './ai-log.js';
+import { recount, needSale } from './ai-log.js';
 import { ordersEnabled, aiOrderStats } from './pancake-orders.js';
 import { getAiConvSet } from './ai-convs.js';
 
@@ -93,6 +93,14 @@ adminRouter.get('/audit', (req, res) => {
     replies: r.replies, leads: r.leads, orders: r.orders, closeRate: rate(r.orders, r.leads),
     pages,
   });
+});
+
+// ---- HÀNG CHỜ CHO SALE: AI đã chốt đơn / cần người → sale vào nắm thông tin ----
+adminRouter.get('/need-sale', (req, res) => {
+  const hours = Math.min(Number(req.query.hours) || 48, 24 * 14);
+  const pk = pancakePages();
+  const list = needSale({ hours }).map((r) => ({ ...r, pageName: pk.get(String(r.page))?.name || r.page }));
+  res.json({ hours, count: list.length, list });
 });
 
 // ---- ĐƠN TỪ KHÁCH AI: khớp đơn Pancake với hội thoại AI đã tư vấn → tỉ lệ chốt thật ----

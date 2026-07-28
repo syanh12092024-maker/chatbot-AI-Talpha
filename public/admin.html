@@ -34,6 +34,7 @@
   .navlabel:first-child{padding-top:10px}
   .nav a.ext .extarrow{margin-left:auto;width:13px;height:13px;opacity:.5}
   .nav a.ext:hover .extarrow{opacity:1}
+  .nsbadge{margin-left:auto;background:var(--bad);color:#fff;font-size:11px;font-weight:700;min-width:19px;height:19px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
   .sidestat{margin-top:auto;display:flex;align-items:center;gap:8px;padding:12px 16px;font-size:12px;color:var(--sideMut);border-top:1px solid #1c3a40}
   .sidestat .dot{width:7px;height:7px;box-shadow:0 0 0 3px rgba(22,163,74,.15)}
   /* main */
@@ -221,6 +222,7 @@ const sec=id=>document.getElementById('sec-'+id);
 const extArrow='<svg class="extarrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>';
 document.getElementById('nav').innerHTML=
   `<div class="navlabel">🤖 Chat Bot AI</div>`
+  +`<a data-k="needsale" onclick="jumpTo('needsale')">${svg(IC.msgs)} Cần sale xử lý <span id="nsBadge" class="nsbadge" style="display:none">0</span></a>`
   +`<a data-k="stats" onclick="jumpTo('stats')">${svg(IC.overview)} Tổng quan</a>`
   +`<a data-k="tokens" onclick="jumpTo('tokens')">${svg(IC.tokens)} Cài đặt / Token</a>`
   +`<div class="navlabel">📢 Tool Bắn Bot</div>`
@@ -230,9 +232,9 @@ window.jumpTo=k=>{const e=sec(k);if(e){e.scrollIntoView({behavior:'smooth',block
 
 // Dựng 1 trang gồm 4 section, mỗi phần tự nạp dữ liệu + tự làm mới.
 function renderHome(){
-  clearInterval(statsTimer);clearInterval(msgsTimer);
-  content.innerHTML=`<section id="sec-stats" class="hsec"></section><section id="sec-pages" class="hsec"></section><section id="sec-msgs" class="hsec"></section><section id="sec-tokens" class="hsec"></section>`;
-  rOverview();rPages();rMsgs();rTokens();setActiveNav('stats');
+  clearInterval(statsTimer);clearInterval(msgsTimer);clearInterval(nsTimer);
+  content.innerHTML=`<section id="sec-needsale" class="hsec"></section><section id="sec-stats" class="hsec"></section><section id="sec-pages" class="hsec"></section><section id="sec-msgs" class="hsec"></section><section id="sec-tokens" class="hsec"></section>`;
+  rNeedSale();rOverview();rPages();rMsgs();rTokens();setActiveNav('needsale');
 }
 const setEl=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt;};
 const setCls=(id,cls)=>{const e=document.getElementById(id);if(e)e.className=cls;};
@@ -258,6 +260,35 @@ function statRow(p){return `<tr>
    <td><button class="btn sm" onclick="openPageKB('${p.id}','${esc(p.name).replace(/'/g,"\\'")}')">Sửa KB</button></td>
  </tr>`;}
 function statRows(pages){return (pages||[]).map(statRow).join('')||`<tr><td colspan="8" class="empty">Chưa có page nào bật AI hoặc có hoạt động.</td></tr>`;}
+
+// ---- HÀNG CHỜ CHO SALE: AI đã chốt đơn / cần người ----
+let nsTimer=null;
+async function rNeedSale(){
+  const el=sec('needsale'); if(!el)return;
+  el.innerHTML=`<div class="stashead"><h2 style="margin:0">🔔 Cần sale xử lý</h2>
+     <div class="row"><span class="muted" style="font-size:12.5px">AI đã chốt / cần người — 48 giờ qua</span>
+     <button class="btn sm" onclick="rNeedSale()">↻ Làm mới</button></div></div>
+   <div id="nsbody"></div>`;
+  fillNeedSale();
+  clearInterval(nsTimer); nsTimer=setInterval(()=>{if(sec('needsale'))fillNeedSale();},15000);
+}
+async function fillNeedSale(){
+  const el=document.getElementById('nsbody'); if(!el)return;
+  const d=await j('/need-sale?hours=48').catch(()=>({list:[]}));
+  const list=d.list||[];
+  const b=document.getElementById('nsBadge');
+  if(b){ b.textContent=list.length; b.style.display=list.length?'inline-block':'none'; }
+  if(!list.length){ el.innerHTML='<div class="tablecard"><div class="empty">Chưa có việc nào cần sale trong 48h qua. AI đang tự xử lý ✅</div></div>'; return; }
+  el.innerHTML=`<div class="tablecard"><table><thead><tr><th>Việc</th><th>Khách</th><th>SĐT</th><th>Page</th><th>Lúc</th><th></th></tr></thead><tbody>${
+    list.map(r=>`<tr>
+      <td>${r.type==='order'?'<span class="pill ok">🛒 Đã chốt đơn</span>':'<span class="pill warn">🙋 Cần người</span>'}</td>
+      <td><b>${esc(r.name||'(chưa rõ)')}</b>${r.city?`<div class="muted" style="font-size:11.5px">${esc(r.city)}${r.qty?' · SL '+r.qty:''}</div>`:''}${r.reason?`<div class="muted" style="font-size:11.5px">${esc(r.reason)}</div>`:''}</td>
+      <td class="mono">${esc(r.phone||'—')}</td>
+      <td style="font-size:12.5px">${esc(r.pageName||'')}</td>
+      <td class="muted" style="font-size:12px">${agoVi(r.t)}</td>
+      <td><a class="btn sm pri" href="${esc(r.link)}" target="_blank">Mở chat ↗</a></td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
 
 // ---- Bộ lọc ngày ----
 const RANGE_PRESETS=[['today','Hôm nay'],['7','7 ngày'],['30','30 ngày'],['all','Tất cả']];
@@ -418,7 +449,7 @@ async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/shee
        <div class="row"><input id="shurl" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1"><button class="btn pri" onclick="connectSheet()">Kết nối</button></div></div>`;
   KBPAGES=pages;
   const sel=pages.find(p=>String(p.id)===String(ctx.pageId))||pages[0]||{};
-  clearInterval(statsTimer);clearInterval(msgsTimer); // rời trang chủ → dừng auto-refresh
+  clearInterval(statsTimer);clearInterval(msgsTimer);clearInterval(nsTimer); // rời trang chủ → dừng auto-refresh
   content.innerHTML=`<button class="btn sm" style="margin-bottom:12px" onclick="renderHome()">← Quay lại bảng điều khiển</button>
    <h2>Kịch bản / KB theo page</h2><p class="sub">Nguồn kịch bản: Google Sheet (cả team) hoặc sửa nhanh từng page bên dưới.</p>${banner}
    <div class="kbbar">
