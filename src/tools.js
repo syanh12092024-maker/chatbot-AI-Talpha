@@ -4,6 +4,7 @@ import { productImages, productTiers } from './kb.js';
 import { incOrder } from './stats.js';
 import { logAi } from './ai-log.js';
 import { createPancakeOrder, ordersEnabled } from './pancake-orders.js';
+import { config } from './config.js';
 
 // Định nghĩa tool (function calling) cho closer.
 export const toolDefs = [
@@ -118,22 +119,23 @@ export async function executeTool(name, input, ctx) {
         // Page 1 SP: tự điền sản phẩm nếu AI không truyền mã (không bắt khách chọn).
         const prod = findProduct(kb, input.product_id);
         if (prod) { input.product_id = prod.id; input.product_name = prod.name; }
-        // TẠO ĐƠN THẬT trong Pancake (trạng thái Chờ xác nhận) nếu đã cấu hình shop; nếu không → ghi nhận nội bộ.
+        // TẠO ĐƠN THẬT trong Pancake — chỉ khi BẬT công tắc (config.autoCreateOrder).
+        // ĐANG TẮT theo yêu cầu: AI vẫn chốt & ghi nhận, nhân viên tạo đơn thủ công.
         let dedup = false;
-        if (ordersEnabled()) {
+        if (config.autoCreateOrder && ordersEnabled()) {
           const r = await createPancakeOrder(state.pageId, input, state.pkConvId);
           if (!r.ok) return { content: `Chưa tạo được đơn Pancake (${r.error}). TUYỆT ĐỐI chưa báo khách "đã đặt". Xin lại thông tin thiếu rồi thử lại, hoặc chuyển nhân viên.`, isError: true };
           dedup = !!r.dedup;
         } else {
-          await createOrder(input, ctx);
+          await createOrder(input, ctx); // chỉ ghi nhận nội bộ, KHÔNG tạo đơn Pancake
         }
         state.closed = true;
         if (!dedup) { // hội thoại đã có đơn → không đếm lại
           try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
           try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty }); } catch { /* sổ AI không chặn */ }
         }
-        // KHÔNG trả mã đơn cho khách. AI chỉ xác nhận đã nhận đơn, nhân viên sẽ liên hệ.
-        return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã tạo đơn (Chờ xác nhận) trong hệ thống. Báo khách "đã nhận đơn, nhân viên sẽ liên hệ xác nhận & giao 2-5 ngày". TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn cho khách.' }) };
+        // KHÔNG trả mã đơn cho khách. AI chỉ xác nhận đã nhận thông tin, nhân viên sẽ liên hệ.
+        return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã ghi nhận đủ thông tin đơn. Báo khách "đã nhận đơn, nhân viên sẽ liên hệ xác nhận & giao 2-5 ngày". TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn cho khách.' }) };
       }
       case 'send_product_image': {
         const p = findProduct(kb, input.product_id);

@@ -39,6 +39,8 @@ export const config = {
   // Đăng nhập dashboard (Basic Auth) — BẮT BUỘC đặt khi chạy trên IP công khai (VPS).
   adminUser: process.env.ADMIN_USER || '',
   adminPass: process.env.ADMIN_PASS || '',
+  // Tự tạo đơn thật trong Pancake khi AI chốt. MẶC ĐỊNH TẮT — bật bằng AUTO_CREATE_ORDER=1 trong .env.
+  autoCreateOrder: process.env.AUTO_CREATE_ORDER === '1',
   // Circuit breakers
   maxAiTurnsBeforeHandoff: 6, // không tự trả quá N lượt/khách khi chưa có người duyệt
   maxToolIterations: 5,       // giới hạn vòng lặp tool-use mỗi lượt
