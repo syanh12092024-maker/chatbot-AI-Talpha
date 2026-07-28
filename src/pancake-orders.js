@@ -82,6 +82,29 @@ export async function aiOrderStats(pageId, convSet, { from, to } = {}) {
   return { customers: matched.size, orders };
 }
 
+// Hội thoại này ĐÃ CÓ ĐƠN chưa (bất kỳ trạng thái nào trừ hủy/hoàn)? → chống tạo đơn trùng.
+const _hasOrderCache = new Map(); // convId -> {t, has}
+export async function conversationHasOrder(pageId, convId) {
+  if (!convId) return false;
+  const hit = _hasOrderCache.get(convId);
+  if (hit && Date.now() - hit.t < 300000) return hit.has; // nhớ 5 phút
+  const s = await shopOf(pageId);
+  if (!s) return false;
+  const from = ymdDaysAgo(90);
+  let has = false;
+  try {
+    for (let pn = 1; pn <= 6 && !has; pn++) {
+      const j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?api_key=${s.api_key}&page_id=${pageId}&page_size=100&startDateTime=${unix(from)}&page_number=${pn}`);
+      const d = j.data || []; if (!d.length) break;
+      for (const o of d) if (o.conversation_id === convId && !CANCEL.has(String(o.status))) { has = true; break; }
+      if (d.length < 100) break;
+    }
+  } catch { /* lỗi mạng → coi như chưa có, không chặn bán */ }
+  _hasOrderCache.set(convId, { t: Date.now(), has });
+  return has;
+}
+export function markConversationOrdered(convId) { if (convId) _hasOrderCache.set(convId, { t: Date.now(), has: true }); }
+
 // ===== TẠO ĐƠN TỰ ĐỘNG khi AI chốt (trạng thái "Chờ xác nhận" = status 0) =====
 let pageProd = {}; try { pageProd = JSON.parse(fs.readFileSync(PROD_FILE, 'utf8')); } catch { pageProd = {}; }
 let createdConvs = new Set();

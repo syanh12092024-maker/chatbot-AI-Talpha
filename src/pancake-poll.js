@@ -8,6 +8,12 @@ import { incReply, incLead } from './stats.js';
 import { logAi } from './ai-log.js';
 import { addAiConv } from './ai-convs.js';
 
+// Thẻ hệ thống Pancake = -(mã trạng thái đơn). Có 1 trong các thẻ này nghĩa là ĐƠN ĐÃ CHỐT
+// & đang được xử lý → AI ngừng bán/tư vấn hội thoại đó (tránh chốt lại, tạo đơn trùng).
+//  -1 submitted(đã xác nhận) · -2 shipped(ĐÃ GỬI) · -3 delivered(đã nhận)
+//  -11 waitting(chờ hàng) · -12 wait_print(chờ in) · -20 ordered(đã đặt hàng)
+const ORDER_STOP_TAGS = new Set([-1, -2, -3, -11, -12, -20]);
+
 // convId -> mốc last_customer_interactive_at đã xử lý (chống trả lời lặp)
 const seen = new Map();
 const primedPages = new Set(); // page đã "ghi mốc lần đầu" — tránh trả lời loạt hội thoại cũ khi mới bật AI
@@ -45,6 +51,12 @@ async function pollPage(pageId) {
     // NHƯỜNG NHÂN VIÊN: chỉ áp dụng khi BẬT config.respectAssignee. Mặc định TẮT vì Pancake
     // tự động gán hội thoại cho nhân viên → nếu bật, AI sẽ im gần hết (sale chỉ nắm đơn, không chat).
     if (config.respectAssignee && (c.assignee_ids || []).length > 0) { console.log(`[pancake] ${c.from?.name || psid}: đã gán nhân viên → AI nhường`); continue; }
+
+    // ĐƠN ĐÃ ĐƯỢC XỬ LÝ → AI IM HẲN (không tư vấn bán lại, không tạo đơn trùng).
+    // Pancake tự gắn thẻ hệ thống = -(mã trạng thái đơn): -1 đã xác nhận, -2 ĐÃ GỬI, -3 đã nhận,
+    // -11 chờ hàng, -12 chờ in, -20 đã đặt hàng. Có thẻ này = đơn đang chạy, để nhân viên lo.
+    const stopTag = (c.tags || []).find((t) => ORDER_STOP_TAGS.has(Number(t)));
+    if (stopTag !== undefined) { console.log(`[pancake] ${c.from?.name || psid}: đơn đang xử lý (thẻ ${stopTag}) → AI im`); continue; }
 
     // Chỉ trả lời khi TIN CUỐI là của khách (không phải page/Botcake).
     const msgs = await pkGetMessages(pageId, c.id, custId);

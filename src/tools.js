@@ -3,7 +3,7 @@ import { sendImage } from './messenger.js';
 import { productImages, productTiers } from './kb.js';
 import { incOrder } from './stats.js';
 import { logAi } from './ai-log.js';
-import { createPancakeOrder, ordersEnabled } from './pancake-orders.js';
+import { createPancakeOrder, ordersEnabled, conversationHasOrder, markConversationOrdered } from './pancake-orders.js';
 import { config } from './config.js';
 
 // Định nghĩa tool (function calling) cho closer.
@@ -116,6 +116,11 @@ export async function executeTool(name, input, ctx) {
         if (!input.phone || String(input.phone).replace(/\D/g, '').length < 7) {
           return { content: 'Từ chối tạo đơn: số điện thoại chưa hợp lệ. Hãy xin lại SĐT liên hệ.', isError: true };
         }
+        // CHỐNG ĐƠN TRÙNG: hội thoại này đã có đơn (do AI/nhân viên/FB Commerce tạo) → KHÔNG tạo nữa.
+        if (ordersEnabled() && await conversationHasOrder(state.pageId, state.pkConvId)) {
+          state.closed = true;
+          return { content: 'Khách này ĐÃ CÓ ĐƠN trong hệ thống rồi — TUYỆT ĐỐI không tạo đơn mới, không chốt lại. Chỉ trả lời câu hỏi của khách về đơn đã đặt (thời gian giao, COD...) và báo nhân viên sẽ liên hệ.', isError: true };
+        }
         // Page 1 SP: tự điền sản phẩm nếu AI không truyền mã (không bắt khách chọn).
         const prod = findProduct(kb, input.product_id);
         if (prod) { input.product_id = prod.id; input.product_name = prod.name; }
@@ -130,6 +135,7 @@ export async function executeTool(name, input, ctx) {
           await createOrder(input, ctx); // chỉ ghi nhận nội bộ, KHÔNG tạo đơn Pancake
         }
         state.closed = true;
+        try { markConversationOrdered(state.pkConvId); } catch { /* nhớ ngay để không tạo lần 2 */ }
         if (!dedup) { // hội thoại đã có đơn → không đếm lại
           try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
           try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty }); } catch { /* sổ AI không chặn */ }
