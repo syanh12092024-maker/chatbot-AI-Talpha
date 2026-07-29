@@ -56,12 +56,17 @@ Cập nhật KB xong gọi `POST /reload-kb` để nạp lại không cần rest
 - BigQuery logging (lead_journey + RTO) để đo Order→Delivered.
 - `APP_SECRET`: bật để xác thực chữ ký webhook (bắt buộc khi production).
 
-## Circuit breakers đã có
+## 10 nguyên tắc khi AI chat với khách
 
-- Không tự trả quá `maxAiTurnsBeforeHandoff` lượt/khách → chuyển người.
-- `lang=other` hoặc khiếu nại → chuyển hàng đợi người, không auto-reply sai tiếng.
-- `create_draft_order` từ chối nếu thiếu xác nhận COD hoặc địa chỉ chưa cụ thể.
-- Giới hạn vòng lặp tool-use mỗi lượt (`maxToolIterations`).
-- Spam (độ tin cậy ≥0.8) → bỏ qua.
+1. **Ngôn ngữ & giọng điệu** — chỉ trả khách bằng Tagalog/English (Taglish OK), không bao giờ tiếng Việt; giọng thân thiện kiểu Philippines ("po"/"opo"), mỗi tin 1-3 câu, né tôn giáo/chính trị. (`prompts.js`)
+2. **Trung thực thông tin** — giá/chính sách chỉ lấy từ KB hoặc tool `get_price`, không bịa; mỗi page 1 sản phẩm; luôn coi còn hàng; chủ động gửi ảnh thật (`send_product_image`).
+3. **Chốt đơn COD đúng quy trình** — đủ Tên + SĐT + Địa chỉ + SL + xác nhận COD mới gọi `create_draft_order`; tool OK rồi mới báo "đã nhận đơn"; cấm bịa Mã đơn.
+4. **Chống spam làm phiền khách** — không hỏi lại thứ khách đã cho; địa chỉ có khu vực + 1 chi tiết là đủ; hỏi ngắn 1-2 dòng, không dán lại checklist.
+5. **Chống đơn trùng** — khách đã có đơn (chốt trước đó / FB Commerce / thẻ trạng thái đơn Pancake) → không chốt lại, không hỏi lại; mỗi khách 1 đơn tới khi sale xử lý xong.
+6. **Biết im lặng** — page tắt AI / chưa có KB / tin đầu (nhường Botcake chào) / tin cuối là của page / spam ≥0.8 / sale đã tiếp quản → AI không nói.
+7. **Biết chuyển người** (`handoff_human`) — khiếu nại, ngôn ngữ lạ, đơn giá trị cao, khách đòi gặp người, AI không chắc → chuyển kèm lý do, hiện ở hàng chờ "Cần sale xử lý" + ghi chú vào Pancake.
+8. **Cầu chì an toàn** — tối đa `maxAiTurnsBeforeHandoff` (6) lượt AI/khách, `maxToolIterations` (5) vòng tool/lượt; classifier lỗi → fallback an toàn. (`config.js`)
+9. **Minh bạch & kiểm chứng** — mọi hành động ghi Sổ AI (`ai-messages.jsonl`); chốt đơn/chuyển người tự ghi chú vào hồ sơ khách trên Pancake; dashboard có nút Đối chiếu Sổ AI.
+10. **Đọc lịch sử trước khi trả lời** — nếu bộ nhớ phiên trống (server mới restart / khách quay lại sau nhiều ngày), AI nạp 20 tin gần nhất của ĐÚNG hội thoại đó từ Pancake (2 chiều, gồm cả Botcake/sale tay) rồi mới soạn tin — không chào lại từ đầu, không hỏi lại thông tin cũ, biết khách đã đặt đơn. (`handler.js → hydrateHistory`)
 
 > Model dùng: `claude-sonnet-4-6` (closer) + `claude-haiku-4-5` (phân loại). Prompt caching bật trên khối KB trong `src/prompts.js`.
