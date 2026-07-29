@@ -71,6 +71,11 @@
   .pill.ok{background:var(--okSoft);color:var(--ok)} .pill.bad{background:var(--badSoft);color:var(--bad)} .pill.warn{background:var(--warnSoft);color:var(--warn)} .pill.mut{background:#eef1f3;color:var(--muted)}
   .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;gap:6px;font-weight:500;transition:.12s}
   .btn:hover{background:#f5f6f7;border-color:#d5dce2} .btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)} .btn.pri:hover{background:var(--priDark)} .btn.sm{padding:5px 10px;font-size:12.5px} .btn svg{width:14px;height:14px}
+  a.btn{text-decoration:none}
+  /* hàng chờ sale: viền màu trái phân biệt loại việc */
+  tr.ns-hand td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+  tr.ns-ord td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+  tr.ns-hand{background:#fffdf7} tr.ns-hand:hover{background:#fdf8ec}
   input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:13.5px;font-family:inherit;outline:none;background:#fff;color:var(--ink)}
   input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--priSoft)}
   .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
@@ -261,29 +266,53 @@ async function pollBadge(){
   return d;
 }
 
-/* ============ 1. CẦN SALE XỬ LÝ ============ */
+/* ============ 1. CẦN SALE XỬ LÝ ============
+   Nguồn: Sổ AI (ai-messages.jsonl) — sự kiện 'order' (AI chốt đơn) & 'handoff' (cần người).
+   Ưu tiên hiển thị: CẦN NGƯỜI trước (khách đang đợi), rồi mới tới đơn đã chốt. */
+let NS={hours:48,filter:'all',list:[]};
+const NS_RANGES=[[24,'24 giờ'],[48,'48 giờ'],[168,'7 ngày']];
 function rNeedSale(){
   content.innerHTML=`<div class="vhead"><h2>🔔 Hàng chờ cho sale</h2>
-     <div class="row"><span class="muted" style="font-size:12.5px">AI đã chốt đơn / cần người — 48 giờ qua · tự làm mới 15s</span>
-     <button class="btn sm" onclick="fillNeedSale()">↻ Làm mới</button></div></div>
+     <div class="row">
+       <div class="chips">${NS_RANGES.map(([h,l])=>`<button class="chip ${NS.hours===h?'act':''}" data-h="${h}" onclick="setNsHours(${h})">${l}</button>`).join('')}</div>
+       <button class="btn sm" onclick="fillNeedSale()" title="Danh sách tự làm mới mỗi 15 giây">↻ Làm mới</button>
+     </div></div>
+   <div class="chips" id="nsSum" style="margin-bottom:14px"></div>
    <div id="nsbody"></div>`;
   fillNeedSale();
   addTimer(fillNeedSale,15000);
 }
+window.setNsHours=h=>{NS.hours=h;document.querySelectorAll('[data-h]').forEach(b=>b.classList.toggle('act',+b.dataset.h===h));fillNeedSale();};
+window.setNsFilter=f=>{NS.filter=f;drawNeedSale();};
+window.copyPhone=async p=>{try{await navigator.clipboard.writeText(p);toast('✓ Đã copy SĐT: '+p);}catch{toast('Không copy được — chọn tay giúp nhé','bad');}};
 async function fillNeedSale(){
+  if(!document.getElementById('nsbody'))return;
+  // Badge trên menu luôn đếm theo 48h (pollBadge); bảng thì theo khoảng đang chọn.
+  const d=NS.hours===48?await pollBadge():await j('/need-sale?hours='+NS.hours).catch(()=>({list:[]}));
+  NS.list=d.list||[];
+  drawNeedSale();
+}
+function drawNeedSale(){
   const el=document.getElementById('nsbody'); if(!el)return;
-  const d=await pollBadge();
-  const list=d.list||[];
-  if(!list.length){ el.innerHTML='<div class="tablecard"><div class="empty">Chưa có việc nào cần sale trong 48h qua. AI đang tự xử lý ✅</div></div>'; return; }
-  el.innerHTML=`<div class="tablecard"><table><thead><tr><th>Việc</th><th>Khách</th><th>SĐT</th><th>Page</th><th>Lúc</th><th></th></tr></thead><tbody>${
-    list.map(r=>`<tr>
-      <td>${r.type==='order'?'<span class="pill ok">🛒 Đã chốt đơn</span>':'<span class="pill warn">🙋 Cần người</span>'}</td>
-      <td><b>${esc(r.name||'(chưa rõ)')}</b>${r.city?`<div class="muted" style="font-size:11.5px">${esc(r.city)}${r.qty?' · SL '+r.qty:''}</div>`:''}${r.reason?`<div class="muted" style="font-size:11.5px">${esc(r.reason)}</div>`:''}</td>
-      <td class="mono">${esc(r.phone||'—')}</td>
+  const list=NS.list, hand=list.filter(r=>r.type!=='order'), ord=list.filter(r=>r.type==='order');
+  const sum=document.getElementById('nsSum');
+  if(sum)sum.innerHTML=[['all',`Tất cả (${list.length})`],['handoff',`🙋 Cần người (${hand.length})`],['order',`🛒 Đã chốt đơn (${ord.length})`]]
+    .map(([f,l])=>`<button class="chip ${NS.filter===f?'act':''}" onclick="setNsFilter('${f}')">${l}</button>`).join('');
+  let rows=NS.filter==='order'?ord:NS.filter==='handoff'?hand:[...hand,...ord]; // cần người luôn nổi lên trước
+  if(!rows.length){ el.innerHTML=`<div class="tablecard"><div class="empty">Chưa có việc nào trong ${NS.hours<168?NS.hours+' giờ':'7 ngày'} qua. AI đang tự xử lý ✅</div></div>`; return; }
+  const NEW_MS=2*3600*1000;
+  el.innerHTML=`<div class="tablecard"><table><thead><tr><th style="width:130px">Việc</th><th>Khách</th><th style="width:170px">SĐT</th><th>Page</th><th style="width:96px;text-align:right">Lúc</th><th style="width:110px"></th></tr></thead><tbody>${
+    rows.map(r=>{const isOrd=r.type==='order';return `<tr class="${isOrd?'ns-ord':'ns-hand'}">
+      <td>${isOrd?'<span class="pill ok">🛒 Đã chốt đơn</span>':'<span class="pill warn">🙋 Cần người</span>'}${(Date.now()-r.t)<NEW_MS?'<div style="margin-top:5px"><span class="pill bad" style="font-size:10px;padding:2px 8px">● MỚI</span></div>':''}</td>
+      <td><div style="display:flex;gap:10px;align-items:flex-start"><div class="av" style="background:${isOrd?'var(--okSoft)':'var(--warnSoft)'};color:${isOrd?'var(--ok)':'var(--warn)'}">${ini(r.name)}</div>
+        <div style="min-width:0"><b style="font-size:14px">${esc(r.name||'(chưa rõ tên)')}</b>
+        ${r.city||r.qty?`<div class="muted" style="font-size:12px;margin-top:2px">📍 ${esc(r.city||'?')}${r.qty?' · SL '+r.qty:''}</div>`:''}
+        ${r.reason?`<div class="muted" style="font-size:12px;margin-top:2px;font-style:italic;max-width:420px">"${esc(r.reason)}"</div>`:''}</div></div></td>
+      <td>${r.phone?`<span style="display:inline-flex;align-items:center;gap:6px"><b class="mono" style="font-size:13px;color:var(--ink)">${esc(r.phone)}</b><button class="btn sm" style="padding:3px 7px" title="Copy SĐT" onclick="copyPhone('${esc(r.phone)}')">⧉</button></span>`:'<span class="muted">—</span>'}</td>
       <td style="font-size:12.5px">${esc(r.pageName||'')}</td>
-      <td class="muted" style="font-size:12px">${agoVi(r.t)}</td>
-      <td><a class="btn sm pri" href="${esc(r.link)}" target="_blank">Mở chat ↗</a></td>
-    </tr>`).join('')}</tbody></table></div>`;
+      <td class="muted" style="font-size:12px;text-align:right">${agoVi(r.t)}</td>
+      <td style="text-align:right"><a class="btn sm pri" href="${esc(r.link)}" target="_blank">Mở chat ↗</a></td>
+    </tr>`;}).join('')}</tbody></table></div>`;
 }
 
 /* ============ Bộ lọc ngày (dùng chung cho Tổng quan) ============ */
