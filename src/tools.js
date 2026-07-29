@@ -39,9 +39,10 @@ export const toolDefs = [
         product_id: { type: 'string', description: 'Bỏ trống — page chỉ có 1 SP, tool tự điền.' },
         variant: { type: 'string', description: 'Gói/combo khách chọn (vd "combo 2"), nếu có.' },
         qty: { type: 'integer' },
+        total_price: { type: 'number', description: 'TỔNG tiền COD khách phải trả theo đúng gói đã chốt (số, nội tệ — vd 99 nghĩa là 99 SAR/AED). LẤY TỪ bảng giá KB, KHÔNG tự bịa.' },
         cod_confirmed: { type: 'boolean', description: 'Khách đã xác nhận thanh toán khi nhận hàng' },
       },
-      required: ['name', 'phone', 'address', 'city', 'qty', 'cod_confirmed'],
+      required: ['name', 'phone', 'address', 'city', 'qty', 'total_price', 'cod_confirmed'],
     },
   },
   {
@@ -123,7 +124,7 @@ export async function executeTool(name, input, ctx) {
         }
         // Page 1 SP: tự điền sản phẩm nếu AI không truyền mã (không bắt khách chọn).
         const prod = findProduct(kb, input.product_id);
-        if (prod) { input.product_id = prod.id; input.product_name = prod.name; }
+        if (prod) { input.product_id = prod.id; input.product_name = prod.name; input.currency = prod.currency || ''; }
         // TẠO ĐƠN THẬT trong Pancake — chỉ khi BẬT công tắc (config.autoCreateOrder).
         // ĐANG TẮT theo yêu cầu: AI vẫn chốt & ghi nhận, nhân viên tạo đơn thủ công.
         let dedup = false;

@@ -146,9 +146,13 @@ export async function createPancakeOrder(pageId, input, convId) {
   if (convId && createdConvs.has(convId)) return { ok: true, dedup: true }; // hội thoại đã tạo đơn → không tạo lại
   const addr = [input.address, input.city].filter(Boolean).join(', ');
   const qty = Number(input.qty) || 1;
-  // Giá = theo số lượng từ đơn thật; thiếu thì suy từ giá 1 cái × qty. Lưu vào shipping_fee (đúng cách shop này).
+  // GIÁ ƯU TIÊN 1: tổng tiền AI đã chốt với khách (total_price, nội tệ) → đổi sang đơn vị nhỏ
+  // của POS (AED/SAR/QAR ×100; KWD/OMR/BHD ×1000). ƯU TIÊN 2: bảng giá học từ đơn cũ theo SL.
+  const CCY_FACTOR = { AED: 100, SAR: 100, QAR: 100, USD: 100, KWD: 1000, OMR: 1000, BHD: 1000 };
   const pm = ref.priceByQty || {};
-  const price = pm[qty] || (pm[1] ? pm[1] * qty : 0);
+  const agreed = Number(input.total_price) > 0
+    ? Math.round(Number(input.total_price) * (CCY_FACTOR[String(input.currency || '').toUpperCase()] ?? 100)) : 0;
+  const price = agreed || pm[qty] || (pm[1] ? pm[1] * qty : 0);
   const payload = {
     page_id: String(pageId),
     bill_full_name: input.name || '',
