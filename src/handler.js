@@ -4,13 +4,40 @@ import { getState, recordInbound, recordOutbound, isAiEnabled } from './store.js
 import { getKBForPage } from './kb.js';
 import { config } from './config.js';
 
+// NẠP LỊCH SỬ THẬT từ Pancake vào bộ nhớ AI khi phiên còn trống (server mới khởi động /
+// khách quay lại sau nhiều ngày). AI đọc hết những gì 2 bên đã nói (kể cả Botcake / sale tay)
+// TRƯỚC khi soạn tin — không hỏi lại thứ khách đã cho, không chào lại từ đầu, biết khách đã đặt đơn.
+const HIST_MAX_MSGS = 20;   // lấy tối đa N tin gần nhất
+const HIST_MAX_CHARS = 400; // cắt mỗi tin để tiết kiệm token
+export function hydrateHistory(state, history, pageId) {
+  if (state.messages.length || !Array.isArray(history) || history.length <= 1) return 0;
+  const turns = [];
+  // bỏ tin CUỐI (chính là tin đang xử lý — handler sẽ tự đẩy vào sau)
+  for (const m of history.slice(0, -1).slice(-HIST_MAX_MSGS)) {
+    const raw = (m.original_message || m.message || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const text = raw ? raw.slice(0, HIST_MAX_CHARS) : ((m.attachments || []).length ? '(gửi ảnh/đính kèm)' : '');
+    if (!text) continue;
+    const role = String(m.from?.id) === String(pageId) ? 'assistant' : 'user';
+    const prev = turns[turns.length - 1];
+    if (prev && prev.role === role) prev.content += '\n' + text; // gộp tin liên tiếp cùng phía
+    else turns.push({ role, content: text });
+  }
+  // Claude yêu cầu mở đầu bằng user & ta sẽ đẩy tin hiện tại (user) vào sau → phải kết bằng assistant.
+  while (turns.length && turns[0].role !== 'user') turns.shift();
+  while (turns.length && turns[turns.length - 1].role !== 'assistant') turns.pop();
+  if (turns.length) state.messages.push(...turns);
+  return turns.length;
+}
+
 // Xử lý 1 tin nhắn đến. Trả về { reply, handoff } — reply=null nghĩa là không tự trả.
-export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustId }) {
+export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustId, history }) {
   const state = getState(psid);
   state.psid = psid;
   state.pageId = pageId;                       // để tool gửi ảnh biết page nào
   if (pkConvId) state.pkConvId = pkConvId;      // ngữ cảnh Pancake để gửi ảnh cùng kênh
   if (pkCustId) state.pkCustId = pkCustId;
+  const nHist = hydrateHistory(state, history, pageId);
+  if (nHist) console.log(`[hist] nạp ${nHist} lượt lịch sử Pancake cho khách ${psid} (page ${pageId})`);
 
   kb = kb || getKBForPage(pageId);
   recordInbound(psid, { pageId, pageName: kb.pageName, text });

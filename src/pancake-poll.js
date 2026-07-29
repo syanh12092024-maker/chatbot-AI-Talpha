@@ -75,7 +75,8 @@ async function pollPage(pageId) {
     const custMsgCount = msgs.filter((m) => String(m.from?.id) !== String(pageId) && (m.original_message || m.message || '').trim()).length;
     if (custMsgCount <= 1) { console.log(`[pancake] ${c.from?.name || psid}: tin đầu "${text.slice(0, 24)}" → nhường Botcake chào`); continue; }
 
-    const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId });
+    // history = msgs (đã fetch sẵn ở trên) → AI đọc toàn bộ hội thoại trước khi soạn tin.
+    const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs });
     if (!reply) continue;
     const r = await pkSendReply(pageId, c.id, custId, reply);
     if (r.ok) {
