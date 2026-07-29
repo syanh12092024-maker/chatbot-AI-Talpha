@@ -3,7 +3,7 @@ import { runCloser } from './closer.js';
 import { getState, recordInbound, recordOutbound, isAiEnabled } from './store.js';
 import { getKBForPage } from './kb.js';
 import { config } from './config.js';
-import { logAi } from './ai-log.js';
+import { logAi, recentReplyCount } from './ai-log.js';
 
 // NGUYÊN TẮC #13 — KẾT THÚC LÀ PHẢI BÀN GIAO: mọi điểm AI dừng phục vụ (khiếu nại,
 // ngôn ngữ lạ, hết lượt, page thiếu KB...) đều ghi 'handoff' vào Sổ AI kèm LÝ DO
@@ -52,6 +52,9 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   if (custName) state.custName = custName;
   const nHist = hydrateHistory(state, history, pageId);
   if (nHist) console.log(`[hist] nạp ${nHist} lượt lịch sử Pancake cho khách ${psid} (page ${pageId})`);
+  // TRẦN LƯỢT BỀN VỮNG (#8): đồng bộ bộ đếm RAM với số tin AI đã trả trong 24h (từ Sổ AI)
+  // → restart server không còn "reset chui" cho khách thêm lượt.
+  if (state.pkCustId) state.aiTurns = Math.max(state.aiTurns, recentReplyCount(pageId, state.pkCustId));
 
   kb = kb || getKBForPage(pageId);
   recordInbound(psid, { pageId, pageName: kb.pageName, text });

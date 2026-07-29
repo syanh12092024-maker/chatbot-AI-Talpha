@@ -14,6 +14,9 @@ import { addAiConv } from './ai-convs.js';
 //  -11 waitting(chờ hàng) · -12 wait_print(chờ in) · -20 ordered(đã đặt hàng)
 const ORDER_STOP_TAGS = new Set([-1, -2, -3, -11, -12, -20]);
 
+// Đợi khách gõ xong mới trả lời (chống dội bom khách nhắn dồn) — chỉnh bằng REPLY_DEBOUNCE_MS.
+const REPLY_DEBOUNCE_MS = Number(process.env.REPLY_DEBOUNCE_MS || 20000);
+
 // convId -> mốc last_customer_interactive_at đã xử lý (chống trả lời lặp)
 const seen = new Map();
 const primedPages = new Set(); // page đã "ghi mốc lần đầu" — tránh trả lời loạt hội thoại cũ khi mới bật AI
@@ -73,6 +76,10 @@ async function pollPage(pageId) {
     if (!psid || !custId) continue;
     const mark = c.last_customer_interactive_at || c.updated_at || '';
     if (seen.get(c.id) === mark) continue; // mốc này đã xử lý
+    // DEBOUNCE (chống dội bom): khách vừa nhắn <20s trước có thể còn đang gõ tiếp →
+    // CHƯA ghi mốc, đợi tick sau; khi khách ngừng gõ mới trả lời 1 LẦN cho cả cụm tin.
+    const markT = Date.parse(mark);
+    if (!firstTime && Number.isFinite(markT) && Date.now() - markT < REPLY_DEBOUNCE_MS) continue;
     seen.set(c.id, mark);
     if (firstTime) continue; // page mới bật AI: chỉ ghi mốc hội thoại cũ, không trả lời
 
@@ -91,7 +98,16 @@ async function pollPage(pageId) {
     const last = msgs[msgs.length - 1];
     if (!last) continue;
     if (String(last.from?.id) === String(pageId)) continue; // page/botcake đã nói cuối → bỏ
-    const text = (last.original_message || last.message || '').trim();
+    // GỘP CỤM TIN DỒN: lấy TẤT CẢ tin khách liên tiếp ở cuối hội thoại (khách nhắn nhiều
+    // tin ngắn liền nhau) → AI đọc đủ cả cụm và trả lời 1 LẦN, không đáp riêng từng tin.
+    const burst = [];
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i];
+      if (String(m.from?.id) === String(pageId)) break;
+      const tx = (m.original_message || m.message || '').trim();
+      if (tx) burst.unshift(tx);
+    }
+    const text = burst.join('\n');
     if (!text) continue;
 
     // NHƯỜNG TIN ĐẦU cho Botcake: Botcake luôn bắn câu chào đầu tiên. Nếu khách MỚI

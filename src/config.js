@@ -45,7 +45,8 @@ export const config = {
   // → bật sẽ làm AI im gần hết. Bật bằng RESPECT_ASSIGNEE=1 nếu sale thực sự chat tay.
   respectAssignee: process.env.RESPECT_ASSIGNEE === '1',
   // Circuit breakers
-  maxAiTurnsBeforeHandoff: 6, // không tự trả quá N lượt/khách khi chưa có người duyệt
+  // Trần lượt AI/khách (đếm BỀN theo Sổ AI 24h, sống sót qua restart). Chỉnh bằng MAX_AI_TURNS.
+  maxAiTurnsBeforeHandoff: Number(process.env.MAX_AI_TURNS || 5),
   maxToolIterations: 5,       // giới hạn vòng lặp tool-use mỗi lượt
 };
 

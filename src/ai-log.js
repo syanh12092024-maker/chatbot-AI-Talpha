@@ -12,7 +12,29 @@ export function logAi(pageId, custId, type, meta = {}) {
   try {
     const rec = { t: Date.now(), page: String(pageId || ''), cust: String(custId || ''), type, ...meta };
     fs.appendFileSync(FILE, JSON.stringify(rec) + '\n');
+    if (type === 'reply' && _idxBuilt) _idxPush(rec.page, rec.cust, rec.t); // cập nhật chỉ mục đếm lượt
   } catch (e) { console.error('[ai-log] lỗi ghi:', e.message); }
+}
+
+// ---- ĐẾM LƯỢT BỀN VỮNG (nguyên tắc #8): số tin AI đã trả cho 1 khách trong N giờ,
+// đọc từ Sổ AI (file) nên SỐNG SÓT QUA RESTART — bộ đếm RAM không còn bị "reset chui".
+// Chỉ mục xây 1 lần lúc gọi đầu, sau đó logAi tự cập nhật → không quét lại file mỗi tin.
+const _replyIdx = new Map(); // 'page:cust' -> [timestamps]
+let _idxBuilt = false;
+function _idxPush(page, cust, t) {
+  const k = page + ':' + cust;
+  let arr = _replyIdx.get(k);
+  if (!arr) { arr = []; _replyIdx.set(k, arr); }
+  arr.push(t);
+}
+export function recentReplyCount(pageId, custId, windowMs = 24 * 3600 * 1000) {
+  if (!_idxBuilt) {
+    for (const r of readLog()) if (r.type === 'reply') _idxPush(String(r.page), String(r.cust), r.t);
+    _idxBuilt = true;
+  }
+  const arr = _replyIdx.get(String(pageId) + ':' + String(custId)) || [];
+  const since = Date.now() - windowMs;
+  return arr.filter((t) => t >= since).length;
 }
 
 export function readLog() {
