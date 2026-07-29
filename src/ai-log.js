@@ -27,17 +27,23 @@ export function readLog() {
 // Mỗi mục kèm link mở thẳng hội thoại Pancake để sale vào nắm thông tin.
 export function needSale({ hours = 48, types = ['order', 'handoff'] } = {}) {
   const since = Date.now() - hours * 3600 * 1000;
-  const rows = readLog().filter((r) => r.t >= since && types.includes(r.type));
+  const all = readLog();
+  // Mã hội thoại Pancake (pageId_psid) theo (page,khách) — lấy từ BẤT KỲ sự kiện nào có ghi conv.
+  // Đường link đúng của Pancake là ?c_id=<conv id>; customer_id (UUID) KHÔNG mở được chat.
+  const convOf = new Map();
+  for (const r of all) if (r.conv) convOf.set(`${r.page}:${r.cust}`, r.conv);
+  const rows = all.filter((r) => r.t >= since && types.includes(r.type));
   // mới nhất trước; mỗi (page,khách,loại) chỉ lấy bản mới nhất
   const seen = new Set(); const out = [];
   for (const r of rows.reverse()) {
     const k = `${r.page}:${r.cust}:${r.type}`;
     if (seen.has(k)) continue; seen.add(k);
+    const conv = r.conv || convOf.get(`${r.page}:${r.cust}`) || '';
     out.push({
       t: r.t, page: r.page, cust: r.cust, type: r.type,
       name: r.name || '', phone: r.phone || '', city: r.city || '', qty: r.qty || null,
       reason: r.reason || '',
-      link: r.cust ? `https://pancake.vn/${r.page}?customer_id=${r.cust}` : `https://pancake.vn/${r.page}`,
+      link: conv ? `https://pancake.vn/${r.page}?c_id=${conv}` : `https://pancake.vn/${r.page}`,
     });
   }
   return out;

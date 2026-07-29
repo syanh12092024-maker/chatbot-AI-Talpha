@@ -138,7 +138,7 @@ export async function executeTool(name, input, ctx) {
         try { markConversationOrdered(state.pkConvId); } catch { /* nhớ ngay để không tạo lần 2 */ }
         if (!dedup) { // hội thoại đã có đơn → không đếm lại
           try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
-          try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty }); } catch { /* sổ AI không chặn */ }
+          try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty, conv: state.pkConvId || '' }); } catch { /* sổ AI không chặn */ }
           // Báo SALE ngay trong Pancake: ghi chú tóm tắt đơn vào hồ sơ khách.
           const noteLines = [
             '🤖 AI ĐÃ CHỐT ĐƠN — cần sale xác nhận',
@@ -182,7 +182,7 @@ export async function executeTool(name, input, ctx) {
       case 'handoff_human': {
         state.handoff = true;
         state.handoffReason = input.reason || '';
-        try { logAi(state.pageId, state.pkCustId, 'handoff', { reason: input.reason || '' }); } catch { /* sổ AI không chặn */ }
+        try { logAi(state.pageId, state.pkCustId, 'handoff', { reason: input.reason || '', conv: state.pkConvId || '' }); } catch { /* sổ AI không chặn */ }
         // Báo SALE ngay trong Pancake để biết hội thoại này cần người.
         try { await pkAddNote(state.pageId, state.pkCustId, `🙋 AI CHUYỂN NGƯỜI — cần sale vào hỗ trợ\nLý do: ${input.reason || 'không rõ'}`); } catch { /* không chặn */ }
         return { content: 'Đã chuyển cho nhân viên. Hãy báo khách sẽ có người hỗ trợ ngay.' };

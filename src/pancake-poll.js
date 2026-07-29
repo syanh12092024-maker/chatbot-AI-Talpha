@@ -81,7 +81,7 @@ async function pollPage(pageId) {
     if (r.ok) {
       try { incReply(pageId); incLead(pageId, custId); } catch { /* thống kê không chặn gửi tin */ }
       try { addAiConv(pageId, c.id); } catch { /* ghi hội thoại AI để khớp đơn */ }
-      try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80) }); } catch { /* sổ AI không chặn */ }
+      try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id }); } catch { /* sổ AI không chặn */ }
     }
     console.log(`[pancake] ${c.from?.name || psid}: "${text.slice(0, 30)}" → AI: "${reply.slice(0, 40)}" ${r.ok ? '✓' : '✗ ' + r.error}`);
   }
