@@ -6,80 +6,101 @@
 <title>AI Closer — Dashboard</title>
 <style>
   :root{
-    --bg:#f4f6f8; --panel:#fff; --ink:#0f172a; --muted:#667085; --line:#e6eaef;
-    --pri:#0e7c86; --priSoft:#e6f4f5; --ok:#16a34a; --okSoft:#e7f6ec; --bad:#dc2626; --badSoft:#fdecec; --warn:#c2740a; --warnSoft:#fbf0e0;
-    --side:#10262b; --sideMut:#7fa3a8; --sideAct:#163a40;
-    --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.07);
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec; --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sideMut:#7fa3a8; --sideAct:#12333a; --sideLine:#173840;
+    --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+    --shHov:0 6px 20px rgba(16,24,40,.09);
+    --r:12px;
   }
   *{box-sizing:border-box} html,body{margin:0;height:100%}
-  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
   .app{display:flex;height:100vh;overflow:hidden}
-  /* sidebar */
-  .side{width:224px;background:var(--side);color:#fff;display:flex;flex-direction:column;flex-shrink:0}
-  .brand{display:flex;align-items:center;gap:10px;padding:18px 18px 16px;font-weight:700;font-size:16px;letter-spacing:.2px}
-  .brand .logo{width:30px;height:30px;border-radius:8px;background:var(--pri);display:flex;align-items:center;justify-content:center}
-  .nav{display:flex;flex-direction:column;gap:2px;padding:6px 10px}
-  .nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--sideMut);cursor:pointer;font-weight:500;font-size:14px}
-  .nav a svg{width:18px;height:18px;flex-shrink:0}
-  .nav a:hover{background:var(--sideAct);color:#fff}
-  .nav a.active{background:var(--pri);color:#fff}
-  .side .foot{padding:12px 18px;font-size:11px;color:#5c8189}
-  /* sidebar chuyên nghiệp */
-  .brand{border-bottom:1px solid #1c3a40;padding-bottom:16px}
-  .brand .logo{box-shadow:0 2px 10px rgba(14,124,134,.45);font-size:16px}
+
+  /* ============ SIDEBAR ============ */
+  .side{width:230px;background:var(--side);color:#fff;display:flex;flex-direction:column;flex-shrink:0}
+  .brand{display:flex;align-items:center;gap:11px;padding:18px 18px 16px;border-bottom:1px solid var(--sideLine)}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#12a0ac,var(--pri));display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 3px 12px rgba(14,124,134,.5)}
   .brandtxt{display:flex;flex-direction:column;line-height:1.15}
-  .brandtxt .bname{font-weight:700;font-size:15.5px}
+  .brandtxt .bname{font-weight:700;font-size:15.5px;letter-spacing:.2px}
   .brandtxt .bsub{font-size:11px;color:var(--sideMut);font-weight:500;margin-top:2px}
-  .navlabel{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#5c8189;padding:16px 14px 5px}
-  .navlabel:first-child{padding-top:10px}
-  .nav a.ext .extarrow{margin-left:auto;width:13px;height:13px;opacity:.5}
+  .nav{display:flex;flex-direction:column;gap:2px;padding:8px 10px;overflow:auto}
+  .navlabel{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#517a81;padding:14px 12px 5px}
+  .nav a{position:relative;display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:var(--sideMut);cursor:pointer;font-weight:500;font-size:13.5px;transition:.12s}
+  .nav a svg{width:17px;height:17px;flex-shrink:0}
+  .nav a:hover{background:var(--sideAct);color:#e8f1f2}
+  .nav a.active{background:var(--sideAct);color:#fff;font-weight:600}
+  .nav a.active::before{content:'';position:absolute;left:-10px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:#14b3c0}
+  .nav a.ext .extarrow{margin-left:auto;width:13px;height:13px;opacity:.45}
   .nav a.ext:hover .extarrow{opacity:1}
   .nsbadge{margin-left:auto;background:var(--bad);color:#fff;font-size:11px;font-weight:700;min-width:19px;height:19px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
-  .sidestat{margin-top:auto;display:flex;align-items:center;gap:8px;padding:12px 16px;font-size:12px;color:var(--sideMut);border-top:1px solid #1c3a40}
-  .sidestat .dot{width:7px;height:7px;box-shadow:0 0 0 3px rgba(22,163,74,.15)}
-  /* main */
+  .sidestat{margin-top:auto;display:flex;align-items:center;gap:8px;padding:13px 16px;font-size:12px;color:var(--sideMut);border-top:1px solid var(--sideLine)}
+  .side .foot{padding:0 16px 14px;font-size:10.5px;color:#4a6d74}
+
+  /* ============ TOPBAR + CONTENT ============ */
   .wrap{flex:1;display:flex;flex-direction:column;min-width:0}
-  .top{height:60px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 22px;flex-shrink:0}
+  .top{height:58px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 22px;flex-shrink:0}
   .top h1{font-size:16px;margin:0;font-weight:650}
   .top .sp{flex:1}
-  .stat{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);background:#f7f9fa;border:1px solid var(--line);padding:5px 11px;border-radius:20px}
+  .stat{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);background:#f7f9fa;border:1px solid var(--line);padding:5px 11px;border-radius:20px;font-weight:500}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--okSoft)}
   .dot.bad{background:var(--bad);box-shadow:0 0 0 3px var(--badSoft)}
-  .iconbtn{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
+  .iconbtn{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:.12s}
   .iconbtn:hover{background:#f5f6f7;color:var(--ink)}
-  .content{flex:1;overflow:auto;padding:22px}
-  h2{font-size:18px;margin:0 0 4px} .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
-  /* cards */
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px;margin-bottom:20px}
-  .mc{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px;box-shadow:var(--sh);cursor:pointer;transition:.12s}
-  .mc:hover{transform:translateY(-2px);border-color:#cfd8df}
-  .mc .ic{width:34px;height:34px;border-radius:9px;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
-  .mc .l{font-size:12.5px;color:var(--muted)} .mc .v{font-size:27px;font-weight:700;margin-top:2px;line-height:1.1}
+  .content{flex:1;overflow:auto;padding:24px 26px}
+  h2{font-size:17px;margin:0 0 4px;font-weight:650} .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px}
+  .vhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .vhead h2{margin:0}
+
+  /* ============ CARDS / KPI ============ */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:14px;margin-bottom:22px}
+  .mc{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--sh)}
+  .mc .ic{width:34px;height:34px;border-radius:9px;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;margin-bottom:11px}
+  .mc .ic svg{width:17px;height:17px}
+  .mc .l{font-size:12px;color:var(--muted);font-weight:500} .mc .v{font-size:26px;font-weight:700;margin-top:3px;line-height:1.1;letter-spacing:-.3px}
   .mc .d{font-size:11.5px;color:var(--muted);margin-top:5px}
-  /* table */
-  .tablecard{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);overflow:hidden}
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)} th{background:#fafbfc;color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+
+  /* ============ TABLE ============ */
+  .tablecard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line)}
+  th{background:#fafbfc;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
   tbody tr:hover{background:#fafcfc} tr:last-child td{border-bottom:none}
-  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:3px 10px;border-radius:20px;font-weight:600}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:3px 10px;border-radius:20px;font-weight:600;white-space:nowrap}
   .pill.ok{background:var(--okSoft);color:var(--ok)} .pill.bad{background:var(--badSoft);color:var(--bad)} .pill.warn{background:var(--warnSoft);color:var(--warn)} .pill.mut{background:#eef1f3;color:var(--muted)}
-  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
-  .btn:hover{background:#f5f6f7} .btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)} .btn.pri:hover{background:#0c6c75} .btn.sm{padding:5px 9px;font-size:12.5px} .btn svg{width:15px;height:15px}
-  input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13.5px;font-family:inherit;outline:none;background:#fff} input:focus,select:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--priSoft)}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;gap:6px;font-weight:500;transition:.12s}
+  .btn:hover{background:#f5f6f7;border-color:#d5dce2} .btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)} .btn.pri:hover{background:var(--priDark)} .btn.sm{padding:5px 10px;font-size:12.5px} .btn svg{width:14px;height:14px}
+  input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:13.5px;font-family:inherit;outline:none;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--priSoft)}
   .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-  .toggle{width:40px;height:23px;border-radius:13px;background:#cbd5db;position:relative;transition:.15s;cursor:pointer;flex-shrink:0}
+  .search{position:relative;max-width:280px} .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted)} .search input{padding-left:33px;width:100%}
+  /* thanh tìm kiếm to, rõ (bảng Tổng quan) */
+  .search.big{max-width:440px;flex:1;min-width:240px}
+  .search.big svg{width:17px;height:17px;left:13px}
+  .search.big input{padding:11px 13px 11px 39px;font-size:14px;border-radius:10px;border-width:1.5px}
+  /* công tắc bật/tắt AI */
+  .toggle{width:40px;height:23px;border-radius:13px;background:#cbd5db;position:relative;transition:.15s;cursor:pointer;flex-shrink:0;display:inline-block;vertical-align:middle}
   .toggle.on{background:var(--ok)} .toggle::after{content:'';position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)} .toggle.on::after{left:18px}
-  .search{position:relative;max-width:280px} .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted)} .search input{padding-left:34px;width:100%}
-  .muted{color:var(--muted)} .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--muted)}
-  /* conversations */
-  .convo{display:grid;grid-template-columns:330px 1fr;gap:16px;height:calc(100vh - 200px)}
+  .muted{color:var(--muted)} .mono{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--muted)}
+  .empty{padding:46px 20px;text-align:center;color:var(--muted)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 13px;font-size:12.5px;cursor:pointer;color:var(--muted);font-weight:500;transition:.12s}
+  .chip:hover{background:#f5f6f7} .chip.act{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .drange{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .drange-cx{display:inline-flex;align-items:center;gap:6px;padding-left:8px;margin-left:2px;border-left:1px solid var(--line)}
+  .drange input[type=date]{padding:5px 8px;font-size:12.5px}
+
+  .av{width:34px;height:34px;border-radius:50%;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+
+  /* ============ CONVERSATIONS ============ */
+  .convo{display:grid;grid-template-columns:330px 1fr;gap:16px;height:calc(100vh - 210px)}
   @media(max-width:880px){.convo{grid-template-columns:1fr;height:auto}}
-  .list{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);overflow:auto}
+  .list{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:auto}
   .ci{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:10px;align-items:flex-start}
   .ci:hover{background:#fafcfc} .ci.sel{background:var(--priSoft)}
-  .av{width:34px;height:34px;border-radius:50%;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
   .ci .t{font-weight:600;font-size:13px;display:flex;justify-content:space-between;gap:6px} .ci .s{font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);display:flex;flex-direction:column;overflow:hidden}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);display:flex;flex-direction:column;overflow:hidden}
   .phd{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
   .tr{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:16px}
   .bub{max-width:78%;padding:9px 13px;border-radius:15px;font-size:13.5px;white-space:pre-wrap;line-height:1.45}
@@ -88,26 +109,19 @@
   .bub.agent{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:5px}
   .bub.system{align-self:center;background:var(--warnSoft);color:var(--warn);font-size:12px}
   .composer{padding:12px;border-top:1px solid var(--line);display:flex;gap:9px}
-  .empty{padding:48px 20px;text-align:center;color:var(--muted)}
-  /* toast */
-  #toast{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:50}
-  .tt{background:#10262b;color:#fff;padding:11px 16px;border-radius:10px;font-size:13.5px;box-shadow:0 6px 24px rgba(0,0,0,.18);display:flex;align-items:center;gap:8px;animation:in .2s}
-  .tt.ok{background:#0e7c86} .tt.bad{background:#dc2626}
-  @keyframes in{from{opacity:0;transform:translateY(8px)}}
-  /* KB product cards */
-  .pcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);padding:18px;margin-bottom:14px}
-  /* KB editor: gộp cấu hình AI + sản phẩm trong 1 khung */
-  .kbeditor{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);padding:2px 20px 16px}
+
+  /* ============ KB EDITOR ============ */
+  .kbbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 16px;position:sticky;top:0;z-index:8;background:var(--bg);padding:6px 0}
+  .kbeditor{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:2px 20px 16px}
   .cfgsec{padding:16px 0 4px;border-left:3px solid var(--pri);padding-left:14px;margin-top:8px}
-  .kbsec{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;padding:14px 0 2px;border-top:1px solid var(--line);margin-top:14px}
-  .kbeditor .pcard{border:none;box-shadow:none;border-radius:0;margin:0;padding:16px 0;border-top:1px dashed var(--line)}
-  .kbeditor .pcard:first-of-type{border-top:none;padding-top:8px}
+  .kbsec{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:14px 0 2px;border-top:1px solid var(--line);margin-top:14px}
+  .pcard{padding:16px 0;border-top:1px dashed var(--line)}
+  .pcard:first-of-type{border-top:none;padding-top:8px}
   .pcard .fh{display:flex;gap:12px;align-items:flex-end;margin-bottom:14px}
   .fld{display:flex;flex-direction:column;gap:5px;min-width:0}
   .fld>label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
   .fld input,.fld textarea,.fld select{width:100%}
   .pcard textarea{resize:vertical;min-height:46px;line-height:1.45}
-  .grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px}
   .imgbox2{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
   .imglist{display:flex;flex-wrap:wrap;gap:10px}
   .imtile{width:92px;position:relative}
@@ -116,7 +130,7 @@
   .imtile .imx{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;border:none;background:var(--bad);color:#fff;cursor:pointer;font-size:12px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.25)}
   .imadd .imthumb{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:12px;gap:3px;border-style:dashed}
   .imadd .imthumb:hover{background:var(--priSoft);color:var(--pri);border-color:var(--pri)}
-  /* bảng gói giá linh hoạt */
+  .imtile select.imlabel{width:92px;font-size:11px;padding:4px 4px;border-radius:7px;cursor:pointer}
   .pricebox{margin:4px 0 14px;padding:14px 16px;background:#fafbfc;border:1px solid var(--line);border-radius:10px}
   .pricebox>.pblabel{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:11px}
   .tierrow{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:13.5px;flex-wrap:wrap}
@@ -124,53 +138,22 @@
   .tierrow .tl{flex:1;min-width:150px} .tierrow .tp{width:110px}
   .tierx{width:28px;height:28px;border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer;color:var(--muted);flex-shrink:0}
   .tierx:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
-  .imtile select.imlabel{width:92px;font-size:11px;padding:4px 4px;border-radius:7px;cursor:pointer}
-  /* product card header + actions */
   .phead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;cursor:pointer}
-  .ptitle{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ptitle .num{color:var(--muted);font-weight:500;margin-right:6px}
+  .ptitle{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pacts{display:flex;gap:6px;flex-shrink:0}
   .actbtn{width:32px;height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center}
   .actbtn:hover{background:#f5f6f7;color:var(--ink)} .actbtn.del:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
   .pcard.collapsed .pbody{display:none}
   .caret{transition:.15s;display:inline-block;color:var(--muted)} .pcard.collapsed .caret{transform:rotate(-90deg)}
-  .rmx{width:30px;height:30px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--muted);flex-shrink:0}
-  .rmx:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
-  .kbbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 16px;position:sticky;top:0;z-index:8}
   .combo-drop{position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(16,24,40,.14);max-height:340px;overflow:auto;margin-top:5px;display:none}
   .ci2{padding:9px 13px;cursor:pointer;font-size:13.5px;border-bottom:1px solid #f1f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ci2:hover{background:var(--priSoft)} .ci2:last-child{border-bottom:none}
-  /* 1 trang cuộn dọc: mỗi section cách nhau + chừa chỗ khi cuộn tới */
-  .hsec{display:block;scroll-margin-top:16px} .hsec+.hsec{margin-top:38px;padding-top:30px;border-top:1px solid var(--line)}
-  .hsec:empty{display:none}
-  /* bộ lọc ngày */
-  .stashead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-  .drange{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-  .drange .chip{padding:6px 12px}
-  .drange-cx{display:inline-flex;align-items:center;gap:6px;padding-left:6px;margin-left:2px;border-left:1px solid var(--line)}
-  .drange input[type=date]{padding:5px 8px;font-size:12.5px}
-  /* filter chips */
-  .chips{display:flex;gap:6px;flex-wrap:wrap}
-  .chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--muted);font-weight:500}
-  .chip:hover{background:#f5f6f7} .chip.act{background:var(--pri);color:#fff;border-color:var(--pri)}
-  /* page management cards */
-  .pglist{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:14px}
-  @media(max-width:1000px){.pglist{grid-template-columns:1fr}}
-  .pg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);overflow:hidden;transition:.12s}
-  .pg:hover{border-color:#cfd8df;box-shadow:0 5px 16px rgba(16,24,40,.08)}
-  .pg.on{border-left:3px solid var(--ok)}
-  .pgacts{display:flex;flex-direction:column;gap:7px;padding:14px 12px;background:#fafbfc;border-right:1px solid var(--line);width:116px;flex-shrink:0}
-  .pgbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 6px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--ink);font-weight:500}
-  .pgbtn svg{width:14px;height:14px} .pgbtn:hover{background:#eef1f3}
-  .pgbtn.ai{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:600} .pgbtn.ai:hover{background:#138a3d}
-  .pgbtn.aioff{color:var(--muted)}
-  .pgbody{flex:1;min-width:0;padding:14px 16px;display:flex;flex-direction:column;gap:9px}
-  .pghd{display:flex;align-items:center;gap:10px}
-  .pgname{font-weight:650;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pgtags{display:flex;gap:6px;flex-wrap:wrap}
-  .pgprev{font-size:12.5px;color:var(--muted);background:#f7f9fa;border-radius:8px;padding:8px 11px;line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-  .pgfoot{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:auto;padding-top:2px}
-  .pgfoot b{color:var(--ink)}
+
+  /* toast */
+  #toast{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:50}
+  .tt{background:#10262b;color:#fff;padding:11px 16px;border-radius:10px;font-size:13.5px;box-shadow:0 6px 24px rgba(0,0,0,.18);display:flex;align-items:center;gap:8px;animation:in .2s}
+  .tt.ok{background:#0e7c86} .tt.bad{background:#dc2626}
+  @keyframes in{from{opacity:0;transform:translateY(8px)}}
 </style>
 </head>
 <body>
@@ -182,16 +165,16 @@
     </div>
     <nav class="nav" id="nav"></nav>
     <div class="sidestat"><span class="dot" id="sidedot"></span><span id="sidestattxt">đang kết nối…</span></div>
-    <div class="foot">v0.2 · Pilot PH/ME</div>
+    <div class="foot">v0.3 · Pilot PH/ME</div>
   </aside>
   <div class="wrap">
     <header class="top">
       <h1 id="ttl">Bảng điều khiển</h1>
       <div class="sp"></div>
       <div class="stat"><span class="dot" id="sdot"></span><span id="sstat">server</span></div>
-      <div class="stat" id="stok">— token</div>
+      <div class="stat" id="stok">— nguồn</div>
       <div class="stat" id="spage">— page</div>
-      <div class="iconbtn" title="Làm mới" onclick="renderHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></div>
+      <div class="iconbtn" title="Làm mới" onclick="render()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></div>
     </header>
     <main class="content" id="content"></main>
   </div>
@@ -206,36 +189,57 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const ago=t=>{if(!t)return'';const d=(Date.now()-t)/1000;if(d<60)return Math.round(d)+'s';if(d<3600)return Math.round(d/60)+'m';return Math.round(d/3600)+'h';};
 const ini=s=>(String(s||'?').trim()[0]||'?').toUpperCase();
 function toast(m,type='ok'){const e=document.createElement('div');e.className='tt '+type;e.textContent=m;document.getElementById('toast').appendChild(e);setTimeout(()=>e.remove(),2600);}
-const IC={overview:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>',pages:'<path d="M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',msgs:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',kb:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>',tokens:'<path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/>',stats:'<path d="M3 3v18h18M7 16v-6M12 16V8M17 16v-3"/>'};
+const IC={
+  bell:'<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',
+  overview:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>',
+  pages:'<path d="M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',
+  msgs:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  kb:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>',
+  tokens:'<path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/>',
+  stats:'<path d="M3 3v18h18M7 16v-6M12 16V8M17 16v-3"/>',
+  mega:'<path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6"/>'};
 const svg=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const search=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>`;
-
-// 1 TRANG CUỘN DỌC: tất cả section trên cùng 1 trang. Menu chỉ giữ lối tắt tới Cài đặt
-// (nằm cuối trang) — 3 mục Tổng quan/Pages/Tin nhắn đã gộp nên bỏ khỏi menu.
-const NAV=[['tokens','Cài đặt / Token','tokens']];
-// Tool "bắn bot khách cũ" (Gửi tin hàng loạt) chạy riêng trên cùng VPS, cổng 3002 → mở tab mới.
-const BROADCAST_URL=`http://${location.hostname}:3002`;
-const IC_MEGA='<path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6"/>';
-let ctx={pageId:'',pageName:''}, selPsid=null, statsTimer=null, msgsTimer=null, RANGE={key:'all',from:null,to:null};
-const content=document.getElementById('content');
-const sec=id=>document.getElementById('sec-'+id);
 const extArrow='<svg class="extarrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>';
-document.getElementById('nav').innerHTML=
-  `<div class="navlabel">🤖 Chat Bot AI</div>`
-  +`<a data-k="needsale" onclick="jumpTo('needsale')">${svg(IC.msgs)} Cần sale xử lý <span id="nsBadge" class="nsbadge" style="display:none">0</span></a>`
-  +`<a data-k="stats" onclick="jumpTo('stats')">${svg(IC.overview)} Tổng quan</a>`
-  +`<a data-k="tokens" onclick="jumpTo('tokens')">${svg(IC.tokens)} Cài đặt / Token</a>`
-  +`<div class="navlabel">📢 Tool Bắn Bot</div>`
-  +`<a class="ext" title="Bắn tin hàng loạt cho khách cũ (mở tab mới)" onclick="window.open(BROADCAST_URL,'_blank')">${svg(IC_MEGA)} <span>Bắn bot khách cũ</span> ${extArrow}</a>`;
-function setActiveNav(k){document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k));}
-window.jumpTo=k=>{const e=sec(k);if(e){e.scrollIntoView({behavior:'smooth',block:'start'});setActiveNav(k);}};
 
-// Dựng 1 trang gồm 4 section, mỗi phần tự nạp dữ liệu + tự làm mới.
-function renderHome(){
-  clearInterval(statsTimer);clearInterval(msgsTimer);clearInterval(nsTimer);
-  content.innerHTML=`<section id="sec-needsale" class="hsec"></section><section id="sec-stats" class="hsec"></section><section id="sec-pages" class="hsec"></section><section id="sec-msgs" class="hsec"></section><section id="sec-tokens" class="hsec"></section>`;
-  rNeedSale();rOverview();rPages();rMsgs();rTokens();setActiveNav('needsale');
+// Tool "bắn bot khách cũ" chạy riêng trên cùng VPS, cổng 3002 → mở tab mới.
+const BROADCAST_URL=`http://${location.hostname}:3002`;
+
+let ctx={pageId:'',pageName:''}, selPsid=null, RANGE={key:'all',from:null,to:null};
+const content=document.getElementById('content');
+
+/* ============ ROUTER: mỗi mục menu = 1 màn hình riêng, không trùng chức năng ============
+   "kb" không nằm trên menu — mở từ nút "Sửa KB" trong bảng Tổng quan. */
+const VIEWS={
+  needsale:{title:'Cần sale xử lý', icon:IC.bell,  render:rNeedSale},
+  stats:   {title:'Tổng quan',      icon:IC.overview, render:rOverview},
+  msgs:    {title:'Tin nhắn',       icon:IC.msgs,  render:rMsgs},
+  kb:      {title:'Kịch bản / KB',  icon:IC.kb,    render:rKB},
+  tokens:  {title:'Cài đặt / Token',icon:IC.tokens,render:rTokens},
+};
+document.getElementById('nav').innerHTML=
+  `<div class="navlabel">Chat Bot AI</div>`
+  +['needsale','stats','msgs'].map(k=>`<a data-k="${k}" onclick="go('${k}')">${svg(VIEWS[k].icon)} ${VIEWS[k].title}${k==='needsale'?' <span id="nsBadge" class="nsbadge" style="display:none">0</span>':''}</a>`).join('')
+  +`<div class="navlabel">Hệ thống</div>`
+  +`<a data-k="tokens" onclick="go('tokens')">${svg(VIEWS.tokens.icon)} ${VIEWS.tokens.title}</a>`
+  +`<div class="navlabel">Tool Bắn Bot</div>`
+  +`<a class="ext" title="Bắn tin hàng loạt cho khách cũ (mở tab mới)" onclick="window.open(BROADCAST_URL,'_blank')">${svg(IC.mega)} <span>Bắn bot khách cũ</span> ${extArrow}</a>`;
+
+let timers=[];
+const addTimer=(fn,ms)=>timers.push(setInterval(fn,ms));
+const clearTimers=()=>{timers.forEach(clearInterval);timers=[];};
+const curView=()=>(location.hash||'#needsale').slice(1).split('?')[0];
+window.go=k=>{if(curView()===k)render();else location.hash=k;};
+window.addEventListener('hashchange',render);
+function render(){
+  clearTimers();selPsid=null;
+  const k=VIEWS[curView()]?curView():'needsale';
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k));
+  document.getElementById('ttl').textContent=VIEWS[k].title;
+  content.innerHTML='';
+  VIEWS[k].render();
 }
+
 const setEl=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt;};
 const setCls=(id,cls)=>{const e=document.getElementById(id);if(e)e.className=cls;};
 async function topStatus(){try{const o=await j('/overview');
@@ -248,36 +252,28 @@ async function topStatus(){try{const o=await j('/overview');
 function agoVi(ts){if(!ts)return 'chưa có';const s=Math.floor((Date.now()-ts)/1000);
   if(s<60)return s+' giây trước';if(s<3600)return Math.floor(s/60)+' phút trước';
   if(s<86400)return Math.floor(s/3600)+' giờ trước';return Math.floor(s/86400)+' ngày trước';}
-function rateBadge(r){const cls=r>=30?'ok':r>=10?'warn':'mut';return `<span class="pill ${cls}">${r||0}%</span>`;}
-function statRow(p){return `<tr>
-   <td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">${p.id}</div></td>
-   <td>${p.aiEnabled?'<span class="pill ok">● Đang bật</span>':'<span class="pill mut">tắt</span>'}</td>
-   <td>${p.hasKb?'<span class="pill ok">✓ có KB</span>':'<span class="pill warn">chưa</span>'}</td>
-   <td style="text-align:right;font-weight:700">${p.replies||0}</td>
-   <td style="text-align:right;font-weight:700">${p.leads||0}</td>
-   <td style="text-align:right;font-weight:700">${p.aiOrders!=null?p.aiOrders:'<span class="muted">…</span>'}</td>
-   <td style="text-align:right">${rateBadge(p.closeRate)}</td>
-   <td><button class="btn sm" onclick="openPageKB('${p.id}','${esc(p.name).replace(/'/g,"\\'")}')">Sửa KB</button></td>
- </tr>`;}
-function statRows(pages){return (pages||[]).map(statRow).join('')||`<tr><td colspan="8" class="empty">Chưa có page nào bật AI hoặc có hoạt động.</td></tr>`;}
 
-// ---- HÀNG CHỜ CHO SALE: AI đã chốt đơn / cần người ----
-let nsTimer=null;
-async function rNeedSale(){
-  const el=sec('needsale'); if(!el)return;
-  el.innerHTML=`<div class="stashead"><h2 style="margin:0">🔔 Cần sale xử lý</h2>
-     <div class="row"><span class="muted" style="font-size:12.5px">AI đã chốt / cần người — 48 giờ qua</span>
-     <button class="btn sm" onclick="rNeedSale()">↻ Làm mới</button></div></div>
+/* ============ BADGE "Cần sale" — cập nhật nền dù đang ở màn nào ============ */
+async function pollBadge(){
+  const d=await j('/need-sale?hours=48').catch(()=>({list:[]}));
+  const n=(d.list||[]).length, b=document.getElementById('nsBadge');
+  if(b){b.textContent=n;b.style.display=n?'inline-flex':'none';}
+  return d;
+}
+
+/* ============ 1. CẦN SALE XỬ LÝ ============ */
+function rNeedSale(){
+  content.innerHTML=`<div class="vhead"><h2>🔔 Hàng chờ cho sale</h2>
+     <div class="row"><span class="muted" style="font-size:12.5px">AI đã chốt đơn / cần người — 48 giờ qua · tự làm mới 15s</span>
+     <button class="btn sm" onclick="fillNeedSale()">↻ Làm mới</button></div></div>
    <div id="nsbody"></div>`;
   fillNeedSale();
-  clearInterval(nsTimer); nsTimer=setInterval(()=>{if(sec('needsale'))fillNeedSale();},15000);
+  addTimer(fillNeedSale,15000);
 }
 async function fillNeedSale(){
   const el=document.getElementById('nsbody'); if(!el)return;
-  const d=await j('/need-sale?hours=48').catch(()=>({list:[]}));
+  const d=await pollBadge();
   const list=d.list||[];
-  const b=document.getElementById('nsBadge');
-  if(b){ b.textContent=list.length; b.style.display=list.length?'inline-block':'none'; }
   if(!list.length){ el.innerHTML='<div class="tablecard"><div class="empty">Chưa có việc nào cần sale trong 48h qua. AI đang tự xử lý ✅</div></div>'; return; }
   el.innerHTML=`<div class="tablecard"><table><thead><tr><th>Việc</th><th>Khách</th><th>SĐT</th><th>Page</th><th>Lúc</th><th></th></tr></thead><tbody>${
     list.map(r=>`<tr>
@@ -290,10 +286,10 @@ async function fillNeedSale(){
     </tr>`).join('')}</tbody></table></div>`;
 }
 
-// ---- Bộ lọc ngày ----
+/* ============ Bộ lọc ngày (dùng chung cho Tổng quan) ============ */
 const RANGE_PRESETS=[['today','Hôm nay'],['7','7 ngày'],['30','30 ngày'],['all','Tất cả']];
 function rangeQ(){return RANGE.from?`?from=${RANGE.from}&to=${RANGE.to}`:'';}
-function rangeLabel(){if(RANGE.key==='all')return 'toàn thời gian';if(RANGE.key==='today')return 'hôm nay';if(RANGE.key==='custom')return RANGE.from+' → '+RANGE.to;return RANGE.from+' → '+RANGE.to;}
+function rangeLabel(){if(RANGE.key==='all')return 'toàn thời gian';if(RANGE.key==='today')return 'hôm nay';return RANGE.from+' → '+RANGE.to;}
 const _ymd=d=>d.toISOString().slice(0,10);
 window.setRange=k=>{const t=new Date();
   if(k==='all')RANGE={key:'all',from:null,to:null};
@@ -305,12 +301,14 @@ window.setRange=k=>{const t=new Date();
 window.applyCustomRange=()=>{const f=document.getElementById('rfrom').value,to=document.getElementById('rto').value;
   if(!f||!to){toast('Chọn cả 2 ngày','bad');return;}RANGE={key:'custom',from:f,to:to};
   document.querySelectorAll('#drange .chip').forEach(b=>b.classList.toggle('act',b.id==='rangeCustomBtn'));fillStatsBody();};
+window.toggleCustomRange=()=>{const e=document.getElementById('drangeCustom');if(e)e.style.display=e.style.display==='none'?'inline-flex':'none';};
 
-// Section TỔNG QUAN: khung + bộ lọc (giữ nguyên), phần số liệu nạp riêng để làm mới không giật.
-async function rOverview(){
+/* ============ 2. TỔNG QUAN — số liệu + quản lý page GỘP 1 BẢNG (bật/tắt AI, Chat, KB tại chỗ) ============ */
+const OVCHIPS=[['all','Tất cả'],['on','Đang bật AI'],['act','Có hoạt động'],['kb','Có kịch bản'],['nokb','Chưa có KB']];
+function rOverview(){
   const cx=RANGE.key==='custom';
-  sec('stats').innerHTML=`<div class="stashead">
-     <h2 style="margin:0">Tổng quan</h2>
+  content.innerHTML=`<div class="vhead">
+     <h2>Tổng quan hoạt động</h2>
      <div class="drange" id="drange">
        ${RANGE_PRESETS.map(([k,l])=>`<button class="chip ${RANGE.key===k?'act':''}" data-r="${k}" onclick="setRange('${k}')">${l}</button>`).join('')}
        <button class="chip ${cx?'act':''}" id="rangeCustomBtn" onclick="toggleCustomRange()">📅 Khác</button>
@@ -320,103 +318,99 @@ async function rOverview(){
        </span>
      </div>
    </div>
-   <div id="statsbody"></div>`;
+   <div id="kpicards" class="cards"></div>
+   <div class="row" style="justify-content:space-between;align-items:center;margin:6px 0 12px;gap:10px">
+     <b style="font-size:14px;flex-shrink:0">Pages <span id="ovsub" class="muted" style="font-weight:400;font-size:12px"></span></b>
+     <div class="row" style="flex:1;justify-content:flex-end;flex-wrap:nowrap">
+       <div class="search big">${search}<input id="ovq" placeholder="Tìm tên page hoặc ID..." oninput="drawOvRows()"></div>
+       <select id="ovfsel" onchange="setOvFilter(this.value)" title="Bộ lọc page" style="padding:10px 11px;border-radius:10px;font-size:13.5px">
+         ${OVCHIPS.map(c=>`<option value="${c[0]}" ${c[0]===(window._ovFilter||'act')?'selected':''}>${c[1]}</option>`).join('')}
+       </select>
+       <button class="btn sm" onclick="auditCheck()" title="Tính lại số liệu từ Sổ AI (audit log) để đối chiếu" style="flex-shrink:0">🔍 Đối chiếu Sổ AI</button>
+     </div>
+   </div>
+   <div class="tablecard"><table><thead><tr><th style="width:86px">AI</th><th>Page</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right">Đơn khách AI</th><th style="text-align:right">Tỉ lệ chốt</th><th style="text-align:right">Thao tác</th></tr></thead><tbody id="ovbody"></tbody></table></div>`;
   fillStatsBody();
-  clearInterval(statsTimer);statsTimer=setInterval(()=>{if(sec('stats'))fillStatsBody();},12000);
+  addTimer(()=>{if(document.getElementById('kpicards'))fillStatsBody();},12000);
 }
-window.toggleCustomRange=()=>{const e=document.getElementById('drangeCustom');if(e)e.style.display=e.style.display==='none'?'inline-flex':'none';};
-async function fillStatsBody(){const el=document.getElementById('statsbody');if(!el)return;
-  const [o,s,ord]=await Promise.all([j('/overview'),j('/stats'+rangeQ()).catch(()=>({pages:[]})),j('/orders'+rangeQ()).catch(()=>({enabled:false,pages:{}}))]);
-  // Gộp ĐƠN THẬT (Pancake POS) vào từng page + tính tỉ lệ chốt thật = đơn thật / khách.
-  (s.pages||[]).forEach(p=>{const r=(ord.pages||{})[p.id];
-    p.aiOrders=r?r.aiOrders:null;
-    p.closeRate=(r&&p.leads>0)?Math.round(r.aiOrders/p.leads*100):0;});
+function rateBadge(r){const cls=r>=30?'ok':r>=10?'warn':'mut';return `<span class="pill ${cls}">${r||0}%</span>`;}
+function statRow(p){const nm=esc(p.name).replace(/'/g,"\\'");return `<tr>
+   <td><span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap"><span class="toggle ${p.aiEnabled?'on':''}" title="${p.aiEnabled?'Bấm để TẮT AI':'Bấm để BẬT AI'}" onclick="ovToggleAi('${p.id}',${!p.aiEnabled})"></span><span style="font-size:12px;font-weight:600;color:${p.aiEnabled?'var(--ok)':'var(--muted)'}">${p.aiEnabled?'Bật':'Tắt'}</span></span></td>
+   <td><b>${esc(p.name)||'(chưa tên)'}</b><div class="mono">${p.id}</div></td>
+   <td>${p.hasKb?`<span class="pill ok">✓ ${p.products>0?p.products+' SP':'có KB'}</span>`:'<span class="pill warn">chưa</span>'}</td>
+   <td style="text-align:right;font-weight:700">${p.replies||0}</td>
+   <td style="text-align:right;font-weight:700">${p.leads||0}</td>
+   <td style="text-align:right;font-weight:700">${p.aiOrders!=null?p.aiOrders:'<span class="muted">…</span>'}</td>
+   <td style="text-align:right">${rateBadge(p.closeRate)}</td>
+   <td style="text-align:right;white-space:nowrap"><button class="btn sm" onclick="openPageChat('${p.id}','${nm}')" title="Xem hội thoại page này">💬 Chat</button> <button class="btn sm" onclick="openPageKB('${p.id}','${nm}')" title="Sửa kịch bản / sản phẩm">📖 Sửa KB</button></td>
+ </tr>`;}
+async function fillStatsBody(){const el=document.getElementById('kpicards');if(!el)return;
+  const [o,s,ord,pages]=await Promise.all([j('/overview'),j('/stats'+rangeQ()).catch(()=>({pages:[]})),j('/orders'+rangeQ()).catch(()=>({enabled:false,pages:{}})),j('/pages').catch(()=>[])]);
+  // Gộp: danh sách TẤT CẢ page (quản lý) + số liệu (stats) + ĐƠN THẬT (Pancake POS).
+  const sm={};(s.pages||[]).forEach(p=>sm[p.id]=p);
+  const merged=pages.map(p=>{const st=sm[p.id]||{};const r=(ord.pages||{})[p.id];
+    const leads=st.leads||0;
+    return {...p,replies:st.replies||0,leads,orders:st.orders||0,
+      aiOrders:r?r.aiOrders:(ord.enabled?0:null),
+      closeRate:(r&&leads>0)?Math.round(r.aiOrders/leads*100):0};});
+  // Page có số liệu nhưng không còn trong danh sách (đổi token...) vẫn hiện ra.
+  (s.pages||[]).forEach(p=>{if(!merged.some(m=>String(m.id)===String(p.id))){const r=(ord.pages||{})[p.id];
+    merged.push({...p,aiOrders:r?r.aiOrders:(ord.enabled?0:null),closeRate:(r&&p.leads>0)?Math.round(r.aiOrders/p.leads*100):0});}});
+  merged.sort((a,b)=>(b.replies-a.replies)||(b.leads-a.leads)||String(a.name||'').localeCompare(String(b.name||'')));
+  window._ov=merged;
   const aiOrdTot=ord.enabled?(ord.aiOrders||0):null;
   const totLeads=s.leads||0;
   const cards=[
-    ['pages','Pages kết nối',o.pages,'nguồn Pancake'],
+    ['pages','Pages kết nối',o.pages,'nguồn '+(o.source==='pancake'?'Pancake':'FB')],
     ['msgs','Khách AI tư vấn',totLeads,rangeLabel()],
     ['stats','Tin AI trả lời',s.replies||0,rangeLabel()],
     ['kb','Đơn từ khách AI',aiOrdTot!=null?aiOrdTot:'…','khách AI có đặt đơn'],
-    ['stats','Tỉ lệ chốt',(aiOrdTot!=null&&totLeads>0?Math.round(aiOrdTot/totLeads*100):0)+'%',(aiOrdTot!=null?aiOrdTot:'…')+' đơn / '+totLeads+' khách'],
+    ['overview','Tỉ lệ chốt',(aiOrdTot!=null&&totLeads>0?Math.round(aiOrdTot/totLeads*100):0)+'%',(aiOrdTot!=null?aiOrdTot:'…')+' đơn / '+totLeads+' khách'],
   ];
-  el.innerHTML=`<div class="cards">${cards.map(c=>`<div class="mc" style="cursor:default"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[3]}</div></div>`).join('')}</div>
-   <div class="row" style="justify-content:space-between;align-items:center;margin:6px 0 12px">
-     <b style="font-size:14px">Hoạt động theo page <span class="muted" style="font-weight:400;font-size:12px">(${rangeLabel()})</span></b>
-     <div class="row"><button class="btn sm" onclick="auditCheck()" title="Tính lại số liệu từ Sổ AI (audit log) để đối chiếu">🔍 Đối chiếu Sổ AI</button><button class="btn sm" onclick="jumpTo('pages')">${svg(IC.pages)} Quản lý page</button><button class="btn sm" onclick="reloadAll()">↻ Nạp lại</button></div>
-   </div>
-   <div class="tablecard"><table><thead><tr><th>Page</th><th>AI</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right">Đơn khách AI</th><th style="text-align:right">Tỉ lệ chốt</th><th></th></tr></thead><tbody id="sbody">${statRows(s.pages)}</tbody></table></div>`;
+  el.innerHTML=cards.map(c=>`<div class="mc"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[3]}</div></div>`).join('');
+  const on=merged.filter(p=>p.aiEnabled).length,kbn=merged.filter(p=>p.hasKb).length;
+  setEl('ovsub',`(${rangeLabel()}) · ${merged.length} page · ${on} bật AI · ${kbn} có kịch bản`);
+  drawOvRows();
 }
-window.reloadAll=async()=>{toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();fillStatsBody();};
+function ovFiltered(){
+  const q=(document.getElementById('ovq')?.value||'').toLowerCase().trim();
+  const f=window._ovFilter||'act';
+  return (window._ov||[]).filter(p=>{
+    if(f==='on'&&!p.aiEnabled)return false;
+    if(f==='act'&&!(p.replies>0||p.leads>0||p.aiEnabled))return false;
+    if(f==='kb'&&!p.hasKb)return false;
+    if(f==='nokb'&&p.hasKb)return false;
+    return !q||[p.name,p.id,p.market,p.category,p.marketer].some(x=>String(x||'').toLowerCase().includes(q));
+  });
+}
+function drawOvRows(){const el=document.getElementById('ovbody');if(!el)return;
+  const list=ovFiltered();
+  el.innerHTML=list.length?list.map(statRow).join(''):`<tr><td colspan="8"><div class="empty">Không có page nào khớp bộ lọc.</div></td></tr>`;}
+window.setOvFilter=f=>{window._ovFilter=f;const s=document.getElementById('ovfsel');if(s&&s.value!==f)s.value=f;drawOvRows();};
+window.ovToggleAi=async(id,on)=>{await post('/pages/'+id+'/ai',{on});
+  const p=(window._ov||[]).find(x=>String(x.id)===String(id));if(p)p.aiEnabled=on;
+  toast(on?'✓ Đã bật AI cho page':'Đã tắt AI cho page');drawOvRows();};
 window.auditCheck=async()=>{try{
   const [a,s]=await Promise.all([j('/audit'+rangeQ()),j('/stats'+rangeQ())]);
   const same=a.replies===s.replies&&a.leads===s.leads&&a.orders===s.orders;
   toast(`📒 Sổ AI (${rangeLabel()}): ${a.events} sự kiện · ${a.replies} tin · ${a.leads} khách · ${a.orders} đơn — ${same?'✓ KHỚP số hiện tại':'⚠ lệch: hiện '+s.replies+'/'+s.leads+'/'+s.orders}`, same?'ok':'bad');
 }catch(e){toast('Lỗi đọc Sổ AI: '+e.message,'bad');}};
 
-const PGCHIPS=[['all','Tất cả'],['on','Đang bật AI'],['kb','Có kịch bản'],['nokb','Chưa có KB']];
-async function rPages(){
-  const [list, st]=await Promise.all([j('/pages'), j('/stats').catch(()=>({pages:[]}))]);
-  const sm={}; (st.pages||[]).forEach(p=>sm[p.id]={replies:p.replies,orders:p.orders});
-  window._pages=list.map(p=>({...p, replies:(sm[p.id]||{}).replies||0, orders:(sm[p.id]||{}).orders||0}));
-  window._pgFilter=window._pgFilter||'all';
-  const on=list.filter(p=>p.aiEnabled).length, kbn=list.filter(p=>p.hasKb).length;
-  sec('pages').innerHTML=`<h2>Pages</h2><p class="sub">${list.length} page kết nối · <b>${on}</b> đang bật AI · <b>${kbn}</b> đã có kịch bản. Mỗi thẻ = 1 page: bật/tắt AI, xem chat, sửa kịch bản.</p>
-   <div class="row" style="margin-bottom:16px;justify-content:space-between;align-items:center">
-     <div class="chips" id="pgtabs">${PGCHIPS.map(c=>`<button class="chip ${c[0]===window._pgFilter?'act':''}" data-f="${c[0]}" onclick="setPgFilter('${c[0]}')">${c[1]}</button>`).join('')}</div>
-     <div class="search">${search}<input id="pgq" placeholder="Tìm tên / thị trường / ngành / MKT..." oninput="drawPages()"></div>
-   </div>
-   <div class="pglist" id="pbody"></div>`;
-  drawPages();
-}
-function pgFiltered(){
-  const q=(document.getElementById('pgq')?.value||'').toLowerCase().trim();
-  const f=window._pgFilter;
-  return (window._pages||[]).filter(p=>{
-    if(f==='on'&&!p.aiEnabled)return false;
-    if(f==='kb'&&!p.hasKb)return false;
-    if(f==='nokb'&&p.hasKb)return false;
-    return !q||[p.name,p.id,p.market,p.category,p.marketer].some(x=>String(x||'').toLowerCase().includes(q));
-  });
-}
-function pgCard(p){const on=p.aiEnabled, nm=esc(p.name)||'(chưa tên)';
-  return `<div class="pg ${on?'on':''}">
-   <div class="pgacts">
-     <button class="pgbtn ${on?'ai':'aioff'}" onclick="toggleAiCard('${p.id}',${!on})">${on?'● AI Bật':'AI Tắt'}</button>
-     <button class="pgbtn" onclick="openPageChat('${p.id}','${nm.replace(/'/g,"\\'")}')">${svg(IC.msgs)} Chat</button>
-     <button class="pgbtn" onclick="openPageKB('${p.id}','${nm.replace(/'/g,"\\'")}')">${svg(IC.kb)} KB</button>
-   </div>
-   <div class="pgbody">
-     <div class="pghd"><div class="av">${ini(p.name)}</div>
-       <div style="flex:1;min-width:0"><div class="pgname">${nm}</div><div class="mono">${p.id}</div></div>
-       ${on?'<span class="pill ok">● Đang chạy</span>':'<span class="pill mut">Tắt</span>'}</div>
-     <div class="pgtags">
-       ${p.hasKb?`<span class="pill ok">✓ ${p.products||0} SP</span>`:'<span class="pill warn">chưa có KB</span>'}
-       ${p.market?`<span class="pill mut">${esc(p.market)}</span>`:''}
-       ${p.category?`<span class="pill mut">${esc(p.category)}</span>`:''}
-       ${p.marketer?`<span class="pill mut">MKT: ${esc(p.marketer)}</span>`:''}</div>
-     <div class="pgprev">${p.preview?('💬 '+esc(p.preview)):'<span class="muted">Chưa có kịch bản — bấm KB để thêm lời chào & sản phẩm.</span>'}</div>
-     <div class="pgfoot"><span>📨 <b>${p.replies||0}</b> tin AI trả lời</span><span>🛒 <b>${p.orders||0}</b> đơn</span></div>
-   </div></div>`;
-}
-function drawPages(){const el=document.getElementById('pbody');if(!el)return;
-  const list=pgFiltered();
-  el.innerHTML=list.length?list.map(pgCard).join(''):'<div class="empty" style="grid-column:1/-1">Không có page nào khớp bộ lọc.</div>';}
-window.setPgFilter=f=>{window._pgFilter=f;document.querySelectorAll('#pgtabs .chip').forEach(b=>b.classList.toggle('act',b.dataset.f===f));drawPages();};
-window.toggleAiCard=async(id,on)=>{await post('/pages/'+id+'/ai',{on});
-  const p=(window._pages||[]).find(x=>x.id===id);if(p)p.aiEnabled=on;
-  toast(on?'✓ Đã bật AI — bot tự trả lời khách qua Pancake':'Đã tắt AI cho page');drawPages();};
-window.openPageChat=(id,name)=>{ctx.pageId=id;ctx.pageName=name;const pf=document.getElementById('pf');if(pf)pf.value=id;loadConvos();jumpTo('msgs');};
-window.openPageKB=(id,name)=>{ctx={pageId:id,pageName:name};rKB();};
+/* Mở Chat / KB của 1 page — gọi từ nút thao tác trong bảng Tổng quan. */
+window.openPageChat=(id,name)=>{ctx.pageId=id;ctx.pageName=name;go('msgs');};
+window.openPageKB=(id,name)=>{ctx={pageId:id,pageName:name};go('kb');};
 
+/* ============ 3. TIN NHẮN — theo dõi live, tiếp quản, trả lời tay ============ */
 async function rMsgs(){
   const pages=await j('/pages');
-  sec('msgs').innerHTML=`<h2>Tin nhắn</h2><p class="sub">Theo dõi hội thoại live · tiếp quản hoặc trả lời tay.</p>
-   <div class="row" style="margin-bottom:14px"><select id="pf" style="min-width:240px"><option value="">Tất cả page</option>${pages.map(p=>`<option value="${p.id}" ${p.id===ctx.pageId?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
-   <span class="pill mut"><span class="dot" style="width:6px;height:6px;box-shadow:none"></span> live</span></div>
+  content.innerHTML=`<div class="vhead"><div><h2>Tin nhắn</h2>
+     <p class="sub" style="margin:4px 0 0">Theo dõi hội thoại live · tiếp quản hoặc trả lời tay · tự làm mới 5s</p></div>
+     <div class="row"><select id="pf" style="min-width:240px"><option value="">Tất cả page</option>${pages.map(p=>`<option value="${p.id}" ${p.id===ctx.pageId?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
+     <span class="pill mut"><span class="dot" style="width:6px;height:6px;box-shadow:none"></span> live</span></div></div>
    <div class="convo"><div class="list" id="clist"></div><div class="panel" id="cpanel"><div class="empty">Chọn 1 hội thoại bên trái.</div></div></div>`;
   document.getElementById('pf').onchange=e=>{ctx.pageId=e.target.value;loadConvos();};
-  await loadConvos(); clearInterval(msgsTimer);msgsTimer=setInterval(()=>{if(sec('msgs'))loadConvos();},5000);
+  await loadConvos();
+  addTimer(()=>{if(document.getElementById('clist'))loadConvos();},5000);
 }
 async function loadConvos(){const el=document.getElementById('clist');if(!el)return;
   const list=await j('/conversations'+(ctx.pageId?'?pageId='+ctx.pageId:''));
@@ -439,6 +433,8 @@ window.takeover=async p=>{await post('/conversation/'+p+'/takeover');toast('Bạ
 window.release=async p=>{await post('/conversation/'+p+'/release');toast('Đã trả lại AI');openConvo(p);loadConvos();};
 window.sendAgent=async p=>{const i=document.getElementById('amsg');const t=i.value.trim();if(!t)return;i.value='';await post('/conversation/'+p+'/send',{text:t});openConvo(p);loadConvos();};
 
+/* ============ 4. KỊCH BẢN / KB — mở từ nút "Sửa KB" trong bảng Tổng quan ============ */
+let KBPAGES=[];
 async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/sheet')]);
   const banner=sheet.url
    ? `<div class="tablecard" style="padding:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
@@ -449,8 +445,7 @@ async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/shee
        <div class="row"><input id="shurl" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1"><button class="btn pri" onclick="connectSheet()">Kết nối</button></div></div>`;
   KBPAGES=pages;
   const sel=pages.find(p=>String(p.id)===String(ctx.pageId))||pages[0]||{};
-  clearInterval(statsTimer);clearInterval(msgsTimer);clearInterval(nsTimer); // rời trang chủ → dừng auto-refresh
-  content.innerHTML=`<button class="btn sm" style="margin-bottom:12px" onclick="renderHome()">← Quay lại bảng điều khiển</button>
+  content.innerHTML=`<button class="btn sm" style="margin-bottom:12px" onclick="go('stats')">← Quay lại Tổng quan</button>
    <h2>Kịch bản / KB theo page</h2><p class="sub">Nguồn kịch bản: Google Sheet (cả team) hoặc sửa nhanh từng page bên dưới.</p>${banner}
    <div class="kbbar">
      <div class="fld combo" style="flex:1;min-width:260px;position:relative">
@@ -473,7 +468,6 @@ async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/shee
 }
 window.connectSheet=async(change)=>{ let url; if(change){url=prompt('Dán link Google Sheet mới:');} else {url=document.getElementById('shurl').value.trim();} if(!url)return; toast('Đang đọc Sheet...'); const r=await post('/sheet',{url}); if(r.error){toast(r.error,'bad');return;} toast('✓ Đọc '+r.pages+' page từ Sheet'); rKB(); };
 window.reloadSheet=async()=>{ toast('Đang nạp lại...'); const r=await post('/sheet/reload'); if(r.error){toast(r.error,'bad');return;} toast('✓ '+r.pages+' page từ Sheet'); rKB(); };
-let KBPAGES=[];
 window.kbFilter=(showAll)=>{const inp=document.getElementById('kbsearch');if(!inp)return;const q=(showAll?'':inp.value).trim().toLowerCase();
   const drop=document.getElementById('kbdrop');
   const list=KBPAGES.filter(p=>!q||(p.name||'').toLowerCase().includes(q))
@@ -593,22 +587,27 @@ window.saveKB=async()=>{const pid=document.getElementById('kbpage').value;
   const r=await post('/kb/'+pid,{products});
   toast('✓ Đã lưu cấu hình AI + '+r.products+' sản phẩm');document.getElementById('kbmsg').textContent='Cập nhật lúc '+new Date().toLocaleTimeString();};
 
+/* ============ 5. CÀI ĐẶT / TOKEN — token Meta + nạp lại page ============ */
 async function rTokens(){const ts=await j('/tokens');
-  sec('tokens').innerHTML=`<h2>⚙️ Cài đặt · API / Token Meta <span class="pill ok" style="vertical-align:middle">failover</span></h2>
-   <p class="sub">Nuôi nhiều System Token (nhiều app). App bị FB khóa → tự đánh dấu hỏng & dùng app khác cho page có dự phòng.</p>
+  content.innerHTML=`<div class="vhead"><div><h2>⚙️ Cài đặt · API / Token Meta <span class="pill ok" style="vertical-align:middle">failover</span></h2>
+   <p class="sub" style="margin:4px 0 0">Nuôi nhiều System Token (nhiều app). App bị FB khóa → tự đánh dấu hỏng & dùng app khác cho page có dự phòng.</p></div>
+   <button class="btn" onclick="reloadTk()">↻ Nạp lại danh sách page</button></div>
    <div class="tablecard" style="margin-bottom:16px"><table><thead><tr><th>Nhãn</th><th>Token</th><th>Trạng thái</th><th></th></tr></thead><tbody>
-   ${ts.map(t=>`<tr><td><b>${esc(t.label)}</b></td><td class="mono">${esc(t.tail)}</td><td>${t.healthy?'<span class="pill ok">● khỏe</span>':'<span class="pill bad">● hỏng</span>'}</td><td><button class="btn sm" onclick="rmToken('${t.id}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan=4 class="empty">Chưa có token.</td></tr>'}
+   ${ts.map(t=>`<tr><td><b>${esc(t.label)}</b></td><td class="mono">${esc(t.tail)}</td><td>${t.healthy?'<span class="pill ok">● khỏe</span>':'<span class="pill bad">● hỏng</span>'}</td><td><button class="btn sm" onclick="rmToken('${t.id}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan=4><div class="empty">Chưa có token.</div></td></tr>'}
    </tbody></table></div>
    <div class="tablecard" style="padding:16px;max-width:620px"><b>Thêm System Token (app khác)</b>
      <div class="row" style="margin-top:10px"><input id="tlabel" placeholder="Nhãn (vd App dự phòng 1)" style="width:200px"><input id="ttoken" placeholder="System User token (EAA...)" style="flex:1"></div>
-     <div class="row" style="margin-top:10px"><button class="btn pri" onclick="addTk()">+ Thêm & nạp page</button><button class="btn" onclick="reloadTk()">↻ Nạp lại</button><span id="tkmsg" class="muted"></span></div>
+     <div class="row" style="margin-top:10px"><button class="btn pri" onclick="addTk()">+ Thêm & nạp page</button><span id="tkmsg" class="muted"></span></div>
    </div>`;
 }
 window.addTk=async()=>{const label=document.getElementById('tlabel').value.trim();const token=document.getElementById('ttoken').value.trim();if(!token){toast('Thiếu token','bad');return;}document.getElementById('tkmsg').textContent='đang nạp...';const r=await post('/tokens',{label,token});toast('✓ Nạp '+r.pages+' page');topStatus();rTokens();};
 window.rmToken=async id=>{if(!confirm('Xóa token này?'))return;await del('/tokens/'+id);toast('Đã xóa token');topStatus();rTokens();};
-window.reloadTk=async()=>{document.getElementById('tkmsg').textContent='đang nạp...';const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();rTokens();};
+window.reloadTk=async()=>{const m=document.getElementById('tkmsg');if(m)m.textContent='đang nạp...';toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();rTokens();};
 
-topStatus();setInterval(topStatus,12000);renderHome();
+/* ============ BOOT ============ */
+topStatus();setInterval(topStatus,12000);
+pollBadge();setInterval(pollBadge,30000);
+render();
 </script>
 </body>
 </html>

@@ -20,10 +20,13 @@ const primedPages = new Set(); // page đã "ghi mốc lần đầu" — tránh 
 
 export function startPancakePolling() {
   if (!config.pancakeToken) { console.warn('[pancake] chưa có PANCAKE_TOKEN → không bật polling.'); return; }
-  console.log(`[pancake] Bật polling mỗi ${config.pancakePollMs / 1000}s (nhận/gửi tin qua Pancake, không cần webhook FB).`);
   // Nạp danh sách page từ Pancake (nguồn chính cho dashboard) + làm mới mỗi 10 phút.
   refreshPancakePages().then((n) => console.log(`[pancake] ${n} page từ Pancake.`));
   setInterval(() => refreshPancakePages(), 10 * 60 * 1000);
+  // PANCAKE_READONLY=1: chỉ nạp danh sách page cho dashboard, KHÔNG auto-reply.
+  // Dùng khi chạy bản sao (máy dev) song song với VPS — tránh 2 server cùng nhắn khách.
+  if (process.env.PANCAKE_READONLY === '1') { console.warn('[pancake] READONLY → chỉ xem dashboard, không auto-reply.'); return; }
+  console.log(`[pancake] Bật polling mỗi ${config.pancakePollMs / 1000}s (nhận/gửi tin qua Pancake, không cần webhook FB).`);
   const tick = () => pollAll().catch((e) => console.warn('[pancake] poll lỗi:', e.message));
   tick();
   setInterval(tick, config.pancakePollMs);
