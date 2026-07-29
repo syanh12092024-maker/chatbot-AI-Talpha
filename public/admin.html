@@ -479,11 +479,14 @@ function ovFiltered(){
   const q=(document.getElementById('ovq')?.value||'').toLowerCase().trim();
   const f=window._ovFilter||'act';
   return (window._ov||[]).filter(p=>{
+    // ĐANG GÕ TÌM KIẾM → tìm trên TẤT CẢ 234 page, bỏ qua bộ lọc đang chọn
+    // (tránh "page có mà tìm không thấy" vì bị bộ lọc 'Có hoạt động' che).
+    if(q)return [p.name,p.id,p.market,p.category,p.marketer].some(x=>String(x||'').toLowerCase().includes(q));
     if(f==='on'&&!p.aiEnabled)return false;
     if(f==='act'&&!(p.replies>0||p.leads>0||p.aiEnabled))return false;
     if(f==='kb'&&!p.hasKb)return false;
     if(f==='nokb'&&p.hasKb)return false;
-    return !q||[p.name,p.id,p.market,p.category,p.marketer].some(x=>String(x||'').toLowerCase().includes(q));
+    return true;
   });
 }
 function drawOvRows(){const el=document.getElementById('ovbody');if(!el)return;
