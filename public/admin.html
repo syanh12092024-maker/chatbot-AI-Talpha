@@ -72,10 +72,25 @@
   .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;gap:6px;font-weight:500;transition:.12s}
   .btn:hover{background:#f5f6f7;border-color:#d5dce2} .btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)} .btn.pri:hover{background:var(--priDark)} .btn.sm{padding:5px 10px;font-size:12.5px} .btn svg{width:14px;height:14px}
   a.btn{text-decoration:none}
-  /* hàng chờ sale: viền màu trái phân biệt loại việc */
-  tr.ns-hand td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
-  tr.ns-ord td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
-  tr.ns-hand{background:#fffdf7} tr.ns-hand:hover{background:#fdf8ec}
+  .pill.info{background:#e7f0fd;color:#2b6cb0}
+  /* hàng chờ sale: viền trái + nền theo mức ưu tiên (0 khẩn, 1 cần người, 2 đơn chốt) */
+  tr.nsr td{padding:13px 14px}
+  tr.nsr-0 td:first-child{box-shadow:inset 3px 0 0 var(--bad)}  tr.nsr-0{background:#fff6f6} tr.nsr-0:hover{background:#fdeeee}
+  tr.nsr-1 td:first-child{box-shadow:inset 3px 0 0 var(--warn)} tr.nsr-1{background:#fffdf6} tr.nsr-1:hover{background:#fdf7e9}
+  tr.nsr-2 td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+  .nsreason{color:var(--muted);font-size:12px;margin-top:3px;font-style:italic;max-width:430px;line-height:1.4}
+  .newpill{display:inline-flex;align-items:center;background:var(--bad);color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 7px;border-radius:9px;margin-bottom:4px}
+  /* segmented control chọn khung giờ */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+  .seg button{border:none;background:transparent;padding:7px 13px;font-size:12.5px;cursor:pointer;color:var(--muted);font-weight:500;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button:hover{background:#f5f6f7} .seg button.act{background:var(--pri);color:#fff;font-weight:600}
+  /* chip bộ lọc loại việc: icon + nhãn + số đếm */
+  .kchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 12px;font-size:12.5px;cursor:pointer;color:var(--ink);font-weight:500;transition:.12s}
+  .kchip:hover{background:#f5f6f7}
+  .kchip .n{background:#eef1f3;color:var(--muted);font-size:11px;font-weight:700;min-width:20px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
+  .kchip.act{background:var(--side);border-color:var(--side);color:#fff}
+  .kchip.act .n{background:rgba(255,255,255,.22);color:#fff}
   input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:13.5px;font-family:inherit;outline:none;background:#fff;color:var(--ink)}
   input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--priSoft)}
   .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
@@ -285,46 +300,74 @@ async function pollBadge(){
    Ưu tiên hiển thị: CẦN NGƯỜI trước (khách đang đợi), rồi mới tới đơn đã chốt. */
 let NS={hours:48,filter:'all',list:[]};
 const NS_RANGES=[[24,'24 giờ'],[48,'48 giờ'],[168,'7 ngày']];
+// 6 CỬA dẫn vào hàng chờ (nguyên tắc #13). prio: 0 khẩn (đỏ) · 1 cần người (vàng) · 2 đơn đã chốt (xanh).
+const NS_KINDS={
+  complaint:{label:'Khiếu nại',      icon:'😡', pill:'bad',  prio:0},
+  ai:       {label:'AI chuyển người',icon:'🙋', pill:'warn', prio:1},
+  lang:     {label:'Ngôn ngữ lạ',    icon:'🌐', pill:'info', prio:1},
+  max_turns:{label:'Hết lượt AI',    icon:'⏳', pill:'warn', prio:1},
+  no_kb:    {label:'Thiếu kịch bản', icon:'📄', pill:'mut',  prio:1},
+  order:    {label:'Đã chốt đơn',    icon:'🛒', pill:'ok',   prio:2},
+};
+// Nhận diện loại việc: ưu tiên kind server gắn; dữ liệu cũ chưa có kind → đoán theo lý do.
+function nsKind(r){
+  if(r.type==='order')return'order';
+  if(r.kind&&NS_KINDS[r.kind])return r.kind;
+  const s=r.reason||'';
+  if(/khiếu nại/i.test(s))return'complaint';
+  if(/ngôn ngữ/i.test(s))return'lang';
+  if(/trả lời đủ/i.test(s))return'max_turns';
+  if(/kịch bản|KB/i.test(s))return'no_kb';
+  return'ai';
+}
 function rNeedSale(){
-  content.innerHTML=`<div class="vhead"><h2>🔔 Hàng chờ cho sale</h2>
+  content.innerHTML=`<div class="vhead">
+     <div><h2>🔔 Hàng chờ cho sale</h2><p class="sub" style="margin:4px 0 0" id="nsMeta">Việc khẩn nổi lên đầu · tự làm mới 15 giây</p></div>
      <div class="row">
-       <div class="chips">${NS_RANGES.map(([h,l])=>`<button class="chip ${NS.hours===h?'act':''}" data-h="${h}" onclick="setNsHours(${h})">${l}</button>`).join('')}</div>
-       <button class="btn sm" onclick="fillNeedSale()" title="Danh sách tự làm mới mỗi 15 giây">↻ Làm mới</button>
+       <div class="seg">${NS_RANGES.map(([h,l])=>`<button class="${NS.hours===h?'act':''}" data-h="${h}" onclick="setNsHours(${h})">${l}</button>`).join('')}</div>
+       <button class="iconbtn" onclick="fillNeedSale()" title="Làm mới ngay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></button>
      </div></div>
-   <div class="chips" id="nsSum" style="margin-bottom:14px"></div>
+   <div class="row" id="nsSum" style="margin-bottom:14px;gap:7px"></div>
    <div id="nsbody"></div>`;
   fillNeedSale();
   addTimer(fillNeedSale,15000);
 }
-window.setNsHours=h=>{NS.hours=h;document.querySelectorAll('[data-h]').forEach(b=>b.classList.toggle('act',+b.dataset.h===h));fillNeedSale();};
+window.setNsHours=h=>{NS.hours=h;document.querySelectorAll('.seg [data-h]').forEach(b=>b.classList.toggle('act',+b.dataset.h===h));fillNeedSale();};
 window.setNsFilter=f=>{NS.filter=f;drawNeedSale();};
 window.copyPhone=async p=>{try{await navigator.clipboard.writeText(p);toast('✓ Đã copy SĐT: '+p);}catch{toast('Không copy được — chọn tay giúp nhé','bad');}};
 async function fillNeedSale(){
   if(!document.getElementById('nsbody'))return;
   // Badge trên menu luôn đếm theo 48h (pollBadge); bảng thì theo khoảng đang chọn.
   const d=NS.hours===48?await pollBadge():await j('/need-sale?hours='+NS.hours).catch(()=>({list:[]}));
-  NS.list=d.list||[];
+  NS.list=(d.list||[]).map(r=>({...r,_k:nsKind(r)}));
   drawNeedSale();
 }
 function drawNeedSale(){
   const el=document.getElementById('nsbody'); if(!el)return;
-  const list=NS.list, hand=list.filter(r=>r.type!=='order'), ord=list.filter(r=>r.type==='order');
-  const sum=document.getElementById('nsSum');
-  if(sum)sum.innerHTML=[['all',`Tất cả (${list.length})`],['handoff',`🙋 Cần người (${hand.length})`],['order',`🛒 Đã chốt đơn (${ord.length})`]]
-    .map(([f,l])=>`<button class="chip ${NS.filter===f?'act':''}" onclick="setNsFilter('${f}')">${l}</button>`).join('');
-  let rows=NS.filter==='order'?ord:NS.filter==='handoff'?hand:[...hand,...ord]; // cần người luôn nổi lên trước
+  const list=NS.list;
+  // Đếm theo từng cửa; chip chỉ hiện cửa CÓ việc (đỡ rối) + luôn có "Tất cả".
+  const cnt={}; list.forEach(r=>cnt[r._k]=(cnt[r._k]||0)+1);
+  if(NS.filter!=='all'&&!cnt[NS.filter])NS.filter='all'; // bộ lọc đang chọn hết việc → về Tất cả
+  const chips=[`<button class="kchip ${NS.filter==='all'?'act':''}" onclick="setNsFilter('all')">Tất cả <span class="n">${list.length}</span></button>`]
+    .concat(Object.entries(NS_KINDS).filter(([k])=>cnt[k]).map(([k,v])=>
+      `<button class="kchip ${NS.filter===k?'act':''}" onclick="setNsFilter('${k}')">${v.icon} ${v.label} <span class="n">${cnt[k]}</span></button>`));
+  const sum=document.getElementById('nsSum'); if(sum)sum.innerHTML=chips.join('');
+  const meta=document.getElementById('nsMeta');
+  if(meta){const kh=(cnt.complaint||0), cn=list.filter(r=>NS_KINDS[r._k].prio===1).length;
+    meta.textContent=`${list.length} việc trong ${NS.hours<168?NS.hours+' giờ':'7 ngày'} qua`+(kh?` · ⚠ ${kh} khiếu nại`:'')+(cn?` · ${cn} cần người`:'')+' · tự làm mới 15s';}
+  let rows=NS.filter==='all'?[...list]:list.filter(r=>r._k===NS.filter);
   if(!rows.length){ el.innerHTML=`<div class="tablecard"><div class="empty">Chưa có việc nào trong ${NS.hours<168?NS.hours+' giờ':'7 ngày'} qua. AI đang tự xử lý ✅</div></div>`; return; }
+  rows.sort((a,b)=>NS_KINDS[a._k].prio-NS_KINDS[b._k].prio||b.t-a.t); // khẩn trước, trong nhóm thì mới nhất trước
   const NEW_MS=2*3600*1000;
-  el.innerHTML=`<div class="tablecard"><table><thead><tr><th style="width:130px">Việc</th><th>Khách</th><th style="width:170px">SĐT</th><th>Page</th><th style="width:96px;text-align:right">Lúc</th><th style="width:110px"></th></tr></thead><tbody>${
-    rows.map(r=>{const isOrd=r.type==='order';return `<tr class="${isOrd?'ns-ord':'ns-hand'}">
-      <td>${isOrd?'<span class="pill ok">🛒 Đã chốt đơn</span>':'<span class="pill warn">🙋 Cần người</span>'}${(Date.now()-r.t)<NEW_MS?'<div style="margin-top:5px"><span class="pill bad" style="font-size:10px;padding:2px 8px">● MỚI</span></div>':''}</td>
-      <td><div style="display:flex;gap:10px;align-items:flex-start"><div class="av" style="background:${isOrd?'var(--okSoft)':'var(--warnSoft)'};color:${isOrd?'var(--ok)':'var(--warn)'}">${ini(r.name)}</div>
-        <div style="min-width:0"><b style="font-size:14px">${esc(r.name||'(chưa rõ tên)')}</b>
-        ${r.city||r.qty?`<div class="muted" style="font-size:12px;margin-top:2px">📍 ${esc(r.city||'?')}${r.qty?' · SL '+r.qty:''}</div>`:''}
-        ${r.reason?`<div class="muted" style="font-size:12px;margin-top:2px;font-style:italic;max-width:420px">"${esc(r.reason)}"</div>`:''}</div></div></td>
+  el.innerHTML=`<div class="tablecard"><table><thead><tr><th style="width:148px">Loại việc</th><th>Khách</th><th style="width:168px">SĐT</th><th style="width:150px">Page</th><th style="width:92px;text-align:right">Lúc</th><th style="width:104px"></th></tr></thead><tbody>${
+    rows.map(r=>{const K=NS_KINDS[r._k];return `<tr class="nsr nsr-${K.prio}">
+      <td><span class="pill ${K.pill}">${K.icon} ${K.label}</span></td>
+      <td><div style="display:flex;gap:10px;align-items:flex-start"><div class="av" style="background:${K.prio===2?'var(--okSoft)':K.prio===0?'var(--badSoft)':'var(--warnSoft)'};color:${K.prio===2?'var(--ok)':K.prio===0?'var(--bad)':'var(--warn)'}">${ini(r.name)}</div>
+        <div style="min-width:0"><b style="font-size:13.5px">${esc(r.name||'(chưa rõ tên)')}</b>${r.city||r.qty?`<span class="muted" style="font-size:12px"> · 📍 ${esc(r.city||'?')}${r.qty?' · SL '+r.qty:''}</span>`:''}
+        ${r.reason?`<div class="nsreason">"${esc(r.reason)}"</div>`:''}</div></div></td>
       <td>${r.phone?`<span style="display:inline-flex;align-items:center;gap:6px"><b class="mono" style="font-size:13px;color:var(--ink)">${esc(r.phone)}</b><button class="btn sm" style="padding:3px 7px" title="Copy SĐT" onclick="copyPhone('${esc(r.phone)}')">⧉</button></span>`:'<span class="muted">—</span>'}</td>
       <td style="font-size:12.5px">${esc(r.pageName||'')}</td>
-      <td class="muted" style="font-size:12px;text-align:right">${agoVi(r.t)}</td>
+      <td style="text-align:right">${(Date.now()-r.t)<NEW_MS?'<span class="newpill">MỚI</span><br>':''}<span class="muted" style="font-size:12px">${agoVi(r.t)}</span></td>
       <td style="text-align:right"><a class="btn sm pri" href="${esc(r.link)}" target="_blank">Mở chat ↗</a></td>
     </tr>`;}).join('')}</tbody></table></div>`;
 }

@@ -42,7 +42,7 @@ export function needSale({ hours = 48, types = ['order', 'handoff'] } = {}) {
     out.push({
       t: r.t, page: r.page, cust: r.cust, type: r.type,
       name: r.name || '', phone: r.phone || '', city: r.city || '', qty: r.qty || null,
-      reason: r.reason || '',
+      reason: r.reason || '', kind: r.kind || '',
       link: conv ? `https://pancake.vn/${r.page}?c_id=${conv}` : `https://pancake.vn/${r.page}`,
     });
   }

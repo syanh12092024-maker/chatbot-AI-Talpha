@@ -182,7 +182,7 @@ export async function executeTool(name, input, ctx) {
       case 'handoff_human': {
         state.handoff = true;
         state.handoffReason = input.reason || '';
-        try { logAi(state.pageId, state.pkCustId, 'handoff', { reason: input.reason || '', conv: state.pkConvId || '' }); } catch { /* sổ AI không chặn */ }
+        try { logAi(state.pageId, state.pkCustId, 'handoff', { reason: input.reason || '', kind: 'ai', conv: state.pkConvId || '' }); } catch { /* sổ AI không chặn */ }
         // Báo SALE ngay trong Pancake để biết hội thoại này cần người.
         try { await pkAddNote(state.pageId, state.pkCustId, `🙋 AI CHUYỂN NGƯỜI — cần sale vào hỗ trợ\nLý do: ${input.reason || 'không rõ'}`); } catch { /* không chặn */ }
         return { content: 'Đã chuyển cho nhân viên. Hãy báo khách sẽ có người hỗ trợ ngay.' };

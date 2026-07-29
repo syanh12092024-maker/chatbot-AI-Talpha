@@ -9,10 +9,10 @@ import { logAi } from './ai-log.js';
 // ngôn ngữ lạ, hết lượt, page thiếu KB...) đều ghi 'handoff' vào Sổ AI kèm LÝ DO
 // → tự hiện ở hàng chờ "Cần sale xử lý" trên dashboard. Không khách nào bị bỏ rơi
 // trong khoảng trống "AI đã im mà người chưa biết".
-function toSaleQueue(state, reason) {
+function toSaleQueue(state, reason, kind) {
   try {
     logAi(state.pageId, state.pkCustId, 'handoff', {
-      reason, conv: state.pkConvId || '', name: state.custName || '',
+      reason, kind: kind || '', conv: state.pkConvId || '', name: state.custName || '',
     });
   } catch { /* sổ AI không chặn luồng chính */ }
 }
@@ -65,7 +65,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   // Page chưa có KB → không bịa, chuyển người.
   if (kb.noData) {
     state.handoff = true; state.handoffReason = 'page_no_kb';
-    toSaleQueue(state, 'Page chưa có kịch bản/KB — AI không thể tư vấn, cần người vào chat');
+    toSaleQueue(state, 'Page chưa có kịch bản/KB — AI không thể tư vấn, cần người vào chat', 'no_kb');
     return reply(psid, holdingMessage('en'), true);
   }
 
@@ -79,7 +79,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
 
   if (cls.intent === 'complaint') {
     state.handoff = true; state.handoffReason = 'complaint';
-    toSaleQueue(state, 'Khách KHIẾU NẠI — cần người xử lý gấp');
+    toSaleQueue(state, 'Khách KHIẾU NẠI — cần người xử lý gấp', 'complaint');
     return reply(psid, holdingMessage(cls.lang), true);
   }
   // Tin quá ngắn/tầm thường ("hm", "hi", "ok", "?", emoji...) hay bị đoán nhầm là "ngôn ngữ lạ".
@@ -89,12 +89,12 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   const trivialMsg = letters.length <= 12 || text.trim().split(/\s+/).length <= 2;
   if (cls.lang === 'other' && !trivialMsg) {
     state.handoff = true; state.handoffReason = 'lang_unknown';
-    toSaleQueue(state, 'Khách dùng ngôn ngữ khác Tagalog/English — AI không phục vụ để tránh trả lời sai');
+    toSaleQueue(state, 'Khách dùng ngôn ngữ khác Tagalog/English — AI không phục vụ để tránh trả lời sai', 'lang');
     return reply(psid, holdingMessage(cls.lang), true);
   }
   if (state.aiTurns >= config.maxAiTurnsBeforeHandoff) {
     state.handoff = true; state.handoffReason = 'max_turns';
-    toSaleQueue(state, `AI đã trả lời đủ ${config.maxAiTurnsBeforeHandoff} lượt — khách còn do dự, cần người vào chốt`);
+    toSaleQueue(state, `AI đã trả lời đủ ${config.maxAiTurnsBeforeHandoff} lượt — khách còn do dự, cần người vào chốt`, 'max_turns');
     return reply(psid, holdingMessage(cls.lang), true);
   }
 
