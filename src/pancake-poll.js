@@ -18,6 +18,29 @@ const ORDER_STOP_TAGS = new Set([-1, -2, -3, -11, -12, -20]);
 const seen = new Map();
 const primedPages = new Set(); // page đã "ghi mốc lần đầu" — tránh trả lời loạt hội thoại cũ khi mới bật AI
 
+// BACKOFF (nguyên tắc #9): page gửi tin thất bại 2 lần LIÊN TIẾP (vd Meta chặn #2022)
+// → tạm ngừng gửi 30 phút, tránh spam retry làm Meta phạt nặng thêm. Gửi OK là reset đếm.
+const SEND_FAIL_LIMIT = 2;
+const SEND_PAUSE_MS = 30 * 60 * 1000;
+const sendFail = new Map(); // pageId -> { count, pausedUntil, lastError }
+export function sendHealth() {
+  const pk = new Map();
+  for (const [id, v] of sendFail) {
+    if (v.count > 0 || v.pausedUntil > Date.now()) pk.set(id, v);
+  }
+  return [...pk.entries()].map(([page, v]) => ({ page, count: v.count, pausedUntil: v.pausedUntil || 0, lastError: (v.lastError || '').slice(0, 160) }));
+}
+function noteSendResult(pageId, ok, error) {
+  if (ok) { sendFail.delete(pageId); return; }
+  const f = sendFail.get(pageId) || { count: 0, pausedUntil: 0, lastError: '' };
+  f.count += 1; f.lastError = error || '';
+  if (f.count >= SEND_FAIL_LIMIT) {
+    f.pausedUntil = Date.now() + SEND_PAUSE_MS;
+    console.warn(`[backoff] page ${pageId} lỗi gửi ${f.count} lần liên tiếp → TẠM NGỪNG 30 phút. Lỗi: ${String(error || '').slice(0, 120)}`);
+  }
+  sendFail.set(pageId, f);
+}
+
 export function startPancakePolling() {
   if (!config.pancakeToken) { console.warn('[pancake] chưa có PANCAKE_TOKEN → không bật polling.'); return; }
   // Nạp danh sách page từ Pancake (nguồn chính cho dashboard) + làm mới mỗi 10 phút.
@@ -35,6 +58,8 @@ export function startPancakePolling() {
 async function pollAll() {
   const pages = listAiEnabled(); // chỉ page bật AI (id = FB page id = Pancake page id)
   for (const pageId of pages) {
+    const f = sendFail.get(pageId);
+    if (f && f.pausedUntil > Date.now()) continue; // đang backoff → bỏ qua page này
     try { await pollPage(pageId); } catch (e) { console.warn(`[pancake] page ${pageId}:`, e.message); }
   }
 }
@@ -79,12 +104,14 @@ async function pollPage(pageId) {
     const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs });
     if (!reply) continue;
     const r = await pkSendReply(pageId, c.id, custId, reply);
+    noteSendResult(pageId, r.ok, r.error); // backoff: 2 lần lỗi liên tiếp → ngừng page 30 phút
     if (r.ok) {
       try { incReply(pageId); incLead(pageId, custId); } catch { /* thống kê không chặn gửi tin */ }
       try { addAiConv(pageId, c.id); } catch { /* ghi hội thoại AI để khớp đơn */ }
       try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id }); } catch { /* sổ AI không chặn */ }
     }
     console.log(`[pancake] ${c.from?.name || psid}: "${text.slice(0, 30)}" → AI: "${reply.slice(0, 40)}" ${r.ok ? '✓' : '✗ ' + r.error}`);
+    if (!r.ok && (sendFail.get(pageId)?.pausedUntil || 0) > Date.now()) return; // vừa kích hoạt backoff → dừng page ngay trong lượt này
   }
   if (firstTime) { primedPages.add(pageId); console.log(`[pancake] page ${pageId} đã ghi mốc — từ giờ chỉ trả lời tin MỚI.`); }
 }

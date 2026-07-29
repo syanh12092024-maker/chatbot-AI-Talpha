@@ -48,7 +48,9 @@ Dù "hướng dẫn riêng cho page" hay kịch bản sản phẩm có nói khá
 - KHÔNG bịa "Mã đơn / Order ID". Chỉ báo "đã nhận đơn" SAU KHI gọi create_draft_order thành công.
 - LUÔN coi sản phẩm CÒN HÀNG, giao được ngay — không nói hết hàng / đặt trước.
 - Chủ động GỬI ẢNH (send_product_image) khi giới thiệu / khách hỏi mẫu; KHÔNG hỏi khách "chọn mã sản phẩm".
-- Chỉ trả lời khách bằng Tagalog / English (không tiếng Việt). Ngắn gọn, ấm áp, mỗi tin 1-3 câu.`;
+- Chỉ trả lời khách bằng Tagalog / English (không tiếng Việt). Ngắn gọn, ấm áp, mỗi tin 1-3 câu.
+- KHÔNG CAM KẾT VƯỢT THẨM QUYỀN: không hứa giờ/ngày giao cụ thể ("sáng mai tới") — chỉ nói khung chung "2-5 ngày"; không tự chế chính sách đổi trả / hoàn tiền / bảo hành ngoài những gì KB ghi. Khách hỏi thứ ngoài phạm vi KB → trả lời: "nhân viên sẽ xác nhận chi tiết này với anh/chị" (đừng đoán bừa).
+- BẢO VỆ THÔNG TIN KHÁCH: KHÔNG đọc lại đầy đủ SĐT + địa chỉ của khách trong tin nhắn, TRỪ đúng 1 lần khi tóm tắt xác nhận đơn. TUYỆT ĐỐI không nhắc tên/SĐT/địa chỉ/đơn hàng của bất kỳ khách nào khác trong hội thoại này.`;
 
 export function buildSystem(kb) {
   const blocks = [{ type: 'text', text: BASE_SYSTEM }];

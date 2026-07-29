@@ -19,18 +19,22 @@ import { getStats } from './stats.js';
 import { recount, needSale } from './ai-log.js';
 import { ordersEnabled, aiOrderStats } from './pancake-orders.js';
 import { getAiConvSet } from './ai-convs.js';
+import { sendHealth } from './pancake-poll.js';
 
 export const adminRouter = express.Router();
 
 // ---- Tổng quan ----
 adminRouter.get('/overview', (_req, res) => {
   const withKB = getPageList().filter((p) => (p.products || 0) > 0).length;
+  const pk = pancakePages();
   res.json({
     pages: pancakePageCount() || pageCount(),
     pagesWithKB: withKB,
     source: pancakePageCount() ? 'pancake' : 'facebook',
     conversations: listConversations().length,
     aiEnabled: listAiEnabled().length,
+    // Cảnh báo backoff: page đang lỗi gửi / tạm ngừng (nguyên tắc #9)
+    sendErrors: sendHealth().map((e) => ({ ...e, pageName: pk.get(String(e.page))?.name || e.page })),
   });
 });
 

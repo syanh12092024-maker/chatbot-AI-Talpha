@@ -176,6 +176,7 @@
     <header class="top">
       <h1 id="ttl">Bảng điều khiển</h1>
       <div class="sp"></div>
+      <div class="stat" id="serr" style="display:none;background:var(--badSoft);border-color:#f2c4c4;color:var(--bad);font-weight:700" title="Page bị lỗi gửi tin — đang tạm ngừng để tránh Meta phạt nặng thêm"></div>
       <div class="stat"><span class="dot" id="sdot"></span><span id="sstat">server</span></div>
       <div class="stat" id="stok">— nguồn</div>
       <div class="stat" id="spage">— page</div>
@@ -247,12 +248,25 @@ function render(){
 
 const setEl=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt;};
 const setCls=(id,cls)=>{const e=document.getElementById(id);if(e)e.className=cls;};
+let SEND_ERRS=[];
 async function topStatus(){try{const o=await j('/overview');
   setEl('sstat','server online');setCls('sdot','dot');
   setEl('stok',o.source==='pancake'?'Pancake':'FB');
   setEl('spage',o.pages+' page');
   setEl('sidestattxt',`Online · ${o.pages} page`);setCls('sidedot','dot');
+  // Cảnh báo backoff (nguyên tắc #9): page lỗi gửi → pill đỏ thấy ở mọi màn hình
+  SEND_ERRS=o.sendErrors||[];
+  const se=document.getElementById('serr');
+  if(se){const n=SEND_ERRS.length;se.style.display=n?'flex':'none';if(n)se.textContent=`⚠ ${n} page lỗi gửi tin`;}
 }catch{setEl('sstat','mất kết nối');setCls('sdot','dot bad');setEl('sidestattxt','mất kết nối');setCls('sidedot','dot bad');}}
+function sendErrBanner(){
+  if(!SEND_ERRS.length)return'';
+  const rows=SEND_ERRS.map(e=>{const left=e.pausedUntil>Date.now()?Math.ceil((e.pausedUntil-Date.now())/60000)+' phút nữa gửi lại':'đang theo dõi';
+    return `<div style="margin-top:6px"><b>${esc(e.pageName)}</b> — lỗi ${e.count} lần · ${left}${e.lastError?`<div class="muted" style="font-size:11.5px;margin-top:2px">${esc(e.lastError)}</div>`:''}</div>`;}).join('');
+  return `<div class="tablecard" style="border-color:#f2c4c4;background:#fff5f5;padding:14px 16px;margin-bottom:16px">
+    <b style="color:var(--bad)">⚠ Page bị lỗi gửi tin — AI tạm ngừng để tránh Meta phạt nặng thêm (tự thử lại sau 30 phút)</b>
+    <div class="muted" style="font-size:12px;margin-top:3px">Khách nhắn vào các page này đang KHÔNG được trả lời. Kiểm tra chất lượng page trong Business Manager / kháng cáo nếu bị hạn chế.</div>${rows}</div>`;
+}
 
 function agoVi(ts){if(!ts)return 'chưa có';const s=Math.floor((Date.now()-ts)/1000);
   if(s<60)return s+' giây trước';if(s<3600)return Math.floor(s/60)+' phút trước';
@@ -347,6 +361,7 @@ function rOverview(){
        </span>
      </div>
    </div>
+   <div id="senderrbox"></div>
    <div id="kpicards" class="cards"></div>
    <div class="row" style="justify-content:space-between;align-items:center;margin:6px 0 12px;gap:10px">
      <b style="font-size:14px;flex-shrink:0">Pages <span id="ovsub" class="muted" style="font-weight:400;font-size:12px"></span></b>
@@ -389,6 +404,8 @@ async function fillStatsBody(){const el=document.getElementById('kpicards');if(!
   const [o,s,pages]=await Promise.all([j('/overview').catch(()=>({pages:0,source:''})),j('/stats'+rangeQ()).catch(()=>({pages:[]})),j('/pages').catch(()=>[])]);
   const ord=(_ordCache.key===rangeQ()&&_ordCache.data)?_ordCache.data:{enabled:false,pages:{}};
   refreshOrders(); // nạp đơn ở nền nếu cache cũ / đổi khoảng ngày
+  SEND_ERRS=o.sendErrors||SEND_ERRS;
+  const seb=document.getElementById('senderrbox');if(seb)seb.innerHTML=sendErrBanner();
   // Gộp: danh sách TẤT CẢ page (quản lý) + số liệu (stats) + ĐƠN THẬT (Pancake POS).
   const sm={};(s.pages||[]).forEach(p=>sm[p.id]=p);
   const merged=pages.map(p=>{const st=sm[p.id]||{};const r=(ord.pages||{})[p.id];
