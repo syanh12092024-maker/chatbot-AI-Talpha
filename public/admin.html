@@ -344,8 +344,22 @@ function statRow(p){const nm=esc(p.name).replace(/'/g,"\\'");return `<tr>
    <td style="text-align:right">${rateBadge(p.closeRate)}</td>
    <td style="text-align:right;white-space:nowrap"><button class="btn sm" onclick="openPageChat('${p.id}','${nm}')" title="Xem hội thoại page này">💬 Chat</button> <button class="btn sm" onclick="openPageKB('${p.id}','${nm}')" title="Sửa kịch bản / sản phẩm">📖 Sửa KB</button></td>
  </tr>`;}
+/* /orders (đơn thật Pancake POS) rất chậm (~30-40s trên VPS) → KHÔNG bắt cả trang đợi:
+   hiện ngay số liệu nhanh (cột đơn tạm "…"), đơn về sau tự điền. Cache 60s + chặn gọi chồng. */
+let _ordCache={key:null,data:null,at:0,inflight:false};
+async function refreshOrders(){
+  const key=rangeQ();
+  if(_ordCache.inflight)return;
+  if(_ordCache.key===key&&_ordCache.data&&Date.now()-_ordCache.at<60000)return; // còn tươi
+  _ordCache.inflight=true;
+  try{const d=await j('/orders'+key);_ordCache={key,data:d,at:Date.now(),inflight:false};
+    if(document.getElementById('kpicards'))fillStatsBody(); // đơn đã về → vẽ lại
+  }finally{_ordCache.inflight=false;}
+}
 async function fillStatsBody(){const el=document.getElementById('kpicards');if(!el)return;
-  const [o,s,ord,pages]=await Promise.all([j('/overview'),j('/stats'+rangeQ()).catch(()=>({pages:[]})),j('/orders'+rangeQ()).catch(()=>({enabled:false,pages:{}})),j('/pages').catch(()=>[])]);
+  const [o,s,pages]=await Promise.all([j('/overview').catch(()=>({pages:0,source:''})),j('/stats'+rangeQ()).catch(()=>({pages:[]})),j('/pages').catch(()=>[])]);
+  const ord=(_ordCache.key===rangeQ()&&_ordCache.data)?_ordCache.data:{enabled:false,pages:{}};
+  refreshOrders(); // nạp đơn ở nền nếu cache cũ / đổi khoảng ngày
   // Gộp: danh sách TẤT CẢ page (quản lý) + số liệu (stats) + ĐƠN THẬT (Pancake POS).
   const sm={};(s.pages||[]).forEach(p=>sm[p.id]=p);
   const merged=pages.map(p=>{const st=sm[p.id]||{};const r=(ord.pages||{})[p.id];
