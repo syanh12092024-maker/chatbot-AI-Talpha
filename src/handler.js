@@ -3,6 +3,19 @@ import { runCloser } from './closer.js';
 import { getState, recordInbound, recordOutbound, isAiEnabled } from './store.js';
 import { getKBForPage } from './kb.js';
 import { config } from './config.js';
+import { logAi } from './ai-log.js';
+
+// NGUYÊN TẮC #13 — KẾT THÚC LÀ PHẢI BÀN GIAO: mọi điểm AI dừng phục vụ (khiếu nại,
+// ngôn ngữ lạ, hết lượt, page thiếu KB...) đều ghi 'handoff' vào Sổ AI kèm LÝ DO
+// → tự hiện ở hàng chờ "Cần sale xử lý" trên dashboard. Không khách nào bị bỏ rơi
+// trong khoảng trống "AI đã im mà người chưa biết".
+function toSaleQueue(state, reason) {
+  try {
+    logAi(state.pageId, state.pkCustId, 'handoff', {
+      reason, conv: state.pkConvId || '', name: state.custName || '',
+    });
+  } catch { /* sổ AI không chặn luồng chính */ }
+}
 
 // NẠP LỊCH SỬ THẬT từ Pancake vào bộ nhớ AI khi phiên còn trống (server mới khởi động /
 // khách quay lại sau nhiều ngày). AI đọc hết những gì 2 bên đã nói (kể cả Botcake / sale tay)
@@ -30,12 +43,13 @@ export function hydrateHistory(state, history, pageId) {
 }
 
 // Xử lý 1 tin nhắn đến. Trả về { reply, handoff } — reply=null nghĩa là không tự trả.
-export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustId, history }) {
+export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustId, history, custName }) {
   const state = getState(psid);
   state.psid = psid;
   state.pageId = pageId;                       // để tool gửi ảnh biết page nào
   if (pkConvId) state.pkConvId = pkConvId;      // ngữ cảnh Pancake để gửi ảnh cùng kênh
   if (pkCustId) state.pkCustId = pkCustId;
+  if (custName) state.custName = custName;
   const nHist = hydrateHistory(state, history, pageId);
   if (nHist) console.log(`[hist] nạp ${nHist} lượt lịch sử Pancake cho khách ${psid} (page ${pageId})`);
 
@@ -51,6 +65,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   // Page chưa có KB → không bịa, chuyển người.
   if (kb.noData) {
     state.handoff = true; state.handoffReason = 'page_no_kb';
+    toSaleQueue(state, 'Page chưa có kịch bản/KB — AI không thể tư vấn, cần người vào chat');
     return reply(psid, holdingMessage('en'), true);
   }
 
@@ -64,6 +79,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
 
   if (cls.intent === 'complaint') {
     state.handoff = true; state.handoffReason = 'complaint';
+    toSaleQueue(state, 'Khách KHIẾU NẠI — cần người xử lý gấp');
     return reply(psid, holdingMessage(cls.lang), true);
   }
   // Tin quá ngắn/tầm thường ("hm", "hi", "ok", "?", emoji...) hay bị đoán nhầm là "ngôn ngữ lạ".
@@ -73,10 +89,12 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   const trivialMsg = letters.length <= 12 || text.trim().split(/\s+/).length <= 2;
   if (cls.lang === 'other' && !trivialMsg) {
     state.handoff = true; state.handoffReason = 'lang_unknown';
+    toSaleQueue(state, 'Khách dùng ngôn ngữ khác Tagalog/English — AI không phục vụ để tránh trả lời sai');
     return reply(psid, holdingMessage(cls.lang), true);
   }
   if (state.aiTurns >= config.maxAiTurnsBeforeHandoff) {
     state.handoff = true; state.handoffReason = 'max_turns';
+    toSaleQueue(state, `AI đã trả lời đủ ${config.maxAiTurnsBeforeHandoff} lượt — khách còn do dự, cần người vào chốt`);
     return reply(psid, holdingMessage(cls.lang), true);
   }
 

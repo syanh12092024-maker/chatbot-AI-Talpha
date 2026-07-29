@@ -56,7 +56,7 @@ Cập nhật KB xong gọi `POST /reload-kb` để nạp lại không cần rest
 - BigQuery logging (lead_journey + RTO) để đo Order→Delivered.
 - `APP_SECRET`: bật để xác thực chữ ký webhook (bắt buộc khi production).
 
-## 12 nguyên tắc khi AI chat với khách
+## 13 nguyên tắc khi AI chat với khách
 
 1. **Ngôn ngữ & giọng điệu** — chỉ trả khách bằng Tagalog/English (Taglish OK), không bao giờ tiếng Việt; giọng thân thiện kiểu Philippines ("po"/"opo"), mỗi tin 1-3 câu, né tôn giáo/chính trị. (`prompts.js`)
 2. **Trung thực thông tin** — giá/chính sách chỉ lấy từ KB hoặc tool `get_price`, không bịa; mỗi page 1 sản phẩm; luôn coi còn hàng; chủ động gửi ảnh thật (`send_product_image`).
@@ -70,6 +70,7 @@ Cập nhật KB xong gọi `POST /reload-kb` để nạp lại không cần rest
 10. **Đọc lịch sử trước khi trả lời** — nếu bộ nhớ phiên trống (server mới restart / khách quay lại sau nhiều ngày), AI nạp 20 tin gần nhất của ĐÚNG hội thoại đó từ Pancake (2 chiều, gồm cả Botcake/sale tay) rồi mới soạn tin — không chào lại từ đầu, không hỏi lại thông tin cũ, biết khách đã đặt đơn. (`handler.js → hydrateHistory`)
 11. **Không cam kết vượt thẩm quyền** — không hứa giờ/ngày giao cụ thể, không tự chế chính sách đổi trả/hoàn tiền/bảo hành ngoài KB; ngoài phạm vi → "nhân viên sẽ xác nhận chi tiết này với anh/chị". (`prompts.js → HARD_RULES`)
 12. **Bảo vệ thông tin khách (PII)** — không đọc lại đầy đủ SĐT/địa chỉ trong tin nhắn trừ 1 lần lúc tóm tắt xác nhận đơn; tuyệt đối không nhắc thông tin/đơn hàng của khách khác trong hội thoại. (`prompts.js → HARD_RULES`)
+13. **Kết thúc là phải bàn giao** — MỌI điểm AI dừng phục vụ đều đổ về hàng chờ "Cần sale xử lý" kèm LÝ DO + link mở chat + tên khách, không khách nào rơi vào khoảng trống "AI im mà người chưa biết". Các điểm dừng: ① AI chốt đơn xong (`order`), ② AI chủ động chuyển người (`handoff_human`), ③ khách khiếu nại, ④ khách dùng ngôn ngữ lạ, ⑤ AI hết lượt (`maxAiTurnsBeforeHandoff`), ⑥ page chưa có KB. Khách nói câu giữ chân "team member will assist you shortly" thì PHẢI có người thật xuất hiện ở hàng chờ. (`handler.js → toSaleQueue`, `tools.js`)
 
 > Ghi chú vận hành: mọi hành động AI vẫn được ghi vào Sổ AI (`ai-messages.jsonl`) và tự ghi chú vào Pancake khi chốt đơn/chuyển người — dashboard có nút "Đối chiếu Sổ AI" để kiểm chứng số liệu.
 

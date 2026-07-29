@@ -101,7 +101,7 @@ async function pollPage(pageId) {
     if (custMsgCount <= 1) { console.log(`[pancake] ${c.from?.name || psid}: tin đầu "${text.slice(0, 24)}" → nhường Botcake chào`); continue; }
 
     // history = msgs (đã fetch sẵn ở trên) → AI đọc toàn bộ hội thoại trước khi soạn tin.
-    const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs });
+    const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '' });
     if (!reply) continue;
     const r = await pkSendReply(pageId, c.id, custId, reply);
     noteSendResult(pageId, r.ok, r.error); // backoff: 2 lần lỗi liên tiếp → ngừng page 30 phút
