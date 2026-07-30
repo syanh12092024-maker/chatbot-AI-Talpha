@@ -12,11 +12,11 @@ import {
   listConversations, getConversation, setHandoff, isAiEnabled, setAiEnabled, listAiEnabled,
 } from './store.js';
 import { sendText } from './messenger.js';
-import { pancakePages, pancakePageCount } from './pancake.js';
+import { pancakePages, pancakePageCount, pkGetMessages, pkSendReply } from './pancake.js';
 import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
-import { recount, needSale } from './ai-log.js';
+import { recount, needSale, recentConversations } from './ai-log.js';
 import { ordersEnabled, aiOrderStats } from './pancake-orders.js';
 import { getAiConvSet } from './ai-convs.js';
 import { sendHealth } from './pancake-poll.js';
@@ -170,13 +170,61 @@ adminRouter.post('/pages/:id/ai', (req, res) => {
 });
 
 // ---- Tin nhắn / hội thoại ----
+// Gộp 2 nguồn: RAM (hội thoại live từ lúc server chạy) + Sổ AI (72h — SỐNG SÓT QUA RESTART).
 adminRouter.get('/conversations', (req, res) => {
-  res.json(listConversations({ pageId: req.query.pageId }));
+  const pageId = req.query.pageId;
+  const pk = pancakePages();
+  const nameOf = (id) => pk.get(String(id))?.name || String(id);
+  const ram = listConversations({ pageId });
+  const seenConv = new Set(ram.map((r) => r.pkConvId).filter(Boolean));
+  const seenPsid = new Set(ram.map((r) => String(r.psid)));
+  const merged = ram.map((r) => ({
+    psid: String(r.psid), pageId: String(r.pageId),
+    pageName: r.pageName || nameOf(r.pageId),
+    custName: r.custName || '', lastText: r.lastText || '', lastAt: r.lastAt || 0,
+    handoff: !!r.handoff, hasOrder: !!r.orderId, live: true,
+    conv: r.pkConvId || '', cust: r.pkCustId || '',
+  }));
+  for (const g of recentConversations({ hours: 72 })) {
+    if (pageId && String(g.page) !== String(pageId)) continue;
+    const psid = (g.conv || '').split('_')[1] || '';
+    if ((g.conv && seenConv.has(g.conv)) || (psid && seenPsid.has(psid))) continue; // RAM đã có → ưu tiên bản live
+    merged.push({
+      psid, pageId: g.page, pageName: nameOf(g.page),
+      custName: g.name || '', lastText: g.lastText || '', lastAt: g.t,
+      handoff: g.lastType === 'handoff', hasOrder: g.hasOrder, live: false,
+      conv: g.conv || '', cust: g.cust,
+    });
+  }
+  merged.sort((a, b) => b.lastAt - a.lastAt);
+  res.json(merged.slice(0, 200));
 });
-adminRouter.get('/conversation/:psid', (req, res) => {
+// Chi tiết hội thoại: RAM nếu có (đủ tin agent/system); không có → KÉO NGUYÊN VĂN từ Pancake.
+adminRouter.get('/conversation/:psid', async (req, res) => {
+  const pk = pancakePages();
   const c = getConversation(req.params.psid);
-  if (!c) return res.status(404).json({ error: 'không tìm thấy' });
-  res.json(c);
+  if (c && (c.transcript || []).length) {
+    c.pageName = c.pageName || pk.get(String(c.pageId))?.name || c.pageId;
+    return res.json(c);
+  }
+  const { pageId, conv, cust } = req.query;
+  if (!(pageId && conv && cust)) {
+    if (c) return res.json(c);
+    // Hội thoại cũ (trước khi Sổ AI ghi mã hội thoại) → không kéo được nguyên văn.
+    return res.json({ psid: req.params.psid, pageId: pageId || '', transcript: [], noHistory: true });
+  }
+  try {
+    const msgs = await pkGetMessages(pageId, conv, cust);
+    const transcript = msgs.map((m) => ({
+      who: String(m.from?.id) === String(pageId) ? 'ai' : 'customer',
+      text: (m.original_message || m.message || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+        || ((m.attachments || []).length ? '(ảnh/đính kèm)' : ''),
+    })).filter((m) => m.text);
+    res.json({
+      psid: req.params.psid, pageId, pageName: pk.get(String(pageId))?.name || pageId,
+      custName: '', handoff: !!(c && c.handoff), transcript, fromPancake: true, pkConvId: conv, pkCustId: cust,
+    });
+  } catch (e) { res.status(502).json({ error: 'không đọc được từ Pancake: ' + e.message }); }
 });
 adminRouter.post('/conversation/:psid/takeover', (req, res) => {
   setHandoff(req.params.psid, true, 'manual');
@@ -190,11 +238,20 @@ adminRouter.post('/conversation/:psid/send', async (req, res) => {
   const text = String(req.body?.text || '').trim();
   if (!text) return res.status(400).json({ error: 'tin rỗng' });
   const c = getConversation(req.params.psid);
-  if (!c) return res.status(404).json({ error: 'không tìm thấy' });
-  setHandoff(req.params.psid, true, 'manual');
+  // Toạ độ Pancake: ưu tiên từ RAM state; không có thì client gửi kèm (hội thoại dựng từ Sổ AI).
+  const kPage = (c && c.pageId) || req.body?.pageId;
+  const kConv = (c && c.pkConvId) || req.body?.conv;
+  const kCust = (c && c.pkCustId) || req.body?.cust;
+  setHandoff(req.params.psid, true, 'manual'); // người gửi tay → AI im hội thoại này
   recordOutbound(req.params.psid, text, 'agent');
+  if (kPage && kConv && kCust) {
+    const r = await pkSendReply(kPage, kConv, kCust, text);
+    if (!r.ok) return res.status(502).json({ error: 'Pancake từ chối: ' + r.error });
+    return res.json({ ok: true, via: 'pancake' });
+  }
+  if (!c) return res.status(404).json({ error: 'không tìm thấy' });
   await sendText(req.params.psid, text, c.pageId);
-  res.json({ ok: true });
+  res.json({ ok: true, via: 'fb' });
 });
 
 // ---- Upload ảnh sản phẩm (base64 từ dashboard → lưu file → trả URL công khai) ----

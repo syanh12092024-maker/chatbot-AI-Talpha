@@ -71,6 +71,29 @@ export function needSale({ hours = 48, types = ['order', 'handoff'] } = {}) {
   return out;
 }
 
+// DANH SÁCH HỘI THOẠI GẦN ĐÂY từ Sổ AI — để tab "Tin nhắn" SỐNG SÓT QUA RESTART
+// (bộ nhớ RAM trắng sau restart, nhưng sổ thì còn). Mỗi (page,khách) 1 dòng, mới nhất trước.
+let _rcCache = { t: 0, key: '', data: null };
+export function recentConversations({ hours = 72 } = {}) {
+  const key = String(hours);
+  if (_rcCache.data && _rcCache.key === key && Date.now() - _rcCache.t < 10000) return _rcCache.data; // cache 10s
+  const since = Date.now() - hours * 3600e3;
+  const map = new Map(); // page:cust -> gộp
+  for (const r of readLog()) {
+    if (!r.cust) continue;
+    const k = r.page + ':' + r.cust;
+    let g = map.get(k);
+    if (!g) { g = { page: String(r.page), cust: String(r.cust), name: '', conv: '', t: 0, lastText: '', lastType: '', hasOrder: false }; map.set(k, g); }
+    if (r.name) g.name = r.name;
+    if (r.conv) g.conv = r.conv;
+    if (r.type === 'order') g.hasOrder = true;
+    if (r.t >= g.t) { g.t = r.t; g.lastType = r.type; if (r.text) g.lastText = r.text; }
+  }
+  const out = [...map.values()].filter((g) => g.t >= since).sort((a, b) => b.t - a.t);
+  _rcCache = { t: Date.now(), key, data: out };
+  return out;
+}
+
 // Tính lại thống kê CHÍNH XÁC từ sổ (dedup khách & đơn theo page+khách).
 // from/to = 'YYYY-MM-DD' (tùy chọn). Trả { replies, leads, orders, byPage, events, lastAt }.
 export function recount({ from, to } = {}) {
