@@ -33,11 +33,11 @@ Nếu trang hiển thị lạ sau khi hệ thống cập nhật → nhấn `Ctrl
 
 AI tự gắn thẻ vào hội thoại trên Pancake để bạn **lọc nhanh ngay trong Pancake**, không cần mở dashboard:
 
-| Thẻ | Khi nào AI gắn |
-|---|---|
-| `bot` | AI đang phục vụ hội thoại này (gắn từ lần AI trả lời đầu tiên) |
-| `Mua hàng` | AI vừa chốt đơn xong |
-| `CSKH` | AI bàn giao cho người (khiếu nại / hết lượt / cần người / thiếu KB) |
+| Thẻ | Khi nào AI gắn | Sale làm gì khi thấy thẻ |
+|---|---|---|
+| `AI Chăm` | AI đang trực tiếp nhắn với khách (gắn từ lần AI trả lời đầu tiên) | Không cần làm gì — AI đang lo |
+| `AI Chốt` | AI vừa chốt đơn xong | Vào kiểm tra hội thoại + kiểm tra đơn trên POS, sửa nếu cần |
+| `AI back Sale` | AI cần người can thiệp (khiếu nại / hết lượt / cần người / thiếu KB) | **Vào hỗ trợ ngay** — khách đang chờ người thật |
 
 Page nào không có sẵn thẻ trùng tên thì AI bỏ qua êm — muốn dùng thì tạo thẻ đúng tên đó trong Pancake. (Đổi tên thẻ mặc định qua cấu hình `PK_TAG_AI` / `PK_TAG_ORDER` / `PK_TAG_HANDOFF`.)
 

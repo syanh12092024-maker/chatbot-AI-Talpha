@@ -46,9 +46,9 @@ export const config = {
   respectAssignee: process.env.RESPECT_ASSIGNEE === '1',
   // TỰ GẮN THẺ Pancake khi AI hành động (tên thẻ phải TỒN TẠI trên page; trống = tắt).
   pkTags: {
-    ai: process.env.PK_TAG_AI ?? 'bot',            // AI đã phục vụ hội thoại này
-    order: process.env.PK_TAG_ORDER ?? 'Mua hàng', // AI chốt đơn xong
-    handoff: process.env.PK_TAG_HANDOFF ?? 'CSKH', // AI bàn giao cho người
+    ai: process.env.PK_TAG_AI ?? 'AI Chăm',             // AI đang trực tiếp nhắn với khách
+    order: process.env.PK_TAG_ORDER ?? 'AI Chốt',       // AI chốt đơn — sale vào kiểm tra hội thoại + đơn rồi fix
+    handoff: process.env.PK_TAG_HANDOFF ?? 'AI back Sale', // AI cần sale can thiệp — thấy thẻ là vào hỗ trợ
   },
   // Circuit breakers
   // Trần lượt AI/khách (đếm BỀN theo Sổ AI 24h, sống sót qua restart). Chỉnh bằng MAX_AI_TURNS.
