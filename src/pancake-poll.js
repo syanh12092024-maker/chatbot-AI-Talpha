@@ -19,6 +19,14 @@ const REPLY_DEBOUNCE_MS = Number(process.env.REPLY_DEBOUNCE_MS || 20000);
 
 // convId -> mốc last_customer_interactive_at đã xử lý (chống trả lời lặp)
 const seen = new Map();
+// DEBOUNCE theo ĐỒNG HỒ SERVER: timestamp Pancake không có múi giờ (Date.parse hiểu sai lệch
+// nhiều giờ) → thay vì tin nó, ghi lại THỜI ĐIỂM MÌNH THẤY mốc mới, đợi đủ N giây rồi mới xử lý.
+const pendingMark = new Map(); // convId -> { mark, firstAt }
+function pruneMaps() { // chống phình RAM sau nhiều tuần chạy
+  for (const m of [seen, pendingMark]) {
+    if (m.size > 8000) { let n = m.size - 6000; for (const k of m.keys()) { m.delete(k); if (--n <= 0) break; } }
+  }
+}
 const primedPages = new Set(); // page đã "ghi mốc lần đầu" — tránh trả lời loạt hội thoại cũ khi mới bật AI
 
 // BACKOFF (nguyên tắc #9): page gửi tin thất bại 2 lần LIÊN TIẾP (vd Meta chặn #2022)
@@ -76,6 +84,7 @@ async function pollAll() {
     });
     // Các page quét song song; từng hội thoại chen vào semaphore chung 4 slot.
     await Promise.all(pages.map((pageId) => pollPage(pageId).catch((e) => console.warn(`[pancake] page ${pageId}:`, e.message))));
+    pruneMaps();
   } finally { _pollRunning = false; }
 }
 
@@ -89,10 +98,14 @@ async function pollPage(pageId) {
     if (!psid || !custId) continue;
     const mark = c.last_customer_interactive_at || c.updated_at || '';
     if (seen.get(c.id) === mark) continue; // mốc này đã xử lý
-    // DEBOUNCE (chống dội bom): khách vừa nhắn <20s trước có thể còn đang gõ tiếp →
-    // CHƯA ghi mốc, đợi tick sau; khi khách ngừng gõ mới trả lời 1 LẦN cho cả cụm tin.
-    const markT = Date.parse(mark);
-    if (!firstTime && Number.isFinite(markT) && Date.now() - markT < REPLY_DEBOUNCE_MS) continue;
+    // DEBOUNCE (chống dội bom): thấy mốc MỚI → ghi giờ server, đợi đủ N giây (khách có thể
+    // còn đang gõ tiếp); khi khách ngừng gõ mới trả lời 1 LẦN cho cả cụm tin.
+    if (!firstTime) {
+      const pd = pendingMark.get(c.id);
+      if (!pd || pd.mark !== mark) { pendingMark.set(c.id, { mark, firstAt: Date.now() }); continue; }
+      if (Date.now() - pd.firstAt < REPLY_DEBOUNCE_MS) continue;
+      pendingMark.delete(c.id);
+    }
     seen.set(c.id, mark);
     if (firstTime) continue; // page mới bật AI: chỉ ghi mốc hội thoại cũ, không trả lời
 

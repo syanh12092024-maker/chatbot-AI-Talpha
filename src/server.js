@@ -88,7 +88,7 @@ app.post('/webhook', (req, res) => {
 });
 
 // Tải lại KB sau khi cập nhật file.
-app.post('/reload-kb', (_req, res) => {
+app.post('/reload-kb', adminAuth, (_req, res) => {
   try {
     const r = loadKB();
     res.json({ ok: true, ...r });
@@ -98,7 +98,7 @@ app.post('/reload-kb', (_req, res) => {
 });
 
 // Tải lại token các page (sau khi thêm page mới vào Business).
-app.post('/reload-tokens', async (_req, res) => {
+app.post('/reload-tokens', adminAuth, async (_req, res) => {
   try {
     const n = await loadPageTokens();
     res.json({ ok: true, pages: n });
