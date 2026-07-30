@@ -300,22 +300,22 @@ async function pollBadge(){
    Ưu tiên hiển thị: CẦN NGƯỜI trước (khách đang đợi), rồi mới tới đơn đã chốt. */
 let NS={hours:48,filter:'all',list:[]};
 const NS_RANGES=[[24,'24 giờ'],[48,'48 giờ'],[168,'7 ngày']];
-// 6 CỬA dẫn vào hàng chờ (nguyên tắc #13). prio: 0 khẩn (đỏ) · 1 cần người (vàng) · 2 đơn đã chốt (xanh).
+// 5 CỬA dẫn vào hàng chờ (nguyên tắc #13). prio: 0 khẩn (đỏ) · 1 cần người (vàng) · 2 đơn đã chốt (xanh).
+// (Cửa "Ngôn ngữ lạ" đã bỏ — AI tự trả lời bằng đúng ngôn ngữ của khách, không chuyển người nữa.)
 const NS_KINDS={
   complaint:{label:'Khiếu nại',      icon:'😡', pill:'bad',  prio:0},
   ai:       {label:'AI chuyển người',icon:'🙋', pill:'warn', prio:1},
-  lang:     {label:'Ngôn ngữ lạ',    icon:'🌐', pill:'info', prio:1},
   max_turns:{label:'Hết lượt AI',    icon:'⏳', pill:'warn', prio:1},
   no_kb:    {label:'Thiếu kịch bản', icon:'📄', pill:'mut',  prio:1},
   order:    {label:'Đã chốt đơn',    icon:'🛒', pill:'ok',   prio:2},
 };
 // Nhận diện loại việc: ưu tiên kind server gắn; dữ liệu cũ chưa có kind → đoán theo lý do.
+// Sự kiện "ngôn ngữ lạ" cũ (còn trong cửa sổ 48h) gộp về nhóm "AI chuyển người".
 function nsKind(r){
   if(r.type==='order')return'order';
   if(r.kind&&NS_KINDS[r.kind])return r.kind;
   const s=r.reason||'';
   if(/khiếu nại/i.test(s))return'complaint';
-  if(/ngôn ngữ/i.test(s))return'lang';
   if(/trả lời đủ/i.test(s))return'max_turns';
   if(/kịch bản|KB/i.test(s))return'no_kb';
   return'ai';
