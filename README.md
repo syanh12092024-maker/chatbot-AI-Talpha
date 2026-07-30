@@ -58,7 +58,7 @@ Cập nhật KB xong gọi `POST /reload-kb` để nạp lại không cần rest
 
 ## 13 nguyên tắc khi AI chat với khách
 
-1. **Ngôn ngữ & giọng điệu** — chỉ trả khách bằng Tagalog/English (Taglish OK), không bao giờ tiếng Việt; giọng thân thiện kiểu Philippines ("po"/"opo"), mỗi tin 1-3 câu, né tôn giáo/chính trị. (`prompts.js`)
+1. **Ngôn ngữ & giọng điệu** — mặc định Tagalog/English (Taglish OK); khách dùng ngôn ngữ khác (Ả Rập, Urdu, Hindi...) → AI **trả lời bằng đúng ngôn ngữ của khách**; tuyệt đối không tiếng Việt với khách; giọng thân thiện kiểu Philippines ("po"/"opo"), mỗi tin 1-3 câu, né tôn giáo/chính trị. (`prompts.js`)
 2. **Trung thực thông tin** — giá/chính sách chỉ lấy từ KB hoặc tool `get_price`, không bịa; mỗi page 1 sản phẩm; luôn coi còn hàng; chủ động gửi ảnh thật (`send_product_image`).
 3. **Chốt đơn COD đúng quy trình** — đủ Tên + SĐT + Địa chỉ + SL + xác nhận COD mới gọi `create_draft_order`; tool OK rồi mới báo "đã nhận đơn"; cấm bịa Mã đơn.
 4. **Chống spam làm phiền khách** — không hỏi lại thứ khách đã cho; địa chỉ có khu vực + 1 chi tiết là đủ; hỏi ngắn 1-2 dòng, không dán lại checklist.
