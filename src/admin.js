@@ -17,6 +17,7 @@ import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
 import { recount, needSale, recentConversations, custProfile } from './ai-log.js';
+import { cleanText } from './handler.js';
 import { ordersEnabled, aiOrderStats, ordersForConv } from './pancake-orders.js';
 import { getAiConvSet } from './ai-convs.js';
 import { sendHealth } from './pancake-poll.js';
@@ -298,7 +299,7 @@ adminRouter.post('/translate', async (req, res) => {
   const msgs = Array.isArray(req.body?.msgs) ? req.body.msgs.slice(0, 50) : [];
   if (!msgs.length) return res.json({ vi: [] });
   try {
-    const src = msgs.map((m, i) => `${i + 1}|${String(m).slice(0, 300).replace(/\n/g, ' ')}`).join('\n');
+    const src = msgs.map((m, i) => `${i + 1}|${cleanText(m, 300).replace(/\n/g, ' ')}`).join('\n');
     const r = await anthropic.messages.create({
       model: config.modelClassifier, max_tokens: 2500,
       system: 'Dịch từng dòng sau sang tiếng Việt tự nhiên, ngắn gọn (giữ nghĩa bán hàng). Trả đúng định dạng "số|bản dịch", mỗi dòng một bản, không thêm gì khác.',

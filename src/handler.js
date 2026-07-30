@@ -25,13 +25,20 @@ function toSaleQueue(state, reason, kind) {
 // TRƯỚC khi soạn tin — không hỏi lại thứ khách đã cho, không chào lại từ đầu, biết khách đã đặt đơn.
 const HIST_MAX_MSGS = 20;   // lấy tối đa N tin gần nhất
 const HIST_MAX_CHARS = 400; // cắt mỗi tin để tiết kiệm token
+// Cắt chuỗi có thể chém ĐÔI 1 emoji (cặp surrogate UTF-16) → JSON hỏng → Claude API 400
+// "no low surrogate" → khách kẹt không được trả lời. Luôn dọn surrogate mồ côi sau khi cắt.
+export function cleanText(str, max) {
+  let s = String(str == null ? '' : str);
+  if (max) s = s.slice(0, max);
+  return s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+}
 export function hydrateHistory(state, history, pageId) {
   if (state.messages.length || !Array.isArray(history) || history.length <= 1) return 0;
   const turns = [];
   // bỏ tin CUỐI (chính là tin đang xử lý — handler sẽ tự đẩy vào sau)
   for (const m of history.slice(0, -1).slice(-HIST_MAX_MSGS)) {
     const raw = (m.original_message || m.message || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    const text = raw ? raw.slice(0, HIST_MAX_CHARS) : ((m.attachments || []).length ? '(gửi ảnh/đính kèm)' : '');
+    const text = raw ? cleanText(raw, HIST_MAX_CHARS) : ((m.attachments || []).length ? '(gửi ảnh/đính kèm)' : '');
     if (!text) continue;
     const role = String(m.from?.id) === String(pageId) ? 'assistant' : 'user';
     const prev = turns[turns.length - 1];
@@ -81,7 +88,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     return { reply: null, handoff: false, archived: true };
   }
 
-  state.messages.push({ role: 'user', content: text });
+  state.messages.push({ role: 'user', content: cleanText(text) });
 
   if (cls.intent === 'complaint') {
     state.handoff = true; state.handoffReason = 'complaint';
