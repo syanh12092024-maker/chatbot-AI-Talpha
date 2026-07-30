@@ -58,18 +58,31 @@ export function startPancakePolling() {
   setInterval(tick, config.pancakePollMs);
 }
 
+// ===== XỬ LÝ SONG SONG (semaphore): tối đa CONV_CONCURRENCY khách cùng lúc TOÀN HỆ THỐNG =====
+// Giờ cao điểm ads không còn xếp hàng tuần tự từng khách. Chỉnh bằng CONV_CONCURRENCY trong .env.
+const CONV_CONCURRENCY = Number(process.env.CONV_CONCURRENCY || 4);
+let _slots = CONV_CONCURRENCY; const _waiters = [];
+const _acquire = () => (_slots > 0 ? (_slots--, Promise.resolve()) : new Promise((r) => _waiters.push(r)));
+const _release = () => { const w = _waiters.shift(); if (w) w(); else _slots++; };
+
+let _pollRunning = false; // chống 2 vòng poll chồng lên nhau khi 1 vòng chạy lâu
 async function pollAll() {
-  const pages = listAiEnabled(); // chỉ page bật AI (id = FB page id = Pancake page id)
-  for (const pageId of pages) {
-    const f = sendFail.get(pageId);
-    if (f && f.pausedUntil > Date.now()) continue; // đang backoff → bỏ qua page này
-    try { await pollPage(pageId); } catch (e) { console.warn(`[pancake] page ${pageId}:`, e.message); }
-  }
+  if (_pollRunning) return;
+  _pollRunning = true;
+  try {
+    const pages = listAiEnabled().filter((pageId) => {
+      const f = sendFail.get(pageId);
+      return !(f && f.pausedUntil > Date.now()); // đang backoff → bỏ qua page này
+    });
+    // Các page quét song song; từng hội thoại chen vào semaphore chung 4 slot.
+    await Promise.all(pages.map((pageId) => pollPage(pageId).catch((e) => console.warn(`[pancake] page ${pageId}:`, e.message))));
+  } finally { _pollRunning = false; }
 }
 
 async function pollPage(pageId) {
   const convs = await pkGetConversations(pageId);
   const firstTime = !primedPages.has(pageId); // lần đầu page này được quét → chỉ ghi mốc
+  const jobs = [];
   for (const c of convs) {
     const psid = c.from_psid;
     const custId = (c.customers || [])[0]?.id;
@@ -88,46 +101,48 @@ async function pollPage(pageId) {
     if (config.respectAssignee && (c.assignee_ids || []).length > 0) { console.log(`[pancake] ${c.from?.name || psid}: đã gán nhân viên → AI nhường`); continue; }
 
     // ĐƠN ĐÃ ĐƯỢC XỬ LÝ → AI IM HẲN (không tư vấn bán lại, không tạo đơn trùng).
-    // Pancake tự gắn thẻ hệ thống = -(mã trạng thái đơn): -1 đã xác nhận, -2 ĐÃ GỬI, -3 đã nhận,
-    // -11 chờ hàng, -12 chờ in, -20 đã đặt hàng. Có thẻ này = đơn đang chạy, để nhân viên lo.
     const stopTag = (c.tags || []).find((t) => ORDER_STOP_TAGS.has(Number(t)));
     if (stopTag !== undefined) { console.log(`[pancake] ${c.from?.name || psid}: đơn đang xử lý (thẻ ${stopTag}) → AI im`); continue; }
 
-    // Chỉ trả lời khi TIN CUỐI là của khách (không phải page/Botcake).
-    const msgs = await pkGetMessages(pageId, c.id, custId);
-    const last = msgs[msgs.length - 1];
-    if (!last) continue;
-    if (String(last.from?.id) === String(pageId)) continue; // page/botcake đã nói cuối → bỏ
-    // GỘP CỤM TIN DỒN: lấy TẤT CẢ tin khách liên tiếp ở cuối hội thoại (khách nhắn nhiều
-    // tin ngắn liền nhau) → AI đọc đủ cả cụm và trả lời 1 LẦN, không đáp riêng từng tin.
-    const burst = [];
-    for (let i = msgs.length - 1; i >= 0; i--) {
-      const m = msgs[i];
-      if (String(m.from?.id) === String(pageId)) break;
-      const tx = (m.original_message || m.message || '').trim();
-      if (tx) burst.unshift(tx);
-    }
-    const text = burst.join('\n');
-    if (!text) continue;
-
-    // NHƯỜNG TIN ĐẦU cho Botcake: Botcake luôn bắn câu chào đầu tiên. Nếu khách MỚI
-    // gửi đúng 1 tin (đây là tin mở đầu) → AI im lặng, để Botcake chào; AI chỉ vào cuộc
-    // từ tin thứ 2 của khách trở đi (lúc khách thực sự hỏi/trao đổi).
-    const custMsgCount = msgs.filter((m) => String(m.from?.id) !== String(pageId) && (m.original_message || m.message || '').trim()).length;
-    if (custMsgCount <= 1) { console.log(`[pancake] ${c.from?.name || psid}: tin đầu "${text.slice(0, 24)}" → nhường Botcake chào`); continue; }
-
-    // history = msgs (đã fetch sẵn ở trên) → AI đọc toàn bộ hội thoại trước khi soạn tin.
-    const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '' });
-    if (!reply) continue;
-    const r = await pkSendReply(pageId, c.id, custId, reply);
-    noteSendResult(pageId, r.ok, r.error); // backoff: 2 lần lỗi liên tiếp → ngừng page 30 phút
-    if (r.ok) {
-      try { incReply(pageId); incLead(pageId, custId); } catch { /* thống kê không chặn gửi tin */ }
-      try { addAiConv(pageId, c.id); } catch { /* ghi hội thoại AI để khớp đơn */ }
-      try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id }); } catch { /* sổ AI không chặn */ }
-    }
-    console.log(`[pancake] ${c.from?.name || psid}: "${text.slice(0, 30)}" → AI: "${reply.slice(0, 40)}" ${r.ok ? '✓' : '✗ ' + r.error}`);
-    if (!r.ok && (sendFail.get(pageId)?.pausedUntil || 0) > Date.now()) return; // vừa kích hoạt backoff → dừng page ngay trong lượt này
+    jobs.push((async () => { await _acquire(); try { await processConv(pageId, c, psid, custId); } finally { _release(); } })());
   }
+  await Promise.all(jobs);
   if (firstTime) { primedPages.add(pageId); console.log(`[pancake] page ${pageId} đã ghi mốc — từ giờ chỉ trả lời tin MỚI.`); }
+}
+
+// Xử lý 1 hội thoại (chạy trong semaphore): đọc tin → AI soạn → gửi qua Pancake.
+async function processConv(pageId, c, psid, custId) {
+  // Chỉ trả lời khi TIN CUỐI là của khách (không phải page/Botcake).
+  const msgs = await pkGetMessages(pageId, c.id, custId);
+  const last = msgs[msgs.length - 1];
+  if (!last) return;
+  if (String(last.from?.id) === String(pageId)) return; // page/botcake đã nói cuối → bỏ
+  // GỘP CỤM TIN DỒN: lấy TẤT CẢ tin khách liên tiếp ở cuối hội thoại → trả lời 1 LẦN cho cả cụm.
+  const burst = [];
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i];
+    if (String(m.from?.id) === String(pageId)) break;
+    const tx = (m.original_message || m.message || '').trim();
+    if (tx) burst.unshift(tx);
+  }
+  const text = burst.join('\n');
+  if (!text) return;
+
+  // NHƯỜNG TIN ĐẦU cho Botcake: khách mới gửi đúng 1 tin → để Botcake chào, AI vào từ tin thứ 2.
+  const custMsgCount = msgs.filter((m) => String(m.from?.id) !== String(pageId) && (m.original_message || m.message || '').trim()).length;
+  if (custMsgCount <= 1) { console.log(`[pancake] ${c.from?.name || psid}: tin đầu "${text.slice(0, 24)}" → nhường Botcake chào`); return; }
+
+  // history = msgs (đã fetch sẵn ở trên) → AI đọc toàn bộ hội thoại trước khi soạn tin.
+  const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '' });
+  if (!reply) return;
+  // Page vừa rơi vào backoff (do job song song khác) → thôi không gửi thêm.
+  if ((sendFail.get(pageId)?.pausedUntil || 0) > Date.now()) return;
+  const r = await pkSendReply(pageId, c.id, custId, reply);
+  noteSendResult(pageId, r.ok, r.error); // backoff: 2 lần lỗi liên tiếp → ngừng page 30 phút
+  if (r.ok) {
+    try { incReply(pageId); incLead(pageId, custId); } catch { /* thống kê không chặn gửi tin */ }
+    try { addAiConv(pageId, c.id); } catch { /* ghi hội thoại AI để khớp đơn */ }
+    try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id }); } catch { /* sổ AI không chặn */ }
+  }
+  console.log(`[pancake] ${c.from?.name || psid}: "${text.slice(0, 30)}" → AI: "${reply.slice(0, 40)}" ${r.ok ? '✓' : '✗ ' + r.error}`);
 }
