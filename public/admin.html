@@ -114,8 +114,22 @@
   .av{width:34px;height:34px;border-radius:50%;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
 
   /* ============ CONVERSATIONS ============ */
-  .convo{display:grid;grid-template-columns:330px 1fr;gap:16px;height:calc(100vh - 210px)}
+  .convo{display:grid;grid-template-columns:300px 1fr 290px;gap:14px;height:calc(100vh - 210px)}
+  @media(max-width:1200px){.convo{grid-template-columns:300px 1fr}.cinfo{display:none}}
   @media(max-width:880px){.convo{grid-template-columns:1fr;height:auto}}
+  /* cột phải: thông tin khách + đơn hàng */
+  .cinfo{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:auto;padding:14px}
+  .cinfo h4{margin:0 0 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .cinfo .sec{padding:12px 0;border-top:1px solid var(--line)} .cinfo .sec:first-child{border-top:none;padding-top:0}
+  .cirow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin:5px 0}
+  .cirow .k{color:var(--muted);flex-shrink:0} .cirow .v{font-weight:600;text-align:right;min-width:0;overflow-wrap:anywhere}
+  .ocard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;background:#fafbfc}
+  .ocard .oid{font-weight:700;font-size:13px}
+  /* mốc ngày + giờ tin + bản dịch */
+  .dsep{align-self:center;background:#eef1f4;color:var(--muted);font-size:11px;font-weight:600;padding:3px 12px;border-radius:12px;margin:6px 0}
+  .btime{display:block;font-size:10px;opacity:.55;margin-top:3px;text-align:right}
+  .vitrans{display:block;font-size:12px;color:#c2410c;margin-top:5px;border-top:1px dashed rgba(0,0,0,.15);padding-top:4px;font-style:italic}
+  .bub.ai .vitrans,.bub.agent .vitrans{color:#ffe3c9;border-top-color:rgba(255,255,255,.35)}
   .list{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:auto}
   .ci{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:10px;align-items:flex-start}
   .ci:hover{background:#fafcfc} .ci.sel{background:var(--priSoft)}
@@ -517,7 +531,7 @@ async function rMsgs(){
        <div class="search">${search}<input id="cq" placeholder="Tìm khách / page / SĐT..." oninput="drawConvs()"></div>
        <select id="pf" style="min-width:200px"><option value="">Tất cả page</option>${pages.map(p=>`<option value="${p.id}" ${p.id===ctx.pageId?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
        <span class="pill mut"><span class="dot" style="width:6px;height:6px;box-shadow:none"></span> live</span></div></div>
-   <div class="convo"><div class="list" id="clist"></div><div class="panel" id="cpanel"><div class="empty">👈 Chọn 1 hội thoại để xem nguyên văn.<br><span style="font-size:12px">Hội thoại cũ được kéo trực tiếp từ Pancake — xem được cả trước khi server khởi động.</span></div></div></div>`;
+   <div class="convo"><div class="list" id="clist"></div><div class="panel" id="cpanel"><div class="empty">👈 Chọn 1 hội thoại để xem nguyên văn.<br><span style="font-size:12px">Hội thoại cũ được kéo trực tiếp từ Pancake — xem được cả trước khi server khởi động.</span></div></div><div class="cinfo" id="cinfo"><div class="empty" style="padding:30px 10px;font-size:12.5px">Thông tin khách & đơn hàng sẽ hiện ở đây.</div></div></div>`;
   document.getElementById('pf').onchange=e=>{ctx.pageId=e.target.value;loadConvos();};
   await loadConvos();
   addTimer(()=>{if(document.getElementById('clist'))loadConvos();},5000);
@@ -538,24 +552,89 @@ function drawConvs(){
     <div class="s"><span class="muted">${esc(c.pageName||c.pageId||'?')}</span> · ${esc(c.lastText||'(chưa có)')}</div></div></div>`;}).join('')
     :'<div class="empty">Không có hội thoại nào khớp.</div>';
 }
+// Vẽ bong bóng chat: mốc ngày ("29/07/2026") + giờ từng tin + bản dịch tiếng Việt (nếu có).
+function bubbles(trs,vi){
+  let out='',lastDay='';
+  trs.forEach((m,idx)=>{
+    const t=m.t||m.at;
+    if(t){const d=new Date(t);const day=d.toLocaleDateString('vi-VN');
+      if(day!==lastDay){lastDay=day;out+=`<div class="dsep">${day}</div>`;}
+      out+=`<div class="bub ${m.who}">${esc(m.text)}${vi&&vi[idx]?`<span class="vitrans">🇻🇳 ${esc(vi[idx])}</span>`:''}<span class="btime">${d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span></div>`;
+    } else out+=`<div class="bub ${m.who}">${esc(m.text)}${vi&&vi[idx]?`<span class="vitrans">🇻🇳 ${esc(vi[idx])}</span>`:''}</div>`;
+  });
+  return out||'<div class="empty">Chưa có tin.</div>';
+}
+window._lastTr=[];window._lastVi=null;
 window.openConvo=async i=>{
   const c=(window._convs||[])[i];if(!c)return;
-  _convSel=convKey(c);drawConvs();
+  _convSel=convKey(c);drawConvs();window._lastVi=null;
   const p=document.getElementById('cpanel');
   p.innerHTML='<div class="empty">Đang tải hội thoại…</div>';
+  fillConvInfo(c); // cột phải nạp song song
   const qs=`?pageId=${encodeURIComponent(c.pageId)}&conv=${encodeURIComponent(c.conv||'')}&cust=${encodeURIComponent(c.cust||'')}`;
   const d=await j('/conversation/'+(c.psid||'x')+qs).catch(e=>({error:String(e)}));
   if(d.error){p.innerHTML=`<div class="empty">⚠ ${esc(d.error)}</div>`;return;}
   const name=c.custName||d.custName||'(chưa rõ tên)';
   const pkLink=c.conv?`https://pancake.vn/${c.pageId}?c_id=${c.conv}`:'';
   const handoff=d.handoff||c.handoff;
+  window._lastTr=d.transcript||[];
   p.innerHTML=`<div class="phd"><div style="min-width:0"><b>${esc(name)}</b> <span class="muted" style="font-size:12px">· ${esc(c.pageName||'')}</span>${d.fromPancake?' <span class="pill mut" style="font-size:10px">từ Pancake</span>':''}</div>
-   <div class="row" style="flex-shrink:0">${pkLink?`<a class="btn sm" href="${esc(pkLink)}" target="_blank">Mở Pancake ↗</a>`:''}
+   <div class="row" style="flex-shrink:0"><button class="btn sm" onclick="dichConvo(${i})" title="Dịch hội thoại sang tiếng Việt (AI)">🇻🇳 Dịch</button>
+   ${pkLink?`<a class="btn sm" href="${esc(pkLink)}" target="_blank">Mở Pancake ↗</a>`:''}
    ${handoff?`<span class="pill warn">đang là người</span><button class="btn sm" onclick="releaseC(${i})">↩ Trả AI</button>`:`<button class="btn sm" onclick="takeoverC(${i})">✋ Tiếp quản</button>`}</div></div>
-   <div class="tr" id="tr">${(d.transcript||[]).map(m=>`<div class="bub ${m.who}">${esc(m.text)}</div>`).join('')||'<div class="empty">Chưa có tin.</div>'}</div>
+   <div class="tr" id="tr">${bubbles(window._lastTr)}</div>
    <div class="composer"><input id="amsg" placeholder="Nhân viên trả lời khách (gửi qua Pancake)..." style="flex:1" onkeydown="if(event.key==='Enter')sendAgent(${i})"><button class="btn pri" onclick="sendAgent(${i})">Gửi</button></div>`;
   if(d.noHistory){document.getElementById('tr').innerHTML='<div class="empty">Hội thoại cũ này chưa được ghi mã Pancake nên không kéo được nguyên văn.<br><span style="font-size:12px">Các hội thoại từ 29/07 trở đi đều xem được đầy đủ.</span></div>';}
   const tr=document.getElementById('tr');tr.scrollTop=tr.scrollHeight;
+};
+// Dịch toàn bộ hội thoại sang tiếng Việt (Haiku) — bấm lần nữa để ẩn.
+window.dichConvo=async i=>{
+  const tr=document.getElementById('tr');if(!tr||!window._lastTr.length)return;
+  if(window._lastVi){window._lastVi=null;tr.innerHTML=bubbles(window._lastTr);tr.scrollTop=tr.scrollHeight;return;}
+  toast('Đang dịch hội thoại…');
+  const r=await post('/translate',{msgs:window._lastTr.map(m=>m.text)});
+  if(r.error){toast('Dịch lỗi: '+r.error,'bad');return;}
+  window._lastVi=r.vi||[];
+  tr.innerHTML=bubbles(window._lastTr,window._lastVi);tr.scrollTop=tr.scrollHeight;
+  toast('✓ Đã dịch — bấm 🇻🇳 lần nữa để ẩn');
+};
+// Trạng thái đơn POS → nhãn + màu
+const POS_ST={0:['Mới','mut'],1:['Đã xác nhận','info'],2:['Đã gửi hàng','ok'],3:['Đã nhận','ok'],4:['Đang hoàn','warn'],5:['Đã hoàn','bad'],6:['Đã hủy','bad'],11:['Chờ hàng','warn'],12:['Chờ in','info'],20:['Đã đặt hàng','info']};
+// Cột phải: hồ sơ khách (Sổ AI) + đơn hàng POS + ghi chú vào Pancake.
+async function fillConvInfo(c){
+  const el=document.getElementById('cinfo');if(!el)return;
+  el.innerHTML='<div class="empty" style="padding:26px 10px">Đang tải thông tin…</div>';
+  const d=await j(`/conversation-info?pageId=${encodeURIComponent(c.pageId)}&conv=${encodeURIComponent(c.conv||'')}&cust=${encodeURIComponent(c.cust||'')}`).catch(()=>({}));
+  const row=(k,v)=>v?`<div class="cirow"><span class="k">${k}</span><span class="v">${v}</span></div>`:'';
+  const ords=(d.orders||[]).map(o=>{const st=POS_ST[o.status]||['TT '+o.status,'mut'];return `<div class="ocard">
+    <div class="row" style="justify-content:space-between"><span class="oid">#${esc(o.id)}</span><span class="pill ${st[1]}">${st[0]}</span></div>
+    ${row('COD',esc(o.codDisplay||''))}${row('Vận đơn',o.tracking?`<span class="mono" style="color:var(--ink)">${esc(o.tracking)}</span>`:'')}
+    ${o.address?`<div class="muted" style="font-size:11.5px;margin-top:4px">📍 ${esc(o.address)}</div>`:''}
+    ${o.note?`<div class="muted" style="font-size:11.5px;margin-top:3px;font-style:italic">${esc(o.note)}</div>`:''}
+  </div>`;}).join('');
+  el.innerHTML=`
+   <div class="sec"><h4>👤 Khách hàng</h4>
+     ${row('Tên',esc(d.name||c.custName||'—'))}
+     ${d.phone?`<div class="cirow"><span class="k">SĐT</span><span class="v"><b class="mono" style="color:var(--ink)">${esc(d.phone)}</b> <button class="btn sm" style="padding:1px 6px" onclick="copyPhone('${esc(d.phone)}')">⧉</button></span></div>`:''}
+     ${row('Khu vực',esc(d.city||''))}${row('Số lượng chốt',d.qty?'SL '+d.qty:'')}
+   </div>
+   <div class="sec"><h4>🛒 Đơn hàng (${(d.orders||[]).length})</h4>${ords||'<div class="muted" style="font-size:12px">Chưa có đơn nào gắn với hội thoại này.</div>'}</div>
+   <div class="sec"><h4>🤖 AI</h4>
+     ${row('Lượt đã dùng (24h)',`${d.replies24h||0} / ${d.maxTurns||5}`)}
+     ${d.lastHandoffReason?`<div class="muted" style="font-size:12px;font-style:italic;margin-top:4px">"${esc(d.lastHandoffReason)}"</div>`:''}
+   </div>
+   <div class="sec"><h4>📝 Ghi chú vào Pancake</h4>
+     <textarea id="cnote" style="width:100%;min-height:54px;font-size:12.5px" placeholder="Ghi chú cho sale trực Pancake..."></textarea>
+     <button class="btn sm pri" style="margin-top:7px" onclick="guiNote('${esc(c.pageId)}','${esc(c.cust||'')}')">Ghi vào hồ sơ khách</button>
+   </div>`;
+}
+window.guiNote=async(pageId,cust)=>{
+  const ta=document.getElementById('cnote');const t=(ta?.value||'').trim();
+  if(!t){toast('Chưa nhập nội dung','bad');return;}
+  if(!cust){toast('Hội thoại thiếu mã khách — không ghi được','bad');return;}
+  const r=await post('/conversation-note',{pageId,cust,text:t});
+  if(r.error){toast('Ghi lỗi: '+r.error,'bad');return;}
+  ta.value='';toast('✓ Đã ghi chú vào hồ sơ khách trên Pancake');
 };
 window.takeoverC=async i=>{const c=window._convs[i];if(!c?.psid){toast('Hội thoại này chưa có phiên — cứ trả lời, hệ thống tự tiếp quản','bad');return;}await post('/conversation/'+c.psid+'/takeover');c.handoff=true;toast('Bạn đã tiếp quản — AI im hội thoại này');openConvo(i);};
 window.releaseC=async i=>{const c=window._convs[i];if(!c?.psid)return;await post('/conversation/'+c.psid+'/release');c.handoff=false;toast('Đã trả lại cho AI');openConvo(i);};

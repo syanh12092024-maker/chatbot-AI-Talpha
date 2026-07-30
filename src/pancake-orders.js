@@ -179,6 +179,22 @@ export async function createPancakeOrder(pageId, input, convId) {
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
+// ĐƠN CỦA 1 HỘI THOẠI — cho cột thông tin ở tab Tin nhắn (khớp conversation_id).
+export async function ordersForConv(pageId, convId) {
+  const s = await shopOf(pageId);
+  if (!s || !convId) return [];
+  try {
+    const j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?api_key=${s.api_key}&page_id=${pageId}&page_number=1&page_size=60`);
+    return (j.data || []).filter((o) => o.conversation_id === convId).map((o) => ({
+      id: o.id, status: o.status, statusName: o.status_name || String(o.status),
+      cod: o.cod ?? o.total_price_after_sub_discount ?? null,
+      address: o.shipping_address?.full_address || o.shipping_address?.address || '',
+      name: o.bill_full_name || '', phone: o.bill_phone_number || o.shipping_address?.phone_number || '',
+      tracking: o.extend_code || o.tracking_number || '', note: o.note || '', at: o.inserted_at || '',
+    }));
+  } catch { return []; }
+}
+
 // Đơn thật cho nhiều page cùng lúc (có cache ngắn để không gọi API dồn dập).
 const _cache = new Map(); // key -> {t, data}
 export async function realOrdersMulti(pageIds, range = {}) {

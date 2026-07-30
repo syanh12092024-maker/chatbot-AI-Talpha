@@ -12,14 +12,15 @@ import {
   listConversations, getConversation, setHandoff, isAiEnabled, setAiEnabled, listAiEnabled,
 } from './store.js';
 import { sendText } from './messenger.js';
-import { pancakePages, pancakePageCount, pkGetMessages, pkSendReply } from './pancake.js';
+import { pancakePages, pancakePageCount, pkGetMessages, pkSendReply, pkAddNote } from './pancake.js';
 import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
-import { recount, needSale, recentConversations } from './ai-log.js';
-import { ordersEnabled, aiOrderStats } from './pancake-orders.js';
+import { recount, needSale, recentConversations, custProfile } from './ai-log.js';
+import { ordersEnabled, aiOrderStats, ordersForConv } from './pancake-orders.js';
 import { getAiConvSet } from './ai-convs.js';
 import { sendHealth } from './pancake-poll.js';
+import { anthropic } from './llm.js';
 
 export const adminRouter = express.Router();
 
@@ -215,11 +216,22 @@ adminRouter.get('/conversation/:psid', async (req, res) => {
   }
   try {
     const msgs = await pkGetMessages(pageId, conv, cust);
-    const transcript = msgs.map((m) => ({
-      who: String(m.from?.id) === String(pageId) ? 'ai' : 'customer',
-      text: (m.original_message || m.message || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-        || ((m.attachments || []).length ? '(ảnh/đính kèm)' : ''),
-    })).filter((m) => m.text);
+    const transcript = msgs.map((m) => {
+      const images = [];
+      let extra = '';
+      for (const a of (m.attachments || [])) {
+        const ty = String(a.type || '');
+        if (a.url && /photo|image|sticker/i.test(ty)) images.push(a.url);
+        else if ((a.post_attachments || []).length) extra = '(bài/video quảng cáo)';
+        else if (a.url || a.image_data) images.push(a.url || '');
+      }
+      const text = (m.original_message || m.message || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      return {
+        who: String(m.from?.id) === String(pageId) ? 'ai' : 'customer',
+        text: text || extra || (images.length ? '' : ((m.attachments || []).length ? '(đính kèm)' : '')),
+        images: images.filter(Boolean),
+      };
+    }).filter((m) => m.text || (m.images || []).length);
     res.json({
       psid: req.params.psid, pageId, pageName: pk.get(String(pageId))?.name || pageId,
       custName: '', handoff: !!(c && c.handoff), transcript, fromPancake: true, pkConvId: conv, pkCustId: cust,
@@ -252,6 +264,51 @@ adminRouter.post('/conversation/:psid/send', async (req, res) => {
   if (!c) return res.status(404).json({ error: 'không tìm thấy' });
   await sendText(req.params.psid, text, c.pageId);
   res.json({ ok: true, via: 'fb' });
+});
+
+// ---- CỘT THÔNG TIN hội thoại: khách (từ Sổ AI) + đơn hàng POS của đúng hội thoại ----
+// ---- PANEL THÔNG TIN hội thoại: hồ sơ khách (Sổ AI) + đơn POS khớp conversation_id ----
+const CCY_DIV = { KWD: 1000, OMR: 1000, BHD: 1000 }; // tiền 3 số lẻ; còn lại chia 100
+adminRouter.get(['/conversation-info', '/conv-info'], async (req, res) => {
+  const { pageId, conv, cust } = req.query;
+  if (!pageId) return res.status(400).json({ error: 'thiếu pageId' });
+  const prof = custProfile(pageId, cust || '');
+  const currency = (getPageProductsRaw(pageId)[0] || {}).currency || '';
+  let orders = [];
+  try { if (ordersEnabled() && conv) orders = await ordersForConv(pageId, conv); } catch { /* không chặn panel */ }
+  const div = CCY_DIV[String(currency).toUpperCase()] || 100;
+  orders = orders.map((o) => ({ ...o, codDisplay: o.cod != null ? (o.cod / div).toLocaleString('vi-VN') + (currency ? ' ' + currency : '') : '' }));
+  if (!prof.phone && orders[0]?.phone) prof.phone = orders[0].phone;
+  if (!prof.name && orders[0]?.name) prof.name = orders[0].name;
+  res.json({ ...prof, currency, maxTurns: config.maxAiTurnsBeforeHandoff, orders });
+});
+
+// ---- Ghi chú vào hồ sơ khách trên Pancake (sale ghi từ dashboard, sale trực Pancake thấy ngay) ----
+adminRouter.post(['/conversation-note', '/conv-note'], async (req, res) => {
+  const { pageId, cust, text } = req.body || {};
+  const t = String(text || '').trim();
+  if (!(pageId && cust && t)) return res.status(400).json({ error: 'thiếu pageId/cust/nội dung' });
+  const r = await pkAddNote(pageId, cust, `📝 [Dashboard] ${t}`).catch((e) => ({ ok: false, error: e.message }));
+  if (r && r.ok === false) return res.status(502).json({ error: r.error });
+  res.json({ ok: true });
+});
+
+// ---- Dịch hội thoại sang tiếng Việt (Haiku) — cho sale đọc hội thoại ngoại ngữ ----
+adminRouter.post('/translate', async (req, res) => {
+  const msgs = Array.isArray(req.body?.msgs) ? req.body.msgs.slice(0, 50) : [];
+  if (!msgs.length) return res.json({ vi: [] });
+  try {
+    const src = msgs.map((m, i) => `${i + 1}|${String(m).slice(0, 300).replace(/\n/g, ' ')}`).join('\n');
+    const r = await anthropic.messages.create({
+      model: config.modelClassifier, max_tokens: 2500,
+      system: 'Dịch từng dòng sau sang tiếng Việt tự nhiên, ngắn gọn (giữ nghĩa bán hàng). Trả đúng định dạng "số|bản dịch", mỗi dòng một bản, không thêm gì khác.',
+      messages: [{ role: 'user', content: src }],
+    });
+    const text = r.content.find((b) => b.type === 'text')?.text || '';
+    const vi = new Array(msgs.length).fill('');
+    for (const line of text.split('\n')) { const m = line.match(/^(\d+)\|(.*)$/); if (m) { const i = +m[1] - 1; if (i >= 0 && i < vi.length) vi[i] = m[2].trim(); } }
+    res.json({ vi });
+  } catch (e) { res.status(502).json({ error: e.message }); }
 });
 
 // ---- Upload ảnh sản phẩm (base64 từ dashboard → lưu file → trả URL công khai) ----

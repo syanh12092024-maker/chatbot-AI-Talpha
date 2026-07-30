@@ -94,6 +94,20 @@ export function recentConversations({ hours = 72 } = {}) {
   return out;
 }
 
+// HỒ SƠ 1 KHÁCH từ Sổ AI: tên, SĐT/địa chỉ (từ đơn AI chốt), lý do chuyển người cuối, số lượt 24h.
+export function custProfile(pageId, custId) {
+  const out = { name: '', phone: '', city: '', qty: null, lastHandoffReason: '', lastHandoffAt: 0, replies24h: 0, orderAt: 0 };
+  const since24 = Date.now() - 24 * 3600e3;
+  for (const r of readLog()) {
+    if (String(r.page) !== String(pageId) || String(r.cust) !== String(custId)) continue;
+    if (r.name) out.name = r.name;
+    if (r.type === 'order') { if (r.phone) out.phone = r.phone; if (r.city) out.city = r.city; if (r.qty) out.qty = r.qty; out.orderAt = r.t; }
+    else if (r.type === 'handoff') { out.lastHandoffReason = r.reason || ''; out.lastHandoffAt = r.t; }
+    else if (r.type === 'reply' && r.t >= since24) out.replies24h++;
+  }
+  return out;
+}
+
 // Tính lại thống kê CHÍNH XÁC từ sổ (dedup khách & đơn theo page+khách).
 // from/to = 'YYYY-MM-DD' (tùy chọn). Trả { replies, leads, orders, byPage, events, lastAt }.
 export function recount({ from, to } = {}) {
