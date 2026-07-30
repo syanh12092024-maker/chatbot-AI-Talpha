@@ -4,6 +4,7 @@ import { getState, recordInbound, recordOutbound, isAiEnabled } from './store.js
 import { getKBForPage } from './kb.js';
 import { config } from './config.js';
 import { logAi, recentReplyCount } from './ai-log.js';
+import { pkTagByName } from './pancake.js';
 
 // NGUYÊN TẮC #13 — KẾT THÚC LÀ PHẢI BÀN GIAO: mọi điểm AI dừng phục vụ (khiếu nại,
 // ngôn ngữ lạ, hết lượt, page thiếu KB...) đều ghi 'handoff' vào Sổ AI kèm LÝ DO
@@ -15,6 +16,8 @@ function toSaleQueue(state, reason, kind) {
       reason, kind: kind || '', conv: state.pkConvId || '', name: state.custName || '',
     });
   } catch { /* sổ AI không chặn luồng chính */ }
+  // Gắn thẻ bàn giao trên Pancake (nếu page có thẻ đó) — sale trực Pancake lọc được ngay.
+  if (config.pkTags.handoff && state.pkConvId) pkTagByName(state.pageId, state.pkConvId, config.pkTags.handoff).catch(() => {});
 }
 
 // NẠP LỊCH SỬ THẬT từ Pancake vào bộ nhớ AI khi phiên còn trống (server mới khởi động /

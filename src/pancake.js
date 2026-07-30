@@ -30,6 +30,45 @@ export async function pkGetMessages(pageId, convId, custId) {
   const j = await res.json();
   return j.messages || [];
 }
+// ===== THẺ HỘI THOẠI (tag) =====
+// Gắn/gỡ thẻ: POST toggle_tag dạng FORM-ENCODED (KHÔNG phải JSON). value=1 gắn (idempotent), 0 gỡ.
+export async function pkToggleTag(pageId, convId, tagId, on = true) {
+  const res = await fetch(`${PK_BASE}/pages/${pageId}/conversations/${convId}/toggle_tag?access_token=${pkTok()}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `tag_id=${encodeURIComponent(tagId)}&value=${on ? 1 : 0}`,
+  });
+  const j = await res.json().catch(() => ({}));
+  return j.success ? { ok: true, tags: j.data } : { ok: false, error: JSON.stringify(j).slice(0, 120) };
+}
+// Bảng thẻ của page (từ /settings) — map TÊN (không phân biệt hoa thường) → tag_id, cache 10 phút.
+const _tagCache = new Map(); // pageId -> { t, map }
+export async function pkTagId(pageId, name) {
+  const k = String(pageId);
+  let e = _tagCache.get(k);
+  if (!e || Date.now() - e.t > 10 * 60e3) {
+    const map = new Map();
+    try {
+      const res = await fetch(`${PK_BASE}/pages/${pageId}/settings?access_token=${pkTok()}`);
+      const j = await res.json();
+      for (const t of (j?.settings?.tags || [])) {
+        const nm = String(t.text || '').trim().toLowerCase();
+        if (nm && !map.has(nm)) map.set(nm, t.id); // trùng tên (bot/BOT/Bot) → lấy thẻ đầu tiên
+      }
+    } catch { /* lỗi mạng → map rỗng, thử lại sau */ }
+    e = { t: Date.now(), map };
+    _tagCache.set(k, e);
+  }
+  const id = e.map.get(String(name).trim().toLowerCase());
+  return id == null ? null : id;
+}
+// Gắn thẻ theo TÊN — page không có thẻ đó thì bỏ qua êm (mỗi page 1 bộ thẻ riêng).
+export async function pkTagByName(pageId, convId, name, on = true) {
+  if (!name || !convId) return { ok: false, error: 'thiếu tên thẻ / hội thoại' };
+  const id = await pkTagId(pageId, name);
+  if (id == null) return { ok: false, error: `page không có thẻ "${name}"` };
+  return pkToggleTag(pageId, convId, id, on);
+}
+
 export async function pkSendReply(pageId, convId, custId, text) {
   const res = await fetch(`${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${pkTok()}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

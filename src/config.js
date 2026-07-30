@@ -44,6 +44,12 @@ export const config = {
   // Né hội thoại đã gán cho nhân viên. MẶC ĐỊNH TẮT vì Pancake TỰ ĐỘNG gán hội thoại cho NV
   // → bật sẽ làm AI im gần hết. Bật bằng RESPECT_ASSIGNEE=1 nếu sale thực sự chat tay.
   respectAssignee: process.env.RESPECT_ASSIGNEE === '1',
+  // TỰ GẮN THẺ Pancake khi AI hành động (tên thẻ phải TỒN TẠI trên page; trống = tắt).
+  pkTags: {
+    ai: process.env.PK_TAG_AI ?? 'bot',            // AI đã phục vụ hội thoại này
+    order: process.env.PK_TAG_ORDER ?? 'Mua hàng', // AI chốt đơn xong
+    handoff: process.env.PK_TAG_HANDOFF ?? 'CSKH', // AI bàn giao cho người
+  },
   // Circuit breakers
   // Trần lượt AI/khách (đếm BỀN theo Sổ AI 24h, sống sót qua restart). Chỉnh bằng MAX_AI_TURNS.
   maxAiTurnsBeforeHandoff: Number(process.env.MAX_AI_TURNS || 5),

@@ -1,7 +1,7 @@
 // Vòng lặp hỏi Pancake tin mới → AI trả lời → gửi lại qua Pancake.
 // KHÔNG cần webhook/URL công khai/tunnel/App Review — chỉ cần internet ra ngoài.
 import { config } from './config.js';
-import { pkGetConversations, pkGetMessages, pkSendReply, refreshPancakePages } from './pancake.js';
+import { pkGetConversations, pkGetMessages, pkSendReply, refreshPancakePages, pkTagByName } from './pancake.js';
 import { listAiEnabled } from './store.js';
 import { handleIncoming } from './handler.js';
 import { incReply, incLead } from './stats.js';
@@ -22,7 +22,9 @@ const seen = new Map();
 // DEBOUNCE theo ĐỒNG HỒ SERVER: timestamp Pancake không có múi giờ (Date.parse hiểu sai lệch
 // nhiều giờ) → thay vì tin nó, ghi lại THỜI ĐIỂM MÌNH THẤY mốc mới, đợi đủ N giây rồi mới xử lý.
 const pendingMark = new Map(); // convId -> { mark, firstAt }
+const aiTagged = new Set(); // hội thoại đã gắn thẻ bot (đỡ gọi API lặp — API vốn idempotent)
 function pruneMaps() { // chống phình RAM sau nhiều tuần chạy
+  if (aiTagged.size > 8000) { let n = aiTagged.size - 6000; for (const k of aiTagged) { aiTagged.delete(k); if (--n <= 0) break; } }
   for (const m of [seen, pendingMark]) {
     if (m.size > 8000) { let n = m.size - 6000; for (const k of m.keys()) { m.delete(k); if (--n <= 0) break; } }
   }
@@ -156,6 +158,11 @@ async function processConv(pageId, c, psid, custId) {
     try { incReply(pageId); incLead(pageId, custId); } catch { /* thống kê không chặn gửi tin */ }
     try { addAiConv(pageId, c.id); } catch { /* ghi hội thoại AI để khớp đơn */ }
     try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id }); } catch { /* sổ AI không chặn */ }
+    // Gắn thẻ "bot" trên Pancake (1 lần/hội thoại) — sale nhìn tag là biết AI đang phục vụ.
+    if (config.pkTags.ai && !aiTagged.has(c.id)) {
+      aiTagged.add(c.id);
+      pkTagByName(pageId, c.id, config.pkTags.ai).then((t) => { if (!t.ok) console.warn(`[tag] ${pageId}: ${t.error}`); }).catch(() => {});
+    }
   }
   console.log(`[pancake] ${c.from?.name || psid}: "${text.slice(0, 30)}" → AI: "${reply.slice(0, 40)}" ${r.ok ? '✓' : '✗ ' + r.error}`);
 }

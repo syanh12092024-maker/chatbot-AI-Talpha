@@ -29,7 +29,19 @@ Nếu trang hiển thị lạ sau khi hệ thống cập nhật → nhấn `Ctrl
 
 ⚠️ Việc **tự trôi khỏi danh sách** khi quá khung thời gian — đừng để tồn qua ngày.
 
-### 1.2. Đơn AI tạo trong POS
+### 1.2. Thẻ (tag) AI tự gắn trên Pancake
+
+AI tự gắn thẻ vào hội thoại trên Pancake để bạn **lọc nhanh ngay trong Pancake**, không cần mở dashboard:
+
+| Thẻ | Khi nào AI gắn |
+|---|---|
+| `bot` | AI đang phục vụ hội thoại này (gắn từ lần AI trả lời đầu tiên) |
+| `Mua hàng` | AI vừa chốt đơn xong |
+| `CSKH` | AI bàn giao cho người (khiếu nại / hết lượt / cần người / thiếu KB) |
+
+Page nào không có sẵn thẻ trùng tên thì AI bỏ qua êm — muốn dùng thì tạo thẻ đúng tên đó trong Pancake. (Đổi tên thẻ mặc định qua cấu hình `PK_TAG_AI` / `PK_TAG_ORDER` / `PK_TAG_HANDOFF`.)
+
+### 1.2b. Đơn AI tạo trong POS
 
 - Đơn do AI chốt có ghi chú **"Đơn do AI chốt — chờ nhân viên xác nhận"**, trạng thái "Mới"
 - AI chỉ được tạo đơn khi đủ: tên + SĐT hợp lệ + địa chỉ cụ thể + khách xác nhận COD → nhưng **bạn vẫn phải gọi xác nhận** trước khi chuyển trạng thái
