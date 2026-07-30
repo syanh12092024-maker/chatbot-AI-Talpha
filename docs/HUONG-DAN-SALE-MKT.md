@@ -18,6 +18,7 @@ Nếu trang hiển thị lạ sau khi hệ thống cập nhật → nhấn `Ctrl
 | Loại | Màu | Nghĩa là gì | Bạn cần làm |
 |---|---|---|---|
 | 😡 Khiếu nại | Đỏ, **luôn trên cùng** | Khách bực/khiếu nại | Vào NGAY — ưu tiên số 1 |
+| ⚙️ Lỗi kỹ thuật | Đỏ | AI gặp lỗi lặp ≥3 lần, không trả lời được khách này | Vào chat tay NGAY — khách đang không được rep |
 | 🙋 AI chuyển người | Vàng | AI thấy cần người (đơn to, khách đòi gặp người, không chắc thông tin) — kèm *lý do in nghiêng* | Đọc lý do → vào chat tiếp khách |
 | ⏳ Hết lượt AI | Vàng | AI đã trả 5 lượt/24h mà khách còn do dự | Vào chốt bằng kỹ năng người thật |
 | 📄 Thiếu kịch bản | Vàng | Khách nhắn vào page chưa có KB | Tiếp khách tay + báo MKT bổ sung KB |

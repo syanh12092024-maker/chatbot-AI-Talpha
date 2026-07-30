@@ -23,9 +23,15 @@ const seen = new Map();
 // nhiều giờ) → thay vì tin nó, ghi lại THỜI ĐIỂM MÌNH THẤY mốc mới, đợi đủ N giây rồi mới xử lý.
 const pendingMark = new Map(); // convId -> { mark, firstAt }
 const aiTagged = new Set(); // hội thoại đã gắn thẻ bot (đỡ gọi API lặp — API vốn idempotent)
+// LỖI KỸ THUẬT THEO HỘI THOẠI (bộ lọc 3 tầng — không ngập hàng chờ):
+//  T1: lỗi thoáng qua (mạng/5xx/quá tải) → thử lại tick sau, tối đa 5 lần; lỗi không tự hồi
+//      phục (Claude 400 invalid_request) → không thử lại vô ích.
+//  T2: cùng 1 hội thoại lỗi ≥3 lần liên tiếp → mới coi là kẹt thật.
+//  T3: mỗi hội thoại chỉ đẩy hàng chờ 1 lần/24h + gắn thẻ 'AI back Sale'.
+const convFail = new Map(); // convId -> { count, lastPushAt }
 function pruneMaps() { // chống phình RAM sau nhiều tuần chạy
   if (aiTagged.size > 8000) { let n = aiTagged.size - 6000; for (const k of aiTagged) { aiTagged.delete(k); if (--n <= 0) break; } }
-  for (const m of [seen, pendingMark]) {
+  for (const m of [seen, pendingMark, convFail]) {
     if (m.size > 8000) { let n = m.size - 6000; for (const k of m.keys()) { m.delete(k); if (--n <= 0) break; } }
   }
 }
@@ -119,10 +125,36 @@ async function pollPage(pageId) {
     const stopTag = (c.tags || []).find((t) => ORDER_STOP_TAGS.has(Number(t)));
     if (stopTag !== undefined) { console.log(`[pancake] ${c.from?.name || psid}: đơn đang xử lý (thẻ ${stopTag}) → AI im`); continue; }
 
-    jobs.push((async () => { await _acquire(); try { await processConv(pageId, c, psid, custId); } finally { _release(); } })());
+    jobs.push((async () => {
+      await _acquire();
+      try { await processConv(pageId, c, psid, custId); convFail.delete(c.id); }
+      catch (e) { noteConvError(pageId, c, psid, custId, e); }
+      finally { _release(); }
+    })());
   }
   await Promise.all(jobs);
   if (firstTime) { primedPages.add(pageId); console.log(`[pancake] page ${pageId} đã ghi mốc — từ giờ chỉ trả lời tin MỚI.`); }
+}
+
+// Lỗi khi xử lý 1 hội thoại: phân loại → thử lại có giới hạn → lỗi lặp 3 lần thì đẩy sale.
+function noteConvError(pageId, c, psid, custId, e) {
+  const msg = String(e?.message || e);
+  const fatal = /invalid_request_error/i.test(msg); // lỗi dữ liệu — cùng input thì lỗi mãi, thử lại vô ích
+  const f = convFail.get(c.id) || { count: 0, lastPushAt: 0 };
+  f.count += 1; convFail.set(c.id, f);
+  console.warn(`[pancake] khách ${c.from?.name || psid} (page ${pageId}) lỗi lần ${f.count}${fatal ? ' (không tự hồi phục)' : ''}: ${msg.slice(0, 160)}`);
+  if (!fatal && f.count < 5) seen.delete(c.id); // lỗi thoáng qua → tick sau thử lại (tối đa 5 lần)
+  if (f.count >= 3 && Date.now() - f.lastPushAt > 24 * 3600e3) {
+    f.lastPushAt = Date.now();
+    try {
+      logAi(pageId, custId, 'handoff', {
+        reason: `⚙️ Lỗi kỹ thuật — AI không trả lời được khách này (đã thử ${f.count} lần), cần người vào chat ngay`,
+        kind: 'error', conv: c.id, name: c.from?.name || '',
+      });
+    } catch { /* sổ AI không chặn */ }
+    if (config.pkTags.handoff) pkTagByName(pageId, c.id, config.pkTags.handoff).catch(() => {});
+    console.warn(`[backsale] ⚙️ ${c.from?.name || psid} (page ${pageId}) → đẩy hàng chờ sale vì lỗi lặp ${f.count} lần`);
+  }
 }
 
 // Xử lý 1 hội thoại (chạy trong semaphore): đọc tin → AI soạn → gửi qua Pancake.
