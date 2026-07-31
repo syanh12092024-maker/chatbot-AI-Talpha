@@ -3,7 +3,74 @@ import { config } from './config.js';
 // ===== API Pancake (pages.fm) — nhận & gửi tin thay cho webhook Facebook =====
 const PK_BASE = 'https://pages.fm/api/v1';
 function pkTok() { return config.pancakeToken; }
-function allToks() { return [config.pancakeToken, ...config.pancakeTokensExtra].filter(Boolean); }
+// ===== KHO TOKEN: env (PANCAKE_TOKEN + PANCAKE_TOKENS_EXTRA) + thêm từ dashboard (pancake-tokens.json) =====
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const TOKENS_FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'pancake-tokens.json');
+let _fileToks = [];
+try { _fileToks = JSON.parse(fs.readFileSync(TOKENS_FILE, 'utf8')); } catch { _fileToks = []; }
+const saveFileToks = () => { try { fs.writeFileSync(TOKENS_FILE, JSON.stringify(_fileToks, null, 2)); } catch (e) { console.error('[token] lưu lỗi', e.message); } };
+// Đọc payload JWT (không cần verify chữ ký — chỉ lấy tên/hạn để hiển thị & lọc token chết)
+export function decodeTok(t) {
+  try {
+    const p = String(t).split('.')[1];
+    const j = JSON.parse(Buffer.from(p.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    return { name: j.name || j.fb_name || '?', exp: (j.exp || 0) * 1000, uid: j.uid || '', iat: (j.iat || 0) * 1000 };
+  } catch { return { name: '(token lỗi định dạng)', exp: 0, uid: '', iat: 0 }; }
+}
+function allToks() {
+  // Token HẾT HẠN bị loại tự động (gọi cũng vô ích). Thứ tự: chính → phụ env → phụ dashboard.
+  return [config.pancakeToken, ...config.pancakeTokensExtra, ..._fileToks]
+    .filter(Boolean)
+    .filter((t) => { const d = decodeTok(t); return !d.exp || d.exp > Date.now(); });
+}
+// ---- Quản lý từ dashboard ----
+export function listPancakeTokens() {
+  const toks = [config.pancakeToken, ...config.pancakeTokensExtra, ..._fileToks].filter(Boolean);
+  const nEnv = 1 + config.pancakeTokensExtra.length;
+  const routing = {}; // token index (trong allToks) -> số page đang định tuyến
+  const live = allToks();
+  for (const idx of _pageTokIdx.values()) routing[idx] = (routing[idx] || 0) + 1;
+  return toks.map((t, i) => {
+    const d = decodeTok(t);
+    const liveIdx = live.indexOf(t);
+    return {
+      i, name: d.name, exp: d.exp, expired: !!d.exp && d.exp <= Date.now(),
+      source: i === 0 ? 'chính (.env)' : i < nEnv ? 'phụ (.env)' : 'dashboard',
+      removable: i >= nEnv, pagesRouted: liveIdx >= 0 ? (routing[liveIdx] || 0) : 0,
+      tail: String(t).slice(-8),
+    };
+  });
+}
+export async function addPancakeToken(token) {
+  const t = String(token || '').trim();
+  if (!t || t.split('.').length !== 3) return { ok: false, error: 'Không phải JWT hợp lệ (phải có 3 phần a.b.c)' };
+  const d = decodeTok(t);
+  if (d.exp && d.exp <= Date.now()) return { ok: false, error: `Token đã hết hạn (${new Date(d.exp).toLocaleDateString('vi-VN')})` };
+  const existing = [config.pancakeToken, ...config.pancakeTokensExtra, ..._fileToks];
+  if (existing.includes(t)) return { ok: false, error: `Token này đã có trong hệ thống (${d.name})` };
+  // Test sống: token phải đọc được danh sách page
+  try {
+    const res = await fetch(`${PK_BASE}/pages?access_token=${t}`);
+    const j = await res.json();
+    const n = (j.categorized?.activated || []).length;
+    if (!j.categorized) return { ok: false, error: 'Pancake từ chối token (đăng nhập lại lấy token mới?)' };
+    _fileToks.push(t); saveFileToks();
+    _pageTokIdx.clear(); // chỉ số token đổi → để các page tự dò lại chân tốt nhất
+    refreshPancakePages().catch(() => {});
+    return { ok: true, name: d.name, pages: n, exp: d.exp };
+  } catch (e) { return { ok: false, error: 'Lỗi mạng khi kiểm tra token: ' + e.message }; }
+}
+export function removePancakeToken(i) {
+  const nEnv = 1 + config.pancakeTokensExtra.length;
+  const fi = Number(i) - nEnv;
+  if (!(fi >= 0 && fi < _fileToks.length)) return { ok: false, error: 'Chỉ xóa được token thêm từ dashboard (token .env sửa trong cấu hình)' };
+  const d = decodeTok(_fileToks[fi]);
+  _fileToks.splice(fi, 1); saveFileToks();
+  _pageTokIdx.clear();
+  return { ok: true, name: d.name };
+}
 
 // ===== ĐA-TOKEN FAILOVER =====
 // Mỗi tài khoản Pancake chỉ có quyền trên 1 nhóm page. Bot nhớ token nào dùng được cho

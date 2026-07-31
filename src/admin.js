@@ -12,7 +12,7 @@ import {
   listConversations, getConversation, setHandoff, isAiEnabled, setAiEnabled, listAiEnabled,
 } from './store.js';
 import { sendText } from './messenger.js';
-import { pancakePages, pancakePageCount, pkGetMessages, pkSendReply, pkAddNote } from './pancake.js';
+import { pancakePages, pancakePageCount, pkGetMessages, pkSendReply, pkAddNote, listPancakeTokens, addPancakeToken, removePancakeToken } from './pancake.js';
 import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
@@ -310,6 +310,19 @@ adminRouter.post('/translate', async (req, res) => {
     for (const line of text.split('\n')) { const m = line.match(/^(\d+)\|(.*)$/); if (m) { const i = +m[1] - 1; if (i >= 0 && i < vi.length) vi[i] = m[2].trim(); } }
     res.json({ vi });
   } catch (e) { res.status(502).json({ error: e.message }); }
+});
+
+// ---- TOKEN PANCAKE (đa tài khoản, failover): xem / thêm / xóa từ dashboard ----
+adminRouter.get('/pancake-tokens', (_req, res) => res.json(listPancakeTokens()));
+adminRouter.post('/pancake-tokens', async (req, res) => {
+  const r = await addPancakeToken(req.body?.token);
+  if (!r.ok) return res.status(400).json(r);
+  res.json(r);
+});
+adminRouter.delete('/pancake-tokens/:i', (req, res) => {
+  const r = removePancakeToken(req.params.i);
+  if (!r.ok) return res.status(400).json(r);
+  res.json(r);
 });
 
 // ---- Upload ảnh sản phẩm (base64 từ dashboard → lưu file → trả URL công khai) ----

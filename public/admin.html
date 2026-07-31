@@ -800,11 +800,38 @@ window.saveKB=async()=>{const pid=document.getElementById('kbpage').value;
   const r=await post('/kb/'+pid,{products});
   toast('✓ Đã lưu cấu hình AI + '+r.products+' sản phẩm');document.getElementById('kbmsg').textContent='Cập nhật lúc '+new Date().toLocaleTimeString();};
 
-/* ============ 5. CÀI ĐẶT / TOKEN — token Meta + nạp lại page ============ */
-async function rTokens(){const ts=await j('/tokens');
-  content.innerHTML=`<div class="vhead"><div><h2>⚙️ Cài đặt · API / Token Meta <span class="pill ok" style="vertical-align:middle">failover</span></h2>
-   <p class="sub" style="margin:4px 0 0">Nuôi nhiều System Token (nhiều app). App bị FB khóa → tự đánh dấu hỏng & dùng app khác cho page có dự phòng.</p></div>
+/* ============ 5. CÀI ĐẶT / TOKEN — token Pancake (đa tài khoản) + token Meta ============ */
+function tokExpPill(t){
+  if(!t.exp)return '<span class="pill mut">không rõ hạn</span>';
+  if(t.expired)return '<span class="pill bad">ĐÃ HẾT HẠN</span>';
+  const d=Math.ceil((t.exp-Date.now())/86400000);
+  const cls=d>14?'ok':d>5?'warn':'bad';
+  return `<span class="pill ${cls}">còn ${d} ngày · ${new Date(t.exp).toLocaleDateString('vi-VN')}</span>`;
+}
+async function rTokens(){const [ts,pk]=await Promise.all([j('/tokens'),j('/pancake-tokens').catch(()=>[])]);
+  content.innerHTML=`<div class="vhead"><div><h2>⚙️ Cài đặt / Token</h2>
+   <p class="sub" style="margin:4px 0 0">Token Pancake (bot nhận/gửi tin — đa tài khoản failover) và System Token Meta.</p></div>
    <button class="btn" onclick="reloadTk()">↻ Nạp lại danh sách page</button></div>
+
+   <h2 style="font-size:15px">🥞 Token Pancake <span class="pill ok" style="vertical-align:middle">failover đa tài khoản</span></h2>
+   <p class="sub">Mỗi tài khoản Pancake nắm quyền 1 nhóm page. Page dính lỗi quyền/gói → bot tự chuyển token kế tiếp. Token hết hạn bị loại tự động. <b>Hạn ~90 ngày — nhớ gia hạn.</b></p>
+   <div class="tablecard" style="margin-bottom:14px"><table><thead><tr><th>#</th><th>Tài khoản</th><th>Nguồn</th><th>Hạn</th><th style="text-align:right">Page đang dùng</th><th></th></tr></thead><tbody>
+   ${pk.map(t=>`<tr>
+     <td class="muted">${t.i+1}</td>
+     <td><b>${esc(t.name)}</b> <span class="mono">…${esc(t.tail)}</span></td>
+     <td><span class="pill ${t.source==='dashboard'?'info':'mut'}">${t.source}</span></td>
+     <td>${tokExpPill(t)}</td>
+     <td style="text-align:right;font-weight:700">${t.pagesRouted||0}</td>
+     <td>${t.removable?`<button class="btn sm" onclick="rmPkTok(${t.i},'${esc(t.name).replace(/'/g,"\\'")}')">Xóa</button>`:''}</td>
+   </tr>`).join('')||'<tr><td colspan=6><div class="empty">Chưa có token Pancake.</div></td></tr>'}
+   </tbody></table></div>
+   <div class="tablecard" style="padding:16px;max-width:720px;margin-bottom:26px"><b>➕ Thêm token Pancake mới</b>
+     <div class="muted" style="font-size:12px;margin:4px 0 10px">Đăng nhập pages.fm bằng tài khoản có quyền page → lấy JWT (access_token) → dán vào đây. Hệ thống tự kiểm tra token sống + đếm page trước khi nhận.</div>
+     <div class="row"><input id="pktok" placeholder="eyJhbGciOi..." style="flex:1;font-family:ui-monospace,monospace;font-size:12px"><button class="btn pri" onclick="addPkTok()">Kiểm tra & thêm</button></div>
+   </div>
+
+   <div class="vhead" style="margin-bottom:6px"><div><h2 style="font-size:15px">Ⓜ️ System Token Meta <span class="pill ok" style="vertical-align:middle">failover</span></h2>
+   <p class="sub" style="margin:4px 0 0">Nuôi nhiều System Token (nhiều app). App bị FB khóa → tự đánh dấu hỏng & dùng app khác cho page có dự phòng.</p></div></div>
    <div class="tablecard" style="margin-bottom:16px"><table><thead><tr><th>Nhãn</th><th>Token</th><th>Trạng thái</th><th></th></tr></thead><tbody>
    ${ts.map(t=>`<tr><td><b>${esc(t.label)}</b></td><td class="mono">${esc(t.tail)}</td><td>${t.healthy?'<span class="pill ok">● khỏe</span>':'<span class="pill bad">● hỏng</span>'}</td><td><button class="btn sm" onclick="rmToken('${t.id}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan=4><div class="empty">Chưa có token.</div></td></tr>'}
    </tbody></table></div>
@@ -813,6 +840,21 @@ async function rTokens(){const ts=await j('/tokens');
      <div class="row" style="margin-top:10px"><button class="btn pri" onclick="addTk()">+ Thêm & nạp page</button><span id="tkmsg" class="muted"></span></div>
    </div>`;
 }
+window.addPkTok=async()=>{
+  const inp=document.getElementById('pktok');const t=inp.value.trim();
+  if(!t){toast('Dán token vào đã nhé','bad');return;}
+  toast('Đang kiểm tra token với Pancake…');
+  const r=await post('/pancake-tokens',{token:t});
+  if(r.error){toast('❌ '+r.error,'bad');return;}
+  toast(`✓ Đã thêm token "${r.name}" — thấy ${r.pages} page, hạn ${new Date(r.exp).toLocaleDateString('vi-VN')}`);
+  inp.value='';rTokens();topStatus();
+};
+window.rmPkTok=async(i,name)=>{
+  if(!confirm(`Xóa token Pancake của "${name}"?`))return;
+  const r=await del('/pancake-tokens/'+i);
+  if(r.error){toast('❌ '+r.error,'bad');return;}
+  toast('Đã xóa token '+name);rTokens();
+};
 window.addTk=async()=>{const label=document.getElementById('tlabel').value.trim();const token=document.getElementById('ttoken').value.trim();if(!token){toast('Thiếu token','bad');return;}document.getElementById('tkmsg').textContent='đang nạp...';const r=await post('/tokens',{label,token});toast('✓ Nạp '+r.pages+' page');topStatus();rTokens();};
 window.rmToken=async id=>{if(!confirm('Xóa token này?'))return;await del('/tokens/'+id);toast('Đã xóa token');topStatus();rTokens();};
 window.reloadTk=async()=>{const m=document.getElementById('tkmsg');if(m)m.textContent='đang nạp...';toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();rTokens();};
