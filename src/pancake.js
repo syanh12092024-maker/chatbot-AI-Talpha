@@ -3,41 +3,74 @@ import { config } from './config.js';
 // ===== API Pancake (pages.fm) — nhận & gửi tin thay cho webhook Facebook =====
 const PK_BASE = 'https://pages.fm/api/v1';
 function pkTok() { return config.pancakeToken; }
+function allToks() { return [config.pancakeToken, ...config.pancakeTokensExtra].filter(Boolean); }
+
+// ===== ĐA-TOKEN FAILOVER =====
+// Mỗi tài khoản Pancake chỉ có quyền trên 1 nhóm page. Bot nhớ token nào dùng được cho
+// page nào (_pageTokIdx); dính lỗi quyền (105) / gói cước (121) → tự thử token kế tiếp.
+const _pageTokIdx = new Map(); // pageId -> index token đang chạy được
+const PERM_ERRS = new Set([105, 121]);
+function permErr(j) {
+  const codes = [j?.error_code, ...(Array.isArray(j?.errors) ? j.errors.map((e) => e?.error_code) : [])];
+  return codes.some((c) => PERM_ERRS.has(Number(c)));
+}
+async function pkFetchPage(pageId, buildUrl, init) {
+  const toks = allToks();
+  if (!toks.length) return {};
+  const start = _pageTokIdx.get(String(pageId)) ?? 0;
+  let last = {};
+  for (let k = 0; k < toks.length; k++) {
+    const i = (start + k) % toks.length;
+    let j = {};
+    try {
+      const res = await fetch(buildUrl(toks[i]), init);
+      j = await res.json().catch(() => ({}));
+    } catch (e) { j = { error_code: -1, message: e.message }; last = j; continue; } // lỗi mạng → thử token khác cũng vô ích nhưng không sập
+    if (!permErr(j)) {
+      if (i !== start) console.log(`[token] page ${pageId} → chuyển sang token #${i + 1}`);
+      _pageTokIdx.set(String(pageId), i);
+      return j;
+    }
+    last = j;
+  }
+  return last; // hết token vẫn lỗi quyền → trả lỗi cuối để caller xử lý
+}
 
 // Danh sách page từ Pancake (nguồn chính) — cache, làm mới định kỳ.
 let _pkPages = new Map(); // id -> { id, name }
 export function pancakePages() { return _pkPages; }
 export function pancakePageCount() { return _pkPages.size; }
 export async function refreshPancakePages() {
-  if (!pkTok()) return 0;
-  try {
-    const res = await fetch(`${PK_BASE}/pages?access_token=${pkTok()}`);
-    const j = await res.json();
-    const m = new Map();
-    for (const p of (j.categorized?.activated || [])) m.set(String(p.id), { id: String(p.id), name: p.name || '' });
-    if (m.size) { _pkPages = m; }
-    return _pkPages.size;
-  } catch (e) { console.warn('[pancake] nạp page lỗi:', e.message); return _pkPages.size; }
+  const toks = allToks();
+  if (!toks.length) return 0;
+  // GỘP danh sách page của TẤT CẢ token (mỗi tài khoản thấy 1 nhóm page khác nhau).
+  const m = new Map();
+  for (const t of toks) {
+    try {
+      const res = await fetch(`${PK_BASE}/pages?access_token=${t}`);
+      const j = await res.json();
+      for (const p of (j.categorized?.activated || [])) if (!m.has(String(p.id))) m.set(String(p.id), { id: String(p.id), name: p.name || '' });
+    } catch (e) { console.warn('[pancake] nạp page lỗi (1 token):', e.message); }
+  }
+  if (m.size) { _pkPages = m; }
+  return _pkPages.size;
 }
 
 export async function pkGetConversations(pageId) {
-  const res = await fetch(`${PK_BASE}/pages/${pageId}/conversations?access_token=${pkTok()}&page_number=1`);
-  const j = await res.json();
+  const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations?access_token=${t}&page_number=1`);
   return j.conversations || [];
 }
 export async function pkGetMessages(pageId, convId, custId) {
-  const res = await fetch(`${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${pkTok()}&customer_id=${custId}`);
-  const j = await res.json();
+  const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}&customer_id=${custId}`);
   return j.messages || [];
 }
 // ===== THẺ HỘI THOẠI (tag) =====
 // Gắn/gỡ thẻ: POST toggle_tag dạng FORM-ENCODED (KHÔNG phải JSON). value=1 gắn (idempotent), 0 gỡ.
 export async function pkToggleTag(pageId, convId, tagId, on = true) {
-  const res = await fetch(`${PK_BASE}/pages/${pageId}/conversations/${convId}/toggle_tag?access_token=${pkTok()}`, {
+  const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/toggle_tag?access_token=${t}`, {
     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `tag_id=${encodeURIComponent(tagId)}&value=${on ? 1 : 0}`,
   });
-  const j = await res.json().catch(() => ({}));
   return j.success ? { ok: true, tags: j.data } : { ok: false, error: JSON.stringify(j).slice(0, 120) };
 }
 // Bảng thẻ của page (từ /settings) — map TÊN (không phân biệt hoa thường) → tag_id, cache 10 phút.
@@ -48,8 +81,7 @@ export async function pkTagId(pageId, name) {
   if (!e || Date.now() - e.t > 10 * 60e3) {
     const map = new Map();
     try {
-      const res = await fetch(`${PK_BASE}/pages/${pageId}/settings?access_token=${pkTok()}`);
-      const j = await res.json();
+      const j = await pkFetchPage(pageId, (tk) => `${PK_BASE}/pages/${pageId}/settings?access_token=${tk}`);
       for (const t of (j?.settings?.tags || [])) {
         const nm = String(t.text || '').trim().toLowerCase();
         if (nm && !map.has(nm)) map.set(nm, t.id); // trùng tên (bot/BOT/Bot) → lấy thẻ đầu tiên
@@ -70,11 +102,10 @@ export async function pkTagByName(pageId, convId, name, on = true) {
 }
 
 export async function pkSendReply(pageId, convId, custId, text) {
-  const res = await fetch(`${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${pkTok()}`, {
+  const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'reply_inbox', message: text, customer_id: custId }),
   });
-  const j = await res.json().catch(() => ({}));
   return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 120) };
 }
 
@@ -82,11 +113,10 @@ export async function pkSendReply(pageId, convId, custId, text) {
 // Dùng thay cho Facebook Graph vì các page này chạy qua Pancake, không có token FB gửi tin.
 export async function pkSendImage(pageId, convId, custId, url) {
   if (!url) return { ok: false, error: 'thiếu url ảnh' };
-  const res = await fetch(`${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${pkTok()}`, {
+  const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'reply_inbox', message: '', content_url: url, customer_id: custId }),
   });
-  const j = await res.json().catch(() => ({}));
   return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 140) };
 }
 
@@ -95,11 +125,10 @@ export async function pkSendImage(pageId, convId, custId, url) {
 export async function pkAddNote(pageId, custId, message) {
   if (!custId || !message) return { ok: false, error: 'thiếu customer_id/nội dung' };
   try {
-    const res = await fetch(`${PK_BASE}/pages/${pageId}/customers/${custId}/notes?access_token=${pkTok()}`, {
+    const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/customers/${custId}/notes?access_token=${t}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
     });
-    const j = await res.json().catch(() => ({}));
     return j.success === false ? { ok: false, error: j.message || 'lỗi' } : { ok: true };
   } catch (e) { return { ok: false, error: e.message }; }
 }

@@ -34,7 +34,10 @@ export const config = {
     apiKey: process.env.PANCAKE_API_KEY || '',
     shopId: process.env.PANCAKE_SHOP_ID || '',
   },
-  pancakeToken: process.env.PANCAKE_TOKEN || '',       // JWT pages.fm — bot nhận/gửi tin qua Pancake
+  pancakeToken: process.env.PANCAKE_TOKEN || '',       // JWT pages.fm — token CHÍNH
+  // Token PHỤ (failover đa tài khoản): mỗi tài khoản Pancake nắm quyền 1 nhóm page khác nhau.
+  // Page nào token chính dính lỗi quyền/gói (105/121) → bot tự thử lần lượt token phụ.
+  pancakeTokensExtra: (process.env.PANCAKE_TOKENS_EXTRA || '').split(',').map((s) => s.trim()).filter(Boolean),
   pancakePollMs: Number(process.env.PANCAKE_POLL_MS || 6000), // chu kỳ hỏi tin mới
   // Đăng nhập dashboard (Basic Auth) — BẮT BUỘC đặt khi chạy trên IP công khai (VPS).
   adminUser: process.env.ADMIN_USER || '',
