@@ -57,14 +57,14 @@ npm start   # dashboard http://localhost:3100/admin (không cần đăng nhập 
 
 ## Núm chỉnh (.env)
 
-`MAX_AI_TURNS=5` (trần lượt/khách/24h) · `REPLY_DEBOUNCE_MS=20000` · `CONV_CONCURRENCY=4` · `PANCAKE_POLL_MS=6000` · `AUTO_CREATE_ORDER=1` · `PANCAKE_READONLY=1` (chỉ local!) · `RESPECT_ASSIGNEE` (mặc định tắt — Pancake tự gán NV nên bật là AI im hết)
+`MAX_AI_TURNS=5` (trần lượt/khách/24h) · `REPLY_DEBOUNCE_MS=20000` · `CONV_CONCURRENCY=4` · `PANCAKE_POLL_MS=6000` · `AUTO_CREATE_ORDER=1` · `PANCAKE_READONLY=1` (chỉ local!) · `RESPECT_ASSIGNEE` (mặc định tắt) · `PANCAKE_TOKENS_EXTRA` (token phụ cách nhau dấu phẩy — ĐA TÀI KHOẢN: page dính lỗi quyền/gói 105/121 tự failover token kế, xem `pancake.js → pkFetchPage`; danh sách page = GỘP mọi token; log `[token] page X → chuyển sang token #N`)
 
 ## Chẩn đoán theo triệu chứng
 
 - **Bot im 1 khách** → grep tên khách trong log: sẽ thấy lý do (`đơn đang xử lý (thẻ -X)`, `tin đầu → nhường Botcake`, `đã gán nhân viên`, handoff). 6 lý do im là THIẾT KẾ, không phải lỗi.
 - **Bot im cả page** → page tắt AI (`ai-enabled.json`)? backoff (`/admin/api/overview` → `sendErrors`)? Meta #2022 trong log?
 - **Meta #2022 "chặn chia sẻ nội dung"** → backoff tự xử lý phần kỹ thuật; gốc rễ: nội dung health-claim, cần kháng cáo BM. Đừng tăng retry.
-- **"Pages kết nối" tụt 234→3** → PANCAKE_TOKEN chết (JWT ~90 ngày, hạn hiện tại 28/09/2026). Lấy token mới từ pages.fm (đăng nhập → JWT), thay trong `.env`, restart.
+- **"Pages kết nối" tụt mạnh** → 1 token chết/mất quyền (JWT ~90 ngày; via FB chết → quyền rụng dần). Thêm token tài khoản còn quyền vào `PANCAKE_TOKENS_EXTRA` (test coverage 12 page bằng conversations API trước khi thêm). Hạn các token hiện tại: cũ 28/09, Hồ Sỹ Aanh 29/10, Thùy Nhung 25/10, CHÍNH 1 28/10/2026.
 - **Đơn AI COD=0** → xem `total_price` có được AI truyền không (Sổ AI event order) và hệ số tiền tệ đúng chưa (`pancake-orders.js`).
 - **Dashboard trắng/JS lạ** → cache trình duyệt (Ctrl+Shift+R); API `/orders` chậm ~35s là bình thường (nạp nền + cache 60s).
 - **Số liệu nghi sai** → `recount()` từ Sổ AI là nguồn sự thật (nút "Đối chiếu Sổ AI").

@@ -93,7 +93,7 @@ Bố cục 3 cột: **danh sách khách** (72h gần nhất, tìm kiếm theo t�
 ### 2.3. Cảnh báo đỏ — PHẢI để ý
 
 - Pill **⚠ N page lỗi gửi tin** trên topbar + banner đỏ ở Tổng quan = page bị Meta chặn gửi (thường lỗi #2022 do nội dung). Bot tự ngừng page đó 30 phút để tránh bị phạt nặng thêm — nhưng **khách đang không được trả lời**: cần sale vào Pancake trực tay + MKT kiểm tra chất lượng page trong Business Manager / kháng cáo
-- Số "Pages kết nối" **tụt từ ~234 xuống ~3** = token Pancake chết/hết hạn (token hiện tại hết hạn **28/09/2026**) → đăng nhập lại pages.fm lấy token mới, báo quản trị thay trong cấu hình
+- Số "Pages kết nối" **tụt mạnh bất thường** = có token Pancake chết/mất quyền. Hệ thống chạy ĐA TÀI KHOẢN (4 token, tự chuyển khi 1 tài khoản mất quyền) nên hiếm khi đứt — nhưng vẫn báo quản trị để bổ sung token tài khoản còn quyền. Hạn token: 28/09 → 29/10/2026
 
 ### 2.4. Nội dung quảng cáo & kịch bản — tránh tự sát kênh
 
