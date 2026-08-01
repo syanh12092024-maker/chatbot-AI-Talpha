@@ -74,9 +74,9 @@ export function removePancakeToken(i) {
 
 // ===== ĐA-TOKEN FAILOVER =====
 // Mỗi tài khoản Pancake chỉ có quyền trên 1 nhóm page. Bot nhớ token nào dùng được cho
-// page nào (_pageTokIdx); dính lỗi quyền (105) / gói cước (121) → tự thử token kế tiếp.
+// page nào (_pageTokIdx); dính lỗi hết phiên (103) / quyền (105) / gói cước (121) → tự thử token kế tiếp.
 const _pageTokIdx = new Map(); // pageId -> index token đang chạy được
-const PERM_ERRS = new Set([105, 121]);
+const PERM_ERRS = new Set([103, 105, 121]);
 function permErr(j) {
   const codes = [j?.error_code, ...(Array.isArray(j?.errors) ? j.errors.map((e) => e?.error_code) : [])];
   return codes.some((c) => PERM_ERRS.has(Number(c)));
