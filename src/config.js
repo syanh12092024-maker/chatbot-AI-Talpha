@@ -47,6 +47,14 @@ export const config = {
   // Circuit breakers
   maxAiTurnsBeforeHandoff: 6, // không tự trả quá N lượt/khách khi chưa có người duyệt
   maxToolIterations: 5,       // giới hạn vòng lặp tool-use mỗi lượt
+  // ẢNH: khách thích xem nhiều ảnh → chốt tốt hơn, NHƯNG gửi dồn dập dễ bị Meta đánh spam (#2022).
+  // Cách chạy an toàn: đặt IMG_PILOT_PAGES = vài page thử nghiệm → chỉ các page đó gửi imgMaxPerTurn,
+  // page còn lại giữ mức cũ imgSafeMaxPerTurn. Bỏ trống IMG_PILOT_PAGES = áp dụng cho MỌI page.
+  imgMaxPerTurn: Number(process.env.IMG_MAX_PER_TURN || 4),
+  imgSafeMaxPerTurn: Number(process.env.IMG_SAFE_MAX_PER_TURN || 2),
+  imgPilotPages: (process.env.IMG_PILOT_PAGES || '').split(',').map((s) => s.trim()).filter(Boolean),
+  imgGapMs: Number(process.env.IMG_GAP_MS || 700), // giãn cách giữa 2 ảnh cho tự nhiên, đỡ bị coi là bot
+  imgRetry: Number(process.env.IMG_RETRY || 1),    // số lần thử lại khi Pancake/FB trả lỗi chập chờn
 };
 
 export function assertConfig() {

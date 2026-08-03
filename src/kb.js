@@ -181,11 +181,18 @@ function applyOverrides() {
 }
 
 // Ảnh sản phẩm: chuẩn hoá về mảng [{url,label}]. Tương thích cả field `image` cũ (1 ảnh).
+// URL phải là link CÔNG KHAI (Facebook/Pancake tự tải về) → link tương đối "/uploads/..."
+// (do dashboard lưu khi chưa đặt PUBLIC_URL) được ghép thêm host, nếu không ảnh sẽ không bao giờ gửi được.
+function absUrl(u) {
+  const s = String(u || '').trim();
+  if (s.startsWith('/') && config.publicUrl) return config.publicUrl + s;
+  return s;
+}
 export function productImages(p) {
   if (Array.isArray(p.images) && p.images.length) {
-    return p.images.map((im) => ({ url: String(im.url || '').trim(), label: String(im.label || '').trim() })).filter((im) => im.url);
+    return p.images.map((im) => ({ url: absUrl(im.url), label: String(im.label || '').trim() })).filter((im) => im.url);
   }
-  if (p.image) return [{ url: String(p.image).trim(), label: 'Ảnh sản phẩm' }];
+  if (p.image) return [{ url: absUrl(p.image), label: 'Ảnh sản phẩm' }];
   return [];
 }
 

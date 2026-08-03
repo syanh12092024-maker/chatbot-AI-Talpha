@@ -46,7 +46,7 @@ export const toolDefs = [
   },
   {
     name: 'send_product_image',
-    description: 'Gửi ẢNH sản phẩm của page cho khách xem. Page chỉ bán 1 SP nên KHÔNG cần mã. Mỗi SP có thể có nhiều loại ảnh (Ảnh sản phẩm, Feedback, Thành phần, Công dụng...). Để trống category = gửi ảnh sản phẩm chính; truyền category để gửi đúng loại khách hỏi (vd "feedback", "thành phần").',
+    description: 'Gửi ẢNH sản phẩm của page cho khách xem. Page chỉ bán 1 SP nên KHÔNG cần mã. Mỗi SP có nhiều loại ảnh (Ảnh sản phẩm, Feedback, Chứng nhận, Thành phần, Công dụng...). GỌI NHIỀU LẦN trong hội thoại — mỗi lần tool tự chọn ảnh MỚI chưa gửi cho khách này, nên không sợ trùng. Để trống category = ưu tiên ảnh sản phẩm; truyền category để gửi đúng loại khách cần (vd "feedback" khi khách do dự, "chứng nhận"/"thành phần" khi khách nghi ngờ chất lượng).',
     input_schema: {
       type: 'object',
       properties: {
@@ -76,6 +76,35 @@ function findProduct(kb, id) {
     if (hit) return hit;
   }
   return list[0]; // page 1 sản phẩm → luôn là sản phẩm này
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Số ảnh tối đa 1 lượt cho page này. Có IMG_PILOT_PAGES → chỉ page trong danh sách được gửi nhiều,
+// page còn lại giữ mức an toàn cũ (giảm rủi ro Meta đánh spam #2022 khi mới bật).
+function imageLimit(pageId) {
+  const pilot = config.imgPilotPages;
+  if (!pilot.length) return config.imgMaxPerTurn;
+  return pilot.includes(String(pageId)) ? config.imgMaxPerTurn : config.imgSafeMaxPerTurn;
+}
+
+// Gửi 1 ảnh + thử lại khi lỗi. Pancake hay trả "invalid_upload_fb_attachments_result" chập chờn
+// (cùng 1 URL lúc được lúc không) — thử lại 1 lần cứu được phần lớn ca này.
+async function sendImageWithRetry(state, viaPancake, url) {
+  let lastErr = '';
+  for (let attempt = 0; attempt <= config.imgRetry; attempt++) {
+    if (attempt) await sleep(1200);
+    if (viaPancake) {
+      const r = await pkSendImage(state.pageId, state.pkConvId, state.pkCustId, url);
+      if (r.ok) return { ok: true };
+      lastErr = r.error;
+    } else {
+      const ok = await sendImage(state.psid, url, state.pageId);
+      if (ok) return { ok: true };
+      lastErr = 'Messenger từ chối gửi ảnh';
+    }
+  }
+  return { ok: false, error: lastErr };
 }
 
 // Thực thi tool. Trả về { content: string, isError?: bool }.
@@ -154,30 +183,43 @@ export async function executeTool(name, input, ctx) {
       case 'send_product_image': {
         const p = findProduct(kb, input.product_id);
         if (!p) return { content: 'Page này chưa có sản phẩm trong KB nên chưa có ảnh. Cứ tư vấn bằng lời.', isError: true };
-        const all = productImages(p);
-        if (!all.length) return { content: `Sản phẩm ${p.id} chưa có ảnh. Cứ tư vấn bằng lời.`, isError: true };
+        const all = productImages(p).filter((im) => /^https?:\/\//.test(im.url)); // link phải công khai, FB mới tải được
+        if (!all.length) return { content: `Sản phẩm ${p.id} chưa có ảnh dùng được. Cứ tư vấn bằng lời.`, isError: true };
         const norm = (s) => String(s || '').toLowerCase();
         const cat = norm(input.category);
-        let pick = cat ? all.filter((im) => norm(im.label).includes(cat)) : all.filter((im) => norm(im.label).includes('sản phẩm'));
-        if (!pick.length) pick = cat ? [] : all.slice(0, 1); // không khớp category → báo lại; không có category → ảnh đầu
-        if (!pick.length) {
-          return { content: `Sản phẩm ${p.id} không có ảnh loại "${input.category}". Các loại có: ${[...new Set(all.map((im) => im.label || 'Ảnh SP'))].join(', ')}.`, isError: true };
+        const isMain = (im) => norm(im.label).includes('sản phẩm');
+        let pick;
+        if (cat) {
+          pick = all.filter((im) => norm(im.label).includes(cat));
+          if (!pick.length) {
+            return { content: `Sản phẩm ${p.id} không có ảnh loại "${input.category}". Các loại có: ${[...new Set(all.map((im) => im.label || 'Ảnh SP'))].join(', ')}.`, isError: true };
+          }
+        } else {
+          // Không nêu loại → ưu tiên ảnh SP, THIẾU thì bù bằng ảnh khác (feedback/chứng nhận...).
+          // Trước đây chỉ lấy ảnh nhãn "sản phẩm" nên page nào chỉ có 1 ảnh SP là khách chỉ nhận được 1 ảnh.
+          pick = [...all.filter(isMain), ...all.filter((im) => !isMain(im))];
         }
+        // Không gửi lại ảnh đã gửi cho chính khách này → mỗi lượt khách được xem ảnh MỚI.
+        const seen = state.sentImages || (state.sentImages = new Set());
+        const fresh = pick.filter((im) => !seen.has(im.url));
+        const queue = fresh.length ? fresh : pick; // hết ảnh mới → cho phép gửi lại ảnh cũ
         // Gửi cùng kênh với tin chữ: có ngữ cảnh Pancake → gửi qua Pancake; nếu không → Facebook Messenger.
-        // Giới hạn 2 ảnh/lượt để tránh Facebook đánh dấu spam (lỗi #2022 khóa gửi tin).
         const viaPancake = state.pkConvId && state.pkCustId;
-        const toSend = pick.slice(0, 2);
+        const toSend = queue.slice(0, imageLimit(state.pageId));
         let sent = 0, lastErr = '';
-        for (const im of toSend) {
-          if (viaPancake) {
-            const r = await pkSendImage(state.pageId, state.pkConvId, state.pkCustId, im.url);
-            if (r.ok) sent++; else lastErr = r.error;
-          } else { await sendImage(state.psid, im.url, state.pageId); sent++; }
+        for (const [i, im] of toSend.entries()) {
+          if (i) await sleep(config.imgGapMs); // giãn cách giữa các ảnh cho tự nhiên
+          const r = await sendImageWithRetry(state, viaPancake, im.url);
+          if (r.ok) { sent++; seen.add(im.url); } else lastErr = r.error;
         }
         console.log(`[img] page ${state.pageId} ${viaPancake ? 'Pancake' : 'Messenger'} gửi ${sent}/${toSend.length} ảnh (${input.category || 'sản phẩm'})${sent ? ' ✓' : ' ✗ ' + lastErr}`);
-        if (!sent) return { content: `Gửi ảnh thất bại (${lastErr || 'không rõ'}). Cứ tư vấn bằng lời, đừng hứa gửi ảnh nữa.`, isError: true };
+        if (!sent) {
+          // Lỗi phía FB/Pancake thường CHẬP CHỜN → cho phép AI thử lại ở lượt sau, đừng chặn vĩnh viễn.
+          return { content: `Gửi ảnh lỗi tạm thời (${lastErr || 'không rõ'}). Cứ tư vấn tiếp bằng lời, lượt sau có thể thử gửi ảnh lại.`, isError: true };
+        }
         try { logAi(state.pageId, state.pkCustId, 'image', { cat: input.category || 'sản phẩm', n: sent }); } catch { /* sổ AI không chặn */ }
-        return { content: `Đã gửi ${sent} ảnh (${input.category || 'sản phẩm'}) cho khách qua ${viaPancake ? 'Pancake' : 'Messenger'}.` };
+        const left = queue.length - toSend.length;
+        return { content: `Đã gửi ${sent} ảnh (${input.category || 'sản phẩm'}) cho khách qua ${viaPancake ? 'Pancake' : 'Messenger'}.${left > 0 ? ` Còn ${left} ảnh khác chưa gửi — có thể gửi thêm ở lượt sau khi khách quan tâm.` : ''}` };
       }
       case 'handoff_human': {
         state.handoff = true;
