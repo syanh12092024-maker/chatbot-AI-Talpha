@@ -28,11 +28,12 @@ export async function sendText(psid, text, pageId) {
 }
 
 // Gửi ẢNH cho khách. url phải là link CÔNG KHAI (Facebook tự tải về).
+// Trả về true nếu Facebook nhận ảnh — để bên gọi biết mà thử lại / báo AI.
 export async function sendImage(psid, url, pageId) {
-  if (!url) return;
+  if (!url) return false;
   for (let attempt = 0; attempt < 2; attempt++) {
     const token = getPageToken(pageId);
-    if (!token) { console.log(`[messenger] (chưa có token page ${pageId}) -> gửi ảnh ${url}`); return; }
+    if (!token) { console.log(`[messenger] (chưa có token page ${pageId}) -> gửi ảnh ${url}`); return false; }
     const res = await fetch(`${GRAPH}/me/messages?access_token=${token}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -42,13 +43,14 @@ export async function sendImage(psid, url, pageId) {
         message: { attachment: { type: 'image', payload: { url, is_reusable: true } } },
       }),
     });
-    if (res.ok) return;
+    if (res.ok) return true;
     const data = await res.json().catch(() => ({}));
     const code = data?.error?.code;
     console.error('[messenger] gửi ảnh lỗi:', res.status, data?.error?.message || '');
     if ([190, 200, 10, 3, 102].includes(code)) { reportSendFailure(pageId, token); continue; }
-    return;
+    return false;
   }
+  return false;
 }
 
 // Bật "đang nhập..." cho tự nhiên (tùy chọn).
