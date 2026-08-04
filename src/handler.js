@@ -95,16 +95,11 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     toSaleQueue(state, 'Khách KHIẾU NẠI — cần người xử lý gấp', 'complaint');
     return reply(psid, holdingMessage(cls.lang), true);
   }
-  // Tin quá ngắn/tầm thường ("hm", "hi", "ok", "?", emoji...) hay bị đoán nhầm là "ngôn ngữ lạ".
-  // KHÔNG chuyển người trong trường hợp này — cứ để closer chào & tư vấn (mặc định English/Taglish),
-  // tránh mất khách ngay câu đầu khi họ vừa bấm vào quảng cáo.
-  const letters = text.trim().replace(/[^\p{L}]/gu, '');
-  const trivialMsg = letters.length <= 12 || text.trim().split(/\s+/).length <= 2;
-  if (cls.lang === 'other' && !trivialMsg) {
-    state.handoff = true; state.handoffReason = 'lang_unknown';
-    toSaleQueue(state, 'Khách dùng ngôn ngữ khác Tagalog/English — AI không phục vụ để tránh trả lời sai', 'lang');
-    return reply(psid, holdingMessage(cls.lang), true);
-  }
+  // NGÔN NGỮ LẠ KHÔNG CÒN CHUYỂN NGƯỜI (nguyên tắc #1 & #7).
+  // AI được dạy trả lời bằng ĐÚNG ngôn ngữ của khách (xem prompts.js), nên đẩy sang sale là
+  // vừa phí lead vừa ngập hàng chờ: cửa này từng chiếm ~45% việc đổ lên sale trong 24h, mà phần
+  // lớn chỉ là khách nhắn Ả Rập/Urdu/Hindi — AI thừa sức phục vụ. Classifier cũng trả 'other'
+  // khi API lỗi (fallback), tức khách bị chuyển người chỉ vì bộ phân loại chập chờn.
   if (state.aiTurns >= config.maxAiTurnsBeforeHandoff) {
     state.handoff = true; state.handoffReason = 'max_turns';
     toSaleQueue(state, `AI đã trả lời đủ ${config.maxAiTurnsBeforeHandoff} lượt — khách còn do dự, cần người vào chốt`, 'max_turns');

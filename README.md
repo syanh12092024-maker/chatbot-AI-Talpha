@@ -7,7 +7,8 @@ Bot AI đứng tuyến đầu trên Facebook Messenger: phân loại tin (Haiku)
 ```
 FB Messenger ──webhook──> Express (server.js)
                               │
-                 classify (Haiku 4.5)  ── spam/complaint/lang? → chuyển người
+                 classify (Haiku 4.5)  ── spam → im · complaint → chuyển người
+                              │            (ngôn ngữ lạ: AI TỰ trả lời, không chuyển)
                               │
                  closer (Sonnet 4.6) + tool use + KB(cache)
                    tools: get_price · check_stock · score_lead
