@@ -2,7 +2,6 @@ import { config } from './config.js';
 
 // ===== API Pancake (pages.fm) — nhận & gửi tin thay cho webhook Facebook =====
 const PK_BASE = 'https://pages.fm/api/v1';
-function pkTok() { return config.pancakeToken; }
 // ===== KHO TOKEN: env (PANCAKE_TOKEN + PANCAKE_TOKENS_EXTRA) + thêm từ dashboard (pancake-tokens.json) =====
 import fs from 'node:fs';
 import path from 'node:path';
