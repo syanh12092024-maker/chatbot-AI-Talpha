@@ -4,8 +4,15 @@
 //
 // Quét/ghép xong, khoá phiên lưu ở wa-auth/ (KHÔNG commit — coi như mật khẩu).
 import 'dotenv/config';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import qrcode from 'qrcode-terminal';
+import QR from 'qrcode';
 import { connect, listGroups, hasSession, AUTH_DIR } from './wa.js';
+
+// QR vẽ bằng ký tự hay bị vỡ (font/độ rộng cột của terminal) → ghi thêm file ẢNH PNG để quét
+// từ màn hình cho chắc. Mỗi lần WhatsApp đổi mã là file được ghi đè.
+const QR_PNG = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'wa-qr.png');
 
 const args = process.argv.slice(2);
 const phoneArg = args.indexOf('--phone');
@@ -20,7 +27,11 @@ let printed = false;
 const sock = await connect({
   timeoutMs: 180000,
   onQr: (qr) => {
-    if (phone || printed) return; // dùng mã ghép thì bỏ qua QR
+    if (phone) return; // dùng mã ghép thì bỏ qua QR
+    QR.toFile(QR_PNG, qr, { width: 512, margin: 2 })
+      .then(() => console.log(`[QR] đã ghi ảnh: ${QR_PNG}  (lúc ${new Date().toISOString().slice(11, 19)} UTC)`))
+      .catch((e) => console.warn('[QR] không ghi được ảnh:', e.message));
+    if (printed) return;
     printed = true;
     qrcode.generate(qr, { small: true });
     console.log('↑ Quét mã này trong vòng ~40 giây (hết hạn thì chạy lại lệnh).');
