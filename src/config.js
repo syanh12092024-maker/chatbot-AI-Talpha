@@ -63,10 +63,6 @@ export const config = {
   imgMaxPerTurn: Number(process.env.IMG_MAX_PER_TURN || 4),
   imgSafeMaxPerTurn: Number(process.env.IMG_SAFE_MAX_PER_TURN || 2),
   imgPilotPages: (process.env.IMG_PILOT_PAGES || '').split(',').map((s) => s.trim()).filter(Boolean),
-  // ÉP ẢNH LƯỢT ĐẦU: prompt đã dặn "luôn gửi ảnh khi giới thiệu" nhưng Haiku chỉ nghe ~49% số lần
-  // (đo trên 1045 khách/7 ngày) — nhiều page có 12 ảnh mà chưa gửi cho khách nào. Nên lượt AI đầu
-  // tiên sẽ do CODE gửi ảnh, không phụ thuộc model. Đặt 0 để tắt.
-  imgFirstTurn: Number(process.env.IMG_FIRST_TURN ?? 2),
   imgGapMs: Number(process.env.IMG_GAP_MS || 700), // giãn cách giữa 2 ảnh cho tự nhiên, đỡ bị coi là bot
   imgRetry: Number(process.env.IMG_RETRY || 1),    // số lần thử lại khi Pancake/FB trả lỗi chập chờn
 };

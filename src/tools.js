@@ -208,10 +208,7 @@ export async function executeTool(name, input, ctx) {
         const queue = fresh.length ? fresh : pick; // hết ảnh mới → cho phép gửi lại ảnh cũ
         // Gửi cùng kênh với tin chữ: có ngữ cảnh Pancake → gửi qua Pancake; nếu không → Facebook Messenger.
         const viaPancake = state.pkConvId && state.pkCustId;
-        // input.max: chỉ dùng NỘI BỘ khi code ép gửi ảnh lượt đầu (không khai trong toolDefs nên
-        // AI không biết mà truyền) — giữ lượt ép ở mức ít ảnh, tránh dội bom khách & Meta phạt.
-        const cap = Number(input.max) > 0 ? Math.min(Number(input.max), imageLimit(state.pageId)) : imageLimit(state.pageId);
-        const toSend = queue.slice(0, cap);
+        const toSend = queue.slice(0, imageLimit(state.pageId));
         let sent = 0, lastErr = '';
         for (const [i, im] of toSend.entries()) {
           if (i) await sleep(config.imgGapMs); // giãn cách giữa các ảnh cho tự nhiên
