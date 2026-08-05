@@ -14,6 +14,7 @@ export async function runCloser(ctx) {
   const system = sanitizeSystem(buildSystem(kb));
 
   let iterations = 0;
+  let askedForText = false; // đã xin model viết chữ khép lượt lần nào chưa
   while (true) {
     if (iterations++ >= config.maxToolIterations) {
       return 'Em cần hỗ trợ thêm từ đồng nghiệp, anh/chị chờ em chút nhé ạ.';
@@ -36,7 +37,21 @@ export async function runCloser(ctx) {
 
     if (res.stop_reason !== 'tool_use') {
       const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-      return text || '...';
+      if (text) return text;
+      // LƯỢT KẾT THÚC MÀ KHÔNG CÓ CHỮ — hay xảy ra ngay sau khi gọi tool gửi ảnh: model coi
+      // như đã xong việc. Trước đây code lấp bằng '...' nên khách nhận mấy tấm ảnh rồi đúng
+      // ba dấu chấm (đo được: 465/905 lần gửi ảnh rơi vào cảnh này). Xin thêm 1 lượt viết chữ.
+      if (!askedForText) {
+        askedForText = true;
+        state.messages.push({
+          role: 'user',
+          content: 'Bạn vừa kết thúc mà chưa nói gì với khách. VIẾT NGAY 1-2 câu ngắn bằng ĐÚNG ngôn ngữ của khách để tư vấn tiếp hoặc hỏi chốt đơn. Không gọi tool nữa, chỉ viết chữ.',
+        });
+        continue;
+      }
+      // Vẫn không viết được → thà IM còn hơn gửi "..." cho khách.
+      console.warn(`[closer] không soạn được tin chữ (page ${state.pageId} · khách ${state.custName || state.psid})${state.sentImageTurn ? ' — khách đã nhận ảnh kèm caption' : ''}`);
+      return '';
     }
 
     // Thực thi mọi tool_use trong lượt này, gom kết quả trả lại.

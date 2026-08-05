@@ -53,8 +53,9 @@ export const toolDefs = [
       properties: {
         product_id: { type: 'string', description: 'Bỏ trống — page chỉ có 1 SP, tool tự lấy.' },
         category: { type: 'string', description: 'Loại ảnh muốn gửi (khớp theo nhãn): vd "feedback", "thành phần", "công dụng". Bỏ trống = ảnh sản phẩm chính.' },
+        caption: { type: 'string', description: 'BẮT BUỘC — lời dẫn NGẮN (1 câu) gửi KÈM ảnh, viết bằng ĐÚNG ngôn ngữ khách. VD: "Here po ang actual photos ng product 😊" / "هذه صور المنتج الحقيقية". TUYỆT ĐỐI không gửi ảnh trơ không lời nào.' },
       },
-      required: [],
+      required: ['caption'],
     },
   },
   {
@@ -91,12 +92,13 @@ function imageLimit(pageId) {
 
 // Gửi 1 ảnh + thử lại khi lỗi. Pancake hay trả "invalid_upload_fb_attachments_result" chập chờn
 // (cùng 1 URL lúc được lúc không) — thử lại 1 lần cứu được phần lớn ca này.
-async function sendImageWithRetry(state, viaPancake, url) {
+// caption chỉ gắn vào ảnh ĐẦU TIÊN của lượt — lặp lại cùng một câu dưới mỗi tấm trông như spam.
+async function sendImageWithRetry(state, viaPancake, url, caption = '') {
   let lastErr = '';
   for (let attempt = 0; attempt <= config.imgRetry; attempt++) {
     if (attempt) await sleep(1200);
     if (viaPancake) {
-      const r = await pkSendImage(state.pageId, state.pkConvId, state.pkCustId, url);
+      const r = await pkSendImage(state.pageId, state.pkConvId, state.pkCustId, url, caption);
       if (r.ok) return { ok: true };
       lastErr = r.error;
     } else {
@@ -209,12 +211,16 @@ export async function executeTool(name, input, ctx) {
         // Gửi cùng kênh với tin chữ: có ngữ cảnh Pancake → gửi qua Pancake; nếu không → Facebook Messenger.
         const viaPancake = state.pkConvId && state.pkCustId;
         const toSend = queue.slice(0, imageLimit(state.pageId));
+        // LỜI DẪN KÈM ẢNH: khách KHÔNG được nhận ảnh trơ. Đo trên Sổ AI: 2/3 số lần gửi ảnh
+        // trước đây là ảnh trần hoặc chỉ kèm "..." — AI gọi tool xong coi như hết việc, không nói gì.
+        const caption = String(input.caption || '').trim();
         let sent = 0, lastErr = '';
         for (const [i, im] of toSend.entries()) {
           if (i) await sleep(config.imgGapMs); // giãn cách giữa các ảnh cho tự nhiên
-          const r = await sendImageWithRetry(state, viaPancake, im.url);
+          const r = await sendImageWithRetry(state, viaPancake, im.url, i === 0 ? caption : '');
           if (r.ok) { sent++; seen.add(im.url); } else lastErr = r.error;
         }
+        if (sent) state.sentImageTurn = true; // closer dùng để BẮT BUỘC có tin chữ khép lượt
         console.log(`[img] page ${state.pageId} ${viaPancake ? 'Pancake' : 'Messenger'} gửi ${sent}/${toSend.length} ảnh (${input.category || 'sản phẩm'})${sent ? ' ✓' : ' ✗ ' + lastErr}`);
         if (!sent) {
           // Lỗi phía FB/Pancake thường CHẬP CHỜN → cho phép AI thử lại ở lượt sau, đừng chặn vĩnh viễn.
@@ -222,7 +228,7 @@ export async function executeTool(name, input, ctx) {
         }
         try { logAi(state.pageId, state.pkCustId, 'image', { cat: input.category || 'sản phẩm', n: sent }); } catch { /* sổ AI không chặn */ }
         const left = queue.length - toSend.length;
-        return { content: `Đã gửi ${sent} ảnh (${input.category || 'sản phẩm'}) cho khách qua ${viaPancake ? 'Pancake' : 'Messenger'}.${left > 0 ? ` Còn ${left} ảnh khác chưa gửi — có thể gửi thêm ở lượt sau khi khách quan tâm.` : ''}` };
+        return { content: `Đã gửi ${sent} ảnh (${input.category || 'sản phẩm'}) cho khách qua ${viaPancake ? 'Pancake' : 'Messenger'}.${caption ? '' : ' ⚠️ Lần này BẠN QUÊN caption nên ảnh gửi đi trần trụi — lần sau phải truyền caption.'} BÂY GIỜ HÃY VIẾT TIN CHỮ cho khách (tư vấn tiếp / hỏi chốt đơn) — TUYỆT ĐỐI không kết thúc lượt mà chỉ có ảnh.${left > 0 ? ` Còn ${left} ảnh khác chưa gửi — có thể gửi thêm ở lượt sau.` : ''}` };
       }
       case 'handoff_human': {
         state.handoff = true;

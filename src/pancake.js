@@ -177,11 +177,12 @@ export async function pkSendReply(pageId, convId, custId, text) {
 
 // Gửi ẢNH qua Pancake (cùng endpoint reply_inbox, dùng content_url = link ảnh CÔNG KHAI).
 // Dùng thay cho Facebook Graph vì các page này chạy qua Pancake, không có token FB gửi tin.
-export async function pkSendImage(pageId, convId, custId, url) {
+// caption: lời dẫn gửi KÈM ảnh — không để khách nhận ảnh trơ (xem tools.js/prompts.js).
+export async function pkSendImage(pageId, convId, custId, url, caption = '') {
   if (!url) return { ok: false, error: 'thiếu url ảnh' };
   const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'reply_inbox', message: '', content_url: url, customer_id: custId }),
+    body: JSON.stringify({ action: 'reply_inbox', message: caption || '', content_url: url, customer_id: custId }),
   });
   return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 140) };
 }
