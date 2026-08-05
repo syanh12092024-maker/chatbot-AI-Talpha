@@ -75,6 +75,7 @@ ssh root@169.58.33.8 'tail -20 /var/log/aicloser-report.log'   # kết quả cá
 - **Đơn AI COD=0** → xem `total_price` có được AI truyền không (Sổ AI event order) và hệ số tiền tệ đúng chưa (`pancake-orders.js`).
 - **Dashboard trắng/JS lạ** → cache trình duyệt (Ctrl+Shift+R); API `/orders` chậm ~35s là bình thường (nạp nền + cache 60s).
 - **Số liệu nghi sai** → `recount()` từ Sổ AI là nguồn sự thật (nút "Đối chiếu Sổ AI").
+- **Bot không gửi ảnh cho khách** → KHÔNG phải lỗi kỹ thuật nếu page khác vẫn gửi được: prompt chỉ DẶN gửi ảnh, quyết định gọi tool là của Haiku (đo được: chỉ 49% khách nhận ảnh). Lượt đầu nay do code ép (`handler.js → ensureFirstTurnImages`, `IMG_FIRST_TURN`). Kiểm bằng Sổ AI: đếm `type:'image'` theo cust. Nếu KB không có ảnh link http(s) thì tool bỏ qua êm.
 - **Nhóm WhatsApp không nhận báo cáo** → `tail /var/log/aicloser-report.log`. Hay gặp nhất: phiên Baileys bị thu hồi (đăng xuất thiết bị từ điện thoại, hoặc Meta chặn số) → `npm run wa:login -- --phone <số>`. Thư mục `wa-auth/` = mật khẩu, mất là phải ghép lại. LƯU Ý: WhatsApp Cloud API chính thức KHÔNG gửi được vào group — đừng "sửa" bằng cách chuyển sang API chính thức. Số liệu báo cáo cắt mốc theo GIỜ VN trong `report.js` (Sổ AI vốn tính ngày theo UTC).
 - **Log có `no low surrogate` / `non-empty content`** → nửa emoji hoặc lượt rỗng lọt vào body. `text.js` đã chặn ở cửa gọi API; nếu thấy lại, tìm đường dữ liệu MỚI chưa qua `sanitizeMessages`. Log `[text] đã dọn N mảnh emoji lẻ` cho biết lớp chặn đang phải ra tay ở page/khách nào.
 

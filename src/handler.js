@@ -1,5 +1,6 @@
 import { classify } from './classifier.js';
 import { runCloser } from './closer.js';
+import { executeTool } from './tools.js';
 import { getState, recordInbound, recordOutbound, isAiEnabled } from './store.js';
 import { getKBForPage } from './kb.js';
 import { config } from './config.js';
@@ -108,7 +109,26 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
 
   const text2 = await runCloser({ kb, state });
   state.aiTurns += 1;
+  await ensureFirstTurnImages({ kb, state });
   return reply(psid, text2, state.handoff);
+}
+
+// ẢNH LƯỢT ĐẦU DO CODE LO (nguyên tắc #2) — không phụ thuộc model có nhớ gọi tool hay không.
+// Đo thực tế: chỉ 49% khách được gửi ảnh (516/1045 khách trong 7 ngày), có page 12 ảnh mà 0 khách
+// nhận được — vì đây là lời dặn trong prompt, còn quyết định gọi tool là của Haiku. Hay hụt nhất
+// là khi khách mở đầu bằng SĐT hoặc hỏi giá thẳng: AI coi đó không phải lượt "giới thiệu sản phẩm".
+async function ensureFirstTurnImages(ctx) {
+  const { state } = ctx;
+  if (!config.imgFirstTurn) return;          // IMG_FIRST_TURN=0 → tắt
+  if (state.aiTurns !== 1) return;           // chỉ lượt AI đầu tiên với khách này
+  if (state.sentImages?.size) return;        // AI đã tự gửi rồi → không gửi chồng
+  if (state.handoff) return;                 // đang bàn giao người thật thì thôi
+  try {
+    const r = await executeTool('send_product_image', { max: config.imgFirstTurn }, ctx);
+    console.log(`[img] ép gửi ảnh lượt đầu · page ${state.pageId} · ${state.custName || state.psid}: ${r.isError ? '✗ ' + String(r.content).slice(0, 70) : '✓'}`);
+  } catch (e) {
+    console.warn('[img] ép gửi ảnh lỗi:', e.message); // không chặn tin trả lời
+  }
 }
 
 function reply(psid, text, handoff) {
