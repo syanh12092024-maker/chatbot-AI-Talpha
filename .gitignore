@@ -19,3 +19,4 @@ page-product-cache.json
 ai-created-orders.json
 .env.vps
 pancake-tokens.json
+wa-auth/

@@ -10,13 +10,17 @@
     "web": "node src/web.js",
     "chat": "node src/local-chat.js",
     "subscribe": "node src/subscribe-pages.js",
-    "pages": "node -e \"import('./src/pages.js').then(async m=>{const n=await m.loadPageTokens();console.log('Tổng page:',n);for(const [id,v] of m.getStore())console.log(' -',id,v.name)})\""
+    "pages": "node -e \"import('./src/pages.js').then(async m=>{const n=await m.loadPageTokens();console.log('Tổng page:',n);for(const [id,v] of m.getStore())console.log(' -',id,v.name)})\"",
+    "report": "node src/report-cli.js",
+    "wa:login": "node src/wa-login.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.0",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
     "express": "^4.21.2",
+    "qrcode-terminal": "^0.12.0",
     "xlsx": "^0.18.5"
   }
 }
