@@ -4,6 +4,7 @@ import { getState, recordInbound, recordOutbound, isAiEnabled } from './store.js
 import { getKBForPage } from './kb.js';
 import { config } from './config.js';
 import { logAi, recentReplyCount } from './ai-log.js';
+import { cleanText } from './text.js';
 import { pkTagByName } from './pancake.js';
 
 // NGUYÊN TẮC #13 — KẾT THÚC LÀ PHẢI BÀN GIAO: mọi điểm AI dừng phục vụ (khiếu nại,
@@ -25,13 +26,9 @@ function toSaleQueue(state, reason, kind) {
 // TRƯỚC khi soạn tin — không hỏi lại thứ khách đã cho, không chào lại từ đầu, biết khách đã đặt đơn.
 const HIST_MAX_MSGS = 20;   // lấy tối đa N tin gần nhất
 const HIST_MAX_CHARS = 400; // cắt mỗi tin để tiết kiệm token
-// Cắt chuỗi có thể chém ĐÔI 1 emoji (cặp surrogate UTF-16) → JSON hỏng → Claude API 400
-// "no low surrogate" → khách kẹt không được trả lời. Luôn dọn surrogate mồ côi sau khi cắt.
-export function cleanText(str, max) {
-  let s = String(str == null ? '' : str);
-  if (max) s = s.slice(0, max);
-  return s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
-}
+// cleanText nay ở text.js (dùng chung với lớp chặn cuối trong closer.js). Re-export để
+// admin.js và code cũ import từ đây vẫn chạy như trước.
+export { cleanText };
 export function hydrateHistory(state, history, pageId) {
   if (state.messages.length || !Array.isArray(history) || history.length <= 1) return 0;
   const turns = [];
@@ -88,7 +85,10 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     return { reply: null, handoff: false, archived: true };
   }
 
-  state.messages.push({ role: 'user', content: cleanText(text) });
+  // Tin chỉ có ảnh/sticker (hoặc chỉ chứa nửa emoji nên bị dọn sạch) sẽ thành chuỗi RỖNG →
+  // Claude trả 400 "user messages must have non-empty content" và khách không được trả lời.
+  const cleaned = cleanText(text);
+  state.messages.push({ role: 'user', content: cleaned.trim() || '(khách gửi ảnh/sticker)' });
 
   if (cls.intent === 'complaint') {
     state.handoff = true; state.handoffReason = 'complaint';

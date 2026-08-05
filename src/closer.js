@@ -2,12 +2,16 @@ import { anthropic } from './llm.js';
 import { config } from './config.js';
 import { buildSystem } from './prompts.js';
 import { toolDefs, executeTool } from './tools.js';
+import { sanitizeMessages, sanitizeSystem } from './text.js';
 
 // Chạy closer (Sonnet) theo manual tool-use loop. Đọc/ghi vào state.messages.
 // Trả về chuỗi text cuối cùng để gửi cho khách.
 export async function runCloser(ctx) {
   const { kb, state } = ctx;
-  const system = buildSystem(kb);
+  // LỚP CHẶN CUỐI (xem text.js): nửa emoji hoặc lượt rỗng lọt vào đây là Claude trả 400
+  // invalid_request_error — lỗi bị coi là "không tự hồi phục" nên bot không thử lại và khách
+  // ngồi im. Dọn ngay trước cửa gọi API thì mọi đường vào đều được chặn, kể cả đường mới thêm sau này.
+  const system = sanitizeSystem(buildSystem(kb));
 
   let iterations = 0;
   while (true) {
@@ -15,12 +19,16 @@ export async function runCloser(ctx) {
       return 'Em cần hỗ trợ thêm từ đồng nghiệp, anh/chị chờ em chút nhé ạ.';
     }
 
+    const { messages, fixed } = sanitizeMessages(state.messages);
+    if (fixed) console.warn(`[text] đã dọn ${fixed} mảnh emoji lẻ trước khi gọi Claude (page ${state.pageId} · khách ${state.custName || state.psid})`);
+    state.messages = messages; // giữ bản sạch để lượt sau không phải dọn lại
+
     const res = await anthropic.messages.create({
       model: config.modelCloser,
       max_tokens: 1024,
       system,
       tools: toolDefs,
-      messages: state.messages,
+      messages,
     });
 
     // Lưu lượt assistant (gồm cả tool_use) vào lịch sử.

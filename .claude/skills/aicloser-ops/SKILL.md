@@ -39,6 +39,7 @@ npm start   # dashboard http://localhost:3100/admin (không cần đăng nhập 
 | `server.js` | Express: webhook FB, /admin, /health, khởi động mọi thứ |
 | `pancake-poll.js` | **Trái tim**: vòng poll 6s → AI trả lời. Chứa: debounce 20s (đo bằng đồng hồ server — timestamp Pancake KHÔNG có múi giờ, đừng Date.parse), gộp cụm tin, semaphore song song 4 khách (`CONV_CONCURRENCY`), backoff 2 lỗi → ngừng page 30p (`sendHealth()`), nhường Botcake tin đầu, im khi có thẻ đơn |
 | `handler.js` | Cổng 1 tin: hydrate lịch sử Pancake vào state (`hydrateHistory`), trần lượt bền (`recentReplyCount`), các cửa bàn giao (`toSaleQueue` — kind: complaint/max_turns/no_kb) |
+| `text.js` | **Lớp chặn cuối trước khi gọi Claude**: dọn nửa emoji (surrogate lẻ) + lượt rỗng. Hai thứ này làm API trả 400 `invalid_request_error` = "không tự hồi phục" → bot KHÔNG thử lại và khách ngồi im. Gọi trong `closer.js` (mọi lượt) và `classifier.js` |
 | `closer.js` + `prompts.js` | Claude closer + system prompt. `HARD_RULES` ở cuối prompts.js LUÔN THẮNG kịch bản page — sửa nguyên tắc AI ở đây |
 | `tools.js` | Tools: get_price, send_product_image, `create_draft_order` (bắt buộc `total_price` — giá AI chốt), `handoff_human` (kind:'ai') |
 | `ai-log.js` | **Sổ AI** `ai-messages.jsonl` (append-only, nguồn sự thật): logAi/needSale/recentConversations/custProfile/recentReplyCount/recount |
@@ -68,6 +69,7 @@ npm start   # dashboard http://localhost:3100/admin (không cần đăng nhập 
 - **Đơn AI COD=0** → xem `total_price` có được AI truyền không (Sổ AI event order) và hệ số tiền tệ đúng chưa (`pancake-orders.js`).
 - **Dashboard trắng/JS lạ** → cache trình duyệt (Ctrl+Shift+R); API `/orders` chậm ~35s là bình thường (nạp nền + cache 60s).
 - **Số liệu nghi sai** → `recount()` từ Sổ AI là nguồn sự thật (nút "Đối chiếu Sổ AI").
+- **Log có `no low surrogate` / `non-empty content`** → nửa emoji hoặc lượt rỗng lọt vào body. `text.js` đã chặn ở cửa gọi API; nếu thấy lại, tìm đường dữ liệu MỚI chưa qua `sanitizeMessages`. Log `[text] đã dọn N mảnh emoji lẻ` cho biết lớp chặn đang phải ra tay ở page/khách nào.
 
 ## Quy tắc an toàn khi thao tác
 
