@@ -25,7 +25,7 @@ export function hasSession() {
 
 // Mở kết nối và chờ tới khi WhatsApp báo sẵn sàng ('open').
 // onQr/onPairing chỉ dùng lúc ĐĂNG NHẬP LẦN ĐẦU (wa-login.js truyền vào).
-export async function connect({ onQr, timeoutMs = 60000 } = {}) {
+export async function connect({ onQr, onPairingCode, pairingPhone, timeoutMs = 60000 } = {}) {
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
   const sock = makeWASocket({
     auth: state,
@@ -35,6 +35,16 @@ export async function connect({ onQr, timeoutMs = 60000 } = {}) {
     markOnlineOnConnect: false, // đừng chiếm trạng thái "online" của số đó
   });
   sock.ev.on('creds.update', saveCreds);
+
+  // MÃ GHÉP phải xin NGAY khi socket vừa dựng, KHÔNG được chờ connection='open' —
+  // với cách ghép bằng số, WhatsApp chỉ mở kết nối SAU khi người dùng nhập mã. Chờ 'open'
+  // trước khi xin mã là treo tới hết giờ mà chẳng bao giờ có mã.
+  if (pairingPhone && !sock.authState.creds.registered) {
+    setTimeout(async () => {
+      try { onPairingCode?.(await sock.requestPairingCode(pairingPhone)); }
+      catch (e) { console.error('[wa] xin mã ghép lỗi:', e.message); }
+    }, 3000);
+  }
 
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`Hết ${timeoutMs / 1000}s mà WhatsApp chưa kết nối được`)), timeoutMs);

@@ -25,7 +25,12 @@ if (!hasSession() && !phone) {
 
 let printed = false;
 const sock = await connect({
-  timeoutMs: 180000,
+  timeoutMs: 300000, // chờ lâu hơn: người dùng cần thời gian mở máy nhập mã / quét
+  pairingPhone: phone || undefined,
+  onPairingCode: (code) => {
+    console.log(`\n🔑 MÃ GHÉP: ${code}`);
+    console.log('Nhập trên điện thoại: WhatsApp → Thiết bị đã liên kết → Liên kết bằng số điện thoại.\n');
+  },
   onQr: (qr) => {
     if (phone) return; // dùng mã ghép thì bỏ qua QR
     QR.toFile(QR_PNG, qr, { width: 512, margin: 2 })
@@ -37,13 +42,6 @@ const sock = await connect({
     console.log('↑ Quét mã này trong vòng ~40 giây (hết hạn thì chạy lại lệnh).');
   },
 });
-
-// Mã ghép: chỉ xin được khi chưa đăng ký thiết bị.
-if (phone && !hasSession()) {
-  const code = await sock.requestPairingCode(phone);
-  console.log(`\n🔑 MÃ GHÉP: ${code}`);
-  console.log('Nhập trên điện thoại: WhatsApp → Thiết bị đã liên kết → Liên kết bằng số điện thoại.\n');
-}
 
 console.log(`✓ WhatsApp đã kết nối. Phiên lưu tại: ${AUTH_DIR}`);
 
