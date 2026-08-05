@@ -214,11 +214,15 @@ export async function executeTool(name, input, ctx) {
         // LỜI DẪN KÈM ẢNH: khách KHÔNG được nhận ảnh trơ. Đo trên Sổ AI: 2/3 số lần gửi ảnh
         // trước đây là ảnh trần hoặc chỉ kèm "..." — AI gọi tool xong coi như hết việc, không nói gì.
         const caption = String(input.caption || '').trim();
+        // Lời dẫn bám theo tấm ảnh ĐẦU TIÊN GỬI THÀNH CÔNG, không phải tấm đầu danh sách:
+        // Pancake trả lỗi chập chờn khá thường (vd 1/2 ảnh) — nếu tấm mang caption hỏng thì
+        // caption mất theo, khách lại nhận ảnh trơ đúng như trước khi sửa.
+        let pendingCaption = caption;
         let sent = 0, lastErr = '';
         for (const [i, im] of toSend.entries()) {
           if (i) await sleep(config.imgGapMs); // giãn cách giữa các ảnh cho tự nhiên
-          const r = await sendImageWithRetry(state, viaPancake, im.url, i === 0 ? caption : '');
-          if (r.ok) { sent++; seen.add(im.url); } else lastErr = r.error;
+          const r = await sendImageWithRetry(state, viaPancake, im.url, pendingCaption);
+          if (r.ok) { sent++; seen.add(im.url); pendingCaption = ''; } else lastErr = r.error;
         }
         if (sent) state.sentImageTurn = true; // closer dùng để BẮT BUỘC có tin chữ khép lượt
         console.log(`[img] page ${state.pageId} ${viaPancake ? 'Pancake' : 'Messenger'} gửi ${sent}/${toSend.length} ảnh (${input.category || 'sản phẩm'})${sent ? ' ✓' : ' ✗ ' + lastErr}`);
