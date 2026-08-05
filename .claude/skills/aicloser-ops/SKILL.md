@@ -30,6 +30,12 @@ ssh root@169.58.33.8 'source <(grep -E "^#?ADMIN_" /opt/aicloser/.env | sed "s/^
 
 # Chạy local (readonly)
 npm start   # dashboard http://localhost:3100/admin (không cần đăng nhập ở local)
+
+# BÁO CÁO WHATSAPP (cron trên VPS: 8:00 & 17:00 giờ VN — CRON_TZ=Asia/Ho_Chi_Minh)
+npm run report -- morning       # XEM TRƯỚC, KHÔNG gửi (afternoon = từ 00:00 hôm nay tới giờ)
+npm run report -- morning --send
+npm run wa:login -- --phone 84xxxxxxxxx   # đăng nhập lại khi phiên rớt (mã ghép 8 ký tự)
+ssh root@169.58.33.8 'tail -20 /var/log/aicloser-report.log'   # kết quả các lần gửi
 ```
 
 ## Bản đồ code (src/)
@@ -69,6 +75,7 @@ npm start   # dashboard http://localhost:3100/admin (không cần đăng nhập 
 - **Đơn AI COD=0** → xem `total_price` có được AI truyền không (Sổ AI event order) và hệ số tiền tệ đúng chưa (`pancake-orders.js`).
 - **Dashboard trắng/JS lạ** → cache trình duyệt (Ctrl+Shift+R); API `/orders` chậm ~35s là bình thường (nạp nền + cache 60s).
 - **Số liệu nghi sai** → `recount()` từ Sổ AI là nguồn sự thật (nút "Đối chiếu Sổ AI").
+- **Nhóm WhatsApp không nhận báo cáo** → `tail /var/log/aicloser-report.log`. Hay gặp nhất: phiên Baileys bị thu hồi (đăng xuất thiết bị từ điện thoại, hoặc Meta chặn số) → `npm run wa:login -- --phone <số>`. Thư mục `wa-auth/` = mật khẩu, mất là phải ghép lại. LƯU Ý: WhatsApp Cloud API chính thức KHÔNG gửi được vào group — đừng "sửa" bằng cách chuyển sang API chính thức. Số liệu báo cáo cắt mốc theo GIỜ VN trong `report.js` (Sổ AI vốn tính ngày theo UTC).
 - **Log có `no low surrogate` / `non-empty content`** → nửa emoji hoặc lượt rỗng lọt vào body. `text.js` đã chặn ở cửa gọi API; nếu thấy lại, tìm đường dữ liệu MỚI chưa qua `sanitizeMessages`. Log `[text] đã dọn N mảnh emoji lẻ` cho biết lớp chặn đang phải ra tay ở page/khách nào.
 
 ## Quy tắc an toàn khi thao tác
