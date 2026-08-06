@@ -2,7 +2,7 @@
 // KHÔNG cần webhook/URL công khai/tunnel/App Review — chỉ cần internet ra ngoài.
 import { config } from './config.js';
 import { pkGetConversations, pkGetMessages, pkSendReply, refreshPancakePages, pkTagByName } from './pancake.js';
-import { listAiEnabled } from './store.js';
+import { listAiEnabled, getState } from './store.js';
 import { handleIncoming } from './handler.js';
 import { incReply, incLead } from './stats.js';
 import { logAi } from './ai-log.js';
@@ -189,7 +189,9 @@ async function processConv(pageId, c, psid, custId) {
   if (r.ok) {
     try { incReply(pageId); incLead(pageId, custId); } catch { /* thống kê không chặn gửi tin */ }
     try { addAiConv(pageId, c.id); } catch { /* ghi hội thoại AI để khớp đơn */ }
-    try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id }); } catch { /* sổ AI không chặn */ }
+    // Ghi kèm TOKEN THẬT của lượt (đo trong closer.js) — nguồn số liệu chi phí theo page.
+    const u = getState(psid).lastUsage || {};
+    try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id, tin: u.tin || 0, tout: u.tout || 0, cread: u.cread || 0, calls: u.calls || 0 }); } catch { /* sổ AI không chặn */ }
     // Gắn thẻ "bot" trên Pancake (1 lần/hội thoại) — sale nhìn tag là biết AI đang phục vụ.
     if (config.pkTags.ai && !aiTagged.has(c.id)) {
       aiTagged.add(c.id);

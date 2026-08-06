@@ -13,6 +13,11 @@ export async function runCloser(ctx) {
   // ngồi im. Dọn ngay trước cửa gọi API thì mọi đường vào đều được chặn, kể cả đường mới thêm sau này.
   const system = sanitizeSystem(buildSystem(kb));
 
+  // ĐO TOKEN THẬT theo lượt (cộng dồn mọi vòng tool) — pancake-poll ghi vào Sổ AI để
+  // thống kê chi phí theo page/khách bằng SỐ ĐO chứ không phải ước lượng.
+  const usage = { tin: 0, tout: 0, cread: 0, calls: 0 };
+  state.lastUsage = usage;
+
   let iterations = 0;
   let askedForText = false; // đã xin model viết chữ khép lượt lần nào chưa
   while (true) {
@@ -32,6 +37,11 @@ export async function runCloser(ctx) {
       messages,
       ...aiExtras, // Kimi: tắt thinking, nếu không tin trả về rỗng
     });
+
+    usage.calls++;
+    usage.tin += res.usage?.input_tokens || 0;
+    usage.tout += res.usage?.output_tokens || 0;
+    usage.cread += res.usage?.cache_read_input_tokens || 0;
 
     // Lưu lượt assistant (gồm cả tool_use) vào lịch sử.
     state.messages.push({ role: 'assistant', content: res.content });
