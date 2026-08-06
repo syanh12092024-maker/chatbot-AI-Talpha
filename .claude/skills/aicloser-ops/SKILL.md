@@ -64,7 +64,7 @@ ssh root@169.58.33.8 'tail -20 /var/log/aicloser-report.log'   # kết quả cá
 
 ## Núm chỉnh (.env)
 
-`MAX_AI_TURNS=5` (trần lượt/khách/24h) · `REPLY_DEBOUNCE_MS=20000` · `CONV_CONCURRENCY=4` · `PANCAKE_POLL_MS=6000` · `AUTO_CREATE_ORDER=1` · `PANCAKE_READONLY=1` (chỉ local!) · `RESPECT_ASSIGNEE` (mặc định tắt) · `PANCAKE_TOKENS_EXTRA` (token phụ cách nhau dấu phẩy — ĐA TÀI KHOẢN: page dính lỗi quyền/gói 105/121 tự failover token kế, xem `pancake.js → pkFetchPage`; danh sách page = GỘP mọi token; log `[token] page X → chuyển sang token #N`)
+`AI_PROVIDER` (anthropic | kimi — Kimi = Moonshot endpoint tương thích Anthropic, cần `KIMI_API_KEY` bản quốc tế; model tự đổi mặc định kimi-k2.6/claude-haiku-4-5, model lệch nhà cung cấp bị bỏ qua kèm cảnh báo `[config]`; Kimi PHẢI tắt thinking — `llm.js → aiExtras` lo việc này) · `MAX_AI_TURNS=5` (trần lượt/khách/24h) · `REPLY_DEBOUNCE_MS=20000` · `CONV_CONCURRENCY=4` · `PANCAKE_POLL_MS=6000` · `AUTO_CREATE_ORDER=1` · `PANCAKE_READONLY=1` (chỉ local!) · `RESPECT_ASSIGNEE` (mặc định tắt) · `PANCAKE_TOKENS_EXTRA` (token phụ cách nhau dấu phẩy — ĐA TÀI KHOẢN: page dính lỗi quyền/gói 105/121 tự failover token kế, xem `pancake.js → pkFetchPage`; danh sách page = GỘP mọi token; log `[token] page X → chuyển sang token #N`)
 
 ## Chẩn đoán theo triệu chứng
 
@@ -77,6 +77,7 @@ ssh root@169.58.33.8 'tail -20 /var/log/aicloser-report.log'   # kết quả cá
 - **Số liệu nghi sai** → `recount()` từ Sổ AI là nguồn sự thật (nút "Đối chiếu Sổ AI").
 - **Bot không gửi ảnh cho khách** → KHÔNG phải lỗi kỹ thuật nếu page khác vẫn gửi được: prompt chỉ DẶN gửi ảnh, quyết định gọi tool là của Haiku (đo 7 ngày: 49% khách nhận ảnh). Chủ trương: KHÔNG ép bằng code (đã thử và gỡ 05/08/2026 — ảnh phải hợp cảnh, không gửi máy móc); muốn tăng thì sửa `prompts.js`. Kiểm bằng Sổ AI: đếm `type:'image'` theo cust. KB không có ảnh link http(s) thì tool bỏ qua êm. Page đang backoff #2022 thì ảnh cũng không gửi được.
 - **Nhóm WhatsApp không nhận báo cáo** → `tail /var/log/aicloser-report.log`. Hay gặp nhất: phiên Baileys bị thu hồi (đăng xuất thiết bị từ điện thoại, hoặc Meta chặn số) → `npm run wa:login -- --phone <số>`. Thư mục `wa-auth/` = mật khẩu, mất là phải ghép lại. LƯU Ý: WhatsApp Cloud API chính thức KHÔNG gửi được vào group — đừng "sửa" bằng cách chuyển sang API chính thức. Số liệu báo cáo cắt mốc theo GIỜ VN trong `report.js` (Sổ AI vốn tính ngày theo UTC).
+- **Log có `credit balance is too low`** → tài khoản Anthropic hết tiền, bot ĐỨNG TOÀN BỘ (đã xảy ra 06/08/2026, ~3 tiếng, ~200 tin lỡ). Nạp tiền HOẶC chuyển tạm `AI_PROVIDER=kimi` trong .env rồi restart. Bot không tự failover nhà cung cấp.
 - **Log có `no low surrogate` / `non-empty content`** → nửa emoji hoặc lượt rỗng lọt vào body. `text.js` đã chặn ở cửa gọi API; nếu thấy lại, tìm đường dữ liệu MỚI chưa qua `sanitizeMessages`. Log `[text] đã dọn N mảnh emoji lẻ` cho biết lớp chặn đang phải ra tay ở page/khách nào.
 
 ## Quy tắc an toàn khi thao tác

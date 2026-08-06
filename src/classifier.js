@@ -1,4 +1,4 @@
-import { anthropic } from './llm.js';
+import { anthropic, aiExtras } from './llm.js';
 import { config } from './config.js';
 import { cleanText } from './text.js';
 
@@ -30,6 +30,7 @@ export async function classify(message, productName = 'sản phẩm') {
         `"${productName}", khách là người Philippines sống ở Trung Đông (OFW), thanh toán COD. Ngôn ngữ: tl (Tagalog/Taglish) hoặc en. Chỉ trả JSON theo schema.`,
       messages: [{ role: 'user', content: msg }],
       output_config: { format: { type: 'json_schema', schema: SCHEMA } },
+      ...aiExtras, // Kimi: tắt thinking (đã thử: json_schema chạy được trên Kimi khi thinking off)
     });
     const text = res.content.find((b) => b.type === 'text')?.text || '{}';
     return JSON.parse(text);

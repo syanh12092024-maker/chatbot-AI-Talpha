@@ -10,8 +10,34 @@ function resolveKbPath(p) {
   return path.isAbsolute(p) ? p : path.resolve(projectRoot, p);
 }
 
+// NHÀ CUNG CẤP AI: 'anthropic' (mặc định) hoặc 'kimi' (Moonshot — endpoint tương thích Anthropic).
+// Thêm Kimi vì tài khoản Anthropic hết credit 06/08/2026 làm bot đứng ~3 tiếng; giữ dạng công tắc
+// để đổi qua lại chỉ bằng .env, không sửa code.
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'anthropic').toLowerCase();
+
+// Chọn model an toàn theo nhà cung cấp. BẪY vận hành có thật: đổi AI_PROVIDER=kimi mà quên sửa
+// MODEL_CLOSER=claude-... trong .env → Moonshot trả 404 "model not found" và bot đứng im.
+// Model lệch nhà cung cấp thì BỎ QUA (kèm cảnh báo) và dùng mặc định đúng, thay vì chết.
+function pickModel(envVal) {
+  const def = AI_PROVIDER === 'kimi' ? 'kimi-k2.6' : 'claude-haiku-4-5';
+  if (!envVal) return def;
+  const mismatch = (AI_PROVIDER === 'kimi' && envVal.startsWith('claude-'))
+    || (AI_PROVIDER !== 'kimi' && envVal.startsWith('kimi-'));
+  if (mismatch) {
+    console.warn(`[config] MODEL "${envVal}" không thuộc nhà cung cấp "${AI_PROVIDER}" → dùng ${def}. Sửa MODEL_CLOSER/MODEL_CLASSIFIER trong .env cho khớp.`);
+    return def;
+  }
+  return envVal;
+}
+
 export const config = {
+  aiProvider: AI_PROVIDER,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+  kimi: {
+    apiKey: process.env.KIMI_API_KEY || '',
+    // Bản QUỐC TẾ. Key .cn không dùng được ở đây và ngược lại.
+    baseUrl: process.env.KIMI_BASE_URL || 'https://api.moonshot.ai/anthropic',
+  },
   pageAccessToken: process.env.PAGE_ACCESS_TOKEN,
   metaSystemToken: process.env.META_SYSTEM_TOKEN || '', // System User token (Business Manager) — đa-page
   metaBusinessIds: (process.env.META_BUSINESS_IDS || '').split(',').map((s) => s.trim()).filter(Boolean), // BM id để liệt kê owned_pages (deploy không có tokens.json)
@@ -27,8 +53,9 @@ export const config = {
     products: 'Sản phẩm theo Page', // fallback: tab gộp cũ nếu chưa tách thị trường
     policies: 'Chính sách', faq: 'FAQ', obj: 'Xử lý phản đối',
   },
-  modelCloser: process.env.MODEL_CLOSER || 'claude-haiku-4-5', // Haiku toàn bộ — tiết kiệm chi phí
-  modelClassifier: process.env.MODEL_CLASSIFIER || 'claude-haiku-4-5',
+  // Model mặc định theo nhà cung cấp (MODEL_CLOSER/MODEL_CLASSIFIER trong .env vẫn đè được).
+  modelCloser: pickModel(process.env.MODEL_CLOSER),
+  modelClassifier: pickModel(process.env.MODEL_CLASSIFIER),
   port: Number(process.env.PORT || 3100),
   pancake: {
     apiKey: process.env.PANCAKE_API_KEY || '',
@@ -69,7 +96,11 @@ export const config = {
 
 export function assertConfig() {
   const missing = [];
-  if (!config.anthropicApiKey) missing.push('ANTHROPIC_API_KEY');
+  if (config.aiProvider === 'kimi') {
+    if (!config.kimi.apiKey) missing.push('KIMI_API_KEY');
+  } else if (!config.anthropicApiKey) {
+    missing.push('ANTHROPIC_API_KEY');
+  }
   if (missing.length) {
     throw new Error(`Thiếu biến môi trường: ${missing.join(', ')} (xem .env.example)`);
   }

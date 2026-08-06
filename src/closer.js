@@ -1,4 +1,4 @@
-import { anthropic } from './llm.js';
+import { anthropic, aiExtras } from './llm.js';
 import { config } from './config.js';
 import { buildSystem } from './prompts.js';
 import { toolDefs, executeTool } from './tools.js';
@@ -30,6 +30,7 @@ export async function runCloser(ctx) {
       system,
       tools: toolDefs,
       messages,
+      ...aiExtras, // Kimi: tắt thinking, nếu không tin trả về rỗng
     });
 
     // Lưu lượt assistant (gồm cả tool_use) vào lịch sử.

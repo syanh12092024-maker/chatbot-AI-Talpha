@@ -21,7 +21,7 @@ import { cleanText } from './handler.js';
 import { ordersEnabled, aiOrderStats, ordersForConv } from './pancake-orders.js';
 import { getAiConvSet } from './ai-convs.js';
 import { sendHealth } from './pancake-poll.js';
-import { anthropic } from './llm.js';
+import { anthropic, aiExtras } from './llm.js';
 
 export const adminRouter = express.Router();
 
@@ -348,6 +348,7 @@ adminRouter.post('/translate', async (req, res) => {
       model: config.modelClassifier, max_tokens: 2500,
       system: 'Dịch từng dòng sau sang tiếng Việt tự nhiên, ngắn gọn (giữ nghĩa bán hàng). Trả đúng định dạng "số|bản dịch", mỗi dòng một bản, không thêm gì khác.',
       messages: [{ role: 'user', content: src }],
+      ...aiExtras, // Kimi: tắt thinking
     });
     const text = r.content.find((b) => b.type === 'text')?.text || '';
     const vi = new Array(msgs.length).fill('');
