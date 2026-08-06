@@ -431,7 +431,7 @@ function rOverview(){
        <button class="btn sm" onclick="auditCheck()" title="Tính lại số liệu từ Sổ AI (audit log) để đối chiếu" style="flex-shrink:0">🔍 Đối chiếu Sổ AI</button>
      </div>
    </div>
-   <div class="tablecard"><table><thead><tr><th style="width:86px">AI</th><th>Page</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right">Đơn khách AI</th><th style="text-align:right">Tỉ lệ chốt</th><th style="text-align:right">Thao tác</th></tr></thead><tbody id="ovbody"></tbody></table></div>`;
+   <div class="tablecard"><table><thead><tr><th style="width:86px">AI</th><th>Page</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right">Đơn khách AI</th><th style="text-align:right">Tỉ lệ chốt</th><th style="text-align:right" title="Chi phí token AI (số ĐO từ Sổ AI, ghi từ 06/08/2026)">Chi phí AI</th><th style="text-align:right">Thao tác</th></tr></thead><tbody id="ovbody"></tbody></table></div>`;
   fillStatsBody();
   addTimer(()=>{if(document.getElementById('kpicards'))fillStatsBody();},12000);
 }
@@ -444,6 +444,7 @@ function statRow(p){const nm=esc(p.name).replace(/'/g,"\\'");return `<tr>
    <td style="text-align:right;font-weight:700">${p.leads||0}</td>
    <td style="text-align:right;font-weight:700">${p.aiOrders!=null?p.aiOrders:'<span class="muted">…</span>'}</td>
    <td style="text-align:right">${rateBadge(p.closeRate)}</td>
+   <td style="text-align:right;white-space:nowrap" title="${p.cost!=null?p.costTok.toLocaleString('vi-VN')+' token (vào+cache) · '+p.costMeasured+' tin có số đo':'chưa có số đo (bật ghi token từ 06/08)'}">${p.cost!=null?'$'+p.cost.toFixed(2):'<span class="muted">—</span>'}</td>
    <td style="text-align:right;white-space:nowrap"><button class="btn sm" onclick="openPageChat('${p.id}','${nm}')" title="Xem hội thoại page này">💬 Chat</button> <button class="btn sm" onclick="openPageKB('${p.id}','${nm}')" title="Sửa kịch bản / sản phẩm">📖 Sửa KB</button></td>
  </tr>`;}
 /* /orders (đơn thật Pancake POS) rất chậm (~30-40s trên VPS) → KHÔNG bắt cả trang đợi:
@@ -459,17 +460,19 @@ async function refreshOrders(){
   }finally{_ordCache.inflight=false;}
 }
 async function fillStatsBody(){const el=document.getElementById('kpicards');if(!el)return;
-  const [o,s,pages]=await Promise.all([j('/overview').catch(()=>({pages:0,source:''})),j('/stats'+rangeQ()).catch(()=>({pages:[]})),j('/pages').catch(()=>[])]);
+  const [o,s,pages,tc]=await Promise.all([j('/overview').catch(()=>({pages:0,source:''})),j('/stats'+rangeQ()).catch(()=>({pages:[]})),j('/pages').catch(()=>[]),j('/token-cost'+rangeQ()).catch(()=>null)]);
   const ord=(_ordCache.key===rangeQ()&&_ordCache.data)?_ordCache.data:{enabled:false,pages:{}};
   refreshOrders(); // nạp đơn ở nền nếu cache cũ / đổi khoảng ngày
   SEND_ERRS=o.sendErrors||SEND_ERRS;
   const seb=document.getElementById('senderrbox');if(seb)seb.innerHTML=sendErrBanner();
   // Gộp: danh sách TẤT CẢ page (quản lý) + số liệu (stats) + ĐƠN THẬT (Pancake POS).
   const sm={};(s.pages||[]).forEach(p=>sm[p.id]=p);
-  const merged=pages.map(p=>{const st=sm[p.id]||{};const r=(ord.pages||{})[p.id];
+  const tcm={};(tc&&tc.pages||[]).forEach(p=>tcm[String(p.id)]=p); // chi phí token đo được theo page
+  const merged=pages.map(p=>{const st=sm[p.id]||{};const r=(ord.pages||{})[p.id];const c=tcm[String(p.id)];
     const leads=st.leads||0;
     return {...p,replies:st.replies||0,leads,orders:st.orders||0,
       aiOrders:r?r.aiOrders:(ord.enabled?0:null),
+      cost:c?c.usd:null,costTok:c?(c.tin+c.cread):0,costMeasured:c?c.measured:0,
       closeRate:(r&&leads>0)?Math.round(r.aiOrders/leads*100):0};});
   // Page có số liệu nhưng không còn trong danh sách (đổi token...) vẫn hiện ra.
   (s.pages||[]).forEach(p=>{if(!merged.some(m=>String(m.id)===String(p.id))){const r=(ord.pages||{})[p.id];
@@ -484,6 +487,7 @@ async function fillStatsBody(){const el=document.getElementById('kpicards');if(!
     ['stats','Tin AI trả lời',s.replies||0,rangeLabel()],
     ['kb','Đơn từ khách AI',aiOrdTot!=null?aiOrdTot:'…','khách AI có đặt đơn'],
     ['overview','Tỉ lệ chốt',(aiOrdTot!=null&&totLeads>0?Math.round(aiOrdTot/totLeads*100):0)+'%',(aiOrdTot!=null?aiOrdTot:'…')+' đơn / '+totLeads+' khách'],
+    ['stats','Chi phí AI (đo)',tc?'$'+tc.usd.toFixed(2):'—',tc?('≈'+tc.vnd.toLocaleString('vi-VN')+'đ · '+tc.measured+'/'+tc.replies+' tin có số đo'):'ghi token từ 06/08'],
   ];
   el.innerHTML=cards.map(c=>`<div class="mc"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[3]}</div></div>`).join('');
   const on=merged.filter(p=>p.aiEnabled).length,kbn=merged.filter(p=>p.hasKb).length;
@@ -506,7 +510,7 @@ function ovFiltered(){
 }
 function drawOvRows(){const el=document.getElementById('ovbody');if(!el)return;
   const list=ovFiltered();
-  el.innerHTML=list.length?list.map(statRow).join(''):`<tr><td colspan="8"><div class="empty">Không có page nào khớp bộ lọc.</div></td></tr>`;}
+  el.innerHTML=list.length?list.map(statRow).join(''):`<tr><td colspan="9"><div class="empty">Không có page nào khớp bộ lọc.</div></td></tr>`;}
 window.setOvFilter=f=>{window._ovFilter=f;const s=document.getElementById('ovfsel');if(s&&s.value!==f)s.value=f;drawOvRows();};
 window.ovToggleAi=async(id,on)=>{await post('/pages/'+id+'/ai',{on});
   const p=(window._ov||[]).find(x=>String(x.id)===String(id));if(p)p.aiEnabled=on;

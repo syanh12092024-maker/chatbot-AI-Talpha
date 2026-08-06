@@ -33,7 +33,13 @@ export async function classify(message, productName = 'sản phẩm') {
       ...aiExtras, // Kimi: tắt thinking (đã thử: json_schema chạy được trên Kimi khi thinking off)
     });
     const text = res.content.find((b) => b.type === 'text')?.text || '{}';
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+    // Đính kèm token đã dùng (không enumerable — không lọt vào JSON/log) để handler cộng vào lượt.
+    Object.defineProperty(parsed, '__usage', {
+      value: { tin: res.usage?.input_tokens || 0, tout: res.usage?.output_tokens || 0, cread: res.usage?.cache_read_input_tokens || 0, calls: 1 },
+      enumerable: false,
+    });
+    return parsed;
   } catch (err) {
     console.error('[classify] lỗi, dùng fallback:', err.message);
     // Fallback an toàn: coi là quan tâm, để người/closer xử lý.

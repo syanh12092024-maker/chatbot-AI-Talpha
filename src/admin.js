@@ -16,7 +16,7 @@ import { pancakePages, pancakePageCount, pkGetMessages, pkSendReply, pkAddNote, 
 import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
-import { recount, needSale, recentConversations, custProfile } from './ai-log.js';
+import { recount, needSale, recentConversations, custProfile, tokenStats } from './ai-log.js';
 import { cleanText } from './handler.js';
 import { ordersEnabled, aiOrderStats, ordersForConv } from './pancake-orders.js';
 import { getAiConvSet } from './ai-convs.js';
@@ -75,6 +75,27 @@ adminRouter.get('/stats', (req, res) => {
     replies: st.replies, orders: st.orders, leads: st.leads,
     closeRate: rate(st.orders, st.leads),
     lastReplyAt: st.lastReplyAt,
+    pages,
+  });
+});
+
+// ---- CHI PHÍ TOKEN theo page — số ĐO từ Sổ AI (ghi từ 06/08/2026), quy tiền theo config.aiPrices ----
+adminRouter.get('/token-cost', (req, res) => {
+  const rgx = /^\d{4}-\d{2}-\d{2}$/;
+  const from = rgx.test(req.query.from || '') ? req.query.from : undefined;
+  const to = rgx.test(req.query.to || '') ? req.query.to : undefined;
+  const st = tokenStats({ from, to });
+  const P = config.aiPrices;
+  const pk = pancakePages();
+  const usd = (b) => (b.tin * P.in + b.cread * P.cache + b.tout * P.out) / 1e6;
+  const pages = Object.entries(st.byPage)
+    .map(([id, b]) => ({ id, name: pk.get(String(id))?.name || id, ...b, usd: +usd(b).toFixed(4) }))
+    .sort((a, b) => b.usd - a.usd);
+  res.json({
+    provider: config.aiProvider, prices: P,
+    replies: st.replies, measured: st.measured, // measured < replies = có tin trước khi bật đo
+    tin: st.tin, tout: st.tout, cread: st.cread, calls: st.calls,
+    usd: +usd(st).toFixed(4), vnd: Math.round(usd(st) * P.usdVnd),
     pages,
   });
 });

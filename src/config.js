@@ -80,9 +80,20 @@ export const config = {
     order: process.env.PK_TAG_ORDER ?? 'AI Chốt',       // AI chốt đơn — sale vào kiểm tra hội thoại + đơn rồi fix
     handoff: process.env.PK_TAG_HANDOFF ?? 'AI back Sale', // AI cần sale can thiệp — thấy thẻ là vào hỗ trợ
   },
+  // ĐƠN GIÁ token (USD / 1 TRIỆU token) để quy tiền trên dashboard — mặc định theo nhà cung cấp,
+  // đè bằng env khi hãng đổi giá. Nguồn: platform.kimi.ai/docs/pricing (08/2026) & giá Claude公bố.
+  //   kimi-k2.6:        vào $0.95 · trúng cache $0.16 · ra $4.00
+  //   claude-haiku-4-5: vào $1.00 · đọc cache $0.10 · ra $5.00
+  aiPrices: {
+    in: Number(process.env.AI_PRICE_IN || (AI_PROVIDER === 'kimi' ? 0.95 : 1.0)),
+    cache: Number(process.env.AI_PRICE_CACHE || (AI_PROVIDER === 'kimi' ? 0.16 : 0.1)),
+    out: Number(process.env.AI_PRICE_OUT || (AI_PROVIDER === 'kimi' ? 4.0 : 5.0)),
+    usdVnd: Number(process.env.AI_USD_VND || 26000), // tỉ giá quy đổi hiển thị
+  },
   // Circuit breakers
   // Trần lượt AI/khách (đếm BỀN theo Sổ AI 24h, sống sót qua restart). Chỉnh bằng MAX_AI_TURNS.
-  maxAiTurnsBeforeHandoff: Number(process.env.MAX_AI_TURNS || 5),
+  // 06/08/2026: chủ dự án hạ 5 → 4 để tiết kiệm token.
+  maxAiTurnsBeforeHandoff: Number(process.env.MAX_AI_TURNS || 4),
   maxToolIterations: 5,       // giới hạn vòng lặp tool-use mỗi lượt
   // ẢNH: khách thích xem nhiều ảnh → chốt tốt hơn, NHƯNG gửi dồn dập dễ bị Meta đánh spam (#2022).
   // Cách chạy an toàn: đặt IMG_PILOT_PAGES = vài page thử nghiệm → chỉ các page đó gửi imgMaxPerTurn,

@@ -13,10 +13,9 @@ export async function runCloser(ctx) {
   // ngồi im. Dọn ngay trước cửa gọi API thì mọi đường vào đều được chặn, kể cả đường mới thêm sau này.
   const system = sanitizeSystem(buildSystem(kb));
 
-  // ĐO TOKEN THẬT theo lượt (cộng dồn mọi vòng tool) — pancake-poll ghi vào Sổ AI để
-  // thống kê chi phí theo page/khách bằng SỐ ĐO chứ không phải ước lượng.
-  const usage = { tin: 0, tout: 0, cread: 0, calls: 0 };
-  state.lastUsage = usage;
+  // ĐO TOKEN THẬT theo lượt (cộng dồn mọi vòng tool) — CỘNG TIẾP vào bộ đếm handler đã khởi tạo
+  // (đã chứa token classifier); pancake-poll ghi vào Sổ AI để thống kê chi phí bằng SỐ ĐO.
+  const usage = state.lastUsage || (state.lastUsage = { tin: 0, tout: 0, cread: 0, calls: 0 });
 
   let iterations = 0;
   let askedForText = false; // đã xin model viết chữ khép lượt lần nào chưa

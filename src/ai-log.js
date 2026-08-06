@@ -108,6 +108,26 @@ export function custProfile(pageId, custId) {
   return out;
 }
 
+// TOKEN & CHI PHÍ theo page — cộng từ số ĐO ghi kèm event 'reply' (tin/tout/cread/calls,
+// bắt đầu ghi 06/08/2026; tin cũ hơn không có số nên `measured` < `replies` là bình thường).
+export function tokenStats({ from, to } = {}) {
+  const byPage = {};
+  let replies = 0, measured = 0, tin = 0, tout = 0, cread = 0, calls = 0;
+  for (const r of readLog()) {
+    if (r.type !== 'reply') continue;
+    const day = new Date(r.t).toISOString().slice(0, 10);
+    if (from && day < from) continue;
+    if (to && day > to) continue;
+    const p = byPage[r.page] || (byPage[r.page] = { tin: 0, tout: 0, cread: 0, calls: 0, replies: 0, measured: 0 });
+    replies++; p.replies++;
+    if (r.tin === undefined) continue; // tin trước khi bật đo
+    measured++; p.measured++;
+    p.tin += r.tin || 0; p.tout += r.tout || 0; p.cread += r.cread || 0; p.calls += r.calls || 0;
+    tin += r.tin || 0; tout += r.tout || 0; cread += r.cread || 0; calls += r.calls || 0;
+  }
+  return { byPage, replies, measured, tin, tout, cread, calls };
+}
+
 // Tính lại thống kê CHÍNH XÁC từ sổ (dedup khách & đơn theo page+khách).
 // from/to = 'YYYY-MM-DD' (tùy chọn). Trả { replies, leads, orders, byPage, events, lastAt }.
 export function recount({ from, to } = {}) {
