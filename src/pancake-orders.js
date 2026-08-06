@@ -19,11 +19,17 @@ try { pageShop = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')); } catch { page
 const saveCache = () => { try { fs.writeFileSync(CACHE_FILE, JSON.stringify(pageShop)); } catch { /* bỏ qua */ } };
 
 // fetch có timeout — 1 call chậm/treo không kéo sập cả request.
-async function fetchJson(url, ms = 12000) {
+async function fetchJson(url, ms = 20000) {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), ms);
   try { const r = await fetch(url, { signal: ac.signal }); return await r.json(); }
   finally { clearTimeout(t); }
+}
+// POS hay chậm/nghẽn theo đợt. Thử lại 1 lần trước khi chịu thua — trước đây lỗi là BỎ DỞ
+// vòng quét và trả về con số THIẾU, khiến thống kê nhảy loạn giữa các lần xem.
+async function fetchJsonRetry(url, ms = 20000) {
+  try { return await fetchJson(url, ms); }
+  catch { await new Promise((r) => setTimeout(r, 1500)); return fetchJson(url, ms); }
 }
 
 export function ordersEnabled() { return SHOPS.length > 0; }
@@ -72,12 +78,17 @@ export async function aiOrderStats(pageId, convSet, { from, to } = {}) {
   if (to) base += `&endDateTime=${unix(to, true)}`;
   for (let pn = 1; pn <= 12; pn++) {
     let j;
-    try { j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?${base}&page_number=${pn}`); } catch { break; }
+    // KHÔNG nuốt lỗi rồi trả số thiếu: ném lên để caller giữ lại giá trị lần quét trước,
+    // thà hiện số cũ còn hơn cho sale thấy 0 đơn rồi lát sau lại thành 49.
+    try { j = await fetchJsonRetry(`${POS}/shops/${s.shop_id}/orders?${base}&page_number=${pn}`); }
+    catch (e) { throw new Error(`POS không phản hồi (page ${pageId}, trang ${pn}): ${e.message}`); }
     const d = j.data || []; if (!d.length) break;
     for (const o of d) {
       if (convSet.has(o.conversation_id) && !CANCEL.has(String(o.status))) { matched.add(o.conversation_id); orders++; }
     }
     if (d.length < 100) break;
+    // Chạm trần 12 trang mà vẫn còn đơn → số đang bị CẮT CỤT, phải báo chứ không im lặng.
+    if (pn === 12) console.warn(`[orders] page ${pageId}: quét chạm trần 1200 đơn, số có thể thiếu`);
   }
   return { customers: matched.size, orders };
 }

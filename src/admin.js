@@ -111,6 +111,26 @@ adminRouter.get('/need-sale', (req, res) => {
 
 // ---- ĐƠN TỪ KHÁCH AI: khớp đơn Pancake với hội thoại AI đã tư vấn → tỉ lệ chốt thật ----
 const _ordCache = new Map();
+// ĐƠN TỪ KHÁCH AI — số này TỪNG NHẢY LOẠN giữa các lần xem (đo được: 162 rồi 248 trong
+// cùng một khoảng ngày). Ba nguyên nhân, đã xử lý cả ba:
+//   ① POS timeout → aiOrderStats bỏ dở vòng quét và trả số THIẾU (page thành 0 đơn).
+//      Nay lỗi được ném lên, page đó GIỮ NGUYÊN số của lần quét trước thay vì tụt về 0.
+//   ② Quét tuần tự 40 page mất tới 215s, lâu hơn cả TTL cache 60s → cứ mở dashboard là
+//      quét lại từ đầu, không lần nào xong. Nay quét song song + cache 5 phút.
+//   ③ Hai request cùng lúc cùng quét chồng nhau. Nay có khoá _ordInflight.
+const ORD_TTL = 5 * 60e3;
+const ORD_CONC = 5;
+const _ordInflight = new Map(); // cacheKey -> Promise (chống quét chồng)
+
+async function runPool(items, limit, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); }
+  }));
+  return out;
+}
+
 adminRouter.get('/orders', async (req, res) => {
   if (!ordersEnabled()) return res.json({ enabled: false, pages: {} });
   const rgx = /^\d{4}-\d{2}-\d{2}$/;
@@ -118,21 +138,45 @@ adminRouter.get('/orders', async (req, res) => {
   const to = rgx.test(req.query.to || '') ? req.query.to : undefined;
   const cacheKey = `${from || ''}|${to || ''}`;
   const hit = _ordCache.get(cacheKey);
-  if (hit && Date.now() - hit.t < 60000) return res.json(hit.data);
-  const st = getStats();
-  const ids = [...new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)])];
-  try {
-    const pages = {};
-    for (const id of ids) { // tuần tự để không làm nghẽn API Pancake
-      const r = await aiOrderStats(id, getAiConvSet(id), { from, to });
-      pages[id] = { aiOrders: r.customers, aiOrderCount: r.orders };
-    }
+  if (hit && Date.now() - hit.t < ORD_TTL) return res.json(hit.data);
+  // Đang có lượt quét chạy → chờ chính nó, đừng mở thêm lượt nữa.
+  if (_ordInflight.has(cacheKey)) {
+    try { return res.json(await _ordInflight.get(cacheKey)); }
+    catch (e) { return res.status(500).json({ enabled: true, error: e.message }); }
+  }
+
+  const scan = (async () => {
+    const st = getStats();
+    const ids = [...new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)])];
+    const prev = hit?.data?.pages || {};
+    const failed = [];
+    const results = await runPool(ids, ORD_CONC, async (id) => {
+      try {
+        const r = await aiOrderStats(id, getAiConvSet(id), { from, to });
+        return [id, { aiOrders: r.customers, aiOrderCount: r.orders }];
+      } catch (e) {
+        failed.push(id);
+        console.warn(`[orders] page ${id} quét lỗi, giữ số lần trước: ${e.message}`);
+        return [id, prev[id] || { aiOrders: 0, aiOrderCount: 0, stale: true }];
+      }
+    });
+    const pages = Object.fromEntries(results);
     let totalAiOrders = 0;
-    for (const v of Object.values(pages)) totalAiOrders += v.aiOrders;
-    const data = { enabled: true, aiOrders: totalAiOrders, pages };
-    _ordCache.set(cacheKey, { t: Date.now(), data });
-    res.json(data);
-  } catch (e) { res.status(500).json({ enabled: true, error: e.message }); }
+    for (const v of Object.values(pages)) totalAiOrders += v.aiOrders || 0;
+    const data = {
+      enabled: true, aiOrders: totalAiOrders, pages,
+      scannedAt: Date.now(),
+      partial: failed.length > 0, failedPages: failed.length,
+    };
+    // Lượt quét thiếu dữ liệu thì cache ngắn hơn để sớm quét lại cho đủ.
+    _ordCache.set(cacheKey, { t: failed.length ? Date.now() - ORD_TTL + 60e3 : Date.now(), data });
+    return data;
+  })();
+
+  _ordInflight.set(cacheKey, scan);
+  try { res.json(await scan); }
+  catch (e) { res.status(500).json({ enabled: true, error: e.message }); }
+  finally { _ordInflight.delete(cacheKey); }
 });
 
 // ---- Pages ----
