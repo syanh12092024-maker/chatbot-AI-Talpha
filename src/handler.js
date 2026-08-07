@@ -18,7 +18,13 @@ function toSaleQueue(state, reason, kind) {
     });
   } catch { /* sổ AI không chặn luồng chính */ }
   // Gắn thẻ bàn giao trên Pancake (nếu page có thẻ đó) — sale trực Pancake lọc được ngay.
-  if (config.pkTags.handoff && state.pkConvId) pkTagByName(state.pageId, state.pkConvId, config.pkTags.handoff).catch(() => {});
+  // Gắn hụt thì PHẢI kêu: trước 07/08/2026 lỗi bị nuốt im, page thiếu thẻ mà không ai biết —
+  // sale lọc theo thẻ thì tưởng AI chưa bàn giao ai. Chỉ 'AI Chăm' có log, hai thẻ kia thì không.
+  if (config.pkTags.handoff && state.pkConvId) {
+    pkTagByName(state.pageId, state.pkConvId, config.pkTags.handoff)
+      .then((t) => { if (!t.ok) console.warn(`[tag] ${state.pageId}: ${t.error} (bàn giao ${kind || '?'})`); })
+      .catch(() => {});
+  }
 }
 
 // NẠP LỊCH SỬ THẬT từ Pancake vào bộ nhớ AI khi phiên còn trống (server mới khởi động /
