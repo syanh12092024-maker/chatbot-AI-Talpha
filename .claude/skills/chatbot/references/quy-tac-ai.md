@@ -26,7 +26,7 @@ Sửa xong: restart service, rồi **nghiệm thu bằng cách tái hiện kịc
 10. **Đọc lịch sử trước khi trả lời** — state RAM trống (restart / khách quay lại) thì nạp 20 tin gần nhất của **đúng hội thoại đó** từ Pancake, cả hai chiều gồm cả tin Botcake/sale tay.
 11. **Không cam kết vượt thẩm quyền** — không hứa giờ/ngày giao cụ thể (chỉ "2–5 ngày"), không tự chế chính sách đổi trả/hoàn tiền ngoài KB.
 12. **Bảo vệ PII** — không đọc lại đầy đủ SĐT/địa chỉ trừ 1 lần khi tóm tắt đơn; tuyệt đối không nhắc khách khác.
-13. **Kết thúc là phải bàn giao** — mọi điểm AI dừng phục vụ đều đổ về hàng chờ "Cần sale xử lý" kèm lý do + link mở chat. 6 điểm dừng: ① chốt đơn xong ② chủ động chuyển người ③ khách khiếu nại ④ hết lượt ⑤ page chưa có KB ⑥ lỗi kỹ thuật lặp ≥3 lần. Nếu AI đã nói "team member will assist you shortly" thì **phải** có người thật xuất hiện ở hàng chờ.
+13. **Kết thúc là phải bàn giao** — mọi điểm AI dừng phục vụ đều đổ về hàng chờ "Cần sale xử lý" kèm lý do + link mở chat, **và để lại dấu vết ngay trong Pancake: thẻ `AI back Sale` + ghi chú lý do vào hồ sơ khách** (thêm 07/08/2026 — sale trực Pancake không dùng dashboard). 6 điểm dừng: ① chốt đơn xong ② chủ động chuyển người ③ khách khiếu nại ④ hết lượt ⑤ page chưa có KB ⑥ lỗi kỹ thuật lặp ≥3 lần. Nếu AI đã nói "team member will assist you shortly" thì **phải** có người thật xuất hiện ở hàng chờ.
 
 14. **Văn phong phải chủ động bán** — mỗi tin kết bằng một bước tiến về phía đơn; cấm kết lượt thụ động ("let me know po") rồi im. Khách chê đắt / xin nghĩ thêm / từ chối → mời chốt lại tối đa **3 lần, mỗi lần một góc khác** (① gỡ đúng nỗi lo ② COD hạ rủi ro về 0 ③ chốt bằng lựa chọn gói). Cấm nài nỉ, cấm bịa khan hiếm/khuyến mãi ngoài KB. Xem mục dưới.
 

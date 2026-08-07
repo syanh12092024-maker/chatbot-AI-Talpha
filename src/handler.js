@@ -5,7 +5,7 @@ import { getKBForPage } from './kb.js';
 import { config } from './config.js';
 import { logAi, recentReplyCount } from './ai-log.js';
 import { cleanText } from './text.js';
-import { pkTagByName } from './pancake.js';
+import { pkTagByName, pkAddNote } from './pancake.js';
 
 // NGUYÊN TẮC #13 — KẾT THÚC LÀ PHẢI BÀN GIAO: mọi điểm AI dừng phục vụ (khiếu nại,
 // ngôn ngữ lạ, hết lượt, page thiếu KB...) đều ghi 'handoff' vào Sổ AI kèm LÝ DO
@@ -23,6 +23,17 @@ function toSaleQueue(state, reason, kind) {
   if (config.pkTags.handoff && state.pkConvId) {
     pkTagByName(state.pageId, state.pkConvId, config.pkTags.handoff)
       .then((t) => { if (!t.ok) console.warn(`[tag] ${state.pageId}: ${t.error} (bàn giao ${kind || '?'})`); })
+      .catch(() => {});
+  }
+  // GHI CHÚ VÀO PANCAKE — sale mở chat là thấy NGAY vì sao AI dừng, không phải đoán.
+  // Trước 07/08/2026 chỉ tool handoff_human và lúc chốt đơn mới ghi chú; các cửa bàn giao
+  // ĐÔNG NHẤT (khiếu nại, hết lượt, page thiếu KB, lỗi kỹ thuật) thì im — 7 ngày có 643 lượt
+  // bàn giao thì ~570 lượt sale mở chat ra chỉ thấy câu "team member will assist you shortly"
+  // mà không biết chuyện gì đã xảy ra.
+  if (state.pkCustId && !state.saleNoted) {
+    state.saleNoted = true; // 1 ghi chú/hội thoại — restart server không rải chú lặp
+    pkAddNote(state.pageId, state.pkCustId, `🙋 AI ĐÃ DỪNG — cần sale tiếp quản\nLý do: ${reason}\nKhách đang chờ người thật trả lời.`)
+      .then((r) => { if (!r.ok) console.warn(`[note] ${state.pageId}: ${r.error} (bàn giao ${kind || '?'})`); })
       .catch(() => {});
   }
 }
