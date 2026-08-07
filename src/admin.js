@@ -88,14 +88,31 @@ adminRouter.get('/token-cost', (req, res) => {
   const P = config.aiPrices;
   const pk = pancakePages();
   const usd = (b) => (b.tin * P.in + b.cread * P.cache + b.tout * P.out) / 1e6;
+  // ĐƠN GIÁ THẬT — chia trên số tin CÓ SỐ ĐO, không chia trên tổng tin.
+  // Token chỉ được ghi từ 06/08/2026, nên khoảng ngày rộng có nhiều tin không đo được;
+  // lấy usd/replies sẽ ra đơn giá rẻ giả tạo. usd/measured mới là tiền thật của 1 tin.
+  // 1 đơn tốn bao nhiêu = đơn giá 1 tin × số tin trung bình để ra 1 đơn (cùng khoảng ngày).
+  const unit = (b) => {
+    const perReply = b.measured > 0 ? usd(b) / b.measured : null;
+    const perOrder = perReply != null && b.orders > 0 ? perReply * (b.replies / b.orders) : null;
+    return {
+      usdPerReply: perReply == null ? null : +perReply.toFixed(6),
+      vndPerReply: perReply == null ? null : Math.round(perReply * P.usdVnd),
+      usdPerOrder: perOrder == null ? null : +perOrder.toFixed(4),
+      vndPerOrder: perOrder == null ? null : Math.round(perOrder * P.usdVnd),
+      repliesPerOrder: b.orders > 0 ? +(b.replies / b.orders).toFixed(1) : null,
+    };
+  };
   const pages = Object.entries(st.byPage)
-    .map(([id, b]) => ({ id, name: pk.get(String(id))?.name || id, ...b, usd: +usd(b).toFixed(4) }))
+    .map(([id, b]) => ({ id, name: pk.get(String(id))?.name || id, ...b, usd: +usd(b).toFixed(4), ...unit(b) }))
     .sort((a, b) => b.usd - a.usd);
   res.json({
     provider: config.aiProvider, prices: P,
     replies: st.replies, measured: st.measured, // measured < replies = có tin trước khi bật đo
+    orders: st.orders, // đơn AI chốt TRONG CÙNG khoảng ngày (nguồn Sổ AI, không phải POS)
     tin: st.tin, tout: st.tout, cread: st.cread, calls: st.calls,
     usd: +usd(st).toFixed(4), vnd: Math.round(usd(st) * P.usdVnd),
+    ...unit(st),
     pages,
   });
 });

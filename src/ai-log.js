@@ -112,20 +112,28 @@ export function custProfile(pageId, custId) {
 // bắt đầu ghi 06/08/2026; tin cũ hơn không có số nên `measured` < `replies` là bình thường).
 export function tokenStats({ from, to } = {}) {
   const byPage = {};
-  let replies = 0, measured = 0, tin = 0, tout = 0, cread = 0, calls = 0;
+  let replies = 0, measured = 0, tin = 0, tout = 0, cread = 0, calls = 0, orders = 0;
+  const seenOrder = new Set(); // 1 khách/page chỉ tính 1 đơn (cùng luật với recount)
+  const pg = (id) => byPage[id] || (byPage[id] = { tin: 0, tout: 0, cread: 0, calls: 0, replies: 0, measured: 0, orders: 0 });
   for (const r of readLog()) {
-    if (r.type !== 'reply') continue;
+    if (r.type !== 'reply' && r.type !== 'order') continue;
     const day = new Date(r.t).toISOString().slice(0, 10);
     if (from && day < from) continue;
     if (to && day > to) continue;
-    const p = byPage[r.page] || (byPage[r.page] = { tin: 0, tout: 0, cread: 0, calls: 0, replies: 0, measured: 0 });
+    // ĐƠN đếm trong CÙNG khoảng ngày với chi phí — để suy ra "1 đơn tốn bao nhiêu tiền AI".
+    if (r.type === 'order') {
+      const k = r.page + ':' + r.cust;
+      if (!seenOrder.has(k)) { seenOrder.add(k); pg(r.page).orders++; orders++; }
+      continue;
+    }
+    const p = pg(r.page);
     replies++; p.replies++;
     if (r.tin === undefined) continue; // tin trước khi bật đo
     measured++; p.measured++;
     p.tin += r.tin || 0; p.tout += r.tout || 0; p.cread += r.cread || 0; p.calls += r.calls || 0;
     tin += r.tin || 0; tout += r.tout || 0; cread += r.cread || 0; calls += r.calls || 0;
   }
-  return { byPage, replies, measured, tin, tout, cread, calls };
+  return { byPage, replies, measured, orders, tin, tout, cread, calls };
 }
 
 // Tính lại thống kê CHÍNH XÁC từ sổ (dedup khách & đơn theo page+khách).
