@@ -74,6 +74,10 @@ export const config = {
   // Né hội thoại đã gán cho nhân viên. MẶC ĐỊNH TẮT vì Pancake TỰ ĐỘNG gán hội thoại cho NV
   // → bật sẽ làm AI im gần hết. Bật bằng RESPECT_ASSIGNEE=1 nếu sale thực sự chat tay.
   respectAssignee: process.env.RESPECT_ASSIGNEE === '1',
+  // ĐÁNH DẤU CHƯA ĐỌC sau mỗi tin AI gửi (cơ chế Botcake — sale yêu cầu 07/08/2026): hội thoại
+  // AI đang chăm KHÔNG trôi khỏi hàng chờ, sale check được AI chat đúng chưa. MẶC ĐỊNH BẬT.
+  // Tắt bằng PK_MARK_UNREAD=0 nếu sale ngợp chấm đỏ.
+  markUnread: process.env.PK_MARK_UNREAD !== '0',
   // TỰ GẮN THẺ Pancake khi AI hành động (tên thẻ phải TỒN TẠI trên page; trống = tắt).
   pkTags: {
     ai: process.env.PK_TAG_AI ?? 'AI Chăm',             // AI đang trực tiếp nhắn với khách

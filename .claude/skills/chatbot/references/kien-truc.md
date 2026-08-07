@@ -65,6 +65,7 @@ Hệ quả: `git reset --hard` trên VPS an toàn với dữ liệu, nhưng **gi
 | `AUTO_CREATE_ORDER` | 1 |
 | `PANCAKE_READONLY` | **Chỉ local.** Bật = không gửi tin |
 | `RESPECT_ASSIGNEE` | Mặc định tắt |
+| `PK_MARK_UNREAD` | Mặc định **bật** (07/08/2026): sau mỗi tin AI gửi, gọi `POST .../unread` (public_api/v1, cần `page_access_token` riêng từng page — bot tự sinh, lưu `pancake-page-tokens.json`) để hội thoại KHÔNG trôi khỏi hàng chờ sale. Tắt: `PK_MARK_UNREAD=0`. Sinh page token làm token cũ của page (nếu từng tạo tay) hết hiệu lực |
 | `PANCAKE_TOKENS_EXTRA` | Token phụ, cách nhau dấu phẩy. Danh sách page = **gộp** mọi token; page lỗi quyền/gói (103/105/121) tự chuyển token kế. **Thứ tự trong `.env` = thứ tự failover** — token chính phải là token phủ nhiều page bật AI nhất |
 | `AI_PRICE_IN` / `AI_PRICE_CACHE` / `AI_PRICE_OUT` / `AI_USD_VND` | Đè đơn giá token, xem `chi-phi-token.md` |
 

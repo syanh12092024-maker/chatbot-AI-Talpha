@@ -102,6 +102,46 @@ async function pkFetchPage(pageId, buildUrl, init) {
   return last; // hết token vẫn lỗi quyền → trả lỗi cuối để caller xử lý
 }
 
+// ===== ĐÁNH DẤU CHƯA ĐỌC (cơ chế Botcake "rep xong giữ chưa đọc" — sale yêu cầu 07/08/2026) =====
+// Endpoint chính thức (developer.pancake.biz) CHỈ có ở base public_api/v1 và đòi page_access_token
+// RIÊNG TỪNG PAGE — JWT thường dùng cho mọi endpoint khác bị 404 (đã thử). Token sinh 1 lần bằng
+// generate_page_access_token (JWT phải là admin page), lưu bền pancake-page-tokens.json (gitignore),
+// không hết hạn trừ khi bị sinh lại. LƯU Ý: sinh token MỚI làm token cũ của page đó (nếu ai từng
+// tạo trong Cài đặt → Công cụ) hết hiệu lực — repo này chưa từng dùng nên an toàn.
+const PK_PUB = 'https://pages.fm/api/public_api/v1';
+const PAGE_TOKS_FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'pancake-page-tokens.json');
+let _pageToks = {};
+try { _pageToks = JSON.parse(fs.readFileSync(PAGE_TOKS_FILE, 'utf8')); } catch { _pageToks = {}; }
+async function getPageAccessToken(pageId) {
+  const k = String(pageId);
+  if (_pageToks[k]) return _pageToks[k];
+  for (const t of allToks()) {
+    try {
+      const r = await fetch(`${PK_BASE}/pages/${pageId}/generate_page_access_token?access_token=${t}`, { method: 'POST' });
+      const j = await r.json().catch(() => ({}));
+      const tok = j.page_access_token || j.data?.page_access_token || j.data?.token;
+      if (j.success !== false && tok) {
+        _pageToks[k] = tok;
+        try { fs.writeFileSync(PAGE_TOKS_FILE, JSON.stringify(_pageToks, null, 2)); } catch (e) { console.warn('[unread] lưu page token lỗi:', e.message); }
+        return tok;
+      }
+    } catch { /* token kế */ }
+  }
+  return null; // không token nào là admin của page → chịu, caller log 1 lần
+}
+// Đánh dấu hội thoại CHƯA ĐỌC — gọi SAU khi AI gửi tin xong, để hội thoại không "trôi"
+// khỏi hàng chờ của sale (bot rep xong Pancake tự coi là đã xử lý). Idempotent, gọi lặp vô hại.
+export async function pkMarkUnread(pageId, convId) {
+  if (!convId) return { ok: false, error: 'thiếu conv' };
+  const tok = await getPageAccessToken(pageId);
+  if (!tok) return { ok: false, error: 'không sinh được page_access_token (không token nào là admin page)' };
+  try {
+    const r = await fetch(`${PK_PUB}/pages/${pageId}/conversations/${convId}/unread?page_access_token=${tok}`, { method: 'POST', headers: { Accept: 'application/json' } });
+    const j = await r.json().catch(() => ({}));
+    return j.success ? { ok: true } : { ok: false, error: JSON.stringify(j).slice(0, 120) };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
 // Danh sách page từ Pancake (nguồn chính) — cache, làm mới định kỳ.
 let _pkPages = new Map(); // id -> { id, name }
 export function pancakePages() { return _pkPages; }

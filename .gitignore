@@ -19,5 +19,6 @@ page-product-cache.json
 ai-created-orders.json
 .env.vps
 pancake-tokens.json
+pancake-page-tokens.json
 wa-auth/
 wa-qr.png

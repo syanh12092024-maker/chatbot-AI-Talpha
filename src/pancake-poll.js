@@ -1,7 +1,7 @@
 // Vòng lặp hỏi Pancake tin mới → AI trả lời → gửi lại qua Pancake.
 // KHÔNG cần webhook/URL công khai/tunnel/App Review — chỉ cần internet ra ngoài.
 import { config } from './config.js';
-import { pkGetConversations, pkGetMessages, pkSendReply, refreshPancakePages, pkTagByName } from './pancake.js';
+import { pkGetConversations, pkGetMessages, pkSendReply, refreshPancakePages, pkTagByName, pkMarkUnread } from './pancake.js';
 import { listAiEnabled, getState } from './store.js';
 import { handleIncoming } from './handler.js';
 import { incReply, incLead } from './stats.js';
@@ -196,6 +196,11 @@ async function processConv(pageId, c, psid, custId) {
     if (config.pkTags.ai && !aiTagged.has(c.id)) {
       aiTagged.add(c.id);
       pkTagByName(pageId, c.id, config.pkTags.ai).then((t) => { if (!t.ok) console.warn(`[tag] ${pageId}: ${t.error}`); }).catch(() => {});
+    }
+    // ĐÁNH DẤU CHƯA ĐỌC lại (cơ chế Botcake): bot rep xong Pancake coi hội thoại là "đã xử lý"
+    // → trôi khỏi hàng chờ sale. Gọi /unread SAU MỖI tin AI gửi để sale vẫn thấy mà check.
+    if (config.markUnread) {
+      pkMarkUnread(pageId, c.id).then((u) => { if (!u.ok) console.warn(`[unread] ${pageId}: ${u.error}`); }).catch(() => {});
     }
   }
   console.log(`[pancake] ${c.from?.name || psid}: "${text.slice(0, 30)}" → AI: "${reply.slice(0, 40)}" ${r.ok ? '✓' : '✗ ' + r.error}`);
