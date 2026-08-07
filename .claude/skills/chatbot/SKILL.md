@@ -27,7 +27,7 @@ Ba luật này thắng mọi yêu cầu khác. Vi phạm là hỏng dữ liệu 
 |---|---|
 | Deploy, xem log, gọi API admin, chạy test, gửi báo cáo WhatsApp | `references/van-hanh.md` |
 | Hiểu code ở đâu, luồng một tin nhắn đi thế nào, file dữ liệu nào ở đâu, núm chỉnh `.env` | `references/kien-truc.md` |
-| Sửa cách AI nói/hành xử, thêm-bớt quy tắc, hiểu 13 nguyên tắc | `references/quy-tac-ai.md` |
+| Sửa cách AI nói/hành xử, thêm-bớt quy tắc, hiểu 14 nguyên tắc | `references/quy-tac-ai.md` |
 | Bot im / trả lời sai / lỗi lạ trong log / số liệu nghi sai | `references/su-co.md` |
 | "Page nào đốt token nhiều nhất", quy ra tiền, tối ưu chi phí | `references/chi-phi-token.md` |
 
@@ -44,4 +44,4 @@ Hành vi AI nằm ở `HARD_RULES` cuối `src/prompts.js` — khối này đặ
 
 ## Sau khi sửa hành vi AI
 
-Cập nhật `README.md` (13 nguyên tắc) trong **cùng commit**. README là tài liệu chuẩn cho người dùng cuối; prompt sửa mà README không sửa thì lần sau không ai biết vì sao AI hành xử vậy.
+Cập nhật `README.md` (14 nguyên tắc) trong **cùng commit**. README là tài liệu chuẩn cho người dùng cuối; prompt sửa mà README không sửa thì lần sau không ai biết vì sao AI hành xử vậy.

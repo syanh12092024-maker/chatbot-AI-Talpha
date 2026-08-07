@@ -27,7 +27,17 @@ export async function classify(message, productName = 'sản phẩm') {
       max_tokens: 200,
       system:
         'Bạn là bộ phân loại tin nhắn bán hàng. Bối cảnh: khách đến từ quảng cáo ' +
-        `"${productName}", khách là người Philippines sống ở Trung Đông (OFW), thanh toán COD. Ngôn ngữ: tl (Tagalog/Taglish) hoặc en. Chỉ trả JSON theo schema.`,
+        `"${productName}", khách là người Philippines sống ở Trung Đông (OFW), thanh toán COD. Ngôn ngữ: tl (Tagalog/Taglish) hoặc en. Chỉ trả JSON theo schema.\n` +
+        // 'complaint' là cửa BÀN GIAO NGƯỜI THẬT (handler.js) — dán nhãn này là AI ngừng bán ngay lập tức.
+        // Trước 07/08/2026 không định nghĩa nhãn nên "ang mahal po naman" (chê đắt) bị coi là khiếu nại
+        // → khách phản đối giá bị đẩy sang sale thay vì được thuyết phục. Phải khoanh nhãn thật hẹp.
+        'ĐỊNH NGHĨA "complaint" (RẤT HẸP — chỉ dùng khi đúng một trong các trường hợp sau):\n' +
+        '  • Khách đã MUA/ĐÃ ĐẶT rồi và có vấn đề: hàng lỗi/hỏng/sai, chưa nhận được hàng, giao chậm, đòi trả hàng/hoàn tiền, bị tính sai tiền.\n' +
+        '  • Khách tức giận, chửi bới, tố lừa đảo ("scam", "peke", "manloloko"), dọa report/kiện.\n' +
+        'TUYỆT ĐỐI KHÔNG dán "complaint" cho PHẢN ĐỐI BÁN HÀNG thông thường của khách CHƯA mua — ' +
+        'chê đắt ("ang mahal", "mahal po naman", "sobrang mahal"), xin nghĩ thêm ("iisipin ko muna", "next time na lang"), ' +
+        'nói chưa có tiền ("wala pang budget", "sahod pa"), nghi ngờ hiệu quả/chất lượng, so giá chỗ khác, hay từ chối mua. ' +
+        'Những tin đó là "interested" (còn quan tâm, đang cân nhắc) hoặc "question" — đây là việc của nhân viên bán hàng, không phải khiếu nại.',
       messages: [{ role: 'user', content: msg }],
       output_config: { format: { type: 'json_schema', schema: SCHEMA } },
       ...aiExtras, // Kimi: tắt thinking (đã thử: json_schema chạy được trên Kimi khi thinking off)
