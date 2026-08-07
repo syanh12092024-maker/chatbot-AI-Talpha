@@ -36,6 +36,7 @@ Phản hồi của sale: *"AI cứ thả cho khách mông lung"*. Đo trên VPS 
 
 1. **Bộ phân loại gọi phản đối giá là `complaint`.** Nhãn `complaint` là cửa bàn giao ở `handler.js` — dán nhãn này là AI ngừng bán **trước khi** LLM kịp chạy, khách chỉ nhận câu giữ chân. Prompt sửa kiểu gì cũng vô hiệu. Đo A/B 8 câu: bản cũ sai 5/6 câu phản đối ("ang mahal" → complaint, "effective ba talaga" → spam). Đã khoanh hẹp định nghĩa `complaint` = khách **đã mua** mà có vấn đề, hoặc chửi bới/tố lừa đảo. Bản mới đúng 8/8.
 2. **`BASE_SYSTEM` dạy AI buông khi khách do dự** — dòng "đã vài lượt mà khách do dự → handoff_human" đã gỡ, thay bằng ladder 3 bước ở `HARD_RULES`.
+3. **Tin `<div></div>` bị coi là khiếu nại.** Khách gửi sticker/ảnh không kèm chữ thì Pancake trả đúng chuỗi `<div></div>`. Nó không rỗng nên lọt qua mọi cửa canh, tới thẳng bộ phân loại và bị gán `complaint`. Đo 07/08/2026: **50/562 tin của khách (8,9%)** là chuỗi này. `cleanText` nay bóc thẻ HTML (danh sách thẻ đã biết, không dùng `/<[^>]*>/g` kẻo nuốt luôn `"giá <100> AED"`) để hai cửa canh sẵn có làm đúng việc: classifier trả `question`, handler thay bằng `(khách gửi ảnh/sticker)`. A/B 3 lượt: bản cũ 1 bàn giao + 1 im + 1 trả lời; bản mới 3/3 trả lời tử tế.
 
 Ràng buộc còn lại: trần **4 lượt/khách/24h** (nguyên tắc 8) tiêu 2 lượt cho chào + báo giá, nên khách từ chối muộn không đủ chỗ chạy hết 3 bước. Muốn trọn ladder phải nâng `MAX_AI_TURNS` — đánh đổi token, thuộc quyền quyết của chủ.
 

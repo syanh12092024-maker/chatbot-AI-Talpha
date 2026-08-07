@@ -76,4 +76,4 @@ Cập nhật KB xong gọi `POST /reload-kb` để nạp lại không cần rest
 
 > Ghi chú vận hành: mọi hành động AI vẫn được ghi vào Sổ AI (`ai-messages.jsonl`), tự ghi chú vào Pancake khi chốt đơn/chuyển người, và TỰ GẮN THẺ Pancake (`AI Chăm` khi đang phục vụ, `AI Chốt` khi chốt đơn, `AI back Sale` khi cần người can thiệp — đổi qua env `PK_TAG_*`, thẻ phải tồn tại trên page) — dashboard có nút "Đối chiếu Sổ AI" để kiểm chứng số liệu.
 
-> Model dùng: `claude-sonnet-4-6` (closer) + `claude-haiku-4-5` (phân loại). Prompt caching bật trên khối KB trong `src/prompts.js`.
+> Model dùng: chọn theo `AI_PROVIDER` trong `.env`. **VPS đang chạy `kimi` — `kimi-k2.6` cho cả closer lẫn phân loại** (đổi từ 06/08/2026 khi tài khoản Anthropic hết credit). Đổi về `AI_PROVIDER=anthropic` thì mặc định là `claude-haiku-4-5`; model lệch nhà cung cấp bị bỏ qua kèm cảnh báo `[config]`. Prompt caching bật trên khối KB trong `src/prompts.js`.

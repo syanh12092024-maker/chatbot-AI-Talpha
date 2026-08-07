@@ -8,11 +8,27 @@
 // Cả hai đều bị xếp loại invalid_request_error = "không tự hồi phục" nên bot KHÔNG thử lại
 // → khách ngồi im tới khi lỗi lặp 3 lần mới được đẩy sang sale. Vì vậy phải chặn từ gốc.
 
-// Xoá mã surrogate mồ côi (nửa emoji). Cắt trước, dọn sau — đúng thứ tự này mới an toàn.
+//  ③ '<div></div>' — khách gửi sticker/ảnh KHÔNG kèm chữ thì Pancake trả về đúng chuỗi HTML rỗng
+//     này. Nó KHÔNG rỗng nên lọt qua mọi cửa canh sẵn có, tới thẳng bộ phân loại và bị gán nhãn
+//     'complaint' → khách bị đẩy sang sale dù chưa nói câu nào. Đo ngày 07/08/2026: 50/562 tin của
+//     khách (8,9%) là '<div></div>'. Bóc thẻ HTML ở đây để hai cửa canh SẴN CÓ làm đúng việc:
+//     classifier trả 'question', handler thay bằng '(khách gửi ảnh/sticker)'.
+//     Chỉ bóc đúng danh sách thẻ đã biết — KHÔNG dùng /<[^>]*>/g, kẻo nuốt luôn chữ của khách
+//     kiểu "giá <100> AED".
+const HTML_TAG = /<\/?(?:div|span|p|br|hr|b|i|u|em|strong|a|img|ul|ol|li|font|table|tr|td)\b[^>]*>/gi;
+export function stripHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(HTML_TAG, ' ')
+    .replace(/&nbsp;/gi, ' ').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&amp;/gi, '&')
+    .replace(/[ \t]{2,}/g, ' ');
+}
+
+// Xoá mã surrogate mồ côi (nửa emoji) + bóc thẻ HTML. Cắt trước, dọn sau — đúng thứ tự này mới an toàn.
 export function cleanText(str, max) {
   let s = String(str == null ? '' : str);
   if (max) s = s.slice(0, max);
-  return s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+  s = s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+  return stripHtml(s);
 }
 
 // Có nửa emoji trong chuỗi không? (dùng để log cảnh báo khi lớp chặn cuối phải ra tay)
