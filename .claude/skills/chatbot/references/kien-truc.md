@@ -62,7 +62,7 @@ Hệ quả: `git reset --hard` trên VPS an toàn với dữ liệu, nhưng **gi
 | `REPLY_DEBOUNCE_MS` | 20000 — đợi khách gõ xong rồi trả 1 lần cho cả cụm |
 | `CONV_CONCURRENCY` | 4 hội thoại song song |
 | `PANCAKE_POLL_MS` | 6000 |
-| `AUTO_CREATE_ORDER` | 1 |
+| `AUTO_CREATE_ORDER` | **0** — chủ dự án TẮT 07/08/2026. AI vẫn chốt lời + gắn thẻ `AI Chốt` + ghi chú đủ thông tin khách vào Pancake + ghi Sổ AI, nhưng KHÔNG tạo đơn thật — nhân viên tạo tay từ ghi chú. Số "đơn AI chốt" trên dashboard không đổi (đếm từ Sổ AI) |
 | `PANCAKE_READONLY` | **Chỉ local.** Bật = không gửi tin |
 | `RESPECT_ASSIGNEE` | Mặc định tắt |
 | `PK_MARK_UNREAD` | Mặc định **bật** (07/08/2026): sau mỗi tin AI gửi, gọi `POST .../unread` (public_api/v1, cần `page_access_token` riêng từng page — bot tự sinh, lưu `pancake-page-tokens.json`) để hội thoại KHÔNG trôi khỏi hàng chờ sale. Tắt: `PK_MARK_UNREAD=0`. Sinh page token làm token cũ của page (nếu từng tạo tay) hết hiệu lực |
