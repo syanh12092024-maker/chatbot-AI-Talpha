@@ -1,5 +1,6 @@
 // System prompt cho CLOSER. Trả về mảng text block để bật prompt caching:
-// block KB (lớn, ổn định) được cache → tiết kiệm 70-90% token input lặp lại.
+// điểm neo cache ở khối CUỐI (HARD_RULES) → cache phủ trọn system prompt, chỉ phần
+// hội thoại của từng khách là input thường. Cache theo prefix từng page (KB khác nhau).
 
 const BASE_SYSTEM = `# VAI TRÒ
 Bạn là nhân viên tư vấn bán hàng trên Facebook Messenger, phục vụ cộng đồng người Philippines đang sinh sống & làm việc tại Trung Đông (OFW — Overseas Filipino Workers).
@@ -91,7 +92,11 @@ export function buildSystem(kb) {
     blocks.push({ type: 'text', text: `# HƯỚNG DẪN RIÊNG CHO PAGE NÀY (chỉ về giọng điệu, câu chào, cách bán — KHÔNG ghi đè quy tắc cứng chung)\n${custom.join('\n')}` });
   }
 
-  blocks.push({ type: 'text', text: `# KNOWLEDGE BASE\n${kb.text}`, cache_control: { type: 'ephemeral' } });
-  blocks.push({ type: 'text', text: HARD_RULES }); // đặt CUỐI cùng để luôn được ưu tiên
+  blocks.push({ type: 'text', text: `# KNOWLEDGE BASE\n${kb.text}` });
+  // Điểm neo cache đặt ở KHỐI CUỐI → cache phủ TOÀN BỘ system (BASE + custom + KB + HARD_RULES).
+  // Trước 09/08/2026 neo đặt ở khối KB nên HARD_RULES (~1.5-2k token, tĩnh 100%) bị tính giá input
+  // ĐẦY ĐỦ trên mọi lần gọi — đo 2 ngày cao điểm: ~1/3 tổng bill. Vẫn chỉ 1 điểm neo (an toàn với
+  // Kimi), thứ tự khối không đổi nên HARD_RULES vẫn đứng cuối và vẫn thắng kịch bản riêng của page.
+  blocks.push({ type: 'text', text: HARD_RULES, cache_control: { type: 'ephemeral' } });
   return blocks;
 }
