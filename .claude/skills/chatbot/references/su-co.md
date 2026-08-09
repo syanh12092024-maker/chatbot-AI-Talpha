@@ -9,7 +9,9 @@ Grep tên khách trong log — sẽ thấy đúng lý do (`đơn đang xử lý 
 Kiểm theo thứ tự: page tắt AI (`ai-enabled.json`)? → đang backoff (`/admin/api/overview` → `sendErrors`)? → Meta #2022 trong log?
 
 ### Bot đứng TOÀN BỘ
-Grep `credit balance is too low` → tài khoản Anthropic hết tiền. Đã xảy ra 06/08/2026: chết ~3 tiếng, ~200 tin lỡ, 1954 lỗi. Bot **không tự failover** nhà cung cấp. Xử lý: nạp tiền, hoặc đổi `AI_PROVIDER=kimi` trong `.env` rồi restart.
+Grep `credit balance is too low` (Anthropic) hoặc `insufficient balance` / `exceeded_current_quota_error` (Kimi 429) → tài khoản nhà cung cấp AI hết tiền. Bot **không tự failover** nhà cung cấp. Xử lý: nạp tiền (không cần restart — 429 là lỗi thoáng qua, có tiền là những tin MỚI tự chạy lại), hoặc đổi `AI_PROVIDER` trong `.env` rồi restart nếu tài khoản kia còn credit — **kiểm tra bằng 1 call thử trước khi đổi**.
+
+Tiền sử: 06/08/2026 Anthropic hết credit (chết ~3 tiếng, ~200 tin lỡ) → chuyển Kimi. **08–09/08/2026 Kimi cũng hết** (hết dần từ trưa 08/08, chết hẳn 03:47 09/08; ~1.500 khách bị đẩy hàng chờ dạng `error`, kiểm luôn Anthropic thì cũng rỗng). Chi tiêu đo được sau khi bật văn phong chủ động bán: **~$13/ngày cao điểm** (~2.500 tin) — nạp Kimi nên trù bị theo mức này.
 
 ### Log có `no low surrogate` / `non-empty content`
 Nửa emoji (UTF-16 surrogate pair bị cắt đôi khi truncate chuỗi) hoặc lượt rỗng lọt vào body → API trả 400 `invalid_request_error`. Đây là lỗi **không tự hồi phục**: bot không retry, khách ngồi im vĩnh viễn mà không ai biết.
