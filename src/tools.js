@@ -18,15 +18,14 @@ export const toolDefs = [
       required: [],
     },
   },
-  {
-    name: 'score_lead',
-    description: 'Chấm điểm chất lượng lead (0-10) trước khi đẩy telesale. Truyền các tín hiệu quan sát được.',
-    input_schema: {
-      type: 'object',
-      properties: { signals: { type: 'string', description: 'Mô tả tín hiệu: nhu cầu rõ?, địa chỉ cụ thể?, do dự?...' } },
-      required: ['signals'],
-    },
-  },
+  // BỎ `score_lead` (10/08/2026) — M11 `src/lead-score.js` chấm điểm bằng LUẬT trên chính tin
+  // khách, 0 token, không gãy khi API lỗi. Tool cũ vừa đắt vừa vô dụng:
+  //   · nó tốn NGUYÊN MỘT VÒNG GỌI API (model gọi tool → ta trả số → model phải gọi lại để viết chữ);
+  //     đo thật: mỗi vòng thừa tốn ~1.276 token input, và 51% số lượt đang có ít nhất một vòng như vậy;
+  //   · kết quả ghi vào `state.leadScore` mà KHÔNG nơi nào trong hệ thống đọc — tiền trả cho một
+  //     con số không ai dùng;
+  //   · bản thân cách chấm chỉ là vài regex trên câu văn do chính model tự viết ra, nên nó chấm
+  //     điểm cho cảm nhận của model chứ không phải cho hành vi của khách.
   {
     name: 'create_draft_order',
     description: 'Tạo đơn nháp trong Pancake. CHỈ gọi sau khi khách xác nhận COD và đã có địa chỉ cụ thể.',
@@ -127,17 +126,11 @@ export async function executeTool(name, input, ctx) {
           }),
         };
       }
-      case 'score_lead': {
-        // Heuristic đơn giản — thay bằng model/logic riêng nếu cần.
-        const s = (input.signals || '').toLowerCase();
-        let score = 5;
-        if (/(địa chỉ|عنوان|address)/.test(s)) score += 2;
-        if (/(xác nhận|chốt|أكيد|نعم|yes|confirm)/.test(s)) score += 2;
-        if (/(do dự|hỏi cho vui|chưa chắc|maybe|later)/.test(s)) score -= 3;
-        score = Math.max(0, Math.min(10, score));
-        state.leadScore = score;
-        return { content: JSON.stringify({ lead_score: score }) };
-      }
+      // `score_lead` đã bỏ — xem ghi chú ở bảng toolDefs. Model cũ có thể còn "nhớ" tên tool
+      // trong lịch sử hội thoại đang chạy dở, nên vẫn trả lời tử tế thay vì để rơi xuống
+      // nhánh lỗi: điểm nóng nay do M11 tính sẵn, model không cần hỏi.
+      case 'score_lead':
+        return { content: JSON.stringify({ note: 'Điểm nóng của khách đã có sẵn trong [HỒ SƠ KHÁCH]. Không cần chấm điểm, hãy trả lời khách ngay.' }) };
       case 'create_draft_order': {
         if (!input.cod_confirmed) {
           return { content: 'Từ chối tạo đơn: khách chưa xác nhận COD. Hãy hỏi lại cam kết thanh toán khi nhận.', isError: true };

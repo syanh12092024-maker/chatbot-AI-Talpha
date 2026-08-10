@@ -6,9 +6,21 @@ import { config } from './config.js';
 import { logAi, recentReplyCount } from './ai-log.js';
 import { cleanText } from './text.js';
 import { pkTagByName, pkAddNote } from './pancake.js';
-import { fastLane, noteFastLane } from './fast-lane.js';
+import { fastLane, noteFastLane, detectLang } from './fast-lane.js';
 import { guardOutbound, recordBlocked } from './outbound-guard.js';
-import { markHandoff } from './conv-owner.js';
+import { markHandoff, markPostSale } from './conv-owner.js';
+import { S, OWNER, getConv, touchConv, setConvState, noteLlmTurn, llmTurns24h, noteOppTurn } from './conv-state.js';
+import { scoreTurn, turnBudget, TIER_LABEL, HARD_MAX_TURNS } from './lead-score.js';
+import { detectPostSale, routePostSale, holdingPostSale, OPPORTUNITY_BRIEF, OPPORTUNITY_MAX_TURNS } from './post-sale.js';
+import { emptyProfile, extractFromText, absorbToolUses, hydrateProfile, buildContextMessages, estimateTokens } from './context.js';
+
+// M11 — công tắc quay về trần lượt cào bằng cũ (MAX_AI_TURNS) nếu ngân sách theo độ nóng
+// gây bất ngờ trên production. Mặc định BẬT ngân sách mới.
+const LEAD_BUDGET = process.env.LEAD_BUDGET !== '0';
+// M07 — công tắc quay về nạp 20 tin thô. Mặc định BẬT hồ sơ nén.
+const CTX_COMPRESS = process.env.CTX_COMPRESS !== '0';
+// M13 — công tắc tắt nhận diện hậu bán theo nội dung.
+const POST_SALE_ROUTER = process.env.POST_SALE_ROUTER !== '0';
 
 // NGUYÊN TẮC #13 — KẾT THÚC LÀ PHẢI BÀN GIAO: mọi điểm AI dừng phục vụ (khiếu nại,
 // ngôn ngữ lạ, hết lượt, page thiếu KB...) đều ghi 'handoff' vào Sổ AI kèm LÝ DO
@@ -45,9 +57,35 @@ function toSaleQueue(state, reason, kind) {
   }
 }
 
+// ── M07 · HỒ SƠ KHÁCH NÉN ───────────────────────────────────────────────────
+// Hồ sơ sống ở conv-state.json (bền qua restart). Lần đầu gặp hội thoại thì dựng từ
+// tối đa 20 tin Pancake ĐÚNG MỘT LẦN; từ đó về sau chỉ cập nhật thêm bằng regex trên
+// tin khách + tham số tool của chính lượt vừa chạy — không nạp lại 20 tin nữa.
+function loadProfile(state, history, pageId) {
+  const convId = state.pkConvId;
+  if (!convId) { // web/local-chat: không có hội thoại Pancake → hồ sơ tạm trong RAM
+    return state.profile || (state.profile = emptyProfile());
+  }
+  const c = getConv(convId);
+  let prof = c.profile;
+  if (!prof || !prof.hydratedAt) {
+    prof = hydrateProfile(Array.isArray(history) ? history : [], pageId, { ...emptyProfile(), ...(prof || {}) });
+    touchConv(convId, { profile: prof });
+    const have = ['name', 'phone', 'address'].filter((k) => prof[k]);
+    console.log(`[ctx] dựng hồ sơ lần đầu cho hội thoại ${convId}${have.length ? ' — đã có: ' + have.join(', ') : ''}`);
+  }
+  return prof;
+}
+
+function saveProfile(state, prof) {
+  if (state.pkConvId) touchConv(state.pkConvId, { profile: prof });
+  else state.profile = prof;
+}
+
 // NẠP LỊCH SỬ THẬT từ Pancake vào bộ nhớ AI khi phiên còn trống (server mới khởi động /
 // khách quay lại sau nhiều ngày). AI đọc hết những gì 2 bên đã nói (kể cả Botcake / sale tay)
 // TRƯỚC khi soạn tin — không hỏi lại thứ khách đã cho, không chào lại từ đầu, biết khách đã đặt đơn.
+// GIỮ LẠI cho công tắc CTX_COMPRESS=0 (đường lui khi hồ sơ nén có vấn đề trên production).
 const HIST_MAX_MSGS = 20;   // lấy tối đa N tin gần nhất
 const HIST_MAX_CHARS = 400; // cắt mỗi tin để tiết kiệm token
 // cleanText nay ở text.js (dùng chung với lớp chặn cuối trong closer.js). Re-export để
@@ -81,8 +119,12 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   if (pkConvId) state.pkConvId = pkConvId;      // ngữ cảnh Pancake để gửi ảnh cùng kênh
   if (pkCustId) state.pkCustId = pkCustId;
   if (custName) state.custName = custName;
-  const nHist = hydrateHistory(state, history, pageId);
-  if (nHist) console.log(`[hist] nạp ${nHist} lượt lịch sử Pancake cho khách ${psid} (page ${pageId})`);
+  // M07: hồ sơ nén thay cho việc nạp 20 tin thô mỗi lượt (dựng ngữ cảnh ngay trước khi
+  // gọi model — xem phần "M07 · DỰNG NGỮ CẢNH" bên dưới). Đường lui: CTX_COMPRESS=0.
+  if (!CTX_COMPRESS) {
+    const nHist = hydrateHistory(state, history, pageId);
+    if (nHist) console.log(`[hist] nạp ${nHist} lượt lịch sử Pancake cho khách ${psid} (page ${pageId})`);
+  }
   // TRẦN LƯỢT BỀN VỮNG (#8): đồng bộ bộ đếm RAM với số tin AI đã trả trong 24h (từ Sổ AI)
   // → restart server không còn "reset chui" cho khách thêm lượt.
   if (state.pkCustId) state.aiTurns = Math.max(state.aiTurns, recentReplyCount(pageId, state.pkCustId));
@@ -107,6 +149,44 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     toSaleQueue(state, 'Page chưa có kịch bản/KB — AI không thể tư vấn, cần người vào chat', 'no_kb');
     return reply(psid, holdingMessage('en'), true);
   }
+
+  // M07: hồ sơ khách (bền qua restart) — mọi tầng bên dưới đọc chung một hồ sơ này.
+  const prof = loadProfile(state, history, pageId);
+
+  // ── M13 · POST-SALE ROUTER — chặn TRƯỚC cả Fast Lane ────────────────────────
+  // Khách đã nhận hàng mà AI dội tiếp bài quảng cáo là lỗi nặng nhất đang có (ca Matess
+  // Valdez: 13 lượt AI, 0 đơn, khách báo hàng vỡ). Nhận diện bằng NỘI DUNG vì thẻ đơn
+  // Pancake không phủ hết. Nhánh này KHÔNG tiêu ngân sách bán.
+  const ps = POST_SALE_ROUTER ? detectPostSale(text) : null;
+  let opportunity = false;
+  if (ps) {
+    const conv = state.pkConvId ? getConv(state.pkConvId) : null;
+    const hasOrderContext = !!(prof.ordered || state.closed || conv?.orderAt
+      || conv?.state === S.CLOSING || conv?.state === S.POST_SALE);
+    const route = routePostSale({ kind: ps.kind, oppTurns: conv?.oppTurns || 0, hasOrderContext });
+    if (route.action !== 'NONE') {
+      console.log(`[postsale] ${state.custName || psid} (page ${pageId}): ${ps.kind} → ${route.action}`);
+    }
+    if (route.action === 'HANDOFF_SALE' || route.action === 'HANDOFF_RTO' || route.action === 'OPPORTUNITY_DONE') {
+      state.handoff = true; state.handoffReason = `post_sale_${ps.kind.toLowerCase()}`;
+      const note = route.priority ? `🔴 ƯU TIÊN — ${route.reason}` : route.reason;
+      toSaleQueue(state, `${note}\nKhách nói: "${String(text).slice(0, 120)}"`, `post_sale_${ps.kind.toLowerCase()}`);
+      // Hậu bán = AI + Botcake đều khoá (bảng quyền nói §4). toSaleQueue đã ghi HANDOFF,
+      // ghi đè bằng POST_SALE để dashboard và Botcake đọc đúng vì sao AI im.
+      if (state.pkConvId) { try { markPostSale(state.pkConvId, route.reason); } catch { /* không chặn luồng chính */ } }
+      // Tin giữ chỗ dựng bằng luật (0 token) — khách không bị bỏ lửng trong lúc chờ người.
+      return reply(psid, holdingPostSale(ps.kind, detectLang(text)), true, 'POSTSALE');
+    }
+    if (route.action === 'OPPORTUNITY') {
+      opportunity = true;
+      // Giữ hội thoại ở POST_SALE nhưng chủ vẫn là AI → conv-owner mở đúng 2 lượt cơ hội.
+      if (state.pkConvId) setConvState(state.pkConvId, S.POST_SALE, OWNER.AI, route.reason);
+    }
+  }
+
+  // ── M11 · LEAD SCORING — chấm điểm mọi tin khách, kể cả tin sẽ do Fast Lane lo ─
+  // Chấm trước Fast Lane để chuỗi tin cụt ("ok", "hm") vẫn bị trừ điểm đúng như spec.
+  const lead = updateLead(state, text);
 
   // ── M06 · FAST LANE — chặn TRƯỚC mọi lần gọi LLM ────────────────────────────
   // 33,8% tin đang gọi model chỉ để đáp sticker / nút START / "ok" / "hi" / hỏi giá.
@@ -147,11 +227,6 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     return { reply: null, handoff: false, archived: true };
   }
 
-  // Tin chỉ có ảnh/sticker (hoặc chỉ chứa nửa emoji nên bị dọn sạch) sẽ thành chuỗi RỖNG →
-  // Claude trả 400 "user messages must have non-empty content" và khách không được trả lời.
-  const cleaned = cleanText(text);
-  state.messages.push({ role: 'user', content: cleaned.trim() || '(khách gửi ảnh/sticker)' });
-
   if (cls.intent === 'complaint') {
     state.handoff = true; state.handoffReason = 'complaint';
     toSaleQueue(state, 'Khách KHIẾU NẠI — cần người xử lý gấp', 'complaint');
@@ -162,20 +237,114 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   // vừa phí lead vừa ngập hàng chờ: cửa này từng chiếm ~45% việc đổ lên sale trong 24h, mà phần
   // lớn chỉ là khách nhắn Ả Rập/Urdu/Hindi — AI thừa sức phục vụ. Classifier cũng trả 'other'
   // khi API lỗi (fallback), tức khách bị chuyển người chỉ vì bộ phân loại chập chờn.
-  if (state.aiTurns >= config.maxAiTurnsBeforeHandoff) {
-    state.handoff = true; state.handoffReason = 'max_turns';
-    toSaleQueue(state, `AI đã trả lời đủ ${config.maxAiTurnsBeforeHandoff} lượt — khách còn do dự, cần người vào chốt`, 'max_turns');
+
+  // ── M11 · NGÂN SÁCH LƯỢT THEO ĐỘ NÓNG ───────────────────────────────────────
+  // Thay trần cào bằng MAX_AI_TURNS=4 — trần đó cắt đúng chỗ tỷ lệ chốt nhân lên
+  // (lượt 4 → 11,2% · 5 → 16,7% · 6 → 18,9%) trong khi khách lạnh vẫn tiêu đủ 4 lượt.
+  const gate = checkBudget(state, lead, opportunity);
+  if (!gate.ok) {
+    state.handoff = true; state.handoffReason = gate.kind;
+    toSaleQueue(state, gate.reason, gate.kind);
     return reply(psid, holdingMessage(cls.lang), true);
   }
 
+  // ── M07 · DỰNG NGỮ CẢNH: [hồ sơ ~150 token] + [6 tin gần nhất] ──────────────
+  applyContext(state, {
+    history, pageId, prof,
+    meta: { state: opportunity ? S.POST_SALE : (state.aiTurns > 0 ? S.SELLING : S.QUALIFY), used: gate.used, max: gate.max, tier: gate.tier },
+  });
+
+  // Tin chỉ có ảnh/sticker (hoặc chỉ chứa nửa emoji nên bị dọn sạch) sẽ thành chuỗi RỖNG →
+  // Claude trả 400 "user messages must have non-empty content" và khách không được trả lời.
+  const cleaned = cleanText(text);
+  const userTurn = cleaned.trim() || '(khách gửi ảnh/sticker)';
+  // Nhánh CƠ HỘI (M13): gài lời nhắc hậu bán vào chính lượt của khách — prompt bán hàng
+  // mặc định sẽ chào bán lại từ đầu nếu không nói rõ đây là khách ĐÃ MUA.
+  state.messages.push({ role: 'user', content: opportunity ? `${OPPORTUNITY_BRIEF}\n\n[KHÁCH VỪA NHẮN]\n${userTurn}` : userTurn });
+
   const text2 = await runCloser({ kb, state });
   state.aiTurns += 1;
+  noteTurnSpent(state, opportunity);
+  // M07: hút thông tin của lượt vừa chạy vào hồ sơ — tham số tool là nguồn chính xác nhất,
+  // và không tốn thêm lần gọi model nào (tool_use đã nằm sẵn trong state.messages).
+  absorbToolUses(state.messages, prof);
+  extractFromText(text, prof);
+  if (state.closed) prof.ordered = true;
+  saveProfile(state, prof);
 
   // ── M09 · OUTBOUND GUARD — cửa cuối trước khi tin tới khách ────────────────
   // Chặn tin rỗng / sai giá / lộ tiếng Việt / doạ khách / checklist / quá dài.
   // Vi phạm lần 1 → xin model viết lại ĐÚNG 1 lần; lần 2 → thà im còn hơn gửi bậy.
   const guarded = await guardAndMaybeRewrite(text2, { kb, state, pageId, psid });
   return reply(psid, guarded, state.handoff, 'AI');
+}
+
+// ── M11 · chấm điểm & ngân sách ─────────────────────────────────────────────
+
+// Cộng điểm cho lượt khách vừa nhắn. Hồ sơ điểm bền theo hội thoại (conv-state.json).
+function updateLead(state, text) {
+  const convId = state.pkConvId;
+  const c = convId ? getConv(convId) : null;
+  const prev = (c ? c.lead : state.lead) || { signals: [], penalty: 0, stubStreak: 0, score: 0 };
+  // Khách quay lại sau khi đã nguội = tín hiệu quan tâm thật (spec §M11: +2).
+  const lead = scoreTurn(text, prev, { backFromCold: c?.state === S.COLD });
+  if (convId) touchConv(convId, { lead }); else state.lead = lead;
+  return lead;
+}
+
+// Còn lượt không? Trả { ok, used, max, tier } hoặc { ok:false, kind, reason }.
+function checkBudget(state, lead, opportunity) {
+  const convId = state.pkConvId;
+
+  // Nhánh CƠ HỘI hậu bán: ngân sách RIÊNG, tách hẳn khỏi ngân sách bán mới (spec §M13).
+  if (opportunity) {
+    const used = convId ? (getConv(convId).oppTurns || 0) : 0;
+    if (used >= OPPORTUNITY_MAX_TURNS) {
+      return { ok: false, kind: 'post_sale_opp', reason: `Hậu bán: đã dùng hết ${OPPORTUNITY_MAX_TURNS} lượt mời mua lại — để sale chăm tiếp` };
+    }
+    return { ok: true, used, max: OPPORTUNITY_MAX_TURNS, tier: 'hậu bán' };
+  }
+
+  // Đường lui (LEAD_BUDGET=0) và các kênh không có hội thoại Pancake (web/local-chat):
+  // giữ nguyên trần cào bằng cũ để hành vi không đổi.
+  if (!LEAD_BUDGET || !convId) {
+    const max = Math.min(config.maxAiTurnsBeforeHandoff, HARD_MAX_TURNS);
+    if (state.aiTurns >= max) {
+      return { ok: false, kind: 'max_turns', reason: `AI đã trả lời đủ ${max} lượt — khách còn do dự, cần người vào chốt` };
+    }
+    return { ok: true, used: state.aiTurns, max, tier: '' };
+  }
+
+  const b = turnBudget(lead);
+  const used = llmTurns24h(convId);   // chỉ đếm lượt GỌI MODEL, câu Fast Lane không tính
+  const tier = TIER_LABEL[b.tier] || b.tier;
+  if (used >= b.max) {
+    const pri = b.priority ? '🔴 ƯU TIÊN (khách đã cho SĐT + địa chỉ) — ' : '';
+    return {
+      ok: false, kind: 'max_turns',
+      reason: `${pri}AI đã dùng hết ngân sách ${b.max} lượt/24h (khách ${tier}, điểm ${lead.score}) — khách còn do dự, cần người vào chốt`,
+    };
+  }
+  return { ok: true, used, max: b.max, tier, priority: b.priority };
+}
+
+// Ghi lượt vừa tiêu vào sổ bền (sống sót qua restart — nguyên tắc #8).
+function noteTurnSpent(state, opportunity) {
+  if (!state.pkConvId) return;
+  try {
+    if (opportunity) noteOppTurn(state.pkConvId);
+    else noteLlmTurn(state.pkConvId);
+  } catch { /* sổ lượt không chặn luồng chính */ }
+}
+
+// ── M07 · thay 20 tin thô bằng [hồ sơ nén] + [6 tin gần nhất] ────────────────
+function applyContext(state, { history, pageId, prof, meta }) {
+  if (!CTX_COMPRESS || !Array.isArray(history) || !history.length) return 0;
+  const { messages, kept, dropped } = buildContextMessages({ prof, msgs: history, pageId, meta });
+  state.messages = messages;
+  state.lastCtxTokens = estimateTokens(messages.map((m) => m.content).join('\n'));
+  console.log(`[ctx] ${state.custName || state.psid} (page ${pageId}): hồ sơ + ${kept} tin (bỏ ${dropped} tin rác/template) ≈ ${state.lastCtxTokens} token`);
+  return kept;
 }
 
 // Soi tin, vi phạm thì xin model viết lại đúng 1 lần rồi soi lại.
