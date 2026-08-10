@@ -14,6 +14,7 @@
 import { S, OWNER, getConv, setConvState, touchConv } from './conv-state.js';
 import { isAutomationTemplate } from './bot-registry.js';
 import { recentAiTexts } from './ai-log.js';
+import { isOurFixedMessage } from './our-messages.js';
 
 export { S, OWNER };
 
@@ -62,8 +63,9 @@ export function looksHuman(text, aiTexts) {
   const raw = String(text || '').trim();
   if (!raw) return false;                                  // tin rỗng / chỉ đính kèm
   if (/^<div><\/div>$/.test(raw) || /^\.{2,}$/.test(raw)) return false;
+  if (isOurFixedMessage(raw)) return false;                // chuỗi CỐ ĐỊNH của code mình
   if (isAutomationTemplate(raw)) return false;             // template đã biết
-  if (isOurs(raw, aiTexts)) return false;                  // chính bot mình
+  if (isOurs(raw, aiTexts)) return false;                  // chính bot mình (tra Sổ AI)
   if (raw.length > HUMAN_MAX_LEN) return false;            // dài = nhiều khả năng template lạ
   if (/https?:\/\/|wa\.me|wa\.link/i.test(raw)) return false; // dán link = kịch bản kéo WhatsApp
   if (raw.split('\n').filter((l) => l.trim()).length > 2) return false; // nhiều dòng = template

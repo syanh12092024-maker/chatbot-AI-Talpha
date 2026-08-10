@@ -14,6 +14,7 @@
 
 import { productTiers } from './kb.js';
 import { cleanText } from './text.js';
+import { registerOurMessage } from './our-messages.js';
 
 const norm = (s) => cleanText(s || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
 
@@ -175,7 +176,7 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes }) 
   if (START_BTN.test(s)) {
     if (aiTurns >= 1) return { handled: true, reply: null, lane: 'silent_start', reason: 'bấm START lại giữa hội thoại' };
     const g = buildGreeting(kb, lang);
-    if (g && !used.has('greet')) { used.add('greet'); return { handled: true, reply: g, lane: 'tpl_start', reason: 'nút START' }; }
+    if (g && !used.has('greet')) { used.add('greet'); registerOurMessage(g); return { handled: true, reply: g, lane: 'tpl_start', reason: 'nút START' }; }
     return escalate('nút START nhưng chưa dựng được câu chào từ KB');
   }
 
@@ -203,7 +204,7 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes }) 
   if (GREET.test(s)) {
     if (aiTurns >= 1) return { handled: true, reply: null, lane: 'silent_greet', reason: 'chào lại giữa hội thoại' };
     const g = buildGreeting(kb, lang);
-    if (g && !used.has('greet')) { used.add('greet'); return { handled: true, reply: g, lane: 'tpl_greet', reason: 'chào hỏi' }; }
+    if (g && !used.has('greet')) { used.add('greet'); registerOurMessage(g); return { handled: true, reply: g, lane: 'tpl_greet', reason: 'chào hỏi' }; }
     return escalate('chào hỏi nhưng chưa dựng được câu chào từ KB');
   }
 
@@ -218,6 +219,7 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes }) 
     if (!body) return escalate(`${reason} nhưng KB chưa đủ dữ liệu`);
     if (used.has(key)) return escalate(`${reason} lần 2 — template không thoả mãn, leo lên AI`);
     used.add(key);
+    registerOurMessage(body); // M05 phải biết đây là tin của mình, không phải sale gõ
     return { handled: true, reply: body, lane: `tpl_${key}`, reason };
   };
 
