@@ -30,7 +30,11 @@ export async function runCloser(ctx) {
 
     const res = await anthropic.messages.create({
       model: config.modelCloser,
-      max_tokens: 1024,
+      // 400, hạ từ 1024 (11/08/2026 — M08 §4). Đo trên Sổ AI: tin trung bình 182 token,
+      // chỉ 6,3% vượt 300. Trần thấp buộc model viết ngắn — đúng quy tắc "1-3 câu" của
+      // CORE §1 và hợp Messenger mobile. Đây là TRẦN, không phải ép hành vi bằng code:
+      // model vẫn tự quyết viết gì, chỉ không được viết dài lê thê.
+      max_tokens: 400,
       system,
       tools: toolDefs,
       messages,
