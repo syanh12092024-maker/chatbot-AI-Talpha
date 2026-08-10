@@ -479,3 +479,64 @@ export function listScriptPages() {
   catch { /* chưa có thư mục lịch sử */ }
   return [...ids];
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// L8 · BẢNG KỊCH BẢN 2 CỘT — tab `Kịch bản tự động` trên Google Sheet
+// Spec: docs/v2/07-KICH-BAN-TU-DONG.md §1 (bước 1)
+//
+// ⚠️ PHẦN NÀY CHỈ THÊM. Không hàm nào ở trên bị sửa (luật §3 của 08-SONG-SONG.md:
+// `kb.js` là điểm nóng — L3 vòng 1 đã đụng, L8 chỉ được THÊM).
+//
+// Ánh xạ cột theo TÊN header (giống CANON_COLS ở trên) chứ không theo vị trí, để
+// marketer chèn/đổi cột mà bảng không vỡ. Ba cột đo (`Lượt dùng`/`Hỏi lại ngay`/
+// `Chốt sau đó`) KHÔNG đọc ở đây: chúng do hệ thống ghi ra, đọc ngược vào sẽ tạo
+// vòng dữ liệu (số đo cũ ghi đè số đo mới).
+// ═════════════════════════════════════════════════════════════════════════════
+
+export const RULES_TAB = process.env.SCRIPT_RULES_TAB || 'Kịch bản tự động';
+
+const RULE_COLS = {
+  pageId: 'Page ID', situation: 'Tình huống', keywords: 'Từ khoá bắt',
+  reply: 'Câu trả lời tự động', aiHint: 'Gợi ý cho AI',
+  condition: 'Điều kiện', priority: 'Ưu tiên', status: 'Trạng thái', source: 'Nguồn',
+};
+
+// gviz trả tab ĐẦU TIÊN khi tab không tồn tại (xem sheets.js) → phải tự soi header.
+// Hai cột bắt buộc để nhận diện: "Tình huống" và "Từ khoá bắt". Không dùng "Page ID"
+// làm dấu nhận vì tab sản phẩm cũng có cột đó — nhận nhầm là nạp cả bảng sản phẩm
+// vào làm luật kịch bản.
+function isRulesMatrix(m) {
+  if (!Array.isArray(m) || !m.length) return false;
+  const h = m[0].map((x) => String(x).trim().toLowerCase());
+  return h.includes(RULE_COLS.situation.toLowerCase()) && h.includes(RULE_COLS.keywords.toLowerCase());
+}
+
+/**
+ * Đọc tab `Kịch bản tự động` → mảng bản ghi THÔ (chưa validate, chưa chuẩn hoá luật).
+ * Chuẩn hoá + validator nằm ở `rule-store.js` để `kb.js` không phình thêm trách nhiệm.
+ *
+ * @param {string} id       Sheet ID (người gọi truyền vào — `kb.js` không giữ sheet id)
+ * @param {string} tabName  Tên tab (mặc định RULES_TAB)
+ * @returns {Promise<{ok:boolean, rows:Array, reason?:string}>} — KHÔNG ném khi thiếu tab.
+ */
+export async function fetchScriptRuleRows(id, tabName = RULES_TAB) {
+  if (!id) return { ok: false, rows: [], reason: 'chưa kết nối Google Sheet' };
+  let m;
+  try { m = await fetchTabMatrix(id, tabName); }
+  catch (e) { return { ok: false, rows: [], reason: e.message }; }
+  if (!isRulesMatrix(m)) {
+    return { ok: false, rows: [], reason: `Sheet chưa có tab "${tabName}" (hoặc thiếu cột "${RULE_COLS.situation}" / "${RULE_COLS.keywords}")` };
+  }
+  const header = m[0].map((x) => String(x).trim().toLowerCase());
+  const at = Object.fromEntries(Object.entries(RULE_COLS).map(([k, name]) => [k, header.indexOf(name.toLowerCase())]));
+  const cell = (row, k) => (at[k] >= 0 ? String(row[at[k]] ?? '').trim() : '');
+  const rows = m.slice(1)
+    .filter((r) => r.some((c) => String(c).trim() !== ''))
+    .map((r, i) => ({
+      row: i + 2, // số dòng thật trên Sheet (1 = header) — để báo lỗi chỉ đúng chỗ
+      pageId: cell(r, 'pageId'), situation: cell(r, 'situation'), keywords: cell(r, 'keywords'),
+      reply: cell(r, 'reply'), aiHint: cell(r, 'aiHint'), condition: cell(r, 'condition'),
+      priority: cell(r, 'priority'), status: cell(r, 'status'), source: cell(r, 'source'),
+    }));
+  return { ok: true, rows, tab: tabName };
+}

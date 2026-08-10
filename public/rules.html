@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kịch bản tự động · Botcake · AI Closer</title>
+<!--
+  L8 · Bảng kịch bản 2 cột + báo cáo trùng lặp Botcake ↔ Fast Lane.
+  TRANG RIÊNG, cố ý KHÔNG nhét vào public/admin.html — file đó là một khối CSS+JS inline
+  mà nhiều luồng đang cùng sửa (docs/v2/08-SONG-SONG.md §3).
+  Phục vụ từ GET /admin/api/rules/ui nên nằm sau Basic Auth của server.js.
+
+  ⚠️ KHÔNG hiển thị key Botcake ở bất kỳ đâu — API chỉ trả pageId + 6 ký tự đuôi.
+-->
+<style>
+  :root{
+    --bg:#f4f7f8;--card:#fff;--line:#e3eaec;--ink:#12252a;--mut:#6b8288;
+    --acc:#0e8f9c;--bad:#c0392b;--badSoft:#fdecea;--warn:#b06a00;--warnSoft:#fff5e2;
+    --ok:#1a7f5a;--okSoft:#e7f6ef;--side:#0f2b31;--sideMut:#9fbcc2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  a{color:var(--acc)}
+  .top{display:flex;align-items:center;gap:14px;padding:12px 18px;background:var(--side);color:#fff}
+  .top h1{font-size:16px;margin:0;font-weight:650}
+  .top .sp{flex:1}
+  .top a{color:var(--sideMut);font-size:12.5px;text-decoration:none;cursor:pointer}.top a:hover{color:#fff}
+  .tabs{display:flex;gap:2px;padding:0 18px;background:var(--side)}
+  .tabs button{border:0;background:transparent;color:var(--sideMut);font:600 13px inherit;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent}
+  .tabs button.on{color:#fff;border-bottom-color:var(--acc)}
+  .wrap{padding:14px;display:grid;gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px}
+  .card h2{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);margin:0;padding:11px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center}
+  .card h2 .sp{flex:1}
+  .pad{padding:14px}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font:600 12.5px inherit;cursor:pointer;color:var(--ink)}
+  .btn:hover{background:#f2f8f8}
+  .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}.btn.pri:hover{filter:brightness(1.08)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  input[type=text],select,textarea{border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:13px/1.5 inherit;background:#fcfdfd}
+  input[type=text]:focus,textarea:focus,select:focus{outline:2px solid #bfe6ea;border-color:var(--acc)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 10px;border-bottom:1px solid #f0f4f5;text-align:left;vertical-align:top}
+  th{font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);font-weight:600;white-space:nowrap}
+  tbody tr:hover{background:#f7fbfb}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:5px;letter-spacing:.3px;white-space:nowrap}
+  .t-on{background:var(--okSoft);color:var(--ok)}
+  .t-off{background:#eef2f3;color:var(--mut)}
+  .t-wait{background:var(--warnSoft);color:var(--warn)}
+  .t-bad{background:var(--badSoft);color:var(--bad)}
+  .t-dup{background:var(--warnSoft);color:var(--warn)}
+  .t-add{background:var(--okSoft);color:var(--ok)}
+  .t-blind{background:#eceff0;color:var(--mut)}
+  .msg{padding:9px 12px;border-radius:8px;margin:0 0 10px;font-size:12.5px}
+  .msg.bad{background:var(--badSoft);border:1px solid #f3c9c4;color:#7d2419}
+  .msg.warn{background:var(--warnSoft);border:1px solid #f0dcb4;color:#7a4a00}
+  .msg.ok{background:var(--okSoft);border:1px solid #bfe4d3;color:#125e42}
+  .msg.info{background:#eef6f7;border:1px solid #cfe6e9;color:#17555c}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px}
+  .mut{color:var(--mut)}
+  .kw{display:inline-block;background:#eef2f3;border-radius:4px;padding:0 5px;margin:1px 3px 1px 0;font-size:11.5px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .num{font-variant-numeric:tabular-nums}
+  .big{display:flex;gap:22px;flex-wrap:wrap}
+  .big div b{display:block;font-size:22px;line-height:1.2}
+  .big div span{font-size:11.5px;color:var(--mut)}
+  details summary{cursor:pointer;font-size:12px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Kịch bản tự động &amp; Botcake</h1>
+  <span class="sp"></span>
+  <a onclick="location.reload()">Tải lại</a>
+  <a href="/admin/" target="_blank">Dashboard ↗</a>
+</div>
+<div class="tabs">
+  <button id="tb-rules" class="on" onclick="go('rules')">Bảng kịch bản</button>
+  <button id="tb-botcake" onclick="go('botcake')">Botcake ↔ Fast Lane</button>
+  <button id="tb-try" onclick="go('try')">Thử 1 tin</button>
+</div>
+<div class="wrap" id="view"></div>
+
+<script>
+const A = '/admin/api';
+const $ = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstElementChild; };
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (v) => (v == null ? '—' : v + '%');
+async function api(p, opt) {
+  const r = await fetch(A + p, opt);
+  const j = await r.json().catch(() => ({ error: 'phản hồi không phải JSON' }));
+  if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+  return j;
+}
+const view = document.getElementById('view');
+const setTab = (k) => ['rules', 'botcake', 'try'].forEach((x) => document.getElementById('tb-' + x).classList.toggle('on', x === k));
+function go(k) { location.hash = k; }
+window.addEventListener('hashchange', render);
+
+// ─── Tab 1 · Bảng kịch bản ──────────────────────────────────────────────────
+async function rRules() {
+  view.innerHTML = '<div class="card"><div class="pad mut">Đang nạp…</div></div>';
+  let d;
+  try { d = await api('/rules'); } catch (e) { view.innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; return; }
+  const i = d.info;
+  view.innerHTML = '';
+
+  const head = $('<div class="card"><h2>Bảng kịch bản <span class="sp"></span></h2><div class="pad"></div></div>');
+  const pad = head.querySelector('.pad');
+  pad.append($('<div class="big">'
+    + '<div><b class="num">' + i.total + '</b><span>dòng đọc được</span></div>'
+    + '<div><b class="num" style="color:var(--ok)">' + i.live + '</b><span>đang BẬT</span></div>'
+    + '<div><b class="num" style="color:var(--warn)">' + i.pending + '</b><span>chờ duyệt</span></div>'
+    + '<div><b class="num" style="color:var(--bad)">' + i.blocked + '</b><span>bị validator chặn</span></div>'
+    + '</div>'));
+  if (!i.sheetConnected) pad.append($('<div class="msg warn" style="margin-top:12px">Chưa kết nối Google Sheet — vào Dashboard → Kịch bản/KB để dán link Sheet.</div>'));
+  else if (!i.ok) pad.append($('<div class="msg warn" style="margin-top:12px">' + esc(i.reason || 'chưa nạp') + '</div>'));
+  const bar = $('<div class="bar" style="margin-top:12px"></div>');
+  const btn = $('<button class="btn pri">Nạp lại từ Sheet</button>');
+  btn.onclick = async () => {
+    btn.disabled = true; btn.textContent = 'Đang nạp…';
+    try { await api('/rules/reload', { method: 'POST' }); render(); }
+    catch (e) { alert(e.message); btn.disabled = false; btn.textContent = 'Nạp lại từ Sheet'; }
+  };
+  bar.append(btn);
+  if (i.sheetUrl) bar.append($('<a class="btn" href="' + esc(i.sheetUrl) + '" target="_blank">Mở tab &laquo;' + esc(i.tab) + '&raquo; ↗</a>'));
+  bar.append($('<span class="mut" style="font-size:12px">Số đo ' + (d.metricsNote.persisted ? 'lưu bền' : 'chỉ trong RAM — mất khi restart (đặt RULE_METRICS_FILE để lưu)') + '</span>'));
+  pad.append(bar);
+  view.append(head);
+
+  if (!d.rules.length) { view.append($('<div class="card"><div class="pad mut">Chưa có dòng nào. Tạo tab &laquo;' + esc(i.tab) + '&raquo; trên Google Sheet với các cột: Page ID · Tình huống · Từ khoá bắt · Câu trả lời tự động · Gợi ý cho AI · Điều kiện · Ưu tiên · Trạng thái · Nguồn.</div></div>')); return; }
+
+  const tbl = $('<div class="card"><table><thead><tr>'
+    + '<th>Mã</th><th>Page</th><th>Tình huống</th><th>Từ khoá bắt</th><th>Tự động</th><th>Gợi ý AI</th>'
+    + '<th>Điều kiện</th><th>Ưu tiên</th><th>Trạng thái</th><th>Lượt dùng</th><th>Hỏi lại</th><th>Im sau</th><th>Chốt sau</th>'
+    + '</tr></thead><tbody></tbody></table></div>');
+  const tb = tbl.querySelector('tbody');
+  for (const r of d.rules) {
+    const m = r.metrics || {};
+    const status = !r.valid ? '<span class="tag t-bad">BỊ CHẶN</span>'
+      : r.status === 'BẬT' ? '<span class="tag t-on">BẬT</span>'
+        : r.status === 'CHỜ DUYỆT' ? '<span class="tag t-wait">CHỜ DUYỆT</span>'
+          : '<span class="tag t-off">' + esc(r.status || 'TẮT') + '</span>';
+    const tr = $('<tr>'
+      + '<td class="mono">' + esc(r.id) + '</td>'
+      + '<td>' + esc(r.pageName) + '</td>'
+      + '<td><b>' + esc(r.situation || '(chưa đặt tên)') + '</b>' + (r.source ? '<div class="mut" style="font-size:11px">' + esc(r.source) + '</div>' : '') + '</td>'
+      + '<td>' + r.keywords.map((k) => '<span class="kw">' + esc(k) + '</span>').join('') + '</td>'
+      + '<td>' + (r.reply ? '✅' : '—') + '</td>'
+      + '<td>' + (r.aiHint ? '✅' : '—') + '</td>'
+      + '<td>' + esc(r.condition || 'luôn') + '</td>'
+      + '<td class="num">' + r.priority + '</td>'
+      + '<td>' + status + '</td>'
+      + '<td class="num">' + (m.fired ?? 0) + '</td>'
+      + '<td class="num">' + pct(m.askedAgainPct) + '</td>'
+      + '<td class="num">' + pct(m.silentPct) + '</td>'
+      + '<td class="num">' + (d.metricsNote.closedWired ? pct(m.closedPct) : '<span class="mut">chưa đo</span>') + '</td>'
+      + '</tr>');
+    tb.append(tr);
+    const notes = [];
+    for (const e of (r.errors || [])) notes.push('<div class="msg bad" style="margin:6px 0 0"><b class="mono">' + esc(e.rule) + '</b> — ' + esc(e.msg) + '</div>');
+    for (const w of (r.warnings || [])) notes.push('<div class="msg warn" style="margin:6px 0 0"><b class="mono">' + esc(w.rule) + '</b> — ' + esc(w.msg) + '</div>');
+    if (m.demote) notes.push('<div class="msg warn" style="margin:6px 0 0">' + esc(m.demote) + '</div>');
+    if (r.reply) notes.push('<details style="margin-top:6px"><summary>Câu trả lời tự động</summary><div class="pad" style="padding:8px 0;white-space:pre-wrap">' + esc(r.reply) + '</div></details>');
+    if (r.aiHint) notes.push('<details style="margin-top:6px"><summary>Gợi ý cho AI</summary><div class="pad" style="padding:8px 0;white-space:pre-wrap">' + esc(r.aiHint) + '</div></details>');
+    if (notes.length) tb.append($('<tr><td colspan="13" style="padding-top:0">' + notes.join('') + '</td></tr>'));
+  }
+  view.append(tbl);
+  view.append($('<div class="msg info">Ngưỡng đề xuất hạ dòng (§3): <b>Hỏi lại ngay &gt;25%</b> · <b>Im sau đó &gt;60%</b>. Dưới 20 lượt dùng thì tỉ lệ chỉ là nhiễu nên hệ thống không đề xuất gì. Mọi thay đổi vẫn phải người sửa trên Sheet.</div>'));
+}
+
+// ─── Tab 2 · Botcake ↔ Fast Lane ────────────────────────────────────────────
+async function rBotcake() {
+  view.innerHTML = '<div class="card"><div class="pad mut">Đang đọc Botcake…</div></div>';
+  let st, cmp;
+  try { st = await api('/botcake'); cmp = await api('/botcake/compare'); }
+  catch (e) { view.innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; return; }
+  view.innerHTML = '';
+
+  view.append($('<div class="msg info"><b>API Botcake là CHỈ ĐỌC.</b> POST/PUT/PATCH/DELETE trên <span class="mono">/keywords</span> đều trả 404, kể cả v2. '
+    + 'Trang này <b>không tự tắt luật nào</b> — nó chỉ chỉ ra chỗ trùng để người vào Botcake tắt tay. '
+    + 'Nội dung trả lời của flow không đọc được qua API; từ khoá được bóc từ tiền tố “Có chứa ” trong <i>tên flow</i>, nên ai đổi tên flow là mất.</div>'));
+
+  const head = $('<div class="card"><h2>Tình trạng key</h2><div class="pad"></div></div>');
+  head.querySelector('.pad').append($('<div class="big">'
+    + '<div><b class="num">' + st.keys + '</b><span>page có key</span></div>'
+    + '<div><b class="num" style="color:var(--warn)">' + st.missingKey + '</b><span>page chưa có key</span></div>'
+    + '<div><b class="num" style="color:var(--warn)">' + cmp.duplicate + '</b><span>luật TRÙNG Fast Lane</span></div>'
+    + '<div><b class="num" style="color:var(--ok)">' + cmp.complement + '</b><span>luật BỔ SUNG</span></div>'
+    + '<div><b class="num">' + cmp.blind + '</b><span>vùng mù</span></div>'
+    + '<div><b class="num" style="color:var(--warn)">' + (cmp.kbGap || 0) + '</b><span>thiếu KB, chưa kết luận được</span></div>'
+    + '</div>'));
+  if (!st.keys) head.querySelector('.pad').append($('<div class="msg warn" style="margin-top:12px">Chưa có key nào. Đặt <span class="mono">BOTCAKE_TOKENS=&lt;pageId&gt;:&lt;key&gt;,…</span> trong <span class="mono">.env</span>. Key là <b>page-scoped</b> — mỗi page một key.</div>'));
+  view.append(head);
+
+  for (const p of cmp.items) {
+    const card = $('<div class="card"><h2>' + esc(p.pageName || p.pageId) + ' <span class="mono mut">' + esc(p.pageId) + '</span><span class="sp"></span>'
+      + '<span class="mut" style="font-size:11.5px;text-transform:none;letter-spacing:0">'
+      + (p.error ? 'lỗi đọc' : (p.activated + '/' + p.total + ' luật đang bật')) + '</span></h2></div>');
+    if (p.error) { card.append($('<div class="pad msg bad">' + esc(p.error) + '</div>')); view.append(card); continue; }
+    const tbl = $('<table><thead><tr><th>Kết luận</th><th>Trạng thái</th><th>Từ khoá đọc được</th><th>Fast Lane</th><th>Đề xuất</th></tr></thead><tbody></tbody></table>');
+    const tb = tbl.querySelector('tbody');
+    for (const it of p.items) {
+      const cls = it.verdict === 'TRÙNG' ? 't-dup' : it.verdict === 'BỔ SUNG' ? 't-add' : 't-blind';
+      tb.append($('<tr>'
+        + '<td><span class="tag ' + cls + '">' + esc(it.verdict) + '</span>' + (it.risky ? '<div class="mut" style="font-size:11px;margin-top:3px">⚠️ Fast Lane CỐ Ý đẩy lên AI ở đây</div>' : '') + (it.kbGap ? '<div class="mut" style="font-size:11px;margin-top:3px">⚠️ thiếu dữ liệu KB</div>' : '') + '</td>'
+        + '<td>' + (it.isActivated ? '<span class="tag t-on">BẬT</span>' : '<span class="tag t-off">tắt</span>') + '</td>'
+        + '<td>' + (it.keywords.length ? it.keywords.map((k) => '<span class="kw">' + esc(k) + '</span>').join('')
+          : '<span class="mut mono">' + esc(it.flowName || '(không có tên)') + '</span>') + '</td>'
+        + '<td class="mut">' + esc((it.lanes || []).join(', ') || '—') + (it.coverage ? '<div style="font-size:11px">' + esc(it.coverage) + '</div>' : '') + '</td>'
+        + '<td class="mut">' + esc(it.suggestion) + '</td>'
+        + '</tr>'));
+    }
+    card.append(tbl);
+    view.append(card);
+  }
+}
+
+// ─── Tab 3 · Thử 1 tin ──────────────────────────────────────────────────────
+async function rTry() {
+  view.innerHTML = '';
+  const card = $('<div class="card"><h2>Thử 1 tin — chạy khô, không gửi cho ai</h2><div class="pad"></div></div>');
+  const pad = card.querySelector('.pad');
+  pad.append($('<div class="msg info">Chạy đúng đường Fast Lane thật: không gọi model, không gọi Pancake, không tạo đơn, không đụng Botcake ngoài việc đọc danh sách từ khoá.</div>'));
+  const form = $('<div class="bar"></div>');
+  const sel = $('<select id="tPage"><option value="">(không chọn page — chỉ dòng dùng chung)</option></select>');
+  const inp = $('<input type="text" id="tText" placeholder="Tin khách, vd: pawnable po ba ito?" style="flex:1;min-width:260px">');
+  const run = $('<button class="btn pri">Thử</button>');
+  form.append(sel, inp, run);
+  pad.append(form);
+  const out = $('<div style="margin-top:12px"></div>');
+  pad.append(out);
+  view.append(card);
+
+  try {
+    const d = await api('/rules');
+    const seen = new Set();
+    for (const r of d.rules) if (r.pageId && !seen.has(r.pageId)) { seen.add(r.pageId); sel.append($('<option value="' + esc(r.pageId) + '">' + esc(r.pageName) + '</option>')); }
+  } catch { /* danh sách page chỉ là tiện ích */ }
+
+  const doTry = async () => {
+    const text = inp.value.trim();
+    if (!text) return;
+    run.disabled = true;
+    try {
+      const r = await api('/rules/try', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, pageId: sel.value }) });
+      const res = r.result;
+      const kind = res.handled && res.reply ? ['ok', 'Bắn câu mẫu — 0 token'] : res.handled ? ['info', 'IM LẶNG — không gửi gì'] : ['warn', 'Leo lên AI (~130đ)'];
+      out.innerHTML = '<div class="msg ' + kind[0] + '"><b>' + kind[1] + '</b> · lane <span class="mono">' + esc(res.lane || '—') + '</span><br>' + esc(res.reason) + '</div>'
+        + (r.matched ? '<div class="msg info">Khớp dòng <span class="mono">' + esc(r.matched.id) + '</span> — “' + esc(r.matched.situation) + '” · điều kiện: <b>' + esc(r.matched.condition) + '</b>' + (r.matched.candidates > 1 ? ' (' + r.matched.candidates + ' dòng cùng khớp, đã chọn theo §4)' : '') + '</div>' : '')
+        + (res.reply ? '<div class="card"><div class="pad" style="white-space:pre-wrap">' + esc(res.reply) + '</div></div>' : '')
+        + (res.aiHint ? '<div class="msg info"><b>Gợi ý nạp thêm cho AI:</b><br>' + esc(res.aiHint) + '</div>' : '')
+        + (r.botcake ? '<div class="msg ' + (r.botcake.willAnswer ? 'warn' : 'ok') + '">Botcake ' + (r.botcake.willAnswer ? 'CÓ THỂ trả lời tin này → giữ nguyên thời gian chờ 6s' : 'không khớp luật nào → bỏ chờ được') + '</div>' : '');
+    } catch (e) { out.innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; }
+    run.disabled = false;
+  };
+  run.onclick = doTry;
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doTry(); });
+}
+
+function render() {
+  const k = (location.hash || '#rules').slice(1);
+  setTab(k);
+  if (k === 'botcake') rBotcake();
+  else if (k === 'try') rTry();
+  else rRules();
+}
+render();
+</script>
+</body>
+</html>
