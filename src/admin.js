@@ -27,6 +27,7 @@ export const adminRouter = express.Router();
 adminRouter.use((await import('./admin-scripts.js')).scriptsRouter); // L3 · M01-M03 Script Studio (1 dòng mount, xem docs/v2/08-SONG-SONG.md §3) — phải đứng TRƯỚC /pages/:id/ai để chặn bật AI page chưa sẵn sàng
 adminRouter.use('/economics', (await import('./admin-economics.js')).economicsRouter); // M20 Unit Economics
 adminRouter.use('/ops', (await import('./admin-ops.js')).opsRouter); // L6 · M18 Ops Console + M19 Health Watchdog
+adminRouter.use('/order-bridge', (await import('./admin-orders.js')).ordersRouter); // L7 · M14 Order Bridge + M15 Miner + sổ template
 
 // ---- Tổng quan ----
 adminRouter.get('/overview', (_req, res) => {

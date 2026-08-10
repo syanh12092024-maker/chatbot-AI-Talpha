@@ -31,3 +31,10 @@ pages.json
 conv-state.json
 conv-state.json.tmp
 botcake-templates.json
+
+# L7 · báo cáo mổ (M15), sổ template chờ duyệt, hàng chờ tạo đơn (M14) — dữ liệu thật của VPS
+miner-reports.jsonl
+miner-state.json
+template-candidates.json
+template-learn-reports.jsonl
+ai-order-queue.json
