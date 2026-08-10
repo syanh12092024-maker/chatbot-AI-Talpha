@@ -229,6 +229,13 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
 
   if (cls.intent === 'complaint') {
     state.handoff = true; state.handoffReason = 'complaint';
+    // Khách bảo ĐỪNG NHẮN NỮA thì bàn giao TRONG IM LẶNG: câu giữ chỗ tuy lịch sự nhưng vẫn là
+    // một tin nữa gửi vào đúng người vừa yêu cầu dừng — đường ngắn nhất tới nút Block/Report,
+    // thứ làm hỏng cả page chứ không chỉ hỏng một đơn. Sale vẫn thấy đủ trong hàng chờ.
+    if (cls.stop_contact) {
+      toSaleQueue(state, '🔴 Khách YÊU CẦU NGỪNG NHẮN TIN — AI đã im hoàn toàn, chỉ người thật được liên hệ lại (nếu cần)', 'stop_contact');
+      return { reply: null, handoff: true, archived: true };
+    }
     toSaleQueue(state, 'Khách KHIẾU NẠI — cần người xử lý gấp', 'complaint');
     return reply(psid, holdingMessage(cls.lang), true);
   }
