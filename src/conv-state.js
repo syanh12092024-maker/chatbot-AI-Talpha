@@ -100,6 +100,43 @@ export function touchConv(convId, extra = {}) {
   return c;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SỔ LƯỢT AI THẬT (M11) — chỉ đếm lượt GỌI MODEL, không đếm câu Fast Lane (0 token).
+// v1 đếm bằng `recentReplyCount` trong Sổ AI: mọi tin trả khách đều tính, nên một khách
+// lạnh chỉ được hỏi giá bằng template cũng bị trừ hết ngân sách. Ngân sách M11 nói về
+// LƯỢT ĐẮT TIỀN, nên phải có sổ riêng. Lưu trong conv-state → sống sót qua restart.
+// ─────────────────────────────────────────────────────────────────────────────
+export const TURN_WINDOW_MS = 24 * 3600 * 1000;
+
+/** Ghi 1 lượt AI (gọi model) cho hội thoại. */
+export function noteLlmTurn(convId, at = Date.now()) {
+  const c = getConv(convId);
+  const arr = Array.isArray(c.llmTurns) ? c.llmTurns : (c.llmTurns = []);
+  arr.push(at);
+  const cut = at - TURN_WINDOW_MS;
+  c.llmTurns = arr.filter((t) => t >= cut).slice(-50);
+  c.touchedAt = at;
+  markDirty();
+  return c.llmTurns.length;
+}
+
+/** Số lượt AI đã tiêu trong 24h qua. */
+export function llmTurns24h(convId, now = Date.now()) {
+  const c = getConv(convId);
+  const arr = Array.isArray(c.llmTurns) ? c.llmTurns : [];
+  const cut = now - TURN_WINDOW_MS;
+  return arr.filter((t) => t >= cut).length;
+}
+
+/** Ghi 1 lượt của nhánh CƠ HỘI hậu bán (M13) — ngân sách TÁCH khỏi ngân sách bán mới. */
+export function noteOppTurn(convId) {
+  const c = getConv(convId);
+  c.oppTurns = (c.oppTurns || 0) + 1;
+  c.touchedAt = Date.now();
+  markDirty();
+  return c.oppTurns;
+}
+
 /** Thống kê cho dashboard (M18). */
 export function convStateStats() {
   load();

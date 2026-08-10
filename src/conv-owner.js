@@ -15,6 +15,7 @@ import { S, OWNER, getConv, setConvState, touchConv } from './conv-state.js';
 import { isAutomationTemplate } from './bot-registry.js';
 import { recentAiTexts } from './ai-log.js';
 import { isOurFixedMessage } from './our-messages.js';
+import { OPPORTUNITY_MAX_TURNS } from './post-sale.js';
 
 export { S, OWNER };
 
@@ -101,7 +102,6 @@ export function decideConv({ pageId, conv, msgs, custId, aiTexts }) {
   }
 
   // ── ② Trạng thái ĐÃ CHỐT CỨNG từ trước → giữ nguyên, không xét lại ────────────
-  if (c.state === S.POST_SALE) return { allow: false, state: c.state, owner: c.owner, reason: c.lastReason || 'hậu bán', changed: false };
   if (c.state === S.HANDOFF) {
     // Bàn giao vì NGƯỜI THẬT vào chat thì HẾT HẠN sau HUMAN_TAKEOVER_TTL_MS.
     // Vì sao không khoá vĩnh viễn: nhận diện người thật là suy đoán (sổ template mới
@@ -112,6 +112,18 @@ export function decideConv({ pageId, conv, msgs, custId, aiTexts }) {
     if (!expired) return { allow: false, state: c.state, owner: c.owner, reason: c.lastReason || 'đã bàn giao người thật', changed: false };
     console.log(`[owner] ${conv?.from?.name || convId}: hết hạn nhường người thật (${Math.round(HUMAN_TAKEOVER_TTL_MS / 3600e3)}h) → AI nhận lại`);
     setConvState(convId, S.SELLING, OWNER.AI, 'hết hạn nhường người thật', { humanAt: 0 });
+  }
+  // POST_SALE = AI im — TRỪ đúng một cửa: nhánh CƠ HỘI của M13 (khách đã nhận hàng và
+  // hài lòng). Cửa này có ngân sách RIÊNG tối đa 2 lượt, chỉ mở khi chính M13 đã đặt
+  // owner = AI. Đơn có thẻ Pancake vẫn bị chặn ở bước ① phía trên nên RTO không bị chen.
+  //
+  // Gộp 11/08/2026: HANDOFF có TTL (nhánh nền) và POST_SALE có nhánh cơ hội (L2) là hai
+  // việc khác nhau trên cùng một khối ②, không loại trừ nhau — giữ cả hai. TTL chỉ áp cho
+  // HANDOFF; hậu bán vẫn khoá theo ngân sách lượt riêng, không dính TTL.
+  let oppBranch = false;
+  if (c.state === S.POST_SALE) {
+    oppBranch = c.owner === OWNER.AI && (c.oppTurns || 0) < OPPORTUNITY_MAX_TURNS;
+    if (!oppBranch) return { allow: false, state: c.state, owner: c.owner, reason: c.lastReason || 'hậu bán', changed: false };
   }
 
   const list = Array.isArray(msgs) ? msgs : [];
@@ -157,9 +169,12 @@ export function decideConv({ pageId, conv, msgs, custId, aiTexts }) {
 
   // ── ⑥ AI ĐƯỢC NÓI ────────────────────────────────────────────────────────────
   // QUALIFY: mới vào, Fast Lane lo phần lớn. SELLING: AI đã nhập cuộc.
-  const next = (c.aiTurns || 0) > 0 ? S.SELLING : S.QUALIFY;
-  const r = setConvState(convId, next, OWNER.AI, 'AI đang phục vụ');
-  return { allow: true, state: next, owner: OWNER.AI, reason: 'AI được nói', changed: r.changed };
+  // Nhánh cơ hội hậu bán GIỮ NGUYÊN POST_SALE — không được rơi ngược về SELLING,
+  // nếu không lượt sau AI lại tưởng đây là khách mới và chào bán từ đầu.
+  const next = oppBranch ? S.POST_SALE : ((c.aiTurns || 0) > 0 ? S.SELLING : S.QUALIFY);
+  const why = oppBranch ? 'hậu bán — nhánh cơ hội' : 'AI đang phục vụ';
+  const r = setConvState(convId, next, OWNER.AI, why);
+  return { allow: true, state: next, owner: OWNER.AI, reason: why, changed: r.changed };
 }
 
 /** Gọi sau khi AI/Fast Lane gửi tin thành công. */
