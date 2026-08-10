@@ -122,3 +122,5 @@ app.listen(config.port, () => {
 
 // Nhận/gửi tin qua Pancake (song song với webhook FB) — không cần URL công khai.
 startPancakePolling();
+
+(await import('./scheduler-followup.js')).startL5Schedulers(); // L5 · M17 quét A/B mỗi giờ + M12 đuổi theo mỗi 15 phút (tự im khi công tắc đóng)

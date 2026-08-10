@@ -10,7 +10,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'conv-state.json');
+// CONV_STATE_FILE: trỏ sổ hội thoại đi chỗ khác — dùng cho TEST và cho việc chạy khô
+// M12 trên bản sao kéo từ VPS. Không đặt biến này thì y hệt trước. Đọc 1 lần lúc nạp
+// module (khác ai-log.js đọc mỗi lần): sổ này giữ trạng thái trong RAM, đổi file giữa
+// chừng sẽ ghi trạng thái của sổ cũ đè lên sổ mới.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const FILE = process.env.CONV_STATE_FILE
+  ? path.resolve(ROOT, process.env.CONV_STATE_FILE)
+  : path.resolve(ROOT, 'conv-state.json');
 const TMP = FILE + '.tmp';
 
 export const S = {
@@ -126,6 +133,50 @@ export function llmTurns24h(convId, now = Date.now()) {
   const arr = Array.isArray(c.llmTurns) ? c.llmTurns : [];
   const cut = now - TURN_WINDOW_MS;
   return arr.filter((t) => t >= cut).length;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SỔ ĐUỔI THEO (M12) — "khách này đã bị đuổi theo lần nào chưa".
+// Ràng buộc cứng của spec là TỐI ĐA 1 TIN/khách/hội thoại, KHÔNG CÓ LẦN 2. Đếm trong
+// RAM là hỏng ngay lần restart đầu tiên (bot restart mỗi lần deploy) → phải nằm ở đây,
+// trong cùng file bền với trạng thái hội thoại.
+//
+// Hai việc TÁCH RIÊNG vì hậu quả khác nhau:
+//   followupSent  — đã GỬI TIN cho khách. Sai là spam người thật.
+//   followupCallAt — chỉ ĐẨY HÀNG CHỜ SALE (nhóm đã cho SĐT/tên). Không gửi tin nào.
+// Gộp một bộ đếm thì đẩy sale một lần là mất luôn quyền nhắn, và ngược lại.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Ghi nhận đã đuổi theo. kind: 'message' (gửi tin) | 'sale' (đẩy hàng chờ sale). */
+export function noteFollowup(convId, kind = 'message', at = Date.now()) {
+  const c = getConv(convId);
+  if (kind === 'sale') { c.followupCallAt = at; }
+  else { c.followupSent = (c.followupSent || 0) + 1; c.followupAt = at; }
+  c.touchedAt = at;
+  markDirty();
+  return { followupSent: c.followupSent || 0, followupAt: c.followupAt || 0, followupCallAt: c.followupCallAt || 0 };
+}
+
+/**
+ * Xem trạng thái hội thoại mà KHÔNG tạo bản ghi mới. `getConv` tạo-nếu-chưa-có, nên
+ * chạy khô M12 trên 1.000 khách giả sẽ đẻ ra 1.000 hội thoại rác trong file thật.
+ * Trả `null` khi chưa từng biết hội thoại này.
+ */
+export function peekConv(convId) {
+  load();
+  return map.get(String(convId || '')) || null;
+}
+
+/** Hội thoại này đã được đuổi theo chưa. Đọc thuần — không tạo bản ghi. */
+export function followupInfo(convId) {
+  const c = peekConv(convId);
+  if (!c) return { followupSent: 0, followupAt: 0, followupCallAt: 0, state: null, owner: null };
+  return {
+    followupSent: c.followupSent || 0,
+    followupAt: c.followupAt || 0,
+    followupCallAt: c.followupCallAt || 0,
+    state: c.state, owner: c.owner,
+  };
 }
 
 /** Ghi 1 lượt của nhánh CƠ HỘI hậu bán (M13) — ngân sách TÁCH khỏi ngân sách bán mới. */
