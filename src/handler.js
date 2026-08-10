@@ -226,6 +226,9 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     // khách thật, tỷ lệ Fast Lane tụt 42,0% → 25,5%, tức chạm đúng ngưỡng LÙI (<25%).
     aiTurns: Math.max(state.aiTurns, state.botTurns || 0),
     lastAiText: state.lastAiText || '',
+    // VIỆC 4 — đọc từ conv-state (BỀN qua restart), không từ RAM: khách im 5 ngày thì
+    // chắc chắn server đã restart vài lần, `state` trong RAM trắng trơn.
+    idleMs: (() => { const t = state.pkConvId ? (getConv(state.pkConvId).lastAiAt || 0) : 0; return t ? Date.now() - t : 0; })(),
     usedLanes: state.fastLanesUsed,
   });
   noteFastLane(fl);

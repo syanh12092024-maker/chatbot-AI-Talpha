@@ -133,6 +133,8 @@ function buildPrice(kb, lang) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const INTRO_ENABLED = process.env.FASTLANE_INTRO !== '0';
+// Im bao lâu thì coi khách quay lại là CHẠM ĐẦU MỚI (việc 4).
+const RETURN_AFTER_MS = Number(process.env.RETURN_AFTER_H ?? 24) * 3600e3;
 const INTRO_MAX_IMAGES = 2; // đủ để tin, chưa đủ để Meta coi là spam (#2022)
 
 /** Ảnh sản phẩm chính của page — dùng cho tin đầu. */
@@ -257,7 +259,7 @@ function pageIdByName(name) {
  *   `aiHint` (nếu có) = cột "Gợi ý cho AI" của dòng kịch bản vừa khớp — tầng gọi nạp
  *   thêm vào prompt lượt này. Bỏ qua trường này thì hệ thống chạy y như trước.
  */
-export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes, pageId, hasOrder }) {
+export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', idleMs = 0, usedLanes, pageId, hasOrder }) {
   let hintExtra = {};
   const escalate = (reason) => ({ handled: false, reply: null, lane: '', reason, ...hintExtra });
   if (!fastLaneConfig.enabled) return escalate('fastlane tắt');
@@ -266,6 +268,13 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes, pa
   const s = norm(raw);
   const lang = detectLang(raw);
   const used = usedLanes instanceof Set ? usedLanes : new Set();
+
+  // VIỆC 4 — KHÁCH QUAY LẠI SAU KHI IM LÂU.
+  // Trước đây: khách im 5 ngày rồi nhắn "hi po" → Botcake im (không phải tin đầu),
+  // Fast Lane im (aiTurns ≥ 1 → silent_greet), AI không được gọi → KHÔNG AI TRẢ LỜI.
+  // Im lâu rồi quay lại là chạm đầu MỚI: coi như chưa nói gì, gửi lại tin đầu đủ ảnh+giá.
+  const returning = idleMs > 0 && idleMs >= RETURN_AFTER_MS;
+  if (returning) { aiTurns = 0; used.clear(); }
 
   // ── L8 · Khớp bảng kịch bản SỚM ────────────────────────────────────────────
   // Khớp ở đây (chứ không phải ở lớp 2) vì hai lý do:

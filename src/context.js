@@ -32,6 +32,18 @@ export function emptyProfile() {
     imagesSent: [],      // loại ảnh đã gửi (feedback, chứng nhận...)
     objections: [],      // phản đối đã nêu
     ordered: false,      // đã gọi create_draft_order thành công
+    // ── VIỆC 2 · BOT KHÁC ĐÃ NÓI GÌ ─────────────────────────────────────────
+    // Botcake/RTO nói cùng một khách nhưng hệ thống mình KHÔNG ghi nhận → AI chào
+    // lại, báo giá lại, gửi ảnh trùng. `cleanHistory` cố ý VỨT template khỏi ngữ
+    // cảnh (đúng: đưa nguyên văn vào prompt là dạy model bắt chước đúng thứ
+    // HARD_RULES cấm) — nên phải bóc thành DỮ KIỆN trước khi vứt.
+    otherBot: {
+      greeted: false,      // đã có bot khác chào
+      quotedPrice: false,  // đã có bot khác báo giá
+      sentImages: false,   // đã có bot khác gửi ảnh
+      askedAddress: false, // đã có bot khác xin tên/SĐT/địa chỉ
+      orderNoted: false,   // đã có bot khác báo "đơn đã tạo"
+    },
     hydratedAt: 0,
   };
 }
@@ -126,7 +138,24 @@ export function absorbToolUses(messages = [], prof = emptyProfile()) {
 /**
  * @returns {Array<{role:'user'|'assistant', text:string}>} cũ → mới, đã bỏ rác
  */
-export function cleanHistory(msgs = [], pageId) {
+// Bóc DỮ KIỆN từ một tin của bot khác. Không giữ chữ, chỉ giữ "chuyện gì đã xảy ra".
+const OB_PRICE  = /(\d[\d.,]*\s*(sar|aed|kwd|qar|omr|bhd)|price|presyo|magkano|السعر)/i;
+const OB_GREET  = /(how can (we|i).{0,30}help|hi\b|hello|kumusta|welcome|interested in our)/i;
+const OB_ADDR   = /(full name|contact number|complete address|provide the information|pangalan|tirahan|العنوان)/i;
+const OB_ORDER  = /(your order (is|has been)|order number|đơn hàng|placed an order)/i;
+export function absorbOtherBot(text, hasAttach, prof) {
+  if (!prof || !prof.otherBot) return prof;
+  const o = prof.otherBot;
+  const t = String(text || '');
+  if (hasAttach) o.sentImages = true;
+  if (OB_ORDER.test(t)) o.orderNoted = true;
+  else if (OB_ADDR.test(t)) o.askedAddress = true;
+  else if (OB_PRICE.test(t)) o.quotedPrice = true;
+  else if (OB_GREET.test(t)) o.greeted = true;
+  return prof;
+}
+
+export function cleanHistory(msgs = [], pageId, prof = null) {
   const out = [];
   for (const m of msgs) {
     const isPage = String(m?.from?.id) === String(pageId);
@@ -135,8 +164,9 @@ export function cleanHistory(msgs = [], pageId) {
     if (isPage) {
       // Tin page RỖNG (sticker/ảnh/"...") = 13,7% tin page — không mang thông tin, bỏ.
       if (!raw || /^\.{2,}$/.test(raw)) continue;
-      // Template Botcake/RTO — chỉ làm nhiễu và dạy model bắt chước đúng thứ HARD_RULES cấm.
-      if (isAutomationTemplate(raw)) continue;
+      // Template Botcake/RTO — KHÔNG đưa nguyên văn vào prompt (dạy model bắt chước
+      // đúng thứ HARD_RULES cấm), nhưng phải BÓC DỮ KIỆN trước khi bỏ (việc 2).
+      if (isAutomationTemplate(raw)) { absorbOtherBot(raw, hasAttach, prof); continue; }
       const t = cleanText(raw, MSG_MAX_CHARS);
       if (t) out.push({ role: 'assistant', text: t });
     } else {
@@ -150,8 +180,14 @@ export function cleanHistory(msgs = [], pageId) {
 /** Dựng hồ sơ lần đầu từ tối đa 20 tin Pancake — CHỈ CHẠY MỘT LẦN cho mỗi hội thoại. */
 export function hydrateProfile(msgs = [], pageId, prof = emptyProfile()) {
   for (const m of msgs.slice(-HYDRATE_MAX_MSGS)) {
-    if (String(m?.from?.id) === String(pageId)) continue; // chỉ tin KHÁCH mới mang thông tin đơn
     const raw = (m?.original_message || m?.message || '').replace(/<[^>]*>/g, ' ').trim();
+    if (String(m?.from?.id) === String(pageId)) {
+      // VIỆC 2 — tin của PAGE: không mang thông tin đơn, nhưng nói cho biết
+      // Botcake/sale đã chào/báo giá/gửi ảnh/xin địa chỉ chưa. Đây là lần DUY NHẤT
+      // hệ thống đọc 20 tin thô, nên phải bóc ở đây, không thì mất luôn.
+      if (isAutomationTemplate(raw)) absorbOtherBot(raw, (m?.attachments || []).length > 0, prof);
+      continue;
+    }
     if (raw) extractFromText(raw, prof);
   }
   prof.hydratedAt = Date.now();
@@ -192,6 +228,16 @@ export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
   if (prof.tier || prof.qty) L.push(`Gói quan tâm: ${[prof.tier, prof.qty ? `SL ${prof.qty}` : '', prof.total ? `tổng ${prof.total}` : ''].filter(Boolean).join(' · ')}`);
   if (prof.imagesSent.length) L.push(`Đã xem ảnh: ${prof.imagesSent.join(', ')} (đừng gửi lại loại cũ)`);
   if (prof.objections.length) L.push(`Phản đối đã nêu: ${prof.objections.map((k) => OBJ_LABEL[k] || k).join(', ')}`);
+  // VIỆC 2 — AI phải biết bot khác đã nói gì, nếu không sẽ chào lại / báo giá lại.
+  const ob = prof.otherBot || {};
+  const obL = [
+    ob.greeted && 'đã chào',
+    ob.quotedPrice && 'ĐÃ BÁO GIÁ',
+    ob.sentImages && 'đã gửi ảnh',
+    ob.askedAddress && 'đã xin tên/SĐT/địa chỉ',
+    ob.orderNoted && 'đã báo đơn đã tạo',
+  ].filter(Boolean);
+  if (obL.length) L.push(`Kênh khác (Botcake/sale) đã làm: ${obL.join(', ')} — ĐỪNG lặp lại.`);
   L.push(`COD: ${prof.cod ? 'khách đã xác nhận' : 'chưa xác nhận'}`);
   const miss = missingSteps(prof);
   L.push(`Bước còn thiếu: ${miss.length ? miss.join(', ') : 'đủ thông tin — chốt đơn được'}`);
@@ -224,7 +270,7 @@ function mergeTurns(rows) {
  * @returns {{messages:Array, kept:number, dropped:number}}
  */
 export function buildContextMessages({ prof, msgs = [], pageId, meta = {}, recent = RECENT_MSGS }) {
-  const rows = cleanHistory(msgs, pageId);
+  const rows = cleanHistory(msgs, pageId, prof); // truyền prof để bóc dữ kiện bot khác (việc 2)
   const dropped = msgs.length - rows.length;
   // bỏ cụm tin khách đang xử lý ở cuối
   while (rows.length && rows[rows.length - 1].role === 'user') rows.pop();

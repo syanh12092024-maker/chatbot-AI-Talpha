@@ -76,6 +76,18 @@ export function looksHuman(text, aiTexts) {
   return true;
 }
 
+
+// VIỆC 3 — tin đầu này CHỈ là lời chào (nhường Botcake), hay là câu hỏi thật (mình trả)?
+// Lệch một chiều có chủ ý: không chắc thì coi là CÂU HỎI THẬT và tự trả lời. Nhường nhầm
+// một câu hỏi = khách phải hỏi lại 2 lần; trả nhầm một lời chào = chỉ trùng với Botcake,
+// mà cửa nhường ② vẫn bắt được.
+const JUST_GREETING = /^(hi+|hello+|helo+|hey+|hai|kumusta|kamusta|musta|salam|assalamualaikum|good (?:morning|afternoon|evening|day)|start|get started|مرحبا|السلام عليكم|اهلا|بدء)([\s,.!?]*(po|poh|ho|sir|maam|ma'?am|there))*[\s,.!?]*$/i;
+export function isJustGreeting(text) {
+  const t = String(text || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!t) return true;                        // sticker/ảnh trơ — cứ để Botcake chào
+  return JUST_GREETING.test(t);
+}
+
 /**
  * Quyết định AI có được nói trong hội thoại này không.
  *
@@ -161,10 +173,21 @@ export function decideConv({ pageId, conv, msgs, custId, aiTexts }) {
     }
   }
 
-  // ── ⑤ NHƯỜNG BOTCAKE TIN ĐẦU (giữ nguyên luồng cũ mày đang quen) ─────────────
-  const custMsgCount = list.filter((m) => !isPage(m) && textOf(m)).length;
-  if (custMsgCount <= 1) {
-    return deny(S.GREET, OWNER.BOTCAKE, 'tin đầu của khách — nhường Botcake chào');
+  // ── ⑤ NHƯỜNG BOTCAKE TIN ĐẦU — nhưng CHỈ KHI khách mới chỉ CHÀO ─────────────
+  //
+  // VIỆC 3. v1 nhường theo VỊ TRÍ (`custMsgCount <= 1`), bất kể khách nói gì. Nhưng
+  // "how much" là tin phổ biến thứ 3 (237/10.900) và thường là tin ĐẦU TIÊN. Nhường
+  // mù quáng nghĩa là: khách hỏi giá → Botcake chào → khách phải hỏi lại lần nữa.
+  // Giờ chia theo NỘI DUNG: chỉ nhường khi tin đầu thực sự chỉ là lời chào.
+  const custMsgs = list.filter((m) => !isPage(m) && textOf(m));
+  if (custMsgs.length <= 1) {
+    const first = textOf(custMsgs[0] || {});
+    if (isJustGreeting(first)) {
+      return deny(S.GREET, OWNER.BOTCAKE, 'tin đầu chỉ là lời chào — nhường Botcake');
+    }
+    // Tin đầu là CÂU HỎI THẬT → không nhường; Fast Lane trả tin đầu đủ ảnh+giá.
+    const rq = setConvState(convId, S.QUALIFY, OWNER.AI, 'tin đầu là câu hỏi thật — không nhường Botcake');
+    return { allow: true, state: S.QUALIFY, owner: OWNER.AI, reason: 'tin đầu là câu hỏi thật', changed: rq.changed };
   }
 
   // ── ⑥ AI ĐƯỢC NÓI ────────────────────────────────────────────────────────────

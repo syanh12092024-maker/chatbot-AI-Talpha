@@ -90,9 +90,10 @@ const aiTagged = new Set(); // hội thoại đã gắn thẻ bot (đỡ gọi A
 //  T2: cùng 1 hội thoại lỗi ≥3 lần liên tiếp → mới coi là kẹt thật.
 //  T3: mỗi hội thoại chỉ đẩy hàng chờ 1 lần/24h + gắn thẻ 'AI back Sale'.
 const convFail = new Map(); // convId -> { count, lastPushAt }
+const yieldLogged = new Map(); // convId -> mark đã ghi 'other_bot' (việc 5, chống ghi lặp)
 function pruneMaps() { // chống phình RAM sau nhiều tuần chạy
   if (aiTagged.size > 8000) { let n = aiTagged.size - 6000; for (const k of aiTagged) { aiTagged.delete(k); if (--n <= 0) break; } }
-  for (const m of [seen, pendingMark, convFail]) {
+  for (const m of [seen, pendingMark, convFail, yieldLogged]) {
     if (m.size > 8000) { let n = m.size - 6000; for (const k of m.keys()) { m.delete(k); if (--n <= 0) break; } }
   }
 }
@@ -221,7 +222,7 @@ async function pollPage(pageId) {
       // 4 slot bị giữ suốt thời gian chờ, giờ cao điểm sẽ nghẽn oan.
       if (BOTCAKE_GRACE_MS > 0) await sleep(BOTCAKE_GRACE_MS);
       await _acquire();
-      try { await processConv(pageId, c, psid, custId); convFail.delete(c.id); }
+      try { await processConv(pageId, c, psid, custId, mark); convFail.delete(c.id); }
       catch (e) { noteConvError(pageId, c, psid, custId, e); }
       finally { _release(); }
     })());
@@ -260,7 +261,7 @@ function noteConvError(pageId, c, psid, custId, e) {
 }
 
 // Xử lý 1 hội thoại (chạy trong semaphore): đọc tin → AI soạn → gửi qua Pancake.
-async function processConv(pageId, c, psid, custId) {
+async function processConv(pageId, c, psid, custId, mark = '') {
   let msgs = await pkGetMessages(pageId, c.id, custId);
   if (!msgs.length) return;
 
@@ -273,6 +274,19 @@ async function processConv(pageId, c, psid, custId) {
     // đếm riêng để biết Botcake đang lấn bao nhiêu.
     if (/tin cuối là của page/.test(d.reason || '')) {
       noteYield(pageId, 'trước khi soạn');
+      // VIỆC 5 — ghi lượt của BOT KHÁC vào Sổ AI. Không ghi thì Botcake vô hình hoàn
+      // toàn: "% tin xử lý 0 token" sai, quy công chốt đơn sai, A/B nhiễu. Ghi 1 lần
+      // cho mỗi mốc hội thoại (không lặp mỗi vòng poll).
+      if (yieldLogged.get(c.id) !== mark) {
+        yieldLogged.set(c.id, mark);
+        const last = msgs[msgs.length - 1];
+        try {
+          logAi(pageId, custId, 'other_bot', {
+            name: c.from?.name || '', conv: c.id, lane: 'BOTCAKE',
+            text: String(last?.original_message || last?.message || '').replace(/\s+/g, ' ').slice(0, 80),
+          });
+        } catch { /* sổ AI không chặn */ }
+      }
       console.log(`[nhường] ${c.from?.name || psid} (page ${pageId}): page đã trả lời trước → AI nhường (chưa tốn token)`);
     } else if (d.changed) {
       console.log(`[owner] ${c.from?.name || psid} (page ${pageId}): → ${d.state} — ${d.reason}`);
