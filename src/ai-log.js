@@ -26,7 +26,8 @@ export function logAi(pageId, custId, type, meta = {}) {
     // Gắn Ở ĐÂY chứ không ở chỗ gọi: chỗ gọi (pancake-poll) là file của luồng khác.
     if (type === 'reply' && rec.scriptVersion === undefined) rec.scriptVersion = scriptVersionOf(rec.page);
     fs.appendFileSync(logFile(), JSON.stringify(rec) + '\n');
-    if (type === 'reply' && _idxBuilt && isLlmReply(rec)) _idxPush(rec.page, rec.cust, rec.t); // chỉ mục đếm lượt — Fast Lane không tính (xem ghi chú dưới)
+    if (type === 'reply' && _idxBuilt && isLlmReply(rec)) _idxPush(rec.page, rec.cust, rec.t); // chỉ mục NGÂN SÁCH — Fast Lane không tính
+    if (type === 'reply' && _botIdxBuilt) _botPush(rec.page, rec.cust, rec.t); // chỉ mục 'bot đã nói chưa' — MỌI tin, kể cả Fast Lane
     if (type === 'reply' && _textIdxBuilt) _textPush(rec.page, rec.cust, rec.text); // chỉ mục tin AI (M05)
   } catch (e) { console.error('[ai-log] lỗi ghi:', e.message); }
 }
@@ -93,6 +94,32 @@ export function recentReplyCount(pageId, custId, windowMs = 24 * 3600 * 1000) {
     _idxBuilt = true;
   }
   const arr = _replyIdx.get(String(pageId) + ':' + String(custId)) || [];
+  const since = Date.now() - windowMs;
+  return arr.filter((t) => t >= since).length;
+}
+
+// ---- BOT ĐÃ NÓI CHƯA (đếm MỌI tin bot gửi, kể cả câu mẫu Fast Lane) ---------------
+// Câu hỏi khác hẳn câu hỏi ở trên, nên phải có bộ đếm riêng:
+//   recentReplyCount  → "đã tiêu bao nhiêu LƯỢT ĐẮT TIỀN" → ngân sách M11
+//   recentBotTurns    → "bot đã mở miệng lần nào chưa"    → cửa im lặng của Fast Lane
+// Fast Lane chỉ được im (sticker, bấm START lại, "ok", chào lại) khi bot ĐÃ nói ít nhất
+// một lần — im ngay từ tin đầu là bỏ rơi khách. Câu mẫu Fast Lane cũng là "bot đã nói",
+// dù nó không tốn token. Dùng chung một bộ đếm cho cả hai việc thì sửa đúng vế này
+// sẽ làm hỏng vế kia.
+const _botIdx = new Map(); // 'page:cust' -> [timestamps]
+let _botIdxBuilt = false;
+function _botPush(page, cust, t) {
+  const k = page + ':' + cust;
+  let arr = _botIdx.get(k);
+  if (!arr) { arr = []; _botIdx.set(k, arr); }
+  arr.push(t);
+}
+export function recentBotTurns(pageId, custId, windowMs = 24 * 3600 * 1000) {
+  if (!_botIdxBuilt) {
+    for (const r of readLog()) if (r.type === 'reply') _botPush(String(r.page), String(r.cust), r.t);
+    _botIdxBuilt = true;
+  }
+  const arr = _botIdx.get(String(pageId) + ':' + String(custId)) || [];
   const since = Date.now() - windowMs;
   return arr.filter((t) => t >= since).length;
 }

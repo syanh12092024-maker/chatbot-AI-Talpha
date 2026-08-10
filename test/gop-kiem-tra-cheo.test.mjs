@@ -104,7 +104,7 @@ test('③ logAi tự gắn scriptVersion cho mọi tin reply', () => {
 //    tin Fast Lane xử lý KHÔNG được trừ ngân sách lượt AI
 // ─────────────────────────────────────────────────────────────────────────────
 
-const { recentReplyCount } = await import('../src/ai-log.js');
+const { recentReplyCount, recentBotTurns } = await import('../src/ai-log.js');
 
 test('④ tin Fast Lane KHÔNG bị tính vào ngân sách lượt AI', () => {
   const P = '900010', C = 'cust-fl';
@@ -122,6 +122,19 @@ test('④ bản ghi CŨ không có trường lane vẫn được đếm — th�
   logAi(P, C, 'reply', { text: 'tin cũ' }); // không có lane
   assert.equal(recentReplyCount(P, C), 1,
     'bỏ đếm bản ghi cũ là reset chui bộ đếm lượt của mọi khách đang dở hội thoại');
+});
+
+test('④ "bot đã nói chưa" là bộ đếm RIÊNG — Fast Lane CÓ tính ở đây', () => {
+  const P = '900012', C = 'cust-two-counters';
+  logAi(P, C, 'reply', { text: 'bảng giá', lane: 'tpl_price' });
+  assert.equal(recentReplyCount(P, C), 0, 'ngân sách: câu mẫu 0 token không được trừ');
+  assert.equal(recentBotTurns(P, C), 1,
+    'cửa im lặng Fast Lane: câu mẫu VẪN là "bot đã nói" — nếu không, hội thoại do Fast Lane '
+    + 'lo trọn vẹn sẽ mãi đứng ở 0 và không lane im nào mở được (đo thật: 42,0% → 25,5%)');
+
+  logAi(P, C, 'reply', { text: 'AI trả lời', lane: 'AI' });
+  assert.equal(recentReplyCount(P, C), 1);
+  assert.equal(recentBotTurns(P, C), 2);
 });
 
 // Ngân sách M11 đếm bằng sổ RIÊNG (conv-state.llmTurns24h) chứ không mượn Sổ AI — phần đó

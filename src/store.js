@@ -33,7 +33,7 @@ export function getState(psid) {
       psid, pageId: '', pageName: '',
       messages: [],     // lịch sử gửi cho Claude
       transcript: [],   // {who:'customer'|'ai'|'system', text, at} — cho dashboard
-      aiTurns: 0, handoff: false, handoffReason: '', saleNoted: false,
+      aiTurns: 0, botTurns: 0, handoff: false, handoffReason: '', saleNoted: false,
       leadScore: null, orderId: null,
       lastText: '', lastAt: 0, createdAt: ts(),
     };

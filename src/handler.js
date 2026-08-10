@@ -3,7 +3,7 @@ import { runCloser } from './closer.js';
 import { getState, recordInbound, recordOutbound, isAiEnabled } from './store.js';
 import { getKBForPage } from './kb.js';
 import { config } from './config.js';
-import { logAi, recentReplyCount } from './ai-log.js';
+import { logAi, recentReplyCount, recentBotTurns } from './ai-log.js';
 import { cleanText } from './text.js';
 import { pkTagByName, pkAddNote } from './pancake.js';
 import { fastLane, noteFastLane, detectLang } from './fast-lane.js';
@@ -131,7 +131,12 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   }
   // TRẦN LƯỢT BỀN VỮNG (#8): đồng bộ bộ đếm RAM với số tin AI đã trả trong 24h (từ Sổ AI)
   // → restart server không còn "reset chui" cho khách thêm lượt.
-  if (state.pkCustId) state.aiTurns = Math.max(state.aiTurns, recentReplyCount(pageId, state.pkCustId));
+  if (state.pkCustId) {
+    state.aiTurns = Math.max(state.aiTurns, recentReplyCount(pageId, state.pkCustId));
+    // "Bot đã nói chưa" là câu hỏi KHÁC với "đã tiêu bao nhiêu lượt đắt tiền" — đếm riêng,
+    // vì câu mẫu Fast Lane có tính là bot đã nói (nhưng không tiêu ngân sách). Xem ai-log.js.
+    state.botTurns = Math.max(state.botTurns || 0, recentBotTurns(pageId, state.pkCustId));
+  }
 
   // ĐO TOKEN CỦA LƯỢT NÀY — reset mỗi lượt để tin không gọi AI (vd holding message)
   // không bị gán nhầm số token của lượt trước. classifier + closer cùng cộng vào đây.
@@ -215,7 +220,11 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   const fl = fastLane({
     text,
     kb,
-    aiTurns: state.aiTurns,
+    // Các lane IM LẶNG chỉ mở khi bot đã nói ít nhất 1 lần — dùng botTurns (mọi tin bot đã
+    // gửi), KHÔNG dùng aiTurns (chỉ lượt gọi model). Nếu dùng aiTurns thì hội thoại mà Fast
+    // Lane đang lo trọn vẹn sẽ mãi đứng ở 0 và không lane im nào mở được: đo trên 7.886 tin
+    // khách thật, tỷ lệ Fast Lane tụt 42,0% → 25,5%, tức chạm đúng ngưỡng LÙI (<25%).
+    aiTurns: Math.max(state.aiTurns, state.botTurns || 0),
     lastAiText: state.lastAiText || '',
     usedLanes: state.fastLanesUsed,
   });
@@ -233,6 +242,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     state.messages.push({ role: 'user', content: cleanText(text).trim() || '(khách gửi ảnh/sticker)' });
     state.messages.push({ role: 'assistant', content: fl.reply });
     state.lastAiText = fl.reply;
+    state.botTurns = (state.botTurns || 0) + 1; // câu mẫu vẫn là 'bot đã nói' (không tiêu ngân sách)
     return reply(psid, fl.reply, false, fl.lane);
   }
 
@@ -283,6 +293,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
 
   const text2 = await runCloser({ kb, state });
   state.aiTurns += 1;
+  state.botTurns = (state.botTurns || 0) + 1;
   noteTurnSpent(state, opportunity);
   // M07: hút thông tin của lượt vừa chạy vào hồ sơ — tham số tool là nguồn chính xác nhất,
   // và không tốn thêm lần gọi model nào (tool_use đã nằm sẵn trong state.messages).
