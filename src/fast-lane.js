@@ -116,8 +116,61 @@ function buildPrice(kb, lang) {
   return `${f.priceHead}\n${lines}${f.priceTail}`;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TIN ĐẦU (tpl_intro) — phải ĐỦ: ảnh + móc + BẢNG GIÁ + COD/free ship + câu chốt
+//
+// Vì sao dựng riêng thay vì dùng thẳng `config.greeting`:
+//   · `greeting` marketer viết chỉ là CÂU MÓC. Ví dụ thật (Ginger Belly Care KSA):
+//     "🥶 Do you often feel a cold sensation in your lower abdomen at night?"
+//     — không có giá, không có ảnh. Khách hỏi giá mà nhận câu móc là mất lượt.
+//   · 94,4% ảnh của hệ thống (2.872/3.041) nằm ở lượt AI ĐẦU TIÊN — đúng lượt
+//     Fast Lane chặn. Fast Lane không gửi ảnh = khách thấy ít hàng thật hơn trước.
+//   · GIÁ luôn dựng từ `productTiers` (KB), KHÔNG lấy từ text marketer viết →
+//     đổi giá trong Sheet là tin đầu đúng ngay, không bao giờ trôi.
+//
+// Chia làm 2 tin theo nguyên tắc #2 (ảnh không bao giờ gửi trơ):
+//   ① ảnh + caption = câu móc      ② tin chữ = bảng giá + COD + câu chốt
+// ─────────────────────────────────────────────────────────────────────────────
+
+const INTRO_ENABLED = process.env.FASTLANE_INTRO !== '0';
+const INTRO_MAX_IMAGES = 2; // đủ để tin, chưa đủ để Meta coi là spam (#2022)
+
+/** Ảnh sản phẩm chính của page — dùng cho tin đầu. */
+function introImages(kb) {
+  const p = (kb?.products || [])[0];
+  if (!p) return [];
+  const all = (typeof p.images === 'object' && Array.isArray(p.images) ? p.images : [])
+    .filter((im) => /^https?:\/\//.test(String(im?.url || '')));
+  if (!all.length) return [];
+  const isMain = (im) => String(im.label || '').toLowerCase().includes('sản phẩm');
+  const main = all.filter(isMain);
+  return (main.length ? main : all).slice(0, INTRO_MAX_IMAGES)
+    .map((im) => ({ url: im.url, label: im.label || 'Ảnh sản phẩm' }));
+}
+
+/**
+ * Dựng tin đầu đầy đủ.
+ * @returns {{caption:string, text:string, images:Array}|null}
+ *   caption — gửi kèm ảnh đầu tiên (câu móc của page)
+ *   text    — tin chữ khép lượt: bảng giá + COD + câu chốt
+ */
+export function buildIntro(kb, lang) {
+  const f = FRAME[lang] || FRAME.en;
+  const lines = priceLines(kb);
+  const images = introImages(kb);
+  const hook = String(kb?.config?.greeting || '').trim();
+  const name = String((kb?.products || [])[0]?.name || '').trim();
+
+  // Không có bảng giá thì tin đầu KHÔNG đủ thông tin → để AI lo, đừng gửi nửa vời.
+  if (!lines) return null;
+
+  const caption = hook || (name ? `${f.priceHead.split('!')[0]}! 😊 ${name}` : f.priceHead);
+  const text = `${lines}${f.priceTail}`;
+  return { caption, text, images };
+}
+
 function buildGreeting(kb, lang) {
-  // Ưu tiên câu chào riêng của page (M02 sẽ điền); chưa có thì dựng từ tên SP + giá.
+  // GIỮ LẠI cho đường lui: FASTLANE_INTRO=0 quay về hành vi cũ (chỉ chữ, không ảnh).
   const custom = kb?.config?.greeting;
   if (custom) return custom;
   const price = buildPrice(kb, lang);
@@ -125,6 +178,24 @@ function buildGreeting(kb, lang) {
   const name = (kb?.products || [])[0]?.name;
   const f = FRAME[lang] || FRAME.en;
   return name ? `Hello po! 😊 This is ${name}.${f.greetTail}` : null;
+}
+
+
+// Kết quả tin đầu: ảnh + caption + tin chữ. Dùng chung cho START / chào / hỏi giá —
+// ba cửa này đều là CHẠM ĐẦU, khách cần thấy đủ sản phẩm + giá ngay lượt một.
+function introResult(kb, lang, used, lane, reason) {
+  if (INTRO_ENABLED) {
+    const it = buildIntro(kb, lang);
+    if (it) {
+      used.add('greet'); used.add('price');   // đã báo giá rồi, đừng bắn lại ở lượt sau
+      registerOurMessage(it.text); registerOurMessage(it.caption);
+      return { handled: true, reply: it.text, caption: it.caption, images: it.images, lane, reason };
+    }
+  }
+  const g = buildGreeting(kb, lang);           // đường lui: chỉ chữ
+  if (!g || used.has('greet')) return null;
+  used.add('greet'); registerOurMessage(g);
+  return { handled: true, reply: g, lane, reason };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -135,6 +206,7 @@ export const fastLaneConfig = {
   enabled: process.env.FASTLANE !== '0',
   templates: process.env.FASTLANE_TEMPLATES !== '0', // lớp 2 (giá/ship/cách đặt)
   rules: process.env.SCRIPT_RULES !== '0',           // L8 · bảng Kịch bản tự động (§07)
+  intro: process.env.FASTLANE_INTRO !== '0',         // tin đầu đủ ảnh+giá (đường lui: =0 → chỉ chữ)
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -227,8 +299,8 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes, pa
   // (b) Nút START của Messenger.
   if (START_BTN.test(s)) {
     if (aiTurns >= 1) return { handled: true, reply: null, lane: 'silent_start', reason: 'bấm START lại giữa hội thoại' };
-    const g = buildGreeting(kb, lang);
-    if (g && !used.has('greet')) { used.add('greet'); registerOurMessage(g); return { handled: true, reply: g, lane: 'tpl_start', reason: 'nút START' }; }
+    const r = introResult(kb, lang, used, 'tpl_start', 'nút START');
+    if (r) return r;
     return escalate('nút START nhưng chưa dựng được câu chào từ KB');
   }
 
@@ -255,8 +327,8 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes, pa
   // (d) Chào hỏi thuần.
   if (GREET.test(s)) {
     if (aiTurns >= 1) return { handled: true, reply: null, lane: 'silent_greet', reason: 'chào lại giữa hội thoại' };
-    const g = buildGreeting(kb, lang);
-    if (g && !used.has('greet')) { used.add('greet'); registerOurMessage(g); return { handled: true, reply: g, lane: 'tpl_greet', reason: 'chào hỏi' }; }
+    const r = introResult(kb, lang, used, 'tpl_greet', 'chào hỏi');
+    if (r) return r;
     return escalate('chào hỏi nhưng chưa dựng được câu chào từ KB');
   }
 
@@ -311,7 +383,15 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes, pa
   };
 
   const f = FRAME[lang] || FRAME.en;
-  if (ASK_PRICE.test(raw)) return tpl('price', kb?.config?.fastLanePrice || buildPrice(kb, lang), 'hỏi giá');
+  if (ASK_PRICE.test(raw)) {
+    // Hỏi giá = chạm đầu điển hình (660 lần trong 10.900 tin). Trả BẢNG GIÁ KÈM ẢNH,
+    // trừ khi page đã tự viết câu trả lời riêng ở `fastLanePrice`.
+    if (!kb?.config?.fastLanePrice && !used.has('price')) {
+      const r = introResult(kb, lang, used, 'tpl_price', 'hỏi giá');
+      if (r) return r;
+    }
+    return tpl('price', kb?.config?.fastLanePrice || buildPrice(kb, lang), 'hỏi giá');
+  }
   if (ASK_HOWTO.test(raw)) return tpl('howto', kb?.config?.fastLaneHowto || f.howto, 'hỏi cách đặt');
   if (ASK_SHIP.test(raw)) return tpl('ship', kb?.config?.fastLaneShip || f.ship, 'hỏi giao hàng');
 

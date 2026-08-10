@@ -1,7 +1,7 @@
 // Vòng lặp hỏi Pancake tin mới → AI trả lời → gửi lại qua Pancake.
 // KHÔNG cần webhook/URL công khai/tunnel/App Review — chỉ cần internet ra ngoài.
 import { config } from './config.js';
-import { pkGetConversations, pkGetMessages, pkSendReply, refreshPancakePages, pkTagByName, pkMarkUnread } from './pancake.js';
+import { pkGetConversations, pkGetMessages, pkSendReply, pkSendImage, refreshPancakePages, pkTagByName, pkMarkUnread } from './pancake.js';
 import { listAiEnabled, getState } from './store.js';
 import { handleIncoming } from './handler.js';
 import { incReply, incLead } from './stats.js';
@@ -300,7 +300,7 @@ async function processConv(pageId, c, psid, custId) {
   }
 
   // history = msgs (đã fetch sẵn ở trên) → AI đọc toàn bộ hội thoại trước khi soạn tin.
-  const { reply, lane } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '' });
+  const { reply, lane, images, caption } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '' });
   if (!reply) return;
 
   // ── CỬA NHƯỜNG BOTCAKE ② — soi lần cuối NGAY TRƯỚC KHI GỬI ────────────────
@@ -317,6 +317,18 @@ async function processConv(pageId, c, psid, custId) {
   }
   // Page vừa rơi vào backoff (do job song song khác) → thôi không gửi thêm.
   if ((sendFail.get(pageId)?.pausedUntil || 0) > Date.now()) return;
+  // ẢNH TRƯỚC, CHỮ SAU (nguyên tắc #2 — ảnh không bao giờ gửi trơ):
+  // caption bám tấm ĐẦU TIÊN, rồi tin chữ khép lượt. Giãn cách imgGapMs cho tự nhiên,
+  // tránh Meta đánh spam #2022 (đã có tiền lệ page bị chặn phải backoff 30 phút).
+  if (Array.isArray(images) && images.length) {
+    for (let i = 0; i < images.length; i++) {
+      if (i) await sleep(config.imgGapMs);
+      const ri = await pkSendImage(pageId, c.id, custId, images[i].url, i === 0 ? (caption || '') : '');
+      if (!ri.ok) { console.warn(`[fastlane-img] ${pageId}: ${ri.error}`); break; } // lỗi ảnh KHÔNG chặn tin chữ
+      try { logAi(pageId, custId, 'image', { name: c.from?.name || '', conv: c.id, lane: lane || '', url: String(images[i].url).slice(0, 120) }); } catch { /* sổ AI không chặn */ }
+    }
+    await sleep(config.imgGapMs);
+  }
   const r = await pkSendReply(pageId, c.id, custId, reply);
   noteSendResult(pageId, r.ok, r.error); // backoff: 2 lần lỗi liên tiếp → ngừng page 30 phút
   if (r.ok) {

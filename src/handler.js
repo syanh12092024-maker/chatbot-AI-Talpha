@@ -243,7 +243,12 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     state.messages.push({ role: 'assistant', content: fl.reply });
     state.lastAiText = fl.reply;
     state.botTurns = (state.botTurns || 0) + 1; // câu mẫu vẫn là 'bot đã nói' (không tiêu ngân sách)
-    return reply(psid, fl.reply, false, fl.lane);
+    // ẢNH TIN ĐẦU: 94,4% ảnh của hệ thống nằm ở lượt 1 — đúng lượt Fast Lane chặn.
+    // Không đẩy ảnh lên đây thì Fast Lane biến lượt giới thiệu thành tin chữ trơ,
+    // tức là TỆ HƠN bản đang chạy. `caption` đi kèm tấm đầu (nguyên tắc #2).
+    const out = reply(psid, fl.reply, false, fl.lane);
+    if (Array.isArray(fl.images) && fl.images.length) { out.images = fl.images; out.caption = fl.caption || ''; }
+    return out;
   }
 
   const cls = await classify(text, kb.products[0]?.name);
