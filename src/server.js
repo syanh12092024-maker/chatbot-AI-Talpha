@@ -122,3 +122,6 @@ app.listen(config.port, () => {
 
 // Nhận/gửi tin qua Pancake (song song với webhook FB) — không cần URL công khai.
 startPancakePolling();
+
+// L7 · M15 mổ hội thoại + tự học sổ template, 02:00 mỗi đêm (tắt trên máy PANCAKE_READONLY=1).
+import('./scheduler-miner.js').then((m) => { const r = m.startMinerScheduler(); if (!r.started) console.log(`[miner] lịch mổ đêm TẮT — ${r.why}`); }).catch((e) => console.error('[miner] không nạp được lịch:', e.message));

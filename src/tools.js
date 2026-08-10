@@ -6,6 +6,7 @@ import { logAi } from './ai-log.js';
 import { createPancakeOrder, ordersEnabled, conversationHasOrder, markConversationOrdered } from './pancake-orders.js';
 import { config } from './config.js';
 import { markClosing } from './conv-owner.js';
+import { recordClosedOrder } from './order-bridge.js'; // M14 · ghi chú chuẩn + hàng chờ tạo đơn
 
 // Định nghĩa tool (function calling) cho closer.
 export const toolDefs = [
@@ -166,14 +167,10 @@ export async function executeTool(name, input, ctx) {
         if (!dedup) { // hội thoại đã có đơn → không đếm lại
           try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
           try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty, conv: state.pkConvId || '' }); } catch { /* sổ AI không chặn */ }
-          // Báo SALE ngay trong Pancake: ghi chú tóm tắt đơn vào hồ sơ khách.
-          const noteLines = [
-            '🤖 AI ĐÃ CHỐT ĐƠN — cần sale xác nhận',
-            `👤 ${input.name || '?'} · ☎ ${input.phone || '?'}`,
-            `📍 ${[input.address, input.city].filter(Boolean).join(', ') || '?'}`,
-            `📦 SL ${input.qty || 1}${input.variant ? ' · ' + input.variant : ''} · 💵 COD (khách đã xác nhận)`,
-          ];
-          try { await pkAddNote(state.pageId, state.pkCustId, noteLines.join('\n')); } catch { /* ghi chú không chặn */ }
+          // M14 · Order Bridge: ghi chú Pancake theo MẪU CHUẨN máy đọc được + đưa vào hàng chờ
+          // "chờ tạo đơn" để sale bấm 1 nút trên dashboard. Thay cho ghi chú tự do trước đây —
+          // ghi chú tự do buộc sale đọc rồi gõ lại từng trường sang form Pancake.
+          try { await recordClosedOrder(state.pageId, state.pkCustId, input, state.pkConvId, { kb, created: config.autoCreateOrder }); } catch (e) { console.warn('[order-bridge] ghi nhận đơn lỗi:', e.message); }
         }
         // KHÔNG trả mã đơn cho khách. AI chỉ xác nhận đã nhận thông tin, nhân viên sẽ liên hệ.
         return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã ghi nhận đủ thông tin đơn. Báo khách "đã nhận đơn, nhân viên sẽ liên hệ xác nhận & giao 2-5 ngày". TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn cho khách.' }) };

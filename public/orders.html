@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Closer — Đơn hàng &amp; Mổ hội thoại (M14 · M15)</title>
+<style>
+  /* Trang RIÊNG, không dùng chung file với admin.html (08-SONG-SONG §3). */
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd6db;text-decoration:none;font-size:12.5px}
+  main{padding:18px 22px 60px;max-width:1360px;margin:0 auto}
+
+  .tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+  .tabs button{background:#fff;color:var(--muted);border:1px solid var(--line)}
+  .tabs button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .badge{display:inline-block;min-width:18px;padding:0 6px;margin-left:6px;border-radius:20px;
+         background:var(--badSoft);color:var(--bad);font-size:11px;font-weight:700}
+  .tabs button.on .badge{background:rgba(255,255,255,.22);color:#fff}
+
+  button{border:0;border-radius:9px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;
+         background:var(--pri);color:#fff}
+  button.ghost{background:#fff;color:var(--pri);border:1px solid var(--line)}
+  button.danger{background:#fff;color:var(--bad);border:1px solid #f2c4c4}
+  button.sm{padding:5px 10px;font-size:12px}
+  button:disabled{opacity:.45;cursor:default}
+  select,input{border:1px solid var(--line);border-radius:9px;padding:7px 10px;font:inherit;background:#fff;color:var(--ink)}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;box-shadow:var(--sh)}
+  .card .k{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  .card .v{font-size:22px;font-weight:700;margin-top:5px;line-height:1.15}
+  .card .n{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .card.good .v{color:var(--ok)} .card.bad .v{color:var(--bad)} .card.warn .v{color:var(--warn)}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:18px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:12px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel .body{padding:13px 15px}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;
+     position:sticky;top:0;background:var(--panel)}
+  tbody tr:hover{background:#fafcfc}
+  td.num{text-align:right;white-space:nowrap}
+  td.dim{color:var(--muted)}
+  .scroll{max-height:620px;overflow:auto}
+  .tag{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600;background:var(--priSoft);color:var(--priDark)}
+  .tag.ok{background:var(--okSoft);color:var(--ok)} .tag.bad{background:var(--badSoft);color:var(--bad)}
+  .tag.warn{background:var(--warnSoft);color:var(--warn)} .tag.none{background:#f1f1f1;color:#777}
+  pre{background:#0b2125;color:#d7e9eb;padding:12px 14px;border-radius:10px;overflow:auto;font-size:12px;line-height:1.55;white-space:pre-wrap;margin:0}
+  .note{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;background:#f7fafa;border:1px solid var(--line);
+        border-radius:8px;padding:8px 10px;white-space:pre-wrap;color:#2b3b3d}
+  .empty{color:var(--muted);padding:14px 2px}
+  .block{background:var(--badSoft);border:1px solid #f2c4c4;border-radius:8px;padding:7px 10px;margin-top:6px;font-size:12px}
+  .pass{background:var(--okSoft);border:1px solid #bfe6cd;border-radius:8px;padding:7px 10px;margin-top:6px;font-size:12px}
+  .banner{background:var(--warnSoft);border:1px solid #f0d9ae;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12.5px}
+  .lnk{color:var(--pri);text-decoration:underline;text-underline-offset:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🛒 Đơn hàng &amp; Mổ hội thoại</h1>
+  <span class="sub">M14 Order Bridge · M15 Conversation Miner · tự học sổ template</span>
+  <span class="sp"></span>
+  <a href="/admin">← Bảng điều khiển</a>
+</header>
+
+<main>
+  <div id="banner"></div>
+  <div class="cards" id="cards"></div>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="view"><div class="empty">đang tải…</div></div>
+</main>
+
+<script>
+const API='/admin/api/order-bridge';
+const j=(u,o)=>fetch(u,o).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;});
+const post=(u,b)=>j(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=n=>n==null?'—':Number(n).toLocaleString('vi-VN');
+const dt=t=>t?new Date(t).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+
+let SUM={};
+const TABS={
+  queue:{title:'Chờ tạo đơn', render:rQueue},
+  reports:{title:'Báo cáo mổ (M15)', render:rReports},
+  templates:{title:'Mẫu template chờ duyệt', render:rTemplates},
+};
+const cur=()=>{const k=(location.hash||'#queue').slice(1);return TABS[k]?k:'queue';};
+window.go=k=>{if(cur()===k)render();else location.hash=k;};
+window.addEventListener('hashchange',render);
+
+async function boot(){
+  try{SUM=await j(API+'/summary');}catch(e){SUM={};}
+  const q=SUM.queue||{},m=SUM.miner||{};
+  document.getElementById('banner').innerHTML=
+    (SUM.readonly?`<div class="banner">🔒 <b>PANCAKE_READONLY=1</b> — máy này chỉ ĐỌC. Nút <b>Tạo đơn Pancake</b> bị khoá.</div>`:'')
+   +(SUM.mode==='B'?`<div class="banner">⚙️ Đang ở <b>chế độ B</b> (AUTO_CREATE_ORDER=1) — AI tự tạo đơn. Chế độ A là mặc định.</div>`:'');
+  const c=(k,v,n,cls='')=>`<div class="card ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  document.getElementById('cards').innerHTML=
+    c('Chờ tạo đơn',num(q.pending||0),`${num(q.created||0)} đã tạo · ${num(q.skipped||0)} bỏ qua`,(q.pending||0)>0?'warn':'good')
+   +c('Bị khoá vì giá',num(q.priceBlocked||0),'tổng không khớp bảng giá KB',(q.priceBlocked||0)>0?'bad':'good')
+   +c('Chế độ',SUM.mode||'—',SUM.mode==='A'?'bán tự động — sale bấm tạo đơn':'tự động')
+   +c('Mẫu chờ duyệt',num(SUM.templates?.pending||0),`${num(SUM.templates?.approved||0)} đã duyệt`, (SUM.templates?.pending||0)>0?'warn':'')
+   +c('Lượt mổ gần nhất',m.lastDate||'chưa chạy',m.lastRunAt?`${m.lastPages||0} page · ${m.lastMinutes||0} phút · ${m.lastCalls||0} lượt model`:'lịch 02:00 mỗi đêm');
+  document.getElementById('tabs').innerHTML=Object.entries(TABS).map(([k,v])=>{
+    const n=k==='queue'?(q.pending||0):k==='templates'?(SUM.templates?.pending||0):0;
+    return `<button class="${cur()===k?'on':'ghost'}" onclick="go('${k}')">${v.title}${n?`<span class="badge">${n}</span>`:''}</button>`;
+  }).join('');
+  render();
+}
+async function render(){
+  document.getElementById('tabs').querySelectorAll('button').forEach((b,i)=>{
+    const k=Object.keys(TABS)[i];b.className=cur()===k?'on':'ghost';
+  });
+  const el=document.getElementById('view');
+  el.innerHTML='<div class="empty">đang tải…</div>';
+  try{await TABS[cur()].render(el);}catch(e){el.innerHTML=`<div class="panel"><div class="body"><span class="tag bad">lỗi</span> ${esc(e.message)}</div></div>`;}
+}
+
+// ═══ ① HÀNG CHỜ TẠO ĐƠN ═════════════════════════════════════════════════════
+async function rQueue(el){
+  const d=await j(API+'/queue?status='+encodeURIComponent(qStatus));
+  if(!d.items.length){el.innerHTML=statusBar()+`<div class="panel"><div class="body"><div class="empty">Không có mục nào (${esc(qStatus)}).</div></div></div>`;return;}
+  el.innerHTML=statusBar()+d.items.map(cardOf).join('');
+}
+let qStatus='pending';
+window.setQStatus=s=>{qStatus=s;render();};
+function statusBar(){
+  return `<div class="tabs">`+['pending','created','skipped','all'].map(s=>
+    `<button class="${qStatus===s?'on':'ghost'} sm" onclick="setQStatus('${s}')">${({pending:'Chờ tạo',created:'Đã tạo',skipped:'Đã bỏ',all:'Tất cả'})[s]}</button>`).join('')+`</div>`;
+}
+function cardOf(it){
+  const price=it.priceCheck||{};
+  const st={pending:'<span class="tag warn">chờ tạo</span>',created:'<span class="tag ok">đã tạo</span>',skipped:'<span class="tag none">đã bỏ</span>'}[it.status]||'';
+  return `<div class="panel" id="q_${esc(it.id)}">
+    <h2>${esc(it.name||'(chưa có tên)')} · <span class="hint">${esc(it.pageName)} · ${dt(it.t)}</span> ${st}
+      ${price.ok?'':'<span class="tag bad">giá chưa khớp KB</span>'}
+      <span style="flex:1"></span>
+      <a class="lnk" href="${esc(it.link)}" target="_blank">mở chat Pancake ↗</a>
+    </h2>
+    <div class="body">
+      <div class="note">${esc(it.note||'')}</div>
+      ${price.ok?'':`<div class="block">⛔ ${esc(price.reason||'chưa đối chiếu được bảng giá')}</div>`}
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="ghost sm" onclick="doCheck('${esc(it.id)}')">Soi 4 cửa chống trùng</button>
+        <button class="sm" ${it.status!=='pending'||SUM.readonly?'disabled':''} onclick="doCreate('${esc(it.id)}')">Tạo đơn Pancake</button>
+        <button class="danger sm" ${it.status!=='pending'?'disabled':''} onclick="doSkip('${esc(it.id)}')">Bỏ khỏi hàng chờ</button>
+      </div>
+      <div id="r_${esc(it.id)}"></div>
+    </div></div>`;
+}
+window.doCheck=async id=>{
+  const box=document.getElementById('r_'+id);box.innerHTML='<div class="empty">đang soi…</div>';
+  try{
+    const r=await post(`${API}/queue/${encodeURIComponent(id)}/check`);
+    box.innerHTML=r.ok
+      ?`<div class="pass">✅ Sạch cả 4 nguồn chống trùng và khớp bảng giá — tạo đơn được.</div>`
+      :r.blocks.map(b=>`<div class="block">⛔ <b>${esc(b.code)}</b> — ${esc(b.reason)}</div>`).join('');
+  }catch(e){box.innerHTML=`<div class="block">Lỗi: ${esc(e.message)}</div>`;}
+};
+window.doCreate=async id=>{
+  if(!confirm('Tạo đơn THẬT trong Pancake cho mục này?'))return;
+  const box=document.getElementById('r_'+id);box.innerHTML='<div class="empty">đang tạo…</div>';
+  try{
+    const r=await post(`${API}/queue/${encodeURIComponent(id)}/create`);
+    box.innerHTML=`<div class="pass">✅ Đã tạo đơn${r.id?' #'+esc(r.id):''}.</div>`;
+    boot();
+  }catch(e){box.innerHTML=`<div class="block">Không tạo: ${esc(e.message)}</div>`;}
+};
+window.doSkip=async id=>{
+  const reason=prompt('Lý do bỏ khỏi hàng chờ? (chỉ đánh dấu trong sổ — KHÔNG xoá đơn Pancake nào)');
+  if(reason===null)return;
+  try{await post(`${API}/queue/${encodeURIComponent(id)}/skip`,{reason});boot();}
+  catch(e){alert('Lỗi: '+e.message);}
+};
+
+// ═══ ② BÁO CÁO MỔ M15 ═══════════════════════════════════════════════════════
+async function rReports(el){
+  const list=await j(API+'/reports');
+  if(!list.length){el.innerHTML=`<div class="panel"><div class="body"><div class="empty">Chưa có báo cáo nào. Lịch mổ chạy 02:00 mỗi đêm — hoặc mổ thử một page ở dưới.</div>
+    <div style="margin-top:10px;display:flex;gap:8px"><input id="mid" placeholder="pageId để mổ thử"><button class="sm" onclick="doMine()">Mổ page này</button></div>
+    <div id="mineOut"></div></div></div>`;return;}
+  el.innerHTML=`<div class="panel"><h2>Báo cáo mới nhất mỗi page <span class="hint">${list.length} page · nhấp để xem chi tiết</span></h2>
+    <div class="scroll"><table><thead><tr><th>Page</th><th>Ngày</th><th class="num">Mẫu</th><th class="num">Phản đối</th>
+      <th class="num">Câu giết</th><th class="num">Câu ăn</th><th>Ngôn ngữ</th><th></th></tr></thead>
+    <tbody>${list.map(r=>`<tr>
+      <td><b>${esc(r.pageName)}</b><div class="dim">${esc(r.pageId)}</div></td>
+      <td class="dim">${esc(r.date)}${r.windowDays===7?' <span class="tag">gộp 7 ngày</span>':''}</td>
+      <td class="num">${r.skipped?'—':`${r.sample?.won||0}✓ / ${r.sample?.lost||0}✗`}</td>
+      <td class="num">${r.skipped?'—':(r.objections||[]).length}</td>
+      <td class="num">${r.skipped?'—':(r.killers||[]).length}</td>
+      <td class="num">${r.skipped?'—':(r.winners||[]).length}</td>
+      <td class="dim">${r.skipped?`<span class="tag none">${esc(r.reason||'bỏ qua')}</span>`:Object.entries(r.langMix||{}).map(([k,v])=>`${esc(k)} ${Math.round(v*100)}%`).join(' · ')}</td>
+      <td><button class="ghost sm" onclick="showReport('${esc(r.pageId)}')">Chi tiết</button></td>
+    </tr>`).join('')}</tbody></table></div></div>
+    <div class="panel"><h2>Mổ thử một page <span class="hint">đúng 1 lời gọi model (~110đ)</span></h2>
+      <div class="body"><div style="display:flex;gap:8px"><input id="mid" placeholder="pageId"><button class="sm" onclick="doMine()">Mổ page này</button></div><div id="mineOut"></div></div></div>
+    <div class="panel" id="detail" style="display:none"><h2 id="detailTitle"></h2><div class="body"><pre id="detailBody"></pre></div></div>`;
+}
+window.showReport=async pid=>{
+  const d=await j(`${API}/reports/${encodeURIComponent(pid)}?limit=5`);
+  document.getElementById('detail').style.display='';
+  document.getElementById('detailTitle').textContent=`🔎 ${d.pageName} — ${d.count} báo cáo gần nhất`;
+  document.getElementById('detailBody').textContent=JSON.stringify(d.reports,null,2);
+  document.getElementById('detail').scrollIntoView({behavior:'smooth'});
+};
+window.doMine=async()=>{
+  const id=document.getElementById('mid').value.trim();if(!id)return;
+  const box=document.getElementById('mineOut');box.innerHTML='<div class="empty">đang mổ… (kéo hội thoại + 1 lời gọi model)</div>';
+  try{const r=await post(`${API}/mine/${encodeURIComponent(id)}`);box.innerHTML=`<pre>${esc(JSON.stringify(r,null,2))}</pre>`;}
+  catch(e){box.innerHTML=`<div class="block">Lỗi: ${esc(e.message)}</div>`;}
+};
+
+// ═══ ③ MẪU TEMPLATE CHỜ DUYỆT ═══════════════════════════════════════════════
+async function rTemplates(el){
+  const d=await j(API+'/templates?status='+encodeURIComponent(tStatus));
+  el.innerHTML=`<div class="tabs">`+['pending','approved','rejected','all'].map(s=>
+      `<button class="${tStatus===s?'on':'ghost'} sm" onclick="setTStatus('${s}')">${({pending:'Chờ duyệt',approved:'Đã duyệt',rejected:'Đã bỏ',all:'Tất cả'})[s]}</button>`).join('')+`</div>`
+   +`<div class="panel"><h2>Mẫu học được từ dữ liệu thật
+      <span class="hint">lặp nguyên văn ≥3 hội thoại &amp; dài ≥40 ký tự · duyệt xong M05 mới dùng</span></h2>
+      ${d.items.length?`<div class="scroll"><table><thead><tr><th>Nội dung mẫu</th><th class="num">Hội thoại</th><th class="num">Lần</th><th>Page</th><th></th></tr></thead>
+      <tbody>${d.items.map(c=>`<tr>
+        <td style="max-width:620px"><div class="note">${esc(c.sample)}</div>
+          <div class="dim" style="margin-top:4px">regex: <code>${esc(c.pattern)}</code></div></td>
+        <td class="num">${c.convs}</td><td class="num">${c.hits}</td>
+        <td class="dim">${(c.pages||[]).length}</td>
+        <td>${c.status==='pending'
+          ?`<button class="sm" onclick="tpl('${esc(c.id)}','approve')">Duyệt</button>
+            <button class="danger sm" onclick="tpl('${esc(c.id)}','reject')">Bỏ</button>`
+          :`<span class="tag ${c.status==='approved'?'ok':'none'}">${c.status==='approved'?'đã duyệt':'đã bỏ'}</span>`}</td>
+      </tr>`).join('')}</tbody></table></div>`
+      :`<div class="body"><div class="empty">Không có mẫu nào (${esc(tStatus)}). Sổ được bồi sau mỗi lượt mổ đêm.</div></div>`}</div>`;
+}
+let tStatus='pending';
+window.setTStatus=s=>{tStatus=s;render();};
+window.tpl=async(id,act)=>{
+  if(act==='approve'&&!confirm('Duyệt mẫu này? Duyệt xong M05 sẽ coi mọi tin khớp mẫu là TIN MÁY.'))return;
+  const reason=act==='reject'?prompt('Lý do bỏ mẫu này?')||'':'';
+  try{await post(`${API}/templates/${encodeURIComponent(id)}/${act}`,{reason});boot();}
+  catch(e){alert('Lỗi: '+e.message);}
+};
+
+boot();
+</script>
+</body>
+</html>
