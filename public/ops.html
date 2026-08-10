@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Closer — Ops Console (M18/M19)</title>
+<style>
+  /* Trang RIÊNG, không dùng chung file với admin.html: 4 luồng v2 đang sửa song song,
+     admin.html là 1 file gộp CSS+JS inline nên chạm vào là xung đột (08-SONG-SONG §3). */
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd6db;text-decoration:none;font-size:12.5px}
+  main{padding:16px 22px 60px;max-width:1440px;margin:0 auto}
+
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--line)}
+  .tabs a{padding:9px 14px;border-radius:9px 9px 0 0;cursor:pointer;font-weight:600;color:var(--muted);
+          font-size:13px;border:1px solid transparent;border-bottom:0}
+  .tabs a.on{background:var(--panel);color:var(--priDark);border-color:var(--line)}
+  .tabs a .n{font-size:11px;background:var(--badSoft);color:var(--bad);border-radius:20px;padding:0 6px;margin-left:5px;font-weight:700}
+
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  input,select,textarea{border:1px solid var(--line);border-radius:9px;padding:7px 10px;font:inherit;background:#fff;color:var(--ink)}
+  textarea{width:100%;min-height:64px;resize:vertical}
+  button{border:0;border-radius:9px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;background:var(--pri);color:#fff}
+  button.ghost{background:#fff;color:var(--pri);border:1px solid var(--line)}
+  button.sm{padding:4px 9px;font-size:12px;border-radius:7px}
+  button:disabled{opacity:.5;cursor:default}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:11px;margin-bottom:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh)}
+  .card .k{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  .card .v{font-size:22px;font-weight:700;margin-top:5px;line-height:1.15}
+  .card .n{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .card.good .v{color:var(--ok)} .card.bad .v{color:var(--bad)} .card.warn .v{color:var(--warn)}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .panel .body{padding:13px 15px}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:7px 9px;text-align:right;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;
+     position:sticky;top:0;background:var(--panel);white-space:nowrap;z-index:1}
+  th:first-child,td:first-child{text-align:left}
+  th.l,td.l{text-align:left}
+  tbody tr:hover{background:#fafcfc}
+  td.dim{color:var(--muted)}
+  .scroll{max-height:620px;overflow:auto}
+  code{background:#f3f5f7;border-radius:5px;padding:1px 5px;font-size:11.5px;word-break:break-all}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+  .pill.g{background:var(--okSoft);color:var(--ok)}
+  .pill.o{background:var(--warnSoft);color:var(--warn)}
+  .pill.r{background:var(--badSoft);color:var(--bad)}
+  .pill.m{background:#f1f1f1;color:#777}
+  .why{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45;white-space:normal;max-width:420px}
+  .why b.r{color:var(--bad)} .why b.o{color:var(--warn)}
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
+  .banner.r{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
+  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner.g{background:var(--okSoft);color:#15803d;border:1px solid #b8e6c8}
+  .banner .s{display:block;font-weight:400;font-size:12px;margin-top:4px}
+  pre.txt{background:#0b2125;color:#d8ecee;border-radius:10px;padding:12px 14px;font-size:12px;
+          white-space:pre-wrap;word-break:break-word;margin:0;line-height:1.55;max-height:420px;overflow:auto}
+  .msg{white-space:normal;max-width:520px;line-height:1.5}
+  .lnk{color:var(--pri);text-decoration:underline;text-underline-offset:2px}
+  .empty{padding:22px 15px;text-align:center;color:var(--muted)}
+  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0b2125;color:#fff;
+         padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:9}
+  #toast.on{opacity:1}
+  #toast.bad{background:var(--bad)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ops Console</h1>
+  <span class="sub">M18 · M19 — page nào không chạy được, và vì sao</span>
+  <span class="sp"></span>
+  <span class="sub" id="clock"></span>
+  <a href="/admin" target="_blank">← Dashboard</a>
+  <a href="/admin/api/economics/ui" target="_blank">Unit Economics ↗</a>
+</header>
+<main>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"></div>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const n0 = (v) => (v == null ? '—' : Number(v).toLocaleString('vi-VN'));
+const p1 = (v) => (v == null ? '—' : Number(v).toFixed(1).replace('.', ',') + '%');
+const hm = (t) => (t ? new Date(t).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—');
+const ago = (t) => { if (!t) return '—'; const m = Math.round((Date.now() - t) / 60000);
+  return m < 1 ? 'vừa xong' : m < 60 ? m + ' phút trước' : m < 1440 ? Math.round(m/60) + ' giờ trước' : Math.round(m/1440) + ' ngày trước'; };
+const ICON = { red:'🔴', orange:'🟠', green:'🟢' };
+const CLS = { red:'r', orange:'o', green:'g' };
+
+let toastT;
+function toast(msg, bad) {
+  const el = $('#toast'); el.textContent = msg; el.className = 'on' + (bad ? ' bad' : '');
+  clearTimeout(toastT); toastT = setTimeout(() => { el.className = ''; }, 3200);
+}
+async function api(url, opt) {
+  const r = await fetch(url, opt);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+  return j;
+}
+const post = (url, body) => api(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+const loading = () => { $('#view').innerHTML = '<div class="empty">Đang tải…</div>'; };
+const fail = (e) => { $('#view').innerHTML = `<div class="banner r">Không tải được: ${esc(e.message)}</div>`; };
+
+// ───────────────────────────────────────────────────────────────── TAB 1 · PAGE
+async function rPages() {
+  loading();
+  let d; try { d = await api('/admin/api/ops/summary?days=7'); } catch (e) { return fail(e); }
+  const t = d.totals, h = d.health;
+  const badHealth = h.checks.filter((c) => c.level !== 'green');
+
+  const banner = badHealth.length
+    ? `<div class="banner ${CLS[h.level]}">${ICON[h.level]} ${badHealth.length} chỉ số sức khoẻ bất thường
+        ${badHealth.map((c) => `<span class="s">${ICON[c.level]} <b>${esc(c.label)}</b>: ${esc(c.value)} (ngưỡng ${esc(c.threshold)}) → ${esc(c.action)}</span>`).join('')}</div>`
+    : `<div class="banner g">🟢 Cả 9 chỉ số sức khoẻ đều xanh<span class="s">Bản tin 09:00 vẫn gửi hằng ngày — im lặng không phải tín hiệu tốt.</span></div>`;
+
+  $('#view').innerHTML = banner + `
+  <div class="cards">
+    <div class="card ${t.runningButBlocked ? 'bad' : 'good'}"><div class="k">Đang chạy mà bị chặn</div><div class="v">${t.runningButBlocked}</div><div class="n">bật AI nhưng chưa đủ điều kiện</div></div>
+    <div class="card"><div class="k">Page bật AI</div><div class="v">${t.aiEnabled}<span style="font-size:14px;color:var(--muted)">/${t.pages}</span></div><div class="n">${t.blocked} page chưa chạy được</div></div>
+    <div class="card ${t.red ? 'bad' : 'good'}"><div class="k">Page cảnh báo đỏ</div><div class="v">${t.red}</div><div class="n">xem cột "Vì sao"</div></div>
+    <div class="card"><div class="k">Chốt 7 ngày</div><div class="v">${p1(t.closeRatePct)}</div><div class="n">${n0(t.orders)} đơn / ${n0(t.leads)} khách</div></div>
+    <div class="card"><div class="k">đ/đơn 7 ngày</div><div class="v">${n0(t.vndPerOrder)}</div><div class="n">tiền token trên mỗi đơn</div></div>
+    <div class="card"><div class="k">Va chạm Botcake</div><div class="v">${d.collisionScan ? n0(d.collisionScan.collisions) : '—'}</div><div class="n">${d.collisionScan ? `${d.collisionScan.checked} hội thoại · ${ago(d.collisionScan.at)}` : 'chưa quét — xem tab Botcake'}</div></div>
+  </div>
+  <div class="panel"><h2>Bảng page <span class="hint">đỏ lên đầu · số chốt/đ-đơn cắt 7 ngày từ Sổ AI (M20)</span></h2>
+   <div class="scroll"><table>
+    <thead><tr><th>Page</th><th>AI</th><th>Sẵn sàng</th><th>Botcake</th><th>Thẻ</th><th>POS</th><th>Khoá</th><th>Chốt</th><th>đ/đơn</th><th class="l">Cảnh báo — vì sao</th></tr></thead>
+    <tbody>${d.pages.map(rowPage).join('')}</tbody>
+   </table></div></div>`;
+}
+
+function rowPage(p) {
+  const yes = (v, y, n, m) => (v == null ? `<span class="pill m">${m}</span>` : v ? `<span class="pill g">${y}</span>` : `<span class="pill r">${n}</span>`);
+  const bot = p.botcake;
+  const botCell = [
+    bot.locked == null ? '<span class="pill m">chưa đánh dấu</span>' : bot.locked ? '<span class="pill g">🔒 đã khoá</span>' : '<span class="pill r">⚠️ tự do</span>',
+    bot.collisions ? `<div class="why">${bot.collisions} va chạm</div>` : '',
+    bot.yieldPct != null && bot.yields ? `<div class="why">nhường ${p1(bot.yieldPct)}</div>` : '',
+  ].join('');
+  return `<tr>
+   <td class="l"><b>${esc(p.name)}</b><div class="why">${esc(p.pageId)}${p.marketer ? ' · ' + esc(p.marketer) : ''}</div></td>
+   <td>${p.aiEnabled ? '<span class="pill g">BẬT</span>' : '<span class="pill m">tắt</span>'}
+       <div style="margin-top:4px"><button class="sm ghost" onclick="toggleAi('${esc(p.pageId)}',${p.aiEnabled ? 'false' : 'true'})">${p.aiEnabled ? 'Tắt' : 'Bật'}</button></div></td>
+   <td><span class="pill ${p.aiAllowed ? (p.readiness === 'READY' ? 'g' : 'o') : 'r'}">${esc(p.readiness)}</span></td>
+   <td>${botCell}</td>
+   <td>${yes(p.tags, '✅', '❌', 'chưa rõ')}${(p.tagsMissing || []).length ? `<div class="why">thiếu: ${esc(p.tagsMissing.join(', '))}</div>` : ''}</td>
+   <td>${yes(p.pos, '✅', '❌', 'chưa rõ')}</td>
+   <td>${p.handoffPct == null ? '<span class="pill m">—</span>' : `<span class="pill ${CLS[p.handoffLevel]}">${p1(p.handoffPct)}</span>`}<div class="why">${n0(p.convs)} hội thoại</div></td>
+   <td>${p1(p.closeRatePct)}<div class="why">${n0(p.orders)}/${n0(p.leads)}</div></td>
+   <td>${n0(p.vndPerOrder)}</td>
+   <td class="l">${p.warnings.length
+      ? p.warnings.map((w) => `<div class="why">${ICON[w.level]} <b class="${CLS[w.level]}">${esc(w.text)}</b></div>`).join('')
+      : '<span class="pill g">—</span>'}</td>
+  </tr>`;
+}
+
+window.toggleAi = async (id, on) => {
+  try { await post('/admin/api/pages/' + id + '/ai', { on }); toast(on ? '✓ Đã bật AI' : '✓ Đã tắt AI'); rPages(); }
+  catch (e) { toast(e.message, true); }
+};
+
+// ─────────────────────────────────────────────────────────────── TAB 2 · BOTCAKE
+async function rBotcake() {
+  loading();
+  let d; try { d = await api('/admin/api/ops/botcake'); } catch (e) { return fail(e); }
+  const s = d.scan;
+  $('#view').innerHTML = `
+  <div class="banner o">Vùng mù lớn nhất của hệ thống<span class="s">${esc(d.apiNote)}</span></div>
+  <div class="panel"><h2>Va chạm 24h <span class="hint">số lần template Botcake xuất hiện TRONG phiên AI — thước đo M05 có thật sự hiệu quả không</span>
+     <span class="sp"></span><button id="scanBtn" onclick="scanCol()">Quét lại (gọi Pancake)</button></h2>
+   <div class="body">
+    ${s ? `<div class="cards" style="margin:0">
+      <div class="card ${s.collisions ? 'bad' : 'good'}"><div class="k">Va chạm</div><div class="v">${n0(s.collisions)}</div><div class="n">${ago(s.at)}</div></div>
+      <div class="card"><div class="k">Hội thoại soi được</div><div class="v">${n0(s.checked)}</div><div class="n">trong ${n0(s.sessions)} phiên AI ${s.hours}h qua</div></div>
+      <div class="card ${s.skipped || s.failed ? 'warn' : ''}"><div class="k">Không soi được</div><div class="v">${n0(s.skipped + s.noAiWindow + s.failed)}</div><div class="n">${n0(s.skipped)} vượt trần · ${n0(s.noAiWindow)} không thấy tin AI trong 25 tin · ${n0(s.failed)} lỗi API</div></div>
+     </div>
+     ${s.byPattern.length ? `<table style="margin-top:12px"><thead><tr><th class="l">Mẫu đã bắt</th><th>Số lần</th></tr></thead>
+      <tbody>${s.byPattern.map((x) => `<tr><td class="l"><code>${esc(x.pattern)}</code></td><td>${x.count}</td></tr>`).join('')}</tbody></table>` : ''}
+     <div style="margin-top:12px"><button class="ghost" onclick="showSamples()">Xem từng tin va chạm (đối chiếu tay)</button></div>`
+     : `<div class="empty">Chưa quét lần nào. Bấm <b>Quét lại</b> — sẽ đọc hội thoại thật qua Pancake nên chỉ chạy khi bấm.</div>`}
+   </div></div>
+
+  <div class="panel"><h2>Điều kiện khoá theo page <span class="hint">Botcake không cho đọc nội dung flow → tick tay sau khi đã đặt điều kiện thẻ</span></h2>
+   <div class="body" style="padding-bottom:0"><div class="why" style="max-width:none">${d.guide.map((g, i) => `${i + 1}. ${esc(g)}`).join('<br>')}</div></div>
+   <div class="scroll"><table>
+    <thead><tr><th>Page</th><th>AI</th><th>Điều kiện khoá</th><th>Va chạm 24h</th><th>AI nhường</th><th class="l">Ghi chú</th><th></th></tr></thead>
+    <tbody>${d.pages.map((p) => `<tr>
+      <td class="l"><b>${esc(p.name)}</b><div class="why">${esc(p.pageId)}</div></td>
+      <td>${p.aiEnabled ? '<span class="pill g">BẬT</span>' : '<span class="pill m">tắt</span>'}</td>
+      <td>${p.locked == null ? '<span class="pill m">chưa đánh dấu</span>' : p.locked ? '<span class="pill g">🔒 đã khoá</span>' : '<span class="pill r">⚠️ tự do</span>'}
+          ${p.lockAt ? `<div class="why">${esc(p.lockBy || 'ai đó')} · ${ago(p.lockAt)}</div>` : ''}</td>
+      <td>${p.collisions == null ? '<span class="pill m">chưa quét</span>' : `${n0(p.collisions)}<div class="why">${p.convsHit}/${p.convs} hội thoại</div>`}</td>
+      <td>${p.yieldPct == null ? '—' : p1(p.yieldPct)}<div class="why">${n0(p.yields)} lượt</div></td>
+      <td class="l"><input id="nt_${esc(p.pageId)}" value="${esc(p.lockNote)}" placeholder="vd: đã đặt điều kiện 3 thẻ, 12/08" style="width:100%"></td>
+      <td><button class="sm ${p.locked ? 'ghost' : ''}" onclick="mark('${esc(p.pageId)}',${p.locked ? 'false' : 'true'})">${p.locked ? 'Bỏ đánh dấu' : 'Đánh dấu đã khoá'}</button></td>
+     </tr>`).join('')}</tbody>
+   </table></div></div>
+
+  <div class="panel"><h2>Sổ nhận diện template <span class="hint">${d.templates.builtin} mẫu dựng sẵn + ${d.templates.extra} mẫu tự thêm — M05 và M07 cùng dùng sổ này</span></h2>
+   <div class="body">
+    <div class="bar">
+      <input id="newTpl" placeholder="regex mới, vd: your parcel is out for delivery" style="flex:1;min-width:280px">
+      <button onclick="addTpl()">Thêm mẫu</button>
+      <button class="ghost" onclick="post('/admin/api/ops/botcake/reload').then(()=>{toast('✓ Đã nạp lại');rBotcake()})">Nạp lại</button>
+    </div>
+    <div class="bar">
+      <input id="testTxt" placeholder="dán một tin thật vào đây để thử sổ có bắt không" style="flex:1;min-width:280px">
+      <button class="ghost" onclick="testTpl()">Test</button>
+      <span id="testOut" class="why"></span>
+    </div>
+   </div>
+   <div class="scroll"><table>
+     <thead><tr><th class="l">Mẫu</th><th>Nguồn</th><th></th></tr></thead>
+     <tbody>${d.templates.items.map((x) => `<tr>
+       <td class="l"><code>${esc(x.pattern)}</code></td>
+       <td>${x.builtin ? '<span class="pill m">dựng sẵn</span>' : '<span class="pill g">tự thêm</span>'}</td>
+       <td>${x.builtin ? '' : `<button class="sm ghost" onclick="delTpl(${JSON.stringify(x.pattern).replace(/"/g, '&quot;')})">Gỡ</button>`}</td>
+      </tr>`).join('')}</tbody>
+   </table></div></div>`;
+}
+
+window.scanCol = async () => {
+  const b = $('#scanBtn'); b.disabled = true; b.textContent = 'Đang đọc hội thoại thật…';
+  try { const r = await post('/admin/api/ops/botcake/collisions', { hours: 24 }); toast(`✓ Soi ${r.checked} hội thoại · ${r.collisions} va chạm`); rBotcake(); }
+  catch (e) { toast(e.message, true); b.disabled = false; b.textContent = 'Quét lại (gọi Pancake)'; }
+};
+window.showSamples = async () => {
+  const d = await api('/admin/api/ops/botcake/collisions');
+  $('#view').insertAdjacentHTML('afterbegin', `<div class="panel"><h2>Từng tin va chạm <span class="hint">mở Pancake đối chiếu tay — nghiệm thu yêu cầu ≥20 hội thoại</span></h2>
+   <div class="scroll"><table><thead><tr><th>Page</th><th class="l">Khách</th><th class="l">Tin Botcake đã chen</th><th class="l">Mẫu bắt</th><th></th></tr></thead>
+   <tbody>${(d.samples || []).map((s) => `<tr>
+     <td class="l">${esc(s.pageName)}</td><td class="l">${esc(s.custName || '—')}</td>
+     <td class="l msg">${esc(s.text)}</td><td class="l"><code>${esc(s.pattern)}</code></td>
+     <td><a class="lnk" href="${esc(s.link)}" target="_blank">Mở ↗</a></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Không có va chạm nào.</td></tr>'}</tbody></table></div></div>`);
+};
+window.mark = async (id, locked) => {
+  try { await post('/admin/api/ops/botcake/lock', { pageId: id, locked, note: document.getElementById('nt_' + id)?.value || '' }); toast('✓ Đã ghi'); rBotcake(); }
+  catch (e) { toast(e.message, true); }
+};
+window.addTpl = async () => {
+  const v = $('#newTpl').value.trim(); if (!v) return;
+  try { await post('/admin/api/ops/botcake/templates', { pattern: v }); toast('✓ Đã thêm mẫu'); rBotcake(); }
+  catch (e) { toast(e.message, true); }
+};
+window.delTpl = async (p) => {
+  if (!confirm('Gỡ mẫu này? M05 sẽ không còn nhận ra tin khớp mẫu là của máy.')) return;
+  try { await api('/admin/api/ops/botcake/templates?pattern=' + encodeURIComponent(p), { method: 'DELETE' }); toast('✓ Đã gỡ'); rBotcake(); }
+  catch (e) { toast(e.message, true); }
+};
+window.testTpl = async () => {
+  const t = $('#testTxt').value; if (!t) return;
+  try {
+    const r = await post('/admin/api/ops/botcake/test', { text: t });
+    $('#testOut').innerHTML = r.hit ? `🤖 <b>là tin máy</b> — bắt bởi <code>${esc(r.pattern)}</code>` : '👤 sổ KHÔNG bắt — M05 sẽ coi đây là người thật gõ';
+  } catch (e) { toast(e.message, true); }
+};
+
+// ──────────────────────────────────────────────── TAB 3 · TRẠNG THÁI HỘI THOẠI (M05)
+async function rConv() {
+  loading();
+  let d; try { d = await api('/admin/api/ops/conv-state'); } catch (e) { return fail(e); }
+  const o = d.overall;
+  const hoPct = o.total > 0 ? (o.byState.HANDOFF || 0) / o.total * 100 : null;
+  $('#view').innerHTML = `
+  <div class="banner ${hoPct != null && hoPct > d.threshold ? 'r' : 'g'}">
+    ${hoPct != null && hoPct > d.threshold ? '🔴' : '🟢'} ${p1(hoPct)} hội thoại đang bị khoá HANDOFF (ngưỡng ${d.threshold}%)
+    <span class="s">Sổ nhận diện template mới phủ 32,1% tin page — 67,9% còn lại là vùng đoán. Đoán sai = AI tự khoá chính mình. Đọc bảng "tin đã kích hoạt khoá" bên dưới để biết oan hay không.</span></div>
+  <div class="cards">
+    ${Object.entries(o.byState).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="card ${k === 'HANDOFF' ? 'bad' : ''}"><div class="k">${esc(k)}</div><div class="v">${n0(v)}</div><div class="n">${p1(o.total ? v / o.total * 100 : null)} tổng</div></div>`).join('')}
+  </div>
+
+  <div class="panel"><h2>Theo page <span class="hint">🔴 khi HANDOFF vượt ${d.threshold}% (chỉ xét page có ≥5 hội thoại)</span></h2>
+   <div class="scroll"><table><thead><tr><th>Page</th><th>Hội thoại</th><th>HANDOFF</th><th>%</th><th>Do "người thật vào chat"</th><th class="l">Chủ hội thoại</th></tr></thead>
+   <tbody>${d.pages.map((p) => `<tr>
+     <td class="l"><b>${esc(p.name)}</b><div class="why">${esc(p.page)}</div></td>
+     <td>${n0(p.total)}</td><td>${n0(p.handoff)}</td>
+     <td><span class="pill ${CLS[p.level]}">${p1(p.handoffPct)}</span></td>
+     <td>${n0(p.humanLocked)}</td>
+     <td class="l"><div class="why">${Object.entries(p.byOwner).map(([k, v]) => `${esc(k)} ${v}`).join(' · ')}</div></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="empty">Chưa có hội thoại nào trong sổ trạng thái.</td></tr>'}</tbody></table></div></div>
+
+  <div class="panel"><h2>AI nhường Botcake <span class="hint">🔴 khi vượt ${d.yieldThreshold}% — mày trả tiền cho AI mà nó không được nói. Đếm từ lúc khởi động (${ago(d.yields.since)})</span></h2>
+   <div class="scroll"><table><thead><tr><th>Page</th><th>Nhường trước khi soạn</th><th>Nhường trước khi gửi</th><th>Tin AI đã gửi</th><th>% nhường</th></tr></thead>
+   <tbody>${d.yields.rows.map((y) => `<tr><td class="l">${esc(y.page)}</td><td>${n0(y.before)}</td><td>${n0(y.send)}</td><td>${n0(y.replies)}</td>
+     <td><span class="pill ${CLS[y.level]}">${p1(y.yieldPct)}</span></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Chưa có lượt nào từ lúc khởi động.</td></tr>'}</tbody></table></div></div>
+
+  <div class="panel"><h2>Tin đã kích hoạt khoá <span class="hint">${n0(d.triggerTotal)} hội thoại — đọc câu này, nếu không phải sale gõ thì AI đang bị khoá oan</span></h2>
+   <div class="scroll"><table><thead><tr><th>Khoá lúc</th><th>Page</th><th class="l">Câu bị coi là "người thật gõ"</th><th class="l">Tin AI ngay trước đó</th><th>Lượt AI</th><th></th></tr></thead>
+   <tbody>${d.triggers.map((t) => `<tr>
+     <td>${hm(t.humanAt)}<div class="why">${t.ageHours}h trước</div></td>
+     <td class="l">${esc(t.name)}</td>
+     <td class="l msg"><b>${esc(t.text) || '<i>(không ghi lại)</i>'}</b></td>
+     <td class="l msg dim">${esc(t.lastAiText) || '—'}</td>
+     <td>${n0(t.aiTurns)}</td>
+     <td><a class="lnk" href="${esc(t.link)}" target="_blank">Mở ↗</a></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="empty">Chưa có hội thoại nào bị khoá vì "người thật vào chat".</td></tr>'}</tbody></table></div></div>`;
+}
+
+// ─────────────────────────────────────────────────────────────── TAB 4 · TOKEN
+async function rTokens() {
+  loading();
+  let d; try { d = await api('/admin/api/ops/tokens'); } catch (e) { return fail(e); }
+  $('#view').innerHTML = `
+  ${d.warnings.map((w) => `<div class="banner o">🟠 ${esc(w)}</div>`).join('')}
+  ${d.warnings.length ? '' : '<div class="banner g">🟢 Thứ tự token đang hợp lý, không token nào chết.</div>'}
+  <div class="panel"><h2>Token Pancake <span class="hint">thứ tự trong .env = thứ tự failover · sổ cái page quét ${ago(Date.now() - (d.registryAgeMs || 0))}</span></h2>
+   <table><thead><tr><th>Token</th><th class="l">Nguồn</th><th class="l">Chủ tài khoản</th><th>Phủ page</th><th>Page bật AI</th><th>Trạng thái</th><th class="l">Lỗi gần nhất</th></tr></thead>
+   <tbody>${d.rows.map((t) => `<tr>
+     <td class="l"><b>#${t.no}</b> <code>…${esc(t.tail)}</code>${t.no === 1 ? ' <span class="pill g">chính</span>' : ''}</td>
+     <td class="l">${esc(t.source)}</td><td class="l">${esc(t.name || '—')}</td>
+     <td>${n0(t.pages)}</td>
+     <td><b>${n0(t.aiPages)}</b><div class="why">/${n0(d.aiPages)} page bật AI</div></td>
+     <td>${t.dead ? '<span class="pill r">🔴 chết</span>' : '<span class="pill g">🟢 sống</span>'}</td>
+     <td class="l"><div class="why">${esc(t.error || '—')}</div></td>
+    </tr>`).join('') || '<tr><td colspan="7" class="empty">Chưa quét sổ cái page (cần token Pancake).</td></tr>'}</tbody></table></div>
+  <div class="why" style="max-width:none">Chỉ hiện 4 ký tự cuối của token. Không có chỗ nào trên trang này in ra token hay api_key đầy đủ.</div>`;
+}
+
+// ──────────────────────────────────────────────────────── TAB 5 · TIN BỊ CHẶN
+async function rBlocked() {
+  loading();
+  let d; try { d = await api('/admin/api/ops/blocked?limit=200'); } catch (e) { return fail(e); }
+  const rules = Object.entries(d.byRule).sort((a, b) => b[1] - a[1]);
+  $('#view').innerHTML = `
+  <div class="cards">
+    <div class="card ${d.total ? 'warn' : 'good'}"><div class="k">Tin bị chặn</div><div class="v">${n0(d.total)}</div><div class="n">${esc(d.note)}</div></div>
+    ${rules.slice(0, 5).map(([k, v]) => `<div class="card"><div class="k">${esc(k)}</div><div class="v">${n0(v)}</div><div class="n">${p1(d.total ? v / d.total * 100 : null)} số tin bị chặn</div></div>`).join('')}
+  </div>
+  <div class="panel"><h2>Chi tiết <span class="hint">chỗ phát hiện sớm kịch bản mới sinh hành vi xấu</span></h2>
+   <div class="scroll"><table><thead><tr><th>Lúc</th><th class="l">Page</th><th class="l">Khách</th><th class="l">Luật</th><th class="l">Vì sao</th><th class="l">Nội dung bị chặn</th></tr></thead>
+   <tbody>${d.list.map((b) => `<tr>
+     <td>${hm(b.t)}</td><td class="l">${esc(b.pageName)}</td><td class="l">${esc(b.cust || '—')}</td>
+     <td class="l"><span class="pill ${b.action === 'block' ? 'r' : 'o'}">${esc(b.rule)}</span><div class="why">${esc(b.action)}</div></td>
+     <td class="l msg">${esc(b.reason)}</td><td class="l msg dim">${esc(b.text)}</td>
+    </tr>`).join('') || '<tr><td colspan="6" class="empty">Chưa có tin nào bị chặn từ lúc khởi động.</td></tr>'}</tbody></table></div></div>`;
+}
+
+// ────────────────────────────────────────────────────── TAB 6 · SỨC KHOẺ (M19)
+async function rHealth() {
+  loading();
+  let d, pv;
+  try { [d, pv] = await Promise.all([api('/admin/api/ops/health'), api('/admin/api/ops/health/preview?kind=daily')]); } catch (e) { return fail(e); }
+  const c = d.context;
+  $('#view').innerHTML = `
+  <div class="banner ${CLS[d.level]}">${ICON[d.level]} ${d.red.length} chỉ số đỏ · ${d.orange.length} chỉ số cam
+    <span class="s">Bot đã chết 2 ngày (09–10/08/2026) vì hết tiền Kimi mà dashboard vẫn xanh. Chín ô dưới đây tồn tại để chuyện đó không lặp lại.</span></div>
+  <div class="cards">
+    <div class="card"><div class="k">Nhà cung cấp</div><div class="v" style="font-size:16px">${esc(c.provider)}</div><div class="n">${esc(c.model)}</div></div>
+    <div class="card ${d.llm.down ? 'bad' : 'good'}"><div class="k">Tầng LLM</div><div class="v" style="font-size:16px">${d.llm.down ? 'ĐANG DỪNG ' + d.llm.downMinutes + ' phút' : 'sống'}</div><div class="n">gọi OK gần nhất ${d.llm.minutesSinceOk} phút trước</div></div>
+    <div class="card ${d.probe.ok === false ? 'bad' : ''}"><div class="k">Dò sống định kỳ</div><div class="v" style="font-size:16px">${d.probe.at ? (d.probe.ok ? '✓ ' + d.probe.ms + 'ms' : '✗ thất bại') : 'chưa dò'}</div><div class="n">${d.probe.at ? ago(d.probe.at) + ' · ' + d.probe.tokens + ' token' : 'mỗi 10 phút, ~20 token'}</div></div>
+    <div class="card"><div class="k">Tin AI 1 giờ qua</div><div class="v">${n0(c.replies1h)}</div><div class="n">${c.aiPages} page bật AI · ${c.peak ? 'giờ cao điểm' : 'ngoài giờ cao điểm'}</div></div>
+  </div>
+  <div class="bar"><button onclick="probe()" id="pb">Dò LLM ngay (~20 token)</button>
+    <button class="ghost" onclick="prev('alert')">Xem bản tin cảnh báo</button>
+    <button class="ghost" onclick="prev('daily')">Xem bản tin 09:00</button></div>
+  <div class="panel"><h2>9 chỉ số <span class="hint">mỗi dòng: đo được gì · ngưỡng · phải làm gì</span></h2>
+   <table><thead><tr><th class="l">Chỉ số</th><th class="l">Đo được</th><th class="l">Ngưỡng</th><th class="l">Phải làm gì</th></tr></thead>
+   <tbody>${d.checks.map((x) => `<tr>
+     <td class="l">${ICON[x.level]} <b>${esc(x.label)}</b></td>
+     <td class="l"><span class="pill ${CLS[x.level]}">${esc(x.value)}</span>${x.detail ? `<div class="why">${esc(x.detail)}</div>` : ''}</td>
+     <td class="l dim">${esc(x.threshold)}</td>
+     <td class="l msg">${esc(x.action)}</td></tr>`).join('')}</tbody></table></div>
+  <div class="panel"><h2>Bản tin 09:00 hằng ngày <span class="hint">gửi KỂ CẢ khi mọi thứ bình thường — im lặng chính là cái bẫy đã làm bot chết 2 ngày</span></h2>
+   <div class="body"><pre class="txt" id="prev">${esc(pv.text)}</pre></div></div>`;
+}
+window.probe = async () => {
+  const b = $('#pb'); b.disabled = true; b.textContent = 'Đang gọi LLM…';
+  try { const r = await post('/admin/api/ops/health/probe'); toast(r.ok ? `✓ LLM sống (${r.ms}ms, ${r.tokens} token)` : '✗ ' + r.error, !r.ok); rHealth(); }
+  catch (e) { toast(e.message, true); b.disabled = false; b.textContent = 'Dò LLM ngay (~20 token)'; }
+};
+window.prev = async (kind) => {
+  try { const r = await api('/admin/api/ops/health/preview?kind=' + kind); $('#prev').textContent = r.text; }
+  catch (e) { toast(e.message, true); }
+};
+
+// ───────────────────────────────────────────────────────────────────── KHUNG
+const TABS = {
+  pages:   { title: 'Bảng page',            render: rPages },
+  botcake: { title: 'Botcake',              render: rBotcake },
+  conv:    { title: 'Trạng thái hội thoại', render: rConv },
+  tokens:  { title: 'Token',                render: rTokens },
+  blocked: { title: 'Tin bị chặn',          render: rBlocked },
+  health:  { title: 'Sức khoẻ (M19)',       render: rHealth },
+};
+const cur = () => (location.hash || '#pages').slice(1);
+function draw() {
+  const k = TABS[cur()] ? cur() : 'pages';
+  $('#tabs').innerHTML = Object.entries(TABS).map(([id, t]) => `<a class="${id === k ? 'on' : ''}" href="#${id}">${t.title}</a>`).join('');
+  TABS[k].render();
+}
+window.addEventListener('hashchange', draw);
+setInterval(() => { $('#clock').textContent = new Date().toLocaleTimeString('vi-VN'); }, 1000);
+draw();
+</script>
+</body>
+</html>
