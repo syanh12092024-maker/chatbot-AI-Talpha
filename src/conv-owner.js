@@ -23,12 +23,24 @@ export const ORDER_STOP_TAGS = new Set([-1, -2, -3, -11, -12, -20]);
 
 // Công tắc: tắt bằng HUMAN_TAKEOVER=0 nếu nhận diện người thật gây im oan.
 const HUMAN_TAKEOVER = process.env.HUMAN_TAKEOVER !== '0';
+// Nhường người thật bao lâu rồi AI nhận lại. 0 = vĩnh viễn.
+const HUMAN_TAKEOVER_TTL_MS = Number(process.env.HUMAN_TAKEOVER_TTL_H ?? 24) * 3600e3;
 
 // Người thật gõ tay thì NGẮN và đời thường ("ok dear", "thanks madam", "pls wait",
 // "yess dear" — tin thật lấy từ Pancake). Template thì dài, nhiều dòng, nhiều emoji.
-// Ngưỡng này cố ý THẬN TRỌNG: nghi ngờ thì coi là MÁY, để AI chạy tiếp (giữ nguyên
-// hành vi cũ) thay vì im vĩnh viễn oan cho một hội thoại.
-const HUMAN_MAX_LEN = 120;
+// Ngưỡng cố ý THẬN TRỌNG: nghi ngờ thì coi là MÁY, để AI chạy tiếp (giữ nguyên hành vi
+// cũ) thay vì im oan cho một hội thoại.
+//
+// ⚠️ Hạ 120 → 80 sau khi đo thật 11/08/2026: sổ nhận diện chỉ phủ 17,4% tin page, nên
+// "vùng đoán" là 82,6%. Mô phỏng production cho thấy 58% hội thoại bị khoá — quá cao.
+// Nhiều ca là template marketing dài 80–120 ký tự lọt qua ngưỡng cũ.
+const HUMAN_MAX_LEN = 80;
+
+// Dấu hiệu MARKETING — người thật trực chat không viết kiểu này.
+const MARKETING = /(free shipping|cash on delivery|\bcod\b|\d+\s*%\s*off|promo|discount|giveaway|sale ends|limited|order now|combo|🚚|⚡|💸|🎉|💎)/i;
+
+// Đếm emoji thô — tin ≥3 emoji gần như chắc chắn là template.
+const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu;
 
 const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').replace(/[^\p{L}\p{N} ]/gu, '').trim();
 
@@ -53,9 +65,11 @@ export function looksHuman(text, aiTexts) {
   if (isAutomationTemplate(raw)) return false;             // template đã biết
   if (isOurs(raw, aiTexts)) return false;                  // chính bot mình
   if (raw.length > HUMAN_MAX_LEN) return false;            // dài = nhiều khả năng template lạ
-  if (/^https?:\/\//i.test(raw)) return false;             // dán link = kịch bản kéo WhatsApp
+  if (/https?:\/\/|wa\.me|wa\.link/i.test(raw)) return false; // dán link = kịch bản kéo WhatsApp
   if (raw.split('\n').filter((l) => l.trim()).length > 2) return false; // nhiều dòng = template
   if (!/\p{L}/u.test(raw)) return false;                   // chỉ emoji/số — không đủ chắc
+  if (MARKETING.test(raw)) return false;                   // giọng quảng cáo = template
+  if ((raw.match(EMOJI) || []).length >= 3) return false;  // nhiều emoji = template
   return true;
 }
 
@@ -85,8 +99,18 @@ export function decideConv({ pageId, conv, msgs, custId, aiTexts }) {
   }
 
   // ── ② Trạng thái ĐÃ CHỐT CỨNG từ trước → giữ nguyên, không xét lại ────────────
-  if (c.state === S.HANDOFF) return { allow: false, state: c.state, owner: c.owner, reason: c.lastReason || 'đã bàn giao người thật', changed: false };
   if (c.state === S.POST_SALE) return { allow: false, state: c.state, owner: c.owner, reason: c.lastReason || 'hậu bán', changed: false };
+  if (c.state === S.HANDOFF) {
+    // Bàn giao vì NGƯỜI THẬT vào chat thì HẾT HẠN sau HUMAN_TAKEOVER_TTL_MS.
+    // Vì sao không khoá vĩnh viễn: nhận diện người thật là suy đoán (sổ template mới
+    // phủ 17,4% tin page), đoán sai một lần mà khoá mãi mãi thì AI chết oan cả hội thoại.
+    // Sale nhắn 3 ngày trước rồi bỏ đó cũng không phải lý do để AI im mãi.
+    // Các lý do bàn giao KHÁC (khiếu nại, chốt đơn, hết ngân sách) vẫn khoá vĩnh viễn.
+    const expired = c.humanAt && HUMAN_TAKEOVER_TTL_MS > 0 && (Date.now() - c.humanAt) > HUMAN_TAKEOVER_TTL_MS;
+    if (!expired) return { allow: false, state: c.state, owner: c.owner, reason: c.lastReason || 'đã bàn giao người thật', changed: false };
+    console.log(`[owner] ${conv?.from?.name || convId}: hết hạn nhường người thật (${Math.round(HUMAN_TAKEOVER_TTL_MS / 3600e3)}h) → AI nhận lại`);
+    setConvState(convId, S.SELLING, OWNER.AI, 'hết hạn nhường người thật', { humanAt: 0 });
+  }
 
   const list = Array.isArray(msgs) ? msgs : [];
   const isPage = (m) => String(m?.from?.id) === String(pageId);
@@ -116,8 +140,9 @@ export function decideConv({ pageId, conv, msgs, custId, aiTexts }) {
     for (const m of tail) {
       const tx = textOf(m);
       if (looksHuman(tx, ours)) {
-        console.log(`[owner] 👤 người thật đã vào chat (${conv?.from?.name || convId}): "${tx.slice(0, 50)}" → AI nhường hẳn`);
-        return deny(S.HANDOFF, OWNER.SALE, `nhân viên đã tiếp quản: "${tx.slice(0, 60)}"`);
+        console.log(`[owner] 👤 người thật đã vào chat (${conv?.from?.name || convId}): "${tx.slice(0, 50)}" → AI nhường`);
+        const r = setConvState(convId, S.HANDOFF, OWNER.SALE, `nhân viên đã tiếp quản: "${tx.slice(0, 60)}"`, { humanAt: Date.now() });
+        return { allow: false, state: S.HANDOFF, owner: OWNER.SALE, reason: r.conv.lastReason, changed: r.changed };
       }
     }
   }

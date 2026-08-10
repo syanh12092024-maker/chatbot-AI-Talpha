@@ -87,7 +87,7 @@ export function allowedPrices(kb) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Ký tự tag vô hình U+E0000–U+E007F — dùng để né bộ lọc trùng lặp của Meta.
-const INVISIBLE_TAG = /[\u{E0000}-\u{E007F}]/u;
+const INVISIBLE_TAG = /[\u{E0000}-\u{E01EF}]/u;
 
 // Lời doạ khách. Đang tồn tại thật ở luồng RTO trên page Kreain Nature PH - Ksa.
 const THREAT = /(taking you to social media|post(?:ing)?\s+(?:you\s+)?in\s+(?:the\s+)?group|report you to|expose you|bóc phốt|bốc phốt|kiện bạn|sue you|blacklist you|đăng lên nhóm)/i;

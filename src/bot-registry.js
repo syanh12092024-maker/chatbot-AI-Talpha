@@ -15,9 +15,16 @@ import { fileURLToPath } from 'node:url';
 
 const FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'botcake-templates.json');
 
-// Ký tự tag vô hình U+E0000–U+E007F: chỉ công cụ tự động mới chèn (né bộ lọc trùng
-// lặp của Meta). Người thật gõ tay không bao giờ có.
-const INVISIBLE_TAG = /[\u{E0000}-\u{E007F}]/u;
+// Ký tự vô hình: chỉ công cụ tự động mới chèn (né bộ lọc trùng lặp của Meta).
+// Người thật gõ tay không bao giờ có.
+//   ⚠️ Bản đầu chỉ quét U+E0000–E007F (Tag characters) → BẮT HỤT HOÀN TOÀN.
+//   Đo thật 11/08/2026 trên 770 tin page: 0 tin dùng dải đó, 22 tin dùng
+//   U+E0100–E01EF (Variation Selectors Supplement). Phải phủ cả hai dải.
+const INVISIBLE_TAG = /[\u{E0000}-\u{E01EF}]/u;
+
+// Chữ "kiểu cách" (Mathematical Alphanumeric Symbols) — 𝑺𝑷𝑬𝑪𝑰𝑨𝑳 𝗢𝗙𝗙…
+// Không ai gõ tay kiểu này trên điện thoại; chỉ template marketing mới có.
+const STYLED_UNICODE = /[\u{1D400}-\u{1D7FF}]/u;
 
 // Mẫu mặc định — trích từ tin THẬT trên Kreain Nature PH-Ksa, Mint Breeze KSA,
 // Lucky Charm House, Golden Soap House… (kéo từ Pancake 10/08/2026)
@@ -56,6 +63,33 @@ const DEFAULT_PATTERNS = [
   // — ĐE DOẠ khách (M09 chặn ở chiều ra; ở đây để nhận ra đó là máy, không phải sale)
   "i'?ll be taking you to social media",
   'posting in group of',
+
+  // ═══ BỔ SUNG 11/08/2026 — khai thác từ 770 tin page THẬT ═══
+  // Sổ cũ chỉ phủ 17,4% tin page. 82,6% còn lại rơi vào "vùng đoán", mà đoán sai
+  // là AI tự khoá mình vĩnh viễn. Dưới đây là các mẫu LẶP ≥3 lần chưa được phủ.
+
+  // — tin HỆ THỐNG của Facebook/Pancake (tiếng Việt, gửi dưới danh nghĩa page)
+  'đã tự động chuyển tin nhắn này vào thư mục spam',
+  'bạn đang phản hồi bình luận của người dùng',
+  'you have placed an order',
+  // — RTO/giữ đơn kiểu "còn đó không"
+  'are you still there',
+  "haven'?t seen your reply",
+  'will end(s)? at \\d+ ?(am|pm)',
+  'do you have any other questions',
+  // — chào bán tự động
+  'do you wanna order now',
+  'do you want to order \\d+ set',
+  'free shipping.{0,20}cash on delivery',
+  'cash on delivery.{0,20}free shipping',
+  'can be pawnable',
+  'do you often feel',
+  "don'?t get this.{0,20}unless you'?re ready",
+  'which combo would you like',
+  // — RTO đòi ảnh / báo trạng thái giao (đo lần 2)
+  'please send me (a )?pictures? of the',
+  'have you received my product',
+  'your order is being shipped',
 ];
 
 let compiled = null;
@@ -83,6 +117,7 @@ export function isAutomationTemplate(text) {
   const t = String(text || '');
   if (!t.trim()) return false;                 // tin rỗng xét riêng, không tính là template
   if (INVISIBLE_TAG.test(t)) return true;      // ký tự ẩn = chắc chắn máy
+  if (STYLED_UNICODE.test(t)) return true;     // chữ kiểu cách = template marketing
   if (!compiled) build();
   return compiled.some((re) => re.test(t));
 }
