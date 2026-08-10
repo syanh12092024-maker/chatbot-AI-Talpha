@@ -31,8 +31,9 @@ export function laneFamily(lane) {
 export const SCRIPT_UNLOGGED = '(chưa ghi)';
 
 export const DIMS = ['page', 'scriptVersion', 'lane', 'day'];
-// Khoá ô = các giá trị chiều nối bằng '|'. Page id là số, scriptVersion là hex/none/(chưa
-// ghi), lane viết hoa, day là ngày — không giá trị nào chứa '|' nên khoá không nhập nhằng,
+// Khoá ô = các giá trị chiều nối bằng '|'. Page id là số, scriptVersion là v<N> của M02
+// (hoặc hex/none/(chưa ghi) với bản ghi cũ), lane viết hoa, day là ngày — không giá trị
+// nào chứa '|' nên khoá không nhập nhằng,
 // và đi lọt qua query string (UI bấm "tra ngược" truyền thẳng khoá này lên).
 const SEP = '|';
 const utcDay = (t) => new Date(t).toISOString().slice(0, 10);

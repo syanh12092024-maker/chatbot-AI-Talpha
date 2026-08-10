@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { getPageConfig } from './kb.js';
+import { getPageConfig, getScriptDoc } from './kb.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // AI_LOG_FILE: trỏ sổ đi chỗ khác — dùng cho TEST và cho việc chạy lại số liệu trên BẢN SAO
@@ -26,16 +26,21 @@ export function logAi(pageId, custId, type, meta = {}) {
     // Gắn Ở ĐÂY chứ không ở chỗ gọi: chỗ gọi (pancake-poll) là file của luồng khác.
     if (type === 'reply' && rec.scriptVersion === undefined) rec.scriptVersion = scriptVersionOf(rec.page);
     fs.appendFileSync(logFile(), JSON.stringify(rec) + '\n');
-    if (type === 'reply' && _idxBuilt) _idxPush(rec.page, rec.cust, rec.t); // cập nhật chỉ mục đếm lượt
+    if (type === 'reply' && _idxBuilt && isLlmReply(rec)) _idxPush(rec.page, rec.cust, rec.t); // chỉ mục đếm lượt — Fast Lane không tính (xem ghi chú dưới)
     if (type === 'reply' && _textIdxBuilt) _textPush(rec.page, rec.cust, rec.text); // chỉ mục tin AI (M05)
   } catch (e) { console.error('[ai-log] lỗi ghi:', e.message); }
 }
 
 // ---- BẢN KỊCH BẢN (scriptVersion) ------------------------------------------------
-// M02 chưa có bản số cho kịch bản page, nên dùng BĂM NỘI DUNG: 8 ký tự sha1 của
-// greeting + tone + salesPrompt. Sửa kịch bản 1 chữ → mã đổi → M17 A/B và M20 unit
-// economics cắt được "bản nào ăn tiền". Khi M02 có `version` thật thì đổi hàm này,
-// mọi chỗ khác không phải sửa.
+// Sổ AI phải nói được "bản kịch bản nào đẻ ra tin này" — thiếu nó thì M17 A/B không có
+// gì để so và M20 không cắt được "bản nào ăn tiền".
+//
+// GỘP 11/08/2026 — kiểm tra chéo ③ của luồng gộp: M02 (Script Studio, L3) nay ĐÃ có bản
+// SỐ thật (`v1`, `v2`… trong kho phiên bản), nên lấy thẳng số đó làm mã. Trước đó L1 băm
+// nội dung vì M02 chưa tồn tại; để hai bên đánh version khác nhau thì Script Studio nói
+// "v3" còn Sổ AI ghi "9f2a1c04" — cùng một kịch bản, hai cái tên, không đối chiếu được.
+//   'v<N>'    = bản LIVE trong kho phiên bản của M02 (nguồn ưu tiên)
+//   8 ký tự hex = ĐƯỜNG LUI, băm nội dung cho page chưa có kho phiên bản
 //   'none'    = page CHƯA có kịch bản riêng (cả 3 trường đều rỗng)
 //   'unknown' = không đọc được cấu hình page (KB chưa nạp xong) — không im lặng ghi sai
 export function scriptVersionOfConfig(cfg = {}) {
@@ -51,8 +56,12 @@ export function scriptVersionOf(pageId, now = Date.now()) {
   const hit = _svCache.get(key);
   if (hit && now - hit.at < 60e3) return hit.v;
   let v;
-  try { v = scriptVersionOfConfig(getPageConfig(key)); }
-  catch { v = 'unknown'; }
+  try {
+    // Kho phiên bản M02 tự nhận bản đang chạy trong kb-overrides làm v1 (backfill), nên
+    // 37/38 page có sẵn số ngay từ tin đầu tiên — không cần chờ marketer bấm Lưu.
+    const live = getScriptDoc(key)?.live?.version;
+    v = live ? `v${live}` : scriptVersionOfConfig(getPageConfig(key));
+  } catch { v = 'unknown'; }
   _svCache.set(key, { v, at: now });
   return v;
 }
@@ -60,8 +69,18 @@ export function scriptVersionOf(pageId, now = Date.now()) {
 // ---- ĐẾM LƯỢT BỀN VỮNG (nguyên tắc #8): số tin AI đã trả cho 1 khách trong N giờ,
 // đọc từ Sổ AI (file) nên SỐNG SÓT QUA RESTART — bộ đếm RAM không còn bị "reset chui".
 // Chỉ mục xây 1 lần lúc gọi đầu, sau đó logAi tự cập nhật → không quét lại file mỗi tin.
+//
+// ⚠️ CHỈ ĐẾM LƯỢT GỌI MODEL (kiểm tra chéo ④ của luồng gộp, 11/08/2026). Tin do Fast Lane
+// soạn cũng ghi `type:'reply'` vào Sổ AI, nhưng nó tốn 0 token — tính nó vào ngân sách lượt
+// là trừ tiền cho việc không tốn tiền: một khách chỉ mới bấm START và hỏi giá bằng template
+// đã mất 2/4 lượt, tới lúc thật sự muốn mua thì AI đã bị cắt.
+// M11 (conv-state.llmTurns24h) đã có sổ riêng đúng như vậy; đây là ĐƯỜNG LUI (LEAD_BUDGET=0
+// hoặc kênh không có hội thoại Pancake: web/local-chat) nên phải đếm cùng một định nghĩa,
+// nếu không thì lúc lùi cấu hình để cầm máu lại rước thêm một lỗi khác.
+// Bản ghi CŨ không có trường `lane` — thời đó chưa có Fast Lane nên đều là lượt gọi model.
 const _replyIdx = new Map(); // 'page:cust' -> [timestamps]
 let _idxBuilt = false;
+const isLlmReply = (rec) => !rec.lane || rec.lane === 'AI';
 function _idxPush(page, cust, t) {
   const k = page + ':' + cust;
   let arr = _replyIdx.get(k);
@@ -70,7 +89,7 @@ function _idxPush(page, cust, t) {
 }
 export function recentReplyCount(pageId, custId, windowMs = 24 * 3600 * 1000) {
   if (!_idxBuilt) {
-    for (const r of readLog()) if (r.type === 'reply') _idxPush(String(r.page), String(r.cust), r.t);
+    for (const r of readLog()) if (r.type === 'reply' && isLlmReply(r)) _idxPush(String(r.page), String(r.cust), r.t);
     _idxBuilt = true;
   }
   const arr = _replyIdx.get(String(pageId) + ':' + String(custId)) || [];
