@@ -92,8 +92,8 @@ const DEFAULT_PATTERNS = [
   'your order is being shipped',
 ];
 
-let compiled = null;
-let extra = [];
+let compiled = null;   // [{ re, pattern, builtin }] — giữ cả chuỗi gốc để M18 nói được
+let extra = [];        //   MẪU NÀO đã bắt tin này, chứ không chỉ "có/không"
 
 function loadExtra() {
   try {
@@ -105,26 +105,50 @@ function loadExtra() {
 
 function build() {
   extra = loadExtra();
-  const all = [...DEFAULT_PATTERNS, ...extra];
-  compiled = all.map((p) => {
-    try { return new RegExp(p, 'i'); } catch { console.warn(`[bot-registry] mẫu hỏng, bỏ qua: ${p}`); return null; }
+  const all = [
+    ...DEFAULT_PATTERNS.map((p) => ({ pattern: p, builtin: true })),
+    ...extra.map((p) => ({ pattern: p, builtin: false })),
+  ];
+  compiled = all.map((x) => {
+    try { return { ...x, re: new RegExp(x.pattern, 'i') }; }
+    catch { console.warn(`[bot-registry] mẫu hỏng, bỏ qua: ${x.pattern}`); return null; }
   }).filter(Boolean);
   return compiled;
 }
 
+/**
+ * Soi 1 tin và trả về MẪU NÀO đã bắt nó.
+ *
+ * Vì sao cần biết mẫu nào, chứ không chỉ true/false: một mẫu quét quá rộng làm AI tự khoá
+ * chính mình (M05 tưởng mọi tin page đều là máy). Người vận hành chỉ gỡ được mẫu hỏng khi
+ * nhìn thấy "tin này bị bắt bởi mẫu kia" — đó là cột "Va chạm 24h" của M18.
+ *
+ * @returns {{hit:boolean, kind:''|'invisible'|'styled'|'pattern', pattern:string, builtin:boolean}}
+ */
+export function matchTemplate(text) {
+  const miss = { hit: false, kind: '', pattern: '', builtin: false };
+  const t = String(text || '');
+  if (!t.trim()) return miss;                  // tin rỗng xét riêng, không tính là template
+  if (INVISIBLE_TAG.test(t)) return { hit: true, kind: 'invisible', pattern: 'ký tự Unicode vô hình (U+E0000–E01EF)', builtin: true };
+  if (STYLED_UNICODE.test(t)) return { hit: true, kind: 'styled', pattern: 'chữ kiểu cách (Mathematical Alphanumeric)', builtin: true };
+  if (!compiled) build();
+  const m = compiled.find((x) => x.re.test(t));
+  return m ? { hit: true, kind: 'pattern', pattern: m.pattern, builtin: m.builtin } : miss;
+}
+
 /** Tin này do MÁY gửi (Botcake / công cụ RTO / sự kiện hệ thống) chứ không phải người gõ? */
 export function isAutomationTemplate(text) {
-  const t = String(text || '');
-  if (!t.trim()) return false;                 // tin rỗng xét riêng, không tính là template
-  if (INVISIBLE_TAG.test(t)) return true;      // ký tự ẩn = chắc chắn máy
-  if (STYLED_UNICODE.test(t)) return true;     // chữ kiểu cách = template marketing
-  if (!compiled) build();
-  return compiled.some((re) => re.test(t));
+  return matchTemplate(text).hit;
 }
 
 export function listTemplates() {
   if (!compiled) build();
-  return { builtin: DEFAULT_PATTERNS.length, extra: extra.length, patterns: [...DEFAULT_PATTERNS, ...extra] };
+  return {
+    builtin: DEFAULT_PATTERNS.length,
+    extra: extra.length,
+    patterns: [...DEFAULT_PATTERNS, ...extra],
+    items: compiled.map((x) => ({ pattern: x.pattern, builtin: x.builtin })),
+  };
 }
 
 /** Thêm mẫu mới (M18 gọi từ dashboard). Trả về false nếu regex hỏng. */
@@ -136,6 +160,23 @@ export function addTemplate(pattern) {
   try { fs.writeFileSync(FILE, JSON.stringify({ patterns: cur }, null, 2)); } catch (e) { console.error('[bot-registry] lưu lỗi:', e.message); return false; }
   build();
   return true;
+}
+
+/**
+ * Gỡ mẫu do người thêm. CỐ Ý không gỡ được mẫu dựng sẵn: mẫu dựng sẵn trích nguyên văn
+ * từ tin thật đang chạy trên page, gỡ nhầm là mở lại đúng vùng mù mà M05 sinh ra để bịt.
+ * Mẫu dựng sẵn sai thì sửa trong code kèm bằng chứng, không gỡ bằng một cú bấm.
+ */
+export function removeTemplate(pattern) {
+  const p = String(pattern || '');
+  if (DEFAULT_PATTERNS.includes(p)) return { ok: false, error: 'mẫu dựng sẵn — chỉ sửa được trong bot-registry.js' };
+  const cur = loadExtra();
+  const next = cur.filter((x) => x !== p);
+  if (next.length === cur.length) return { ok: false, error: 'không tìm thấy mẫu này' };
+  try { fs.writeFileSync(FILE, JSON.stringify({ patterns: next }, null, 2)); }
+  catch (e) { console.error('[bot-registry] lưu lỗi:', e.message); return { ok: false, error: e.message }; }
+  build();
+  return { ok: true, left: next.length };
 }
 
 export function reloadTemplates() { return build().length; }

@@ -22,22 +22,29 @@ const ACCOUNT_ERR = /(insufficient balance|insufficient_quota|suspended|recharge
 const state = {
   down: false,
   reason: '',
+  accountError: false, // hỏng vì TÀI KHOẢN (nạp tiền/đổi key) chứ không phải lỗi thoáng qua
   since: 0,
   lastTryAt: 0,
-  errors: [],       // mốc thời gian các lỗi gần đây
+  // Các lỗi gần đây: { at, status, msg }. M19 (health.js) cần TÁCH được 401/402/429 khỏi
+  // lỗi mạng lặt vặt — ngưỡng ">10 lỗi 401/402/429 trong 5 phút" của spec là về tầng tài
+  // khoản/hạn mức, không phải về một cú rớt mạng.
+  errors: [],
   totalErrors: 0,
+  lastError: '',
+  lastErrorAt: 0,
   lastOkAt: Date.now(),
 };
 
 function prune() {
   const cut = Date.now() - ERR_WINDOW_MS;
-  while (state.errors.length && state.errors[0] < cut) state.errors.shift();
+  while (state.errors.length && state.errors[0].at < cut) state.errors.shift();
 }
 
-function goDown(reason) {
+function goDown(reason, isAccount = false) {
   if (state.down) return;
   state.down = true;
   state.reason = reason;
+  state.accountError = isAccount;
   state.since = Date.now();
   state.lastTryAt = Date.now();
   console.error(`[llm-health] 🔴 TẦNG LLM HỎNG — DỪNG XỬ LÝ. Lý do: ${reason}`);
@@ -49,6 +56,7 @@ function goUp() {
   const mins = Math.round((Date.now() - state.since) / 60000);
   state.down = false;
   state.reason = '';
+  state.accountError = false;
   state.errors = [];
   console.log(`[llm-health] 🟢 TẦNG LLM SỐNG LẠI sau ${mins} phút — tiếp tục xử lý.`);
 }
@@ -65,12 +73,14 @@ export function noteLlmError(err) {
   const msg = String(err?.message || err || '');
   const status = Number(err?.status || err?.statusCode || 0);
   state.totalErrors++;
-  state.errors.push(Date.now());
+  state.lastError = msg.slice(0, 200);
+  state.lastErrorAt = Date.now();
+  state.errors.push({ at: Date.now(), status, msg: msg.slice(0, 200) });
   prune();
 
   const isAccount = ACCOUNT_ERR.test(msg) || status === 401 || status === 402 || status === 403;
   if (isAccount) {
-    goDown(`lỗi tài khoản (${status || '?'}): ${msg.slice(0, 160)}`);
+    goDown(`lỗi tài khoản (${status || '?'}): ${msg.slice(0, 160)}`, true);
     return true;
   }
   if (state.errors.length >= ERR_THRESHOLD) {
@@ -78,6 +88,22 @@ export function noteLlmError(err) {
     return true;
   }
   return false;
+}
+
+// Lỗi TẦNG TÀI KHOẢN/HẠN MỨC trong 5 phút — đúng chỉ số đầu bảng §M19.
+// Tách khỏi tổng số lỗi: 10 lần rớt mạng ≠ 10 lần bị từ chối vì hết tiền, mà hai thứ đó
+// cần hai cách xử lý khác hẳn nhau (một cái chờ, một cái phải nạp tiền).
+const BILLING_STATUS = new Set([401, 402, 403, 429]);
+export function llmErrorBreakdown() {
+  prune();
+  const byStatus = {};
+  let billing = 0;
+  for (const e of state.errors) {
+    const k = e.status || 0;
+    byStatus[k] = (byStatus[k] || 0) + 1;
+    if (BILLING_STATUS.has(e.status)) billing++;
+  }
+  return { total: state.errors.length, billing, byStatus };
 }
 
 /**
@@ -97,14 +123,21 @@ export function isLlmDown() {
 
 export function llmHealth() {
   prune();
+  const br = llmErrorBreakdown();
   return {
     down: state.down,
     reason: state.reason,
+    accountError: state.accountError,
     since: state.since,
     downMinutes: state.down ? Math.round((Date.now() - state.since) / 60000) : 0,
     errorsIn5m: state.errors.length,
+    billingErrorsIn5m: br.billing,   // 401/402/403/429 — ngưỡng >10/5 phút của §M19
+    errorsByStatus: br.byStatus,
     totalErrors: state.totalErrors,
+    lastError: state.lastError,
+    lastErrorAt: state.lastErrorAt,
     lastOkAt: state.lastOkAt,
     minutesSinceOk: Math.round((Date.now() - state.lastOkAt) / 60000),
+    threshold: ERR_THRESHOLD,
   };
 }
