@@ -4,6 +4,22 @@ bán hàng Messenger qua Pancake, production trên VPS 169.58.33.8 (39 page).
 # LUỒNG 6 — VẬN HÀNH (M18 Ops Console · M19 Health Watchdog đầy đủ)
 ### Vòng 2 · chạy sau khi L0 deploy xong
 
+> 🔄 **Cập nhật 11/08/2026** (xem `docs/v2/09-VONG-2-CAP-NHAT.md`) — thêm MỘT việc BẮT BUỘC:
+>
+> **Giám sát M05 khoá oan.** Đo mô phỏng production: **45% hội thoại bị khoá `HANDOFF`**
+> vì cho là người thật đã tiếp quản. Sau khi vá thì phần lớn ca còn lại đúng là sale gõ
+> thật, NHƯNG sổ nhận diện template **mới phủ 32,1% tin page** — 67,9% là vùng đoán.
+> Đoán sai = AI tự khoá chính mình.
+>
+> Ops Console PHẢI có, theo từng page:
+> · `HANDOFF` chiếm bao nhiêu % tổng hội thoại (🔴 nếu >15%)
+> · **AI nhường Botcake 24h** — gọi `botcakeYieldStats()` trong `pancake-poll.js`
+>   (🔴 nếu >50%: Botcake đang lấn hết phần AI, mày trả tiền cho AI mà nó không được nói)
+> · Danh sách tin đã kích hoạt khoá, để người soi xem có oan không
+>
+> Và tab Botcake nay **có API thật để nạp** — xem `09-VONG-2-CAP-NHAT.md` §1②
+> (chỉ đọc được từ khoá qua TÊN flow, KHÔNG đọc được nội dung trả lời).
+
 ## Đọc trước khi làm
 1. `docs/v2/05-TANG-VAN-HANH.md` § M18, § M19 — spec đầy đủ
 2. `docs/v2/08-SONG-SONG.md` §3 — LUẬT SỞ HỮU FILE

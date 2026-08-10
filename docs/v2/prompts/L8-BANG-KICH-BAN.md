@@ -1,3 +1,8 @@
+> ⛔ **BẢN NÀY ĐÃ LỖI THỜI (11/08/2026).** API Botcake được xác minh là CHỈ ĐỌC —
+> mọi phương thức ghi trả 404. Dùng `L8-BOTCAKE-KICH-BAN.md` thay cho file này.
+
+---
+
 Bạn đang làm việc trong repo `/Users/syanh/Desktop/Chat Bot AI/messenger-closer` — bot AI
 bán hàng Messenger qua Pancake, production trên VPS 169.58.33.8 (39 page).
 

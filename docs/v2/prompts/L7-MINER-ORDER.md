@@ -4,6 +4,9 @@ bán hàng Messenger qua Pancake, production trên VPS 169.58.33.8 (39 page).
 # LUỒNG 7 — MỔ HỘI THOẠI + CẦU NỐI ĐƠN (M15 Conversation Miner · M14 Order Bridge)
 ### Vòng 2 · chạy sau khi L0 deploy xong
 
+> 🔄 **Cập nhật 11/08/2026** — thêm MỘT module mới vào luồng này: **tự học sổ template**
+> (`src/template-learner.js`). Xem `docs/v2/09-VONG-2-CAP-NHAT.md` §1④.
+
 ## Đọc trước khi làm
 1. `docs/v2/04-TANG-TU-TIEN-HOA.md` § M15 — spec mổ hội thoại
 2. `docs/v2/03-TANG-TANG-CHOT.md` § M14 — spec cầu nối đơn
@@ -39,7 +42,25 @@ xong khách im luôn) · `winners` (câu xuất hiện trước khi chốt) · `
 ⚠️ M15 **chỉ mổ và báo cáo**. Việc sinh đề xuất sửa kịch bản là M16 (luồng vòng 3).
 Đừng làm lấn.
 
-### ② M14 · `src/order-bridge.js` (mới) — chế độ A (bán tự động)
+### ② `src/template-learner.js` (mới) — TỰ HỌC sổ nhận diện tin máy
+
+**Vấn đề:** `src/bot-registry.js` mới phủ **32,1%** tin do page gửi. 67,9% còn lại là
+vùng đoán, mà đoán sai thì M05 cho rằng sale đã vào chat → **AI tự khoá vĩnh viễn**.
+API Botcake KHÔNG vá được (không trả nội dung flow), và nguồn nhiễu còn có **công cụ RTO
+thứ ba** + **tin hệ thống Facebook tiếng Việt** — hai thứ không có API nào.
+
+**Tín hiệu đã kiểm chứng trên dữ liệu thật:** tin lặp **nguyên văn qua ≥3 hội thoại
+KHÁC NHAU** và **dài ≥40 ký tự** thì là template. Ngắn hơn là câu đệm người gõ — kiểm
+đúng: `"ok dear"` 7×, `"..."` 5×, `"It take 2-5 days to delivery dear"` đều bị loại đúng.
+
+Việc:
+- Chạy cùng đường ống đọc hội thoại của M15 (đừng gọi Pancake hai lần)
+- Sinh mẫu mới → ghi ra **`botcake-templates.json`** (bot-registry đọc file này sẵn rồi)
+- **KHÔNG sửa `src/bot-registry.js`** — đó là file của L6
+- Mẫu mới phải qua người duyệt trước khi bật (mẫu sai = AI bỏ sót người thật)
+- Báo cáo: độ phủ sổ trước/sau, và tỷ lệ hội thoại bị khoá thay đổi thế nào
+
+### ③ M14 · `src/order-bridge.js` (mới) — chế độ A (bán tự động)
 - Ghi chú Pancake theo **MẪU CHUẨN máy đọc được** (khối ở spec §M14) thay cho ghi chú
   tự do hiện tại
 - Nút **[Tạo đơn Pancake]** trên dashboard — 1 click, điền sẵn mọi trường từ ghi chú
@@ -50,7 +71,7 @@ xong khách im luôn) · `winners` (câu xuất hiện trước khi chốt) · `
 - Chế độ B (tự tạo đơn, `AUTO_CREATE_ORDER=1`) **chỉ chuẩn bị code, KHÔNG bật**
 
 ## Sở hữu file
-✅ ĐƯỢC sửa/tạo: `src/miner.js` · `src/order-bridge.js` · `src/scheduler-miner.js` *(mới)* ·
+✅ ĐƯỢC sửa/tạo: `src/miner.js` · `src/template-learner.js` · `src/order-bridge.js` · `src/scheduler-miner.js` *(mới)* ·
 `src/admin-orders.js` *(mới)* · `public/orders.html` *(mới)* · `src/pancake-orders.js` ·
 `test/*.test.mjs` của mình · 1 dòng khởi động trong `server.js` · 1 dòng mount trong `admin.js`
 

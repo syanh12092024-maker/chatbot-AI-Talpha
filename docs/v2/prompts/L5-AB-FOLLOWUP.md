@@ -4,6 +4,12 @@ bán hàng Messenger qua Pancake, production trên VPS 169.58.33.8 (39 page).
 # LUỒNG 5 — A/B + ĐUỔI THEO (M17 Experiment Engine · M12 Follow-up Engine)
 ### Vòng 2 · chạy sau khi L0 deploy xong và có báo cáo 48h
 
+> 🔄 **Cập nhật 11/08/2026** (xem `docs/v2/09-VONG-2-CAP-NHAT.md`):
+> · **M04 debounce thích ứng ĐÃ XONG** — gỡ khỏi luồng này, đừng làm lại (`src/turn-complete.js`, 5s/15s)
+> · **M20 (`src/economics.js`) đã có** — M17 hết bị chặn. Gọi hàm của nó, ĐỪNG tính lại chi phí
+> · **`scriptVersion` đã được ghi vào Sổ AI** (L1 làm) — dùng luôn làm khoá A/B
+> · Số nền production đã đo: 9.036 lượt · 151 đơn · 7.502đ/đơn · ngân sách lượt-1 **69,7%**
+
 ## Đọc trước khi làm
 1. `docs/v2/04-TANG-TU-TIEN-HOA.md` § M17 — spec A/B
 2. `docs/v2/03-TANG-TANG-CHOT.md` § M12 — spec đuổi theo
@@ -54,7 +60,7 @@ biết nó tăng đơn hay chỉ làm phiền khách. Đừng làm ngược.
 1 dòng khởi động trong `server.js` · 1 dòng mount router nếu cần
 
 ⛔ CẤM đụng: `src/handler.js` · `src/pancake-poll.js` · `src/prompts.js` · `src/closer.js` ·
-`src/kb.js` · `src/fast-lane.js` · `src/economics.js` · `public/admin.html`
+`src/kb.js` · `src/fast-lane.js` · `src/economics.js` · `src/turn-complete.js` · `public/admin.html`
 
 > Cần đọc trạng thái hội thoại thì dùng `src/conv-state.js` (M05 đã có `getConv`,
 > `allConvStates`). Cần biết chi phí thì gọi hàm của `src/economics.js` (L1 đã có) —
