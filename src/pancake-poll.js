@@ -8,6 +8,7 @@ import { incReply, incLead } from './stats.js';
 import { logAi } from './ai-log.js';
 import { addAiConv } from './ai-convs.js';
 import { isLlmDown, llmHealth } from './llm-health.js';
+import { debounceFor } from './turn-complete.js';
 import { decideConv, noteAiSpoke, markPostSale, ORDER_STOP_TAGS } from './conv-owner.js';
 import { pruneConvStates } from './conv-state.js';
 
@@ -185,7 +186,13 @@ async function pollPage(pageId) {
     if (!firstTime) {
       const pd = pendingMark.get(c.id);
       if (!pd || pd.mark !== mark) { pendingMark.set(c.id, { mark, firstAt: Date.now() }); continue; }
-      if (Date.now() - pd.firstAt < REPLY_DEBOUNCE_MS) continue;
+      // M04 · DEBOUNCE THÍCH ỨNG — chờ theo việc khách đã nói TRỌN Ý chưa.
+      // Đo thật: khách KHÔNG nhắn một mạch (30,2% cụm ≥2 tin, p50 cách nhau 18s), nhưng
+      // ~70% lượt chỉ nhắn đúng 1 tin. Chờ cào bằng 20s thì vừa chen ngang 45% cụm dở,
+      // vừa bắt 70% người đã nói xong ngồi đợi. `snippet` = tin cuối, có sẵn trong danh
+      // sách hội thoại nên phân loại không tốn thêm lời gọi API nào.
+      const wait = debounceFor(c.snippet || '');
+      if (Date.now() - pd.firstAt < wait.ms) continue;
       pendingMark.delete(c.id);
     }
     seen.set(c.id, mark);
