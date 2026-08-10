@@ -18,15 +18,9 @@ export const toolDefs = [
       required: [],
     },
   },
-  {
-    name: 'score_lead',
-    description: 'Chấm điểm chất lượng lead (0-10) trước khi đẩy telesale. Truyền các tín hiệu quan sát được.',
-    input_schema: {
-      type: 'object',
-      properties: { signals: { type: 'string', description: 'Mô tả tín hiệu: nhu cầu rõ?, địa chỉ cụ thể?, do dự?...' } },
-      required: ['signals'],
-    },
-  },
+  // `score_lead` đã BỎ (11/08/2026 — M08 §3). Nó bắt model tốn một vòng tool chỉ để chạy
+  // một heuristic regex, và điểm trả ra (`state.leadScore`) KHÔNG nơi nào đọc. Chấm điểm lead
+  // nay làm bằng luật ở classifier (`lead_quality`) + M11 của Luồng 2 — 0 token, không gãy.
   {
     name: 'create_draft_order',
     description: 'Tạo đơn nháp trong Pancake. CHỈ gọi sau khi khách xác nhận COD và đã có địa chỉ cụ thể.',
@@ -126,17 +120,6 @@ export async function executeTool(name, input, ctx) {
             price_tiers: productTiers(p),
           }),
         };
-      }
-      case 'score_lead': {
-        // Heuristic đơn giản — thay bằng model/logic riêng nếu cần.
-        const s = (input.signals || '').toLowerCase();
-        let score = 5;
-        if (/(địa chỉ|عنوان|address)/.test(s)) score += 2;
-        if (/(xác nhận|chốt|أكيد|نعم|yes|confirm)/.test(s)) score += 2;
-        if (/(do dự|hỏi cho vui|chưa chắc|maybe|later)/.test(s)) score -= 3;
-        score = Math.max(0, Math.min(10, score));
-        state.leadScore = score;
-        return { content: JSON.stringify({ lead_score: score }) };
       }
       case 'create_draft_order': {
         if (!input.cod_confirmed) {
