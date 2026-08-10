@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Closer — Unit Economics (M20)</title>
+<style>
+  /* Trang RIÊNG, không dùng chung file với admin.html: 4 luồng v2 đang sửa song song,
+     admin.html là 1 file gộp CSS+JS inline nên chạm vào là xung đột (08-SONG-SONG §3). */
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd6db;text-decoration:none;font-size:12.5px}
+  main{padding:18px 22px 60px;max-width:1360px;margin:0 auto}
+
+  .bar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+  .fld{display:flex;flex-direction:column;gap:4px}
+  .fld label{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  input,select{border:1px solid var(--line);border-radius:9px;padding:7px 10px;font:inherit;background:#fff;color:var(--ink)}
+  button{border:0;border-radius:9px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;
+         background:var(--pri);color:#fff}
+  button.ghost{background:#fff;color:var(--pri);border:1px solid var(--line)}
+  button:disabled{opacity:.5;cursor:default}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;box-shadow:var(--sh)}
+  .card .k{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  .card .v{font-size:22px;font-weight:700;margin-top:5px;line-height:1.15}
+  .card .n{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .card.good .v{color:var(--ok)} .card.bad .v{color:var(--bad)} .card.warn .v{color:var(--warn)}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:18px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:12px 15px;border-bottom:1px solid var(--line);
+            display:flex;align-items:center;gap:8px}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel .body{padding:13px 15px}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;
+     position:sticky;top:0;background:var(--panel)}
+  th:first-child,td:first-child{text-align:left}
+  tbody tr:hover{background:#fafcfc}
+  td.dim{color:var(--muted)}
+  .tag{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600;background:var(--priSoft);color:var(--priDark)}
+  .tag.none{background:#f1f1f1;color:#777}
+  .scroll{max-height:560px;overflow:auto}
+  .lnk{color:var(--pri);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+  .alert{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;margin-bottom:8px;border:1px solid}
+  .alert.red{background:var(--badSoft);border-color:#f2c4c4}
+  .alert.orange{background:var(--warnSoft);border-color:#f0d9ae}
+  .alert b{display:block}
+  .alert .act{color:var(--muted);font-size:12px;margin-top:2px}
+
+  pre{background:#0b2125;color:#d7e9eb;padding:12px 14px;border-radius:10px;overflow:auto;font-size:12px;line-height:1.55;white-space:pre-wrap}
+  .ok{color:var(--ok);font-weight:700} .no{color:var(--bad);font-weight:700}
+  .empty{color:var(--muted);padding:14px 2px}
+</style>
+</head>
+<body>
+<header>
+  <h1>📐 Unit Economics</h1>
+  <span class="sub">M20 · page nào lãi, page nào lỗ, và vì sao · nguồn: Sổ AI</span>
+  <span class="sp"></span>
+  <a href="/admin">← Bảng điều khiển</a>
+</header>
+
+<main>
+  <div class="bar">
+    <div class="fld"><label>Từ ngày</label><input type="date" id="from"></div>
+    <div class="fld"><label>Đến ngày</label><input type="date" id="to"></div>
+    <div class="fld"><label>Cắt theo</label>
+      <select id="by">
+        <option value="page">page</option>
+        <option value="page,scriptVersion">page × kịch bản</option>
+        <option value="page,lane">page × lane</option>
+        <option value="page,scriptVersion,lane">page × kịch bản × lane</option>
+        <option value="scriptVersion">kịch bản</option>
+        <option value="lane">lane</option>
+        <option value="day">ngày</option>
+      </select>
+    </div>
+    <button onclick="load()">Xem</button>
+    <button class="ghost" onclick="doVerify()">Đối chiếu Sổ AI</button>
+    <button class="ghost" onclick="doWeekly()">Báo cáo tuần</button>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="panel">
+    <h2>⚠️ Ngưỡng cảnh báo <span class="hint">4 ngưỡng tự động của spec §M20</span></h2>
+    <div class="body" id="alerts"><div class="empty">đang tải…</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Bảng cắt <span class="hint" id="byHint"></span></h2>
+    <div class="scroll"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="panel" id="tracePanel" style="display:none">
+    <h2>🔎 Tra ngược về Sổ AI <span class="hint" id="traceHint"></span></h2>
+    <div class="scroll"><table id="traceTbl"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="panel" id="outPanel" style="display:none">
+    <h2 id="outTitle"></h2>
+    <div class="body"><pre id="out"></pre></div>
+  </div>
+</main>
+
+<script>
+const API='/admin/api/economics';
+const j=(u,o)=>fetch(u,o).then(r=>r.json());
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=n=>n==null?'—':Number(n).toLocaleString('vi-VN');
+const p1=n=>n==null?'—':n+'%';
+const qs=()=>{const f=from.value,t=to.value;return (f?`from=${f}&`:'')+(t?`to=${t}&`:'')+`by=${encodeURIComponent(by.value)}`;};
+
+let CUR=null;
+
+// Chỉ số sức khoẻ v2: % ngân sách vào lượt AI đầu tiên. Mục tiêu ≤20%, đo 10/08/2026 là 69,7%.
+function cards(T){
+  const c=(k,v,n,cls='')=>`<div class="card ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  const budget=T.firstTurnPct;
+  document.getElementById('cards').innerHTML=
+    c('Chi phí / đơn', T.vndPerOrder==null?'—':num(T.vndPerOrder)+'đ', `${num(T.orders)} đơn · mục tiêu ≤2.000đ`,
+      T.vndPerOrder==null?'':(T.vndPerOrder>20000?'bad':T.vndPerOrder<=2000?'good':'warn'))
+   +c('Lượt / đơn', T.repliesPerOrder==null?'—':num(T.repliesPerOrder), `${num(T.replies)} lượt AI`,
+      T.repliesPerOrder==null?'':(T.repliesPerOrder>100?'bad':''))
+   +c('Tỷ lệ chốt', p1(T.closeRatePct), `${num(T.leads)} khách`, T.closeRatePct==null?'':(T.closeRatePct>=4?'good':''))
+   +c('% Fast Lane', p1(T.fastLanePct), 'tin xử lý 0 token')
+   +c('% ngân sách lượt 1', p1(budget), 'sức khoẻ v2 · mục tiêu ≤20%',
+      budget==null?'':(budget>40?'bad':budget<=20?'good':'warn'))
+   +c('Tổng chi phí', num(T.vnd)+'đ', `${num(T.measured)}/${num(T.replies)} tin có số đo`)
+   +c('calls / lượt', T.callsPerReply==null?'—':T.callsPerReply, 'mục tiêu ≤1,2',
+      T.callsPerReply==null?'':(T.callsPerReply>2?'warn':'good'));
+}
+
+const COLS=[
+  ['replies','lượt'],['leads','khách'],['orders','đơn'],
+  ['closeRatePct','chốt %'],['vnd','chi phí (đ)'],['vndPerOrder','đ/đơn'],
+  ['repliesPerOrder','lượt/đơn'],['fastLanePct','fast %'],['firstTurnPct','lượt-1 %'],
+  ['callsPerReply','calls/lượt'],['measured','có số đo'],
+];
+function table(e){
+  const dims=e.dims;
+  const th=dims.map(d=>`<th>${d==='page'?'page':d==='scriptVersion'?'kịch bản':d}</th>`).join('')
+    +COLS.map(([,l])=>`<th>${l}</th>`).join('')+'<th></th>';
+  document.querySelector('#tbl thead').innerHTML=`<tr>${th}</tr>`;
+  document.querySelector('#tbl tbody').innerHTML=e.groups.map(g=>{
+    const cells=dims.map(d=>{
+      if(d==='page') return `<td>${esc(g.name||g.dims.page)}</td>`;
+      if(d==='scriptVersion'){const v=g.dims.scriptVersion;return `<td><span class="tag ${v==='none'?'none':''}">${esc(v)}</span></td>`;}
+      return `<td class="dim">${esc(g.dims[d])}</td>`;
+    }).join('');
+    const vals=COLS.map(([k])=>{
+      const v=g[k];
+      if(k==='closeRatePct'||k==='fastLanePct'||k==='firstTurnPct') return `<td>${p1(v)}</td>`;
+      return `<td>${num(v)}</td>`;
+    }).join('');
+    return `<tr>${cells}${vals}<td><span class="lnk" onclick="doTrace('${esc(g.key).replace(/'/g,"\\'")}')">tra ngược</span></td></tr>`;
+  }).join('')||`<tr><td colspan="20" class="empty">Không có dữ liệu trong khoảng này.</td></tr>`;
+  document.getElementById('byHint').textContent=`${e.groups.length} ô · cắt theo ${dims.join(' × ')}`;
+}
+
+async function load(){
+  CUR=await j(`${API}/summary?${qs()}`);
+  if(CUR.error) return alert(CUR.error);
+  cards(CUR.totals); table(CUR);
+  const al=await j(`${API}/alerts?${qs()}`);
+  document.getElementById('alerts').innerHTML=(al.length?al:[]).map(a=>
+    `<div class="alert ${a.level}"><span>${a.level==='red'?'🔴':'🟠'}</span><div>
+       <b>${esc(a.name)}</b>${esc(a.message)}
+       <div class="act">→ ${esc(a.action)}</div></div></div>`).join('')
+    ||'<div class="empty">Không có page nào vượt ngưỡng. 🎉</div>';
+}
+
+async function doTrace(key){
+  const t=await j(`${API}/trace?${qs()}&key=${encodeURIComponent(key)}`);
+  if(t.error) return alert(t.error);
+  document.getElementById('tracePanel').style.display='';
+  document.getElementById('traceHint').textContent=
+    `${key} — ${t.replies} lượt · ${t.orders} đơn${t.truncated?' (hiện 200 dòng cuối)':''}`;
+  document.querySelector('#traceTbl thead').innerHTML=
+    '<tr><th>lúc</th><th>khách</th><th>lane</th><th>kịch bản</th><th>tin</th><th>cread</th><th>tout</th><th>calls</th><th>nội dung</th></tr>';
+  document.querySelector('#traceTbl tbody').innerHTML=t.events.slice().reverse().map(r=>
+    `<tr><td class="dim">${esc(r.at.slice(0,16).replace('T',' '))}</td>
+      <td>${r.link?`<a class="lnk" href="${esc(r.link)}" target="_blank">${esc(r.name||r.cust)}</a>`:esc(r.name||r.cust)}</td>
+      <td class="dim">${esc(r.lane==null?'(chưa ghi)':r.lane)}</td>
+      <td><span class="tag ${r.scriptVersion==='none'?'none':''}">${esc(r.scriptVersion==null?'(chưa ghi)':r.scriptVersion)}</span></td>
+      <td>${num(r.tin)}</td><td>${num(r.cread)}</td><td>${num(r.tout)}</td><td>${num(r.calls)}</td>
+      <td style="text-align:left;white-space:normal;max-width:420px" class="dim">${esc(r.text)}</td></tr>`).join('')
+    ||'<tr><td colspan="9" class="empty">Không có dòng nào.</td></tr>';
+  document.getElementById('tracePanel').scrollIntoView({behavior:'smooth'});
+}
+
+function showOut(title,body){
+  document.getElementById('outPanel').style.display='';
+  document.getElementById('outTitle').innerHTML=title;
+  document.getElementById('out').innerHTML=body;
+  document.getElementById('outPanel').scrollIntoView({behavior:'smooth'});
+}
+
+async function doVerify(){
+  const f=from.value,t=to.value;
+  const v=await j(`${API}/verify?${(f?`from=${f}&`:'')+(t?`to=${t}`:'')}`);
+  const rows=v.checks.map(c=>
+    `${(c.ok?'✓':'✗')} ${c.name.padEnd(10)} M20=${String(c.econ).padStart(12)}   ${c.refFrom}=${String(c.ref).padStart(12)}   lệch ${c.diffPct}%`).join('\n');
+  // Sổ rỗng KHÔNG được hiện "KHỚP": 0 vs 0 thì phép nào cũng lệch 0% mà chẳng đối chiếu gì.
+  const verdict = v.empty ? '<span class="no">— CHƯA ĐỐI CHIẾU ĐƯỢC</span>'
+    : v.ok ? '<span class="ok">— KHỚP</span>' : '<span class="no">— LỆCH</span>';
+  showOut(`Đối chiếu với Sổ AI ${verdict}`,
+    esc(`${v.why ? v.why + '\n\n' : ''}ngưỡng cho phép: ${v.tolerancePct}%\n\n${rows}`));
+}
+
+async function doWeekly(){
+  const w=await j(`${API}/weekly`);
+  if(w.error) return alert(w.error);
+  showOut('Báo cáo tuần (xem trước — bản tự gửi WhatsApp sáng thứ 2)',
+    esc(w.text)+'\n\n<span class="lnk" onclick="sendWeekly()">Gửi ngay vào nhóm WhatsApp</span>');
+}
+async function sendWeekly(){
+  if(!confirm('Gửi báo cáo tuần vào nhóm WhatsApp ngay bây giờ?')) return;
+  const r=await j(`${API}/weekly/send`,{method:'POST'});
+  alert(r.ok?'✓ Đã gửi.':'✗ Lỗi: '+(r.error||'không rõ'));
+}
+
+// Mặc định 30 ngày gần nhất
+const d=n=>new Date(Date.now()-n*86400e3).toISOString().slice(0,10);
+from.value=d(30); to.value=d(0);
+load();
+</script>
+</body>
+</html>

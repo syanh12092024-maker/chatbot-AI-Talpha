@@ -24,6 +24,7 @@ import { sendHealth } from './pancake-poll.js';
 import { anthropic, aiExtras } from './llm.js';
 
 export const adminRouter = express.Router();
+adminRouter.use('/economics', (await import('./admin-economics.js')).economicsRouter); // M20 Unit Economics
 
 // ---- Tổng quan ----
 adminRouter.get('/overview', (_req, res) => {

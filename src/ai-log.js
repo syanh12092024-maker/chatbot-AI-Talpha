@@ -4,17 +4,57 @@
 //   type: reply (trả lời) | image (gửi ảnh) | order (chốt đơn) | handoff (chuyển người)
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { getPageConfig } from './kb.js';
 
-const FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'ai-messages.jsonl');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// AI_LOG_FILE: trỏ sổ đi chỗ khác — dùng cho TEST và cho việc chạy lại số liệu trên BẢN SAO
+// Sổ AI kéo từ VPS mà không đụng sổ đang chạy. Không đặt biến này thì y hệt trước.
+// Đọc env mỗi lần (không chốt lúc nạp module) để test đổi được sổ giữa chừng.
+// LƯU Ý: hai chỉ mục RAM bên dưới xây 1 lần — đổi sổ giữa chừng thì chúng vẫn giữ số của
+// sổ cũ. Chỉ đổi trong test / script chạy lại số liệu, không đổi khi bot đang chạy.
+const logFile = () => (process.env.AI_LOG_FILE
+  ? path.resolve(ROOT, process.env.AI_LOG_FILE)
+  : path.resolve(ROOT, 'ai-messages.jsonl'));
 
 export function logAi(pageId, custId, type, meta = {}) {
   try {
     const rec = { t: Date.now(), page: String(pageId || ''), cust: String(custId || ''), type, ...meta };
-    fs.appendFileSync(FILE, JSON.stringify(rec) + '\n');
+    // M20: mọi tin AI phải nói được "bản kịch bản nào đẻ ra nó" — nếu không có trường này
+    // thì không cắt được chi phí theo kịch bản, và A/B (M17) không có gì để so.
+    // Gắn Ở ĐÂY chứ không ở chỗ gọi: chỗ gọi (pancake-poll) là file của luồng khác.
+    if (type === 'reply' && rec.scriptVersion === undefined) rec.scriptVersion = scriptVersionOf(rec.page);
+    fs.appendFileSync(logFile(), JSON.stringify(rec) + '\n');
     if (type === 'reply' && _idxBuilt) _idxPush(rec.page, rec.cust, rec.t); // cập nhật chỉ mục đếm lượt
     if (type === 'reply' && _textIdxBuilt) _textPush(rec.page, rec.cust, rec.text); // chỉ mục tin AI (M05)
   } catch (e) { console.error('[ai-log] lỗi ghi:', e.message); }
+}
+
+// ---- BẢN KỊCH BẢN (scriptVersion) ------------------------------------------------
+// M02 chưa có bản số cho kịch bản page, nên dùng BĂM NỘI DUNG: 8 ký tự sha1 của
+// greeting + tone + salesPrompt. Sửa kịch bản 1 chữ → mã đổi → M17 A/B và M20 unit
+// economics cắt được "bản nào ăn tiền". Khi M02 có `version` thật thì đổi hàm này,
+// mọi chỗ khác không phải sửa.
+//   'none'    = page CHƯA có kịch bản riêng (cả 3 trường đều rỗng)
+//   'unknown' = không đọc được cấu hình page (KB chưa nạp xong) — không im lặng ghi sai
+export function scriptVersionOfConfig(cfg = {}) {
+  const raw = [cfg.greeting || '', cfg.tone || '', cfg.salesPrompt || ''].join('\n');
+  if (!raw.trim()) return 'none';
+  return crypto.createHash('sha1').update(raw, 'utf8').digest('hex').slice(0, 8);
+}
+
+// Cache 60s/page: logAi chạy trên đường gửi tin, không được đọc lại file kịch bản mỗi lượt.
+const _svCache = new Map(); // pageId -> { v, at }
+export function scriptVersionOf(pageId, now = Date.now()) {
+  const key = String(pageId || '');
+  const hit = _svCache.get(key);
+  if (hit && now - hit.at < 60e3) return hit.v;
+  let v;
+  try { v = scriptVersionOfConfig(getPageConfig(key)); }
+  catch { v = 'unknown'; }
+  _svCache.set(key, { v, at: now });
+  return v;
 }
 
 // ---- ĐẾM LƯỢT BỀN VỮNG (nguyên tắc #8): số tin AI đã trả cho 1 khách trong N giờ,
@@ -62,8 +102,9 @@ export function recentAiTexts(pageId, custId, n = 12) {
 
 export function readLog() {
   try {
-    if (!fs.existsSync(FILE)) return [];
-    return fs.readFileSync(FILE, 'utf8').split('\n').filter(Boolean)
+    const f = logFile();
+    if (!fs.existsSync(f)) return [];
+    return fs.readFileSync(f, 'utf8').split('\n').filter(Boolean)
       .map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
   } catch { return []; }
 }
