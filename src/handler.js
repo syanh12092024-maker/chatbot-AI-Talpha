@@ -22,6 +22,10 @@ const CTX_COMPRESS = process.env.CTX_COMPRESS !== '0';
 // M13 — công tắc tắt nhận diện hậu bán theo nội dung.
 const POST_SALE_ROUTER = process.env.POST_SALE_ROUTER !== '0';
 
+// Khách bảo ĐỪNG NHẮN NỮA. Khoanh hẹp, chỉ những câu không thể hiểu nhầm: im nhầm một khách
+// đang muốn mua thì mất một đơn, nhưng nhắn tiếp vào người đang bực thì mất cả page.
+const STOP_CONTACT = /\b(harass(?:ing|ment)?|stop (?:messaging|sending|texting|contacting|spamming)|do ?n'?t (?:message|contact|text) me|leave me alone|huwag na (?:kayong|ninyong|kayo|niyo)|tigilan (?:niyo|nyo) (?:na )?ako|wag na (?:kayo|kayong)|i'?ll block you|iblock ko kayo|unsubscribe|remove me from)\b|لا ترسل|توقف عن الإرسال|اتركني/i;
+
 // NGUYÊN TẮC #13 — KẾT THÚC LÀ PHẢI BÀN GIAO: mọi điểm AI dừng phục vụ (khiếu nại,
 // ngôn ngữ lạ, hết lượt, page thiếu KB...) đều ghi 'handoff' vào Sổ AI kèm LÝ DO
 // → tự hiện ở hàng chờ "Cần sale xử lý" trên dashboard. Không khách nào bị bỏ rơi
@@ -153,6 +157,21 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   // M07: hồ sơ khách (bền qua restart) — mọi tầng bên dưới đọc chung một hồ sơ này.
   const prof = loadProfile(state, history, pageId);
 
+  // ── KHÁCH ĐÒI NGỪNG NHẮN — cửa chặn ĐẦU TIÊN, trên cả hậu bán lẫn Fast Lane ──
+  // Bàn giao TRONG IM LẶNG: không câu giữ chỗ, không template, không gì cả. Một tin nữa
+  // gửi vào đúng người vừa bảo dừng là đường ngắn nhất tới nút Block/Report — thứ làm hỏng
+  // CẢ PAGE chứ không chỉ hỏng một đơn, và không có đơn nào bù lại được.
+  // Ca thật: "Hey what youre doing you are harassing me and telling to reply and evryday
+  // youre sending msg and I AM REPLYING…" — v1 vẫn bán tiếp.
+  // Đặt ở handler chứ không ở classifier vì đây là quyết định ĐIỀU PHỐI (ai được nói),
+  // không phải phân loại ý định — và classifier là file của luồng khác.
+  if (STOP_CONTACT.test(text)) {
+    state.handoff = true; state.handoffReason = 'stop_contact';
+    toSaleQueue(state, `🔴 Khách YÊU CẦU NGỪNG NHẮN TIN — AI đã im hoàn toàn, chỉ người thật được liên hệ lại nếu thật sự cần\nKhách nói: "${String(text).slice(0, 120)}"`, 'stop_contact');
+    console.log(`[stop] ${state.custName || psid} (page ${pageId}) đòi ngừng liên lạc — AI im`);
+    return { reply: null, handoff: true, archived: true };
+  }
+
   // ── M13 · POST-SALE ROUTER — chặn TRƯỚC cả Fast Lane ────────────────────────
   // Khách đã nhận hàng mà AI dội tiếp bài quảng cáo là lỗi nặng nhất đang có (ca Matess
   // Valdez: 13 lượt AI, 0 đơn, khách báo hàng vỡ). Nhận diện bằng NỘI DUNG vì thẻ đơn
@@ -229,13 +248,6 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
 
   if (cls.intent === 'complaint') {
     state.handoff = true; state.handoffReason = 'complaint';
-    // Khách bảo ĐỪNG NHẮN NỮA thì bàn giao TRONG IM LẶNG: câu giữ chỗ tuy lịch sự nhưng vẫn là
-    // một tin nữa gửi vào đúng người vừa yêu cầu dừng — đường ngắn nhất tới nút Block/Report,
-    // thứ làm hỏng cả page chứ không chỉ hỏng một đơn. Sale vẫn thấy đủ trong hàng chờ.
-    if (cls.stop_contact) {
-      toSaleQueue(state, '🔴 Khách YÊU CẦU NGỪNG NHẮN TIN — AI đã im hoàn toàn, chỉ người thật được liên hệ lại (nếu cần)', 'stop_contact');
-      return { reply: null, handoff: true, archived: true };
-    }
     toSaleQueue(state, 'Khách KHIẾU NẠI — cần người xử lý gấp', 'complaint');
     return reply(psid, holdingMessage(cls.lang), true);
   }
