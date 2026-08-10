@@ -96,11 +96,44 @@ Tin do page gửi được coi là NGƯỜI THẬT khi KHÔNG khớp:
 → Có người thật nói → HANDOFF ngay.
 ```
 
-## Khoá Botcake (việc phải làm ở phía Botcake, không phải code)
-Trong Botcake, mọi kịch bản từ khoá thêm điều kiện:
-> **Không chạy nếu hội thoại có thẻ `AI Chăm`, `AI Chốt` hoặc `AI back Sale`.**
+## Chống đâm nhau với Botcake — HAI LỚP
 
-M18 (Ops Console) có màn hình hướng dẫn + kiểm tra điều kiện này đã được đặt chưa.
+### Lớp chính: AI CHỦ ĐỘNG NHƯỜNG *(không cần Botcake hợp tác)*
+
+Chủ trương của chủ dự án (11/08/2026): **AI luôn đi sau Botcake. Chậm vài giây còn hơn
+hai bot nói chồng lên nhau.** Ưu điểm lớn nhất là **không phụ thuộc vào việc Botcake có
+đọc được thẻ Pancake hay không** — thứ chưa ai xác minh được.
+
+| Cửa | Thời điểm | Cách làm | Mất gì |
+|---|---|---|---|
+| **①** | Sau debounce, **trước khi chiếm slot** | Chờ thêm `BOTCAKE_GRACE_MS` rồi mới đọc tin. Page đã nói → `decideConv` trả *"tin cuối là của page"* → AI im | Khách chờ thêm ~6s. **0 token** |
+| **②** | Ngay trước khi gửi | Đọc lại tin, page vừa nói → **bỏ tin đã soạn** | Token đã tiêu, nhưng khách không nhận 2 câu chồng |
+
+Cửa ② quan trọng hơn: AI soạn tin mất vài giây, Botcake hoàn toàn có thể trả lời trong
+khoảng đó — cửa ① không bắt được ca này.
+
+⚠️ **Hai cái bẫy đã vấp phải khi cài, đừng lặp lại:**
+1. **`pkGetMessages` trả TỐI ĐA 25 tin.** Hội thoại ≥25 tin thì cửa sổ **trượt** — độ dài
+   không đổi dù page vừa nói. So theo số lượng là hỏng đúng ở hội thoại bận rộn nhất.
+   → Phải so theo **`id` của tin** (`pageSpokeSince` trong `pancake-poll.js`).
+2. **Không được `sleep` bên trong semaphore.** Ngủ khi đang giữ 1 trong 4 slot thì giờ cao
+   điểm nghẽn oan. Chờ **trước** `_acquire()`.
+
+Núm chỉnh:
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `BOTCAKE_GRACE_MS` | `6000` | Chờ thêm bao lâu cho Botcake nói trước. `0` = tắt cửa ① |
+| `BOTCAKE_YIELD_BEFORE_SEND` | bật | `0` = tắt cửa ② (không khuyến khích) |
+
+Đếm số lần nhường: `botcakeYieldStats()` → M18 hiện thành cột "AI nhường 24h".
+**Nhường >50% là dấu hiệu Botcake đang lấn hết phần AI** — lúc đó phải thu hẹp kịch bản Botcake.
+
+### Lớp phụ *(tuỳ chọn — làm được thì tốt, không làm cũng chạy)*
+Trong Botcake, thêm điều kiện vào kịch bản từ khoá:
+> Không chạy nếu hội thoại có thẻ `AI Chăm`, `AI Chốt` hoặc `AI back Sale`.
+
+Bot vẫn gắn 3 thẻ này nên lớp phụ dùng được ngay khi ai đó cấu hình. M18 có màn hình
+hướng dẫn + đánh dấu page nào đã đặt điều kiện.
 
 ## Tiêu chí nghiệm thu
 - [ ] Trong 100 hội thoại có AI, số hội thoại xuất hiện template Botcake = **0**

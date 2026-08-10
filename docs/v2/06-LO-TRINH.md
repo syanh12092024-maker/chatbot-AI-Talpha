@@ -17,8 +17,15 @@
 | Sổ AI + `lane`/`state` | ✅ |
 | 16 module còn lại | ⬜ mới có spec |
 
-**Chặn ngoài code:** ① nạp tiền Kimi (bot đang chết) ② deploy ③ thêm điều kiện khoá thẻ
-trong Botcake ④ gỡ tin doạ khách ở công cụ RTO (**không nằm trong repo này**)
+| Cửa nhường Botcake (2 lớp) | ✅ code + 8 test · **chưa deploy** |
+
+**Chặn ngoài code:**
+① **nạp tiền Kimi** (bot đang chết) — 🔴 chặn cứng
+② **deploy** — 🔴 chặn cứng
+③ ~~thêm điều kiện khoá thẻ trong Botcake~~ → **đã hạ xuống TUỲ CHỌN** (11/08/2026):
+AI giờ tự nhường Botcake bằng 2 cửa trong `pancake-poll.js`, không cần Botcake hợp tác
+④ **gỡ tin doạ khách ở công cụ RTO** — 🔴 công cụ đó **không nằm trong repo này**,
+không dòng code nào ở đây chặn được
 
 ---
 

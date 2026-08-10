@@ -16,6 +16,67 @@ import { pruneConvStates } from './conv-state.js';
 // Đợi khách gõ xong mới trả lời (chống dội bom khách nhắn dồn) — chỉnh bằng REPLY_DEBOUNCE_MS.
 const REPLY_DEBOUNCE_MS = Number(process.env.REPLY_DEBOUNCE_MS || 20000);
 
+// ═══ NHƯỜNG BOTCAKE — chủ trương: AI LUÔN đi sau, không bao giờ nói chồng ═══
+// Đo 10/08/2026 trên 60 hội thoại thật: 75% hội thoại có AI bị template Botcake đâm ngang.
+// Ca thật (khách Cristita Andales): AI vừa chốt "So ready na ba sa address mo? 😊" thì
+// Botcake dội nguyên checklist "✔️Your full name ✔️Contact number…" — đúng thứ HARD_RULES
+// cấm AI làm — ngay sau khi khách nói chưa cần. Mất đơn.
+//
+// Cách xử lý: thay vì bắt Botcake im (phải cấu hình điều kiện thẻ bên Botcake, và chưa
+// chắc Botcake đọc được thẻ Pancake), ta cho AI CHỦ ĐỘNG NHƯỜNG — soi lại hội thoại ở
+// hai thời điểm, thấy page vừa nói thì bỏ lượt. Không cần Botcake hợp tác gì cả.
+//
+//   ① sau debounce, chờ thêm BOTCAKE_GRACE_MS rồi mới đọc tin → nếu page đã nói,
+//      decideConv trả "tin cuối là của page" và AI im, CHƯA tốn token nào
+//   ② ngay trước khi gửi, đọc lại lần nữa → nhường; token đã tiêu nhưng khách
+//      KHÔNG nhận hai câu chồng lên nhau. Đây là cửa quan trọng nhất vì AI soạn
+//      tin mất vài giây, Botcake hoàn toàn có thể trả lời trong khoảng đó.
+//
+// Đánh đổi: khách chờ thêm vài giây. Chủ dự án đã chọn đánh đổi này.
+const BOTCAKE_GRACE_MS = Number(process.env.BOTCAKE_GRACE_MS ?? 6000);
+const BOTCAKE_YIELD_BEFORE_SEND = process.env.BOTCAKE_YIELD_BEFORE_SEND !== '0';
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Giữa hai lần đọc, PAGE có gửi tin nào không?
+//
+//  · KHÔNG so theo mốc thời gian: timestamp Pancake không kèm múi giờ, Date.parse hiểu
+//    sai nhiều giờ (xem ghi chú debounce phía trên).
+//  · KHÔNG so theo SỐ TIN: đo thật 11/08/2026 — `pkGetMessages` trả về TỐI ĐA 25 tin.
+//    Hội thoại ≥25 tin thì cửa sổ TRƯỢT (tin cũ nhất rơi ra, tin mới thêm vào) nên độ dài
+//    KHÔNG đổi dù page vừa nói. Đây đúng là những hội thoại bận rộn nhất — so theo số
+//    lượng là hỏng ở chính chỗ cần nhất.
+//  → So theo `id` của tin (Pancake có sẵn trường này).
+export function pageSpokeSince(before, after, pageId) {
+  if (!Array.isArray(after) || !after.length) return false;
+  const prev = Array.isArray(before) ? before : [];
+
+  const prevIds = new Set(prev.map((m) => m?.id).filter(Boolean));
+  if (prevIds.size) {
+    const fresh = after.filter((m) => m?.id && !prevIds.has(m.id));
+    if (fresh.length) return fresh.some((m) => String(m?.from?.id) === String(pageId));
+    return false;
+  }
+
+  // Dự phòng khi API không trả `id`: so tin CUỐI (người gửi + nội dung).
+  const key = (m) => `${m?.from?.id}|${(m?.original_message || m?.message || '').slice(0, 120)}`;
+  const a = after[after.length - 1];
+  const b = prev[prev.length - 1];
+  if (!b || key(a) === key(b)) return false;
+  return String(a?.from?.id) === String(pageId);
+}
+
+// Đếm số lần nhường — để biết Botcake đang lấn bao nhiêu, và AI có bị câm oan không.
+const yieldCount = new Map(); // pageId -> { before: n, send: n }
+function noteYield(pageId, when) {
+  const y = yieldCount.get(pageId) || { before: 0, send: 0 };
+  if (when === 'trước khi gửi') y.send++; else y.before++;
+  yieldCount.set(pageId, y);
+}
+export function botcakeYieldStats() {
+  return [...yieldCount.entries()].map(([page, v]) => ({ page, ...v, total: v.before + v.send }));
+}
+
 // convId -> mốc last_customer_interactive_at đã xử lý (chống trả lời lặp)
 const seen = new Map();
 // DEBOUNCE theo ĐỒNG HỒ SERVER: timestamp Pancake không có múi giờ (Date.parse hiểu sai lệch
@@ -145,6 +206,13 @@ async function pollPage(pageId) {
     }
 
     jobs.push((async () => {
+      // ── CỬA NHƯỜNG BOTCAKE ① — chờ TRƯỚC KHI chiếm slot ────────────────────
+      // Cho Botcake thêm vài giây để trả lời trước. Nếu nó có trả lời thì lúc
+      // processConv đọc tin, `decideConv` sẽ thấy "tin cuối là của page" và AI im —
+      // chưa tốn một token nào.
+      // Ngủ ở ĐÂY chứ không phải trong processConv: nằm trong semaphore mà ngủ thì
+      // 4 slot bị giữ suốt thời gian chờ, giờ cao điểm sẽ nghẽn oan.
+      if (BOTCAKE_GRACE_MS > 0) await sleep(BOTCAKE_GRACE_MS);
       await _acquire();
       try { await processConv(pageId, c, psid, custId); convFail.delete(c.id); }
       catch (e) { noteConvError(pageId, c, psid, custId, e); }
@@ -186,7 +254,7 @@ function noteConvError(pageId, c, psid, custId, e) {
 
 // Xử lý 1 hội thoại (chạy trong semaphore): đọc tin → AI soạn → gửi qua Pancake.
 async function processConv(pageId, c, psid, custId) {
-  const msgs = await pkGetMessages(pageId, c.id, custId);
+  let msgs = await pkGetMessages(pageId, c.id, custId);
   if (!msgs.length) return;
 
   // ── M05 · AI CÓ ĐƯỢC NÓI KHÔNG? ────────────────────────────────────────────
@@ -194,7 +262,14 @@ async function processConv(pageId, c, psid, custId) {
   // là của page · tin đầu nhường Botcake · người thật đã tiếp quản.
   const d = decideConv({ pageId, conv: c, msgs, custId });
   if (!d.allow) {
-    if (d.changed) console.log(`[owner] ${c.from?.name || psid} (page ${pageId}): → ${d.state} — ${d.reason}`);
+    // Page vừa nói trong lúc chờ (cửa nhường ① ở pollPage) — đây là ca nhường Botcake,
+    // đếm riêng để biết Botcake đang lấn bao nhiêu.
+    if (/tin cuối là của page/.test(d.reason || '')) {
+      noteYield(pageId, 'trước khi soạn');
+      console.log(`[nhường] ${c.from?.name || psid} (page ${pageId}): page đã trả lời trước → AI nhường (chưa tốn token)`);
+    } else if (d.changed) {
+      console.log(`[owner] ${c.from?.name || psid} (page ${pageId}): → ${d.state} — ${d.reason}`);
+    }
     return;
   }
 
@@ -209,10 +284,9 @@ async function processConv(pageId, c, psid, custId) {
   const text = burst.join('\n');
   if (!text) return;
 
-  // KHOÁ BOTCAKE NGAY, TRƯỚC KHI AI SOẠN TIN.
-  // Gắn thẻ 'AI Chăm' ở đây (chứ không phải sau khi gửi xong như v1) để kịch bản Botcake
-  // — vốn có điều kiện "không chạy nếu hội thoại có thẻ AI Chăm" — dừng lại trong lúc AI
-  // còn đang soạn. v1 gắn muộn nên Botcake vẫn kịp chen vào giữa (đo: 75% hội thoại).
+  // Gắn thẻ 'AI Chăm' — vẫn hữu ích: sale nhìn thẻ biết AI đang phục vụ, và nếu kịch bản
+  // Botcake CÓ đặt điều kiện theo thẻ thì đây là lớp chặn thứ hai. Nhưng cửa nhường ở
+  // trên/dưới mới là thứ bảo đảm không đâm nhau, vì nó không cần Botcake hợp tác.
   if (config.pkTags.ai && !aiTagged.has(c.id)) {
     aiTagged.add(c.id);
     pkTagByName(pageId, c.id, config.pkTags.ai).then((t) => { if (!t.ok) console.warn(`[tag] ${pageId}: ${t.error}`); }).catch(() => {});
@@ -221,6 +295,19 @@ async function processConv(pageId, c, psid, custId) {
   // history = msgs (đã fetch sẵn ở trên) → AI đọc toàn bộ hội thoại trước khi soạn tin.
   const { reply, lane } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '' });
   if (!reply) return;
+
+  // ── CỬA NHƯỜNG BOTCAKE ② — soi lần cuối NGAY TRƯỚC KHI GỬI ────────────────
+  // Đây là cửa quan trọng nhất: AI soạn tin mất vài giây, Botcake hoàn toàn có thể
+  // trả lời trong khoảng đó. Cửa ① không bắt được ca này.
+  // Token đã tiêu rồi, nhưng thà bỏ tin còn hơn để khách nhận 2 câu chồng nhau.
+  if (BOTCAKE_YIELD_BEFORE_SEND) {
+    const latest = await pkGetMessages(pageId, c.id, custId).catch(() => null);
+    if (latest && pageSpokeSince(msgs, latest, pageId)) {
+      noteYield(pageId, 'trước khi gửi');
+      console.log(`[nhường] ${c.from?.name || psid} (page ${pageId}): Botcake trả lời trong lúc AI soạn → BỎ tin đã soạn`);
+      return;
+    }
+  }
   // Page vừa rơi vào backoff (do job song song khác) → thôi không gửi thêm.
   if ((sendFail.get(pageId)?.pausedUntil || 0) > Date.now()) return;
   const r = await pkSendReply(pageId, c.id, custId, reply);
