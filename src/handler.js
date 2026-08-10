@@ -6,6 +6,9 @@ import { config } from './config.js';
 import { logAi, recentReplyCount } from './ai-log.js';
 import { cleanText } from './text.js';
 import { pkTagByName, pkAddNote } from './pancake.js';
+import { fastLane, noteFastLane } from './fast-lane.js';
+import { guardOutbound, recordBlocked } from './outbound-guard.js';
+import { markHandoff } from './conv-owner.js';
 
 // NGUYÊN TẮC #13 — KẾT THÚC LÀ PHẢI BÀN GIAO: mọi điểm AI dừng phục vụ (khiếu nại,
 // ngôn ngữ lạ, hết lượt, page thiếu KB...) đều ghi 'handoff' vào Sổ AI kèm LÝ DO
@@ -17,6 +20,10 @@ function toSaleQueue(state, reason, kind) {
       reason, kind: kind || '', conv: state.pkConvId || '', name: state.custName || '',
     });
   } catch { /* sổ AI không chặn luồng chính */ }
+  // M05: khoá hội thoại lại — AI im, Botcake im, chỉ sale được nói. Trạng thái này
+  // BỀN qua restart (conv-state.json) nên không còn cảnh bot quay lại chen ngang
+  // sau khi server khởi động lại.
+  try { if (state.pkConvId) markHandoff(state.pkConvId, reason); } catch { /* không chặn luồng chính */ }
   // Gắn thẻ bàn giao trên Pancake (nếu page có thẻ đó) — sale trực Pancake lọc được ngay.
   // Gắn hụt thì PHẢI kêu: trước 07/08/2026 lỗi bị nuốt im, page thiếu thẻ mà không ai biết —
   // sale lọc theo thẻ thì tưởng AI chưa bàn giao ai. Chỉ 'AI Chăm' có log, hai thẻ kia thì không.
@@ -83,6 +90,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   // ĐO TOKEN CỦA LƯỢT NÀY — reset mỗi lượt để tin không gọi AI (vd holding message)
   // không bị gán nhầm số token của lượt trước. classifier + closer cùng cộng vào đây.
   state.lastUsage = { tin: 0, tout: 0, cread: 0, calls: 0 };
+  state.orderCreatedThisTurn = false; // cờ cho M09 — chỉ đúng trong phạm vi 1 lượt
 
   kb = kb || getKBForPage(pageId);
   recordInbound(psid, { pageId, pageName: kb.pageName, text });
@@ -98,6 +106,35 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     state.handoff = true; state.handoffReason = 'page_no_kb';
     toSaleQueue(state, 'Page chưa có kịch bản/KB — AI không thể tư vấn, cần người vào chat', 'no_kb');
     return reply(psid, holdingMessage('en'), true);
+  }
+
+  // ── M06 · FAST LANE — chặn TRƯỚC mọi lần gọi LLM ────────────────────────────
+  // 33,8% tin đang gọi model chỉ để đáp sticker / nút START / "ok" / "hi" / hỏi giá.
+  // Tầng này xử lý chúng bằng luật + câu mẫu dựng từ KB, tốn 0 token.
+  // Mọi trường hợp nghi ngờ đều leo lên AI (xem fast-lane.js).
+  state.fastLanesUsed = state.fastLanesUsed || new Set();
+  const fl = fastLane({
+    text,
+    kb,
+    aiTurns: state.aiTurns,
+    lastAiText: state.lastAiText || '',
+    usedLanes: state.fastLanesUsed,
+  });
+  noteFastLane(fl);
+  if (fl.handled) {
+    console.log(`[fastlane] ${state.custName || psid} (page ${pageId}): ${fl.lane} — ${fl.reason}`);
+    // Lượt IM LẶNG: không ghi vào state.messages. Sticker/"ok" không mang thông tin,
+    // và ghi lượt user không có lượt assistant kèm sẽ phá thế xen kẽ của mảng messages.
+    if (!fl.reply) return { reply: null, handoff: false, lane: fl.lane };
+    // Câu mẫu vẫn phải qua cửa kiểm duyệt như mọi tin khác.
+    const v = guardOutbound(fl.reply, { kb, pageId, custName: state.custName, lastAiText: state.lastAiText });
+    if (!v.ok) { recordBlocked(v, { pageId, custName: state.custName }, fl.reply); return { reply: null, handoff: false, blocked: v.rule }; }
+    // Ghi cặp lượt vào bộ nhớ phiên để AI ở lượt sau đọc được mạch hội thoại
+    // (hydrateHistory đã chạy phía trên nên không sợ chặn mất việc nạp lịch sử thật).
+    state.messages.push({ role: 'user', content: cleanText(text).trim() || '(khách gửi ảnh/sticker)' });
+    state.messages.push({ role: 'assistant', content: fl.reply });
+    state.lastAiText = fl.reply;
+    return reply(psid, fl.reply, false, fl.lane);
   }
 
   const cls = await classify(text, kb.products[0]?.name);
@@ -133,12 +170,50 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
 
   const text2 = await runCloser({ kb, state });
   state.aiTurns += 1;
-  return reply(psid, text2, state.handoff);
+
+  // ── M09 · OUTBOUND GUARD — cửa cuối trước khi tin tới khách ────────────────
+  // Chặn tin rỗng / sai giá / lộ tiếng Việt / doạ khách / checklist / quá dài.
+  // Vi phạm lần 1 → xin model viết lại ĐÚNG 1 lần; lần 2 → thà im còn hơn gửi bậy.
+  const guarded = await guardAndMaybeRewrite(text2, { kb, state, pageId, psid });
+  return reply(psid, guarded, state.handoff, 'AI');
 }
 
-function reply(psid, text, handoff) {
+// Soi tin, vi phạm thì xin model viết lại đúng 1 lần rồi soi lại.
+async function guardAndMaybeRewrite(text, { kb, state, pageId, psid }) {
+  const ctx = {
+    kb,
+    pageId,
+    custName: state.custName || psid,
+    lastAiText: state.lastAiText || '',
+    orderCreated: !!state.orderCreatedThisTurn,
+    isOrderSummary: !!state.orderCreatedThisTurn,
+  };
+  if (!String(text || '').trim()) return ''; // closer đã chủ động im — không phải vi phạm
+
+  let v = guardOutbound(text, ctx);
+  if (v.ok) { state.lastAiText = text; return text; }
+  recordBlocked(v, ctx, text);
+  if (v.action === 'block') return '';
+
+  // Xin viết lại: đưa đúng lý do để model sửa trúng chỗ.
+  state.messages.push({
+    role: 'user',
+    content: `Tin vừa rồi KHÔNG gửi được cho khách. Lý do: ${v.reason}\nVIẾT LẠI 1-2 câu ngắn bằng ĐÚNG ngôn ngữ của khách, khắc phục đúng lỗi trên. Không gọi tool, chỉ viết chữ.`,
+  });
+  let text3 = '';
+  try { text3 = await runCloser({ kb, state }); } catch (e) { console.warn('[guard] viết lại lỗi:', e.message); return ''; }
+  if (!String(text3 || '').trim()) return '';
+
+  v = guardOutbound(text3, ctx);
+  if (v.ok) { state.lastAiText = text3; return text3; }
+  recordBlocked(v, ctx, text3);
+  console.warn(`[guard] viết lại vẫn vi phạm (${v.rule}) → IM. page ${pageId} · ${ctx.custName}`);
+  return '';
+}
+
+function reply(psid, text, handoff, lane) {
   recordOutbound(psid, text);
-  return { reply: text, handoff };
+  return { reply: text, handoff, lane: lane || '' };
 }
 
 function holdingMessage(lang) {

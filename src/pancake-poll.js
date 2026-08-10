@@ -7,12 +7,11 @@ import { handleIncoming } from './handler.js';
 import { incReply, incLead } from './stats.js';
 import { logAi } from './ai-log.js';
 import { addAiConv } from './ai-convs.js';
+import { isLlmDown, llmHealth } from './llm-health.js';
+import { decideConv, noteAiSpoke, markPostSale, ORDER_STOP_TAGS } from './conv-owner.js';
+import { pruneConvStates } from './conv-state.js';
 
-// Thẻ hệ thống Pancake = -(mã trạng thái đơn). Có 1 trong các thẻ này nghĩa là ĐƠN ĐÃ CHỐT
-// & đang được xử lý → AI ngừng bán/tư vấn hội thoại đó (tránh chốt lại, tạo đơn trùng).
-//  -1 submitted(đã xác nhận) · -2 shipped(ĐÃ GỬI) · -3 delivered(đã nhận)
-//  -11 waitting(chờ hàng) · -12 wait_print(chờ in) · -20 ordered(đã đặt hàng)
-const ORDER_STOP_TAGS = new Set([-1, -2, -3, -11, -12, -20]);
+// ORDER_STOP_TAGS chuyển sang conv-owner.js (M05) — nơi giữ toàn bộ luật "ai được nói".
 
 // Đợi khách gõ xong mới trả lời (chống dội bom khách nhắn dồn) — chỉnh bằng REPLY_DEBOUNCE_MS.
 const REPLY_DEBOUNCE_MS = Number(process.env.REPLY_DEBOUNCE_MS || 20000);
@@ -82,8 +81,21 @@ const _acquire = () => (_slots > 0 ? (_slots--, Promise.resolve()) : new Promise
 const _release = () => { const w = _waiters.shift(); if (w) w(); else _slots++; };
 
 let _pollRunning = false; // chống 2 vòng poll chồng lên nhau khi 1 vòng chạy lâu
+let _downNotice = 0;
 async function pollAll() {
   if (_pollRunning) return;
+  // TẦNG LLM HỎNG (hết tiền / sai key) → DỪNG HẲN vòng xử lý.
+  // Không xử lý = không lỗi = không đẩy khách vào hàng chờ. 08–10/08/2026 thiếu cửa này
+  // nên bot vẫn cần cù quay vòng và tạo 2.652 handoff "⚙️ Lỗi kỹ thuật" vô nghĩa,
+  // đồng thời KHÔNG ghi mốc `seen` → khi nạp tiền xong, tin cũ vẫn được trả lời bình thường.
+  if (isLlmDown()) {
+    if (Date.now() - _downNotice > 60000) {
+      _downNotice = Date.now();
+      const h = llmHealth();
+      console.warn(`[pancake] ⏸ TẠM DỪNG ${h.downMinutes} phút — tầng LLM hỏng: ${h.reason}`);
+    }
+    return;
+  }
   _pollRunning = true;
   try {
     const pages = listAiEnabled().filter((pageId) => {
@@ -93,6 +105,7 @@ async function pollAll() {
     // Các page quét song song; từng hội thoại chen vào semaphore chung 4 slot.
     await Promise.all(pages.map((pageId) => pollPage(pageId).catch((e) => console.warn(`[pancake] page ${pageId}:`, e.message))));
     pruneMaps();
+    if (Math.random() < 0.002) pruneConvStates(); // ~1 lần/giờ ở nhịp 6s — dọn hội thoại cũ
   } finally { _pollRunning = false; }
 }
 
@@ -119,11 +132,17 @@ async function pollPage(pageId) {
 
     // NHƯỜNG NHÂN VIÊN: chỉ áp dụng khi BẬT config.respectAssignee. Mặc định TẮT vì Pancake
     // tự động gán hội thoại cho nhân viên → nếu bật, AI sẽ im gần hết (sale chỉ nắm đơn, không chat).
+    // M05 thay thế cửa này bằng nhận diện theo HÀNH VI (xem conv-owner.js § ④).
     if (config.respectAssignee && (c.assignee_ids || []).length > 0) { console.log(`[pancake] ${c.from?.name || psid}: đã gán nhân viên → AI nhường`); continue; }
 
-    // ĐƠN ĐÃ ĐƯỢC XỬ LÝ → AI IM HẲN (không tư vấn bán lại, không tạo đơn trùng).
+    // ĐƠN ĐÃ ĐƯỢC XỬ LÝ → AI IM HẲN. Chốt sớm ở đây để khỏi tải danh sách tin vô ích;
+    // decideConv (M05) vẫn kiểm lại đầy đủ khi đã có tin trong tay.
     const stopTag = (c.tags || []).find((t) => ORDER_STOP_TAGS.has(Number(t)));
-    if (stopTag !== undefined) { console.log(`[pancake] ${c.from?.name || psid}: đơn đang xử lý (thẻ ${stopTag}) → AI im`); continue; }
+    if (stopTag !== undefined) {
+      markPostSale(c.id, `đơn đang xử lý (thẻ ${stopTag})`);
+      console.log(`[pancake] ${c.from?.name || psid}: đơn đang xử lý (thẻ ${stopTag}) → AI im`);
+      continue;
+    }
 
     jobs.push((async () => {
       await _acquire();
@@ -144,6 +163,14 @@ function noteConvError(pageId, c, psid, custId, e) {
   f.count += 1; convFail.set(c.id, f);
   console.warn(`[pancake] khách ${c.from?.name || psid} (page ${pageId}) lỗi lần ${f.count}${fatal ? ' (không tự hồi phục)' : ''}: ${msg.slice(0, 160)}`);
   if (!fatal && f.count < 5) seen.delete(c.id); // lỗi thoáng qua → tick sau thử lại (tối đa 5 lần)
+  // LỖI TẦNG LLM (hết tiền / sai key) KHÔNG phải lỗi của hội thoại này — mọi khách đều
+  // dính. Đẩy hàng chờ là làm ngập sale bằng rác (đo 09/08/2026: 1.213 cái trong 1 ngày).
+  // Xoá bộ đếm để khi LLM sống lại, hội thoại được xử lý sạch từ đầu.
+  if (isLlmDown()) {
+    convFail.delete(c.id);
+    seen.delete(c.id);
+    return;
+  }
   if (f.count >= 3 && Date.now() - f.lastPushAt > 24 * 3600e3) {
     f.lastPushAt = Date.now();
     try {
@@ -159,11 +186,18 @@ function noteConvError(pageId, c, psid, custId, e) {
 
 // Xử lý 1 hội thoại (chạy trong semaphore): đọc tin → AI soạn → gửi qua Pancake.
 async function processConv(pageId, c, psid, custId) {
-  // Chỉ trả lời khi TIN CUỐI là của khách (không phải page/Botcake).
   const msgs = await pkGetMessages(pageId, c.id, custId);
-  const last = msgs[msgs.length - 1];
-  if (!last) return;
-  if (String(last.from?.id) === String(pageId)) return; // page/botcake đã nói cuối → bỏ
+  if (!msgs.length) return;
+
+  // ── M05 · AI CÓ ĐƯỢC NÓI KHÔNG? ────────────────────────────────────────────
+  // Một cửa duy nhất thay cho các cửa canh rời rạc của v1: đơn đã chốt · tin cuối
+  // là của page · tin đầu nhường Botcake · người thật đã tiếp quản.
+  const d = decideConv({ pageId, conv: c, msgs, custId });
+  if (!d.allow) {
+    if (d.changed) console.log(`[owner] ${c.from?.name || psid} (page ${pageId}): → ${d.state} — ${d.reason}`);
+    return;
+  }
+
   // GỘP CỤM TIN DỒN: lấy TẤT CẢ tin khách liên tiếp ở cuối hội thoại → trả lời 1 LẦN cho cả cụm.
   const burst = [];
   for (let i = msgs.length - 1; i >= 0; i--) {
@@ -175,12 +209,17 @@ async function processConv(pageId, c, psid, custId) {
   const text = burst.join('\n');
   if (!text) return;
 
-  // NHƯỜNG TIN ĐẦU cho Botcake: khách mới gửi đúng 1 tin → để Botcake chào, AI vào từ tin thứ 2.
-  const custMsgCount = msgs.filter((m) => String(m.from?.id) !== String(pageId) && (m.original_message || m.message || '').trim()).length;
-  if (custMsgCount <= 1) { console.log(`[pancake] ${c.from?.name || psid}: tin đầu "${text.slice(0, 24)}" → nhường Botcake chào`); return; }
+  // KHOÁ BOTCAKE NGAY, TRƯỚC KHI AI SOẠN TIN.
+  // Gắn thẻ 'AI Chăm' ở đây (chứ không phải sau khi gửi xong như v1) để kịch bản Botcake
+  // — vốn có điều kiện "không chạy nếu hội thoại có thẻ AI Chăm" — dừng lại trong lúc AI
+  // còn đang soạn. v1 gắn muộn nên Botcake vẫn kịp chen vào giữa (đo: 75% hội thoại).
+  if (config.pkTags.ai && !aiTagged.has(c.id)) {
+    aiTagged.add(c.id);
+    pkTagByName(pageId, c.id, config.pkTags.ai).then((t) => { if (!t.ok) console.warn(`[tag] ${pageId}: ${t.error}`); }).catch(() => {});
+  }
 
   // history = msgs (đã fetch sẵn ở trên) → AI đọc toàn bộ hội thoại trước khi soạn tin.
-  const { reply } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '' });
+  const { reply, lane } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '' });
   if (!reply) return;
   // Page vừa rơi vào backoff (do job song song khác) → thôi không gửi thêm.
   if ((sendFail.get(pageId)?.pausedUntil || 0) > Date.now()) return;
@@ -191,12 +230,12 @@ async function processConv(pageId, c, psid, custId) {
     try { addAiConv(pageId, c.id); } catch { /* ghi hội thoại AI để khớp đơn */ }
     // Ghi kèm TOKEN THẬT của lượt (đo trong closer.js) — nguồn số liệu chi phí theo page.
     const u = getState(psid).lastUsage || {};
-    try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id, tin: u.tin || 0, tout: u.tout || 0, cread: u.cread || 0, calls: u.calls || 0 }); } catch { /* sổ AI không chặn */ }
-    // Gắn thẻ "bot" trên Pancake (1 lần/hội thoại) — sale nhìn tag là biết AI đang phục vụ.
-    if (config.pkTags.ai && !aiTagged.has(c.id)) {
-      aiTagged.add(c.id);
-      pkTagByName(pageId, c.id, config.pkTags.ai).then((t) => { if (!t.ok) console.warn(`[tag] ${pageId}: ${t.error}`); }).catch(() => {});
-    }
+    // `lane` = tin do đâu soạn ('AI' hay 'tpl_price'/'tpl_greet'… của Fast Lane).
+    // Đây là điều kiện cần để đo "tỷ lệ tin xử lý 0 token" và tách chi phí theo tầng.
+    try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id, lane: lane || 'AI', state: d.state, tin: u.tin || 0, tout: u.tout || 0, cread: u.cread || 0, calls: u.calls || 0 }); } catch { /* sổ AI không chặn */ }
+    // M05: ghi nhận AI vừa nói — để lượt sau phân biệt được "tin của mình" với "người thật gõ".
+    try { noteAiSpoke(c.id, reply); } catch { /* trạng thái không chặn gửi tin */ }
+    // (thẻ 'AI Chăm' đã gắn TRƯỚC khi soạn tin — xem M05 phía trên)
     // ĐÁNH DẤU CHƯA ĐỌC lại (cơ chế Botcake): bot rep xong Pancake coi hội thoại là "đã xử lý"
     // → trôi khỏi hàng chờ sale. Gọi /unread SAU MỖI tin AI gửi để sale vẫn thấy mà check.
     if (config.markUnread) {

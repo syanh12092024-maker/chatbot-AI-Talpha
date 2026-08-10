@@ -13,6 +13,7 @@ export function logAi(pageId, custId, type, meta = {}) {
     const rec = { t: Date.now(), page: String(pageId || ''), cust: String(custId || ''), type, ...meta };
     fs.appendFileSync(FILE, JSON.stringify(rec) + '\n');
     if (type === 'reply' && _idxBuilt) _idxPush(rec.page, rec.cust, rec.t); // cập nhật chỉ mục đếm lượt
+    if (type === 'reply' && _textIdxBuilt) _textPush(rec.page, rec.cust, rec.text); // chỉ mục tin AI (M05)
   } catch (e) { console.error('[ai-log] lỗi ghi:', e.message); }
 }
 
@@ -35,6 +36,28 @@ export function recentReplyCount(pageId, custId, windowMs = 24 * 3600 * 1000) {
   const arr = _replyIdx.get(String(pageId) + ':' + String(custId)) || [];
   const since = Date.now() - windowMs;
   return arr.filter((t) => t >= since).length;
+}
+
+// ---- TIN AI ĐÃ GỬI GẦN ĐÂY cho 1 khách (M05 dùng để phân biệt "tin của mình" với
+// "tin do người thật gõ"). Sổ AI lưu 80 ký tự đầu — đủ để so khớp phần đầu.
+// Cùng cách làm với chỉ mục đếm lượt: xây 1 lần, sau đó logAi tự đẩy vào.
+const _textIdx = new Map(); // 'page:cust' -> [text]
+let _textIdxBuilt = false;
+function _textPush(page, cust, text) {
+  if (!text) return;
+  const k = page + ':' + cust;
+  let arr = _textIdx.get(k);
+  if (!arr) { arr = []; _textIdx.set(k, arr); }
+  arr.push(text);
+  if (arr.length > 30) arr.splice(0, arr.length - 30); // chỉ cần khúc đuôi
+}
+export function recentAiTexts(pageId, custId, n = 12) {
+  if (!_textIdxBuilt) {
+    for (const r of readLog()) if (r.type === 'reply' && r.text) _textPush(String(r.page), String(r.cust), r.text);
+    _textIdxBuilt = true;
+  }
+  const arr = _textIdx.get(String(pageId) + ':' + String(custId)) || [];
+  return arr.slice(-n);
 }
 
 export function readLog() {

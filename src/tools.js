@@ -5,6 +5,7 @@ import { incOrder } from './stats.js';
 import { logAi } from './ai-log.js';
 import { createPancakeOrder, ordersEnabled, conversationHasOrder, markConversationOrdered } from './pancake-orders.js';
 import { config } from './config.js';
+import { markClosing } from './conv-owner.js';
 
 // Định nghĩa tool (function calling) cho closer.
 export const toolDefs = [
@@ -167,6 +168,11 @@ export async function executeTool(name, input, ctx) {
           await createOrder(input, ctx); // chỉ ghi nhận nội bộ, KHÔNG tạo đơn Pancake
         }
         state.closed = true;
+        // Cờ cho M09 (outbound-guard): lượt NÀY đã chốt đơn thành công → được phép
+        // tóm tắt đơn (đọc lại SĐT/địa chỉ đúng 1 lần) và được nhắc tới đơn hàng.
+        state.orderCreatedThisTurn = true;
+        // M05: chuyển hội thoại sang CLOSING — sale tiếp quản, AI + Botcake khoá.
+        try { if (state.pkConvId) markClosing(state.pkConvId, `AI chốt đơn: ${input.name || '?'} · ${input.qty || 1} sp`); } catch { /* không chặn chốt đơn */ }
         try { markConversationOrdered(state.pkConvId); } catch { /* nhớ ngay để không tạo lần 2 */ }
         // Gắn thẻ "Mua hàng" trên Pancake để sale lọc nhanh đơn AI chốt.
         if (config.pkTags.order) {

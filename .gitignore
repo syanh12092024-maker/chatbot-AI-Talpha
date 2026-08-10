@@ -22,3 +22,8 @@ pancake-tokens.json
 pancake-page-tokens.json
 wa-auth/
 wa-qr.png
+
+# Trạng thái hội thoại (M05) + sổ template Botcake (M18) — dữ liệu thật, chỉ có trên VPS
+conv-state.json
+conv-state.json.tmp
+botcake-templates.json
