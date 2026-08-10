@@ -120,6 +120,22 @@ chốt          = số đơn / số khách
 % ngân sách lượt 1 = chi phí lượt AI đầu / tổng chi phí   ← chỉ số sức khoẻ v2
 ```
 
+## Đã đo trên Sổ AI THẬT (bản kéo từ VPS 10/08/2026 · 15.970 dòng · 22/07→10/08)
+Tổng khớp `/admin/api/token-cost` **lệch 0%**: 9.036 lượt · 4.913 khách · 151 đơn ·
+515.852đ · 7.502đ/đơn · 59,8 lượt/đơn · chốt 3,1% · **ngân sách lượt-1 = 69,7%**
+(mục tiêu ≤20%). 46 cảnh báo bắn: 2 🔴 nhiều lượt-0 đơn · 33 rò lượt-1 · 5 lỗ · 6 lượt/đơn cao.
+
+Ba điều tài liệu/prompt ghi chưa đúng với dữ liệu thật, đã kiểm chứng:
+1. **`lane` và `state` "đã có"** — có trong CODE (`pancake-poll.js`) nhưng **0/9.036** bản ghi
+   production có hai trường này, vì nhánh nền `fix-images` chưa deploy. Mọi số cắt theo lane
+   chỉ đúng từ lần deploy tới.
+2. **`% Fast Lane` không đo đủ được từ Sổ AI.** `pancake-poll.js` có `if (!reply) return;`
+   đặt TRƯỚC chỗ ghi sổ, nên 5 nhánh Fast Lane im lặng (`silent_*`) không đẻ dòng sổ nào —
+   đúng những lượt rẻ nhất lại vô hình. Con số hiện là **cận dưới**. Sửa được bằng cách ghi
+   sổ cả lượt im lặng, nhưng đó là file của luồng khác (08-SONG-SONG §3).
+3. **`scriptVersion`** hiện `(chưa ghi)` trên toàn bộ sổ cũ — chỉ có từ lần deploy tới; cắt
+   theo kịch bản chỉ có nghĩa với dữ liệu mới, không hồi tố được.
+
 ## Ngưỡng cảnh báo tự động
 | Điều kiện | Hành động |
 |---|---|
