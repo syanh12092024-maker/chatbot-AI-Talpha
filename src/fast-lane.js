@@ -12,9 +12,10 @@
 // AN TOÀN LÀ TRÊN HẾT: mọi trường hợp nghi ngờ đều LEO LÊN AI. Thà tốn token còn
 // hơn trả lời máy móc một khách đang muốn mua.
 
-import { productTiers } from './kb.js';
+import { productTiers, getPageList } from './kb.js';
 import { cleanText } from './text.js';
 import { registerOurMessage } from './our-messages.js';
+import { matchRule, noteRuleFired, noteCustomerTurn, replyPriceOk } from './rule-store.js';
 
 const norm = (s) => cleanText(s || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
 
@@ -133,7 +134,40 @@ function buildGreeting(kb, lang) {
 export const fastLaneConfig = {
   enabled: process.env.FASTLANE !== '0',
   templates: process.env.FASTLANE_TEMPLATES !== '0', // lớp 2 (giá/ship/cách đặt)
+  rules: process.env.SCRIPT_RULES !== '0',           // L8 · bảng Kịch bản tự động (§07)
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// L8 · Suy ra pageId khi tầng gọi chưa truyền
+//
+// `handler.js` (KHÔNG thuộc quyền luồng này) đang gọi `fastLane()` mà không truyền
+// pageId, còn `getKBForPage()` thì không nhét pageId vào object KB. Không có pageId
+// thì mọi dòng kịch bản CÓ Page ID cụ thể sẽ không bao giờ chạy — chỉ còn dòng dùng chung.
+//
+// Đường vá tạm: dò ngược từ `kb.pageName`, và CHỈ khi tên đó là DUY NHẤT. Trùng tên →
+// trả null (chỉ dòng dùng chung chạy) thay vì đoán bừa — gán nhầm page nghĩa là bắn
+// kịch bản của page A cho khách của page B.
+//
+// 🔌 Cách sửa ĐÚNG là 1 dòng ở `handler.js`: thêm `pageId,` vào lời gọi `fastLane({…})`.
+//    Đã ghi vào mục "Cách nối" của báo cáo L8 để L0 làm khi gộp.
+// ─────────────────────────────────────────────────────────────────────────────
+let _nameIdx = { t: 0, map: new Map() };
+function pageIdByName(name) {
+  const n = String(name || '').trim().toLowerCase();
+  if (!n) return null;
+  if (Date.now() - _nameIdx.t > 60e3) {
+    const m = new Map();
+    try {
+      for (const p of getPageList()) {
+        const k = String(p.name || '').trim().toLowerCase();
+        if (!k) continue;
+        m.set(k, m.has(k) ? null : String(p.id)); // trùng tên → đánh dấu null (không dùng được)
+      }
+    } catch { /* KB chưa nạp — lần sau thử lại */ }
+    _nameIdx = { t: Date.now(), map: m };
+  }
+  return _nameIdx.map.get(n) || null;
+}
 
 /**
  * @param {object} a
@@ -142,19 +176,37 @@ export const fastLaneConfig = {
  *   @param {number} a.aiTurns     Số lượt AI đã trả cho khách này
  *   @param {string} a.lastAiText  Tin AI gửi gần nhất (để biết AI vừa hỏi gì)
  *   @param {Set}    a.usedLanes   Các câu mẫu đã dùng cho khách này (chống lặp)
- * @returns {{handled:boolean, reply:string|null, lane:string, reason:string}}
+ *   @param {string} [a.pageId]    L8 · để chạy dòng kịch bản riêng của page (xem pageIdByName)
+ *   @param {boolean}[a.hasOrder]  L8 · khách đã có đơn chưa (điều kiện "chưa có đơn")
+ * @returns {{handled:boolean, reply:string|null, lane:string, reason:string, aiHint?:string, rule?:string}}
  *   handled=true, reply=null  → IM LẶNG, không gọi LLM, không gửi gì
  *   handled=true, reply='...' → gửi câu mẫu (0 token)
  *   handled=false             → leo lên AI Closer
+ *   `aiHint` (nếu có) = cột "Gợi ý cho AI" của dòng kịch bản vừa khớp — tầng gọi nạp
+ *   thêm vào prompt lượt này. Bỏ qua trường này thì hệ thống chạy y như trước.
  */
-export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes }) {
-  const escalate = (reason) => ({ handled: false, reply: null, lane: '', reason });
+export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes, pageId, hasOrder }) {
+  let hintExtra = {};
+  const escalate = (reason) => ({ handled: false, reply: null, lane: '', reason, ...hintExtra });
   if (!fastLaneConfig.enabled) return escalate('fastlane tắt');
 
   const raw = String(text || '');
   const s = norm(raw);
   const lang = detectLang(raw);
   const used = usedLanes instanceof Set ? usedLanes : new Set();
+
+  // ── L8 · Khớp bảng kịch bản SỚM ────────────────────────────────────────────
+  // Khớp ở đây (chứ không phải ở lớp 2) vì hai lý do:
+  //   ① "Gợi ý cho AI" phải đi kèm MỌI lối leo lên AI, kể cả lối thoát an toàn ở trên
+  //      (có SĐT / phản đối giá) — đó chính là những lượt AI cần gợi ý nhất.
+  //   ② Ba chỉ số/dòng cần đếm ĐỦ tin khách, kể cả tin bị lớp 1 nuốt ("ok", sticker).
+  // Nhưng CHỈ BẮN câu mẫu ở lớp 2, sau khi đã qua hết lưới an toàn.
+  const pid = pageId ? String(pageId) : pageIdByName(kb?.pageName);
+  const hit = (fastLaneConfig.enabled && fastLaneConfig.rules && s)
+    ? matchRule({ pageId: pid, text: raw, kb, aiTurns, lastAiText, usedLanes: used, hasOrder })
+    : null;
+  if (hit?.rule?.aiHint) hintExtra = { rule: hit.rule.id, aiHint: hit.rule.aiHint };
+  noteCustomerTurn(used, hit?.rule?.id || null);
 
   // ── Tín hiệu ƯU TIÊN CAO: luôn leo lên AI, không cần xét mẫu ──────────────
   if (HAS_PHONE.test(raw)) return escalate('có số điện thoại — khách đang cho thông tin đơn');
@@ -209,11 +261,46 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', usedLanes }) 
   }
 
   // ── LỚP 2 · kịch bản KB (0 token) ────────────────────────────────────────
-  if (!fastLaneConfig.templates) return escalate('lớp template tắt');
-
-  // Tin dài thì luôn có ngữ cảnh riêng → để AI.
+  // Tin dài thì luôn có ngữ cảnh riêng → để AI. Trần này áp cho CẢ dòng kịch bản:
+  // một dòng bắt từ khoá không hề biết 20 từ còn lại của khách đang nói gì.
   const words = s.split(' ').filter(Boolean).length;
   if (words > 12) return escalate('tin dài >12 từ');
+
+  // ── L8 · BẢNG KỊCH BẢN TỰ ĐỘNG — thắng mẫu cứng trong code (§4 bậc 2-4 < bậc 5) ──
+  //
+  // Bốn cách kết hợp hai cột (§1):
+  //   trả lời ✅ · gợi ý ✗  → bắn mẫu, 0 token
+  //   trả lời ✅ · gợi ý ✅  → lần đầu bắn mẫu; khách hỏi lại → AI vào KÈM gợi ý
+  //   trả lời ✗  · gợi ý ✅  → luôn gọi AI, nhưng AI biết cách trả lời đúng
+  //   trả lời ✗  · gợi ý ✗   → validator đã chặn, không tồn tại ở đây
+  if (hit && hit.rule.reply) {
+    const key = `rule:${hit.rule.id}`;
+    if (used.has(key)) {
+      // Chống lặp §4: một dòng chỉ bắn tối đa 1 lần cho một khách. Hỏi lại cùng ý =
+      // mẫu cứng KHÔNG thoả mãn được → lên AI, kèm gợi ý của chính dòng đó.
+      return escalate(`kịch bản "${hit.rule.situation}" đã bắn 1 lần — khách hỏi lại thì để AI`);
+    } else if (hit.condition !== 'met') {
+      // 'unmet' = điều kiện rõ ràng chưa tới. 'unknown' = tầng gọi chưa truyền tín hiệu
+      // (vd chưa nối `hasOrder`). Cả hai đều KHÔNG bắn — phân vân thì để lên AI.
+      return escalate(`kịch bản "${hit.rule.situation}" chưa thoả điều kiện "${hit.rule.condition}" (${hit.condition})`);
+    } else if (!replyPriceOk(hit.rule.reply, kb)) {
+      // Bảng giá đã đổi kể từ lần nạp luật gần nhất → thà tốn ~130đ còn hơn báo sai giá.
+      console.warn(`[rules] ${hit.rule.id} "${hit.rule.situation}": giá trong câu trả lời không còn khớp bảng giá — bỏ qua, để AI`);
+      return escalate('dòng kịch bản nêu giá không còn khớp bảng giá — để AI');
+    } else {
+      used.add(key);
+      registerOurMessage(hit.rule.reply); // M05 phải biết đây là tin của mình, không phải sale gõ
+      noteRuleFired(hit.rule.id, used);
+      return {
+        handled: true, reply: hit.rule.reply,
+        lane: `rule_${hit.rule.id}`, reason: `kịch bản: ${hit.rule.situation}`,
+        rule: hit.rule.id, aiHint: hit.rule.aiHint || '',
+      };
+    }
+  }
+
+  // ── Mẫu cứng trong code — §4 bậc 5, chạy sau khi không dòng kịch bản nào khớp ──
+  if (!fastLaneConfig.templates) return escalate('lớp template tắt');
 
   const tpl = (key, body, reason) => {
     if (!body) return escalate(`${reason} nhưng KB chưa đủ dữ liệu`);
