@@ -28,6 +28,7 @@ adminRouter.use((await import('./admin-scripts.js')).scriptsRouter); // L3 · M0
 adminRouter.use('/economics', (await import('./admin-economics.js')).economicsRouter); // M20 Unit Economics
 adminRouter.use('/ops', (await import('./admin-ops.js')).opsRouter); // L6 · M18 Ops Console + M19 Health Watchdog
 adminRouter.use('/order-bridge', (await import('./admin-orders.js')).ordersRouter); // L7 · M14 Order Bridge + M15 Miner + sổ template
+adminRouter.use('/ab', (await import('./admin-experiments.js')).experimentsRouter); // L5 · M17 A/B + M12 đuổi theo (1 dòng mount, xem docs/v2/08-SONG-SONG.md §3)
 
 // ---- Tổng quan ----
 adminRouter.get('/overview', (_req, res) => {

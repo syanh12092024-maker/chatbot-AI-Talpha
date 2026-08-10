@@ -125,3 +125,4 @@ startPancakePolling();
 
 // L7 · M15 mổ hội thoại + tự học sổ template, 02:00 mỗi đêm (tắt trên máy PANCAKE_READONLY=1).
 import('./scheduler-miner.js').then((m) => { const r = m.startMinerScheduler(); if (!r.started) console.log(`[miner] lịch mổ đêm TẮT — ${r.why}`); }).catch((e) => console.error('[miner] không nạp được lịch:', e.message));
+(await import('./scheduler-followup.js')).startL5Schedulers(); // L5 · M17 quét A/B mỗi giờ + M12 đuổi theo mỗi 15 phút (tự im khi công tắc đóng)
