@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Script Studio · AI Closer</title>
+<!--
+  M02 · Script Studio — TRANG RIÊNG, cố ý KHÔNG nhét vào public/admin.html.
+  admin.html là một file gộp CSS+JS inline mà nhiều luồng đang cùng sửa; thêm màn
+  hình vào đó là cầm chắc xung đột (docs/v2/08-SONG-SONG.md §3).
+  Trang này phục vụ từ GET /admin/api/scripts/ui nên nằm sau Basic Auth của /admin.
+-->
+<style>
+  :root{
+    --bg:#f4f7f8;--card:#fff;--line:#e3eaec;--ink:#12252a;--mut:#6b8288;
+    --acc:#0e8f9c;--bad:#c0392b;--badSoft:#fdecea;--warn:#b06a00;--warnSoft:#fff5e2;
+    --ok:#1a7f5a;--okSoft:#e7f6ef;--side:#0f2b31;--sideMut:#9fbcc2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  a{color:var(--acc)}
+  .top{display:flex;align-items:center;gap:14px;padding:12px 18px;background:var(--side);color:#fff}
+  .top h1{font-size:16px;margin:0;font-weight:650}
+  .top .sp{flex:1}
+  .pill{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
+  .pill.bad{background:#4a1512;color:#ffb3aa}.pill.warn{background:#4a3410;color:#ffd699}.pill.ok{background:#0d3a2c;color:#8ce0bd}
+  .top a{color:var(--sideMut);font-size:12.5px;text-decoration:none}.top a:hover{color:#fff}
+  .wrap{display:grid;grid-template-columns:340px 1fr;gap:14px;padding:14px;align-items:start}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px}
+  .card h2{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);margin:0;padding:11px 14px;border-bottom:1px solid var(--line)}
+  .list{max-height:calc(100vh - 150px);overflow:auto}
+  .row{padding:9px 14px;border-bottom:1px solid #f0f4f5;cursor:pointer;display:flex;gap:8px;align-items:flex-start}
+  .row:hover{background:#f7fbfb}.row.sel{background:#e8f6f7}
+  .row .nm{flex:1;min-width:0}
+  .row .nm b{display:block;font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .nm span{font-size:11.5px;color:var(--mut)}
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:5px}
+  .dot.bad{background:var(--bad)}.dot.warn{background:var(--warn)}.dot.ok{background:var(--ok)}
+  .pad{padding:14px}
+  .fld{margin-bottom:14px}
+  .fld label{display:flex;align-items:baseline;gap:8px;font-weight:650;font-size:12.5px;margin-bottom:5px}
+  .fld label .hint{font-weight:400;color:var(--mut);font-size:11.5px}
+  .fld label .tag{font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;letter-spacing:.4px}
+  .tag.cust{background:var(--badSoft);color:var(--bad)}
+  .tag.int{background:#eef2f3;color:var(--mut)}
+  textarea,input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:13px/1.55 inherit;resize:vertical;background:#fcfdfd}
+  textarea:focus,input:focus{outline:2px solid #bfe6ea;border-color:var(--acc)}
+  textarea.err{border-color:var(--bad);background:#fffafa}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 13px;font:600 13px inherit;cursor:pointer;color:var(--ink)}
+  .btn:hover{background:#f2f8f8}
+  .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}.btn.pri:hover{filter:brightness(1.08)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--line);background:#fafcfc;border-radius:0 0 10px 10px}
+  .bar .sp{flex:1}
+  .msg{padding:9px 12px;border-radius:8px;margin-bottom:8px;font-size:12.5px}
+  .msg.bad{background:var(--badSoft);border:1px solid #f3c9c4;color:#7d2419}
+  .msg.warn{background:var(--warnSoft);border:1px solid #f0dcb4;color:#7a4a00}
+  .msg.ok{background:var(--okSoft);border:1px solid #bfe4d3;color:#125e42}
+  .msg b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px}
+  .hist{font-size:12.5px}
+  .hist .h{display:flex;gap:9px;align-items:center;padding:7px 14px;border-bottom:1px solid #f0f4f5}
+  .st{font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;letter-spacing:.4px}
+  .st.LIVE{background:var(--okSoft);color:var(--ok)}.st.DRAFT{background:#eef2f3;color:var(--mut)}
+  .st.REVIEW{background:var(--warnSoft);color:var(--warn)}.st.ARCHIVED{background:#f4f6f6;color:#93a7ab}
+  .meta{color:var(--mut);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prices{font-size:12px;color:var(--mut);padding:0 14px 12px}
+  .prices code{background:#eef4f5;padding:1px 6px;border-radius:4px;color:var(--ink);font-weight:600}
+  .try{white-space:pre-wrap;background:#f7fbfb;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13px;margin-top:8px}
+  .muted{color:var(--mut);font-size:12.5px}
+  #toast{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:9}
+  .tt{background:#12252a;color:#fff;padding:9px 14px;border-radius:8px;font-size:13px;box-shadow:0 6px 22px rgba(0,0,0,.18)}
+  .tt.bad{background:var(--bad)}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>📝 Script Studio</h1>
+  <span class="pill bad" id="cBlocked">—</span>
+  <span class="pill warn" id="cWarned">—</span>
+  <span class="pill ok" id="cReady">—</span>
+  <div class="sp"></div>
+  <a href="#" onclick="showDigest();return false">Xem bản tin 09:00</a>
+  <a href="/admin">← Bảng điều khiển</a>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Page</h2>
+    <div class="pad" style="padding:9px 12px;border-bottom:1px solid var(--line)">
+      <input type="text" id="q" placeholder="Lọc theo tên / marketer…" oninput="drawList()">
+    </div>
+    <div class="list" id="list"><div class="pad muted">Đang tải…</div></div>
+  </div>
+
+  <div id="right"><div class="card"><div class="pad muted">Chọn một page bên trái để sửa kịch bản.</div></div></div>
+</div>
+<div id="toast"></div>
+
+<script>
+const API='/admin/api';
+const j=(u,o)=>fetch(API+u,o).then(async r=>{const d=await r.json().catch(()=>({}));return {status:r.status,d};});
+const post=(u,b)=>j(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const when=s=>{if(!s)return'—';const d=new Date(s);return isNaN(d)?'—':d.toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});};
+function toast(m,bad){const e=document.createElement('div');e.className='tt'+(bad?' bad':'');e.textContent=m;toastEl.appendChild(e);setTimeout(()=>e.remove(),4200);}
+const toastEl=document.getElementById('toast');
+
+// Nhãn trường: `cust` = bắn NGUYÊN VĂN cho khách (validator soi gắt, cấm tiếng Việt);
+// `int` = chỉ dẫn nội bộ cho model đọc (tiếng Việt là đúng).
+const FIELDS=[
+  {k:'tone',        t:'② Giọng điệu',            kind:'int', rows:3, hint:'Xưng hô, độ dài câu. Ô này 37/38 page bỏ trống.'},
+  {k:'greeting',    t:'③ Câu chào',              kind:'cust',rows:3, hint:'Gửi thẳng cho khách. KHÔNG được chứa con số giá.'},
+  {k:'salesPrompt', t:'④ Cách bán / điểm mạnh',  kind:'int', rows:10,hint:'Nạp vào prompt mỗi lượt — càng dài càng đắt.'},
+  {k:'fastLanePrice',t:'⑤ Trả lời "hỏi giá" (0 token)', kind:'cust',rows:4,hint:'Giá phải khớp ĐÚNG bảng giá bên dưới.'},
+  {k:'fastLaneShip', t:'⑥ Trả lời "hỏi ship" (0 token)',kind:'cust',rows:3,hint:'Khung chung "2-5 days", không hứa ngày cụ thể.'},
+  {k:'fastLaneHowto',t:'⑦ Trả lời "cách đặt" (0 token)',kind:'cust',rows:3,hint:'Trống = dùng mẫu chung trong code.'},
+];
+
+let PAGES=[], CUR=null, DIRTY=false, MAXTOK=2000;
+
+async function loadList(){
+  const {d}=await j('/scripts');
+  PAGES=d.pages||[];
+  document.getElementById('cBlocked').textContent=PAGES.filter(p=>!p.aiAllowed).length+' chặn';
+  document.getElementById('cWarned').textContent=PAGES.filter(p=>p.aiAllowed&&p.warnings.length).length+' nhắc';
+  document.getElementById('cReady').textContent=PAGES.filter(p=>p.readiness==='READY').length+' sẵn sàng';
+  drawList();
+}
+function drawList(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  const rows=PAGES.filter(p=>!q||(p.name+' '+p.marketer).toLowerCase().includes(q));
+  document.getElementById('list').innerHTML=rows.map(p=>{
+    const cls=!p.aiAllowed?'bad':(p.warnings.length?'warn':'ok');
+    const why=!p.aiAllowed?p.blockers.map(b=>b.code).join(', '):(p.warnings.map(w=>w.code).join(', ')||'READY');
+    return `<div class="row ${CUR===p.pageId?'sel':''}" onclick="open_('${p.pageId}')">
+      <span class="dot ${cls}"></span>
+      <span class="nm"><b>${esc(p.name)}</b><span>${p.version?'v'+p.version:'chưa có bản'} · ${esc(why)}${p.marketer?' · '+esc(p.marketer):''}</span></span>
+    </div>`;
+  }).join('')||'<div class="pad muted">Không có page nào khớp.</div>';
+}
+
+async function open_(id){
+  if(DIRTY&&!confirm('Bản nháp chưa lưu sẽ mất. Chuyển page?'))return;
+  CUR=id;DIRTY=false;drawList();
+  const {d}=await j('/scripts/'+id);
+  const cfg=(d.draft&&d.draft.config)||d.liveConfig||{};
+  MAXTOK=d.maxTokens||MAXTOK;   // trần lấy từ server (SCRIPT_MAX_TOKENS), đừng ghi cứng ở đây
+  const cur=PAGES.find(p=>p.pageId===id)||{};
+  document.getElementById('right').innerHTML=`
+    <div class="card">
+      <h2>${esc(d.name)} — ${d.live?'v'+d.live.version+' '+d.live.status:'chưa xuất bản bản nào'}${d.draft?` · đang soạn v${d.draft.version} ${d.draft.status}`:''}</h2>
+      <div class="pad">
+        <div id="ready"></div>
+        <div id="vout"></div>
+        ${FIELDS.map(f=>`<div class="fld">
+          <label>${f.t}
+            <span class="tag ${f.kind}">${f.kind==='cust'?'GỬI KHÁCH':'NỘI BỘ'}</span>
+            <span class="hint">${esc(f.hint)}</span></label>
+          <textarea id="f_${f.k}" rows="${f.rows}" oninput="DIRTY=true;count()">${esc(cfg[f.k]||'')}</textarea>
+        </div>`).join('')}
+        <div class="muted" id="tok"></div>
+      </div>
+      <div class="prices">Bảng giá hiện tại (nguồn đối chiếu của validator):
+        ${(d.prices||[]).length?d.prices.map(p=>`<code>${p} ${esc(d.currency)}</code>`).join(' '):'<b>chưa có</b> — không xuất bản được câu trả lời giá cứng'}</div>
+      <div class="bar">
+        <button class="btn" onclick="doValidate()">Soi lỗi</button>
+        <button class="btn" onclick="doTry()">Thử với 1 tin</button>
+        <div class="sp"></div>
+        <button class="btn" onclick="doDraft()">Lưu nháp</button>
+        <button class="btn" onclick="doReview()" ${d.requireReview?'':'style="display:none"'}>Gửi duyệt</button>
+        <button class="btn pri" onclick="doPublish()">Xuất bản</button>
+      </div>
+    </div>
+    <div id="tryout"></div>
+    <div class="card" style="margin-top:14px">
+      <h2>Lịch sử — khôi phục là tạo bản MỚI, bản cũ không bị xoá</h2>
+      <div class="hist">${(d.versions||[]).map(v=>`<div class="h">
+        <span class="st ${v.status}">${v.status}</span>
+        <b>v${v.version}</b>
+        <span class="meta">${esc(v.updatedBy)} · ${when(v.updatedAt)} · ~${v.tokens} token${v.note?' · '+esc(v.note):''}</span>
+        ${v.status==='LIVE'?'':`<button class="btn" onclick="doRestore(${v.version})">↩ khôi phục</button>`}
+      </div>`).join('')||'<div class="pad muted">Chưa có phiên bản nào.</div>'}</div>
+    </div>`;
+  drawReady(d.readiness,cur);
+  count();
+}
+
+function drawReady(r,cur){
+  const el=document.getElementById('ready');if(!el||!r)return;
+  const b=(r.blockers||[]).map(x=>`<div class="msg bad"><b>${x.code}</b> — ${esc(x.detail)}</div>`).join('');
+  const w=(r.warnings||[]).map(x=>`<div class="msg warn"><b>${x.code}</b> — ${esc(x.detail)}</div>`).join('');
+  const ai=cur&&cur.aiEnabled?'AI đang BẬT':'AI đang tắt';
+  el.innerHTML=b+w+(b?`<div class="msg bad">⛔ Page này KHÔNG bật được AI cho tới khi hết mục đỏ. (${ai})</div>`:'');
+}
+
+const cfgNow=()=>Object.fromEntries(FIELDS.map(f=>[f.k,document.getElementById('f_'+f.k).value]));
+function count(){
+  const c=cfgNow();
+  const n=Math.ceil(([c.tone,c.greeting,c.salesPrompt].filter(Boolean).join('\n')).length/3.2);
+  document.getElementById('tok').textContent=`Độ dài nạp vào prompt: ~${n} token (trần ${MAXTOK.toLocaleString('vi-VN')} — chỉ tính giọng điệu + câu chào + cách bán).`;
+}
+
+function showValidation(v){
+  const el=document.getElementById('vout');
+  FIELDS.forEach(f=>document.getElementById('f_'+f.k).classList.remove('err'));
+  (v.errors||[]).forEach(e=>{const t=document.getElementById('f_'+e.field);if(t)t.classList.add('err');});
+  el.innerHTML=[
+    ...(v.errors||[]).map(e=>`<div class="msg bad">⛔ <b>${e.rule}</b> · ${esc(e.field)} — ${esc(e.msg)}</div>`),
+    ...(v.warnings||[]).map(e=>`<div class="msg warn">⚠️ <b>${e.rule}</b> · ${esc(e.field)} — ${esc(e.msg)}</div>`),
+    (v.ok&&!(v.warnings||[]).length)?'<div class="msg ok">✓ Qua hết 6 luật validator.</div>':'',
+  ].join('');
+}
+
+async function doValidate(){
+  const {d}=await post(`/scripts/${CUR}/validate`,{config:cfgNow()});
+  showValidation(d);
+  toast(d.ok?'Qua validator':'Còn '+d.errors.length+' lỗi chặn',!d.ok);
+}
+async function doDraft(){
+  const {d}=await post(`/scripts/${CUR}/draft`,{config:cfgNow()});
+  DIRTY=false;
+  if(d.validation)showValidation(d.validation);
+  toast('Đã lưu nháp v'+d.version+' — production KHÔNG đổi');
+  await loadList();await open_(CUR);
+}
+async function doReview(){
+  const {d:doc}=await j('/scripts/'+CUR);
+  if(!doc.draft)return toast('Chưa có bản nháp nào để gửi duyệt — bấm Lưu nháp trước',1);
+  const {status,d}=await post(`/scripts/${CUR}/review`,{version:doc.draft.version});
+  if(status>=400)return toast(d.error,1);
+  toast('Đã gửi duyệt v'+d.version);await loadList();await open_(CUR);
+}
+async function doPublish(){
+  if(DIRTY&&!confirm('Bản đang gõ chưa lưu. Xuất bản sẽ dùng bản nháp ĐÃ LƯU gần nhất. Tiếp tục?'))return;
+  const {d:doc}=await j('/scripts/'+CUR);
+  const v=(doc.draft&&doc.draft.version)||(doc.live&&doc.live.version);
+  if(!v)return toast('Chưa có phiên bản nào để xuất bản',1);
+  const {status,d}=await post(`/scripts/${CUR}/publish`,{version:v});
+  if(status===422){showValidation(d);return toast('Bị chặn: '+d.errors.length+' luật vi phạm',1);}
+  if(status>=400)return toast(d.error,1);
+  toast('✓ Đã xuất bản v'+d.version+' — có hiệu lực ngay, không cần restart');
+  await loadList();await open_(CUR);
+}
+async function doRestore(v){
+  if(!confirm(`Khôi phục v${v}? Sẽ tạo một phiên bản MỚI sao từ v${v} rồi xuất bản. Bản hiện tại được lưu lại, không mất.`))return;
+  const {status,d}=await post(`/scripts/${CUR}/restore/${v}`,{});
+  if(status===422){showValidation(d);return toast(`v${v} không còn hợp lệ với bảng giá/luật hiện tại`,1);}
+  if(status>=400)return toast(d.error,1);
+  toast(`✓ Khôi phục v${d.from} → v${d.version}`);
+  await loadList();await open_(CUR);
+}
+async function doTry(){
+  const text=prompt('Tin thử của khách (chạy trên bản đang gõ, KHÔNG gửi cho khách thật):','Magkano po ito?');
+  if(!text)return;
+  const out=document.getElementById('tryout');
+  out.innerHTML='<div class="card" style="margin-top:14px"><div class="pad muted">Đang chạy…</div></div>';
+  const {status,d}=await post(`/scripts/${CUR}/try`,{text,config:cfgNow()});
+  if(status>=400){out.innerHTML=`<div class="card" style="margin-top:14px"><div class="pad"><div class="msg bad">${esc(d.error)}</div></div></div>`;return;}
+  const g=d.guard||{};
+  out.innerHTML=`<div class="card" style="margin-top:14px"><h2>Thử với 1 tin — không gửi cho khách</h2><div class="pad">
+    <div class="muted">Khách: ${esc(text)}</div>
+    <div class="try">${esc(d.reply)||'<i>model không trả chữ nào</i>'}</div>
+    ${g.ok?'<div class="msg ok" style="margin-top:8px">✓ Outbound Guard cho qua.</div>'
+          :`<div class="msg bad" style="margin-top:8px">⛔ <b>${esc(g.rule)}</b> — ${esc(g.reason)}</div>`}
+    <div class="muted">${d.usage.in} token vào · ${d.usage.out} ra · ${esc(d.note)}</div>
+  </div></div>`;
+}
+async function showDigest(){
+  const {d}=await j('/readiness/digest');
+  const g=d.groups||[];
+  document.getElementById('right').innerHTML=`<div class="card"><h2>Bản tin 09:00 — gộp theo marketer (${g.length} nhóm)</h2><div class="pad">
+    ${g.length?g.map(x=>`<div class="msg ${x.blocked?'bad':'warn'}" style="white-space:pre-wrap">${esc(x.text)}</div>`).join('')
+              :'<div class="msg ok">Không page nào cần nhắc.</div>'}
+  </div><div class="bar"><div class="sp"></div><button class="btn" onclick="sendDigest()">Gửi WhatsApp ngay</button></div></div>`;
+}
+async function sendDigest(){
+  const {d}=await post('/readiness/digest/send',{force:true});
+  toast(d.ok?`Đã gửi ${d.sent}/${d.groups} nhóm`:(d.errors||[]).join(' · ')||d.skipped||'lỗi gửi',!d.ok);
+}
+window.addEventListener('beforeunload',e=>{if(DIRTY){e.preventDefault();e.returnValue='';}});
+loadList();
+</script>
+</body>
+</html>

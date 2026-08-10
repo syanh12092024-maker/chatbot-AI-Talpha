@@ -257,6 +257,7 @@ document.getElementById('nav').innerHTML=
   +['needsale','stats','msgs'].map(k=>`<a data-k="${k}" onclick="go('${k}')">${svg(VIEWS[k].icon)} ${VIEWS[k].title}${k==='needsale'?' <span id="nsBadge" class="nsbadge" style="display:none">0</span>':''}</a>`).join('')
   +`<div class="navlabel">Hệ thống</div>`
   +`<a data-k="tokens" onclick="go('tokens')">${svg(VIEWS.tokens.icon)} ${VIEWS.tokens.title}</a>`
+  +`<a class="ext" title="Kịch bản từng page: phiên bản, duyệt, khôi phục (M02)" onclick="window.open('/admin/api/scripts/ui','_blank')">${svg(IC.kb)} <span>Script Studio</span> ${extArrow}</a>`
   +`<div class="navlabel">Tool Bắn Bot</div>`
   +`<a class="ext" title="Bắn tin hàng loạt cho khách cũ (mở tab mới)" onclick="window.open(BROADCAST_URL,'_blank')">${svg(IC.mega)} <span>Bắn bot khách cũ</span> ${extArrow}</a>`;
 

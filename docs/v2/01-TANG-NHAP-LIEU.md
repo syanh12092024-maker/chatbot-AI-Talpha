@@ -122,13 +122,21 @@ KHÔI PHỤC: clone bản cũ thành version mới, xuất bản ngay
 | `fastLane.price` phải khớp **đúng** bảng giá hiện tại | Chống lệch giá — lỗi hạng sống còn |
 | Không chứa tiếng Việt trong các trường gửi khách | Nguyên tắc #1 |
 | Không hứa ngày/giờ giao cụ thể | Nguyên tắc #11 |
-| Tổng độ dài 3 trường ≤ 1.200 token | Chống phình prompt |
+| Tổng độ dài 3 trường ≤ 2.000 token | Chống phình prompt |
 
 ## Cấu hình
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
 | `SCRIPT_REQUIRE_REVIEW` | 1 | Bắt buộc duyệt trước khi LIVE |
-| `SCRIPT_MAX_TOKENS` | 1200 | Trần độ dài kịch bản page |
+| `SCRIPT_MAX_TOKENS` | 2000 | Trần độ dài kịch bản page |
+
+> ⚠️ **Đính chính 10/08/2026 — trần này bản đầu ghi 1.200, SAI.** Kịch bản thật đang
+> chạy dài **890–1.908 token**, nên trần 1.200 sẽ chặn marketer xuất bản ngay cả khi
+> họ chỉ sửa một chữ trên page vốn đã dài (validator chỉ chạy lúc XUẤT BẢN, nên các
+> bản LIVE cũ vẫn chạy bình thường — lỗi chỉ lộ ra ở lần sửa đầu tiên). Đã nâng lên
+> 2.000: mọi kịch bản hiện hành lọt qua, trên mức đó vẫn chặn cứng.
+> Ước lượng token là `số ký tự / 3,2`; tiếng Việt dày token hơn tỉ lệ này nên con số
+> thiên về ĐẾM THIẾU — đừng hạ trần mà không đo lại trên dữ liệu thật.
 
 ## Tiêu chí nghiệm thu
 - [ ] Sửa kịch bản → có hiệu lực trong ≤ 60s, **không cần restart**
@@ -157,11 +165,23 @@ M01 (biết page nào tồn tại)
 | **`MISSING_SCRIPT`** | **Thiếu `greeting` HOẶC `salesPrompt`** | **⛔** |
 | `THIN_SCRIPT` | Thiếu `tone`, hoặc `salesPrompt` < 500 token | ⚠️ được + nhắc |
 | `SCRIPT_STALE` | Kịch bản >30 ngày chưa đụng & closeRate < 1% | ⚠️ được + nhắc |
-
-> Số thực tế 11/08/2026: **1 page** `MISSING_SCRIPT` (Light Step Care KSA) ·
-> **37 page** `THIN_SCRIPT` (thiếu `tone`). Cảnh báo phải phân biệt hai mức này rõ —
-> gộp chung sẽ tạo ra bản tin 38 dòng đỏ mà không ai đọc.
 | `READY` | Đủ hết | ✅ |
+
+> **Số ĐO THẬT 10/08/2026** — đếm trên `kb-overrides.json` kéo từ VPS 169.58.33.8
+> (44 bản ghi page). Bản đầu ghi *"1 page MISSING_SCRIPT · 37 page THIN_SCRIPT"*, **lệch**:
+>
+> | | Đếm thật | Bản đầu ghi |
+> |---|---|---|
+> | `MISSING_SCRIPT` (trống hoàn toàn) | **3 page** | 1 page |
+> | `THIN_SCRIPT` | **40 page** | 37 page |
+> | Đủ cả `tone`+`greeting`+`salesPrompt` dày | **1 page** | — |
+> | Có điền `tone` | 2/41 | 1/38 |
+> | Có điền `fastLane*` | **0/41** | — |
+> | Độ dài 3 trường | 351–1.847 token (trung vị 1.358) | 890–1.908 |
+>
+> Kết luận không đổi và càng đúng hơn: phải tách hai mức. Gộp chung là bản tin
+> **43 dòng đỏ** mà không ai đọc, trong khi chỉ 3 dòng thật sự chặn bot.
+> `fastLane*` trống toàn bộ vì trước M02 chưa có đường nào điền — không phải marketer quên.
 
 ## Logic
 ```

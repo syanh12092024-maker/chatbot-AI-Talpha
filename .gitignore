@@ -23,6 +23,10 @@ pancake-page-tokens.json
 wa-auth/
 wa-qr.png
 
+# Lịch sử kịch bản (M02) + sổ cái page (M01) — kịch bản marketer viết + map shop, như kb-overrides.json
+script-versions/
+pages.json
+
 # Trạng thái hội thoại (M05) + sổ template Botcake (M18) — dữ liệu thật, chỉ có trên VPS
 conv-state.json
 conv-state.json.tmp
