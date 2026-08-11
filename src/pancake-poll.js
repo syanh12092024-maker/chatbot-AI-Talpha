@@ -408,6 +408,9 @@ async function processConv(pageId, c, psid, custId, mark = '') {
         noteYield(pageId, 'trước khi gọi AI');
         return `page đã trả lời (Botcake/sale) sau ${Math.round(r.waitedMs / 1000)}s chờ`;
       }
+      // Ghi lại cả ca ĐI TIẾP: không có dòng này thì không phân biệt được
+      // "Botcake im thật" với "vòng chờ không chạy" — đúng chỗ tôi đã phải đoán.
+      console.log(`[chờ] ${c.from?.name || psid} (page ${pageId}): page im ${Math.round(r.waitedMs / 1000)}s → tới lượt AI`);
       return null;
     },
   });
