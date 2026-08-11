@@ -273,6 +273,63 @@ export function guardOutbound(text, ctx = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SỬA TẠI CHỖ — không tốn thêm lời gọi model.
+//
+// Đo 11/08/2026 trên production: 44 lần guard can thiệp thì 44 lần đều là "xin
+// model viết lại", mỗi lần thêm TRỌN một lời gọi (~4.400 token cache + ~2.300
+// token mới) tức nhân đôi giá lượt đó. Nhưng 32/44 (73%) là TOO_LONG và
+// CHECKLIST — lỗi HÌNH THỨC, code cắt được, không cần model phán đoán gì.
+//
+// Chỉ sửa tại chỗ những luật mà phép cắt là TẤT ĐỊNH và không đổi nghĩa. Các
+// luật nội dung (bịa giá, lộ PII, hứa ngày giao, bịa khan hiếm) vẫn phải để
+// model viết lại — cắt máy móc ở đó là làm sai nghĩa, nguy hiểm hơn tốn tiền.
+// ─────────────────────────────────────────────────────────────────────────────
+const FIXABLE = new Set(['TOO_LONG', 'CHECKLIST']);
+export const canFixLocally = (rule) => FIXABLE.has(rule);
+
+// Cắt tin dài về trong hạn, GIỮ LẠI câu hỏi chốt ở cuối — nguyên tắc #14: mỗi
+// tin phải kết bằng một bước tiến về phía đơn, cắt cụt là bỏ mất bước đó.
+function trimLong(text) {
+  const lines = String(text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 2) return null;
+  const lastQ = [...lines].reverse().find((l) => /[?？]/.test(l)) || '';
+  const out = [];
+  for (const l of lines) {
+    if (out.length >= 5) break;
+    if (approxTokens([...out, l].join('\n')) > 380) break;
+    out.push(l);
+  }
+  if (lastQ && !out.includes(lastQ)) {
+    while (out.length && (out.length >= 5 || approxTokens([...out, lastQ].join('\n')) > 400)) out.pop();
+    out.push(lastQ);
+  }
+  const fixed = out.join('\n').trim();
+  return fixed && fixed !== String(text).trim() ? fixed : null;
+}
+
+// Gộp checklist nhiều dòng thành MỘT dòng, giữ nguyên chữ của model (không tự
+// chế câu mới — khách mỗi page một ngôn ngữ, chế câu là dễ chế nhầm tiếng).
+function collapseChecklist(text) {
+  const keep = [], fields = [];
+  for (const l of String(text || '').split('\n')) {
+    if (BULLET_LINE.test(l) && INFO_WORD.test(l) && isEmptyField(l)) {
+      const name = l.replace(/^[\s*_\-–—•·>#]+/, '').replace(/[:：].*$/, '').trim();
+      if (name) fields.push(name);
+    } else if (l.trim()) keep.push(l.trim());
+  }
+  if (fields.length < 3) return null;
+  const fixed = [...keep.slice(0, 2), fields.join(', ')].join('\n').trim();
+  return fixed && fixed !== String(text).trim() ? fixed : null;
+}
+
+/** Trả bản đã sửa, hoặc null nếu luật này không sửa máy móc được. */
+export function localFix(text, rule) {
+  if (rule === 'TOO_LONG') return trimLong(text);
+  if (rule === 'CHECKLIST') return collapseChecklist(text);
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Sổ tin bị chặn — nguồn cho màn hình "Tin bị chặn" trên dashboard (M18)
 // Giữ trong RAM, trần 500 bản ghi. Cảnh báo đỏ thì log riêng để không trôi.
 // ─────────────────────────────────────────────────────────────────────────────

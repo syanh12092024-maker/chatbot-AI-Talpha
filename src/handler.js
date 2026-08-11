@@ -7,7 +7,7 @@ import { logAi, recentReplyCount, recentBotTurns } from './ai-log.js';
 import { cleanText } from './text.js';
 import { pkTagByName, pkAddNote } from './pancake.js';
 import { fastLane, noteFastLane, detectLang } from './fast-lane.js';
-import { guardOutbound, recordBlocked } from './outbound-guard.js';
+import { guardOutbound, recordBlocked, canFixLocally, localFix } from './outbound-guard.js';
 import { markHandoff, markPostSale } from './conv-owner.js';
 import { S, OWNER, getConv, touchConv, setConvState, noteLlmTurn, llmTurns24h, noteOppTurn } from './conv-state.js';
 import { scoreTurn, turnBudget, TIER_LABEL, HARD_MAX_TURNS } from './lead-score.js';
@@ -420,6 +420,23 @@ async function guardAndMaybeRewrite(text, { kb, state, pageId, psid }) {
   if (v.ok) { state.lastAiText = text; return text; }
   recordBlocked(v, ctx, text);
   if (v.action === 'block') return '';
+
+  // ── SỬA TẠI CHỖ TRƯỚC, HỎI MODEL SAU ─────────────────────────────────────
+  // Lỗi hình thức (tin quá dài, dán checklist) thì code cắt được; hỏi model là
+  // tốn trọn một lời gọi nữa. Đo 11/08/2026: 32/44 lần guard bắt là hai lỗi này,
+  // tức gần 3/4 số lời gọi "viết lại" đáng lẽ không cần tiêu đồng nào.
+  // Chỉ nhận bản sửa khi nó QUA ĐƯỢC guard — cắt xong vẫn phạm thì bỏ, hỏi model.
+  if (canFixLocally(v.rule)) {
+    const fixed = localFix(text, v.rule);
+    if (fixed) {
+      const v2 = guardOutbound(fixed, ctx);
+      if (v2.ok) {
+        console.log(`[guard] ✂ ${v.rule} — sửa tại chỗ, KHÔNG gọi model (page ${pageId} · ${ctx.custName})`);
+        state.lastAiText = fixed;
+        return fixed;
+      }
+    }
+  }
 
   // Xin viết lại: đưa đúng lý do để model sửa trúng chỗ.
   state.messages.push({
