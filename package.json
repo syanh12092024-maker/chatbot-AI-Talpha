@@ -14,6 +14,7 @@
     "report": "node src/report-cli.js",
     "wa:login": "node src/wa-login.js",
     "fix-labels": "node src/fix-tier-labels.js",
+    "fix-dup": "node src/fix-dup-products.js",
     "test": "node --test test/"
   },
   "dependencies": {

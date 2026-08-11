@@ -250,7 +250,10 @@ export function updatePageProducts(pageId, products) {
   const clean = (products || []).map((p) => {
     const images = productImages(p);
     const tiers = (Array.isArray(p.tiers) ? p.tiers : [])
-      .map((t) => ({ label: String(t.label != null ? t.label : (t.qty ? `Mua ${t.qty} cái` : '')).trim(), price: numOrNull(t.price) }))
+      // Nhãn dự phòng phải KHỚP productTiers ('Buy N'). Đây là đường GHI: nhãn
+      // tiếng Việt lọt vào đây là nằm vĩnh viễn trong kb-overrides.json, rồi
+      // Fast Lane in thẳng cho khách Trung Đông.
+      .map((t) => ({ label: String(t.label != null ? t.label : (t.qty ? `Buy ${t.qty}` : '')).trim(), price: numOrNull(t.price) }))
       .filter((t) => t.price != null && t.price > 0);
     return {
       id: String(p.id || '').trim() || 'SP01', name: String(p.name || '').trim(), desc: String(p.desc || '').trim(),
