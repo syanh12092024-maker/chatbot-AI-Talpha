@@ -95,11 +95,15 @@ async function sendImageWithRetry(state, viaPancake, url, caption = '') {
     if (attempt) await sleep(1200);
     if (viaPancake) {
       const r = await pkSendImage(state.pageId, state.pkConvId, state.pkCustId, url, caption);
-      if (r.ok) return { ok: true };
+      // ĐẾM TIN CỦA CHÍNH MÌNH: ảnh này đi ra NGAY BÂY GIỜ, giữa lúc model còn
+      // đang viết. Cửa nhường Botcake soi hội thoại sau đó sẽ thấy tin mới từ
+      // page — không trừ số này ra thì nó tưởng Botcake vừa nói rồi vứt phần
+      // chữ của chính ta, khách nhận ảnh trơ (nguyên tắc #2). Xem pancake-poll.
+      if (r.ok) { state.selfSent = (state.selfSent || 0) + 1; return { ok: true }; }
       lastErr = r.error;
     } else {
       const ok = await sendImage(state.psid, url, state.pageId);
-      if (ok) return { ok: true };
+      if (ok) { state.selfSent = (state.selfSent || 0) + 1; return { ok: true }; }
       lastErr = 'Messenger từ chối gửi ảnh';
     }
   }

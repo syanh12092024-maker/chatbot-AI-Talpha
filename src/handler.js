@@ -141,6 +141,9 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   // ĐO TOKEN CỦA LƯỢT NÀY — reset mỗi lượt để tin không gọi AI (vd holding message)
   // không bị gán nhầm số token của lượt trước. classifier + closer cùng cộng vào đây.
   state.lastUsage = { tin: 0, tout: 0, cread: 0, cwrite: 0, calls: 0 };
+  // Đếm lại từ 0 mỗi lượt: số tin CHÍNH TA đẩy lên hội thoại giữa lượt (ảnh do
+  // tool gửi). Cửa nhường Botcake phải trừ số này ra, xem pancake-poll.js.
+  state.selfSent = 0;
   state.orderCreatedThisTurn = false; // cờ cho M09 — chỉ đúng trong phạm vi 1 lượt
 
   kb = kb || getKBForPage(pageId);

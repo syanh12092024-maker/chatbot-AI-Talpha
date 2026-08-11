@@ -51,3 +51,31 @@ test('S5 · đường lui: ngưỡng 0 thì không chờ, không soi lần nào'
   assert.deepEqual(r, { spoke: false, waitedMs: 0 });
   assert.equal(goi, 0, 'ngưỡng 0 mà vẫn gọi API là phí');
 });
+
+// ── TỰ NHẬN NHẦM MÌNH LÀ BOTCAKE ────────────────────────────────────────────
+// Gốc của 50% tiền token bị vứt (đo 11/08/2026): tool `send_product_image` đẩy
+// ảnh lên NGAY GIỮA LƯỢT, nên khi cửa nhường soi lại thì hội thoại đã có tin
+// mới từ page — do chính ta gửi. Không trừ ra thì ta vứt phần chữ của mình,
+// khách nhận ảnh trơ (nguyên tắc #2) và lượt đó mất tiền vô ích.
+const { pageSpokeSince } = await import('../src/pancake-poll.js');
+
+const nen = [{ id: 'm1', from: { id: 'CUST' } }];
+const themAnh = (n) => [...nen, ...Array.from({ length: n }, (_, i) => ({ id: `img${i}`, from: { id: PAGE } }))];
+
+test('O1 · 2 ảnh của chính mình KHÔNG bị coi là Botcake nói', () => {
+  assert.equal(pageSpokeSince(nen, themAnh(2), PAGE, 2), false);
+});
+
+test('O2 · Botcake nói THÊM ngoài ảnh của mình thì vẫn phải bắt được', () => {
+  const co = [...themAnh(2), { id: 'bc', from: { id: PAGE } }];
+  assert.equal(pageSpokeSince(nen, co, PAGE, 2), true);
+});
+
+test('O3 · không truyền ignoreOwn thì giữ nguyên hành vi cũ', () => {
+  assert.equal(pageSpokeSince(nen, themAnh(1), PAGE), true);
+});
+
+test('O4 · khách nhắn thêm không phải là "page nói"', () => {
+  const khach = [...nen, { id: 'm2', from: { id: 'CUST' } }];
+  assert.equal(pageSpokeSince(nen, khach, PAGE, 0), false);
+});

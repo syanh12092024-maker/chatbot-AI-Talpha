@@ -48,14 +48,23 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 //    KHÔNG đổi dù page vừa nói. Đây đúng là những hội thoại bận rộn nhất — so theo số
 //    lượng là hỏng ở chính chỗ cần nhất.
 //  → So theo `id` của tin (Pancake có sẵn trường này).
-export function pageSpokeSince(before, after, pageId) {
+//  · PHẢI TRỪ TIN CỦA CHÍNH MÌNH (`ignoreOwn`): tool `send_product_image` gửi ảnh
+//    NGAY TRONG LÚC model đang viết (tools.js:97), nên tới lúc soi thì trên hội
+//    thoại đã có tin mới do chính ta đẩy lên. Không trừ thì ta tưởng Botcake vừa
+//    nói rồi VỨT phần chữ của chính mình — khách nhận ảnh trơ, đúng thứ nguyên
+//    tắc #2 cấm, và lượt đó mất tiền vô ích.
+//    Đo 11/08/2026: đây là gốc của 50% tiền token bị vứt.
+export function pageSpokeSince(before, after, pageId, ignoreOwn = 0) {
   if (!Array.isArray(after) || !after.length) return false;
   const prev = Array.isArray(before) ? before : [];
 
   const prevIds = new Set(prev.map((m) => m?.id).filter(Boolean));
   if (prevIds.size) {
     const fresh = after.filter((m) => m?.id && !prevIds.has(m.id));
-    if (fresh.length) return fresh.some((m) => String(m?.from?.id) === String(pageId));
+    if (fresh.length) {
+      const cuaPage = fresh.filter((m) => String(m?.from?.id) === String(pageId)).length;
+      return cuaPage > Math.max(0, ignoreOwn);
+    }
     return false;
   }
 
@@ -451,7 +460,9 @@ async function processConv(pageId, c, psid, custId, mark = '') {
   // Token đã tiêu rồi, nhưng thà bỏ tin còn hơn để khách nhận 2 câu chồng nhau.
   if (BOTCAKE_YIELD_BEFORE_SEND) {
     const latest = await pkGetMessages(pageId, c.id, custId).catch(() => null);
-    if (latest && pageSpokeSince(msgs, latest, pageId)) {
+    // trừ số ảnh CHÍNH TA vừa đẩy lên giữa lượt, kẻo tự nhận nhầm mình là Botcake
+    const tuGui = getState(psid).selfSent || 0;
+    if (latest && pageSpokeSince(msgs, latest, pageId, tuGui)) {
       noteYield(pageId, 'trước khi gửi');
       console.log(`[nhường] ${c.from?.name || psid} (page ${pageId}): Botcake trả lời trong lúc AI soạn → BỎ tin đã soạn`);
       // GHI SỔ CẢ LƯỢT BỊ BỎ. Token đã trả rồi mới vứt tin đi, nên không ghi là
