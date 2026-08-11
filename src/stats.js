@@ -94,5 +94,5 @@ export function getStats({ from, to } = {}) {
     replies += b.replies || 0; orders += b.orders || 0; leads += b.leads || 0; inbound += b.inbound || 0;
     for (const [id, pb] of Object.entries(b.byPage || {})) { const x = pg(byPage, id); x.replies += pb.replies || 0; x.orders += pb.orders || 0; x.leads += pb.leads || 0; x.inbound += pb.inbound || 0; }
   }
-  return { replies, orders, leads, byPage, lastReplyAt: s.lastReplyAt };
+  return { replies, orders, leads, inbound, byPage, lastReplyAt: s.lastReplyAt };
 }

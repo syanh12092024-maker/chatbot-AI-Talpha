@@ -201,8 +201,10 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
       // Hậu bán = AI + Botcake đều khoá (bảng quyền nói §4). toSaleQueue đã ghi HANDOFF,
       // ghi đè bằng POST_SALE để dashboard và Botcake đọc đúng vì sao AI im.
       if (state.pkConvId) { try { markPostSale(state.pkConvId, route.reason); } catch { /* không chặn luồng chính */ } }
-      // Tin giữ chỗ dựng bằng luật (0 token) — khách không bị bỏ lửng trong lúc chờ người.
-      return reply(psid, holdingPostSale(ps.kind, detectLang(text)), true, 'POSTSALE');
+      // IM LẶNG (11/08/2026) — cùng luật với mọi cửa bàn giao khác, xem mục "KHÔNG CÒN CÂU
+      // GIỮ CHÂN" cuối file. Khách hậu bán đang bực: một câu máy "chúng tôi sẽ kiểm tra"
+      // không giải quyết gì mà còn làm sale mở chat ra tưởng đã có người trả lời rồi.
+      return { reply: null, handoff: true };
     }
     if (route.action === 'OPPORTUNITY') {
       opportunity = true;
