@@ -308,6 +308,10 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', idleMs = 0, u
   // (b) Nút START của Messenger.
   if (START_BTN.test(s)) {
     if (aiTurns >= 1) return { handled: true, reply: null, lane: 'silent_start', reason: 'bấm START lại giữa hội thoại' };
+    // Lớp template TẮT = chủ dự án đã giao lời chào cho Botcake (11/08/2026).
+    // Bấm START chính là lúc Botcake bắn flow chào hàng — mình chào nữa là hai bot
+    // cùng chào một khách. IM, đừng leo lên AI: leo lên AI còn tốn token hơn.
+    if (!fastLaneConfig.templates) return { handled: true, reply: null, lane: 'silent_start_botcake', reason: 'nhường Botcake chào (lớp template tắt)' };
     const r = introResult(kb, lang, used, 'tpl_start', 'nút START');
     if (r) return r;
     return escalate('nút START nhưng chưa dựng được câu chào từ KB');
@@ -336,6 +340,8 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', idleMs = 0, u
   // (d) Chào hỏi thuần.
   if (GREET.test(s)) {
     if (aiTurns >= 1) return { handled: true, reply: null, lane: 'silent_greet', reason: 'chào lại giữa hội thoại' };
+    // Cùng lý do như nút START ở (b): lời chào đã giao cho Botcake.
+    if (!fastLaneConfig.templates) return { handled: true, reply: null, lane: 'silent_greet_botcake', reason: 'nhường Botcake chào (lớp template tắt)' };
     const r = introResult(kb, lang, used, 'tpl_greet', 'chào hỏi');
     if (r) return r;
     return escalate('chào hỏi nhưng chưa dựng được câu chào từ KB');

@@ -290,7 +290,7 @@ test('F10 · nhận đúng ngôn ngữ', () => {
 // ── Vài chữ tiếng Việt lọt ra (11/08/2026) ──────────────────────────────────
 // Nhãn gói giá "Mua 1 cái" bị Fast Lane in thẳng cho khách. Bộ chấm điểm cũ
 // đếm TỪ CHỨC NĂNG ("là/của/và") nên nhãn toàn danh từ được 0 điểm → lọt.
-test('G1 · nhãn gói tiếng Việt phải bị bắt (chấm điểm cũ mù với dạng này)', () => {
+test('VN1 · nhãn gói tiếng Việt phải bị bắt (chấm điểm cũ mù với dạng này)', () => {
   const tin = '🎁 Mua 1 cái — 99 AED\n🎁 Combo 2 cái — 149 AED\n🚚 FREE delivery po, at COD';
   assert.equal(looksVietnamese(tin), false, 'chấm điểm cũ vẫn mù — đúng như đo được');
   assert.equal(hasVietnameseNoun(tin), true);
@@ -301,7 +301,7 @@ test('G1 · nhãn gói tiếng Việt phải bị bắt (chấm điểm cũ mù 
   assert.equal(v.action, 'rewrite');
 });
 
-test('G2 · KHÔNG bắt oan tiếng Anh / Tagalog / Ả Rập', () => {
+test('VN2 · KHÔNG bắt oan tiếng Anh / Tagalog / Ả Rập', () => {
   // Đo thật: trên 9.043 tin AI production, luật này bắt thêm đúng 3 tin và cả
   // 3 đều là rò rỉ thật — 0 bắt oan. Vài câu tiêu biểu giữ lại làm chốt chặn.
   for (const t of [
@@ -316,7 +316,36 @@ test('G2 · KHÔNG bắt oan tiếng Anh / Tagalog / Ả Rập', () => {
   }
 });
 
-test('G3 · .test() không được nhớ lastIndex giữa các lần gọi (bẫy cờ /g)', () => {
+test('VN3 · .test() không được nhớ lastIndex giữa các lần gọi (bẫy cờ /g)', () => {
   const tin = 'Mua 1 cái';
   for (let i = 0; i < 5; i++) assert.equal(hasVietnameseNoun(tin), true, `lần ${i + 1} trượt`);
+});
+
+// ── Giao lời chào cho Botcake (11/08/2026) ──────────────────────────────────
+// Chủ dự án tắt lớp trả lời của Fast Lane để Botcake lo chào hàng + từ khoá.
+// FASTLANE_INTRO=0 KHÔNG đủ: nó chỉ bỏ bản ảnh+giá rồi rơi xuống câu chào CHỮ,
+// nên hai bot vẫn cùng chào một khách. Hai cửa chạm đầu phải IM hẳn.
+test('BC1 · lớp template TẮT → nút START và lời chào IM, nhường Botcake', async () => {
+  const { fastLaneConfig } = await import('../src/fast-lane.js');
+  const cu = fastLaneConfig.templates;
+  try {
+    fastLaneConfig.templates = false;
+    for (const [text, lane] of [['START', 'silent_start_botcake'], ['hi po', 'silent_greet_botcake']]) {
+      const r = fastLane({ text, kb: KB, aiTurns: 0, lastAiText: '', usedLanes: new Set() });
+      assert.equal(r.handled, true, `${text}: phải do Fast Lane lo`);
+      assert.equal(r.reply, null, `${text}: KHÔNG được trả lời — Botcake đang chào`);
+      assert.equal(r.lane, lane);
+    }
+  } finally { fastLaneConfig.templates = cu; }
+});
+
+test('BC2 · lớp template BẬT → vẫn chào như cũ (không phá hành vi mặc định)', async () => {
+  const { fastLaneConfig } = await import('../src/fast-lane.js');
+  const cu = fastLaneConfig.templates;
+  try {
+    fastLaneConfig.templates = true;
+    const r = fastLane({ text: 'START', kb: KB, aiTurns: 0, lastAiText: '', usedLanes: new Set() });
+    assert.equal(r.handled, true);
+    assert.ok(r.reply && r.reply.length > 0, 'bật template thì phải có câu chào');
+  } finally { fastLaneConfig.templates = cu; }
 });
