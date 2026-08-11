@@ -13,6 +13,7 @@
     "pages": "node -e \"import('./src/pages.js').then(async m=>{const n=await m.loadPageTokens();console.log('Tổng page:',n);for(const [id,v] of m.getStore())console.log(' -',id,v.name)})\"",
     "report": "node src/report-cli.js",
     "wa:login": "node src/wa-login.js",
+    "fix-labels": "node src/fix-tier-labels.js",
     "test": "node --test test/"
   },
   "dependencies": {
