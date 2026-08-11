@@ -10,13 +10,15 @@ try { if (fs.existsSync(FILE)) s = { ...s, ...JSON.parse(fs.readFileSync(FILE, '
 if (!s.days) s.days = {};
 if (!Array.isArray(s.leadKeys)) s.leadKeys = [];
 if (!Array.isArray(s.orderKeys)) s.orderKeys = [];
+if (!Array.isArray(s.inboundKeys)) s.inboundKeys = [];
 const leadSet = new Set(s.leadKeys);
 const orderSet = new Set(s.orderKeys); // mỗi khách chỉ tính 1 đơn chốt (chống đếm trùng)
+const inboundSet = new Set(s.inboundKeys); // mỗi khách NHẮN TỚI chỉ tính 1 lần
 
 function save() { try { fs.writeFileSync(FILE, JSON.stringify(s)); } catch (e) { console.error('[stats] lưu lỗi', e.message); } }
 function today() { return new Date().toISOString().slice(0, 10); }
-function bucket(d) { d = d || today(); if (!s.days[d]) s.days[d] = { replies: 0, orders: 0, leads: 0, byPage: {} }; return s.days[d]; }
-function pg(map, id) { const k = String(id); if (!map[k]) map[k] = { replies: 0, orders: 0, leads: 0 }; return map[k]; }
+function bucket(d) { d = d || today(); if (!s.days[d]) s.days[d] = { replies: 0, orders: 0, leads: 0, inbound: 0, byPage: {} }; return s.days[d]; }
+function pg(map, id) { const k = String(id); if (!map[k]) map[k] = { replies: 0, orders: 0, leads: 0, inbound: 0 }; return map[k]; }
 
 // ── Migration 1 lần: gộp dữ liệu TỔNG cũ (lifetime / totalReplies) chưa nằm trong days
 //    vào 1 bucket "trước khi lưu theo ngày" (19/07/2026), rồi bỏ cấu trúc cũ. Nhờ vậy
@@ -31,7 +33,7 @@ function pg(map, id) { const k = String(id); if (!map[k]) map[k] = { replies: 0,
     let sr = 0, so = 0, sl = 0; const sbp = {};
     for (const b of Object.values(s.days)) {
       sr += b.replies || 0; so += b.orders || 0; sl += b.leads || 0;
-      for (const [id, pb] of Object.entries(b.byPage || {})) { const x = pg(sbp, id); x.replies += pb.replies || 0; x.orders += pb.orders || 0; x.leads += pb.leads || 0; }
+      for (const [id, pb] of Object.entries(b.byPage || {})) { const x = pg(sbp, id); x.replies += pb.replies || 0; x.orders += pb.orders || 0; x.leads += pb.leads || 0; x.inbound += pb.inbound || 0; }
     }
     const dR = (old.replies || 0) - sr, dL = (old.leads || 0) - sl, dO = (old.orders || 0) - so;
     if (dR > 0 || dL > 0 || dO > 0) {
@@ -63,14 +65,34 @@ export function incLead(pageId, custKey) {
   bump('leads', pageId); save();
 }
 
+// ── KHÁCH NHẮN TỚI — mẫu số THẬT của tỉ lệ chốt ────────────────────────────
+// `leads` chỉ đếm khách mà AI ĐÃ TRẢ LỜI, nên `đơn / leads` là tỉ lệ chốt trên
+// nhóm đã lọc sẵn — luôn đẹp hơn sự thật. Phần lớn khách không bao giờ tới tay
+// AI: Botcake lo trọn, Fast Lane trả, hoặc rơi vào 6 cửa im lặng.
+// `inbound` đếm MỌI khách có tin mới, ghi ngay trong vòng poll trước mọi cửa
+// lọc, nên không tốn thêm lời gọi API nào.
+// Khử trùng theo (page, khách) trọn đời — cùng quy ước với leads/orders, để tử
+// số và mẫu số so được với nhau.
+const INBOUND_KEYS_MAX = 300000; // chặn stats.json phình vô hạn
+export function incInbound(pageId, custKey) {
+  const key = `${pageId}:${custKey}`;
+  if (inboundSet.has(key)) return;
+  inboundSet.add(key); s.inboundKeys.push(key);
+  if (s.inboundKeys.length > INBOUND_KEYS_MAX) {
+    const bo = s.inboundKeys.splice(0, s.inboundKeys.length - INBOUND_KEYS_MAX);
+    for (const k of bo) inboundSet.delete(k);
+  }
+  bump('inbound', pageId); save();
+}
+
 // Tổng hợp theo khoảng ngày [from, to] (gồm 2 đầu). Bỏ trống = tất cả.
 export function getStats({ from, to } = {}) {
-  let replies = 0, orders = 0, leads = 0; const byPage = {};
+  let replies = 0, orders = 0, leads = 0, inbound = 0; const byPage = {};
   for (const [d, b] of Object.entries(s.days)) {
     if (from && d < from) continue;
     if (to && d > to) continue;
-    replies += b.replies || 0; orders += b.orders || 0; leads += b.leads || 0;
-    for (const [id, pb] of Object.entries(b.byPage || {})) { const x = pg(byPage, id); x.replies += pb.replies || 0; x.orders += pb.orders || 0; x.leads += pb.leads || 0; }
+    replies += b.replies || 0; orders += b.orders || 0; leads += b.leads || 0; inbound += b.inbound || 0;
+    for (const [id, pb] of Object.entries(b.byPage || {})) { const x = pg(byPage, id); x.replies += pb.replies || 0; x.orders += pb.orders || 0; x.leads += pb.leads || 0; x.inbound += pb.inbound || 0; }
   }
   return { replies, orders, leads, byPage, lastReplyAt: s.lastReplyAt };
 }

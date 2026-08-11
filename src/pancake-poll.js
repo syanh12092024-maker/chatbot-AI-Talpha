@@ -4,7 +4,7 @@ import { config } from './config.js';
 import { pkGetConversations, pkGetMessages, pkSendReply, pkSendImage, refreshPancakePages, pkTagByName, pkMarkUnread } from './pancake.js';
 import { listAiEnabled, getState } from './store.js';
 import { handleIncoming } from './handler.js';
-import { incReply, incLead } from './stats.js';
+import { incReply, incLead, incInbound } from './stats.js';
 import { logAi } from './ai-log.js';
 import { addAiConv } from './ai-convs.js';
 import { isLlmDown, llmHealth } from './llm-health.js';
@@ -294,6 +294,12 @@ async function pollPage(pageId) {
     }
     seen.set(c.id, mark);
     if (firstTime) continue; // page mới bật AI: chỉ ghi mốc hội thoại cũ, không trả lời
+
+    // KHÁCH NHẮN TỚI — đếm ở ĐÂY, trước MỌI cửa lọc. Đây là mẫu số thật của tỉ
+    // lệ chốt: `leads` chỉ đếm khách mà AI đã trả lời nên bỏ sót toàn bộ khách
+    // do Botcake/Fast Lane lo trọn hoặc rơi vào 6 cửa im lặng — chia theo nó thì
+    // tỉ lệ chốt luôn đẹp hơn sự thật.
+    try { incInbound(pageId, custId); } catch { /* thống kê không chặn luồng chính */ }
 
     // NHƯỜNG NHÂN VIÊN: chỉ áp dụng khi BẬT config.respectAssignee. Mặc định TẮT vì Pancake
     // tự động gán hội thoại cho nhân viên → nếu bật, AI sẽ im gần hết (sale chỉ nắm đơn, không chat).

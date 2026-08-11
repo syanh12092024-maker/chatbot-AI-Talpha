@@ -58,7 +58,7 @@ adminRouter.get('/stats', (req, res) => {
   const ids = new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)]);
   const rate = (orders, leads) => (leads > 0 ? Math.round((orders / leads) * 100) : 0); // tỉ lệ chốt %
   const pages = [...ids].map((id) => {
-    const b = st.byPage[id] || { replies: 0, orders: 0, leads: 0 };
+    const b = st.byPage[id] || { replies: 0, orders: 0, leads: 0, inbound: 0 };
     const cfg = getPageConfig(id);
     const hasKb = ((kbById.get(id) || {}).products || 0) > 0 || !!(cfg.greeting || cfg.tone || cfg.salesPrompt);
     return {
@@ -67,6 +67,7 @@ adminRouter.get('/stats', (req, res) => {
       aiEnabled: isAiEnabled(id),
       replies: b.replies || 0,
       leads: b.leads || 0,
+      inbound: b.inbound || 0,   // khách NHẮN TỚI — mẫu số thật của tỉ lệ chốt
       orders: b.orders || 0,
       closeRate: rate(b.orders || 0, b.leads || 0),
       hasKb,
@@ -78,7 +79,7 @@ adminRouter.get('/stats', (req, res) => {
     pagesWithKB: getPageList().filter((p) => (p.products || 0) > 0).length,
     aiEnabled: listAiEnabled().length,
     range: { from: from || null, to: to || null },
-    replies: st.replies, orders: st.orders, leads: st.leads,
+    replies: st.replies, orders: st.orders, leads: st.leads, inbound: st.inbound || 0,
     closeRate: rate(st.orders, st.leads),
     lastReplyAt: st.lastReplyAt,
     pages,
