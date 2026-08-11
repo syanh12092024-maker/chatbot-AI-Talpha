@@ -735,12 +735,13 @@ function imgTile(im){im=im||{};const u=im.url||'';const lbl=im.label||'Ảnh s�
   </div>`;}
 function addTile(){return `<div class="imtile imadd"><div class="imthumb" onclick="addKbImg(this)"><b style="font-size:22px;font-weight:400;line-height:1">＋</b>Thêm ảnh</div></div>`;}
 // Bảng gói giá: lấy từ r.tiers (mới) hoặc suy từ price1/combo2/combo3 (dữ liệu cũ).
+// NHÃN PHẢI TIẾNG ANH — Fast Lane in thẳng nhãn này cho khách (sửa 11/08/2026).
 function tiersOf(r){
-  if(Array.isArray(r.tiers)&&r.tiers.length)return r.tiers.filter(t=>+t.price>0).map(t=>({label:t.label!=null?t.label:(t.qty?`Mua ${t.qty} cái`:''),price:+t.price}));
-  const out=[];[['Mua 1 cái',r.price1],['Combo 2 cái',r.combo2],['Combo 3 cái',r.combo3]].forEach(([l,v])=>{if(+v>0)out.push({label:l,price:+v});});
+  if(Array.isArray(r.tiers)&&r.tiers.length)return r.tiers.filter(t=>+t.price>0).map(t=>({label:t.label!=null?t.label:(t.qty?`Buy ${t.qty}`:''),price:+t.price}));
+  const out=[];[['Buy 1',r.price1],['Combo 2',r.combo2],['Combo 3',r.combo3]].forEach(([l,v])=>{if(+v>0)out.push({label:l,price:+v});});
   return out.length?out:[{label:'',price:''}];
 }
-function tierRow(t){t=t||{};return `<div class="tierrow"><input class="tl" value="${esc(t.label||'')}" placeholder="Mô tả gói: Mua 1 cái / Mua 1 tặng 1 / Combo 2..."><span>—</span><input class="tp" type="number" min="0" value="${t.price??''}" placeholder="giá"><button class="tierx" title="Xoá gói" onclick="this.closest('.tierrow').remove()">✕</button></div>`;}
+function tierRow(t){t=t||{};return `<div class="tierrow"><input class="tl" value="${esc(t.label||'')}" placeholder="Mô tả gói — TIẾNG ANH, khách đọc trực tiếp: Buy 1 Get 2 FREE (3 pcs)..."><span>—</span><input class="tp" type="number" min="0" value="${t.price??''}" placeholder="giá"><button class="tierx" title="Xoá gói" onclick="this.closest('.tierrow').remove()">✕</button></div>`;}
 window.addTierRow=(btn)=>btn.closest('.pricebox').querySelector('.tiers').insertAdjacentHTML('beforeend',tierRow({}));
 function kbCard(r){r=r||{};const imgs=(r.images&&r.images.length)?r.images:(r.image?[{url:r.image,label:'Ảnh sản phẩm'}]:[]);
   const cur=r.currency||'AED';const curOpts=[...CURRENCIES];if(!curOpts.includes(cur))curOpts.unshift(cur);

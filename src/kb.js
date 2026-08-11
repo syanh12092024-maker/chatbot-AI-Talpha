@@ -273,19 +273,23 @@ export function updatePageProducts(pageId, products) {
 function numOrNull(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
 
 // Chuẩn hoá BẢNG GÓI GIÁ: [{label, price}]. label là MÔ TẢ TỰ DO ưu đãi
-// (vd "Mua 1 cái", "Mua 1 tặng 1", "Combo 2 cái"...). Giữ thứ tự người dùng nhập.
+// (vd "Buy 1 Get 2 FREE (3 pcs)", "BUY 1 TAKE 1"...). Giữ thứ tự người dùng nhập.
 // Ưu tiên p.tiers (mới); fallback price1/combo2/combo3 hoặc tiers kiểu {qty} cũ để tương thích.
+//
+// NHÃN PHẢI LÀ TIẾNG ANH — Fast Lane in thẳng nhãn này cho khách (fast-lane.js
+// priceLines), và AI cũng nhại lại khi liệt kê gói. Nhãn tiếng Việt cứng ở đây
+// từng gửi "Mua 1 cái — 99 AED" cho khách Trung Đông (sửa 11/08/2026).
 export function productTiers(p) {
   if (Array.isArray(p.tiers) && p.tiers.length) {
     return p.tiers.map((t) => ({
-      label: String(t.label != null ? t.label : (t.qty ? `Mua ${t.qty} cái` : '')).trim(),
+      label: String(t.label != null ? t.label : (t.qty ? `Buy ${t.qty}` : '')).trim(),
       price: numOrNull(t.price),
     })).filter((t) => t.price != null && t.price > 0);
   }
   const out = [];
-  if (p.price1 != null && p.price1 > 0) out.push({ label: 'Mua 1 cái', price: p.price1 });
-  if (p.combo2 != null && p.combo2 > 0) out.push({ label: 'Combo 2 cái', price: p.combo2 });
-  if (p.combo3 != null && p.combo3 > 0) out.push({ label: 'Combo 3 cái', price: p.combo3 });
+  if (p.price1 != null && p.price1 > 0) out.push({ label: 'Buy 1', price: p.price1 });
+  if (p.combo2 != null && p.combo2 > 0) out.push({ label: 'Combo 2', price: p.combo2 });
+  if (p.combo3 != null && p.combo3 > 0) out.push({ label: 'Combo 3', price: p.combo3 });
   return out;
 }
 
