@@ -49,6 +49,26 @@ test('Dạng 3 · chữ hoa mỹ unicode né lọc Meta → vẫn đọc đượ
   assert.ok(!/[\u{1D400}-\u{1D7FF}]/u.test(t[0].label), 'còn sót chữ hoa mỹ');
 });
 
+test('Giá THẬP PHÂN không được biến thành số nguyên gấp 10 lần', () => {
+  // "8,9 KWD" và "9.9 KWD" đều là 8,9 / 9,9 — xoá dấu là thành 89 / 99, sai 10 lần.
+  const a = parseOffers('💎 1 Pair – 8,9 KWD\n💎 2 Pairs – 12,9 KWD (Most Popular Choice)');
+  assert.deepEqual(a.map((x) => x.price), [8.9, 12.9]);
+  const b = parseOffers('🌻 1 Couple Ring Set – Only 9.9 KWD + 🚚 FREE Delivery (Best Value)');
+  assert.deepEqual(b.map((x) => x.price), [9.9]);
+  assert.equal(b[0].label, '1 Couple Ring Set');
+  // KWD/BHD/OMR có 3 số lẻ: 13,900 là 13,9 chứ không phải 13.900
+  assert.equal(parseOffers('1 set – 13,900 KWD')[0].price, 13.9);
+  // còn tiền tệ 2 số lẻ thì 3 chữ số là hàng nghìn
+  assert.equal(parseOffers('1 set – 1,500 AED')[0].price, 1500);
+});
+
+test('Cụm giao hàng trong ngoặc bị bóc cả cặp, không để lại "(" cụt', () => {
+  const t = parseOffers('🎁 Buy 1 Get 1 FREE – 99 SAR (Free delivery)');
+  assert.equal(t[0].label, 'Buy 1 Get 1 FREE');
+  const u = parseOffers('🎁 Buy 1 Get 1 FREE ( Total 2 iteam ) – Only 109 SAR with FREE Shipping');
+  assert.equal(u[0].label, 'Buy 1 Get 1 FREE ( Total 2 iteam )');
+});
+
 test('Dòng không phải gói (phí ship, giá gạch) không thành gói giá', () => {
   const t = parseOffers('🚚 Free delivery\nCASH ON DELIVERY\nHello po!');
   assert.equal(t.length, 0);

@@ -47,7 +47,22 @@ function deFancy(s) {
 
 // Đuôi giao hàng/COD không phải tên gói — cắt bỏ, KHÔNG loại cả dòng
 // (dạng "🌈149 AED 1 set - free delivery" chiếm 10/29 page).
-const TAIL = /\s*[-–—,·|]*\s*(free\s*(delivery|shipping)|cash\s*on\s*delivery|\bcod\b|libreng\s*\w+).*$/i;
+const TAIL = /\s*[-–—,·|+]*\s*(with\s+|and\s+|plus\s+)?(free\s*(delivery|shipping)|cash\s*on\s*delivery|\bcod\b|libreng\s*\w+).*$/i;
+// "…FREE – 99 SAR (Free delivery)" — cụm giao hàng nằm TRONG ngoặc, phải bóc cả
+// cặp ngoặc kẻo còn lại dấu "(" cụt.
+const PAREN_SHIP = /\(\s*[^)]*(free\s*(delivery|shipping)|cash\s*on\s*delivery)[^)]*\)/gi;
+
+// Giá có phần thập phân: "8,9 KWD" · "9.9 KWD". Xoá thẳng dấu chấm/phẩy như
+// dấu phân cách nghìn sẽ biến 8,9 KWD thành 89 KWD — sai gấp 10 lần, mất đơn
+// và mất page. Luật: 1–2 chữ số sau dấu là thập phân; 3 chữ số là hàng nghìn,
+// TRỪ các đồng tiền 3 số lẻ (KWD/BHD/OMR) vốn viết 13,900 = 13,9.
+const CUR_3DP = /^(KWD|BHD|OMR)$/i;
+function toPrice(raw, cur) {
+  const s = String(raw).trim();
+  const m = s.match(/^(\d+)[.,](\d{1,3})$/);
+  if (m && (m[2].length <= 2 || CUR_3DP.test(cur || ''))) return Number(`${m[1]}.${m[2]}`);
+  return Number(s.replace(/[.,]/g, ''));
+}
 
 export function parseOffers(text) {
   const lines = deFancy(text).split('\n');
@@ -55,17 +70,21 @@ export function parseOffers(text) {
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(new RegExp(`(\\d[\\d.,]*)\\s*(${CUR})\\b|\\b(${CUR})\\s*(\\d[\\d.,]*)`, 'i'));
     if (!m) continue;
-    const price = Number(String(m[1] || m[4]).replace(/[.,]/g, ''));
+    const price = toPrice(m[1] || m[4], m[2] || m[3]);
     if (!Number.isFinite(price) || price <= 0) continue;
 
     let label = lines[i]
       .replace(m[0], ' ')
       .replace(/\b(only|just|for|sale|price)\b/gi, ' ')
       .replace(/[\p{Extended_Pictographic}☀-➿️]/gu, ' ')
+      .replace(PAREN_SHIP, ' ')
       .replace(TAIL, '')
       .replace(/[*_>#~`]/g, ' ')
+      .replace(/\(\s*\)/g, ' ')                              // ngoặc rỗng còn sót
+      .replace(/\s*\([^)]*$/, '')                            // ngoặc mở cụt đuôi
+      .replace(/[\s\-–—,+]*\b(with|and|plus|at)\s*$/i, '')   // liên từ cụt đuôi
       .replace(/\s{2,}/g, ' ')
-      .replace(/^[\s:=+\-–—•·|]+|[\s:=+\-–—•·|]+$/g, '')
+      .replace(/^[\s:=+\-–—•·|)]+|[\s:=+\-–—•·|(]+$/g, '')
       .trim();
 
     // "Total: 3 PCS" ở dòng kế — cho khách biết thực nhận bao nhiêu món.
