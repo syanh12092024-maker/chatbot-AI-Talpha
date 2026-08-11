@@ -451,7 +451,7 @@ function statRow(p){const nm=esc(p.name).replace(/'/g,"\\'");return `<tr>
    <td style="text-align:right;font-weight:700${p.orders?'':';color:var(--muted);font-weight:400'}">${p.orders||0}</td>
    <td style="text-align:right;font-weight:700">${p.aiOrders!=null?p.aiOrders:'<span class="muted">…</span>'}</td>
    <td style="text-align:right" title="Đơn ÷ khách AI đã trả lời — mẫu số đã lọc, luôn đẹp hơn sự thật">${rateBadge(p.closeRate)}</td>
-   <td style="text-align:right" title="Đơn ÷ TOÀN BỘ khách nhắn tới page. Đây mới là tỉ lệ chốt thật.">${p.inbound>0?rateBadge(p.closeRateAll):'<span class="muted">—</span>'}</td>
+   <td style="text-align:right" title="Đơn ÷ TOÀN BỘ khách nhắn tới page — tỉ lệ chốt THẬT. Hiện '—' khi mẫu số chưa đủ nghĩa: bộ đếm 'Khách nhắn' bật từ 11/08/2026 còn 'Đơn' là số tích luỹ từ trước, hai bên khác khung thời gian nên chưa chia được. Lọc theo ngày từ 12/08 trở đi sẽ ra số đúng.">${p.closeRateAll!=null?rateBadge(p.closeRateAll):'<span class="muted" title="chưa đủ dữ liệu cùng khoảng ngày">—</span>'}</td>
    <td style="text-align:right;white-space:nowrap" title="${p.cost!=null?p.costTok.toLocaleString('vi-VN')+' token (vào+cache) · đo được '+p.costMeasured+'/'+p.costReplies+' tin của page này'+(p.vndPerOrder!=null?' · '+p.vndPerOrder.toLocaleString('vi-VN')+'đ/đơn ('+p.costOrders+' đơn AI chốt)':''):'chưa có số đo (bật ghi token từ 06/08)'}">${p.cost!=null?'$'+p.cost.toFixed(2)+`<div class="muted" style="font-size:11px;font-weight:400">đo ${p.costMeasured} tin${p.vndPerReply!=null?' · '+p.vndPerReply.toLocaleString('vi-VN')+'đ/tin':''}</div>`:'<span class="muted">—</span>'}</td>
    <td style="text-align:right;white-space:nowrap"><button class="btn sm" onclick="openPageChat('${p.id}','${nm}')" title="Xem hội thoại page này">💬 Chat</button> <button class="btn sm" onclick="openPageKB('${p.id}','${nm}')" title="Sửa kịch bản / sản phẩm">📖 Sửa KB</button></td>
  </tr>`;}
@@ -483,10 +483,10 @@ async function fillStatsBody(){const el=document.getElementById('kpicards');if(!
       cost:c?c.usd:null,costTok:c?(c.tin+c.cread):0,costMeasured:c?c.measured:0,
       costReplies:c?c.replies:0,costOrders:c?c.orders:0,vndPerReply:c?c.vndPerReply:null,vndPerOrder:c?c.vndPerOrder:null,
       closeRate:(r&&leads>0)?Math.round(r.aiOrders/leads*100):0,
-      closeRateAll:(r&&(st.inbound||0)>0)?Math.round(r.aiOrders/st.inbound*100):0};});
+      closeRateAll:(r&&(st.inbound||0)>=r.aiOrders&&st.inbound>0)?Math.round(r.aiOrders/st.inbound*100):null};});
   // Page có số liệu nhưng không còn trong danh sách (đổi token...) vẫn hiện ra.
   (s.pages||[]).forEach(p=>{if(!merged.some(m=>String(m.id)===String(p.id))){const r=(ord.pages||{})[p.id];
-    merged.push({...p,aiOrders:r?r.aiOrders:(ord.enabled?0:null),closeRate:(r&&p.leads>0)?Math.round(r.aiOrders/p.leads*100):0,closeRateAll:(r&&(p.inbound||0)>0)?Math.round(r.aiOrders/p.inbound*100):0});}});
+    merged.push({...p,aiOrders:r?r.aiOrders:(ord.enabled?0:null),closeRate:(r&&p.leads>0)?Math.round(r.aiOrders/p.leads*100):0,closeRateAll:(r&&(p.inbound||0)>=r.aiOrders&&p.inbound>0)?Math.round(r.aiOrders/p.inbound*100):null});}});
   merged.sort((a,b)=>(b.replies-a.replies)||(b.leads-a.leads)||String(a.name||'').localeCompare(String(b.name||'')));
   window._ov=merged;
   const aiOrdTot=ord.enabled?(ord.aiOrders||0):null;
