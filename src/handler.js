@@ -116,7 +116,7 @@ export function hydrateHistory(state, history, pageId) {
 }
 
 // Xử lý 1 tin nhắn đến. Trả về { reply, handoff } — reply=null nghĩa là không tự trả.
-export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustId, history, custName }) {
+export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustId, history, custName, beforeAi }) {
   const state = getState(psid);
   state.psid = psid;
   state.pageId = pageId;                       // để tool gửi ảnh biết page nào
@@ -252,6 +252,24 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     const out = reply(psid, fl.reply, false, fl.lane);
     if (Array.isArray(fl.images) && fl.images.length) { out.images = fl.images; out.caption = fl.caption || ''; }
     return out;
+  }
+
+  // ── CỬA CHẶN AI · thứ tự ưu tiên Botcake → Sale → Fast Lane → AI ──────────
+  // Fast Lane vừa bỏ cuộc ⇒ từ đây trở đi là việc của AI, tầng ĐẮT NHẤT (133đ/lượt
+  // so với 0đ của ba tầng trên). Soi lại hội thoại NGAY TRƯỚC khi tiêu token: page
+  // vừa nói — Botcake trả từ khoá, hoặc sale gõ tay — thì AI im hẳn, không chạy.
+  //
+  // Trước 11/08/2026 cửa này nằm ở `pancake-poll.js` SAU khi AI soạn xong. Khách
+  // không nhận hai câu chồng nhau, nhưng token đã trả rồi mới vứt tin đi. Đo 2 tiếng
+  // đầu sau khi deploy v2, chỉ 1 page: **6 tin bị bỏ / 4 tin gửi được**.
+  // Cửa ở `pancake-poll` VẪN GIỮ — nó bắt ca Botcake trả lời trong lúc AI soạn tin,
+  // là khoảng thời gian cửa này không phủ được.
+  if (typeof beforeAi === 'function') {
+    const vi = await beforeAi().catch(() => null);
+    if (vi) {
+      console.log(`[nhường] ${state.custName || psid} (page ${pageId}): ${vi} → AI KHÔNG chạy (chưa tốn token)`);
+      return { reply: null, handoff: false, yielded: true };
+    }
   }
 
   const cls = await classify(text, kb.products[0]?.name);

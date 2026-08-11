@@ -305,17 +305,32 @@ async function processConv(pageId, c, psid, custId, mark = '') {
   const text = burst.join('\n');
   if (!text) return;
 
-  // Gắn thẻ 'AI Chăm' — vẫn hữu ích: sale nhìn thẻ biết AI đang phục vụ, và nếu kịch bản
-  // Botcake CÓ đặt điều kiện theo thẻ thì đây là lớp chặn thứ hai. Nhưng cửa nhường ở
-  // trên/dưới mới là thứ bảo đảm không đâm nhau, vì nó không cần Botcake hợp tác.
-  if (config.pkTags.ai && !aiTagged.has(c.id)) {
+  // history = msgs (đã fetch sẵn ở trên) → AI đọc toàn bộ hội thoại trước khi soạn tin.
+  // `beforeAi` = cửa chặn AI, chạy NGAY TRƯỚC lời gọi model đầu tiên (xem handler.js).
+  // Thứ tự ưu tiên: Botcake → Sale → Fast Lane → AI. Ba tầng trên miễn phí, AI thì không,
+  // nên phải chắc chắn không tầng nào đang nói rồi mới cho AI tiêu tiền.
+  const { reply, lane, images, caption } = await handleIncoming({
+    psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '',
+    beforeAi: async () => {
+      const latest = await pkGetMessages(pageId, c.id, custId).catch(() => null);
+      if (latest && pageSpokeSince(msgs, latest, pageId)) {
+        noteYield(pageId, 'trước khi gọi AI');
+        return 'page đã trả lời (Botcake/sale) trong lúc chờ';
+      }
+      return null;
+    },
+  });
+  if (!reply) return;
+
+  // Gắn thẻ 'AI Chăm' — CHỈ khi chính AI trả lời, và chỉ khi tin THẬT SỰ sắp gửi.
+  // Trước 11/08/2026 thẻ được gắn TRƯỚC handleIncoming, nên hội thoại bị dán thẻ cả khi
+  // Fast Lane trả câu mẫu, khi Fast Lane im, và cả khi tin bị bỏ vì nhường Botcake —
+  // sale nhìn thẻ tưởng AI đang phục vụ mà AI chưa nói câu nào. Thẻ nay mang đúng nghĩa
+  // "AI đã vào cuộc", cũng là điều kiện để Botcake tự lùi nếu page có cài luật theo thẻ.
+  if (config.pkTags.ai && lane === 'AI' && !aiTagged.has(c.id)) {
     aiTagged.add(c.id);
     pkTagByName(pageId, c.id, config.pkTags.ai).then((t) => { if (!t.ok) console.warn(`[tag] ${pageId}: ${t.error}`); }).catch(() => {});
   }
-
-  // history = msgs (đã fetch sẵn ở trên) → AI đọc toàn bộ hội thoại trước khi soạn tin.
-  const { reply, lane, images, caption } = await handleIncoming({ psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '' });
-  if (!reply) return;
 
   // ── CỬA NHƯỜNG BOTCAKE ② — soi lần cuối NGAY TRƯỚC KHI GỬI ────────────────
   // Đây là cửa quan trọng nhất: AI soạn tin mất vài giây, Botcake hoàn toàn có thể
