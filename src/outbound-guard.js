@@ -45,11 +45,25 @@ function similarity(a, b) {
 const VN_CHARS = /[ăâđêôơưĂÂĐÊÔƠƯ]|[ạảãáàẠẢÃÁÀẹẻẽéèẸẺẼÉÈịỉĩíìỊỈĨÍÌọỏõóòỌỎÕÓÒụủũúùỤỦŨÚÙỵỷỹýỳỴỶỸÝỲ]/gu;
 const VN_WORDS = /\b(là|của|và|cho|với|được|nhé|nhân viên|khách hàng|đơn hàng|giao hàng|cảm ơn|vui lòng|chúng tôi|chúng em|anh chị|sẽ|đã|không|xin lỗi|hàng|tiền|địa chỉ|số điện thoại)\b/giu;
 
+// Danh từ hàng hoá — chỗ tiếng Việt lọt ra NHIỀU NHẤT mà hai bộ đếm trên mù tịt.
+// Xuất xứ 11/08/2026: nhãn gói giá "Mua 1 cái" / "Combo 2 cái" do bộ nhập sinh ra
+// bị Fast Lane in thẳng cho khách; chấm điểm cũ cho 0 từ chức năng + 2 dấu → lọt.
+// MỌI từ ở đây đều mang dấu tiếng Việt, nên không đụng tiếng Anh/Tagalog/Ả Rập.
+// KHÔNG dùng cờ /g: .test() với /g nhớ lastIndex giữa các lần gọi nên sẽ bắt
+// lúc được lúc không — đúng loại lỗi im lặng khó truy nhất.
+const VN_NOUNS = /\b(cái|chiếc|tặng|hộp|tuýp|lọ|chai|gói|miếng|đôi|thùng|bộ|sản phẩm|khuyến mãi|miễn phí|số lượng|màu sắc|kích cỡ|đặt hàng|thanh toán|giảm giá)\b/iu;
+
 export function looksVietnamese(text) {
   const s = String(text || '');
   const words = (s.match(VN_WORDS) || []).length;
   const chars = (s.match(VN_CHARS) || []).length;
   return words >= 2 || (words >= 1 && chars >= 3);
+}
+
+// Tách riêng khỏi looksVietnamese vì mức xử lý KHÁC: bắt được ở đây thì xin model
+// viết lại (còn cứu được lượt), chứ không chặn thẳng như tiếng Việt nguyên câu.
+export function hasVietnameseNoun(text) {
+  return VN_NOUNS.test(String(text || ''));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -182,6 +196,12 @@ export function guardOutbound(text, ctx = {}) {
   // ── Luật 2 · lọt tiếng Việt ───────────────────────────────────────────────
   if (looksVietnamese(t)) {
     return block('VIETNAMESE', 'Tin lọt TIẾNG VIỆT — khách là người Philippines/Ả Rập, tuyệt đối không dùng tiếng Việt', true);
+  }
+  // Chỉ vài chữ hàng hoá lọt ra (điển hình: nhãn gói giá "Mua 1 cái"). REWRITE
+  // chứ không BLOCK: câu còn lại phần lớn là tiếng Anh dùng được, xin model dịch
+  // nốt thì cứu được lượt — chặn thẳng là khách không nhận được gì.
+  if (hasVietnameseNoun(t)) {
+    return rewrite('VIETNAMESE_WORD', 'Lọt chữ tiếng Việt (thường là nhãn gói giá) — viết lại toàn bộ bằng ngôn ngữ của khách', true);
   }
 
   // ── Luật 3 · bịa mã đơn ───────────────────────────────────────────────────

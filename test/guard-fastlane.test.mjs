@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { guardOutbound, looksVietnamese, extractMoney } from '../src/outbound-guard.js';
+import { guardOutbound, looksVietnamese, hasVietnameseNoun, extractMoney } from '../src/outbound-guard.js';
 import { fastLane, detectLang } from '../src/fast-lane.js';
 
 // KB giả: 1 sản phẩm, 2 gói giá — giống page thật (SET 1 / SET 2)
@@ -285,4 +285,38 @@ test('F10 · nhận đúng ngôn ngữ', () => {
   assert.equal(detectLang('magkano po'), 'tl');
   assert.equal(detectLang('كم السعر'), 'ar');
   assert.equal(detectLang('how much is this'), 'en');
+});
+
+// ── Vài chữ tiếng Việt lọt ra (11/08/2026) ──────────────────────────────────
+// Nhãn gói giá "Mua 1 cái" bị Fast Lane in thẳng cho khách. Bộ chấm điểm cũ
+// đếm TỪ CHỨC NĂNG ("là/của/và") nên nhãn toàn danh từ được 0 điểm → lọt.
+test('G1 · nhãn gói tiếng Việt phải bị bắt (chấm điểm cũ mù với dạng này)', () => {
+  const tin = '🎁 Mua 1 cái — 99 AED\n🎁 Combo 2 cái — 149 AED\n🚚 FREE delivery po, at COD';
+  assert.equal(looksVietnamese(tin), false, 'chấm điểm cũ vẫn mù — đúng như đo được');
+  assert.equal(hasVietnameseNoun(tin), true);
+  const v = guardOutbound(tin, { kb: KB });
+  assert.equal(v.ok, false);
+  assert.equal(v.rule, 'VIETNAMESE_WORD');
+  // REWRITE chứ không BLOCK: câu còn lại dùng được, chặn thẳng là khách trắng tay.
+  assert.equal(v.action, 'rewrite');
+});
+
+test('G2 · KHÔNG bắt oan tiếng Anh / Tagalog / Ả Rập', () => {
+  // Đo thật: trên 9.043 tin AI production, luật này bắt thêm đúng 3 tin và cả
+  // 3 đều là rò rỉ thật — 0 bắt oan. Vài câu tiêu biểu giữ lại làm chốt chặn.
+  for (const t of [
+    'Buy 1 Get 2 FREE (Total 3 Products) — 99 AED. COD po!',
+    'Salamat po, Ma\'am! Sandali lang po, may makakausap kayong team member.',
+    'كم السعر؟ التوصيل مجاني',
+    'I understand po, mas sulit ang combo — 149 AED for 5 pcs.',
+    'Your order is confirmed po. Cash on delivery, 2-5 days.',
+  ]) {
+    assert.equal(hasVietnameseNoun(t), false, `bắt oan: ${t}`);
+    assert.equal(guardOutbound(t, { kb: KB }).rule === 'VIETNAMESE_WORD', false, `bắt oan: ${t}`);
+  }
+});
+
+test('G3 · .test() không được nhớ lastIndex giữa các lần gọi (bẫy cờ /g)', () => {
+  const tin = 'Mua 1 cái';
+  for (let i = 0; i < 5; i++) assert.equal(hasVietnameseNoun(tin), true, `lần ${i + 1} trượt`);
 });
