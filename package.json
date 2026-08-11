@@ -15,6 +15,7 @@
     "wa:login": "node src/wa-login.js",
     "fix-labels": "node src/fix-tier-labels.js",
     "fix-dup": "node src/fix-dup-products.js",
+    "tpl-approve": "node src/approve-templates.js",
     "test": "node --test test/"
   },
   "dependencies": {
