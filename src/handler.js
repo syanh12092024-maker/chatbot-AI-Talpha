@@ -6,12 +6,12 @@ import { config } from './config.js';
 import { logAi, recentReplyCount, recentBotTurns } from './ai-log.js';
 import { cleanText } from './text.js';
 import { pkTagByName, pkAddNote } from './pancake.js';
-import { fastLane, noteFastLane, detectLang } from './fast-lane.js';
+import { fastLane, noteFastLane } from './fast-lane.js';
 import { guardOutbound, recordBlocked, canFixLocally, localFix } from './outbound-guard.js';
 import { markHandoff, markPostSale } from './conv-owner.js';
 import { S, OWNER, getConv, touchConv, setConvState, noteLlmTurn, llmTurns24h, noteOppTurn } from './conv-state.js';
 import { scoreTurn, turnBudget, TIER_LABEL, HARD_MAX_TURNS } from './lead-score.js';
-import { detectPostSale, routePostSale, holdingPostSale, OPPORTUNITY_BRIEF, OPPORTUNITY_MAX_TURNS } from './post-sale.js';
+import { detectPostSale, routePostSale, OPPORTUNITY_BRIEF, OPPORTUNITY_MAX_TURNS } from './post-sale.js';
 import { emptyProfile, extractFromText, absorbToolUses, hydrateProfile, buildContextMessages, estimateTokens } from './context.js';
 
 // M11 — công tắc quay về trần lượt cào bằng cũ (MAX_AI_TURNS) nếu ngân sách theo độ nóng

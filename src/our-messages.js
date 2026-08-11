@@ -26,6 +26,22 @@ export const HOLDING_MESSAGES = [
   'Sandali lang po / one moment — a team member will assist you shortly. 🙏',
 ];
 
+// Câu giữ chân HẬU BÁN của M13 (post-sale.js → holdingPostSale, đã xoá 11/08/2026).
+// Chín chuỗi này CHƯA TỪNG được khai ở đây dù quy tắc ⚠️ phía trên bắt buộc — tức M05 vốn
+// đã có thể nhận nhầm chúng là người thật. Bot không phát nữa, nhưng lịch sử Pancake còn
+// nguyên, nên khai ở đây để đóng luôn lỗ đó.
+export const LEGACY_POSTSALE_HOLDING = [
+  'Naku, pasensya na po sa abala. 🙏 Ipapasa ko po agad kayo sa team namin para maayos ito ngayon din.',
+  'Pasensya na po sa paghihintay. 🙏 Icheck po namin agad ang delivery ninyo at may makakausap kayong team member namin.',
+  'Sandali lang po, icheck po namin ang order ninyo at ibabalita agad ng team namin. 🙏',
+  'I\'m so sorry about that. 🙏 I\'m passing this to our team right now so they can fix it for you.',
+  'Sorry for the wait. 🙏 We\'re checking your delivery now and a team member will get back to you shortly.',
+  'One moment please — we\'re checking your order and our team will update you shortly. 🙏',
+  'نعتذر جداً عن هذا. 🙏 حولت طلبك للفريق المختص الآن ليتم حله فوراً.',
+  'نعتذر عن التأخير. 🙏 نتحقق من الشحنة الآن وسيتواصل معك أحد الفريق قريباً.',
+  'لحظة من فضلك — نتحقق من طلبك وسيوافيك الفريق بالتحديث. 🙏',
+];
+
 // Câu closer trả khi hết vòng tool (closer.js)
 export const CLOSER_FALLBACKS = [
   'Em cần hỗ trợ thêm từ đồng nghiệp, anh/chị chờ em chút nhé ạ.',
@@ -34,7 +50,7 @@ export const CLOSER_FALLBACKS = [
 const norm = (s) => cleanText(s || '').toLowerCase().replace(/\s+/g, ' ').replace(/[^\p{L}\p{N} ]/gu, '').trim();
 
 // Chuỗi cố định + các câu mẫu Fast Lane đã dựng (đăng ký lúc chạy).
-const fixed = new Set([...HOLDING_MESSAGES, ...CLOSER_FALLBACKS].map(norm).filter(Boolean));
+const fixed = new Set([...HOLDING_MESSAGES, ...LEGACY_POSTSALE_HOLDING, ...CLOSER_FALLBACKS].map(norm).filter(Boolean));
 const dynamic = new Set(); // câu mẫu Fast Lane dựng từ KB — khác nhau theo page
 
 /** Fast Lane gọi mỗi khi dựng xong một câu mẫu, để M05 biết đó là tin của mình. */

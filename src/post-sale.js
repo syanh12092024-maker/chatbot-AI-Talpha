@@ -206,23 +206,11 @@ export const OPPORTUNITY_BRIEF = [
   'Nếu khách than phiền bất cứ điều gì → gọi ngay tool handoff_human.',
 ].join('\n');
 
-// Lời nhắc cho tin GIỮ CHỖ khi chuyển người (không dùng model, 0 token).
-export function holdingPostSale(kind, lang = 'tl') {
-  const tl = {
-    [PS.PROBLEM]: 'Naku, pasensya na po sa abala. 🙏 Ipapasa ko po agad kayo sa team namin para maayos ito ngayon din.',
-    [PS.NOT_RECEIVED]: 'Pasensya na po sa paghihintay. 🙏 Icheck po namin agad ang delivery ninyo at may makakausap kayong team member namin.',
-    [PS.STATUS]: 'Sandali lang po, icheck po namin ang order ninyo at ibabalita agad ng team namin. 🙏',
-  };
-  const en = {
-    [PS.PROBLEM]: 'I\'m so sorry about that. 🙏 I\'m passing this to our team right now so they can fix it for you.',
-    [PS.NOT_RECEIVED]: 'Sorry for the wait. 🙏 We\'re checking your delivery now and a team member will get back to you shortly.',
-    [PS.STATUS]: 'One moment please — we\'re checking your order and our team will update you shortly. 🙏',
-  };
-  const ar = {
-    [PS.PROBLEM]: 'نعتذر جداً عن هذا. 🙏 حولت طلبك للفريق المختص الآن ليتم حله فوراً.',
-    [PS.NOT_RECEIVED]: 'نعتذر عن التأخير. 🙏 نتحقق من الشحنة الآن وسيتواصل معك أحد الفريق قريباً.',
-    [PS.STATUS]: 'لحظة من فضلك — نتحقق من طلبك وسيوافيك الفريق بالتحديث. 🙏',
-  };
-  const table = lang === 'ar' ? ar : (lang === 'en' ? en : tl);
-  return table[kind] || table[PS.STATUS];
-}
+// ── ĐÃ XOÁ `holdingPostSale()` (11/08/2026) ─────────────────────────────────
+// M13 từng gửi một câu giữ chỗ 3 ngôn ngữ khi bàn giao hậu bán ("chúng tôi đang kiểm tra
+// đơn của bạn…"). Nay bàn giao hậu bán IM LẶNG như mọi cửa bàn giao khác — chủ dự án
+// quyết 11/08/2026: khách khiếu nại thì để sale tự xử, câu máy không giải quyết được gì
+// mà còn làm sale mở chat ra tưởng đã có người trả lời.
+// Chín chuỗi cũ chuyển sang `our-messages.js → LEGACY_POSTSALE_HOLDING` để M05 vẫn nhận
+// ra tin cũ của chính bot trong lịch sử Pancake. Đừng xoá bên đó.
+// Ba dấu vết bàn giao (Sổ AI + thẻ + ghi chú Pancake) không đổi — xem `handler.js`.

@@ -3,7 +3,8 @@
 // ("Kuya damage po yong Isa") và AI đáp "thank you so much" rồi dội bài quảng cáo.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectPostSale, routePostSale, holdingPostSale, PS, OPPORTUNITY_MAX_TURNS } from '../src/post-sale.js';
+import { detectPostSale, routePostSale, PS, OPPORTUNITY_MAX_TURNS } from '../src/post-sale.js';
+import { LEGACY_POSTSALE_HOLDING, isOurFixedMessage } from '../src/our-messages.js';
 import { decideConv, S, OWNER } from '../src/conv-owner.js';
 import { setConvState, touchConv, noteOppTurn } from '../src/conv-state.js';
 
@@ -124,13 +125,15 @@ test('R4 · khách hài lòng → nhánh CƠ HỘI, ngân sách riêng tối đa
   assert.equal(done.aiMay, false);
 });
 
-test('R5 · tin giữ chỗ có đủ 3 ngôn ngữ, không rỗng, không lộ tiếng Việt', () => {
-  for (const lang of ['tl', 'en', 'ar']) {
-    for (const kind of [PS.PROBLEM, PS.NOT_RECEIVED, PS.STATUS]) {
-      const s = holdingPostSale(kind, lang);
-      assert.ok(s && s.length > 10, `${kind}/${lang} phải có nội dung`);
-      assert.equal(/[ăâđêôơưĂÂĐÊÔƠƯ]|khách|nhân viên/.test(s), false, `${kind}/${lang} lộ tiếng Việt`);
-    }
+test('R5 · bàn giao hậu bán KHÔNG còn câu giữ chỗ, nhưng tin cũ vẫn nhận ra là của mình', async () => {
+  const ps = await import('../src/post-sale.js');
+  assert.equal(ps.holdingPostSale, undefined, 'holdingPostSale phải bị xoá — bàn giao hậu bán im lặng');
+  // 9 chuỗi cũ còn nằm đầy trong lịch sử Pancake: M05 gặp lại mà không nhận ra là tin của
+  // chính bot thì sẽ tưởng người thật đã tiếp quản rồi tự khoá hội thoại.
+  assert.equal(LEGACY_POSTSALE_HOLDING.length, 9, 'đủ 3 ca × 3 ngôn ngữ');
+  for (const s of LEGACY_POSTSALE_HOLDING) {
+    assert.equal(isOurFixedMessage(s), true, `phải nhận ra là tin của bot: "${s.slice(0, 40)}"`);
+    assert.equal(/[ăâđêôơưĂÂĐÊÔƠƯ]|khách|nhân viên/.test(s), false, `lộ tiếng Việt: "${s.slice(0, 40)}"`);
   }
 });
 
