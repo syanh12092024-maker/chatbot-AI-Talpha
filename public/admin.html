@@ -415,7 +415,7 @@ function rOverview(){
   const cx=RANGE.key==='custom';
   content.innerHTML=`<div class="vhead">
      <h2>Tổng quan hoạt động</h2>
-     <div class="drange" id="drange">
+     <div class="drange" id="drange" title="Ngày cắt theo mốc UTC — tức 07:00 giờ VN, không phải 00:00. 'Hôm nay' = 07:00 hôm nay → 07:00 mai (giờ VN). Cả stats.json, Sổ AI lẫn đơn Pancake đều cắt cùng mốc này nên các cột so được với nhau; riêng báo cáo WhatsApp cắt theo 00:00 giờ VN nên hai bên lệch nhau ở khung 7 tiếng đầu ngày.">
        ${RANGE_PRESETS.map(([k,l])=>`<button class="chip ${RANGE.key===k?'act':''}" data-r="${k}" onclick="setRange('${k}')">${l}</button>`).join('')}
        <button class="chip ${cx?'act':''}" id="rangeCustomBtn" onclick="toggleCustomRange()">📅 Khác</button>
        <span class="drange-cx" id="drangeCustom" style="display:${cx?'inline-flex':'none'}">
@@ -436,7 +436,7 @@ function rOverview(){
        <button class="btn sm" onclick="auditCheck()" title="Tính lại số liệu từ Sổ AI (audit log) để đối chiếu" style="flex-shrink:0">🔍 Đối chiếu Sổ AI</button>
      </div>
    </div>
-   <div class="tablecard"><table><thead><tr><th style="width:86px">AI</th><th>Page</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right">Đơn khách AI</th><th style="text-align:right">Tỉ lệ chốt</th><th style="text-align:right" title="Chi phí token AI — CHỈ tính trên những tin có số đo thật (Sổ AI ghi token từ 06/08/2026). Cột 'Tin AI' bên trái là TOÀN BỘ tin trong khoảng ngày, nên hai cột không cùng mẫu số: xem dòng 'đo N tin' ngay dưới số tiền.">Chi phí AI</th><th style="text-align:right">Thao tác</th></tr></thead><tbody id="ovbody"></tbody></table></div>`;
+   <div class="tablecard"><table><thead><tr><th style="width:86px">AI</th><th>Page</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right" title="Số đơn CHÍNH AI tự chốt và tự đẩy sang Pancake (nguồn: Sổ AI, sự kiện 'order'). Đơn AI tạo luôn mang ghi chú 'Đơn do AI chốt — chờ nhân viên xác nhận'.">AI chốt</th><th style="text-align:right" title="Số KHÁCH được AI tư vấn TRONG khoảng ngày này và có phát sinh đơn Pancake (khớp conversation_id, bỏ đơn hủy/hoàn). KỂ CẢ đơn do sale chốt tay — cột này đo 'AI có góp phần', không phải 'AI tự chốt'. Muốn xem AI tự chốt thì nhìn cột 'AI chốt' bên trái.">Đơn khách AI</th><th style="text-align:right" title="Đơn khách AI ÷ Khách, cùng một khoảng ngày.">Tỉ lệ chốt</th><th style="text-align:right" title="Chi phí token AI — CHỈ tính trên những tin có số đo thật (Sổ AI ghi token từ 06/08/2026). Cột 'Tin AI' bên trái là TOÀN BỘ tin trong khoảng ngày, nên hai cột không cùng mẫu số: xem dòng 'đo N tin' ngay dưới số tiền.">Chi phí AI</th><th style="text-align:right">Thao tác</th></tr></thead><tbody id="ovbody"></tbody></table></div>`;
   fillStatsBody();
   addTimer(()=>{if(document.getElementById('kpicards'))fillStatsBody();},12000);
 }
@@ -447,6 +447,7 @@ function statRow(p){const nm=esc(p.name).replace(/'/g,"\\'");return `<tr>
    <td>${p.hasKb?`<span class="pill ok">✓ ${p.products>0?p.products+' SP':'có KB'}</span>`:'<span class="pill warn">chưa</span>'}</td>
    <td style="text-align:right;font-weight:700">${p.replies||0}</td>
    <td style="text-align:right;font-weight:700">${p.leads||0}</td>
+   <td style="text-align:right;font-weight:700${p.orders?'':';color:var(--muted);font-weight:400'}">${p.orders||0}</td>
    <td style="text-align:right;font-weight:700">${p.aiOrders!=null?p.aiOrders:'<span class="muted">…</span>'}</td>
    <td style="text-align:right">${rateBadge(p.closeRate)}</td>
    <td style="text-align:right;white-space:nowrap" title="${p.cost!=null?p.costTok.toLocaleString('vi-VN')+' token (vào+cache) · đo được '+p.costMeasured+'/'+p.costReplies+' tin của page này'+(p.vndPerOrder!=null?' · '+p.vndPerOrder.toLocaleString('vi-VN')+'đ/đơn ('+p.costOrders+' đơn AI chốt)':''):'chưa có số đo (bật ghi token từ 06/08)'}">${p.cost!=null?'$'+p.cost.toFixed(2)+`<div class="muted" style="font-size:11px;font-weight:400">đo ${p.costMeasured} tin${p.vndPerReply!=null?' · '+p.vndPerReply.toLocaleString('vi-VN')+'đ/tin':''}</div>`:'<span class="muted">—</span>'}</td>
@@ -491,7 +492,7 @@ async function fillStatsBody(){const el=document.getElementById('kpicards');if(!
     ['pages','Pages kết nối',o.pages,'nguồn '+(o.source==='pancake'?'Pancake':'FB')],
     ['msgs','Khách AI tư vấn',totLeads,rangeLabel()],
     ['stats','Tin AI trả lời',s.replies||0,rangeLabel()],
-    ['kb','Đơn từ khách AI',aiOrdTot!=null?aiOrdTot:'…','khách AI có đặt đơn'],
+    ['kb','Đơn từ khách AI',aiOrdTot!=null?aiOrdTot:'…','trong đó '+(s.orders||0)+' do AI tự chốt, còn lại sale chốt tay'],
     ['overview','Tỉ lệ chốt',(aiOrdTot!=null&&totLeads>0?Math.round(aiOrdTot/totLeads*100):0)+'%',(aiOrdTot!=null?aiOrdTot:'…')+' đơn / '+totLeads+' khách'],
     ['stats','Chi phí AI (đo)',tc?'$'+tc.usd.toFixed(2):'—',tc?('≈'+tc.vnd.toLocaleString('vi-VN')+'đ · đo trên '+tc.measured.toLocaleString('vi-VN')+' tin'):'ghi token từ 06/08'],
     ['stats','Chi phí / 1 tin AI',tc&&tc.vndPerReply!=null?tc.vndPerReply.toLocaleString('vi-VN')+'đ':'—',tc&&tc.usdPerReply!=null?('$'+tc.usdPerReply.toFixed(5)+' · '+tc.measured.toLocaleString('vi-VN')+' tin có số đo'):'chưa có tin nào đo được'],

@@ -246,6 +246,34 @@ export function tokenStats({ from, to } = {}) {
   return { byPage, replies, measured, orders, tin, tout, cread, calls };
 }
 
+// HỘI THOẠI AI ĐÃ TƯ VẤN, CẮT THEO KHOẢNG NGÀY (nguồn: Sổ AI) → pageId -> Set(convId).
+//
+// Vì sao phải có hàm này: `ai-convs.json` là tập TOÀN THỜI GIAN, không cắt ngày được.
+// Đem tập đó đi khớp với đơn Pancake ĐÃ lọc ngày thì tử số và mẫu số là hai tập khác nhau:
+// khách AI tư vấn tuần trước, sale chốt tay hôm nay, vẫn nhảy vào "đơn hôm nay" trong khi
+// không có mặt ở "khách hôm nay". Đo được 11/08/2026 trên page Lucky Charm House UAE:
+// 2 đơn / 2 khách = 100%, nhưng chỉ 1 trong 2 khách là của hôm nay — tỉ lệ này còn có thể
+// vượt 100% khi đơn tồn về nhiều.
+//
+// CHỈ tính event 'reply' để dùng CÙNG MỘT ĐỊNH NGHĨA với cột "Khách" (stats.leads = khách
+// có tin AI trả lời). Đổi định nghĩa ở một vế là lại lệch mẫu số như cũ.
+// Trường `conv` được ghi từ 29/07/2026 (phủ 100% tin từ mốc đó); khoảng ngày trùm về trước
+// mốc ấy sẽ thiếu — caller nên giữ tập toàn thời gian cho khung "Tất cả".
+export function aiConvsByPageInRange({ from, to } = {}) {
+  const out = new Map();
+  for (const r of readLog()) {
+    if (r.type !== 'reply' || !r.conv) continue;
+    const day = new Date(r.t).toISOString().slice(0, 10);
+    if (from && day < from) continue;
+    if (to && day > to) continue;
+    const k = String(r.page);
+    let set = out.get(k);
+    if (!set) { set = new Set(); out.set(k, set); }
+    set.add(r.conv);
+  }
+  return out;
+}
+
 // Tính lại thống kê CHÍNH XÁC từ sổ (dedup khách & đơn theo page+khách).
 // from/to = 'YYYY-MM-DD' (tùy chọn). Trả { replies, leads, orders, byPage, events, lastAt }.
 export function recount({ from, to } = {}) {

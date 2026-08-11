@@ -16,7 +16,7 @@ import { pancakePages, pancakePageCount, pkGetMessages, pkSendReply, pkAddNote, 
 import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
-import { recount, needSale, recentConversations, custProfile, tokenStats } from './ai-log.js';
+import { recount, needSale, recentConversations, custProfile, tokenStats, aiConvsByPageInRange } from './ai-log.js';
 import { cleanText } from './handler.js';
 import { ordersEnabled, aiOrderStats, ordersForConv } from './pancake-orders.js';
 import { getAiConvSet } from './ai-convs.js';
@@ -162,6 +162,10 @@ const _ordCache = new Map();
 //   ② Quét tuần tự 40 page mất tới 215s, lâu hơn cả TTL cache 60s → cứ mở dashboard là
 //      quét lại từ đầu, không lần nào xong. Nay quét song song + cache 5 phút.
 //   ③ Hai request cùng lúc cùng quét chồng nhau. Nay có khoá _ordInflight.
+//   ④ (11/08/2026) Tử số và mẫu số KHÁC TẬP: đơn lọc theo ngày, nhưng tập hội thoại AI
+//      lấy từ ai-convs.json là TOÀN THỜI GIAN → khách AI tư vấn tuần trước mà sale chốt tay
+//      hôm nay vẫn tính vào "đơn hôm nay", trong khi không nằm trong "khách hôm nay".
+//      Nay khung có ngày thì dựng tập hội thoại từ Sổ AI theo ĐÚNG khoảng ngày đó.
 const ORD_TTL = 5 * 60e3;
 const ORD_CONC = 5;
 const _ordInflight = new Map(); // cacheKey -> Promise (chống quét chồng)
@@ -194,9 +198,13 @@ adminRouter.get('/orders', async (req, res) => {
     const ids = [...new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)])];
     const prev = hit?.data?.pages || {};
     const failed = [];
+    // Khung "Tất cả" (không from/to) giữ nguyên tập toàn thời gian: trường `conv` chỉ được
+    // ghi vào Sổ AI từ 29/07/2026, dựng lại từ sổ sẽ mất các hội thoại cũ hơn mốc đó.
+    const convByPage = (from || to) ? aiConvsByPageInRange({ from, to }) : null;
+    const convSetOf = (id) => (convByPage ? (convByPage.get(String(id)) || new Set()) : getAiConvSet(id));
     const results = await runPool(ids, ORD_CONC, async (id) => {
       try {
-        const r = await aiOrderStats(id, getAiConvSet(id), { from, to });
+        const r = await aiOrderStats(id, convSetOf(id), { from, to });
         return [id, { aiOrders: r.customers, aiOrderCount: r.orders }];
       } catch (e) {
         failed.push(id);

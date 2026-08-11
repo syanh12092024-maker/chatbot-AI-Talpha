@@ -86,8 +86,17 @@ Bố cục 3 cột: **danh sách khách** (72h gần nhất, tìm kiếm theo t�
 ### 2.2. Đọc số liệu ở 📊 Tổng quan
 
 - 5 thẻ KPI: Pages kết nối · Khách AI tư vấn · Tin AI trả lời · **Đơn từ khách AI** (khớp đơn POS thật với hội thoại AI) · **Tỉ lệ chốt**
-- Lọc theo: Hôm nay / 7 ngày / 30 ngày / Tất cả / tùy chọn ngày
+- Lọc theo: Hôm nay / 7 ngày / 30 ngày / Tất cả / tùy chọn ngày. Ngày **cắt theo mốc UTC = 07:00 giờ VN**, không phải 00:00 — mọi cột đều cắt cùng mốc nên so được với nhau, riêng báo cáo WhatsApp cắt theo 00:00 giờ VN nên hai bên lệch ở khung 7 tiếng đầu ngày
 - Bảng page: lọc "Có hoạt động" (mặc định) / Đang bật AI / Có kịch bản / Chưa có KB; cột "Đơn khách AI" hiện `…` vài chục giây đầu là bình thường (đang đợi POS)
+
+**Hai cột đơn khác nhau — đừng đọc nhầm:**
+
+| Cột | Nghĩa | Nguồn |
+|---|---|---|
+| **AI chốt** | Chính AI tự chốt và tự đẩy đơn sang Pancake. Đơn này luôn mang ghi chú *"Đơn do AI chốt — chờ nhân viên xác nhận"* | Sổ AI, sự kiện `order` |
+| **Đơn khách AI** | Khách được AI tư vấn **trong khoảng ngày đang xem** và có phát sinh đơn, **kể cả đơn sale chốt tay**. Đo "AI có góp phần", không phải "AI tự chốt" | Đơn POS Pancake, khớp `conversation_id` |
+
+**Tỉ lệ chốt** = Đơn khách AI ÷ Khách, cùng một khoảng ngày. Trước 11/08/2026 con số này bị vống lên vì đơn thì lọc theo ngày còn tập hội thoại AI lấy toàn thời gian — khách tư vấn tuần trước mà sale chốt tay hôm nay vẫn nhảy vào "đơn hôm nay". Đã sửa.
 - Nút **🔍 Đối chiếu Sổ AI**: kiểm chứng số liệu với nhật ký gốc — lệch là có vấn đề, báo quản trị
 
 ### 2.3. Cảnh báo đỏ — PHẢI để ý
