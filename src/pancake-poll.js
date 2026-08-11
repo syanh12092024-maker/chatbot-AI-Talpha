@@ -309,7 +309,7 @@ async function processConv(pageId, c, psid, custId, mark = '') {
   // `beforeAi` = cửa chặn AI, chạy NGAY TRƯỚC lời gọi model đầu tiên (xem handler.js).
   // Thứ tự ưu tiên: Botcake → Sale → Fast Lane → AI. Ba tầng trên miễn phí, AI thì không,
   // nên phải chắc chắn không tầng nào đang nói rồi mới cho AI tiêu tiền.
-  const { reply, lane, images, caption } = await handleIncoming({
+  const res = await handleIncoming({
     psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '',
     beforeAi: async () => {
       const latest = await pkGetMessages(pageId, c.id, custId).catch(() => null);
@@ -320,7 +320,26 @@ async function processConv(pageId, c, psid, custId, mark = '') {
       return null;
     },
   });
-  if (!reply) return;
+  // KHÔNG CÓ TIN ĐỂ GỬI — nhưng có thể ĐÃ TIÊU TOKEN. Đây là nút thắt duy nhất
+  // mà mọi đường "AI chạy rồi không gửi được" đều đi qua: guard chặn tin, model
+  // trả rỗng, bàn giao sale, hội thoại bị lưu trữ. Trước 11/08/2026 tất cả đều
+  // im lặng rời khỏi đây, nên khoản chi của chúng TÀNG HÌNH — sổ cộng ra $0,27
+  // trong khi hoá đơn thật $1. Ghi lại thì vẫn không gửi tin, nhưng tiền nhìn
+  // thấy được và truy được về đúng page/khách/lý do.
+  const { reply, lane, images, caption } = res;
+  if (!reply) {
+    const un = getState(psid).lastUsage || {};
+    if (un.calls) {
+      try {
+        logAi(pageId, custId, 'spent_no_send', {
+          name: c.from?.name || '', conv: c.id, lane: lane || 'AI',
+          why: res.blocked ? `guard:${res.blocked}` : res.handoff ? 'bàn giao sale' : res.yielded ? 'nhường Botcake' : 'AI im',
+          tin: un.tin || 0, tout: un.tout || 0, cread: un.cread || 0, cwrite: un.cwrite || 0, calls: un.calls || 0,
+        });
+      } catch { /* sổ AI không chặn */ }
+    }
+    return;
+  }
 
   // Gắn thẻ 'AI Chăm' — CHỈ khi chính AI trả lời, và chỉ khi tin THẬT SỰ sắp gửi.
   // Trước 11/08/2026 thẻ được gắn TRƯỚC handleIncoming, nên hội thoại bị dán thẻ cả khi
