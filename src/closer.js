@@ -15,7 +15,8 @@ export async function runCloser(ctx) {
 
   // ĐO TOKEN THẬT theo lượt (cộng dồn mọi vòng tool) — CỘNG TIẾP vào bộ đếm handler đã khởi tạo
   // (đã chứa token classifier); pancake-poll ghi vào Sổ AI để thống kê chi phí bằng SỐ ĐO.
-  const usage = state.lastUsage || (state.lastUsage = { tin: 0, tout: 0, cread: 0, calls: 0 });
+  const usage = state.lastUsage || (state.lastUsage = { tin: 0, tout: 0, cread: 0, cwrite: 0, calls: 0 });
+  if (usage.cwrite == null) usage.cwrite = 0;   // bộ đếm cũ chưa có trường này
 
   let iterations = 0;
   let askedForText = false; // đã xin model viết chữ khép lượt lần nào chưa
@@ -45,6 +46,11 @@ export async function runCloser(ctx) {
     usage.tin += res.usage?.input_tokens || 0;
     usage.tout += res.usage?.output_tokens || 0;
     usage.cread += res.usage?.cache_read_input_tokens || 0;
+    // GHI cache — đắt hơn token thường, và trước 11/08/2026 KHÔNG được đếm cũng
+    // KHÔNG được tính giá. Mọi con số chi phí trước ngày đó đều là CẬN DƯỚI.
+    // Cache ghi lại mỗi khi tiền tố đổi: sửa kịch bản page, sửa bảng giá, hoặc
+    // hết hạn cache — tức là mỗi page bật AI đều trả khoản này đều đặn.
+    usage.cwrite += res.usage?.cache_creation_input_tokens || 0;
 
     // Lưu lượt assistant (gồm cả tool_use) vào lịch sử.
     state.messages.push({ role: 'assistant', content: res.content });

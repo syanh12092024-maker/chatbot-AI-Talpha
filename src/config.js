@@ -92,6 +92,14 @@ export const config = {
     in: Number(process.env.AI_PRICE_IN || (AI_PROVIDER === 'kimi' ? 0.95 : 1.0)),
     cache: Number(process.env.AI_PRICE_CACHE || (AI_PROVIDER === 'kimi' ? 0.16 : 0.1)),
     out: Number(process.env.AI_PRICE_OUT || (AI_PROVIDER === 'kimi' ? 4.0 : 5.0)),
+    // GHI cache. Trước 11/08/2026 khoản này KHÔNG được đếm và KHÔNG được tính giá,
+    // nên mọi con số chi phí trước đó là CẬN DƯỚI — đó là lý do sổ nói $0,27 trong
+    // khi hoá đơn thật $1.
+    // ⚠️ Đơn giá dưới đây CHƯA ĐỐI CHIẾU với hoá đơn: Anthropic công bố ghi cache =
+    // 1,25× giá vào; Moonshot không nêu rõ nên tạm lấy bằng giá vào (cận dưới).
+    // Hiệu chỉnh bằng AI_PRICE_CACHE_WRITE sau khi so với hoá đơn thật.
+    cacheWrite: Number(process.env.AI_PRICE_CACHE_WRITE
+      || (AI_PROVIDER === 'kimi' ? 0.95 : 1.25)),
     usdVnd: Number(process.env.AI_USD_VND || 26000), // tỉ giá quy đổi hiển thị
   },
   // Circuit breakers

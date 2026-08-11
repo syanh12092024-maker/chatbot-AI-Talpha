@@ -140,7 +140,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
 
   // ĐO TOKEN CỦA LƯỢT NÀY — reset mỗi lượt để tin không gọi AI (vd holding message)
   // không bị gán nhầm số token của lượt trước. classifier + closer cùng cộng vào đây.
-  state.lastUsage = { tin: 0, tout: 0, cread: 0, calls: 0 };
+  state.lastUsage = { tin: 0, tout: 0, cread: 0, cwrite: 0, calls: 0 };
   state.orderCreatedThisTurn = false; // cờ cho M09 — chỉ đúng trong phạm vi 1 lượt
 
   kb = kb || getKBForPage(pageId);
@@ -276,6 +276,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   if (cls.__usage) { // cộng token classifier vào lượt (fallback lỗi thì không có usage — không tốn tiền)
     state.lastUsage.tin += cls.__usage.tin; state.lastUsage.tout += cls.__usage.tout;
     state.lastUsage.cread += cls.__usage.cread; state.lastUsage.calls += cls.__usage.calls;
+    state.lastUsage.cwrite += cls.__usage.cwrite || 0;
   }
 
   if (cls.intent === 'spam' && cls.is_spam_conf >= 0.8) {

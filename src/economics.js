@@ -63,13 +63,16 @@ function inRange(r, { from, to, fromMs, toMs }) {
 
 const emptyBucket = () => ({
   replies: 0, measured: 0, orders: 0, leads: 0,
-  tin: 0, tout: 0, cread: 0, calls: 0,
+  tin: 0, tout: 0, cread: 0, cwrite: 0, calls: 0,
   fastReplies: 0, aiReplies: 0,
   firstAiReplies: 0, firstAiUsd: 0,
   usd: 0,
 });
 
-const usdOf = (b, P) => (b.tin * P.in + b.cread * P.cache + b.tout * P.out) / 1e6;
+// GHI cache tính riêng: đắt hơn ĐỌC cache nhiều lần. Bản ghi cũ không có `cwrite`
+// nên coi như 0 — số cũ vì thế là CẬN DƯỚI, đừng so thẳng với số mới.
+const usdOf = (b, P) =>
+  (b.tin * P.in + b.cread * P.cache + (b.cwrite || 0) * (P.cacheWrite ?? P.in) + b.tout * P.out) / 1e6;
 const r2 = (x, n = 4) => (x == null ? null : +x.toFixed(n));
 const pct = (a, b) => (b > 0 ? +((a / b) * 100).toFixed(1) : null);
 
@@ -172,12 +175,12 @@ export function economics({ from, to, fromMs, toMs, groupBy = ['page'], prices, 
 
     if (r.tin === undefined) continue; // tin trước 06/08/2026 — chưa bật đo token
     b.measured++; totals.measured++;
-    for (const k of ['tin', 'tout', 'cread', 'calls']) { b[k] += r[k] || 0; totals[k] += r[k] || 0; }
+    for (const k of ['tin', 'tout', 'cread', 'cwrite', 'calls']) { b[k] += r[k] || 0; totals[k] += r[k] || 0; }
 
     // LƯỢT AI ĐẦU TIÊN của hội thoại (bỏ qua Fast Lane vì nó tốn 0 token).
     if (fam === LANE.AI && !firstAiDone.has(conv)) {
       firstAiDone.add(conv);
-      const u = usdOf({ tin: r.tin || 0, tout: r.tout || 0, cread: r.cread || 0 }, P);
+      const u = usdOf({ tin: r.tin || 0, tout: r.tout || 0, cread: r.cread || 0, cwrite: r.cwrite || 0 }, P);
       b.firstAiReplies++; b.firstAiUsd += u;
       totals.firstAiReplies++; totals.firstAiUsd += u;
     }

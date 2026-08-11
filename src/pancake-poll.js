@@ -341,6 +341,16 @@ async function processConv(pageId, c, psid, custId, mark = '') {
     if (latest && pageSpokeSince(msgs, latest, pageId)) {
       noteYield(pageId, 'trước khi gửi');
       console.log(`[nhường] ${c.from?.name || psid} (page ${pageId}): Botcake trả lời trong lúc AI soạn → BỎ tin đã soạn`);
+      // GHI SỔ CẢ LƯỢT BỊ BỎ. Token đã trả rồi mới vứt tin đi, nên không ghi là
+      // khoản chi này TÀNG HÌNH: sổ báo rẻ hơn hoá đơn thật mà không ai truy được.
+      // Đo 11/08/2026: 19 lượt bị bỏ trong 2 tiếng, không lượt nào có bản ghi.
+      const uy = getState(psid).lastUsage || {};
+      try {
+        logAi(pageId, custId, 'yielded', {
+          name: c.from?.name || '', conv: c.id, lane: lane || 'AI', to: 'BOTCAKE',
+          tin: uy.tin || 0, tout: uy.tout || 0, cread: uy.cread || 0, cwrite: uy.cwrite || 0, calls: uy.calls || 0,
+        });
+      } catch { /* sổ AI không chặn đường gửi */ }
       return;
     }
   }
@@ -367,7 +377,7 @@ async function processConv(pageId, c, psid, custId, mark = '') {
     const u = getState(psid).lastUsage || {};
     // `lane` = tin do đâu soạn ('AI' hay 'tpl_price'/'tpl_greet'… của Fast Lane).
     // Đây là điều kiện cần để đo "tỷ lệ tin xử lý 0 token" và tách chi phí theo tầng.
-    try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id, lane: lane || 'AI', state: d.state, tin: u.tin || 0, tout: u.tout || 0, cread: u.cread || 0, calls: u.calls || 0 }); } catch { /* sổ AI không chặn */ }
+    try { logAi(pageId, custId, 'reply', { name: c.from?.name || '', text: reply.slice(0, 80), conv: c.id, lane: lane || 'AI', state: d.state, tin: u.tin || 0, tout: u.tout || 0, cread: u.cread || 0, cwrite: u.cwrite || 0, calls: u.calls || 0 }); } catch { /* sổ AI không chặn */ }
     // M05: ghi nhận AI vừa nói — để lượt sau phân biệt được "tin của mình" với "người thật gõ".
     try { noteAiSpoke(c.id, reply); } catch { /* trạng thái không chặn gửi tin */ }
     // (thẻ 'AI Chăm' đã gắn TRƯỚC khi soạn tin — xem M05 phía trên)
