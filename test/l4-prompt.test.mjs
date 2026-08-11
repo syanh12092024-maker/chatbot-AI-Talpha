@@ -187,7 +187,9 @@ test('③ Sticker/ảnh (`<div></div>`) không bị kết tội — 8,9% tin kh�
   }
 });
 
-test('③ lang chuẩn hoá đúng enum cũ (tl | en | other) cho câu giữ chân của handler', async () => {
+// `lang` không còn ai đọc từ 11/08/2026 (bỏ câu giữ chân khi bàn giao — xem handler.js),
+// nhưng classifier vẫn trả nó. Giữ test để enum không lặng lẽ đổi nếu sau này dùng lại.
+test('③ lang chuẩn hoá đúng enum cũ (tl | en | other)', async () => {
   assert.equal((await classify('magkano po ito')).lang, 'tl');
   assert.equal((await classify('how much is this')).lang, 'en');
   assert.equal((await classify('كم سعر هذا المنتج')).lang, 'other'); // Ả Rập → câu song ngữ

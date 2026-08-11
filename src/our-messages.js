@@ -16,7 +16,10 @@
 
 import { cleanText } from './text.js';
 
-// Câu giữ chân khi bàn giao sale (handler.js → holdingMessage)
+// Câu giữ chân khi bàn giao sale.
+// ⚠️ BOT KHÔNG CÒN GỬI BA CÂU NÀY (bỏ 11/08/2026, xem `handler.js` mục "KHÔNG CÒN CÂU
+// GIỮ CHÂN") — nhưng danh sách PHẢI GIỮ LẠI: lịch sử Pancake còn đầy tin cũ do chính bot
+// gửi, xoá đi là M05 gặp lại chúng và tưởng người thật đã tiếp quản, tự khoá hội thoại.
 export const HOLDING_MESSAGES = [
   'Sandali lang po, may makakausap kayong team member namin agad. 🙏',
   'One moment please — a team member will assist you shortly. 🙏',

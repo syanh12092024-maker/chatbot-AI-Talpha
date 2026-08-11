@@ -159,7 +159,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   if (kb.noData) {
     state.handoff = true; state.handoffReason = 'page_no_kb';
     toSaleQueue(state, 'Page chưa có kịch bản/KB — AI không thể tư vấn, cần người vào chat', 'no_kb');
-    return reply(psid, holdingMessage('en'), true);
+    return { reply: null, handoff: true };
   }
 
   // M07: hồ sơ khách (bền qua restart) — mọi tầng bên dưới đọc chung một hồ sơ này.
@@ -289,7 +289,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   if (cls.intent === 'complaint') {
     state.handoff = true; state.handoffReason = 'complaint';
     toSaleQueue(state, 'Khách KHIẾU NẠI — cần người xử lý gấp', 'complaint');
-    return reply(psid, holdingMessage(cls.lang), true);
+    return { reply: null, handoff: true };
   }
   // NGÔN NGỮ LẠ KHÔNG CÒN CHUYỂN NGƯỜI (nguyên tắc #1 & #7).
   // AI được dạy trả lời bằng ĐÚNG ngôn ngữ của khách (xem prompts.js), nên đẩy sang sale là
@@ -304,7 +304,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   if (!gate.ok) {
     state.handoff = true; state.handoffReason = gate.kind;
     toSaleQueue(state, gate.reason, gate.kind);
-    return reply(psid, holdingMessage(cls.lang), true);
+    return { reply: null, handoff: true };
   }
 
   // ── M07 · DỰNG NGỮ CẢNH: [hồ sơ ~150 token] + [6 tin gần nhất] ──────────────
@@ -462,8 +462,21 @@ function reply(psid, text, handoff, lane) {
   return { reply: text, handoff, lane: lane || '' };
 }
 
-function holdingMessage(lang) {
-  if (lang === 'tl') return 'Sandali lang po, may makakausap kayong team member namin agad. 🙏';
-  if (lang === 'en') return 'One moment please — a team member will assist you shortly. 🙏';
-  return 'Sandali lang po / one moment — a team member will assist you shortly. 🙏';
-}
+// ── KHÔNG CÒN CÂU GIỮ CHÂN KHI BÀN GIAO (bỏ 11/08/2026) ─────────────────────
+// Trước đây mọi cửa bàn giao đều gửi "One moment please — a team member will assist
+// you shortly. 🙏". Đã bỏ hẳn, bàn giao nay IM LẶNG hoàn toàn — cùng cách STOP_CONTACT
+// vẫn làm. Ba lý do, không cái nào là "tiết kiệm token" (câu đó tốn 0 token từ khi L4
+// bỏ lần gọi LLM của classifier — đo trên 20 câu của v2: 0 lượt gọi model, 0đ):
+//
+// ① Sale VẪN THẤY, không cần câu này. Pancake chỉ coi hội thoại là "đã xử lý" và cho
+//    trôi khỏi hàng chờ KHI BOT GỬI TIN — chính vì vậy mới phải có `pkMarkUnread()`
+//    sau mỗi tin AI (pancake-poll.js). Không gửi gì thì tin khách nằm nguyên đó chưa
+//    đọc, hội thoại không trôi đi đâu cả. Ba dấu vết của `toSaleQueue()` (sự kiện Sổ AI
+//    + thẻ Pancake + ghi chú nêu lý do) vẫn nguyên vẹn — nguyên tắc #13 không suy suyển.
+// ② Nó chen vào đúng lúc dở nhất. Ca thật (Maeann Ricardo, Kreain Nature PH-KSA): khách
+//    vừa nói "buy one get one free" — tức đang chốt — thì AI cắt ngang bằng câu giữ chân.
+// ③ Chính ba chuỗi này là thủ phạm số 1 khiến M05 tự khoá nhầm hội thoại: 50/198 ca nhận
+//    nhầm (25%) đến từ đúng chúng (xem `our-messages.js`). Bỏ nguồn phát là hết một lớp lỗi.
+//
+// `our-messages.js` VẪN GIỮ danh sách ba chuỗi — lịch sử Pancake còn đầy tin cũ, M05 phải
+// tiếp tục nhận ra chúng là tin của mình. Đừng xoá bên đó.
