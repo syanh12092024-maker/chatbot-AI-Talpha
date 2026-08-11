@@ -74,8 +74,45 @@ function noteYield(pageId, when) {
   if (when === 'trước khi gửi') y.send++; else y.before++;
   yieldCount.set(pageId, y);
 }
+const sentCount = new Map(); // pageId -> số tin AI GỬI ĐƯỢC (mẫu số của tỉ lệ vứt)
+function noteSent(pageId) { sentCount.set(pageId, (sentCount.get(pageId) || 0) + 1); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THỜI GIAN NHƯỜNG TỰ ĐIỀU CHỈNH THEO PAGE
+//
+// Đo 11/08/2026 sau khi bịt lỗ đo: 53% tiền token chảy vào những lượt AI soạn
+// xong rồi bị vứt vì Botcake trả lời trước — cứ 2 lượt AI thì 1 lượt ra rác.
+// Cửa `beforeAi` đã bắt ca Botcake nói TRƯỚC khi AI chạy; phần còn lại là
+// Botcake trả lời TRONG LÚC AI soạn (3–8 giây), cửa nào cũng không cứu được
+// vì token đã cam kết ngay khi gửi request.
+//
+// Chỉ còn một cách không đòi khoá tay: CHỜ LÂU HƠN trước khi tiêu tiền — nhưng
+// chỉ ở page mà Botcake thật sự hay cướp lời. Chờ đều tất cả các page là bắt
+// khách của những page Botcake im lặng phải đợi vô ích.
+//
+// Đánh đổi: page bị chỉnh chờ lâu hơn thì khách nhận tin chậm hơn vài giây.
+// Trần BOTCAKE_GRACE_MAX_MS để không bao giờ chờ quá lâu.
+// ─────────────────────────────────────────────────────────────────────────────
+const GRACE_MAX_MS = Number(process.env.BOTCAKE_GRACE_MAX_MS ?? 15000);
+const GRACE_TRIGGER = Number(process.env.BOTCAKE_GRACE_TRIGGER ?? 0.25); // vứt >25% thì nới
+const GRACE_MIN_SAMPLE = 6;   // dưới mức này thì chưa đủ cơ sở, giữ mặc định
+
+export function graceFor(pageId) {
+  if (BOTCAKE_GRACE_MS <= 0) return 0;
+  const y = (yieldCount.get(pageId) || {}).send || 0;
+  const n = y + (sentCount.get(pageId) || 0);
+  if (n < GRACE_MIN_SAMPLE) return BOTCAKE_GRACE_MS;
+  const rate = y / n;
+  if (rate < GRACE_TRIGGER) return BOTCAKE_GRACE_MS;
+  return Math.min(GRACE_MAX_MS, Math.round(BOTCAKE_GRACE_MS * (1 + rate * 2)));
+}
+
 export function botcakeYieldStats() {
-  return [...yieldCount.entries()].map(([page, v]) => ({ page, ...v, total: v.before + v.send }));
+  return [...yieldCount.entries()].map(([page, v]) => ({
+    page, ...v, total: v.before + v.send,
+    sent: sentCount.get(page) || 0,
+    graceMs: graceFor(page),
+  }));
 }
 
 // convId -> mốc last_customer_interactive_at đã xử lý (chống trả lời lặp)
@@ -220,7 +257,8 @@ async function pollPage(pageId) {
       // chưa tốn một token nào.
       // Ngủ ở ĐÂY chứ không phải trong processConv: nằm trong semaphore mà ngủ thì
       // 4 slot bị giữ suốt thời gian chờ, giờ cao điểm sẽ nghẽn oan.
-      if (BOTCAKE_GRACE_MS > 0) await sleep(BOTCAKE_GRACE_MS);
+      const graceMs = graceFor(pageId);   // tự nới ở page Botcake hay cướp lời
+      if (graceMs > 0) await sleep(graceMs);
       await _acquire();
       try { await processConv(pageId, c, psid, custId, mark); convFail.delete(c.id); }
       catch (e) { noteConvError(pageId, c, psid, custId, e); }
@@ -390,6 +428,7 @@ async function processConv(pageId, c, psid, custId, mark = '') {
   const r = await pkSendReply(pageId, c.id, custId, reply);
   noteSendResult(pageId, r.ok, r.error); // backoff: 2 lần lỗi liên tiếp → ngừng page 30 phút
   if (r.ok) {
+    noteSent(pageId); // mẫu số của tỉ lệ vứt — quyết định page này có phải chờ lâu hơn không
     try { incReply(pageId); incLead(pageId, custId); } catch { /* thống kê không chặn gửi tin */ }
     try { addAiConv(pageId, c.id); } catch { /* ghi hội thoại AI để khớp đơn */ }
     // Ghi kèm TOKEN THẬT của lượt (đo trong closer.js) — nguồn số liệu chi phí theo page.
