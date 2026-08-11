@@ -119,6 +119,44 @@ export function aiWaitFor(pageId) {
   return Math.min(AI_WAIT_MAX_MS, Math.round(AI_WAIT_MS * (1 + rate * 2)));
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CHỜ TỚI KHI BOTCAKE IM HẲN — chủ trương chủ dự án 11/08/2026:
+// "bao giờ bot không gửi nữa thì mới gọi chat bot AI trả lời".
+//
+// Bản trước NGỦ MỘT MẠCH rồi soi đúng một lần ở cuối. Hai chỗ hỏng:
+//   · Botcake nói ở giây thứ 20 → lọt qua cửa, AI vẫn chạy rồi tin bị vứt.
+//   · Botcake nói ở giây thứ 3  → vẫn phải ngủ hết mới biết, giữ oan 1 slot
+//     semaphore và làm khách chờ vô ích.
+// Đo 11/08: 50% tiền token chảy vào đúng nhóm tin bị vứt này.
+//
+// Nay SOI LIÊN TỤC mỗi AI_SETTLE_POLL_MS:
+//   · thấy page nói  → BỎ LƯỢT NGAY, chưa tiêu đồng nào, trả slot sớm.
+//   · im đủ quietMs  → Botcake coi như đã xong, giờ mới tới lượt AI.
+//
+// Vì thoát sớm khi Botcake nói, thời gian chờ TRUNG BÌNH còn ngắn hơn bản ngủ
+// một mạch — dù ngưỡng im lặng đặt cao hơn.
+// ─────────────────────────────────────────────────────────────────────────────
+const AI_SETTLE_POLL_MS = Number(process.env.AI_SETTLE_POLL_MS ?? 2500);
+
+/**
+ * @returns {Promise<{spoke:boolean, waitedMs:number}>} spoke=true ⇒ page đã nói, AI phải im.
+ */
+export async function waitBotcakeSettled(pageId, conv, custId, baseMsgs, quietMs, deps = {}) {
+  const getMsgs = deps.getMessages || pkGetMessages;
+  const nap = deps.sleep || sleep;
+  const now = deps.now || (() => Date.now());
+  const t0 = now();
+  if (quietMs <= 0) return { spoke: false, waitedMs: 0 };
+
+  while (now() - t0 < quietMs) {
+    await nap(Math.min(AI_SETTLE_POLL_MS, quietMs - (now() - t0)));
+    const latest = await getMsgs(pageId, conv, custId).catch(() => null);
+    if (!latest) continue;                       // lỗi mạng: coi như chưa biết, soi tiếp
+    if (pageSpokeSince(baseMsgs, latest, pageId)) return { spoke: true, waitedMs: now() - t0 };
+  }
+  return { spoke: false, waitedMs: now() - t0 };
+}
+
 export function botcakeYieldStats() {
   return [...yieldCount.entries()].map(([page, v]) => ({
     page, ...v, total: v.before + v.send,
@@ -362,16 +400,13 @@ async function processConv(pageId, c, psid, custId, mark = '') {
   const res = await handleIncoming({
     psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '',
     beforeAi: async () => {
-      // ② CHỜ RIÊNG CỦA AI — Fast Lane đã bó tay, từ đây mới là tầng tốn tiền.
-      // Ngủ thêm rồi mới soi: phần lớn ca "Botcake trả lời trong lúc AI soạn"
-      // rơi vào khoảng này, bắt được ở đây là KHÔNG TIÊU đồng nào; để lọt xuống
-      // dưới thì token đã cam kết, chỉ còn nước vứt tin đã soạn.
-      const waitMs = aiWaitFor(pageId);
-      if (waitMs > 0) await sleep(waitMs);
-      const latest = await pkGetMessages(pageId, c.id, custId).catch(() => null);
-      if (latest && pageSpokeSince(msgs, latest, pageId)) {
+      // ② CHỜ TỚI KHI BOTCAKE IM HẲN — Fast Lane đã bó tay, từ đây mới tốn tiền.
+      // Soi liên tục thay vì ngủ một mạch: Botcake nói lúc nào cũng bắt được, và
+      // bắt được là bỏ lượt NGAY, chưa tiêu đồng nào lẫn không giữ oan slot.
+      const r = await waitBotcakeSettled(pageId, c.id, custId, msgs, aiWaitFor(pageId));
+      if (r.spoke) {
         noteYield(pageId, 'trước khi gọi AI');
-        return 'page đã trả lời (Botcake/sale) trong lúc chờ';
+        return `page đã trả lời (Botcake/sale) sau ${Math.round(r.waitedMs / 1000)}s chờ`;
       }
       return null;
     },
