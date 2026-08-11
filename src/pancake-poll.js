@@ -78,40 +78,52 @@ const sentCount = new Map(); // pageId -> số tin AI GỬI ĐƯỢC (mẫu số
 function noteSent(pageId) { sentCount.set(pageId, (sentCount.get(pageId) || 0) + 1); }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THỜI GIAN NHƯỜNG TỰ ĐIỀU CHỈNH THEO PAGE
+// HAI MỨC CHỜ KHÁC NHAU — theo đúng thứ tự ưu tiên: Botcake → Fast Lane → AI
 //
 // Đo 11/08/2026 sau khi bịt lỗ đo: 53% tiền token chảy vào những lượt AI soạn
-// xong rồi bị vứt vì Botcake trả lời trước — cứ 2 lượt AI thì 1 lượt ra rác.
-// Cửa `beforeAi` đã bắt ca Botcake nói TRƯỚC khi AI chạy; phần còn lại là
-// Botcake trả lời TRONG LÚC AI soạn (3–8 giây), cửa nào cũng không cứu được
-// vì token đã cam kết ngay khi gửi request.
+// xong rồi bị vứt vì Botcake trả lời trước. Cứ 2 lượt AI thì 1 lượt ra rác.
 //
-// Chỉ còn một cách không đòi khoá tay: CHỜ LÂU HƠN trước khi tiêu tiền — nhưng
-// chỉ ở page mà Botcake thật sự hay cướp lời. Chờ đều tất cả các page là bắt
-// khách của những page Botcake im lặng phải đợi vô ích.
+// ① CHỜ CHUNG (BOTCAKE_GRACE_MS, 6s) — áp cho mọi lượt, đủ để Botcake kịp trả
+//    từ khoá. Fast Lane hưởng luôn mốc này và trả lời ngay sau đó: nó tốn 0
+//    token nên KHÔNG có lý do gì bắt nó chờ thêm, chờ là thiệt khách vô ích.
 //
-// Đánh đổi: page bị chỉnh chờ lâu hơn thì khách nhận tin chậm hơn vài giây.
-// Trần BOTCAKE_GRACE_MAX_MS để không bao giờ chờ quá lâu.
+// ② CHỜ RIÊNG CỦA AI (AI_WAIT_MS) — chỉ áp khi Fast Lane đã bó tay và sắp gọi
+//    model. Đây là tầng DUY NHẤT tốn tiền, nên là tầng duy nhất đáng bắt chờ.
+//    Chờ xong soi lại hội thoại lần nữa: page đã nói thì bỏ lượt, CHƯA TIÊU
+//    ĐỒNG NÀO. Cửa "vứt tin đã soạn" chỉ còn phải lo khoảng 3–8 giây model
+//    thực sự đang viết.
+//
+// Mức chờ ② TỰ ĐIỀU CHỈNH theo page: page nào Botcake hay cướp lời thì nới
+// dần, page nào Botcake im thì giữ mức nền. Trần AI_WAIT_MAX_MS.
+//
+// Đánh đổi: chỉ những khách phải nhờ tới AI mới chờ lâu hơn. Khách hỏi giá /
+// vận chuyển / cách đặt vẫn được Fast Lane trả nhanh như cũ.
+//
+// LƯU Ý VẬN HÀNH: mức chờ ② nằm TRONG semaphore (giữ 1 trong CONV_CONCURRENCY
+// slot suốt lúc ngủ). Ở lưu lượng hiện tại thừa sức, nhưng nếu mở lại 39 page
+// và thấy nghẽn thì nâng CONV_CONCURRENCY chứ đừng hạ mức chờ.
 // ─────────────────────────────────────────────────────────────────────────────
-const GRACE_MAX_MS = Number(process.env.BOTCAKE_GRACE_MAX_MS ?? 15000);
-const GRACE_TRIGGER = Number(process.env.BOTCAKE_GRACE_TRIGGER ?? 0.25); // vứt >25% thì nới
-const GRACE_MIN_SAMPLE = 6;   // dưới mức này thì chưa đủ cơ sở, giữ mặc định
+const AI_WAIT_MS = Number(process.env.AI_WAIT_MS ?? 8000);
+const AI_WAIT_MAX_MS = Number(process.env.AI_WAIT_MAX_MS ?? 20000);
+const AI_WAIT_TRIGGER = Number(process.env.AI_WAIT_TRIGGER ?? 0.25); // vứt >25% thì nới
+const AI_WAIT_MIN_SAMPLE = 6;  // dưới mức này chưa đủ cơ sở, giữ mức nền
 
-export function graceFor(pageId) {
-  if (BOTCAKE_GRACE_MS <= 0) return 0;
+/** Mức chờ RIÊNG của AI cho page này (ms). Fast Lane không dùng hàm này. */
+export function aiWaitFor(pageId) {
+  if (AI_WAIT_MS <= 0) return 0;
   const y = (yieldCount.get(pageId) || {}).send || 0;
   const n = y + (sentCount.get(pageId) || 0);
-  if (n < GRACE_MIN_SAMPLE) return BOTCAKE_GRACE_MS;
+  if (n < AI_WAIT_MIN_SAMPLE) return AI_WAIT_MS;
   const rate = y / n;
-  if (rate < GRACE_TRIGGER) return BOTCAKE_GRACE_MS;
-  return Math.min(GRACE_MAX_MS, Math.round(BOTCAKE_GRACE_MS * (1 + rate * 2)));
+  if (rate < AI_WAIT_TRIGGER) return AI_WAIT_MS;
+  return Math.min(AI_WAIT_MAX_MS, Math.round(AI_WAIT_MS * (1 + rate * 2)));
 }
 
 export function botcakeYieldStats() {
   return [...yieldCount.entries()].map(([page, v]) => ({
     page, ...v, total: v.before + v.send,
     sent: sentCount.get(page) || 0,
-    graceMs: graceFor(page),
+    aiWaitMs: aiWaitFor(page),
   }));
 }
 
@@ -257,8 +269,8 @@ async function pollPage(pageId) {
       // chưa tốn một token nào.
       // Ngủ ở ĐÂY chứ không phải trong processConv: nằm trong semaphore mà ngủ thì
       // 4 slot bị giữ suốt thời gian chờ, giờ cao điểm sẽ nghẽn oan.
-      const graceMs = graceFor(pageId);   // tự nới ở page Botcake hay cướp lời
-      if (graceMs > 0) await sleep(graceMs);
+      // ① chờ chung — Botcake kịp trả từ khoá; Fast Lane hưởng luôn mốc này.
+      if (BOTCAKE_GRACE_MS > 0) await sleep(BOTCAKE_GRACE_MS);
       await _acquire();
       try { await processConv(pageId, c, psid, custId, mark); convFail.delete(c.id); }
       catch (e) { noteConvError(pageId, c, psid, custId, e); }
@@ -350,6 +362,12 @@ async function processConv(pageId, c, psid, custId, mark = '') {
   const res = await handleIncoming({
     psid, text, pageId, pkConvId: c.id, pkCustId: custId, history: msgs, custName: c.from?.name || '',
     beforeAi: async () => {
+      // ② CHỜ RIÊNG CỦA AI — Fast Lane đã bó tay, từ đây mới là tầng tốn tiền.
+      // Ngủ thêm rồi mới soi: phần lớn ca "Botcake trả lời trong lúc AI soạn"
+      // rơi vào khoảng này, bắt được ở đây là KHÔNG TIÊU đồng nào; để lọt xuống
+      // dưới thì token đã cam kết, chỉ còn nước vứt tin đã soạn.
+      const waitMs = aiWaitFor(pageId);
+      if (waitMs > 0) await sleep(waitMs);
       const latest = await pkGetMessages(pageId, c.id, custId).catch(() => null);
       if (latest && pageSpokeSince(msgs, latest, pageId)) {
         noteYield(pageId, 'trước khi gọi AI');
