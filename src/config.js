@@ -10,8 +10,34 @@ function resolveKbPath(p) {
   return path.isAbsolute(p) ? p : path.resolve(projectRoot, p);
 }
 
+// NHÀ CUNG CẤP AI: 'anthropic' (mặc định) hoặc 'kimi' (Moonshot — endpoint tương thích Anthropic).
+// Thêm Kimi vì tài khoản Anthropic hết credit 06/08/2026 làm bot đứng ~3 tiếng; giữ dạng công tắc
+// để đổi qua lại chỉ bằng .env, không sửa code.
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'anthropic').toLowerCase();
+
+// Chọn model an toàn theo nhà cung cấp. BẪY vận hành có thật: đổi AI_PROVIDER=kimi mà quên sửa
+// MODEL_CLOSER=claude-... trong .env → Moonshot trả 404 "model not found" và bot đứng im.
+// Model lệch nhà cung cấp thì BỎ QUA (kèm cảnh báo) và dùng mặc định đúng, thay vì chết.
+function pickModel(envVal) {
+  const def = AI_PROVIDER === 'kimi' ? 'kimi-k2.6' : 'claude-haiku-4-5';
+  if (!envVal) return def;
+  const mismatch = (AI_PROVIDER === 'kimi' && envVal.startsWith('claude-'))
+    || (AI_PROVIDER !== 'kimi' && envVal.startsWith('kimi-'));
+  if (mismatch) {
+    console.warn(`[config] MODEL "${envVal}" không thuộc nhà cung cấp "${AI_PROVIDER}" → dùng ${def}. Sửa MODEL_CLOSER/MODEL_CLASSIFIER trong .env cho khớp.`);
+    return def;
+  }
+  return envVal;
+}
+
 export const config = {
+  aiProvider: AI_PROVIDER,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+  kimi: {
+    apiKey: process.env.KIMI_API_KEY || '',
+    // Bản QUỐC TẾ. Key .cn không dùng được ở đây và ngược lại.
+    baseUrl: process.env.KIMI_BASE_URL || 'https://api.moonshot.ai/anthropic',
+  },
   pageAccessToken: process.env.PAGE_ACCESS_TOKEN,
   metaSystemToken: process.env.META_SYSTEM_TOKEN || '', // System User token (Business Manager) — đa-page
   metaBusinessIds: (process.env.META_BUSINESS_IDS || '').split(',').map((s) => s.trim()).filter(Boolean), // BM id để liệt kê owned_pages (deploy không có tokens.json)
@@ -27,14 +53,18 @@ export const config = {
     products: 'Sản phẩm theo Page', // fallback: tab gộp cũ nếu chưa tách thị trường
     policies: 'Chính sách', faq: 'FAQ', obj: 'Xử lý phản đối',
   },
-  modelCloser: process.env.MODEL_CLOSER || 'claude-haiku-4-5', // Haiku toàn bộ — tiết kiệm chi phí
-  modelClassifier: process.env.MODEL_CLASSIFIER || 'claude-haiku-4-5',
+  // Model mặc định theo nhà cung cấp (MODEL_CLOSER/MODEL_CLASSIFIER trong .env vẫn đè được).
+  modelCloser: pickModel(process.env.MODEL_CLOSER),
+  modelClassifier: pickModel(process.env.MODEL_CLASSIFIER),
   port: Number(process.env.PORT || 3100),
   pancake: {
     apiKey: process.env.PANCAKE_API_KEY || '',
     shopId: process.env.PANCAKE_SHOP_ID || '',
   },
-  pancakeToken: process.env.PANCAKE_TOKEN || '',       // JWT pages.fm — bot nhận/gửi tin qua Pancake
+  pancakeToken: process.env.PANCAKE_TOKEN || '',       // JWT pages.fm — token CHÍNH
+  // Token PHỤ (failover đa tài khoản): mỗi tài khoản Pancake nắm quyền 1 nhóm page khác nhau.
+  // Page nào token chính dính lỗi quyền/gói (105/121) → bot tự thử lần lượt token phụ.
+  pancakeTokensExtra: (process.env.PANCAKE_TOKENS_EXTRA || '').split(',').map((s) => s.trim()).filter(Boolean),
   pancakePollMs: Number(process.env.PANCAKE_POLL_MS || 6000), // chu kỳ hỏi tin mới
   // Đăng nhập dashboard (Basic Auth) — BẮT BUỘC đặt khi chạy trên IP công khai (VPS).
   adminUser: process.env.ADMIN_USER || '',
@@ -44,8 +74,38 @@ export const config = {
   // Né hội thoại đã gán cho nhân viên. MẶC ĐỊNH TẮT vì Pancake TỰ ĐỘNG gán hội thoại cho NV
   // → bật sẽ làm AI im gần hết. Bật bằng RESPECT_ASSIGNEE=1 nếu sale thực sự chat tay.
   respectAssignee: process.env.RESPECT_ASSIGNEE === '1',
+  // ĐÁNH DẤU CHƯA ĐỌC sau mỗi tin AI gửi (cơ chế Botcake — sale yêu cầu 07/08/2026): hội thoại
+  // AI đang chăm KHÔNG trôi khỏi hàng chờ, sale check được AI chat đúng chưa. MẶC ĐỊNH BẬT.
+  // Tắt bằng PK_MARK_UNREAD=0 nếu sale ngợp chấm đỏ.
+  markUnread: process.env.PK_MARK_UNREAD !== '0',
+  // TỰ GẮN THẺ Pancake khi AI hành động (tên thẻ phải TỒN TẠI trên page; trống = tắt).
+  pkTags: {
+    ai: process.env.PK_TAG_AI ?? 'AI Chăm',             // AI đang trực tiếp nhắn với khách
+    order: process.env.PK_TAG_ORDER ?? 'AI Chốt',       // AI chốt đơn — sale vào kiểm tra hội thoại + đơn rồi fix
+    handoff: process.env.PK_TAG_HANDOFF ?? 'AI back Sale', // AI cần sale can thiệp — thấy thẻ là vào hỗ trợ
+  },
+  // ĐƠN GIÁ token (USD / 1 TRIỆU token) để quy tiền trên dashboard — mặc định theo nhà cung cấp,
+  // đè bằng env khi hãng đổi giá. Nguồn: platform.kimi.ai/docs/pricing (08/2026) & giá Claude公bố.
+  //   kimi-k2.6:        vào $0.95 · trúng cache $0.16 · ra $4.00
+  //   claude-haiku-4-5: vào $1.00 · đọc cache $0.10 · ra $5.00
+  aiPrices: {
+    in: Number(process.env.AI_PRICE_IN || (AI_PROVIDER === 'kimi' ? 0.95 : 1.0)),
+    cache: Number(process.env.AI_PRICE_CACHE || (AI_PROVIDER === 'kimi' ? 0.16 : 0.1)),
+    out: Number(process.env.AI_PRICE_OUT || (AI_PROVIDER === 'kimi' ? 4.0 : 5.0)),
+    // GHI cache. Trước 11/08/2026 khoản này KHÔNG được đếm và KHÔNG được tính giá,
+    // nên mọi con số chi phí trước đó là CẬN DƯỚI — đó là lý do sổ nói $0,27 trong
+    // khi hoá đơn thật $1.
+    // ⚠️ Đơn giá dưới đây CHƯA ĐỐI CHIẾU với hoá đơn: Anthropic công bố ghi cache =
+    // 1,25× giá vào; Moonshot không nêu rõ nên tạm lấy bằng giá vào (cận dưới).
+    // Hiệu chỉnh bằng AI_PRICE_CACHE_WRITE sau khi so với hoá đơn thật.
+    cacheWrite: Number(process.env.AI_PRICE_CACHE_WRITE
+      || (AI_PROVIDER === 'kimi' ? 0.95 : 1.25)),
+    usdVnd: Number(process.env.AI_USD_VND || 26000), // tỉ giá quy đổi hiển thị
+  },
   // Circuit breakers
-  maxAiTurnsBeforeHandoff: 6, // không tự trả quá N lượt/khách khi chưa có người duyệt
+  // Trần lượt AI/khách (đếm BỀN theo Sổ AI 24h, sống sót qua restart). Chỉnh bằng MAX_AI_TURNS.
+  // 06/08/2026: chủ dự án hạ 5 → 4 để tiết kiệm token.
+  maxAiTurnsBeforeHandoff: Number(process.env.MAX_AI_TURNS || 4),
   maxToolIterations: 5,       // giới hạn vòng lặp tool-use mỗi lượt
   // ẢNH: khách thích xem nhiều ảnh → chốt tốt hơn, NHƯNG gửi dồn dập dễ bị Meta đánh spam (#2022).
   // Cách chạy an toàn: đặt IMG_PILOT_PAGES = vài page thử nghiệm → chỉ các page đó gửi imgMaxPerTurn,
@@ -59,7 +119,11 @@ export const config = {
 
 export function assertConfig() {
   const missing = [];
-  if (!config.anthropicApiKey) missing.push('ANTHROPIC_API_KEY');
+  if (config.aiProvider === 'kimi') {
+    if (!config.kimi.apiKey) missing.push('KIMI_API_KEY');
+  } else if (!config.anthropicApiKey) {
+    missing.push('ANTHROPIC_API_KEY');
+  }
   if (missing.length) {
     throw new Error(`Thiếu biến môi trường: ${missing.join(', ')} (xem .env.example)`);
   }

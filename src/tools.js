@@ -1,10 +1,12 @@
-import { createOrder, pkSendImage, pkAddNote } from './pancake.js';
+import { createOrder, pkSendImage, pkAddNote, pkTagByName } from './pancake.js';
 import { sendImage } from './messenger.js';
 import { productImages, productTiers } from './kb.js';
 import { incOrder } from './stats.js';
 import { logAi } from './ai-log.js';
 import { createPancakeOrder, ordersEnabled, conversationHasOrder, markConversationOrdered } from './pancake-orders.js';
 import { config } from './config.js';
+import { markClosing } from './conv-owner.js';
+import { recordClosedOrder } from './order-bridge.js'; // M14 · ghi chú chuẩn + hàng chờ tạo đơn
 
 // Định nghĩa tool (function calling) cho closer.
 export const toolDefs = [
@@ -17,15 +19,9 @@ export const toolDefs = [
       required: [],
     },
   },
-  {
-    name: 'score_lead',
-    description: 'Chấm điểm chất lượng lead (0-10) trước khi đẩy telesale. Truyền các tín hiệu quan sát được.',
-    input_schema: {
-      type: 'object',
-      properties: { signals: { type: 'string', description: 'Mô tả tín hiệu: nhu cầu rõ?, địa chỉ cụ thể?, do dự?...' } },
-      required: ['signals'],
-    },
-  },
+  // `score_lead` đã BỎ (11/08/2026 — M08 §3). Nó bắt model tốn một vòng tool chỉ để chạy
+  // một heuristic regex, và điểm trả ra (`state.leadScore`) KHÔNG nơi nào đọc. Chấm điểm lead
+  // nay làm bằng luật ở classifier (`lead_quality`) + M11 của Luồng 2 — 0 token, không gãy.
   {
     name: 'create_draft_order',
     description: 'Tạo đơn nháp trong Pancake. CHỈ gọi sau khi khách xác nhận COD và đã có địa chỉ cụ thể.',
@@ -39,9 +35,10 @@ export const toolDefs = [
         product_id: { type: 'string', description: 'Bỏ trống — page chỉ có 1 SP, tool tự điền.' },
         variant: { type: 'string', description: 'Gói/combo khách chọn (vd "combo 2"), nếu có.' },
         qty: { type: 'integer' },
+        total_price: { type: 'number', description: 'TỔNG tiền COD khách phải trả theo đúng gói đã chốt (số, nội tệ — vd 99 nghĩa là 99 SAR/AED). LẤY TỪ bảng giá KB, KHÔNG tự bịa.' },
         cod_confirmed: { type: 'boolean', description: 'Khách đã xác nhận thanh toán khi nhận hàng' },
       },
-      required: ['name', 'phone', 'address', 'city', 'qty', 'cod_confirmed'],
+      required: ['name', 'phone', 'address', 'city', 'qty', 'total_price', 'cod_confirmed'],
     },
   },
   {
@@ -52,8 +49,9 @@ export const toolDefs = [
       properties: {
         product_id: { type: 'string', description: 'Bỏ trống — page chỉ có 1 SP, tool tự lấy.' },
         category: { type: 'string', description: 'Loại ảnh muốn gửi (khớp theo nhãn): vd "feedback", "thành phần", "công dụng". Bỏ trống = ảnh sản phẩm chính.' },
+        caption: { type: 'string', description: 'BẮT BUỘC — lời dẫn NGẮN (1 câu) gửi KÈM ảnh, viết bằng ĐÚNG ngôn ngữ khách. VD: "Here po ang actual photos ng product 😊" / "هذه صور المنتج الحقيقية". TUYỆT ĐỐI không gửi ảnh trơ không lời nào.' },
       },
-      required: [],
+      required: ['caption'],
     },
   },
   {
@@ -90,17 +88,22 @@ function imageLimit(pageId) {
 
 // Gửi 1 ảnh + thử lại khi lỗi. Pancake hay trả "invalid_upload_fb_attachments_result" chập chờn
 // (cùng 1 URL lúc được lúc không) — thử lại 1 lần cứu được phần lớn ca này.
-async function sendImageWithRetry(state, viaPancake, url) {
+// caption chỉ gắn vào ảnh ĐẦU TIÊN của lượt — lặp lại cùng một câu dưới mỗi tấm trông như spam.
+async function sendImageWithRetry(state, viaPancake, url, caption = '') {
   let lastErr = '';
   for (let attempt = 0; attempt <= config.imgRetry; attempt++) {
     if (attempt) await sleep(1200);
     if (viaPancake) {
-      const r = await pkSendImage(state.pageId, state.pkConvId, state.pkCustId, url);
-      if (r.ok) return { ok: true };
+      const r = await pkSendImage(state.pageId, state.pkConvId, state.pkCustId, url, caption);
+      // ĐẾM TIN CỦA CHÍNH MÌNH: ảnh này đi ra NGAY BÂY GIỜ, giữa lúc model còn
+      // đang viết. Cửa nhường Botcake soi hội thoại sau đó sẽ thấy tin mới từ
+      // page — không trừ số này ra thì nó tưởng Botcake vừa nói rồi vứt phần
+      // chữ của chính ta, khách nhận ảnh trơ (nguyên tắc #2). Xem pancake-poll.
+      if (r.ok) { state.selfSent = (state.selfSent || 0) + 1; return { ok: true }; }
       lastErr = r.error;
     } else {
       const ok = await sendImage(state.psid, url, state.pageId);
-      if (ok) return { ok: true };
+      if (ok) { state.selfSent = (state.selfSent || 0) + 1; return { ok: true }; }
       lastErr = 'Messenger từ chối gửi ảnh';
     }
   }
@@ -123,17 +126,6 @@ export async function executeTool(name, input, ctx) {
           }),
         };
       }
-      case 'score_lead': {
-        // Heuristic đơn giản — thay bằng model/logic riêng nếu cần.
-        const s = (input.signals || '').toLowerCase();
-        let score = 5;
-        if (/(địa chỉ|عنوان|address)/.test(s)) score += 2;
-        if (/(xác nhận|chốt|أكيد|نعم|yes|confirm)/.test(s)) score += 2;
-        if (/(do dự|hỏi cho vui|chưa chắc|maybe|later)/.test(s)) score -= 3;
-        score = Math.max(0, Math.min(10, score));
-        state.leadScore = score;
-        return { content: JSON.stringify({ lead_score: score }) };
-      }
       case 'create_draft_order': {
         if (!input.cod_confirmed) {
           return { content: 'Từ chối tạo đơn: khách chưa xác nhận COD. Hãy hỏi lại cam kết thanh toán khi nhận.', isError: true };
@@ -152,7 +144,7 @@ export async function executeTool(name, input, ctx) {
         }
         // Page 1 SP: tự điền sản phẩm nếu AI không truyền mã (không bắt khách chọn).
         const prod = findProduct(kb, input.product_id);
-        if (prod) { input.product_id = prod.id; input.product_name = prod.name; }
+        if (prod) { input.product_id = prod.id; input.product_name = prod.name; input.currency = prod.currency || ''; }
         // TẠO ĐƠN THẬT trong Pancake — chỉ khi BẬT công tắc (config.autoCreateOrder).
         // ĐANG TẮT theo yêu cầu: AI vẫn chốt & ghi nhận, nhân viên tạo đơn thủ công.
         let dedup = false;
@@ -164,18 +156,25 @@ export async function executeTool(name, input, ctx) {
           await createOrder(input, ctx); // chỉ ghi nhận nội bộ, KHÔNG tạo đơn Pancake
         }
         state.closed = true;
+        // Cờ cho M09 (outbound-guard): lượt NÀY đã chốt đơn thành công → được phép
+        // tóm tắt đơn (đọc lại SĐT/địa chỉ đúng 1 lần) và được nhắc tới đơn hàng.
+        state.orderCreatedThisTurn = true;
+        // M05: chuyển hội thoại sang CLOSING — sale tiếp quản, AI + Botcake khoá.
+        try { if (state.pkConvId) markClosing(state.pkConvId, `AI chốt đơn: ${input.name || '?'} · ${input.qty || 1} sp`); } catch { /* không chặn chốt đơn */ }
         try { markConversationOrdered(state.pkConvId); } catch { /* nhớ ngay để không tạo lần 2 */ }
+        // Gắn thẻ "Mua hàng" trên Pancake để sale lọc nhanh đơn AI chốt.
+        if (config.pkTags.order) {
+          pkTagByName(state.pageId, state.pkConvId, config.pkTags.order)
+            .then((t) => { if (!t.ok) console.warn(`[tag] ${state.pageId}: ${t.error} (chốt đơn)`); })
+            .catch(() => {});
+        }
         if (!dedup) { // hội thoại đã có đơn → không đếm lại
           try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
-          try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty }); } catch { /* sổ AI không chặn */ }
-          // Báo SALE ngay trong Pancake: ghi chú tóm tắt đơn vào hồ sơ khách.
-          const noteLines = [
-            '🤖 AI ĐÃ CHỐT ĐƠN — cần sale xác nhận',
-            `👤 ${input.name || '?'} · ☎ ${input.phone || '?'}`,
-            `📍 ${[input.address, input.city].filter(Boolean).join(', ') || '?'}`,
-            `📦 SL ${input.qty || 1}${input.variant ? ' · ' + input.variant : ''} · 💵 COD (khách đã xác nhận)`,
-          ];
-          try { await pkAddNote(state.pageId, state.pkCustId, noteLines.join('\n')); } catch { /* ghi chú không chặn */ }
+          try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty, conv: state.pkConvId || '' }); } catch { /* sổ AI không chặn */ }
+          // M14 · Order Bridge: ghi chú Pancake theo MẪU CHUẨN máy đọc được + đưa vào hàng chờ
+          // "chờ tạo đơn" để sale bấm 1 nút trên dashboard. Thay cho ghi chú tự do trước đây —
+          // ghi chú tự do buộc sale đọc rồi gõ lại từng trường sang form Pancake.
+          try { await recordClosedOrder(state.pageId, state.pkCustId, input, state.pkConvId, { kb, created: config.autoCreateOrder }); } catch (e) { console.warn('[order-bridge] ghi nhận đơn lỗi:', e.message); }
         }
         // KHÔNG trả mã đơn cho khách. AI chỉ xác nhận đã nhận thông tin, nhân viên sẽ liên hệ.
         return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã ghi nhận đủ thông tin đơn. Báo khách "đã nhận đơn, nhân viên sẽ liên hệ xác nhận & giao 2-5 ngày". TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn cho khách.' }) };
@@ -206,12 +205,20 @@ export async function executeTool(name, input, ctx) {
         // Gửi cùng kênh với tin chữ: có ngữ cảnh Pancake → gửi qua Pancake; nếu không → Facebook Messenger.
         const viaPancake = state.pkConvId && state.pkCustId;
         const toSend = queue.slice(0, imageLimit(state.pageId));
+        // LỜI DẪN KÈM ẢNH: khách KHÔNG được nhận ảnh trơ. Đo trên Sổ AI: 2/3 số lần gửi ảnh
+        // trước đây là ảnh trần hoặc chỉ kèm "..." — AI gọi tool xong coi như hết việc, không nói gì.
+        const caption = String(input.caption || '').trim();
+        // Lời dẫn bám theo tấm ảnh ĐẦU TIÊN GỬI THÀNH CÔNG, không phải tấm đầu danh sách:
+        // Pancake trả lỗi chập chờn khá thường (vd 1/2 ảnh) — nếu tấm mang caption hỏng thì
+        // caption mất theo, khách lại nhận ảnh trơ đúng như trước khi sửa.
+        let pendingCaption = caption;
         let sent = 0, lastErr = '';
         for (const [i, im] of toSend.entries()) {
           if (i) await sleep(config.imgGapMs); // giãn cách giữa các ảnh cho tự nhiên
-          const r = await sendImageWithRetry(state, viaPancake, im.url);
-          if (r.ok) { sent++; seen.add(im.url); } else lastErr = r.error;
+          const r = await sendImageWithRetry(state, viaPancake, im.url, pendingCaption);
+          if (r.ok) { sent++; seen.add(im.url); pendingCaption = ''; } else lastErr = r.error;
         }
+        if (sent) state.sentImageTurn = true; // closer dùng để BẮT BUỘC có tin chữ khép lượt
         console.log(`[img] page ${state.pageId} ${viaPancake ? 'Pancake' : 'Messenger'} gửi ${sent}/${toSend.length} ảnh (${input.category || 'sản phẩm'})${sent ? ' ✓' : ' ✗ ' + lastErr}`);
         if (!sent) {
           // Lỗi phía FB/Pancake thường CHẬP CHỜN → cho phép AI thử lại ở lượt sau, đừng chặn vĩnh viễn.
@@ -219,12 +226,17 @@ export async function executeTool(name, input, ctx) {
         }
         try { logAi(state.pageId, state.pkCustId, 'image', { cat: input.category || 'sản phẩm', n: sent }); } catch { /* sổ AI không chặn */ }
         const left = queue.length - toSend.length;
-        return { content: `Đã gửi ${sent} ảnh (${input.category || 'sản phẩm'}) cho khách qua ${viaPancake ? 'Pancake' : 'Messenger'}.${left > 0 ? ` Còn ${left} ảnh khác chưa gửi — có thể gửi thêm ở lượt sau khi khách quan tâm.` : ''}` };
+        return { content: `Đã gửi ${sent} ảnh (${input.category || 'sản phẩm'}) cho khách qua ${viaPancake ? 'Pancake' : 'Messenger'}.${caption ? '' : ' ⚠️ Lần này BẠN QUÊN caption nên ảnh gửi đi trần trụi — lần sau phải truyền caption.'} BÂY GIỜ HÃY VIẾT TIN CHỮ cho khách (tư vấn tiếp / hỏi chốt đơn) — TUYỆT ĐỐI không kết thúc lượt mà chỉ có ảnh.${left > 0 ? ` Còn ${left} ảnh khác chưa gửi — có thể gửi thêm ở lượt sau.` : ''}` };
       }
       case 'handoff_human': {
         state.handoff = true;
         state.handoffReason = input.reason || '';
-        try { logAi(state.pageId, state.pkCustId, 'handoff', { reason: input.reason || '' }); } catch { /* sổ AI không chặn */ }
+        try { logAi(state.pageId, state.pkCustId, 'handoff', { reason: input.reason || '', kind: 'ai', conv: state.pkConvId || '' }); } catch { /* sổ AI không chặn */ }
+        if (config.pkTags.handoff) {
+          pkTagByName(state.pageId, state.pkConvId, config.pkTags.handoff)
+            .then((t) => { if (!t.ok) console.warn(`[tag] ${state.pageId}: ${t.error} (AI chuyển người)`); })
+            .catch(() => {});
+        }
         // Báo SALE ngay trong Pancake để biết hội thoại này cần người.
         try { await pkAddNote(state.pageId, state.pkCustId, `🙋 AI CHUYỂN NGƯỜI — cần sale vào hỗ trợ\nLý do: ${input.reason || 'không rõ'}`); } catch { /* không chặn */ }
         return { content: 'Đã chuyển cho nhân viên. Hãy báo khách sẽ có người hỗ trợ ngay.' };

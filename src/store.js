@@ -33,7 +33,7 @@ export function getState(psid) {
       psid, pageId: '', pageName: '',
       messages: [],     // lịch sử gửi cho Claude
       transcript: [],   // {who:'customer'|'ai'|'system', text, at} — cho dashboard
-      aiTurns: 0, handoff: false, handoffReason: '',
+      aiTurns: 0, botTurns: 0, handoff: false, handoffReason: '', saleNoted: false,
       leadScore: null, orderId: null,
       lastText: '', lastAt: 0, createdAt: ts(),
     };
@@ -63,6 +63,7 @@ export function listConversations({ pageId } = {}) {
     .filter((s) => !pageId || String(s.pageId) === String(pageId))
     .map((s) => ({
       psid: s.psid, pageId: s.pageId, pageName: s.pageName,
+      custName: s.custName || '', pkConvId: s.pkConvId || '', pkCustId: s.pkCustId || '',
       lastText: s.lastText, lastAt: s.lastAt, handoff: s.handoff, handoffReason: s.handoffReason,
       aiTurns: s.aiTurns, orderId: s.orderId, msgs: s.transcript.length,
     }))
@@ -75,6 +76,7 @@ export function getConversation(psid) {
   if (!s) return null;
   return {
     psid: s.psid, pageId: s.pageId, pageName: s.pageName,
+    custName: s.custName || '', pkConvId: s.pkConvId || '', pkCustId: s.pkCustId || '',
     handoff: s.handoff, handoffReason: s.handoffReason, orderId: s.orderId,
     transcript: s.transcript,
   };

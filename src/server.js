@@ -88,7 +88,7 @@ app.post('/webhook', (req, res) => {
 });
 
 // Tải lại KB sau khi cập nhật file.
-app.post('/reload-kb', (_req, res) => {
+app.post('/reload-kb', adminAuth, (_req, res) => {
   try {
     const r = loadKB();
     res.json({ ok: true, ...r });
@@ -98,7 +98,7 @@ app.post('/reload-kb', (_req, res) => {
 });
 
 // Tải lại token các page (sau khi thêm page mới vào Business).
-app.post('/reload-tokens', async (_req, res) => {
+app.post('/reload-tokens', adminAuth, async (_req, res) => {
   try {
     const n = await loadPageTokens();
     res.json({ ok: true, pages: n });
@@ -122,3 +122,7 @@ app.listen(config.port, () => {
 
 // Nhận/gửi tin qua Pancake (song song với webhook FB) — không cần URL công khai.
 startPancakePolling();
+
+// L7 · M15 mổ hội thoại + tự học sổ template, 02:00 mỗi đêm (tắt trên máy PANCAKE_READONLY=1).
+import('./scheduler-miner.js').then((m) => { const r = m.startMinerScheduler(); if (!r.started) console.log(`[miner] lịch mổ đêm TẮT — ${r.why}`); }).catch((e) => console.error('[miner] không nạp được lịch:', e.message));
+(await import('./scheduler-followup.js')).startL5Schedulers(); // L5 · M17 quét A/B mỗi giờ + M12 đuổi theo mỗi 15 phút (tự im khi công tắc đóng)

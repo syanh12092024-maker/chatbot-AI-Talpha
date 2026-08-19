@@ -6,80 +6,135 @@
 <title>AI Closer — Dashboard</title>
 <style>
   :root{
-    --bg:#f4f6f8; --panel:#fff; --ink:#0f172a; --muted:#667085; --line:#e6eaef;
-    --pri:#0e7c86; --priSoft:#e6f4f5; --ok:#16a34a; --okSoft:#e7f6ec; --bad:#dc2626; --badSoft:#fdecec; --warn:#c2740a; --warnSoft:#fbf0e0;
-    --side:#10262b; --sideMut:#7fa3a8; --sideAct:#163a40;
-    --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.07);
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec; --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sideMut:#7fa3a8; --sideAct:#12333a; --sideLine:#173840;
+    --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+    --shHov:0 6px 20px rgba(16,24,40,.09);
+    --r:12px;
   }
   *{box-sizing:border-box} html,body{margin:0;height:100%}
-  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
   .app{display:flex;height:100vh;overflow:hidden}
-  /* sidebar */
-  .side{width:224px;background:var(--side);color:#fff;display:flex;flex-direction:column;flex-shrink:0}
-  .brand{display:flex;align-items:center;gap:10px;padding:18px 18px 16px;font-weight:700;font-size:16px;letter-spacing:.2px}
-  .brand .logo{width:30px;height:30px;border-radius:8px;background:var(--pri);display:flex;align-items:center;justify-content:center}
-  .nav{display:flex;flex-direction:column;gap:2px;padding:6px 10px}
-  .nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--sideMut);cursor:pointer;font-weight:500;font-size:14px}
-  .nav a svg{width:18px;height:18px;flex-shrink:0}
-  .nav a:hover{background:var(--sideAct);color:#fff}
-  .nav a.active{background:var(--pri);color:#fff}
-  .side .foot{padding:12px 18px;font-size:11px;color:#5c8189}
-  /* sidebar chuyên nghiệp */
-  .brand{border-bottom:1px solid #1c3a40;padding-bottom:16px}
-  .brand .logo{box-shadow:0 2px 10px rgba(14,124,134,.45);font-size:16px}
+
+  /* ============ SIDEBAR ============ */
+  .side{width:230px;background:var(--side);color:#fff;display:flex;flex-direction:column;flex-shrink:0}
+  .brand{display:flex;align-items:center;gap:11px;padding:18px 18px 16px;border-bottom:1px solid var(--sideLine)}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#12a0ac,var(--pri));display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 3px 12px rgba(14,124,134,.5)}
   .brandtxt{display:flex;flex-direction:column;line-height:1.15}
-  .brandtxt .bname{font-weight:700;font-size:15.5px}
+  .brandtxt .bname{font-weight:700;font-size:15.5px;letter-spacing:.2px}
   .brandtxt .bsub{font-size:11px;color:var(--sideMut);font-weight:500;margin-top:2px}
-  .navlabel{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#5c8189;padding:16px 14px 5px}
-  .navlabel:first-child{padding-top:10px}
-  .nav a.ext .extarrow{margin-left:auto;width:13px;height:13px;opacity:.5}
+  .nav{display:flex;flex-direction:column;gap:2px;padding:8px 10px;overflow:auto}
+  .navlabel{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#517a81;padding:14px 12px 5px}
+  .nav a{position:relative;display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:var(--sideMut);cursor:pointer;font-weight:500;font-size:13.5px;transition:.12s}
+  .nav a svg{width:17px;height:17px;flex-shrink:0}
+  .nav a:hover{background:var(--sideAct);color:#e8f1f2}
+  .nav a.active{background:var(--sideAct);color:#fff;font-weight:600}
+  .nav a.active::before{content:'';position:absolute;left:-10px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:#14b3c0}
+  .nav a.ext .extarrow{margin-left:auto;width:13px;height:13px;opacity:.45}
   .nav a.ext:hover .extarrow{opacity:1}
   .nsbadge{margin-left:auto;background:var(--bad);color:#fff;font-size:11px;font-weight:700;min-width:19px;height:19px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
-  .sidestat{margin-top:auto;display:flex;align-items:center;gap:8px;padding:12px 16px;font-size:12px;color:var(--sideMut);border-top:1px solid #1c3a40}
-  .sidestat .dot{width:7px;height:7px;box-shadow:0 0 0 3px rgba(22,163,74,.15)}
-  /* main */
+  .sidestat{margin-top:auto;display:flex;align-items:center;gap:8px;padding:13px 16px;font-size:12px;color:var(--sideMut);border-top:1px solid var(--sideLine)}
+  .side .foot{padding:0 16px 14px;font-size:10.5px;color:#4a6d74}
+
+  /* ============ TOPBAR + CONTENT ============ */
   .wrap{flex:1;display:flex;flex-direction:column;min-width:0}
-  .top{height:60px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 22px;flex-shrink:0}
+  .top{height:58px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 22px;flex-shrink:0}
   .top h1{font-size:16px;margin:0;font-weight:650}
   .top .sp{flex:1}
-  .stat{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);background:#f7f9fa;border:1px solid var(--line);padding:5px 11px;border-radius:20px}
+  .stat{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);background:#f7f9fa;border:1px solid var(--line);padding:5px 11px;border-radius:20px;font-weight:500}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--okSoft)}
   .dot.bad{background:var(--bad);box-shadow:0 0 0 3px var(--badSoft)}
-  .iconbtn{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
+  .iconbtn{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:.12s}
   .iconbtn:hover{background:#f5f6f7;color:var(--ink)}
-  .content{flex:1;overflow:auto;padding:22px}
-  h2{font-size:18px;margin:0 0 4px} .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
-  /* cards */
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px;margin-bottom:20px}
-  .mc{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px;box-shadow:var(--sh);cursor:pointer;transition:.12s}
-  .mc:hover{transform:translateY(-2px);border-color:#cfd8df}
-  .mc .ic{width:34px;height:34px;border-radius:9px;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
-  .mc .l{font-size:12.5px;color:var(--muted)} .mc .v{font-size:27px;font-weight:700;margin-top:2px;line-height:1.1}
+  .content{flex:1;overflow:auto;padding:24px 26px}
+  h2{font-size:17px;margin:0 0 4px;font-weight:650} .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px}
+  .vhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .vhead h2{margin:0}
+
+  /* ============ CARDS / KPI ============ */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:14px;margin-bottom:22px}
+  .mc{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--sh)}
+  .mc .ic{width:34px;height:34px;border-radius:9px;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;margin-bottom:11px}
+  .mc .ic svg{width:17px;height:17px}
+  .mc .l{font-size:12px;color:var(--muted);font-weight:500} .mc .v{font-size:26px;font-weight:700;margin-top:3px;line-height:1.1;letter-spacing:-.3px}
   .mc .d{font-size:11.5px;color:var(--muted);margin-top:5px}
-  /* table */
-  .tablecard{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);overflow:hidden}
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)} th{background:#fafbfc;color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+
+  /* ============ TABLE ============ */
+  .tablecard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line)}
+  th{background:#fafbfc;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
   tbody tr:hover{background:#fafcfc} tr:last-child td{border-bottom:none}
-  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:3px 10px;border-radius:20px;font-weight:600}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:3px 10px;border-radius:20px;font-weight:600;white-space:nowrap}
   .pill.ok{background:var(--okSoft);color:var(--ok)} .pill.bad{background:var(--badSoft);color:var(--bad)} .pill.warn{background:var(--warnSoft);color:var(--warn)} .pill.mut{background:#eef1f3;color:var(--muted)}
-  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
-  .btn:hover{background:#f5f6f7} .btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)} .btn.pri:hover{background:#0c6c75} .btn.sm{padding:5px 9px;font-size:12.5px} .btn svg{width:15px;height:15px}
-  input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13.5px;font-family:inherit;outline:none;background:#fff} input:focus,select:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--priSoft)}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;gap:6px;font-weight:500;transition:.12s}
+  .btn:hover{background:#f5f6f7;border-color:#d5dce2} .btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)} .btn.pri:hover{background:var(--priDark)} .btn.sm{padding:5px 10px;font-size:12.5px} .btn svg{width:14px;height:14px}
+  a.btn{text-decoration:none}
+  .pill.info{background:#e7f0fd;color:#2b6cb0}
+  /* hàng chờ sale: viền trái + nền theo mức ưu tiên (0 khẩn, 1 cần người, 2 đơn chốt) */
+  tr.nsr td{padding:13px 14px}
+  tr.nsr-0 td:first-child{box-shadow:inset 3px 0 0 var(--bad)}  tr.nsr-0{background:#fff6f6} tr.nsr-0:hover{background:#fdeeee}
+  tr.nsr-1 td:first-child{box-shadow:inset 3px 0 0 var(--warn)} tr.nsr-1{background:#fffdf6} tr.nsr-1:hover{background:#fdf7e9}
+  tr.nsr-2 td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+  .nsreason{color:var(--muted);font-size:12px;margin-top:3px;font-style:italic;max-width:430px;line-height:1.4}
+  .newpill{display:inline-flex;align-items:center;background:var(--bad);color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 7px;border-radius:9px;margin-bottom:4px}
+  /* segmented control chọn khung giờ */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+  .seg button{border:none;background:transparent;padding:7px 13px;font-size:12.5px;cursor:pointer;color:var(--muted);font-weight:500;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button:hover{background:#f5f6f7} .seg button.act{background:var(--pri);color:#fff;font-weight:600}
+  /* chip bộ lọc loại việc: icon + nhãn + số đếm */
+  .kchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 12px;font-size:12.5px;cursor:pointer;color:var(--ink);font-weight:500;transition:.12s}
+  .kchip:hover{background:#f5f6f7}
+  .kchip .n{background:#eef1f3;color:var(--muted);font-size:11px;font-weight:700;min-width:20px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
+  .kchip.act{background:var(--side);border-color:var(--side);color:#fff}
+  .kchip.act .n{background:rgba(255,255,255,.22);color:#fff}
+  input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:13.5px;font-family:inherit;outline:none;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--priSoft)}
   .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-  .toggle{width:40px;height:23px;border-radius:13px;background:#cbd5db;position:relative;transition:.15s;cursor:pointer;flex-shrink:0}
+  .search{position:relative;max-width:280px} .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted)} .search input{padding-left:33px;width:100%}
+  /* thanh tìm kiếm to, rõ (bảng Tổng quan) */
+  .search.big{max-width:440px;flex:1;min-width:240px}
+  .search.big svg{width:17px;height:17px;left:13px}
+  .search.big input{padding:11px 13px 11px 39px;font-size:14px;border-radius:10px;border-width:1.5px}
+  /* công tắc bật/tắt AI */
+  .toggle{width:40px;height:23px;border-radius:13px;background:#cbd5db;position:relative;transition:.15s;cursor:pointer;flex-shrink:0;display:inline-block;vertical-align:middle}
   .toggle.on{background:var(--ok)} .toggle::after{content:'';position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)} .toggle.on::after{left:18px}
-  .search{position:relative;max-width:280px} .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted)} .search input{padding-left:34px;width:100%}
-  .muted{color:var(--muted)} .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--muted)}
-  /* conversations */
-  .convo{display:grid;grid-template-columns:330px 1fr;gap:16px;height:calc(100vh - 200px)}
+  .muted{color:var(--muted)} .mono{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--muted)}
+  .empty{padding:46px 20px;text-align:center;color:var(--muted)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 13px;font-size:12.5px;cursor:pointer;color:var(--muted);font-weight:500;transition:.12s}
+  .chip:hover{background:#f5f6f7} .chip.act{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .drange{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .drange-cx{display:inline-flex;align-items:center;gap:6px;padding-left:8px;margin-left:2px;border-left:1px solid var(--line)}
+  .drange input[type=date]{padding:5px 8px;font-size:12.5px}
+
+  .av{width:34px;height:34px;border-radius:50%;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+
+  /* ============ CONVERSATIONS ============ */
+  .convo{display:grid;grid-template-columns:300px 1fr 290px;gap:14px;height:calc(100vh - 210px)}
+  @media(max-width:1200px){.convo{grid-template-columns:300px 1fr}.cinfo{display:none}}
   @media(max-width:880px){.convo{grid-template-columns:1fr;height:auto}}
-  .list{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);overflow:auto}
+  /* cột phải: thông tin khách + đơn hàng */
+  .cinfo{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:auto;padding:14px}
+  .cinfo h4{margin:0 0 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .cinfo .sec{padding:12px 0;border-top:1px solid var(--line)} .cinfo .sec:first-child{border-top:none;padding-top:0}
+  .cirow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin:5px 0}
+  .cirow .k{color:var(--muted);flex-shrink:0} .cirow .v{font-weight:600;text-align:right;min-width:0;overflow-wrap:anywhere}
+  .ocard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;background:#fafbfc}
+  .ocard .oid{font-weight:700;font-size:13px}
+  /* mốc ngày + giờ tin + bản dịch */
+  .dsep{align-self:center;background:#eef1f4;color:var(--muted);font-size:11px;font-weight:600;padding:3px 12px;border-radius:12px;margin:6px 0}
+  .btime{display:block;font-size:10px;opacity:.55;margin-top:3px;text-align:right}
+  .vitrans{display:block;font-size:12px;color:#c2410c;margin-top:5px;border-top:1px dashed rgba(0,0,0,.15);padding-top:4px;font-style:italic}
+  .bub.ai .vitrans,.bub.agent .vitrans{color:#ffe3c9;border-top-color:rgba(255,255,255,.35)}
+  .list{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:auto}
   .ci{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:10px;align-items:flex-start}
   .ci:hover{background:#fafcfc} .ci.sel{background:var(--priSoft)}
-  .av{width:34px;height:34px;border-radius:50%;background:var(--priSoft);color:var(--pri);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
   .ci .t{font-weight:600;font-size:13px;display:flex;justify-content:space-between;gap:6px} .ci .s{font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);display:flex;flex-direction:column;overflow:hidden}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);display:flex;flex-direction:column;overflow:hidden}
   .phd{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
   .tr{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:16px}
   .bub{max-width:78%;padding:9px 13px;border-radius:15px;font-size:13.5px;white-space:pre-wrap;line-height:1.45}
@@ -88,26 +143,19 @@
   .bub.agent{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:5px}
   .bub.system{align-self:center;background:var(--warnSoft);color:var(--warn);font-size:12px}
   .composer{padding:12px;border-top:1px solid var(--line);display:flex;gap:9px}
-  .empty{padding:48px 20px;text-align:center;color:var(--muted)}
-  /* toast */
-  #toast{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:50}
-  .tt{background:#10262b;color:#fff;padding:11px 16px;border-radius:10px;font-size:13.5px;box-shadow:0 6px 24px rgba(0,0,0,.18);display:flex;align-items:center;gap:8px;animation:in .2s}
-  .tt.ok{background:#0e7c86} .tt.bad{background:#dc2626}
-  @keyframes in{from{opacity:0;transform:translateY(8px)}}
-  /* KB product cards */
-  .pcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);padding:18px;margin-bottom:14px}
-  /* KB editor: gộp cấu hình AI + sản phẩm trong 1 khung */
-  .kbeditor{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);padding:2px 20px 16px}
+
+  /* ============ KB EDITOR ============ */
+  .kbbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 16px;position:sticky;top:0;z-index:8;background:var(--bg);padding:6px 0}
+  .kbeditor{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:2px 20px 16px}
   .cfgsec{padding:16px 0 4px;border-left:3px solid var(--pri);padding-left:14px;margin-top:8px}
-  .kbsec{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;padding:14px 0 2px;border-top:1px solid var(--line);margin-top:14px}
-  .kbeditor .pcard{border:none;box-shadow:none;border-radius:0;margin:0;padding:16px 0;border-top:1px dashed var(--line)}
-  .kbeditor .pcard:first-of-type{border-top:none;padding-top:8px}
+  .kbsec{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:14px 0 2px;border-top:1px solid var(--line);margin-top:14px}
+  .pcard{padding:16px 0;border-top:1px dashed var(--line)}
+  .pcard:first-of-type{border-top:none;padding-top:8px}
   .pcard .fh{display:flex;gap:12px;align-items:flex-end;margin-bottom:14px}
   .fld{display:flex;flex-direction:column;gap:5px;min-width:0}
   .fld>label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
   .fld input,.fld textarea,.fld select{width:100%}
   .pcard textarea{resize:vertical;min-height:46px;line-height:1.45}
-  .grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px}
   .imgbox2{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
   .imglist{display:flex;flex-wrap:wrap;gap:10px}
   .imtile{width:92px;position:relative}
@@ -116,7 +164,7 @@
   .imtile .imx{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;border:none;background:var(--bad);color:#fff;cursor:pointer;font-size:12px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.25)}
   .imadd .imthumb{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:12px;gap:3px;border-style:dashed}
   .imadd .imthumb:hover{background:var(--priSoft);color:var(--pri);border-color:var(--pri)}
-  /* bảng gói giá linh hoạt */
+  .imtile select.imlabel{width:92px;font-size:11px;padding:4px 4px;border-radius:7px;cursor:pointer}
   .pricebox{margin:4px 0 14px;padding:14px 16px;background:#fafbfc;border:1px solid var(--line);border-radius:10px}
   .pricebox>.pblabel{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:11px}
   .tierrow{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:13.5px;flex-wrap:wrap}
@@ -124,54 +172,22 @@
   .tierrow .tl{flex:1;min-width:150px} .tierrow .tp{width:110px}
   .tierx{width:28px;height:28px;border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer;color:var(--muted);flex-shrink:0}
   .tierx:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
-  .imtile select.imlabel{width:92px;font-size:11px;padding:4px 4px;border-radius:7px;cursor:pointer}
-  /* product card header + actions */
   .phead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;cursor:pointer}
-  .ptitle{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ptitle .num{color:var(--muted);font-weight:500;margin-right:6px}
+  .ptitle{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pacts{display:flex;gap:6px;flex-shrink:0}
   .actbtn{width:32px;height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center}
   .actbtn:hover{background:#f5f6f7;color:var(--ink)} .actbtn.del:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
   .pcard.collapsed .pbody{display:none}
   .caret{transition:.15s;display:inline-block;color:var(--muted)} .pcard.collapsed .caret{transform:rotate(-90deg)}
-  .rmx{width:30px;height:30px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--muted);flex-shrink:0}
-  .rmx:hover{background:var(--badSoft);color:var(--bad);border-color:var(--badSoft)}
-  .kbbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 16px;position:sticky;top:0;z-index:8}
   .combo-drop{position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(16,24,40,.14);max-height:340px;overflow:auto;margin-top:5px;display:none}
   .ci2{padding:9px 13px;cursor:pointer;font-size:13.5px;border-bottom:1px solid #f1f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ci2:hover{background:var(--priSoft)} .ci2:last-child{border-bottom:none}
-  /* 1 trang cuộn dọc: mỗi section cách nhau + chừa chỗ khi cuộn tới */
-  .hsec{display:block;scroll-margin-top:16px} .hsec+.hsec{margin-top:38px;padding-top:30px;border-top:1px solid var(--line)}
-  .hsec:empty{display:none}
-  /* bộ lọc ngày */
-  .stashead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-  .drange{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-  .drange .chip{padding:6px 12px}
-  .drange-cx{display:inline-flex;align-items:center;gap:6px;padding-left:6px;margin-left:2px;border-left:1px solid var(--line)}
-  .drange input[type=date]{padding:5px 8px;font-size:12.5px}
-  /* filter chips */
-  .chips{display:flex;gap:6px;flex-wrap:wrap}
-  .chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--muted);font-weight:500}
-  .chip:hover{background:#f5f6f7} .chip.act{background:var(--pri);color:#fff;border-color:var(--pri)}
-  /* page management cards */
-  .pglist{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:10px}
-  @media(max-width:820px){.pglist{grid-template-columns:1fr}}
-  .pg{background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:var(--sh);padding:11px 13px;transition:.12s}
-  .pg:hover{border-color:#cfd8df;box-shadow:0 4px 12px rgba(16,24,40,.07)}
-  .pg.on{border-left:3px solid var(--ok)}
-  .pgtop{display:flex;align-items:center;gap:10px}
-  .pgname{font-weight:650;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pgmeta{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
-  .pgbtns{display:flex;align-items:center;gap:6px;flex-shrink:0}
-  .ibtn{width:30px;height:30px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center}
-  .ibtn svg{width:15px;height:15px} .ibtn:hover{background:var(--priSoft);color:var(--pri);border-color:var(--pri)}
-  .tgl{width:38px;height:22px;border:none;border-radius:12px;background:#cbd5db;position:relative;cursor:pointer;flex-shrink:0;transition:.15s;padding:0}
-  .tgl.on{background:var(--ok)}
-  .tgl::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
-  .tgl.on::after{left:18px}
-  .pgprev{font-size:12px;color:var(--muted);background:#f7f9fa;border-radius:7px;padding:7px 10px;line-height:1.4;margin-top:9px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-  .pgfoot{display:flex;gap:16px;font-size:11.5px;color:var(--muted);margin-top:8px}
-  .pgfoot b{color:var(--ink)}
+
+  /* toast */
+  #toast{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:50}
+  .tt{background:#10262b;color:#fff;padding:11px 16px;border-radius:10px;font-size:13.5px;box-shadow:0 6px 24px rgba(0,0,0,.18);display:flex;align-items:center;gap:8px;animation:in .2s}
+  .tt.ok{background:#0e7c86} .tt.bad{background:#dc2626}
+  @keyframes in{from{opacity:0;transform:translateY(8px)}}
 </style>
 </head>
 <body>
@@ -183,16 +199,17 @@
     </div>
     <nav class="nav" id="nav"></nav>
     <div class="sidestat"><span class="dot" id="sidedot"></span><span id="sidestattxt">đang kết nối…</span></div>
-    <div class="foot">v0.2 · Pilot PH/ME</div>
+    <div class="foot">v0.3 · Pilot PH/ME</div>
   </aside>
   <div class="wrap">
     <header class="top">
       <h1 id="ttl">Bảng điều khiển</h1>
       <div class="sp"></div>
+      <div class="stat" id="serr" style="display:none;background:var(--badSoft);border-color:#f2c4c4;color:var(--bad);font-weight:700" title="Page bị lỗi gửi tin — đang tạm ngừng để tránh Meta phạt nặng thêm"></div>
       <div class="stat"><span class="dot" id="sdot"></span><span id="sstat">server</span></div>
-      <div class="stat" id="stok">— token</div>
+      <div class="stat" id="stok">— nguồn</div>
       <div class="stat" id="spage">— page</div>
-      <div class="iconbtn" title="Làm mới" onclick="renderHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></div>
+      <div class="iconbtn" title="Làm mới" onclick="render()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></div>
     </header>
     <main class="content" id="content"></main>
   </div>
@@ -207,95 +224,178 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const ago=t=>{if(!t)return'';const d=(Date.now()-t)/1000;if(d<60)return Math.round(d)+'s';if(d<3600)return Math.round(d/60)+'m';return Math.round(d/3600)+'h';};
 const ini=s=>(String(s||'?').trim()[0]||'?').toUpperCase();
 function toast(m,type='ok'){const e=document.createElement('div');e.className='tt '+type;e.textContent=m;document.getElementById('toast').appendChild(e);setTimeout(()=>e.remove(),2600);}
-const IC={overview:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>',pages:'<path d="M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',msgs:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',kb:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>',tokens:'<path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/>',stats:'<path d="M3 3v18h18M7 16v-6M12 16V8M17 16v-3"/>'};
+const IC={
+  bell:'<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',
+  overview:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>',
+  pages:'<path d="M12 2 2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',
+  msgs:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  kb:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>',
+  tokens:'<path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/>',
+  stats:'<path d="M3 3v18h18M7 16v-6M12 16V8M17 16v-3"/>',
+  mega:'<path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6"/>'};
 const svg=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const search=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>`;
-
-// 1 TRANG CUỘN DỌC: tất cả section trên cùng 1 trang. Menu chỉ giữ lối tắt tới Cài đặt
-// (nằm cuối trang) — 3 mục Tổng quan/Pages/Tin nhắn đã gộp nên bỏ khỏi menu.
-const NAV=[['tokens','Cài đặt / Token','tokens']];
-// Tool "bắn bot khách cũ" (Gửi tin hàng loạt) chạy riêng trên cùng VPS, cổng 3002 → mở tab mới.
-const BROADCAST_URL=`http://${location.hostname}:3002`;
-const IC_MEGA='<path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6"/>';
-let ctx={pageId:'',pageName:''}, selPsid=null, statsTimer=null, msgsTimer=null, RANGE={key:'all',from:null,to:null};
-const content=document.getElementById('content');
-const sec=id=>document.getElementById('sec-'+id);
 const extArrow='<svg class="extarrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>';
-document.getElementById('nav').innerHTML=
-  `<div class="navlabel">🤖 Chat Bot AI</div>`
-  +`<a data-k="needsale" onclick="jumpTo('needsale')">${svg(IC.msgs)} Cần sale xử lý <span id="nsBadge" class="nsbadge" style="display:none">0</span></a>`
-  +`<a data-k="stats" onclick="jumpTo('stats')">${svg(IC.overview)} Tổng quan</a>`
-  +`<a onclick="openPagesScreen()">${svg(IC.pages)} Pages</a>`
-  +`<a data-k="tokens" onclick="jumpTo('tokens')">${svg(IC.tokens)} Cài đặt / Token</a>`
-  +`<div class="navlabel">📢 Tool Bắn Bot</div>`
-  +`<a class="ext" title="Bắn tin hàng loạt cho khách cũ (mở tab mới)" onclick="window.open(BROADCAST_URL,'_blank')">${svg(IC_MEGA)} <span>Bắn bot khách cũ</span> ${extArrow}</a>`;
-function setActiveNav(k){document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k));}
-window.jumpTo=k=>{const e=sec(k);if(e){e.scrollIntoView({behavior:'smooth',block:'start'});setActiveNav(k);}};
 
-// Dựng 1 trang gồm 4 section, mỗi phần tự nạp dữ liệu + tự làm mới.
-function renderHome(){
-  clearInterval(statsTimer);clearInterval(msgsTimer);clearInterval(nsTimer);
-  content.innerHTML=`<section id="sec-needsale" class="hsec"></section><section id="sec-stats" class="hsec"></section><section id="sec-msgs" class="hsec"></section><section id="sec-tokens" class="hsec"></section>`;
-  rNeedSale();rOverview();rMsgs();rTokens();setActiveNav('needsale');
+// Tool "bắn bot khách cũ" chạy riêng trên cùng VPS, cổng 3002 → mở tab mới.
+const BROADCAST_URL=`http://${location.hostname}:3002`;
+
+let ctx={pageId:'',pageName:''}, selPsid=null, RANGE={key:'all',from:null,to:null};
+const content=document.getElementById('content');
+
+/* ============ ROUTER: mỗi mục menu = 1 màn hình riêng, không trùng chức năng ============
+   "kb" không nằm trên menu — mở từ nút "Sửa KB" trong bảng Tổng quan. */
+const VIEWS={
+  needsale:{title:'Cần sale xử lý', icon:IC.bell,  render:rNeedSale},
+  stats:   {title:'Tổng quan',      icon:IC.overview, render:rOverview},
+  msgs:    {title:'Tin nhắn',       icon:IC.msgs,  render:rMsgs},
+  kb:      {title:'Kịch bản / KB',  icon:IC.kb,    render:rKB},
+  tokens:  {title:'Cài đặt / Token',icon:IC.tokens,render:rTokens},
+};
+document.getElementById('nav').innerHTML=
+  `<div class="navlabel">Chat Bot AI</div>`
+  +['needsale','stats','msgs'].map(k=>`<a data-k="${k}" onclick="go('${k}')">${svg(VIEWS[k].icon)} ${VIEWS[k].title}${k==='needsale'?' <span id="nsBadge" class="nsbadge" style="display:none">0</span>':''}</a>`).join('')
+  +`<div class="navlabel">Hệ thống</div>`
+  +`<a data-k="tokens" onclick="go('tokens')">${svg(VIEWS.tokens.icon)} ${VIEWS.tokens.title}</a>`
+  +`<a class="ext" title="M18/M19 · page nào không chạy được và vì sao, Botcake, token, sức khoẻ hệ thống" onclick="window.open('/admin/api/ops/ui','_blank')">${svg(IC.overview)} <span>Ops Console</span> ${extArrow}</a>`
+  +`<a class="ext" title="M20 · chi phí/đơn, lượt/đơn, tỷ lệ chốt theo page × kịch bản × lane" onclick="window.open('/admin/api/economics/ui','_blank')">${svg(IC.stats)} <span>Unit Economics</span> ${extArrow}</a>`
+  +`<a class="ext" title="Kịch bản từng page: phiên bản, duyệt, khôi phục (M02)" onclick="window.open('/admin/api/scripts/ui','_blank')">${svg(IC.kb)} <span>Script Studio</span> ${extArrow}</a>`
+  +`<a class="ext" title="M14 · hàng chờ tạo đơn 1 click · M15 · báo cáo mổ hội thoại · sổ template chờ duyệt" onclick="window.open('/admin/api/order-bridge/ui','_blank')">${svg(IC.bell)} <span>Đơn &amp; Mổ hội thoại</span> ${extArrow}</a>`
+  +`<a class="ext" title="Bảng kịch bản tự động 2 cột + đối chiếu luật Botcake với Fast Lane (L8)" onclick="window.open('/admin/api/rules/ui','_blank')">${svg(IC.kb)} <span>Kịch bản &amp; Botcake</span> ${extArrow}</a>`
+  +`<div class="navlabel">Tool Bắn Bot</div>`
+  +`<a class="ext" title="Bắn tin hàng loạt cho khách cũ (mở tab mới)" onclick="window.open(BROADCAST_URL,'_blank')">${svg(IC.mega)} <span>Bắn bot khách cũ</span> ${extArrow}</a>`;
+
+let timers=[];
+const addTimer=(fn,ms)=>timers.push(setInterval(fn,ms));
+const clearTimers=()=>{timers.forEach(clearInterval);timers=[];};
+const curView=()=>(location.hash||'#needsale').slice(1).split('?')[0];
+window.go=k=>{if(curView()===k)render();else location.hash=k;};
+window.addEventListener('hashchange',render);
+function render(){
+  clearTimers();selPsid=null;
+  const k=VIEWS[curView()]?curView():'needsale';
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.k===k));
+  document.getElementById('ttl').textContent=VIEWS[k].title;
+  content.innerHTML='';
+  VIEWS[k].render();
 }
+
 const setEl=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt;};
 const setCls=(id,cls)=>{const e=document.getElementById(id);if(e)e.className=cls;};
+let SEND_ERRS=[];
 async function topStatus(){try{const o=await j('/overview');
   setEl('sstat','server online');setCls('sdot','dot');
   setEl('stok',o.source==='pancake'?'Pancake':'FB');
   setEl('spage',o.pages+' page');
   setEl('sidestattxt',`Online · ${o.pages} page`);setCls('sidedot','dot');
+  // Cảnh báo backoff (nguyên tắc #9): page lỗi gửi → pill đỏ thấy ở mọi màn hình
+  SEND_ERRS=o.sendErrors||[];
+  const se=document.getElementById('serr');
+  if(se){const n=SEND_ERRS.length;se.style.display=n?'flex':'none';if(n)se.textContent=`⚠ ${n} page lỗi gửi tin`;}
 }catch{setEl('sstat','mất kết nối');setCls('sdot','dot bad');setEl('sidestattxt','mất kết nối');setCls('sidedot','dot bad');}}
+function sendErrBanner(){
+  if(!SEND_ERRS.length)return'';
+  const rows=SEND_ERRS.map(e=>{const left=e.pausedUntil>Date.now()?Math.ceil((e.pausedUntil-Date.now())/60000)+' phút nữa gửi lại':'đang theo dõi';
+    return `<div style="margin-top:6px"><b>${esc(e.pageName)}</b> — lỗi ${e.count} lần · ${left}${e.lastError?`<div class="muted" style="font-size:11.5px;margin-top:2px">${esc(e.lastError)}</div>`:''}</div>`;}).join('');
+  return `<div class="tablecard" style="border-color:#f2c4c4;background:#fff5f5;padding:14px 16px;margin-bottom:16px">
+    <b style="color:var(--bad)">⚠ Page bị lỗi gửi tin — AI tạm ngừng để tránh Meta phạt nặng thêm (tự thử lại sau 30 phút)</b>
+    <div class="muted" style="font-size:12px;margin-top:3px">Khách nhắn vào các page này đang KHÔNG được trả lời. Kiểm tra chất lượng page trong Business Manager / kháng cáo nếu bị hạn chế.</div>${rows}</div>`;
+}
 
 function agoVi(ts){if(!ts)return 'chưa có';const s=Math.floor((Date.now()-ts)/1000);
   if(s<60)return s+' giây trước';if(s<3600)return Math.floor(s/60)+' phút trước';
   if(s<86400)return Math.floor(s/3600)+' giờ trước';return Math.floor(s/86400)+' ngày trước';}
-function rateBadge(r){const cls=r>=30?'ok':r>=10?'warn':'mut';return `<span class="pill ${cls}">${r||0}%</span>`;}
-function statRow(p){return `<tr>
-   <td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">${p.id}</div></td>
-   <td>${p.aiEnabled?'<span class="pill ok">● Đang bật</span>':'<span class="pill mut">tắt</span>'}</td>
-   <td>${p.hasKb?'<span class="pill ok">✓ có KB</span>':'<span class="pill warn">chưa</span>'}</td>
-   <td style="text-align:right;font-weight:700">${p.replies||0}</td>
-   <td style="text-align:right;font-weight:700">${p.leads||0}</td>
-   <td style="text-align:right;font-weight:700">${p.aiOrders!=null?p.aiOrders:'<span class="muted">…</span>'}</td>
-   <td style="text-align:right">${rateBadge(p.closeRate)}</td>
-   <td><button class="btn sm" onclick="openPageKB('${p.id}','${esc(p.name).replace(/'/g,"\\'")}')">Sửa KB</button></td>
- </tr>`;}
-function statRows(pages){return (pages||[]).map(statRow).join('')||`<tr><td colspan="8" class="empty">Chưa có page nào bật AI hoặc có hoạt động.</td></tr>`;}
 
-// ---- HÀNG CHỜ CHO SALE: AI đã chốt đơn / cần người ----
-let nsTimer=null;
-async function rNeedSale(){
-  const el=sec('needsale'); if(!el)return;
-  el.innerHTML=`<div class="stashead"><h2 style="margin:0">🔔 Cần sale xử lý</h2>
-     <div class="row"><span class="muted" style="font-size:12.5px">AI đã chốt / cần người — 48 giờ qua</span>
-     <button class="btn sm" onclick="rNeedSale()">↻ Làm mới</button></div></div>
+/* ============ BADGE "Cần sale" — cập nhật nền dù đang ở màn nào ============ */
+async function pollBadge(){
+  const d=await j('/need-sale?hours=48').catch(()=>({list:[]}));
+  const n=(d.list||[]).length, b=document.getElementById('nsBadge');
+  if(b){b.textContent=n;b.style.display=n?'inline-flex':'none';}
+  return d;
+}
+
+/* ============ 1. CẦN SALE XỬ LÝ ============
+   Nguồn: Sổ AI (ai-messages.jsonl) — sự kiện 'order' (AI chốt đơn) & 'handoff' (cần người).
+   Ưu tiên hiển thị: CẦN NGƯỜI trước (khách đang đợi), rồi mới tới đơn đã chốt. */
+let NS={hours:48,filter:'all',list:[]};
+const NS_RANGES=[[24,'24 giờ'],[48,'48 giờ'],[168,'7 ngày']];
+// 5 CỬA dẫn vào hàng chờ (nguyên tắc #13). prio: 0 khẩn (đỏ) · 1 cần người (vàng) · 2 đơn đã chốt (xanh).
+// (Cửa "Ngôn ngữ lạ" đã bỏ — AI tự trả lời bằng đúng ngôn ngữ của khách, không chuyển người nữa.)
+const NS_KINDS={
+  complaint:{label:'Khiếu nại',      icon:'😡', pill:'bad',  prio:0},
+  error:    {label:'Lỗi kỹ thuật',   icon:'⚙️', pill:'bad',  prio:0},
+  ai:       {label:'AI chuyển người',icon:'🙋', pill:'warn', prio:1},
+  max_turns:{label:'Hết lượt AI',    icon:'⏳', pill:'warn', prio:1},
+  no_kb:    {label:'Thiếu kịch bản', icon:'📄', pill:'mut',  prio:1},
+  order:    {label:'Đã chốt đơn',    icon:'🛒', pill:'ok',   prio:2},
+};
+// Nhận diện loại việc: ưu tiên kind server gắn; dữ liệu cũ chưa có kind → đoán theo lý do.
+// Sự kiện "ngôn ngữ lạ" cũ (còn trong cửa sổ 48h) gộp về nhóm "AI chuyển người".
+function nsKind(r){
+  if(r.type==='order')return'order';
+  if(r.kind&&NS_KINDS[r.kind])return r.kind;
+  const s=r.reason||'';
+  if(/khiếu nại/i.test(s))return'complaint';
+  if(/trả lời đủ/i.test(s))return'max_turns';
+  if(/kịch bản|KB/i.test(s))return'no_kb';
+  return'ai';
+}
+function rNeedSale(){
+  content.innerHTML=`<div class="vhead">
+     <div><h2>🔔 Hàng chờ cho sale</h2><p class="sub" style="margin:4px 0 0" id="nsMeta">Việc khẩn nổi lên đầu · tự làm mới 15 giây</p></div>
+     <div class="row">
+       <div class="seg">${NS_RANGES.map(([h,l])=>`<button class="${NS.hours===h?'act':''}" data-h="${h}" onclick="setNsHours(${h})">${l}</button>`).join('')}</div>
+       <button class="iconbtn" onclick="fillNeedSale()" title="Làm mới ngay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></button>
+     </div></div>
+   <div class="row" id="nsSum" style="margin-bottom:14px;gap:7px"></div>
    <div id="nsbody"></div>`;
   fillNeedSale();
-  clearInterval(nsTimer); nsTimer=setInterval(()=>{if(sec('needsale'))fillNeedSale();},15000);
+  addTimer(fillNeedSale,15000);
 }
+window.setNsHours=h=>{NS.hours=h;document.querySelectorAll('.seg [data-h]').forEach(b=>b.classList.toggle('act',+b.dataset.h===h));fillNeedSale();};
+window.setNsFilter=f=>{NS.filter=f;drawNeedSale();};
+window.copyPhone=async p=>{try{await navigator.clipboard.writeText(p);toast('✓ Đã copy SĐT: '+p);}catch{toast('Không copy được — chọn tay giúp nhé','bad');}};
 async function fillNeedSale(){
+  if(!document.getElementById('nsbody'))return;
+  // Badge trên menu luôn đếm theo 48h (pollBadge); bảng thì theo khoảng đang chọn.
+  const d=NS.hours===48?await pollBadge():await j('/need-sale?hours='+NS.hours).catch(()=>({list:[]}));
+  NS.list=(d.list||[]).map(r=>({...r,_k:nsKind(r)}));
+  drawNeedSale();
+}
+function drawNeedSale(){
   const el=document.getElementById('nsbody'); if(!el)return;
-  const d=await j('/need-sale?hours=48').catch(()=>({list:[]}));
-  const list=d.list||[];
-  const b=document.getElementById('nsBadge');
-  if(b){ b.textContent=list.length; b.style.display=list.length?'inline-block':'none'; }
-  if(!list.length){ el.innerHTML='<div class="tablecard"><div class="empty">Chưa có việc nào cần sale trong 48h qua. AI đang tự xử lý ✅</div></div>'; return; }
-  el.innerHTML=`<div class="tablecard"><table><thead><tr><th>Việc</th><th>Khách</th><th>SĐT</th><th>Page</th><th>Lúc</th><th></th></tr></thead><tbody>${
-    list.map(r=>`<tr>
-      <td>${r.type==='order'?'<span class="pill ok">🛒 Đã chốt đơn</span>':'<span class="pill warn">🙋 Cần người</span>'}</td>
-      <td><b>${esc(r.name||'(chưa rõ)')}</b>${r.city?`<div class="muted" style="font-size:11.5px">${esc(r.city)}${r.qty?' · SL '+r.qty:''}</div>`:''}${r.reason?`<div class="muted" style="font-size:11.5px">${esc(r.reason)}</div>`:''}</td>
-      <td class="mono">${esc(r.phone||'—')}</td>
+  const list=NS.list;
+  // Đếm theo từng cửa; chip chỉ hiện cửa CÓ việc (đỡ rối) + luôn có "Tất cả".
+  const cnt={}; list.forEach(r=>cnt[r._k]=(cnt[r._k]||0)+1);
+  if(NS.filter!=='all'&&!cnt[NS.filter])NS.filter='all'; // bộ lọc đang chọn hết việc → về Tất cả
+  const chips=[`<button class="kchip ${NS.filter==='all'?'act':''}" onclick="setNsFilter('all')">Tất cả <span class="n">${list.length}</span></button>`]
+    .concat(Object.entries(NS_KINDS).filter(([k])=>cnt[k]).map(([k,v])=>
+      `<button class="kchip ${NS.filter===k?'act':''}" onclick="setNsFilter('${k}')">${v.icon} ${v.label} <span class="n">${cnt[k]}</span></button>`));
+  const sum=document.getElementById('nsSum'); if(sum)sum.innerHTML=chips.join('');
+  const meta=document.getElementById('nsMeta');
+  if(meta){const kh=(cnt.complaint||0), cn=list.filter(r=>NS_KINDS[r._k].prio===1).length;
+    meta.textContent=`${list.length} việc trong ${NS.hours<168?NS.hours+' giờ':'7 ngày'} qua`+(kh?` · ⚠ ${kh} khiếu nại`:'')+(cn?` · ${cn} cần người`:'')+' · tự làm mới 15s';}
+  let rows=NS.filter==='all'?[...list]:list.filter(r=>r._k===NS.filter);
+  if(!rows.length){ el.innerHTML=`<div class="tablecard"><div class="empty">Chưa có việc nào trong ${NS.hours<168?NS.hours+' giờ':'7 ngày'} qua. AI đang tự xử lý ✅</div></div>`; return; }
+  rows.sort((a,b)=>NS_KINDS[a._k].prio-NS_KINDS[b._k].prio||b.t-a.t); // khẩn trước, trong nhóm thì mới nhất trước
+  const NEW_MS=2*3600*1000;
+  el.innerHTML=`<div class="tablecard"><table><thead><tr><th style="width:148px">Loại việc</th><th>Khách</th><th style="width:168px">SĐT</th><th style="width:150px">Page</th><th style="width:92px;text-align:right">Lúc</th><th style="width:104px"></th></tr></thead><tbody>${
+    rows.map(r=>{const K=NS_KINDS[r._k];return `<tr class="nsr nsr-${K.prio}">
+      <td><span class="pill ${K.pill}">${K.icon} ${K.label}</span></td>
+      <td><div style="display:flex;gap:10px;align-items:flex-start"><div class="av" style="background:${K.prio===2?'var(--okSoft)':K.prio===0?'var(--badSoft)':'var(--warnSoft)'};color:${K.prio===2?'var(--ok)':K.prio===0?'var(--bad)':'var(--warn)'}">${ini(r.name)}</div>
+        <div style="min-width:0"><b style="font-size:13.5px">${esc(r.name||'(chưa rõ tên)')}</b>${r.city||r.qty?`<span class="muted" style="font-size:12px"> · 📍 ${esc(r.city||'?')}${r.qty?' · SL '+r.qty:''}</span>`:''}
+        ${r.reason?`<div class="nsreason">"${esc(r.reason)}"</div>`:''}</div></div></td>
+      <td>${r.phone?`<span style="display:inline-flex;align-items:center;gap:6px"><b class="mono" style="font-size:13px;color:var(--ink)">${esc(r.phone)}</b><button class="btn sm" style="padding:3px 7px" title="Copy SĐT" onclick="copyPhone('${esc(r.phone)}')">⧉</button></span>`:'<span class="muted">—</span>'}</td>
       <td style="font-size:12.5px">${esc(r.pageName||'')}</td>
-      <td class="muted" style="font-size:12px">${agoVi(r.t)}</td>
-      <td><a class="btn sm pri" href="${esc(r.link)}" target="_blank">Mở chat ↗</a></td>
-    </tr>`).join('')}</tbody></table></div>`;
+      <td style="text-align:right">${(Date.now()-r.t)<NEW_MS?'<span class="newpill">MỚI</span><br>':''}<span class="muted" style="font-size:12px">${agoVi(r.t)}</span></td>
+      <td style="text-align:right"><a class="btn sm pri" href="${esc(r.link)}" target="_blank">Mở chat ↗</a></td>
+    </tr>`;}).join('')}</tbody></table></div>`;
 }
 
-// ---- Bộ lọc ngày ----
+/* ============ Bộ lọc ngày (dùng chung cho Tổng quan) ============ */
 const RANGE_PRESETS=[['today','Hôm nay'],['7','7 ngày'],['30','30 ngày'],['all','Tất cả']];
 function rangeQ(){return RANGE.from?`?from=${RANGE.from}&to=${RANGE.to}`:'';}
-function rangeLabel(){if(RANGE.key==='all')return 'toàn thời gian';if(RANGE.key==='today')return 'hôm nay';if(RANGE.key==='custom')return RANGE.from+' → '+RANGE.to;return RANGE.from+' → '+RANGE.to;}
+function rangeLabel(){if(RANGE.key==='all')return 'toàn thời gian';if(RANGE.key==='today')return 'hôm nay';return RANGE.from+' → '+RANGE.to;}
 const _ymd=d=>d.toISOString().slice(0,10);
 window.setRange=k=>{const t=new Date();
   if(k==='all')RANGE={key:'all',from:null,to:null};
@@ -307,13 +407,15 @@ window.setRange=k=>{const t=new Date();
 window.applyCustomRange=()=>{const f=document.getElementById('rfrom').value,to=document.getElementById('rto').value;
   if(!f||!to){toast('Chọn cả 2 ngày','bad');return;}RANGE={key:'custom',from:f,to:to};
   document.querySelectorAll('#drange .chip').forEach(b=>b.classList.toggle('act',b.id==='rangeCustomBtn'));fillStatsBody();};
+window.toggleCustomRange=()=>{const e=document.getElementById('drangeCustom');if(e)e.style.display=e.style.display==='none'?'inline-flex':'none';};
 
-// Section TỔNG QUAN: khung + bộ lọc (giữ nguyên), phần số liệu nạp riêng để làm mới không giật.
-async function rOverview(){
+/* ============ 2. TỔNG QUAN — số liệu + quản lý page GỘP 1 BẢNG (bật/tắt AI, Chat, KB tại chỗ) ============ */
+const OVCHIPS=[['all','Tất cả'],['on','Đang bật AI'],['act','Có hoạt động'],['kb','Có kịch bản'],['nokb','Chưa có KB']];
+function rOverview(){
   const cx=RANGE.key==='custom';
-  sec('stats').innerHTML=`<div class="stashead">
-     <h2 style="margin:0">Tổng quan</h2>
-     <div class="drange" id="drange">
+  content.innerHTML=`<div class="vhead">
+     <h2>Tổng quan hoạt động</h2>
+     <div class="drange" id="drange" title="Ngày cắt theo mốc UTC — tức 07:00 giờ VN, không phải 00:00. 'Hôm nay' = 07:00 hôm nay → 07:00 mai (giờ VN). Cả stats.json, Sổ AI lẫn đơn Pancake đều cắt cùng mốc này nên các cột so được với nhau; riêng báo cáo WhatsApp cắt theo 00:00 giờ VN nên hai bên lệch nhau ở khung 7 tiếng đầu ngày.">
        ${RANGE_PRESETS.map(([k,l])=>`<button class="chip ${RANGE.key===k?'act':''}" data-r="${k}" onclick="setRange('${k}')">${l}</button>`).join('')}
        <button class="chip ${cx?'act':''}" id="rangeCustomBtn" onclick="toggleCustomRange()">📅 Khác</button>
        <span class="drange-cx" id="drangeCustom" style="display:${cx?'inline-flex':'none'}">
@@ -322,130 +424,246 @@ async function rOverview(){
        </span>
      </div>
    </div>
-   <div id="statsbody"></div>`;
+   <div id="senderrbox"></div>
+   <div id="kpicards" class="cards"></div>
+   <div class="row" style="justify-content:space-between;align-items:center;margin:6px 0 12px;gap:10px">
+     <b style="font-size:14px;flex-shrink:0">Pages <span id="ovsub" class="muted" style="font-weight:400;font-size:12px"></span></b>
+     <div class="row" style="flex:1;justify-content:flex-end;flex-wrap:nowrap">
+       <div class="search big">${search}<input id="ovq" placeholder="Tìm tên page hoặc ID..." oninput="drawOvRows()"></div>
+       <select id="ovfsel" onchange="setOvFilter(this.value)" title="Bộ lọc page" style="padding:10px 11px;border-radius:10px;font-size:13.5px">
+         ${OVCHIPS.map(c=>`<option value="${c[0]}" ${c[0]===(window._ovFilter||'act')?'selected':''}>${c[1]}</option>`).join('')}
+       </select>
+       <button class="btn sm" onclick="auditCheck()" title="Tính lại số liệu từ Sổ AI (audit log) để đối chiếu" style="flex-shrink:0">🔍 Đối chiếu Sổ AI</button>
+     </div>
+   </div>
+   <div class="tablecard"><table><thead><tr><th style="width:86px">AI</th><th>Page</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right" title="Số khách mà AI ĐÃ TRẢ LỜI. Không phải toàn bộ khách của page.">Khách AI</th><th style="text-align:right" title="TOÀN BỘ khách có nhắn tin tới page, gồm cả khách Botcake/Fast Lane lo trọn và khách rơi vào các cửa im lặng — AI không đụng tới. Đếm từ 11/08/2026.">Khách nhắn</th><th style="text-align:right" title="Số đơn CHÍNH AI tự chốt và tự đẩy sang Pancake (nguồn: Sổ AI, sự kiện 'order'). Đơn AI tạo luôn mang ghi chú 'Đơn do AI chốt — chờ nhân viên xác nhận'.">AI chốt</th><th style="text-align:right" title="Số KHÁCH được AI tư vấn TRONG khoảng ngày này và có phát sinh đơn Pancake (khớp conversation_id, bỏ đơn hủy/hoàn). KỂ CẢ đơn do sale chốt tay — cột này đo 'AI có góp phần', không phải 'AI tự chốt'. Muốn xem AI tự chốt thì nhìn cột 'AI chốt' bên trái.">Đơn khách AI</th><th style="text-align:right" title="Đơn khách AI ÷ Khách AI — mẫu số ĐÃ LỌC (chỉ khách AI trả lời), nên luôn đẹp hơn sự thật. Dùng để đánh giá riêng chất lượng AI.">Chốt / khách AI</th><th style="text-align:right" title="Đơn khách AI ÷ TOÀN BỘ khách nhắn tới page. ĐÂY MỚI LÀ TỈ LỆ CHỐT THẬT của page.">Chốt / tổng khách</th><th style="text-align:right" title="Chi phí token AI — CHỈ tính trên những tin có số đo thật (Sổ AI ghi token từ 06/08/2026). Cột 'Tin AI' bên trái là TOÀN BỘ tin trong khoảng ngày, nên hai cột không cùng mẫu số: xem dòng 'đo N tin' ngay dưới số tiền.">Chi phí AI</th><th style="text-align:right">Thao tác</th></tr></thead><tbody id="ovbody"></tbody></table></div>`;
   fillStatsBody();
-  clearInterval(statsTimer);statsTimer=setInterval(()=>{if(sec('stats'))fillStatsBody();},12000);
+  addTimer(()=>{if(document.getElementById('kpicards'))fillStatsBody();},12000);
 }
-window.toggleCustomRange=()=>{const e=document.getElementById('drangeCustom');if(e)e.style.display=e.style.display==='none'?'inline-flex':'none';};
-async function fillStatsBody(){const el=document.getElementById('statsbody');if(!el)return;
-  const [o,s,ord]=await Promise.all([j('/overview'),j('/stats'+rangeQ()).catch(()=>({pages:[]})),j('/orders'+rangeQ()).catch(()=>({enabled:false,pages:{}}))]);
-  // Gộp ĐƠN THẬT (Pancake POS) vào từng page + tính tỉ lệ chốt thật = đơn thật / khách.
-  (s.pages||[]).forEach(p=>{const r=(ord.pages||{})[p.id];
-    p.aiOrders=r?r.aiOrders:null;
-    p.closeRate=(r&&p.leads>0)?Math.round(r.aiOrders/p.leads*100):0;});
+function rateBadge(r){const cls=r>=30?'ok':r>=10?'warn':'mut';return `<span class="pill ${cls}">${r||0}%</span>`;}
+function statRow(p){const nm=esc(p.name).replace(/'/g,"\\'");return `<tr>
+   <td><span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap"><span class="toggle ${p.aiEnabled?'on':''}" title="${p.aiEnabled?'Bấm để TẮT AI':'Bấm để BẬT AI'}" onclick="ovToggleAi('${p.id}',${!p.aiEnabled})"></span><span style="font-size:12px;font-weight:600;color:${p.aiEnabled?'var(--ok)':'var(--muted)'}">${p.aiEnabled?'Bật':'Tắt'}</span></span></td>
+   <td><b>${esc(p.name)||'(chưa tên)'}</b><div class="mono">${p.id}</div></td>
+   <td>${p.hasKb?`<span class="pill ok">✓ ${p.products>0?p.products+' SP':'có KB'}</span>`:'<span class="pill warn">chưa</span>'}</td>
+   <td style="text-align:right;font-weight:700">${p.replies||0}</td>
+   <td style="text-align:right;font-weight:700">${p.leads||0}</td>
+   <td style="text-align:right;font-weight:700" title="Khách có nhắn tin tới page — gồm cả khách Botcake/Fast Lane lo trọn, AI không đụng tới">${p.inbound||0}</td>
+   <td style="text-align:right;font-weight:700${p.orders?'':';color:var(--muted);font-weight:400'}">${p.orders||0}</td>
+   <td style="text-align:right;font-weight:700">${p.aiOrders!=null?p.aiOrders:'<span class="muted">…</span>'}</td>
+   <td style="text-align:right" title="Đơn ÷ khách AI đã trả lời — mẫu số đã lọc, luôn đẹp hơn sự thật">${rateBadge(p.closeRate)}</td>
+   <td style="text-align:right" title="Đơn ÷ TOÀN BỘ khách nhắn tới page — tỉ lệ chốt THẬT. Hiện '—' khi mẫu số chưa đủ nghĩa: bộ đếm 'Khách nhắn' bật từ 11/08/2026 còn 'Đơn' là số tích luỹ từ trước, hai bên khác khung thời gian nên chưa chia được. Lọc theo ngày từ 12/08 trở đi sẽ ra số đúng.">${p.closeRateAll!=null?rateBadge(p.closeRateAll):'<span class="muted" title="chưa đủ dữ liệu cùng khoảng ngày">—</span>'}</td>
+   <td style="text-align:right;white-space:nowrap" title="${p.cost!=null?p.costTok.toLocaleString('vi-VN')+' token (vào+cache) · đo được '+p.costMeasured+'/'+p.costReplies+' tin của page này'+(p.vndPerOrder!=null?' · '+p.vndPerOrder.toLocaleString('vi-VN')+'đ/đơn ('+p.costOrders+' đơn AI chốt)':''):'chưa có số đo (bật ghi token từ 06/08)'}">${p.cost!=null?'$'+p.cost.toFixed(2)+`<div class="muted" style="font-size:11px;font-weight:400">đo ${p.costMeasured} tin${p.vndPerReply!=null?' · '+p.vndPerReply.toLocaleString('vi-VN')+'đ/tin':''}</div>`:'<span class="muted">—</span>'}</td>
+   <td style="text-align:right;white-space:nowrap"><button class="btn sm" onclick="openPageChat('${p.id}','${nm}')" title="Xem hội thoại page này">💬 Chat</button> <button class="btn sm" onclick="openPageKB('${p.id}','${nm}')" title="Sửa kịch bản / sản phẩm">📖 Sửa KB</button></td>
+ </tr>`;}
+/* /orders (đơn thật Pancake POS) rất chậm (~30-40s trên VPS) → KHÔNG bắt cả trang đợi:
+   hiện ngay số liệu nhanh (cột đơn tạm "…"), đơn về sau tự điền. Cache 60s + chặn gọi chồng. */
+let _ordCache={key:null,data:null,at:0,inflight:false};
+async function refreshOrders(){
+  const key=rangeQ();
+  if(_ordCache.inflight)return;
+  if(_ordCache.key===key&&_ordCache.data&&Date.now()-_ordCache.at<60000)return; // còn tươi
+  _ordCache.inflight=true;
+  try{const d=await j('/orders'+key);_ordCache={key,data:d,at:Date.now(),inflight:false};
+    if(document.getElementById('kpicards'))fillStatsBody(); // đơn đã về → vẽ lại
+  }finally{_ordCache.inflight=false;}
+}
+async function fillStatsBody(){const el=document.getElementById('kpicards');if(!el)return;
+  const [o,s,pages,tc]=await Promise.all([j('/overview').catch(()=>({pages:0,source:''})),j('/stats'+rangeQ()).catch(()=>({pages:[]})),j('/pages').catch(()=>[]),j('/token-cost'+rangeQ()).catch(()=>null)]);
+  const ord=(_ordCache.key===rangeQ()&&_ordCache.data)?_ordCache.data:{enabled:false,pages:{}};
+  refreshOrders(); // nạp đơn ở nền nếu cache cũ / đổi khoảng ngày
+  SEND_ERRS=o.sendErrors||SEND_ERRS;
+  const seb=document.getElementById('senderrbox');if(seb)seb.innerHTML=sendErrBanner();
+  // Gộp: danh sách TẤT CẢ page (quản lý) + số liệu (stats) + ĐƠN THẬT (Pancake POS).
+  const sm={};(s.pages||[]).forEach(p=>sm[p.id]=p);
+  const tcm={};(tc&&tc.pages||[]).forEach(p=>tcm[String(p.id)]=p); // chi phí token đo được theo page
+  const merged=pages.map(p=>{const st=sm[p.id]||{};const r=(ord.pages||{})[p.id];const c=tcm[String(p.id)];
+    const leads=st.leads||0;
+    return {...p,replies:st.replies||0,leads,orders:st.orders||0,
+      aiOrders:r?r.aiOrders:(ord.enabled?0:null),
+      cost:c?c.usd:null,costTok:c?(c.tin+c.cread):0,costMeasured:c?c.measured:0,
+      costReplies:c?c.replies:0,costOrders:c?c.orders:0,vndPerReply:c?c.vndPerReply:null,vndPerOrder:c?c.vndPerOrder:null,
+      closeRate:(r&&leads>0)?Math.round(r.aiOrders/leads*100):0,
+      closeRateAll:(r&&(st.inbound||0)>=r.aiOrders&&st.inbound>0)?Math.round(r.aiOrders/st.inbound*100):null};});
+  // Page có số liệu nhưng không còn trong danh sách (đổi token...) vẫn hiện ra.
+  (s.pages||[]).forEach(p=>{if(!merged.some(m=>String(m.id)===String(p.id))){const r=(ord.pages||{})[p.id];
+    merged.push({...p,aiOrders:r?r.aiOrders:(ord.enabled?0:null),closeRate:(r&&p.leads>0)?Math.round(r.aiOrders/p.leads*100):0,closeRateAll:(r&&(p.inbound||0)>=r.aiOrders&&p.inbound>0)?Math.round(r.aiOrders/p.inbound*100):null});}});
+  merged.sort((a,b)=>(b.replies-a.replies)||(b.leads-a.leads)||String(a.name||'').localeCompare(String(b.name||'')));
+  window._ov=merged;
   const aiOrdTot=ord.enabled?(ord.aiOrders||0):null;
   const totLeads=s.leads||0;
   const cards=[
-    ['pages','Pages kết nối',o.pages,'nguồn Pancake'],
+    ['pages','Pages kết nối',o.pages,'nguồn '+(o.source==='pancake'?'Pancake':'FB')],
     ['msgs','Khách AI tư vấn',totLeads,rangeLabel()],
     ['stats','Tin AI trả lời',s.replies||0,rangeLabel()],
-    ['kb','Đơn từ khách AI',aiOrdTot!=null?aiOrdTot:'…','khách AI có đặt đơn'],
-    ['stats','Tỉ lệ chốt',(aiOrdTot!=null&&totLeads>0?Math.round(aiOrdTot/totLeads*100):0)+'%',(aiOrdTot!=null?aiOrdTot:'…')+' đơn / '+totLeads+' khách'],
+    ['kb','Đơn từ khách AI',aiOrdTot!=null?aiOrdTot:'…','trong đó '+(s.orders||0)+' do AI tự chốt, còn lại sale chốt tay'],
+    ['overview','Tỉ lệ chốt',(aiOrdTot!=null&&totLeads>0?Math.round(aiOrdTot/totLeads*100):0)+'%',(aiOrdTot!=null?aiOrdTot:'…')+' đơn / '+totLeads+' khách'],
+    ['stats','Chi phí AI (đo)',tc?'$'+tc.usd.toFixed(2):'—',tc?('≈'+tc.vnd.toLocaleString('vi-VN')+'đ · đo trên '+tc.measured.toLocaleString('vi-VN')+' tin'):'ghi token từ 06/08'],
+    ['stats','Chi phí / 1 tin AI',tc&&tc.vndPerReply!=null?tc.vndPerReply.toLocaleString('vi-VN')+'đ':'—',tc&&tc.usdPerReply!=null?('$'+tc.usdPerReply.toFixed(5)+' · '+tc.measured.toLocaleString('vi-VN')+' tin có số đo'):'chưa có tin nào đo được'],
+    ['kb','Chi phí / 1 đơn AI chốt',tc&&tc.vndPerOrder!=null?tc.vndPerOrder.toLocaleString('vi-VN')+'đ':'—',tc&&tc.usdPerOrder!=null?('$'+tc.usdPerOrder.toFixed(2)+' · '+tc.repliesPerOrder+' tin/đơn · '+tc.orders+' đơn AI chốt'):'chưa có đơn nào trong khoảng'],
   ];
-  el.innerHTML=`<div class="cards">${cards.map(c=>`<div class="mc" style="cursor:default"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[3]}</div></div>`).join('')}</div>
-   <div class="row" style="justify-content:space-between;align-items:center;margin:6px 0 12px">
-     <b style="font-size:14px">Hoạt động theo page <span class="muted" style="font-weight:400;font-size:12px">(${rangeLabel()})</span></b>
-     <div class="row"><button class="btn sm" onclick="auditCheck()" title="Tính lại số liệu từ Sổ AI (audit log) để đối chiếu">🔍 Đối chiếu Sổ AI</button><button class="btn sm" onclick="openPagesScreen()">${svg(IC.pages)} Quản lý page</button><button class="btn sm" onclick="reloadAll()">↻ Nạp lại</button></div>
-   </div>
-   <div class="tablecard"><table><thead><tr><th>Page</th><th>AI</th><th>KB</th><th style="text-align:right">Tin AI</th><th style="text-align:right">Khách</th><th style="text-align:right">Đơn khách AI</th><th style="text-align:right">Tỉ lệ chốt</th><th></th></tr></thead><tbody id="sbody">${statRows(s.pages)}</tbody></table></div>`;
+  el.innerHTML=cards.map(c=>`<div class="mc"><div class="ic">${svg(IC[c[0]])}</div><div class="l">${c[1]}</div><div class="v">${c[2]}</div><div class="d">${c[3]}</div></div>`).join('');
+  const on=merged.filter(p=>p.aiEnabled).length,kbn=merged.filter(p=>p.hasKb).length;
+  setEl('ovsub',`(${rangeLabel()}) · ${merged.length} page · ${on} bật AI · ${kbn} có kịch bản`);
+  drawOvRows();
 }
-window.reloadAll=async()=>{toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();fillStatsBody();};
+function ovFiltered(){
+  const q=(document.getElementById('ovq')?.value||'').toLowerCase().trim();
+  const f=window._ovFilter||'act';
+  return (window._ov||[]).filter(p=>{
+    // ĐANG GÕ TÌM KIẾM → tìm trên TẤT CẢ 234 page, bỏ qua bộ lọc đang chọn
+    // (tránh "page có mà tìm không thấy" vì bị bộ lọc 'Có hoạt động' che).
+    if(q)return [p.name,p.id,p.market,p.category,p.marketer].some(x=>String(x||'').toLowerCase().includes(q));
+    if(f==='on'&&!p.aiEnabled)return false;
+    if(f==='act'&&!(p.replies>0||p.leads>0||p.aiEnabled))return false;
+    if(f==='kb'&&!p.hasKb)return false;
+    if(f==='nokb'&&p.hasKb)return false;
+    return true;
+  });
+}
+function drawOvRows(){const el=document.getElementById('ovbody');if(!el)return;
+  const list=ovFiltered();
+  el.innerHTML=list.length?list.map(statRow).join(''):`<tr><td colspan="9"><div class="empty">Không có page nào khớp bộ lọc.</div></td></tr>`;}
+window.setOvFilter=f=>{window._ovFilter=f;const s=document.getElementById('ovfsel');if(s&&s.value!==f)s.value=f;drawOvRows();};
+window.ovToggleAi=async(id,on)=>{await post('/pages/'+id+'/ai',{on});
+  const p=(window._ov||[]).find(x=>String(x.id)===String(id));if(p)p.aiEnabled=on;
+  toast(on?'✓ Đã bật AI cho page':'Đã tắt AI cho page');drawOvRows();};
 window.auditCheck=async()=>{try{
   const [a,s]=await Promise.all([j('/audit'+rangeQ()),j('/stats'+rangeQ())]);
   const same=a.replies===s.replies&&a.leads===s.leads&&a.orders===s.orders;
   toast(`📒 Sổ AI (${rangeLabel()}): ${a.events} sự kiện · ${a.replies} tin · ${a.leads} khách · ${a.orders} đơn — ${same?'✓ KHỚP số hiện tại':'⚠ lệch: hiện '+s.replies+'/'+s.leads+'/'+s.orders}`, same?'ok':'bad');
 }catch(e){toast('Lỗi đọc Sổ AI: '+e.message,'bad');}};
 
-const PGCHIPS=[['all','Tất cả'],['on','Đang bật AI'],['kb','Có kịch bản'],['nokb','Chưa có KB']];
-window.openPagesScreen=async()=>{
-  clearInterval(statsTimer);clearInterval(msgsTimer);clearInterval(nsTimer); // rời trang chủ
-  const [list, st]=await Promise.all([j('/pages'), j('/stats').catch(()=>({pages:[]}))]);
-  const sm={}; (st.pages||[]).forEach(p=>sm[p.id]={replies:p.replies,orders:p.orders});
-  window._pages=list.map(p=>({...p, replies:(sm[p.id]||{}).replies||0, orders:(sm[p.id]||{}).orders||0}));
-  window._pgFilter=window._pgFilter||'kb';
-  const on=list.filter(p=>p.aiEnabled).length, kbn=list.filter(p=>p.hasKb).length;
-  const chips=[['kb','Có kịch bản',kbn],['on','Đang bật AI',on],['nokb','Chưa có KB',list.length-kbn],['all','Tất cả',list.length]];
-  content.innerHTML=`<button class="btn sm" style="margin-bottom:12px" onclick="renderHome()">← Quay lại bảng điều khiển</button>
-   <div class="stashead"><h2 style="margin:0">Pages</h2>
-     <div class="search" style="max-width:250px">${search}<input id="pgq" placeholder="Tìm tên / thị trường / MKT..." oninput="drawPages()"></div></div>
-   <div class="chips" id="pgtabs" style="margin-bottom:14px">${chips.map(c=>`<button class="chip ${c[0]===window._pgFilter?'act':''}" data-f="${c[0]}" onclick="setPgFilter('${c[0]}')">${c[1]} <b>${c[2]}</b></button>`).join('')}</div>
-   <div class="pglist" id="pbody"></div>`;
-  drawPages();
-}
-function pgFiltered(){
-  const q=(document.getElementById('pgq')?.value||'').toLowerCase().trim();
-  const f=window._pgFilter;
-  return (window._pages||[]).filter(p=>{
-    if(f==='on'&&!p.aiEnabled)return false;
-    if(f==='kb'&&!p.hasKb)return false;
-    if(f==='nokb'&&p.hasKb)return false;
-    return !q||[p.name,p.id,p.market,p.category,p.marketer].some(x=>String(x||'').toLowerCase().includes(q));
-  });
-}
-// Thẻ page GỌN: 1 dòng tên + nút; các dòng phụ chỉ hiện khi có dữ liệu (tránh lặp chỗ trống).
-function pgCard(p){const on=p.aiEnabled, nm=esc(p.name)||'(chưa tên)', q=nm.replace(/'/g,"\\'");
-  const meta=[p.market&&esc(p.market), p.hasKb&&`${p.products||0} SP`, p.marketer&&'MKT: '+esc(p.marketer)].filter(Boolean);
-  const act=(p.replies||0)+(p.orders||0)>0;
-  return `<div class="pg ${on?'on':''}">
-   <div class="pgtop">
-     <div class="av">${ini(p.name)}</div>
-     <div style="flex:1;min-width:0">
-       <div class="pgname">${nm}</div>
-       <div class="pgmeta">${p.id}${meta.length?' · '+meta.join(' · '):''}</div>
-     </div>
-     <div class="pgbtns">
-       <button class="tgl ${on?'on':''}" title="${on?'Đang bật AI — bấm để tắt':'AI tắt — bấm để bật'}" onclick="toggleAiCard('${p.id}',${!on})"></button>
-       <button class="ibtn" title="Xem chat" onclick="openPageChat('${p.id}','${q}')">${svg(IC.msgs)}</button>
-       <button class="ibtn" title="Sửa kịch bản / KB" onclick="openPageKB('${p.id}','${q}')">${svg(IC.kb)}</button>
-     </div>
-   </div>
-   ${p.preview?`<div class="pgprev">💬 ${esc(p.preview)}</div>`:''}
-   ${act?`<div class="pgfoot"><span>📨 <b>${p.replies||0}</b> tin</span><span>🛒 <b>${p.orders||0}</b> đơn</span></div>`:''}
-  </div>`;
-}
-function drawPages(){const el=document.getElementById('pbody');if(!el)return;
-  const list=pgFiltered();
-  el.innerHTML=list.length?list.map(pgCard).join(''):'<div class="empty" style="grid-column:1/-1">Không có page nào khớp bộ lọc.</div>';}
-window.setPgFilter=f=>{window._pgFilter=f;document.querySelectorAll('#pgtabs .chip').forEach(b=>b.classList.toggle('act',b.dataset.f===f));drawPages();};
-window.toggleAiCard=async(id,on)=>{await post('/pages/'+id+'/ai',{on});
-  const p=(window._pages||[]).find(x=>x.id===id);if(p)p.aiEnabled=on;
-  toast(on?'✓ Đã bật AI — bot tự trả lời khách qua Pancake':'Đã tắt AI cho page');drawPages();};
-window.openPageChat=(id,name)=>{ctx.pageId=id;ctx.pageName=name;
-  // Nếu đang ở màn hình riêng (Pages/KB) thì dựng lại trang chủ trước rồi mới nhảy tới Tin nhắn.
-  if(!sec('msgs')){renderHome();setTimeout(()=>{const pf=document.getElementById('pf');if(pf)pf.value=id;loadConvos();jumpTo('msgs');},400);return;}
-  const pf=document.getElementById('pf');if(pf)pf.value=id;loadConvos();jumpTo('msgs');};
-window.openPageKB=(id,name)=>{ctx={pageId:id,pageName:name};rKB();};
+/* Mở Chat / KB của 1 page — gọi từ nút thao tác trong bảng Tổng quan. */
+window.openPageChat=(id,name)=>{ctx.pageId=id;ctx.pageName=name;go('msgs');};
+window.openPageKB=(id,name)=>{ctx={pageId:id,pageName:name};go('kb');};
 
+/* ============ 3. TIN NHẮN — tên khách rõ ràng, bền qua restart (Sổ AI + Pancake), tiếp quản, trả lời tay ============ */
+let _convSel=''; // khóa hội thoại đang mở (psid hoặc conv id)
+const convKey=c=>c.psid||c.conv||'';
 async function rMsgs(){
   const pages=await j('/pages');
-  sec('msgs').innerHTML=`<h2>Tin nhắn</h2><p class="sub">Theo dõi hội thoại live · tiếp quản hoặc trả lời tay.</p>
-   <div class="row" style="margin-bottom:14px"><select id="pf" style="min-width:240px"><option value="">Tất cả page</option>${pages.map(p=>`<option value="${p.id}" ${p.id===ctx.pageId?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
-   <span class="pill mut"><span class="dot" style="width:6px;height:6px;box-shadow:none"></span> live</span></div>
-   <div class="convo"><div class="list" id="clist"></div><div class="panel" id="cpanel"><div class="empty">Chọn 1 hội thoại bên trái.</div></div></div>`;
+  content.innerHTML=`<div class="vhead"><div><h2>Tin nhắn</h2>
+     <p class="sub" style="margin:4px 0 0" id="cvMeta">Hội thoại 72 giờ gần nhất (kể cả trước restart) · tự làm mới 5s</p></div>
+     <div class="row">
+       <div class="search">${search}<input id="cq" placeholder="Tìm khách / page / SĐT..." oninput="drawConvs()"></div>
+       <select id="pf" style="min-width:200px"><option value="">Tất cả page</option>${pages.map(p=>`<option value="${p.id}" ${p.id===ctx.pageId?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
+       <span class="pill mut"><span class="dot" style="width:6px;height:6px;box-shadow:none"></span> live</span></div></div>
+   <div class="convo"><div class="list" id="clist"></div><div class="panel" id="cpanel"><div class="empty">👈 Chọn 1 hội thoại để xem nguyên văn.<br><span style="font-size:12px">Hội thoại cũ được kéo trực tiếp từ Pancake — xem được cả trước khi server khởi động.</span></div></div><div class="cinfo" id="cinfo"><div class="empty" style="padding:30px 10px;font-size:12.5px">Thông tin khách & đơn hàng sẽ hiện ở đây.</div></div></div>`;
   document.getElementById('pf').onchange=e=>{ctx.pageId=e.target.value;loadConvos();};
-  await loadConvos(); clearInterval(msgsTimer);msgsTimer=setInterval(()=>{if(sec('msgs'))loadConvos();},5000);
+  await loadConvos();
+  addTimer(()=>{if(document.getElementById('clist'))loadConvos();},5000);
 }
-async function loadConvos(){const el=document.getElementById('clist');if(!el)return;
-  const list=await j('/conversations'+(ctx.pageId?'?pageId='+ctx.pageId:''));
-  el.innerHTML=list.length?list.map(c=>`<div class="ci ${c.psid===selPsid?'sel':''}" onclick="openConvo('${c.psid}')">
-    <div class="av">${ini(c.pageName)}</div><div style="flex:1;min-width:0">
-    <div class="t"><span>${esc(c.pageName||c.pageId||'?')}</span><span class="muted" style="font-size:11.5px">${ago(c.lastAt)}</span></div>
-    <div class="s">${c.handoff?'👤 ':''}${esc(c.lastText||'(chưa có)')}</div></div></div>`).join('')
-    :'<div class="empty">Chưa có hội thoại.</div>';
+async function loadConvos(){
+  if(!document.getElementById('clist'))return;
+  window._convs=await j('/conversations'+(ctx.pageId?'?pageId='+ctx.pageId:'')).catch(()=>window._convs||[]);
+  drawConvs();
 }
-window.openConvo=async psid=>{selPsid=psid;const c=await j('/conversation/'+psid);
-  document.querySelectorAll('.ci').forEach(e=>e.classList.toggle('sel',e.getAttribute('onclick').includes(psid)));
+function drawConvs(){
+  const el=document.getElementById('clist');if(!el)return;
+  const q=(document.getElementById('cq')?.value||'').toLowerCase().trim();
+  const list=(window._convs||[]).filter(c=>!q||[c.custName,c.pageName,c.psid,c.lastText].some(x=>String(x||'').toLowerCase().includes(q)));
+  setEl('cvMeta',`${list.length} hội thoại · 72 giờ gần nhất (kể cả trước restart) · tự làm mới 5s`);
+  el.innerHTML=list.length?list.map(c=>{const i=(window._convs||[]).indexOf(c);return `<div class="ci ${convKey(c)===_convSel?'sel':''}" onclick="openConvo(${i})">
+    <div class="av">${ini(c.custName||c.pageName)}</div><div style="flex:1;min-width:0">
+    <div class="t"><span>${esc(c.custName||'(chưa rõ tên)')}${c.handoff?' <span class="pill warn" style="font-size:10px;padding:1px 7px">✋ người</span>':''}${c.hasOrder?' <span class="pill ok" style="font-size:10px;padding:1px 7px">🛒 có đơn</span>':''}</span><span class="muted" style="font-size:11.5px;flex-shrink:0">${ago(c.lastAt)}</span></div>
+    <div class="s"><span class="muted">${esc(c.pageName||c.pageId||'?')}</span> · ${esc(c.lastText||'(chưa có)')}</div></div></div>`;}).join('')
+    :'<div class="empty">Không có hội thoại nào khớp.</div>';
+}
+// Vẽ bong bóng chat: mốc ngày ("29/07/2026") + giờ từng tin + bản dịch tiếng Việt (nếu có).
+function bubbles(trs,vi){
+  let out='',lastDay='';
+  trs.forEach((m,idx)=>{
+    const t=m.t||m.at;
+    if(t){const d=new Date(t);const day=d.toLocaleDateString('vi-VN');
+      if(day!==lastDay){lastDay=day;out+=`<div class="dsep">${day}</div>`;}
+      out+=`<div class="bub ${m.who}">${esc(m.text)}${vi&&vi[idx]?`<span class="vitrans">🇻🇳 ${esc(vi[idx])}</span>`:''}<span class="btime">${d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span></div>`;
+    } else out+=`<div class="bub ${m.who}">${esc(m.text)}${vi&&vi[idx]?`<span class="vitrans">🇻🇳 ${esc(vi[idx])}</span>`:''}</div>`;
+  });
+  return out||'<div class="empty">Chưa có tin.</div>';
+}
+window._lastTr=[];window._lastVi=null;
+window.openConvo=async i=>{
+  const c=(window._convs||[])[i];if(!c)return;
+  _convSel=convKey(c);drawConvs();window._lastVi=null;
   const p=document.getElementById('cpanel');
-  p.innerHTML=`<div class="phd"><div><b>${esc(c.pageName||c.pageId)}</b> <span class="mono">${psid}</span></div>
-   <div class="row">${c.handoff?`<span class="pill warn">đang là người</span><button class="btn sm" onclick="release('${psid}')">↩ Trả AI</button>`:`<button class="btn sm" onclick="takeover('${psid}')">✋ Tiếp quản</button>`}</div></div>
-   <div class="tr" id="tr">${c.transcript.map(m=>`<div class="bub ${m.who}">${esc(m.text)}</div>`).join('')||'<div class="empty">Chưa có tin.</div>'}</div>
-   <div class="composer"><input id="amsg" placeholder="Nhân viên trả lời..." style="flex:1" onkeydown="if(event.key==='Enter')sendAgent('${psid}')"><button class="btn pri" onclick="sendAgent('${psid}')">Gửi</button></div>`;
+  p.innerHTML='<div class="empty">Đang tải hội thoại…</div>';
+  fillConvInfo(c); // cột phải nạp song song
+  const qs=`?pageId=${encodeURIComponent(c.pageId)}&conv=${encodeURIComponent(c.conv||'')}&cust=${encodeURIComponent(c.cust||'')}`;
+  const d=await j('/conversation/'+(c.psid||'x')+qs).catch(e=>({error:String(e)}));
+  if(d.error){p.innerHTML=`<div class="empty">⚠ ${esc(d.error)}</div>`;return;}
+  const name=c.custName||d.custName||'(chưa rõ tên)';
+  const pkLink=c.conv?`https://pancake.vn/${c.pageId}?c_id=${c.conv}`:'';
+  const handoff=d.handoff||c.handoff;
+  window._lastTr=d.transcript||[];
+  p.innerHTML=`<div class="phd"><div style="min-width:0"><b>${esc(name)}</b> <span class="muted" style="font-size:12px">· ${esc(c.pageName||'')}</span>${d.fromPancake?' <span class="pill mut" style="font-size:10px">từ Pancake</span>':''}</div>
+   <div class="row" style="flex-shrink:0"><button class="btn sm" onclick="dichConvo(${i})" title="Dịch hội thoại sang tiếng Việt (AI)">🇻🇳 Dịch</button>
+   ${pkLink?`<a class="btn sm" href="${esc(pkLink)}" target="_blank">Mở Pancake ↗</a>`:''}
+   ${handoff?`<span class="pill warn">đang là người</span><button class="btn sm" onclick="releaseC(${i})">↩ Trả AI</button>`:`<button class="btn sm" onclick="takeoverC(${i})">✋ Tiếp quản</button>`}</div></div>
+   <div class="tr" id="tr">${bubbles(window._lastTr)}</div>
+   <div class="composer"><input id="amsg" placeholder="Nhân viên trả lời khách (gửi qua Pancake)..." style="flex:1" onkeydown="if(event.key==='Enter')sendAgent(${i})"><button class="btn pri" onclick="sendAgent(${i})">Gửi</button></div>`;
+  if(d.noHistory){document.getElementById('tr').innerHTML='<div class="empty">Hội thoại cũ này chưa được ghi mã Pancake nên không kéo được nguyên văn.<br><span style="font-size:12px">Các hội thoại từ 29/07 trở đi đều xem được đầy đủ.</span></div>';}
   const tr=document.getElementById('tr');tr.scrollTop=tr.scrollHeight;
 };
-window.takeover=async p=>{await post('/conversation/'+p+'/takeover');toast('Bạn đã tiếp quản');openConvo(p);loadConvos();};
-window.release=async p=>{await post('/conversation/'+p+'/release');toast('Đã trả lại AI');openConvo(p);loadConvos();};
-window.sendAgent=async p=>{const i=document.getElementById('amsg');const t=i.value.trim();if(!t)return;i.value='';await post('/conversation/'+p+'/send',{text:t});openConvo(p);loadConvos();};
+// Dịch toàn bộ hội thoại sang tiếng Việt (Haiku) — bấm lần nữa để ẩn.
+window.dichConvo=async i=>{
+  const tr=document.getElementById('tr');if(!tr||!window._lastTr.length)return;
+  if(window._lastVi){window._lastVi=null;tr.innerHTML=bubbles(window._lastTr);tr.scrollTop=tr.scrollHeight;return;}
+  toast('Đang dịch hội thoại…');
+  const r=await post('/translate',{msgs:window._lastTr.map(m=>m.text)});
+  if(r.error){toast('Dịch lỗi: '+r.error,'bad');return;}
+  window._lastVi=r.vi||[];
+  tr.innerHTML=bubbles(window._lastTr,window._lastVi);tr.scrollTop=tr.scrollHeight;
+  toast('✓ Đã dịch — bấm 🇻🇳 lần nữa để ẩn');
+};
+// Trạng thái đơn POS → nhãn + màu
+const POS_ST={0:['Mới','mut'],1:['Đã xác nhận','info'],2:['Đã gửi hàng','ok'],3:['Đã nhận','ok'],4:['Đang hoàn','warn'],5:['Đã hoàn','bad'],6:['Đã hủy','bad'],11:['Chờ hàng','warn'],12:['Chờ in','info'],20:['Đã đặt hàng','info']};
+// Cột phải: hồ sơ khách (Sổ AI) + đơn hàng POS + ghi chú vào Pancake.
+async function fillConvInfo(c){
+  const el=document.getElementById('cinfo');if(!el)return;
+  el.innerHTML='<div class="empty" style="padding:26px 10px">Đang tải thông tin…</div>';
+  const d=await j(`/conversation-info?pageId=${encodeURIComponent(c.pageId)}&conv=${encodeURIComponent(c.conv||'')}&cust=${encodeURIComponent(c.cust||'')}`).catch(()=>({}));
+  const row=(k,v)=>v?`<div class="cirow"><span class="k">${k}</span><span class="v">${v}</span></div>`:'';
+  const ords=(d.orders||[]).map(o=>{const st=POS_ST[o.status]||['TT '+o.status,'mut'];return `<div class="ocard">
+    <div class="row" style="justify-content:space-between"><span class="oid">#${esc(o.id)}</span><span class="pill ${st[1]}">${st[0]}</span></div>
+    ${row('COD',esc(o.codDisplay||''))}${row('Vận đơn',o.tracking?`<span class="mono" style="color:var(--ink)">${esc(o.tracking)}</span>`:'')}
+    ${o.address?`<div class="muted" style="font-size:11.5px;margin-top:4px">📍 ${esc(o.address)}</div>`:''}
+    ${o.note?`<div class="muted" style="font-size:11.5px;margin-top:3px;font-style:italic">${esc(o.note)}</div>`:''}
+  </div>`;}).join('');
+  el.innerHTML=`
+   <div class="sec"><h4>👤 Khách hàng</h4>
+     ${row('Tên',esc(d.name||c.custName||'—'))}
+     ${d.phone?`<div class="cirow"><span class="k">SĐT</span><span class="v"><b class="mono" style="color:var(--ink)">${esc(d.phone)}</b> <button class="btn sm" style="padding:1px 6px" onclick="copyPhone('${esc(d.phone)}')">⧉</button></span></div>`:''}
+     ${row('Khu vực',esc(d.city||''))}${row('Số lượng chốt',d.qty?'SL '+d.qty:'')}
+   </div>
+   <div class="sec"><h4>🛒 Đơn hàng (${(d.orders||[]).length})</h4>${ords||'<div class="muted" style="font-size:12px">Chưa có đơn nào gắn với hội thoại này.</div>'}</div>
+   <div class="sec"><h4>🤖 AI</h4>
+     ${row('Lượt đã dùng (24h)',`${d.replies24h||0} / ${d.maxTurns||5}`)}
+     ${d.lastHandoffReason?`<div class="muted" style="font-size:12px;font-style:italic;margin-top:4px">"${esc(d.lastHandoffReason)}"</div>`:''}
+   </div>
+   <div class="sec"><h4>📝 Ghi chú vào Pancake</h4>
+     <textarea id="cnote" style="width:100%;min-height:54px;font-size:12.5px" placeholder="Ghi chú cho sale trực Pancake..."></textarea>
+     <button class="btn sm pri" style="margin-top:7px" onclick="guiNote('${esc(c.pageId)}','${esc(c.cust||'')}')">Ghi vào hồ sơ khách</button>
+   </div>`;
+}
+window.guiNote=async(pageId,cust)=>{
+  const ta=document.getElementById('cnote');const t=(ta?.value||'').trim();
+  if(!t){toast('Chưa nhập nội dung','bad');return;}
+  if(!cust){toast('Hội thoại thiếu mã khách — không ghi được','bad');return;}
+  const r=await post('/conversation-note',{pageId,cust,text:t});
+  if(r.error){toast('Ghi lỗi: '+r.error,'bad');return;}
+  ta.value='';toast('✓ Đã ghi chú vào hồ sơ khách trên Pancake');
+};
+window.takeoverC=async i=>{const c=window._convs[i];if(!c?.psid){toast('Hội thoại này chưa có phiên — cứ trả lời, hệ thống tự tiếp quản','bad');return;}await post('/conversation/'+c.psid+'/takeover');c.handoff=true;toast('Bạn đã tiếp quản — AI im hội thoại này');openConvo(i);};
+window.releaseC=async i=>{const c=window._convs[i];if(!c?.psid)return;await post('/conversation/'+c.psid+'/release');c.handoff=false;toast('Đã trả lại cho AI');openConvo(i);};
+window.sendAgent=async i=>{const c=window._convs[i];if(!c)return;
+  const inp=document.getElementById('amsg');const t=inp.value.trim();if(!t)return;inp.value='';
+  const r=await post('/conversation/'+(c.psid||'x')+'/send',{text:t,pageId:c.pageId,conv:c.conv,cust:c.cust});
+  if(r.error){toast('Gửi lỗi: '+r.error,'bad');inp.value=t;return;}
+  c.handoff=true;toast('✓ Đã gửi cho khách qua '+(r.via==='pancake'?'Pancake':'Messenger'));
+  setTimeout(()=>openConvo(i),800);};
 
+/* ============ 4. KỊCH BẢN / KB — mở từ nút "Sửa KB" trong bảng Tổng quan ============ */
+let KBPAGES=[];
 async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/sheet')]);
   const banner=sheet.url
    ? `<div class="tablecard" style="padding:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
@@ -456,8 +674,7 @@ async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/shee
        <div class="row"><input id="shurl" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1"><button class="btn pri" onclick="connectSheet()">Kết nối</button></div></div>`;
   KBPAGES=pages;
   const sel=pages.find(p=>String(p.id)===String(ctx.pageId))||pages[0]||{};
-  clearInterval(statsTimer);clearInterval(msgsTimer);clearInterval(nsTimer); // rời trang chủ → dừng auto-refresh
-  content.innerHTML=`<button class="btn sm" style="margin-bottom:12px" onclick="renderHome()">← Quay lại bảng điều khiển</button>
+  content.innerHTML=`<button class="btn sm" style="margin-bottom:12px" onclick="go('stats')">← Quay lại Tổng quan</button>
    <h2>Kịch bản / KB theo page</h2><p class="sub">Nguồn kịch bản: Google Sheet (cả team) hoặc sửa nhanh từng page bên dưới.</p>${banner}
    <div class="kbbar">
      <div class="fld combo" style="flex:1;min-width:260px;position:relative">
@@ -480,7 +697,6 @@ async function rKB(){const [pages,sheet]=await Promise.all([j('/pages'),j('/shee
 }
 window.connectSheet=async(change)=>{ let url; if(change){url=prompt('Dán link Google Sheet mới:');} else {url=document.getElementById('shurl').value.trim();} if(!url)return; toast('Đang đọc Sheet...'); const r=await post('/sheet',{url}); if(r.error){toast(r.error,'bad');return;} toast('✓ Đọc '+r.pages+' page từ Sheet'); rKB(); };
 window.reloadSheet=async()=>{ toast('Đang nạp lại...'); const r=await post('/sheet/reload'); if(r.error){toast(r.error,'bad');return;} toast('✓ '+r.pages+' page từ Sheet'); rKB(); };
-let KBPAGES=[];
 window.kbFilter=(showAll)=>{const inp=document.getElementById('kbsearch');if(!inp)return;const q=(showAll?'':inp.value).trim().toLowerCase();
   const drop=document.getElementById('kbdrop');
   const list=KBPAGES.filter(p=>!q||(p.name||'').toLowerCase().includes(q))
@@ -523,12 +739,13 @@ function imgTile(im){im=im||{};const u=im.url||'';const lbl=im.label||'Ảnh s�
   </div>`;}
 function addTile(){return `<div class="imtile imadd"><div class="imthumb" onclick="addKbImg(this)"><b style="font-size:22px;font-weight:400;line-height:1">＋</b>Thêm ảnh</div></div>`;}
 // Bảng gói giá: lấy từ r.tiers (mới) hoặc suy từ price1/combo2/combo3 (dữ liệu cũ).
+// NHÃN PHẢI TIẾNG ANH — Fast Lane in thẳng nhãn này cho khách (sửa 11/08/2026).
 function tiersOf(r){
-  if(Array.isArray(r.tiers)&&r.tiers.length)return r.tiers.filter(t=>+t.price>0).map(t=>({label:t.label!=null?t.label:(t.qty?`Mua ${t.qty} cái`:''),price:+t.price}));
-  const out=[];[['Mua 1 cái',r.price1],['Combo 2 cái',r.combo2],['Combo 3 cái',r.combo3]].forEach(([l,v])=>{if(+v>0)out.push({label:l,price:+v});});
+  if(Array.isArray(r.tiers)&&r.tiers.length)return r.tiers.filter(t=>+t.price>0).map(t=>({label:t.label!=null?t.label:(t.qty?`Buy ${t.qty}`:''),price:+t.price}));
+  const out=[];[['Buy 1',r.price1],['Combo 2',r.combo2],['Combo 3',r.combo3]].forEach(([l,v])=>{if(+v>0)out.push({label:l,price:+v});});
   return out.length?out:[{label:'',price:''}];
 }
-function tierRow(t){t=t||{};return `<div class="tierrow"><input class="tl" value="${esc(t.label||'')}" placeholder="Mô tả gói: Mua 1 cái / Mua 1 tặng 1 / Combo 2..."><span>—</span><input class="tp" type="number" min="0" value="${t.price??''}" placeholder="giá"><button class="tierx" title="Xoá gói" onclick="this.closest('.tierrow').remove()">✕</button></div>`;}
+function tierRow(t){t=t||{};return `<div class="tierrow"><input class="tl" value="${esc(t.label||'')}" placeholder="Mô tả gói — TIẾNG ANH, khách đọc trực tiếp: Buy 1 Get 2 FREE (3 pcs)..."><span>—</span><input class="tp" type="number" min="0" value="${t.price??''}" placeholder="giá"><button class="tierx" title="Xoá gói" onclick="this.closest('.tierrow').remove()">✕</button></div>`;}
 window.addTierRow=(btn)=>btn.closest('.pricebox').querySelector('.tiers').insertAdjacentHTML('beforeend',tierRow({}));
 function kbCard(r){r=r||{};const imgs=(r.images&&r.images.length)?r.images:(r.image?[{url:r.image,label:'Ảnh sản phẩm'}]:[]);
   const cur=r.currency||'AED';const curOpts=[...CURRENCIES];if(!curOpts.includes(cur))curOpts.unshift(cur);
@@ -600,22 +817,69 @@ window.saveKB=async()=>{const pid=document.getElementById('kbpage').value;
   const r=await post('/kb/'+pid,{products});
   toast('✓ Đã lưu cấu hình AI + '+r.products+' sản phẩm');document.getElementById('kbmsg').textContent='Cập nhật lúc '+new Date().toLocaleTimeString();};
 
-async function rTokens(){const ts=await j('/tokens');
-  sec('tokens').innerHTML=`<h2>⚙️ Cài đặt · API / Token Meta <span class="pill ok" style="vertical-align:middle">failover</span></h2>
-   <p class="sub">Nuôi nhiều System Token (nhiều app). App bị FB khóa → tự đánh dấu hỏng & dùng app khác cho page có dự phòng.</p>
+/* ============ 5. CÀI ĐẶT / TOKEN — token Pancake (đa tài khoản) + token Meta ============ */
+function tokExpPill(t){
+  if(!t.exp)return '<span class="pill mut">không rõ hạn</span>';
+  if(t.expired)return '<span class="pill bad">ĐÃ HẾT HẠN</span>';
+  const d=Math.ceil((t.exp-Date.now())/86400000);
+  const cls=d>14?'ok':d>5?'warn':'bad';
+  return `<span class="pill ${cls}">còn ${d} ngày · ${new Date(t.exp).toLocaleDateString('vi-VN')}</span>`;
+}
+async function rTokens(){const [ts,pk]=await Promise.all([j('/tokens'),j('/pancake-tokens').catch(()=>[])]);
+  content.innerHTML=`<div class="vhead"><div><h2>⚙️ Cài đặt / Token</h2>
+   <p class="sub" style="margin:4px 0 0">Token Pancake (bot nhận/gửi tin — đa tài khoản failover) và System Token Meta.</p></div>
+   <button class="btn" onclick="reloadTk()">↻ Nạp lại danh sách page</button></div>
+
+   <h2 style="font-size:15px">🥞 Token Pancake <span class="pill ok" style="vertical-align:middle">failover đa tài khoản</span></h2>
+   <p class="sub">Mỗi tài khoản Pancake nắm quyền 1 nhóm page. Page dính lỗi quyền/gói → bot tự chuyển token kế tiếp. Token hết hạn bị loại tự động. <b>Hạn ~90 ngày — nhớ gia hạn.</b></p>
+   <div class="tablecard" style="margin-bottom:14px"><table><thead><tr><th>#</th><th>Tài khoản</th><th>Nguồn</th><th>Hạn</th><th style="text-align:right">Page đang dùng</th><th></th></tr></thead><tbody>
+   ${pk.map(t=>`<tr>
+     <td class="muted">${t.i+1}</td>
+     <td><b>${esc(t.name)}</b> <span class="mono">…${esc(t.tail)}</span></td>
+     <td><span class="pill ${t.source==='dashboard'?'info':'mut'}">${t.source}</span></td>
+     <td>${tokExpPill(t)}</td>
+     <td style="text-align:right;font-weight:700">${t.pagesRouted||0}</td>
+     <td>${t.removable?`<button class="btn sm" onclick="rmPkTok(${t.i},'${esc(t.name).replace(/'/g,"\\'")}')">Xóa</button>`:''}</td>
+   </tr>`).join('')||'<tr><td colspan=6><div class="empty">Chưa có token Pancake.</div></td></tr>'}
+   </tbody></table></div>
+   <div class="tablecard" style="padding:16px;max-width:720px;margin-bottom:26px"><b>➕ Thêm token Pancake mới</b>
+     <div class="muted" style="font-size:12px;margin:4px 0 10px">Đăng nhập pages.fm bằng tài khoản có quyền page → lấy JWT (access_token) → dán vào đây. Hệ thống tự kiểm tra token sống + đếm page trước khi nhận.</div>
+     <div class="row"><input id="pktok" placeholder="eyJhbGciOi..." style="flex:1;font-family:ui-monospace,monospace;font-size:12px"><button class="btn pri" onclick="addPkTok()">Kiểm tra & thêm</button></div>
+   </div>
+
+   <div class="vhead" style="margin-bottom:6px"><div><h2 style="font-size:15px">Ⓜ️ System Token Meta <span class="pill ok" style="vertical-align:middle">failover</span></h2>
+   <p class="sub" style="margin:4px 0 0">Nuôi nhiều System Token (nhiều app). App bị FB khóa → tự đánh dấu hỏng & dùng app khác cho page có dự phòng.</p></div></div>
    <div class="tablecard" style="margin-bottom:16px"><table><thead><tr><th>Nhãn</th><th>Token</th><th>Trạng thái</th><th></th></tr></thead><tbody>
-   ${ts.map(t=>`<tr><td><b>${esc(t.label)}</b></td><td class="mono">${esc(t.tail)}</td><td>${t.healthy?'<span class="pill ok">● khỏe</span>':'<span class="pill bad">● hỏng</span>'}</td><td><button class="btn sm" onclick="rmToken('${t.id}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan=4 class="empty">Chưa có token.</td></tr>'}
+   ${ts.map(t=>`<tr><td><b>${esc(t.label)}</b></td><td class="mono">${esc(t.tail)}</td><td>${t.healthy?'<span class="pill ok">● khỏe</span>':'<span class="pill bad">● hỏng</span>'}</td><td><button class="btn sm" onclick="rmToken('${t.id}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan=4><div class="empty">Chưa có token.</div></td></tr>'}
    </tbody></table></div>
    <div class="tablecard" style="padding:16px;max-width:620px"><b>Thêm System Token (app khác)</b>
      <div class="row" style="margin-top:10px"><input id="tlabel" placeholder="Nhãn (vd App dự phòng 1)" style="width:200px"><input id="ttoken" placeholder="System User token (EAA...)" style="flex:1"></div>
-     <div class="row" style="margin-top:10px"><button class="btn pri" onclick="addTk()">+ Thêm & nạp page</button><button class="btn" onclick="reloadTk()">↻ Nạp lại</button><span id="tkmsg" class="muted"></span></div>
+     <div class="row" style="margin-top:10px"><button class="btn pri" onclick="addTk()">+ Thêm & nạp page</button><span id="tkmsg" class="muted"></span></div>
    </div>`;
 }
+window.addPkTok=async()=>{
+  const inp=document.getElementById('pktok');const t=inp.value.trim();
+  if(!t){toast('Dán token vào đã nhé','bad');return;}
+  toast('Đang kiểm tra token với Pancake…');
+  const r=await post('/pancake-tokens',{token:t});
+  if(r.error){toast('❌ '+r.error,'bad');return;}
+  toast(`✓ Đã thêm token "${r.name}" — thấy ${r.pages} page, hạn ${new Date(r.exp).toLocaleDateString('vi-VN')}`);
+  inp.value='';rTokens();topStatus();
+};
+window.rmPkTok=async(i,name)=>{
+  if(!confirm(`Xóa token Pancake của "${name}"?`))return;
+  const r=await del('/pancake-tokens/'+i);
+  if(r.error){toast('❌ '+r.error,'bad');return;}
+  toast('Đã xóa token '+name);rTokens();
+};
 window.addTk=async()=>{const label=document.getElementById('tlabel').value.trim();const token=document.getElementById('ttoken').value.trim();if(!token){toast('Thiếu token','bad');return;}document.getElementById('tkmsg').textContent='đang nạp...';const r=await post('/tokens',{label,token});toast('✓ Nạp '+r.pages+' page');topStatus();rTokens();};
 window.rmToken=async id=>{if(!confirm('Xóa token này?'))return;await del('/tokens/'+id);toast('Đã xóa token');topStatus();rTokens();};
-window.reloadTk=async()=>{document.getElementById('tkmsg').textContent='đang nạp...';const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();rTokens();};
+window.reloadTk=async()=>{const m=document.getElementById('tkmsg');if(m)m.textContent='đang nạp...';toast('Đang nạp lại...');const r=await post('/tokens/reload');toast('✓ '+r.pages+' page');topStatus();rTokens();};
 
-topStatus();setInterval(topStatus,12000);renderHome();
+/* ============ BOOT ============ */
+topStatus();setInterval(topStatus,12000);
+pollBadge();setInterval(pollBadge,30000);
+render();
 </script>
 </body>
 </html>

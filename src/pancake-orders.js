@@ -19,11 +19,17 @@ try { pageShop = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')); } catch { page
 const saveCache = () => { try { fs.writeFileSync(CACHE_FILE, JSON.stringify(pageShop)); } catch { /* bỏ qua */ } };
 
 // fetch có timeout — 1 call chậm/treo không kéo sập cả request.
-async function fetchJson(url, ms = 12000) {
+async function fetchJson(url, ms = 20000) {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), ms);
   try { const r = await fetch(url, { signal: ac.signal }); return await r.json(); }
   finally { clearTimeout(t); }
+}
+// POS hay chậm/nghẽn theo đợt. Thử lại 1 lần trước khi chịu thua — trước đây lỗi là BỎ DỞ
+// vòng quét và trả về con số THIẾU, khiến thống kê nhảy loạn giữa các lần xem.
+async function fetchJsonRetry(url, ms = 20000) {
+  try { return await fetchJson(url, ms); }
+  catch { await new Promise((r) => setTimeout(r, 1500)); return fetchJson(url, ms); }
 }
 
 export function ordersEnabled() { return SHOPS.length > 0; }
@@ -72,12 +78,17 @@ export async function aiOrderStats(pageId, convSet, { from, to } = {}) {
   if (to) base += `&endDateTime=${unix(to, true)}`;
   for (let pn = 1; pn <= 12; pn++) {
     let j;
-    try { j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?${base}&page_number=${pn}`); } catch { break; }
+    // KHÔNG nuốt lỗi rồi trả số thiếu: ném lên để caller giữ lại giá trị lần quét trước,
+    // thà hiện số cũ còn hơn cho sale thấy 0 đơn rồi lát sau lại thành 49.
+    try { j = await fetchJsonRetry(`${POS}/shops/${s.shop_id}/orders?${base}&page_number=${pn}`); }
+    catch (e) { throw new Error(`POS không phản hồi (page ${pageId}, trang ${pn}): ${e.message}`); }
     const d = j.data || []; if (!d.length) break;
     for (const o of d) {
       if (convSet.has(o.conversation_id) && !CANCEL.has(String(o.status))) { matched.add(o.conversation_id); orders++; }
     }
     if (d.length < 100) break;
+    // Chạm trần 12 trang mà vẫn còn đơn → số đang bị CẮT CỤT, phải báo chứ không im lặng.
+    if (pn === 12) console.warn(`[orders] page ${pageId}: quét chạm trần 1200 đơn, số có thể thiếu`);
   }
   return { customers: matched.size, orders };
 }
@@ -146,9 +157,13 @@ export async function createPancakeOrder(pageId, input, convId) {
   if (convId && createdConvs.has(convId)) return { ok: true, dedup: true }; // hội thoại đã tạo đơn → không tạo lại
   const addr = [input.address, input.city].filter(Boolean).join(', ');
   const qty = Number(input.qty) || 1;
-  // Giá = theo số lượng từ đơn thật; thiếu thì suy từ giá 1 cái × qty. Lưu vào shipping_fee (đúng cách shop này).
+  // GIÁ ƯU TIÊN 1: tổng tiền AI đã chốt với khách (total_price, nội tệ) → đổi sang đơn vị nhỏ
+  // của POS (AED/SAR/QAR ×100; KWD/OMR/BHD ×1000). ƯU TIÊN 2: bảng giá học từ đơn cũ theo SL.
+  const CCY_FACTOR = { AED: 100, SAR: 100, QAR: 100, USD: 100, KWD: 1000, OMR: 1000, BHD: 1000 };
   const pm = ref.priceByQty || {};
-  const price = pm[qty] || (pm[1] ? pm[1] * qty : 0);
+  const agreed = Number(input.total_price) > 0
+    ? Math.round(Number(input.total_price) * (CCY_FACTOR[String(input.currency || '').toUpperCase()] ?? 100)) : 0;
+  const price = agreed || pm[qty] || (pm[1] ? pm[1] * qty : 0);
   const payload = {
     page_id: String(pageId),
     bill_full_name: input.name || '',
@@ -173,6 +188,22 @@ export async function createPancakeOrder(pageId, input, convId) {
     }
     return { ok: false, error: (res.message || JSON.stringify(res)).slice(0, 160) };
   } catch (e) { return { ok: false, error: e.message }; }
+}
+
+// ĐƠN CỦA 1 HỘI THOẠI — cho cột thông tin ở tab Tin nhắn (khớp conversation_id).
+export async function ordersForConv(pageId, convId) {
+  const s = await shopOf(pageId);
+  if (!s || !convId) return [];
+  try {
+    const j = await fetchJson(`${POS}/shops/${s.shop_id}/orders?api_key=${s.api_key}&page_id=${pageId}&page_number=1&page_size=60`);
+    return (j.data || []).filter((o) => o.conversation_id === convId).map((o) => ({
+      id: o.id, status: o.status, statusName: o.status_name || String(o.status),
+      cod: o.cod ?? o.total_price_after_sub_discount ?? null,
+      address: o.shipping_address?.full_address || o.shipping_address?.address || '',
+      name: o.bill_full_name || '', phone: o.bill_phone_number || o.shipping_address?.phone_number || '',
+      tracking: o.extend_code || o.tracking_number || '', note: o.note || '', at: o.inserted_at || '',
+    }));
+  } catch { return []; }
 }
 
 // Đơn thật cho nhiều page cùng lúc (có cache ngắn để không gọi API dồn dập).

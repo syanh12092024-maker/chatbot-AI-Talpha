@@ -12,25 +12,37 @@ import {
   listConversations, getConversation, setHandoff, isAiEnabled, setAiEnabled, listAiEnabled,
 } from './store.js';
 import { sendText } from './messenger.js';
-import { pancakePages, pancakePageCount } from './pancake.js';
+import { pancakePages, pancakePageCount, pkGetMessages, pkSendReply, pkAddNote, listPancakeTokens, addPancakeToken, removePancakeToken } from './pancake.js';
 import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
-import { recount, needSale } from './ai-log.js';
-import { ordersEnabled, aiOrderStats } from './pancake-orders.js';
+import { recount, needSale, recentConversations, custProfile, tokenStats, aiConvsByPageInRange } from './ai-log.js';
+import { cleanText } from './handler.js';
+import { ordersEnabled, aiOrderStats, ordersForConv } from './pancake-orders.js';
 import { getAiConvSet } from './ai-convs.js';
+import { sendHealth } from './pancake-poll.js';
+import { anthropic, aiExtras } from './llm.js';
 
 export const adminRouter = express.Router();
+adminRouter.use((await import('./admin-scripts.js')).scriptsRouter); // L3 · M01-M03 Script Studio (1 dòng mount, xem docs/v2/08-SONG-SONG.md §3) — phải đứng TRƯỚC /pages/:id/ai để chặn bật AI page chưa sẵn sàng
+adminRouter.use('/economics', (await import('./admin-economics.js')).economicsRouter); // M20 Unit Economics
+adminRouter.use('/ops', (await import('./admin-ops.js')).opsRouter); // L6 · M18 Ops Console + M19 Health Watchdog
+adminRouter.use('/order-bridge', (await import('./admin-orders.js')).ordersRouter); // L7 · M14 Order Bridge + M15 Miner + sổ template
+adminRouter.use('/ab', (await import('./admin-experiments.js')).experimentsRouter); // L5 · M17 A/B + M12 đuổi theo (1 dòng mount, xem docs/v2/08-SONG-SONG.md §3)
+adminRouter.use((await import('./admin-rules.js')).rulesRouter); // L8 · bảng Kịch bản tự động + Botcake chỉ đọc (1 dòng mount, xem docs/v2/08-SONG-SONG.md §3)
 
 // ---- Tổng quan ----
 adminRouter.get('/overview', (_req, res) => {
   const withKB = getPageList().filter((p) => (p.products || 0) > 0).length;
+  const pk = pancakePages();
   res.json({
     pages: pancakePageCount() || pageCount(),
     pagesWithKB: withKB,
     source: pancakePageCount() ? 'pancake' : 'facebook',
     conversations: listConversations().length,
     aiEnabled: listAiEnabled().length,
+    // Cảnh báo backoff: page đang lỗi gửi / tạm ngừng (nguyên tắc #9)
+    sendErrors: sendHealth().map((e) => ({ ...e, pageName: pk.get(String(e.page))?.name || e.page })),
   });
 });
 
@@ -46,7 +58,7 @@ adminRouter.get('/stats', (req, res) => {
   const ids = new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)]);
   const rate = (orders, leads) => (leads > 0 ? Math.round((orders / leads) * 100) : 0); // tỉ lệ chốt %
   const pages = [...ids].map((id) => {
-    const b = st.byPage[id] || { replies: 0, orders: 0, leads: 0 };
+    const b = st.byPage[id] || { replies: 0, orders: 0, leads: 0, inbound: 0 };
     const cfg = getPageConfig(id);
     const hasKb = ((kbById.get(id) || {}).products || 0) > 0 || !!(cfg.greeting || cfg.tone || cfg.salesPrompt);
     return {
@@ -55,6 +67,7 @@ adminRouter.get('/stats', (req, res) => {
       aiEnabled: isAiEnabled(id),
       replies: b.replies || 0,
       leads: b.leads || 0,
+      inbound: b.inbound || 0,   // khách NHẮN TỚI — mẫu số thật của tỉ lệ chốt
       orders: b.orders || 0,
       closeRate: rate(b.orders || 0, b.leads || 0),
       hasKb,
@@ -66,9 +79,47 @@ adminRouter.get('/stats', (req, res) => {
     pagesWithKB: getPageList().filter((p) => (p.products || 0) > 0).length,
     aiEnabled: listAiEnabled().length,
     range: { from: from || null, to: to || null },
-    replies: st.replies, orders: st.orders, leads: st.leads,
+    replies: st.replies, orders: st.orders, leads: st.leads, inbound: st.inbound || 0,
     closeRate: rate(st.orders, st.leads),
     lastReplyAt: st.lastReplyAt,
+    pages,
+  });
+});
+
+// ---- CHI PHÍ TOKEN theo page — số ĐO từ Sổ AI (ghi từ 06/08/2026), quy tiền theo config.aiPrices ----
+adminRouter.get('/token-cost', (req, res) => {
+  const rgx = /^\d{4}-\d{2}-\d{2}$/;
+  const from = rgx.test(req.query.from || '') ? req.query.from : undefined;
+  const to = rgx.test(req.query.to || '') ? req.query.to : undefined;
+  const st = tokenStats({ from, to });
+  const P = config.aiPrices;
+  const pk = pancakePages();
+  const usd = (b) => (b.tin * P.in + b.cread * P.cache + b.tout * P.out) / 1e6;
+  // ĐƠN GIÁ THẬT — chia trên số tin CÓ SỐ ĐO, không chia trên tổng tin.
+  // Token chỉ được ghi từ 06/08/2026, nên khoảng ngày rộng có nhiều tin không đo được;
+  // lấy usd/replies sẽ ra đơn giá rẻ giả tạo. usd/measured mới là tiền thật của 1 tin.
+  // 1 đơn tốn bao nhiêu = đơn giá 1 tin × số tin trung bình để ra 1 đơn (cùng khoảng ngày).
+  const unit = (b) => {
+    const perReply = b.measured > 0 ? usd(b) / b.measured : null;
+    const perOrder = perReply != null && b.orders > 0 ? perReply * (b.replies / b.orders) : null;
+    return {
+      usdPerReply: perReply == null ? null : +perReply.toFixed(6),
+      vndPerReply: perReply == null ? null : Math.round(perReply * P.usdVnd),
+      usdPerOrder: perOrder == null ? null : +perOrder.toFixed(4),
+      vndPerOrder: perOrder == null ? null : Math.round(perOrder * P.usdVnd),
+      repliesPerOrder: b.orders > 0 ? +(b.replies / b.orders).toFixed(1) : null,
+    };
+  };
+  const pages = Object.entries(st.byPage)
+    .map(([id, b]) => ({ id, name: pk.get(String(id))?.name || id, ...b, usd: +usd(b).toFixed(4), ...unit(b) }))
+    .sort((a, b) => b.usd - a.usd);
+  res.json({
+    provider: config.aiProvider, prices: P,
+    replies: st.replies, measured: st.measured, // measured < replies = có tin trước khi bật đo
+    orders: st.orders, // đơn AI chốt TRONG CÙNG khoảng ngày (nguồn Sổ AI, không phải POS)
+    tin: st.tin, tout: st.tout, cread: st.cread, calls: st.calls,
+    usd: +usd(st).toFixed(4), vnd: Math.round(usd(st) * P.usdVnd),
+    ...unit(st),
     pages,
   });
 });
@@ -105,6 +156,30 @@ adminRouter.get('/need-sale', (req, res) => {
 
 // ---- ĐƠN TỪ KHÁCH AI: khớp đơn Pancake với hội thoại AI đã tư vấn → tỉ lệ chốt thật ----
 const _ordCache = new Map();
+// ĐƠN TỪ KHÁCH AI — số này TỪNG NHẢY LOẠN giữa các lần xem (đo được: 162 rồi 248 trong
+// cùng một khoảng ngày). Ba nguyên nhân, đã xử lý cả ba:
+//   ① POS timeout → aiOrderStats bỏ dở vòng quét và trả số THIẾU (page thành 0 đơn).
+//      Nay lỗi được ném lên, page đó GIỮ NGUYÊN số của lần quét trước thay vì tụt về 0.
+//   ② Quét tuần tự 40 page mất tới 215s, lâu hơn cả TTL cache 60s → cứ mở dashboard là
+//      quét lại từ đầu, không lần nào xong. Nay quét song song + cache 5 phút.
+//   ③ Hai request cùng lúc cùng quét chồng nhau. Nay có khoá _ordInflight.
+//   ④ (11/08/2026) Tử số và mẫu số KHÁC TẬP: đơn lọc theo ngày, nhưng tập hội thoại AI
+//      lấy từ ai-convs.json là TOÀN THỜI GIAN → khách AI tư vấn tuần trước mà sale chốt tay
+//      hôm nay vẫn tính vào "đơn hôm nay", trong khi không nằm trong "khách hôm nay".
+//      Nay khung có ngày thì dựng tập hội thoại từ Sổ AI theo ĐÚNG khoảng ngày đó.
+const ORD_TTL = 5 * 60e3;
+const ORD_CONC = 5;
+const _ordInflight = new Map(); // cacheKey -> Promise (chống quét chồng)
+
+async function runPool(items, limit, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); }
+  }));
+  return out;
+}
+
 adminRouter.get('/orders', async (req, res) => {
   if (!ordersEnabled()) return res.json({ enabled: false, pages: {} });
   const rgx = /^\d{4}-\d{2}-\d{2}$/;
@@ -112,21 +187,49 @@ adminRouter.get('/orders', async (req, res) => {
   const to = rgx.test(req.query.to || '') ? req.query.to : undefined;
   const cacheKey = `${from || ''}|${to || ''}`;
   const hit = _ordCache.get(cacheKey);
-  if (hit && Date.now() - hit.t < 60000) return res.json(hit.data);
-  const st = getStats();
-  const ids = [...new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)])];
-  try {
-    const pages = {};
-    for (const id of ids) { // tuần tự để không làm nghẽn API Pancake
-      const r = await aiOrderStats(id, getAiConvSet(id), { from, to });
-      pages[id] = { aiOrders: r.customers, aiOrderCount: r.orders };
-    }
+  if (hit && Date.now() - hit.t < ORD_TTL) return res.json(hit.data);
+  // Đang có lượt quét chạy → chờ chính nó, đừng mở thêm lượt nữa.
+  if (_ordInflight.has(cacheKey)) {
+    try { return res.json(await _ordInflight.get(cacheKey)); }
+    catch (e) { return res.status(500).json({ enabled: true, error: e.message }); }
+  }
+
+  const scan = (async () => {
+    const st = getStats();
+    const ids = [...new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)])];
+    const prev = hit?.data?.pages || {};
+    const failed = [];
+    // Khung "Tất cả" (không from/to) giữ nguyên tập toàn thời gian: trường `conv` chỉ được
+    // ghi vào Sổ AI từ 29/07/2026, dựng lại từ sổ sẽ mất các hội thoại cũ hơn mốc đó.
+    const convByPage = (from || to) ? aiConvsByPageInRange({ from, to }) : null;
+    const convSetOf = (id) => (convByPage ? (convByPage.get(String(id)) || new Set()) : getAiConvSet(id));
+    const results = await runPool(ids, ORD_CONC, async (id) => {
+      try {
+        const r = await aiOrderStats(id, convSetOf(id), { from, to });
+        return [id, { aiOrders: r.customers, aiOrderCount: r.orders }];
+      } catch (e) {
+        failed.push(id);
+        console.warn(`[orders] page ${id} quét lỗi, giữ số lần trước: ${e.message}`);
+        return [id, prev[id] || { aiOrders: 0, aiOrderCount: 0, stale: true }];
+      }
+    });
+    const pages = Object.fromEntries(results);
     let totalAiOrders = 0;
-    for (const v of Object.values(pages)) totalAiOrders += v.aiOrders;
-    const data = { enabled: true, aiOrders: totalAiOrders, pages };
-    _ordCache.set(cacheKey, { t: Date.now(), data });
-    res.json(data);
-  } catch (e) { res.status(500).json({ enabled: true, error: e.message }); }
+    for (const v of Object.values(pages)) totalAiOrders += v.aiOrders || 0;
+    const data = {
+      enabled: true, aiOrders: totalAiOrders, pages,
+      scannedAt: Date.now(),
+      partial: failed.length > 0, failedPages: failed.length,
+    };
+    // Lượt quét thiếu dữ liệu thì cache ngắn hơn để sớm quét lại cho đủ.
+    _ordCache.set(cacheKey, { t: failed.length ? Date.now() - ORD_TTL + 60e3 : Date.now(), data });
+    return data;
+  })();
+
+  _ordInflight.set(cacheKey, scan);
+  try { res.json(await scan); }
+  catch (e) { res.status(500).json({ enabled: true, error: e.message }); }
+  finally { _ordInflight.delete(cacheKey); }
 });
 
 // ---- Pages ----
@@ -166,13 +269,72 @@ adminRouter.post('/pages/:id/ai', (req, res) => {
 });
 
 // ---- Tin nhắn / hội thoại ----
+// Gộp 2 nguồn: RAM (hội thoại live từ lúc server chạy) + Sổ AI (72h — SỐNG SÓT QUA RESTART).
 adminRouter.get('/conversations', (req, res) => {
-  res.json(listConversations({ pageId: req.query.pageId }));
+  const pageId = req.query.pageId;
+  const pk = pancakePages();
+  const nameOf = (id) => pk.get(String(id))?.name || String(id);
+  const ram = listConversations({ pageId });
+  const seenConv = new Set(ram.map((r) => r.pkConvId).filter(Boolean));
+  const seenPsid = new Set(ram.map((r) => String(r.psid)));
+  const merged = ram.map((r) => ({
+    psid: String(r.psid), pageId: String(r.pageId),
+    pageName: r.pageName || nameOf(r.pageId),
+    custName: r.custName || '', lastText: r.lastText || '', lastAt: r.lastAt || 0,
+    handoff: !!r.handoff, hasOrder: !!r.orderId, live: true,
+    conv: r.pkConvId || '', cust: r.pkCustId || '',
+  }));
+  for (const g of recentConversations({ hours: 72 })) {
+    if (pageId && String(g.page) !== String(pageId)) continue;
+    const psid = (g.conv || '').split('_')[1] || '';
+    if ((g.conv && seenConv.has(g.conv)) || (psid && seenPsid.has(psid))) continue; // RAM đã có → ưu tiên bản live
+    merged.push({
+      psid, pageId: g.page, pageName: nameOf(g.page),
+      custName: g.name || '', lastText: g.lastText || '', lastAt: g.t,
+      handoff: g.lastType === 'handoff', hasOrder: g.hasOrder, live: false,
+      conv: g.conv || '', cust: g.cust,
+    });
+  }
+  merged.sort((a, b) => b.lastAt - a.lastAt);
+  res.json(merged.slice(0, 200));
 });
-adminRouter.get('/conversation/:psid', (req, res) => {
+// Chi tiết hội thoại: RAM nếu có (đủ tin agent/system); không có → KÉO NGUYÊN VĂN từ Pancake.
+adminRouter.get('/conversation/:psid', async (req, res) => {
+  const pk = pancakePages();
   const c = getConversation(req.params.psid);
-  if (!c) return res.status(404).json({ error: 'không tìm thấy' });
-  res.json(c);
+  if (c && (c.transcript || []).length) {
+    c.pageName = c.pageName || pk.get(String(c.pageId))?.name || c.pageId;
+    return res.json(c);
+  }
+  const { pageId, conv, cust } = req.query;
+  if (!(pageId && conv && cust)) {
+    if (c) return res.json(c);
+    // Hội thoại cũ (trước khi Sổ AI ghi mã hội thoại) → không kéo được nguyên văn.
+    return res.json({ psid: req.params.psid, pageId: pageId || '', transcript: [], noHistory: true });
+  }
+  try {
+    const msgs = await pkGetMessages(pageId, conv, cust);
+    const transcript = msgs.map((m) => {
+      const images = [];
+      let extra = '';
+      for (const a of (m.attachments || [])) {
+        const ty = String(a.type || '');
+        if (a.url && /photo|image|sticker/i.test(ty)) images.push(a.url);
+        else if ((a.post_attachments || []).length) extra = '(bài/video quảng cáo)';
+        else if (a.url || a.image_data) images.push(a.url || '');
+      }
+      const text = (m.original_message || m.message || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      return {
+        who: String(m.from?.id) === String(pageId) ? 'ai' : 'customer',
+        text: text || extra || (images.length ? '' : ((m.attachments || []).length ? '(đính kèm)' : '')),
+        images: images.filter(Boolean),
+      };
+    }).filter((m) => m.text || (m.images || []).length);
+    res.json({
+      psid: req.params.psid, pageId, pageName: pk.get(String(pageId))?.name || pageId,
+      custName: '', handoff: !!(c && c.handoff), transcript, fromPancake: true, pkConvId: conv, pkCustId: cust,
+    });
+  } catch (e) { res.status(502).json({ error: 'không đọc được từ Pancake: ' + e.message }); }
 });
 adminRouter.post('/conversation/:psid/takeover', (req, res) => {
   setHandoff(req.params.psid, true, 'manual');
@@ -186,11 +348,79 @@ adminRouter.post('/conversation/:psid/send', async (req, res) => {
   const text = String(req.body?.text || '').trim();
   if (!text) return res.status(400).json({ error: 'tin rỗng' });
   const c = getConversation(req.params.psid);
-  if (!c) return res.status(404).json({ error: 'không tìm thấy' });
-  setHandoff(req.params.psid, true, 'manual');
+  // Toạ độ Pancake: ưu tiên từ RAM state; không có thì client gửi kèm (hội thoại dựng từ Sổ AI).
+  const kPage = (c && c.pageId) || req.body?.pageId;
+  const kConv = (c && c.pkConvId) || req.body?.conv;
+  const kCust = (c && c.pkCustId) || req.body?.cust;
+  setHandoff(req.params.psid, true, 'manual'); // người gửi tay → AI im hội thoại này
   recordOutbound(req.params.psid, text, 'agent');
+  if (kPage && kConv && kCust) {
+    const r = await pkSendReply(kPage, kConv, kCust, text);
+    if (!r.ok) return res.status(502).json({ error: 'Pancake từ chối: ' + r.error });
+    return res.json({ ok: true, via: 'pancake' });
+  }
+  if (!c) return res.status(404).json({ error: 'không tìm thấy' });
   await sendText(req.params.psid, text, c.pageId);
+  res.json({ ok: true, via: 'fb' });
+});
+
+// ---- CỘT THÔNG TIN hội thoại: khách (từ Sổ AI) + đơn hàng POS của đúng hội thoại ----
+// ---- PANEL THÔNG TIN hội thoại: hồ sơ khách (Sổ AI) + đơn POS khớp conversation_id ----
+const CCY_DIV = { KWD: 1000, OMR: 1000, BHD: 1000 }; // tiền 3 số lẻ; còn lại chia 100
+adminRouter.get(['/conversation-info', '/conv-info'], async (req, res) => {
+  const { pageId, conv, cust } = req.query;
+  if (!pageId) return res.status(400).json({ error: 'thiếu pageId' });
+  const prof = custProfile(pageId, cust || '');
+  const currency = (getPageProductsRaw(pageId)[0] || {}).currency || '';
+  let orders = [];
+  try { if (ordersEnabled() && conv) orders = await ordersForConv(pageId, conv); } catch { /* không chặn panel */ }
+  const div = CCY_DIV[String(currency).toUpperCase()] || 100;
+  orders = orders.map((o) => ({ ...o, codDisplay: o.cod != null ? (o.cod / div).toLocaleString('vi-VN') + (currency ? ' ' + currency : '') : '' }));
+  if (!prof.phone && orders[0]?.phone) prof.phone = orders[0].phone;
+  if (!prof.name && orders[0]?.name) prof.name = orders[0].name;
+  res.json({ ...prof, currency, maxTurns: config.maxAiTurnsBeforeHandoff, orders });
+});
+
+// ---- Ghi chú vào hồ sơ khách trên Pancake (sale ghi từ dashboard, sale trực Pancake thấy ngay) ----
+adminRouter.post(['/conversation-note', '/conv-note'], async (req, res) => {
+  const { pageId, cust, text } = req.body || {};
+  const t = String(text || '').trim();
+  if (!(pageId && cust && t)) return res.status(400).json({ error: 'thiếu pageId/cust/nội dung' });
+  const r = await pkAddNote(pageId, cust, `📝 [Dashboard] ${t}`).catch((e) => ({ ok: false, error: e.message }));
+  if (r && r.ok === false) return res.status(502).json({ error: r.error });
   res.json({ ok: true });
+});
+
+// ---- Dịch hội thoại sang tiếng Việt (Haiku) — cho sale đọc hội thoại ngoại ngữ ----
+adminRouter.post('/translate', async (req, res) => {
+  const msgs = Array.isArray(req.body?.msgs) ? req.body.msgs.slice(0, 50) : [];
+  if (!msgs.length) return res.json({ vi: [] });
+  try {
+    const src = msgs.map((m, i) => `${i + 1}|${cleanText(m, 300).replace(/\n/g, ' ')}`).join('\n');
+    const r = await anthropic.messages.create({
+      model: config.modelClassifier, max_tokens: 2500,
+      system: 'Dịch từng dòng sau sang tiếng Việt tự nhiên, ngắn gọn (giữ nghĩa bán hàng). Trả đúng định dạng "số|bản dịch", mỗi dòng một bản, không thêm gì khác.',
+      messages: [{ role: 'user', content: src }],
+      ...aiExtras, // Kimi: tắt thinking
+    });
+    const text = r.content.find((b) => b.type === 'text')?.text || '';
+    const vi = new Array(msgs.length).fill('');
+    for (const line of text.split('\n')) { const m = line.match(/^(\d+)\|(.*)$/); if (m) { const i = +m[1] - 1; if (i >= 0 && i < vi.length) vi[i] = m[2].trim(); } }
+    res.json({ vi });
+  } catch (e) { res.status(502).json({ error: e.message }); }
+});
+
+// ---- TOKEN PANCAKE (đa tài khoản, failover): xem / thêm / xóa từ dashboard ----
+adminRouter.get('/pancake-tokens', (_req, res) => res.json(listPancakeTokens()));
+adminRouter.post('/pancake-tokens', async (req, res) => {
+  const r = await addPancakeToken(req.body?.token);
+  if (!r.ok) return res.status(400).json(r);
+  res.json(r);
+});
+adminRouter.delete('/pancake-tokens/:i', (req, res) => {
+  const r = removePancakeToken(req.params.i);
+  if (!r.ok) return res.status(400).json(r);
+  res.json(r);
 });
 
 // ---- Upload ảnh sản phẩm (base64 từ dashboard → lưu file → trả URL công khai) ----

@@ -17,3 +17,24 @@ page-shop-cache.json
 ai-convs.json
 page-product-cache.json
 ai-created-orders.json
+.env.vps
+pancake-tokens.json
+pancake-page-tokens.json
+wa-auth/
+wa-qr.png
+
+# Lịch sử kịch bản (M02) + sổ cái page (M01) — kịch bản marketer viết + map shop, như kb-overrides.json
+script-versions/
+pages.json
+
+# Trạng thái hội thoại (M05) + sổ template Botcake (M18) — dữ liệu thật, chỉ có trên VPS
+conv-state.json
+conv-state.json.tmp
+botcake-templates.json
+
+# L7 · báo cáo mổ (M15), sổ template chờ duyệt, hàng chờ tạo đơn (M14) — dữ liệu thật của VPS
+miner-reports.jsonl
+miner-state.json
+template-candidates.json
+template-learn-reports.jsonl
+ai-order-queue.json
