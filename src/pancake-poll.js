@@ -503,8 +503,20 @@ async function processConv(pageId, c, psid, custId, mark = '') {
     await sleep(config.imgGapMs);
   }
   // Model gửi ảnh nhưng không viết nổi chữ: caption đã đi kèm ảnh nên khách vẫn có lời,
-  // không phải ảnh trơ. Kết lượt tại đây thay vì gửi tin rỗng.
-  if (!reply) return;
+  // không phải ảnh trơ. Kết lượt tại đây thay vì gửi tin rỗng — nhưng VẪN GHI SỔ token,
+  // kẻo khoản chi của lượt này tàng hình (không có bản ghi 'reply' nào để bám vào).
+  if (!reply) {
+    const ui = st.lastUsage || {};
+    if (ui.calls) {
+      try {
+        logAi(pageId, custId, 'spent_no_send', {
+          name: c.from?.name || '', conv: c.id, lane: lane || 'AI', why: 'chỉ gửi được ảnh, model không viết chữ',
+          tin: ui.tin || 0, tout: ui.tout || 0, cread: ui.cread || 0, cwrite: ui.cwrite || 0, calls: ui.calls || 0,
+        });
+      } catch { /* sổ AI không chặn */ }
+    }
+    return;
+  }
   const r = await pkSendReply(pageId, c.id, custId, reply);
   noteSendResult(pageId, r.ok, r.error); // backoff: 2 lần lỗi liên tiếp → ngừng page 30 phút
   if (r.ok) {
