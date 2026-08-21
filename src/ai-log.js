@@ -295,7 +295,7 @@ export function recount({ from, to } = {}) {
     } else if (r.type === 'order') {
       const ok = r.page + ':' + r.cust;
       if (!seenOrder.has(ok)) { seenOrder.add(ok); p.orders++; orders++; }
-    } else if (r.type === 'image') { p.images++; }
+    } else if (r.type === 'image') { p.images += (r.n || 1); } // 1 bản ghi = cả cụm ảnh của lượt (r.n tấm)
     else if (r.type === 'handoff') { p.handoffs++; }
   }
   return { replies, leads, orders, byPage, events, lastAt };

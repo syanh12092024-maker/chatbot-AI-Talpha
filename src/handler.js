@@ -7,6 +7,7 @@ import { logAi, recentReplyCount, recentBotTurns } from './ai-log.js';
 import { cleanText } from './text.js';
 import { pkTagByName, pkAddNote } from './pancake.js';
 import { fastLane, noteFastLane } from './fast-lane.js';
+import { flushPendingImages } from './tools.js';
 import { guardOutbound, recordBlocked, canFixLocally, localFix } from './outbound-guard.js';
 import { markHandoff, markPostSale } from './conv-owner.js';
 import { S, OWNER, getConv, touchConv, setConvState, noteLlmTurn, llmTurns24h, noteOppTurn } from './conv-state.js';
@@ -144,6 +145,12 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   // Đếm lại từ 0 mỗi lượt: số tin CHÍNH TA đẩy lên hội thoại giữa lượt (ảnh do
   // tool gửi). Cửa nhường Botcake phải trừ số này ra, xem pancake-poll.js.
   state.selfSent = 0;
+  // Hàng đợi ảnh của lượt. Tool `send_product_image` chỉ xếp vào đây; ảnh bay đi ở
+  // `flushPendingImages`, SAU cửa nhường Botcake. Dọn đầu mỗi lượt để ảnh của lượt bị
+  // nhường không rơi nhầm sang lượt sau.
+  state.pendingImages = [];
+  state.pendingCaption = '';
+  state.sentImageTurn = false;
   state.orderCreatedThisTurn = false; // cờ cho M09 — chỉ đúng trong phạm vi 1 lượt
 
   kb = kb || getKBForPage(pageId);
@@ -255,7 +262,15 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
     // Không đẩy ảnh lên đây thì Fast Lane biến lượt giới thiệu thành tin chữ trơ,
     // tức là TỆ HƠN bản đang chạy. `caption` đi kèm tấm đầu (nguyên tắc #2).
     const out = reply(psid, fl.reply, false, fl.lane);
-    if (Array.isArray(fl.images) && fl.images.length) { out.images = fl.images; out.caption = fl.caption || ''; }
+    // MỘT ĐƯỜNG ẢNH DUY NHẤT cho cả Fast Lane lẫn AI (21/08/2026): xếp vào hàng đợi,
+    // `flushPendingImages` gửi sau cửa nhường Botcake. Trước đây Fast Lane đi đường
+    // riêng (out.images) còn tool AI gửi thẳng giữa lượt — chính chỗ lệch đó đẻ ra
+    // "ảnh trơ" khi cửa nhường vứt tin chữ.
+    if (Array.isArray(fl.images) && fl.images.length) {
+      state.pendingImages = fl.images.map((im) => ({ url: im.url, cat: im.label || 'sản phẩm' }));
+      state.pendingCaption = fl.caption || '';
+    }
+    if (!state.pkConvId) await flushPendingImages(state);
     return out;
   }
 
@@ -338,6 +353,9 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   // Chặn tin rỗng / sai giá / lộ tiếng Việt / doạ khách / checklist / quá dài.
   // Vi phạm lần 1 → xin model viết lại ĐÚNG 1 lần; lần 2 → thà im còn hơn gửi bậy.
   const guarded = await guardAndMaybeRewrite(text2, { kb, state, pageId, psid });
+  // Kênh KHÔNG qua Pancake (webhook Messenger, web demo, local-chat) không có cửa nhường
+  // Botcake nào để chờ — xả ảnh ngay tại đây để ảnh vẫn đi TRƯỚC tin chữ như trước giờ.
+  if (!state.pkConvId) await flushPendingImages(state);
   return reply(psid, guarded, state.handoff, 'AI');
 }
 

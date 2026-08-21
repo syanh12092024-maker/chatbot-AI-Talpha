@@ -1,10 +1,11 @@
 // Vòng lặp hỏi Pancake tin mới → AI trả lời → gửi lại qua Pancake.
 // KHÔNG cần webhook/URL công khai/tunnel/App Review — chỉ cần internet ra ngoài.
 import { config } from './config.js';
-import { pkGetConversations, pkGetMessages, pkSendReply, pkSendImage, refreshPancakePages, pkTagByName, pkMarkUnread } from './pancake.js';
+import { pkGetConversations, pkGetMessages, pkSendReply, refreshPancakePages, pkTagByName, pkMarkUnread } from './pancake.js';
 import { listAiEnabled, getState } from './store.js';
 import { handleIncoming } from './handler.js';
 import { incReply, incLead, incInbound } from './stats.js';
+import { flushPendingImages } from './tools.js';
 import { logAi } from './ai-log.js';
 import { addAiConv } from './ai-convs.js';
 import { isLlmDown, llmHealth } from './llm-health.js';
@@ -435,8 +436,12 @@ async function processConv(pageId, c, psid, custId, mark = '') {
   // im lặng rời khỏi đây, nên khoản chi của chúng TÀNG HÌNH — sổ cộng ra $0,27
   // trong khi hoá đơn thật $1. Ghi lại thì vẫn không gửi tin, nhưng tiền nhìn
   // thấy được và truy được về đúng page/khách/lý do.
-  const { reply, lane, images, caption } = res;
-  if (!reply) {
+  const { reply, lane } = res;
+  // Ảnh của lượt nằm ở hàng đợi trong state (Fast Lane lẫn AI đều xếp vào đó — xem
+  // handler.js). Còn ảnh chờ thì lượt VẪN CÓ việc để làm, dù model không viết được chữ.
+  const st = getState(psid);
+  const imgQueued = (st.pendingImages || []).length;
+  if (!reply && !imgQueued) {
     const un = getState(psid).lastUsage || {};
     if (un.calls) {
       try {
@@ -470,7 +475,11 @@ async function processConv(pageId, c, psid, custId, mark = '') {
     const tuGui = getState(psid).selfSent || 0;
     if (latest && pageSpokeSince(msgs, latest, pageId, tuGui)) {
       noteYield(pageId, 'trước khi gửi');
-      console.log(`[nhường] ${c.from?.name || psid} (page ${pageId}): Botcake trả lời trong lúc AI soạn → BỎ tin đã soạn`);
+      // BỎ CẢ CỤM: ảnh chưa gửi đi tấm nào (chúng nằm trong hàng đợi, không phải trên
+      // Messenger), nên nhường ở đây là khách không nhận gì thừa — khác hẳn trước
+      // 21/08/2026, khi ảnh đã bay đi giữa lượt và chỉ tin chữ bị vứt.
+      st.pendingImages = []; st.pendingCaption = '';
+      console.log(`[nhường] ${c.from?.name || psid} (page ${pageId}): Botcake trả lời trong lúc AI soạn → BỎ tin đã soạn${imgQueued ? ` + ${imgQueued} ảnh chưa gửi` : ''}`);
       // GHI SỔ CẢ LƯỢT BỊ BỎ. Token đã trả rồi mới vứt tin đi, nên không ghi là
       // khoản chi này TÀNG HÌNH: sổ báo rẻ hơn hoá đơn thật mà không ai truy được.
       // Đo 11/08/2026: 19 lượt bị bỏ trong 2 tiếng, không lượt nào có bản ghi.
@@ -489,15 +498,13 @@ async function processConv(pageId, c, psid, custId, mark = '') {
   // ẢNH TRƯỚC, CHỮ SAU (nguyên tắc #2 — ảnh không bao giờ gửi trơ):
   // caption bám tấm ĐẦU TIÊN, rồi tin chữ khép lượt. Giãn cách imgGapMs cho tự nhiên,
   // tránh Meta đánh spam #2022 (đã có tiền lệ page bị chặn phải backoff 30 phút).
-  if (Array.isArray(images) && images.length) {
-    for (let i = 0; i < images.length; i++) {
-      if (i) await sleep(config.imgGapMs);
-      const ri = await pkSendImage(pageId, c.id, custId, images[i].url, i === 0 ? (caption || '') : '');
-      if (!ri.ok) { console.warn(`[fastlane-img] ${pageId}: ${ri.error}`); break; } // lỗi ảnh KHÔNG chặn tin chữ
-      try { logAi(pageId, custId, 'image', { name: c.from?.name || '', conv: c.id, lane: lane || '', url: String(images[i].url).slice(0, 120) }); } catch { /* sổ AI không chặn */ }
-    }
+  if (imgQueued) {
+    await flushPendingImages(st); // lỗi ảnh KHÔNG chặn tin chữ — hàm tự thử lại rồi báo log
     await sleep(config.imgGapMs);
   }
+  // Model gửi ảnh nhưng không viết nổi chữ: caption đã đi kèm ảnh nên khách vẫn có lời,
+  // không phải ảnh trơ. Kết lượt tại đây thay vì gửi tin rỗng.
+  if (!reply) return;
   const r = await pkSendReply(pageId, c.id, custId, reply);
   noteSendResult(pageId, r.ok, r.error); // backoff: 2 lần lỗi liên tiếp → ngừng page 30 phút
   if (r.ok) {

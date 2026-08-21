@@ -43,7 +43,7 @@ export const toolDefs = [
   },
   {
     name: 'send_product_image',
-    description: 'Gửi ẢNH sản phẩm của page cho khách xem. Page chỉ bán 1 SP nên KHÔNG cần mã. Mỗi SP có nhiều loại ảnh (Ảnh sản phẩm, Feedback, Chứng nhận, Thành phần, Công dụng...). GỌI NHIỀU LẦN trong hội thoại — mỗi lần tool tự chọn ảnh MỚI chưa gửi cho khách này, nên không sợ trùng. Để trống category = ưu tiên ảnh sản phẩm; truyền category để gửi đúng loại khách cần (vd "feedback" khi khách do dự, "chứng nhận"/"thành phần" khi khách nghi ngờ chất lượng).',
+    description: 'Gửi ẢNH sản phẩm của page cho khách xem. Ảnh được gửi CÙNG LƯỢT với tin chữ của bạn (ảnh trước, chữ ngay sau) — nên gọi tool xong BẮT BUỘC phải viết chữ, không viết thì ảnh cũng không tới khách. Page chỉ bán 1 SP nên KHÔNG cần mã. Mỗi SP có nhiều loại ảnh (Ảnh sản phẩm, Feedback, Chứng nhận, Thành phần, Công dụng...). GỌI NHIỀU LẦN trong hội thoại — mỗi lần tool tự chọn ảnh MỚI chưa gửi cho khách này, nên không sợ trùng. Để trống category = ưu tiên ảnh sản phẩm; truyền category để gửi đúng loại khách cần (vd "feedback" khi khách do dự, "chứng nhận"/"thành phần" khi khách nghi ngờ chất lượng).',
     input_schema: {
       type: 'object',
       properties: {
@@ -95,10 +95,9 @@ async function sendImageWithRetry(state, viaPancake, url, caption = '') {
     if (attempt) await sleep(1200);
     if (viaPancake) {
       const r = await pkSendImage(state.pageId, state.pkConvId, state.pkCustId, url, caption);
-      // ĐẾM TIN CỦA CHÍNH MÌNH: ảnh này đi ra NGAY BÂY GIỜ, giữa lúc model còn
-      // đang viết. Cửa nhường Botcake soi hội thoại sau đó sẽ thấy tin mới từ
-      // page — không trừ số này ra thì nó tưởng Botcake vừa nói rồi vứt phần
-      // chữ của chính ta, khách nhận ảnh trơ (nguyên tắc #2). Xem pancake-poll.
+      // Ảnh nay chỉ đi ra ở `flushPendingImages`, tức SAU cửa nhường Botcake — nhưng
+      // vẫn đếm tin của chính mình, vì cửa nhường ② soi lại hội thoại một lần nữa ở
+      // lượt sau và không trừ ra thì nó tưởng Botcake vừa nói.
       if (r.ok) { state.selfSent = (state.selfSent || 0) + 1; return { ok: true }; }
       lastErr = r.error;
     } else {
@@ -108,6 +107,37 @@ async function sendImageWithRetry(state, viaPancake, url, caption = '') {
     }
   }
   return { ok: false, error: lastErr };
+}
+
+// ── XẢ HÀNG ĐỢI ẢNH — gọi NGAY TRƯỚC khi gửi tin chữ ────────────────────────
+// Tool `send_product_image` chỉ XẾP HÀNG, không gửi (xem lý do ở tool). Ảnh thật sự
+// bay đi tại đây, nên nó luôn nằm CÙNG PHÍA cửa nhường Botcake với tin chữ: nhường
+// thì cả cụm cùng bị bỏ, gửi thì khách nhận ảnh + chữ liền nhau. Trước 21/08/2026
+// ảnh đi ngay trong lúc model còn viết, nên 137/242 lượt nhường để lại "ảnh trơ" —
+// khách hỏi giá, nhận về mấy tấm ảnh và một câu caption, không có câu trả lời.
+export async function flushPendingImages(state) {
+  const queue = state.pendingImages || [];
+  if (!queue.length) return { sent: 0, total: 0 };
+  state.pendingImages = [];
+  const viaPancake = state.pkConvId && state.pkCustId;
+  const seen = state.sentImages || (state.sentImages = new Set());
+  // Lời dẫn bám theo tấm ĐẦU TIÊN GỬI THÀNH CÔNG, không phải tấm đầu danh sách:
+  // Pancake trả lỗi chập chờn khá thường (vd 1/2 ảnh) — nếu tấm mang caption hỏng
+  // thì caption mất theo, khách lại nhận ảnh trơ đúng như trước khi sửa.
+  let pendingCaption = String(state.pendingCaption || '').trim();
+  state.pendingCaption = '';
+  let sent = 0, lastErr = '';
+  for (const [i, im] of queue.entries()) {
+    if (i) await sleep(config.imgGapMs); // giãn cách giữa các ảnh cho tự nhiên
+    const r = await sendImageWithRetry(state, viaPancake, im.url, pendingCaption);
+    if (r.ok) { sent++; seen.add(im.url); pendingCaption = ''; } else lastErr = r.error;
+  }
+  const cats = [...new Set(queue.map((im) => im.cat || 'sản phẩm'))].join(', ');
+  console.log(`[img] page ${state.pageId} ${viaPancake ? 'Pancake' : 'Messenger'} gửi ${sent}/${queue.length} ảnh (${cats})${sent ? ' ✓' : ' ✗ ' + lastErr}`);
+  if (sent) {
+    try { logAi(state.pageId, state.pkCustId, 'image', { cat: cats, n: sent }); } catch { /* sổ AI không chặn */ }
+  }
+  return { sent, total: queue.length, error: lastErr };
 }
 
 // Thực thi tool. Trả về { content: string, isError?: bool }.
@@ -202,31 +232,31 @@ export async function executeTool(name, input, ctx) {
         const seen = state.sentImages || (state.sentImages = new Set());
         const fresh = pick.filter((im) => !seen.has(im.url));
         const queue = fresh.length ? fresh : pick; // hết ảnh mới → cho phép gửi lại ảnh cũ
-        // Gửi cùng kênh với tin chữ: có ngữ cảnh Pancake → gửi qua Pancake; nếu không → Facebook Messenger.
-        const viaPancake = state.pkConvId && state.pkCustId;
-        const toSend = queue.slice(0, imageLimit(state.pageId));
+        // XẾP HÀNG, KHÔNG GỬI NGAY (21/08/2026). Trước đây ảnh bay đi ngay tại đây —
+        // giữa lúc model còn đang viết, tức là TRƯỚC cửa nhường Botcake ở pancake-poll.
+        // Cửa nhường chỉ vứt được tin chữ, không thu hồi được ảnh đã gửi, nên 137/242
+        // lượt nhường để lại khách với "ảnh trơ": hỏi giá, nhận về ảnh + caption, không
+        // có câu trả lời. Nay ảnh nằm chung một phía cửa với tin chữ (xem flushPendingImages).
+        const q = state.pendingImages || (state.pendingImages = []);
+        // Trần ảnh tính cho CẢ LƯỢT, không phải cho mỗi lần gọi tool: model gọi tool hai
+        // lần trong một lượt thì tổng vẫn không vượt trần — đúng nghĩa "tối đa 1 lượt".
+        const room = imageLimit(state.pageId) - q.length;
+        const already = new Set(q.map((im) => im.url));
+        const toSend = room > 0 ? queue.filter((im) => !already.has(im.url)).slice(0, room) : [];
         // LỜI DẪN KÈM ẢNH: khách KHÔNG được nhận ảnh trơ. Đo trên Sổ AI: 2/3 số lần gửi ảnh
         // trước đây là ảnh trần hoặc chỉ kèm "..." — AI gọi tool xong coi như hết việc, không nói gì.
         const caption = String(input.caption || '').trim();
-        // Lời dẫn bám theo tấm ảnh ĐẦU TIÊN GỬI THÀNH CÔNG, không phải tấm đầu danh sách:
-        // Pancake trả lỗi chập chờn khá thường (vd 1/2 ảnh) — nếu tấm mang caption hỏng thì
-        // caption mất theo, khách lại nhận ảnh trơ đúng như trước khi sửa.
-        let pendingCaption = caption;
-        let sent = 0, lastErr = '';
-        for (const [i, im] of toSend.entries()) {
-          if (i) await sleep(config.imgGapMs); // giãn cách giữa các ảnh cho tự nhiên
-          const r = await sendImageWithRetry(state, viaPancake, im.url, pendingCaption);
-          if (r.ok) { sent++; seen.add(im.url); pendingCaption = ''; } else lastErr = r.error;
+        if (!toSend.length) {
+          return { content: `Lượt này đã đủ ${q.length} ảnh chờ gửi rồi — đừng gọi thêm. HÃY VIẾT TIN CHỮ cho khách ngay.`, isError: true };
         }
-        if (sent) state.sentImageTurn = true; // closer dùng để BẮT BUỘC có tin chữ khép lượt
-        console.log(`[img] page ${state.pageId} ${viaPancake ? 'Pancake' : 'Messenger'} gửi ${sent}/${toSend.length} ảnh (${input.category || 'sản phẩm'})${sent ? ' ✓' : ' ✗ ' + lastErr}`);
-        if (!sent) {
-          // Lỗi phía FB/Pancake thường CHẬP CHỜN → cho phép AI thử lại ở lượt sau, đừng chặn vĩnh viễn.
-          return { content: `Gửi ảnh lỗi tạm thời (${lastErr || 'không rõ'}). Cứ tư vấn tiếp bằng lời, lượt sau có thể thử gửi ảnh lại.`, isError: true };
-        }
-        try { logAi(state.pageId, state.pkCustId, 'image', { cat: input.category || 'sản phẩm', n: sent }); } catch { /* sổ AI không chặn */ }
+        const catLabel = input.category || 'sản phẩm';
+        for (const im of toSend) q.push({ url: im.url, cat: catLabel });
+        // caption của lần gọi ĐẦU TIÊN trong lượt được giữ — ảnh gửi liền nhau nên một
+        // lời dẫn là đủ, nhắc lại dưới mỗi tấm trông như spam.
+        if (!state.pendingCaption) state.pendingCaption = caption;
+        state.sentImageTurn = true; // closer dùng để BẮT BUỘC có tin chữ khép lượt
         const left = queue.length - toSend.length;
-        return { content: `Đã gửi ${sent} ảnh (${input.category || 'sản phẩm'}) cho khách qua ${viaPancake ? 'Pancake' : 'Messenger'}.${caption ? '' : ' ⚠️ Lần này BẠN QUÊN caption nên ảnh gửi đi trần trụi — lần sau phải truyền caption.'} BÂY GIỜ HÃY VIẾT TIN CHỮ cho khách (tư vấn tiếp / hỏi chốt đơn) — TUYỆT ĐỐI không kết thúc lượt mà chỉ có ảnh.${left > 0 ? ` Còn ${left} ảnh khác chưa gửi — có thể gửi thêm ở lượt sau.` : ''}` };
+        return { content: `Đã chuẩn bị ${toSend.length} ảnh (${catLabel}) — ảnh sẽ gửi cho khách NGAY TRƯỚC tin chữ của bạn, trong cùng một lượt.${caption ? '' : ' ⚠️ Lần này BẠN QUÊN caption — lần sau phải truyền caption.'} BÂY GIỜ HÃY VIẾT TIN CHỮ cho khách (tư vấn tiếp / hỏi chốt đơn) — bạn KHÔNG viết chữ thì ảnh cũng KHÔNG được gửi.${left > 0 ? ` Còn ${left} ảnh khác chưa dùng — có thể gửi ở lượt sau.` : ''}` };
       }
       case 'handoff_human': {
         state.handoff = true;
