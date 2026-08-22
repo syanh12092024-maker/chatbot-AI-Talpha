@@ -261,3 +261,67 @@ giá trị khác của cột này do máy trạng thái đơn đặt, theo bản
 > file đó, vì regen trong lúc 003 còn nằm ngoài git là kéo migration của thợ khác vào
 > commit của mình. Ca `S11` của `test/l0-m1-luoc-do.test.js` đã ĐỎ từ TRƯỚC lượt này
 > (đo: gỡ 004 ra khỏi cây thì S11 vẫn đỏ — nguyên nhân là 003). Đã ghi §9 sổ điều hành.
+
+---
+
+## 9 · THAY ĐỔI — bản 003 (phiếu L2-M1, 22/08/2026)
+
+> Mục này viết SAU §8 (bản 004) chỉ vì thứ tự nộp, không phải thứ tự áp. Thứ tự áp vẫn là
+> 001 → 002 → 003 → 004; `node db/migrate.js trang-thai` là nguồn sự thật.
+
+### 9.1 · Bảng thứ 21: `tin_cho_xu_ly` (migration `003_tin_cho_xu_ly`)
+
+20 bảng của 001+002 **không có chỗ nhớ «tin này đã xử chưa»**. Bản đang chạy xử lý tin
+NGAY TRONG vòng poll (`pancake-poll.js` → `handleIncoming` → `pkSendReply`), nên trạng
+thái của một tin chỉ sống trong RAM: tiến trình chết giữa lượt là tin biến mất không dấu
+vết, và một lượt model chậm giữ luôn slot của vòng poll. `02-KE-HOACH-CODE.md` §L2 đòi
+tách hai việc — **poll chỉ NẠP, worker mới XỬ LÝ** — bảng này là chỗ nối.
+
+| Cột                     | Ghi chú                                                                   |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `team_id NOT NULL`      | như mọi bảng nghiệp vụ; lấy từ `page.team_id` lúc NẠP, worker không suy lại |
+| `page_id`               | **id Facebook dạng TEXT** (khoá cửa Messenger v3 nhận), KHÔNG phải `page.id` bigint · cố ý KHÔNG có FK |
+| `psid` · `conv_id`      | GIỮ CẢ HAI — `psid` để tra `hoi_thoai`, `conv_id` để gọi API (cua-messenger §2) |
+| `msg_id` · `noi_dung`   | neo chống trùng + cụm tin khách đã gộp                                    |
+| `trang_thai`            | `cho`\|`dang_xu`\|`xong`\|`loi`\|**`chan_guard`** — CHECK ở tầng CSDL      |
+| `so_lan_thu`            | +1 mỗi lượt worker RÚT được; trần ở `src/queue/worker.js`                 |
+| `khoa_worker` · `ly_do` | ai đang giữ · VÌ SAO đứng ở trạng thái đó                                 |
+
+UNIQUE `(page_id, conv_id, msg_id)` — vòng poll 6 giây/lần trả lại y nguyên tin cũ; thiếu
+rào này là mỗi vòng đẻ một bản sao ⇒ khách nhận n câu trả lời. Index bộ phận
+`WHERE trang_thai='cho'` vì 99% dòng nằm ở `xong` sau vài phút.
+
+⛔ **Không vào `BANG_NGHIEP_VU_CHUAN`** (vẫn 15 tên): worker rút việc bằng
+`FOR UPDATE SKIP LOCKED` **CỘNG** `pg_try_advisory_xact_lock(hashtext(conv_id))` — hai thứ
+mà `layNhieu/suaTheoId` không diễn đạt được. Bộ đọc/ghi riêng ở `src/queue/kho.js` (luôn
+kẹp `team_id`, không có hàm xoá) — cùng tiền lệ `ket_noi_pos` (§7.1) và `ghiCauHinhModel`.
+
+**`chan_guard` là trạng thái RIÊNG, không gộp vào `loi`** — quyết định về TIỀN: lượt gọi
+model chạy TRƯỚC lượt gửi, nên thử lại một tin bị cửa chặn là đốt thêm token cho một tin
+chắc chắn không gửi được. Chi tiết + cách gỡ thủ công: `duong-tin-v1.md` §2.
+
+### 9.2 · `so_ai` — thêm một cách dùng neo idempotent (không đổi lược đồ)
+
+`so_ai` giữ nguyên cột. Đường RUNTIME (handler v3) dùng neo:
+`nguon_tep = 'tin_cho_xu_ly:<loại>'` · `nguon_dong = <id dòng tin>` — tách theo LOẠI vì
+`UNIQUE (nguon_tep, nguon_dong)` chỉ cho một dòng mỗi cặp, mà một lượt xử lý sinh tới 4 sự
+kiện. Bộ nạp JSONL của L0-M1 vẫn dùng neo «tệp + số dòng» như cũ; hai họ neo không đụng
+nhau. ⚠️ `nguon_dong` là `int` ⇒ trần 2,1 tỉ dòng hàng đợi (xa, nhưng có thật).
+
+`ma_model` cho lượt **không gọi model** (Fast Lane, 0 token) khai nhãn vắng mặt
+`'khong-goi-model'` — xem `duong-tin-v1.md` §7 về vì sao KHÔNG ghi mã model đang cấu hình.
+
+### 9.3 · Cửa hẹp thứ HAI ghi `hoi_thoai` — nợ N3 lặp lại
+
+`src/chat/kho.js` (`suaHoiThoai` · `baoDamHoiThoai` · `docHoiThoaiTheoPageText`) tồn tại
+đúng vì lý do của `src/pos/kho.js`: `suaTheoId` không nhận `ctxHeThong()`, mà worker là job
+nền và dữ liệu di trú đậu ở team KỸ THUẬT. Repo nay có **HAI** cửa hẹp cùng một gốc — mở
+phiếu `suaTheoId cho ctxHeThong` rồi **xoá cả hai**. Đã ghi §9 sổ điều hành.
+
+> 🔴 **Nợ kèm theo (cùng họ với nợ của §7.1):** `test/l0-m1-luoc-do.test.js` (S1 dòng 65,
+> S12 dòng 323) và `ops/bin/nghiem-thu/l0-m1.sh` (biến `NEO`, dòng 112) neo cứng con số
+> **20** + danh sách tên bảng, nên chúng ĐỎ kể từ bản 003. Đo 22/08 sau 003: **21 bảng**
+> (`l0-m1.sh` = ĐẠT 47 / TRƯỢT 4, cùng 4 mục mà L1-M1 đã gặp). Vá = `20 → 21` ở hai chỗ
+> trong test + thêm `tin_cho_xu_ly` vào `NEO_19_BANG` (test) và `NEO` (script). Ngoài
+> pathspec L2-M1 (án lệ #25) — TỔNG vá. Bản 004 KHÔNG thêm bảng nào
+> (`grep -c '^CREATE TABLE' db/migrate/004_*.up.sql` = 0) nên con số đúng là 21, không phải 22.

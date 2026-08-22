@@ -324,7 +324,77 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   LIVE, nên `src/orders/cua-pos.js` import SÂU `src/pos/api.js#guiDocMotDon` (hàm CHỈ-ĐỌC, GET).
   Vá: re-export `docMotDonLive` ở `src/pos/index.js` rồi xoá import sâu đó.
 
+- 22/08 · thợ L2-M1 (nợ N1 — 🔴 ĐƯỜNG ĐƠN/TIỀN, phiếu khai THIẾU): phiếu L2-M1 ② khai
+  «BA chỗ gửi ngầm» trong `executeTool`; đo lại ra **NĂM đường thoát**, hai chỗ gọi GIÁN
+  TIẾP nên grep trong `tools.js` không thấy: (4) `tools.js:208 recordClosedOrder` →
+  `order-bridge.js:255 pkAddNote(<ghi chú đơn>)`; (5) `tools.js:171 ordersEnabled() &&
+  conversationHasOrder()` → `src/pancake-orders.js:25` và `:108` **fetch HTTP tới POS
+  pages.fm bằng KHOÁ THẬT của 7 shop** (`pancake-shops.json`). Đo bằng bẫy
+  `globalThis.fetch` trong `test/l2-m1-nhac-truong.test.js`: **7 lượt** thoát ra ở dân số
+  «ép chốt đơn», trong khi mock `pancake.js`+`messenger.js` vẫn báo sạch — tức bộ ca chỉ
+  mock theo danh sách của phiếu sẽ **XANH GIẢ**. Ba thứ làm nó nguy: `grep PANCAKE_READONLY
+  src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` ở `:113` nuốt
+  lỗi theo chiều fail-OPEN («coi như chưa có đơn») · nó là đường ĐỌC nên không ai đi tìm
+  khi hỏi «bot có gửi gì không». Bọc nó nằm ngoài pathspec L2-M1 (file phẳng, CẤM SỬA) —
+  cần một phiếu cutover.
+- 22/08 · thợ L2-M1 (nợ dài hạn CUTOVER, phiếu ② yêu cầu ghi): ở VPS (môi trường ĐƯỢC PHÉP
+  gửi) cả **5 đường thoát** trên vẫn đi thẳng, không qua cửa v3 — «hợp thức ở cutover, VPS
+  là môi trường được phép gửi». Hệ quả cụ thể phải biết trước khi bật: nhánh **chuyển
+  người** để lại **HAI ghi chú** trên Pancake (một của `tools.js:271`, một của cửa v3 ở
+  handler v3 — phiếu ④#4c đòi cửa v3 gánh tag/note) và gắn thẻ **hai lượt** (thẻ lũy đẳng
+  nên vô hại; ghi chú thì KHÔNG). ⛔ Đừng «sửa» bằng cách bỏ đường cửa v3: bỏ nó là mất
+  luôn guard, và mất luôn tag/note cho các nhánh bàn giao mà bộ não KHÔNG chạy tới (page
+  chưa có KB, khiếu nại). Cách đúng: phiếu bọc
+  `tools.js`/`order-bridge.js`/`pancake-orders.js` ở đợt cutover.
+- 22/08 · thợ L2-M1 (nợ THƯỚC — giống hệt nợ N2 của L1-M1, lặp lại vì bản 003):
+  `test/l0-m1-luoc-do.test.js` **S1 (dòng 65)** + **S12 (dòng 323)** và
+  `ops/bin/nghiem-thu/l0-m1.sh` (biến `NEO`, dòng 112) neo cứng con số **20** + danh sách
+  tên bảng ⇒ ĐỎ kể từ bản 003. Đo 22/08: **21 bảng** · `l0-m1.sh` **51 → ĐẠT 47 / TRƯỢT 4**
+  (đúng 4 mục L1-M1 đã gặp). Vá = `20 → 21` ở hai chỗ trong test + thêm `tin_cho_xu_ly` vào
+  `NEO_19_BANG` (test dòng 16) và `NEO` (script dòng 112). Đo thêm để TỔNG khỏi đoán: bản
+  004 (L3-M1) **KHÔNG thêm bảng nào** (`grep -c '^CREATE TABLE' db/migrate/004_*.up.sql` =
+  0) ⇒ con số đúng là **21**, không phải 22. Ngoài pathspec L2-M1 (án lệ #25) — TỔNG vá.
+- 22/08 · thợ L2-M1 (nợ N3 của L1-M1 LẶP LẠI): `suaTheoId` của tầng L0-M2 vẫn chưa có bản
+  cho `ctxHeThong()`, mà worker là job nền và 100% dữ liệu di trú đậu ở team KỸ THUẬT
+  `chua-phan` ⇒ không còn đường UPDATE hợp lệ nào qua tầng chung cho `hoi_thoai`. Buộc dựng
+  cửa hẹp thứ HAI `src/chat/kho.js` (danh sách cột deny-by-default · luôn kẹp `team_id` ·
+  mọi lượt ghi `nhat_ky` · không có hàm xoá), cùng khuôn `src/pos/kho.js`. Repo nay có
+  **HAI** cửa hẹp cùng một gốc — mở phiếu `suaTheoId cho ctxHeThong` rồi **XOÁ CẢ HAI**.
+- 22/08 · thợ L2-M1 (phối hợp phiếu song song, không phải lỗi): `db/schema.sql` **cố ý
+  KHÔNG commit** ở cả L2-M1 lẫn L3-M1 — nó sinh ra từ CẢ thư mục `db/migrate/`, nên ai
+  commit trước là kéo migration của người kia vào commit của mình và làm HEAD mâu thuẫn
+  (schema.sql khai một bản chưa có trong git). Tệp TRÊN ĐĨA đã được sinh lại (ca `S11` xanh
+  cho cả hai thợ ngay lúc này). **TỔNG chạy `node db/migrate.js schema` MỘT LƯỢT rồi commit
+  sau khi 003 và 004 đã gộp.**
+
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+
+- 22/08 · L2-M1 → 🔎 chờ nghiệm thu — hàng đợi tin + nhạc trưởng v3
+  (`db/migrate/003_tin_cho_xu_ly` bảng thứ 21 · `src/queue/` 4 tệp · `src/chat/` 6 tệp):
+  worker rút việc bằng HAI khoá (`FOR UPDATE SKIP LOCKED` **cộng**
+  `pg_try_advisory_xact_lock(hashtext(conv_id))` — khoá dòng chỉ chặn 1 TIN, hai tin cùng
+  conv là hai dòng nên thiếu advisory lock là 2 worker cùng dựng state) · `chan_guard` là
+  trạng thái RIÊNG KHÔNG retry (N6) · van NGUỒN fail-closed `PANCAKE_READONLY`/`V3_NAP_DEV`
+  (N1a) · tin chữ qua cửa `guiTin`, ảnh qua `guiAnh`, tag/note qua `gatThe`/`ghiNote` —
+  KHÔNG `pkSendReply`/`flushPendingImages` · `so_ai` đủ 5 loại §11.2 (neo
+  `tin_cho_xu_ly:<loại>`) · `layModel(pool,ctx,{vaiTro})` fail-CLOSED khi team khai nhà
+  cung cấp khác · `autoCreateOrder` GIỮ TẮT · bàn giao `docs/v3/ban-giao/duong-tin-v1.md`.
+- 22/08 · L2-M1 → 🔴 LỆCH ĐỀ BÀI LỚN: phiếu ② khai **3** chỗ gửi ngầm, đo ra **5** — thêm
+  `order-bridge.js:255 pkAddNote` (gián tiếp từ `tools.js:208`) và
+  `pancake-orders.js:25/:108` **fetch HTTP tới POS bằng khoá thật 7 shop** (gián tiếp từ
+  `tools.js:171`, **không** `PANCAKE_READONLY` canh, `catch{}` nuốt lỗi fail-OPEN). Bắt
+  được nhờ bẫy `globalThis.fetch` trong bộ ca: **7 lượt lọt** ở lượt đo đầu trong khi mock
+  `pancake.js`+`messenger.js` vẫn báo sạch ⇒ bộ ca theo đúng danh sách của phiếu sẽ XANH
+  GIẢ. 🧭 bài học: danh sách mock là một LỜI KHAI — phép «không gửi gì ra ngoài» phải chặn
+  ở TẦNG VẬN CHUYỂN, không chỉ tầng module. 5 dòng nợ §9 (2 dòng 🔴 đường đơn/tiền).
+- 22/08 · L2-M1 → cổng `ops/bin/nghiem-thu/l2-m1.sh` **22 phép ĐẠT 22 / TRƯỢT 0** (2 lượt,
+  rc=0) · bộ ca **23 ca xanh** (hàng đợi 12/12 · nhạc trưởng 11/11, cần cờ
+  `--experimental-test-module-mocks`) · BA DÂN SỐ đều CHẠY, `pkSendReply=0` và
+  `pkSendImage+sendImage(Graph)=0` ở cả ba, `fetch-lọt=0` · khoá hội thoại 0→1→2 · `so_ai`
+  `{handoff:1,image:1,order:1,reply:5,spent_no_send:1}` · `ma_model` đổi theo mock
+  `["mo-hinh-A","mo-hinh-B"]` · `autoCreateOrder=false`, `don_hang=0` · hồi quy v3 118/120
+  (2 đỏ = nợ neo số bảng, TỔNG vá) · commit <HASH> · nhật ký
+  docs/thi-cong/nhat-ky/phieu-l2-m1.md
 
 - 22/08 · L3-M1 → 🔎 chờ nghiệm thu — máy trạng thái đơn `src/orders/` (4 tệp) + migration
   004 (`ly_do_khong_gui` CHECK 3 giá trị · `so_lan_thu_wa` · bất biến đôi «lý do chỉ sống cùng
