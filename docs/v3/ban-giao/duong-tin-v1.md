@@ -322,3 +322,101 @@ Câu trả lời của bậc này đi qua **cùng cửa `d.kiemTinRa` (M09)** v�
 Đo lại: `bash ops/bin/nghiem-thu/l2-m2.sh` (6 phép của ④ phiếu L2-M2) ·
 `node --test test/l2-m2-lop-tu-khoa.test.js` (đơn vị, không cần DB) ·
 `node --test test/l2-m2-handler.test.js` (nối vào `xuLyMotTin` thật, cần sandbox DB).
+
+## 13 · Ráp prompt BỐN KHỐI từ DB (L2-M3) — `src/chat/rap-prompt.js`
+
+Thay `getKBForPage` (kb.js, `kb-overrides.json`) làm nguồn `kb` mặc định cho
+`buildSystem(kb)` — ráp từ BỐN bảng DB thay vì một tệp JSON phẳng. Thi hành:
+`01-QUYET-DINH.md` §6 (bảng 4 khối) + `02-KE-HOACH-CODE.md` §L2.
+
+### 13.1 · Hợp đồng bốn khối
+
+| Khối             | Bảng                   | Ai sửa (dự kiến giai đoạn 2)   | Đi đâu trong `kb`                       |
+| ---------------- | ---------------------- | ------------------------------ | --------------------------------------- |
+| Bộ luật chung    | `bo_luat_chung`        | Quản trị · toàn hệ (team NULL) | Mẩu ~300 ký tự vào `kb.text` (§13.2)    |
+| Kỹ năng          | `ky_nang`              | Marketer · theo nhóm SP        | TOÀN VĂN vào `kb.text`                  |
+| Kịch bản page    | `kich_ban` (LIVE)      | Marketer phụ trách page        | `kb.config` (buildSystem đọc trực tiếp) |
+| Dữ liệu sản phẩm | `san_pham` + `goi_gia` | Đồng bộ từ POS (L1-M1)         | TOÀN VĂN vào `kb.text` + `kb.products`  |
+
+`kb.blocks.{boLuatChung,kyNang,kichBan,sanPham}` giữ dữ liệu THÔ (chưa cắt) — dùng để
+đo "độ dài từng khối" và cho công cụ/dashboard tương lai; KHÔNG phải thứ `buildSystem`
+đọc trực tiếp.
+
+**"Nhóm sản phẩm" của `ky_nang.bat_cho_nhom_sp`** = danh sách `san_pham.ma` (mã biến
+thể POS `"<shop>:<variation_id>"`) — lược đồ KHÔNG có cột "nhóm SP" riêng. Kỹ năng áp
+dụng cho page khi `bat=true` VÀ (`bat_cho_nhom_sp` rỗng — áp dụng TOÀN TEAM, admin đã
+bật có chủ đích — HOẶC giao với `san_pham.ma` của page).
+
+### 13.2 · ⚠️ GIỚI HẠN THẬT — bo_luat_chung CHƯA điều khiển model
+
+`buildSystem(kb)` trong `src/prompts.js` (CẤM SỬA) HARDCODE hằng `CORE` — nó không đọc
+trường `kb.*` nào cho "bộ luật chung". Seed + đọc `bo_luat_chung` ở phiếu này ĐÚNG hợp
+đồng dữ liệu (OR-IS-NULL, versioned), nhưng **CHƯA phải đường sống**: CORE cứng trong
+prompts.js vẫn là thứ duy nhất có hiệu lực cho tầng "bộ luật chung" hôm nay.
+`kb.text` chỉ mang một MẨU ~300 ký tự đầu của `bo_luat_chung` (không dán nguyên ~2.256
+token — trùng lặp với CORE, tốn token mà không đổi hành vi model) kèm dòng khai rõ
+tình trạng này. Ba khối còn lại (kỹ năng/kịch bản/sản phẩm) CÓ hiệu lực thật ngay hôm
+nay. Cùng khuôn cảnh báo "model DI chưa cắm xong" ở §6 file này — đọc kỹ trước khi tin.
+Đo lại: `grep -c "CORE" src/prompts.js` (hằng còn nguyên) · test ① `l2-m3-rap-prompt.test.js`.
+
+### 13.3 · Khối RỖNG + cờ fallback
+
+Khối rỗng (không đọc được dòng nào) → liệt vào `kb.nguon_thieu` (mảng tên khối), và
+handler-v3.js đóng dấu `kb_nguon_thieu` vào MỌI dòng `so_ai` của lượt đó qua `ghi()`
+(mù-có-nói-ra). Riêng `san_pham` rỗng → `kb.noData=true` (cùng ngưỡng kb.js cũ, handler
+bàn giao thay vì để AI tư vấn không sản phẩm).
+
+Cờ **`V3_RAP_PROMPT_BAT`** (bảng biến §14, luật "vắng = ĐÓNG"): VẮNG (mặc định) ⇒
+`rapKb` lùi NGUYÊN VẸN về `getKBForPage` cũ, 0 truy vấn tới 4 bảng — không gãy 51 page
+hiện hành. `=1` mới bật đường DB. `kb.nguon` báo `'kb_cu'|'db'` — dùng field này để xác
+nhận đường nào đang chạy (thay cho spy trên `getKBForPage`, đơn giản/chắc chắn hơn).
+
+### 13.4 · Ngân sách lượt theo độ nóng (`src/chat/ngan-sach-luot.js`)
+
+Thay hằng `config.maxAiTurnsBeforeHandoff` (4, cào bằng) bằng `turnBudget()` của
+`lead-score.js` (đọc-qua-import, CẤM SỬA) — port đúng cơ chế M11 của `src/handler.js`
+cũ (`updateLead`/`checkBudget`, dòng 223-225/362-409).
+
+- **CHẤM ĐIỂM** (`chamVaTinhNganSach`) chạy SỚM trong handler-v3.js (bước "3b", TRƯỚC
+  lớp từ khoá/Fast Lane) — để tin cụt liên tiếp vẫn bị trừ điểm đúng luật M11.
+- **GÁC CỬA** (`conNganSach`) chạy MUỘN (bước "6b", sau classify, trước `runCloser`) —
+  chỉ chặn lượt GỌI MODEL thật, không chặn 3 tầng 0 đồng phía trước.
+- `used` = `state.aiTurns` (lượt gọi model trong 24h, đếm từ `hoi_thoai.moc_luot_llm`)
+  — KHÔNG phải `luot_ai`/`botTurns` (gồm cả Fast Lane).
+- Điểm lưu vào `hoi_thoai.diem_lead` (jsonb) + `diem_nong` (int) — hai cột CÓ SẴN từ
+  migration 001 nhưng chưa cửa nào ghi trước phiếu này (`src/chat/kho.js#COT_CHO_PHEP`
+  đã mở). Đọc lại MỖI LƯỢT qua `hoiThoai.diem_lead`, không cache riêng.
+- **Giả định ghi rõ**: v3 KHÔNG có trạng thái COLD trong CHECK của `hoi_thoai.trang_thai`
+  (chỉ GREET/QUALIFY/SELLING/CLOSING/HANDOFF/POST_SALE) ⇒ tín hiệu "quay lại sau khi
+  nguội" (+2 điểm ở bản cũ) luôn tính `false` ở v3. Ảnh hưởng nhỏ (1/12 tín hiệu).
+- Trần tuyệt đối vẫn là `HARD_MAX_TURNS=12` của lead-score.js (đã kẹp SẴN trong
+  `turnBudget()`, không viết trần mới).
+- Hết ngân sách → `state.handoff=true` + bàn giao + ghi `so_ai` loại `handoff`
+  (`ly_do='ngan_sach_het:<tier>'`) — KHÔNG im lặng, cùng khuôn mọi cửa bàn giao khác.
+- `context.js#buildProfileBlock` (meta `{used,max,tier}`) nay đọc `budget.max`/`tier`
+  thật thay vì hằng 4 — model thấy đúng "lượt đã dùng: X/Y (khách <tier>)".
+
+### 13.5 · Cờ page trọng điểm
+
+`page.trong_diem` đọc trong `rapKb()`, gắn vào `kb.trongDiem`; handler-v3.js đóng dấu
+`trong_diem` vào MỌI dòng `so_ai` của lượt (qua `ghi()`, cùng cơ chế `kb_nguon_thieu`
+ở §13.3) — để §7b/T4 đo riêng nhóm page trọng điểm. KHÔNG có dashboard/UI cho cờ này
+ở phiếu này (giai đoạn 2).
+
+### 13.6 · ⚠️ Hồi quy đã biết ở `test/l2-m2-handler.test.js`
+
+Ca "không cướp diễn đàn (ở tầng handler)" ĐỎ THẬT sau phiếu này — KHÔNG phải lỗi ngân
+sách, là hệ quả ĐÚNG THIẾT KẾ của việc thay trần cào-bằng-4 bằng ngân sách thật (file
+đó dùng CHUNG một `hoi_thoai` cho 6 ca, một ca trước đã tiêu hết ngân sách 1-lượt của
+tier LẠNH). Chi tiết + đề xuất vá: §9 sổ điều hành. `ops/bin/nghiem-thu/l2-m3.sh` phép
+⑦e tự nhận diện ĐÚNG ca này bằng TÊN (không chỉ đếm số) và không tính là hồi quy mới.
+
+### 13.7 · Nghiệm thu
+
+```bash
+bash ops/bin/nghiem-thu/l2-m3.sh                              # 7 phép của ④, tự dựng/dọn sandbox
+node --test test/l2-m3-ngan-sach-luot.test.js                 # đơn vị ngân sách, không cần DB
+node --test test/l2-m3-rap-prompt.test.js                     # ráp 4 khối + seed, cần sandbox DB
+node --test test/l2-m3-handler.test.js                        # nối vào xuLyMotTin thật, cần sandbox DB
+node db/di-tru/index.js                                       # (thật/dev) seed mồi qua npm run di-tru
+```

@@ -10,6 +10,7 @@ import { voiPool, GOC } from "../ket-noi.js";
 import { diTruTatCa } from "./nap.js";
 import { napSoAi } from "./so-ai.js";
 import { diTruKetNoiPos, TEP_NGUON as TEP_SHOP } from "./ket-noi-pos.js";
+import { seedBoLuatVaKyNang } from "./bo-luat-va-ky-nang.js";
 
 function thamSo(ten) {
   const p = process.argv.find((a) => a.startsWith(`--${ten}=`));
@@ -34,6 +35,8 @@ export async function chay(
     kichBan: await dem("kich_ban"),
   };
   kq.ketNoiPos = await diTruKetNoiPos(pool, goc);
+  // L2-M3 — seed mồi bo_luat_chung v1 (rút từ prompts.js) + ky_nang "hỏi size".
+  kq.boLuatVaKyNang = await seedBoLuatVaKyNang(pool);
   if (soAi) kq.soAi = await napSoAi(pool, soAi, { maModelCu });
   return kq;
 }
@@ -63,6 +66,19 @@ function inBaoCao(kq) {
     console.log(
       `kết nối POS  nguồn ${TEP_SHOP} = ${kn.nguon} thị trường  →  bảng ket_noi_pos = ${kn.dich}` +
         `  (thêm ${kn.them} · cập nhật ${kn.capNhat} · giữ nguyên ${kn.giuNguyen})`,
+    );
+  }
+  const bl = kq.boLuatVaKyNang;
+  if (bl) {
+    console.log(
+      `bộ luật chung nguồn prompts.js#CORE (${bl.boLuatChung.doDai} ký tự) → ` +
+        `bo_luat_chung v${bl.boLuatChung.phienBan} ` +
+        `(${bl.boLuatChung.them ? "vừa thêm" : "đã có, giữ nguyên"})`,
+    );
+    console.log(
+      `kỹ năng "hỏi size"  → ky_nang thêm ${bl.kyNang.them.length} team ` +
+        `(${bl.kyNang.them.join(", ") || "-"}) · giữ nguyên ${bl.kyNang.giuNguyen.length} ` +
+        `(${bl.kyNang.giuNguyen.join(", ") || "-"})`,
     );
   }
   if (kq.soAi) {

@@ -36,6 +36,11 @@ const COT_CHO_PHEP = new Set([
   "luot_llm",
   "luot_ai",
   "ho_so",
+  // L2-M3 (ngân sách lượt theo độ nóng) — hai cột ĐÃ CÓ SẴN từ migration 001_nen (dòng
+  // 162-163) nhưng CHƯA cửa ghi nào cho phép: khớp đứt kiểu "bảng có reader mà không ai
+  // ghi". `diem_nong` = diem_lead->>'score' (tách ra để lọc/index sau này).
+  "diem_nong",
+  "diem_lead",
 ]);
 
 /** Cột jsonb — phải bọc `::jsonb`, nếu không pg ghi chuỗi vào cột json và im lặng sai kiểu. */

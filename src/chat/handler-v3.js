@@ -1,10 +1,13 @@
 // HANDLER v3 — NHẠC TRƯỞNG MỚI quanh bộ não CŨ (phiếu L2-M1 ②.3).
 //
 // ⛔ BỘ NÃO DÙNG NGUYÊN, KHÔNG SỬA MỘT DÒNG: `classifier.js` `fast-lane.js` `closer.js`
-//    `tools.js` `prompts.js` `outbound-guard.js` `context.js` `kb.js` được IMPORT y nguyên
-//    (luật 4 §0a sổ điều hành). File này chỉ thay phần ĐIỀU PHỐI mà `handler.js` +
+//    `tools.js` `prompts.js` `outbound-guard.js` `context.js` `kb.js` KHÔNG bị đụng một
+//    dòng nào (luật 4 §0a sổ điều hành). File này chỉ thay phần ĐIỀU PHỐI mà `handler.js` +
 //    `pancake-poll.js` đang làm: lấy tin ở đâu, ghi trạng thái vào đâu, và — quan trọng
 //    nhất — TIN ĐI RA BẰNG ĐƯỜNG NÀO.
+//    (L2-M3) `kb.js#getKBForPage` không còn import TRỰC TIẾP ở đây — mặc định `layKb` nay
+//    là `rap-prompt.js#rapKb`, TỰ gọi `getKBForPage` bên trong làm đường LÙI khi cờ
+//    `V3_RAP_PROMPT_BAT` vắng (xem rap-prompt.js). kb.js vẫn nguyên vẹn, chỉ đổi ai gọi nó.
 //
 // ══ VÌ SAO PHẢI CÓ FILE NÀY: NỢ N2 (§9 sổ điều hành, L1-M2) ═══════════════════════════
 // Cửa Messenger v3 (`src/channels/messenger/`) đặt guard fail-closed cho MỌI lượt gửi —
@@ -62,7 +65,6 @@ import { classify } from "../classifier.js";
 import { fastLane, noteFastLane } from "../fast-lane.js";
 import { runCloser } from "../closer.js";
 import { guardOutbound } from "../outbound-guard.js";
-import { getKBForPage } from "../kb.js";
 import {
   emptyProfile,
   extractFromText,
@@ -76,6 +78,11 @@ import { ghiSoAi, LOAI, KHONG_GOI_MODEL } from "./so-ai.js";
 import { dungState, ganTuState } from "./trang-thai.js";
 import { suaHoiThoai, docHoiThoaiTheoPageText } from "./kho.js";
 import { lopTuKhoa, LANE as LANE_TU_KHOA } from "./lop-tu-khoa.js";
+import { rapKb as rapKbMacDinh } from "./rap-prompt.js";
+import {
+  chamVaTinhNganSach as chamVaTinhNganSachMacDinh,
+  conNganSach as conNganSachMacDinh,
+} from "./ngan-sach-luot.js";
 
 /** Không tìm thấy dòng `hoi_thoai` cho tin — bộ NẠP phải tạo TRƯỚC (cua-messenger §2). */
 export class LoiThieuHoiThoai extends Error {
@@ -93,12 +100,20 @@ export const KET_QUA = Object.freeze({
 
 function depsMacDinh(deps = {}) {
   return {
-    layKb: deps.layKb || getKBForPage,
+    // L2-M3 ②.1: mặc định nay là rap-prompt.js (ráp 4 khối từ DB, cờ V3_RAP_PROMPT_BAT
+    // vắng = tự lùi về kb.js cũ bên trong rapKb — xem rap-prompt.js đầu file). Chữ ký đổi
+    // từ layKb(pageId) đồng bộ sang layKb(pool, {teamId, pageIdText}) bất đồng bộ; các
+    // bản override cũ trong test/ops đều dạng `() => kb` (bỏ qua tham số) nên KHÔNG vỡ —
+    // đo lại: `grep -rn "layKb:" test/ ops/` chỉ ra toàn bộ là `() => kb`.
+    layKb: deps.layKb || rapKbMacDinh,
     layModel: deps.layModel || layModelMacDinh,
     phanLoai: deps.phanLoai || classify,
     lanNhanh: deps.lanNhanh || fastLane,
     chayCloser: deps.chayCloser || runCloser,
     kiemTinRa: deps.kiemTinRa || guardOutbound,
+    // L2-M3 ②.2: ngân sách lượt theo độ nóng, thay trần 4 lượt cứng.
+    chamVaTinhNganSach: deps.chamVaTinhNganSach || chamVaTinhNganSachMacDinh,
+    conNganSach: deps.conNganSach || conNganSachMacDinh,
     cua: {
       guiTin: deps.cua?.guiTin || cuaGuiTin,
       guiAnh: deps.cua?.guiAnh || cuaGuiAnh,
@@ -132,14 +147,24 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     goiModel: 0,
     soAi: {},
   };
+  // `kb` (khai ở bước 2, dưới đây) được closure này đọc TRỄ — mọi lượt gọi `ghi(...)`
+  // thật sự chạy đều SAU khi `kb` đã gán, dù `ghi` khai TRƯỚC nó trong văn bản (thứ tự
+  // hàm ≠ thứ tự thực thi trong JS). L2-M3 ②.3: đóng dấu cờ page trọng điểm + khối rỗng
+  // vào MỌI dòng so_ai của lượt này (mù-có-nói-ra, không im — cùng khuôn án lệ #7).
   const ghi = async (loai, phan) => {
+    const { duLieu, ...con } = phan || {};
     const r = await ghiSoAi(pool, {
       teamId,
       tinId: tin.id,
       loai,
       pageId: tin.page_id,
       psid: tin.psid,
-      ...phan,
+      ...con,
+      duLieu: {
+        ...(duLieu || {}),
+        trong_diem: kb.trongDiem === true,
+        ...(kb.nguon_thieu?.length ? { kb_nguon_thieu: kb.nguon_thieu } : {}),
+      },
     });
     if (r.ghi) dem.soAi[loai] = (dem.soAi[loai] || 0) + 1;
     return r;
@@ -159,7 +184,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
   }
 
   // ── 2 · KB + MODEL ───────────────────────────────────────────────────────────────
-  const kb = d.layKb(tin.page_id) || {};
+  const kb = (await d.layKb(pool, { teamId, pageIdText: tin.page_id })) || {};
   const model = await d.layModel(pool, { teamId }, { vaiTro: "chinh" });
 
   // ── 3 · STATE + HỒ SƠ ────────────────────────────────────────────────────────────
@@ -169,6 +194,18 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       ? { ...emptyProfile(), ...hoiThoai.ho_so }
       : emptyProfile();
   const text = String(tin.noi_dung || "");
+
+  // ── 3b · M11 v3 · CHẤM ĐIỂM LEAD (L2-M3 ②.2) ─────────────────────────────────────
+  // SỚM — TRƯỚC lớp từ-khoá/Fast Lane (bước 4b/5), đúng vị trí `updateLead` của
+  // handler.js cũ (dòng 223-225: "Chấm trước Fast Lane để chuỗi tin cụt vẫn bị trừ điểm
+  // đúng như spec"). `lead` được `luuLai` bên dưới đóng gói vào patch qua closure —
+  // MỌI đường thoát của hàm này (kể cả kb.noData/lớp từ khoá/Fast Lane/spam/complaint)
+  // đều ghi lại điểm mới, không chỉ nhánh gọi model.
+  const prevLead =
+    hoiThoai.diem_lead && Object.keys(hoiThoai.diem_lead).length
+      ? hoiThoai.diem_lead
+      : {};
+  const { lead, budget } = d.chamVaTinhNganSach(text, prevLead);
 
   // Tham số cửa dùng lại nguyên bộ cho mọi lượt gửi — `convId` để gọi API, `psid` để
   // cửa tra quyền sở hữu (hai giá trị KHÁC NHAU, xem cua-messenger-v1.md §2).
@@ -189,6 +226,11 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       textDaGui,
       bayGio,
     });
+    // L2-M3 ②.2: điểm lead của LƯỢT NÀY (đóng qua closure từ bước 3b) — ghi lại ở MỌI
+    // đường thoát, kể cả lượt bị lớp từ khoá/Fast Lane trả lời trọn (điểm vẫn phải cộng
+    // dồn đúng cho lượt sau, xem ghi chú "3b" phía trên).
+    patch.diem_lead = lead;
+    patch.diem_nong = Number(lead.score || 0);
     // ⚠️ KHÔNG dùng `suaTheoId` của tầng truy vấn — nó không nhận `ctxHeThong()`, và
     // 100% dữ liệu di trú đậu ở team KỸ THUẬT nên ctx người dùng bị từ chối (nợ N3 của
     // L1-M1, §9 sổ điều hành). Đi qua cửa hẹp `src/chat/kho.js` — cùng khuôn src/pos/kho.js.
@@ -382,6 +424,33 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       return { ketQua: KET_QUA.XONG, lyDo: "complaint", dem };
     }
 
+    // ── 6b · NGÂN SÁCH LƯỢT THEO ĐỘ NÓNG — thay trần 4 lượt cứng (L2-M3 ②.2) ─────
+    // MUỘN — sau lớp từ khoá/Fast Lane/classify (đều 0 token, không có lý do chặn),
+    // NGAY TRƯỚC khi tốn tiền gọi model thật. `used` = state.aiTurns (lượt GỌI MODEL
+    // trong 24h, không phải luot_ai/botTurns — xem ngan-sach-luot.js đầu file).
+    const nganSach = d.conNganSach(budget, state.aiTurns);
+    if (!nganSach.ok) {
+      state.handoff = true;
+      state.handoffReason = nganSach.lyDo;
+      await banGiaoSale(nganSach.lyDo);
+      await ghi(LOAI.HANDOFF, {
+        maModel: KHONG_GOI_MODEL,
+        lyDo: `ngan_sach_het:${budget.tier}`,
+        duLieu: {
+          diem: lead.score,
+          tier: budget.tier,
+          max: budget.max,
+          used: state.aiTurns,
+        },
+      });
+      await luuLai({ daGoiModel: false, daGuiText: false });
+      return {
+        ketQua: KET_QUA.XONG,
+        lyDo: `ngan_sach_het:${budget.tier}`,
+        dem,
+      };
+    }
+
     // ── 7 · DỰNG NGỮ CẢNH + GỌI BỘ NÃO (runCloser NGUYÊN VĂN) ────────────────────
     const { messages } = buildContextMessages({
       prof,
@@ -390,7 +459,10 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       meta: {
         state: hoiThoai.trang_thai,
         used: state.aiTurns,
-        max: config.maxAiTurnsBeforeHandoff,
+        // L2-M3 ②.2: ngân sách THEO ĐỘ NÓNG thay hằng cào bằng config.maxAiTurnsBeforeHandoff
+        // (context.js#buildProfileBlock đọc {used,max,tier} y nguyên — không đổi hàm đó).
+        max: budget.max,
+        tier: budget.tier,
       },
     });
     state.messages = messages;
