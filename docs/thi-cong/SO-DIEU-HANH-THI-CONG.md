@@ -138,21 +138,21 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 ## §3 · SÓNG 1 — BỐN CỬA KẾT NỐI (phần A: 3 cửa)
 
-| Mã    | Việc                                                                   | Phụ thuộc   | Session | Đụng file                            | Trạng thái |
-| ----- | ---------------------------------------------------------------------- | ----------- | ------- | ------------------------------------ | ---------- |
-| L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥        | R0 ✅       | thợ mới | `src/pos/*` `db/migrate/002` `test/` | ✅         |
-| L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team | R0 ✅       | thợ mới | `src/channels/messenger/*` `test/`   | ✅         |
-| L1-M3 | Cửa Pancake WhatsApp 🟥 — KHUNG + mock (phép thật → §7b T1)              | R0 ✅ (H1 thôi chặn code) | thợ mới | `src/channels/whatsapp/*` `test/` | ✅         |
-| R1    | **GATE SÓNG 1** — máy: chạy lúc cây rảnh (L2-M1 đang test) · thật: §7b T1/T2 | L1-M1..M3 ✅ | TỔNG | — | 🟨 |
+| Mã    | Việc                                                                         | Phụ thuộc                 | Session | Đụng file                            | Trạng thái |
+| ----- | ---------------------------------------------------------------------------- | ------------------------- | ------- | ------------------------------------ | ---------- |
+| L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥              | R0 ✅                     | thợ mới | `src/pos/*` `db/migrate/002` `test/` | ✅         |
+| L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team       | R0 ✅                     | thợ mới | `src/channels/messenger/*` `test/`   | ✅         |
+| L1-M3 | Cửa Pancake WhatsApp 🟥 — KHUNG + mock (phép thật → §7b T1)                  | R0 ✅ (H1 thôi chặn code) | thợ mới | `src/channels/whatsapp/*` `test/`    | ✅         |
+| R1    | **GATE SÓNG 1** — máy: chạy lúc cây rảnh (L2-M1 đang test) · thật: §7b T1/T2 | L1-M1..M3 ✅              | TỔNG    | —                                    | 🟨         |
 
 ## §4 · SÓNG 2 — CHAT MESSENGER
 
-| Mã    | Việc                                                                                | Phụ thuộc                     | Session | Đụng file                          | Trạng thái |
-| ----- | ----------------------------------------------------------------------------------- | ----------------------------- | ------- | ---------------------------------- | ---------- |
+| Mã    | Việc                                                                                  | Phụ thuộc                                                           | Session | Đụng file                                           | Trạng thái |
+| ----- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------- | --------------------------------------------------- | ---------- |
 | L2-M1 | Đường xử lý tin nền mới + hàng đợi; route outbound qua cửa v3 (nợ tools.js); DI model | R1 code-xong (L1-M1·M2 ✅; model = llm.js cũ qua DI, chỗ cắm cho B) | thợ mới | `src/queue/*` `src/chat/*` `db/migrate/003` `test/` | ✅         |
-| L2-M2 | Tắt Botcake 3 page thử, bật 2 lớp 0 đồng, nhập 2 luật từ khoá, vá `paano mag order` | L2-M1 + **H3** + **H8**       | thợ mới | `src/chat/*` `test/`               | 🟨         |
-| L2-M3 | Tách prompt 4 khối, ngân sách lượt theo độ nóng, cờ page trọng điểm                 | L2-M1                         | thợ mới | `src/chat/*` `test/`               | ⬜         |
-| R2    | **GATE SÓNG 2** — đo 50 lượt thật <10s, 7 ngày so 3 page đối chứng                  | L2-M1..M3                     | TỔNG    | —                                  | ⬜         |
+| L2-M2 | Tắt Botcake 3 page thử, bật 2 lớp 0 đồng, nhập 2 luật từ khoá, vá `paano mag order`   | L2-M1 + **H3** + **H8**                                             | thợ mới | `src/chat/*` `test/`                                | 🟨         |
+| L2-M3 | Tách prompt 4 khối, ngân sách lượt theo độ nóng, cờ page trọng điểm                   | L2-M1                                                               | thợ mới | `src/chat/*` `test/`                                | ⬜         |
+| R2    | **GATE SÓNG 2** — đo 50 lượt thật <10s, 7 ngày so 3 page đối chứng                    | L2-M1..M3                                                           | TỔNG    | —                                                   | ⬜         |
 
 ## §5 · SÓNG 3 — HAI LUỒNG ĐƠN 🟥 (toàn sóng là đường đơn/tiền)
 
@@ -168,28 +168,28 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 Mọi phép cần thế-giới-thật của các phiếu được code-với-mock + HOÃN minh bạch, dồn về đây:
 
-| # | Phép | Của phiếu | Cần gì |
-| --- | --- | --- | --- |
-| T1 | Gửi 1 tin WhatsApp thật qua API Pancake tới số nội bộ | L1-M3 ⑤ | H1 nối số WA vào Pancake |
-| T2 | Diễn tập ghi-ngược trạng thái trên ĐƠN NHÁP (2 chiều) | L1-M1 ④#5c | V3_POS_GHI=1 + đơn nháp |
-| T3 | Tắt Botcake 3 page thử + bật 2 lớp 0 đồng | L2-M2 | H8 chọn page + người vào Botcake |
-| T4 | Đo 50 lượt trả lời thật <10s + 7 ngày so 3 page đối chứng | L2 gate R2 | T3 xong |
-| T5 | Nạp `ai-messages.jsonl` + đối chiếu số dòng Sổ AI | nợ §9 L0-M1 | chạy trên VPS |
-| T6 | Lớp model B (L1-M4) cắm vào chỗ DI của L2-M1 | H5 | người B xong |
+| #   | Phép                                                      | Của phiếu   | Cần gì                           |
+| --- | --------------------------------------------------------- | ----------- | -------------------------------- |
+| T1  | Gửi 1 tin WhatsApp thật qua API Pancake tới số nội bộ     | L1-M3 ⑤     | H1 nối số WA vào Pancake         |
+| T2  | Diễn tập ghi-ngược trạng thái trên ĐƠN NHÁP (2 chiều)     | L1-M1 ④#5c  | V3_POS_GHI=1 + đơn nháp          |
+| T3  | Tắt Botcake 3 page thử + bật 2 lớp 0 đồng                 | L2-M2       | H8 chọn page + người vào Botcake |
+| T4  | Đo 50 lượt trả lời thật <10s + 7 ngày so 3 page đối chứng | L2 gate R2  | T3 xong                          |
+| T5  | Nạp `ai-messages.jsonl` + đối chiếu số dòng Sổ AI         | nợ §9 L0-M1 | chạy trên VPS                    |
+| T6  | Lớp model B (L1-M4) cắm vào chỗ DI của L2-M1              | H5          | người B xong                     |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
-| Mã  | Việc                                                                                            | Chặn gì                                                        | Trạng thái |
-| --- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---------- |
-| H1  | Điểm kiểm 1: gửi WhatsApp bằng API Pancake được không (thử 1 tin số nội bộ)                     | L1-M3                                                          | ⬜         |
-| H2  | Điểm kiểm 2: Pancake có webhook đẩy tin về không                                                | kiến trúc L2-M1 (poll vs push)                                 | ⬜         |
-| H3  | Điểm kiểm 3: Botcake kéo bao nhiêu khách từ bình luận (Private Replies)                         | L2-M2                                                          | ⬜         |
-| H4  | Điểm kiểm 4: Marketing Message có bật cho Trung Đông không (test 50 khách UAE)                  | giai đoạn 3, cần biết sớm                                      | ⬜         |
-| H5  | **Chỉ định NGƯỜI B** + B xong lớp model L1-M4 cuối tuần 1                                       | L2-M1                                                          | ⬜         |
-| H6  | Mở tài khoản + lấy khoá 4 nhà model, nạp tiền chạy A/B                                          | L2 (A/B model)                                                 | ⬜         |
-| H7  | Chốt mapping page/sản phẩm/thị trường ↔ 3 team (Tiểu Alpha·Auus·Pialpha EU)                     | di trú gán team thật (L0-M1 seed 3 team, gán chi tiết chờ đây) | ⬜         |
-| H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                                      | L2-M2                                                          | ⬜         |
-| H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm | ⬜         |
+| Mã  | Việc                                                                                 | Chặn gì                                                        | Trạng thái |
+| --- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------- | ---------- |
+| H1  | Điểm kiểm 1: gửi WhatsApp bằng API Pancake được không (thử 1 tin số nội bộ)          | L1-M3                                                          | ⬜         |
+| H2  | Điểm kiểm 2: Pancake có webhook đẩy tin về không                                     | kiến trúc L2-M1 (poll vs push)                                 | ⬜         |
+| H3  | Điểm kiểm 3: Botcake kéo bao nhiêu khách từ bình luận (Private Replies)              | L2-M2                                                          | ⬜         |
+| H4  | Điểm kiểm 4: Marketing Message có bật cho Trung Đông không (test 50 khách UAE)       | giai đoạn 3, cần biết sớm                                      | ⬜         |
+| H5  | **Chỉ định NGƯỜI B** + B xong lớp model L1-M4 cuối tuần 1                            | L2-M1                                                          | ⬜         |
+| H6  | Mở tài khoản + lấy khoá 4 nhà model, nạp tiền chạy A/B                               | L2 (A/B model)                                                 | ⬜         |
+| H7  | Chốt mapping page/sản phẩm/thị trường ↔ 3 team (Tiểu Alpha·Auus·Pialpha EU)          | di trú gán team thật (L0-M1 seed 3 team, gán chi tiết chờ đây) | ⬜         |
+| H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                           | L2-M2                                                          | ⬜         |
+| H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm                                | ⬜         |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
@@ -329,12 +329,12 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   «BA chỗ gửi ngầm» trong `executeTool`; đo lại ra **NĂM đường thoát**, hai chỗ gọi GIÁN
   TIẾP nên grep trong `tools.js` không thấy: (4) `tools.js:208 recordClosedOrder` →
   `order-bridge.js:255 pkAddNote(<ghi chú đơn>)`; (5) `tools.js:171 ordersEnabled() &&
-  conversationHasOrder()` → `src/pancake-orders.js:25` và `:108` **fetch HTTP tới POS
+conversationHasOrder()` → `src/pancake-orders.js:25` và `:108` **fetch HTTP tới POS
   pages.fm bằng KHOÁ THẬT của 7 shop** (`pancake-shops.json`). Đo bằng bẫy
   `globalThis.fetch` trong `test/l2-m1-nhac-truong.test.js`: **7 lượt** thoát ra ở dân số
   «ép chốt đơn», trong khi mock `pancake.js`+`messenger.js` vẫn báo sạch — tức bộ ca chỉ
   mock theo danh sách của phiếu sẽ **XANH GIẢ**. Ba thứ làm nó nguy: `grep PANCAKE_READONLY
-  src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` ở `:113` nuốt
+src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` ở `:113` nuốt
   lỗi theo chiều fail-OPEN («coi như chưa có đơn») · nó là đường ĐỌC nên không ai đi tìm
   khi hỏi «bot có gửi gì không». Bọc nó nằm ngoài pathspec L2-M1 (file phẳng, CẤM SỬA) —
   cần một phiếu cutover.
@@ -353,8 +353,7 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   tên bảng ⇒ ĐỎ kể từ bản 003. Đo 22/08: **21 bảng** · `l0-m1.sh` **51 → ĐẠT 47 / TRƯỢT 4**
   (đúng 4 mục L1-M1 đã gặp). Vá = `20 → 21` ở hai chỗ trong test + thêm `tin_cho_xu_ly` vào
   `NEO_19_BANG` (test dòng 16) và `NEO` (script dòng 112). Đo thêm để TỔNG khỏi đoán: bản
-  004 (L3-M1) **KHÔNG thêm bảng nào** (`grep -c '^CREATE TABLE' db/migrate/004_*.up.sql` =
-  0) ⇒ con số đúng là **21**, không phải 22. Ngoài pathspec L2-M1 (án lệ #25) — TỔNG vá.
+  004 (L3-M1) **KHÔNG thêm bảng nào** (`grep -c '^CREATE TABLE' db/migrate/004_*.up.sql` = 0) ⇒ con số đúng là **21**, không phải 22. Ngoài pathspec L2-M1 (án lệ #25) — TỔNG vá.
 - 22/08 · thợ L2-M1 (nợ N3 của L1-M1 LẶP LẠI): `suaTheoId` của tầng L0-M2 vẫn chưa có bản
   cho `ctxHeThong()`, mà worker là job nền và 100% dữ liệu di trú đậu ở team KỸ THUẬT
   `chua-phan` ⇒ không còn đường UPDATE hợp lệ nào qua tầng chung cho `hoi_thoai`. Buộc dựng
@@ -379,6 +378,26 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   `git reset -q -- <đúng 19 đường dẫn>` (không đụng phần staged của ai). ⇒ **Đề nghị TỔNG
   bổ sung vào skill `tho-thi-cong`: private-index commit PHẢI kết bằng
   `git reset -- <pathspec>`.** Nghi thức hiện tại dừng ở `update-ref` là để lại mìn hẹn giờ.
+
+- 23/08 · thợ VA-P1 — **P1 đóng bởi VA-P1**: thêm cặp `1→12` vào `CHUYEN_CHO_PHEP`
+  (`src/pos/ma-trang-thai.js`), neo đồ thị đơn 47397 (UAE) `0→1→12→8` + nhãn `submitted`
+  đã có sẵn trong `BANG_MA`. Ca `C5` của `test/l3-m1-may-trang-thai.test.js` (neo L3-M1 để
+  lại) cập nhật theo hành-vi-mới: `kiemChuyen(1,12)` nay CHO QUA thay vì ném
+  `LoiChuyenNgoaiBang`. Test mới `D5` (`test/l1-m1-ghi-nguoc.test.js`) đo cặp mới qua đủ
+  bốn cửa. Bộ ca l1-m1+l3-m1 gộp 63/63 xanh. `may-trang-thai-don-v1.md` §3 (bản CŨ của
+  nợ P1) KHÔNG được đồng bộ trong lượt này — ngoài pathspec VA-P1 (chỉ khai
+  `luoc-do-v1.md`), cần phiếu riêng nếu muốn đồng bộ. Chi tiết: nhật ký
+  `docs/thi-cong/nhat-ky/phieu-va-p1.md`.
+- 23/08 · thợ VA-P1 (nợ mới — 🟡 THƯỚC TRÔI theo số migration, không phải lỗi cửa POS):
+  `ops/bin/nghiem-thu/l1-m1.sh` phép ① («bảng `ket_noi_pos` sau down/sau up» chờ `0/1`)
+  nay ĐỎ THẬT `1/1`. Xác nhận bằng A/B `git stash` đúng 3 file pathspec của VA-P1: chạy
+  script trên bản GỐC (chưa vá CHUYEN_CHO_PHEP) ra ĐỎ Y HỆT ⇒ không liên quan cặp `1→12`.
+  Nguyên nhân: `node db/migrate.js down` (không tham số) gỡ bản MỚI NHẤT trong
+  `_migrations` (`db/migrate.js` dòng 5); script viết khi 002 còn là bản mới nhất, nay
+  chuỗi có thêm 003 (L2-M1) + 004 (L3-M1) nên một lượt `down` gỡ 004, không đụng bảng
+  `ket_noi_pos` của 002 ⇒ bảng còn nguyên sau down. Cùng họ nợ P2 (schema.sql) — gate giả
+  định số migration cố định trong khi cây chạy nhiều phiếu song song; sửa đúng cần chọn
+  `down --het` hay `down N` cho MỌI gate, không phải việc vá 1 dòng bảng hằng của VA-P1.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
@@ -456,10 +475,10 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   schema (P2 đóng) · thước l0-m1 21 bảng · skill tho-thi-cong +2 bài học (private-index
   reset, bẫy fetch tầng thấp).
 - 23/08 · L3-M1 → ✅ — cổng 34/0/3-hoãn (tổng chạy, sandbox) · per-commit 1017a615 11 tệp
-  + vượt-pathspec CÓ XIN (004, luoc-do §8) tổng DUYỆT · đơn thật 26|26 nguyên · thợ phát
-  hiện P1: CHUYEN_CHO_PHEP cửa POS thiếu cặp 1→12 (máy fail-closed thay vì lọt) — phiếu
-  vá VA-P1 phát riêng · P2: schema.sql regen MỘT THỂ sau khi 003 (L2-M1) vào — tổng làm
-  ở gate.
+  - vượt-pathspec CÓ XIN (004, luoc-do §8) tổng DUYỆT · đơn thật 26|26 nguyên · thợ phát
+    hiện P1: CHUYEN_CHO_PHEP cửa POS thiếu cặp 1→12 (máy fail-closed thay vì lọt) — phiếu
+    vá VA-P1 phát riêng · P2: schema.sql regen MỘT THỂ sau khi 003 (L2-M1) vào — tổng làm
+    ở gate.
 - 22/08 · L3-M1 → 🎫→🟨 — điểm (a) 2 CHAN (nhánh messenger nhầm bảng · thiếu trạng thái
   thất bại) → v2 đóng 7/7, verify DAT 6/6 ô bảng 01 §1. ⚠️ BẢN V2 THẬT = commit `7069d31`
   (141 dòng); `deabfe1` mang cùng message nhưng RỖNG RUỘT (sự cố heredoc) — tra sử đừng
@@ -538,3 +557,8 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   `docs(dieu-hanh)` của TỔNG soạn L2-M1/L3-M1 trong lúc code — xác minh bằng
   `git status --short` + `git diff --numstat` chỉ có đúng 8 tệp pathspec ③, 0 marker
   trong file của tôi) · commit `01063fa` · nhật ký docs/thi-cong/nhat-ky/phieu-l1-m3.md
+- 23/08 · VA-P1 → ✅ — `ma-trang-thai.js#CHUYEN_CHO_PHEP` thêm cặp `1→12` (đóng nợ P1,
+  neo đồ thị đơn 47397 UAE 0→1→12→8), ca `C5`/`M3` cập nhật theo hành-vi-mới + test mới
+  `D5`, bộ ca l1-m1+l3-m1 63/63 xanh · `l1-m1.sh` 23 đạt/1 trượt (CÓ SẴN trước vá, A/B
+  stash xác nhận, nợ mới ghi §9)/1 hoãn (có sẵn, ⑤c chờ VPS) · commit `b3d4e10` · nhật ký
+  docs/thi-cong/nhat-ky/phieu-va-p1.md
