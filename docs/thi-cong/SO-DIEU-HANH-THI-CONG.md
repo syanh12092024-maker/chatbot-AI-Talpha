@@ -360,3 +360,22 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   dãy riêng từng shop ⇒ ma_pos mang shop · danh mục POS giá 0 ⇒ goi_gia 0 dòng) và 8 dòng nợ §9.
   Cổng `ops/bin/nghiem-thu/l1-m1.sh` 24 ĐẠT/0 TRƯỢT/1 HOÃN (⑤c ghi ngược THẬT CHƯA CHẠY — chờ
   diễn tập VPS), bộ ca 34/34 · commit f5611cb · nhật ký docs/thi-cong/nhat-ky/phieu-l1-m1.md
+- 22/08 · L1-M3 → 🔎 chờ nghiệm thu — cửa Pancake WhatsApp `src/channels/whatsapp/`
+  (4 file; `guiTinMau(pool,ctx,{soNhan,tenMau,thamSo,donHangId})` — SAO CHÉP cơ chế đã
+  duyệt L1-M2: định tuyến team qua `don_hang` thay `page` (Cloud API không có khái niệm
+  Facebook Page) · `ctxHeThong()` gắn đúng team cho job nền · guard fail-closed riêng
+  `V3_WA_GUI` (chung `PANCAKE_READONLY` — một van cho mọi đường Pancake). CỘNG nhật ký
+  HAI PHA (khuôn `ghi-nguoc.js` L1-M1: `wa_gui_bat_dau`/`wa_gui_ket_qua`, lỗi
+  `coPhanHoi=true` vẫn ghi pha 2, mất tín hiệu mạng thật mới để mồ côi). MỚI theo phiếu:
+  rào NGUỒN ĐƠN (chỉ `don_hang.nguon='trang_ban_hang'`, 01 §1 — `LoiSaiNguonDon`) + LUẬT
+  MẪU TIN (chỉ `da_duyet=true` — bảng `mau-tin.js#BANG_MAU_TIN` RỖNG THẬT, Meta chưa
+  duyệt mẫu nào, 90-phu-luc §M1/§M2 còn trống — không bịa mẫu). Endpoint Pancake
+  WhatsApp CHƯA XÁC ĐỊNH (đo lại: `pancake.js` không có route `/whatsapp`; 01 §4 = điểm
+  kiểm H1 chưa chạy) — adapter thật `guiMauQuaPancake` LUÔN ném `LoiChuaCoEndpoint`
+  (`coPhanHoi=true`, không bịa endpoint). Đối chiếu `PHIEU-L3-M1.md` +
+  `bien-moi-truong-v3.md` (soạn song song) xác nhận tên hàm/lỗi/biến khớp hợp đồng đã
+  ký, không có CHAN mới. Cổng `l1-m3.sh` 24/24 ĐẠT + 1 HOÃN minh bạch (gửi WA thật, §7b
+  T1, chờ H1) · test 17/17 xanh · chặng 1 5/8 (phép ④/⑥ NHIỄU SONG SONG từ 7 commit
+  `docs(dieu-hanh)` của TỔNG soạn L2-M1/L3-M1 trong lúc code — xác minh bằng
+  `git status --short` + `git diff --numstat` chỉ có đúng 8 tệp pathspec ③, 0 marker
+  trong file của tôi) · commit `01063fa` · nhật ký docs/thi-cong/nhat-ky/phieu-l1-m3.md
