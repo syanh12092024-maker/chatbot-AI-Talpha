@@ -1,8 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 19:00 22/08 · đang chạy: L0-M2 🟨 (thợ sonnet) · phán mới
-> nhất: L1-M1 điểm (a) TRẢ-VỀ 3 CHAN (bảng mã không phép đo · ghi không đọc live · thiếu
-> khoá) → phiếu v2 đóng 7/7, khoá dev đã đặt, H9 mở, đang verify vòng 2.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 20:00 22/08 · đang chạy: L1-M1 🟨 (opus) + L1-M2 🟨
+> (sonnet) SONG SONG · phán mới nhất: GATE R0 XANH (52/52 test ×2 lượt · l0-m1 51/51 ·
+> l0-m2 16/16) — sóng 0 ĐÓNG, lược đồ + tầng truy vấn đã bàn giao cho B qua docs/v3/ban-giao/.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -123,8 +123,8 @@ trong 5′, đơn Messenger không bị hỏi lại, trùng chéo bị bắt.
 | Mã    | Việc                                                                               | Phụ thuộc | Session | Đụng file             | Trạng thái |
 | ----- | ---------------------------------------------------------------------------------- | --------- | ------- | --------------------- | ---------- |
 | L0-M1 | Lược đồ 19 bảng + di trú dữ liệu thật từ JSON                                      | —         | thợ mới | `db/*` `test/l0-m1-*` | ✅         |
-| L0-M2 | Tầng truy vấn tự chèn điều kiện team, thiếu bối cảnh → ném lỗi                     | L0-M1     | thợ mới | `src/db/*` `test/`    | 🟨         |
-| R0    | **GATE SÓNG 0** — npm test 2 lượt + script nghiệm thu + đối chiếu danh sách di trú | L0-M1·M2  | TỔNG    | —                     | ⬜         |
+| L0-M2 | Tầng truy vấn tự chèn điều kiện team, thiếu bối cảnh → ném lỗi                     | L0-M1     | thợ mới | `src/db/*` `test/`    | ✅         |
+| R0    | **GATE SÓNG 0** — npm test 2 lượt + script nghiệm thu + đối chiếu danh sách di trú | L0-M1·M2  | TỔNG    | —                     | ✅         |
 
 Bàn giao cho B tại R0: lược đồ (điểm 1) + hàm tầng truy vấn (điểm 2) + hình dạng bảng
 `viec_can_xu_ly` (điểm 3) — công bố bằng file `docs/v3/ban-giao/luoc-do-v1.md`.
@@ -139,8 +139,8 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 | Mã    | Việc                                                            | Phụ thuộc   | Session | Đụng file                          | Trạng thái |
 | ----- | --------------------------------------------------------------- | ----------- | ------- | ---------------------------------- | ---------- |
-| L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥 | R0          | thợ mới | `src/pos/*` `db/migrate/002` `test/` | 🎫         |
-| L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team | R0    | thợ mới | `src/channels/messenger/*` `test/` | 🎫         |
+| L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥 | R0 ✅       | thợ mới | `src/pos/*` `db/migrate/002` `test/` | 🟨         |
+| L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team | R0 ✅ | thợ mới | `src/channels/messenger/*` `test/` | 🟨         |
 | L1-M3 | Cửa Pancake WhatsApp 🟥 (gửi tin ra khách)                      | **H1** + R0 | thợ mới | `src/channels/whatsapp/*` `test/`  | ⬜         |
 | R1    | **GATE SÓNG 1**                                                 | L1-M1..M3   | TỔNG    | —                                  | ⬜         |
 
@@ -231,6 +231,12 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
   ghi nhat_ky); chống ĐẠT RỖNG bằng mẫu trộn tieu-alpha+auus, so DANH SÁCH id không so
   count. Cổng `l0-m2.sh` 16/16 ĐẠT, test 22 ca xanh (gộp l0-m1 52/52, bộ cũ 18/5 không
   hồi quy) · commit 9c40c9f · nhật ký docs/thi-cong/nhat-ky/phieu-l0-m2.md
+- 22/08 · L0-M2 → ✅ + GATE R0 XANH — chặng 1 8/8 · cổng 16/16 (tổng chạy) · kiểm chéo độc
+  lập 5 phép (LoiThieuBoiCanhTeam · picker 3 slug · ctx kỹ thuật chặn · LoiXuyenTeam +
+  nhat_ky 0→1) · test v3 52/52 ×2 lượt · commit thợ 9c40c9f · PHÁN TỔNG: gate NHỎ nội bộ
+  (không push/prod) tự qua khi phần máy xanh — theo 2 lệnh tăng tốc 22/08; gate có
+  push/deploy vẫn DỪNG chờ người. Bộ test cũ LOẠI khỏi gate (tự ghi conv-state.json thật,
+  nợ §9) — thay bằng phép ⑤ chan1 (diff không đụng file phẳng src/).
 - 22/08 · L1-M2 → 🎫 sẵn sàng chờ R0 — điểm (a) TRẢ-VỀ 3 CHAN (guard sai chiều · lối vòng
   tools.js · ctxHeThong không team) → v2 đóng 6/6, verify DAT · H9 gom thêm V3_PANCAKE_GUI.
 - 22/08 · L1-M1 → 🎫 sẵn sàng chờ R0 — điểm (a) vòng 1 TRẢ-VỀ 3 CHAN, phiếu v2 đóng 7/7,
