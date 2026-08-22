@@ -1,0 +1,145 @@
+phieu: VA-R2
+diem: a
+nguoi_cham: reviewer nghiep-vu (skill review-nghiep-vu v1)
+ngay: 2026-08-23
+lan: 🟥 TIỀN + tạo đơn COD thật · gộp 6 finding (RF-9·10·11·12·21·15)
+nguon_da_doc:
+  - docs/thi-cong/phieu/PHIEU-VA-R2.md
+  - docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs (F1·F3a·F3b·F4·F6 — đo lại rc)
+  - docs/v3/01-QUYET-DINH.md (KHÔNG có VND — tiền tệ gốc là ME) · docs/v3/02-KE-HOACH-CODE.md
+  - docs/v3/ban-giao/luoc-do-v1.md §7.2 (bảng mã: 8=packing) · phieu-l1-m1.md §3.3 (tong_tien NULL)
+  - src/pos/tao-don.js (HE_SO_TE · doiSangDonViNho) · src/orders/hang-cho.js:105/219/320
+    · src/orders/ti-le-hoan.js:45 (MA_HOAN {4,5,6,7}) · src/orders/may-trang-thai.js (C3 — đo lại)
+  - (kiểm) repo KHÔNG có CLAUDE.md, KHÔNG có design-pack/
+
+cau:
+  - so: 1
+    dap: KHONG
+    bang_chung: >-
+      Phiếu VÁ — không sinh năng lực người dùng mới, sửa 6 lỗi tiền/tạo-đơn. Đúng bản chất; câu 8
+      gánh biện minh (bỏ đi thì COD đúp + thu ×100).
+  - so: 3
+    dap: CO
+    bang_chung: >-
+      CÓ mâu thuẫn, ở vế TIỀN của RF-9. Phiếu bắt thợ tra «CLAUDE §8 tiền: mọi số VND kèm rate» và
+      «CLAUDE §8 + **design-pack quy ước VND**» (dòng 11 · 23). Đo trên cây: repo NÀY **không có
+      CLAUDE.md** và **không có design-pack/** — cả hai là của dự án KHÁC (LevelUp Sales OS, đang nạp
+      chung do share thư mục memory). Nguồn ý đồ của DỰ ÁN NÀY (01-QUYET-DINH) **không có một chữ
+      VND**; tiền tệ gốc là ME (AED/SAR/QAR/TWD ×100 · KWD/OMR/BHD ×1000 — `tao-don.js` HE_SO_TE),
+      và L1-M1 §3.3 đã chốt convention thật «tong_tien NULL — fail-CLOSED về ĐƠN VỊ (minor), không
+      phải về tỷ giá». Trích sai dự án ⇒ đề bài chỏi nguồn thật. Xem N2.
+  - so: 7
+    dap: KHONG
+    bang_chung: >-
+      Không làm hẹp luồng khác. Gộp 6 finding đều nằm trong 3 file C2 (`hang-cho.js`·`tao-don.js`·
+      `doc-danh-muc.js`) + migration 007, cùng một repro (tong-the-1). KHÔNG finding nào cần
+      `may-trang-thai.js` (C3): đo trên cây, C3 dùng `BANG_CHUYEN` per-nguồn, KHÔNG có bản sao tập
+      mã hủy/hoàn; nguồn đúng của RF-10 là `ti-le-hoan.js:45` `MA_HOAN` (đã export sẵn). Gộp hợp lý,
+      KHÔNG cần tách vì C3.
+  - so: 8
+    dap: CO
+    bang_chung: >-
+      Bỏ phiếu thì đau đo được: refute tong-the-1 cho F3b thu **1.500 AED thay vì 15,00** (×100 hai
+      lần), F1 đơn `status 8 (packing)` đọc thành hủy ⇒ **COD đúp**, F4 POST-rollback bấm lại =
+      **đơn thật thứ hai** (luật 2 cấm xoá), F6 đơn trang 2 lọt cửa chống trùng. Đây là đường tiền +
+      tạo đơn COD thật. Không phải over-engineering.
+
+ket_luan: TRA_VE
+
+findings:
+  - ma: N1
+    muc: CHAN
+    mo_ta: >-
+      Thước «repro biến ĐỎ→XANH» chưa TỰ CHẤM: `refute-tong-the-1.repro.mjs` in 🔴/✅ (`ok()` trả
+      emoji) nhưng LUÔN exit 0, và ④ không bắt `.sh` grep dòng ✅/số — `va-r2.sh` chấm bằng rc sẽ
+      XANH khi bug còn sống.
+    bang_chung: >-
+      Đo trên cây: `node refute-tong-the-1.repro.mjs; echo $?` → **rc=0**. Không `process.exit`,
+      không `throw`, không bộ đếm fail — `ok = (b)=>(b?"✅":"🔴")` chỉ sinh chuỗi để in. ④ ghi «F3b
+      thu ĐÚNG 15,00 (=1500 minor), không 1.500» — nêu kỳ vọng, không mandate `va-r2.sh` trích
+      `shipping_fee===1500` và fail khi ≠. Cùng bệnh N1 của VA-R1, cùng cách chữa.
+    kich_ban_hong: >-
+      Thợ vá hụt RF-9 (ví dụ chỉ sửa `tao-don` mà `doc-danh-muc` vẫn ghi sai đơn vị) ⇒ F3b in 🔴
+      «thu 1.500» nhưng repro vẫn exit 0 ⇒ `va-r2.sh` rc=0 ⇒ cổng XANH ⇒ đơn COD thật thu gấp 100
+      lần vẫn được ký là «đã vá».
+    sua_the_nao: >-
+      Như VA-R1 N1: hoặc sửa repro `process.exitCode=1` khi có 🔴, hoặc `va-r2.sh` grep từng token
+      kỳ vọng (in con số hai vế + đơn vị) và exit≠0 khi thấy 🔴. Áp cho cả 6 phép F1/F3a/F3b/F4/F6.
+
+  - ma: N2
+    muc: CHAN
+    mo_ta: >-
+      RF-9 trích SAI DỰ ÁN cho khuôn tiền: «CLAUDE §8 mọi số VND kèm rate» + «design-pack quy ước
+      VND» — cả hai không tồn tại trong repo này, và dự án này KHÔNG dùng VND. Trên phiếu CÓ migration
+      007, nên trích sai đẩy thợ tới dựng schema tỷ giá không cần.
+    bang_chung: >-
+      `ls CLAUDE.md .claude/CLAUDE.md` → không có; `ls -d design-pack` → không có. 01-QUYET-DINH
+      (nguồn ý đồ dự án này) không có chữ VND. Convention THẬT đã chốt ở L1-M1 §3.3: «POS trả tiền ở
+      đơn vị nhỏ, hệ số khác theo tệ… `tong_tien` NULL» — tức bài toán là ĐƠN VỊ (minor/major) trong
+      **tệ gốc ME**, KHÔNG phải quy đổi VND + tỷ giá. `tao-don.js` HE_SO_TE xác nhận: giữ tệ gốc,
+      chỉ đổi major↔minor.
+    kich_ban_hong: >-
+      Thợ đọc ② «CLAUDE §8 + design-pack quy ước VND» theo nghĩa đen: (a) phí công tìm design-pack
+      không tồn tại; (b) nặng hơn — dựng cột `rate`/`rate_date` + «fail-CLOSED khi thiếu tỷ giá»
+      vào migration 007 theo luật VND của LevelUp. Dự án này KHÔNG có bảng tỷ giá ⇒ fail-closed
+      chặn MỌI đơn (0 đơn tạo được), hoặc `tong_tien` NOT NULL kèm rate làm hỏng đúng cột L1-M1 cố
+      ý để NULL vì lý do KHÁC (đơn vị, không phải tỷ giá). «Một câu lối đi SAI đắt hơn không có câu.»
+    sua_the_nao: >-
+      Thay mọi trích VND/CLAUDE §8/design-pack bằng nguồn THẬT của dự án: L1-M1 §3.3 + `tao-don.js`
+      HE_SO_TE + `luoc-do-v1.md`. Khai rõ: tiền GIỮ TỆ GỐC (ME), `goi_gia.gia` và `don_hang.tong_tien`
+      cùng lưu **đơn vị nhỏ của tệ gốc** kèm cột `tien_te`; KHÔNG quy đổi VND, KHÔNG rate. Phần ②
+      «tao-don KHÔNG nhân ×100 nếu đã minor + phép so tiền in cả hai vế + đơn vị» giữ nguyên — nó
+      đã đúng và độc lập tệ.
+
+  - ma: N3
+    muc: NEN
+    mo_ta: >-
+      RF-11 và RF-12 để đề bài mở bằng «HOẶC» trên đường chống-trùng/idempotent 🟥 — hai cơ chế
+      khác ngữ nghĩa, không thay thế nhau.
+    bang_chung: >-
+      ②(3) «phân trang tới hết HOẶC khai unknown»; ②(4) «UNIQUE DB trên (hoi_thoai_id) HOẶC marker
+      POST-đã-gửi trước rollback». UNIQUE(hoi_thoai_id) = một đơn/hội-thoại VĨNH VIỄN (chặn cả lần
+      mua lại hợp lệ sau này), khác hẳn marker-trước-POST (chỉ chống đúp lượt rollback của RF-12).
+    sua_the_nao: >-
+      Chốt sàn an toàn, coi tối ưu là tuỳ chọn: RF-11 «chưa quét hết ⇒ `unknown` ⇒ ĐÓNG» là bắt
+      buộc (phân trang-tới-hết chỉ để giảm false-unknown, có thể lặp vô hạn trên shop lớn). RF-12
+      chọn marker POST-đã-gửi-trước-rollback (đúng bệnh); nếu thêm UNIQUE thì phải cho phép mua lại
+      hợp lệ (khoá theo hàng-chờ, không theo hội-thoại đời-đời).
+
+  - ma: N4
+    muc: NEN
+    mo_ta: >-
+      RF-10 lấy nguồn chung từ `ti-le-hoan.js` (MA_HOAN) nhưng file đó KHÔNG trong pathspec ③ — cần
+      chốt là chỉ IMPORT (read-only), và thống nhất TÊN để khỏi đẻ «một-nguồn-hai-tên».
+    bang_chung: >-
+      `ti-le-hoan.js:45` `export const MA_HOAN = [4,5,6,7]` (đã export). `hang-cho.js:105`
+      `const HUY_HOAN = ["4",...,"8"]` (bản sao SAI, có 8). ③ liệt hang-cho/tao-don/doc-danh-muc,
+      không có ti-le-hoan.js — import thì không cần sửa nó, nhưng reader dùng hai tên (`MA_HOAN` số
+      vs `HUY_HOAN` chuỗi) + hai kiểu (number vs string) dễ lệch khi so `String(o.status)`.
+    sua_the_nao: >-
+      ② khai «hang-cho IMPORT `MA_HOAN` từ ti-le-hoan (read-only, không sửa), xoá `HUY_HOAN` cục
+      bộ»; thống nhất so sánh (ép cùng kiểu). ④#2 «grep HUY_HOAN toàn repo = 1 định nghĩa» nên đổi
+      thành «0 định nghĩa `HUY_HOAN`, mọi reader dùng `MA_HOAN`».
+
+  - ma: N5
+    muc: GHI-NO
+    mo_ta: >-
+      RF-9 nay GHI `don_hang.tong_tien` mà L1-M1 cố ý để NULL — cần kiểm không reader nào đang dựa
+      vào NULL đó làm tín hiệu.
+    bang_chung: >-
+      phieu-l1-m1.md §3.3 «tong_tien để NULL — fail-CLOSED về tiền». Đổi sang có giá trị là đổi
+      hợp đồng cột; reader nào coi NULL = «chưa biết giá» có thể diễn giải sai khi thấy số.
+    sua_the_nao: "Grep reader `tong_tien` trước khi ghi; ghi kèm `tien_te` để số không bao giờ trần trụi."
+
+ghi_chu_cho_tong: >-
+  Trả lời bốn câu tổng hỏi. (i) KHÔNG sửa file cấm: 3 file đụng (`hang-cho`·`tao-don`·`doc-danh-muc`)
+  đều là file v3 do L3-M4/L1-M1 dựng dưới `src/orders`·`src/pos`, KHÔNG phải file phẳng cấm;
+  `pancake-orders.js` giữ nguyên. (ii) KHÔNG cần tách vì C3: đo trên cây, `may-trang-thai.js` dùng
+  `BANG_CHUYEN` per-nguồn, không có bản sao tập mã hủy/hoàn, và không finding nào trong 6 chạm nó —
+  gộp 6 hợp lý (cùng 3 file, cùng repro). (iii) Thước đỏ→xanh CHƯA đủ chặt: repro exit 0 bất kể 🔴
+  (đo rc=0), ④ không bắt grep ⇒ CHAN N1. (iv) RF-9 CÓ mâu thuẫn: phiếu trích «CLAUDE §8 VND + rate,
+  fail-closed thiếu tỷ giá» + «design-pack» — cả hai của DỰ ÁN KHÁC (repo này không có CLAUDE.md/
+  design-pack, 01-QUYET-DINH không có VND). Bản thân LÕI RF-9 (×100 hai lần) là thật và cách sửa ở
+  ② line 26 đã đúng + độc lập tệ; chỉ phần TRÍCH NGUỒN sai, đẩy thợ tới dựng máy tỷ giá VND không tồn
+  tại — CHAN N2, sửa bằng trích L1-M1 §3.3 + HE_SO_TE. Điểm phiếu làm đúng, giữ: RF-10/RF-15 chỉ
+  đúng «một-nguồn-hai-luật» (bản sao mã 8) và «khớp đứt page_id» với bằng chứng dòng số.

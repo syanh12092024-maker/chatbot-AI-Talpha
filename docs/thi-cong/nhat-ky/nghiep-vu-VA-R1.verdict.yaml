@@ -1,0 +1,108 @@
+phieu: VA-R1
+diem: a
+nguoi_cham: reviewer nghiep-vu (skill review-nghiep-vu v1)
+ngay: 2026-08-23
+lan: 🟥 vá vi phạm luật số 1 (note/tag thật bay ra khách từ máy dev)
+nguon_da_doc:
+  - docs/thi-cong/phieu/PHIEU-VA-R1.md
+  - docs/thi-cong/nhat-ky/refute-MANG-2.repro.mjs (S1·S3·S4·S5 — đo lại rc)
+  - docs/thi-cong/SO-DIEU-HANH-THI-CONG.md §0a luật 1 · §9 RF-1/2/3
+  - src/tools.js:197/266/271 (3 đường gửi ngầm — đã đo ở verdict L2-M1) · src/pancake.js pkFetchPage
+  - docs/v3/02-KE-HOACH-CODE.md §L2 (nghiệm thu <10s là T4/VPS, không phải dev)
+
+cau:
+  - so: 1
+    dap: KHONG
+    bang_chung: >-
+      Phiếu VÁ, không sinh năng lực người dùng mới — nó KHÔI PHỤC tuân thủ luật 1 (máy dev thôi
+      bắn note/tag thật). Đúng bản chất phiếu chặn; câu 8 gánh biện minh.
+  - so: 3
+    dap: KHONG
+    bang_chung: >-
+      Không mâu thuẫn ý đồ. «KHÔNG chạy tool-loop khi van đóng» khiến máy dev không chạy được lượt
+      dùng-tool của bộ não, nhưng nghiệm thu «trả lời <10s trên 50 lượt» của 02 §L2 là T4 chạy trên
+      VPS (van mở), không phải dev — nên không đụng. Fix nằm đúng hướng luật 1 §0a.
+  - so: 7
+    dap: KHONG
+    bang_chung: >-
+      Không làm hẹp luồng khác một cách chặn được. Đường ĐỌC (nạp/poll) trên dev vốn đã không chạm
+      pages.fm thật (token IP cá nhân lỗi 121, sổ §0a) nên fetch-trap chặn pages.fm khi van đóng
+      không cắt mất phép đo nào đang sống trên dev. Vẫn có một mép cần siết — xem N2, mức NEN.
+  - so: 8
+    dap: CO
+    bang_chung: >-
+      Bỏ phiếu thì luật 1 §0a bị vi phạm sống: refute repro MANG-2 S4 đo **12 lượt HTTP thật**
+      (note/tag) bay ra từ máy dev khi van GỬI đóng — trùng với VPS đang phục vụ khách thật. Đây
+      là 3 đường gửi ngầm trong executeTool mà verdict L2-M1 N1 đã cảnh báo và L2-M1 chưa bịt kín.
+      Không phải over-engineering.
+
+ket_luan: TRA_VE
+
+findings:
+  - ma: N1
+    muc: CHAN
+    mo_ta: >-
+      Thước «repro biến ĐỎ→XANH» chưa TỰ CHẤM: repro in 🔴/✅ nhưng LUÔN exit 0, và ④ viết giá trị
+      kỳ vọng chứ không bắt `.sh` grep dòng ✅/số — nên `va-r1.sh` chấm bằng rc sẽ XANH khi bug còn
+      sống.
+    bang_chung: >-
+      Đo trên cây: `node refute-MANG-2.repro.mjs; echo $?` → **rc=0**. Repro không có `process.exit`
+      nào, không `throw`, không bộ đếm fail (khác `refute-tong-the-1` còn có `ok()` trả emoji để in).
+      ④ của phiếu ghi «S4 → 0 lượt HTTP (trước: 12)» — nêu KỲ VỌNG nhưng không nói `va-r1.sh` phải
+      trích con số đó và fail khi ≠ 0. Đây đúng án lệ dây chuyền «nghiệm thu bằng NỘI DUNG, không
+      bằng lệnh-chạy-xong»: repro in nội dung mà exit 0, nên rc vô nghĩa.
+    kich_ban_hong: >-
+      Thợ viết `va-r1.sh` dạng `node refute-MANG-2.repro.mjs S4 && echo PASS`. Fix hụt (ví dụ trap
+      chỉ bọc một trong hai đường, hoặc tool-loop vẫn chạy nhánh handoff) ⇒ repro in 🔴 «12 lượt»
+      nhưng vẫn exit 0 ⇒ cổng XANH ⇒ tổng nghiệm thu đọc rc=0 kết luận đã vá, note/tag thật vẫn bay.
+    sua_the_nao: >-
+      Chốt MỘT trong hai, ghi vào ④: (a) sửa repro set `process.exitCode = 1` khi bất kỳ kịch bản
+      nào 🔴 (rẻ nhất, biến repro thành thước tự chấm); hoặc (b) `va-r1.sh` GREP từng dòng kỳ vọng
+      («0 lượt HTTP», «PASS guard») và `exit 1` khi thấy 🔴 hoặc thiếu dòng ✅. In con số thật mỗi
+      phép, không nuốt.
+
+  - ma: N2
+    muc: NEN
+    mo_ta: >-
+      RF-1 khai fetch-trap «chặn MỌI request tới pages.fm/graph khi van đóng» — over-broad: van GỬI
+      ghì luôn đường ĐỌC, coupling hai thứ đáng lẽ tách.
+    bang_chung: >-
+      RF-1 nguyên văn «chặn mọi request tới pages.fm/graph khi van đóng». Đường ĐỌC (`docHoiThoai`/
+      `docTin` của nạp) cũng gọi pages.fm. Van cần chặn là van GỬI (POST reply/tag/note/order), không
+      phải GET đọc. Trên dev hôm nay vô hại (đọc thật đằng nào cũng 121), nhưng một máy có token
+      đọc được + van GỬI đóng sẽ mất luôn đường nạp.
+    sua_the_nao: >-
+      Khoanh trap theo VERB/endpoint GHI (POST …/messages, …/tags, …/notes, …/orders), để GET đọc
+      đi qua. Và nhấn rằng lớp chặn CHÍNH là «KHÔNG chạy tool-loop khi van đóng» (S1) — trap chỉ là
+      lưới đỡ; đừng để lưới đỡ thành cửa chắn đường đọc.
+
+  - ma: N3
+    muc: NEN
+    mo_ta: >-
+      RF-2 để đề bài mở «V3_NAP_DEV chỉ mở khi KHÔNG nối DB thật (HOẶC bỏ hẳn, dùng biến khác)» —
+      một chữ «hoặc» trên van 🟥 là đề bài mơ hồ.
+    bang_chung: >-
+      Chữ «hoặc bỏ hẳn, dùng biến khác» để thợ tự quyết cơ chế van. Van là đường tiền/tin ra khách,
+      cấm để hai lối. §0a luật 1 đòi một hành vi tất định.
+    sua_the_nao: >-
+      Chốt một luật (khuyến nghị: `nguonDangMo` fail-CLOSED — chỉ mở khi `PANCAKE_READONLY!=='1'`,
+      đọc env đường tuyệt đối như `ket-noi.js`, không phụ thuộc cwd), khai vào ② và đo bằng ④#3.
+
+  - ma: N4
+    muc: GHI-NO
+    mo_ta: >-
+      Bọc `globalThis.fetch` là backstop mong manh (mã nào giữ tham chiếu `fetch` trước lúc bọc thì
+      lọt) — nên phiếu nói rõ nó CHỈ là lưới đỡ, không phải cơ chế chính.
+    bang_chung: >-
+      `pancake.js` gọi `fetch` qua `pkFetchPage`; nếu module giữ reference sớm thì trap sau không
+      bắt. Cơ chế đúng đã có trong phiếu: không chạy tool-loop khi van đóng (S1).
+    sua_the_nao: Ghi một câu trong ② rằng trap là backstop; thước chính của RF-1 là S1 (0 lượt tool-loop).
+
+ghi_chu_cho_tong: >-
+  Trả lời câu tổng hỏi cho phiếu này. (i) KHÔNG có đường sửa file cấm: bug nằm trong tools.js:197/
+  266/271 + order-bridge.js:255 (CẤM SỬA), và phiếu chèn cổng ở handler-v3/worker (đất được phép) —
+  đúng chỗ, đúng khuôn «không vá được thì chặn ở tầng nguồn» đã dùng ở L1-M2 N2 → L2-M1. (iii) Thước
+  «đỏ→xanh» CHƯA đủ chặt vì repro exit 0 bất kể 🔴 (đo: rc=0) và ④ không bắt grep — đó là CHAN N1,
+  rẻ để đóng (một dòng `process.exitCode`). Điểm phiếu làm ĐÚNG, giữ: chọn lớp chặn CHÍNH là «không
+  chạy tool-loop khi van đóng» (bịt tận gốc thay vì lọc từng lời gọi), và dùng chính repro refute
+  làm thước thay vì tự bịa ca.
