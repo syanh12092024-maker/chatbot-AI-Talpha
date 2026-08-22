@@ -1,8 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 20:00 22/08 · đang chạy: L1-M1 🟨 (opus) + L1-M2 🟨
-> (sonnet) SONG SONG · phán mới nhất: GATE R0 XANH (52/52 test ×2 lượt · l0-m1 51/51 ·
-> l0-m2 16/16) — sóng 0 ĐÓNG, lược đồ + tầng truy vấn đã bàn giao cho B qua docs/v3/ban-giao/.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 20:45 22/08 · đang chạy: L1-M1 🟨 (opus) · phán mới nhất:
+> L1-M2 ✅ (chặng 1 8/8 · cổng 15/15 · kiểm chéo: guard sát cửa ra, tính duy nhất đúng 1
+> file, chặn được cả path lạ) — chờ L1-M1 + quyết H1 để đóng sóng 1.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -140,7 +140,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | Mã    | Việc                                                                   | Phụ thuộc   | Session | Đụng file                            | Trạng thái |
 | ----- | ---------------------------------------------------------------------- | ----------- | ------- | ------------------------------------ | ---------- |
 | L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥        | R0 ✅       | thợ mới | `src/pos/*` `db/migrate/002` `test/` | 🟨         |
-| L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team | R0 ✅       | thợ mới | `src/channels/messenger/*` `test/`   | 🟨         |
+| L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team | R0 ✅       | thợ mới | `src/channels/messenger/*` `test/`   | ✅         |
 | L1-M3 | Cửa Pancake WhatsApp 🟥 (gửi tin ra khách)                             | **H1** + R0 | thợ mới | `src/channels/whatsapp/*` `test/`    | ⬜         |
 | R1    | **GATE SÓNG 1**                                                        | L1-M1..M3   | TỔNG    | —                                    | ⬜         |
 
@@ -249,6 +249,10 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
   ghi nhat_ky); chống ĐẠT RỖNG bằng mẫu trộn tieu-alpha+auus, so DANH SÁCH id không so
   count. Cổng `l0-m2.sh` 16/16 ĐẠT, test 22 ca xanh (gộp l0-m1 52/52, bộ cũ 18/5 không
   hồi quy) · commit 9c40c9f · nhật ký docs/thi-cong/nhat-ky/phieu-l0-m2.md
+- 22/08 · L1-M2 → ✅ — chặng 1 8/8 · cổng 15/15 (tổng chạy) · kiểm chéo 3 phép độc lập
+  (LoiCuaGuiDong fail-closed, guard đặt NGAY TRƯỚC send · grep duy nhất = 1 file · path
+  lạ vẫn chặn) · thợ phát hiện convId ≠ psid (án lệ #4, tra chéo bằng psid đúng cột
+  UNIQUE thật) · commit 92afae3c.
 - 22/08 · L0-M2 → ✅ + GATE R0 XANH — chặng 1 8/8 · cổng 16/16 (tổng chạy) · kiểm chéo độc
   lập 5 phép (LoiThieuBoiCanhTeam · picker 3 slug · ctx kỹ thuật chặn · LoiXuyenTeam +
   nhat_ky 0→1) · test v3 52/52 ×2 lượt · commit thợ 9c40c9f · PHÁN TỔNG: gate NHỎ nội bộ
