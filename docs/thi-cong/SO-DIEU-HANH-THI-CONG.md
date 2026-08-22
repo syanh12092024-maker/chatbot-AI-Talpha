@@ -178,13 +178,13 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 
 ## §5b · SÓNG VÁ REFUTE (VA-R1..R4 — đóng 10 CHẶN §9b)
 
-| Mã | Cụm | Phụ thuộc | Đụng file | Trạng thái |
-| --- | --- | --- | --- | --- |
-| VA-R1 | C1 bộ-não-HTTP (RF-1/2/3) | review(a) | chat/handler-v3 · queue/worker · queue/nap | 🎫 chờ review |
-| VA-R2 | C2 tiền+tạo-đơn (RF-9/10/11/12/21/15) | review(a) | orders/hang-cho · pos/tao-don · pos/doc-danh-muc | 🎫 chờ review |
-| VA-R3 | C3 máy trạng thái (RF-13/14) | — | orders/may-trang-thai · quet-don-moi | 🟨 |
-| VA-R4 | C4 đọc ý (RF-20) | — | orders/doc-y | ✅ |
-| RVA | **GATE SÓNG VÁ** — 13 cổng cũ + 4 va-r* + repro 2 bộ đảo xanh | VA-R1..R4 | TỔNG | ⬜ |
+| Mã    | Cụm                                                           | Phụ thuộc | Đụng file                                        | Trạng thái    |
+| ----- | ------------------------------------------------------------- | --------- | ------------------------------------------------ | ------------- |
+| VA-R1 | C1 bộ-não-HTTP (RF-1/2/3)                                     | review(a) | chat/handler-v3 · queue/worker · queue/nap       | 🎫 chờ review |
+| VA-R2 | C2 tiền+tạo-đơn (RF-9/10/11/12/21/15)                         | review(a) | orders/hang-cho · pos/tao-don · pos/doc-danh-muc | 🎫 chờ review |
+| VA-R3 | C3 máy trạng thái (RF-13/14)                                  | —         | orders/may-trang-thai · quet-don-moi             | 🟨            |
+| VA-R4 | C4 đọc ý (RF-20)                                              | —         | orders/doc-y                                     | ✅            |
+| RVA   | **GATE SÓNG VÁ** — 13 cổng cũ + 4 va-r* + repro 2 bộ đảo xanh | VA-R1..R4 | TỔNG                                             | ⬜            |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
@@ -210,18 +210,19 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   docstring khai không-đụng-DB · RF-27 kịch bản `{}` không vào nguon_thieu.
 
 ═══════════════════════════════════════════════════════════════════════════════
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
 prompt/toàn-cục ✅ · **luồng-đơn + bộ-não = nơi mọi CHẶN tụ**. Gate máy 13/13 + 117/117
 test XANH mà refute lộ 10 CHẶN — thước đo «hệ có hỏng» chưa đo «tiền đúng · tin không bay».
 
-| Cụm | CHẶN | Vùng | Phiếu vá đề xuất |
-| --- | --- | --- | --- |
-| C1 bộ-não-bắn-HTTP | RF-1·RF-2·RF-3 | handler-v3.js · queue/worker.js | VA-R1 🟥 opus |
-| C2 tiền + tạo-đơn | RF-9(×100)·RF-10(mã8)·RF-11(phân trang)·RF-12(POST-rollback)·RF-21(khoá hội thoại) | orders/hang-cho.js · pos/tao-don.js · doc-danh-muc.js | VA-R2 🟥 opus |
-| C3 máy trạng thái | RF-13(CAS ghiDon)·RF-14(kẹt cho_gui_wa) | orders/may-trang-thai.js · quet-don-moi.js | VA-R3 🟥 sonnet |
-| C4 đọc ý | RF-20(phủ định→xác nhận) | orders/doc-y.js | VA-R4 🟨 sonnet |
+| Cụm                | CHẶN                                                                               | Vùng                                                  | Phiếu vá đề xuất |
+| ------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------------- |
+| C1 bộ-não-bắn-HTTP | RF-1·RF-2·RF-3                                                                     | handler-v3.js · queue/worker.js                       | VA-R1 🟥 opus    |
+| C2 tiền + tạo-đơn  | RF-9(×100)·RF-10(mã8)·RF-11(phân trang)·RF-12(POST-rollback)·RF-21(khoá hội thoại) | orders/hang-cho.js · pos/tao-don.js · doc-danh-muc.js | VA-R2 🟥 opus    |
+| C3 máy trạng thái  | RF-13(CAS ghiDon)·RF-14(kẹt cho_gui_wa)                                            | orders/may-trang-thai.js · quet-don-moi.js            | VA-R3 🟥 sonnet  |
+| C4 đọc ý           | RF-20(phủ định→xác nhận)                                                           | orders/doc-y.js                                       | VA-R4 🟨 sonnet  |
 
 Mỗi CHẶN tổng ĐÃ TỰ VERIFY bằng repro/gọi-tay (không tin lời agent). NÊN (RF-15..19,
 25-27) + GHI-NỢ (RF-22..24) vào sóng kèm hoặc sổ nợ dài hạn. ⛔ Cấm push tới khi C1-C4 ✅.
@@ -283,12 +284,12 @@ Mỗi CHẶN tổng ĐÃ TỰ VERIFY bằng repro/gọi-tay (không tin lời ag
     worker là LỜI KHAI SAI: lúc ghi «không gửi» thì note+thẻ đã ra hồ sơ khách. «Cô lập bộ
     não» L2-M1 (nợ N2) CHƯA đóng thật.
   - 🔴 **RF-2 (CHẶN):** van bảo vệ RF-1 nằm ở bộ NẠP (`nguonDangMo`) mà `worker.js:32-65
-    chayMotVong` KHÔNG đọc; `V3_NAP_DEV=1` hoặc đổi cwd (dotenv theo cwd, `ket-noi.js` đọc
+chayMotVong` KHÔNG đọc; `V3_NAP_DEV=1` hoặc đổi cwd (dotenv theo cwd, `ket-noi.js` đọc
     .env đường tuyệt đối) mở van trong khi vẫn nối CSDL thật.
   - 🔴 **RF-3 (CHẶN, nghiệp vụ):** `handler-v3.js:495-501` gọi guard THIẾU `orderCreated`
-    + `isOrderSummary` (v2 `handler.js:436-437` có) ⇒ lượt tóm tắt xác nhận đơn bị
-    `PII_ECHO`/`FAKE_ORDER_ID` chặn, v3 coi `rewrite`=câm ⇒ khách KHÔNG nhận gì mà hệ vẫn
-    ghi `so_ai ORDER` + đẩy `hang_cho_tao_don`. Repro S3.
+    - `isOrderSummary` (v2 `handler.js:436-437` có) ⇒ lượt tóm tắt xác nhận đơn bị
+      `PII_ECHO`/`FAKE_ORDER_ID` chặn, v3 coi `rewrite`=câm ⇒ khách KHÔNG nhận gì mà hệ vẫn
+      ghi `so_ai ORDER` + đẩy `hang_cho_tao_don`. Repro S3.
   - NÊN: RF-4 ảnh bay khi guard chặn chữ · RF-5 lỗi N5 đốt 3 lượt model · RF-6 v3 không gọi
     `recordBlocked` (M18 mù). GHI-NỢ: RF-7 kiểm quyền psid ≠ lệnh convId · RF-8 xaAnh trước
     vòng gửi. (4 mảng refute khác đang chạy — gom sau.)
@@ -693,3 +694,8 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
 - 23/08 · VA-R4 → ✅ — RF-20 đóng: phủ định liền kề trước từ khoá xac_nhan (EN+AR) hết
   đọc thành xac_nhan, nhánh cũ giữ nguyên (l3-m3-doc-y 8/8) · commit 5973f7f · nhật ký
   `docs/thi-cong/nhat-ky/phieu-va-r4.md`.
+- 23/08 · VA-R3 → ✅ — RF-13 CAS ghiDon (ảnh cũ ném LoiGhiDonAnhCu có tên, apDung trả
+  ghi:false thay vì ném xuyên — không phải im lặng, xem nhật ký §2) + RF-14 CAU_QUET
+  nhặt lại đơn kẹt cho_gui_wa (thành công đi tiếp, hỏng → cho_sale+viec_can_xu_ly ngay,
+  không chờ đủ trần lần hai); repro F5/F2 đảo 🔴→✅, hồi quy 5 file/56 ca fail=0 · commit
+  a1d1a41 · nhật ký `docs/thi-cong/nhat-ky/phieu-va-r3.md`.
