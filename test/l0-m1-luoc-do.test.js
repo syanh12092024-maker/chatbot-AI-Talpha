@@ -12,7 +12,9 @@ import { GOC } from "../db/ket-noi.js";
 // NEO NGOÀI: 19 tên bảng trích từ `docs/v3/02-KE-HOACH-CODE.md` §"Nền dữ liệu".
 // Cố ý gõ tay ở đây thay vì đọc từ lược đồ — hai vế cùng sinh từ một nguồn thì phép
 // so luôn xanh và không bắt được bảng thiếu lẫn bảng thừa (finding N5).
+// 22/08 TỔNG vá theo §9 (L1-M1): +ket_noi_pos — bảng thứ 20, khai lý do ở luoc-do-v1 §thay-đổi.
 const NEO_19_BANG = [
+  "ket_noi_pos",
   "team",
   "nguoi_dung",
   "vai",
@@ -60,7 +62,7 @@ test("S1 · danh sách bảng khớp NEO NGOÀI 19 tên của 02 (+ _migrations)
   const thieu = NEO_19_BANG.filter((t) => !that.includes(t));
   const thua = that.filter((t) => !NEO_19_BANG.includes(t));
   assert.deepEqual({ thieu, thua }, { thieu: [], thua: [] });
-  assert.equal(that.length, 19);
+  assert.equal(that.length, 20); // 19 của 02 + ket_noi_pos (002, luoc-do-v1 §thay-đổi)
 });
 
 test("S2 · phủ team_id: 0 bảng nghiệp vụ thiếu cột, chỉ bo_luat_chung được NULLABLE", async () => {
@@ -318,5 +320,5 @@ test("S12 · diễn tập down → up trên CSDL ĐÃ có dữ liệu: sạch r�
     `SELECT count(*)::int c FROM information_schema.tables
      WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> '_migrations'`,
   );
-  assert.equal(sau.c, 19);
+  assert.equal(sau.c, 20); // 19 + ket_noi_pos
 });
