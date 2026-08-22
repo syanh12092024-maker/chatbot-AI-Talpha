@@ -1,9 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 01:10 23/08 · đang chạy: VA-P1 🟨 (sonnet) · phán mới
-> nhất: L2-M1 ✅ (22/22 tổng chạy, bẫy fetch bắt 5 chỗ gửi ngầm thay vì 3 như đề khai —
-> pancake-orders fetch POS khoá thật không READONLY canh) · P2 đóng (schema regen 001-004,
-> DB chính đã áp 4 bản) · thước l0-m1 nhận 21 bảng · skill thợ +2 bài học.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 02:00 23/08 · đang chạy: L2-M2 🟨 (sonnet) + L3-M2 🟨
+> (opus) · phán mới nhất: VA-P1 ✅ (cặp 1→12 vào, 63/63, nợ P1 đóng) — tổng vá thước
+> l1-m1 lùi-đúng-ranh-002, 24/24 lại xanh. Còn hàng: L2-M3 · L3-M3 · L3-M4.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -467,6 +466,9 @@ src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` �
   ghi nhat_ky); chống ĐẠT RỖNG bằng mẫu trộn tieu-alpha+auus, so DANH SÁCH id không so
   count. Cổng `l0-m2.sh` 16/16 ĐẠT, test 22 ca xanh (gộp l0-m1 52/52, bộ cũ 18/5 không
   hồi quy) · commit 9c40c9f · nhật ký docs/thi-cong/nhat-ky/phieu-l0-m2.md
+- 23/08 · VA-P1 → ✅ — cặp {tu:1,sang:12} vào CHUYEN_CHO_PHEP (neo đồ thị 0→1→12→8) ·
+  63/63 test (tổng chạy) · nợ P1 đóng · thợ phát hiện nợ thước: l1-m1.sh down gỡ nhầm
+  bản mới nhất khi chuỗi >002 — tổng vá lùi-từng-bản-tới-ranh, 24/24 lại xanh.
 - 23/08 · L2-M1 → ✅ — cổng 22/22 ×2 (tổng chạy lại 1 lượt xác nhận) · per-commit 4261900
   19 tệp sạch pathspec · thợ bẫy globalThis.fetch bắt 5 CHỖ GỬI NGẦM (đề khai 3): thêm
   order-bridge.js:255 pkAddNote + pancake-orders.js:25/:108 fetch POS KHOÁ THẬT 7 shop
