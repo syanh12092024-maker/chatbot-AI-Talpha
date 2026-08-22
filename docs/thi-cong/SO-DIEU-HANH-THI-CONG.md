@@ -1,8 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 02:00 23/08 · đang chạy: L2-M2 🟨 (sonnet) + L3-M2 🟨
-> (opus) · phán mới nhất: VA-P1 ✅ (cặp 1→12 vào, 63/63, nợ P1 đóng) — tổng vá thước
-> l1-m1 lùi-đúng-ranh-002, 24/24 lại xanh. Còn hàng: L2-M3 · L3-M3 · L3-M4.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 04:30 23/08 · đang chạy: VA-Q12 🟨 + review (a) L3-M4 ·
+> phán mới nhất: L3-M3 ✅ (23/23, huỷ-bù đủ 4 nhánh — thợ phát hiện nhanPhanHoi chỉ tự
+> huỷ 2/4) — 11 module + 1 vá ✅, còn L3-M4 (phiếu đã soạn, chờ vùng pos + verdict).
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -159,7 +159,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | ----- | ----------------------------------------------------------------- | --------- | ------- | ------------------------------------ | ---------- |
 | L3-M1 | Máy trạng thái đơn PHÂN NHÁNH THEO NGUỒN 🟥                       | R2        | thợ mới | `src/orders/*` `test/`               | ✅         |
 | L3-M2 | Lọc trùng chéo hai luồng + chấm tỉ lệ hoàn 🟥                     | L3-M1     | thợ mới | `src/orders/*` `test/`               | ✅         |
-| L3-M3 | Hàng đợi nhắc (2h×5, huỷ khi khách trả lời) + bộ đọc ý 4 nhánh 🟥 | L3-M1     | thợ mới | `src/orders/*` `src/queue/*` `test/` | 🟨         |
+| L3-M3 | Hàng đợi nhắc (2h×5, huỷ khi khách trả lời) + bộ đọc ý 4 nhánh 🟥 | L3-M1     | thợ mới | `src/orders/*` `src/queue/*` `test/` | ✅         |
 | L3-M4 | Hàng chờ tạo đơn luồng Messenger 🟥                               | L3-M1·M2  | thợ mới | `src/orders/*` `test/`               | ⬜         |
 | R3    | **GATE SÓNG 3**                                                   | L3-M1..M4 | TỔNG    | —                                    | ⬜         |
 
@@ -509,7 +509,35 @@ bang` mà `l2-m2.sh`/`l3-m2.sh` cũng dùng (CHƯA lộ ở hai cổng đó vì 
   `lich_nhac` của đơn (mỗi lần nhắc = một dòng riêng, `lan_thu` là số thứ tự của dòng đó).
   Chi tiết: `docs/thi-cong/nhat-ky/phieu-l3-m3.md` §2-3.
 
+- 23/08 · thợ VA-Q12 — **Q1·Q2·Q3 ĐÓNG bởi VA-Q12**: `src/pos/doc-don.js` nay upsert
+  `khach` theo (team, SĐT chuẩn hoá bằng `chuanHoaSdt`) và ghi `don_hang.khach_id` +
+  `san_pham_ma` (mảng `"<shop>:<variation_id>"`, RỖNG khi thiếu — không bịa) cho mỗi đơn
+  đọc về, kể cả BACKFILL đơn đã có sẵn (không chỉ khi `trang_thai_pos` đổi — nếu không,
+  26 đơn cũ sẽ mãi mãi không được nối vì trạng thái POS của chúng không đổi). Q3 làm
+  luôn (rẻ, cùng vòng lặp): migration `006_lich_su_trang_thai` thêm `don_hang.
+status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TRÊN DỮ LIỆU THẬT
+  (`aicloser_v3` dev, không sandbox — chữ phiếu đòi "di trú lại 26 đơn cũ" +
+  "kiemTrung trên dữ liệu thật"): sau khi refresh UAE (26/26 đơn cũ có `khach_id`) và
+  Saudi (`tuNgay=2026-08-18`), `kiemTrung()` **BẮT ĐƯỢC** đúng cặp trùng chéo thật mà
+  `loc-trung.js` đã nêu tên — SĐT `966501984606`, đơn Messenger #68771 / trang bán hàng
+  #68769 → `trung=true·ly_do=trung_khop_san_pham·nguon_trung=ca_hai` (trước phiếu này
+  luôn RỖNG). Hệ quả phụ ĐÃ ĐO, nói thẳng: quét đủ sâu để chạm 26 `ma_pos` cũ + cặp lịch
+  sử 19/08 đã làm `don_hang` 26→3.784 và `khach` 0→3.218 trên dev (chỉ THÊM đơn UAE/Saudi
+  thật đi qua GET, KHÔNG xoá/nhân đôi dòng nào — đúng nghĩa "làm giàu thêm" mà phiếu cho
+  phép). Lệch chữ phiếu có chủ ý (luật 13 skill, lý do đo được): nhập `chuanHoaSdt` THẲNG
+  từ `loc-trung.js` thay vì qua `orders/index.js` — barrel đó tạo VÒNG `src/pos↔src/orders`
+  (đo thử: chạy được hôm nay nhưng vỡ ngầm nếu ai đổi kiểu khai hàm; repo đã trả giá 4 lần
+  để giữ layer không phụ thuộc ngược). Nợ mới (§9, ngoài pathspec, đất L1-M1): `docDon`
+  `if (!lo.donHang.length) break;` coi một trang POS RỖNG THOÁNG QUA (đo được thật khi gọi
+  dồn dập không nghỉ) là HẾT DỮ LIỆU, có thể bỏ sót các trang sau — IM LẶNG. Chi tiết đủ:
+  `docs/thi-cong/nhat-ky/phieu-va-q12.md`.
+
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+
+- 23/08 · L3-M3 → ✅ (TỔNG nghiệm thu) — cổng 23/23 · 28/28 test · hồi quy 94/94 · 9 tệp
+  sạch pathspec · thợ tự chốt đúng: không tái dùng so_lan_thu_wa (trần khác), đếm bằng
+  dòng lich_nhac; huỷ-bù doi_sua/khong_ro ở cầu nối · nợ mới: cửa ghi hẹp thứ 5 (ghiLich)
+  · commit 7a22b59.
 
 - 23/08 · L2-M3 → ✅ (TỔNG nghiệm thu) — cổng 11/11 · 17/17 test · seed mồi đã vào DB
   chính qua di-tru (bo_luat_chung 1 · ky_nang 3) · giới hạn thật thợ khai: bo_luat_chung
