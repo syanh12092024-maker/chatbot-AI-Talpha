@@ -201,3 +201,74 @@ ghi_chu_cho_tong: >-
   theo PAGE còn job này duyệt ĐƠN, nên thiếu vế rebind ctx theo từng đơn (N3). Hai chỗ phiếu làm
   rất tốt, nên giữ: dùng bảng mã **ĐÃ XÁC MINH** (`12 = wait_print`) thay vì đoán, và tách hàm
   thuần `chuyen(don, sukien)` khỏi side-effect qua deps — nhờ đó ④#1 mới đo được «tuyệt đối 0».
+
+# ─────────────────────────────────────────────────────────────────────────────
+verify_vong_2:
+  ngay: 2026-08-22
+  pham_vi: CHỈ VERIFY 2 CHAN theo checklist tổng — không mở kịch bản mới.
+  ban_phieu: PHIEU-L3-M1.md v2 · commit **7069d31** (bản thật)
+  luu_y_ban: >-
+    Có hai commit mang message «v2»: `deabfe1` RỖNG phần phiếu (sự cố heredoc) và `7069d31` là
+    bản thật. Đã kiểm trên cây: tệp hiện tại 141 dòng, mang đủ nội dung v2, và
+    `git log -1 -- docs/thi-cong/phieu/PHIEU-L3-M1.md` trỏ `7069d31`. Chấm trên bản này.
+  ma:
+    - ma: N1
+      dap: DAT
+      doi_chieu:
+        - "②#1 sửa đúng PHẠM TRÙ chứ không vá triệu chứng: «đơn Messenger **chưa duyệt thì CHƯA
+           TỒN TẠI trong `don_hang`** (01 §1: sale duyệt mới TẠO đơn) — pre-duyệt sống ở
+           `hang_cho_tao_don`, ĐẤT L3-M4, phiếu này KHÔNG mô hình nó» — ✔ hai trạng thái mồ côi
+           `moi`/`cho_duyet` đã biến khỏi sơ đồ messenger, không còn đơn không-có-nhà"
+        - "Máy nhận đơn messenger từ `donMessengerDaTao(ctx,{donId})` → khởi tạo thẳng
+           `day_cho_in` («POS đã Chờ in từ lúc tạo») — ✔ khớp đúng ô «Kết thúc / Messenger = Sale
+           duyệt → tạo đơn ở Chờ in» của 01 §1. Ô từng PHẢN ở vòng 1 nay KHỚP, bảng 6/6."
+        - "④#1 thêm vế KHẲNG ĐỊNH «đơn messenger có dòng trạng thái pre-duyệt trong `don_hang`
+           = 0» — ✔ đo được chính cái ranh giới vừa chốt, không phải lời hứa"
+        - "Interface `donMessengerDaTao` khai ở ②#3 cho L3-M4 («M4 lo duyệt/loại TRÊN
+           `hang_cho_tao_don`, M1 chỉ nhận đơn đã tạo») — ✔ vế (a) của câu 7 đóng luôn"
+    - ma: N2
+      dap: DAT
+      doi_chieu:
+        - "Vế WA: thêm `gui_wa_loi` + cột `ly_do_khong_gui` đúng **ba** giá trị (`thieu_so_wa` ·
+           `mau_chua_duyet` · `loi_kenh`) — ✔ khớp gạch nghiệm thu 02 §L3, và phiếu chép cả lý do
+           («nằm lại `cho_gui_wa` im lặng là 37,4% quay lại, im lặng hơn») nên thợ không sửa lấy lệ"
+        - "④#2b đếm **THEO LÝ DO = 1/1/1** và kèm mệnh đề «trên riêng đơn trang bán hàng (đơn
+           messenger = 0)» — ✔ đúng chữ của 02 §L3, không phải một tổng gộp"
+        - "Trần thử lại → `cho_sale` + `viec_can_xu_ly` — ✔ đơn hỏng có lối ra, không kẹt câm"
+        - "Vế POS: CAS đọc **LIVE** với tập tiền-in `{0,1}`, và bắt thợ ĐO nhãn của mã `1` trong
+           bảng 14 mã rồi mới chốt — ✔ đúng khuôn bảng-mã-ĐÃ-XÁC-MINH, không kế thừa lời đoán;
+           live ngoài tập → KHÔNG ghi POS, đơn sang `cho_sale` + `pos_trang_thai_la`"
+        - "④#3 ba ca live=0 / live=1 / live=8 — ✔ chọn `8` làm ca ngoài tập là chọn khéo: đó đúng
+           mã mà §7.5 và `pancake-orders.js:13` khai SAI thành hủy/hoàn (thật là `packing`), nên
+           phép vừa đo cái rào vừa neo lại bài học L1-M1"
+  ba_finding_con_lai_da_kiem_luon:
+    - "N3 đóng: ②#2 khai rebind ctx **PER-ĐƠN** từ `don_hang.team_id` và nói rõ vì sao (khuôn
+       L1-M2 là ctx theo PAGE, job này duyệt ĐƠN); ④#6 đo 2 đơn 2 team trong MỘT lượt quét → 2
+       dòng `nhat_ky` mang 2 `team_id` đúng."
+    - "N4 đóng: `bao_het_luot(ctx,{donId})` cho `het_luot` — trạng thái hết mồ côi; ④#4 đo."
+    - "N6 vế nặng đóng: deps `huyLichNhac(donId)` được GỌI khi `xac_nhan`/`tu_choi`, ④#4 spy=1 —
+       khớp nghiệm thu 02 §L3 «khách trả lời giữa chừng → lịch nhắc bị huỷ ngay», mà vẫn không
+       đụng bảng `lich_nhac` của L3-M3."
+  con_lai_khong_chan:
+    - muc: GHI-NO
+      mo_ta: >-
+        N5 mới đóng một nửa. ④#2b có vế «đơn messenger = 0» nên chạm được chuyện gán nhãn, nhưng
+        vẫn thiếu hai câu rẻ: (a) đơn thuộc diện «chưa quyết được `nguon`» (luật suy L1-M1 v2)
+        KHÔNG được job quét bắt — fail-closed, in count = 0; (b) chốt `donId` = `don_hang.id`
+        (khoá v3), vì `phieu-l1-m1.md` §1.6 ghi «id đơn POS chồng nhau giữa các shop».
+    - muc: GHI-NO
+      mo_ta: >-
+        `tu_choi` vẫn chưa khai là chính «hủy» của 02 §L3 («bốn nhánh đọc ý: xác nhận · hủy · đòi
+        sửa · không rõ»). Một dòng trong `may-trang-thai-don-v1.md` là đủ, kẻo L3-M3 đẻ nhánh thứ năm.
+    - muc: GHI-NO
+      mo_ta: >-
+        `git log --oneline` nay có HAI dòng mang message «phiếu L3-M1 v2» (`deabfe1` rỗng ·
+        `7069d31` thật). Người tra lịch sử sau này bốc nhầm `deabfe1` sẽ kết luận phiếu v2 không
+        có nội dung. Nên ghi một dòng §10 nói rõ bản thật là `7069d31`.
+  ket_luan_moi: DAT
+  ghi_chu: >-
+    7/7 finding đóng. Hai CHAN đóng đúng tầng: N1 sửa ở PHẠM TRÙ (bỏ hẳn hai trạng thái pre-duyệt
+    ra khỏi `don_hang` và mở cửa `donMessengerDaTao` cho L3-M4) chứ không cố nhét trạng thái vào
+    bảng sai — nhờ đó ô cuối cùng còn PHẢN của bảng 01 §1 nay KHỚP, đủ 6/6. N2 đóng cả hai vế và
+    vế POS đóng bằng cách ĐỌC LIVE thay vì tin ảnh chụp, với tập tiền-in phải ĐO mới được chốt —
+    đúng bài học đắt nhất của L1-M1. Phiếu ĐỦ ĐIỀU KIỆN phát thợ.

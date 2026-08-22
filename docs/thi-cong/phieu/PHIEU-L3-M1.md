@@ -57,6 +57,10 @@
      ngoài bảng → ném lỗi; mọi chuyển (kể cả bị chặn) ghi `nhat_ky`.
    - Hàm thuần `chuyen(don, sukien)` tách khỏi side-effect; side-effect (gửi WA, ghi
      POS, huỷ nhắc) qua deps tiêm — RUNTIME trỏ cửa thật, TEST trỏ mock.
+   - Ba chốt nhỏ (GHI-NO verify): `donId` trong MỌI interface = `don_hang.id` nội bộ,
+     KHÔNG phải id POS (id POS chồng nhau giữa 7 shop — bài học L1-M1, ma_pos=<shop>:<id>);
+     đơn KHÔNG quyết được `nguon` → máy TỪ CHỐI nhận (lỗi có tên, §9) — không đoán;
+     `tu_choi` = «hủy» theo nghĩa 02 §L3 (khai trong file bàn giao).
 2. **`src/orders/quet-don-moi.js`** — job quét `don_hang` nguồn `trang_ban_hang` trạng
    thái POS «Chờ xác nhận»(0) chưa vào máy → `moi` → `cho_gui_wa` → `guiTinMau` (mẫu
    xác nhận) → `da_gui_wa`/`gui_wa_loi`. Nhịp quét ≤ 5 phút (02 §L3 «trong vòng 5
