@@ -44,6 +44,7 @@ Bot làm ba việc: **trả lời khách và chốt đơn qua Messenger** · **n
 | 1 | File này | Bức tranh chung |
 | 2 | [`01-QUYET-DINH.md`](01-QUYET-DINH.md) | **Mọi quyết định đã chốt và vì sao.** Đọc để không đào lại chuyện đã quyết |
 | 3 | [`02-KE-HOACH-CODE.md`](02-KE-HOACH-CODE.md) | Làm gì trước, làm gì sau, nghiệm thu thế nào |
+| 4 | [`05-PHAN-VIEC.md`](05-PHAN-VIEC.md) | **Ai làm gì, ranh giới file, năm điểm bàn giao** |
 
 ### Người viết code
 
