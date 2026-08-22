@@ -224,6 +224,13 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
+- 22/08 · L0-M2 → 🔎 chờ nghiệm thu — tầng truy vấn `src/db/` (5 file; ctx=
+  {teamId,nguoiDungId} chốt hình dạng cho B): 2 lỗi tên LoiThieuBoiCanhTeam/LoiXuyenTeam
+  · layNhieu/layMotTheoId/themMoi/suaTheoId tự chèn team_id cho 15 bảng nghiệp vụ, đặc
+  cách đọc bo_luat_chung 2 vế · picker + ctxHeThong (đòi team_id tường minh, mọi lượt
+  ghi nhat_ky); chống ĐẠT RỖNG bằng mẫu trộn tieu-alpha+auus, so DANH SÁCH id không so
+  count. Cổng `l0-m2.sh` 16/16 ĐẠT, test 22 ca xanh (gộp l0-m1 52/52, bộ cũ 18/5 không
+  hồi quy) · commit 9c40c9f · nhật ký docs/thi-cong/nhat-ky/phieu-l0-m2.md
 - 22/08 · L1-M2 → 🎫 sẵn sàng chờ R0 — điểm (a) TRẢ-VỀ 3 CHAN (guard sai chiều · lối vòng
   tools.js · ctxHeThong không team) → v2 đóng 6/6, verify DAT · H9 gom thêm V3_PANCAKE_GUI.
 - 22/08 · L1-M1 → 🎫 sẵn sàng chờ R0 — điểm (a) vòng 1 TRẢ-VỀ 3 CHAN, phiếu v2 đóng 7/7,
