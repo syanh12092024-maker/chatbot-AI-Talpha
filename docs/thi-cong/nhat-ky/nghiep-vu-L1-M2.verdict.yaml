@@ -1,0 +1,187 @@
+phieu: L1-M2
+diem: a
+nguoi_cham: reviewer nghiep-vu (skill review-nghiep-vu v1)
+ngay: 2026-08-22
+lan: 🟥 có đường GỬI TIN RA KHÁCH
+nguon_da_doc:
+  - docs/v3/01-QUYET-DINH.md (§1 · §2 · §8 · §10)
+  - docs/v3/02-KE-HOACH-CODE.md (§L1 cửa Messenger · §L2 danh sách dùng-lại/viết-lại)
+  - docs/v3/05-PHAN-VIEC.md (L1-M2 = A · 2 ngày · ranh giới `src/channels/messenger/*`)
+  - docs/TONG-QUAN-HE-THONG.md §7.3–7.4 · §8 (lịch nền, FOLLOWUP)
+  - docs/thi-cong/SO-DIEU-HANH-THI-CONG.md §0a (luật 1 + luật 4 danh sách CẤM SỬA) · §3 · §9
+  - docs/thi-cong/phieu/PHIEU-L1-M2.md
+  - src/pancake.js · src/tools.js · src/handler.js · src/scheduler-followup.js · .env (đo lại)
+
+cau:
+  - so: 1
+    dap: KHONG
+    bang_chung: >-
+      Không có màn, không có nút. Đầu ra là một thư viện (`src/channels/messenger/`) + một file
+      bàn giao cho L2 trỏ vào. Người tiêu thụ là phiếu L2-M1, không phải mkter/sale/chủ dự án.
+      Giống L0-M1 và L1-M1: KHÔNG ở đây đúng bản chất phiếu cửa, không tự nó thành TRẢ-VỀ —
+      câu 8 gánh phần biện minh. Cái khiến phiếu bị trả về nằm ở câu 3 và 7.
+  - so: 3
+    dap: CO
+    bang_chung: >-
+      CÓ mâu thuẫn, 2 chỗ. (a) Sổ §0a luật 1 dựng ra để chặn đúng một tai nạn: «thiếu là máy dev
+      gửi tin cho khách thật, trùng với VPS đang chạy». Guard của phiếu viết là
+      `PANCAKE_READONLY === '1'` → ném lỗi ⇒ **biến VẮNG thì không ném, tin đi ra** — nó chặn ca
+      «có biến và =1» chứ không chặn ca «thiếu», tức đúng ca luật 1 nói tới. Và phiếu L1-M1 vừa
+      được duyệt ở ngay bên cạnh viết ngược lại cho cùng lớp rủi ro: «`V3_POS_GHI` mặc định
+      VẮNG/`0` = fail-CLOSED». Cùng một dây chuyền, hai cửa ghi-ra-ngoài, hai chiều hỏng khác nhau.
+      (b) 01 §8 luật cứng «điều kiện team… tự chèn theo người đang đăng nhập. Quên một chỗ là team
+      này nhìn thấy khách của team kia» — đường `ctxHeThong` của phiếu không bị buộc phải mang
+      team nào, mà đó lại là đường DUY NHẤT có lưu lượng thật. Xem N1 · N3.
+  - so: 7
+    dap: CO
+    bang_chung: >-
+      CÓ làm hẹp, nạn nhân là L2 và L4. ②#1 chốt «Bọc tối thiểu… đọc hội thoại · đọc tin · gửi
+      text · gửi ảnh. **Không bọc thứ chưa ai gọi**» và để tag/note ở dạng tuỳ chọn («tag/note
+      nếu bọc»). Nhưng «chưa ai gọi» sai về số: đo trên cây, `pkAddNote`/`pkTagByName` đang được
+      gọi ở **4 tệp** — `src/tools.js:1` · `src/handler.js:8` · `src/order-bridge.js:27` ·
+      `src/admin.js:15`. Và chúng không phải hàm phụ: §7.4 khai note «🛒 AI ĐÃ CHỐT — CHỜ TẠO ĐƠN»
+      + thẻ «AI Chốt» LÀ cơ chế bàn giao cho sale, tức đầu vào của bảng điều phối L4. Cửa thiếu
+      hai hàm đó thì L2 buộc phải mở đường riêng xuống `pancake.js`, và câu «một chỗ duy nhất»
+      của chính phiếu tự vỡ ở phiếu kế tiếp. Xem N2 · N4.
+  - so: 8
+    dap: CO
+    bang_chung: >-
+      Bỏ phiếu này thì đau rõ, và phiếu tự chỉ ra chỗ đau: ② đo được rằng bản cũ kiểm
+      `PANCAKE_READONLY` **rải rác ở từng caller** trong khi `pkSendReply` không tự kiểm — đo lại
+      đúng: 8 chỗ kiểm nằm ở scheduler/route admin (`admin-orders.js:21`, `health.js:399`,
+      `scheduler-miner.js:85`…), còn `pkSendReply`/`pkSendImage`/`pkAddNote`/`pkTagByName` đọc
+      nguyên mã thì đi thẳng `pkFetchPage`, không một dòng guard. Không có cửa thì mỗi module v3
+      lại tự kiểm một lần nữa, và cái nào quên thì im lặng gửi thật. Thêm nữa, không có cửa thì
+      01 §8 không có chỗ nào cắm định tuyến team cho kênh Messenger. Không phải over-engineering.
+
+ket_luan: TRA_VE
+
+findings:
+  - ma: N1
+    muc: CHAN
+    mo_ta: >-
+      Guard đặt đúng chỗ nhưng SAI CHIỀU — `PANCAKE_READONLY === '1'` là danh sách CẤM, nên biến
+      vắng/gõ sai = cửa mở, tin ra khách thật.
+    bang_chung: >-
+      ②#1: «nhóm hàm GỬI… kiểm `PANCAKE_READONLY === '1'` → ném lỗi». So khớp một chiều với chuỗi
+      `'1'`: `undefined !== '1'`, `'true' !== '1'`, `'1 ' !== '1'` — cả ba đều KHÔNG ném, tức gửi.
+      Sổ §0a luật 1 nói thẳng hậu quả: «thiếu là máy dev gửi tin cho khách thật, trùng với VPS
+      đang chạy». Phiếu L1-M1 v2 (đã DAT) làm ngược cho cùng lớp rủi ro: «mặc định VẮNG/`0` =
+      fail-CLOSED». Phiếu này tự nhận đã sửa bản cũ ở chỗ «một chỗ, không rải» — sửa được CHỖ ĐẶT,
+      giữ nguyên CHIỀU HỎNG của bản cũ (8 chỗ kiểm cũ đều `=== '1'`).
+    kich_ban_hong: >-
+      Tiến trình v3 khởi động không nạp được `.env` — unit systemd thiếu `EnvironmentFile`, container
+      thiếu mount, CI runner, hay đơn giản là code v3 mới chưa gọi dotenv trước khi cửa đọc biến.
+      `process.env.PANCAKE_READONLY` = `undefined` ⇒ guard không ném ⇒ `guiTin` gửi thật vào 502
+      page khách. Không phép nào của ④ bắt: ④#1 chỉ chạy ca CÓ biến và =1.
+    sua_the_nao: >-
+      Đảo thành danh sách CHO PHÉP như L1-M1: chỉ gửi khi có biến bật tường minh (vd `V3_PK_GUI=1`),
+      mọi giá trị khác kể cả VẮNG ⇒ ném lỗi. Nếu buộc giữ tên `PANCAKE_READONLY` thì luật phải là
+      «gửi chỉ khi biến TỒN TẠI và `=== '0'`». Thêm phép ④1b: xoá hẳn biến khỏi môi trường rồi gọi
+      `guiTin` → vẫn ném đúng tên lỗi, spy 0 lượt.
+
+  - ma: N2
+    muc: CHAN
+    mo_ta: >-
+      Cửa KHÔNG kín: `src/tools.js` — bộ não chat DÙNG NGUYÊN và CẤM SỬA — import thẳng
+      `pkSendImage`/`pkAddNote`/`pkTagByName` từ `pancake.js`, nên đường gửi của chính con bot đi
+      vòng qua cửa mà không ai chặn được.
+    bang_chung: >-
+      Đo trên cây: `src/tools.js:1` = `import { createOrder, pkSendImage, pkAddNote, pkTagByName }
+      from './pancake.js';`. Sổ §0a luật 4 liệt `src/tools.js` vào nhóm «Bộ não chat DÙNG NGUYÊN,
+      cấm sửa»; 02 §L2 xếp nó vào «Dùng lại nguyên… 1.962 dòng». Nghĩa là ở L2 nó vẫn gọi thẳng
+      `pancake.js`, và không ai được phép sửa để trỏ vào cửa. `src/scheduler-followup.js:24` cũng
+      import `pkSendReply` trực tiếp và không nằm trong danh sách viết-lại của 02 §L2 (đuổi-theo
+      thuộc giai đoạn 3). Bốn hàm gửi đó đọc nguyên mã thì không có guard nào — đi thẳng
+      `pkFetchPage`. Vậy câu ②#1 «MỘT chỗ duy nhất mọi module v3 đi qua» KHÔNG đúng ngay tại thời
+      điểm ký phiếu, và ④ không có phép nào đo tính duy nhất ấy.
+    kich_ban_hong: >-
+      L2-M1 đấu bộ não chat vào nền mới. Bot chốt xong gọi `tools.js` → `pkSendImage`/`pkAddNote`
+      → `pancake.js` → fetch. Ảnh và ghi chú ra khách thật kể cả khi `PANCAKE_READONLY=1`, vì
+      guard nằm ở cửa mà đường này không qua cửa. Trên máy dev điều đó nghĩa là gửi trùng với VPS
+      đang chạy — đúng tai nạn luật 1 mô tả.
+    sua_the_nao: >-
+      (i) Thêm phép ④ dạng cổng ranh-giới: `grep -rn "from .*pancake\.js" src/channels/ src/chat/
+      src/queue/ src/orders/ src/pos/` — mọi import ngoài chính thư mục cửa = ĐỎ, in danh sách.
+      (ii) Vì `tools.js`/`scheduler-followup.js` CẤM SỬA, phiếu phải KHAI chúng là lối vòng đã
+      biết: liệt kê vào `cua-messenger-v1.md` + một dòng §9 sổ, và bỏ câu «một chỗ duy nhất» hoặc
+      sửa thành «một chỗ duy nhất cho mã v3 viết mới». (iii) Nếu người quyết muốn kín thật thì
+      phải chốt ở phiếu khác: chặn tại biên mạng, hoặc L2 cấp shim cho `tools.js` — ngoài phạm vi
+      phiếu này, nhưng phải có tên chủ.
+
+  - ma: N3
+    muc: CHAN
+    mo_ta: >-
+      Định tuyến team lọt qua đường `ctxHeThong` — ctx nền không bị buộc mang team của chính page,
+      mà đó là đường chở 100% lưu lượng thật.
+    bang_chung: >-
+      ②#1: «Page chưa gán team (`chua-phan`) chỉ đi được qua `ctxHeThong` — có audit». Đo trạng
+      thái thật: `luoc-do-v1.md` §5 ghi toàn bộ **502/502 page** đang ở `chua-phan` chờ H7 (H7 vẫn
+      ⬜). Vậy hôm nay mọi lượt đọc/gửi Messenger đều đi nhánh `ctxHeThong`, nơi phép so
+      `page.team_id !== ctx.teamId` không có gì để so. Và lỗ không tự đóng khi H7 xong: vòng poll
+      và handler của L2 là job nền, không có người đăng nhập, nên chúng vĩnh viễn chạy dưới
+      `ctxHeThong`. 01 §8: «Quên một chỗ là team này nhìn thấy khách của team kia».
+    kich_ban_hong: >-
+      H7 chốt xong, page chia về 3 team. Vòng poll L2-M1 chạy `ctxHeThong`, lấy danh sách page bị
+      lệch phạm vi (một truy vấn quên `team_id`, hoặc một page đổi chủ giữa chừng) và trả lời trên
+      page của Auus trong lượt đang phục vụ Tiểu Alpha. Cửa không kêu vì `ctxHeThong` không có
+      team để so; `nhat_ky` ghi một dòng không mang team, nên hậu kiểm cũng không dựng lại được.
+    sua_the_nao: >-
+      Định nghĩa `ctxHeThong` là «không có NGƯỜI», không phải «không có TEAM»: cửa nhận `pageId`,
+      tra `page.team_id`, rồi TỰ DỰNG ctx gắn đúng team đó cho cả lượt; gọi `ctxHeThong` mà không
+      kèm `pageId` ⇒ ném lỗi. Thêm phép ④3b: dưới `ctxHeThong`, chạy 2 page thuộc 2 team nghiệp vụ
+      trong một vòng → mỗi dòng `nhat_ky` mang ĐÚNG `team_id` của page tương ứng, 0 dòng mang team
+      rỗng/wildcard.
+
+  - ma: N4
+    muc: NEN
+    mo_ta: >-
+      Phép ④#1 — phiếu tự gọi là «QUAN TRỌNG NHẤT» — đo cái MOCK chứ không đo cái CỬA: một con số
+      0 không có đối chứng dương là con số không bác bỏ được.
+    bang_chung: >-
+      ④#1: «pancake.js KHÔNG được gọi xuống (spy/mock đếm 0 lượt)». Spy gắn nhầm phiên bản module
+      (ESM live binding, hai đường import khác nhau tới cùng tệp) cũng cho **0**; cửa quên gọi
+      xuống trong nhánh đó cũng cho **0**; guard hỏng nhưng spy chết cũng cho **0**. ④#4 có đỡ một
+      phần (chứng minh mock đọc được là mock có nối), nhưng nó nối cho nhóm hàm ĐỌC, không chứng
+      minh spy của nhóm GHI đang sống. Đây đúng án lệ «phép đo tự dựng điều kiện» dây chuyền đã
+      dính ở L0-M1 ④#2.
+    sua_the_nao: >-
+      Thêm đối chứng dương TRÊN CÙNG MỘT GIÀN, cùng hàm: tắt guard (biến cho phép gửi bật) + mock
+      ở biên mạng → **cùng spy đó phải đếm ≥1**. In cặp số «chặn=0 / cho phép=1». Và đặt biến
+      trong harness thay vì thừa hưởng `.env` — điều kiện của phép đo không được là biến môi
+      trường máy chạy.
+
+  - ma: N5
+    muc: NEN
+    mo_ta: >-
+      Cửa kiểm `pageId ↔ team` nhưng không kiểm `convId`/`custId` có thuộc chính page đó không —
+      định tuyến chỉ đúng một nửa khoá.
+    bang_chung: >-
+      Chữ ký dưới cửa là `pkSendReply(pageId, convId, custId, text)` (đọc `src/pancake.js:210`).
+      Phiếu chỉ khai tra `page_id` → `page.team_id`. `hoi_thoai` đã có sẵn `UNIQUE (page, psid)` +
+      `team_id` (luoc-do-v1 §2), nên vế còn lại tra được rẻ.
+    sua_the_nao: >-
+      Giải `convId` qua `hoi_thoai` dưới cùng ctx; conv không thuộc page đang gửi ⇒ ném lỗi có tên.
+      Thêm một phép ④ cho cặp lệch page↔conv.
+
+  - ma: N6
+    muc: GHI-NO
+    mo_ta: >-
+      Sổ §3 không gắn 🟥 cho hàng L1-M2 trong khi phiếu tự khai làn 🟥 và §0a xếp «mọi đường gửi
+      tin ra khách» vào 🟥 — bảng điều phối và phiếu lệch nhau về mức rủi ro.
+    bang_chung: >-
+      §0a: «🟥 = mọi thứ GHI ra ngoài… mọi đường gửi tin ra khách». §3 gắn 🟥 cho L1-M1 và L1-M3
+      nhưng hàng L1-M2 để trống, trong khi phiếu ghi «Làn: 🟥 có đường GỬI TIN RA KHÁCH».
+    sua_the_nao: Gắn 🟥 vào hàng L1-M2 ở §3 cho khớp phiếu.
+
+ghi_chu_cho_tong: >-
+  Trả lời thẳng ba câu tổng hỏi. (i) Guard KHÔNG kín, hai lớp: sai chiều (vắng biến = mở, N1) và
+  có lối vòng có thật, đã đo được, lại nằm trong danh sách CẤM SỬA (`tools.js` gọi thẳng
+  `pkSendImage`/`pkAddNote`/`pkTagByName`, N2). Việc đưa guard về một chỗ là đúng hướng và đáng
+  giữ — chỉ là câu «một chỗ duy nhất» hiện chưa đúng sự thật và không có phép nào đo. (ii) CÓ
+  kịch bản lọt: `ctxHeThong` không mang team, mà 502/502 page đang ở `chua-phan` nên đó là đường
+  duy nhất có lưu lượng, và job nền của L2 sẽ ở lại đường đó cả sau H7 (N3). (iii) ④#1 đo cái
+  mock: 0 lượt không có đối chứng dương thì không phân biệt được guard tốt với spy đứt (N4).
+  Hai chỗ phiếu làm TỐT, nên giữ: ② tự đo và khai đúng bệnh bản cũ («kiểm rải rác, `pkSendReply`
+  không tự kiểm» — đo lại đúng), và ④#5 dám để nhánh gọi thật ở trạng thái «CHƯA CHẠY — chờ VPS»
+  thay vì dựng điều kiện giả.
