@@ -34,6 +34,7 @@
 //    dòng hàng chờ của chính mình.
 import { ghiNhatKy, LoiThieuBoiCanhTeam } from "../db/index.js";
 import { kiemTrung } from "./loc-trung.js";
+import { MA_HOAN } from "./ti-le-hoan.js";
 import { donMessengerDaTao } from "./may-trang-thai.js";
 import { taoDon as taoDonPos, layKetNoi } from "../pos/index.js";
 // ⛔ import SÂU có chủ ý, cùng án lệ `src/orders/cua-pos.js:18`: `src/pos/index.js`
@@ -101,8 +102,14 @@ export const TRANG_THAI_HANG_CHO = Object.freeze([
 export const FB_COMMERCE =
   /(you have placed an order|your order (?:has been|is) (?:placed|received|confirmed|created)|order confirmation|order\s*(?:number|no\.?|#)\s*[:#]?\s*\w|đơn hàng của bạn|bạn đã đặt hàng|تم(?:\s+استلام)?\s+طلبك|رقم الطلب)/i;
 
-/** Trạng thái POS coi là huỷ/hoàn — đơn đã huỷ KHÔNG phải «đã có đơn» (khuôn cũ). */
-const HUY_HOAN = new Set(["4", "5", "6", "7", "8"]);
+/**
+ * Trạng thái POS coi là huỷ/hoàn — đơn đã huỷ KHÔNG phải «đã có đơn».
+ * MỘT NGUỒN DUY NHẤT: `MA_HOAN` của `ti-le-hoan.js` = {4,5,6,7} (KHÔNG có 8 = packing
+ * = một bước TIẾN, án lệ L1-M1). Bản sao gõ tay {4,5,6,7,8} cũ là RF-10: đơn đang ĐÓNG
+ * GÓI đọc thành «đã huỷ» ⇒ nguồn (b) khai `sach` ⇒ `duyet()` đẻ ra kiện COD THỨ HAI.
+ * Đọc theo `MA_HOAN` (số) đổi sang chuỗi vì `o.status` của POS về dạng chuỗi.
+ */
+const HUY_HOAN = new Set(MA_HOAN.map(String));
 
 /** Trạng thái hội thoại nói «đơn đang được xử lý» (vế v3 của `ORDER_STOP_TAGS`). */
 const TRANG_THAI_DA_CO_DON = new Set(["POST_SALE"]);
@@ -295,12 +302,27 @@ export async function traMarketCuaPage(pool, { teamId, posShopId, thiTruong }) {
   return { market: null, qua: null };
 }
 
-/** (b) POS SỐNG — GET đơn thẳng từ API ngay lúc kiểm. Lỗi/timeout ⇒ unknown ⇒ ĐÓNG. */
+/**
+ * (b) POS SỐNG — GET đơn thẳng từ API ngay lúc kiểm. Lỗi/timeout ⇒ unknown ⇒ ĐÓNG.
+ *
+ * RF-11 — PHÂN TRANG TỚI HẾT, không đọc mỗi trang 1. `docDon` trả `tongTrang`
+ * (`total_pages` của POS); quét từng trang cho tới khi: (a) BẮT được đơn của hội thoại
+ * (dừng sớm ⇒ `duong`), hoặc (b) hết trang thật (⇒ `sach`), hoặc (c) chạm TRẦN
+ * `soTrangToiDa` mà POS còn trang (⇒ `unknown` = ĐÓNG, KHÔNG được khai `sach`).
+ * Bản cũ chỉ đọc trang 1/100 rồi khai `sach` ⇒ đơn ở trang 2 lọt = tạo COD đúp.
+ * CHỐT MỘT cơ chế (phân trang hết); trần chỉ để một shop khổng lồ không treo lượt kiểm.
+ */
 export async function nguonB_posSong(
   pool,
   ctx,
   { teamId, market, convId },
-  { nap = fetch, env = process.env, docDon = guiDocDon, coTrang = 100 } = {},
+  {
+    nap = fetch,
+    env = process.env,
+    docDon = guiDocDon,
+    coTrang = 100,
+    soTrangToiDa = 50,
+  } = {},
 ) {
   if (!market)
     return {
@@ -317,19 +339,51 @@ export async function nguonB_posSong(
     };
   try {
     const ketNoi = await layKetNoi(pool, ctx, market, { teamId, env });
-    const lo = await docDon(ketNoi, { trang: 1, coTrang }, { nap });
-    const khop = (lo.donHang || []).filter(
-      (o) =>
-        String(o.conversation_id ?? "") === String(convId) &&
-        !HUY_HOAN.has(String(o.status)),
-    );
+    let trang = 1;
+    let tongTrang = 1; // tối thiểu 1 trang cho tới khi POS nói khác (total_pages)
+    let soDaQuet = 0;
+    for (; trang <= tongTrang && trang <= soTrangToiDa; trang++) {
+      const lo = await docDon(ketNoi, { trang, coTrang }, { nap });
+      const ds = lo.donHang || [];
+      soDaQuet += ds.length;
+      const khop = ds.filter(
+        (o) =>
+          String(o.conversation_id ?? "") === String(convId) &&
+          !HUY_HOAN.has(String(o.status)),
+      );
+      if (khop.length)
+        return {
+          ket: KET_NGUON.DUONG,
+          so_don_quet: soDaQuet,
+          trang_da_quet: trang,
+          chi_tiet: `POS SỐNG đã có đơn #${khop[0].id} (status ${khop[0].status}) gắn hội thoại này (trang ${trang})`,
+          don: khop.map((o) => ({
+            id: String(o.id),
+            status: String(o.status),
+          })),
+        };
+      // Còn trang không? Tin `total_pages` của POS; hoặc trang non-đầy = trang cuối.
+      const tt = Number(lo.tongTrang) || 0;
+      if (tt > 0) tongTrang = tt;
+      if (ds.length < coTrang) {
+        tongTrang = trang;
+        break;
+      }
+    }
+    // Hết vòng mà chưa bắt: nếu POS còn trang ta CHƯA quét tới (chạm trần) ⇒ UNKNOWN.
+    if (tongTrang > soTrangToiDa)
+      return {
+        ket: KET_NGUON.UNKNOWN,
+        so_don_quet: soDaQuet,
+        chi_tiet:
+          `POS có ${tongTrang} trang > trần quét ${soTrangToiDa} — CHƯA quét hết, ` +
+          `KHÔNG đọc thành «sạch» (thà chặn còn hơn tạo trùng).`,
+      };
     return {
-      ket: khop.length ? KET_NGUON.DUONG : KET_NGUON.SACH,
-      so_don_quet: (lo.donHang || []).length,
-      chi_tiet: khop.length
-        ? `POS SỐNG đã có đơn #${khop[0].id} (status ${khop[0].status}) gắn hội thoại này`
-        : `đã hỏi POS ${(lo.donHang || []).length} đơn gần nhất của shop, không đơn nào gắn hội thoại này`,
-      don: khop.map((o) => ({ id: String(o.id), status: String(o.status) })),
+      ket: KET_NGUON.SACH,
+      so_don_quet: soDaQuet,
+      trang_da_quet: tongTrang,
+      chi_tiet: `đã hỏi POS ${soDaQuet} đơn (${tongTrang} trang), không đơn nào gắn hội thoại này`,
     };
   } catch (e) {
     return {
@@ -716,6 +770,24 @@ export async function duyet(
           (dong.don_hang_id ? ` (đơn #${dong.don_hang_id})` : "") +
           ` — lượt duyệt này KHÔNG chạy. Đây là hành vi đúng, không phải lỗi.`,
         { trangThai: dong.trang_thai, donHangId: dong.don_hang_id },
+      );
+    }
+
+    // RF-21 — KHOÁ THEO HỘI THOẠI, không chỉ theo DÒNG. `SELECT … FOR UPDATE` ở trên
+    // tuần tự hoá hai lượt duyệt CÙNG một dòng (D3/RF-12), nhưng KHÔNG chống được HAI
+    // DÒNG hàng chờ KHÁC NHAU của CÙNG hội thoại duyệt song song: hai khoá dòng khác
+    // nhau ⇒ cả hai cùng chạy, cùng qua cửa ③ TRƯỚC khi bên kia kịp ghi `so_ai(order)`
+    // ⇒ hai kiện COD cho một khách. Advisory lock (giữ tới hết giao dịch) buộc lượt sau
+    // CHỜ lượt trước COMMIT — rồi cửa ③ nguồn (a) so_ai / (b) POS sống thấy đơn vừa tạo.
+    // ⚠️ Dùng HAI KHOÁ (namespace, hashtext(conv)) — KHÁC KHÔNG GIAN với 1-khoá của
+    //    `src/queue/kho.js` (Postgres tách riêng hai không gian advisory 1-khoá vs
+    //    2-khoá), nên không đụng khoá hội thoại của worker chat. conv_id rỗng ⇒ bỏ qua,
+    //    dựa khoá dòng (hiếm: dòng hàng chờ không có conv_id Pancake).
+    const convDeKhoa = (dong.du_lieu_don || {}).conv_id ?? null;
+    if (convDeKhoa) {
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))",
+        ["hang_cho_tao_don:duyet", String(convDeKhoa)],
       );
     }
 
