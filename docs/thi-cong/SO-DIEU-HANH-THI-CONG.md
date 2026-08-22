@@ -169,15 +169,15 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 Mọi phép cần thế-giới-thật của các phiếu được code-với-mock + HOÃN minh bạch, dồn về đây:
 
-| #   | Phép                                                      | Của phiếu   | Cần gì                           |
-| --- | --------------------------------------------------------- | ----------- | -------------------------------- |
-| T1  | Gửi 1 tin WhatsApp thật qua API Pancake tới số nội bộ     | L1-M3 ⑤     | H1 nối số WA vào Pancake         |
-| T2  | Diễn tập ghi-ngược trạng thái trên ĐƠN NHÁP (2 chiều)     | L1-M1 ④#5c  | V3_POS_GHI=1 + đơn nháp          |
-| T3  | Tắt Botcake 3 page thử + bật 2 lớp 0 đồng                 | L2-M2       | H8 chọn page + người vào Botcake |
-| T4  | Đo 50 lượt trả lời thật <10s + 7 ngày so 3 page đối chứng | L2 gate R2  | T3 xong                          |
-| T5  | Nạp `ai-messages.jsonl` + đối chiếu số dòng Sổ AI         | nợ §9 L0-M1 | chạy trên VPS                    |
-| T6  | Lớp model B (L1-M4) cắm vào chỗ DI của L2-M1              | H5          | người B xong                     |
-| T7 | Duyệt 1 dòng hàng chờ thật → tạo 1 đơn NHÁP đánh dấu TEST trên shop ít dùng nhất (để nguyên — luật 2 cấm xoá) | L3-M4 ⑤ | V3_POS_GHI=1 + người chọn shop |
+| #   | Phép                                                                                                          | Của phiếu   | Cần gì                           |
+| --- | ------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------- |
+| T1  | Gửi 1 tin WhatsApp thật qua API Pancake tới số nội bộ                                                         | L1-M3 ⑤     | H1 nối số WA vào Pancake         |
+| T2  | Diễn tập ghi-ngược trạng thái trên ĐƠN NHÁP (2 chiều)                                                         | L1-M1 ④#5c  | V3_POS_GHI=1 + đơn nháp          |
+| T3  | Tắt Botcake 3 page thử + bật 2 lớp 0 đồng                                                                     | L2-M2       | H8 chọn page + người vào Botcake |
+| T4  | Đo 50 lượt trả lời thật <10s + 7 ngày so 3 page đối chứng                                                     | L2 gate R2  | T3 xong                          |
+| T5  | Nạp `ai-messages.jsonl` + đối chiếu số dòng Sổ AI                                                             | nợ §9 L0-M1 | chạy trên VPS                    |
+| T6  | Lớp model B (L1-M4) cắm vào chỗ DI của L2-M1                                                                  | H5          | người B xong                     |
+| T7  | Duyệt 1 dòng hàng chờ thật → tạo 1 đơn NHÁP đánh dấu TEST trên shop ít dùng nhất (để nguyên — luật 2 cấm xoá) | L3-M4 ⑤     | V3_POS_GHI=1 + người chọn shop   |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
@@ -572,9 +572,26 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   hành vi ĐÚNG theo §7.3 (thà chặn còn hơn tin con số bot nêu — án lệ khách Priscela Amon),
   và là cách phiếu L3-M4 sống chung với nợ L1-M1; ghi ra đây để người sau đọc bảng điều
   khiển «0 đơn duyệt được» không đi tìm bug ở `hang-cho.js`.
+- 23/08 · thợ VA-T1 (quét trọn họ #1 theo skill v3.1, NGOÀI pathspec, **KHÔNG đỏ** —
+  chỉ ghi để canh): `ops/bin/nghiem-thu/l0-m2.sh` ⑤ và `test/l0-m2-cach-ly.test.js` C10
+  đếm `bo_luat_chung` theo cùng khuôn TUYỆT ĐỐI "2/1/1" mà VA-T1 vừa vá ở l0-m1.sh
+  ⑦/S6 (đếm DELTA). Cả hai ĐANG XANH vì sandbox của chúng (`dungSandbox()`) không chạy
+  `db/di-tru/index.js` nên seed mồi L2-M3 (bo_luat_chung +1 dòng NULL) không có mặt —
+  y hệt lý do S6 (l0-m1) còn xanh trước khi bị lộ qua đường shell script. Vỡ ngay nếu
+  setup của hai chỗ này sau này đổi sang gọi di-tru, hoặc một migration mới bake sẵn
+  dòng NULL toàn hệ. KHÔNG vá (ngoài phạm vi phiếu VA-T1) — để nguyên, ai đụng
+  `l0-m2`/`l0-m2-cach-ly` lần sau nên đổi luôn sang đếm DELTA cùng khuôn.
+  (Đối chứng: `l2-m3.sh` ② và `test/l2-m3-rap-prompt.test.js` ② cũng đụng
+  `bo_luat_chung` nhưng đo theo ĐỊNH DANH dòng — `idDong.size===1` — không phải tổng
+  số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
+- 23/08 · VA-T1 → ✅ — vá 4 thước trôi (bo_luat_chung đếm DELTA · l3-m1 ⑦b bất biến
+  TRƯỚC≡SAU thay hằng "26" · l3-m2 ⑦ lùi-bản-trước-khi-down-005 · l2-m2-handler mỗi
+  ca hội thoại riêng), 0 dòng `src/**` đụng · 13/13 cổng rc=0 · test 328/317p/0f
+  (mọi phép 2 lượt y hệt) · commit 9b5fadf · nhật ký
+  `docs/thi-cong/nhat-ky/phieu-va-t1.md`.
 - 23/08 · L3-M4 → ✅ (TỔNG nghiệm thu) — chan1 8/8 · cổng 62/0/1-hoãn (T7) · đảo-vá 7/7
   đột biến không sống · 3 lệch đề bài thợ đo (variation_id UUID · pos_shop_id · warehouse
   không nguồn) · kiemTrung thật bắt cặp trùng · commit e97fcb1 — **12/12 MODULE A XONG**.
@@ -582,12 +599,12 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   (bo_luat +1 seed · 26→3.784 đơn · 006 sau 005 · fixture kb thiếu products + share PSID)
   → phiếu VA-T1; 1 bài học đo rc tách dòng; code nghiệp vụ 0 bug lộ ra ở gate.
 - 23/08 · L3-M4 → 🔎 chờ nghiệm thu — hàng chờ tạo đơn Messenger `src/orders/hang-cho.js`
-  + cửa TẠO ĐƠN THẬT `src/pos/tao-don.js`: NĂM cửa §7.3 (đủ trường · tiền · chống trùng ·
-  hàng chờ · tạo-đơn-chạy-lại-đủ-cửa) với **NĂM nguồn** chống trùng (bản cũ bốn) — nguồn (b)
-  GET **POS SỐNG**, KHÔNG đọc gương `don_hang`; mọi nguồn `unknown` ⇒ **ĐÓNG**. `taoDon`
-  BỐN cửa khuôn `ghi-nguoc.js`, `status: 12` TƯỜNG MINH (cấm bê `status: 0` khuôn cũ),
-  idempotent BA lớp (dòng · `SELECT … FOR UPDATE` · kiểm nhật-ký-MỒ-CÔI **trước POST**, lớp
-  duy nhất sống qua rollback). Chỗ đấu `src/chat/handler-v3.js` bước 11b, 1 chỗ.
+  - cửa TẠO ĐƠN THẬT `src/pos/tao-don.js`: NĂM cửa §7.3 (đủ trường · tiền · chống trùng ·
+    hàng chờ · tạo-đơn-chạy-lại-đủ-cửa) với **NĂM nguồn** chống trùng (bản cũ bốn) — nguồn (b)
+    GET **POS SỐNG**, KHÔNG đọc gương `don_hang`; mọi nguồn `unknown` ⇒ **ĐÓNG**. `taoDon`
+    BỐN cửa khuôn `ghi-nguoc.js`, `status: 12` TƯỜNG MINH (cấm bê `status: 0` khuôn cũ),
+    idempotent BA lớp (dòng · `SELECT … FOR UPDATE` · kiểm nhật-ký-MỒ-CÔI **trước POST**, lớp
+    duy nhất sống qua rollback). Chỗ đấu `src/chat/handler-v3.js` bước 11b, 1 chỗ.
 - 23/08 · L3-M4 → 🔴 BA LỆCH ĐỀ BÀI đo được trước khi code (án lệ #4): **`variation_id` của
   POS là UUID chứ không phải số** (`san_pham.ma` 137/137 · `don_hang.san_pham_ma`
   4.581/4.581 phần tử · số thuần 0) — bản đầu ép `Number()` sẽ TỪ CHỐI 100% sản phẩm thật ·
@@ -605,7 +622,6 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   `ca_hai` · 2 đơn, phép CHỈ ĐỌC (dev hàng chờ 0/0, đơn 3784/3784) · RACE 2 lượt duyệt song
   song ⇒ 1 POST 1 đơn · 7 đảo-vá không đột biến nào sống sót · commit `e97fcb1` (code) +
   dòng này (sổ+nhật ký) · nhật ký `docs/thi-cong/nhat-ky/phieu-l3-m4.md`
-
 
 - 23/08 · VA-Q12 → ✅ (TỔNG nghiệm thu) — cổng 17/17 ×2 · khach 0→3.218 · don_hang nối
   khach_id 3.779/3.784 · phép ăn tiền kiểm chéo độc lập: cặp 966501984606 trung=true
