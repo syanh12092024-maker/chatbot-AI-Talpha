@@ -94,3 +94,33 @@ export {
 export { docY, TU_KHOA as TU_KHOA_DOC_Y } from "./doc-y.js";
 
 export { nhanPhanHoiWa } from "./nhan-phan-hoi-wa.js";
+
+// ── L3-M4 · hàng chờ tạo đơn luồng Messenger (NĂM cửa, duyệt = TẠO ĐƠN POS THẬT) ──
+// Hợp đồng: docs/v3/ban-giao/may-trang-thai-don-v1.md §hàng-chờ.
+// ⛔ `duyet()` là đường DUY NHẤT của v3 đẻ ra một đơn POS mới — đọc `src/orders/
+//    hang-cho.js` đầu file (§7.3 «THÀ KHÔNG TẠO CÒN HƠN TẠO NHẦM») trước khi gọi.
+export {
+  vaoHangCho,
+  duyet,
+  loai,
+  docHangCho,
+  chayNamCua,
+  cua1DuTruong,
+  cua2Tien,
+  cua3ChongTrung,
+  nguonA_soAi,
+  nguonB_posSong,
+  nguonC_trangThaiHoiThoai,
+  nguonD_fbCommerce,
+  nguonE_kiemTrung,
+  traMarketCuaPage,
+  chuanHoaHoSo,
+  chuanHoaHoSoBoSung,
+  TRUONG_BAT_BUOC,
+  NGUON_CHONG_TRUNG,
+  KET_NGUON,
+  TRANG_THAI_HANG_CHO,
+  FB_COMMERCE,
+  LoiHangChoDaXuLy,
+  LoiThieuHangCho,
+} from "./hang-cho.js";

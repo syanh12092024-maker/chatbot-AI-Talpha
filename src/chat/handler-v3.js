@@ -83,6 +83,7 @@ import {
   chamVaTinhNganSach as chamVaTinhNganSachMacDinh,
   conNganSach as conNganSachMacDinh,
 } from "./ngan-sach-luot.js";
+import { vaoHangCho as vaoHangChoMacDinh } from "../orders/hang-cho.js";
 
 /** Không tìm thấy dòng `hoi_thoai` cho tin — bộ NẠP phải tạo TRƯỚC (cua-messenger §2). */
 export class LoiThieuHoiThoai extends Error {
@@ -121,6 +122,10 @@ function depsMacDinh(deps = {}) {
       gatThe: deps.cua?.gatThe || cuaGatThe,
     },
     depsPancake: deps.depsPancake || {},
+    // L3-M4 ②.1: hàng chờ tạo đơn (bước 11b). Tiêm qua deps như mọi cửa ngoài khác —
+    // bộ ca đếm được «vào hàng chờ mấy lượt» mà không cần dựng cả bảng.
+    vaoHangCho: deps.vaoHangCho || vaoHangChoMacDinh,
+    depsHangCho: deps.depsHangCho || {},
     lichSu: Array.isArray(deps.lichSu) ? deps.lichSu : [],
     bayGio: deps.bayGio || (() => Date.now()),
   };
@@ -555,6 +560,26 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
           auto_create_order: config.autoCreateOrder, // GIỮ TẮT — hàng chờ tạo đơn là L3-M4
         },
       });
+      // ── 11b · L3-M4 · VÀO HÀNG CHỜ SALE DUYỆT ─────────────────────────────
+      // 01 §1: bot chốt xong thì đơn KHÔNG tự vào POS (`autoCreateOrder` vẫn TẮT, đúng
+      // §7.3 «THÀ KHÔNG TẠO CÒN HƠN TẠO NHẦM») — nó vào `hang_cho_tao_don` kèm kết quả
+      // năm cửa, sale duyệt mới tạo đơn thật. Đặt NGAY SAU dòng `so_ai(order)` là cố ý:
+      // nguồn (a) của cửa chống trùng tra chính bảng đó và phải TRỪ sự kiện của lượt
+      // này ra (`tinId`), nếu không mọi dòng đều tự báo mình trùng.
+      // Lỗi KHÔNG bị nuốt: cùng khuôn `ghi(...)`/`luuLai(...)` quanh nó — nuốt ở đây là
+      // đánh rơi một đơn đã chốt mà không ai biết.
+      await d.vaoHangCho(
+        pool,
+        ctx,
+        {
+          hoiThoaiId: hoiThoai.id,
+          teamId,
+          hoSo: prof,
+          convId: tin.conv_id,
+          tinId: tin.id,
+        },
+        d.depsHangCho,
+      );
     }
     if (state.handoff) {
       await banGiaoSale(state.handoffReason || "AI yêu cầu chuyển người");

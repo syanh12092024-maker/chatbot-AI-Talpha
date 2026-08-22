@@ -13,6 +13,22 @@ export {
   LoiTrangThaiDaDoi,
 } from "./ghi-nguoc.js";
 export { layKetNoi, lietKeThiTruong, LoiThieuKetNoiPos } from "./ket-noi.js";
+// ⛔ TẠO ĐƠN THẬT (L3-M4) — lệnh ra ngoài NẶNG NHẤT của v3: nó ĐẺ ra một kiện COD, và
+//    luật 2 §0a cấm xoá đơn POS ⇒ tạo nhầm là KHÔNG GỠ ĐƯỢC. Đọc `src/pos/tao-don.js`
+//    đầu file (bốn cửa an toàn) trước khi gọi.
+export {
+  taoDon,
+  dungPayload,
+  guiTaoDon,
+  moCoiTruocPost,
+  doiSangDonViNho,
+  tachMaBienThe,
+  MA_CHO_IN,
+  GHI_CHU_DON,
+  HE_SO_TE,
+  LoiThieuThamChieuSanPham,
+  LoiDonDaTao,
+} from "./tao-don.js";
 export {
   BANG_MA,
   NHOM_HUY_HOAN,
