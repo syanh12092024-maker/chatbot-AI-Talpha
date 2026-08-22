@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Đăng nhập — AI Closer</title>
+<style>
+  /* Hệ thiết kế chép từ dashboard đang chạy (`public/ops.html` dòng 10–17) để hai bản
+     nhìn là một. Một file HTML thuần, không khung, KHÔNG gọi mạng ra ngoài — trang đăng
+     nhập mà kéo font hay script từ CDN thì cả đường đăng nhập phụ thuộc vào máy người khác. */
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --bad:#dc2626; --badSoft:#fdecec;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased;
+       min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .hop{width:100%;max-width:372px}
+  .dau{display:flex;align-items:center;gap:10px;margin-bottom:18px;padding-left:2px}
+  .dau .cham{width:30px;height:30px;border-radius:9px;background:var(--side);color:#9fd6db;
+             display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  .dau h1{font-size:16px;margin:0;font-weight:700}
+  .dau .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  form{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+       box-shadow:var(--sh);padding:20px}
+  label{display:block;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+        color:var(--muted);margin:0 0 5px}
+  input{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font:inherit;
+        background:#fff;color:var(--ink)}
+  input:focus{outline:0;border-color:var(--pri);box-shadow:0 0 0 3px var(--priSoft)}
+  .o{margin-bottom:14px}
+  button{width:100%;border:0;border-radius:9px;padding:10px 14px;font:inherit;font-weight:600;
+         cursor:pointer;background:var(--pri);color:#fff}
+  button:hover:not(:disabled){background:var(--priDark)}
+  button:disabled{opacity:.55;cursor:default}
+  .loi{display:none;background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;
+       border-radius:9px;padding:9px 11px;margin-bottom:14px;font-weight:600;line-height:1.5}
+  .loi.hien{display:block}
+  .chan{text-align:center;color:var(--muted);font-size:11.5px;margin-top:14px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="hop">
+  <div class="dau">
+    <div class="cham">AI</div>
+    <div>
+      <h1>AI Closer</h1>
+      <div class="sub">Đăng nhập để vào bảng điều phối</div>
+    </div>
+  </div>
+
+  <form id="f" autocomplete="on" novalidate>
+    <div class="loi" id="loi" role="alert" aria-live="polite"></div>
+    <div class="o">
+      <label for="ten">Tên đăng nhập</label>
+      <input id="ten" name="username" type="text" autocomplete="username" autocapitalize="none"
+             spellcheck="false" required autofocus />
+    </div>
+    <div class="o">
+      <label for="mk">Mật khẩu</label>
+      <input id="mk" name="password" type="password" autocomplete="current-password" required />
+    </div>
+    <button id="nut" type="submit">Đăng nhập</button>
+  </form>
+
+  <div class="chan">Phiên đăng nhập hết hạn sau 8 tiếng.</div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const oLoi = $('#loi'), nut = $('#nut');
+
+function baoLoi(t) { oLoi.textContent = t; oLoi.classList.add('hien'); }
+function xoaLoi() { oLoi.textContent = ''; oLoi.classList.remove('hien'); }
+
+$('#f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  xoaLoi();
+  const tenDangNhap = $('#ten').value.trim();
+  const matKhau = $('#mk').value;
+  if (!tenDangNhap || !matKhau) { baoLoi('Nhập đủ tên đăng nhập và mật khẩu.'); return; }
+
+  nut.disabled = true; nut.textContent = 'Đang kiểm…';
+  try {
+    const r = await fetch('/api/dang-nhap', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ tenDangNhap, matKhau }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) {
+      // Không đoán thêm gì từ mã lỗi: máy chủ cố ý trả CÙNG một câu cho "không có tài
+      // khoản" và "sai mật khẩu". Hiện đúng câu nó trả.
+      baoLoi(d.thongDiep || 'Sai tên đăng nhập hoặc mật khẩu.');
+      $('#mk').value = ''; $('#mk').focus();
+      return;
+    }
+    location.assign(d.diTiep || (d.canChonTeam ? '/chon-team' : '/dieu-phoi'));
+  } catch {
+    baoLoi('Không nối được máy chủ. Thử lại.');
+  } finally {
+    nut.disabled = false; nut.textContent = 'Đăng nhập';
+  }
+});
+</script>
+</body>
+</html>
