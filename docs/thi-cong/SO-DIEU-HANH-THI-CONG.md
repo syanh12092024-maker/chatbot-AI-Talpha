@@ -150,7 +150,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | Mã    | Việc                                                                                | Phụ thuộc                     | Session | Đụng file                          | Trạng thái |
 | ----- | ----------------------------------------------------------------------------------- | ----------------------------- | ------- | ---------------------------------- | ---------- |
 | L2-M1 | Đường xử lý tin nền mới + hàng đợi; route outbound qua cửa v3 (nợ tools.js); DI model | R1 code-xong (L1-M1·M2 ✅; model = llm.js cũ qua DI, chỗ cắm cho B) | thợ mới | `src/queue/*` `src/chat/*` `db/migrate/003` `test/` | ✅         |
-| L2-M2 | Tắt Botcake 3 page thử, bật 2 lớp 0 đồng, nhập 2 luật từ khoá, vá `paano mag order` | L2-M1 + **H3** + **H8**       | thợ mới | `src/chat/*` `test/`               | ⬜         |
+| L2-M2 | Tắt Botcake 3 page thử, bật 2 lớp 0 đồng, nhập 2 luật từ khoá, vá `paano mag order` | L2-M1 + **H3** + **H8**       | thợ mới | `src/chat/*` `test/`               | 🟨         |
 | L2-M3 | Tách prompt 4 khối, ngân sách lượt theo độ nóng, cờ page trọng điểm                 | L2-M1                         | thợ mới | `src/chat/*` `test/`               | ⬜         |
 | R2    | **GATE SÓNG 2** — đo 50 lượt thật <10s, 7 ngày so 3 page đối chứng                  | L2-M1..M3                     | TỔNG    | —                                  | ⬜         |
 
@@ -159,7 +159,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | Mã    | Việc                                                              | Phụ thuộc | Session | Đụng file                            | Trạng thái |
 | ----- | ----------------------------------------------------------------- | --------- | ------- | ------------------------------------ | ---------- |
 | L3-M1 | Máy trạng thái đơn PHÂN NHÁNH THEO NGUỒN 🟥                       | R2        | thợ mới | `src/orders/*` `test/`               | ✅         |
-| L3-M2 | Lọc trùng chéo hai luồng + chấm tỉ lệ hoàn 🟥                     | L3-M1     | thợ mới | `src/orders/*` `test/`               | ⬜         |
+| L3-M2 | Lọc trùng chéo hai luồng + chấm tỉ lệ hoàn 🟥                     | L3-M1     | thợ mới | `src/orders/*` `test/`               | 🟨         |
 | L3-M3 | Hàng đợi nhắc (2h×5, huỷ khi khách trả lời) + bộ đọc ý 4 nhánh 🟥 | L3-M1     | thợ mới | `src/orders/*` `src/queue/*` `test/` | ⬜         |
 | L3-M4 | Hàng chờ tạo đơn luồng Messenger 🟥                               | L3-M1·M2  | thợ mới | `src/orders/*` `test/`               | ⬜         |
 | R3    | **GATE SÓNG 3**                                                   | L3-M1..M4 | TỔNG    | —                                    | ⬜         |
