@@ -1,8 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 20:45 22/08 · đang chạy: L1-M1 🟨 (opus) · phán mới nhất:
-> L1-M2 ✅ (chặng 1 8/8 · cổng 15/15 · kiểm chéo: guard sát cửa ra, tính duy nhất đúng 1
-> file, chặn được cả path lạ) — chờ L1-M1 + quyết H1 để đóng sóng 1.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 21:30 22/08 · đang chạy: KHÔNG thợ nào — dây chuyền ĐỨNG
+> CHỜ VIỆC NGƯỜI (H1 chặn L1-M3 · H5 chặn L2) · phán mới nhất: L1-M1 ✅ (24/24+1 hoãn ⑤c
+> chờ VPS) — sóng 1 còn mỗi L1-M3; sự cố commit-không-pathspec đã khôi phục sạch.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -139,7 +139,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 | Mã    | Việc                                                                   | Phụ thuộc   | Session | Đụng file                            | Trạng thái |
 | ----- | ---------------------------------------------------------------------- | ----------- | ------- | ------------------------------------ | ---------- |
-| L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥        | R0 ✅       | thợ mới | `src/pos/*` `db/migrate/002` `test/` | 🟨         |
+| L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥        | R0 ✅       | thợ mới | `src/pos/*` `db/migrate/002` `test/` | ✅         |
 | L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team | R0 ✅       | thợ mới | `src/channels/messenger/*` `test/`   | ✅         |
 | L1-M3 | Cửa Pancake WhatsApp 🟥 (gửi tin ra khách)                             | **H1** + R0 | thợ mới | `src/channels/whatsapp/*` `test/`    | ⬜         |
 | R1    | **GATE SÓNG 1**                                                        | L1-M1..M3   | TỔNG    | —                                    | ⬜         |
@@ -297,6 +297,14 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
   ghi nhat_ky); chống ĐẠT RỖNG bằng mẫu trộn tieu-alpha+auus, so DANH SÁCH id không so
   count. Cổng `l0-m2.sh` 16/16 ĐẠT, test 22 ca xanh (gộp l0-m1 52/52, bộ cũ 18/5 không
   hồi quy) · commit 9c40c9f · nhật ký docs/thi-cong/nhat-ky/phieu-l0-m2.md
+- 22/08 · L1-M1 → ✅ — chặng 1 7/8 (phép ④ nhiễu song song, tổng đo lại per-commit
+  f5611cb+dff58ed: 20/20 tệp ⊆ ③) · cổng 24/24 + 1 HOÃN minh bạch (⑤c ghi thật chờ diễn
+  tập VPS) · kiểm chéo DB 5 phép khớp · 🧭 SỰ CỐ + BÀI HỌC: commit sổ b356f7b của TỔNG
+  không mang pathspec đã nuốt 6 tệp L1-M2 (index chính stale vì thợ commit bằng
+  private-index) — khôi phục nguyên vẹn (diff với 92afae3c = rỗng); từ nay TỔNG commit
+  cũng bắt buộc `git commit -- <pathspec>`; phiếu song song thì phép ④ đo per-commit khai
+  trong nhật ký, không đo cả khoảng cây · thước l0-m1 vá nhận bảng 20 ket_noi_pos, 51/51
+  lại xanh · N8+N2 thợ nêu: ĐÃ XỬ.
 - 22/08 · L1-M2 → ✅ — chặng 1 8/8 · cổng 15/15 (tổng chạy) · kiểm chéo 3 phép độc lập
   (LoiCuaGuiDong fail-closed, guard đặt NGAY TRƯỚC send · grep duy nhất = 1 file · path
   lạ vẫn chặn) · thợ phát hiện convId ≠ psid (án lệ #4, tra chéo bằng psid đúng cột
