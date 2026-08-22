@@ -1,0 +1,127 @@
+# REFUTE mảng 5 — LỚP TỪ-KHOÁ + RÁP PROMPT 4 KHỐI + NGÂN SÁCH LƯỢT + BẪY TOÀN CỤC
+# Phạm vi: PHIEU-L2-M2 (lớp từ khoá) · PHIEU-L2-M3 (ráp prompt + ngân sách) · PHIEU-VA-T1
+# (vá thước) + lớp TOÀN CỤC (migration/đồng thời/nhiễu test — chỉ agent này soi).
+# Chạy thật: Node 25.8, DB tạm aicloser_refute5 @localhost:5433 (đã DROP sau khi xong).
+phieu: L2-M2 + L2-M3 + VA-T1 (+ toàn cục)
+vong: 1
+ket_luan: DAT
+
+findings:
+  # ─────────────────────────── NEN ───────────────────────────
+  - ma: F1
+    muc: NEN
+    mo_ta: >-
+      rap-prompt.js khai docstring "VẮNG (mặc định) ⇒ ... KHÔNG đụng DB" nhưng đường
+      fallback (cờ TẮT) VẪN chạy docTrangPage() — một truy vấn bảng `page` — TRƯỚC khi
+      kiểm cờ. Lời khai ≠ hành vi. Không mất tiền/dữ liệu (teamId luôn hợp lệ từ FK
+      tin.team_id ở đường thật), nhưng thêm 1 roundtrip/tin ở đúng đường "an toàn" và
+      sai lời hứa deploy "không đụng DB".
+    kich_ban: >-
+      DATABASE_URL_V3=<refute5>; delete env V3_RAP_PROMPT_BAT; rapKb(pool,{teamId:999999,
+      pageIdText:'X'}) ⇒ NÉM LoiThieuBoiCanhTeam "team_id=999999 không tồn tại" (nếu thật
+      không đụng DB thì phải trả kb cũ, không ném). Đã chạy: node 03-nghi-van.mjs.
+    file_line: src/chat/rap-prompt.js:24 (docstring) · :184 (docTrangPage trước :187 kiểm cờ)
+
+  - ma: F2
+    muc: NEN
+    mo_ta: >-
+      Lớp từ khoá CƯỚP DIỄN ĐÀN với tin CHỨA từ khoá nhưng nghĩa khác: "is it real
+      leather"/"is it real gold"/"is this original design" → that_gia; "family size
+      portion"/"what is the size of your company"/"one size fits all"/"do you deliver to
+      my area size 10 shoe" → hoi_size (bỏ qua vế giao hàng). CHỈ bắn khi page có
+      kb.config.fastLaneAuth/fastLaneSize (đa số page hôm nay rỗng ⇒ nhường). Trả lời
+      không trọn, không mất tiền, khách nhắn lại được — cùng hạng nhiễu keyword của
+      fastLane cũ. 10 câu ngoài-luật của phiếu (giá/địa chỉ/chào) thì NHƯỜNG đúng (0 cướp).
+    kich_ban: >-
+      node 04-pure.mjs (mục A: 0 cướp trên 13 câu điển hình) + probe trực tiếp lopTuKhoa
+      với kb có fastLaneAuth/fastLaneSize → 9/9 câu "chất liệu/size ngữ cảnh khác" bị BẮT.
+    file_line: src/chat/lop-tu-khoa.js:58-59 (AUTH_Q) · :64 (SIZE_Q)
+
+  - ma: F3
+    muc: NEN
+    mo_ta: >-
+      Khối RỖNG NỘI DUNG im thành "sạch": kich_ban LIVE có dòng nhưng noi_dung_nguoi={}
+      → config={} nhưng KHÔNG vào nguon_thieu (code chỉ cờ khi THIẾU DÒNG, không khi
+      rỗng nội dung). Marketer lưu kịch bản trống ⇒ page rơi về CORE trơn mà không tín
+      hiệu "thiếu kịch bản". Nhỏ: fallback CORE an toàn (không bịa), là lỗi dữ liệu người
+      vận hành. Hợp đồng "mù-có-nói-ra" chỉ giữ ở cấp DÒNG, hở ở cấp NỘI DUNG.
+    kich_ban: >-
+      node 02-seed-va-rapprompt.mjs (PAGE_OTHER: kich_ban noi_dung_nguoi='{}' → nguon_thieu
+      = ["ky_nang"], KHÔNG có "kich_ban").
+    file_line: src/chat/rap-prompt.js:229 (if (!kichBan) nguonThieu.push — chỉ xét dòng)
+
+  # ─────────────────────────── GHI-NO ───────────────────────────
+  - ma: G1
+    muc: GHI-NO
+    mo_ta: >-
+      `node --test` BARE (cả suite) ra 9 fail/736 — nhưng CÓ SẴN, ngoài mảng: 8 fail cả
+      khi cô lập ở test LEGACY v2 (guard-fastlane×4, conv-owner D6, intro I3, l8-botcake
+      A8, viec-2345 V4 — mọi file sửa lần cuối 08-10/11, KHÔNG trong pathspec L2/VA) + 1
+      nhiễu song song (l0-m1-di-tru D8 mtime, cô lập thì XANH). `node --test test/`
+      (=npm test) VỠ trên Node 25 — đã biết, gate vá bằng glob per-file. Scope v3 thật
+      (l0-l3) = 318 test, 0 fail, ổn định 2 lượt.
+    kich_ban: >-
+      node --test (auto) ⇒ 714/9/13; cô lập từng file legacy vẫn fail; git log -1 các file
+      = 08-10/11 (trước L2-M2 38bcb71/L2-M3 5347191/VA-T1 9b5fadf).
+    file_line: test/guard-fastlane.test.mjs · conv-owner · intro · l8-botcake-rules · viec-2345 (legacy)
+
+  - ma: G2
+    muc: GHI-NO
+    mo_ta: >-
+      BẢN SAO THỨ HAI của luật (một-nguồn-một-luật): (a) HOWTO_FALLBACK trong lop-tu-khoa
+      chép tay FRAME[lang].howto của fast-lane (hiện KHỚP byte, sẽ trôi nếu sửa một bên);
+      (b) seed bo_luat_chung = CORE của prompts.js, mà CORE cũng hardcode trong prompts.js
+      và MỚI là bản điều khiển model thật (bản DB chỉ "tham khảo/phiên bản", trích 300 ký
+      tự). Cả hai đều KHAI RÕ tại chỗ + nhật ký. Trôi thì vô hại (bản DB không điều khiển).
+    kich_ban: node so cụm "I-send niyo lang"/"Just send:" ở 2 file → cùng câu; CORE.length=6734=seed doDai.
+    file_line: src/chat/lop-tu-khoa.js:78-82 · src/prompts.js CORE ↔ db/di-tru/bo-luat-va-ky-nang.js:41-45
+
+  - ma: G3
+    muc: GHI-NO
+    mo_ta: >-
+      seedBoLuatChung là CHECK-THEN-INSERT không khoá + bo_luat_chung KHÔNG có UNIQUE (chỉ
+      PK id) ⇒ hai lượt di-trú SONG SONG có thể đẻ 2 dòng v1 NULL. KHÔNG tái lập được (8
+      lượt Promise song song ra đúng 1 dòng — pg pool nối tiếp đủ). Vô hại: docBoLuatChung
+      chịu trùng (lấy phien_ban cao nhất) + di-tru là one-shot tuần tự. Tác giả đã khai
+      "không UNIQUE ràng, tự kiểm trước khi ghi".
+    kich_ban: node 03-nghi-van.mjs (NGHI 2: 8×seedBoLuatChung song song → 1 dòng NULL, không trùng).
+    file_line: db/di-tru/bo-luat-va-ky-nang.js:34-47
+
+  - ma: G4
+    muc: GHI-NO
+    mo_ta: >-
+      READER trước WRITER (deploy-code-trước-migration ở tầng dữ liệu): don_hang.san_pham_ma
+      (mig 005) + status_history (mig 006) có index/reader mà CHƯA cửa POS ghi. Ngoài mảng
+      (L3/L1). Đã KHAI RÕ trong comment migration + reader kiemTrung xử "mù CÓ NÓI RA"
+      (nghi_trung_chua_ro_san_pham). Riêng mảng L2-M2/M3: mọi reader (rap-prompt) chỉ cần
+      lược đồ 001 (đủ cột), KHÔNG đọc cột 004/005/006 ⇒ không rủi ro deploy-trước-migrate.
+    file_line: db/migrate/005_loc_trung_va_ti_le_hoan.up.sql:598-604 · 006_lich_su_trang_thai.up.sql:681
+
+# ─────────────────────── ĐÃ CHẠY & XANH (không thành finding) ───────────────────────
+da_verify:
+  - "Migration 001→006 trên DB SẠCH aicloser_refute5: áp TRỌN đúng thứ tự (6/6), 21 bảng
+     nghiệp vụ + đủ cột L2-M3 (hoi_thoai.diem_lead/diem_nong, page.trong_diem,
+     ky_nang.bat/bat_cho_nhom_sp, bo_luat_chung.team_id NULLABLE, kich_ban.noi_dung_*)."
+  - "down --het → up round-trip trên DB đã seed+dữ liệu: gỡ 6 bản ngược thứ tự → 0 bảng
+     nghiệp vụ → up lại → 21 bảng. Reversible sạch."
+  - "bo_luat_chung OR-IS-NULL: docBoLuatChung(team) đọc ĐÚNG dòng team_id=NULL; chèn v2 →
+     đọc ăn v2 ngay (không cache/restart)."
+  - "Ráp 4 khối đủ; buildSystem(kb) KHÔNG ném với kb đủ (3 block) LẪN kb rỗng (2 block);
+     nguon_thieu liệt kê đúng khối THIẾU DÒNG; ky_nang lọc đúng theo nhóm SP của page."
+  - "Ngân sách: HARD_MAX_TURNS=12 KHÔNG bị vượt ở ca nóng nhất (base12+bonus3→min=12);
+     ngân sách LẠNH lượt đầu used=0<max=1 KHÔNG chặn oan; 3 mức nguội<ấm<nóng tăng dần."
+  - "Seed bo_luat_chung = CORE NGUYÊN VĂN (6734 ký tự); idempotent rerun tuần tự (1/1,
+     không đẻ dòng 2); ky_nang hỏi size seed bat=false (không âm thầm bật, đúng chủ đích)."
+  - "paano: vá ĐÚNG lỗ 'mag + khoảng trắng/gạch nối/đệm po-ba' (paano mag order, mag-order,
+     po mag order, mag bumili — bắt); KHÔNG giẫm biến thể liền chữ fastLane gốc đã bắt."
+  - "Test scope v3 (l0-*,l1-*,l2-*,l3-*): 318 test, 0 fail, ổn định Y HỆT 2 lượt liên tiếp.
+     Mảng L2-M2/M3 riêng: 35/35 pass 2 lượt."
+
+mu_code_review: []
+mu_nghiep_vu: []
+
+# ─── PHÁN TỔNG ───────────────────────────────────────────────────────────────────
+# KHÔNG CHẶN. 3 mảng (L2-M2/L2-M3/VA-T1) + lớp toàn cục qua được mọi kịch bản phá đã dựng.
+# 3 NEN (docstring 'KHÔNG đụng DB' sai · cướp diễn đàn keyword khi page cấu hình KB ·
+# khối rỗng-nội-dung im thành sạch) — đáng vá/ghi nợ, KHÔNG chặn gộp (không mất tiền/dữ
+# liệu, có đường vòng hợp lệ). 4 GHI-NO đều CÓ SẴN/ngoài mảng/đã khai rõ.

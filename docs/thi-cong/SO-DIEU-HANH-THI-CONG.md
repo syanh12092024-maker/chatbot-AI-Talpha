@@ -1,8 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 09:30 23/08 · 4/5 mảng refute về (team ĐẠT · tiền-hẹp
-> ĐẠT · cửa-gửi ĐẠT-nhưng-RF1-nâng-CHẶN · luồng-đơn 3 CHẶN) · đang chờ mảng prompt/toàn-cục
-> · **~11 CHẶN verify** gom thành 5 cụm vá · ⛔ KHÔNG push.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 10:00 23/08 · REFUTE XONG 5/5 mảng · **10 CHẶN verify
+> gom 4 cụm vá (§9b)** · nền (team/tiền-hẹp/cửa-gửi/toàn-cục) ĐẠT · chờ lệnh CEO mở sóng
+> vá C1-C4 · ⛔ KHÔNG push tới khi vá xong.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -192,6 +192,30 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm                                | ⬜         |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
+
+- 23/08 · REFUTE (mảng prompt/toàn-cục) — **PHÁN ĐẠT, 0 CHẶN.** Verify XANH: migration
+  001→006 trên DB sạch áp trọn 21 bảng · down--het→up round-trip sạch · HARD_MAX=12 không
+  vượt ca nóng · ngân sách lạnh lượt đầu không chặn oan · seed=CORE nguyên văn idempotent ·
+  paano vá đúng lỗ. NÊN: RF-25 lớp từ-khoá cướp «is it real leather»/«family size» khi page
+  có fastLaneAuth/Size (`lop-tu-khoa.js`) · RF-26 rap-prompt fallback vẫn query `page` dù
+  docstring khai không-đụng-DB · RF-27 kịch bản `{}` không vào nguon_thieu.
+
+═══════════════════════════════════════════════════════════════════════════════
+## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
+
+Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
+prompt/toàn-cục ✅ · **luồng-đơn + bộ-não = nơi mọi CHẶN tụ**. Gate máy 13/13 + 117/117
+test XANH mà refute lộ 10 CHẶN — thước đo «hệ có hỏng» chưa đo «tiền đúng · tin không bay».
+
+| Cụm | CHẶN | Vùng | Phiếu vá đề xuất |
+| --- | --- | --- | --- |
+| C1 bộ-não-bắn-HTTP | RF-1·RF-2·RF-3 | handler-v3.js · queue/worker.js | VA-R1 🟥 opus |
+| C2 tiền + tạo-đơn | RF-9(×100)·RF-10(mã8)·RF-11(phân trang)·RF-12(POST-rollback)·RF-21(khoá hội thoại) | orders/hang-cho.js · pos/tao-don.js · doc-danh-muc.js | VA-R2 🟥 opus |
+| C3 máy trạng thái | RF-13(CAS ghiDon)·RF-14(kẹt cho_gui_wa) | orders/may-trang-thai.js · quet-don-moi.js | VA-R3 🟥 sonnet |
+| C4 đọc ý | RF-20(phủ định→xác nhận) | orders/doc-y.js | VA-R4 🟨 sonnet |
+
+Mỗi CHẶN tổng ĐÃ TỰ VERIFY bằng repro/gọi-tay (không tin lời agent). NÊN (RF-15..19,
+25-27) + GHI-NỢ (RF-22..24) vào sóng kèm hoặc sổ nợ dài hạn. ⛔ Cấm push tới khi C1-C4 ✅.
 
 - 23/08 · REFUTE (mảng luồng-đơn L3 + cửa-gửi) — thêm 2 CHẶN MỚI verify + xác nhận trùng:
   - 🔴 **RF-20 (CHẶN, đọc ý — tổng verify tay):** `doc-y.js` đọc "not sure"/"don't confirm"/
