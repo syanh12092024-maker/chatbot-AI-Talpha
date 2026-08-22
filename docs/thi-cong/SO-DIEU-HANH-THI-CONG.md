@@ -109,14 +109,20 @@ trong 5′, đơn Messenger không bị hỏi lại, trùng chéo bị bắt.
 
 ## §2 · SÓNG 0 — NỀN DỮ LIỆU (L0 phần A)
 
-| Mã    | Việc                                                                               | Phụ thuộc | Session | Đụng file                        | Trạng thái |
-| ----- | ---------------------------------------------------------------------------------- | --------- | ------- | -------------------------------- | ---------- |
-| L0-M1 | Lược đồ 18 bảng + di trú dữ liệu thật từ JSON                                      | —         | thợ mới | `db/*` `test/l0-m1-*`            | 🎫         |
-| L0-M2 | Tầng truy vấn tự chèn điều kiện team, thiếu bối cảnh → ném lỗi                     | L0-M1     | thợ mới | `src/db/*` `test/`               | ⬜         |
-| R0    | **GATE SÓNG 0** — npm test 2 lượt + script nghiệm thu + đối chiếu danh sách di trú | L0-M1·M2  | TỔNG    | —                                | ⬜         |
+| Mã    | Việc                                                                               | Phụ thuộc | Session | Đụng file             | Trạng thái |
+| ----- | ---------------------------------------------------------------------------------- | --------- | ------- | --------------------- | ---------- |
+| L0-M1 | Lược đồ 19 bảng + di trú dữ liệu thật từ JSON                                      | —         | thợ mới | `db/*` `test/l0-m1-*` | 🎫         |
+| L0-M2 | Tầng truy vấn tự chèn điều kiện team, thiếu bối cảnh → ném lỗi                     | L0-M1     | thợ mới | `src/db/*` `test/`    | ⬜         |
+| R0    | **GATE SÓNG 0** — npm test 2 lượt + script nghiệm thu + đối chiếu danh sách di trú | L0-M1·M2  | TỔNG    | —                     | ⬜         |
 
 Bàn giao cho B tại R0: lược đồ (điểm 1) + hàm tầng truy vấn (điểm 2) + hình dạng bảng
 `viec_can_xu_ly` (điểm 3) — công bố bằng file `docs/v3/ban-giao/luoc-do-v1.md`.
+
+Dặn trước cho phiếu L0-M2 (từ verdict điểm (a) L0-M1, chống ĐẠT RỖNG): nghiệm thu «đăng
+nhập Tiểu Alpha không thấy dữ liệu team khác» phải đo trên dữ liệu ĐÃ GÁN ≥2 team nghiệp
+vụ (test tự chèn mẩu dữ liệu trộn team rồi mới đo cách ly) — toàn bộ dữ liệu di trú đang
+nằm ở team kỹ thuật `chua-phan` nên đo trên dữ liệu thật là đo trên tập rỗng. Kèm ca test
+hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 ## §3 · SÓNG 1 — BỐN CỬA KẾT NỐI (phần A: 3 cửa)
 
@@ -160,6 +166,13 @@ Bàn giao cho B tại R0: lược đồ (điểm 1) + hàm tầng truy vấn (đ
 | H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                     | L2-M2                                                          | ⬜         |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
+
+- 22/08 · TỔNG (từ verdict L0-M1 điểm a): nạp `ai-messages.jsonl` (Sổ AI, chỉ có trên VPS)
+  + đối chiếu SỐ DÒNG với bản cũ — chạy trên VPS đợt cutover. Vế thứ ba của phép đối chiếu
+  di trú (02 §L0) KHÔNG được tính đạt ở GATE R0.
+- 22/08 · TỔNG (từ verdict L0-M1 điểm a): ≥1 page bật AI không nằm trong `pages.json`
+  (`1125576063976794`) — thợ L0-M1 liệt kê đủ danh sách page lạc khi di trú; nguồn gốc
+  lệch sổ cái xử ở lượt riêng, không nuốt im trong di trú.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 

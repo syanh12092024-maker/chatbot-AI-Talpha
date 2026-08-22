@@ -1,0 +1,206 @@
+phieu: L0-M1
+diem: a
+nguoi_cham: reviewer nghiep-vu (skill review-nghiep-vu v1)
+ngay: 2026-08-22
+base_phieu: 80f93b2
+nguon_da_doc:
+  - docs/v3/01-QUYET-DINH.md (§1 · §6 · §7 · §8 · §9 · §"Số đo nền")
+  - docs/v3/02-KE-HOACH-CODE.md (§"Nền dữ liệu — 18 bảng" · §"L0 · Nền dữ liệu")
+  - docs/v3/05-PHAN-VIEC.md (ranh giới A/B + 5 điểm bàn giao)
+  - docs/thi-cong/SO-DIEU-HANH-THI-CONG.md (§0a 4 luật · §0 luật 2·8·15 · §2 GATE R0)
+  - docs/TONG-QUAN-HE-THONG.md §11.1–11.2 (nguồn phiếu tự trích dẫn)
+  - docs/thi-cong/phieu/PHIEU-L0-M1.md
+
+cau:
+  - so: 1
+    dap: KHONG
+    bang_chung: >-
+      Phiếu không sinh màn→nút→kết quả nào cho 5 vai của §9 (Quản trị·Marketer·Sale·Quản lý·
+      Người duyệt). ③ pathspec không có file UI; ⑤ không nêu màn nào. Đầu ra là `npm run migrate`,
+      `npm run di-tru`, `docs/v3/ban-giao/luoc-do-v1.md` — người tiêu thụ là NGƯỜI B (thợ), không
+      phải người dùng thật. KHÔNG ở đây là ĐÚNG BẢN CHẤT phiếu nền, không tự nó thành TRẢ-VỀ:
+      câu 8 gánh phần biện minh.
+  - so: 3
+    dap: CO
+    bang_chung: >-
+      CÓ mâu thuẫn, 2 chỗ. (a) 01 §"Số đo nền" khai «Page đang bật AI: 51 trên 315» và 02 khai
+      `page` có cờ `bot_ai_bat`; nguồn duy nhất của cờ đó là `ai-enabled.json` — chính nguồn phiếu
+      trích ở ① (TONG-QUAN §11.1) ghi «⚠️ Đây là công tắc thật — vòng poll chạy theo file này», và
+      `src/store.js:12-20` đọc nó thành Set. Phiếu liệt kê file ở ② nhưng ④ KHÔNG có phép đo nào
+      chạm cờ này. (b) 01 §8 luật cứng «Quên một chỗ là team này nhìn thấy khách của team kia» —
+      ② #3 dựng team thứ 4 `chua-phan` ôm 100% dữ liệu thật của cả ba team mà không kèm luật cấm
+      gán người vào nó và không có phép đo nào. Chi tiết: N1, N2.
+  - so: 7
+    dap: CO
+    bang_chung: >-
+      CÓ làm hẹp, nạn nhân là L0-M2 (phiếu kế tiếp của chính A). (a) Nghiệm thu L0-M2 theo 02 §L0
+      là «Đăng nhập team Tiểu Alpha, không thấy một dòng dữ liệu nào của hai team kia» — với toàn
+      bộ 502 page + 18.790 hội thoại + toàn bộ khách nằm trong `chua-phan`, câu đó ĐẠT RỖNG: không
+      có dòng nào của tieu-alpha lẫn auus để mà rò. Phép đo không phân biệt được «cách ly đúng» với
+      «chưa ai có dữ liệu». Phiếu không dựng nổi một mẩu dữ liệu trộn team để L0-M2 có cái mà đo.
+      (b) `bo_luat_chung.team_id` NULLABLE tạo ngoại lệ ngay trong tầng mà 01 §8 bắt phải đồng nhất,
+      nhưng phiếu chỉ bắt «ghi chú lại trong file bàn giao» (file cho B) — không có câu hợp đồng nào
+      ràng L0-M2 phải đọc `(team_id = $ctx OR team_id IS NULL)`. Chi tiết: N2, N3.
+  - so: 8
+    dap: CO
+    bang_chung: >-
+      Bỏ phiếu này thì đau ở ba chỗ đếm được, không phải over-engineering. (1) Không có
+      `don_hang.nguon` ⇒ L3-M1 «máy trạng thái phân nhánh theo nguồn» — thứ 01 §1 gọi là «quyết định
+      quan trọng nhất về nghiệp vụ» — không có gì để rẽ nhánh, và 37,4% khách bấm BUY NOW không gửi
+      WhatsApp không bao giờ được bịt. (2) Không có `so_ai.ma_model` ⇒ 01 §7 «đo bằng tiền mỗi đơn»
+      trên 4 nhà chênh 28 lần là bất khả vĩnh viễn (02 nói thẳng: «nếu không sau này không so được
+      model nào rẻ hơn thật»). (3) Không có `team_id` ⇒ luật cứng 01 §8 không có chỗ bám; hệ ở lại
+      15 file JSON rời, `conv-state.json` 5,4 MB đọc/ghi trọn file.
+
+ket_luan: TRA_VE
+
+findings:
+  - ma: N1
+    muc: CHAN
+    mo_ta: >-
+      Công tắc AI thật (`ai-enabled.json`, 47 page) không có bảng đích khai trong ② và không có
+      phép đo nào ở ④ — cờ `page.bot_ai_bat` mất im lặng mà nghiệm thu vẫn xanh.
+    bang_chung: >-
+      Đo trên cây 22/08: `ai-enabled.json` = 47 page_id (mảng phẳng) · `pages.json` = 502 page và
+      KHÔNG có bất kỳ khoá nào dạng ai/bot/enabled (đo bằng
+      `[...new Set(Object.values(pg).flatMap(Object.keys))].filter(k=>/ai|bot|enab/i.test(k))` → `[]`).
+      Nguồn phiếu tự trích (TONG-QUAN §11.1) xếp file này vào bảng «Bắt buộc — thiếu là không chạy
+      được» kèm «⚠️ Đây là công tắc thật — vòng poll chạy theo file này»; `src/store.js:12-20` xác nhận.
+      Phép đo ④#4 chỉ diff TẬP page_id của `pages.json` với bảng `page` — nó ĐẠT y hệt nhau dù
+      `bot_ai_bat` bật cho 0, 46, 47 hay cả 502 page.
+    kich_ban_hong: >-
+      Thợ dựng `page` từ `pages.json` (502 dòng), quên/nhầm bộ nạp cờ. Nếu DEFAULT true → cutover
+      bot sống trên 502 page, tức 455 page khách thật chưa ai bật. Nếu DEFAULT false → 47 page đang
+      chạy tắt câm. Cả hai lượt ④#1..#8 đều rc=0.
+      Kèm một mìn im: 1 trong 47 page bật AI (`1125576063976794`) KHÔNG có trong `pages.json` —
+      bộ nạp kiểu `UPDATE page SET bot_ai_bat=true WHERE page_id=$1` chạm 0 dòng, không ai biết.
+    sua_the_nao: >-
+      Thêm vào ④: (i) `SELECT count(*) FROM page WHERE bot_ai_bat` in ra CON SỐ và diff TẬP page bật
+      ↔ `ai-enabled.json` = rỗng; (ii) page_id có trong `ai-enabled.json` mà không có trong
+      `pages.json` phải được LIỆT KÊ RA (không nuốt im) và đổ §9; (iii) khai rõ bảng đích + cột +
+      giá trị mặc định của `bot_ai_bat` trong ② và trong `luoc-do-v1.md`.
+
+  - ma: N2
+    muc: CHAN
+    mo_ta: >-
+      Team kỹ thuật `chua-phan` là một dòng `team` THẬT ôm toàn bộ dữ liệu ba team, nhưng phiếu
+      không ràng «cấm gán người vào nó» và không có phép đo — mở đúng cái cửa 01 §8 lập ra để đóng.
+    bang_chung: >-
+      Phiếu ② #3: «toàn bộ gán `chua-phan`, giữ được `team_id NOT NULL`». Khối lượng thật đo trên
+      cây: 502 page + 18.790 hội thoại (`conv-state.json`) + 73 mục `kb-overrides.json` + toàn bộ
+      khách. 01 §8 luật cứng: «điều kiện team nằm ở tầng truy vấn, tự chèn theo người đang đăng nhập
+      — không phải bộ lọc trên màn hình. Quên một chỗ là team này nhìn thấy khách của team kia».
+      ④#5 chỉ đòi `SELECT slug FROM team` = 4 slug — không có phép nào chặn người vào `chua-phan`.
+    kich_ban_hong: >-
+      Phiếu này LÀ điểm bàn giao 1 & 3 cho người B (05-PHAN-VIEC §"Năm điểm bàn giao"). B đọc
+      `luoc-do-v1.md`, thấy 4 dòng `team`, dựng màn «chọn team» của L0-M3 bằng `SELECT * FROM team`.
+      Một Quản trị chọn `chua-phan` → một màn duy nhất hiện khách của cả Tiểu Alpha, Auus và
+      Pialpha EU. Không luật nào trong phiếu chặn, không phép đo nào bắt.
+    sua_the_nao: >-
+      Ràng trong ②: `team` có cột phân loại (vd `la_ky_thuat boolean NOT NULL DEFAULT false`),
+      `chua-phan` = true; luật «cấm gán `thanh_vien_team` vào team kỹ thuật»; thêm ④#5b
+      `SELECT count(*) FROM thanh_vien_team tv JOIN team t ON t.id=tv.team_id WHERE t.slug='chua-phan'`
+      = 0; và ghi nguyên văn ràng buộc đó vào `luoc-do-v1.md` để B không dựng picker mù.
+
+  - ma: N3
+    muc: NEN
+    mo_ta: >-
+      `bo_luat_chung.team_id` NULLABLE (NULL = toàn hệ) là phán hợp lý theo 01 §6 («dùng chung
+      51 page», chủ sở hữu Quản trị), nhưng phiếu không ràng hệ quả cho L0-M2 ⇒ khối prompt đắt
+      nhất có thể tàng hình với mọi team.
+    bang_chung: >-
+      Phiếu ②#4 chỉ nói «phán của tổng, ghi chú lại trong file bàn giao» — mà file bàn giao là dành
+      cho B (05-PHAN-VIEC điểm 1), trong khi L0-M2 «tầng truy vấn tự chèn điều kiện team» là việc của
+      A (sổ §2). 02 khai «Mọi bảng có `team_id`, trừ ba bảng dùng chung» và `bo_luat_chung` không nằm
+      trong ba bảng đó ⇒ không mâu thuẫn thẳng, nhưng ngoại lệ thì có thật.
+    kich_ban_hong: >-
+      Thợ L0-M2 cài đúng nguyên văn phiếu mình: `WHERE team_id = $ctx`. Dòng bộ luật chung
+      `team_id IS NULL` không khớp bất kỳ team nào ⇒ mọi page mất khối 2.256 token mà 01 §6 gọi là
+      «khối quyết định bot tư vấn giỏi hay dở». Nghiệm thu L0-M2 («thiếu bối cảnh → ném lỗi») vẫn xanh.
+    sua_the_nao: >-
+      Viết thẳng câu hợp đồng vào ④ và vào `luoc-do-v1.md`: «`bo_luat_chung` đọc bằng
+      `(team_id = $ctx OR team_id IS NULL)` — mọi bảng khác dùng luật đồng nhất», kèm một ca test
+      trong phiếu này chứng minh dòng NULL đọc được từ bối cảnh của cả 3 team nghiệp vụ.
+
+  - ma: N4
+    muc: NEN
+    mo_ta: >-
+      Hoãn nạp Sổ AI sang cutover-trên-VPS là đúng (file chỉ có ở VPS), nhưng phiếu bỏ luôn vế đó
+      khỏi ④ mà không mở nợ ⇒ GATE R0 ăn xanh trên 2/3 phép đối chiếu di trú.
+    bang_chung: >-
+      02 §L0 «Nghiệm thu» nêu BA vế: «Dữ liệu di trú khớp bản cũ: số page, số kịch bản, **số dòng
+      Sổ AI** đối chiếu bằng nhau». ④#4 chỉ có page · hội thoại · kịch bản — vế Sổ AI biến mất.
+      Sổ §2 khai GATE R0 = «đối chiếu danh sách di trú»; sổ §0 luật 2 bắt «lỗi ngoài phạm vi → ghi
+      §9 SỔ NỢ», mà phiếu không bắt thợ mở dòng §9 nào cho việc bị hoãn này, cũng không có mã H mới
+      trong §8 (§8 hiện dừng ở H8).
+    sua_the_nao: >-
+      Bắt thợ APPEND §9 một dòng «nạp `ai-messages.jsonl` + đối chiếu số dòng — chạy trên VPS đợt
+      cutover», hoặc tổng mở H9 trong §8 và ghi vào ④ rằng vế thứ ba của phép đối chiếu KHÔNG được
+      tính là đã đạt ở R0.
+
+  - ma: N5
+    muc: NEN
+    mo_ta: >-
+      Phép đo ④#2 tự dựng điều kiện — đối chiếu `\dt` với danh sách do CHÍNH THỢ viết trong
+      `luoc-do-v1.md` ⇒ luôn xanh, không bắt được bảng thiếu lẫn bảng thừa.
+    bang_chung: >-
+      ④#2 nguyên văn: «So DANH SÁCH bảng: \dt khớp từng tên với danh sách khai trong luoc-do-v1.md
+      (diff = rỗng)». Cả hai vế cùng sinh ra từ một lược đồ, một người. Neo ĐÚNG là danh sách tên
+      bảng trong `02-KE-HOACH-CODE.md` §"Nền dữ liệu" — đếm lại ra 19 tên (team · nguoi_dung · vai ·
+      thanh_vien_team · cau_hinh_model · page · san_pham · goi_gia · khach · hoi_thoai · so_ai ·
+      don_hang · viec_can_xu_ly · hang_cho_tao_don · kich_ban · bo_luat_chung · ky_nang · lich_nhac ·
+      nhat_ky), không phải 18. ② đã lường trước lệch số nhưng ④ thì chưa.
+    sua_the_nao: >-
+      Đổi ④#2 thành diff `\dt` với danh sách 19 tên trích từ 02; lệch thì LIỆT KÊ TỪNG TÊN thừa/thiếu
+      kèm lý do, không in một con số tổng.
+
+  - ma: N6
+    muc: GHI-NO
+    mo_ta: >-
+      `stats.json` được liệt kê ở ② như nguồn di trú nhưng không có bảng đích trong 19 bảng và không
+      có phép đo nào ở ④ — phán «không nạp» là ĐÚNG ý đồ nhưng không được nói ra thành lời.
+    bang_chung: >-
+      TONG-QUAN §11.2 (nguồn phiếu tự trích ở ①): «Sổ AI (`ai-messages.jsonl`) — **nguồn số duy
+      nhất**… Không có bảng thống kê song song, không có bộ đếm RAM». §11.1 xếp `stats.json` vào
+      «Dữ liệu vận hành», cùng nhóm với các file cache «tự sinh lại được». Đó chính là lý do không
+      nạp — nhưng phiếu chỉ liệt kê tên file, để thợ tự đoán.
+    sua_the_nao: >-
+      Ghi thẳng vào ②: «`stats.json` + `page-*-cache.json` + `health-state.json` + `miner-state.json`
+      KHÔNG nạp — §11.2 cấm bảng thống kê song song, các file còn lại tự sinh lại được», để thợ khỏi
+      đẻ bảng ngoài danh sách 19.
+
+  - ma: N7
+    muc: GHI-NO
+    mo_ta: >-
+      `cau_hinh_model` giữ khoá API của 4 nhà × 3 team; 02 khai «khoá mã hoá khi lưu» nhưng ④#4
+      «cột bắt buộc theo ý đồ» bỏ sót vế mã hoá và không có phép đo nào.
+    bang_chung: >-
+      02 §"Nền dữ liệu": «`cau_hinh_model` | Model và khoá từng team | **mới** · chính, dự phòng,
+      model nền · **khoá mã hoá khi lưu**». Hình dạng cột do phiếu này chốt, còn người ghi vào là B
+      (L1-M4 — điểm bàn giao 4), nên chốt sai kiểu cột là B phải sửa lược đồ giữa chừng.
+    sua_the_nao: >-
+      Thêm vào ④#4 và `luoc-do-v1.md`: cột khoá lưu dạng mã hoá; phép đo «`SELECT` cột khoá trên
+      dòng nháp không ra chuỗi mở đầu `sk-`/`ey`».
+
+  - ma: N8
+    muc: GHI-NO
+    mo_ta: >-
+      `khach.so_dien_thoai` khai «unique trong team» nhưng không khai NULL được hay không — hở đúng
+      chỗ L3 sẽ dùng.
+    bang_chung: >-
+      ④#4 chỉ khai «`khach.so_dien_thoai` là khoá nối kênh (unique trong team)». 01 §1 nói khách
+      Messenger chỉ đưa «đủ tên, số, địa chỉ» ở cuối hội thoại, trong khi phiếu này di trú 18.790
+      hội thoại vào `hoi_thoai`. Nếu thợ chọn NOT NULL (hoặc `hoi_thoai.khach_id` NOT NULL), hội
+      thoại đang dở chưa có số sẽ không tạo được dòng — chặn L3-M2 «lọc trùng chéo hai luồng».
+    sua_the_nao: >-
+      Khai rõ trong ②: `so_dien_thoai` NULL được (UNIQUE Postgres cho nhiều NULL), `hoi_thoai.khach_id`
+      nullable; ghi vào `luoc-do-v1.md`.
+
+ghi_chu_cho_tong: >-
+  Ba phán tổng còn lại đứng vững, không phải sửa: (1) `chua-phan` thay vì `team_id` NULL — đúng
+  hướng fail-closed, giữ được NOT NULL, chỉ thiếu cái rào ở N2; (2) không nạp `stats.json` — đúng
+  §11.2, chỉ thiếu câu nói ra ở N6; (3) `so_ai` nạp sau trên VPS — đúng ràng buộc vật lý, chỉ thiếu
+  dòng nợ ở N4. Hai điểm phiếu làm TỐT, nên giữ nguyên khuôn cho các phiếu sau: ② bắt thợ «ĐO LẠI
+  cấu trúc thật trước khi code — đề bài có thể khai sai» (đúng: đề khai ~18 bảng/~71 file, thật là
+  19 bảng/70 file, 502 page chứ không phải 315 của 01), và ④ ra lệnh «mỗi phép in MỘT CON SỐ hoặc
+  MỘT DIFF DANH SÁCH — cấm 'chạy xong không lỗi' suông».
