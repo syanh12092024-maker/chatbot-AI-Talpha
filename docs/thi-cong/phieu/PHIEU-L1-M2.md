@@ -1,6 +1,6 @@
 # PHIẾU L1-M2 — Cửa Pancake Messenger: bọc code cũ + định tuyến team + guard tại cửa
 
-**Base:** `DIEN-LUC-PHAT` · **Làn:** 🟥 có đường GỬI TIN RA KHÁCH — nhưng thợ **sonnet**
+**Base:** `dfcd9ae` · **Làn:** 🟥 có đường GỬI TIN RA KHÁCH — nhưng thợ **sonnet**
 (bọc mỏng theo route 22/08; phép đo ④ gánh chất lượng)
 
 > Phiếu là HỢP ĐỒNG. Thợ nạp skill `tho-thi-cong`. Đọc sổ §0a trước khi gõ.

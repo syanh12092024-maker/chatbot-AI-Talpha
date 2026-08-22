@@ -1,6 +1,6 @@
 # PHIẾU L1-M1 — Cửa POS: đọc đơn / danh mục sản phẩm / tồn kho + GHI NGƯỢC trạng thái đơn
 
-**Base:** `DIEN-LUC-PHAT` · **Làn:** 🟥 GHI RA NGOÀI (đổi trạng thái đơn thật trên POS —
+**Base:** `dfcd9ae` · **Làn:** 🟥 GHI RA NGOÀI (đổi trạng thái đơn thật trên POS —
 sai là hỏng đơn khách) · thợ **opus** (1 trong 4 phiếu khó theo route 22/08)
 
 > Phiếu là HỢP ĐỒNG. Thợ nạp skill `tho-thi-cong` trước khi làm. Đọc sổ §0a trước khi gõ.
