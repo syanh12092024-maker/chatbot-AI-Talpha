@@ -1,0 +1,248 @@
+phieu: L3-M4
+diem: a
+nguoi_cham: reviewer nghiep-vu (skill review-nghiep-vu v1)
+ngay: 2026-08-23
+lan: 🟥 GHI RA NGOÀI nặng nhất — duyệt là TẠO ĐƠN THẬT trên POS
+nguon_da_doc:
+  - docs/v3/01-QUYET-DINH.md §1 (ô «Kết thúc / Messenger») · §7.2 «cấm bịa tổng tiền»
+  - docs/v3/02-KE-HOACH-CODE.md §L3 · §L4 nghiệm thu «vào POS đúng thông tin, không phải gõ lại»
+  - docs/TONG-QUAN-HE-THONG.md §7.1–7.4 (NĂM CỬA gốc, đối chiếu từng nguồn)
+  - docs/v3/ban-giao/may-trang-thai-don-v1.md §7.1 (`kiemTrung`) · §7 nợ `khach_id` 0/26
+  - docs/thi-cong/SO-DIEU-HANH-THI-CONG.md §9 (nợ Q1/Q2 · goi_gia 0 dòng) · §7b
+  - src/pancake-orders.js:154-190 (`createPancakeOrder` — payload thật)
+  - docs/thi-cong/phieu/PHIEU-L3-M4.md
+
+doi_chieu_5_cua_voi_7_3_goc:
+  - cua: "① MẪU ĐỦ TRƯỜNG"
+    phan_dinh: YEU
+    ghi_chu: "v3 gắn `thieu_truong` rồi hứa «sale bổ sung» nhưng không có đường bổ sung; `duyet`
+      chạy lại ②③ chứ không chạy lại ① — xem N6."
+  - cua: "② CỬA TIỀN"
+    phan_dinh: KHOP
+    ghi_chu: "`unknown` VÀ ĐÓNG khi `goi_gia` rỗng, ④#2 đo cả hai chiều — vế làm ĐÚNG NHẤT của phiếu."
+  - cua: "③ nguồn ① Sổ AI"
+    phan_dinh: KHOP
+  - cua: "③ nguồn ② đơn POS thật của hội thoại"
+    phan_dinh: YEU
+    ghi_chu: "đổi từ hỏi POS sống sang đọc gương `don_hang` — mất luôn cơ chế `unknown`. Xem N2."
+  - cua: "③ nguồn ③ thẻ trạng thái trên hội thoại"
+    phan_dinh: KHOP
+  - cua: "③ nguồn ④ dấu hiệu đơn FB Commerce"
+    phan_dinh: ROI
+    ghi_chu: "biến mất khỏi v3, bị `kiemTrung` chiếm chỗ mà vẫn khai «4 nguồn». Xem N1."
+  - cua: "④ HÀNG CHỜ"
+    phan_dinh: KHOP
+  - cua: "⑤ TẠO ĐƠN chạy lại ②③"
+    phan_dinh: YEU
+    ghi_chu: "chạy lại đúng, nhưng hai sale bấm cùng lúc thì chạy lại cũng vô nghĩa — xem N4."
+
+cau:
+  - so: 1
+    dap: KHONG
+    bang_chung: >-
+      Không màn (màn là L4 của B), và lần này còn cứng hơn: `goi_gia` đang **0 dòng trên toàn hệ**
+      (nợ L1-M1, §9), mà cửa tiền trả `unknown` VÀ ĐÓNG ⇒ cuối phiếu **không một dòng hàng chờ nào
+      duyệt được**. Đó là hành vi ĐÚNG theo §7.3, nhưng nghĩa là năng lực người dùng thật bằng 0
+      cho tới khi nợ giá được vá. Phép tạo đơn thật cũng chưa tồn tại: ⑤ mới đề xuất mở **T7**,
+      §7b hiện dừng ở T6.
+  - so: 3
+    dap: CO
+    bang_chung: >-
+      CÓ mâu thuẫn, tại ô «Kết thúc / Messenger» của bảng 01 §1: «Sale duyệt → **tạo đơn ở Chờ
+      in**». ②#2 lại bắt «payload khớp khuôn `createPancakeOrder` đã đo», mà khuôn đó đo được ở
+      `src/pancake-orders.js:173` là `status: 0, // Mới / Chờ xác nhận — nhân viên duyệt`, kèm
+      `note: 'Đơn do AI chốt — chờ nhân viên xác nhận'`. Bảng mã ĐÃ XÁC MINH (L1-M1) cho «Chờ in»
+      = **12**. Xem N3.
+  - so: 7
+    dap: CO
+    bang_chung: >-
+      CÓ làm hẹp, nạn nhân là **L4 của người B**. (a) 02 §L4 nghiệm thu đòi «Đơn duyệt từ hàng chờ
+      vào POS **đúng thông tin, không phải gõ lại**», và §7.1 mô tả bản cũ có «form điền sẵn mọi
+      trường» — nhưng `duyet(pool, ctx, {hangChoId})` không có chỗ nhận trường bổ sung, nên B dựng
+      màn xong vẫn không có hàm để lưu phần sale gõ thêm (N6). (b) B không được báo rằng với
+      `goi_gia` 0 dòng thì MỌI dòng sẽ hiện «bị chặn — cửa tiền unknown»; màn đúng sẽ bị đọc là
+      màn hỏng (N7).
+  - so: 8
+    dap: CO
+    bang_chung: >-
+      Bỏ phiếu này thì luồng Messenger của 01 §1 cụt ở bước cuối: bot chốt xong không có hàng chờ,
+      sale không có gì để duyệt, `hang_cho_tao_don` (dựng từ L0-B1, có `cua_kiem jsonb`) không ai
+      ghi, và `donMessengerDaTao` mà L3-M1 v2 vừa mở ra không ai gọi — nửa messenger của máy trạng
+      thái thành mã chết. Đây cũng là chỗ duy nhất port được năm cửa §7.3 sang v3. Không phải
+      over-engineering.
+
+ket_luan: TRA_VE
+
+findings:
+  - ma: N1
+    muc: CHAN
+    mo_ta: >-
+      Nguồn chống trùng ④ của §7.3 — «dấu hiệu đơn FB Commerce trong nội dung» — RƠI khỏi v3, và
+      cái rơi bị che bởi con số «4 nguồn» giữ nguyên.
+    bang_chung: >-
+      §7.3 gốc liệt 4 nguồn: ①Sổ AI · ②Pancake POS · ③Thẻ trạng thái đơn trên hội thoại · ④**Dấu
+      hiệu đơn FB Commerce trong nội dung**. ②#1 của phiếu liệt 4 nguồn v3: `so_ai` · đơn POS ·
+      `kiemTrung` · trạng thái `hoi_thoai`. Đối chiếu theo DANH SÁCH chứ không theo SỐ: FB Commerce
+      không có mặt ở đâu trong phiếu, `kiemTrung` chiếm chỗ nó. Mà ① của phiếu lại giới thiệu
+      `kiemTrung` là «**thêm** nguồn… (bản cũ chưa có)» — chữ «thêm» khiến 4→4 đọc như 4→5.
+    kich_ban_hong: >-
+      Khách đặt qua cửa hàng FB Commerce của page rồi vẫn nhắn chat; bot chốt; hàng chờ chạy 4
+      nguồn v3 — `so_ai` sạch (bot chưa từng chốt hội thoại này), `don_hang` sạch (đơn FB Commerce
+      không mang `conversation_id`), `kiemTrung` sạch (`khach` 0 dòng, xem N5), `hoi_thoai` sạch.
+      Sale duyệt → đơn thứ hai được tạo thật. Nguồn duy nhất bắt được ca này chính là nguồn vừa bị
+      bỏ, và §7.3 dựng nó ra vì đã gặp thật.
+    sua_the_nao: >-
+      Hoặc port nguồn ④ (đọc dấu hiệu FB Commerce trong nội dung hội thoại — nguồn v3 là
+      `hoi_thoai`/`so_ai`), hoặc khai TƯỜNG MINH trong ② rằng nó bị bỏ, vì sao, và mở một dòng §9.
+      Cấm để con số 4 đứng thay danh sách. Thêm vế đo: ④#3 in TÊN từng nguồn đã chạy, đối chiếu
+      với danh sách khai trong bàn giao (diff = rỗng).
+
+  - ma: N2
+    muc: CHAN
+    mo_ta: >-
+      Nguồn ② bị làm yếu: từ «hỏi POS sống» thành «đọc bảng gương `don_hang`», nên mất luôn cơ chế
+      `unknown` — nguồn này nay hỏng IM LẶNG thay vì hỏng ồn ào.
+    bang_chung: >-
+      §7.3 gốc: nguồn ② = «Pancake POS (đơn thật của hội thoại này)», kèm cảnh báo dành riêng cho
+      nó: «⚠️ **Lỗi mạng ở nguồn ② KHÔNG được coi là "sạch" → trả `unknown`, cửa vẫn đóng**».
+      ②#1 v3: «đơn POS của hội thoại (qua `don_hang` + conversation_id)». `don_hang` là ảnh chụp do
+      `docDon` (L1-M1) đổ về theo nhịp, không phải POS sống. Phiếu có câu «nguồn nào lỗi → `unknown`,
+      cửa ĐÓNG» — nhưng đọc một bảng cục bộ thì **không sinh ra lỗi**: nó trả về «không có dòng»,
+      tức SẠCH.
+    kich_ban_hong: >-
+      Sale tạo tay một đơn cho khách trên POS lúc 09:00. `docDon` chưa tới nhịp quét. 09:05 bot
+      chốt cùng khách đó trong chat, hàng chờ chạy nguồn ②: `SELECT … FROM don_hang WHERE
+      conversation_id = …` → 0 dòng → SẠCH. Duyệt → đơn thứ hai trên POS, không xoá được (luật 2
+      §0a). Cảnh báo mà §7.3 viết hoa cho đúng nguồn này đã bị vô hiệu hoá bằng cách đổi nguồn.
+    sua_the_nao: >-
+      Nguồn ② phải hỏi POS SỐNG qua cửa POS (`docDon` theo hội thoại / `ordersForConv`), lỗi mạng →
+      `unknown` → ĐÓNG, đúng nguyên văn §7.3. Nếu người quyết muốn giữ đường gương cho rẻ thì phải
+      kèm điều kiện độ tươi: ảnh chụp cũ hơn N phút ⇒ `unknown` ⇒ ĐÓNG. Thêm ca vào ④#3: gương
+      rỗng nhưng POS sống CÓ đơn → cửa phải CHẶN.
+
+  - ma: N3
+    muc: CHAN
+    mo_ta: >-
+      Payload tạo đơn theo khuôn cũ đặt `status: 0` (Chờ xác nhận), trong khi 01 §1 đòi đơn
+      Messenger sinh ra ở «Chờ in» (=12) — và L3-M1 đã khởi tạo trạng thái hệ theo giả định đó.
+    bang_chung: >-
+      `src/pancake-orders.js:173` — `status: 0, // Mới / Chờ xác nhận — nhân viên duyệt`, và
+      `note: 'Đơn do AI chốt — chờ nhân viên xác nhận'`. 01 §1 ô «Kết thúc / Messenger»: «Sale
+      duyệt → tạo đơn ở **Chờ in**». `luoc-do-v1` §7.2 (bảng mã ĐÃ XÁC MINH): «Chờ in» = `12`
+      (`wait_print`). `may-trang-thai-don-v1.md`: `donMessengerDaTao` khởi tạo thẳng `day_cho_in`
+      với lý do «POS đã Chờ in từ lúc tạo». ②#2 của phiếu lại bắt «payload khớp khuôn
+      `createPancakeOrder` đã đo» — làm đúng lời phiếu là ra sai trạng thái.
+    kich_ban_hong: >-
+      Khách đã đưa đủ tên/số/địa chỉ và đồng ý COD trong chat; sale duyệt; đơn nằm ở «Chờ xác
+      nhận» kèm ghi chú «chờ nhân viên xác nhận» ⇒ người khác lại gọi hỏi khách lần nữa — đúng cái
+      «làm phiền và làm chậm» mà 01 §1 nêu làm lý do tách hai luồng. Đồng thời `trang_thai_he` =
+      `day_cho_in` còn `trang_thai_pos` = 0: hai cột lệch nhau ngay từ dòng đầu tiên.
+    sua_the_nao: >-
+      Khai rõ trong ②: payload port khuôn cũ NHƯNG `status` = **12**, `note` viết lại cho đúng
+      («Đơn AI chốt — khách đã xác nhận trong chat»). Thêm vế đo vào ④#4: in payload và khẳng định
+      `status === 12`; sau khi tạo, `don_hang.trang_thai_pos` = 12 và `trang_thai_he` = `day_cho_in`
+      (in cả hai cột, phải khớp nhau).
+
+  - ma: N4
+    muc: CHAN
+    mo_ta: >-
+      Hai sale bấm duyệt cùng một dòng cùng lúc thì «chạy lại đủ cửa» không cứu được: idempotent
+      theo `hang_cho_id` được khai như một cái TÊN, không có cơ chế, và ④#5 chỉ đo TUẦN TỰ.
+    bang_chung: >-
+      ②#2 khai «idempotent theo `hang_cho_id` — bấm đúp không tạo 2 đơn» mà không nói khoá ở đâu.
+      ④#5 đo «duyet 2 lần → taoDon 1 lượt» — hai lượt nối tiếp, không phải hai lượt song song.
+      Cơ chế duy nhất có sẵn trong mã cũ là `createdConvs.has(convId)` (`pancake-orders.js:157`) —
+      một `Set` trong RAM của MỘT tiến trình, khoá theo `convId` chứ không theo `hang_cho_id`, nên
+      không chặn được hai worker/hai request. Đây đúng họ lỗi đã có án lệ ở L2-M1 («khoá theo conv»
+      là tên, không phải cơ chế).
+    kich_ban_hong: >-
+      Màn L4 của B mở trên hai máy; hai sale thấy cùng một dòng, bấm Duyệt trong cùng một giây. Cả
+      hai đọc «chưa có đơn cho `hang_cho_id` này» trước khi bên nào kịp ghi ⇒ cả hai POST tới POS
+      ⇒ **hai đơn COD thật, trùng nhau, không xoá được** (luật 2 §0a cấm xoá đơn POS ở mọi trạng
+      thái). Hậu quả nặng nhất trong cả dây chuyền, và ④ hiện không có phép nào nhìn thấy nó.
+    sua_the_nao: >-
+      Khai cơ chế thật: `duyet` mở giao dịch, `SELECT … FROM hang_cho_tao_don WHERE id = $1 FOR
+      UPDATE` (hoặc `pg_try_advisory_xact_lock(hangChoId)`), kiểm trạng thái dòng ≠ đã-duyệt, chạy
+      lại cửa, gọi `taoDon`, ghi kết quả, COMMIT. Ghi POS phải nằm SAU khi giành được khoá. Thêm
+      ④#5b theo khuôn đã dùng ở L2-M1: hai lượt `duyet` SONG SONG trên cùng `hangChoId` → khẳng
+      định `taoDon` = **1** lượt và lượt thứ hai trả lỗi có tên (in cả hai kết quả).
+
+  - ma: N5
+    muc: CHAN
+    mo_ta: >-
+      Cách xử nợ VA-Q12 là CHE-NỢ chứ không phải sống-chung: nguồn `kiemTrung` hiện không thể trả
+      dương (khach 0 dòng), mà ⑦ lại chỉ định **mock** nó khi đo — ngược hẳn cách xử đúng đang
+      dùng cho nợ `goi_gia` ngay bên cạnh.
+    bang_chung: >-
+      §9 sổ (23/08, thợ L3-M2, nợ Q1): «🔴 KHỚP ĐỨT trên ĐƯỜNG ĐƠN, **chặn CẢ HAI cửa kiểm** —
+      `khach` có **0 dòng** và `don_hang.khach_id` = **0/26**». `kiemTrung(pool, ctx, {soDienThoai,
+      …})` do đó không có dữ liệu để đối chiếu. ⑦ của phiếu: «nếu VA-Q12 chưa ✅ lúc chạy, **mock
+      nguồn đó** và ghi nhật ký». So sánh với cách xử nợ `goi_gia` ở ②#1: «cửa tiền trả `unknown`
+      VÀ ĐÓNG (ghi lý do, không coi là sạch — nguyên tắc §7.3)» — cùng một loại nợ, hai cách xử
+      ngược nhau.
+    kich_ban_hong: >-
+      L3-M4 nộp, ④ xanh (nguồn `kiemTrung` được mock trả «có trùng» ở ca thử). Chạy thật: `khach`
+      0 dòng ⇒ `kiemTrung` không tra được ai ⇒ trả «không trùng» ⇒ nguồn thứ ba của bốn nguồn là
+      SẠCH VĨNH VIỄN. Cộng với N1 (nguồn ④ đã rơi) và N2 (nguồn ② đọc gương), bộ chống trùng thực
+      tế chỉ còn `so_ai` + `hoi_thoai` — hai nguồn cùng nhìn vào dữ liệu của chính bot, nên mù
+      trọn vẹn với mọi đơn do người hoặc kênh khác tạo.
+    sua_the_nao: >-
+      Áp đúng khuôn `goi_gia`: `kiemTrung` không đọc được vế khách (`khach` 0 dòng / `khach_id`
+      NULL) ⇒ trả `unknown` ⇒ cửa ĐÓNG + ghi lý do, y như `nghi_trung_chua_ro_san_pham` đã fail-
+      CLOSED cho vế sản phẩm. Trong ④ thì **cấm mock nguồn này thành xanh**: ca thiếu dữ liệu phải
+      là ca CHẶN, và ghi «CHƯA CHẠY được vế dương — chờ VA-Q12» đúng kiểu ④#5c của L1-M1.
+
+  - ma: N6
+    muc: NEN
+    mo_ta: >-
+      Cửa ① yếu đi: `thieu_truong` hứa «sale bổ sung» nhưng không có đường bổ sung, và `duyet`
+      không chạy lại cửa ① nên đơn thiếu SĐT vẫn tạo được.
+    bang_chung: >-
+      ②#1: «thiếu → vẫn vào hàng chờ nhưng gắn `thieu_truong`, sale bổ sung». `duyet(pool, ctx,
+      {hangChoId})` không có tham số nào cho trường bổ sung; ②#3 chỉ chạy lại «đủ cửa ②③». Payload
+      cũ điền `bill_phone_number: input.phone || ''` — chuỗi rỗng vẫn POST. §7.1 bản cũ có «form
+      điền sẵn mọi trường» trên dashboard, v3 chưa ai cấp.
+    kich_ban_hong: >-
+      Dòng `thieu_truong` (thiếu SĐT) được duyệt → đơn COD thật không có số điện thoại → không ai
+      gọi được, không giao được, và không xoá được (luật 2).
+    sua_the_nao: >-
+      `duyet(pool, ctx, {hangChoId, boSung?})` nhận trường bổ sung và **chạy lại cả cửa ①**; còn
+      `thieu_truong` mà không có `boSung` ⇒ chặn. Thêm ca ④.
+
+  - ma: N7
+    muc: NEN
+    mo_ta: >-
+      Hệ quả «0 dòng duyệt được cho tới khi có `goi_gia`» là đúng nhưng chưa được khai cho người
+      B, nên màn L4 đúng sẽ bị đọc là màn hỏng.
+    bang_chung: >-
+      `goi_gia` 0 dòng toàn hệ (§9, nợ L1-M1) + cửa tiền `unknown`-là-đóng ⇒ mọi dòng hàng chờ đều
+      hiện trạng thái chặn. ②#3 nói `duyet`/`loai` «là interface cho màn L4 của B — khai vào bàn
+      giao», nhưng không bắt khai kèm trạng thái mong đợi này.
+    sua_the_nao: >-
+      Bắt ghi vào `may-trang-thai-don-v1.md` §hàng-chờ: «tới khi `goi_gia` có dữ liệu, mọi dòng
+      trả lý do chặn `cua_tien_unknown` — đây là hành vi ĐÚNG (§7.3), không phải lỗi màn», kèm
+      trỏ tới dòng §9.
+
+  - ma: N8
+    muc: GHI-NO
+    mo_ta: >-
+      Mục ⑤ và ⑥ của phiếu vỡ khuôn — một câu tự vấn («KHÔNG, không xoá được (luật 2)») lọt vào
+      giữa và ⑥ bị dính chung dòng với ⑤.
+    bang_chung: >-
+      Dòng 94–97 của phiếu. Nội dung phán thì đúng (T7 = tạo 1 đơn nháp đánh dấu TEST, để nguyên,
+      không xoá — tôn trọng luật 2), nhưng phiếu là HỢP ĐỒNG, mục phải đọc được rành mạch.
+    sua_the_nao: "Tách lại ⑤ và ⑥; và mở T7 trong §7b sổ (hiện §7b dừng ở T6) trước khi phát thợ."
+
+ghi_chu_cho_tong: >-
+  Trả lời thẳng ba câu tổng hỏi. (i) Đối chiếu theo DANH SÁCH chứ không theo SỐ thì «4 nguồn» của
+  v3 KHÔNG phải 4 nguồn của §7.3: nguồn ④ FB Commerce **RƠI** và bị `kiemTrung` chiếm chỗ (N1),
+  nguồn ② **YẾU ĐI** vì đổi từ hỏi POS sống sang đọc gương `don_hang` — mất luôn cơ chế `unknown`
+  mà §7.3 viết hoa dành riêng cho đúng nguồn đó (N2), cửa ① yếu vì lời hứa «sale bổ sung» không có
+  đường (N6). Cửa ② (tiền) là vế làm ĐÚNG NHẤT, giữ nguyên. (ii) CÓ race: `duyet` chạy lại đủ cửa
+  vẫn thua hai người bấm cùng lúc, vì «idempotent theo `hang_cho_id`» là một cái tên không kèm cơ
+  chế và ④#5 chỉ đo tuần tự — hậu quả là hai đơn COD thật trùng nhau mà luật 2 cấm xoá (N4). (iii)
+  Phiếu SỐNG CHUNG đúng với nợ `goi_gia` — biến nợ thành cửa ĐÓNG, đo cả hai chiều ở ④#2, đây là
+  khuôn mẫu nên nhân ra chỗ khác — nhưng CHE NỢ với VA-Q12: ⑦ chỉ định **mock** nguồn `kiemTrung`,
+  trong khi §9 đã ghi Q1 «chặn CẢ HAI cửa kiểm». Hai nợ cùng loại, hai cách xử ngược nhau; cộng
+  dồn N1+N2+N5 thì bộ chống trùng thật chỉ còn hai nguồn cùng nhìn vào dữ liệu của chính bot. Đó
+  là chỗ nguy nhất của phiếu cuối này, và nó không lộ ra nếu chỉ đếm số nguồn.

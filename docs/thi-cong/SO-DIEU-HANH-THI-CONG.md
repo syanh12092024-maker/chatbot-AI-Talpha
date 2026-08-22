@@ -175,6 +175,7 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | T4  | Đo 50 lượt trả lời thật <10s + 7 ngày so 3 page đối chứng | L2 gate R2  | T3 xong                          |
 | T5  | Nạp `ai-messages.jsonl` + đối chiếu số dòng Sổ AI         | nợ §9 L0-M1 | chạy trên VPS                    |
 | T6  | Lớp model B (L1-M4) cắm vào chỗ DI của L2-M1              | H5          | người B xong                     |
+| T7 | Duyệt 1 dòng hàng chờ thật → tạo 1 đơn NHÁP đánh dấu TEST trên shop ít dùng nhất (để nguyên — luật 2 cấm xoá) | L3-M4 ⑤ | V3_POS_GHI=1 + người chọn shop |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
@@ -533,6 +534,11 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   `docs/thi-cong/nhat-ky/phieu-va-q12.md`.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+
+- 23/08 · VA-Q12 → ✅ (TỔNG nghiệm thu) — cổng 17/17 ×2 · khach 0→3.218 · don_hang nối
+  khach_id 3.779/3.784 · phép ăn tiền kiểm chéo độc lập: cặp 966501984606 trung=true
+  ca_hai (tổng gọi thẳng kiemTrung với ctxHeThong + teamId tham số) · Q1·Q2·Q3 đóng ·
+  commit 7c63859 · L3-M4 điểm (a) TRẢ-VỀ 5 CHAN → phiếu v2 đóng 8/8, chờ verify.
 
 - 23/08 · L3-M3 → ✅ (TỔNG nghiệm thu) — cổng 23/23 · 28/28 test · hồi quy 94/94 · 9 tệp
   sạch pathspec · thợ tự chốt đúng: không tái dùng so_lan_thu_wa (trần khác), đếm bằng

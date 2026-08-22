@@ -2,6 +2,8 @@
 
 **Base:** `DIEN-LUC-PHAT` · **Làn:** 🟥 GHI RA NGOÀI nặng nhất còn lại (tạo đơn thật
 trên POS) · thợ **opus** · nguyên tắc gốc §7.3: **«THÀ KHÔNG TẠO CÒN HƠN TẠO NHẦM»**.
+Bản v2 — đóng 8 finding `nghiep-vu-L3-M4.verdict.yaml` (5 CHAN: nguồn FB Commerce rơi ·
+nguồn POS yếu thành gương · status khuôn cũ =0 sai «Chờ in» · race 2 sale · che-nợ mock).
 
 > Thợ nạp skill `tho-thi-cong` (2 bài học mới cuối). Đọc sổ §0a + §7b. Đây là phiếu
 > CUỐI của phần việc A — mọi interface đã sẵn, việc của mày là NỐI cho đúng.
@@ -37,19 +39,30 @@ hoSo})` được handler gọi sau lượt bot chốt (chỗ đấu trong `src/c
    thấy trước): ①đủ trường (tên/SĐT/địa chỉ/SL/tổng — thiếu → vẫn vào hàng chờ nhưng
    gắn `thieu_truong`, sale bổ sung) ②cửa tiền: tổng khớp ĐÚNG MỘT `goi_gia` của page —
    `goi_gia` đang 0 dòng (giá 0 nợ L1-M1) ⇒ cửa tiền trả `unknown` VÀ ĐÓNG (ghi lý do,
-   không coi là sạch — nguyên tắc §7.3) ③chống trùng 4 nguồn v3: `so_ai` order theo
-   hội thoại · đơn POS của hội thoại (qua `don_hang` + conversation_id) · `kiemTrung`
-   L3-M2 (SĐT+SP chéo 2 luồng) · trạng thái `hoi_thoai` — nguồn nào lỗi → `unknown`,
-   cửa ĐÓNG.
+   không coi là sạch — nguyên tắc §7.3) ③chống trùng **NĂM nguồn v3 — so DANH SÁCH với §7.3, không so số (N1/N2)**:
+   (a) `so_ai` sự kiện order theo hội thoại · (b) **POS SỐNG** — GET đơn của hội thoại
+   thẳng từ API POS ngay lúc kiểm (N2: đọc gương `don_hang` là mất cơ chế `unknown` —
+   sale tạo tay 09:00, docDon chưa quét, 09:05 duyệt = đơn đúp; gương chỉ làm cache
+   tham khảo) · (c) trạng thái/thẻ `hoi_thoai` · (d) **dấu hiệu đơn FB Commerce trong
+   nội dung hội thoại** (N1 — nguồn ④ của §7.3, KHÔNG được rơi; port luật nhận diện từ
+   handler cũ, đọc khuôn) · (e) `kiemTrung` L3-M2 chéo hai luồng — **chạy THẬT, cấm
+   mock (N5 — VA-Q12 đã ✅: khach 3.218 dòng, cặp 966501984606 bắt được)**. BẤT KỲ
+   nguồn nào lỗi/timeout → `unknown` và cửa ĐÓNG — không nguồn nào được «0 dòng = sạch».
 2. **`src/pos/tao-don.js`** — cửa TẠO ĐƠN THẬT (đất pos, khuôn ghi-nguoc): BỐN CỬA AN
-   TOÀN y khuôn L1-M1 (`V3_POS_GHI` fail-closed · payload khớp khuôn createPancakeOrder
-   đã đo · nhật ký 2 pha `pos_tao_don_*` · idempotent theo `hang_cho_id` — bấm đúp
-   không tạo 2 đơn).
-3. **`duyet(pool, ctx, {hangChoId})`** — CHẠY LẠI đủ cửa ②③ (§7.3 cửa ⑤ — người bấm
-   nhầm cũng không tạo được đơn trùng/sai tiền) → gọi `taoDon` → INSERT `don_hang`
-   (nguon=messenger, ma_pos từ response) → `donMessengerDaTao` (máy L3-M1 nhận) → ghi
-   `so_ai`. **`loai(pool, ctx, {hangChoId, lyDo})`** → đóng + lý do. Cả hai ghi
-   `nhat_ky`; hai hàm này là interface cho màn L4 của B — khai vào bàn giao.
+   TOÀN y khuôn L1-M1 (`V3_POS_GHI` fail-closed · payload theo khuôn createPancakeOrder
+   NHƯNG **`status: 12` («Chờ in» — bảng mã đã xác minh) tường minh, CẤM bê `status: 0`
+   của khuôn cũ (N3 — 01 §1 đòi tạo thẳng Chờ in; khuôn cũ tạo Chờ xác nhận là sai
+   trạng thái + lệch `donMessengerDaTao`)** · nhật ký 2 pha `pos_tao_don_*` · idempotent
+   theo `hang_cho_id` — CƠ CHẾ THẬT, không phải cái tên: cột/UNIQUE trên hàng chờ +
+   kiểm trước POST).
+3. **`duyet(pool, ctx, {hangChoId, boSung?})`** — mở transaction + **`SELECT … FOR
+   UPDATE` dòng hàng chờ TRƯỚC mọi việc (N4 — hai sale bấm cùng giây là hai đơn COD
+   thật không xoá được; ④#5b đo SONG SONG, khuôn L2-M1)**; nhận `boSung` trường thiếu
+   (N6) rồi CHẠY LẠI đủ cửa ①②③ (§7.3 cửa ⑤) — còn thiếu trường vẫn CHẶN → gọi `taoDon`
+   → INSERT `don_hang` (nguon=messenger, ma_pos từ response, 2 cột trạng thái khớp 12/
+   day_cho_in) → `donMessengerDaTao` → ghi `so_ai`. **`loai(...)`** → đóng + lý do.
+   Cả hai ghi `nhat_ky`; interface cho màn L4 của B — bàn giao khai RÕ: **dòng bị chặn
+   là ĐÚNG hành vi (N7)**, màn phải hiện lý do chặn, không phải lỗi hệ.
 4. Append `may-trang-thai-don-v1.md` §hàng-chờ: chữ ký + 5 cửa + trạng thái dòng hàng chờ.
 
 ## ③ Pathspec
@@ -78,14 +91,20 @@ xin trước).
 #    kết quả); thiếu trường → gắn thieu_truong vẫn vào (sale bổ sung, không rơi im)
 # 2. CỬA TIỀN unknown-là-đóng: goi_gia rỗng → cửa tiền 'unknown', duyet BỊ CHẶN đúng
 #    tên lỗi (nguyên tắc THÀ KHÔNG TẠO — in lý do); seed 1 goi_gia khớp → cửa mở
-# 3. CHỐNG TRÙNG 4 nguồn: từng nguồn dương một (so_ai order · đơn POS conv · kiemTrung
-#    chéo · hoi_thoai state) → duyet chặn (4 ca in từng nguồn); nguồn kiemTrung LỖI
-#    (mock ném) → 'unknown' + CHẶN (không coi là sạch)
+# 2b. NGUỒN POS SỐNG (N2): mock API POS ném timeout → nguồn (b) 'unknown' + duyet CHẶN
+#     (in lý do); POS trả đơn tay mới-chưa-quét → bắt trùng (gương don_hang không có)
+# 3. CHỐNG TRÙNG 5 nguồn (N1 — so DANH SÁCH với §7.3): từng nguồn dương một (so_ai order · đơn POS conv · kiemTrung
+#    chéo THẬT không mock (VA-Q12 ✅) · hoi_thoai state · FB Commerce dấu hiệu) → duyet
+#    chặn (5 ca in từng nguồn); nguồn kiemTrung LỖI (mock ném) → 'unknown' + CHẶN
 # 4. duyet HAPPY PATH: mock taoDon POS → đơn tạo đúng payload (đối chiếu khuôn
 #    createPancakeOrder — in payload) → don_hang +1 nguon=messenger → donMessengerDaTao
 #    được gọi (máy nhận day_cho_in) → so_ai +1
-# 5. BỐN CỬA taoDon: V3_POS_GHI vắng → chặn api=0 · idempotent hang_cho_id (duyet 2 lần
-#    → taoDon 1 lượt, đơn 1) · nhật ký 2 pha (timeout → dòng bắt-đầu mồ côi)
+# 5. BỐN CỬA taoDon: V3_POS_GHI vắng → chặn api=0 · payload status=12 (in payload, N3)
+#    · idempotent hang_cho_id (duyet 2 lần TUẦN TỰ → 1 đơn) · nhật ký 2 pha
+# 5b. RACE (N4): 2 lượt duyet SONG SONG cùng hangChoId → taoDon đúng 1 lượt, đơn đúng 1
+#     (FOR UPDATE — in cả hai kết quả, một thành công một bị chặn/đã-xử)
+# 5c. N6: dòng thieu_truong → duyet KHÔNG boSung → chặn cửa ①; duyet có boSung đủ →
+#     chạy lại cửa ① qua → tiếp cửa ②③
 # 6. loai: đóng + lý do + nhat_ky; duyet sau loai → chặn (trạng thái dòng)
 # 7. node --test l3-m4 xanh + hồi quy l3-m1/l3-m2/l2-m1 không gãy
 # (phép TẠO ĐƠN THẬT trên POS: §7b — thêm dòng T7 nếu tổng duyệt)
