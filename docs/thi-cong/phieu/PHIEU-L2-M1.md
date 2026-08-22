@@ -45,7 +45,7 @@
 
 1. **Migration `db/migrate/003_tin_cho_xu_ly.*`** — bảng `tin_cho_xu_ly` (team_id NOT
    NULL · page_id · psid · conv_id · msg_id · noi_dung · trang_thai
-   `cho|dang_xu|xong|loi` · so_lan_thu · khoa_worker · thoi_diem). UNIQUE chống trùng
+   `cho|dang_xu|xong|loi|chan_guard` · so_lan_thu · khoa_worker · thoi_diem). UNIQUE chống trùng
    `(page_id, conv_id, msg_id)`. Khai lý do bảng mới vào `luoc-do-v1.md` §thay-đổi +
    regen `db/schema.sql`.
 2. **`src/queue/`** — (a) bộ NẠP: poll qua CỬA messenger (đường đọc, ctxHeThong) →
@@ -116,8 +116,8 @@ page tới ngày cutover) · không đụng `src/channels/*` `src/pos/*` `src/db
 #    c. ÉP nhánh chuyển người (tool handoff) → pkTagByName(handoff)+pkAddNote = 0 lọt,
 #       cửa v3 gánh tag/note, so_ai có `handoff`
 #    In bảng đếm cả ba dân số — dân số 1 tin xanh vì NHÁNH KHÔNG CHẠY không tính là đạt
-# 5. Guard đóng (mặc định dev): tin ra bị LoiCuaGuiDong → tin_cho_xu_ly đánh 'loi' + so_ai
-#    ghi 'spent_no_send' (SELECT in ra) — token tiêu không tàng hình
+# 5. Guard đóng (mặc định dev): tin ra bị LoiCuaGuiDong → tin_cho_xu_ly sang 'chan_guard'
+#    (khớp N6, không phải 'loi') + so_ai ghi 'spent_no_send' (SELECT in ra)
 # 6. so_ai ĐỦ LOẠI (N5): reply (ma_model NOT NULL, không phải hằng bịa — đổi mock model
 #    thì ma_model đổi theo, in 2 giá trị khác nhau) · image · order · handoff ·
 #    spent_no_send — mỗi loại ≥1 dòng từ các dân số ④#4, in bảng đếm theo loại
