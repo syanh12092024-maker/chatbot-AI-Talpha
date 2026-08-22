@@ -185,3 +185,62 @@ ghi_chu_cho_tong: >-
   Hai chỗ phiếu làm TỐT, nên giữ: ② tự đo và khai đúng bệnh bản cũ («kiểm rải rác, `pkSendReply`
   không tự kiểm» — đo lại đúng), và ④#5 dám để nhánh gọi thật ở trạng thái «CHƯA CHẠY — chờ VPS»
   thay vì dựng điều kiện giả.
+
+# ─────────────────────────────────────────────────────────────────────────────
+verify_vong_2:
+  ngay: 2026-08-22
+  pham_vi: CHỈ VERIFY 3 CHAN theo checklist tổng — không mở kịch bản mới.
+  ban_phieu: PHIEU-L1-M2.md v2 · commit aa1ed5c
+  ma:
+    - ma: N1
+      dap: DAT
+      doi_chieu:
+        - "②#1 đổi sang danh sách CHO PHÉP: gửi/ghi chỉ chạy khi `V3_PANCAKE_GUI === '1'` **VÀ**
+           `PANCAKE_READONLY !== '1'`; «mọi trường hợp khác (vắng biến, giá trị lạ) → ném lỗi có
+           tên» — ✔ vắng = ĐÓNG, đúng khuôn `V3_POS_GHI` của L1-M1"
+        - "Hai vế AND giữ nguyên hiệu lực luật 1 sổ §0a: máy dev có `PANCAKE_READONLY=1` thì dù ai
+           lỡ bật `V3_PANCAKE_GUI` vẫn chặn — ✔ không đánh đổi luật cũ lấy luật mới"
+        - "④#1 ba vế trên CÙNG spy, CÙNG hàm, env đặt TRONG harness: a (vắng) = 0 · b (GUI=1 +
+           READONLY=1) = 0 · c (GUI=1, không READONLY) = 1, in ba dòng — ✔ vế (c) là đối chứng
+           dương, và câu «thiếu vế (c) là đo cái mock» đã nằm ngay trong phép"
+        - "②#1 khai chỗ bật thật: «VPS v3 sẽ đặt `V3_PANCAKE_GUI=1` lúc cutover — ghi vào file bàn
+           giao» — ✔ biến mới có chủ, không thành chốt chặn câm như V3_KHOA_MA_HOA ở L1-M1 vòng 1"
+    - ma: N2
+      dap: DAT
+      doi_chieu:
+        - "Lời hứa thu hẹp đúng sự thật: «MỘT chỗ duy nhất **cho CODE V3**… đường v2 cũ có vòng đời
+           riêng, không đụng» — ✔ hết câu tuyệt đối không kiểm chứng được"
+        - "④#1b đo TÍNH DUY NHẤT bằng grep import `pancake.js` trong `src/db|pos|channels|chat|
+           orders|queue`, in danh sách file khớp, kỳ vọng đúng nhóm file của cửa, **và vào gate lặp
+           mãi** — ✔ đây là vế quyết định: nó biến lời hứa thành phép đo hồi quy, bắt được cả module
+           v3 tương lai mở lối tắt"
+        - "②#3 ghi nợ NGUYÊN VĂN và có người nhận: `src/tools.js:1` + `scheduler-followup.js:24`,
+           «cửa v3 KHÔNG bịt được lối này trong phiếu này (đụng file cấm); L2-M1… PHẢI route
+           outbound của bộ não qua cửa v3 (DI/injection, không sửa tools.js)», APPEND §9 — ✔ lối
+           vòng không bị giấu, và được chuyển đúng phiếu có thẩm quyền chạm nó"
+    - ma: N3
+      dap: DAT
+      doi_chieu:
+        - "②#1 định nghĩa lại đúng chữ: «ctxHeThong = *không có NGƯỜI*, KHÔNG PHẢI *không có
+           TEAM*» — đường job nền tra `page.team_id` rồi TỰ DỰNG ctx gắn đúng team của page — ✔"
+        - "Phiếu chép cả lý do vào thân (502/502 page ở `chua-phan` ⇒ đường hệ-thống là đường duy
+           nhất có lưu lượng; lỗ không tự đóng sau H7 vì poll/handler vĩnh viễn là job nền) — ✔
+           thợ đọc phiếu là hiểu vì sao, không sửa lấy lệ"
+        - "④#3 đo bằng dữ liệu: gọi đường hệ-thống trên page đã gán team X (mẩu trộn) → SELECT dòng
+           `nhat_ky` mới mang `team_id = X`, **KHÔNG phải NULL/chua-phan** — ✔ đo cái đi vào sổ,
+           không đo lời khai của hàm"
+  ba_finding_con_lai_da_kiem_luon:
+    - "N4 đóng: gộp vào ④#1 thành cặp đối chứng a/b/c trên cùng spy cùng hàm, env trong harness."
+    - "N5 đóng: ④#2b — convId không thuộc pageId → lỗi có tên, spy=0; ②#1 khai tra qua `hoi_thoai`
+       UNIQUE(page,psid) trước khi gọi xuống."
+    - "N6 đóng: §3 sổ dòng 143 nay ghi «Cửa Pancake Messenger 🟥 (có đường gửi tin)», trạng thái 🎫."
+    - "Câu 7 đóng: ②#1 bọc thêm `ghiNote` + `gatThe` kèm lý do §7.4 (note+thẻ là cơ chế bàn giao
+       sale, đầu vào L4) và sửa lại câu sai «chưa ai gọi» thành «đang được 4 tệp v2 gọi»."
+  ket_luan_moi: DAT
+  ghi_chu: >-
+    6/6 finding đóng. Ba CHAN đóng đúng cơ chế: N1 đảo chiều guard sang danh-sách-cho-phép mà vẫn
+    giữ nguyên hiệu lực luật 1 (hai vế AND) · N2 không vá được lối vòng thì THU HẸP LỜI HỨA + dựng
+    phép grep hồi quy + chuyển nợ có tên người nhận, đúng cách xử một ràng buộc không gỡ được ·
+    N3 sửa ở định nghĩa chứ không ở nhánh if, nên lỗ đóng luôn cho cả sau H7. Phiếu ĐỦ ĐIỀU KIỆN
+    phát thợ. Một việc cho tổng, không thuộc phiếu: `V3_PANCAKE_GUI` phải vào danh sách biến
+    cutover VPS (cùng chỗ với `V3_KHOA_MA_HOA`/H9), kẻo tới cutover cửa đóng câm mà không ai nhớ.

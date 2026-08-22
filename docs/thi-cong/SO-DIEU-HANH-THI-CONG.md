@@ -175,7 +175,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | H6  | Mở tài khoản + lấy khoá 4 nhà model, nạp tiền chạy A/B                         | L2 (A/B model)                                                 | ⬜         |
 | H7  | Chốt mapping page/sản phẩm/thị trường ↔ 3 team (Tiểu Alpha·Auus·Pialpha EU)    | di trú gán team thật (L0-M1 seed 3 team, gán chi tiết chờ đây) | ⬜         |
 | H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                     | L2-M2                                                          | ⬜         |
-| H9  | Đặt `V3_KHOA_MA_HOA` RIÊNG trên VPS (32 byte; dev đã có khoá tổng đặt 22/08)   | cutover — ghi khoá model/POS thật trên prod                    | ⬜         |
+| H9  | Bộ biến v3 cutover VPS: `V3_KHOA_MA_HOA` (RIÊNG, 32 byte) · `V3_PANCAKE_GUI=1` · `V3_POS_GHI=1` | cutover — thiếu là khoá/cửa gửi/cửa ghi POS đóng câm | ⬜         |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
@@ -224,6 +224,8 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
+- 22/08 · L1-M2 → 🎫 sẵn sàng chờ R0 — điểm (a) TRẢ-VỀ 3 CHAN (guard sai chiều · lối vòng
+  tools.js · ctxHeThong không team) → v2 đóng 6/6, verify DAT · H9 gom thêm V3_PANCAKE_GUI.
 - 22/08 · L1-M1 → 🎫 sẵn sàng chờ R0 — điểm (a) vòng 1 TRẢ-VỀ 3 CHAN, phiếu v2 đóng 7/7,
   verify vòng 2 DAT · verdict nghiep-vu-L1-M1.verdict.yaml · phán tổng: sau R0 phát L1-M1
   song song L1-M2 (khác vùng file, lệnh tăng-tốc 22/08 thắng nhịp tuần-tự-một-người).
