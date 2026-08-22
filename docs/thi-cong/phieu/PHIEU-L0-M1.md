@@ -1,6 +1,6 @@
 # PHIẾU L0-M1 — Lược đồ CSDL v3 (19 bảng, team_id mọi nơi) + di trú dữ liệu thật từ JSON
 
-**Base:** `80f93b2` · **Làn:** 🟥 (tổng phán: nền của mọi module đường đơn/tiền + di trú đụng
+**Base:** `502766a` · **Làn:** 🟥 (tổng phán: nền của mọi module đường đơn/tiền + di trú đụng
 dữ liệu khách thật — nghiêng làn cao khi nghi)
 
 > Phiếu là HỢP ĐỒNG giữa tổng và thợ. Thợ nạp skill `tho-thi-cong` trước khi làm.
