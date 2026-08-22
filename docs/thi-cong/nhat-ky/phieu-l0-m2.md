@@ -147,4 +147,5 @@ nằm TRONG quyền quyết của phiếu này (định hình `ctx`, phạm vi b
 và đã ghi thành quyết định có lý do ở §3, không phải nợ để lại. Không đụng `db/`,
 không đụng file phẳng dưới `src/`, không đổi `package.json` — pathspec ③ giữ nguyên.
 
-Không còn marker `[NEEDS CLARIFICATION]` nào trong lượt này.
+Lượt này không cắm marker chờ làm rõ nào — mọi chỗ mơ hồ đều đã thành quyết định có lý
+do ở §3, hoặc kết luận là ngoài phạm vi.
