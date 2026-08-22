@@ -204,3 +204,65 @@ ghi_chu_cho_tong: >-
   cấu trúc thật trước khi code — đề bài có thể khai sai» (đúng: đề khai ~18 bảng/~71 file, thật là
   19 bảng/70 file, 502 page chứ không phải 315 của 01), và ④ ra lệnh «mỗi phép in MỘT CON SỐ hoặc
   MỘT DIFF DANH SÁCH — cấm 'chạy xong không lỗi' suông».
+
+# ─────────────────────────────────────────────────────────────────────────────
+verify_vong_2:
+  ngay: 2026-08-22
+  pham_vi: CHỈ VERIFY hai finding CHAN theo checklist tổng — không mở kịch bản mới, không chấm lại.
+  ban_phieu: PHIEU-L0-M1.md v2 · commit 4593858
+  ma:
+    - ma: N1
+      dap: DAT
+      doi_chieu:
+        - "② Vào: `ai-enabled.json` khai «CÔNG TẮC AI THẬT · mảng phẳng 47 page_id» + trích
+           TONG-QUAN §11.1 «vòng poll chạy theo file này» — ✔"
+        - "② Ra #4: `page.bot_ai_bat boolean NOT NULL DEFAULT false` · «nguồn DUY NHẤT là
+           ai-enabled.json» · «page ngoài danh sách = false» — ✔ đủ cả bảng đích, nguồn, DEFAULT"
+        - "② Vào: luật liệt-kê-page-lạc «mọi page lạc kiểu này phải được LIỆT KÊ RA nhật ký +
+           APPEND §9 sổ, cấm nuốt im (UPDATE chạm 0 dòng là mất công tắc câm)» — ✔"
+        - "④#4b ba phép: (i) `count(page WHERE bot_ai_bat)` in ra ✔ · (ii) diff tập bật trong DB ↔
+           `ai-enabled.json` ✔ · (iii) page lạc LIỆT KÊ từng id + grep §9 xác nhận ✔"
+        - "§9 sổ đã có sẵn dòng nợ page lạc `1125576063976794` ⇒ phép grep của #4b(iii) có cái để
+           bắt, không phải lời hứa suông — ✔"
+      con_ho_nho:
+        muc: GHI-NO
+        mo_ta: >-
+          ④#4b phép (ii) đòi «diff tập page bật trong DB ↔ tập trong ai-enabled.json = rỗng», nhưng
+          phép (iii) ngay dưới thừa nhận có page bật AI không nằm trong `pages.json` — mà page đó
+          không thể có dòng trong bảng `page`. Diff ấy sẽ LUÔN ra 1 phần tử (`1125576063976794`),
+          nên phép (ii) đỏ vĩnh viễn dù thợ làm đúng. Hỏng theo chiều AN TOÀN (fail-closed, không
+          mở lại lỗ N1) nên không chặn phiếu — nhưng thợ sẽ mất một vòng hỏi lại.
+        sua_the_nao: >-
+          Tách phép (ii) thành diff HAI CHIỀU: `DB \ ai-enabled` = rỗng (không được tự bật thêm) ·
+          `ai-enabled \ DB` = ĐÚNG BẰNG danh sách page lạc đã khai ở (iii) và đã có trong §9.
+    - ma: N2
+      dap: DAT
+      doi_chieu:
+        - "② Ra #3: `team.la_ky_thuat boolean NOT NULL DEFAULT false`, `chua-phan` = true — ✔"
+        - "② Ra #3: «cấm gán thành viên vào team kỹ thuật — thi hành ở mức DB (trigger/constraint
+           trên `thanh_vien_team`), không chỉ ở code» — ✔ mạnh hơn mức reviewer đòi"
+        - "④#5b `SELECT count(*) FROM thanh_vien_team tv JOIN team t ON t.id=tv.team_id
+           WHERE t.la_ky_thuat` = 0 — ✔"
+        - "④#5c INSERT thử thành viên vào `chua-phan` → DB TỪ CHỐI (rc≠0) — ✔ đo được cái RÀO,
+           không chỉ đo trạng thái hiện thời"
+        - "② Ra #5 câu hợp đồng (i): «màn chọn team CHỈ `SELECT … WHERE NOT la_ky_thuat` — cấm hiện
+           `chua-phan` cho người dùng», bắt nằm NGUYÊN VĂN trong `luoc-do-v1.md` — ✔ bịt đúng đường
+           rò qua picker của B ở L0-M3"
+  sau_pham_vi_checklist_da_thay_luon:
+    - "N3 đóng: ②#4 ghi hợp đồng đọc `(team_id = $ctx OR team_id IS NULL)` + ④#7 có ca test 3 team
+       (tieu-alpha thấy 2 dòng, auus/pialpha-eu thấy 1)."
+    - "N4 đóng: §9 sổ có dòng nợ Sổ AI + ④#4 ghi «vế Sổ AI KHÔNG đo ở đây» + ② ghi «KHÔNG tính đạt
+       ở GATE R0»."
+    - "N5 đóng: ④#2 đổi sang NEO NGOÀI — diff `\\dt` ↔ 19 tên trích từ 02, lệch thì liệt kê từng tên."
+    - "N6 đóng: ② có mục «KHÔNG nạp» kèm lý do §11.2 + «cấm đẻ bảng đích cho chúng»."
+    - "N7 đóng: ②#4 khoá API lưu mã hoá + ④#8 đo bằng cách in 10 ký tự đầu."
+    - "N8 đóng: ②#4 `khach.so_dien_thoai` NULL được · `hoi_thoai.khach_id` nullable."
+    - "Câu 7 (làm hẹp L0-M2) đóng ở SỔ §2 «Dặn trước cho phiếu L0-M2 — chống ĐẠT RỖNG»: bắt đo cách
+       ly trên dữ liệu ĐÃ GÁN ≥2 team nghiệp vụ, không đo trên tập rỗng."
+    - "Tiêu đề phiếu + §2 sổ đã sửa 18 → 19 bảng."
+  ket_luan_moi: DAT
+  ghi_chu: >-
+    8/8 finding đã đóng, hai finding CHAN đóng đúng chỗ và đúng mức (rào N2 thi hành ở tầng DB,
+    không phải quy ước trong code). Phiếu ĐỦ ĐIỀU KIỆN phát cho thợ. Một chỉnh nhỏ nên gửi kèm khi
+    giao việc, không cần vòng review nữa: sửa ④#4b phép (ii) thành diff hai chiều (xem `con_ho_nho`
+    của N1) — nếu không thợ sẽ gặp một phép đỏ vĩnh viễn và phải hỏi ngược lại tổng.

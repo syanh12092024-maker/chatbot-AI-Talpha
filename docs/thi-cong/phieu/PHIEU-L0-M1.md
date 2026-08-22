@@ -111,9 +111,11 @@ docs/thi-cong/SO-DIEU-HANH-THI-CONG.md   ← CHỈ append §9 (nợ phát sinh) 
 #     các bảng khác NOT NULL)
 # 4. Di trú idempotent + so DANH SÁCH với nguồn (in cả hai vế mỗi phép):
 #    a. tập page_id pages.json = tập page_id bảng page (diff = rỗng)
-#    b. CÔNG TẮC AI (N1): count(page WHERE bot_ai_bat) in ra; diff tập page bật trong DB ↔
-#       tập trong ai-enabled.json = rỗng; page bật AI KHÔNG có trong pages.json → LIỆT KÊ
-#       từng id + xác nhận đã APPEND §9 (grep sổ ra dòng đó)
+#    b. CÔNG TẮC AI (N1): count(page WHERE bot_ai_bat) in ra; diff HAI CHIỀU:
+#       (i) tập bật trong DB \ ai-enabled.json = RỖNG (DB không tự bật thêm ai);
+#       (ii) ai-enabled.json \ tập bật trong DB = ĐÚNG danh sách page lạc đã khai §9
+#            (page bật AI không có trong pages.json nên không thể ở bảng page — LIỆT KÊ
+#            từng id + xác nhận đã APPEND §9 bằng grep sổ ra dòng đó)
 #    c. số hội thoại conv-state.json = count(hoi_thoai)
 #    d. số file script-versions/ + số mục kb-overrides.json khớp count(kich_ban) theo phép
 #       quy đổi thợ khai trong nhật ký (in phép quy đổi + hai vế)
