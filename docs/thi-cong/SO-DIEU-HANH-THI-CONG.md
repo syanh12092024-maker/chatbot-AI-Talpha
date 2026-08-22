@@ -1,9 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 23:20 22/08 · đang chạy: L2-M1 🟨 (opus) · verify L3-M1
-> vòng 2 · phán mới nhất: L1-M3 ✅ (24/24+1 hoãn, endpoint WA Pancake xác nhận CHƯA TỒN TẠI
-> — không bịa, adapter chờ H1) — SÓNG 1 CODE-ĐÓNG 3/3 cửa; 🧭 2 bài học tổng: && xuyên
-> heredoc · cấm amend khi cây có thợ (đã gỡ sạch bằng reflog, commit thợ nguyên vẹn).
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 00:20 23/08 · đang chạy: L2-M1 🟨 (opus) + phiếu vá P1
+> sắp phát · phán mới nhất: L3-M1 ✅ (34 phép/0 đỏ/3 hoãn trên sandbox — DB chính chưa áp
+> 003/004, áp một thể ở gate) · duyệt vượt-pathspec-có-xin của L3-M1 (004 + luoc-do §8).
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -158,7 +157,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 | Mã    | Việc                                                              | Phụ thuộc | Session | Đụng file                            | Trạng thái |
 | ----- | ----------------------------------------------------------------- | --------- | ------- | ------------------------------------ | ---------- |
-| L3-M1 | Máy trạng thái đơn PHÂN NHÁNH THEO NGUỒN 🟥                       | R2        | thợ mới | `src/orders/*` `test/`               | 🟨         |
+| L3-M1 | Máy trạng thái đơn PHÂN NHÁNH THEO NGUỒN 🟥                       | R2        | thợ mới | `src/orders/*` `test/`               | ✅         |
 | L3-M2 | Lọc trùng chéo hai luồng + chấm tỉ lệ hoàn 🟥                     | L3-M1     | thợ mới | `src/orders/*` `test/`               | ⬜         |
 | L3-M3 | Hàng đợi nhắc (2h×5, huỷ khi khách trả lời) + bộ đọc ý 4 nhánh 🟥 | L3-M1     | thợ mới | `src/orders/*` `src/queue/*` `test/` | ⬜         |
 | L3-M4 | Hàng chờ tạo đơn luồng Messenger 🟥                               | L3-M1·M2  | thợ mới | `src/orders/*` `test/`               | ⬜         |
@@ -366,6 +365,11 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   ghi nhat_ky); chống ĐẠT RỖNG bằng mẫu trộn tieu-alpha+auus, so DANH SÁCH id không so
   count. Cổng `l0-m2.sh` 16/16 ĐẠT, test 22 ca xanh (gộp l0-m1 52/52, bộ cũ 18/5 không
   hồi quy) · commit 9c40c9f · nhật ký docs/thi-cong/nhat-ky/phieu-l0-m2.md
+- 23/08 · L3-M1 → ✅ — cổng 34/0/3-hoãn (tổng chạy, sandbox) · per-commit 1017a615 11 tệp
+  + vượt-pathspec CÓ XIN (004, luoc-do §8) tổng DUYỆT · đơn thật 26|26 nguyên · thợ phát
+  hiện P1: CHUYEN_CHO_PHEP cửa POS thiếu cặp 1→12 (máy fail-closed thay vì lọt) — phiếu
+  vá VA-P1 phát riêng · P2: schema.sql regen MỘT THỂ sau khi 003 (L2-M1) vào — tổng làm
+  ở gate.
 - 22/08 · L3-M1 → 🎫→🟨 — điểm (a) 2 CHAN (nhánh messenger nhầm bảng · thiếu trạng thái
   thất bại) → v2 đóng 7/7, verify DAT 6/6 ô bảng 01 §1. ⚠️ BẢN V2 THẬT = commit `7069d31`
   (141 dòng); `deabfe1` mang cùng message nhưng RỖNG RUỘT (sự cố heredoc) — tra sử đừng
