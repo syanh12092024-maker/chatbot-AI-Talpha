@@ -218,3 +218,10 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 - 22/08 · TỔNG → khởi động — cài 4 skill dây chuyền vào `.claude/skills/`, trải gói bàn
   giao vào gốc repo (gitignore chặn đủ, `.env` giữ `PANCAKE_READONLY=1`), dựng Postgres
   `talpha-pg:5433`, dựng sổ này · commit (sổ) · nhật ký: sổ này §0a.
+- 22/08 · L0-M1 → 🔎 chờ nghiệm thu — lược đồ 19 bảng (team_id mọi nơi, rào team kỹ thuật +
+  chỉ-INSERT ở tầng DB) + di trú thật: page 502/502 · công tắc AI 46/47 · hội thoại
+  18.790/18.790 · kịch bản 69 (=71−2 bản của page lạc); cổng `ops/bin/nghiem-thu/l0-m1.sh`
+  51/51 ĐẠT, 30 ca mới xanh, bộ ca cũ giữ nguyên 18/23 của mốc nền; 3 phát hiện lệch đề bài
+  (page lạc 3 chứ không 1 · `llmTurns` là mảng mốc chứ không phải số đếm · surrogate lẻ trong
+  kịch bản làm chết cả lượt nạp) và 5 dòng nợ §9 · commit <HASH> · nhật ký
+  docs/thi-cong/nhat-ky/phieu-l0-m1.md
