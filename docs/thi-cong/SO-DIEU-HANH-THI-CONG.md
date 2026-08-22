@@ -1,8 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 18:20 22/08 · đang chạy: L0-M2 🟨 (thợ sonnet, nền) · phán
-> mới nhất: L0-M1 ✅ — chặng 1 8/8, cổng thợ 51/51 tổng tự chạy, kiểm chéo độc lập khớp
-> (20 bảng · 502 page/46 bật AI · rào chua-phan nổ · nhat_ky chặn UPDATE+DELETE dòng thật).
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 19:00 22/08 · đang chạy: L0-M2 🟨 (thợ sonnet) · phán mới
+> nhất: L1-M1 điểm (a) TRẢ-VỀ 3 CHAN (bảng mã không phép đo · ghi không đọc live · thiếu
+> khoá) → phiếu v2 đóng 7/7, khoá dev đã đặt, H9 mở, đang verify vòng 2.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -175,6 +175,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | H6  | Mở tài khoản + lấy khoá 4 nhà model, nạp tiền chạy A/B                         | L2 (A/B model)                                                 | ⬜         |
 | H7  | Chốt mapping page/sản phẩm/thị trường ↔ 3 team (Tiểu Alpha·Auus·Pialpha EU)    | di trú gán team thật (L0-M1 seed 3 team, gán chi tiết chờ đây) | ⬜         |
 | H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                     | L2-M2                                                          | ⬜         |
+| H9  | Đặt `V3_KHOA_MA_HOA` RIÊNG trên VPS (32 byte; dev đã có khoá tổng đặt 22/08)   | cutover — ghi khoá model/POS thật trên prod                    | ⬜         |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
