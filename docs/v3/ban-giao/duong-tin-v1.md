@@ -282,3 +282,43 @@ không giả xanh; cổng `l2-m1.sh` tự truyền cờ.
 
 Nhánh gọi Pancake/Meta **THẬT** chưa đo (token 121 theo IP máy cá nhân, và van nguồn đóng
 trên dev) — đo thật thuộc §7b T4 của sổ điều hành.
+
+## 12 · Bậc từ khoá v3 (L2-M2) — đấu vào TRƯỚC Fast Lane
+
+Phiếu L2-M2 chêm một bậc mới vào TRƯỚC bước "Fast Lane" của chuỗi §10 (`src/chat/lop-tu-khoa.js`,
+gọi ở handler-v3.js bước "── 4b"). Chuỗi ĐẦY ĐỦ nay là:
+
+```
+KB (bước 4, kb.noData) → LỚP TỪ KHOÁ v3 (bước 4b, MỚI) → Fast Lane → classify → runCloser
+→ outbound-guard → cửa
+```
+
+Ba luật, cùng một hàm thuần `lopTuKhoa({text, kb})` (không đọc DB, không gọi model):
+
+1. **Thật/giả** — Botcake cũ bắt được, lớp 0 đồng hiện có (`fast-lane.js`) thì KHÔNG
+   (đo 01-QUYET-DINH.md §2: 0/10 page). Trả lời từ `kb.config.fastLaneAuth`.
+2. **Hỏi size** — cùng tình trạng 0/10. Trả lời từ `kb.config.fastLaneSize`.
+3. **Vá `paano mag order`** — biến thể TÁCH CHỮ tiếng Philippines mà `ASK_HOWTO` của
+   `fast-lane.js` bỏ sót (01-QUYET-DINH.md §12). Trả lời từ `kb.config.fastLaneHowto`
+   (field CŨ, đã có sẵn) — có khung mặc định 3 ngôn ngữ khi trang chưa tự viết.
+
+**Quy ước KB MỚI:** `kb.config.fastLaneAuth` / `kb.config.fastLaneSize` — cùng khuôn
+`fastLanePrice/fastLaneShip/fastLaneHowto` đã có trong `kb.js` (`SCRIPT_FIELDS`), nhưng
+CHƯA được thêm vào `SCRIPT_FIELDS` (ngoài pathspec L2-M2 — `kb.js` không nằm trong ③).
+⚠️ Hệ quả: `kb.js#cleanConfig` chỉ giữ đúng 6 cột của `SCRIPT_FIELDS` khi ghi qua dashboard
+(`updatePageConfig`/`saveDraft`), nên hai field mới hôm nay CHỈ sống được nếu ghi thẳng vào
+`kb-overrides.json` (đường mà ⑤ phiếu L2-M2 đã dùng để rút bộ từ khoá thật) — dashboard chưa
+có ô nhập cho chúng. Ghi §9 sổ điều hành.
+
+**Không bịa:** hai luật thật/giả + hỏi size NHƯỜNG (trả `handled:false`, không đụng gì) khi
+trang chưa có field tương ứng — pipeline chạy tiếp y như chưa có bậc này. `paano` là vá một
+câu trả lời ĐÃ AN TOÀN có sẵn (khung "cách đặt hàng" của Fast Lane) nên KHÔNG nhường, dùng
+khung mặc định khi trang chưa tự viết.
+
+Câu trả lời của bậc này đi qua **cùng cửa `d.kiemTinRa` (M09)** với Fast Lane/AI — không
+được miễn kiểm nội dung. Bắt được thì ghi `so_ai` loại `reply`, `lane='tu_khoa_v3'`,
+`ma_model='khong-goi-model'` (0 token, cùng khuôn Fast Lane).
+
+Đo lại: `bash ops/bin/nghiem-thu/l2-m2.sh` (6 phép của ④ phiếu L2-M2) ·
+`node --test test/l2-m2-lop-tu-khoa.test.js` (đơn vị, không cần DB) ·
+`node --test test/l2-m2-handler.test.js` (nối vào `xuLyMotTin` thật, cần sandbox DB).

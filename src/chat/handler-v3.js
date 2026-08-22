@@ -75,6 +75,7 @@ import { layModel as layModelMacDinh } from "./model.js";
 import { ghiSoAi, LOAI, KHONG_GOI_MODEL } from "./so-ai.js";
 import { dungState, ganTuState } from "./trang-thai.js";
 import { suaHoiThoai, docHoiThoaiTheoPageText } from "./kho.js";
+import { lopTuKhoa, LANE as LANE_TU_KHOA } from "./lop-tu-khoa.js";
 
 /** Không tìm thấy dòng `hoi_thoai` cho tin — bộ NẠP phải tạo TRƯỚC (cua-messenger §2). */
 export class LoiThieuHoiThoai extends Error {
@@ -268,6 +269,41 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       });
       await luuLai({ daGoiModel: false, daGuiText: false });
       return { ketQua: KET_QUA.XONG, lyDo: "page_no_kb", dem };
+    }
+
+    // ── 4b · LỚP TỪ-KHOÁ v3 — 2 luật Botcake chưa phủ + vá `paano mag order` (L2-M2) ──
+    // Đứng TRƯỚC Fast Lane/classify (đề bài ① phiếu L2-M2). `lopTuKhoa` là hàm THUẦN,
+    // không đọc DB — xem src/chat/lop-tu-khoa.js đầu file để biết vì sao NHƯỜNG (không
+    // bịa) khi KB trang chưa có `fastLaneAuth`/`fastLaneSize`. Cùng cửa `d.kiemTinRa`
+    // (M09) với Fast Lane/AI — câu trả lời của lớp này KHÔNG được miễn kiểm nội dung.
+    const tk = lopTuKhoa({ text, kb });
+    if (tk.handled) {
+      const v = d.kiemTinRa(tk.reply, {
+        kb,
+        pageId: state.pageId,
+        custName: state.custName,
+        lastAiText: state.lastAiText,
+      });
+      if (!v.ok) {
+        await ghi(LOAI.SPENT_NO_SEND, {
+          maModel: KHONG_GOI_MODEL,
+          lane: LANE_TU_KHOA,
+          lyDo: `guard_noi_dung:${v.rule}`,
+        });
+        await luuLai({ daGoiModel: false, daGuiText: false });
+        return { ketQua: KET_QUA.XONG, lyDo: `guard_noi_dung:${v.rule}`, dem };
+      }
+      await guiChu(tk.reply);
+      await ghi(LOAI.REPLY, {
+        maModel: KHONG_GOI_MODEL, // lớp từ khoá KHÔNG gọi model — xem so-ai.js
+        lane: LANE_TU_KHOA,
+        trangThai: hoiThoai.trang_thai,
+        lyDo: tk.lyDo,
+        duLieu: { text: tk.reply.slice(0, 200), rule: tk.rule },
+      });
+      state.lastAiText = tk.reply;
+      await luuLai({ daGoiModel: false, daGuiText: true, textDaGui: tk.reply });
+      return { ketQua: KET_QUA.XONG, lyDo: `tu_khoa_v3:${tk.rule}`, dem };
     }
 
     // ── 5 · FAST LANE — chặn TRƯỚC mọi lượt gọi model (0 token) ──────────────────
