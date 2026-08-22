@@ -5,7 +5,8 @@
 
 > Thợ nạp skill `tho-thi-cong`. Đọc sổ §0a + §7b. Bộ não chat DÙNG NGUYÊN — phiếu này là
 > NHẠC TRƯỞNG MỚI quanh nó. Đây là phiếu nhận NỢ N2 của L1-M2 (§9: tools.js/scheduler
-> import thẳng pancake.js).
+> import thẳng pancake.js). Bản v2 — đóng 6 finding `nghiep-vu-L2-M1.verdict.yaml`
+> (3 CHAN: 3 lượt gửi ngầm trong executeTool · khoá dòng ≠ khoá hội thoại · DI thiếu team).
 
 ## ① Thi hành đoạn spec nào
 
@@ -23,12 +24,20 @@
 
 **Vào (thợ ĐO LẠI — số đo tổng 22/08):**
 
-- Bộ não KHÔNG TỰ GỬI GÌ: `runCloser(ctx{kb,state})` TRẢ TEXT (`closer.js:9`); tool ảnh
-  chỉ XẾP `state.pendingImages` — ảnh chỉ bay khi ai đó gọi `flushPendingImages`
-  (`tools.js:118`, handler CŨ gọi); tag/note do handler cũ gọi thẳng; text do
-  `pancake-poll.js:520` gửi. ⇒ handler v3 KHÔNG gọi `flushPendingImages` cũ và tự quản
-  outbound = bộ não bị cô lập hoàn toàn khỏi pancake.js (trừ `tools.js:186 createOrder`
-  = ghi nhận nội bộ + nhánh `config.autoCreateOrder` ĐANG TẮT — giữ nguyên TẮT).
+- Bộ não GẦN NHƯ không tự gửi — nhưng KHÔNG tuyệt đối (N1): `runCloser` trả text; ảnh
+  chỉ XẾP `state.pendingImages`; text do handler/poll gửi. **BA CHỖ GỬI NGẦM còn lại nằm
+  trong `executeTool`, chạy giữa lòng runCloser:** `tools.js:197` `pkTagByName(pkTags.order)`
+  (nhánh chốt đơn) · `:266` `pkTagByName(pkTags.handoff)` · `:271` `pkAddNote('🙋 AI
+  CHUYỂN NGƯỜI…')` — đúng cơ chế bàn giao sale §7.4, chắc chắn bay khi bot làm việc thật.
+  Kèm ĐƯỜNG GỬI THỨ HAI (N4): `tools.js:2` import `sendImage` từ `messenger.js` → Graph
+  API, không kiểm READONLY (nhánh `else` của `sendImageWithRetry`). `tools.js:186
+  createOrder` = ghi nội bộ; `config.autoCreateOrder` ĐANG TẮT — giữ TẮT.
+  **Chặn kiểu hai tầng, không sửa file cấm:** (a) TẦNG NGUỒN fail-closed — bộ NẠP từ
+  chối enqueue khi `PANCAKE_READONLY === '1'` trừ khi `V3_NAP_DEV === '1'` (dev không có
+  tin thật vào hàng đợi ⇒ executeTool không bao giờ chạy trên hội thoại thật ở máy cá
+  nhân); (b) TẦNG ĐO — test mock module `pancake.js` VÀ `messenger.js` (node:test
+  `mock.module`), 3 dân số ở ④#4. Phần tag/note runtime vẫn đi thẳng ở VPS: ghi §9 nợ
+  dài hạn «hợp thức ở cutover — VPS là môi trường được phép gửi».
 - State cũ sống ở `conv-state.json` — v3 đọc/ghi bảng `hoi_thoai` (đã di trú 18.790 dòng).
 - Chỗ cắm model: `llm.js` (41 dòng, client anthropic/kimi) — DÙNG NGUYÊN qua DI.
 
@@ -39,23 +48,33 @@
    `cho|dang_xu|xong|loi` · so_lan_thu · khoa_worker · thoi_diem). UNIQUE chống trùng
    `(page_id, conv_id, msg_id)`. Khai lý do bảng mới vào `luoc-do-v1.md` §thay-đổi +
    regen `db/schema.sql`.
-2. **`src/queue/`** — (a) bộ NẠP: poll qua CỬA messenger (đường đọc `docHoiThoai`/`docTin`,
-   ctxHeThong) → enqueue idempotent; (b) WORKER: rút `cho` → `dang_xu` bằng
-   `FOR UPDATE SKIP LOCKED`, **một hội thoại không bao giờ 2 worker cùng xử** (khoá theo
-   conv), gọi handler, xong/lỗi cập nhật trạng thái + đếm lần thử.
+2. **`src/queue/`** — (a) bộ NẠP: poll qua CỬA messenger (đường đọc, ctxHeThong) →
+   enqueue idempotent; fail-closed nguồn theo N1(a). (b) WORKER: rút `cho`→`dang_xu`
+   bằng `FOR UPDATE SKIP LOCKED` **CỘNG khoá HỘI THOẠI bằng
+   `pg_try_advisory_xact_lock(hashtext(conv_id))` (N2)** — khoá dòng chỉ chặn 1 TIN,
+   hai tin cùng conv là hai dòng nên thiếu advisory lock là 2 worker cùng dựng state,
+   trả lời đúp, `moc_luot_llm` trừ đua. Không lấy được lock → trả tin về `cho`, worker
+   sang conv khác. Tin `loi` có trần `so_lan_thu`; **guard chặn → trạng thái RIÊNG
+   `chan_guard`, KHÔNG retry (N6)** — retry lượt guard đóng là đốt token thật mỗi vòng.
 3. **`src/chat/`** — handler v3 (nhạc trưởng mới): dựng `state` từ `hoi_thoai` + KB
    (`kb.js` cũ import nguyên — nhóm "nội dung dùng nguyên"), gọi
    `classify`/`fastLane`/`runCloser` NGUYÊN VĂN; nhận text về rồi:
    - gửi text qua **cửa `guiTin`** (guard V3_PANCAKE_GUI) — KHÔNG pkSendReply;
    - tự xả `state.pendingImages` qua **cửa `guiAnh`** — KHÔNG `flushPendingImages` cũ;
    - tag/note qua cửa; cập nhật `hoi_thoai` (state · lượt · hồ sơ nén) + ghi `so_ai`
-     (sự kiện `reply` kèm token + **`ma_model`**; guard chặn thì ghi `spent_no_send` —
-     đúng án lệ §11.2 «khoản chi tàng hình»);
+     ĐỦ LOẠI SỰ KIỆN §11.2 (N5): `reply` (token + **`ma_model`**) · `image` (theo số ảnh
+     xả) · `order` (đọc cờ `state.orderCreatedThisTurn`/`state.closed` bộ não để lại —
+     executeTool ghi logAi vào JSONL cũ, KHÔNG vào so_ai, nên handler v3 phải tự ghi;
+     thiếu là 4 cửa chống trùng §7.3 + L3-M2/M4 câm) · `handoff` (cờ handoff của state) ·
+     `spent_no_send` khi guard chặn — «khoản chi tàng hình» §11.2;
    - `config.autoCreateOrder` giữ TẮT — bot chốt chỉ ghi nhận, hàng chờ tạo đơn là
      L3-M4.
-4. **Chỗ cắm model (DI, §7b T6):** handler nhận `deps.layModel()` mặc định trả client
-   `llm.js` cũ; interface (chữ ký + hợp đồng lỗi/dự phòng mà B phải theo) ghi vào
-   `docs/v3/ban-giao/duong-tin-v1.md` — KHÔNG tự viết lớp model (việc B, prompt A cấm).
+4. **Chỗ cắm model (DI, §7b T6 — N3):** `deps.layModel(ctx, {vaiTro: 'chinh'|'du_phong'|
+   'nen'}) → {client, maModel}` — có TEAM (01 §7 mỗi team model riêng) và vai trò. Bản
+   mặc định: SELECT `cau_hinh_model` theo `ctx.teamId`; team chưa cấu hình → fallback
+   client `llm.js` cũ + `maModel` từ config thật (CẤM hằng số bịa). KHÔNG viết lớp model
+   đa-nhà/dự-phòng/độ-ngẫu-nhiên (việc B) — chỉ interface + SELECT + fallback. Hợp đồng
+   ghi vào `duong-tin-v1.md` để B cài L1-M4 vào đúng chữ ký.
 5. `docs/v3/ban-giao/duong-tin-v1.md` — kiến trúc đường tin + hợp đồng DI model + cách
    L2-M2/M3 cắm thêm.
 
@@ -84,14 +103,26 @@ page tới ngày cutover) · không đụng `src/channels/*` `src/pos/*` `src/db
 ```bash
 # 1. Migration 003: 2 lượt idempotent + down→up trên DB đã có dữ liệu
 # 2. Enqueue idempotent: bơm CÙNG 1 tin 2 lần → đúng 1 dòng (in count)
-# 3. Thứ tự per-conv: 2 tin cùng conv + 2 worker song song → xử TUẦN TỰ (đo bằng dấu
-#    thời gian xử chồng lấn = 0); 2 tin khác conv → được song song (chồng lấn ≥ 0 cho phép)
-# 4. PHÉP ĐẮT NHẤT — CÔ LẬP BỘ NÃO (đóng nợ N2): chạy handler trọn 1 tin mẫu với spy
-#    module pancake.js: pkSendReply=0 · pkSendImage=0 · pkAddNote/pkTagByName=0; cùng lúc
-#    spy cửa v3: guiTin=1 · guiAnh=số ảnh pending · in cả hai bảng đếm
+# 3. Khoá HỘI THOẠI (N2): 2 tin CÙNG conv + 2 worker → phép KHẲNG ĐỊNH «worker B rút
+#    conv X trả 0 dòng khi A đang giữ advisory lock» (in số dòng B rút được = 0) + sau khi
+#    A nhả, B xử được (= 1); 2 tin KHÁC conv → 2 worker song song (cả hai rút được)
+# 3b. Nguồn fail-closed (N1a): PANCAKE_READONLY=1 + vắng V3_NAP_DEV → bộ nạp enqueue 0
+#     dòng, in lý do; V3_NAP_DEV=1 → nạp được (đối chứng dương)
+# 4. PHÉP ĐẮT NHẤT — CÔ LẬP BỘ NÃO (N1): mock CẢ pancake.js LẪN messenger.js, BA DÂN SỐ:
+#    a. tin thường → pkSendReply/pkSendImage/pkAddNote/pkTagByName/sendImage(Graph) = 0;
+#       cửa v3: guiTin=1, guiAnh=số ảnh
+#    b. ÉP nhánh chốt đơn (mock model trả tool_use create_order) → pkTagByName(order)
+#       của pancake.js = 0 lượt LỌT RA NGOÀI mock, so_ai có sự kiện `order`
+#    c. ÉP nhánh chuyển người (tool handoff) → pkTagByName(handoff)+pkAddNote = 0 lọt,
+#       cửa v3 gánh tag/note, so_ai có `handoff`
+#    In bảng đếm cả ba dân số — dân số 1 tin xanh vì NHÁNH KHÔNG CHẠY không tính là đạt
 # 5. Guard đóng (mặc định dev): tin ra bị LoiCuaGuiDong → tin_cho_xu_ly đánh 'loi' + so_ai
 #    ghi 'spent_no_send' (SELECT in ra) — token tiêu không tàng hình
-# 6. so_ai sự kiện reply có ma_model NOT NULL (in 1 dòng mẫu)
+# 6. so_ai ĐỦ LOẠI (N5): reply (ma_model NOT NULL, không phải hằng bịa — đổi mock model
+#    thì ma_model đổi theo, in 2 giá trị khác nhau) · image · order · handoff ·
+#    spent_no_send — mỗi loại ≥1 dòng từ các dân số ④#4, in bảng đếm theo loại
+# 6b. Guard chặn (N6): tin sang `chan_guard`, KHÔNG retry (worker bỏ qua, in số lần thử
+#     đứng yên = 1); so_ai ghi spent_no_send
 # 7. autoCreateOrder: config đọc ra = false + không dòng don_hang nào sinh từ lượt test
 # 8. DI model: layModel() mặc định trả client llm.js; thay bằng mock trong test → handler
 #    dùng mock (chứng minh chỗ cắm sống)

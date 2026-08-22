@@ -1,0 +1,207 @@
+phieu: L2-M1
+diem: a
+nguoi_cham: reviewer nghiep-vu (skill review-nghiep-vu v1)
+ngay: 2026-08-22
+lan: 🟥 (chạm outbound + bộ não) · phiếu NHẬN nợ N2 của L1-M2
+nguon_da_doc:
+  - docs/v3/01-QUYET-DINH.md (§1 · §3 · §6 · §7)
+  - docs/v3/02-KE-HOACH-CODE.md (§L1 lớp model · §L2 dùng-lại/viết-lại + nghiệm thu)
+  - docs/TONG-QUAN-HE-THONG.md §7.3–7.4 · §11.2 (7 loại sự kiện Sổ AI)
+  - docs/thi-cong/SO-DIEU-HANH-THI-CONG.md §0a (luật 4) · §7b (T4 · T6) · §9 nợ N2 · nhịp tim
+  - docs/v3/ban-giao/luoc-do-v1.md (`hoi_thoai.moc_luot_llm` · `so_ai` · `hang_cho_tao_don`)
+  - docs/thi-cong/phieu/PHIEU-L2-M1.md
+  - src/tools.js · src/closer.js · src/fast-lane.js · src/outbound-guard.js · src/messenger.js
+    · src/pancake.js (đo lại từng dòng gọi)
+
+cau:
+  - so: 1
+    dap: KHONG
+    bang_chung: >-
+      Không màn, không nút. Đầu ra là bảng `tin_cho_xu_ly` + `src/queue/` + `src/chat/` + file
+      bàn giao. Năng lực người dùng thật thấy được — «khách nhắn → trả lời dưới 10 giây trên 3
+      page thử» — là §7b **T4**, đã hoãn minh bạch và còn phụ thuộc T3. Guard mặc định ĐÓNG nên
+      cuối phiếu không một tin nào tới khách. KHÔNG ở đây đúng bản chất phiếu nền; cái làm phiếu
+      bị trả về nằm ở câu 3 và 7.
+  - so: 3
+    dap: CO
+    bang_chung: >-
+      CÓ mâu thuẫn, 2 chỗ. (a) 01 §7: «Bốn nhà… **Mỗi team nhập khoá riêng và chọn model riêng**»
+      và 02 §L1 nghiệm thu «Đổi model của một team → lượt chat tiếp theo đi đúng model mới, không
+      phải khởi động lại». Chỗ cắm phiếu khai là `deps.layModel()` — **không tham số** — nên không
+      mang được team, không mang được `vai_tro` (`cau_hinh_model.vai_tro ∈ chinh/du_phong/nen`,
+      luoc-do-v1 §2), tức không cài được thứ 01 §7 đòi. Xem N3. (b) 01 §1: luồng Messenger kết
+      thúc bằng «bot chốt → hàng chờ duyệt». Phiếu viết «bot chốt chỉ **ghi nhận**, hàng chờ tạo
+      đơn là L3-M4» nhưng không khai «ghi nhận» đi vào bảng nào — mà `createOrder` của bản cũ
+      (`pancake.js:245`) là **STUB log + id giả**. Sự kiện chốt đơn không có đích trong v3. Xem N5.
+  - so: 7
+    dap: CO
+    bang_chung: >-
+      CÓ làm hẹp, nạn nhân là L3-M2 và L3-M4. §7.3 khai bốn nguồn chống đơn trùng, nguồn ① là
+      «**Sổ AI (đã có sự kiện `order`)**». Phiếu chỉ khai handler ghi `so_ai` sự kiện **`reply`**
+      (+ `spent_no_send` khi guard chặn), và ④#6 cũng chỉ đo `reply`. §11.2 liệt 7 loại sự kiện —
+      `order` · `handoff` · `other_bot` · `image` · `yielded` nằm ngoài phiếu và không ai nhận.
+      Hệ quả đo được: sang L3-M2 «lọc trùng chéo hai luồng», cửa ① tra Sổ AI sẽ trả 0 cho mọi
+      hội thoại v3 vì chưa bao giờ có dòng `order` nào được ghi — cửa không đỏ, nó **câm**, đúng
+      loại hỏng §7.3 dựng ra để chặn («THÀ KHÔNG TẠO CÒN HƠN TẠO NHẦM»). Xem N5.
+  - so: 8
+    dap: CO
+    bang_chung: >-
+      Bỏ phiếu này thì đau ở ba chỗ. (1) Nợ N2 của L1-M2 không có ai đóng — `tools.js` vẫn gọi
+      thẳng `pancake.js`, và cửa v3 vừa dựng ở L1-M2 thành cửa không ai đi qua. (2) 02 §L2 «hàng
+      đợi thay vòng poll» không có nền: `conv-state.json` 5,4 MB đọc/ghi trọn tệp mỗi lượt, không
+      có chỗ nào rút việc song song. (3) Không có handler v3 thì `hoi_thoai` (18.790 dòng đã di
+      trú) không có người đọc — nền dữ liệu L0 đứng không. Không phải over-engineering.
+
+ket_luan: TRA_VE
+
+findings:
+  - ma: N1
+    muc: CHAN
+    mo_ta: >-
+      ④#4 KHÔNG đóng được nợ N2: lời khai «bộ não cô lập hoàn toàn» ở ② sót **ba** chỗ bộ não tự
+      ghi ra Pancake, và dân số của phép («1 tin mẫu») không bao giờ chạm tới ba chỗ đó ⇒ spy đọc
+      0 vì nhánh không chạy, không phải vì cửa chặn.
+    bang_chung: >-
+      ② khai nguyên văn: «bộ não bị cô lập hoàn toàn khỏi pancake.js (**trừ** `tools.js:186
+      createOrder`…)». Đo lại `src/tools.js` thì danh sách trừ còn thiếu ba dòng, tất cả nằm TRONG
+      `executeTool`, tức chạy giữa lòng `runCloser`:
+        · `tools.js:197` `pkTagByName(state.pageId, state.pkConvId, config.pkTags.order)` — nhánh
+          công cụ CHỐT ĐƠN, ngay sau `createOrder`;
+        · `tools.js:266` `pkTagByName(…, config.pkTags.handoff)` — nhánh công cụ CHUYỂN NGƯỜI;
+        · `tools.js:271` `await pkAddNote(state.pageId, state.pkCustId, '🙋 AI CHUYỂN NGƯỜI — cần
+          sale vào hỗ trợ…')` — cùng nhánh.
+      Câu ② «tag/note do handler cũ gọi thẳng» đúng cho `handler.js:8` nhưng KHÔNG đủ: bộ não tự
+      gọi. Ba dòng này là đúng cơ chế bàn giao sale của §7.4 (thẻ «AI Chốt» + ghi chú «🛒 AI ĐÃ
+      CHỐT»), nên chúng chắc chắn bay khi bot làm việc thật. ④#4 có spy `pkAddNote/pkTagByName=0`
+      — thước đúng — nhưng chạy trên «**1 tin mẫu**», mà một tin thường không gọi tool chốt đơn
+      hay tool chuyển người. Phép xanh, nhánh vẫn sống.
+    kich_ban_hong: >-
+      Cutover xong, khách chốt đơn. `runCloser` gọi tool order → `tools.js:197` gắn thẻ thẳng lên
+      Pancake, không qua cửa, không qua `V3_PANCAKE_GUI`, không có dòng `nhat_ky` nào của cửa v3.
+      Trên máy dev cũng vậy: `PANCAKE_READONLY=1` không chặn được vì guard nằm ở cửa mà đường này
+      không đi qua cửa — đúng tai nạn sổ §0a luật 1 dựng ra để chặn. ④#4 đã ký xanh từ trước.
+    sua_the_nao: >-
+      (i) Sửa ② cho đúng sự thật: liệt đủ `tools.js:186` + `:197` + `:266` + `:271`. (ii) ④#4 phải
+      chạy **ba dân số**, không phải một tin: một tin thường · một lượt ÉP gọi tool chốt đơn · một
+      lượt ÉP gọi tool chuyển người (mock model trả tool_use tương ứng) — spy `pancake.js` = 0 ở
+      **cả ba**, spy cửa v3 `gatThe`/`ghiNote` ≥ 1 ở hai lượt sau. (iii) Vì `tools.js` CẤM SỬA,
+      handler v3 phải chặn ở tầng DI: tiêm bản cài `pkTagByName`/`pkAddNote`/`pkSendImage` trỏ
+      vào cửa v3 (đúng khuôn «route outbound bằng DI, không sửa file cấm» mà nợ N2 đã chốt) — nếu
+      `tools.js` không nhận được DI thì đó là một `[NEEDS CLARIFICATION]` phải trả lời TRƯỚC khi code.
+
+  - ma: N2
+    muc: CHAN
+    mo_ta: >-
+      Bảo đảm «một hội thoại không bao giờ 2 worker cùng xử» được khai bằng một cơ chế không tạo
+      ra nó — `FOR UPDATE SKIP LOCKED` khoá DÒNG TIN, không khoá HỘI THOẠI — và phép đo duy nhất
+      có thể xanh nhờ may.
+    bang_chung: >-
+      ②#2b: «rút `cho` → `dang_xu` bằng `FOR UPDATE SKIP LOCKED`, **một hội thoại không bao giờ 2
+      worker cùng xử** (khoá theo conv)». Đơn vị dòng của `tin_cho_xu_ly` là TIN (`UNIQUE
+      (page_id, conv_id, msg_id)`), nên hai tin của CÙNG một `conv_id` là hai dòng khác nhau:
+      worker A khoá dòng 1, worker B không bị chặn — `SKIP LOCKED` chỉ bỏ qua dòng ĐANG bị khoá —
+      B khoá dòng 2 và chạy song song trên cùng hội thoại. Cụm «(khoá theo conv)» là một cái TÊN,
+      không phải một cơ chế: phiếu không khai advisory lock, không khai cột/bảng khoá theo conv,
+      `khoa_worker` cũng không được khai là khoá theo conv hay theo tin.
+    kich_ban_hong: >-
+      Khách gõ hai tin liền — ca thường gặp đến mức 01 §3 phải cấp hẳn 5 giây «đợi khách gõ xong».
+      Hai worker cùng dựng `state` từ một dòng `hoi_thoai`, cùng gọi model, cùng trả lời: khách
+      nhận hai câu; `so_ai` ghi hai `reply` (tiêu đôi token); `state.pendingImages` ghi đè nhau
+      (ảnh mất hoặc gửi đôi); `hoi_thoai.moc_luot_llm` — sổ ngân sách 24h — bị trừ đua nhau nên
+      trần lượt mất nghĩa. Và ④#3 đo «dấu thời gian xử chồng lấn = 0»: đó là phép đo VẮNG MẶT,
+      hai lượt nhanh có thể không chồng nhau trên đồng hồ mà vẫn chạy song song.
+    sua_the_nao: >-
+      Khai cơ chế thật trong ②: `pg_try_advisory_xact_lock(hashtext(conv_id))` ngay trong câu rút
+      việc (không lấy được khoá ⇒ bỏ qua tin đó, để lượt sau), hoặc một bảng/dòng khoá theo conv
+      lock `FOR UPDATE`. Và đổi ④#3 sang phép KHẲNG ĐỊNH thay vì phép vắng mặt: worker A giữ conv
+      X, gọi hàm rút của worker B → **trả về 0 dòng của conv X** (in số), rồi mới đo thêm chồng
+      lấn thời gian như hiện có.
+
+  - ma: N3
+    muc: CHAN
+    mo_ta: >-
+      Chỗ cắm model cho B (§7b T6) KHÔNG đủ: `deps.layModel()` không tham số nên không chở được
+      team, không chở được vai trò, và không trả về được mã model đã dùng cho `so_ai`.
+    bang_chung: >-
+      ②#4 khai `deps.layModel()`. Ba thứ hợp đồng này phải chở mà nó không có chỗ: (a) TEAM —
+      01 §7 «mỗi team nhập khoá riêng và chọn model riêng», 02 §L1 nghiệm thu «đổi model của một
+      team → lượt chat tiếp theo đi đúng model mới, không phải khởi động lại»; (b) VAI TRÒ —
+      `cau_hinh_model.vai_tro ∈ chinh/du_phong/nen` (luoc-do-v1 §2), và 02 §L1 đòi «tự chuyển
+      model dự phòng khi nhà chính lỗi, và báo ngay»; (c) MÃ MODEL ĐÃ DÙNG — chính phiếu này đòi
+      `so_ai.ma_model NOT NULL` và ④#6 đo nó, nhưng nếu `layModel()` trả một client đục thì sau
+      một lượt chuyển dự phòng, handler không biết model nào thật sự đã trả lời. 02 nói rõ vì sao
+      điều đó chết người: «`so_ai` phải ghi mã model ngay từ đầu, nếu không sau này không so được
+      model nào rẻ hơn thật».
+    kich_ban_hong: >-
+      B xong L1-M4, tới T6 cắm vào thì chữ ký không nhận team ⇒ hoặc B phải nhét trạng thái toàn
+      cục (mất tính đa team, 01 §8), hoặc A phải mở lại handler sửa chữ ký — đúng thứ điểm bàn
+      giao dựng ra để tránh. Và ④#6 vẫn xanh cả khi `ma_model` bị điền cứng một chuỗi, vì phép
+      chỉ đòi NOT NULL.
+    sua_the_nao: >-
+      Chốt chữ ký chở đủ ba vế ngay trong ② và trong `duong-tin-v1.md`: `layModel(ctx, { vaiTro })`
+      trả `{ client, maModel }`; hợp đồng lỗi/dự phòng khai rõ ai đổi sang `du_phong` và ai báo.
+      Thêm vế đo cho ④#6: sau một lượt ép nhà chính lỗi, `so_ai.ma_model` của lượt đó phải KHÁC
+      lượt trước (in hai giá trị) — chứng minh mã model đi theo model thật, không phải hằng số.
+      Vẫn giữ đúng «không viết bản tạm»: mặc định trả `llm.js` cũ là ĐÚNG, chỉ cần mở rộng chữ ký.
+
+  - ma: N4
+    muc: NEN
+    mo_ta: >-
+      Có một đường gửi thứ HAI không phải Pancake — `src/messenger.js` (Facebook Graph) — mà spy
+      của ④#4 không nhìn tới; lập luận cô lập đang ngầm dựa vào «handler v3 không gọi
+      `flushPendingImages`» nhưng không nói ra.
+    bang_chung: >-
+      `tools.js:2` `import { sendImage } from './messenger.js'`; `tools.js:104` gọi nó làm đường
+      dự phòng khi không đi Pancake; `messenger.js:32` bắn thẳng `graph.facebook.com/me/messages`
+      và không có một dòng kiểm `PANCAKE_READONLY` nào. Đường này chỉ chết nếu không ai gọi
+      `flushPendingImages` (`tools.js:118` → `:132` → `:104`) — đúng như phiếu định làm, nhưng đó
+      là một điều kiện ngầm: một lượt wiring sai ở L2-M2/M3 là ảnh bay qua Graph mà cả spy
+      `pancake.js` lẫn spy cửa v3 đều đọc 0.
+    sua_the_nao: >-
+      Nói thẳng điều kiện đó trong ② («cô lập phụ thuộc việc KHÔNG gọi `flushPendingImages`»), và
+      thêm `src/messenger.js` vào bảng spy của ④#4 với kỳ vọng `sendImage=0` · `sendText=0`.
+
+  - ma: N5
+    muc: NEN
+    mo_ta: >-
+      Sự kiện chốt đơn và chuyển người của bộ não không có đích trong v3 — `so_ai` chỉ được khai
+      ghi `reply`/`spent_no_send`, nên nguồn ① của bốn cửa chống trùng (§7.3) câm ngay từ đầu.
+    bang_chung: >-
+      §11.2 liệt 7 loại sự kiện Sổ AI; phiếu khai 2. §7.3 cửa ① = «Sổ AI (đã có sự kiện `order`)».
+      `createOrder` của bản cũ là STUB (`pancake.js:245`, phần fetch bị comment ở `:259`) nên
+      «ghi nhận nội bộ» hôm nay chỉ là một dòng log. `hang_cho_tao_don` (có `cua_kiem jsonb`) tồn
+      tại từ L0-M1 nhưng phiếu đẩy hết sang L3-M4 mà không để lại tín hiệu nào cho nó đọc.
+    sua_the_nao: >-
+      Khai trong ②#3: handler v3 ghi `so_ai` sự kiện `order` khi bộ não gọi tool chốt và `handoff`
+      khi gọi tool chuyển người (kèm lý do — §11.2 đòi «kèm **lý do**»); thêm vế đo vào ④#6. Nếu
+      người quyết muốn để trọn cho L3-M4 thì phải APPEND §9 một dòng nợ có tên, đừng để trống.
+
+  - ma: N6
+    muc: NEN
+    mo_ta: >-
+      ④#5 bắt tin bị guard chặn đánh trạng thái `'loi'` — sai phân loại, và trên máy dev nó biến
+      mọi tin đến thành nợ thử lại vĩnh viễn, mỗi lượt thử lại tiêu token thật.
+    bang_chung: >-
+      Enum khai ở ②#1 là `cho|dang_xu|xong|loi`, không có trạng thái cho «bị chặn có chủ ý».
+      ④#5: «tin ra bị `LoiCuaGuiDong` → `tin_cho_xu_ly` đánh `'loi'` + `so_ai` ghi
+      `spent_no_send`». Nhưng guard đóng là trạng thái MẶC ĐỊNH của máy dev (`V3_PANCAKE_GUI`
+      vắng = đóng, L1-M2 v2), nên đây là đường đi bình thường chứ không phải sự cố. Bảng có
+      `so_lan_thu` ⇒ worker sẽ thử lại; mỗi lượt thử lại chạy lại `runCloser` và tiêu token thật
+      — đúng khoản chi mà §11.2 gọi là «tàng hình» nay thành tàng hình có nhân số.
+    sua_the_nao: >-
+      Thêm trạng thái `bi_chan` vào enum (kết thúc, KHÔNG thử lại), và ④#5 đo `so_lan_thu` của
+      tin bị chặn = 1 sau nhiều vòng worker.
+
+ghi_chu_cho_tong: >-
+  Trả lời thẳng ba câu tổng hỏi. (i) ④#4 CHƯA đóng được N2 — hai lỗi chồng nhau: lời khai ở ②
+  sót ba chỗ bộ não tự ghi (`tools.js:197` · `:266` · `:271`, đều là nhánh chốt-đơn/chuyển-người
+  tức nhánh chắc chắn chạy thật), và dân số của phép là «1 tin mẫu» nên spy đọc 0 vì nhánh không
+  chạy. Thước đúng, dân số sai — cùng họ với lỗi «đo cái mock» ở L1-M2 vòng 1. (ii) CÓ kịch bản
+  lọt: `SKIP LOCKED` khoá DÒNG TIN chứ không khoá HỘI THOẠI, hai tin liền của một khách là hai
+  dòng nên hai worker vào cùng lúc; ④#3 đo chồng-lấn-thời-gian là phép vắng mặt, xanh được nhờ
+  may. (iii) DI model đúng ở chỗ quan trọng nhất — mặc định trả `llm.js` cũ, KHÔNG viết bản tạm,
+  đúng lệnh prompt A — nhưng chữ ký `layModel()` không tham số thì chưa đủ cho T6: thiếu team,
+  thiếu `vai_tro`, và không trả mã model nên `so_ai.ma_model` có thể xanh bằng hằng số. Ba chỗ
+  phiếu làm TỐT, nên giữ: nhận nợ N2 tường minh ở ⑦ thay vì để trôi · ghi `spent_no_send` khi
+  guard chặn (đúng án lệ §11.2 khoản chi tàng hình) · ⑤ khai thẳng webhook điểm-kiểm-2 chưa đo
+  và giải thích vì sao đổi nguồn sau không đụng worker.
