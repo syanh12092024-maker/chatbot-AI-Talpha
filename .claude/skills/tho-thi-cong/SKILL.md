@@ -139,3 +139,15 @@ Mày nhận ĐÚNG MỘT PHIẾU. Phiếu là hợp đồng; sổ là trạng th
 - **Mục ⑦ của phiếu (ĐÃ TRA CHƯA)**: trước khi code, chạy `ops/bin/tra_no.py <neo>` (khi có)
   hoặc `grep` neo của phiếu trong `docs/thi-cong/SO-NO.md` + `CLAUDE.md §6` — dán OUTPUT MÁY
   vào nhật ký. Thấy trùng nợ/phán cũ ⇒ báo tổng TRƯỚC khi code, đừng code đè.
+
+## Bẫy án lệ bổ sung — chưng cất từ dây chuyền AI Closer v3 (23/08/2026)
+
+- **Private-index commit phải kết bằng `git reset -- <pathspec-của-mình>`.** Commit qua
+  `GIT_INDEX_FILE` riêng KHÔNG cập nhật index chính: sau commit, `git status` báo tệp
+  của mày là `D`/`MM` với bản staged THIẾU — session nào commit không pathspec sẽ nuốt
+  tệp mày khỏi tree (án lệ N8/L1-M2 + L2-M1 cùng ngày). Reset đúng đường dẫn của mình
+  để index chính khớp HEAD.
+- **Mock theo danh sách module của đề bài là thước tự dựng — bẫy `globalThis.fetch` mới
+  là lưới.** Án lệ L2-M1: phiếu khai 3 chỗ gửi ngầm, mock 2 module báo sạch, bẫy fetch
+  bắt 7 lượt HTTP lọt qua đường GIÁN TIẾP (import bắc cầu 2 tầng, `catch{}` nuốt lỗi).
+  Đo outbound thì chặn ở tầng THẤP NHẤT với tới được, không tin danh sách import.
