@@ -1,8 +1,7 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 10:40 23/08 · SÓNG VÁ REFUTE — đang chạy: VA-R3 🟨 +
-> VA-R4 🟨 (sonnet, tự chấm) · VA-R1+VA-R2 chờ review (a) rồi phát opus · repro cũ làm
-> thước biến đỏ→xanh · ⛔ chưa push.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 11:30 23/08 · SÓNG VÁ — VA-R4 ✅ (phủ định 0/5 đọc thành
+> xác nhận) · đang chạy VA-R1+R2 (opus) + VA-R3 (sonnet) · gate RVA sau khi đủ 4 · ⛔ chưa push.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -184,7 +183,7 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | VA-R1 | C1 bộ-não-HTTP (RF-1/2/3) | review(a) | chat/handler-v3 · queue/worker · queue/nap | 🎫 chờ review |
 | VA-R2 | C2 tiền+tạo-đơn (RF-9/10/11/12/21/15) | review(a) | orders/hang-cho · pos/tao-don · pos/doc-danh-muc | 🎫 chờ review |
 | VA-R3 | C3 máy trạng thái (RF-13/14) | — | orders/may-trang-thai · quet-don-moi | 🟨 |
-| VA-R4 | C4 đọc ý (RF-20) | — | orders/doc-y | 🟨 |
+| VA-R4 | C4 đọc ý (RF-20) | — | orders/doc-y | ✅ |
 | RVA | **GATE SÓNG VÁ** — 13 cổng cũ + 4 va-r* + repro 2 bộ đảo xanh | VA-R1..R4 | TỔNG | ⬜ |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
