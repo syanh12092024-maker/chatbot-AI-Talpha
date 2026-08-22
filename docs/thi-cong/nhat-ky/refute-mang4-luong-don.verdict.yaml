@@ -1,0 +1,99 @@
+phieu: L3-M1 · L3-M2 · L3-M3 · L3-M4 (mảng 4 — hai luồng đơn + chống trùng + tạo đơn thật)
+vong: 1
+ket_luan: TRA_VE
+do_bang_chung: |
+  Chạy thật trên sandbox tự dựng tự dọn (db/sandbox.js, DB aicloser_v3 @5433, KHÔNG
+  chạm dữ liệu dev, KHÔNG TRUNCATE). Ba đòn CHAN đều CONFIRMED bằng output máy.
+  ⚠️ CẢ BA CHAN hôm nay đang LATENT sau giàn giáo «chưa đấu» (goi_gia=0 khoá cua tiền ·
+  BANG_MAU_TIN rỗng khoá WA · V3_POS_GHI vắng khoá ghi POS · handler vaoHangCho chưa nối).
+  Chúng là lỗi CODE đã chứng minh, sẽ mất tiền THẬT ngay khi các khoá đó mở (đúng lộ
+  trình go-live) — phải vá TRƯỚC khi mở van, không phải «chưa xảy ra nên bỏ qua».
+
+findings:
+  - ma: F1
+    muc: CHAN
+    mo_ta: >-
+      Nguồn chống trùng (b) POS SỐNG — lá chắn MẠNH NHẤT của cửa ③ (đọc đơn thật, không
+      đọc nhãn) — coi đơn đang PACKING (status 8) là ĐÃ HUỶ nên bỏ qua nó ⇒ trả 'sach'
+      cho một đơn đang được đóng gói. Một hội thoại đã có đơn (sale tạo tay) tiến tới
+      packing thì lượt duyệt thứ hai không thấy trùng ⇒ đẻ ĐƠN COD ĐÚP. Đây đúng cửa sổ
+      «sale tạo tay 09:00, docDon chưa quét, 09:05 duyệt» mà nguồn (b) sinh ra để bịt.
+      Gốc lỗi = một-nguồn-một-luật trôi khỏi nhau: hang-cho.js chép nợ cũ {4,5,6,7,8}
+      trong khi ti-le-hoan.js (cùng mảng) khai đúng [4,5,6,7] kèm cảnh báo «8=packing là
+      bước TIẾN, KHÔNG chép theo». Bộ ca M4 Cb/Cb4 chỉ test status 0 và 6, KHÔNG test 8.
+    kich_ban: >-
+      node --env-file=.env <script gọi nguonB_posSong với nap trả đơn status 8 cùng
+      convId>. Output THẬT: status 0→'duong', 12→'duong', 4→'sach' (đúng), 8→'sach' (SAI).
+    file_line: src/orders/hang-cho.js:105 (HUY_HOAN có "8") + :322 (filter nguonB); trái src/orders/ti-le-hoan.js:45 (MA_HOAN=[4,5,6,7])
+
+  - ma: F2
+    muc: CHAN
+    mo_ta: >-
+      Bộ đọc ý đọc PHỦ ĐỊNH của từ xác-nhận thành XÁC NHẬN với do_tin=1 (max). khopNhanh
+      so theo biên-từ nhưng không hiểu phủ định ghép: "not sure" / "don't confirm" /
+      "cannot confirm" / "not sure yet" đều ra ket_qua='xac_nhan'. nhanPhanHoi(xac_nhan)
+      đi THẲNG tới ghiNguocPos → POS 'Chờ in' (12), KHÔNG có người xen giữa ⇒ ship COD
+      cho khách CHƯA đồng ý (bom hàng). Vi phạm chính nghiệm thu 02 §L3 «câu mơ hồ →
+      khong_ro» và doctrine tự khai của file «KHÔNG đoán liều». Thợ CÓ khai tradeoff
+      "not sure"→"sure" ở đầu file nhưng tradeoff đó không xoá được rủi ro tiền.
+    kich_ban: >-
+      node -e 'import("file://.../src/orders/doc-y.js").then(m=>["not sure","don''t
+      confirm","cannot confirm"].forEach(c=>console.log(c,m.docY(c))))'. Output THẬT: cả
+      ba → {ket_qua:'xac_nhan',do_tin:1}; đối chứng "not interested"→tu_choi, "yes"→xac_nhan.
+    file_line: src/orders/doc-y.js:128-130 (khopNhanh, không xử phủ định) + :151-155; hệ quả may-trang-thai.js:496-570 (xac_nhan→ghiNguocPos)
+
+  - ma: F3
+    muc: CHAN
+    mo_ta: >-
+      FOR UPDATE trong duyet() CÓ THẬT (khoá dòng Postgres, không phải Set-RAM) và chặn
+      đúng lượt-đúp CÙNG hangChoId. NHƯNG nó khoá theo DÒNG: hai dòng hang_cho khác nhau
+      CÙNG một hội thoại (tin_id khác, hoặc tin_id null không neo) không đụng khoá của
+      nhau. Hai lượt duyệt song song ⇒ cửa ③ chống trùng bị TOCTOU (cả hai đọc trạng thái
+      sạch TRƯỚC khi bên kia COMMIT: nguonA/B/E đều đọc snapshot cũ) ⇒ HAI đơn messenger
+      THẬT cho một hội thoại (luật 2 §0a cấm xoá). Thiếu khoá chống trùng ở grain hội
+      thoại: hang_cho_tao_don không có UNIQUE/advisory-lock trên hoi_thoai_id.
+    kich_ban: >-
+      node --env-file=.env refute-mang4.mjs: seed 2 dòng hang_cho cùng hoi_thoai +
+      goi_gia mở cua tiền, taoDon MOCK có rào-cản (chỉ chạy tiếp khi CẢ HAI đã qua cửa ③),
+      Promise.allSettled 2 duyet. Output THẬT: [TẠO | TẠO], don_hang messenger = 2.
+    file_line: src/orders/hang-cho.js:701-704 (FOR UPDATE theo dòng) + :446-489 (cua3 TOCTOU); schema db/schema.sql:257 (hang_cho_tao_don thiếu unique hoi_thoai_id)
+
+  - ma: F4
+    muc: NEN
+    mo_ta: >-
+      Đơn trang_ban_hang kẹt ở 'cho_gui_wa' KHÔNG job nào quét lại: CAU_QUET chỉ tuyển
+      (moi_tu_pos + pos 0) HOẶC (gui_wa_loi + dưới trần). Tiến trình chết giữa bat_dau_gui
+      (đã COMMIT cho_gui_wa) và gui_xong/gui_hong — hoặc guiTinMau ném LoiSaiNguonDon/
+      LoiDonKhongThuocTeam (re-throw ra catch ngoài, để nguyên cho_gui_wa) — thì đơn nằm
+      lại vĩnh viễn, khách KHÔNG bao giờ được hỏi WA. Đúng lỗ 37,4% mà module sinh ra để
+      bịt, nay mở lại IM LẶNG cho từng đơn dính. Cần: CAU_QUET tuyển thêm cho_gui_wa cũ,
+      hoặc gộp bat_dau_gui→gui thành một bước.
+    kich_ban: >-
+      node --env-file=.env refute-orphan.mjs: chèn 1 đơn cho_gui_wa + 1 đơn moi_tu_pos,
+      chạy quetDonMoi. Output THẬT: quét nhận 1 (chỉ moi_tu_pos), đơn cho_gui_wa vẫn 'cho_gui_wa'.
+    file_line: src/orders/quet-don-moi.js:61-69 (CAU_QUET không tuyển cho_gui_wa)
+
+  - ma: F5
+    muc: NEN
+    mo_ta: >-
+      Trần 5 lần nhắc chỉ kín KHI có đúng một chuỗi lịch/đơn. lich_nhac KHÔNG có UNIQUE
+      trên (don_hang_id) WHERE trang_thai='cho' — datLichNhac chống nhân đôi bằng
+      check-then-insert (SELECT rồi INSERT), an toàn một-tiến-trình (dangChay chặn chồng
+      lượt) nhưng KHÔNG an toàn nếu chạy >1 instance job quét (PM2 cluster / lượt tay xen
+      lượt cron): hai chuỗi 'cho' song song ⇒ mỗi chuỗi tự đi 1→5 ⇒ tối đa 10 tin nhắc
+      cho một đơn. Vá: unique partial index (don_hang_id) WHERE trang_thai='cho'.
+    kich_ban: >-
+      Đọc db/migrate/001_nen.up.sql:322 — chỉ có index thường trên hen_luc, không unique
+      trên don_hang_id. Concurrency: chạy 2 datLichNhac song song trên cùng donId (chưa
+      có lịch) → 2 dòng 'cho' (không repro trong lượt này vì cần >1 tiến trình thật).
+    file_line: db/schema.sql:318-331 (lich_nhac thiếu unique) + src/orders/lich-nhac.js:105-120 (check-then-insert)
+
+sach_da_kiem:
+  - "item #4 status 12: CHẮC — tao-don.js:57-64 verify BANG_MA lúc nạp + :162 tường minh + :358 chặn lại. Không finding."
+  - "item #6 mã 8 ở ti-le-hoan: ĐÚNG — MA_HOAN=[4,5,6,7] loại 8; cửa sổ ngày loc-trung dùng timestamptz (now()-interval) không lệch múi giờ."
+  - "item #1 Messenger→WA: KÍN — BANG_CHUYEN[messenger] chỉ 1 chuyển (da_tao→day_cho_in); donMessengerDaTao chặn nguon!=messenger; CAU_QUET lọc nguon='trang_ban_hang'."
+  - "item #5 huỷ lịch: KÍN cả 4 nhánh — nhan-phan-hoi-wa.js:54-57 BÙ huyLichNhac cho doi_sua/khong_ro; quetLichNhac:239 tái kiểm trang_thai_he!='da_gui_wa' trước khi gửi (không bắn cho đơn đã sang sale)."
+
+mu_code_review: []
+mu_nghiep_vu:
+  - "F1/F2/F3 đều là lỗi NGHIỆP VỤ đường-đơn (làn 🟥): đơn COD đúp + ship khách chưa đồng ý — trái 01 §1 và §7.3 «thà không tạo còn hơn tạo nhầm». Không chỉ lỗi code."

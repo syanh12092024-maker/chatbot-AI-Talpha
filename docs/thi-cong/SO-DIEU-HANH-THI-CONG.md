@@ -1,9 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 08:55 23/08 · **9 CHẶN đã verify** (đường-gửi 3 + tiền/
-> POS 6) · còn mảng team + luồng-đơn + prompt/toàn-cục chạy · phán: refute ĂN ĐẬM — gate
-> máy 13/13 xanh nhưng refute lộ 9 lỗ đường tiền/gửi thước không bắt. ⛔ KHÔNG push tới khi
-> vá xong sóng CHẶN.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 09:30 23/08 · 4/5 mảng refute về (team ĐẠT · tiền-hẹp
+> ĐẠT · cửa-gửi ĐẠT-nhưng-RF1-nâng-CHẶN · luồng-đơn 3 CHẶN) · đang chờ mảng prompt/toàn-cục
+> · **~11 CHẶN verify** gom thành 5 cụm vá · ⛔ KHÔNG push.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -193,6 +192,22 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm                                | ⬜         |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
+
+- 23/08 · REFUTE (mảng luồng-đơn L3 + cửa-gửi) — thêm 2 CHẶN MỚI verify + xác nhận trùng:
+  - 🔴 **RF-20 (CHẶN, đọc ý — tổng verify tay):** `doc-y.js` đọc "not sure"/"don't confirm"/
+    "cannot confirm" → `xac_nhan` do_tin=1 (thấy "confirm/sure", bỏ phủ định) ⇒ tự ship hàng
+    khách CHƯA đồng ý. `node -e docY('not sure')` = xac_nhan. Trái §L3 «mơ hồ→khong_ro».
+  - 🔴 **RF-21 (CHẶN, race):** `duyet()` FOR UPDATE khoá theo DÒNG hàng chờ, không theo HỘI
+    THOẠI ⇒ 2 dòng hang_cho cùng hội thoại + 2 duyệt song song = don_hang 2 (khác RF-12 =
+    cùng hang_cho_id). (`hang-cho.js` — mảng4 F3)
+  - RF-10 XÁC NHẬN LẠI bởi mảng luồng-đơn độc lập (mã 8 ở hang-cho.js:105) — 2 agent trùng.
+  - Mảng cửa-gửi (mảng 3 tôi) phán ĐẠT ở dev bình thường NHƯNG F1 của nó = RF-1 (tổng đã
+    nâng CHẶN vì RF-2 mở được van) — hai agent bất đồng mức, tổng giữ CHẶN (luật 1).
+  - RF-22 (GHI-NỢ, HỆ CŨ ngoài v3): webhook `server.js:68 POST /webhook` không chốt
+    READONLY + `appSecret` rỗng ⇒ note/tag/tin THẬT bay — bản đang chạy, KHÔNG đụng, ghi
+    cho cutover. RF-23 (GHI-NỢ): `chuanHoaSdt` gộp khách xuyên nước 8-số-nội-địa trong
+    chua-phan (Kuwait/Bahrain/Oman/Qatar) → báo trùng nhầm. RF-24: `doiSangDonViNho` trả 0
+    (không null) khi tong≤0 ⇒ COD free lọt cửa tiền.
 
 - 23/08 · REFUTE (mảng team/di trú) — **PHÁN ĐẠT, KHÔNG CHẶN** (cách ly team 17/17 đòn thật
   không phá được; di trú idempotent; down 003-006 sạch). NÊN nên vá trong sóng:

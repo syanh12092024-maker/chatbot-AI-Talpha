@@ -1,0 +1,60 @@
+phieu: mang3-cua-gui   # L1-M2 (cửa Messenger) · L1-M3 (cửa WhatsApp) · L2-M1 (handler v3 + queue)
+vong: 1
+ket_luan: DAT
+# Không phá được "tin/ảnh/tag/note THẬT bay ra ở DEV qua CODE của 3 phiếu v3". Đo env thật:
+# PANCAKE_READONLY="1" sạch (không space/CR), V3_PANCAKE_GUI/V3_WA_GUI/V3_NAP_DEV đều undefined.
+# Đã KIỂM và KÍN:
+#  · Cửa Messenger/WhatsApp: guard fail-closed đúng chiều (=== '1' VÀ !== '1'), đọc env TƯƠI mỗi
+#    lượt, đặt TRƯỚC lệnh gửi; giá trị lạ ('true'/' 1'/số) → ĐÓNG (không mở nhầm). guiTinMau: guard
+#    ④ vẫn đứng trước adapter; adapter thật ném LoiChuaCoEndpoint; BANG_MAU_TIN rỗng (deny-by-default).
+#  · nap.js nguonDangMo() = false ở dev (đo chạy) ⇒ hàng đợi v3 đóng; xepTin là đường ghi bảng DUY
+#    NHẤT; KHÔNG ai import queue/worker/handler-v3 ngoài chúng ⇒ đường v3 không tự khởi động ở dev.
+#  · Bộ test cửa tiêm spy qua deps (kể cả ca đối chứng dương); bộ nhạc trưởng mock 5 đường + bẫy
+#    globalThis.fetch; cổng l2-m1.sh TỰ thêm --experimental-test-module-mocks (báo trượt nếu thiếu).
+findings:
+  - ma: F1
+    muc: NEN
+    mo_ta: >-
+      executeTool (tools.js:97/197/266/271) + order-bridge.js:255 + pancake-orders.js chạy bằng
+      TOKEN/KHOÁ THẬT, KHÔNG có guard/READONLY nội tại — ở dev chỉ được chặn bởi MỘT tầng van ở
+      NGUỒN (nap). handler-v3 gọi runCloser NGUYÊN VĂN (closer.js:81 → executeTool), nên nếu tin
+      lọt vào executeTool (V3_NAP_DEV lọt ra ngoài harness, hay ai chạm worker) → note/tag bay ngay,
+      cửa v3 KHÔNG bao được. Phiếu ĐÃ ghi §9 (hợp thức ở VPS) — đúng phạm vi nợ N2, nhưng van dev
+      chỉ một tầng. Khuyến nghị: coi đây là bề mặt cần tầng-trong (không sửa tools.js được → chốt ở
+      worker/nap phải bất khả xâm phạm).
+    kich_ban: >-
+      node --env-file=.env <scratchpad>/refute-executetool.mjs  → bẫy fetch (chặn, ghi host+path bỏ
+      query) rồi gọi executeTool('handoff_human',...) với state pkConvId/pkCustId thật. KẾT QUẢ ĐO:
+      2 lượt ĐỊNH bắn bằng token thật — "GET pages.fm/.../settings" + "POST pages.fm/.../customers/
+      CUST-REAL/notes" (ghi NOTE thật). Chỉ fetch-trap chặn; PANCAKE_READONLY=1 vô can.
+    file_line: src/tools.js:266-271 · src/closer.js:81 · src/chat/handler-v3.js:66,482
+  - ma: F2
+    muc: GHI-NO
+    mo_ta: >-
+      NGOÀI 3 phiếu v3 (HỆ CŨ v2 chạy song song đến cutover) nhưng PHÁ LUẬT SỐ 1 ở dev: đường webhook
+      server.js:68 POST /webhook → handleIncoming → runCloser → executeTool + sendText KHÔNG có MỘT
+      chốt PANCAKE_READONLY nào (grep handler.js = 0); appSecret RỖNG (đo) ⇒ verifySignature trả true,
+      BỎ chữ ký. Máy dev có token sống + pkTags cấu hình ⇒ đủ đạn. (admin.js:358/389 gửi tin/note
+      dashboard cũng không readonly, nhưng /admin có Basic Auth). poll/cron/nap v3 đều có van; đúng
+      hai đường này thiếu.
+    kich_ban: >-
+      node --env-file=.env src/server.js  rồi POST tới localhost:3100/webhook body
+      {object:'page',entry:[{id:<pageId thật>,messaging:[{sender:{id:<psid>},message:{text:'...'}}]}]}
+      → không cần chữ ký, model trả tool_use handoff/chốt ⇒ pkAddNote/pkTagByName THẬT bay. (KHÔNG
+      chạy thật — cùng cơ chế đã chứng minh ở F1). Sửa: chốt READONLY ở processMessage/handleIncoming
+      + admin gửi-tin, hoặc đừng chạy server.js đầy đủ trên máy dev.
+    file_line: src/server.js:68-88,112-117 · src/handler.js:341 · src/messenger.js:81-91 · src/admin.js:358,389
+  - ma: F3
+    muc: GHI-NO
+    mo_ta: >-
+      package.json "test"="node --test test/" THIẾU --experimental-test-module-mocks ⇒ mock.module
+      undefined (đo) ⇒ ca ④#4 "cô lập bộ não" (phép đắt nhất của L2-M1) bị SKIP (test:348). Cổng
+      l2-m1.sh:218-220 tự thêm cờ nên ĐO ĐỦ — không phải xanh-giả ở cổng, nhưng ai chạy `npm test`
+      thấy xanh mà phép chống-lọt-outbound không hề chạy. Khuyến nghị thêm cờ vào script test.
+    kich_ban: "node -e \"import('node:test').then(t=>console.log(typeof t.mock.module))\" → undefined; npm test → ca ④#4 skipped"
+    file_line: package.json:21 · test/l2-m1-nhac-truong.test.js:34,348
+  # Quan sát nhỏ (không finding): N5 cửa Messenger kiểm psid∈page nhưng KHÔNG kiểm convId khớp psid;
+  # convId truyền xuống nguyên vẹn để gọi API. Thực tế handler-v3/nap lấy cả hai từ CÙNG dòng tin nên
+  # khớp; rào "đúng hội thoại" ở VPS mỏng nếu caller khác truyền lệch. Thấp, ghi để tổng biết.
+mu_code_review: []
+mu_nghiep_vu: []

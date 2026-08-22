@@ -1,0 +1,95 @@
+# PHẢN BIỆN ĐỐI KHÁNG — mảng 1: TIỀN + GHI-NGƯỢC POS + LÀM GIÀU ĐƠN
+# Agent refute · 23/08/2026 · DB dev talpha-pg:5433 (aicloser_v3) · chạy thật, không suy đoán chay
+# Phạm vi: PHIEU-L1-M1 (base dfcd9ae) · PHIEU-VA-P1 (base bbe3a4c) · PHIEU-VA-Q12 (base 31172e1)
+phieu: "L1-M1 + VA-P1 + VA-Q12"
+vong: 1
+ket_luan: DAT   # không tìm được finding CHAN sau khi thử thật; 3 NEN + 2 GHI-NO dưới
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ĐÃ CHẠY THẬT (không phá được các bẫy chính — nêu để không ai tưởng bỏ sót):
+#  · khuôn san_pham_ma: 0/4581 phần tử sai khuôn "<số>:<uuid>"; reader kiemTrung
+#    (loc-trung.js:263 .includes(String(sanPhamId))) và writer rutSanPhamMa
+#    (doc-don.js:116) DÙNG CÙNG khuôn → phép "ăn tiền" nghiệm thu ④ khớp thật, KHÔNG
+#    tự dựng điều kiện. tong_tien 0/3799 NOT NULL (fail-CLOSED đúng như khai).
+#  · mã 8=packing: mọi reader v3 (ti-le-hoan.js:45 MA_HOAN, may-trang-thai.js:423,
+#    ma-trang-thai.js:82) đều {4,5,6,7}, KHÔNG chỗ nào bê nhầm {4,5,6,7,8} của bản cũ.
+#  · CAS ghi-ngược đọc LIVE từ POS (ghi-nguoc.js:133), không đọc ảnh don_hang cũ; market
+#    suy từ chính ma_pos (cua-pos.js:43-56) fail-CLOSED → luồng caller KHÔNG PUT nhầm shop.
+#  · nhật ký 2 pha: PUT-mất-phản-hồi (coPhanHoi=false) để dòng bắt-đầu MỒ CÔI, đọc ra
+#    được (api.js:55-60 + ghi-nguoc.js:178); caller nhanPhanHoi gọi trên pool (không
+#    transaction) nên mồ côi KHÔNG bị rollback nuốt.
+#  · bộ ca mock: node --test va-q12 + l1-m1 + l3-m1 = 64/64 xanh.
+#  · VA-P1 (cặp 1→12): sạch — mã 1,12 đã xác minh trong BANG_MA, CAS/4 cửa nguyên vẹn,
+#    không mở lỗ hổng mới. KHÔNG finding.
+# ─────────────────────────────────────────────────────────────────────────────
+
+findings:
+  - ma: F1
+    muc: NEN
+    mo_ta: >-
+      docDon KHÔNG idempotent dưới SONG SONG — themMoi là INSERT thuần không ON CONFLICT
+      (truy-van.js:235), docDon dùng check-then-insert (layNhieu rồi themMoi) không khoá;
+      hai lượt chồng nhau cùng (team,ma_pos) hoặc cùng SĐT → lượt sau nổ 23505 → docDon
+      abort giữa chừng. Cổng va-q12.sh:12 khai "docDon idempotent" chỉ đúng cho CHẠY LẠI
+      TUẦN TỰ, không phải concurrency-safe.
+    kich_ban: >-
+      node scratchpad/pha.mjs → PHÁ1: 2 kết nối cùng SELECT thấy rỗng rồi cùng INSERT
+      don_hang (team 4, ma_pos "REFUTE-RACE-*:1") → "B THROW: 23505
+      don_hang_team_id_ma_pos_key" (đã dọn sạch, 0 dòng còn lại). UNIQUE bảo vệ nên KHÔNG
+      nhân đôi/mất dữ liệu và chạy lại là xong ⇒ NEN, không CHAN. Đề nghị: đính chính lời
+      khai cổng, hoặc bọc themMoi bằng ON CONFLICT khi phiếu suaTheoId-cho-ctxHeThong ra.
+    file_line: src/pos/doc-don.js:238-257 · src/db/truy-van.js:235 · ops/bin/nghiem-thu/va-q12.sh:12
+  - ma: F2
+    muc: NEN
+    mo_ta: >-
+      CAS ghi-ngược còn cửa sổ TOCTOU giữa GET cửa (c) và PUT: sale đổi trạng thái tay
+      trong khoảng đó (vd đơn vừa bị hủy 6, hoặc rời khỏi {0,1}) thì PUT status=12 VẪN
+      ghi đè — đẩy đơn đã hủy về "Chờ in". TAP_TIEN_IN {0,1} + hai lớp GET (docLivePos rồi
+      cửa c) thu hẹp nhưng KHÔNG đóng cửa sổ cuối; POS không có compare-and-set nguyên tử.
+    kich_ban: >-
+      Đọc mã ghi-nguoc.js:132-165 (GET live → so → PUT, không nguyên tử). KHÔNG tái lập
+      runtime được vì van V3_POS_GHI đang ĐÓNG + cần timing sub-second trên POS thật ⇒
+      PLAUSIBLE/NEN, không CHAN. Đề nghị: ghi §9 để diễn tập VPS ⑤c đo, và xét dùng
+      trường old_status có điều kiện của POS nếu API hỗ trợ.
+    file_line: src/pos/ghi-nguoc.js:132-165 · src/orders/may-trang-thai.js:502-539
+  - ma: F3
+    muc: NEN
+    mo_ta: >-
+      chuanHoaSdt GỘP NHẦM khách xuyên nước trong team chua-phan: Kuwait/Bahrain/Oman/Qatar
+      đều 8 số nội địa, hai người KHÁC NƯỚC cùng 8 số (hoặc +965 vs +973 cùng đuôi) ra cùng
+      giá trị chuẩn hoá → VA-Q12 upsert gộp 1 dòng khach → kiemTrung báo trùng NHẦM. Gốc là
+      chuanHoaSdt (L3-M2, VA-Q12 dùng lại đúng phiếu) + chua-phan gộp mọi nước.
+    kich_ban: >-
+      node scratchpad/pha.mjs → PHÁ2: chuanHoaSdt("51234567")Kuwait == ("51234567")Bahrain
+      == ("+96551234567") == ("+97351234567") = "51234567" (true). DB thật: 4 khach nối đơn
+      xuyên shop Saudi↔UAE (vd khach 345, SĐT 386685425). Có sale gác hang_cho nên không tự
+      mất đơn ⇒ NEN. Đề nghị: ghi nợ §9 "gộp xuyên nước trong chua-phan" để khi phân team/
+      thêm nước có 8-số-trùng thì biết.
+    file_line: src/orders/loc-trung.js:106-117 · src/pos/doc-don.js:206-223
+  - ma: F4
+    muc: GHI-NO
+    mo_ta: >-
+      doiSangDonViNho trả 0 (KHÔNG null) khi tong<=0/null VÌ kiểm tong TRƯỚC khi kiểm tệ:
+      cửa (b) taoDon chỉ chặn gia===null, nên đơn có tong_tien NULL (chính là giá trị mà
+      L1-M1/VA-Q12 CỐ Ý để NULL) + tệ bất kỳ → gia=0 lọt cửa → tạo COD free-shipping. Khớp
+      đứt giữa "docDon để tong_tien NULL" và "taoDon cần tongTien".
+    kich_ban: >-
+      node scratchpad/probe2.mjs → doiSangDonViNho(0,"VND")=0, (null,"VND")=0, (-5,"ABC")=0;
+      chỉ (100,"VND")=null. Ngoài 3 phiếu (tao-don.js = L3-M4) + van đóng ⇒ GHI-NO mảng
+      tiền. Đề nghị: đảo thứ tự (kiểm tệ trước) hoặc chặn gia<=0 ở cửa (b) khi phiếu L3-M4 mở.
+    file_line: src/pos/tao-don.js:104-110 · src/pos/tao-don.js:319-320
+  - ma: F5
+    muc: GHI-NO
+    mo_ta: >-
+      docDon ghi tien_te MÙ từ order_currency không kiểm khớp market: DB thật có 7 đơn
+      tien_te='VND' trên shop Saudi/UAE (phải SAR/AED), và id đơn dạng "B715116407.1"
+      (chữ+chấm, KHÔNG phải số) — trái lời khai nhật ký L1-M1 §1.6 "id đơn POS là dãy số".
+      Không crash (ma_pos vẫn unique nhờ prefix shop) nhưng là dữ liệu bất thường.
+    kich_ban: >-
+      node scratchpad/probe2.mjs → khối B: VND trên 1328205216(Saudi)+1635200759(UAE),
+      ma_pos "...:B715116407.1". Phiếu L1-M1 ⑥ đã dặn dữ liệu POS bất thường → §9, cấm sửa
+      giùm ⇒ GHI-NO. Đề nghị: §9 ghi "order_currency lệch market + id đơn không-số tồn tại".
+    file_line: src/pos/doc-don.js:249-254
+
+mu_code_review: []   # không có mũ /code-review trong lượt refute này
+mu_nghiep_vu: []     # mũ nghiệp vụ do agent review-nghiep-vu phụ trách, không trộn vào đây
