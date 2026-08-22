@@ -219,3 +219,69 @@ ghi_chu_cho_tong: >-
   hợp đồng kỹ thuật: §0 «schema.sql sinh lại sau mỗi migration» — hỏng ở pathspec, sửa bằng một
   dòng (N5). Việc dựng bảng mới ở đây là đúng: 01 §8 đòi kết nối POS theo team và 19 bảng thật sự
   không có chỗ chứa.
+
+# ─────────────────────────────────────────────────────────────────────────────
+verify_vong_2:
+  ngay: 2026-08-22
+  pham_vi: CHỈ VERIFY 3 CHAN theo checklist tổng — không mở kịch bản mới.
+  ban_phieu: PHIEU-L1-M1.md v2 · commit 9db9c11 (+ 205b6dd mở H9)
+  ma:
+    - ma: N1
+      dap: DAT
+      doi_chieu:
+        - "②#3 nâng bảng mã thành ĐIỀU KIỆN MỞ CỬA: «mã chưa xác minh ⇒ cửa (b) đóng, KHÔNG *tạm
+           cho qua*» — đảo đúng chiều, cửa hỏng về phía đóng thay vì phía cho qua — ✔"
+        - "②#2b: whitelist «khai cứng BẰNG MÃ ĐÃ XÁC MINH», bảng chuyển NẠP TỪ bảng đã xác minh —
+           ✔ hết đường khai tay một cặp chưa ai kiểm"
+        - "④#3b đủ ba vế: diff bảng-mã-trong-code ↔ bảng-đã-xác-minh-trong-nhật-ký (in cả bảng) ·
+           neo `{4,5,6,7,8}` phải thuộc nhóm hủy/hoàn · chưa xác minh → phép ĐỎ **và** gọi thử để
+           chứng minh cửa (b) đang ĐÓNG — ✔ vế cuối là vế đắt: nó đo CÁI CỬA, không chỉ đo cái bảng"
+        - "②#3 giữ nguyên văn kịch bản hỏng (3=«Đã giao» ⇒ đơn đánh dấu đã giao lúc hàng còn trong
+           kho) — thợ đọc phiếu là biết vì sao cấm đoán, ✔"
+    - ma: N2
+      dap: DAT
+      doi_chieu:
+        - "Chữ ký đổi thành `ghiNguocTrangThai(ctx, {donId, **tu**, sang})` — ✔ có vế «từ»"
+        - "Cửa (c) mới = COMPARE-AND-SET: «trước PUT phải GET trạng thái LIVE từ POS — live ≠ `tu`
+           → TỪ CHỐI (lỗi có tên + nhat_ky)», kèm câu cấm «tra whitelist trên ảnh chụp `don_hang`
+           cũ» và trích đúng §7.4 (sale đổi tay song song) — ✔ đóng đúng lỗ TOCTOU"
+        - "④#5b2: mock GET live ≠ `tu` → từ chối đúng tên lỗi · **PUT 0 lượt** · nhat_ky +1 dòng
+           bị-chặn — ✔ đo cả ba vế, không gộp"
+        - "Số cửa đã lên BỐN và ④#5 khai «đo ĐỦ, không gộp» — ✔ nhất quán"
+    - ma: N3
+      dap: DAT
+      doi_chieu:
+        - "`grep -c V3_KHOA_MA_HOA .env` = **1** (trước: 0) — chốt chặn đã gỡ trên máy dev, ✔"
+        - "②#1 khai thẳng: «`.env` dev ĐÃ có `V3_KHOA_MA_HOA` (tổng đặt 22/08 sau verdict N3); VPS
+           dùng khoá RIÊNG — việc NGƯỜI H9 §8 sổ, không chặn dev» — ✔ tách đúng hai vế dev/VPS"
+        - "H9 mở ở §8 sổ dòng 178: «Đặt `V3_KHOA_MA_HOA` RIÊNG trên VPS (32 byte; dev đã có khoá
+           tổng đặt 22/08)», cột Chặn gì = «cutover — ghi khoá model/POS thật trên prod» — ✔ phạm
+           vi khai đúng, nên §3 giữ Phụ thuộc L1-M1 = «R0» là ĐÚNG, không còn thiếu mã H"
+        - "④#2 (count `ket_noi_pos` = 7 market) nay chạy được — ✔ phiếu hết treo ở phép thứ hai"
+  bon_finding_con_lai_da_kiem_luon:
+    - "N4 đóng: cửa (d) nhật ký HAI PHA (`pos_ghi_bat_dau` trước PUT + `pos_ghi_ket_qua` sau, 2 dòng
+       vì bảng chỉ-INSERT) + ④#5b3 mock timeout SAU khi gửi → dòng bắt-đầu MỒ CÔI, đếm 2 loại in 2
+       số. Ca «PUT tới nơi, phản hồi mất» nay để lại dấu."
+    - "N5 đóng: `db/schema.sql` vào pathspec ③ kèm ghi chú «regen theo luoc-do-v1 §0»."
+    - "N6 đóng: ②#4 khai luật suy `nguon` bằng neo `conversation_id` (§7.5) + đơn không suy được →
+       LIỆT KÊ từng mã + đổ §9, cấm đoán bừa."
+    - "N7 đóng: ④#6 khai rõ phép 3/4 chạy dưới `ctxHeThong` (job nền, có audit), «không phải ctx
+       người thật; đường người thật đo ở L4 khi có màn» — thật thà đúng kiểu phép 5c."
+  con_lai_khong_chan:
+    - muc: GHI-NO
+      mo_ta: >-
+        Nửa phụ của N2 (giải shop từ chính dòng `don_hang`/`ket_noi_pos` của ctx, cấm nhận shop từ
+        tham số ngoài — 7 shop dùng chung không gian mã đơn) không nằm trong checklist vòng 2 và
+        chưa được khai; `docDon` vẫn nhận `{shop, …}`. Không mở lại N2 vì cửa (c) CAS đã chặn ca
+        ghi nhầm shop theo đường khác (GET live của sai shop sẽ không ra `tu` mong đợi ⇒ từ chối).
+        Thợ nên khai một câu trong nhật ký về cách giải shop.
+    - muc: GHI-NO
+      mo_ta: >-
+        ④ đánh số lệch thứ tự (…3, 4, 3b, 5…) và ① vẫn trích hai dòng nợ §9 cũ. Cả hai vô hại —
+        dòng nợ đang chặn đã được gỡ nên lời trích không còn dẫn thợ đi sai.
+  ket_luan_moi: DAT
+  ghi_chu: >-
+    7/7 finding đóng. Ba CHAN đóng đúng cơ chế chứ không đóng bằng lời hứa: N1 biến bảng mã từ
+    «việc phải làm» thành «điều kiện mở cửa» và có phép đo CHÍNH CÁI CỬA · N2 thay whitelist tĩnh
+    bằng compare-and-set đọc live · N3 gỡ chốt thật trên `.env` và tách phần VPS ra H9 đúng phạm vi.
+    Phiếu ĐỦ ĐIỀU KIỆN phát thợ, không cần vòng review nữa.

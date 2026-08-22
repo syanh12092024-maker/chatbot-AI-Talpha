@@ -139,7 +139,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 | Mã    | Việc                                                            | Phụ thuộc   | Session | Đụng file                          | Trạng thái |
 | ----- | --------------------------------------------------------------- | ----------- | ------- | ---------------------------------- | ---------- |
-| L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥 | R0          | thợ mới | `src/pos/*` `test/`                | ⬜         |
+| L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥 | R0          | thợ mới | `src/pos/*` `db/migrate/002` `test/` | 🎫         |
 | L1-M2 | Cửa Pancake Messenger — bọc code cũ, thêm định tuyến team       | R0          | thợ mới | `src/channels/messenger/*` `test/` | ⬜         |
 | L1-M3 | Cửa Pancake WhatsApp 🟥 (gửi tin ra khách)                      | **H1** + R0 | thợ mới | `src/channels/whatsapp/*` `test/`  | ⬜         |
 | R1    | **GATE SÓNG 1**                                                 | L1-M1..M3   | TỔNG    | —                                  | ⬜         |
@@ -224,6 +224,9 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
+- 22/08 · L1-M1 → 🎫 sẵn sàng chờ R0 — điểm (a) vòng 1 TRẢ-VỀ 3 CHAN, phiếu v2 đóng 7/7,
+  verify vòng 2 DAT · verdict nghiep-vu-L1-M1.verdict.yaml · phán tổng: sau R0 phát L1-M1
+  song song L1-M2 (khác vùng file, lệnh tăng-tốc 22/08 thắng nhịp tuần-tự-một-người).
 - 22/08 · L0-M1 → ✅ — tổng nghiệm thu: chặng 1 8/8 · cổng 51/51 (tổng tự chạy) · kiểm chéo
   độc lập 6 phép khớp; 2 lỗi thước _chan1 (nợ §9 của thợ) đã vá + đất điều hành loại khỏi
   phép pathspec · commit thợ b2ee56e · nghiệp vụ điểm (a) L0-M2 tổng tự chấm 4 câu: ĐẠT
