@@ -108,8 +108,8 @@ bang "_migrations sau lần 1 → lần 2" "${M1}→${M2}" "${M1}→${M1}"
 kiem_2_den_8() {
 
 muc "② DANH SÁCH bảng ↔ NEO NGOÀI 19 tên trích từ 02-KE-HOACH-CODE §Nền dữ liệu"
-# 22/08 TỔNG vá theo §9 (L1-M1): +ket_noi_pos (bảng 20, luoc-do-v1 §thay-đổi)
-NEO="$(printf '%s\n' ket_noi_pos team nguoi_dung vai thanh_vien_team cau_hinh_model page san_pham \
+# 22/08 TỔNG vá: +ket_noi_pos (20). 23/08: +tin_cho_xu_ly (21, migration 003 của L2-M1)
+NEO="$(printf '%s\n' ket_noi_pos tin_cho_xu_ly team nguoi_dung vai thanh_vien_team cau_hinh_model page san_pham \
   goi_gia khach hoi_thoai so_ai don_hang viec_can_xu_ly hang_cho_tao_don kich_ban \
   bo_luat_chung ky_nang lich_nhac nhat_ky | sort)"
 THAT="$(psqlx "SELECT table_name FROM information_schema.tables
