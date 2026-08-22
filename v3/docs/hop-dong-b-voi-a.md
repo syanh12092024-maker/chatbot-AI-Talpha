@@ -242,6 +242,24 @@ hợp đồng, không phải đổi code.
 `khach` · `hoi_thoai` · `don_hang` · `page` · `san_pham` · `so_ai` — B đọc để dựng màn chi
 tiết. B **không ghi** vào bảng nào trong số này.
 
+**Ba tên cột của `so_ai` mà màn chi tiết trông vào — chốt sớm, đây là chỗ dễ trượt nhất
+lúc di trú.** Sổ AI hiện tại (`ai-messages.jsonl`) ghi khoá là `page` và `cust`; nếu di trú
+giữ nguyên hai tên đó thì đoạn chat trên màn chi tiết **im lặng trống rỗng** — không lỗi,
+không cảnh báo, chỉ là không có tin nào. Đã dính thật lúc chạy thử.
+
+| Cột | B trông vào |
+|---|---|
+| `page_id` `cust_id` | khoá tra đoạn chat của một khách trên một page |
+| `thoi_gian` | mốc ms, dùng để sắp và hiển thị (đoán theo `nhat_ky`) |
+| `ben` | `'bot'` \| `'khach'` — ai nói |
+| `chu` | nội dung tin |
+| `lane` `ma_model` | hiện kèm mỗi tin của bot |
+
+B đọc rộng tay vài tên thay thế (`luc`/`tao_luc`/`t` cho thời gian, `noi_dung`/`tin` cho nội
+dung, `vai_tro`/`huong` cho bên) để đỡ vỡ lúc chưa chốt — nhưng `page_id`/`cust_id` thì
+**không có đường lui**. A đổi tên khác thì báo, B sửa `COT_THOI_GIAN_SO_AI` và hàm tra
+trong `v3/src/ui/dispatch/chi-tiet.js`.
+
 ---
 
 ## 5 · Khoá API mã hoá thế nào
