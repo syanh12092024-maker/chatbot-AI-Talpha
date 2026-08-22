@@ -533,7 +533,70 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   dồn dập không nghỉ) là HẾT DỮ LIỆU, có thể bỏ sót các trang sau — IM LẶNG. Chi tiết đủ:
   `docs/thi-cong/nhat-ky/phieu-va-q12.md`.
 
+- 23/08 · thợ L3-M4 (nợ mới — CỬA MẠNG POS THỨ HAI): `src/pos/api.js` tự khai là «chỗ DUY
+  NHẤT trong v3 chạm mạng của POS», nhưng nó KHÔNG nằm trong pathspec ③ của phiếu L3-M4
+  (án lệ #25) ⇒ hàm POST tạo đơn `guiTaoDon` tạm sống trong `src/pos/tao-don.js`. Nó vẫn là
+  MỘT cửa ra trần trụi, đếm được (bộ ca đếm `POST` từng lượt), nhưng hai cửa mạng POS trong
+  một repo là một khớp dễ trôi. Cùng họ với import SÂU `../pos/api.js#guiDocDon` mà nguồn
+  (b) phải dùng (`src/pos/index.js` chỉ export `docDon` — bản QUÉT-VÀ-GHI-DB, không phải
+  lượt GET trần) — đúng nợ mà `src/orders/cua-pos.js:18` đã ghi từ L3-M1. Vá: `api.js` thêm
+  `guiTaoDon` + `docMotTrangDon`, rồi xoá hai import sâu.
+- 23/08 · thợ L3-M4 (nợ mới — NGUỒN (c) CHỐNG TRÙNG MỚI CÓ MỘT VẾ): §7.3 bản cũ đọc «thẻ
+  trạng thái đơn trên hội thoại» (`ORDER_STOP_TAGS` = −1/−2/−3/−11/−12/−20, `conv-owner.js`).
+  v3 KHÔNG có cột nào giữ thẻ số của hội thoại Pancake — cửa Messenger v3 chỉ có `gatThe`
+  (GHI), không có đường ĐỌC. Nguồn (c) hiện đọc `hoi_thoai.trang_thai='POST_SALE'` và khai
+  thẳng `the_hoi_thoai: "chua_co_cot"` trong `cua_kiem`. ⚠️ Vế thiếu CỐ Ý không tính là
+  `unknown`: tính thì theo luật «unknown = đóng» mọi dòng hàng chờ chết vĩnh viễn. Rủi ro
+  còn lại (sale gắn thẻ trên Pancake mà chưa có đơn POS) do nguồn (b) POS SỐNG phủ trực
+  tiếp. Vá đúng = cửa Messenger cấp đường đọc thẻ hội thoại (đất L1-M2).
+- 23/08 · thợ L3-M4 (nợ mới — 🔴 `warehouse_id` KHÔNG CÓ NGUỒN NÀO TRONG v3): payload tạo
+  đơn POS đòi `warehouse_id` (khuôn cũ `createPancakeOrder` học nó từ đơn cũ của page qua
+  `productRef`). v3 không có cột nào giữ: `san_pham` không có, `don_hang` không có,
+  `doc-danh-muc.js` không đọc. `taoDon` fail-CLOSED (`LoiThieuThamChieuSanPham`, 0 lượt
+  POST) thay vì đoán. HỆ QUẢ ĐO ĐƯỢC: hôm nay MỌI lượt duyệt đều phải có sale `boSung`
+  `kho_hang` bằng tay. Vá = cửa POS lưu `warehouse_id` lúc đọc đơn/danh mục (đất L1-M1),
+  KHÔNG dựng một bộ «học từ đơn cũ» thứ hai trong `src/orders`.
+- 23/08 · thợ L3-M4 (nợ mới — 🟡 tra kết nối POS của page chỉ phủ 112/502): nguồn (b) cần
+  một `market` để gọi `layKetNoi`. Đo 23/08 trên `aicloser_v3`: khớp qua `page.pos_shop_id`
+  → `ket_noi_pos.shop_id` được **112/502** page; khớp qua nhãn `page.thi_truong`
+  (`KSA`·`Khác`·rỗng) với `ket_noi_pos.market` (`Saudi`…) được **0/502** — hai từ vựng khác
+  nhau. 390 page còn lại ⇒ nguồn (b) `unknown` ⇒ cửa ĐÓNG (đúng nguyên tắc, nhưng là 78%
+  hàng chờ không duyệt được). Vá = di trú điền `pos_shop_id` cho mọi page (đất di trú/L1-M1),
+  hoặc chuẩn hoá một từ vựng thị trường duy nhất. ⛔ Đừng vá bằng một bảng ánh xạ gõ tay
+  `KSA→Saudi` (án lệ #22: danh sách gõ tay là lỗ hẹn giờ).
+- 23/08 · thợ L3-M4 (khai rõ hệ quả của nợ `goi_gia` giá-0, KHÔNG phải nợ mới): `goi_gia`
+  = **0 dòng** toàn hệ ⇒ cửa tiền ② trả `unknown_chua_co_bang_gia` cho MỌI dòng hàng chờ và
+  ĐÓNG ⇒ **hôm nay 100% lượt `duyet` bị chặn ở cửa ②**, kể cả khi mọi cửa khác sạch. Đây là
+  hành vi ĐÚNG theo §7.3 (thà chặn còn hơn tin con số bot nêu — án lệ khách Priscela Amon),
+  và là cách phiếu L3-M4 sống chung với nợ L1-M1; ghi ra đây để người sau đọc bảng điều
+  khiển «0 đơn duyệt được» không đi tìm bug ở `hang-cho.js`.
+
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 23/08 · L3-M4 → 🔎 chờ nghiệm thu — hàng chờ tạo đơn Messenger `src/orders/hang-cho.js`
+  + cửa TẠO ĐƠN THẬT `src/pos/tao-don.js`: NĂM cửa §7.3 (đủ trường · tiền · chống trùng ·
+  hàng chờ · tạo-đơn-chạy-lại-đủ-cửa) với **NĂM nguồn** chống trùng (bản cũ bốn) — nguồn (b)
+  GET **POS SỐNG**, KHÔNG đọc gương `don_hang`; mọi nguồn `unknown` ⇒ **ĐÓNG**. `taoDon`
+  BỐN cửa khuôn `ghi-nguoc.js`, `status: 12` TƯỜNG MINH (cấm bê `status: 0` khuôn cũ),
+  idempotent BA lớp (dòng · `SELECT … FOR UPDATE` · kiểm nhật-ký-MỒ-CÔI **trước POST**, lớp
+  duy nhất sống qua rollback). Chỗ đấu `src/chat/handler-v3.js` bước 11b, 1 chỗ.
+- 23/08 · L3-M4 → 🔴 BA LỆCH ĐỀ BÀI đo được trước khi code (án lệ #4): **`variation_id` của
+  POS là UUID chứ không phải số** (`san_pham.ma` 137/137 · `don_hang.san_pham_ma`
+  4.581/4.581 phần tử · số thuần 0) — bản đầu ép `Number()` sẽ TỪ CHỐI 100% sản phẩm thật ·
+  **tra kết nối POS theo nhãn `page.thi_truong` trúng 0/502**, khoá đúng là `pos_shop_id`
+  (112/502) · **`warehouse_id` không có nguồn nào trong v3** ⇒ fail-CLOSED, sale bổ sung.
+  Kèm bẫy đắt nhất của lượt: nhạc trưởng ghi `so_ai(order)` TRƯỚC khi gọi `vaoHangCho`, nên
+  nguồn (a) phải TRỪ sự kiện của chính lượt đó (`tinId`) — không trừ thì mọi dòng tự báo
+  trùng và 0 đơn ra, im lặng. 5 dòng nợ §9 (3 🔴/🟡 đường đơn).
+- 23/08 · L3-M4 → cổng `ops/bin/nghiem-thu/l3-m4.sh` **62 phép ĐẠT / 0 TRƯỢT / 1 HOÃN**
+  (2 lượt liên tiếp, rc=0, sandbox tự dựng/dọn; HOÃN = tạo đơn THẬT §7b **T7**, `nap` tiêm
+  ở mọi phép) · bộ ca `test/l3-m4-*` **44/44** · hồi quy gộp trong cổng **161/0** · hồi quy
+  toàn v3 **326 ca / 1 đỏ CÓ SẴN** (`l2-m2-handler` «không cướp diễn đàn» — A/B `git stash`
+  đúng tệp mình sửa xác nhận đỏ y hệt ở HEAD, nợ §9 23/08 của L2-M3) · `kiemTrung` chạy
+  **THẬT** trên `aicloser_v3` (cấm mock): bắt cặp `501984606` → `trung_khop_san_pham` ·
+  `ca_hai` · 2 đơn, phép CHỈ ĐỌC (dev hàng chờ 0/0, đơn 3784/3784) · RACE 2 lượt duyệt song
+  song ⇒ 1 POST 1 đơn · 7 đảo-vá không đột biến nào sống sót · commit `e97fcb1` (code) +
+  dòng này (sổ+nhật ký) · nhật ký `docs/thi-cong/nhat-ky/phieu-l3-m4.md`
+
 
 - 23/08 · VA-Q12 → ✅ (TỔNG nghiệm thu) — cổng 17/17 ×2 · khach 0→3.218 · don_hang nối
   khach_id 3.779/3.784 · phép ăn tiền kiểm chéo độc lập: cặp 966501984606 trung=true
