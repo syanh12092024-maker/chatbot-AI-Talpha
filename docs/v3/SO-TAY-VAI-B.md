@@ -15,9 +15,10 @@
 | L1-M4a · Lõi lớp model | **xong** |
 | L0-M3 · Đăng nhập, chọn team, hai vai | **xong** |
 | L0-M4 · Nhật ký thao tác | **xong** |
-| L1-M4b+c · Cấu hình model theo team, kho khoá, dự phòng | đang làm |
-| L4-M1 · Bảng điều phối | đang làm |
-| L4-M2 · Đánh dấu đã xử | đang làm |
+| L1-M4b+c · Cấu hình model theo team, kho khoá, dự phòng | **xong** |
+| L4-M1 · Bảng điều phối | **xong** |
+| L4-M2 · Đánh dấu đã xử | **xong** |
+| Nối dây phần rìa (`v3/src/vai-b.js`) | **xong** |
 
 Spec từng module: `v3/docs/spec/`. Hợp đồng với người A: `v3/docs/hop-dong-b-voi-a.md`.
 
@@ -85,6 +86,9 @@ có ghi nhật ký, cấm sửa/xoá `nhat_ky` và `so_ai`, cấm xoá mọi b�
 | 20 | **Việc của team khác → 404, không phải 403** | 403 là xác nhận "dòng này có tồn tại ở team khác" — rò rỉ đúng thứ lớp team sinh ra để giấu |
 | 21 | **Không có đường mở lại việc đã đóng** trong giai đoạn 1 | Mở lại là sửa dữ liệu đã chốt. Mã `mo_lai_viec` đã để sẵn trong danh mục nhật ký |
 | 22 | **Mẫu đường POS để trong biến môi trường `V3_POS_MAU_DON`**, trống thì nút hiện mờ | Bản đang chạy chỉ gọi API POS, chưa ai mở giao diện POS bằng mắt. Đoán bừa thì dẫn sale tới trang 404 |
+| 23 | **Đóng việc người khác đang giữ cũng bị chặn**, quản trị không có cửa vượt | Cùng lý do với "không cướp im lặng". **Đánh đổi:** sale nhận việc rồi nghỉ thì việc kẹt tới giai đoạn 2 |
+| 24 | **Trang HTML hết vé thì chuyển hướng về đăng nhập**, đường `/api` vẫn trả JSON | Sale mở dấu trang buổi sáng nhìn thấy khối JSON thì không có đường đi tiếp. Máy gọi máy thì mã lỗi mới là thứ đúng |
+| 25 | **Thêm `v3/src/vai-b.js` nối dây một lời gọi** | Bốn module không import lẫn nhau nên phải nối tay 12 chỗ, đúng thứ tự. Cả hai cách nối sai đã xảy ra thật lúc chạy thử |
 
 ---
 

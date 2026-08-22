@@ -302,19 +302,37 @@ A không phải làm gì cho việc này, chỉ cần `cau_hinh_model.sua_luc` �
 
 ---
 
-## 8 · Việc A cần làm để nối vào code của B
-
-Ba dòng, đặt lúc dựng ứng dụng:
+## 8 · Việc A cần làm để nối vào code của B — **một lời gọi**
 
 ```js
-import { datTaoTruyVan }  from '../auth/cong-du-lieu.js';  // hoặc mỗi module tự nhận
-import { datPheuSoAi }    from '../model/index.js';
-import { datPheuNhatKy }  from '../audit/index.js';
+import express from 'express';
+import { dungPhanB } from './v3/src/vai-b.js';
 
-datTaoTruyVan(taoTruyVan);   // hàm tạo truy vấn của A
-datPheuSoAi(ghiSoAi);        // để mọi lượt gọi model tự ghi mã model vào Sổ AI
-datPheuNhatKy(ghiNhatKy);    // để lớp model và lớp auth ghi được nhật ký
+const app = express();
+dungPhanB(app, {
+  taoTruyVan,             // BẮT BUỘC · cổng có chèn điều kiện team (mục 3)
+  taoTruyVanHeThong,      // BẮT BUỘC · cổng KHÔNG gắn team, chỉ 4 bảng dùng chung (mục 4)
+  ghiSoAi,                // để mọi lượt gọi model tự ghi mã model vào Sổ AI (mục 2)
+  canhBao,                // nơi nhận báo khi tự chuyển model dự phòng
+  express,                // để tự gắn express.json()
+});
 ```
 
-Chưa nối thì code của B vẫn chạy được bằng bản giả trong test, và **kêu lên** khi chạy
-thật mà chưa nối — không im lặng chạy sai.
+Xong. Không phải nhớ mười hai chỗ tiêm, không phải nhớ thứ tự middleware.
+
+**Vì sao có file này.** Bốn module của vai B cố ý không import lẫn nhau, nên ai dựng ứng
+dụng cũng phải nối tay mười hai chỗ. Trong lúc chạy thử 22/08, **cả hai cách nối sai đều đã
+xảy ra thật**, và cả hai đều hỏng theo kiểu tệ nhất — im lặng hoặc muộn:
+
+| Nối sai | Hỏng thế nào |
+|---|---|
+| `lopBoiCanh()` đặt **sau** router đăng nhập | `/api/toi` trả 401 → màn chọn team đá ngược về đăng nhập → **người thuộc nhiều team không bao giờ vào được**, không một dòng lỗi |
+| Tiêm **cái chắn đã dựng** thay vì hàm dựng | `Cannot read properties of undefined (reading 'boiCanh')` — nổ giữa lúc có khách bấm, stack trace phun ra trình duyệt |
+
+`dungPhanB` **ném ngay lúc nối** nếu thiếu cổng dữ liệu, và **kêu ra** nếu thiếu phễu Sổ AI
+hoặc phễu cảnh báo — thiếu phễu cảnh báo nghĩa là nhà chính hết tiền thì tự chuyển dự phòng
+mà không ai được báo, đúng cảnh 06/08/2026.
+
+Muốn nối tay từng chỗ thì vẫn được, mọi hàm `dat…` đều còn xuất ra. Đọc `v3/src/vai-b.js`
+để lấy đúng thứ tự.
+
