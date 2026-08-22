@@ -1,0 +1,74 @@
+phieu: L0-M1 + L0-M2   # mảng 2: nền dữ liệu + cách ly team + di trú
+vong: 1
+ket_luan: DAT
+# Đã tấn công CÁCH LY TEAM bằng battery 17 phép qua chính tầng truy vấn (chạy thật trên
+# talpha-pg, bọc BEGIN/ROLLBACK) — KHÔNG phá được: không ctx/ctx kỹ thuật → ném lỗi có
+# tên (không trả rỗng); truyền tay team_id khác → LoiXuyenTeam + nhat_ky+1; đọc-theo-id
+# chéo team → null; bo_luat_chung OR-IS-NULL đúng (team thường không đọc/sửa/tạo dòng NULL);
+# tên cột/tên bảng bẩn bị chặn; các RAW-select ngoài src/db (may-trang-thai, whatsapp) đều
+# là nhánh ctxHeThong tự-ràng team của chính dòng, không rò. Di trú idempotent thật (chạy 2
+# lần trong tx: page/kich_ban/bo_luat_chung/ky_nang không đổi). down 003–006 đúng, re-up
+# chạy được. Rào §8 (chèn thành viên team kỹ thuật) chặn ở DB (23514). Không có CHAN.
+findings:
+  - ma: F1
+    muc: NEN
+    mo_ta: >
+      TRUNCATE lách trigger chỉ-INSERT của nhat_ky/so_ai — lời khai schema
+      "cấm UPDATE, cấm DELETE — kể cả của chủ CSDL" bị phá; TRUNCATE xoá sạch sổ audit/sổ AI.
+    kich_ban: >
+      docker exec -i talpha-pg psql -U aicloser -d aicloser_v3 -c
+      "BEGIN; TRUNCATE nhat_ky; SELECT count(*) FROM nhat_ky; ROLLBACK;"
+      → in 0 (57638→0), KHÔNG lỗi; trong khi UPDATE/DELETE cùng bảng bị RAISE chặn.
+      Trigger là BEFORE UPDATE OR DELETE ... FOR EACH ROW (tgtype 27) nên không phủ TRUNCATE.
+    file_line: db/migrate/001_nen.up.sql:381-393
+    va_de_xuat: thêm trigger BEFORE TRUNCATE ... FOR EACH STATEMENT + REVOKE TRUNCATE khỏi role app.
+  - ma: F2
+    muc: NEN
+    mo_ta: >
+      Không xoá được nguoi_dung một khi có dòng nhat_ky: FK nguoi_dung_id ON DELETE SET NULL
+      trên bảng append-only ⇒ cascade sinh UPDATE nhat_ky ⇒ trigger chỉ-INSERT chặn ⇒ DELETE user hỏng.
+    kich_ban: >
+      BEGIN; INSERT nguoi_dung; INSERT nhat_ky(nguoi_dung_id=user đó);
+      DELETE FROM nguoi_dung → ERROR "bang nhat_ky chi INSERT — cam UPDATE"
+      (CONTEXT: UPDATE ONLY nhat_ky SET nguoi_dung_id=NULL). User không vướng nhat_ky thì xoá được.
+    file_line: db/migrate/001_nen.up.sql:339 (FK) + :387-389 (trigger)
+    va_de_xuat: bỏ ON DELETE SET NULL trên nhat_ky.nguoi_dung_id (giữ id trơ, không FK-action) — đã có hoat_dong để vô hiệu hoá mềm.
+  - ma: F3
+    muc: GHI-NO
+    mo_ta: >
+      bo_luat_chung không có UNIQUE (chỉ PK+FK) và seedBoLuatChung là SELECT-rồi-INSERT
+      không nguyên tử ⇒ hai lượt di trú chạy song song đẻ 2 luật toàn hệ (NULL) v1 trùng;
+      cũng cho phép 2 dòng dang_dung=true cùng team.
+    kich_ban: >
+      Suy từ mã: db/di-tru/bo-luat-va-ky-nang.js:34-47 (guard không atomic) + pg_constraint
+      của bo_luat_chung chỉ có pkey/fkey (đã đo). Idempotent tuần tự OK, chỉ hở khi đồng thời.
+    file_line: db/di-tru/bo-luat-va-ky-nang.js:34-47
+  - ma: F4
+    muc: GHI-NO
+    mo_ta: >
+      demSoAiTheoLoai(pool, {}) không teamId ⇒ đếm GỘP so_ai mọi team (rò aggregate count
+      chéo team). Foot-gun: caller per-team quên truyền teamId là lặng lẽ gộp. Ngoài L0 (src/chat, L2/L3).
+    kich_ban: "Đọc mã: nhánh else không có WHERE team_id."
+    file_line: src/chat/so-ai.js:118-126
+  - ma: F5
+    muc: GHI-NO
+    mo_ta: >
+      Đường chặn-xuyen-team ghi audit rồi mới throw: (a) nếu caller bọc tx và rollback khi
+      bắt LoiXuyenTeam thì dòng nhat_ky 'chan_xuyen_team' mất theo; (b) nếu ghiNhatKy hỏng
+      (vd nguoiDungId không có trong nguoi_dung) thì ném lỗi pg 23503 thay vì LoiXuyenTeam.
+      Cả hai vẫn FAIL-CLOSED (ghiNhatKy chạy trước SELECT nên KHÔNG rò dữ liệu) — chỉ hỏng
+      hợp đồng lỗi/audit, không hỏng cách ly.
+    kich_ban: >
+      Đo thật: ctx.nguoiDungId=id-không-tồn-tại → layNhieu(...team_id khác...) ném pg 23503,
+      dữ liệu team kia KHÔNG trả về. Với user thật: ném đúng LoiXuyenTeam + nhat_ky+1.
+    file_line: src/db/truy-van.js:128-145
+  - ma: F6
+    muc: GHI-NO
+    mo_ta: >
+      napKichBan dùng INSERT ... ON CONFLICT(page_id,phien_ban) nhưng có UNIQUE bộ phận
+      kich_ban_live_moi_page (1 LIVE/page); nguồn nếu có ≥2 bản LIVE cùng page sẽ làm di trú
+      chết GIỮA lượt (diTruTatCa không bọc transaction) — data-dependent, dataset hiện tại không dính.
+    kich_ban: "Suy từ mã + index; kich_ban=69 nạp thành công nên nguồn hiện tại không có 2 LIVE/page."
+    file_line: db/di-tru/nap.js:161-168 + db/migrate/001_nen.up.sql:289
+mu_code_review: []
+mu_nghiep_vu: []

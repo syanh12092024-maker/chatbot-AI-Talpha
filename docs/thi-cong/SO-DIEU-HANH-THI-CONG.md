@@ -194,6 +194,16 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
+- 23/08 · REFUTE (mảng team/di trú) — **PHÁN ĐẠT, KHÔNG CHẶN** (cách ly team 17/17 đòn thật
+  không phá được; di trú idempotent; down 003-006 sạch). NÊN nên vá trong sóng:
+  - RF-16 (NÊN): `TRUNCATE nhat_ky/so_ai` LÁCH trigger chỉ-INSERT (57638→0 không lỗi) —
+    lời khai «cấm kể cả chủ CSDL» sai. Vá: `BEFORE TRUNCATE` statement-trigger + REVOKE.
+    (`db/migrate/001_nen.up.sql`)
+  - RF-17 (GHI-NỢ): `bo_luat_chung` thiếu UNIQUE + `seedBoLuatChung` SELECT-rồi-INSERT không
+    atomic ⇒ dup luật toàn hệ khi chạy song song · RF-18: `demSoAiTheoLoai(pool,{})` thiếu
+    teamId đếm gộp mọi team (đất src/chat) · RF-19: `napKichBan` UPSERT vs UNIQUE 1-LIVE/page
+    chết nếu nguồn có ≥2 LIVE/page.
+
 - 23/08 · REFUTE (mảng tiền/POS) — 6 CHẶN tổng TỰ VERIFY bằng repro
   `refute-tong-the-1.repro.mjs` (sandbox, 0 byte ra POS). ⚠️ 117/117 ca của 7 bộ test đang
   XANH mà KHÔNG cổng nào bắt được finding nào — đúng cảnh báo «toàn luật cấm thì màn trống
