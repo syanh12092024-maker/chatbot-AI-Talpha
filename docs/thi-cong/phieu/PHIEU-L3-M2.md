@@ -1,6 +1,6 @@
 # PHIẾU L3-M2 — Lọc trùng CHÉO hai luồng đơn + chấm tỉ lệ hoàn từ lịch sử POS
 
-**Base:** `DIEN-LUC-PHAT` · **Làn:** 🟥 (kết quả quyết đơn được tạo/chặn — đường đơn) ·
+**Base:** `f295de8` · **Làn:** 🟥 (kết quả quyết đơn được tạo/chặn — đường đơn) ·
 thợ **opus** (danh sách 4-phiếu-opus) · điểm (a) tổng tự chấm: thi hành 01 §1 câu «Lọc
 trùng phải KIỂM CHÉO cả hai luồng — cùng một khách vào được bằng hai đường» + 02 §L3;
 không gửi gì ra ngoài (chỉ đọc POS + ghi bảng nội bộ) nên không thuê lượt (a).

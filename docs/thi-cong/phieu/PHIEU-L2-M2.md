@@ -1,6 +1,6 @@
 # PHIẾU L2-M2 — Lớp từ khoá v3 trước bộ não: 2 luật Botcake chưa phủ + vá `paano mag order`
 
-**Base:** `DIEN-LUC-PHAT` · **Làn:** 🟨 (nội bộ src/chat, không gửi gì mới ra ngoài) ·
+**Base:** `f295de8` · **Làn:** 🟨 (nội bộ src/chat, không gửi gì mới ra ngoài) ·
 thợ **sonnet** · điểm (a) tổng tự chấm: thi hành 01 §2 bảng đối chiếu 10 page + §12 lỗ
 `paano`; bỏ đi thì tắt Botcake (T3) là mất 2 nhóm câu khách hỏi nhiều nhất chưa ai đỡ.
 
