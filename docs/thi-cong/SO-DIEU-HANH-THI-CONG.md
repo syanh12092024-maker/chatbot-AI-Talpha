@@ -291,7 +291,62 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   nên chưa mất gì, nhưng HEAD hiện KHÔNG có code L1-M2 và sổ thì khai ✅. Vá: `git add`
   lại đúng 6 đường dẫn đó rồi commit — ⛔ L1-M1 không chạm (đất phiếu khác, án lệ #25).
 
+- 22/08 · thợ L3-M1 (nợ P1 — 🔴 CHẶN một nhánh ĐANG CHẠY): `src/pos/ma-trang-thai.js#CHUYEN_CHO_PHEP`
+  chỉ có `0→12` và `12→0`. Cặp **`1→12` KHÔNG có**, trong khi đồ thị POS thật là `0 → 1 → 12 → 8`
+  (sale duyệt tay xen giữa lúc bot chờ khách trả lời). Hệ quả đo được: ca `live=1` của L3-M1
+  ngoài đời KHÔNG tới `day_cho_in` mà rơi vào `cho_sale` + `viec_can_xu_ly`
+  («pos_tu_choi_ghi (LoiChuyenNgoaiBang)») — không im lặng, nhưng là một đơn phải làm tay.
+  Vá = thêm cặp `1→12` vào bảng ĐÃ XÁC MINH (đất phiếu L1-M1, L3-M1 không chạm — án lệ #25).
+  Neo đo: `ops/bin/nghiem-thu/l3-m1.sh` phép ③c (in ⏸ HOÃN) + ca `C5` của
+  `test/l3-m1-may-trang-thai.test.js` (sẽ ĐỎ khi ai vá xong — đó là lúc sửa
+  `docs/v3/ban-giao/may-trang-thai-don-v1.md` §3).
+- 22/08 · thợ L3-M1 (VƯỢT PATHSPEC ③ — khai trước, xin sau đúng lệnh đề bài): phiếu ③ không
+  liệt `db/migrate/`, nhưng đo `don_hang` ra ĐÚNG 14 cột, không cột nào chứa nổi lý do không
+  gửi / số lần thử và không có cột jsonb ⇒ buộc phải có **`db/migrate/004_trang_thai_don`**
+  (số 004 do TỔNG cấp trong đề bài). Ba đường dẫn vượt ③ trong commit:
+  `db/migrate/004_trang_thai_don.up.sql` · `.down.sql` · `docs/v3/ban-giao/luoc-do-v1.md`
+  (APPEND §8, đề bài yêu cầu «khai lý do vào luoc-do-v1 §thay-đổi»). Không đụng bảng nào của 003.
+- 22/08 · thợ L3-M1 (nợ P2): **`db/schema.sql` CHƯA regen** — `node db/migrate.js schema` sinh
+  từ TOÀN BỘ `db/migrate/*.up.sql`, trong đó `003` của L2-M1 còn nằm ngoài git; regen là kéo
+  migration thợ khác vào commit của mình (án lệ #24/#25). Ca `S11` của `l0-m1-luoc-do.test.js`
+  ĐÃ ĐỎ TỪ TRƯỚC lượt này (đo: gỡ 004 khỏi cây, S11 vẫn đỏ ⇒ nguyên nhân là 003). TỔNG chạy
+  `node db/migrate.js schema` **một lượt duy nhất sau khi CẢ 003 lẫn 004 đã gộp**, rồi chạy lại
+  S11. ⚠️ Thợ L2-M1 đã tự regen file đó trong lúc tôi làm nên nó hiện chứa CẢ `tin_cho_xu_ly`
+  lẫn `ly_do_khong_gui` — file NÓNG hai bên, L3-M1 cố ý không commit nó. CSDL dev cũng chưa áp
+  004 (áp là chạy luôn 003 của thợ kia); cổng + bộ ca đều tự dựng sandbox nên không cần.
+- 22/08 · thợ L3-M1 (nợ P3): repo đang có **BA** đường UPDATE hẹp — `suaTheoId` (`src/db/`,
+  không nhận `ctxHeThong()`), `suaTheoIdPos` (`src/pos/kho.js`, bản TẠM của L1-M1), và
+  `ghiDon` trong `src/orders/may-trang-thai.js` (allow-list 4 cột, luôn kẹp `team_id`).
+  Lý do không tái dùng `suaTheoIdPos`: nó tự ghi thêm một dòng `nhat_ky` ghi chú «cửa POS sửa
+  dòng» — câu đó SAI cho một lượt chuyển trạng thái ĐƠN («cổng lỏng mà log nói dối là HAI lỗi»).
+  Bản vá đúng: `suaTheoId` hỗ trợ `ctxHeThong()` ở `src/db/` (đất L0-M2) rồi gộp cả ba về một.
+- 22/08 · thợ L3-M1 (nợ P4): `src/pos/index.js` (cửa VÀO duy nhất) KHÔNG re-export hàm đọc MỘT
+  đơn — chỉ có `docDon` (quét cả shop, phân trang, ghi DB). Vế `tu` của compare-and-set phải đọc
+  LIVE, nên `src/orders/cua-pos.js` import SÂU `src/pos/api.js#guiDocMotDon` (hàm CHỈ-ĐỌC, GET).
+  Vá: re-export `docMotDonLive` ở `src/pos/index.js` rồi xoá import sâu đó.
+
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+
+- 22/08 · L3-M1 → 🔎 chờ nghiệm thu — máy trạng thái đơn `src/orders/` (4 tệp) + migration
+  004 (`ly_do_khong_gui` CHECK 3 giá trị · `so_lan_thu_wa` · bất biến đôi «lý do chỉ sống cùng
+  gui_wa_loi»): bảng chuyển KHAI CỨNG **per-nguồn** 13 cặp, deny-by-default, cặp ngoài bảng ném
+  `LoiChuyenNgoaiBangDon` / ép sai nhánh ném `LoiSaiNhanhNguon`, lượt BỊ CHẶN vẫn ghi `nhat_ky` ·
+  nhánh messenger ĐÚNG MỘT chuyển `da_tao→day_cho_in`, spy cửa WA = **0 TUYỆT ĐỐI**, 0 dòng
+  pre-duyệt trong `don_hang` (đất L3-M4) · `xac_nhan` CAS THEO LIVE với `TAP_TIEN_IN=[0,1]`
+  (**đo được**: mã 1=`submitted`, đồ thị `0→1→12→8`), live ngoài tập ⇒ 0 lượt ghi POS +
+  `cho_sale` + `pos_trang_thai_la` · ba lý do không gửi đếm **1/1/1** trên riêng đơn trang bán
+  hàng (messenger=0) + trần thử lại ⇒ `cho_sale` · job quét nhịp 4′ (trần 5′) rebind ctx PER-ĐƠN
+  (26/26 đơn thật ở team KỸ THUẬT ⇒ ctx người bất khả dụng) · 3 hook cho L3-M3/M4.
+- 22/08 · L3-M1 → 🔴 LỆCH ĐỀ BÀI (án lệ #4, đắt nhất lượt này): phiếu ④#3 đòi `live=1` →
+  `day_cho_in`, nhưng cửa POS thật chỉ cho `0→12`/`12→0` ⇒ **ngoài đời ca đó vào `cho_sale`**;
+  chỉ MOCK mới xanh. Không sửa cửa đã ✅ (án lệ #25) — code xử đúng cả hai đời (bắt lỗi, đơn
+  sang `cho_sale` mang ĐÚNG TÊN LỖI), cổng thêm phép ③c ĐO CỬA THẬT + in ⏸ HOÃN, ca `C5` là neo
+  known-answer sẽ ĐỎ khi ai vá xong. 5 dòng nợ §9 (P1–P4 + khai vượt pathspec 004).
+- 22/08 · L3-M1 → cổng `ops/bin/nghiem-thu/l3-m1.sh` **34 phép · 0 ĐỎ · 3 HOÃN** (rc=0, sandbox
+  tự dựng/tự dọn, dev `aicloser_v3` đo lại ra **26|26** — chưa đơn thật nào bị đụng) · bộ ca
+  `test/l3-m1-*.test.js` 28/28 xanh, bộ v3 gộp 118/118 · 3 sự cố tự bắt trong lượt (phép ⑦b đo
+  nhầm SANDBOX mà khai «dev» — án lệ #8; thước `G7` DELETE trên bảng chỉ-INSERT; backtick trong
+  nhãn phép ③b chạy như lệnh shell) · commit `1017a615` (code) + dòng này (sổ+nhật ký) · nhật ký docs/thi-cong/nhat-ky/phieu-l3-m1.md
 
 - 22/08 · L1-M2 → 🔎 chờ nghiệm thu — cửa Pancake Messenger `src/channels/messenger/`
   (2 file; 6 hàm docHoiThoai/docTin/guiTin/guiAnh/ghiNote/gatThe nhận ctx, bọc
