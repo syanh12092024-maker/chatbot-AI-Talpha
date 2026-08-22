@@ -1,8 +1,9 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 00:20 23/08 · đang chạy: L2-M1 🟨 (opus) + phiếu vá P1
-> sắp phát · phán mới nhất: L3-M1 ✅ (34 phép/0 đỏ/3 hoãn trên sandbox — DB chính chưa áp
-> 003/004, áp một thể ở gate) · duyệt vượt-pathspec-có-xin của L3-M1 (004 + luoc-do §8).
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 01:10 23/08 · đang chạy: VA-P1 🟨 (sonnet) · phán mới
+> nhất: L2-M1 ✅ (22/22 tổng chạy, bẫy fetch bắt 5 chỗ gửi ngầm thay vì 3 như đề khai —
+> pancake-orders fetch POS khoá thật không READONLY canh) · P2 đóng (schema regen 001-004,
+> DB chính đã áp 4 bản) · thước l0-m1 nhận 21 bảng · skill thợ +2 bài học.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -148,7 +149,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 | Mã    | Việc                                                                                | Phụ thuộc                     | Session | Đụng file                          | Trạng thái |
 | ----- | ----------------------------------------------------------------------------------- | ----------------------------- | ------- | ---------------------------------- | ---------- |
-| L2-M1 | Đường xử lý tin nền mới + hàng đợi; route outbound qua cửa v3 (nợ tools.js); DI model | R1 code-xong (L1-M1·M2 ✅; model = llm.js cũ qua DI, chỗ cắm cho B) | thợ mới | `src/queue/*` `src/chat/*` `db/migrate/003` `test/` | 🟨         |
+| L2-M1 | Đường xử lý tin nền mới + hàng đợi; route outbound qua cửa v3 (nợ tools.js); DI model | R1 code-xong (L1-M1·M2 ✅; model = llm.js cũ qua DI, chỗ cắm cho B) | thợ mới | `src/queue/*` `src/chat/*` `db/migrate/003` `test/` | ✅         |
 | L2-M2 | Tắt Botcake 3 page thử, bật 2 lớp 0 đồng, nhập 2 luật từ khoá, vá `paano mag order` | L2-M1 + **H3** + **H8**       | thợ mới | `src/chat/*` `test/`               | ⬜         |
 | L2-M3 | Tách prompt 4 khối, ngân sách lượt theo độ nóng, cờ page trọng điểm                 | L2-M1                         | thợ mới | `src/chat/*` `test/`               | ⬜         |
 | R2    | **GATE SÓNG 2** — đo 50 lượt thật <10s, 7 ngày so 3 page đối chứng                  | L2-M1..M3                     | TỔNG    | —                                  | ⬜         |
@@ -447,6 +448,13 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   ghi nhat_ky); chống ĐẠT RỖNG bằng mẫu trộn tieu-alpha+auus, so DANH SÁCH id không so
   count. Cổng `l0-m2.sh` 16/16 ĐẠT, test 22 ca xanh (gộp l0-m1 52/52, bộ cũ 18/5 không
   hồi quy) · commit 9c40c9f · nhật ký docs/thi-cong/nhat-ky/phieu-l0-m2.md
+- 23/08 · L2-M1 → ✅ — cổng 22/22 ×2 (tổng chạy lại 1 lượt xác nhận) · per-commit 4261900
+  19 tệp sạch pathspec · thợ bẫy globalThis.fetch bắt 5 CHỖ GỬI NGẦM (đề khai 3): thêm
+  order-bridge.js:255 pkAddNote + pancake-orders.js:25/:108 fetch POS KHOÁ THẬT 7 shop
+  không READONLY canh, catch{} fail-open — mock-theo-danh-sách sẽ xanh giả · 6 dòng nợ
+  §9 thợ append (2 🔴 đường tiền) · TỔNG đã: áp migrate 003+004 DB chính (4 bản) · regen
+  schema (P2 đóng) · thước l0-m1 21 bảng · skill tho-thi-cong +2 bài học (private-index
+  reset, bẫy fetch tầng thấp).
 - 23/08 · L3-M1 → ✅ — cổng 34/0/3-hoãn (tổng chạy, sandbox) · per-commit 1017a615 11 tệp
   + vượt-pathspec CÓ XIN (004, luoc-do §8) tổng DUYỆT · đơn thật 26|26 nguyên · thợ phát
   hiện P1: CHUYEN_CHO_PHEP cửa POS thiếu cặp 1→12 (máy fail-closed thay vì lọt) — phiếu
