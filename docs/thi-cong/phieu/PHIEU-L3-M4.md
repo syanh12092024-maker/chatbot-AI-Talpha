@@ -1,6 +1,6 @@
 # PHIẾU L3-M4 — Hàng chờ tạo đơn luồng Messenger: 5 cửa v3 + duyệt là TẠO ĐƠN POS THẬT
 
-**Base:** `DIEN-LUC-PHAT` · **Làn:** 🟥 GHI RA NGOÀI nặng nhất còn lại (tạo đơn thật
+**Base:** `1865bd8` · **Làn:** 🟥 GHI RA NGOÀI nặng nhất còn lại (tạo đơn thật
 trên POS) · thợ **opus** · nguyên tắc gốc §7.3: **«THÀ KHÔNG TẠO CÒN HƠN TẠO NHẦM»**.
 Bản v2 — đóng 8 finding `nghiep-vu-L3-M4.verdict.yaml` (5 CHAN: nguồn FB Commerce rơi ·
 nguồn POS yếu thành gương · status khuôn cũ =0 sai «Chờ in» · race 2 sale · che-nợ mock).
@@ -96,7 +96,7 @@ xin trước).
 # 3. CHỐNG TRÙNG 5 nguồn (N1 — so DANH SÁCH với §7.3): từng nguồn dương một (so_ai order · đơn POS conv · kiemTrung
 #    chéo THẬT không mock (VA-Q12 ✅) · hoi_thoai state · FB Commerce dấu hiệu) → duyet
 #    chặn (5 ca in từng nguồn); nguồn kiemTrung LỖI (mock ném) → 'unknown' + CHẶN
-# 4. duyet HAPPY PATH: mock taoDon POS → đơn tạo đúng payload (đối chiếu khuôn
+# 4. duyet HAPPY PATH: mock taoDon POS → đơn tạo đúng payload (đối chiếu khuôn TRỪ status
 #    createPancakeOrder — in payload) → don_hang +1 nguon=messenger → donMessengerDaTao
 #    được gọi (máy nhận day_cho_in) → so_ai +1
 # 5. BỐN CỬA taoDon: V3_POS_GHI vắng → chặn api=0 · payload status=12 (in payload, N3)
@@ -119,8 +119,7 @@ nhất, để nguyên — tổng ghi §7b). ## ⑥ Ngoài phạm vi → §9.
 
 ```
 §9: nợ goi_gia-giá-0 (L1-M1) → cửa tiền unknown-đóng là cách phiếu này SỐNG CHUNG với nợ
-đó (không chờ vá); Q1/Q2 đang được VA-Q12 đóng song song — phép #3 nguồn kiemTrung cần
-khach_id: nếu VA-Q12 chưa ✅ lúc chạy, mock nguồn đó và ghi nhật ký. Không trùng phiếu.
+đó (không chờ vá). VA-Q12 ĐÃ ✅ — kiemTrung chạy THẬT, không có đường mock nào. Không trùng phiếu.
 ```
 
 **Khi nộp:** nhật ký · §10 3 dòng · commit pathspec (`feat(orders): L3-M4 — ...`) · ≤15 dòng.

@@ -246,3 +246,95 @@ ghi_chu_cho_tong: >-
   trong khi §9 đã ghi Q1 «chặn CẢ HAI cửa kiểm». Hai nợ cùng loại, hai cách xử ngược nhau; cộng
   dồn N1+N2+N5 thì bộ chống trùng thật chỉ còn hai nguồn cùng nhìn vào dữ liệu của chính bot. Đó
   là chỗ nguy nhất của phiếu cuối này, và nó không lộ ra nếu chỉ đếm số nguồn.
+
+# ─────────────────────────────────────────────────────────────────────────────
+verify_vong_2:
+  ngay: 2026-08-23
+  pham_vi: CHỈ VERIFY 5 CHAN theo checklist tổng — không mở kịch bản mới.
+  ban_phieu: PHIEU-L3-M4.md v2 · commit 1865bd8
+  boi_canh_doi: >-
+    VA-Q12 đã ✅ THẬT (`khach` 3.218 dòng; tổng tự gọi `kiemTrung` bắt được cặp 966501984606
+    `trung=true` `ca_hai`). Nợ Q1 mà §9 ghi «chặn CẢ HAI cửa kiểm» đã gỡ ⇒ tiền đề của N5 đổi:
+    nguồn (e) nay có dân số thật để chạy, không còn lý do nào để mock.
+  ma:
+    - ma: N1
+      dap: DAT
+      doi_chieu:
+        - "②#1③ đổi thành «**NĂM nguồn v3 — so DANH SÁCH với §7.3, không so số**», liệt (a)…(e) —
+           ✔ và (d) là **«dấu hiệu đơn FB Commerce trong nội dung hội thoại»** kèm câu «nguồn ④ của
+           §7.3, KHÔNG được rơi; port luật nhận diện từ handler cũ». Nguồn bị mất đã về."
+        - "Chữ «thêm» ở ① nay ĐÚNG: `kiemTrung` là (e), tức 4→5 thật, không còn chiếm chỗ ai — ✔"
+        - "④#3 đổi tiêu đề thành «CHỐNG TRÙNG 5 nguồn (N1 — so DANH SÁCH với §7.3)» và liệt đủ **5
+           ca**, mỗi ca in tên nguồn — ✔ phép đếm nay theo danh sách, không theo số"
+    - ma: N2
+      dap: DAT
+      doi_chieu:
+        - "(b) đổi thành **POS SỐNG** — «GET đơn của hội thoại thẳng từ API POS ngay lúc kiểm»,
+           «gương chỉ làm cache tham khảo», kèm nguyên văn kịch bản hỏng («sale tạo tay 09:00,
+           docDon chưa quét, 09:05 duyệt = đơn đúp») — ✔ khôi phục đúng bản chất nguồn ② của §7.3"
+        - "Thêm câu TỔNG QUÁT hoá mạnh hơn cả bản gốc: «**BẤT KỲ nguồn nào** lỗi/timeout →
+           `unknown` và cửa ĐÓNG — không nguồn nào được *0 dòng = sạch*» — ✔ §7.3 chỉ cảnh báo cho
+           riêng nguồn ②, v3 áp cho cả năm"
+        - "④#2b đo đúng hai vế đã nêu trong verdict: timeout → `unknown` → CHẶN (in lý do) · POS
+           trả đơn tay mới-chưa-quét → BẮT TRÙNG (gương không có) — ✔"
+    - ma: N3
+      dap: DAT
+      doi_chieu:
+        - "②#2: «payload theo khuôn createPancakeOrder NHƯNG **`status: 12`** («Chờ in» — bảng mã
+           đã xác minh) **tường minh, CẤM bê `status: 0` của khuôn cũ**», kèm lý do (01 §1 + lệch
+           `donMessengerDaTao`) — ✔ chỗ duy nhất được phép lệch khuôn cũ được chỉ đích danh"
+        - "②#3 đóng luôn vế lệch cột: INSERT `don_hang` với «2 cột trạng thái khớp 12/day_cho_in» — ✔"
+        - "④#5 «payload status=12 (in payload, N3)» — ✔ đo bằng nội dung payload, không bằng lời khai"
+    - ma: N4
+      dap: DAT
+      doi_chieu:
+        - "`duyet(pool, ctx, {hangChoId, boSung?})` — «mở transaction + `SELECT … FOR UPDATE` dòng
+           hàng chờ **TRƯỚC mọi việc**» — ✔ khoá giành trước khi chạy cửa và trước khi POST"
+        - "②#2 sửa luôn gốc bệnh chữ nghĩa: idempotent theo `hang_cho_id` nay là «**CƠ CHẾ THẬT,
+           không phải cái tên**: cột/UNIQUE trên hàng chờ + kiểm trước POST» — ✔ bài học «tên ≠ cơ
+           chế» của L2-M1/L3-M1 đã thành phản xạ"
+        - "④#5b: 2 lượt `duyet` **SONG SONG** cùng `hangChoId` → `taoDon` đúng 1, đơn đúng 1, in cả
+           hai kết quả (một thành công, một bị chặn) — ✔ thay phép tuần tự bằng phép song song,
+           đúng khuôn đã dùng ở L2-M1"
+    - ma: N5
+      dap: DAT
+      doi_chieu:
+        - "(e) `kiemTrung` nay «**chạy THẬT, cấm mock**» kèm bằng chứng dân số (khach 3.218 dòng,
+           cặp 966501984606) — ✔ nợ được GỠ thật rồi mới bỏ mock, không phải bỏ mock trên giấy"
+        - "Mock chỉ còn dùng cho ca LỖI («nguồn kiemTrung LỖI (mock ném) → `unknown` + CHẶN») — ✔
+           đúng chỗ được phép mock: không ai dựng được timeout thật theo yêu cầu"
+        - "Cách xử hai nợ nay ĐỒNG NHẤT: `goi_gia` chưa có ⇒ `unknown`-đóng · nguồn nào lỗi ⇒
+           `unknown`-đóng — ✔ hết cảnh hai nợ cùng loại hai cách xử ngược nhau"
+  ba_finding_con_lai_da_kiem_luon:
+    - "N6 đóng: `boSung?` vào chữ ký, `duyet` chạy lại **đủ cửa ①②③** (không còn chỉ ②③), «còn
+       thiếu trường vẫn CHẶN»; ④#5c đo cả hai chiều (không boSung → chặn · có boSung đủ → qua)."
+    - "N7 đóng: ②#3 bắt bàn giao khai RÕ «dòng bị chặn là ĐÚNG hành vi, màn phải hiện lý do chặn,
+       không phải lỗi hệ» — B sẽ không đọc màn đúng thành màn hỏng."
+    - "N8 nửa nặng đóng: T7 đã vào §7b sổ (dòng 178) đúng tinh thần luật 2 — «tạo 1 đơn NHÁP đánh
+       dấu TEST trên shop ít dùng nhất (**để nguyên — luật 2 cấm xoá**)»."
+  con_lai_khong_chan:
+    - muc: GHI-NO
+      mo_ta: >-
+        ⚠️ ⑦ của phiếu (dòng 121–124) CÒN NGUYÊN VĂN CŨ: «nếu VA-Q12 chưa ✅ lúc chạy, **mock nguồn
+        đó** và ghi nhật ký» — mâu thuẫn thẳng với ②#1(e) «chạy THẬT, **cấm mock**» vừa chốt. Điều
+        kiện đã hết hiệu lực (VA-Q12 ✅) nên không gây hại nữa, nhưng đây là một câu lối-đi-sai còn
+        nằm trong hợp đồng: thợ đọc ⑦ có thể mock đúng cái nguồn N5 vừa cấm mock. **Xoá/ghi đè hai
+        câu đó trước khi phát thợ** — rẻ hơn nhiều so với một lượt thợ đi nhầm.
+    - muc: GHI-NO
+      mo_ta: >-
+        ⑤ và ⑥ vẫn vỡ khuôn (dòng 113–116): câu tự vấn «KHÔNG, không xoá được (luật 2)» còn lọt
+        giữa mục, và ⑥ vẫn dính chung dòng với ⑤. Nội dung phán đúng, chỉ là hợp đồng khó đọc.
+    - muc: GHI-NO
+      mo_ta: >-
+        ④#4 còn viết «đơn tạo đúng payload (đối chiếu khuôn `createPancakeOrder`)» — nay mơ hồ vì
+        payload PHẢI lệch khuôn cũ đúng một trường (`status`). ④#5 đã có phép `status=12` nên
+        không hở, chỉ nên sửa chữ thành «khớp khuôn TRỪ `status`».
+  ket_luan_moi: DAT
+  ghi_chu: >-
+    8/8 finding đóng. Năm CHAN đóng đúng cơ chế, và hai điểm đáng ghi nhận: (1) N2 không chỉ khôi
+    phục nguồn POS sống mà còn TỔNG QUÁT HOÁ luật «lỗi ⇒ unknown ⇒ đóng» cho cả năm nguồn — v3 nay
+    chặt hơn bản cũ vốn chỉ cảnh báo cho riêng nguồn ②; (2) N5 được đóng bằng cách GỠ NỢ THẬT rồi
+    mới bỏ mock (VA-Q12 ✅ với cặp trùng bắt được ngoài đời), chứ không bỏ mock trên giấy — đó là
+    khác biệt giữa sống-chung và che-nợ mà vòng 1 đã chỉ ra. Phiếu ĐỦ ĐIỀU KIỆN phát thợ **sau khi
+    xoá hai câu «mock nguồn đó» còn sót ở ⑦**. Đây là module 12/12 của phần việc A: cả 6 phiếu
+    được thuê chấm (a) đều đã DAT ở vòng 2.
