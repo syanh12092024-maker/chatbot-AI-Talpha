@@ -150,7 +150,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | ----- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------- | --------------------------------------------------- | ---------- |
 | L2-M1 | Đường xử lý tin nền mới + hàng đợi; route outbound qua cửa v3 (nợ tools.js); DI model | R1 code-xong (L1-M1·M2 ✅; model = llm.js cũ qua DI, chỗ cắm cho B) | thợ mới | `src/queue/*` `src/chat/*` `db/migrate/003` `test/` | ✅         |
 | L2-M2 | Tắt Botcake 3 page thử, bật 2 lớp 0 đồng, nhập 2 luật từ khoá, vá `paano mag order`   | L2-M1 + **H3** + **H8**                                             | thợ mới | `src/chat/*` `test/`                                | ✅         |
-| L2-M3 | Tách prompt 4 khối, ngân sách lượt theo độ nóng, cờ page trọng điểm                   | L2-M1                                                               | thợ mới | `src/chat/*` `test/`                                | 🟨         |
+| L2-M3 | Tách prompt 4 khối, ngân sách lượt theo độ nóng, cờ page trọng điểm                   | L2-M1                                                               | thợ mới | `src/chat/*` `test/`                                | ✅         |
 | R2    | **GATE SÓNG 2** — đo 50 lượt thật <10s, 7 ngày so 3 page đối chứng                    | L2-M1..M3                                                           | TỔNG    | —                                                   | ⬜         |
 
 ## §5 · SÓNG 3 — HAI LUỒNG ĐƠN 🟥 (toàn sóng là đường đơn/tiền)
@@ -494,7 +494,28 @@ bang` mà `l2-m2.sh`/`l3-m2.sh` cũng dùng (CHƯA lộ ở hai cổng đó vì 
   `l2-m2.sh`/`l3-m2.sh` (ngoài pathspec, đất phiếu khác) — đáng chưng cất vào skill
   `tho-thi-cong` cho các cổng tương lai, TỔNG cân nhắc.
 
+- 23/08 · thợ L3-M3 (nợ mới — cửa ghi hẹp THỨ NĂM, cùng họ N3/P3/nợ-Q-của-L3-M2): job
+  quét lịch nhắc (`src/orders/lich-nhac.js`) bắt buộc chạy dưới `ctxHeThong()` (tin WA tự
+  động tới, không có người đăng nhập), mà `suaTheoId` (L0-M2) vẫn KHÔNG hỗ trợ
+  `ctxHeThong()`. Thêm `ghiLich` (UPDATE hẹp, allow-list đúng hai cột
+  `trang_thai`/`huy_ly_do`, luôn kẹp `team_id`) — cửa hẹp thứ NĂM sau `suaTheoId` gốc,
+  `suaTheoIdPos` (L1-M1), `ghiDon` (L3-M1), `CAU_GHI_CHAM` (L3-M2). Bản vá đúng không đổi:
+  `suaTheoId` hỗ trợ `ctxHeThong()` rồi gộp cả năm về một — ngoài pathspec L3-M3.
+- 23/08 · thợ L3-M3 (khai rõ, không phải nợ): phiếu ②#1 viết "ghi `so_lan_thu_wa`" khi mô
+  tả job gửi nhắc — đo lại xác nhận `don_hang.so_lan_thu_wa` (migration 004) là cột RIÊNG
+  của `quet-don-moi.js` (đếm thử lại gửi mẫu XÁC NHẬN LẦN ĐẦU, trần 3, ràng buộc CHECK gắn
+  với `gui_wa_loi`) — dùng chung cột cho hàng đợi nhắc (trần 5, ý nghĩa khác hẳn) sẽ làm
+  hai trần giẫm lên nhau. Đã KHÔNG đụng cột đó; đếm số lần nhắc bằng chính số DÒNG
+  `lich_nhac` của đơn (mỗi lần nhắc = một dòng riêng, `lan_thu` là số thứ tự của dòng đó).
+  Chi tiết: `docs/thi-cong/nhat-ky/phieu-l3-m3.md` §2-3.
+
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+
+- 23/08 · L2-M3 → ✅ (TỔNG nghiệm thu) — cổng 11/11 · 17/17 test · seed mồi đã vào DB
+  chính qua di-tru (bo_luat_chung 1 · ky_nang 3) · giới hạn thật thợ khai: bo_luat_chung
+  chưa điều khiển model (buildSystem hardcode CORE — nợ giai đoạn 2) · ky_nang size seed
+  bat=false chờ người chốt 2 SKU · 1 ca đỏ hồi quy = nhiễu thứ tự test DB chung (án lệ
+  cũ, gate cuối chạy tuần tự) · commit 5347191.
 
 - 23/08 · L3-M2 → ✅ (TỔNG nghiệm thu) — cổng 13/13+2 hoãn · 38/38 test + hồi quy nguyên ·
   chuẩn hoá SĐT kiểm chéo đồng nhất · mọi ngưỡng chốt bằng 5.144 đơn thật (cửa sổ 7 ngày
@@ -727,3 +748,21 @@ bang` mà `l2-m2.sh`/`l3-m2.sh` cũng dùng (CHƯA lộ ở hai cổng đó vì 
   nhạc trưởng 11/11), l2-m2 lớp từ khoá 12/12 nguyên, l2-m2 handler 1 ca đỏ đã biết
   trước (⑦e tự nhận diện bằng TÊN, không chỉ đếm số) · commit `5347191` · nhật ký
   `docs/thi-cong/nhat-ky/phieu-l2-m3.md`
+
+- 23/08 · L3-M3 → 🔎 chờ nghiệm thu — hàng đợi nhắc `src/orders/lich-nhac.js` (2h×5, job
+  TỰ quét đơn `da_gui_wa` chưa có lịch — không hook `quet-don-moi.js`, cấm đụng pathspec)
+  - bộ đọc ý 4 nhánh `src/orders/doc-y.js` (luật từ khoá EN/AR/PH, hàm thuần, so theo
+    TỪ/CỤM TỪ có biên) + cầu nối `src/orders/nhan-phan-hoi-wa.js` (docY → nhanPhanHoi, bù
+    `huyLichNhac` cho doi_sua/khong_ro vì L3-M1 chỉ tự huỷ 2/4 nhánh, ghi sự kiện `so_ai`
+    neo riêng). `taoHuyLichNhac` cắm THẬT chỗ chờ §5 bàn giao L3-M1 (thay no-op).
+- 23/08 · L3-M3 → cửa ghi hẹp thứ NĂM (`ghiLich`, cùng họ N3/P3/nợ-L3-M2) vì `suaTheoId`
+  vẫn chưa hỗ trợ `ctxHeThong()` · quyết định tự chốt: KHÔNG tái dùng
+  `don_hang.so_lan_thu_wa` cho hàng đợi nhắc (cột đó là của `quet-don-moi.js`, trần khác,
+  domain khác) — đếm bằng số DÒNG `lich_nhac` của đơn thay vào đó.
+- 23/08 · L3-M3 → cổng `ops/bin/nghiem-thu/l3-m3.sh` **23/23 phép ĐẠT / 0 TRƯỢT / 0 HOÃN**
+  (sandbox tự dựng/dọn, dev `aicloser_v3` đo lại 0 dòng `lich_nhac` — chưa đơn thật nào bị
+  đụng) · bộ ca `test/l3-m3-*.test.js` **28/28** xanh, hồi quy l3-m1+l3-m2 gộp **94/94** ·
+  3 bẫy THƯỚC tự bắt trong lượt (test tự-nhiễm-nhau qua job quét toàn CSDL dùng chung
+  sandbox · bash single-quote không escape được nháy đơn lồng · đóng ngoặc thừa 1 dấu `"`
+  ở năm khối `nodex`) · commit `7a22b59` (code) + dòng này (sổ+nhật ký) · nhật ký
+  `docs/thi-cong/nhat-ky/phieu-l3-m3.md`
