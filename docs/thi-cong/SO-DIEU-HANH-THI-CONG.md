@@ -137,12 +137,12 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 ## §3 · SÓNG 1 — BỐN CỬA KẾT NỐI (phần A: 3 cửa)
 
-| Mã    | Việc                                                            | Phụ thuộc   | Session | Đụng file                          | Trạng thái |
-| ----- | --------------------------------------------------------------- | ----------- | ------- | ---------------------------------- | ---------- |
-| L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥 | R0 ✅       | thợ mới | `src/pos/*` `db/migrate/002` `test/` | 🟨         |
-| L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team | R0 ✅ | thợ mới | `src/channels/messenger/*` `test/` | 🟨         |
-| L1-M3 | Cửa Pancake WhatsApp 🟥 (gửi tin ra khách)                      | **H1** + R0 | thợ mới | `src/channels/whatsapp/*` `test/`  | ⬜         |
-| R1    | **GATE SÓNG 1**                                                 | L1-M1..M3   | TỔNG    | —                                  | ⬜         |
+| Mã    | Việc                                                                   | Phụ thuộc   | Session | Đụng file                            | Trạng thái |
+| ----- | ---------------------------------------------------------------------- | ----------- | ------- | ------------------------------------ | ---------- |
+| L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥        | R0 ✅       | thợ mới | `src/pos/*` `db/migrate/002` `test/` | 🟨         |
+| L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team | R0 ✅       | thợ mới | `src/channels/messenger/*` `test/`   | 🟨         |
+| L1-M3 | Cửa Pancake WhatsApp 🟥 (gửi tin ra khách)                             | **H1** + R0 | thợ mới | `src/channels/whatsapp/*` `test/`    | ⬜         |
+| R1    | **GATE SÓNG 1**                                                        | L1-M1..M3   | TỔNG    | —                                    | ⬜         |
 
 ## §4 · SÓNG 2 — CHAT MESSENGER
 
@@ -165,17 +165,17 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
-| Mã  | Việc                                                                           | Chặn gì                                                        | Trạng thái |
-| --- | ------------------------------------------------------------------------------ | -------------------------------------------------------------- | ---------- |
-| H1  | Điểm kiểm 1: gửi WhatsApp bằng API Pancake được không (thử 1 tin số nội bộ)    | L1-M3                                                          | ⬜         |
-| H2  | Điểm kiểm 2: Pancake có webhook đẩy tin về không                               | kiến trúc L2-M1 (poll vs push)                                 | ⬜         |
-| H3  | Điểm kiểm 3: Botcake kéo bao nhiêu khách từ bình luận (Private Replies)        | L2-M2                                                          | ⬜         |
-| H4  | Điểm kiểm 4: Marketing Message có bật cho Trung Đông không (test 50 khách UAE) | giai đoạn 3, cần biết sớm                                      | ⬜         |
-| H5  | **Chỉ định NGƯỜI B** + B xong lớp model L1-M4 cuối tuần 1                      | L2-M1                                                          | ⬜         |
-| H6  | Mở tài khoản + lấy khoá 4 nhà model, nạp tiền chạy A/B                         | L2 (A/B model)                                                 | ⬜         |
-| H7  | Chốt mapping page/sản phẩm/thị trường ↔ 3 team (Tiểu Alpha·Auus·Pialpha EU)    | di trú gán team thật (L0-M1 seed 3 team, gán chi tiết chờ đây) | ⬜         |
-| H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                     | L2-M2                                                          | ⬜         |
-| H9  | Bộ biến v3 cutover VPS: `V3_KHOA_MA_HOA` (RIÊNG, 32 byte) · `V3_PANCAKE_GUI=1` · `V3_POS_GHI=1` | cutover — thiếu là khoá/cửa gửi/cửa ghi POS đóng câm | ⬜         |
+| Mã  | Việc                                                                                            | Chặn gì                                                        | Trạng thái |
+| --- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---------- |
+| H1  | Điểm kiểm 1: gửi WhatsApp bằng API Pancake được không (thử 1 tin số nội bộ)                     | L1-M3                                                          | ⬜         |
+| H2  | Điểm kiểm 2: Pancake có webhook đẩy tin về không                                                | kiến trúc L2-M1 (poll vs push)                                 | ⬜         |
+| H3  | Điểm kiểm 3: Botcake kéo bao nhiêu khách từ bình luận (Private Replies)                         | L2-M2                                                          | ⬜         |
+| H4  | Điểm kiểm 4: Marketing Message có bật cho Trung Đông không (test 50 khách UAE)                  | giai đoạn 3, cần biết sớm                                      | ⬜         |
+| H5  | **Chỉ định NGƯỜI B** + B xong lớp model L1-M4 cuối tuần 1                                       | L2-M1                                                          | ⬜         |
+| H6  | Mở tài khoản + lấy khoá 4 nhà model, nạp tiền chạy A/B                                          | L2 (A/B model)                                                 | ⬜         |
+| H7  | Chốt mapping page/sản phẩm/thị trường ↔ 3 team (Tiểu Alpha·Auus·Pialpha EU)                     | di trú gán team thật (L0-M1 seed 3 team, gán chi tiết chờ đây) | ⬜         |
+| H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                                      | L2-M2                                                          | ⬜         |
+| H9  | Bộ biến v3 cutover VPS: `V3_KHOA_MA_HOA` (RIÊNG, 32 byte) · `V3_PANCAKE_GUI=1` · `V3_POS_GHI=1` | cutover — thiếu là khoá/cửa gửi/cửa ghi POS đóng câm           | ⬜         |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
@@ -221,9 +221,27 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
   (c) nhỏ hơn: ④ đo `git diff base..HEAD` nên **gộp cả commit của session khác** trong cùng
   khoảng — lượt này nó tính `docs/thi-cong/phieu/PHIEU-L0-M2.md` (tệp của TỔNG) vào phần thợ.
   ⛔ Thợ KHÔNG sửa `_chan1.sh` — ngoài pathspec ③ của phiếu L0-M1.
+- 22/08 · L1-M2 (nợ N2 — nguyên văn từ phiếu ②#3, tổng đã duyệt trước, thợ APPEND):
+  `src/tools.js:1` (bộ não chat, CẤM SỬA) import thẳng
+  `createOrder, pkSendImage, pkAddNote, pkTagByName` từ `pancake.js`;
+  `scheduler-followup.js:24` import `pkSendReply` — bốn hàm gửi không một dòng guard.
+  Cửa v3 KHÔNG bịt được lối này trong phiếu L1-M2 (đụng file cấm); L2-M1 khi chuyển
+  đường xử lý tin PHẢI route outbound của bộ não qua cửa v3 (DI/injection, không sửa
+  `tools.js`). Chi tiết: `docs/v3/ban-giao/cua-messenger-v1.md` §5.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
+- 22/08 · L1-M2 → 🔎 chờ nghiệm thu — cửa Pancake Messenger `src/channels/messenger/`
+  (2 file; 6 hàm docHoiThoai/docTin/guiTin/guiAnh/ghiNote/gatThe nhận ctx, bọc
+  `pancake.js` qua import): định tuyến team qua `page.team_id` (lỗi có tên +
+  `nhat_ky`) · N5 xác nhận hội thoại thuộc page qua `psid` — phát hiện lệch đề bài
+  `convId` Pancake ≠ `psid` (bằng chứng: `pancake-poll.js:277` +
+  `l7-miner-order.test.mjs:122`), giữ đúng khuôn `hoi_thoai` UNIQUE(page_id,psid)
+  thay vì so nhầm convId · guard N1 fail-closed (`V3_PANCAKE_GUI==='1'` VÀ
+  `PANCAKE_READONLY!=='1'`, vắng biến = ĐÓNG) chỉ áp nhóm GỬI/GHI · N3 `ctxHeThong`
+  tự tra + gắn đúng team của page cho job nền. Cổng `l1-m2.sh` 15/15 ĐẠT (2 lượt),
+  test 17/17 xanh, tính duy nhất trong V3 xác nhận bằng grep (①b) · commit
+  `92afae3c` · nhật ký docs/thi-cong/nhat-ky/phieu-l1-m2.md
 - 22/08 · L0-M2 → 🔎 chờ nghiệm thu — tầng truy vấn `src/db/` (5 file; ctx=
   {teamId,nguoiDungId} chốt hình dạng cho B): 2 lỗi tên LoiThieuBoiCanhTeam/LoiXuyenTeam
   · layNhieu/layMotTheoId/themMoi/suaTheoId tự chèn team_id cho 15 bảng nghiệp vụ, đặc
