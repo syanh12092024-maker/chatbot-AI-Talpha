@@ -1,8 +1,9 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 21:50 22/08 · đang chạy: soạn + phát L1-M3, L2-M1 · phán
-> NGƯỜI QUYẾT (lệnh 3): CODE TRỌN không đứng chờ H — mọi phép chạm-thật dồn «CHẠY THỬ MỘT
-> LẦN» (danh sách §7b). H1/H5 thôi chặn CODE, chỉ còn chặn phép đo thật.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 23:20 22/08 · đang chạy: L2-M1 🟨 (opus) · verify L3-M1
+> vòng 2 · phán mới nhất: L1-M3 ✅ (24/24+1 hoãn, endpoint WA Pancake xác nhận CHƯA TỒN TẠI
+> — không bịa, adapter chờ H1) — SÓNG 1 CODE-ĐÓNG 3/3 cửa; 🧭 2 bài học tổng: && xuyên
+> heredoc · cấm amend khi cây có thợ (đã gỡ sạch bằng reflog, commit thợ nguyên vẹn).
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -141,8 +142,8 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | ----- | ---------------------------------------------------------------------- | ----------- | ------- | ------------------------------------ | ---------- |
 | L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥        | R0 ✅       | thợ mới | `src/pos/*` `db/migrate/002` `test/` | ✅         |
 | L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team | R0 ✅       | thợ mới | `src/channels/messenger/*` `test/`   | ✅         |
-| L1-M3 | Cửa Pancake WhatsApp 🟥 — KHUNG + mock (phép thật → §7b T1)              | R0 ✅ (H1 thôi chặn code) | thợ mới | `src/channels/whatsapp/*` `test/` | ⬜         |
-| R1    | **GATE SÓNG 1**                                                        | L1-M1..M3   | TỔNG    | —                                    | ⬜         |
+| L1-M3 | Cửa Pancake WhatsApp 🟥 — KHUNG + mock (phép thật → §7b T1)              | R0 ✅ (H1 thôi chặn code) | thợ mới | `src/channels/whatsapp/*` `test/` | ✅         |
+| R1    | **GATE SÓNG 1** — máy: chạy lúc cây rảnh (L2-M1 đang test) · thật: §7b T1/T2 | L1-M1..M3 ✅ | TỔNG | — | 🟨 |
 
 ## §4 · SÓNG 2 — CHAT MESSENGER
 
@@ -310,6 +311,11 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   ghi nhat_ky); chống ĐẠT RỖNG bằng mẫu trộn tieu-alpha+auus, so DANH SÁCH id không so
   count. Cổng `l0-m2.sh` 16/16 ĐẠT, test 22 ca xanh (gộp l0-m1 52/52, bộ cũ 18/5 không
   hồi quy) · commit 9c40c9f · nhật ký docs/thi-cong/nhat-ky/phieu-l0-m2.md
+- 22/08 · L1-M3 → ✅ — cổng 24/24+1 HOÃN (tổng chạy) · per-commit 01063fa+301546c sạch
+  pathspec · exports chỉ guiTinMau + 5 lỗi tên (không gửi tự do) · endpoint WA Pancake
+  CHƯA TỒN TẠI (thợ đo, adapter LoiChuaCoEndpoint chờ H1) · 🧭 sự cố heredoc+amend của
+  tổng: deabfe1 rỗng ruột, amend nuốt commit thợ — gỡ bằng reset --soft về 01063fa,
+  phiếu tách thành 7069d31; luật mới: tổng nối && xuyên heredoc, cấm amend khi thợ chạy.
 - 22/08 · L1-M1 → ✅ — chặng 1 7/8 (phép ④ nhiễu song song, tổng đo lại per-commit
   f5611cb+dff58ed: 20/20 tệp ⊆ ③) · cổng 24/24 + 1 HOÃN minh bạch (⑤c ghi thật chờ diễn
   tập VPS) · kiểm chéo DB 5 phép khớp · 🧭 SỰ CỐ + BÀI HỌC: commit sổ b356f7b của TỔNG
