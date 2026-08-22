@@ -38,3 +38,6 @@ miner-state.json
 template-candidates.json
 template-learn-reports.jsonl
 ai-order-queue.json
+
+# rác của macOS
+.DS_Store

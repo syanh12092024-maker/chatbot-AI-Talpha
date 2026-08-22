@@ -1,4 +1,8 @@
-# AI Messenger Closer (pilot — thị trường ME / COD)
+# AI Messenger Closer
+
+> **Đang thiết kế lại — bản v3.** Người mới nhận việc đọc [`docs/v3/00-BAT-DAU-TU-DAY.md`](docs/v3/00-BAT-DAU-TU-DAY.md) trước.
+> File này mô tả **bản đang chạy** và 14 nguyên tắc AI chat với khách — vẫn còn hiệu lực, v3 kế thừa nguyên.
+
 
 Bot AI đứng tuyến đầu trên Facebook Messenger: phân loại tin (bằng LUẬT, 0 token) → tư vấn & chốt đơn bằng ngôn ngữ của khách (có tool use) → lọc đơn COD chống bom hàng → tạo đơn vào Pancake. Giữ Pancake làm nơi đóng đơn.
 
