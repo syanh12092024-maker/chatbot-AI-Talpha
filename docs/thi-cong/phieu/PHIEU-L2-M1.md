@@ -1,6 +1,6 @@
 # PHIẾU L2-M1 — Đường xử lý tin nền mới: hàng đợi + handler v3, MỌI outbound qua cửa
 
-**Base:** `DIEN-LUC-PHAT` · **Làn:** 🟥 (chạm outbound + bộ não) · thợ **opus** (phán
+**Base:** `f4946f5` · **Làn:** 🟥 (chạm outbound + bộ não) · thợ **opus** (phán
 22/08: đổi chỗ trong danh sách 4-phiếu-opus với L1-M3 vì L1-M3 đã thành khung mỏng)
 
 > Thợ nạp skill `tho-thi-cong`. Đọc sổ §0a + §7b. Bộ não chat DÙNG NGUYÊN — phiếu này là
