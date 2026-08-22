@@ -447,6 +447,53 @@ src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` �
   `ti-le-hoan.js`. Kèm số cho lượt chốt đó: hạ sàn từ 2 xuống 1 đơn-đã-kết làm `rui_ro_cao`
   nhảy **130 → 953 khách** (823 người bị dán nhãn bằng ĐÚNG MỘT đơn).
 
+- 23/08 · thợ L2-M3 (nợ mới — giới hạn THẬT, không phải lỗi code): `bo_luat_chung` seed
+  - đọc đúng hợp đồng DB (OR-IS-NULL, versioned, hợp đồng N3 có sẵn ở tầng truy vấn)
+    nhưng KHÔNG điều khiển model — `buildSystem(kb)` trong `prompts.js` (CẤM SỬA) HARDCODE
+    hằng `CORE`, không đọc trường `kb.*` nào cho khối "bộ luật chung". `kb.text` chỉ mang
+    một MẨU ~300 ký tự của `bo_luat_chung` (khai rõ tình trạng ngay trong đoạn text đó),
+    KHÔNG dán nguyên ~2.256 token (trùng lặp với CORE, tốn token mà không đổi hành vi model).
+    Ba khối còn lại (kỹ năng/kịch bản/sản phẩm) CÓ hiệu lực thật qua `kb.text`/`kb.config`.
+    Muốn bo_luat_chung THẬT SỰ sống thì phải mở phiếu sửa `prompts.js#buildSystem` — ngoài
+    mọi pathspec hiện có (file CẤM SỬA cấp dự án, luật 4 §0a). Chi tiết:
+    `docs/v3/ban-giao/duong-tin-v1.md` §13.2.
+- 23/08 · thợ L2-M3 (nợ mới, cùng họ nợ Q2 của L3-M2 23/08): 01-QUYET-DINH.md §6 chỉ
+  đích danh «2 SP hoàn 26,8%/19,2% chưa bật kỹ năng size», nhưng KHÔNG có cách xác định
+  ĐÚNG 2 mã SP đó từ dữ liệu hiện có (`san_pham` không có tỉ lệ hoàn theo SP;
+  `don_hang.san_pham_ma` — migration 005 — CHƯA cửa POS nào ghi, nợ Q2 §9 23/08). Seed
+  kỹ năng `hoi_size` (`db/di-tru/bo-luat-va-ky-nang.js`) với `bat_cho_nhom_sp='{}'` VÀ
+  `bat=false` — khung có sẵn, KHÔNG âm thầm bật cho toàn danh mục team (tránh hỏi size
+  cho sản phẩm không có size). Khi cửa POS (đất L1-M1) ghi xong `san_pham_ma` VÀ có báo
+  cáo tỉ lệ hoàn theo SP, người vận hành UPDATE `bat_cho_nhom_sp`+`bat=true` — không cần
+  seed lại.
+- 23/08 · thợ L2-M3 (nợ mới — 🟡 THƯỚC TRÔI theo tính năng mới ĐÚNG THIẾT KẾ, không phải
+  hồi quy thật): `test/l2-m2-handler.test.js` ca «không cướp diễn đàn (ở tầng handler)»
+  (dòng ~206-224) nay ĐỎ THẬT, tái lập ổn định. File đó dùng CHUNG một `hoi_thoai` cho 6
+  ca (`before()` tạo 1 lần); ca «NHƯỜNG khi thiếu KB size» chạy TRƯỚC đã tiêu 1 lượt gọi
+  model thật (`moc_luot_llm` +1). Tin của ca đỏ («magkano po ang presyo?») chỉ ghi điểm
+  lead=1 (tín hiệu `price`) ⇒ tier LẠNH ⇒ ngân sách 24h=1 lượt — ĐÃ TIÊU HẾT bởi ca trước
+  ⇒ ngân sách lượt theo độ nóng (L2-M3, thay trần 4 lượt cứng) CHẶN ĐÚNG THIẾT KẾ, không
+  gọi model. Xác nhận không phải bug: cùng kịch bản dưới trần-4-cứng CŨ không đỏ (4>1
+  lượt đã tiêu). Vá đúng (1-3 dòng, ngoài pathspec L2-M3 — án lệ #25, đất test L2-M2):
+  thêm `deps.conNganSach: () => ({ok:true})` cho ca đó, hoặc tách `hoi_thoai` riêng — xem
+  `test/l2-m3-handler.test.js` đã làm mẫu chính cơ chế này. Neo đo:
+  `ops/bin/nghiem-thu/l2-m3.sh` phép ⑦e tự nhận diện ĐÚNG ca này BẰNG TÊN (án lệ #8 "so
+  danh sách không so số"), không phải chỉ đếm số — ca nào KHÁC/thêm đỏ mới là hồi quy
+  thật. Chi tiết đủ: `docs/v3/ban-giao/duong-tin-v1.md` §13.6 +
+  `docs/thi-cong/nhat-ky/phieu-l2-m3.md` §4.
+- 23/08 · thợ L2-M3 (phát hiện phụ — bẫy THƯỚC dùng CHUNG, không phải nợ riêng phiếu
+  này): khi tự chạy thử `l2-m3.sh` bắt được 2 lỗi trong CHÍNH khuôn `muc/so/dat/truot/
+bang` mà `l2-m2.sh`/`l3-m2.sh` cũng dùng (CHƯA lộ ở hai cổng đó vì chưa từng có ca đỏ
+  để thử): (a) đọc `$?` sau một lệnh `so`/`printf` trung gian thay vì NGAY sau
+  `node --test` → luôn đọc rc=0 GIẢ (rc của lệnh in, không phải của node) — cổng lỏng mà
+  không ai biết, án lệ #5 dạng mới; (b) `grep -c '^✖ '` đếm TRÙNG khi có ca đỏ thật: node
+  --test in tên ca đỏ 2 LẦN (khối tuần tự + khối "failing tests:" cuối log) và dòng
+  "✖ failing tests:" tự nó cũng khớp `^✖ ` ⇒ 1 ca đỏ đếm ra 3. Đã vá TRONG `l2-m3.sh`
+  (đất mình: `$?` capture ngay sau `node --test`; đếm bằng dòng tổng kết chuẩn
+  `ℹ pass N`/`ℹ fail N`; tên ca đỏ cắt log tại dòng `ℹ tests` trước khi grep). KHÔNG sửa
+  `l2-m2.sh`/`l3-m2.sh` (ngoài pathspec, đất phiếu khác) — đáng chưng cất vào skill
+  `tho-thi-cong` cho các cổng tương lai, TỔNG cân nhắc.
+
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
 - 23/08 · L3-M2 → ✅ (TỔNG nghiệm thu) — cổng 13/13+2 hoãn · 38/38 test + hồi quy nguyên ·
@@ -642,12 +689,12 @@ src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` �
   8 / TRƯỢT 0** (3 lượt liên tiếp rc=0) · bộ ca l2-m2 18/18 xanh + hồi quy l2-m1 nguyên
   vẹn (hàng đợi 12/12 · nhạc trưởng 11/11) · commit `38bcb71`
 - 23/08 · L3-M2 → 🔎 chờ nghiệm thu — lọc trùng CHÉO hai luồng (`src/orders/loc-trung.js`)
-  + chấm tỉ lệ hoàn BỐN TẦNG (`src/orders/ti-le-hoan.js`, migration 005): chuẩn hoá SĐT là
-  hàm THUẦN + nguồn luật DUY NHẤT (SQL chỉ lọc thô bằng bảy chữ số cuối — an toàn MỘT
-  CHIỀU chứng minh được, không có bản luật SQL song sinh); vế sản phẩm mù thì fail-CLOSED
-  bằng mã lý do RIÊNG `nghi_trung_chua_ro_san_pham`, KHÔNG đọc cột rỗng thành «sạch»;
-  ⛔ KHÔNG dòng mã nào đọc `tang_hoan` để CHẶN (01 §11 còn «Chờ chốt») — ca `C4` bắt đỏ nếu
-  ai thêm `don_hang`/`viec_can_xu_ly`/`INSERT`/`DELETE` vào câu ghi.
+  - chấm tỉ lệ hoàn BỐN TẦNG (`src/orders/ti-le-hoan.js`, migration 005): chuẩn hoá SĐT là
+    hàm THUẦN + nguồn luật DUY NHẤT (SQL chỉ lọc thô bằng bảy chữ số cuối — an toàn MỘT
+    CHIỀU chứng minh được, không có bản luật SQL song sinh); vế sản phẩm mù thì fail-CLOSED
+    bằng mã lý do RIÊNG `nghi_trung_chua_ro_san_pham`, KHÔNG đọc cột rỗng thành «sạch»;
+    ⛔ KHÔNG dòng mã nào đọc `tang_hoan` để CHẶN (01 §11 còn «Chờ chốt») — ca `C4` bắt đỏ nếu
+    ai thêm `don_hang`/`viec_can_xu_ly`/`INSERT`/`DELETE` vào câu ghi.
 - 23/08 · L3-M2 → mọi quyết định số chốt bằng **5.144 đơn POS THẬT / 7 shop** (GET, 0 lượt
   ghi, `PANCAKE_READONLY=1`): cắt mã quốc gia gom thêm **58 khách** (4.558→4.500) và nâng
   trùng-chéo bắt được 48→**56 khách** · **20 cặp** (messenger, trang bán hàng) cùng sản phẩm
@@ -662,3 +709,21 @@ src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` �
   **12/12** (S11 xanh sau regen `db/schema.sql` từ 001–005; 005 KHÔNG thêm bảng ⇒ NEO 21 giữ
   nguyên) · migration 005 đã áp lên CSDL dev · commit `9a7788c` · nhật ký
   `docs/thi-cong/nhat-ky/phieu-l3-m2.md`
+
+- 23/08 · L2-M3 → 🔎 chờ nghiệm thu — ráp `kb` cho `buildSystem` từ BỐN KHỐI DB
+  (`src/chat/rap-prompt.js` + `ngan-sach-luot.js`, seed `db/di-tru/bo-luat-va-ky-nang.js`):
+  bo_luat_chung đọc OR-IS-NULL qua tầng truy vấn có sẵn nhưng CHƯA điều khiển model thật
+  (CORE vẫn hardcode trong `prompts.js` — giới hạn ghi rõ §9) · kỹ năng/kịch bản/sản
+  phẩm CÓ hiệu lực qua `kb.text`/`kb.config` · cờ `V3_RAP_PROMPT_BAT` (vắng=đóng) lùi
+  nguyên kb.js cũ, đo bằng `kb.nguon` thay spy.
+- 23/08 · L2-M3 → ngân sách lượt thay trần 4 cứng bằng `turnBudget()` (lead-score.js,
+  đọc-qua-import): 5 bậc **1→3→6→10→12** tăng dần, trần=`HARD_MAX_TURNS`; điểm lưu
+  `hoi_thoai.diem_lead`/`diem_nong` (2 cột có sẵn từ migration 001, chưa ai ghi — khớp
+  đứt đã mở qua `kho.js`) · cờ `page.trong_diem` đóng dấu vào mọi `so_ai`. Gây hồi quy
+  ĐÃ CHẨN ĐOÁN đúng 1 ca `test/l2-m2-handler.test.js` (ngân sách LẠNH=1 lượt bị tiêu bởi
+  ca chạy trước, chia sẻ `hoi_thoai`) — KHÔNG phải bug, xem §9.
+- 23/08 · L2-M3 → cổng `ops/bin/nghiem-thu/l2-m3.sh` **11/11 phép ĐẠT** (7 phép đề bài,
+  ⑦ tách 5 mục a-e) · bộ ca **17/17 xanh** · hồi quy l2-m1 nguyên vẹn (hàng đợi 12/12 ·
+  nhạc trưởng 11/11), l2-m2 lớp từ khoá 12/12 nguyên, l2-m2 handler 1 ca đỏ đã biết
+  trước (⑦e tự nhận diện bằng TÊN, không chỉ đếm số) · commit `5347191` · nhật ký
+  `docs/thi-cong/nhat-ky/phieu-l2-m3.md`
