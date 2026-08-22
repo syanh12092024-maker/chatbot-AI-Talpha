@@ -794,3 +794,21 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   sandbox · bash single-quote không escape được nháy đơn lồng · đóng ngoặc thừa 1 dấu `"`
   ở năm khối `nodex`) · commit `7a22b59` (code) + dòng này (sổ+nhật ký) · nhật ký
   `docs/thi-cong/nhat-ky/phieu-l3-m3.md`
+
+- 23/08 · VA-Q12 → ✅ — `docDon` (`src/pos/doc-don.js`) nay upsert `khach` theo SĐT
+  chuẩn hoá + ghi `don_hang.khach_id`/`san_pham_ma` cho MỌI đơn đọc về (kể cả backfill
+  đơn đã có, không chỉ khi trạng thái đổi — nếu không 26 đơn cũ không bao giờ được nối)
+  · Q3 làm luôn: migration `006_lich_su_trang_thai` (`don_hang.status_history jsonb`,
+  KHÔNG thêm bảng, thước l0-m1 giữ 21) · nhập `chuanHoaSdt` THẲNG từ `loc-trung.js`
+  (không qua barrel `orders/index.js` — tránh vòng `src/pos↔src/orders`, lý do đo được
+  ghi trong nhật ký). BẰNG CHỨNG THẬT: cổng `ops/bin/nghiem-thu/va-q12.sh` **17/17 ĐẠT
+  / 0 TRƯỢT / 0 HOÃN** (2 lượt liên tiếp trên `aicloser_v3` dev thật + POS GET thật —
+  KHÔNG sandbox, đúng chữ phiếu "di trú lại 26 đơn cũ"/"kiemTrung trên dữ liệu thật"):
+  26/26 đơn cũ có `khach_id` · `kiemTrung()` BẮT ĐƯỢC cặp trùng chéo thật SĐT
+  `966501984606` (#68771 messenger / #68769 trang bán hàng, phép ăn tiền của phiếu) ·
+  bộ ca `va-q12-doc-don.test.js` **10/10** · hồi quy l1-m1 **35/35** · l3-m2+l3-m1
+  **66/66** · l0-m1 **12/12**. Hệ quả phụ đã đo: quét đủ sâu để chạm 26 `ma_pos` cũ +
+  cặp lịch sử 19/08 làm `don_hang` dev 26→3.784, `khach` 0→3.218 (chỉ THÊM đơn UAE/Saudi
+  thật qua GET, không xoá/nhân đôi). Đóng nợ **Q1·Q2·Q3** (§9 23/08). Nợ mới ghi §9:
+  `docDon` có thể bỏ sót trang khi POS trả một trang rỗng thoáng qua (đất L1-M1) · commit
+  `7c63859` (code) + dòng này (sổ+nhật ký) · nhật ký `docs/thi-cong/nhat-ky/phieu-va-q12.md`
