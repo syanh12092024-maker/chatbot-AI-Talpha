@@ -1,6 +1,6 @@
 # PHIẾU L0-M2 — Tầng truy vấn tự chèn điều kiện team; thiếu bối cảnh → NÉM LỖI
 
-**Base:** `DIEN-LUC-PHAT` · **Làn:** 🟥 lõi cách ly team — nhưng thợ **sonnet** (route
+**Base:** `70335be` · **Làn:** 🟥 lõi cách ly team — nhưng thợ **sonnet** (route
 tiết kiệm 22/08: nghiệm thu ④ viết sẵn gánh chất lượng); KHÔNG refute per-phiếu
 
 > Phiếu là HỢP ĐỒNG giữa tổng và thợ. Thợ nạp skill `tho-thi-cong` trước khi làm.
