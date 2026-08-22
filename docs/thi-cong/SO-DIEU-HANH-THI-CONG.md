@@ -1,7 +1,7 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 16:30 22/08 · đang chạy: dựng sổ + phiếu L0-M1 · phán mới
-> nhất: Postgres v3 đã dựng (talpha-pg:5433), dây chuyền khởi động từ L0-M1.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 17:15 22/08 · đang chạy: L0-M1 🟨 (thợ opus, nền) · phán mới
+> nhất: điểm (a) vòng 1 TRẢ-VỀ 2 CHAN → phiếu v2 đóng 8/8 finding, verify vòng 2 DAT, đã phát thợ.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -111,7 +111,7 @@ trong 5′, đơn Messenger không bị hỏi lại, trùng chéo bị bắt.
 
 | Mã    | Việc                                                                               | Phụ thuộc | Session | Đụng file             | Trạng thái |
 | ----- | ---------------------------------------------------------------------------------- | --------- | ------- | --------------------- | ---------- |
-| L0-M1 | Lược đồ 19 bảng + di trú dữ liệu thật từ JSON                                      | —         | thợ mới | `db/*` `test/l0-m1-*` | 🎫         |
+| L0-M1 | Lược đồ 19 bảng + di trú dữ liệu thật từ JSON                                      | —         | thợ mới | `db/*` `test/l0-m1-*` | 🟨         |
 | L0-M2 | Tầng truy vấn tự chèn điều kiện team, thiếu bối cảnh → ném lỗi                     | L0-M1     | thợ mới | `src/db/*` `test/`    | ⬜         |
 | R0    | **GATE SÓNG 0** — npm test 2 lượt + script nghiệm thu + đối chiếu danh sách di trú | L0-M1·M2  | TỔNG    | —                     | ⬜         |
 
