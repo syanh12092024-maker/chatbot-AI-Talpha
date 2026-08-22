@@ -1,6 +1,6 @@
 # PHIẾU L2-M3 — Ráp prompt BỐN KHỐI từ DB + ngân sách lượt theo độ nóng + cờ page trọng điểm
 
-**Base:** `DIEN-LUC-PHAT` · **Làn:** 🟨 (nội bộ src/chat — đổi NGUỒN prompt và NHỊP lượt,
+**Base:** `020c50c` · **Làn:** 🟨 (nội bộ src/chat — đổi NGUỒN prompt và NHỊP lượt,
 không mở đường gửi mới) · thợ **sonnet** · điểm (a) tổng tự chấm: thi hành 01 §6 («tách
 bốn khối ngay từ giai đoạn 1, kể cả khi chưa làm giao diện» — mỗi khối một chủ, một nhịp
 đổi) + 02 §L2 («bỏ trần 4 lượt cứng, thay bằng ngân sách theo độ nóng» + «page trọng

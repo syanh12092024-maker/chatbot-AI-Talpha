@@ -149,8 +149,8 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | Mã    | Việc                                                                                  | Phụ thuộc                                                           | Session | Đụng file                                           | Trạng thái |
 | ----- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------- | --------------------------------------------------- | ---------- |
 | L2-M1 | Đường xử lý tin nền mới + hàng đợi; route outbound qua cửa v3 (nợ tools.js); DI model | R1 code-xong (L1-M1·M2 ✅; model = llm.js cũ qua DI, chỗ cắm cho B) | thợ mới | `src/queue/*` `src/chat/*` `db/migrate/003` `test/` | ✅         |
-| L2-M2 | Tắt Botcake 3 page thử, bật 2 lớp 0 đồng, nhập 2 luật từ khoá, vá `paano mag order`   | L2-M1 + **H3** + **H8**                                             | thợ mới | `src/chat/*` `test/`                                | 🟨         |
-| L2-M3 | Tách prompt 4 khối, ngân sách lượt theo độ nóng, cờ page trọng điểm                   | L2-M1                                                               | thợ mới | `src/chat/*` `test/`                                | ⬜         |
+| L2-M2 | Tắt Botcake 3 page thử, bật 2 lớp 0 đồng, nhập 2 luật từ khoá, vá `paano mag order`   | L2-M1 + **H3** + **H8**                                             | thợ mới | `src/chat/*` `test/`                                | ✅         |
+| L2-M3 | Tách prompt 4 khối, ngân sách lượt theo độ nóng, cờ page trọng điểm                   | L2-M1                                                               | thợ mới | `src/chat/*` `test/`                                | 🟨         |
 | R2    | **GATE SÓNG 2** — đo 50 lượt thật <10s, 7 ngày so 3 page đối chứng                    | L2-M1..M3                                                           | TỔNG    | —                                                   | ⬜         |
 
 ## §5 · SÓNG 3 — HAI LUỒNG ĐƠN 🟥 (toàn sóng là đường đơn/tiền)
@@ -409,6 +409,10 @@ src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` �
   tiết: `docs/v3/ban-giao/duong-tin-v1.md` §12.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+
+- 23/08 · L2-M2 → ✅ (TỔNG nghiệm thu) — cổng 8/8 · 18/18 test + hồi quy l2-m1 nguyên ·
+  lỗ paano thật = «mag+khoảng trắng/gạch nối» (umorder đã khớp cũ) · nợ mới §9
+  kb.js#SCRIPT_FIELDS (dashboard giai đoạn 2) · commit 38bcb71.
 
 - 22/08 · L2-M1 → 🔎 chờ nghiệm thu — hàng đợi tin + nhạc trưởng v3
   (`db/migrate/003_tin_cho_xu_ly` bảng thứ 21 · `src/queue/` 4 tệp · `src/chat/` 6 tệp):
