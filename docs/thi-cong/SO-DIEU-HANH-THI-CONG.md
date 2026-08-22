@@ -408,6 +408,45 @@ src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` �
   phiếu thêm 2 field vào `SCRIPT_FIELDS` + form dashboard khi cần marketer tự nhập tay. Chi
   tiết: `docs/v3/ban-giao/duong-tin-v1.md` §12.
 
+- 23/08 · thợ L3-M2 (nợ Q1 — 🔴 KHỚP ĐỨT trên ĐƯỜNG ĐƠN, chặn CẢ HAI cửa kiểm):
+  `khach` có **0 dòng** và `don_hang.khach_id` = **0/26** trên `aicloser_v3` (đo 23/08).
+  Cửa POS `src/pos/doc-don.js` đọc đơn nhưng KHÔNG tạo hồ sơ khách, trong khi POS trả sẵn
+  `shipping_address.phone_number` (đo: chỉ 15/5.144 đơn thật thiếu số). Hệ quả đo được:
+  `kiemTrung()` và `chamTiLeHoan()` chạy đúng nhưng trả **tập RỖNG** trên dữ liệu thật
+  (`chamTiLeHoan` trên dev: 4 team · 0 khách · 0 cập nhật), và nhánh `thieu_so_wa` của
+  L3-M1 cũng nối qua đúng cột rỗng đó ⇒ hôm nay **100% đơn trang bán hàng không có số WA**
+  vì lý do này chứ không phải vì khách thiếu số. Đây là họ lỗi «hai đầu làm rất kỹ, phần bị
+  bỏ luôn là phần NỐI». Vá = cửa POS tạo/nối `khach` lúc đọc đơn — **đất L1-M1** (án lệ
+  #25, L3-M2 không chạm). Neo đo: `ops/bin/nghiem-thu/l3-m2.sh` in ⏸ HOÃN mục 1.
+- 23/08 · thợ L3-M2 (nợ Q2 — cột mới CHƯA CÓ NGƯỜI GHI): migration 005 thêm
+  `don_hang.san_pham_ma text[]` (mã biến thể POS `"<shop>:<variation_id>"`) vì `don_hang`
+  KHÔNG có cột nào giữ sản phẩm, mà nghiệm thu 02 §L3 là «cùng sản phẩm → bị bắt là trùng».
+  **Chủ cột là cửa POS** (`src/pos/doc-don.js`, L1-M1): POS trả sẵn `items[].variation_id`
+  trên **4.935/5.144 đơn (95,9%)**, chỉ thiếu lượt ghi. Trong lúc chờ, `kiemTrung()` KHÔNG
+  đọc cột rỗng thành «khác SP ⇒ sạch» mà rơi vào nhánh mù-có-nói-ra
+  `nghi_trung_chua_ro_san_pham` (fail-CLOSED, mã lý do RIÊNG). Neo đo: ⏸ HOÃN mục 2 của cổng.
+- 23/08 · thợ L3-M2 (nợ Q3 — 0,08% sai số của một phép quy ước, đo được): job chấm tỉ lệ
+  hoàn dùng ảnh chụp `don_hang.trang_thai_pos` chứ không dùng `status_history` — cửa POS
+  KHÔNG lưu mảng đó xuống cột nào, và job đêm không được tự gọi lại POS từng đơn (án lệ #31
+  «cửa RA đúng một cái»). Đo độ lệch của chính phép quy ước trên 5.144 đơn thật: «lịch sử
+  TỪNG chạm {4,5,6,7}» khác «hiện tại thuộc {4,5,6,7}» ở đúng **4 đơn (0,08%)**. Xoá nốt
+  0,08% = cửa POS lưu `status_history` (đất L1-M1). `status_history` CÓ trên 5.144/5.144 đơn.
+- 23/08 · thợ L3-M2 (nợ N3/P3 LẶP LẠI lần thứ tư): `suaTheoId` của `src/db/` vẫn chưa nhận
+  `ctxHeThong()`, mà job đêm phải chạm team KỸ THUẬT `chua-phan` (26/26 đơn thật ở đó) ⇒
+  buộc dựng đường UPDATE hẹp thứ **BỐN** (`CAU_GHI_CHAM` trong `src/orders/ti-le-hoan.js`:
+  một câu cố định 5 cột của `khach`, luôn kẹp `k.team_id`, không `INSERT`/`DELETE`, không
+  đụng `sua_luc`). Không tái dùng `suaTheoIdPos` vì nó tự ghi `nhat_ky` mang câu «cửa POS
+  sửa dòng» — SAI cho một lượt chấm tỉ lệ hoàn («cổng lỏng mà log nói dối là HAI lỗi»).
+  Bản vá đúng vẫn là `suaTheoId` cho `ctxHeThong()` ở `src/db/` (đất L0-M2) rồi **gộp CẢ
+  BỐN về một**.
+- 23/08 · thợ L3-M2 (quyết định NGƯỜI còn treo, không phải nợ kỹ thuật): 01 §11 «Chặn cứng
+  khách hoàn cao ở một ngưỡng» vẫn **Chờ chốt**. Phần TÍNH đã trả xong (bốn tầng + tử/mẫu +
+  mốc chấm, phân bố đo trên 5.144 đơn thật: `canh_bao` 30–65% = **107 khách** — cụm thật,
+  cỡ khớp với «144 khách» 01 §11 nêu). Phần CHẶN: **không dòng mã nào trong v3 đọc
+  `tang_hoan` để chặn**, cố ý. Người quyết chốt xong thì mở phiếu riêng — đừng vá lén vào
+  `ti-le-hoan.js`. Kèm số cho lượt chốt đó: hạ sàn từ 2 xuống 1 đơn-đã-kết làm `rui_ro_cao`
+  nhảy **130 → 953 khách** (823 người bị dán nhãn bằng ĐÚNG MỘT đơn).
+
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
 - 23/08 · L2-M2 → ✅ (TỔNG nghiệm thu) — cổng 8/8 · 18/18 test + hồi quy l2-m1 nguyên ·
@@ -597,3 +636,24 @@ src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` �
   `docs/thi-cong/nhat-ky/phieu-l2-m2.md` · cổng `ops/bin/nghiem-thu/l2-m2.sh` **8 phép ĐẠT
   8 / TRƯỢT 0** (3 lượt liên tiếp rc=0) · bộ ca l2-m2 18/18 xanh + hồi quy l2-m1 nguyên
   vẹn (hàng đợi 12/12 · nhạc trưởng 11/11) · commit `38bcb71`
+- 23/08 · L3-M2 → 🔎 chờ nghiệm thu — lọc trùng CHÉO hai luồng (`src/orders/loc-trung.js`)
+  + chấm tỉ lệ hoàn BỐN TẦNG (`src/orders/ti-le-hoan.js`, migration 005): chuẩn hoá SĐT là
+  hàm THUẦN + nguồn luật DUY NHẤT (SQL chỉ lọc thô bằng bảy chữ số cuối — an toàn MỘT
+  CHIỀU chứng minh được, không có bản luật SQL song sinh); vế sản phẩm mù thì fail-CLOSED
+  bằng mã lý do RIÊNG `nghi_trung_chua_ro_san_pham`, KHÔNG đọc cột rỗng thành «sạch»;
+  ⛔ KHÔNG dòng mã nào đọc `tang_hoan` để CHẶN (01 §11 còn «Chờ chốt») — ca `C4` bắt đỏ nếu
+  ai thêm `don_hang`/`viec_can_xu_ly`/`INSERT`/`DELETE` vào câu ghi.
+- 23/08 · L3-M2 → mọi quyết định số chốt bằng **5.144 đơn POS THẬT / 7 shop** (GET, 0 lượt
+  ghi, `PANCAKE_READONLY=1`): cắt mã quốc gia gom thêm **58 khách** (4.558→4.500) và nâng
+  trùng-chéo bắt được 48→**56 khách** · **20 cặp** (messenger, trang bán hàng) cùng sản phẩm
+  — ví dụ đọc được SĐT `966501984606` đơn #68771/#68769 cách **0 ngày** · cửa sổ **7 ngày**
+  bắt 17/20 trong khi p75 nhịp mua lại là 12,16 ngày · tầng `canh_bao` 30–65% = **107 khách**
+  (cụm thật, cỡ khớp «144 khách» 01 §11) · hạ sàn 2→1 làm `rui_ro_cao` nhảy **130→953**.
+  Ba nguyên liệu đề bài ② khai thiếu (không cột sản phẩm · `khach` 0 dòng · `status_history`
+  có nhưng không lưu) đã xử + ghi §9 nợ **Q1·Q2·Q3** (đều thuộc đất L1-M1, không tiện tay sửa).
+- 23/08 · L3-M2 → cổng `ops/bin/nghiem-thu/l3-m2.sh` **13 phép ĐẠT 13 / TRƯỢT 0 / ⏸ HOÃN 2**
+  (hoãn: phân tầng 144 khách THẬT + vế «cùng sản phẩm» trên đơn THẬT — cả hai chờ cửa POS
+  nối `khach`/`san_pham_ma`) · bộ ca l3-m2 **38/38** · hồi quy L3-M1 **28/28** · l0-m1
+  **12/12** (S11 xanh sau regen `db/schema.sql` từ 001–005; 005 KHÔNG thêm bảng ⇒ NEO 21 giữ
+  nguyên) · migration 005 đã áp lên CSDL dev · commit `9a7788c` · nhật ký
+  `docs/thi-cong/nhat-ky/phieu-l3-m2.md`
