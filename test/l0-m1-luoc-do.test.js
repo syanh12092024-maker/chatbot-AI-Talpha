@@ -167,7 +167,7 @@ test("S5 · CHỈ INSERT: nhat_ky và so_ai từ chối UPDATE lẫn DELETE", as
   );
 });
 
-test("S6 · hợp đồng đọc bo_luat_chung: (team_id=$ctx OR team_id IS NULL) — 2/1/1", async () => {
+test("S6 · hợp đồng đọc bo_luat_chung: (team_id=$ctx OR team_id IS NULL) — đếm DELTA", async () => {
   const ctx = async (slug) => {
     const r = await q(
       `SELECT count(*)::int c FROM bo_luat_chung
@@ -176,14 +176,23 @@ test("S6 · hợp đồng đọc bo_luat_chung: (team_id=$ctx OR team_id IS NULL
     );
     return r.rows[0].c;
   };
+  // 23/08 VA-T1 vá (chẩn đoán #1, khuôn giống ops/bin/nghiem-thu/l0-m1.sh ⑦): đếm
+  // TUYỆT ĐỐI ăn may theo trạng thái seed của bo_luat_chung — sandbox `dungSandbox()`
+  // ở đây KHÔNG chạy di-tru nên hôm nay vẫn 0 dòng trước khi chèn, nhưng đếm SAU−TRƯỚC
+  // quanh đúng hai dòng ca này tự chèn mới là bất biến ĐÚNG dù seed tương lai có gì.
+  const truoc = {
+    tieuAlpha: await ctx("tieu-alpha"),
+    auus: await ctx("auus"),
+    pialphaEu: await ctx("pialpha-eu"),
+  };
   await q(
     "INSERT INTO bo_luat_chung (team_id, noi_dung) VALUES (NULL, 'luat toan he')",
   );
   await q(`INSERT INTO bo_luat_chung (team_id, noi_dung)
            SELECT id, 'luat rieng tieu-alpha' FROM team WHERE slug='tieu-alpha'`);
-  assert.equal(await ctx("tieu-alpha"), 2);
-  assert.equal(await ctx("auus"), 1);
-  assert.equal(await ctx("pialpha-eu"), 1);
+  assert.equal((await ctx("tieu-alpha")) - truoc.tieuAlpha, 2);
+  assert.equal((await ctx("auus")) - truoc.auus, 1);
+  assert.equal((await ctx("pialpha-eu")) - truoc.pialphaEu, 1);
   // Luật ĐỒNG NHẤT `team_id = $ctx` (không có vế NULL) làm mất dòng toàn hệ — đó là
   // chính xác cái bẫy N3 mà L0-M2 phải tránh; giữ ca này làm bằng chứng.
   const dongNhat = await mot(

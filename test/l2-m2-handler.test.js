@@ -26,7 +26,7 @@ const PSID = "psid-l2m2";
 const CONV = "conv-l2m2";
 const CUST = "cust-l2m2";
 
-let sb, teamId;
+let sb, teamId, pageRowId;
 let xuLyMotTin, KET_QUA, xepTin, docTinTheoId;
 
 before(async () => {
@@ -40,11 +40,9 @@ before(async () => {
     "INSERT INTO page (team_id, page_id, ten) VALUES ($1,$2,'Ca L2-M2') RETURNING id",
     [teamId, PAGE],
   );
-  await sb.pool.query(
-    `INSERT INTO hoi_thoai (team_id, page_id, psid, trang_thai, chu_so_huu)
-     VALUES ($1,$2,$3,'QUALIFY','AI')`,
-    [teamId, p.rows[0].id, PSID],
-  );
+  pageRowId = p.rows[0].id;
+  // ⚠️ KHÔNG seed một dòng hoi_thoai DÙNG CHUNG ở đây nữa — mỗi ca tự tạo hội thoại
+  // RIÊNG trong motLuot() (xem chú thích ở đó, chẩn đoán #4 phiếu VA-T1).
 });
 
 after(async () => {
@@ -52,14 +50,34 @@ after(async () => {
 });
 
 let msgSeq = 0;
-/** Dựng + chạy ĐÚNG MỘT lượt qua `xuLyMotTin` thật, deps đều là spy/stub. */
+/**
+ * Dựng + chạy ĐÚNG MỘT lượt qua `xuLyMotTin` thật, deps đều là spy/stub.
+ *
+ * 23/08 VA-T1 vá (chẩn đoán #4): bản cũ mọi ca CHIA SẺ một PSID/CONV hằng số ⇒ chung
+ * một dòng `hoi_thoai` ⇒ chung một sổ `moc_luot_llm` (ngân sách lượt L2-M3 ②.2,
+ * `state.aiTurns`). Ca "NHƯỜNG khi thiếu KB size" gọi được `chayCloser` một lần và
+ * TIÊU mất lượt ngân sách của chính hội thoại đó; ca "không cướp diễn đàn" chạy SAU
+ * nó trên CÙNG hội thoại thì bị `conNganSach()` chặn ở bước 6b (`ngan_sach_het:<tier>`)
+ * TRƯỚC khi kịp tới `chayCloser` — handler không gửi gì, `guiTinCalls` rỗng dù đề bài
+ * chờ `['stub AI reply']`. Đỏ CẢ KHI CÔ LẬP (chạy riêng file) vì bệnh nằm NGAY TRONG
+ * file, giữa các ca với nhau — không phải nhiễu thứ tự với file khác. Vá GỐC: mỗi lượt
+ * gọi `motLuot()` dựng một PSID + một dòng `hoi_thoai` MỚI TOANH (`moc_luot_llm` rỗng),
+ * nên không ca nào còn tiêu ngân sách hộ ca khác — rà cả 6 ca trong file: chỉ đúng hai
+ * ca trên từng chạm `chayCloser`, cô lập triệt để loại luôn cả bệnh tiềm ẩn cho 4 ca kia.
+ */
 async function motLuot({ noiDung, kb, deps = {} }) {
   msgSeq += 1;
+  const psid = `${PSID}-${msgSeq}`;
+  await sb.pool.query(
+    `INSERT INTO hoi_thoai (team_id, page_id, psid, trang_thai, chu_so_huu)
+     VALUES ($1,$2,$3,'QUALIFY','AI')`,
+    [teamId, pageRowId, psid],
+  );
   const t = await xepTin(sb.pool, {
     teamId,
     pageId: PAGE,
-    psid: PSID,
-    convId: CONV,
+    psid,
+    convId: `${CONV}-${msgSeq}`,
     custId: CUST,
     msgId: `msg-l2m2-${msgSeq}`,
     noiDung,

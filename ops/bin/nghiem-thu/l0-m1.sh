@@ -250,16 +250,23 @@ psqlq "UPDATE so_ai SET ma_model='doi'" \
 psqlq "DELETE FROM so_ai" \
   && truot "so_ai CHO DELETE" || dat "so_ai từ chối DELETE (rc≠0)"
 
-muc "⑦ hợp đồng đọc bo_luat_chung: (team_id = \$ctx OR team_id IS NULL)"
+muc "⑦ hợp đồng đọc bo_luat_chung: (team_id = \$ctx OR team_id IS NULL) — đếm DELTA"
+# 23/08 VA-T1 vá (chẩn đoán #1): seed mồi L2-M3 (di-tru chèn 1 dòng NULL toàn hệ vào
+# bo_luat_chung) làm đếm TUYỆT ĐỐI ăn may theo trạng thái seed — 2/1/1 hoá 3/2/2 ngay
+# khi phép ④ DI TRÚ ở trên đã chạy. Đếm SAU−TRƯỚC quanh đúng hai dòng lượt này tự
+# chèn mới là bất biến ĐÚNG, không phụ thuộc seed nào khác (kể cả di-tru đổi seed sau).
+dem_ctx() {
+  psqlx "SELECT count(*) FROM bo_luat_chung
+         WHERE team_id=(SELECT id FROM team WHERE slug='$1') OR team_id IS NULL"
+}
+T_TA="$(dem_ctx tieu-alpha)"; T_AU="$(dem_ctx auus)"; T_PI="$(dem_ctx pialpha-eu)"
 psqlq "INSERT INTO bo_luat_chung (team_id,noi_dung) VALUES (NULL,'luat toan he')"
 psqlq "INSERT INTO bo_luat_chung (team_id,noi_dung)
        SELECT id,'luat rieng tieu-alpha' FROM team WHERE slug='tieu-alpha'"
-for s in tieu-alpha auus pialpha-eu; do
-  N="$(psqlx "SELECT count(*) FROM bo_luat_chung
-              WHERE team_id=(SELECT id FROM team WHERE slug='${s}') OR team_id IS NULL")"
-  if [ "${s}" = "tieu-alpha" ]; then bang "bối cảnh ${s} thấy" "${N}" "2"
-  else bang "bối cảnh ${s} thấy" "${N}" "1"; fi
-done
+S_TA="$(dem_ctx tieu-alpha)"; S_AU="$(dem_ctx auus)"; S_PI="$(dem_ctx pialpha-eu)"
+bang "DELTA bối cảnh tieu-alpha (thấy CẢ HAI dòng vừa chèn)" "$((S_TA - T_TA))" "2"
+bang "DELTA bối cảnh auus (chỉ thấy dòng toàn hệ)" "$((S_AU - T_AU))" "1"
+bang "DELTA bối cảnh pialpha-eu (chỉ thấy dòng toàn hệ)" "$((S_PI - T_PI))" "1"
 
 muc "⑧ khoá API của cau_hinh_model lưu dạng MÃ HOÁ"
 node -e '

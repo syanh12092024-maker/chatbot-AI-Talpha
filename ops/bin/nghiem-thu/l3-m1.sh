@@ -10,8 +10,9 @@
 # ghi ngược POS THẬT (§7b T2, cần V3_POS_GHI=1 + đơn nháp). Gộp hoãn vào đạt là nói dối.
 #
 # Cổng TỰ DỰNG CSDL sandbox `aicloser_v3_nt_l3m1` từ khuôn trần rồi TỰ DỌN (luật 11 sổ
-# điều hành) — KHÔNG chạm `aicloser_v3` dev (26 đơn thật + dữ liệu thợ song song), KHÔNG
-# chạm mạng nào (hai cửa ngoài đều là spy tiêm qua deps).
+# điều hành) — KHÔNG chạm `aicloser_v3` dev (đơn thật + dữ liệu thợ song song — số dòng
+# KHÔNG cố định, ⑦b tự đo bất biến TRƯỚC≡SAU thay vì neo hằng số), KHÔNG chạm mạng nào
+# (hai cửa ngoài đều là spy tiêm qua deps).
 #
 #   bash ops/bin/nghiem-thu/l3-m1.sh
 #   GIU_SANDBOX=1 bash ops/bin/nghiem-thu/l3-m1.sh   # giữ CSDL lại để soi tay
@@ -86,6 +87,21 @@ trap don_dep EXIT
 
 echo "CỔNG NGHIỆM THU L3-M1 · $(date '+%F %T') · cây $(git rev-parse --short HEAD 2>/dev/null)"
 echo "CSDL đo: ${DB} (sandbox, KHÔNG phải aicloser_v3 dev) · container ${CONTAINER}"
+
+# Đếm đơn thật trên DEV — gọi LẶP LẠI ở đầu và ở ⑦b để so DELTA. 23/08 VA-T1 vá
+# (chẩn đoán #2): hằng số chụp-thời-điểm «26|26» hết hạn ngay khi VA-Q12 backfill
+# (26 → 3.784) — bất biến đúng là TRƯỚC lượt chạy ≡ SAU lượt chạy, không phải một số.
+dem_dev_don() {
+  DATABASE_URL_V3="${URL_DEV}" node -e '
+const { voiPool } = await import("./db/ket-noi.js");
+await voiPool(async (pool) => {
+  const r = await pool.query(
+    "SELECT count(*)::int tong, count(*) FILTER (WHERE trang_thai_he=$1)::int gieo FROM don_hang", ["moi_tu_pos"]);
+  console.log(`${r.rows[0].tong}|${r.rows[0].gieo}`);
+});' 2>/dev/null || printf 'LOI-NODE'
+}
+DEV_TRUOC="$(dem_dev_don)"
+so "đơn thật trên DEV TRƯỚC lượt (tổng|còn ở moi_tu_pos)" "${DEV_TRUOC}"
 
 node db/migrate.js >/dev/null 2>&1
 CO_COT="$(docker exec "${CONTAINER}" psql -U aicloser -d "${DB}" -tAc \
@@ -401,22 +417,17 @@ bang "⑥c cặp đơn→team khớp team CỦA ĐƠN" "$(echo "${KQ6}" | cut -d
 so   "⑥d cặp đo được" "$(echo "${KQ6}" | cut -d'|' -f4)"
 
 # ═══ ⑦ BỘ CA + ĐƠN THẬT KHÔNG BỊ ĐỤNG ════════════════════════════════════════
-muc "⑦ node --test bộ l3-m1 · và 26 đơn thật trên aicloser_v3 KHÔNG bị đụng"
+muc "⑦ node --test bộ l3-m1 · và đơn thật trên aicloser_v3 KHÔNG bị đụng (bất biến)"
 TEST_OUT="$(DATABASE_URL_V3="${URL_DEV}" node --test test/l3-m1-may-trang-thai.test.js test/l3-m1-quet-don.test.js 2>&1)"
 TPASS="$(echo "${TEST_OUT}" | grep -E '^# pass |^ℹ pass ' | grep -oE '[0-9]+' | head -1)"
 TFAIL="$(echo "${TEST_OUT}" | grep -E '^# fail |^ℹ fail ' | grep -oE '[0-9]+' | head -1)"
 so "⑦a ca xanh / đỏ" "${TPASS:-?} / ${TFAIL:-?}"
 bang "⑦a bộ ca l3-m1 đỏ" "${TFAIL:-LOI-NODE}" "0"
 
-DEV="$(DATABASE_URL_V3="${URL_DEV}" node -e '
-const { voiPool } = await import("./db/ket-noi.js");
-await voiPool(async (pool) => {
-  const r = await pool.query(
-    "SELECT count(*)::int tong, count(*) FILTER (WHERE trang_thai_he=$1)::int gieo FROM don_hang", ["moi_tu_pos"]);
-  console.log(`${r.rows[0].tong}|${r.rows[0].gieo}`);
-});' 2>/dev/null || printf 'LOI-NODE')"
-so "⑦b CSDL DEV ${URL_DEV##*/} — tổng đơn | còn ở moi_tu_pos" "${DEV}"
-bang "⑦b 26 đơn thật còn nguyên, chưa đơn nào bị máy đụng" "${DEV}" "26|26"
+DEV_SAU="$(dem_dev_don)"
+so "⑦b CSDL DEV ${URL_DEV##*/} — tổng đơn | còn ở moi_tu_pos — TRƯỚC lượt" "${DEV_TRUOC}"
+so "⑦b CSDL DEV ${URL_DEV##*/} — tổng đơn | còn ở moi_tu_pos — SAU lượt" "${DEV_SAU}"
+bang "⑦b bất biến: đơn thật KHÔNG bị máy đụng (SAU ≡ TRƯỚC, không neo hằng số)" "${DEV_SAU}" "${DEV_TRUOC}"
 
 # ═══ HOÃN MINH BẠCH ══════════════════════════════════════════════════════════
 muc "HOÃN MINH BẠCH — hai phép cần thế-giới-thật (sổ điều hành §7b)"

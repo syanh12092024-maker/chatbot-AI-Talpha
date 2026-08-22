@@ -11,7 +11,7 @@
 # có người ghi — chủ cột là cửa POS L1-M1, đã ghi §9). Gộp hoãn vào đạt là nói dối.
 #
 # Cổng TỰ DỰNG CSDL sandbox `aicloser_v3_nt_l3m2` từ khuôn trần rồi TỰ DỌN (luật 11 sổ
-# điều hành) — KHÔNG chạm `aicloser_v3` dev (26 đơn thật + dữ liệu hai thợ song song),
+# điều hành) — KHÔNG chạm `aicloser_v3` dev (đơn thật + dữ liệu hai thợ song song),
 # KHÔNG chạm mạng lượt nào.
 #
 #   bash ops/bin/nghiem-thu/l3-m2.sh
@@ -297,7 +297,7 @@ bang "số CREATE TABLE trong 005 (thêm bảng là phải vá NEO l0-m1)" "${SO
 KQ7="$(nodex '
 const fs = await import("node:fs");
 const { voiPool } = await import("./db/ket-noi.js");
-const { xuong, len } = await import("./db/migrate.js");
+const { xuong, len, daAp } = await import("./db/migrate.js");
 await voiPool(async (pool) => {
   const demCot = async () => (await pool.query(
     `SELECT count(*)::int n FROM information_schema.columns
@@ -313,16 +313,31 @@ await voiPool(async (pool) => {
   let chayLai = "OK";
   try { await pool.query(fs.readFileSync("db/migrate/"+tep, "utf8")); } catch (e) { chayLai = "NEM:"+e.message.slice(0,60); }
   const cot1 = await demCot();
-  // (b) down → cột biến mất · (c) up lại → cột trở lại, số bảng không đổi
-  await xuong(pool, { im: true });
+  // (b) `xuong()` gỡ bản MỚI NHẤT — từ VA-Q12 (006_lich_su_trang_thai) bản mới nhất
+  //     KHÔNG còn là 005. Lùi từng bản tới khi 005 là bản chót rồi mới down ĐÚNG nó
+  //     (khuôn ops/bin/nghiem-thu/l1-m1.sh dòng ~112 đã vá 23/08, xem PHIẾU VA-T1 #3).
+  let xong = await daAp(pool);
+  let vongLui = 0;
+  while (xong[xong.length - 1] !== "005_loc_trung_va_ti_le_hoan" && vongLui < 10) {
+    await xuong(pool, { im: true });
+    xong = await daAp(pool);
+    vongLui++;
+  }
+  const chotTruocDown = xong[xong.length - 1];
+  await xuong(pool, { im: true }); // gỡ ĐÚNG 005 (giờ nó mới là bản chót)
   const cot2 = await demCot();
+  // (c) up lại — len() áp lại MỌI bản còn thiếu (005 + mọi bản sau nó, vd 006), số
+  //     bảng không đổi vì cả 005 lẫn 006 đều CHỈ alter cột, không tạo/xoá bảng.
   await len(pool, { im: true });
   const cot3 = await demCot();
   const bang1 = await demBang();
-  console.log(`chayLai=${chayLai} cotSauChayLai=${cot1} cotSauDown=${cot2} cotSauUp=${cot3} bangTruoc=${bang0} bangSau=${bang1}`);
+  console.log(`${chotTruocDown}|chayLai=${chayLai} cotSauChayLai=${cot1} cotSauDown=${cot2} cotSauUp=${cot3} bangTruoc=${bang0} bangSau=${bang1}`);
 });
 ')"
-bang "005 chạy lại được · down→up tròn · số bảng không đổi" "${KQ7}" \
+so "⑦ bản chót TRƯỚC khi down 005 (phải LÙI về đúng 005 trước, không phải 006)" \
+   "$(echo "${KQ7}" | cut -d'|' -f1)"
+bang "⑦ bản chót trước down = 005 chính nó" "$(echo "${KQ7}" | cut -d'|' -f1)" "005_loc_trung_va_ti_le_hoan"
+bang "005 chạy lại được · down→up tròn · số bảng không đổi" "$(echo "${KQ7}" | cut -d'|' -f2-)" \
      "chayLai=OK cotSauChayLai=5 cotSauDown=0 cotSauUp=5 bangTruoc=21 bangSau=21"
 
 # ═══ ⑧ BỘ CA L3-M2 + HỒI QUY L3-M1 ════════════════════════════════════════════
