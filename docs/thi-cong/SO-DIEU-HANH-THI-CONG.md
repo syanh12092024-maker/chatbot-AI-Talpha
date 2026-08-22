@@ -398,6 +398,16 @@ src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` �
   định số migration cố định trong khi cây chạy nhiều phiếu song song; sửa đúng cần chọn
   `down --het` hay `down N` cho MỌI gate, không phải việc vá 1 dòng bảng hằng của VA-P1.
 
+- 23/08 · thợ L2-M2 (nợ mới — quy ước KB chưa có đường ghi qua dashboard): `src/chat/lop-tu-khoa.js`
+  dùng `kb.config.fastLaneAuth` / `kb.config.fastLaneSize` (quy ước MỚI, cùng khuôn
+  `fastLanePrice/fastLaneShip/fastLaneHowto` đã có sẵn) để trả lời 2 luật thật/giả + hỏi
+  size. Nhưng `kb.js#cleanConfig` (mảng `SCRIPT_FIELDS`) chỉ giữ đúng 6 cột đã khai khi ghi
+  qua dashboard (`updatePageConfig`/`saveDraft`) — 2 field mới hôm nay CHỈ sống được nếu ghi
+  thẳng `kb-overrides.json` (đúng đường đã dùng để rút bộ từ khoá thật ở đề bài ⑤ phiếu
+  L2-M2), dashboard chưa có ô nhập cho chúng. `kb.js` ngoài pathspec ③ của phiếu này — mở
+  phiếu thêm 2 field vào `SCRIPT_FIELDS` + form dashboard khi cần marketer tự nhập tay. Chi
+  tiết: `docs/v3/ban-giao/duong-tin-v1.md` §12.
+
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
 - 22/08 · L2-M1 → 🔎 chờ nghiệm thu — hàng đợi tin + nhạc trưởng v3
@@ -564,3 +574,22 @@ src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` �
   `D5`, bộ ca l1-m1+l3-m1 63/63 xanh · `l1-m1.sh` 23 đạt/1 trượt (CÓ SẴN trước vá, A/B
   stash xác nhận, nợ mới ghi §9)/1 hoãn (có sẵn, ⑤c chờ VPS) · commit `b3d4e10` · nhật ký
   docs/thi-cong/nhat-ky/phieu-va-p1.md
+- 23/08 · L2-M2 → 🔎 chờ nghiệm thu — lớp từ khoá v3 (`src/chat/lop-tu-khoa.js`, chêm bậc
+  "4b" TRƯỚC Fast Lane/classify trong `handler-v3.js`): luật thật/giả + hỏi size trả lời từ
+  `kb.config.fastLaneAuth`/`fastLaneSize` (quy ước KB mới), NHƯỜNG (không bịa) khi trang
+  chưa có dữ liệu; vá lỗ `paano mag order` (biến thể tách chữ PH mà `ASK_HOWTO` của
+  `fast-lane.js` bỏ sót — đo lại xác nhận cả 3 ví dụ phiếu nêu, trừ `paano umorder` ĐÃ khớp
+  sẵn, lệch nhỏ đã ghi rõ trong nhật ký). Câu trả lời qua CÙNG cửa `outbound-guard` (M09)
+  với Fast Lane/AI — không miễn kiểm; bắt được ghi `so_ai` `lane='tu_khoa_v3'`
+  `ma_model='khong-goi-model'`. Không đụng `fast-lane.js`/file phẳng `src/`/vùng
+  `src/orders`·`src/pos`·`src/channels` (2 thợ khác đang ở đó).
+- 23/08 · L2-M2 → thuật ngữ đề bài ④#1/#3 "model 0 lượt (spy layModel=0)" **không thể là
+  nghĩa đen**: đo kiến trúc thì `d.layModel(...)` (tra CẤU HÌNH model) chạy KHÔNG ĐIỀU KIỆN
+  ở bước ② handler cho MỌI tin, TRƯỚC CẢ bước 4b — LUÔN = 1 dù lớp từ khoá có bắt hay không
+  (kiến trúc L2-M1 có sẵn, ngoài phạm vi phiếu). Đọc theo Ý ĐỊNH (0 token/không sinh
+  completion) và đo bằng `dem.goiModel`/`deps.chayCloser` (seam đã có sẵn) thay cho literal
+  `layModel` — ghi RÕ giả định tại chỗ quyết (luật 11 skill), không dừng phiếu vì có bằng
+  chứng đo, không phải một ngã rẽ thiết kế. Chi tiết đủ cả 2 dòng trên: nhật ký
+  `docs/thi-cong/nhat-ky/phieu-l2-m2.md` · cổng `ops/bin/nghiem-thu/l2-m2.sh` **8 phép ĐẠT
+  8 / TRƯỢT 0** (3 lượt liên tiếp rc=0) · bộ ca l2-m2 18/18 xanh + hồi quy l2-m1 nguyên
+  vẹn (hàng đợi 12/12 · nhạc trưởng 11/11) · commit `38bcb71`
