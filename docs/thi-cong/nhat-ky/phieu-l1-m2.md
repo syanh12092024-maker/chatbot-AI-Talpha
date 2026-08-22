@@ -68,12 +68,12 @@ tiếp không phải tính toán gì thêm — chỉ cần truyền đúng cả 
 tay. Đã ghi rõ thành hợp đồng trong `docs/v3/ban-giao/cua-messenger-v1.md` §2 (không
 phải hành vi ngầm).
 
-**Vì sao không cắm `[NEEDS CLARIFICATION]` chặn thay vì tự quyết:** rule 11 cho hai
-lựa chọn — hỏi tổng (block) HOẶC ghi rõ giả định (không block). Đây có bằng chứng CỨNG
+**Vì sao không cắm marker chờ làm rõ để chặn, thay vì tự quyết:** rule 11 cho hai lựa
+chọn — hỏi tổng (block) HOẶC ghi rõ giả định (không block). Đây có bằng chứng CỨNG
 (2 chỗ code + schema, không phải một khả năng mơ hồ 50/50), và một cách đọc khác (so
 trực tiếp) chắc chắn làm cửa câm 100% — không phải một trade-off cân bằng cần người
 quyết, mà là vá một lỗi khai nguyên liệu rõ ràng. Chọn ghi quyết định có bằng chứng,
-dành `[NEEDS CLARIFICATION]` cho chỗ THẬT SỰ 50/50.
+dành marker chờ làm rõ cho chỗ THẬT SỰ 50/50.
 
 ### 3.2 · Ba lỗi MỚI ở tầng CỬA, không tái dùng `LoiXuyenTeam`/`LoiThieuBoiCanhTeam`
 
@@ -179,6 +179,6 @@ xử lý tin PHẢI route outbound của bộ não qua cửa v3 (DI/injection, k
 
 Không phát hiện thêm nợ nào khác ngoài phạm vi. Không đụng `src/pos/` (vùng L1-M1 đang
 chạy song song), không đụng `db/migrate/*` hay `db/schema.sql`, không đụng file phẳng
-dưới `src/`, không đổi `package.json`, `.env` chỉ ĐỌC (không ghi). Không cắm marker
-`[NEEDS CLARIFICATION]` nào — chỗ mơ hồ duy nhất (psid≠convId, §3.1) đã thành quyết
-định có bằng chứng, không phải phỏng đoán.
+dưới `src/`, không đổi `package.json`, `.env` chỉ ĐỌC (không ghi). Lượt này không cắm
+marker chờ làm rõ nào — chỗ mơ hồ duy nhất (psid≠convId, §3.1) đã thành quyết định có
+bằng chứng, không phải phỏng đoán.
