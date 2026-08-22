@@ -1,8 +1,10 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 04:30 23/08 · đang chạy: VA-Q12 🟨 + review (a) L3-M4 ·
-> phán mới nhất: L3-M3 ✅ (23/23, huỷ-bù đủ 4 nhánh — thợ phát hiện nhanPhanHoi chỉ tự
-> huỷ 2/4) — 11 module + 1 vá ✅, còn L3-M4 (phiếu đã soạn, chờ vùng pos + verdict).
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 06:40 23/08 · đang chạy: VA-T1 🟨 (vá 4 thước trôi) ·
+> phán mới nhất: **12/12 MODULE PHẦN A XONG** (L3-M4 ✅ 62 phép, đảo-vá 7/7 đột biến chết)
+> — gate toàn cục lộ 4 thước known-answer trôi theo cây sống (KHÔNG bug code nào, tổng đã
+> mổ tới gốc từng cái) + 1 lỗi phép đo rc của chính tổng (đo $? trong chuỗi echo có
+> command-substitution — đo tách dòng từ nay).
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -160,7 +162,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | L3-M1 | Máy trạng thái đơn PHÂN NHÁNH THEO NGUỒN 🟥                       | R2        | thợ mới | `src/orders/*` `test/`               | ✅         |
 | L3-M2 | Lọc trùng chéo hai luồng + chấm tỉ lệ hoàn 🟥                     | L3-M1     | thợ mới | `src/orders/*` `test/`               | ✅         |
 | L3-M3 | Hàng đợi nhắc (2h×5, huỷ khi khách trả lời) + bộ đọc ý 4 nhánh 🟥 | L3-M1     | thợ mới | `src/orders/*` `src/queue/*` `test/` | ✅         |
-| L3-M4 | Hàng chờ tạo đơn luồng Messenger 🟥                               | L3-M1·M2  | thợ mới | `src/orders/*` `test/`               | ⬜         |
+| L3-M4 | Hàng chờ tạo đơn luồng Messenger 🟥                               | L3-M1·M2  | thợ mới | `src/orders/*` `test/`               | ✅         |
 | R3    | **GATE SÓNG 3**                                                   | L3-M1..M4 | TỔNG    | —                                    | ⬜         |
 
 ## §7b · «CHẠY THỬ MỘT LẦN» — dồn theo lệnh người quyết 22/08 (làm khi CEO gọi)
@@ -572,6 +574,13 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   khiển «0 đơn duyệt được» không đi tìm bug ở `hang-cho.js`.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+
+- 23/08 · L3-M4 → ✅ (TỔNG nghiệm thu) — chan1 8/8 · cổng 62/0/1-hoãn (T7) · đảo-vá 7/7
+  đột biến không sống · 3 lệch đề bài thợ đo (variation_id UUID · pos_shop_id · warehouse
+  không nguồn) · kiemTrung thật bắt cặp trùng · commit e97fcb1 — **12/12 MODULE A XONG**.
+- 23/08 · TỔNG · gate toàn cục 13 cổng — 9 xanh · 4 đỏ đều là THƯỚC trôi theo cây sống
+  (bo_luat +1 seed · 26→3.784 đơn · 006 sau 005 · fixture kb thiếu products + share PSID)
+  → phiếu VA-T1; 1 bài học đo rc tách dòng; code nghiệp vụ 0 bug lộ ra ở gate.
 - 23/08 · L3-M4 → 🔎 chờ nghiệm thu — hàng chờ tạo đơn Messenger `src/orders/hang-cho.js`
   + cửa TẠO ĐƠN THẬT `src/pos/tao-don.js`: NĂM cửa §7.3 (đủ trường · tiền · chống trùng ·
   hàng chờ · tạo-đơn-chạy-lại-đủ-cửa) với **NĂM nguồn** chống trùng (bản cũ bốn) — nguồn (b)
