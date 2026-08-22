@@ -111,7 +111,7 @@ trong 5′, đơn Messenger không bị hỏi lại, trùng chéo bị bắt.
 
 | Mã    | Việc                                                                               | Phụ thuộc | Session | Đụng file                        | Trạng thái |
 | ----- | ---------------------------------------------------------------------------------- | --------- | ------- | -------------------------------- | ---------- |
-| L0-M1 | Lược đồ 18 bảng + di trú dữ liệu thật từ JSON                                      | —         | thợ mới | `db/*` `src/db/migrate*` `test/` | ⬜         |
+| L0-M1 | Lược đồ 18 bảng + di trú dữ liệu thật từ JSON                                      | —         | thợ mới | `db/*` `test/l0-m1-*`            | 🎫         |
 | L0-M2 | Tầng truy vấn tự chèn điều kiện team, thiếu bối cảnh → ném lỗi                     | L0-M1     | thợ mới | `src/db/*` `test/`               | ⬜         |
 | R0    | **GATE SÓNG 0** — npm test 2 lượt + script nghiệm thu + đối chiếu danh sách di trú | L0-M1·M2  | TỔNG    | —                                | ⬜         |
 
