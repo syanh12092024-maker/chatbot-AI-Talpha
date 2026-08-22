@@ -1,0 +1,203 @@
+phieu: L3-M1
+diem: a
+nguoi_cham: reviewer nghiep-vu (skill review-nghiep-vu v1)
+ngay: 2026-08-22
+lan: 🟥 (điều khiển đơn thật qua 2 cửa đã guard)
+nguon_da_doc:
+  - docs/v3/01-QUYET-DINH.md §1 (bảng hai luồng — đối chiếu TỪNG Ô) · §12
+  - docs/v3/02-KE-HOACH-CODE.md §L3 (Làm gì 6 gạch + Nghiệm thu 6 gạch)
+  - docs/v3/05-PHAN-VIEC.md (L3-M1/M2/M3/M4 — ranh giới)
+  - docs/v3/ban-giao/luoc-do-v1.md §2 · §7.2 (bảng mã POS đã xác minh) · §7.3
+  - docs/thi-cong/nhat-ky/phieu-l1-m1.md §1.4–1.6 (đồ thị chuyển thật trên 1.400 đơn)
+  - docs/thi-cong/SO-DIEU-HANH-THI-CONG.md §0a · §7b · §9
+  - docs/thi-cong/phieu/PHIEU-L3-M1.md
+
+doi_chieu_tung_o_01_muc_1:
+  - o: "Đơn vào POS lúc nào — trang bán hàng «ngay khi bấm BUY NOW»"
+    phan_dinh: KHOP
+    ghi_chu: "job quét bắt đơn ĐÃ có trong POS ở mã 0 — đúng chiều."
+  - o: "Đơn vào POS lúc nào — messenger «chỉ khi sale duyệt»"
+    phan_dinh: PHAN
+    ghi_chu: "xem N1 — sơ đồ messenger đặt `moi`/`cho_duyet` lên `don_hang`, tức giả định đã có
+      dòng đơn TRƯỚC khi sale duyệt."
+  - o: "Trạng thái ban đầu — Chờ xác nhận / —"
+    phan_dinh: KHOP
+  - o: "Ai xác nhận — Bot nhắn WhatsApp / Khách đã xác nhận trong chat"
+    phan_dinh: KHOP
+  - o: "Cần WhatsApp không — Có bắt buộc / KHÔNG"
+    phan_dinh: KHOP
+    ghi_chu: "`LoiSaiNhanhNguon` + ④#1 spy `guiTinMau`=0 tuyệt đối — vế này làm chắc."
+  - o: "Kết thúc — Đổi sang Chờ in / Sale duyệt → tạo đơn ở Chờ in"
+    phan_dinh: KHOP
+    ghi_chu: "`0→12` khớp bảng mã ĐÃ XÁC MINH (`12 = wait_print`), không đoán."
+
+cau:
+  - so: 1
+    dap: KHONG
+    bang_chung: >-
+      Không màn, không nút; năng lực thật («đơn BUY NOW không gửi WA → bot nhắn trong 5 phút»)
+      nằm sau hai cửa còn đóng và hai phép §7b **T1** (gửi WA thật) + **T2** (ghi ngược POS thật),
+      đều chưa chạy. Đúng bản chất phiếu máy-trạng-thái; câu 3 và 7 mới là chỗ trả về.
+  - so: 3
+    dap: CO
+    bang_chung: >-
+      CÓ mâu thuẫn, tại ĐÚNG MỘT Ô của bảng 01 §1 — ô «Đơn vào POS lúc nào / Messenger = **Chỉ
+      khi sale duyệt**». Sơ đồ messenger của ②#1 (`moi → cho_duyet → {duyet → tao_don_cho_in ·
+      loai → dong}`) được khai là «trạng thái HỆ (cột riêng, TÁCH POS)», mà cột đó là
+      `don_hang.trang_thai_he` (luoc-do-v1 §2). Đơn Messenger chưa duyệt thì **chưa có dòng
+      `don_hang`** — theo đúng ô vừa dẫn — nên hai trạng thái đầu của nhánh này không có chỗ đậu.
+      Chỗ đậu thật là `hang_cho_tao_don` (`cua_kiem jsonb`), mà ⑥ của chính phiếu cấm đụng vì đó
+      là đất L3-M4. Xem N1. Năm ô còn lại của bảng khớp — chi tiết ở `doi_chieu_tung_o_01_muc_1`.
+  - so: 7
+    dap: CO
+    bang_chung: >-
+      CÓ làm hẹp, hai nạn nhân. (a) **L3-M4**: phiếu vẽ nhánh messenger nhưng không khai interface
+      nào cho hai sự kiện của nhánh đó — `nhanPhanHoi` chỉ nhận 4 kết quả hình dạng WhatsApp, không
+      có `duyet`/`loai`. L3-M4 dựng hàng chờ duyệt xong sẽ không có hàm để gọi, cộng với va chạm
+      bảng ở N1. (b) **L3-M3**: trạng thái `het_luot` có trong sơ đồ nhưng không sự kiện nào của
+      phiếu kích được nó (`lich_nhac` là đất L3-M3, `nhanPhanHoi` không có nhánh đó); và nghiệm thu
+      02 §L3 «Khách trả lời giữa chừng → **lịch nhắc bị huỷ ngay**» không có ai nhận — phiếu không
+      khai bên gọi `nhanPhanHoi` phải huỷ lịch, cũng không phát sự kiện để L3-M3 nghe. Xem N4 · N5.
+  - so: 8
+    dap: CO
+    bang_chung: >-
+      Bỏ phiếu này thì đau ở chỗ đắt nhất của dự án: 01 §1 gọi phân nhánh theo nguồn là «quyết định
+      quan trọng nhất về nghiệp vụ», và 37,4% khách bấm BUY NOW rồi không gửi WhatsApp là «lỗ lớn
+      nhất bot sinh ra để bịt». Không có máy trạng thái thì `don_hang.nguon` (đã có từ L0-M1) và
+      cửa WA (L1-M3) đều là bộ phận rời không ai lắp; cửa POS `ghiNguocTrangThai` vừa dựng ở L1-M1
+      cũng không có ai gọi. Không phải over-engineering.
+
+ket_luan: TRA_VE
+
+findings:
+  - ma: N1
+    muc: CHAN
+    mo_ta: >-
+      Nhánh Messenger không có nhà: hai trạng thái đầu (`moi`, `cho_duyet`) được đặt trên
+      `don_hang.trang_thai_he`, nhưng đơn Messenger chưa duyệt thì chưa tồn tại dòng `don_hang`.
+    bang_chung: >-
+      01 §1 ô «Đơn vào POS lúc nào / Messenger» = «**Chỉ khi sale duyệt**», và ô «Kết thúc» =
+      «Sale duyệt → **tạo đơn** ở Chờ in» — tức dòng đơn SINH RA tại `duyet`, không tồn tại trước
+      đó. `luoc-do-v1` §2 khai `don_hang` = «đơn» với `nguon` NOT NULL và `trang_thai_he` tách
+      `trang_thai_pos`; bảng dành cho giai đoạn trước duyệt là `hang_cho_tao_don` («đơn bot chốt
+      chờ duyệt», `cua_kiem jsonb`). Phiếu ②#1 khai máy chạy trên trạng thái HỆ, ⑥ lại cấm đụng
+      đất L3-M4, nên nhánh messenger vừa không có bảng vừa không được phép có bảng.
+    kich_ban_hong: >-
+      Thợ buộc phải chọn một trong ba, cả ba đều hỏng: (a) tạo dòng `don_hang` ngay khi bot chốt ⇒
+      phản thẳng ô «chỉ khi sale duyệt», và làm hỏng mọi phép đếm đơn (đơn chưa duyệt lẫn vào đơn
+      thật); (b) ghi trạng thái vào `hang_cho_tao_don` ⇒ vi phạm ⑥, đụng đất L3-M4 đang chờ phát;
+      (c) giữ trong RAM ⇒ mất trạng thái khi worker restart, và L3-M4 không đọc được.
+    sua_the_nao: >-
+      Chốt trong ②: nhánh messenger TRƯỚC duyệt sống ở `hang_cho_tao_don` (L3-M1 chỉ khai hình
+      dạng cột trạng thái + hằng số trạng thái, L3-M4 thi hành ghi), `don_hang` chỉ nhận dòng từ
+      `duyet` trở đi; và mở interface `duyetHangCho(ctx,{hangChoId})` / `loaiHangCho(...)` cho
+      L3-M4 gọi. Nếu người quyết muốn giữ trọn ở L3-M4 thì ②#1 phải bỏ hai trạng thái đó khỏi sơ
+      đồ và nói rõ nhánh messenger bắt đầu TỪ `duyet`.
+
+  - ma: N2
+    muc: CHAN
+    mo_ta: >-
+      Máy không có trạng thái/lý do cho «KHÔNG GỬI ĐƯỢC» và «KHÔNG ĐẨY ĐƯỢC POS» — đúng hai chỗ
+      hỏng mà nghiệm thu 02 §L3 gọi tên, và ④#2 idempotent biến chúng thành đơn kẹt câm.
+    bang_chung: >-
+      Chuỗi trang_ban_hang là `moi → cho_gui_wa → da_gui_wa → …` — không có nhánh nào cho lượt
+      `guiTinMau` THẤT BẠI (thiếu số WhatsApp, mẫu tin chưa Meta duyệt, guard cửa WA đóng, lỗi
+      Pancake). 02 §L3 nghiệm thu có hẳn một gạch cho chuyện này: «**Ba lý do không gửi đếm đúng
+      trên riêng đơn trang bán hàng**» — phiếu không có cột lý do, không có phép đo. Vế POS cũng
+      hở: ④#3 chỉ đo ca thuận `{tu:0, sang:12}`, trong khi đồ thị chuyển ĐO THẬT trên 1.400 đơn
+      (`phieu-l1-m1.md` §1.4, `luoc-do-v1` §7.2) cho thấy đường thật là `0 → 1 → 12 → 8` — tức mã
+      **1 = `submitted`** nằm chen giữa. Cửa POS L1-M1 là compare-and-set, nên đơn đã trôi sang 1
+      sẽ bị TỪ CHỐI đúng như thiết kế — nhưng máy trạng thái không có chỗ nào chứa cái từ chối đó.
+    kich_ban_hong: >-
+      (a) Đơn không có số WhatsApp: `guiTinMau` ném lỗi, đơn nằm lại `cho_gui_wa`; quét lần 2
+      «KHÔNG gửi lại (idempotent)» theo đúng ④#2 nên không ai thử lại và không ai đếm — 37,4% quay
+      lại nguyên vẹn, lần này im lặng hơn vì bảng điều khiển tin rằng máy đang chạy.
+      (b) Sale chạm đơn trên POS (0→1) trong lúc chờ khách trả lời; khách nhắn «ok»; `nhanPhanHoi`
+      gọi cửa POS với `tu=0`, live=1 ⇒ cửa từ chối. Khách đã đồng ý mua mà đơn không bao giờ sang
+      Chờ in, và trạng thái hệ không ghi được vì sao.
+    sua_the_nao: >-
+      Thêm hai trạng thái kết-thúc-mềm + cột lý do: `khong_gui_duoc(ly_do)` cho vế WA (tối thiểu ba
+      lý do 02 §L3 đòi) và `cho_sale(ly_do='pos_da_doi')` cho vế POS bị CAS từ chối, cả hai đẩy
+      `viec_can_xu_ly`. Thêm phép ④: mock `guiTinMau` ném → đơn sang `khong_gui_duoc` + `SELECT`
+      đếm theo lý do; mock cửa POS từ chối (live=1) → đơn sang `cho_sale` + `nhat_ky` ghi lý do.
+
+  - ma: N3
+    muc: NEN
+    mo_ta: >-
+      `ctxHeThong` mà phiếu thừa kế từ L1-M2 là ctx theo PAGE, còn job này duyệt ĐƠN — thiếu vế
+      rebind ctx theo từng đơn thì một vòng quét đa team chạy dưới một team.
+    bang_chung: >-
+      ②#2 viết «chạy bằng ctxHeThong (gắn đúng team — khuôn N3 L1-M2)», nhưng hợp đồng L1-M2 là
+      `ctxHeThong(pageId)` tra `page.team_id`. Job này quét `don_hang` toàn hệ; team của một đơn
+      đọc từ `don_hang.team_id`, không từ page. ④#6 chỉ đo «nhat_ky dòng mang team_id thật của
+      đơn» trên một đơn, không đo vòng quét nhiều team.
+    sua_the_nao: >-
+      Khai rõ: ctx dựng LẠI theo từng đơn từ `don_hang.team_id`, mọi lượt gọi cửa WA/POS của đơn
+      đó nằm trong ctx ấy. ④#6 quét 2 đơn thuộc 2 team nghiệp vụ trong MỘT vòng → 2 dòng `nhat_ky`
+      mang 2 `team_id` khác nhau (in cả hai).
+
+  - ma: N4
+    muc: NEN
+    mo_ta: >-
+      `het_luot` là trạng thái mồ côi — có trong sơ đồ, không sự kiện nào của phiếu kích được, và
+      L3-M3 không được phiếu này cấp cửa vào.
+    bang_chung: >-
+      ②#1 khai `… → {… · het_luot → cho_sale}`. Nguồn duy nhất sinh ra «hết lượt» là hàng đợi nhắc
+      (02 §L3: «nhắc mỗi 2 tiếng, tối đa 5 lần»), mà ③/⑥ cấm đụng `lich_nhac`. `nhanPhanHoi` chỉ
+      có 4 kết quả đọc-ý, không có `het_luot`.
+    sua_the_nao: >-
+      Bổ sung interface `henNhacHetLuot(ctx,{donId})` (hoặc mở rộng `nhanPhanHoi` bằng kết quả thứ
+      năm) và ghi vào `may-trang-thai-don-v1.md` để L3-M3 cắm đúng chỗ.
+
+  - ma: N5
+    muc: NEN
+    mo_ta: >-
+      Bảo đảm «messenger tuyệt đối không nhận WA» thừa kế nguyên độ đúng của `don_hang.nguon`, mà
+      phiếu không khai phụ thuộc đó và không có phép cho đơn chưa suy được nguồn.
+    bang_chung: >-
+      Job quét lọc `nguon = 'trang_ban_hang'`. `nguon` do L1-M1 suy bằng neo `conversation_id`, và
+      phiếu L1-M1 v2 chốt «đơn KHÔNG suy được → LIỆT KÊ từng mã + đổ §9, cấm đoán bừa». ④#1 chỉ
+      thử đơn ĐÃ gán đúng `messenger`; không có ca cho đơn gán sai/chưa quyết. Đồng thời
+      `phieu-l1-m1.md` §1.6 ghi «`don_hang` không có cột shop, và id đơn POS chồng nhau giữa các
+      shop» — nên `donId` trong `nhanPhanHoi`/`ghiNguocTrangThai` phải là khoá v3, không phải id POS.
+    sua_the_nao: >-
+      Khai phụ thuộc trong ②; thêm phép ④: đơn có `nguon` thuộc diện «chưa quyết được» KHÔNG bị
+      quét (in count = 0) — fail-closed. Và ghi rõ `donId` = `don_hang.id` (khoá v3).
+
+  - ma: N6
+    muc: GHI-NO
+    mo_ta: >-
+      Tên kết quả lệch tài liệu gốc và việc huỷ lịch nhắc chưa có chủ.
+    bang_chung: >-
+      02 §L3 khai «Bốn nhánh đọc ý: xác nhận · **hủy** · đòi sửa · không rõ»; phiếu dùng `tu_choi`.
+      Cùng nghĩa nhưng nên khai là một, kẻo L3-M3 đẻ nhánh thứ năm. Và nghiệm thu 02 §L3 «Khách
+      trả lời giữa chừng → lịch nhắc bị huỷ ngay» chưa được gán cho ai trong hai phiếu.
+    sua_the_nao: >-
+      Ghi «`tu_choi` = «hủy» của 02 §L3» vào bàn giao; khai rõ «bên gọi `nhanPhanHoi` phải huỷ
+      `lich_nhac` cùng lượt» (hoặc máy phát sự kiện cho L3-M3 nghe).
+
+  - ma: N7
+    muc: GHI-NO
+    mo_ta: >-
+      ④#6 đòi `team_id` «không NULL/chua-phan» nhưng 26 đơn thật đang ở `chua-phan` (H7 chưa chốt)
+      — phải nói rõ phép chạy trên mẩu tự chèn, kẻo lặp lại ĐẠT RỖNG.
+    bang_chung: >-
+      `phieu-l1-m1.md` ghi «Mọi shop hiện đậu chung team `chua-phan`»; ④#7 có sẵn cơ chế mẩu tự
+      chèn tự dọn. Chỉ thiếu một câu buộc ④#6 dùng mẩu đó.
+    sua_the_nao: "Thêm vào ④#6: «đo trên mẩu đơn tự chèn thuộc 2 team nghiệp vụ, không trên 26 đơn thật»."
+
+ghi_chu_cho_tong: >-
+  Trả lời thẳng bốn câu tổng hỏi. (i) Đối chiếu từng ô: **5/6 ô KHỚP**, ô PHẢN là «Đơn vào POS lúc
+  nào / Messenger = chỉ khi sale duyệt» — hai trạng thái đầu của nhánh messenger không có bảng để
+  đậu và bảng đúng lại nằm trong vùng ⑥ cấm (N1). (ii) ④#1 bịt CHẮC chiều «làm phiền khách đã mua»
+  — đi trọn hai đường vòng đời + spy tuyệt đối + ép chuyển ném lỗi, đây là phép mạnh nhất của phiếu;
+  nhưng chiều «bom hàng» thì ④#2 không phải chỗ bịt (④#5 nhảy-cóc + ④#3 CAS mới là), và cả hai
+  chiều còn hở ở chỗ thứ ba mà phiếu chưa thấy: KHÔNG có trạng thái thất bại, nên đơn gửi hỏng nằm
+  kẹt câm và đơn bị POS từ chối không ghi được lý do (N2) — mà «ba lý do không gửi» là một gạch
+  nghiệm thu có tên trong 02 §L3. (iii) `nhanPhanHoi` 4 kết quả KHÔNG làm hẹp bộ đọc ý L3-M3 (chia
+  việc sạch: M3 đọc, M1 quyết) — nhưng làm hẹp L3-M4 vì nhánh messenger không có interface
+  `duyet`/`loai`, và bỏ rơi `het_luot` + việc huỷ lịch nhắc của L3-M3 (N4 · N6). (iv) Job quét
+  KHÔNG lặp lại lỗ N3 cũ — phiếu đã thừa kế đúng khuôn và có phép ④#6 — nhưng khuôn L1-M2 là ctx
+  theo PAGE còn job này duyệt ĐƠN, nên thiếu vế rebind ctx theo từng đơn (N3). Hai chỗ phiếu làm
+  rất tốt, nên giữ: dùng bảng mã **ĐÃ XÁC MINH** (`12 = wait_print`) thay vì đoán, và tách hàm
+  thuần `chuyen(don, sukien)` khỏi side-effect qua deps — nhờ đó ④#1 mới đo được «tuyệt đối 0».
