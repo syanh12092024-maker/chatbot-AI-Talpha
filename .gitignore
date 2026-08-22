@@ -39,5 +39,13 @@ template-candidates.json
 template-learn-reports.jsonl
 ai-order-queue.json
 
+health-state.json
+
 # rác của macOS
 .DS_Store
+
+# Bàn giao nội bộ — chứa .env, token, KB thật. TUYỆT ĐỐI không push lên git
+ban-giao-noi-bo-*/
+
+# Gói quy trình dây chuyền AI — tài liệu nội bộ, không push (bản cài đã nằm ở .claude/skills/)
+goi-day-chuyen-ai*/
