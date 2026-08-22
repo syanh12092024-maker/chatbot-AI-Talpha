@@ -229,6 +229,54 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
   đường xử lý tin PHẢI route outbound của bộ não qua cửa v3 (DI/injection, không sửa
   `tools.js`). Chi tiết: `docs/v3/ban-giao/cua-messenger-v1.md` §5.
 
+- 22/08 · thợ L1-M1 (nợ N1 — ⚠️ ĐƯỜNG TIỀN/ĐƠN): `src/pancake-orders.js:13` và
+  `docs/TONG-QUAN-HE-THONG.md` §7.5 khai nhóm hủy/hoàn = `{4,5,6,7,8}`. ĐO 22/08 trên
+  3.546 đơn thật / 7 shop bằng chính `status_name` của API: **8 = `packing` (đang đóng
+  gói)**, một bước TIẾN — `status_history` đơn 47397 (UAE) là `0→1→12→8`, đồ thị chuyển
+  trên 1.400 đơn có `12→8` 986 lượt · `8→9` 537 · `8→2` 394. Hệ quả: bản ĐANG CHẠY trừ
+  đơn đang-đóng-gói khỏi «successful» ⇒ **đếm THIẾU đơn thành công** (riêng UAE 71 đơn
+  đứng ở 8 lúc đo). Nhóm đúng là `{4,5,6,7}`. v3 đã khai đúng (`src/pos/ma-trang-thai.js`,
+  cổng ③b đỏ nếu ai sửa cho «khớp tài liệu»); sửa bản đang chạy + §7.5 nằm ngoài pathspec.
+- 22/08 · thợ L1-M1 (nợ N2 — THƯỚC L0-M1 ĐỎ vì bản 002): thêm bảng thứ 20 `ket_noi_pos`
+  làm `test/l0-m1-luoc-do.test.js` **S1 (dòng 63)** + **S12 (dòng 321)** đỏ và
+  `ops/bin/nghiem-thu/l0-m1.sh` tụt **51/51 → ĐẠT 47 / TRƯỢT 4** (phép ② + ⑨ + bộ ca).
+  Cả 6 mục đỏ CÙNG MỘT GỐC: con số **19** neo cứng. Vá = `19 → 20` ở hai chỗ + thêm
+  `ket_noi_pos` vào `NEO_19_BANG`. Ngoài pathspec ③ của L1-M1 (án lệ #25) — TỔNG vá.
+- 22/08 · thợ L1-M1 (nợ N3): `suaTheoId` của tầng L0-M2 **chưa có bản cho `ctxHeThong()`**
+  (chính `tang-truy-van-v1.md` §3 khai: «mở phiếu mới nếu L1+ cần»). L1-M1 CẦN — refresh
+  `trang_thai_pos`/`ton_kho`, mà dữ liệu đậu ở team KỸ THUẬT `chua-phan` nên ctx người
+  thật bị từ chối ⇒ buộc ctxHeThong ⇒ không còn đường UPDATE hợp lệ. Tạm giữ MỘT cửa hẹp
+  `src/pos/kho.js` (4 bảng deny-by-default · luôn kẹp `team_id` · mọi lượt ghi `nhat_ky`
+  · không có hàm xoá). Repo đang có HAI đường ghi — mở phiếu `suaTheoId` cho ctxHeThong
+  rồi XOÁ cửa tạm này.
+- 22/08 · thợ L1-M1 (nợ N4 — TIỀN): chưa chỗ nào trong v3 khai quy ước quy đổi tiền POS.
+  POS trả **đơn vị nhỏ** với hệ số khác nhau theo tệ (AED/SAR/QAR/TWD ×100 ·
+  KWD/OMR/BHD ×1000), mà `don_hang.tong_tien` là `numeric(14,2)` — chia 1.000 là làm
+  tròn mất chữ số thứ ba ngay lúc ghi, còn ghi số nhỏ trần vào cột tên «tổng tiền» thì
+  người sau đọc sai 1.000 lần. L1-M1 **để `tong_tien` NULL** (fail-CLOSED), chỉ ghi
+  `tien_te`. Cần một quyết định khai MỘT chỗ cho cả hệ trước khi L3 tính tiền/tỉ lệ hoàn.
+- 22/08 · thợ L1-M1 (nợ N5): `db/ket-noi.js` có `docEnv` đọc `.env` kiểu chỉ-đọc nhưng
+  **KHÔNG export**, nên `npm run di-tru` chết ở dòng đầu («Thiếu V3_KHOA_MA_HOA») dù
+  `.env` có biến ở dòng 83. Pathspec L1-M1 cấm sửa file đó ⇒ phải chép 12 dòng sang
+  `src/pos/moi-truong.js`. HAI bản đọc `.env` trong một repo là khớp dễ trôi — export
+  `docEnv` rồi gộp về một.
+- 22/08 · thợ L1-M1 (nợ N6): `don_hang.trang_thai_he` là cột của MÁY TRẠNG THÁI L3-M1,
+  nhưng nó NOT NULL nên cửa POS buộc phải gieo một giá trị lúc tạo dòng — đang là
+  `'moi_tu_pos'`. L3-M1 chốt từ vựng thì đổi bằng một câu UPDATE. Cửa POS KHÔNG bao giờ
+  ghi lại cột này (ca `R3` của `test/l1-m1-doc-pos.test.js` canh).
+- 22/08 · thợ L1-M1 (nợ N7): danh mục POS có **biến thể TRÙNG TÊN** — đo mẫu 352 biến thể
+  /7 shop: 37 (10,5%) trùng, riêng Taiwan 12/28 (3 biến thể đầu đều tên «010 - Birthstone
+  Set»). `san_pham.ma` khác nhau nên không mất dữ liệu, nhưng bot báo giá/tồn theo TÊN thì
+  không phân biệt nổi biến thể. Sửa ở POS (đặt tên/size) hoặc ghép thêm khoá vào tên hiển thị.
+- 22/08 · thợ L1-M1 (nợ N8 — 🔴 MẤT CODE TRONG GIT, không phải việc của L1-M1): commit
+  `b356f7b` («docs(dieu-hanh): L1-M2 ✅ — nghiệm thu 8/8…») **XOÁ 6/6 tệp của L1-M2 khỏi
+  cây git** (1.311 dòng: `src/channels/messenger/index.js` · `loi.js` ·
+  `test/l1-m2-cua.test.js` · `ops/bin/nghiem-thu/l1-m2.sh` · `docs/v3/ban-giao/cua-messenger-v1.md`
+  · `docs/thi-cong/nhat-ky/phieu-l1-m2.md`) — đúng những tệp `92afae3` vừa thêm. Kiểm bằng
+  `git show --diff-filter=D --name-only b356f7b`. Tệp CÒN NGUYÊN trên đĩa (đang untracked)
+  nên chưa mất gì, nhưng HEAD hiện KHÔNG có code L1-M2 và sổ thì khai ✅. Vá: `git add`
+  lại đúng 6 đường dẫn đó rồi commit — ⛔ L1-M1 không chạm (đất phiếu khác, án lệ #25).
+
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
 - 22/08 · L1-M2 → 🔎 chờ nghiệm thu — cửa Pancake Messenger `src/channels/messenger/`
@@ -283,3 +331,11 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
   (page lạc 3 chứ không 1 · `llmTurns` là mảng mốc chứ không phải số đếm · surrogate lẻ trong
   kịch bản làm chết cả lượt nạp) và 5 dòng nợ §9 · commit b2ee56e · nhật ký
   docs/thi-cong/nhat-ky/phieu-l0-m1.md
+- 22/08 · L1-M1 → 🔎 chờ nghiệm thu — cửa POS `src/pos/` (9 tệp) + migration 002 `ket_noi_pos`
+  (bảng thứ 20, khoá mã hoá): docDon/docDanhMuc + ghiNguocTrangThai BỐN CỬA (van V3_POS_GHI
+  fail-CLOSED · bảng chuyển nạp từ bảng mã ĐÃ XÁC MINH 3.546 đơn/7 shop, «Chờ in»=12, không
+  đường tới xoá đơn · compare-and-set đọc LIVE trước PUT · nhật ký 2 pha để lại dòng mồ côi);
+  4 lệch đề bài đo được (POS KHÔNG chặn IP máy này · 8=packing chứ không hủy/hoàn · id đơn là
+  dãy riêng từng shop ⇒ ma_pos mang shop · danh mục POS giá 0 ⇒ goi_gia 0 dòng) và 8 dòng nợ §9.
+  Cổng `ops/bin/nghiem-thu/l1-m1.sh` 24 ĐẠT/0 TRƯỢT/1 HOÃN (⑤c ghi ngược THẬT CHƯA CHẠY — chờ
+  diễn tập VPS), bộ ca 34/34 · commit f5611cb · nhật ký docs/thi-cong/nhat-ky/phieu-l1-m1.md
