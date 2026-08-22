@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Giai đoạn | 1 — năm luồng lõi |
-| Luồng đang làm | **Phần rìa (người B) đang chạy** — trục chính (người A) chưa bắt đầu |
+| Luồng đang làm | **Phần rìa (người B) XONG** — trục chính (người A) chưa bắt đầu |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `v3/vai-b` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
 
@@ -54,6 +54,8 @@ trong giai đoạn 1 thì phải kéo nó vào — đây là đổi phạm vi, k
 | L3 · Hai luồng đơn | 6–8 ngày | chưa bắt đầu — của người A | 0 |
 | L4 · Bảng điều phối | 4–5 ngày | **xong** | 2/2 |
 
+`npm test`: **702 bài · 700 pass · 0 fail · 2 skip** (nền của bản đang chạy là 408, không đụng một bài nào). Nhánh `v3/vai-b`.
+
 ---
 
 ## Sổ module
@@ -64,9 +66,10 @@ trong giai đoạn 1 thì phải kéo nó vào — đây là đổi phạm vi, k
 | L0-M4 | Nhật ký thao tác | B | 22/08 | 22 bài của module xanh; kiểm tay 5 ca | Cấm sửa/xoá ở tầng dưới là **quyền cơ sở dữ liệu** — đã ghi thành yêu cầu cho A |
 | L1-M4a | Lõi lớp model — 4 nhà, độ ngẫu nhiên, quy giá | B | 22/08 | 505 test xanh; bảng giá khớp `01-QUYET-DINH` mục 7, lệch ≤0,65% | Ba model chưa mở tài khoản có **đơn giá suy ngược**, phải thay bằng giá công bố |
 | L0-M3 | Đăng nhập, chọn team, hai vai | B | 22/08 | 505 test xanh; kiểm tay ca xuyên team và ca lộ tài khoản | Dùng **vé ký HMAC** thay bảng phiên — 18 bảng không có bảng phiên, thêm là đổi lược đồ của A |
-| L1-M4b+c | Cấu hình model theo team, kho khoá, dự phòng | B | 22/08 | xem `docs/v3/SO-TAY-VAI-B.md` | |
-| L4-M1 | Bảng điều phối — hai danh sách, màn chi tiết | B | 22/08 | xem `docs/v3/SO-TAY-VAI-B.md` | Mẫu đường POS chưa ai mở bằng mắt → để vào biến môi trường |
-| L4-M2 | Đánh dấu đã xử, chọn kết quả và lý do | B | 22/08 | xem `docs/v3/SO-TAY-VAI-B.md` | Danh sách **kết quả và lý do** tài liệu chưa chốt → B đề xuất, cần chủ dự án duyệt |
+| L1-M4b+c | Cấu hình model theo team, kho khoá, dự phòng | B | 23/08 | chuyển dự phòng trong **9 ms**; cảnh báo đúng 1 lần sau 6 lượt hỏng; nạp nóng không khởi động lại | `ghiCauHinh` ban đầu **bỏ qua lặng lẽ** tên cột theo hợp đồng → phép thử nạp nóng đậu vì lý do sai. Bắt được nhờ soi nhật ký |
+| L4-M1 | Bảng điều phối — hai danh sách, màn chi tiết | B | 23/08 | 100 việc tốn **8 lời gọi cổng**; việc team khác → 404 (không 403); kho không đổi một byte | Mẫu đường POS chưa ai mở bằng mắt → để vào biến môi trường |
+| L4-M2 | Đánh dấu đã xử, chọn kết quả và lý do | B | 23/08 | hai người nhận cùng lúc → đúng 1 thắng; đóng lại → 409, kết quả cũ nguyên vẹn | Danh sách **kết quả và lý do** tài liệu chưa chốt → B đề xuất, cần chủ dự án duyệt |
+| — | Nối dây phần rìa (`v3/src/vai-b.js`) | B | 23/08 | người thuộc hai team đi hết đường đăng nhập → bảng điều phối | Sinh ra vì **cả hai cách nối sai đã xảy ra thật** lúc chạy thử |
 
 Chi tiết mọi chỗ tự quyết: **`docs/v3/SO-TAY-VAI-B.md`**.
 
