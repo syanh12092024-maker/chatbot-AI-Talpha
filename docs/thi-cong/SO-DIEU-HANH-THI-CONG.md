@@ -1,9 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 07:50 23/08 · KHÔNG thợ nào chạy · trạng thái:
-> **PHẦN VIỆC CODER A — 12/12 MODULE + 3 PHIẾU VÁ ✅ · GATE TOÀN CỤC 13/13 XANH.**
-> Chờ NGƯỜI: §7b chạy-thử-một-lần (T1–T7) · §8 H1–H9 · refute tổng thể (CEO gọi) ·
-> lệnh push. Đời tổng sau đọc sổ này là đủ tiếp quản.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 08:30 23/08 · đang chạy: 5 agent refute (mảng 1-5) ·
+> phán mới nhất: mảng đường-gửi về TRƯỚC — 3 CHẶN tổng đã TỰ VERIFY bằng repro (RF-1 vi
+> phạm luật số 1: bộ não bắn HTTP thật trước cửa v3). CHƯA vá — chờ đủ 5 mảng rồi gom phiếu.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -193,6 +192,25 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm                                | ⬜         |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
+
+- 23/08 · REFUTE TỔNG THỂ (mảng đường-gửi) — 3 CHẶN đã tổng TỰ VERIFY bằng repro
+  `refute-MANG-2.repro.mjs` (bẫy fetch, 0 byte ra mạng):
+  - 🔴 **RF-1 (CHẶN, luật số 1):** `handler-v3.js:482` gọi `runCloser` (bộ não cũ) TRƯỚC
+    cửa v3; `executeTool` trong đó bắn THẲNG HTTP ra pages.fm bằng token thật
+    (`tools.js:197/266/271`, `order-bridge.js:255`) — 0 dòng READONLY canh, `catch{}` nuốt
+    lỗi. Repro S4 = 12 lượt HTTP (6 GET settings + 6 POST notes). Verdict `chan_guard` của
+    worker là LỜI KHAI SAI: lúc ghi «không gửi» thì note+thẻ đã ra hồ sơ khách. «Cô lập bộ
+    não» L2-M1 (nợ N2) CHƯA đóng thật.
+  - 🔴 **RF-2 (CHẶN):** van bảo vệ RF-1 nằm ở bộ NẠP (`nguonDangMo`) mà `worker.js:32-65
+    chayMotVong` KHÔNG đọc; `V3_NAP_DEV=1` hoặc đổi cwd (dotenv theo cwd, `ket-noi.js` đọc
+    .env đường tuyệt đối) mở van trong khi vẫn nối CSDL thật.
+  - 🔴 **RF-3 (CHẶN, nghiệp vụ):** `handler-v3.js:495-501` gọi guard THIẾU `orderCreated`
+    + `isOrderSummary` (v2 `handler.js:436-437` có) ⇒ lượt tóm tắt xác nhận đơn bị
+    `PII_ECHO`/`FAKE_ORDER_ID` chặn, v3 coi `rewrite`=câm ⇒ khách KHÔNG nhận gì mà hệ vẫn
+    ghi `so_ai ORDER` + đẩy `hang_cho_tao_don`. Repro S3.
+  - NÊN: RF-4 ảnh bay khi guard chặn chữ · RF-5 lỗi N5 đốt 3 lượt model · RF-6 v3 không gọi
+    `recordBlocked` (M18 mù). GHI-NỢ: RF-7 kiểm quyền psid ≠ lệnh convId · RF-8 xaAnh trước
+    vòng gửi. (4 mảng refute khác đang chạy — gom sau.)
 
 - 22/08 · TỔNG (từ verdict L0-M1 điểm a): nạp `ai-messages.jsonl` (Sổ AI, chỉ có trên VPS)
   - đối chiếu SỐ DÒNG với bản cũ — chạy trên VPS đợt cutover. Vế thứ ba của phép đối chiếu

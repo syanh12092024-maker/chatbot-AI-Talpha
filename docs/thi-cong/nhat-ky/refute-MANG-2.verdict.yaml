@@ -1,0 +1,109 @@
+phieu: MANG-2 (đường gửi tin ra khách — channels/messenger · channels/whatsapp · chat/handler-v3 · queue)
+vong: 1
+ket_luan: TRA_VE
+findings:
+  - ma: F1
+    muc: CHAN
+    mo_ta: >-
+      Bộ não CŨ (runCloser → executeTool) chạy TRƯỚC cửa v3 và bắn thẳng HTTP ra
+      pages.fm bằng token thật — KHÔNG một dòng PANCAKE_READONLY/V3_* nào canh.
+      Verdict `chan_guard` mà worker ghi là LỜI KHAI SAI: lúc nó ghi «cửa đóng,
+      không gửi gì», ghi chú + thẻ đã bay ra hồ sơ khách rồi.
+    kich_ban: >-
+      node docs/thi-cong/nhat-ky/refute-MANG-2.repro.mjs S4 (bẫy globalThis.fetch, .env thật
+      PANCAKE_READONLY=1, V3_PANCAKE_GUI vắng) → executeTool('handoff_human')
+      bắn 12 lượt HTTP: 6× GET /pages/<id>/settings + 6× POST
+      /pages/<id>/customers/<custId>/notes?access_token=<TOKEN THẬT>, body
+      «🙋 AI CHUYỂN NGƯỜI…». Chỉ cái bẫy chặn lại. Lỗi bị `catch {}` nuốt ⇒ im lặng.
+      Kèm S1 cùng script: van ĐÓNG mà chayCloser vẫn chạy 1 lượt
+      rồi mới ra `chan_guard`.
+    file_line: src/tools.js:271 · src/tools.js:197 · src/tools.js:266 · src/order-bridge.js:255 · src/chat/handler-v3.js:482 (gọi bộ não trước cửa)
+  - ma: F2
+    muc: CHAN
+    mo_ta: >-
+      Đường vào dev KHÔNG khoá: van duy nhất bảo vệ F1 nằm ở bộ NẠP
+      (`nguonDangMo`), mà worker `chayMotVong` KHÔNG hề đọc van đó. `V3_NAP_DEV=1`
+      (biến harness ĐƯỢC KHAI trong tài liệu) mở van nguồn ngay cả khi
+      PANCAKE_READONLY=1 ⇒ trên máy dev đang trỏ CSDL thật (502 page · 18.790
+      hoi_thoai) là đủ để ghi chú/thẻ thật bay ra khách thật.
+    kich_ban: >-
+      V3_NAP_DEV=1 node -e "import('./src/queue/nap.js').then(m=>console.log(m.nguonDangMo()))"
+      → `true` trong khi .env vẫn PANCAKE_READONLY=1. Chuỗi: napTuPoll (mở) →
+      xepTin → chayMotVong (không kiểm van) → xuLyMotTin bước 7 → runCloser →
+      F1. Biến thể 2 (đã chạy): `cd <thư mục khác> && node <repo>/src/queue/nap.js`
+      → PANCAKE_READONLY=undefined (dotenv tra .env theo cwd) ⇒ nguonDangMo()=true,
+      trong khi db/ket-noi.js VẪN nối được CSDL thật vì nó đọc .env theo đường
+      TUYỆT ĐỐI — van phụ thuộc cwd, đường tới dữ liệu thật thì không.
+    file_line: src/queue/worker.js:32-65 · src/queue/nap.js:31-33 · db/ket-noi.js:18-29
+  - ma: F3
+    muc: CHAN
+    mo_ta: >-
+      handler-v3 gọi outbound-guard THIẾU HAI TRƯỜNG ctx mà v2 vẫn truyền
+      (`orderCreated`, `isOrderSummary`) ⇒ đúng lượt TÓM TẮT XÁC NHẬN ĐƠN bị
+      PII_ECHO chặn, lượt nhắc «order number» sau khi chốt bị FAKE_ORDER_ID chặn.
+      v3 lại coi `rewrite` = câm (`if (!v.ok) guarded = ""`), nên khách KHÔNG
+      nhận gì — trong khi hệ vẫn ghi so_ai ORDER và đẩy đơn vào hang_cho_tao_don.
+    kich_ban: >-
+      node -e "import('./src/outbound-guard.js').then(m=>console.log(m.guardOutbound('Confirming your order: Name: Grace Pranom, Contact: 0917 555 1234, Address: Cebu City.',{kb:{products:[{name:'X',price:109}],text:''}})))"
+      → rewrite/PII_ECHO. Thêm `isOrderSummary:true` → pass. Tương tự
+      FAKE_ORDER_ID với/không `orderCreated:true`. So chiếu src/handler.js:436-437
+      (v2 truyền cả hai từ state.orderCreatedThisTurn).
+    file_line: src/chat/handler-v3.js:495-501 (so với src/handler.js:431-438)
+  - ma: F4
+    muc: NEN
+    mo_ta: >-
+      Guard nội dung chặn CHỮ nhưng ẢNH vẫn bay — vi phạm đúng nguyên tắc #2 mà
+      chính file khai đang giữ («khách không bao giờ nhận ảnh trơ»,
+      handler-v3.js:260). Nhánh Fast Lane làm ĐÚNG (return trước xaAnh), nhánh AI
+      thì xả ảnh vô điều kiện rồi mới `if (guarded)`.
+    kich_ban: >-
+      node docs/thi-cong/nhat-ky/refute-MANG-2.repro.mjs S2 (guardOutbound THẬT, cửa tiêm spy):
+      model trả tiếng Việt → guard block/VIETNAMESE → ẢNH gửi 2 tấm, CHỮ gửi 0
+      tin, kết quả lượt vẫn `xong/khong_gui`.
+    file_line: src/chat/handler-v3.js:513-522 (đối chiếu nhánh đúng 380-396)
+  - ma: F5
+    muc: NEN
+    mo_ta: >-
+      N6 chỉ chặn thử-lại cho `LoiCuaGuiDong`. Lỗi N5 (`LoiHoiThoaiKhongThuocPage`)
+      / `LoiPageKhongThuocTeam` cũng TẤT ĐỊNH y hệt nhưng rơi vào nhánh lỗi chung
+      ⇒ đốt trọn TRAN_THU=3 lượt model cho một tin chắc chắn không gửi được, và
+      mỗi lượt lại kích F1 thêm một lần (3 ghi chú trùng vào hồ sơ khách).
+    kich_ban: >-
+      node docs/thi-cong/nhat-ky/refute-MANG-2.repro.mjs S5 → «MỘT tin, lượt gọi MODEL = 3 ·
+      {"vong":3,"xong":0,"chan_guard":0,"loi":1,"thu_lai":2}».
+    file_line: src/queue/worker.js:79-99 · src/chat/handler-v3.js:604
+  - ma: F6
+    muc: NEN
+    mo_ta: >-
+      v3 KHÔNG gọi `recordBlocked` ở bất kỳ đường nào ⇒ sổ tin-bị-chặn (nguồn của
+      màn M18 «Tin bị chặn») mù hoàn toàn với mọi lượt guard của v3; chỉ v2 và
+      scheduler-followup còn nạp nó. Màn vẫn xanh vì nó đọc mảng RAM luôn có mặt.
+    kich_ban: "grep -rn 'recordBlocked' src → 0 dòng trong src/chat/ và src/queue/"
+    file_line: src/chat/handler-v3.js:495-509 · src/outbound-guard.js:339
+  - ma: F7
+    muc: GHI-NO
+    mo_ta: >-
+      Cửa Messenger kiểm quyền sở hữu bằng `psid` nhưng lệnh HTTP thật lại dùng
+      `convId` — THỨ ĐƯỢC KIỂM KHÁC THỨ ĐƯỢC DÙNG. Một cặp (psid hợp lệ của team A
+      + convId của team B) qua N5 sạch rồi gửi vào hội thoại của team B. Hôm nay
+      chưa khai thác được vì caller duy nhất lấy cả hai từ cùng một dòng
+      `tin_cho_xu_ly`, nên là nợ kiến trúc chứ chưa là lỗ đang chảy.
+    kich_ban: >-
+      Đọc mã: xacNhanHoiThoaiThuocPage() chỉ so `psid`; guiTin/guiAnh/gatThe
+      truyền `convId` NGUYÊN VẸN xuống pkSendReply/pkSendImage/pkTagByName. Chưa
+      dựng được ca chạy vì không có bảng nào ánh xạ convId↔page ⇒ PLAUSIBLE.
+    file_line: src/channels/messenger/index.js:129-147, 206, 231, 271
+  - ma: F8
+    muc: GHI-NO
+    mo_ta: >-
+      `xaAnh()` xoá `state.pendingImages` TRƯỚC vòng gửi; `guiAnh` ném giữa chừng
+      (mạng/cửa) là mất hẳn các tấm còn lại, không đường phục hồi, và lượt sau
+      không biết đã gửi mấy tấm.
+    kich_ban: "Đọc mã — chưa dựng ca vì cần mô phỏng lỗi mạng giữa vòng lặp; PLAUSIBLE."
+    file_line: src/chat/handler-v3.js:261-280
+mu_code_review:
+  - "src/chat/handler-v3.js:159-176 — closure `ghi()` đọc `const kb` khai ở dòng 192 (TDZ). Đúng hôm nay vì mọi lượt gọi nằm sau 192, nhưng thêm một đường thoát sớm nào ở bước 1 là ReferenceError câm."
+  - "src/channels/whatsapp/ — không tìm được đường phá: adapter luôn ném LoiChuaCoEndpoint, BANG_MAU_TIN rỗng + `bang?.[ten]?.da_duyet` không lọt prototype ('constructor'/'__proto__' đều false). Cửa WA hiện KHÔNG gửi được gì, đúng như khai."
+mu_nghiep_vu:
+  - "F3 là lỗi NGHIỆP VỤ nặng nhất mảng này: hệ ghi «đã chốt đơn» + đẩy vào hàng chờ sale, còn khách thì im lặng tuyệt đối đúng lượt xác nhận đơn — sale gọi ra khách không biết mình đã đặt gì."
+  - "F1+F2 làm câu «van kín trên máy dev» thành lời khai không đo được: cái được đo (PANCAKE_READONLY) không canh cái đang chảy (tools.js/order-bridge.js/pancake-orders.js)."
