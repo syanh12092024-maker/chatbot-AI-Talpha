@@ -1,0 +1,152 @@
+phieu: TONG-THE-1 (MẢNG 1/5 — đường TIỀN/ĐƠN · src/pos/* · src/orders/may-trang-thai.js · quet-don-moi.js · hang-cho.js · db/migrate/001..006)
+vong: 1
+ket_luan: TRA_VE
+bang_chung_chung: >-
+  node docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs  — 7 kịch bản, sandbox tự dựng/tự
+  dọn (KHÔNG chạm `aicloser_v3`), mọi `fetch` đi qua `nap` TIÊM, `V3_POS_GHI` chỉ đặt
+  trong object env truyền vào deps (khuôn `MO` của test/l1-m1-ghi-nguoc.test.js) — 0 byte
+  ra POS thật. Đối chứng: 117/117 ca của 7 bộ ca trong phạm vi (l1-m1-doc-pos · l1-m1-ghi-nguoc
+  · l3-m1-may-trang-thai · l3-m1-quet-don · l3-m4-hang-cho · l3-m4-duyet · va-q12-doc-don)
+  ĐANG XANH ⇒ KHÔNG cổng nào hiện có bắt được một finding nào dưới đây.
+findings:
+  - ma: F1
+    muc: CHAN
+    mo_ta: >-
+      Nhóm hủy/hoàn của cửa chống trùng khai LẠI BẰNG TAY và mang đúng con số SAI mà
+      sổ §9 nợ N1 (22/08) đã đo và cấm: `{4,5,6,7,8}`. Mã 8 = `packing` (ĐANG ĐÓNG GÓI,
+      một bước TIẾN) bị đọc thành «đã hủy» ⇒ nguồn (b) POS SỐNG trả `sach` cho một hội
+      thoại ĐANG có kiện hàng thật trên bàn đóng gói ⇒ `duyet()` tạo KIỆN COD THỨ HAI.
+      Luật 2 §0a cấm xoá đơn POS ⇒ không gỡ được. Nguồn ĐÚNG đã sẵn sàng và cùng repo:
+      `NHOM_HUY_HOAN=[4,5,6,7]` export ở `src/pos/index.js:34` — file này đã import từ
+      `../pos/index.js` (dòng 38) nhưng gõ tay bản thứ hai. Một luật, hai nguồn, bản
+      thứ hai sai.
+    kich_ban: >-
+      node docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs → khối F1:
+      «status=2 → duong · status=8 → sach · status=6 → sach» rồi
+      «duyet() → tao=true chan_vi=[] · lượt tạo đơn POS = 1» trong khi POS đang giữ đơn
+      #991 status 8 của CHÍNH hội thoại đó. Đột biến KHÔNG ĐỎ: bộ ca l3-m4-hang-cho chỉ
+      đo status 0 (dòng 304) và status 6 (dòng 352) — thêm/bớt số 8 khỏi `HUY_HOAN`
+      không làm đỏ một ca nào.
+    file_line: src/orders/hang-cho.js:105 · src/orders/hang-cho.js:324 (đối chiếu src/pos/ma-trang-thai.js:82 · src/orders/ti-le-hoan.js:45 · SO-DIEU-HANH §9 nợ N1)
+  - ma: F2
+    muc: CHAN
+    mo_ta: >-
+      ĐƠN MẤT IM LẶNG. `quetDonMoi` đẩy đơn sang `cho_gui_wa` (bước ②) TRƯỚC khi gọi cửa
+      WA, nhưng `CAU_QUET` chỉ quét `moi_tu_pos`+pos'0' hoặc `gui_wa_loi` — `cho_gui_wa`
+      KHÔNG có người đọc ở bất kỳ đâu trong repo. Mọi thoát khỏi vòng lặp giữa ② và ④
+      (dòng 179 CỐ Ý ném lại `LoiSaiNguonDon`/`LoiDonKhongThuocTeam`; và mọi lượt tiến
+      trình chết) để đơn nằm chết vĩnh viễn: `so_lan_thu_wa` vẫn 0 nên trần thử lại
+      không bao giờ chạm, 0 dòng `viec_can_xu_ly` nên không ai nhìn thấy, và `donSaiNhanh`
+      chỉ sống trong giá trị trả về của MỘT lượt quét (không xuống bảng nào). Đúng cái
+      37,4% mà cả L3 sinh ra để vá — lần này im hơn.
+    kich_ban: >-
+      node docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs → khối F2:
+      «lượt 1: quet=1 saiNhanh=1 → trang_thai_he=cho_gui_wa so_lan_thu_wa=0» ·
+      «lượt 2: quet=0 · viec_can_xu_ly của đơn = 0».
+      Sự VẮNG MẶT: grep 'cho_gui_wa' toàn repo — chỉ có ở bảng chuyển + bộ ca, KHÔNG job
+      nào, KHÔNG thước nào, KHÔNG câu SQL nào đếm nó.
+    file_line: src/orders/quet-don-moi.js:61-69 (CAU_QUET) · :140-150 (vào cho_gui_wa) · :170-182 (ném lại) · :227-235 (nuốt vào biến RAM)
+  - ma: F3
+    muc: CHAN
+    mo_ta: >-
+      TIỀN SAI 100 LẦN trên chính cửa tiền. `goi_gia.gia` KHÔNG khai đơn vị ở đâu cả
+      (001:114 `numeric(14,2)`, 0 COMMENT, 0 CHECK — trong khi 005 khai đơn vị cho
+      `khach.ti_le_hoan` bằng CẢ CHECK LẪN COMMENT vì đúng án lệ ×100 này). Hai đầu của
+      cột đọc nó theo hai đơn vị: `doc-danh-muc.js:136,146` ghi NGUYÊN VĂN `retail_price`
+      của POS (POS trả tiền ở ĐƠN VỊ NHỎ — chính `doc-don.js:307-317` đã đo và khai thế),
+      còn `tao-don.js:104-110,148,165` coi con số bot chốt là ĐƠN VỊ THƯỜNG rồi nhân
+      `HE_SO_TE` lần nữa. Cửa ② (`hang-cho.js:219-224`) so hai vế khác đơn vị bằng `===`
+      và cho qua. Kèm theo: `hang-cho.js:818,827` GHI `don_hang.tong_tien` — đúng cột mà
+      L1-M1 CỐ Ý để NULL fail-CLOSED chờ «một quyết định khai MỘT CHỖ cho cả hệ» (nợ N4
+      §9) — nên hôm nay cột đó có hai chủ, một người từ chối ghi vì chưa có đơn vị, một
+      người ghi mà không có đơn vị.
+    kich_ban: >-
+      node docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs → khối F3b:
+      goi_gia.gia=1500 (POS retail_price = 15,00 AED) → cửa ② đòi tong_tien=1500 → duyet
+      tao=true → «payload POST shipping_fee = 150000 đơn vị nhỏ = 1500 AED thu của khách»
+      (cod = shipping_fee, đúng khuôn đã port) và «don_hang.tong_tien = 1500.00 AED».
+      Cùng con số 1500 mang BA nghĩa trong một lượt.
+    file_line: db/migrate/001_nen.up.sql:114 · src/pos/doc-danh-muc.js:136,146-152 · src/orders/hang-cho.js:219-224,818,827 · src/pos/tao-don.js:104-110,148,165
+  - ma: F4
+    muc: CHAN
+    mo_ta: >-
+      CƠ CHẾ IDEMPOTENT CỦA CỬA TẠO ĐƠN THỦNG ĐÚNG CA NÓ KHAI LÀ ĐANG GIỮ. `tao-don.js:24-33`
+      khai lớp ③ «là lớp DUY NHẤT sống sót qua một lượt rollback», nhưng `moCoiTruocPost`
+      chỉ phát hiện rollback khi POST có kết cục KHÔNG BIẾT (`batDau > ketQua`). Ca
+      «POST THÀNH CÔNG rồi giao dịch rollback» — ca rollback DỄ XẢY RA NHẤT, vì cả
+      `INSERT don_hang` / `donMessengerDaTao` / `ghiSuKienTaoDon` / `ghiNhatKy` / COMMIT
+      đều nằm SAU lượt POST — để lại nhật ký CÂN BẰNG (bd=1 kq=1) ⇒ mồ côi=false. Đồng
+      thời lớp ① (`don_hang_id`) và lớp ② (FOR UPDATE + `da_duyet`) bị chính lượt ROLLBACK
+      xoá sạch. Ba lớp cùng mù một lúc ⇒ sale bấm duyệt lại là KIỆN COD THỨ HAI.
+    kich_ban: >-
+      node docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs → khối F4:
+      «sau lượt 1: POST=1 · hang_cho=cho_duyet don_hang_id=null · nhật ký bd=1 kq=1 ⇒
+      mồ côi=false» rồi «lượt 2 (sale bấm lại): tao=true maPos=9995001:801 · TỔNG lượt
+      POST = 2». Hỏng-sau-POST được TIÊM qua `deps.donMessengerDaTao` để tất định hoá;
+      nó đứng thay cho «tiến trình chết / lỗi CSDL / mất kết nối trước COMMIT», và cơ
+      chế thủng đọc thẳng ra từ mã: `moCoi = batDau > ketQua` (tao-don.js:231).
+    file_line: src/pos/tao-don.js:222-232 (đối chiếu lời khai :24-38) · src/orders/hang-cho.js:790-813,889,902-908
+  - ma: F5
+    muc: CHAN
+    mo_ta: >-
+      HAI SỔ LỆCH VỀ MỘT ĐƠN ĐÃ RA LỆNH POS. `ghiDon()` UPDATE MÙ — không có vế
+      `AND trang_thai_he = <buoc.tu>`, trong khi `apDung()` chấp nhận ẢNH `don` truyền
+      vào (`donSan`) và không đọc lại. Một lượt đi từ ảnh cũ ghi đè kết quả của lượt vừa
+      GHI RA POS: POS đang ở 12 «Chờ in» (kiện sẽ in và giao) còn sổ hệ ghi `cho_sale` +
+      một dòng `viec_can_xu_ly` bảo sale «khách không trả lời». Đây là bề mặt thật, không
+      phải giả định: `quet-don-moi.js` truyền snapshot `don`/`dangO` qua 4 lượt `apDung`
+      liên tiếp, và `nhanPhanHoi` (webhook WA) chạy song song với `baoHetLuot` (job nhắc)
+      trên cùng một đơn. Cửa POS có CAS (đọc live rồi so), máy trạng thái thì không có
+      lớp tương đương ở tầng CSDL.
+    kich_ban: >-
+      node docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs → khối F5:
+      «ghi POS = 1 (POS đã sang 12) · hệ sau xac_nhan = day_cho_in» rồi
+      «lượt "het_luot" đi từ ẢNH CŨ → hệ = cho_sale (POS vẫn 12)».
+      Biến thể song song (đã chạy, scratchpad): Promise.all[nhanPhanHoi(xac_nhan) có
+      chốt cửa ở docLivePos + baoHetLuot] → cả hai `fulfilled`, posGhi=1, đẻ một
+      `viec_can_xu_ly` mồ côi.
+    file_line: src/orders/may-trang-thai.js:257-278 (ghiDon) · :326-338 (apDung nhận donSan) · src/orders/quet-don-moi.js:138-149,217
+  - ma: F6
+    muc: CHAN
+    mo_ta: >-
+      NGUỒN (b) — nguồn chống trùng DUY NHẤT đọc sự thật POS, và là backstop của F1 —
+      chỉ hỏi TRANG 1 (100 đơn gần nhất của CẢ SHOP, không lọc theo page), không phân
+      trang, rồi khai kết quả là `sach`. Với shop thật (Saudi 62.029 đơn · UAE 47.421),
+      một đơn của hôm qua đã rơi khỏi cửa sổ ⇒ «chưa nhìn thấy» được ghi thành «đã tra,
+      không có». Đúng cái mà chính đầu file cấm: «một kết quả rỗng vì gọi sai trông y hệt
+      một kết quả sạch» (hang-cho.js:17-19). Thứ LẼ RA PHẢI CÓ mà chưa có: `guiDocDon`
+      ĐÃ trả `tong`/`tongTrang` (api.js:96-100) — chỉ cần `lo.tong > coTrang` ⇒ `unknown`
+      là đủ fail-CLOSED, nhưng không dòng nào đọc hai trường đó.
+    kich_ban: >-
+      node docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs → khối F6:
+      «POS có 101 đơn (total_entries=101), đơn của 'convF6' ở TRANG 2 · lượt gọi API = 1»
+      → «nguồn(b) = sach · chi_tiet = "đã hỏi POS 100 đơn gần nhất của shop, không đơn
+      nào gắn hội thoại này"».
+    file_line: src/orders/hang-cho.js:320,326-333 (đối chiếu src/pos/api.js:76-101 có sẵn tong/tongTrang)
+  - ma: F7
+    muc: NEN
+    mo_ta: >-
+      CÂU LỐI ĐI SAI trong §9 sổ + cửa tiền chết cứng vì lý do KHÁC lý do đã khai.
+      `doc-danh-muc.js:101-109` là NGƯỜI GHI DUY NHẤT của `san_pham` trong cả repo và nó
+      KHÔNG ghi `page_id`; `cua2Tien` lại JOIN `AND s.page_id = $2`. Nên mọi dòng `goi_gia`
+      do cửa POS sinh ra là VÔ HÌNH với cửa tiền — kể cả khi POS đã có giá. Sổ §9 (23/08,
+      thợ L3-M4) khai nguyên nhân là «`goi_gia` = 0 dòng vì danh mục POS giá 0» và dặn
+      người sau «đọc bảng điều khiển 0 đơn duyệt được thì đừng đi tìm bug ở hang-cho.js»
+      — câu đó cử người đi nhập giá vào POS, và sau khi họ nhập xong cửa ② VẪN ĐÓNG.
+    kich_ban: >-
+      node docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs → khối F3a:
+      «docDanhMuc: them=1 giaGhiDuoc=1 → san_pham.page_id = null» ·
+      «goi_gia trong CSDL = 2 dòng · cua2Tien nhìn thấy = 1 dòng ([150])» ·
+      «dòng giá 1500 vừa nạp từ POS có trong bảng? false» (dòng 150 thấy được là dòng
+      SEED TAY có page_id).
+    file_line: src/pos/doc-danh-muc.js:101-109,142-152 · src/orders/hang-cho.js:186-190 · SO-DIEU-HANH-THI-CONG.md §9 mục 23/08 «hệ quả của nợ goi_gia giá-0»
+mu_code_review:
+  - "src/orders/may-trang-thai.js:369-384 — `ghiDon()` trả `null` khi UPDATE khớp 0 dòng, nhưng `apDung` vẫn ghi `nhat_ky('don_doi_trang_thai')` và trả `{don: sau ?? don}` như thể đã đổi. Một lượt ghi trượt team/id sẽ để lại một dòng nhật ký NÓI DỐI; nên `!sau ⇒ ném`."
+  - "src/pos/tao-don.js:104-110 — `HE_SO_TE` KHÔNG có `TWD` (port nguyên văn khuôn cũ, đúng chữ), nhưng shop Taiwan có thật trong `pancake-shops.json` và SO-DIEU-HANH §9 nợ N4 khai «AED/SAR/QAR/TWD ×100». Hệ quả là fail-CLOSED (đơn Taiwan không tạo được) — an toàn, nhưng `doc-don.js:308` đang khai một tệ mà bảng hệ số không có ⇒ lời khai lệch mã."
+  - "src/pos/tao-don.js:104-110 — `doiSangDonViNho` trả `0` (không phải `null`) cho `tongTien` NaN/0/âm, còn cửa (b) `tao-don.js:320` chỉ chặn `gia === null`. Hôm nay cửa ① của L3-M4 chặn trước nên không thủng, nhưng `taoDon` được export ở `src/pos/index.js` như API công khai: một lối gọi thứ hai sẽ dựng payload `is_free_shipping:true` (COD thu 0 đồng) mà không cửa nào kêu."
+  - "src/pos/tao-don.js:212 — POS trả HTTP 200 nhưng thân không có `data.id` bị phân loại `coPhanHoi:true` («POS TỪ CHỐI»), tức đóng luôn pha 2 nhật ký. Nếu đó là một biến thể vỏ phản hồi mà đơn VẪN được tạo, lượt duyệt sau không bị cửa (c)③ chặn ⇒ cùng kết cục F4."
+  - "Không phá được (đã thử, ghi lại để khỏi thử lại): (a) `ghiNguocTrangThai` — vế `tu` bắt buộc, CAS đọc LIVE, `maPos` luôn dựng từ `ketNoi.shopId` nên không có đường ghi nhầm đơn của shop khác qua id trần (đề bài (d)); (b) `taChMaPos`/`tachMaBienThe` tách đúng, `tao-don.js:337` còn chặn lệch shop giữa `san_pham_ma` và kết nối; (c) mã 13 thật sự bị `kiemChuyen` từ chối bằng `LoiMaChuaXacMinh` trước khi tra bảng chuyển; (d) `HUY_HOAN` sai chỉ có ở hang-cho.js — `ti-le-hoan.js:45` và `ops/bin/nghiem-thu/l3-m2.sh:252` dùng {4,5,6,7,8} như ĐỐI CHỨNG cố ý, không phải luật."
+mu_nghiep_vu:
+  - "Hai kết cục nghiệp vụ của mảng này đều là kiện COD thật không gỡ được (luật 2 §0a): F1+F6 mở đường tạo đơn TRÙNG qua cửa hợp lệ, F4 mở đường tạo đơn TRÙNG qua một lượt bấm lại bình thường của sale. Cả ba đi qua đúng một chỗ — nguồn (b) POS SỐNG — nên nó là điểm phải vá trước."
+  - "F3 + F7 cộng lại nói rằng luồng messenger→POS HÔM NAY chưa từng tạo được một đơn nào bằng dữ liệu thật (cửa ② mù), và NGÀY nó tạo được là ngày nó thu sai 100 lần. Nghiệm thu «gate 13/13 xanh, 328 test 0 fail» không đo được điều đó vì không ca nào chạy trọn cửa ②→payload trên một dòng `goi_gia` do CHÍNH cửa POS nạp."
+  - "F2 là lỗi nghiệp vụ câm nhất: đơn trang-bán-hàng biến mất khỏi mọi bảng đếm mà không có ô nào tăng — sale không có việc, job không quét lại, `so_lan_thu_wa` vẫn 0 nên cả trần thử lại lẫn nhánh `qua_tran` đều không bao giờ chạm tới."

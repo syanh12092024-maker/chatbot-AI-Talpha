@@ -1,8 +1,9 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 08:30 23/08 · đang chạy: 5 agent refute (mảng 1-5) ·
-> phán mới nhất: mảng đường-gửi về TRƯỚC — 3 CHẶN tổng đã TỰ VERIFY bằng repro (RF-1 vi
-> phạm luật số 1: bộ não bắn HTTP thật trước cửa v3). CHƯA vá — chờ đủ 5 mảng rồi gom phiếu.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 08:55 23/08 · **9 CHẶN đã verify** (đường-gửi 3 + tiền/
+> POS 6) · còn mảng team + luồng-đơn + prompt/toàn-cục chạy · phán: refute ĂN ĐẬM — gate
+> máy 13/13 xanh nhưng refute lộ 9 lỗ đường tiền/gửi thước không bắt. ⛔ KHÔNG push tới khi
+> vá xong sóng CHẶN.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -192,6 +193,28 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm                                | ⬜         |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
+
+- 23/08 · REFUTE (mảng tiền/POS) — 6 CHẶN tổng TỰ VERIFY bằng repro
+  `refute-tong-the-1.repro.mjs` (sandbox, 0 byte ra POS). ⚠️ 117/117 ca của 7 bộ test đang
+  XANH mà KHÔNG cổng nào bắt được finding nào — đúng cảnh báo «toàn luật cấm thì màn trống
+  vẫn đạt»:
+  - 🔴 **RF-9 (CHẶN, TIỀN ×100):** `goi_gia.gia` không khai đơn vị — `doc-danh-muc.js:136`
+    ghi minor, `tao-don.js:104` nhân ×100 lần nữa ⇒ **thu 1.500 AED thay vì 15,00**; kèm
+    `hang-cho.js:219` ghi `don_hang.tong_tien` mà L1-M1 cố ý để NULL (nợ N4). (`001:114`)
+  - 🔴 **RF-10 (CHẶN):** `HUY_HOAN` gõ tay lại nhóm SAI `{4,5,6,7,8}` (nợ N1 cấm) ⇒ đơn
+    mã 8 `packing` đọc thành «đã hủy» ⇒ `duyet()` đẻ kiện COD THỨ HAI. (`hang-cho.js:105,324`)
+  - 🔴 **RF-11 (CHẶN):** nguồn (b) POS-sống — backstop chống trùng DUY NHẤT — chỉ đọc
+    trang 1/100 đơn cả shop, không phân trang, rồi khai `sach` (bỏ `tong`/`tongTrang`);
+    đơn ở trang 2 = lọt. (`hang-cho.js:320,326-333`)
+  - 🔴 **RF-12 (CHẶN):** 3 lớp idempotent cùng mù ca «POST xong rồi rollback» (nhật ký cân
+    bằng ⇒ moCoi=false) ⇒ bấm duyệt lại = POST lần hai. (`tao-don.js:222` · `hang-cho.js:790`)
+  - 🔴 **RF-13 (CHẶN):** `ghiDon()` UPDATE mù không CAS `trang_thai_he` ⇒ ảnh cũ ghi đè:
+    POS ở 12 «Chờ in» mà sổ hệ ghi `cho_sale` (hai sổ lệch). (`may-trang-thai.js:257-278`)
+  - 🔴 **RF-14 (CHẶN):** đơn kẹt vĩnh viễn ở `cho_gui_wa` — không job/thước/SQL nào đọc
+    trạng thái đó, `so_lan_thu_wa` vẫn 0, 0 `viec_can_xu_ly`. (`quet-don-moi.js:61-69,170`)
+  - NÊN RF-15: `doc-danh-muc` không ghi `san_pham.page_id` ⇒ mọi `goi_gia` POS vô hình với
+    `cua2Tien` (JOIN page_id) — §9 nợ cũ khai SAI nguyên nhân «giá 0», vá theo câu đó xong
+    cửa ② vẫn đóng. (`doc-danh-muc.js:101`) [reclassify nợ goi_gia-0]
 
 - 23/08 · REFUTE TỔNG THỂ (mảng đường-gửi) — 3 CHẶN đã tổng TỰ VERIFY bằng repro
   `refute-MANG-2.repro.mjs` (bẫy fetch, 0 byte ra mạng):
