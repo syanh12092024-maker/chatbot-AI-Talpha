@@ -1,6 +1,6 @@
 # PHIẾU VA-R3 — Máy trạng thái: CAS ghiDon + đơn kẹt cho_gui_wa (C3: RF-13·RF-14)
 
-**Base:** `57eff36` · **Làn:** 🟥 hai sổ lệch (POS vs hệ) trên đường đơn · thợ **sonnet** ·
+**Base:** `bf9614a` · **Làn:** 🟥 hai sổ lệch (POS vs hệ) trên đường đơn · thợ **sonnet** ·
 điểm (a) tổng tự chấm: bám repro `refute-tong-the-1.repro.mjs` F5 + `refute-mang4` F4; sửa
 nội bộ máy trạng thái, không đổi interface đã ✅.
 

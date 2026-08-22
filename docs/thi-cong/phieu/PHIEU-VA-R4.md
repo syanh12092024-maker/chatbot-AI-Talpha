@@ -1,6 +1,6 @@
 # PHIẾU VA-R4 — Bộ đọc ý: phủ định KHÔNG được đọc thành xác nhận (C4: RF-20)
 
-**Base:** `57eff36` · **Làn:** 🟨 (đọc ý — nhưng kết quả kích ship COD, đo kỹ) · thợ **sonnet** ·
+**Base:** `bf9614a` · **Làn:** 🟨 (đọc ý — nhưng kết quả kích ship COD, đo kỹ) · thợ **sonnet** ·
 điểm (a) tổng tự chấm: 02 §L3 «mơ hồ→khong_ro, KHÔNG đoán liều»; ship hàng khách chưa đồng ý
 là hỏng COD.
 

@@ -1,8 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 10:00 23/08 · REFUTE XONG 5/5 mảng · **10 CHẶN verify
-> gom 4 cụm vá (§9b)** · nền (team/tiền-hẹp/cửa-gửi/toàn-cục) ĐẠT · chờ lệnh CEO mở sóng
-> vá C1-C4 · ⛔ KHÔNG push tới khi vá xong.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 10:40 23/08 · SÓNG VÁ REFUTE — đang chạy: VA-R3 🟨 +
+> VA-R4 🟨 (sonnet, tự chấm) · VA-R1+VA-R2 chờ review (a) rồi phát opus · repro cũ làm
+> thước biến đỏ→xanh · ⛔ chưa push.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -176,6 +176,16 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | T5  | Nạp `ai-messages.jsonl` + đối chiếu số dòng Sổ AI                                                             | nợ §9 L0-M1 | chạy trên VPS                    |
 | T6  | Lớp model B (L1-M4) cắm vào chỗ DI của L2-M1                                                                  | H5          | người B xong                     |
 | T7  | Duyệt 1 dòng hàng chờ thật → tạo 1 đơn NHÁP đánh dấu TEST trên shop ít dùng nhất (để nguyên — luật 2 cấm xoá) | L3-M4 ⑤     | V3_POS_GHI=1 + người chọn shop   |
+
+## §5b · SÓNG VÁ REFUTE (VA-R1..R4 — đóng 10 CHẶN §9b)
+
+| Mã | Cụm | Phụ thuộc | Đụng file | Trạng thái |
+| --- | --- | --- | --- | --- |
+| VA-R1 | C1 bộ-não-HTTP (RF-1/2/3) | review(a) | chat/handler-v3 · queue/worker · queue/nap | 🎫 chờ review |
+| VA-R2 | C2 tiền+tạo-đơn (RF-9/10/11/12/21/15) | review(a) | orders/hang-cho · pos/tao-don · pos/doc-danh-muc | 🎫 chờ review |
+| VA-R3 | C3 máy trạng thái (RF-13/14) | — | orders/may-trang-thai · quet-don-moi | 🟨 |
+| VA-R4 | C4 đọc ý (RF-20) | — | orders/doc-y | 🟨 |
+| RVA | **GATE SÓNG VÁ** — 13 cổng cũ + 4 va-r* + repro 2 bộ đảo xanh | VA-R1..R4 | TỔNG | ⬜ |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
