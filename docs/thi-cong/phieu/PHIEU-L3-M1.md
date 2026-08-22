@@ -1,6 +1,6 @@
 # PHIẾU L3-M1 — Máy trạng thái đơn PHÂN NHÁNH THEO NGUỒN ngay từ cửa vào
 
-**Base:** `DIEN-LUC-PHAT` · **Làn:** 🟥 (điều khiển đơn thật: đẩy WhatsApp + ghi ngược POS
+**Base:** `5030f04` · **Làn:** 🟥 (điều khiển đơn thật: đẩy WhatsApp + ghi ngược POS
 — qua 2 cửa đã guard) · thợ **opus**
 
 > Thợ nạp skill `tho-thi-cong`. Đọc sổ §0a + §7b. «Quyết định quan trọng nhất về nghiệp
