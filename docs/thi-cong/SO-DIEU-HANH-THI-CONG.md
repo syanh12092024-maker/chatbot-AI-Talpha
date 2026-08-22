@@ -148,7 +148,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 | Mã    | Việc                                                                                | Phụ thuộc                     | Session | Đụng file                          | Trạng thái |
 | ----- | ----------------------------------------------------------------------------------- | ----------------------------- | ------- | ---------------------------------- | ---------- |
-| L2-M1 | Đường xử lý tin nền mới + hàng đợi; route outbound qua cửa v3 (nợ tools.js); DI model | R1 code-xong (L1-M1·M2 ✅; model = llm.js cũ qua DI, chỗ cắm cho B) | thợ mới | `src/queue/*` `src/chat/*` `db/migrate/003` `test/` | ⬜         |
+| L2-M1 | Đường xử lý tin nền mới + hàng đợi; route outbound qua cửa v3 (nợ tools.js); DI model | R1 code-xong (L1-M1·M2 ✅; model = llm.js cũ qua DI, chỗ cắm cho B) | thợ mới | `src/queue/*` `src/chat/*` `db/migrate/003` `test/` | 🟨         |
 | L2-M2 | Tắt Botcake 3 page thử, bật 2 lớp 0 đồng, nhập 2 luật từ khoá, vá `paano mag order` | L2-M1 + **H3** + **H8**       | thợ mới | `src/chat/*` `test/`               | ⬜         |
 | L2-M3 | Tách prompt 4 khối, ngân sách lượt theo độ nóng, cờ page trọng điểm                 | L2-M1                         | thợ mới | `src/chat/*` `test/`               | ⬜         |
 | R2    | **GATE SÓNG 2** — đo 50 lượt thật <10s, 7 ngày so 3 page đối chứng                  | L2-M1..M3                     | TỔNG    | —                                  | ⬜         |
@@ -188,7 +188,7 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | H6  | Mở tài khoản + lấy khoá 4 nhà model, nạp tiền chạy A/B                                          | L2 (A/B model)                                                 | ⬜         |
 | H7  | Chốt mapping page/sản phẩm/thị trường ↔ 3 team (Tiểu Alpha·Auus·Pialpha EU)                     | di trú gán team thật (L0-M1 seed 3 team, gán chi tiết chờ đây) | ⬜         |
 | H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                                      | L2-M2                                                          | ⬜         |
-| H9  | Bộ biến v3 cutover VPS: `V3_KHOA_MA_HOA` (RIÊNG, 32 byte) · `V3_PANCAKE_GUI=1` · `V3_POS_GHI=1` | cutover — thiếu là khoá/cửa gửi/cửa ghi POS đóng câm           | ⬜         |
+| H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm | ⬜         |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 

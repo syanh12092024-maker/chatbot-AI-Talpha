@@ -205,3 +205,77 @@ ghi_chu_cho_tong: >-
   phiếu làm TỐT, nên giữ: nhận nợ N2 tường minh ở ⑦ thay vì để trôi · ghi `spent_no_send` khi
   guard chặn (đúng án lệ §11.2 khoản chi tàng hình) · ⑤ khai thẳng webhook điểm-kiểm-2 chưa đo
   và giải thích vì sao đổi nguồn sau không đụng worker.
+
+# ─────────────────────────────────────────────────────────────────────────────
+verify_vong_2:
+  ngay: 2026-08-22
+  pham_vi: CHỈ VERIFY 3 CHAN theo checklist tổng — không mở kịch bản mới.
+  ban_phieu: PHIEU-L2-M1.md v2 · HEAD 3a71670
+  ma:
+    - ma: N1
+      dap: DAT
+      doi_chieu:
+        - "② sửa lời khai cho đúng sự thật: bỏ «cô lập hoàn toàn», thay bằng «GẦN NHƯ không tự
+           gửi — nhưng KHÔNG tuyệt đối» và liệt đủ ba chỗ `tools.js:197` · `:266` · `:271` kèm
+           ghi chú §7.4 «chắc chắn bay khi bot làm việc thật» — ✔"
+        - "Đường Graph gộp vào cùng chỗ: `tools.js:2` → `messenger.js`, «không kiểm READONLY
+           (nhánh `else` của `sendImageWithRetry`)» — ✔ N4 đóng luôn tại đây"
+        - "TẦNG (a) NGUỒN fail-closed: bộ nạp từ chối enqueue khi `PANCAKE_READONLY==='1'` trừ
+           `V3_NAP_DEV==='1'` ⇒ dev không có tin thật trong hàng đợi ⇒ `executeTool` không bao giờ
+           chạy trên hội thoại thật ở máy cá nhân — ✔ đây mới là vế CHẶN, và nó chặn ở chỗ duy
+           nhất chặn được mà không sửa file cấm"
+        - "④#3b có đối chứng dương: vắng `V3_NAP_DEV` → enqueue **0** dòng + in lý do; bật →
+           nạp được — ✔ không lặp lại lỗi «0 không bác bỏ được» của L1-M2 vòng 1"
+        - "TẦNG (b) ĐO: ④#4 ba dân số a/b/c, mock CẢ `pancake.js` LẪN `messenger.js`, và câu chốt
+           «dân số 1 tin xanh vì NHÁNH KHÔNG CHẠY **không tính là đạt**» — ✔ đúng chỗ vòng 1 thủng"
+        - "Phần không gỡ được (`tools.js` cấm sửa, import ở đầu module nên không nhận DI) được
+           KHAI làm nợ §9 dài hạn thay vì giấu — ✔ cùng cách xử đã dùng cho nợ N2 ở L1-M2"
+    - ma: N2
+      dap: DAT
+      doi_chieu:
+        - "②#2b khai cơ chế thật: `FOR UPDATE SKIP LOCKED` **CỘNG**
+           `pg_try_advisory_xact_lock(hashtext(conv_id))`, kèm nguyên nhân («khoá dòng chỉ chặn 1
+           TIN, hai tin cùng conv là hai dòng») và hành vi khi trượt khoá («trả tin về `cho`,
+           worker sang conv khác») — ✔ hết cảnh một cái TÊN đứng thay một cơ chế"
+        - "④#3 đổi từ phép VẮNG MẶT sang phép KHẲNG ĐỊNH đủ ba vế: B rút conv X = **0** khi A
+           giữ · sau khi A nhả B xử được = **1** · 2 conv khác nhau thì cả hai rút được — ✔ không
+           còn xanh-nhờ-may theo dấu thời gian"
+    - ma: N3
+      dap: DAT
+      doi_chieu:
+        - "②#4 chữ ký chở đủ ba vế: `layModel(ctx, {vaiTro:'chinh'|'du_phong'|'nen'}) →
+           {client, maModel}` — TEAM qua ctx (01 §7) · VAI TRÒ khớp `cau_hinh_model.vai_tro` ·
+           MÃ MODEL trả về cho `so_ai` — ✔"
+        - "Mặc định SELECT `cau_hinh_model` theo `ctx.teamId`, team chưa cấu hình → fallback
+           `llm.js` cũ + `maModel` **từ config thật (CẤM hằng số bịa)** — ✔ giữ đúng lệnh prompt A
+           «không viết bản tạm»: chỉ interface + SELECT + fallback, không tự làm lớp đa-nhà/
+           dự-phòng/độ-ngẫu-nhiên của B"
+        - "④#6 đổi mock model → `ma_model` đổi theo, in 2 giá trị KHÁC NHAU — ✔ bịt đúng đường
+           lách «NOT NULL thoả bằng một hằng số»"
+  hai_finding_con_lai_da_kiem_luon:
+    - "N5 đóng: ②#3 khai `so_ai` đủ 5 loại (`reply`·`image`·`order`·`handoff`·`spent_no_send`),
+       `order` đọc cờ state bộ não để lại, kèm lý do đúng («executeTool ghi logAi vào JSONL cũ,
+       KHÔNG vào so_ai… thiếu là 4 cửa chống trùng §7.3 + L3-M2/M4 câm»); ④#6 in bảng đếm theo loại."
+    - "N6 đóng: enum thêm `chan_guard`, ②#2b «KHÔNG retry — retry lượt guard đóng là đốt token
+       thật mỗi vòng»; phép ④#5 và ④#6b nay cùng nói `chan_guard` (đúng nội dung commit 3a71670),
+       ④#6b đo `so_lan_thu` đứng yên = 1."
+  con_lai_khong_chan:
+    - muc: GHI-NO
+      mo_ta: >-
+        Dòng nợ §9 dài hạn nên nói rõ residual THẬT là gì. Ở VPS, ba lượt tag/note trong
+        `executeTool` vẫn đi thẳng `pancake.js`, tức bỏ qua **định tuyến team + `nhat_ky` của cửa
+        v3** — không phải vấn đề an toàn gửi (VPS được phép gửi) mà là vấn đề 01 §8. Ghi «hợp
+        thức ở cutover» không đủ; nên ghi thêm vế «đổi lại chỉ được khi có phiếu chạm `tools.js`».
+    - muc: GHI-NO
+      mo_ta: >-
+        ④#8 còn viết tắt kiểu cũ «`layModel()` mặc định trả client llm.js» trong khi ②#4 đã chốt
+        `layModel(ctx, {vaiTro})`. Lệch chữ, không lệch nghĩa — ④#6 mới là phép đo thật của N3.
+  ket_luan_moi: DAT
+  ghi_chu: >-
+    6/6 finding đóng. Ba CHAN đóng đúng cơ chế, và điểm đáng ghi nhận nhất là N1: chỗ hỏng không
+    vá được bằng DI (tools.js import ở đầu module, lại nằm trong danh sách cấm sửa) nên phiếu
+    chuyển sang chặn ở TẦNG NGUỒN — không cho tin thật vào hàng đợi trên máy dev — rồi khai thẳng
+    phần còn lại thành nợ. Đó là cách xử đúng một ràng buộc không gỡ được, giống hệt nước đi đã
+    dùng ở L1-M2 N2. Phiếu ĐỦ ĐIỀU KIỆN phát thợ. Một việc cho tổng ngoài phiếu: `V3_NAP_DEV` là
+    biến mới thứ ba của dây chuyền (sau `V3_POS_GHI`, `V3_PANCAKE_GUI`) — gom cả ba vào một chỗ
+    khai duy nhất trong sổ kèm giá trị đúng cho dev/VPS, kẻo tới cutover mỗi cửa đóng câm một kiểu.
