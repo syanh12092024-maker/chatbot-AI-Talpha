@@ -145,13 +145,13 @@ ly, và phải có ca hợp đồng `bo_luat_chung` như mục 1(ii).
 tệp phẳng `pancake-shops.json` (7 dòng `{market, shop_id, api_key}`) — không mang team,
 không mã hoá.
 
-| Cột                | Ghi chú                                                              |
-| ------------------ | -------------------------------------------------------------------- |
-| `team_id NOT NULL` | như mọi bảng nghiệp vụ                                               |
-| `market`           | tên thị trường đúng như `pancake-shops.json` — **khoá gọi cửa POS**  |
-| `shop_id`          | id shop POS (text)                                                   |
-| `api_key_ma`       | **MÃ HOÁ** `v1.<iv>.<tag>.<ct>` — CHECK `LIKE 'v1.%'` ở tầng CSDL    |
-| `bat`              | tắt một kết nối mà không xoá dòng                                    |
+| Cột                | Ghi chú                                                             |
+| ------------------ | ------------------------------------------------------------------- |
+| `team_id NOT NULL` | như mọi bảng nghiệp vụ                                              |
+| `market`           | tên thị trường đúng như `pancake-shops.json` — **khoá gọi cửa POS** |
+| `shop_id`          | id shop POS (text)                                                  |
+| `api_key_ma`       | **MÃ HOÁ** `v1.<iv>.<tag>.<ct>` — CHECK `LIKE 'v1.%'` ở tầng CSDL   |
+| `bat`              | tắt một kết nối mà không xoá dòng                                   |
 
 UNIQUE `(team_id, market)` và `(team_id, shop_id)`.
 
@@ -174,16 +174,16 @@ Nguồn sự thật trong code: `src/pos/ma-trang-thai.js`. Đo 22/08/2026 trên
 thật**, 3.546 đơn, bằng chính trường `status_name` mà API POS trả kèm mỗi đơn — không
 mã nào ra hai nhãn khác nhau.
 
-| Mã  | Nhãn máy         | Mã  | Nhãn máy         |
-| --- | ---------------- | --- | ---------------- |
-| 0   | `new` (Chờ xác nhận) | 8   | `packing`     |
-| 1   | `submitted`      | 9   | `pending`        |
-| 2   | `shipped`        | 11  | `waitting`       |
-| 3   | `delivered`      | 12  | `wait_print` (**Chờ in**) |
-| 4   | `returning`      | 16  | `received_money` |
-| 5   | `returned`       | 19  | (API trả nhãn `null`, 1 đơn) |
-| 6   | `canceled`       | 20  | `ordered`        |
-| 7   | `removed`        | 13  | **chưa xác minh** — có trong `status_history` nhưng 0 đơn đang đứng ở đó |
+| Mã  | Nhãn máy             | Mã  | Nhãn máy                                                                 |
+| --- | -------------------- | --- | ------------------------------------------------------------------------ |
+| 0   | `new` (Chờ xác nhận) | 8   | `packing`                                                                |
+| 1   | `submitted`          | 9   | `pending`                                                                |
+| 2   | `shipped`            | 11  | `waitting`                                                               |
+| 3   | `delivered`          | 12  | `wait_print` (**Chờ in**)                                                |
+| 4   | `returning`          | 16  | `received_money`                                                         |
+| 5   | `returned`           | 19  | (API trả nhãn `null`, 1 đơn)                                             |
+| 6   | `canceled`           | 20  | `ordered`                                                                |
+| 7   | `removed`            | 13  | **chưa xác minh** — có trong `status_history` nhưng 0 đơn đang đứng ở đó |
 
 ⚠️ **`docs/TONG-QUAN-HE-THONG.md` §7.5 và `src/pancake-orders.js:13` khai SAI**: nhóm
 hủy/hoàn ở đó là `{4,5,6,7,8}`, nhưng **8 = `packing` (đang đóng gói)**, một bước TIẾN.
@@ -195,6 +195,14 @@ Bằng chứng — `status_history` đơn 47397 (UAE): `0 → 1 → 12 → 8`; �
 → Chờ in, 01 §1) và `12→0` (trả về). Deny-by-default; ⛔ không bao giờ có đường tới
 `7 = removed`. 🔎 Chiều `12→0` **chưa có bằng chứng ngoài đời** — 0 lượt trong 1.400 đơn
 (chiều lùi POS đang dùng là `12→1`, 47 lượt); diễn tập VPS phải trả lời câu đó.
+
+> ✅ **VÁ 23/08 (phiếu VA-P1, đóng nợ P1 sổ §9 22/08):** bảng chuyển CHO PHÉP ở trên nay
+> có BA cặp, không phải hai — thêm `1→12` (`submitted`→`wait_print`). Neo: đồ thị
+> `status_history` đơn 47397 (UAE) `0→1→12→8` cho thấy sale duyệt tay xen giữa lúc bot
+> chờ khách trả lời là luồng TIẾN phổ biến; thiếu cặp này làm ca `live=1` của L3-M1 bị
+> cửa (b) từ chối OAN, đơn rơi vào `cho_sale` dù khách đã đồng ý mua. Chi tiết:
+> `src/pos/ma-trang-thai.js#CHUYEN_CHO_PHEP`, test `test/l3-m1-may-trang-thai.test.js`
+> ca `C5`.
 
 ### 7.3 · Ba cột `don_hang` do cửa POS ghi
 
@@ -234,10 +242,10 @@ hơn một bảng giá trống, vì nó trông như đã có.
 cột**, không cột nào chứa nổi «vì sao đơn này không gửi được WhatsApp» hay «đã thử mấy
 lần», và không có cột jsonb để mượn tạm.
 
-| Cột | Ghi chú |
-| --- | --- |
-| `ly_do_khong_gui text` | `CHECK IN ('thieu_so_wa','mau_chua_duyet','loi_kenh')` — ba lý do nghiệm thu của 02 §L3 |
-| `so_lan_thu_wa int NOT NULL 0` | `CHECK >= 0` — số lượt ĐÃ THỬ gửi; chạm trần thì đơn sang `cho_sale` |
+| Cột                            | Ghi chú                                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| `ly_do_khong_gui text`         | `CHECK IN ('thieu_so_wa','mau_chua_duyet','loi_kenh')` — ba lý do nghiệm thu của 02 §L3 |
+| `so_lan_thu_wa int NOT NULL 0` | `CHECK >= 0` — số lượt ĐÃ THỬ gửi; chạm trần thì đơn sang `cho_sale`                    |
 
 Cộng một **bất biến ĐÔI** ở tầng CSDL: `CHECK (ly_do_khong_gui IS NULL OR
 trang_thai_he = 'gui_wa_loi')` — lý do cũ không đeo bám sau khi đơn rời trạng thái thất
@@ -277,15 +285,15 @@ thái của một tin chỉ sống trong RAM: tiến trình chết giữa lượ
 vết, và một lượt model chậm giữ luôn slot của vòng poll. `02-KE-HOACH-CODE.md` §L2 đòi
 tách hai việc — **poll chỉ NẠP, worker mới XỬ LÝ** — bảng này là chỗ nối.
 
-| Cột                     | Ghi chú                                                                   |
-| ----------------------- | ------------------------------------------------------------------------- |
-| `team_id NOT NULL`      | như mọi bảng nghiệp vụ; lấy từ `page.team_id` lúc NẠP, worker không suy lại |
+| Cột                     | Ghi chú                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------ |
+| `team_id NOT NULL`      | như mọi bảng nghiệp vụ; lấy từ `page.team_id` lúc NẠP, worker không suy lại                            |
 | `page_id`               | **id Facebook dạng TEXT** (khoá cửa Messenger v3 nhận), KHÔNG phải `page.id` bigint · cố ý KHÔNG có FK |
-| `psid` · `conv_id`      | GIỮ CẢ HAI — `psid` để tra `hoi_thoai`, `conv_id` để gọi API (cua-messenger §2) |
-| `msg_id` · `noi_dung`   | neo chống trùng + cụm tin khách đã gộp                                    |
-| `trang_thai`            | `cho`\|`dang_xu`\|`xong`\|`loi`\|**`chan_guard`** — CHECK ở tầng CSDL      |
-| `so_lan_thu`            | +1 mỗi lượt worker RÚT được; trần ở `src/queue/worker.js`                 |
-| `khoa_worker` · `ly_do` | ai đang giữ · VÌ SAO đứng ở trạng thái đó                                 |
+| `psid` · `conv_id`      | GIỮ CẢ HAI — `psid` để tra `hoi_thoai`, `conv_id` để gọi API (cua-messenger §2)                        |
+| `msg_id` · `noi_dung`   | neo chống trùng + cụm tin khách đã gộp                                                                 |
+| `trang_thai`            | `cho`\|`dang_xu`\|`xong`\|`loi`\|**`chan_guard`** — CHECK ở tầng CSDL                                  |
+| `so_lan_thu`            | +1 mỗi lượt worker RÚT được; trần ở `src/queue/worker.js`                                              |
+| `khoa_worker` · `ly_do` | ai đang giữ · VÌ SAO đứng ở trạng thái đó                                                              |
 
 UNIQUE `(page_id, conv_id, msg_id)` — vòng poll 6 giây/lần trả lại y nguyên tin cũ; thiếu
 rào này là mỗi vòng đẻ một bản sao ⇒ khách nhận n câu trả lời. Index bộ phận

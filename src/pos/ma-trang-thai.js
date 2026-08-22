@@ -83,9 +83,11 @@ export const NHOM_HUY_HOAN = Object.freeze([4, 5, 6, 7]);
 
 /**
  * BẢNG CHUYỂN TRẠNG THÁI CHO PHÉP — khai cứng, ngắn nhất có thể (phiếu ②.2b).
- * Chỉ đúng hai chiều của MỘT nghiệp vụ: bot xác nhận đơn trang bán hàng qua WhatsApp
- * rồi đẩy sang Chờ in (01 §1), và trả về khi xác nhận hỏng (nghiệm thu 02 §L1:
- * «Đổi thử một đơn nháp sang Chờ in RỒI TRẢ VỀ, POS ghi nhận đúng cả hai lần»).
+ * Ba cặp của MỘT nghiệp vụ: bot xác nhận đơn trang bán hàng qua WhatsApp rồi đẩy sang
+ * Chờ in (01 §1) — kể cả khi sale đã duyệt tay xen giữa lúc bot còn chờ khách trả lời
+ * (POS lúc đó đã ở `1=submitted`, không còn ở `0=new`) — và trả về khi xác nhận hỏng
+ * (nghiệm thu 02 §L1: «Đổi thử một đơn nháp sang Chờ in RỒI TRẢ VỀ, POS ghi nhận đúng
+ * cả hai lần»).
  *
  * ⛔ KHÔNG BAO GIỜ có nhánh xoá đơn (7 = removed) — luật 2 của §0a sổ điều hành.
  * ⛔ Mọi cặp ngoài bảng này bị từ chối, kể cả cặp «trông có vẻ vô hại».
@@ -94,6 +96,12 @@ export const NHOM_HUY_HOAN = Object.freeze([4, 5, 6, 7]);
  *    hiện 3 lượt (có thật), còn 12→0 xuất hiện **0 lượt** — chiều lùi mà POS thực sự
  *    dùng là 12→1 (47 lượt). Nghĩa là POS có thể TỪ CHỐI 12→0. Diễn tập trên VPS
  *    (phép ⑤c) phải trả lời đúng câu đó trước khi ai tin chiều về chạy được.
+ *
+ * ✅ VÁ 23/08 (phiếu VA-P1, đóng nợ P1 — sổ §9 22/08 của L3-M1): thêm cặp `1→12`.
+ *    Neo: đồ thị `status_history` đơn 47397 (UAE) `0@05:41→1@05:45→12@05:45→8@06:04` —
+ *    sale duyệt tay xen giữa lúc bot chờ khách trả lời là luồng TIẾN phổ biến, không
+ *    phải ca hiếm. Thiếu cặp này làm ca `live=1` của L3-M1 (`nhanPhanHoi` lúc `xac_nhan`)
+ *    bị cửa (b) từ chối OAN — đơn rơi vào `cho_sale` dù khách đã đồng ý mua.
  */
 export const CHUYEN_CHO_PHEP = Object.freeze([
   Object.freeze({ tu: 0, sang: 12, y: "xác nhận xong → Chờ in (01 §1)" }),
@@ -101,6 +109,11 @@ export const CHUYEN_CHO_PHEP = Object.freeze([
     tu: 12,
     sang: 0,
     y: "trả về Chờ xác nhận (nghiệm thu 02 §L1)",
+  }),
+  Object.freeze({
+    tu: 1,
+    sang: 12,
+    y: "đã duyệt tay (submitted) → Chờ in — sale xen giữa lúc bot chờ khách trả lời (nợ P1, đồ thị đơn 47397 UAE: 0→1→12→8)",
   }),
 ]);
 

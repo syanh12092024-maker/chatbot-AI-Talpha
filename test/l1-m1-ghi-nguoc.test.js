@@ -100,11 +100,12 @@ test("M2 · nhóm hủy/hoàn đo được = {4,5,6,7} — 8 là `packing`, KHÔ
   for (const m of NHOM_HUY_HOAN) assert.ok(daXacMinh(m));
 });
 
-test("M3 · bảng chuyển CHỈ có hai cặp, và KHÔNG có nhánh xoá đơn", () => {
-  assert.equal(CHUYEN_CHO_PHEP.length, 2);
+test("M3 · bảng chuyển CÓ BA cặp (vá 23/08, nợ P1: thêm 1→12), và KHÔNG có nhánh xoá đơn", () => {
+  assert.equal(CHUYEN_CHO_PHEP.length, 3);
   assert.deepEqual(CHUYEN_CHO_PHEP.map((c) => `${c.tu}→${c.sang}`).sort(), [
     "0→12",
     "12→0",
+    "1→12",
   ]);
   // 7 = removed. Không cặp nào được phép đi tới đó, hôm nay và mãi về sau.
   assert.equal(
@@ -320,6 +321,45 @@ test("D4 · chiều VỀ (12→0) chạy được — nghiệm thu 02 đòi «đ
   assert.equal(r.nhanTu, "wait_print");
   assert.equal(r.nhanSang, "new");
   assert.equal(luot.PUT, 1);
+});
+
+test("D5 · cặp MỚI (1→12, vá 23/08 nợ P1): tu=1(submitted) → sang=12 CHO QUA — GET 1 · PUT 1 · hai pha đủ · gương don_hang theo POS", async () => {
+  const maPos = `${SHOP}:444`;
+  await pool.query(
+    `INSERT INTO don_hang (team_id, ma_pos, nguon, trang_thai_he, trang_thai_pos)
+     VALUES ($1,$2,'trang_ban_hang','moi_tu_pos','1')`,
+    [CHUA_PHAN, maPos],
+  );
+  const bd = await demNhatKy("pos_ghi_bat_dau");
+  const kq = await demNhatKy("pos_ghi_ket_qua");
+  const { nap, luot } = napGia((pt) =>
+    pt === "GET"
+      ? { than: { data: { id: 444, status: 1, status_name: "submitted" } } }
+      : { than: { success: true, data: { id: 444, status: 12 } } },
+  );
+  const r = await ghiNguocTrangThai(
+    pool,
+    ctxHeThong(),
+    { market: "GiaLap", donId: 444, tu: 1, sang: 12, teamId: CHUA_PHAN },
+    { nap, env: MO },
+  );
+  assert.equal(r.maPos, maPos);
+  assert.equal(r.nhanTu, "submitted");
+  assert.equal(r.nhanSang, "wait_print");
+  assert.equal(luot.GET, 1);
+  assert.equal(luot.PUT, 1);
+  assert.equal(await demNhatKy("pos_ghi_bat_dau"), bd + 1);
+  assert.equal(await demNhatKy("pos_ghi_ket_qua"), kq + 1);
+  const d = await pool.query(
+    "SELECT trang_thai_he, trang_thai_pos FROM don_hang WHERE ma_pos = $1",
+    [maPos],
+  );
+  assert.equal(d.rows[0].trang_thai_pos, "12");
+  assert.equal(
+    d.rows[0].trang_thai_he,
+    "moi_tu_pos",
+    "cửa POS đụng vào cột của L3-M1",
+  );
 });
 
 // ─── RÀO TEAM (thừa kế L0-M2) ───────────────────────────────────────────────

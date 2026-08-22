@@ -298,12 +298,16 @@ test("C5 · ĐO CỬA POS THẬT (không mock): bảng chuyển cho phép của 
     nhanTu: "new",
     nhanSang: "wait_print",
   });
-  // 1→12 CHƯA có ⇒ ngoài đời, ca live=1 rơi vào nhánh C4 (cho_sale), không phải day_cho_in.
-  // Ca này là NEO ĐO HIỆN TRẠNG (nợ §9), KHÔNG phải lời khai «đã đủ» — sửa `CHUYEN_CHO_PHEP`
-  // xong thì ca này đỏ, và đó đúng là lúc phải quay lại đọc lại đoạn này.
-  assert.equal(co(1, MA_POS_CHO_IN), false);
-  assert.throws(() => kiemChuyen(1, MA_POS_CHO_IN), {
-    name: "LoiChuyenNgoaiBang",
+  // 1→12 ĐÃ VÁ (phiếu VA-P1, 23/08, đóng nợ P1 sổ §9 22/08): sale duyệt tay xen giữa
+  // lúc bot chờ khách trả lời là luồng TIẾN phổ biến — đồ thị đơn 47397 (UAE)
+  // 0→1→12→8. Ca live=1 giờ CHO QUA thẳng tới day_cho_in, KHÔNG còn rơi vào cho_sale
+  // oan như C4 mô tả (bài học cũ giữ nguyên ở đó cho ca live=8/packing, không đụng).
+  assert.ok(co(1, MA_POS_CHO_IN), "1→12 phải CÓ trong bảng sau khi vá P1");
+  assert.deepEqual(kiemChuyen(1, MA_POS_CHO_IN), {
+    tu: 1,
+    sang: 12,
+    nhanTu: "submitted",
+    nhanSang: "wait_print",
   });
 });
 
