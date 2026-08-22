@@ -1,7 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 17:15 22/08 · đang chạy: L0-M1 🟨 (thợ opus, nền) · phán mới
-> nhất: điểm (a) vòng 1 TRẢ-VỀ 2 CHAN → phiếu v2 đóng 8/8 finding, verify vòng 2 DAT, đã phát thợ.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 17:40 22/08 · đang chạy: L0-M1 🟨 (thợ opus, nền) + soạn trước
+> L0-M2 · phán mới nhất: NGƯỜI QUYẾT 22/08 — BỎ refute per-phiếu để tăng tốc, refute TỔNG THỂ
+> một lượt trước deploy; nghiệm thu còn: cổng máy `_chan1.sh` + tổng chạy script ④.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -35,6 +36,11 @@ biến `DATABASE_URL_V3`. Node v25. Dữ liệu thật để di trú nằm ở g
 giao 19/08 — đều bị gitignore). Token Pancake từ IP máy cá nhân bị chặn (lỗi 121) — số đo
 Pancake thật phải lấy trên VPS, đừng debug ở local.
 
+**Route model thợ (sửa 22/08 — tiết kiệm token):** MẶC ĐỊNH **sonnet** cho mọi phiếu code
+— phiếu đã viết sẵn nghiệm thu máy chi tiết nên cổng ④ gánh phần chất lượng; **opus** chỉ
+cho phiếu khó thuật toán/rủi ro ghi-ra-ngoài: L1-M1 · L1-M3 · L3-M1 · L3-M2. Thợ trả về
+≤15 dòng, chi tiết vào file (đã là luật).
+
 **Ranh giới làn rủi ro của dự án này (route phiếu):**
 🟥 = mọi thứ GHI ra ngoài hoặc đụng đơn/tiền: `src/pos/*` (ghi ngược trạng thái POS) ·
 `src/orders/*` · `hang_cho_tao_don` · mọi đường gửi tin ra khách · `db/migrate/*` đụng bảng
@@ -51,8 +57,13 @@ Pancake thật phải lấy trên VPS, đừng debug ở local.
    **§9 SỔ NỢ**, cấm tiện tay sửa.
 3. **Trạng thái:** ⬜ chưa làm · 🎫 đã có phiếu · 🟨 đang code · 🔎 chờ review · ✅ xong
    (đã nghiệm thu nội dung) · ⛔ chặn (ghi vì sao). Hai phiếu đụng cùng file → TUẦN TỰ.
-4. **Review:** phiếu đường tiền/lõi bắt buộc review ĐỐI KHÁNG (agent refute — skill
-   `phan-bien-refute`) + tổng nghiệm thu lại bằng nội dung. Cuối mỗi sóng có GATE.
+4. **Review:** ⚠️ SỬA theo lệnh người quyết 22/08 (2 đợt) — **BỎ refute per-phiếu** và
+   **BỎ agent review điểm (a) riêng**; nghiệm thu mọi làn = chặng 1 máy (`_chan1.sh`) +
+   tổng chạy script ④ bằng nội dung. Tổng TỰ chấm 4 câu nghiệp vụ (1·3·7·8) khi soạn phiếu
+   — không thuê agent; NGOẠI LỆ duy nhất được thuê 1 lượt review (a): phiếu GHI RA NGOÀI
+   (POS ghi ngược L1-M1 · WhatsApp gửi tin L1-M3 · máy trạng thái đơn L3-M1). **Refute
+   TỔNG THỂ một lượt trước deploy** — người quyết gọi. GATE cuối sóng = phần MÁY (npm test
+   2 lượt + toàn bộ ops/bin/nghiem-thu/*.sh), không fan-out agent.
 5. **Commit:** thợ commit pathspec phiếu mình (`type(scope): <mã> — mô tả`). Cấm
    `git add -A`. Push chỉ khi người quyết ra lệnh. Đổi hành vi module nào → cập nhật
    doc thiết kế tương ứng cùng commit.
@@ -168,14 +179,42 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
 - 22/08 · TỔNG (từ verdict L0-M1 điểm a): nạp `ai-messages.jsonl` (Sổ AI, chỉ có trên VPS)
-  + đối chiếu SỐ DÒNG với bản cũ — chạy trên VPS đợt cutover. Vế thứ ba của phép đối chiếu
-  di trú (02 §L0) KHÔNG được tính đạt ở GATE R0.
+  - đối chiếu SỐ DÒNG với bản cũ — chạy trên VPS đợt cutover. Vế thứ ba của phép đối chiếu
+    di trú (02 §L0) KHÔNG được tính đạt ở GATE R0.
 - 22/08 · TỔNG (từ verdict L0-M1 điểm a): ≥1 page bật AI không nằm trong `pages.json`
   (`1125576063976794`) — thợ L0-M1 liệt kê đủ danh sách page lạc khi di trú; nguồn gốc
   lệch sổ cái xử ở lượt riêng, không nuốt im trong di trú.
+- 22/08 · thợ L0-M1 (số đo bổ sung cho dòng trên): page LẠC không phải 1 mà là **3** —
+  `1125576063976794` (ai-enabled + kb-overrides + script-versions v1 LIVE) ·
+  `1220547807799752` (kb-overrides + script-versions v1 LIVE) · `1100561323151723`
+  (kb-overrides, chỉ có sản phẩm). Hệ quả đã đo: **1 công tắc AI** không có đích và
+  **2 bản kịch bản** không nạp được (`kich_ban` 69 thay vì 71). Tệp nguồn KHÔNG bị đụng —
+  gỡ khi sổ cái page được vá.
+- 22/08 · thợ L0-M1: **bộ ca cũ GHI THẲNG vào `conv-state.json` thật** ở gốc repo (chỉ
+  `test/l5-ab-followup.test.mjs` tự trỏ `CONV_STATE_FILE` đi nơi khác). Mỗi lượt `npm test`
+  đẻ thêm hội thoại khoá `convN_<rác>` vào dữ liệu vận hành — đo trong lượt này: 0 → 21 → 33
+  khoá sai khuôn. Cổng `l0-m1.sh` đã tự bảo vệ bằng `CONV_STATE_FILE` tạm; sửa bộ ca cũ
+  nằm ngoài pathspec phiếu này.
+- 22/08 · thợ L0-M1: `npm test` (`node --test test/`) **gãy trên Node v25** — v25 nhận thư
+  mục làm tệp mở đầu (`Cannot find module .../test`). Ngoài ra 5/23 tệp ca cũ đỏ sẵn ở mốc
+  nền `3d1eed1` (conv-owner · guard-fastlane · intro · l8-botcake-rules · viec-2345), và
+  `node_modules` chưa từng được cài. Sửa script `test` ngoài phạm vi ③ của phiếu L0-M1.
+- 22/08 · thợ L0-M1: `.env` **chưa có `V3_KHOA_MA_HOA`** (khoá 32 byte để mã hoá
+  `cau_hinh_model.khoa_api_ma`). Bộ ghi fail-CLOSED khi thiếu, nên người B ở L1-M4 sẽ
+  không ghi được khoá thật cho tới khi người vận hành đặt biến này — việc NGƯỜI.
+- 22/08 · thợ L0-M1: `kb-overrides.json` còn phần **`products`** (bảng giá + ảnh của 73 mục)
+  CHƯA nạp — 02 khai nguồn `san_pham`/`goi_gia` là POS (L1-M1), nạp trước sẽ đẻ danh mục
+  nửa vời phải hoà giải. L1-M1 quyết có backfill giá/ảnh từ đây không. Kèm số đo cho L1-M1:
+  `pages.json.posApiKey` **đã bị che** (112/112 giá trị dạng `***xxxx`, chỉ 6 mã) — khoá POS
+  thật nằm ở `pancake-shops.json`, đừng đọc nhầm cột đã che.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
+- 22/08 · TỔNG → phán người quyết đợt 2 (giản lược token): bỏ agent review (a) riêng — tổng
+  tự chấm, chỉ thuê cho phiếu ghi-ra-ngoài; route thợ mặc định sonnet, opus cho 4 phiếu khó;
+  gate = phần máy · luật 4 + route đã sửa tại chỗ.
+- 22/08 · TỔNG → phán người quyết: BỎ refute per-phiếu, refute tổng thể sau — luật 4 đã
+  sửa tại chỗ · commit sổ · nhật ký: dòng này.
 - 22/08 · TỔNG → khởi động — cài 4 skill dây chuyền vào `.claude/skills/`, trải gói bàn
   giao vào gốc repo (gitignore chặn đủ, `.env` giữ `PANCAKE_READONLY=1`), dựng Postgres
   `talpha-pg:5433`, dựng sổ này · commit (sổ) · nhật ký: sổ này §0a.
