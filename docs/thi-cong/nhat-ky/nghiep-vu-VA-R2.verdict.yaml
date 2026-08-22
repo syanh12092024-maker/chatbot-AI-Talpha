@@ -143,3 +143,47 @@ ghi_chu_cho_tong: >-
   ② line 26 đã đúng + độc lập tệ; chỉ phần TRÍCH NGUỒN sai, đẩy thợ tới dựng máy tỷ giá VND không tồn
   tại — CHAN N2, sửa bằng trích L1-M1 §3.3 + HE_SO_TE. Điểm phiếu làm đúng, giữ: RF-10/RF-15 chỉ
   đúng «một-nguồn-hai-luật» (bản sao mã 8) và «khớp đứt page_id» với bằng chứng dòng số.
+
+# ─────────────────────────────────────────────────────────────────────────────
+verify_vong_2:
+  ngay: 2026-08-23
+  pham_vi: CHỈ VERIFY 2 CHAN + NEN theo checklist tổng.
+  ban_phieu: PHIEU-VA-R2.md v2 · commit f0ce0f8
+  ma:
+    - ma: N1
+      dap: DAT
+      doi_chieu:
+        - "④ mở bằng «⚠️ THƯỚC TỰ CHẤM (bẫy: repro in ❌ nhưng rc=0): CAPTURE output từng SECTION…
+           rồi `grep -c ❌` = 0» — ✔ chấm bằng đếm ❌, không rc"
+        - "Khoanh đúng SECTION F1·F3·F4·F6, loại F2/F5 «vì thuộc C3/VA-R3» — ✔ không chấm nhầm phần
+           của phiếu khác, không bỏ sót phần của mình"
+    - ma: N2
+      dap: DAT
+      doi_chieu:
+        - "①RF-9 nay trích NGUỒN ĐÚNG: «KHÔNG phải VND — repo này KHÔNG có CLAUDE.md/design-pack…
+           `HE_SO_TE` (`tao-don.js:95` — AED/SAR/QAR/TWD ×100 · KWD/OMR/BHD ×1000) + nhật ký L1-M1
+           dòng 174… ĐỘC-LẬP-TỆ, KHÔNG dựng máy tỷ giá/quy VND» — ✔ đo trên cây khớp: `HE_SO_TE`
+           đúng tao-don.js:95, `MA_HOAN` export sẵn ti-le-hoan.js:45, L1-M1 dòng 174 đúng chữ"
+        - "②Ra(1) «tao-don dùng `HE_SO_TE` ĐÚNG MỘT LẦN theo tệ… ĐỘC-LẬP-TỆ, không quy VND»; ④#1
+           «test đa tệ: AED/SAR ×100 VÀ KWD/OMR/BHD ×1000 đều đúng (in bảng từng tệ)» — ✔ gauge bắt
+           lỗi ×hệ-số-hai-lần trên NHIỀU tệ, không chỉ AED"
+      con_ho_nho:
+        muc: GHI-NO
+        mo_ta: >-
+          ⚠️ CÒN SÓT trích sai: ②«Vào (ĐO LẠI)» (dòng 29) vẫn ghi «khuôn tiền… **CLAUDE §8 +
+          design-pack quy ước VND**» — mâu thuẫn thẳng với ①RF-9 vừa sửa. Vô hại vì ① thắng và ④#1
+          ép hành vi đúng, nhưng là câu lối-đi-sai còn trong hợp đồng (cùng loại sót với ⑦ «mock
+          nguồn đó» ở L3-M4 v2). **Xoá cụm «CLAUDE §8 + design-pack quy ước VND» ở dòng 29 trước
+          khi phát thợ** — thay bằng «HE_SO_TE (tao-don.js:95) + L1-M1 dòng 174».
+  nen_da_kiem_luon:
+    - "RF-10 đóng: ②Ra(2) import `MA_HOAN` từ ti-le-hoan.js (đã export, xoá bản sao hang-cho:105,
+       thống nhất tên) + ③ khai «ti-le-hoan.js chỉ IMPORT (read-only, không sửa)» + ④#2 «= 1 nguồn»."
+    - "RF-11/RF-12 đóng «hoặc»: Ra(3) phân trang CHỐT một cơ chế · Ra(4) marker POST-đã-gửi ghi
+       TRƯỚC POST (sống qua rollback), CHỐT — hết hai lối trên đường 🟥."
+  ket_luan_moi: DAT
+  ghi_chu: >-
+    Hai CHAN đóng đúng cơ chế; N2 đóng ở chỗ quan trọng nhất — RF-9 nay độc-lập-tệ, trích HE_SO_TE
+    thật của dự án thay vì luật VND của dự án khác, ④#1 test từng hệ số nên bắt cả tệ ×1000. Còn MỘT
+    câu sót phải xoá trước khi phát thợ: ②«Vào» dòng 29 vẫn dẫn CLAUDE §8/design-pack/VND (xem
+    `con_ho_nho`) — rẻ, nhưng để lại là lối-đi-sai trong hợp đồng. Phiếu ĐỦ ĐIỀU KIỆN phát thợ sau
+    khi cắt câu đó. (Cả 8 phiếu được thuê chấm (a) — 6 module A + VA-R1 + VA-R2 — nay đều DAT vòng 2.)

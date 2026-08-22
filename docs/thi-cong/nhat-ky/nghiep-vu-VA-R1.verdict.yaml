@@ -106,3 +106,35 @@ ghi_chu_cho_tong: >-
   rẻ để đóng (một dòng `process.exitCode`). Điểm phiếu làm ĐÚNG, giữ: chọn lớp chặn CHÍNH là «không
   chạy tool-loop khi van đóng» (bịt tận gốc thay vì lọc từng lời gọi), và dùng chính repro refute
   làm thước thay vì tự bịa ca.
+
+# ─────────────────────────────────────────────────────────────────────────────
+verify_vong_2:
+  ngay: 2026-08-23
+  pham_vi: CHỈ VERIFY 1 CHAN + 2 NEN theo checklist tổng.
+  ban_phieu: PHIEU-VA-R1.md v2 · commit f0ce0f8
+  ma:
+    - ma: N1
+      dap: DAT
+      doi_chieu:
+        - "④ mở đầu bằng cảnh báo tự chấm: «⚠️ THƯỚC TỰ CHẤM (bẫy: repro in ❌ nhưng rc=0): mỗi phép
+           CAPTURE output rồi `grep -c ❌` = 0 — KHÔNG dựa rc của node. In số ❌ đếm được» — ✔ đóng
+           đúng gốc: chấm bằng NỘI DUNG (đếm ❌) chứ không bằng rc"
+        - "Từng phép #1/#2/#4 nay là `grep -c ❌ = 0` trên output CAPTURE, không `node …&&` — ✔"
+        - "Thêm #5 ĐỐI CHỨNG DƯƠNG «đường ĐỌC (GET settings) dưới van đóng VẪN chạy» — ✔ chứng minh
+           trap không ghì nhầm đọc, đồng thời là đối chứng cho N2"
+    - ma: NEN_fetch_trap
+      dap: DAT
+      doi_chieu:
+        - "②#1 nay «bọc cổng outbound chặn request GHI (POST/PUT/PATCH/DELETE)… ⚠️ KHOANH THEO VERB:
+           đường ĐỌC (GET) vẫn phải chạy», bất biến đổi thành «0 lượt HTTP GHI» — ✔ khoanh đúng verb"
+    - ma: NEN_nap_dev
+      dap: DAT
+      doi_chieu:
+        - "RF-2 chốt MỘT hành vi: «V3_NAP_DEV chỉ mở khi KHÔNG nối DB thật (kiểm chuỗi nối trỏ
+           localhost sandbox); KHÔNG để *hoặc bỏ hẳn* mơ hồ» — ✔ hết hai lối trên van 🟥; ④#3 đo
+           với chuỗi nối DB THẬT → `nguonDangMo()=false`"
+  ket_luan_moi: DAT
+  ghi_chu: >-
+    CHAN N1 + hai NEN đóng đúng cơ chế. Điểm mạnh: ④ không chỉ sửa cách chấm mà còn CHÉP nguyên
+    cái bẫy vào đầu script («repro in ❌ nhưng rc=0») nên đời thợ sau không tái phạm. Phiếu ĐỦ ĐIỀU
+    KIỆN phát thợ.

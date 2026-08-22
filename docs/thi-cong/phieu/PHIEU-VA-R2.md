@@ -26,9 +26,9 @@
 
 ## ② Vào/ra
 
-**Vào (ĐO LẠI):** khuôn tiền — POS trả retail_price đơn vị gì (đo response thật), CLAUDE §8 +
-design-pack quy ước VND · `doc-danh-muc.js` · `tao-don.js` · `hang-cho.js` · `may-trang-thai`
-HUY_HOAN nguồn khai.
+**Vào (ĐO LẠI):** khuôn tiền — POS trả retail_price đơn vị gì (đo response thật) + `HE_SO_TE`
+(`tao-don.js:95`) đa tệ, KHÔNG VND · `doc-danh-muc.js` · `tao-don.js` · `hang-cho.js` ·
+`ti-le-hoan.js` `MA_HOAN` (nguồn mã hủy/hoàn đúng).
 **Ra:** (1) đơn vị tiền khai MỘT nguồn — `goi_gia.gia` + `don_hang.tong_tien` cùng đơn vị tường
 minh (kèm `tien_te`), tao-don dùng `HE_SO_TE` ĐÚNG MỘT LẦN theo tệ (đã nhỏ thì không nhân
 lại); phép so tiền in cả hai vế + đơn vị + tệ. ĐỘC-LẬP-TỆ, không quy VND. (2) HUY_HOAN import
