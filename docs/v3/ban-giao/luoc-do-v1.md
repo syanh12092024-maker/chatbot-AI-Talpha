@@ -333,3 +333,51 @@ phiếu `suaTheoId cho ctxHeThong` rồi **xoá cả hai**. Đã ghi §9 sổ đ
 > trong test + thêm `tin_cho_xu_ly` vào `NEO_19_BANG` (test) và `NEO` (script). Ngoài
 > pathspec L2-M1 (án lệ #25) — TỔNG vá. Bản 004 KHÔNG thêm bảng nào
 > (`grep -c '^CREATE TABLE' db/migrate/004_*.up.sql` = 0) nên con số đúng là 21, không phải 22.
+
+---
+
+## 10 · THAY ĐỔI — bản 005 (phiếu L3-M2, 23/08/2026)
+
+### 10.1 · Bốn cột trên `khach` + một cột trên `don_hang` (migration `005_loc_trung_va_ti_le_hoan`)
+
+**ĐO TRƯỚC KHI THÊM** (CSDL dev `aicloser_v3`): `khach` có ĐÚNG **9 cột** và **0 dòng**;
+`don_hang` có **16 cột** (14 của 001 + 2 của 004), **không cột nào giữ SẢN PHẨM** — mà
+nghiệm thu 02 §L3 là «đặt trang bán hàng rồi chat Messenger **cùng sản phẩm** → bị bắt là
+trùng». Không có cột đó thì vế «cùng sản phẩm» không tồn tại để mà kiểm.
+
+| Bảng       | Cột                                | Ghi chú                                                                    |
+| ---------- | ---------------------------------- | -------------------------------------------------------------------------- |
+| `khach`    | `tang_hoan text`                   | CHECK 5 nhãn: 4 tầng của 01 §11 + `chua_du_don`                            |
+| `khach`    | `so_don_ket` · `so_don_hoan` (int) | **TỬ và MẪU** của `ti_le_hoan` — để một tầng luôn tra ngược được            |
+| `khach`    | `cham_hoan_luc timestamptz`        | tuổi PHÉP ĐO (án lệ #9), mới lại mỗi lượt job kể cả khi điểm số không đổi   |
+| `don_hang` | `san_pham_ma text[]`               | mã biến thể POS `"<shop>:<variation_id>"`; **MẢNG** vì một đơn nhiều dòng hàng |
+
+Cộng bốn ràng buộc ở **tầng CSDL**: `khach_tang_hoan_hop_le` (deny-by-default 5 nhãn) ·
+`khach_ti_le_hoan_phan_tram` (**khai ĐƠN VỊ**: `ti_le_hoan` là PHẦN TRĂM 0–100, không
+phải phân số 0–1 — cột `numeric(5,2)` nhận cả hai nên không kẹp là mời một lỗi ×100) ·
+`khach_dem_hoan_hop_le` (`so_don_hoan ≤ so_don_ket`) · `khach_tang_di_kem_moc_cham`
+(**bất biến ĐÔI** cùng khuôn 004: có tầng thì phải có mốc chấm, và ngược lại).
+
+Ba index: `khach_duoi7_sdt` (biểu thức **bảy chữ số cuối** — vế THÔ để câu SQL lọc được
+bằng index, luật chuẩn hoá thật sống MỘT CHỖ ở `chuanHoaSdt()` trong JS; viết lại luật
+bằng SQL là đẻ nguồn luật thứ hai) · `don_hang_khach_ngay` (cửa sổ ngày) ·
+`don_hang_san_pham_ma` (GIN, cho phép `&&`).
+
+⛔ Bản này **KHÔNG thêm bảng nào** (`grep -c '^CREATE TABLE' db/migrate/005_*.up.sql` = 0)
+⇒ thước l0-m1 vẫn đọc **21 bảng**, không phải vá NEO như án lệ bản 003.
+⛔ Số bản 005 do TỔNG cấp (án lệ #25).
+
+### 10.2 · `don_hang.san_pham_ma` CHƯA CÓ NGƯỜI GHI — chủ cột là cửa POS
+
+Cột này do L3-M2 tạo nhưng **chủ là `src/pos/doc-don.js` (L1-M1)**. POS THẬT trả sẵn dữ
+liệu: `items[].variation_id` có trên **4.935/5.144 đơn (95,9%)** đo 23/08 trên 7/7 shop.
+L3-M2 không ghi hộ (án lệ #25 — không tiện tay sửa file phiếu khác). Trong lúc chờ,
+`kiemTrung()` xử cột rỗng bằng nhánh **mù-CÓ-NÓI-RA** (`nghi_trung_chua_ro_san_pham`),
+KHÔNG đọc cột rỗng thành «khác sản phẩm ⇒ không trùng». Đã ghi §9 sổ điều hành.
+
+### 10.3 · `khach` trống và `don_hang.khach_id` = 0/26 — khớp ĐỨT đang mở
+
+Đo 23/08 trên `aicloser_v3`: bảng `khach` có **0 dòng**, và **0/26** đơn thật có
+`khach_id`. Cửa POS đọc đơn nhưng chưa tạo hồ sơ khách, nên **cả hai cửa kiểm của L3-M2
+lẫn nhánh `thieu_so_wa` của L3-M1** đều nối qua một cột rỗng. Hai cửa chạy đúng và trả
+tập RỖNG — đúng họ lỗi «hai đầu làm rất kỹ, phần bị bỏ luôn là phần NỐI». Đã ghi §9.

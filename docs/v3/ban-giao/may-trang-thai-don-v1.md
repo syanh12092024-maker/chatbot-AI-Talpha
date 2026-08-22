@@ -201,3 +201,84 @@ chạm mạng: hai cửa ngoài (WhatsApp, POS) đều đi qua `deps`.
 **Chưa đo được ở lượt này (nói thẳng, đừng để người sau tưởng đã đủ):** gửi WhatsApp
 THẬT (endpoint chưa chốt — §7b **T1**) và ghi ngược POS THẬT (§7b **T2**, cần
 `V3_POS_GHI=1` + đơn nháp). Cổng in `⏸ HOÃN` cho hai nhánh đó, không giả xanh.
+
+---
+
+## 7 · HAI TRONG «BỐN CỬA KIỂM» CHỐNG TRÙNG — hợp đồng cho L3-M4 (phiếu L3-M2, 23/08)
+
+`hang_cho_tao_don.cua_kiem` (jsonb) giữ kết quả bốn cửa. L3-M2 cấp **hai** cửa; hai cửa
+còn lại là đất L3-M4. Import từ cùng một chỗ:
+
+```js
+import {
+  kiemTrung,
+  chamTiLeHoan,
+  chamTang,
+  chuanHoaSdt,
+} from "../../src/orders/index.js";
+```
+
+### 7.1 · Cửa #1 — `kiemTrung` (lọc trùng CHÉO hai luồng)
+
+```ts
+kiemTrung(pool, ctx, { soDienThoai, sanPhamId?, keo_ngay?, teamId? })
+  → { trung, don[], nguon_trung, ly_do, sdt_chuan, so_don_xet, chamTran }
+```
+
+- `ctx` = ctx NGƯỜI (mang `teamId`) **hoặc** `ctxHeThong()` **cộng** `teamId` tường minh.
+  Thiếu bối cảnh ⇒ **NÉM** `LoiThieuBoiCanhTeam`, không trả «không trùng» (một kết quả
+  rỗng vì gọi sai trông y hệt một kết quả sạch).
+- `sanPhamId` = mã biến thể POS `"<shop_id>:<variation_id>"`, cùng khoá `san_pham.ma`.
+- `keo_ngay` mặc định **7** (đo: bắt 17/20 cặp trùng chéo thật, còn p75 nhịp mua lại của
+  cùng một khách là 12,16 ngày ⇒ cửa sổ nằm DƯỚI nhịp mua lại, không nuốt lượt mua lại).
+- `nguon_trung` ∈ `trang_ban_hang` | `messenger` | `ca_hai` | `null`.
+- `ly_do` — **tập đóng**, grep theo đúng năm chuỗi này (`LY_DO_TRUNG`):
+
+  | `ly_do`                       | `trung` | nghĩa                                                           |
+  | ----------------------------- | ------- | --------------------------------------------------------------- |
+  | `chua_co_sdt`                 | false   | khách Messenger giữa chừng chưa đưa số — **cửa CHƯA phán được** |
+  | `sdt_khong_doc_duoc`          | false   | có chuỗi nhưng không còn chữ số nào                             |
+  | `khong_trung`                 | false   | đã tra, không đơn nào khớp                                      |
+  | `trung_khop_san_pham`         | true    | trùng ĐÃ XÁC MINH: cùng khách + cùng SP + trong cửa sổ          |
+  | `nghi_trung_chua_ro_san_pham` | true    | cùng khách + trong cửa sổ, **vế SP không đọc được**             |
+
+⚠️ **Hai giá trị `true` KHÔNG được gộp.** `nghi_trung_chua_ro_san_pham` là fail-CLOSED:
+đơn trong CSDL chưa khai sản phẩm (hoặc lượt gọi không biết mình hỏi SP nào), hệ **không**
+đọc cột rỗng thành «khác SP ⇒ sạch». L3-M4 hiện lý do NGUYÊN VĂN cho sale.
+
+⛔ `trung: true` **không phải một lệnh chặn** — nó là một kết quả. Ai chặn, chặn thế nào
+là quyết định của L3-M4 + người.
+
+### 7.2 · Cửa #2 — `chamTiLeHoan` (chấm tỉ lệ hoàn, BỐN TẦNG)
+
+```ts
+chamTiLeHoan(pool, { cauHinh? })        // job đêm, mọi team
+chamTiLeHoanMotTeam(pool, { teamId, cauHinh?, moc? })
+chamTang(tiLePhanTram, soDonKet, cauHinh?) → tên tầng     // HÀM THUẦN, test được không cần DB
+batDauChamDem(pool, { nhipMs? })        // trả hàm dừng
+```
+
+L3-M4 **ĐỌC** kết quả ở bốn cột của `khach` (không gọi lại job): `ti_le_hoan` (PHẦN TRĂM
+0–100) · `tang_hoan` · `so_don_ket`/`so_don_hoan` (tử/mẫu, để tra ngược) · `cham_hoan_luc`.
+
+| `tang_hoan`   | khoảng        | ghi chú                                                         |
+| ------------- | ------------- | --------------------------------------------------------------- |
+| `chua_du_don` | —             | **không phải tầng** — dưới sàn `toi_thieu_don_ket` (mặc định 2) |
+| `tot`         | [0 %, 15 %)   |                                                                 |
+| `binh_thuong` | [15 %, 30 %)  |                                                                 |
+| `canh_bao`    | [30 %, 65 %)  | ← đúng vế 01 §11 gọi tên («144 khách bị gộp nhầm»)              |
+| `rui_ro_cao`  | [65 %, 100 %] |                                                                 |
+
+⛔⛔ **KHÔNG có nhánh chặn nào trong v3 đọc `tang_hoan`** — 01 §11 xếp «chặn cứng khách
+hoàn cao» vào bảng ĐÃ QUYẾT KHÔNG LÀM, ghi chú **«Chờ chốt»**. Tầng chỉ để ĐỌC. Ai thêm
+một `if (tang === 'rui_ro_cao') return chan()` là tự ký một quyết định chưa ai ký.
+
+### 7.3 · Hai chỗ CHƯA đủ (đọc trước khi tin kết quả)
+
+1. **`don_hang.khach_id` = 0/26 trên dữ liệu thật** — cửa POS chưa tạo hồ sơ `khach`
+   (`khach` có **0 dòng**, đo 23/08 trên `aicloser_v3`). Cả hai cửa đều nối qua cột đó,
+   nên hôm nay chúng chạy đúng nhưng ra tập RỖNG trên dữ liệu thật. Nợ §9, đất L1-M1.
+2. **`don_hang.san_pham_ma` chưa có người ghi** — POS THẬT có sẵn (`items[].variation_id`
+   trên 4.935/5.144 đơn), chỉ thiếu lượt ghi ở `src/pos/doc-don.js`. Nợ §9, đất L1-M1.
+
+Đo lại cả hai bằng `bash ops/bin/nghiem-thu/l3-m2.sh` (13 phép, 2 mục in `⏸ HOÃN`).
