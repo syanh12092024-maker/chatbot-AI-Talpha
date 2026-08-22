@@ -158,8 +158,8 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | Mã    | Việc                                                              | Phụ thuộc | Session | Đụng file                            | Trạng thái |
 | ----- | ----------------------------------------------------------------- | --------- | ------- | ------------------------------------ | ---------- |
 | L3-M1 | Máy trạng thái đơn PHÂN NHÁNH THEO NGUỒN 🟥                       | R2        | thợ mới | `src/orders/*` `test/`               | ✅         |
-| L3-M2 | Lọc trùng chéo hai luồng + chấm tỉ lệ hoàn 🟥                     | L3-M1     | thợ mới | `src/orders/*` `test/`               | 🟨         |
-| L3-M3 | Hàng đợi nhắc (2h×5, huỷ khi khách trả lời) + bộ đọc ý 4 nhánh 🟥 | L3-M1     | thợ mới | `src/orders/*` `src/queue/*` `test/` | ⬜         |
+| L3-M2 | Lọc trùng chéo hai luồng + chấm tỉ lệ hoàn 🟥                     | L3-M1     | thợ mới | `src/orders/*` `test/`               | ✅         |
+| L3-M3 | Hàng đợi nhắc (2h×5, huỷ khi khách trả lời) + bộ đọc ý 4 nhánh 🟥 | L3-M1     | thợ mới | `src/orders/*` `src/queue/*` `test/` | 🟨         |
 | L3-M4 | Hàng chờ tạo đơn luồng Messenger 🟥                               | L3-M1·M2  | thợ mới | `src/orders/*` `test/`               | ⬜         |
 | R3    | **GATE SÓNG 3**                                                   | L3-M1..M4 | TỔNG    | —                                    | ⬜         |
 
@@ -448,6 +448,11 @@ src/pancake-orders.js` = **0 dòng** (van máy dev KHÔNG phủ) · `catch {}` �
   nhảy **130 → 953 khách** (823 người bị dán nhãn bằng ĐÚNG MỘT đơn).
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+
+- 23/08 · L3-M2 → ✅ (TỔNG nghiệm thu) — cổng 13/13+2 hoãn · 38/38 test + hồi quy nguyên ·
+  chuẩn hoá SĐT kiểm chéo đồng nhất · mọi ngưỡng chốt bằng 5.144 đơn thật (cửa sổ 7 ngày
+  = 17/20 cặp, dưới p75 nhịp mua lại 12,16 ngày; tầng canh_bao 107 khách ≈ cụm «144») ·
+  3 khớp đứt Q1/Q2/Q3 → phiếu VA-Q12 · commit 9a7788c.
 
 - 23/08 · L2-M2 → ✅ (TỔNG nghiệm thu) — cổng 8/8 · 18/18 test + hồi quy l2-m1 nguyên ·
   lỗ paano thật = «mag+khoảng trắng/gạch nối» (umorder đã khớp cũ) · nợ mới §9

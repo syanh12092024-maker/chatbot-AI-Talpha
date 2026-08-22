@@ -1,6 +1,6 @@
 # PHIẾU L3-M3 — Hàng đợi nhắc (2h × tối đa 5, huỷ khi khách trả lời) + bộ đọc ý 4 nhánh
 
-**Base:** `DIEN-LUC-PHAT` · **Làn:** 🟥 (điều khiển gửi nhắc ra khách — qua cửa WA đã
+**Base:** `31172e1` · **Làn:** 🟥 (điều khiển gửi nhắc ra khách — qua cửa WA đã
 guard) · thợ **sonnet** (cơ chế cửa/máy đã có sẵn, phiếu này là lịch + phân loại) ·
 điểm (a) tổng tự chấm: thi hành 02 §L3 hai gạch «Hàng đợi có hẹn giờ: nhắc mỗi 2 tiếng,
 tối đa 5 lần, huỷ khi khách trả lời» + «Bốn nhánh đọc ý»; nghiệm thu 02 §L3 «Khách trả
