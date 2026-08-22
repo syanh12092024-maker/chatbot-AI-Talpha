@@ -1,8 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 17:40 22/08 · đang chạy: L0-M1 🟨 (thợ opus, nền) + soạn trước
-> L0-M2 · phán mới nhất: NGƯỜI QUYẾT 22/08 — BỎ refute per-phiếu để tăng tốc, refute TỔNG THỂ
-> một lượt trước deploy; nghiệm thu còn: cổng máy `_chan1.sh` + tổng chạy script ④.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 18:20 22/08 · đang chạy: L0-M2 🟨 (thợ sonnet, nền) · phán
+> mới nhất: L0-M1 ✅ — chặng 1 8/8, cổng thợ 51/51 tổng tự chạy, kiểm chéo độc lập khớp
+> (20 bảng · 502 page/46 bật AI · rào chua-phan nổ · nhat_ky chặn UPDATE+DELETE dòng thật).
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -122,8 +122,8 @@ trong 5′, đơn Messenger không bị hỏi lại, trùng chéo bị bắt.
 
 | Mã    | Việc                                                                               | Phụ thuộc | Session | Đụng file             | Trạng thái |
 | ----- | ---------------------------------------------------------------------------------- | --------- | ------- | --------------------- | ---------- |
-| L0-M1 | Lược đồ 19 bảng + di trú dữ liệu thật từ JSON                                      | —         | thợ mới | `db/*` `test/l0-m1-*` | 🟨         |
-| L0-M2 | Tầng truy vấn tự chèn điều kiện team, thiếu bối cảnh → ném lỗi                     | L0-M1     | thợ mới | `src/db/*` `test/`    | ⬜         |
+| L0-M1 | Lược đồ 19 bảng + di trú dữ liệu thật từ JSON                                      | —         | thợ mới | `db/*` `test/l0-m1-*` | ✅         |
+| L0-M2 | Tầng truy vấn tự chèn điều kiện team, thiếu bối cảnh → ném lỗi                     | L0-M1     | thợ mới | `src/db/*` `test/`    | 🟨         |
 | R0    | **GATE SÓNG 0** — npm test 2 lượt + script nghiệm thu + đối chiếu danh sách di trú | L0-M1·M2  | TỔNG    | —                     | ⬜         |
 
 Bàn giao cho B tại R0: lược đồ (điểm 1) + hàm tầng truy vấn (điểm 2) + hình dạng bảng
@@ -223,6 +223,10 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
+- 22/08 · L0-M1 → ✅ — tổng nghiệm thu: chặng 1 8/8 · cổng 51/51 (tổng tự chạy) · kiểm chéo
+  độc lập 6 phép khớp; 2 lỗi thước _chan1 (nợ §9 của thợ) đã vá + đất điều hành loại khỏi
+  phép pathspec · commit thợ b2ee56e · nghiệp vụ điểm (a) L0-M2 tổng tự chấm 4 câu: ĐẠT
+  (khớp 01 §8 + 06 ném-lỗi; bỏ phiếu thì luật cứng team không ai thi hành).
 - 22/08 · TỔNG → phán người quyết đợt 2 (giản lược token): bỏ agent review (a) riêng — tổng
   tự chấm, chỉ thuê cho phiếu ghi-ra-ngoài; route thợ mặc định sonnet, opus cho 4 phiếu khó;
   gate = phần máy · luật 4 + route đã sửa tại chỗ.
