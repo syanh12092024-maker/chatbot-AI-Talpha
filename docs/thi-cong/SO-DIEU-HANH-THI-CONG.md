@@ -691,3 +691,6 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   --experimental-test-module-mocks — cổng .sh tự bật, chạy trần thì skip có nói) ·
   VA-T1 ✅ 4/4 thước hết trôi (2 nơi cùng khuôn đang xanh ghi §9 canh) · commit 9b5fadf.
   §10 đợt 1 nén vào `nhat-ky/so-luu-tru-dot-1.md` (luật 15). CHƯA push — chờ lệnh.
+- 23/08 · VA-R4 → ✅ — RF-20 đóng: phủ định liền kề trước từ khoá xac_nhan (EN+AR) hết
+  đọc thành xac_nhan, nhánh cũ giữ nguyên (l3-m3-doc-y 8/8) · commit 5973f7f · nhật ký
+  `docs/thi-cong/nhat-ky/phieu-va-r4.md`.
