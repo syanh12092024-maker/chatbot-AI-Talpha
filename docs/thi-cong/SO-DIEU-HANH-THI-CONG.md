@@ -1,8 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 21:30 22/08 · đang chạy: KHÔNG thợ nào — dây chuyền ĐỨNG
-> CHỜ VIỆC NGƯỜI (H1 chặn L1-M3 · H5 chặn L2) · phán mới nhất: L1-M1 ✅ (24/24+1 hoãn ⑤c
-> chờ VPS) — sóng 1 còn mỗi L1-M3; sự cố commit-không-pathspec đã khôi phục sạch.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 21:50 22/08 · đang chạy: soạn + phát L1-M3, L2-M1 · phán
+> NGƯỜI QUYẾT (lệnh 3): CODE TRỌN không đứng chờ H — mọi phép chạm-thật dồn «CHẠY THỬ MỘT
+> LẦN» (danh sách §7b). H1/H5 thôi chặn CODE, chỉ còn chặn phép đo thật.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -141,14 +141,14 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | ----- | ---------------------------------------------------------------------- | ----------- | ------- | ------------------------------------ | ---------- |
 | L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥        | R0 ✅       | thợ mới | `src/pos/*` `db/migrate/002` `test/` | ✅         |
 | L1-M2 | Cửa Pancake Messenger 🟥 (có đường gửi tin) — bọc cũ + định tuyến team | R0 ✅       | thợ mới | `src/channels/messenger/*` `test/`   | ✅         |
-| L1-M3 | Cửa Pancake WhatsApp 🟥 (gửi tin ra khách)                             | **H1** + R0 | thợ mới | `src/channels/whatsapp/*` `test/`    | ⬜         |
+| L1-M3 | Cửa Pancake WhatsApp 🟥 — KHUNG + mock (phép thật → §7b T1)              | R0 ✅ (H1 thôi chặn code) | thợ mới | `src/channels/whatsapp/*` `test/` | ⬜         |
 | R1    | **GATE SÓNG 1**                                                        | L1-M1..M3   | TỔNG    | —                                    | ⬜         |
 
 ## §4 · SÓNG 2 — CHAT MESSENGER
 
 | Mã    | Việc                                                                                | Phụ thuộc                     | Session | Đụng file                          | Trạng thái |
 | ----- | ----------------------------------------------------------------------------------- | ----------------------------- | ------- | ---------------------------------- | ---------- |
-| L2-M1 | Chuyển đường xử lý tin sang nền mới, hàng đợi thay vòng poll                        | R1 + **H5 (lớp model của B)** | thợ mới | `src/queue/*` `src/chat/*` `test/` | ⬜         |
+| L2-M1 | Đường xử lý tin nền mới + hàng đợi; route outbound qua cửa v3 (nợ tools.js); DI model | R1 code-xong (L1-M1·M2 ✅; model = llm.js cũ qua DI, chỗ cắm cho B) | thợ mới | `src/queue/*` `src/chat/*` `db/migrate/003` `test/` | ⬜         |
 | L2-M2 | Tắt Botcake 3 page thử, bật 2 lớp 0 đồng, nhập 2 luật từ khoá, vá `paano mag order` | L2-M1 + **H3** + **H8**       | thợ mới | `src/chat/*` `test/`               | ⬜         |
 | L2-M3 | Tách prompt 4 khối, ngân sách lượt theo độ nóng, cờ page trọng điểm                 | L2-M1                         | thợ mới | `src/chat/*` `test/`               | ⬜         |
 | R2    | **GATE SÓNG 2** — đo 50 lượt thật <10s, 7 ngày so 3 page đối chứng                  | L2-M1..M3                     | TỔNG    | —                                  | ⬜         |
@@ -162,6 +162,19 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | L3-M3 | Hàng đợi nhắc (2h×5, huỷ khi khách trả lời) + bộ đọc ý 4 nhánh 🟥 | L3-M1     | thợ mới | `src/orders/*` `src/queue/*` `test/` | ⬜         |
 | L3-M4 | Hàng chờ tạo đơn luồng Messenger 🟥                               | L3-M1·M2  | thợ mới | `src/orders/*` `test/`               | ⬜         |
 | R3    | **GATE SÓNG 3**                                                   | L3-M1..M4 | TỔNG    | —                                    | ⬜         |
+
+## §7b · «CHẠY THỬ MỘT LẦN» — dồn theo lệnh người quyết 22/08 (làm khi CEO gọi)
+
+Mọi phép cần thế-giới-thật của các phiếu được code-với-mock + HOÃN minh bạch, dồn về đây:
+
+| # | Phép | Của phiếu | Cần gì |
+| --- | --- | --- | --- |
+| T1 | Gửi 1 tin WhatsApp thật qua API Pancake tới số nội bộ | L1-M3 ⑤ | H1 nối số WA vào Pancake |
+| T2 | Diễn tập ghi-ngược trạng thái trên ĐƠN NHÁP (2 chiều) | L1-M1 ④#5c | V3_POS_GHI=1 + đơn nháp |
+| T3 | Tắt Botcake 3 page thử + bật 2 lớp 0 đồng | L2-M2 | H8 chọn page + người vào Botcake |
+| T4 | Đo 50 lượt trả lời thật <10s + 7 ngày so 3 page đối chứng | L2 gate R2 | T3 xong |
+| T5 | Nạp `ai-messages.jsonl` + đối chiếu số dòng Sổ AI | nợ §9 L0-M1 | chạy trên VPS |
+| T6 | Lớp model B (L1-M4) cắm vào chỗ DI của L2-M1 | H5 | người B xong |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
