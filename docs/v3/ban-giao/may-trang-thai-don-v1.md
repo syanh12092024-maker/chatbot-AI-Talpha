@@ -282,3 +282,85 @@ một `if (tang === 'rui_ro_cao') return chan()` là tự ký một quyết đ�
    trên 4.935/5.144 đơn), chỉ thiếu lượt ghi ở `src/pos/doc-don.js`. Nợ §9, đất L1-M1.
 
 Đo lại cả hai bằng `bash ops/bin/nghiem-thu/l3-m2.sh` (13 phép, 2 mục in `⏸ HOÃN`).
+
+---
+
+## §lịch-nhắc · HÀNG ĐỢI NHẮC + BỘ ĐỌC Ý — chỗ chờ ở §5 đã CẮM THẬT (phiếu L3-M3, 23/08)
+
+`huyLichNhac` ở §5 (mặc định no-op `{camChua:false}`) nay có bản THẬT:
+`src/orders/lich-nhac.js` + `src/orders/doc-y.js` + `src/orders/nhan-phan-hoi-wa.js`, cùng
+import từ `src/orders/index.js`.
+
+```js
+import {
+  datLichNhac, // (pool, ctx, {donId}, deps) — đặt lịch đầu tiên, idempotent
+  quetLichNhac, // (pool, tuyChon, deps) — MỘT lượt quét (bước ①+②, xem dưới)
+  batDauQuetLich, // (pool, {nhipMs?}, deps) — job định kỳ, unref()
+  taoHuyLichNhac, // (pool, {job?}) => huyLichNhac(donId) — bản THẬT để tiêm vào nhanPhanHoi
+  docY, // (text, {ngonNgu?}) => {ket_qua, do_tin} — HÀM THUẦN, 4 nhánh
+  nhanPhanHoiWa, // (pool, ctx, {donId, text}, deps) — cầu nối trọn vòng
+  CACH_NHAC_MS,
+  TRAN_NHAC,
+  MAU_NHAC, // 2h · 5 lần · mẫu NHẮC (KHÁC MAU_XAC_NHAN của quet-don-moi.js)
+} from "../../src/orders/index.js";
+```
+
+### Vì sao KHÔNG có hook tự động trong `quet-don-moi.js` khi đơn vào `da_gui_wa`
+
+Pathspec L3-M3 cấm đụng `may-trang-thai.js`/`quet-don-moi.js`. Nên **"đặt lịch khi đơn vào
+`da_gui_wa`" không phải một sự kiện gắn vào lượt chuyển trạng thái** — `quetLichNhac` tự
+quét (bước ①): mỗi lượt, nó tìm đơn `trang_thai_he='da_gui_wa'` **CHƯA có bất kỳ dòng
+`lich_nhac` nào** rồi tự gọi `datLichNhac` cho đơn đó. Bước ② mới là quét lịch **tới
+hạn** để gửi nhắc/báo hết lượt. `batDauQuetLich` chạy cả hai bước mỗi nhịp
+(`NHIP_QUET_LICH_MS = 5 phút`). Hệ quả: có độ trễ tối đa một nhịp quét giữa lúc đơn vào
+`da_gui_wa` và lúc lịch đầu tiên được tạo — chấp nhận được, cùng bản chất với độ trễ quét
+của chính `quet-don-moi.js`.
+
+### Chu kỳ nhắc
+
+`da_gui_wa` (chưa có lịch) → `datLichNhac` tạo dòng `lan_thu=1, hen_luc=+2h, trạng_thái='cho'`
+→ tới hạn → gửi qua `guiTinMau(..., tenMau: MAU_NHAC)` (mẫu NHẮC riêng, **không phải**
+`MAU_XAC_NHAN` của lượt gửi đầu) → đánh dấu dòng đó `'da_gui'` → `lan_thu < 5` thì tạo dòng
+kế tiếp (`lan_thu+1`, `+2h`); `lan_thu = 5` thì gọi `baoHetLuot` thay vì tạo dòng thứ 6.
+Mỗi lần nhắc là **một dòng riêng** trong `lich_nhac` (không phải một dòng tự tăng
+`lan_thu`) — đếm dòng của một đơn sau khi hết lượt phải đúng **5**, không hơn.
+
+**Lưới an toàn:** nếu lúc quét tới hạn mà đơn đã rời `da_gui_wa` qua đường khác (lịch mồ
+côi — hiếm, vì `huyLichNhac` đã huỷ TRONG CÙNG LƯỢT phản hồi), `quetLichNhac` huỷ êm dòng
+đó (`huy_ly_do='don_da_roi_da_gui_wa:<trạng_thái>'`), **không gửi**.
+
+### HUỶ NGAY — bù cho hai nhánh `nhanPhanHoi` không tự gọi `huyLichNhac`
+
+`nhanPhanHoi` (L3-M1, đã chốt, gate riêng `l3-m1.sh` ④c `huyGoi=2`) chỉ tự gọi
+`huyLichNhac` ở nhánh `xac_nhan`/`tu_choi`. 02 §L3 đòi huỷ ngay cho khách "trả lời giữa
+chừng" nói chung — nên `nhanPhanHoiWa` **bù thêm** một lượt gọi `huyLichNhac` cho
+`doi_sua`/`khong_ro`. `huyLichNhac` idempotent nên không sợ bị gọi "thừa". Kết quả đo
+được: lịch active (`trang_thai='cho'`) của đơn về **0 ngay trong lượt gọi
+`nhanPhanHoiWa`**, không chờ `quetLichNhac` chạy tới.
+
+### Cửa ghi hẹp THỨ NĂM (nợ kỹ thuật, đã ghi §9 sổ điều hành)
+
+`suaTheoId` (L0-M2) không hỗ trợ `ctxHeThong()`, mà job quét lịch bắt buộc chạy dưới
+`ctxHeThong` (không có người đăng nhập đứng sau một tin WA tự động tới). `lich-nhac.js` tự
+có `ghiLich` (UPDATE hẹp, allow-list `trang_thai`/`huy_ly_do`, luôn kẹp `team_id`) — cùng
+khuôn `ghiDon` của `may-trang-thai.js`. Đây là cửa hẹp thứ **năm** sau `suaTheoId` gốc,
+`suaTheoIdPos` (L1-M1), `ghiDon` (L3-M1), `CAU_GHI_CHAM` (L3-M2/`ti-le-hoan.js`).
+
+### docY — bốn nhánh, luật từ khoá, 0 model
+
+`docY(text, {ngonNgu?}) → {ket_qua, do_tin}` là **hàm thuần** (không pool/await/đồng hồ).
+Khớp theo TỪ/CỤM TỪ có biên khoảng trắng (không phải substring trần — "no" không khớp
+trong "know"). 0 nhánh khớp hoặc ≥2 nhánh khớp mâu thuẫn ("yes but actually no") đều trả
+`khong_ro` — không đoán liều. Bộ từ khoá EN/AR (+ PH) sống trong `TU_KHOA` (export), tự
+kiểm khớp `KET_QUA_PHAN_HOI` lúc nạp module (bắt drift ngay, không đợi test).
+
+### Nghiệm thu — đo lại bằng gì
+
+```bash
+bash ops/bin/nghiem-thu/l3-m3.sh   # 23 phép của PHIẾU L3-M3 ④, tự dựng/dọn sandbox
+node --test test/l3-m3-doc-y.test.js test/l3-m3-lich-nhac.test.js test/l3-m3-nhan-phan-hoi-wa.test.js
+```
+
+Không lượt nào chạm mạng thật (WA/POS đều spy tiêm qua `deps`). Đo trên
+`aicloser_v3_nt_l3m3` (sandbox tự dựng/dọn), **không phải** `aicloser_v3` dev — cổng ⑥b
+xác nhận `aicloser_v3` còn 0 dòng `lich_nhac` sau khi chạy.

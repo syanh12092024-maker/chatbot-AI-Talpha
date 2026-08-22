@@ -72,3 +72,25 @@ export {
   CAU_DEM_HOAN,
   CAU_GHI_CHAM,
 } from "./ti-le-hoan.js";
+
+// ── L3-M3 · hàng đợi nhắc (2h×5, huỷ khi khách trả lời) + bộ đọc ý 4 nhánh ─────
+// Hợp đồng: docs/v3/ban-giao/may-trang-thai-don-v1.md §5. `taoHuyLichNhac` là bản THẬT
+// thay no-op mặc định của `nhanPhanHoi` (may-trang-thai.js) — chỗ chờ ở đó đã "cài THẬT"
+// bằng cách các caller (nhanPhanHoiWa) dùng factory này làm deps.huyLichNhac mặc định.
+export {
+  datLichNhac,
+  quetLichNhac,
+  batDauQuetLich,
+  taoHuyLichNhac,
+  LOAI_NHAC,
+  CACH_NHAC_MS,
+  TRAN_NHAC,
+  MAU_NHAC,
+  NHIP_QUET_LICH_MS,
+  CAU_DON_CAN_LICH,
+  CAU_LICH_TOI_HAN,
+} from "./lich-nhac.js";
+
+export { docY, TU_KHOA as TU_KHOA_DOC_Y } from "./doc-y.js";
+
+export { nhanPhanHoiWa } from "./nhan-phan-hoi-wa.js";
