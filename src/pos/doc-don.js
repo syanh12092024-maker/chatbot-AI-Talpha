@@ -30,11 +30,36 @@
 //    một đơn lật nguồn giữa chừng là lật luôn nhánh nghiệp vụ đang chạy dở. Lượt đọc
 //    sau thấy lệch thì BÁO ra (`lechNguon`), không tự sửa.
 //
+// ⑤ `khach`/`san_pham_ma`/`status_history` — NUÔI ở đây, và NHẬP `chuanHoaSdt` TRỰC
+//    TIẾP từ `../orders/loc-trung.js`, KHÔNG qua `../orders/index.js` (phiếu VA-Q12).
+//    Lý do nói ra (luật 13 tho-thi-cong): phiếu khai ưu tiên `orders/index.js`, và hàm
+//    ĐÃ được export ở đó — nhưng `orders/index.js` re-export cả `cua-pos.js`, mà file
+//    đó `import … from "../pos/index.js"`. Nhập theo đường đó tạo VÒNG: `src/pos` →
+//    `src/orders` → `src/pos`. ĐO THỬ 23/08 (tạm thêm dòng import, chạy
+//    `node --test test/l1-m1-doc-pos.test.js`): vòng này CHẠY ĐƯỢC hôm nay (Node giải
+//    quyết được nhờ `chuanHoaSdt` là function DECLARATION hoisted, gọi ở runtime chứ
+//    không ở module-scope) — nhưng codebase này đã trả giá 4 lần cho việc GIỮ layer
+//    `src/pos` (L1) không phụ thuộc ngược vào `src/orders` (L3) — xem 4 «cửa hẹp» ghi
+//    trùng ở §9 sổ điều hành, sinh ra chính vì tôn trọng ranh giới lớp. Vòng qua
+//    index.js "chạy được hôm nay" nhưng vỡ IM LẶNG nếu mai có ai đổi `chuanHoaSdt`
+//    thành hằng `const`, hoặc một file trong chuỗi re-export thêm một dòng chạy ở
+//    module-scope. Nhập thẳng `loc-trung.js` (0 phụ thuộc ngược vào `src/pos`) tốn
+//    đúng một dòng khác với chữ phiếu, không vòng, không rủi ro — cùng khuôn
+//    `cua-pos.js:18` đã làm với `import SÂU có chủ ý` khi hàng rào không vừa.
+//    Giá phải trả: `khach.so_dien_thoai` LƯU DẠNG ĐÃ CHUẨN HOÁ (không phải chuỗi thô
+//    của POS) — để một SĐT chỉ có ĐÚNG MỘT `khach` dù POS khai `0501234567` hay
+//    `+966501234567` (không thì lặp lại chính lỗi «58 khách bị tách đôi» mà
+//    `loc-trung.js` đã đo, nhưng lần này lặp NGAY TRONG bảng `khach`). Đổi lại: mất
+//    khả năng hiển thị số điện thoại ở ĐÚNG định dạng gốc khách đã nhập — chưa có màn
+//    nào trong v3 cần điều đó, nếu cần thì đó là một quyết định khác, không phải lượt
+//    này.
+//
 // ⛔ `tong_tien` để NULL — xem khối «TIỀN» cuối file. Fail-CLOSED, có nợ §9.
 import { layNhieu, themMoi } from "../db/index.js";
 import { xacDinhTeam, suaTheoIdPos } from "./kho.js";
 import { layKetNoi } from "./ket-noi.js";
 import { guiDocDon } from "./api.js";
+import { chuanHoaSdt } from "../orders/loc-trung.js";
 
 const RE_CONV = /^(\d+)_(\d+)$/;
 
@@ -65,6 +90,35 @@ async function banDoHoiThoai(pool, ctx, teamId) {
   const m = new Map();
   for (const h of ds) m.set(`${h.page_id}|${h.psid}`, String(h.id));
   return m;
+}
+
+/**
+ * Bản đồ SĐT ĐÃ CHUẨN HOÁ → khach.id của team, nạp MỘT lượt (quyết định ⑤ đầu file).
+ * Chạy `chuanHoaSdt` lại trên GIÁ TRỊ ĐANG LƯU dù đã lưu ở dạng chuẩn hoá — phòng thân
+ * cho dữ liệu cũ/ghi tay lệch khuôn (chuanHoaSdt THUẦN nên gọi lại trên một số ĐÃ chuẩn
+ * hoá không đổi gì, tốn 0, an toàn tuyệt đối một chiều).
+ */
+async function banDoKhach(pool, ctx, teamId) {
+  const ds = await layNhieu(pool, ctx, "khach", {
+    dieuKien: { team_id: teamId },
+  });
+  const m = new Map();
+  for (const k of ds) {
+    const sdt = chuanHoaSdt(k.so_dien_thoai);
+    if (sdt) m.set(sdt, String(k.id));
+  }
+  return m;
+}
+
+/** Rút mã biến thể POS từ `items[]` của một đơn, khuôn "<shop_id>:<variation_id>"
+ *  (CÙNG khoá với `san_pham.ma` — xem `doc-danh-muc.js`). Đơn không có dòng hàng /
+ *  thiếu variation_id (4,1% đo 23/08) → MẢNG RỖNG, KHÔNG bịa (②#3 phiếu VA-Q12). */
+function rutSanPhamMa(donPos, shopId) {
+  const items = Array.isArray(donPos.items) ? donPos.items : [];
+  return items
+    .map((it) => it?.variation_id)
+    .filter((vid) => vid != null && vid !== "")
+    .map((vid) => `${shopId}:${vid}`);
 }
 
 /**
@@ -106,10 +160,15 @@ export async function docDon(
     lechNguon: [],
     khopHoiThoai: 0,
     tongPos: 0,
+    // Nợ Q1/Q2 (§9 sổ điều hành) — khach + san_pham_ma.
+    khachMoi: 0, // khach vừa TẠO trong lượt này
+    khachDaCo: 0, // khớp khach ĐÃ CÓ (cùng team + SĐT chuẩn hoá)
+    donKhongSdt: 0, // đơn KHÔNG có SĐT → khach_id NULL — nói ra, không im (②#1 phiếu)
   };
 
   const pageMap = await banDoPage(pool, ctx, team.teamId);
   const htMap = await banDoHoiThoai(pool, ctx, team.teamId);
+  const khachMap = await banDoKhach(pool, ctx, team.teamId);
 
   for (let trang = 1; trang <= soTrangToiDa; trang++) {
     const lo = await guiDocDon(
@@ -140,6 +199,42 @@ export async function docDon(
         if (hoiThoaiId) kq.khopHoiThoai++;
       }
 
+      // ── Nợ Q1 (§9): upsert `khach` theo (team, SĐT chuẩn hoá) — nguồn duy nhất
+      // `shipping_address.phone_number` (ĐO 23/08: có trên 2.083/2.100 đơn mẫu, khớp
+      // cùng cột đã dùng để đo bảng chuẩn hoá của L3-M2). Không SĐT → khach_id NULL,
+      // ĐẾM chứ không im lặng (nói ra ở kq.donKhongSdt).
+      const sdtChuan = chuanHoaSdt(o.shipping_address?.phone_number ?? null);
+      let khachId = null;
+      if (sdtChuan) {
+        khachId = khachMap.get(sdtChuan) ?? null;
+        if (!khachId) {
+          // Khuôn `const moi = await themMoi(...)` cùng `doc-danh-muc.js`.
+          const moi = await themMoi(pool, ctx, "khach", {
+            team_id: team.teamId,
+            so_dien_thoai: sdtChuan,
+            ten: o.shipping_address?.full_name || o.bill_full_name || "",
+            dia_chi:
+              o.shipping_address?.full_address ||
+              o.shipping_address?.address ||
+              "",
+            thanh_pho: o.shipping_address?.province_name || "",
+          });
+          khachId = String(moi.id);
+          khachMap.set(sdtChuan, khachId); // cùng SĐT gặp lại TRONG lượt này → tái dùng
+          kq.khachMoi++;
+        } else {
+          kq.khachDaCo++;
+        }
+      } else {
+        kq.donKhongSdt++;
+      }
+
+      // ── Nợ Q2 (§9): mã biến thể POS của các dòng hàng — mảng RỖNG khi thiếu
+      // (4,1% đơn thật, KHÔNG bịa). Nợ Q3: lịch sử chuyển trạng thái RAW, CHỈ LƯU
+      // (chưa ai đọc — migration 006).
+      const sanPhamMa = rutSanPhamMa(o, ketNoi.shopId);
+      const lichSuTrangThai = JSON.stringify(o.status_history ?? []);
+
       const daCo = await layNhieu(pool, ctx, "don_hang", {
         dieuKien: { team_id: team.teamId, ma_pos: maPos },
       });
@@ -155,6 +250,9 @@ export async function docDon(
           hoi_thoai_id: hoiThoaiId,
           page_id: pageBigint,
           tien_te: o.order_currency ?? null,
+          khach_id: khachId,
+          san_pham_ma: sanPhamMa,
+          status_history: lichSuTrangThai,
         });
         kq.them++;
       } else {
@@ -163,7 +261,23 @@ export async function docDon(
           // KHÔNG tự sửa — báo ra (quyết định ④ đầu file).
           kq.lechNguon.push({ maPos, trongDb: cu.nguon, doDuoc: suy.nguon });
         }
-        if (String(cu.trang_thai_pos ?? "") === String(o.status)) {
+        // Ưu tiên giá trị MỚI đọc được; lượt này không có SĐT thì GIỮ khach_id cũ
+        // (đơn không lẽ nào "mất" khách đã nối được ở lượt trước) — cùng khuôn
+        // `tien_te: o.order_currency ?? cu.tien_te` đã có sẵn ở đây.
+        const khachIdMoi = khachId ?? cu.khach_id;
+        const trangThaiDoi =
+          String(cu.trang_thai_pos ?? "") !== String(o.status);
+        const khachDoi = String(khachIdMoi ?? "") !== String(cu.khach_id ?? "");
+        const spDoi =
+          JSON.stringify(cu.san_pham_ma ?? []) !== JSON.stringify(sanPhamMa);
+        // status_history: chỉ ép ghi khi đang NULL (chưa từng ghi). Không diff nội
+        // dung ở đây — jsonb KHÔNG giữ nguyên thứ tự khoá khi đọc lại (Postgres tự
+        // canon hoá), nên so JSON.stringify(giá trị mới từ POS) với
+        // JSON.stringify(giá trị đã qua vòng jsonb) có thể lệch dù NỘI DUNG như nhau
+        // ⇒ "đổi" giả vĩnh viễn. Mọi lượt CÓ cập nhật (vì lý do khác) vẫn mang theo
+        // bản mới nhất, nên cột không bị đứng hình sau lượt ghi đầu.
+        const lsThieu = cu.status_history == null;
+        if (!trangThaiDoi && !khachDoi && !spDoi && !lsThieu) {
           kq.giuNguyen++;
         } else {
           await suaTheoIdPos(pool, ctx, {
@@ -173,6 +287,9 @@ export async function docDon(
             duLieu: {
               trang_thai_pos: String(o.status),
               tien_te: o.order_currency ?? cu.tien_te,
+              khach_id: khachIdMoi,
+              san_pham_ma: sanPhamMa,
+              status_history: lichSuTrangThai,
               sua_luc: new Date(),
             },
             hanhDong: "pos_doc_don_refresh",

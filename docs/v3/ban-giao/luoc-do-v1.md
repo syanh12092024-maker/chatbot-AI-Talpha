@@ -345,11 +345,11 @@ phiếu `suaTheoId cho ctxHeThong` rồi **xoá cả hai**. Đã ghi §9 sổ đ
 nghiệm thu 02 §L3 là «đặt trang bán hàng rồi chat Messenger **cùng sản phẩm** → bị bắt là
 trùng». Không có cột đó thì vế «cùng sản phẩm» không tồn tại để mà kiểm.
 
-| Bảng       | Cột                                | Ghi chú                                                                    |
-| ---------- | ---------------------------------- | -------------------------------------------------------------------------- |
-| `khach`    | `tang_hoan text`                   | CHECK 5 nhãn: 4 tầng của 01 §11 + `chua_du_don`                            |
-| `khach`    | `so_don_ket` · `so_don_hoan` (int) | **TỬ và MẪU** của `ti_le_hoan` — để một tầng luôn tra ngược được            |
-| `khach`    | `cham_hoan_luc timestamptz`        | tuổi PHÉP ĐO (án lệ #9), mới lại mỗi lượt job kể cả khi điểm số không đổi   |
+| Bảng       | Cột                                | Ghi chú                                                                        |
+| ---------- | ---------------------------------- | ------------------------------------------------------------------------------ |
+| `khach`    | `tang_hoan text`                   | CHECK 5 nhãn: 4 tầng của 01 §11 + `chua_du_don`                                |
+| `khach`    | `so_don_ket` · `so_don_hoan` (int) | **TỬ và MẪU** của `ti_le_hoan` — để một tầng luôn tra ngược được               |
+| `khach`    | `cham_hoan_luc timestamptz`        | tuổi PHÉP ĐO (án lệ #9), mới lại mỗi lượt job kể cả khi điểm số không đổi      |
 | `don_hang` | `san_pham_ma text[]`               | mã biến thể POS `"<shop>:<variation_id>"`; **MẢNG** vì một đơn nhiều dòng hàng |
 
 Cộng bốn ràng buộc ở **tầng CSDL**: `khach_tang_hoan_hop_le` (deny-by-default 5 nhãn) ·
@@ -381,3 +381,51 @@ KHÔNG đọc cột rỗng thành «khác sản phẩm ⇒ không trùng». Đã
 `khach_id`. Cửa POS đọc đơn nhưng chưa tạo hồ sơ khách, nên **cả hai cửa kiểm của L3-M2
 lẫn nhánh `thieu_so_wa` của L3-M1** đều nối qua một cột rỗng. Hai cửa chạy đúng và trả
 tập RỖNG — đúng họ lỗi «hai đầu làm rất kỹ, phần bị bỏ luôn là phần NỐI». Đã ghi §9.
+
+> **ĐÓNG bởi phiếu VA-Q12 (23/08/2026) — xem §11.**
+
+## 11 · THAY ĐỔI — bản 006 (phiếu VA-Q12, 23/08/2026)
+
+### 11.1 · Đóng khớp đứt 10.2/10.3 — `src/pos/doc-don.js` nuôi `khach` + ghi `san_pham_ma`
+
+`docDon()` nay UPSERT `khach` theo (team, SĐT đã chuẩn hoá bằng `chuanHoaSdt()`) cho
+mỗi đơn đọc về, và ghi `don_hang.khach_id` + `don_hang.san_pham_ma` (mảng
+`"<shop_id>:<variation_id>"` rút từ `items[]`, RỖNG khi đơn không khai — không bịa).
+Cả hai cửa kiểm của L3-M2 (`kiemTrung`) và nhánh `thieu_so_wa` của L3-M1 giờ nối qua
+cột CÓ dữ liệu. Chủ hai cột (nói trong 10.2/10.3) chính là phiếu này — L1-M1 ban đầu để
+trống có chủ ý, VA-Q12 là "phần NỐI" đến sau.
+
+**BẰNG CHỨNG ĐO TRÊN DỮ LIỆU THẬT (23/08, `aicloser_v3`, `ops/bin/nghiem-thu/va-q12.sh`,
+17/17 ĐẠT):** sau khi chạy `docDon` thật trên shop UAE (di trú lại 26 đơn cũ — đủ
+26/26 có `khach_id`) và shop Saudi (`tuNgay=2026-08-18`), câu `kiemTrung()` **BẮT ĐƯỢC**
+đúng cặp trùng chéo thật mà `loc-trung.js` đã nêu tên: SĐT `966501984606`, đơn Messenger
+**#68771** và đơn trang bán hàng **#68769** (Saudi, cùng ngày 19/08, chung mã biến thể
+`3e272c3b-…`) → `trung=true · ly_do=trung_khop_san_pham · nguon_trung=ca_hai`. Đây là
+phép "ăn tiền" của phiếu — trước VA-Q12, cùng câu tra này luôn trả tập RỖNG (10.3).
+
+### 11.2 · Cột mới: `don_hang.status_history jsonb` (migration `006_lich_su_trang_thai`,
+
+nợ Q3 — đóng luôn vì rẻ, đo cùng lượt đọc với 11.1)
+
+Lưu NGUYÊN VĂN mảng lịch sử chuyển trạng thái mà POS trả kèm mỗi đơn (`status_history`,
+có trên 5.144/5.144 đơn đo 23/08). **CHỈ LƯU — chưa hàm nào trong v3 ĐỌC cột này**; job
+chấm tỉ lệ hoàn (`src/orders/ti-le-hoan.js`, ngoài pathspec VA-Q12) vẫn chấm bằng ảnh
+chụp `trang_thai_pos` như trước (độ lệch đã đo 0,08%, xem SO-DIEU-HANH-THI-CONG.md §9
+nợ Q3 — phần "đọc để giảm 0,08%" còn mở, mở phiếu riêng nếu cần). ⛔ Bản này **KHÔNG
+thêm bảng nào** (`grep -c '^CREATE TABLE' db/migrate/006_*.up.sql` = 0) ⇒ thước l0-m1
+vẫn đọc **21 bảng**. ⛔ Số bản 006 do TỔNG cấp SẴN trong phiếu (án lệ #25).
+
+### 11.3 · Quyết định layer: `chuanHoaSdt` nhập TRỰC TIẾP từ `loc-trung.js`, không qua barrel
+
+`src/pos/doc-don.js` (L1) cần dùng lại `chuanHoaSdt()` — nguồn luật DUY NHẤT, sống ở
+`src/orders/loc-trung.js` (L3). Phiếu khai ưu tiên nhập qua `src/orders/index.js`
+(hàm ĐÃ được export ở đó), nhưng `orders/index.js` re-export cả `cua-pos.js`, mà file
+đó `import … from "../pos/index.js"` — nhập theo đường barrel tạo VÒNG `src/pos` →
+`src/orders` → `src/pos`. Đo thử (thêm dòng import, chạy bộ ca L1-M1): vòng này CHẠY
+ĐƯỢC hôm nay (Node giải quyết nhờ `chuanHoaSdt` là function declaration hoisted, gọi ở
+runtime chứ không ở module-scope), nhưng **cố ý không dùng** — codebase này đã trả giá
+bốn lần (bốn "cửa hẹp" ghi trùng ở SO-DIEU-HANH-THI-CONG.md §9) để giữ `src/pos` không
+phụ thuộc ngược vào `src/orders`. Chọn nhập THẲNG `../orders/loc-trung.js` (0 phụ thuộc
+ngược) — cùng khuôn `import SÂU có chủ ý` đã ghi ở `cua-pos.js:18`. Giá phải trả:
+`khach.so_dien_thoai` LƯU DẠNG ĐÃ CHUẨN HOÁ (không giữ định dạng gốc của POS) — chi
+tiết + lý do đầy đủ nằm trong comment quyết định ⑤ đầu `src/pos/doc-don.js`.
