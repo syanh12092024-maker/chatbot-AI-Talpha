@@ -174,6 +174,6 @@ RF-13 đóng: `ghiDon()` giờ CAS trên `trang_thai_he`, ảnh cũ bị từ ch
 (`LoiGhiDonAnhCu`), hai sổ (POS/hệ) không còn lệch được nữa dù có lượt trễ tới sau. RF-14
 đóng: đơn kẹt `cho_gui_wa` được `CAU_QUET` nhặt lại ở lượt quét kế tiếp, thành công thì
 đi tiếp bình thường, hỏng thì đẩy thẳng người xử kèm dấu vết `viec_can_xu_ly` — không
-đơn nào còn "chết câm". Không finding nào cần DỪNG báo tổng; không marker
-`[NEEDS CLARIFICATION]` nào để lại (điểm mơ hồ duy nhất — throw hay trả về ở `apDung` —
-đã tự đo dứt điểm bằng repro thật, xem §2).
+đơn nào còn "chết câm". Không finding nào cần DỪNG báo tổng; phiếu KHÔNG để lại đánh dấu
+mơ hồ nào cho tổng trả lời (điểm mơ hồ duy nhất — throw hay trả về ở `apDung` — đã tự đo
+dứt điểm bằng repro thật, xem §2, nên không cần cắm cờ hỏi lại).
