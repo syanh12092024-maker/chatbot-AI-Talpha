@@ -223,3 +223,41 @@ Bằng chứng — `status_history` đơn 47397 (UAE): `0 → 1 → 12 → 8`; �
 Danh mục POS của các shop này KHÔNG mang giá; giá thật sống trong từng đơn
 (`cod` = `shipping_fee`). Bộ nạp cố ý KHÔNG ghi dòng giá 0: một bảng giá toàn số 0 nguy
 hơn một bảng giá trống, vì nó trông như đã có.
+
+---
+
+## 8 · THAY ĐỔI — bản 004 (phiếu L3-M1, 22/08/2026)
+
+### 8.1 · Hai cột mới trên `don_hang` (migration `004_trang_thai_don`)
+
+**Đo trước khi thêm** (CSDL dev `aicloser_v3`, 26 đơn thật): `don_hang` có ĐÚNG **14
+cột**, không cột nào chứa nổi «vì sao đơn này không gửi được WhatsApp» hay «đã thử mấy
+lần», và không có cột jsonb để mượn tạm.
+
+| Cột | Ghi chú |
+| --- | --- |
+| `ly_do_khong_gui text` | `CHECK IN ('thieu_so_wa','mau_chua_duyet','loi_kenh')` — ba lý do nghiệm thu của 02 §L3 |
+| `so_lan_thu_wa int NOT NULL 0` | `CHECK >= 0` — số lượt ĐÃ THỬ gửi; chạm trần thì đơn sang `cho_sale` |
+
+Cộng một **bất biến ĐÔI** ở tầng CSDL: `CHECK (ly_do_khong_gui IS NULL OR
+trang_thai_he = 'gui_wa_loi')` — lý do cũ không đeo bám sau khi đơn rời trạng thái thất
+bại; thiếu ràng buộc này thì mọi phép đếm theo lý do đọc ra số CAO HƠN sự thật.
+
+Vì sao KHÔNG dùng cột có sẵn: nhét lý do vào `trang_thai_he` là hỏng chính cột máy trạng
+thái rẽ nhánh (và hỏng index `don_hang_nguon`); nhét vào `nhat_ky` thì phép đếm «3 lý do
+1/1/1» phải `DISTINCT ON` trên một bảng chỉ-INSERT, còn số lần thử không có chỗ đứng.
+
+⛔ Số bản **004 do TỔNG cấp** (003 là của phiếu L2-M1 chạy song song — án lệ khe/trùng số
+migration). Bản này CHỈ `ALTER TABLE don_hang`, không đụng bảng nào của 003.
+
+### 8.2 · Chủ cột `trang_thai_he` từ đây là L3-M1
+
+Cửa POS gieo `'moi_tu_pos'` một lần lúc tạo dòng rồi không đụng lại (§7.3 vẫn đúng). Mọi
+giá trị khác của cột này do máy trạng thái đơn đặt, theo bảng chuyển khai cứng per-nguồn
+ở [`./may-trang-thai-don-v1.md`](./may-trang-thai-don-v1.md).
+
+> 🔴 **Nợ kèm theo:** `db/schema.sql` phải được sinh lại (`node db/migrate.js schema`)
+> **một lượt duy nhất sau khi CẢ 003 lẫn 004 đã gộp** — phiếu L3-M1 cố ý KHÔNG commit
+> file đó, vì regen trong lúc 003 còn nằm ngoài git là kéo migration của thợ khác vào
+> commit của mình. Ca `S11` của `test/l0-m1-luoc-do.test.js` đã ĐỎ từ TRƯỚC lượt này
+> (đo: gỡ 004 ra khỏi cây thì S11 vẫn đỏ — nguyên nhân là 003). Đã ghi §9 sổ điều hành.
