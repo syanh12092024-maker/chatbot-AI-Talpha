@@ -1,6 +1,6 @@
 # PHIẾU VA-R2 — Cụm tiền + tạo đơn: đơn vị tiền · mã 8 · phân trang · idempotent POST · khoá hội thoại (C2)
 
-**Base:** `57eff36` · **Làn:** 🟥 TIỀN + tạo đơn COD thật · thợ **opus**
+**Base:** `cb4b8b7` · **Làn:** 🟥 TIỀN + tạo đơn COD thật · thợ **opus**
 
 > Thợ nạp `tho-thi-cong`. Đọc sổ §9 (RF-9·10·11·12·21·15) + §9b. Repro
 > `refute-tong-the-1.repro.mjs` (F1·F3·F4·F6) + `refute-mang4-luong-don.verdict.yaml` là thước.

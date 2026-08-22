@@ -1,6 +1,6 @@
 # PHIẾU VA-R1 — Bộ não KHÔNG được bắn HTTP thật + worker đọc van + guard đủ cờ (C1: RF-1·RF-2·RF-3)
 
-**Base:** `57eff36` · **Làn:** 🟥 vi phạm luật số 1 (note/tag thật bay ra khách) · thợ **opus**
+**Base:** `cb4b8b7` · **Làn:** 🟥 vi phạm luật số 1 (note/tag thật bay ra khách) · thợ **opus**
 
 > Thợ nạp skill `tho-thi-cong`. Đọc sổ §0a + §9 (RF-1·2·3) + §9b. Đây là cụm CHẶN nặng
 > nhất — refute đã có repro đo được, phiếu này biến repro từ ĐỎ sang XANH.
