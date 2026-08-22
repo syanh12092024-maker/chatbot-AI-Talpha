@@ -140,7 +140,7 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
 | Mã    | Việc                                                            | Phụ thuộc   | Session | Đụng file                          | Trạng thái |
 | ----- | --------------------------------------------------------------- | ----------- | ------- | ---------------------------------- | ---------- |
 | L1-M1 | Cửa POS: đọc đơn/sản phẩm/tồn kho + GHI NGƯỢC trạng thái đơn 🟥 | R0          | thợ mới | `src/pos/*` `db/migrate/002` `test/` | 🎫         |
-| L1-M2 | Cửa Pancake Messenger — bọc code cũ, thêm định tuyến team       | R0          | thợ mới | `src/channels/messenger/*` `test/` | ⬜         |
+| L1-M2 | Cửa Pancake Messenger — bọc code cũ, thêm định tuyến team       | R0          | thợ mới | `src/channels/messenger/*` `test/` | 🎫         |
 | L1-M3 | Cửa Pancake WhatsApp 🟥 (gửi tin ra khách)                      | **H1** + R0 | thợ mới | `src/channels/whatsapp/*` `test/`  | ⬜         |
 | R1    | **GATE SÓNG 1**                                                 | L1-M1..M3   | TỔNG    | —                                  | ⬜         |
 
