@@ -57,6 +57,11 @@ const POS_CHO_XAC_NHAN = "0";
  * Đơn nào ĐỦ ĐIỀU KIỆN vào luồng WhatsApp — MỘT câu, đọc được, in ra được.
  * ⛔ Vế `nguon = 'trang_ban_hang'` là vế KHÔNG ĐƯỢC RƠI RA khi ai chép câu này đi:
  *    thiếu nó là đơn messenger bị hỏi lại (bom hàng — 01 §1).
+ * Vế thứ ba `trang_thai_he = 'cho_gui_wa'` (VA-R3/RF-14): NHẶT LẠI đơn kẹt — bình thường
+ * `cho_gui_wa` chỉ sống TRONG một lượt quét (bước ② → gọi cửa WA ngay bước ③, cùng vòng
+ * for); một dòng còn đứng ở đó SANG LƯỢT QUÉT KẾ TIẾP chỉ có một cách giải thích: lượt
+ * trước đã crash/re-throw giữa chừng (F2 repro) và không job/thước nào khác đọc trạng
+ * thái này — kẹt vĩnh viễn nếu không quét lại.
  */
 export const CAU_QUET = `
   SELECT id, team_id, ma_pos, nguon, trang_thai_he, trang_thai_pos,
@@ -64,7 +69,8 @@ export const CAU_QUET = `
     FROM don_hang
    WHERE nguon = 'trang_ban_hang'
      AND (   (trang_thai_he = $1 AND trang_thai_pos = $2)
-          OR (trang_thai_he = 'gui_wa_loi' AND so_lan_thu_wa < $3) )
+          OR (trang_thai_he = 'gui_wa_loi' AND so_lan_thu_wa < $3)
+          OR  trang_thai_he = 'cho_gui_wa' )
    ORDER BY id
    LIMIT $4`;
 
@@ -123,30 +129,39 @@ export async function quetDonMoi(pool, tuyChon = {}, deps = {}) {
     // ── REBIND ctx PER-ĐƠN: mọi lượt ghi/nhật ký dưới đây mang team CỦA ĐƠN NÀY ──
     const ctx = ctxHeThong();
     const teamId = String(don.team_id);
+    // NHẶT LẠI (VA-R3/RF-14): dòng NÀY đã đứng ở cho_gui_wa TỪ TRƯỚC lượt quét hiện tại
+    // (xem CAU_QUET) — lượt sinh ra nó đã crash/re-throw giữa chừng. Bỏ qua ①② (đã ở đúng
+    // đó rồi), gọi cửa WA lại NGAY; đơn NHẶT LẠI vốn đã một lần không xong nên hỏng LẦN
+    // NÀY (bất kể lý do gì) đẩy THẲNG cho_sale — không chờ đủ trần lần hai, vì giữ nó quay
+    // vòng thêm chính là cái lỗ RF-14 («kẹt vĩnh viễn»/«0 viec_can_xu_ly»).
+    const nhatLai = don.trang_thai_he === "cho_gui_wa";
     try {
-      // ① vào máy (moi_tu_pos → moi) hoặc thử lại (gui_wa_loi → cho_gui_wa)
-      const b1 = await apDung(
-        pool,
-        ctx,
-        {
-          donId: don.id,
-          sukien: don.trang_thai_he === "gui_wa_loi" ? "thu_lai" : "vao_may",
-          don,
-        },
-        { job },
-      );
-      const donSau = { ...don, ...b1.don };
-
-      // ② moi → cho_gui_wa (chỉ nhánh «đơn mới»; nhánh thử lại đã ở cho_gui_wa rồi)
-      let dangO = donSau;
-      if (b1.sang === "moi") {
-        const b2 = await apDung(
+      let dangO = don;
+      if (!nhatLai) {
+        // ① vào máy (moi_tu_pos → moi) hoặc thử lại (gui_wa_loi → cho_gui_wa)
+        const b1 = await apDung(
           pool,
           ctx,
-          { donId: don.id, sukien: "bat_dau_gui", don: donSau },
+          {
+            donId: don.id,
+            sukien: don.trang_thai_he === "gui_wa_loi" ? "thu_lai" : "vao_may",
+            don,
+          },
           { job },
         );
-        dangO = { ...donSau, ...b2.don };
+        const donSau = { ...don, ...b1.don };
+        dangO = donSau;
+
+        // ② moi → cho_gui_wa (chỉ nhánh «đơn mới»; nhánh thử lại đã ở cho_gui_wa rồi)
+        if (b1.sang === "moi") {
+          const b2 = await apDung(
+            pool,
+            ctx,
+            { donId: don.id, sukien: "bat_dau_gui", don: donSau },
+            { job },
+          );
+          dangO = { ...donSau, ...b2.don };
+        }
       }
 
       // ③ gọi cửa WA — hoặc chặn trước vì thiếu số (không gọi cửa lượt nào)
@@ -169,13 +184,16 @@ export async function quetDonMoi(pool, tuyChon = {}, deps = {}) {
           );
         } catch (e) {
           if (
-            e instanceof LoiSaiNguonDon ||
-            e?.name === "LoiSaiNguonDon" ||
-            e instanceof LoiDonKhongThuocTeam ||
-            e?.name === "LoiDonKhongThuocTeam"
+            !nhatLai &&
+            (e instanceof LoiSaiNguonDon ||
+              e?.name === "LoiSaiNguonDon" ||
+              e instanceof LoiDonKhongThuocTeam ||
+              e?.name === "LoiDonKhongThuocTeam")
           ) {
             // KHÔNG phải «lý do không gửi» — đây là đơn đi NHẦM NHÁNH/nhầm team. Nó phải
-            // được người nhìn, không được rơi vào ô đếm của ba lý do kênh.
+            // được người nhìn, không được rơi vào ô đếm của ba lý do kênh. (Chỉ giữ rethrow
+            // này cho lượt TƯƠI — đơn NHẶT LẠI đã hỏng một lần rồi thì mọi lý do đều gộp
+            // vào bước ④/⑤ bên dưới để CHẮC CHẮN thoát khỏi cho_gui_wa, không rơi lại.)
             throw e;
           }
           lyDo = lyDoTuLoi(e);
@@ -209,8 +227,8 @@ export async function quetDonMoi(pool, tuyChon = {}, deps = {}) {
       kq.hong++;
       kq.theoLyDo[lyDo]++;
 
-      // ⑤ quá trần ⇒ giao người, kèm lý do NGUYÊN VĂN
-      if (lanThu >= tranThuLai) {
+      // ⑤ quá trần HOẶC đây là lượt NHẶT LẠI ⇒ giao người, kèm lý do NGUYÊN VĂN
+      if (lanThu >= tranThuLai || nhatLai) {
         await apDung(
           pool,
           ctx,
@@ -220,7 +238,9 @@ export async function quetDonMoi(pool, tuyChon = {}, deps = {}) {
         await dayChoSale(pool, ctx, {
           don,
           teamId,
-          lyDo: `qua_tran_thu_lai (${lanThu}/${tranThuLai}) — lý do cuối: ${lyDo}`,
+          lyDo:
+            `qua_tran_thu_lai (${lanThu}/${tranThuLai}) — lý do cuối: ${lyDo}` +
+            (nhatLai ? " (nhặt lại đơn kẹt cho_gui_wa)" : ""),
         });
         kq.quaTran++;
       }

@@ -55,6 +55,16 @@ export class LoiThieuNguonDon extends Error {
     this.name = "LoiThieuNguonDon";
   }
 }
+/**
+ * CAS ở `ghiDon` thất bại (VA-R3/RF-13): `trang_thai_he` trong CSDL không còn khớp ẢNH đã
+ * đọc lúc chuẩn bị ghi — một lượt khác đã đổi nó trước. TỪ CHỐI, không ghi đè lên trên.
+ */
+export class LoiGhiDonAnhCu extends Error {
+  constructor(thongDiep) {
+    super(thongDiep);
+    this.name = "LoiGhiDonAnhCu";
+  }
+}
 
 // ── TRẠNG THÁI + SỰ KIỆN ─────────────────────────────────────────────────────
 /** Giá trị cửa POS gieo lúc TẠO dòng (src/pos/doc-don.js) — cửa vào của cả hai nhánh. */
@@ -254,7 +264,13 @@ const COT_DUOC_GHI = Object.freeze([
   "dong_luc",
 ]);
 
-async function ghiDon(pool, { teamId, id, duLieu }) {
+/**
+ * CỬA GHI HẸP — CAS trên `trang_thai_he` (VA-R3/RF-13). `tu` là ẢNH `trang_thai_he` đã
+ * đọc lúc quyết định chuyển (`buoc.tu` của `chuyen()`) — UPDATE chỉ chạm dòng nếu CSDL
+ * NGAY LÚC GHI vẫn còn đúng ảnh đó. 0 dòng chạm ⇒ một lượt khác đã ghi trước (ảnh cũ) ⇒
+ * ném `LoiGhiDonAnhCu` có tên, KHÔNG ghi đè im lặng — hai sổ (POS/hệ) không bao giờ lệch.
+ */
+async function ghiDon(pool, { teamId, id, tu, duLieu }) {
   const gan = [];
   const tham = [];
   for (const [k, v] of Object.entries(duLieu)) {
@@ -270,11 +286,22 @@ async function ghiDon(pool, { teamId, id, duLieu }) {
   gan.push("sua_luc = now()");
   tham.push(teamId);
   tham.push(id);
+  tham.push(tu);
   const r = await pool.query(
-    `UPDATE don_hang SET ${gan.join(",")} WHERE team_id = $${tham.length - 1} AND id = $${tham.length} RETURNING *`,
+    `UPDATE don_hang SET ${gan.join(",")}
+       WHERE team_id = $${tham.length - 2} AND id = $${tham.length - 1}
+         AND trang_thai_he = $${tham.length}
+     RETURNING *`,
     tham,
   );
-  return r.rows[0] ?? null;
+  if (!r.rowCount) {
+    throw new LoiGhiDonAnhCu(
+      `ghiDon(id=${id}): CAS thất bại — trang_thai_he không còn bằng ẢNH đã đọc lúc ` +
+        `chuẩn bị ghi (${JSON.stringify(tu)}); một lượt khác đã đổi nó trước. TỪ CHỐI ` +
+        `ghi đè — hai sổ (POS/hệ) không bao giờ lệch (VA-R3/RF-13).`,
+    );
+  }
+  return r.rows[0];
 }
 
 /**
@@ -366,22 +393,45 @@ export async function apDung(
     duLieu.ly_do_khong_gui = null;
   if (buoc.sang === "dong") duLieu.dong_luc = new Date();
 
-  const sau = await ghiDon(pool, { teamId, id: don.id, duLieu });
-  await ghiNhatKy(pool, {
-    teamId,
-    tacNhan,
-    nguoiDungId,
-    hanhDong: "don_doi_trang_thai",
-    doiTuong: "don_hang",
-    doiTuongId: String(don.id),
-    truoc: {
-      trang_thai_he: buoc.tu,
-      ly_do_khong_gui: don.ly_do_khong_gui ?? null,
-    },
-    sau: { trang_thai_he: buoc.sang, sukien, ...them },
-    ghiChu: `nguon=${buoc.nguon} · ${buoc.y}`,
-  });
-  return { ...buoc, don: sau ?? don, teamId };
+  // CAS ở ghiDon (VA-R3/RF-13): 0 dòng chạm ⇒ ẢNH CŨ — TỪ CHỐI, không phải bug logic của
+  // caller (khác chuyen() ném ở trên — cặp SAI thì KHÔNG retry nào cứu được). Đây là đụng
+  // độ TẠM THỜI với một lượt khác đã thắng trước: log CÓ TÊN rồi trả về `ghi:false` thay vì
+  // ném xuyên qua caller — job nền (quetDonMoi) đã tự bọc try/catch per-đơn nên vẫn AN
+  // TOÀN nếu propagate, nhưng buộc MỌI caller (kể cả gọi trực tiếp không bọc) phải tự xử
+  // một đụng độ vốn đã VÔ HẠI (bên thắng đã ghi đúng ảnh mới, hai sổ không lệch) là cái giá
+  // không đáng — nói rõ theo luật 13 (tradeoff).
+  try {
+    const sau = await ghiDon(pool, { teamId, id: don.id, tu: buoc.tu, duLieu });
+    await ghiNhatKy(pool, {
+      teamId,
+      tacNhan,
+      nguoiDungId,
+      hanhDong: "don_doi_trang_thai",
+      doiTuong: "don_hang",
+      doiTuongId: String(don.id),
+      truoc: {
+        trang_thai_he: buoc.tu,
+        ly_do_khong_gui: don.ly_do_khong_gui ?? null,
+      },
+      sau: { trang_thai_he: buoc.sang, sukien, ...them },
+      ghiChu: `nguon=${buoc.nguon} · ${buoc.y}`,
+    });
+    return { ...buoc, don: sau, teamId, ghi: true };
+  } catch (e) {
+    if (!(e instanceof LoiGhiDonAnhCu)) throw e;
+    await ghiNhatKy(pool, {
+      teamId,
+      tacNhan,
+      nguoiDungId,
+      hanhDong: "don_chuyen_bi_chan",
+      doiTuong: "don_hang",
+      doiTuongId: String(don.id),
+      truoc: { nguon: don.nguon, trang_thai_he: don.trang_thai_he },
+      sau: { sukien, muonSang: buoc.sang },
+      ghiChu: `${e.name}: ${e.message}`.slice(0, 500),
+    });
+    return { ...buoc, don, teamId, ghi: false, biTuChoiAnhCu: true };
+  }
 }
 
 /** Đẩy một đơn sang hàng chờ sale, kèm lý do NGUYÊN VĂN (hiện trên mỗi dòng màn L4). */
