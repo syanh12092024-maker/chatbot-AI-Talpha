@@ -327,11 +327,20 @@ so "nhạc trưởng xanh/đỏ" "$(grep -cE '^✔ ' "${LOG_NT:-/dev/null}" 2>/d
 bang "⑨a bộ ca hàng đợi rc" "${RC_HD}" "0"
 bang "⑨b bộ ca nhạc trưởng rc" "${RC_NT:-1}" "0"
 
-# ⑩ KHÔNG đụng vùng cấm: file phẳng src/ + 5 file bộ não (đo trên cây, không phải lời khai)
-muc "⑩ Vùng cấm — file phẳng src/*.js và bộ não"
-BAN="$(git status --porcelain -- 'src/*.js' | grep -E '^\s*[MADR]' | head -20)"
-if [ -z "${BAN}" ]; then dat "⑩ 0 file phẳng src/*.js bị sửa"
-else so "file phẳng bị sửa" "${BAN}"; truot "⑩ ĐỤNG vùng cấm"; fi
+# ⑩ KHÔNG đụng vùng cấm: 62 file phẳng ngay dưới src/ (bản đang chạy, luật 4 §0a).
+#
+# ⚠️ HAI CÁI BẪY của phép này, cả hai đã cắn một lần ở chính lượt L2-M1:
+#   (a) ⛔ KHÔNG dùng `git status`: nó đọc INDEX. Thợ commit bằng nghi thức private-index
+#       (`GIT_INDEX_FILE` riêng) thì index CHÍNH trở nên stale và báo mọi tệp vừa commit là
+#       «D » (đã xoá) ⇒ phép này đỏ với đúng những tệp vừa thêm. `git diff HEAD` so CÂY
+#       LÀM VIỆC với HEAD, không đọc index — đó mới là thứ đang hỏi.
+#   (b) ⛔ Pathspec `src/*.js` của git dùng fnmatch KHÔNG có FNM_PATHNAME, nên `*` ăn cả
+#       dấu `/`: nó khớp luôn `src/queue/nap.js`. Phải lọc bằng regex `^src/[^/]+\.js$`
+#       (cùng cách `_chan1.sh` phép ⑤ làm).
+muc "⑩ Vùng cấm — 62 file phẳng ngay dưới src/"
+BAN="$(git diff --name-only HEAD | grep -E '^src/[^/]+\.js$' | head -20)"
+if [ -z "${BAN}" ]; then dat "⑩ 0 file phẳng src/*.js bị sửa (đo cây vs HEAD, không qua index)"
+else so "file phẳng bị sửa" "$(echo "${BAN}" | tr '\n' ' ')"; truot "⑩ ĐỤNG vùng cấm"; fi
 
 printf '\n═══ TỔNG: %d phép · ĐẠT %d · TRƯỢT %d\n' "${PHEP}" "$((PHEP - LOI))" "${LOI}"
 [ "${LOI}" -eq 0 ]

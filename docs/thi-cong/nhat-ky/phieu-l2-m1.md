@@ -291,3 +291,63 @@ Không tiện tay sửa bất cứ thứ gì trong 4 mục trên.
 - **Một phép đo ĐỎ chưa chắc là code sai — hỏi «thước của ca này có còn đúng tiền đề
   không»** (án lệ #27). Ca N6 đỏ với 11≠10; dòng dôi ra không phải bản sao mà là một
   `spent_no_send` THẬT do `guardOutbound` chặn tin lặp — hệ hành xử đúng, thước sai grain.
+
+---
+
+## 9 · Chặng 1 (`_chan1.sh l2-m1`) — và HAI sự cố THƯỚC của chính lượt nộp
+
+### 9.1 · Phép ④ đo `base..HEAD` nên gộp phiên khác — đo lại PER-COMMIT
+
+`_chan1.sh` phép ④ chạy `git diff --name-only <Base>..HEAD`. Base của phiếu là `f4946f5`,
+cách HEAD **10 commit**, trong đó có commit của L1-M3 và L3-M1 (phiên song song). Nó báo
+17 tệp «NGOÀI PHẠM VI» — toàn bộ là `src/orders/*`, `src/channels/whatsapp/*`,
+`ops/bin/nghiem-thu/l1-m3.sh|l3-m1.sh`, `test/l1-m3-*`, `test/l3-m1-*`,
+`docs/v3/ban-giao/cua-whatsapp-v1.md|may-trang-thai-don-v1.md`, `db/migrate/004_*` — **không
+tệp nào của L2-M1**. Đây đúng lỗi (c) mà thợ L0-M1 đã ghi §9 cho `_chan1.sh`.
+
+Đo lại đúng grain (chỉ commit của mình), chạy **bằng bash**:
+
+```
+$ git show --name-only --format= 4261900   →  19 tệp
+$ (so từng tệp với khối pathspec ③ của phiếu)
+④ per-commit 4261900: NGOÀI PHẠM VI = 0 / 19 tệp
+```
+
+🧭 **Cái thước cũng phải qua cổng (án lệ #1).** Lượt đo per-commit đầu tiên tôi chạy trong
+**zsh** và nó báo 2/19 ngoài phạm vi — sai. Nguyên nhân: `case "$f" in $p)` với `$p` là
+biến, **zsh KHÔNG diễn giải kết quả expansion thành pattern** (cần `setopt globsubst`),
+còn bash thì có. Chạy lại y nguyên script bằng `bash -c` → **0/19**. `_chan1.sh` có
+`#!/usr/bin/env bash` nên nó luôn đúng; chỉ câu đo tay của tôi sai vỏ. Cùng họ với án lệ
+«bash 3.2 + LANG=C.UTF-8» đã ghi trong trí nhớ dài hạn: **ghi TÊN VỎ vào chính câu kết luận**.
+
+### 9.2 · 🔴 Suýt lặp lại nợ N8 của L1-M1 — INDEX CHÍNH stale sau private-index commit
+
+Commit bằng nghi thức private-index (`GIT_INDEX_FILE` riêng) **không cập nhật index CHÍNH**.
+Ngay sau commit `4261900`, `git status --porcelain` báo **19 tệp vừa thêm là `D ` (đã xoá)**
+và hai tệp dùng chung (`SO-DIEU-HANH-THI-CONG.md`, `luoc-do-v1.md`) là `MM` với bản staged
+LÀ BẢN TRƯỚC KHI TÔI APPEND (`git diff --cached HEAD` = `-70 dòng` và `-64 dòng`).
+
+Nghĩa là: **bất kỳ session nào chạy `git commit` không pathspec, hoặc commit hai tệp dùng
+chung đó, sẽ XOÁ 19 tệp của L2-M1 khỏi cây và nuốt luôn phần append §9/§10** — đúng kịch
+bản `b356f7b` đã làm với L1-M2 (nợ N8, §9 sổ).
+
+Đã sửa ngay bằng phép hẹp, không đụng phần staged của ai:
+
+```
+$ git reset -q -- <đúng 19 đường dẫn của phiếu>
+$ git status --porcelain          →  chỉ còn ` M db/schema.sql` và ` M <sổ>` (worktree)
+```
+
+🧭 **Luật rút ra: private-index commit PHẢI kết bằng `git reset -- <pathspec>` để đồng bộ
+index chính.** Nghi thức hiện tại dừng ở `update-ref` là để lại một quả mìn hẹn giờ cho
+session kế tiếp — và nó đã nổ một lần rồi.
+
+### 9.3 · Phép ⑩ của cổng L2-M1 tự đỏ vì đúng chuyện đó — đã vá
+
+Phép ⑩ («0 file phẳng `src/*.js` bị sửa») vòng 1 viết bằng `git status --porcelain -- 'src/*.js'`.
+Hai lỗi trong một dòng: (a) nó đọc INDEX nên đỏ vì index stale ở 9.2; (b) pathspec
+`src/*.js` của git dùng fnmatch **không** có `FNM_PATHNAME` ⇒ `*` ăn cả dấu `/` và khớp
+luôn `src/queue/nap.js`. Vá: `git diff --name-only HEAD | grep -E '^src/[^/]+\.js$'` —
+so CÂY với HEAD (không qua index), lọc bằng regex đúng một cấp.
+
+**Sau vá: cổng `l2-m1.sh` = 22 phép ĐẠT 22 / TRƯỢT 0, rc=0.**

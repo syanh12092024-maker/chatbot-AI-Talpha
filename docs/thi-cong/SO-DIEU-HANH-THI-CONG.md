@@ -367,6 +367,18 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   cho cả hai thợ ngay lúc này). **TỔNG chạy `node db/migrate.js schema` MỘT LƯỢT rồi commit
   sau khi 003 và 004 đã gộp.**
 
+- 22/08 · thợ L2-M1 (🔴 QUY TRÌNH — suýt lặp lại nợ N8 của L1-M1, đã tự sửa nhưng luật
+  còn thiếu): commit bằng nghi thức **private-index** (`GIT_INDEX_FILE` riêng +
+  `update-ref`) **KHÔNG cập nhật index CHÍNH**. Ngay sau commit `4261900`,
+  `git status --porcelain` báo **19 tệp vừa thêm là `D ` (đã xoá)** và hai tệp dùng chung
+  (`SO-DIEU-HANH-THI-CONG.md`, `luoc-do-v1.md`) là `MM` với bản staged là bản TRƯỚC append
+  (`git diff --cached HEAD` = −70 và −64 dòng). Session nào chạy `git commit` không
+  pathspec — hoặc commit đúng hai tệp đó — sẽ xoá 19 tệp L2-M1 khỏi cây và nuốt phần
+  §9/§10, đúng kịch bản `b356f7b` đã làm với L1-M2. Đã sửa bằng
+  `git reset -q -- <đúng 19 đường dẫn>` (không đụng phần staged của ai). ⇒ **Đề nghị TỔNG
+  bổ sung vào skill `tho-thi-cong`: private-index commit PHẢI kết bằng
+  `git reset -- <pathspec>`.** Nghi thức hiện tại dừng ở `update-ref` là để lại mìn hẹn giờ.
+
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
 - 22/08 · L2-M1 → 🔎 chờ nghiệm thu — hàng đợi tin + nhạc trưởng v3
@@ -393,7 +405,7 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   `pkSendImage+sendImage(Graph)=0` ở cả ba, `fetch-lọt=0` · khoá hội thoại 0→1→2 · `so_ai`
   `{handoff:1,image:1,order:1,reply:5,spent_no_send:1}` · `ma_model` đổi theo mock
   `["mo-hinh-A","mo-hinh-B"]` · `autoCreateOrder=false`, `don_hang=0` · hồi quy v3 118/120
-  (2 đỏ = nợ neo số bảng, TỔNG vá) · commit <HASH> · nhật ký
+  (2 đỏ = nợ neo số bảng, TỔNG vá) · commit 4261900 · nhật ký
   docs/thi-cong/nhat-ky/phieu-l2-m1.md
 
 - 22/08 · L3-M1 → 🔎 chờ nghiệm thu — máy trạng thái đơn `src/orders/` (4 tệp) + migration
