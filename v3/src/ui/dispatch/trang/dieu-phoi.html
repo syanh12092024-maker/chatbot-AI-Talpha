@@ -62,9 +62,47 @@
   .dh.qua{color:var(--bad)}
   tr.tre{background:var(--badSoft)}
   tr.tre:hover{background:#fbe0e0}
-  .ten{font-weight:600}
+  .ten{font-weight:600;overflow-wrap:anywhere}
   .phu{font-size:11.5px;color:var(--muted);margin-top:2px}
   .ly-do{white-space:normal;max-width:280px;line-height:1.45}
+  .c-nhan{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+
+  /* ─────────────────────── KHỔ HẸP: bảng thành thẻ xếp dọc ───────────────────────
+     Ở 375px, dạng bảng đẩy cột "Còn lại" ra ngoài khung — mà đồng hồ đếm ngược là NỬA
+     LÝ DO TỒN TẠI của mỗi dòng. Dưới ngưỡng này mỗi dòng thành một thẻ ba hàng:
+
+         Nguyễn Thu Hà                         +2:14
+         Khách khiếu nại
+         Tiểu Alpha Store        Bình     0901234567
+
+     Khổ rộng KHÔNG ĐỔI một dòng nào — nó vốn đã đúng. Nền đỏ dòng quá hạn và đồng hồ đếm
+     lên (`+3:20`) giữ nguyên ở cả hai khổ vì cả hai đều gắn vào `tr` và `.dh`. */
+  @media (max-width:720px){
+    main{padding:12px 12px 48px}
+    header{padding:12px 14px}
+    .hai{gap:12px}
+    /* Không cuộn ngang: bỏ khung cuộn của bảng, thẻ tự vừa bề rộng màn hình. */
+    .scroll{max-height:none;overflow:visible}
+    table{display:block}
+    thead{display:none}                 /* tiêu đề cột vô nghĩa khi mỗi dòng là một thẻ */
+    tbody{display:block}
+    tbody tr{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto auto;
+      column-gap:10px;row-gap:3px;
+      padding:11px 13px;border-bottom:1px solid var(--line);
+    }
+    tbody td{display:block;border:0;padding:0;text-align:left}
+    td.c-khach{display:contents}        /* thả tên và số điện thoại thẳng vào lưới của dòng */
+    td.c-khach .ten{grid-column:1;grid-row:1;min-width:0}
+    td.c-khach .phu{grid-column:3;grid-row:3;margin:0;justify-self:end;align-self:end}
+    td.c-dem{grid-column:2/-1;grid-row:1;justify-self:end}
+    td.c-lydo{grid-column:1/-1;grid-row:2;max-width:none}
+    td.c-page{grid-column:1;grid-row:3;min-width:0;font-size:11.5px;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    td.c-nhan{grid-column:2;grid-row:3;justify-self:end;font-size:11.5px;max-width:110px}
+    tbody td[colspan]{grid-column:1/-1;grid-row:1}
+  }
 </style>
 </head>
 <body>
@@ -84,7 +122,7 @@
         <span class="sp"></span><span class="hint">gần hết giờ nhất lên đầu</span></h2>
       <div class="scroll">
         <table>
-          <thead><tr><th class="l">Khách</th><th class="l">Page</th><th class="l">Lý do bot đẩy sang</th><th style="width:78px">Còn lại</th></tr></thead>
+          <thead><tr><th class="l">Khách</th><th class="l">Page</th><th class="l">Lý do bot đẩy sang</th><th class="l" style="width:110px">Đang xử</th><th style="width:78px">Còn lại</th></tr></thead>
           <tbody id="tb-ht"></tbody>
         </table>
       </div>
@@ -95,7 +133,7 @@
         <span class="sp"></span><span class="hint">gần hết giờ nhất lên đầu</span></h2>
       <div class="scroll">
         <table>
-          <thead><tr><th class="l">Khách</th><th class="l">Page</th><th class="l">Lý do bot đẩy sang</th><th style="width:78px">Còn lại</th></tr></thead>
+          <thead><tr><th class="l">Khách</th><th class="l">Page</th><th class="l">Lý do bot đẩy sang</th><th class="l" style="width:110px">Đang xử</th><th style="width:78px">Còn lại</th></tr></thead>
           <tbody id="tb-don"></tbody>
         </table>
       </div>
@@ -145,16 +183,25 @@ function nhipDongHo() {
   }
 }
 
+/* Cột "Đang xử" (L4-M2): trống khi `cho`, tên người khi `dang_xu`. Chỉ đọc — nhận việc và
+   đóng việc đều làm ở màn chi tiết, không ai bấm nhầm từ một danh sách đang tự làm mới. */
+function dangXuCua(v) {
+  if (v.trang_thai !== 'dang_xu') return '';
+  return esc(v.nhan_boi_ten || v.nhan_boi || 'ai đó');
+}
+
 function dongViec(v) {
   const han = Number(v.han_luc);
+  const nhan = dangXuCua(v);
   return '<tr data-id="' + esc(v.id) + '">'
-    + '<td class="l"><div class="ten"><a class="lnk" href="/viec/' + encodeURIComponent(v.id) + '">'
+    + '<td class="l c-khach"><div class="ten"><a class="lnk" href="/viec/' + encodeURIComponent(v.id) + '">'
       + esc(v.tenKhach || v.cust_id || '(chưa có tên)') + '</a></div>'
       + (v.soDienThoai ? '<div class="phu">' + esc(v.soDienThoai) + '</div>' : '')
     + '</td>'
-    + '<td class="l dim">' + esc(v.tenPage || v.page_id || '—') + '</td>'
-    + '<td class="l ly-do">' + esc(v.lyDoChu) + '</td>'
-    + '<td><span class="dh' + lopDem(han) + '" data-han="' + (Number.isFinite(han) ? han : '') + '">'
+    + '<td class="l dim c-page">' + esc(v.tenPage || v.page_id || '—') + '</td>'
+    + '<td class="l ly-do c-lydo">' + esc(v.lyDoChu) + '</td>'
+    + '<td class="l dim c-nhan"' + (nhan ? ' title="' + nhan + '"' : '') + '>' + nhan + '</td>'
+    + '<td class="c-dem"><span class="dh' + lopDem(han) + '" data-han="' + (Number.isFinite(han) ? han : '') + '">'
       + chuoiDem(han) + '</span></td>'
     + '</tr>';
 }
@@ -163,7 +210,7 @@ function veBang(id, ds) {
   const el = $(id);
   if (!ds.length) {
     // Bảng trống trơn trông như màn hình hỏng. Nói thẳng ra là không có việc nào.
-    el.innerHTML = '<tr><td colspan="4"><div class="empty">Không có việc nào đang chờ</div></td></tr>';
+    el.innerHTML = '<tr><td colspan="5"><div class="empty">Không có việc nào đang chờ</div></td></tr>';
     return;
   }
   el.innerHTML = ds.map(dongViec).join('');

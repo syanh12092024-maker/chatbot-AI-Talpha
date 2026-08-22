@@ -2,8 +2,11 @@
 //
 // Màn này CỐ Ý NGHÈO NÀN. Sale không làm việc trên hệ thống này; họ đã quen Pancake.
 // Bảng điều phối chỉ nói cho họ biết việc nào đang chờ, vì sao, còn bao nhiêu phút — rồi
-// đẩy họ sang chỗ họ vốn làm việc. Thêm nút, thêm ô soạn tin, thêm bộ lọc đẹp đẽ vào đây
-// là đi ngược `01-QUYET-DINH.md` mục 10. Đừng làm.
+// đẩy họ sang chỗ họ vốn làm việc. Thêm ô soạn tin, thêm bộ lọc đẹp đẽ vào đây là đi ngược
+// `01-QUYET-DINH.md` mục 10. Đừng làm.
+//
+// ĐÚNG MỘT THAO TÁC được thêm, và nó là của `L4-M2`: đóng việc bằng kết quả và lý do
+// (`dong-viec.js`). Đó là thao tác duy nhất sale làm trên hệ thống này.
 //
 // Nối vào ứng dụng, đúng thứ tự:
 //
@@ -53,4 +56,16 @@ export {
   datChanDangNhap, datChanVai, datPheuNhatKy,
   daNoiChan, daNoiPheuNhatKy, ghiNhatKyDieuPhoi,
   VAI_VAO_DUOC,
+  // hai đường trả trang: đá về đăng nhập thay vì phun JSON
+  muonTrang, locTiep, TRANG_MAC_DINH,
 } from './router.js';
+
+// L4-M2 — nhận việc và đóng việc. Đây là hai hàm DUY NHẤT trong module có ghi xuống cơ sở
+// dữ liệu, và cả hai chỉ `UPDATE` chín cột nửa dưới của `viec_can_xu_ly`.
+export {
+  nhanViec, dongViec, bangKetQua, bangLyDo,
+  KET_QUA, LY_DO_DONG, TRANG_THAI, COT_NUA_DUOI,
+  chuKetQua, chuLyDoDong,
+  CHI_PHI_TOI_DA, GHI_CHU_TOI_THIEU, HANH_DONG_NHAN, HANH_DONG_DONG,
+  LoiDongViec, LoiDaCoNguoiGiu, LoiDaDong, LoiThieuLyDo, LoiKetQuaLa, LoiChiPhiLa,
+} from './dong-viec.js';
