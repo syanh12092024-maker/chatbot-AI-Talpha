@@ -4,7 +4,9 @@
 sai là hỏng đơn khách) · thợ **opus** (1 trong 4 phiếu khó theo route 22/08)
 
 > Phiếu là HỢP ĐỒNG. Thợ nạp skill `tho-thi-cong` trước khi làm. Đọc sổ §0a trước khi gõ.
-> Phát SAU GATE R0 (L0-M1 ✅ + L0-M2 ✅).
+> Phát SAU GATE R0 (L0-M1 ✅ + L0-M2 ✅). Bản v2 — đóng 7 finding
+> `docs/thi-cong/nhat-ky/nghiep-vu-L1-M1.verdict.yaml` (3 CHAN: bảng mã không phép đo ·
+> ghi không đọc live · V3_KHOA_MA_HOA thiếu).
 
 ## ① Thi hành đoạn spec nào
 
@@ -34,22 +36,37 @@ qua import, cấm sửa file gốc) · `pancake-shops.json` (khoá POS thật th
    market · shop_id · api_key lưu MÃ HOÁ cùng cơ chế `db/khoa.js` của L0-M1). 19 bảng không
    có chỗ chứa kết nối POS theo team (01 §8 đòi) — bảng mới, khai lý do vào `luoc-do-v1.md`
    (§thay đổi). Di trú `pancake-shops.json` → `ket_noi_pos`, team = `chua-phan` (chờ H7,
-   giống pattern page).
+   giống pattern page). Khoá mã hoá: `.env` dev ĐÃ có `V3_KHOA_MA_HOA` (tổng đặt 22/08 sau
+   verdict N3); VPS dùng khoá RIÊNG — việc NGƯỜI H9 §8 sổ, không chặn dev.
 2. **`src/pos/`** (thư mục con MỚI) — cửa POS v3, mọi hàm nhận `ctx` qua tầng truy vấn
    L0-M2:
    - `docDon(ctx, {shop, trangThai, tuNgay})` — đọc đơn theo trạng thái; ghi/refresh vào
      `don_hang` (cột nguồn, trạng thái POS TÁCH trạng thái hệ).
    - `docDanhMuc(ctx, shop)` — danh mục SP + biến thể + TỒN KHO thật từ API POS → upsert
      `san_pham`/`goi_gia`. Hết cảnh suy từ 25 đơn (01 §12).
-   - `ghiNguocTrangThai(ctx, {donId, sang})` — GHI NGƯỢC có **BA CỬA AN TOÀN**:
+   - `ghiNguocTrangThai(ctx, {donId, tu, sang})` — GHI NGƯỢC có **BỐN CỬA AN TOÀN**:
      a. Biến môi trường `V3_POS_GHI` mặc định VẮNG/`0` = fail-CLOSED — hàm NÉM LỖI, không
      gọi API (giống khuôn `PANCAKE_READONLY`).
-     b. Bảng chuyển trạng thái CHO PHÉP khai cứng (vd Chờ xác nhận→Chờ in, Chờ in→Chờ xác
-     nhận cho diễn tập) — ngoài bảng là ném lỗi. ⛔ KHÔNG BAO GIỜ có nhánh xoá đơn.
-     c. Mọi lượt gọi (kể cả bị chặn) ghi 1 dòng `nhat_ky` (tác nhân + đơn + từ→sang + kết quả).
-3. Mã trạng thái POS: KHÔNG bịa — đọc từ response API thật (đơn có sẵn trên shop), đối chiếu
-   nhãn trên dashboard POS, ghi bảng mã→nhãn vào nhật ký + `luoc-do-v1.md`. Số `4,5,6,7,8`
-   = hủy/hoàn (TONG-QUAN §7.5) là neo đối chiếu.
+     b. Bảng chuyển trạng thái CHO PHÉP khai cứng BẰNG MÃ ĐÃ XÁC MINH (mục 3 dưới — bảng
+     mã chưa xác minh thì cửa (b) ĐÓNG, mọi lượt ném lỗi). Ngoài bảng là ném lỗi.
+     ⛔ KHÔNG BAO GIỜ có nhánh xoá đơn.
+     c. COMPARE-AND-SET (N2): vế `tu` bắt buộc; trước PUT phải GET trạng thái LIVE từ POS
+     — live ≠ `tu` → TỪ CHỐI (lỗi có tên + nhat_ky). Sale vẫn đổi trạng thái tay song song
+     (§7.4) — cấm tra whitelist trên ảnh chụp `don_hang` cũ.
+     d. Nhật ký HAI PHA (N4): INSERT `pos_ghi_bat_dau` TRƯỚC PUT + INSERT `pos_ghi_ket_qua`
+     SAU (bảng chỉ-INSERT nên 2 dòng, không update). Mất phản hồi sau PUT ⇒ dòng bắt-đầu
+     MỒ CÔI, phát hiện được. Lượt bị chặn ở (a)(b)(c) cũng ghi.
+3. **Bảng mã trạng thái POS — XÁC MINH LÀ ĐIỀU KIỆN MỞ CỬA (b), N1:** KHÔNG bịa, KHÔNG
+   đoán. "Chờ in" xuất hiện 8 lần trong docs mà không đâu có mã số; chỉ chắc `0` = Chờ xác
+   nhận (`pancake-orders.js:173`); đoán 3="Chờ in" khi 3 có thể là "Đã giao" = đơn khách bị
+   đánh dấu đã giao lúc hàng còn trong kho. Xác minh: đọc đơn THẬT nhiều trạng thái từ API,
+   đối chiếu nhãn dashboard POS bằng mắt, ghi bảng `mã → nhãn` vào nhật ký + `luoc-do-v1.md`
+   §thay-đổi; neo kiểm `{4,5,6,7,8}` = hủy/hoàn (§7.5) phải khớp. Bảng chuyển cho phép
+   trong code NẠP TỪ bảng đã xác minh; mã chưa xác minh ⇒ cửa (b) đóng, KHÔNG "tạm cho qua".
+4. **Luật suy `don_hang.nguon` (N6, cột NOT NULL):** neo `conversation_id` trên đơn POS
+   (§7.5 — khớp hội thoại Messenger ⇒ `messenger`; còn lại ⇒ `trang_ban_hang`). Thợ ĐO
+   phân bố thật + khai luật vào nhật ký; đơn KHÔNG suy được → LIỆT KÊ từng mã + đổ §9,
+   cấm đoán bừa (đoán sai là bịt luôn lỗ 37,4% mà L3 sinh ra để vá).
 
 ## ③ File được đụng (pathspec)
 
@@ -58,6 +75,7 @@ db/migrate/002_ket_noi_pos.up.sql
 db/migrate/002_ket_noi_pos.down.sql
 db/di-tru/ket-noi-pos.js
 db/di-tru/index.js
+db/schema.sql                            ← regen theo luoc-do-v1 §0 khi thêm migration 002
 src/pos/
 test/l1-m1-*.test.js
 docs/v3/ban-giao/luoc-do-v1.md          ← CHỈ append §thay-đổi (bảng 002 + bảng mã trạng thái)
@@ -80,13 +98,22 @@ docs/thi-cong/SO-DIEU-HANH-THI-CONG.md  ← CHỈ append §9 + §10
 #    danh sách, đối chiếu MẮT với dashboard POS (chụp số vào nhật ký)
 # 4. docDon trên 1 shop thật, 1 trạng thái: count đơn đọc được + IN 2 mã đơn đầu; đơn ghi
 #    vào don_hang có nguon + trạng thái POS tách trạng thái hệ (SELECT kiểm 2 cột khác nhau)
-# 5. GHI NGƯỢC — ba cửa đo ĐỦ BA, không gộp:
+# 3b. BẢNG MÃ XÁC MINH (N1): bảng mã→nhãn trong code = bảng đã xác minh trong nhật ký
+#     (diff = rỗng, in cả bảng); {4,5,6,7,8} thuộc nhóm hủy/hoàn; chưa xác minh → phép ĐỎ
+#     và cửa (b) phải đang ĐÓNG (gọi thử → ném lỗi)
+# 5. GHI NGƯỢC — BỐN cửa đo ĐỦ, không gộp:
 #    a. V3_POS_GHI vắng → gọi ghiNguocTrangThai ném lỗi ĐÚNG TÊN, api KHÔNG được gọi
 #       (mock/spy đếm 0 lượt), nhat_ky +1 dòng "bị chặn"
 #    b. V3_POS_GHI=1 + chuyển NGOÀI bảng cho phép → ném lỗi, api 0 lượt
+#    b2. COMPARE-AND-SET (N2): mock GET live ≠ `tu` → từ chối đúng tên lỗi, PUT 0 lượt,
+#        nhat_ky +1 dòng bị-chặn
+#    b3. NHẬT KÝ 2 PHA (N4): mock PUT timeout SAU khi gửi → dòng bắt-đầu tồn tại KHÔNG có
+#        dòng kết-quả (đếm 2 loại, in 2 số)
 #    c. V3_POS_GHI=1 + đơn NHÁP + chuyển hợp lệ: PHÉP NÀY CHỈ CHẠY TRÊN VPS/khi tổng ra
 #       lệnh — local ghi rõ "CHƯA CHẠY — chờ diễn tập VPS" vào output, KHÔNG giả vờ xanh
-# 6. Mọi hàm gọi không ctx → ném lỗi tầng truy vấn (thừa kế L0-M2, đo 1 phép đại diện)
+# 6. Mọi hàm gọi không ctx → ném lỗi tầng truy vấn (thừa kế L0-M2, đo 1 phép đại diện).
+#    Phép 3/4 chạy dưới ctxHeThong (job nền, có audit) — KHAI RÕ trong output (N7), không
+#    phải ctx người thật; đường người thật đo ở L4 khi có màn
 # 7. npm test: bộ l1-m1 xanh; KHÔNG chạy bộ cũ trong script này (nợ §9: bộ cũ ghi vào
 #    conv-state.json thật — gate R1 xử riêng)
 ```

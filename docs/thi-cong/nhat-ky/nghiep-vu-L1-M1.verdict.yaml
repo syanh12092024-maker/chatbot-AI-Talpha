@@ -1,0 +1,221 @@
+phieu: L1-M1
+diem: a
+nguoi_cham: reviewer nghiep-vu (skill review-nghiep-vu v1)
+ngay: 2026-08-22
+base_phieu: DIEN-LUC-PHAT (soạn trước ở commit 022eb74)
+lan: 🟥 GHI RA NGOÀI — lượt (a) duy nhất được thuê cho phiếu loại này
+nguon_da_doc:
+  - docs/v3/01-QUYET-DINH.md (§1 · §8 · §9 · §12)
+  - docs/v3/02-KE-HOACH-CODE.md (§"L1 · Bốn cửa kết nối" — Làm gì + Nghiệm thu)
+  - docs/v3/05-PHAN-VIEC.md (L1-M1 = A · 3 ngày · "quyền ghi mới, sai là hỏng đơn thật")
+  - docs/TONG-QUAN-HE-THONG.md §7.1–7.5 (hai chế độ · 5 cửa · đọc đơn thật từ POS)
+  - docs/thi-cong/SO-DIEU-HANH-THI-CONG.md (§0a 4 luật · §3 · §8 · §9 toàn bộ 8 dòng nợ)
+  - docs/v3/ban-giao/luoc-do-v1.md (hợp đồng L0-M1 — §0 · §1 · §2 · §4)
+  - docs/thi-cong/phieu/PHIEU-L1-M1.md
+  - src/pancake-orders.js · db/khoa.js · pancake-shops.json (đo lại số thật)
+
+cau:
+  - so: 1
+    dap: KHONG
+    bang_chung: >-
+      Năng lực MỚI là có thật và đếm được — `docDanhMuc` bịt đúng chỗ hở 01 §12 («hàm lấy thông
+      tin sản phẩm suy ngược từ 25 đơn gần nhất»), `san_pham`/`goi_gia` đang rỗng đúng như
+      luoc-do-v1 §4.6 khai. NHƯNG cuối phiếu KHÔNG người dùng thật nào chạm tới được, vì hai chốt
+      cùng đóng: (i) ②#1 seed toàn bộ 7 market vào team `chua-phan`, mà luoc-do-v1 §2 ghi CSDL đã
+      có «trigger chặn team kỹ thuật» không cho ai làm thành viên ⇒ không ctx của tieu-alpha/auus/
+      pialpha-eu nào đọc ra một dòng `ket_noi_pos`; (ii) vế GHI NGƯỢC — nửa còn lại của nghiệm thu
+      02 §L1 — bị ④#5c hoãn thẳng («CHỈ CHẠY TRÊN VPS… local ghi rõ CHƯA CHẠY»). Không có màn, không
+      có nút; đường đi duy nhất là lệnh của thợ dưới ctx kỹ thuật. Xem N3 · N7.
+  - so: 3
+    dap: CO
+    bang_chung: >-
+      CÓ mâu thuẫn, 2 chỗ đọc thẳng ra khỏi 01-QUYET-DINH. (a) 01 §9: «Nhật ký ghi đầy đủ, không
+      sửa không xoá, ghi cả việc máy làm» — cửa an toàn (c) của phiếu ghi «1 dòng nhat_ky (tác nhân
+      + đơn + từ→sang + **kết quả**)», tức ghi SAU khi biết kết quả; `nhat_ky` là CHỈ-INSERT
+      (luoc-do-v1 §2) nên không sửa bổ sung được. Lượt PUT đã tới POS rồi mất phản hồi (client cũ
+      `fetchJson` timeout 20 s, `src/pancake-orders.js:22`) để lại đơn thật đã đổi trạng thái mà
+      SỔ TRỐNG — đúng ca cần nhật ký nhất lại là ca duy nhất không có dòng. (b) 01 §8: «mỗi team có
+      **kết nối POS riêng**» — ②#1 seed cả 7 market về `chua-phan`, nên hết phiếu chưa team nào có
+      kết nối riêng; đó là hệ quả H7 (chấp nhận được), nhưng sổ §3 ghi cột Phụ thuộc của L1-M1 chỉ
+      «R0», trong khi hàng L1-M3 ngay dưới biết cách khai «**H1** + R0». Chốt người thiếu không được
+      khai ở chỗ điều phối nhìn thấy. Xem N4 · N3 · N7.
+  - so: 7
+    dap: CO
+    bang_chung: >-
+      CÓ làm hẹp, nạn nhân là L3 (hai luồng đơn — sóng 3). `don_hang.nguon` ∈
+      `trang_ban_hang|messenger` **NOT NULL** (luoc-do-v1 §2), mà ②#2 chỉ viết «ghi/refresh vào
+      `don_hang` (cột nguồn, …)» trong một dấu ngoặc — không khai `docDon` SUY `nguon` từ đâu khi
+      đọc hàng loạt từ POS, nơi không có trường nào tên là «nguồn». Cột NOT NULL + không có luật suy
+      ⇒ thợ buộc phải điền một giá trị mặc định. Điền sai một chiều là đầu độc L3-M1 IM LẶNG: 01 §1
+      dựng cả nhánh «chỉ đơn trang bán hàng vào luồng nhắn WhatsApp», nên gán nhầm toàn bộ thành
+      `messenger` sẽ khiến 37,4% khách bấm BUY NOW không bao giờ được hỏi lại — đúng cái lỗ 01 §1
+      nói «đây là lỗ lớn nhất bot sinh ra để bịt» — và không phép đo nào của L3 kêu, vì dữ liệu
+      «hợp lệ». Neo có sẵn mà phiếu không dùng: §7.5 khớp đơn với hội thoại bằng `conversation_id`.
+      Xem N6.
+  - so: 8
+    dap: CO
+    bang_chung: >-
+      Bỏ phiếu này thì đau ở ba chỗ đếm được. (1) `san_pham`/`goi_gia` ở lại RỖNG (luoc-do-v1 §4.6
+      khai thẳng «nguồn là POS, thuộc L1-M1») ⇒ chỗ hở 01 §12 còn nguyên: sản phẩm mới chưa có đơn
+      thì không tạo được đơn, và «tên sản phẩm trống trong dữ liệu» không có đường vá. (2) Không có
+      `ghiNguocTrangThai` thì 01 §1 cụt ở bước cuối — «Kết thúc: Đổi sang Chờ in → đóng gói» không
+      ai làm được bằng máy, nên vòng xác nhận WhatsApp của L3 không có hành động kết thúc. (3) 19
+      bảng không có chỗ nào chứa kết nối POS theo team ⇒ 01 §8 «kết nối POS riêng» không có nhà.
+      Không phải over-engineering.
+
+ket_luan: TRA_VE
+
+findings:
+  - ma: N1
+    muc: CHAN
+    mo_ta: >-
+      Cửa an toàn (b) khoá vào BẢNG MÃ TRẠNG THÁI POS, mà bảng đó chưa tồn tại và ④ không có phép
+      đo nào cho nó — cửa chỉ bảo đảm «cặp nằm trong danh sách của tôi», không bảo đảm danh sách đúng.
+    bang_chung: >-
+      ②#2b khai cửa bằng TÊN («vd Chờ xác nhận→Chờ in»); ②#3 thừa nhận mã phải đi tìm («KHÔNG bịa —
+      đọc từ response API thật… ghi bảng mã→nhãn vào nhật ký + luoc-do-v1.md») và tự nêu neo «Số
+      4,5,6,7,8 = hủy/hoàn (TONG-QUAN §7.5) là neo đối chiếu». Nhưng ④ có 7 phép, KHÔNG phép nào
+      chạm bảng mã — ④#5 chỉ đo ba cửa, ④#3 có «đối chiếu MẮT với dashboard POS» nhưng là cho danh
+      mục sản phẩm, không cho mã trạng thái. Đo trên cây: chuỗi «Chờ in» xuất hiện 8 lần trong
+      `docs/` nhưng **mã số của nó không có ở bất kỳ đâu**; mã duy nhất biết chắc là `0` = Mới/Chờ
+      xác nhận (`src/pancake-orders.js:173`) và `4,5,6,7,8` = hoàn/hủy (:13).
+    kich_ban_hong: >-
+      Thợ đọc một response, thấy `status_name` của vài đơn, suy «Chờ in» = 3, khai whitelist {0→3}.
+      Nếu 3 thật ra là «Đang chuyển» hay «Đã giao», thì mọi đơn khách xác nhận qua WhatsApp bị đánh
+      dấu đã giao trong khi hàng còn trong kho: không ai đóng gói, và báo cáo đọc ra đã giao. Cửa (a)
+      cho qua (V3_POS_GHI=1 là chủ ý), cửa (b) cho qua (cặp có trong danh sách), cửa (c) ghi sổ
+      đúng một dòng «thành công». Ba cửa xanh, đơn thật hỏng. ④#5c — phép duy nhất có thể bắt — đã
+      tự khai «CHƯA CHẠY, chờ diễn tập VPS».
+    sua_the_nao: >-
+      Thêm một phép vào ④ trước mọi phép ghi: IN bảng mã→nhãn đọc từ API thật (mã · `status_name` ·
+      số đơn đang ở mã đó) và chấm bằng KNOWN-ANSWER có sẵn — tập mã hoàn/hủy đọc ra phải trùng
+      đúng `{4,5,6,7,8}` của §7.5 và mã «Mới/Chờ xác nhận» phải là `0` như `pancake-orders.js:173`;
+      lệch một phần tử ⇒ DỪNG, cách đọc sai. Whitelist cửa (b) khai bằng MÃ + nhãn kèm nhau, và
+      phải nằm trong `luoc-do-v1.md` trước khi `V3_POS_GHI` được bật lần đầu.
+
+  - ma: N2
+    muc: CHAN
+    mo_ta: >-
+      Cửa (b) là whitelist CẶP TĨNH, không có vế đọc lại trạng thái LIVE ngay trước khi ghi — vế
+      «từ» lấy trên ảnh chụp cũ, nên ghi đè được thao tác tay của sale.
+    bang_chung: >-
+      Chữ ký `ghiNguocTrangThai(ctx, {donId, sang})` chỉ nhận đích, không nhận «từ» và không có
+      bước đọc lại. Nguồn duy nhất của «từ» là `don_hang.trang_thai_pos` — một bản chụp do `docDon`
+      ghi lúc quét (②#2). Mà §7.4 nói rõ người vẫn đang đụng chính những đơn đó song song: «⚠️ Sale
+      vẫn phải gọi xác nhận **trước khi chuyển trạng thái đơn**». Bảy shop thật trong
+      `pancake-shops.json` đều là shop đang chạy (Saudi·UAE·Kuwait·Bahrain·Oman·Qatar·Taiwan).
+    kich_ban_hong: >-
+      08:00 `docDon` quét, đơn X = «Chờ xác nhận». 08:20 sale gọi khách, khách đòi đổi size, sale
+      chuyển tay sang «Chờ xử lý»/hủy trên POS. 08:25 khách nhắn «ok» vào luồng WhatsApp, hệ gọi
+      `ghiNguocTrangThai(X, 'Chờ in')`. Cửa (b) tra cặp (Chờ xác nhận→Chờ in) — có trong bảng, cho
+      qua, vì nó tra trên trạng thái CŨ. Đơn đã hủy/đang sửa bị đẩy sang Chờ in và đi đóng gói.
+      Không cửa nào kêu, cửa (c) ghi một dòng «thành công».
+    sua_the_nao: >-
+      Đổi thành compare-and-set: hàm nhận `tu` bắt buộc; ngay trước khi ghi phải ĐỌC LẠI trạng thái
+      live của đơn từ POS; `live !== tu` ⇒ ném lỗi và ghi `nhat_ky` lý do «trạng thái đã đổi bên
+      ngoài», KHÔNG ghi đè. Thêm phép ④5d đo đúng ca này (dựng lệch rồi gọi, khẳng định api 0 lượt).
+      Ghi thêm vế shop: `donId` phải giải ra shop bằng chính dòng `don_hang`/`ket_noi_pos` của ctx,
+      cấm nhận shop từ tham số ngoài — 7 shop dùng chung không gian mã đơn.
+
+  - ma: N3
+    muc: CHAN
+    mo_ta: >-
+      Phiếu đứng ngay ở phép ④#2 vì `V3_KHOA_MA_HOA` chưa có trong `.env`, mà ① lại trích hai dòng
+      nợ §9 KHÁC — hai dòng không chặn gì — và bỏ đúng dòng nợ đang chặn.
+    bang_chung: >-
+      ②#1 bắt `ket_noi_pos.api_key` «lưu MÃ HOÁ cùng cơ chế `db/khoa.js` của L0-M1». Đo trên cây:
+      `db/khoa.js:17-20` đọc `env.V3_KHOA_MA_HOA` và **ném lỗi** khi thiếu; `grep -c V3_KHOA_MA_HOA
+      .env` = **0**. luoc-do-v1 §4.5 đã cảnh báo nguyên văn «⚠️ Biến này **chưa có trong `.env`** —
+      việc NGƯỜI, đã ghi §9 sổ», và §9 sổ có đúng dòng đó. ① của phiếu chỉ trích «Sổ §9 hai dòng nợ
+      liên quan: `posApiKey` bị che · `kb-overrides.products` chưa nạp» — cả hai đều KHÔNG chặn
+      (dòng đầu là lời dặn đọc đúng tệp, dòng sau ⑦ đã tự loại khỏi phạm vi). Sổ §3 ghi Phụ thuộc
+      của L1-M1 = «R0», không có mã H nào.
+    kich_ban_hong: >-
+      Thợ chạy `npm run di-tru` cho `ket-noi-pos.js` → `db/khoa.js` ném «Thiếu V3_KHOA_MA_HOA» →
+      `ket_noi_pos` 0 dòng → ④#2 («count = số market trong pancake-shops.json», thật là **7**)
+      không thể xanh → không có shop → ④#3 `docDanhMuc` và ④#4 `docDon` cũng không có đầu vào.
+      Toàn phiếu treo ở phép thứ hai vì một biến môi trường mà tổng đã biết là thiếu từ L0-M1.
+    sua_the_nao: >-
+      Mở **H9** ở §8 sổ («đặt `V3_KHOA_MA_HOA` 32 byte vào `.env` máy dev + VPS») và ghi nó vào cột
+      Phụ thuộc của L1-M1 ở §3 (đúng khuôn «H9 + R0» như L1-M3 đang làm với H1); sửa ① của phiếu
+      trích đúng dòng nợ này thay vì hai dòng không chặn. Nếu người quyết muốn chạy trước khi có
+      khoá thì phải khai rõ nhánh tạm và ④#2 ghi «CHƯA CHẠY» thật thà, không được để phép xanh giả.
+
+  - ma: N4
+    muc: NEN
+    mo_ta: >-
+      Cửa (c) ghi nhật ký MỘT dòng SAU khi có kết quả ⇒ ca nguy hiểm nhất (lệnh đã ra tới POS,
+      phản hồi mất) là ca duy nhất không để lại dòng nào.
+    bang_chung: >-
+      ②#2c: «Mọi lượt gọi (kể cả bị chặn) ghi 1 dòng `nhat_ky` (tác nhân + đơn + từ→sang + **kết
+      quả**)». `nhat_ky` CHỈ-INSERT (luoc-do-v1 §2) nên không có đường bổ sung sau. Client cũ đặt
+      timeout 20 s (`src/pancake-orders.js:22,30`). Dự án đã có sẵn án lệ đúng cho ca này ở §7.3:
+      «⚠️ Lỗi mạng ở nguồn ② KHÔNG được coi là "sạch" → trả `unknown`, cửa vẫn đóng».
+    kich_ban_hong: >-
+      PUT đi, POS áp trạng thái, mạng rớt trước khi phản hồi về. Hàm ném lỗi, dòng nhật ký không
+      bao giờ được ghi. Đơn thật đã sang «Chờ in» mà hệ tin là chưa — lượt sau retry lần nữa, hoặc
+      người mở sổ ra không thấy gì và kết luận cửa POS chưa từng chạy.
+    sua_the_nao: >-
+      Hai dòng, không phải một: dòng ĐỊNH LÀM ghi TRƯỚC khi gọi (tác nhân · đơn · từ→sang ·
+      `dinh_lam`), dòng KẾT QUẢ ghi sau (`thanh_cong` | `bi_chan` | `khong_ro`). Timeout/đứt mạng
+      ⇒ bắt buộc là `khong_ro`, cấm nuốt thành lỗi thường. Thêm phép ④5e: giả lập timeout, khẳng
+      định `nhat_ky` có ĐỦ hai dòng và dòng sau mang `khong_ro`.
+
+  - ma: N5
+    muc: NEN
+    mo_ta: >-
+      `db/schema.sql` không nằm trong pathspec ③, nhưng hợp đồng luoc-do-v1 §0 bắt phải sinh lại sau
+      mỗi migration ⇒ thợ làm đúng kiểu nào cũng có một cổng đỏ.
+    bang_chung: >-
+      luoc-do-v1 §0 nguyên văn: «Đổi lược đồ = thêm một bản `db/migrate/NNN_*.up.sql|.down.sql` rồi
+      chạy `node db/migrate.js schema`. Ca `S11` đỏ nếu hai bên trôi khỏi nhau.» ③ của phiếu liệt kê
+      từng tệp (`002_*.up.sql`, `002_*.down.sql`, `db/di-tru/*`, `src/pos/`…) và **không có**
+      `db/schema.sql` — khác L0-M1 vốn cho cả thư mục `db/`. ③ tự khai «Ngoài danh sách = ngoài phạm
+      vi → ghi §9, cấm sửa».
+    kich_ban_hong: >-
+      Nhánh (i) thợ không regen: `schema.sql` thiếu `ket_noi_pos`, ca S11 đỏ ở GATE R1 (④#7 của
+      phiếu này cố ý không chạy bộ cũ nên nó lọt tới tận gate). Nhánh (ii) thợ regen: `_chan1.sh`
+      phép ④ kết «NGOÀI PHẠM VI» cho một tệp thợ buộc phải đụng.
+    sua_the_nao: Thêm đúng một dòng `db/schema.sql` vào ③.
+
+  - ma: N6
+    muc: NEN
+    mo_ta: >-
+      `docDon` phải điền `don_hang.nguon` NOT NULL cho đơn đọc từ POS, nhưng phiếu không khai luật
+      suy — thợ buộc phải mặc định, và mặc định sai đầu độc L3 im lặng (chi tiết ở câu 7).
+    bang_chung: >-
+      luoc-do-v1 §2: `don_hang` · «**`nguon`** ∈ trang_ban_hang/messenger». ②#2 chỉ có cụm «(cột
+      nguồn, trạng thái POS TÁCH trạng thái hệ)». §7.5 cho sẵn neo suy: cột «Đơn khách AI» khớp
+      POS↔hội thoại bằng `conversation_id`, và `src/pancake-orders.js:200` đã đọc trường đó ra.
+    sua_the_nao: >-
+      Khai thẳng luật suy trong ② (vd: có `conversation_id` khớp `hoi_thoai` ⇒ `messenger`; không có
+      ⇒ `trang_ban_hang`; không quyết được ⇒ **fail-CLOSED**, để đơn ở khay chờ + §9, cấm đoán) và
+      thêm phép ④4b in phân bố hai giá trị `nguon` + số đơn không quyết được.
+
+  - ma: N7
+    muc: GHI-NO
+    mo_ta: >-
+      ④#3/#4 sẽ chạy dưới ctx của team kỹ thuật `chua-phan` — lặp lại đúng dạng ĐẠT RỖNG đã có án lệ
+      ở L0-M2, chỉ khác chỗ.
+    bang_chung: >-
+      ②#1 seed `ket_noi_pos` team = `chua-phan`; luoc-do-v1 §1 nói `chua-phan` cấm hiện cho người
+      dùng và CSDL có trigger cấm gán thành viên. Vậy phép «đọc được danh mục thật từ POS» đo trên
+      một ctx không người thật nào có được. Bản thân phiếu đã làm rất đúng ở phép 5c (dám ghi «CHƯA
+      CHẠY» thay vì dựng điều kiện giả) — nên áp cùng thái độ cho 3/4.
+    sua_the_nao: >-
+      ④#3/#4 in ra ctx đang dùng và ghi một dòng «đường này CHƯA tới được người dùng thật — chờ H7»;
+      hoặc H7 chốt một market cho một team nghiệp vụ để có ít nhất một đường thật đo được.
+
+ghi_chu_cho_tong: >-
+  Trả lời thẳng câu tổng hỏi. (1) BA CỬA AN TOÀN chặn được ba lỗi PHẠM TRÙ — ghi khi chưa được
+  phép (a) · chuyển sang trạng thái không nằm trong danh sách (b) · làm mà không có sổ (c) — và
+  cửa (b) chọn đúng hình dạng whitelist thay vì blacklist, có câu «⛔ KHÔNG BAO GIỜ có nhánh xoá
+  đơn» khớp luật 2 §0a. Nhưng chúng KHÔNG chặn hai lỗi TÌNH HUỐNG, cả hai đều kết thúc bằng một
+  đơn thật nằm sai trạng thái: đích sai vì bảng mã chưa ai kiểm (N1) và nguồn sai vì không đọc lại
+  trạng thái live trước khi ghi (N2). Cả hai lọt qua đủ ba cửa với ba đèn xanh. (2) Bảng
+  `ket_noi_pos` ngoài-19-bảng KHÔNG phá hợp đồng nghiệp vụ nào của `luoc-do-v1`: `team_id NOT NULL`
+  giữ đúng luật «ngoại lệ duy nhất là `bo_luat_chung`» (§2), mã hoá đúng cơ chế `db/khoa.js` (§4.5),
+  seed `chua-phan` đúng pattern (§5), và phiếu có bắt khai lý do vào §thay-đổi. Nó phá đúng MỘT
+  hợp đồng kỹ thuật: §0 «schema.sql sinh lại sau mỗi migration» — hỏng ở pathspec, sửa bằng một
+  dòng (N5). Việc dựng bảng mới ở đây là đúng: 01 §8 đòi kết nối POS theo team và 19 bảng thật sự
+  không có chỗ chứa.
