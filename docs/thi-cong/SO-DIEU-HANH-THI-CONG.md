@@ -1,7 +1,8 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 11:30 23/08 · SÓNG VÁ — VA-R4 ✅ (phủ định 0/5 đọc thành
-> xác nhận) · đang chạy VA-R1+R2 (opus) + VA-R3 (sonnet) · gate RVA sau khi đủ 4 · ⛔ chưa push.
+> 💓 **NHỊP TIM TỔNG:** vòng cuối 12:10 23/08 · SÓNG VÁ 2/4 ✅ (VA-R3 · VA-R4) · đang chạy
+> VA-R1 + VA-R2 (opus) · repro refute-tong-the-1 còn ĐÚNG 5 dấu 🔴, tất cả thuộc đất VA-R2
+> (F1·F3a·F3b·F4·F6); F2·F5 của VA-R3 đã sạch · ⛔ chưa push.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -182,7 +183,7 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | ----- | ------------------------------------------------------------- | --------- | ------------------------------------------------ | ------------- |
 | VA-R1 | C1 bộ-não-HTTP (RF-1/2/3)                                     | review(a) | chat/handler-v3 · queue/worker · queue/nap       | 🎫 chờ review |
 | VA-R2 | C2 tiền+tạo-đơn (RF-9/10/11/12/21/15)                         | review(a) | orders/hang-cho · pos/tao-don · pos/doc-danh-muc | 🎫 chờ review |
-| VA-R3 | C3 máy trạng thái (RF-13/14)                                  | —         | orders/may-trang-thai · quet-don-moi             | 🟨            |
+| VA-R3 | C3 máy trạng thái (RF-13/14)                                  | —         | orders/may-trang-thai · quet-don-moi             | ✅            |
 | VA-R4 | C4 đọc ý (RF-20)                                              | —         | orders/doc-y                                     | ✅            |
 | RVA   | **GATE SÓNG VÁ** — 13 cổng cũ + 4 va-r* + repro 2 bộ đảo xanh | VA-R1..R4 | TỔNG                                             | ⬜            |
 
@@ -685,6 +686,13 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+
+- 23/08 · VA-R3 → ✅ (TỔNG nghiệm thu) — cổng 4/4 rc=0 · repro F2+F5 hết 🔴 (đếm thô
+  `grep -c`, in từng dòng) · 7/7 test mới + hồi quy 56 ca fail=0 · commit a1d1a41.
+  🧭 BÀI HỌC TỔNG (2 lỗi đo liên tiếp trong CÙNG lượt kiểm): ①đếm nhầm KÝ TỰ (`❌` trong
+  khi repro dùng `🔴`) ⇒ ra 0 giả; ②regex cắt khối theo `═══ Fx ·` hỏng ⇒ lại ra 0 giả.
+  Cả hai suýt báo «sạch» cho thứ chưa sạch. LUẬT: đếm dấu bằng `grep -c` + IN TỪNG DÒNG
+  khớp; cấm regex cắt khối khi chưa đối chiếu tổng thô.
 
 - 23/08 · TỔNG · **GATE TOÀN CỤC XANH — PHẦN VIỆC CODER A CODE XONG.** 13/13 cổng rc=0
   (tổng tự chạy, rc tách dòng) · 328 test / 0 fail (11 ca N* của l2-m1 cần cờ
