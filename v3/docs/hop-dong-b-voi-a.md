@@ -150,7 +150,7 @@ Hình dạng B cần — **đề xuất**, A chốt lại khác thì B sửa đ�
 ```js
 const db = taoTruyVan(boiCanh);        // A cung cấp. Thiếu boiCanh → ném lỗi
 
-await db.chon(bang, dieuKien, tuyChon) // → mảng bản ghi. tuyChon: { sapXep, gioiHan, buoc }
+await db.chon(bang, dieuKien, tuyChon) // → mảng bản ghi. tuyChon: { sapXep, giamDan, gioiHan, buoc }
 await db.mot(bang, dieuKien)           // → một bản ghi hoặc null
 await db.dem(bang, dieuKien)           // → số
 await db.them(bang, banGhi)            // → bản ghi vừa tạo (đã có id)
@@ -164,6 +164,9 @@ Ba điều B trông cậy vào A:
 2. **Truyền tay `team_id` khác** trong `dieuKien` → **ném lỗi**, không im lặng bỏ qua.
    B cũng chặn ở phía mình một lần nữa (chặn hai lớp) và ghi nhật ký.
 3. **`bang` là tên bảng dạng chuỗi**, đúng tên trong `docs/v3/02-KE-HOACH-CODE.md`.
+4. **`tuyChon.giamDan`** (bổ sung 22/08 sau khi làm L0-M4): sắp giảm dần. Nhật ký và bảng
+   điều phối đều cần "mới nhất trước", mà đảo ở phía B thì phải kéo hết bảng về rồi mới đảo —
+   sai ngay khi có phân trang. A không làm thì B đảo phía mình và chấp nhận giới hạn đó.
 
 Trong lúc chờ A, B chạy bằng bản cài giả ở `v3/testkit/db-gia.js` — cùng đúng giao diện
 trên, giữ dữ liệu trong RAM. Bản giả **cũng** ném lỗi khi thiếu bối cảnh, nên test của B
