@@ -9,6 +9,7 @@
 import { voiPool, GOC } from "../ket-noi.js";
 import { diTruTatCa } from "./nap.js";
 import { napSoAi } from "./so-ai.js";
+import { diTruKetNoiPos, TEP_NGUON as TEP_SHOP } from "./ket-noi-pos.js";
 
 function thamSo(ten) {
   const p = process.argv.find((a) => a.startsWith(`--${ten}=`));
@@ -32,6 +33,7 @@ export async function chay(
     hoiThoai: await dem("hoi_thoai"),
     kichBan: await dem("kich_ban"),
   };
+  kq.ketNoiPos = await diTruKetNoiPos(pool, goc);
   if (soAi) kq.soAi = await napSoAi(pool, soAi, { maModelCu });
   return kq;
 }
@@ -52,6 +54,17 @@ function inBaoCao(kq) {
     `kịch bản      nguồn ${kq.kichBan.soTepLichSu} tệp script-versions (${kq.kichBan.nguon} bản)` +
       ` + ${kq.kichBan.soMucKb} mục kb-overrides  →  bảng kich_ban = ${d.kichBan}`,
   );
+  const kn = kq.ketNoiPos;
+  if (kn?.chuaCoBang) {
+    console.log(
+      `kết nối POS  nguồn ${TEP_SHOP} = ${kn.nguon} thị trường  →  BỎ QUA: chưa áp migration 002_ket_noi_pos`,
+    );
+  } else if (kn) {
+    console.log(
+      `kết nối POS  nguồn ${TEP_SHOP} = ${kn.nguon} thị trường  →  bảng ket_noi_pos = ${kn.dich}` +
+        `  (thêm ${kn.them} · cập nhật ${kn.capNhat} · giữ nguyên ${kn.giuNguyen})`,
+    );
+  }
   if (kq.soAi) {
     console.log(
       `sổ AI         nguồn ${kq.soAi.soDongTep} dòng  →  thêm mới ${kq.soAi.them} (hỏng ${kq.soAi.hong.length})`,
@@ -64,8 +77,8 @@ function inBaoCao(kq) {
 
   console.log("── ĐÃ SỬA / ĐÃ BỎ QUA (liệt kê, cấm nuốt im) ──────────────");
   console.log(
-    `chuỗi phải vá surrogate lẻ (→ U+FFFD): kịch bản ${kq.kichBan.soVaSurrogate}`
-      + ` · hội thoại ${kq.hoiThoai.soVaSurrogate}`,
+    `chuỗi phải vá surrogate lẻ (→ U+FFFD): kịch bản ${kq.kichBan.soVaSurrogate}` +
+      ` · hội thoại ${kq.hoiThoai.soVaSurrogate}`,
   );
   console.log(
     `page LẠC (có dữ liệu, KHÔNG có trong pages.json): ${kq.pageLac.length}`,

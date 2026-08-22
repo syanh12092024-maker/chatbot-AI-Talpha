@@ -133,3 +133,93 @@ Nghiệm thu «đăng nhập Tiểu Alpha không thấy dữ liệu team khác»
 đo trên tập rỗng** — 100% dữ liệu đang ở `chua-phan`, không có dòng nào của `tieu-alpha` hay
 `auus` để mà rò. Bộ ca L0-M2 phải tự chèn mẩu dữ liệu trộn ≥2 team nghiệp vụ rồi mới đo cách
 ly, và phải có ca hợp đồng `bo_luat_chung` như mục 1(ii).
+
+---
+
+## 7 · THAY ĐỔI — bản 002 (phiếu L1-M1, 22/08/2026)
+
+### 7.1 · Bảng thứ 20: `ket_noi_pos` (migration `002_ket_noi_pos`)
+
+19 bảng của 001 **không có chỗ chứa kết nối POS theo team**, trong khi
+`01-QUYET-DINH.md` §8 đòi «mỗi team có kết nối POS riêng». Khoá POS thật đang nằm ở
+tệp phẳng `pancake-shops.json` (7 dòng `{market, shop_id, api_key}`) — không mang team,
+không mã hoá.
+
+| Cột                | Ghi chú                                                              |
+| ------------------ | -------------------------------------------------------------------- |
+| `team_id NOT NULL` | như mọi bảng nghiệp vụ                                               |
+| `market`           | tên thị trường đúng như `pancake-shops.json` — **khoá gọi cửa POS**  |
+| `shop_id`          | id shop POS (text)                                                   |
+| `api_key_ma`       | **MÃ HOÁ** `v1.<iv>.<tag>.<ct>` — CHECK `LIKE 'v1.%'` ở tầng CSDL    |
+| `bat`              | tắt một kết nối mà không xoá dòng                                    |
+
+UNIQUE `(team_id, market)` và `(team_id, shop_id)`.
+
+⛔ **Bảng này KHÔNG vào `BANG_NGHIEP_VU_CHUAN`** của tầng truy vấn (vẫn 15 tên). Nó chứa
+bí mật, nên có bộ đọc/ghi riêng — `src/pos/ket-noi.js` + `db/di-tru/ket-noi-pos.js` —
+đúng án lệ `ghiCauHinhModel` của L0-M1. Đừng mở nó ra cho một hàm `SELECT *` dùng chung.
+
+Di trú: `npm run di-tru` nạp 7 thị trường vào team `chua-phan` (chờ H7, ⛔ không đoán
+team theo thị trường). Chạy lại được và **ổn định**: chỉ ghi đè khi khoá nguồn thật sự
+khác (bao thư AES-GCM có IV ngẫu nhiên — UPDATE mù thì lượt nào cột cũng đổi giá trị).
+
+> 🔴 **Nợ kèm theo:** `test/l0-m1-luoc-do.test.js` (S1 dòng 63, S12 dòng 321) và
+> `ops/bin/nghiem-thu/l0-m1.sh` (phép ②) neo cứng con số **19**, nên chúng ĐỎ kể từ
+> bản 002. Sửa = 19 → 20 + thêm `ket_noi_pos` vào `NEO_19_BANG`. Ngoài pathspec L1-M1,
+> đã ghi §9 sổ điều hành.
+
+### 7.2 · Bảng mã trạng thái đơn POS — ĐO ĐƯỢC, không đoán
+
+Nguồn sự thật trong code: `src/pos/ma-trang-thai.js`. Đo 22/08/2026 trên **7/7 shop
+thật**, 3.546 đơn, bằng chính trường `status_name` mà API POS trả kèm mỗi đơn — không
+mã nào ra hai nhãn khác nhau.
+
+| Mã  | Nhãn máy         | Mã  | Nhãn máy         |
+| --- | ---------------- | --- | ---------------- |
+| 0   | `new` (Chờ xác nhận) | 8   | `packing`     |
+| 1   | `submitted`      | 9   | `pending`        |
+| 2   | `shipped`        | 11  | `waitting`       |
+| 3   | `delivered`      | 12  | `wait_print` (**Chờ in**) |
+| 4   | `returning`      | 16  | `received_money` |
+| 5   | `returned`       | 19  | (API trả nhãn `null`, 1 đơn) |
+| 6   | `canceled`       | 20  | `ordered`        |
+| 7   | `removed`        | 13  | **chưa xác minh** — có trong `status_history` nhưng 0 đơn đang đứng ở đó |
+
+⚠️ **`docs/TONG-QUAN-HE-THONG.md` §7.5 và `src/pancake-orders.js:13` khai SAI**: nhóm
+hủy/hoàn ở đó là `{4,5,6,7,8}`, nhưng **8 = `packing` (đang đóng gói)**, một bước TIẾN.
+Bằng chứng — `status_history` đơn 47397 (UAE): `0 → 1 → 12 → 8`; đồ thị chuyển đo trên
+1.400 đơn: `12→8` = 986 lượt, `8→9` = 537, `8→2` = 394. Nhóm đúng là **{4,5,6,7}**.
+Đã ghi §9 sổ (không sửa bản đang chạy trong phiếu này).
+
+**Bảng chuyển CHO PHÉP** của `ghiNguocTrangThai` chỉ có hai cặp: `0→12` (xác nhận xong
+→ Chờ in, 01 §1) và `12→0` (trả về). Deny-by-default; ⛔ không bao giờ có đường tới
+`7 = removed`. 🔎 Chiều `12→0` **chưa có bằng chứng ngoài đời** — 0 lượt trong 1.400 đơn
+(chiều lùi POS đang dùng là `12→1`, 47 lượt); diễn tập VPS phải trả lời câu đó.
+
+### 7.3 · Ba cột `don_hang` do cửa POS ghi
+
+- `ma_pos` = **`"<shop_id>:<id đơn POS>"`**, KHÔNG phải id trần. Id đơn POS là dãy riêng
+  từng shop, cùng đếm từ 1 (đo 22/08: Saudi 62.029 · UAE 47.421 · Kuwait 13.922 ·
+  Taiwan 344) — id trần là hai shop tranh nhau một dòng dưới UNIQUE `(team_id, ma_pos)`.
+- `nguon`: có `conversation_id` đúng khuôn `<page_id_fb>_<psid>` ⇒ `messenger`; vắng ⇒
+  `trang_ban_hang`; **có mà sai khuôn ⇒ không suy được, LIỆT KÊ ra, cấm đoán**. Khuôn
+  này khớp đúng khoá `conv-state.json` mà L0-M1 đã nạp, nên nối được thẳng
+  `don_hang.hoi_thoai_id`. Phân bố đo trên 2.100 đơn mới nhất: 75,9% có · 24,1% không.
+  Ghi MỘT LẦN lúc tạo, lượt sau lệch thì BÁO chứ không tự sửa (L3 rẽ nhánh theo cột này).
+- `trang_thai_pos` = mã số POS dạng text, refresh mỗi lượt đọc. `trang_thai_he` cửa POS
+  **chỉ gieo `'moi_tu_pos'` lúc tạo** rồi không đụng lại — chủ cột là L3-M1.
+- `tong_tien` để **NULL** (fail-CLOSED): POS trả tiền ở đơn vị nhỏ với hệ số khác nhau
+  theo tệ (×100 vs ×1000), mà cột là `numeric(14,2)` — chia cho 1.000 là làm tròn mất
+  chữ số thứ ba của KWD/OMR/BHD. Quy ước quy đổi phải khai MỘT chỗ cho cả hệ (nợ §9).
+  `tien_te` thì có ghi (nhãn, an toàn).
+
+### 7.4 · `san_pham` / `goi_gia` — POS chỉ cấp được một nửa
+
+`docDanhMuc` đóng chỗ hở 01 §12 («suy sản phẩm ngược từ 25 đơn», «tên sản phẩm trống»):
+đọc thẳng `GET /shops/<shop>/products/variations` → tên + **tồn kho thật**.
+`san_pham.ma` = `"<shop_id>:<variation_id>"`, `ton_kho` giữ nguyên cả số **âm**.
+
+⚠️ **`goi_gia` ra 0 dòng** — `retail_price` = 0 trên **128/128** biến thể mẫu của 3 shop.
+Danh mục POS của các shop này KHÔNG mang giá; giá thật sống trong từng đơn
+(`cod` = `shipping_fee`). Bộ nạp cố ý KHÔNG ghi dòng giá 0: một bảng giá toàn số 0 nguy
+hơn một bảng giá trống, vì nó trông như đã có.
