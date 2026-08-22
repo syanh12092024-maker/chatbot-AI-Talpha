@@ -207,6 +207,19 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
   nửa vời phải hoà giải. L1-M1 quyết có backfill giá/ảnh từ đây không. Kèm số đo cho L1-M1:
   `pages.json.posApiKey` **đã bị che** (112/112 giá trị dạng `***xxxx`, chỉ 6 mã) — khoá POS
   thật nằm ở `pancake-shops.json`, đừng đọc nhầm cột đã che.
+- 22/08 · thợ L0-M1: **cổng chặng 1 `ops/bin/nghiem-thu/_chan1.sh` có hai lỗi THƯỚC trên máy
+  macOS** (đo trên phiếu L0-M1, cây `d74e43e`) — cả hai làm cổng báo sai về việc ĐÚNG:
+  (a) `sed 's/\s*$//'` — BSD sed **không có `\s`**, nó đọc thành «chữ `s` lặp lại», nên mọi
+  dòng pathspec kết thúc bằng `s` bị **cắt mất chữ cuối**: `test/l0-m1-*.test.js` thành
+  `test/l0-m1-*.test.j` ⇒ phép ④ kết «NGOÀI PHẠM VI» cho đúng những tệp phiếu đã cho phép
+  (mọi `.js`/`.ts`/`docs` đều dính). Vá: `[[:space:]]` thay `\s` ở cả hai lệnh sed.
+  (b) `m2=$(grep -c … || echo 0)` — khi không có marker, `grep -c` đã in `0` RỒI trả rc=1,
+  nên `|| echo 0` nối thành `"0\n0"` ⇒ `syntax error` + `tong_marker: unbound variable`,
+  script **chết ngay ở phép ⑥** và không bao giờ chạy tới ⑦ (script nghiệm thu phiếu) và ⑧.
+  Nghĩa là ca THÀNH CÔNG (0 marker) là ca duy nhất làm cổng chết. Vá: bỏ `|| echo 0`.
+  (c) nhỏ hơn: ④ đo `git diff base..HEAD` nên **gộp cả commit của session khác** trong cùng
+  khoảng — lượt này nó tính `docs/thi-cong/phieu/PHIEU-L0-M2.md` (tệp của TỔNG) vào phần thợ.
+  ⛔ Thợ KHÔNG sửa `_chan1.sh` — ngoài pathspec ③ của phiếu L0-M1.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 
@@ -223,5 +236,5 @@ hợp đồng `bo_luat_chung (team_id = $ctx OR team_id IS NULL)`.
   18.790/18.790 · kịch bản 69 (=71−2 bản của page lạc); cổng `ops/bin/nghiem-thu/l0-m1.sh`
   51/51 ĐẠT, 30 ca mới xanh, bộ ca cũ giữ nguyên 18/23 của mốc nền; 3 phát hiện lệch đề bài
   (page lạc 3 chứ không 1 · `llmTurns` là mảng mốc chứ không phải số đếm · surrogate lẻ trong
-  kịch bản làm chết cả lượt nạp) và 5 dòng nợ §9 · commit <HASH> · nhật ký
+  kịch bản làm chết cả lượt nạp) và 5 dòng nợ §9 · commit b2ee56e · nhật ký
   docs/thi-cong/nhat-ky/phieu-l0-m1.md
