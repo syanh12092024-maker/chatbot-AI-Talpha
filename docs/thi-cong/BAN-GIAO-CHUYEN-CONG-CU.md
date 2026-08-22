@@ -24,10 +24,18 @@
 
 ## 2. Việc phải làm tiếp — theo thứ tự
 
-1. **Quyết VA-R2 dở dang.** `git status` sẽ thấy `src/orders/hang-cho.js`,
-   `src/pos/tao-don.js`, `src/pos/doc-danh-muc.js` đang dirty (+186/−27). Hai lựa chọn:
-   giữ và làm tiếp theo `docs/thi-cong/phieu/PHIEU-VA-R2.md`, hoặc `git checkout --` ba
-   file đó rồi làm lại từ đầu. Chưa có `db/migrate/007*`, chưa có `ops/bin/nghiem-thu/va-r2.sh`.
+1. **Quyết VA-R2 dở dang** — nằm ở **nhánh `wip/va-r2`** (3 commit, `main` sạch không dính):
+   `src/orders/hang-cho.js` · `src/pos/tao-don.js` · `src/pos/doc-danh-muc.js` (+186/−27) +
+   `db/migrate/007_idempotent_tao_don_va_don_vi_tien.{up,down}.sql`. **CHƯA nghiệm thu, chưa
+   có `ops/bin/nghiem-thu/va-r2.sh`, migration 007 CHƯA áp** (thợ báo lúc bị dừng: «007 không
+   được nhận, vẫn 6 bản — kiểm regex `danhSachBan()` trong `db/migrate.js`»). Hai lựa chọn:
+   `git checkout wip/va-r2` làm tiếp theo `docs/thi-cong/phieu/PHIEU-VA-R2.md`, hoặc bỏ nhánh
+   làm lại từ đầu trên `main`.
+1b. **VA-R1 chưa ai đụng file nào.** Ghi chú thợ để lại lúc bị dừng (đáng đọc trước khi làm):
+   trong repro `refute-MANG-2.repro.mjs` có ca **S4b** kỳ vọng `nguonDangMo()=true` khi
+   `V3_NAP_DEV=1` trên DB `aicloser_v3` (localhost) ⇒ nếu chốt điều kiện «chỉ mở khi tên DB
+   chứa `_test_`» sẽ PHÁ S4b; nên chốt theo **host localhost/sandbox** thay vì tên DB, và grep
+   hết caller của `worker.js` trước khi đổi điều kiện.
 2. **Làm VA-R1** theo `docs/thi-cong/phieu/PHIEU-VA-R1.md` (chưa ai đụng).
 3. **Gate RVA:** chạy 13 cổng `ops/bin/nghiem-thu/{l*,va-*}.sh` (rc đo TÁCH DÒNG) + toàn bộ
    `node --env-file=.env --test test/l0-* test/l1-* test/l2-* test/l3-* test/va-*` + hai repro
