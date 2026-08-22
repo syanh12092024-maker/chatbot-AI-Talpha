@@ -26,7 +26,7 @@ danh_sach=$(git diff --name-only "$base"..HEAD)
 echo "— file đổi ($(echo "$danh_sach" | grep -c .)):"; echo "$danh_sach" | sed 's/^/    /'
 
 # ④ pathspec ⊆ mục ③ của phiếu (đọc khối ``` sau tiêu đề ③, so prefix; §10 sổ luôn được phép)
-hop_le=$(awk '/^## ③/,/^## ④/' "$phieu" | sed -n '/^```$/,/^```$/p' | grep -v '^```' | grep -v '^\s*$' | sed 's/\s*←.*//;s/\s*$//')
+hop_le=$(awk '/^## ③/,/^## ④/' "$phieu" | sed -n '/^```$/,/^```$/p' | grep -v '^```' | grep -v '^[[:space:]]*$' | sed 's/[[:space:]]*←.*//;s/[[:space:]]*$//')
 ngoai=""
 while IFS= read -r f; do
   [ -z "$f" ] && continue
@@ -40,8 +40,8 @@ while IFS= read -r f; do
     case "$f" in $p) ok=1; break;; esac
   done <<< "$hop_le"
   [ "$f" = "docs/thi-cong/SO-DIEU-HANH-THI-CONG.md" ] && ok=1
-  [ "$f" = "$phieu" ] && ok=1   # phiếu do tổng commit trong cùng khoảng base..HEAD
-  case "$f" in docs/thi-cong/nhat-ky/*) ok=1;; esac
+  # đất điều hành: phiếu (tổng soạn) + nhật ký (thợ append) — không tính vào pathspec code
+  case "$f" in docs/thi-cong/phieu/*|docs/thi-cong/nhat-ky/*) ok=1;; esac
   [ $ok -eq 0 ] && ngoai="$ngoai$f"$'\n'
 done <<< "$danh_sach"
 [ -z "$ngoai" ]; ket "④pathspec-⊆-③" $? "${ngoai:+NGOÀI PHẠM VI: }$(echo "$ngoai" | tr '\n' ' ')"
@@ -51,8 +51,9 @@ cam=$(echo "$danh_sach" | grep -E '^src/[^/]+\.js$')
 [ -z "$cam" ]; ket "⑤vùng-cấm-src-phẳng" $? "${cam:+ĐỤNG: }$(echo "$cam" | tr '\n' ' ')"
 
 # ⑥ hết marker NEEDS CLARIFICATION trong diff (loại chính file phiếu — khuôn phiếu có chữ đó)
-m1=$(git diff "$base"..HEAD -- . ":(exclude)$phieu" | grep -c '\[NEEDS CLARIFICATION')
-m2=$(grep -c '\[NEEDS CLARIFICATION' "docs/thi-cong/nhat-ky/phieu-${ma}.md" 2>/dev/null || echo 0)
+# grep -c trả rc=1 khi đếm ra 0 — KHÔNG nối `|| echo 0` (ra hai dòng "0\n0", vỡ phép cộng)
+m1=$(git diff "$base"..HEAD -- . ":(exclude)docs/thi-cong/phieu" | grep -c '\[NEEDS CLARIFICATION'); m1=${m1:-0}
+m2=$(grep -c '\[NEEDS CLARIFICATION' "docs/thi-cong/nhat-ky/phieu-${ma}.md" 2>/dev/null); m2=${m2:-0}
 tong_marker=$((m1 + m2))
 [ "$tong_marker" -eq 0 ]; ket "⑥hết-marker" $? "đếm=$tong_marker"
 
