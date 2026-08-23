@@ -17,12 +17,14 @@
 | L3-M1..M4 (máy trạng thái · lọc trùng · nhắc · hàng chờ tạo đơn) | ✅ |
 | VA-P1 · VA-Q12 · VA-T1 (vá trong lúc thi công) | ✅ |
 | **VA-R3** (CAS ghiDon + nhặt đơn kẹt) · **VA-R4** (đọc ý phủ định) | ✅ |
-| **VA-R1** (bộ não bắn HTTP thật) | ❌ **CHƯA LÀM** — phiếu sẵn, thợ chưa đụng file nào |
-| **VA-R2** (tiền ×hệ-số + tạo đơn) | ⚠️ **DỞ DANG** — 3 file sửa +186 dòng CHƯA COMMIT |
-| Gate RVA (chốt sóng vá) | ⬜ chờ VA-R1 + VA-R2 |
+| **VA-R1** (bộ não bắn HTTP thật) | ✅ 23/08 · commit `1562d58` · cổng `va-r1.sh` 12/12 |
+| **VA-R2** (tiền ×hệ-số + tạo đơn) | ✅ 23/08 · commit `5caf5be` (gộp nhánh `wip/va-r2` vào `main`, nhánh wip có thể xoá) · cổng `va-r2.sh` 17/17 |
+| Gate RVA (chốt sóng vá) | ✅ 23/08 · 17 cổng rc=0 · 352/352 test · repro tổng-thể-1 🔴=0 · MẢNG-2 còn ❌ F4/F5 mức NÊN (§9) |
 | Push lên GitHub | ⬜ **chưa push — ~100 commit local trên `main`** |
 
 ## 2. Việc phải làm tiếp — theo thứ tự
+
+> **Cập nhật 23/08 (sau VA-R1/R2/gate RVA ✅):** mục 1–3 dưới đây ĐÃ XONG, giữ lại làm sử. Việc còn lại = mục 4 (push + §7b chạy thử thật + việc người H1–H9) + nợ NÊN §9 (F4 ảnh trơ · F5 thử lại N5 · NHOM_HUY_HOAN gộp nguồn).
 
 1. **Quyết VA-R2 dở dang** — nằm ở **nhánh `wip/va-r2`** (3 commit, `main` sạch không dính):
    `src/orders/hang-cho.js` · `src/pos/tao-don.js` · `src/pos/doc-danh-muc.js` (+186/−27) +
