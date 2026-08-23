@@ -761,3 +761,22 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   bản thật** ⇒ 294 bài xanh không chứng minh được gì về việc nối vào CSDL thật. Chỗ im lặng
   nhất: `vai.ma` thật là `quan-tri` gạch NGANG, B so `quan_tri` gạch DƯỚI — lệch dấu này làm
   MỌI người dùng thành không có vai, `batBuocVaiHTTP` chặn sạch, trông y hệt phân quyền chạy đúng.
+
+- 23/08 · NGƯỜI B · **DEPLOY VPS → ✅** (chủ dự án ra lệnh). `/opt/aicloser` `2170af7` →
+  `4e72228` (**132 commit chưa từng lên**), mốc quay lui ghi ở `/root/aicloser-rollback-*.txt`.
+  Kiểm TRƯỚC khi bấm: `src/server.js` nạp 35 file, **KHÔNG file nào thuộc cây v3** (dò đệ quy
+  cả cây import) ⇒ code v3 lên đĩa nhưng nằm im, và VPS không có biến `V3_` nào nên fail-closed.
+  Bốn file bản-đang-chạy đổi (`tools/handler/pancake-poll/ai-log`) đều **chỉ** do 2 commit sản
+  xuất cũ `06f7289`+`d939920`, **không commit v3 nào đụng**. Sau 45′: `active` · NRestarts=0 ·
+  387 MB · **84 sự kiện · 20 page · 12 reply · 4 image · 1 order · 1 handoff**. Khung 03h UTC
+  hôm nay 7 reply, đối chứng 3 ngày trước 3/10/17 ⇒ trong khoảng bình thường.
+  ⚠️ GHI NỢ: tiến trình cũ **không chịu SIGTERM**, systemd phải SIGKILL sau timeout (bản cũ
+  chạy liền từ 19/08, 1d26m CPU) ⇒ **mỗi lần restart đều rơi tin của khách đang giữa lượt**.
+  Nên thêm bắt SIGTERM đóng vòng poll — phiếu cho A.
+  🧭 BÀI HỌC (cùng LOẠI với bài học đếm nhầm của TỔNG ở VA-R3): tôi báo động "429 tăng 8→21
+  sau restart" bằng cách so `tail -2000` với `tail -4000|head -2000`. SAI — mốc khởi động nằm
+  ở dòng 252904/253042, tức cửa sổ 2000 dòng đó **gần như trọn vẹn nằm TRƯỚC deploy**; tôi đếm
+  429 cũ rồi quy cho deploy. Cắt đúng mốc, cùng 138 dòng mỗi bên: **429 là 1 vs 1, không đổi**;
+  chỉ "lượt quét thiếu" là 2 vs 0 (giá của restart, hệ giữ sổ cái cũ nên không mất page).
+  LUẬT: log ứng dụng KHÔNG có mốc giờ ⇒ cấm so bằng cửa sổ `tail -N`; phải cắt theo mốc khởi
+  động (`grep -n "page từ Pancake" | tail -1`) rồi so **cùng số dòng** hai bên.
