@@ -221,6 +221,14 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   chờ luôn thiếu `tong_tien` cho tới khi sale cho tệ — đúng fail-CLOSED, nhưng VA-R1/handler
   có thể lấy tệ từ `page`/`ket_noi_pos` để điền sẵn (ngoài phiếu này).
 
+- 23/08 · VA-R1 (fable) — NGOÀI PHẠM VI, chưa sửa: (1) MẢNG-2 F4 (NÊN): guard chặn CHỮ nhưng
+  ẢNH vẫn bay — `handler-v3.js` bước 10 xả ảnh trước `if (guarded)`; repro S2 còn ❌. (2) F5
+  (NÊN): lỗi N5/`LoiPageKhongThuocTeam` tất định vẫn thử lại TRAN_THU=3 lượt model; S5 còn
+  ❌. (3) F6: v3 không gọi `recordBlocked` (màn M18 mù). (4) `db/ket-noi.js#docEnv` và
+  `channels/messenger#cuaDangMo` không export ⇒ chép ở `nap.js#docEnvTuyetDoi` +
+  `handler-v3#vanGuiDangMo` — phiếu sau export rồi xoá bản chép. (5) F7/F8 GHI-NỢ verdict
+  MẢNG-2 (psid-kiểm ≠ convId-dùng; `xaAnh` mất ảnh giữa vòng).
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -725,3 +733,9 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   RF-21 advisory lock hội thoại (đảo-vá 3/3 ra 2 đơn) · RF-15 san_pham.page_id; cổng
   va-r2.sh 17/17, suite 347/0 fail, repro tổng-thể-1 🔴=0 · commit 5caf5be · nhật ký
   `docs/thi-cong/nhat-ky/phieu-va-r2.md` (thước cũ 3 file ngoài pathspec chỉnh theo luật mới).
+- 23/08 · VA-R1 → ✅ — RF-1 cổng HTTP ghi (accessor trên globalThis.fetch: POST/PUT/PATCH/
+  DELETE tới pages.fm/graph bị chặn khi van đóng, GET qua, pos.pages.fm ngoài van) + handler
+  /worker không gọi bộ não khi van đóng (S1: 0 lượt, S4: 0 HTTP GHI tới bẫy, 6 GET qua) ·
+  RF-2 nguonDangMo đọc .env tuyệt đối, V3_NAP_DEV chỉ mở khi DB localhost · RF-3 guard nhận
+  orderCreated/isOrderSummary. GATE RVA: 17 cổng rc=0 · 352/352 · tổng-thể-1 🔴=0 · MẢNG-2
+  còn ❌ F4/F5 (NÊN, §9) · commit 1562d58 · nhật ký `docs/thi-cong/nhat-ky/phieu-va-r1.md`.
