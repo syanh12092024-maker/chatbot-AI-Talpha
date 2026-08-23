@@ -739,3 +739,25 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   RF-2 nguonDangMo đọc .env tuyệt đối, V3_NAP_DEV chỉ mở khi DB localhost · RF-3 guard nhận
   orderCreated/isOrderSummary. GATE RVA: 17 cổng rc=0 · 352/352 · tổng-thể-1 🔴=0 · MẢNG-2
   còn ❌ F4/F5 (NÊN, §9) · commit 1562d58 · nhật ký `docs/thi-cong/nhat-ky/phieu-va-r1.md`.
+
+- 23/08 · NGƯỜI B · **PULL + DỰNG LẠI → TẮC Ở MÔI TRƯỜNG, CHƯA CODE MẢNH NỐI.** Máy B
+  KHÔNG có docker/brew/postgres/Postgres.app và Node là **v20.20.2** (sổ khai v25) ⇒ bước
+  `docker run talpha-pg` không chạy được. Output thật ba thước: ① `v3/test/b` **294 pass /
+  0 fail** ✅ (phải bỏ nháy glob — Node 20 không tự bung, `npm test` nguyên văn báo
+  `Could not find 'test/*.test.*'`; KHÔNG sửa dòng test theo lệnh) · ② `test/l0-*..va-*`
+  **32 pass / 330 fail**, 320/330 cùng một lý do `Thiếu DATABASE_URL_V3` · ③ 17 cổng
+  **rc=2 ×12, rc=1 ×5** (cùng nguyên nhân). Không phải lỗi code — thiếu CSDL.
+- 23/08 · NGƯỜI B · **KÊ CHỖ LỆCH TRƯỚC KHI CODE** (`v3/docs/lech-giua-gia-dinh-cua-B-va-
+  luoc-do-that.md`, commit ba65578, chưa push). 🟥 3 CHẶN cần A/CEO chốt: ①`suaTheoId` chỉ
+  theo `id` ⇒ **so-và-đặt của L4-M2 không diễn đạt được** (đề xuất A thêm
+  `suaCoDieuKien(...)`; A đã tự giải bài này ở RF-13) · ②`cau_hinh_model` **3 dòng/team**
+  (`UNIQUE team_id+vai_tro`), B viết 1 dòng/team ⇒ viết lại lớp cấu hình, và khoá API gắn
+  theo VAI TRÒ nên cùng khoá Kimi bị lưu 2 lần · ③`so_ai` **không có `ben`/`chu`** ⇒ đoạn
+  chat màn chi tiết không dựng được (B nghiêng phương án BỎ đoạn chat, bấm thẳng sang
+  Pancake). 🟨 2 chốt: `V3_KHOA_CHU`(B) trùng việc `V3_KHOA_MA_HOA`(A) — bao thư jsonb của
+  B bị `CHECK LIKE 'v1.%'` từ chối, B đề xuất bỏ bản của B dùng `db/khoa.js`; và `nhat_ky`
+  hai cửa ghi — B đề xuất giữ L0-M4 làm lớp trên, ruột gọi xuống `ghiNhatKy` của A.
+  🧭 BÀI HỌC: bản cài giả `v3/testkit/db-gia.js` viết lúc chưa có lược đồ và **dễ tính hơn
+  bản thật** ⇒ 294 bài xanh không chứng minh được gì về việc nối vào CSDL thật. Chỗ im lặng
+  nhất: `vai.ma` thật là `quan-tri` gạch NGANG, B so `quan_tri` gạch DƯỚI — lệch dấu này làm
+  MỌI người dùng thành không có vai, `batBuocVaiHTTP` chặn sạch, trông y hệt phân quyền chạy đúng.
