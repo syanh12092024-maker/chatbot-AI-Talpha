@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chi tiết việc cần xử — AI Closer v3</title>
+<style>
+  /* Hệ thiết kế chép từ `public/ops.html` dòng 10–17. Một file, không khung nào, không gọi
+     mạng ra ngoài. */
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd6db;text-decoration:none;font-size:12.5px}
+  main{padding:16px 22px 60px;max-width:1100px;margin:0 auto}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .panel .body{padding:13px 15px}
+  .tablecard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
+  .banner.r{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
+  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner .s{display:block;font-weight:400;font-size:12px;margin-top:4px}
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+  .pill.g{background:var(--okSoft);color:var(--ok)}
+  .pill.o{background:var(--warnSoft);color:var(--warn)}
+  .pill.r{background:var(--badSoft);color:var(--bad)}
+  .pill.m{background:#f1f1f1;color:#777}
+  .empty{padding:22px 15px;text-align:center;color:var(--muted)}
+  .lnk{color:var(--pri);text-decoration:underline;text-underline-offset:2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap;width:180px}
+
+  /* KHỐI 1 — lý do bot dừng. Nổi nhất, trên cùng: đây là câu sale cần trả lời trước khi
+     quyết định mở Pancake hay bỏ qua. */
+  .ly-do{border-left:5px solid var(--pri);margin-bottom:14px}
+  .ly-do.gap{border-left-color:var(--warn)}
+  .ly-do.qua{border-left-color:var(--bad);background:#fffafa}
+  .ly-do .chu{font-size:19px;font-weight:700;line-height:1.35;margin:2px 0 6px}
+  .ly-do .ai{color:var(--muted);font-size:12.5px;line-height:1.6}
+  .dh{font-variant-numeric:tabular-nums;font-weight:700}
+  .dh.gap{color:var(--warn)} .dh.qua{color:var(--bad)}
+
+  /* Hai nút to — cả màn hình tồn tại để dẫn tới đây. */
+  .nut-hang{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 16px}
+  a.nut{display:inline-block;background:var(--pri);color:#fff;border-radius:10px;padding:13px 22px;
+        font-weight:700;font-size:14.5px;text-decoration:none}
+  a.nut:hover{background:var(--priDark)}
+  a.nut.phu{background:#fff;color:var(--pri);border:1px solid var(--line)}
+  span.nut.mo{display:inline-block;background:#eef1f3;color:#9aa4ad;border-radius:10px;padding:13px 22px;
+              font-weight:700;font-size:14.5px;cursor:not-allowed}
+  .chu-nut{font-size:11.5px;color:var(--muted);margin-top:5px}
+
+  /* KHỐI 2 — đoạn chat, cũ trước, đọc như trên Pancake. */
+  .chat{padding:13px 15px;max-height:460px;overflow:auto;background:#fbfcfd}
+  .tin{max-width:74%;margin-bottom:10px;padding:8px 11px;border-radius:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+  .tin.khach{background:#fff;border:1px solid var(--line)}
+  .tin.bot{background:var(--priSoft);border:1px solid #cfe6e8;margin-left:auto}
+  .tin .meta{font-size:10.5px;color:var(--muted);margin-top:4px;font-weight:600}
+
+  /* KHỐI 4 (L4-M2) — đánh dấu đã xử. Thao tác DUY NHẤT sale làm trên hệ thống này, nên nó
+     là thứ duy nhất trên màn có nút bấm được. */
+  .dv-de{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);
+         font-weight:700;margin:0 0 6px}
+  .dv-de .buoc{color:var(--bad);text-transform:none;letter-spacing:0;font-weight:600}
+  .seg{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .seg button{background:#fff;border:1px solid var(--line);border-radius:20px;padding:8px 15px;
+              font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit}
+  .seg button:hover{border-color:var(--pri);color:var(--pri)}
+  .seg button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+  .o-nhap{margin-bottom:14px}
+  .o-nhap select,.o-nhap input{width:100%;max-width:420px;padding:9px 11px;border:1px solid var(--line);
+              border-radius:9px;font-size:13.5px;font-family:inherit;color:var(--ink);background:#fff}
+  .o-nhap select:focus,.o-nhap input:focus{outline:2px solid var(--priSoft);border-color:var(--pri)}
+  .o-nhap .goi-y{font-size:11.5px;color:var(--muted);margin-top:5px}
+  button.nut{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:13px 22px;
+             font-weight:700;font-size:14.5px;cursor:pointer;font-family:inherit}
+  button.nut:hover:not(:disabled){background:var(--priDark)}
+  button.nut:disabled{background:#eef1f3;color:#9aa4ad;cursor:not-allowed}
+  button.nut.phu{background:#fff;color:var(--pri);border:1px solid var(--line)}
+  button.nut.phu:hover{background:var(--priSoft)}
+  .dv-hang{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .dv-giu{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4;border-radius:9px;
+          padding:9px 12px;margin-bottom:13px;line-height:1.5}
+  .dv-loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:9px;
+          padding:9px 12px;margin-bottom:13px;font-weight:600;line-height:1.5}
+  .da-xu{background:var(--okSoft);border:1px solid #bfe6cd;border-radius:9px;padding:12px 14px;line-height:1.6}
+  .da-xu .to{font-size:15px;font-weight:700;color:#166534}
+  .da-xu .them{color:var(--muted);font-size:12.5px;margin-top:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Chi tiết việc cần xử</h1>
+  <span class="sub" id="phu-de"></span>
+  <span class="sp"></span>
+  <a href="/dieu-phoi">← Bảng điều phối</a>
+</header>
+
+<main id="than"><div class="empty">Đang tải…</div></main>
+
+<script>
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const gio2 = (t) => (t ? new Date(t).toLocaleString('vi-VN', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' }) : '—');
+
+/* Id lấy từ ĐƯỜNG DẪN, không phải query string: "Không nhét dữ liệu khách vào query
+   string" — mọi thứ đi qua `/api/...` với id. */
+const VIEC_ID = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
+
+let lech = 0;
+const gio = () => Date.now() + lech;
+
+function chuoiDem(han) {
+  if (!Number.isFinite(han)) return '—';
+  const con = han - gio();
+  const giay = Math.floor(Math.abs(con) / 1000);
+  const p = Math.floor(giay / 60), g = giay % 60;
+  return (con < 0 ? '+' : '') + p + ':' + String(g).padStart(2, '0');
+}
+const lopDem = (han) => (!Number.isFinite(han) ? '' : (han - gio() < 0 ? ' qua' : (han - gio() <= 300000 ? ' gap' : '')));
+
+function nhipDongHo() {
+  for (const el of document.querySelectorAll('[data-han]')) {
+    const han = Number(el.getAttribute('data-han'));
+    el.textContent = chuoiDem(han);
+    el.className = 'dh' + lopDem(han);
+  }
+}
+
+/* Nhãn tiếng Việt cho những cột đơn hàng đoán được; cột lạ hiện nguyên tên cột chứ không
+   giấu đi — lược đồ `don_hang` là của người A, giấu cột là giấu mất thông tin sale cần. */
+const NHAN = {
+  // Hai mã KHÁC NHAU, đừng để chung một nhãn: sale đọc mã cho kho mà đọc nhầm mã nội bộ
+  // thì kho không tra ra đơn nào.
+  id:'Mã trong hệ thống', ma_don:'Mã đơn trên POS', trang_thai:'Trạng thái', trang_thai_pos:'Trạng thái POS',
+  tong_tien:'Tổng tiền', tien_te:'Tiền tệ', so_luong:'Số lượng', san_pham:'Sản phẩm',
+  nguon:'Nguồn', dia_chi:'Địa chỉ', thanh_pho:'Thành phố', quoc_gia:'Quốc gia',
+  so_dien_thoai:'Số điện thoại', ten_khach:'Tên khách', ghi_chu:'Ghi chú',
+  tao_luc:'Tạo lúc', sua_luc:'Sửa lúc', shop_id:'Shop POS',
+};
+const AN = new Set(['team_id']);
+
+function bangDoiTuong(o) {
+  const hang = Object.entries(o)
+    .filter(([k, v]) => !AN.has(k) && v != null && v !== '' && typeof v !== 'object')
+    .map(([k, v]) => '<tr><th>' + esc(NHAN[k] || k) + '</th><td>' + esc(v) + '</td></tr>')
+    .join('');
+  return hang ? '<table>' + hang + '</table>' : '<div class="empty">Không có thông tin</div>';
+}
+
+function veTin(t) {
+  const meta = [t.luc ? gio2(t.luc) : null, t.lane ? 'lane ' + t.lane : null, t.maModel]
+    .filter(Boolean).map(esc).join(' · ');
+  return '<div class="tin ' + (t.ben === 'khach' ? 'khach' : 'bot') + '">'
+    + esc(t.chu || '(không có chữ)')
+    + (meta ? '<div class="meta">' + (t.ben === 'khach' ? 'Khách' : 'Bot') + ' · ' + meta + '</div>' : '')
+    + '</div>';
+}
+
+function ve(d) {
+  const v = d.viec || {};
+  const han = Number(v.han_luc);
+  const mucKhan = v.mucKhan === 'qua_han' ? 'qua' : (v.mucKhan === 'gap' ? 'gap' : '');
+  const pill = v.quaHan ? '<span class="pill r">QUÁ HẠN</span>'
+    : (v.mucKhan === 'gap' ? '<span class="pill o">SẮP HẾT GIỜ</span>' : '<span class="pill g">CÒN GIỜ</span>');
+
+  const ai = [
+    v.tenKhach || v.cust_id ? 'Khách: <b>' + esc(v.tenKhach || v.cust_id) + '</b>' : null,
+    v.soDienThoai ? esc(v.soDienThoai) : null,
+    v.tenPage || v.page_id ? 'Page: ' + esc(v.tenPage || v.page_id) : null,
+    'Bot đẩy sang lúc ' + esc(gio2(Number(v.tao_luc))),
+  ].filter(Boolean).join(' · ');
+
+  const posMo = !d.lienKet || !d.lienKet.pos;
+  const nutPos = posMo
+    ? '<div><span class="nut mo">Mở POS</span><div class="chu-nut">'
+        + (v.don_hang_id ? 'chưa cấu hình đường POS' : 'việc này không gắn đơn nào') + '</div></div>'
+    : '<div><a class="nut phu" href="' + esc(d.lienKet.pos) + '" target="_blank" rel="noopener">Mở POS</a></div>';
+
+  const nutPancake = d.lienKet && d.lienKet.pancake
+    ? '<div><a class="nut" href="' + esc(d.lienKet.pancake) + '" target="_blank" rel="noopener">Mở Pancake</a></div>'
+    : '<div><span class="nut mo">Mở Pancake</span><div class="chu-nut">việc này không có page hoặc hội thoại</div></div>';
+
+  const chat = (d.doanChat || []).length
+    ? '<div class="chat">' + d.doanChat.map(veTin).join('') + '</div>'
+    : '<div class="empty">Chưa có tin nào trong Sổ AI cho khách này</div>';
+
+  document.getElementById('than').innerHTML =
+    // KHỐI 1 — lý do bot dừng
+    '<div class="card ly-do ' + mucKhan + '">'
+      + '<div>' + pill + ' <span class="dh' + lopDem(han) + '" data-han="' + (Number.isFinite(han) ? han : '') + '">'
+      + chuoiDem(han) + '</span></div>'
+      + '<div class="chu">' + esc(d.lyDoChu) + '</div>'
+      + '<div class="ai">' + ai + '</div>'
+    + '</div>'
+    // Hai nút to
+    + '<div class="nut-hang">' + nutPancake + nutPos + '</div>'
+    // KHỐI 2 — đoạn chat
+    + '<section class="panel"><h2>Đoạn chat <span class="sp"></span>'
+      + '<span class="hint">' + (d.doanChat || []).length + ' tin gần nhất, cũ trước</span></h2>'
+      + chat + '</section>'
+    // KHỐI 3 — thông tin đơn
+    + '<section class="panel"><h2>Thông tin đơn</h2>'
+      + (d.donHang
+        ? '<div class="tablecard" style="border:0;box-shadow:none">' + bangDoiTuong(d.donHang) + '</div>'
+        : '<div class="empty">Việc này không gắn với đơn nào</div>')
+    + '</section>'
+    // Chỗ để sẵn cho L4-M2 (đánh dấu đã xử). ĐỂ RỖNG — đắp gì vào đây là việc của module đó.
+    + '<div id="o-dong-viec"></div>';
+
+  document.getElementById('phu-de').textContent = d.lyDoChu || '';
+  nhipDongHo();
+  veDongViec(d);                       // KHỐI 4 — L4-M2, đắp vào ô đã chừa ở trên
+}
+
+/* ══════════════════════ KHỐI 4 · ĐÁNH DẤU ĐÃ XỬ (L4-M2) ══════════════════════
+   Máy trạng thái: `cho` ──nhận──▶ `dang_xu` ──đóng──▶ `da_xu`. Không có đường mở lại ở
+   giai đoạn 1, nên trạng thái `da_xu` KHÔNG CÓ NÚT NÀO — bấm nhầm một cái là chốt vĩnh viễn.
+
+   Lỗi 409 hiện NGUYÊN VĂN thông điệp máy chủ ("Việc này Bình đang giữ từ 14:32"). Nuốt nó
+   thành "có lỗi xảy ra" là để sale bấm lại năm lần rồi đi hỏi người khác. */
+
+let VIEC = null;                        // dòng việc đang mở
+let BANG_KQ = null;                     // { loai, ds } — bảng kết quả tải từ máy chủ, nhớ một lần
+const chon = { ketQua: null, lyDo: null, ghiChu: '', chiPhi: '' };
+
+const tien = (n) => (Number.isFinite(Number(n)) ? Number(n).toLocaleString('vi-VN') : '');
+
+async function goiApi(duong, than) {
+  const r = await fetch(duong, {
+    method: than === undefined ? 'GET' : 'POST',
+    headers: { accept: 'application/json', ...(than === undefined ? {} : { 'content-type': 'application/json' }) },
+    body: than === undefined ? undefined : JSON.stringify(than),
+  });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || j.ok !== true) {
+    // Thông điệp của máy chủ đi thẳng ra màn hình.
+    const e = new Error((j && j.thongDiep) || ('Máy chủ trả ' + r.status));
+    e.ma = j && j.ma;
+    throw e;
+  }
+  return j;
+}
+
+/** Bảng kết quả hợp lệ cho ĐÚNG loại việc này. Máy chủ quyết, trang không tự đoán lại. */
+async function bangKetQua(loai) {
+  if (BANG_KQ && BANG_KQ.loai === loai) return BANG_KQ.ds;
+  const j = await goiApi('/api/dieu-phoi/bang-ket-qua?loai=' + encodeURIComponent(loai || ''));
+  BANG_KQ = { loai, ds: j.ketQua || [] };
+  return BANG_KQ.ds;
+}
+
+const timKq = (ma) => (BANG_KQ ? BANG_KQ.ds.find((k) => k.ma === ma) : null) || null;
+
+function khoiDaXu(v) {
+  const k = timKq(v.ket_qua);
+  const ld = k && (k.lyDo || []).find((x) => x.ma === v.ket_qua_ly_do);
+  const doi = [
+    (k && k.chu) || v.ket_qua || '(không ghi kết quả)',
+    ld ? ld.chu : (v.ket_qua_ly_do || null),
+  ].filter(Boolean).map(esc).join(' · ');
+  const them = [
+    v.ghi_chu ? 'Ghi chú: ' + esc(v.ghi_chu) : null,
+    v.chi_phi_dong != null && v.chi_phi_dong !== '' ? 'Chi phí: ' + esc(tien(v.chi_phi_dong)) + ' đ' : null,
+  ].filter(Boolean).join(' · ');
+
+  return '<section class="panel"><h2>Đã xử</h2><div class="body">'
+    + '<div class="da-xu"><div class="to">✔ Đã xử bởi '
+      + esc(v.nhan_boi_ten || v.nhan_boi || '(không rõ ai)')
+      + ' lúc ' + esc(gio2(Number(v.dong_luc))) + ' · ' + doi + '</div>'
+    + (them ? '<div class="them">' + them + '</div>' : '')
+    + '</div></div></section>';
+}
+
+function veOThem() {
+  const k = timKq(chon.ketQua);
+  const o = document.getElementById('dv-them');
+  if (!o) return;
+  if (!k) { o.innerHTML = ''; return; }
+
+  const dsLyDo = k.lyDo || [];
+  const canGhiChu = chon.lyDo === 'khac';
+
+  // Ô lý do chỉ hiện SAU KHI chọn kết quả cần lý do — hiện sẵn cả sáu ô thì màn này thành
+  // một cái biểu mẫu, mà sale chỉ có mười giây cho mỗi việc.
+  const oLyDo = dsLyDo.length
+    ? '<div class="o-nhap"><div class="dv-de">Lý do <span class="buoc">· bắt buộc</span></div>'
+      + '<select id="dv-ly-do"><option value="">— chọn lý do —</option>'
+      + dsLyDo.map((x) => '<option value="' + esc(x.ma) + '"' + (chon.lyDo === x.ma ? ' selected' : '') + '>'
+          + esc(x.chu) + '</option>').join('')
+      + '</select>'
+      + '<div class="goi-y">Đây là thứ dùng để sửa bot — không có lý do thì con số sau này không nói lên gì.</div>'
+      + '</div>'
+    : '';
+
+  const oGhiChu = '<div class="o-nhap"><div class="dv-de">Ghi chú'
+    + (canGhiChu ? ' <span class="buoc">· bắt buộc, ít nhất 5 ký tự</span>' : ' <span class="buoc" style="color:var(--muted)">· không bắt buộc</span>')
+    + '</div><input type="text" id="dv-ghi-chu" maxlength="500" value="' + esc(chon.ghiChu) + '" '
+    + 'placeholder="' + (canGhiChu ? 'Chọn “khác” thì phải ghi rõ ra' : 'Điều gì đáng nhớ về lần này') + '" /></div>';
+
+  // Ô chi phí: chỉ đơn đã chốt được mới có. Cờ này do MÁY CHỦ tính, trang không tự suy lại.
+  const oChiPhi = k.coChiPhi
+    ? '<div class="o-nhap"><div class="dv-de">Chi phí đóng đơn (đồng)</div>'
+      + '<input type="text" inputmode="numeric" id="dv-chi-phi" value="' + esc(chon.chiPhi) + '" placeholder="để trống nếu chưa biết" />'
+      + '<div class="goi-y">Số nguyên đồng, để trống được. Không biết thì bỏ trống, đừng gõ 0.</div></div>'
+    : '';
+
+  o.innerHTML = oLyDo + oGhiChu + oChiPhi;
+
+  const sel = document.getElementById('dv-ly-do');
+  if (sel) sel.addEventListener('change', (ev) => { chon.lyDo = ev.target.value || null; veOThem(); dongMo(); });
+  const gc = document.getElementById('dv-ghi-chu');
+  if (gc) gc.addEventListener('input', (ev) => { chon.ghiChu = ev.target.value; dongMo(); });
+  const cp = document.getElementById('dv-chi-phi');
+  if (cp) cp.addEventListener('input', (ev) => { chon.chiPhi = ev.target.value; });
+  dongMo();
+}
+
+/** Bật/tắt nút "Đóng việc" theo đúng luật máy chủ, để sale không bấm rồi mới bị 400. */
+function dongMo() {
+  const nut = document.getElementById('dv-dong');
+  if (!nut) return;
+  const k = timKq(chon.ketQua);
+  let duoc = Boolean(k);
+  if (k && (k.lyDo || []).length && !chon.lyDo) duoc = false;
+  if (chon.lyDo === 'khac' && chon.ghiChu.trim().length < 5) duoc = false;
+  nut.disabled = !duoc;
+}
+
+function baoLoi(chu) {
+  const o = document.getElementById('dv-loi');
+  if (!o) return;
+  if (!chu) { o.hidden = true; o.textContent = ''; return; }
+  o.hidden = false;
+  o.textContent = chu;
+}
+
+async function veDongViec(d) {
+  const o = document.getElementById('o-dong-viec');
+  if (!o) return;
+  VIEC = d.viec || {};
+  chon.ketQua = null; chon.lyDo = null; chon.ghiChu = ''; chon.chiPhi = '';
+
+  let ds;
+  try {
+    ds = await bangKetQua(VIEC.loai);
+  } catch (e) {
+    o.innerHTML = '<div class="banner o">Không tải được danh sách kết quả.<span class="s">'
+      + esc(e && e.message ? e.message : 'lỗi mạng') + '</span></div>';
+    return;
+  }
+
+  if (VIEC.trang_thai === 'da_xu') { o.innerHTML = khoiDaXu(VIEC); return; }
+
+  const giu = VIEC.nhan_boi_ten || VIEC.nhan_boi;
+  o.innerHTML = '<section class="panel"><h2>Đánh dấu đã xử<span class="sp"></span>'
+      + '<span class="hint">chọn kết quả rồi bấm “Đóng việc”</span></h2><div class="body">'
+    + (VIEC.trang_thai === 'dang_xu' && giu
+        ? '<div class="dv-giu">Đang do <b>' + esc(giu) + '</b> giữ từ ' + esc(gio2(Number(VIEC.nhan_luc)))
+          + '. Nếu không phải bạn thì hỏi họ một câu trước khi đóng.</div>'
+        : '')
+    + (VIEC.trang_thai === 'cho'
+        ? '<div class="dv-hang" style="margin-bottom:14px">'
+          + '<button type="button" class="nut phu" id="dv-nhan">Nhận việc</button>'
+          + '<span class="chu-nut" style="margin:0">hoặc chọn thẳng kết quả bên dưới — hệ thống tự nhận hộ</span></div>'
+        : '')
+    + '<div class="dv-de">Kết quả</div>'
+    + '<div class="seg" id="dv-kq">'
+      + ds.map((k) => '<button type="button" data-kq="' + esc(k.ma) + '">' + esc(k.chu) + '</button>').join('')
+    + '</div>'
+    + '<div id="dv-them"></div>'
+    + '<div class="dv-loi" id="dv-loi" hidden></div>'
+    + '<div class="dv-hang"><button type="button" class="nut" id="dv-dong" disabled>Đóng việc</button></div>'
+    + '</div></section>';
+
+  document.getElementById('dv-kq').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-kq]');
+    if (!b) return;
+    chon.ketQua = b.getAttribute('data-kq');
+    chon.lyDo = null;
+    for (const x of document.querySelectorAll('#dv-kq button')) x.classList.toggle('on', x === b);
+    baoLoi('');
+    veOThem();
+  });
+
+  const nhan = document.getElementById('dv-nhan');
+  if (nhan) nhan.addEventListener('click', () => gui(nhan, '/nhan'));
+  document.getElementById('dv-dong').addEventListener('click', (ev) => gui(ev.currentTarget, '/dong', {
+    ketQua: chon.ketQua,
+    lyDo: chon.lyDo || undefined,
+    ghiChu: chon.ghiChu.trim() || undefined,
+    chiPhi: chon.chiPhi.trim() || undefined,
+  }));
+}
+
+async function gui(nut, duoi, than) {
+  nut.disabled = true;
+  baoLoi('');
+  try {
+    await goiApi('/api/dieu-phoi/viec/' + encodeURIComponent(VIEC_ID) + duoi, than || {});
+    BANG_KQ = null;
+    await tai();                        // tải lại để thấy đúng trạng thái vừa ghi
+  } catch (e) {
+    baoLoi(e && e.message ? e.message : 'Không gửi được, thử lại.');
+    nut.disabled = false;
+    dongMo();
+  }
+}
+
+async function tai() {
+  try {
+    const r = await fetch('/api/dieu-phoi/viec/' + encodeURIComponent(VIEC_ID), { headers: { accept: 'application/json' } });
+    if (r.status === 401) {
+      document.getElementById('than').innerHTML =
+        '<div class="banner o">Phiên đăng nhập đã hết.<span class="s"><a class="lnk" href="/dang-nhap">Đăng nhập lại</a></span></div>';
+      return;
+    }
+    if (r.status === 404) {
+      document.getElementById('than').innerHTML =
+        '<div class="banner o">Không có việc này.<span class="s">Có thể việc đã bị xoá khỏi hàng chờ, hoặc đường dẫn sai. '
+        + '<a class="lnk" href="/dieu-phoi">Về bảng điều phối</a></span></div>';
+      return;
+    }
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j || j.ok !== true) throw new Error((j && j.thongDiep) || ('Máy chủ trả ' + r.status));
+    if (Number.isFinite(j.bay)) lech = j.bay - Date.now();
+    ve(j);
+  } catch (e) {
+    document.getElementById('than').innerHTML =
+      '<div class="banner r">Không tải được việc này.<span class="s">' + esc(e && e.message ? e.message : 'lỗi mạng') + '</span></div>';
+  }
+}
+
+setInterval(nhipDongHo, 1000);
+tai();
+</script>
+</body>
+</html>

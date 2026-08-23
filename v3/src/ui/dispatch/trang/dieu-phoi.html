@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bảng điều phối — AI Closer v3</title>
+<style>
+  /* Hệ thiết kế chép từ `public/ops.html` dòng 10–17 — cùng màu, cùng bo góc, cùng cỡ chữ
+     với dashboard sale đang dùng. Trang RIÊNG, một file, không khung nào, không gọi mạng
+     ra ngoài: bốn luồng v3 sửa song song, dùng chung file CSS là xung đột. */
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  main{padding:16px 22px 60px;max-width:1440px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .tablecard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:7px 9px;text-align:right;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;
+     position:sticky;top:0;background:var(--panel);white-space:nowrap;z-index:1}
+  th:first-child,td:first-child{text-align:left}
+  th.l,td.l{text-align:left}
+  tbody tr:hover{background:#fafcfc;cursor:pointer}
+  td.dim{color:var(--muted)}
+  .scroll{max-height:620px;overflow:auto}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+  .pill.g{background:var(--okSoft);color:var(--ok)}
+  .pill.o{background:var(--warnSoft);color:var(--warn)}
+  .pill.r{background:var(--badSoft);color:var(--bad)}
+  .pill.m{background:#f1f1f1;color:#777}
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
+  .banner.r{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
+  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner .s{display:block;font-weight:400;font-size:12px;margin-top:4px}
+  .lnk{color:var(--pri);text-decoration:underline;text-underline-offset:2px}
+  .empty{padding:22px 15px;text-align:center;color:var(--muted)}
+
+  /* Hai bảng cạnh nhau; màn hẹp thì xuống một cột. Sale hay mở trên laptop 13 inch. */
+  .hai{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:1060px){ .hai{grid-template-columns:1fr} }
+
+  /* Đồng hồ: chữ số đều nhau để con số không nhảy ngang mỗi giây. */
+  .dh{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+  .dh.gap{color:var(--warn)}
+  .dh.qua{color:var(--bad)}
+  tr.tre{background:var(--badSoft)}
+  tr.tre:hover{background:#fbe0e0}
+  .ten{font-weight:600;overflow-wrap:anywhere}
+  .phu{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .ly-do{white-space:normal;max-width:280px;line-height:1.45}
+  .c-nhan{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+
+  /* ─────────────────────── KHỔ HẸP: bảng thành thẻ xếp dọc ───────────────────────
+     Ở 375px, dạng bảng đẩy cột "Còn lại" ra ngoài khung — mà đồng hồ đếm ngược là NỬA
+     LÝ DO TỒN TẠI của mỗi dòng. Dưới ngưỡng này mỗi dòng thành một thẻ ba hàng:
+
+         Nguyễn Thu Hà                         +2:14
+         Khách khiếu nại
+         Tiểu Alpha Store        Bình     0901234567
+
+     Khổ rộng KHÔNG ĐỔI một dòng nào — nó vốn đã đúng. Nền đỏ dòng quá hạn và đồng hồ đếm
+     lên (`+3:20`) giữ nguyên ở cả hai khổ vì cả hai đều gắn vào `tr` và `.dh`. */
+  @media (max-width:720px){
+    main{padding:12px 12px 48px}
+    header{padding:12px 14px}
+    .hai{gap:12px}
+    /* Không cuộn ngang: bỏ khung cuộn của bảng, thẻ tự vừa bề rộng màn hình. */
+    .scroll{max-height:none;overflow:visible}
+    table{display:block}
+    thead{display:none}                 /* tiêu đề cột vô nghĩa khi mỗi dòng là một thẻ */
+    tbody{display:block}
+    tbody tr{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto auto;
+      column-gap:10px;row-gap:3px;
+      padding:11px 13px;border-bottom:1px solid var(--line);
+    }
+    tbody td{display:block;border:0;padding:0;text-align:left}
+    td.c-khach{display:contents}        /* thả tên và số điện thoại thẳng vào lưới của dòng */
+    td.c-khach .ten{grid-column:1;grid-row:1;min-width:0}
+    td.c-khach .phu{grid-column:3;grid-row:3;margin:0;justify-self:end;align-self:end}
+    td.c-dem{grid-column:2/-1;grid-row:1;justify-self:end}
+    td.c-lydo{grid-column:1/-1;grid-row:2;max-width:none}
+    td.c-page{grid-column:1;grid-row:3;min-width:0;font-size:11.5px;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    td.c-nhan{grid-column:2;grid-row:3;justify-self:end;font-size:11.5px;max-width:110px}
+    tbody td[colspan]{grid-column:1/-1;grid-row:1}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bảng điều phối</h1>
+  <span class="sub">Việc bot đẩy sang · mốc 10 phút</span>
+  <span class="sp"></span>
+  <span class="sub" id="nhip">đang tải…</span>
+</header>
+
+<main>
+  <div id="bao-dong"></div>
+
+  <div class="hai">
+    <section class="panel">
+      <h2>Hội thoại cần xử <span class="pill m" id="n-ht">0</span>
+        <span class="sp"></span><span class="hint">gần hết giờ nhất lên đầu</span></h2>
+      <div class="scroll">
+        <table>
+          <thead><tr><th class="l">Khách</th><th class="l">Page</th><th class="l">Lý do bot đẩy sang</th><th class="l" style="width:110px">Đang xử</th><th style="width:78px">Còn lại</th></tr></thead>
+          <tbody id="tb-ht"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Đơn cần xử <span class="pill m" id="n-don">0</span>
+        <span class="sp"></span><span class="hint">gần hết giờ nhất lên đầu</span></h2>
+      <div class="scroll">
+        <table>
+          <thead><tr><th class="l">Khách</th><th class="l">Page</th><th class="l">Lý do bot đẩy sang</th><th class="l" style="width:110px">Đang xử</th><th style="width:78px">Còn lại</th></tr></thead>
+          <tbody id="tb-don"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <p class="empty" style="padding-top:4px">Tự làm mới mỗi 15 giây. Bấm một dòng để xem chi tiết rồi nhảy sang Pancake.</p>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+/* Đồng hồ của MÁY CHỦ, không phải của máy khách: mỗi lần tải, `bay` từ máy chủ về được so
+   với `Date.now()` tại chỗ rồi giữ lại độ lệch. Máy sale đặt sai giờ 3 phút thì cả bảng
+   đếm sai 3 phút mà không ai ngờ. */
+let lech = 0;
+const gio = () => Date.now() + lech;
+
+/* Đếm ngược chạy PHÍA TRÌNH DUYỆT mỗi giây; máy chủ chỉ được hỏi 15 giây một lần.
+   Hỏi máy chủ mỗi giây thì 20 sale mở màn này là 20 lượt/giây, cả ngày, chỉ để đổi con số. */
+const CHU_KY_TAI_MS = 15000;
+
+function chuoiDem(hanLuc) {
+  if (!Number.isFinite(hanLuc)) return '—';
+  const con = hanLuc - gio();
+  const giay = Math.floor(Math.abs(con) / 1000);
+  const p = Math.floor(giay / 60), g = giay % 60;
+  // Quá hạn thì hiện `+3:20` — đếm lùi qua số âm không ai đọc được là trễ bao lâu.
+  return (con < 0 ? '+' : '') + p + ':' + String(g).padStart(2, '0');
+}
+
+function lopDem(hanLuc) {
+  if (!Number.isFinite(hanLuc)) return '';
+  const con = hanLuc - gio();
+  if (con < 0) return ' qua';
+  return con <= 5 * 60 * 1000 ? ' gap' : '';
+}
+
+function nhipDongHo() {
+  for (const el of document.querySelectorAll('[data-han]')) {
+    const han = Number(el.getAttribute('data-han'));
+    el.textContent = chuoiDem(han);
+    el.className = 'dh' + lopDem(han);
+    const tr = el.closest('tr');
+    if (tr) tr.classList.toggle('tre', Number.isFinite(han) && han - gio() < 0);
+  }
+}
+
+/* Cột "Đang xử" (L4-M2): trống khi `cho`, tên người khi `dang_xu`. Chỉ đọc — nhận việc và
+   đóng việc đều làm ở màn chi tiết, không ai bấm nhầm từ một danh sách đang tự làm mới. */
+function dangXuCua(v) {
+  if (v.trang_thai !== 'dang_xu') return '';
+  return esc(v.nhan_boi_ten || v.nhan_boi || 'ai đó');
+}
+
+function dongViec(v) {
+  const han = Number(v.han_luc);
+  const nhan = dangXuCua(v);
+  return '<tr data-id="' + esc(v.id) + '">'
+    + '<td class="l c-khach"><div class="ten"><a class="lnk" href="/viec/' + encodeURIComponent(v.id) + '">'
+      + esc(v.tenKhach || v.cust_id || '(chưa có tên)') + '</a></div>'
+      + (v.soDienThoai ? '<div class="phu">' + esc(v.soDienThoai) + '</div>' : '')
+    + '</td>'
+    + '<td class="l dim c-page">' + esc(v.tenPage || v.page_id || '—') + '</td>'
+    + '<td class="l ly-do c-lydo">' + esc(v.lyDoChu) + '</td>'
+    + '<td class="l dim c-nhan"' + (nhan ? ' title="' + nhan + '"' : '') + '>' + nhan + '</td>'
+    + '<td class="c-dem"><span class="dh' + lopDem(han) + '" data-han="' + (Number.isFinite(han) ? han : '') + '">'
+      + chuoiDem(han) + '</span></td>'
+    + '</tr>';
+}
+
+function veBang(id, ds) {
+  const el = $(id);
+  if (!ds.length) {
+    // Bảng trống trơn trông như màn hình hỏng. Nói thẳng ra là không có việc nào.
+    el.innerHTML = '<tr><td colspan="5"><div class="empty">Không có việc nào đang chờ</div></td></tr>';
+    return;
+  }
+  el.innerHTML = ds.map(dongViec).join('');
+}
+
+function veBaoDong(tt) {
+  const el = $('#bao-dong');
+  if (!tt || !tt.quaHanTong) { el.innerHTML = ''; return; }
+  const cu = tt.cuNhat;
+  el.innerHTML = '<div class="banner r">⛔ ' + tt.quaHanTong
+    + ' việc đã quá 10 phút chưa ai nhận'
+    + (cu ? '<span class="s">Việc cũ nhất quá hạn ' + cu.phutQuaHan + ' phút — '
+        + '<a class="lnk" href="/viec/' + encodeURIComponent(cu.id) + '">mở ngay</a></span>' : '')
+    + '</div>';
+}
+
+function veLoi(chu, dangNhapLai) {
+  $('#bao-dong').innerHTML = '<div class="banner o">' + esc(chu)
+    + (dangNhapLai ? '<span class="s"><a class="lnk" href="/dang-nhap">Đăng nhập lại</a></span>' : '')
+    + '</div>';
+}
+
+async function doc(duong) {
+  const r = await fetch(duong, { headers: { accept: 'application/json' } });
+  if (r.status === 401) { const e = new Error('het_phien'); e.ma = 'het_phien'; throw e; }
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || j.ok !== true) {
+    const e = new Error((j && j.thongDiep) || ('Máy chủ trả ' + r.status));
+    e.ma = j && j.ma; throw e;
+  }
+  return j;
+}
+
+let dangTai = false;
+async function tai() {
+  if (dangTai) return;
+  dangTai = true;
+  try {
+    const [tt, hc] = await Promise.all([
+      doc('/api/dieu-phoi/tom-tat'),
+      doc('/api/dieu-phoi/hang-cho'),
+    ]);
+    if (Number.isFinite(hc.bay)) lech = hc.bay - Date.now();
+    veBaoDong(tt);
+    veBang('#tb-ht', hc.hoiThoai || []);
+    veBang('#tb-don', hc.don || []);
+    $('#n-ht').textContent = (hc.hoiThoai || []).length;
+    $('#n-don').textContent = (hc.don || []).length;
+    $('#nhip').textContent = 'làm mới lúc ' + new Date().toLocaleTimeString('vi-VN');
+    nhipDongHo();
+  } catch (e) {
+    if (e && e.ma === 'het_phien') veLoi('Phiên đăng nhập đã hết.', true);
+    else veLoi('Không tải được danh sách: ' + (e && e.message ? e.message : 'lỗi mạng') + '. Sẽ thử lại sau 15 giây.');
+    $('#nhip').textContent = 'lỗi lúc ' + new Date().toLocaleTimeString('vi-VN');
+  } finally { dangTai = false; }
+}
+
+// Bấm bất cứ đâu trên dòng là mở màn chi tiết. Bấm đúng cái tên thì để thẻ <a> tự đi —
+// giữ được mở tab mới bằng chuột giữa.
+document.addEventListener('click', (ev) => {
+  if (ev.target.closest('a')) return;
+  const tr = ev.target.closest('tr[data-id]');
+  if (tr) location.href = '/viec/' + encodeURIComponent(tr.getAttribute('data-id'));
+});
+
+setInterval(nhipDongHo, 1000);
+setInterval(tai, CHU_KY_TAI_MS);
+tai();
+</script>
+</body>
+</html>
