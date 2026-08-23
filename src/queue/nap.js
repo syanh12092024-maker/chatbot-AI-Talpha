@@ -26,17 +26,75 @@ import {
 import { ctxHeThong } from "../db/index.js";
 import { baoDamHoiThoai } from "../chat/kho.js";
 import { xepTin } from "./kho.js";
+import fs from "node:fs";
+import path from "node:path";
+import { GOC } from "../../db/ket-noi.js";
 
-/** Van nguồn đọc env TƯƠI mỗi lượt (cùng khuôn `cuaDangMo()` của cửa Messenger). */
+/**
+ * Đọc biến env theo ĐƯỜNG TUYỆT ĐỐI: `process.env` trước, vắng thì tra `<GOC>/.env`
+ * (cùng nguồn `db/ket-noi.js#docEnv` dùng để nối CSDL — chép 8 dòng vì hàm đó không
+ * export, nợ §9). Refute F2 biến thể 2: `cd <nơi khác> && node <repo>/src/queue/...` ⇒
+ * dotenv không nạp `.env` (tra theo cwd) ⇒ `PANCAKE_READONLY` vắng ⇒ mọi van đọc
+ * `process.env` trần đều MỞ, trong khi đường tới CSDL thật vẫn nối được. Van phải đọc
+ * cùng nguồn với đường tới dữ liệu. `handler-v3.js` (cổng HTTP ghi) cũng dùng hàm này.
+ */
+export function docEnvTuyetDoi(ten) {
+  if (process.env[ten] != null) return process.env[ten];
+  try {
+    const raw = fs.readFileSync(path.join(GOC, ".env"), "utf8");
+    for (const dong of raw.split("\n")) {
+      const m = dong.match(/^\s*([A-Za-z_0-9]+)\s*=\s*(.*)$/);
+      if (m && m[1] === ten) return m[2].trim().replace(/^["']|["']$/g, "");
+    }
+  } catch {
+    /* không có .env ⇒ coi như thiếu biến */
+  }
+  return undefined;
+}
+
+/**
+ * CSDL đang trỏ có phải sandbox CỤC BỘ không — host của `DATABASE_URL_V3` (đọc CÙNG
+ * NGUỒN với `db/ket-noi.js`: process.env rồi `.env` tuyệt đối) là localhost/127.0.0.1/::1.
+ * VA-R1 · RF-2: `V3_NAP_DEV=1` chỉ được mở van khi KHÔNG nối CSDL thật (máy chủ
+ * 169.58.33.8 hay bất kỳ host xa nào). Chốt theo HOST, không theo tên DB: harness
+ * (`l2-m1.sh ③b`, S4b) chạy trên `aicloser_v3` localhost vẫn phải mở được.
+ * Không parse được ⇒ `false` (mù ⇒ ĐÓNG).
+ */
+export function dbLaSandboxCucBo(url = docEnvTuyetDoi("DATABASE_URL_V3")) {
+  try {
+    const h = new URL(String(url || "")).hostname.toLowerCase();
+    return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(h);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Van nguồn — đọc env TƯƠI mỗi lượt. `PANCAKE_READONLY` đọc theo ĐƯỜNG TUYỆT ĐỐI
+ * (`docEnvTuyetDoi`): refute F2 biến thể 2 — `cd <nơi khác> && node <repo>/src/queue/nap.js`
+ * làm dotenv không nạp `.env`, biến vắng ⇒ bản cũ đọc thành MỞ trong khi `db/ket-noi.js`
+ * vẫn nối được CSDL thật. Luật (CHỐT MỘT hành vi):
+ *   · READONLY ≠ '1'  ⇒ MỞ (máy chủ);
+ *   · READONLY = '1'  ⇒ ĐÓNG, trừ khi `V3_NAP_DEV==='1'` VÀ CSDL là sandbox cục bộ.
+ */
 export function nguonDangMo() {
-  return process.env.PANCAKE_READONLY !== "1" || process.env.V3_NAP_DEV === "1";
+  if (docEnvTuyetDoi("PANCAKE_READONLY") !== "1") return true;
+  return process.env.V3_NAP_DEV === "1" && dbLaSandboxCucBo();
 }
 
 export function lyDoNguonDong() {
+  const db = (() => {
+    try {
+      return new URL(String(docEnvTuyetDoi("DATABASE_URL_V3") || "")).host;
+    } catch {
+      return "(không đọc được)";
+    }
+  })();
   return (
-    `Bộ NẠP ĐÓNG: PANCAKE_READONLY=${JSON.stringify(process.env.PANCAKE_READONLY)} ` +
-    `và V3_NAP_DEV=${JSON.stringify(process.env.V3_NAP_DEV)}. Máy READONLY chỉ nạp khi ` +
-    `V3_NAP_DEV==='1' (chỉ dùng trong harness test — xem docs/v3/ban-giao/bien-moi-truong-v3.md).`
+    `Bộ NẠP ĐÓNG: PANCAKE_READONLY=${JSON.stringify(docEnvTuyetDoi("PANCAKE_READONLY"))} ` +
+    `(đọc .env tuyệt đối) và V3_NAP_DEV=${JSON.stringify(process.env.V3_NAP_DEV)} · CSDL=${db} ` +
+    `(sandbox cục bộ: ${dbLaSandboxCucBo()}). Máy READONLY chỉ nạp khi V3_NAP_DEV==='1' VÀ ` +
+    `CSDL trỏ localhost (harness test — xem docs/v3/ban-giao/bien-moi-truong-v3.md).`
   );
 }
 

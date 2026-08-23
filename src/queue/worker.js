@@ -16,7 +16,7 @@
 // đóng thành một máy đốt tiền chạy tới khi chạm trần. Người vận hành mở van rồi thì
 // UPDATE tay đám `chan_guard` về `cho` — có chủ đích, không tự động.
 import { moPhienRut, TRANG_THAI, THU_LAI, ghiNhatKyHangDoi } from "./kho.js";
-import { xuLyMotTin, KET_QUA } from "../chat/handler-v3.js";
+import { xuLyMotTin, KET_QUA, vanGuiDangMo } from "../chat/handler-v3.js";
 import { docTin as cuaDocTin } from "../channels/messenger/index.js";
 import { ctxHeThong } from "../db/index.js";
 
@@ -36,6 +36,31 @@ export async function chayMotVong(pool, deps = {}) {
 
   const { tin, khach } = phien;
   try {
+    // VA-R1 · RF-2: worker ĐỌC VAN GỬI trước khi giao tin cho nhạc trưởng. Van đóng ⇒
+    // chốt `chan_guard` NGAY (0 lượt đọc lịch sử, 0 token, 0 HTTP) — không chờ tới lượt
+    // cửa chặn ở cuối. Bản cũ không đọc van: mọi tin lọt vào hàng đợi (V3_NAP_DEV, cwd
+    // lạ) đều được chạy trọn bộ não trước khi cửa nói «đóng». Chỉ áp khi dùng CỬA THẬT
+    // (cửa TIÊM = harness, tự gánh van) — cùng luật với bước 7 của handler-v3.
+    if (!deps.cua && !vanGuiDangMo()) {
+      const lyDo =
+        `Van GỬI đóng (V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)} · ` +
+        `PANCAKE_READONLY=${JSON.stringify(process.env.PANCAKE_READONLY)}) — worker không ` +
+        `giao tin cho bộ não. Mở van rồi UPDATE tay tin chan_guard về cho.`;
+      await ghiNhatKyHangDoi(khach, {
+        teamId: tin.team_id,
+        hanhDong: "tin_chan_guard",
+        tinId: tin.id,
+        ghiChu: lyDo.slice(0, 400),
+      });
+      await phien.ketThuc(TRANG_THAI.CHAN_GUARD, lyDo);
+      return {
+        tinId: tin.id,
+        ketQua: KET_QUA.CHAN_GUARD,
+        lyDo,
+        dem: { goiModel: 0 },
+        soLanThu: tin.so_lan_thu,
+      };
+    }
     // Lịch sử hội thoại cho ngữ cảnh model — đọc QUA CỬA (đường ĐỌC, không bị guard
     // GỬI chặn). Lỗi mạng ở đây KHÔNG làm hỏng lượt: bộ não vẫn trả lời được với hồ sơ
     // nén + tin hiện tại, chỉ nghèo ngữ cảnh hơn. Thà trả lời với ít ngữ cảnh còn hơn

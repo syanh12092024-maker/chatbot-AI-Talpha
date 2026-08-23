@@ -89,7 +89,22 @@ P("\n═══ S3 · handler-v3 gọi guard THIẾU orderCreated/isOrderSummary 
   const mad = "Your order number will be sent by our staff shortly.";
   P(`   nhắc order no, ctx v3    → ${guardOutbound(mad, { kb: kbMau }).rule}`);
   P(`   thêm orderCreated:true   → ${guardOutbound(mad, { kb: kbMau, orderCreated: true }).action}`);
-  P("   ❌ F3: v2 (handler.js:436-437) truyền cả hai, v3 đánh rơi ⇒ lượt xác nhận đơn CÂM");
+  // ĐO QUA HANDLER-V3 THẬT (sau VA-R1 thước phải đo hành vi, không in ❌ vô điều kiện):
+  // bộ não giả chốt đơn (state.orderCreatedThisTurn=true) rồi trả tóm tắt đơn; guard THẬT.
+  const { tin } = await dungTin("psid-s3", "yes confirm");
+  const ctxThay = [];
+  const kq = await xuLyMotTin(sb.pool, tin, depsChung({
+    chayCloser: async ({ state }) => { state.orderCreatedThisTurn = true; return tom; },
+    kiemTinRa: (t, c) => { ctxThay.push(c); return guardOutbound(t, c); },
+    cua: {
+      guiTin: async () => ({ ok: true }), guiAnh: async () => ({ ok: true }),
+      ghiNote: async () => ({ ok: true }), gatThe: async () => ({ ok: true }),
+    },
+  }));
+  const c = ctxThay[0] || {};
+  P(`   handler-v3 truyền guard: orderCreated=${c.orderCreated} isOrderSummary=${c.isOrderSummary} → lượt ${kq.ketQua}/${kq.lyDo}`);
+  P(c.orderCreated === true && c.isOrderSummary === true && kq.lyDo === "tra_loi"
+    ? "   ✅" : "   ❌ F3: v2 (handler.js:436-437) truyền cả hai, v3 đánh rơi ⇒ lượt xác nhận đơn CÂM");
 }
 
 // ══ S5 · lỗi N5 tất định vẫn thử lại 3 lượt model ═══════════════════════════
@@ -137,8 +152,15 @@ P("\n═══ S4 · executeTool('handoff_human') với PANCAKE_READONLY=1 ═�
   await new Promise((s) => setTimeout(s, 400)); // chờ nhánh fire-and-forget
   globalThis.fetch = that;
   if (luu) fs.writeFileSync(url, luu);
-  P(`   → lượt HTTP bị bẫy chặn: ${bay.length}`);
+  // Sau VA-R1: CỔNG HTTP GHI (handler-v3 cài lên globalThis.fetch bằng accessor) đứng
+  // NGOÀI bẫy này — lượt GHI bị cổng ném trước khi tới bẫy; lượt ĐỌC (GET) vẫn qua (khoanh
+  // theo verb, đường đọc không bị ghì). Thước: số lượt GHI tới bẫy = 0; in cả số cổng chặn.
+  const { congHttpGhi } = await import("../../../src/chat/handler-v3.js");
+  const ghi = bay.filter((b) => !/^(GET|HEAD|OPTIONS) /.test(b));
+  const doc = bay.length - ghi.length;
+  P(`   → lượt HTTP tới bẫy: ${bay.length} (ĐỌC ${doc} · GHI ${ghi.length}) · cổng HTTP ghi đã chặn: ${congHttpGhi.daChan.length}`);
   for (const b of [...new Set(bay)]) P(`      · ${b}`);
-  P(bay.length ? "   ❌ F1: bắn thẳng pages.fm bằng token thật, 0 dòng READONLY canh, lỗi bị catch{} nuốt" : "   ✅");
+  for (const b of [...new Set(congHttpGhi.daChan)]) P(`      ⛔ ${b}`);
+  P(ghi.length ? "   ❌ F1: bắn thẳng pages.fm bằng token thật, 0 dòng READONLY canh, lỗi bị catch{} nuốt" : "   ✅");
 }
 P("\n(sandbox đã dọn)");

@@ -84,6 +84,100 @@ import {
   conNganSach as conNganSachMacDinh,
 } from "./ngan-sach-luot.js";
 import { vaoHangCho as vaoHangChoMacDinh } from "../orders/hang-cho.js";
+import { docEnvTuyetDoi } from "../queue/nap.js";
+
+// ══ VAN GỬI + CỔNG HTTP GHI (VA-R1 · RF-1/RF-2) ══════════════════════════════════════
+/**
+ * VAN GỬI — CÙNG LUẬT với `cuaDangMo()` của cửa Messenger (channels/messenger/index.js:53,
+ * hàm đó không export): MỞ ⇔ `V3_PANCAKE_GUI==='1'` VÀ `PANCAKE_READONLY!=='1'`, đọc
+ * `process.env` TƯƠI — harness test mở van bằng cách đặt/xoá hai biến này trong tiến
+ * trình (test/l2-m1-nhac-truong.test.js:314-318), nên lớp này KHÔNG được tra `.env`.
+ */
+export function vanGuiDangMo() {
+  return (
+    process.env.V3_PANCAKE_GUI === "1" && process.env.PANCAKE_READONLY !== "1"
+  );
+}
+
+/**
+ * VAN GỬI đọc `PANCAKE_READONLY` theo ĐƯỜNG TUYỆT ĐỐI — lớp CUỐI (cổng HTTP ghi) dùng:
+ * cwd khác làm `process.env` vắng biến thì vẫn thấy `.env` của repo nói READONLY=1.
+ * Chặt hơn `vanGuiDangMo()` đúng một chiều (chỉ có thể ĐÓNG thêm, không mở thêm).
+ */
+export function vanGuiDangMoTuyetDoi() {
+  return (
+    process.env.V3_PANCAKE_GUI === "1" && docEnvTuyetDoi("PANCAKE_READONLY") !== "1"
+  );
+}
+
+/** Host thuộc van GỬI Pancake/FB. `pos.pages.fm` KHÔNG thuộc — POS có van riêng `V3_POS_GHI`. */
+export function hostThuocVanGui(host) {
+  const h = String(host || "").toLowerCase();
+  if (h === "pos.pages.fm") return false;
+  return h === "pages.fm" || h.endsWith(".pages.fm") || h === "graph.facebook.com";
+}
+
+/** Sổ chứng cứ của cổng: các lượt GHI đã chặn (token đã che) — test/repro đọc. */
+export const congHttpGhi = { daLap: false, daChan: [], daChoQua: 0 };
+
+/**
+ * CỔNG HTTP GHI — lớp chặn CUỐI cho RF-1. Bộ não cũ (`tools.js:197/266/271`,
+ * `order-bridge.js:255` — file CẤM SỬA) gọi `fetch` TOÀN CỤC trần để POST note/tag ra
+ * pages.fm, KHÔNG qua cửa v3. Không sửa được file cấm ⇒ chặn ở chính `globalThis.fetch`:
+ * cài ACCESSOR (get/set) thay vì gán hàm — ai gán `globalThis.fetch = ...` sau đó (bẫy
+ * test, polyfill) chỉ thay được phần TRONG, cổng vẫn đứng ngoài. Luật:
+ *   · chỉ xét host thuộc van GỬI (`hostThuocVanGui`) — POS, Anthropic, mạng khác đi thẳng;
+ *   · KHOANH THEO VERB: GET/HEAD/OPTIONS luôn qua (đường ĐỌC không bị ghì);
+ *   · POST/PUT/PATCH/DELETE khi `vanGuiDangMo()===false` ⇒ ném `LoiCuaGuiDong`, ghi
+ *     `congHttpGhi.daChan` (URL che token). `tools.js` bọc `catch {}` nên ném là an toàn.
+ * Cài MỘT lần khi nạp module này (worker/handler nào gọi bộ não đều import file này).
+ */
+export function lapCongHttpGhi() {
+  if (congHttpGhi.daLap) return congHttpGhi;
+  const mo = Object.getOwnPropertyDescriptor(globalThis, "fetch");
+  let trong = mo?.value ?? (mo?.get ? mo.get.call(globalThis) : undefined);
+  const cong = async function fetchQuaCongGhi(dauVao, init) {
+    // `pancake.js#pkFetchPage` gửi `method: false` cho GET ⇒ falsy = GET (đo ở S4:
+    // bản đầu dùng `??` đọc thành "FALSE" và chặn cả đường ĐỌC — đúng cái phiếu cấm).
+    const method = String(
+      init?.method || (typeof dauVao === "object" && dauVao?.method) || "GET",
+    ).toUpperCase();
+    let host = "";
+    try {
+      host = new URL(typeof dauVao === "string" ? dauVao : dauVao?.url ?? String(dauVao)).host;
+    } catch {
+      host = "";
+    }
+    const laGhi = !["GET", "HEAD", "OPTIONS"].includes(method);
+    if (laGhi && hostThuocVanGui(host) && !vanGuiDangMoTuyetDoi()) {
+      const urlChe = String(typeof dauVao === "string" ? dauVao : dauVao?.url ?? "").replace(
+        /(access_token|page_access_token|api_key)=[^&]*/g,
+        "$1=<che>",
+      );
+      congHttpGhi.daChan.push(`${method} ${urlChe}`);
+      throw new LoiCuaGuiDong(
+        `CỔNG HTTP GHI chặn ${method} ${host} — van GỬI đóng (V3_PANCAKE_GUI=${JSON.stringify(
+          process.env.V3_PANCAKE_GUI,
+        )} · PANCAKE_READONLY=${JSON.stringify(docEnvTuyetDoi("PANCAKE_READONLY"))}). ` +
+          `Lượt này phát ra NGOÀI cửa v3 (bộ não cũ) — RF-1.`,
+      );
+    }
+    if (hostThuocVanGui(host)) congHttpGhi.daChoQua += 1;
+    if (typeof trong !== "function") throw new TypeError("fetch chưa sẵn sàng");
+    return trong(dauVao, init);
+  };
+  Object.defineProperty(globalThis, "fetch", {
+    configurable: true,
+    enumerable: mo?.enumerable ?? true,
+    get: () => cong,
+    set: (v) => {
+      trong = v;
+    },
+  });
+  congHttpGhi.daLap = true;
+  return congHttpGhi;
+}
+lapCongHttpGhi();
 
 /** Không tìm thấy dòng `hoi_thoai` cho tin — bộ NẠP phải tạo TRƯỚC (cua-messenger §2). */
 export class LoiThieuHoiThoai extends Error {
@@ -457,6 +551,18 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     }
 
     // ── 7 · DỰNG NGỮ CẢNH + GỌI BỘ NÃO (runCloser NGUYÊN VĂN) ────────────────────
+    // VA-R1 · RF-1: van GỬI đóng ⇒ KHÔNG chạy tool-loop. Bộ não chứa 5 lượt HTTP ghi
+    // thẳng (đầu file) và tiêu token thật; chạy nó rồi mới để cửa chặn là vừa đốt tiền
+    // vừa để note/tag bay ra trước khi cửa kịp nói «đóng» (refute S1). Ném cùng lỗi
+    // `LoiCuaGuiDong` ⇒ rơi vào nhánh `chan_guard` dưới đáy, worker KHÔNG thử lại (N6).
+    // Chỉ áp khi dùng CỬA THẬT: cửa được TIÊM (test/harness) tự gánh van của nó.
+    if (!deps.cua && !vanGuiDangMo()) {
+      throw new LoiCuaGuiDong(
+        `Van GỬI đóng (V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)} · ` +
+          `PANCAKE_READONLY=${JSON.stringify(process.env.PANCAKE_READONLY)}) — ` +
+          `KHÔNG gọi bộ não (0 token, 0 HTTP ghi). Mở van rồi UPDATE tay tin chan_guard về cho.`,
+      );
+    }
     const { messages } = buildContextMessages({
       prof,
       msgs: d.lichSu,
@@ -497,6 +603,12 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         pageId: state.pageId,
         custName: state.custName,
         lastAiText: state.lastAiText,
+        // VA-R1 · RF-3: khuôn v2 `src/handler.js:436-437` — lượt bot vừa chốt đơn là lượt
+        // TÓM TẮT xác nhận (tên/SĐT/địa chỉ) + có thể nhắc «order number»; thiếu hai cờ
+        // này guard chặn nhầm PII_ECHO/FAKE_ORDER_ID ⇒ khách câm đúng lượt xác nhận đơn
+        // trong khi hệ đã ghi so_ai ORDER + đẩy hàng chờ.
+        orderCreated: !!state.orderCreatedThisTurn,
+        isOrderSummary: !!state.orderCreatedThisTurn,
       });
       if (!v.ok) guarded = ""; // v3 KHÔNG xin model viết lại (một lượt = một lượt model)
       if (!v.ok) {
