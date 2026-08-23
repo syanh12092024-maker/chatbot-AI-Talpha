@@ -210,6 +210,17 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   có fastLaneAuth/Size (`lop-tu-khoa.js`) · RF-26 rap-prompt fallback vẫn query `page` dù
   docstring khai không-đụng-DB · RF-27 kịch bản `{}` không vào nguon_thieu.
 
+- 23/08 · VA-R2 (thợ đời 2) — NGOÀI PHẠM VI, chưa sửa: (1) `src/pos/ma-trang-thai.js:82`
+  `NHOM_HUY_HOAN=[4,5,6,7]` là bản khai thứ hai cùng giá trị `MA_HOAN` (`ti-le-hoan.js`
+  read-only theo phiếu) — cổng va-r2 ②b canh hai tập ≡, phiếu sau gộp về một. (2) `san_pham`
+  chỉ giữ MỘT `page_id`: shop nhiều page ⇒ `docDanhMuc` để null + đếm `pageMoHo`, `cua2Tien`
+  vẫn mù với các page đó — cần bảng nối hoặc JOIN theo `pos_shop_id`. (3) Việc người: UI sale
+  bổ sung tiền lúc duyệt phải khai rõ ĐƠN VỊ NHỎ (khoá `tong_tien`) hoặc gửi khuôn cũ
+  `total_price`+`currency` để hệ quy; `du_lieu_don.tong_tien_lon` là khoá jsonb mới (không
+  cột). (4) Bộ não cũ không trả `currency` (`src/context.js` prof) ⇒ dòng bot chốt vào hàng
+  chờ luôn thiếu `tong_tien` cho tới khi sale cho tệ — đúng fail-CLOSED, nhưng VA-R1/handler
+  có thể lấy tệ từ `page`/`ket_noi_pos` để điền sẵn (ngoài phiếu này).
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -707,3 +718,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   nhặt lại đơn kẹt cho_gui_wa (thành công đi tiếp, hỏng → cho_sale+viec_can_xu_ly ngay,
   không chờ đủ trần lần hai); repro F5/F2 đảo 🔴→✅, hồi quy 5 file/56 ca fail=0 · commit
   a1d1a41 · nhật ký `docs/thi-cong/nhat-ky/phieu-va-r3.md`.
+- 23/08 · VA-R2 → ✅ — 6 RF đóng: RF-9 đơn vị tiền một nguồn (goi_gia.gia/don_hang.tong_tien
+  = đơn vị NHỎ POS, HE_SO_TE nhân đúng 1 lần ở cửa vào `chuanHoaHoSo` cho khuôn cũ
+  `total_price`, tao-don không nhân lại; 007 COMMENT) · RF-10 HUY_HOAN dẫn từ MA_HOAN · RF-11
+  nguồn (b) phân trang hết/vượt trần ⇒ unknown · RF-12 lớp c3b + UNIQUE partial 007 ·
+  RF-21 advisory lock hội thoại (đảo-vá 3/3 ra 2 đơn) · RF-15 san_pham.page_id; cổng
+  va-r2.sh 17/17, suite 347/0 fail, repro tổng-thể-1 🔴=0 · commit 5caf5be · nhật ký
+  `docs/thi-cong/nhat-ky/phieu-va-r2.md` (thước cũ 3 file ngoài pathspec chỉnh theo luật mới).
