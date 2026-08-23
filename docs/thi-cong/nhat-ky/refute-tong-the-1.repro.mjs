@@ -327,13 +327,20 @@ P("\n═══ F4 · cửa (c)③ mồ-côi KHÔNG phủ ca «POST THÀNH CÔNG 
     [String(v.id)],
   );
   P(`   sau lượt 1: POST=${nap.post} · hang_cho=${dong.trang_thai} don_hang_id=${dong.don_hang_id} · nhật ký bd=${nk.bd} kq=${nk.kq} ⇒ mồ côi=${nk.bd > nk.kq}`);
-  const d2 = await duyet(
-    pool,
-    ctx(),
-    { hangChoId: v.id, teamId: TEAM },
-    { nap, env: MO, taoDon, donMessengerDaTao: hongSauPost },
-  );
-  P(`   lượt 2 (sale bấm lại): tao=${d2.tao} maPos=${d2.maPos} · TỔNG lượt POST = ${nap.post}`);
+  // Sau VA-R2 (RF-12) lượt 2 bị cửa (c)③b TỪ CHỐI bằng ném `LoiDonDaTao` — bắt để đo
+  // số POST (thước phải khớp luật mới, án lệ #27; bản trước vá lượt 2 trả về bình thường).
+  let d2 = null;
+  try {
+    d2 = await duyet(
+      pool,
+      ctx(),
+      { hangChoId: v.id, teamId: TEAM },
+      { nap, env: MO, taoDon, donMessengerDaTao: hongSauPost },
+    );
+    P(`   lượt 2 (sale bấm lại): tao=${d2.tao} maPos=${d2.maPos} · TỔNG lượt POST = ${nap.post}`);
+  } catch (e) {
+    P(`   lượt 2 (sale bấm lại) bị CHẶN: lớp=${e.lop ?? "?"} · ${e.message.slice(0, 80)} · TỔNG lượt POST = ${nap.post}`);
+  }
   P(`   ${ok(nap.post === 1)} KỲ VỌNG: 1 POST — cửa (c)③ phải chặn lượt hai`);
 }
 

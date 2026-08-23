@@ -216,10 +216,14 @@ Bằng chứng — `status_history` đơn 47397 (UAE): `0 → 1 → 12 → 8`; �
   Ghi MỘT LẦN lúc tạo, lượt sau lệch thì BÁO chứ không tự sửa (L3 rẽ nhánh theo cột này).
 - `trang_thai_pos` = mã số POS dạng text, refresh mỗi lượt đọc. `trang_thai_he` cửa POS
   **chỉ gieo `'moi_tu_pos'` lúc tạo** rồi không đụng lại — chủ cột là L3-M1.
-- `tong_tien` để **NULL** (fail-CLOSED): POS trả tiền ở đơn vị nhỏ với hệ số khác nhau
-  theo tệ (×100 vs ×1000), mà cột là `numeric(14,2)` — chia cho 1.000 là làm tròn mất
-  chữ số thứ ba của KWD/OMR/BHD. Quy ước quy đổi phải khai MỘT chỗ cho cả hệ (nợ §9).
-  `tien_te` thì có ghi (nhãn, an toàn).
+- `tong_tien` — cửa POS (L1-M1, đọc đơn từ POS) vẫn để **NULL** (fail-CLOSED): POS trả
+  tiền ở đơn vị nhỏ với hệ số khác nhau theo tệ (×100 vs ×1000), mà cột là
+  `numeric(14,2)` — chia cho 1.000 là làm tròn mất chữ số thứ ba của KWD/OMR/BHD.
+  **Quy ước đã khai MỘT chỗ (VA-R2 · migration 007 COMMENT):** `goi_gia.gia` và
+  `don_hang.tong_tien` lưu **đơn vị NHỎ POS** (= `retail_price`), kèm `tien_te`; đường
+  Messenger (`duyet()` L3-M4) ghi số ở đơn vị nhỏ đó, `tao-don.js` dùng THẲNG không nhân
+  `HE_SO_TE`. Khuôn cũ bộ não (`total_price`, đơn vị lớn) quy một lần ở `chuanHoaHoSo`
+  khi biết tệ; chưa biết tệ ⇒ `tong_tien` NULL + `tong_tien_lon`. `tien_te` luôn ghi.
 
 ### 7.4 · `san_pham` / `goi_gia` — POS chỉ cấp được một nửa
 

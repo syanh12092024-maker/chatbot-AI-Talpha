@@ -138,7 +138,17 @@ test("A1 · cửa ① liệt kê ĐÚNG TÊN trường thiếu (không chỉ tru
     chuanHoaHoSo({ name: "A", qty: 1, total_price: 10 }),
   );
   assert.equal(thieu.qua, false);
-  assert.deepEqual(thieu.thieu_truong, ["sdt", "dia_chi"]);
+  // RF-9 (VA-R2): `total_price` khuôn cũ là đơn vị LỚN, KHÔNG có tệ ⇒ không quy được
+  // sang đơn vị nhỏ ⇒ `tong_tien` null = THIẾU (mù có nói ra), giữ ở `tong_tien_lon`.
+  assert.deepEqual(thieu.thieu_truong, ["sdt", "dia_chi", "tong_tien"]);
+  assert.equal(
+    chuanHoaHoSo({ name: "A", qty: 1, total_price: 10 }).tong_tien_lon,
+    10,
+  );
+  // Có tệ ⇒ quy ĐÚNG MỘT LẦN theo HE_SO_TE (AED ×100 · KWD ×1000); tên cột v3 giữ nguyên.
+  assert.equal(chuanHoaHoSo({ total_price: 10, currency: "AED" }).tong_tien, 1000);
+  assert.equal(chuanHoaHoSo({ total_price: 10, currency: "KWD" }).tong_tien, 10000);
+  assert.equal(chuanHoaHoSo({ tong_tien: 1000, tien_te: "AED" }).tong_tien, 1000);
   // 0 và "" là THIẾU, không phải «có giá trị» — số 0 lọt qua là một đơn 0 đồng.
   assert.deepEqual(
     cua1DuTruong(chuanHoaHoSo({ ...HO_SO_DU, so_luong: 0, tong_tien: 0 }))
@@ -170,6 +180,7 @@ test("A2 · thiếu trường VẪN vào hàng chờ, gắn thieu_truong (không
   assert.deepEqual(dong.cua_kiem.cong["1_du_truong"].thieu_truong, [
     "sdt",
     "dia_chi",
+    "tong_tien", // RF-9: total_price khuôn cũ không tệ ⇒ chưa quy được ⇒ thiếu
   ]);
   assert.equal(dong.cua_kiem.qua_het, false);
   assert.ok(dong.cua_kiem.chan_vi.some((x) => x.startsWith("cua1:")));

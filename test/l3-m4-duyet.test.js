@@ -206,7 +206,9 @@ test("P1 · payload mang ĐỦ trường khuôn createPancakeOrder, và status =
   assert.equal(MA_CHO_IN, 12);
   assert.deepEqual(pl.items, [{ variation_id: UUID_BT, quantity: 2 }]);
   assert.equal(typeof pl.items[0].variation_id, "string"); // KHÔNG Number() ⇒ NaN
-  assert.equal(pl.shipping_fee, 19900); // 199 AED × 100 (đơn vị nhỏ, khuôn cũ)
+  // RF-9 (VA-R2): `don.tongTien` ĐÃ ở đơn vị nhỏ POS (= goi_gia.gia) ⇒ KHÔNG nhân ×100
+  // lần nữa. Thước cũ neo 19900 chính là lỗi thu 1.500 AED thay vì 15,00.
+  assert.equal(pl.shipping_fee, 199);
   assert.equal(pl.is_free_shipping, false);
   assert.equal(pl.shipping_address.address, "Jumeirah 3, Dubai");
 });

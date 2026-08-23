@@ -86,11 +86,12 @@ export class LoiDonDaTao extends Error {
 }
 
 /**
- * ĐỔI TIỀN SANG ĐƠN VỊ NHỎ CỦA POS — port NGUYÊN VĂN bảng `CCY_FACTOR` của
+ * HỆ SỐ ĐƠN VỊ NHỎ CỦA POS theo tệ — port NGUYÊN VĂN bảng `CCY_FACTOR` của
  * `src/pancake-orders.js:162` (bản đang chạy, CẤM SỬA nên chép chứ không import: file
- * đó đọc `pancake-shops.json` + bắn `fetch` ngay lúc nạp module).
- * ⚠️ Tệ KHÔNG có trong bảng ⇒ trả `null` (KHÔNG rơi về ×100 im lặng như khuôn cũ) —
- * đoán sai hệ số là sai tiền 100 lần, và cửa gọi sẽ ném thay vì gửi một con số bịa.
+ * đó đọc `pancake-shops.json` + bắn `fetch` ngay lúc nạp module). Dự án ĐA TỆ Trung Đông
+ * — mỗi tệ một hệ số (AED/SAR/QAR/USD ×100 · KWD/OMR/BHD ×1000). KHÔNG có VND ở đây.
+ * ⚠️ Tệ KHÔNG có trong bảng ⇒ hàm quy đổi trả `null` (KHÔNG rơi về ×100 im lặng như
+ * khuôn cũ) — đoán sai hệ số là sai tiền 100 lần, và cửa gọi sẽ ném thay vì gửi con số bịa.
  */
 export const HE_SO_TE = Object.freeze({
   AED: 100,
@@ -101,12 +102,40 @@ export const HE_SO_TE = Object.freeze({
   OMR: 1000,
   BHD: 1000,
 });
+
+/**
+ * Quy MỘT SỐ TIỀN Ở ĐƠN VỊ LỚN (major, ví dụ 15,00 AED) SANG ĐƠN VỊ NHỎ (minor, 1500).
+ * ⚠️ RF-9 — luồng TẠO ĐƠN v3 KHÔNG dùng hàm này: `goi_gia.gia` và `don_hang.tong_tien`
+ *    (⇒ `don.tongTien`) đã LƯU sẵn đơn vị nhỏ POS (khuôn `doc-danh-muc.js` ghi thẳng
+ *    `retail_price`, vốn đã là minor). Nhân hệ số MỘT LẦN NỮA ở đó = thu ×100/×1000
+ *    (thu 1.500 AED thay vì 15,00). Hàm này chỉ để quy khi NGUỒN khai đơn vị lớn; giữ
+ *    export + known-answer (test `l3-m4-duyet` P3) cho tương thích. Luồng tiền dùng
+ *    `phiVanChuyenMinor` bên dưới.
+ */
 export function doiSangDonViNho(tong, tienTe) {
   const n = Number(tong);
   if (!Number.isFinite(n) || n <= 0) return 0;
   const he = HE_SO_TE[String(tienTe || "").toUpperCase()];
   if (!he) return null;
   return Math.round(n * he);
+}
+
+/**
+ * PHÍ THU CỦA KHÁCH Ở ĐƠN VỊ NHỎ (minor) — nguồn tiền ĐÃ minor nên KHÔNG nhân (RF-9).
+ * `goi_gia.gia` · `don_hang.tong_tien` · `don.tongTien` cùng MỘT đơn vị: đơn vị nhỏ POS
+ * (khai tường minh ở migration 007 COMMENT + `doc-danh-muc.js`). `HE_SO_TE` ở đây chỉ
+ * VALIDATE tệ, KHÔNG nhân:
+ *   · tệ KHÔNG có trong bảng ⇒ `null` ⇒ cửa (b) chặn (fail-CLOSED, cấm gửi số tệ lạ);
+ *   · tong ≤ 0 / không phải số ⇒ 0 (miễn phí ship);
+ *   · còn lại ⇒ chính con số đó (đã minor), làm tròn về số nguyên đơn vị nhỏ.
+ * ĐỘC-LẬP-TỆ: mọi tệ đi cùng một đường, không quy về một tệ neo nào.
+ */
+export function phiVanChuyenMinor(tong, tienTe) {
+  const he = HE_SO_TE[String(tienTe || "").toUpperCase()];
+  if (!he) return null; // tệ lạ ⇒ fail-CLOSED (cửa b đọc null = thiếu he_so_te)
+  const n = Number(tong);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.round(n); // ĐÃ minor — KHÔNG nhân lại (RF-9: không thu ×100/×1000)
 }
 
 /**
@@ -145,7 +174,9 @@ export function dungPayload({
 }) {
   const diaChi = [don.diaChi, don.thanhPho].filter(Boolean).join(", ");
   const soLuong = Number(don.soLuong) || 1;
-  const gia = doiSangDonViNho(don.tongTien, don.tienTe);
+  // RF-9: `don.tongTien` ĐÃ ở đơn vị nhỏ POS (= `goi_gia.gia`) ⇒ dùng THẲNG, KHÔNG
+  //       nhân `HE_SO_TE` lần nữa. `phiVanChuyenMinor` chỉ validate tệ + làm tròn.
+  const gia = phiVanChuyenMinor(don.tongTien, don.tienTe);
   return {
     page_id: String(pageIdText),
     bill_full_name: don.ten || "",
@@ -218,17 +249,30 @@ export async function guiTaoDon(ketNoi, payload, { nap = fetch } = {}) {
   return { id: String(j.data.id), tho: j.data };
 }
 
-/** Cửa (c)③ — còn dòng `pos_tao_don_bat_dau` nào của hàng chờ này chưa có kết quả không. */
+/**
+ * Cửa (c)③ + ③b — đọc dấu vết POST của hàng chờ này trên `nhat_ky` (bảng chỉ-INSERT,
+ * ghi trên POOL GỐC nên SỐNG QUA một lượt rollback của giao dịch `duyet()`):
+ *   · `moCoi`  = có dòng `bat_dau` chưa có `ket_qua` ⇒ POST bay đi mà MẤT PHẢN HỒI
+ *               (không biết POS có nhận không) — lớp ③.
+ *   · `daNhan` = có dòng `ket_qua` MANG `ma_pos` ⇒ POS ĐÃ NHẬN đơn của hàng chờ này ở
+ *               một lượt trước — lớp ③b (RF-12). Đây là ca «POST THÀNH CÔNG rồi giao
+ *               dịch ROLLBACK»: nhật ký hai pha CÂN BẰNG (moCoi=false) nên lớp ③ mù,
+ *               nhưng đơn THẬT đã sinh trên POS. `ket_qua` của lượt POS bị POS TỪ CHỐI
+ *               KHÔNG mang `ma_pos` (xem cửa d) nên KHÔNG tính là `daNhan` — vế đó cho
+ *               phép thử lại, đúng nghiệp vụ.
+ */
 export async function moCoiTruocPost(pool, { teamId, hangChoId }) {
   const r = await pool.query(
     `SELECT count(*) FILTER (WHERE hanh_dong = 'pos_tao_don_bat_dau')::int  bat_dau,
-            count(*) FILTER (WHERE hanh_dong = 'pos_tao_don_ket_qua')::int ket_qua
+            count(*) FILTER (WHERE hanh_dong = 'pos_tao_don_ket_qua')::int ket_qua,
+            count(*) FILTER (WHERE hanh_dong = 'pos_tao_don_ket_qua'
+                             AND (sau ->> 'ma_pos') IS NOT NULL)::int da_nhan
        FROM nhat_ky
       WHERE team_id = $1 AND doi_tuong = 'hang_cho_tao_don' AND doi_tuong_id = $2`,
     [teamId, String(hangChoId)],
   );
-  const { bat_dau: batDau, ket_qua: ketQua } = r.rows[0];
-  return { batDau, ketQua, moCoi: batDau > ketQua };
+  const { bat_dau: batDau, ket_qua: ketQua, da_nhan: daNhan } = r.rows[0];
+  return { batDau, ketQua, daNhan: daNhan > 0, moCoi: batDau > ketQua };
 }
 
 async function ghiChan(pool, { teamId, cua, hangChoId, chiTiet }) {
@@ -316,7 +360,8 @@ export async function taoDon(
   const bienThe = tachMaBienThe(don.sanPhamMa);
   if (!bienThe) thieu.push("san_pham_ma");
   if (don.khoHang == null || don.khoHang === "") thieu.push("kho_hang");
-  const gia = doiSangDonViNho(don.tongTien, don.tienTe);
+  // RF-9: validate tệ (fail-CLOSED tệ lạ) mà KHÔNG nhân — `tongTien` đã minor.
+  const gia = phiVanChuyenMinor(don.tongTien, don.tienTe);
   if (gia === null) thieu.push(`he_so_te:${don.tienTe ?? "(rỗng)"}`);
   if (thieu.length) {
     await ghiChan(soNhatKy, {
@@ -378,6 +423,28 @@ export async function taoDon(
         `cục (nhật ký hai pha mồ côi) — TỪ CHỐI tạo lại. Người phải mở POS xem đơn đã ` +
         `vào chưa; thà một đơn làm tay còn hơn hai kiện COD.`,
       { lop: "c3", chiTiet: `${mc.batDau}/${mc.ketQua}` },
+    );
+  }
+
+  // ── CỬA (c) lớp ③b — POST ĐÃ THÀNH CÔNG rồi giao dịch ROLLBACK (RF-12) ─────
+  // Lớp ③ mù ca này: POST OK ⇒ nhật ký hai pha CÂN BẰNG (moCoi=false), mà đơn THẬT đã
+  // sinh trên POS và `hang_cho.don_hang_id` bị rollback trả về null ⇒ lớp ① không thấy.
+  // `daNhan` (ket_qua mang ma_pos, ghi trên POOL GỐC) là dấu DUY NHẤT sống qua rollback
+  // nói «POS đã nhận đơn của hàng chờ này». UNIQUE DB (migration 007) là chốt cứng cuối:
+  // không bao giờ hai `ket_qua` thành công cùng hangChoId (án lệ #31 — cửa RA đúng một cái).
+  if (mc.daNhan) {
+    await ghiChan(soNhatKy, {
+      teamId: team.teamId,
+      cua: "c3b",
+      hangChoId,
+      chiTiet:
+        "POST đã THÀNH CÔNG ở lượt trước (ket_qua mang ma_pos) — sống qua rollback",
+    });
+    throw new LoiDonDaTao(
+      `Hàng chờ #${hangChoId} ĐÃ có một lượt POST thành công trên POS (dấu sống qua ` +
+        `rollback) — TỪ CHỐI tạo lại. Người mở POS xác nhận đơn; thà một đơn làm tay ` +
+        `còn hơn hai kiện COD.`,
+      { lop: "c3b", chiTiet: "da_nhan" },
     );
   }
 
