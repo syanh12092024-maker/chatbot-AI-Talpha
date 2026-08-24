@@ -143,14 +143,19 @@ function nhipDongHo() {
    giấu đi — lược đồ `don_hang` là của người A, giấu cột là giấu mất thông tin sale cần. */
 const NHAN = {
   // Hai mã KHÁC NHAU, đừng để chung một nhãn: sale đọc mã cho kho mà đọc nhầm mã nội bộ
-  // thì kho không tra ra đơn nào.
-  id:'Mã trong hệ thống', ma_don:'Mã đơn trên POS', trang_thai:'Trạng thái', trang_thai_pos:'Trạng thái POS',
+  // thì kho không tra ra đơn nào. `ma_pos` là "<shop>:<số đơn POS>", không phải số trần.
+  id:'Mã trong hệ thống', ma_pos:'Mã đơn trên POS',
+  // HAI cột trạng thái TÁCH HẲN nhau trong lược đồ thật: đơn có thể «chờ khách trả lời»
+  // trong hệ mà trên POS vẫn «chờ xác nhận». Gộp một nhãn là giấu mất một nửa sự thật.
+  trang_thai_he:'Trạng thái trong hệ', trang_thai_pos:'Trạng thái POS',
   tong_tien:'Tổng tiền', tien_te:'Tiền tệ', so_luong:'Số lượng', san_pham:'Sản phẩm',
   nguon:'Nguồn', dia_chi:'Địa chỉ', thanh_pho:'Thành phố', quoc_gia:'Quốc gia',
   so_dien_thoai:'Số điện thoại', ten_khach:'Tên khách', ghi_chu:'Ghi chú',
-  tao_luc:'Tạo lúc', sua_luc:'Sửa lúc', shop_id:'Shop POS',
+  tao_luc:'Tạo lúc', sua_luc:'Sửa lúc', dong_luc:'Đóng lúc',
 };
-const AN = new Set(['team_id']);
+// Khoá ngoại và cột nội bộ: giấu đi vì chúng là SỐ, sale không tra được gì bằng chúng —
+// thứ chúng trỏ tới đã hiện sẵn ở khối trên (khách, page, hội thoại).
+const AN = new Set(['team_id', 'khach_id', 'page_id', 'hoi_thoai_id']);
 
 function bangDoiTuong(o) {
   const hang = Object.entries(o)
@@ -168,10 +173,10 @@ function ve(d) {
     : (v.mucKhan === 'gap' ? '<span class="pill o">SẮP HẾT GIỜ</span>' : '<span class="pill g">CÒN GIỜ</span>');
 
   const ai = [
-    v.tenKhach || v.cust_id ? 'Khách: <b>' + esc(v.tenKhach || v.cust_id) + '</b>' : null,
+    v.tenKhach ? 'Khách: <b>' + esc(v.tenKhach) + '</b>' : null,
     v.soDienThoai ? esc(v.soDienThoai) : null,
-    v.tenPage || v.page_id ? 'Page: ' + esc(v.tenPage || v.page_id) : null,
-    'Bot đẩy sang lúc ' + esc(gio2(Number(v.tao_luc))),
+    v.tenPage ? 'Page: ' + esc(v.tenPage) : null,
+    'Bot đẩy sang lúc ' + esc(gio2(Number(v.day_luc))),
   ].filter(Boolean).join(' · ');
 
   const posMo = !d.lienKet || !d.lienKet.pos;
@@ -182,7 +187,7 @@ function ve(d) {
 
   const nutPancake = d.lienKet && d.lienKet.pancake
     ? '<div><a class="nut" href="' + esc(d.lienKet.pancake) + '" target="_blank" rel="noopener">Mở Pancake</a></div>'
-    : '<div><span class="nut mo">Mở Pancake</span><div class="chu-nut">việc này không có page hoặc hội thoại</div></div>';
+    : '<div><span class="nut mo">Mở Pancake</span><div class="chu-nut">việc này không gắn hội thoại nào</div></div>';
 
   document.getElementById('than').innerHTML =
     // KHỐI 1 — lý do bot dừng
@@ -252,21 +257,24 @@ async function bangKetQua(loai) {
 
 const timKq = (ma) => (BANG_KQ ? BANG_KQ.ds.find((k) => k.ma === ma) : null) || null;
 
+/* `ly_do_dong` là MỘT cột chở hai thứ (mã lý do + ghi chú) — lược đồ thật không có cột
+   `ghi_chu`. Máy chủ đã tách sẵn thành `lyDoDongMa` và `lyDoDongGhiChu`; trang KHÔNG tự
+   cắt chuỗi, để khuôn ghép/tách chỉ có một bản (`kho-viec.js`). */
 function khoiDaXu(v) {
   const k = timKq(v.ket_qua);
-  const ld = k && (k.lyDo || []).find((x) => x.ma === v.ket_qua_ly_do);
+  const ld = k && (k.lyDo || []).find((x) => x.ma === v.lyDoDongMa);
   const doi = [
     (k && k.chu) || v.ket_qua || '(không ghi kết quả)',
-    ld ? ld.chu : (v.ket_qua_ly_do || null),
+    ld ? ld.chu : (v.lyDoDongMa || null),
   ].filter(Boolean).map(esc).join(' · ');
   const them = [
-    v.ghi_chu ? 'Ghi chú: ' + esc(v.ghi_chu) : null,
-    v.chi_phi_dong != null && v.chi_phi_dong !== '' ? 'Chi phí: ' + esc(tien(v.chi_phi_dong)) + ' đ' : null,
+    v.lyDoDongGhiChu ? 'Ghi chú: ' + esc(v.lyDoDongGhiChu) : null,
+    v.chi_phi != null && v.chi_phi !== '' ? 'Chi phí: ' + esc(tien(v.chi_phi)) + ' đ' : null,
   ].filter(Boolean).join(' · ');
 
   return '<section class="panel"><h2>Đã xử</h2><div class="body">'
     + '<div class="da-xu"><div class="to">✔ Đã xử bởi '
-      + esc(v.nhan_boi_ten || v.nhan_boi || '(không rõ ai)')
+      + esc(v.tenNguoiNhan || '(không rõ)')
       + ' lúc ' + esc(gio2(Number(v.dong_luc))) + ' · ' + doi + '</div>'
     + (them ? '<div class="them">' + them + '</div>' : '')
     + '</div></div></section>';
@@ -350,16 +358,17 @@ async function veDongViec(d) {
     return;
   }
 
-  if (VIEC.trang_thai === 'da_xu') { o.innerHTML = khoiDaXu(VIEC); return; }
+  // `trangThai` do máy chủ suy sẵn — công thức nằm ở `kho-viec.js`, trang không chép lại.
+  if (VIEC.trangThai === 'da_xu') { o.innerHTML = khoiDaXu(VIEC); return; }
 
-  const giu = VIEC.nhan_boi_ten || VIEC.nhan_boi;
+  const giu = VIEC.tenNguoiNhan;
   o.innerHTML = '<section class="panel"><h2>Đánh dấu đã xử<span class="sp"></span>'
       + '<span class="hint">chọn kết quả rồi bấm “Đóng việc”</span></h2><div class="body">'
-    + (VIEC.trang_thai === 'dang_xu' && giu
+    + (VIEC.trangThai === 'dang_xu' && giu
         ? '<div class="dv-giu">Đang do <b>' + esc(giu) + '</b> giữ từ ' + esc(gio2(Number(VIEC.nhan_luc)))
           + '. Nếu không phải bạn thì hỏi họ một câu trước khi đóng.</div>'
         : '')
-    + (VIEC.trang_thai === 'cho'
+    + (VIEC.trangThai === 'cho'
         ? '<div class="dv-hang" style="margin-bottom:14px">'
           + '<button type="button" class="nut phu" id="dv-nhan">Nhận việc</button>'
           + '<span class="chu-nut" style="margin:0">hoặc chọn thẳng kết quả bên dưới — hệ thống tự nhận hộ</span></div>'

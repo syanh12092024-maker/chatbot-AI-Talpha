@@ -5,10 +5,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { KhoGia, taoTruyVanGia } from '../../testkit/db-gia.js';
 import { taoBoiCanh, VAI, LoiThieuBoiCanh } from '../../src/auth/boi-canh.js';
 import {
   datTaoTruyVan, hangCho, tomTat, lyDoChu, LY_DO, MUC_KHAN, LoiDieuPhoi,
+  trangThaiCua, TRANG_THAI, LOAI, KHONG_RO_NGUOI,
 } from '../../src/ui/dispatch/index.js';
 
 /* ───────────────────────────── tiện tay ───────────────────────────── */
@@ -41,33 +46,55 @@ function noiKho(hat) {
 
 const anh = (kho) => JSON.stringify([...kho.bang.entries()].map(([k, v]) => [k, v]));
 
-/** `tao_luc` cách đây `phutTruoc` phút, hạn 10 phút sau đó. */
+/**
+ * Một dòng `viec_can_xu_ly` ĐÚNG HÌNH DẠNG LƯỢC ĐỒ THẬT (`001_nen.up.sql:228`):
+ * không có `trang_thai`, không có `page_id`/`cust_id`/`conv_id` — chỉ có `hoi_thoai_id`
+ * và `don_hang_id`, còn khách/page thì phải đi vòng qua `hoi_thoai`.
+ *
+ * `dong_luc: null` và `nguoi_nhan_id: null` GHI HẲN RA, không bỏ trống: cột thật luôn tồn
+ * tại với giá trị NULL, và điều kiện "việc đang mở" là `dong_luc IS NULL`.
+ */
 const viec = (id, teamId, loai, phutTruoc, thua = {}) => ({
-  id, team_id: teamId, loai, trang_thai: 'cho',
-  tao_luc: BAY - phut(phutTruoc), han_luc: BAY - phut(phutTruoc) + HAN,
-  ly_do_ma: loai === 'don' ? 'don_can_duyet' : 'khieu_nai',
-  page_id: teamId === 't1' ? 'p1' : 'p2',
-  cust_id: teamId === 't1' ? 'k1' : 'k2',
-  conv_id: 'c_' + id,
+  id, team_id: teamId, loai,
+  day_luc: BAY - phut(phutTruoc), han_luc: BAY - phut(phutTruoc) + HAN,
+  ly_do_day: loai === 'don_hang' ? 'don_can_duyet' : 'khieu_nai',
+  hoi_thoai_id: teamId === 't1' ? 'h1' : 'h2',
+  don_hang_id: loai === 'don_hang' ? 'd1' : null,
+  nguoi_nhan_id: null, nhan_luc: null,
+  ket_qua: null, ly_do_dong: null, chi_phi: null, dong_luc: null,
   ...thua,
+});
+
+/** Dòng `hoi_thoai` — chỗ DUY NHẤT còn giữ page và khách của một việc. */
+const hoiThoai = (id, teamId, pageId, khachId, thua = {}) => ({
+  id, team_id: teamId, page_id: pageId, khach_id: khachId,
+  psid: 'psid_' + id, trang_thai: 'SELLING', chu_so_huu: 'AI', ...thua,
 });
 
 const HAT = () => ({
   viec_can_xu_ly: [
     viec('v1', 't1', 'hoi_thoai', 12),                        // quá hạn 2 phút
     viec('v2', 't1', 'hoi_thoai', 7),                         // còn 3 phút → gấp
-    viec('v3', 't1', 'don', 2),                               // còn 8 phút → thường
-    viec('v4', 't1', 'don', 15),                              // quá hạn 5 phút — cũ nhất
-    viec('v5', 't1', 'hoi_thoai', 40, { trang_thai: 'da_xu' }),  // đã xử → không hiện
+    viec('v3', 't1', 'don_hang', 2),                          // còn 8 phút → thường
+    viec('v4', 't1', 'don_hang', 15),                         // quá hạn 5 phút — cũ nhất
+    viec('v5', 't1', 'hoi_thoai', 40, { dong_luc: BAY - phut(30) }),  // đã xử → không hiện
     viec('v6', 't2', 'hoi_thoai', 9),                         // TEAM KHÁC
+  ],
+  hoi_thoai: [
+    hoiThoai('h1', 't1', 'p1', 'k1'),
+    hoiThoai('h2', 't2', 'p2', 'k2'),
   ],
   khach: [
     { id: 'k1', team_id: 't1', ten: 'Nguyễn Thu Hà', so_dien_thoai: '0901234567' },
     { id: 'k2', team_id: 't2', ten: 'Khách của team hai', so_dien_thoai: '0909999999' },
   ],
   page: [
-    { id: 'p1', team_id: 't1', ten: 'Tiểu Alpha Store' },
-    { id: 'p2', team_id: 't2', ten: 'Auus Store' },
+    { id: 'p1', team_id: 't1', page_id: '102938', ten: 'Tiểu Alpha Store' },
+    { id: 'p2', team_id: 't2', page_id: '556677', ten: 'Auus Store' },
+  ],
+  nguoi_dung: [
+    { id: 'u1', email: 'an@shop.vn', ten: 'An' },
+    { id: 'u2', email: 'binh@shop.vn', ten: 'Bình' },
   ],
 });
 
@@ -102,9 +129,9 @@ test('L4-M1 · team A không thấy MỘT DÒNG NÀO của team B, dù kho có c
 });
 
 test('L4-M1 · gộp kèm cũng theo team: không mượn được tên khách của team khác', async () => {
-  // Việc của t1 trỏ nhầm sang khách của t2 → tên phải là null, không phải tên khách kia.
+  // Việc của t1 trỏ nhầm sang HỘI THOẠI của t2 → tên phải là null, không phải tên khách kia.
   const hat = HAT();
-  hat.viec_can_xu_ly = [viec('vx', 't1', 'hoi_thoai', 3, { cust_id: 'k2', page_id: 'p2' })];
+  hat.viec_can_xu_ly = [viec('vx', 't1', 'hoi_thoai', 3, { hoi_thoai_id: 'h2' })];
   noiKho(hat);
   const [d] = await hangCho(bcT1, { bay: BAY });
   assert.equal(d.tenKhach, null);
@@ -134,10 +161,11 @@ test('L4-M1 · việc tạo cách đây 12 phút: quaHan, mucKhan=qua_han, quaHa
   noiKho({
     viec_can_xu_ly: [
       viec('a', 't1', 'hoi_thoai', 12),   // quá hạn 2 phút
-      viec('b', 't1', 'don', 3),          // còn 7 phút
+      viec('b', 't1', 'don_hang', 3),     // còn 7 phút
     ],
+    hoi_thoai: [hoiThoai('h1', 't1', 'p1', 'k1')],
     khach: [{ id: 'k1', team_id: 't1', ten: 'Hà' }],
-    page: [{ id: 'p1', team_id: 't1', ten: 'Tiểu Alpha Store' }],
+    page: [{ id: 'p1', team_id: 't1', page_id: '102938', ten: 'Tiểu Alpha Store' }],
   });
 
   const ds = await hangCho(bcT1, { bay: BAY });
@@ -174,9 +202,9 @@ test('L4-M1 · tomTat đếm cả `dang_xu`, và không có việc trễ thì cu
   noiKho({
     viec_can_xu_ly: [
       viec('a', 't1', 'hoi_thoai', 1),
-      viec('b', 't1', 'hoi_thoai', 2, { trang_thai: 'dang_xu' }),
-      viec('c', 't1', 'don', 1),
-      viec('d', 't1', 'don', 90, { trang_thai: 'da_xu' }),
+      viec('b', 't1', 'hoi_thoai', 2, { nguoi_nhan_id: 'u2', nhan_luc: BAY - phut(1) }),
+      viec('c', 't1', 'don_hang', 1),
+      viec('d', 't1', 'don_hang', 90, { dong_luc: BAY - phut(80) }),
     ],
   });
   const tt = await tomTat(bcT1, { bay: BAY });
@@ -195,8 +223,8 @@ test('L4-M1 · loai="hoi_thoai" thì mọi dòng đều đúng loại đó', asy
   assert.ok(ht.every((v) => v.loai === 'hoi_thoai'), 'lọt việc loại khác');
   assert.deepEqual(ht.map((v) => v.id), ['v1', 'v2']);
 
-  const don = await hangCho(bcT1, { loai: 'don', bay: BAY });
-  assert.ok(don.every((v) => v.loai === 'don'));
+  const don = await hangCho(bcT1, { loai: 'don_hang', bay: BAY });
+  assert.ok(don.every((v) => v.loai === 'don_hang'));
   assert.deepEqual(don.map((v) => v.id), ['v4', 'v3']);
 
   await assert.rejects(() => hangCho(bcT1, { loai: 'lung_tung', bay: BAY }), LoiDieuPhoi);
@@ -204,32 +232,43 @@ test('L4-M1 · loai="hoi_thoai" thì mọi dòng đều đúng loại đó', asy
 
 /* ───────────────────────── tiêu chí 8 · không N+1 ───────────────────── */
 
-test('L4-M1 · 100 việc trong kho → tổng số lời gọi cổng truy vấn ≤ 8', async () => {
+test('L4-M1 · 100 việc + 100 hội thoại + 100 khách → hangCho ≤ 5 lời gọi, tomTat ≤ 6', async () => {
+  // Đường nối thật dài hơn trước MỘT chặng (việc → hội thoại → khách + page), nên bài này
+  // là chỗ duy nhất phát hiện được ai đó lỡ tay đọc hội thoại theo từng dòng.
   const nhieu = [];
+  const hoiThoais = [];
   for (let i = 0; i < 100; i++) {
-    nhieu.push(viec('n' + i, 't1', i % 2 ? 'don' : 'hoi_thoai', i % 20, {
-      cust_id: 'k' + (i % 7), page_id: 'p' + (i % 4),
+    nhieu.push(viec('n' + i, 't1', i % 2 ? 'don_hang' : 'hoi_thoai', i % 20, {
+      hoi_thoai_id: 'h' + i,
+      nguoi_nhan_id: i % 3 ? null : 'u' + (i % 5),
     }));
+    hoiThoais.push(hoiThoai('h' + i, 't1', 'p' + (i % 4), 'k' + i));
   }
   const khach = [];
-  for (let i = 0; i < 7; i++) khach.push({ id: 'k' + i, team_id: 't1', ten: 'Khách ' + i, so_dien_thoai: '090000000' + i });
+  for (let i = 0; i < 100; i++) khach.push({ id: 'k' + i, team_id: 't1', ten: 'Khách ' + i, so_dien_thoai: '090000' + i });
   const page = [];
-  for (let i = 0; i < 4; i++) page.push({ id: 'p' + i, team_id: 't1', ten: 'Page ' + i });
+  for (let i = 0; i < 4; i++) page.push({ id: 'p' + i, team_id: 't1', page_id: '10000' + i, ten: 'Page ' + i });
+  const nguoi = [];
+  for (let i = 0; i < 5; i++) nguoi.push({ id: 'u' + i, email: 'u' + i + '@shop.vn', ten: 'Sale ' + i });
 
-  const { dem } = noiKho({ viec_can_xu_ly: nhieu, khach, page });
+  const { dem } = noiKho({ viec_can_xu_ly: nhieu, hoi_thoai: hoiThoais, khach, page, nguoi_dung: nguoi });
 
   const ds = await hangCho(bcT1, { gioiHan: 100, bay: BAY });
+  const demHangCho = { n: dem.n, ds: [...dem.ds] };
+  dem.n = 0; dem.ds.length = 0;
   const tt = await tomTat(bcT1, { bay: BAY });
 
   assert.equal(ds.length, 100);
   assert.equal(tt.hoiThoai.cho + tt.don.cho, 100);
   assert.ok(ds.every((v) => v.tenKhach && v.tenPage), 'gộp kèm sót dòng');
-  assert.ok(dem.n <= 8, `gọi cổng ${dem.n} lần (${dem.ds.join(', ')}) — N+1 rồi`);
+  assert.ok(ds.some((v) => v.tenNguoiNhan), 'cột "Đang xử" không có tên nào — mẻ nguoi_dung hụt');
+  assert.ok(demHangCho.n <= 5, `hangCho gọi cổng ${demHangCho.n} lần (${demHangCho.ds.join(', ')}) — N+1 rồi`);
+  assert.ok(dem.n <= 6, `tomTat gọi cổng ${dem.n} lần (${dem.ds.join(', ')})`);
 });
 
-test('L4-M1 · không có khách/page nào để gộp thì không gọi thêm lời nào', async () => {
+test('L4-M1 · không có hội thoại/người nhận nào để gộp thì không gọi thêm lời nào', async () => {
   const { dem } = noiKho({
-    viec_can_xu_ly: [viec('a', 't1', 'hoi_thoai', 1, { cust_id: null, page_id: null })],
+    viec_can_xu_ly: [viec('a', 't1', 'hoi_thoai', 1, { hoi_thoai_id: null, nguoi_nhan_id: null })],
   });
   await hangCho(bcT1, { bay: BAY });
   assert.equal(dem.n, 1, 'gọi thừa: ' + dem.ds.join(', '));   // `IN ()` không phải câu SQL hợp lệ
@@ -237,21 +276,28 @@ test('L4-M1 · không có khách/page nào để gộp thì không gọi thêm l
 
 /* ───────────────────────── bảng lý do ───────────────────── */
 
-test('L4-M1 · lý do bằng chữ; MÃ LẠ hiện nguyên mã, không gộp im lặng vào `khac`', () => {
-  assert.equal(lyDoChu({ ly_do_ma: 'doi_tra' }), LY_DO.doi_tra);
-  assert.equal(lyDoChu({ ly_do_ma: 'don_can_duyet' }), 'Đơn bot chốt, chờ sale duyệt');
+test('L4-M1 · lý do đọc từ MỘT cột `ly_do_day`; mã lạ hiện nguyên văn, không gộp vào `khac`', () => {
+  assert.equal(lyDoChu({ ly_do_day: 'doi_tra' }), LY_DO.doi_tra);
+  assert.equal(lyDoChu({ ly_do_day: 'don_can_duyet' }), 'Đơn bot chốt, chờ sale duyệt');
 
   const warnCu = console.warn;
   const keu = [];
   console.warn = (...a) => keu.push(a.join(' '));
   try {
-    assert.equal(lyDoChu({ ly_do_ma: 'ly_do_moi_toanh' }), 'ly_do_moi_toanh');
+    assert.equal(lyDoChu({ ly_do_day: 'ly_do_moi_toanh' }), 'ly_do_moi_toanh');
   } finally { console.warn = warnCu; }
   assert.equal(keu.length, 1, 'mã lạ phải kêu lên một tiếng');
-  assert.notEqual(lyDoChu({ ly_do_ma: 'ly_do_moi_toanh' }), LY_DO.khac);
+  assert.notEqual(lyDoChu({ ly_do_day: 'ly_do_moi_toanh' }), LY_DO.khac);
 
-  // Không có mã thì lấy lý do thô.
-  assert.equal(lyDoChu({ ly_do: 'khách chửi rất to' }), 'khách chửi rất to');
+  // Cột thật là CHỮ TỰ DO — câu tiếng Việt thì hiện nguyên văn và KHÔNG kêu.
+  const warnCu2 = console.warn;
+  const keu2 = [];
+  console.warn = (...a) => keu2.push(a.join(' '));
+  try {
+    assert.equal(lyDoChu({ ly_do_day: 'khách chửi rất to' }), 'khách chửi rất to');
+  } finally { console.warn = warnCu2; }
+  assert.equal(keu2.length, 0, 'chữ tự do mà cũng kêu thì log thành rác');
+
   assert.equal(lyDoChu({}), '(không ghi lý do)');
 });
 
@@ -271,7 +317,7 @@ test('L4-M1 · chạy hết mọi đường đọc rồi so kho trước/sau: KH
   const truoc = anh(kho);
 
   await hangCho(bcT1, { bay: BAY });
-  await hangCho(bcT1, { loai: 'don', bay: BAY });
+  await hangCho(bcT1, { loai: 'don_hang', bay: BAY });
   await hangCho(bcT2, { bay: BAY });
   await tomTat(bcT1, { bay: BAY });
   await tomTat(bcT2, { bay: BAY });
@@ -297,4 +343,114 @@ test('L4-M1 · cổng chỉ-đọc: gọi them/sua/xoa là ném — mà cả mod
   await hangCho(bcT1, { bay: BAY });
   await tomTat(bcT1, { bay: BAY });
   // Không ném ra ở trên là bằng chứng: không có đường ghi nào trong module.
+});
+
+/* ═════════════ máy trạng thái · SUY RA, không phải cột (B-S1 mục "Ba chỗ") ═════════════ */
+
+test('L4-M1 · trangThaiCua suy đúng ba trạng thái từ nguoi_nhan_id + dong_luc', () => {
+  assert.equal(trangThaiCua({ nguoi_nhan_id: null, dong_luc: null }), TRANG_THAI.CHO);
+  assert.equal(trangThaiCua({ nguoi_nhan_id: 7, dong_luc: null }), TRANG_THAI.DANG_XU);
+  assert.equal(trangThaiCua({ nguoi_nhan_id: 7, dong_luc: BAY }), TRANG_THAI.DA_XU);
+  // Đóng mà không ai nhận (dữ liệu lệch, hoặc người nhận đã bị xoá → ON DELETE SET NULL):
+  // vẫn là ĐÃ XỬ. `dong_luc` mới là thứ quyết định, không phải người nhận.
+  assert.equal(trangThaiCua({ nguoi_nhan_id: null, dong_luc: BAY }), TRANG_THAI.DA_XU);
+  assert.equal(trangThaiCua({}), TRANG_THAI.CHO);
+  assert.equal(trangThaiCua(null), TRANG_THAI.CHO);
+});
+
+test('L4-M1 · mỗi dòng danh sách mang sẵn `trangThai` — trang không phải tự suy lại', async () => {
+  noiKho({
+    viec_can_xu_ly: [
+      viec('cho', 't1', 'hoi_thoai', 1),
+      viec('dang', 't1', 'hoi_thoai', 2, { nguoi_nhan_id: 'u2', nhan_luc: BAY - phut(1) }),
+    ],
+    hoi_thoai: [hoiThoai('h1', 't1', 'p1', 'k1')],
+    khach: [{ id: 'k1', team_id: 't1', ten: 'Hà' }],
+    page: [{ id: 'p1', team_id: 't1', page_id: '102938', ten: 'Tiểu Alpha Store' }],
+    nguoi_dung: [{ id: 'u2', email: 'binh@shop.vn', ten: 'Bình' }],
+  });
+  const m = new Map((await hangCho(bcT1, { bay: BAY })).map((v) => [v.id, v]));
+  assert.equal(m.get('cho').trangThai, TRANG_THAI.CHO);
+  assert.equal(m.get('cho').tenNguoiNhan, null, 'chưa ai nhận thì cột "Đang xử" phải trống');
+  assert.equal(m.get('dang').trangThai, TRANG_THAI.DANG_XU);
+  assert.equal(m.get('dang').tenNguoiNhan, 'Bình', 'phải TRA `nguoi_dung`, không in id ra');
+});
+
+/* ═════════════ tiêu chí 8 · người nhận tra không ra thì KHÔNG lộ id ═════════════ */
+
+test('L4-M1 · nguoi_nhan_id lạ → hiện "(không rõ)", tuyệt đối không hiện id trần', async () => {
+  noiKho({
+    viec_can_xu_ly: [
+      viec('la', 't1', 'hoi_thoai', 1, { nguoi_nhan_id: 'u_khong_co_that', nhan_luc: BAY }),
+    ],
+    nguoi_dung: [{ id: 'u1', email: 'an@shop.vn', ten: 'An' }],
+  });
+  const [d] = await hangCho(bcT1, { bay: BAY });
+  assert.equal(d.trangThai, TRANG_THAI.DANG_XU);
+  assert.equal(d.tenNguoiNhan, KHONG_RO_NGUOI);
+  assert.ok(!String(d.tenNguoiNhan).includes('u_khong_co_that'), 'id trần lọt ra màn hình');
+});
+
+/* ═════════════ tiêu chí 2 · quét mã nguồn — tên cột cũ không được sống lại ═════════════ */
+
+const THU_MUC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../src/ui/dispatch');
+
+/** Mọi file mã nguồn của module, kể cả hai trang HTML (chúng cũng đọc tên cột). */
+function moiFile() {
+  const ra = [];
+  for (const f of fs.readdirSync(THU_MUC)) {
+    if (f.endsWith('.js')) ra.push([f, fs.readFileSync(path.join(THU_MUC, f), 'utf8')]);
+  }
+  for (const f of fs.readdirSync(path.join(THU_MUC, 'trang'))) {
+    if (f.endsWith('.html')) ra.push([`trang/${f}`, fs.readFileSync(path.join(THU_MUC, 'trang', f), 'utf8')]);
+  }
+  return ra;
+}
+
+test('L4-M1 · không còn tên cột NÀO do người B tự đoán trong cả module', () => {
+  // Tám chỗ lệch của G5. Bảy cái đầu là tên KHÔNG TỒN TẠI trong lược đồ thật — có mặt ở
+  // đâu cũng là bịa; nên cấm thẳng cả từ.
+  const CAM = ['ly_do_ma', 'nhan_boi', 'nhan_boi_ten', 'chi_phi_dong', 'ket_qua_ly_do', 'cust_id', 'conv_id'];
+  const ds = moiFile();
+  assert.ok(ds.length >= 6, 'quét hụt file — bài test này sẽ xanh giả');
+
+  for (const [ten, ma] of ds) {
+    for (const cam of CAM) {
+      // `\b` không ăn với dấu gạch dưới hai đầu, nên tự chặn hai bên cho chắc.
+      const re = new RegExp(`(^|[^0-9A-Za-z_])${cam}([^0-9A-Za-z_]|$)`);
+      assert.ok(!re.test(ma), `${ten} còn tên cột B tự đoán: ${cam}`);
+    }
+    // `tao_luc` VẪN LÀ CỘT THẬT của `don_hang`/`khach`/`page` — cấm cả từ là cấm nhầm.
+    // Chỉ cấm khi nó bị ĐỌC RA TỪ MỘT DÒNG: dòng việc thật dùng `day_luc`.
+    assert.ok(!/\.tao_luc\b/.test(ma), `${ten} đọc \`.tao_luc\` — dòng việc thật là \`day_luc\``);
+    // Giá trị, không phải tên cột: CHECK của lược đồ chỉ nhận 'hoi_thoai' | 'don_hang'.
+    assert.ok(!/loai\s*(:|={2,3}|!={1,2})\s*['"]don['"]/.test(ma), `${ten} còn loai = 'don'`);
+  }
+
+  assert.equal(LOAI.DON, 'don_hang');
+  assert.equal(LOAI.HOI_THOAI, 'hoi_thoai');
+});
+
+/* ═══════ tiêu chí 3 · công thức trạng thái nằm ở ĐÚNG MỘT chỗ ═══════ */
+
+test('L4-M1 · chỉ kho-viec.js biết công thức trạng thái; nơi khác gọi trangThaiCua()', () => {
+  // "Suy trạng thái" = SO MỘT TRONG HAI CỘT ĐÓ VỚI NULL. Đọc/ghi hai cột thì file nào cũng
+  // được (dong-viec.js phải ghi chúng); chép lại CÔNG THỨC mới là chỗ sinh ra hai sự thật.
+  const CONG_THUC = /(nguoi_nhan_id|dong_luc)\s*(={2,3}|!={1,2})\s*null|null\s*(={2,3}|!={1,2})\s*(nguoi_nhan_id|dong_luc)/;
+
+  const ds = moiFile();
+  const goc = ds.find(([t]) => t === 'kho-viec.js');
+  assert.ok(goc, 'không thấy kho-viec.js');
+  assert.ok(CONG_THUC.test(goc[1]), 'công thức đã rời khỏi kho-viec.js — sửa luôn bài test này');
+
+  for (const [ten, ma] of ds) {
+    if (ten === 'kho-viec.js') continue;
+    assert.ok(!CONG_THUC.test(ma), `${ten} chép lại công thức trạng thái — phải gọi trangThaiCua()`);
+  }
+
+  // Và KHÔNG file nào còn đọc cột `trang_thai` của dòng việc — cột đó không tồn tại.
+  // (`trang_thai_he`/`trang_thai_pos` của `don_hang` là chuyện khác, và không có dấu chấm.)
+  for (const [ten, ma] of ds) {
+    assert.ok(!/\.trang_thai\b/.test(ma), `${ten} còn đọc cột trang_thai của dòng việc`);
+  }
 });

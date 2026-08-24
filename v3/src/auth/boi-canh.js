@@ -51,7 +51,10 @@ export class LoiThieuVai extends Error {
 }
 
 /** Hai vai tối thiểu của giai đoạn 1. Ba vai còn lại (marketer, quản lý, người duyệt) là giai đoạn 2. */
-export const VAI = Object.freeze({ QUAN_TRI: 'quan_tri', SALE: 'sale' });
+// ⚠️ GẠCH NGANG, chép đúng `vai.ma` của lược đồ thật (`db/migrate/001_nen.up.sql`, seed 5 vai).
+//    Bản đoán cũ dùng gạch DƯỚI: lệch một dấu thì không ai tra ra vai, `batBuocVaiHTTP` chặn
+//    sạch, mà màn hình trông y hệt phân quyền đang chạy đúng.
+export const VAI = Object.freeze({ QUAN_TRI: 'quan-tri', SALE: 'sale' });
 const VAI_HOP_LE = new Set(Object.values(VAI));
 
 /** Nguồn của vé: người thật đang đăng nhập, hay việc nền do máy chạy. */

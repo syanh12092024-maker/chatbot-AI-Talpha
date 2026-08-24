@@ -27,7 +27,7 @@ for (const n of ['V3_KHOA_KIMI', 'V3_KHOA_CLAUDE', 'V3_KHOA_OPENAI', 'V3_KHOA_DE
 
 const KHOA_KIMI = 'sk-moonshot-BI-MAT-0123456789-a3f9';
 const bcCua = (teamId, them = {}) => taoBoiCanh({
-  nguoiDungId: `u-${teamId}`, tenDangNhap: `nguoi-${teamId}`, teamId, vai: ['quan_tri'], ...them,
+  nguoiDungId: `u-${teamId}`, tenDangNhap: `nguoi-${teamId}`, teamId, vai: ['quan-tri'], ...them,
 });
 
 /** Nền sạch cho mỗi bài: kho giả, phễu nhật ký giả, bộ đếm lượt chạm cơ sở dữ liệu. */

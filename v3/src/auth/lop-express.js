@@ -98,6 +98,8 @@ export function lopBoiCanh() {
     try {
       req.boiCanh = taoBoiCanh({
         nguoiDungId: than.nguoiDungId,
+        // ⚠️ Tên trường `tenDangNhap` giữ nguyên (hợp đồng với người A, `boi-canh.js` cấm
+        //    đụng) nhưng GIÁ TRỊ là EMAIL — lược đồ thật không có cột tên đăng nhập.
         tenDangNhap: than.tenDangNhap,
         teamId: than.teamId,
         vai: than.vai,

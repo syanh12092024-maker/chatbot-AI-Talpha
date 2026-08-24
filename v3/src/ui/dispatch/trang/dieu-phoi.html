@@ -184,10 +184,14 @@ function nhipDongHo() {
 }
 
 /* Cột "Đang xử" (L4-M2): trống khi `cho`, tên người khi `dang_xu`. Chỉ đọc — nhận việc và
-   đóng việc đều làm ở màn chi tiết, không ai bấm nhầm từ một danh sách đang tự làm mới. */
+   đóng việc đều làm ở màn chi tiết, không ai bấm nhầm từ một danh sách đang tự làm mới.
+
+   `trangThai` và `tenNguoiNhan` do MÁY CHỦ dựng sẵn. Trang KHÔNG tự nhìn `nguoi_nhan_id`
+   với `dong_luc` mà suy lại — công thức trạng thái chỉ có một bản, ở `kho-viec.js`. Và
+   `nguoi_nhan_id` vốn là một con số khoá ngoại, in ra đây thì sale đọc được gì. */
 function dangXuCua(v) {
-  if (v.trang_thai !== 'dang_xu') return '';
-  return esc(v.nhan_boi_ten || v.nhan_boi || 'ai đó');
+  if (v.trangThai !== 'dang_xu') return '';
+  return esc(v.tenNguoiNhan || 'ai đó');
 }
 
 function dongViec(v) {
@@ -195,10 +199,10 @@ function dongViec(v) {
   const nhan = dangXuCua(v);
   return '<tr data-id="' + esc(v.id) + '">'
     + '<td class="l c-khach"><div class="ten"><a class="lnk" href="/viec/' + encodeURIComponent(v.id) + '">'
-      + esc(v.tenKhach || v.cust_id || '(chưa có tên)') + '</a></div>'
+      + esc(v.tenKhach || '(chưa có tên)') + '</a></div>'
       + (v.soDienThoai ? '<div class="phu">' + esc(v.soDienThoai) + '</div>' : '')
     + '</td>'
-    + '<td class="l dim c-page">' + esc(v.tenPage || v.page_id || '—') + '</td>'
+    + '<td class="l dim c-page">' + esc(v.tenPage || '—') + '</td>'
     + '<td class="l ly-do c-lydo">' + esc(v.lyDoChu) + '</td>'
     + '<td class="l dim c-nhan"' + (nhan ? ' title="' + nhan + '"' : '') + '>' + nhan + '</td>'
     + '<td class="c-dem"><span class="dh' + lopDem(han) + '" data-han="' + (Number.isFinite(han) ? han : '') + '">'

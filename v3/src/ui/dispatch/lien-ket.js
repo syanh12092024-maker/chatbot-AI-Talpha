@@ -53,6 +53,44 @@ export function daCauHinhPos() {
 }
 
 /**
+ * Id hội thoại của Pancake, DỰNG từ một dòng `hoi_thoai` thật.
+ *
+ * `hoi_thoai` của lược đồ thật KHÔNG có cột nào chứa sẵn id này — nó có `psid`. Khuôn của
+ * id hội thoại là `<page_id_fb>_<psid>`, đã đo và ghi ở `docs/v3/ban-giao/luoc-do-v1.md`
+ * §7.3 ("có `conversation_id` đúng khuôn `<page_id_fb>_<psid>`"). Dựng lại ở đây theo đúng
+ * khuôn đó, thay vì đọc một cột không tồn tại rồi im lặng trả `null` mãi mãi.
+ *
+ * Thiếu MỘT trong hai vế thì trả `null` → nút Pancake mờ. Ghép nửa vời ra một id sai là
+ * dẫn sale tới một cuộc hội thoại của người khác.
+ *
+ * @param {object|null} hoiThoai  dòng `hoi_thoai` (cần `psid`)
+ * @param {object|null} page      dòng `page` (cần `page_id` — id Facebook dạng text)
+ */
+export function convIdCua(hoiThoai, page) {
+  if (!hoiThoai) return null;
+  const psid = chuoi(hoiThoai.psid);
+  const pageFb = chuoi(page?.page_id);
+  return psid && pageFb ? `${pageFb}_${psid}` : null;
+}
+
+/**
+ * Tách `don_hang.ma_pos` thành shop và số đơn trên POS.
+ *
+ * `ma_pos` là **`"<shop_id>:<id đơn POS>"`**, không phải id trần — id đơn POS là dãy riêng
+ * từng shop nên hai shop trùng số (`luoc-do-v1.md` §7.3). Đường POS cần cả hai vế, và
+ * `don_hang` không có cột `shop_id` nào khác để lấy.
+ *
+ * @returns {{shop:string|null, don:string|null}}
+ */
+export function tachMaPos(maPos) {
+  const s = chuoi(maPos);
+  if (!s) return { shop: null, don: null };
+  const v = s.indexOf(':');
+  if (v < 0) return { shop: null, don: s };     // dạng lạ thì coi cả chuỗi là số đơn
+  return { shop: s.slice(0, v) || null, don: s.slice(v + 1) || null };
+}
+
+/**
  * Đường mở hội thoại trên Pancake.
  * Không có `pageId` → `null` (không có gì để mở). Không có `convId` → mở trang page.
  */
@@ -85,16 +123,27 @@ export function lienKetPos(donHangId, { shopId } = {}) {
 
 /**
  * Hai đường của một việc, dựng một lần cho màn chi tiết.
- * `shopId` lấy theo thứ tự: đơn → page → biến môi trường (một shop cho cả hệ).
+ *
+ * ĐƯỜNG PANCAKE ĐI TỪ `hoi_thoai`, KHÔNG TỪ DÒNG VIỆC. Dòng `viec_can_xu_ly` thật không
+ * mang cột page, cũng không mang id hội thoại của Pancake; nó chỉ có `hoi_thoai_id`. Việc
+ * loại `don_hang` không gắn hội thoại → không có gì để mở → `null` → màn hình hiện nút MỜ
+ * (cơ chế nút mờ đã có sẵn, dùng lại), chứ không dẫn sale tới một trang trống rồi để họ
+ * tưởng hệ thống hỏng.
+ *
+ * `shopId` lấy theo thứ tự: tiền tố của `don_hang.ma_pos` → `page.pos_shop_id` → biến môi
+ * trường (một shop cho cả hệ).
  *
  * @param {object} viec   dòng `viec_can_xu_ly`
- * @param {{page?:object|null, donHang?:object|null}} [kem]
+ * @param {{page?:object|null, donHang?:object|null, hoiThoai?:object|null}} [kem]
  * @returns {{pancake: string|null, pos: string|null}}
  */
-export function lienKetCua(viec = {}, { page = null, donHang = null } = {}) {
-  const shopId = donHang?.shop_id ?? page?.shop_id ?? null;
+export function lienKetCua(viec = {}, { page = null, donHang = null, hoiThoai = null } = {}) {
+  const { shop, don } = tachMaPos(donHang?.ma_pos);
+  const shopId = shop ?? page?.pos_shop_id ?? null;
   return {
-    pancake: lienKetPancake(viec.page_id, viec.conv_id),
-    pos: lienKetPos(viec.don_hang_id, { shopId }),
+    pancake: lienKetPancake(page?.page_id, convIdCua(hoiThoai, page)),
+    // Chưa đọc được `ma_pos` thì lui về id trong hệ — thà một đường có thể sai còn hơn
+    // không có đường nào, và nút vẫn mờ khi việc không gắn đơn.
+    pos: lienKetPos(don ?? viec.don_hang_id, { shopId }),
   };
 }

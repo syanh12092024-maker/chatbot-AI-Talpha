@@ -27,7 +27,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { coVai, doiChieuTeam, LoiXuyenTeam } from '../../auth/boi-canh.js';
+import { coVai, doiChieuTeam, LoiXuyenTeam, VAI } from '../../auth/boi-canh.js';
 import { hangCho, tomTat, LOAI } from './kho-viec.js';
 import { chiTietViec } from './chi-tiet.js';
 import { nhanViec, dongViec, bangKetQua, LoiDongViec } from './dong-viec.js';
@@ -35,8 +35,16 @@ import { nhanViec, dongViec, bangKetQua, LoiDongViec } from './dong-viec.js';
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
 
-/** Hai vai được vào bảng điều phối. Quản trị vào được để đi kiểm, không phải để làm thay. */
-export const VAI_VAO_DUOC = Object.freeze(['sale', 'quan_tri']);
+/**
+ * Hai vai được vào bảng điều phối. Quản trị vào được để đi kiểm, không phải để làm thay.
+ *
+ * LẤY TỪ HẰNG `VAI`, KHÔNG GÕ LẠI CHUỖI. Bản trước gõ tay mã quản trị bằng dấu gạch DƯỚI,
+ * trong khi `vai.ma` thật dùng dấu gạch NGANG — so chuỗi không khớp thì mọi quản trị thành
+ * "không có vai" và bị `batBuocVaiHTTP` chặn sạch. Không lỗi, không cảnh báo, và sale vẫn
+ * vào được nên không ai báo: nó chỉ lộ ra đúng lúc quản trị cần vào kiểm thì không vào được.
+ * Một bản sao gõ tay của một mã đã có hằng là một bản sao sẽ lệch.
+ */
+export const VAI_VAO_DUOC = Object.freeze([VAI.SALE, VAI.QUAN_TRI]);
 
 /* ─────────────────────────── ba chỗ tiêm từ ngoài ─────────────────────────── */
 
@@ -95,7 +103,7 @@ export function datChanDangNhap(fn) {
 
 /**
  * Nối cái chắn vai của L0-M3. Nhận `batBuocVaiHTTP` (hàm dựng, sẽ được gọi với
- * `VAI_VAO_DUOC`) hoặc `batBuocVaiHTTP('sale','quan_tri')` (cái chắn đã dựng).
+ * `VAI_VAO_DUOC`) hoặc `batBuocVaiHTTP(...VAI_VAO_DUOC)` (cái chắn đã dựng).
  */
 export function datChanVai(fn) {
   _chanVai = dungChan(fn, 'datChanVai', ...VAI_VAO_DUOC);

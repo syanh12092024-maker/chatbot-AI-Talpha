@@ -20,6 +20,10 @@
 //
 // Cần `V3_KHOA_VE` trong môi trường. Thiếu là ném ngay lần phát vé đầu tiên — cố ý,
 // xem ghi chú ở `ve.js`.
+//
+// ĐĂNG NHẬP BẰNG EMAIL (`nguoi_dung.email` của `db/migrate/001_nen.up.sql`). `POST
+// /api/dang-nhap` vẫn nhận `tenDangNhap` làm tên cũ, và `boiCanh.tenDangNhap` giữ nguyên
+// tên trường (hợp đồng với người A) nhưng GIÁ TRỊ nay là email.
 
 export { bam, kiem, hopLe as bamHopLe, THAM_SO as THAM_SO_BAM } from './mat-khau.js';
 
@@ -30,7 +34,7 @@ export {
 
 export {
   datCongDanhTinh, daNoiCongDanhTinh, BANG_DANH_TINH,
-  timTheoTen, teamCuaNguoi, vaiTrongTeam,
+  timTheoEmail, teamCuaNguoi, vaiTrongTeam,
 } from './kho-nguoi-dung.js';
 
 export {

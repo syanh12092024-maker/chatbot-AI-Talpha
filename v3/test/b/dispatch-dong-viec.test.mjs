@@ -23,7 +23,8 @@ import { taoBoiCanh, VAI } from '../../src/auth/boi-canh.js';
 import {
   datTaoTruyVan, datChanDangNhap, datChanVai, datPheuNhatKy, taoRouterDieuPhoi,
   nhanViec, dongViec, bangKetQua, bangLyDo, locTiep, muonTrang,
-  KET_QUA, TRANG_THAI, COT_NUA_DUOI, CHI_PHI_TOI_DA,
+  KET_QUA, TRANG_THAI, COT_NUA_DUOI, CHI_PHI_TOI_DA, CHI_PHI_SO_LE,
+  trangThaiCua, ghepLyDoDong, tachLyDoDong, KHONG_RO_NGUOI,
   LoiDaCoNguoiGiu, LoiDaDong, LoiThieuLyDo, LoiKetQuaLa, LoiChiPhiLa,
 } from '../../src/ui/dispatch/index.js';
 
@@ -37,36 +38,51 @@ const bcT2 = taoBoiCanh({ nguoiDungId: 'u9', tenDangNhap: 'cuc', teamId: 't2', v
 
 /* ────────────────────────────────── hạt giống ────────────────────────────────── */
 
+/**
+ * Một dòng `viec_can_xu_ly` đúng lược đồ thật: KHÔNG có `trang_thai`, không có cột người
+ * nhận dạng chuỗi, không có cột ghi chú. Sáu cột nửa dưới ghi hẳn NULL ra — cột thật luôn
+ * tồn tại, và cả điều kiện lọc lẫn công thức trạng thái đều đọc theo vế `IS NULL`.
+ */
 const nenViec = (thua) => ({
-  team_id: 't1', page_id: 'p1', cust_id: 'k1', conv_id: 'c9',
-  tao_luc: BAY - phut(4), han_luc: BAY + phut(6),
-  trang_thai: TRANG_THAI.CHO,
-  nhan_boi: null, nhan_boi_ten: null, nhan_luc: null,
-  ket_qua: null, ket_qua_ly_do: null, ghi_chu: null, chi_phi_dong: null, dong_luc: null,
+  team_id: 't1', hoi_thoai_id: 'ht1', don_hang_id: null,
+  day_luc: BAY - phut(4), han_luc: BAY + phut(6),
+  nguoi_nhan_id: null, nhan_luc: null,
+  ket_qua: null, ly_do_dong: null, chi_phi: null, dong_luc: null,
   ...thua,
 });
 
 function hat() {
   return {
     viec_can_xu_ly: [
-      nenViec({ id: 'w_ht', loai: 'hoi_thoai', ly_do_ma: 'khieu_nai' }),
-      nenViec({ id: 'w_ht2', loai: 'hoi_thoai', ly_do_ma: 'ngoai_kich_ban' }),
-      nenViec({ id: 'w_don', loai: 'don', ly_do_ma: 'don_can_duyet', don_hang_id: 'd1' }),
-      nenViec({ id: 'w_don2', loai: 'don', ly_do_ma: 'don_sai_thong_tin', don_hang_id: 'd2' }),
-      // Lược đồ của người A CHƯA CHẮC có cột thứ chín. Dòng này cố ý không có `nhan_boi_ten`.
-      { id: 'w_khong_ten', team_id: 't1', loai: 'hoi_thoai', ly_do_ma: 'qua_luot',
-        trang_thai: TRANG_THAI.CHO, tao_luc: BAY - phut(2), han_luc: BAY + phut(8) },
-      nenViec({ id: 'w_an_giu', loai: 'hoi_thoai', ly_do_ma: 'doi_tra',
-        trang_thai: TRANG_THAI.DANG_XU, nhan_boi: 'u1', nhan_boi_ten: 'an', nhan_luc: BAY - phut(3) }),
-      nenViec({ id: 'w_binh_giu', loai: 'hoi_thoai', ly_do_ma: 'hoan_tien',
-        trang_thai: TRANG_THAI.DANG_XU, nhan_boi: 'u2', nhan_boi_ten: 'binh', nhan_luc: BAY - phut(2) }),
-      nenViec({ id: 'w_da_xu', loai: 'don', ly_do_ma: 'trung_don', don_hang_id: 'd3',
-        trang_thai: TRANG_THAI.DA_XU, nhan_boi: 'u2', nhan_boi_ten: 'binh', nhan_luc: BAY - phut(9),
-        ket_qua: 'chot_duoc', ket_qua_ly_do: null, chi_phi_dong: 12000, dong_luc: BAY - phut(8) }),
-      nenViec({ id: 'w_t2', team_id: 't2', loai: 'hoi_thoai', ly_do_ma: 'doi_tra' }),
+      nenViec({ id: 'w_ht', loai: 'hoi_thoai', ly_do_day: 'khieu_nai' }),
+      nenViec({ id: 'w_ht2', loai: 'hoi_thoai', ly_do_day: 'ngoai_kich_ban' }),
+      nenViec({ id: 'w_don', loai: 'don_hang', ly_do_day: 'don_can_duyet', don_hang_id: 'd1' }),
+      nenViec({ id: 'w_don2', loai: 'don_hang', ly_do_day: 'don_sai_thong_tin', don_hang_id: 'd2' }),
+      // Việc A vừa chèn xong, chưa ai đụng: cả sáu cột nửa dưới đều NULL.
+      nenViec({ id: 'w_moi_day', loai: 'hoi_thoai', ly_do_day: 'qua_luot',
+        day_luc: BAY - phut(2), han_luc: BAY + phut(8) }),
+      nenViec({ id: 'w_an_giu', loai: 'hoi_thoai', ly_do_day: 'doi_tra',
+        nguoi_nhan_id: 'u1', nhan_luc: BAY - phut(3) }),
+      nenViec({ id: 'w_binh_giu', loai: 'hoi_thoai', ly_do_day: 'hoan_tien',
+        nguoi_nhan_id: 'u2', nhan_luc: BAY - phut(2) }),
+      nenViec({ id: 'w_da_xu', loai: 'don_hang', ly_do_day: 'trung_don', don_hang_id: 'd3',
+        nguoi_nhan_id: 'u2', nhan_luc: BAY - phut(9),
+        ket_qua: 'chot_duoc', ly_do_dong: null, chi_phi: 12000, dong_luc: BAY - phut(8) }),
+      nenViec({ id: 'w_t2', team_id: 't2', loai: 'hoi_thoai', ly_do_day: 'doi_tra',
+        hoi_thoai_id: 'ht2' }),
+    ],
+    hoi_thoai: [
+      { id: 'ht1', team_id: 't1', page_id: 'p1', psid: '9911', khach_id: 'k1', trang_thai: 'SELLING', chu_so_huu: 'AI' },
+      { id: 'ht2', team_id: 't2', page_id: 'p2', psid: '8822', khach_id: 'k2', trang_thai: 'GREET', chu_so_huu: 'AI' },
     ],
     khach: [{ id: 'k1', team_id: 't1', ten: 'Nguyễn Thu Hà', so_dien_thoai: '0901234567' }],
-    page: [{ id: 'p1', team_id: 't1', ten: 'Tiểu Alpha Store', shop_id: '77' }],
+    page: [{ id: 'p1', team_id: 't1', page_id: '102938', ten: 'Tiểu Alpha Store', pos_shop_id: '77' }],
+    // `nguoi_nhan_id` là khoá ngoại — tên người giữ việc nằm ở ĐÂY, không ở dòng việc.
+    nguoi_dung: [
+      { id: 'u1', email: 'an@shop.vn', ten: 'an' },
+      { id: 'u2', email: 'binh@shop.vn', ten: 'binh' },
+      { id: 'u9', email: 'cuc@shop.vn', ten: 'cuc' },
+    ],
   };
 }
 
@@ -107,6 +123,8 @@ function noiKho() {
 }
 
 const dong = (id) => kho.docThang(BANG).find((r) => r.id === id) || null;
+/** Trạng thái SUY RA từ dòng thật — bảng không có cột `trang_thai` để đọc thẳng. */
+const tt = (id) => trangThaiCua(dong(id));
 const anh = () => JSON.stringify(kho.docThang(BANG));
 const soDong = () => kho.docThang(BANG).length;
 const nhatKyMa = (ma) => nhatKy.filter((n) => n.hanhDong === ma);
@@ -168,26 +186,35 @@ async function goi(duong, { ai = 'u1', cach = 'GET', than, tieuDe = {}, theoChuy
 
 /* ══════════════════ tiêu chí 2 · nhận việc ══════════════════ */
 
-test('L4-M2 · nhận việc → dang_xu, nhan_boi là người đăng nhập, nhan_luc có giá trị', async () => {
+test('L4-M2 · nhận việc → dang_xu, nguoi_nhan_id là người đăng nhập, nhan_luc có giá trị', async () => {
   const kq = await nhanViec(bcAn, 'w_ht', { bay: BAY });
   assert.equal(kq.ok, true);
 
   const r = dong('w_ht');
-  assert.equal(r.trang_thai, TRANG_THAI.DANG_XU);
-  assert.equal(r.nhan_boi, 'u1');
+  assert.equal(tt('w_ht'), TRANG_THAI.DANG_XU);
+  assert.equal(r.nguoi_nhan_id, 'u1');
   assert.equal(r.nhan_luc, BAY);
-  assert.equal(r.nhan_boi_ten, 'an', 'cột thứ chín có trong lược đồ thì phải ghi');
-  // Không đụng nửa trên của dòng — đó là của người A.
-  assert.equal(r.ly_do_ma, 'khieu_nai');
+  // KHÔNG đẻ thêm cột nào ngoài sáu cột nửa dưới — bảng là của người A.
+  assert.ok(!('trang_thai' in r), 'tự mọc cột trang_thai — lược đồ thật không có');
+  assert.ok(!('nhan_boi_ten' in r), 'tự mọc cột tên người nhận — tên nằm ở `nguoi_dung`');
+  // Không đụng nửa trên của dòng — đó cũng là của người A.
+  assert.equal(r.ly_do_day, 'khieu_nai');
   assert.equal(r.han_luc, BAY + phut(6));
 });
 
-test('L4-M2 · lược đồ KHÔNG có nhan_boi_ten thì bỏ qua cột đó, không tự mọc thêm cột', async () => {
-  await nhanViec(bcAn, 'w_khong_ten', { bay: BAY });
-  const r = dong('w_khong_ten');
-  assert.equal(r.trang_thai, TRANG_THAI.DANG_XU);
-  assert.equal(r.nhan_boi, 'u1');
-  assert.ok(!('nhan_boi_ten' in r), 'tự thêm cột vào bảng của người A');
+test('L4-M2 · nhận việc chỉ chạm ĐÚNG HAI cột; bốn cột đóng còn nguyên NULL', async () => {
+  // Dòng A vừa chèn: cả sáu cột nửa dưới NULL. Nhận việc chỉ được đặt hai trong sáu —
+  // đụng vào bốn cột kia là đóng việc hộ sale, mà đóng việc là đường một chiều.
+  assert.equal(tt('w_moi_day'), TRANG_THAI.CHO);
+  await nhanViec(bcAn, 'w_moi_day', { bay: BAY });
+
+  const r = dong('w_moi_day');
+  assert.equal(tt('w_moi_day'), TRANG_THAI.DANG_XU);
+  assert.equal(r.nguoi_nhan_id, 'u1');
+  assert.equal(r.nhan_luc, BAY);
+  for (const cot of ['ket_qua', 'ly_do_dong', 'chi_phi', 'dong_luc']) {
+    assert.equal(r[cot], null, `nhận việc mà đụng vào cột đóng: ${cot}`);
+  }
 });
 
 test('L4-M2 · bấm "Nhận việc" hai lần: lần hai không ghi đè nhan_luc, không ghi nhật ký thừa', async () => {
@@ -218,23 +245,23 @@ test('L4-M2 · nhận lại việc đã đóng → 409 da_dong', async () => {
     () => nhanViec(bcAn, 'w_da_xu', { bay: BAY }),
     (e) => e instanceof LoiDaDong && e.status === 409,
   );
-  assert.equal(dong('w_da_xu').trang_thai, TRANG_THAI.DA_XU);
+  assert.equal(tt('w_da_xu'), TRANG_THAI.DA_XU);
 });
 
 /* ══════════════════ tiêu chí 4 · đóng thẳng từ `cho` ══════════════════ */
 
-test('L4-M2 · đóng việc đang ở `cho` → nhận hộ và đóng trong MỘT lần, nhan_boi = người đóng', async () => {
+test('L4-M2 · đóng việc đang ở `cho` → nhận hộ và đóng trong MỘT lần, người đóng là người nhận', async () => {
   const kq = await dongViec(bcAn, 'w_don', { ketQua: 'chot_duoc', chiPhi: 250000, bay: BAY });
   assert.equal(kq.ok, true);
   assert.equal(kq.nhanHo, true);
 
   const r = dong('w_don');
-  assert.equal(r.trang_thai, TRANG_THAI.DA_XU);
-  assert.equal(r.nhan_boi, 'u1');
+  assert.equal(tt('w_don'), TRANG_THAI.DA_XU);
+  assert.equal(r.nguoi_nhan_id, 'u1');
   assert.equal(r.nhan_luc, BAY);
   assert.equal(r.dong_luc, BAY);
   assert.equal(r.ket_qua, 'chot_duoc');
-  assert.equal(r.chi_phi_dong, 250000);
+  assert.equal(r.chi_phi, 250000);
 
   // Một thao tác của sale = một dòng nhật ký, nói rõ là đã nhận hộ.
   assert.equal(nhatKyMa('dong_viec').length, 1);
@@ -269,7 +296,7 @@ test('L4-M2 · đóng lại việc đã `da_xu` → 409, ket_qua CŨ không bị
   );
   const r = dong('w_da_xu');
   assert.equal(r.ket_qua, 'chot_duoc', 'kết quả cũ bị ghi đè');
-  assert.equal(r.chi_phi_dong, 12000);
+  assert.equal(r.chi_phi, 12000);
   assert.equal(r.dong_luc, BAY - phut(8));
   assert.equal(nhatKyMa('dong_viec').length, 0);
 });
@@ -281,11 +308,12 @@ test('L4-M2 · khach_tu_choi không lý do → 400; có lý do → qua', async (
     () => dongViec(bcAn, 'w_ht', { ketQua: 'khach_tu_choi', bay: BAY }),
     (e) => e instanceof LoiThieuLyDo && e.status === 400 && e.ma === 'thieu_ly_do',
   );
-  assert.equal(dong('w_ht').trang_thai, TRANG_THAI.CHO, 'lần 400 vẫn ghi xuống kho');
+  assert.equal(tt('w_ht'), TRANG_THAI.CHO, 'lần 400 vẫn ghi xuống kho');
 
   const kq = await dongViec(bcAn, 'w_ht', { ketQua: 'khach_tu_choi', lyDo: 'gia_cao', bay: BAY });
   assert.equal(kq.ok, true);
-  assert.equal(dong('w_ht').ket_qua_ly_do, 'gia_cao');
+  assert.equal(dong('w_ht').ly_do_dong, 'gia_cao');
+  assert.deepEqual(tachLyDoDong(dong('w_ht').ly_do_dong), { ma: 'gia_cao', ghiChu: null });
 });
 
 test('L4-M2 · day_nham cũng bắt buộc lý do, và lý do lạ thì 400 chứ không nuốt', async () => {
@@ -313,7 +341,11 @@ test('L4-M2 · lyDo="khac" mà ghiChu rỗng → 400; đủ 5 ký tự → qua',
     ketQua: 'khach_tu_choi', lyDo: 'khac', ghiChu: 'khách bảo để tết tính', bay: BAY,
   });
   assert.equal(kq.ok, true);
-  assert.equal(dong('w_ht').ghi_chu, 'khách bảo để tết tính');
+  // Không có cột `ghi_chu` trong lược đồ thật: mã lý do và ghi chú đi CHUNG `ly_do_dong`,
+  // theo khuôn của `ghepLyDoDong`. Không vế nào bị nuốt.
+  assert.equal(dong('w_ht').ly_do_dong, ghepLyDoDong('khac', 'khách bảo để tết tính'));
+  assert.deepEqual(tachLyDoDong(dong('w_ht').ly_do_dong),
+    { ma: 'khac', ghiChu: 'khách bảo để tết tính' });
 });
 
 test('L4-M2 · kết quả không có bảng lý do mà vẫn gửi lý do → 400, không nuốt im lặng', async () => {
@@ -323,7 +355,7 @@ test('L4-M2 · kết quả không có bảng lý do mà vẫn gửi lý do → 4
   );
   const kq = await dongViec(bcAn, 'w_ht', { ketQua: 'khach_khong_tra_loi', bay: BAY });
   assert.equal(kq.ok, true);
-  assert.equal(dong('w_ht').ket_qua_ly_do, null);
+  assert.equal(dong('w_ht').ly_do_dong, null);
 });
 
 /* ══════════════════ tiêu chí 8 · ô chi phí ══════════════════ */
@@ -333,11 +365,12 @@ test('L4-M2 · chi phí: hội thoại mà truyền chiPhi → 400', async () =>
     () => dongViec(bcAn, 'w_ht', { ketQua: 'chot_duoc', chiPhi: 250000, bay: BAY }),
     (e) => e instanceof LoiChiPhiLa && e.status === 400,
   );
-  assert.equal(dong('w_ht').trang_thai, TRANG_THAI.CHO);
+  assert.equal(tt('w_ht'), TRANG_THAI.CHO);
 });
 
 test('L4-M2 · chi phí: số âm và chữ đều 400, KHÔNG âm thầm quy về 0', async () => {
-  for (const xau of [-1, '-250000', 'nhiều', '12.5', '1e5', ' 20 000 ']) {
+  // `12.5` KHÔNG còn nằm ở đây: cột thật là numeric(14,2), phần lẻ là hợp lệ.
+  for (const xau of [-1, '-250000', 'nhiều', '12.555', '1e5', ' 20 000 ', '.5', '12.']) {
     await assert.rejects(
       () => dongViec(bcAn, 'w_don', { ketQua: 'chot_duoc', chiPhi: xau, bay: BAY }),
       (e) => e instanceof LoiChiPhiLa && e.status === 400,
@@ -348,19 +381,39 @@ test('L4-M2 · chi phí: số âm và chữ đều 400, KHÔNG âm thầm quy v�
     () => dongViec(bcAn, 'w_don', { ketQua: 'chot_duoc', chiPhi: CHI_PHI_TOI_DA + 1, bay: BAY }),
     (e) => e instanceof LoiChiPhiLa,
   );
-  assert.equal(dong('w_don').chi_phi_dong, null);
+  assert.equal(dong('w_don').chi_phi, null);
+});
+
+test('L4-M2 · chi phí: numeric(14,2) — 250000.50 lưu và đọc ra ĐÚNG 250000.5, không ép nguyên', async () => {
+  // Bản cũ của B ép `^\d+$` nên số này bị chặn ngay ở cửa. Cột thật giữ hai chữ số lẻ, mà
+  // tiền vùng Vịnh vốn có phần lẻ — ép nguyên là làm sai tiền một cách im lặng.
+  await dongViec(bcAn, 'w_don', { ketQua: 'chot_duoc', chiPhi: 250000.50, bay: BAY });
+  assert.equal(dong('w_don').chi_phi, 250000.5);
+  assert.equal(typeof dong('w_don').chi_phi, 'number');
+
+  noiKho();
+  await dongViec(bcAn, 'w_don', { ketQua: 'chot_duoc', chiPhi: '0.25', bay: BAY });
+  assert.equal(dong('w_don').chi_phi, 0.25);
+
+  // Quá hai chữ số lẻ thì 400 — cột chỉ giữ hai, làm tròn im lặng là mất tiền chỗ khó thấy.
+  noiKho();
+  await assert.rejects(
+    () => dongViec(bcAn, 'w_don', { ketQua: 'chot_duoc', chiPhi: '1.005', bay: BAY }),
+    (e) => e instanceof LoiChiPhiLa && e.status === 400,
+  );
+  assert.equal(CHI_PHI_SO_LE, 2);
 });
 
 test('L4-M2 · chi phí: đơn + chot_duoc + 250000 → lưu đúng 250000; để trống → null; 0 → 0', async () => {
   await dongViec(bcAn, 'w_don', { ketQua: 'chot_duoc', chiPhi: 250000, bay: BAY });
-  assert.equal(dong('w_don').chi_phi_dong, 250000);
+  assert.equal(dong('w_don').chi_phi, 250000);
 
   await dongViec(bcAn, 'w_don2', { ketQua: 'chot_duoc', chiPhi: '', bay: BAY });
-  assert.equal(dong('w_don2').chi_phi_dong, null, 'để trống được, không phải đơn nào cũng biết ngay');
+  assert.equal(dong('w_don2').chi_phi, null, 'để trống được, không phải đơn nào cũng biết ngay');
 
   noiKho();
   await dongViec(bcAn, 'w_don', { ketQua: 'chot_duoc', chiPhi: 0, bay: BAY });
-  assert.equal(dong('w_don').chi_phi_dong, 0, '0 là "không tốn gì", khác hẳn "chưa biết"');
+  assert.equal(dong('w_don').chi_phi, 0, '0 là "không tốn gì", khác hẳn "chưa biết"');
 });
 
 test('L4-M2 · chi phí: đơn nhưng kết quả không phải chot_duoc → 400', async () => {
@@ -377,7 +430,7 @@ test('L4-M2 · tra_lai_bot với loai="don" → 400; với hội thoại → qua
     () => dongViec(bcAn, 'w_don', { ketQua: 'tra_lai_bot', bay: BAY }),
     (e) => e instanceof LoiKetQuaLa && e.status === 400 && e.ma === 'ket_qua_la',
   );
-  assert.equal(dong('w_don').trang_thai, TRANG_THAI.CHO);
+  assert.equal(tt('w_don'), TRANG_THAI.CHO);
 
   const kq = await dongViec(bcAn, 'w_ht', { ketQua: 'tra_lai_bot', bay: BAY });
   assert.equal(kq.ok, true);
@@ -407,6 +460,32 @@ test('L4-M2 · nhận/đóng việc của team khác → không thấy (→404),
   assert.equal(kq.ok, true);
 });
 
+/* ══════════════════ người giữ việc là KHOÁ NGOẠI, không phải chuỗi tên ══════════════════ */
+
+test('L4-M2 · 409 gọi TÊN người giữ, tra từ `nguoi_dung` — không phun bigint ra cho sale', async () => {
+  await assert.rejects(
+    () => nhanViec(bcAn, 'w_binh_giu', { bay: BAY }),
+    (e) => e.nguoiGiu === 'binh' && /Việc này binh đang giữ/.test(e.message),
+  );
+  // Câu lỗi tuyệt đối không được chứa id trần — 'u2' là thứ sale không tra được vào đâu.
+  await assert.rejects(
+    () => nhanViec(bcAn, 'w_binh_giu', { bay: BAY }),
+    (e) => !/\bu2\b/.test(e.message),
+  );
+});
+
+test('L4-M2 · người giữ không còn trong `nguoi_dung` → "(không rõ)", KHÔNG lộ id', async () => {
+  // `nguoi_nhan_id` là FK `ON DELETE SET NULL`, nhưng dữ liệu cũ vẫn có thể trỏ vào một id
+  // không tra ra. Lúc đó thà nói "(không rõ)" còn hơn dán một con số vào mặt sale.
+  for (const r of kho.docThang(BANG)) {
+    if (r.id === 'w_binh_giu') r.nguoi_nhan_id = 'u_bien_mat';
+  }
+  await assert.rejects(
+    () => nhanViec(bcAn, 'w_binh_giu', { bay: BAY }),
+    (e) => e.nguoiGiu === KHONG_RO_NGUOI && !/u_bien_mat/.test(e.message),
+  );
+});
+
 /* ══════════════════ tiêu chí 11 · nhật ký ══════════════════ */
 
 test('L4-M2 · nhận và đóng đều ghi ĐÚNG MỘT dòng nhật ký, có truoc/sau là chín cột nửa dưới', async () => {
@@ -416,23 +495,25 @@ test('L4-M2 · nhận và đóng đều ghi ĐÚNG MỘT dòng nhật ký, có t
   assert.equal(gNhan[0].doiTuongLoai, BANG);
   assert.equal(gNhan[0].doiTuongId, 'w_ht');
   assert.equal(gNhan[0].boiCanh.nguoiDungId, 'u1');
-  assert.equal(gNhan[0].truoc.trang_thai, TRANG_THAI.CHO);
-  assert.equal(gNhan[0].truoc.nhan_boi, null);
-  assert.equal(gNhan[0].sau.trang_thai, TRANG_THAI.DANG_XU);
-  assert.equal(gNhan[0].sau.nhan_boi, 'u1');
+  assert.equal(gNhan[0].truoc.nguoi_nhan_id, null);
+  assert.equal(gNhan[0].truoc.dong_luc, null);
+  assert.equal(gNhan[0].sau.nguoi_nhan_id, 'u1');
+  assert.equal(trangThaiCua(gNhan[0].truoc), TRANG_THAI.CHO);
+  assert.equal(trangThaiCua(gNhan[0].sau), TRANG_THAI.DANG_XU);
   assert.deepEqual(Object.keys(gNhan[0].sau), [...COT_NUA_DUOI]);
+  assert.equal(COT_NUA_DUOI.length, 6, 'nửa dưới của lược đồ thật là SÁU cột');
 
   await dongViec(bcAn, 'w_ht', { ketQua: 'khach_tu_choi', lyDo: 'gia_cao', bay: BAY + 1000 });
   const gDong = nhatKyMa('dong_viec');
   assert.equal(gDong.length, 1);
   assert.equal(gDong[0].truoc.ket_qua, null);
   assert.equal(gDong[0].sau.ket_qua, 'khach_tu_choi');
-  assert.equal(gDong[0].sau.ket_qua_ly_do, 'gia_cao');
+  assert.equal(gDong[0].sau.ly_do_dong, 'gia_cao');
   assert.equal(gDong[0].sau.dong_luc, BAY + 1000);
   assert.match(gDong[0].ghiChu, /Khách từ chối/);
 
   // Nhật ký chỉ mang chín cột nửa dưới — không kèm cả dòng, không kèm dữ liệu khách.
-  for (const cot of ['cust_id', 'page_id', 'conv_id', 'ly_do_ma', 'han_luc']) {
+  for (const cot of ['hoi_thoai_id', 'don_hang_id', 'loai', 'ly_do_day', 'han_luc', 'day_luc']) {
     assert.ok(!(cot in gDong[0].sau), `nhật ký mang theo cột ${cot} của người A`);
   }
 });
@@ -475,13 +556,13 @@ test('L4-M2 · hai lời gọi nhanViec đồng thời trên cùng một việc 
   ]);
   const duoc = kq.filter((k) => k.status === 'fulfilled');
   const hong = kq.filter((k) => k.status === 'rejected');
-  assert.equal(duoc.length, 1, 'cả hai cùng thắng — thiếu điều kiện trang_thai lúc ghi');
+  assert.equal(duoc.length, 1, 'cả hai cùng thắng — thiếu điều kiện nửa dưới lúc ghi');
   assert.equal(hong.length, 1);
   assert.ok(hong[0].reason instanceof LoiDaCoNguoiGiu);
 
   const r = dong('w_ht');
-  assert.equal(r.trang_thai, TRANG_THAI.DANG_XU);
-  assert.ok(['u1', 'u2'].includes(r.nhan_boi));
+  assert.equal(tt('w_ht'), TRANG_THAI.DANG_XU);
+  assert.ok(['u1', 'u2'].includes(r.nguoi_nhan_id));
   assert.equal(nhatKyMa('nhan_viec').length, 1, 'người thua vẫn ghi một dòng "đã nhận"');
 });
 
@@ -493,13 +574,13 @@ test('L4-M2 · hai lời gọi dongViec đồng thời → đúng một thành c
   assert.equal(kq.filter((k) => k.status === 'fulfilled').length, 1);
   const thang = kq.find((k) => k.status === 'fulfilled').value;
   assert.equal(dong('w_ht').ket_qua, thang.viec.ket_qua);
-  assert.equal(dong('w_ht').trang_thai, TRANG_THAI.DA_XU);
+  assert.equal(tt('w_ht'), TRANG_THAI.DA_XU);
 });
 
 /* ══════════════════ bảng kết quả và lý do ══════════════════ */
 
 test('L4-M2 · bangKetQua theo loại: tra_lai_bot chỉ cho hội thoại, ô chi phí chỉ cho đơn', () => {
-  const don = bangKetQua('don');
+  const don = bangKetQua('don_hang');
   const ht = bangKetQua('hoi_thoai');
   assert.ok(!don.some((k) => k.ma === 'tra_lai_bot'), 'đơn không có "trả lại cho bot"');
   assert.ok(ht.some((k) => k.ma === 'tra_lai_bot'));
@@ -534,14 +615,14 @@ test('L4-M2 HTTP · POST nhan rồi POST dong: 200, và trạng thái đổi đ�
   const a = await goi('/api/dieu-phoi/viec/w_ht/nhan', { cach: 'POST', than: {} });
   assert.equal(a.res.status, 200);
   assert.equal(a.than.ok, true);
-  assert.equal(dong('w_ht').trang_thai, TRANG_THAI.DANG_XU);
+  assert.equal(tt('w_ht'), TRANG_THAI.DANG_XU);
 
   const b = await goi('/api/dieu-phoi/viec/w_ht/dong', {
     cach: 'POST', than: { ketQua: 'khach_tu_choi', lyDo: 'khac', ghiChu: 'khách chặn tin' },
   });
   assert.equal(b.res.status, 200);
   assert.equal(b.than.viec.ket_qua, 'khach_tu_choi');
-  assert.equal(dong('w_ht').ghi_chu, 'khách chặn tin');
+  assert.equal(tachLyDoDong(dong('w_ht').ly_do_dong).ghiChu, 'khách chặn tin');
 });
 
 test('L4-M2 HTTP · 409 trả THẲNG thông điệp máy chủ, kèm tên người giữ', async () => {
@@ -587,9 +668,9 @@ test('L4-M2 HTTP · thân không phải JSON → 400 gọn, không phun HTML kè
 });
 
 test('L4-M2 HTTP · GET bang-ket-qua trả bảng cho màn hình, loại lạ → 400', async () => {
-  const r = await goi('/api/dieu-phoi/bang-ket-qua?loai=don');
+  const r = await goi('/api/dieu-phoi/bang-ket-qua?loai=don_hang');
   assert.equal(r.res.status, 200);
-  assert.equal(r.than.loai, 'don');
+  assert.equal(r.than.loai, 'don_hang');
   assert.deepEqual(r.than.ketQua.map((k) => k.ma),
     ['chot_duoc', 'khach_tu_choi', 'khach_khong_tra_loi', 'da_xu_ngoai', 'day_nham']);
   assert.equal(r.than.ketQua[0].coChiPhi, true);
@@ -603,12 +684,12 @@ test('L4-M2 HTTP · GET bang-ket-qua trả bảng cho màn hình, loại lạ �
 test('L4-M2 HTTP · hai đường POST vẫn bắt đăng nhập và vai', async () => {
   const chuaVao = await goi('/api/dieu-phoi/viec/w_ht/nhan', { cach: 'POST', than: {}, ai: null });
   assert.equal(chuaVao.res.status, 401);
-  assert.equal(dong('w_ht').trang_thai, TRANG_THAI.CHO);
+  assert.equal(tt('w_ht'), TRANG_THAI.CHO);
 
   const xuyenTeam = await goi('/api/dieu-phoi/viec/w_ht/nhan?team_id=t2', { cach: 'POST', than: {} });
   assert.equal(xuyenTeam.res.status, 403);
   assert.equal(xuyenTeam.than.ma, 'chan_xuyen_team');
-  assert.equal(dong('w_ht').trang_thai, TRANG_THAI.CHO);
+  assert.equal(tt('w_ht'), TRANG_THAI.CHO);
 });
 
 /* ══════════════════ hai trang HTML ══════════════════ */
@@ -638,7 +719,7 @@ test('L4-M2 · bảng điều phối có ĐÚNG MỘT cột "Đang xử" và ở
   assert.match(than, /colspan="5"/, 'dòng "không có việc nào" phải trải hết năm cột');
   assert.match(than, /@media \(max-width:720px\)/);
   assert.match(than, /td\.c-dem\{grid-column:2\/-1;grid-row:1/, 'đồng hồ phải nằm ở hàng đầu của thẻ');
-  assert.match(than, /trang_thai !== 'dang_xu'/, 'cột Đang xử phải trống khi việc còn ở `cho`');
+  assert.match(than, /trangThai !== 'dang_xu'/, 'cột Đang xử phải trống khi việc còn ở `cho`');
   assert.ok(!/<textarea/.test(than));
 });
 
@@ -646,11 +727,11 @@ test('L4-M2 · bảng điều phối có ĐÚNG MỘT cột "Đang xử" và ở
 
 test('L4-M2 · nối CÁI CHẮN ĐÃ DỰNG (req,res,next) thì mọi đường vẫn chạy', async () => {
   datChanDangNhap(chanDangNhap());          // ← đã dựng, kiểu người ta hay viết
-  datChanVai(chanVai('sale', 'quan_tri'));
+  datChanVai(chanVai(VAI.SALE, VAI.QUAN_TRI));   // hằng, không gõ lại chuỗi mã vai
   try {
     const r = await goi('/api/dieu-phoi/viec/w_ht/nhan', { cach: 'POST', than: {} });
     assert.equal(r.res.status, 200, 'nối cái chắn đã dựng mà nổ — đó là lỗi req undefined');
-    assert.equal(dong('w_ht').trang_thai, TRANG_THAI.DANG_XU);
+    assert.equal(tt('w_ht'), TRANG_THAI.DANG_XU);
 
     const chuaVao = await goi('/api/dieu-phoi/tom-tat', { ai: null });
     assert.equal(chuaVao.res.status, 401);

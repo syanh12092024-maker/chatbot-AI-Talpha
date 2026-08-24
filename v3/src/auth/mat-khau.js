@@ -4,7 +4,8 @@
 // máy, cài trên VPS hay hỏng. scrypt nằm sẵn trong Node, đủ chậm để chống dò, và không
 // thêm một dòng nào vào `package.json` — mà `package.json` là file B không được đụng.
 //
-// Định dạng lưu (đúng hợp đồng mục 4, cột `nguoi_dung.mat_khau_bam` kiểu text):
+// Định dạng lưu (cột `nguoi_dung.mat_khau_hash` kiểu text của `db/migrate/001_nen.up.sql`;
+// cột NULLABLE — NULL = chưa đặt mật khẩu, xử lý ở `kho-nguoi-dung.js`):
 //     scrypt$<N>$<r>$<p>$<muối base64>$<băm base64>
 // Tham số nằm ngay trong chuỗi để sau này nâng N mà mật khẩu cũ vẫn kiểm được.
 
@@ -44,7 +45,7 @@ export async function bam(matKhau, thamSo = {}) {
 
 /**
  * So mật khẩu với chuỗi đã băm. Chuỗi băm sai định dạng → trả `false`, KHÔNG ném:
- * dữ liệu hỏng trong cột `mat_khau_bam` không được làm sập đường đăng nhập của cả team.
+ * dữ liệu hỏng trong cột `mat_khau_hash` không được làm sập đường đăng nhập của cả team.
  * @returns {Promise<boolean>}
  */
 export async function kiem(matKhau, chuoiDaBam) {

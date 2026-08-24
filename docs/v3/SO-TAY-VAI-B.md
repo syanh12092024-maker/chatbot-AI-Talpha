@@ -26,8 +26,8 @@ Spec từng module: `v3/docs/spec/`. Hợp đồng với người A: `v3/docs/ho
 
 ## Cách làm việc — ba điều người nhận tiếp phải biết
 
-**1. Người A chưa viết dòng nào.** Lược đồ (`v3/db/`) và tầng truy vấn (`v3/src/db/`) chưa
-tồn tại. Nên mọi module của B **nhận cổng truy vấn từ ngoài vào** (tiêm phụ thuộc), và chạy
+**1. ~~Người A chưa viết dòng nào~~ — ĐÃ LỖI THỜI (24/08).** A xong 12/12 module: lược đồ
+thật ở `db/migrate/`, tầng truy vấn ở `src/db/` (KHÔNG phải `v3/db/` như B từng chờ). Nên mọi module của B **nhận cổng truy vấn từ ngoài vào** (tiêm phụ thuộc), và chạy
 test bằng bản cài giả `v3/testkit/db-gia.js`. Khi A xong, mỗi module chỉ phải nối một chỗ —
 xem hợp đồng mục 8.
 
@@ -89,6 +89,40 @@ có ghi nhật ký, cấm sửa/xoá `nhat_ky` và `so_ai`, cấm xoá mọi b�
 | 23 | **Đóng việc người khác đang giữ cũng bị chặn**, quản trị không có cửa vượt | Cùng lý do với "không cướp im lặng". **Đánh đổi:** sale nhận việc rồi nghỉ thì việc kẹt tới giai đoạn 2 |
 | 24 | **Trang HTML hết vé thì chuyển hướng về đăng nhập**, đường `/api` vẫn trả JSON | Sale mở dấu trang buổi sáng nhìn thấy khối JSON thì không có đường đi tiếp. Máy gọi máy thì mã lỗi mới là thứ đúng |
 | 25 | **Thêm `v3/src/vai-b.js` nối dây một lời gọi** | Bốn module không import lẫn nhau nên phải nối tay 12 chỗ, đúng thứ tự. Cả hai cách nối sai đã xảy ra thật lúc chạy thử |
+
+---
+
+## Sửa theo lược đồ thật — 23–24/08/2026
+
+Sổ tay này từng ghi *"người A chưa viết dòng nào"*. **Đã lỗi thời.** A xong 12/12 module;
+lược đồ thật ở `db/migrate/001_nen.up.sql`, tầng truy vấn ở `src/db/`.
+
+Toàn bộ tên cột và mã vai của B là **do B tự đoán** hồi chưa có lược đồ. Đã sửa cho khớp —
+xem `v3/docs/lech-giua-gia-dinh-cua-B-va-luoc-do-that.md`, spec `B-S1` và `B-S2`.
+
+**Bẫy im lặng đã gỡ, và nó có HAI bản:** `vai.ma` thật là `quan-tri` gạch **ngang**, B so
+`quan_tri` gạch **dưới** — ở `boi-canh.js` và ở `ui/dispatch/router.js`. Lệch dấu này làm
+**mọi người dùng thành không có vai**, cửa chặn sạch, mà màn hình trông y hệt phân quyền chạy
+đúng. Nay `VAI_VAO_DUOC` **nhập hằng** thay vì gõ lại chuỗi, và có bài test **đọc thẳng file
+migration** rồi so — gõ tay mã vai vào test là đẻ bản sao thứ hai của cùng một sự thật.
+
+**Ba đổi lớn hơn đổi tên:**
+
+| | |
+|---|---|
+| `trang_thai` **không tồn tại** | suy từ `nguoi_nhan_id` + `dong_luc`; công thức nằm ở **đúng một chỗ** (`trangThaiCua()` trong `kho-viec.js`), có test khoá |
+| Không còn `page_id`/`cust_id` trên dòng việc | đi vòng `viec → hoi_thoai → khach + page`. Thêm một mẻ đọc, vẫn **không N+1**: 100 việc tốn 5 lời gọi |
+| **Không có cột `ghi_chu`** | gộp vào `ly_do_dong` theo khuôn `mã · ghi chú`, khuôn ở đúng hai hàm. **Chỗ đáng lật lại nhất nếu A muốn khác** |
+
+**Team kỹ thuật `chua-phan` nay bị chặn khỏi màn chọn team.** Nó là chỗ đậu của 502 page ·
+18.790 hội thoại chưa chốt chủ — một người chọn được nó là nhìn thấy khách của cả ba team.
+
+**Ba chỗ cần một câu chốt, B không tự quyết:**
+
+1. `ve.js` ghi *"không nhét email vào vé"* mà vé nay mang email — sửa ghi chú, hay đổi cách vé mang danh tính?
+2. Gộp `ghi_chu` vào `ly_do_dong` — A có muốn một cột riêng không?
+3. `v3/testkit/db-gia.js` vẫn **dễ tính hơn** bản thật (không có `CHECK`, không khoá ngoại,
+   không trigger). 313 bài xanh **không chứng minh** gì về cơ sở dữ liệu thật.
 
 ---
 

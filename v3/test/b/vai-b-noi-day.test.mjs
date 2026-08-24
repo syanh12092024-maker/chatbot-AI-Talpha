@@ -17,15 +17,22 @@ async function dungThu({ ghiSoAi, canhBao } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
-    nguoi_dung: [{ id: 'u1', ten_dang_nhap: 'an', mat_khau_bam: mk, ho_ten: 'An', bat: true }],
-    team: [{ id: 't1', ten: 'Tiểu Alpha' }, { id: 't2', ten: 'Auus' }],
+    // Hạt giống theo LƯỢC ĐỒ THẬT (`db/migrate/001_nen.up.sql`), không theo tên B từng đoán.
+    nguoi_dung: [{ id: 'u1', email: 'an@talpha.vn', mat_khau_hash: mk, ten: 'An', hoat_dong: true }],
+    team: [
+      { id: 't1', slug: 'tieu-alpha', ten: 'Tiểu Alpha', la_ky_thuat: false },
+      { id: 't2', slug: 'auus', ten: 'Auus', la_ky_thuat: false },
+    ],
     vai: [{ id: 'v1', ma: 'sale', ten: 'Sale' }],
     thanh_vien_team: [
-      { nguoi_dung_id: 'u1', team_id: 't1', vai_id: 'v1' },
-      { nguoi_dung_id: 'u1', team_id: 't2', vai_id: 'v1' },
+      { id: 'tv1', nguoi_dung_id: 'u1', team_id: 't1', vai_id: 'v1' },
+      { id: 'tv2', nguoi_dung_id: 'u1', team_id: 't2', vai_id: 'v1' },
     ],
+    hoi_thoai: [{ id: 'ht1', team_id: 't1', page_id: 'p1', psid: 'k1' }],
     viec_can_xu_ly: [
-      { id: 'w1', team_id: 't1', loai: 'hoi_thoai', ly_do_ma: 'khieu_nai', trang_thai: 'cho', tao_luc: BAY - 6e5, han_luc: BAY },
+      { id: 'w1', team_id: 't1', loai: 'hoi_thoai', hoi_thoai_id: 'ht1',
+        ly_do_day: 'Khách khiếu nại', day_luc: BAY - 6e5, han_luc: BAY,
+        nguoi_nhan_id: null, dong_luc: null },
     ],
   });
   const app = express();
@@ -52,7 +59,7 @@ test('nối dây · BẪY ①: người thuộc hai team vào được tới b�
 
   const dn = await fetch(`${goc}/api/dang-nhap`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tenDangNhap: 'an', matKhau: 'matkhau1' }),
+    body: JSON.stringify({ email: 'an@talpha.vn', matKhau: 'matkhau1' }),
   });
   assert.equal(dn.status, 200);
   const ck = dn.headers.get('set-cookie').split(';')[0];
@@ -82,7 +89,7 @@ test('nối dây · chặn xuyên team vẫn còn, và có ghi vào bảng nhậ
   t.after(() => sv.close());
   const dn = await fetch(`${goc}/api/dang-nhap`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tenDangNhap: 'an', matKhau: 'matkhau1' }),
+    body: JSON.stringify({ email: 'an@talpha.vn', matKhau: 'matkhau1' }),
   });
   const ck = dn.headers.get('set-cookie').split(';')[0];
   const ct = await fetch(`${goc}/api/chon-team`, {

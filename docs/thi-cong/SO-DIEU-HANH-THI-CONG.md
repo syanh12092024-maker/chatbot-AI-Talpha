@@ -802,3 +802,34 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   «Mã trong hệ thống» / «Mã đơn trên POS». Xem tận mắt trên trình duyệt. `v3/test/b`:
   **294 pass / 0 fail**. 🧭 Hệ quả: `so_ai` rơi khỏi danh sách bảng B đọc ⇒ mục tên cột
   `so_ai` trong hợp đồng B–A **hết hiệu lực**, A tự do đặt tên.
+
+- 24/08 · NGƯỜI B · **SỬA CODE B THEO LƯỢC ĐỒ THẬT** (spec `B-S1` điều phối · `B-S2` danh
+  tính, hai thợ song song). `v3/test/b`: **313 pass / 0 fail** (trước 294). 🧭 BẪY IM LẶNG có
+  **HAI bản**: `vai.ma` thật là `quan-tri` gạch NGANG, B so `quan_tri` gạch DƯỚI — ở
+  `boi-canh.js` VÀ `ui/dispatch/router.js:39` (`VAI_VAO_DUOC`). Bản thứ hai do chính thợ B-S2
+  soi ra trong đất của thợ B-S1 lúc quét chéo, tổng chuyển tay. Lệch một dấu ⇒ **mọi người
+  dùng thành không có vai**, `batBuocVaiHTTP` chặn sạch, màn hình trông y hệt phân quyền chạy
+  đúng — sale vẫn vào được nên không ai báo, chỉ lộ đúng lúc quản trị cần vào. LUẬT: mã vai
+  **nhập hằng**, cấm gõ lại chuỗi; và bài test phải **đọc thẳng `db/migrate/001_nen.up.sql`**
+  rồi so, gõ tay mã vai vào test là đẻ bản sao thứ hai của cùng một sự thật. Nghiệm thu bằng
+  HÀNH VI chứ không bằng grep: vé vai quản trị gọi `/api/dieu-phoi/tom-tat` → **200**.
+  Ba đổi lớn hơn đổi tên: `trang_thai` không tồn tại (suy từ `nguoi_nhan_id`+`dong_luc`, công
+  thức ở đúng một chỗ) · dòng việc không còn `page_id`/`cust_id` nên đi vòng qua `hoi_thoai`
+  (100 việc vẫn chỉ 5 lời gọi, không N+1) · **không có cột `ghi_chu`** nên gộp vào `ly_do_dong`
+  khuôn `mã · ghi chú`. Thêm: team kỹ thuật `chua-phan` nay bị chặn khỏi màn chọn team (502
+  page · 18.790 hội thoại chưa chốt chủ — chọn được nó là thấy khách cả ba team).
+  §9 NỢ: (1) `ve.js` ghi «không nhét email vào vé» mà vé nay mang email — cần chốt. (2) Gộp
+  `ghi_chu` vào `ly_do_dong` — A muốn cột riêng thì mở phiếu. (3) `v3/testkit/db-gia.js` vẫn
+  DỄ TÍNH hơn bản thật (không CHECK, không khoá ngoại, không trigger) ⇒ 313 bài xanh **không
+  chứng minh gì** về CSDL thật.
+- 24/08 · NGƯỜI B · **SỰ CỐ SẢN XUẤT, KHÔNG DO DEPLOY.** Bot ngừng trả khách từ 23/08 22h UTC,
+  **227 phút**. Nguyên nhân: **cả hai tài khoản AI hết tiền** — Kimi `429 "account ... is
+  suspended due to insufficient balance"`, Anthropic `400 "credit balance is too low"` (gọi
+  thử cả hai từ VPS). Không có đường lui. Bằng chứng KHÔNG do deploy: cả ngày 23/08 sau deploy
+  là ngày chạy tốt nhất — 48 reply lúc 05h, 44 lúc 18h, **15 order** cả ngày; tắt lúc 22h, tức
+  19 tiếng sau. Hệ thống xử lý ĐÚNG: `llm-health` dừng vòng xử lý, **0 handoff trong 4 tiếng**
+  (không đẩy rác sang sale như sự cố 08/08), 9 khách treo giữ nguyên hội thoại, dò lại mỗi 5
+  phút. Việc NGƯỜI: nạp tiền, xong bot tự chạy lại. 🧭 Đây đúng là sự cố 06/08 lặp lại — cái mà
+  lớp model dự phòng L1-M4 sinh ra để bịt. Nhưng nó nằm im ở `v3/`, VÀ kể cả đã nối cũng
+  KHÔNG cứu được: dự phòng cần nhà thứ hai **còn tiền**. Việc «mở tài khoản 4 nhà model, nạp
+  ít tiền mỗi cái» vẫn "chưa làm" — hôm nay là cái giá của nó.

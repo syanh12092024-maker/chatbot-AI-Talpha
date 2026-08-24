@@ -65,33 +65,66 @@ function cong() {
   };
 }
 
-/** `bat === false` (hoặc 0 / 'false') là tài khoản đã khoá. Thiếu cột → coi như đang bật. */
-const biTat = (nd) => nd.bat === false || nd.bat === 0 || nd.bat === 'false' || nd.bat === 'f';
+/**
+ * Cờ boolean đọc từ cơ sở dữ liệu. Trình điều khiển này trả `true/false`, trình khác trả
+ * `'t'`/`1`/`'true'` — nhận hết. `undefined` (cột không được chọn) KHÔNG phải `false`, nơi
+ * gọi tự quyết mặc định.
+ */
+const co = (v) => v === true || v === 1 || v === '1' || v === 't' || v === 'true' || v === 'y';
+
+/** `hoat_dong = false` là tài khoản đã khoá. Thiếu cột → coi như đang bật (mặc định của lược đồ). */
+const biTat = (nd) => nd.hoat_dong != null && !co(nd.hoat_dong);
 
 /**
- * Tìm theo tên đăng nhập. Tài khoản khoá (`bat === false`) trả `null` — **coi như không
- * tồn tại**, để đường đăng nhập trả đúng một thông điệp cho cả ba ca: không có tài khoản,
- * tài khoản khoá, sai mật khẩu. Khác nhau là chỉ điểm cho người dò tài khoản.
- * @returns {Promise<{id:string,ten_dang_nhap:string,mat_khau_bam:string,ho_ten:string|null,bat:boolean}|null>}
+ * Tìm theo EMAIL (`nguoi_dung.email` là cột UNIQUE của lược đồ thật — không có cột tên
+ * đăng nhập).
+ *
+ * SO KHỚP ĐÚNG NGUYÊN VĂN, chỉ cắt khoảng trắng. KHÔNG hạ chữ thường ở đây: cột là `text`
+ * UNIQUE thường, không phải `citext`, và không có index trên `lower(email)` — hạ chữ thường
+ * phía JS thì người có email lưu dạng có chữ hoa sẽ không bao giờ tra ra, mà cửa hỏng lại
+ * trả đúng câu "sai email hoặc mật khẩu" nên không ai lần ra. (Bộ đếm thử sai thì VẪN khoá
+ * theo bản hạ chữ thường — chỗ đó cố tình gộp, xem `router.js`.)
+ *
+ * Trả `null` — **coi như không tồn tại** — ở cả ba ca dưới đây, để đường đăng nhập chỉ có
+ * đúng MỘT thông điệp cho mọi kiểu hỏng. Khác nhau là chỉ điểm cho người dò tài khoản:
+ *   · không có dòng nào
+ *   · `hoat_dong = false`      (tài khoản khoá)
+ *   · `mat_khau_hash IS NULL`  (**chưa đặt mật khẩu** — lược đồ để cột nullable, xem
+ *     `001_nen.up.sql:29`. Trả null ở đây để nơi gọi chạy nhánh băm giả, giữ nguyên độ trễ;
+ *     trả chuỗi rỗng thì `kiem()` về ngay và thời gian phản hồi tự khai ca này.)
+ *
+ * @returns {Promise<{id:string,email:string,mat_khau_hash:string,ten:string|null,hoat_dong:boolean}|null>}
  */
-export async function timTheoTen(tenDangNhap) {
-  const ten = String(tenDangNhap ?? '').trim();
-  if (!ten) return null;
-  const nd = await cong().mot('nguoi_dung', { ten_dang_nhap: ten });
+export async function timTheoEmail(email) {
+  const e = String(email ?? '').trim();
+  if (!e) return null;
+  const nd = await cong().mot('nguoi_dung', { email: e });
   if (!nd || biTat(nd)) return null;
+  if (nd.mat_khau_hash == null || String(nd.mat_khau_hash) === '') return null;
   return {
     id: String(nd.id),
-    ten_dang_nhap: String(nd.ten_dang_nhap),
-    mat_khau_bam: nd.mat_khau_bam == null ? '' : String(nd.mat_khau_bam),
-    ho_ten: nd.ho_ten == null ? null : String(nd.ho_ten),
-    bat: true,
+    email: String(nd.email),
+    mat_khau_hash: String(nd.mat_khau_hash),
+    ten: nd.ten == null ? null : String(nd.ten),
+    hoat_dong: true,
   };
 }
 
 /**
  * Các team người này thuộc về, kèm vai trong từng team.
- * Team mà không tra ra vai nào thì BỊ LOẠI khỏi danh sách — vào team mà không có vai thì
- * `taoBoiCanh` sẽ ném; loại sớm ở đây để màn chọn team không hiện cái thẻ bấm vào là lỗi.
+ *
+ * HAI CHỖ BỊ LOẠI KHỎI DANH SÁCH:
+ *
+ *  ① Team không tra ra vai nào — vào team mà không có vai thì `taoBoiCanh` sẽ ném; loại sớm
+ *    ở đây để màn chọn team không hiện cái thẻ bấm vào là lỗi.
+ *
+ *  ② ⛔ TEAM KỸ THUẬT (`team.la_ky_thuat`) — đây là chỗ đậu của TOÀN BỘ dữ liệu di trú chưa
+ *    chốt chủ (502 page · 18.790 hội thoại · 69 bản kịch bản, team `chua-phan`). Một người
+ *    chọn được nó là nhìn thấy khách của cả ba team nghiệp vụ cùng lúc. Cơ sở dữ liệu đã có
+ *    trigger cấm gán thành viên vào team kỹ thuật, nhưng picker mù vẫn là một đường rò ở
+ *    tầng màn hình — nên chặn ở CẢ HAI tầng. Hàm này là nguồn duy nhất của danh sách team
+ *    (cả `/api/toi`, cả `chon-team.html`, cả `vaiTrongTeam`), nên lọc ở đây là lọc mọi chỗ.
+ *
  * @returns {Promise<Array<{teamId:string, tenTeam:string, vai:string[]}>>}
  */
 export async function teamCuaNguoi(nguoiDungId) {
@@ -104,14 +137,22 @@ export async function teamCuaNguoi(nguoiDungId) {
   if (!dsTV.length) return [];
 
   const maVai = new Map((await db.chon('vai')).map((v) => [String(v.id), String(v.ma)]));
-  const tenTeam = new Map((await db.chon('team')).map((t) => [String(t.id), String(t.ten ?? t.id)]));
+  // Giữ cả cờ kỹ thuật, không chỉ tên: quyết định loại hay không nằm ngay ở dòng team.
+  const bangTeam = new Map((await db.chon('team')).map((t) => [
+    String(t.id), { ten: String(t.ten ?? t.id), laKyThuat: co(t.la_ky_thuat) },
+  ]));
 
   const gom = new Map();
   for (const r of dsTV) {
     if (String(r.nguoi_dung_id) !== id) continue; // chắn thêm một lần, phòng cổng lọc lỏng
     const teamId = String(r.team_id ?? '');
     if (!teamId) continue;
-    if (!gom.has(teamId)) gom.set(teamId, { teamId, tenTeam: tenTeam.get(teamId) || teamId, vai: [] });
+    const th = bangTeam.get(teamId);
+    if (th && th.laKyThuat) {
+      console.warn(`[auth] người ${id} có dòng thanh_vien_team ở TEAM KỸ THUẬT ${teamId} — loại khỏi danh sách chọn team.`);
+      continue;
+    }
+    if (!gom.has(teamId)) gom.set(teamId, { teamId, tenTeam: th ? th.ten : teamId, vai: [] });
     const ma = maVai.get(String(r.vai_id)) || (r.vai_ma ? String(r.vai_ma) : null);
     const o = gom.get(teamId);
     if (ma && !o.vai.includes(ma)) o.vai.push(ma);
@@ -131,6 +172,10 @@ export async function teamCuaNguoi(nguoiDungId) {
 
 /**
  * Vai của một người TRONG MỘT TEAM. Không thuộc team đó → `[]` (nơi gọi trả 403).
+ *
+ * Đi qua `teamCuaNguoi` nên **team kỹ thuật cũng ra `[]`** — gõ thẳng `teamId` của
+ * `chua-phan` vào `POST /api/chon-team` bị xử đúng như chọn một team không thuộc về:
+ * 403 + một dòng nhật ký `chan_xuyen_team`.
  * @returns {Promise<string[]>}
  */
 export async function vaiTrongTeam(nguoiDungId, teamId) {

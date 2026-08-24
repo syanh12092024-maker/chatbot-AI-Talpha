@@ -8,9 +8,13 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 
 import { KhoGia, taoTruyVanGia } from '../../testkit/db-gia.js';
+import { VAI } from '../../src/auth/boi-canh.js';
 import {
   datTaoTruyVan, datChanDangNhap, datChanVai, datPheuNhatKy,
   taoRouterDieuPhoi, VAI_VAO_DUOC, BIEN_MAU_POS, MAU_POS_MAC_DINH,
@@ -21,27 +25,31 @@ const phut = (n) => n * 60000;
 
 /* ────────────────────────────────── hạt giống ────────────────────────────────── */
 
+/** Nửa dưới của dòng việc — sáu cột thật, NULL ghi hẳn ra (điều kiện mở là `IS NULL`). */
+const nuaDuoi = { nguoi_nhan_id: null, nhan_luc: null, ket_qua: null, ly_do_dong: null, chi_phi: null, dong_luc: null };
+
 const kho = new KhoGia({
   viec_can_xu_ly: [
     {
-      id: 'v1', team_id: 't1', loai: 'hoi_thoai', trang_thai: 'cho', ly_do_ma: 'khieu_nai',
-      page_id: 'p1', cust_id: 'k1', conv_id: 'c9', don_hang_id: null,
-      tao_luc: BAY - phut(12), han_luc: BAY - phut(2),          // quá hạn 2 phút
+      id: 'v1', team_id: 't1', loai: 'hoi_thoai', ly_do_day: 'khieu_nai',
+      hoi_thoai_id: 'ht1', don_hang_id: null,
+      day_luc: BAY - phut(12), han_luc: BAY - phut(2), ...nuaDuoi,   // quá hạn 2 phút
     },
     {
-      id: 'v2', team_id: 't1', loai: 'hoi_thoai', trang_thai: 'dang_xu', ly_do_ma: 'ngoai_kich_ban',
-      page_id: 'p1', cust_id: 'k1', conv_id: 'c9',
-      tao_luc: BAY - phut(4), han_luc: BAY + phut(6),
+      id: 'v2', team_id: 't1', loai: 'hoi_thoai', ly_do_day: 'ngoai_kich_ban',
+      hoi_thoai_id: 'ht1', don_hang_id: null,
+      day_luc: BAY - phut(4), han_luc: BAY + phut(6),
+      ...nuaDuoi, nguoi_nhan_id: 'u_t1', nhan_luc: BAY - phut(3),    // đang xử
     },
     {
-      id: 'v3', team_id: 't1', loai: 'don', trang_thai: 'cho', ly_do_ma: 'don_can_duyet',
-      page_id: 'p1', cust_id: 'k1', conv_id: 'c9', don_hang_id: 'd1',
-      tao_luc: BAY - phut(1), han_luc: BAY + phut(9),
+      id: 'v3', team_id: 't1', loai: 'don_hang', ly_do_day: 'don_can_duyet',
+      hoi_thoai_id: 'ht1', don_hang_id: 'd1',
+      day_luc: BAY - phut(1), han_luc: BAY + phut(9), ...nuaDuoi,
     },
     {
-      id: 'v_t2', team_id: 't2', loai: 'hoi_thoai', trang_thai: 'cho', ly_do_ma: 'doi_tra',
-      page_id: 'p2', cust_id: 'k2', conv_id: 'c8',
-      tao_luc: BAY - phut(3), han_luc: BAY + phut(7),
+      id: 'v_t2', team_id: 't2', loai: 'hoi_thoai', ly_do_day: 'doi_tra',
+      hoi_thoai_id: 'ht2', don_hang_id: null,
+      day_luc: BAY - phut(3), han_luc: BAY + phut(7), ...nuaDuoi,
     },
   ],
   khach: [
@@ -49,14 +57,21 @@ const kho = new KhoGia({
     { id: 'k2', team_id: 't2', ten: 'Khách team hai', so_dien_thoai: '0909999999' },
   ],
   page: [
-    { id: 'p1', team_id: 't1', ten: 'Tiểu Alpha Store', shop_id: '77' },
-    { id: 'p2', team_id: 't2', ten: 'Auus Store' },
+    { id: 'p1', team_id: 't1', page_id: '102938', ten: 'Tiểu Alpha Store', pos_shop_id: '77' },
+    { id: 'p2', team_id: 't2', page_id: '556677', ten: 'Auus Store' },
   ],
-  hoi_thoai: [{ id: 'ht1', team_id: 't1', conv_id: 'c9', page_id: 'p1', cust_id: 'k1' }],
-  don_hang: [{ id: 'd1', team_id: 't1', ma_don: 'SO-1024', tong_tien: 249000 }],
+  hoi_thoai: [
+    { id: 'ht1', team_id: 't1', page_id: 'p1', psid: '9911', khach_id: 'k1', trang_thai: 'SELLING', chu_so_huu: 'AI' },
+    { id: 'ht2', team_id: 't2', page_id: 'p2', psid: '8822', khach_id: 'k2', trang_thai: 'GREET', chu_so_huu: 'AI' },
+  ],
+  nguoi_dung: [
+    { id: 'u_t1', email: 'an@shop.vn', ten: 'An' },
+    { id: 'u_t2', email: 'cuc@shop.vn', ten: 'Cúc' },
+  ],
+  don_hang: [{ id: 'd1', team_id: 't1', ma_pos: '77:1024', tong_tien: 249000 }],
   so_ai: [
-    { id: 's1', team_id: 't1', page_id: 'p1', cust_id: 'k1', thoi_gian: BAY - phut(20), ben: 'khach', chu: 'hàng lỗi rồi' },
-    { id: 's2', team_id: 't1', page_id: 'p1', cust_id: 'k1', thoi_gian: BAY - phut(19), ben: 'bot', chu: 'em xin lỗi chị', ma_model: 'kimi-k2.6' },
+    { id: 's1', team_id: 't1', page_id: '102938', psid: '9911', xay_ra_luc: BAY - phut(20), loai: 'reply', ma_model: 'kimi-k2.6' },
+    { id: 's2', team_id: 't1', page_id: '102938', psid: '9911', xay_ra_luc: BAY - phut(19), loai: 'order', ma_model: 'kimi-k2.6' },
   ],
 });
 
@@ -176,8 +191,8 @@ test('L4-M1 HTTP · đăng nhập team A thì không có MỘT DÒNG NÀO của 
 });
 
 test('L4-M1 HTTP · ?loai= lọc đúng một danh sách', async () => {
-  const { than } = await nhu('/api/dieu-phoi/hang-cho?loai=don');
-  assert.equal(than.loai, 'don');
+  const { than } = await nhu('/api/dieu-phoi/hang-cho?loai=don_hang');
+  assert.equal(than.loai, 'don_hang');
   assert.deepEqual(than.don.map((v) => v.id), ['v3']);
   assert.deepEqual(than.hoiThoai, []);
 
@@ -221,10 +236,10 @@ test('L4-M1 HTTP · chi tiết trả đủ ba khối và hai đường nhảy', 
   try {
     const { than } = await nhu('/api/dieu-phoi/viec/v3');
     assert.equal(than.lyDoChu, 'Đơn bot chốt, chờ sale duyệt');
-    assert.equal(than.donHang.ma_don, 'SO-1024');
+    assert.equal(than.donHang.ma_pos, '77:1024');
     assert.equal(than.doanChat, undefined, 'đoạn chat đã bỏ 23/08 — xem đầu chi-tiet.js');
-    assert.equal(than.lienKet.pancake, 'https://pancake.vn/p1?c_id=c9');
-    assert.equal(than.lienKet.pos, 'https://pos.pages.fm/shops/77/orders/d1');
+    assert.equal(than.lienKet.pancake, 'https://pancake.vn/102938?c_id=102938_9911');
+    assert.equal(than.lienKet.pos, 'https://pos.pages.fm/shops/77/orders/1024');
 
     const chat = (await nhu('/api/dieu-phoi/viec/v1')).than;
     assert.equal(chat.donHang, null, 'việc hội thoại không có đơn → null, không ném');
@@ -322,4 +337,41 @@ test('L4-M1 HTTP · module không mở đường POST/PUT/DELETE nào (đó là 
     });
     assert.equal(res.status, 404, method + ' không được có đường nào');
   }
+});
+
+/* ═════ mã vai — bản sao gõ tay là cái bẫy im lặng nhất trong cả module ═════ */
+
+test('L4-M1 · không file nào trong module gõ tay mã vai quản trị bằng gạch DƯỚI', () => {
+  // `vai.ma` thật dùng dấu gạch ngang. Gõ nhầm gạch dưới thì so chuỗi không khớp, mọi quản
+  // trị thành "không có vai", và cửa vai chặn sạch — trông y hệt phân quyền chạy đúng. Sale
+  // vẫn vào được nên sẽ không ai báo. Bài này khoá lại bằng cách quét cả thư mục.
+  const goc = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../src/ui/dispatch');
+  const ds = [];
+  for (const f of fs.readdirSync(goc)) {
+    if (f.endsWith('.js')) ds.push([f, fs.readFileSync(path.join(goc, f), 'utf8')]);
+  }
+  for (const f of fs.readdirSync(path.join(goc, 'trang'))) {
+    if (f.endsWith('.html')) ds.push([`trang/${f}`, fs.readFileSync(path.join(goc, 'trang', f), 'utf8')]);
+  }
+  assert.ok(ds.length >= 6, 'quét hụt file — bài test này sẽ xanh giả');
+
+  const SAI = 'quan' + '_tri';        // ghép ra lúc chạy, để chính bài test không dính bẫy
+  for (const [ten, ma] of ds) {
+    assert.ok(!ma.includes(SAI), `${ten} còn mã vai gõ tay sai dấu: ${SAI}`);
+  }
+
+  // Và hằng phải đi TỪ `VAI`, không phải một bản sao trùng giá trị cho may.
+  assert.deepEqual([...VAI_VAO_DUOC], [VAI.SALE, VAI.QUAN_TRI]);
+  assert.equal(VAI.QUAN_TRI, 'quan-tri');
+});
+
+test('L4-M1 HTTP · vé mang vai QUẢN TRỊ vào được bảng điều phối — 200, không phải 403', async () => {
+  const r = await goi('/api/dieu-phoi/tom-tat', { team: 't1', vai: VAI.QUAN_TRI });
+  assert.equal(r.res.status, 200, 'quản trị bị chặn khỏi bảng điều phối — mã vai lệch dấu');
+  assert.equal(r.than.ok, true);
+
+  // Và vai gõ sai dấu thì KHÔNG được vào — chứng minh 200 ở trên là do khớp mã thật.
+  const sai = await goi('/api/dieu-phoi/tom-tat', { team: 't1', vai: 'quan' + '_tri' });
+  assert.equal(sai.res.status, 403);
+  assert.equal(sai.than.ma, 'thieu_vai');
 });

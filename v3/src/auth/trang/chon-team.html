@@ -66,7 +66,11 @@
 <script>
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-const TEN_VAI = { quan_tri: 'Quản trị', sale: 'Sale' };
+// Khoá phải trùng `vai.ma` của lược đồ thật (`db/migrate/001_nen.up.sql`, seed 5 vai):
+// GẠCH NGANG. Sai một dấu thì thẻ team hiện mã trần thay vì tên vai.
+// Giai đoạn 1 chỉ dùng hai vai; ba vai còn lại (marketer · quan-ly · duyet-kich-ban)
+// hiện nguyên mã cho tới khi giai đoạn 2 mở chúng ra.
+const TEN_VAI = { 'quan-tri': 'Quản trị', sale: 'Sale' };
 
 function baoLoi(t) { const o = $('#loi'); o.textContent = t; o.classList.add('hien'); }
 function xoaLoi() { const o = $('#loi'); o.textContent = ''; o.classList.remove('hien'); }
@@ -79,9 +83,13 @@ async function nap() {
     d = await r.json();
   } catch { baoLoi('Không nối được máy chủ. Tải lại trang.'); return; }
 
+  // `tenDangNhap` giữ nguyên TÊN TRƯỜNG (hợp đồng với người A) nhưng GIÁ TRỊ nay là email.
   if (d.tenDangNhap) {
     $('#chao').textContent = 'Đang đăng nhập là ' + d.tenDangNhap + ' — chọn team để vào bảng điều phối.';
   }
+  // `dsTeam` đã bị máy chủ lọc bỏ TEAM KỸ THUẬT (cờ `team.la_ky_thuat`) ở
+  // `kho-nguoi-dung.js#teamCuaNguoi`. Trang này CẤM tự đắp lại team đó vào lưới: một người
+  // chọn được nó là nhìn thấy khách của cả ba team nghiệp vụ cùng lúc.
   const ds = Array.isArray(d.dsTeam) ? d.dsTeam : [];
   const luoi = $('#luoi');
   if (!ds.length) {

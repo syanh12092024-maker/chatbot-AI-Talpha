@@ -8,14 +8,16 @@ process.env.V3_KHOA_VE = 'khoa-thu-cho-test-dai-hon-32-ky-tu-abcdefgh';
 const { phatVe, phatVeTam, docVe, docVeAmTham, HAN_VE_MS, PHIEN_BAN_VE } = await import('../../src/auth/ve.js');
 const { LoiChuaDangNhap, taoBoiCanh, VAI } = await import('../../src/auth/boi-canh.js');
 
-const NGUOI = { nguoiDungId: 'u1', tenDangNhap: 'an', teamId: 't1', vai: [VAI.SALE] };
+// ⚠️ Tên trường `tenDangNhap` giữ nguyên (hợp đồng với người A) nhưng GIÁ TRỊ nay là
+//    EMAIL — lược đồ thật (`db/migrate/001_nen.up.sql`) không có cột tên đăng nhập.
+const NGUOI = { nguoiDungId: 'u1', tenDangNhap: 'an@vidu.vn', teamId: 't1', vai: [VAI.SALE] };
 
 test('vé · phát rồi đọc lại ra đúng nội dung, hạn 8 tiếng', () => {
   const truoc = Date.now();
   const than = docVe(phatVe(NGUOI));
   assert.equal(than.v, PHIEN_BAN_VE);
   assert.equal(than.nguoiDungId, 'u1');
-  assert.equal(than.tenDangNhap, 'an');
+  assert.equal(than.tenDangNhap, 'an@vidu.vn');
   assert.equal(than.teamId, 't1');
   assert.deepEqual(than.vai, ['sale']);
   assert.ok(than.hetHan - than.capLuc === HAN_VE_MS, 'hạn phải đúng 8 tiếng');
@@ -77,7 +79,7 @@ test('vé · thông điệp lỗi KHÔNG nói sai chỗ nào', () => {
 });
 
 test('vé tạm · không mang teamId, không dựng nổi bối cảnh', () => {
-  const than = docVe(phatVeTam({ nguoiDungId: 'u1', tenDangNhap: 'an' }));
+  const than = docVe(phatVeTam({ nguoiDungId: 'u1', tenDangNhap: 'an@vidu.vn' }));
   assert.equal(than.tam, true);
   assert.equal(than.teamId, null);
   assert.deepEqual(than.vai, []);

@@ -55,9 +55,12 @@
   <form id="f" autocomplete="on" novalidate>
     <div class="loi" id="loi" role="alert" aria-live="polite"></div>
     <div class="o">
-      <label for="ten">Tên đăng nhập</label>
-      <input id="ten" name="username" type="text" autocomplete="username" autocapitalize="none"
-             spellcheck="false" required autofocus />
+      <!-- ĐĂNG NHẬP BẰNG EMAIL: lược đồ thật (`db/migrate/001_nen.up.sql`) chỉ có cột
+           `nguoi_dung.email`, không có cột tên đăng nhập. `autocomplete="username"` giữ
+           nguyên — đó là tên chuẩn của trường danh tính, trình quản lý mật khẩu hiểu nó. -->
+      <label for="email">Email</label>
+      <input id="email" name="username" type="email" autocomplete="username" autocapitalize="none"
+             spellcheck="false" inputmode="email" required autofocus />
     </div>
     <div class="o">
       <label for="mk">Mật khẩu</label>
@@ -79,9 +82,9 @@ function xoaLoi() { oLoi.textContent = ''; oLoi.classList.remove('hien'); }
 $('#f').addEventListener('submit', async (e) => {
   e.preventDefault();
   xoaLoi();
-  const tenDangNhap = $('#ten').value.trim();
+  const email = $('#email').value.trim();
   const matKhau = $('#mk').value;
-  if (!tenDangNhap || !matKhau) { baoLoi('Nhập đủ tên đăng nhập và mật khẩu.'); return; }
+  if (!email || !matKhau) { baoLoi('Nhập đủ email và mật khẩu.'); return; }
 
   nut.disabled = true; nut.textContent = 'Đang kiểm…';
   try {
@@ -89,13 +92,14 @@ $('#f').addEventListener('submit', async (e) => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ tenDangNhap, matKhau }),
+      body: JSON.stringify({ email, matKhau }),
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok || !d.ok) {
-      // Không đoán thêm gì từ mã lỗi: máy chủ cố ý trả CÙNG một câu cho "không có tài
-      // khoản" và "sai mật khẩu". Hiện đúng câu nó trả.
-      baoLoi(d.thongDiep || 'Sai tên đăng nhập hoặc mật khẩu.');
+      // Không đoán thêm gì từ mã lỗi: máy chủ cố ý trả CÙNG một câu cho bốn ca
+      // (không có tài khoản · tài khoản khoá · chưa đặt mật khẩu · sai mật khẩu).
+      // Hiện đúng câu nó trả.
+      baoLoi(d.thongDiep || 'Sai email hoặc mật khẩu.');
       $('#mk').value = ''; $('#mk').focus();
       return;
     }

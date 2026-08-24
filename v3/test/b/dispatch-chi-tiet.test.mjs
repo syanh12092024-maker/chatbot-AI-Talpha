@@ -6,8 +6,9 @@ import assert from 'node:assert/strict';
 import { KhoGia, taoTruyVanGia } from '../../testkit/db-gia.js';
 import { taoBoiCanh, VAI, LoiThieuBoiCanh } from '../../src/auth/boi-canh.js';
 import {
-  datTaoTruyVan, chiTietViec, LY_DO,
+  datTaoTruyVan, chiTietViec, LY_DO, TRANG_THAI, KHONG_RO_NGUOI,
   lienKetPancake, lienKetPos, mauPos, daCauHinhPos, MAU_POS_MAC_DINH, BIEN_MAU_POS,
+  convIdCua, tachMaPos,
 } from '../../src/ui/dispatch/index.js';
 
 const BAY = Date.parse('2026-08-22T10:00:00.000Z');
@@ -21,25 +22,41 @@ const tin = (id, teamId, phutTruoc, ben, chu, thua = {}) => ({
   thoi_gian: BAY - phut(phutTruoc), ben, chu, ...thua,
 });
 
+/** Nửa dưới của một dòng việc, đúng SÁU cột thật, luôn ghi hẳn NULL ra. */
+const nuaDuoi = { nguoi_nhan_id: null, nhan_luc: null, ket_qua: null, ly_do_dong: null, chi_phi: null, dong_luc: null };
+
 function hat() {
   return {
     viec_can_xu_ly: [
       {
-        id: 'v_chat', team_id: 't1', loai: 'hoi_thoai', trang_thai: 'cho',
-        ly_do_ma: 'khieu_nai', ly_do: 'khách nhắn "hàng lỗi"',
-        page_id: 'p1', cust_id: 'k1', conv_id: 'c9', don_hang_id: null,
-        tao_luc: BAY - phut(12), han_luc: BAY - phut(2),
+        id: 'v_chat', team_id: 't1', loai: 'hoi_thoai',
+        ly_do_day: 'khieu_nai', hoi_thoai_id: 'ht1', don_hang_id: null,
+        day_luc: BAY - phut(12), han_luc: BAY - phut(2), ...nuaDuoi,
       },
       {
-        id: 'v_don', team_id: 't1', loai: 'don', trang_thai: 'cho',
-        ly_do_ma: 'don_can_duyet',
-        page_id: 'p1', cust_id: 'k1', conv_id: 'c9', don_hang_id: 'd1',
-        tao_luc: BAY - phut(3), han_luc: BAY + phut(7),
+        id: 'v_don', team_id: 't1', loai: 'don_hang',
+        ly_do_day: 'don_can_duyet', hoi_thoai_id: 'ht1', don_hang_id: 'd1',
+        day_luc: BAY - phut(3), han_luc: BAY + phut(7), ...nuaDuoi,
+      },
+      // CHECK của lược đồ chỉ bắt `don_hang` phải có `don_hang_id` — KHÔNG bắt có hội
+      // thoại. Đây là dòng dựng ra ca "đơn từ trang bán hàng", không nối Messenger.
+      {
+        id: 'v_don_le', team_id: 't1', loai: 'don_hang',
+        ly_do_day: 'trung_don', hoi_thoai_id: null, don_hang_id: 'd2',
+        day_luc: BAY - phut(5), han_luc: BAY + phut(5), ...nuaDuoi,
       },
       {
-        id: 'v_cua_t2', team_id: 't2', loai: 'hoi_thoai', trang_thai: 'cho',
-        ly_do_ma: 'doi_tra', page_id: 'p2', cust_id: 'k2', conv_id: 'c8',
-        tao_luc: BAY - phut(4), han_luc: BAY + phut(6),
+        id: 'v_da_xu', team_id: 't1', loai: 'hoi_thoai',
+        ly_do_day: 'hoan_tien', hoi_thoai_id: 'ht1', don_hang_id: null,
+        day_luc: BAY - phut(40), han_luc: BAY - phut(30),
+        nguoi_nhan_id: 'u2', nhan_luc: BAY - phut(35),
+        ket_qua: 'khach_tu_choi', ly_do_dong: 'khac · khách bảo để tết tính',
+        chi_phi: null, dong_luc: BAY - phut(31),
+      },
+      {
+        id: 'v_cua_t2', team_id: 't2', loai: 'hoi_thoai',
+        ly_do_day: 'doi_tra', hoi_thoai_id: 'ht2', don_hang_id: null,
+        day_luc: BAY - phut(4), han_luc: BAY + phut(6), ...nuaDuoi,
       },
     ],
     khach: [
@@ -47,15 +64,20 @@ function hat() {
       { id: 'k2', team_id: 't2', ten: 'Khách team hai' },
     ],
     page: [
-      { id: 'p1', team_id: 't1', ten: 'Tiểu Alpha Store', shop_id: '77' },
-      { id: 'p2', team_id: 't2', ten: 'Auus Store' },
+      { id: 'p1', team_id: 't1', page_id: '102938', ten: 'Tiểu Alpha Store', pos_shop_id: '77' },
+      { id: 'p2', team_id: 't2', page_id: '556677', ten: 'Auus Store' },
     ],
     hoi_thoai: [
-      { id: 'ht1', team_id: 't1', conv_id: 'c9', page_id: 'p1', cust_id: 'k1', buoc: 'chot_gia' },
-      { id: 'ht2', team_id: 't2', conv_id: 'c8', page_id: 'p2', cust_id: 'k2', buoc: 'chao' },
+      { id: 'ht1', team_id: 't1', page_id: 'p1', psid: '9911', khach_id: 'k1', trang_thai: 'CLOSING', chu_so_huu: 'AI' },
+      { id: 'ht2', team_id: 't2', page_id: 'p2', psid: '8822', khach_id: 'k2', trang_thai: 'GREET', chu_so_huu: 'AI' },
+    ],
+    nguoi_dung: [
+      { id: 'u1', email: 'an@shop.vn', ten: 'An' },
+      { id: 'u2', email: 'binh@shop.vn', ten: 'Bình' },
     ],
     don_hang: [
-      { id: 'd1', team_id: 't1', ma_don: 'SO-1024', tong_tien: 249000, trang_thai: 'cho_xac_nhan', nguon: 'messenger' },
+      { id: 'd1', team_id: 't1', ma_pos: '77:1024', tong_tien: 249000, trang_thai_he: 'cho_xac_nhan', nguon: 'messenger' },
+      { id: 'd2', team_id: 't1', ma_pos: '77:2048', tong_tien: 99000, trang_thai_he: 'moi_tu_pos', nguon: 'trang_ban_hang' },
     ],
     so_ai: [
       tin('s1', 't1', 30, 'khach', 'tin cũ nhất'),
@@ -91,6 +113,11 @@ test('L4-M1 · chi tiết gom đủ: việc · khách · page · hội thoại �
   assert.equal(d.hoiThoai.id, 'ht1');
   assert.equal(d.viec.tenKhach, 'Nguyễn Thu Hà');
   assert.equal(d.viec.soDienThoai, '0901234567');
+  // Khách và page KHÔNG còn nằm trên dòng việc — cả hai đi vòng qua `hoi_thoai`.
+  assert.equal(d.khach.id, d.hoiThoai.khach_id);
+  assert.equal(d.page.id, d.hoiThoai.page_id);
+  assert.equal(d.viec.trangThai, TRANG_THAI.CHO);
+  assert.equal(d.viec.tenNguoiNhan, null);
 });
 
 test('L4-M1 · không có đơn thì donHang là null, KHÔNG ném', async () => {
@@ -99,7 +126,7 @@ test('L4-M1 · không có đơn thì donHang là null, KHÔNG ném', async () =>
   assert.equal(d.donHang, null);
 
   const e = await chiTietViec(bcT1, 'v_don', { bay: BAY });
-  assert.equal(e.donHang.ma_don, 'SO-1024');
+  assert.equal(e.donHang.ma_pos, '77:1024');
 });
 
 test('L4-M1 · việc của team khác → null (để router trả 404, KHÔNG phải 403)', async () => {
@@ -191,20 +218,79 @@ test('L4-M1 · có mẫu POS thì dựng đường theo mẫu, thiếu shop thì
   }
 });
 
-test('L4-M1 · chi tiết gắn sẵn hai đường; shop lấy từ page khi đơn không có', async () => {
+test('L4-M1 · chi tiết gắn sẵn hai đường, cả hai dựng từ hội thoại và ma_pos', async () => {
   const cu = process.env[BIEN_MAU_POS];
   process.env[BIEN_MAU_POS] = MAU_POS_MAC_DINH;
   try {
     noiKho();
     const d = await chiTietViec(bcT1, 'v_don', { bay: BAY });
-    assert.equal(d.lienKet.pancake, 'https://pancake.vn/p1?c_id=c9');
-    assert.equal(d.lienKet.pos, 'https://pos.pages.fm/shops/77/orders/d1');
+    assert.equal(d.lienKet.pancake, 'https://pancake.vn/102938?c_id=102938_9911');
+    assert.equal(d.lienKet.pos, 'https://pos.pages.fm/shops/77/orders/1024');
 
     const c = await chiTietViec(bcT1, 'v_chat', { bay: BAY });
     assert.equal(c.lienKet.pos, null, 'việc không có đơn thì không có đường POS');
   } finally {
     if (cu === undefined) delete process.env[BIEN_MAU_POS]; else process.env[BIEN_MAU_POS] = cu;
   }
+});
+
+/* ═══════ tiêu chí 5 · đơn không gắn hội thoại → nút Pancake MỜ, không nổ ═══════ */
+
+test('L4-M1 · việc loai="don_hang" không có hoi_thoai_id → pancake null, và KHÔNG ném', async () => {
+  const cu = process.env[BIEN_MAU_POS];
+  process.env[BIEN_MAU_POS] = MAU_POS_MAC_DINH;
+  try {
+    noiKho();
+    const d = await chiTietViec(bcT1, 'v_don_le', { bay: BAY });
+    assert.ok(d, 'màn chi tiết phải mở được — đơn không nối Messenger là chuyện thường');
+    assert.equal(d.hoiThoai, null);
+    assert.equal(d.khach, null, 'không có hội thoại thì cũng không có khách để tra');
+    assert.equal(d.page, null);
+    assert.equal(d.lienKet.pancake, null, 'không có hội thoại mà vẫn dựng đường Pancake');
+    // Đường POS thì VẪN CÓ — đơn vẫn ở đó, chỉ là không đi từ Messenger.
+    assert.equal(d.lienKet.pos, 'https://pos.pages.fm/shops/77/orders/2048');
+  } finally {
+    if (cu === undefined) delete process.env[BIEN_MAU_POS]; else process.env[BIEN_MAU_POS] = cu;
+  }
+});
+
+test('L4-M1 · convIdCua dựng đúng khuôn <page_id_fb>_<psid>, thiếu vế nào thì null', () => {
+  assert.equal(convIdCua({ psid: '9911' }, { page_id: '102938' }), '102938_9911');
+  assert.equal(convIdCua({ psid: '9911' }, null), null, 'thiếu page thì thà không dựng');
+  assert.equal(convIdCua({}, { page_id: '102938' }), null);
+  assert.equal(convIdCua(null, { page_id: '102938' }), null);
+});
+
+test('L4-M1 · tachMaPos tách "<shop>:<số đơn POS>", dạng lạ thì coi cả chuỗi là số đơn', () => {
+  assert.deepEqual(tachMaPos('77:1024'), { shop: '77', don: '1024' });
+  assert.deepEqual(tachMaPos('1024'), { shop: null, don: '1024' });
+  assert.deepEqual(tachMaPos(''), { shop: null, don: null });
+  assert.deepEqual(tachMaPos(null), { shop: null, don: null });
+});
+
+/* ═══════ nửa dưới đọc ra được: trạng thái · tên người · một cột ly_do_dong ═══════ */
+
+test('L4-M1 · việc đã đóng: trangThai=da_xu, tên người nhận TRA từ nguoi_dung, ly_do_dong tách sẵn', async () => {
+  noiKho();
+  const d = await chiTietViec(bcT1, 'v_da_xu', { bay: BAY });
+  assert.equal(d.viec.trangThai, TRANG_THAI.DA_XU);
+  assert.equal(d.viec.tenNguoiNhan, 'Bình', 'phải tra bảng, không in bigint ra màn hình');
+  assert.equal(d.viec.lyDoDongMa, 'khac');
+  assert.equal(d.viec.lyDoDongGhiChu, 'khách bảo để tết tính');
+  // Dòng `nguoi_dung` KHÔNG được đi ra ngoài: nó mang email và mật khẩu băm.
+  assert.equal(d.nguoiDung, undefined);
+  assert.equal(d.nguoiNhan, undefined);
+  assert.ok(!JSON.stringify(d).includes('binh@shop.vn'), 'email người dùng lọt ra màn hình');
+});
+
+test('L4-M1 · người nhận không tra được → "(không rõ)", không lộ id', async () => {
+  const h = hat();
+  h.viec_can_xu_ly = h.viec_can_xu_ly.map((v) => (
+    v.id === 'v_da_xu' ? { ...v, nguoi_nhan_id: 'u_bien_mat' } : v));
+  noiKho(h);
+  const d = await chiTietViec(bcT1, 'v_da_xu', { bay: BAY });
+  assert.equal(d.viec.tenNguoiNhan, KHONG_RO_NGUOI);
+  assert.ok(!String(d.viec.tenNguoiNhan).includes('u_bien_mat'));
 });
 
 /* ───────────────────────── tiêu chí 10 · không ghi ───────────────────── */

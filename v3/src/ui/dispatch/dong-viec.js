@@ -4,16 +4,17 @@
 // vẫn làm ở Pancake và POS — `01-QUYET-DINH.md` mục 10.
 //
 // LUẬT NẶNG NHẤT CỦA FILE NÀY:
-// module chỉ `UPDATE` chín cột nửa dưới của `viec_can_xu_ly`. KHÔNG chèn dòng mới, KHÔNG
+// module chỉ `UPDATE` sáu cột nửa dưới của `viec_can_xu_ly`. KHÔNG chèn dòng mới, KHÔNG
 // xoá dòng nào — ở đây, và ở bất cứ đâu trong `v3/src/ui/dispatch/`. Dòng là do người A
 // chèn lúc bot đẩy việc sang; bỏ một dòng đi là bỏ mất dấu vết bot đã dừng ở đâu, mà đó
 // đúng là thứ duy nhất dùng để sửa bot. Hợp đồng B–A mục 4, và có bài test quét mã nguồn
 // chặn đúng chuyện này.
 //
 // BA LUẬT NHỎ HƠN NHƯNG VẪN LÀM VỠ DỮ LIỆU NẾU QUÊN:
-//   1. ĐỌC RỒI GHI PHẢI CÓ ĐIỀU KIỆN. Mỗi lần ghi đều kèm `trang_thai` đã đọc được vào
-//      điều kiện (so-và-đặt). Hai sale bấm cùng một giây thì đúng một người thắng, người
-//      kia nhận 409 — chứ không phải cả hai cùng "thành công" rồi ghi đè nhau.
+//   1. ĐỌC RỒI GHI PHẢI CÓ ĐIỀU KIỆN. Mỗi lần ghi đều kèm hai vế vừa đọc được vào điều
+//      kiện (so-và-đặt trên người giữ và mốc đóng). Hai sale bấm cùng một giây thì đúng một
+//      người thắng, người kia nhận 409 — chứ không phải cả hai cùng "thành công" rồi ghi
+//      đè nhau.
 //   2. KHÔNG NÉM LỖI BÊN TRONG GIAO DỊCH. Ném là hoàn tác, mà hoàn tác nhầm lúc người
 //      khác vừa ghi xong là mất luôn cái ghi đó. Trong giao dịch chỉ trả về một PHÁN
 //      QUYẾT; ném ở ngoài, sau khi giao dịch đã đóng.
@@ -24,24 +25,27 @@
 // `datTaoTruyVan()` ở `kho-viec.js` (hợp đồng mục 3 và mục 8).
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
-import { BANG, LOAI, LY_DO, LoiDieuPhoi, congTruyVan, lyDoChu } from './kho-viec.js';
+import {
+  BANG, LOAI, LY_DO, TRANG_THAI, DIEU_KIEN_MO, KHONG_RO_NGUOI,
+  LoiDieuPhoi, congTruyVan, lyDoChu, trangThaiCua, tenNguoiNhan, ghepLyDoDong,
+} from './kho-viec.js';
 // Phễu nhật ký nằm ở `router.js` (chỗ tiêm `datPheuNhatKy` đã có từ L4-M1) nên hai file
 // tham chiếu vòng nhau. An toàn vì cả hai bên chỉ dùng nhau BÊN TRONG thân hàm, không
 // dùng lúc nạp module — và một phễu nhật ký thì hơn hai cái phễu song song mà người dựng
 // ứng dụng phải nhớ nối cả hai.
 import { ghiNhatKyDieuPhoi } from './router.js';
 
-/** Ba trạng thái, hai bước, không có đường tắt và (giai đoạn 1) không có đường mở lại. */
-export const TRANG_THAI = Object.freeze({ CHO: 'cho', DANG_XU: 'dang_xu', DA_XU: 'da_xu' });
-
 /**
- * CHÍN CỘT NỬA DƯỚI — toàn bộ những gì vai B được ghi trên bảng này (hợp đồng mục 4).
- * Cũng chính là hình dạng `truoc`/`sau` của nhật ký. `nhan_boi_ten` là cột thứ chín, chỉ
- * ghi khi lược đồ của người A thật sự có nó.
+ * SÁU CỘT NỬA DƯỚI — toàn bộ những gì vai B được ghi trên bảng này (hợp đồng mục 4).
+ * Cũng chính là hình dạng `truoc`/`sau` của nhật ký.
+ *
+ * Trước đây là CHÍN, vì bản của B đoán thêm ba cột mà lược đồ thật không có: một cột trạng
+ * thái, một cột tên người nhận, và một cột ghi chú. Cả ba đều có đường khác: trạng thái là
+ * thứ SUY RA (`trangThaiCua`), tên người nhận TRA từ `nguoi_dung`, còn ghi chú đi chung cột
+ * `ly_do_dong` (xem `ghepLyDoDong`).
  */
 export const COT_NUA_DUOI = Object.freeze([
-  'trang_thai', 'nhan_boi', 'nhan_boi_ten', 'nhan_luc',
-  'ket_qua', 'ket_qua_ly_do', 'ghi_chu', 'chi_phi_dong', 'dong_luc',
+  'nguoi_nhan_id', 'nhan_luc', 'ket_qua', 'ly_do_dong', 'chi_phi', 'dong_luc',
 ]);
 
 /** Hai mã trong danh mục nhật ký (`v3/src/audit/hanh-dong.js`). Gõ lệch là bộ lọc trống. */
@@ -52,13 +56,16 @@ export const HANH_DONG_DONG = 'dong_viec';
 export const CHI_PHI_TOI_DA = 100_000_000;
 export const GHI_CHU_TOI_THIEU = 5;
 
+/** Số chữ số sau dấu phẩy mà cột `chi_phi numeric(14,2)` giữ được. Quá là mất chữ số. */
+export const CHI_PHI_SO_LE = 2;
+
 /* ─────────────────────────────── kết quả và lý do ───────────────────────────────
  * Tài liệu không chốt hai bảng này — đây là ĐỀ XUẤT CỦA NGƯỜI B, đã ghi vào sổ tay mục
  * "Chỗ tự quyết". Xếp theo thứ sale bấm nhiều nhất, vì nút đầu tiên là nút được bấm nhiều
  * nhất dù danh sách có đúng hay không.
  *
  * `loai: null` = dùng cho cả hai loại việc. `chiPhi: true` = kết quả này có ô chi phí —
- * nhưng ô đó chỉ HIỆN khi việc là `don` (mục 3 của spec), xem `bangKetQua()`.
+ * nhưng ô đó chỉ HIỆN khi việc là `don_hang` (mục 3 của spec), xem `bangKetQua()`.
  */
 export const KET_QUA = Object.freeze({
   chot_duoc:           Object.freeze({ chu: 'Chốt được',                     loai: null,           chiPhi: true }),
@@ -188,7 +195,7 @@ export class LoiKetQuaLa extends LoiDongViec {
   }
 }
 
-/** 400 — chi phí không phải số nguyên đồng, âm, quá trần, hoặc điền vào chỗ không có ô. */
+/** 400 — chi phí âm, sai dạng, quá trần, hoặc điền vào chỗ không có ô. */
 export class LoiChiPhiLa extends LoiDongViec {
   constructor(thongDiep, ma = 'chi_phi_la') {
     super(thongDiep, ma, 400);
@@ -239,17 +246,28 @@ function chuanGhiChu(maLyDo, ghiChu) {
   return chu || null;
 }
 
+/**
+ * Cột thật là `chi_phi numeric(14,2)`, KHÔNG phải số nguyên đồng.
+ *
+ * Bản cũ của B ép `^\d+$` — ép thế thì `250000.50` bị từ chối ngay ở cửa, mà tiền tệ vùng
+ * Vịnh (KWD/OMR/BHD) vốn có phần lẻ. Nay nới đúng bằng cột: không âm, tối đa hai chữ số
+ * sau dấu phẩy. Ba chữ số trở lên vẫn 400 — cột chỉ giữ hai, im lặng làm tròn là mất tiền
+ * ở chữ số không ai nhìn.
+ *
+ * Số âm và chữ vẫn 400, KHÔNG âm thầm quy về 0: 0 nghĩa là "đơn này không tốn gì", khác
+ * hẳn "sale gõ nhầm".
+ */
 function chuanChiPhi(chiPhi) {
   if (chiPhi == null || chiPhi === '') return null;      // để trống được
   const s = String(chiPhi).trim();
   if (s === '') return null;
-  // Chỉ chấp nhận chữ số. Số âm và chữ đều rơi vào đây → 400, KHÔNG âm thầm quy về 0:
-  // 0 nghĩa là "đơn này không tốn gì", khác hẳn "sale gõ nhầm".
-  if (!/^\d+$/.test(s)) {
-    throw new LoiChiPhiLa(`Chi phí phải là số nguyên đồng, không âm: "${s}".`);
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) {
+    throw new LoiChiPhiLa(
+      `Chi phí phải là số không âm, nhiều nhất ${CHI_PHI_SO_LE} chữ số sau dấu chấm: "${s}".`,
+    );
   }
   const n = Number(s);
-  if (!Number.isSafeInteger(n) || n > CHI_PHI_TOI_DA) {
+  if (!Number.isFinite(n) || n > CHI_PHI_TOI_DA) {
     throw new LoiChiPhiLa(`Chi phí vượt trần ${CHI_PHI_TOI_DA.toLocaleString('vi-VN')} đồng: "${s}".`);
   }
   return n;
@@ -257,20 +275,30 @@ function chuanChiPhi(chiPhi) {
 
 /* ──────────────────────────── tiện tay quanh một dòng ──────────────────────────── */
 
-const coCotTen = (viec) => coRieng(viec || {}, 'nhan_boi_ten');
 const nguoiCua = (bc) => (bc.nguoiDungId == null ? null : String(bc.nguoiDungId));
-const tenCua = (bc) => bc.tenDangNhap || nguoiCua(bc) || null;
 
-/** Ai đang giữ việc, bằng tên đọc được. */
-const tenNguoiGiu = (viec) => chuoi(viec?.nhan_boi_ten) || chuoi(viec?.nhan_boi) || '(không rõ ai)';
+/**
+ * Ai đang giữ / đã đóng việc, bằng TÊN ĐỌC ĐƯỢC.
+ *
+ * `nguoi_nhan_id` là bigint khoá ngoại `nguoi_dung(id)` — in thẳng cột ra câu lỗi là đưa
+ * cho sale một con số. Nên tra bảng. Một lời gọi thêm, và chỉ trên ĐƯỜNG LỖI (409), nên
+ * không đụng gì tới số lời gọi của đường thường.
+ */
+async function tenNguoiGiu(db, viec) {
+  const id = chuoi(viec?.nguoi_nhan_id);
+  if (!id) return KHONG_RO_NGUOI;
+  let nguoi = null;
+  try { nguoi = await db.mot('nguoi_dung', { id }); } catch { nguoi = null; }
+  return tenNguoiNhan(viec, nguoi) || KHONG_RO_NGUOI;
+}
 
 /**
  * Việc này có phải TÔI đang giữ không.
- * `dang_xu` mà `nhan_boi` trống là dữ liệu lệch (không ai nhận mà vẫn đang xử) — coi như
- * không ai giữ để việc không kẹt vĩnh viễn, vì giai đoạn 1 không có đường mở lại.
+ * Đang xử mà `nguoi_nhan_id` trống là dữ liệu lệch — coi như không ai giữ để việc không kẹt
+ * vĩnh viễn, vì giai đoạn 1 không có đường mở lại.
  */
 function laToi(viec, bc) {
-  const giu = chuoi(viec?.nhan_boi);
+  const giu = chuoi(viec?.nguoi_nhan_id);
   if (!giu) return true;
   return giu === chuoi(nguoiCua(bc));
 }
@@ -285,36 +313,34 @@ const gioNgan = (ms) => {
   }
 };
 
-/** Ảnh chụp chín cột nửa dưới — hình dạng `truoc`/`sau` của nhật ký. */
+/** Ảnh chụp sáu cột nửa dưới — hình dạng `truoc`/`sau` của nhật ký. */
 function anhNuaDuoi(viec = {}) {
   const ra = {};
-  for (const cot of COT_NUA_DUOI) {
-    if (cot === 'nhan_boi_ten' && !coCotTen(viec)) continue;
-    ra[cot] = viec[cot] ?? null;
-  }
+  for (const cot of COT_NUA_DUOI) ra[cot] = viec[cot] ?? null;
   return ra;
 }
 
-function loiDaCoNguoiGiu(viec) {
+function loiDaCoNguoiGiu(viec, ten) {
   return new LoiDaCoNguoiGiu(
-    `Việc này ${tenNguoiGiu(viec)} đang giữ từ ${gioNgan(viec?.nhan_luc)}.`,
-    { nguoiGiu: tenNguoiGiu(viec), luc: Number(viec?.nhan_luc) || null },
+    `Việc này ${ten} đang giữ từ ${gioNgan(viec?.nhan_luc)}.`,
+    { nguoiGiu: ten, luc: Number(viec?.nhan_luc) || null },
   );
 }
 
-function loiDaDong(viec) {
+function loiDaDong(viec, ten) {
   const kq = chuKetQua(viec?.ket_qua);
   return new LoiDaDong(
-    `Việc này ${tenNguoiGiu(viec)} đã đóng lúc ${gioNgan(viec?.dong_luc)} — kết quả "${kq}". Không ghi đè.`,
-    { nguoiDong: tenNguoiGiu(viec), luc: Number(viec?.dong_luc) || null, ketQua: viec?.ket_qua ?? null },
+    `Việc này ${ten} đã đóng lúc ${gioNgan(viec?.dong_luc)} — kết quả "${kq}". Không ghi đè.`,
+    { nguoiDong: ten, luc: Number(viec?.dong_luc) || null, ketQua: viec?.ket_qua ?? null },
   );
 }
 
 /**
  * Chạy trong giao dịch nếu cổng có; không có thì kêu lên rồi chạy tiếp.
  *
- * Chạy tiếp được là vì thứ thật sự giữ cho "đúng một người thắng" là ĐIỀU KIỆN `trang_thai`
- * trong mỗi lần ghi (so-và-đặt), không phải giao dịch. Giao dịch chỉ thêm một lớp nữa.
+ * Chạy tiếp được là vì thứ thật sự giữ cho "đúng một người thắng" là ĐIỀU KIỆN kèm theo mỗi
+ * lần ghi (so-và-đặt trên `nguoi_nhan_id` + `dong_luc`), không phải giao dịch. Giao dịch chỉ
+ * thêm một lớp nữa.
  */
 async function chayGiaoDich(db, fn) {
   if (typeof db.giaoDich === 'function') return db.giaoDich(fn);
@@ -346,32 +372,29 @@ export async function nhanViec(boiCanh, viecId, bo = {}) {
   const pq = await chayGiaoDich(db, async (db2) => {
     const viec = await db2.mot(BANG, { id });
     if (!viec) return { ma: 'khong_thay' };
-    if (viec.trang_thai === TRANG_THAI.DA_XU) return { ma: 'da_dong', viec };
-    if (viec.trang_thai === TRANG_THAI.DANG_XU) {
+    const tt = trangThaiCua(viec);
+    if (tt === TRANG_THAI.DA_XU) return { ma: 'da_dong', viec };
+    if (tt === TRANG_THAI.DANG_XU) {
       return laToi(viec, bc) ? { ma: 'toi_giu_san', viec } : { ma: 'da_co_nguoi_giu', viec };
     }
-    if (viec.trang_thai !== TRANG_THAI.CHO) return { ma: 'trang_thai_la', viec };
 
     const truoc = anhNuaDuoi(viec);
-    const thayDoi = { trang_thai: TRANG_THAI.DANG_XU, nhan_boi: nguoiCua(bc), nhan_luc: bay };
-    if (coCotTen(viec)) thayDoi.nhan_boi_ten = tenCua(bc);
+    const thayDoi = { nguoi_nhan_id: nguoiCua(bc), nhan_luc: bay };
 
-    // So-và-đặt: chỉ ghi khi dòng CÒN ở `cho`. Người kia nhanh tay hơn thì n = 0.
-    const n = await db2.sua(BANG, { id, trang_thai: TRANG_THAI.CHO }, thayDoi);
+    // So-và-đặt: chỉ ghi khi dòng CÒN chưa ai nhận và CÒN chưa đóng — đúng hai vế đã đọc
+    // được ở trên. Người kia nhanh tay hơn thì n = 0.
+    const n = await db2.sua(BANG, { id, ...DIEU_KIEN_MO, nguoi_nhan_id: null }, thayDoi);
     if (n !== 1) {
       const lai = (await db2.mot(BANG, { id })) || viec;
-      return { ma: lai.trang_thai === TRANG_THAI.DA_XU ? 'da_dong' : 'da_co_nguoi_giu', viec: lai };
+      return { ma: trangThaiCua(lai) === TRANG_THAI.DA_XU ? 'da_dong' : 'da_co_nguoi_giu', viec: lai };
     }
     const moi = (await db2.mot(BANG, { id })) || { ...viec, ...thayDoi };
     return { ma: 'xong', viec: moi, truoc, sau: anhNuaDuoi(moi) };
   });
 
   if (pq.ma === 'khong_thay') return null;
-  if (pq.ma === 'da_dong') throw loiDaDong(pq.viec);
-  if (pq.ma === 'da_co_nguoi_giu') throw loiDaCoNguoiGiu(pq.viec);
-  if (pq.ma === 'trang_thai_la') {
-    throw new LoiDongViec(`Việc này đang ở trạng thái lạ: "${pq.viec.trang_thai}".`, 'trang_thai_la', 409);
-  }
+  if (pq.ma === 'da_dong') throw loiDaDong(pq.viec, await tenNguoiGiu(db, pq.viec));
+  if (pq.ma === 'da_co_nguoi_giu') throw loiDaCoNguoiGiu(pq.viec, await tenNguoiGiu(db, pq.viec));
   // Bấm "Nhận việc" hai lần: không ghi lại `nhan_luc` (ghi lại là xoá mất mốc giữ bao lâu)
   // và không ghi thêm một dòng nhật ký y hệt dòng cũ.
   if (pq.ma === 'toi_giu_san') return { ok: true, viec: pq.viec, daGiuTuTruoc: true };
@@ -423,48 +446,47 @@ export async function dongViec(boiCanh, viecId, bo = {}) {
     if (!hopLoai(dn, loai)) return { ma: 'ket_qua_khac_loai', viec, loai };
     if (soChiPhi != null && !(loai === LOAI.DON && dn.chiPhi)) return { ma: 'chi_phi_lac_cho', viec, loai };
 
-    if (viec.trang_thai === TRANG_THAI.DA_XU) return { ma: 'da_dong', viec };
-    if (viec.trang_thai === TRANG_THAI.DANG_XU && !laToi(viec, bc)) return { ma: 'da_co_nguoi_giu', viec };
-    if (viec.trang_thai !== TRANG_THAI.CHO && viec.trang_thai !== TRANG_THAI.DANG_XU) {
-      return { ma: 'trang_thai_la', viec };
-    }
+    const tt = trangThaiCua(viec);
+    if (tt === TRANG_THAI.DA_XU) return { ma: 'da_dong', viec };
+    if (tt === TRANG_THAI.DANG_XU && !laToi(viec, bc)) return { ma: 'da_co_nguoi_giu', viec };
 
     const truoc = anhNuaDuoi(viec);
-    const nhanHo = viec.trang_thai === TRANG_THAI.CHO;
+    const nhanHo = tt === TRANG_THAI.CHO;
     const thayDoi = {
-      trang_thai: TRANG_THAI.DA_XU,
       ket_qua: dn.ma,
-      ket_qua_ly_do: maLyDo,
-      ghi_chu: chuGhi,
-      chi_phi_dong: soChiPhi,
+      // Một cột cho cả mã lý do lẫn ghi chú — lược đồ thật không có cột `ghi_chu`.
+      ly_do_dong: ghepLyDoDong(maLyDo, chuGhi),
+      chi_phi: soChiPhi,
       dong_luc: bay,
     };
     if (nhanHo) {
-      thayDoi.nhan_boi = nguoiCua(bc);
+      thayDoi.nguoi_nhan_id = nguoiCua(bc);
       thayDoi.nhan_luc = bay;
-      if (coCotTen(viec)) thayDoi.nhan_boi_ten = tenCua(bc);
     }
 
-    const n = await db2.sua(BANG, { id, trang_thai: viec.trang_thai }, thayDoi);
+    // So-và-đặt: việc PHẢI còn mở, và người giữ phải đúng người đã đọc được ở trên (chưa ai
+    // giữ thì `null`). Thiếu một trong hai vế là hai sale bấm cùng giây cùng thắng.
+    const n = await db2.sua(
+      BANG,
+      { id, ...DIEU_KIEN_MO, nguoi_nhan_id: viec.nguoi_nhan_id ?? null },
+      thayDoi,
+    );
     if (n !== 1) {
       const lai = (await db2.mot(BANG, { id })) || viec;
-      return { ma: lai.trang_thai === TRANG_THAI.DA_XU ? 'da_dong' : 'da_co_nguoi_giu', viec: lai };
+      return { ma: trangThaiCua(lai) === TRANG_THAI.DA_XU ? 'da_dong' : 'da_co_nguoi_giu', viec: lai };
     }
     const moi = (await db2.mot(BANG, { id })) || { ...viec, ...thayDoi };
     return { ma: 'xong', viec: moi, truoc, sau: anhNuaDuoi(moi), nhanHo };
   });
 
   if (pq.ma === 'khong_thay') return null;
-  if (pq.ma === 'da_dong') throw loiDaDong(pq.viec);
-  if (pq.ma === 'da_co_nguoi_giu') throw loiDaCoNguoiGiu(pq.viec);
+  if (pq.ma === 'da_dong') throw loiDaDong(pq.viec, await tenNguoiGiu(db, pq.viec));
+  if (pq.ma === 'da_co_nguoi_giu') throw loiDaCoNguoiGiu(pq.viec, await tenNguoiGiu(db, pq.viec));
   if (pq.ma === 'ket_qua_khac_loai') {
     throw new LoiKetQuaLa(`Kết quả "${dn.chu}" chỉ dùng cho việc loại "${dn.loai}", việc này là "${pq.loai}".`);
   }
   if (pq.ma === 'chi_phi_lac_cho') {
     throw new LoiChiPhiLa(`Ô chi phí chỉ có ở đơn đã chốt được; việc này là "${pq.loai}" với kết quả "${dn.chu}".`);
-  }
-  if (pq.ma === 'trang_thai_la') {
-    throw new LoiDongViec(`Việc này đang ở trạng thái lạ: "${pq.viec.trang_thai}".`, 'trang_thai_la', 409);
   }
 
   const chuLd = chuLyDoDong(dn.ma, maLyDo);
@@ -482,4 +504,4 @@ export async function dongViec(boiCanh, viecId, bo = {}) {
 }
 
 // KHÔNG có hàm tạo việc, KHÔNG có hàm bỏ việc, và sẽ không bao giờ có ở đây. Người A chèn
-// dòng lúc bot đẩy việc sang; vai B chỉ sửa chín cột nửa dưới. Hợp đồng B–A mục 4.
+// dòng lúc bot đẩy việc sang; vai B chỉ sửa sáu cột nửa dưới. Hợp đồng B–A mục 4.

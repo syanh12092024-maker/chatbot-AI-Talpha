@@ -45,7 +45,7 @@ const KHOA = {
 };
 
 const bcCua = (teamId) => taoBoiCanh({
-  nguoiDungId: `u-${teamId}`, tenDangNhap: `nguoi-${teamId}`, teamId, vai: ['quan_tri'],
+  nguoiDungId: `u-${teamId}`, tenDangNhap: `nguoi-${teamId}`, teamId, vai: ['quan-tri'],
 });
 
 const yeuCau = () => ({ messages: [{ role: 'user', content: 'giá bao nhiêu' }], max_tokens: 400 });

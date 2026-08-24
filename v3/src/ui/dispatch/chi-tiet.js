@@ -13,7 +13,10 @@
 // Module này CHỈ ĐỌC, y như `kho-viec.js`.
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
-import { BANG, congTruyVan, dongHoCua, lyDoChu, tenKhachCua, soDienThoaiCua, tenPageCua } from './kho-viec.js';
+import {
+  BANG, congTruyVan, dongHoCua, lyDoChu, trangThaiCua, tachLyDoDong,
+  tenKhachCua, soDienThoaiCua, tenPageCua, tenNguoiNhan,
+} from './kho-viec.js';
 import { lienKetCua } from './lien-ket.js';
 
 // ĐOẠN CHAT ĐÃ BỎ — quyết định 23/08/2026, chủ dự án duyệt.
@@ -31,27 +34,17 @@ import { lienKetCua } from './lien-ket.js';
 
 const chuoi = (v) => (v == null ? '' : String(v).trim());
 
-/**
- * Tìm dòng `hoi_thoai` của việc này.
- *
- * Khoá của `hoi_thoai` chưa chốt (bảng của người A). Thử `conv_id` trước — `viec_can_xu_ly`
- * mang sẵn cột đó — rồi mới lui về cặp `page_id`+`cust_id`. A chốt xong khoá thì bỏ nhánh
- * lui, còn hơn để màn chi tiết trống trơn mà không ai biết vì sao.
- */
-async function timHoiThoai(db, viec) {
-  const conv = chuoi(viec.conv_id);
-  if (conv) {
-    const theoConv = await db.mot('hoi_thoai', { conv_id: conv });
-    if (theoConv) return theoConv;
-  }
-  const page = chuoi(viec.page_id);
-  const cust = chuoi(viec.cust_id);
-  if (page && cust) return db.mot('hoi_thoai', { page_id: page, cust_id: cust });
-  return null;
-}
+/** Đọc một dòng theo id, hoặc `null` khi không có id để đọc. Chưa có id thì đừng gọi cổng. */
+const motTheoId = (db, bang, id) => (chuoi(id) ? db.mot(bang, { id: chuoi(id) }) : Promise.resolve(null));
 
 /**
  * Gom dữ liệu cho màn chi tiết.
+ *
+ * BA MẺ ĐỌC NỐI TIẾP, vì lược đồ thật nối vòng qua `hoi_thoai`:
+ *
+ *   1. dòng việc
+ *   2. `hoi_thoai` · `don_hang` · `nguoi_dung` (song song — cả ba chỉ cần dòng việc)
+ *   3. `khach` · `page` (song song — id nằm trên dòng `hoi_thoai` vừa đọc)
  *
  * @param {object} boiCanh   BẮT BUỘC — thiếu là ném, không trả `null` (null nghĩa là
  *                           "không có việc này", khác hẳn "gọi sai")
@@ -72,28 +65,43 @@ export async function chiTietViec(boiCanh, viecId, bo = {}) {
   const viec = await db.mot(BANG, { id });
   if (!viec) return null;                      // → 404, không phải 403
 
-  const [khach, page, donHang, hoiThoai] = await Promise.all([
-    chuoi(viec.cust_id) ? db.mot('khach', { id: chuoi(viec.cust_id) }) : Promise.resolve(null),
-    chuoi(viec.page_id) ? db.mot('page', { id: chuoi(viec.page_id) }) : Promise.resolve(null),
+  const [hoiThoai, donHang, nguoiNhan] = await Promise.all([
+    // Việc loại `don_hang` có thể KHÔNG gắn hội thoại nào → `null` → nút Pancake mờ.
+    motTheoId(db, 'hoi_thoai', viec.hoi_thoai_id),
     // Việc loại `hoi_thoai` không gắn đơn nào → `null`, KHÔNG ném. Một nửa số việc trên
     // bảng điều phối là loại đó; ném ở đây là màn chi tiết chết một nửa số lần mở.
-    chuoi(viec.don_hang_id) ? db.mot('don_hang', { id: chuoi(viec.don_hang_id) }) : Promise.resolve(null),
-    timHoiThoai(db, viec),
+    motTheoId(db, 'don_hang', viec.don_hang_id),
+    // `nguoi_nhan_id` là khoá ngoại: phải TRA BẢNG mới có tên, không in cột ra màn hình.
+    motTheoId(db, 'nguoi_dung', viec.nguoi_nhan_id),
   ]);
+
+  const [khach, page] = await Promise.all([
+    motTheoId(db, 'khach', hoiThoai?.khach_id),
+    motTheoId(db, 'page', hoiThoai?.page_id),
+  ]);
+
+  const lyDoDong = tachLyDoDong(viec.ly_do_dong);
 
   return {
     viec: {
       ...viec,
       ...dongHoCua(viec, bay),
+      // Trang HTML đọc những trường dựng sẵn này, KHÔNG tự suy lại từ cột thô.
+      trangThai: trangThaiCua(viec),
       tenKhach: tenKhachCua(khach),
       soDienThoai: soDienThoaiCua(khach),
       tenPage: tenPageCua(page),
+      tenNguoiNhan: tenNguoiNhan(viec, nguoiNhan),
+      lyDoDongMa: lyDoDong.ma,
+      lyDoDongGhiChu: lyDoDong.ghiChu,
     },
     khach,
     page,
     hoiThoai,
     donHang,
-    lienKet: lienKetCua(viec, { page, donHang }),
+    // KHÔNG trả cả dòng `nguoi_dung` ra ngoài — dòng đó mang `email` và `mat_khau_hash`.
+    // Màn hình chỉ cần một cái tên, và cái tên đã nằm ở `viec.tenNguoiNhan`.
+    lienKet: lienKetCua(viec, { page, donHang, hoiThoai }),
     lyDoChu: lyDoChu(viec),
   };
 }

@@ -38,16 +38,21 @@ export {
   hangCho, tomTat, dongHoCua,
   // bảng lý do — `L4-M2` dùng lại, đừng chép sang bên đó một bản thứ hai
   LY_DO, lyDoChu, danhSachLyDo,
+  // MÁY TRẠNG THÁI — `viec_can_xu_ly` không có cột `trang_thai`; công thức nằm ở đúng một
+  // chỗ là `trangThaiCua()`. Ai cần biết việc đang ở đâu thì gọi hàm, đừng chép công thức.
+  TRANG_THAI, trangThaiCua, DIEU_KIEN_MO,
+  // một cột `ly_do_dong` chở cả mã lẫn ghi chú — khuôn nằm ở đúng hai hàm này
+  NGAN_LY_DO, ghepLyDoDong, tachLyDoDong,
   // hằng số dùng chung
-  BANG, TRANG_THAI_MO, LOAI, MUC_KHAN, NGUONG_GAP_MS, LoiDieuPhoi,
-  // bộ chuyển đổi tên cột của bảng người A chưa dựng
-  tenKhachCua, soDienThoaiCua, tenPageCua,
+  BANG, LOAI, MUC_KHAN, NGUONG_GAP_MS, LoiDieuPhoi,
+  // bộ chuyển đổi: đọc một dòng của bảng bên cạnh
+  tenKhachCua, soDienThoaiCua, tenPageCua, tenNguoiDungCua, tenNguoiNhan, KHONG_RO_NGUOI,
 } from './kho-viec.js';
 
 export { chiTietViec } from './chi-tiet.js';   // đoạn chat đã bỏ 23/08 — xem đầu chi-tiet.js
 
 export {
-  lienKetPancake, lienKetPos, lienKetCua, mauPos, daCauHinhPos,
+  lienKetPancake, lienKetPos, lienKetCua, mauPos, daCauHinhPos, convIdCua, tachMaPos,
   MAU_POS_MAC_DINH, BIEN_MAU_POS, BIEN_SHOP_POS, GHI_CHU_POS_CHUA_CAU_HINH,
 } from './lien-ket.js';
 
@@ -61,11 +66,11 @@ export {
 } from './router.js';
 
 // L4-M2 — nhận việc và đóng việc. Đây là hai hàm DUY NHẤT trong module có ghi xuống cơ sở
-// dữ liệu, và cả hai chỉ `UPDATE` chín cột nửa dưới của `viec_can_xu_ly`.
+// dữ liệu, và cả hai chỉ `UPDATE` sáu cột nửa dưới của `viec_can_xu_ly`.
 export {
   nhanViec, dongViec, bangKetQua, bangLyDo,
-  KET_QUA, LY_DO_DONG, TRANG_THAI, COT_NUA_DUOI,
+  KET_QUA, LY_DO_DONG, COT_NUA_DUOI,
   chuKetQua, chuLyDoDong,
-  CHI_PHI_TOI_DA, GHI_CHU_TOI_THIEU, HANH_DONG_NHAN, HANH_DONG_DONG,
+  CHI_PHI_TOI_DA, CHI_PHI_SO_LE, GHI_CHU_TOI_THIEU, HANH_DONG_NHAN, HANH_DONG_DONG,
   LoiDongViec, LoiDaCoNguoiGiu, LoiDaDong, LoiThieuLyDo, LoiKetQuaLa, LoiChiPhiLa,
 } from './dong-viec.js';
