@@ -1,4 +1,4 @@
-# PHIẾU B-Y1 — Nới `suaTheoId`: nhận `ctxHeThong()` và nhận điều kiện so-và-đặt
+# PHIẾU B-Y1 — Nới tầng truy vấn: `suaTheoId` nhận điều kiện, và `layNhieu` nhận `IN`
 
 **Base:** `474c57c` · **Làn:** 🟥 (máy phán lại — phiếu này gỡ rào cho đường **duyệt đơn**
 và đường **ghi ngược trạng thái POS**, cả hai là đường tiền)
@@ -59,11 +59,51 @@ suaTheoId(pool, ctx, tenBang, id, duLieu, { neu } = {})
 
 **Không đổi chữ ký cũ.** `neu` là tham số thứ sáu tuỳ chọn — 100% lời gọi hiện có chạy y nguyên.
 
+## ②b · MỤC HAI — `layNhieu` không có `IN` (thêm 24/08, phát hiện khi viết mảnh nối)
+
+**Vào:** `src/db/truy-van.js:177` dựng mỗi điều kiện thành `cot = $n`. Truyền một **mảng**
+id vào là sinh `id = '{1,2,3}'` → Postgres ném lỗi kiểu.
+
+**Chỗ hỏng:** cả bốn mẻ gộp của bảng điều phối đều **gom id rồi đọc một lần bằng mảng** —
+đó chính là cách nó không N+1 (có bài test đo: 10 dòng và 100 dòng phải tốn bằng nhau).
+Không có `IN` thì chỉ còn hai đường, cả hai đều xấu:
+
+| Đường | Giá |
+|---|---|
+| Đọc từng id một | **N+1** — 100 việc thành 400 lời gọi. Chính thứ bài test cấm |
+| Đọc trọn bảng của team rồi lọc trong JS | mỗi lượt mở bảng điều phối **kéo trọn `hoi_thoai`**. Hôm nay **28.953 dòng** |
+
+Mảnh nối đang gánh bằng đường thứ hai, có kêu cảnh báo kèm số dòng — nhưng đó là băng dán,
+không phải bản vá.
+
+**Ra:** `layNhieu` (và `layMotTheoId` nếu tiện) nhận giá trị **mảng** trong `dieuKien`:
+
+```js
+// giá trị mảng → = ANY($n)   ·  giá trị null → IS NULL  ·  còn lại giữ nguyên = $n
+if (Array.isArray(v)) { params.push(v); return `${k} = ANY($${params.length})`; }
+if (v === null)       {                 return `${k} IS NULL`; }
+```
+
+Mảng **rỗng** → phải ra `false` (0 dòng), đừng dựng `= ANY('{}')` rồi tuỳ Postgres.
+`team_id` trong mảng vẫn bị soi xuyên team như hiện nay, không mở lỗ mới.
+
+**Nghiệm thu thêm:**
+
+```bash
+# gieo 5 dòng khach, đọc bằng { id: [id1, id3, id5] } → đúng 3 dòng, đúng 3 id đó
+# { id: [] }                    → 0 dòng, KHÔNG ném
+# { id: [id_cua_team_khac] }    → 0 dòng (rào team vẫn ăn trước)
+# { team_id: ['9'] } với ctx team 1 → LoiXuyenTeam như cũ
+```
+
+---
+
 ## ③ File được đụng (pathspec)
 
 ```
 src/db/truy-van.js
 src/db/index.js
+test/l0-m2-boi-canh.test.js
 test/l0-m2-cach-ly.test.js
 ops/bin/nghiem-thu/l0-m2.sh
 docs/v3/ban-giao/tang-truy-van-v1.md
