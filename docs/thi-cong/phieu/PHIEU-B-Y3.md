@@ -43,7 +43,17 @@ Hàng giữa là chỗ nguy: **không lỗi, không cảnh báo, trả về dòn
 nó sẽ báo "đã gán" và không có gì xảy ra. Đây đúng họ lỗi của bài học ② giai đoạn 1
 (`quan_tri` gạch dưới) — *sai mà màn hình trông y hệt chạy đúng*.
 
-**(b) Việc này ĐÃ ĐƯỢC LÀM BẰNG TAY RỒI, không ghi nhật ký.** Đo trên `aicloser_v3`
+**(b) Việc này ĐÃ LÀM MỘT LẦN BẰNG SQL TAY — có chủ đích, có mốc quay lui, KHÔNG có nhật
+ký.** Chủ dự án chốt ngày 24/08 (commit `4524294`): gán **toàn bộ về Tiểu Alpha** trong
+**một giao dịch** — 514 page · 28.953 hội thoại · 71 kịch bản · 7 kết nối POS — kèm bảng mốc
+quay lui **29.545 dòng**, nay vẫn còn: `_quay_lui_gan_team_20260824`.
+
+Nói rõ để phiếu này không bị đọc nhầm thành lời chê: **lượt gán đó làm cẩn thận**, và chính
+commit ấy đã ghi đúng yêu cầu mà phiếu này thi hành — *«gán bằng màn hình, và đổi team một
+page thì hội thoại của page đó đi theo»*. Thứ duy nhất nó không có là **dòng `nhat_ky`**,
+và không phải vì ai quên: chưa có màn hình nào để ghi.
+
+Cái phiếu này xin là **làm cho lần sau không cần tới psql nữa.** Đo trên `aicloser_v3`
 (169.58.33.8) hôm nay:
 
 ```
@@ -52,13 +62,14 @@ hoi_thoai: tieu-alpha 28953 | auus 0 | pialpha-eu 0 | chua-phan 0
 nhat_ky tong=0
 ```
 
-Mà `db/di-tru/nap.js:13` là `TEAM_KY_THUAT = "chua-phan"` (bản trên VPS `58cbe03` giống hệt),
-và sổ điều hành §8 H7 ghi *"Di trú 24/08: 514/514 page + 28.953/28.953 hội thoại đều ở
-`chua-phan`"*. ⇒ **có người đã `UPDATE ... SET team_id` bằng psql tay, sau di trú.**
-`page` không có trigger `sua_luc` nên lệnh đó không để lại dấu vết nào ngoài chính dữ liệu.
+`db/di-tru/nap.js:13` là `TEAM_KY_THUAT = "chua-phan"` (bản trên VPS `58cbe03` giống hệt) —
+tức là **bộ nạp vẫn đổ vào `chua-phan`**. Chạy lại di trú thì page mới lại rơi vào team kỹ
+thuật, và lại phải gọi người chạy SQL để kéo ra. `page` cũng không có trigger `sua_luc` nên
+lượt kéo đó không để dấu vết nào ngoài chính dữ liệu.
 
-Nói thẳng cái giá: **cửa duy nhất đang dùng để gán page cho team là psql tay, không ghi
-nhật ký, không kiểm tra gì.** Phiếu này thay nó bằng một hàm.
+Nói thẳng cái giá: **cửa duy nhất để gán page cho team hiện là psql tay** — dùng được một
+lần vì có người cẩn thận ngồi viết giao dịch và bảng quay lui, nhưng không dùng lại được mỗi
+khi thêm một page. Phiếu này thay nó bằng một hàm.
 
 **(c) Chuyển page KHÔNG PHẢI một cột.** `page.id` được năm bảng trỏ tới, và mỗi bảng mang
 `team_id` RIÊNG (`db/migrate/001_nen.up.sql`):

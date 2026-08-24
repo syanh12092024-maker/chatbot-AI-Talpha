@@ -52,9 +52,14 @@ Kế hoạch GD2 và sổ điều hành §8 H7 ghi *«514/514 page ở `chua-pha
 | `cau_hinh_model` | **0 dòng ở mọi team** |
 | `nhat_ky` | **0 dòng** |
 
-`nap.js` chèn vào `chua-phan` (cả bản local lẫn bản VPS `58cbe03`), mà dữ liệu nằm ở
-`tieu-alpha` và `nhat_ky` rỗng ⇒ **đã có người `UPDATE ... SET team_id` bằng psql tay,
-không ghi nhật ký.** Đúng cái việc màn «Cấu hình team» sinh ra để xoá.
+Vì sao lệch: chủ dự án chốt 24/08 (commit `4524294`) gán **toàn bộ về Tiểu Alpha** bằng
+SQL tay — một giao dịch, 514 page + 28.953 hội thoại + 71 kịch bản + 7 kết nối POS, kèm bảng
+mốc quay lui `_quay_lui_gan_team_20260824` (29.545 dòng, nay vẫn còn). **Lượt gán đó làm cẩn
+thận**; thứ duy nhất thiếu là dòng `nhat_ky`, và thiếu vì chưa có màn hình để ghi.
+
+Nhưng `db/di-tru/nap.js:13` vẫn là `TEAM_KY_THUAT = "chua-phan"` ⇒ **chạy lại di trú thì page
+mới lại rơi vào team kỹ thuật**, và lại phải gọi người chạy SQL để kéo ra. Đúng cái việc màn
+«Cấu hình team» sinh ra để xoá.
 
 ⚠️ Hệ quả: bảng điều phối rỗng vì **thật sự chưa có việc nào**, không phải lỗi màn hình.
 Và lớp team đang cô lập một cái rỗng — cả ba team nghiệp vụ dồn dữ liệu vào một team.

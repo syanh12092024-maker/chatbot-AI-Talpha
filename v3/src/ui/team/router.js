@@ -159,7 +159,14 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 ${escHtml((bc.vai || []).join(', ') || 'không có vai nào')}.</p>
 <p><a href="/dieu-phoi">← Về bảng điều phối</a></p></div>`);
       }
-      return res.status(403).json({ ok: false, ma: 'thieu_vai' });
+      // 403 KÈM LÝ DO, không 403 câm — commit 4524294 dặn thẳng: «vai chưa mở thì trả 403
+      // kèm lý do, không 403 câm». Mã lỗi trần không nói được cần vai nào, nên người nhận
+      // nó đi hỏi vòng quanh thay vì đi xin đúng vai.
+      return res.status(403).json({
+        ok: false, ma: 'thieu_vai',
+        thongDiep: `Màn cấu hình team cần một trong các vai: ${VAI_VAO_DUOC.join(', ')}. `
+          + `Vai hiện có: ${(bc.vai || []).join(', ') || 'không có vai nào'}.`,
+      });
     }
     return res.sendFile(TRANG('cau-hinh-team.html'), (e) => (e ? next(e) : undefined));
   });
