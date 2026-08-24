@@ -73,7 +73,14 @@ Bạn là ĐƯỜNG GĂNG của tuần 1.
 
 G1 · QUẢN TRỊ & CẤU HÌNH — 5 màn · 6 ngày  ← LÀM TRƯỚC TIÊN
    Cấu hình team · Page & Bot · Model AI & khoá · Kết nối & token · Nhật ký thao tác
-   Kèm: nới hai vai của L0-M3 lên NĂM vai (quan-tri · marketer · sale · quan-ly · duyet-kich-ban)
+
+   ⚠️ PHÂN QUYỀN: chủ dự án chốt 24/08 — CHỈ LÀM VAI `quan-tri` TRƯỚC, bốn vai kia lùi.
+   Lý do: bảng ai-được-làm-gì chưa có, làm bốn vai kia bây giờ là tự bịa rồi sửa lại, mà
+   sửa phân quyền là sờ lại mọi màn. Vai `sale` đã có sẵn từ L0-M3 nên thực tế đang chạy hai vai.
+   NHƯNG: hằng VAI khai đủ NĂM mã ngay (lược đồ đã seed đủ), và MỌI MÀN khai sẵn danh sách
+   vai cần có kể cả vai chưa mở — khai sau là phải mở lại từng file. Vai chưa mở thì 403
+   KÈM LÝ DO "vai này chưa mở ở giai đoạn này", không 403 câm.
+   Chi tiết: docs/v3/07-KE-HOACH-GD2.md mục 2b.
 
 G5 · SỐ LIỆU & BÁO CÁO — 8 màn · 7 ngày
    Trang chủ · Báo cáo · Chi phí AI · Hiệu quả kịch bản · Sức khỏe hệ thống ·
@@ -121,7 +128,10 @@ G1 thêm:
   - Khoá trong CSDL là bản mã hoá, SELECT ra không đọc được
   - Bật/tắt bot một page → có dòng nhật ký ghi ai bấm lúc nào
   - Vai `sale` mở màn Cấu hình team → 403, có ghi nhật ký
-  - Test đọc THẲNG db/migrate/001_nen.up.sql rồi so năm mã vai
+  - Hằng VAI có đủ NĂM mã và khớp lược đồ — test ĐỌC THẲNG db/migrate/001_nen.up.sql rồi so
+  - Mọi màn (của cả bạn và người A) đã khai sẵn danh sách vai, kể cả vai chưa mở — test quét
+    mã nguồn, màn nào không khai là đỏ
+  - Người thuộc vai chưa mở → 403 KÈM LÝ DO, không im lặng
 
 G5 thêm:
   - Số trên màn KHỚP với so_ai, có nút tra ngược ra đúng những dòng sổ đẻ ra con số đó
@@ -276,9 +286,11 @@ Chưa viết code vội.
 
 | # | Việc | Vì sao chặn |
 |---|---|---|
-| 1 | **Nạp tiền tài khoản AI** | Bot đang chết. Mọi tiêu chí có chữ *"lượt chat kế tiếp"* không đo được |
-| 2 | **Chốt page nào thuộc team nào** | B làm được màn hình, nhưng người bấm cần biết chia thế nào. 514 page, ba team |
-| 3 | **Chốt năm vai ai được làm gì** | `01-QUYET-DINH.md` mục 9 mới nêu tên năm vai, chưa có bảng quyền chi tiết. G1 không đoán hộ được |
+| 1 | ~~Nạp tiền tài khoản AI~~ | ✅ **xong 24/08** (Kimi). Tầng LLM sống lại sau 731 phút |
+| 2 | ~~Chốt page nào thuộc team nào~~ | ✅ **xong 24/08** — toàn bộ về **Tiểu Alpha**. Đã gán 514 page · 28.953 hội thoại · 71 kịch bản · 7 kết nối POS |
+| 3 | ~~Chốt năm vai ai được làm gì~~ | ✅ **xong 24/08** — làm `quan-tri` trước, bốn vai kia lùi. Xem mục 2b của kế hoạch |
 
-Thiếu (1) thì hai người vẫn code được nhưng **không nghiệm thu được**.
-Thiếu (2) và (3) thì **người B không bắt đầu được**, mà B là đường găng tuần 1.
+**Cả ba đã xong ngày 24/08 — hai prompt trên dán được ngay.**
+
+Còn lại một việc không chặn khởi động nhưng chặn nghiệm thu cuối: **H8 — chọn 3 page thử và
+3 page đối chứng** (cùng ngành, cùng mức quảng cáo). Cần trước khi đo tiêu chí giai đoạn 1.

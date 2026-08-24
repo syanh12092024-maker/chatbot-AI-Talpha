@@ -18,8 +18,8 @@ giai đoạn 2 chính là thứ **đang chặn giai đoạn 1**:
 
 | Việc người đang kẹt | Màn giai đoạn 2 gỡ nó |
 |---|---|
-| **H7** — 514/514 page còn ở team kỹ thuật, team nghiệp vụ 0 page ⇒ mọi màn v3 rỗng | **Cấu hình team** + **Page & Bot** |
-| **H6** — chưa có khoá 4 nhà model, chưa nạp tiền | **Model AI & khoá** |
+| ~~**H7**~~ ✅ **đã gán 24/08**: 514 page · 28.953 hội thoại về **Tiểu Alpha**, bằng SQL vì chưa có màn hình | **Cấu hình team** + **Page & Bot** — để lần sau không phải gọi tôi chạy SQL |
+| ~~**H6**~~ ✅ **đã nạp 24/08** (Kimi). Tầng LLM sống lại sau 731 phút | **Model AI & khoá** — để nhập khoá 4 nhà, và thấy sắp hết tiền TRƯỚC khi bot chết |
 | **H8** — chưa chọn 3 page thử / 3 page đối chứng | **Page & Bot** |
 
 Nên **luồng G1 làm trước tiên, và nó phục vụ giai đoạn 1 chứ không phải giai đoạn 2.**
@@ -52,9 +52,9 @@ Xong G1 thì giai đoạn 1 mới chạy thật được để mà nghiệm thu.
 | **G3 · Kịch bản & nội dung** | 5 | **A** | 6 | Marketer làm việc hằng ngày ở đây. Dùng lại `import-script.js`, `rule-store.js` |
 | **G4 · Sản phẩm & cửa kiểm** | 3 | **A** | 4 | Phụ thuộc cửa POS của L1-M1 đã xong. Dùng lại `readiness.js` |
 | **G5 · Số liệu & báo cáo** | 8 | **B** | 7 | Nhiều màn nhưng nhẹ nhất — đắp lên `economics.js`, `health.js`, `report.js` đã có |
-| **Xuyên suốt · phân quyền 5 vai** | — | **B** | 2 | Nới hai vai của L0-M3 lên năm vai. Chạm mọi màn nên làm trong G1 |
+| **Xuyên suốt · phân quyền** | — | **B** | 1 | **Chủ dự án chốt 24/08: làm vai `quan-tri` TRƯỚC, bốn vai kia lùi.** Xem mục 2b |
 
-**Tổng: 30 ngày công** (A 15 · B 15) — cân hơn giai đoạn 1 (A 24 · B 10) vì giai đoạn 2 phần
+**Tổng: 29 ngày công** (A 15 · B 14) — cân hơn giai đoạn 1 (A 24 · B 10) vì giai đoạn 2 phần
 lớn là màn hình.
 
 ---
@@ -78,13 +78,47 @@ lớn là màn hình.
 `v3/src/model/*` (`tomTatCauHinh` trả khoá dạng `{daCo, duoi}`) — của chính B, đã xong.
 
 **Nghiệm thu:**
-1. Gán **514 page** cho ba team bằng màn hình, không bằng SQL → bảng điều phối hết rỗng
+1. Gán page cho team **bằng màn hình, không bằng SQL** (24/08 tôi phải chạy SQL vì chưa có màn — đó chính là lý do màn này tồn tại). Đổi team một page → hội thoại của page đó **đi theo**, không để page một nơi hội thoại một nẻo
 2. Nhập khoá một nhà model → **lượt chat kế tiếp đi đúng khoá mới, không khởi động lại**
 3. Khoá lưu trong cơ sở dữ liệu là **bản mã hoá**, `SELECT` ra không đọc được
 4. Bật/tắt bot một page → `page.bot_ai_bat` đổi, và **có dòng nhật ký ghi ai bấm lúc nào**
 5. Vai `sale` mở màn Cấu hình team → **403**, có ghi nhật ký
-6. Năm vai (`quan-tri` `marketer` `sale` `quan-ly` `duyet-kich-ban`) đều đăng nhập được và
-   thấy đúng phần của mình — **test đọc thẳng `db/migrate/001_nen.up.sql` rồi so**, cấm gõ tay
+6. Phân quyền: xem mục **2b** — giai đoạn này chỉ mở `quan-tri` (cộng `sale` đã có từ L0-M3)
+
+### 2b · Phân quyền — chỉ làm vai QUẢN TRỊ trước (chốt 24/08)
+
+`01-QUYET-DINH.md` mục 9 nêu **năm vai**: `quan-tri` · `marketer` · `sale` · `quan-ly` ·
+`duyet-kich-ban`. Nhưng tài liệu mới nêu **tên**, chưa có bảng ai-được-làm-gì.
+
+**Chủ dự án chốt: làm `quan-tri` trước.** Ba lý do, và đây là quyết định đúng:
+
+1. **Không phải đoán.** Bảng quyền chi tiết chưa có; làm bốn vai kia bây giờ là tự bịa rồi
+   sửa lại — mà sửa phân quyền là sờ lại mọi màn.
+2. **Đủ để gỡ kẹt.** Ba màn đang chặn giai đoạn 1 (Cấu hình team · Page & Bot · Model AI &
+   khoá) đều là màn của quản trị. Có `quan-tri` là chạy được.
+3. **`sale` đã có sẵn** từ L0-M3 và đang dùng ở bảng điều phối. Nên thực tế đang có **hai**
+   vai chạy được, không phải một.
+
+**Cách làm để sau này thêm vai không phải sửa lan:**
+
+- Giữ nguyên `batBuocVaiHTTP(...vai)` của L0-M3 — nó vốn nhận danh sách vai, thêm vai chỉ là
+  thêm phần tử.
+- **Mọi màn khai vai cần có ngay từ bây giờ**, kể cả vai chưa làm. Ví dụ màn Kịch bản khai
+  `[VAI.QUAN_TRI, VAI.MARKETER]` — hôm nay chỉ `quan-tri` đăng nhập được nên không đổi gì,
+  mai thêm `marketer` là chạy luôn. Khai sau là phải mở lại từng file.
+- **Hằng `VAI` khai đủ NĂM mã ngay**, lấy từ `db/migrate/001_nen.up.sql` (lược đồ đã seed đủ
+  năm dòng). Bài test đọc thẳng file migration rồi so — cấm gõ tay.
+- Vai chưa mở mà có người thuộc vai đó → **403 kèm câu nói rõ "vai này chưa mở ở giai đoạn
+  này"**, không phải 403 câm. Đây đúng bài học ③: màn hình phải nói đúng nghĩa.
+
+**Nghiệm thu phân quyền (thay cho mục "năm vai" trong G1):**
+1. `quan-tri` mở được cả năm màn G1 · `sale` mở màn Cấu hình team → **403 có ghi nhật ký**
+2. Hằng `VAI` có đủ **năm** mã và **khớp lược đồ** — test đọc thẳng file migration
+3. Mỗi màn của cả A và B đều **đã khai sẵn danh sách vai**, kể cả vai chưa mở — test quét
+   mã nguồn, màn nào không khai là đỏ
+4. Người thuộc vai chưa mở → 403 **kèm lý do**, không im lặng
+
+---
 
 ### G2 · Bộ não AI ba tầng — 3 màn · người A · 5 ngày
 
@@ -232,12 +266,12 @@ bộ luật chung ra khỏi `src/prompts.js` vào bảng `bo_luat_chung`, đã c
 
 | Mã | Việc | Chặn gì |
 |---|---|---|
-| **H6** | **Nạp tiền tài khoản AI** | 🔴 bot đang chết. Chặn mọi nghiệm thu có chữ "lượt chat kế tiếp" |
-| **H7** | Chốt page nào thuộc team nào | 🔴 B làm màn Cấu hình team được, nhưng **ai bấm cũng cần biết chia thế nào** |
+| ~~**H6**~~ | ~~Nạp tiền tài khoản AI~~ | ✅ **ĐÃ NẠP 24/08 (Kimi).** Tầng LLM sống lại sau 731 phút |
+| ~~**H7**~~ | ~~Chốt page nào thuộc team nào~~ | ✅ **ĐÃ CHỐT 24/08: toàn bộ về Tiểu Alpha.** Đã gán: 514 page · 28.953 hội thoại · 71 kịch bản · 7 kết nối POS |
 | H8 | Chọn 3 page thử + 3 page đối chứng | nghiệm thu giai đoạn 1 |
 | — | Mở khoá 4 nhà model, nạp ít tiền mỗi cái | G1 nghiệm thu "đổi khoá → lượt sau đi khoá mới" |
 | — | **Duyệt danh sách kết quả/lý do đóng việc** (sổ tay vai B mục 18) | L4-M2 đã code xong, chờ duyệt |
-| — | Chốt **năm vai ai được làm gì** — bảng quyền chi tiết | G1 không đoán hộ được |
+| — | ~~Chốt năm vai ai được làm gì~~ — **ĐÃ CHỐT 24/08: làm `quan-tri` trước, bốn vai kia lùi** | không còn chặn |
 
 ---
 
