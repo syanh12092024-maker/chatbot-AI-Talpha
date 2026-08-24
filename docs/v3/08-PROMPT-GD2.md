@@ -10,7 +10,7 @@
 
 ````text
 Bạn là người viết code cho dự án AI Closer v3, giai đoạn 2. Bạn giữ QUẢN TRỊ và SỐ LIỆU:
-màn cấu hình, phân quyền năm vai, và toàn bộ báo cáo.
+màn cấu hình, phân quyền, và toàn bộ báo cáo.
 
 Việc đầu tiên của bạn KHÔNG phải giai đoạn 2 — nó đang gỡ kẹt cho giai đoạn 1. Đọc kỹ mục
 "VÌ SAO BẠN LÀM TRƯỚC" bên dưới.
@@ -60,16 +60,19 @@ Có một người thứ hai (người A) làm bộ não AI, kịch bản, sản
 
 Giai đoạn 1 code xong nhưng KHÔNG CHẠY ĐƯỢC, và ba chỗ kẹt đều là màn hình của bạn:
 
-  · 514/514 page và 28.953/28.953 hội thoại đang đậu ở team KỸ THUẬT `chua-phan`. Ba team
-    nghiệp vụ có 0 page. Nên bảng điều phối rỗng vĩnh viễn, và không có màn hình nào để gán.
-    → Màn "Page & Bot" + "Cấu hình team" của bạn gỡ cái này.
+  · Gán page cho team: 24/08 phải chạy BẰNG SQL vì chưa có màn hình (514 page + 28.953 hội
+    thoại về Tiểu Alpha). Lần sau đổi team một page mà vẫn phải gọi người chạy SQL là hỏng.
+    → Màn "Page & Bot" + "Cấu hình team" của bạn. Đổi team một page thì hội thoại của page
+      đó phải ĐI THEO — page một nơi hội thoại một nẻo là chỗ rò lớp cách ly.
   · Chưa có khoá bốn nhà model trong cơ sở dữ liệu → màn "Model AI & khoá" của bạn.
+    Và 23–24/08 bot CHẾT 731 PHÚT vì hết tiền tài khoản mà không ai biết trước — màn này
+    phải cho thấy sắp hết tiền TRƯỚC khi bot chết, không phải sau.
   · Chưa chọn 3 page thử / 3 page đối chứng → màn "Page & Bot" của bạn.
 
 Người A gần như không làm được gì trước khi bạn giao năm vai và khung màn hình dùng chung.
 Bạn là ĐƯỜNG GĂNG của tuần 1.
 
-═══ VIỆC CỦA BẠN — 13 MÀN, 15 NGÀY CÔNG ═══
+═══ VIỆC CỦA BẠN — 13 MÀN, 14 NGÀY CÔNG ═══
 
 G1 · QUẢN TRỊ & CẤU HÌNH — 5 màn · 6 ngày  ← LÀM TRƯỚC TIÊN
    Cấu hình team · Page & Bot · Model AI & khoá · Kết nối & token · Nhật ký thao tác
@@ -108,7 +111,8 @@ Và của chính bạn ở giai đoạn 1: v3/src/auth/* (vé, vai, cổng danh 
 v3/src/model/* (tomTatCauHinh trả khoá dạng {daCo, duoi}, không trả khoá thật).
 
 ═══ NĂM ĐIỂM BÀN GIAO ═══
-1. NĂM VAI + màn phân quyền — BẠN làm, A dùng. Chốt CUỐI NGÀY 2. A chờ cái này.
+1. VAI + màn phân quyền (giai đoạn này: `quan-tri`) — BẠN làm, A dùng. Chốt CUỐI NGÀY 2.
+   A chờ cái này. Hằng VAI vẫn khai đủ năm mã ngay.
 2. KHUNG MÀN HÌNH dùng chung (sidebar, thanh trên, bảng, phân trang) — BẠN làm, A dùng.
    Cuối ngày 2. Dựng một lần, cả hai dùng — đừng để hai người đẻ hai bộ khung.
 3. GÁN PAGE CHO TEAM — BẠN làm. Cuối ngày 3. Không có nó thì MỌI màn của cả hai đều rỗng.
@@ -123,7 +127,7 @@ Mọi module:
   - Chạy thật trên Postgres, không chỉ trên bản cài giả
 
 G1 thêm:
-  - Gán 514 page cho ba team BẰNG MÀN HÌNH → bảng điều phối hết rỗng
+  - Gán page cho team BẰNG MÀN HÌNH, không bằng SQL; đổi team một page thì hội thoại đi theo
   - Nhập khoá một nhà model → lượt chat kế tiếp đi đúng khoá mới, KHÔNG khởi động lại
   - Khoá trong CSDL là bản mã hoá, SELECT ra không đọc được
   - Bật/tắt bot một page → có dòng nhật ký ghi ai bấm lúc nào
