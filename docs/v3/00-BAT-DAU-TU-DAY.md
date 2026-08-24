@@ -45,6 +45,8 @@ Bot làm ba việc: **trả lời khách và chốt đơn qua Messenger** · **n
 | 2 | [`01-QUYET-DINH.md`](01-QUYET-DINH.md) | **Mọi quyết định đã chốt và vì sao.** Đọc để không đào lại chuyện đã quyết |
 | 3 | [`02-KE-HOACH-CODE.md`](02-KE-HOACH-CODE.md) | Làm gì trước, làm gì sau, nghiệm thu thế nào |
 | 4 | [`05-PHAN-VIEC.md`](05-PHAN-VIEC.md) | **Ai làm gì, ranh giới file, năm điểm bàn giao** |
+| 5 | [`07-KE-HOACH-GD2.md`](07-KE-HOACH-GD2.md) | **Giai đoạn 2** — 25 màn, năm luồng G1–G5, ai làm gì |
+| 6 | [`08-PROMPT-GD2.md`](08-PROMPT-GD2.md) | Hai prompt giao việc giai đoạn 2, dán thẳng vào phiên mới |
 
 ### Người viết code
 
