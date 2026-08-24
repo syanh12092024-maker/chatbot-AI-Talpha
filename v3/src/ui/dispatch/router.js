@@ -28,6 +28,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { coVai, doiChieuTeam, LoiXuyenTeam, VAI } from '../../auth/boi-canh.js';
+import { TRANG_MAC_DINH, muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { hangCho, tomTat, LOAI } from './kho-viec.js';
 import { chiTietViec } from './chi-tiet.js';
 import { nhanViec, dongViec, bangKetQua, LoiDongViec } from './dong-viec.js';
@@ -200,38 +201,11 @@ const chanVaiMw = () => (req, res, next) => (
  * máy gọi máy, mã lỗi mới là thứ đúng.
  */
 
-/** Đích mặc định sau khi đăng nhập xong. */
-export const TRANG_MAC_DINH = '/dieu-phoi';
-
-/**
- * Yêu cầu này là một CON NGƯỜI đang mở trang, hay là `fetch()` của trang đó?
- *
- * Hỏi `req.accepts(['json','html'])` chứ không hỏi `req.accepts('html')`: tiêu đề Accept
- * mở toang (curl, `fetch` trần, máy gọi máy) khớp CẢ HAI, và với thứ khớp cả hai thì JSON
- * mới là câu trả lời đúng. Chỉ trình duyệt thật mới nói rõ `text/html` được ưu tiên hơn —
- * và đó cũng là thứ giữ cho bài test "chưa đăng nhập → 401 ở cả năm đường" của L4-M1 vẫn xanh.
- * Không đoán bằng đường dẫn: `fetch()` từ chính trang đó vẫn phải nhận JSON.
- */
-export function muonTrang(req) {
-  if (req.xhr) return false;
-  try {
-    return req.accepts(['json', 'html']) === 'html';
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Lọc `tiep` — CHỈ ĐƯỜNG DẪN NỘI BỘ.
- * Phải bắt đầu bằng đúng một dấu `/`; `//evil.com` là đường ra ngoài (trình duyệt đọc nó
- * thành `https://evil.com`), `\\` cũng vậy trên vài bộ phân tích. Không đạt → về mặc định.
- */
-export function locTiep(tiep) {
-  const s = typeof tiep === 'string' ? tiep.trim() : '';
-  if (!s.startsWith('/')) return TRANG_MAC_DINH;
-  if (s.startsWith('//') || s.startsWith('/\\')) return TRANG_MAC_DINH;
-  return s;
-}
+// `TRANG_MAC_DINH` · `muonTrang` · `locTiep` chuyển sang `../chung/http.js` ngày 25/08 để
+// màn «Cấu hình team» dùng CHUNG một bản — `locTiep` là bộ lọc chặn chuyển hướng ra
+// ngoài, và hai bản sao của một bộ lọc an toàn là hai bản sẽ lệch. Vẫn xuất lại ở đây
+// nguyên tên cũ nên không nơi gọi nào phải đổi.
+export { TRANG_MAC_DINH, muonTrang, locTiep } from '../chung/http.js';
 
 /** `/dang-nhap?tiep=…` — đăng nhập xong quay lại đúng chỗ đang định tới. */
 function duongDangNhap(req) {
@@ -241,9 +215,6 @@ function duongDangNhap(req) {
   return `/dang-nhap?tiep=${encodeURIComponent(locTiep(xin))}`;
 }
 
-const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => (
-  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-));
 
 /**
  * Trang "không đủ quyền". KHÔNG chuyển hướng về đăng nhập: tài khoản này đã đúng, đá họ về

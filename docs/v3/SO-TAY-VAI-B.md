@@ -90,6 +90,32 @@ có ghi nhật ký, cấm sửa/xoá `nhat_ky` và `so_ai`, cấm xoá mọi b�
 | 24 | **Trang HTML hết vé thì chuyển hướng về đăng nhập**, đường `/api` vẫn trả JSON | Sale mở dấu trang buổi sáng nhìn thấy khối JSON thì không có đường đi tiếp. Máy gọi máy thì mã lỗi mới là thứ đúng |
 | 25 | **Thêm `v3/src/vai-b.js` nối dây một lời gọi** | Bốn module không import lẫn nhau nên phải nối tay 12 chỗ, đúng thứ tự. Cả hai cách nối sai đã xảy ra thật lúc chạy thử |
 
+### Giai đoạn 2 · sóng 0 · màn «Cấu hình team» (G2-B1) — 25/08/2026
+
+| # | Quyết gì | Vì sao | Đánh đổi |
+|---|---|---|---|
+| 26 | **Nới `VAI` từ 2 lên đủ 5 vai** | CSDL có đủ 5 từ đầu. Màn cấu hình gán được vai `marketer`, mà `taoBoiCanh` ném «vai lạ» cho mã đó ⇒ người được gán **đăng nhập được nhưng không cấp nổi vé**, trong khi màn quản trị vẫn hiện họ có vai đầy đủ. Cùng họ lỗi với vụ gạch dưới/gạch ngang | Không có. Nới `VAI` **không mở thêm cửa nào**: ai vào màn nào vẫn do từng màn tự khai (`VAI_VAO_DUOC`) |
+| 27 | **Bài test vai phải so HAI CHIỀU** | Bản cũ chỉ so `VAI ⊆ lược đồ` nên nó **xanh suốt trong khi `VAI` thiếu 3/5 mã**. Một tập con hợp lệ không phải một tập đủ | |
+| 28 | **Cổng danh tính nới GHI cho ĐÚNG `thanh_vien_team`** | `thanh_vien_team` không nằm trong `BANG_NGHIEP_VU_CHUAN` của A nên không có đường nào khác tới nó | `team`/`nguoi_dung`/`vai` vĩnh viễn chỉ đọc — thêm team hay sửa mã vai là việc của di trú, không phải của màn hình |
+| 29 | **Có `xoa`, không có `sua`** trên cổng đó | `UNIQUE (team, người, vai)` nên «đổi vai» thật ra là bớt một dòng + thêm một dòng; một lời gọi `sua` giả vờ đó là thao tác nguyên tử mà không phải. Và rút quyền phải có hiệu lực NGAY | Ngược nếp «vai B không xoá». Nhưng đây là dòng CẤP QUYỀN, không phải đơn hàng — luật 2 nói về đơn hàng. Bảng không có cột `bat` nên xoá mềm không làm được mà không đổi lược đồ |
+| 30 | **Không rút được vai `quan-tri` CUỐI CÙNG của team** | Rút xong thì không còn ai cấu hình được team đó, và **không có màn nào để sửa** — phải quay lại psql tay, đúng thứ màn này sinh ra để xoá | Muốn giải tán một team thì phải làm bằng tay. Chấp nhận: giải tán team không phải việc hằng ngày |
+| 31 | **Vai nhận theo MÃ, không nhận `vai_id` thô từ trình duyệt** | `vai_id` là số; gõ nhầm một chữ số thì gán trúng vai khác mà không gì kêu. Mã gõ sai thì không tra ra và bị chặn ngay | Thêm một lượt tra bảng `vai` mỗi lần ghi |
+| 32 | **Ghi thành viên mà nhật ký hỏng thì NÉM**, khác `ghiNhatKyDieuPhoi` (nuốt lỗi) | Bên điều phối, nhật ký hỏng không được biến 403 thành 500. Ở đây là **cấp quyền**: cấp xong mà không truy ngược được ai cấp cho ai lúc nào thì thao tác đó không nên xảy ra | |
+| 33 | **`khoiRong()` NÉM nếu quên khai vì sao rỗng**, và `chua_cai_dat` bắt buộc kèm đường đi tiếp | Thi hành bài học ③ bằng CODE chứ không bằng lời dặn. Không có đường trả một ô trắng | Mỗi chỗ rỗng phải viết thêm một câu. Đó là toàn bộ mục đích |
+| 34 | **Màn cấu hình KHÔNG đếm sang team khác**, kể cả khi rất cần con số đó | Đi vòng qua `boiCanhMay`/`ctxHeThong` để đếm hộ là tự tay mở cửa hậu mà cả lớp team sinh ra để đóng — và mở nó ở **màn quản trị** thì càng khó thấy | Màn nói thẳng «chỉ đếm được team đang mở». Con số cả-ba-team là việc của `PHIEU-B-Y3` |
+| 35 | **Lát bị chặn hiện MỜ kèm số phiếu, không giấu đi** | Giấu thì người dùng đi tìm mãi một chức năng tài liệu có hứa; hiện kèm lý do thì họ biết đang đợi ai, đợi gì | |
+| 36 | **Ba mảnh HTTP (`muonTrang`/`locTiep`/`escHtml`) tách ra `ui/chung/http.js`** | `locTiep` là bộ lọc chặn chuyển hướng ra ngoài. Hai bản sao của một bộ lọc an toàn là hai bản sẽ lệch, và bản bị bỏ quên luôn là bản đang mở cửa | Đụng vào `ui/dispatch/router.js` đang chạy. 316 bài test cũ vẫn xanh sau khi tách |
+
+**Hai chỗ bản cài giả nói KHÁC bản thật, phát hiện khi làm màn này** — cùng họ với bài học ①:
+
+1. `db-gia.js` **xoá mất điều kiện `team_id`** với bảng dùng chung, nên mọi câu hỏi «thành
+   viên của team này» trên bản giả đều trả về thành viên của **mọi team**. Lệch theo chiều
+   **nguy nhất**: bản giả dễ tính hơn bản thật, nên một màn rò rỉ thành viên xuyên team vẫn
+   xanh hết bài test. Đã sửa. (Bắt được nhờ chính bài test của màn này, không phải nhờ đọc code.)
+2. `db-gia.js#xoa` ném **vô điều kiện** trong khi cổng thật xoá được `thanh_vien_team`. Lệch
+   theo chiều khắt khe — không cho bản hỏng đi lọt, nhưng vẫn phải sửa: **bản giả khắt khe
+   sai chỗ thì người ta sẽ sửa CODE cho vừa bản giả**, và đó mới là chỗ hỏng thật.
+
 ---
 
 ## Sửa theo lược đồ thật — 23–24/08/2026

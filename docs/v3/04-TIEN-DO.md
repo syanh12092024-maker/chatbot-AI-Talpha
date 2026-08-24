@@ -8,10 +8,56 @@
 
 | | |
 |---|---|
-| Giai đoạn | 1 — năm luồng lõi |
-| Luồng đang làm | **Phần rìa (người B) XONG** — trục chính (người A) chưa bắt đầu |
+| Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
+| Luồng đang làm | **G2-B1 «Cấu hình team» — ba lát xong, lát thứ tư chờ `PHIEU-B-Y3`** |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
-| Nhánh code v3 | `v3/vai-b` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
+| Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
+| Bài test vai B | **339 xanh** (316 trước giai đoạn 2) |
+
+---
+
+## Giai đoạn 2 · sóng 0 — GỠ CHẶN
+
+### G2-B1 · Cấu hình team — 3/4 lát xong (25/08/2026)
+
+| Lát | Việc | Trạng thái |
+|---|---|---|
+| ① Tổng quan team | số đo thật + cảnh báo suy ra | **xong** |
+| ② Thành viên và vai | cấp/rút vai, đủ 5 vai | **xong** |
+| ③ Kết nối POS | chỉ hiện trạng thái, không bao giờ hiện khoá | **xong** |
+| ④ Gán page ↔ team | chuyển page giữa các team | 🟥 **chặn — `PHIEU-B-Y3`** |
+
+Đường: `/cau-hinh-team` · vào được: `quan-tri` + `quan-ly` · ghi được: `quan-tri`.
+Xem tận mắt trên cổng 3101 (dữ liệu giả) ở khổ 375px: **không cuộn ngang, 0 phần tử tràn**.
+
+### Ba chỗ chặn tìm được TRƯỚC khi viết code, và đã xử
+
+| # | Chặn gì | Xử thế nào |
+|---|---|---|
+| ① | `suaTheoId` **bỏ rơi `team_id` trong im lặng** (`src/db/truy-van.js:259`) — gọi đúng team thì `UPDATE` chạy, trả về dòng, cột không đổi. Màn hình sẽ báo «đã gán» mà không có gì xảy ra | **phát `PHIEU-B-Y3`** cho người A. Lát ④ hiện MỜ kèm lý do, không giấu |
+| ② | Hằng `VAI` mới có **2/5 vai** — gán vai `marketer` thì `taoBoiCanh` ném «vai lạ», người đó đăng nhập được nhưng **không cấp nổi vé** | B nới đủ 5 vai. Bài test cũ chỉ so `VAI ⊆ lược đồ` nên **xanh suốt trong khi thiếu 3 mã**; đã thêm chiều ngược lại |
+| ③ | Cổng danh tính **chỉ đọc**, mà `thanh_vien_team` không nằm trong tầng truy vấn của A | B nới GHI cho **đúng một bảng**, không có `sua`, `xoa` chặn điều kiện rỗng |
+
+### Đo lại CSDL thật 25/08 — tài liệu đang ghi SAI
+
+Kế hoạch GD2 và sổ điều hành §8 H7 ghi *«514/514 page ở `chua-phan`»*. **Không đúng nữa:**
+
+| | Thật hôm nay |
+|---|---|
+| `page` | 514 — **tất cả ở `tieu-alpha`**, `chua-phan` = 0 |
+| `page.marketer` rỗng | **514/514** (tài liệu ghi 314/315) |
+| `hoi_thoai` | 28.953, tất cả ở `tieu-alpha` |
+| `khach` · `don_hang` · `viec_can_xu_ly` | **0 ở mọi team** |
+| `nguoi_dung` | **1** · `thanh_vien_team` 3 dòng, cùng một người |
+| `cau_hinh_model` | **0 dòng ở mọi team** |
+| `nhat_ky` | **0 dòng** |
+
+`nap.js` chèn vào `chua-phan` (cả bản local lẫn bản VPS `58cbe03`), mà dữ liệu nằm ở
+`tieu-alpha` và `nhat_ky` rỗng ⇒ **đã có người `UPDATE ... SET team_id` bằng psql tay,
+không ghi nhật ký.** Đúng cái việc màn «Cấu hình team» sinh ra để xoá.
+
+⚠️ Hệ quả: bảng điều phối rỗng vì **thật sự chưa có việc nào**, không phải lỗi màn hình.
+Và lớp team đang cô lập một cái rỗng — cả ba team nghiệp vụ dồn dữ liệu vào một team.
 
 ---
 

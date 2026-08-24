@@ -70,7 +70,16 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<'
 // GẠCH NGANG. Sai một dấu thì thẻ team hiện mã trần thay vì tên vai.
 // Giai đoạn 1 chỉ dùng hai vai; ba vai còn lại (marketer · quan-ly · duyet-kich-ban)
 // hiện nguyên mã cho tới khi giai đoạn 2 mở chúng ra.
-const TEN_VAI = { 'quan-tri': 'Quản trị', sale: 'Sale' };
+// Nhãn cho ĐỦ NĂM vai của lược đồ thật (`db/migrate/001_nen.up.sql`, seed `vai`).
+// Bài test `auth-router` đọc thẳng file migration rồi so — thiếu một nhãn là ĐỎ, không
+// phải hiện mã thô cho người dùng nhìn.
+const TEN_VAI = {
+  'quan-tri': 'Quản trị',
+  marketer: 'Marketer',
+  sale: 'Sale',
+  'quan-ly': 'Quản lý',
+  'duyet-kich-ban': 'Người duyệt kịch bản',
+};
 
 function baoLoi(t) { const o = $('#loi'); o.textContent = t; o.classList.add('hien'); }
 function xoaLoi() { const o = $('#loi'); o.textContent = ''; o.classList.remove('hien'); }

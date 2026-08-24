@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cấu hình team — AI Closer v3</title>
+<style>
+  /* Cùng hệ thiết kế với `dieu-phoi.html` (gốc: `public/ops.html`). Trang RIÊNG, một file,
+     không gọi mạng ra ngoài — bốn luồng v3 sửa song song, dùng chung file CSS là xung đột. */
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1120px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  /* ─── ô số đo: tự xuống dòng, không bao giờ đẩy trang rộng ra ─── */
+  .so{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px}
+  .o{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fcfdfd;min-width:0}
+  .o .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15;overflow-wrap:anywhere}
+  .o .t{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+  .o.xau .n{color:var(--bad)}
+  .o.canh .n{color:var(--warn)}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
+  .pill.g{background:var(--okSoft);color:var(--ok)}
+  .pill.o{background:var(--warnSoft);color:var(--warn)}
+  .pill.r{background:var(--badSoft);color:var(--bad)}
+  .pill.m{background:#f1f1f1;color:#777}
+  .pill.p{background:var(--priSoft);color:var(--priDark)}
+
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
+  .banner.r{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
+  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner .s{display:block;font-weight:400;font-size:12px;margin-top:4px}
+
+  /* ─── TRẠNG THÁI RỖNG — hai kiểu, trông KHÁC HẲN nhau ───────────────────────────────
+     Đây là chỗ đã dính lỗi thật 24/08: bảng rỗng đọc như tin mừng trong khi sự thật là
+     chưa cài đặt xong. Nên «xong» thì xanh và im, «chưa cài đặt» thì vàng và có nút. */
+  .trong{padding:18px 15px;text-align:center;line-height:1.6}
+  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
+  .trong.xong{color:var(--ok);background:var(--okSoft)}
+  .trong.chua{color:#8a4a06;background:var(--warnSoft);border-top:1px solid #f0d3a4}
+  .trong .di{display:inline-block;margin-top:8px;font-weight:700;color:var(--priDark);
+             background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 12px;text-decoration:none}
+
+  /* ─── lát bị chặn: hiện MỜ kèm lý do, không giấu đi ─── */
+  .chan{background:#fafbfb;border:1px dashed #cfd8dc;border-radius:10px;padding:14px;color:var(--muted);line-height:1.6}
+  .chan b{color:var(--ink)}
+  .chan .ma{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
+            background:#eef2f3;padding:1px 6px;border-radius:5px}
+
+  button,select{font:inherit}
+  .nut{background:var(--pri);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
+  .nut:hover{background:var(--priDark)}
+  .nut[disabled]{background:#c3cdd0;cursor:not-allowed}
+  .nut.nho{padding:4px 9px;font-size:11.5px;font-weight:600}
+  .nut.xoa{background:transparent;color:var(--bad);border:1px solid #f0c2c2}
+  .nut.xoa:hover{background:var(--badSoft)}
+  select{border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:#fff;max-width:100%}
+
+  .hang{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .ten{font-weight:600;overflow-wrap:anywhere}
+  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+  .loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:8px;
+       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .loi.hien{display:block}
+
+  /* ─── KHỔ HẸP (điện thoại 375px): bảng thành thẻ xếp dọc, KHÔNG cuộn ngang ─── */
+  @media (max-width:640px){
+    header{padding:12px 14px}
+    main{padding:12px 14px 48px}
+    .panel h2{padding:10px 12px}
+    .than{padding:12px}
+    .so{grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:8px}
+    .o .n{font-size:19px}
+    table,thead,tbody,th,td,tr{display:block}
+    thead{display:none}
+    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:9px 11px}
+    tbody tr:last-child{margin-bottom:0}
+    td{border:none;padding:3px 0}
+    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;
+      text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:1px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cấu hình team</h1>
+  <span class="sub" id="teamHien">…</span>
+  <span class="sp"></span>
+  <a href="/chon-team">Đổi team</a>
+  <a href="/dieu-phoi">Bảng điều phối →</a>
+</header>
+
+<main>
+  <div class="loi" id="loi"></div>
+  <div id="canhBao"></div>
+
+  <!-- ─── LÁT 1 · tổng quan ─────────────────────────────────────────────────────── -->
+  <section class="panel">
+    <h2>Tổng quan team này
+      <span class="hint">chỉ đếm được team đang mở — lớp team chặn nhìn sang team khác</span>
+    </h2>
+    <div class="than"><div class="so" id="soDo">
+      <div class="o"><div class="n">…</div><div class="t">đang đọc</div></div>
+    </div></div>
+  </section>
+
+  <!-- ─── LÁT 2 · thành viên và vai ─────────────────────────────────────────────── -->
+  <section class="panel">
+    <h2>Thành viên và vai <span class="sp"></span>
+      <span class="hint" id="ghiChuVai"></span>
+    </h2>
+    <div id="khoiThanhVien"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+    <div class="than" id="themThanhVien" style="display:none;border-top:1px solid var(--line)">
+      <div class="hang">
+        <select id="chonNguoi" aria-label="Chọn người"></select>
+        <select id="chonVai" aria-label="Chọn vai"></select>
+        <button class="nut" id="nutThem">Cấp vai</button>
+      </div>
+      <div class="phu" style="margin-top:7px">Một người mang được nhiều vai trong cùng một team.</div>
+    </div>
+  </section>
+
+  <!-- ─── LÁT 3 · kết nối ───────────────────────────────────────────────────────── -->
+  <section class="panel">
+    <h2>Kết nối POS <span class="hint">khoá API không bao giờ hiện ở đây</span></h2>
+    <div id="khoiKetNoi"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+  </section>
+
+  <!-- ─── LÁT 4 · gán page ↔ team (đang chờ phiếu) ──────────────────────────────── -->
+  <section class="panel">
+    <h2>Gán page ↔ team</h2>
+    <div class="than" id="khoiGanPage"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const so = (n) => Number(n || 0).toLocaleString('vi-VN');
+
+function baoLoi(t){ const o=$('#loi'); o.textContent=t; o.classList.add('hien'); }
+function xoaLoi(){ const o=$('#loi'); o.textContent=''; o.classList.remove('hien'); }
+
+async function goi(duong, tuyChon){
+  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
+  let d = null;
+  try { d = await r.json(); } catch { /* để nguyên null */ }
+  if (!r.ok || !d || d.ok === false) {
+    throw new Error((d && d.thongDiep) || `Máy chủ trả ${r.status}.`);
+  }
+  return d;
+}
+
+/* Vẽ trạng thái rỗng — hai kiểu trông KHÁC HẲN nhau. Không có kiểu thứ ba, và không có
+   đường vẽ một ô trắng: mọi chỗ rỗng của màn này đều phải nói vì sao. */
+function veTrong(t){
+  if (!t) return '';
+  const chua = t.vi === 'chua_cai_dat';
+  const di = chua && t.diTiep
+    ? `<a class="di" href="${esc(t.diTiep.duong || '#')}">${esc(t.diTiep.chu)}</a>` : '';
+  return `<div class="trong ${chua ? 'chua' : 'xong'}">
+    <span class="ic">${chua ? '⚠️' : '✓'}</span>
+    <div>${esc(t.noi)}</div>${di}</div>`;
+}
+
+/* ─── lát 1 ─── */
+function veTongQuan(t){
+  $('#teamHien').textContent = `team #${t.teamId}`;
+  const thieu = t.page.thieuMarketer;
+  $('#soDo').innerHTML = [
+    ['page', so(t.page.tong), 'page thuộc team này', t.page.tong === 0 ? 'canh' : ''],
+    ['bot', so(t.page.botBat), 'page đang bật BOT AI', ''],
+    ['mkt', so(thieu), 'page CHƯA có marketer', thieu > 0 ? (t.page.coMarketer === 0 ? 'xau' : 'canh') : ''],
+    ['hoi', so(t.hoiThoai), 'hội thoại', ''],
+    ['mdl', t.model.daCauHinh ? so(t.model.soDong) : '0', t.model.daCauHinh ? 'dòng cấu hình model' : 'CHƯA cấu hình model', t.model.daCauHinh ? '' : 'xau'],
+    ['tv', so(t.thanhVien), 'dòng cấp quyền', t.thanhVien === 0 ? 'xau' : ''],
+  ].map(([, n, nhan, lop]) => `<div class="o ${lop}"><div class="n">${esc(n)}</div><div class="t">${esc(nhan)}</div></div>`).join('');
+
+  $('#canhBao').innerHTML = (t.canhBao || []).map((c) =>
+    `<div class="banner ${c.muc === 'do' ? 'r' : 'o'}">${esc(c.chu)}</div>`).join('');
+}
+
+/* ─── lát 2 ─── */
+let VAI_HIEN = [];
+function veThanhVien(d){
+  VAI_HIEN = d.vai || [];
+  $('#ghiChuVai').textContent = d.suaDuoc ? '' : 'vai của bạn chỉ xem được, không sửa được';
+
+  if (d.trong) { $('#khoiThanhVien').innerHTML = veTrong(d.trong); }
+  else {
+    $('#khoiThanhVien').innerHTML = `<table><thead><tr>
+      <th>Người</th><th>Vai</th><th></th></tr></thead><tbody>${d.thanhVien.map((n) => `
+      <tr>
+        <td data-nhan="Người"><div class="ten">${esc(n.email)}</div>
+          ${n.ten ? `<div class="phu">${esc(n.ten)}</div>` : ''}
+          ${n.hoatDong ? '' : '<div class="phu"><span class="pill r">tài khoản đã khoá</span></div>'}</td>
+        <td data-nhan="Vai">${n.vai.map((v) => `<span class="pill p">${esc(v.ten)}</span>`).join('') || '<span class="pill m">không có vai</span>'}</td>
+        <td data-nhan="">${d.suaDuoc ? n.vai.map((v) =>
+          `<button class="nut nho xoa" data-bot="${esc(n.nguoiDungId)}" data-vai="${esc(v.ma)}"
+             title="Rút vai ${esc(v.ten)}">Rút ${esc(v.ten)}</button>`).join(' ') : ''}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+
+  const oThem = $('#themThanhVien');
+  oThem.style.display = d.suaDuoc ? '' : 'none';
+  if (d.suaDuoc) {
+    const chon = (d.nguoiChonDuoc || []);
+    $('#chonNguoi').innerHTML = chon.length
+      ? chon.map((n) => `<option value="${esc(n.nguoiDungId)}">${esc(n.email)}${n.daO ? ' (đã ở team)' : ''}</option>`).join('')
+      : '<option value="">— không có tài khoản nào —</option>';
+    $('#chonVai').innerHTML = VAI_HIEN.map((v) => `<option value="${esc(v.ma)}">${esc(v.ten)}</option>`).join('');
+    $('#nutThem').disabled = !chon.length;
+  }
+
+  document.querySelectorAll('[data-bot]').forEach((b) => b.addEventListener('click', () => rut(b.dataset.bot, b.dataset.vai)));
+}
+
+async function rut(nguoiDungId, maVai){
+  const ten = (VAI_HIEN.find((v) => v.ma === maVai) || {}).ten || maVai;
+  if (!confirm(`Rút vai "${ten}" của người này khỏi team?`)) return;
+  xoaLoi();
+  try {
+    await goi('/api/team/thanh-vien', { method:'DELETE', body: JSON.stringify({ nguoiDungId, maVai }) });
+    await napThanhVien(); await napTongQuan();
+  } catch (e) { baoLoi(e.message); }
+}
+
+$('#nutThem').addEventListener('click', async () => {
+  const nguoiDungId = $('#chonNguoi').value;
+  const maVai = $('#chonVai').value;
+  if (!nguoiDungId) return;
+  xoaLoi();
+  $('#nutThem').disabled = true;
+  try {
+    const kq = await goi('/api/team/thanh-vien', { method:'POST', body: JSON.stringify({ nguoiDungId, maVai }) });
+    if (kq.daCo) baoLoi('Người này đã có sẵn vai đó trong team — không thêm gì cả.');
+    await napThanhVien(); await napTongQuan();
+  } catch (e) { baoLoi(e.message); }
+  finally { $('#nutThem').disabled = false; }
+});
+
+/* ─── lát 3 ─── */
+function veKetNoi(d){
+  if (d.trong) { $('#khoiKetNoi').innerHTML = veTrong(d.trong); return; }
+  $('#khoiKetNoi').innerHTML = `<table><thead><tr>
+    <th>Thị trường</th><th>Shop POS</th><th>Trạng thái</th></tr></thead><tbody>${d.pos.map((k) => `
+    <tr><td data-nhan="Thị trường"><span class="ten">${esc(k.market)}</span></td>
+      <td data-nhan="Shop POS"><span class="phu">${esc(k.shopId)}</span></td>
+      <td data-nhan="Trạng thái">${k.bat ? '<span class="pill g">đang bật</span>' : '<span class="pill m">đã tắt</span>'}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+/* ─── lát 4 · hiện MỜ kèm lý do, không giấu ─── */
+function veGanPage(g){
+  $('#khoiGanPage').innerHTML = `<div class="chan">
+    <b>Chưa mở được.</b> ${esc(g.lyDo)}
+    <div style="margin-top:9px">Phiếu đang chờ người A: <span class="ma">${esc(g.phieu)}</span></div>
+    <div style="margin-top:9px">Team này đang có <b>${so(g.soPageTeamNay)}</b> page. ${esc(g.ghiChu)}</div>
+  </div>`;
+}
+
+/* ─── nạp ─── */
+async function napTongQuan(){ const d = await goi('/api/team/tong-quan'); if (d) veTongQuan(d.tongQuan); }
+async function napThanhVien(){ const d = await goi('/api/team/thanh-vien'); if (d) veThanhVien(d); }
+async function napKetNoi(){ const d = await goi('/api/team/ket-noi'); if (d) veKetNoi(d); }
+async function napGanPage(){ const d = await goi('/api/team/gan-page'); if (d) veGanPage(d.ganPage); }
+
+(async function nap(){
+  // Nạp từng khối riêng: một khối hỏng thì ba khối kia vẫn hiện. Gộp `Promise.all` rồi để
+  // một lỗi làm trắng cả trang là đúng thứ màn này sinh ra để chống.
+  for (const [ten, fn] of [['tổng quan', napTongQuan], ['thành viên', napThanhVien],
+                           ['kết nối', napKetNoi], ['gán page', napGanPage]]) {
+    try { await fn(); } catch (e) { baoLoi(`Khối "${ten}" hỏng: ${e.message}`); }
+  }
+})();
+</script>
+</body>
+</html>

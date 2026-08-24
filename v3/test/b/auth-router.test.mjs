@@ -451,6 +451,19 @@ test('tiêu chí 2 · hằng VAI đối chiếu THẲNG với lệnh chèn bản
     assert.ok(maThat.has(v), `mã vai "${v}" KHÔNG có trong lược đồ thật (${[...maThat].join(' · ')})`);
   }
 
+  // CHIỀU NGƯỢC LẠI — thêm 25/08, giai đoạn 2 sóng 0.
+  // Bản trước chỉ kiểm `VAI ⊆ lược đồ`, nên nó XANH suốt trong khi `VAI` mới có 2/5 mã. Cái
+  // thiếu không kêu: gán vai `marketer` trên màn Cấu hình team thì `taoBoiCanh` ném «vai lạ»
+  // và người đó không cấp nổi vé — mà bài test vẫn xanh vì hai mã đang có đều hợp lệ.
+  // Một tập con hợp lệ không phải là một tập ĐỦ; phải so cả hai chiều mới khoá được sự thật.
+  const maTrongCode = new Set(Object.values(VAI));
+  for (const m of maThat) {
+    assert.ok(maTrongCode.has(m), `lược đồ có vai "${m}" mà hằng VAI không khai — người mang `
+      + `vai này sẽ không cấp được vé (taoBoiCanh ném «vai lạ»), trong khi màn quản trị vẫn `
+      + `hiện họ có vai. Khai nó vào VAI ở v3/src/auth/boi-canh.js.`);
+  }
+  assert.equal(maTrongCode.size, maThat.size, 'số mã vai của code và của lược đồ phải bằng nhau');
+
   // BẪY IM LẶNG NHẤT CỦA DỰ ÁN: gạch dưới thay gạch ngang → mọi người dùng thành không có
   // vai, batBuocVaiHTTP chặn sạch, màn hình trông y hệt phân quyền chạy đúng.
   assert.equal(VAI.QUAN_TRI, 'quan-tri');

@@ -13,7 +13,7 @@ const { bam } = await import('../../src/auth/mat-khau.js');
 const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
-async function dungThu({ ghiSoAi, canhBao } = {}) {
+async function dungThu({ ghiSoAi, canhBao, docKetNoiPos } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -39,11 +39,27 @@ async function dungThu({ ghiSoAi, canhBao } = {}) {
   const bao = dungPhanB(app, {
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
-    ghiSoAi, canhBao, express,
+    ghiSoAi, canhBao, docKetNoiPos, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
   return { goc: `http://127.0.0.1:${sv.address().port}`, sv, kho, bao };
+}
+
+/** Đăng nhập rồi chọn team `t1`, trả về cookie vé đầy đủ. */
+async function dangNhapLay(goc, teamId = 't1') {
+  const dn = await fetch(`${goc}/api/dang-nhap`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'an@talpha.vn', matKhau: 'matkhau1' }),
+  });
+  if (dn.status !== 200) return null;
+  const ck = dn.headers.get('set-cookie').split(';')[0];
+  const ct = await fetch(`${goc}/api/chon-team`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', cookie: ck },
+    body: JSON.stringify({ teamId }),
+  });
+  if (ct.status !== 200) return null;
+  return ct.headers.get('set-cookie').split(';')[0];
 }
 
 test('nối dây · thiếu cổng dữ liệu thì NÉM NGAY LÚC NỐI, không đợi lúc có khách bấm', () => {
@@ -107,13 +123,45 @@ test('nối dây · chặn xuyên team vẫn còn, và có ghi vào bảng nhậ
   assert.equal(dong[0].team_id, 't1');
 });
 
-test('nối dây · thiếu phễu Sổ AI và phễu cảnh báo thì BÁO RA, không im lặng', async (t) => {
+test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc kết nối POS thì BÁO RA, không im lặng', async (t) => {
   const { sv, bao } = await dungThu();
   t.after(() => sv.close());
   assert.ok(bao.thieu.some((x) => /ghiSoAi/.test(x)), 'phải nêu thiếu ghiSoAi');
   assert.ok(bao.thieu.some((x) => /canhBao/.test(x)), 'phải nêu thiếu canhBao');
+  // `docKetNoiPos` thiếu thì màn cấu hình team KHÔNG được nói «không có kết nối nào» —
+  // hai câu đó dẫn người đọc đi hai hướng khác hẳn nhau (đi tìm kết nối bị mất, hay đi
+  // sửa cấu hình máy chủ). Nên nó phải nằm trong danh sách `thiếu`, không im lặng.
+  assert.ok(bao.thieu.some((x) => /docKetNoiPos/.test(x)), 'phải nêu thiếu docKetNoiPos');
 
-  const { sv: sv2, bao: bao2 } = await dungThu({ ghiSoAi: () => {}, canhBao: () => {} });
+  const { sv: sv2, bao: bao2 } = await dungThu({
+    ghiSoAi: () => {}, canhBao: () => {}, docKetNoiPos: async () => [],
+  });
   t.after(() => sv2.close());
   assert.deepEqual(bao2.thieu, [], 'nối đủ thì không còn thiếu gì');
+});
+
+test('nối dây · màn cấu hình team được mắc vào, và chặn đúng vai', async (t) => {
+  const { sv, goc, kho } = await dungThu({ docKetNoiPos: async () => [] });
+  t.after(() => sv.close());
+
+  // Chưa đăng nhập: TRANG thì đá về đăng nhập, API thì trả JSON 401 (máy gọi máy cần mã lỗi).
+  const trang = await fetch(`${goc}/cau-hinh-team`, { headers: { accept: 'text/html' }, redirect: 'manual' });
+  assert.equal(trang.status, 302, 'trang HTML hết vé phải chuyển hướng, không phun JSON');
+  assert.match(trang.headers.get('location') || '', /^\/dang-nhap\?tiep=/);
+
+  const api = await fetch(`${goc}/api/team/tong-quan`, { headers: { accept: 'application/json' } });
+  assert.equal(api.status, 401);
+
+  // Người trong hạt giống chỉ mang vai `sale`. Sale vào được BẢNG ĐIỀU PHỐI nhưng KHÔNG
+  // vào được màn cấu hình — hai màn có hai danh sách vai riêng, và đây là chỗ chứng minh
+  // cái chắn của màn cấu hình không mượn nhầm danh sách của bảng điều phối.
+  const ckSale = await dangNhapLay(goc);
+  assert.ok(ckSale, 'phải đăng nhập được');
+
+  const dieuPhoi = await fetch(`${goc}/api/dieu-phoi/tom-tat`, { headers: { cookie: ckSale, accept: 'application/json' } });
+  assert.equal(dieuPhoi.status, 200, 'sale VÀO ĐƯỢC bảng điều phối');
+
+  const cauHinh = await fetch(`${goc}/api/team/tong-quan`, { headers: { cookie: ckSale, accept: 'application/json' } });
+  assert.equal(cauHinh.status, 403, 'sale KHÔNG vào được màn cấu hình team');
+  assert.ok(kho, 'kho dữ liệu giả phải dựng được');
 });

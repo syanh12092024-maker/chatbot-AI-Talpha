@@ -50,11 +50,31 @@ export class LoiThieuVai extends Error {
   }
 }
 
-/** Hai vai tối thiểu của giai đoạn 1. Ba vai còn lại (marketer, quản lý, người duyệt) là giai đoạn 2. */
-// ⚠️ GẠCH NGANG, chép đúng `vai.ma` của lược đồ thật (`db/migrate/001_nen.up.sql`, seed 5 vai).
-//    Bản đoán cũ dùng gạch DƯỚI: lệch một dấu thì không ai tra ra vai, `batBuocVaiHTTP` chặn
-//    sạch, mà màn hình trông y hệt phân quyền đang chạy đúng.
-export const VAI = Object.freeze({ QUAN_TRI: 'quan-tri', SALE: 'sale' });
+/**
+ * ĐỦ NĂM VAI của `01-QUYET-DINH.md` §9, đúng bằng seed `vai` của lược đồ thật.
+ *
+ * ⚠️ GẠCH NGANG, chép đúng `vai.ma` của `db/migrate/001_nen.up.sql`. Bản đoán cũ dùng gạch
+ *    DƯỚI: lệch một dấu thì không ai tra ra vai, `batBuocVaiHTTP` chặn sạch, mà màn hình
+ *    trông y hệt phân quyền đang chạy đúng. Có bài test đọc THẲNG file migration rồi so —
+ *    gõ tay năm mã này vào test là đẻ bản sao thứ hai của cùng một sự thật.
+ *
+ * VÌ SAO NỚI TỪ HAI LÊN NĂM (giai đoạn 2, sóng 0):
+ * Bản trước chỉ có `quan-tri` và `sale` vì giai đoạn 1 chỉ cần hai vai đó. Nhưng CSDL đã có
+ * đủ năm từ đầu, và màn «Cấu hình team» gán được cả năm. Gán vai `marketer` cho một người
+ * trong khi `VAI` không biết mã đó ⇒ `taoBoiCanh` ném «vai lạ: marketer» ⇒ **người đó đăng
+ * nhập được nhưng không cấp nổi vé, tức là không vào được gì cả** — mà màn quản trị thì vẫn
+ * hiện họ có vai đầy đủ. Cùng đúng một họ lỗi với vụ gạch dưới/gạch ngang.
+ *
+ * ⛔ NỚI Ở ĐÂY KHÔNG MỞ THÊM CỬA NÀO. `VAI` chỉ nói «mã vai này có thật»; ai vào được màn
+ *    nào thì do từng màn tự khai (`VAI_VAO_DUOC` của bảng điều phối vẫn đúng hai vai).
+ */
+export const VAI = Object.freeze({
+  QUAN_TRI: 'quan-tri',
+  MARKETER: 'marketer',
+  SALE: 'sale',
+  QUAN_LY: 'quan-ly',
+  DUYET_KICH_BAN: 'duyet-kich-ban',
+});
 const VAI_HOP_LE = new Set(Object.values(VAI));
 
 /** Nguồn của vé: người thật đang đăng nhập, hay việc nền do máy chạy. */

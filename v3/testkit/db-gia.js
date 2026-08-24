@@ -21,6 +21,19 @@ export const BANG_DUNG_CHUNG = new Set(['team', 'nguoi_dung', 'vai', 'thanh_vien
 /** Bảng chỉ được thêm, không được sửa, không được xoá. */
 export const BANG_CHI_THEM = new Set(['nhat_ky', 'so_ai']);
 
+/**
+ * Bảng XOÁ ĐƯỢC — phải khớp `BANG_GHI_DUOC` của cổng danh tính thật
+ * (`v3/src/noi-day/cong-danh-tinh.js`). Thêm 25/08 khi màn «Cấu hình team» cần rút vai.
+ *
+ * Bản trước cho `xoa()` ném VÔ ĐIỀU KIỆN, trong khi cổng thật xoá được đúng bảng này. Đó
+ * đúng là kiểu lệch mà bài học ① giai đoạn 1 nói tới: bản giả và bản thật nói hai thứ tiếng,
+ * và test xanh trên bản giả không chứng minh gì về bản thật. Ở đây bản giả lệch theo chiều
+ * KHẮT KHE hơn — nghĩa là nó làm bài test của tính năng mới KHÔNG chạy được, chứ không phải
+ * cho một bản hỏng đi lọt. Vẫn phải sửa: bản giả khắt khe sai chỗ thì người ta sẽ sửa CODE
+ * cho vừa bản giả, và đó mới là chỗ hỏng thật.
+ */
+export const BANG_XOA_DUOC = new Set(['thanh_vien_team']);
+
 let _dem = 0;
 const idMoi = (bang) => `${bang}_${++_dem}`;
 
@@ -99,7 +112,16 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
   /** Chèn điều kiện team, và chặn nếu nơi gọi tự truyền team_id lệch. */
   const gan = (bang, dieuKien = {}) => {
     const dk = { ...dieuKien };
-    if (BANG_DUNG_CHUNG.has(bang)) { delete dk.team_id; return dk; }
+    // Bảng DÙNG CHUNG: KHÔNG tự chèn `team_id` (chúng không có lớp team) — nhưng cũng
+    // KHÔNG được XOÁ điều kiện `team_id` nơi gọi truyền tay. `thanh_vien_team` CÓ cột
+    // `team_id` và cổng danh tính thật (`v3/src/noi-day/cong-danh-tinh.js`) dựng đúng
+    // `WHERE team_id = $1` cho nó.
+    //
+    // Bản trước `delete dk.team_id` nên mọi câu hỏi «thành viên của team này» trên bản giả
+    // đều trả về thành viên của MỌI team. Lệch theo chiều nguy nhất: bản giả DỄ TÍNH hơn
+    // bản thật, nên một màn hình rò rỉ thành viên xuyên team vẫn xanh hết bài test.
+    // Bài học ① giai đoạn 1, lần thứ ba. (Bắt được nhờ bài test của màn Cấu hình team.)
+    if (BANG_DUNG_CHUNG.has(bang)) return dk;
     if (dk.team_id != null && String(dk.team_id) !== bc.teamId) chanXuyenTeam(bang, dk.team_id);
     dk.team_id = bc.teamId;
     return dk;
@@ -156,8 +178,23 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
       return n;
     },
 
-    async xoa(bang) {
-      throw new Error(`Vai B không xoá dữ liệu (bảng ${bang}). Xem luật 2: không xoá đơn hàng ở bất kỳ trạng thái nào.`);
+    async xoa(bang, dieuKien = {}) {
+      if (!BANG_XOA_DUOC.has(bang)) {
+        throw new Error(`Vai B không xoá dữ liệu (bảng ${bang}). Xem luật 2: không xoá đơn hàng ở bất kỳ trạng thái nào.`);
+      }
+      // Cùng rào với cổng thật: điều kiện rỗng = xoá sạch bảng, và điều kiện rỗng gần như
+      // luôn là một biến `undefined` trôi xuống chứ không phải ý định của ai.
+      const khoa = Object.keys(dieuKien).filter((k) => dieuKien[k] !== undefined);
+      if (!khoa.length) {
+        throw new Error(`xoa(${bang}) với điều kiện RỖNG sẽ xoá sạch bảng — từ chối.`);
+      }
+      const dk = gan(bang, dieuKien);
+      const ds = ghiDs(bang);
+      let n = 0;
+      for (let i = ds.length - 1; i >= 0; i--) {
+        if (hop(ds[i], dk)) { ds.splice(i, 1); n++; }
+      }
+      return n;
     },
 
     async giaoDich(fn) {

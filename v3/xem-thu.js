@@ -67,17 +67,34 @@ const { taoTruyVan } = dungCongGia({
     // Team KỸ THUẬT — cố ý gieo vào để thấy nó KHÔNG hiện trên màn chọn team.
     { id: '9', slug: 'chua-phan', ten: 'Chưa phân', la_ky_thuat: true },
   ],
-  vai: [{ id: '1', ma: 'sale', ten: 'Sale' }, { id: '2', ma: 'quan-tri', ten: 'Quản trị' }],
+  // ĐỦ NĂM vai, đúng seed của lược đồ thật. Gieo thiếu thì màn Cấu hình team chỉ chọn được
+  // hai vai và không ai phát hiện ra là thiếu.
+  vai: [
+    { id: '1', ma: 'sale', ten: 'Sale' },
+    { id: '2', ma: 'quan-tri', ten: 'Quản trị' },
+    { id: '3', ma: 'marketer', ten: 'Marketer' },
+    { id: '4', ma: 'quan-ly', ten: 'Quản lý' },
+    { id: '5', ma: 'duyet-kich-ban', ten: 'Người duyệt kịch bản' },
+  ],
   thanh_vien_team: [
     { id: '1', nguoi_dung_id: '1', team_id: '1', vai_id: '1' },
     { id: '2', nguoi_dung_id: '1', team_id: '2', vai_id: '2' },
     { id: '3', nguoi_dung_id: '1', team_id: '3', vai_id: '1' },
     { id: '4', nguoi_dung_id: '2', team_id: '1', vai_id: '1' },
+    // Quản trị ở team 1 để mở được màn Cấu hình team. `binh` cố ý CHỈ có vai sale — mở bằng
+    // tài khoản đó là thấy đúng cảnh 403 «màn này cần vai Quản trị hoặc Quản lý».
+    { id: '5', nguoi_dung_id: '1', team_id: '1', vai_id: '2' },
   ],
   page: [
-    { id: '1', team_id: '1', page_id: '1209280405604866', ten: 'Kreain Nature PH - Ksa' },
-    { id: '2', team_id: '1', page_id: '1200082103184799', ten: 'Golden Soap House KSA' },
-    { id: '3', team_id: '1', page_id: '1100863943120879', ten: 'Mint Breeze KSA' },
+    // `marketer: ''` trên CẢ BA — cố ý gieo đúng cảnh thật đo được 25/08 trên `aicloser_v3`:
+    // 514/514 page không có marketer. Bản xem thử mà gieo đẹp hơn bản thật thì nó giấu đi
+    // đúng cái cảnh báo màn này sinh ra để hiện.
+    { id: '1', team_id: '1', page_id: '1209280405604866', ten: 'Kreain Nature PH - Ksa',
+      marketer: '', bot_ai_bat: true, trong_diem: false, botcake_tat: false },
+    { id: '2', team_id: '1', page_id: '1200082103184799', ten: 'Golden Soap House KSA',
+      marketer: '', bot_ai_bat: true, trong_diem: false, botcake_tat: false },
+    { id: '3', team_id: '1', page_id: '1100863943120879', ten: 'Mint Breeze KSA',
+      marketer: '', bot_ai_bat: false, trong_diem: false, botcake_tat: false },
   ],
   khach: [
     { id: '1', team_id: '1', ten: 'Aisha Al Balushi', so_dien_thoai: '+96891234567', ti_le_hoan: 8.5 },
@@ -128,6 +145,14 @@ const bao = dungPhanB(app, {
   taoTruyVan,
   taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('9', 'bản xem thử đọc bảng dùng chung')),
   express,
+  // Kết nối POS giả — bảng `ket_noi_pos` có bộ đọc RIÊNG của người A (nó chứa bí mật), nên
+  // bản xem thử tự dựng một bộ đọc thay vì gieo vào kho. KHÔNG kèm khoá: bộ đọc thật cũng
+  // không trả khoá, và bản giả dễ dãi hơn bản thật là cách đẻ ra lỗ hổng không ai thấy.
+  docKetNoiPos: async (bc) => (String(bc.teamId) === '1'
+    ? [{ id: '1', market: 'Saudi', shopId: '77', bat: true },
+       { id: '2', market: 'UAE', shopId: '81', bat: true },
+       { id: '3', market: 'Kuwait', shopId: '92', bat: false }]
+    : []),
 });
 app.get('/', (_q, r) => r.redirect('/dieu-phoi'));
 
