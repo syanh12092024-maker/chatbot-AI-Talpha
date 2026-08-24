@@ -833,3 +833,31 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   lớp model dự phòng L1-M4 sinh ra để bịt. Nhưng nó nằm im ở `v3/`, VÀ kể cả đã nối cũng
   KHÔNG cứu được: dự phòng cần nhà thứ hai **còn tiền**. Việc «mở tài khoản 4 nhà model, nạp
   ít tiền mỗi cái» vẫn "chưa làm" — hôm nay là cái giá của nó.
+
+- 24/08 · NGƯỜI B · **DỰNG HẠ TẦNG v3 TRÊN VPS + NỐI MÀN HÌNH VÀO DỮ LIỆU THẬT** (chủ dự án
+  ra lệnh «đẩy lên hết»). PostgreSQL **16.15** cài trên 169.58.33.8, nghe **127.0.0.1:5432**
+  (không phơi ra Internet), CSDL `aicloser_v3`. `npm run migrate` áp trọn **001→007, 21 bảng**;
+  `npm run di-tru` nạp thật: **514 page · 28.953 hội thoại · 71 kịch bản · 7 kết nối POS ·
+  bộ luật chung v1 · ky_nang 3 team**. Sổ AI bỏ qua (đợt cutover). Năm app khác trên máy
+  (`aicloser` `broadcast` `levelup-webhook` `pancake-len-don` `nginx`) **không hề hấn**,
+  `aicloser` NRestarts=0. Hai dịch vụ mới: `aicloser-v3` cổng **3102** (dữ liệu thật) và
+  `aicloser-v3-xemthu` cổng **3101** (dữ liệu giả). Không cửa GHI ra ngoài nào của v3 mở
+  (`V3_PANCAKE_GUI`/`V3_WA_GUI`/`V3_POS_GHI`/`V3_NAP_DEV` đều vắng = fail-closed).
+  🚩 **PHÁT HIỆN CHẶN CẢ v3:** **514/514 page và 28.953/28.953 hội thoại đều ở team KỸ THUẬT
+  `chua-phan`** — chưa ai gán page cho ba team nghiệp vụ. Mà `chua-phan` bị cấm hiện trên màn
+  chọn team (hợp đồng lược đồ §1). Nên đăng nhập team thật thì **thấy 0 dòng mọi bảng**. Đây
+  KHÔNG phải lỗi code — đó là việc «Chốt danh sách ba team» trong "việc làm song song", vẫn
+  "chưa làm". Không gán xong thì mọi màn hình v3 đều rỗng.
+- 24/08 · NGƯỜI B · **MẢNH NỐI XONG** (`v3/src/noi-day/`). 🧭 BÀI HỌC LỚN NHẤT ĐỢT NÀY: bản cài
+  giả `v3/testkit/db-gia.js` **dễ tính hơn bản thật**, và 313 bài xanh trên nó **không chứng
+  minh gì**. Nối vào CSDL thật thì vấp **bốn** chỗ liên tiếp, không chỗ nào test bắt được:
+  ① `layNhieu` không có `IN` (mọi mẻ gộp id vỡ) · ② không có `LIMIT`, `thuTu` chỉ tăng dần ·
+  ③ không có toán tử so sánh (`{han_luc:{'<':bay}}` → Postgres ném «date/time field value out
+  of range») · ④ Postgres trả `Date` còn code B tính bằng mốc ms (đồng hồ ra `NaN`, không báo).
+  Mảnh nối gánh ①②③④ (③④ quy đổi ở MỘT chỗ), **KHÔNG gánh** so-và-đặt: `sua` có điều kiện thì
+  **ném `LoiChuaCoSoVaDat` (501)** chứ không chạy bản kém an toàn — nút hỏng to còn hơn hai đơn
+  trùng lặng lẽ vào POS. `PHIEU-B-Y1` nay có **hai mục**: `suaTheoId` nhận điều kiện, và
+  `layNhieu` nhận mảng (`= ANY($n)`).
+  Thêm một bẫy nối dây: `dungPhanB` tự đặt cổng danh tính bằng `taoTruyVanHeThong`, nên gọi
+  `datCongDanhTinh` riêng ở trước là bị ghi đè → đăng nhập nổ «nguoi_dung không nằm trong
+  BANG_NGHIEP_VU_CHUAN». Cổng danh tính phải TRUYỀN VÀO, không đặt ngoài.
