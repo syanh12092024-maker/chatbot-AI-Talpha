@@ -20,6 +20,17 @@
 //   ② KHÔNG CÓ `LIMIT`/`OFFSET`, và `thuTu` chỉ TĂNG DẦN MỘT CỘT.
 //      → GÁNH: sắp và cắt trang trong JS. Cùng một giá với ①.
 //
+//   ③b KHÔNG CÓ TOÁN TỬ SO SÁNH. `layNhieu` chỉ dựng `cot = $n`. Bảng điều phối lọc việc
+//      đang mở bằng `{ han_luc: { '<': bây_giờ } }` — truyền xuống là Postgres nhận nguyên
+//      object rồi ném «date/time field value out of range». Đã dính thật.
+//      → GÁNH: cùng đường với ① — đẩy phần bằng-nhau xuống, so sánh thì lọc ở JS.
+//
+//   ③c POSTGRES TRẢ `Date`, CODE CỦA B TÍNH BẰNG MỐC MILI-GIÂY.
+//      Bản cài giả gieo số, Postgres trả đối tượng `Date` cho mọi cột `timestamptz`. Đây
+//      đúng là chỗ «bản giả dễ tính hơn bản thật» — test xanh không chứng minh được gì.
+//      → GÁNH: quy `Date` → mốc ms ngay ở cửa ra của mảnh nối, MỘT CHỖ DUY NHẤT. Code của
+//        B phía trên không phải biết cơ sở dữ liệu trả kiểu gì.
+//
 //   ③ KHÔNG CÓ SO-VÀ-ĐẶT. `suaTheoId` chỉ nhận `id`, không nhận điều kiện thêm.
 //      → KHÔNG GÁNH. Hai sale bấm "Nhận việc" cùng lúc mà không có so-và-đặt thì CẢ HAI
 //        CÙNG THẮNG; ở dòng duyệt đơn nghĩa là hai đơn trùng bay vào POS. Đây là đường
@@ -56,13 +67,49 @@ export class LoiChuaCoSoVaDat extends Error {
 }
 
 const chuoi = (v) => (v == null ? '' : String(v));
-const khop = (dong, dieuKien) => Object.entries(dieuKien).every(([k, v]) => (
-  Array.isArray(v) ? v.map(chuoi).includes(chuoi(dong[k]))
-    : v === null ? dong[k] == null
-      : chuoi(dong[k]) === chuoi(v)
-));
-const coMang = (dk) => Object.values(dk || {}).some(Array.isArray);
-const coNull = (dk) => Object.values(dk || {}).some((v) => v === null);
+const OP = ['>=', '>', '<=', '<', 'khac'];
+const laToanTu = (v) => !!v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)
+  && Object.keys(v).length > 0 && Object.keys(v).every((k) => OP.includes(k));
+
+/** Cùng ngữ nghĩa với bản cài giả (`v3/testkit/db-gia.js#hop`) — hai bên phải nói một thứ tiếng. */
+function khopMot(giaTri, dk) {
+  if (Array.isArray(dk)) return dk.map(chuoi).includes(chuoi(giaTri));
+  if (dk === null) return giaTri == null;
+  if (laToanTu(dk)) {
+    const a = giaTri instanceof Date ? giaTri.getTime() : giaTri;
+    for (const [op, moc] of Object.entries(dk)) {
+      const b = moc instanceof Date ? moc.getTime() : moc;
+      if (op === '>=' && !(a >= b)) return false;
+      if (op === '>' && !(a > b)) return false;
+      if (op === '<=' && !(a <= b)) return false;
+      if (op === '<' && !(a < b)) return false;
+      if (op === 'khac' && chuoi(a) === chuoi(b)) return false;
+    }
+    return true;
+  }
+  return chuoi(giaTri) === chuoi(dk);
+}
+const khop = (dong, dieuKien) => Object.entries(dieuKien).every(([k, v]) => khopMot(dong[k], v));
+
+/** Điều kiện tầng dưới KHÔNG diễn đạt được: mảng (thiếu IN) · null (thiếu IS NULL) · toán tử. */
+const khongDayXuongDuoc = (v) => Array.isArray(v) || v === null || laToanTu(v);
+const coPhanKhoDay = (dk) => Object.values(dk || {}).some(khongDayXuongDuoc);
+
+/**
+ * Quy mọi `Date` thành mốc mili-giây, MỘT CHỖ DUY NHẤT.
+ *
+ * Bản cài giả gieo số; Postgres trả `Date` cho mọi `timestamptz`. Không quy ở đây thì mỗi
+ * chỗ tính giờ trong code của B phải tự nhớ — và chỗ nào quên thì đồng hồ đếm ngược ra `NaN`
+ * mà không báo gì. Quy một lần ở cửa ra là code phía trên không cần biết CSDL trả kiểu gì.
+ */
+function quyNgay(dong) {
+  if (!dong || typeof dong !== 'object') return dong;
+  let doi = null;
+  for (const [k, v] of Object.entries(dong)) {
+    if (v instanceof Date) { doi = doi || { ...dong }; doi[k] = v.getTime(); }
+  }
+  return doi || dong;
+}
 
 /**
  * Dựng cổng dữ liệu cho một bối cảnh.
@@ -83,18 +130,16 @@ export function taoTruyVanThat(pool, boiCanh) {
   /** Đọc: tách phần tầng dưới làm được (bằng nhau, không null) khỏi phần phải lọc ở JS. */
   async function docLoc(bang, dieuKien = {}, thuTu) {
     const dk = kepTeam(dieuKien);
-    if (!coMang(dk) && !coNull(dk)) return layNhieu(pool, ctx, bang, { dieuKien: dk, thuTu });
+    if (!coPhanKhoDay(dk)) {
+      return (await layNhieu(pool, ctx, bang, { dieuKien: dk, thuTu })).map(quyNgay);
+    }
 
-    // Có mảng hoặc có `null` → tầng dưới không diễn đạt được. Đẩy xuống phần diễn đạt
-    // được, kéo về, rồi lọc nốt ở JS.
-    const dkDuoi = Object.fromEntries(
-      Object.entries(dk).filter(([, v]) => !Array.isArray(v) && v !== null),
-    );
-    const tho = await layNhieu(pool, ctx, bang, { dieuKien: dkDuoi, thuTu });
+    // Có mảng, `null`, hoặc toán tử so sánh → tầng dưới không diễn đạt được. Đẩy xuống phần
+    // diễn đạt được, kéo về, rồi lọc nốt ở JS.
+    const dkDuoi = Object.fromEntries(Object.entries(dk).filter(([, v]) => !khongDayXuongDuoc(v)));
+    const tho = (await layNhieu(pool, ctx, bang, { dieuKien: dkDuoi, thuTu })).map(quyNgay);
     if (LOC_TRONG_JS.has(bang)) keuMotLan(bang, tho.length);
-    const conLai = Object.fromEntries(
-      Object.entries(dk).filter(([, v]) => Array.isArray(v) || v === null),
-    );
+    const conLai = Object.fromEntries(Object.entries(dk).filter(([, v]) => khongDayXuongDuoc(v)));
     return tho.filter((d) => khop(d, conLai));
   }
 
@@ -117,7 +162,7 @@ export function taoTruyVanThat(pool, boiCanh) {
       const khoa = Object.keys(dieuKien);
       // Đúng một điều kiện `id` → dùng đường có chỉ mục của A, đừng quét bảng.
       if (khoa.length === 1 && khoa[0] === 'id' && !laMay && !Array.isArray(dieuKien.id)) {
-        return layMotTheoId(pool, ctx, bang, dieuKien.id);
+        return quyNgay(await layMotTheoId(pool, ctx, bang, dieuKien.id));
       }
       return (await docLoc(bang, dieuKien))[0] || null;
     },
@@ -128,7 +173,7 @@ export function taoTruyVanThat(pool, boiCanh) {
     },
 
     async them(bang, banGhi = {}) {
-      return themMoi(pool, ctx, bang, kepTeam(banGhi));
+      return quyNgay(await themMoi(pool, ctx, bang, kepTeam(banGhi)));
     },
 
     async sua(bang, dieuKien = {}, thayDoi = {}) {
