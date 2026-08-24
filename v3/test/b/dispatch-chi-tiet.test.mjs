@@ -78,7 +78,7 @@ const anh = (kho) => JSON.stringify([...kho.bang.entries()].map(([k, v]) => [k, 
 
 /* ───────────────────────────── màn chi tiết ───────────────────────────── */
 
-test('L4-M1 · chi tiết gom đủ: việc · khách · page · hội thoại · đoạn chat · lý do', async () => {
+test('L4-M1 · chi tiết gom đủ: việc · khách · page · hội thoại · đơn · lý do', async () => {
   noiKho();
   const d = await chiTietViec(bcT1, 'v_chat', { bay: BAY });
 
@@ -117,32 +117,44 @@ test('L4-M1 · id không có thật → null, id rỗng → null, thiếu bối 
   await assert.rejects(() => chiTietViec(undefined, 'v_chat', { bay: BAY }), LoiThieuBoiCanh);
 });
 
-/* ───────────────────────────── đoạn chat ───────────────────────────── */
+/* ────────────────── đoạn chat đã BỎ (quyết định 23/08) ────────────────── */
 
-test('L4-M1 · đoạn chat: lấy tin GẦN NHẤT nhưng xếp CŨ TRƯỚC để đọc như chat thật', async () => {
+// `so_ai` thật chỉ ghi HÀNH ĐỘNG của bot: không có cột nội dung tin, không có dòng nào
+// cho tin của khách. Dựng đoạn chat từ đó là dựng một nửa cuộc nói chuyện. Hội thoại đầy
+// đủ nằm ở Pancake, đúng chỗ sale vốn làm việc (01-QUYET-DINH §10).
+// Ba bài dưới đây KHOÁ quyết định đó lại, để người sau không vô tình đắp lại.
+
+test('L4-M1 · màn chi tiết KHÔNG trả đoạn chat nữa', async () => {
   noiKho();
-  const d = await chiTietViec(bcT1, 'v_chat', { soTin: 3, bay: BAY });
-  assert.equal(d.doanChat.length, 3);
-  assert.deepEqual(d.doanChat.map((t) => t.chu), ['hàng lỗi rồi', 'em xin lỗi chị', 'tin mới nhất']);
-  for (let i = 1; i < d.doanChat.length; i++) {
-    assert.ok(d.doanChat[i - 1].luc <= d.doanChat[i].luc, 'đoạn chat không phải cũ trước');
+  const d = await chiTietViec(bcT1, 'v_chat', { bay: BAY });
+  assert.equal(d.doanChat, undefined, 'đoạn chat phải biến mất hẳn, không phải trả mảng rỗng');
+  assert.ok(!('doanChat' in d));
+  // vẫn còn đủ thứ sale cần
+  for (const k of ['viec', 'khach', 'page', 'hoiThoai', 'donHang', 'lienKet', 'lyDoChu']) {
+    assert.ok(k in d, `mất khối ${k}`);
   }
 });
 
-test('L4-M1 · mỗi tin có đủ { luc, ben, chu, lane, maModel }', async () => {
-  noiKho();
-  const d = await chiTietViec(bcT1, 'v_chat', { bay: BAY });
-  const t = d.doanChat.find((x) => x.chu === 'em xin lỗi chị');
-  assert.deepEqual(t, { luc: BAY - phut(15), ben: 'bot', chu: 'em xin lỗi chị', lane: 'AI', maModel: 'kimi-k2.6' });
-  assert.equal(d.doanChat.find((x) => x.chu === 'tin mới nhất').ben, 'khach');
-  assert.equal(d.doanChat.find((x) => x.chu === 'tin cũ nhất').lane, null);
+test('L4-M1 · KHÔNG đọc bảng so_ai một lần nào', async () => {
+  const kho = new KhoGia(hat());
+  const daDoc = [];
+  datTaoTruyVan((bc) => {
+    const g = taoTruyVanGia(kho, bc);
+    return new Proxy(g, {
+      get: (t, k) => (['chon', 'mot', 'dem'].includes(k)
+        ? (bang, ...r) => { daDoc.push(bang); return t[k](bang, ...r); }
+        : t[k]),
+    });
+  });
+  await chiTietViec(bcT1, 'v_chat', { bay: BAY });
+  assert.ok(daDoc.length > 0, 'không đọc bảng nào thì bài test này vô nghĩa');
+  assert.ok(!daDoc.includes('so_ai'), `vẫn còn đọc so_ai: ${daDoc.join(',')}`);
 });
 
-test('L4-M1 · đoạn chat không lấy nhầm tin của team khác', async () => {
-  noiKho();
-  const d = await chiTietViec(bcT1, 'v_chat', { bay: BAY });
-  assert.ok(!d.doanChat.some((t) => t.chu === 'tin của team hai'));
-  assert.equal(d.doanChat.length, 5);
+test('L4-M1 · module không còn xuất hằng số của đoạn chat', async () => {
+  const m = await import('../../src/ui/dispatch/index.js');
+  const con = Object.keys(m).filter((k) => /doanChat|SO_TIN|COT_THOI_GIAN_SO_AI/.test(k));
+  assert.deepEqual(con, [], `còn sót: ${con.join(', ')}`);
 });
 
 /* ───────────────────────────── hai đường nhảy ───────────────────────────── */

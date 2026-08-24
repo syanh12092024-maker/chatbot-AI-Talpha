@@ -44,7 +44,7 @@ export {
   tenKhachCua, soDienThoaiCua, tenPageCua,
 } from './kho-viec.js';
 
-export { chiTietViec, COT_THOI_GIAN_SO_AI, SO_TIN_MAC_DINH } from './chi-tiet.js';
+export { chiTietViec } from './chi-tiet.js';   // đoạn chat đã bỏ 23/08 — xem đầu chi-tiet.js
 
 export {
   lienKetPancake, lienKetPos, lienKetCua, mauPos, daCauHinhPos,

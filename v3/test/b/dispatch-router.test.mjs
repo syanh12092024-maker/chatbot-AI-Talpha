@@ -222,7 +222,7 @@ test('L4-M1 HTTP · chi tiết trả đủ ba khối và hai đường nhảy', 
     const { than } = await nhu('/api/dieu-phoi/viec/v3');
     assert.equal(than.lyDoChu, 'Đơn bot chốt, chờ sale duyệt');
     assert.equal(than.donHang.ma_don, 'SO-1024');
-    assert.deepEqual(than.doanChat.map((t) => t.ben), ['khach', 'bot']);
+    assert.equal(than.doanChat, undefined, 'đoạn chat đã bỏ 23/08 — xem đầu chi-tiet.js');
     assert.equal(than.lienKet.pancake, 'https://pancake.vn/p1?c_id=c9');
     assert.equal(than.lienKet.pos, 'https://pos.pages.fm/shops/77/orders/d1');
 

@@ -16,39 +16,20 @@ import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 import { BANG, congTruyVan, dongHoCua, lyDoChu, tenKhachCua, soDienThoaiCua, tenPageCua } from './kho-viec.js';
 import { lienKetCua } from './lien-ket.js';
 
-/**
- * Cột thời gian của `so_ai`. Lược đồ của người A chưa viết; đây là BỘ CHUYỂN ĐỔI mà hợp
- * đồng nói tới — A chốt tên khác thì sửa đúng dòng này, không phải sửa cả màn hình.
- * (`nhat_ky` đã chốt là `thoi_gian`, nên đoán `so_ai` cũng vậy.)
- */
-export const COT_THOI_GIAN_SO_AI = 'thoi_gian';
-
-/** Số tin mặc định của đoạn chat. Đủ để hiểu chuyện, không đủ để phải cuộn mỏi tay. */
-export const SO_TIN_MAC_DINH = 20;
+// ĐOẠN CHAT ĐÃ BỎ — quyết định 23/08/2026, chủ dự án duyệt.
+//
+// Màn này từng dựng đoạn chat từ bảng `so_ai`. Nay KHÔNG dựng nữa, vì hai lẽ:
+//   · `so_ai` thật (`db/migrate/001_nen.up.sql:174`) chỉ ghi HÀNH ĐỘNG của bot — có
+//     `loai`/`ma_model`/token/tiền, KHÔNG có cột nội dung tin, và KHÔNG có dòng nào cho
+//     tin của KHÁCH. Dựng đoạn chat từ đó là dựng một nửa cuộc nói chuyện.
+//   · Cả hội thoại gốc nằm sẵn ở Pancake, đúng chỗ sale vốn làm việc. `01-QUYET-DINH.md`
+//     §10: "Sale KHÔNG làm việc trên hệ thống này… bấm là nhảy thẳng sang Pancake."
+//
+// Nên màn chi tiết chỉ còn ba việc: nói LÝ DO bot dừng, cho xem THÔNG TIN ĐƠN, rồi đẩy
+// sang Pancake/POS. Muốn đọc hội thoại thì bấm "Mở Pancake" — một cú bấm, đúng chỗ.
+// Chép hội thoại vào đây là đẻ bản sao thứ hai, phải đồng bộ suốt đời.
 
 const chuoi = (v) => (v == null ? '' : String(v).trim());
-const dau = (...v) => { for (const x of v) if (x != null && String(x).trim() !== '') return x; return null; };
-
-/** Bên nào nói. Bản ghi lạ → coi là bot; chỉ khách mới cần nhận đúng, và khách luôn có dấu. */
-function benCua(r = {}) {
-  const raw = String(dau(r.ben, r.vai_tro, r.huong, r.tu) ?? '').toLowerCase();
-  if (['khach', 'khách', 'user', 'in', 'vao', 'đến', 'den'].includes(raw)) return 'khach';
-  return 'bot';
-}
-
-/**
- * Một dòng `so_ai` → một tin trong đoạn chat.
- * Tên cột đọc rộng tay vì `so_ai` là bảng của người A, chưa chốt lược đồ.
- */
-function tinCua(r = {}) {
-  return {
-    luc: Number(dau(r[COT_THOI_GIAN_SO_AI], r.luc, r.tao_luc, r.t)) || null,
-    ben: benCua(r),
-    chu: String(dau(r.chu, r.noi_dung, r.tin, r.text) ?? ''),
-    lane: dau(r.lane, r.lan) ?? null,
-    maModel: dau(r.ma_model, r.maModel) ?? null,
-  };
-}
 
 /**
  * Tìm dòng `hoi_thoai` của việc này.
@@ -70,38 +51,19 @@ async function timHoiThoai(db, viec) {
 }
 
 /**
- * Đoạn chat: `soTin` bản ghi GẦN NHẤT, trả về CŨ TRƯỚC để đọc như một đoạn chat thật.
- *
- * Lấy mới nhất trước rồi đảo, chứ không lấy cũ trước rồi cắt: hội thoại dài thì "20 tin cũ
- * nhất" là đoạn mở đầu chào hỏi, chẳng liên quan gì tới lý do bot vừa dừng.
- */
-async function docDoanChat(db, viec, soTin) {
-  const page = chuoi(viec.page_id);
-  const cust = chuoi(viec.cust_id);
-  if (!page || !cust) return [];
-  const n = Math.max(1, Math.min(200, Number(soTin) || SO_TIN_MAC_DINH));
-  const moiTruoc = await db.chon(
-    'so_ai',
-    { page_id: page, cust_id: cust },
-    { sapXep: COT_THOI_GIAN_SO_AI, giamDan: true, gioiHan: n },
-  );
-  return moiTruoc.map(tinCua).reverse();
-}
-
-/**
  * Gom dữ liệu cho màn chi tiết.
  *
  * @param {object} boiCanh   BẮT BUỘC — thiếu là ném, không trả `null` (null nghĩa là
  *                           "không có việc này", khác hẳn "gọi sai")
  * @param {string|number} viecId
- * @param {{soTin?:number, bay?:number}} [bo]
+ * @param {{bay?:number}} [bo]
  * @returns {Promise<null | {viec:object, khach:object|null, page:object|null,
- *   hoiThoai:object|null, donHang:object|null, doanChat:object[],
+ *   hoiThoai:object|null, donHang:object|null,
  *   lienKet:{pancake:string|null,pos:string|null}, lyDoChu:string}>}
  */
 export async function chiTietViec(boiCanh, viecId, bo = {}) {
   const bc = batBuocBoiCanh(boiCanh);
-  const { soTin = SO_TIN_MAC_DINH, bay = Date.now() } = bo;
+  const { bay = Date.now() } = bo;
 
   const id = chuoi(viecId);
   if (!id) return null;
@@ -110,14 +72,13 @@ export async function chiTietViec(boiCanh, viecId, bo = {}) {
   const viec = await db.mot(BANG, { id });
   if (!viec) return null;                      // → 404, không phải 403
 
-  const [khach, page, donHang, hoiThoai, doanChat] = await Promise.all([
+  const [khach, page, donHang, hoiThoai] = await Promise.all([
     chuoi(viec.cust_id) ? db.mot('khach', { id: chuoi(viec.cust_id) }) : Promise.resolve(null),
     chuoi(viec.page_id) ? db.mot('page', { id: chuoi(viec.page_id) }) : Promise.resolve(null),
     // Việc loại `hoi_thoai` không gắn đơn nào → `null`, KHÔNG ném. Một nửa số việc trên
     // bảng điều phối là loại đó; ném ở đây là màn chi tiết chết một nửa số lần mở.
     chuoi(viec.don_hang_id) ? db.mot('don_hang', { id: chuoi(viec.don_hang_id) }) : Promise.resolve(null),
     timHoiThoai(db, viec),
-    docDoanChat(db, viec, soTin),
   ]);
 
   return {
@@ -132,7 +93,6 @@ export async function chiTietViec(boiCanh, viecId, bo = {}) {
     page,
     hoiThoai,
     donHang,
-    doanChat,
     lienKet: lienKetCua(viec, { page, donHang }),
     lyDoChu: lyDoChu(viec),
   };

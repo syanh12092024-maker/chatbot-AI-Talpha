@@ -780,3 +780,25 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   chỉ "lượt quét thiếu" là 2 vs 0 (giá của restart, hệ giữ sổ cái cũ nên không mất page).
   LUẬT: log ứng dụng KHÔNG có mốc giờ ⇒ cấm so bằng cửa sổ `tail -N`; phải cắt theo mốc khởi
   động (`grep -n "page từ Pancake" | tail -1`) rồi so **cùng số dòng** hai bên.
+
+- 23/08 · NGƯỜI B · **CHỐT 3 CHẶN** (chủ dự án duyệt cả ba đề xuất). ① **C1 → phát
+  `PHIEU-B-Y1`**: nới `suaTheoId` nhận `ctxHeThong()` + điều kiện so-và-đặt. ⑦ tra ra
+  **TRÙNG-NỢ N3** — cùng chỗ hẹp đã cắn **bốn lần**: L1-M1 (đẻ cửa tạm `src/pos/kho.js`) ·
+  L2-M1 (cửa tạm `src/chat/kho.js`) · VA-R3/RF-13 (`UPDATE` tay ở `may-trang-thai.js:290`) ·
+  nay L4-M2 của B. Chính `may-trang-thai.js:258` đã khai *«repo tạm có ba đường UPDATE hẹp
+  thay vì một… bản vá đúng là suaTheoId cho ctxHeThong ở src/db/»*. Phiếu này **đóng nợ N3**,
+  không đẻ việc mới; xoá ba cửa tạm là ba phiếu sau. ② **C2 → phát `PHIEU-B-Y2`**: khoá API
+  đang gắn theo **vai trò** nên team dùng Kimi cho cả ô `chinh` lẫn ô `nen` bị lưu **hai bản
+  cùng một khoá** ⇒ đổi khoá quên một bản thì **chat vẫn chạy, việc nền chết câm**. Cùng loại
+  «bản khai thứ hai cùng giá trị» với `NHOM_HUY_HOAN` (§9 VA-R2). Đề xuất bảng thứ 22
+  `khoa_nha` — `khoa_api_ma` đang NULL ở mọi dòng nên **di trú giá bằng không, làm bây giờ là
+  rẻ nhất**. ③ **C3 → CHỐT BỎ đoạn chat**, B làm xong luôn.
+- 23/08 · NGƯỜI B · **C3 xong** — bỏ đoạn chat khỏi màn chi tiết (`chi-tiet.js` bỏ
+  `docDoanChat`/`tinCua`/`benCua`; `chi-tiet-viec.html` bỏ khối chat + `veTin`, thay bằng một
+  dòng chỉ đường sang nút «Mở Pancake»). Ba bài test **khoá quyết định**: không còn trường
+  `doanChat` · **không đọc bảng `so_ai` một lần nào** (cổng có bộ ghi) · không còn xuất
+  `SO_TIN_MAC_DINH`/`COT_THOI_GIAN_SO_AI`. Kèm sửa nhãn: `id` và `ma_don` từng dùng chung chữ
+  «Mã đơn» ⇒ sale đọc mã cho kho mà đọc nhầm mã nội bộ thì kho không tra ra đơn nào; nay tách
+  «Mã trong hệ thống» / «Mã đơn trên POS». Xem tận mắt trên trình duyệt. `v3/test/b`:
+  **294 pass / 0 fail**. 🧭 Hệ quả: `so_ai` rơi khỏi danh sách bảng B đọc ⇒ mục tên cột
+  `so_ai` trong hợp đồng B–A **hết hiệu lực**, A tự do đặt tên.

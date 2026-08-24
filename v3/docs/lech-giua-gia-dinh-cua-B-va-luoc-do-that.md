@@ -14,9 +14,9 @@
 
 | # | Chỗ lệch | Mức | Ai xử |
 |---|---|---|---|
-| C1 | `suaTheoId` chỉ sửa theo `id` → **so-và-đặt của L4-M2 không diễn đạt được** | 🟥 CHẶN | cần A hoặc chốt cách khác |
-| C2 | `cau_hinh_model` là **ba dòng/team**, B viết như **một dòng/team** | 🟥 CHẶN | B viết lại lớp cấu hình |
-| C3 | `so_ai` **không có cột `ben`/`chu`** → đoạn chat màn chi tiết không dựng được | 🟥 CHẶN | cần chốt nguồn đoạn chat |
+| C1 | `suaTheoId` chỉ sửa theo `id` → **so-và-đặt của L4-M2 không diễn đạt được** | 🟥 CHẶN | **đã phát `PHIEU-B-Y1` cho A** (23/08) |
+| C2 | `cau_hinh_model` là **ba dòng/team**, B viết như **một dòng/team** | 🟥 CHẶN | **đã phát `PHIEU-B-Y2` cho A** (23/08) · B viết lại lớp cấu hình sau khi A xong |
+| C3 | `so_ai` **không có cột `ben`/`chu`** → đoạn chat màn chi tiết không dựng được | ✅ **ĐÃ CHỐT 23/08** | chủ dự án duyệt phương án **(b) BỎ đoạn chat** — đã làm xong |
 | G1 | 4 hàm rời thay cho đối tượng `db.*` | 🟩 gánh được | B, trong mảnh nối |
 | G2 | Không có `gioiHan`/`buoc`/`giảm dần` | 🟩 gánh được | B, cắt trang trong JS |
 | G3 | Không có `dem()` | 🟨 gánh được, tốn | B, đếm bằng độ dài |
@@ -109,6 +109,26 @@ Ba điều kéo theo:
 (a) `du_lieu jsonb` — A khai khoá chuẩn, B đọc theo · (b) bỏ đoạn chat, sale bấm thẳng sang
 Pancake đọc (đúng tinh thần "sale không làm việc trên hệ thống này", và **B nghiêng về
 cách này**) · (c) bảng tin riêng — mở phiếu mới.
+
+---
+
+## ✅ C3 đã chốt — 23/08/2026
+
+Chủ dự án duyệt phương án **(b): BỎ đoạn chat khỏi màn chi tiết.**
+
+Lý do giữ nguyên như đã trình: `so_ai` chỉ ghi **hành động của bot** — không có cột nội dung
+tin, không có dòng nào cho tin của **khách**. Dựng đoạn chat từ đó là dựng **một nửa** cuộc
+nói chuyện, mà nửa thiếu lại đúng là nửa sale cần (khách nói gì). Hội thoại đầy đủ nằm sẵn ở
+Pancake, đúng chỗ sale vốn làm việc — `01-QUYET-DINH.md` §10.
+
+**Đã làm:** bỏ `docDoanChat`/`tinCua`/`benCua` khỏi `chi-tiet.js`, bỏ khối chat và hàm `veTin`
+khỏi `trang/chi-tiet-viec.html`, thay bằng **một dòng chỉ đường** sang nút "Mở Pancake".
+Ba bài test mới **khoá quyết định lại** để người sau không vô tình đắp lại: màn chi tiết không
+còn trường `doanChat`, **không đọc bảng `so_ai` một lần nào**, và module không còn xuất
+`SO_TIN_MAC_DINH`/`COT_THOI_GIAN_SO_AI`.
+
+**Hệ quả tốt kèm theo:** `so_ai` rơi khỏi danh sách bảng B đọc. Mục về tên cột `so_ai` trong
+hợp đồng (`hop-dong-b-voi-a.md` mục 4) **không còn là ràng buộc** — A tự do đặt tên.
 
 ---
 

@@ -623,10 +623,13 @@ test('L4-M2 · màn chi tiết đắp vào đúng ô đã chừa, không mọc �
   assert.match(than, /bang-ket-qua/);
   assert.match(than, /Đã xử bởi /);
   assert.ok(!/<textarea/.test(than), 'màn chi tiết mọc ô soạn tin — 01-QUYET-DINH mục 10');
-  // Ba khối của L4-M1 còn nguyên.
+  // Các khối của L4-M1 còn nguyên. Khối "Đoạn chat" ĐÃ BỎ ngày 23/08 (chủ dự án duyệt):
+  // `so_ai` không giữ nội dung tin và không có tin của khách, nên dựng ở đây là dựng một
+  // nửa cuộc nói chuyện — bản đầy đủ nằm ở Pancake. Chỗ đó nay là một dòng chỉ đường.
   assert.match(than, /Mở Pancake/);
-  assert.match(than, /Đoạn chat/);
   assert.match(than, /Thông tin đơn/);
+  assert.ok(!/Đoạn chat/.test(than), 'đoạn chat mọc lại — xem ghi chú đầu chi-tiet.js');
+  assert.match(than, /Hội thoại đầy đủ nằm ở Pancake/);
 });
 
 test('L4-M2 · bảng điều phối có ĐÚNG MỘT cột "Đang xử" và ở khổ hẹp thì xếp thẻ', async () => {
