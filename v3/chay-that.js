@@ -21,23 +21,25 @@ for (const bien of ['DATABASE_URL_V3', 'V3_KHOA_VE']) {
 
 const { taoPool } = await import(`${GOC}/db/ket-noi.js`);
 const auth = await import('./src/auth/index.js');
-const { datCongDanhTinh } = await import('./src/auth/kho-nguoi-dung.js');
-const { boiCanhMay } = await import('./src/auth/boi-canh.js');
 const { taoTruyVanThat } = await import('./src/noi-day/cong-du-lieu-that.js');
 const { dungPhanB } = await import('./src/vai-b.js');
 
 const pool = taoPool();
 const taoTruyVan = (bc) => taoTruyVanThat(pool, bc);
 
-// Cổng danh tính: bốn bảng dùng chung KHÔNG nằm trong BANG_NGHIEP_VU_CHUAN của A (bàn giao
-// tầng truy vấn §6), nên đọc thẳng bằng pool — đúng chỗ A dặn B tự viết.
+// Cổng danh tính: bốn bảng dùng chung (team · nguoi_dung · vai · thanh_vien_team) KHÔNG nằm
+// trong BANG_NGHIEP_VU_CHUAN của A (bàn giao tầng truy vấn §6) — gọi tầng đó với chúng là
+// ném ngay. Nên đọc thẳng bằng pool, đúng chỗ A dặn B tự viết.
+//
+// ⚠️ PHẢI truyền vào làm `taoTruyVanHeThong`, KHÔNG gọi `datCongDanhTinh` riêng ở đây:
+// `dungPhanB` tự đặt cổng danh tính bằng chính `taoTruyVanHeThong`, nên đặt trước là bị nó
+// ghi đè, rồi đăng nhập nổ «nguoi_dung không nằm trong BANG_NGHIEP_VU_CHUAN». Đã dính thật.
 const { taoCongDanhTinh } = await import('./src/noi-day/cong-danh-tinh.js');
-datCongDanhTinh(() => taoCongDanhTinh(pool));
 
 const app = express();
 const bao = dungPhanB(app, {
   taoTruyVan,
-  taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('1', 'chay-that đọc bảng dùng chung')),
+  taoTruyVanHeThong: () => taoCongDanhTinh(pool),
   express,
 });
 app.get('/', (_q, r) => r.redirect('/dieu-phoi'));
