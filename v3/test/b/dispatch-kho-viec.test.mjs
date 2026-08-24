@@ -232,9 +232,12 @@ test('L4-M1 · loai="hoi_thoai" thì mọi dòng đều đúng loại đó', asy
 
 /* ───────────────────────── tiêu chí 8 · không N+1 ───────────────────── */
 
-test('L4-M1 · 100 việc + 100 hội thoại + 100 khách → hangCho ≤ 5 lời gọi, tomTat ≤ 6', async () => {
-  // Đường nối thật dài hơn trước MỘT chặng (việc → hội thoại → khách + page), nên bài này
-  // là chỗ duy nhất phát hiện được ai đó lỡ tay đọc hội thoại theo từng dòng.
+test('L4-M1 · số lời gọi cổng KHÔNG tăng theo số dòng (10 việc và 100 việc bằng nhau)', async () => {
+  // Đường nối thật dài hơn trước MỘT chặng (việc → hội thoại/đơn → khách + page), nên bài
+  // này là chỗ duy nhất phát hiện được ai đó lỡ tay đọc theo từng dòng.
+  //
+  // Trần cứng (≤6) chỉ bắt được lỗi thô. Thứ THẬT SỰ chứng minh không N+1 là: đếm ở 10 dòng
+  // và ở 100 dòng phải RA CÙNG MỘT SỐ. Bài này đo cả hai.
   const nhieu = [];
   const hoiThoais = [];
   for (let i = 0; i < 100; i++) {
@@ -262,8 +265,21 @@ test('L4-M1 · 100 việc + 100 hội thoại + 100 khách → hangCho ≤ 5 l�
   assert.equal(tt.hoiThoai.cho + tt.don.cho, 100);
   assert.ok(ds.every((v) => v.tenKhach && v.tenPage), 'gộp kèm sót dòng');
   assert.ok(ds.some((v) => v.tenNguoiNhan), 'cột "Đang xử" không có tên nào — mẻ nguoi_dung hụt');
-  assert.ok(demHangCho.n <= 5, `hangCho gọi cổng ${demHangCho.n} lần (${demHangCho.ds.join(', ')}) — N+1 rồi`);
+  // Sáu mẻ: viec · hoi_thoai · don_hang · nguoi_dung · khach · page. `don_hang` là mẻ thứ
+  // sáu, thêm 24/08 vì việc loại đơn KHÔNG gắn hội thoại nào thì khách chỉ ra được từ đó —
+  // thiếu nó thì sale thấy đơn cần duyệt mà không biết của ai.
+  assert.ok(demHangCho.n <= 6, `hangCho gọi cổng ${demHangCho.n} lần (${demHangCho.ds.join(', ')}) — N+1 rồi`);
   assert.ok(dem.n <= 6, `tomTat gọi cổng ${dem.n} lần (${dem.ds.join(', ')})`);
+
+  // ── phép chứng minh thật: ít dòng và nhiều dòng phải tốn BẰNG NHAU ──
+  const it = nhieu.slice(0, 10);
+  const { dem: dem2 } = noiKho({
+    viec_can_xu_ly: it, hoi_thoai: hoiThoais.slice(0, 10), khach, page, nguoi_dung: nguoi,
+  });
+  const ds2 = await hangCho(bcT1, { gioiHan: 100, bay: BAY });
+  assert.equal(ds2.length, 10);
+  assert.equal(dem2.n, demHangCho.n,
+    `10 dòng tốn ${dem2.n} lời gọi, 100 dòng tốn ${demHangCho.n} — số lời gọi tăng theo số dòng là N+1`);
 });
 
 test('L4-M1 · không có hội thoại/người nhận nào để gộp thì không gọi thêm lời nào', async () => {

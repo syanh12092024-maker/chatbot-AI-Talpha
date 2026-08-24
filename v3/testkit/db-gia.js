@@ -105,7 +105,11 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
     return dk;
   };
 
-  const ds = (bang) => {
+  // ĐỌC không được đẻ bảng. Trước đây hàm này tự `set(bang, [])` cho bảng chưa có, nên một
+  // lượt ĐỌC bảng trống cũng làm kho đổi — bài test "module chỉ đọc thì kho không đổi một
+  // byte" bắt được đúng chỗ đó. Bản giả mà đọc-lại-ghi thì nó nói dối về chính thứ nó canh.
+  const docDs = (bang) => kho.bang.get(bang) || [];
+  const ghiDs = (bang) => {
     if (!kho.bang.has(bang)) kho.bang.set(bang, []);
     return kho.bang.get(bang);
   };
@@ -115,7 +119,7 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
 
     async chon(bang, dieuKien = {}, { sapXep, giamDan = false, gioiHan, buoc = 0 } = {}) {
       const dk = gan(bang, dieuKien);
-      let ra = ds(bang).filter((r) => hop(r, dk)).map((r) => ({ ...r }));
+      let ra = docDs(bang).filter((r) => hop(r, dk)).map((r) => ({ ...r }));
       if (sapXep) ra.sort((a, b) => (a[sapXep] > b[sapXep] ? 1 : a[sapXep] < b[sapXep] ? -1 : 0));
       if (giamDan) ra.reverse();
       if (buoc) ra = ra.slice(buoc);
@@ -130,14 +134,14 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
 
     async dem(bang, dieuKien = {}) {
       const dk = gan(bang, dieuKien);
-      return ds(bang).filter((r) => hop(r, dk)).length;
+      return docDs(bang).filter((r) => hop(r, dk)).length;
     },
 
     async them(bang, banGhi = {}) {
       const dk = gan(bang, { team_id: banGhi.team_id });
       const moi = { id: banGhi.id ?? idMoi(bang), ...banGhi };
       if (!BANG_DUNG_CHUNG.has(bang)) moi.team_id = dk.team_id;
-      ds(bang).push(moi);
+      ghiDs(bang).push(moi);
       return { ...moi };
     },
 
@@ -148,7 +152,7 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
       if ('team_id' in thayDoi && String(thayDoi.team_id) !== bc.teamId) chanXuyenTeam(bang, thayDoi.team_id);
       const dk = gan(bang, dieuKien);
       let n = 0;
-      for (const r of ds(bang)) if (hop(r, dk)) { Object.assign(r, thayDoi); n++; }
+      for (const r of ghiDs(bang)) if (hop(r, dk)) { Object.assign(r, thayDoi); n++; }
       return n;
     },
 

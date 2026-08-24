@@ -86,11 +86,14 @@ const { taoTruyVan } = dungCongGia({
     { id: '4', team_id: '1', ten: 'Laila Al Rawahi', so_dien_thoai: '+96895553311', ti_le_hoan: 12.9 },
     { id: '5', team_id: '1', ten: 'Noura Al Kindi', so_dien_thoai: '+96894442200', ti_le_hoan: 5.1 },
   ],
+  // ⚠️ `hoi_thoai.page_id` là **bigint REFERENCES page(id)**, KHÔNG phải id Facebook —
+  // id Facebook nằm ở `page.page_id`. Gieo nhầm hai cái này thì cột PAGE trên bảng điều
+  // phối trống trơn mà không báo lỗi gì. Đã dính thật lúc dựng bản xem thử lần đầu.
   hoi_thoai: [
-    { id: '1', team_id: '1', page_id: '1209280405604866', psid: '9001', khach_id: '1' },
-    { id: '2', team_id: '1', page_id: '1209280405604866', psid: '9002', khach_id: '2' },
-    { id: '3', team_id: '1', page_id: '1200082103184799', psid: '9003', khach_id: '3' },
-    { id: '4', team_id: '1', page_id: '1100863943120879', psid: '9004', khach_id: '5' },
+    { id: '1', team_id: '1', page_id: '1', psid: '9001', khach_id: '1' },
+    { id: '2', team_id: '1', page_id: '1', psid: '9002', khach_id: '2' },
+    { id: '3', team_id: '1', page_id: '2', psid: '9003', khach_id: '3' },
+    { id: '4', team_id: '1', page_id: '3', psid: '9004', khach_id: '5' },
   ],
   don_hang: [
     { id: '1', team_id: '1', nguon: 'messenger', ma_pos: '77:40219', khach_id: '4',

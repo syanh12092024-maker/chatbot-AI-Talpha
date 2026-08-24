@@ -76,7 +76,9 @@ export async function chiTietViec(boiCanh, viecId, bo = {}) {
   ]);
 
   const [khach, page] = await Promise.all([
-    motTheoId(db, 'khach', hoiThoai?.khach_id),
+    // HAI ĐƯỜNG RA KHÁCH: đơn từ trang bán hàng không gắn hội thoại nào (01-QUYET-DINH §1),
+    // chỉ đi qua `hoi_thoai` thì màn chi tiết của một đơn cần duyệt không có tên khách.
+    motTheoId(db, 'khach', hoiThoai?.khach_id ?? donHang?.khach_id),
     motTheoId(db, 'page', hoiThoai?.page_id),
   ]);
 

@@ -266,7 +266,12 @@ const theoId = (ds) => new Map(ds.map((r) => [String(r.id), r]));
  * DÒNG VIỆC KHÔNG CÒN CỘT PAGE HAY CỘT KHÁCH. Lược đồ thật nối thế này:
  *
  *     viec_can_xu_ly.hoi_thoai_id → hoi_thoai → (page_id, khach_id) → page, khach
+ *     viec_can_xu_ly.don_hang_id   → don_hang  → khach_id            → khach
  *     viec_can_xu_ly.nguoi_nhan_id → nguoi_dung
+ *
+ * HAI ĐƯỜNG RA KHÁCH, không phải một. Việc loại `don_hang` có thể KHÔNG gắn hội thoại nào
+ * (đơn từ trang bán hàng — khách chưa nói chuyện với ai, xem `01-QUYET-DINH.md` §1). Chỉ đi
+ * qua `hoi_thoai` thì sale thấy một đơn cần duyệt mà KHÔNG BIẾT CỦA AI — trên đường tiền.
  *
  * Nên có thêm một MẺ đọc nữa (bốn lời gọi thay vì hai), nhưng vẫn là mẻ chứ KHÔNG N+1: gom
  * id rồi đọc một lần bằng điều kiện mảng. Hai mẻ chạy nối tiếp vì `khach`/`page` chỉ biết
@@ -277,18 +282,21 @@ const theoId = (ds) => new Map(ds.map((r) => [String(r.id), r]));
  */
 async function gopKem(db, dong, bay) {
   const idHoiThoai = duyNhat(dong.map((v) => v.hoi_thoai_id));
+  const idDonHang = duyNhat(dong.map((v) => v.don_hang_id));
   const idNguoi = duyNhat(dong.map((v) => v.nguoi_nhan_id));
 
-  // Mẻ 1 — hội thoại (để ra khách và page) và người nhận (để ra cột "Đang xử").
-  const [dsHoiThoai, dsNguoi] = await Promise.all([
+  // Mẻ 1 — hội thoại, đơn hàng (cả hai đều dẫn ra khách) và người nhận (cột "Đang xử").
+  const [dsHoiThoai, dsDonHang, dsNguoi] = await Promise.all([
     idHoiThoai.length ? db.chon('hoi_thoai', { id: idHoiThoai }) : Promise.resolve([]),
+    idDonHang.length ? db.chon('don_hang', { id: idDonHang }) : Promise.resolve([]),
     idNguoi.length ? db.chon('nguoi_dung', { id: idNguoi }) : Promise.resolve([]),
   ]);
   const mHoiThoai = theoId(dsHoiThoai);
+  const mDonHang = theoId(dsDonHang);
   const mNguoi = theoId(dsNguoi);
 
-  // Mẻ 2 — khách và page, id lấy từ chính các dòng hội thoại vừa đọc.
-  const idKhach = duyNhat(dsHoiThoai.map((h) => h.khach_id));
+  // Mẻ 2 — khách và page. Khách gom từ CẢ HAI nguồn; page chỉ có ở hội thoại.
+  const idKhach = duyNhat([...dsHoiThoai.map((h) => h.khach_id), ...dsDonHang.map((d) => d.khach_id)]);
   const idPage = duyNhat(dsHoiThoai.map((h) => h.page_id));
   const [dsKhach, dsPage] = await Promise.all([
     idKhach.length ? db.chon('khach', { id: idKhach }) : Promise.resolve([]),
@@ -299,7 +307,9 @@ async function gopKem(db, dong, bay) {
 
   return dong.map((v) => {
     const h = mHoiThoai.get(String(v.hoi_thoai_id)) || null;
-    const k = h ? mKhach.get(String(h.khach_id)) || null : null;
+    const d = mDonHang.get(String(v.don_hang_id)) || null;
+    // Hội thoại trước, đơn hàng sau: việc gắn cả hai thì hội thoại sát với chuyện đang xảy ra hơn.
+    const k = (h && mKhach.get(String(h.khach_id))) || (d && mKhach.get(String(d.khach_id))) || null;
     const p = h ? mPage.get(String(h.page_id)) || null : null;
     return {
       ...v,
