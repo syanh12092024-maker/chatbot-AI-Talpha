@@ -470,3 +470,31 @@ test('L4-M1 · chỉ kho-viec.js biết công thức trạng thái; nơi khác g
     assert.ok(!/\.trang_thai\b/.test(ma), `${ten} còn đọc cột trang_thai của dòng việc`);
   }
 });
+
+/* ────────── bảng rỗng có HAI nghĩa (thêm 24/08 sau khi dính thật) ────────── */
+
+test('L4-M1 · bảng rỗng + team CHƯA có page → nói "chưa cài đặt", không nói "hết việc"', async () => {
+  noiKho({ viec_can_xu_ly: [], page: [], hoi_thoai: [] });
+  const tt = await tomTat(bcT1, { bay: BAY });
+  assert.equal(tt.hoiThoai.cho + tt.don.cho, 0);
+  assert.ok(tt.team, 'bảng rỗng thì phải kèm tín hiệu team để màn hình nói đúng nghĩa');
+  assert.equal(tt.team.daGanPage, false);
+  assert.equal(tt.team.soPage, 0);
+});
+
+test('L4-M1 · bảng rỗng nhưng team ĐÃ có page → đúng là "hết việc"', async () => {
+  noiKho({
+    viec_can_xu_ly: [],
+    page: [{ id: 'p1', team_id: 't1', page_id: '111', ten: 'Page Thử' }],
+    hoi_thoai: [{ id: 'h1', team_id: 't1', page_id: 'p1', psid: '9', khach_id: null }],
+  });
+  const tt = await tomTat(bcT1, { bay: BAY });
+  assert.equal(tt.team.daGanPage, true);
+  assert.equal(tt.team.soPage, 1);
+});
+
+test('L4-M1 · bảng CÓ việc thì KHÔNG tốn thêm lời gọi nào để đếm page', async () => {
+  const { dem } = noiKho();
+  await tomTat(bcT1, { bay: BAY });
+  assert.ok(!dem.ds.includes('page'), `đường thường không được đếm page: ${dem.ds.join(', ')}`);
+});

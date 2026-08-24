@@ -210,11 +210,27 @@ function dongViec(v) {
     + '</tr>';
 }
 
+// Bảng rỗng có HAI nghĩa khác hẳn nhau. Máy chủ gửi kèm `tt.team` khi bảng rỗng để phân biệt:
+//   · team ĐÃ có page  → "không có việc nào đang chờ"  = tin mừng, sale nghỉ tay
+//   · team CHƯA có page → "chưa cài đặt xong"           = phải đi gán page, không phải chờ
+// Nói nhầm nghĩa thứ hai thành thứ nhất là để người ta ngồi chờ một hệ thống không bao giờ
+// có việc. Đã dính thật 24/08.
+let _tt = null;
+
+function chuRong() {
+  if (_tt && _tt.team && !_tt.team.daGanPage) {
+    return '<div class="empty"><b>Team này chưa được gán page nào.</b>'
+      + '<div style="margin-top:6px;font-weight:400">Chưa phải "hết việc" — là chưa cài đặt xong. '
+      + 'Toàn bộ page đang đậu ở team kỹ thuật <code>chua-phan</code> chờ chốt chủ. '
+      + 'Gán page cho team xong thì việc mới chảy về đây.</div></div>';
+  }
+  return '<div class="empty">Không có việc nào đang chờ</div>';
+}
+
 function veBang(id, ds) {
   const el = $(id);
   if (!ds.length) {
-    // Bảng trống trơn trông như màn hình hỏng. Nói thẳng ra là không có việc nào.
-    el.innerHTML = '<tr><td colspan="5"><div class="empty">Không có việc nào đang chờ</div></td></tr>';
+    el.innerHTML = '<tr><td colspan="5">' + chuRong() + '</td></tr>';
     return;
   }
   el.innerHTML = ds.map(dongViec).join('');
@@ -222,6 +238,14 @@ function veBang(id, ds) {
 
 function veBaoDong(tt) {
   const el = $('#bao-dong');
+  _tt = tt;
+  // Chưa gán page: nói ngay ở dải trên cùng, đừng để người ta phải đoán từ bảng rỗng.
+  if (tt && tt.team && !tt.team.daGanPage) {
+    el.innerHTML = '<div class="banner o">⚙️ Chưa cài đặt xong — team này chưa được gán page nào'
+      + '<span class="s">Bảng dưới rỗng vì chưa có dữ liệu, không phải vì đã xử hết việc. '
+      + 'Còn ' + (tt.team.soHoiThoai || 0) + ' hội thoại của team này trong hệ thống.</span></div>';
+    return;
+  }
   if (!tt || !tt.quaHanTong) { el.innerHTML = ''; return; }
   const cu = tt.cuNhat;
   el.innerHTML = '<div class="banner r">⛔ ' + tt.quaHanTong

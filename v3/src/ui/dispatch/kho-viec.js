@@ -385,11 +385,26 @@ export async function tomTat(boiCanh, { bay = Date.now() } = {}) {
     db.chon(BANG, daTre, { sapXep: 'han_luc', gioiHan: 1 }),
   ]);
 
+  // BẢNG RỖNG CÓ HAI NGHĨA KHÁC HẲN NHAU, và màn hình phải nói đúng cái nào:
+  //   · "mọi việc đã xử xong"      → tin mừng, sale không phải làm gì
+  //   · "team này chưa có page nào" → CHƯA CÀI ĐẶT XONG, phải đi gán page
+  // Nói nhầm nghĩa thứ hai thành nghĩa thứ nhất là để người ta ngồi chờ một hệ thống
+  // không bao giờ có việc. Đã dính thật 24/08: chủ dự án đăng nhập thấy bảng rỗng và
+  // tưởng màn hình hỏng, trong khi 514/514 page còn đậu ở team kỹ thuật.
+  //
+  // Chỉ đếm khi bảng RỖNG — đường thường không tốn thêm lời gọi nào.
+  let team = null;
+  if (hoiThoaiCho + donCho === 0) {
+    const [soPage, soHoiThoai] = await Promise.all([db.dem('page', {}), db.dem('hoi_thoai', {})]);
+    team = { soPage, soHoiThoai, daGanPage: soPage > 0 };
+  }
+
   const cu = cuNhatDs[0] || null;
   return {
     hoiThoai: { cho: hoiThoaiCho, quaHan: hoiThoaiQua },
     don: { cho: donCho, quaHan: donQua },
     quaHanTong: hoiThoaiQua + donQua,
+    team,
     cuNhat: cu
       ? {
         id: String(cu.id),
