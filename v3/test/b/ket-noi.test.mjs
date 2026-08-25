@@ -119,7 +119,39 @@ test('canhBaoKhoToken · token CHÍNH không phủ page nào = thứ tự dự p
     tokAx(0, { pagesRouted: 0 }),
     tokAx(1, { pagesRouted: 40 }),
   ], BAY);
-  assert.ok(c.some((x) => x.ma === 'chinh_khong_phu'));
+  const x = c.find((y) => y.ma === 'chinh_khong_phu');
+  assert.ok(x);
+  assert.equal(x.muc, 'do', 'phủ ĐÚNG 0 là nặng nhất — token chính coi như vô dụng');
+});
+
+test('canhBaoKhoToken · SỐ THẬT 25/08: chính phủ 16, phụ phủ 109 → vẫn phải kêu', () => {
+  // Đây là ca đo được TRÊN MÁY CHỦ THẬT, và là lý do luật này phải nới.
+  // Bản đầu chỉ bắn khi token chính phủ ĐÚNG 0 page, nên với 16 nó im — trong khi thứ tự
+  // đang ngược hẳn. Bài test đơn vị không bắt được; chỉ có số thật mới lộ ra.
+  const c = kn.canhBaoKhoToken([
+    tokAx(0, { name: 'Hồ Sỹ Aanh', pagesRouted: 16 }),
+    tokAx(1, { name: 'CHÍNH 1', pagesRouted: 109 }),
+    tokAx(2, { name: 'Chu Thuý', pagesRouted: 46 }),
+    tokAx(3, { name: 'N. Thế', pagesRouted: 32 }),
+    tokAx(4, { name: 'Thơ Nyây', pagesRouted: 0 }),
+    tokAx(5, { name: 'Sỹ Anh Leader', pagesRouted: 0 }),
+  ], BAY);
+  const x = c.find((y) => y.ma === 'chinh_khong_phu');
+  assert.ok(x, 'chính phủ 16 mà phụ phủ 109 thì PHẢI kêu');
+  assert.equal(x.muc, 'vang', 'có phủ chút ít thì là cảnh vàng, không phải đỏ');
+  // Câu cảnh báo phải nói được số, không nói chung chung — người đọc cần biết đổi có đáng không.
+  assert.match(x.chu, /16 page/);
+  assert.match(x.chu, /109 page/);
+  assert.match(x.chu, /93 page/, 'phải tính ra phần chênh để người đọc thấy giá phải trả');
+});
+
+test('canhBaoKhoToken · token chính ĐÃ phủ nhiều nhất thì IM, kể cả khi có token phủ 0', () => {
+  const c = kn.canhBaoKhoToken([
+    tokAx(0, { pagesRouted: 109 }),
+    tokAx(1, { pagesRouted: 16 }),
+    tokAx(2, { pagesRouted: 0 }),
+  ], BAY);
+  assert.ok(!c.some((y) => y.ma === 'chinh_khong_phu'), 'thứ tự đúng thì không được kêu');
 });
 
 test('canhBaoKhoToken · kho khoẻ thì IM', () => {

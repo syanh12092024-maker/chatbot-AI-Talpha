@@ -109,13 +109,29 @@ export function canhBaoKhoToken(ds, bay = Date.now()) {
   if (daHet.length) {
     ra.push({ ma: 'co_token_chet', muc: 'vang', chu: `${daHet.length} token đã hết hạn, đang bị bỏ qua — nên gỡ cho đỡ rối.` });
   }
-  // Token chính (thứ tự 0) mà không phủ page nào thì thứ tự dự phòng đang sai chỗ.
+  // ─── THỨ TỰ DỰ PHÒNG ĐẶT SAI ────────────────────────────────────────────────────────
+  // Luật (sổ kho token): «token chính phải phủ NHIỀU page bật AI nhất». Token chính là
+  // token được thử ĐẦU TIÊN cho mọi page; nó phủ ít thì phần lớn page phải rơi xuống token
+  // sau mới gọi được — tốn thêm một vòng gọi hỏng cho mỗi page, mỗi lượt quét.
+  //
+  // Bản đầu chỉ bắn khi token chính phủ ĐÚNG 0 page. Đo trên máy chủ thật 25/08 mới thấy
+  // luật đó quá hẹp: token chính phủ **16** page trong khi một token phụ phủ **109** — thứ
+  // tự đang ngược hẳn, mà không có cảnh báo nào vì 16 ≠ 0. Bài test đơn vị không bắt được
+  // chỗ này; chỉ có số thật mới lộ ra.
   const chinh = ds[0];
-  if (chinh && !chinh.daHet && chinh.soPageDangDung === 0 && song.length > 1) {
-    ra.push({
-      ma: 'chinh_khong_phu', muc: 'vang',
-      chu: 'Token CHÍNH không định tuyến page nào — thứ tự dự phòng đang đặt sai: token chính nên là token phủ nhiều page nhất.',
-    });
+  if (chinh && !chinh.daHet && song.length > 1) {
+    const phuNhieuNhat = song.reduce((a, b) => (b.soPageDangDung > a.soPageDangDung ? b : a), song[0]);
+    if (phuNhieuNhat !== chinh && phuNhieuNhat.soPageDangDung > chinh.soPageDangDung) {
+      ra.push({
+        ma: 'chinh_khong_phu',
+        muc: chinh.soPageDangDung === 0 ? 'do' : 'vang',
+        chu: `Thứ tự dự phòng đang đặt sai: token CHÍNH ("${chinh.ten}") chỉ phủ `
+          + `${chinh.soPageDangDung} page, trong khi "${phuNhieuNhat.ten}" phủ `
+          + `${phuNhieuNhat.soPageDangDung} page. Token chính được thử ĐẦU TIÊN cho mọi page, `
+          + `nên đặt token phủ nhiều nhất lên đầu thì đỡ được một vòng gọi hỏng cho `
+          + `${phuNhieuNhat.soPageDangDung - chinh.soPageDangDung} page mỗi lượt quét.`,
+      });
+    }
   }
   return ra;
 }
