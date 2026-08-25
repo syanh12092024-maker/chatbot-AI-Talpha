@@ -336,3 +336,123 @@ test('trangThaiGanPage · khai thẳng là chưa mở được, kèm số phiế
   // đây là số của cả hệ thống.
   assert.match(g.ghiChu, /team đang mở/i);
 });
+
+/* ═══════════ lát 4 · gán page ↔ team — MỞ 25/08 (PHIEU-B-Y3 xong) ═══════════ */
+
+const gp = await import('../../src/ui/team/gan-page.js');
+
+/** Ghi lại mọi lượt gọi để kiểm phần v3 gánh, không kiểm lại phần người A đã có test riêng. */
+function noiChuyenGia({ hongVoi = null } = {}) {
+  const goi = [];
+  gp.datChuyenPage(async (bc, t) => {
+    goi.push({ teamId: bc.teamId, ...t });
+    if (hongVoi && String(t.pageId) === String(hongVoi)) throw new Error('page này hỏng');
+    return { pageId: String(t.pageId), teamCu: bc.teamId, teamMoi: String(t.teamDichId),
+      daChuyen: { hoi_thoai: 3, kich_ban: 1 }, boLai: { so_ai: 7 } };
+  });
+  return goi;
+}
+
+test('lát 4 · chưa nối dây thì báo CHƯA MỞ, không giả vờ chuyển rồi im', async () => {
+  dungKho();
+  gp.datChuyenPage(null);
+  const t = await kt.trangThaiGanPage(bcQt(), { daNoiChuyen: gp.daNoiChuyenPage() });
+  assert.equal(t.moDuoc, false);
+  assert.match(t.lyDo, /chưa nối/i);
+  await assert.rejects(() => gp.chuyenNhieuPage(bcQt(), { pageIds: ['p1'], teamDichId: 't2' }),
+    (e) => e.ma === 'chua_noi');
+});
+
+test('lát 4 · nối rồi thì mở, và KHÔNG còn lý do chặn', async () => {
+  dungKho();
+  noiChuyenGia();
+  const t = await kt.trangThaiGanPage(bcQt(), { daNoiChuyen: gp.daNoiChuyenPage() });
+  assert.equal(t.moDuoc, true);
+  assert.equal(t.lyDo, null);
+});
+
+test('lát 4 · team đích KHÔNG gồm team đang mở và KHÔNG gồm team kỹ thuật', async () => {
+  dungKho();
+  const ds = await gp.danhSachTeamDich(bcQt('t1'));
+  assert.deepEqual(ds.map((t) => t.teamId), ['t2'], 'chỉ còn t2; t1 là team đang mở');
+  // Hạt giống không có team kỹ thuật, nên kiểm thêm bằng một kho có nó.
+  dungKho({ team: [
+    { id: 't1', slug: 'tieu-alpha', ten: 'Tiểu Alpha', la_ky_thuat: false },
+    { id: 't2', slug: 'auus', ten: 'Auus', la_ky_thuat: false },
+    { id: 't9', slug: 'chua-phan', ten: 'Chưa phân', la_ky_thuat: true },
+  ] });
+  const ds2 = await gp.danhSachTeamDich(bcQt('t1'));
+  assert.ok(!ds2.some((t) => t.teamId === 't9'), 'team kỹ thuật không được hiện — chuyển vào đó là làm page tàng hình');
+});
+
+test('lát 4 · chuyển được, và gom số dòng con đi theo + cố ý bỏ lại', async () => {
+  dungKho();
+  const goi = noiChuyenGia();
+  const kq = await gp.chuyenNhieuPage(bcQt('t1'), { pageIds: ['p1', 'p2'], teamDichId: 't2', lyDo: 'chia team' });
+  assert.equal(kq.soXong, 2);
+  assert.equal(kq.soHong, 0);
+  assert.deepEqual(kq.daChuyen, { hoi_thoai: 6, kich_ban: 2 }, 'phải CỘNG DỒN qua các page');
+  assert.deepEqual(kq.boLai, { so_ai: 14 });
+  assert.equal(goi.length, 2);
+  assert.equal(goi[0].lyDo, 'chia team', 'lý do phải xuống tới hàm của A để vào nhật ký');
+});
+
+test('lát 4 · một page hỏng thì KHÔNG dừng cả mẻ, và nói rõ page nào hỏng', async () => {
+  // Dừng ở lỗi đầu tiên để lại một trạng thái nửa vời mà màn hình không mô tả nổi: hai page
+  // đầu đã chuyển, phần còn lại chưa, và người dùng chỉ thấy chữ "lỗi".
+  dungKho();
+  noiChuyenGia({ hongVoi: 'p2' });
+  const kq = await gp.chuyenNhieuPage(bcQt('t1'), { pageIds: ['p1', 'p2', 'p3'], teamDichId: 't2' });
+  assert.equal(kq.soChon, 3);
+  assert.equal(kq.soXong, 2);
+  assert.equal(kq.soHong, 1);
+  const hong = kq.ketQua.find((r) => !r.xong);
+  assert.equal(hong.pageId, 'p2');
+  assert.match(hong.loi, /hỏng/);
+  assert.ok(kq.ketQua.filter((r) => r.xong).map((r) => r.pageId).includes('p3'),
+    'page SAU page hỏng vẫn phải được thử');
+});
+
+test('lát 4 · bốn cửa chặn tham số', async () => {
+  dungKho();
+  noiChuyenGia();
+  await assert.rejects(() => gp.chuyenNhieuPage(bcQt(), { pageIds: [], teamDichId: 't2' }),
+    (e) => e.ma === 'thieu_tham_so');
+  await assert.rejects(() => gp.chuyenNhieuPage(bcQt(), { pageIds: ['p1'] }),
+    (e) => e.ma === 'thieu_tham_so');
+  await assert.rejects(() => gp.chuyenNhieuPage(bcQt('t1'), { pageIds: ['p1'], teamDichId: 't1' }),
+    (e) => e.ma === 'trung_team');
+  const nhieu = Array.from({ length: gp.TOI_DA_MOT_ME + 1 }, (_, i) => `p${i}`);
+  await assert.rejects(() => gp.chuyenNhieuPage(bcQt(), { pageIds: nhieu, teamDichId: 't2' }),
+    (e) => e.ma === 'qua_nhieu');
+});
+
+test('lát 4 · CHỈ quan-tri; và id trùng trong một mẻ chỉ chuyển một lần', async () => {
+  dungKho();
+  const goi = noiChuyenGia();
+  await assert.rejects(() => gp.chuyenNhieuPage(bcSale(), { pageIds: ['p1'], teamDichId: 't2' }),
+    (e) => e.ma === 'thieu_vai');
+  assert.equal(goi.length, 0, 'chặn TRƯỚC khi gọi xuống tầng dưới');
+
+  await gp.chuyenNhieuPage(bcQt(), { pageIds: ['p1', 'p1', 'p1'], teamDichId: 't2' });
+  assert.equal(goi.length, 1, 'bấm nhầm chọn trùng thì vẫn chỉ một lượt chuyển');
+});
+
+test('lát 4 · KHÔNG tự ghi nhật ký — hàm của người A đã ghi trong giao dịch', async () => {
+  // Ghi thêm một dòng nữa là đẻ hai bản ghi cho một thao tác, và người đọc nhật ký đếm gấp đôi.
+  const { nhatKy } = dungKho();
+  noiChuyenGia();
+  await gp.chuyenNhieuPage(bcQt(), { pageIds: ['p1'], teamDichId: 't2' });
+  assert.equal(nhatKy.length, 0, 'lớp v3 không được ghi thêm bản ghi thứ hai');
+});
+
+test('lát 4 · danh sách page để chọn có lọc, và nói rõ khi bị cắt bớt', async () => {
+  dungKho();
+  const tatCa = await gp.pageDeChuyen(bcQt('t1'));
+  assert.equal(tatCa.soTong, 2, 'chỉ page của team đang mở');
+  const loc = await gp.pageDeChuyen(bcQt('t1'), { tim: 'Page A' });
+  assert.equal(loc.soKhop, 1);
+  const cat = await gp.pageDeChuyen(bcQt('t1'), { gioiHan: 1 });
+  assert.equal(cat.page.length, 1);
+  assert.equal(cat.catBot, 1, 'phải nói còn bao nhiêu page không hiện, không im lặng cắt');
+});

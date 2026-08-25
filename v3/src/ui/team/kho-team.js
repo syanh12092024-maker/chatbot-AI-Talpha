@@ -79,14 +79,14 @@ export const daNoiTruyVan = () => typeof _taoTruyVan === 'function';
 export const daNoiDanhTinh = () => typeof _congDanhTinh === 'function';
 export const daNoiKetNoiPos = () => typeof _docKetNoiPos === 'function';
 
-function congTruyVan(bc) {
+export function congTruyVan(bc) {
   if (!_taoTruyVan) {
     throw new LoiCauHinhTeam('chưa nối cổng truy vấn — gọi datTaoTruyVan(taoTruyVan) lúc dựng ứng dụng', 'chua_noi');
   }
   return _taoTruyVan(bc);
 }
 
-function congDanhTinh() {
+export function congDanhTinh() {
   if (!_congDanhTinh) {
     throw new LoiCauHinhTeam('chưa nối cổng danh tính — gọi datCongDanhTinh(taoCongDanhTinh) lúc dựng ứng dụng', 'chua_noi');
   }
@@ -327,18 +327,32 @@ export async function ketNoiCua(boiCanh) {
  * một chức năng tài liệu có hứa; hiện nút mờ kèm đúng lý do thì họ biết phải đợi ai, đợi gì.
  */
 export const PHIEU_GAN_PAGE = 'PHIEU-B-Y3';
-export const LY_DO_CHUA_GAN_DUOC = 'Tầng truy vấn không cho đổi cột `team_id` — `suaTheoId` bỏ '
-  + 'qua nó trong im lặng, nên nút sẽ báo «đã gán» mà không có gì đổi. Chuyển page còn phải kéo '
-  + 'theo hội thoại, kịch bản và sản phẩm của page đó, nếu không thì chúng thành mồ côi ở team cũ.';
 
-export async function trangThaiGanPage(boiCanh) {
+/** Lý do lát này TỪNG bị chặn. Giữ lại để người sau hiểu vì sao nó được viết như bây giờ. */
+export const LY_DO_TUNG_CHAN = 'Tầng truy vấn không cho đổi cột `team_id` — `suaTheoId` bỏ qua '
+  + 'nó trong im lặng, nên nút sẽ báo «đã gán» mà không có gì đổi. Chuyển page còn phải kéo theo '
+  + 'hội thoại, kịch bản và sản phẩm của page đó, nếu không thì chúng thành mồ côi ở team cũ.';
+
+/**
+ * Trạng thái lát «gán page ↔ team».
+ *
+ * MỞ ĐƯỢC từ 25/08/2026: người A giao `chuyenPageSangTeam` (`PHIEU-B-Y3` xong). Trước đó lát
+ * này hiện MỜ kèm số phiếu — và cách hiện-mờ-kèm-lý-do đó chính là thứ giữ cho nó không bị
+ * quên: người ta nhìn thấy nó mỗi ngày.
+ *
+ * `moDuoc` suy từ việc dây ĐÃ NỐI hay chưa, không phải từ một cờ gõ tay: máy chủ dựng thiếu
+ * dây thì nút phải mờ, dù mã nguồn có đủ khả năng.
+ */
+export async function trangThaiGanPage(boiCanh, { daNoiChuyen = false } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   const db = congTruyVan(bc);
   const pages = await db.chon(BANG_PAGE, {});
   return {
-    moDuoc: false,
+    moDuoc: !!daNoiChuyen,
     phieu: PHIEU_GAN_PAGE,
-    lyDo: LY_DO_CHUA_GAN_DUOC,
+    lyDo: daNoiChuyen ? null
+      : 'Máy chủ chưa nối hàm `chuyenPageSangTeam` của người A — lỗi cấu hình lúc dựng ứng '
+        + 'dụng, không phải thiếu tính năng.',
     soPageTeamNay: pages.length,
     // Nói thẳng giới hạn thay vì hiện một con số trông như đã đếm cả hệ thống.
     ghiChu: 'Chỉ đếm được page của team đang mở — lớp team chặn đọc sang team khác, và màn '

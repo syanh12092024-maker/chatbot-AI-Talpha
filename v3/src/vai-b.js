@@ -31,7 +31,7 @@ import {
   datTaoTruyVan as datTruyVanTeam, datCongDanhTinh as datDanhTinhTeam,
   datCongDanhTinhGhi as datDanhTinhTeamGhi, datPheuNhatKy as datPheuNhatKyTeam,
   datDocKetNoiPos, datChanDangNhap as datChanDangNhapTeam, datChanVai as datChanVaiTeam,
-  taoRouterCauHinhTeam,
+  taoRouterCauHinhTeam, datChuyenPage,
 } from './ui/team/index.js';
 import {
   datTaoTruyVan as datTruyVanPageBot, datPheuNhatKy as datPheuNhatKyPageBot,
@@ -52,6 +52,9 @@ import {
  * @param {(boiCanh:object)=>object} phuThuoc.taoTruyVan        BẮT BUỘC · người A giao. Cổng có chèn điều kiện team.
  * @param {()=>object}               phuThuoc.taoTruyVanHeThong BẮT BUỘC · người A giao. Cổng KHÔNG gắn team,
  *                                                              chỉ cho bốn bảng dùng chung — xem `auth/kho-nguoi-dung.js`.
+ * @param {(bc:object,t:object)=>Promise<object>} [phuThuoc.chuyenPage] chuyển một page sang team khác, kèm toàn bộ con
+ *                                                              (người A giao: `src/db/chuyen-team.js#chuyenPageSangTeam`).
+ *                                                              Thiếu thì lát «gán page ↔ team» hiện MỜ kèm lý do.
  * @param {(bc:object)=>Promise<Array>} [phuThuoc.docKetNoiPos]   đọc kết nối POS của một team, KHÔNG giải mã khoá
  *                                                              (người A giao: `src/pos/ket-noi.js#lietKeThiTruong`).
  *                                                              Thiếu thì màn cấu hình team nói «chưa nối bộ đọc»,
@@ -61,7 +64,7 @@ import {
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiSoAi, canhBao, express } = {}) {
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -115,6 +118,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
 
   if (typeof canhBao === 'function') { datPheuCanhBao(canhBao); daNoi.push('cảnh báo ← chuyển model dự phòng'); }
   else thieu.push('canhBao — nhà chính hết tiền thì tự chuyển dự phòng nhưng KHÔNG ai được báo. Đúng cảnh 06/08/2026');
+
+  if (typeof chuyenPage === 'function') { datChuyenPage(chuyenPage); daNoi.push('chuyển page ↔ team → màn cấu hình team (lát 4)'); }
+  else thieu.push('chuyenPage — lát «gán page ↔ team» hiện MỜ. Không có nó thì gán page vẫn phải chạy psql tay, đúng thứ sóng 0 sinh ra để xoá');
 
   if (typeof docKetNoiPos === 'function') {
     datDocKetNoiPos(docKetNoiPos);

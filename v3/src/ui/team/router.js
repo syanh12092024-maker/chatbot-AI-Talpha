@@ -6,7 +6,8 @@
 // | POST   /api/team/thanh-vien      | cấp một vai cho một người      (chỉ `quan-tri`)    |
 // | DELETE /api/team/thanh-vien      | rút một vai của một người      (chỉ `quan-tri`)    |
 // | GET    /api/team/ket-noi         | kết nối POS (KHÔNG bao giờ trả khoá)               |
-// | GET    /api/team/gan-page        | trạng thái lát «gán page ↔ team» — đang chờ phiếu  |
+// | GET    /api/team/gan-page        | trạng thái + team đích + page chọn được            |
+// | POST   /api/team/gan-page        | chuyển một mẻ page sang team khác  (chỉ `quan-tri`)|
 //
 // HAI CỬA GHI DUY NHẤT là `POST`/`DELETE /api/team/thanh-vien`, và cả hai chỉ chạm
 // `thanh_vien_team`. Router chỉ dịch tham số và mã lỗi; luật nằm trong `thanh-vien.js`.
@@ -28,6 +29,10 @@ import {
   LoiCauHinhTeam,
 } from './kho-team.js';
 import { themThanhVien, botThanhVien, LoiRutQuanTriCuoi } from './thanh-vien.js';
+import {
+  danhSachTeamDich, pageDeChuyen, chuyenNhieuPage, daNoiChuyenPage,
+  TOI_DA_MOT_ME, LoiChuyenPage,
+} from './gan-page.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -212,10 +217,32 @@ ${escHtml((bc.vai || []).join(', ') || 'không có vai nào')}.</p>
   }));
 
   r.get('/api/team/gan-page', canDangNhap, canVai, boc(async (req, res) => {
-    res.json({ ok: true, ganPage: await trangThaiGanPage(cuaBoiCanh(req)) });
+    const bc = cuaBoiCanh(req);
+    const noiRoi = daNoiChuyenPage();
+    const [tt, dich, ds] = await Promise.all([
+      trangThaiGanPage(bc, { daNoiChuyen: noiRoi }),
+      danhSachTeamDich(bc),
+      pageDeChuyen(bc, { tim: req.query.tim || '' }),
+    ]);
+    res.json({
+      ok: true,
+      ganPage: tt,
+      teamDich: dich,
+      ...ds,
+      toiDaMotMe: TOI_DA_MOT_ME,
+      suaDuoc: coVai(bc, ...VAI_GHI_DUOC),
+    });
+  }));
+
+  r.post('/api/team/gan-page', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    const { pageIds, teamDichId, lyDo } = req.body || {};
+    const kq = await chuyenNhieuPage(cuaBoiCanh(req), { pageIds, teamDichId, lyDo });
+    // Trả 200 kể cả khi có page hỏng: mẻ chạy hết, và nơi gọi cần ĐỦ kết quả từng page để
+    // hiện ra. Gộp thành một mã lỗi là lấy mất thứ người dùng cần để biết làm gì tiếp.
+    res.json({ ok: true, ...kq });
   }));
 
   return r;
 }
 
-export { LoiCauHinhTeam };
+export { LoiCauHinhTeam, LoiChuyenPage };

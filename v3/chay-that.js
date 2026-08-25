@@ -36,6 +36,11 @@ const taoTruyVan = (bc) => taoTruyVanThat(pool, bc);
 // ghi đè, rồi đăng nhập nổ «nguoi_dung không nằm trong BANG_NGHIEP_VU_CHUAN». Đã dính thật.
 const { taoCongDanhTinh } = await import('./src/noi-day/cong-danh-tinh.js');
 
+// Chuyển page giữa các team — `PHIEU-B-Y3`, người A giao 25/08. Hàm này tự lo giao dịch,
+// khoá dòng, kiểm vai `quan-tri` trong bảng `thanh_vien_team`, và ghi `nhat_ky` NGAY TRONG
+// giao dịch. Lớp v3 chỉ dịch bối cảnh và gom kết quả từng page.
+const { chuyenPageSangTeam } = await import(`${GOC}/src/db/chuyen-team.js`);
+
 // Kết nối POS: bảng `ket_noi_pos` CHỨA BÍ MẬT nên nó cố ý không nằm trong tầng truy vấn
 // chung — người A cho nó bộ đọc riêng. `lietKeThiTruong` KHÔNG giải mã khoá (đúng thứ màn
 // cấu hình team cần: chỉ hiện thị trường, shop, bật/tắt).
@@ -49,6 +54,7 @@ const bao = dungPhanB(app, {
   taoTruyVan,
   taoTruyVanHeThong: () => taoCongDanhTinh(pool),
   docKetNoiPos: (bc) => lietKeThiTruong(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId || null }),
+  chuyenPage: (bc, t) => chuyenPageSangTeam(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId }, t),
   express,
 });
 app.get('/', (_q, r) => r.redirect('/dieu-phoi'));

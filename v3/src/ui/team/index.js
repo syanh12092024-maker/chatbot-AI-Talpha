@@ -6,7 +6,7 @@
 //   ① Tổng quan team      · đọc      · chạy được ngay
 //   ② Thành viên và vai   · GHI      · chạy được ngay (cổng danh tính đã nới cho đúng bảng này)
 //   ③ Kết nối POS         · đọc      · chạy được ngay, KHÔNG bao giờ hiện khoá
-//   ④ Gán page ↔ team     · GHI      · CHỜ `PHIEU-B-Y3` — hiện MỜ kèm lý do, không giấu đi
+//   ④ Gán page ↔ team     · GHI      · **MỞ 25/08** — người A giao `chuyenPageSangTeam`
 //
 // Nối vào ứng dụng: đừng nối tay, gọi `dungPhanB()` ở `v3/src/vai-b.js`.
 
@@ -21,9 +21,15 @@ export {
   khoiRong, VI_RONG,
   // hằng
   TEN_VAI, BANG_PAGE, BANG_HOI_THOAI, BANG_MODEL, BANG_THANH_VIEN, BANG_NGUOI_DUNG, BANG_VAI,
-  PHIEU_GAN_PAGE, LY_DO_CHUA_GAN_DUOC,
+  PHIEU_GAN_PAGE, LY_DO_TUNG_CHAN,
   LoiCauHinhTeam,
 } from './kho-team.js';
+
+// LÁT 4 — mở được từ 25/08 khi người A giao `chuyenPageSangTeam` (`PHIEU-B-Y3` xong).
+export {
+  datChuyenPage, daNoiChuyenPage, danhSachTeamDich, pageDeChuyen, chuyenNhieuPage,
+  VAI_CHUYEN_DUOC, TOI_DA_MOT_ME, LoiChuyenPage,
+} from './gan-page.js';
 
 // Hai hàm DUY NHẤT của module có ghi xuống CSDL, và cả hai chỉ chạm `thanh_vien_team`.
 export {

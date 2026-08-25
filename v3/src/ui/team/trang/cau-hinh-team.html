@@ -71,6 +71,18 @@
   .chan .ma{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
             background:#eef2f3;padding:1px 6px;border-radius:5px}
 
+  /* ─── lát 4: chọn page để chuyển team ─── */
+  .chon-page{border:1px solid var(--line);border-radius:10px;max-height:280px;overflow-y:auto;margin-top:8px}
+  .chon-page label{display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-bottom:1px solid var(--line);cursor:pointer}
+  .chon-page label:last-child{border-bottom:none}
+  .chon-page label:hover{background:#fafcfc}
+  .chon-page input{margin-top:2px;flex:none}
+  .chon-page .n{font-weight:600;overflow-wrap:anywhere}
+  .kq{margin-top:10px;border-radius:8px;padding:10px 12px;line-height:1.6}
+  .kq.g{background:var(--okSoft);color:#14532d;border:1px solid #b7e4c7}
+  .kq.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .kq ul{margin:6px 0 0;padding-left:18px}
+
   button,select{font:inherit}
   .nut{background:var(--pri);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
   .nut:hover{background:var(--priDark)}
@@ -150,9 +162,11 @@
     <div id="khoiKetNoi"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
   </section>
 
-  <!-- ─── LÁT 4 · gán page ↔ team (đang chờ phiếu) ──────────────────────────────── -->
+  <!-- ─── LÁT 4 · gán page ↔ team ───────────────────────────────────────────────── -->
   <section class="panel">
-    <h2>Gán page ↔ team</h2>
+    <h2>Gán page ↔ team
+      <span class="hint">chuyển page sang team khác — hội thoại, kịch bản và sản phẩm của page đi theo</span>
+    </h2>
     <div class="than" id="khoiGanPage"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
   </section>
 </main>
@@ -275,12 +289,106 @@ function veKetNoi(d){
     </tr>`).join('')}</tbody></table>`;
 }
 
-/* ─── lát 4 · hiện MỜ kèm lý do, không giấu ─── */
-function veGanPage(g){
-  $('#khoiGanPage').innerHTML = `<div class="chan">
-    <b>Chưa mở được.</b> ${esc(g.lyDo)}
-    <div style="margin-top:9px">Phiếu đang chờ người A: <span class="ma">${esc(g.phieu)}</span></div>
-    <div style="margin-top:9px">Team này đang có <b>${so(g.soPageTeamNay)}</b> page. ${esc(g.ghiChu)}</div>
+/* ─── lát 4 · gán page ↔ team ─── */
+let TIM_PAGE = '';
+
+function veGanPage(d){
+  const g = d.ganPage;
+  if (!g.moDuoc) {
+    // Chưa nối dây thì hiện MỜ kèm lý do — không giấu đi, để người ta biết đang đợi gì.
+    $('#khoiGanPage').innerHTML = `<div class="chan">
+      <b>Chưa mở được.</b> ${esc(g.lyDo || '')}
+      <div style="margin-top:9px">Team này đang có <b>${so(g.soPageTeamNay)}</b> page. ${esc(g.ghiChu)}</div>
+    </div>`;
+    return;
+  }
+  if (!d.teamDich.length) {
+    $('#khoiGanPage').innerHTML = veTrong({ vi: 'chua_cai_dat',
+      noi: 'Không có team nào khác để chuyển sang — hệ thống chỉ có một team nghiệp vụ.',
+      diTiep: { chu: 'Xem lại danh sách team', duong: '/chon-team' } });
+    return;
+  }
+
+  $('#khoiGanPage').innerHTML = `
+    <div class="phu">Team này đang có <b>${so(g.soPageTeamNay)}</b> page. Chuyển tối đa
+      <b>${d.toiDaMotMe}</b> page mỗi lần.</div>
+    <input class="tim" id="timPage" type="search" placeholder="Lọc page theo tên, id Facebook, thị trường…"
+           value="${esc(TIM_PAGE)}" style="margin-top:8px" />
+    <div class="hang" style="margin-top:8px">
+      <button class="nut nho" id="chonHet">Chọn hết ${d.page.length} page đang hiện</button>
+      <button class="nut nho" id="boChon">Bỏ chọn</button>
+      <span class="phu" id="demChon">chưa chọn page nào</span>
+    </div>
+    <div class="chon-page" id="dsPage">${d.page.map((p) => `
+      <label><input type="checkbox" value="${esc(p.id)}" />
+        <span><span class="n">${esc(p.ten || '(chưa có tên)')}</span>
+          <span class="phu">${esc(p.pageId)}${p.thiTruong ? ' · ' + esc(p.thiTruong) : ''}${p.botAiBat ? ' · <span class="pill g">bot BẬT</span>' : ''}</span>
+        </span></label>`).join('')}</div>
+    ${d.catBot ? `<div class="phu" style="margin-top:6px">Còn ${so(d.catBot)} page nữa không hiện —
+      gõ vào ô lọc để thu hẹp. Danh sách cắt ở 200 dòng cho đỡ nặng.</div>` : ''}
+    <div class="hang" style="margin-top:11px">
+      <select id="teamDich" aria-label="Team đích">
+        ${d.teamDich.map((t) => `<option value="${esc(t.teamId)}">${esc(t.ten)}</option>`).join('')}
+      </select>
+      <button class="nut" id="nutChuyen" ${d.suaDuoc ? '' : 'disabled'}>Chuyển sang team này</button>
+    </div>
+    ${d.suaDuoc ? '' : '<div class="phu" style="margin-top:6px">Vai của bạn chỉ xem được.</div>'}
+    <div id="kqChuyen"></div>`;
+
+  const ds = $('#dsPage');
+  const demChon = () => {
+    const n = ds.querySelectorAll('input:checked').length;
+    $('#demChon').textContent = n ? `đã chọn ${so(n)} page` : 'chưa chọn page nào';
+  };
+  ds.addEventListener('change', demChon);
+  $('#chonHet').addEventListener('click', () => {
+    ds.querySelectorAll('input').forEach((c) => { c.checked = true; }); demChon();
+  });
+  $('#boChon').addEventListener('click', () => {
+    ds.querySelectorAll('input').forEach((c) => { c.checked = false; }); demChon();
+  });
+  let henP = null;
+  $('#timPage').addEventListener('input', (e) => {
+    clearTimeout(henP);
+    henP = setTimeout(() => { TIM_PAGE = e.target.value.trim(); napGanPage(); }, 250);
+  });
+  $('#nutChuyen').addEventListener('click', chuyen);
+}
+
+async function chuyen(){
+  const ds = [...document.querySelectorAll('#dsPage input:checked')].map((c) => c.value);
+  if (!ds.length) { baoLoi('Chưa chọn page nào.'); return; }
+  const oTeam = $('#teamDich');
+  const tenTeam = oTeam.options[oTeam.selectedIndex].textContent.trim();
+  // Hỏi lại và nói RÕ hệ quả: đây là đổi chủ dữ liệu, không phải một cờ hiển thị.
+  if (!confirm(`Chuyển ${ds.length} page sang team "${tenTeam}"?\n\n`
+    + 'Hội thoại, kịch bản và sản phẩm của những page đó sẽ đi theo sang team mới.\n'
+    + 'Team hiện tại sẽ KHÔNG còn nhìn thấy chúng.')) return;
+
+  xoaLoi();
+  $('#nutChuyen').disabled = true;
+  $('#nutChuyen').textContent = 'Đang chuyển…';
+  try {
+    const kq = await goi('/api/team/gan-page', { method: 'POST',
+      body: JSON.stringify({ pageIds: ds, teamDichId: oTeam.value, lyDo: `chuyển sang ${tenTeam}` }) });
+    veKetQuaChuyen(kq, tenTeam);
+    await napTongQuan();
+  } catch (e) { baoLoi(e.message); }
+  finally { $('#nutChuyen').disabled = false; $('#nutChuyen').textContent = 'Chuyển sang team này'; }
+}
+
+function veKetQuaChuyen(kq, tenTeam){
+  const con = Object.entries(kq.daChuyen || {}).filter(([, n]) => n > 0);
+  const lai = Object.entries(kq.boLai || {}).filter(([, n]) => n > 0);
+  const hong = kq.ketQua.filter((r) => !r.xong);
+  // Hiện CẢ phần xong lẫn phần hỏng. Gộp thành một chữ "lỗi" là lấy mất thứ người ta cần.
+  $('#kqChuyen').innerHTML = `<div class="kq ${hong.length ? 'o' : 'g'}">
+    <b>Chuyển xong ${so(kq.soXong)}/${so(kq.soChon)} page sang "${esc(tenTeam)}".</b>
+    ${con.length ? `<div>Đi theo: ${con.map(([b, n]) => `${so(n)} ${esc(b)}`).join(' · ')}</div>` : ''}
+    ${lai.length ? `<div>Cố ý ở lại team cũ: ${lai.map(([b, n]) => `${so(n)} ${esc(b)}`).join(' · ')}
+      <span class="phu">(số liệu lịch sử — xem PHIEU-B-Y3 mục ⑧)</span></div>` : ''}
+    ${hong.length ? `<div>Không chuyển được ${so(hong.length)} page:<ul>${
+      hong.slice(0, 8).map((r) => `<li>page ${esc(r.pageId)}: ${esc(r.loi)}</li>`).join('')}</ul></div>` : ''}
   </div>`;
 }
 
@@ -288,7 +396,10 @@ function veGanPage(g){
 async function napTongQuan(){ const d = await goi('/api/team/tong-quan'); if (d) veTongQuan(d.tongQuan); }
 async function napThanhVien(){ const d = await goi('/api/team/thanh-vien'); if (d) veThanhVien(d); }
 async function napKetNoi(){ const d = await goi('/api/team/ket-noi'); if (d) veKetNoi(d); }
-async function napGanPage(){ const d = await goi('/api/team/gan-page'); if (d) veGanPage(d.ganPage); }
+async function napGanPage(){
+  const d = await goi('/api/team/gan-page?tim=' + encodeURIComponent(TIM_PAGE));
+  if (d) veGanPage(d);
+}
 
 (async function nap(){
   // Nạp từng khối riêng: một khối hỏng thì ba khối kia vẫn hiện. Gộp `Promise.all` rồi để

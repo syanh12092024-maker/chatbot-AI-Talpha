@@ -55,7 +55,7 @@ const p = (n) => B - n * 60000;
 
 // Tên cột theo ĐÚNG lược đồ thật (`db/migrate/001_nen.up.sql`) — bản xem thử mà gieo sai tên
 // thì nó thành cái bẫy: màn hình chạy đẹp trên dữ liệu giả rồi vỡ lúc nối vào bản thật.
-const { taoTruyVan } = dungCongGia({
+const { taoTruyVan, kho } = dungCongGia({
   nguoi_dung: [
     { id: '1', email: 'sale@talpha.vn', mat_khau_hash: await bam(MAT_KHAU), ten: 'Ngọc (sale)', hoat_dong: true },
     { id: '2', email: 'binh@talpha.vn', mat_khau_hash: await bam(MAT_KHAU), ten: 'Bình', hoat_dong: true },
@@ -156,6 +156,26 @@ const bao = dungPhanB(app, {
   // Kết nối POS giả — bảng `ket_noi_pos` có bộ đọc RIÊNG của người A (nó chứa bí mật), nên
   // bản xem thử tự dựng một bộ đọc thay vì gieo vào kho. KHÔNG kèm khoá: bộ đọc thật cũng
   // không trả khoá, và bản giả dễ dãi hơn bản thật là cách đẻ ra lỗ hổng không ai thấy.
+  // Chuyển page GIẢ — đổi thẳng trong kho RAM, đủ để thấy màn hình chạy. Bản thật là
+  // `src/db/chuyen-team.js` với giao dịch, khoá dòng và nhật ký; xem `v3/chay-that.js`.
+  chuyenPage: async (bc, { pageId, teamDichId }) => {
+    const p = (kho.docThang('page') || []).find((x) => String(x.id) === String(pageId));
+    if (!p) throw new Error(`không có page id=${pageId}.`);
+    const teamCu = String(p.team_id);
+    if (teamCu === String(teamDichId)) throw new Error(`page id=${pageId} đã thuộc team đó rồi.`);
+    p.team_id = String(teamDichId);
+    let ht = 0;
+    for (const h of kho.docThang('hoi_thoai') || []) {
+      if (String(h.page_id) === String(pageId)) { h.team_id = String(teamDichId); ht++; }
+    }
+    // Kho giả trả về BẢN SAO ở `docThang`, nên phải ghi ngược vào kho thật.
+    kho.bang.set('page', kho.bang.get('page').map((x) => (String(x.id) === String(pageId)
+      ? { ...x, team_id: String(teamDichId) } : x)));
+    kho.bang.set('hoi_thoai', (kho.bang.get('hoi_thoai') || []).map((x) => (String(x.page_id) === String(pageId)
+      ? { ...x, team_id: String(teamDichId) } : x)));
+    return { pageId: String(pageId), teamCu, teamMoi: String(teamDichId),
+      daChuyen: { hoi_thoai: ht }, boLai: { so_ai: 0 } };
+  },
   docKetNoiPos: async (bc) => (String(bc.teamId) === '1'
     ? [{ id: '1', market: 'Saudi', shopId: '77', bat: true },
        { id: '2', market: 'UAE', shopId: '81', bat: true },

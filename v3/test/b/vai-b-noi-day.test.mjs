@@ -13,7 +13,7 @@ const { bam } = await import('../../src/auth/mat-khau.js');
 const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
-async function dungThu({ ghiSoAi, canhBao, docKetNoiPos } = {}) {
+async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -39,7 +39,7 @@ async function dungThu({ ghiSoAi, canhBao, docKetNoiPos } = {}) {
   const bao = dungPhanB(app, {
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
-    ghiSoAi, canhBao, docKetNoiPos, express,
+    ghiSoAi, canhBao, docKetNoiPos, chuyenPage, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -132,9 +132,13 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   // hai câu đó dẫn người đọc đi hai hướng khác hẳn nhau (đi tìm kết nối bị mất, hay đi
   // sửa cấu hình máy chủ). Nên nó phải nằm trong danh sách `thiếu`, không im lặng.
   assert.ok(bao.thieu.some((x) => /docKetNoiPos/.test(x)), 'phải nêu thiếu docKetNoiPos');
+  // `chuyenPage` thiếu thì lát «gán page ↔ team» hiện MỜ — tức là gán page vẫn phải chạy
+  // psql tay, đúng thứ sóng 0 sinh ra để xoá. Im lặng ở đây là im lặng đúng chỗ đau nhất.
+  assert.ok(bao.thieu.some((x) => /chuyenPage/.test(x)), 'phải nêu thiếu chuyenPage');
 
   const { sv: sv2, bao: bao2 } = await dungThu({
     ghiSoAi: () => {}, canhBao: () => {}, docKetNoiPos: async () => [],
+    chuyenPage: async () => ({ teamCu: 't1', teamMoi: 't2', daChuyen: {}, boLai: {} }),
   });
   t.after(() => sv2.close());
   assert.deepEqual(bao2.thieu, [], 'nối đủ thì không còn thiếu gì');
