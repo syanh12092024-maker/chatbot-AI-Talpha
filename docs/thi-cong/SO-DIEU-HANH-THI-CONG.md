@@ -467,6 +467,33 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   Người quyết chốt: giữ opt-out (như hiện tại) hay lật thành opt-in.
   Kèm: 1557 dòng rác đang có **không dọn được** (`nhat_ky` cấm xoá ở tầng CSDL). Cứ để.
 
+- 25/08 · B-Y6 — 🧭 **TÔI TREO MỘT TẦNG DÙNG ĐƯỢC VÀO MỘT TẦNG CHƯA TỒN TẠI.** Migration 010
+  (G2-A5) buộc bản kịch bản `cap='nuoc'` phải có `san_pham_ma`, mà `san_pham` = 0 dòng ⇒ tầng
+  nước chưa bao giờ tới được page nào; trong khi `page.thi_truong` có ở 140/514. Tôi ĐÃ đo cả
+  hai con số đó lúc làm G2-A5 và vẫn thiết kế sai — đo được mà không dùng số đo để chọn hình
+  dạng thì bằng không đo. 012 cho phép phạm vi CHỈ-THEO-NƯỚC. Kèm một lỗ nữa của 010 mà phiếu
+  chỉ ra: `UNIQUE (team_id, san_pham_ma, thi_truong)` không ràng được khi `san_pham_ma` NULL
+  (hai NULL là khác nhau) ⇒ hai bản LIVE cùng một nước LỌT. Bịt bằng `coalesce(…, '')`.
+
+- 25/08 · B-Y6 ⓑ — 🧭 **MẪU SỐ SAI THÌ TỈ LỆ LUÔN ĐẸP.** Phiếu gợi ý đếm lượt 0 đồng từ
+  `so_ai.loai='reply'`. Không được: lượt 0 đồng KHÔNG gọi model nên KHÔNG đẻ dòng `so_ai` nào
+  — lấy `so_ai` làm mẫu số là chia cho đúng phần KHÔNG bị chặn. Mẫu số đúng =
+  (bị chặn ở `mau_0_dong`) + (có gọi model ở `so_ai`). Và bộ đếm phải cộng NGUYÊN TỬ trong
+  CSDL: đọc-rồi-ghi thì hai lượt chat đồng thời mất một lượt, im lặng, và con số «chặn ≥33%»
+  hết dùng được để nghiệm thu.
+
+- 25/08 · B-Y6 ⓑ — NỢ: `mau_0_dong.so_lan_chan` là bộ đếm **CỘNG DỒN**, không cắt theo khoảng
+  thời gian, trong khi `soLuotGoiModel` thì có cắt. Hai vế khác thước ⇒ `tiLeChan0Dong` chỉ
+  đúng khi khoảng đo phủ toàn bộ thời gian — hàm TỰ KHAI điều đó ở trường `canhBao`. Muốn cắt
+  theo khoảng thì cần một bảng lịch sử từng lượt chặn; chưa dựng, chờ ai đó thật sự cần.
+
+- 25/08 · B-Y6 ⓒ — TRẢ LỜI CÂU HỎI, KHÔNG DỰNG BẢNG. Phiếu hỏi «ảnh đang ở đâu». Đo được:
+  ảnh nằm trong `kb-overrides.json` → `products[].images[] = {url, label}`; **32 ảnh / 7 page
+  / 5 nhãn**; tệp thật ở `public/uploads` (**49 tệp · 34 MB** trên VPS); bot lấy ra gửi ở
+  `src/handler.js:270`. ⇒ chỉ cần một bảng NHÃN trỏ URL sẵn có, không cần lưu tệp. NHƯNG bộ
+  nhãn chưa chuẩn hoá — «Ảnh feedback» và «Feedback» là hai nhãn cho cùng một thứ. Dựng bảng
+  trước khi chốt bộ nhãn là dựng một bảng phải sửa ngay. **Chờ người quyết chốt bộ nhãn.**
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -943,6 +970,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 25/08 · B-Y6 → ✅ xong — migration 012: tầng CHỈ-NƯỚC cho cây kịch bản (sửa lỗi thiết kế của chính 010) + bảng `mau_0_dong` với bộ đếm nguyên tử · commit cdae76d · nhật ký docs/thi-cong/nhat-ky/phieu-b-y6.md
+- 25/08 · B-Y6 → đo trên Postgres 16.15 THẬT: l0-m2-kich-ban 20 pass · l0-m2-so-lieu 18 pass · l0-m1-luoc-do 13 pass (24 bảng) · hồi quy 34 bộ chỉ D7 đỏ · commit cdae76d · nhật ký docs/thi-cong/nhat-ky/phieu-b-y6.md
+- 25/08 · B-Y6 → 🧭 mục ⓒ TRẢ LỜI bằng số đo chứ không dựng bảng: ảnh ở kb-overrides.json, 32 ảnh/5 nhãn, bộ nhãn chưa chuẩn hoá — chi tiết §9 · commit cdae76d · nhật ký docs/thi-cong/nhat-ky/phieu-b-y6.md
+
 - 25/08 · B-Y5 → ✅ xong — `ctxHeThong({ghiNhatKy:false})` tắt nhật ký cho lệnh ĐỌC; lệnh GHI vẫn để dấu vết, không cờ nào tắt được; đã BẬT ở `rap-prompt.js` chứ không để cờ nằm không · commit 49d2272 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y5.md
 - 25/08 · B-Y5 → đo trên Postgres 16.15 THẬT: cổng L0-M2 31 phép ĐẠT 30 TRƯỢT 1 (D7 đỏ sẵn) · bộ ca 22 pass/0 fail · `nhat_ky` hiện 1557 dòng và 100% là `doc` · commit 49d2272 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y5.md
 - 25/08 · B-Y5 → 🧭 `l2-m3-rap-prompt` chập chờn ~25% và CÓ SẴN (đo 8 lượt: mới 2/8 · cũ 2/8) — chi tiết §9 · commit 49d2272 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y5.md
