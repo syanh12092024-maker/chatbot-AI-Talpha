@@ -218,7 +218,7 @@ Kế hoạch: `docs/v3/gd2/00-KE-HOACH-GD2.md`. Sáu module, làm TUẦN TỰ.
 | **G2-A1** | Nới tầng truy vấn (`PHIEU-B-Y1`) — đóng nợ **N3** | ✅ **25/08** | nền 22 → **41 pass / 0 fail** trên Postgres 16.15 thật · cổng L0-M2 **26/27** · quét hồi quy 28 bộ ca v3 **319 pass / 1 fail** |
 | **G2-A2** | Khoá API theo nhà (`PHIEU-B-Y2`) + migration 008 | ✅ **25/08** | cổng L0-M1 **58/59** · `001→008` áp trọn trên CSDL trắng · down→up khớp vân tay 242 cột · đổi khoá **1 lần → 2/2 ô** đọc ra khoá mới · 5 bộ ca đụng `layModel` xanh trọn |
 | **B-Y3** | Chuyển page ↔ team (chen trước G2-A3 theo lệnh) — gỡ chặn **H7** + lát ④ màn Cấu hình team | ✅ **25/08** | cổng B-Y3 **14/14** · bộ ca **14 pass / 0 fail** · **5** bảng con đi theo page (phiếu kê 3, lược đồ thật có 5) · mồ côi trên CSDL THẬT = **0** |
-| G2-A3 | Xoá BA cửa tạm ghi thẳng, gom về tầng truy vấn | ⬜ | |
+| **G2-A3** | Gộp BA cửa ghi hẹp về MỘT bộ dựng SQL | ✅ **25/08** | cổng G2-A3 **6/6** · ba cửa còn **0** câu UPDATE tay · bộ ca khoá bẫy **7 pass / 0 fail** · 7 bộ ca của ba cửa xanh trọn · còn **4 câu gộp được** ở `lich-nhac`/`hang-cho`/`ti-le-hoan` — ngoài phạm vi, đã ghi §9 |
 | G2-A4 | Bảng + API bộ luật chung và kỹ năng (phiên bản · duyệt · xem trước ảnh hưởng) | ⬜ 🟥 | |
 | G2-A5 | Bảng + API kịch bản ba tầng có KẾ THỪA, đúng MỘT bản LIVE mỗi page | ⬜ | |
 | G2-A6 | API số liệu: báo cáo hai luồng · chi phí AI · A/B · sức khỏe 9 chỉ số | ⬜ | |

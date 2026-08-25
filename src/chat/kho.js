@@ -1,25 +1,29 @@
-// CỬA HẸP GHI `hoi_thoai` cho đường chat v3.
+// LỚP GHI `hoi_thoai` cho đường chat v3.
 //
-// ⚠️ VÌ SAO KHÔNG DÙNG `suaTheoId` CỦA TẦNG TRUY VẤN — đây là NỢ N3 của phiếu L1-M1
-// (§9 sổ điều hành), chạm lại nguyên vẹn ở phiếu này:
-//   · `suaTheoId`/`layMotTheoId` KHÔNG hỗ trợ `ctxHeThong()` (tang-truy-van-v1.md §3:
-//     "chưa có bản suaTheoId cho ctxHeThong, mở phiếu mới nếu L1+ cần").
-//   · Đường worker là JOB NỀN — không có NGƯỜI để dựng ctx người dùng.
-//   · Và 100% dữ liệu di trú (18.790 hội thoại) đang đậu ở team KỸ THUẬT `chua-phan`,
-//     mà ctx người dùng mang team kỹ thuật thì tầng truy vấn ném `LoiThieuBoiCanhTeam`.
-//   ⇒ Không còn đường UPDATE hợp lệ nào qua tầng chung. Giữ MỘT cửa hẹp ở đây, đúng
-//     khuôn `src/pos/kho.js` mà L1-M1 đã phải dựng vì cùng lý do.
+// ═══ LỊCH SỬ — đọc trước khi định "dọn nốt" file này ══════════════════════════════
+// File này TỪNG là một trong ba «cửa tạm»: nó tự dựng câu `UPDATE hoi_thoai SET …` vì
+// `suaTheoId` chưa nhận `ctxHeThong()` (nợ N3, mở 22/08). **G2-A1 đã đóng nợ đó và
+// G2-A3 đã gộp câu SQL tay đi** — `suaHoiThoai` nay là một lớp MỎNG gọi xuống
+// `suaTheoId`, repo còn đúng MỘT bộ dựng câu UPDATE.
 //
-// BỐN RÀO TỰ ÁP (bù cho phần tầng chung không áp hộ) — giống hệt `src/pos/kho.js`:
-//   1. DANH SÁCH CỘT CHO PHÉP, deny-by-default. Cột lạ ⇒ ném lỗi, không âm thầm bỏ qua.
-//   2. LUÔN kẹp `team_id = $team` trong WHERE. Không có đường nào bỏ được vế này.
-//   3. Mọi lượt ghi để lại một dòng `nhat_ky` qua cửa chung `ghiNhatKy`.
-//   4. KHÔNG có hàm xoá.
+// Hai lý do cũ cũng đã hết hạn, ghi lại để người sau không tin nhầm:
+//   · «`suaTheoId` không nhận ctxHeThong» — SAI từ 25/08, nó nhận rồi.
+//   · «dữ liệu đậu ở team kỹ thuật `chua-phan`» — SAI từ 24/08, 514 page + 28.953 hội
+//     thoại đã sang `tieu-alpha`; `chua-phan` rỗng.
 //
-// ⛔ Cửa này chỉ ghi `hoi_thoai`. Repo đang có HAI đường ghi bảng nghiệp vụ (tầng chung
-//    + các cửa hẹp) — khi phiếu `suaTheoId cho ctxHeThong` được mở và làm xong thì XOÁ
-//    cửa này. Đã ghi §9 sổ điều hành.
-import { ghiNhatKy } from "../db/index.js";
+// ═══ VÌ SAO FILE NÀY VẪN CÒN ═════════════════════════════════════════════════════
+// Nó không còn là cửa tạm, nhưng nó THÊM ba thứ mà tầng chung cố ý không có:
+//   1. DANH SÁCH CỘT CHO PHÉP của riêng đường chat, deny-by-default. Tầng chung nhận
+//      mọi cột của bảng — đường chat thì không được phép chạm `team_id`/`page_id`/…
+//   2. KHUÔN jsonb: `pg` biến MẢNG JS thành mảng POSTGRES chứ không thành JSON, nên
+//      `moc_luot_llm` phải `JSON.stringify` trước. Đo 25/08, xem ghi chú tại chỗ.
+//   3. KHUÔN NHẬT KÝ giữ kín nội dung: chỉ ghi TÊN CỘT đã đổi, vì `ho_so` mang SĐT và
+//      địa chỉ khách, mà `nhat_ky` là bảng CHỈ-INSERT (lỡ ghi là không xoá được).
+//
+// `baoDamHoiThoai` cũng ở lại: nó là `INSERT … ON CONFLICT DO UPDATE`, mà `themMoi` của
+// tầng chung không diễn đạt được nâng-hoặc-chèn. `docHoiThoaiTheoPageText` ở lại vì nó
+// tra theo id FACEBOOK (JOIN sang `page`), tầng chung không có JOIN.
+import { ghiNhatKy, suaTheoId, ctxHeThong } from "../db/index.js";
 
 /** Đúng những cột mà một lượt chat được phép đổi. Thêm cột = sửa Ở ĐÂY, có chủ đích. */
 const COT_CHO_PHEP = new Set([
@@ -66,19 +70,33 @@ export async function suaHoiThoai(
     );
   }
 
-  const tham = [id, teamId];
-  const dat = cot.map((c, i) => {
-    tham.push(COT_JSONB.has(c) ? JSON.stringify(giaTri[c] ?? null) : giaTri[c]);
-    return `${c} = $${i + 3}${COT_JSONB.has(c) ? "::jsonb" : ""}`;
-  });
+  // ═══ GỘP VỀ MỘT BỘ DỰNG SQL (25/08, G2-A3) ══════════════════════════════════
+  // Trước đây khối này TỰ dựng câu `UPDATE hoi_thoai SET … WHERE id AND team_id` vì
+  // `suaTheoId` chưa nhận `ctxHeThong()` (nợ N3). G2-A1 đã đóng nợ đó, nên câu SQL tay
+  // biến mất và hàm này còn đúng phần nó THẬT SỰ thêm vào: danh sách cột cho phép của
+  // đường chat, khuôn jsonb, và một dòng nhật ký KHÔNG chứa nội dung nhạy cảm.
+  //
+  // ⚠️ `JSON.stringify` cho cột jsonb KHÔNG bỏ được. Đo 25/08 trên Postgres 16.15:
+  //    `pg` biến MẢNG JS thành mảng POSTGRES `{a,b}` chứ không thành JSON, nên
+  //    `moc_luot_llm: [mốc, mốc]` đi thẳng vào `suaTheoId` là «invalid input syntax for
+  //    type json». Stringify ở đây rồi để Postgres tự ép unknown→jsonb thì đúng
+  //    (`jsonb_typeof` = `array`, `jsonb_array_length` = 2).
+  const duLieu = {};
+  for (const c of cot) {
+    duLieu[c] = COT_JSONB.has(c)
+      ? JSON.stringify(giaTri[c] ?? null)
+      : giaTri[c];
+  }
 
-  const r = await pool.query(
-    `UPDATE hoi_thoai SET ${dat.join(", ")}, sua_luc = now()
-      WHERE id = $1 AND team_id = $2
-      RETURNING *`,
-    tham,
+  const dong = await suaTheoId(
+    pool,
+    ctxHeThong(),
+    "hoi_thoai",
+    id,
+    { ...duLieu, team_id: teamId },
+    { datSuaLuc: true }, // `sua_luc = now()` — GIỮ đồng hồ CSDL như bản cũ
   );
-  if (!r.rowCount) return null;
+  if (!dong) return null;
 
   await ghiNhatKy(pool, {
     teamId,
@@ -91,7 +109,7 @@ export async function suaHoiThoai(
     // và `nhat_ky` là bảng CHỈ-INSERT (không xoá được dòng đã lỡ ghi).
     sau: { cot: cot },
   });
-  return r.rows[0];
+  return dong;
 }
 
 /**

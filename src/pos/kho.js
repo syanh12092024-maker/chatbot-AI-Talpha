@@ -4,6 +4,9 @@
 // Tầng truy vấn L0-M2 (`src/db/`) là cửa đúng, và L1-M1 dùng nó cho ĐỌC (`layNhieu`)
 // và THÊM (`themMoi`). Nhưng nó có HAI lỗ mà phiếu L1-M1 rơi đúng vào:
 //
+//   ⚠️ HAI LÝ DO DƯỚI ĐÂY ĐÃ HẾT HẠN (25/08) — giữ lại để người sau đọc được lịch sử,
+//      nhưng ĐỪNG tin chúng như mô tả hiện trạng. Câu `UPDATE` tay đã bị gộp về
+//      `suaTheoId` ở G2-A3; file này nay là lớp MỎNG, không còn là cửa tạm.
 //   ① `suaTheoId` KHÔNG hỗ trợ `ctxHeThong()` — chính bàn giao L0-M2 khai điều đó
 //      (`docs/v3/ban-giao/tang-truy-van-v1.md` §3: «chưa có bản suaTheoId cho
 //      ctxHeThong, ngoài phạm vi ④ của phiếu này, MỞ PHIẾU MỚI NẾU L1+ CẦN»).
@@ -27,26 +30,22 @@
 // ⛔ `ket_noi_pos` không nằm trong `BANG_NGHIEP_VU_CHUAN` của tầng truy vấn (nó chứa
 //    khoá POS mã hoá — xem đầu `db/migrate/002_ket_noi_pos.up.sql`), nên nó chỉ đi qua
 //    file này và `src/pos/ket-noi.js`, đúng án lệ `ghiCauHinhModel` của L0-M1.
-import { LoiThieuBoiCanhTeam, LoiXuyenTeam, ghiNhatKy } from "../db/index.js";
+import {
+  LoiThieuBoiCanhTeam,
+  LoiXuyenTeam,
+  ghiNhatKy,
+  suaTheoId,
+} from "../db/index.js";
 
-/** Deny-by-default: đúng 4 bảng cửa POS được phép ghi qua file này. */
-export const BANG_POS_DUOC_GHI = new Set([
-  "don_hang",
-  "san_pham",
-  "goi_gia",
-  "ket_noi_pos",
-]);
-
-const RE_TEN_COT = /^[a-z_][a-z0-9_]*$/;
-
-function kiemTenCot(ten) {
-  if (typeof ten !== "string" || !RE_TEN_COT.test(ten)) {
-    throw new Error(
-      `tên cột "${ten}" không hợp lệ (chỉ chữ thường/số/gạch dưới).`,
-    );
-  }
-  return ten;
-}
+/** Deny-by-default: ba bảng cửa POS được phép ghi qua file này.
+ *
+ *  ⚠️ `ket_noi_pos` ĐÃ BỎ khỏi danh sách (25/08, G2-A3). Nó chưa từng có nơi gọi nào —
+ *  đo bằng `grep suaTheoIdPos`: ba nơi gọi, dùng `don_hang`/`san_pham`/`goi_gia`. Bảng
+ *  đó được ghi bởi `db/di-tru/ket-noi-pos.js` bằng câu riêng, và nó CỐ Ý ngoài
+ *  `BANG_NGHIEP_VU_CHUAN` (chứa khoá POS mã hoá). Một mục allow-list không ai dùng là
+ *  cái lỗ chờ người sau bước vào (án lệ #22) — và từ khi hàm này gọi xuống `suaTheoId`,
+ *  để nó lại chỉ đổi một lỗi rõ ràng thành một lỗi khó hiểu về BANG_NGHIEP_VU_CHUAN. */
+export const BANG_POS_DUOC_GHI = new Set(["don_hang", "san_pham", "goi_gia"]);
 
 /**
  * Xác định team_id thật sự dùng cho câu SQL — BẢN SOI GƯƠNG của
@@ -138,33 +137,30 @@ export async function suaTheoIdPos(
     throw new Error("suaTheoIdPos: thiếu hanhDong (để ghi nhat_ky).");
   const team = await xacDinhTeam(pool, ctx, { teamId, doiTuong: bang });
 
-  const gan = [];
-  const tham = [];
-  for (const [k, v] of Object.entries(duLieu)) {
-    if (k === "team_id") continue; // team_id không bao giờ sửa được qua cửa này
-    kiemTenCot(k);
-    tham.push(v);
-    gan.push(`${k} = $${tham.length}`);
-  }
-  if (!gan.length)
-    throw new Error("suaTheoIdPos: duLieu rỗng — không có gì để sửa.");
-  tham.push(team.teamId);
-  const veTeam = `team_id = $${tham.length}`;
-  tham.push(id);
-  const r = await pool.query(
-    `UPDATE ${bang} SET ${gan.join(",")} WHERE ${veTeam} AND id = $${tham.length} RETURNING *`,
-    tham,
-  );
+  // ═══ GỘP VỀ MỘT BỘ DỰNG SQL (25/08, G2-A3) ══════════════════════════════════
+  // Khối này TỪNG tự dựng `UPDATE ${bang} SET … WHERE team_id AND id`, vì `suaTheoId`
+  // chưa nhận `ctxHeThong()` (nợ N3). G2-A1 đóng nợ đó ⇒ câu SQL tay biến mất, và cửa
+  // POS còn đúng phần nó thật sự thêm: allow-list ba bảng, và một dòng nhật ký ghi MỌI
+  // lượt — kể cả lượt khớp 0 dòng, để «đã có người thử» cũng để lại dấu.
+  //
+  // `team_id` truyền tường minh vì đường POS chạy dưới `ctxHeThong()` (job nền, không
+  // có người đăng nhập) — đúng luật của tầng chung. Với ctx NGƯỜI thì giá trị này khớp
+  // ctx nên đi qua như thường; lệch là `LoiXuyenTeam`, đúng cái ta muốn.
+  const dong = await suaTheoId(pool, ctx, bang, id, {
+    ...duLieu,
+    team_id: team.teamId,
+  });
+
   await ghiNhatKy(pool, {
     teamId: team.teamId,
     tacNhan,
     hanhDong,
     doiTuong: bang,
     doiTuongId: String(id),
-    sau: r.rowCount ? duLieu : null,
-    ghiChu: r.rowCount
-      ? "cửa POS sửa dòng (bản TẠM — chờ suaTheoId cho ctxHeThong, nợ §9)"
+    sau: dong ? duLieu : null,
+    ghiChu: dong
+      ? "cửa POS sửa dòng"
       : "cửa POS sửa: 0 dòng khớp (id không có hoặc thuộc team khác)",
   });
-  return r.rows[0] ?? null;
+  return dong;
 }

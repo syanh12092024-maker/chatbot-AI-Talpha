@@ -28,6 +28,7 @@
 import {
   themMoi,
   layMotTheoId,
+  suaTheoId,
   ctxHeThong,
   ghiNhatKy,
   LoiThieuBoiCanhTeam,
@@ -247,7 +248,10 @@ export function chuyen(don, sukien) {
 }
 
 // ── CỬA GHI HẸP CỦA MÁY TRẠNG THÁI ───────────────────────────────────────────
-// Vì sao KHÔNG dùng `suaTheoId` (L0-M2) hay `suaTheoIdPos` (L1-M1):
+// ⚠️ ĐOẠN DƯỚI ĐÂY LÀ LỊCH SỬ, KHÔNG PHẢI HIỆN TRẠNG (sửa 25/08, G2-A3): hàm `ghiDon`
+// NAY gọi xuống `suaTheoId` và repo còn đúng MỘT bộ dựng câu UPDATE. Giữ lại để người
+// sau đọc được vì sao từng có ba đường.
+// Vì sao (LÚC ĐÓ) không dùng `suaTheoId` (L0-M2) hay `suaTheoIdPos` (L1-M1):
 //   · `suaTheoId` KHÔNG hỗ trợ `ctxHeThong()` (bàn giao tầng truy vấn §3 khai rõ), mà
 //     job quét BẮT BUỘC chạy dưới ctxHeThong — 26/26 đơn thật đang thuộc team KỸ THUẬT
 //     `chua-phan` (đo 22/08), và ctx NGƯỜI bị từ chối trên team kỹ thuật.
@@ -255,8 +259,8 @@ export function chuyen(don, sukien) {
 //     «cửa POS sửa dòng» — với một lượt chuyển trạng thái ĐƠN thì câu đó SAI, và
 //     «cổng lỏng mà log nói dối là HAI lỗi». Máy trạng thái tự ghi dòng nhật ký của
 //     chính nó (`don_doi_trang_thai`, có `truoc`/`sau`) nên không cần dòng thứ hai.
-// Giá phải trả (nói ra theo luật 13): repo tạm có ba đường UPDATE hẹp thay vì một. Đã
-// ghi §9 — bản vá đúng là `suaTheoId` cho `ctxHeThong()` ở `src/db/`, đất L0-M2.
+// Giá phải trả lúc đó: repo tạm có ba đường UPDATE hẹp thay vì một. ĐÃ TRẢ XONG —
+// `suaTheoId` cho `ctxHeThong()` làm ở G2-A1, ba cửa gộp ở G2-A3.
 const COT_DUOC_GHI = Object.freeze([
   "trang_thai_he",
   "ly_do_khong_gui",
@@ -271,37 +275,42 @@ const COT_DUOC_GHI = Object.freeze([
  * ném `LoiGhiDonAnhCu` có tên, KHÔNG ghi đè im lặng — hai sổ (POS/hệ) không bao giờ lệch.
  */
 async function ghiDon(pool, { teamId, id, tu, duLieu }) {
-  const gan = [];
-  const tham = [];
-  for (const [k, v] of Object.entries(duLieu)) {
+  for (const k of Object.keys(duLieu)) {
     if (!COT_DUOC_GHI.includes(k)) {
       throw new Error(
         `máy trạng thái đơn không được ghi cột "${k}" — chỉ ${COT_DUOC_GHI.join("/")} ` +
           `(deny-by-default; \`nguon\`/\`trang_thai_pos\`/\`ma_pos\` có chủ khác).`,
       );
     }
-    tham.push(v);
-    gan.push(`${k} = $${tham.length}`);
   }
-  gan.push("sua_luc = now()");
-  tham.push(teamId);
-  tham.push(id);
-  tham.push(tu);
-  const r = await pool.query(
-    `UPDATE don_hang SET ${gan.join(",")}
-       WHERE team_id = $${tham.length - 2} AND id = $${tham.length - 1}
-         AND trang_thai_he = $${tham.length}
-     RETURNING *`,
-    tham,
+
+  // ═══ GỘP VỀ MỘT BỘ DỰNG SQL (25/08, G2-A3) ══════════════════════════════════
+  // Khối này TỪNG tự dựng `UPDATE don_hang SET … WHERE team AND id AND trang_thai_he`
+  // vì `suaTheoId` không nhận `ctxHeThong()` VÀ không nhận điều kiện thêm — hai chỗ hẹp
+  // mà G2-A1 (PHIEU-B-Y1) đã mở. So-và-đặt nay diễn đạt bằng `{ neu: { trang_thai_he: tu } }`.
+  //
+  // ⚠️ ĐIỂM DỄ MẤT NHẤT CỦA CẢ LƯỢT GỘP: `suaTheoId` TRẢ `null` khi 0 dòng khớp, còn
+  //    hợp đồng của hàm này là NÉM `LoiGhiDonAnhCu`. Hai ngữ nghĩa khác hẳn nhau: với
+  //    tầng chung «0 dòng» là chuyện thường (id không có / thuộc team khác), còn ở đây
+  //    nó nghĩa là MỘT LƯỢT KHÁC ĐÃ GHI TRƯỚC — ảnh cũ đè lên ảnh mới thì hai sổ POS/hệ
+  //    lệch (RF-13). Quên dịch `null` → ném là biến lá chắn RF-13 thành lệnh RỖNG mà
+  //    không ai thấy. Đã ghi cảnh báo này vào §9 lúc làm G2-A1, nay thi hành nó.
+  const dong = await suaTheoId(
+    pool,
+    ctxHeThong(),
+    "don_hang",
+    id,
+    { ...duLieu, team_id: teamId },
+    { neu: { trang_thai_he: tu }, datSuaLuc: true },
   );
-  if (!r.rowCount) {
+  if (!dong) {
     throw new LoiGhiDonAnhCu(
       `ghiDon(id=${id}): CAS thất bại — trang_thai_he không còn bằng ẢNH đã đọc lúc ` +
         `chuẩn bị ghi (${JSON.stringify(tu)}); một lượt khác đã đổi nó trước. TỪ CHỐI ` +
         `ghi đè — hai sổ (POS/hệ) không bao giờ lệch (VA-R3/RF-13).`,
     );
   }
-  return r.rows[0];
+  return dong;
 }
 
 /**

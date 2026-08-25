@@ -330,6 +330,9 @@ function teamIdDeSoi(duLieu, neu) {
  *  nào bay ra. ⚠️ Nơi gọi nào coi "mất tranh" là LỖI (máy trạng thái đơn: ảnh cũ ghi đè =
  *  hai sổ lệch) thì phải TỰ dịch `null` thành ném — tầng này không đoán hộ ngữ nghĩa đó.
  *
+ *  tuyChon.datSuaLuc — thêm `sua_luc = now()` (đồng hồ CSDL) vào mệnh đề SET. MẶC ĐỊNH
+ *  TẮT: xem ghi chú trong thân hàm, có hợp đồng ngược lại ở L3-M2.
+ *
  *  tuyChon.neu — điều kiện THÊM, nối vào WHERE SAU vế team và vế id. Dùng CHUNG bộ dựng vế
  *  với `layNhieu` (`veDieuKien`): `null` → IS NULL · mảng → = ANY · còn lại → = $n. Đây là
  *  cách diễn đạt SO-VÀ-ĐẶT: `{ neu: { nguoi_nhan_id: null } }` chỉ chạm dòng nếu NGAY LÚC
@@ -351,7 +354,7 @@ export async function suaTheoId(
   tuyChon = {},
 ) {
   kiemTraTenBang(tenBang);
-  const { neu } = tuyChon;
+  const { neu, datSuaLuc = false } = tuyChon;
   if (neu != null && (typeof neu !== "object" || Array.isArray(neu))) {
     throw new Error(
       "suaTheoId: `neu` phải là object phẳng { cot: giaTri } (hoặc bỏ trống).",
@@ -369,9 +372,11 @@ export async function suaTheoId(
 
   const gan = [];
   const params = [];
+  const coMang = []; // tên các cột nhận giá trị MẢNG — chỉ dùng để dịch lỗi, xem dưới
   for (const [k, v] of Object.entries(duLieu)) {
     if (k === "team_id") continue;
     kiemTraTenCot(k);
+    if (Array.isArray(v)) coMang.push(k);
     params.push(v);
     gan.push(`${k} = $${params.length}`);
   }
@@ -380,6 +385,15 @@ export async function suaTheoId(
       "suaTheoId: duLieu rỗng (ngoài team_id) — không có gì để sửa.",
     );
   }
+  // Đồng hồ CSDL, không đồng hồ máy. `now()` là hằng SQL cố định trong chuỗi — không có
+  // giá trị nào của nơi gọi đi vào đây, nên không mở bề mặt chèn SQL nào.
+  //
+  // Vì sao là CỜ chứ không phải luôn-luôn: `test/l3-m2-ti-le-hoan.test.js:270` có hợp
+  // đồng ngược lại — cổng ghi chậm của L3-M2 bị CẤM chạm `sua_luc`. Bật mặc định là phá
+  // đúng hợp đồng đó, và phá cả những phép đo dùng `max(sua_luc)` làm vân tay «có ai ghi
+  // gì không». Nơi nào cần thì tự khai (án lệ #18: cùng luật chưa đủ, còn phải cùng
+  // THỜI ĐIỂM — trộn đồng hồ máy với đồng hồ CSDL trong một cột là mầm lệch).
+  if (datSuaLuc) gan.push("sua_luc = now()");
   params.push(resolved.teamId);
   const dkTeam = `team_id = $${params.length}`; // MỘT vế, kể cả bo_luat_chung — xem đầu file
   params.push(id);
@@ -389,10 +403,31 @@ export async function suaTheoId(
   const dkThem = Object.entries(neu ?? {})
     .filter(([k]) => k !== "team_id")
     .map(([k, v]) => veDieuKien(k, v, params));
-  const r = await pool.query(
-    `UPDATE ${tenBang} SET ${gan.join(",")} WHERE ${[dkTeam, dkId, ...dkThem].join(" AND ")} RETURNING *`,
-    params,
-  );
+  // Mảng JS đi thẳng xuống `pg` là ĐÚNG cho cột mảng THẬT (`don_hang.san_pham_ma text[]`,
+  // `ky_nang.bat_cho_nhom_sp text[]` — đo 25/08). Nhưng `pg` tuần tự hoá nó thành mảng
+  // POSTGRES `{a,b}`, nên cùng giá trị đó ghi vào cột `jsonb` thì Postgres ném
+  // «invalid input syntax for type json» — câu đó ĐÚNG nhưng không chỉ đường, và
+  // `hoi_thoai.moc_luot_llm` là một cột jsonb nhận mảng thật (đã cắn một lần ở G2-A3).
+  // Tầng này không biết kiểu cột đích, và hỏi `information_schema` mỗi lượt ghi thì đắt
+  // — nên không chặn trước, chỉ DỊCH LẠI câu lỗi khi nó thật sự xảy ra. Không tốn gì ở
+  // đường lành, và người gặp lỗi biết ngay phải làm gì.
+  let r;
+  try {
+    r = await pool.query(
+      `UPDATE ${tenBang} SET ${gan.join(",")} WHERE ${[dkTeam, dkId, ...dkThem].join(" AND ")} RETURNING *`,
+      params,
+    );
+  } catch (e) {
+    if (coMang.length && /invalid input syntax for type json/i.test(e?.message ?? "")) {
+      throw new Error(
+        `${tenBang}: cột jsonb nhận MẢNG JS — \`pg\` gửi nó thành mảng Postgres {a,b}, ` +
+          `không thành JSON. JSON.stringify(...) trước khi truyền. Cột nghi vấn: ` +
+          `${coMang.join(", ")}. (Cột mảng THẬT như text[] thì truyền mảng là đúng.)`,
+        { cause: e },
+      );
+    }
+    throw e;
+  }
   if (resolved.laHeThong)
     await ghiNhatKyHeThong(pool, resolved.teamId, "sua", tenBang);
   return r.rows[0] ?? null;
