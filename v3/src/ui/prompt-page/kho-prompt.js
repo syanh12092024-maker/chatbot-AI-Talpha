@@ -12,6 +12,19 @@
 //    KHÔNG đụng CSDL. Màn này cần thấy bốn khối trong CSDL bất kể cờ, và cần thấy TỪNG KHỐI
 //    riêng để đếm token. Nên gọi bốn bộ đọc lẻ — chúng không nhìn cờ.
 //
+// ⚠️⚠️ CÁI GIÁ, ĐO ĐƯỢC 25/08 và KHAI THẲNG Ở ĐÂY: bốn bộ đọc của A chạy dưới `ctxHeThong()`,
+//    và `layNhieu` **ghi một dòng `nhat_ky` cho MỖI lượt gọi qua cửa đó** (cố ý — `01 §9`
+//    "ghi cả việc máy làm"). Nên **mỗi lượt XEM một page đẻ 4 dòng nhật ký `doc`**. Đo thật:
+//    xem 3 page → 15 dòng.
+//
+//    Với một màn XEM mà người ta lướt qua 514 page, đó là ~2.000 dòng `doc` chôn lấp những
+//    dòng thao tác thật — và `nhat_ky` là bảng CHỈ-THÊM, không dọn lại được.
+//
+//    VẪN GIỮ bộ đọc của A, không tự viết bản khác: bản khác thì màn hiện một prompt KHÁC cái
+//    bot thật sự gửi, và đó là hỏng nặng hơn hẳn. Đã phát `PHIEU-B-Y5` xin A một cửa đọc
+//    không-ghi-nhật-ký cho đường XEM. Trong lúc chờ: đọc `san_pham` một lần thay vì hai
+//    (bớt 1/5 số dòng), và màn chỉ dựng prompt cho MỘT page mỗi lượt, không dựng hàng loạt.
+//
 // ═══ SOI MÂU THUẪN — và giới hạn của nó, khai ngay ══════════════════════════════════════
 // Đây là dò theo TỪ KHOÁ, không phải hiểu nghĩa. Nó bắt được kiểu mâu thuẫn thô («không
 // giảm giá» ở khối luật vs «giảm 10%» ở khối kịch bản) và bỏ sót kiểu tinh vi. Màn phải khai
@@ -132,11 +145,14 @@ export async function promptCua(boiCanh, pageIdFacebook) {
   const page = dsPage[0];
   if (!page) throw new LoiPrompt(`không có page "${pageIdFacebook}" trong team này.`, 'khong_thay', 404);
 
-  const [boLuat, kyNang, kichBan, sanPham] = await Promise.all([
+  // ĐỌC `san_pham` MỘT LẦN rồi dùng cho cả hai chỗ (khối sản phẩm, và lọc kỹ năng theo mã
+  // SP). Bản đầu để `docKhoi.kyNang` tự đi đọc lại — mỗi lượt xem tốn HAI lượt đọc bảng đó,
+  // và mỗi lượt đọc qua `ctxHeThong()` lại đẻ một dòng `nhat_ky` (xem khối ⚠️ dưới đây).
+  const sanPham = await _docKhoi.sanPham(bc.teamId, page.id);
+  const [boLuat, kyNang, kichBan] = await Promise.all([
     _docKhoi.boLuat(bc.teamId),
-    _docKhoi.kyNang(bc.teamId, page.id),
+    _docKhoi.kyNang(bc.teamId, page.id, (sanPham || []).map((s) => String(s.ma))),
     _docKhoi.kichBan(bc.teamId, page.id),
-    _docKhoi.sanPham(bc.teamId, page.id),
   ]);
 
   const khoi = [

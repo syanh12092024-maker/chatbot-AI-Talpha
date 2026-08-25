@@ -20,7 +20,7 @@ function dungKho(khoi = {}) {
   pp.datTaoTruyVan(taoTruyVan);
   pp.datDocKhoi({
     boLuat: async () => khoi.boLuat ?? null,
-    kyNang: async () => khoi.kyNang ?? [],
+    kyNang: async (_t, _p, _ma) => khoi.kyNang ?? [],
     kichBan: async () => khoi.kichBan ?? null,
     sanPham: async () => khoi.sanPham ?? [],
   });
@@ -161,4 +161,27 @@ test('thiếu bối cảnh thì NÉM', async () => {
   dungKho({});
   await assert.rejects(() => pp.promptCua(null, '111'), /bối cảnh|teamId/i);
   await assert.rejects(() => pp.pageChonDuoc(null), /bối cảnh|teamId/i);
+});
+
+test('mỗi lượt xem đọc `san_pham` ĐÚNG MỘT LẦN, không hai', async () => {
+  // Bốn bộ đọc của người A chạy dưới `ctxHeThong()`, và `layNhieu` ghi một dòng `nhat_ky`
+  // cho MỖI lượt gọi qua cửa đó. Đọc `san_pham` hai lần = một dòng nhật ký thừa mỗi lượt
+  // XEM, và `nhat_ky` là bảng chỉ-thêm nên không dọn lại được. Đo thật 25/08: xem 3 page
+  // đẻ 15 dòng `doc`, trong đó 6 là của `san_pham` (đáng lẽ 3).
+  const { taoTruyVan } = dungCongGia({
+    team: [{ id: 't1', slug: 'tieu-alpha', ten: 'T', la_ky_thuat: false }],
+    page: [{ id: 'p1', team_id: 't1', page_id: '111', ten: 'A' }],
+  });
+  pp.datTaoTruyVan(taoTruyVan);
+  const dem = { sanPham: 0, kyNang: 0 };
+  pp.datDocKhoi({
+    boLuat: async () => null,
+    kyNang: async (_t, _p, dsMa) => { dem.kyNang++; dem.maNhan = dsMa; return []; },
+    kichBan: async () => null,
+    sanPham: async () => { dem.sanPham++; return [{ ma: 'SP-1', ten: 'X', goiGia: [] }]; },
+  });
+  await pp.promptCua(bcQt(), '111');
+  assert.equal(dem.sanPham, 1, 'đọc san_pham đúng một lần');
+  assert.equal(dem.kyNang, 1);
+  assert.deepEqual(dem.maNhan, ['SP-1'], 'mã SP phải TRUYỀN XUỐNG, không để bộ đọc tự tra lại');
 });

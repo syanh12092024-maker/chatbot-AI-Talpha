@@ -74,11 +74,9 @@ const bao = dungPhanB(app, {
   chuyenPage: (bc, t) => chuyenPageSangTeam(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId }, t),
   docKhoi: {
     boLuat: (teamId) => rap.docBoLuatChung(pool, teamId),
-    // `docKyNang` lọc theo MÃ sản phẩm của page, nên phải tra mã trước.
-    kyNang: async (teamId, pageRowId) => {
-      const sp = await rap.docSanPhamGoiGia(pool, teamId, pageRowId);
-      return rap.docKyNang(pool, teamId, (sp || []).map((s) => String(s.ma)));
-    },
+    // `docKyNang` lọc theo MÃ sản phẩm của page. Nơi gọi truyền sẵn mã xuống — nó đã đọc
+    // `san_pham` cho khối sản phẩm rồi, đọc lại là tốn thêm một dòng `nhat_ky` mỗi lượt xem.
+    kyNang: (teamId, _pageRowId, dsMaSp = []) => rap.docKyNang(pool, teamId, dsMaSp),
     kichBan: (teamId, pageRowId) => rap.docKichBanLive(pool, teamId, pageRowId),
     sanPham: (teamId, pageRowId) => rap.docSanPhamGoiGia(pool, teamId, pageRowId),
   },

@@ -222,9 +222,8 @@ const bao = dungPhanB(app, {
     boLuat: async (teamId) => (kho.docThang('bo_luat_chung') || [])
       .filter((r) => r.dang_dung === true && (String(r.team_id ?? '') === String(teamId) || r.team_id == null))
       .sort((a, b) => Number(b.phien_ban) - Number(a.phien_ban))[0] || null,
-    kyNang: async (teamId, pageRowId) => {
-      const ma = new Set((kho.docThang('san_pham') || [])
-        .filter((s) => String(s.page_id) === String(pageRowId)).map((s) => String(s.ma)));
+    kyNang: async (teamId, _pageRowId, dsMaSp = []) => {
+      const ma = new Set((dsMaSp || []).map(String));
       return (kho.docThang('ky_nang') || []).filter((k) => String(k.team_id) === String(teamId) && k.bat === true)
         .filter((k) => {
           const n = Array.isArray(k.bat_cho_nhom_sp) ? k.bat_cho_nhom_sp : [];

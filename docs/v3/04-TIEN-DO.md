@@ -12,7 +12,7 @@
 | Luồng đang làm | **SÓNG 0 và SÓNG 1 XONG** (7 màn). Kế tiếp: sóng 2 — kịch bản và nội dung |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **453 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **454 xanh** (316 trước giai đoạn 2) |
 
 ---
 
@@ -32,6 +32,27 @@
 | Màn nói rõ **bao nhiêu page bị ảnh hưởng** trước khi bấm | ✅ hai số: tổng page, và số đang BẬT bot |
 | **Lùi về bản trước bằng một nút**, có nhật ký ai lùi lúc nào | ✅ cùng hàm với «áp», nhật ký khai `la_lui: true` |
 | Bật kỹ năng cho nhóm SP → prompt của **đúng** page đó thêm khối, page khác **không đổi** | ✅ đo trên xem thử: page có size **25 → 74 token**, page không size **25 → 25** |
+
+### Đo sóng 1 trên CSDL thật — 25/08, và một chỗ phép đo TỰ NÓ làm hỏng
+
+```
+C1 · 1 bản bộ luật (0 của team, 1 TOÀN HỆ đang áp) · kế thừa: true · 6.734 ký tự ≈ 2.256 token
+     ẢNH HƯỞNG nếu áp: 514 page · 50 đang BẬT bot
+C2 · 1 kỹ năng (hoi_size), đang TẮT, 0 page nhận · 0 sản phẩm trong CSDL → 2 cảnh báo vàng
+C3 · 514 page chọn được. Ba page mẫu: tổng 4.166 / 2.256 / 2.256 token
+     Page đầu 2/4 khối THIẾU, hai page sau 3/4 THIẾU (không kịch bản LIVE, không sản phẩm)
+```
+
+🚩 **Phép đo tự nó ghi 15 dòng `nhat_ky`.** Bốn bộ đọc khối của người A chạy dưới
+`ctxHeThong()`, và `layNhieu` **ghi một dòng cho MỖI lượt gọi** qua cửa đó (cố ý — §9 «ghi cả
+việc máy làm»). Nên **mỗi lượt XEM một page đẻ 4 dòng nhật ký `doc`**; lướt 514 page là
+~2.000 dòng, và `nhat_ky` cấm xoá ở tầng CSDL.
+
+Đây **không phải lỗi của bên nào**: luật «ghi cả việc máy làm» đúng cho *job nền ghi dữ
+liệu*; cái mới là một màn XEM đi qua cùng cửa. Đã sửa phần của B (đọc `san_pham` một lần thay
+vì hai → 4 dòng/lượt thay vì 5) và **phát `PHIEU-B-Y5`** xin A một cờ tắt ghi cho đường đọc.
+KHÔNG tự viết lại bộ đọc để né: bản khác thì màn hiện một prompt **khác cái bot thật sự gửi**,
+hỏng nặng hơn hẳn vấn đề đang xin vá.
 
 ### Ba chỗ đáng đọc của sóng 1
 
