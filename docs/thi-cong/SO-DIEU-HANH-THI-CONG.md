@@ -430,6 +430,26 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   mọi báo cáo tiền là cận dưới. Người B cần biết để nối lớp model đẩy `tienVnd` qua phễu
   `datPheuSoAi`.
 
+- 25/08 · B-Y7 — 🧭 **TÔI ĐỌC BẢN SAO VÀ COI LÀ SỰ THẬT.** `page.bot_ai_bat` lệch nguồn thật
+  đúng **50** (CSDL nói 50 bật · `ai-enabled.json` = `[]` · sửa 24/08 12:13, ai đó tắt qua
+  dashboard v1 và CSDL v3 không biết). Mà `migrate/001` đã khai từ đầu: «NGUỒN DUY NHẤT của
+  cờ này là `ai-enabled.json`… cấm suy ra từ trường khác». G2-A4 của tôi đọc thẳng cột đó cho
+  con số `soPageDangBatBot` — tức con số màn «Bộ luật chung» dùng để cho phép bấm ÁP. Suốt từ
+  lúc G2-A4 xong, màn hình sẽ nói «50 page đổi cách nói với khách» trong khi thật là KHÔNG
+  page nào. Nay đọc file, đối chiếu cột, và BÁO chỗ lệch.
+
+- 25/08 · B-Y7 — 🧭 **THƯỚC CỦA TÔI XANH VÌ FIXTURE DỰNG HAI VẾ BẰNG NHAU.** Ca N5/N11 khẳng
+  định `soPageDangBatBot === 2` và xanh suốt — vì fixture đặt cột và bot khớp nhau. Đúng cảnh
+  phiếu ⑤ cảnh báo: «cảnh bằng nhau chính là cảnh bài test cũ đã xanh trong khi thực tế đã
+  lệch 50 page». Bài học chung: khi hai nguồn PHẢI khớp, bài test bắt buộc phải có ca chúng
+  KHÔNG khớp — ca khớp không chứng minh gì. Và cổng đổi từ canh GIÁ TRỊ sang canh NGUỒN.
+
+- 25/08 · B-Y7 — NGOÀI PHẠM VI, cần người quyết: **ai được quyền sửa cột `bot_ai_bat`?**
+  (a) bỏ hẳn cột, luôn hỏi file — hết lệch, nhưng mọi câu SQL lọc theo cột phải viết lại và
+  không JOIN được · (b) job đồng bộ ngược bot → CSDL — giữ được câu SQL, nhưng job chết thì
+  lại lệch âm thầm · (c) giữ nguyên + LUÔN báo lệch — rẻ nhất, đã làm xong ở phiếu này.
+  Hôm nay đang là (c): con số không nói dối nữa, nhưng cột vẫn lệch.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -906,6 +926,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 25/08 · B-Y7 → ✅ xong — con số «bao nhiêu page đang bật bot» nay hỏi `ai-enabled.json`, cột chỉ để đối chiếu; không đọc được nguồn thì khai CHƯA BIẾT chứ không rơi lặng về cột · commit f6b5c80 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y7.md
+- 25/08 · B-Y7 → đo trên Postgres 16.15 THẬT: cổng G2-A4 16/16 · 20 ca xanh · trên CSDL thật «thật 0 · cột 50 · lệch 50» và nó BÁO ra · commit f6b5c80 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y7.md
+- 25/08 · B-Y7 → 🧭 tôi đọc BẢN SAO và coi là sự thật, còn thước của tôi xanh vì fixture dựng hai vế bằng nhau — chi tiết §9 · commit f6b5c80 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y7.md
+
 - 25/08 · G2-A5 → ✅ xong — migration 010 + `src/db/kich-ban.js`: cây sản phẩm→nước→page, bộ giải LUÔN khai nguồn, `rap-prompt` đi qua nó, có lưới migration · commit b7dbf14 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a5.md
 - 25/08 · G2-A6 → ✅ xong — migration 011 + `src/db/so-lieu.js`: báo cáo hai luồng không cộng, chi phí AI, A/B ẩn tỉ lệ khi chưa đủ mẫu, 9 đèn có đèn XÁM · commit b7dbf14 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a6.md
 - 25/08 · G2-A5+A6 → đo trên Postgres 16.15 THẬT: cổng 15/15 · 16+14 ca xanh · hồi quy 34 bộ chỉ D7 đỏ · 🧭 quên lưới migration suýt làm chết bot, chi tiết §9 · commit b7dbf14 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a5.md
