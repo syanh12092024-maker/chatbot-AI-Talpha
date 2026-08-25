@@ -10,6 +10,8 @@
 // LUẬT: `db/schema.sql` là bản HỢP NHẤT SINH RA từ thư mục migrate/, không phải
 // bản chép tay thứ hai. Hai nguồn một lược đồ là cách rẻ nhất để chúng trôi khỏi
 // nhau; cổng nghiệm thu sinh lại rồi diff, lệch là đỏ.
+import nodePath from "node:path";
+import { fileURLToPath as nodeFileURLToPath } from "node:url";
 import fs from "node:fs";
 import path from "node:path";
 import { GOC, voiPool } from "./ket-noi.js";
@@ -129,7 +131,27 @@ async function main() {
   });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+/** So `import.meta.url` với script đang chạy bằng ĐƯỜNG DẪN đã giải mã — chịu được dấu
+ *  cách, dấu tiếng Việt và mọi ký tự bị percent-encode trong URL. */
+function laChayTrucTiep(metaUrl) {
+  if (!process.argv[1]) return false;
+  try {
+    return (
+      nodePath.resolve(process.argv[1]) ===
+      nodePath.resolve(nodeFileURLToPath(metaUrl))
+    );
+  } catch {
+    return false;
+  }
+}
+
+// Chạy trực tiếp hay bị import? So bằng ĐƯỜNG DẪN, không bằng chuỗi URL ghép tay.
+// Án lệ 25/08 (G2-A2): `file://${process.argv[1]}` KHÔNG bằng `import.meta.url` khi đường
+// dẫn có DẤU CÁCH — `import.meta.url` mã hoá `%20`, `process.argv[1]` thì không. Cây làm
+// việc thật của dự án là «/Users/…/Chat Bot AI/messenger-closer», nên ở máy đó `npm run
+// migrate` và `npm run di-tru` THOÁT 0 MÀ KHÔNG LÀM GÌ — im lặng hoàn toàn. Trên VPS
+// (/opt/aicloser, không dấu cách) thì chạy, nên chỗ này lọt suốt.
+if (laChayTrucTiep(import.meta.url)) {
   main().catch((e) => {
     console.error(e.message);
     process.exit(1);

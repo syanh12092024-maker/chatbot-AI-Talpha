@@ -18,7 +18,6 @@ set -uo pipefail
 GOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "${GOC}" || exit 2
 
-CONTAINER="talpha-pg"
 DB="aicloser_v3_nt_l0m1"
 LOI=0
 PHEP=0
@@ -39,34 +38,60 @@ bang() {
 
 # Trả về giá trị, hoặc đúng chuỗi "LOI-PSQL" khi câu lệnh hỏng. KHÔNG trả nguyên văn
 # câu lỗi: hai lượt đo cùng hỏng sẽ ra hai chuỗi BẰNG NHAU và phép so đọc thành ĐẠT.
+# ⚠️ SỬA 25/08 (G2-A2): khối này TỪNG chạy qua `docker exec talpha-pg`. Container đó không
+# còn tồn tại ở đâu — máy dev không có docker, VPS chạy Postgres cài thẳng — nên cổng `exit
+# 2` câm từ lâu. Nay nói chuyện với CSDL bằng chính gói `pg` của repo (cùng cách l0-m2.sh
+# đã sửa), chạy ở đâu có `DATABASE_URL_V3` là chạy. Án lệ #28.
+GOC_URL="$(node -e 'const {chuoiNoi}=await import("./db/ket-noi.js");console.log(chuoiNoi());')"
+if [ -z "${GOC_URL}" ]; then
+  echo "✘ không đọc được DATABASE_URL_V3 — cổng không đo được"; exit 2
+fi
+
+# $1 = câu SQL · $2 = tên CSDL. In từng ô cách nhau `|`, từng dòng một — cùng khuôn `-tAc`.
+chay_sql() {
+  node -e '
+    const pg = (await import("pg")).default;
+    const u = new URL(process.argv[1]); u.pathname = "/" + process.argv[3];
+    const p = new pg.Pool({ connectionString: u.toString(), max: 1 });
+    try {
+      const r = await p.query(process.argv[2]);
+      if (r.rows?.length) console.log(r.rows.map(o => Object.values(o).join("|")).join("\n"));
+    } finally { await p.end(); }
+  ' "${GOC_URL}" "$1" "$2"
+}
+
 psqlx() {
   local out
-  if out="$(docker exec "${CONTAINER}" psql -U aicloser -d "${DB}" -v ON_ERROR_STOP=1 -tAc "$1" 2>&1)"; then
+  if out="$(chay_sql "$1" "${DB}" 2>/dev/null)"; then
     printf '%s' "${out}"
   else
     printf 'LOI-PSQL'
   fi
 }
-psqlq() { docker exec "${CONTAINER}" psql -U aicloser -d "${DB}" -v ON_ERROR_STOP=1 -tAc "$1" >/dev/null 2>&1; }
+psqlq() { chay_sql "$1" "${DB}" >/dev/null 2>&1; }
+
+# Chạy một khối node -e; in đúng NỘI DUNG stdout, hoặc chuỗi cố định "LOI-NODE" khi rc≠0
+# — KHÔNG in nguyên văn lỗi (hai lượt cùng hỏng ra hai chuỗi BẰNG NHAU thì phép so đọc
+# nhầm thành ĐẠT — cùng lý do như `psqlx` ngay trên).
+nodex() {
+  local out
+  if out="$(node -e "$1" 2>/tmp/l0m1-node-err.txt)"; then
+    printf '%s' "${out}"
+  else
+    printf 'LOI-NODE'
+  fi
+}
 
 # ── dựng sandbox ─────────────────────────────────────────────────────────────
-if ! docker ps --format '{{.Names}}' | grep -qx "${CONTAINER}"; then
-  echo "✘ container ${CONTAINER} không chạy — cổng không đo được"; exit 2
-fi
-# ⚠️ CREATE DATABASE không chạy chung một chuỗi lệnh với câu khác (psql gói thành một
-#    transaction ⇒ "cannot run inside a transaction block"). Phải hai lượt -c riêng.
-docker exec "${CONTAINER}" psql -U aicloser -d postgres -tAc \
-  "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" >/dev/null 2>&1
-if ! docker exec "${CONTAINER}" psql -U aicloser -d postgres -v ON_ERROR_STOP=1 -tAc \
-  "CREATE DATABASE ${DB}" >/dev/null 2>&1; then
-  echo "✘ không tạo được CSDL sandbox ${DB} — cổng dừng"; exit 2
+chay_sql "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" postgres >/dev/null 2>&1
+if ! chay_sql "CREATE DATABASE ${DB}" postgres >/dev/null 2>&1; then
+  echo "✘ không tạo được CSDL sandbox ${DB} — cổng dừng."
+  echo "  (vai CSDL trong DATABASE_URL_V3 đã có quyền CREATEDB chưa?)"; exit 2
 fi
 
 DATABASE_URL_V3="$(node -e '
 const u = new URL(process.argv[1]); u.pathname = "/" + process.argv[2]; console.log(u.toString());
-' "$(node -e '
-const { chuoiNoi } = await import("./db/ket-noi.js"); console.log(chuoiNoi());
-')" "${DB}")"
+' "${GOC_URL}" "${DB}")"
 export DATABASE_URL_V3
 # Khoá mã hoá DÙNG MỘT LẦN của lượt đo — không đọc, không đụng khoá thật trong .env.
 V3_KHOA_MA_HOA="$(node -e 'console.log(require("node:crypto").randomBytes(32).toString("hex"))')"
@@ -76,8 +101,7 @@ don_dep() {
   if [ "${GIU_SANDBOX:-0}" = "1" ]; then
     printf '\n(giữ lại CSDL %s theo GIU_SANDBOX=1)\n' "${DB}"
   else
-    docker exec "${CONTAINER}" psql -U aicloser -d postgres -tAc \
-      "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" >/dev/null 2>&1
+    chay_sql "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" postgres >/dev/null 2>&1
   fi
 }
 trap don_dep EXIT
@@ -92,7 +116,8 @@ console.log(Object.keys(d).sort().map((k) => {
 }).join(" "));')"
 
 echo "CỔNG NGHIỆM THU L0-M1 · $(date '+%F %T') · cây $(git rev-parse --short HEAD 2>/dev/null)"
-echo "CSDL đo: ${DB} (sandbox, không phải aicloser_v3 dev) · container ${CONTAINER}"
+echo "CSDL đo: ${DB} (sandbox, không phải aicloser_v3) · máy chủ $(node -e '
+  console.log(new URL(process.argv[1]).host)' "${GOC_URL}")"
 
 # ═══ ① MIGRATE IDEMPOTENT ════════════════════════════════════════════════════
 muc "① migrate chạy 2 lần — lần 2 rc=0 và _migrations KHÔNG thêm dòng"
@@ -108,8 +133,9 @@ bang "_migrations sau lần 1 → lần 2" "${M1}→${M2}" "${M1}→${M1}"
 kiem_2_den_8() {
 
 muc "② DANH SÁCH bảng ↔ NEO NGOÀI 19 tên trích từ 02-KE-HOACH-CODE §Nền dữ liệu"
-# 22/08 TỔNG vá: +ket_noi_pos (20). 23/08: +tin_cho_xu_ly (21, migration 003 của L2-M1)
-NEO="$(printf '%s\n' ket_noi_pos tin_cho_xu_ly team nguoi_dung vai thanh_vien_team cau_hinh_model page san_pham \
+# 22/08 TỔNG vá: +ket_noi_pos (20). 23/08: +tin_cho_xu_ly (21, migration 003 của L2-M1).
+# 25/08 G2-A2: +khoa_nha (22, migration 008 — khoá API tách khỏi cau_hinh_model).
+NEO="$(printf '%s\n' ket_noi_pos tin_cho_xu_ly khoa_nha team nguoi_dung vai thanh_vien_team cau_hinh_model page san_pham \
   goi_gia khach hoi_thoai so_ai don_hang viec_can_xu_ly hang_cho_tao_don kich_ban \
   bo_luat_chung ky_nang lich_nhac nhat_ky | sort)"
 THAT="$(psqlx "SELECT table_name FROM information_schema.tables
@@ -120,7 +146,7 @@ THUA="$(comm -13 <(printf '%s\n' "${NEO}") <(printf '%s\n' "${THAT}") | tr '\n' 
 so "số bảng thật (không kể _migrations)" "$(printf '%s\n' "${THAT}" | wc -l | tr -d ' ')"
 so "THIẾU so với neo" "${THIEU:-(không)}"
 so "THỪA so với neo" "${THUA:-(không)}"
-if [ -z "${THIEU}${THUA}" ]; then dat "danh sách bảng khớp neo 19 tên"
+if [ -z "${THIEU}${THUA}" ]; then dat "danh sách bảng khớp neo 22 tên"
 else truot "danh sách bảng LỆCH neo — xem từng tên ở trên"; fi
 CO_MIG="$(psqlx "SELECT count(*) FROM information_schema.tables
   WHERE table_schema='public' AND table_name='_migrations'")"
@@ -276,8 +302,11 @@ await voiPool((pool) => ghiCauHinhModel(pool, {
   teamSlug: "auus", vaiTro: "chinh", nhaCungCap: "moonshot",
   maModel: "kimi-k2.6", khoaApi: "sk-nghiem-thu-khong-duoc-lo",
 }));' >/dev/null 2>&1
-CUT="$(psqlx "SELECT left(khoa_api_ma,10) FROM cau_hinh_model
-              WHERE team_id=(SELECT id FROM team WHERE slug='auus')")"
+# 25/08 (G2-A2): khoá đã rời `cau_hinh_model` sang `khoa_nha` — phép này hỏi ĐÚNG chỗ mới.
+# Sửa luật thì phải sửa cả THƯỚC (án lệ #27): để nguyên câu cũ thì cổng đỏ vì bảng đổi chỗ,
+# không phải vì khoá lưu sai, và người đọc cổng sẽ đi tìm nhầm chỗ.
+CUT="$(psqlx "SELECT left(k.khoa_api_ma,10) FROM khoa_nha k
+              WHERE k.team_id=(SELECT id FROM team WHERE slug='auus')")"
 so "10 ký tự đầu của giá trị ĐÃ LƯU" "${CUT}"
 case "${CUT}" in
   sk-*|ey*) truot "khoá lưu NGUYÊN VĂN" ;;
@@ -329,11 +358,13 @@ rm -rf "${TMP_CONV}"
 so "bộ ca CŨ (bản đang chạy): tệp xanh / đỏ" "${PASS} / ${FAIL}"
 so "tệp cũ ĐỎ" "${DO_LIST:-(không)}"
 # Mốc nền đo trên cây tại base 3d1eed1, SAU `npm install`, TRƯỚC mọi dòng code của phiếu.
-NEN_DO="conv-owner.test.mjs guard-fastlane.test.mjs intro.test.mjs l8-botcake-rules.test.mjs viec-2345.test.mjs"
-if [ "$(echo ${DO_LIST} | tr ' ' '\n' | sort | tr '\n' ' ')" = "$(echo ${NEN_DO} | tr ' ' '\n' | sort | tr '\n' ' ')" ]; then
-  dat "bộ ca cũ KHÔNG gãy thêm — đúng 5 tệp đã đỏ sẵn ở mốc nền"
+# ⚠️ SỬA 25/08 (G2-A2): mốc nền cũ gõ tay 5 tệp «đỏ sẵn». Đo lại thì CẢ NĂM XANH ở cả hai
+# môi trường (máy cá nhân 5/5 · VPS 23/23) ⇒ cổng TRƯỢT mỗi khi mã nguồn TỐT LÊN. Cùng bản
+# vá với `l0-m2.sh`: danh sách gõ tay là lỗ hẹn giờ (án lệ #22), đổi thành luật «0 tệp đỏ».
+if [ "${FAIL}" -eq 0 ]; then
+  dat "bộ ca cũ: 0 tệp đỏ trên ${PASS} tệp"
 else
-  truot "bộ ca cũ LỆCH mốc nền · nền: ${NEN_DO} · nay:${DO_LIST}"
+  truot "bộ ca cũ có tệp ĐỎ (${FAIL}/$((PASS + FAIL))):${DO_LIST}"
 fi
 
 muc "⑪ cổng KHÔNG sửa tệp nguồn (phép tự soi của chính lượt đo)"
@@ -345,6 +376,69 @@ console.log(Object.keys(d).sort().map((k) => {
   const s = fs.statSync(d[k]); return `${k}:${s.size}|${s.mtimeMs}`;
 }).join(" "));')"
 bang "vân tay tệp nguồn (kích thước|mtime) đầu ↔ cuối lượt" "${SAU_NGUON}" "${TRUOC_NGUON}"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHIEU-B-Y2 (G2-A2) — khoá API MỘT bản mỗi (team × nhà). Ba phép.
+# ═══════════════════════════════════════════════════════════════════════════════
+muc "⑫ khoá đã RỜI cau_hinh_model, và khoa_nha có rào MỘT-BẢN"
+CON_COT="$(psqlx "SELECT count(*) FROM information_schema.columns
+  WHERE table_name='cau_hinh_model' AND column_name='khoa_api_ma'")"
+bang "cột khoa_api_ma còn lại trên cau_hinh_model" "${CON_COT}" "0"
+RANG="$(psqlx "SELECT count(*) FROM information_schema.table_constraints
+  WHERE table_name='khoa_nha' AND constraint_type='UNIQUE'")"
+bang "ràng buộc UNIQUE trên khoa_nha" "${RANG}" "1"
+RAO="$(psqlx "SELECT count(*) FROM information_schema.check_constraints c
+  JOIN information_schema.constraint_column_usage u USING (constraint_name)
+  WHERE u.table_name='khoa_nha' AND u.column_name='khoa_api_ma'
+    AND c.check_clause LIKE '%v1.%'")"
+bang "rào LIKE 'v1.%' đi theo cột sang bảng mới" "${RAO}" "1"
+
+muc "⑬ ĐỔI KHOÁ MỘT LẦN là đủ cho MỌI ô dùng nhà đó (④#4 — cái lỗi 008 sinh ra để vá)"
+KQ13="$(nodex '
+const { ghiCauHinhModel, ghiKhoaNha, docKhoaNha } = await import("./db/khoa.js");
+const { voiPool } = await import("./db/ket-noi.js");
+await voiPool(async (pool) => {
+  const chung = { teamSlug: "auus", nhaCungCap: "kimi" };
+  const K1 = "sk-kimi-ban-dau", K2 = "sk-kimi-da-doi";
+  await ghiCauHinhModel(pool, { ...chung, vaiTro: "chinh", maModel: "kimi-k2.6", khoaApi: K1 });
+  await ghiCauHinhModel(pool, { ...chung, vaiTro: "nen",   maModel: "kimi-k2.5", khoaApi: K1 });
+  const soBan = (await pool.query(
+    `SELECT count(*)::int c FROM khoa_nha k JOIN team t ON t.id=k.team_id
+      WHERE t.slug=$1 AND k.nha_cung_cap=$2`, ["auus", "kimi"])).rows[0].c;
+  await ghiKhoaNha(pool, { ...chung, khoaApi: K2 });          // đổi khoá ĐÚNG MỘT LẦN
+  const o = (await pool.query(
+    `SELECT c.vai_tro FROM cau_hinh_model c JOIN team t ON t.id=c.team_id
+      WHERE t.slug=$1 AND c.nha_cung_cap=$2 ORDER BY c.vai_tro`, ["auus", "kimi"])).rows;
+  const tid = (await pool.query("SELECT id FROM team WHERE slug=$1", ["auus"])).rows[0].id;
+  const doc = await docKhoaNha(pool, { teamId: tid, nhaCungCap: "kimi" });
+  const khop = o.filter(() => doc === K2).length;
+  console.log(`${soBan}|${o.length}|${khop}`);
+});')"
+IFS='|' read -r A2_BAN A2_O A2_KHOP <<< "${KQ13}"
+bang "chinh + nen cùng nhà kimi → số bản khoá lưu" "${A2_BAN}" "1"
+bang "số ô model dùng nhà kimi" "${A2_O}" "2"
+bang "số ô đọc ra khoá MỚI sau 1 lượt đổi" "${A2_KHOP}" "2"
+
+muc "⑭ down 008 → up 008 : lược đồ khớp"
+# Thước phải TỰ CHỨNG MINH nó có đo gì (án lệ #29): in kèm SỐ CỘT, và số đó phải > 0.
+# Lượt đo đầu của G2-A2 khai «KHỚP — 0 dòng» vì câu chụp hỏng — hai tệp rỗng thì bằng nhau.
+CHUP="SELECT count(*)||':'||md5(string_agg(
+        table_name||'.'||column_name||':'||data_type||':'||is_nullable,
+        ',' ORDER BY table_name, column_name))
+      FROM information_schema.columns WHERE table_schema='public'"
+LD_TRUOC="$(psqlx "${CHUP}")"
+node db/migrate.js down >/dev/null 2>&1
+node db/migrate.js      >/dev/null 2>&1
+LD_SAU="$(psqlx "${CHUP}")"
+so "vân tay lược đồ trước down/up" "${LD_TRUOC}"
+so "vân tay lược đồ sau  down/up" "${LD_SAU}"
+SO_COT="${LD_TRUOC%%:*}"
+if [ -z "${SO_COT}" ] || [ "${SO_COT}" -lt 100 ] 2>/dev/null; then
+  truot "vân tay lược đồ đếm được ${SO_COT:-0} cột — THƯỚC RỖNG, không đọc là đạt"
+else
+  dat "vân tay lược đồ đếm ${SO_COT} cột (thước có đo thật)"
+fi
+bang "lược đồ trước ↔ sau round-trip 008" "${LD_SAU}" "${LD_TRUOC}"
 
 # ── tổng ─────────────────────────────────────────────────────────────────────
 printf '\n═══════════════════════════════════════════════════════════════\n'

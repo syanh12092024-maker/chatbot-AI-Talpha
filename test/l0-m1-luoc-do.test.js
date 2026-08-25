@@ -3,7 +3,7 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { dungSandbox } from "../db/sandbox.js";
-import { maHoa, giaiMa, ghiCauHinhModel } from "../db/khoa.js";
+import { maHoa, giaiMa, ghiCauHinhModel, ghiKhoaNha } from "../db/khoa.js";
 import { danhSachBan, len, xuong, sinhSchema } from "../db/migrate.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -14,9 +14,12 @@ import { GOC } from "../db/ket-noi.js";
 // so luôn xanh và không bắt được bảng thiếu lẫn bảng thừa (finding N5).
 // 22/08 TỔNG vá theo §9 (L1-M1): +ket_noi_pos (bảng 20). 23/08 vá tiếp theo §9 (L2-M1):
 // +tin_cho_xu_ly (bảng 21, migration 003) — 004 KHÔNG thêm bảng.
+// 25/08 G2-A2 (PHIEU-B-Y2): +khoa_nha (bảng 22, migration 008) — khoá API tách khỏi
+// `cau_hinh_model` để MỘT khoá mỗi (team × nhà), thay vì một bản mỗi dòng vai trò.
 const NEO_19_BANG = [
   "ket_noi_pos",
   "tin_cho_xu_ly",
+  "khoa_nha",
   "team",
   "nguoi_dung",
   "vai",
@@ -64,7 +67,7 @@ test("S1 · danh sách bảng khớp NEO NGOÀI 19 tên của 02 (+ _migrations)
   const thieu = NEO_19_BANG.filter((t) => !that.includes(t));
   const thua = that.filter((t) => !NEO_19_BANG.includes(t));
   assert.deepEqual({ thieu, thua }, { thieu: [], thua: [] });
-  assert.equal(that.length, 21); // 19 của 02 + ket_noi_pos (002) + tin_cho_xu_ly (003)
+  assert.equal(that.length, 22); // 19 của 02 + ket_noi_pos (002) + tin_cho_xu_ly (003) + khoa_nha (008)
 });
 
 test("S2 · phủ team_id: 0 bảng nghiệp vụ thiếu cột, chỉ bo_luat_chung được NULLABLE", async () => {
@@ -202,9 +205,9 @@ test("S6 · hợp đồng đọc bo_luat_chung: (team_id=$ctx OR team_id IS NULL
   assert.equal(dongNhat.c, 0);
 });
 
-test("S7 · khoá API lưu dạng MÃ HOÁ, DB chặn bản nguyên văn", async () => {
+test("S7 · khoá API lưu dạng MÃ HOÁ ở `khoa_nha`, DB chặn bản nguyên văn", async () => {
   const KHOA_THAT = "sk-that-khong-duoc-lo-0123456789";
-  const id = await ghiCauHinhModel(
+  await ghiCauHinhModel(
     sb.pool,
     {
       teamSlug: "tieu-alpha",
@@ -215,9 +218,10 @@ test("S7 · khoá API lưu dạng MÃ HOÁ, DB chặn bản nguyên văn", async
     },
     MOI_TRUONG,
   );
-  const r = await mot("SELECT khoa_api_ma FROM cau_hinh_model WHERE id=$1", [
-    id,
-  ]);
+  const r = await mot(
+    `SELECT k.khoa_api_ma FROM khoa_nha k JOIN team t ON t.id = k.team_id
+      WHERE t.slug='tieu-alpha' AND k.nha_cung_cap='moonshot'`,
+  );
   assert.ok(
     r.khoa_api_ma.startsWith("v1."),
     `đã lưu: ${r.khoa_api_ma.slice(0, 10)}`,
@@ -225,18 +229,69 @@ test("S7 · khoá API lưu dạng MÃ HOÁ, DB chặn bản nguyên văn", async
   assert.ok(!/^(sk-|ey)/.test(r.khoa_api_ma));
   assert.ok(!r.khoa_api_ma.includes(KHOA_THAT));
   assert.equal(giaiMa(r.khoa_api_ma, MOI_TRUONG), KHOA_THAT);
-  // Rào ở tầng DB: có cố ghi thẳng cũng không lọt.
+
+  // `cau_hinh_model` KHÔNG còn cột khoá — đó là cả cái lý do của migration 008.
+  const conCot = await mot(
+    `SELECT count(*)::int c FROM information_schema.columns
+      WHERE table_name='cau_hinh_model' AND column_name='khoa_api_ma'`,
+  );
+  assert.equal(conCot.c, 0);
+
+  // Rào ở tầng DB THEO CỘT sang bảng mới: có cố ghi thẳng cũng không lọt.
   await assert.rejects(
     () =>
       q(
-        `INSERT INTO cau_hinh_model (team_id, vai_tro, nha_cung_cap, ma_model, khoa_api_ma)
-             SELECT id,'du_phong','openai','gpt-5.6', $1 FROM team WHERE slug='tieu-alpha'`,
+        `INSERT INTO khoa_nha (team_id, nha_cung_cap, khoa_api_ma)
+             SELECT id,'openai',$1 FROM team WHERE slug='tieu-alpha'`,
         [KHOA_THAT],
       ),
-    /cau_hinh_model_khoa_api_ma_check/,
+    /khoa_nha_khoa_api_ma_check/,
   );
   // Thiếu khoá gốc thì NÉM LỖI, không rơi về khoá mặc định.
   assert.throws(() => maHoa("abc", {}), /V3_KHOA_MA_HOA/);
+});
+
+// ── ④#2 và ④#4 của PHIEU-B-Y2 — chính cái lỗi im lặng mà 008 sinh ra để vá ────────
+test("S7b · một team dùng CÙNG nhà cho ô chính và ô nền → khoá lưu ĐÚNG MỘT bản", async () => {
+  const K1 = "sk-kimi-ban-dau-000000000000";
+  const chung = { teamSlug: "auus", nhaCungCap: "kimi" };
+  await ghiCauHinhModel(
+    sb.pool,
+    { ...chung, vaiTro: "chinh", maModel: "kimi-k2.6", khoaApi: K1 },
+    MOI_TRUONG,
+  );
+  await ghiCauHinhModel(
+    sb.pool,
+    { ...chung, vaiTro: "nen", maModel: "kimi-k2.5", khoaApi: K1 },
+    MOI_TRUONG,
+  );
+
+  // ④#2 — không còn CÁCH NÀO lưu hai bản khoá cho cùng một nhà.
+  const dem = await mot(
+    `SELECT count(*)::int c FROM khoa_nha k JOIN team t ON t.id=k.team_id
+      WHERE t.slug='auus' AND k.nha_cung_cap='kimi'`,
+  );
+  console.log(`   [S7b] chinh + nen cùng nhà kimi → ${dem.c} bản khoá (chờ 1)`);
+  assert.equal(dem.c, 1);
+
+  // ④#4 — ĐỔI khoá MỘT LẦN là đủ cho MỌI ô dùng nhà đó. Đây là ca mà lược đồ cũ hỏng:
+  // sửa ô «chính» xong ô «nền» giữ khoá cũ ⇒ chat chạy, việc nền chết câm.
+  const K2 = "sk-kimi-da-doi-1111111111111";
+  await ghiKhoaNha(sb.pool, { ...chung, khoaApi: K2 }, MOI_TRUONG);
+
+  const oCuaTeam = await q(
+    `SELECT c.vai_tro, k.khoa_api_ma
+       FROM cau_hinh_model c
+       JOIN team t ON t.id = c.team_id
+       LEFT JOIN khoa_nha k ON k.team_id=c.team_id AND k.nha_cung_cap=c.nha_cung_cap
+      WHERE t.slug='auus' AND c.nha_cung_cap='kimi' ORDER BY c.vai_tro`,
+  );
+  const doc = oCuaTeam.rows.map((x) => giaiMa(x.khoa_api_ma, MOI_TRUONG));
+  console.log(
+    `   [S7b] ${oCuaTeam.rows.length} ô dùng nhà kimi → ${doc.filter((d) => d === K2).length} ô đọc ra khoá MỚI`,
+  );
+  assert.equal(oCuaTeam.rows.length, 2);
+  assert.deepEqual(doc, [K2, K2]); // cả `chinh` lẫn `nen`, không sót ô nào
 });
 
 test("S8 · don_hang: nguồn bắt buộc + trạng thái hệ TÁCH trạng thái POS", async () => {
@@ -331,5 +386,5 @@ test("S12 · diễn tập down → up trên CSDL ĐÃ có dữ liệu: sạch r�
     `SELECT count(*)::int c FROM information_schema.tables
      WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> '_migrations'`,
   );
-  assert.equal(sau.c, 21); // 19 + ket_noi_pos + tin_cho_xu_ly
+  assert.equal(sau.c, 22); // 19 + ket_noi_pos + tin_cho_xu_ly + khoa_nha
 });

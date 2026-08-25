@@ -63,8 +63,67 @@ export function giaiMa(baoThu, env = process.env) {
   ]).toString("utf8");
 }
 
-// Bộ GHI của phiếu này: mọi đường ghi khoá API đi qua đúng hàm này (án lệ «cửa RA
-// đúng một cái»). Người B ở L1-M4 gọi hàm này, không tự viết câu INSERT khác.
+// ═══ KHOÁ API LƯU Ở ĐÂU (đổi ở migration 008 — PHIEU-B-Y2) ════════════════════
+// TRƯỚC 008: `cau_hinh_model.khoa_api_ma`, tức MỖI DÒNG VAI TRÒ một bản. Team nào xếp
+// `chinh` và `nen` cùng nhà là cùng một khoá lưu HAI BẢN; đổi khoá quên một bản thì chat
+// vẫn chạy còn việc nền chết câm.
+// TỪ 008: bảng `khoa_nha`, MỘT bản cho mỗi (team × nhà). `cau_hinh_model` không còn cột
+// khoá. Ghi khoá MỘT LẦN là mọi ô dùng nhà đó đọc ra khoá mới.
+//
+// ⛔ `khoa_nha` CỐ Ý ngoài `BANG_NGHIEP_VU_CHUAN` của tầng truy vấn (nó chứa khoá đã mã
+//    hoá) — mọi đường ghi/đọc khoá đi qua đúng ba hàm dưới đây, đúng tiền lệ `ket_noi_pos`.
+
+/** Ghi (hoặc đổi) khoá API của một NHÀ cho một team. Cửa RA duy nhất của `khoa_nha`.
+ *  `khoaApi = null` → giữ nguyên khoá cũ (không xoá) — đổi model mà vô tình xoá khoá là
+ *  một cách rất rẻ để làm team đó câm. Muốn XOÁ khoá thì dùng `xoaKhoaNha`. */
+export async function ghiKhoaNha(
+  pool,
+  { teamSlug, nhaCungCap, khoaApi = null },
+  env = process.env,
+) {
+  const r = await pool.query(
+    `INSERT INTO khoa_nha (team_id, nha_cung_cap, khoa_api_ma)
+     SELECT t.id, $2, $3 FROM team t WHERE t.slug = $1
+     ON CONFLICT (team_id, nha_cung_cap) DO UPDATE
+       SET khoa_api_ma = COALESCE(EXCLUDED.khoa_api_ma, khoa_nha.khoa_api_ma),
+           sua_luc     = now()
+     RETURNING id`,
+    [teamSlug, nhaCungCap, maHoa(khoaApi, env)],
+  );
+  if (!r.rowCount) throw new Error(`không có team slug='${teamSlug}'`);
+  return r.rows[0].id;
+}
+
+/** Đọc khoá NGUYÊN VĂN của một (team × nhà). null = chưa có khoá.
+ *  Đòi `V3_KHOA_MA_HOA` (để giải mã) — chỉ gọi ở nơi THẬT SỰ cần khoá để gọi API. Chỗ nào
+ *  chỉ cần biết «team này có khoá riêng không» thì gọi `coKhoaNha`, đừng kéo khoá ra. */
+export async function docKhoaNha(
+  pool,
+  { teamId, nhaCungCap },
+  env = process.env,
+) {
+  const r = await pool.query(
+    `SELECT khoa_api_ma FROM khoa_nha WHERE team_id = $1 AND nha_cung_cap = $2`,
+    [teamId, nhaCungCap],
+  );
+  return r.rowCount ? giaiMa(r.rows[0].khoa_api_ma, env) : null;
+}
+
+/** Có khoá riêng hay không — KHÔNG giải mã, KHÔNG đòi `V3_KHOA_MA_HOA`.
+ *  Câu hỏi «có khoá riêng không» là câu hỏi định tuyến, không phải câu hỏi bí mật; kéo
+ *  bản mã ra khỏi CSDL chỉ để đếm nó là mở rộng bề mặt rò rỉ mà chẳng được gì. */
+export async function coKhoaNha(pool, { teamId, nhaCungCap }) {
+  const r = await pool.query(
+    `SELECT 1 FROM khoa_nha
+      WHERE team_id = $1 AND nha_cung_cap = $2 AND khoa_api_ma IS NOT NULL`,
+    [teamId, nhaCungCap],
+  );
+  return r.rowCount > 0;
+}
+
+// Bộ GHI cấu hình model. Từ 008 nó KHÔNG còn ghi khoá vào `cau_hinh_model` nữa — đưa
+// `khoaApi` vào thì khoá đi thẳng sang `khoa_nha` theo `nhaCungCap`, tức là ghi một lần
+// cho MỌI vai trò dùng nhà đó. Chữ ký giữ nguyên để nơi gọi cũ không phải sửa.
 export async function ghiCauHinhModel(
   pool,
   {
@@ -79,26 +138,20 @@ export async function ghiCauHinhModel(
   env = process.env,
 ) {
   const r = await pool.query(
-    `INSERT INTO cau_hinh_model (team_id, vai_tro, nha_cung_cap, ma_model, khoa_api_ma, do_ngau_nhien, bat)
-     SELECT t.id, $2, $3, $4, $5, $6, $7 FROM team t WHERE t.slug = $1
+    `INSERT INTO cau_hinh_model (team_id, vai_tro, nha_cung_cap, ma_model, do_ngau_nhien, bat)
+     SELECT t.id, $2, $3, $4, $5, $6 FROM team t WHERE t.slug = $1
      ON CONFLICT (team_id, vai_tro) DO UPDATE
-       SET nha_cung_cap = EXCLUDED.nha_cung_cap,
-           ma_model     = EXCLUDED.ma_model,
-           khoa_api_ma  = COALESCE(EXCLUDED.khoa_api_ma, cau_hinh_model.khoa_api_ma),
+       SET nha_cung_cap  = EXCLUDED.nha_cung_cap,
+           ma_model      = EXCLUDED.ma_model,
            do_ngau_nhien = EXCLUDED.do_ngau_nhien,
-           bat          = EXCLUDED.bat,
-           sua_luc      = now()
+           bat           = EXCLUDED.bat,
+           sua_luc       = now()
      RETURNING id`,
-    [
-      teamSlug,
-      vaiTro,
-      nhaCungCap,
-      maModel,
-      maHoa(khoaApi, env),
-      doNgauNhien,
-      bat,
-    ],
+    [teamSlug, vaiTro, nhaCungCap, maModel, doNgauNhien, bat],
   );
   if (!r.rowCount) throw new Error(`không có team slug='${teamSlug}'`);
+  if (khoaApi != null && khoaApi !== "") {
+    await ghiKhoaNha(pool, { teamSlug, nhaCungCap, khoaApi }, env);
+  }
   return r.rows[0].id;
 }

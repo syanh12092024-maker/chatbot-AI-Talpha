@@ -51,13 +51,37 @@ export async function layModel(pool, ctx, { vaiTro = "chinh" } = {}) {
     );
   }
 
-  const r = await pool.query(
-    `SELECT nha_cung_cap, ma_model, khoa_api_ma, do_ngau_nhien
-       FROM cau_hinh_model
-      WHERE team_id = $1 AND vai_tro = $2 AND bat
-      LIMIT 1`,
-    [ctx.teamId, vaiTro],
-  );
+  // Từ migration 008 khoá API nằm ở bảng `khoa_nha` (MỘT bản mỗi team × nhà), không còn
+  // ở `cau_hinh_model.khoa_api_ma`. Ở đây chỉ cần biết CÓ hay KHÔNG có khoá riêng — đó là
+  // câu hỏi định tuyến, không phải câu hỏi bí mật — nên hỏi bằng `IS NOT NULL`, không kéo
+  // bản mã vào tiến trình chat như bản trước.
+  //
+  // LƯỚI MIGRATION (án lệ #7): hàm này nằm trên ĐƯỜNG CHAT SỐNG. Deploy code trước khi áp
+  // 008 thì `khoa_nha` chưa tồn tại và câu JOIN ném `42P01` ⇒ MỌI lượt trả lời khách chết.
+  // Nên bắt đúng mã đó và lui về cột cũ, kèm một dòng KÊU RA — «mù thì phải nói», đừng câm.
+  const CAU_MOI = `SELECT c.nha_cung_cap, c.ma_model, c.do_ngau_nhien,
+                          (k.khoa_api_ma IS NOT NULL) AS co_khoa_rieng
+                     FROM cau_hinh_model c
+                     LEFT JOIN khoa_nha k
+                            ON k.team_id = c.team_id AND k.nha_cung_cap = c.nha_cung_cap
+                    WHERE c.team_id = $1 AND c.vai_tro = $2 AND c.bat
+                    LIMIT 1`;
+  const CAU_CU = `SELECT nha_cung_cap, ma_model, do_ngau_nhien,
+                         (khoa_api_ma IS NOT NULL) AS co_khoa_rieng
+                    FROM cau_hinh_model
+                   WHERE team_id = $1 AND vai_tro = $2 AND bat
+                   LIMIT 1`;
+  let r;
+  try {
+    r = await pool.query(CAU_MOI, [ctx.teamId, vaiTro]);
+  } catch (e) {
+    if (e?.code !== "42P01") throw e;
+    console.warn(
+      "[model] bảng `khoa_nha` chưa có (migration 008 chưa áp) — đọc tạm khoá ở cột cũ " +
+        "`cau_hinh_model.khoa_api_ma`. Áp 008 rồi thì dòng này biến mất.",
+    );
+    r = await pool.query(CAU_CU, [ctx.teamId, vaiTro]);
+  }
 
   if (!r.rowCount) {
     // ĐƯỜNG LUI — team chưa cấu hình. `maModel` lấy từ config THẬT đang chạy
@@ -72,10 +96,10 @@ export async function layModel(pool, ctx, { vaiTro = "chinh" } = {}) {
   // phục vụ được đúng ca client cũ dùng được: cùng nhà cung cấp VÀ không có khoá
   // riêng. Mọi ca khác ⇒ ném lỗi, KHÔNG lặng lẽ gọi nhà A bằng mã model của nhà B
   // (im lặng ở đây là hoá đơn sai + một lượt 400 mà khách chỉ thấy bot câm).
-  if (row.nha_cung_cap !== config.aiProvider || row.khoa_api_ma) {
+  if (row.nha_cung_cap !== config.aiProvider || row.co_khoa_rieng) {
     throw new LoiChuaCoLopModel(
       `Team ${ctx.teamId} cấu hình model riêng (nha_cung_cap=${row.nha_cung_cap}` +
-        `${row.khoa_api_ma ? " · có khoá API riêng" : ""}) nhưng L2-M1 chỉ có client ` +
+        `${row.co_khoa_rieng ? " · có khoá API riêng" : ""}) nhưng L2-M1 chỉ có client ` +
         `của llm.js cũ (nhà đang chạy: ${config.aiProvider}). Cần lớp model L1-M4 ` +
         `của người B. Fail-CLOSED — không gọi bằng client sai nhà.`,
     );

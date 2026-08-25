@@ -60,7 +60,8 @@ Mọi bảng còn lại có `team_id NOT NULL`; **ngoại lệ duy nhất** là 
 | `nguoi_dung`         | người                            | `email` UNIQUE · `mat_khau_hash` (B chốt cách băm ở L0-M3, NULL = chưa đặt)                             |
 | `vai`                | 5 vai của 01 §9                  | `ma`: `quan-tri`·`marketer`·`sale`·`quan-ly`·`duyet-kich-ban`                                           |
 | `thanh_vien_team`    | ai thuộc team nào, vai gì        | UNIQUE (team, người, vai) · **trigger chặn team kỹ thuật**                                              |
-| `cau_hinh_model`     | model + khoá từng team           | `vai_tro` ∈ chinh/du_phong/nen · **`khoa_api_ma` MÃ HOÁ** · `do_ngau_nhien`                             |
+| `cau_hinh_model`     | model từng team, BA dòng một team | `vai_tro` ∈ chinh/du_phong/nen · `nha_cung_cap` · `ma_model` · `do_ngau_nhien` · ~~`khoa_api_ma`~~ (bỏ ở 008) |
+| `khoa_nha` (008)     | khoá API — MỘT bản mỗi (team × nhà) | `UNIQUE (team_id, nha_cung_cap)` · **`khoa_api_ma` MÃ HOÁ** · ngoài `BANG_NGHIEP_VU_CHUAN` |
 | `page`               | sổ cái page                      | `page_id` (id FB, UNIQUE) · **`bot_ai_bat`** · `botcake_tat` · `trong_diem` · `the_pancake` · `mat_dau` |
 | `san_pham` `goi_gia` | danh mục                         | **chưa nạp ở L0-M1** — nguồn là POS (L1-M1)                                                             |
 | `khach`              | hồ sơ khách                      | `so_dien_thoai` **NULL được**, UNIQUE trong team khi có giá trị · `ti_le_hoan`                          |
@@ -103,11 +104,27 @@ CHECK ràng: `loai='hoi_thoai'` bắt buộc có `hoi_thoai_id`, `loai='don_hang
 4. **`so_ai.ma_model` NOT NULL.** `logAi` của bản đang chạy chưa ghi model, nên bộ nạp Sổ AI
    đòi người chạy KHAI mã model cũ (`--ma-model-cu=`) và **ném lỗi kèm số dòng** nếu thiếu —
    cấm đoán hộ, sổ có cả giai đoạn chạy Claude lẫn Kimi.
-5. **`cau_hinh_model.khoa_api_ma` lưu bao thư `v1.<iv>.<tag>.<ct>`** (AES-256-GCM,
-   `db/khoa.js`). Khoá gốc đọc từ biến môi trường **`V3_KHOA_MA_HOA`** (32 byte hex/base64);
-   thiếu là ném lỗi, không có khoá mặc định trong mã nguồn. ⚠️ Biến này **chưa có trong
-   `.env`** — việc NGƯỜI, đã ghi §9 sổ. CHECK ở tầng CSDL chặn mọi giá trị không mở đầu `v1.`.
-   Ghi bằng `ghiCauHinhModel()`, đừng tự viết câu INSERT khác.
+5. **Khoá API: `khoa_nha.khoa_api_ma`, bao thư `v1.<iv>.<tag>.<ct>`** (AES-256-GCM,
+   `db/khoa.js`). Khoá gốc đọc từ **`V3_KHOA_MA_HOA`** (32 byte hex/base64); thiếu là ném
+   lỗi, không có khoá mặc định trong mã nguồn. CHECK ở tầng CSDL chặn mọi giá trị không mở
+   đầu `v1.`. `khoa_nha` **cố ý ngoài `BANG_NGHIEP_VU_CHUAN`** — nó chứa khoá, nên chỉ đi
+   qua `db/khoa.js`, đúng tiền lệ `ket_noi_pos`.
+
+   ⚠️ **ĐỔI CHỖ Ở MIGRATION 008 (25/08, PHIEU-B-Y2).** Trước đó khoá nằm trên `cau_hinh_model`,
+   tức MỖI DÒNG VAI TRÒ một bản. Team nào xếp `chinh` và `nen` cùng nhà là cùng một khoá lưu
+   HAI BẢN; đổi khoá mà chỉ sửa ô «chính» thì **chat với khách vẫn chạy, việc nền chết câm**
+   — không dòng lỗi nào, chỉ là báo cáo trống dần. Nay ghi khoá MỘT LẦN cho mỗi (team × nhà)
+   là mọi ô dùng nhà đó đọc ra khoá mới.
+
+   | Cần gì | Gọi hàm nào | Đòi `V3_KHOA_MA_HOA`? |
+   |---|---|---|
+   | Ghi/đổi khoá của một nhà | `ghiKhoaNha(pool, {teamSlug, nhaCungCap, khoaApi})` | có |
+   | Lấy khoá NGUYÊN VĂN để gọi API | `docKhoaNha(pool, {teamId, nhaCungCap})` | có |
+   | Chỉ hỏi «team này có khoá riêng không» | `coKhoaNha(pool, {teamId, nhaCungCap})` | **không** |
+   | Ghi cấu hình model (khoá đi kèm sẽ tự sang `khoa_nha`) | `ghiCauHinhModel(...)` | chỉ khi có `khoaApi` |
+
+   Câu hỏi «có khoá riêng không» là câu hỏi ĐỊNH TUYẾN, không phải câu hỏi bí mật — dùng
+   `coKhoaNha`, đừng kéo bản mã vào tiến trình chỉ để đếm nó.
 6. **`san_pham`/`goi_gia` để trống ở L0-M1** — 02 khai nguồn là POS, thuộc L1-M1.
 
 ## 5 · Số di trú (đo 22/08/2026 trên cây `f967076`, máy dev)
