@@ -341,6 +341,23 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   `max(sua_luc)` làm vân tay «có ai ghi gì không». Nơi nào cần đồng hồ CSDL thì tự khai —
   đừng trộn `new Date()` của máy vào một cột đang toàn `now()` (án lệ #18).
 
+- 25/08 · B-Y4 (người A) — GHI NỢ + một quyết định CỐ Ý không tối ưu:
+  (1) `marketer` là chuỗi TỰ DO, chưa phải khoá ngoại sang `nguoi_dung`. Đáng làm (báo cáo
+  cắt theo marketer sẽ dựa trên chuỗi gõ tay, sai chính tả là mất dòng), nhưng đổi cả lược
+  đồ lẫn màn hình của B ⇒ phiếu riêng.
+  (2) **CỐ Ý không sinh SQL động** ở `napPage` dù hai danh sách `COT_MAY_DAT`/`COT_NGUOI_DAT`
+  gọn hơn và an toàn hơn cho người sau: `v3/test/b/page-bot.test.mjs` ĐỌC THẲNG văn bản SQL
+  đó để đối chiếu. Sinh động là làm bộ đọc của người B mù — họ sẽ thấy «không tìm thấy câu
+  ON CONFLICT» thay vì thấy tín hiệu thật. Phá một hợp đồng liên-người đang chạy để đổi lấy
+  cái đẹp hình thức là lỗ (án lệ #24). Đã ghi vào chú thích: PHẢI giữ SQL ở dạng CHỮ.
+  (3) Page MỚI vẫn rơi vào team kỹ thuật (`team_id` chỉ ở vế INSERT) — nợ cũ từ B-Y3.
+
+- 25/08 · B-Y4 — 🧭 **kiểm bẫy phải kiểm CẢ HAI CHIỀU.** Người B giăng sẵn một khẳng định
+  sẽ đỏ đúng lúc A vá xong. Chạy lại thì 21 pass/0 fail — nhưng «xanh» một mình không nói
+  được gì, nên đo lại bằng CHÍNH regex của B trên cả hai bản: bản cũ 10 cột (có `marketer`),
+  bản mới 9. Xanh ĐÚNG NHỜ bản vá, lùi lại là đỏ. Không có phép đo hai chiều này thì lời
+  khai «bẫy của B đã ăn» chỉ là suy đoán.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -817,6 +834,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 25/08 · B-Y4 → ✅ xong — `napPage` dùng CASE: nguồn điền chỗ trống, không bao giờ xoá chỗ người đã đặt; chỉ có ĐÚNG MỘT cột người đặt nằm trong câu ghi đè · commit e7afdbd · nhật ký docs/thi-cong/nhat-ky/phieu-b-y4.md
+- 25/08 · B-Y4 → đo trên Postgres 16.15 THẬT: cổng 6/6, phép chính chạy `npm run di-tru` ĐẦU-CUỐI · bộ ca di trú 11→16 ca, 15 pass/1 fail (D7 đỏ sẵn) · commit e7afdbd · nhật ký docs/thi-cong/nhat-ky/phieu-b-y4.md
+- 25/08 · B-Y4 → 🧭 kiểm bẫy của người B cả HAI chiều (bản cũ 10 cột / bản mới 9) — «xanh» một mình không chứng minh gì · commit e7afdbd · nhật ký docs/thi-cong/nhat-ky/phieu-b-y4.md
+
 - 25/08 · G2-A3 → ✅ xong — gộp câu SQL của ba cửa về `suaTheoId`; giữ allow-list, khuôn jsonb, nhật ký giấu nội dung khách, và CAS vẫn NÉM chứ không trả null · commit 5316a90 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a3.md
 - 25/08 · G2-A3 → đo trên Postgres 16.15 THẬT: cổng 6/6 · ba cửa còn 0 câu UPDATE tay · bộ ca khoá bẫy 7 pass/0 fail · hồi quy 31 bộ chỉ D7 đỏ · commit 5316a90 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a3.md
 - 25/08 · G2-A3 → 🧭 mảng JS vào cột jsonb · guard quá chặt làm đỏ 5 ca vì text[] thật · hộp kiểm kê gõ tay nói dối — chi tiết §9 · commit 5316a90 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a3.md
