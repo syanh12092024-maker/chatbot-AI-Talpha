@@ -16,10 +16,14 @@ import { GOC } from "../db/ket-noi.js";
 // +tin_cho_xu_ly (bảng 21, migration 003) — 004 KHÔNG thêm bảng.
 // 25/08 G2-A2 (PHIEU-B-Y2): +khoa_nha (bảng 22, migration 008) — khoá API tách khỏi
 // `cau_hinh_model` để MỘT khoá mỗi (team × nhà), thay vì một bản mỗi dòng vai trò.
+// 25/08 G2-A4: +ky_nang_lich_su (bảng 23, migration 009) — ảnh các bản CŨ của kỹ năng.
+// Bản ĐANG DÙNG vẫn ở chính `ky_nang` (một dòng mỗi team×ma), cố ý: màn «Thư viện kỹ
+// năng» của người B đọc `db.chon('ky_nang', {})` và hiện mỗi dòng là một kỹ năng.
 const NEO_19_BANG = [
   "ket_noi_pos",
   "tin_cho_xu_ly",
   "khoa_nha",
+  "ky_nang_lich_su",
   "team",
   "nguoi_dung",
   "vai",
@@ -67,7 +71,7 @@ test("S1 · danh sách bảng khớp NEO NGOÀI 19 tên của 02 (+ _migrations)
   const thieu = NEO_19_BANG.filter((t) => !that.includes(t));
   const thua = that.filter((t) => !NEO_19_BANG.includes(t));
   assert.deepEqual({ thieu, thua }, { thieu: [], thua: [] });
-  assert.equal(that.length, 22); // 19 của 02 + ket_noi_pos (002) + tin_cho_xu_ly (003) + khoa_nha (008)
+  assert.equal(that.length, 23); // 19 của 02 + ket_noi_pos + tin_cho_xu_ly + khoa_nha (008) + ky_nang_lich_su (009)
 });
 
 test("S2 · phủ team_id: 0 bảng nghiệp vụ thiếu cột, chỉ bo_luat_chung được NULLABLE", async () => {
@@ -386,5 +390,5 @@ test("S12 · diễn tập down → up trên CSDL ĐÃ có dữ liệu: sạch r�
     `SELECT count(*)::int c FROM information_schema.tables
      WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> '_migrations'`,
   );
-  assert.equal(sau.c, 22); // 19 + ket_noi_pos + tin_cho_xu_ly + khoa_nha
+  assert.equal(sau.c, 23); // 19 + ket_noi_pos + tin_cho_xu_ly + khoa_nha + ky_nang_lich_su
 });

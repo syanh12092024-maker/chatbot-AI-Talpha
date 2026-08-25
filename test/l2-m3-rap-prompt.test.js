@@ -149,6 +149,13 @@ test("② bo_luat_chung: NULL đọc được từ ctx cả 3 team (N3); version
     `[② N3] 3 team (${slugs.join(",")}) cùng đọc dòng id=${[...idDong][0]}, v1`,
   );
 
+  // ⚠️ SỬA 25/08 (G2-A4): chỉ mục `bo_luat_chung_mot_ban_dang_ap` (migration 009) làm
+  // trạng thái «hai bản cùng dang_dung» KHÔNG tồn tại được nữa — đó là RF-17, và bộ ca này
+  // trước đây tự dựng đúng cái trạng thái ấy. Hạ v1 rồi mới dựng v2, đúng như mọi nơi gọi
+  // hợp lệ phải làm. Ý ĐỒ của ca không đổi: đo «version mới ăn NGAY, không cần restart».
+  await sb.pool.query(
+    "UPDATE bo_luat_chung SET dang_dung = false WHERE team_id IS NULL AND dang_dung",
+  );
   await sb.pool.query(
     `INSERT INTO bo_luat_chung (team_id, phien_ban, noi_dung, dang_dung, nguoi_sua)
      VALUES (NULL, 2, 'BẢN VÁ v2 — test khong-restart-L2M3', true, 'test-l2m3')`,

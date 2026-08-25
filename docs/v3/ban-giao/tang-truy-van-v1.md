@@ -272,6 +272,41 @@ const { moCoi, boLaiCoChuDich } = await demMoCoi(pool);
 // boLaiCoChuDich → `so_ai`, CỐ Ý > 0 sau lượt chuyển đầu tiên. Hiện, nhưng đừng báo động.
 ```
 
+## 6c · Bộ luật chung & kỹ năng — phiên bản, duyệt, đo ảnh hưởng (25/08, G2-A4)
+
+```js
+import {
+  taoBanBoLuat, duyetBoLuat, apBoLuat, soSanhBoLuat, xemAnhHuongBoLuat,
+  suaKyNang, luiKyNang, lichSuKyNang, xemAnhHuongKyNang, apDungChoPage,
+} from "../../src/db/index.js";
+```
+
+| Cần gì | Gọi hàm nào |
+|---|---|
+| Soạn bản mới (KHÔNG áp ngay) | `taoBanBoLuat(pool, ctx, { noiDung, ghiChu, nguon })` |
+| Đóng dấu duyệt | `duyetBoLuat(pool, ctx, { id })` — **người soạn không tự duyệt được** |
+| Áp **hoặc lùi** | `apBoLuat(pool, ctx, { id, lyDo })` → `{ ban, banCu, laLui, anhHuong }` |
+| Khác bản trước chỗ nào | `soSanhBoLuat(pool, ctx, { tuPhienBan, denPhienBan })` |
+| Bao nhiêu page bị chạm | `xemAnhHuongBoLuat` · `xemAnhHuongKyNang(pool, ctx, { ma, batChoNhomSp })` |
+| Sửa / lùi / xem lịch sử kỹ năng | `suaKyNang` · `luiKyNang` · `lichSuKyNang` |
+
+**Ba điều đáng đổi sang dùng:**
+
+- `apBoLuat()` chạy **MỘT GIAO DỊCH**. Bản hiện tại của màn hạ bản cũ rồi dựng bản mới bằng
+  hai lời gọi rời — hạ xong mà dựng hỏng thì team không còn bản nào đang áp và prompt rơi về
+  bản toàn hệ, tức mọi page đang bật bot đổi cách nói mà không ai bấm nút nào.
+- Migration 009 thêm chỉ mục `bo_luat_chung_mot_ban_dang_ap`: **hai bản cùng `dang_dung`
+  không tồn tại được nữa** (RF-17). Thứ tự hạ-trước-dựng-sau của màn vẫn hợp lệ.
+- `xemAnhHuongKyNang` nhận `batChoNhomSp` **định đặt** (chưa ghi xuống) — xem trước rồi mới
+  bấm. Nó dùng CHUNG vị từ `apDungChoPage()` với bộ ráp prompt, nên con số nó nói đúng bằng
+  số page bot thật sự đổi giọng (đo 25/08: **0/514 page lệch**).
+
+`ky_nang` **vẫn đúng một dòng mỗi (team, ma)** — lịch sử nằm ở bảng riêng `ky_nang_lich_su`.
+Cố ý, để màn «Thư viện kỹ năng» không phải đổi hình.
+
+⚠️ Chưa siết `CHECK (NOT dang_dung OR duyet_luc IS NOT NULL)` ở tầng CSDL vì màn còn ghi
+thẳng qua `db.sua()`. Sẽ siết sau khi màn đổi sang gọi `apBoLuat()` — cutover hai bước.
+
 ## 7 · Nghiệm thu — đo lại bằng gì
 
 ```bash

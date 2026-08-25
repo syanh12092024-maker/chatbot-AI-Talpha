@@ -24,7 +24,7 @@
 // (mặc định) ⇒ dùng NGUYÊN đường `kb.js#getKBForPage` cũ, KHÔNG đụng DB — không gãy 51
 // page hiện hành đang sống bằng kb-overrides.json lúc cây này merge/deploy. Đặt `=1` mới
 // bật đường DB bốn khối. Đây LÀ "cờ config" mà đề bài ②.1 nhắc — không phải per-block.
-import { ctxHeThong, layNhieu } from "../db/index.js";
+import { ctxHeThong, layNhieu, apDungChoPage } from "../db/index.js";
 import { getKBForPage } from "../kb.js";
 
 /** Bốn tên khối — dùng để khai `nguon_thieu` (mù-có-nói-ra, không im — luật án lệ #7). */
@@ -72,11 +72,10 @@ export async function docKyNang(pool, teamId, dsMaSp = []) {
     dieuKien: { team_id: teamId, bat: true },
     thuTu: "ma",
   });
-  const ma = new Set(dsMaSp);
-  return rows.filter((r) => {
-    const nhom = Array.isArray(r.bat_cho_nhom_sp) ? r.bat_cho_nhom_sp : [];
-    return !nhom.length || nhom.some((g) => ma.has(g));
-  });
+  // ⚠️ Vị từ này DÙNG CHUNG với phép đếm «kỹ năng này chạm bao nhiêu page» ở
+  // `src/db/noi-dung.js`. Gõ lại nó ở đây là đẻ bản khai thứ hai — và bản thứ hai bao giờ
+  // cũng là bản trôi, tức màn hình nói «3 page» trong khi bot đổi giọng ở 51 page.
+  return rows.filter((r) => apDungChoPage(r, dsMaSp));
 }
 
 /** Đọc dòng `page` theo khoá tự nhiên TEXT (Facebook page_id) — cần `page.id` (bigint)

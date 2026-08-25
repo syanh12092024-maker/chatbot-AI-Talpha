@@ -364,7 +364,7 @@ Kế hoạch: `docs/v3/gd2/00-KE-HOACH-GD2.md`. Sáu module, làm TUẦN TỰ.
 | **B-Y3** | Chuyển page ↔ team (chen trước G2-A3 theo lệnh) — gỡ chặn **H7** + lát ④ màn Cấu hình team | ✅ **25/08** | cổng B-Y3 **14/14** · bộ ca **14 pass / 0 fail** · **5** bảng con đi theo page (phiếu kê 3, lược đồ thật có 5) · mồ côi trên CSDL THẬT = **0** |
 | **G2-A3** | Gộp BA cửa ghi hẹp về MỘT bộ dựng SQL | ✅ **25/08** | cổng G2-A3 **6/6** · ba cửa còn **0** câu UPDATE tay · bộ ca khoá bẫy **7 pass / 0 fail** · 7 bộ ca của ba cửa xanh trọn · còn **4 câu gộp được** ở `lich-nhac`/`hang-cho`/`ti-le-hoan` — ngoài phạm vi, đã ghi §9 |
 | **B-Y4** | Di trú thôi ghi đè cột NGƯỜI đặt (chen theo lệnh) — cứu chức năng gán marketer của `G2-B2` | ✅ **25/08** | cổng B-Y4 **6/6** · marketer gán tay SỐNG SÓT qua `npm run di-tru` đầu-cuối · cột máy vẫn đồng bộ · **0** cột người đặt còn trong câu ghi đè |
-| G2-A4 | Bảng + API bộ luật chung và kỹ năng (phiên bản · duyệt · xem trước ảnh hưởng) | ⬜ 🟥 | |
+| **G2-A4** | Bảng + API bộ luật chung và kỹ năng (phiên bản · duyệt · xem trước ảnh hưởng) | ✅ **25/08** 🟥 | cổng G2-A4 **12/12** · bộ ca **17 pass / 0 fail** · migration 009 đóng **RF-17** (hai bản cùng đang áp KHÔNG tồn tại được) · áp là MỘT giao dịch · phép đếm ảnh hưởng lệch bộ đọc prompt **0/514 page thật** |
 | G2-A5 | Bảng + API kịch bản ba tầng có KẾ THỪA, đúng MỘT bản LIVE mỗi page | ⬜ | |
 | G2-A6 | API số liệu: báo cáo hai luồng · chi phí AI · A/B · sức khỏe 9 chỉ số | ⬜ | |
 
