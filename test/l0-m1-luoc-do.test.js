@@ -24,6 +24,7 @@ const NEO_19_BANG = [
   "tin_cho_xu_ly",
   "khoa_nha",
   "ky_nang_lich_su",
+  "mau_0_dong",
   "team",
   "nguoi_dung",
   "vai",
@@ -71,7 +72,7 @@ test("S1 · danh sách bảng khớp NEO NGOÀI 19 tên của 02 (+ _migrations)
   const thieu = NEO_19_BANG.filter((t) => !that.includes(t));
   const thua = that.filter((t) => !NEO_19_BANG.includes(t));
   assert.deepEqual({ thieu, thua }, { thieu: [], thua: [] });
-  assert.equal(that.length, 23); // 19 của 02 + ket_noi_pos + tin_cho_xu_ly + khoa_nha (008) + ky_nang_lich_su (009)
+  assert.equal(that.length, 24); // 19 của 02 + ket_noi_pos + tin_cho_xu_ly + khoa_nha (008) + ky_nang_lich_su (009)
 });
 
 test("S2 · phủ team_id: 0 bảng nghiệp vụ thiếu cột, chỉ bo_luat_chung được NULLABLE", async () => {
@@ -390,5 +391,5 @@ test("S12 · diễn tập down → up trên CSDL ĐÃ có dữ liệu: sạch r�
     `SELECT count(*)::int c FROM information_schema.tables
      WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> '_migrations'`,
   );
-  assert.equal(sau.c, 23); // 19 + ket_noi_pos + tin_cho_xu_ly + khoa_nha + ky_nang_lich_su
+  assert.equal(sau.c, 24); // 19 + ket_noi_pos + tin_cho_xu_ly + khoa_nha + ky_nang_lich_su
 });

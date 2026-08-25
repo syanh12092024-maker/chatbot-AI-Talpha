@@ -158,20 +158,42 @@ async function giaiChoPage(khach, teamId, pageRowId) {
       };
     }
 
-    // ② tầng NƯỚC — cần CẢ mã sản phẩm LẪN thị trường
-    if (k.maSp.length && k.thiTruong) {
-      const nuoc = await khach.query(
+    // ② tầng NƯỚC. HAI mức, hẹp trước rộng sau (012 · B-Y6 ⓐ):
+    //   2a. (sản phẩm × nước) — hẹp hơn, cần CẢ hai khoá
+    //   2b. CHỈ nước          — cần mỗi `thi_truong`
+    // 010 chỉ có 2a, và nó BUỘC phải có `san_pham_ma` — mà `san_pham` đang 0 dòng, nên
+    // tầng nước của tôi chưa bao giờ tới được. `page.thi_truong` thì có ở 140/514 page.
+    // Tôi đã treo một tầng dùng được vào một tầng chưa tồn tại; 012 gỡ đúng chỗ đó.
+    if (k.thiTruong) {
+      if (k.maSp.length) {
+        const hep = await khach.query(
+          `SELECT * FROM kich_ban
+            WHERE team_id = $1 AND cap = 'nuoc' AND trang_thai = 'LIVE'
+              AND san_pham_ma = ANY($2) AND thi_truong = $3
+            ORDER BY san_pham_ma LIMIT 1`,
+          [teamId, k.maSp, k.thiTruong],
+        );
+        if (hep.rowCount) {
+          const b = hep.rows[0];
+          return {
+            ban: b, cap: CAP.NUOC, keThua: true,
+            tuDau: `${CHU_CAP.nuoc} (${b.san_pham_ma} × ${b.thi_truong})`,
+            viSao: null, khoa,
+          };
+        }
+      }
+      const rong = await khach.query(
         `SELECT * FROM kich_ban
           WHERE team_id = $1 AND cap = 'nuoc' AND trang_thai = 'LIVE'
-            AND san_pham_ma = ANY($2) AND thi_truong = $3
-          ORDER BY san_pham_ma LIMIT 1`,
-        [teamId, k.maSp, k.thiTruong],
+            AND san_pham_ma IS NULL AND thi_truong = $2
+          LIMIT 1`,
+        [teamId, k.thiTruong],
       );
-      if (nuoc.rowCount) {
-        const b = nuoc.rows[0];
+      if (rong.rowCount) {
+        const b = rong.rows[0];
         return {
           ban: b, cap: CAP.NUOC, keThua: true,
-          tuDau: `${CHU_CAP.nuoc} (${b.san_pham_ma} × ${b.thi_truong})`,
+          tuDau: `${CHU_CAP.nuoc} (cả nước ${b.thi_truong})`,
           viSao: null, khoa,
         };
       }
@@ -199,9 +221,15 @@ async function giaiChoPage(khach, teamId, pageRowId) {
     // ④ KHÔNG CÓ GÌ — và đây là chỗ phải nói cho ra nhẽ, không được trả `null` trần.
     // Ba lý do khác hẳn nhau, và cách sửa cũng khác hẳn nhau.
     const thieu = [];
-    if (!k.maSp.length) {
+    if (!k.maSp.length && !k.thiTruong) {
       thieu.push(
-        "page chưa gắn sản phẩm nào (`san_pham.page_id`) nên CẢ HAI tầng trên không tới được",
+        "page chưa gắn sản phẩm nào (`san_pham.page_id`) VÀ chưa khai `thi_truong` — " +
+          "không tầng trên nào tới được",
+      );
+    } else if (!k.maSp.length) {
+      thieu.push(
+        "page chưa gắn sản phẩm nào (`san_pham.page_id`) nên tầng SẢN PHẨM không tới được; " +
+          `tầng NƯỚC thì chưa có bản LIVE nào cho "${k.thiTruong}"`,
       );
     } else if (!k.thiTruong) {
       thieu.push(

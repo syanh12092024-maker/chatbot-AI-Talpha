@@ -312,3 +312,52 @@ test("K16 · chưa áp 010 → KHÔNG chết, lui về một tầng và KÊU RA 
     await sb2.don();
   }
 });
+
+// ══ B-Y6 ⓐ — TẦNG CHỈ-NƯỚC, tầng duy nhất dùng được với dữ liệu hôm nay ═════════════
+// 010 buộc bản tầng nước phải có `san_pham_ma`, mà `san_pham` = 0 dòng ⇒ tầng đó chưa bao
+// giờ tới được. `page.thi_truong` thì có ở 140/514 page. 012 gỡ đúng chỗ đó.
+test("K17 · bản CHỈ theo nước (không mã sản phẩm) — page cùng nước kế thừa được", async () => {
+  const p = await mot(
+    "INSERT INTO page (team_id,page_id,ten,thi_truong) VALUES ($1,'fb-chi-nuoc','CN','Bahrain') RETURNING id",
+    [tA],
+  );
+  await mkBan({ cap: CAP.NUOC, maSp: null, nuoc: "Bahrain", pb: 1, live: true, chu: "CẢ-NƯỚC" });
+  const kq = await docKichBanChoPage(sb.pool, tA, p.id);
+  console.log(`   [K17] tuDau="${kq.tuDau}"`);
+  assert.equal(kq.cap, CAP.NUOC);
+  assert.equal(kq.keThua, true);
+  assert.equal(kq.ban.noi_dung_may, "CẢ-NƯỚC");
+  assert.match(kq.tuDau, /cả nước Bahrain/);
+  // …và page này KHÔNG có sản phẩm nào — đó chính là cảnh của 374/514 page thật.
+  assert.deepEqual(kq.khoa.maSp, []);
+});
+
+test("K18 · bản (sản phẩm × nước) HẸP HƠN nên thắng bản chỉ-nước", async () => {
+  const p = await mot(
+    "INSERT INTO page (team_id,page_id,ten,thi_truong) VALUES ($1,'fb-hai-muc','HM','Oman') RETURNING id",
+    [tA],
+  );
+  await q("INSERT INTO san_pham (team_id,page_id,ma,ten) VALUES ($1,$2,'sp:oman','SP')", [tA, p.id]);
+  await mkBan({ cap: CAP.NUOC, maSp: null, nuoc: "Oman", pb: 2, live: true, chu: "RỘNG" });
+  await mkBan({ cap: CAP.NUOC, maSp: "sp:oman", nuoc: "Oman", pb: 3, live: true, chu: "HẸP" });
+  const kq = await docKichBanChoPage(sb.pool, tA, p.id);
+  console.log(`   [K18] có cả hai mức → dùng "${kq.ban.noi_dung_may}"`);
+  assert.equal(kq.ban.noi_dung_may, "HẸP");
+});
+
+test("K19 · CSDL chặn hai bản LIVE cùng một nước (lỗ NULL mà B-Y6 cảnh báo)", async () => {
+  // `UNIQUE (team_id, san_pham_ma, thi_truong)` của 010 KHÔNG ràng được khi `san_pham_ma`
+  // là NULL — hai NULL trong Postgres là khác nhau, nên hai bản LIVE cùng nước sẽ LỌT.
+  // 012 bịt bằng `coalesce(san_pham_ma, '')`.
+  await assert.rejects(
+    () => mkBan({ cap: CAP.NUOC, maSp: null, nuoc: "Bahrain", pb: 9, live: true, chu: "x" }),
+    /kich_ban_mot_live_nuoc/,
+  );
+});
+
+test("K20 · bản tầng nước vẫn BẮT BUỘC có thi_truong", async () => {
+  await assert.rejects(
+    () => mkBan({ cap: CAP.NUOC, maSp: "sp:x", nuoc: null, pb: 8, live: false, chu: "x" }),
+    /kich_ban_khoa_dung_cap/,
+  );
+});

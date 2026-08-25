@@ -13,6 +13,8 @@ export {
   chiPhiAiTheoPage,
   hieuQuaKichBan,
   sucKhoeHeThong,
+  ghiNhanChan0Dong,
+  tiLeChan0Dong,
   CHIN_CHI_SO,
   TOI_THIEU_DE_KET_LUAN,
   VAI_XEM_SO_LIEU,

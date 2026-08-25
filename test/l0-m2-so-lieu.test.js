@@ -247,3 +247,62 @@ test("S14 · mọi khối số đều khai NGUỒN để tra ngược được",
   // Nối `so_ai` phải bằng id FACEBOOK — nối nhầm sang `page.id` thì câu chạy mà trả RỖNG.
   assert.match(b.nguon, /page\.page_id/);
 });
+
+// ══ B-Y6 ⓑ — LỚP TRẢ LỜI 0 ĐỒNG ════════════════════════════════════════════════════
+
+test("S15 · bảng mau_0_dong dùng được qua tầng truy vấn (không thì màn B không đụng nổi)", async () => {
+  const { layNhieu, themMoi, BANG_NGHIEP_VU_CHUAN } = await import("../src/db/index.js");
+  assert.ok(BANG_NGHIEP_VU_CHUAN.has("mau_0_dong"));
+  const dong = await themMoi(sb.pool, ctx, "mau_0_dong", {
+    ma: "phi-ship",
+    ten: "Phí ship",
+    tu_khoa: ["ship", "phí ship", "magkano ang shipping"],
+    noi_dung: "Freeship toàn quốc ạ.",
+    bat: true,
+  });
+  assert.ok(dong.id);
+  const ds = await layNhieu(sb.pool, ctx, "mau_0_dong", { dieuKien: { bat: true } });
+  console.log(`   [S15] đọc lại được ${ds.length} mẫu đang bật`);
+  assert.equal(ds.length, 1);
+  assert.deepEqual(ds[0].tu_khoa, ["ship", "phí ship", "magkano ang shipping"]);
+});
+
+test("S16 · bộ đếm chặn cộng NGUYÊN TỬ — 20 lượt đồng thời không mất lượt nào", async () => {
+  // Đọc-rồi-ghi thì hai lượt chat đồng thời cùng đọc một số rồi cùng ghi số đó+1: mất một
+  // lượt, im lặng. Một bộ đếm đếm thiếu thì con số «chặn ≥33%» không nghiệm thu được.
+  const { ghiNhanChan0Dong } = await import("../src/db/index.js");
+  await Promise.all(
+    Array.from({ length: 20 }, () => ghiNhanChan0Dong(sb.pool, { teamId: tA, ma: "phi-ship" })),
+  );
+  const r = await mot("SELECT so_lan_chan, chan_lan_cuoi FROM mau_0_dong WHERE ma='phi-ship'");
+  console.log(`   [S16] 20 lượt đồng thời → so_lan_chan=${r.so_lan_chan}`);
+  assert.equal(Number(r.so_lan_chan), 20);
+  assert.ok(r.chan_lan_cuoi);
+});
+
+test("S17 · mẫu TẮT thì không đếm, và trả null chứ không ném (đường chat không được chết)", async () => {
+  const { ghiNhanChan0Dong } = await import("../src/db/index.js");
+  await q("UPDATE mau_0_dong SET bat = false WHERE ma='phi-ship'");
+  const kq = await ghiNhanChan0Dong(sb.pool, { teamId: tA, ma: "phi-ship" });
+  assert.equal(kq, null);
+  const lac = await ghiNhanChan0Dong(sb.pool, { teamId: tA, ma: "khong-co-mau-nay" });
+  assert.equal(lac, null);
+  await q("UPDATE mau_0_dong SET bat = true WHERE ma='phi-ship'");
+});
+
+test("S18 · tỉ lệ chặn lấy MẪU SỐ đúng — lượt 0 đồng không đẻ dòng so_ai nào", async () => {
+  // Chỗ dễ sai nhất: lấy `so_ai` làm mẫu số là chia cho đúng phần KHÔNG bị chặn — tỉ lệ
+  // luôn đẹp và luôn sai. Mẫu số phải là (bị chặn + có gọi model).
+  const { tiLeChan0Dong } = await import("../src/db/index.js");
+  const kq = await tiLeChan0Dong(sb.pool, ctx);
+  const goi = kq.soLuotGoiModel;
+  console.log(
+    `   [S18] chặn ${kq.soLuotChan} · gọi model ${goi} · tổng ${kq.tongLuu} · tỉ lệ ${kq.tiLeChan?.toFixed(2)}`,
+  );
+  assert.equal(kq.soLuotChan, 20);
+  assert.equal(kq.tongLuu, 20 + goi, "mẫu số phải là chặn + gọi model, không phải chỉ so_ai");
+  assert.equal(kq.tiLeChan, 20 / (20 + goi));
+  assert.equal(kq.datNguong33, 20 / (20 + goi) >= 0.33);
+  // …và hàm phải TỰ KHAI chỗ hai vế khác thước, đừng để người đọc tưởng là tỉ lệ 7 ngày.
+  assert.match(kq.canhBao, /CỘNG DỒN/);
+});

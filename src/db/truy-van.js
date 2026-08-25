@@ -39,7 +39,7 @@
 import { LoiThieuBoiCanhTeam, LoiXuyenTeam } from "./loi.js";
 import { ghiNhatKy } from "./nhat-ky.js";
 
-// NEO NGOÀI — 15 bảng nghiệp vụ trích từ `docs/v3/ban-giao/luoc-do-v1.md` §2 (gõ tay,
+// NEO NGOÀI — 16 bảng nghiệp vụ trích từ `docs/v3/ban-giao/luoc-do-v1.md` §2 (gõ tay,
 // KHÔNG đọc từ information_schema: hai vế cùng sinh từ một nguồn thì phép so luôn xanh
 // và không bắt được bảng bị đánh rơi khỏi lược đồ — án lệ N5 của L0-M1, giữ nguyên cách
 // làm ở `test/l0-m1-luoc-do.test.js`). Đổi lược đồ (thêm/bớt bảng nghiệp vụ) mà không
@@ -61,6 +61,11 @@ export const BANG_NGHIEP_VU_CHUAN = new Set([
   "ky_nang",
   "lich_nhac",
   "nhat_ky",
+  // 25/08 (B-Y6 ⓑ): lớp trả lời 0 đồng. Bảng nghiệp vụ bình thường (`team_id NOT NULL`),
+  // nên nó vào đây — không vào thì màn của người B không đụng được nó bằng đường nào cả.
+  // ⛔ `khoa_nha` (008) và `ky_nang_lich_su` (009) CỐ Ý không có mặt: cái đầu chứa khoá đã
+  //    mã hoá (đi qua `db/khoa.js`), cái sau chỉ ghi qua `suaKyNang`/`luiKyNang`.
+  "mau_0_dong",
 ]);
 
 const RE_TEN_HOP_LE = /^[a-z_][a-z0-9_]*$/;

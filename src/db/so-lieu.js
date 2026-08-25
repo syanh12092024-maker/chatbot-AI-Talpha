@@ -362,3 +362,84 @@ async function boiCanhRong(khach, teamId, soDong, bang, { tu, den }) {
       `đo có đúng không.`,
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════════
+// LỚP TRẢ LỜI 0 ĐỒNG — đếm «chặn được bao nhiêu» (B-Y6 ⓑ)
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Ghi nhận MỘT lượt mẫu 0 đồng trả lời thay model. Cộng NGUYÊN TỬ ngay trong CSDL.
+ *
+ * Vì sao không để nơi gọi `đọc → +1 → ghi`: hai lượt chat đồng thời cùng khớp một mẫu thì
+ * cả hai đọc cùng một số rồi cùng ghi số đó+1 — mất một lượt, im lặng. Bộ đếm mà đếm thiếu
+ * thì con số «chặn ≥33% lưu lượng» không dùng để nghiệm thu được.
+ *
+ * Đây là đường CHAT nên nó chạy dưới job nền, không có vai để đòi — khác mọi hàm khác của
+ * file này. Đổi lại nó chỉ làm được đúng một việc: +1 vào một dòng của đúng một team.
+ */
+export async function ghiNhanChan0Dong(pool, { teamId, ma } = {}) {
+  if (teamId == null || !ma) {
+    throw new Error("ghiNhanChan0Dong: thiếu teamId hoặc ma.");
+  }
+  const r = await pool.query(
+    `UPDATE mau_0_dong
+        SET so_lan_chan = so_lan_chan + 1, chan_lan_cuoi = now()
+      WHERE team_id = $1 AND ma = $2 AND bat
+      RETURNING so_lan_chan`,
+    [teamId, ma],
+  );
+  // 0 dòng = mẫu không tồn tại HOẶC đang tắt. Trả null chứ không ném: đường chat không nên
+  // chết vì một cái bộ đếm. Nhưng cũng KHÔNG âm thầm coi là đã đếm.
+  return r.rowCount ? Number(r.rows[0].so_lan_chan) : null;
+}
+
+/**
+ * «Lớp 0 đồng chặn bao nhiêu phần trăm lưu lượng?» — tiêu chí nghiệm thu sóng 2 (≥33%).
+ *
+ * MẪU SỐ là chỗ dễ sai nhất: lượt 0 đồng KHÔNG gọi model nên KHÔNG đẻ dòng `so_ai` nào.
+ * Tổng lưu lượng = (lượt có gọi model, đếm ở `so_ai`) + (lượt bị chặn, đếm ở `mau_0_dong`).
+ * Lấy `so_ai` làm mẫu số là chia cho đúng phần KHÔNG bị chặn — tỉ lệ luôn đẹp và luôn sai.
+ */
+export async function tiLeChan0Dong(pool, ctx, tuyChon = {}) {
+  const khach = await pool.connect();
+  try {
+    await batBuocVai(khach, ctx, VAI_XEM_SO_LIEU, "xem tỉ lệ lớp 0 đồng");
+    const { tu, den } = khoang(tuyChon);
+    const c = await khach.query(
+      `SELECT coalesce(sum(so_lan_chan), 0)::bigint chan,
+              count(*) FILTER (WHERE bat)::int mau_bat, count(*)::int mau_tong
+         FROM mau_0_dong WHERE team_id = $1`,
+      [ctx.teamId],
+    );
+    const g = await khach.query(
+      `SELECT count(*)::int c FROM so_ai
+        WHERE team_id = $1 AND loai = 'reply' AND xay_ra_luc >= $2 AND xay_ra_luc < $3`,
+      [ctx.teamId, tu, den],
+    );
+    const chan = Number(c.rows[0].chan);
+    const goiModel = g.rows[0].c;
+    const tong = chan + goiModel;
+    return {
+      khoang: { tu, den },
+      soLuotChan: chan,
+      soLuotGoiModel: goiModel,
+      tongLuu: tong,
+      tiLeChan: tong ? chan / tong : null,
+      datNguong33: tong ? chan / tong >= 0.33 : null,
+      soMauDangBat: c.rows[0].mau_bat,
+      soMauTong: c.rows[0].mau_tong,
+      // ⚠️ `so_lan_chan` là bộ đếm CỘNG DỒN từ lúc tạo mẫu, KHÔNG cắt theo khoảng thời gian
+      // — cột đó không lưu lịch sử từng lượt. Còn `soLuotGoiModel` thì CÓ cắt theo khoảng.
+      // Hai vế khác thước ⇒ tỉ lệ chỉ đúng khi lấy khoảng = toàn bộ thời gian. Nói ra chứ
+      // đừng để người đọc tưởng đây là tỉ lệ của riêng 7 ngày qua.
+      canhBao:
+        "soLuotChan là bộ đếm CỘNG DỒN (không cắt theo khoảng); soLuotGoiModel thì có cắt. " +
+        "Tỉ lệ chỉ đúng khi khoảng đo phủ toàn bộ thời gian. Muốn cắt theo khoảng thì cần " +
+        "một bảng lịch sử từng lượt chặn — chưa có, đã ghi §9.",
+      boiCanh: await boiCanhRong(khach, ctx.teamId, tong, "mau_0_dong + so_ai", { tu, den }),
+      nguon: "mau_0_dong.so_lan_chan (cộng dồn) + so_ai WHERE loai='reply' (theo khoảng)",
+    };
+  } finally {
+    khach.release();
+  }
+}
