@@ -100,8 +100,10 @@ import {
  * @param {(boiCanh:object)=>object} phuThuoc.taoTruyVan        BẮT BUỘC · người A giao. Cổng có chèn điều kiện team.
  * @param {()=>object}               phuThuoc.taoTruyVanHeThong BẮT BUỘC · người A giao. Cổng KHÔNG gắn team,
  *                                                              chỉ cho bốn bảng dùng chung — xem `auth/kho-nguoi-dung.js`.
- * @param {{taoBan:Function,ap:Function,duyet:Function}} [phuThuoc.cuaBoLuat] cửa GHI có giao dịch cho bộ luật
- *                                                              chung (người A giao: `src/db/noi-dung.js`).
+ * @param {{taoBan:Function,ap:Function,duyet:Function,xemAnhHuong?:Function}} [phuThuoc.cuaBoLuat]
+ *                                                              cửa GHI có giao dịch cho bộ luật chung (người A
+ *                                                              giao: `src/db/noi-dung.js`). `xemAnhHuong` là
+ *                                                              phép đếm page-bị-ảnh-hưởng hỏi NGUỒN THẬT.
  * @param {()=>Promise<{pages:Array}>} [phuThuoc.docSanSang]    bộ đọc cửa kiểm sẵn sàng. Bỏ trống → dùng cầu
  *                                                              THẬT sang tiến trình bot. Máy chủ dữ liệu giả
  *                                                              PHẢI truyền bản giả, nếu không trang demo sẽ

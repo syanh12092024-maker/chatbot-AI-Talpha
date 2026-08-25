@@ -353,3 +353,44 @@ test('router · `nguon` KHÔNG nhận từ trình duyệt — đóng lỗ lách 
   assert.match(khoi, /nguon:\s*'nguoi'/, 'đường /nhap phải ghi cứng nguon nguoi');
   assert.ok(!/nguon:\s*req\.body/.test(khoi), 'KHÔNG được lấy `nguon` từ thân yêu cầu');
 });
+
+
+/* ═══════════ B-Y7 · CON SỐ ② PHẢI HỎI NGUỒN THẬT, KHÔNG HỎI CỘT ═══════════ */
+//
+// Đo 25/08 trên máy chủ: `page.bot_ai_bat` nói 50 page bật AI, `ai-enabled.json` nói 0.
+// Cột là BẢN SAO và đã cũ từ 24/08. Con số này là thứ người ta nhìn để quyết định có bấm
+// ÁP hay không — lấy từ nguồn sai nghĩa là cho phép bấm dựa trên một điều không có thật.
+
+test('B-Y7 · có cửa `xemAnhHuong` thì DÙNG nó, không đếm cột', async () => {
+  const { kho } = dungKho();
+  // Cột nói 2 page đang bật; nguồn thật nói 0. Màn phải theo NGUỒN THẬT.
+  const goi = [];
+  bl.datCuaBoLuat({
+    taoBan: async () => ({ id: 'x', phienBan: 9 }),
+    ap: async () => ({}),
+    duyet: async () => ({}),
+    xemAnhHuong: async (bc) => {
+      goi.push(bc.teamId);
+      return {
+        soPage: 3, soPageDangBatBot: 0, nguon: 'ai-enabled.json',
+        lech: { co: true, viSao: 'CSDL nói 2, nguồn thật nói 0' },
+        tenVaiPage: [],
+      };
+    },
+  });
+  const a = await bl.demAnhHuong(bcQt());
+  assert.equal(goi.length, 1, 'phải gọi cửa của người A');
+  assert.equal(a.dangBatBot, 0, 'đếm cột sẽ ra 2 — con số này phải là 0');
+  assert.equal(a.nguon, 'ai-enabled.json');
+  assert.equal(a.lech.co, true, 'chỗ lệch phải đi tiếp ra màn, không bị nuốt');
+  assert.ok(kho, 'kho vẫn dựng được');
+});
+
+test('B-Y7 · KHÔNG có cửa thì vẫn trả số, nhưng KHAI RÕ là đếm từ cột', async () => {
+  dungKho();
+  bl.datCuaBoLuat({ taoBan: async () => ({}), ap: async () => ({}), duyet: async () => ({}) });
+  const a = await bl.demAnhHuong(bcQt());
+  assert.equal(a.nguon, 'cot_csdl', 'im lặng rơi về cột chính là cái đã sai');
+  assert.ok(a.lech && a.lech.viSao.length > 60, 'phải nói rõ con số này là ước lượng trên');
+  assert.match(a.lech.viSao, /bản sao|B-Y7/i);
+});

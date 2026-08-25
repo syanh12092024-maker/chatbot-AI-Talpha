@@ -179,6 +179,25 @@ function veNguy(){
     trong đó <span class="so">${so(a.dangBatBot)}</span> page <b>đang BẬT bot</b> — tức là đang
     nói chuyện với khách thật ngay lúc này.
     ${a.tenVaiPage.length ? `<div class="phu" style="margin-top:5px">Ví dụ: ${a.tenVaiPage.map(esc).join(' · ')}${a.dangBatBot > a.tenVaiPage.length ? ' …' : ''}</div>` : ''}
+    ${veNguonSo(a)}
+  </div>`;
+}
+
+/**
+ * CON SỐ NÀY LẤY TỪ ĐÂU — hiện ngay dưới nó, không giấu.
+ *
+ * Người ta bấm ÁP dựa trên con số này, nên «nó đáng tin tới đâu» là một phần của con số.
+ * B-Y7: cột `page.bot_ai_bat` từng lệch 50 page so với `ai-enabled.json` suốt từ 24/08, và
+ * màn vẫn hiện con số cột như thể nó là sự thật.
+ */
+function veNguonSo(a){
+  if (!a.nguon) return '';
+  const that = a.nguon !== 'cot_csdl';
+  const lech = a.lech && a.lech.co;
+  return `<div class="phu" style="margin-top:7px;padding-top:7px;border-top:1px solid #f0c2c2">
+    ${that ? '✅' : '⚠️'} Con số «đang bật bot» đọc từ <b>${esc(a.nguon)}</b>${that ? '' : ' — <b>bản sao, có thể cũ</b>'}.
+    ${lech ? `<br>⚠️ <b>Lệch với cột trong CSDL:</b> ${esc(a.lech.viSao || '')}` : ''}
+    ${!that && a.lech ? `<br>${esc(a.lech.viSao || '')}` : ''}
   </div>`;
 }
 

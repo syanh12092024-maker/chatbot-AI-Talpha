@@ -90,6 +90,9 @@ const bao = dungPhanB(app, {
     taoBan: (bc, t) => noiDung.taoBanBoLuat(pool, ctxCuaA(bc), t),
     ap: (bc, t) => noiDung.apBoLuat(pool, ctxCuaA(bc), t),
     duyet: (bc, t) => noiDung.duyetBoLuat(pool, ctxCuaA(bc), t),
+    // Con số ② «bao nhiêu page bị ảnh hưởng» — hàm của A hỏi NGUỒN THẬT
+    // (`ai-enabled.json`), không hỏi cột `page.bot_ai_bat` đã lệch. Xem B-Y7.
+    xemAnhHuong: (bc) => noiDung.xemAnhHuongBoLuat(pool, ctxCuaA(bc)),
   },
   dungBanMay: (cfg) => dungBanChoMay(cfg),
   // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM tiến trình bot, qua đúng cửa v1.

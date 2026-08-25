@@ -238,14 +238,44 @@ export function tomTatSoSanh(cu, moi) {
  * Chỉ hiện số thứ nhất là để người ta bấm áp mà không biết mình vừa đổi cách nói của 50
  * page đang có khách; chỉ hiện số thứ hai là giấu mất phần sẽ ảnh hưởng khi bật bot sau này.
  */
+/**
+ * ② trong ba thứ bắt buộc: **bao nhiêu page bị ảnh hưởng**, hỏi TRƯỚC khi cho bấm áp.
+ *
+ * ⚠️ HỎI NGUỒN THẬT, KHÔNG HỎI CỘT. Bản trước đếm `page.bot_ai_bat === true`. Đo 25/08 trên
+ *    máy chủ: cột nói 50, `ai-enabled.json` nói 0 — cột chỉ là BẢN SAO và đã cũ từ 24/08.
+ *    `db/migrate/001_nen.up.sql` khai thẳng: «NGUỒN DUY NHẤT của cờ này là `ai-enabled.json`
+ *    … Cấm suy ra từ bất kỳ trường nào khác». → `PHIEU-B-Y7`, người A đã giao `xemAnhHuongBoLuat`.
+ *
+ * Không có cửa của A thì VẪN trả số, nhưng khai rõ `nguon: 'cot_csdl'` kèm cảnh báo — im lặng
+ * rơi về cột chính là cái đã sai.
+ */
 export async function demAnhHuong(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
+
+  if (_cua && typeof _cua.xemAnhHuong === 'function') {
+    const a = await _cua.xemAnhHuong(bc);
+    return {
+      tongPage: a.soPage,
+      dangBatBot: a.soPageDangBatBot,
+      nguon: a.nguon,
+      lech: a.lech || null,
+      tenVaiPage: Array.isArray(a.tenVaiPage) ? a.tenVaiPage : [],
+    };
+  }
+
   const db = congTruyVan(bc);
   const pages = await db.chon(BANG_PAGE, {});
   const batBot = pages.filter((p) => p.bot_ai_bat === true);
   return {
     tongPage: pages.length,
     dangBatBot: batBot.length,
+    nguon: 'cot_csdl',
+    lech: {
+      co: null,
+      viSao: 'Chưa nối `xemAnhHuong` của tầng dữ liệu, nên con số này đếm từ CỘT '
+        + '`page.bot_ai_bat` — một bản sao đã từng lệch 50 page (B-Y7). Coi nó là ước lượng '
+        + 'trên, đừng coi là số page thật sự đang chạy.',
+    },
     tenVaiPage: batBot.slice(0, 5).map((p) => p.ten || p.page_id || String(p.id)),
   };
 }
