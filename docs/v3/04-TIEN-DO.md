@@ -28,7 +28,26 @@
 | ④ Gán page ↔ team | chuyển page giữa các team | 🟥 **chặn — `PHIEU-B-Y3`** |
 
 Đường: `/cau-hinh-team` · vào được: `quan-tri` + `quan-ly` · ghi được: `quan-tri`.
-Xem tận mắt trên cổng 3101 (dữ liệu giả) ở khổ 375px: **không cuộn ngang, 0 phần tử tràn**.
+Đã triển khai lên VPS (`d38df3b`), dịch vụ `aicloser-v3` + `aicloser-v3-xemthu` khởi động lại.
+**Bot thật `aicloser` không bị đụng: `active`, `NRestarts=0` trước và sau.**
+
+#### Đã nghiệm thu bằng số
+
+| Kiểm gì | Kết quả |
+|---|---|
+| Bài test vai B | **339 xanh / 0 đỏ** |
+| Khổ 375px (cổng 3101) | **không cuộn ngang · 0 phần tử tràn** |
+| Bốn hành vi ghi, thử thẳng trên trình duyệt | cấp vai `200` · rút vai `200` · rút quản trị cuối `409 quan_tri_cuoi` · mã vai gạch dưới `400 vai_la` |
+| Tầng đọc trên **CSDL THẬT** (bài học ①) | chạy đủ 3 team, số khớp: 514 page · 50 bot bật · 514 thiếu marketer · 28.953 hội thoại · 7 kết nối POS |
+| Kết nối POS có lộ khoá không | **không** — cả 3 team |
+| Trang cho trình duyệt hết vé | `302` → `/dang-nhap?tiep=/cau-hinh-team` |
+| Đường `/api` hết vé | `401 {"ma":"chua_dang_nhap"}` |
+| Nhật ký sau lượt đo thật | vẫn `0` — phép đo chỉ đọc, không ghi một dòng |
+
+**Chỗ CHƯA nghiệm thu:** chưa mở màn hình bằng mắt trên **dữ liệu thật** (cổng 3102) — CSDL
+thật chỉ có một tài khoản `chu@talpha.vn` và thợ không giữ mật khẩu của nó. Đã thay bằng
+phép chạy tầng đọc thẳng trên Postgres thật ở bảng trên. Chủ dự án mở
+`http://169.58.33.8:3102/cau-hinh-team` là xem được ngay.
 
 ### Ba chỗ chặn tìm được TRƯỚC khi viết code, và đã xử
 
