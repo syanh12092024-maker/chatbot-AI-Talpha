@@ -315,6 +315,32 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   (2) `db/di-tru/nap.js` vẫn đổ vào `chua-phan` — chạy lại di trú thì page mới lại rơi vào
   team kỹ thuật. Nay có đường kéo ra bằng hàm thay vì psql, nhưng BỘ NẠP thì chưa đổi.
 
+- 25/08 · G2-A3 (người A) — NỢ CÒN LẠI sau lượt gộp, khai bằng SỐ ĐO chứ không bằng cảm giác:
+  ba cửa được giao còn **0** câu `UPDATE` tay, nhưng đất người A vẫn còn **4 câu GỘP ĐƯỢC**
+  chưa gộp vì ngoài phạm vi ③ — `src/orders/lich-nhac.js` (2, bảng `lich_nhac`) ·
+  `src/orders/hang-cho.js` (1, `hang_cho_tao_don`) · `src/orders/ti-le-hoan.js` (1, `khach`).
+  Cái cuối phải đọc kỹ trước khi đụng: `test/l3-m2-ti-le-hoan.test.js:270` có hợp đồng CẤM
+  cổng đó chạm `sua_luc`. Còn `src/queue/kho.js` (1, `tin_cho_xu_ly`) thì **không gộp được** —
+  bảng cố ý ngoài `BANG_NGHIEP_VU_CHUAN`. Cổng `g2-a3.sh` in kiểm kê đủ kèm lý do từng tệp và
+  ĐỎ nếu có tệp mang câu UPDATE mà chưa khai lý do — cửa thứ tư mọc lên là biết ngay.
+
+- 25/08 · G2-A3 — 🧭 BA BÀI HỌC, mỗi cái sập thật trong lượt:
+  (1) **MẢNG JS vào cột jsonb**: `pg` gửi mảng JS thành mảng POSTGRES `{a,b}`, không thành
+  JSON ⇒ `hoi_thoai.moc_luot_llm` (jsonb nhận mảng) phải `JSON.stringify` trước. Trước lượt
+  này KHÔNG bộ ca nào ghi cột đó qua `suaHoiThoai` — bỏ stringify là hỏng CÂM. Nay ca `G1`
+  khoá, ca `G2` là vế đảo chiều.
+  (2) **Guard quá chặt cũng là lỗi**: bản đầu tôi chặn MỌI mảng trong `duLieu` ⇒ 5 ca đỏ ở
+  `l1-m1-doc-pos` và `va-q12-doc-don`, vì `don_hang.san_pham_ma` là `text[]` THẬT. Đổi sang
+  KHÔNG chặn trước, chỉ DỊCH LẠI câu lỗi của Postgres khi nó thật sự vấp.
+  (3) **Hộp kiểm kê gõ tay của chính tôi nói dối**: con số cổng đo lệch với hộp ở 4 tệp (hai
+  regex khác nhau). Cổng lỏng mà log nói dối là HAI lỗi (án lệ #5) ⇒ hộp nay SINH TỪ phép đo,
+  chỉ lý do là gõ tay, và thiếu lý do thì cổng đỏ.
+
+- 25/08 · G2-A3 — cờ `datSuaLuc` của `suaTheoId` MẶC ĐỊNH TẮT, cố ý: bật mặc định là phá hợp
+  đồng `test/l3-m2-ti-le-hoan.test.js:270` (cấm chạm `sua_luc`) và phá mọi phép đo dùng
+  `max(sua_luc)` làm vân tay «có ai ghi gì không». Nơi nào cần đồng hồ CSDL thì tự khai —
+  đừng trộn `new Date()` của máy vào một cột đang toàn `now()` (án lệ #18).
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -791,6 +817,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 25/08 · G2-A3 → ✅ xong — gộp câu SQL của ba cửa về `suaTheoId`; giữ allow-list, khuôn jsonb, nhật ký giấu nội dung khách, và CAS vẫn NÉM chứ không trả null · commit 5316a90 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a3.md
+- 25/08 · G2-A3 → đo trên Postgres 16.15 THẬT: cổng 6/6 · ba cửa còn 0 câu UPDATE tay · bộ ca khoá bẫy 7 pass/0 fail · hồi quy 31 bộ chỉ D7 đỏ · commit 5316a90 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a3.md
+- 25/08 · G2-A3 → 🧭 mảng JS vào cột jsonb · guard quá chặt làm đỏ 5 ca vì text[] thật · hộp kiểm kê gõ tay nói dối — chi tiết §9 · commit 5316a90 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a3.md
+
 - 25/08 · B-Y3 → ✅ xong — `chuyenPageSangTeam`: cửa hẹp thứ SÁU, một giao dịch, vai `quan-tri` đọc từ CSDL, nhật ký hỏng là cuộn lại; `src/db/truy-van.js` KHÔNG đụng một dòng · commit 441e457 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y3.md
 - 25/08 · B-Y3 → đo trên Postgres 16.15 THẬT: cổng 14/14 · bộ ca 14 pass/0 fail · hồi quy 31 bộ = 375 pass/1 fail · mồ côi trên CSDL THẬT = 0 · commit 441e457 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y3.md
 - 25/08 · B-Y3 → 🧭 phiếu kê SÓT hai bảng con (`don_hang` bảng tiền · `tin_cho_xu_ly`) ⇒ danh mục con nay TỰ SINH từ information_schema, không gõ tay — chi tiết §9 · commit 441e457 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y3.md
