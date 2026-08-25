@@ -128,7 +128,10 @@ const { taoTruyVan, kho } = dungCongGia({
   // hoàn 26,8% và 19,2% mà chưa ai bật kỹ năng này.
   san_pham: [
     { id: 'sp1', team_id: '1', page_id: '1', ma: '77:1001', ten: 'Kem dưỡng Kreain', ton_kho: 40 },
-    { id: 'sp2', team_id: '1', page_id: '2', ma: '77:1002', ten: 'Áo thun Golden (có size)', ton_kho: 12 },
+    // `ton_kho: 0` — CỐ Ý, để bản xem thử chạm nhánh «hết hàng» của Trang chủ. Bản thật thì
+    // `san_pham` rỗng hẳn (0 dòng, đo 25/08) nên ở đó Trang chủ hiện «chưa nạp» — cảnh đó
+    // đã có bài test canh, không cần gieo lại ở đây.
+    { id: 'sp2', team_id: '1', page_id: '2', ma: '77:1002', ten: 'Áo thun Golden (có size)', ton_kho: 0 },
   ],
   goi_gia: [
     { id: 'g1', team_id: '1', san_pham_id: 'sp1', so_luong: 1, gia: '89', tien_te: 'SAR' },

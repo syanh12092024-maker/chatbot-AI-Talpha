@@ -230,6 +230,42 @@ AI; `ai-enabled.json` và RAM của bot đều nói 0. Cột `page.bot_ai_bat` l
 `PHIEU-B-Y7` cho người A (`src/db/noi-dung.js` là đất của A). Màn cửa kiểm giữ **cả hai** con
 số và nêu chỗ lệch kèm ví dụ từng page.
 
+### Giai đoạn 2 · sóng 4 · G2-F1 «Trang chủ» — 25/08/2026
+
+**Trang chủ là DANH SÁCH VIỆC, không phải bảng số liệu.** Yêu cầu ghi rõ: *«Marketer vào thấy
+đúng việc của mình»*. Phễu, doanh thu, tỉ lệ chốt thuộc màn Báo cáo — dựng thêm một bản ở đây
+là hai màn đếm ra hai con số rồi cãi nhau. Mỗi ô là một việc CÓ NGƯỜI LÀM và CÓ CHỖ BẤM SANG.
+
+**Ba trạng thái rỗng, ba câu khác nhau.** Đây là màn người ta mở ĐẦU TIÊN nên bài học 24/08
+đặt nặng nhất vào đây: `xong` (đếm được, đúng là 0 — tin tốt) · `chua-nap` (bảng có nhưng chưa
+ai đổ dữ liệu) · `chua-co-bang`. Gộp ba thành chữ «0» là cách chắc nhất để người ta yên tâm sai.
+
+**Ô dễ nói dối nhất là hàng đợi việc, và nó phân biệt được bằng số.** `viec_can_xu_ly` rỗng có
+thể là «hết việc» hoặc «chưa nạp». Dấu hiệu ĐO ĐƯỢC: bảng rỗng toàn bộ MÀ `hoi_thoai` có bản
+ghi HANDOFF thì không thể cùng đúng. Đo 25/08: `viec_can_xu_ly`=0, HANDOFF=**988** ⇒ chưa nạp.
+Báo «0 việc» ở cảnh đó là nói với sale rằng không có gì phải làm.
+
+**Cầu hỏng thì để `null`, không rơi về 0.** «0 page bị chặn» là tin mừng, và cầu hỏng không
+phải tin mừng. Màn hiện «—»/«?» và tự khai có mấy ô chưa đọc được.
+
+**Sale KHÔNG vào Trang chủ.** `03-MAN-HINH.md`: *«Bảng điều phối — Sale vào THẲNG đây»*. Bản
+đầu của tôi cho sale vào; lưới quét `phan-quyen-nam-vai.test.mjs` bắt được. Thêm một bước vào
+đúng luồng cần nhanh nhất là làm hỏng luồng đó.
+
+**Ba lỗi chỉ thấy khi mở màn bằng mắt**, không bài test nào bắt: ① dòng «vai:» đặt tên class
+`.v` — trùng đúng class thẻ việc nên ăn nguyên khung thẻ. ② nút «Sản phẩm hết hàng» trỏ
+`/san-pham` — **màn đó chưa dựng**, bấm vào là 404; tệ hơn không có nút, vì người ta tưởng
+mình bấm sai. ③ đơn vị gõ cứng «page» nên ô sản phẩm hiện «/ 2 page».
+
+Lỗi ② đau nhất vì tôi CÓ viết bài test chặn đường chết, rồi tự chép `/san-pham` vào danh sách
+hợp lệ. Nay bài test **đọc thẳng `DUONG_TRANG` từ mọi `router.js` đã dựng** — cùng phép với
+việc đọc `LADDER` từ `src/readiness.js`. Danh sách chép tay là danh sách nói dối được.
+
+**Kho giả lệch lần thứ NĂM: điều kiện `null`.** Tầng thật dịch `null` thành `IS NULL` nên khớp
+cả cột chưa gieo; kho giả rơi xuống so chuỗi, `String(undefined)` ≠ `"null"` nên cột không gieo
+KHÔNG khớp. Lệch theo chiều khắt khe hơn: bài test đếm «bản chưa ai duyệt» ra 0 trong khi bản
+thật ra N, rồi người ta sửa CODE cho vừa kho giả. Đã vá `hop()` trong `v3/testkit/db-gia.js`.
+
 **Gói dữ liệu không chở bản sao của cùng một câu.** Bản đầu, mỗi ô điều kiện chở theo tên
 bậc + chỗ nhảy + câu chỉ việc. Trên 514 page thật là **586 KB** cho 1.397 ô, vì câu «Thêm một
 token Pancake có phủ page này…» bị chép 120 lần. Nay ô chỉ chở `ma` + `chiTiet`; phần chung

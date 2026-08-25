@@ -59,6 +59,10 @@ import {
 } from './ui/bo-luat/index.js';
 import { sanSangToanHe } from './noi-day/cau-bot-v1.js';
 import {
+  datTaoTruyVan as datTruyVanTrangChu, datDocSanSang as datDocSanSangTrangChu,
+  datChanDangNhap as datChanDangNhapTrangChu, datChanVai as datChanVaiTrangChu, taoRouterTrangChu,
+} from './ui/trang-chu/index.js';
+import {
   datTaoTruyVan as datTruyVanSanSang, datDocSanSang,
   datChanDangNhap as datChanDangNhapSanSang, datChanVai as datChanVaiSanSang, taoRouterSanSang,
 } from './ui/san-sang/index.js';
@@ -168,7 +172,10 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   // NHẬN TỪ NGOÀI được, và đó là chủ ý: máy chủ xem thử (`v3/xem-thu.js`, dữ liệu giả) PHẢI
   // truyền bản giả vào. Nếu nó dùng cầu thật thì một trang demo sẽ hiện tình trạng page THẬT
   // của khách — cùng một máy, cổng 3100 vẫn gọi được.
-  datDocSanSang(typeof docSanSang === 'function' ? docSanSang : sanSangToanHe);
+  const docCuaKiem = typeof docSanSang === 'function' ? docSanSang : sanSangToanHe;
+  datDocSanSang(docCuaKiem);
+  datTruyVanTrangChu(taoTruyVan);
+  datDocSanSangTrangChu(docCuaKiem);   // CÙNG bộ đọc — hai màn không được ra hai con số
   if (typeof docSanSang === 'function') daNoi.push('bộ đọc cửa kiểm GIẢ → màn Cửa kiểm sẵn sàng');
   datTruyVanSucKhoe(taoTruyVan);
   daNoi.push('cổng dữ liệu → nhật ký · lớp model · bảng điều phối · kho người dùng · cấu hình team · page & bot');
@@ -279,6 +286,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiDeXuat(batBuocVaiHTTP);
   datChanDangNhapSanSang(batBuocDangNhap);
   datChanVaiSanSang(batBuocVaiHTTP);
+  datChanDangNhapTrangChu(batBuocDangNhap);
+  datChanVaiTrangChu(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -299,7 +308,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterNhatKy());     //   /nhat-ky · /api/nhat-ky
   app.use(taoRouterDeXuat());     //   /ai-de-xuat · /api/ai-de-xuat/*
   app.use(taoRouterSanSang());    //   /san-sang · /api/san-sang
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng');
+  app.use(taoRouterTrangChu());   //   /trang-chu · /api/trang-chu
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng → trang chủ');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };

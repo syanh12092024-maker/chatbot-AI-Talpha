@@ -10,19 +10,20 @@
 |---|---|
 | Người A (trục dữ liệu) | **6/6 module + 2 phiếu chen XONG** — cổng: A1 26/27 · A2 58/59 · B-Y3 14/14 · A3 6/6 · B-Y4 6/6 · A4 12/12 · A5+A6 15/15 |
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
-| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 3/5 · SÓNG 3 2/5 · SÓNG 4 2/10** (14 màn). Ba màn số liệu chờ `so_ai` có dữ liệu |
+| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 3/5 · SÓNG 3 2/5 · SÓNG 4 3/10** (15 màn). Bảy màn còn lại chặn vì thiếu dữ liệu/bảng, không phải thiếu code |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **543 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **560 xanh** (316 trước giai đoạn 2) |
 
 ---
 
-## Giai đoạn 2 · sóng 4 — VẬN HÀNH (2/10 màn, 25/08)
+## Giai đoạn 2 · sóng 4 — VẬN HÀNH (3/10 màn, 25/08)
 
 | Màn | Đường | Trạng thái |
 |---|---|---|
 | **AI đề xuất** | `/ai-de-xuat` | xong — cửa DUY NHẤT ghi bản `nguon='ai'`, tách hẳn cửa của người viết |
 | **Cửa kiểm sẵn sàng** | `/san-sang` | xong — bảy điều kiện, ô đỏ bấm nhảy tới chỗ sửa |
+| **Trang chủ** | `/trang-chu` | xong — danh sách việc theo vai, ô rỗng nói rõ vì sao rỗng |
 
 **«Hai đường khác nhau» đã chạy thật, đủ bốn bước**, đo trên máy chủ xem thử 25/08:
 nhận đề xuất → `nguon='ai'`, v3, chưa duyệt · áp ngay → **400 `ai_chua_duyet`** · duyệt →
@@ -42,8 +43,14 @@ trong lúc bot đang chạy ⇒ 50 page bị tắt qua dashboard v1, CSDL v3 kh�
 **Hệ quả:** màn «Bộ luật chung» đếm *«bao nhiêu page bị ảnh hưởng»* bằng chính cột đó — con
 số ② trong ba thứ bắt buộc trước khi cho bấm áp đang lấy từ nguồn sai. → `PHIEU-B-Y7`.
 
-Tám màn còn lại của sóng 4 phần lớn **chặn vì dữ liệu**: `khach` · `don_hang` · `san_pham`
-đều 0 dòng.
+**`viec_can_xu_ly` rỗng trong khi 988 hội thoại ở trạng thái HANDOFF.** Hai điều đó không thể
+cùng đúng ⇒ hàng đợi việc của v3 **chưa được nạp**, không phải «hết việc». Hội thoại hiện có là
+bản nhập từ lịch sử (11–23/08) và **0/988 dòng có `nguoi_that_luc`**, nên v3 cũng không biết ai
+đã xử chúng. Trang chủ nói thẳng điều này thay vì hiện số 0.
+
+Bảy màn còn lại của sóng 4 **chặn vì dữ liệu hoặc thiếu cột**: `khach` · `don_hang` ·
+`san_pham` đều 0 dòng, và `hoi_thoai` **không có cột `nguon`** nên «Nguồn khách vào» không lần
+được khách đến từ đâu.
 
 ---
 

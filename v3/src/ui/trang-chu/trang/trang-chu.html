@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Trang chủ — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3; --xam:#8b95a1;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:18px 22px 60px;max-width:900px;margin:0 auto}
+
+  .chao{margin:0 0 16px;line-height:1.55}
+  .chao b{font-size:15px}
+  /* KHÔNG đặt tên `.v` cho dòng này: `.v` là thẻ việc, và dòng vai sẽ ăn nguyên khung thẻ. */
+  .chao .vaiToi{color:var(--muted);font-size:12px;margin-top:2px}
+
+  .ds{display:grid;gap:10px}
+
+  .v{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);
+     border-radius:var(--r);box-shadow:var(--sh);padding:14px 16px;display:flex;gap:14px;align-items:flex-start}
+  .v.gap{border-left-color:var(--bad)}
+  .v.yen{border-left-color:var(--ok)}
+  .v.mu{border-left-color:var(--xam);background:#fbfcfd}
+
+  .v .so{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;
+         min-width:58px;text-align:right;padding-top:2px}
+  .v.gap .so{color:var(--bad)} .v.yen .so{color:var(--ok)}
+  .v.mu .so{color:var(--xam);font-size:17px;font-weight:600}
+  .v .than{flex:1;min-width:0}
+  .v .ten{font-weight:600;font-size:13.5px;margin-bottom:3px}
+  .v .lam{color:var(--muted);font-size:12px;line-height:1.55}
+  .v .noi{font-size:12px;line-height:1.6;margin-top:6px}
+  .v .di{margin-top:9px}
+  .v .di a{display:inline-block;background:var(--pri);color:#fff;text-decoration:none;
+           padding:6px 13px;border-radius:8px;font-size:12px;font-weight:600}
+  .v .di a:hover{background:var(--priDark)}
+  .v .di .khong{color:var(--muted);font-size:12px;font-style:italic}
+
+  /* ba trạng thái rỗng, ba màu — cả điểm của màn này */
+  .vi{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;
+      margin-bottom:5px;white-space:nowrap}
+  .vi.xong{background:var(--okSoft);color:#166534}
+  .vi.chua-nap{background:var(--warnSoft);color:#8a4a06}
+  .vi.chua-co-bang{background:var(--badSoft);color:#991b1b}
+  .canh{background:var(--warnSoft);border:1px solid #f0d3a4;color:#8a4a06;border-radius:9px;
+        padding:9px 12px;margin-top:7px;line-height:1.6;font-size:12px}
+  .canh b{color:#7a3f05}
+
+  .chan{margin-top:18px;color:var(--muted);font-size:11.5px;line-height:1.6;
+        background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 15px}
+  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6;
+         background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  code{background:#f1f3f5;padding:1px 5px;border-radius:4px;font-size:11.5px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  @media (max-width:720px){
+    header{padding:12px 14px} main{padding:14px 14px 50px}
+    .v{padding:12px 13px;gap:11px} .v .so{min-width:44px;font-size:22px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Trang chủ</h1>
+  <span class="sub" id="hTeam">…</span>
+  <span class="sp"></span>
+  <a href="/san-sang">Cửa kiểm →</a>
+  <a href="/dieu-phoi">Điều phối →</a>
+</header>
+
+<main>
+  <div class="chao" id="chao"></div>
+  <div class="ds" id="ds"><div class="trong">Đang tải…</div></div>
+  <div class="chan" id="chan"></div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const CHU_VI = {
+  'xong': 'đã xong',
+  'chua-nap': 'chưa có dữ liệu',
+  'chua-co-bang': 'chưa có bảng',
+};
+
+function veViec(v) {
+  // Ba cảnh, ba cách vẽ:
+  //   ① có việc            → viền đỏ, số to, nút bấm sang
+  //   ② hết việc thật      → viền xanh, «đã xong»
+  //   ③ chưa đọc được / chưa nạp → viền xám, KHÔNG hiện số 0 (số 0 ở đây là tin mừng giả)
+  const chuaBiet = v.so === null || (v.so === 0 && v.viRong !== 'xong');
+  const lop = v.gap ? 'gap' : (chuaBiet ? 'mu' : 'yen');
+  const so = v.so === null ? '—' : (chuaBiet ? '?' : v.so);
+
+  let noi = '';
+  if (!v.gap) {
+    noi = `<div class="noi"><span class="vi ${esc(v.viRong)}">${esc(CHU_VI[v.viRong] || v.viRong)}</span><br>${esc(v.noiRong || '')}</div>`;
+    if (v.diTiepRong) noi += `<div class="canh"><b>Đi tiếp:</b> ${esc(v.diTiepRong)}</div>`;
+  }
+
+  const di = v.gap && v.di
+    ? `<div class="di"><a href="${esc(v.di)}">Xem và xử →</a></div>`
+    : (v.di ? '' : '<div class="di"><span class="khong">chưa có màn để bấm sang</span></div>');
+
+  return `<div class="v ${lop}">
+    <div class="so">${so}</div>
+    <div class="than">
+      <div class="ten">${esc(v.ten)}${v.tong != null ? ` <span class="lam">/ ${v.tong} ${esc(v.donVi || 'page')}</span>` : ''}</div>
+      <div class="lam">${esc(v.lam)}</div>
+      ${noi}${di}
+    </div>
+  </div>`;
+}
+
+async function tai() {
+  try {
+    const r = await fetch('/api/trang-chu', { credentials: 'same-origin' });
+    const d = await r.json();
+    if (!r.ok || d.ok === false) throw new Error(d.thongDiep || 'Lỗi ' + r.status);
+
+    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    $('#chao').innerHTML = `<b>${esc(d.tenDangNhap || '')}</b>
+      ${d.soGap ? `— <b style="color:var(--bad)">${d.soGap} việc đang cần bạn</b>` : '— không có việc nào gấp'}
+      <div class="vaiToi">vai: ${esc((d.vai || []).join(', ') || 'không có')}</div>`;
+
+    if (!d.viec.length) {
+      $('#ds').innerHTML = `<div class="trong">
+        <div class="ti">${esc(d.trong ? d.trong.noi : 'Không có việc nào')}</div>
+        <div>${esc(d.trong ? d.trong.diTiep : '')}</div></div>`;
+    } else {
+      $('#ds').innerHTML = d.viec.map(veViec).join('');
+    }
+
+    const ghi = [];
+    if (d.soChuaDocDuoc) {
+      ghi.push(`<b>${d.soChuaDocDuoc} ô chưa đọc được số</b> — hiện «—» hoặc «?» thay vì «0». `
+        + 'Số 0 ở những ô đó sẽ là tin mừng giả.');
+    }
+    if (d.soAnVaiKhac) {
+      ghi.push(`Còn <b>${d.soAnVaiKhac} việc</b> thuộc vai khác, không hiện ở đây — `
+        + 'màn này chỉ cho bạn xem việc của vai bạn, không phải toàn bộ hệ thống.');
+    }
+    ghi.push('Màn này là danh sách <b>việc</b>. Con số kinh doanh nằm ở màn Báo cáo.');
+    $('#chan').innerHTML = ghi.join('<br>');
+  } catch (e) {
+    $('#ds').innerHTML = `<div class="trong"><div class="ti">Không tải được</div><div>${esc(e.message)}</div></div>`;
+  }
+}
+
+tai();
+</script>
+</body>
+</html>

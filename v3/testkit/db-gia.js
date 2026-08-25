@@ -79,6 +79,15 @@ function hop(banGhi, dieuKien) {
       }
       continue;
     }
+    // `null` = `IS NULL` của SQL, KHÔNG phải so chuỗi.
+    //
+    // Bản trước rơi xuống `String(banGhi[k]) !== String(v)`: cột được gieo hẳn `null` thì
+    // `"null" === "null"` nên khớp, nhưng cột **không gieo** (`undefined`) thành `"undefined"`
+    // nên KHÔNG khớp — trong khi Postgres coi cột chưa có giá trị là NULL và vẫn khớp.
+    //
+    // Lệch theo chiều KHẮT KHE hơn bản thật: bài test đếm «bản chưa ai duyệt» ra 0 trong khi
+    // bản thật ra N, rồi người ta đi sửa CODE cho vừa kho giả. Lần thứ năm của bài học ①.
+    if (v === null) { if (banGhi[k] != null) return false; continue; }
     if (String(banGhi[k]) !== String(v)) return false;
   }
   return true;
