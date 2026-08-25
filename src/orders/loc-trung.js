@@ -117,6 +117,36 @@ export function chuanHoaSdt(tho) {
 }
 
 /**
+ * KHOÁ ĐỊNH DANH MỘT KHÁCH — «hai đơn này là cùng một người hay không».
+ *
+ * Vì sao không phải chỉ mỗi SĐT: POS lưu số Ở DẠNG NỘI ĐỊA, KHÔNG mã nước (đo 26/08 —
+ * Kuwait `66410373`, Qatar `55534997`, Saudi/UAE `5xxxxxxxx`). Nên `chuanHoaSdt` chạy
+ * trên dữ liệu POS là no-op: nó cắt tiền tố mà POS không có tiền tố nào. Nước KHÔNG
+ * nằm trong con số — nó nằm ở «đơn đến từ shop nào». Bảy shop đều ở team 1, nên gộp
+ * chỉ theo (team, số) là gộp bảy nước làm một. Đo trên mẫu 3.000 đơn/shop: Saudi ∩ UAE
+ * có **6** số trùng khít (`561698732` `547049872` …); nhóm 8 số (Kuwait·Qatar·Bahrain·
+ * Oman, 5.703 số) thì **0** — tức RF-23 gọi tên đúng cái nhóm không va chạm.
+ *
+ * ⛔ CÂU SONG SINH CÓ THẬT VÀ NÓ Ở TRONG CSDL: chỉ mục `khach_sdt_trong_team_nuoc`
+ *    (migration 013) là `(team_id, coalesce(thi_truong,''), so_dien_thoai)`. Hàm này
+ *    PHẢI ra cùng một phán quyết với nó — `coalesce(...,'')` ở đây là để khớp, không
+ *    phải cho gọn. Hai bản trôi khỏi nhau nghĩa là bên ghi tưởng tạo mới còn CSDL nói
+ *    trùng (hoặc ngược lại). Ca `Q6` của `test/a7-1-khoa-khach.test.js` khoá điều đó
+ *    bằng cách cho chính CSDL ném lỗi trùng, chứ không đọc hai bản rồi so bằng mắt.
+ *
+ * @param thiTruong tên thị trường LẤY TỪ `ket_noi_pos.market` — KHÔNG phải
+ *                  `page.thi_truong` (từ vựng khác: `KSA` vs `Saudi`, khớp 0/502 page).
+ *                  Chưa tra được nước ⇒ null/rỗng ⇒ lùi về hành vi cũ (gộp theo số).
+ * @param sdtTho    SĐT thô; hàm tự chạy `chuanHoaSdt`.
+ * @returns khoá chuỗi, hoặc `null` khi không đọc được chữ số nào (không có khoá nối).
+ */
+export function khoaKhach(thiTruong, sdtTho) {
+  const sdt = chuanHoaSdt(sdtTho);
+  if (!sdt) return null;
+  return `${String(thiTruong ?? "").trim()}|${sdt}`;
+}
+
+/**
  * BẢY CHỮ SỐ CUỐI — vế THÔ dùng để lọc bằng index (`khach_duoi7_sdt`, migration 005).
  * Bao rộng hơn `chuanHoaSdt` một cách CÓ CHỦ Ý và AN TOÀN MỘT CHIỀU: chuẩn hoá chỉ
  * CẮT TIỀN TỐ, nên hai số bằng nhau sau chuẩn hoá luôn có bảy chữ số cuối bằng nhau

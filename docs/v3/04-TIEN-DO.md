@@ -476,7 +476,33 @@ Kế hoạch: `docs/v3/gd2/00-KE-HOACH-GD2.md`. Sáu module, làm TUẦN TỰ.
 | **B-Y7** | 🟥 `page.bot_ai_bat` lệch nguồn thật — sửa con số cho-bấm-áp của màn Bộ luật | ✅ **25/08** | cổng G2-A4 **16/16** · bộ ca **20 pass / 0 fail** · con số nay lấy từ `ai-enabled.json`, cột chỉ để đối chiếu · trên CSDL thật: **thật 0 · cột 50 · lệch 50**, và nó BÁO ra |
 | **G2-A6** | API số liệu: báo cáo hai luồng · chi phí AI · A/B · sức khỏe 9 chỉ số | ✅ **25/08** | migration 011 · bộ ca **14 pass / 0 fail** · mọi số 0 kèm `viSaoRong` · A/B chưa đủ mẫu thì `tiLeChot=null` · đèn XÁM tách khỏi đèn ĐỎ |
 
-Đỏ duy nhất của quét hồi quy là `D7` (`test/l0-m1-di-tru.test.js`), đã A/B trên cùng cây:
+| **A7-1** | Khoá định danh khách = (team, **NƯỚC**, SĐT) — migration 013 | ✅ **26/08** | cổng a7-1 **6/6 rc=0** · bộ ca **11 pass / 0 fail** trên Postgres 16.15 thật · **đảo-vá** bỏ nước khỏi khoá ⇒ 2 ca đỏ (thước có răng) · quét hồi quy 473 ca **458 pass / 4 fail**, cả 4 đã A/B là có sẵn |
+
+**A7-1 · vì sao khoá cũ sai, đo 26/08 trên POS thật.** `UNIQUE (team_id, so_dien_thoai)` +
+bảy shop POS cùng ở team 1 = «một số điện thoại là một người, xuyên bảy nước». POS lưu SĐT
+ở dạng **nội địa, không mã nước** (Kuwait `66410373` · Saudi/UAE `5xxxxxxxx`) ⇒ `chuanHoaSdt`
+là **no-op** trên dữ liệu POS; nước chỉ nằm ở «đơn đến từ shop nào». Đo va chạm:
+
+| nhóm | dân số đo | va chạm THẬT |
+|---|---|---|
+| 8 số — Kuwait·Qatar·Bahrain·Oman | 5.703 sđt phân biệt | **0** (1 hit là rác `123123123123`) |
+| 9 số — **Saudi·UAE** | 2.529 + 2.537 sđt (mẫu 3.000 đơn/shop) | **6** — `561698732` `547049872` … |
+
+⇒ **RF-23 (§9, 23/08) gọi tên đúng cái nhóm KHÔNG va chạm** và bỏ sót nhóm có va chạm, cũng
+là nhóm chiếm 82% đơn. Làm ngay vì `khach` đang **0 dòng** — hôm nay là migration rỗng, sau
+khi nạp đơn thì phải suy ngược nước cho từng khách đã gộp.
+
+🚩 **Dân số đơn THẬT là 122.615, không phải 5.144** (Saudi 62.494 · UAE 38.641 · Kuwait
+12.353 · Qatar 6.071 · Oman 1.740 · Bahrain 964 · Taiwan 352 — đo 26/08 qua `guiDocDon`).
+Mốc 23/08 đo trên **4,2%** dân số ⇒ mọi số dẫn xuất từ nó (phân bố bốn tầng của `ti-le-hoan`,
+«283 khách ≥2 đơn kết», «lệch 0,08%») đang đứng trên 1/24 dữ liệu. Ghi §9.
+
+Đỏ của quét hồi quy 26/08 (473 ca): `D1`·`D9`·`D10` (`l0-m1-di-tru`) + `l2-m3-rap-prompt`.
+A/B trên CÙNG cây CÙNG dữ liệu, bản trước-013 và sau-013 đều **26 pass / 3 fail** ⇒ không
+phải hồi quy. Lưu ý người sau: bộ D đỏ **khác nhau tuỳ dữ liệu** — dữ liệu VPS cho `D7`, dữ
+liệu máy cá nhân cho `D1`/`D9`/`D10`; ghi TÊN dữ liệu vào câu kết luận, đừng chỉ ghi số.
+
+Đỏ duy nhất của quét hồi quy 25/08 là `D7` (`test/l0-m1-di-tru.test.js`), đã A/B trên cùng cây:
 bản CŨ 10 pass/1 fail · bản MỚI 10 pass/1 fail ⇒ **không phải hồi quy**, nguyên nhân là dữ
 liệu `pages.json`/`ai-enabled.json` trên VPS. Ghi §9, đất L0-M1.
 

@@ -494,6 +494,46 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   nhãn chưa chuẩn hoá — «Ảnh feedback» và «Feedback» là hai nhãn cho cùng một thứ. Dựng bảng
   trước khi chốt bộ nhãn là dựng một bảng phải sửa ngay. **Chờ người quyết chốt bộ nhãn.**
 
+- 26/08 · A7-1 — 🧭 **RF-23 GỌI TÊN SAI NƯỚC, VÀ TÔI SUÝT CHÉP LẠI LỜI KHAI ĐÓ.** RF-23
+  (23/08) ghi «`chuanHoaSdt` gộp khách xuyên nước với số nội địa 8 chữ số (Kuwait/Bahrain/
+  Oman/Qatar)». Đo lại trên POS thật 26/08: nhóm 8 số ấy có **5.703 sđt phân biệt và 0 va
+  chạm THẬT** (đúng 1 hit, là rác `123123123123`); còn **Saudi ∩ UAE — nhóm 9 số, KHÔNG được
+  RF-23 nhắc — có 6 va chạm thật** (`561698732` `547049872` `575461472` `546241121`
+  `538440108` `386685425`) trên mẫu 3.000 đơn/shop, và đó là nhóm chiếm **82% đơn**. Bài học
+  đúng khuôn án lệ #4: nếu tôi thiết kế theo chữ của sổ thì đã đi vá nhóm không hỏng và để
+  nguyên nhóm hỏng. Gốc cũng khác lời khai: **POS lưu SĐT không có mã nước** (Kuwait
+  `66410373`, Saudi/UAE `5xxxxxxxx`) ⇒ `chuanHoaSdt` là no-op trên dữ liệu POS; nước chỉ nằm
+  ở «đơn đến từ shop nào», không nằm trong con số. Đã đóng bằng migration 013.
+
+- 26/08 · A7-1 — 🔴 **MỌI SỐ DẪN XUẤT TỪ MỐC «5.144 ĐƠN» ĐANG ĐỨNG TRÊN 4,2% DỮ LIỆU.** Đo
+  26/08 qua `guiDocDon` trên cả 7 shop: **122.615 đơn** (Saudi 62.494 · UAE 38.641 · Kuwait
+  12.353 · Qatar 6.071 · Oman 1.740 · Bahrain 964 · Taiwan 352). Sổ và `ti-le-hoan.js` đều
+  khai «5.144 đơn thật / 7 shop POS» (23/08). Cần đo lại, ngoài phạm vi A7-1: phân bố bốn
+  tầng hoàn (`canh_bao` 30–65% = 100 khách) · «283 khách có ≥2 đơn đã kết» · «859 khách đúng
+  một đơn kết» · «lệch lịch-sử-vs-hiện-tại 0,08%». Bốn con số đó là nền của A8 — đừng mở A8
+  trước khi đo lại, kẻo chốt chính sách chặn bằng 1/24 dân số.
+
+- 26/08 · A7-1 — NGOÀI PHẠM VI, chưa sửa: `kiemTrung`/`CAU_TRA_TRUNG` (`src/orders/loc-trung.js`)
+  vẫn dò trùng CHỈ theo SĐT chuẩn hoá, không kẹp nước ⇒ hai khách Saudi/UAE cùng số vẫn bị
+  **báo trùng chéo nhầm** (đúng vế «báo trùng nhầm» của RF-23, nhưng ở đúng nhóm nước mà
+  RF-23 không nêu). KHÔNG tiện tay sửa: đó là làn 🟥 (đường đơn/tiền, đất L3-M2) và đổi luật
+  dò trùng là đổi đơn nào được tạo. Cần phiếu riêng, và cần chốt: nước lấy ở đâu cho một đơn
+  `trang_ban_hang` (không đi qua shop nào).
+
+- 26/08 · A7-1 — 🧭 **CỔNG CỦA CHÍNH TÔI BÁO TRƯỢT CHO THỨ ĐANG XANH.** Phép ④ của
+  `ops/bin/nghiem-thu/a7-1.sh` in TRƯỢT trong khi chạy tay là 11/11: `node --test … | grep -q`
+  dưới `set -o pipefail` — `grep -q` đóng ống ngay khi khớp ⇒ node ăn SIGPIPE (141) ⇒ cả
+  pipeline thành TRƯỢT. Tệ hơn: phép ⑤ (đảo-vá) lại ĐẠT vì **lý do sai** — nó chỉ xanh nhờ
+  bộ ca đỏ thật. Tức cùng một lỗi thước vừa cho âm tính giả vừa cho dương tính giả trong một
+  file. Đã vá bằng cách hứng ra biến rồi mới soi, và ghi CẤM ngay trong cổng. Cùng họ án lệ
+  #27 («thước đỏ giống hệt code đỏ») và #10.
+
+- 26/08 · A7-1 — 🧭 **BỘ CA `l0-m1-di-tru` ĐỎ KHÁC NHAU TUỲ DỮ LIỆU, nên câu «D7 là đỏ có
+  sẵn» chưa đủ.** Trên dữ liệu VPS: đỏ `D7` (15 pass/1 fail). Trên dữ liệu máy cá nhân (cùng
+  mã, cùng CSDL): đỏ `D1`·`D9`·`D10` (26 pass/3 fail kèm `l0-m1-luoc-do`). A/B bản trước-013
+  và sau-013 trên CÙNG cây CÙNG dữ liệu ra **y hệt 26/3** ⇒ không phải hồi quy. Người sau đọc
+  kết quả quét phải hỏi «đo trên dữ liệu NÀO» trước khi nhận hay chối một dòng đỏ — án lệ #8.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -970,6 +1010,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 26/08 · A7-1 → ✅ xong — migration 013: khoá định danh khách là (team, NƯỚC, SĐT); nước lấy từ `ket_noi_pos.market` ngay tại `docDon`, `coalesce` bịt lỗ hai-NULL, có lưới migration lùi-và-kêu · commit <hash> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
+- 26/08 · A7-1 → đo trên Postgres 16.15 THẬT: cổng a7-1 6/6 rc=0 · bộ ca 11 pass/0 fail · đảo-vá bỏ nước ⇒ 2 ca đỏ · hồi quy 473 ca 458 pass/4 fail, cả 4 A/B ra có sẵn · commit <hash> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
+- 26/08 · A7-1 → 🧭 RF-23 gọi tên sai nước (nhóm 8 số 0 va chạm · Saudi∩UAE 6) · dân số đơn thật 122.615 chứ không 5.144 · cổng của tôi báo trượt cho thứ đang xanh — chi tiết §9 · commit <hash> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
+
 - 25/08 · B-Y6 → ✅ xong — migration 012: tầng CHỈ-NƯỚC cho cây kịch bản (sửa lỗi thiết kế của chính 010) + bảng `mau_0_dong` với bộ đếm nguyên tử · commit cdae76d · nhật ký docs/thi-cong/nhat-ky/phieu-b-y6.md
 - 25/08 · B-Y6 → đo trên Postgres 16.15 THẬT: l0-m2-kich-ban 20 pass · l0-m2-so-lieu 18 pass · l0-m1-luoc-do 13 pass (24 bảng) · hồi quy 34 bộ chỉ D7 đỏ · commit cdae76d · nhật ký docs/thi-cong/nhat-ky/phieu-b-y6.md
 - 25/08 · B-Y6 → 🧭 mục ⓒ TRẢ LỜI bằng số đo chứ không dựng bảng: ảnh ở kb-overrides.json, 32 ảnh/5 nhãn, bộ nhãn chưa chuẩn hoá — chi tiết §9 · commit cdae76d · nhật ký docs/thi-cong/nhat-ky/phieu-b-y6.md

@@ -54,12 +54,22 @@
 //    nào trong v3 cần điều đó, nếu cần thì đó là một quyết định khác, không phải lượt
 //    này.
 //
+// ⑥ KHOÁ ĐỊNH DANH KHÁCH LÀ (NƯỚC, SỐ), không phải chỉ SỐ — A7-1, migration 013.
+//    Quyết định ⑤ ở trên nói «một SĐT chỉ có ĐÚNG MỘT khach», và câu đó ĐÚNG TRONG
+//    MỘT NƯỚC nhưng SAI khi bảy shop POS cùng nằm ở team 1. Đo 26/08: POS lưu số ở
+//    dạng NỘI ĐỊA, không mã nước (Kuwait `66410373`, Saudi/UAE `5xxxxxxxx`) ⇒
+//    `chuanHoaSdt` là no-op trên dữ liệu POS, và Saudi ∩ UAE có **6** số trùng khít
+//    trên mẫu 3.000 đơn/shop. Sáu cặp đó là sáu người bị nhập làm một, mang theo cả
+//    địa chỉ và tỉ lệ hoàn của nhau. Nước lấy từ tham số `shop` (= `ket_noi_pos.market`),
+//    có sẵn ở đây, không phải đi tra. Chưa áp 013 ⇒ lùi về khoá cũ + `console.warn`,
+//    và `kq.khoaTheoNuoc=false` để nơi gọi thấy được (án lệ #7).
+//
 // ⛔ `tong_tien` để NULL — xem khối «TIỀN» cuối file. Fail-CLOSED, có nợ §9.
 import { layNhieu, themMoi } from "../db/index.js";
 import { xacDinhTeam, suaTheoIdPos } from "./kho.js";
 import { layKetNoi } from "./ket-noi.js";
 import { guiDocDon } from "./api.js";
-import { chuanHoaSdt } from "../orders/loc-trung.js";
+import { chuanHoaSdt, khoaKhach } from "../orders/loc-trung.js";
 
 const RE_CONV = /^(\d+)_(\d+)$/;
 
@@ -92,20 +102,56 @@ async function banDoHoiThoai(pool, ctx, teamId) {
   return m;
 }
 
+/** Cột `khach.thi_truong` (013) đã có chưa? Hỏi `information_schema` chứ không bắt lỗi
+ *  `42703` giữa chừng — án lệ #7, và ở đây nó nặng hơn: `themMoi` ném giữa vòng quét
+ *  đơn thì lượt đồng bộ chết dở, một nửa đơn đã ghi. */
+let _coThiTruong = null;
+async function coCotThiTruong(pool) {
+  if (_coThiTruong !== null) return _coThiTruong;
+  const r = await pool.query(
+    `SELECT count(*)::int c FROM information_schema.columns
+      WHERE table_schema='public' AND table_name='khach' AND column_name='thi_truong'`,
+  );
+  _coThiTruong = r.rows[0].c > 0;
+  return _coThiTruong;
+}
+
+/** CHỈ dùng cho test — bộ nhớ đệm trên sống theo tiến trình. */
+export function quenLuoiMigration() {
+  _coThiTruong = null;
+  _daKeu013 = false;
+}
+
+let _daKeu013 = false;
+function keuThieuMigration013() {
+  if (_daKeu013) return;
+  _daKeu013 = true;
+  console.warn(
+    "[doc-don] migration 013 chưa áp — khách đang gộp theo (team, SĐT) BẤT KỂ NƯỚC. " +
+      "Bảy shop POS đều ở team 1, nên hai khách khác nước cùng số sẽ thành MỘT dòng " +
+      "(đo 26/08: 6 cặp Saudi∩UAE trên mẫu 3.000 đơn/shop). Chạy `npm run migrate`.",
+  );
+}
+
 /**
- * Bản đồ SĐT ĐÃ CHUẨN HOÁ → khach.id của team, nạp MỘT lượt (quyết định ⑤ đầu file).
- * Chạy `chuanHoaSdt` lại trên GIÁ TRỊ ĐANG LƯU dù đã lưu ở dạng chuẩn hoá — phòng thân
- * cho dữ liệu cũ/ghi tay lệch khuôn (chuanHoaSdt THUẦN nên gọi lại trên một số ĐÃ chuẩn
- * hoá không đổi gì, tốn 0, an toàn tuyệt đối một chiều).
+ * Bản đồ KHOÁ ĐỊNH DANH → khach.id của team, nạp MỘT lượt (quyết định ⑤ đầu file).
+ * Khoá là `khoaKhach(thi_truong, sđt)` — CÙNG luật với chỉ mục
+ * `khach_sdt_trong_team_nuoc` (013). Chạy lại trên GIÁ TRỊ ĐANG LƯU dù đã lưu ở dạng
+ * chuẩn hoá — phòng thân cho dữ liệu cũ/ghi tay lệch khuôn (`khoaKhach` THUẦN nên gọi
+ * lại trên một số ĐÃ chuẩn hoá không đổi gì, tốn 0, an toàn tuyệt đối một chiều).
+ *
+ * `coNuoc=false` (chưa áp 013) ⇒ khoá lùi về CHỈ số, đúng hành vi trước 013.
  */
-async function banDoKhach(pool, ctx, teamId) {
+async function banDoKhach(pool, ctx, teamId, coNuoc) {
   const ds = await layNhieu(pool, ctx, "khach", {
     dieuKien: { team_id: teamId },
   });
   const m = new Map();
   for (const k of ds) {
-    const sdt = chuanHoaSdt(k.so_dien_thoai);
-    if (sdt) m.set(sdt, String(k.id));
+    const khoa = coNuoc
+      ? khoaKhach(k.thi_truong, k.so_dien_thoai)
+      : khoaKhach(null, k.so_dien_thoai);
+    if (khoa) m.set(khoa, String(k.id));
   }
   return m;
 }
@@ -164,11 +210,18 @@ export async function docDon(
     khachMoi: 0, // khach vừa TẠO trong lượt này
     khachDaCo: 0, // khớp khach ĐÃ CÓ (cùng team + SĐT chuẩn hoá)
     donKhongSdt: 0, // đơn KHÔNG có SĐT → khach_id NULL — nói ra, không im (②#1 phiếu)
+    // A7-1: lượt này có gộp khách theo nước không, hay đang mù (013 chưa áp)?
+    khoaTheoNuoc: true,
   };
+
+  // Lưới migration 013 (án lệ #7): thiếu cột thì LÙI về khoá cũ và KÊU RA, không chết.
+  const coNuoc = await coCotThiTruong(pool);
+  kq.khoaTheoNuoc = coNuoc;
+  if (!coNuoc) keuThieuMigration013();
 
   const pageMap = await banDoPage(pool, ctx, team.teamId);
   const htMap = await banDoHoiThoai(pool, ctx, team.teamId);
-  const khachMap = await banDoKhach(pool, ctx, team.teamId);
+  const khachMap = await banDoKhach(pool, ctx, team.teamId, coNuoc);
 
   for (let trang = 1; trang <= soTrangToiDa; trang++) {
     const lo = await guiDocDon(
@@ -204,14 +257,18 @@ export async function docDon(
       // cùng cột đã dùng để đo bảng chuẩn hoá của L3-M2). Không SĐT → khach_id NULL,
       // ĐẾM chứ không im lặng (nói ra ở kq.donKhongSdt).
       const sdtChuan = chuanHoaSdt(o.shipping_address?.phone_number ?? null);
+      // A7-1: khoá định danh = (nước, số). `shop` CHÍNH LÀ `ket_noi_pos.market` —
+      // nguồn đúng của cột `thi_truong`, và nó có sẵn ngay đây, không phải đi tra.
+      const khoa = khoaKhach(coNuoc ? shop : null, sdtChuan);
       let khachId = null;
-      if (sdtChuan) {
-        khachId = khachMap.get(sdtChuan) ?? null;
+      if (khoa) {
+        khachId = khachMap.get(khoa) ?? null;
         if (!khachId) {
           // Khuôn `const moi = await themMoi(...)` cùng `doc-danh-muc.js`.
           const moi = await themMoi(pool, ctx, "khach", {
             team_id: team.teamId,
             so_dien_thoai: sdtChuan,
+            ...(coNuoc ? { thi_truong: shop } : {}),
             ten: o.shipping_address?.full_name || o.bill_full_name || "",
             dia_chi:
               o.shipping_address?.full_address ||
@@ -220,7 +277,7 @@ export async function docDon(
             thanh_pho: o.shipping_address?.province_name || "",
           });
           khachId = String(moi.id);
-          khachMap.set(sdtChuan, khachId); // cùng SĐT gặp lại TRONG lượt này → tái dùng
+          khachMap.set(khoa, khachId); // cùng khoá gặp lại TRONG lượt này → tái dùng
           kq.khachMoi++;
         } else {
           kq.khachDaCo++;
