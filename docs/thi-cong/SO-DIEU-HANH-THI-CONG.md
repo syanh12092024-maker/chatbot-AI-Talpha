@@ -389,6 +389,47 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   đập màn của B ⇒ ba chỗ nhường (không thêm cột `trang_thai` · lịch sử kỹ năng ra bảng
   riêng · chưa siết CHECK). Chi tiết ở nhật ký phiếu.
 
+- 25/08 · G2-A5 — 🧭 **SUÝT LÀM CHẾT BOT: quên lưới migration ở bộ đọc MỚI trên đường chat
+  sống.** Cổng chạy trên CSDL thật trả `column "cap" does not exist` — CSDL thật ở migration
+  008, mà `docKichBanChoPage` đã được nối vào `rap-prompt.js`. Deploy code trước khi áp 010 =
+  MỌI lượt trả lời khách chết (đúng án lệ #7/K2). Đáng nói hơn: tôi ĐÃ bọc lưới đúng như vậy
+  cho `layModel` ở G2-A2 rồi **quên ở đây** — bọc một chỗ không thành thói quen. Vá bằng cách
+  hỏi `information_schema` MỘT lần (không bắt lỗi 42703: một câu lỗi giữa giao dịch làm hỏng
+  cả giao dịch, không lui được nữa), thiếu cột thì lui về bộ đọc một tầng và KÊU RA. Ca K16
+  dựng đúng cảnh đó bằng cách DROP cột thật.
+
+- 25/08 · G2-A5 — hai lỗi khác, cả hai do TEST bắt chứ không phải đọc code thấy:
+  (1) `apKichBan` đếm ảnh hưởng bằng `pool` (kết nối KHÁC) khi đang ở giữa giao dịch ⇒ đọc
+  ảnh TRƯỚC khi ghi ⇒ trả 0. Mọi phép đếm trong giao dịch phải đi bằng chính client của giao
+  dịch đó. (2) Tôi thêm chỉ mục `kich_ban_mot_live_page` trùng với `kich_ban_live_moi_page`
+  đã có từ migration 001 — đúng cái «bản khai thứ hai» mà cả sóng này đang dọn.
+
+- 25/08 · G2-A5/A6 — ĐO TRƯỚC KHI DỰNG, và hai tầng trên GẦN NHƯ KHÔNG TỚI ĐƯỢC:
+  `san_pham` = **0 dòng** · `page.thi_truong` = **140/514** · `page.nganh_hang` = **0/514**
+  · `kich_ban` 71 bản/70 page ⇒ **444/514 page chưa có bản riêng**. Cấu trúc dựng đúng nhưng
+  hôm nay hầu hết page rơi vào «không kế thừa được từ đâu» — đó là TRẠNG THÁI THẬT. Tầng sản
+  phẩm chỉ sống khi `san_pham` có dòng (việc của POS/L1-M1); tầng nước chỉ với tới 27% page
+  cho tới khi ai đó điền `page.thi_truong`.
+
+- 25/08 · G2-A6 — TỰ QUYẾT: danh sách **9 chỉ số sức khoẻ** là của tôi, tài liệu chỉ ghi «đèn
+  9 chỉ số» chứ không liệt kê. Mỗi chỉ số neo vào một SỰ CỐ THẬT hoặc con số đã đo:
+  `llm_account`(23/08) · `don_ket_cho_gui_wa`(RF-14) · `page_thieu_marketer`(514/514) ·
+  `page_thieu_kich_ban`(dùng bộ giải A5) · `du_lieu_mo_coi`(dùng `demMoCoi` B-Y3) ·
+  `hang_doi_tin` · `viec_qua_han` · `hang_cho_duyet` · `page_mat_dau`. Chủ dự án đổi thì sửa
+  `CHIN_CHI_SO`, và ca S9 sẽ đỏ cho tới khi test sửa theo (cố ý). Ngưỡng A/B
+  `TOI_THIEU_DE_KET_LUAN=30` cũng là quy ước, được KHAI trong chính kết quả trả về.
+
+- 25/08 · G2-A6 — 🧭 **ĐÈN XÁM tách khỏi ĐÈN ĐỎ.** «0 lượt trả lời» có HAI nghĩa: chưa có dữ
+  liệu bao giờ (chưa cài xong) và có rồi mà dừng (sự cố). Gộp thành đỏ là dựng một đèn đỏ
+  VĨNH VIỄN, rồi ai cũng học cách bỏ qua nó — đúng bài học vừa rút ở mốc nền mục của
+  `l0-m1.sh`/`l0-m2.sh` cùng ngày. `tomTat` nói thẳng: «không đèn đỏ, nhưng có đèn XÁM — chưa
+  đủ dữ liệu để nói hệ khoẻ».
+
+- 25/08 · G2-A5/A6 — NỢ: migration **010 và 011 CHƯA áp** trên CSDL thật (đang ở 008 + 009
+  chưa áp). Cho tới lúc áp: cây ba tầng TẮT (có kêu cảnh báo), và `so_ai` chưa có cột tiền nên
+  mọi báo cáo tiền là cận dưới. Người B cần biết để nối lớp model đẩy `tienVnd` qua phễu
+  `datPheuSoAi`.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -865,6 +906,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 25/08 · G2-A5 → ✅ xong — migration 010 + `src/db/kich-ban.js`: cây sản phẩm→nước→page, bộ giải LUÔN khai nguồn, `rap-prompt` đi qua nó, có lưới migration · commit b7dbf14 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a5.md
+- 25/08 · G2-A6 → ✅ xong — migration 011 + `src/db/so-lieu.js`: báo cáo hai luồng không cộng, chi phí AI, A/B ẩn tỉ lệ khi chưa đủ mẫu, 9 đèn có đèn XÁM · commit b7dbf14 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a6.md
+- 25/08 · G2-A5+A6 → đo trên Postgres 16.15 THẬT: cổng 15/15 · 16+14 ca xanh · hồi quy 34 bộ chỉ D7 đỏ · 🧭 quên lưới migration suýt làm chết bot, chi tiết §9 · commit b7dbf14 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a5.md
+
 - 25/08 · G2-A4 → ✅ xong — migration 009 + `src/db/noi-dung.js`: soạn/duyệt/áp/lùi có phiên bản, bốn mắt, và đo ảnh hưởng dùng CHUNG vị từ với bộ ráp prompt · commit 604dc9a · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a4.md
 - 25/08 · G2-A4 → đo trên Postgres 16.15 THẬT: cổng 12/12 · bộ ca 17 pass/0 fail · phép đếm ảnh hưởng lệch bộ đọc prompt 0/514 page · hồi quy 32 bộ chỉ D7 đỏ · commit 604dc9a · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a4.md
 - 25/08 · G2-A4 → 🧭 RF-17 đóng bằng chỉ mục (phải COALESCE vì team_id NULLABLE) · không chạy 3 lượt model, lý do ở §9 · commit 604dc9a · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a4.md
