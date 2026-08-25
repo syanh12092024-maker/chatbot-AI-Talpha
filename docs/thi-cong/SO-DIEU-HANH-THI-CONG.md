@@ -450,6 +450,23 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   lại lệch âm thầm · (c) giữ nguyên + LUÔN báo lệch — rẻ nhất, đã làm xong ở phiếu này.
   Hôm nay đang là (c): con số không nói dối nữa, nhưng cột vẫn lệch.
 
+- 25/08 · B-Y5 — 🧭 **BỘ CA CHẬP CHỜN ~25%, VÀ NÓ CÓ SẴN — đo rồi mới dám nói.**
+  `test/l2-m3-rap-prompt.test.js` đỏ trong quét hồi quy với lỗi của BỘ CHẠY test
+  (`Unable to deserialize cloned data`), trong khi chạy thẳng `node test/...` thì 6/6.
+  Không đoán: chạy 8 lượt mỗi bản → **bản mới 2 đỏ/8 · bản cũ (HEAD) 2 đỏ/8**. Tỉ lệ y hệt
+  ⇒ chập chờn CÓ SẴN, không phải do B-Y5. Hai điều rút ra: (1) một bộ ca chập chờn TỆ HƠN
+  một bộ ca đỏ, vì nó dạy người ta chạy lại cho tới khi xanh; (2) mọi lượt «quét hồi quy»
+  trong phiên này có ~25% khả năng hiện một dòng đỏ GIẢ ở tệp đó — ai đọc kết quả quét phải
+  biết điều này. Chưa vá (ngoài phạm vi), nghi là stdout lớn/nhiều ký tự lạ làm hỏng IPC của
+  test runner.
+
+- 25/08 · B-Y5 — TỰ QUYẾT + NỢ: **mặc định của cờ `ghiNhatKy` đang SAI theo số đo** nhưng
+  tôi CỐ Ý không tự lật. Đo: `nhat_ky` 1557 dòng, **100% là `doc`** — tức mặc định «ĐỌC thì
+  ghi» chưa từng phục vụ ai. Nhưng lật nó là bỏ một khả năng kiểm toán (dấu vết ĐỌC bảng
+  `khach` — bảng mang SĐT và địa chỉ khách), và phiếu ⑤#1 khai thẳng «mặc định không đổi».
+  Người quyết chốt: giữ opt-out (như hiện tại) hay lật thành opt-in.
+  Kèm: 1557 dòng rác đang có **không dọn được** (`nhat_ky` cấm xoá ở tầng CSDL). Cứ để.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -926,6 +943,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 25/08 · B-Y5 → ✅ xong — `ctxHeThong({ghiNhatKy:false})` tắt nhật ký cho lệnh ĐỌC; lệnh GHI vẫn để dấu vết, không cờ nào tắt được; đã BẬT ở `rap-prompt.js` chứ không để cờ nằm không · commit 49d2272 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y5.md
+- 25/08 · B-Y5 → đo trên Postgres 16.15 THẬT: cổng L0-M2 31 phép ĐẠT 30 TRƯỢT 1 (D7 đỏ sẵn) · bộ ca 22 pass/0 fail · `nhat_ky` hiện 1557 dòng và 100% là `doc` · commit 49d2272 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y5.md
+- 25/08 · B-Y5 → 🧭 `l2-m3-rap-prompt` chập chờn ~25% và CÓ SẴN (đo 8 lượt: mới 2/8 · cũ 2/8) — chi tiết §9 · commit 49d2272 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y5.md
+
 - 25/08 · B-Y7 → ✅ xong — con số «bao nhiêu page đang bật bot» nay hỏi `ai-enabled.json`, cột chỉ để đối chiếu; không đọc được nguồn thì khai CHƯA BIẾT chứ không rơi lặng về cột · commit f6b5c80 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y7.md
 - 25/08 · B-Y7 → đo trên Postgres 16.15 THẬT: cổng G2-A4 16/16 · 20 ca xanh · trên CSDL thật «thật 0 · cột 50 · lệch 50» và nó BÁO ra · commit f6b5c80 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y7.md
 - 25/08 · B-Y7 → 🧭 tôi đọc BẢN SAO và coi là sự thật, còn thước của tôi xanh vì fixture dựng hai vế bằng nhau — chi tiết §9 · commit f6b5c80 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y7.md
