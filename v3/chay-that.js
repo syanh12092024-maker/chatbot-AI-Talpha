@@ -36,10 +36,19 @@ const taoTruyVan = (bc) => taoTruyVanThat(pool, bc);
 // ghi đè, rồi đăng nhập nổ «nguoi_dung không nằm trong BANG_NGHIEP_VU_CHUAN». Đã dính thật.
 const { taoCongDanhTinh } = await import('./src/noi-day/cong-danh-tinh.js');
 
+// Kết nối POS: bảng `ket_noi_pos` CHỨA BÍ MẬT nên nó cố ý không nằm trong tầng truy vấn
+// chung — người A cho nó bộ đọc riêng. `lietKeThiTruong` KHÔNG giải mã khoá (đúng thứ màn
+// cấu hình team cần: chỉ hiện thị trường, shop, bật/tắt).
+//
+// Nối vào đây thay vì để trống, vì để trống thì màn hình nói «chưa nối bộ đọc kết nối POS»
+// — đúng sự thật, nhưng là một sự thật do chính máy chủ này gây ra chứ không phải do dữ liệu.
+const { lietKeThiTruong } = await import(`${GOC}/src/pos/ket-noi.js`);
+
 const app = express();
 const bao = dungPhanB(app, {
   taoTruyVan,
   taoTruyVanHeThong: () => taoCongDanhTinh(pool),
+  docKetNoiPos: (bc) => lietKeThiTruong(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId || null }),
   express,
 });
 app.get('/', (_q, r) => r.redirect('/dieu-phoi'));
