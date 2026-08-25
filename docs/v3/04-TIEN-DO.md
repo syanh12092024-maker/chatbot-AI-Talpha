@@ -142,6 +142,24 @@ dùng thẳng sáu con số đo được. **Đây đúng là lý do tiêu chí g
 ⚠️ **Việc cho chủ dự án:** đổi thứ tự token trong `.env` để token phủ 109 page lên đầu —
 tiết kiệm một vòng gọi hỏng cho 93 page mỗi lượt quét. Màn `/ket-noi` nay hiện cảnh báo này.
 
+### Đo cả BỐN màn trên CSDL thật — 25/08, chỉ đọc
+
+```
+G2-B1 lát 4 · team đích: Auus, Pialpha EU · mở được: true · 514 page
+             dòng con MỒ CÔI: don_hang 0 · hoi_thoai 0 · kich_ban 0 · san_pham 0 · tin_cho_xu_ly 0
+G2-B2 · 514 page · 11 trang · bot_bat 50 · thieu_marketer 514 · mat_dau 120
+G2-B3 · chưa cấu hình (0 dòng) · 4/4 nhà CHƯA có khoá · 3 cảnh báo ĐỎ · không lộ khoá
+G2-B4 · 6 token · cửa ghi ĐÓNG · 1 cảnh báo (thứ tự dự phòng đặt sai)
+nhat_ky sau lượt đo: 0  (phép đo chỉ đọc, không ghi một dòng)
+```
+
+⚠️ **Hai việc cho chủ dự án, màn hình nay chỉ thẳng ra:**
+
+1. **Chưa team nào có khoá model.** `khoa_nha` rỗng, `cau_hinh_model` rỗng — cả ba team đang
+   chạy bằng bộ mặc định và khoá từ `.env`. Mở `/model-ai`, dán khoá bốn nhà rồi chọn model.
+2. **Thứ tự token đặt ngược:** token chính phủ 16 page, token phụ phủ 109. Đổi thứ tự trong
+   `.env` là đỡ một vòng gọi hỏng cho 93 page mỗi lượt quét.
+
 ### Ba chỗ chặn tìm được TRƯỚC khi viết code, và đã xử
 
 | # | Chặn gì | Xử thế nào |
