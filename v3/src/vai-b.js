@@ -59,6 +59,11 @@ import {
 } from './ui/bo-luat/index.js';
 import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage } from './noi-day/cau-bot-v1.js';
 import {
+  datTaoTruyVan as datTruyVanLenChay, datDocSanSang as datDocSanSangLenChay,
+  datDocMotPage as datDocMotPageLenChay,
+  datChanDangNhap as datChanDangNhapLenChay, datChanVai as datChanVaiLenChay, taoRouterLenChay,
+} from './ui/len-chay/index.js';
+import {
   datTaoTruyVan as datTruyVanAnh, datDocKhoSanPham as datDocKhoAnh,
   datChanDangNhap as datChanDangNhapAnh, datChanVai as datChanVaiAnh, taoRouterAnh,
 } from './ui/thu-vien-anh/index.js';
@@ -196,6 +201,10 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   // Thư viện ảnh dùng CHUNG bộ đọc — ảnh nằm trong chính dữ liệu sản phẩm, không có kho riêng.
   datTruyVanAnh(taoTruyVan);
   datDocKhoAnh(kho);
+  // Màn sáu chặng dùng LẠI cả hai bộ đọc — cửa kiểm và cấu hình kịch bản. Không bộ nào riêng.
+  datTruyVanLenChay(taoTruyVan);
+  datDocSanSangLenChay(docCuaKiem);
+  datDocMotPageLenChay(kho.motPage);
   datDocSanSangTrangChu(docCuaKiem);   // CÙNG bộ đọc — hai màn không được ra hai con số
   if (typeof docSanSang === 'function') daNoi.push('bộ đọc cửa kiểm GIẢ → màn Cửa kiểm sẵn sàng');
   datTruyVanSucKhoe(taoTruyVan);
@@ -313,6 +322,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiSanPham(batBuocVaiHTTP);
   datChanDangNhapAnh(batBuocDangNhap);
   datChanVaiAnh(batBuocVaiHTTP);
+  datChanDangNhapLenChay(batBuocDangNhap);
+  datChanVaiLenChay(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -336,7 +347,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterTrangChu());   //   /trang-chu · /api/trang-chu
   app.use(taoRouterSanPham());    //   /san-pham · /api/san-pham/*
   app.use(taoRouterAnh());        //   /thu-vien-anh · /api/thu-vien-anh
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng → trang chủ → sản phẩm & kho → thư viện ảnh');
+  app.use(taoRouterLenChay());    //   /len-chay · /api/len-chay/*
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng → trang chủ → sản phẩm & kho → thư viện ảnh → đưa lên chạy');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };

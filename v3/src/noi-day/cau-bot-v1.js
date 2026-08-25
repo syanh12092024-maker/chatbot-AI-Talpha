@@ -231,9 +231,20 @@ export async function danhSachPageKemSanPham() {
 export async function sanPhamCuaPage(pageIdFacebook) {
   const d = await goi('/kb/' + encodeURIComponent(String(pageIdFacebook)), { hetGio: 15000 });
   const ds = Array.isArray(d && d.products) ? d.products : [];
+  const cfg = (d && d.config) || {};
   return {
     pageId: String(pageIdFacebook),
     tenPage: (d && d.pageName) || '',
+    // BA Ô CẤU HÌNH, VÀ CHỈ BA. `kb-overrides.json` của page chỉ có `greeting`, `salesPrompt`,
+    // `tone` — xem `90-phu-luc §4`. Không có ô nào cho **động cơ**, lời hứa trung tâm, nhóm
+    // nhu cầu. Trả đúng ba ô này ra, đừng độn thêm khoá rỗng cho đẹp: một ô rỗng và một ô
+    // KHÔNG TỒN TẠI là hai chuyện khác nhau, và màn «Đưa sản phẩm mới lên chạy» sống bằng
+    // đúng sự khác nhau đó.
+    cauHinh: {
+      chao: String(cfg.greeting || '').trim(),
+      cachBan: String(cfg.salesPrompt || '').trim(),
+      giongDieu: String(cfg.tone || '').trim(),
+    },
     sanPham: ds.map((s) => ({
       ma: String(s.id || ''),
       ten: String(s.name || '').trim(),
