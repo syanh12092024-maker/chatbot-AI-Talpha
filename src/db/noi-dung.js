@@ -60,7 +60,7 @@ export function apDungChoPage(kyNang, dsMaSp = []) {
 // RÀO CHUNG
 // ═══════════════════════════════════════════════════════════════════════════════════
 
-async function batBuocVai(khach, ctx, dsVai, viec) {
+export async function batBuocVai(khach, ctx, dsVai, viec) {
   if (ctx?.laHeThong) {
     throw new LoiThieuBoiCanhTeam(
       `${viec} KHÔNG nhận ctxHeThong() — đây là thao tác đổi thứ 51 page nói với khách, ` +

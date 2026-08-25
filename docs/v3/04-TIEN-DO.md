@@ -8,6 +8,7 @@
 
 | | |
 |---|---|
+| Người A (trục dữ liệu) | **6/6 module + 2 phiếu chen XONG** — cổng: A1 26/27 · A2 58/59 · B-Y3 14/14 · A3 6/6 · B-Y4 6/6 · A4 12/12 · A5+A6 15/15 |
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
 | Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 3/5 · SÓNG 3 2/5** (12 màn). Ba màn số liệu chờ `so_ai` có dữ liệu |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
@@ -400,8 +401,8 @@ Kế hoạch: `docs/v3/gd2/00-KE-HOACH-GD2.md`. Sáu module, làm TUẦN TỰ.
 | **G2-A3** | Gộp BA cửa ghi hẹp về MỘT bộ dựng SQL | ✅ **25/08** | cổng G2-A3 **6/6** · ba cửa còn **0** câu UPDATE tay · bộ ca khoá bẫy **7 pass / 0 fail** · 7 bộ ca của ba cửa xanh trọn · còn **4 câu gộp được** ở `lich-nhac`/`hang-cho`/`ti-le-hoan` — ngoài phạm vi, đã ghi §9 |
 | **B-Y4** | Di trú thôi ghi đè cột NGƯỜI đặt (chen theo lệnh) — cứu chức năng gán marketer của `G2-B2` | ✅ **25/08** | cổng B-Y4 **6/6** · marketer gán tay SỐNG SÓT qua `npm run di-tru` đầu-cuối · cột máy vẫn đồng bộ · **0** cột người đặt còn trong câu ghi đè |
 | **G2-A4** | Bảng + API bộ luật chung và kỹ năng (phiên bản · duyệt · xem trước ảnh hưởng) | ✅ **25/08** 🟥 | cổng G2-A4 **12/12** · bộ ca **17 pass / 0 fail** · migration 009 đóng **RF-17** (hai bản cùng đang áp KHÔNG tồn tại được) · áp là MỘT giao dịch · phép đếm ảnh hưởng lệch bộ đọc prompt **0/514 page thật** |
-| G2-A5 | Bảng + API kịch bản ba tầng có KẾ THỪA, đúng MỘT bản LIVE mỗi page | ⬜ | |
-| G2-A6 | API số liệu: báo cáo hai luồng · chi phí AI · A/B · sức khỏe 9 chỉ số | ⬜ | |
+| **G2-A5** | Bảng + API kịch bản ba tầng có KẾ THỪA, đúng MỘT bản LIVE mỗi page | ✅ **25/08** | migration 010 · bộ ca **16 pass / 0 fail** · bộ giải LUÔN khai nguồn (kể cả «không có gì, thiếu khoá nào») · bộ ráp prompt ĐI QUA bộ giải · 3 chỉ mục chặn hai bản LIVE cùng phạm vi |
+| **G2-A6** | API số liệu: báo cáo hai luồng · chi phí AI · A/B · sức khỏe 9 chỉ số | ✅ **25/08** | migration 011 · bộ ca **14 pass / 0 fail** · mọi số 0 kèm `viSaoRong` · A/B chưa đủ mẫu thì `tiLeChot=null` · đèn XÁM tách khỏi đèn ĐỎ |
 
 Đỏ duy nhất của quét hồi quy là `D7` (`test/l0-m1-di-tru.test.js`), đã A/B trên cùng cây:
 bản CŨ 10 pass/1 fail · bản MỚI 10 pass/1 fail ⇒ **không phải hồi quy**, nguyên nhân là dữ

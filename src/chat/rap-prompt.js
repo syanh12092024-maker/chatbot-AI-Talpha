@@ -24,7 +24,12 @@
 // (mặc định) ⇒ dùng NGUYÊN đường `kb.js#getKBForPage` cũ, KHÔNG đụng DB — không gãy 51
 // page hiện hành đang sống bằng kb-overrides.json lúc cây này merge/deploy. Đặt `=1` mới
 // bật đường DB bốn khối. Đây LÀ "cờ config" mà đề bài ②.1 nhắc — không phải per-block.
-import { ctxHeThong, layNhieu, apDungChoPage } from "../db/index.js";
+import {
+  ctxHeThong,
+  layNhieu,
+  apDungChoPage,
+  docKichBanChoPage,
+} from "../db/index.js";
 import { getKBForPage } from "../kb.js";
 
 /** Bốn tên khối — dùng để khai `nguon_thieu` (mù-có-nói-ra, không im — luật án lệ #7). */
@@ -90,11 +95,17 @@ export async function docTrangPage(pool, teamId, pageIdText) {
 /** Đọc bản kịch bản LIVE của page — `noi_dung_nguoi` là ĐÚNG 6 trường SCRIPT_FIELDS của
  *  kb.js (kb.js §"Cấu hình AI theo page"), buildSystem() đọc thẳng làm `kb.config`. */
 export async function docKichBanLive(pool, teamId, pageRowId) {
-  const rows = await layNhieu(pool, ctxHeThong(), "kich_ban", {
-    dieuKien: { team_id: teamId, page_id: pageRowId, trang_thai: "LIVE" },
-  });
-  return rows[0] || null;
+  // ⚠️ TỪ 25/08 (G2-A5) hàm này KHÔNG còn chỉ đọc tầng page. Nó đi qua bộ giải ba tầng
+  // `docKichBanChoPage()` — page không có bản riêng thì KẾ THỪA bản tầng nước, rồi tầng
+  // sản phẩm. Không nối vào đây thì cây kế thừa chỉ là thứ để nhìn trên màn hình: marketer
+  // soạn một bản tầng sản phẩm, màn báo «đã áp cho 40 page», mà bot thì không đổi một chữ.
+  const kq = await docKichBanChoPage(pool, teamId, pageRowId);
+  return kq.ban;
 }
+
+/** Bản đầy đủ của bộ giải — dùng khi cần biết NGUỒN (màn hình, chẩn đoán), không chỉ nội
+ *  dung. `docKichBanLive` ở trên là lối tắt cho đường ráp prompt, vốn chỉ cần nội dung. */
+export { docKichBanChoPage };
 
 /** Đọc danh mục sản phẩm + bảng giá của page. `goi_gia` không có cột `page_id` nên phải
  *  tra theo TỪNG `san_pham.id` — một page thường 1 SP (prompts.js:44 "MỖI PAGE CHỈ BÁN 1
