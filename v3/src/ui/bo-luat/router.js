@@ -5,6 +5,7 @@
 // | GET  /api/bo-luat/:id/so-sanh  | bản này khác bản ĐANG ÁP chỗ nào, theo từng dòng     |
 // | POST /api/bo-luat/nhap         | lưu bản nháp — KHÔNG áp        (chỉ `quan-tri`)      |
 // | POST /api/bo-luat/:id/ap       | áp / lùi về một bản            (chỉ `quan-tri`)      |
+// | POST /api/bo-luat/:id/duyet    | duyệt một bản — BẮT BUỘC với bản `nguon='ai'`        |
 //
 // HAI ĐƯỜNG GHI TÁCH HẲN NHAU, và đó là cả thiết kế của màn này: soạn xong KHÔNG áp. Gộp
 // «lưu» với «áp» vào một nút là bỏ mất cửa duyệt mà tiêu chí nghiệm thu sóng 1 đòi.
@@ -16,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import {
-  manBoLuat, soVoiDangAp, luuBanNhap, apPhienBan, VAI_SUA_DUOC, LoiBoLuat,
+  manBoLuat, soVoiDangAp, luuBanNhap, apPhienBan, duyetBan, VAI_SUA_DUOC, LoiBoLuat,
 } from './kho-bo-luat.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
@@ -84,11 +85,25 @@ function chanGhiMw(req, res, next) {
   return next();
 }
 
+/** Lỗi từ CỬA của người A là `Error` trần — dịch thành mã người đọc được, đừng để rơi 500.
+ *  Một cửa chặn ĐÚNG mà trả 500 thì người dùng đọc «Lỗi máy chủ» và đi báo hỏng, trong khi
+ *  hệ thống vừa làm đúng việc của nó. */
+const DICH_LOI_CUA = [
+  [/chưa ai duyệt|chưa duyệt/i, 'ai_chua_duyet', 400],
+  [/đang áp rồi/i, 'dang_ap', 400],
+  [/không có bản/i, 'khong_thay', 404],
+  [/không đủ quyền|vai/i, 'thieu_vai', 403],
+];
+
 function traLoi(res, e) {
   if (e instanceof LoiChuaDangNhap) return res.status(401).json({ ok: false, ma: 'chua_dang_nhap' });
   if (e instanceof LoiThieuVai) return res.status(403).json({ ok: false, ma: 'thieu_vai', thongDiep: e.message });
   if (e && typeof e.status === 'number' && e.ma) {
     return res.status(e.status).json({ ok: false, ma: e.ma, thongDiep: e.message });
+  }
+  const van = String(e?.message || '');
+  for (const [re, ma, st] of DICH_LOI_CUA) {
+    if (re.test(van)) return res.status(st).json({ ok: false, ma, thongDiep: van });
   }
   console.error('[bo-luat] lỗi chưa phân loại:', e?.stack || e?.message || e);
   return res.status(500).json({ ok: false, ma: 'loi_may_chu', thongDiep: 'Lỗi máy chủ. Xem log.' });
@@ -138,9 +153,18 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   }));
 
   r.post('/api/bo-luat/nhap', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    // ⛔ `nguon` KHÔNG nhận từ trình duyệt. Màn này là người gõ, nên luôn `'nguoi'`.
+    //    Cho nơi gọi tự đặt `nguon` là mở đường lách luật §9 theo cả hai chiều: đánh dấu
+    //    một đề xuất của AI thành 'nguoi' để áp thẳng không cần duyệt. Đường ghi bản AI là
+    //    một cửa RIÊNG của màn «AI đề xuất» (sóng 4), không phải cửa này.
     const kq = await luuBanNhap(cuaBoiCanh(req), {
-      noiDung: req.body?.noiDung, ghiChu: req.body?.ghiChu,
+      noiDung: req.body?.noiDung, ghiChu: req.body?.ghiChu, nguon: 'nguoi',
     });
+    res.json({ ok: true, ...kq });
+  }));
+
+  r.post('/api/bo-luat/:id/duyet', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    const kq = await duyetBan(cuaBoiCanh(req), req.params.id, { ghiChu: req.body?.ghiChu });
     res.json({ ok: true, ...kq });
   }));
 

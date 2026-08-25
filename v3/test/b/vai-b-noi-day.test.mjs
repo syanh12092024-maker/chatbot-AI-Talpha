@@ -14,7 +14,7 @@ const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
 async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi,
-  dungBanMay, dayKichBanLenBot, bocPancake } = {}) {
+  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -41,7 +41,7 @@ async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, do
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
     ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi,
-    dungBanMay, dayKichBanLenBot, bocPancake, express,
+    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -141,7 +141,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   // dán khoá không xuống được, và khoá riêng của team trong `khoa_nha` tàng hình.
   assert.ok(bao.thieu.some((x) => /khoKhoa/.test(x)), 'phải nêu thiếu khoKhoa');
   assert.ok(bao.thieu.some((x) => /docKhoi/.test(x)), 'phải nêu thiếu docKhoi');
-  for (const t of ['dungBanMay', 'dayKichBanLenBot', 'bocPancake']) {
+  for (const t of ['dungBanMay', 'dayKichBanLenBot', 'bocPancake', 'cuaBoLuat']) {
     assert.ok(bao.thieu.some((x) => x.includes(t)), `phải nêu thiếu ${t}`);
   }
 
@@ -154,6 +154,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
       kichBan: async () => null, sanPham: async () => [],
     },
     dungBanMay: () => '', dayKichBanLenBot: async () => ({}), bocPancake: async () => ({}),
+    cuaBoLuat: { taoBan: async () => ({}), ap: async () => ({}), duyet: async () => ({}) },
   });
   t.after(() => sv2.close());
   assert.deepEqual(bao2.thieu, [], 'nối đủ thì không còn thiếu gì');

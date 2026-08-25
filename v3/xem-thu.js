@@ -220,6 +220,45 @@ const bao = dungPhanB(app, {
   // Bản-cho-máy dựng bằng ĐÚNG công thức của `db/di-tru/nguon.js#dungBanChoMay` (bản thật
   // import thẳng hàm đó). Chép công thức ở đây là chấp nhận được vì bản giả chỉ để xem màn
   // hình chạy — nhưng ghi rõ, để không ai tưởng đây là nguồn sự thật.
+  // Cửa ghi bộ luật GIẢ — bản thật là `src/db/noi-dung.js` với giao dịch +
+  // `pg_advisory_xact_lock`. Bản giả KHÔNG mô phỏng giao dịch (chỉ Postgres thật chứng minh
+  // được), nhưng CÓ thi hành luật §9: bản `nguon='ai'` chưa duyệt thì từ chối áp.
+  cuaBoLuat: (() => {
+    const ds = () => kho.bang.get('bo_luat_chung') || [];
+    return {
+      taoBan: async (bc, t) => {
+        const cua = ds().filter((r) => String(r.team_id ?? '') === String(bc.teamId));
+        const pb = Math.max(0, ...cua.map((r) => Number(r.phien_ban) || 0)) + 1;
+        const id = 'bl' + Date.now();
+        ds().push({ id, team_id: bc.teamId, phien_ban: pb, noi_dung: t.noiDung,
+          dang_dung: false, nguon: t.nguon || 'nguoi', duyet_luc: null,
+          ghi_chu: t.ghiChu || '', nguoi_sua: bc.tenDangNhap || '', sua_luc: new Date().toISOString() });
+        return { id, phienBan: pb };
+      },
+      ap: async (bc, t) => {
+        const b = ds().find((r) => String(r.id) === String(t.id));
+        if (!b) throw new Error(`không có bản id=${t.id}`);
+        if (b.dang_dung) throw new Error(`bản v${b.phien_ban} đang áp rồi.`);
+        if (b.nguon === 'ai' && !b.duyet_luc) {
+          throw new Error(`bản v${b.phien_ban} là ĐỀ XUẤT CỦA AI và chưa ai duyệt — 01-QUYET-DINH §9 đòi người duyệt trước khi áp.`);
+        }
+        const cu = ds().find((r) => r.dang_dung && String(r.team_id ?? '') === String(bc.teamId)) || null;
+        if (cu) cu.dang_dung = false;
+        b.dang_dung = true;
+        b.sua_luc = new Date().toISOString();
+        const pg = (kho.docThang('page') || []).filter((p) => String(p.team_id) === String(bc.teamId));
+        return { laLui: cu ? Number(b.phien_ban) < Number(cu.phien_ban) : false,
+          anhHuong: { soPage: pg.length, soPageDangBatBot: pg.filter((p) => p.bot_ai_bat).length } };
+      },
+      duyet: async (bc, t) => {
+        const b = ds().find((r) => String(r.id) === String(t.id));
+        if (!b) throw new Error(`không có bản id=${t.id}`);
+        b.duyet_luc = new Date().toISOString();
+        b.duyet_boi = bc.tenDangNhap || '';
+        return { duyetLuc: b.duyet_luc };
+      },
+    };
+  })(),
   dungBanMay: (c) => {
     const d = [];
     if (c.tone) d.push(`- Giọng điệu / phong cách: ${c.tone}`);

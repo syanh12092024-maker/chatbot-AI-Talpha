@@ -12,7 +12,8 @@
 
 export {
   manBoLuat, danhSachBan, soVoiDangAp, demAnhHuong,
-  luuBanNhap, apPhienBan,
+  luuBanNhap, apPhienBan, duyetBan,
+  datCuaBoLuat, daNoiCuaBoLuat,
   soSanh, tomTatSoSanh, uocToken,
   datTaoTruyVan, datPheuNhatKy, daNoiTruyVanBoLuat,
   BANG, TRANG_THAI, CHU_TRANG_THAI, VAI_SUA_DUOC, DAI_TOI_THIEU,

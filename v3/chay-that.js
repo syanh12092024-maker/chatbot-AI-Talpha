@@ -27,6 +27,9 @@ const { dungPhanB } = await import('./src/vai-b.js');
 const pool = taoPool();
 const taoTruyVan = (bc) => taoTruyVanThat(pool, bc);
 
+/** Vé của vai B → hình dạng `ctx` mà tầng dữ liệu của người A đòi. */
+const ctxCuaA = (bc) => ({ teamId: bc.teamId, nguoiDungId: bc.nguoiDungId });
+
 // Cổng danh tính: bốn bảng dùng chung (team · nguoi_dung · vai · thanh_vien_team) KHÔNG nằm
 // trong BANG_NGHIEP_VU_CHUAN của A (bàn giao tầng truy vấn §6) — gọi tầng đó với chúng là
 // ném ngay. Nên đọc thẳng bằng pool, đúng chỗ A dặn B tự viết.
@@ -54,6 +57,11 @@ const rap = await import(`${GOC}/src/chat/rap-prompt.js`);
 // hai là màn hình hứa một prompt khác cái bot thật sự nhận.
 const { dungBanChoMay } = await import(`${GOC}/db/di-tru/nguon.js`);
 const { parsePancakeScript } = await import(`${GOC}/src/kb.js`);
+
+// Cửa GHI có giao dịch cho bộ luật chung — người A giao (G2-A4). Màn của B cắt sang đây
+// 25/08: bản đầu ghi bằng hai lời gọi `db.sua()` rời, nên giao dịch, khoá chống bấm-cùng-lúc
+// và luật «đề xuất của AI phải có người duyệt» đều không ăn.
+const noiDung = await import(`${GOC}/src/db/noi-dung.js`);
 const { datBotAi: _unused } = await import('./src/noi-day/cau-bot-v1.js');
 const _slug = new Map();
 async function slugCua(teamId) {
@@ -78,6 +86,11 @@ const bao = dungPhanB(app, {
   taoTruyVanHeThong: () => taoCongDanhTinh(pool),
   docKetNoiPos: (bc) => lietKeThiTruong(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId || null }),
   chuyenPage: (bc, t) => chuyenPageSangTeam(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId }, t),
+  cuaBoLuat: {
+    taoBan: (bc, t) => noiDung.taoBanBoLuat(pool, ctxCuaA(bc), t),
+    ap: (bc, t) => noiDung.apBoLuat(pool, ctxCuaA(bc), t),
+    duyet: (bc, t) => noiDung.duyetBoLuat(pool, ctxCuaA(bc), t),
+  },
   dungBanMay: (cfg) => dungBanChoMay(cfg),
   // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM tiến trình bot, qua đúng cửa v1.
   dayKichBanLenBot: async (pageIdFacebook, cfg) => {

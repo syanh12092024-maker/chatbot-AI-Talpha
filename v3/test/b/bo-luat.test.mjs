@@ -29,6 +29,57 @@ function dungKho(luat = null) {
   });
   const nhatKy = [];
   bl.datTaoTruyVan(taoTruyVan);
+
+  // CỬA GHI GIẢ — mô phỏng `src/db/noi-dung.js` của người A (G2-A4). Bản thật chạy trong
+  // MỘT giao dịch với `pg_advisory_xact_lock` + `FOR UPDATE`, và tự ghi `nhat_ky`.
+  //
+  // Bản giả ở đây CỐ Ý không mô phỏng giao dịch: giao dịch là thứ chỉ chứng minh được trên
+  // Postgres thật, và giả vờ có nó là làm bài test nói dối về đúng chỗ nó canh. Cái bản giả
+  // này canh là: **màn có gọi đúng cửa, đúng tham số, đúng thứ tự** — phần logic bên trong
+  // cửa là việc của bài test bên người A.
+  const goiCua = [];
+  const dungCua = (bo = {}) => bl.datCuaBoLuat({
+    taoBan: async (bc, t) => {
+      goiCua.push({ ham: 'taoBan', teamId: bc.teamId, ...t });
+      if (bo.taoBanHong) throw new Error(bo.taoBanHong);
+      const ds = kho.docThang(bl.BANG).filter((r) => String(r.team_id ?? '') === String(bc.teamId));
+      const pb = Math.max(0, ...ds.map((r) => Number(r.phien_ban) || 0)) + 1;
+      const id = 'moi' + (goiCua.length);
+      kho.bang.get(bl.BANG).push({
+        id, team_id: bc.teamId, phien_ban: pb, noi_dung: t.noiDung, dang_dung: false,
+        nguon: t.nguon || 'nguoi', duyet_luc: null, ghi_chu: t.ghiChu || '', nguoi_sua: bc.tenDangNhap || '',
+      });
+      return { id, phienBan: pb };
+    },
+    ap: async (bc, t) => {
+      goiCua.push({ ham: 'ap', teamId: bc.teamId, ...t });
+      if (bo.apHong) throw new Error(bo.apHong);
+      const ds = kho.bang.get(bl.BANG);
+      const b = ds.find((r) => String(r.id) === String(t.id));
+      if (!b) throw new Error(`không có bản id=${t.id}`);
+      if (b.dang_dung) throw new Error(`bản v${b.phien_ban} đang áp rồi.`);
+      // Luật §9 mà bản đầu của màn này THIẾU HẲN — cửa của A thi hành nó.
+      if (b.nguon === 'ai' && !b.duyet_luc) {
+        throw new Error(`bản v${b.phien_ban} là ĐỀ XUẤT CỦA AI và chưa ai duyệt.`);
+      }
+      const cu2 = ds.find((r) => r.dang_dung && String(r.team_id ?? '') === String(bc.teamId)) || null;
+      if (cu2) cu2.dang_dung = false;
+      b.dang_dung = true;
+      const pages = kho.docThang('page').filter((p) => String(p.team_id) === String(bc.teamId));
+      return {
+        laLui: cu2 ? Number(b.phien_ban) < Number(cu2.phien_ban) : false,
+        anhHuong: { soPage: pages.length, soPageDangBatBot: pages.filter((p) => p.bot_ai_bat).length },
+      };
+    },
+    duyet: async (bc, t) => {
+      goiCua.push({ ham: 'duyet', teamId: bc.teamId, ...t });
+      const b = kho.bang.get(bl.BANG).find((r) => String(r.id) === String(t.id));
+      if (!b) throw new Error(`không có bản id=${t.id}`);
+      b.duyet_luc = new Date().toISOString();
+      b.duyet_boi = bc.tenDangNhap || '';
+      return { duyetLuc: b.duyet_luc };
+    },
+  }) && goiCua;
   // Phễu giả GHI THẬT xuống bảng `nhat_ky` — vì `idDaTungAp()` đọc lại chính bảng đó để
   // phân biệt «bản cũ» với «chờ duyệt». Một phễu chỉ đẩy vào mảng thì bài test xanh mà
   // đường thật hỏng.
@@ -42,7 +93,8 @@ function dungKho(luat = null) {
       ghi_chu: ban.ghiChu ?? null,
     });
   });
-  return { kho, nhatKy, taoTruyVan };
+  dungCua();
+  return { kho, nhatKy, taoTruyVan, goiCua, dungCua };
 }
 
 const bcQt = () => taoBoiCanh({ nguoiDungId: 'u1', tenDangNhap: 'an@talpha.vn', teamId: 't1', vai: [VAI.QUAN_TRI] });
@@ -141,62 +193,69 @@ test('apPhienBan · áp xong thì bản cũ tự hạ, đúng MỘT bản đang 
   assert.equal(String(dangAp[0].id), String(kq.id));
 });
 
-test('apPhienBan · áp KÈM con số ảnh hưởng vào nhật ký — không ghi một dòng trống nghĩa', async () => {
-  const { nhatKy } = dungKho();
+test('apPhienBan · trả về con số ảnh hưởng do CỬA tính, và lý do xuống tới cửa', async () => {
+  const { goiCua } = dungKho();
   const kq = await bl.luuBanNhap(bcQt(), { noiDung: LUAT_GOC + '\n4. Mới.' });
-  await bl.apPhienBan(bcQt(), kq.id, { lyDo: 'chốt sau họp' });
-  const d = nhatKy.find((x) => x.hanhDong === bl.HANH_DONG_AP);
-  assert.ok(d, 'phải có dòng ap_bo_luat');
-  assert.equal(d.sau.so_page_anh_huong, 3);
-  assert.equal(d.sau.so_page_bat_bot, 2);
-  assert.equal(d.truoc.phien_ban, 1, 'phải ghi cả bản TRƯỚC để truy ngược được');
-  assert.match(d.ghiChu, /chốt sau họp/);
+  const ap = await bl.apPhienBan(bcQt(), kq.id, { lyDo: 'chốt sau họp' });
+  assert.equal(ap.anhHuong.tongPage, 3);
+  assert.equal(ap.anhHuong.dangBatBot, 2);
+  const g = goiCua.find((x) => x.ham === 'ap');
+  assert.equal(g.lyDo, 'chốt sau họp', 'lý do phải xuống cửa để vào nhật ký mà CỬA ghi');
+  assert.equal(g.id, String(kq.id));
 });
 
-test('apPhienBan · LÙI về bản cũ được, và nhật ký khai rõ đó là lùi', async () => {
+test('apPhienBan · màn KHÔNG tự ghi nhật ký — cửa của người A đã ghi trong giao dịch', async () => {
+  // Ghi thêm là đẻ hai bản ghi cho một thao tác, rồi người đọc nhật ký đếm gấp đôi. Cùng
+  // đúng cái bẫy đã tránh được ở lát «gán page ↔ team».
   const { nhatKy } = dungKho();
+  const kq = await bl.luuBanNhap(bcQt(), { noiDung: LUAT_GOC + '\n4. Mới.' });
+  await bl.apPhienBan(bcQt(), kq.id);
+  assert.deepEqual(nhatKy, [], 'màn không được đẩy bản ghi nào qua phễu của mình');
+});
+
+test('apPhienBan · LÙI về bản cũ được, và CỬA khai đó là lùi', async () => {
+  dungKho();
   const v2 = await bl.luuBanNhap(bcQt(), { noiDung: LUAT_GOC + '\n4. Mới.' });
   await bl.apPhienBan(bcQt(), v2.id);
   const { ban } = await bl.danhSachBan(bcQt());
   const v1 = ban.find((b) => b.phienBan === 1);
-
   const lui = await bl.apPhienBan(bcQt(), v1.id);
   assert.equal(lui.laLui, true, 'phải phân biệt được lùi với áp mới');
   assert.equal(lui.phienBan, 1);
-  const d = nhatKy.filter((x) => x.hanhDong === bl.HANH_DONG_AP).at(-1);
-  assert.equal(d.sau.la_lui, true);
-  assert.match(d.ghiChu, /LÙI/);
 });
 
-test('apPhienBan · sau khi LÙI, bản bị gạt phải là "BẢN CŨ", KHÔNG phải "chờ duyệt"', async () => {
-  // ĐÂY LÀ BÀI TEST QUAN TRỌNG NHẤT CỦA FILE. `bo_luat_chung` không có cột `trang_thai`,
-  // nên suy trạng thái bằng SỐ PHIÊN BẢN sẽ sai đúng ở chỗ này: sau lượt lùi, bản v2 (số
-  // lớn hơn) lại trông như «chờ duyệt» trong khi nó ĐÃ TỪNG CHẠY và bị gạt — và người sau
-  // sẽ bấm áp lại nó tưởng là bản mới chưa ai duyệt.
-  // Cách đúng: hỏi `nhat_ky` (bảng chỉ-thêm) xem bản này đã từng áp chưa.
+test('luật §9 · bản `nguon=ai` CHƯA duyệt thì cửa TỪ CHỐI áp — bản đầu của màn THIẾU HẲN luật này', async () => {
+  // Đây là chỗ đắt nhất của lượt cắt sang cửa người A: bản tôi tự viết không có luật này,
+  // nên một đề xuất của AI áp thẳng được mà không ai duyệt. 01-QUYET-DINH §9 cấm đúng thế.
+  const { kho } = dungKho();
+  const kq = await bl.luuBanNhap(bcQt(), { noiDung: LUAT_GOC + '\n4. AI đề xuất.', nguon: 'ai' });
+  const { ban } = await bl.danhSachBan(bcQt());
+  const b = ban.find((x) => x.id === String(kq.id));
+  assert.equal(b.trangThai, bl.TRANG_THAI.AI_CHUA_DUYET, 'trạng thái RIÊNG, không gộp vào «bản nháp»');
+
+  await assert.rejects(() => bl.apPhienBan(bcQt(), kq.id), /chưa ai duyệt/i);
+  assert.equal(kho.docThang(bl.BANG).find((r) => String(r.id) === String(kq.id)).dang_dung, false);
+
+  await bl.duyetBan(bcQt(), kq.id);
+  const ap = await bl.apPhienBan(bcQt(), kq.id);
+  assert.equal(ap.phienBan, 2);
+});
+
+test('chưa nối cửa của người A thì TỪ CHỐI ghi, không lùi về hai lời gọi rời', async () => {
   dungKho();
-  const v2 = await bl.luuBanNhap(bcQt(), { noiDung: LUAT_GOC + '\n4. Mới.' });
-  const { ban: b0 } = await bl.danhSachBan(bcQt());
-  assert.equal(b0.find((b) => b.id === v2.id).trangThai, bl.TRANG_THAI.CHO_DUYET);
-
-  await bl.apPhienBan(bcQt(), v2.id);
-  const v1 = (await bl.danhSachBan(bcQt())).ban.find((b) => b.phienBan === 1);
-  await bl.apPhienBan(bcQt(), v1.id);            // lùi
-
-  const { ban, dangAp } = await bl.danhSachBan(bcQt());
-  assert.equal(dangAp.phienBan, 1);
-  assert.equal(ban.find((b) => b.id === v2.id).trangThai, bl.TRANG_THAI.DA_TUNG_AP,
-    'bản đã từng chạy KHÔNG được quay lại trạng thái "chờ duyệt"');
+  bl.datCuaBoLuat(null);
+  await assert.rejects(() => bl.luuBanNhap(bcQt(), { noiDung: LUAT_GOC + '\nx' }), (e) => {
+    assert.equal(e.ma, 'chua_noi');
+    assert.match(e.message, /giao dịch/);
+    return true;
+  });
 });
 
-test('apPhienBan · áp lại bản đang áp thì chặn, đừng đẻ nhật ký rác', async () => {
-  const { nhatKy } = dungKho();
+test('apPhienBan · áp lại bản đang áp thì chặn', async () => {
+  dungKho();
   const { dangAp } = await bl.danhSachBan(bcQt());
-  await assert.rejects(() => bl.apPhienBan(bcQt(), dangAp.id), (e) => e.ma === 'dang_ap');
-  assert.equal(nhatKy.length, 0);
+  await assert.rejects(() => bl.apPhienBan(bcQt(), dangAp.id), /đang áp rồi/i);
 });
-
-/* ═══════════ bản TOÀN HỆ — kế thừa, chỉ đọc ═══════════ */
 
 test('bản toàn hệ · hiện ra kèm nhãn KẾ THỪA, không phải "chờ duyệt"', async () => {
   dungKho([
@@ -257,8 +316,40 @@ test('vai · thiếu bối cảnh thì NÉM, không trả danh sách rỗng', as
   await assert.rejects(() => bl.demAnhHuong(null), /bối cảnh|teamId/i);
 });
 
-test('nhật ký · chưa nối phễu thì TỪ CHỐI ghi — dòng ap_bo_luat vừa là dấu vết vừa là DỮ LIỆU', async () => {
-  dungKho();
-  bl.datPheuNhatKy(null);
-  await assert.rejects(() => bl.luuBanNhap(bcQt(), { noiDung: LUAT_GOC + '\nx' }), (e) => e.ma === 'chua_noi');
+test('trạng thái · đọc THẲNG cột `duyet_luc`/`nguon`, không còn tra nhật ký', async () => {
+  // Bản đầu suy «chờ duyệt hay bản cũ» bằng cách hỏi `nhat_ky`. Migration 009 cho cột thật,
+  // nên trạng thái thôi phụ thuộc việc ghi nhật ký có thành công hay không.
+  dungKho([
+    { id: 'a1', team_id: 't1', phien_ban: 1, dang_dung: true, noi_dung: LUAT_GOC, nguon: 'nguoi' },
+    { id: 'a2', team_id: 't1', phien_ban: 2, dang_dung: false, noi_dung: LUAT_GOC + 'x', nguon: 'nguoi' },
+    { id: 'a3', team_id: 't1', phien_ban: 3, dang_dung: false, noi_dung: LUAT_GOC + 'y',
+      nguon: 'ai', duyet_luc: null },
+    { id: 'a4', team_id: 't1', phien_ban: 4, dang_dung: false, noi_dung: LUAT_GOC + 'z',
+      nguon: 'ai', duyet_luc: '2026-08-25T00:00:00Z' },
+  ]);
+  const { ban } = await bl.danhSachBan(bcQt());
+  const t = Object.fromEntries(ban.map((b) => [b.id, b.trangThai]));
+  assert.equal(t.a1, bl.TRANG_THAI.DANG_AP);
+  assert.equal(t.a2, bl.TRANG_THAI.CHO_DUYET);
+  assert.equal(t.a3, bl.TRANG_THAI.AI_CHUA_DUYET, 'AI chưa duyệt là trạng thái RIÊNG');
+  assert.equal(t.a4, bl.TRANG_THAI.DA_DUYET);
+});
+
+test('router · `nguon` KHÔNG nhận từ trình duyệt — đóng lỗ lách luật §9', async () => {
+  // Đo thật trên xem thử 25/08: router bản đầu KHÔNG truyền `nguon` xuống, nên một bản gửi
+  // kèm `nguon:'ai'` vẫn thành bản 'nguoi' và ÁP THẲNG không cần duyệt. Lỗ đúng chiều nguy:
+  // đề xuất của AI lách được cửa duyệt mà §9 dựng ra.
+  //
+  // Cách bịt: màn này là NGƯỜI gõ, nên luôn ghi 'nguoi'. Đường ghi bản AI là cửa RIÊNG của
+  // màn «AI đề xuất» (sóng 4). Bài test đọc thẳng mã nguồn router — hành vi này không quan
+  // sát được từ tầng dưới vì tầng dưới vốn nhận `nguon` như một tham số hợp lệ.
+  const { readFileSync } = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const p = path.resolve(fileURLToPath(new URL('.', import.meta.url)),
+    '../../src/ui/bo-luat/router.js');
+  const src = readFileSync(p, 'utf8');
+  const khoi = src.slice(src.indexOf("'/api/bo-luat/nhap'"), src.indexOf("'/api/bo-luat/:id/duyet'"));
+  assert.match(khoi, /nguon:\s*'nguoi'/, 'đường /nhap phải ghi cứng nguon nguoi');
+  assert.ok(!/nguon:\s*req\.body/.test(khoi), 'KHÔNG được lấy `nguon` từ thân yêu cầu');
 });

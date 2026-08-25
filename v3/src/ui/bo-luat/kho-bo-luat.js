@@ -14,18 +14,33 @@
 // đang chạy. Phải gọi `apPhienBan()` — một thao tác riêng, một cú bấm riêng, một dòng nhật
 // ký riêng — thì bot mới đổi cách nói.
 //
-// ═══ HAI CHỖ LƯỢC ĐỒ HẸP, VÀ CÁCH GÁNH ══════════════════════════════════════════════════
+// ═══ CẮT SANG CỬA CÓ GIAO DỊCH CỦA NGƯỜI A — 25/08/2026 ════════════════════════════════
 //
-// ① `bo_luat_chung` KHÔNG có cột `trang_thai` (`kich_ban` thì có).
-//    Nên «bản này đang chờ duyệt hay là bản cũ đã từng chạy?» không đọc thẳng ra được.
-//    Suy bằng SỐ PHIÊN BẢN thì sai sau lượt lùi: lùi về v1 xong thì v2, v3 lại trông như
-//    «chờ duyệt» trong khi chúng đã từng chạy và bị gạt.
-//    → GÁNH bằng `nhat_ky`: bảng CHỈ-THÊM, không sửa không xoá được, và nó vốn sinh ra để
-//      trả lời đúng câu hỏi «việc này đã từng xảy ra chưa». Một phiên bản đã từng áp thì có
-//      một dòng `ap_bo_luat`. Không có dòng nào = chưa bao giờ chạy = ĐANG CHỜ DUYỆT.
-//    Không xin thêm cột: câu trả lời chính xác đã có sẵn, chỉ là nằm ở bảng khác.
+// Bản đầu của file này tự ghi bằng hai lời gọi `db.sua()` RỜI NHAU, và tôi đã ghi thẳng
+// trong chú thích rằng «tầng truy vấn chưa phơi `giaoDich()` ra». **Sai.** Người A đã giao
+// `src/db/noi-dung.js` (G2-A4) với `apBoLuat()` — và cái rào giao dịch chỉ ăn khi nơi gọi đi
+// qua nó, nên nó nằm đó trong khi màn này vẫn ghi rời.
 //
-// ② `bo_luat_chung.team_id` NULL = luật TOÀN HỆ, và tầng truy vấn của A **cố ý** không cho
+// Cửa của A mạnh hơn bản tôi ở BỐN điểm, không phải một:
+//   · `BEGIN` — hạ bản cũ và dựng bản mới trong MỘT giao dịch
+//   · `pg_advisory_xact_lock` — hai quản trị bấm cùng lúc thì người sau xếp hàng, không giẫm
+//   · `FOR UPDATE` trên dòng bản
+//   · **luật §9 mà tôi THIẾU HẲN**: bản `nguon='ai'` chưa ai duyệt thì TỪ CHỐI áp
+//     («đề xuất của AI phải có người duyệt mới áp»)
+//
+// ⇒ Màn này nay CHỈ dịch tham số và gom kết quả. Mọi luật nằm ở cửa của A.
+// ⛔ Và KHÔNG ghi nhật ký nữa — `apBoLuat`/`taoBanBoLuat` tự ghi trong giao dịch. Ghi thêm là
+//    đẻ hai bản ghi cho một thao tác, đúng lỗi đã tránh được ở lát «gán page ↔ team».
+//
+// ═══ TRẠNG THÁI BẢN — nay đọc thẳng cột, không phải suy từ nhật ký ══════════════════════
+// Migration 009 thêm `nguon` · `duyet_boi` · `duyet_luc` · `ghi_chu`. Bản đầu của file này
+// suy «chờ duyệt hay bản cũ» bằng cách tra `nhat_ky` (vì chưa có cột nào trả lời). Nay có
+// cột thật thì dùng cột: `duyet_luc IS NULL` = chưa duyệt. Bớt một phép tra, và quan trọng
+// hơn: trạng thái thôi phụ thuộc việc ghi nhật ký có thành công hay không.
+//
+// ═══ MỘT CHỖ LƯỢC ĐỒ VẪN HẸP ═══════════════════════════════════════════════════════════
+//
+// `bo_luat_chung.team_id` NULL = luật TOÀN HỆ, và tầng truy vấn của A **cố ý** không cho
 //    ghi vào dòng đó qua `ctx` thường (`themMoi` luôn đặt `team_id = ctx.teamId`;
 //    `suaTheoId` dựng `WHERE team_id = ctx.teamId` nên không bao giờ khớp `NULL`).
 //    → KHÔNG GÁNH, và KHÔNG xin mở. Đây là thiết kế đúng: màn này quản bộ luật CỦA TEAM,
@@ -37,7 +52,6 @@ import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
 
 export const BANG = 'bo_luat_chung';
 export const BANG_PAGE = 'page';
-export const BANG_NHAT_KY = 'nhat_ky';
 
 export const HANH_DONG_LUU = 'luu_ban_nhap_bo_luat';
 export const HANH_DONG_AP = 'ap_bo_luat';
@@ -48,8 +62,11 @@ export const VAI_SUA_DUOC = Object.freeze([VAI.QUAN_TRI]);
 /** Bốn trạng thái suy ra được, và chúng KHÁC NHAU thật. */
 export const TRANG_THAI = Object.freeze({
   DANG_AP: 'dang_ap',       // `dang_dung = true`
-  DA_TUNG_AP: 'da_tung_ap', // có dòng `ap_bo_luat` trong nhật ký
-  CHO_DUYET: 'cho_duyet',   // chưa bao giờ chạy, và áp được
+  CHO_DUYET: 'cho_duyet',   // bản người viết, chưa duyệt — nhưng §9 cho áp thẳng
+  DA_DUYET: 'da_duyet',     // `duyet_luc` đã có
+  // `nguon='ai'` mà chưa duyệt — `apBoLuat` TỪ CHỐI áp. Trạng thái RIÊNG, không gộp vào
+  // «chờ duyệt»: gộp là mời người ta bấm một nút chắc chắn báo lỗi.
+  AI_CHUA_DUYET: 'ai_chua_duyet',
   // Bản TOÀN HỆ (`team_id IS NULL`). KHÔNG phải «chờ duyệt»: màn này không áp nó được, và
   // gọi nó là «chờ duyệt» là mời người ta đi bấm một nút sẽ báo lỗi. Nó là bản team đang
   // KẾ THỪA khi chưa có bản riêng.
@@ -58,8 +75,9 @@ export const TRANG_THAI = Object.freeze({
 
 export const CHU_TRANG_THAI = Object.freeze({
   dang_ap: 'Đang áp',
-  da_tung_ap: 'Bản cũ',
-  cho_duyet: 'Chờ duyệt',
+  cho_duyet: 'Bản nháp',
+  da_duyet: 'Đã duyệt',
+  ai_chua_duyet: 'AI đề xuất — CHƯA duyệt',
   ke_thua: 'Bản kế thừa',
 });
 
@@ -76,6 +94,7 @@ export class LoiBoLuat extends Error {
 
 let _taoTruyVan = null;
 let _pheuNhatKy = null;
+let _cua = null;
 
 export function datTaoTruyVan(fn) {
   if (fn != null && typeof fn !== 'function') throw new LoiBoLuat('datTaoTruyVan cần một hàm');
@@ -91,6 +110,34 @@ export function datPheuNhatKy(fn) {
 
 export const daNoiTruyVanBoLuat = () => typeof _taoTruyVan === 'function';
 
+/**
+ * Cửa GHI có giao dịch của người A (`src/db/noi-dung.js`). Ba hàm, tiêm cùng một lần vì
+ * thiếu một cái là màn hỏng nửa vời — thà ném lúc dựng ứng dụng.
+ * @param {{taoBan:Function, ap:Function, duyet:Function}} bo
+ */
+export function datCuaBoLuat(bo) {
+  if (bo == null) { _cua = null; return null; }
+  for (const t of ['taoBan', 'ap', 'duyet']) {
+    if (typeof bo[t] !== 'function') throw new LoiBoLuat(`datCuaBoLuat: thiếu hàm \`${t}\`.`);
+  }
+  _cua = bo;
+  return _cua;
+}
+
+export const daNoiCuaBoLuat = () => _cua != null;
+
+function cua() {
+  if (!_cua) {
+    throw new LoiBoLuat(
+      'chưa nối cửa ghi bộ luật của người A (`src/db/noi-dung.js`) — TỪ CHỐI ghi. Ghi bằng '
+      + 'hai lời gọi rời là bỏ mất giao dịch, khoá chống bấm-cùng-lúc, và luật «đề xuất của '
+      + 'AI phải có người duyệt» mà cửa đó thi hành.',
+      'chua_noi', 500,
+    );
+  }
+  return _cua;
+}
+
 export function congTruyVan(bc) {
   if (!_taoTruyVan) {
     throw new LoiBoLuat('chưa nối cổng truy vấn — gọi datTaoTruyVan() lúc dựng ứng dụng', 'chua_noi', 500);
@@ -99,9 +146,9 @@ export function congTruyVan(bc) {
 }
 
 /**
- * Ghi nhật ký CÓ NÉM. Không phải chỗ nuốt lỗi được: dòng `ap_bo_luat` vừa là dấu vết vừa là
- * DỮ LIỆU — nó là thứ duy nhất phân biệt «bản cũ» với «chờ duyệt» (xem khối ① đầu file).
- * Ghi hụt là một bản đã chạy bỗng trông như chưa duyệt, và người sau bấm áp lại nó.
+ * ⛔ KHÔNG DÙNG NỮA — giữ hàm để cửa tiêm không đổi chữ ký, nhưng màn này KHÔNG tự ghi nhật
+ * ký từ 25/08: `taoBanBoLuat`/`apBoLuat`/`duyetBoLuat` của người A ghi NGAY TRONG giao dịch.
+ * Ghi thêm là đẻ hai bản ghi cho một thao tác, rồi người đọc nhật ký đếm gấp đôi.
  */
 async function ghi(bc, banGhi) {
   if (!_pheuNhatKy) {
@@ -200,17 +247,21 @@ export async function demAnhHuong(boiCanh) {
 
 /* ─────────────────────────── đọc ─────────────────────────── */
 
-/** Đã từng áp phiên bản nào — đọc từ `nhat_ky`, bảng chỉ-thêm. Xem khối ① đầu file. */
-async function idDaTungAp(db) {
-  const dong = await db.chon(BANG_NHAT_KY, { hanh_dong: HANH_DONG_AP });
-  return new Set(dong.map((d) => String(d.doi_tuong_id ?? d.doiTuongId ?? '')).filter(Boolean));
-}
-
-function trangThaiCua(r, daTungAp) {
+/**
+ * Trạng thái một bản — đọc THẲNG CỘT từ migration 009, không tra nhật ký nữa.
+ *
+ * Bản đầu suy «chờ duyệt hay bản cũ» bằng cách hỏi `nhat_ky` xem bản này đã từng áp chưa,
+ * vì lúc đó chưa có cột nào trả lời được. Nay `duyet_luc` trả lời thẳng, và trạng thái thôi
+ * phụ thuộc việc ghi nhật ký có thành công hay không.
+ */
+function trangThaiCua(r) {
   if (r.dang_dung === true) return TRANG_THAI.DANG_AP;
-  if (daTungAp.has(String(r.id))) return TRANG_THAI.DA_TUNG_AP;
   // Bản toàn hệ không áp được ở màn này — xem `KE_THUA` ở trên.
   if (r.team_id == null || r.team_id === '') return TRANG_THAI.KE_THUA;
+  // `nguon='ai'` chưa duyệt là một trạng thái RIÊNG: `apBoLuat` của người A TỪ CHỐI áp nó
+  // (01-QUYET-DINH §9). Gộp nó vào «chờ duyệt» là mời người ta bấm một nút sẽ báo lỗi.
+  if (r.nguon === 'ai' && !r.duyet_luc) return TRANG_THAI.AI_CHUA_DUYET;
+  if (r.duyet_luc) return TRANG_THAI.DA_DUYET;
   return TRANG_THAI.CHO_DUYET;
 }
 
@@ -221,7 +272,7 @@ function trangThaiCua(r, daTungAp) {
 export async function danhSachBan(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
   const db = congTruyVan(bc);
-  const [dong, daTungAp] = await Promise.all([db.chon(BANG, {}), idDaTungAp(db)]);
+  const dong = await db.chon(BANG, {});
 
   const ban = dong
     .map((r) => ({
@@ -230,7 +281,11 @@ export async function danhSachBan(boiCanh) {
       // `team_id` rỗng = bản TOÀN HỆ. Màn này KHÔNG sửa được nó — xem khối ② đầu file.
       toanHe: r.team_id == null || r.team_id === '',
       dangDung: r.dang_dung === true,
-      trangThai: trangThaiCua(r, daTungAp),
+      trangThai: trangThaiCua(r),
+      nguon: r.nguon || 'nguoi',
+      duyetLuc: r.duyet_luc || null,
+      duyetBoi: r.duyet_boi || null,
+      ghiChu: r.ghi_chu || '',
       nguoiSua: r.nguoi_sua || '',
       suaLuc: r.sua_luc || r.tao_luc || null,
       soKyTu: String(r.noi_dung || '').length,
@@ -299,45 +354,42 @@ export const DAI_TOI_THIEU = 200;
  * định cách bot nói với khách. Sửa đè là xoá mất bản mà 51 page đã chạy bằng nó — và lúc cần
  * lùi thì không còn gì để lùi về.
  */
-export async function luuBanNhap(boiCanh, { noiDung, ghiChu = '' } = {}) {
+export async function luuBanNhap(boiCanh, { noiDung, ghiChu = '', nguon = 'nguoi' } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   batBuocVai(bc, ...VAI_SUA_DUOC);
 
   const chu = String(noiDung == null ? '' : noiDung);
   if (chu.trim().length < DAI_TOI_THIEU) {
-    // Bộ luật đang chạy dài 6.734 ký tự. Một bản vài chục ký tự gần như chắc chắn là dán
-    // nhầm hoặc ô soạn bị xoá trắng, và áp nó vào là 51 page mất sạch quy tắc cứng.
+    // Rào NÀY giữ ở đây, không đẩy sang cửa của A: nó là luật của MÀN HÌNH («bản đang chạy
+    // dài 6.734 ký tự, một bản vài chục ký tự là dán nhầm»), không phải luật của tầng dữ liệu.
     throw new LoiBoLuat(
       `bộ luật chung chỉ có ${chu.trim().length} ký tự — quá ngắn (tối thiểu ${DAI_TOI_THIEU}). `
       + 'Bản đang chạy dài 6.734 ký tự; một bản ngắn thế này gần như chắc chắn là dán nhầm.',
       'qua_ngan',
     );
   }
-
-  const db = congTruyVan(bc);
-  const { ban, dangAp } = await danhSachBan(bc);
+  const { dangAp } = await danhSachBan(bc);
   if (dangAp && dangAp.noiDung === chu) {
     throw new LoiBoLuat('nội dung không khác bản đang áp — không tạo bản trùng.', 'khong_doi');
   }
 
-  const phienBan = Math.max(0, ...ban.map((b) => b.phienBan)) + 1;
-  const dong = await db.them(BANG, {
-    phien_ban: phienBan,
-    noi_dung: chu,
-    dang_dung: false,              // ⛔ KHÔNG áp ngay. Áp là một thao tác riêng.
-    nguoi_sua: bc.tenDangNhap || String(bc.nguoiDungId || ''),
-    sua_luc: new Date().toISOString(),
-  });
+  // Cửa của A tự đánh số phiên bản, tự ghi nhật ký, và có `UNIQUE (team, phien_ban)` chặn
+  // hai người tạo cùng số. Màn này KHÔNG tự đánh số nữa — đánh số ở hai chỗ là chỗ đua nhau.
+  const kq = await cua().taoBan(bc, { noiDung: chu, ghiChu, nguon });
+  return {
+    id: kq && kq.id != null ? String(kq.id) : null,
+    phienBan: kq ? Number(kq.phienBan ?? kq.phien_ban) : null,
+    nguon,
+    daAp: false,
+  };
+}
 
-  await ghi(bc, {
-    hanhDong: HANH_DONG_LUU,
-    doiTuongLoai: BANG,
-    doiTuongId: dong ? String(dong.id) : null,
-    sau: { phien_ban: phienBan, so_ky_tu: chu.length, uoc_token: uocToken(chu) },
-    ghiChu: ghiChu || `lưu bản nháp v${phienBan}`,
-  });
-
-  return { id: dong ? String(dong.id) : null, phienBan, daAp: false };
+/** Duyệt một bản — bắt buộc với bản `nguon='ai'` trước khi áp được (01-QUYET-DINH §9). */
+export async function duyetBan(boiCanh, id, { ghiChu = '' } = {}) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const kq = await cua().duyet(bc, { id: String(id), ghiChu });
+  return { id: String(id), ...(kq || {}) };
 }
 
 /**
@@ -349,49 +401,31 @@ export async function apPhienBan(boiCanh, id, { lyDo = '' } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   batBuocVai(bc, ...VAI_SUA_DUOC);
 
-  const db = congTruyVan(bc);
+  // Tra trước CHỈ để trả lời «đây có phải bản toàn hệ không» bằng câu người đọc được. Cửa
+  // của A cũng từ chối nó, nhưng thông điệp của A nói theo góc dữ liệu; ở đây nói theo góc
+  // người dùng và chỉ được đường đi tiếp.
   const { ban, dangAp } = await danhSachBan(bc);
   const b = ban.find((x) => x.id === String(id));
   if (!b) throw new LoiBoLuat(`không có bản id=${id} trong tầm nhìn của team này.`, 'khong_thay', 404);
   if (b.toanHe) {
-    // Xem khối ② đầu file: tầng truy vấn cố ý không cho ghi vào dòng toàn hệ.
     throw new LoiBoLuat(
       'đây là bản TOÀN HỆ (dùng chung mọi team) — màn này không sửa và không áp nó được. '
       + 'Team đang kế thừa nó sẵn; muốn khác thì soạn một bản riêng của team.',
       'ban_toan_he', 400,
     );
   }
-  if (b.dangDung) throw new LoiBoLuat(`bản v${b.phienBan} đang áp rồi.`, 'dang_ap');
 
-  const laLui = !!(dangAp && b.phienBan < dangAp.phienBan);
+  // MỌI luật còn lại nằm ở cửa của A: giao dịch, khoá chống bấm-cùng-lúc, `FOR UPDATE`,
+  // «bản đang áp rồi», và «đề xuất của AI chưa duyệt thì từ chối». Không chép lại ở đây —
+  // hai bản cài của cùng một luật là cách chắc chắn nhất để chúng lệch nhau.
+  const kq = await cua().ap(bc, { id: String(id), lyDo });
 
-  // Hạ bản cũ TRƯỚC, dựng bản mới SAU. Ngược lại thì có một khoảnh khắc hai bản cùng
-  // `dang_dung=true`, và `docBoLuatChung` của người A lấy `phien_ban` cao nhất — tức là
-  // trong khoảnh khắc đó một lượt lùi có thể vẫn đọc ra bản mới.
-  //
-  // ⚠️ KHÔNG có giao dịch: tầng truy vấn của A chưa phơi `giaoDich()` ra. Nếu hạ xong mà
-  //    dựng hỏng thì team KHÔNG có bản nào đang áp, và `docBoLuatChung` trả `null` ⇒ prompt
-  //    rơi về bản toàn hệ (bản kế thừa), KHÔNG phải rơi về rỗng. Hỏng theo hướng an toàn.
-  //    Ghi rõ ở đây để người sau không tưởng là đã có giao dịch.
-  for (const cu of ban.filter((x) => x.dangDung && !x.toanHe)) {
-    await db.sua(BANG, { id: cu.id }, { dang_dung: false });
-  }
-  await db.sua(BANG, { id: b.id }, { dang_dung: true, sua_luc: new Date().toISOString() });
-
-  const anhHuong = await demAnhHuong(bc);
-  await ghi(bc, {
-    hanhDong: HANH_DONG_AP,
-    doiTuongLoai: BANG,
-    doiTuongId: String(b.id),
-    truoc: dangAp ? { phien_ban: dangAp.phienBan, id: dangAp.id } : null,
-    sau: {
-      phien_ban: b.phienBan,
-      la_lui: laLui,
-      so_page_anh_huong: anhHuong.tongPage,
-      so_page_bat_bot: anhHuong.dangBatBot,
-    },
-    ghiChu: lyDo || (laLui ? `LÙI về bản v${b.phienBan}` : `áp bản v${b.phienBan}`),
-  });
-
-  return { id: String(b.id), phienBan: b.phienBan, laLui, anhHuong };
+  return {
+    id: String(b.id),
+    phienBan: b.phienBan,
+    laLui: kq && kq.laLui != null ? !!kq.laLui : !!(dangAp && b.phienBan < dangAp.phienBan),
+    anhHuong: (kq && kq.anhHuong)
+      ? { tongPage: kq.anhHuong.soPage, dangBatBot: kq.anhHuong.soPageDangBatBot, tenVaiPage: [] }
+      : await demAnhHuong(bc),
+  };
 }

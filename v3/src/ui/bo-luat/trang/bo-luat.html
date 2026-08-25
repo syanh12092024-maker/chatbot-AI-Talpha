@@ -194,6 +194,13 @@ function veCanhBao(){
       hẳn khối quy tắc cứng — bot trả lời khách mà không có luật chung nào.</div>`);
   }
   // CHỈ đếm bản của team — bản toàn hệ mang trạng thái 'ke_thua', không phải chờ duyệt.
+  // Bản AI chưa duyệt là cảnh RIÊNG và nặng hơn: `apBoLuat` TỪ CHỐI áp nó (01-QUYET-DINH §9).
+  const aiCho = D.ban.filter((b) => b.trangThai === 'ai_chua_duyet').length;
+  if (aiCho) {
+    kh.push(`<div class="banner o"><b>${so(aiCho)} bản do AI đề xuất, CHƯA ai duyệt.</b>
+      Không áp được cho tới khi có người duyệt — 01-QUYET-DINH §9: kịch bản người viết áp
+      thẳng, nhưng đề xuất của AI phải qua người.</div>`);
+  }
   const cho = D.ban.filter((b) => b.trangThai === 'cho_duyet').length;
   if (cho) {
     kh.push(`<div class="banner o"><b>${so(cho)} bản đang chờ duyệt.</b> Chúng chưa ảnh hưởng
@@ -214,8 +221,10 @@ function veBang(){
     <tr class="${b.dangDung ? 'ap' : ''}">
       <td data-nhan="Phiên bản"><span class="ten">v${b.phienBan}</span>
         ${b.toanHe ? ' <span class="pill m">toàn hệ · kế thừa</span>' : ''}</td>
-      <td data-nhan="Trạng thái"><span class="pill ${b.trangThai === 'dang_ap' ? 'g' : b.trangThai === 'cho_duyet' ? 'o' : 'm'}">
-        ${esc(D.chuTrangThai[b.trangThai])}</span></td>
+      <td data-nhan="Trạng thái"><span class="pill ${b.trangThai === 'dang_ap' ? 'g'
+          : b.trangThai === 'ai_chua_duyet' ? 'r' : b.trangThai === 'cho_duyet' ? 'o' : 'm'}">
+        ${esc(D.chuTrangThai[b.trangThai])}</span>
+        ${b.nguon === 'ai' ? '<div class="phu">AI đề xuất</div>' : ''}</td>
       <td data-nhan="Cỡ" class="num">${so(b.soKyTu)} ký tự<div class="phu">≈ ${so(b.uocToken)} token (ước lượng)</div></td>
       <td data-nhan="Người sửa"><span class="phu">${esc(b.nguoiSua || '—')}<br>${b.suaLuc ? new Date(b.suaLuc).toLocaleString('vi-VN') : ''}</span></td>
       <td data-nhan="">
@@ -250,6 +259,11 @@ async function xemSoSanh(id){
         + 'sửa và không áp nó được. Soạn một bản riêng của team ở dưới.</span>';
     } else if (b.dangDung) {
       $('#nutAp').innerHTML = '<span class="pill g">Bản này đang áp</span>';
+    } else if (b.trangThai === 'ai_chua_duyet') {
+      $('#nutAp').innerHTML = `<button class="nut" id="btDuyet">Duyệt bản v${b.phienBan}</button>
+        <span class="phu">Bản này do <b>AI đề xuất</b> — phải có người duyệt mới áp được
+          (01-QUYET-DINH §9). Duyệt xong mới hiện nút áp.</span>`;
+      $('#btDuyet').addEventListener('click', () => duyet(b));
     } else {
       const lui = d.dangAp && b.phienBan < d.dangAp.phienBan;
       $('#nutAp').innerHTML = `<button class="nut ${lui ? '' : 'nguy'}" id="btAp">
@@ -277,6 +291,18 @@ async function ap(b, lui){
     $('#khoiSoSanh').style.display = 'none';
     await nap();
   } catch (e) { baoLoi(e.message); $('#btAp').disabled = false; }
+}
+
+async function duyet(b){
+  if (!confirm(`Duyệt bản v${b.phienBan} do AI đề xuất?\n\nDuyệt KHÔNG phải là áp — duyệt xong `
+    + 'mới hiện nút áp, và lúc đó mới hỏi lại số page bị ảnh hưởng.')) return;
+  xoaBao();
+  try {
+    await goi('/api/bo-luat/' + encodeURIComponent(b.id) + '/duyet', { method:'POST', body: JSON.stringify({}) });
+    baoOk(`Đã duyệt v${b.phienBan}. CHƯA áp — bấm "Xem khác chỗ nào" rồi áp.`);
+    $('#khoiSoSanh').style.display = 'none';
+    await nap();
+  } catch (e) { baoLoi(e.message); }
 }
 
 $('#dongSoSanh').addEventListener('click', () => { $('#khoiSoSanh').style.display = 'none'; });

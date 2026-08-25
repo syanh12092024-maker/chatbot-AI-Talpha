@@ -52,6 +52,7 @@ import {
 import {
   datTaoTruyVan as datTruyVanBoLuat, datPheuNhatKy as datPheuNhatKyBoLuat,
   datChanDangNhap as datChanDangNhapBoLuat, datChanVai as datChanVaiBoLuat, taoRouterBoLuat,
+  datCuaBoLuat,
 } from './ui/bo-luat/index.js';
 import {
   datTaoTruyVan as datTruyVanKyNang, datPheuNhatKy as datPheuNhatKyKyNang,
@@ -75,6 +76,10 @@ import {
  * @param {(boiCanh:object)=>object} phuThuoc.taoTruyVan        BẮT BUỘC · người A giao. Cổng có chèn điều kiện team.
  * @param {()=>object}               phuThuoc.taoTruyVanHeThong BẮT BUỘC · người A giao. Cổng KHÔNG gắn team,
  *                                                              chỉ cho bốn bảng dùng chung — xem `auth/kho-nguoi-dung.js`.
+ * @param {{taoBan:Function,ap:Function,duyet:Function}} [phuThuoc.cuaBoLuat] cửa GHI có giao dịch cho bộ luật
+ *                                                              chung (người A giao: `src/db/noi-dung.js`).
+ *                                                              Thiếu thì màn Bộ luật TỪ CHỐI ghi — ghi bằng
+ *                                                              hai lời gọi rời là bỏ mất giao dịch và luật §9.
  * @param {(cfg:object)=>string}    [phuThuoc.dungBanMay]      dựng BẢN CHO MÁY từ bản người
  *                                                              (người A giao: `db/di-tru/nguon.js#dungBanChoMay`).
  *                                                              Thiếu thì màn soạn kịch bản TỪ CHỐI lưu.
@@ -100,7 +105,7 @@ import {
  * @returns {{daNoi:string[], thieu:string[]}}
  */
 export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa,
-  docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, ghiSoAi, canhBao, express } = {}) {
+  docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -158,6 +163,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
 
   if (typeof canhBao === 'function') { datPheuCanhBao(canhBao); daNoi.push('cảnh báo ← chuyển model dự phòng'); }
   else thieu.push('canhBao — nhà chính hết tiền thì tự chuyển dự phòng nhưng KHÔNG ai được báo. Đúng cảnh 06/08/2026');
+
+  if (cuaBoLuat && typeof cuaBoLuat.ap === 'function') { datCuaBoLuat(cuaBoLuat); daNoi.push('cửa ghi có giao dịch → màn Bộ luật chung'); }
+  else thieu.push('cuaBoLuat — màn Bộ luật chung TỪ CHỐI ghi. Ghi bằng hai lời gọi rời là bỏ mất giao dịch, khoá chống bấm-cùng-lúc, và luật «đề xuất của AI phải có người duyệt»');
 
   if (typeof dungBanMay === 'function') { datDungBanMay(dungBanMay); daNoi.push('bộ dựng bản-cho-máy → màn soạn kịch bản'); }
   else thieu.push('dungBanMay — màn soạn kịch bản TỪ CHỐI lưu, vì tự dựng bản thứ hai là hứa một prompt khác cái bot nhận');
