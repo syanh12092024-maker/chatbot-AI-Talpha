@@ -264,6 +264,29 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   (máy cá nhân 5/5 · VPS 23/23) ⇒ cổng TRƯỢT mỗi khi mã nguồn TỐT LÊN. Thay bằng luật tự
   bảo trì «0 tệp đỏ» (án lệ #22).
 
+- 25/08 · G2-A2 (người A) — NGOÀI PHẠM VI PHIẾU nhưng ĐÃ SỬA, khai rõ để tổng soi:
+  (1) `src/chat/model.js` **không có trong pathspec ③ của B-Y2** nhưng nó `SELECT khoa_api_ma
+  FROM cau_hinh_model` và dùng cột đó làm cờ **fail-CLOSED**. Bỏ cột mà không sửa = hệ vỡ;
+  bỏ luôn cờ = team có khoá Kimi riêng bị phục vụ bằng client Anthropic cũ TRONG IM LẶNG.
+  `src/chat/*` nằm trong danh sách file A được đụng nên lượt này gộp vào, giữ NGUYÊN hành vi
+  fail-CLOSED, và bọc **lưới migration `42P01`** (án lệ #7 — `layModel` ở trên đường chat sống,
+  deploy code trước migration là bot câm).
+  (2) `ops/bin/nghiem-thu/l0-m1.sh` cùng bệnh `docker exec talpha-pg` như l0-m2.sh ⇒ đã chết
+  câm; vá cùng cách + thay mốc nền gõ tay bằng luật «0 tệp đỏ» + trỏ phép «khoá lưu dạng mã
+  hoá» sang `khoa_nha` (để nguyên thì cổng đỏ vì BẢNG ĐỔI CHỖ, không phải vì khoá lưu sai).
+
+- 25/08 · G2-A2 — 🧭 **LỖI IM LẶNG BẮT ĐƯỢC DỌC ĐƯỜNG, đáng nhớ:** cửa
+  `if (import.meta.url === \`file://${process.argv[1]}\`)` **không bao giờ khớp khi đường dẫn
+  có DẤU CÁCH** (`import.meta.url` mã hoá `%20`, `argv[1]` thì không). Cây làm việc thật là
+  «…/Chat Bot AI/messenger-closer» ⇒ ở máy đó **`npm run migrate` và `npm run di-tru` THOÁT 0
+  MÀ KHÔNG LÀM GÌ**. Trên VPS (`/opt/aicloser`) thì chạy, nên lọt suốt từ L0-M1. Đã vá đúng
+  hai tệp mắc (`db/migrate.js` · `db/di-tru/index.js`) bằng `laChayTrucTiep()` so ĐƯỜNG DẪN
+  đã giải mã. Ai viết entrypoint mới: đừng ghép `file://` + `argv[1]`.
+
+- 25/08 · G2-A2 — 🧭 **THƯỚC RỖNG của chính thợ**, bắt ở vòng đo đầu: phép «down 008 → up 008
+  khớp byte-for-byte» in `KHỚP — 0 dòng cột` vì câu chụp lược đồ hỏng cú pháp — hai tệp RỖNG
+  thì bằng nhau (án lệ #29). Bản đóng gói trong cổng nay in kèm SỐ CỘT và **TRƯỢT nếu < 100**.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -740,6 +763,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 25/08 · G2-A2 → ✅ xong — migration 008 `khoa_nha`: khoá API MỘT bản mỗi (team × nhà), `cau_hinh_model` bỏ cột; `layModel` đọc chỗ mới, giữ fail-CLOSED, có lưới `42P01` · commit e5e9386 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a2.md
+- 25/08 · G2-A2 → đo trên Postgres 16.15 THẬT: cổng L0-M1 58/59 · 001→008 áp trọn · down→up khớp vân tay 242 cột · đổi khoá 1 lần → 2/2 ô đọc khoá mới · commit e5e9386 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a2.md
+- 25/08 · G2-A2 → 🧭 hai lỗi IM LẶNG ngoài phiếu: `npm run migrate` không chạy gì khi đường dẫn có dấu cách, và cổng l0-m1 chết câm vì docker — chi tiết §9 · commit e5e9386 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a2.md
+
 - 25/08 · G2-A1 → ✅ xong — `suaTheoId` nhận `{neu}` + `ctxHeThong`, `layNhieu` nhận mảng; đóng nợ N3, ba cửa tạm CHƯA xoá (để G2-A3) · commit 4bc7efd · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a1.md
 - 25/08 · G2-A1 → đo trên Postgres 16.15 THẬT (VPS): nền 22 → 41 pass/0 fail · cổng L0-M2 26/27 · hồi quy 28 bộ ca v3 = 319 pass/1 fail · commit 4bc7efd · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a1.md
 - 25/08 · G2-A1 → 🧭 THƯỚC hỏng trước CODE: vai CSDL thiếu CREATEDB + cổng dựng sandbox bằng docker đã chết + mốc nền gõ tay đã mục — sửa cả ba, chi tiết §9 · commit 4bc7efd · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a1.md
