@@ -10,20 +10,47 @@
 |---|---|
 | Người A (trục dữ liệu) | **6/6 module + 2 phiếu chen XONG** — cổng: A1 26/27 · A2 58/59 · B-Y3 14/14 · A3 6/6 · B-Y4 6/6 · A4 12/12 · A5+A6 15/15 |
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
-| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 3/5 · SÓNG 3 2/5 · SÓNG 4 3/10** (15 màn). Bảy màn còn lại chặn vì thiếu dữ liệu/bảng, không phải thiếu code |
+| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 4/5 · SÓNG 3 2/5 · SÓNG 4 5/10** (18 màn). Ba màn chặn THẬT, đã kiểm ở nguồn v1 |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **562 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **595 xanh** (316 trước giai đoạn 2) |
 
 ---
 
-## Giai đoạn 2 · sóng 4 — VẬN HÀNH (3/10 màn, 25/08)
+## Giai đoạn 2 · sóng 4 — VẬN HÀNH (6/10 màn, 26/08)
+
+### ⚠️ DANH SÁCH «CHẶN» CŨ CỦA TÔI SAI — đã đo lại ở nguồn v1 ngày 26/08
+
+Tôi từng báo «10 màn còn lại đều chặn vì thiếu dữ liệu». Sai, và sai theo đúng kiểu đã mắc
+với cột `page.bot_ai_bat` (B-Y7): **nhìn bảng mirror rỗng trong CSDL v3 rồi kết luận nguồn
+cũng rỗng**. Đo lại bằng `/admin/api` của tiến trình bot:
+
+| Nguồn v1 | Có gì thật |
+|---|---|
+| `/pages` + `/kb/:id` | **69 page · 71 sản phẩm · 459 ảnh · 6 loại tiền · 71/71 có bậc giá** |
+| `/stats` | 14.238 lượt trả lời · **269 đơn** · 8.761 lead |
+| `/token-cost` | **127 đ/tin · 6.698 đ/đơn · 52,9 tin/đơn · 1.145.472 đ** · bảng theo **57 page** |
+| `/orders` | **904 đơn AI**, tách theo page |
+| `/conversations` | 200 hội thoại gần nhất, có tên khách |
+
+⇒ Ba màn sản phẩm/ảnh đã dựng xong. **Chi phí AI** và **Báo cáo** cũng KHÔNG còn chặn — số
+liệu có sẵn ở `/token-cost` và `/stats`, đúng những con số kế hoạch đòi.
+
+Người A cũng vừa giao `src/db/so-lieu.js` (`baoCaoHaiLuong`, `chiPhiAiTheoPage`,
+`hieuQuaKichBan`) và migration 012 cho lớp trả lời 0 đồng — bốn màn nữa có tầng dữ liệu.
+
+**Chặn THẬT, đã kiểm ở nguồn:** «Nguồn khách vào» (`hoi_thoai` không có cột `nguon`, v1 cũng
+không trả trường nguồn) · «Hồ sơ khách hàng» (`khach` 0 dòng **và** 0/28.953 hội thoại có
+`khach_id`) · «Rủi ro hoàn hàng» (`don_hang` 0 dòng, chưa nối POS).
 
 | Màn | Đường | Trạng thái |
 |---|---|---|
 | **AI đề xuất** | `/ai-de-xuat` | xong — cửa DUY NHẤT ghi bản `nguon='ai'`, tách hẳn cửa của người viết |
 | **Cửa kiểm sẵn sàng** | `/san-sang` | xong — bảy điều kiện, ô đỏ bấm nhảy tới chỗ sửa |
 | **Trang chủ** | `/trang-chu` | xong — danh sách việc theo vai, ô rỗng nói rõ vì sao rỗng |
+| **Sản phẩm & kho** | `/san-pham` | xong — đọc nguồn thật, **68/71 sản phẩm không có tên** |
+| **Thư viện ảnh** | `/thu-vien-anh` | xong — 459 ảnh, 8 chủ đề, đọc theo trang |
+| **Đưa sản phẩm mới lên chạy** | `/len-chay` | xong — sáu chặng, **chặng 2 không có ô để điền** |
 
 **«Hai đường khác nhau» đã chạy thật, đủ bốn bước**, đo trên máy chủ xem thử 25/08:
 nhận đề xuất → `nguon='ai'`, v3, chưa duyệt · áp ngay → **400 `ai_chua_duyet`** · duyệt →
