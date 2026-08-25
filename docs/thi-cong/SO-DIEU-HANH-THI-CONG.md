@@ -358,6 +358,37 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   bản mới 9. Xanh ĐÚNG NHỜ bản vá, lùi lại là đỏ. Không có phép đo hai chiều này thì lời
   khai «bẫy của B đã ăn» chỉ là suy đoán.
 
+- 25/08 · G2-A4 (người A) — **RF-17 ĐÓNG.** Chỉ mục `bo_luat_chung_mot_ban_dang_ap`
+  (migration 009) làm trạng thái «hai bản cùng `dang_dung`» KHÔNG tồn tại được, kể cả khi
+  ghi thẳng bằng psql. Kèm `apBoLuat()` chạy trong MỘT giao dịch — bản của màn hình hạ bản
+  cũ rồi dựng bản mới bằng hai lời gọi rời, hạ xong mà dựng hỏng thì team không còn bản nào
+  đang áp và prompt rơi về bản toàn hệ, tức mọi page đang bật bot đổi cách nói mà KHÔNG ai
+  bấm nút nào. ⚠️ `team_id` NULLABLE nên chỉ mục phải `COALESCE(team_id, 0)`: hai NULL trong
+  Postgres là KHÁC nhau, để nguyên thì dòng luật toàn hệ không được ràng.
+
+- 25/08 · G2-A4 — NỢ CÒN LẠI (cutover hai bước, cần người B):
+  (1) CHƯA siết `CHECK (NOT dang_dung OR duyet_luc IS NOT NULL)` — màn của B còn ghi thẳng
+  qua `db.sua()`, bật ngay là màn chết. Siết sau khi B đổi sang `apBoLuat()`.
+  (2) **Chưa báo người B** rằng đã có `apBoLuat()` · `suaKyNang()` · `xemAnhHuongKyNang()`
+  ở `src/db/index.js` (khai ở `ban-giao/tang-truy-van-v1.md` §6c). Cái rào thứ hai chỉ có
+  tác dụng khi nơi gọi đi qua nó — hiện nó nằm đó mà chưa ai đi.
+  (3) `soSanhBoLuat` là phép so TẬP HỢP DÒNG, không phải diff có thứ tự: dòng bị chuyển chỗ
+  hiện thành một bỏ + một thêm. Hàm tự khai điều đó ở trường `phepSo`, đừng đọc quá tay.
+
+- 25/08 · G2-A4 — 🧭 **VÌ SAO KHÔNG CHẠY BA LƯỢT MODEL** (đọc trước khi mở sóng 1): nghiệm
+  thu sóng 1 dặn «thay đổi chạm cách bot nói thì chạy ít nhất BA lượt». Lượt này KHÔNG chạy,
+  vì nội dung prompt **không đổi một byte** — thứ duy nhất chạm đường ráp prompt là
+  `docKyNang` đổi sang vị từ dùng chung, và đã đo **0/514 page lệch** giữa vị từ cũ và mới
+  trên CSDL thật. Ba lượt model đo TÍNH BẤT ĐỊNH CỦA MODEL, hữu ích khi NỘI DUNG đổi; ở đây
+  phép đo đúng là so prompt trước/sau, tất định và mạnh hơn. **Lượt phải chạy ba lượt là
+  lượt ai đó ÁP một bản bộ luật chung có nội dung khác** — thao tác của người qua màn hình.
+
+- 25/08 · G2-A4 — 🧭 phạm vi phiếu đổi giữa chừng vì người B đã dựng xong hai màn
+  (`v3/src/ui/bo-luat/`, `v3/src/ui/ky-nang/`) trên lược đồ cũ. Đã trình hai đường cho chủ
+  dự án và **chủ dự án chốt dựng bảng + API riêng như phiếu gốc**. Ràng buộc tự đặt: không
+  đập màn của B ⇒ ba chỗ nhường (không thêm cột `trang_thai` · lịch sử kỹ năng ra bảng
+  riêng · chưa siết CHECK). Chi tiết ở nhật ký phiếu.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -834,6 +865,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 25/08 · G2-A4 → ✅ xong — migration 009 + `src/db/noi-dung.js`: soạn/duyệt/áp/lùi có phiên bản, bốn mắt, và đo ảnh hưởng dùng CHUNG vị từ với bộ ráp prompt · commit 604dc9a · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a4.md
+- 25/08 · G2-A4 → đo trên Postgres 16.15 THẬT: cổng 12/12 · bộ ca 17 pass/0 fail · phép đếm ảnh hưởng lệch bộ đọc prompt 0/514 page · hồi quy 32 bộ chỉ D7 đỏ · commit 604dc9a · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a4.md
+- 25/08 · G2-A4 → 🧭 RF-17 đóng bằng chỉ mục (phải COALESCE vì team_id NULLABLE) · không chạy 3 lượt model, lý do ở §9 · commit 604dc9a · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a4.md
+
 - 25/08 · B-Y4 → ✅ xong — `napPage` dùng CASE: nguồn điền chỗ trống, không bao giờ xoá chỗ người đã đặt; chỉ có ĐÚNG MỘT cột người đặt nằm trong câu ghi đè · commit e7afdbd · nhật ký docs/thi-cong/nhat-ky/phieu-b-y4.md
 - 25/08 · B-Y4 → đo trên Postgres 16.15 THẬT: cổng 6/6, phép chính chạy `npm run di-tru` ĐẦU-CUỐI · bộ ca di trú 11→16 ca, 15 pass/1 fail (D7 đỏ sẵn) · commit e7afdbd · nhật ký docs/thi-cong/nhat-ky/phieu-b-y4.md
 - 25/08 · B-Y4 → 🧭 kiểm bẫy của người B cả HAI chiều (bản cũ 10 cột / bản mới 9) — «xanh» một mình không chứng minh gì · commit e7afdbd · nhật ký docs/thi-cong/nhat-ky/phieu-b-y4.md
