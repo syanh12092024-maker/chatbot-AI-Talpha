@@ -20,6 +20,8 @@
 // toàn hơn; nó không đổi ý nghĩa cột nào B đang đọc. `dang_dung` vẫn là cờ LIVE duy nhất.
 import { LoiThieuBoiCanhTeam, LoiXuyenTeam } from "./loi.js";
 import { ghiNhatKy } from "./nhat-ky.js";
+import { GOC } from "../../db/ket-noi.js";
+import { docAiEnabled } from "../../db/di-tru/nguon.js";
 
 export const HANH_DONG = Object.freeze({
   TAO_BAN: "tao_ban_bo_luat",
@@ -119,25 +121,86 @@ const tacNhanCua = (ctx) => `nguoi:${ctx.nguoiDungId}`;
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /**
+ * «Page nào ĐANG BẬT BOT» — hỏi NGUỒN THẬT, không hỏi cột.
+ *
+ * ⚠️ B-Y7, đo 25/08 trên máy chủ: `page.bot_ai_bat` nói **50**, còn `ai-enabled.json` (và
+ * RAM tiến trình bot, khớp nhau) nói **0**. Ai đó tắt 50 page qua dashboard v1 ngày 24/08
+ * và CSDL v3 không hề biết. Chính `db/migrate/001_nen.up.sql` đã khai: «NGUỒN DUY NHẤT của
+ * cờ này là `ai-enabled.json`… Cấm suy ra từ bất kỳ trường nào khác». Cột chỉ là BẢN SAO.
+ *
+ * Nên hàm này đọc FILE, đối chiếu với cột, và trả CẢ HAI + chỗ lệch. Đọc mù cột là con số
+ * «bao nhiêu page bị ảnh hưởng» sai 50 — mà đó đúng là con số cho phép bấm áp.
+ *
+ * @param {string} goc thư mục gốc chứa `ai-enabled.json`. Tham số để BÀI TEST chạm được
+ *        nhánh LỆCH thật; đường chạy thật để mặc định.
+ */
+async function demPageBatBot(khach, teamId, goc = GOC) {
+  const r = await khach.query(
+    `SELECT page_id, bot_ai_bat FROM page WHERE team_id = $1`,
+    [teamId],
+  );
+  const theoCot = r.rows.filter((x) => x.bot_ai_bat).map((x) => x.page_id);
+
+  let batThat = null;
+  let loiNguon = null;
+  try {
+    batThat = new Set(docAiEnabled(goc));
+  } catch (e) {
+    // Mù thì phải NÓI RA, không được lặng lẽ rơi về cột — rơi về cột chính là cái đang sai.
+    loiNguon = e?.message ?? String(e);
+  }
+  if (!batThat) {
+    return {
+      soPage: r.rowCount,
+      soPageDangBatBot: theoCot.length,
+      nguon: "cot_csdl",
+      lech: {
+        co: null,
+        viSao:
+          `KHÔNG đọc được \`ai-enabled.json\` (${loiNguon}) — con số dưới đây lấy từ CỘT, ` +
+          `mà cột là BẢN SAO và đã từng lệch 50 (B-Y7). Đừng coi nó là số thật.`,
+      },
+    };
+  }
+
+  const cuaTeam = r.rows.map((x) => x.page_id);
+  const batThatTrongTeam = cuaTeam.filter((id) => batThat.has(String(id)));
+  const chiCot = theoCot.filter((id) => !batThat.has(String(id)));
+  const chiBot = batThatTrongTeam.filter(
+    (id) => !theoCot.includes(id),
+  );
+  return {
+    soPage: r.rowCount,
+    // ⬇️ Con số THẬT — của tiến trình bot, không phải của cột.
+    soPageDangBatBot: batThatTrongTeam.length,
+    theoCotCsdl: theoCot.length,
+    nguon: "ai-enabled.json",
+    lech: {
+      co: chiCot.length + chiBot.length > 0,
+      soLech: chiCot.length + chiBot.length,
+      chiCotBat: chiCot.slice(0, 10),
+      chiBotBat: chiBot.slice(0, 10),
+      viSao:
+        chiCot.length + chiBot.length === 0
+          ? null
+          : `CỘT \`page.bot_ai_bat\` LỆCH nguồn thật: cột nói ${theoCot.length} page bật, ` +
+            `\`ai-enabled.json\` nói ${batThatTrongTeam.length}. Con số ở trên lấy theo NGUỒN ` +
+            `THẬT. Cột là bản sao và chưa ai đồng bộ ngược (B-Y7, nợ §9).`,
+    },
+  };
+}
+
+/**
  * Bộ luật chung áp cho MỌI page của team. Con số quan trọng không phải tổng số page mà là
  * **số page ĐANG BẬT BOT** — chỉ những page đó mới thật sự đổi cách nói với khách. Trả cả
  * hai, và đừng gộp: gộp lại thì người bấm nút đọc «514» và tưởng thảm hoạ, hoặc đọc «51»
  * mà không biết còn 463 page sẽ đổi ngay khi ai đó bật bot.
  */
-export async function xemAnhHuongBoLuat(pool, ctx) {
+export async function xemAnhHuongBoLuat(pool, ctx, { goc = GOC } = {}) {
   const khach = await pool.connect();
   try {
     await batBuocVai(khach, ctx, VAI_SUA_BO_LUAT, "xem ảnh hưởng bộ luật chung");
-    const r = await khach.query(
-      `SELECT count(*)::int tong,
-              count(*) FILTER (WHERE bot_ai_bat)::int dang_bat
-         FROM page WHERE team_id = $1`,
-      [ctx.teamId],
-    );
-    return {
-      soPage: r.rows[0].tong,
-      soPageDangBatBot: r.rows[0].dang_bat,
-    };
+    return await demPageBatBot(khach, ctx.teamId, goc);
   } finally {
     khach.release();
   }
@@ -410,15 +473,9 @@ export async function apBoLuat(pool, ctx, { id, lyDo = "" } = {}) {
 
     const banCu = cu.rows[0] ?? null;
     const laLui = banCu ? Number(ban.phien_ban) < Number(banCu.phien_ban) : false;
-    const ah = await khach.query(
-      `SELECT count(*)::int tong, count(*) FILTER (WHERE bot_ai_bat)::int dang_bat
-         FROM page WHERE team_id = $1`,
-      [ctx.teamId],
-    );
-    const anhHuong = {
-      soPage: ah.rows[0].tong,
-      soPageDangBatBot: ah.rows[0].dang_bat,
-    };
+    // Cùng một bộ đếm với `xemAnhHuongBoLuat` — con số hiện lúc XEM TRƯỚC và con số ghi
+    // vào nhật ký lúc ÁP phải là cùng một phép đo, không phải hai câu SQL giống nhau.
+    const anhHuong = await demPageBatBot(khach, ctx.teamId);
 
     await ghiNhatKy(khach, {
       teamId: ctx.teamId,

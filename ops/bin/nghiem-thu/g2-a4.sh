@@ -130,16 +130,51 @@ await voiPool(async (p) => {
   console.log([
     String(dangApTruoc) === String(dangApSau) ? "KHONG-DOI" : "DA-DOI",
     tuDuyet, aiChuaDuyet,
-    kq.anhHuong.soPageDangBatBot, kq.laLui ? "lui" : "tien", lui.laLui ? "lui" : "tien", nk,
+    kq.anhHuong.nguon, kq.laLui ? "lui" : "tien", lui.laLui ? "lui" : "tien", nk,
   ].join("|"));
 });')"
 IFS='|' read -r A4_TAO A4_TUDUYET A4_AI A4_AH A4_L1 A4_L2 A4_NK <<< "${KQ3}"
 bang "tạo bản mới → bản đang áp" "${A4_TAO}" "KHONG-DOI"
 bang "người soạn tự duyệt bản mình" "${A4_TUDUYET}" "LoiXuyenTeam"
 bang "áp bản AI chưa duyệt" "${A4_AI}" "bi-chan"
-bang "số page ĐANG BẬT BOT bị chạm, trả về lúc áp" "${A4_AH}" "1"
+# ⚠️ SỬA 25/08 (B-Y7): trước đây phép này khẳng định một CON SỐ lấy từ cột `bot_ai_bat`.
+# Cột đó là BẢN SAO và đã lệch 50 trên máy chủ thật. Nay canh NGUỒN của con số, không canh
+# giá trị: giá trị đúng bao nhiêu là tuỳ `ai-enabled.json`, nhưng nó PHẢI đến từ đó.
+bang "nguồn của con số «đang bật bot»" "${A4_AH}" "ai-enabled.json"
 bang "lượt áp tiến / lượt áp lùi" "${A4_L1}/${A4_L2}" "tien/lui"
 bang "số dòng nhật ký ap_bo_luat" "${A4_NK}" "2"
+
+muc "③b B-Y7 — cột lệch nguồn thật thì phải BÁO, không nuốt"
+KQ3B="$(nodex '
+const { voiPool } = await import("./db/ket-noi.js");
+const M = await import("./src/db/index.js");
+const fs = await import("node:fs");
+const os = await import("node:os");
+const path = await import("node:path");
+await voiPool(async (p) => {
+  const t = (await p.query("SELECT id FROM team WHERE slug=$1",["tieu-alpha"])).rows[0].id;
+  const u = (await p.query(
+    "SELECT tv.nguoi_dung_id n FROM thanh_vien_team tv JOIN vai v ON v.id=tv.vai_id WHERE tv.team_id=$1 AND v.ma=$2 LIMIT 1",
+    [t,"quan-tri"])).rows[0].n;
+  const ctx = { teamId: t, nguoiDungId: u };
+  const tam = fs.mkdtempSync(path.join(os.tmpdir(), "nt-y7-"));
+  try {
+    fs.writeFileSync(path.join(tam, "ai-enabled.json"), "[]");
+    const a = await M.xemAnhHuongBoLuat(p, ctx, { goc: tam });
+    const b = await M.xemAnhHuongBoLuat(p, ctx, { goc: "/khong/co" });
+    console.log([
+      a.lech.co === true ? "co-bao" : "NUOT",
+      a.soPageDangBatBot,
+      b.lech.co === null ? "chua-biet" : "DOAN-BUA",
+      b.nguon,
+    ].join("|"));
+  } finally { fs.rmSync(tam, { recursive: true, force: true }); }
+});')"
+IFS='|' read -r Y7_1 Y7_2 Y7_3 Y7_4 <<< "${KQ3B}"
+bang "cột bật mà nguồn thật tắt → có BÁO lệch" "${Y7_1}" "co-bao"
+bang "và con số lấy theo NGUỒN THẬT" "${Y7_2}" "0"
+bang "không đọc được nguồn → lech.co = CHƯA BIẾT" "${Y7_3}" "chua-biet"
+bang "…và khai rõ đang lấy từ cột" "${Y7_4}" "cot_csdl"
 
 muc "④ phép ĐẾM ảnh hưởng khớp BỘ ĐỌC PROMPT thật — trên CSDL THẬT, chỉ đọc"
 # Câu «bao nhiêu page bị chạm» chỉ đúng nếu nó dùng ĐÚNG luật bộ ráp prompt dùng lúc chạy.
