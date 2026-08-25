@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Thư viện ảnh — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3; --xam:#8b95a1;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1180px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  .o{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+  .o .k{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh)}
+  .o .k .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+  .o .k .c{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .o .k.xau .n{color:var(--bad)} .o .k.tot .n{color:var(--ok)}
+
+  .nguy{background:#fff4f4;border:1px solid #f0c2c2;border-left:4px solid var(--bad);
+        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
+  .nguy b{color:#991b1b}
+  .canh{background:var(--warnSoft);border:1px solid #f0d3a4;color:#8a4a06;border-radius:var(--r);
+        padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
+
+  .luoi{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:11px}
+  .luoi .a{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .luoi .a img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#f1f3f5}
+  .luoi .a .d{padding:7px 8px;font-size:11px;line-height:1.45}
+  .luoi .a .nh{font-weight:600;color:var(--muted)}
+  .luoi .a .nh.khong{color:var(--bad);font-style:italic;font-weight:500}
+  .luoi .a .pg{color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .nhan{display:flex;gap:7px;flex-wrap:wrap}
+  .nhan .t{background:#f1f3f5;color:#344054;border-radius:20px;padding:4px 11px;font-size:11.5px;font-weight:600}
+  .nhan .t b{font-variant-numeric:tabular-nums}
+
+  .trang{display:flex;gap:8px;align-items:center;padding:11px 15px;border-top:1px solid var(--line);
+         background:#fafbfc;flex-wrap:wrap}
+  button{font:inherit;border:1px solid var(--line);background:#fff;color:#344054;border-radius:8px;
+         padding:6px 13px;cursor:pointer;font-weight:600}
+  button[disabled]{opacity:.45;cursor:not-allowed}
+
+  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
+  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .trong .di{margin-top:10px;font-size:12px;background:var(--priSoft);color:#0b4a52;
+             display:inline-block;padding:9px 13px;border-radius:9px;text-align:left;max-width:540px}
+  .nho{color:var(--muted);font-size:11.5px;line-height:1.5}
+
+  @media (max-width:720px){
+    header{padding:12px 14px} main{padding:12px 14px 50px}
+    .than{padding:12px}
+    .o{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
+    .o .k{padding:10px 11px} .o .k .n{font-size:19px}
+    .luoi{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Thư viện ảnh</h1>
+  <span class="sub" id="hTeam">…</span>
+  <span class="sp"></span>
+  <a href="/san-pham">Sản phẩm &amp; kho →</a>
+  <a href="/trang-chu">← Trang chủ</a>
+</header>
+
+<main>
+  <div id="dai"></div>
+  <div class="o" id="dem"></div>
+
+  <div class="panel">
+    <h2>Nhãn đang dùng <span class="hint">nhãn ≠ chủ đề</span></h2>
+    <div class="than"><div class="nhan" id="dsNhan"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Ảnh <span class="hint" id="hSo"></span></h2>
+    <div id="luoi"><div class="than nho">Đang tải…</div></div>
+    <div class="trang" id="phanTrang" hidden></div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let trang = 0;
+
+async function goi(d) {
+  const r = await fetch(d, { credentials: 'same-origin' });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Lỗi ' + r.status);
+  return j;
+}
+
+function veDai(d) {
+  let h = '';
+  const c = d.chuDe;
+  if (c && !c.duoc) {
+    // Vế «bot chọn đúng lúc» CHƯA làm được — nói ngay đầu màn, không để cuối.
+    h += `<div class="nguy"><b>Ảnh đã có đủ, nhưng CHƯA gắn chủ đề.</b><br>${esc(c.noi)}
+      <div class="nho" style="margin-top:7px;color:#7a3f05">👉 ${esc(c.diTiep || '')}</div></div>`;
+  } else if (c) {
+    h += `<div class="canh" style="background:var(--okSoft);border-color:#b7e4c7;color:#166534">
+      ✅ ${esc(c.noi)}</div>`;
+  }
+  if (d.hong && d.hong.length) {
+    h += `<div class="canh"><b>${d.hong.length} page không đọc được ảnh.</b>
+      Một page hỏng không làm hỏng cả thư viện — phần còn lại vẫn hiện đủ.
+      <div class="nho" style="margin-top:4px">${d.hong.map((x) => esc(x.tenPage || x.pageId)).join(' · ')}</div></div>`;
+  }
+  $('#dai').innerHTML = h;
+}
+
+function veDem(k) {
+  $('#dem').innerHTML = [
+    { n: k.anh, c: 'ảnh đọc được', l: 'tot' },
+    { n: k.coChuDe, c: 'ảnh CÓ chủ đề riêng', l: k.coChuDe ? 'tot' : 'xau' },
+    { n: k.khongChuDe, c: 'ảnh không phân biệt được dùng lúc nào', l: k.khongChuDe ? 'xau' : '' },
+    { n: `${k.pageDaDoc}/${k.pageCoSanPham}`, c: 'page đã đọc', l: '' },
+  ].map((x) => `<div class="k ${x.l}"><div class="n">${x.n}</div><div class="c">${x.c}</div></div>`).join('');
+}
+
+function veNhan(ds) {
+  $('#dsNhan').innerHTML = ds.length
+    ? ds.map((n) => `<span class="t">${esc(n.ten)} <b>${n.so}</b></span>`).join('')
+    : '<span class="nho">chưa có nhãn nào</span>';
+}
+
+function veLuoi(d) {
+  $('#hSo').textContent = `${d.anh.length} ảnh`;
+  const b = $('#luoi');
+  if (!d.anh.length) {
+    b.innerHTML = `<div class="trong"><div class="ti">${esc(d.trong ? d.trong.noi : 'Chưa có ảnh')}</div>
+      ${d.trong && d.trong.diTiep ? `<div class="di">👉 ${esc(d.trong.diTiep)}</div>` : ''}</div>`;
+    return;
+  }
+  b.innerHTML = `<div class="than"><div class="luoi">${d.anh.map((a) => `
+    <div class="a">
+      <img src="${esc(a.duong)}" alt="" loading="lazy">
+      <div class="d">
+        <div class="nh ${a.laChuDe ? '' : 'khong'}">${esc(a.nhan || '(không nhãn)')}</div>
+        <div class="pg" title="${esc(a.tenPage)}">${esc(a.tenPage)}</div>
+        <div class="pg">${a.thieuTenSp ? `mã ${esc(a.maSp)}` : esc(a.tenSp)}</div>
+      </div>
+    </div>`).join('')}</div></div>`;
+}
+
+function vePhanTrang(t) {
+  const soTrang = Math.ceil(t.tong / t.moiTrang);
+  if (soTrang <= 1) { $('#phanTrang').hidden = true; return; }
+  $('#phanTrang').hidden = false;
+  $('#phanTrang').innerHTML = `
+    <button id="tr" ${t.hienTai <= 0 ? 'disabled' : ''}>← Trước</button>
+    <span class="nho">page ${t.hienTai * t.moiTrang + 1}–${Math.min((t.hienTai + 1) * t.moiTrang, t.tong)} / ${t.tong}</span>
+    <button id="sa" ${t.hienTai >= soTrang - 1 ? 'disabled' : ''}>Sau →</button>
+    <span class="nho" style="margin-left:auto">Mỗi lượt đọc ${t.moiTrang} page — mỗi page là một lời gọi sang tiến trình bot.</span>`;
+  const tr = $('#tr'); const sa = $('#sa');
+  if (tr) tr.onclick = () => { trang -= 1; tai(); };
+  if (sa) sa.onclick = () => { trang += 1; tai(); };
+}
+
+async function tai() {
+  $('#luoi').innerHTML = '<div class="than nho">Đang đọc ảnh từ tiến trình bot…</div>';
+  try {
+    const d = await goi('/api/thu-vien-anh?trang=' + trang);
+    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    veDai(d); veDem(d.dem); veNhan(d.nhanDaDung || []); veLuoi(d);
+    if (d.trang) vePhanTrang(d.trang);
+  } catch (e) {
+    $('#luoi').innerHTML = `<div class="than"><div class="canh" style="margin:0">
+      <b>Không đọc được thư viện ảnh:</b> ${esc(e.message)}</div></div>`;
+    $('#dem').innerHTML = '';
+  }
+}
+
+tai();
+</script>
+</body>
+</html>
