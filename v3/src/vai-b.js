@@ -33,6 +33,16 @@ import {
   datDocKetNoiPos, datChanDangNhap as datChanDangNhapTeam, datChanVai as datChanVaiTeam,
   taoRouterCauHinhTeam,
 } from './ui/team/index.js';
+import {
+  datTaoTruyVan as datTruyVanPageBot, datPheuNhatKy as datPheuNhatKyPageBot,
+  datChanDangNhap as datChanDangNhapPageBot, datChanVai as datChanVaiPageBot,
+  taoRouterPageBot,
+} from './ui/page-bot/index.js';
+import {
+  datDocKetNoiPos as datDocKetNoiPosKN, datPheuNhatKy as datPheuNhatKyKetNoi,
+  datChanDangNhap as datChanDangNhapKetNoi, datChanVai as datChanVaiKetNoi,
+  taoRouterKetNoi,
+} from './ui/ket-noi/index.js';
 
 /**
  * Nối toàn bộ phần rìa vào một ứng dụng Express.
@@ -78,12 +88,14 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datTruyVanTeam(taoTruyVan);
   datDanhTinhTeam(taoTruyVanHeThong);
   datDanhTinhTeamGhi(taoTruyVanHeThong);
-  daNoi.push('cổng dữ liệu → nhật ký · lớp model · bảng điều phối · kho người dùng · cấu hình team');
+  datTruyVanPageBot(taoTruyVan);
+  daNoi.push('cổng dữ liệu → nhật ký · lớp model · bảng điều phối · kho người dùng · cấu hình team · page & bot');
 
   // ── ② Nhật ký: ba module ghi, một chỗ nhận ──
   // Ghi thẳng bằng `ghiNhatKy` của L0-M4 chứ không qua module trung gian: ba module kia
   // không được import `../audit/…`, nhưng ở đây thì được — đây chính là chỗ nối dây.
-  for (const dat of [datPheuNhatKyAuth, datPheuNhatKyModel, datPheuNhatKyDieuPhoi, datPheuNhatKyTeam]) {
+  for (const dat of [datPheuNhatKyAuth, datPheuNhatKyModel, datPheuNhatKyDieuPhoi, datPheuNhatKyTeam,
+    datPheuNhatKyPageBot, datPheuNhatKyKetNoi]) {
     dat((boiCanh, ban) => {
       // Đăng nhập hỏng và chọn team không thuộc xảy ra TRƯỚC khi có bối cảnh — vai B cố ý
       // không dựng bối cảnh giả để lách (bối cảnh giả là thứ nguy hiểm nhất trong hệ này).
@@ -95,7 +107,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
       return ghiNhatKy(boiCanh, ban);
     });
   }
-  daNoi.push('nhật ký ← đăng nhập · lớp model · bảng điều phối · cấu hình team');
+  daNoi.push('nhật ký ← đăng nhập · lớp model · bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ③ Sổ AI và cảnh báo ──
   if (typeof ghiSoAi === 'function') { datPheuSoAi(ghiSoAi); daNoi.push('Sổ AI ← lớp model (mọi lượt ghi được mã model)'); }
@@ -104,7 +116,11 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   if (typeof canhBao === 'function') { datPheuCanhBao(canhBao); daNoi.push('cảnh báo ← chuyển model dự phòng'); }
   else thieu.push('canhBao — nhà chính hết tiền thì tự chuyển dự phòng nhưng KHÔNG ai được báo. Đúng cảnh 06/08/2026');
 
-  if (typeof docKetNoiPos === 'function') { datDocKetNoiPos(docKetNoiPos); daNoi.push('kết nối POS → màn cấu hình team'); }
+  if (typeof docKetNoiPos === 'function') {
+    datDocKetNoiPos(docKetNoiPos);
+    datDocKetNoiPosKN(docKetNoiPos);
+    daNoi.push('kết nối POS → màn cấu hình team · màn kết nối & token');
+  }
   else thieu.push('docKetNoiPos — màn cấu hình team hiện «chưa nối bộ đọc kết nối POS». KHÔNG hiện «không có kết nối», vì hai câu đó dẫn người đọc đi hai hướng khác nhau');
 
   // ── ④ Chắn đăng nhập và chắn vai cho bảng điều phối ──
@@ -117,7 +133,13 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   // là cho `sale` vào màn cấu hình.
   datChanDangNhapTeam(batBuocDangNhap);
   datChanVaiTeam(batBuocVaiHTTP);
-  daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team');
+  // Ba màn quản trị, BA danh sách vai KHÁC NHAU — mỗi màn tự gọi hàm dựng với danh sách của
+  // mình. `ket-noi` chỉ cho `quan-tri` vì kho token là hạ tầng dùng chung cho cả ba team.
+  datChanDangNhapPageBot(batBuocDangNhap);
+  datChanVaiPageBot(batBuocVaiHTTP);
+  datChanDangNhapKetNoi(batBuocDangNhap);
+  datChanVaiKetNoi(batBuocVaiHTTP);
+  daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
   if (express && typeof express.json === 'function') app.use(express.json());
@@ -126,7 +148,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   app.use(chanTeamTrenUrl());     //   ?team_id=<team khác> → 403 + ghi nhật ký
   app.use(taoRouterDieuPhoi());   //   /dieu-phoi · /viec/:id · /api/dieu-phoi/*
   app.use(taoRouterCauHinhTeam()); //  /cau-hinh-team · /api/team/*
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team');
+  app.use(taoRouterPageBot());    //   /page-bot · /api/page-bot/*
+  app.use(taoRouterKetNoi());     //   /ket-noi · /api/ket-noi/*
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };

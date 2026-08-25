@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kết nối &amp; token — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1040px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .than{padding:13px 15px}
+
+  /* dải "toàn hệ" — phải trông KHÁC hẳn mọi màn theo team, vì nó là ngoại lệ */
+  .toanhe{background:#eef4fb;border:1px solid #c9dcf0;color:#1c3d5f;border-radius:var(--r);
+          padding:11px 14px;margin-bottom:14px;line-height:1.55}
+  .toanhe b{display:block;margin-bottom:2px}
+
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
+  .banner.r{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
+  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:11.5px}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  .ten{font-weight:600;overflow-wrap:anywhere}
+  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+  .ma{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
+      background:#f1f4f5;padding:1px 6px;border-radius:5px}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
+  .pill.g{background:var(--okSoft);color:var(--ok)}
+  .pill.o{background:var(--warnSoft);color:var(--warn)}
+  .pill.r{background:var(--badSoft);color:var(--bad)}
+  .pill.m{background:#f1f1f1;color:#777}
+  .pill.p{background:var(--priSoft);color:var(--priDark)}
+
+  /* số thứ tự dự phòng — cái này là NỘI DUNG, không phải trang trí */
+  .bac{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;
+       border-radius:50%;background:var(--priSoft);color:var(--priDark);font-weight:700;font-size:11.5px}
+  .bac.chinh{background:var(--pri);color:#fff}
+
+  .trong{padding:20px 15px;text-align:center;line-height:1.6}
+  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
+  .trong.chua{color:#8a4a06;background:var(--warnSoft)}
+  .trong .di{display:inline-block;margin-top:8px;font-weight:700;color:var(--priDark);background:#fff;
+             border:1px solid var(--line);border-radius:8px;padding:6px 12px;text-decoration:none}
+
+  button{font:inherit}
+  .nut{background:var(--pri);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
+  .nut:hover{background:var(--priDark)}
+  .nut[disabled]{background:#c3cdd0;cursor:not-allowed}
+  .nut.nho{padding:4px 9px;font-size:11.5px;font-weight:600}
+  .nut.xoa{background:transparent;color:var(--bad);border:1px solid #f0c2c2}
+  .nut.xoa:hover{background:var(--badSoft)}
+  .nut.xoa[disabled]{background:transparent;color:#bbb;border-color:var(--line)}
+  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;min-height:64px;resize:vertical}
+
+  .loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:8px;
+       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .loi.hien{display:block}
+  .ok{background:var(--okSoft);color:#14532d;border:1px solid #b7e4c7;border-radius:8px;
+      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .ok.hien{display:block}
+
+  @media (max-width:700px){
+    header{padding:12px 14px} main{padding:12px 14px 48px}
+    .panel h2{padding:10px 12px} .than{padding:11px 12px}
+    table,thead,tbody,th,td,tr{display:block}
+    thead{display:none}
+    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
+    tbody tr:last-child{margin-bottom:0}
+    td{border:none;padding:4px 0}
+    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
+      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kết nối &amp; token</h1>
+  <span class="sub" id="teamHien">…</span>
+  <span class="sp"></span>
+  <a href="/cau-hinh-team">Cấu hình team</a>
+  <a href="/page-bot">Page &amp; Bot</a>
+  <a href="/dieu-phoi">Bảng điều phối →</a>
+</header>
+
+<main>
+  <div class="loi" id="loi"></div>
+  <div class="ok" id="baoOk"></div>
+  <div class="toanhe" id="toanHe"></div>
+  <div id="canhBao"></div>
+
+  <section class="panel">
+    <h2>Kho token Pancake <span class="hint" id="giaiThich"></span></h2>
+    <div id="bangToken"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+    <div class="than" id="themToken" style="border-top:1px solid var(--line)">
+      <div class="phu" style="margin-bottom:6px">Dán token JWT lấy từ Pancake. Hệ thống thử token
+        trước khi nhận, và <b>không cần khởi động lại</b> — page tự dò lại chân ở lượt quét kế tiếp.</div>
+      <textarea id="oToken" placeholder="eyJhbGciOi… (ba phần a.b.c)" spellcheck="false"></textarea>
+      <div style="margin-top:8px"><button class="nut" id="nutThem">Thêm token</button></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Kết nối POS <span class="hint">của team đang mở · khoá API không bao giờ hiện ở đây</span></h2>
+    <div id="bangPos"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ngay = (ms) => (ms ? new Date(ms).toLocaleDateString('vi-VN') : '—');
+const maHoa = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+
+let CUA = { mo: false, thieu: [] };
+
+function baoLoi(t){ const o = $('#loi'); o.textContent = t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
+function baoOk(t){ const o = $('#baoOk'); o.textContent = t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
+function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
+
+async function goi(duong, tuyChon){
+  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
+  let d = null;
+  try { d = await r.json(); } catch { /* null */ }
+  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
+  return d;
+}
+
+function veTrong(t){
+  if (!t) return '';
+  const di = t.diTiep ? `<a class="di" href="${esc(t.diTiep.duong || '#')}">${esc(t.diTiep.chu)}</a>` : '';
+  return `<div class="trong chua"><span class="ic">⚠️</span><div>${maHoa(t.noi)}</div>${di}</div>`;
+}
+
+function veKho(d){
+  CUA = d.cua || { mo: false, thieu: [] };
+  $('#toanHe').innerHTML = `<b>Màn này là hạ tầng dùng chung</b>${esc(d.laToanHe).replace(
+    'Kho token này dùng chung cho MỌI team. ', '')}`;
+  $('#giaiThich').textContent = d.giaiThichThuTu || '';
+
+  const kh = (d.canhBao || []).map((c) =>
+    `<div class="banner ${c.muc === 'do' ? 'r' : 'o'}">${esc(c.chu)}</div>`);
+  if (!CUA.mo) {
+    kh.unshift(`<div class="banner o"><b>Cửa ghi đang ĐÓNG — xem được, sửa không được.</b><br>${
+      CUA.thieu.map((x) => '• ' + maHoa(x)).join('<br>')}</div>`);
+  }
+  $('#canhBao').innerHTML = kh.join('');
+
+  if (d.trong) { $('#bangToken').innerHTML = veTrong(d.trong); }
+  else {
+    $('#bangToken').innerHTML = `<table><thead><tr>
+      <th>Thứ tự dự phòng</th><th>Tài khoản</th><th>Nguồn</th><th>Hạn</th><th>Page đang dùng</th><th></th>
+      </tr></thead><tbody>${d.token.map((t) => `
+      <tr>
+        <td data-nhan="Thứ tự dự phòng">
+          <span class="bac ${t.thuTu === 0 ? 'chinh' : ''}">${t.thuTu + 1}</span>
+          ${t.thuTu === 0 ? ' <span class="pill p">token chính</span>' : ''}
+        </td>
+        <td data-nhan="Tài khoản"><div class="ten">${esc(t.ten)}</div>
+          <div class="phu">…<span class="ma">${esc(t.duoi)}</span></div></td>
+        <td data-nhan="Nguồn"><span class="phu">${esc(t.nguon)}</span></td>
+        <td data-nhan="Hạn">
+          <span class="pill ${t.sucKhoe.muc === 'xanh' ? 'g' : t.sucKhoe.muc === 'vang' ? 'o' : t.sucKhoe.muc === 'do' ? 'r' : 'm'}">${esc(t.sucKhoe.chu)}</span>
+          <div class="phu">${ngay(t.het)}</div></td>
+        <td data-nhan="Page đang dùng"><b>${t.soPageDangDung}</b></td>
+        <td data-nhan="">${t.boDuoc
+          ? `<button class="nut nho xoa" data-bo="${t.thuTu}" ${CUA.mo ? '' : 'disabled'}
+               title="${CUA.mo ? 'Bỏ token này' : 'Cửa ghi đang đóng'}">Bỏ</button>`
+          : '<span class="phu">token .env — sửa trong cấu hình máy chủ</span>'}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+
+  $('#nutThem').disabled = !CUA.mo;
+  $('#oToken').disabled = !CUA.mo;
+  document.querySelectorAll('[data-bo]').forEach((b) => b.addEventListener('click', () => bo(b.dataset.bo)));
+}
+
+function vePos(d){
+  if (d.trong) { $('#bangPos').innerHTML = veTrong(d.trong); return; }
+  $('#bangPos').innerHTML = `<table><thead><tr>
+    <th>Thị trường</th><th>Shop POS</th><th>Trạng thái</th></tr></thead><tbody>${d.pos.map((k) => `
+    <tr><td data-nhan="Thị trường"><span class="ten">${esc(k.market)}</span></td>
+      <td data-nhan="Shop POS"><span class="ma">${esc(k.shopId)}</span></td>
+      <td data-nhan="Trạng thái">${k.bat ? '<span class="pill g">đang bật</span>' : '<span class="pill m">đã tắt</span>'}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function bo(thuTu){
+  if (!confirm('Bỏ token này khỏi kho?\n\nCác page đang định tuyến qua nó sẽ tự dò sang token khác.')) return;
+  xoaBao();
+  try { await goi('/api/ket-noi/token/' + encodeURIComponent(thuTu), { method:'DELETE' }); baoOk('Đã bỏ token.'); await nap(); }
+  catch (e) { baoLoi(e.message); }
+}
+
+$('#nutThem').addEventListener('click', async () => {
+  const token = $('#oToken').value.trim();
+  if (!token) return;
+  xoaBao();
+  $('#nutThem').disabled = true;
+  $('#nutThem').textContent = 'Đang thử token…';
+  try {
+    const kq = await goi('/api/ket-noi/token', { method:'POST', body: JSON.stringify({ token }) });
+    $('#oToken').value = '';
+    baoOk(`Đã thêm token của "${kq.ten}" — phủ ${kq.soPage} page. Không cần khởi động lại.`);
+    await nap();
+  } catch (e) { baoLoi(e.message); }
+  finally { $('#nutThem').disabled = !CUA.mo; $('#nutThem').textContent = 'Thêm token'; }
+});
+
+async function nap(){
+  for (const [ten, duong, ve] of [['kho token', '/api/ket-noi/kho-token', veKho], ['kết nối POS', '/api/ket-noi/pos', vePos]]) {
+    try { const d = await goi(duong); if (d) ve(d); }
+    catch (e) { baoLoi(`Khối "${ten}" hỏng: ${e.message}`); }
+  }
+}
+nap();
+</script>
+</body>
+</html>

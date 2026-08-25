@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Page &amp; Bot — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1240px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:13px 15px}
+
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
+  .banner.r{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
+  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:11.5px}
+
+  /* thanh lọc — cuộn ngang RIÊNG nó, không đẩy cả trang */
+  .loc{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch}
+  .loc button{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:20px;
+              padding:5px 11px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer}
+  .loc button.chon{background:var(--priSoft);border-color:var(--pri);color:var(--priDark)}
+  .loc button .n{opacity:.7;font-weight:400}
+  .tim{width:100%;max-width:340px;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;margin-top:4px}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  .ten{font-weight:600;overflow-wrap:anywhere}
+  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
+  .pill.g{background:var(--okSoft);color:var(--ok)}
+  .pill.o{background:var(--warnSoft);color:var(--warn)}
+  .pill.r{background:var(--badSoft);color:var(--bad)}
+  .pill.m{background:#f1f1f1;color:#777}
+
+  /* công tắc */
+  .ct{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+  .ct input{position:absolute;opacity:0;width:0;height:0}
+  .ct .ray{width:38px;height:22px;border-radius:20px;background:#cfd8dc;position:relative;transition:background .15s;flex:none}
+  .ct .ray::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+                  background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .ct input:checked + .ray{background:var(--ok)}
+  .ct input:checked + .ray::after{transform:translateX(16px)}
+  .ct.khoa{cursor:not-allowed;opacity:.45}
+  .ct .nhan{font-size:11.5px;color:var(--muted);font-weight:600}
+
+  .o-mkt{width:100%;max-width:190px;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font:inherit;font-size:12.5px}
+  .o-mkt.trong{border-color:#f0c2a4;background:#fffbf5}
+
+  .trong{padding:20px 15px;text-align:center;line-height:1.6}
+  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
+  .trong.xong{color:var(--ok);background:var(--okSoft)}
+  .trong.chua{color:#8a4a06;background:var(--warnSoft)}
+  .trong.khong_khop{color:var(--muted)}
+  .trong .di{display:inline-block;margin-top:8px;font-weight:700;color:var(--priDark);background:#fff;
+             border:1px solid var(--line);border-radius:8px;padding:6px 12px;text-decoration:none}
+
+  .trang{display:flex;gap:8px;align-items:center;justify-content:center;padding:11px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+  .trang button{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 11px;font:inherit;font-weight:600;cursor:pointer}
+  .trang button[disabled]{opacity:.4;cursor:not-allowed}
+
+  .loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:8px;
+       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .loi.hien{display:block}
+  .ok{background:var(--okSoft);color:#14532d;border:1px solid #b7e4c7;border-radius:8px;
+      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .ok.hien{display:block}
+
+  @media (max-width:700px){
+    header{padding:12px 14px} main{padding:12px 14px 48px}
+    .panel h2{padding:10px 12px} .than{padding:11px 12px}
+    table,thead,tbody,th,td,tr{display:block}
+    thead{display:none}
+    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
+    tbody tr:last-child{margin-bottom:0}
+    td{border:none;padding:4px 0}
+    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
+      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
+    .o-mkt{max-width:100%}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Page &amp; Bot</h1>
+  <span class="sub" id="teamHien">…</span>
+  <span class="sp"></span>
+  <a href="/cau-hinh-team">Cấu hình team</a>
+  <a href="/ket-noi">Kết nối &amp; token</a>
+  <a href="/dieu-phoi">Bảng điều phối →</a>
+</header>
+
+<main>
+  <div class="loi" id="loi"></div>
+  <div class="ok" id="baoOk"></div>
+  <div id="canhBao"></div>
+
+  <section class="panel">
+    <h2>Danh sách page <span class="hint" id="tomTat"></span></h2>
+    <div class="than">
+      <div class="loc" id="thanhLoc"></div>
+      <input class="tim" id="oTim" type="search" placeholder="Tìm theo tên page, id Facebook, thị trường, marketer…" />
+    </div>
+    <div id="bang"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+    <div class="trang" id="phanTrang"></div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const so = (n) => Number(n || 0).toLocaleString('vi-VN');
+
+let TRANG = 0, LOC = 'tat_ca', TIM = '', SUA = false, CUA = { mo: false, thieu: [] };
+
+function baoLoi(t){ const o = $('#loi'); o.textContent = t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
+function baoOk(t){ const o = $('#baoOk'); o.textContent = t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
+function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
+
+async function goi(duong, tuyChon){
+  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
+  let d = null;
+  try { d = await r.json(); } catch { /* null */ }
+  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
+  return d;
+}
+
+function veTrong(t){
+  if (!t) return '';
+  const lop = t.vi === 'chua_cai_dat' ? 'chua' : t.vi === 'xong' ? 'xong' : 'khong_khop';
+  const ic = t.vi === 'chua_cai_dat' ? '⚠️' : t.vi === 'xong' ? '✓' : '∅';
+  const di = t.diTiep ? `<a class="di" href="${esc(t.diTiep.duong || '#')}">${esc(t.diTiep.chu)}</a>` : '';
+  return `<div class="trong ${lop}"><span class="ic">${ic}</span><div>${esc(t.noi)}</div>${di}</div>`;
+}
+
+function veCanhBao(d){
+  const kh = [];
+  if (!CUA.mo) {
+    kh.push(`<div class="banner o"><b>Công tắc BOT AI đang khoá.</b> Gạt được thì bot bắt đầu (hoặc ngừng)
+      tự trả lời khách THẬT, nên cửa ghi của v3 mặc định đóng.<br>${CUA.thieu.map((x) =>
+        '• ' + esc(x).replace(/`([^`]+)`/g, '<code>$1</code>')).join('<br>')}</div>`);
+  }
+  if (d.dem && d.dem.thieu_marketer > 0) {
+    kh.push(`<div class="banner ${d.dem.thieu_marketer === d.soTong ? 'r' : 'o'}">
+      <b>${so(d.dem.thieu_marketer)}/${so(d.soTong)} page chưa có marketer.</b>
+      Báo cáo cắt theo marketer sẽ trống với những page đó.</div>`);
+  }
+  $('#canhBao').innerHTML = kh.join('');
+}
+
+function veThanhLoc(d){
+  $('#thanhLoc').innerHTML = Object.entries(d.chuLoc).map(([ma, chu]) =>
+    `<button data-loc="${esc(ma)}" class="${ma === LOC ? 'chon' : ''}">${esc(chu)}
+       <span class="n">${so(ma === 'tat_ca' ? d.soTong : (d.dem[ma] || 0))}</span></button>`).join('');
+  document.querySelectorAll('[data-loc]').forEach((b) => b.addEventListener('click', () => {
+    LOC = b.dataset.loc; TRANG = 0; nap();
+  }));
+}
+
+function veBang(d){
+  $('#tomTat').textContent = d.soKhop === d.soTong
+    ? `${so(d.soTong)} page` : `${so(d.soKhop)}/${so(d.soTong)} page khớp`;
+
+  if (d.trong) { $('#bang').innerHTML = veTrong(d.trong); $('#phanTrang').innerHTML = ''; return; }
+
+  $('#bang').innerHTML = `<table><thead><tr>
+      <th>Page</th><th>Thị trường</th><th>Marketer</th><th>Bot AI</th><th>Trọng điểm</th>
+    </tr></thead><tbody>${d.page.map((p) => `
+    <tr>
+      <td data-nhan="Page">
+        <div class="ten">${esc(p.ten || '(chưa có tên)')}</div>
+        <div class="phu">${esc(p.pageId)}${p.matDau ? ' · <span class="pill r">mất dấu</span>' : ''}</div>
+      </td>
+      <td data-nhan="Thị trường"><span class="phu">${esc(p.thiTruong || '—')}${p.nganhHang ? ' · ' + esc(p.nganhHang) : ''}</span></td>
+      <td data-nhan="Marketer">
+        <input class="o-mkt ${p.marketer ? '' : 'trong'}" data-mkt="${esc(p.id)}" value="${esc(p.marketer)}"
+               placeholder="chưa gán" ${SUA ? '' : 'disabled'} />
+      </td>
+      <td data-nhan="Bot AI">
+        <label class="ct ${(SUA && CUA.mo) ? '' : 'khoa'}">
+          <input type="checkbox" data-bot="${esc(p.id)}" ${p.botAiBat ? 'checked' : ''} ${(SUA && CUA.mo) ? '' : 'disabled'} />
+          <span class="ray"></span>
+          <span class="nhan">${p.botAiBat ? 'BẬT' : 'tắt'}</span>
+        </label>
+      </td>
+      <td data-nhan="Trọng điểm">
+        <label class="ct ${SUA ? '' : 'khoa'}">
+          <input type="checkbox" data-td="${esc(p.id)}" ${p.trongDiem ? 'checked' : ''} ${SUA ? '' : 'disabled'} />
+          <span class="ray"></span>
+        </label>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+
+  $('#phanTrang').innerHTML = d.soTrang > 1 ? `
+    <button id="lui" ${d.trang === 0 ? 'disabled' : ''}>← Trước</button>
+    <span>Trang ${d.trang + 1} / ${d.soTrang}</span>
+    <button id="toi" ${d.trang >= d.soTrang - 1 ? 'disabled' : ''}>Sau →</button>` : '';
+  if (d.soTrang > 1) {
+    $('#lui').addEventListener('click', () => { TRANG = Math.max(0, TRANG - 1); nap(); });
+    $('#toi').addEventListener('click', () => { TRANG = TRANG + 1; nap(); });
+  }
+
+  document.querySelectorAll('[data-bot]').forEach((el) => el.addEventListener('change', () => gatBot(el)));
+  document.querySelectorAll('[data-td]').forEach((el) => el.addEventListener('change', () => gatTrongDiem(el)));
+  document.querySelectorAll('[data-mkt]').forEach((el) => {
+    el.addEventListener('blur', () => luuMarketer(el));
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') el.blur(); });
+  });
+}
+
+async function gatBot(el){
+  const bat = el.checked;
+  const ten = el.closest('tr').querySelector('.ten').textContent.trim();
+  // Hỏi lại: đây là công tắc chạm KHÁCH THẬT, không phải một cờ hiển thị.
+  if (!confirm(`${bat ? 'BẬT' : 'TẮT'} bot AI cho page "${ten}"?\n\n`
+    + (bat ? 'Bot sẽ bắt đầu TỰ TRẢ LỜI khách thật của page này.'
+           : 'Bot sẽ NGỪNG trả lời; khách của page này phải có người trực.'))) {
+    el.checked = !bat; return;
+  }
+  xoaBao(); el.disabled = true;
+  try {
+    const kq = await goi(`/api/page-bot/${encodeURIComponent(el.dataset.bot)}/bot`,
+      { method:'POST', body: JSON.stringify({ bat }) });
+    baoOk(`Đã ${kq.botAiBat ? 'BẬT' : 'TẮT'} bot cho "${ten}".`);
+    await nap();
+  } catch (e) { el.checked = !bat; baoLoi(e.message); }
+  finally { el.disabled = false; }
+}
+
+async function gatTrongDiem(el){
+  xoaBao(); el.disabled = true;
+  try {
+    await goi(`/api/page-bot/${encodeURIComponent(el.dataset.td)}/trong-diem`,
+      { method:'POST', body: JSON.stringify({ bat: el.checked }) });
+    await nap();
+  } catch (e) { el.checked = !el.checked; baoLoi(e.message); }
+  finally { el.disabled = false; }
+}
+
+async function luuMarketer(el){
+  const moi = el.value.trim();
+  if (moi === (el.defaultValue || '').trim()) return;
+  xoaBao();
+  try {
+    const kq = await goi(`/api/page-bot/${encodeURIComponent(el.dataset.mkt)}/marketer`,
+      { method:'POST', body: JSON.stringify({ marketer: moi }) });
+    el.defaultValue = moi;
+    el.classList.toggle('trong', !moi);
+    if (kq.canhBao) baoOk(kq.canhBao);
+    await napNhe();
+  } catch (e) { el.value = el.defaultValue || ''; baoLoi(e.message); }
+}
+
+/** Nạp lại số đếm mà không vẽ lại bảng — để con trỏ không nhảy khỏi ô đang gõ. */
+async function napNhe(){
+  const d = await goi(`/api/page-bot/danh-sach?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}&trang=${TRANG}`);
+  if (!d) return;
+  CUA = d.cuaBot; veCanhBao(d); veThanhLoc(d);
+}
+
+async function nap(){
+  try {
+    const d = await goi(`/api/page-bot/danh-sach?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}&trang=${TRANG}`);
+    if (!d) return;
+    SUA = d.suaDuoc; CUA = d.cuaBot; TRANG = d.trang;
+    veCanhBao(d); veThanhLoc(d); veBang(d);
+  } catch (e) { baoLoi(e.message); }
+}
+
+let hen = null;
+$('#oTim').addEventListener('input', (e) => {
+  clearTimeout(hen);
+  hen = setTimeout(() => { TIM = e.target.value.trim(); TRANG = 0; nap(); }, 250);
+});
+
+nap();
+</script>
+</body>
+</html>

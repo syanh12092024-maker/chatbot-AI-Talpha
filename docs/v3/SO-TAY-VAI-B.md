@@ -116,6 +116,24 @@ có ghi nhật ký, cấm sửa/xoá `nhat_ky` và `so_ai`, cấm xoá mọi b�
    theo chiều khắt khe — không cho bản hỏng đi lọt, nhưng vẫn phải sửa: **bản giả khắt khe
    sai chỗ thì người ta sẽ sửa CODE cho vừa bản giả**, và đó mới là chỗ hỏng thật.
 
+### Giai đoạn 2 · sóng 0 · G2-B2 «Page & Bot» và G2-B4 «Kết nối & token» — 25/08/2026
+
+| # | Quyết gì | Vì sao | Đánh đổi |
+|---|---|---|---|
+| 37 | **Công tắc bot AI KHÔNG ghi xuống cột `page.bot_ai_bat`** — gọi sang `/admin/api` của tiến trình bot v1 | Cột đó là BẢN SAO. Nguồn thật là `ai-enabled.json` + `Set` trong RAM tiến trình bot, và `napCongTacAi` chép đè lại **cả hai chiều** mỗi lượt di trú. Ghi cột thì bot không đổi hành vi, rồi di trú xoá dấu vết — một nút bấm báo thành công và không làm gì | v3 phụ thuộc bề mặt HTTP của v1 và cần `ADMIN_USER`/`ADMIN_PASS`. Chấp nhận: bot **là** v1, CSDL v3 mới là bản đọc |
+| 38 | **Đọc lại trạng thái bot trả về rồi mới chép vào cột**, không chép theo tham số gửi đi | Bot không bật được vì cớ nào đó mà cột vẫn ghi «đã bật» là màn hình bắt đầu nói dối có hệ thống. Có bài test cho đúng nhánh này | thêm một vòng đọc |
+| 39 | **Cửa ghi sang bot mặc định ĐÓNG** (`V3_BOT_GHI` + `PANCAKE_READONLY`) | Đúng quy ước của người A cho mọi cửa ghi ra ngoài. Đây là đường chạm KHÁCH THẬT: bật bot cho một page là bot bắt đầu tự trả lời người thật | Muốn dùng thật phải đặt biến môi trường. Cố ý |
+| 40 | **ĐỌC không cần cờ, chỉ GHI mới cần** | Cửa đóng mà giấu luôn dữ liệu thì người ta không biết đang ở trạng thái nào để quyết định. Màn hiện đủ + nói rõ thiếu gì | |
+| 41 | **v3 kiểm team TRƯỚC khi gọi sang v1** | `/admin/api/pages/:id/ai` của v1 không biết team — ai gọi được là bật/tắt được mọi page. Cây cầu cố ý KHÔNG tự kiểm quyền, để không có hai bản luật phân quyền ở hai chỗ | |
+| 42 | **Vẫn cho gán marketer dù di trú sẽ xoá**, kèm cảnh báo hiện trên màn + `PHIEU-B-Y4` | Gán marketer là lý do màn này tồn tại (514/514 page chưa có). Chặn lại thì màn gần như vô dụng; ghi mà im lặng thì công sức bay mất không ai biết. Chọn: ghi + nói to | Trước khi A làm Y4, chạy `npm run di-tru` là mất phần đã gán. Người dùng **được báo trước** |
+| 43 | **`ket-noi` chỉ cho `quan-tri`**, hẹp hơn `cau-hinh-team` và `page-bot` (cho cả `quan-ly`) | Kho token là hạ tầng dùng chung cả ba team; một danh sách token, kể cả chỉ có tên và tám ký tự cuối, vẫn là bản đồ hạ tầng | Quản lý muốn xem token phải nhờ quản trị |
+| 44 | **Không viết lại kho token, chỉ bọc quyền + nhật ký quanh bản của v1** | `src/pancake.js` đã làm đúng phần khó nhất: thử token sống, xoá chỉ số định tuyến, **không cần khởi động lại**. Viết lại là đẻ bản thứ hai của một thứ đang chạy đúng, rồi hai bản lệch nhau | v3 không kiểm soát được hành vi kho token; muốn đổi phải sửa `src/` — đất người khác |
+
+**Một chỗ bản cài giả suýt lừa lần nữa:** bài test `canhBaoKhoToken` lần đầu đưa **bản THÔ của
+v1** (`pagesRouted`) vào hàm ăn **bản đã ánh xạ** (`soPageDangDung`). `undefined === 0` là sai,
+nên cảnh báo «token chính không phủ page nào» im lặng không bắn mà bài test vẫn suýt xanh. Nay
+có hai helper tách bạch (`tok` / `tokAx`) kèm chú thích lý do.
+
 ---
 
 ## Sửa theo lược đồ thật — 23–24/08/2026

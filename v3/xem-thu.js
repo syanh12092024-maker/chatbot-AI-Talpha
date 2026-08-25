@@ -95,6 +95,14 @@ const { taoTruyVan } = dungCongGia({
       marketer: '', bot_ai_bat: true, trong_diem: false, botcake_tat: false },
     { id: '3', team_id: '1', page_id: '1100863943120879', ten: 'Mint Breeze KSA',
       marketer: '', bot_ai_bat: false, trong_diem: false, botcake_tat: false },
+    // Thêm cho màn «Page & Bot»: đủ thị trường khác nhau, một page có marketer, một page
+    // mất dấu — để thấy bộ lọc và các nhãn hoạt động, và để phân trang có cái mà cắt.
+    { id: '4', team_id: '1', page_id: '1100863943120880', ten: 'Desert Rose UAE',
+      thi_truong: 'UAE', nganh_hang: 'Mỹ phẩm', marketer: 'Ngọc',
+      bot_ai_bat: false, trong_diem: true, botcake_tat: false, mat_dau: false },
+    { id: '5', team_id: '1', page_id: '1100863943120881', ten: 'Pearl Oman',
+      thi_truong: 'Oman', nganh_hang: 'Gia dụng', marketer: '',
+      bot_ai_bat: false, trong_diem: false, botcake_tat: false, mat_dau: true },
   ],
   khach: [
     { id: '1', team_id: '1', ten: 'Aisha Al Balushi', so_dien_thoai: '+96891234567', ti_le_hoan: 8.5 },

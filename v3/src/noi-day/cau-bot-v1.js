@@ -1,0 +1,178 @@
+// CÂY CẦU SANG TIẾN TRÌNH BOT v1 — cho hai màn G2-B2 (Page & Bot) và G2-B4 (Kết nối & token).
+//
+// ─── VÌ SAO PHẢI CÓ CÂY CẦU, KHÔNG GHI THẲNG XUỐNG CSDL ────────────────────────────────
+//
+// Hai thứ mà hai màn đó điều khiển KHÔNG nằm trong cơ sở dữ liệu v3:
+//
+//   ① CÔNG TẮC BOT AI. Nguồn thật là `ai-enabled.json` + một `Set` trong RAM của tiến trình
+//      bot (`src/store.js`). Cột `page.bot_ai_bat` của v3 chỉ là BẢN SAO, và
+//      `db/di-tru/nap.js#napCongTacAi` chép lại nó từ file mỗi lượt di trú — **cả hai chiều**
+//      («bật đúng tập đó, TẮT mọi page ngoài tập»). Ghi thẳng vào cột ⇒ bot KHÔNG đổi hành
+//      vi, rồi lượt di trú kế tiếp xoá luôn dấu vết. Màn hình báo «đã bật» mà không có gì
+//      xảy ra — đúng họ lỗi im lặng của `suaTheoId` bỏ rơi `team_id` (xem `PHIEU-B-Y3`).
+//
+//   ② KHO TOKEN PANCAKE. Nguồn thật là `.env` + `pancake-tokens.json`, nạp vào biến
+//      `_fileToks` trong RAM của tiến trình bot (`src/pancake.js`). v3 chạy ở TIẾN TRÌNH
+//      KHÁC (`aicloser-v3`, cổng 3102). Ghi file từ đây thì bot vẫn dùng bản trong RAM cũ
+//      cho tới khi khởi động lại — mà tiêu chí nghiệm thu sóng 0 đòi đúng điều ngược lại:
+//      «thêm token mới → page nhận được trong một lượt quét, KHÔNG restart».
+//
+// ⇒ Cửa đúng là HTTP `/admin/api` của chính tiến trình bot. Nó đã có sẵn, đã chạy thật, và
+//    nó là nơi DUY NHẤT vừa đổi được RAM vừa lưu được file trong cùng một lượt.
+//
+// **KHÔNG sửa một dòng nào của `src/`.** File này chỉ gọi HTTP.
+//
+// ─── PHÂN VAI: v3 giữ QUYỀN, v1 giữ CÔNG TẮC ───────────────────────────────────────────
+// `/admin/api/pages/:id/ai` của v1 KHÔNG biết team là gì — ai gọi được là bật/tắt được mọi
+// page. Nên lớp v3 phải kiểm team và ghi nhật ký TRƯỚC khi gọi qua đây; cây cầu này cố ý
+// KHÔNG tự kiểm quyền, để không có hai bản luật phân quyền ở hai chỗ.
+//
+// ─── CỬA GHI MẶC ĐỊNH ĐÓNG ──────────────────────────────────────────────────────────────
+// Cùng quy ước với `V3_PANCAKE_GUI` / `V3_WA_GUI` / `V3_POS_GHI` của người A: hai điều kiện,
+// thiếu một là đóng. Đây là đường chạm KHÁCH THẬT — bật bot cho một page là bot bắt đầu tự
+// trả lời người thật — nên mặc định phải là KHÔNG.
+//
+//   V3_BOT_GHI === '1'   VÀ   PANCAKE_READONLY !== '1'
+//
+// ĐỌC thì không cần cờ: xem danh sách token và trạng thái công tắc không đổi gì cả, mà biết
+// trạng thái lại đúng là thứ giúp người ta quyết định. Màn hình hiện đủ, và nói rõ cửa ghi
+// đang đóng — thay vì hiện một màn trống rồi để người ta đoán.
+
+export const BIEN_CO_GHI = 'V3_BOT_GHI';
+export const BIEN_CHAN_DOC = 'PANCAKE_READONLY';
+export const BIEN_GOC = 'V3_BOT_V1_GOC';
+
+export class LoiCauBotDong extends Error {
+  constructor(lyDo) {
+    super(lyDo);
+    this.name = 'LoiCauBotDong';
+    this.ma = 'cua_ghi_dong';
+    this.status = 409;
+  }
+}
+
+export class LoiCauBotHong extends Error {
+  constructor(thongDiep, status = 502) {
+    super(thongDiep);
+    this.name = 'LoiCauBotHong';
+    this.ma = 'cau_bot_hong';
+    this.status = status;
+  }
+}
+
+const env = (t) => process.env[t] || '';
+
+/** Gốc của tiến trình bot v1. Mặc định cùng máy, cổng `PORT` của bot. */
+export function gocBot() {
+  if (env(BIEN_GOC)) return env(BIEN_GOC).replace(/\/+$/, '');
+  const cong = env('PORT') || '3100';
+  return `http://127.0.0.1:${cong}`;
+}
+
+/** Có đủ tài khoản gọi `/admin/api` không (Basic auth của `src/server.js`). */
+export const coTaiKhoan = () => !!(env('ADMIN_USER') && env('ADMIN_PASS'));
+
+/**
+ * Cửa ghi mở hay đóng, và VÌ SAO đóng — trả về câu người đọc được, không phải một cờ trần.
+ * Màn hình hiện thẳng câu này; «không bật được» mà không nói vì sao thì người ta đi hỏi vòng.
+ */
+export function trangThaiCau() {
+  const thieu = [];
+  if (env(BIEN_CO_GHI) !== '1') {
+    thieu.push('`' + BIEN_CO_GHI + '` chưa đặt bằng `1` — cửa ghi của v3 mặc định ĐÓNG, đây là '
+      + 'đường chạm khách thật (bật bot cho một page là bot bắt đầu tự trả lời người thật)');
+  }
+  if (env(BIEN_CHAN_DOC) === '1') {
+    thieu.push('`' + BIEN_CHAN_DOC + '=1` đang bật — máy này ở chế độ CHỈ ĐỌC với Pancake');
+  }
+  if (!coTaiKhoan()) {
+    thieu.push('thiếu `ADMIN_USER`/`ADMIN_PASS` — không gọi được `/admin/api` của tiến trình bot');
+  }
+  return { mo: thieu.length === 0, thieu, goc: gocBot() };
+}
+
+function batBuocMo() {
+  const t = trangThaiCau();
+  if (!t.mo) throw new LoiCauBotDong('Cửa ghi sang tiến trình bot đang ĐÓNG: ' + t.thieu.join(' · '));
+}
+
+function tieuDe() {
+  const co = Buffer.from(env('ADMIN_USER') + ':' + env('ADMIN_PASS')).toString('base64');
+  return { Authorization: 'Basic ' + co, 'Content-Type': 'application/json', Accept: 'application/json' };
+}
+
+/**
+ * Gọi một đường của `/admin/api`.
+ * `ghi` = true thì kiểm cửa trước. Đọc thì chỉ cần tài khoản.
+ */
+async function goi(duong, { phuongThuc = 'GET', than = null, ghi = false, hetGio = 8000 } = {}) {
+  if (ghi) batBuocMo();
+  else if (!coTaiKhoan()) {
+    throw new LoiCauBotDong('thiếu `ADMIN_USER`/`ADMIN_PASS` — không đọc được trạng thái từ tiến trình bot');
+  }
+  const bo = AbortSignal.timeout ? AbortSignal.timeout(hetGio) : undefined;
+  let res;
+  try {
+    res = await fetch(gocBot() + '/admin/api' + duong, {
+      method: phuongThuc,
+      headers: tieuDe(),
+      body: than == null ? undefined : JSON.stringify(than),
+      signal: bo,
+    });
+  } catch (e) {
+    // Bot không chạy là một sự thật đáng nói, không phải một lỗi 500 vô danh: nó nghĩa là
+    // công tắc bot đang KHÔNG ai điều khiển được, kể cả bằng dashboard cũ.
+    throw new LoiCauBotHong('Không gọi được tiến trình bot ở ' + gocBot()
+      + ' — bot có đang chạy không? (' + (e && e.message ? e.message : e) + ')');
+  }
+  if (res.status === 401) {
+    throw new LoiCauBotHong('Tiến trình bot từ chối đăng nhập — `ADMIN_USER`/`ADMIN_PASS` sai.', 502);
+  }
+  let d = null;
+  try { d = await res.json(); } catch { d = null; }
+  if (!res.ok) {
+    throw new LoiCauBotHong('Tiến trình bot trả ' + res.status + ': '
+      + ((d && (d.error || d.thongDiep)) || 'không rõ lý do'), 502);
+  }
+  return d;
+}
+
+/* ────────────────────────────── công tắc BOT AI (G2-B2) ────────────────────────────── */
+
+/**
+ * Bật/tắt bot AI cho MỘT page, bằng id Facebook (`page.page_id`, không phải `page.id`).
+ * Trả về trạng thái SAU khi đổi, đọc từ chính tiến trình bot — không đoán theo tham số gửi đi.
+ */
+export async function datBotAi(pageIdFacebook, bat) {
+  const d = await goi('/pages/' + encodeURIComponent(String(pageIdFacebook)) + '/ai',
+    { phuongThuc: 'POST', than: { on: !!bat }, ghi: true });
+  return { pageId: String(pageIdFacebook), batSauKhiDoi: !!(d && d.aiEnabled) };
+}
+
+/* ────────────────────────────── kho token Pancake (G2-B4) ────────────────────────────── */
+
+/**
+ * Danh sách token theo ĐÚNG THỨ TỰ DỰ PHÒNG: chính (.env) → phụ (.env) → thêm từ dashboard.
+ * v1 chỉ trả về **tám ký tự cuối** của mỗi token, không trả token đầy đủ — giữ nguyên như vậy.
+ */
+export async function danhSachToken() {
+  const ds = await goi('/pancake-tokens');
+  return (Array.isArray(ds) ? ds : []).map((t, i) => ({
+    thuTu: i,
+    ten: t.name,
+    het: t.exp || 0,
+    daHet: !!t.expired,
+    nguon: t.source,
+    boDuoc: !!t.removable,
+    soPageDangDung: t.pagesRouted || 0,
+    duoi: t.tail,
+  }));
+}
+
+export async function themToken(token) {
+  return goi('/pancake-tokens', { phuongThuc: 'POST', than: { token }, ghi: true, hetGio: 20000 });
+}
+
+export async function boToken(thuTu) {
+  return goi('/pancake-tokens/' + encodeURIComponent(String(thuTu)), { phuongThuc: 'DELETE', ghi: true });
+}

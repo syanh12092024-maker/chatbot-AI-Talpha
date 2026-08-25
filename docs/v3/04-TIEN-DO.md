@@ -9,10 +9,10 @@
 | | |
 |---|---|
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
-| Luồng đang làm | **G2-B1 «Cấu hình team» — ba lát xong, lát thứ tư chờ `PHIEU-B-Y3`** |
+| Luồng đang làm | **Sóng 0: G2-B1 · G2-B2 · G2-B4 xong. G2-B3 chờ một câu chốt** |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **339 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **375 xanh** (316 trước giai đoạn 2) |
 
 ---
 
@@ -48,6 +48,50 @@
 thật chỉ có một tài khoản `chu@talpha.vn` và thợ không giữ mật khẩu của nó. Đã thay bằng
 phép chạy tầng đọc thẳng trên Postgres thật ở bảng trên. Chủ dự án mở
 `http://169.58.33.8:3102/cau-hinh-team` là xem được ngay.
+
+### G2-B2 · Page & Bot — xong (25/08/2026)
+
+Đường `/page-bot` · vào: `quan-tri` + `quan-ly` · sửa: `quan-tri`. Lọc 7 nhóm, tìm, phân trang
+50 dòng/trang (514 page của `tieu-alpha` là 11 trang).
+
+**Chỗ chặn tìm được trước khi viết code — BA CỘT, BA CHỦ SỞ HỮU:**
+
+| Cột | Nguồn thật | Màn này làm gì |
+|---|---|---|
+| `bot_ai_bat` | `ai-enabled.json` + RAM tiến trình bot | **KHÔNG ghi cột.** Gọi sang `/admin/api` của bot, rồi chép kết quả THẬT về cột |
+| `marketer` | CSDL v3 — nhưng di trú ghi đè từ `pages.json` (nguồn rỗng ⇒ **xoá trắng**) | ghi được, kèm cảnh báo hiện trên màn → **`PHIEU-B-Y4`** |
+| `trong_diem` | CSDL v3 sở hữu trọn | ghi thẳng, an toàn |
+
+Ghi thẳng `bot_ai_bat` xuống cột thì **bot không đổi hành vi** và lượt di trú kế tiếp xoá dấu
+vết — nút bấm báo thành công mà không làm gì. Cùng họ lỗi với `suaTheoId` bỏ rơi `team_id`.
+
+### G2-B4 · Kết nối & token — xong (25/08/2026)
+
+Đường `/ket-noi` · **chỉ `quan-tri`** (hẹp hơn hai màn kia). Kho token, thứ tự dự phòng, sức
+khoẻ từng token, 5 cảnh báo suy từ cả kho, kết nối POS theo team.
+
+**Màn này MỎNG có chủ ý.** Kho token đã chạy đúng trong tiến trình bot (`src/pancake.js`) —
+kể cả phần khó nhất là thêm token **không cần khởi động lại**, đúng tiêu chí nghiệm thu sóng 0.
+v3 không viết lại; v3 bọc quanh nó **lớp vai** và **nhật ký** — hai thứ dashboard cũ không có.
+
+⚠️ **Toàn hệ, không theo team.** Kho token dùng chung cho cả ba team. Màn nói thẳng điều đó
+bằng chữ, vì mọi màn khác của v3 đều theo team nên người dùng có nếp nghĩ «cái tôi thấy là của
+team tôi» — ở đây nếp đó sai.
+
+### Cây cầu sang tiến trình bot — `v3/src/noi-day/cau-bot-v1.js`
+
+Hai màn trên đều phải nói chuyện với **tiến trình bot**, không phải với CSDL, vì công tắc AI
+và kho token đều nằm trong RAM của tiến trình đó. v3 chạy ở tiến trình khác (cổng 3102).
+
+**Cửa ghi MẶC ĐỊNH ĐÓNG**, đúng quy ước `V3_PANCAKE_GUI`/`V3_WA_GUI`/`V3_POS_GHI` của người A:
+
+```
+V3_BOT_GHI === '1'   VÀ   PANCAKE_READONLY !== '1'   VÀ   có ADMIN_USER/ADMIN_PASS
+```
+
+Đọc thì không cần cờ — biết trạng thái mới quyết định được. Cửa đóng thì màn **hiện đủ và nói
+rõ thiếu gì**, không hiện màn trống. Phân vai: **v3 giữ quyền + nhật ký, v1 giữ công tắc** —
+`/admin/api/pages/:id/ai` của v1 không biết team là gì, nên lớp v3 kiểm team **trước** khi gọi.
 
 ### Ba chỗ chặn tìm được TRƯỚC khi viết code, và đã xử
 
