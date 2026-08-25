@@ -12,7 +12,7 @@
 | Luồng đang làm | **Sóng 0: G2-B1 · G2-B2 · G2-B4 xong. G2-B3 chờ một câu chốt** |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **375 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **377 xanh** (316 trước giai đoạn 2) |
 
 ---
 
@@ -92,6 +92,26 @@ V3_BOT_GHI === '1'   VÀ   PANCAKE_READONLY !== '1'   VÀ   có ADMIN_USER/ADMIN
 Đọc thì không cần cờ — biết trạng thái mới quyết định được. Cửa đóng thì màn **hiện đủ và nói
 rõ thiếu gì**, không hiện màn trống. Phân vai: **v3 giữ quyền + nhật ký, v1 giữ công tắc** —
 `/admin/api/pages/:id/ai` của v1 không biết team là gì, nên lớp v3 kiểm team **trước** khi gọi.
+
+### Đo thật hai màn mới — 25/08, và một lỗi CHỈ dữ liệu thật mới lộ
+
+Chạy tầng đọc của G2-B2 và G2-B4 thẳng trên `aicloser_v3` + tiến trình bot thật:
+
+```
+G2-B2 · 514 page · 11 trang · bot_bat=50 · thieu_marketer=514 · mat_dau=120
+G2-B4 · 6 token · cửa ghi ĐÓNG (V3_BOT_GHI chưa đặt) · không lộ token đầy đủ
+        kết nối POS: Bahrain, Kuwait, Oman, Qatar, Saudi, Taiwan, UAE
+        nhat_ky sau lượt đo: 0 (phép đo chỉ đọc)
+```
+
+🚩 **Số thật lộ ra chỗ 375 bài test không bắt được:** token **CHÍNH** phủ **16** page, trong
+khi token **PHỤ** thứ hai phủ **109**. Thứ tự dự phòng đang ngược hẳn — mà cảnh báo im, vì
+bản đầu chỉ bắn khi token chính phủ **đúng 0**. Mọi ca tôi tự nghĩ ra đều là 0-hoặc-nhiều;
+không ai nghĩ ra ca 16-so-với-109. Đã nới luật (so với token phủ nhiều nhất) và thêm bài test
+dùng thẳng sáu con số đo được. **Đây đúng là lý do tiêu chí giai đoạn 2 bắt xem trên dữ liệu thật.**
+
+⚠️ **Việc cho chủ dự án:** đổi thứ tự token trong `.env` để token phủ 109 page lên đầu —
+tiết kiệm một vòng gọi hỏng cho 93 page mỗi lượt quét. Màn `/ket-noi` nay hiện cảnh báo này.
 
 ### Ba chỗ chặn tìm được TRƯỚC khi viết code, và đã xử
 
