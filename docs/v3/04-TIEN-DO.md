@@ -9,12 +9,47 @@
 | | |
 |---|---|
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
-| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 xong 3/5** (10 màn). Hai màn cuối sóng 2 chờ `PHIEU-B-Y6` |
+| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 3/5 · SÓNG 3 2/5** (12 màn). Ba màn số liệu chờ `so_ai` có dữ liệu |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **476 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **505 xanh** (316 trước giai đoạn 2) |
 
 ---
+
+## Giai đoạn 2 · sóng 3 — SỐ LIỆU (2/5 màn, 25/08)
+
+| Màn | Đường | Trạng thái |
+|---|---|---|
+| **Sức khoẻ hệ thống** | `/suc-khoe` | xong — chín đèn, tự nạp lại mỗi phút |
+| **Nhật ký thao tác** | `/nhat-ky` | xong — tách làn người/máy |
+| **Báo cáo** | — | ⏸ chờ dữ liệu: `so_ai` **0 dòng**, `don_hang` **0**, `khach` **0** |
+| **Chi phí AI** | — | ⏸ như trên — mọi con số tính từ `so_ai` |
+| **Hiệu quả kịch bản** | — | ⏸ như trên — A/B không có mẫu nào |
+
+Ba màn cuối **không bị chặn bởi code hay lược đồ** — chúng bị chặn bởi **dữ liệu**. Dựng
+chúng bây giờ là dựng ba màn rỗng, và tiêu chí sóng 3 («mọi con số tra ngược được về đúng
+những dòng Sổ AI đẻ ra nó») không kiểm được trên số không. Đèn `so_ai` của màn Sức khoẻ nói
+thẳng điều đó và chỉ ai phải làm gì.
+
+### Hai luật của màn Sức khoẻ, đáng đọc
+
+**① Đèn KHÔNG ĐO ĐƯỢC phải màu XÁM, không phải xanh.** Tô xanh chỗ mình đang mù là làm người
+ta yên tâm về đúng thứ không ai biết. Mức tổng thể cũng vậy: không đèn nào đỏ mà có đèn xám
+thì tổng thể là **XÁM**, không phải xanh.
+
+**② Đèn ĐỎ hoặc VÀNG mà không chỉ đường đi tiếp thì `den()` NÉM ngay lúc dựng.** Báo động rồi
+bỏ mặc người ta là cách nhanh nhất để họ học cách bỏ qua đèn. Đèn xanh thì không cần — không
+có gì để đi sửa, và bắt nó dài dòng chỉ làm bảng ồn.
+
+### Màn Nhật ký làm lộ ra chính vấn đề của `PHIEU-B-Y5`
+
+Đo 25/08: **1.043 dòng `nhat_ky`, và 1.043 dòng trong đó là `doc`** — 100% cuốn sổ là dấu vết
+tầng truy vấn ĐỌC dữ liệu qua `ctxHeThong()`, không phải việc ai làm gì. Một lượt chạy hàng
+loạt đẻ **1.031 dòng `ky_nang` trong 110 phút** rồi dừng (không phải rò rỉ đang chạy).
+
+Màn tách hai làn và **mặc định mở ở làn NGƯỜI**. Nhưng đó là chữa **triệu chứng**: bảng vẫn
+phình, `nhat_ky` cấm xoá ở tầng CSDL, và ai truy vấn thẳng CSDL vẫn gặp đúng đống đó. Thuốc
+thật vẫn là `PHIEU-B-Y5`.
 
 ## Giai đoạn 2 · sóng 2 — KỊCH BẢN VÀ NỘI DUNG (3/5 màn, 25/08)
 

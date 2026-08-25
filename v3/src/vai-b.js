@@ -21,7 +21,8 @@ import {
   datCongDanhTinh, datPheuNhatKy as datPheuNhatKyAuth, taoRouterAuth,
   lopBoiCanh, batBuocDangNhap, batBuocVaiHTTP, chanTeamTrenUrl,
 } from './auth/index.js';
-import { datTaoTruyVan as datTruyVanNhatKy, datPheuNhatKy as datPheuRaNgoai, ghiNhatKy } from './audit/index.js';
+import { datTaoTruyVan as datTruyVanNhatKy, datPheuNhatKy as datPheuRaNgoai, ghiNhatKy, docNhatKy } from './audit/index.js';
+import { moTa as moTaHanhDong, NHOM as NHOM_HANH_DONG } from './audit/hanh-dong.js';
 import {
   datTaoTruyVan as datTruyVanModel, datPheuSoAi, datPheuNhatKy as datPheuNhatKyModel,
   datPheuCanhBao, datKhoKhoa,
@@ -41,6 +42,8 @@ import {
   datChanDangNhap as datChanDangNhapPageBot, datChanVai as datChanVaiPageBot,
   taoRouterPageBot,
 } from './ui/page-bot/index.js';
+import { khoToken } from './ui/ket-noi/index.js';
+import { trangThaiCau as trangThaiCauBot } from './noi-day/cau-bot-v1.js';
 import {
   datDocKetNoiPos as datDocKetNoiPosKN, datPheuNhatKy as datPheuNhatKyKetNoi,
   datChanDangNhap as datChanDangNhapKetNoi, datChanVai as datChanVaiKetNoi,
@@ -62,6 +65,14 @@ import {
   datTaoTruyVan as datTruyVanPrompt, datDocKhoi,
   datChanDangNhap as datChanDangNhapPrompt, datChanVai as datChanVaiPrompt, taoRouterPromptPage,
 } from './ui/prompt-page/index.js';
+import {
+  datDocNhatKy, datDanhMuc,
+  datChanDangNhap as datChanDangNhapNhatKy, datChanVai as datChanVaiNhatKy, taoRouterNhatKy,
+} from './ui/nhat-ky/index.js';
+import {
+  datTaoTruyVan as datTruyVanSucKhoe, datDocKhoToken, datTrangThaiCauBot,
+  datChanDangNhap as datChanDangNhapSucKhoe, datChanVai as datChanVaiSucKhoe, taoRouterSucKhoe,
+} from './ui/suc-khoe/index.js';
 import {
   datTaoTruyVan as datTruyVanKichBan, datPheuNhatKy as datPheuNhatKyKichBan,
   datDungBanMay, datDayLenBot, datBocPancake,
@@ -137,6 +148,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datTruyVanKyNang(taoTruyVan);
   datTruyVanPrompt(taoTruyVan);
   datTruyVanKichBan(taoTruyVan);
+  datTruyVanSucKhoe(taoTruyVan);
   daNoi.push('cổng dữ liệu → nhật ký · lớp model · bảng điều phối · kho người dùng · cấu hình team · page & bot');
 
   // ── ② Nhật ký: ba module ghi, một chỗ nhận ──
@@ -163,6 +175,17 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
 
   if (typeof canhBao === 'function') { datPheuCanhBao(canhBao); daNoi.push('cảnh báo ← chuyển model dự phòng'); }
   else thieu.push('canhBao — nhà chính hết tiền thì tự chuyển dự phòng nhưng KHÔNG ai được báo. Đúng cảnh 06/08/2026');
+
+  // Hai đèn của màn Sức khoẻ cần nguồn ngoài. Nối THẲNG từ hai module đã có, không bắt
+  // người dựng ứng dụng truyền thêm — chúng vốn đã ở trong cùng gói này.
+  datDocKhoToken(khoToken);
+  datTrangThaiCauBot(trangThaiCauBot);
+  daNoi.push('kho token + cầu bot → màn Sức khoẻ hệ thống');
+
+  // Màn Nhật ký đọc qua chính bộ đọc của L0-M4 — không dựng đường đọc thứ hai.
+  datDocNhatKy(docNhatKy);
+  datDanhMuc({ moTa: moTaHanhDong, nhom: NHOM_HANH_DONG });
+  daNoi.push('bộ đọc nhật ký + danh mục mã → màn Nhật ký thao tác');
 
   if (cuaBoLuat && typeof cuaBoLuat.ap === 'function') { datCuaBoLuat(cuaBoLuat); daNoi.push('cửa ghi có giao dịch → màn Bộ luật chung'); }
   else thieu.push('cuaBoLuat — màn Bộ luật chung TỪ CHỐI ghi. Ghi bằng hai lời gọi rời là bỏ mất giao dịch, khoá chống bấm-cùng-lúc, và luật «đề xuất của AI phải có người duyệt»');
@@ -218,6 +241,10 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiPrompt(batBuocVaiHTTP);
   datChanDangNhapKichBan(batBuocDangNhap);
   datChanVaiKichBan(batBuocVaiHTTP);
+  datChanDangNhapSucKhoe(batBuocDangNhap);
+  datChanVaiSucKhoe(batBuocVaiHTTP);
+  datChanDangNhapNhatKy(batBuocDangNhap);
+  datChanVaiNhatKy(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -234,7 +261,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterKyNang());     //   /ky-nang · /api/ky-nang/*
   app.use(taoRouterPromptPage()); //   /prompt-page · /api/prompt-page/*
   app.use(taoRouterKichBan());    //   /kich-ban · /api/kich-ban/*
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản');
+  app.use(taoRouterSucKhoe());    //   /suc-khoe · /api/suc-khoe
+  app.use(taoRouterNhatKy());     //   /nhat-ky · /api/nhat-ky
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };
