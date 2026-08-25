@@ -193,6 +193,65 @@ export async function sanSangToanHe() {
   };
 }
 
+/* ─────────────────────────── kho sản phẩm (G2-F6, G2-F7) ─────────────────────────── */
+
+/**
+ * Danh sách page kèm SỐ sản phẩm — một lời gọi cho toàn hệ.
+ *
+ * ⚠️ Nguồn sản phẩm là Google Sheet mà tiến trình bot đọc, **không phải bảng `san_pham`**
+ *    của CSDL v3. Bảng đó có 0 dòng (đo 25/08) vì chưa ai chạy nạp từ POS. Đọc bảng rồi
+ *    kết luận «chưa có sản phẩm» là đúng cái lỗi đã mắc với cột `page.bot_ai_bat`: nhìn
+ *    bản sao rỗng rồi tin, trong khi nguồn thật có 71 sản phẩm trên 69 page.
+ *
+ * ⚠️ TOÀN HỆ, KHÔNG THEO TEAM — nơi gọi phải lọc lại theo page của team mình.
+ */
+export async function danhSachPageKemSanPham() {
+  const d = await goi('/pages', { hetGio: 20000 });
+  const ds = Array.isArray(d) ? d : (d && Array.isArray(d.pages) ? d.pages : []);
+  return ds.map((p) => ({
+    pageId: String(p.id),
+    ten: p.name || '',
+    soSanPham: Number(p.products || 0),
+    coKichBan: !!p.hasKb,
+    thiTruong: p.market || '',
+    nganhHang: p.category || '',
+    marketer: (p.marketer || '').trim(),
+    botBat: !!p.aiEnabled,
+  }));
+}
+
+/**
+ * Sản phẩm của MỘT page: mã, tên, bậc giá, tiền tệ, ảnh.
+ *
+ * ⚠️ 96% SẢN PHẨM KHÔNG CÓ TÊN (đo 25/08: 68/71). `01-QUYET-DINH.md` mục 12 đã cảnh báo:
+ *    *«Tên sản phẩm trống trong dữ liệu — chỉ có bảng giá và ảnh. Phải lấy tên và mã từ
+ *    POS.»* Hàm này KHÔNG bịa tên thay thế — trả đúng chuỗi rỗng để màn hiện ra được rằng
+ *    bot đang bán một món nó không gọi được tên.
+ */
+export async function sanPhamCuaPage(pageIdFacebook) {
+  const d = await goi('/kb/' + encodeURIComponent(String(pageIdFacebook)), { hetGio: 15000 });
+  const ds = Array.isArray(d && d.products) ? d.products : [];
+  return {
+    pageId: String(pageIdFacebook),
+    tenPage: (d && d.pageName) || '',
+    sanPham: ds.map((s) => ({
+      ma: String(s.id || ''),
+      ten: String(s.name || '').trim(),
+      moTa: String(s.desc || '').trim(),
+      bienThe: String(s.variant || '').trim(),
+      tienTe: String(s.currency || '').trim(),
+      giaDau: s.price1 == null ? null : Number(s.price1),
+      bacGia: Array.isArray(s.tiers)
+        ? s.tiers.map((b) => ({ nhan: String(b.label || ''), gia: Number(b.price) }))
+        : [],
+      anh: Array.isArray(s.images)
+        ? s.images.map((a) => ({ duong: String(a.url || ''), nhan: String(a.label || '') }))
+            .filter((a) => a.duong)
+        : [],
+    })),
+  };
+}
+
 /* ────────────────────────────── kho token Pancake (G2-B4) ────────────────────────────── */
 
 /**
