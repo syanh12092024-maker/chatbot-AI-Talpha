@@ -169,13 +169,21 @@ export async function datBotAi(pageIdFacebook, bat) {
  *    lọc lại theo danh sách page của team mình trước khi trả ra trình duyệt. Ai quên bước đó
  *    là để team này đọc được tình trạng page của team kia.
  *
+ * ⚠️ HẾT-GIỜ RIÊNG 25 GIÂY, không dùng 8 giây mặc định. Đo trên máy chủ 25/08: đường này mất
+ *    **10,6 – 13,2 giây** và trả về 300 KB cho 676 page — `allReadiness()` đọc sổ đăng ký, số
+ *    liệu và kho phiên bản kịch bản cho TỪNG page. Để 8 giây thì màn luôn báo «bot có đang
+ *    chạy không?» trong khi bot vẫn khoẻ, và người ta đi tìm một lỗi không có.
+ *
+ *    Chỉ nới cho đường NÀY. Đường gạt công tắc vẫn 8 giây — ở đó chờ lâu nghĩa là bot treo
+ *    thật, và biết sớm quan trọng hơn.
+ *
  * ⚠️ `aiEnabled` ở đây đọc từ **RAM của tiến trình bot** (`store.js#isAiEnabled`), tức là
  *    SỰ THẬT về việc bot có đang trả lời page đó không. Cột `page.bot_ai_bat` trong CSDL v3
  *    chỉ là bản sao, và đã có lần lệch — xem `docs/v3/SO-TAY-VAI-B.md`. Khi hai số khác nhau,
  *    con số ĐÚNG là con số ở đây.
  */
 export async function sanSangToanHe() {
-  const d = await goi('/readiness');
+  const d = await goi('/readiness', { hetGio: 25000 });
   const ds = Array.isArray(d && d.pages) ? d.pages : [];
   return {
     pages: ds,
