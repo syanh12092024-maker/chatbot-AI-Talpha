@@ -21,6 +21,8 @@
 //      Không có nó thì mọi mẻ đọc gom id của màn hình phải đọc TRỌN bảng của team rồi
 //      lọc trong JS — `hoi_thoai` hôm nay 28.953 dòng (đo 25/08 trên `aicloser_v3` của
 //      VPS), và đường vòng đó đang nằm thật ở `v3/src/noi-day/cong-du-lieu-that.js`.
+//   4b. `ctxHeThong({ ghiNhatKy: false })` tắt dòng nhật ký của lệnh ĐỌC — và CHỈ của
+//      lệnh đọc. Lệnh GHI luôn để lại dấu vết, không có cờ nào tắt được (B-Y5).
 //   5. `suaTheoId` nhận `{ neu }` (điều kiện thêm) VÀ nhận `ctxHeThong()` (B-Y1 mục 1).
 //      `neu` là cách duy nhất diễn đạt SO-VÀ-ĐẶT qua tầng này. Không có nó thì hai sale
 //      bấm «Nhận việc» cùng lúc CẢ HAI CÙNG THẮNG, và ở dòng `loai='don_hang'` nghĩa là
@@ -249,7 +251,9 @@ export async function layNhieu(pool, ctx, tenBang, tuyChon = {}) {
     `SELECT * FROM ${tenBang} WHERE ${whereSql}${orderSql}`,
     params,
   );
-  if (resolved.laHeThong)
+  // Cờ `ghiNhatKy` của `ctxHeThong` CHỈ có tác dụng ở đây — đường ĐỌC. Đường GHI bên dưới
+  // không đọc cờ này: tắt dấu vết của một lượt GHI là chuyện khác hẳn (B-Y5).
+  if (resolved.laHeThong && ctx?.ghiNhatKy !== false)
     await ghiNhatKyHeThong(pool, resolved.teamId, "doc", tenBang);
   return r.rows;
 }

@@ -244,3 +244,72 @@ test("B16 · giá trị undefined trong dieuKien/neu → Error, không lặng l�
     /undefined/,
   );
 });
+
+// ══════════════════════════════════════════════════════════════════════════════════
+// B-Y5 — cửa ĐỌC không ghi nhật ký, và CHỈ cửa đọc.
+//
+// Đo 25/08 trên `aicloser_v3`: `nhat_ky` có 1557 dòng và **100% là `doc`** — không một
+// dòng nghiệp vụ nào. Bảng cấm xoá, nên rác nằm đó vĩnh viễn, và máy trạng thái màn Bộ
+// luật của người B thì SUY TRẠNG THÁI từ chính bảng này.
+// ══════════════════════════════════════════════════════════════════════════════════
+
+test("B18 · mặc định KHÔNG đổi — ctxHeThong() không tham số vẫn ghi khi ĐỌC", async () => {
+  const truoc = await demNhatKy();
+  await layNhieu(sb.pool, ctxHeThong(), "khach", {
+    dieuKien: { team_id: idTieuAlpha },
+  });
+  const sau = await demNhatKy();
+  console.log(`   [B18] mặc định: nhat_ky ${truoc} → ${sau} (chờ +1)`);
+  assert.equal(sau - truoc, 1);
+});
+
+test("B19 · ctxHeThong({ghiNhatKy:false}) + ĐỌC → 0 dòng nhật ký", async () => {
+  const ctxDoc = ctxHeThong({ ghiNhatKy: false });
+  const truoc = await demNhatKy();
+  await layNhieu(sb.pool, ctxDoc, "khach", { dieuKien: { team_id: idTieuAlpha } });
+  await layNhieu(sb.pool, ctxDoc, "page", { dieuKien: { team_id: idTieuAlpha } });
+  await layNhieu(sb.pool, ctxDoc, "ky_nang", { dieuKien: { team_id: idTieuAlpha } });
+  const sau = await demNhatKy();
+  console.log(`   [B19] 3 lượt ĐỌC với cờ tắt: nhat_ky ${truoc} → ${sau} (chờ +0)`);
+  assert.equal(sau - truoc, 0);
+});
+
+// ⚠️ NHÁNH QUAN TRỌNG NHẤT của phiếu: cờ chỉ được tắt cho ĐỌC. Tắt dấu vết của một lượt
+// GHI là chuyện khác hẳn, và không cờ nào được phép làm.
+test("B20 · CÙNG cờ đó + lệnh GHI → VẪN ghi nhật ký", async () => {
+  const ctxDoc = ctxHeThong({ ghiNhatKy: false });
+  const truoc = await demNhatKy();
+  const dong = await themMoi(sb.pool, ctxDoc, "khach", {
+    team_id: idTieuAlpha,
+    ten: "ghi-van-phai-co-dau-vet",
+  });
+  const giua = await demNhatKy();
+  console.log(`   [B20] themMoi với cờ tắt: nhat_ky ${truoc} → ${giua} (chờ +1)`);
+  assert.equal(giua - truoc, 1, "lệnh GHI phải để lại dấu vết dù cờ tắt");
+
+  await suaTheoId(sb.pool, ctxDoc, "khach", dong.id, {
+    team_id: idTieuAlpha,
+    ten: "sua-cung-phai-co",
+  });
+  const sau = await demNhatKy();
+  console.log(`   [B20] suaTheoId với cờ tắt: ${giua} → ${sau} (chờ +1)`);
+  assert.equal(sau - giua, 1, "suaTheoId cũng phải để lại dấu vết");
+});
+
+test("B21 · ctx NGƯỜI thường không đổi gì — cờ chỉ thuộc về ctxHeThong", async () => {
+  const truoc = await demNhatKy();
+  await layNhieu(sb.pool, { teamId: idTieuAlpha, nguoiDungId: null }, "khach");
+  const sau = await demNhatKy();
+  assert.equal(sau - truoc, 0, "ctx người vốn không ghi khi đọc — không được đổi");
+});
+
+test("B22 · bốn bộ đọc khối prompt THẬT SỰ dùng cờ tắt (không phải chỉ có cờ nằm đó)", async () => {
+  // Cờ mà không ai bật thì bằng không có cờ. Ca này gọi chính bộ đọc của đường chat.
+  const { docBoLuatChung, docKyNang } = await import("../src/chat/rap-prompt.js");
+  const truoc = await demNhatKy();
+  await docBoLuatChung(sb.pool, idTieuAlpha);
+  await docKyNang(sb.pool, idTieuAlpha, []);
+  const sau = await demNhatKy();
+  console.log(`   [B22] 2 bộ đọc khối prompt: nhat_ky ${truoc} → ${sau} (chờ +0)`);
+  assert.equal(sau - truoc, 0, "rap-prompt còn ghi nhật ký khi đọc = phiếu chưa xong");
+});

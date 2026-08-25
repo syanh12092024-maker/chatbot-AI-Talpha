@@ -355,6 +355,46 @@ bang "ctxHeThong THIẾU team_id → tên lỗi" "${Y1_THIEU}" "LoiThieuBoiCanhT
 bang "ctxHeThong CÓ team_id → giá trị đã sửa" "${Y1_TEN}" "da-sua-nen"
 bang "số dòng nhat_ky đẻ ra bởi 1 lượt sửa nền" "${Y1_NK}" "1"
 
+muc "⑬ B-Y5 — cửa ĐỌC không ghi nhật ký, và CHỈ cửa đọc"
+# `nhat_ky` cấm xoá ở tầng CSDL, nên mỗi dòng rác nằm đó vĩnh viễn. Đo 25/08 trên
+# `aicloser_v3`: 1557 dòng, 100% là `doc`. Cuốn sổ sinh ra để trả lời «ai làm gì» mà 100%
+# số dòng là «có người mở ra xem» thì không ai đọc nó nữa.
+KQ13="$(nodex '
+const { layNhieu, themMoi, suaTheoId, ctxHeThong } = await import("./src/db/index.js");
+const { docBoLuatChung, docKyNang } = await import("./src/chat/rap-prompt.js");
+const { voiPool } = await import("./db/ket-noi.js");
+await voiPool(async (pool) => {
+  const t = (await pool.query("SELECT id FROM team WHERE slug=$1",["tieu-alpha"])).rows[0].id;
+  const dem = async () => (await pool.query("SELECT count(*)::int c FROM nhat_ky")).rows[0].c;
+  const tat = ctxHeThong({ ghiNhatKy: false });
+
+  const a0 = await dem();
+  await layNhieu(pool, ctxHeThong(), "khach", { dieuKien: { team_id: t } });
+  const macDinh = (await dem()) - a0;
+
+  const b0 = await dem();
+  await layNhieu(pool, tat, "khach", { dieuKien: { team_id: t } });
+  await layNhieu(pool, tat, "page",  { dieuKien: { team_id: t } });
+  const docTat = (await dem()) - b0;
+
+  const c0 = await dem();
+  const d = await themMoi(pool, tat, "khach", { team_id: t, ten: "nt-y5" });
+  await suaTheoId(pool, tat, "khach", d.id, { team_id: t, ten: "nt-y5-sua" });
+  const ghiVan = (await dem()) - c0;
+
+  const e0 = await dem();
+  await docBoLuatChung(pool, t);
+  await docKyNang(pool, t, []);
+  const rapPrompt = (await dem()) - e0;
+
+  console.log(`${macDinh}|${docTat}|${ghiVan}|${rapPrompt}`);
+});')"
+IFS='|' read -r Y5_MD Y5_DOC Y5_GHI Y5_RP <<< "${KQ13}"
+bang "mặc định (không cờ) — ĐỌC vẫn ghi" "${Y5_MD}" "1"
+bang "cờ tắt — 2 lượt ĐỌC đẻ mấy dòng" "${Y5_DOC}" "0"
+bang "cờ tắt — nhưng 2 lượt GHI vẫn đẻ mấy dòng" "${Y5_GHI}" "2"
+bang "bộ đọc khối prompt THẬT SỰ dùng cờ (2 lượt)" "${Y5_RP}" "0"
+
 # ── tổng ─────────────────────────────────────────────────────────────────────
 printf '\n═══════════════════════════════════════════════════════════════\n'
 printf 'TỔNG: %d phép · ĐẠT %d · TRƯỢT %d\n' "${PHEP}" "$((PHEP - LOI))" "${LOI}"

@@ -30,6 +30,12 @@ import {
   apDungChoPage,
   docKichBanChoPage,
 } from "../db/index.js";
+
+// Bốn bộ đọc khối prompt dưới đây là đường CHỈ ĐỌC, và màn «Prompt của page» gọi chúng mỗi
+// lần xem một page. Ghi nhật ký cho chúng đẻ 4 dòng `doc` mỗi lượt XEM — đo 25/08: `nhat_ky`
+// có 1557 dòng và 100% là rác đó, trong khi bảng cấm xoá. Tắt ghi cho ĐỌC (B-Y5); mọi lệnh
+// GHI của file này (nếu có sau này) vẫn để lại dấu vết như thường.
+const CTX_DOC = ctxHeThong({ ghiNhatKy: false });
 import { getKBForPage } from "../kb.js";
 
 /** Bốn tên khối — dùng để khai `nguon_thieu` (mù-có-nói-ra, không im — luật án lệ #7). */
@@ -53,7 +59,7 @@ function bienCoBat() {
  * over-engineering cho thứ chưa ai đòi).
  */
 export async function docBoLuatChung(pool, teamId) {
-  const rows = await layNhieu(pool, ctxHeThong(), "bo_luat_chung", {
+  const rows = await layNhieu(pool, CTX_DOC, "bo_luat_chung", {
     dieuKien: { team_id: teamId, dang_dung: true },
   });
   if (!rows.length) return null;
@@ -73,7 +79,7 @@ export async function docBoLuatChung(pool, teamId) {
  * @param {string[]} dsMaSp  danh sách `san_pham.ma` của page đang xử lý
  */
 export async function docKyNang(pool, teamId, dsMaSp = []) {
-  const rows = await layNhieu(pool, ctxHeThong(), "ky_nang", {
+  const rows = await layNhieu(pool, CTX_DOC, "ky_nang", {
     dieuKien: { team_id: teamId, bat: true },
     thuTu: "ma",
   });
@@ -86,7 +92,7 @@ export async function docKyNang(pool, teamId, dsMaSp = []) {
 /** Đọc dòng `page` theo khoá tự nhiên TEXT (Facebook page_id) — cần `page.id` (bigint)
  *  để tra kịch bản/sản phẩm, và `page.trong_diem` cho cờ đo riêng T4. */
 export async function docTrangPage(pool, teamId, pageIdText) {
-  const rows = await layNhieu(pool, ctxHeThong(), "page", {
+  const rows = await layNhieu(pool, CTX_DOC, "page", {
     dieuKien: { team_id: teamId, page_id: String(pageIdText) },
   });
   return rows[0] || null;
@@ -111,13 +117,13 @@ export { docKichBanChoPage };
  *  tra theo TỪNG `san_pham.id` — một page thường 1 SP (prompts.js:44 "MỖI PAGE CHỈ BÁN 1
  *  SP") nên vòng lặp không phải N+1 thật sự. */
 export async function docSanPhamGoiGia(pool, teamId, pageRowId) {
-  const sp = await layNhieu(pool, ctxHeThong(), "san_pham", {
+  const sp = await layNhieu(pool, CTX_DOC, "san_pham", {
     dieuKien: { team_id: teamId, page_id: pageRowId },
     thuTu: "ma",
   });
   const ra = [];
   for (const s of sp) {
-    const goiGia = await layNhieu(pool, ctxHeThong(), "goi_gia", {
+    const goiGia = await layNhieu(pool, CTX_DOC, "goi_gia", {
       dieuKien: { team_id: teamId, san_pham_id: s.id },
       thuTu: "so_luong",
     });
