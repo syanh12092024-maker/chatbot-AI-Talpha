@@ -13,7 +13,7 @@
 | Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 3/5 · SÓNG 3 2/5 · SÓNG 4 3/10** (15 màn). Bảy màn còn lại chặn vì thiếu dữ liệu/bảng, không phải thiếu code |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **560 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **562 xanh** (316 trước giai đoạn 2) |
 
 ---
 
@@ -42,6 +42,11 @@ nhật ký v3 chỉ có `doc | 1043` (màn của B chưa gạt công tắc nào)
 trong lúc bot đang chạy ⇒ 50 page bị tắt qua dashboard v1, CSDL v3 không biết.
 **Hệ quả:** màn «Bộ luật chung» đếm *«bao nhiêu page bị ảnh hưởng»* bằng chính cột đó — con
 số ② trong ba thứ bắt buộc trước khi cho bấm áp đang lấy từ nguồn sai. → `PHIEU-B-Y7`.
+
+**✅ ĐÃ ĐÓNG trong ngày.** Người A giao `xemAnhHuongBoLuat` (`f6b5c80`) hỏi thẳng
+`ai-enabled.json`. Màn của B nối vào cửa đó và hiện thêm **nguồn số** + **cờ lệch** ngay dưới
+con số. Đo lại trên máy chủ sau khi sửa: `tongPage=514 · dangBatBot=0 · nguon=ai-enabled.json ·
+lech.soLech=50`. Trước đó màn nói «50 page đang bật bot» — sai hẳn 50.
 
 **`viec_can_xu_ly` rỗng trong khi 988 hội thoại ở trạng thái HANDOFF.** Hai điều đó không thể
 cùng đúng ⇒ hàng đợi việc của v3 **chưa được nạp**, không phải «hết việc». Hội thoại hiện có là
