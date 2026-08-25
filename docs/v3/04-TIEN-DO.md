@@ -145,6 +145,34 @@ Chi tiết mọi chỗ tự quyết: **`docs/v3/SO-TAY-VAI-B.md`**.
 
 ---
 
+## Giai đoạn 2 · người A — trục dữ liệu
+
+Kế hoạch: `docs/v3/gd2/00-KE-HOACH-GD2.md`. Sáu module, làm TUẦN TỰ.
+
+| Mã | Việc | Trạng thái | Đo bằng số |
+|---|---|---|---|
+| **G2-A1** | Nới tầng truy vấn (`PHIEU-B-Y1`) — đóng nợ **N3** | ✅ **25/08** | nền 22 → **41 pass / 0 fail** trên Postgres 16.15 thật · cổng L0-M2 **26/27** · quét hồi quy 28 bộ ca v3 **319 pass / 1 fail** |
+| G2-A2 | Khoá API theo nhà (`PHIEU-B-Y2`) + migration 008 | ⬜ | |
+| G2-A3 | Xoá BA cửa tạm ghi thẳng, gom về tầng truy vấn | ⬜ | |
+| G2-A4 | Bảng + API bộ luật chung và kỹ năng (phiên bản · duyệt · xem trước ảnh hưởng) | ⬜ 🟥 | |
+| G2-A5 | Bảng + API kịch bản ba tầng có KẾ THỪA, đúng MỘT bản LIVE mỗi page | ⬜ | |
+| G2-A6 | API số liệu: báo cáo hai luồng · chi phí AI · A/B · sức khỏe 9 chỉ số | ⬜ | |
+
+Đỏ duy nhất của quét hồi quy là `D7` (`test/l0-m1-di-tru.test.js`), đã A/B trên cùng cây:
+bản CŨ 10 pass/1 fail · bản MỚI 10 pass/1 fail ⇒ **không phải hồi quy**, nguyên nhân là dữ
+liệu `pages.json`/`ai-enabled.json` trên VPS. Ghi §9, đất L0-M1.
+
+**Hạ tầng đo — sửa 25/08, đọc trước khi chạy bất cứ cổng nào:**
+
+- Máy cá nhân **không có Postgres** (`.env` thiếu `DATABASE_URL_V3`, không docker, 5433 đóng)
+  ⇒ mọi bộ ca đụng CSDL chỉ đo được **trên VPS**.
+- Vai `aicloser` trước 25/08 **không có `CREATEDB`** ⇒ `dungSandbox()` chết, mọi cổng và mọi
+  bộ ca DB đều 0 pass mà không ai biết. Đã cấp: `ALTER ROLE aicloser CREATEDB`.
+- `ops/bin/nghiem-thu/l0-m2.sh` trước 25/08 dựng sandbox bằng `docker exec talpha-pg` —
+  container không còn tồn tại ở đâu ⇒ cổng `exit 2` câm. Nay dựng bằng gói `pg` của repo.
+
+---
+
 ## Việc làm song song — không chờ code
 
 | Việc | Trạng thái |

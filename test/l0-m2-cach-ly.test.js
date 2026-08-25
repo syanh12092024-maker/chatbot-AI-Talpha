@@ -209,3 +209,186 @@ test("C11 · SỬA bo_luat_chung KHÔNG có đặc cách hai vế — ctx không
   );
   assert.equal(vanNguyen.noi_dung, "luật toàn hệ");
 });
+
+// ══════════════════════════════════════════════════════════════════════════════════
+// PHIEU-B-Y1 — nới tầng truy vấn. Hai mục, đo trên NHÁNH THẬT (sandbox Postgres, đua
+// thật bằng bốn kết nối, không giả lập bằng cờ trong JS).
+// ══════════════════════════════════════════════════════════════════════════════════
+
+let sale = []; // 4 người dùng thật để làm `nguoi_nhan_id` (có khoá ngoại, không bịa id)
+
+const taoViec = async () =>
+  themMoi(sb.pool, ctxA, "viec_can_xu_ly", {
+    loai: "hoi_thoai",
+    hoi_thoai_id: hoiThoaiA.id,
+    ly_do_day: "khieu_nai",
+    han_luc: new Date(Date.now() + 10 * 60 * 1000),
+  });
+
+/** Bốn lượt "Nhận việc" ĐỒNG THỜI trên cùng một dòng. `neu` bật/tắt để so hai thế giới. */
+const bonSaleCungBam = (viecId, { coSoVaDat }) =>
+  Promise.all(
+    sale.map((uid) =>
+      suaTheoId(
+        sb.pool,
+        ctxA,
+        "viec_can_xu_ly",
+        viecId,
+        { nguoi_nhan_id: uid, nhan_luc: new Date() },
+        coSoVaDat ? { neu: { nguoi_nhan_id: null } } : {},
+      ),
+    ),
+  );
+
+test("Y1-a · dựng 4 sale thật (nguoi_nhan_id có khoá ngoại — không bịa id)", async () => {
+  for (let i = 1; i <= 4; i++) {
+    const u = await mot(
+      "INSERT INTO nguoi_dung (email, ten) VALUES ($1,$2) RETURNING id",
+      [`sale${i}@l0m2.test`, `Sale ${i}`],
+    );
+    sale.push(u.id);
+  }
+  assert.equal(sale.length, 4);
+});
+
+// ── ④#2 — SO-VÀ-ĐẶT: bốn sale bấm cùng lúc → đúng MỘT thắng ──────────────────────
+test("Y1-b · 4 lượt suaTheoId ĐỒNG THỜI + neu:{nguoi_nhan_id:null} → đúng MỘT thắng", async () => {
+  const viec = await taoViec();
+  const ketQua = await bonSaleCungBam(viec.id, { coSoVaDat: true });
+  const thang = ketQua.filter(Boolean);
+  const truot = ketQua.filter((x) => x === null);
+  console.log(`   [Y1-b] 4 lượt đua → thắng=${thang.length} trượt=${truot.length}`);
+  assert.equal(thang.length, 1);
+  assert.equal(truot.length, 3);
+
+  // Cột chỉ mang MỘT giá trị, và đúng giá trị của người thắng.
+  const cuoi = await mot("SELECT nguoi_nhan_id FROM viec_can_xu_ly WHERE id=$1", [viec.id]);
+  assert.equal(String(cuoi.nguoi_nhan_id), String(thang[0].nguoi_nhan_id));
+  assert.ok(sale.map(String).includes(String(cuoi.nguoi_nhan_id)));
+});
+
+// ── CỔNG THỨ HAI, viết bằng HÀNH VI (án lệ #19/#29): bỏ `neu` ra thì ca trên PHẢI đỏ.
+// Không có ca này thì Y1-b có thể xanh vì một lý do khác (pool xếp hàng, ghi tuần tự…)
+// và cái được chứng nhận sẽ là «hàm chạy được», không phải «so-và-đặt có tác dụng».
+test("Y1-c · CÙNG phép đua nhưng KHÔNG có `neu` → CẢ BỐN cùng thắng (đúng cái hỏng B-Y1 vá)", async () => {
+  const viec = await taoViec();
+  const ketQua = await bonSaleCungBam(viec.id, { coSoVaDat: false });
+  const thang = ketQua.filter(Boolean);
+  console.log(`   [Y1-c] 4 lượt đua KHÔNG so-và-đặt → thắng=${thang.length} (chờ 4)`);
+  assert.equal(thang.length, 4); // người sau ghi đè người trước, không ai biết
+});
+
+// ── ④#3 — điều kiện không khớp → null, KHÔNG ném ─────────────────────────────────
+test("Y1-d · `neu` không còn đúng → trả null, KHÔNG ném (mất tranh ≠ lỗi)", async () => {
+  const viec = await taoViec();
+  const lan1 = await suaTheoId(
+    sb.pool, ctxA, "viec_can_xu_ly", viec.id,
+    { nguoi_nhan_id: sale[0], nhan_luc: new Date() },
+    { neu: { nguoi_nhan_id: null } },
+  );
+  assert.ok(lan1);
+  const lan2 = await suaTheoId(
+    sb.pool, ctxA, "viec_can_xu_ly", viec.id,
+    { nguoi_nhan_id: sale[1], nhan_luc: new Date() },
+    { neu: { nguoi_nhan_id: null } },
+  );
+  assert.equal(lan2, null);
+  const cuoi = await mot("SELECT nguoi_nhan_id FROM viec_can_xu_ly WHERE id=$1", [viec.id]);
+  assert.equal(String(cuoi.nguoi_nhan_id), String(sale[0])); // người đầu giữ nguyên
+});
+
+test("Y1-e · `neu` khớp giá trị THƯỜNG (không chỉ null) — so-và-đặt trên cột text", async () => {
+  const viec = await taoViec();
+  await suaTheoId(sb.pool, ctxA, "viec_can_xu_ly", viec.id, { ket_qua: "dang_goi" });
+  const truot = await suaTheoId(
+    sb.pool, ctxA, "viec_can_xu_ly", viec.id,
+    { ket_qua: "chot" }, { neu: { ket_qua: "chua_goi" } },
+  );
+  assert.equal(truot, null);
+  const trung = await suaTheoId(
+    sb.pool, ctxA, "viec_can_xu_ly", viec.id,
+    { ket_qua: "chot" }, { neu: { ket_qua: "dang_goi" } },
+  );
+  assert.equal(trung.ket_qua, "chot");
+});
+
+// ── ④#4 — neu.team_id lệch ctx → LoiXuyenTeam + ĐÚNG 1 dòng nhat_ky ──────────────
+test("Y1-f · neu.team_id = team khác → LoiXuyenTeam + đúng 1 dòng nhat_ky chan_xuyen_team", async () => {
+  const truoc = await demChanXuyenTeam();
+  await assert.rejects(
+    () =>
+      suaTheoId(sb.pool, ctxA, "khach", khachA[0].id, { ten: "hack-neu" },
+        { neu: { team_id: idAuus } }),
+    LoiXuyenTeam,
+  );
+  const sau = await demChanXuyenTeam();
+  console.log(`   [Y1-f] chan_xuyen_team trước=${truoc} sau=${sau} (chờ +1, KHÔNG +2)`);
+  assert.equal(sau - truoc, 1);
+});
+
+test("Y1-g · duLieu.team_id và neu.team_id KHAI KHÁC NHAU → Error thường (lỗi gọi sai, không phải mưu)", async () => {
+  await assert.rejects(
+    () =>
+      suaTheoId(sb.pool, ctxA, "khach", khachA[0].id,
+        { team_id: idTieuAlpha, ten: "x" }, { neu: { team_id: idAuus } }),
+    /mâu thuẫn/,
+  );
+});
+
+// ══ B-Y1 MỤC 2 — layNhieu nhận MẢNG ══════════════════════════════════════════════
+test("Y1-h · dieuKien { id: [3 id] } → ĐÚNG 3 dòng đó (so danh sách, không so count)", async () => {
+  const them = [];
+  for (let i = 3; i <= 7; i++)
+    them.push(await themMoi(sb.pool, ctxA, "khach", { ten: `Khách A${i}` }));
+  const chon = [them[0], them[2], them[4]]; // A3, A5, A7
+  const rows = await layNhieu(sb.pool, ctxA, "khach", {
+    dieuKien: { id: chon.map((r) => r.id) },
+  });
+  console.log(`   [Y1-h] xin ${chon.length} id → nhận ${rows.length} dòng`);
+  assert.deepEqual(soi(rows), soi(chon));
+});
+
+test("Y1-i · mảng RỖNG → 0 dòng, KHÔNG ném (và không phải 'bỏ qua điều kiện')", async () => {
+  const rows = await layNhieu(sb.pool, ctxA, "khach", { dieuKien: { id: [] } });
+  const tatCa = await layNhieu(sb.pool, ctxA, "khach");
+  console.log(`   [Y1-i] { id: [] } → ${rows.length} dòng (cả team có ${tatCa.length})`);
+  assert.equal(rows.length, 0);
+  assert.ok(tatCa.length > 0); // chứng minh 0 KHÔNG phải vì bảng rỗng
+});
+
+test("Y1-j · mảng chứa id của team KHÁC → 0 dòng (rào team ăn TRƯỚC mảng)", async () => {
+  const rows = await layNhieu(sb.pool, ctxA, "khach", {
+    dieuKien: { id: [khachB[0].id] },
+  });
+  assert.equal(rows.length, 0);
+});
+
+test("Y1-k · mảng TRỘN id của mình và của team khác → chỉ ra dòng của mình", async () => {
+  const rows = await layNhieu(sb.pool, ctxA, "khach", {
+    dieuKien: { id: [khachA[0].id, khachB[0].id] },
+  });
+  assert.deepEqual(soi(rows), [String(khachA[0].id)]);
+});
+
+test("Y1-l · team_id dạng MẢNG cũng bị soi xuyên team, không lách được bằng bọc mảng", async () => {
+  const truoc = await demChanXuyenTeam();
+  await assert.rejects(
+    () => layNhieu(sb.pool, ctxA, "khach", { dieuKien: { team_id: [idAuus] } }),
+    LoiXuyenTeam,
+  );
+  assert.equal((await demChanXuyenTeam()) - truoc, 1);
+});
+
+test("Y1-m · giá trị null trong dieuKien → IS NULL (không phải `= NULL` khớp 0 dòng)", async () => {
+  const chuaGan = await themMoi(sb.pool, ctxA, "hoi_thoai", {
+    page_id: hoiThoaiA.page_id,
+    psid: "psid-a-chua-gan-khach",
+    trang_thai: "GREET",
+    chu_so_huu: "AI",
+  });
+  const rows = await layNhieu(sb.pool, ctxA, "hoi_thoai", {
+    dieuKien: { khach_id: null },
+  });
+  console.log(`   [Y1-m] hoi_thoai khach_id IS NULL → ${rows.length} dòng`);
+  assert.deepEqual(soi(rows), [String(chuaGan.id)]);
+});

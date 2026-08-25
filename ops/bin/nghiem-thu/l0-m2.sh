@@ -19,7 +19,6 @@ set -uo pipefail
 GOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "${GOC}" || exit 2
 
-CONTAINER="talpha-pg"
 DB="aicloser_v3_nt_l0m2"
 LOI=0
 PHEP=0
@@ -50,21 +49,34 @@ nodex() {
 }
 
 # ── dựng sandbox ─────────────────────────────────────────────────────────────
-if ! docker ps --format '{{.Names}}' | grep -qx "${CONTAINER}"; then
-  echo "✘ container ${CONTAINER} không chạy — cổng không đo được"; exit 2
+# ⚠️ SỬA 25/08 (G2-A1): khối này TỪNG gọi `docker exec talpha-pg`. Đo lại thì KHÔNG NƠI
+# NÀO còn container đó — máy dev không có docker, VPS chạy Postgres cài thẳng. Cổng đã
+# chết câm `exit 2` từ lúc nào không ai biết, tức là mọi lượt «chạy lại cổng L0-M2» sau
+# đó đều không đo gì. Nay dựng/dọn bằng chính gói `pg` của repo: không phụ thuộc CSDL
+# được cài kiểu gì, chạy ở đâu có `DATABASE_URL_V3` là chạy (án lệ #28).
+GOC_URL="$(node -e 'const {chuoiNoi}=await import("./db/ket-noi.js");console.log(chuoiNoi());')"
+if [ -z "${GOC_URL}" ]; then
+  echo "✘ không đọc được DATABASE_URL_V3 — cổng không đo được"; exit 2
 fi
-docker exec "${CONTAINER}" psql -U aicloser -d postgres -tAc \
-  "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" >/dev/null 2>&1
-if ! docker exec "${CONTAINER}" psql -U aicloser -d postgres -v ON_ERROR_STOP=1 -tAc \
-  "CREATE DATABASE ${DB}" >/dev/null 2>&1; then
-  echo "✘ không tạo được CSDL sandbox ${DB} — cổng dừng"; exit 2
+
+quanly() { # $1 = câu SQL chạy trên CSDL `postgres` của cùng máy chủ
+  node -e '
+    const pg = (await import("pg")).default;
+    const u = new URL(process.argv[1]); u.pathname = "/postgres";
+    const p = new pg.Pool({ connectionString: u.toString(), max: 1 });
+    try { await p.query(process.argv[2]); } finally { await p.end(); }
+  ' "${GOC_URL}" "$1"
+}
+
+quanly "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" >/dev/null 2>&1
+if ! quanly "CREATE DATABASE ${DB}" >/dev/null 2>&1; then
+  echo "✘ không tạo được CSDL sandbox ${DB} — cổng dừng."
+  echo "  (vai CSDL trong DATABASE_URL_V3 đã có quyền CREATEDB chưa?)"; exit 2
 fi
 
 DATABASE_URL_V3="$(node -e '
 const u = new URL(process.argv[1]); u.pathname = "/" + process.argv[2]; console.log(u.toString());
-' "$(node -e '
-const { chuoiNoi } = await import("./db/ket-noi.js"); console.log(chuoiNoi());
-')" "${DB}")"
+' "${GOC_URL}" "${DB}")"
 export DATABASE_URL_V3
 V3_KHOA_MA_HOA="$(node -e 'console.log(require("node:crypto").randomBytes(32).toString("hex"))')"
 export V3_KHOA_MA_HOA
@@ -73,14 +85,14 @@ don_dep() {
   if [ "${GIU_SANDBOX:-0}" = "1" ]; then
     printf '\n(giữ lại CSDL %s theo GIU_SANDBOX=1)\n' "${DB}"
   else
-    docker exec "${CONTAINER}" psql -U aicloser -d postgres -tAc \
-      "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" >/dev/null 2>&1
+    quanly "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" >/dev/null 2>&1
   fi
 }
 trap don_dep EXIT
 
 echo "CỔNG NGHIỆM THU L0-M2 · $(date '+%F %T') · cây $(git rev-parse --short HEAD 2>/dev/null)"
-echo "CSDL đo: ${DB} (sandbox, không phải aicloser_v3 dev) · container ${CONTAINER}"
+echo "CSDL đo: ${DB} (sandbox, không phải aicloser_v3) · máy chủ $(node -e '
+  console.log(new URL(process.argv[1]).host)' "${GOC_URL}")"
 
 node db/migrate.js >/dev/null 2>&1
 
@@ -231,14 +243,117 @@ done
 rm -rf "${TMP_CONV}"
 so "bộ ca CŨ (bản đang chạy): tệp xanh / đỏ" "${PASS} / ${FAIL}"
 so "tệp cũ ĐỎ" "${DO_LIST:-(không)}"
-# Mốc nền — GIỐNG HỆT mốc l0-m1.sh (đo tại base 3d1eed1, cây chưa có dòng code nào của
-# chuỗi phiếu L0). L0-M2 không đụng src/ phẳng hay db/ nên mốc không có lý do trôi.
-NEN_DO="conv-owner.test.mjs guard-fastlane.test.mjs intro.test.mjs l8-botcake-rules.test.mjs viec-2345.test.mjs"
-if [ "$(echo ${DO_LIST} | tr ' ' '\n' | sort | tr '\n' ' ')" = "$(echo ${NEN_DO} | tr ' ' '\n' | sort | tr '\n' ' ')" ]; then
-  dat "bộ ca cũ KHÔNG gãy thêm — đúng 5 tệp đã đỏ sẵn ở mốc nền"
+# ⚠️ SỬA 25/08 (G2-A1): mốc nền cũ là DANH SÁCH GÕ TAY 5 tệp «đã đỏ sẵn ở base 3d1eed1»
+# — `conv-owner · guard-fastlane · intro · l8-botcake-rules · viec-2345`. Đo lại 25/08 thì
+# CẢ NĂM ĐỀU XANH, ở CẢ HAI môi trường: máy cá nhân (.env 17 khoá) 5/5 xanh, VPS (.env rút
+# gọn 3 biến) 23/23 tệp xanh. Chúng được vá ở đâu đó sau base mà không ai sửa mốc ⇒ cổng
+# TRƯỢT mỗi khi mã nguồn TỐT LÊN, và vì cổng còn chết ở khối docker phía trên nên chưa ai
+# thấy. Danh sách gõ tay là lỗ hẹn giờ (án lệ #22) — thay bằng luật tự bảo trì: KHÔNG tệp
+# nào được đỏ. Thêm một tệp đỏ là cổng đỏ, không phải sửa mốc nữa.
+if [ "${FAIL}" -eq 0 ]; then
+  dat "bộ ca cũ: 0 tệp đỏ trên ${PASS} tệp"
 else
-  truot "bộ ca cũ LỆCH mốc nền · nền: ${NEN_DO} · nay:${DO_LIST}"
+  truot "bộ ca cũ có tệp ĐỎ (${FAIL}/$((PASS + FAIL))):${DO_LIST}"
 fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHIEU-B-Y1 — bốn phép mới. Mỗi phép in MỘT CON SỐ, và phép ⑨ có CỔNG THỨ HAI:
+# cùng câu đo, bỏ `neu` ra thì kết quả phải ĐẢO CHIỀU. Không có vế đảo chiều thì
+# «1 lượt thắng» có thể xanh vì hàng đợi kết nối chứ không vì so-và-đặt (án lệ #19).
+# ═══════════════════════════════════════════════════════════════════════════════
+muc "⑨ SO-VÀ-ĐẶT — 4 lượt «Nhận việc» ĐỒNG THỜI trên MỘT dòng viec_can_xu_ly"
+KQ9="$(nodex '
+const { themMoi, suaTheoId } = await import("./src/db/index.js");
+const { voiPool } = await import("./db/ket-noi.js");
+await voiPool(async (pool) => {
+  const tA = (await pool.query("SELECT id FROM team WHERE slug=$1",["tieu-alpha"])).rows[0].id;
+  const ctx = { teamId: tA, nguoiDungId: null };
+  const pg1 = (await pool.query("INSERT INTO page (team_id,page_id,ten) VALUES ($1,$2,$3) RETURNING id",
+    [tA, "nt-y1-page", "NT Y1"])).rows[0];
+  const ht = await themMoi(pool, ctx, "hoi_thoai",
+    { page_id: pg1.id, psid: "nt-y1-psid", trang_thai: "GREET", chu_so_huu: "AI" });
+  const sale = [];
+  for (let i = 1; i <= 4; i++)
+    sale.push((await pool.query("INSERT INTO nguoi_dung (email,ten) VALUES ($1,$2) RETURNING id",
+      [`nt-y1-sale${i}@t.test`, `S${i}`])).rows[0].id);
+  const moiViec = async () => themMoi(pool, ctx, "viec_can_xu_ly",
+    { loai: "hoi_thoai", hoi_thoai_id: ht.id, ly_do_day: "nt", han_luc: new Date(Date.now()+6e5) });
+  const dua = async (viecId, coNeu) => (await Promise.all(sale.map((u) =>
+    suaTheoId(pool, ctx, "viec_can_xu_ly", viecId, { nguoi_nhan_id: u, nhan_luc: new Date() },
+      coNeu ? { neu: { nguoi_nhan_id: null } } : {})))).filter(Boolean).length;
+  const co  = await dua((await moiViec()).id, true);
+  const khg = await dua((await moiViec()).id, false);
+  console.log(`${co}|${khg}`);
+});')"
+IFS='|' read -r Y1_CO Y1_KHONG <<< "${KQ9}"
+bang "số lượt THẮNG khi CÓ neu (chờ đúng 1)" "${Y1_CO}" "1"
+bang "số lượt THẮNG khi BỎ neu — vế đảo chiều" "${Y1_KHONG}" "4"
+
+muc "⑩ neu không khớp → null (không ném) · tên cột rác → Error và 0 lượt chạm CSDL"
+KQ10="$(nodex '
+const { suaTheoId } = await import("./src/db/index.js");
+const { voiPool } = await import("./db/ket-noi.js");
+await voiPool(async (pool) => {
+  const tA = (await pool.query("SELECT id FROM team WHERE slug=$1",["tieu-alpha"])).rows[0].id;
+  const ctx = { teamId: tA, nguoiDungId: null };
+  const kh = (await pool.query("INSERT INTO khach (team_id,ten) VALUES ($1,$2) RETURNING id",
+    [tA, "NT-Y1-khach"])).rows[0];
+  const truot = await suaTheoId(pool, ctx, "khach", kh.id, { ten: "moi" },
+    { neu: { ten: "khong-phai-ten-nay" } });
+  let dem = 0;
+  const poolDem = { query: (...a) => { dem += 1; return pool.query(...a); } };
+  let ten = "KHONG-NEM";
+  try { await suaTheoId(poolDem, ctx, "khach", kh.id, { ten: "x" }, { neu: { "a b": 1 } }); }
+  catch (e) { ten = e.constructor.name; }
+  console.log(`${truot === null ? "null" : "CO-DONG"}|${ten}|${dem}`);
+});')"
+IFS='|' read -r Y1_TRUOT Y1_LOICOT Y1_DEM <<< "${KQ10}"
+bang "neu không khớp trả về" "${Y1_TRUOT}" "null"
+bang "tên cột rác ném loại lỗi" "${Y1_LOICOT}" "Error"
+bang "số lượt chạm CSDL khi tên cột rác" "${Y1_DEM}" "0"
+
+muc "⑪ layNhieu nhận MẢNG — đọc gom id không còn phải kéo trọn bảng"
+KQ11="$(nodex '
+const { themMoi, layNhieu } = await import("./src/db/index.js");
+const { voiPool } = await import("./db/ket-noi.js");
+await voiPool(async (pool) => {
+  const tid = async (sl) => (await pool.query("SELECT id FROM team WHERE slug=$1",[sl])).rows[0].id;
+  const tA = await tid("tieu-alpha"), tB = await tid("auus");
+  const ctxA = { teamId: tA, nguoiDungId: null }, ctxB = { teamId: tB, nguoiDungId: null };
+  const a = [];
+  for (let i = 0; i < 5; i++) a.push(await themMoi(pool, ctxA, "khach", { ten: `NT-Y1-M${i}` }));
+  const b1 = await themMoi(pool, ctxB, "khach", { ten: "NT-Y1-B" });
+  const chon = [a[0].id, a[2].id, a[4].id];
+  const ra = (await layNhieu(pool, ctxA, "khach", { dieuKien: { id: chon } })).map(r=>String(r.id)).sort();
+  const rong = await layNhieu(pool, ctxA, "khach", { dieuKien: { id: [] } });
+  const cheo = await layNhieu(pool, ctxA, "khach", { dieuKien: { id: [b1.id] } });
+  console.log(`${ra.join(",")}|${chon.map(String).sort().join(",")}|${rong.length}|${cheo.length}`);
+});')"
+IFS='|' read -r Y1_RA Y1_XIN Y1_RONG Y1_CHEO <<< "${KQ11}"
+bang "DANH SÁCH id đọc bằng mảng khớp danh sách xin" "${Y1_RA}" "${Y1_XIN}"
+bang "mảng RỖNG → số dòng" "${Y1_RONG}" "0"
+bang "mảng chứa id team KHÁC → số dòng" "${Y1_CHEO}" "0"
+
+muc "⑫ suaTheoId nhận ctxHeThong — job nền sửa được, và MỌI lượt ghi nhat_ky"
+KQ12="$(nodex '
+const { themMoi, suaTheoId, ctxHeThong } = await import("./src/db/index.js");
+const { voiPool } = await import("./db/ket-noi.js");
+await voiPool(async (pool) => {
+  const tA = (await pool.query("SELECT id FROM team WHERE slug=$1",["tieu-alpha"])).rows[0].id;
+  const dem = async () => (await pool.query("SELECT count(*)::int c FROM nhat_ky")).rows[0].c;
+  const kh = await themMoi(pool, ctxHeThong(), "khach", { team_id: tA, ten: "NT-Y1-nen" });
+  let thieu = "KHONG-NEM";
+  try { await suaTheoId(pool, ctxHeThong(), "khach", kh.id, { ten: "x" }); }
+  catch (e) { thieu = e.name; }
+  const truoc = await dem();
+  const ok = await suaTheoId(pool, ctxHeThong(), "khach", kh.id, { team_id: tA, ten: "da-sua-nen" });
+  const sau = await dem();
+  console.log(`${thieu}|${ok ? ok.ten : "null"}|${sau - truoc}`);
+});')"
+IFS='|' read -r Y1_THIEU Y1_TEN Y1_NK <<< "${KQ12}"
+bang "ctxHeThong THIẾU team_id → tên lỗi" "${Y1_THIEU}" "LoiThieuBoiCanhTeam"
+bang "ctxHeThong CÓ team_id → giá trị đã sửa" "${Y1_TEN}" "da-sua-nen"
+bang "số dòng nhat_ky đẻ ra bởi 1 lượt sửa nền" "${Y1_NK}" "1"
 
 # ── tổng ─────────────────────────────────────────────────────────────────────
 printf '\n═══════════════════════════════════════════════════════════════\n'

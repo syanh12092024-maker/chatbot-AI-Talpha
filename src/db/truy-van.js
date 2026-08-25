@@ -16,6 +16,17 @@
 //      chung của tầng này, không phải một hàm khác dễ quên gọi. GHI vào bo_luat_chung
 //      (themMoi/suaTheoId) KHÔNG có đặc cách này — một team chỉ ghi/sửa dòng của chính
 //      nó, không bao giờ chạm dòng team_id IS NULL (luật toàn hệ) qua ctx thường.
+//   4. `layNhieu` nhận giá trị MẢNG và `null` trong `dieuKien` (PHIEU-B-Y1 mục 2):
+//      mảng → `= ANY($n)` · mảng RỖNG → `false` (0 dòng) · `null` → `IS NULL`.
+//      Không có nó thì mọi mẻ đọc gom id của màn hình phải đọc TRỌN bảng của team rồi
+//      lọc trong JS — `hoi_thoai` hôm nay 28.953 dòng (đo 25/08 trên `aicloser_v3` của
+//      VPS), và đường vòng đó đang nằm thật ở `v3/src/noi-day/cong-du-lieu-that.js`.
+//   5. `suaTheoId` nhận `{ neu }` (điều kiện thêm) VÀ nhận `ctxHeThong()` (B-Y1 mục 1).
+//      `neu` là cách duy nhất diễn đạt SO-VÀ-ĐẶT qua tầng này. Không có nó thì hai sale
+//      bấm «Nhận việc» cùng lúc CẢ HAI CÙNG THẮNG, và ở dòng `loai='don_hang'` nghĩa là
+//      hai người cùng duyệt một đơn ⇒ hai kiện COD. Đây là nợ N3: mở 22/08, cắn BỐN lần
+//      (L1-M1 · L2-M1 · VA-R3/RF-13 · L4-M2) và đẻ ra ba cửa UPDATE tạm. Phiếu này mở
+//      đường; xoá ba cửa tạm là phiếu G2-A3, mỗi cửa một chủ.
 //
 // KHÔNG bao phủ ở đây: `team` `nguoi_dung` `vai` (dùng chung — xem team.js, không đòi
 // ctx) và `thanh_vien_team` (việc của người B ở L0-M3: xác định ctx.teamId TỪ đăng nhập
@@ -69,6 +80,57 @@ function kiemTraTenCot(ten) {
     );
   }
   return ten;
+}
+
+// ─── Bộ dựng MỘT vế điều kiện — DÙNG CHUNG cho `layNhieu.dieuKien` và `suaTheoId.neu`.
+// Một bản khai, không hai: hai chỗ cùng luật mà gõ tay hai lần là bom hẹn giờ (bài học 2
+// của giai đoạn 2; án lệ `NHOM_HUY_HOAN` §9 — «bản khai thứ hai cùng giá trị»).
+function veDieuKien(k, v, params) {
+  // Cửa RA của tên cột vào chuỗi SQL. Nơi gọi đã kiểm sớm một lượt rồi, nhưng phanh đặt
+  // ở cửa RA mới là phanh (án lệ #31) — cửa VÀO là tập mở, cửa ra chỉ có đúng chỗ này.
+  kiemTraTenCot(k);
+  if (Array.isArray(v)) {
+    // Mảng RỖNG → hằng `false`, KHÔNG dựng `= ANY('{}')` rồi phó mặc Postgres: câu trả
+    // lời đúng cho «lấy các dòng có id thuộc tập RỖNG» là 0 dòng, và tầng này tự nói câu
+    // đó ra chứ không mượn hành vi của một bản cài CSDL để nói hộ.
+    if (v.length === 0) return "false";
+    params.push(v);
+    return `${k} = ANY($${params.length})`;
+  }
+  if (v === null) return `${k} IS NULL`;
+  if (v === undefined) {
+    // `cot = NULL` KHÔNG BAO GIỜ đúng trong SQL. Dịch thẳng `undefined` thành tham số thì
+    // lời gọi khớp 0 dòng và IM — mà `undefined` ở đây luôn là một biến chưa gán của nơi
+    // gọi, không bao giờ là ý đồ. Ném to; muốn hỏi «cột này rỗng» thì viết `null`.
+    throw new Error(
+      `điều kiện "${k}" mang giá trị undefined — tầng truy vấn không đoán. Viết null ` +
+        `tường minh nếu muốn IS NULL.`,
+    );
+  }
+  if (
+    typeof v === "object" &&
+    !(v instanceof Date) &&
+    !Buffer.isBuffer(v)
+  ) {
+    // Người B diễn đạt so sánh bằng object `{ ">=": moc }` (xem `laToanTu` ở
+    // `v3/src/noi-day/cong-du-lieu-that.js`). Tầng này CHƯA làm toán tử — B-Y1 ⑥ để
+    // ngoài phạm vi có chủ đích. Nếu cứ đẩy xuống thì `pg` tuần tự hoá object thành
+    // JSON và câu SQL thành `cot = '{">=":5}'`: khớp 0 dòng, KHÔNG lỗi, KHÔNG ai biết.
+    // Nói ra là hơn — nơi gọi còn biết đường lọc ở JS như hiện nay.
+    throw new Error(
+      `điều kiện "${k}" là object — tầng truy vấn chưa nhận toán tử so sánh ` +
+        `(chỉ: giá trị thường · mảng · null). Xem PHIEU-B-Y1 ⑥.`,
+    );
+  }
+  params.push(v);
+  return `${k} = $${params.length}`;
+}
+
+// Kiểm tên cột TRƯỚC mọi lượt chạm CSDL: tên rác là lỗi GỌI SAI của code, không đáng tốn
+// một vòng hỏi bảng `team`, và càng không đáng đẻ một dòng nhat_ky `chan_xuyen_team` cho
+// một lời gọi vốn đã hỏng cú pháp (phép ④#7 của PHIEU-B-Y1: «KHÔNG chạm CSDL»).
+function kiemTraTenCotSom(vat) {
+  for (const k of Object.keys(vat ?? {})) kiemTraTenCot(k);
 }
 
 function coTruyenTayTeamId(vat) {
@@ -166,22 +228,21 @@ function veTeamKhiDoc(tenBang, teamId, params) {
 
 /**
  * Đọc nhiều dòng của `tenBang` trong bối cảnh `ctx`.
- * tuyChon.dieuKien — điều kiện BẰNG (=) thêm ngoài team_id (vd { trang_thai: 'GREET' }).
+ * tuyChon.dieuKien — điều kiện thêm ngoài team_id (vd { trang_thai: 'GREET' }).
+ *   giá trị MẢNG  → `= ANY($n)`  ·  mảng RỖNG → 0 dòng  ·  `null` → `IS NULL`
+ *   `undefined`   → ném Error (xem `veDieuKien`, đó luôn là biến chưa gán của nơi gọi).
  * tuyChon.thuTu    — tên MỘT cột để ORDER BY (tăng dần).
  */
 export async function layNhieu(pool, ctx, tenBang, tuyChon = {}) {
   kiemTraTenBang(tenBang);
   const { dieuKien = {}, thuTu } = tuyChon;
+  kiemTraTenCotSom(dieuKien);
   const resolved = await xacDinhTeamId(pool, ctx, tenBang, dieuKien);
   const params = [];
   const mauTeam = veTeamKhiDoc(tenBang, resolved.teamId, params);
   const dkKhac = Object.entries(dieuKien)
     .filter(([k]) => k !== "team_id")
-    .map(([k, v]) => {
-      kiemTraTenCot(k);
-      params.push(v);
-      return `${k} = $${params.length}`;
-    });
+    .map(([k, v]) => veDieuKien(k, v, params));
   const whereSql = [mauTeam, ...dkKhac].join(" AND ");
   const orderSql = thuTu ? ` ORDER BY ${kiemTraTenCot(thuTu)}` : "";
   const r = await pool.query(
@@ -241,18 +302,71 @@ export async function themMoi(pool, ctx, tenBang, duLieu = {}) {
   return r.rows[0];
 }
 
-/** Sửa một dòng theo id, CHỈ khi dòng đó team_id = ctx.teamId — kể cả với bo_luat_chung
- *  (đặc cách 2 vế CHỈ áp dụng khi ĐỌC, xem đầu file). 0 dòng khớp → trả null, KHÔNG ném
- *  lỗi: đó là "không có dòng đó trong team của bạn", khác với "ctx sai"/"xuyên team".
- *  KHÔNG hỗ trợ ctxHeThong cùng lý do như layMotTheoId. */
-export async function suaTheoId(pool, ctx, tenBang, id, duLieu = {}) {
-  kiemTraTenBang(tenBang);
-  const resolved = await xacDinhTeamId(pool, ctx, tenBang, duLieu);
-  if (resolved.laHeThong) {
-    throw new LoiThieuBoiCanhTeam(
-      "suaTheoId không hỗ trợ ctxHeThong trong phiên bản này (ngoài phạm vi ④ của L0-M2).",
+// `suaTheoId` soi `team_id` ở HAI chỗ (`duLieu` và `neu`) nhưng `xacDinhTeamId` chỉ nhận
+// MỘT object. Gộp ở đây thay vì gọi soi hai lượt: gọi hai lượt thì một lời gọi xuyên team
+// đẻ HAI dòng nhat_ky `chan_xuyen_team` cho cùng một sự việc, trong khi hợp đồng ② khai
+// «đúng 1 dòng». Hai chỗ cùng khai mà khác nhau là lỗi GỌI SAI, không phải mưu xuyên team
+// — nên ném Error thường, đừng gán cho nơi gọi một ý đồ mà họ không có.
+function teamIdDeSoi(duLieu, neu) {
+  const a = coTruyenTayTeamId(duLieu) ? String(duLieu.team_id) : null;
+  const b = coTruyenTayTeamId(neu) ? String(neu.team_id) : null;
+  if (a !== null && b !== null && a !== b) {
+    throw new Error(
+      `suaTheoId: duLieu.team_id=${a} khác neu.team_id=${b} — hai lời khai mâu thuẫn, ` +
+        `tầng truy vấn không đoán hộ chọn cái nào.`,
     );
   }
+  if (a !== null) return { team_id: a };
+  if (b !== null) return { team_id: b };
+  return {};
+}
+
+/** Sửa một dòng theo id, CHỈ khi dòng đó team_id = ctx.teamId — kể cả với bo_luat_chung
+ *  (đặc cách 2 vế CHỈ áp dụng khi ĐỌC, xem đầu file).
+ *
+ *  0 dòng khớp → trả `null`, KHÔNG ném. Ba chuyện cùng ra `null`: id không tồn tại · dòng
+ *  đó thuộc team khác · điều kiện `neu` KHÔNG CÒN đúng lúc ghi (mất tranh so-và-đặt). Cả
+ *  ba đều KHÁC HẲN "ctx sai"/"xuyên team" — nơi gọi phân biệt bằng việc không có ngoại lệ
+ *  nào bay ra. ⚠️ Nơi gọi nào coi "mất tranh" là LỖI (máy trạng thái đơn: ảnh cũ ghi đè =
+ *  hai sổ lệch) thì phải TỰ dịch `null` thành ném — tầng này không đoán hộ ngữ nghĩa đó.
+ *
+ *  tuyChon.neu — điều kiện THÊM, nối vào WHERE SAU vế team và vế id. Dùng CHUNG bộ dựng vế
+ *  với `layNhieu` (`veDieuKien`): `null` → IS NULL · mảng → = ANY · còn lại → = $n. Đây là
+ *  cách diễn đạt SO-VÀ-ĐẶT: `{ neu: { nguoi_nhan_id: null } }` chỉ chạm dòng nếu NGAY LÚC
+ *  GHI nó vẫn chưa có ai nhận. Nhánh `null` là nhánh QUAN TRỌNG NHẤT của tham số này —
+ *  dịch nó thành `nguoi_nhan_id = NULL` (không bao giờ đúng) là mọi lượt nhận việc đều
+ *  trượt và màn hình báo «mất tranh» cho từng cú bấm, hỏng CÂM.
+ *
+ *  ctxHeThong() ĐƯỢC hỗ trợ (khác `layMotTheoId`): job nền có chỗ khai `team_id` tường
+ *  minh — trong `duLieu` HOẶC trong `neu`. Thiếu → LoiThieuBoiCanhTeam, y hệt luật của
+ *  `themMoi` (§4 bàn giao). Mọi lượt gọi bằng ctxHeThong đều ghi nhat_ky, kể cả lượt khớp
+ *  0 dòng: 01-QUYET-DINH §9 đòi ghi «việc máy làm», mà một lượt CAS trượt vẫn là việc máy
+ *  đã làm — bỏ nó là sổ chỉ còn kể những lần thắng. */
+export async function suaTheoId(
+  pool,
+  ctx,
+  tenBang,
+  id,
+  duLieu = {},
+  tuyChon = {},
+) {
+  kiemTraTenBang(tenBang);
+  const { neu } = tuyChon;
+  if (neu != null && (typeof neu !== "object" || Array.isArray(neu))) {
+    throw new Error(
+      "suaTheoId: `neu` phải là object phẳng { cot: giaTri } (hoặc bỏ trống).",
+    );
+  }
+  kiemTraTenCotSom(duLieu);
+  kiemTraTenCotSom(neu);
+
+  const resolved = await xacDinhTeamId(
+    pool,
+    ctx,
+    tenBang,
+    teamIdDeSoi(duLieu, neu),
+  );
+
   const gan = [];
   const params = [];
   for (const [k, v] of Object.entries(duLieu)) {
@@ -269,9 +383,17 @@ export async function suaTheoId(pool, ctx, tenBang, id, duLieu = {}) {
   params.push(resolved.teamId);
   const dkTeam = `team_id = $${params.length}`; // MỘT vế, kể cả bo_luat_chung — xem đầu file
   params.push(id);
+  const dkId = `id = $${params.length}`;
+  // Vế `neu` nối SAU team và id: đọc câu SQL sinh ra là thấy ngay rào team đứng trước mọi
+  // điều kiện nghiệp vụ, không phải lần theo thứ tự tham số mới biết.
+  const dkThem = Object.entries(neu ?? {})
+    .filter(([k]) => k !== "team_id")
+    .map(([k, v]) => veDieuKien(k, v, params));
   const r = await pool.query(
-    `UPDATE ${tenBang} SET ${gan.join(",")} WHERE ${dkTeam} AND id = $${params.length} RETURNING *`,
+    `UPDATE ${tenBang} SET ${gan.join(",")} WHERE ${[dkTeam, dkId, ...dkThem].join(" AND ")} RETURNING *`,
     params,
   );
+  if (resolved.laHeThong)
+    await ghiNhatKyHeThong(pool, resolved.teamId, "sua", tenBang);
   return r.rows[0] ?? null;
 }

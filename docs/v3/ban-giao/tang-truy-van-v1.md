@@ -62,26 +62,87 @@ Cả hai hàm đọc (`layNhieu`, `layMotTheoId`) lẫn ghi (`themMoi`, `suaTheo
 layNhieu(pool, ctx, tenBang, ({ dieuKien = {}, thuTu } = {})); // → mảng dòng
 layMotTheoId(pool, ctx, tenBang, id); // → dòng | null
 themMoi(pool, ctx, tenBang, (duLieu = {})); // → dòng vừa tạo
-suaTheoId(pool, ctx, tenBang, id, (duLieu = {})); // → dòng đã sửa | null
+suaTheoId(pool, ctx, tenBang, id, (duLieu = {}), ({ neu } = {})); // → dòng đã sửa | null
 ```
+
+> **Nới 25/08/2026 · PHIEU-B-Y1** — hai chỗ hẹp cũ đã mở, chữ ký cũ KHÔNG vỡ (tham số mới
+> đều tuỳ chọn). Xem §3b và §3c.
 
 - `tenBang` phải nằm trong `BANG_NGHIEP_VU_CHUAN` (15 bảng — xem §6), gõ tay nhầm hoặc
   bảng lạ ⇒ `Error` thường (không phải hai lỗi có tên ở trên — đây là lỗi GỌI SAI của
   code, không phải chuyện team).
-- `dieuKien`/`duLieu` là object phẳng `{ tên_cột: giá_trị }`, ánh xạ thẳng sang
-  `cột = giá_trị` (AND). Tên cột được kiểm bằng regex (chỉ chữ thường/số/gạch dưới) —
-  không tự bịa cột không tồn tại, Postgres sẽ báo lỗi cột lạ như bình thường.
+- `dieuKien`/`duLieu` là object phẳng `{ tên_cột: giá_trị }`, nối bằng AND. Tên cột được
+  kiểm bằng regex (chỉ chữ thường/số/gạch dưới) **TRƯỚC mọi lượt chạm CSDL** — tên rác là
+  lỗi gọi sai của code, không đáng một vòng hỏi bảng `team`. Cách một GIÁ TRỊ được dịch:
+
+  | Giá trị trong `dieuKien`/`neu` | SQL sinh ra |
+  |---|---|
+  | thường (chuỗi, số, Date…) | `cot = $n` |
+  | **mảng** | `cot = ANY($n)` |
+  | **mảng rỗng** | `false` — 0 dòng, KHÔNG ném |
+  | **`null`** | `cot IS NULL` |
+  | `undefined` | **ném `Error`** — luôn là biến chưa gán của nơi gọi; viết `null` nếu thật sự muốn `IS NULL` |
   **`team_id` trong `dieuKien`/`duLieu` không bao giờ được DÙNG trực tiếp** — nó chỉ
   được SOI để phát hiện xuyên team; giá trị ghi xuống DB luôn là `ctx.teamId` (hoặc
   `team_id` tường minh khi dùng `ctxHeThong()`, xem §4).
 - `suaTheoId` trả `null` khi **0 dòng khớp** (id không tồn tại, hoặc tồn tại nhưng thuộc
   team khác) — đây KHÔNG phải lỗi, coi như "không có dòng đó trong team của bạn". Khác
   với `LoiXuyenTeam` (bị chặn vì **cố ý** truyền tay `team_id` khác trong `duLieu`).
-- `layMotTheoId`/`suaTheoId` **không hỗ trợ `ctxHeThong()`** (ném `LoiThieuBoiCanhTeam`
-  nếu dùng chung) — không có tham số nào để truyền `team_id` tường minh qua `id`. Job
-  nền cần tra/sửa theo id thì dùng `layNhieu(pool, ctxHeThong(), tenBang, { dieuKien: {
-id, team_id } })` (đọc) — **chưa có bản `suaTheoId` cho ctxHeThong**, ngoài phạm vi ④
-  của phiếu này, mở phiếu mới nếu L1+ cần.
+- `layMotTheoId` **không hỗ trợ `ctxHeThong()`** (ném `LoiThieuBoiCanhTeam`) — không có
+  tham số nào để truyền `team_id` tường minh qua `id`. Job nền tra theo id thì dùng
+  `layNhieu(pool, ctxHeThong(), tenBang, { dieuKien: { id, team_id } })`.
+  `suaTheoId` thì **CÓ** — xem §3c.
+
+### 3b · `neu` — điều kiện thêm, và cách diễn đạt SO-VÀ-ĐẶT
+
+```js
+suaTheoId(pool, ctx, tenBang, id, duLieu, { neu });
+```
+
+`neu` là object phẳng, nối vào `WHERE` **sau** vế team và vế id, dịch bằng ĐÚNG bảng giá
+trị ở §3 (cùng một bộ dựng vế với `layNhieu` — một bản khai, không hai).
+
+```js
+// Sale bấm "Nhận việc": chỉ thắng nếu NGAY LÚC GHI vẫn chưa ai nhận.
+const thang = await suaTheoId(
+  pool, ctx, "viec_can_xu_ly", viecId,
+  { nguoi_nhan_id: toi, nhan_luc: new Date() },
+  { neu: { nguoi_nhan_id: null } },
+);
+if (thang === null) {
+  /* người khác nhận trước — KHÔNG phải lỗi, hiện "việc đã có người nhận" */
+}
+```
+
+Ba điều phải nhớ:
+
+- **`null` là nhánh quan trọng nhất.** `neu: { cot: null }` ra `cot IS NULL`. Nếu tầng này
+  dịch thành `cot = NULL` thì không dòng nào khớp và **mọi** lượt nhận việc đều trượt —
+  hỏng câm, màn hình báo "mất tranh" cho từng cú bấm. Có bài test khoá nhánh này.
+- **0 dòng khớp → `null`, không ném.** Ba chuyện cùng ra `null`: id không tồn tại · dòng
+  thuộc team khác · `neu` không còn đúng (mất tranh). Nơi gọi nào coi mất tranh là LỖI
+  (máy trạng thái đơn: ảnh cũ ghi đè = hai sổ lệch) thì **tự dịch `null` thành ném** —
+  tầng này không đoán hộ ngữ nghĩa đó.
+- **`neu.team_id` lệch ctx → `LoiXuyenTeam`** + đúng **một** dòng `nhat_ky`, y hệt
+  `dieuKien`/`duLieu`. Khai `team_id` ở CẢ `duLieu` lẫn `neu` mà hai giá trị khác nhau
+  → `Error` thường (lỗi gọi sai, không phải mưu xuyên team).
+
+### 3c · `suaTheoId` + `ctxHeThong()` — job nền sửa được
+
+Đòi `team_id` tường minh, đặt ở **`duLieu` HOẶC `neu`** đều được — y hệt luật `themMoi`
+(§4). Thiếu → `LoiThieuBoiCanhTeam`. **Mọi** lượt gọi bằng `ctxHeThong` đều ghi `nhat_ky`,
+kể cả lượt khớp 0 dòng: một lượt so-và-đặt trượt vẫn là việc máy đã làm, bỏ nó đi thì sổ
+chỉ còn kể những lần thắng.
+
+```js
+await suaTheoId(pool, ctxHeThong(), "don_hang", id,
+  { team_id, trang_thai_he: "cho_sale" },
+  { neu: { trang_thai_he: anhDaDoc } });   // CAS của máy trạng thái đơn
+```
+
+**Việc này đóng nợ N3** (mở 22/08, cắn bốn lần, đẻ ba cửa UPDATE tạm ở `src/pos/kho.js` ·
+`src/chat/kho.js` · `src/orders/may-trang-thai.js`). Ba cửa đó **chưa bị xoá** — xoá là
+phiếu **G2-A3**, mỗi cửa một chủ. Đừng dựng cửa thứ tư.
 
 ### Đặc cách `bo_luat_chung` — CHỈ khi ĐỌC
 
@@ -175,9 +236,15 @@ BANG_NGHIEP_VU_CHUAN"):
 ## 7 · Nghiệm thu — đo lại bằng gì
 
 ```bash
-bash ops/bin/nghiem-thu/l0-m2.sh        # 8 phép của PHIẾU L0-M2 ④, tự dựng/dọn sandbox
-node --test test/l0-m2-boi-canh.test.js test/l0-m2-cach-ly.test.js   # 22 ca chi tiết
+bash ops/bin/nghiem-thu/l0-m2.sh        # 8 phép L0-M2 + 4 phép B-Y1, tự dựng/dọn sandbox
+node --test test/l0-m2-boi-canh.test.js test/l0-m2-cach-ly.test.js   # 40 ca chi tiết
 ```
+
+⚠️ **Cổng này từng chết câm.** Tới 25/08 nó còn dựng sandbox bằng `docker exec talpha-pg`,
+mà container đó không còn tồn tại ở đâu (máy dev không có docker, VPS chạy Postgres cài
+thẳng) ⇒ mọi lượt "chạy lại cổng L0-M2" đều `exit 2` mà không đo gì. Nay nó dựng/dọn bằng
+chính gói `pg` của repo, chạy ở đâu có `DATABASE_URL_V3` là chạy. Vai CSDL phải có quyền
+`CREATEDB` (trên VPS: `ALTER ROLE aicloser CREATEDB`, cấp 25/08).
 
 Không đo trên `aicloser_v3` (CSDL dev/di-trú) — cả cổng lẫn test đều tự dựng CSDL sandbox
 riêng rồi `DROP DATABASE` khi xong (mẫu `dungSandbox()` của `db/sandbox.js`, L0-M1), nên

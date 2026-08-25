@@ -138,13 +138,109 @@ test("B10 · ctxHeThong() — 1 lượt ĐỌC cũng ghi nhat_ky +1 (không riê
   assert.equal(sau - truoc, 1);
 });
 
-test("B11 · ctxHeThong không dùng được với layMotTheoId/suaTheoId (giới hạn đã khai)", async () => {
+// ⚠️ B11 ĐÃ ĐỔI NGHĨA ở PHIEU-B-Y1 — `suaTheoId` NAY hỗ trợ ctxHeThong. Bản cũ của ca này
+// khai «suaTheoId không dùng được với ctxHeThong»; sau B-Y1 lời khai đó SAI trong khi phép
+// assert vẫn XANH (vì lời gọi cũ không kèm team_id nên vẫn ném đúng lỗi đó, chỉ khác LÝ DO).
+// Thước xanh mà nhãn nói dối là án lệ #27 — nên tách làm hai: giới hạn CÒN THẬT của
+// `layMotTheoId` ở đây, và hợp đồng MỚI của `suaTheoId` ở B12–B15.
+test("B11 · layMotTheoId vẫn KHÔNG dùng được với ctxHeThong (không có chỗ khai team_id)", async () => {
   await assert.rejects(
     () => layMotTheoId(sb.pool, ctxHeThong(), "khach", 1),
     LoiThieuBoiCanhTeam,
   );
+});
+
+// ── B-Y1 mục 1 ④#5 — ctxHeThong KHÔNG kèm team_id tường minh thì suaTheoId vẫn từ chối.
+// Ném vì THIẾU KHAI, không phải vì «hàm không hỗ trợ» — hai lý do khác nhau, cùng một lỗi.
+test("B12 · suaTheoId + ctxHeThong() KHÔNG kèm team_id → LoiThieuBoiCanhTeam", async () => {
   await assert.rejects(
     () => suaTheoId(sb.pool, ctxHeThong(), "khach", 1, { ten: "x" }),
     LoiThieuBoiCanhTeam,
+  );
+});
+
+// ── B-Y1 mục 1 ④#6 — ctxHeThong CÓ team_id: chạy được, và ghi nhat_ky MỌI lượt ────
+test("B13 · suaTheoId + ctxHeThong() + team_id trong duLieu → sửa được, nhat_ky +1", async () => {
+  const dong = await themMoi(sb.pool, ctxHeThong(), "khach", {
+    team_id: idTieuAlpha,
+    ten: "job-nen-sua-1",
+  });
+  const truoc = await demNhatKy();
+  const sau = await suaTheoId(
+    sb.pool,
+    ctxHeThong(),
+    "khach",
+    dong.id,
+    { team_id: idTieuAlpha, ten: "job-nen-da-sua" },
+  );
+  const demSau = await demNhatKy();
+  console.log(`   [B13] nhat_ky trước=${truoc} sau=${demSau} (chờ +1)`);
+  assert.equal(sau.ten, "job-nen-da-sua");
+  assert.equal(demSau - truoc, 1);
+});
+
+test("B14 · suaTheoId + ctxHeThong(): team_id khai trong `neu` cũng đủ (không riêng duLieu)", async () => {
+  const dong = await themMoi(sb.pool, ctxHeThong(), "khach", {
+    team_id: idTieuAlpha,
+    ten: "job-nen-sua-2",
+  });
+  const sau = await suaTheoId(
+    sb.pool,
+    ctxHeThong(),
+    "khach",
+    dong.id,
+    { ten: "sua-qua-neu" },
+    { neu: { team_id: idTieuAlpha, ten: "job-nen-sua-2" } },
+  );
+  assert.equal(sau.ten, "sua-qua-neu");
+});
+
+// ── B-Y1 ④#7 — tên cột rác trong `neu` → Error thường, và KHÔNG CHẠM CSDL ─────────
+// Đo bằng HÀNH VI (án lệ #30): bọc pool bằng một cái đếm, rồi khai con số. Đếm 0 lượt
+// query là bằng chứng; «có ném lỗi» thì chưa nói được nó ném TRƯỚC hay SAU khi hỏi DB.
+test("B15 · tên cột rác trong `neu`/`dieuKien` → Error thường, 0 lượt chạm CSDL", async () => {
+  let dem = 0;
+  const poolDem = {
+    query: (...a) => {
+      dem += 1;
+      return sb.pool.query(...a);
+    },
+  };
+  const ctx = { teamId: idTieuAlpha, nguoiDungId: null };
+  for (const rac of ["a b", "a;drop table khach", "1cot", "CỘT"]) {
+    await assert.rejects(
+      () => suaTheoId(poolDem, ctx, "khach", 1, { ten: "x" }, { neu: { [rac]: 1 } }),
+      /tên cột/,
+    );
+    await assert.rejects(
+      () => layNhieu(poolDem, ctx, "khach", { dieuKien: { [rac]: 1 } }),
+      /tên cột/,
+    );
+  }
+  console.log(`   [B15] 8 lời gọi tên cột rác → ${dem} lượt chạm CSDL (chờ 0)`);
+  assert.equal(dem, 0);
+});
+
+// ── `undefined` KHÔNG được lặng lẽ thành `= NULL` (khớp 0 dòng và im) ─────────────
+test("B17 · toán tử so sánh dạng object → Error nói rõ chưa làm (không lặng lẽ khớp 0 dòng)", async () => {
+  const ctx = { teamId: idTieuAlpha, nguoiDungId: null };
+  await assert.rejects(
+    () => layNhieu(sb.pool, ctx, "khach", { dieuKien: { tao_luc: { ">=": new Date(0) } } }),
+    /chưa nhận toán tử so sánh/,
+  );
+  // …nhưng Date THƯỜNG thì vẫn là giá trị hợp lệ, đừng chặn nhầm.
+  const ok = await layNhieu(sb.pool, ctx, "khach", { dieuKien: { tao_luc: new Date(0) } });
+  assert.equal(ok.length, 0); // 0 dòng vì không ai tạo lúc epoch — KHÔNG phải vì bị chặn
+});
+
+test("B16 · giá trị undefined trong dieuKien/neu → Error, không lặng lẽ khớp 0 dòng", async () => {
+  const ctx = { teamId: idTieuAlpha, nguoiDungId: null };
+  await assert.rejects(
+    () => layNhieu(sb.pool, ctx, "khach", { dieuKien: { ten: undefined } }),
+    /undefined/,
+  );
+  await assert.rejects(
+    () => suaTheoId(sb.pool, ctx, "khach", 1, { ten: "x" }, { neu: { ten: undefined } }),
+    /undefined/,
   );
 });
