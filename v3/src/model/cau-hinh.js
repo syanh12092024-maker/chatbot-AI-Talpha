@@ -22,7 +22,9 @@ import {
 import { layModel, MA_MODEL } from './bang-model.js';
 import { MA_NHA } from './nha/index.js';
 import { LoiModel, LoiThamSo } from './loi.js';
-import { machHoaKho, giaiMaKho, tomTatKho, duoiKhoa } from './kho-khoa.js';
+// CHỈ lấy hai hàm HIỂN THỊ (`tomTatKho`, `duoiKhoa`). Bộ mã hoá của B (`machHoaKho`/
+// `giaiMaKho`) KHÔNG dùng nữa — xem khối «KHOÁ NẰM Ở ĐÂU» bên dưới.
+import { duoiKhoa } from './kho-khoa.js';
 
 export { LoiThieuBoiCanh, LoiXuyenTeam };
 
@@ -108,6 +110,47 @@ export function datPheuCanhBao(fn) {
 }
 
 /** Đồng hồ của bộ đệm — tiêm để test kiểm được hạn 5 giây mà không phải chờ thật. */
+/* ══════════════════════ KHOÁ NẰM Ở ĐÂU — đổi 25/08/2026 ══════════════════════
+ *
+ * TRƯỚC: `cau_hinh_model.khoa_ma_hoa` (jsonb, theo NHÀ) + bộ mã hoá riêng của B
+ *        (`v3/src/model/kho-khoa.js`, bao thư `{v,iv,the,mat}`).
+ *
+ * NAY:   bảng `khoa_nha` của người A (migration 008, `PHIEU-B-Y2` xong), MỘT bản khoá cho
+ *        mỗi (team × nhà), bao thư `v1.<iv>.<tag>.<ct>` của `db/khoa.js`.
+ *
+ * VÌ SAO BỎ BẢN CỦA B, KHÔNG PHẢI VÌ BẢN NÀO ĐẸP HƠN: cột `khoa_nha.khoa_api_ma` có
+ * `CHECK (... LIKE 'v1.%')` ở TẦNG CSDL. Bao thư jsonb của B ghi xuống là Postgres từ chối
+ * ngay. Hai bộ mã hoá cho cùng một cột thì bộ nào không khớp `CHECK` là bộ không tồn tại —
+ * giữ lại chỉ để đẻ ra một đường ghi luôn đỏ.
+ *
+ * Cổng khoá TIÊM TỪ NGOÀI, không import thẳng `db/khoa.js`: lớp model phải chạy được trong
+ * test mà không cần Postgres, và `khoa_nha` cố ý nằm NGOÀI tầng truy vấn chung (nó chứa bí
+ * mật) nên nó không đi qua `congTruyVan` được.
+ *
+ * ⛔ `docKhoa` CHỈ gọi cho những nhà THẬT SỰ đang dùng (chính · dự phòng · nền) — tối đa ba,
+ *    thường là hai. Kéo cả bốn nhà ra mỗi lượt đọc là mở rộng bề mặt rò rỉ mà chẳng được gì.
+ */
+
+let _khoKhoa = null;
+
+/**
+ * Nối kho khoá của người A.
+ * @param {{coKhoa:(teamId,nha)=>Promise<boolean>, docKhoa:(teamId,nha)=>Promise<string|null>,
+ *          ghiKhoa:(teamId,nha,khoaApi)=>Promise<any>}} bo
+ */
+export function datKhoKhoa(bo) {
+  if (bo == null) { _khoKhoa = null; return null; }
+  for (const ten of ['coKhoa', 'docKhoa', 'ghiKhoa']) {
+    if (typeof bo[ten] !== 'function') {
+      throw new LoiCauHinh(`datKhoKhoa: thiếu hàm \`${ten}\`. Cần đủ ba: coKhoa · docKhoa · ghiKhoa.`);
+    }
+  }
+  _khoKhoa = bo;
+  return _khoKhoa;
+}
+
+export const daNoiKhoKhoa = () => _khoKhoa != null;
+
 export function datDongHoCauHinh(fn) {
   if (fn != null && typeof fn !== 'function') throw new LoiCauHinh('datDongHoCauHinh cần một hàm');
   _dongHo = fn || (() => Date.now());
@@ -205,28 +248,60 @@ export function cauHinhMacDinh(teamId) {
     doNgauNhien: MAC_DINH.doNgauNhien,
     doNgauNhienNen: MAC_DINH.doNgauNhienNen,
     khoa: khoaTuEnv(),
-    khoaGoc: {},
+    khoaRieng: {},        // nhà nào có khoá RIÊNG của team (không kể khoá env)
     suaLuc: null,
   };
 }
 
-/** Bản ghi trong bảng → cấu hình đã giải mã khoá. */
-function tuBanGhi(teamId, r) {
-  const khoaGoc = r.khoa_ma_hoa && typeof r.khoa_ma_hoa === 'object' ? r.khoa_ma_hoa : {};
+/** Ba vai trò của `cau_hinh_model` — `CHECK (vai_tro IN (...))` của lược đồ thật. */
+export const VAI_TRO = Object.freeze({ CHINH: 'chinh', DU_PHONG: 'du_phong', NEN: 'nen' });
+
+/** vai_tro trong CSDL ↔ tên trường của lớp này. Một chỗ duy nhất, hai chiều. */
+const VAI_TRO_SANG_TRUONG = Object.freeze({ chinh: 'chinh', du_phong: 'duPhong', nen: 'nen' });
+const TRUONG_SANG_VAI_TRO = Object.freeze({ chinh: 'chinh', duPhong: 'du_phong', nen: 'nen' });
+
+/**
+ * BA DÒNG trong bảng → MỘT cấu hình.
+ *
+ * Lược đồ thật là `UNIQUE (team_id, vai_tro)` với `vai_tro ∈ chinh|du_phong|nen` — tức là
+ * mỗi team BA DÒNG, không phải một. Bản trước của file này viết theo hình một-dòng
+ * (`chinh_ma_model`, `du_phong_ma_model`…) vì nó viết lúc chưa có lược đồ. Đây không phải
+ * đổi tên cột mà là đổi hình dạng dữ liệu, nên phải gộp ở đây.
+ *
+ * Dòng thiếu → rơi về mặc định của ô đó, KHÔNG ném: một team mới cấu hình ô `chinh` mà chưa
+ * đụng ô `nen` là chuyện bình thường, không phải dữ liệu hỏng.
+ */
+function tuBaDong(teamId, dong) {
+  const theoVai = new Map();
+  for (const r of dong || []) {
+    if (r && r.vai_tro && VAI_TRO_SANG_TRUONG[r.vai_tro]) theoVai.set(r.vai_tro, r);
+  }
   const so = (x, mac) => (Number.isFinite(Number(x)) ? Number(x) : mac);
+  const oCua = (vaiTro, macDinhMa) => {
+    const r = theoVai.get(vaiTro);
+    return oModel((r && r.ma_model) || macDinhMa);
+  };
+  const rChinh = theoVai.get(VAI_TRO.CHINH);
+  const rNen = theoVai.get(VAI_TRO.NEN);
+  // `sua_luc` mới nhất trong ba dòng — màn hình hỏi "sửa lần cuối lúc nào", không hỏi
+  // "dòng `chinh` sửa lúc nào".
+  const suaLuc = (dong || []).map((r) => r && r.sua_luc).filter(Boolean).sort().pop() || null;
+
   return {
     teamId: String(teamId),
-    macDinh: false,
-    id: r.id ?? null,
-    chinh: oModel(r.chinh_ma_model || MAC_DINH.chinh),
-    duPhong: oModel(r.du_phong_ma_model || MAC_DINH.duPhong),
-    nen: oModel(r.nen_ma_model || MAC_DINH.nen),
-    doNgauNhien: so(r.do_ngau_nhien, MAC_DINH.doNgauNhien),
-    doNgauNhienNen: so(r.do_ngau_nhien_nen, MAC_DINH.doNgauNhienNen),
-    // Khoá của team đè lên khoá env, không phải ngược lại.
-    khoa: { ...khoaTuEnv(), ...giaiMaKho(khoaGoc) },
-    khoaGoc,
-    suaLuc: r.sua_luc ?? null,
+    macDinh: theoVai.size === 0,
+    soDong: theoVai.size,
+    id: rChinh ? rChinh.id ?? null : null,
+    idTheoVai: Object.fromEntries([...theoVai].map(([v, r]) => [v, r.id ?? null])),
+    chinh: oCua(VAI_TRO.CHINH, MAC_DINH.chinh),
+    duPhong: oCua(VAI_TRO.DU_PHONG, MAC_DINH.duPhong),
+    nen: oCua(VAI_TRO.NEN, MAC_DINH.nen),
+    // `do_ngau_nhien` nằm TRÊN TỪNG DÒNG ở lược đồ thật, nên `doNgauNhienNen` của bản cũ
+    // chính là `do_ngau_nhien` của dòng `vai_tro='nen'` — không còn cột thứ hai.
+    doNgauNhien: so(rChinh && rChinh.do_ngau_nhien, MAC_DINH.doNgauNhien),
+    doNgauNhienNen: so(rNen && rNen.do_ngau_nhien, MAC_DINH.doNgauNhienNen),
+    bat: Object.fromEntries([...theoVai].map(([v, r]) => [v, r.bat !== false])),
+    suaLuc,
   };
 }
 
@@ -295,8 +370,12 @@ export async function docCauHinh(boiCanh, bo = {}) {
     if (teamXin != null && teamXin !== '') dieuKien.team_id = teamXin;
     // Đọc hỏng thì PHẢI ném. Lặng lẽ lùi về mặc định là đổi model của cả team mà không ai
     // biết — đúng kiểu hỏng mà cả spec này sinh ra để bịt.
-    const r = await db.mot(BANG, dieuKien);
-    cauHinh = r ? tuBanGhi(bc.teamId, r) : cauHinhMacDinh(bc.teamId);
+    // BA dòng, không phải một (`UNIQUE (team_id, vai_tro)`). Đọc hỏng thì PHẢI ném —
+    // lặng lẽ lùi về mặc định là đổi model của cả team mà không ai biết.
+    const dong = await db.chon(BANG, dieuKien);
+    cauHinh = tuBaDong(bc.teamId, dong);
+    if (cauHinh.macDinh) cauHinh = { ...cauHinhMacDinh(bc.teamId), soDong: 0, idTheoVai: {}, bat: {} };
+    else cauHinh = await datKhoaVao(cauHinh);
   }
 
   _dem.set(khoaDem, { luc: _dongHo(), cauHinh });
@@ -304,17 +383,59 @@ export async function docCauHinh(boiCanh, bo = {}) {
 }
 
 /**
+ * Nạp khoá vào cấu hình — CHỈ những nhà thật sự đang dùng (chính · dự phòng · nền).
+ * Chưa nối kho khoá → chạy bằng khoá env và KÊU MỘT LẦN, không im lặng chạy sai.
+ */
+async function datKhoaVao(c) {
+  const env = khoaTuEnv();
+  if (!_khoKhoa) {
+    if (!_daKeuChuaKhoa.has(c.teamId)) {
+      _daKeuChuaKhoa.add(c.teamId);
+      console.warn(
+        `[model] chưa nối kho khoá (datKhoKhoa) — team ${c.teamId} chạy bằng khoá từ biến `
+        + 'môi trường. Khoá riêng của team trong bảng `khoa_nha` KHÔNG được đọc.',
+      );
+    }
+    return { ...c, khoa: env, khoaRieng: {} };
+  }
+  const nhaDung = [...new Set([c.chinh.nha, c.duPhong.nha, c.nen.nha])];
+  const khoa = { ...env };
+  const khoaRieng = {};
+  for (const nha of nhaDung) {
+    const k = await _khoKhoa.docKhoa(c.teamId, nha);
+    if (k) { khoa[nha] = k; khoaRieng[nha] = true; }   // khoá riêng của team LUÔN thắng env
+  }
+  return { ...c, khoa, khoaRieng };
+}
+
+const _daKeuChuaKhoa = new Set();
+
+/**
  * Cấu hình CHO MÀN HÌNH: khoá chỉ còn `{ daCo, duoi }`, không có một ký tự khoá thật nào.
  */
 export async function tomTatCauHinh(boiCanh, bo = {}) {
   const c = await docCauHinh(boiCanh, bo);
-  const khoa = tomTatKho(c.khoaGoc);
-  // Khoá đến từ biến môi trường cũng phải hiện, nếu không màn hình báo "chưa có khoá"
-  // trong khi bot vẫn đang gọi được — hai thứ ngược nhau là chỗ mất cả buổi để hiểu.
   const env = khoaTuEnv();
+
+  // Hỏi ĐỦ BỐN NHÀ — kể cả nhà team chưa chọn model. Màn hình phải cho dán khoá TRƯỚC rồi
+  // mới chọn model của nhà đó; chỉ hiện nhà đang dùng thì người ta không có đường vào.
+  //
+  // Dùng `coKhoa` chứ KHÔNG dùng `docKhoa`: câu hỏi «nhà này có khoá chưa» là câu hỏi định
+  // tuyến, không phải câu hỏi bí mật. Kéo bản mã ra khỏi CSDL chỉ để đếm nó là mở rộng bề
+  // mặt rò rỉ mà chẳng được gì (cùng lý lẽ với `db/khoa.js#coKhoaNha`).
+  const khoa = {};
   for (const nha of MA_NHA) {
-    if (!khoa[nha].daCo && env[nha]) {
+    const rieng = _khoKhoa ? await _khoKhoa.coKhoa(c.teamId, nha) : false;
+    if (rieng) {
+      // Khoá riêng: KHÔNG hiện đuôi. Muốn biết đuôi thì phải giải mã, mà giải mã chỉ để
+      // trang trí một dòng chữ là đúng thứ `coKhoaNha` sinh ra để tránh.
+      khoa[nha] = { daCo: true, duoi: null, tuEnv: false };
+    } else if (env[nha]) {
+      // Khoá env cũng phải hiện, nếu không màn hình báo "chưa có khoá" trong khi bot vẫn
+      // đang gọi được — hai thứ ngược nhau là chỗ mất cả buổi để hiểu.
       khoa[nha] = { daCo: true, duoi: duoiKhoa(env[nha]) || null, tuEnv: true };
+    } else {
+      khoa[nha] = { daCo: false, duoi: null, tuEnv: false };
     }
   }
   return {
@@ -327,8 +448,62 @@ export async function tomTatCauHinh(boiCanh, bo = {}) {
     doNgauNhienNen: c.doNgauNhienNen,
     khoa,
     suaLuc: c.suaLuc,
+    soDong: c.soDong ?? 0,
     danhSachModel: MA_MODEL,
+    // Cảnh báo suy từ cấu hình — suy Ở ĐÂY để có bài test khoá, không suy trong HTML.
+    canhBao: canhBaoCauHinh({ ...c, khoa }),
   };
+}
+
+/**
+ * Bốn cảnh báo của màn «Model AI & khoá».
+ *
+ * Cái thứ nhất là bài học đắt nhất: **06/08/2026 tài khoản nhà chính hết tiền, bot đứng im
+ * ba tiếng mà không ai biết**; và 23/08 lặp lại — **731 phút**. Nên màn này phải nói được
+ * «sắp hỏng» TRƯỚC khi hỏng, chứ không phải báo cáo sau khi đã hỏng.
+ */
+export function canhBaoCauHinh(c) {
+  const ra = [];
+  const k = c.khoa || {};
+  const coKhoa = (nha) => !!(k[nha] && k[nha].daCo);
+
+  if (c.macDinh) {
+    ra.push({
+      ma: 'chua_cau_hinh', muc: 'do',
+      chu: 'Team này chưa cấu hình model — đang chạy bằng bộ mặc định '
+        + `(${MAC_DINH.chinh} → ${MAC_DINH.duPhong}). Chọn model rồi lưu để chốt lại.`,
+    });
+  }
+  if (!coKhoa(c.chinh.nha)) {
+    ra.push({
+      ma: 'chinh_khong_khoa', muc: 'do',
+      chu: `Model chính "${c.chinh.ma}" là của nhà "${c.chinh.nha}" mà nhà đó CHƯA có khoá — `
+        + 'mọi lượt chat sẽ rơi thẳng sang dự phòng, hoặc chết hẳn nếu dự phòng cũng thiếu.',
+    });
+  }
+  if (!coKhoa(c.duPhong.nha)) {
+    ra.push({
+      ma: 'du_phong_khong_khoa', muc: 'do',
+      chu: `Dự phòng "${c.duPhong.ma}" (nhà "${c.duPhong.nha}") chưa có khoá — nhà chính hết `
+        + 'tiền là bot đứng im. Đúng cảnh 06/08/2026 (3 tiếng) và 23/08 (731 phút).',
+    });
+  }
+  if (c.chinh.nha === c.duPhong.nha) {
+    ra.push({
+      ma: 'du_phong_cung_nha', muc: 'do',
+      chu: `Dự phòng cùng nhà "${c.duPhong.nha}" với model chính — hết tiền một tài khoản là `
+        + 'chết cả hai. Đây là dự phòng GIẢ.',
+    });
+  }
+  const thieu = MA_NHA.filter((n) => !coKhoa(n));
+  if (thieu.length && thieu.length < MA_NHA.length) {
+    ra.push({
+      ma: 'con_nha_chua_khoa', muc: 'tin',
+      chu: `Chưa dán khoá cho ${thieu.length}/${MA_NHA.length} nhà (${thieu.join(', ')}) — `
+        + 'chưa có khoá thì không chọn được model của nhà đó.',
+    });
+  }
+  return ra;
 }
 
 // ---- GHI ---------------------------------------------------------------------------
@@ -368,7 +543,8 @@ const TEN_NHA = new Map([
 ]);
 
 /** Máy chủ tự đặt. Nhận để màn hình gửi nguyên bản ghi về được, nhưng không lấy giá trị. */
-const TEN_MAY_CHU_DAT = new Set(['id', 'team_id', 'teamId', 'sua_luc', 'macDinh', 'khoaGoc']);
+const TEN_MAY_CHU_DAT = new Set(['id', 'team_id', 'teamId', 'sua_luc', 'macDinh', 'khoaGoc', 'khoaRieng', 'soDong', 'idTheoVai', 'bat', 'danhSachModel',
+  'canhBao', 'suaLuc', 'vai_tro', 'nha_cung_cap', 'ma_model']);
 
 /**
  * Bóc `thayDoi` ra tên nội bộ.
@@ -459,33 +635,65 @@ export async function ghiCauHinh(boiCanh, thayDoi = {}) {
   const doNgauNhienNen = xin.doNgauNhienNen != null
     ? batBuocDoNgauNhien('do_ngau_nhien_nen', xin.doNgauNhienNen) : truoc.doNgauNhienNen;
 
-  // Khoá: chỉ đụng nhà nào có trong `thayDoi.khoa`. Không truyền = giữ nguyên.
-  let khoaGoc = truoc.khoaGoc;
-  let doiKhoa = [];
+  // ── KHOÁ: đi sang bảng `khoa_nha` của người A, KHÔNG vào `cau_hinh_model` nữa ──
+  // Từ migration 008 `cau_hinh_model` không còn cột khoá. Ghi khoá MỘT LẦN cho mỗi nhà là
+  // mọi ô dùng nhà đó đọc ra khoá mới — đúng cái `PHIEU-B-Y2` xin và A đã làm.
+  const doiKhoa = [];
   if (xin.khoa && typeof xin.khoa === 'object') {
-    const moi = machHoaKho(xin.khoa);              // mã hoá TRƯỚC khi chạm cơ sở dữ liệu
-    khoaGoc = { ...truoc.khoaGoc };
-    for (const [nha, goi] of Object.entries(moi)) {
-      if (goi == null) delete khoaGoc[nha]; else khoaGoc[nha] = goi;
+    if (!_khoKhoa) {
+      throw new LoiCauHinh(
+        'chưa nối kho khoá (`datKhoKhoa`) — từ chối ghi khoá. Ghi hụt khoá là cách rẻ nhất '
+        + 'để làm một team câm mà không ai biết.',
+      );
+    }
+    for (const [nha, giaTri] of Object.entries(xin.khoa)) {
+      if (!MA_NHA.includes(nha)) throw new LoiCauHinh(`nhà lạ: "${nha}" (có: ${MA_NHA.join(', ')}).`);
+      // ⛔ CHẶN HÌNH HIỂN THỊ. `tomTatCauHinh` trả `khoa[nha] = { daCo, duoi, tuEnv }` cho
+      //    màn hình. Màn hình gửi nguyên tóm tắt đó lên là chuyện rất dễ xảy ra — và không
+      //    chặn thì `String({daCo:true})` ra `"[object Object]"`, ghi thẳng vào kho khoá
+      //    làm khoá API. Bot chết mà màn hình báo "đã lưu khoá". Ném to ở đây.
+      if (giaTri != null && typeof giaTri === 'object') {
+        throw new LoiCauHinh(
+          `khoá của nhà "${nha}" phải là CHUỖI, nhận một đối tượng. Có phải nơi gọi gửi lại `
+          + 'nguyên `khoa` của `tomTatCauHinh` không? Đó là hình HIỂN THỊ ({daCo, duoi}), '
+          + 'không phải khoá — gửi chuỗi khoá thật, hoặc bỏ hẳn trường `khoa` để giữ nguyên.',
+        );
+      }
+      const v = giaTri == null ? null : String(giaTri).trim();
+      // Chuỗi RỖNG ≠ null. `null` là "giữ nguyên" (hợp đồng `ghiKhoaNha` của A); rỗng là
+      // nơi gọi gửi một ô input trống — không phải ý định xoá khoá, nên bỏ qua chứ đừng ghi.
+      if (v === '' || v == null) continue;
+      await _khoKhoa.ghiKhoa(bc.teamId, nha, v);
       doiKhoa.push(nha);
     }
   }
 
+  // ── BA DÒNG, nâng-hoặc-chèn TỪNG VAI TRÒ (`UNIQUE (team_id, vai_tro)`) ──
+  // Không có `ON CONFLICT` ở tầng truy vấn của A, và `db.sua` đòi điều kiện `id`. Nên đọc
+  // dòng đang có rồi chọn sửa hay chèn — ba lượt, mỗi lượt một vai trò.
   const suaLuc = new Date(_dongHo()).toISOString();
-  const banGhi = {
-    // KHÔNG đặt team_id — cổng truy vấn tự chèn (hợp đồng mục 3 điều 1).
-    chinh_ma_model: chinh.ma, chinh_nha: chinh.nha,
-    du_phong_ma_model: duPhong.ma, du_phong_nha: duPhong.nha,
-    nen_ma_model: nen.ma, nen_nha: nen.nha,
-    do_ngau_nhien: doNgauNhien,
-    do_ngau_nhien_nen: doNgauNhienNen,
-    khoa_ma_hoa: khoaGoc,
-    sua_luc: suaLuc,
-  };
+  const dangCoDs = await db.chon(BANG, {});
+  const theoVai = new Map((dangCoDs || []).filter((r) => r && r.vai_tro).map((r) => [r.vai_tro, r]));
+  const dangCo = theoVai.get(VAI_TRO.CHINH) || null;
 
-  const dangCo = await db.mot(BANG, {});
-  if (dangCo) await db.sua(BANG, {}, banGhi);
-  else await db.them(BANG, banGhi);
+  const bo = [
+    [VAI_TRO.CHINH, chinh, doNgauNhien],
+    [VAI_TRO.DU_PHONG, duPhong, null],
+    [VAI_TRO.NEN, nen, doNgauNhienNen],
+  ];
+  for (const [vaiTro, o, dnn] of bo) {
+    const banGhi = {
+      // KHÔNG đặt team_id — cổng truy vấn tự chèn (hợp đồng mục 3 điều 1).
+      vai_tro: vaiTro,
+      nha_cung_cap: o.nha,
+      ma_model: o.ma,
+      do_ngau_nhien: dnn,
+      sua_luc: suaLuc,
+    };
+    const cu = theoVai.get(vaiTro);
+    if (cu) await db.sua(BANG, { id: cu.id }, banGhi);
+    else await db.them(BANG, banGhi);
+  }
 
   // NẠP NÓNG — xoá đệm NGAY sau khi ghi. Đây là cả bí quyết của tiêu chí "không khởi
   // động lại": lượt chat kế tiếp không thấy đệm nên đọc lại bảng và thấy model mới.
@@ -523,8 +731,10 @@ export async function ghiCauHinh(boiCanh, thayDoi = {}) {
       doiTuongId: dangCo ? dangCo.id : null,
       // CHỈ đuôi bốn ký tự. `nhat_ky` là bảng KHÔNG SỬA ĐƯỢC: lỡ ghi khoá thật vào là nằm
       // đó vĩnh viễn.
-      truoc: { khoa: tomTatKho(truoc.khoaGoc) },
-      sau: { khoa: tomTatKho(khoaGoc) },
+      // ⛔ CHỈ TÊN NHÀ. `nhat_ky` là bảng KHÔNG SỬA ĐƯỢC: lỡ ghi khoá thật vào là nằm đó
+      //    vĩnh viễn, và cả bốn đuôi khoá gộp lại cũng đã là thông tin thừa.
+      truoc: null,
+      sau: { nha_da_doi: doiKhoa },
       ghiChu: `đổi khoá nhà: ${doiKhoa.join(', ')}`,
     });
   }

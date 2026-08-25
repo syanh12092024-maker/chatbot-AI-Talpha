@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Model AI &amp; khoá — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1100px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
+  .banner.r{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
+  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner.i{background:var(--priSoft);color:#0b4a52;border:1px solid #b8dde0;font-weight:400}
+
+  /* ba ô vai trò */
+  .ba{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+  .vai{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fcfdfd;min-width:0}
+  .vai h3{font-size:12.5px;margin:0 0 3px}
+  .vai .gt{font-size:11.5px;color:var(--muted);line-height:1.45;margin-bottom:9px;min-height:32px}
+  .vai select{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff;font:inherit;font-size:12.5px}
+  .vai .gia{margin-top:7px;font-size:11.5px;color:var(--muted);line-height:1.5}
+  .vai .gia b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .vai.canh{border-color:#f0c2a4;background:#fffbf5}
+
+  .khoa-o{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .khoa-o input{flex:1;min-width:130px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;
+                font:inherit;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 9px;text-align:right;border-bottom:1px solid var(--line);vertical-align:middle}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.dung{background:var(--priSoft)}
+  td.num{font-variant-numeric:tabular-nums}
+  .ten{font-weight:600;overflow-wrap:anywhere}
+  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
+  .pill.g{background:var(--okSoft);color:var(--ok)}
+  .pill.o{background:var(--warnSoft);color:var(--warn)}
+  .pill.r{background:var(--badSoft);color:var(--bad)}
+  .pill.m{background:#f1f1f1;color:#777}
+  .pill.p{background:var(--priSoft);color:var(--priDark)}
+
+  button{font:inherit}
+  .nut{background:var(--pri);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
+  .nut:hover{background:var(--priDark)}
+  .nut[disabled]{background:#c3cdd0;cursor:not-allowed}
+  .nut.nho{padding:5px 10px;font-size:11.5px;font-weight:600}
+  .hang{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  input[type=range]{width:100%;max-width:220px}
+
+  .loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:8px;
+       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .loi.hien{display:block}
+  .ok{background:var(--okSoft);color:#14532d;border:1px solid #b7e4c7;border-radius:8px;
+      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .ok.hien{display:block}
+
+  @media (max-width:700px){
+    header{padding:12px 14px} main{padding:12px 14px 48px}
+    .panel h2{padding:10px 12px} .than{padding:12px}
+    .vai .gt{min-height:0}
+    table,thead,tbody,th,td,tr{display:block}
+    thead{display:none}
+    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
+    tbody tr:last-child{margin-bottom:0}
+    td{border:none;padding:4px 0;text-align:left}
+    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
+      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Model AI &amp; khoá</h1>
+  <span class="sub" id="teamHien">…</span>
+  <span class="sp"></span>
+  <a href="/cau-hinh-team">Cấu hình team</a>
+  <a href="/page-bot">Page &amp; Bot</a>
+  <a href="/ket-noi">Kết nối &amp; token</a>
+  <a href="/dieu-phoi">Bảng điều phối →</a>
+</header>
+
+<main>
+  <div class="loi" id="loi"></div>
+  <div class="ok" id="baoOk"></div>
+  <div id="canhBao"></div>
+
+  <section class="panel">
+    <h2>Model đang dùng
+      <span class="hint" id="suaLuc"></span>
+      <span class="sp"></span>
+      <span class="hint">đổi xong là lượt chat kế tiếp đi model mới — không khởi động lại</span>
+    </h2>
+    <div class="than">
+      <div class="ba" id="baVai"></div>
+      <div style="margin-top:13px" id="khoiNgauNhien"></div>
+      <div class="hang" style="margin-top:13px">
+        <button class="nut" id="nutLuu">Lưu cấu hình</button>
+        <span class="phu" id="ghiChuLuu"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Khoá API bốn nhà <span class="hint">dán vào được, không đọc ra được</span></h2>
+    <div class="than"><div class="ba" id="baNha"></div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Quy giá ra tiền thật
+      <span class="hint" id="giaiThichGia"></span>
+    </h2>
+    <div id="bangGia"></div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const so = (n) => Number(n || 0).toLocaleString('vi-VN');
+const so1 = (n) => Number(n || 0).toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+let D = null, SUA = false;
+
+function baoLoi(t){ const o = $('#loi'); o.textContent = t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
+function baoOk(t){ const o = $('#baoOk'); o.textContent = t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
+function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
+
+async function goi(duong, tuyChon){
+  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
+  let d = null;
+  try { d = await r.json(); } catch { /* null */ }
+  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
+  return d;
+}
+
+/** Ô chọn model cho một vai trò. Chỉ liệt model của nhà ĐÃ CÓ KHOÁ + model đang chọn. */
+function oVai(khoa, nhan, giaiThich, dangChon, canhBao){
+  const chonDuoc = D.bangGia.filter((m) => {
+    const k = D.khoa[m.nha];
+    return (k && k.daCo) || m.ma === dangChon.ma;     // đang chọn thì luôn hiện, dù mất khoá
+  });
+  const gia = D.bangGia.find((m) => m.ma === dangChon.ma);
+  return `<div class="vai ${canhBao ? 'canh' : ''}">
+    <h3>${esc(nhan)}</h3>
+    <div class="gt">${esc(giaiThich)}</div>
+    <select data-vai="${esc(khoa)}" ${SUA ? '' : 'disabled'}>
+      ${chonDuoc.map((m) => `<option value="${esc(m.ma)}" ${m.ma === dangChon.ma ? 'selected' : ''}>
+        ${esc(m.ma)} — ${esc(m.tenNha)}${(D.khoa[m.nha] && D.khoa[m.nha].daCo) ? '' : ' (chưa có khoá)'}
+      </option>`).join('')}
+    </select>
+    ${gia ? `<div class="gia"><b>${so1(gia.dTin)}</b> đ/tin · <b>${so(gia.dDon)}</b> đ/đơn
+      ${gia.giaChacChan ? '' : ' · <span class="pill o">giá suy ngược</span>'}</div>` : ''}
+  </div>`;
+}
+
+function veCauHinh(){
+  $('#teamHien').textContent = `team #${D.teamId}` + (D.macDinh ? ' · chưa cấu hình' : '');
+  $('#suaLuc').textContent = D.suaLuc ? `sửa lần cuối: ${new Date(D.suaLuc).toLocaleString('vi-VN')}` : '';
+  $('#ghiChuLuu').textContent = SUA ? '' : 'vai của bạn chỉ xem được';
+  $('#nutLuu').disabled = !SUA;
+
+  const thieuKhoa = (nha) => !(D.khoa[nha] && D.khoa[nha].daCo);
+  $('#baVai').innerHTML =
+    oVai('chinh', D.tenVaiTro.chinh, D.giaiThichVaiTro.chinh, D.dangDung.chinh, thieuKhoa(D.dangDung.chinh.nha))
+    + oVai('duPhong', D.tenVaiTro.du_phong, D.giaiThichVaiTro.du_phong, D.dangDung.duPhong, thieuKhoa(D.dangDung.duPhong.nha))
+    + oVai('nen', D.tenVaiTro.nen, D.giaiThichVaiTro.nen, D.dangDung.nen, thieuKhoa(D.dangDung.nen.nha));
+
+  $('#khoiNgauNhien').innerHTML = `<div class="ba">
+    <div><label class="phu">Độ ngẫu nhiên — model chính: <b id="nnHien">${D.doNgauNhien}</b></label>
+      <input type="range" id="nn" min="0" max="1" step="0.05" value="${D.doNgauNhien}" ${SUA ? '' : 'disabled'} />
+      <div class="phu">0 = trả lời ổn định, giống nhau mỗi lần. 1 = nói đa dạng hơn nhưng khó lường.</div></div>
+    <div><label class="phu">Độ ngẫu nhiên — việc nền: <b id="nnnHien">${D.doNgauNhienNen}</b></label>
+      <input type="range" id="nnn" min="0" max="1" step="0.05" value="${D.doNgauNhienNen}" ${SUA ? '' : 'disabled'} />
+      <div class="phu">Việc nền là phân loại và tóm tắt — nên để thấp cho kết quả lặp lại được.</div></div>
+  </div>`;
+  if (SUA) {
+    $('#nn').addEventListener('input', (e) => { $('#nnHien').textContent = e.target.value; });
+    $('#nnn').addEventListener('input', (e) => { $('#nnnHien').textContent = e.target.value; });
+  }
+
+  $('#canhBao').innerHTML = (D.canhBao || []).map((c) =>
+    `<div class="banner ${c.muc === 'do' ? 'r' : c.muc === 'vang' ? 'o' : 'i'}">${esc(c.chu)}</div>`).join('');
+}
+
+function veKhoa(){
+  $('#baNha').innerHTML = D.nha.map((n) => {
+    const k = D.khoa[n.ma] || {};
+    return `<div class="vai">
+      <h3>${esc(n.ten)}</h3>
+      <div class="gt">${k.daCo
+        ? (k.tuEnv
+          ? `<span class="pill m">khoá từ biến môi trường</span> dán khoá riêng của team để đè lên.`
+          : `<span class="pill g">đã có khoá riêng</span> dán khoá mới để thay.`)
+        : '<span class="pill r">chưa có khoá</span> chưa dán thì không chọn được model của nhà này.'}
+      </div>
+      ${SUA ? `<div class="khoa-o">
+        <input type="password" data-khoa="${esc(n.ma)}" placeholder="dán khoá API…" autocomplete="off" spellcheck="false" />
+        <button class="nut nho" data-luukhoa="${esc(n.ma)}">Lưu</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+  document.querySelectorAll('[data-luukhoa]').forEach((b) => b.addEventListener('click', () => luuKhoa(b.dataset.luukhoa)));
+}
+
+function veBangGia(){
+  $('#giaiThichGia').textContent =
+    `hồ sơ token đo thật · ${so(D.tinMoiDon)} tin mỗi đơn · tỉ giá ${so(D.usdVnd)} đ/USD`;
+  $('#bangGia').innerHTML = `<table><thead><tr>
+      <th>Model</th><th>Nhà</th><th>đ/tin</th><th>đ/đơn</th><th>So với đang dùng</th>
+    </tr></thead><tbody>${D.bangGia.map((m) => `
+    <tr class="${m.laDangDung ? 'dung' : ''}">
+      <td data-nhan="Model"><span class="ten">${esc(m.ma)}</span>
+        ${m.laDangDung ? ' <span class="pill p">đang dùng</span>' : ''}
+        ${m.giaChacChan ? '' : '<div class="phu">giá SUY NGƯỢC — chưa ai mở tài khoản nhà này, đơn giá giải ngược từ bảng đ/tin</div>'}</td>
+      <td data-nhan="Nhà"><span class="phu">${esc(m.tenNha)}</span></td>
+      <td data-nhan="đ/tin" class="num">${so1(m.dTin)}</td>
+      <td data-nhan="đ/đơn" class="num"><b>${so(m.dDon)}</b></td>
+      <td data-nhan="So với đang dùng" class="num">${m.soVoiDangDung == null ? '—'
+        : `<span class="pill ${m.soVoiDangDung < 1 ? 'g' : m.soVoiDangDung > 1.5 ? 'r' : 'm'}">${m.soVoiDangDung}×</span>`}</td>
+    </tr>`).join('')}</tbody></table>
+    <div class="than phu">Đo bằng tiền <b>mỗi đơn</b>, không phải mỗi tin: model thông minh hơn chốt
+      bằng ít tin hơn, nên có thể đắt mỗi tin mà rẻ mỗi đơn. Cột đ/đơn là <b>phóng chiếu</b>
+      (đ/tin × ${so(D.tinMoiDon)} tin/đơn đo được), không phải một phép đo mới — muốn biết chắc
+      thì phải A/B.</div>`;
+}
+
+async function luuKhoa(nha){
+  const o = document.querySelector(`[data-khoa="${nha}"]`);
+  const v = (o.value || '').trim();
+  if (!v) { baoLoi('Chưa dán khoá nào. Ô trống nghĩa là "giữ nguyên", không phải "xoá".'); return; }
+  xoaBao();
+  try {
+    await goi('/api/model/khoa', { method:'POST', body: JSON.stringify({ nha, khoa: v }) });
+    o.value = '';
+    baoOk(`Đã lưu khoá cho ${nha}. Lượt chat kế tiếp dùng khoá mới — không cần khởi động lại.`);
+    await nap();
+  } catch (e) { baoLoi(e.message); }
+}
+
+$('#nutLuu').addEventListener('click', async () => {
+  xoaBao();
+  const lay = (v) => document.querySelector(`[data-vai="${v}"]`).value;
+  const than = {
+    chinh: lay('chinh'), duPhong: lay('duPhong'), nen: lay('nen'),
+    doNgauNhien: Number($('#nn').value), doNgauNhienNen: Number($('#nnn').value),
+  };
+  $('#nutLuu').disabled = true;
+  try {
+    await goi('/api/model/cau-hinh', { method:'POST', body: JSON.stringify(than) });
+    baoOk('Đã lưu. Lượt chat kế tiếp đi model mới — không cần khởi động lại.');
+    await nap();
+  } catch (e) { baoLoi(e.message); }
+  finally { $('#nutLuu').disabled = !SUA; }
+});
+
+async function nap(){
+  try {
+    const d = await goi('/api/model/cau-hinh');
+    if (!d) return;
+    D = d; SUA = !!d.suaDuoc;
+    veCauHinh(); veKhoa(); veBangGia();
+  } catch (e) { baoLoi(e.message); }
+}
+nap();
+</script>
+</body>
+</html>

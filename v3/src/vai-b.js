@@ -22,7 +22,10 @@ import {
   lopBoiCanh, batBuocDangNhap, batBuocVaiHTTP, chanTeamTrenUrl,
 } from './auth/index.js';
 import { datTaoTruyVan as datTruyVanNhatKy, datPheuNhatKy as datPheuRaNgoai, ghiNhatKy } from './audit/index.js';
-import { datTaoTruyVan as datTruyVanModel, datPheuSoAi, datPheuNhatKy as datPheuNhatKyModel, datPheuCanhBao } from './model/index.js';
+import {
+  datTaoTruyVan as datTruyVanModel, datPheuSoAi, datPheuNhatKy as datPheuNhatKyModel,
+  datPheuCanhBao, datKhoKhoa,
+} from './model/index.js';
 import {
   datTaoTruyVan as datTruyVanDieuPhoi, datPheuNhatKy as datPheuNhatKyDieuPhoi,
   datChanDangNhap, datChanVai, taoRouterDieuPhoi,
@@ -43,6 +46,9 @@ import {
   datChanDangNhap as datChanDangNhapKetNoi, datChanVai as datChanVaiKetNoi,
   taoRouterKetNoi,
 } from './ui/ket-noi/index.js';
+import {
+  datChanDangNhap as datChanDangNhapModel, datChanVai as datChanVaiModel, taoRouterModel,
+} from './ui/model/index.js';
 
 /**
  * Nối toàn bộ phần rìa vào một ứng dụng Express.
@@ -52,6 +58,9 @@ import {
  * @param {(boiCanh:object)=>object} phuThuoc.taoTruyVan        BẮT BUỘC · người A giao. Cổng có chèn điều kiện team.
  * @param {()=>object}               phuThuoc.taoTruyVanHeThong BẮT BUỘC · người A giao. Cổng KHÔNG gắn team,
  *                                                              chỉ cho bốn bảng dùng chung — xem `auth/kho-nguoi-dung.js`.
+ * @param {{coKhoa:Function,docKhoa:Function,ghiKhoa:Function}} [phuThuoc.khoKhoa] kho khoá API theo (team × nhà)
+ *                                                              (người A giao: `db/khoa.js`, bảng `khoa_nha`).
+ *                                                              Thiếu thì lớp model chỉ đọc được khoá từ biến môi trường.
  * @param {(bc:object,t:object)=>Promise<object>} [phuThuoc.chuyenPage] chuyển một page sang team khác, kèm toàn bộ con
  *                                                              (người A giao: `src/db/chuyen-team.js#chuyenPageSangTeam`).
  *                                                              Thiếu thì lát «gán page ↔ team» hiện MỜ kèm lý do.
@@ -64,7 +73,7 @@ import {
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, ghiSoAi, canhBao, express } = {}) {
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa, ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -119,6 +128,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   if (typeof canhBao === 'function') { datPheuCanhBao(canhBao); daNoi.push('cảnh báo ← chuyển model dự phòng'); }
   else thieu.push('canhBao — nhà chính hết tiền thì tự chuyển dự phòng nhưng KHÔNG ai được báo. Đúng cảnh 06/08/2026');
 
+  if (khoKhoa && typeof khoKhoa.docKhoa === 'function') { datKhoKhoa(khoKhoa); daNoi.push('kho khoá theo nhà → lớp model · màn Model AI'); }
+  else thieu.push('khoKhoa — lớp model CHỈ đọc được khoá từ biến môi trường; khoá riêng của team trong bảng `khoa_nha` không tới được, và màn Model AI không dán khoá được');
+
   if (typeof chuyenPage === 'function') { datChuyenPage(chuyenPage); daNoi.push('chuyển page ↔ team → màn cấu hình team (lát 4)'); }
   else thieu.push('chuyenPage — lát «gán page ↔ team» hiện MỜ. Không có nó thì gán page vẫn phải chạy psql tay, đúng thứ sóng 0 sinh ra để xoá');
 
@@ -145,6 +157,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiPageBot(batBuocVaiHTTP);
   datChanDangNhapKetNoi(batBuocDangNhap);
   datChanVaiKetNoi(batBuocVaiHTTP);
+  datChanDangNhapModel(batBuocDangNhap);
+  datChanVaiModel(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -156,7 +170,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterCauHinhTeam()); //  /cau-hinh-team · /api/team/*
   app.use(taoRouterPageBot());    //   /page-bot · /api/page-bot/*
   app.use(taoRouterKetNoi());     //   /ket-noi · /api/ket-noi/*
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối');
+  app.use(taoRouterModel());      //   /model-ai · /api/model/*
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };

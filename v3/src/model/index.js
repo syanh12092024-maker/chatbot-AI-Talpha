@@ -27,7 +27,7 @@ import { goiCoDuPhong, chonModel, VIEC } from './du-phong.js';
 export {
   // cấu hình + ba chỗ tiêm ra ngoài
   docCauHinh, ghiCauHinh, tomTatCauHinh, xoaDem, coTrongDem, cauHinhMacDinh,
-  datTaoTruyVan, datPheuNhatKy, datPheuCanhBao, datDongHoCauHinh,
+  datTaoTruyVan, datKhoKhoa, daNoiKhoKhoa, VAI_TRO, canhBaoCauHinh, datPheuNhatKy, datPheuCanhBao, datDongHoCauHinh,
   ghiNhatKyModel, canhBao,
   BANG as BANG_CAU_HINH, HAN_DEM_MS, MAC_DINH, HANH_DONG, MUC, LoiCauHinh,
   xoaSachCauHinh,

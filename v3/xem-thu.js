@@ -176,6 +176,17 @@ const bao = dungPhanB(app, {
     return { pageId: String(pageId), teamCu, teamMoi: String(teamDichId),
       daChuyen: { hoi_thoai: ht }, boLai: { so_ai: 0 } };
   },
+  // Kho khoá GIẢ trong RAM — bản thật là bảng `khoa_nha` + `db/khoa.js` (AES-256-GCM).
+  // Bản giả KHÔNG mã hoá, và đó là chỗ nó dễ tính hơn bản thật: nó chỉ để xem màn hình chạy.
+  khoKhoa: (() => {
+    const kho2 = new Map();
+    const k = (t, n) => `${t}|${n}`;
+    return {
+      coKhoa: async (t, n) => kho2.has(k(t, n)),
+      docKhoa: async (t, n) => kho2.get(k(t, n)) ?? null,
+      ghiKhoa: async (t, n, v) => { kho2.set(k(t, n), v); return 1; },
+    };
+  })(),
   docKetNoiPos: async (bc) => (String(bc.teamId) === '1'
     ? [{ id: '1', market: 'Saudi', shopId: '77', bat: true },
        { id: '2', market: 'UAE', shopId: '81', bat: true },

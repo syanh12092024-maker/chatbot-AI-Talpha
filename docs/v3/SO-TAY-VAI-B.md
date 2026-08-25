@@ -134,6 +134,25 @@ v1** (`pagesRouted`) vào hàm ăn **bản đã ánh xạ** (`soPageDangDung`). 
 nên cảnh báo «token chính không phủ page nào» im lặng không bắn mà bài test vẫn suýt xanh. Nay
 có hai helper tách bạch (`tok` / `tokAx`) kèm chú thích lý do.
 
+### Giai đoạn 2 · sóng 0 · G2-B1 lát 4 và G2-B3 — 25/08/2026
+
+| # | Quyết gì | Vì sao | Đánh đổi |
+|---|---|---|---|
+| 45 | **Lát «gán page» KHÔNG tự ghi nhật ký** | `chuyenPageSangTeam` của A đã ghi NGAY TRONG giao dịch. Ghi thêm là đẻ hai bản ghi cho một thao tác, người đọc nhật ký đếm gấp đôi | Nội dung dòng nhật ký do A quyết, B không thêm trường được |
+| 46 | **Chuyển nhiều page KHÔNG dừng ở lỗi đầu tiên**, trần 100 page/mẻ | Dừng giữa chừng để lại trạng thái nửa vời mà màn hình không mô tả nổi: vài page đã chuyển, phần còn lại chưa, người dùng chỉ thấy chữ «lỗi» | Không có giao dịch bao ngoài cả mẻ. Đúng ý: chuyển được page nào thì page đó xong hẳn |
+| 47 | **`moDuoc` suy từ dây ĐÃ NỐI, không từ cờ gõ tay** | Máy chủ dựng thiếu dây thì nút phải mờ, dù mã nguồn đủ khả năng | |
+| 48 | **Bỏ bộ mã hoá khoá của B (`kho-khoa.js`), dùng `db/khoa.js` của A** | KHÔNG phải vì bản nào đẹp hơn: `khoa_nha.khoa_api_ma` có `CHECK LIKE 'v1.%'` ở tầng CSDL, bao thư jsonb của B ghi xuống là bị từ chối ngay. Hai bộ mã hoá cho một cột thì bộ không khớp `CHECK` là bộ không tồn tại | `V3_KHOA_CHU` biến mất khỏi tài liệu của B. Đây là câu chốt còn treo từ 23/08, nay tự quyết vì mọi cách khác đều là viết code không ghi nổi xuống |
+| 49 | **Viết lại lớp cấu hình model theo hình BA DÒNG/team** | Lược đồ thật `UNIQUE (team_id, vai_tro)`. Bản cũ viết hình một-dòng vì viết lúc chưa có lược đồ, và **13 bài test đang khoá hình sai** | Phải sửa 13 bài test. Đáng: chúng đang bảo vệ một hình dạng không tồn tại |
+| 50 | **`doNgauNhienNen` không còn là cột riêng** — nó là `do_ngau_nhien` của dòng `vai_tro='nen'` | Lược đồ thật đặt `do_ngau_nhien` trên TỪNG dòng | |
+| 51 | **Ô khoá RỖNG = giữ nguyên, KHÔNG phải xoá** | Bản cũ coi rỗng là lệnh xoá. Nhưng biểu mẫu có bốn ô khoá, ba ô không đụng thì trình duyệt gửi chuỗi rỗng ⇒ mỗi lần đổi khoá một nhà là **ba nhà kia bị xoá sạch**, bot chết ba phần tư mà màn hình báo «đã lưu» | Muốn xoá khoá thì cần một đường riêng, chưa mở |
+| 52 | **Chặn hình HIỂN THỊ lọt vào đường ghi khoá** | `tomTatCauHinh` trả `khoa[nha] = {daCo,duoi}`; màn gửi nguyên tóm tắt lên là chuyện dễ xảy ra, và `String({daCo:true})` ra `"[object Object]"` ghi thẳng làm khoá API | |
+| 53 | **Nhật ký đổi khoá chỉ ghi TÊN NHÀ**, bỏ cả đuôi bốn ký tự | `nhat_ky` là bảng KHÔNG SỬA ĐƯỢC — mọi thứ ghi vào nằm lại vĩnh viễn, và bốn đuôi khoá gộp lại đã là thông tin thừa cho một dòng chỉ cần trả lời «ai đổi khoá nhà nào, lúc nào» | Truy vết mất một chi tiết. Đổi lại nhật ký không mang mảnh bí mật nào |
+| 54 | **Bảng giá đối chiếu THẲNG `01-QUYET-DINH.md` §7 trong bài test** | Bảng giá là thứ người ta dựa vào để quyết đổi model. Lệch với tài liệu mà không ai biết thì quyết định dựa trên số đã trôi | Tài liệu đổi khuôn bảng là bài test đỏ. Cố ý |
+| 55 | **Cột đ/đơn khai rõ là PHÓNG CHIẾU**, không phải số đo mới | `dDon = dTin × 52,69 tin/đơn`. Hiện nó như một phép đo là mời người ta tin chắc hơn mức dữ liệu cho phép — muốn biết chắc phải A/B | |
+
+**Chỗ vẫn CHƯA xong của sóng 0:** `PHIEU-B-Y4` (di trú thôi ghi đè `marketer`) người A chưa
+làm. Gán marketer trên màn `/page-bot` vẫn bị `npm run di-tru` xoá trắng — màn có cảnh báo.
+
 ---
 
 ## Sửa theo lược đồ thật — 23–24/08/2026

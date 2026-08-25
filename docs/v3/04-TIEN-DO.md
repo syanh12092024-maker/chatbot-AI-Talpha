@@ -9,10 +9,10 @@
 | | |
 |---|---|
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
-| Luồng đang làm | **Sóng 0: G2-B1 · G2-B2 · G2-B4 xong. G2-B3 chờ một câu chốt** |
+| Luồng đang làm | **SÓNG 0 XONG ĐỦ 4 MÀN** (G2-B1 · G2-B2 · G2-B3 · G2-B4). Kế tiếp: sóng 1 |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **377 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **403 xanh** (316 trước giai đoạn 2) |
 
 ---
 
@@ -25,7 +25,7 @@
 | ① Tổng quan team | số đo thật + cảnh báo suy ra | **xong** |
 | ② Thành viên và vai | cấp/rút vai, đủ 5 vai | **xong** |
 | ③ Kết nối POS | chỉ hiện trạng thái, không bao giờ hiện khoá | **xong** |
-| ④ Gán page ↔ team | chuyển page giữa các team | 🟥 **chặn — `PHIEU-B-Y3`** |
+| ④ Gán page ↔ team | chuyển page giữa các team | **xong 25/08** — `PHIEU-B-Y3` A đã giao |
 
 Đường: `/cau-hinh-team` · vào được: `quan-tri` + `quan-ly` · ghi được: `quan-tri`.
 Đã triển khai lên VPS (`d38df3b`), dịch vụ `aicloser-v3` + `aicloser-v3-xemthu` khởi động lại.
@@ -48,6 +48,35 @@
 thật chỉ có một tài khoản `chu@talpha.vn` và thợ không giữ mật khẩu của nó. Đã thay bằng
 phép chạy tầng đọc thẳng trên Postgres thật ở bảng trên. Chủ dự án mở
 `http://169.58.33.8:3102/cau-hinh-team` là xem được ngay.
+
+### G2-B3 · Model AI & khoá — xong (25/08/2026)
+
+Đường `/model-ai` · vào: `quan-tri` + `quan-ly` · sửa: `quan-tri`.
+
+**Phải viết lại lớp cấu hình model**, vì bản cũ viết theo hình **1 dòng/team** trong khi
+lược đồ thật là **3 dòng/team** (`UNIQUE (team_id, vai_tro)`, `vai_tro ∈ chinh|du_phong|nen`).
+Đây không phải đổi tên cột mà là đổi hình dạng dữ liệu. 13 bài test cũ đang **khoá hình sai**
+— đã viết lại chúng.
+
+**Bỏ bộ mã hoá khoá của B, dùng `db/khoa.js` của A** (`khoa_nha`, migration 008). Không phải
+vì bản nào đẹp hơn: cột có `CHECK (khoa_api_ma LIKE 'v1.%')` ở tầng CSDL, nên bao thư jsonb
+của B ghi xuống là Postgres từ chối ngay. Đã áp 008 trên VPS.
+
+Ba việc màn làm được: chọn model ba ô (chính · dự phòng · nền), dán khoá bốn nhà, và quy giá
+ra tiền thật. Bảng giá **đối chiếu thẳng `01-QUYET-DINH.md` §7** trong bài test — bội số khớp
+tới từng số: 0,17 · 0,20 · 0,52 · 0,96 · 1,00 · 2,89 · 4,81.
+
+**Khoá VÀO được, KHÔNG RA được.** Không đường nào của module trả khoá ra; tóm tắt chỉ mang
+`{daCo, tuEnv}`. Có bài test khoá lại.
+
+⚠️ Một chỗ suýt hỏng im lặng, bắt được khi viết test: `tomTatCauHinh` trả `khoa[nha] =
+{daCo,duoi}` cho màn hình. Màn gửi nguyên tóm tắt đó lên là chuyện dễ xảy ra, và
+`String({daCo:true})` ra `"[object Object]"` — ghi thẳng vào kho khoá làm khoá API. Bot chết,
+màn hình báo «đã lưu khoá». Nay ném to.
+
+⚠️ Chỗ thứ hai: bản cũ coi ô khoá RỖNG là lệnh **xoá khoá**. Nhưng biểu mẫu có bốn ô, ba ô
+không đụng tới thì trình duyệt gửi lên chuỗi rỗng — tức mỗi lần đổi khoá một nhà là **ba nhà
+kia bị xoá sạch**. Nay rỗng = giữ nguyên, đúng hợp đồng `ghiKhoaNha` của A.
 
 ### G2-B2 · Page & Bot — xong (25/08/2026)
 

@@ -18,7 +18,7 @@ import { randomBytes } from 'node:crypto';
 import {
   goiModel, datPheuSoAi, xoaSachSoAi, NHIP_KEU_CHUA_TIEM,
   datTaoTruyVan, datPheuNhatKy, datPheuCanhBao, xoaSachCauHinh,
-  ghiCauHinh, docCauHinh,
+  ghiCauHinh, docCauHinh, datKhoKhoa,
   datDongHo, xoaSucKhoe, dangHongThuan,
   datNgu, xoaSachDuPhong, LoiCaHaiNhaHong,
   LoiThieuBoiCanh, LoiNhaCungCap, LoiModelLa, VIEC,
@@ -72,13 +72,22 @@ function dungNen() {
   datNgu(async (ms) => { gio += ms; });
   const { kho, taoTruyVan } = dungCongGia();
   datTaoTruyVan(taoTruyVan);
+  // KHO KHOÁ GIẢ — mô phỏng `khoa_nha` của người A (migration 008). Từ 008 khoá không còn
+  // nằm trong `cau_hinh_model`; lớp model nhận kho khoá qua `datKhoKhoa`.
+  const khoaNha = new Map();
+  const kN = (t, n) => `${t}|${n}`;
+  datKhoKhoa({
+    coKhoa: async (t, n) => khoaNha.has(kN(t, n)),
+    docKhoa: async (t, n) => khoaNha.get(kN(t, n)) ?? null,
+    ghiKhoa: async (t, n, v) => { khoaNha.set(kN(t, n), v); return 1; },
+  });
   const soAi = [];
   datPheuSoAi((ban) => { soAi.push(ban); });
   const nhatKy = [];
   datPheuNhatKy((bc, ban) => { nhatKy.push({ teamId: bc.teamId, ...ban }); });
   const canhBao = [];
   datPheuCanhBao((c) => { canhBao.push(c); });
-  return { kho, soAi, nhatKy, canhBao };
+  return { kho, soAi, nhatKy, canhBao, khoaNha };
 }
 
 /**
@@ -273,12 +282,16 @@ test('tiêu chí ⑪ · lượt lỗi 400 vẫn ghi Sổ AI, maModel là model �
 test('tiêu chí ⑪ · lỗi từ CHÍNH lớp model (mã model lạ trong cấu hình) cũng để lại một dòng', async () => {
   const { soAi, kho } = dungNen();
   const bc = bcCua('t1');
-  kho.gieo('cau_hinh_model', [{
-    team_id: 't1', chinh_ma_model: 'model-khong-co-that', chinh_nha: 'kimi',
-    du_phong_ma_model: 'claude-haiku-4.5', du_phong_nha: 'claude',
-    nen_ma_model: 'deepseek-v4-flash', nen_nha: 'deepseek',
-    do_ngau_nhien: 0.3, do_ngau_nhien_nen: 0.1, khoa_ma_hoa: {}, sua_luc: 'x',
-  }]);
+  // Hình BA DÒNG của lược đồ thật (`UNIQUE (team_id, vai_tro)`), không phải hình một-dòng
+  // mà bản trước của lớp cấu hình từng giả định.
+  kho.gieo('cau_hinh_model', [
+    { id: 'g1', team_id: 't1', vai_tro: 'chinh', nha_cung_cap: 'kimi',
+      ma_model: 'model-khong-co-that', do_ngau_nhien: 0.3, bat: true, sua_luc: 'x' },
+    { id: 'g2', team_id: 't1', vai_tro: 'du_phong', nha_cung_cap: 'claude',
+      ma_model: 'claude-haiku-4.5', do_ngau_nhien: null, bat: true, sua_luc: 'x' },
+    { id: 'g3', team_id: 't1', vai_tro: 'nen', nha_cung_cap: 'deepseek',
+      ma_model: 'deepseek-v4-flash', do_ngau_nhien: 0.1, bat: true, sua_luc: 'x' },
+  ]);
   const f = dungFetch();
   assert.ok(await batLoi(() => goiModel({ boiCanh: bc, yeuCau: yeuCau(), fetchFn: f.fn })) instanceof LoiModelLa);
   assert.equal(soAi.length, 1);
