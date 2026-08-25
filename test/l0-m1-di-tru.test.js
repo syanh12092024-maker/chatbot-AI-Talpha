@@ -9,6 +9,9 @@ import fs from "node:fs";
 import { dungSandbox } from "../db/sandbox.js";
 import { GOC } from "../db/ket-noi.js";
 import { chay } from "../db/di-tru/index.js";
+import { napPage } from "../db/di-tru/nap.js";
+import os from "node:os";
+import path from "node:path";
 import {
   BAN_DO_CONV_STATE,
   docPages,
@@ -225,4 +228,96 @@ test("D11 · toàn bộ dữ liệu di trú nằm ở team KỸ THUẬT chua-pha
     ["chua-phan"],
   );
   assert.equal(r.rows[0].c, kq1.dich.page);
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════
+// PHIEU-B-Y4 — di trú thôi ghi đè cột NGƯỜI đặt.
+//
+// Câu cũ `marketer = EXCLUDED.marketer` KHÔNG phải đồng bộ: `pages.json` có 0 marketer,
+// nên mỗi lượt `npm run di-tru` là một lệnh `SET marketer = ''` cho mọi page. Màn
+// «Page & Bot» vừa mở đúng chức năng gán marketer cho 514 page — lượt di trú kế tiếp xoá
+// sạch, không báo một dòng nào, và không có bản quay lui.
+// ══════════════════════════════════════════════════════════════════════════════════
+
+const mocPage = async () =>
+  (await sb.pool.query("SELECT page_id FROM page ORDER BY id LIMIT 1")).rows[0].page_id;
+
+test("Y4-1 · marketer NGƯỜI đặt SỐNG SÓT qua một lượt di trú", async () => {
+  const pid = await mocPage();
+  await sb.pool.query("UPDATE page SET marketer = $1 WHERE page_id = $2", [
+    "chi-lan-y4",
+    pid,
+  ]);
+  await napPage(sb.pool, GOC); // chạy lại đúng bước đã xoá trắng ở bản cũ
+  const r = await sb.pool.query("SELECT marketer FROM page WHERE page_id = $1", [pid]);
+  console.log(`   [Y4-1] sau di trú: marketer="${r.rows[0].marketer}"`);
+  assert.equal(r.rows[0].marketer, "chi-lan-y4");
+});
+
+test("Y4-2 · page CHƯA ai gán thì VẪN nhận marketer từ nguồn (không khoá cứng)", async () => {
+  // ⚠️ Nhánh này KHÔNG chạm được bằng dữ liệu thật: `pages.json` của repo có 0 marketer
+  // (đo 25/08). Nên dựng một GỐC tạm mang đúng một page có marketer, và khai rõ ở đây là
+  // ca này chạy trên HẠT GIỐNG, không phải trên nguồn thật.
+  const pid = await mocPage();
+  await sb.pool.query("UPDATE page SET marketer = '' WHERE page_id = $1", [pid]);
+
+  const tam = fs.mkdtempSync(path.join(os.tmpdir(), "y4-"));
+  try {
+    fs.writeFileSync(
+      path.join(tam, "pages.json"),
+      JSON.stringify({ [pid]: { name: "Hạt giống Y4", marketer: "anh-tuan-y4" } }),
+    );
+    await napPage(sb.pool, tam);
+    const r = await sb.pool.query("SELECT marketer, ten FROM page WHERE page_id = $1", [pid]);
+    console.log(`   [Y4-2] từ hạt giống: marketer="${r.rows[0].marketer}"`);
+    assert.equal(r.rows[0].marketer, "anh-tuan-y4");
+
+    // …và ngay sau đó, nguồn RỖNG cũng không xoá được giá trị vừa nhận.
+    fs.writeFileSync(
+      path.join(tam, "pages.json"),
+      JSON.stringify({ [pid]: { name: "Hạt giống Y4", marketer: "" } }),
+    );
+    await napPage(sb.pool, tam);
+    const r2 = await sb.pool.query("SELECT marketer FROM page WHERE page_id = $1", [pid]);
+    assert.equal(r2.rows[0].marketer, "anh-tuan-y4");
+  } finally {
+    fs.rmSync(tam, { recursive: true, force: true });
+  }
+});
+
+test("Y4-3 · marketer rỗng + nguồn rỗng → vẫn rỗng, không nổ", async () => {
+  const pid = await mocPage();
+  await sb.pool.query("UPDATE page SET marketer = '' WHERE page_id = $1", [pid]);
+  await napPage(sb.pool, GOC);
+  const r = await sb.pool.query("SELECT marketer FROM page WHERE page_id = $1", [pid]);
+  assert.equal(r.rows[0].marketer, "");
+});
+
+test("Y4-4 · cột MÁY đặt VẪN được ghi đè — vá này không được làm cứng cả bảng", async () => {
+  const pid = await mocPage();
+  const truoc = (
+    await sb.pool.query("SELECT ten FROM page WHERE page_id = $1", [pid])
+  ).rows[0].ten;
+  await sb.pool.query("UPDATE page SET ten = 'TÊN BỊ SỬA TAY' WHERE page_id = $1", [pid]);
+  await napPage(sb.pool, GOC);
+  const sau = (await sb.pool.query("SELECT ten FROM page WHERE page_id = $1", [pid]))
+    .rows[0].ten;
+  console.log(`   [Y4-4] ten: sửa tay → "${sau}" (nguồn: "${truoc}")`);
+  assert.equal(sau, truoc, "cột do MÁY đặt phải quay về giá trị nguồn");
+});
+
+test("Y4-5 · marketer là cột NGƯỜI đặt DUY NHẤT trong câu ghi đè (đọc file thật)", async () => {
+  // Đối chiếu bằng chính văn bản SQL, không gõ lại theo trí nhớ. Ai thêm một cột NGƯỜI
+  // đặt vào câu đó sau này thì ca này phải đỏ — đó là cả lý do nó tồn tại.
+  const src = fs.readFileSync(`${GOC}/db/di-tru/nap.js`, "utf8");
+  const khoi = src.match(/ON CONFLICT \(page_id\) DO UPDATE SET([\s\S]*?)`,/);
+  assert.ok(khoi, "không tìm thấy câu ON CONFLICT của napPage");
+  const ghiDe = [...khoi[1].matchAll(/(\w+)\s*=\s*EXCLUDED\./g)].map((m) => m[1]);
+  console.log(`   [Y4-5] cột bị ghi đè thẳng: ${ghiDe.join(", ")}`);
+  const NGUOI_DAT = ["marketer", "trong_diem", "botcake_tat", "bot_ai_bat"];
+  const lot = ghiDe.filter((c) => NGUOI_DAT.includes(c));
+  assert.deepEqual(lot, [], `cột NGƯỜI đặt lọt vào câu ghi đè: ${lot.join(", ")}`);
+  // …và `marketer` vẫn phải CÓ MẶT trong câu, ở dạng CASE — bỏ hẳn nó đi thì page mới
+  // không bao giờ nhận được marketer từ nguồn.
+  assert.match(khoi[1], /marketer\s*=\s*CASE/);
 });

@@ -24,9 +24,31 @@ async function idTeam(pool, slug) {
 const gio = (v) => (v ? new Date(typeof v === "number" ? v : String(v)) : null);
 
 // ── page ───────────────────────────────────────────────────────────────────
-// Khoá tự nhiên: page_id. `bot_ai_bat` KHÔNG nằm trong pages.json — nó được đặt
-// riêng ở nạpCongTacAi() từ ai-enabled.json, nên câu UPDATE dưới đây CỐ Ý không
-// đụng cột đó (nếu đụng, mỗi lượt di trú lại tắt sạch công tắc).
+// Khoá tự nhiên: page_id.
+//
+// ═══ AI LÀ CHỦ CỦA TỪNG CỘT — đọc trước khi thêm cột vào câu ON CONFLICT ══════════
+// Câu `DO UPDATE` dưới đây chạy MỖI LƯỢT `npm run di-tru`. Cột nào lọt vào đó thì giá
+// trị trong CSDL bị thay bằng giá trị của `pages.json`, im lặng và không quay lui được
+// (đây không phải một lượt di chuyển dữ liệu có bảng quay lui, chỉ là một câu UPDATE
+// trong một script chạy thường xuyên).
+//
+//   · cột MÁY đặt (`ten` `thi_truong` `nganh_hang` `pos_*` `token_idx` `the_pancake`
+//     `mat_dau` `kiem_luc`) → ghi đè là ĐÚNG, đó chính là đồng bộ.
+//   · cột NGƯỜI đặt → ghi đè là XOÁ CÔNG SỨC NGƯỜI. Hôm nay có đúng một cột như vậy
+//     trong câu này: `marketer` (màn «Page & Bot» của G2-B2 gán nó cho 514 page).
+//     Đã đo 25/08: `pages.json` có 0/47 page mang marketer ⇒ câu cũ
+//     `marketer = EXCLUDED.marketer` KHÔNG phải «đồng bộ từ nguồn», nó là
+//     `SET marketer = ''` cho mọi page, mỗi lượt di trú. Nay dùng CASE: nguồn điền vào
+//     chỗ trống, không bao giờ xoá chỗ đã có (PHIEU-B-Y4).
+//   · `bot_ai_bat` KHÔNG nằm trong pages.json — `napCongTacAi()` đặt riêng từ
+//     `ai-enabled.json`, nên câu dưới CỐ Ý không đụng (đụng là mỗi lượt tắt sạch công tắc).
+//   · `trong_diem`, `botcake_tat` không nằm trong câu này. GIỮ NGUYÊN như vậy.
+//   · `team_id` chỉ ở vế INSERT, không ở vế UPDATE — nên page CŨ không bị kéo về team
+//     kỹ thuật, nhưng page MỚI thì vẫn rơi vào đó (đã ghi §9, ngoài phạm vi phiếu này).
+//
+// ⚠️ Thêm cột vào câu dưới thì phải trả lời được: «ai là chủ giá trị của cột này?».
+//    `v3/test/b/page-bot.test.mjs` đọc THẲNG câu SQL này và đối chiếu — nên giữ nó ở
+//    dạng CHỮ, đừng sinh động, kẻo bộ đọc của người B mù.
 export async function napPage(pool, goc) {
   const teamId = await idTeam(pool, TEAM_KY_THUAT);
   const rows = docPages(goc);
@@ -37,7 +59,11 @@ export async function napPage(pool, goc) {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        ON CONFLICT (page_id) DO UPDATE SET
          ten = EXCLUDED.ten, thi_truong = EXCLUDED.thi_truong, nganh_hang = EXCLUDED.nganh_hang,
-         marketer = EXCLUDED.marketer, pos_shop_id = EXCLUDED.pos_shop_id, pos_via = EXCLUDED.pos_via,
+         -- marketer là cột NGƯỜI đặt (màn Page & Bot), không phải cột máy đồng bộ.
+         -- Nguồn ĐIỀN VÀO CHỖ TRỐNG nhưng KHÔNG BAO GIỜ XOÁ CHỖ ĐÃ CÓ. Xem ghi chú đầu hàm.
+         marketer = CASE WHEN page.marketer <> '' THEN page.marketer
+                         ELSE EXCLUDED.marketer END,
+         pos_shop_id = EXCLUDED.pos_shop_id, pos_via = EXCLUDED.pos_via,
          token_idx = EXCLUDED.token_idx, the_pancake = EXCLUDED.the_pancake,
          mat_dau = EXCLUDED.mat_dau, kiem_luc = EXCLUDED.kiem_luc, sua_luc = now()`,
       [
