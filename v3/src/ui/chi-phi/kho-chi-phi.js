@@ -142,8 +142,19 @@ export async function manChiPhi(boiCanh) {
       tiLeDoThat: tongLuot > 0 ? Math.round((tongDoThat / tongLuot) * 100) : null,
       tienVnd: tongTien,
       soDon: tongDon,
-      vndMoiTin: tongLuot > 0 ? Math.round(tongTien / tongLuot) : null,
-      vndMoiDon: tongDon > 0 ? Math.round(tongTien / tongDon) : null,
+      // ⚠️ CHIA CHO SỐ LƯỢT **ĐO THẬT**, KHÔNG CHIA CHO TỔNG LƯỢT.
+      //
+      // Bản đầu của tôi chia cho tổng lượt và ra 82 đ/tin, trong khi v1 nói 127 đ/tin trên
+      // gần như cùng một lượng. `src/economics.js` đã ghi sẵn lý do — và ghi trước khi tôi
+      // mắc: *«token chỉ ghi từ 06/08/2026, chia trên tổng tin sẽ ra ĐƠN GIÁ RẺ GIẢ TẠO»*.
+      // Tiền đo được là tiền của phần CÓ SỐ ĐO; đem nó chia cho cả những lượt chưa từng
+      // được đo là pha loãng bằng một mẫu số không sinh ra đồng nào trong tử số.
+      //
+      // Dùng ĐÚNG công thức của v1, không tự tính lại: hai công thức cho một chỉ số thì
+      // nghiệm thu «sai lệch dưới 1%» chỉ là so hai cách tính khác nhau rồi tự khen nhau.
+      vndMoiTin: tongDoThat > 0 ? Math.round(tongTien / tongDoThat) : null,
+      vndMoiDon: (tongDoThat > 0 && tongDon > 0)
+        ? Math.round((tongTien / tongDoThat) * (tongLuot / tongDon)) : null,
       tinMoiDon: tongDon > 0 ? +(tongLuot / tongDon).toFixed(1) : null,
     },
     // Con số toàn hệ của v1 — giữ lại để đối chiếu khi nghi ngờ phần team.

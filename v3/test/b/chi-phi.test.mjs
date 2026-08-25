@@ -116,6 +116,26 @@ test('③ · khai tỉ lệ đo thật, không gộp với ước', async () => 
   assert.equal(d.page[0].tiLeDoThat, 65);
 });
 
+/* ═══════════ ③b ĐƠN GIÁ CHIA CHO SỐ ĐO THẬT, KHÔNG CHIA CHO TỔNG ═══════════ */
+
+test('③b · đ/tin chia cho số lượt ĐO THẬT — không tạo ra «đơn giá rẻ giả tạo»', async () => {
+  // `src/economics.js` ghi sẵn lý do: token chỉ ghi từ 06/08/2026, chia trên tổng tin sẽ ra
+  // đơn giá rẻ giả tạo. Bản đầu của màn chia cho tổng lượt và ra 82 đ/tin trong khi v1 nói
+  // 127 — chính là con số v1 đã cảnh báo trước.
+  dung({ bot: botCo([pg('111', { soLuot: 1000, soLuotDoThat: 500, tienVnd: 100000, soDon: 10 })]) });
+  const d = await cp.manChiPhi(bc());
+  assert.equal(d.tong.vndMoiTin, 200, '100.000 / 500 đo thật = 200, KHÔNG phải 100.000/1000 = 100');
+  // đ/đơn = đơn giá tin × số tin trung bình cho một đơn — đúng công thức `derive()` của v1.
+  assert.equal(d.tong.vndMoiDon, 20000, '200 × (1000/10) = 20.000');
+});
+
+test('③c · chưa lượt nào đo thật → đơn giá là `null`, không phải 0', async () => {
+  dung({ bot: botCo([pg('111', { soLuot: 100, soLuotDoThat: 0, tienVnd: 5000, soDon: 1 })]) });
+  const d = await cp.manChiPhi(bc());
+  assert.equal(d.tong.vndMoiTin, null, '0 đ/tin là một con số, và nó sai');
+  assert.equal(d.tong.vndMoiDon, null);
+});
+
 /* ═══════════ ④ TEAM ═══════════ */
 
 test('④ · cầu trả TOÀN HỆ, màn chỉ cộng page của team mình', async () => {
