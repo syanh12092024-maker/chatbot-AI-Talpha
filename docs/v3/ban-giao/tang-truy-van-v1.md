@@ -233,6 +233,45 @@ BANG_NGHIEP_VU_CHUAN"):
   ctx là chuyện con-gà-quả-trứng. B viết truy vấn riêng cho bảng này ở L0-M3 (SQL trực
   tiếp qua `db/ket-noi.js`, không qua `src/db/`).
 
+## 6b · `chuyenPageSangTeam` — cửa DUY NHẤT đổi chủ một page (25/08, PHIEU-B-Y3)
+
+```js
+import { chuyenPageSangTeam, demMoCoi } from "../../src/db/index.js";
+
+const kq = await chuyenPageSangTeam(pool, ctx, { pageId, teamDichId, lyDo });
+// → { pageId, teamCu, teamMoi, daChuyen: {bảng: số dòng}, boLai: {so_ai: n}, nhatKyId }
+```
+
+`suaTheoId` **không đổi được `team_id`** — cột đó bị bỏ khỏi mệnh đề `SET` một cách CỐ Ý, và
+đó là quyết định đúng cần giữ. Nên đổi chủ page đi bằng cửa riêng này.
+
+**Chuyển page KHÔNG phải đổi một cột.** Năm bảng con mang `team_id` riêng và phải đi theo:
+
+| Bảng | Nối qua | Ghi chú |
+|---|---|---|
+| `hoi_thoai` `kich_ban` `san_pham` `don_hang` | `page_id` = `page.id` (bigint) | `don_hang` là bảng **tiền** |
+| `tin_cho_xu_ly` | `page_id` = id **Facebook** (text) | hàng đợi tin |
+| `so_ai` | id Facebook (text) | **Ở LẠI** team cũ — trigger cấm UPDATE. Số dòng bỏ lại trả về ở `boLai`, hãy HIỆN nó lên màn hình |
+
+⛔ Danh mục trên **không gõ tay trong code** — nó được sinh từ `information_schema` mỗi lượt
+gọi («bảng nào có CẢ `page_id` LẪN `team_id`»). Thêm một bảng mới có `page_id` là nó tự vào
+lưới. Lý do rất cụ thể: bản kê tay đầu tiên **sót hai bảng**, một trong đó là `don_hang`.
+
+Bốn rào, mỗi rào một câu đo được:
+
+- **Một giao dịch.** Nửa chừng hỏng → không dòng nào đổi. Nhật ký ghi hỏng cũng cuộn lại tất.
+- **Vai `quan-tri`**, đọc từ `thanh_vien_team` — KHÔNG tin `ctx.vai` do nơi gọi khai.
+- **`ctx` phải thuộc team nguồn HOẶC team đích.** Người ngoài cả hai → `LoiXuyenTeam`.
+- **Team đích là team KỸ THUẬT → từ chối.** Page sẽ tàng hình với mọi màn.
+
+`ctxHeThong()` **bị từ chối** ở cửa này: đổi chủ dữ liệu đòi một VAI, job nền không có vai.
+
+```js
+const { moCoi, boLaiCoChuDich } = await demMoCoi(pool);
+// moCoi          → phải LUÔN bằng 0. Khác 0 = có ai đổi team_id ngoài cửa này.
+// boLaiCoChuDich → `so_ai`, CỐ Ý > 0 sau lượt chuyển đầu tiên. Hiện, nhưng đừng báo động.
+```
+
 ## 7 · Nghiệm thu — đo lại bằng gì
 
 ```bash
