@@ -229,6 +229,41 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   `handler-v3#vanGuiDangMo` — phiếu sau export rồi xoá bản chép. (5) F7/F8 GHI-NỢ verdict
   MẢNG-2 (psid-kiểm ≠ convId-dùng; `xaAnh` mất ảnh giữa vòng).
 
+- 25/08 · G2-A1 (người A) — NGOÀI PHẠM VI, chưa sửa:
+  (1) **`D7` đỏ trên VPS** (`test/l0-m1-di-tru.test.js:145` «ít nhất một page lạc phải là
+  page ĐANG BẬT AI»). Đã A/B trên CÙNG cây, CÙNG dữ liệu, chỉ đổi `src/db/truy-van.js`:
+  bản CŨ 10 pass/1 fail · bản MỚI 10 pass/1 fail ⇒ **không phải hồi quy của B-Y1**. Nguyên
+  nhân là DỮ LIỆU: `pages.json`/`ai-enabled.json` trên VPS không còn page lạc nào đang bật
+  AI. Đất L0-M1, ngoài pathspec B-Y1 ⇒ cổng L0-M2 sẽ còn TRƯỢT 1/27 tới khi có phiếu.
+  (2) **Cảnh báo cho G2-A3:** `ghiDon()` (`may-trang-thai.js`) khi CAS trượt thì **NÉM**
+  `LoiGhiDonAnhCu`, còn `suaTheoId` thì **TRẢ `null`**. Xoá cửa tạm thứ ba mà quên dịch
+  `null` → ném là lá chắn RF-13 thành lệnh rỗng IM LẶNG (án lệ #26: bản vá cũng là code mới).
+  (3) `themMoi` chưa có lớp kiểm tên cột SỚM như `layNhieu`/`suaTheoId` (ngoài phạm vi ④) —
+  lệch nhỏ về thứ tự lỗi khi vừa sai ctx vừa sai tên cột. Gộp ở phiếu sau.
+  (4) `v3/src/noi-day/cong-du-lieu-that.js#khongDayXuongDuoc` vẫn lọc mảng/`null` trong JS.
+  Sau B-Y1 hai lớp đó **đẩy xuống được** — đất B, B tự bỏ đường vòng và bỏ `keuMotLan`.
+  (5) **Máy cá nhân không chạy được bộ ca nào đụng CSDL**: `.env` 17 khoá không có
+  `DATABASE_URL_V3`, không docker, không `psql`, cổng 5433 đóng. Ghi chú `db/ket-noi.js:3`
+  («.env dòng 80 — container talpha-pg») đã mục. Mọi phép đo DB phải chạy trên VPS.
+
+- 25/08 · G2-A1 — TỰ QUYẾT (ghi theo luật 11 skill, đề bài không khai):
+  (a) `neu: { cot: null }` → `IS NULL`, KHÔNG phải `= NULL`. Đề bài mục 1 chỉ khai
+  `AND cot = $k`; cài đúng chữ đó thì so-và-đặt của L4-M2 khớp 0 dòng và **mọi** lượt
+  «Nhận việc» đều trượt — hỏng CÂM. Mục 2 cùng phiếu đã chốt luật `null → IS NULL`, nên
+  hai đường dùng CHUNG một bộ dựng vế (`veDieuKien`), không hai bản khai.
+  (b) `undefined` và object (toán tử `{'>=': x}` của B) trong `dieuKien`/`neu` → **ném**
+  `Error`. Cùng lớp hỏng-im với (a): `pg` biến chúng thành `= NULL` / `= '{">=":5}'`,
+  khớp 0 dòng mà không một dòng lỗi nào. `Date`/`Buffer` vẫn cho qua.
+  (c) Soi `team_id` của `duLieu` + `neu` gộp MỘT lượt — soi hai lượt thì một lời gọi xuyên
+  team đẻ HAI dòng `nhat_ky` trong khi hợp đồng ② khai «đúng 1 dòng».
+  (d) **Hạ tầng đo:** cấp `ALTER ROLE aicloser CREATEDB` trên VPS (đảo lại bằng
+  `NOCREATEDB`). Không có nó thì `dungSandbox()` ném `permission denied to create database`
+  và **mọi** cổng + **mọi** bộ ca DB đều 0 pass — thước hỏng trước code.
+  (e) Cổng `l0-m2.sh`: bỏ `docker exec talpha-pg` (container không còn ở đâu ⇒ cổng `exit 2`
+  câm), và bỏ mốc nền GÕ TAY 5 tệp «đỏ sẵn» — đo 25/08 thì cả 5 XANH ở cả hai môi trường
+  (máy cá nhân 5/5 · VPS 23/23) ⇒ cổng TRƯỢT mỗi khi mã nguồn TỐT LÊN. Thay bằng luật tự
+  bảo trì «0 tệp đỏ» (án lệ #22).
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -705,6 +740,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 25/08 · G2-A1 → ✅ xong — `suaTheoId` nhận `{neu}` + `ctxHeThong`, `layNhieu` nhận mảng; đóng nợ N3, ba cửa tạm CHƯA xoá (để G2-A3) · commit 4bc7efd · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a1.md
+- 25/08 · G2-A1 → đo trên Postgres 16.15 THẬT (VPS): nền 22 → 41 pass/0 fail · cổng L0-M2 26/27 · hồi quy 28 bộ ca v3 = 319 pass/1 fail · commit 4bc7efd · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a1.md
+- 25/08 · G2-A1 → 🧭 THƯỚC hỏng trước CODE: vai CSDL thiếu CREATEDB + cổng dựng sandbox bằng docker đã chết + mốc nền gõ tay đã mục — sửa cả ba, chi tiết §9 · commit 4bc7efd · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a1.md
+
 
 - 23/08 · VA-R3 → ✅ (TỔNG nghiệm thu) — cổng 4/4 rc=0 · repro F2+F5 hết 🔴 (đếm thô
   `grep -c`, in từng dòng) · 7/7 test mới + hồi quy 56 ca fail=0 · commit a1d1a41.
