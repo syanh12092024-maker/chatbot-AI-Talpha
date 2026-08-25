@@ -193,6 +193,56 @@ export async function sanSangToanHe() {
   };
 }
 
+/* ─────────────────────────── chi phí AI (G2-G2) ─────────────────────────── */
+
+/**
+ * Chi phí token THẬT mà tiến trình bot đã đo — tiền, số lượt, và bảng theo từng page.
+ *
+ * ⚠️ ĐÂY LÀ SỐ ĐO ĐƯỢC, KHÔNG PHẢI SỐ SUY. `measured` cho biết bao nhiêu lượt có số token
+ *    thật từ nhà cung cấp; phần còn lại là ước. Trả nguyên cả hai ra để màn nói được câu
+ *    «bao nhiêu phần trăm con số này là đo thật».
+ *
+ * ⚠️ TOÀN HỆ, KHÔNG THEO TEAM. Nơi gọi phải giao với danh sách page của team.
+ *
+ * ⚠️ Bảng `so_ai` của CSDL v3 là sổ cái DÀI HẠN cho cùng chuyện này, và nó có **0 dòng**
+ *    (đo 25/08) vì luồng sống của v3 chưa chạy. Hai chỗ chưa đồng bộ — màn phải nói ra,
+ *    đừng hiện 0 của v3 như thể không ai tiêu đồng nào.
+ */
+export async function chiPhiToanHe() {
+  const d = await goi('/token-cost', { hetGio: 25000 });
+  const so = (v) => (v == null ? null : Number(v));
+  const dsPage = Array.isArray(d && d.pages) ? d.pages : [];
+  return {
+    nhaCungCap: String((d && d.provider) || ''),
+    soLuotTraLoi: so(d?.replies),
+    soLuotDoThat: so(d?.measured),
+    soDon: so(d?.orders),
+    soLoiGoi: so(d?.calls),
+    tokenVao: so(d?.tin),
+    tokenRa: so(d?.tout),
+    tokenDocLai: so(d?.cread),
+    tienUsd: so(d?.usd),
+    tienVnd: so(d?.vnd),
+    vndMoiTin: so(d?.vndPerReply),
+    vndMoiDon: so(d?.vndPerOrder),
+    tinMoiDon: so(d?.repliesPerOrder),
+    bangGia: d?.prices || null,
+    page: dsPage.map((p) => ({
+      pageId: String(p.id),
+      ten: p.name || '',
+      soLuot: so(p.replies) || 0,
+      soLuotDoThat: so(p.measured) || 0,
+      soDon: so(p.orders) || 0,
+      tienVnd: so(p.usd) != null ? Math.round(so(p.usd) * (so(d?.vnd) && so(d?.usd) ? so(d.vnd) / so(d.usd) : 26000)) : 0,
+      tienUsd: so(p.usd) || 0,
+      vndMoiTin: so(p.vndPerReply),
+      vndMoiDon: so(p.vndPerOrder),
+      tinMoiDon: so(p.repliesPerOrder),
+      token: (so(p.tin) || 0) + (so(p.tout) || 0),
+    })),
+  };
+}
+
 /* ─────────────────────────── kho sản phẩm (G2-F6, G2-F7) ─────────────────────────── */
 
 /**

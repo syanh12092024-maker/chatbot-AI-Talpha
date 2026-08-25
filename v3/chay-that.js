@@ -62,6 +62,8 @@ const { parsePancakeScript } = await import(`${GOC}/src/kb.js`);
 // 25/08: bản đầu ghi bằng hai lời gọi `db.sua()` rời, nên giao dịch, khoá chống bấm-cùng-lúc
 // và luật «đề xuất của AI phải có người duyệt» đều không ăn.
 const noiDung = await import(`${GOC}/src/db/noi-dung.js`);
+// Sổ số liệu của người A (G2-A6) — dùng ĐỐI CHIẾU ở màn Chi phí AI.
+const soLieu = await import(`${GOC}/src/db/so-lieu.js`);
 const { datBotAi: _unused } = await import('./src/noi-day/cau-bot-v1.js');
 const _slug = new Map();
 async function slugCua(teamId) {
@@ -94,6 +96,9 @@ const bao = dungPhanB(app, {
     // (`ai-enabled.json`), không hỏi cột `page.bot_ai_bat` đã lệch. Xem B-Y7.
     xemAnhHuong: (bc) => noiDung.xemAnhHuongBoLuat(pool, ctxCuaA(bc)),
   },
+  // Sổ cái `so_ai` của v3 — dùng để ĐỐI CHIẾU với số đo của tiến trình bot, không phải
+  // nguồn chính. Hai sổ lệch thì màn Chi phí nói ra kèm cả hai con số.
+  docSoAiV3: (bc) => soLieu.chiPhiAiTheoPage(pool, ctxCuaA(bc)),
   dungBanMay: (cfg) => dungBanChoMay(cfg),
   // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM tiến trình bot, qua đúng cửa v1.
   dayKichBanLenBot: async (pageIdFacebook, cfg) => {

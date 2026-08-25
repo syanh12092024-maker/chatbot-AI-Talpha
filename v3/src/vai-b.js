@@ -57,7 +57,11 @@ import {
   datChanDangNhap as datChanDangNhapBoLuat, datChanVai as datChanVaiBoLuat, taoRouterBoLuat,
   datCuaBoLuat, manBoLuat,
 } from './ui/bo-luat/index.js';
-import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage } from './noi-day/cau-bot-v1.js';
+import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe } from './noi-day/cau-bot-v1.js';
+import {
+  datTaoTruyVan as datTruyVanChiPhi, datDocChiPhiBot, datDocSoAi,
+  datChanDangNhap as datChanDangNhapChiPhi, datChanVai as datChanVaiChiPhi, taoRouterChiPhi,
+} from './ui/chi-phi/index.js';
 import {
   datTaoTruyVan as datTruyVanLenChay, datDocSanSang as datDocSanSangLenChay,
   datDocMotPage as datDocMotPageLenChay,
@@ -149,7 +153,7 @@ import {
  */
 export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa,
   docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
-  ghiSoAi, canhBao, express } = {}) {
+  docChiPhi, docSoAiV3, ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -202,6 +206,11 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datTruyVanAnh(taoTruyVan);
   datDocKhoAnh(kho);
   // Màn sáu chặng dùng LẠI cả hai bộ đọc — cửa kiểm và cấu hình kịch bản. Không bộ nào riêng.
+  datTruyVanChiPhi(taoTruyVan);
+  // Tiền đọc từ nơi ĐO THẬT. Sổ `so_ai` của v3 chỉ dùng để ĐỐI CHIẾU — nó 0 dòng, và hiện
+  // số 0 ở màn chi phí là nói với chủ dự án rằng bot không tốn tiền.
+  datDocChiPhiBot(typeof docChiPhi === 'function' ? docChiPhi : chiPhiToanHe);
+  if (typeof docSoAiV3 === 'function') datDocSoAi(docSoAiV3);
   datTruyVanLenChay(taoTruyVan);
   datDocSanSangLenChay(docCuaKiem);
   datDocMotPageLenChay(kho.motPage);
@@ -324,6 +333,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiAnh(batBuocVaiHTTP);
   datChanDangNhapLenChay(batBuocDangNhap);
   datChanVaiLenChay(batBuocVaiHTTP);
+  datChanDangNhapChiPhi(batBuocDangNhap);
+  datChanVaiChiPhi(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -348,7 +359,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterSanPham());    //   /san-pham · /api/san-pham/*
   app.use(taoRouterAnh());        //   /thu-vien-anh · /api/thu-vien-anh
   app.use(taoRouterLenChay());    //   /len-chay · /api/len-chay/*
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng → trang chủ → sản phẩm & kho → thư viện ảnh → đưa lên chạy');
+  app.use(taoRouterChiPhi());     //   /chi-phi · /api/chi-phi
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng → trang chủ → sản phẩm & kho → thư viện ảnh → đưa lên chạy → chi phí AI');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };
