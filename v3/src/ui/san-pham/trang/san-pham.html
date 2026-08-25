@@ -62,7 +62,10 @@
   .sp .m img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:#f1f3f5;flex:0 0 auto}
   .sp .m .t{flex:1;min-width:0}
   .sp .m .ten{font-weight:600;margin-bottom:3px}
-  .sp .m .ten.trong{color:var(--bad);font-style:italic;font-weight:500}
+  /* `khuyet`, KHÔNG đặt là `trong`: `.trong` đã là lớp của khung rỗng cả màn
+     (padding 34px + text-align:center), nên tên sản phẩm sẽ ăn nguyên căn giữa của nó.
+     Đây là lần THỨ HAI trùng tên lớp kiểu này — lần trước là `.v` ở Trang chủ. */
+  .sp .m .ten.khuyet{color:var(--bad);font-style:italic;font-weight:500}
   .sp .m .gia{font-size:12px;color:var(--muted);line-height:1.6;margin-top:3px}
   .sp .m .gia b{color:var(--ink);font-variant-numeric:tabular-nums}
 
@@ -192,7 +195,7 @@ async function moPage(id) {
       <div class="m ${s.thieuTen ? 'thieu' : ''}">
         ${s.anh.length ? `<img src="${esc(s.anh[0].duong)}" alt="" loading="lazy">` : '<img alt="">'}
         <div class="t">
-          <div class="ten ${s.thieuTen ? 'trong' : ''}">${esc(s.goiLa)}</div>
+          <div class="ten ${s.thieuTen ? 'khuyet' : ''}">${esc(s.goiLa)}</div>
           <div class="nho">mã <code>${esc(s.ma)}</code>${s.bienThe ? ' · ' + esc(s.bienThe) : ''} · ${s.soAnh} ảnh</div>
           <div class="gia">${s.bacGia.map((g) => `${esc(g.nhan)}: <b>${so(g.gia)} ${esc(s.tienTe)}</b>`).join('<br>') || '<i>chưa có bậc giá</i>'}</div>
         </div>
