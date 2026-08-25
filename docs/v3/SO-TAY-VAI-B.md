@@ -153,6 +153,31 @@ có hai helper tách bạch (`tok` / `tokAx`) kèm chú thích lý do.
 **Chỗ vẫn CHƯA xong của sóng 0:** `PHIEU-B-Y4` (di trú thôi ghi đè `marketer`) người A chưa
 làm. Gán marketer trên màn `/page-bot` vẫn bị `npm run di-tru` xoá trắng — màn có cảnh báo.
 
+### Giai đoạn 2 · sóng 1 · bộ não AI — 25/08/2026
+
+| # | Quyết gì | Vì sao | Đánh đổi |
+|---|---|---|---|
+| 56 | **Suy trạng thái bộ luật bằng `nhat_ky`, không xin thêm cột `trang_thai`** | `bo_luat_chung` không có cột đó. Suy bằng số phiên bản thì SAI sau lượt lùi: bản đã chạy rồi bị gạt lại trông như «chờ duyệt». `nhat_ky` là bảng chỉ-thêm và vốn sinh ra để trả lời «việc này đã từng xảy ra chưa» | Trạng thái phụ thuộc một bảng khác; nên `ap_bo_luat` phải vào nhóm BẮT BUỘC — ghi hụt là hỏng dữ liệu chứ không chỉ mất dấu vết |
+| 57 | **KHÔNG xin mở đường ghi vào bản toàn hệ (`team_id IS NULL`)** | Tầng truy vấn của A cố ý chặn, và đó là thiết kế ĐÚNG: màn quản bộ luật CỦA TEAM, bản toàn hệ là bản kế thừa chỉ đọc — khớp đúng hợp đồng đọc `(team_id = ctx OR IS NULL)` | Muốn sửa luật toàn hệ thì phải qua di trú. Chấp nhận: nó đổi «rất hiếm» (§6) |
+| 58 | **Bản toàn hệ có trạng thái RIÊNG «Bản kế thừa»**, không gọi là «chờ duyệt» | Gọi nhầm là mời người ta đi bấm một nút chắc chắn báo lỗi | |
+| 59 | **«Áp» và «lùi về bản trước» là CÙNG một hàm** | Nhìn từ hai phía thì đó là một thao tác. Viết hai hàm là đẻ hai đường ghi cho cùng một sự việc, rồi một trong hai quên ghi nhật ký | |
+| 60 | **Chặn bản bộ luật ngắn hơn 200 ký tự** | Bản đang chạy dài 6.734 ký tự. Một bản vài chục ký tự gần như chắc chắn là dán nhầm, và áp nó là 51 page mất sạch quy tắc cứng | Không soạn được bộ luật cực ngắn. Chưa ai cần |
+| 61 | **Viết bộ so hai bản bằng LCS, không thêm thư viện** | So từng dòng theo chỉ số thì chèn MỘT dòng ở đầu là mọi dòng dưới bị báo «đã đổi» — người đọc thấy «đổi 40 dòng» rồi thôi không đọc nữa. Có bài test cho đúng nhánh này | ~40 dòng mã tự viết |
+| 62 | **Ước lượng token hiệu chỉnh theo chính bộ luật đang chạy** (6.734 ký tự ↔ 2.256 token) | Bộ đếm thật nằm ở phía nhà cung cấp. Con số này là ƯỚC LƯỢNG và mọi chỗ hiện nó đều ghi rõ như vậy | Lệch với bộ đếm thật của từng nhà |
+| 63 | **Soi mâu thuẫn dò theo TỪ KHOÁ, và khai thẳng giới hạn đó** | Bắt được mâu thuẫn thô («cấm giảm giá» ↔ «giảm 10%»), bỏ sót kiểu tinh vi. Trình bày là «chỗ đáng đọc lại», không phải phán quyết | Bỏ sót. Nhưng một danh sách gợi ý trung thực còn hơn một phán quyết sai |
+| 64 | **Chỉ báo mâu thuẫn khi hai vế ở HAI khối khác nhau** | Cùng một khối là việc của người viết khối đó. Báo cả trong-khối là làm loãng danh sách rồi người ta thôi đọc | |
+| 65 | **Mốc token của khối kỹ năng nhân theo SỐ kỹ năng** | §6 ghi ~180 token MỖI kỹ năng. Dùng mốc cứng 180 là báo động giả ngay khi bật kỹ năng thứ hai | |
+| 66 | **Marketer sửa được kỹ năng** (khác bộ luật — chỉ quản trị) | §6: kỹ năng là tầng của marketer, «bật theo sản phẩm». Bộ luật chung thì dùng chung 51 page nên chỉ quản trị | |
+| 67 | **Kiểm mã sản phẩm CÓ THẬT khi khoanh nhóm kỹ năng** | Khoanh vào mã gõ sai thì kỹ năng bật mà không page nào nhận — kiểu hỏng chỉ lộ ra khi ai đó đọc tỉ lệ hoàn hàng ba tuần sau | Thêm một lượt đọc bảng `san_pham` mỗi lần ghi |
+
+**LỖI IM LẶNG LỚN NHẤT CỦA CẢ GIAI ĐOẠN 2, bắt được ở sóng 1:** danh mục mã hành động là
+deny-by-default và `ghiNhatKy` **nuốt** lỗi mã lạ (`console.error` + trả `null`). Năm màn của
+sóng 0 dùng chín mã chưa khai ⇒ **không một dòng nhật ký nào của chúng được ghi** — cấp
+quyền, gạt công tắc bot, thêm token, chuyển page: không việc nào để lại dấu vết, mà màn hình
+vẫn báo thành công. Nay đã khai đủ, 7 mã vào nhóm bắt buộc, và có **bài test quét mã nguồn**
+đối chiếu mọi hằng `HANH_DONG_*` với danh mục — gõ tay danh sách là đẻ bản sao thứ ba rồi
+màn thứ sáu lại quên như màn thứ nhất.
+
 ---
 
 ## Sửa theo lược đồ thật — 23–24/08/2026

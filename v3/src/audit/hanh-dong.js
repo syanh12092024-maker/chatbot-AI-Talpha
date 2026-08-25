@@ -54,6 +54,8 @@ export const HANH_DONG = Object.freeze({
   // ── giai đoạn 2 · sóng 1 ──
   LUU_BAN_NHAP_BO_LUAT: 'luu_ban_nhap_bo_luat',
   AP_BO_LUAT: 'ap_bo_luat',
+  BAT_TAT_KY_NANG: 'bat_tat_ky_nang',
+  DAT_NHOM_KY_NANG: 'dat_nhom_ky_nang',
 });
 
 /** Nhóm để màn hình xếp bộ lọc thành từng cụm, không phải để module này dùng. */
@@ -75,6 +77,7 @@ export const NHOM = Object.freeze({
   ]),
   ket_noi: Object.freeze([HANH_DONG.THEM_TOKEN_PANCAKE, HANH_DONG.BO_TOKEN_PANCAKE]),
   bo_luat: Object.freeze([HANH_DONG.LUU_BAN_NHAP_BO_LUAT, HANH_DONG.AP_BO_LUAT]),
+  ky_nang: Object.freeze([HANH_DONG.BAT_TAT_KY_NANG, HANH_DONG.DAT_NHOM_KY_NANG]),
 });
 
 /**
@@ -107,6 +110,9 @@ export const nhomBatBuoc = Object.freeze(new Set([
   //    một dòng là một bản đã từng chạy bỗng trông như chưa duyệt, và người sau bấm áp lại
   //    nó tưởng là bản mới.
   HANH_DONG.AP_BO_LUAT,
+  // Bật một kỹ năng là đổi cách bot tư vấn cho cả nhóm sản phẩm — §6 đo được nó đụng tới
+  // tỉ lệ hoàn hàng (26,8% và 19,2% với sản phẩm có size chưa bật hỏi size).
+  HANH_DONG.BAT_TAT_KY_NANG,
 ]));
 
 /** Ghi hỏng mã này thì phải ném lỗi chứ không được nuốt. */
@@ -151,6 +157,8 @@ const MO_TA = Object.freeze({
   // giai đoạn 2 · sóng 1
   [HANH_DONG.LUU_BAN_NHAP_BO_LUAT]: 'Lưu bản nháp bộ luật chung',
   [HANH_DONG.AP_BO_LUAT]: 'Áp bộ luật chung',
+  [HANH_DONG.BAT_TAT_KY_NANG]: 'Bật/tắt kỹ năng',
+  [HANH_DONG.DAT_NHOM_KY_NANG]: 'Khoanh nhóm sản phẩm cho kỹ năng',
 });
 
 /** Chữ tiếng Việt cho màn hình. Mã lạ → trả lại chính mã, kèm một tiếng kêu ở console. */

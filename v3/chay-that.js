@@ -44,6 +44,11 @@ const { chuyenPageSangTeam } = await import(`${GOC}/src/db/chuyen-team.js`);
 // Kho khoá API theo (team × nhà) — bảng `khoa_nha`, migration 008 (`PHIEU-B-Y2`).
 // `ghiKhoaNha` của A nhận `teamSlug` chứ không nhận `teamId`, nên mảnh nối tra slug hộ.
 const { ghiKhoaNha, docKhoaNha, coKhoaNha } = await import(`${GOC}/db/khoa.js`);
+
+// Bốn bộ đọc khối prompt — chính bộ mà đường chat đang dùng. KHÔNG gọi `rapKb()`: nó có cờ
+// `V3_RAP_PROMPT_BAT`, vắng cờ thì lui về `kb.js` cũ và không đụng CSDL. Bốn bộ lẻ không
+// nhìn cờ, và cho từng khối riêng để đếm token.
+const rap = await import(`${GOC}/src/chat/rap-prompt.js`);
 const _slug = new Map();
 async function slugCua(teamId) {
   if (_slug.has(String(teamId))) return _slug.get(String(teamId));
@@ -67,6 +72,16 @@ const bao = dungPhanB(app, {
   taoTruyVanHeThong: () => taoCongDanhTinh(pool),
   docKetNoiPos: (bc) => lietKeThiTruong(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId || null }),
   chuyenPage: (bc, t) => chuyenPageSangTeam(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId }, t),
+  docKhoi: {
+    boLuat: (teamId) => rap.docBoLuatChung(pool, teamId),
+    // `docKyNang` lọc theo MÃ sản phẩm của page, nên phải tra mã trước.
+    kyNang: async (teamId, pageRowId) => {
+      const sp = await rap.docSanPhamGoiGia(pool, teamId, pageRowId);
+      return rap.docKyNang(pool, teamId, (sp || []).map((s) => String(s.ma)));
+    },
+    kichBan: (teamId, pageRowId) => rap.docKichBanLive(pool, teamId, pageRowId),
+    sanPham: (teamId, pageRowId) => rap.docSanPhamGoiGia(pool, teamId, pageRowId),
+  },
   khoKhoa: {
     coKhoa: (teamId, nha) => coKhoaNha(pool, { teamId, nhaCungCap: nha }),
     docKhoa: (teamId, nha) => docKhoaNha(pool, { teamId, nhaCungCap: nha }),

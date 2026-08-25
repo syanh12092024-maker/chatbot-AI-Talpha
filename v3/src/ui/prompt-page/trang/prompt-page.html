@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prompt của page — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1160px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  /* dải cảnh báo NGUY — màn này phải trông khác mọi màn khác */
+  .nguy{background:#fff4f4;border:1px solid #f0c2c2;border-left:4px solid var(--bad);
+        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
+  .nguy b{color:#991b1b}
+  .nguy .so{font-size:19px;font-weight:700;color:#991b1b;font-variant-numeric:tabular-nums}
+
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
+  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner.i{background:var(--priSoft);color:#0b4a52;border:1px solid #b8dde0}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.ap{background:var(--priSoft)}
+  .num{font-variant-numeric:tabular-nums}
+  .ten{font-weight:600;overflow-wrap:anywhere}
+  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
+  .pill.g{background:var(--okSoft);color:var(--ok)}
+  .pill.o{background:var(--warnSoft);color:var(--warn)}
+  .pill.r{background:var(--badSoft);color:var(--bad)}
+  .pill.m{background:#f1f1f1;color:#777}
+  .pill.p{background:var(--priSoft);color:var(--priDark)}
+
+  /* khối so sánh */
+  .diff{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:400px;background:#fcfdfd}
+  .diff pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6}
+  .diff .d{padding:1px 10px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid transparent}
+  .diff .d.them{background:#e9f8ee;border-left-color:var(--ok)}
+  .diff .d.bo{background:#fdecec;border-left-color:var(--bad);text-decoration:line-through;opacity:.8}
+  .diff .d.giu{color:var(--muted)}
+
+  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6;
+           min-height:260px;resize:vertical}
+
+  button{font:inherit}
+  .nut{background:var(--pri);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
+  .nut:hover{background:var(--priDark)}
+  .nut[disabled]{background:#c3cdd0;cursor:not-allowed}
+  .nut.nho{padding:4px 10px;font-size:11.5px;font-weight:600}
+  .nut.nguy{background:var(--bad)}
+  .nut.nguy:hover{background:#b91c1c}
+  .nut.phu{background:transparent;color:var(--priDark);border:1px solid var(--line)}
+  .nut.phu:hover{background:var(--priSoft)}
+  .hang{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+
+  .trong{padding:20px 15px;text-align:center;line-height:1.6}
+  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
+  .trong.chua{color:#8a4a06;background:var(--warnSoft)}
+  .loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:8px;
+       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .loi.hien{display:block}
+  .ok{background:var(--okSoft);color:#14532d;border:1px solid #b7e4c7;border-radius:8px;
+      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .ok.hien{display:block}
+
+  @media (max-width:700px){
+    header{padding:12px 14px} main{padding:12px 14px 48px}
+    .panel h2{padding:10px 12px} .than{padding:12px}
+    table,thead,tbody,th,td,tr{display:block}
+    thead{display:none}
+    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
+    tbody tr:last-child{margin-bottom:0}
+    td{border:none;padding:4px 0}
+    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
+      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
+  }
+
+  .khoi{border:1px solid var(--line);border-radius:10px;margin-bottom:11px;overflow:hidden;background:#fcfdfd}
+  .khoi > .dau{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:11px 13px;border-bottom:1px solid var(--line)}
+  .khoi h3{font-size:13px;margin:0}
+  .khoi .nd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.6;
+            padding:10px 13px;max-height:230px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#fff}
+  .khoi.thieu{border-color:#f0c2a4;background:#fffbf5}
+  .khoi .thieu-noi{padding:12px 13px;color:#8a4a06;line-height:1.55}
+  .thanh{height:7px;border-radius:4px;background:#eef2f3;overflow:hidden;margin-top:7px}
+  .thanh i{display:block;height:100%;background:var(--pri)}
+  .thanh i.qua{background:var(--warn)}
+  .mt{background:#fff4f4;border:1px solid #f0c2c2;border-left:4px solid var(--bad);border-radius:10px;
+      padding:11px 13px;margin-bottom:10px;line-height:1.6}
+  .mt .tr{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:#fff;
+          border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin-top:5px;overflow-wrap:anywhere}
+  select{border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:#fff;font:inherit;max-width:100%}
+</style>
+</head>
+<body>
+<header>
+  <h1>Prompt của page</h1>
+  <span class="sub" id="teamHien">…</span>
+  <span class="sp"></span>
+  <a href="/bo-luat">Bộ luật chung</a>
+  <a href="/ky-nang">Thư viện kỹ năng</a>
+  <a href="/dieu-phoi">Bảng điều phối →</a>
+</header>
+
+<main>
+  <div class="loi" id="loi"></div>
+  <div class="ok" id="baoOk"></div>
+  <div class="banner i">Đây là prompt <b>THẬT</b> gửi cho model, đọc từ đúng bốn bộ đọc khối mà
+    đường chat đang dùng (<code>src/chat/rap-prompt.js</code>) — không phải một bản dựng lại.
+    Màn này <b>chỉ đọc</b>; sửa khối nào thì sang màn của khối đó.</div>
+
+  <section class="panel">
+    <h2>Chọn page <span class="hint" id="tomTatPage"></span></h2>
+    <div class="than">
+      <input class="tim" id="oTim" type="search" placeholder="Lọc page theo tên hoặc id Facebook…"
+             style="width:100%;max-width:340px;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit" />
+      <div style="margin-top:9px"><select id="chonPage"></select></div>
+    </div>
+  </section>
+
+  <div id="ketQua"></div>
+</main>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const so = (n) => Number(n || 0).toLocaleString('vi-VN');
+function baoLoi(t){ const o=$('#loi'); o.textContent=t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
+function baoOk(t){ const o=$('#baoOk'); o.textContent=t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
+function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
+async function goi(duong, tuyChon){
+  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
+  let d = null; try { d = await r.json(); } catch { /* null */ }
+  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
+  return d;
+}
+function veTrong(t){
+  if (!t) return '';
+  const di = t.diTiep && t.diTiep.duong ? `<a class="di" href="${esc(t.diTiep.duong)}">${esc(t.diTiep.chu)}</a>` : '';
+  return `<div class="trong chua"><span class="ic">⚠️</span><div>${esc(t.noi)}</div>${di}</div>`;
+}
+
+
+let D = null, DS = null, TIM = '';
+
+function veKetQua(){
+  $('#teamHien').textContent = `${D.page.ten || D.page.pageId}` + (D.page.botAiBat ? ' · bot BẬT' : ' · bot tắt');
+  const mt = D.mauThuan.length ? `<div class="panel"><h2>Chỗ đáng đọc lại
+      <span class="hint">dò theo từ khoá — bắt được mâu thuẫn thô, bỏ sót kiểu tinh vi. Đây là gợi ý, không phải phán quyết.</span></h2>
+    <div class="than">${D.mauThuan.map((m) => `<div class="mt">
+      <b>${esc(m.tenA)}</b> ↔ <b>${esc(m.tenB)}</b> — ${esc(m.chu)}
+      ${m.trichA ? `<div class="tr">${esc(m.tenA)}: …${esc(m.trichA)}…</div>` : ''}
+      ${m.trichB ? `<div class="tr">${esc(m.tenB)}: …${esc(m.trichB)}…</div>` : ''}
+    </div>`).join('')}</div></div>` : '';
+
+  $('#ketQua').innerHTML = `
+    <section class="panel">
+      <h2>Bốn khối của prompt
+        <span class="hint">tổng ≈ <b>${so(D.tongToken)}</b> token (ước lượng)${D.soKhoiThieu ? ` · ${D.soKhoiThieu} khối THIẾU` : ''}</span>
+      </h2>
+      <div class="than">${D.khoi.map((k) => `
+        <div class="khoi ${k.thieu ? 'thieu' : ''}">
+          <div class="dau">
+            <h3>${esc(k.ten)}</h3>
+            <span class="phu">${esc(k.aiSua)}</span>
+            <span class="sp" style="flex:1"></span>
+            ${k.thieu ? '<span class="pill o">THIẾU</span>'
+              : `<span class="phu">≈ <b>${so(k.uocToken)}</b> token${k.phu ? ' · ' + esc(k.phu) : ''}</span>`}
+          </div>
+          ${k.thieu
+            ? `<div class="thieu-noi">⚠️ ${esc(k.lyDoThieu)}
+                ${k.duongSua ? ` <a class="lnk" href="${esc(k.duongSua)}" style="color:var(--priDark);font-weight:600">Sang màn sửa →</a>` : ''}</div>`
+            : `<div style="padding:0 13px 10px">
+                 <div class="phu">so với thiết kế §6 (${so(k.tokenThietKe)} token): <b>${k.soVoiThietKe}×</b></div>
+                 <div class="thanh"><i class="${k.soVoiThietKe > 1.2 ? 'qua' : ''}" style="width:${Math.min(100, k.soVoiThietKe * 50)}%"></i></div>
+               </div>
+               <div class="nd">${esc(k.noiDung)}</div>`}
+        </div>`).join('')}
+      </div>
+    </section>${mt}`;
+}
+
+async function napPage(){
+  const d = await goi('/api/prompt-page/danh-sach?tim=' + encodeURIComponent(TIM));
+  if (!d) return;
+  DS = d;
+  $('#tomTatPage').textContent = d.soKhop === d.soTong
+    ? `${so(d.soTong)} page` : `${so(d.soKhop)}/${so(d.soTong)} page khớp`
+      + (d.catBot ? ` · còn ${so(d.catBot)} không hiện` : '');
+  const cu = $('#chonPage').value;
+  $('#chonPage').innerHTML = d.page.length
+    ? d.page.map((p) => `<option value="${esc(p.pageId)}">${esc(p.ten || '(chưa có tên)')} — ${esc(p.pageId)}${p.botAiBat ? ' · bot BẬT' : ''}</option>`).join('')
+    : '<option value="">— không page nào —</option>';
+  if (cu && d.page.some((p) => p.pageId === cu)) $('#chonPage').value = cu;
+  if ($('#chonPage').value) await napPrompt();
+  else $('#ketQua').innerHTML = veTrong({ noi: 'Team này chưa có page nào để xem prompt.',
+    diTiep: { chu: 'Sang màn Cấu hình team', duong: '/cau-hinh-team' } });
+}
+
+async function napPrompt(){
+  xoaBao();
+  try {
+    const d = await goi('/api/prompt-page/' + encodeURIComponent($('#chonPage').value));
+    if (!d) return;
+    D = d; veKetQua();
+  } catch (e) { baoLoi(e.message); $('#ketQua').innerHTML = ''; }
+}
+
+$('#chonPage').addEventListener('change', napPrompt);
+let hen = null;
+$('#oTim').addEventListener('input', (e) => {
+  clearTimeout(hen);
+  hen = setTimeout(() => { TIM = e.target.value.trim(); napPage(); }, 250);
+});
+
+napPage().catch((e) => baoLoi(e.message));
+</script>
+</body>
+</html>

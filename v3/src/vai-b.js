@@ -53,6 +53,14 @@ import {
   datTaoTruyVan as datTruyVanBoLuat, datPheuNhatKy as datPheuNhatKyBoLuat,
   datChanDangNhap as datChanDangNhapBoLuat, datChanVai as datChanVaiBoLuat, taoRouterBoLuat,
 } from './ui/bo-luat/index.js';
+import {
+  datTaoTruyVan as datTruyVanKyNang, datPheuNhatKy as datPheuNhatKyKyNang,
+  datChanDangNhap as datChanDangNhapKyNang, datChanVai as datChanVaiKyNang, taoRouterKyNang,
+} from './ui/ky-nang/index.js';
+import {
+  datTaoTruyVan as datTruyVanPrompt, datDocKhoi,
+  datChanDangNhap as datChanDangNhapPrompt, datChanVai as datChanVaiPrompt, taoRouterPromptPage,
+} from './ui/prompt-page/index.js';
 
 /**
  * Nối toàn bộ phần rìa vào một ứng dụng Express.
@@ -62,6 +70,10 @@ import {
  * @param {(boiCanh:object)=>object} phuThuoc.taoTruyVan        BẮT BUỘC · người A giao. Cổng có chèn điều kiện team.
  * @param {()=>object}               phuThuoc.taoTruyVanHeThong BẮT BUỘC · người A giao. Cổng KHÔNG gắn team,
  *                                                              chỉ cho bốn bảng dùng chung — xem `auth/kho-nguoi-dung.js`.
+ * @param {{boLuat:Function,kyNang:Function,kichBan:Function,sanPham:Function}} [phuThuoc.docKhoi]
+ *                                                              bốn bộ đọc khối prompt (người A giao:
+ *                                                              `src/chat/rap-prompt.js`). Thiếu thì màn
+ *                                                              «Prompt của page» nói rõ là lỗi cấu hình.
  * @param {{coKhoa:Function,docKhoa:Function,ghiKhoa:Function}} [phuThuoc.khoKhoa] kho khoá API theo (team × nhà)
  *                                                              (người A giao: `db/khoa.js`, bảng `khoa_nha`).
  *                                                              Thiếu thì lớp model chỉ đọc được khoá từ biến môi trường.
@@ -77,7 +89,7 @@ import {
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa, ghiSoAi, canhBao, express } = {}) {
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa, docKhoi, ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -106,13 +118,15 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datDanhTinhTeamGhi(taoTruyVanHeThong);
   datTruyVanPageBot(taoTruyVan);
   datTruyVanBoLuat(taoTruyVan);
+  datTruyVanKyNang(taoTruyVan);
+  datTruyVanPrompt(taoTruyVan);
   daNoi.push('cổng dữ liệu → nhật ký · lớp model · bảng điều phối · kho người dùng · cấu hình team · page & bot');
 
   // ── ② Nhật ký: ba module ghi, một chỗ nhận ──
   // Ghi thẳng bằng `ghiNhatKy` của L0-M4 chứ không qua module trung gian: ba module kia
   // không được import `../audit/…`, nhưng ở đây thì được — đây chính là chỗ nối dây.
   for (const dat of [datPheuNhatKyAuth, datPheuNhatKyModel, datPheuNhatKyDieuPhoi, datPheuNhatKyTeam,
-    datPheuNhatKyPageBot, datPheuNhatKyKetNoi, datPheuNhatKyBoLuat]) {
+    datPheuNhatKyPageBot, datPheuNhatKyKetNoi, datPheuNhatKyBoLuat, datPheuNhatKyKyNang]) {
     dat((boiCanh, ban) => {
       // Đăng nhập hỏng và chọn team không thuộc xảy ra TRƯỚC khi có bối cảnh — vai B cố ý
       // không dựng bối cảnh giả để lách (bối cảnh giả là thứ nguy hiểm nhất trong hệ này).
@@ -132,6 +146,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
 
   if (typeof canhBao === 'function') { datPheuCanhBao(canhBao); daNoi.push('cảnh báo ← chuyển model dự phòng'); }
   else thieu.push('canhBao — nhà chính hết tiền thì tự chuyển dự phòng nhưng KHÔNG ai được báo. Đúng cảnh 06/08/2026');
+
+  if (docKhoi && typeof docKhoi.boLuat === 'function') { datDocKhoi(docKhoi); daNoi.push('bốn bộ đọc khối prompt → màn Prompt của page'); }
+  else thieu.push('docKhoi — màn «Prompt của page» không dựng được bốn khối, và nó nói rõ đó là lỗi cấu hình chứ không phải "page này không có prompt"');
 
   if (khoKhoa && typeof khoKhoa.docKhoa === 'function') { datKhoKhoa(khoKhoa); daNoi.push('kho khoá theo nhà → lớp model · màn Model AI'); }
   else thieu.push('khoKhoa — lớp model CHỈ đọc được khoá từ biến môi trường; khoá riêng của team trong bảng `khoa_nha` không tới được, và màn Model AI không dán khoá được');
@@ -166,6 +183,10 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiModel(batBuocVaiHTTP);
   datChanDangNhapBoLuat(batBuocDangNhap);
   datChanVaiBoLuat(batBuocVaiHTTP);
+  datChanDangNhapKyNang(batBuocDangNhap);
+  datChanVaiKyNang(batBuocVaiHTTP);
+  datChanDangNhapPrompt(batBuocDangNhap);
+  datChanVaiPrompt(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -179,7 +200,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterKetNoi());     //   /ket-noi · /api/ket-noi/*
   app.use(taoRouterModel());      //   /model-ai · /api/model/*
   app.use(taoRouterBoLuat());     //   /bo-luat · /api/bo-luat/*
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung');
+  app.use(taoRouterKyNang());     //   /ky-nang · /api/ky-nang/*
+  app.use(taoRouterPromptPage()); //   /prompt-page · /api/prompt-page/*
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };

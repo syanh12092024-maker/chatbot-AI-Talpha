@@ -9,12 +9,46 @@
 | | |
 |---|---|
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
-| Luồng đang làm | **SÓNG 0 XONG ĐỦ 4 MÀN** (G2-B1 · G2-B2 · G2-B3 · G2-B4). Kế tiếp: sóng 1 |
+| Luồng đang làm | **SÓNG 0 và SÓNG 1 XONG** (7 màn). Kế tiếp: sóng 2 — kịch bản và nội dung |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **403 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **453 xanh** (316 trước giai đoạn 2) |
 
 ---
+
+## Giai đoạn 2 · sóng 1 — BỘ NÃO AI 🟥 (xong 25/08)
+
+| Màn | Đường | Trạng thái |
+|---|---|---|
+| **Bộ luật chung** | `/bo-luat` | xong — có phiên bản, so từng dòng, số page ảnh hưởng, nút lùi |
+| **Thư viện kỹ năng** | `/ky-nang` | xong — ba phạm vi, đếm page THẬT SỰ nhận |
+| **Prompt của page** | `/prompt-page` | xong — bốn khối, token từng khối, soi mâu thuẫn |
+
+### Tiêu chí nghiệm thu sóng 1 — đo được
+
+| Tiêu chí | Kết quả |
+|---|---|
+| Sửa bộ luật → **KHÔNG áp ngay**, phải qua duyệt | ✅ `luuBanNhap` tạo bản `dang_dung=false`, áp là thao tác riêng |
+| Màn nói rõ **bao nhiêu page bị ảnh hưởng** trước khi bấm | ✅ hai số: tổng page, và số đang BẬT bot |
+| **Lùi về bản trước bằng một nút**, có nhật ký ai lùi lúc nào | ✅ cùng hàm với «áp», nhật ký khai `la_lui: true` |
+| Bật kỹ năng cho nhóm SP → prompt của **đúng** page đó thêm khối, page khác **không đổi** | ✅ đo trên xem thử: page có size **25 → 74 token**, page không size **25 → 25** |
+
+### Ba chỗ đáng đọc của sóng 1
+
+**① Một lỗi im lặng nuốt nhật ký của CẢ NĂM màn sóng 0.** Danh mục mã hành động
+(`v3/src/audit/hanh-dong.js`) là deny-by-default; `ghiNhatKy` từ chối mã lạ rồi
+`console.error` + trả `null`. Năm màn giai đoạn 2 dùng chín mã chưa khai ⇒ **mọi lượt ghi
+nhật ký của cả năm màn rơi vào hư không** trong khi màn hình vẫn báo thành công. Đã khai 12
+mã, đưa 7 mã vào nhóm BẮT BUỘC, và thêm bài test **quét mã nguồn** đối chiếu — nó bắt tiếp
+hai mã của màn kỹ năng ngay sau đó.
+
+**② `bo_luat_chung` không có cột `trang_thai`.** Suy trạng thái bằng số phiên bản thì SAI sau
+lượt lùi: bản đã chạy rồi bị gạt lại trông như «chờ duyệt», người sau bấm áp lại tưởng bản
+mới. Gánh bằng `nhat_ky` — bảng chỉ-thêm, vốn sinh ra để trả lời «việc này đã từng xảy ra
+chưa». **Không xin thêm cột**: câu trả lời chính xác đã có sẵn, chỉ nằm ở bảng khác.
+
+**③ Bốn khối đọc bằng bộ đọc của người A**, không dựng lại. Dựng lại là đẻ bản thứ hai rồi
+màn hiện một prompt khác cái bot thật sự gửi — đúng thứ màn này sinh ra để loại trừ.
 
 ## Giai đoạn 2 · sóng 0 — GỠ CHẶN
 

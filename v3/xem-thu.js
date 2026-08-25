@@ -123,6 +123,36 @@ const { taoTruyVan, kho } = dungCongGia({
       sua_luc: new Date(B - 86400000).toISOString(),
       noi_dung: '# BỘ LUẬT CHUNG (bản của Tiểu Alpha)\n\n1. Luôn chào bằng tiếng Ả Rập.\n2. Không hứa ngày giao cụ thể.\n3. Không tự ý giảm giá quá 10%.\n4. Hỏi số điện thoại trước khi chốt.\n5. Không nhắc tên đối thủ.\n6. Trả lời trong 10 giây.\n7. Không bịa thông số sản phẩm.\n8. Chuyển sale khi khách khiếu nại.\n9. Không xin thông tin thẻ.\n10. Kết thúc bằng một câu hỏi mở.\n11. Nhắc phí COD ngay khi khách hỏi giá.\n\n(phần diễn giải dài để bản này đủ cỡ thật — aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)' },
   ],
+  // Kỹ năng + sản phẩm + kịch bản LIVE — để màn «Thư viện kỹ năng» và «Prompt của page» có
+  // cái mà hiện. `hoi_size` gieo TẮT, đúng cảnh thật: §6 đo được hai sản phẩm có size đang
+  // hoàn 26,8% và 19,2% mà chưa ai bật kỹ năng này.
+  san_pham: [
+    { id: 'sp1', team_id: '1', page_id: '1', ma: '77:1001', ten: 'Kem dưỡng Kreain', ton_kho: 40 },
+    { id: 'sp2', team_id: '1', page_id: '2', ma: '77:1002', ten: 'Áo thun Golden (có size)', ton_kho: 12 },
+  ],
+  goi_gia: [
+    { id: 'g1', team_id: '1', san_pham_id: 'sp1', so_luong: 1, gia: '89', tien_te: 'SAR' },
+    { id: 'g2', team_id: '1', san_pham_id: 'sp1', so_luong: 2, gia: '159', tien_te: 'SAR' },
+  ],
+  ky_nang: [
+    { id: 'k1', team_id: '1', ma: 'hoi_size', ten: 'Hỏi size trước khi chốt', bat: false,
+      bat_cho_nhom_sp: [], phien_ban: 1,
+      noi_dung: 'Khi khách hỏi mua sản phẩm có size, PHẢI hỏi số đo trước khi chốt đơn.\\n'
+        + 'Hỏi đúng một lần, gộp vào câu tư vấn, đừng hỏi rời thành một tin riêng.' },
+    { id: 'k2', team_id: '1', ma: 'doi_tra', ten: 'Chính sách đổi trả', bat: true,
+      bat_cho_nhom_sp: [], phien_ban: 1,
+      noi_dung: 'Đổi trả trong 7 ngày nếu còn nguyên tem. Không hoàn tiền mặt, chỉ đổi hàng.' },
+    { id: 'k3', team_id: '1', ma: 'khuyen_mai', ten: 'Nói về khuyến mãi', bat: true,
+      bat_cho_nhom_sp: ['77:9999'], phien_ban: 1,
+      noi_dung: 'Mua 2 giảm 10% cho đơn trên 150 SAR.' },
+  ],
+  kich_ban: [
+    { id: 'kb1', team_id: '1', page_id: '1', phien_ban: 3, trang_thai: 'LIVE',
+      noi_dung_nguoi: {}, nguoi_sua: 'ngoc',
+      noi_dung_may: 'Chào khách bằng tiếng Ả Rập. Giới thiệu kem dưỡng Kreain.\\n'
+        + 'Nếu khách hỏi giá thì nói 89 SAR, mua 2 còn 159 SAR (giảm 10%).\\n'
+        + 'Giao trong 3 ngày trên toàn Saudi.' },
+  ],
   hoi_thoai: [
     { id: '1', team_id: '1', page_id: '1', psid: '9001', khach_id: '1' },
     { id: '2', team_id: '1', page_id: '1', psid: '9002', khach_id: '2' },
@@ -187,6 +217,26 @@ const bao = dungPhanB(app, {
   },
   // Kho khoá GIẢ trong RAM — bản thật là bảng `khoa_nha` + `db/khoa.js` (AES-256-GCM).
   // Bản giả KHÔNG mã hoá, và đó là chỗ nó dễ tính hơn bản thật: nó chỉ để xem màn hình chạy.
+  // Bốn bộ đọc khối GIẢ — đọc thẳng kho RAM. Bản thật là `src/chat/rap-prompt.js`.
+  docKhoi: {
+    boLuat: async (teamId) => (kho.docThang('bo_luat_chung') || [])
+      .filter((r) => r.dang_dung === true && (String(r.team_id ?? '') === String(teamId) || r.team_id == null))
+      .sort((a, b) => Number(b.phien_ban) - Number(a.phien_ban))[0] || null,
+    kyNang: async (teamId, pageRowId) => {
+      const ma = new Set((kho.docThang('san_pham') || [])
+        .filter((s) => String(s.page_id) === String(pageRowId)).map((s) => String(s.ma)));
+      return (kho.docThang('ky_nang') || []).filter((k) => String(k.team_id) === String(teamId) && k.bat === true)
+        .filter((k) => {
+          const n = Array.isArray(k.bat_cho_nhom_sp) ? k.bat_cho_nhom_sp : [];
+          return !n.length || n.some((g) => ma.has(String(g)));
+        });
+    },
+    kichBan: async (teamId, pageRowId) => (kho.docThang('kich_ban') || [])
+      .find((k) => String(k.team_id) === String(teamId) && String(k.page_id) === String(pageRowId)
+        && k.trang_thai === 'LIVE') || null,
+    sanPham: async (teamId, pageRowId) => (kho.docThang('san_pham') || [])
+      .filter((s) => String(s.team_id) === String(teamId) && String(s.page_id) === String(pageRowId)),
+  },
   khoKhoa: (() => {
     const kho2 = new Map();
     const k = (t, n) => `${t}|${n}`;
