@@ -1,6 +1,11 @@
 // TẦNG ĐỌC/GHI CỦA MÀN «BỘ LUẬT CHUNG» (G2-C1, sóng 1 — màn NGUY HIỂM NHẤT giai đoạn 2).
 //
-// Sửa sai một dòng ở đây là **51 page đổi cách nói với khách cùng lúc**.
+// Sửa sai một dòng ở đây là **mọi page của team đổi cách nói với khách cùng lúc**.
+//
+// ⚠️ ĐỪNG GHI MỘT CON SỐ CỐ ĐỊNH VÀO ĐÂY. Bản trước ghi «51 page» — số đó chép từ cột
+//    `page.bot_ai_bat` lúc 22/08, và tới 25/08 cột đã lệch: CSDL ghi 50 page bật AI trong khi
+//    tiến trình bot chạy 0. Số đúng phải ĐO lúc chạy (`demAnhHuong()`), không phải chép vào
+//    chú thích rồi mọi người tin theo. Xem `PHIEU-B-Y7`.
 //
 // ═══ BA THỨ BẮT BUỘC PHẢI CÓ TRƯỚC KHI CHO BẤM ÁP ═══════════════════════════════════════
 // Sổ giao việc ghi thẳng: «phải hiện bản mới khác bản cũ chỗ nào, bao nhiêu page bị ảnh
@@ -351,7 +356,7 @@ export const DAI_TOI_THIEU = 200;
  * Lưu một bản nháp MỚI. KHÔNG áp — bản đang chạy không đổi một chữ.
  *
  * Luôn tạo dòng mới, không bao giờ sửa đè: `bo_luat_chung` là chỗ giữ lịch sử của thứ quyết
- * định cách bot nói với khách. Sửa đè là xoá mất bản mà 51 page đã chạy bằng nó — và lúc cần
+ * định cách bot nói với khách. Sửa đè là xoá mất bản mà cả team đã chạy bằng nó — và lúc cần
  * lùi thì không còn gì để lùi về.
  */
 export async function luuBanNhap(boiCanh, { noiDung, ghiChu = '', nguon = 'nguoi' } = {}) {

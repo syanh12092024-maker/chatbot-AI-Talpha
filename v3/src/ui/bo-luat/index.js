@@ -1,6 +1,6 @@
 // CỬA RA VÀO CỦA MÀN «BỘ LUẬT CHUNG» (G2-C1 · sóng 1).
 //
-// ⚠️ MÀN NGUY HIỂM NHẤT GIAI ĐOẠN 2. Sửa sai một dòng là 51 page đổi cách nói với khách
+// ⚠️ MÀN NGUY HIỂM NHẤT GIAI ĐOẠN 2. Sửa sai một dòng là MỌI page của team đổi cách nói với khách
 //    cùng lúc. Đọc khối chú thích đầu `kho-bo-luat.js` trước khi sửa gì ở đây.
 //
 // BA THỨ BẮT BUỘC CÓ TRƯỚC KHI CHO BẤM ÁP — và cả ba đều có:

@@ -288,7 +288,7 @@ export async function banCuaPage(boiCanh, pageRowId) {
 
 /**
  * BƯỚC 1 → BƯỚC 2, KHÔNG ĐẢO: nhận bản NGƯỜI, tự dựng bản MÁY, lưu CẢ HAI.
- * Luôn tạo phiên bản mới `DRAFT` — không sửa đè, vì bản cũ là thứ 51 page đã chạy bằng nó.
+ * Luôn tạo phiên bản mới `DRAFT` — không sửa đè, vì bản cũ là thứ các page đang chạy bằng nó.
  */
 export async function luuBanNhap(boiCanh, pageRowId, { nguoi, ghiChu = '' } = {}) {
   const bc = batBuocBoiCanh(boiCanh);

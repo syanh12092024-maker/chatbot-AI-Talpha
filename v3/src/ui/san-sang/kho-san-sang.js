@@ -238,17 +238,26 @@ function lech(page) {
   };
 }
 
+/**
+ * Một ô điều kiện trên MỘT page.
+ *
+ * ⚠️ CHỈ CHỞ THỨ RIÊNG CỦA PAGE NÀY: `ma` + `chiTiet`. Tên bậc, chỗ nhảy, câu chỉ việc đều
+ *    là thứ CHUNG của bậc thang — chúng đã nằm trong `dieuKien` gửi kèm MỘT lần, trình duyệt
+ *    tra theo `ma`.
+ *
+ *    Đo 25/08 trên 514 page thật: chở kèm thì gói JSON **586 KB** cho 1.397 ô, vì cùng một
+ *    câu «Thêm một token Pancake có phủ page này…» bị chép lại 120 lần. Bỏ đi còn **288 KB**.
+ *
+ *    Và nó cũng là cùng một mối nguy như chuỗi gõ hai lần, chỉ ở dạng dữ liệu: hai bản sao
+ *    của một câu thì sửa một bản là hai nơi nói khác nhau.
+ */
 function nhan(b, laChan) {
   const ma = String(b?.code || '');
   const dk = DIEU_KIEN[ma] || null;
   return {
     ma,
-    ten: dk?.ten || ma,
     chiTiet: String(b?.detail || ''),
     chan: dk ? dk.chan : laChan,
-    di: dk?.di || null,
-    nutDi: dk?.nutDi || null,
-    lam: dk?.lam || '',
     // Mã v1 trả về mà bảng ở đây không biết — hiện ra chứ không nuốt. Nuốt đi thì bậc thang
     // mới của v1 lặng lẽ biến mất khỏi màn.
     la: !dk,

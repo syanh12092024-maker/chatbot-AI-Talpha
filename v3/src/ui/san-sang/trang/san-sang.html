@@ -149,14 +149,18 @@ function veLoc() {
   });
 }
 
-/** Ô điều kiện. Có `di` → thẻ <a> bấm được. Không có → <span> kèm lời chỉ việc phải làm. */
+/**
+ * Ô điều kiện. Tên bậc / chỗ nhảy / câu chỉ việc tra từ `DL.dieuKien` theo mã — gói dữ liệu
+ * KHÔNG chở chúng theo từng page (xem chú thích ở `kho-san-sang.js#nhan`).
+ * Có chỗ nhảy → thẻ <a> bấm được. Không có → <span> viền đứt, kèm lời chỉ việc.
+ */
 function veO(x) {
+  const dk = (DL.dieuKien && DL.dieuKien[x.ma]) || null;
   const lop = x.chan ? 'chan' : 'nhac';
-  const nhan = esc(x.ten) + (x.la ? ' (mã lạ)' : '');
-  if (x.di) {
-    return `<a class="ma ${lop}" href="${esc(x.di)}" title="${esc(x.lam)}">${nhan}</a>`;
-  }
-  return `<span class="ma ${lop}" data-khong="1" title="${esc(x.lam)}">${nhan}</span>`;
+  const nhan = esc(dk ? dk.ten : x.ma) + (x.la ? ' (mã lạ)' : '');
+  const lam = esc(dk ? dk.lam : 'Mã này v1 vừa thêm, màn chưa biết cách chỉ chỗ sửa.');
+  if (dk && dk.di) return `<a class="ma ${lop}" href="${esc(dk.di)}" title="${lam}">${nhan}</a>`;
+  return `<span class="ma ${lop}" data-khong="1" title="${lam}">${nhan}</span>`;
 }
 
 function veBang() {

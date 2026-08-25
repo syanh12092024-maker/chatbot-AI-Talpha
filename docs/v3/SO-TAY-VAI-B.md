@@ -230,6 +230,24 @@ AI; `ai-enabled.json` và RAM của bot đều nói 0. Cột `page.bot_ai_bat` l
 `PHIEU-B-Y7` cho người A (`src/db/noi-dung.js` là đất của A). Màn cửa kiểm giữ **cả hai** con
 số và nêu chỗ lệch kèm ví dụ từng page.
 
+**Gói dữ liệu không chở bản sao của cùng một câu.** Bản đầu, mỗi ô điều kiện chở theo tên
+bậc + chỗ nhảy + câu chỉ việc. Trên 514 page thật là **586 KB** cho 1.397 ô, vì câu «Thêm một
+token Pancake có phủ page này…» bị chép 120 lần. Nay ô chỉ chở `ma` + `chiTiet`; phần chung
+nằm trong `dieuKien` gửi một lần, trình duyệt tra theo mã. Còn **288 KB**, giảm 51%. Nó cũng
+là cùng mối nguy như chuỗi gõ hai lần, chỉ ở dạng dữ liệu.
+
+**Hết-giờ của cầu phải theo đường, không theo mặc định.** `/admin/api/readiness` mất
+**10,6–13,2 giây** và trả 300 KB cho 676 page (`allReadiness()` đọc sổ đăng ký + số liệu +
+kho phiên bản cho TỪNG page). Mặc định 8 giây làm màn luôn báo «bot có đang chạy không?»
+trong khi bot vẫn khoẻ. Nới riêng đường này lên 25 giây; đường gạt công tắc giữ 8 giây, vì ở
+đó chờ lâu nghĩa là bot treo thật.
+
+**Đã gỡ bốn chỗ gõ cứng «51 page».** Con số đó chép từ cột `page.bot_ai_bat` hôm 22/08, và
+tới 25/08 cột đã lệch (CSDL 50, bot 0) ⇒ nó sai hai lần. Một trong bốn chỗ là **chữ người
+dùng đọc** trên màn AI đề xuất. Nay nói «mọi page của team»; số thật phải ĐO lúc chạy bằng
+`demAnhHuong()`. Cùng loại lỗi với chuỗi gõ hai lần, chỉ khác là nó nằm trong chú thích và
+trong câu tiếng Việt — chỗ không bài test nào canh.
+
 **Màn nào CÓ cửa ghi thì PHẢI xuất danh sách ghi.** Bắt được vì router `bo-luat` NHẬP
 `VAI_SUA_DUOC` từ tầng dưới mà không XUẤT lại, nên lưới quét phân quyền đọc ra `[]` và một
 màn nới quyền sau này vẫn lọt. `dispatch` và `ket-noi` có «ghi = xem», nay khai TƯỜNG MINH dù
