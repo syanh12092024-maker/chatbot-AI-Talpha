@@ -61,6 +61,11 @@ import {
   datTaoTruyVan as datTruyVanPrompt, datDocKhoi,
   datChanDangNhap as datChanDangNhapPrompt, datChanVai as datChanVaiPrompt, taoRouterPromptPage,
 } from './ui/prompt-page/index.js';
+import {
+  datTaoTruyVan as datTruyVanKichBan, datPheuNhatKy as datPheuNhatKyKichBan,
+  datDungBanMay, datDayLenBot, datBocPancake,
+  datChanDangNhap as datChanDangNhapKichBan, datChanVai as datChanVaiKichBan, taoRouterKichBan,
+} from './ui/kich-ban/index.js';
 
 /**
  * Nối toàn bộ phần rìa vào một ứng dụng Express.
@@ -70,6 +75,11 @@ import {
  * @param {(boiCanh:object)=>object} phuThuoc.taoTruyVan        BẮT BUỘC · người A giao. Cổng có chèn điều kiện team.
  * @param {()=>object}               phuThuoc.taoTruyVanHeThong BẮT BUỘC · người A giao. Cổng KHÔNG gắn team,
  *                                                              chỉ cho bốn bảng dùng chung — xem `auth/kho-nguoi-dung.js`.
+ * @param {(cfg:object)=>string}    [phuThuoc.dungBanMay]      dựng BẢN CHO MÁY từ bản người
+ *                                                              (người A giao: `db/di-tru/nguon.js#dungBanChoMay`).
+ *                                                              Thiếu thì màn soạn kịch bản TỪ CHỐI lưu.
+ * @param {(pageId:string,cfg:object)=>Promise} [phuThuoc.dayKichBanLenBot] đưa một bản lên LIVE ở tiến trình bot.
+ * @param {(b64:string)=>Promise<object>} [phuThuoc.bocPancake]  bóc file kịch bản Pancake thành bản nháp.
  * @param {{boLuat:Function,kyNang:Function,kichBan:Function,sanPham:Function}} [phuThuoc.docKhoi]
  *                                                              bốn bộ đọc khối prompt (người A giao:
  *                                                              `src/chat/rap-prompt.js`). Thiếu thì màn
@@ -89,7 +99,8 @@ import {
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa, docKhoi, ghiSoAi, canhBao, express } = {}) {
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa,
+  docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -120,13 +131,14 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datTruyVanBoLuat(taoTruyVan);
   datTruyVanKyNang(taoTruyVan);
   datTruyVanPrompt(taoTruyVan);
+  datTruyVanKichBan(taoTruyVan);
   daNoi.push('cổng dữ liệu → nhật ký · lớp model · bảng điều phối · kho người dùng · cấu hình team · page & bot');
 
   // ── ② Nhật ký: ba module ghi, một chỗ nhận ──
   // Ghi thẳng bằng `ghiNhatKy` của L0-M4 chứ không qua module trung gian: ba module kia
   // không được import `../audit/…`, nhưng ở đây thì được — đây chính là chỗ nối dây.
   for (const dat of [datPheuNhatKyAuth, datPheuNhatKyModel, datPheuNhatKyDieuPhoi, datPheuNhatKyTeam,
-    datPheuNhatKyPageBot, datPheuNhatKyKetNoi, datPheuNhatKyBoLuat, datPheuNhatKyKyNang]) {
+    datPheuNhatKyPageBot, datPheuNhatKyKetNoi, datPheuNhatKyBoLuat, datPheuNhatKyKyNang, datPheuNhatKyKichBan]) {
     dat((boiCanh, ban) => {
       // Đăng nhập hỏng và chọn team không thuộc xảy ra TRƯỚC khi có bối cảnh — vai B cố ý
       // không dựng bối cảnh giả để lách (bối cảnh giả là thứ nguy hiểm nhất trong hệ này).
@@ -146,6 +158,15 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
 
   if (typeof canhBao === 'function') { datPheuCanhBao(canhBao); daNoi.push('cảnh báo ← chuyển model dự phòng'); }
   else thieu.push('canhBao — nhà chính hết tiền thì tự chuyển dự phòng nhưng KHÔNG ai được báo. Đúng cảnh 06/08/2026');
+
+  if (typeof dungBanMay === 'function') { datDungBanMay(dungBanMay); daNoi.push('bộ dựng bản-cho-máy → màn soạn kịch bản'); }
+  else thieu.push('dungBanMay — màn soạn kịch bản TỪ CHỐI lưu, vì tự dựng bản thứ hai là hứa một prompt khác cái bot nhận');
+
+  if (typeof dayKichBanLenBot === 'function') { datDayLenBot(dayKichBanLenBot); daNoi.push('cửa đưa kịch bản lên LIVE → tiến trình bot'); }
+  else thieu.push('dayKichBanLenBot — soạn được kịch bản nhưng KHÔNG đưa lên LIVE được; sửa cột mà không gọi sang bot thì bot vẫn nói y như cũ');
+
+  if (typeof bocPancake === 'function') { datBocPancake(bocPancake); daNoi.push('bộ bóc file kịch bản Pancake'); }
+  else thieu.push('bocPancake — không nhập được kịch bản từ file Pancake');
 
   if (docKhoi && typeof docKhoi.boLuat === 'function') { datDocKhoi(docKhoi); daNoi.push('bốn bộ đọc khối prompt → màn Prompt của page'); }
   else thieu.push('docKhoi — màn «Prompt của page» không dựng được bốn khối, và nó nói rõ đó là lỗi cấu hình chứ không phải "page này không có prompt"');
@@ -187,6 +208,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiKyNang(batBuocVaiHTTP);
   datChanDangNhapPrompt(batBuocDangNhap);
   datChanVaiPrompt(batBuocVaiHTTP);
+  datChanDangNhapKichBan(batBuocDangNhap);
+  datChanVaiKichBan(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -202,7 +225,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterBoLuat());     //   /bo-luat · /api/bo-luat/*
   app.use(taoRouterKyNang());     //   /ky-nang · /api/ky-nang/*
   app.use(taoRouterPromptPage()); //   /prompt-page · /api/prompt-page/*
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page');
+  app.use(taoRouterKichBan());    //   /kich-ban · /api/kich-ban/*
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };

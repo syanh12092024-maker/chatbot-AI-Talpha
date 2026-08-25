@@ -9,12 +9,54 @@
 | | |
 |---|---|
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
-| Luồng đang làm | **SÓNG 0 và SÓNG 1 XONG** (7 màn). Kế tiếp: sóng 2 — kịch bản và nội dung |
+| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 xong 3/5** (10 màn). Hai màn cuối sóng 2 chờ `PHIEU-B-Y6` |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **454 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **476 xanh** (316 trước giai đoạn 2) |
 
 ---
+
+## Giai đoạn 2 · sóng 2 — KỊCH BẢN VÀ NỘI DUNG (3/5 màn, 25/08)
+
+| Màn | Đường | Trạng thái |
+|---|---|---|
+| **Kịch bản** (cây) | `/kich-ban` | xong — dựng bằng HAI tầng có dữ liệu, nói thẳng tầng thứ ba trống |
+| **Soạn kịch bản** | `/kich-ban` (cùng màn) | xong — hai bước không đảo, đúng một bản LIVE |
+| **Nhập từ Pancake** | `/api/kich-ban/nhap-pancake` | xong — nối vào bộ bóc sẵn có của v1 |
+| **Lớp trả lời 0 đồng** | — | 🟥 **chặn — không có bảng** (`PHIEU-B-Y6` ⓑ) |
+| **Thư viện ảnh** | — | 🟥 **chặn — không có bảng** (`PHIEU-B-Y6` ⓒ) |
+
+### Tiêu chí nghiệm thu sóng 2 — phần đo được
+
+| Tiêu chí | Kết quả |
+|---|---|
+| Viết tiếng Việt → một nút ra **bản cho máy**, **cả hai bản đều lưu** | ✅ `noi_dung_nguoi` + `noi_dung_may`, dựng bằng ĐÚNG hàm của bộ di trú |
+| Đúng **một** bản LIVE mỗi page — bản thứ hai bật thì bản cũ tự hạ | ✅ v2 lên LIVE → v1 thành `ARCHIVED`, đếm được đúng 1 |
+| Page không có kịch bản riêng → cây ghi rõ, không hiện trống | ✅ nhãn «chưa có kịch bản riêng» + cảnh báo 4/5 page |
+| Lớp 0 đồng chặn ≥33% lưu lượng | ❌ **không đo được** — không có bảng, và chưa rõ đếm bằng cột nào (`PHIEU-B-Y6` ⑧) |
+
+### Cây «ba tầng» hôm nay chỉ dựng được HAI — và đó là sự thật của dữ liệu
+
+```
+tầng SẢN PHẨM · page.nganh_hang khác rỗng = 0/514 · bảng san_pham = 0 dòng
+tầng NƯỚC     · page.thi_truong khác rỗng = 140/514 (KSA 34 · UAE 32 · Khác 28 · Kuwait 23…)
+tầng PAGE     · 70/514 page có bản LIVE ⇒ 444 page KHÔNG có kịch bản riêng
+```
+
+Thêm nữa `kich_ban.page_id` là **NOT NULL**, nên không lưu được bản ở tầng trên — «kế thừa từ
+tầng trên» **không có tầng trên nào để kế thừa**. Màn dựng bằng hai tầng có dữ liệu và **nói
+thẳng tầng thứ ba đang trống**: dựng đủ ba tầng trên dữ liệu rỗng thì ra một cây có đúng một
+nhánh «(chưa phân loại)», trông như màn hình hỏng và che mất sự thật là dữ liệu chưa có.
+
+### Hai chỗ đáng đọc
+
+**① Bản-cho-máy dựng bằng ĐÚNG hàm của bộ di trú** (`db/di-tru/nguon.js#dungBanChoMay`), và
+**không cho sửa thẳng bản máy**. Sửa được nó là hai bản rời nhau: bản người nói một đằng, bản
+máy chạy một nẻo, và không ai biết bản nào mới là thật.
+
+**② Đưa lên LIVE gọi sang TIẾN TRÌNH BOT trước, rồi mới sửa cột.** Bản LIVE thật nằm ở
+`kb-overrides.json` + RAM tiến trình bot; cột là bản sao. Đảo thứ tự thì cột nói «LIVE» trong
+khi bot vẫn nói y như cũ — mà màn hình chính là thứ người ta nhìn để tin.
 
 ## Giai đoạn 2 · sóng 1 — BỘ NÃO AI 🟥 (xong 25/08)
 

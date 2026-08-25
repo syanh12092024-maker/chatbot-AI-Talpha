@@ -13,7 +13,8 @@ const { bam } = await import('../../src/auth/mat-khau.js');
 const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
-async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi } = {}) {
+async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi,
+  dungBanMay, dayKichBanLenBot, bocPancake } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -39,7 +40,8 @@ async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, do
   const bao = dungPhanB(app, {
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
-    ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi, express,
+    ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi,
+    dungBanMay, dayKichBanLenBot, bocPancake, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -139,6 +141,9 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   // dán khoá không xuống được, và khoá riêng của team trong `khoa_nha` tàng hình.
   assert.ok(bao.thieu.some((x) => /khoKhoa/.test(x)), 'phải nêu thiếu khoKhoa');
   assert.ok(bao.thieu.some((x) => /docKhoi/.test(x)), 'phải nêu thiếu docKhoi');
+  for (const t of ['dungBanMay', 'dayKichBanLenBot', 'bocPancake']) {
+    assert.ok(bao.thieu.some((x) => x.includes(t)), `phải nêu thiếu ${t}`);
+  }
 
   const { sv: sv2, bao: bao2 } = await dungThu({
     ghiSoAi: () => {}, canhBao: () => {}, docKetNoiPos: async () => [],
@@ -148,6 +153,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
       boLuat: async () => null, kyNang: async () => [],
       kichBan: async () => null, sanPham: async () => [],
     },
+    dungBanMay: () => '', dayKichBanLenBot: async () => ({}), bocPancake: async () => ({}),
   });
   t.after(() => sv2.close());
   assert.deepEqual(bao2.thieu, [], 'nối đủ thì không còn thiếu gì');

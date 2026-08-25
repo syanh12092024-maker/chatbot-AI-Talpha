@@ -217,6 +217,18 @@ const bao = dungPhanB(app, {
   },
   // Kho khoá GIẢ trong RAM — bản thật là bảng `khoa_nha` + `db/khoa.js` (AES-256-GCM).
   // Bản giả KHÔNG mã hoá, và đó là chỗ nó dễ tính hơn bản thật: nó chỉ để xem màn hình chạy.
+  // Bản-cho-máy dựng bằng ĐÚNG công thức của `db/di-tru/nguon.js#dungBanChoMay` (bản thật
+  // import thẳng hàm đó). Chép công thức ở đây là chấp nhận được vì bản giả chỉ để xem màn
+  // hình chạy — nhưng ghi rõ, để không ai tưởng đây là nguồn sự thật.
+  dungBanMay: (c) => {
+    const d = [];
+    if (c.tone) d.push(`- Giọng điệu / phong cách: ${c.tone}`);
+    if (c.greeting) d.push(`- Câu chào mở đầu (dùng khi khách mới nhắn): "${c.greeting}"`);
+    if (c.salesPrompt) d.push(`- Cách bán / điểm mạnh riêng của sản phẩm:\n${c.salesPrompt}`);
+    return d.join('\n');
+  },
+  dayKichBanLenBot: async () => ({ ok: true }),   // bản giả: không có tiến trình bot để đẩy
+  bocPancake: async () => ({ greeting: '(bản giả — không bóc file thật)', tone: '', salesPrompt: '' }),
   // Bốn bộ đọc khối GIẢ — đọc thẳng kho RAM. Bản thật là `src/chat/rap-prompt.js`.
   docKhoi: {
     boLuat: async (teamId) => (kho.docThang('bo_luat_chung') || [])

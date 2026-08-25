@@ -137,6 +137,17 @@ async function goi(duong, { phuongThuc = 'GET', than = null, ghi = false, hetGio
   return d;
 }
 
+/**
+ * Cửa gọi CHUNG sang `/admin/api` — cho những màn cần một đường không nằm trong danh sách
+ * hàm sẵn có ở dưới (ví dụ `POST /kb/:pageId/config` của màn soạn kịch bản).
+ *
+ * Vẫn đi qua đúng `goi()`: cùng lớp kiểm cửa ghi, cùng lớp dịch lỗi, cùng hết-giờ. Phơi
+ * `goi` ra thẳng thì mỗi nơi gọi lại tự đặt tuỳ chọn một kiểu.
+ */
+export function goiAdminV1(duong, tuyChon = {}) {
+  return goi(duong, tuyChon);
+}
+
 /* ────────────────────────────── công tắc BOT AI (G2-B2) ────────────────────────────── */
 
 /**

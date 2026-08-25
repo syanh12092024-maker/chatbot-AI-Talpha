@@ -49,6 +49,12 @@ const { ghiKhoaNha, docKhoaNha, coKhoaNha } = await import(`${GOC}/db/khoa.js`);
 // `V3_RAP_PROMPT_BAT`, vắng cờ thì lui về `kb.js` cũ và không đụng CSDL. Bốn bộ lẻ không
 // nhìn cờ, và cho từng khối riêng để đếm token.
 const rap = await import(`${GOC}/src/chat/rap-prompt.js`);
+
+// Bộ dựng BẢN CHO MÁY và bộ bóc file Pancake — của người A, dùng NGUYÊN. Tự viết bản thứ
+// hai là màn hình hứa một prompt khác cái bot thật sự nhận.
+const { dungBanChoMay } = await import(`${GOC}/db/di-tru/nguon.js`);
+const { parsePancakeScript } = await import(`${GOC}/src/kb.js`);
+const { datBotAi: _unused } = await import('./src/noi-day/cau-bot-v1.js');
 const _slug = new Map();
 async function slugCua(teamId) {
   if (_slug.has(String(teamId))) return _slug.get(String(teamId));
@@ -72,6 +78,13 @@ const bao = dungPhanB(app, {
   taoTruyVanHeThong: () => taoCongDanhTinh(pool),
   docKetNoiPos: (bc) => lietKeThiTruong(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId || null }),
   chuyenPage: (bc, t) => chuyenPageSangTeam(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId }, t),
+  dungBanMay: (cfg) => dungBanChoMay(cfg),
+  // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM tiến trình bot, qua đúng cửa v1.
+  dayKichBanLenBot: async (pageIdFacebook, cfg) => {
+    const { goiAdminV1 } = await import('./src/noi-day/cau-bot-v1.js');
+    return goiAdminV1(`/kb/${encodeURIComponent(pageIdFacebook)}/config`, { phuongThuc: 'POST', than: cfg, ghi: true });
+  },
+  bocPancake: async (b64) => parsePancakeScript(b64),
   docKhoi: {
     boLuat: (teamId) => rap.docBoLuatChung(pool, teamId),
     // `docKyNang` lọc theo MÃ sản phẩm của page. Nơi gọi truyền sẵn mã xuống — nó đã đọc
