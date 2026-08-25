@@ -8,7 +8,15 @@
 // Thêm mã mới: thêm vào HANH_DONG **và** MO_TA. Thiếu mô tả thì `moTa()` kêu lên ở
 // console chứ không trả về chuỗi rỗng — màn hình hiện mã trần còn hơn hiện ô trống.
 
-/** Mười bốn mã của giai đoạn 1, nhóm theo việc. Giá trị = đúng chuỗi lưu xuống cột `hanh_dong`. */
+/**
+ * Mã hành động, nhóm theo việc. Giá trị = đúng chuỗi lưu xuống cột `hanh_dong`.
+ *
+ * ⚠️ DANH MỤC NÀY LÀ DENY-BY-DEFAULT, và nó đã bắt được một lỗi thật (25/08): năm màn của
+ * giai đoạn 2 dùng chín mã chưa khai ở đây, nên `ghiNhatKy` từ chối, `console.error` rồi
+ * trả `null` — **mọi lượt ghi nhật ký của cả năm màn rơi vào hư không** trong khi màn hình
+ * vẫn báo thành công. Đúng loại lỗi im lặng mà cả dự án này canh.
+ * Thêm màn mới thì thêm mã Ở ĐÂY TRƯỚC, đừng đợi tới lúc chạy mới biết.
+ */
 export const HANH_DONG = Object.freeze({
   // đăng nhập
   DANG_NHAP: 'dang_nhap',
@@ -29,6 +37,23 @@ export const HANH_DONG = Object.freeze({
   MO_LAI_VIEC: 'mo_lai_viec',
   // máy làm
   VIEC_TU_DONG: 'viec_tu_dong',
+
+  // ── giai đoạn 2 · sóng 0 ──
+  // cấu hình team
+  THEM_THANH_VIEN: 'them_thanh_vien',
+  BOT_THANH_VIEN: 'bot_thanh_vien',
+  CHUYEN_PAGE_TEAM: 'chuyen_page_team',
+  // page & bot
+  BAT_TAT_BOT_AI: 'bat_tat_bot_ai',
+  GAN_MARKETER: 'gan_marketer',
+  DAT_TRONG_DIEM: 'dat_trong_diem',
+  // kết nối & token
+  THEM_TOKEN_PANCAKE: 'them_token_pancake',
+  BO_TOKEN_PANCAKE: 'bo_token_pancake',
+
+  // ── giai đoạn 2 · sóng 1 ──
+  LUU_BAN_NHAP_BO_LUAT: 'luu_ban_nhap_bo_luat',
+  AP_BO_LUAT: 'ap_bo_luat',
 });
 
 /** Nhóm để màn hình xếp bộ lọc thành từng cụm, không phải để module này dùng. */
@@ -42,6 +67,14 @@ export const NHOM = Object.freeze({
   ]),
   dieu_phoi: Object.freeze([HANH_DONG.NHAN_VIEC, HANH_DONG.DONG_VIEC, HANH_DONG.MO_LAI_VIEC]),
   may_lam: Object.freeze([HANH_DONG.VIEC_TU_DONG]),
+  cau_hinh_team: Object.freeze([
+    HANH_DONG.THEM_THANH_VIEN, HANH_DONG.BOT_THANH_VIEN, HANH_DONG.CHUYEN_PAGE_TEAM,
+  ]),
+  page_bot: Object.freeze([
+    HANH_DONG.BAT_TAT_BOT_AI, HANH_DONG.GAN_MARKETER, HANH_DONG.DAT_TRONG_DIEM,
+  ]),
+  ket_noi: Object.freeze([HANH_DONG.THEM_TOKEN_PANCAKE, HANH_DONG.BO_TOKEN_PANCAKE]),
+  bo_luat: Object.freeze([HANH_DONG.LUU_BAN_NHAP_BO_LUAT, HANH_DONG.AP_BO_LUAT]),
 });
 
 /**
@@ -58,6 +91,22 @@ export const nhomBatBuoc = Object.freeze(new Set([
   HANH_DONG.DANG_NHAP_THAT_BAI,
   HANH_DONG.DOI_MODEL,
   HANH_DONG.DOI_KHOA,
+
+  // ── thêm 25/08, giai đoạn 2 ──
+  // Cấp quyền: ai cho ai vào team nào với vai gì. Mất dấu là mất luôn khả năng trả lời
+  // «vì sao người này thấy được dữ liệu đó».
+  HANH_DONG.THEM_THANH_VIEN,
+  HANH_DONG.BOT_THANH_VIEN,
+  // Đổi chủ dữ liệu: một lượt chuyển kéo theo hội thoại, kịch bản, sản phẩm sang team khác.
+  HANH_DONG.CHUYEN_PAGE_TEAM,
+  // Gạt công tắc bot là đổi cách hệ thống nói chuyện với KHÁCH THẬT.
+  HANH_DONG.BAT_TAT_BOT_AI,
+  // ⚠️ `AP_BO_LUAT` bắt buộc vì một lý do KHÁC HẲN mấy mã trên: nó vừa là dấu vết vừa là
+  //    DỮ LIỆU. Màn bộ luật suy «bản cũ» hay «chờ duyệt» bằng cách hỏi bảng nhật ký xem
+  //    phiên bản này đã từng áp chưa (`bo_luat_chung` không có cột `trang_thai`). Ghi hụt
+  //    một dòng là một bản đã từng chạy bỗng trông như chưa duyệt, và người sau bấm áp lại
+  //    nó tưởng là bản mới.
+  HANH_DONG.AP_BO_LUAT,
 ]));
 
 /** Ghi hỏng mã này thì phải ném lỗi chứ không được nuốt. */
@@ -66,6 +115,9 @@ export function laBatBuoc(ma) {
 }
 
 const DS_HOP_LE = new Set(Object.values(HANH_DONG));
+
+/** Phơi ra CHỈ cho bài test đối chiếu danh mục — xem `audit-ghi.test.mjs`. */
+export const DS_HOP_LE_DE_TEST = DS_HOP_LE;
 
 /** Mã có nằm trong danh mục không. Chuỗi trần lọt vào là chặn ngay lúc ghi. */
 export function hopLeHanhDong(ma) {
@@ -87,6 +139,18 @@ const MO_TA = Object.freeze({
   [HANH_DONG.DONG_VIEC]: 'Đóng việc',
   [HANH_DONG.MO_LAI_VIEC]: 'Mở lại việc',
   [HANH_DONG.VIEC_TU_DONG]: 'Việc máy tự làm',
+  // giai đoạn 2 · sóng 0
+  [HANH_DONG.THEM_THANH_VIEN]: 'Cấp vai cho người trong team',
+  [HANH_DONG.BOT_THANH_VIEN]: 'Rút vai của người trong team',
+  [HANH_DONG.CHUYEN_PAGE_TEAM]: 'Chuyển page sang team khác',
+  [HANH_DONG.BAT_TAT_BOT_AI]: 'Bật/tắt bot AI cho page',
+  [HANH_DONG.GAN_MARKETER]: 'Gán marketer cho page',
+  [HANH_DONG.DAT_TRONG_DIEM]: 'Đánh dấu page trọng điểm',
+  [HANH_DONG.THEM_TOKEN_PANCAKE]: 'Thêm token Pancake',
+  [HANH_DONG.BO_TOKEN_PANCAKE]: 'Bỏ token Pancake',
+  // giai đoạn 2 · sóng 1
+  [HANH_DONG.LUU_BAN_NHAP_BO_LUAT]: 'Lưu bản nháp bộ luật chung',
+  [HANH_DONG.AP_BO_LUAT]: 'Áp bộ luật chung',
 });
 
 /** Chữ tiếng Việt cho màn hình. Mã lạ → trả lại chính mã, kèm một tiếng kêu ở console. */

@@ -276,17 +276,78 @@ test('docNhatKy · lọc theo hành động, người dùng, đối tượng, kh
 
 // ---- DANH MỤC MÃ HÀNH ĐỘNG ----------------------------------------------------------
 
-test('hanh-dong.js · đủ mười bốn mã, bốn mã bắt buộc, mã nào cũng có mô tả tiếng Việt', () => {
+test('hanh-dong.js · mã nào cũng duy nhất, có nhóm, và có mô tả tiếng Việt', () => {
+  // KHÔNG chốt cứng con số nữa. Bản trước ghi `equal(ds.length, 14)`, và mỗi lần thêm màn
+  // là bài test đỏ vì một lý do KHÔNG PHẢI LỖI — người sửa chỉ việc nâng số lên rồi đi tiếp.
+  // Một bài test mà cách sửa luôn là «đổi con số kỳ vọng» thì nó không canh gì cả.
+  // Thứ đáng canh là các TÍNH CHẤT: không trùng, ai cũng có nhóm, ai cũng có mô tả.
   const ds = Object.values(HANH_DONG);
-  assert.equal(ds.length, 14);
-  assert.equal(new Set(ds).size, 14, 'không mã nào trùng');
-  assert.deepEqual([...hanhDongMod.nhomBatBuoc].sort(),
-    ['chan_xuyen_team', 'dang_nhap_that_bai', 'doi_khoa', 'doi_model']);
+  assert.ok(ds.length >= 14, 'không được BỚT mã — bớt là mọi dòng nhật ký cũ mang mã đó thành mã lạ');
+  assert.equal(new Set(ds).size, ds.length, 'không mã nào trùng');
   for (const ma of ds) {
     assert.ok(hanhDongMod.hopLeHanhDong(ma));
     assert.notEqual(hanhDongMod.moTa(ma), ma, `mã ${ma} chưa có mô tả`);
   }
-  assert.equal(hanhDongMod.danhSachHanhDong().length, 14, 'mọi mã đều được xếp vào một nhóm');
+  assert.equal(hanhDongMod.danhSachHanhDong().length, ds.length, 'mọi mã đều được xếp vào một nhóm');
   assert.equal(hanhDongMod.laBatBuoc('nhan_viec'), false);
   assert.equal(hanhDongMod.laBatBuoc('doi_khoa'), true);
+});
+
+test('hanh-dong.js · nhóm BẮT BUỘC phủ đủ hai loại việc không được mất dấu', () => {
+  const bb = hanhDongMod.nhomBatBuoc;
+  // ① sự cố an ninh và đổi cấu hình tốn tiền — bốn mã gốc của giai đoạn 1
+  for (const ma of ['chan_xuyen_team', 'dang_nhap_that_bai', 'doi_model', 'doi_khoa']) {
+    assert.ok(bb.has(ma), `${ma} phải bắt buộc`);
+  }
+  // ② giai đoạn 2: cấp quyền, đổi chủ dữ liệu, và gạt công tắc chạm khách thật
+  for (const ma of ['them_thanh_vien', 'bot_thanh_vien', 'chuyen_page_team', 'bat_tat_bot_ai']) {
+    assert.ok(bb.has(ma), `${ma} phải bắt buộc — mất dấu là mất khả năng trả lời "ai làm việc đó"`);
+  }
+  // ③ `ap_bo_luat` bắt buộc vì một lý do KHÁC: nó vừa là dấu vết vừa là DỮ LIỆU — màn bộ
+  //    luật suy "bản cũ" hay "chờ duyệt" bằng chính sự tồn tại của dòng nhật ký này.
+  assert.ok(bb.has('ap_bo_luat'), 'ap_bo_luat vừa là dấu vết vừa là dữ liệu');
+  // Nhưng KHÔNG phải cái gì cũng bắt buộc — nhật ký hỏng không được làm chết mọi thao tác.
+  assert.equal(bb.has('gan_marketer'), false, 'việc nhẹ thì nuốt lỗi, để việc chính đi tiếp');
+  assert.equal(bb.has('dat_trong_diem'), false);
+});
+
+/* ═══════════ DANH MỤC MÃ PHẢI PHỦ MỌI MÃ CODE THẬT SỰ GHI ═══════════ */
+
+test('danh mục · MỌI mã hành động dùng trong v3/src đều phải khai ở hanh-dong.js', async () => {
+  // BÀI TEST NÀY SINH RA TỪ MỘT LỖI THẬT (25/08). Năm màn của giai đoạn 2 dùng chín mã chưa
+  // khai; `ghiNhatKy` từ chối, `console.error` rồi trả `null` — mọi lượt ghi nhật ký của cả
+  // năm màn rơi vào hư không trong khi màn hình vẫn báo thành công.
+  //
+  // Quét MÃ NGUỒN thay vì gõ tay danh sách: gõ tay là đẻ bản sao thứ ba của cùng một sự thật
+  // (HANH_DONG, MO_TA, và test), rồi màn thứ sáu lại quên đúng như màn thứ nhất.
+  const { readdirSync, readFileSync } = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const { DS_HOP_LE_DE_TEST, moTa } = await import('../../src/audit/hanh-dong.js');
+
+  const GOC = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../src');
+  const tep = (d) => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory()
+    ? tep(path.join(d, e.name))
+    : (e.name.endsWith('.js') ? [path.join(d, e.name)] : [])));
+
+  // Bắt hằng dạng `export const HANH_DONG_X = 'ma_gi_do';` — khuôn mà mọi module màn dùng.
+  const dung = new Map();
+  for (const f of tep(GOC)) {
+    if (f.includes(`${path.sep}audit${path.sep}`)) continue;   // chính danh mục thì bỏ qua
+    const src = readFileSync(f, 'utf8');
+    for (const m of src.matchAll(/export const HANH_DONG\w*\s*=\s*'([a-z_]+)'/g)) {
+      dung.set(m[1], path.relative(GOC, f));
+    }
+  }
+  assert.ok(dung.size >= 8, `chỉ tách được ${dung.size} mã — regex hỏng thì bài test thành vỏ rỗng`);
+
+  const thieu = [...dung].filter(([ma]) => !DS_HOP_LE_DE_TEST.has(ma));
+  assert.deepEqual(thieu, [],
+    'mã dùng trong code mà CHƯA khai ở hanh-dong.js — ghiNhatKy sẽ từ chối và nuốt lỗi:\n'
+    + thieu.map(([ma, f]) => `  · "${ma}" (${f})`).join('\n'));
+
+  // Và mã nào cũng phải có chữ tiếng Việt, nếu không màn Nhật ký hiện mã trần.
+  for (const [ma] of dung) {
+    assert.notEqual(moTa(ma), ma, `mã "${ma}" chưa có mô tả trong MO_TA`);
+  }
 });

@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bộ luật chung — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1160px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  /* dải cảnh báo NGUY — màn này phải trông khác mọi màn khác */
+  .nguy{background:#fff4f4;border:1px solid #f0c2c2;border-left:4px solid var(--bad);
+        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
+  .nguy b{color:#991b1b}
+  .nguy .so{font-size:19px;font-weight:700;color:#991b1b;font-variant-numeric:tabular-nums}
+
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
+  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner.i{background:var(--priSoft);color:#0b4a52;border:1px solid #b8dde0}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.ap{background:var(--priSoft)}
+  .num{font-variant-numeric:tabular-nums}
+  .ten{font-weight:600;overflow-wrap:anywhere}
+  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
+  .pill.g{background:var(--okSoft);color:var(--ok)}
+  .pill.o{background:var(--warnSoft);color:var(--warn)}
+  .pill.r{background:var(--badSoft);color:var(--bad)}
+  .pill.m{background:#f1f1f1;color:#777}
+  .pill.p{background:var(--priSoft);color:var(--priDark)}
+
+  /* khối so sánh */
+  .diff{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:400px;background:#fcfdfd}
+  .diff pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6}
+  .diff .d{padding:1px 10px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid transparent}
+  .diff .d.them{background:#e9f8ee;border-left-color:var(--ok)}
+  .diff .d.bo{background:#fdecec;border-left-color:var(--bad);text-decoration:line-through;opacity:.8}
+  .diff .d.giu{color:var(--muted)}
+
+  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6;
+           min-height:260px;resize:vertical}
+
+  button{font:inherit}
+  .nut{background:var(--pri);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
+  .nut:hover{background:var(--priDark)}
+  .nut[disabled]{background:#c3cdd0;cursor:not-allowed}
+  .nut.nho{padding:4px 10px;font-size:11.5px;font-weight:600}
+  .nut.nguy{background:var(--bad)}
+  .nut.nguy:hover{background:#b91c1c}
+  .nut.phu{background:transparent;color:var(--priDark);border:1px solid var(--line)}
+  .nut.phu:hover{background:var(--priSoft)}
+  .hang{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+
+  .trong{padding:20px 15px;text-align:center;line-height:1.6}
+  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
+  .trong.chua{color:#8a4a06;background:var(--warnSoft)}
+  .loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:8px;
+       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .loi.hien{display:block}
+  .ok{background:var(--okSoft);color:#14532d;border:1px solid #b7e4c7;border-radius:8px;
+      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
+  .ok.hien{display:block}
+
+  @media (max-width:700px){
+    header{padding:12px 14px} main{padding:12px 14px 48px}
+    .panel h2{padding:10px 12px} .than{padding:12px}
+    table,thead,tbody,th,td,tr{display:block}
+    thead{display:none}
+    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
+    tbody tr:last-child{margin-bottom:0}
+    td{border:none;padding:4px 0}
+    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
+      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bộ luật chung</h1>
+  <span class="sub" id="teamHien">…</span>
+  <span class="sp"></span>
+  <a href="/ky-nang">Thư viện kỹ năng</a>
+  <a href="/prompt-page">Prompt của page</a>
+  <a href="/cau-hinh-team">Cấu hình team</a>
+  <a href="/dieu-phoi">Bảng điều phối →</a>
+</header>
+
+<main>
+  <div class="loi" id="loi"></div>
+  <div class="ok" id="baoOk"></div>
+  <div id="nguy"></div>
+  <div id="canhBao"></div>
+
+  <section class="panel">
+    <h2>Các phiên bản <span class="hint" id="tomTatBan"></span></h2>
+    <div id="bangBan"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+  </section>
+
+  <section class="panel" id="khoiSoSanh" style="display:none">
+    <h2>Khác bản đang áp chỗ nào <span class="hint" id="tomTatDiff"></span>
+      <span class="sp"></span>
+      <button class="nut nho phu" id="dongSoSanh">Đóng</button>
+    </h2>
+    <div class="than">
+      <div class="diff" id="diff"></div>
+      <div class="hang" style="margin-top:12px" id="nutAp"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="soan">
+    <h2>Soạn bản mới
+      <span class="hint">lưu xong KHÔNG áp ngay — phải bấm áp ở bảng trên, đó là cửa duyệt</span>
+    </h2>
+    <div class="than">
+      <textarea id="oNoiDung" spellcheck="false" placeholder="Nội dung bộ luật chung…"></textarea>
+      <div class="hang" style="margin-top:9px">
+        <button class="nut phu" id="nutChep">Chép bản đang áp vào ô</button>
+        <span class="phu" id="demChu"></span>
+        <span class="sp" style="flex:1"></span>
+        <button class="nut" id="nutLuu">Lưu bản nháp</button>
+      </div>
+      <div class="phu" style="margin-top:7px" id="ghiChuSoan"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const so = (n) => Number(n || 0).toLocaleString('vi-VN');
+
+let D = null, SUA = false, DANG_SO = null;
+
+function baoLoi(t){ const o=$('#loi'); o.textContent=t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
+function baoOk(t){ const o=$('#baoOk'); o.textContent=t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
+function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
+
+async function goi(duong, tuyChon){
+  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
+  let d = null;
+  try { d = await r.json(); } catch { /* null */ }
+  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
+  return d;
+}
+
+/** Dải NGUY — con số page bị ảnh hưởng, hiện thường trực chứ không đợi lúc bấm. */
+function veNguy(){
+  const a = D.anhHuong;
+  $('#nguy').innerHTML = `<div class="nguy">
+    <b>Bộ luật chung dùng chung cho MỌI page của team.</b>
+    Sửa và áp một bản là <span class="so">${so(a.tongPage)}</span> page đổi cách nói với khách,
+    trong đó <span class="so">${so(a.dangBatBot)}</span> page <b>đang BẬT bot</b> — tức là đang
+    nói chuyện với khách thật ngay lúc này.
+    ${a.tenVaiPage.length ? `<div class="phu" style="margin-top:5px">Ví dụ: ${a.tenVaiPage.map(esc).join(' · ')}${a.dangBatBot > a.tenVaiPage.length ? ' …' : ''}</div>` : ''}
+  </div>`;
+}
+
+function veCanhBao(){
+  const kh = [];
+  if (D.keThua) {
+    kh.push(`<div class="banner i">Team này <b>chưa có bộ luật riêng</b> — đang <b>kế thừa bản
+      toàn hệ</b> (dùng chung mọi team). Soạn một bản ở dưới là team có bản riêng, và bản riêng
+      sẽ thắng bản kế thừa.</div>`);
+  }
+  if (!D.dangAp) {
+    kh.push(`<div class="banner o"><b>Không có bản nào đang áp.</b> Prompt của page đang thiếu
+      hẳn khối quy tắc cứng — bot trả lời khách mà không có luật chung nào.</div>`);
+  }
+  // CHỈ đếm bản của team — bản toàn hệ mang trạng thái 'ke_thua', không phải chờ duyệt.
+  const cho = D.ban.filter((b) => b.trangThai === 'cho_duyet').length;
+  if (cho) {
+    kh.push(`<div class="banner o"><b>${so(cho)} bản đang chờ duyệt.</b> Chúng chưa ảnh hưởng
+      gì tới bot — phải bấm <b>Áp bản này</b> thì mới có hiệu lực.</div>`);
+  }
+  $('#canhBao').innerHTML = kh.join('');
+}
+
+function veBang(){
+  $('#teamHien').textContent = `team #${D.teamId}`;
+  $('#tomTatBan').textContent = `${D.soBanCuaTeam} bản của team · ${D.soBanToanHe} bản toàn hệ`;
+  if (D.trong) { $('#bangBan').innerHTML = `<div class="trong chua"><span class="ic">⚠️</span>
+    <div>${esc(D.trong.noi)}</div></div>`; return; }
+
+  $('#bangBan').innerHTML = `<table><thead><tr>
+      <th>Phiên bản</th><th>Trạng thái</th><th>Cỡ</th><th>Người sửa</th><th></th>
+    </tr></thead><tbody>${D.ban.map((b) => `
+    <tr class="${b.dangDung ? 'ap' : ''}">
+      <td data-nhan="Phiên bản"><span class="ten">v${b.phienBan}</span>
+        ${b.toanHe ? ' <span class="pill m">toàn hệ · kế thừa</span>' : ''}</td>
+      <td data-nhan="Trạng thái"><span class="pill ${b.trangThai === 'dang_ap' ? 'g' : b.trangThai === 'cho_duyet' ? 'o' : 'm'}">
+        ${esc(D.chuTrangThai[b.trangThai])}</span></td>
+      <td data-nhan="Cỡ" class="num">${so(b.soKyTu)} ký tự<div class="phu">≈ ${so(b.uocToken)} token (ước lượng)</div></td>
+      <td data-nhan="Người sửa"><span class="phu">${esc(b.nguoiSua || '—')}<br>${b.suaLuc ? new Date(b.suaLuc).toLocaleString('vi-VN') : ''}</span></td>
+      <td data-nhan="">
+        <button class="nut nho phu" data-so="${esc(b.id)}">Xem khác chỗ nào</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+
+  document.querySelectorAll('[data-so]').forEach((b) => b.addEventListener('click', () => xemSoSanh(b.dataset.so)));
+}
+
+async function xemSoSanh(id){
+  xoaBao();
+  try {
+    const d = await goi('/api/bo-luat/' + encodeURIComponent(id) + '/so-sanh');
+    if (!d) return;
+    DANG_SO = d;
+    const t = d.tomTat;
+    $('#tomTatDiff').textContent = d.dangAp
+      ? `v${d.ban.phienBan} so với v${d.dangAp.phienBan} đang áp · +${t.them} dòng · −${t.bo} dòng · ${t.tokenChenh >= 0 ? '+' : ''}${so(t.tokenChenh)} token`
+      : `v${d.ban.phienBan} — chưa có bản nào đang áp để so`;
+
+    $('#diff').innerHTML = '<pre>' + d.dong.map((x) =>
+      `<div class="d ${x.loai}">${x.loai === 'them' ? '+ ' : x.loai === 'bo' ? '- ' : '  '}${esc(x.chu) || '&nbsp;'}</div>`
+    ).join('') + '</pre>';
+
+    // Nút áp chỉ hiện khi ĐƯỢC PHÉP và bản đó áp được — và luôn kèm con số ảnh hưởng.
+    const b = d.ban;
+    if (!SUA) {
+      $('#nutAp').innerHTML = '<span class="phu">Vai của bạn chỉ xem được.</span>';
+    } else if (b.toanHe) {
+      $('#nutAp').innerHTML = '<span class="phu">Bản toàn hệ dùng chung mọi team — màn này không '
+        + 'sửa và không áp nó được. Soạn một bản riêng của team ở dưới.</span>';
+    } else if (b.dangDung) {
+      $('#nutAp').innerHTML = '<span class="pill g">Bản này đang áp</span>';
+    } else {
+      const lui = d.dangAp && b.phienBan < d.dangAp.phienBan;
+      $('#nutAp').innerHTML = `<button class="nut ${lui ? '' : 'nguy'}" id="btAp">
+          ${lui ? `↩ Lùi về bản v${b.phienBan}` : `Áp bản v${b.phienBan}`}</button>
+        <span class="phu">sẽ đổi cách nói của <b>${so(D.anhHuong.tongPage)}</b> page
+          (<b>${so(D.anhHuong.dangBatBot)}</b> đang bật bot)</span>`;
+      $('#btAp').addEventListener('click', () => ap(b, lui));
+    }
+    $('#khoiSoSanh').style.display = '';
+    $('#khoiSoSanh').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) { baoLoi(e.message); }
+}
+
+async function ap(b, lui){
+  const a = D.anhHuong;
+  if (!confirm(`${lui ? 'LÙI VỀ' : 'ÁP'} bản v${b.phienBan}?\n\n`
+    + `${a.tongPage} page sẽ đổi cách nói với khách, trong đó ${a.dangBatBot} page ĐANG BẬT BOT `
+    + 'và đang nói chuyện với khách thật.\n\n'
+    + 'Có hiệu lực ngay ở lượt chat kế tiếp.')) return;
+  xoaBao();
+  $('#btAp').disabled = true;
+  try {
+    const kq = await goi('/api/bo-luat/' + encodeURIComponent(b.id) + '/ap', { method:'POST', body: JSON.stringify({}) });
+    baoOk(`Đã ${kq.laLui ? 'lùi về' : 'áp'} bản v${kq.phienBan} — ${so(kq.anhHuong.tongPage)} page dùng bản này từ lượt chat kế tiếp.`);
+    $('#khoiSoSanh').style.display = 'none';
+    await nap();
+  } catch (e) { baoLoi(e.message); $('#btAp').disabled = false; }
+}
+
+$('#dongSoSanh').addEventListener('click', () => { $('#khoiSoSanh').style.display = 'none'; });
+
+$('#nutChep').addEventListener('click', () => {
+  if (!D.dangAp) { baoLoi('Chưa có bản nào đang áp để chép.'); return; }
+  $('#oNoiDung').value = D.dangAp.noiDung;
+  demChu();
+});
+
+function demChu(){
+  const n = $('#oNoiDung').value.length;
+  const tk = Math.round(n / D.kyTuMoiToken);
+  const goc = D.dangAp ? D.dangAp.soKyTu : 0;
+  $('#demChu').innerHTML = `${so(n)} ký tự · ≈ ${so(tk)} token (ước lượng)`
+    + (goc ? ` · bản đang áp ${so(goc)} ký tự` : '');
+}
+$('#oNoiDung').addEventListener('input', demChu);
+
+$('#nutLuu').addEventListener('click', async () => {
+  const noiDung = $('#oNoiDung').value;
+  if (!noiDung.trim()) { baoLoi('Ô soạn đang trống.'); return; }
+  xoaBao();
+  $('#nutLuu').disabled = true;
+  try {
+    const kq = await goi('/api/bo-luat/nhap', { method:'POST', body: JSON.stringify({ noiDung }) });
+    baoOk(`Đã lưu bản nháp v${kq.phienBan}. CHƯA áp — bot vẫn đang chạy bản cũ. `
+      + 'Bấm "Xem khác chỗ nào" ở bảng trên rồi mới áp.');
+    await nap();
+  } catch (e) { baoLoi(e.message); }
+  finally { $('#nutLuu').disabled = !SUA; }
+});
+
+async function nap(){
+  try {
+    const d = await goi('/api/bo-luat');
+    if (!d) return;
+    D = d; SUA = !!d.suaDuoc;
+    $('#nutLuu').disabled = !SUA;
+    $('#oNoiDung').disabled = !SUA;
+    $('#nutChep').disabled = !SUA;
+    $('#ghiChuSoan').textContent = SUA ? '' : 'Vai của bạn chỉ xem được — không soạn và không áp được.';
+    veNguy(); veCanhBao(); veBang(); demChu();
+  } catch (e) { baoLoi(e.message); }
+}
+nap();
+</script>
+</body>
+</html>

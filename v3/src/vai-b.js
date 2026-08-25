@@ -49,6 +49,10 @@ import {
 import {
   datChanDangNhap as datChanDangNhapModel, datChanVai as datChanVaiModel, taoRouterModel,
 } from './ui/model/index.js';
+import {
+  datTaoTruyVan as datTruyVanBoLuat, datPheuNhatKy as datPheuNhatKyBoLuat,
+  datChanDangNhap as datChanDangNhapBoLuat, datChanVai as datChanVaiBoLuat, taoRouterBoLuat,
+} from './ui/bo-luat/index.js';
 
 /**
  * Nối toàn bộ phần rìa vào một ứng dụng Express.
@@ -101,13 +105,14 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datDanhTinhTeam(taoTruyVanHeThong);
   datDanhTinhTeamGhi(taoTruyVanHeThong);
   datTruyVanPageBot(taoTruyVan);
+  datTruyVanBoLuat(taoTruyVan);
   daNoi.push('cổng dữ liệu → nhật ký · lớp model · bảng điều phối · kho người dùng · cấu hình team · page & bot');
 
   // ── ② Nhật ký: ba module ghi, một chỗ nhận ──
   // Ghi thẳng bằng `ghiNhatKy` của L0-M4 chứ không qua module trung gian: ba module kia
   // không được import `../audit/…`, nhưng ở đây thì được — đây chính là chỗ nối dây.
   for (const dat of [datPheuNhatKyAuth, datPheuNhatKyModel, datPheuNhatKyDieuPhoi, datPheuNhatKyTeam,
-    datPheuNhatKyPageBot, datPheuNhatKyKetNoi]) {
+    datPheuNhatKyPageBot, datPheuNhatKyKetNoi, datPheuNhatKyBoLuat]) {
     dat((boiCanh, ban) => {
       // Đăng nhập hỏng và chọn team không thuộc xảy ra TRƯỚC khi có bối cảnh — vai B cố ý
       // không dựng bối cảnh giả để lách (bối cảnh giả là thứ nguy hiểm nhất trong hệ này).
@@ -159,6 +164,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiKetNoi(batBuocVaiHTTP);
   datChanDangNhapModel(batBuocDangNhap);
   datChanVaiModel(batBuocVaiHTTP);
+  datChanDangNhapBoLuat(batBuocDangNhap);
+  datChanVaiBoLuat(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -171,7 +178,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterPageBot());    //   /page-bot · /api/page-bot/*
   app.use(taoRouterKetNoi());     //   /ket-noi · /api/ket-noi/*
   app.use(taoRouterModel());      //   /model-ai · /api/model/*
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI');
+  app.use(taoRouterBoLuat());     //   /bo-luat · /api/bo-luat/*
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };

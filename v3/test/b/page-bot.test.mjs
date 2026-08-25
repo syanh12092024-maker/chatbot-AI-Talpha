@@ -95,18 +95,22 @@ test('COT_BI_DI_TRU_GHI_DE · đối chiếu THẲNG câu ON CONFLICT của `db/
       + 'cột đó thì công sức người dùng sẽ bị xoá âm thầm');
   }
 
-  // Hai khẳng định là LÝ DO của cả màn này:
-  assert.ok(cotThat.has('marketer'), 'marketer VẪN bị di trú ghi đè → PHIEU-B-Y4 còn hiệu lực');
+  // `PHIEU-B-Y4` XONG 25/08: di trú nay dùng `CASE WHEN page.marketer <> '' ...` nên
+  // `marketer` KHÔNG còn ở dạng `= EXCLUDED.marketer` trần. Bài test này bắt được đúng lúc
+  // A vá xong — nó đỏ vì hằng còn khai marketer, và đó là cách nó phải hoạt động.
+  assert.ok(!cotThat.has('marketer'),
+    'marketer không được ghi đè trần nữa — nếu nó quay lại thì PHIEU-B-Y4 đã bị lùi');
+  assert.match(khoi[1], /CASE WHEN page\.marketer/,
+    'phải giữ nhánh CASE: nguồn điền vào chỗ trống nhưng không xoá chỗ đã có');
   assert.ok(!cotThat.has('trong_diem'), 'trong_diem KHÔNG được nằm trong câu ghi đè');
 });
 
-test('COT_SUA_DUOC · cột nào bền, cột nào không — khớp với thực tế trên', () => {
-  assert.equal(kp.COT_SUA_DUOC.marketer.benVung, false);
+test('COT_SUA_DUOC · cả hai cột nay đều BỀN sau khi PHIEU-B-Y4 xong', () => {
+  assert.equal(kp.COT_SUA_DUOC.marketer.benVung, true, 'Y4 đã vá — di trú không xoá marketer nữa');
   assert.equal(kp.COT_SUA_DUOC.trong_diem.benVung, true);
-  assert.ok(kp.COT_SUA_DUOC.marketer.vi, 'cột không bền phải nói VÌ SAO không bền');
-  // Và cảnh báo phải tới được người dùng, không nằm im trong mã nguồn.
-  assert.match(ct.CANH_BAO_MARKETER, /di-tru|di trú/i);
-  assert.match(ct.CANH_BAO_MARKETER, /PHIEU-B-Y4/);
+  // Cảnh báo phải TẮT theo. Để nó kêu tiếp là dạy người dùng bỏ qua cảnh báo — mà cảnh báo
+  // bị bỏ qua thì lần sau có cảnh thật cũng không ai đọc.
+  assert.equal(ct.CANH_BAO_MARKETER, null, 'vá xong thì cảnh báo phải TẮT');
 });
 
 /* ═══════════ đọc và lọc ═══════════ */
@@ -268,11 +272,11 @@ test('công tắc bot · chưa nối phễu nhật ký thì TỪ CHỐI, không 
 
 /* ═══════════ marketer và trọng điểm ═══════════ */
 
-test('ganMarketer · ghi được, có nhật ký, và TRẢ KÈM cảnh báo di trú', async () => {
+test('ganMarketer · ghi được và có nhật ký; cảnh báo di trú đã TẮT sau Y4', async () => {
   const { kho, nhatKy } = dungKho();
   const kq = await ct.ganMarketer(bcQt(), 'p1', '  Ngọc  ');
   assert.equal(kq.marketer, 'Ngọc', 'phải cắt khoảng trắng hai đầu');
-  assert.ok(kq.canhBao, 'gán xong phải kèm cảnh báo — người gán 514 page xứng đáng biết trước');
+  assert.equal(kq.canhBao, null, 'Y4 vá rồi thì không còn cảnh báo nào để kèm');
   assert.equal(kho.docThang('page').find((p) => p.id === 'p1').marketer, 'Ngọc');
   assert.equal(nhatKy.at(-1).ban.hanhDong, ct.HANH_DONG_MARKETER);
 });

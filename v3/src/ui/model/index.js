@@ -13,7 +13,7 @@
 
 export {
   manModel, luuCauHinh, bangGia,
-  TEN_NHA, TEN_VAI_TRO, GIAI_THICH_VAI_TRO, TIN_MOI_DON, HANH_DONG_DOI,
+  TEN_NHA, TEN_VAI_TRO, GIAI_THICH_VAI_TRO, TIN_MOI_DON,
   LoiCauHinh,
 } from './kho-model.js';
 

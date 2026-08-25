@@ -1,7 +1,7 @@
 // BA THAO TÁC GHI CỦA MÀN «PAGE & BOT» — và ba đường đi khác nhau, cố ý.
 //
 //   ① bật/tắt BOT AI  → KHÔNG chạm CSDL. Đi qua `noi-day/cau-bot-v1.js` sang tiến trình bot.
-//   ② gán marketer    → CSDL v3. ⚠️ di trú sẽ ghi đè — xem `CANH_BAO_MARKETER`.
+//   ② gán marketer    → CSDL v3. Bền — `PHIEU-B-Y4` đã chặn di trú xoá cột này.
 //   ③ cờ trọng điểm   → CSDL v3, an toàn (cột không nằm trong câu ghi đè của di trú).
 //
 // ─── VÌ SAO ① KHÔNG GHI XUỐNG CỘT `bot_ai_bat` ─────────────────────────────────────────
@@ -32,13 +32,14 @@ export const VAI_SUA_DUOC = Object.freeze([VAI.QUAN_TRI]);
 export const DAI_MARKETER = 120;
 
 /**
- * ⚠️ Câu này hiện THẲNG trên màn hình cạnh ô marketer, không giấu trong tài liệu.
- * Người gán 514 marketer xứng đáng biết trước rằng nó xoá được bằng một lệnh.
+ * Câu này TỪNG là một cảnh báo: di trú ghi đè cột `marketer` bằng `pages.json` (nguồn rỗng),
+ * nên mỗi lượt `npm run di-tru` xoá trắng công gán tay. `PHIEU-B-Y4` đã vá — di trú nay chỉ
+ * ĐIỀN VÀO CHỖ TRỐNG, không xoá chỗ đã có.
+ *
+ * Giữ lại `null` thay vì xoá hẳn hằng: nơi gọi vẫn đọc nó, và một hằng `null` nói rõ «không
+ * còn cảnh báo nào» hơn là một hằng biến mất rồi để `undefined` trôi ra màn hình.
  */
-export const CANH_BAO_MARKETER =
-  'Lưu ý: chạy `npm run di-tru` sẽ ghi đè cột marketer bằng dữ liệu `pages.json`, mà nguồn đó '
-  + 'hiện KHÔNG có marketer nào — tức là xoá trắng những gì gán ở đây. Đã phát `PHIEU-B-Y4` '
-  + 'xin người A cho di trú thôi đụng vào cột này.';
+export const CANH_BAO_MARKETER = null;
 
 export const PHIEU_MARKETER = 'PHIEU-B-Y4';
 

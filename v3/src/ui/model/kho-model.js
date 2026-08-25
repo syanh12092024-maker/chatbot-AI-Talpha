@@ -127,8 +127,6 @@ export function bangGia({ usdVnd, dangChinh } = {}) {
 
 /* ─────────────────────────── ghi ─────────────────────────── */
 
-export const HANH_DONG_DOI = 'doi_cau_hinh_model';
-
 /**
  * Lưu cấu hình. Mỏng có chủ ý — mọi luật (dự phòng khác nhà, độ ngẫu nhien trong [0,1], mã
  * model có thật, ghi nhật ký, xoá đệm để nạp nóng) đã nằm trong `ghiCauHinh` của lớp model

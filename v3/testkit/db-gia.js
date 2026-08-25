@@ -110,7 +110,7 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
   };
 
   /** Chèn điều kiện team, và chặn nếu nơi gọi tự truyền team_id lệch. */
-  const gan = (bang, dieuKien = {}) => {
+  const gan = (bang, dieuKien = {}, ghiHay = false) => {
     const dk = { ...dieuKien };
     // Bảng DÙNG CHUNG: KHÔNG tự chèn `team_id` (chúng không có lớp team) — nhưng cũng
     // KHÔNG được XOÁ điều kiện `team_id` nơi gọi truyền tay. `thanh_vien_team` CÓ cột
@@ -122,6 +122,18 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
     // bản thật, nên một màn hình rò rỉ thành viên xuyên team vẫn xanh hết bài test.
     // Bài học ① giai đoạn 1, lần thứ ba. (Bắt được nhờ bài test của màn Cấu hình team.)
     if (BANG_DUNG_CHUNG.has(bang)) return dk;
+    // `bo_luat_chung` có ĐẶC CÁCH HAI VẾ khi ĐỌC: `(team_id = $ctx OR team_id IS NULL)` —
+    // NULL nghĩa là luật TOÀN HỆ, mọi team kế thừa. Cài sẵn trong `veTeamKhiDoc` của tầng
+    // truy vấn thật (`src/db/truy-van.js`), và bản giả thiếu nó thì bản toàn hệ TÀNG HÌNH.
+    //
+    // Lệch theo chiều KHẮT KHE hơn bản thật — không cho bản hỏng đi lọt, nhưng vẫn nguy:
+    // màn hình chạy trên bản giả sẽ báo «team chưa có bộ luật nào» trong khi bản thật đang
+    // kế thừa một bản toàn hệ, và người ta sẽ sửa CODE cho vừa bản giả. Lần thứ ba của
+    // bài học ①.
+    if (bang === 'bo_luat_chung' && !ghiHay) {
+      dk.team_id = [bc.teamId, null];     // `hop()` hiểu mảng là "một trong các giá trị"
+      return dk;
+    }
     if (dk.team_id != null && String(dk.team_id) !== bc.teamId) chanXuyenTeam(bang, dk.team_id);
     dk.team_id = bc.teamId;
     return dk;
@@ -160,7 +172,7 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
     },
 
     async them(bang, banGhi = {}) {
-      const dk = gan(bang, { team_id: banGhi.team_id });
+      const dk = gan(bang, { team_id: banGhi.team_id }, true);   // GHI: không đặc cách
       const moi = { id: banGhi.id ?? idMoi(bang), ...banGhi };
       if (!BANG_DUNG_CHUNG.has(bang)) moi.team_id = dk.team_id;
       ghiDs(bang).push(moi);
@@ -172,7 +184,9 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
         throw new Error(`Bảng ${bang} chỉ được thêm, không được sửa — xem hợp đồng mục 4.`);
       }
       if ('team_id' in thayDoi && String(thayDoi.team_id) !== bc.teamId) chanXuyenTeam(bang, thayDoi.team_id);
-      const dk = gan(bang, dieuKien);
+      // GHI KHÔNG có đặc cách hai vế: một team chỉ sửa dòng của chính nó, không bao giờ
+      // chạm dòng `team_id IS NULL` (luật toàn hệ) — đúng như `suaTheoId` của người A.
+      const dk = gan(bang, dieuKien, true);
       let n = 0;
       for (const r of ghiDs(bang)) if (hop(r, dk)) { Object.assign(r, thayDoi); n++; }
       return n;
@@ -188,7 +202,7 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
       if (!khoa.length) {
         throw new Error(`xoa(${bang}) với điều kiện RỖNG sẽ xoá sạch bảng — từ chối.`);
       }
-      const dk = gan(bang, dieuKien);
+      const dk = gan(bang, dieuKien, true);
       const ds = ghiDs(bang);
       let n = 0;
       for (let i = ds.length - 1; i >= 0; i--) {

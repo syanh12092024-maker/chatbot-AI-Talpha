@@ -9,7 +9,7 @@
 // | Cột | Ai là NGUỒN THẬT | Ghi từ màn này thì sao |
 // |---|---|---|
 // | `bot_ai_bat` | `ai-enabled.json` + RAM tiến trình bot | **KHÔNG ghi vào CSDL.** Đi qua `noi-day/cau-bot-v1.js`; cột trong CSDL chỉ là bản sao |
-// | `marketer`   | CSDL v3 — NHƯNG `db/di-tru/nap.js` ghi đè bằng `pages.json` mỗi lượt | ghi được, **và sẽ bị lượt di trú kế tiếp XOÁ TRẮNG** (`pages.json` không có marketer nào) → `PHIEU-B-Y4` |
+// | `marketer`   | CSDL v3. **`PHIEU-B-Y4` xong 25/08** — di trú nay `CASE WHEN page.marketer <> '' THEN page.marketer ELSE EXCLUDED.marketer END` | ghi được, **và di trú không xoá nữa**: nguồn điền vào chỗ trống, không bao giờ xoá chỗ đã có |
 // | `trong_diem` | CSDL v3, và CHỈ CSDL v3 | ghi thẳng, an toàn — cột này không nằm trong câu `ON CONFLICT DO UPDATE` của di trú |
 //
 // Ba dòng trên là lý do màn này không phải «một cái bảng có mấy cái công tắc». Gạt nhầm chỗ
@@ -23,13 +23,16 @@ export const BANG = 'page';
 /** Cột `napPage` GHI ĐÈ mỗi lượt di trú (`db/di-tru/nap.js`, câu ON CONFLICT DO UPDATE).
  *  Đọc thẳng từ đó, KHÔNG gõ lại theo trí nhớ — bài test đối chiếu với file thật. */
 export const COT_BI_DI_TRU_GHI_DE = Object.freeze([
-  'ten', 'thi_truong', 'nganh_hang', 'marketer', 'pos_shop_id', 'pos_via',
+  'ten', 'thi_truong', 'nganh_hang', 'pos_shop_id', 'pos_via',
   'token_idx', 'the_pancake', 'mat_dau', 'kiem_luc',
 ]);
 
 /** Cột màn này cho sửa, và cột đó có bị di trú ghi đè không. */
 export const COT_SUA_DUOC = Object.freeze({
-  marketer: { benVung: false, vi: 'di trú ghi đè từ `pages.json`, mà nguồn đó không có marketer nào' },
+  // Cả hai nay đều BỀN. `marketer` từng không bền — `PHIEU-B-Y4` (A làm 25/08) đổi câu di
+  // trú thành `CASE WHEN page.marketer <> '' THEN page.marketer ELSE EXCLUDED.marketer END`:
+  // nguồn ĐIỀN VÀO CHỖ TRỐNG nhưng KHÔNG BAO GIỜ XOÁ CHỖ ĐÃ CÓ.
+  marketer: { benVung: true, vi: null },
   trong_diem: { benVung: true, vi: null },
 });
 

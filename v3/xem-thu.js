@@ -114,6 +114,15 @@ const { taoTruyVan, kho } = dungCongGia({
   // ⚠️ `hoi_thoai.page_id` là **bigint REFERENCES page(id)**, KHÔNG phải id Facebook —
   // id Facebook nằm ở `page.page_id`. Gieo nhầm hai cái này thì cột PAGE trên bảng điều
   // phối trống trơn mà không báo lỗi gì. Đã dính thật lúc dựng bản xem thử lần đầu.
+  // Bộ luật chung: một bản TOÀN HỆ (team_id null) + một bản của team 1 đang áp — để thấy
+  // cả nhãn «kế thừa» lẫn phép so hai bản.
+  bo_luat_chung: [
+    { id: 'bl0', team_id: null, phien_ban: 1, dang_dung: false, nguoi_sua: 'seed',
+      noi_dung: '# BỘ LUẬT CHUNG (bản toàn hệ)\n\n1. Luôn chào bằng tiếng Ả Rập.\n2. Không hứa ngày giao cụ thể.\n3. Không tự ý giảm giá.\n4. Hỏi số điện thoại trước khi chốt.\n5. Không nhắc tên đối thủ.\n6. Trả lời trong 10 giây.\n7. Không bịa thông số sản phẩm.\n8. Chuyển sale khi khách khiếu nại.\n9. Không xin thông tin thẻ.\n10. Kết thúc bằng một câu hỏi mở.\n\n(phần diễn giải dài để bản này đủ cỡ thật — aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)' },
+    { id: 'bl1', team_id: '1', phien_ban: 2, dang_dung: true, nguoi_sua: 'chu@talpha.vn',
+      sua_luc: new Date(B - 86400000).toISOString(),
+      noi_dung: '# BỘ LUẬT CHUNG (bản của Tiểu Alpha)\n\n1. Luôn chào bằng tiếng Ả Rập.\n2. Không hứa ngày giao cụ thể.\n3. Không tự ý giảm giá quá 10%.\n4. Hỏi số điện thoại trước khi chốt.\n5. Không nhắc tên đối thủ.\n6. Trả lời trong 10 giây.\n7. Không bịa thông số sản phẩm.\n8. Chuyển sale khi khách khiếu nại.\n9. Không xin thông tin thẻ.\n10. Kết thúc bằng một câu hỏi mở.\n11. Nhắc phí COD ngay khi khách hỏi giá.\n\n(phần diễn giải dài để bản này đủ cỡ thật — aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)' },
+  ],
   hoi_thoai: [
     { id: '1', team_id: '1', page_id: '1', psid: '9001', khach_id: '1' },
     { id: '2', team_id: '1', page_id: '1', psid: '9002', khach_id: '2' },
