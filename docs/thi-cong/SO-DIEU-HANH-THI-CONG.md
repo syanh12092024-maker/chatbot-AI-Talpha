@@ -287,6 +287,34 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   khớp byte-for-byte» in `KHỚP — 0 dòng cột` vì câu chụp lược đồ hỏng cú pháp — hai tệp RỖNG
   thì bằng nhau (án lệ #29). Bản đóng gói trong cổng nay in kèm SỐ CỘT và **TRƯỢT nếu < 100**.
 
+- 25/08 · B-Y3 (người A) — PHIẾU KHAI SÓT, đã đo lại và vá rộng hơn phiếu:
+  (1) Phiếu kê tay BỐN bảng con (`hoi_thoai` `san_pham` `kich_ban` `so_ai`) và xếp
+  `don_hang` vào ô «nối gián tiếp qua hoi_thoai». **Sai**: `don_hang.page_id` trỏ THẲNG vào
+  `page(id)` và mang `team_id` riêng — đó là bảng TIỀN, bỏ lại là báo cáo doanh thu của
+  team mới thiếu đơn. Phiếu cũng KHÔNG nhắc `tin_cho_xu_ly` (hàng đợi tin, `page_id` text) —
+  bỏ lại là worker team CŨ vẫn xử tin cho page đã sang team khác. **Lược đồ thật có NĂM
+  bảng phải đi**, không phải ba.
+  (2) Hệ quả thiết kế: danh mục bảng con **KHÔNG GÕ TAY** — sinh từ `information_schema` mỗi
+  lượt gọi («bảng nào có CẢ page_id LẪN team_id»). Bản kê tay sai lần này thì lần sau cũng
+  sai (án lệ #22). Thêm bảng mới có `page_id` là nó tự vào lưới.
+  (3) Phiếu không nói VAI lấy từ đâu — `ctx` của `src/db/` chỉ có `{teamId, nguoiDungId}`.
+  Quyết: đọc từ `thanh_vien_team`+`vai`, KHÔNG tin `ctx.vai` do nơi gọi khai (tự khai vai
+  của chính mình thì bịa được). Và hằng `quan-tri` được ĐỐI CHIẾU với bảng `vai` mỗi lượt
+  gọi — gõ sai một dấu gạch thì ĐỎ chứ không CÂM (bài học 2 GD2).
+  (4) `demMoCoi` tách HAI nhóm: `moCoi` (phải luôn 0) và `boLaiCoChuDich` (`so_ai`, cố ý
+  > 0 sau lượt chuyển đầu). Gộp một nhóm thì phép đo đỏ VĨNH VIỄN ngay sau thao tác hợp lệ
+  đầu tiên — đèn đỏ vĩnh viễn là đèn người ta học cách không nhìn. Kèm theo: ④#5 của phiếu
+  khai «so_ai mồ côi: 0» chỉ đúng TẠI THỜI ĐIỂM đo, không phải mãi mãi.
+
+- 25/08 · B-Y3 — MARKER CHƯA GỠ + NGOÀI PHẠM VI:
+  (1) `[NEEDS CLARIFICATION: so_ai của page được chuyển thì đi hay ở?]` — làm theo cách (a)
+  như phiếu dặn cho trạng thái chưa-trả-lời (để lại, không đụng trigger, số dòng bỏ lại trả
+  ra `boLai`). **Marker còn mở**: cái giá là màn «Chi phí AI» của team mới KHÔNG thấy chi
+  tiêu trước ngày chuyển. Hôm nay `so_ai` 0 dòng nên chưa ai đau; khi bộ nạp Sổ AI chạy
+  (52.036 dòng) thì đau. Người quyết chọn (a)/(b)/(c) ở ⑧ của phiếu.
+  (2) `db/di-tru/nap.js` vẫn đổ vào `chua-phan` — chạy lại di trú thì page mới lại rơi vào
+  team kỹ thuật. Nay có đường kéo ra bằng hàm thay vì psql, nhưng BỘ NẠP thì chưa đổi.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -763,6 +791,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 25/08 · B-Y3 → ✅ xong — `chuyenPageSangTeam`: cửa hẹp thứ SÁU, một giao dịch, vai `quan-tri` đọc từ CSDL, nhật ký hỏng là cuộn lại; `src/db/truy-van.js` KHÔNG đụng một dòng · commit 441e457 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y3.md
+- 25/08 · B-Y3 → đo trên Postgres 16.15 THẬT: cổng 14/14 · bộ ca 14 pass/0 fail · hồi quy 31 bộ = 375 pass/1 fail · mồ côi trên CSDL THẬT = 0 · commit 441e457 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y3.md
+- 25/08 · B-Y3 → 🧭 phiếu kê SÓT hai bảng con (`don_hang` bảng tiền · `tin_cho_xu_ly`) ⇒ danh mục con nay TỰ SINH từ information_schema, không gõ tay — chi tiết §9 · commit 441e457 · nhật ký docs/thi-cong/nhat-ky/phieu-b-y3.md
+
 - 25/08 · G2-A2 → ✅ xong — migration 008 `khoa_nha`: khoá API MỘT bản mỗi (team × nhà), `cau_hinh_model` bỏ cột; `layModel` đọc chỗ mới, giữ fail-CLOSED, có lưới `42P01` · commit e5e9386 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a2.md
 - 25/08 · G2-A2 → đo trên Postgres 16.15 THẬT: cổng L0-M1 58/59 · 001→008 áp trọn · down→up khớp vân tay 242 cột · đổi khoá 1 lần → 2/2 ô đọc khoá mới · commit e5e9386 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a2.md
 - 25/08 · G2-A2 → 🧭 hai lỗi IM LẶNG ngoài phiếu: `npm run migrate` không chạy gì khi đường dẫn có dấu cách, và cổng l0-m1 chết câm vì docker — chi tiết §9 · commit e5e9386 · nhật ký docs/thi-cong/nhat-ky/phieu-g2-a2.md
