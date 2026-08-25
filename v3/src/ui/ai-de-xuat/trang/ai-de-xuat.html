@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI đề xuất — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3; --tim:#6d28d9; --timSoft:#f1ebfd;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1000px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  /* hai đường — cả điểm của màn này nằm ở hình này */
+  .duong{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .duong .d{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--panel);line-height:1.55}
+  .duong .d b{display:block;font-size:12.5px;margin-bottom:4px}
+  .duong .d .m{color:var(--muted);font-size:11.5px}
+  .duong .d.nguoi{border-left:4px solid var(--ok)}
+  .duong .d.ai{border-left:4px solid var(--tim);background:var(--timSoft)}
+  .duong .d .buoc{margin-top:7px;font-size:11.5px;font-weight:600;color:var(--muted)}
+
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
+  .banner.i{background:var(--priSoft);color:#0b4a52;border:1px solid #b8dde0}
+  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:#fafbfc}
+  tbody tr:last-child td{border-bottom:0}
+  .bao{display:block;overflow-x:auto}
+
+  .the{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+  .the.cho{background:var(--warnSoft);color:#8a4a06}
+  .the.duyet{background:var(--okSoft);color:#166534}
+  .the.ai{background:var(--timSoft);color:#5b21b6}
+  .the.tat{background:#f1f3f5;color:var(--muted)}
+
+  button{font:inherit;border:0;border-radius:8px;padding:7px 13px;cursor:pointer;font-weight:600}
+  .b1{background:var(--pri);color:#fff}
+  .b1:hover{background:var(--priDark)}
+  .b2{background:#eef1f4;color:#344054}
+  button[disabled]{opacity:.5;cursor:not-allowed}
+  textarea,input[type=text]{font:inherit;width:100%;padding:9px 11px;border:1px solid var(--line);
+        border-radius:8px;background:#fff;color:var(--ink);resize:vertical}
+  textarea{min-height:150px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.6}
+  label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin:0 0 5px}
+  .hang{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:10px}
+
+  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
+  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .trong .di{margin-top:10px;font-size:12px}
+
+  .tang{display:grid;gap:8px}
+  .tang .t{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:9px;line-height:1.55}
+  .tang .t.chua{background:#fafbfc}
+  .tang .t .ch{font-size:14px;line-height:1.2}
+  .tang .t b{font-size:12.5px}
+  .tang .t .vi{color:var(--muted);font-size:11.5px;margin-top:3px}
+
+  .nho{color:var(--muted);font-size:11.5px;line-height:1.55}
+  code{background:#f1f3f5;padding:1px 5px;border-radius:4px;font-size:11.5px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  @media (max-width:720px){
+    header{padding:12px 14px} main{padding:12px 14px 50px}
+    .duong{grid-template-columns:1fr}
+    .than{padding:12px}
+    th,td{padding:8px 10px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI đề xuất</h1>
+  <span class="sub" id="hTeam">…</span>
+  <span class="sp"></span>
+  <a href="/bo-luat">Bộ luật chung →</a>
+  <a href="/dieu-phoi">← Điều phối</a>
+</header>
+
+<main>
+  <div class="duong">
+    <div class="d nguoi">
+      <b>✍️ Người viết</b>
+      <div class="m">Quản trị tự gõ ở màn <a href="/bo-luat">Bộ luật chung</a>.</div>
+      <div class="buoc">Lưu → Áp. Hai bước.</div>
+    </div>
+    <div class="d ai">
+      <b>🤖 AI đề xuất</b>
+      <div class="m">Vào bằng cửa này. Ghi <code>nguon='ai'</code>.</div>
+      <div class="buoc">Nhận → <b>Duyệt</b> → Áp. Ba bước.</div>
+    </div>
+  </div>
+
+  <div class="banner i">
+    Bản do AI đề xuất <b>không áp được</b> khi chưa có người bấm duyệt — tầng dữ liệu chặn,
+    không phải giao diện ẩn nút. Duyệt xong vẫn phải sang màn Bộ luật bấm áp: duyệt là
+    «nội dung này chấp nhận được», áp là «từ giờ 51 page nói theo bản này».
+  </div>
+
+  <div class="panel">
+    <h2>Đang chờ duyệt <span class="hint" id="hDem"></span></h2>
+    <div id="dsBox"><div class="than nho">Đang tải…</div></div>
+  </div>
+
+  <div class="panel" id="pNhan" hidden>
+    <h2>Nhận một đề xuất <span class="hint">ghi vào hàng chờ, chưa đụng bản đang chạy</span></h2>
+    <div class="than">
+      <label for="fNoi">Nội dung đề xuất</label>
+      <textarea id="fNoi" placeholder="Dán toàn văn bản bộ luật mà AI đề xuất…"></textarea>
+      <div class="hang" style="margin-top:10px;display:block">
+        <label for="fLy">Lý do — <span style="font-weight:400">bắt buộc. Người duyệt cần biết đổi cái gì và vì sao.</span></label>
+        <input type="text" id="fLy" placeholder="VD: rút gọn phần chào, thêm luật không hứa ngày giao" />
+      </div>
+      <div class="hang">
+        <button class="b1" id="bNhan">Đưa vào hàng chờ</button>
+        <span class="nho" id="mNhan"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Ba tầng <span class="hint">tầng nào nhận được đề xuất hôm nay</span></h2>
+    <div class="than"><div class="tang" id="dsTang"></div></div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const gio = (t) => (t ? new Date(t).toLocaleString('vi-VN', { hour12: false }) : '—');
+
+let suaDuoc = false;
+
+async function goi(duong, tuyChon) {
+  const r = await fetch(duong, { credentials: 'same-origin', ...tuyChon });
+  let d = null;
+  try { d = await r.json(); } catch { d = null; }
+  if (!r.ok || !d || d.ok === false) {
+    throw new Error((d && d.thongDiep) || 'Lỗi ' + r.status);
+  }
+  return d;
+}
+
+function veTang(ds) {
+  $('#dsTang').innerHTML = ds.map((t) => `
+    <div class="t ${t.duoc ? '' : 'chua'}">
+      <span class="ch">${t.duoc ? '✅' : '⏳'}</span>
+      <div><b>${esc(t.ten)}</b>
+        ${t.duoc ? '<span class="the duyet" style="margin-left:6px">nhận được</span>'
+                 : '<span class="the tat" style="margin-left:6px">chưa nhận được</span>'}
+        ${t.vi ? `<div class="vi">${esc(t.vi)}</div>` : ''}</div>
+    </div>`).join('');
+}
+
+function veDs(d) {
+  const b = $('#dsBox');
+  $('#hDem').textContent = d.soChoDuyet ? `${d.soChoDuyet} bản` : '';
+  if (!d.deXuat.length) {
+    // Rỗng vì XONG, không phải vì chưa cài đặt — nói rõ để không ai đi tìm cái không hỏng.
+    b.innerHTML = `<div class="trong">
+      <div class="ti">Chưa có đề xuất nào đang chờ</div>
+      <div>${esc(d.trong ? d.trong.noi : '')}</div>
+      <div class="di">Đây là trạng thái <b>bình thường</b> — không phải màn hỏng.</div>
+    </div>`;
+    return;
+  }
+  b.innerHTML = `<div class="bao"><table>
+    <thead><tr><th>Bản</th><th>Lý do</th><th>Đưa vào</th><th>Trạng thái</th><th></th></tr></thead>
+    <tbody>${d.deXuat.map((x) => `
+      <tr>
+        <td><b>v${x.phienBan}</b><div class="nho">${x.soKyTu} ký tự · ~${x.uocToken} token</div></td>
+        <td style="max-width:340px">${esc(x.ghiChu) || '<span class="nho">—</span>'}</td>
+        <td class="nho">${esc(x.nguoiSua)}<br>${gio(x.suaLuc)}</td>
+        <td>${x.daDuyet
+          ? `<span class="the duyet">đã duyệt</span><div class="nho">${esc(x.duyetBoi || '')}<br>${gio(x.duyetLuc)}</div>`
+          : '<span class="the cho">chờ duyệt</span>'}</td>
+        <td>${x.daDuyet
+          ? '<a href="/bo-luat" style="color:var(--pri);font-weight:600;text-decoration:none">Sang áp →</a>'
+          : (suaDuoc ? `<button class="b1" data-duyet="${esc(x.id)}">Duyệt</button>` : '<span class="nho">—</span>')}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+
+  b.querySelectorAll('[data-duyet]').forEach((n) => {
+    n.onclick = async () => {
+      const ly = prompt('Ghi chú khi duyệt (không bắt buộc):', '');
+      if (ly === null) return;
+      n.disabled = true; n.textContent = 'Đang duyệt…';
+      try {
+        await goi('/api/ai-de-xuat/' + encodeURIComponent(n.dataset.duyet) + '/duyet', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ ghiChu: ly }),
+        });
+        await tai();
+      } catch (e) { alert('Không duyệt được: ' + e.message); n.disabled = false; n.textContent = 'Duyệt'; }
+    };
+  });
+}
+
+async function tai() {
+  try {
+    const d = await goi('/api/ai-de-xuat');
+    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    suaDuoc = !!d.suaDuoc;
+    $('#pNhan').hidden = !suaDuoc;
+    veTang(d.tang || []);
+    veDs(d);
+  } catch (e) {
+    $('#dsBox').innerHTML = `<div class="than"><div class="banner o" style="margin:0">
+      Không tải được: ${esc(e.message)}</div></div>`;
+  }
+}
+
+$('#bNhan').onclick = async () => {
+  const b = $('#bNhan'); const m = $('#mNhan');
+  b.disabled = true; m.textContent = 'Đang gửi…';
+  try {
+    const kq = await goi('/api/ai-de-xuat', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ noiDung: $('#fNoi').value, ghiChu: $('#fLy').value }),
+    });
+    m.textContent = `Đã vào hàng chờ — bản v${kq.phienBan}. Chưa áp.`;
+    $('#fNoi').value = ''; $('#fLy').value = '';
+    await tai();
+  } catch (e) { m.textContent = '⛔ ' + e.message; }
+  b.disabled = false;
+};
+
+tai();
+</script>
+</body>
+</html>

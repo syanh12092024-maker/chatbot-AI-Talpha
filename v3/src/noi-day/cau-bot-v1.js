@@ -160,6 +160,31 @@ export async function datBotAi(pageIdFacebook, bat) {
   return { pageId: String(pageIdFacebook), batSauKhiDoi: !!(d && d.aiEnabled) };
 }
 
+/* ──────────────────────────── cửa kiểm sẵn sàng (G2-F5) ──────────────────────────── */
+
+/**
+ * Sáu điều kiện sẵn sàng của MỌI page mà tiến trình bot nhìn thấy.
+ *
+ * ⚠️ TRẢ VỀ TOÀN HỆ, KHÔNG THEO TEAM — v1 không biết team là gì. Nơi gọi **bắt buộc** phải
+ *    lọc lại theo danh sách page của team mình trước khi trả ra trình duyệt. Ai quên bước đó
+ *    là để team này đọc được tình trạng page của team kia.
+ *
+ * ⚠️ `aiEnabled` ở đây đọc từ **RAM của tiến trình bot** (`store.js#isAiEnabled`), tức là
+ *    SỰ THẬT về việc bot có đang trả lời page đó không. Cột `page.bot_ai_bat` trong CSDL v3
+ *    chỉ là bản sao, và đã có lần lệch — xem `docs/v3/SO-TAY-VAI-B.md`. Khi hai số khác nhau,
+ *    con số ĐÚNG là con số ở đây.
+ */
+export async function sanSangToanHe() {
+  const d = await goi('/readiness');
+  const ds = Array.isArray(d && d.pages) ? d.pages : [];
+  return {
+    pages: ds,
+    // Ba con số này do chính v1 đếm trên TOÀN HỆ. Màn theo team phải tự đếm lại trên phần
+    // của mình — giữ lại đây chỉ để đối chiếu khi nghi ngờ.
+    toanHe: { chan: d?.blocked ?? null, nhac: d?.warned ?? null, san: d?.ready ?? null, tong: ds.length },
+  };
+}
+
 /* ────────────────────────────── kho token Pancake (G2-B4) ────────────────────────────── */
 
 /**

@@ -10,10 +10,40 @@
 |---|---|
 | Người A (trục dữ liệu) | **6/6 module + 2 phiếu chen XONG** — cổng: A1 26/27 · A2 58/59 · B-Y3 14/14 · A3 6/6 · B-Y4 6/6 · A4 12/12 · A5+A6 15/15 |
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
-| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 3/5 · SÓNG 3 2/5** (12 màn). Ba màn số liệu chờ `so_ai` có dữ liệu |
+| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 3/5 · SÓNG 3 2/5 · SÓNG 4 2/10** (14 màn). Ba màn số liệu chờ `so_ai` có dữ liệu |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **505 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **543 xanh** (316 trước giai đoạn 2) |
+
+---
+
+## Giai đoạn 2 · sóng 4 — VẬN HÀNH (2/10 màn, 25/08)
+
+| Màn | Đường | Trạng thái |
+|---|---|---|
+| **AI đề xuất** | `/ai-de-xuat` | xong — cửa DUY NHẤT ghi bản `nguon='ai'`, tách hẳn cửa của người viết |
+| **Cửa kiểm sẵn sàng** | `/san-sang` | xong — bảy điều kiện, ô đỏ bấm nhảy tới chỗ sửa |
+
+**«Hai đường khác nhau» đã chạy thật, đủ bốn bước**, đo trên máy chủ xem thử 25/08:
+nhận đề xuất → `nguon='ai'`, v3, chưa duyệt · áp ngay → **400 `ai_chua_duyet`** · duyệt →
+đóng dấu người + giờ · áp → 200, bản v3 đang áp. Cửa của người viết ghi cứng `'nguoi'`, cửa
+AI ghi cứng `'ai'`; **không cửa nào đọc `nguon` từ trình duyệt**.
+
+**Đề xuất mới nhận được ở MỘT trong ba tầng.** `bo_luat_chung` có `nguon` + `duyet_luc`
+(migration 009) ⇒ nhận được. `ky_nang` và `kich_ban` **không có cột phân biệt nguồn** ⇒ không
+dựng được cửa duyệt. Màn hiện đủ ba dòng và ghi rõ thiếu cột nào — không nhét nguồn vào cột
+ghi chú cho đủ ba.
+
+**Cột `page.bot_ai_bat` đã lệch khỏi sự thật — 50 vs 0.** Đo 25/08: CSDL v3 ghi 50 page bật
+AI, `ai-enabled.json` là `[]` và RAM tiến trình bot cũng 0/676. Đã loại trừ ba nguyên nhân:
+nhật ký v3 chỉ có `doc | 1043` (màn của B chưa gạt công tắc nào) · `READINESS_AUTO_DISABLE=0`
+· `NRestarts=0` từ 23/08 (không phải mất RAM do khởi động lại). File đổi lúc **24/08 12:13**
+trong lúc bot đang chạy ⇒ 50 page bị tắt qua dashboard v1, CSDL v3 không biết.
+**Hệ quả:** màn «Bộ luật chung» đếm *«bao nhiêu page bị ảnh hưởng»* bằng chính cột đó — con
+số ② trong ba thứ bắt buộc trước khi cho bấm áp đang lấy từ nguồn sai. → `PHIEU-B-Y7`.
+
+Tám màn còn lại của sóng 4 phần lớn **chặn vì dữ liệu**: `khach` · `don_hang` · `san_pham`
+đều 0 dòng.
 
 ---
 

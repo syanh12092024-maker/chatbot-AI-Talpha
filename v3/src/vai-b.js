@@ -55,8 +55,17 @@ import {
 import {
   datTaoTruyVan as datTruyVanBoLuat, datPheuNhatKy as datPheuNhatKyBoLuat,
   datChanDangNhap as datChanDangNhapBoLuat, datChanVai as datChanVaiBoLuat, taoRouterBoLuat,
-  datCuaBoLuat,
+  datCuaBoLuat, manBoLuat,
 } from './ui/bo-luat/index.js';
+import { sanSangToanHe } from './noi-day/cau-bot-v1.js';
+import {
+  datTaoTruyVan as datTruyVanSanSang, datDocSanSang,
+  datChanDangNhap as datChanDangNhapSanSang, datChanVai as datChanVaiSanSang, taoRouterSanSang,
+} from './ui/san-sang/index.js';
+import {
+  datDocBoLuat as datDocBoLuatChoDeXuat, datCuaBoLuat as datCuaBoLuatChoDeXuat,
+  datChanDangNhap as datChanDangNhapDeXuat, datChanVai as datChanVaiDeXuat, taoRouterDeXuat,
+} from './ui/ai-de-xuat/index.js';
 import {
   datTaoTruyVan as datTruyVanKyNang, datPheuNhatKy as datPheuNhatKyKyNang,
   datChanDangNhap as datChanDangNhapKyNang, datChanVai as datChanVaiKyNang, taoRouterKyNang,
@@ -89,6 +98,10 @@ import {
  *                                                              chỉ cho bốn bảng dùng chung — xem `auth/kho-nguoi-dung.js`.
  * @param {{taoBan:Function,ap:Function,duyet:Function}} [phuThuoc.cuaBoLuat] cửa GHI có giao dịch cho bộ luật
  *                                                              chung (người A giao: `src/db/noi-dung.js`).
+ * @param {()=>Promise<{pages:Array}>} [phuThuoc.docSanSang]    bộ đọc cửa kiểm sẵn sàng. Bỏ trống → dùng cầu
+ *                                                              THẬT sang tiến trình bot. Máy chủ dữ liệu giả
+ *                                                              PHẢI truyền bản giả, nếu không trang demo sẽ
+ *                                                              hiện tình trạng page thật của khách.
  *                                                              Thiếu thì màn Bộ luật TỪ CHỐI ghi — ghi bằng
  *                                                              hai lời gọi rời là bỏ mất giao dịch và luật §9.
  * @param {(cfg:object)=>string}    [phuThuoc.dungBanMay]      dựng BẢN CHO MÁY từ bản người
@@ -116,7 +129,7 @@ import {
  * @returns {{daNoi:string[], thieu:string[]}}
  */
 export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa,
-  docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, ghiSoAi, canhBao, express } = {}) {
+  docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -148,6 +161,15 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datTruyVanKyNang(taoTruyVan);
   datTruyVanPrompt(taoTruyVan);
   datTruyVanKichBan(taoTruyVan);
+  datTruyVanSanSang(taoTruyVan);
+  // Cửa kiểm đọc thẳng từ tiến trình bot — `src/readiness.js` là cái CHẶN việc bật AI ở v1,
+  // nên nó cũng phải là cái v3 hiện ra. Tính lại ở v3 là dựng cái thang thứ hai.
+  //
+  // NHẬN TỪ NGOÀI được, và đó là chủ ý: máy chủ xem thử (`v3/xem-thu.js`, dữ liệu giả) PHẢI
+  // truyền bản giả vào. Nếu nó dùng cầu thật thì một trang demo sẽ hiện tình trạng page THẬT
+  // của khách — cùng một máy, cổng 3100 vẫn gọi được.
+  datDocSanSang(typeof docSanSang === 'function' ? docSanSang : sanSangToanHe);
+  if (typeof docSanSang === 'function') daNoi.push('bộ đọc cửa kiểm GIẢ → màn Cửa kiểm sẵn sàng');
   datTruyVanSucKhoe(taoTruyVan);
   daNoi.push('cổng dữ liệu → nhật ký · lớp model · bảng điều phối · kho người dùng · cấu hình team · page & bot');
 
@@ -187,8 +209,16 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datDanhMuc({ moTa: moTaHanhDong, nhom: NHOM_HANH_DONG });
   daNoi.push('bộ đọc nhật ký + danh mục mã → màn Nhật ký thao tác');
 
-  if (cuaBoLuat && typeof cuaBoLuat.ap === 'function') { datCuaBoLuat(cuaBoLuat); daNoi.push('cửa ghi có giao dịch → màn Bộ luật chung'); }
-  else thieu.push('cuaBoLuat — màn Bộ luật chung TỪ CHỐI ghi. Ghi bằng hai lời gọi rời là bỏ mất giao dịch, khoá chống bấm-cùng-lúc, và luật «đề xuất của AI phải có người duyệt»');
+  // Màn «AI đề xuất» dùng LẠI bộ đọc và CÙNG cửa ghi của màn Bộ luật — nó chỉ khác ở chỗ
+  // ghi cứng `nguon='ai'`. Dựng bộ đọc thứ hai là mở đường cho hai màn đếm ra hai con số.
+  datDocBoLuatChoDeXuat(manBoLuat);
+
+  if (cuaBoLuat && typeof cuaBoLuat.ap === 'function') {
+    datCuaBoLuat(cuaBoLuat);
+    datCuaBoLuatChoDeXuat(cuaBoLuat);
+    daNoi.push('cửa ghi có giao dịch → màn Bộ luật chung + màn AI đề xuất');
+  }
+  else thieu.push('cuaBoLuat — màn Bộ luật chung và màn AI đề xuất TỪ CHỐI ghi. Ghi bằng hai lời gọi rời là bỏ mất giao dịch, khoá chống bấm-cùng-lúc, và luật «đề xuất của AI phải có người duyệt»');
 
   if (typeof dungBanMay === 'function') { datDungBanMay(dungBanMay); daNoi.push('bộ dựng bản-cho-máy → màn soạn kịch bản'); }
   else thieu.push('dungBanMay — màn soạn kịch bản TỪ CHỐI lưu, vì tự dựng bản thứ hai là hứa một prompt khác cái bot nhận');
@@ -245,6 +275,10 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiSucKhoe(batBuocVaiHTTP);
   datChanDangNhapNhatKy(batBuocDangNhap);
   datChanVaiNhatKy(batBuocVaiHTTP);
+  datChanDangNhapDeXuat(batBuocDangNhap);
+  datChanVaiDeXuat(batBuocVaiHTTP);
+  datChanDangNhapSanSang(batBuocDangNhap);
+  datChanVaiSanSang(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -263,7 +297,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterKichBan());    //   /kich-ban · /api/kich-ban/*
   app.use(taoRouterSucKhoe());    //   /suc-khoe · /api/suc-khoe
   app.use(taoRouterNhatKy());     //   /nhat-ky · /api/nhat-ky
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký');
+  app.use(taoRouterDeXuat());     //   /ai-de-xuat · /api/ai-de-xuat/*
+  app.use(taoRouterSanSang());    //   /san-sang · /api/san-sang
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };

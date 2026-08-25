@@ -268,6 +268,32 @@ const bao = dungPhanB(app, {
   },
   dayKichBanLenBot: async () => ({ ok: true }),   // bản giả: không có tiến trình bot để đẩy
   bocPancake: async () => ({ greeting: '(bản giả — không bóc file thật)', tone: '', salesPrompt: '' }),
+
+  // CỬA KIỂM SẴN SÀNG — bản GIẢ, bắt buộc phải truyền.
+  //
+  // Bỏ trống thì `dungPhanB` dùng cầu THẬT sang `127.0.0.1:3100`, và trên máy chủ thì bản
+  // xem thử chạy cùng máy với bot thật ⇒ trang demo sẽ hiện tình trạng của 676 page khách.
+  // Gieo đủ ba cảnh: một page bị chặn, một page chỉ nhắc, một page CSDL ghi bật mà bot tắt
+  // (đúng chỗ lệch đo được thật 25/08).
+  docSanSang: async () => ({
+    pages: [
+      { pageId: '1209280405604866', readiness: 'MISSING_PRODUCT', aiAllowed: false, aiEnabled: false,
+        blockers: [{ code: 'MISSING_PRODUCT', detail: 'Sheet chưa có sản phẩm/giá cho page này' }],
+        warnings: [{ code: 'MISSING_POS', detail: 'chưa map shop POS — AI chốt được nhưng không tạo được đơn thật' }],
+        missing: [], tokens: 0 },
+      { pageId: '1200082103184799', readiness: 'THIN_SCRIPT', aiAllowed: true, aiEnabled: true,
+        blockers: [],
+        warnings: [{ code: 'THIN_SCRIPT', detail: 'chưa điền giọng điệu' }],
+        missing: [], tokens: 412 },
+      { pageId: '1100863943120879', readiness: 'READY', aiAllowed: true, aiEnabled: false,
+        blockers: [], warnings: [], missing: [], tokens: 1731 },
+      { pageId: '1100863943120880', readiness: 'NO_TOKEN', aiAllowed: false, aiEnabled: false,
+        blockers: [{ code: 'NO_TOKEN', detail: 'mọi token phủ page đều đã chết' }],
+        warnings: [], missing: [], tokens: 900 },
+      // page id '1100863943120881' CỐ Ý không có ở đây → hiện cảnh «bot không thấy page này».
+    ],
+    toanHe: { chan: 2, nhac: 1, san: 1, tong: 4 },
+  }),
   // Bốn bộ đọc khối GIẢ — đọc thẳng kho RAM. Bản thật là `src/chat/rap-prompt.js`.
   docKhoi: {
     boLuat: async (teamId) => (kho.docThang('bo_luat_chung') || [])

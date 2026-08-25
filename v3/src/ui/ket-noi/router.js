@@ -29,6 +29,15 @@ const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
 
 /** CHỈ quản trị — màn này là hạ tầng toàn hệ, không phải dữ liệu team. */
 export const VAI_VAO_DUOC = Object.freeze([VAI.QUAN_TRI]);
+/**
+ * Danh sách GHI — bằng đúng danh sách vào, và đó là chủ ý: màn này CHỈ cho `quan-tri` vào
+ * (kho token là hạ tầng dùng chung cả ba team), nên ai vào được cũng là ai sửa được. Không
+ * có tầng «xem mà không sửa» ở đây vì không ai ngoài quản trị nhìn thấy màn.
+ *
+ * Khai TƯỜNG MINH dù trùng — xem lý do ở `dispatch/router.js`.
+ */
+export const VAI_SUA_DUOC = VAI_VAO_DUOC;
+
 export const DUONG_TRANG = '/ket-noi';
 
 export const HANH_DONG_THEM_TOKEN = 'them_token_pancake';

@@ -26,6 +26,11 @@ const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
 /** Người duyệt kịch bản XEM được (họ cần biết luật chung nói gì để duyệt kịch bản cho khớp),
  *  nhưng KHÔNG sửa được — `01-QUYET-DINH.md` §9 tách rõ hai việc. */
 export const VAI_VAO_DUOC = Object.freeze([VAI.QUAN_TRI, VAI.QUAN_LY, VAI.DUYET_KICH_BAN]);
+// XUẤT LẠI danh sách ghi (nhập từ tầng dưới) để lưới quét phân quyền ngang nhìn thấy
+// được. Chỉ nhập mà không xuất thì phép quét đọc ra `[]`, và một màn nới quyền ghi
+// sau này vẫn qua lưới — xem `v3/test/b/phan-quyen-nam-vai.test.mjs`.
+export { VAI_SUA_DUOC };
+
 export const DUONG_TRANG = '/bo-luat';
 
 let _chanDangNhap = null;

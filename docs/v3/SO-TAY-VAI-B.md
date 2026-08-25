@@ -180,6 +180,61 @@ màn thứ sáu lại quên như màn thứ nhất.
 
 ---
 
+### Giai đoạn 2 · sóng 4 · G2-F8 «AI đề xuất» và G2-F5 «Cửa kiểm sẵn sàng» — 25/08/2026
+
+**Tách HAI CỬA HTTP thay vì thêm một tham số `nguon`.** Tiêu chí nghiệm thu đòi *«kịch bản
+người viết → áp thẳng; đề xuất của AI → phải duyệt mới áp; hai đường khác nhau»*. Cách rẻ
+nhất là cho `POST /api/bo-luat/nhap` nhận thêm `nguon`. Không làm: một tham số thì nơi gọi
+nào cũng đặt được, và cái cửa duyệt §9 dựng ra thành chỗ đi vòng. Nay là hai đường riêng,
+mỗi đường ghi CỨNG một hằng số, không đường nào đọc `nguon` từ trình duyệt.
+
+**Bài test canh HÀNH VI, nên phá một tầng thì nó vẫn xanh.** `nguon` được chốt ở hai chỗ:
+router không chuyền `req.body.nguon` xuống, và tầng dưới cũng ghi cứng. Đã thử phá từng
+tầng: phá một → vẫn xanh (tầng kia còn đỡ, hành vi vẫn đúng); phá cả hai → đỏ. Ghi lại vì
+người sau nới một tầng rồi thấy xanh sẽ tưởng mình an toàn.
+
+**Màn «AI đề xuất» KHÔNG có đường áp.** Duyệt xong vẫn phải sang màn Bộ luật bấm áp. Duyệt
+là «nội dung này chấp nhận được», áp là «từ giờ mọi page nói theo bản này» — gộp hai nút là
+biến hai người thành một cú bấm.
+
+**Ba tầng thì hôm nay mới MỘT tầng nhận được đề xuất, và màn nói thẳng ra.** Kế hoạch đòi đề
+xuất ở cả `bo_luat_chung` · `ky_nang` · `kich_ban`. Chỉ `bo_luat_chung` có `nguon` +
+`duyet_luc` (migration 009). Hai bảng kia thiếu cột phân biệt nguồn ⇒ không dựng được cửa
+duyệt. Màn hiện đủ ba dòng, hai dòng ghi rõ **thiếu cột nào**. Không nhét nguồn vào một cột
+ghi chú cho đủ ba.
+
+**Cửa kiểm: KHÔNG tính lại bảy điều kiện ở v3.** `src/readiness.js` là cái CHẶN việc bật AI
+bên v1. Tính lại ở v3 là dựng cái thang thứ hai — màn báo xanh mà v1 vẫn chặn. Nhưng cũng
+KHÔNG `import` nó: nó kéo theo `kb.js` · `page-registry.js` · `pancake.js` · `store.js` ·
+`stats.js` · `wa.js`. Nên đi qua cầu HTTP `/admin/api/readiness`.
+
+**Bảng mã chép tay thì phải khoá vào mã nguồn.** Vì không nhập được `LADDER`, tám bậc thang
+là chép tay — đúng kiểu lỗi `quan_tri` vs `quan-tri`. `v3/test/b/san-sang.test.mjs` ĐỌC THẲNG
+`src/readiness.js`, bóc `LADDER` bằng phép đếm ngoặc, rồi so **cả tên mã lẫn cờ `blocks`**.
+Chép đúng tên mà sai mức là màn báo «chỉ nhắc» trong khi v1 đang CHẶN.
+
+**Tài liệu nói SÁU điều kiện, mã nguồn có BẢY.** `LADDER` có 8 khoá, `READY` là kết quả ⇒ 7
+điều kiện thật. Màn hiện đủ bảy: thứ chặn bot là mã nguồn, không phải tài liệu.
+
+**Cầu hỏng thì NÉM, không trả bảng rỗng.** Một bảng rỗng ở màn này trông y hệt «mọi page đều
+ổn» — kết luận ngược hẳn sự thật. Lỗi 502 kèm nguyên câu đó.
+
+**Máy chủ xem thử PHẢI được tiêm bộ đọc GIẢ.** `dungPhanB` mặc định dùng cầu thật; trên máy
+chủ, bản demo (cổng 3101) chạy cùng máy với bot thật (cổng 3100) ⇒ bỏ trống là trang demo
+hiện tình trạng 676 page của khách. Nay `v3/xem-thu.js` truyền `docSanSang` giả.
+
+**Đã đo được một chỗ lệch thật, và nó ăn vào màn nguy hiểm nhất.** CSDL v3 ghi 50 page bật
+AI; `ai-enabled.json` và RAM của bot đều nói 0. Cột `page.bot_ai_bat` là bản sao và đã cũ từ
+24/08. Màn «Bộ luật chung» đếm *«bao nhiêu page bị ảnh hưởng»* bằng chính cột đó — tức con số
+② trong ba thứ bắt buộc phải có trước khi cho bấm áp đang lấy từ nguồn sai. Đã lập
+`PHIEU-B-Y7` cho người A (`src/db/noi-dung.js` là đất của A). Màn cửa kiểm giữ **cả hai** con
+số và nêu chỗ lệch kèm ví dụ từng page.
+
+**Màn nào CÓ cửa ghi thì PHẢI xuất danh sách ghi.** Bắt được vì router `bo-luat` NHẬP
+`VAI_SUA_DUOC` từ tầng dưới mà không XUẤT lại, nên lưới quét phân quyền đọc ra `[]` và một
+màn nới quyền sau này vẫn lọt. `dispatch` và `ket-noi` có «ghi = xem», nay khai TƯỜNG MINH dù
+trùng — một danh sách ngầm là một danh sách không ai soát được.
+
 ## Sửa theo lược đồ thật — 23–24/08/2026
 
 Sổ tay này từng ghi *"người A chưa viết dòng nào"*. **Đã lỗi thời.** A xong 12/12 module;
@@ -215,6 +270,9 @@ migration** rồi so — gõ tay mã vai vào test là đẻ bản sao thứ hai
 ---
 
 ## Việc B đang chờ người A
+
+- **`PHIEU-B-Y7`** — cột `page.bot_ai_bat` lệch 50 page so với tiến trình bot; con số ảnh
+  hưởng của `demAnhHuong`/`apBoLuat` trong `src/db/noi-dung.js` đang đọc từ cột đó.
 
 | # | Chờ gì | Chặn cái gì |
 |---|---|---|

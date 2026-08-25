@@ -47,6 +47,17 @@ const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
  */
 export const VAI_VAO_DUOC = Object.freeze([VAI.SALE, VAI.QUAN_TRI]);
 
+/**
+ * Danh sách GHI — ở màn này **bằng đúng** danh sách vào, và đó là chủ ý: thao tác ghi duy
+ * nhất là «đánh dấu đã xử» (`01-QUYET-DINH.md` §10), tức là chính việc sale vào đây để làm.
+ * Vào được mà không đóng được việc thì màn này thành một bảng chỉ để nhìn.
+ *
+ * Khai TƯỜNG MINH dù nó trùng, để lưới quét phân quyền ngang
+ * (`v3/test/b/phan-quyen-nam-vai.test.mjs`) nhìn thấy — một danh sách ngầm là một danh sách
+ * không ai soát được.
+ */
+export const VAI_SUA_DUOC = VAI_VAO_DUOC;
+
 /* ─────────────────────────── ba chỗ tiêm từ ngoài ─────────────────────────── */
 
 let _chanDangNhap = null;

@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cửa kiểm sẵn sàng — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1180px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  .o{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;margin-bottom:16px}
+  .o .k{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh)}
+  .o .k .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+  .o .k .c{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .o .k.xau .n{color:var(--bad)} .o .k.nhac .n{color:var(--warn)} .o .k.tot .n{color:var(--ok)}
+
+  .lech{background:#fff4f4;border:1px solid #f0c2c2;border-left:4px solid var(--bad);
+        border-radius:var(--r);padding:12px 15px;margin-bottom:16px;line-height:1.6}
+  .lech b{color:#991b1b}
+  .lech table{margin-top:9px;font-size:12px;width:auto}
+  .lech td{padding:3px 12px 3px 0;border:0}
+
+  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
+  .banner.o2{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner.i{background:var(--priSoft);color:#0b4a52;border:1px solid #b8dde0}
+
+  .loc{display:flex;gap:7px;flex-wrap:wrap;padding:11px 15px;border-bottom:1px solid var(--line);background:#fafbfc}
+  .loc button{font:inherit;border:1px solid var(--line);background:#fff;color:#344054;border-radius:20px;
+              padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600}
+  .loc button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:#fafbfc}
+  tbody tr:last-child td{border-bottom:0}
+  .bao{display:block;overflow-x:auto}
+
+  /* ô đỏ BẤM ĐƯỢC — cả yêu cầu của màn nằm ở đây */
+  .ma{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:7px;font-size:11.5px;
+      font-weight:600;margin:2px 4px 2px 0;border:1px solid transparent;text-decoration:none;white-space:nowrap}
+  .ma.chan{background:var(--badSoft);color:#991b1b;border-color:#f3c9c9}
+  .ma.nhac{background:var(--warnSoft);color:#8a4a06;border-color:#f0d3a4}
+  a.ma:hover{filter:brightness(.95);text-decoration:none}
+  a.ma::after{content:"→";font-weight:700;opacity:.7}
+  span.ma[data-khong]{opacity:.95;cursor:help;border-style:dashed}
+  .ct{color:var(--muted);font-size:11.5px;line-height:1.5;margin-top:3px}
+
+  .cham{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+  .cham.b{background:var(--ok)} .cham.t{background:#cfd6dd}
+  .the{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+  .the.chan{background:var(--badSoft);color:#991b1b}
+  .the.nhac{background:var(--warnSoft);color:#8a4a06}
+  .the.san{background:var(--okSoft);color:#166534}
+  .the.la{background:#f1f3f5;color:var(--muted)}
+
+  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
+  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .trong .di{margin-top:10px;font-size:12px;background:var(--priSoft);color:#0b4a52;
+             display:inline-block;padding:9px 13px;border-radius:9px;text-align:left;max-width:520px}
+  .nho{color:var(--muted);font-size:11.5px;line-height:1.5}
+  code{background:#f1f3f5;padding:1px 5px;border-radius:4px;font-size:11.5px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  @media (max-width:720px){
+    header{padding:12px 14px} main{padding:12px 14px 50px}
+    .than{padding:12px} th,td{padding:8px 9px}
+    .o{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
+    .o .k{padding:10px 11px} .o .k .n{font-size:19px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cửa kiểm sẵn sàng</h1>
+  <span class="sub" id="hTeam">…</span>
+  <span class="sp"></span>
+  <a href="/page-bot">Page &amp; Bot →</a>
+  <a href="/dieu-phoi">← Điều phối</a>
+</header>
+
+<main>
+  <div id="canhBao"></div>
+  <div class="o" id="dem"></div>
+
+  <div class="panel">
+    <h2>Page của team <span class="hint" id="hSo"></span>
+      <span class="sp"></span>
+      <span class="hint">bấm ô đỏ để nhảy tới chỗ sửa</span></h2>
+    <div class="loc" id="loc"></div>
+    <div id="bang"><div class="than nho">Đang tải…</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Bảy điều kiện <span class="hint">bậc nào chặn, bậc nào chỉ nhắc</span></h2>
+    <div class="than"><div class="bao"><table id="dsDk"></table></div></div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let DL = null;
+let locHien = 'chan';
+
+const LOC = [
+  { ma: 'chan', ten: 'Bị chặn' },
+  { ma: 'nhac', ten: 'Chỉ nhắc' },
+  { ma: 'san', ten: 'Sẵn sàng' },
+  { ma: 'chay', ten: 'Đang chạy' },
+  { ma: 'tat_ca', ten: 'Tất cả' },
+];
+
+function locPage() {
+  const ds = DL.page;
+  if (locHien === 'chan') return ds.filter((p) => p.chan.length);
+  if (locHien === 'nhac') return ds.filter((p) => !p.chan.length && p.nhac.length);
+  if (locHien === 'san') return ds.filter((p) => !p.botKhongThay && !p.chan.length && !p.nhac.length);
+  if (locHien === 'chay') return ds.filter((p) => p.botTheoBot);
+  return ds;
+}
+
+function veLoc() {
+  $('#loc').innerHTML = LOC.map((l) =>
+    `<button data-l="${l.ma}" class="${l.ma === locHien ? 'on' : ''}">${l.ten}</button>`).join('');
+  $('#loc').querySelectorAll('[data-l]').forEach((n) => {
+    n.onclick = () => { locHien = n.dataset.l; veLoc(); veBang(); };
+  });
+}
+
+/** Ô điều kiện. Có `di` → thẻ <a> bấm được. Không có → <span> kèm lời chỉ việc phải làm. */
+function veO(x) {
+  const lop = x.chan ? 'chan' : 'nhac';
+  const nhan = esc(x.ten) + (x.la ? ' (mã lạ)' : '');
+  if (x.di) {
+    return `<a class="ma ${lop}" href="${esc(x.di)}" title="${esc(x.lam)}">${nhan}</a>`;
+  }
+  return `<span class="ma ${lop}" data-khong="1" title="${esc(x.lam)}">${nhan}</span>`;
+}
+
+function veBang() {
+  const ds = locPage();
+  $('#hSo').textContent = `${ds.length}/${DL.page.length}`;
+  const b = $('#bang');
+
+  if (!DL.page.length) {
+    b.innerHTML = `<div class="trong">
+      <div class="ti">${esc(DL.trong ? DL.trong.noi : 'Chưa có dữ liệu')}</div>
+      <div>Màn này chưa dùng được — <b>không phải</b> vì mọi thứ đã xong.</div>
+      ${DL.trong && DL.trong.diTiep ? `<div class="di">👉 ${esc(DL.trong.diTiep)}</div>` : ''}
+    </div>`;
+    return;
+  }
+  if (!ds.length) {
+    b.innerHTML = `<div class="trong">
+      <div class="ti">Không page nào ở nhóm này</div>
+      <div>Đây là tin <b>tốt</b> nếu bộ lọc đang là «Bị chặn» — nghĩa là không page nào bị chặn.</div>
+    </div>`;
+    return;
+  }
+
+  b.innerHTML = `<div class="bao"><table>
+    <thead><tr><th>Page</th><th>Bot</th><th>Chặn</th><th>Nhắc</th><th>Marketer</th></tr></thead>
+    <tbody>${ds.map((p) => `
+      <tr>
+        <td><b>${esc(p.ten)}</b><div class="nho">${esc(p.pageId)}</div></td>
+        <td style="white-space:nowrap">
+          <span class="cham ${p.botTheoBot ? 'b' : 't'}"></span>${p.botTheoBot ? 'đang chạy' : 'tắt'}
+          ${p.botTheoCsdl !== p.botTheoBot && !p.botKhongThay
+            ? `<div class="nho" style="color:var(--bad)">CSDL ghi ${p.botTheoCsdl ? 'bật' : 'tắt'}</div>` : ''}
+          ${p.botKhongThay ? '<div class="nho">bot không thấy page này</div>' : ''}
+        </td>
+        <td>${p.botKhongThay ? '<span class="the la">không biết</span>'
+              : (p.chan.length ? p.chan.map(veO).join('') : '<span class="the san">không</span>')}
+          ${p.chan.length ? `<div class="ct">${esc(p.chan.map((x) => x.chiTiet).filter(Boolean).join(' · '))}</div>` : ''}</td>
+        <td>${p.nhac.length ? p.nhac.map(veO).join('') : '<span class="nho">—</span>'}</td>
+        <td class="nho">${esc(p.marketer) || '<i>chưa gán</i>'}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+}
+
+function veDem(k) {
+  $('#dem').innerHTML = [
+    { n: k.tong, c: 'page của team', l: '' },
+    { n: k.chan, c: 'BỊ CHẶN — bot không bật được', l: 'xau' },
+    { n: k.nhac, c: 'chỉ nhắc — bot vẫn chạy được', l: 'nhac' },
+    { n: k.san, c: 'đủ điều kiện', l: 'tot' },
+    { n: k.dangChay, c: 'bot đang thật sự chạy', l: k.dangChay ? 'tot' : '' },
+    ...(k.chayMaBiChan ? [{ n: k.chayMaBiChan, c: 'ĐANG CHẠY MÀ BỊ CHẶN', l: 'xau' }] : []),
+    ...(k.botKhongThay ? [{ n: k.botKhongThay, c: 'bot không thấy page', l: 'nhac' }] : []),
+  ].map((x) => `<div class="k ${x.l}"><div class="n">${x.n}</div><div class="c">${x.c}</div></div>`).join('');
+}
+
+function veDieuKien(dk) {
+  const r = Object.entries(dk).filter(([m]) => m !== 'READY');
+  $('#dsDk').innerHTML = `
+    <thead><tr><th>Mã</th><th>Điều kiện</th><th>Mức</th><th>Phải làm gì</th></tr></thead>
+    <tbody>${r.map(([ma, d]) => `
+      <tr>
+        <td><code>${esc(ma)}</code></td>
+        <td>${esc(d.ten)}</td>
+        <td><span class="the ${d.chan ? 'chan' : 'nhac'}">${d.chan ? 'CHẶN bot' : 'chỉ nhắc'}</span></td>
+        <td>${esc(d.lam)}${d.di ? ` <a href="${esc(d.di)}" style="color:var(--pri);font-weight:600;text-decoration:none">${esc(d.nutDi)} →</a>` : ''}</td>
+      </tr>`).join('')}</tbody>`;
+}
+
+async function tai() {
+  try {
+    const r = await fetch('/api/san-sang', { credentials: 'same-origin' });
+    const d = await r.json();
+    if (!r.ok || d.ok === false) throw new Error(d.thongDiep || 'Lỗi ' + r.status);
+    DL = d;
+    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+
+    let cb = '';
+    if (d.lech) {
+      cb += `<div class="lech"><b>⚠️ CSDL v3 và tiến trình bot đang nói khác nhau.</b><br>${esc(d.lech.noi)}
+        <table><tbody>${d.lech.viDu.map((v) => `<tr>
+          <td>${esc(v.ten)}</td><td class="nho">${esc(v.pageId)}</td>
+          <td>CSDL: <b>${v.csdl ? 'bật' : 'tắt'}</b></td>
+          <td>bot: <b>${v.bot ? 'bật' : 'tắt'}</b></td></tr>`).join('')}</tbody></table></div>`;
+    }
+    if (d.dem.chayMaBiChan) {
+      cb += `<div class="banner o2"><b>${d.dem.chayMaBiChan} page đang chạy nhưng có điều kiện chặn.</b>
+        Bot vẫn trả lời khách trên các page này dù chưa đủ điều kiện — xem bộ lọc «Đang chạy».</div>`;
+    }
+    $('#canhBao').innerHTML = cb;
+
+    veDem(d.dem);
+    veDieuKien(d.dieuKien);
+    veLoc();
+    veBang();
+  } catch (e) {
+    $('#bang').innerHTML = `<div class="than"><div class="banner o2" style="margin:0">
+      <b>Không đọc được cửa kiểm:</b> ${esc(e.message)}<br>
+      Màn <b>từ chối</b> hiện bảng rỗng ở đây — một bảng rỗng trông y như «mọi page đều ổn».</div></div>`;
+    $('#dem').innerHTML = '';
+  }
+}
+
+tai();
+</script>
+</body>
+</html>
