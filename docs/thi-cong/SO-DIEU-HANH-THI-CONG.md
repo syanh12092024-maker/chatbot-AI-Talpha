@@ -1010,9 +1010,9 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
-- 26/08 · A7-1 → ✅ xong — migration 013: khoá định danh khách là (team, NƯỚC, SĐT); nước lấy từ `ket_noi_pos.market` ngay tại `docDon`, `coalesce` bịt lỗ hai-NULL, có lưới migration lùi-và-kêu · commit <hash> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
-- 26/08 · A7-1 → đo trên Postgres 16.15 THẬT: cổng a7-1 6/6 rc=0 · bộ ca 11 pass/0 fail · đảo-vá bỏ nước ⇒ 2 ca đỏ · hồi quy 473 ca 458 pass/4 fail, cả 4 A/B ra có sẵn · commit <hash> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
-- 26/08 · A7-1 → 🧭 RF-23 gọi tên sai nước (nhóm 8 số 0 va chạm · Saudi∩UAE 6) · dân số đơn thật 122.615 chứ không 5.144 · cổng của tôi báo trượt cho thứ đang xanh — chi tiết §9 · commit <hash> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
+- 26/08 · A7-1 → ✅ xong — migration 013: khoá định danh khách là (team, NƯỚC, SĐT); nước lấy từ `ket_noi_pos.market` ngay tại `docDon`, `coalesce` bịt lỗ hai-NULL, có lưới migration lùi-và-kêu · commit 2d94649 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
+- 26/08 · A7-1 → đo trên Postgres 16.15 THẬT: cổng a7-1 6/6 rc=0 · bộ ca 11 pass/0 fail · đảo-vá bỏ nước ⇒ 2 ca đỏ · hồi quy 473 ca 458 pass/4 fail, cả 4 A/B ra có sẵn · commit 2d94649 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
+- 26/08 · A7-1 → 🧭 RF-23 gọi tên sai nước (nhóm 8 số 0 va chạm · Saudi∩UAE 6) · dân số đơn thật 122.615 chứ không 5.144 · cổng của tôi báo trượt cho thứ đang xanh — chi tiết §9 · commit 2d94649 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
 
 - 25/08 · B-Y6 → ✅ xong — migration 012: tầng CHỈ-NƯỚC cho cây kịch bản (sửa lỗi thiết kế của chính 010) + bảng `mau_0_dong` với bộ đếm nguyên tử · commit cdae76d · nhật ký docs/thi-cong/nhat-ky/phieu-b-y6.md
 - 25/08 · B-Y6 → đo trên Postgres 16.15 THẬT: l0-m2-kich-ban 20 pass · l0-m2-so-lieu 18 pass · l0-m1-luoc-do 13 pass (24 bảng) · hồi quy 34 bộ chỉ D7 đỏ · commit cdae76d · nhật ký docs/thi-cong/nhat-ky/phieu-b-y6.md
