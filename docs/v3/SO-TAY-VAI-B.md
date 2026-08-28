@@ -266,6 +266,47 @@ cả cột chưa gieo; kho giả rơi xuống so chuỗi, `String(undefined)` �
 KHÔNG khớp. Lệch theo chiều khắt khe hơn: bài test đếm «bản chưa ai duyệt» ra 0 trong khi bản
 thật ra N, rồi người ta sửa CODE cho vừa kho giả. Đã vá `hop()` trong `v3/testkit/db-gia.js`.
 
+### Giai đoạn 2 · các màn số liệu và vận hành — 26–28/08/2026
+
+**Bốn lần cùng một bài học, bốn hình dạng khác nhau.** Tôi báo «chặn vì thiếu dữ liệu» bốn
+lượt, và cả bốn đều sai vì tôi nhìn BẢN SAO rỗng trong CSDL v3 rồi kết luận nguồn cũng rỗng:
+
+| Chỗ nhìn | Nói gì | Nguồn thật nói gì |
+|---|---|---|
+| `page.bot_ai_bat` | 50 page bật AI | `ai-enabled.json` = 0 (B-Y7) |
+| `san_pham` | 0 dòng | v1 có **71 sản phẩm / 69 page / 459 ảnh** |
+| `so_ai` | 0 dòng | `/token-cost` đo được **1.145.472 đ** |
+| `khach`, `don_hang` | 0 dòng | di trú 013 nhập **89.484 khách / 60.000+ đơn** |
+
+Và cột cũng biết nói dối theo cách khác: `khach.so_don_ket` **không NULL nhưng toàn 0** —
+`count()` trả về đủ dòng nên nhìn qua tưởng đã tính (B-Y8). `hoi_thoai.khach_id` thì có cột
+mà toàn NULL (B-Y9). Ba dạng: **bản sao lệch · cột toàn 0 · cột toàn NULL**.
+
+**Một câu phủ định về dữ liệu phải ĐO LÚC CHẠY.** Màn Báo cáo của tôi đã đẩy lên máy chủ và
+nói «luồng trang bán hàng chưa có nguồn» trong lúc `don_hang` đã có 559 đơn của luồng đó —
+nói sai đúng vào lúc tình hình vừa tốt lên. Nay `luongTrangBanHang()` hỏi lại mỗi lượt.
+
+**Đừng tự tính lại một chỉ số nơi khác đã có công thức.** Màn Chi phí bản đầu chia tiền cho
+TỔNG lượt và ra 82 đ/tin; v1 nói 127. `src/economics.js` đã ghi sẵn lý do trước khi tôi mắc:
+*«token chỉ ghi từ 06/08/2026, chia trên tổng tin sẽ ra ĐƠN GIÁ RẺ GIẢ TẠO»*. Tôi tự tính lại
+và ra đúng cái sai người ta đã lường.
+
+**Ba con số cho một chỗ thì đừng chọn một cái rồi gọi nó là «số đơn».** 907 đơn POS quy cho
+AI (60 ngày) · 269 bot tự tay chốt (toàn thời gian) · 893 hội thoại có đơn. Lệch hơn ba lần,
+cả ba đều đúng, ba câu hỏi khác nhau. Màn Báo cáo hiện cả ba, xếp DỌC, không có trường tổng.
+
+**Tỉ lệ tính trên một mẫu là nhiễu, không phải tín hiệu.** 6.148 khách «hoàn cao», nhưng
+5.440 chỉ có ĐÚNG MỘT đơn. Chặn theo tỉ lệ đơn thuần là chặn 5.440 người vì một dữ kiện.
+Nên màn Rủi ro hoàn luôn trả tỉ lệ KÈM số đơn, và xếp bảng theo hai chiều.
+
+**Trần đọc mà không nói là một tổng bị cắt trông y hệt một tổng đúng.** Bắt được lúc soát
+bằng mắt: màn Nguồn khách hiện 55.730 + 4.270 = đúng 60.000, bằng chằn chặn trần, mà im.
+Ở màn đó còn tệ hơn — tỉ lệ giữa hai luồng cũng sai theo, vì phép cắt không chia đều.
+
+**Ba lỗi trong đợt này chỉ thấy khi mở màn bằng mắt**, không bài test nào bắt: trùng tên lớp
+CSS (`.v`, rồi `.trong`) · nút trỏ sang màn chưa dựng · trần đọc im lặng. Bài test canh được
+hành vi, không canh được chuyện hai con số cạnh nhau cộng ra một số tròn đáng ngờ.
+
 **Gói dữ liệu không chở bản sao của cùng một câu.** Bản đầu, mỗi ô điều kiện chở theo tên
 bậc + chỗ nhảy + câu chỉ việc. Trên 514 page thật là **586 KB** cho 1.397 ô, vì câu «Thêm một
 token Pancake có phủ page này…» bị chép 120 lần. Nay ô chỉ chở `ma` + `chiTiet`; phần chung
@@ -325,6 +366,10 @@ migration** rồi so — gõ tay mã vai vào test là đẻ bản sao thứ hai
 
 ## Việc B đang chờ người A
 
+- **`PHIEU-B-Y8`** — `khach.so_don_ket`/`so_don_hoan` là cột **không NULL nhưng toàn 0**; màn
+  Rủi ro hoàn đang tự đếm từ `don_hang`, cần cắt sang hàm tổng hợp của A.
+- **`PHIEU-B-Y9`** — `hoi_thoai.khach_id` **rỗng 28.953/28.953**; kênh thứ ba của màn Hồ sơ
+  khách không gộp được. Nối SAI còn tệ hơn không nối.
 - **`PHIEU-B-Y7`** — cột `page.bot_ai_bat` lệch 50 page so với tiến trình bot; con số ảnh
   hưởng của `demAnhHuong`/`apBoLuat` trong `src/db/noi-dung.js` đang đọc từ cột đó.
 

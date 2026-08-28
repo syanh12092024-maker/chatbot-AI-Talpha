@@ -13,7 +13,7 @@
 | Luồng đang làm | **24/24 MÀN XONG** — cộng màn «AI đề xuất» ngoài danh sách là 25 |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **664 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **666 xanh** (316 trước giai đoạn 2) |
 
 ---
 
