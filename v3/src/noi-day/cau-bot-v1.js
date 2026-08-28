@@ -193,6 +193,52 @@ export async function sanSangToanHe() {
   };
 }
 
+/* ─────────────────────────── đơn hàng (G2-G1) ─────────────────────────── */
+
+/**
+ * BA CON SỐ ĐƠN, ĐO BA CÂU HỎI KHÁC NHAU. Đừng chọn một cái rồi gọi nó là «số đơn».
+ *
+ * Truy 26/08 tận nơi tính:
+ *
+ * ① `botTuTao` — `src/stats.js#incOrder`, gọi từ `src/tools.js:202` khi CHÍNH BOT tạo đơn
+ *    bằng lời gọi công cụ. Khử trùng theo (page, khách) ⇒ mỗi khách đếm một lần.
+ *    Phạm vi: TOÀN THỜI GIAN. Đo 26/08: **269**.
+ *
+ * ② `posQuyChoAi` — `src/pancake-orders.js#aiOrderStats`. Hỏi thẳng POS Pancake lấy đơn
+ *    THẬT, giữ đơn nào có `conversation_id` thuộc tập hội thoại AI, bỏ đơn huỷ/hoàn.
+ *    Phạm vi: **60 NGÀY GẦN NHẤT**. Đo 26/08: **907**.
+ *
+ * ③ `hoiThoaiCoDon` — cùng phép quét ②, nhưng đếm số HỘI THOẠI thay vì số đơn.
+ *    Đo 26/08: **893**.
+ *
+ * ① và ② lệch hơn ba lần và CẢ HAI ĐỀU ĐÚNG: ① là «bot tự tay chốt bao nhiêu đơn», ② là
+ * «bao nhiêu đơn thật ở POS đến từ hội thoại có AI tham gia» — khách chat với bot rồi sale
+ * chốt hộ, hoặc khách tự đặt sau khi chat, đều vào ② mà không vào ①.
+ *
+ * Cộng chúng lại, hay lấy một cái rồi gọi là «số đơn», đều là trả lời sai. Trả cả ba ra
+ * kèm nhãn, và để màn nói rõ từng cái đo gì.
+ */
+export async function donHangToanHe() {
+  const d = await goi('/orders', { hetGio: 25000 });
+  const trang = (d && d.pages) || {};
+  const page = Object.entries(trang).map(([pageId, v]) => ({
+    pageId: String(pageId),
+    hoiThoaiCoDon: Number(v.aiOrders || 0),
+    posQuyChoAi: Number(v.aiOrderCount || 0),
+    // `stale: true` = lượt quét này HỎNG và đang hiện lại số của lần trước. Phải đi tiếp ra
+    // màn, không nuốt: một con số cũ trông y hệt một con số mới.
+    soCu: v.stale === true,
+  }));
+  return {
+    bat: d?.enabled === true,
+    // `partial` = có page quét lỗi ⇒ tổng đang THIẾU, không phải đang đúng.
+    thieu: d?.partial === true,
+    soPageQuetLoi: Number(d?.failedPages || 0),
+    quetLuc: d?.scannedAt ? new Date(Number(d.scannedAt)).toISOString() : null,
+    page,
+  };
+}
+
 /* ─────────────────────────── chi phí AI (G2-G2) ─────────────────────────── */
 
 /**

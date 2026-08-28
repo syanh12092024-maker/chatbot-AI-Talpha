@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Báo cáo — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3; --xam:#8b95a1;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1080px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  /* ba thước — cố ý KHÔNG xếp thành hàng cộng được */
+  .thuoc{display:grid;gap:11px}
+  .thuoc .t{border:1px solid var(--line);border-left:4px solid var(--pri);border-radius:10px;
+            padding:13px 15px;display:flex;gap:15px;align-items:flex-start;background:#fff}
+  .thuoc .t .n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;
+               min-width:92px;text-align:right;color:var(--pri)}
+  .thuoc .t.mu{border-left-color:var(--xam)} .thuoc .t.mu .n{color:var(--xam);font-size:19px}
+  .thuoc .t .d{flex:1;min-width:0}
+  .thuoc .t .ten{font-weight:600;margin-bottom:3px}
+  .thuoc .t .mo{color:var(--muted);font-size:12px;line-height:1.55}
+  .thuoc .t .kh{margin-top:5px;font-size:11.5px}
+  .kh .b{display:inline-block;background:#f1f3f5;color:#344054;border-radius:20px;padding:2px 9px;font-weight:600}
+
+  .khongCong{background:var(--warnSoft);border:1px solid #f0d3a4;color:#8a4a06;border-radius:var(--r);
+             padding:12px 15px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
+  .khongCong b{color:#7a3f05}
+  .canh{background:var(--warnSoft);border:1px solid #f0d3a4;color:#8a4a06;border-radius:10px;
+        padding:10px 13px;margin-top:10px;line-height:1.6;font-size:12px}
+  .mu2{background:#fbfcfd;border:1px dashed #cfd6dd;border-radius:var(--r);padding:14px 16px;line-height:1.65}
+  .mu2 .ti{font-weight:600;margin-bottom:4px}
+  .mu2 .di{margin-top:8px;font-size:12px;color:var(--muted)}
+
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:#fafbfc}
+  th.p,td.p{text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:last-child td{border-bottom:0}
+  .bao{display:block;overflow-x:auto}
+  .the{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+  .the.cu{background:var(--warnSoft);color:#8a4a06}
+
+  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
+  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .nho{color:var(--muted);font-size:11.5px;line-height:1.5}
+  code{background:#f1f3f5;padding:1px 5px;border-radius:4px;font-size:11.5px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  @media (max-width:720px){
+    header{padding:12px 14px} main{padding:12px 14px 50px}
+    .than{padding:12px} th,td{padding:8px 9px}
+    .thuoc .t{padding:11px 12px;gap:11px} .thuoc .t .n{min-width:64px;font-size:21px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Báo cáo</h1>
+  <span class="sub" id="hTeam">…</span>
+  <span class="sp"></span>
+  <a href="/chi-phi">Chi phí AI →</a>
+  <a href="/trang-chu">← Trang chủ</a>
+</header>
+
+<main>
+  <div class="khongCong" id="khongCong"></div>
+
+  <div class="panel">
+    <h2>Luồng Messenger <span class="hint" id="hQuet"></span></h2>
+    <div class="than"><div class="thuoc" id="thuoc"></div><div id="canh"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Luồng trang bán hàng</h2>
+    <div class="than"><div id="tbh"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Theo page <span class="hint" id="hSo"></span>
+      <span class="sp"></span><span class="hint">xếp theo đơn POS quy cho AI</span></h2>
+    <div id="bang"><div class="than nho">Đang tải…</div></div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const d0 = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN'));
+
+async function goi(u) {
+  const r = await fetch(u, { credentials: 'same-origin' });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Lỗi ' + r.status);
+  return j;
+}
+
+/** Ba thước xếp DỌC, không xếp ngang: xếp ngang là mời người ta cộng lại. */
+function veThuoc(m, T) {
+  const hang = [
+    { k: T.POS_QUY_CHO_AI, v: m.posQuyChoAi },
+    { k: T.BOT_TU_TAO, v: m.botTuTao },
+    { k: T.HOI_THOAI_CO_DON, v: m.hoiThoaiCoDon },
+  ];
+  $('#thuoc').innerHTML = hang.map((x) => `
+    <div class="t ${x.v == null ? 'mu' : ''}">
+      <div class="n">${x.v == null ? '—' : d0(x.v)}</div>
+      <div class="d">
+        <div class="ten">${esc(x.k.ten)}</div>
+        <div class="mo">${esc(x.k.doGi)}</div>
+        <div class="kh"><span class="b">${esc(x.k.khoang)}</span>
+          <span class="nho"> · nguồn: ${esc(x.k.nguon.replace(/`/g, ''))}</span></div>
+      </div>
+    </div>`).join('');
+}
+
+function veCanh(m) {
+  let h = '';
+  if (m.thieu && m.thieu.co) h += `<div class="canh">⚠️ <b>${esc(m.thieu.noi)}</b></div>`;
+  if (m.soCu) h += `<div class="canh">🕗 ${esc(m.soCu.noi)}</div>`;
+  $('#canh').innerHTML = h;
+}
+
+function veBang(d) {
+  const ds = d.messenger.page.filter((p) => p.posQuyChoAi > 0 || p.hoiThoaiCoDon > 0);
+  $('#hSo').textContent = `${ds.length} page có đơn`;
+  const b = $('#bang');
+  if (!ds.length) {
+    b.innerHTML = `<div class="trong"><div class="ti">${esc(d.trong ? d.trong.noi : 'Chưa page nào có đơn')}</div>
+      <div>${esc(d.trong ? d.trong.diTiep : '')}</div></div>`;
+    return;
+  }
+  b.innerHTML = `<div class="bao"><table>
+    <thead><tr><th>Page</th><th class="p">Đơn POS quy cho AI</th><th class="p">Hội thoại có đơn</th><th>Marketer</th></tr></thead>
+    <tbody>${ds.map((p) => `
+      <tr>
+        <td><b>${esc(p.ten)}</b><div class="nho">${esc(p.pageId)}</div>
+          ${p.soCu ? '<span class="the cu">số lần quét trước</span>' : ''}</td>
+        <td class="p"><b>${d0(p.posQuyChoAi)}</b></td>
+        <td class="p">${d0(p.hoiThoaiCoDon)}</td>
+        <td class="nho">${esc(p.marketer) || '<i>chưa gán</i>'}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+}
+
+async function tai() {
+  try {
+    const d = await goi('/api/bao-cao');
+    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    $('#khongCong').innerHTML = `🚫 <b>Màn này KHÔNG cộng.</b> ${esc(d.viSaoKhongCong.replace(/`/g, ''))}`;
+
+    // luồng trang bán hàng — chưa có nguồn
+    const t = d.trangBanHang;
+    $('#tbh').innerHTML = `<div class="mu2">
+      <div class="ti">— chưa đo được</div>
+      <div>${esc(t.noi)}</div>
+      <div class="di">👉 ${esc(t.diTiep.replace(/\*\*/g, ''))}</div></div>`;
+
+    if (!d.messenger) {
+      $('#thuoc').innerHTML = `<div class="mu2"><div class="ti">${esc(d.trong.noi)}</div>
+        <div class="di">👉 ${esc(d.trong.diTiep)}</div></div>`;
+      $('#bang').innerHTML = '';
+      return;
+    }
+    if (d.messenger.quetLuc) {
+      $('#hQuet').textContent = 'quét POS lúc ' + new Date(d.messenger.quetLuc).toLocaleString('vi-VN', { hour12: false });
+    }
+    veThuoc(d.messenger, d.thuoc);
+    veCanh(d.messenger);
+    veBang(d);
+  } catch (e) {
+    $('#bang').innerHTML = `<div class="than"><div class="canh" style="margin:0">
+      <b>Không đọc được báo cáo:</b> ${esc(e.message)}</div></div>`;
+  }
+}
+
+tai();
+</script>
+</body>
+</html>
