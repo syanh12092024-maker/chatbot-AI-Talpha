@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hồ sơ khách hàng — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3; --xam:#8b95a1;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1120px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  .kenh{display:grid;gap:9px}
+  .kenh .k{border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:10px;
+           padding:11px 14px;display:flex;gap:12px;align-items:flex-start;background:#fff}
+  .kenh .k.chua{border-left-color:var(--bad);background:#fff6f6}
+  .kenh .k .ic{font-size:15px;line-height:1.3}
+  .kenh .k .t{flex:1;min-width:0}
+  .kenh .k .ten{font-weight:600;margin-bottom:2px}
+  .kenh .k .mo{color:var(--muted);font-size:12px;line-height:1.55}
+  .kenh .k.chua .mo{color:#7f1d1d}
+  .kenh .k .dt{margin-top:6px;font-size:11.5px;line-height:1.6;background:#fdecec;color:#7f1d1d;
+               border-radius:8px;padding:8px 10px}
+
+  .canh{background:var(--warnSoft);border:1px solid #f0d3a4;color:#8a4a06;border-radius:var(--r);
+        padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
+
+  .loc{display:flex;gap:9px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--line);
+       background:#fafbfc;flex-wrap:wrap}
+  input[type=search]{font:inherit;padding:7px 11px;border:1px solid var(--line);border-radius:8px;
+        background:#fff;color:var(--ink);min-width:220px;flex:1;max-width:340px}
+  button{font:inherit;border:1px solid var(--line);background:#fff;color:#344054;border-radius:8px;
+         padding:6px 13px;cursor:pointer;font-weight:600}
+  button[disabled]{opacity:.45;cursor:not-allowed}
+
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:#fafbfc}
+  th.p,td.p{text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:last-child td{border-bottom:0}
+  .bao{display:block;overflow-x:auto}
+  .the{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+  .the.gop{background:var(--warnSoft);color:#8a4a06}
+  .the.mu{background:#f1f3f5;color:var(--xam)}
+  .the.hoan{background:var(--badSoft);color:#991b1b}
+  .sdt{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  .trang{display:flex;gap:8px;align-items:center;padding:11px 15px;border-top:1px solid var(--line);
+         background:#fafbfc;flex-wrap:wrap}
+  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
+  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .nho{color:var(--muted);font-size:11.5px;line-height:1.5}
+  code{background:#f1f3f5;padding:1px 5px;border-radius:4px;font-size:11.5px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  @media (max-width:720px){
+    header{padding:12px 14px} main{padding:12px 14px 50px}
+    .than{padding:12px} th,td{padding:8px 8px}
+    input[type=search]{min-width:0}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hồ sơ khách hàng</h1>
+  <span class="sub" id="hTeam">…</span>
+  <span class="sp"></span>
+  <a href="/rui-ro-hoan">Rủi ro hoàn →</a>
+  <a href="/trang-chu">← Trang chủ</a>
+</header>
+
+<main>
+  <div id="dai"></div>
+
+  <div class="panel">
+    <h2>Ba kênh <span class="hint">kênh nào gộp được, kênh nào chưa</span></h2>
+    <div class="than"><div class="kenh" id="kenh"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Khách <span class="hint" id="hSo"></span>
+      <span class="sp"></span><span class="hint">gộp theo số điện thoại</span></h2>
+    <div class="loc">
+      <input type="search" id="tim" placeholder="Tìm theo số điện thoại hoặc tên…" />
+      <button id="bTim">Tìm</button>
+      <span class="nho" id="mTim"></span>
+    </div>
+    <div id="bang"><div class="than nho">Đang tải…</div></div>
+    <div class="trang" id="phanTrang" hidden></div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const d0 = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN'));
+
+let trang = 0; let tim = '';
+
+async function goi(u) {
+  const r = await fetch(u, { credentials: 'same-origin' });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Lỗi ' + r.status);
+  return j;
+}
+
+function veKenh(ds) {
+  $('#kenh').innerHTML = ds.map((k) => `
+    <div class="k ${k.noiDuoc ? '' : 'chua'}">
+      <span class="ic">${k.noiDuoc ? '✅' : '⛔'}</span>
+      <div class="t">
+        <div class="ten">${esc(k.ten)} <span class="nho">— khoá: ${esc(String(k.khoa).replace(/`/g, ''))}</span></div>
+        <div class="mo">${esc(k.noi.replace(/`/g, ''))}</div>
+        ${k.diTiep ? `<div class="dt">${esc(k.diTiep.replace(/\*\*/g, '').replace(/`/g, ''))}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function veDai(d) {
+  let h = '';
+  const k = d.dem;
+  if (k.soBiTach) {
+    h += `<div class="canh">🔗 <b>${d0(k.soBiTach)} người</b> đang nằm ở nhiều dòng
+      <code>khach</code> khác nhau — màn đã gộp theo số điện thoại.
+      Không gộp thì cùng một người hiện nhiều lần với nhiều lịch sử mua khác nhau.</div>`;
+  }
+  if (k.soKhongCoSo) {
+    h += `<div class="canh">📵 <b>${d0(k.soKhongCoSo)} dòng khách KHÔNG có số điện thoại</b> —
+      không gộp được, nên không nằm trong bảng dưới.</div>`;
+  }
+  if (k.donKhongQuyDuoc) {
+    h += `<div class="canh">🧾 <b>${d0(k.donKhongQuyDuoc)} đơn</b> chưa nối được về khách nào.</div>`;
+  }
+  if (k.chamTran) {
+    h += `<div class="canh">📏 <b>Đã đọc tới trần</b> — bảng dưới là MỘT PHẦN, không phải toàn bộ.</div>`;
+  }
+  $('#dai').innerHTML = h;
+}
+
+function veBang(d) {
+  $('#hSo').textContent = `${d0(d.trang.tong)} người · ${d0(d.dem.soDongKhach)} dòng`;
+  const b = $('#bang');
+  if (!d.khach.length) {
+    b.innerHTML = `<div class="trong"><div class="ti">${esc(d.trong ? d.trong.noi : 'Không có khách')}</div>
+      ${d.trong && d.trong.diTiep ? `<div>${esc(d.trong.diTiep)}</div>` : ''}</div>`;
+    return;
+  }
+  b.innerHTML = `<div class="bao"><table>
+    <thead><tr><th>Số điện thoại</th><th>Tên</th><th class="p">Đơn</th><th class="p">Hoàn</th>
+      <th>Hội thoại</th><th class="p">Tiền</th><th>Luồng</th></tr></thead>
+    <tbody>${d.khach.map((x) => `
+      <tr>
+        <td><span class="sdt">${esc(x.so)}</span>
+          ${x.soDongGop > 1 ? `<span class="the gop">gộp ${x.soDongGop} dòng</span>` : ''}</td>
+        <td>${esc(x.ten) || '<span class="nho">—</span>'}
+          ${x.thiTruong ? `<div class="nho">${esc(x.thiTruong)}</div>` : ''}</td>
+        <td class="p"><b>${d0(x.soDon)}</b></td>
+        <td class="p">${x.soDonHoan
+          ? `<span class="the hoan">${x.soDonHoan}${x.tiLeHoan != null ? ' · ' + Math.round(x.tiLeHoan * 100) + '%' : ''}</span>`
+          : '<span class="nho">0</span>'}</td>
+        <td><span class="the mu">chưa nối</span></td>
+        <td class="p">${x.soDonCoTien ? d0(x.tongTien) : '<span class="nho">—</span>'}
+          ${!x.tienDayDu && x.soDon ? `<div class="nho">${x.soDonCoTien}/${x.soDon} đơn có tiền</div>` : ''}</td>
+        <td class="nho">${x.luong.map(esc).join(', ') || '—'}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+}
+
+function vePhanTrang(t) {
+  const soTrang = Math.ceil(t.tong / t.moiTrang);
+  if (soTrang <= 1) { $('#phanTrang').hidden = true; return; }
+  $('#phanTrang').hidden = false;
+  $('#phanTrang').innerHTML = `
+    <button id="tr" ${t.hienTai <= 0 ? 'disabled' : ''}>← Trước</button>
+    <span class="nho">${t.hienTai * t.moiTrang + 1}–${Math.min((t.hienTai + 1) * t.moiTrang, t.tong)} / ${d0(t.tong)}</span>
+    <button id="sa" ${t.hienTai >= soTrang - 1 ? 'disabled' : ''}>Sau →</button>`;
+  const a = $('#tr'); const b = $('#sa');
+  if (a) a.onclick = () => { trang -= 1; tai(); };
+  if (b) b.onclick = () => { trang += 1; tai(); };
+}
+
+async function tai() {
+  try {
+    const d = await goi(`/api/ho-so-khach?trang=${trang}&tim=${encodeURIComponent(tim)}`);
+    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    veDai(d); veKenh(d.kenh || []); veBang(d); vePhanTrang(d.trang);
+    $('#mTim').textContent = tim ? `lọc: "${tim}"` : '';
+  } catch (e) {
+    $('#bang').innerHTML = `<div class="than"><div class="canh" style="margin:0">
+      <b>Không đọc được:</b> ${esc(e.message)}</div></div>`;
+  }
+}
+
+$('#bTim').onclick = () => { tim = $('#tim').value.trim(); trang = 0; tai(); };
+$('#tim').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#bTim').click(); });
+
+tai();
+</script>
+</body>
+</html>

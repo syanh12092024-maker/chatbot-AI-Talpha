@@ -59,6 +59,10 @@ import {
 } from './ui/bo-luat/index.js';
 import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe } from './noi-day/cau-bot-v1.js';
 import {
+  datTaoTruyVan as datTruyVanKhach,
+  datChanDangNhap as datChanDangNhapKhach, datChanVai as datChanVaiKhach, taoRouterKhach,
+} from './ui/ho-so-khach/index.js';
+import {
   datTaoTruyVan as datTruyVanRuiRo,
   datChanDangNhap as datChanDangNhapRuiRo, datChanVai as datChanVaiRuiRo, taoRouterRuiRo,
 } from './ui/rui-ro-hoan/index.js';
@@ -216,6 +220,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datDocKhoAnh(kho);
   // Màn sáu chặng dùng LẠI cả hai bộ đọc — cửa kiểm và cấu hình kịch bản. Không bộ nào riêng.
   const docTien = typeof docChiPhi === 'function' ? docChiPhi : chiPhiToanHe;
+  datTruyVanKhach(taoTruyVan);
   datTruyVanRuiRo(taoTruyVan);
   datTruyVanBaoCao(taoTruyVan);
   datDocDon(typeof docDonHang === 'function' ? docDonHang : donHangToanHe);
@@ -354,6 +359,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiBaoCao(batBuocVaiHTTP);
   datChanDangNhapRuiRo(batBuocDangNhap);
   datChanVaiRuiRo(batBuocVaiHTTP);
+  datChanDangNhapKhach(batBuocDangNhap);
+  datChanVaiKhach(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -381,7 +388,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterChiPhi());     //   /chi-phi · /api/chi-phi
   app.use(taoRouterBaoCao());     //   /bao-cao · /api/bao-cao
   app.use(taoRouterRuiRo());      //   /rui-ro-hoan · /api/rui-ro-hoan
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng → trang chủ → sản phẩm & kho → thư viện ảnh → đưa lên chạy → chi phí AI → báo cáo → rủi ro hoàn');
+  app.use(taoRouterKhach());      //   /ho-so-khach · /api/ho-so-khach
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng → trang chủ → sản phẩm & kho → thư viện ảnh → đưa lên chạy → chi phí AI → báo cáo → rủi ro hoàn → hồ sơ khách');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };
