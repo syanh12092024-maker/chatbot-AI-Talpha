@@ -120,8 +120,18 @@ async function goi(duong, { phuongThuc = 'GET', than = null, ghi = false, hetGio
       signal: bo,
     });
   } catch (e) {
-    // Bot không chạy là một sự thật đáng nói, không phải một lỗi 500 vô danh: nó nghĩa là
-    // công tắc bot đang KHÔNG ai điều khiển được, kể cả bằng dashboard cũ.
+    // HẾT GIỜ ≠ BOT CHẾT. Phân biệt hai cảnh, vì lời khuyên đi kèm khác hẳn nhau:
+    //   · hết giờ  → bot vẫn chạy, chỉ đang làm việc lâu (ví dụ `/orders` quét POS từng
+    //                page khi cache nguội, có thể mất vài phút). Bảo người ta đi kiểm
+    //                «bot có chạy không» là đẩy họ đi tìm một lỗi không có.
+    //   · không nối được → bot thật sự không trả lời.
+    const tenLoi = String((e && (e.name || e.message)) || '');
+    if (/AbortError|TimeoutError|aborted|timeout/i.test(tenLoi)) {
+      throw new LoiCauBotHong(
+        `Tiến trình bot chưa trả lời trong ${Math.round(hetGio / 1000)} giây cho \`${duong}\` — `
+        + 'bot VẪN ĐANG CHẠY, chỉ là lượt này lâu. Thử lại sau ít phút.', 504,
+      );
+    }
     throw new LoiCauBotHong('Không gọi được tiến trình bot ở ' + gocBot()
       + ' — bot có đang chạy không? (' + (e && e.message ? e.message : e) + ')');
   }
@@ -219,7 +229,11 @@ export async function sanSangToanHe() {
  * kèm nhãn, và để màn nói rõ từng cái đo gì.
  */
 export async function donHangToanHe() {
-  const d = await goi('/orders', { hetGio: 25000 });
+  // ⚠️ HẾT-GIỜ 60 GIÂY. `/orders` CHỜ QUÉT XONG khi cache nguội — nó hỏi POS Pancake cho
+  //    từng page, tới 12 trang × 100 đơn mỗi page. Có cache thì trả trong ~12 ms; nguội thì
+  //    có thể mất vài phút. 60 giây là chỗ dừng: đủ cho phần lớn lượt quét, và không bắt
+  //    người dùng ngồi nhìn màn trắng lâu hơn thế. Quá thì màn báo «bot vẫn chạy, thử lại».
+  const d = await goi('/orders', { hetGio: 60000 });
   const trang = (d && d.pages) || {};
   const page = Object.entries(trang).map(([pageId, v]) => ({
     pageId: String(pageId),
