@@ -1051,9 +1051,9 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
-- 26/08 · A7-3 → ✅ xong — `timKhach`/`docHoSoKhach` ở `src/orders/doc-ho-so.js`; KHÔNG dựng phép gộp thứ hai (gộp đã ở tầng ghi), KHÔNG khai đã gộp WhatsApp, tỉ lệ hoàn chỉ ĐỌC kèm ngày chấm · commit <hash3> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md
-- 26/08 · A7-3 → đo trên Postgres 16.15 THẬT: cổng a7-3 9/9 rc=0 · bộ ca 12 pass/0 fail · hồi quy 495 ca 481 pass/3 fail (chỉ D1·D9·D10 có sẵn) · commit <hash3> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md
-- 26/08 · A7-3 → 🧭 cổng bắt tội file vì đã ghi lý do · vòng nhập thật mà `await import()` chỉ giấu · ca H7 rỗng, H12 sinh từ đảo-vá — chi tiết §9 · commit <hash3> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md
+- 26/08 · A7-3 → ✅ xong — `timKhach`/`docHoSoKhach` ở `src/orders/doc-ho-so.js`; KHÔNG dựng phép gộp thứ hai (gộp đã ở tầng ghi), KHÔNG khai đã gộp WhatsApp, tỉ lệ hoàn chỉ ĐỌC kèm ngày chấm · commit ac41ab9 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md
+- 26/08 · A7-3 → đo trên Postgres 16.15 THẬT: cổng a7-3 9/9 rc=0 · bộ ca 12 pass/0 fail · hồi quy 495 ca 481 pass/3 fail (chỉ D1·D9·D10 có sẵn) · commit ac41ab9 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md
+- 26/08 · A7-3 → 🧭 cổng bắt tội file vì đã ghi lý do · vòng nhập thật mà `await import()` chỉ giấu · ca H7 rỗng, H12 sinh từ đảo-vá — chi tiết §9 · commit ac41ab9 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md
 
 - 26/08 · A7-2 → ✅ xong — `noiKhachChoHoiThoai()` nối `hoi_thoai.khach_id` bằng ĐÚNG khoá của cửa POS; đi bằng `suaTheoId` chứ không đẻ cửa UPDATE hẹp thứ NĂM; hội thoại không tra được nước thì BỎ QUA + kê tên page · commit 361144b · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
 - 26/08 · A7-2 → đo trên Postgres 16.15 THẬT: cổng a7-2 8/8 rc=0 · bộ ca 10 pass/0 fail · ca chính POS-trước-Messenger-sau ra ĐÚNG 1 hồ sơ · hồi quy 482 ca 467 pass/4 fail (cùng 4 cái có sẵn) · commit 361144b · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
