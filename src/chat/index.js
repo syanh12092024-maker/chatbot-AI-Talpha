@@ -9,3 +9,9 @@ export {
   themMocLuot,
 } from "./trang-thai.js";
 export { suaHoiThoai, baoDamHoiThoai, docHoiThoaiTheoPageText } from "./kho.js";
+export {
+  noiKhachChoHoiThoai,
+  viSaoRong,
+  CAU_TIM,
+  TRAN_MOT_LUOT,
+} from "./ho-so-khach.js";

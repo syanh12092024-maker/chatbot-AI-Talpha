@@ -534,6 +534,21 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   và sau-013 trên CÙNG cây CÙNG dữ liệu ra **y hệt 26/3** ⇒ không phải hồi quy. Người sau đọc
   kết quả quét phải hỏi «đo trên dữ liệu NÀO» trước khi nhận hay chối một dòng đỏ — án lệ #8.
 
+- 26/08 · A7-2 — 🧭 **ĐẢO-VÁ SỐNG SÓT CẢ CHÍN CA, VÀ NÓ ĐÚNG KHI LÀM THẾ.** Đổi
+  `khoaKhach(h.market, …)` → `khoaKhach(null, …)` trong `ho-so-khach.js` mà 9/9 ca vẫn
+  xanh. Không phải thước cùn hoàn toàn: câu tra CSDL còn kẹp `thi_truong = $2` nên hành vi
+  được cứu ở tầng dưới, đúng cảnh «cửa VÀO là tập MỞ, cửa RA đúng một cái» (án lệ #31).
+  Lỗ THẬT mà đột biến mở là **bản đồ trong lượt** (`banDo`): hai hội thoại cùng số KHÁC
+  NƯỚC trong CÙNG một lượt thì cái thứ hai ăn khách của cái thứ nhất và không lần nào chạm
+  CSDL để biết mình sai. Ca `G10` sinh ra TỪ lượt đảo-vá đó, và phép ⑤ của cổng a7-2 giữ nó
+  lại để không ai xoá mất mà cổng vẫn xanh. Bài học: đảo-vá KHÔNG đỏ thì câu hỏi đúng là
+  «nhánh nào của đột biến này chưa ai đo», không phải «vậy là code đúng rồi».
+
+- 26/08 · A7-2 — NGOÀI PHẠM VI, chưa sửa: `khach` vẫn **0 dòng** vì **chưa ai chạy đồng bộ
+  POS thật** (`docDon` trên 7 shop, 122.615 đơn). Code hai đầu đã sẵn và đã khớp nhau ở bộ
+  ca; thiếu đúng một lượt chạy. Lượt đó ghi vào CSDL thật nên là việc cần người gật — và
+  nên chạy SAU khi 013 lên được VPS, kẻo khách nạp vào theo khoá cũ rồi phải gỡ ngược.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -1010,6 +1025,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 26/08 · A7-2 → ✅ xong — `noiKhachChoHoiThoai()` nối `hoi_thoai.khach_id` bằng ĐÚNG khoá của cửa POS; đi bằng `suaTheoId` chứ không đẻ cửa UPDATE hẹp thứ NĂM; hội thoại không tra được nước thì BỎ QUA + kê tên page · commit <hash2> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
+- 26/08 · A7-2 → đo trên Postgres 16.15 THẬT: cổng a7-2 8/8 rc=0 · bộ ca 10 pass/0 fail · ca chính POS-trước-Messenger-sau ra ĐÚNG 1 hồ sơ · hồi quy 482 ca 467 pass/4 fail (cùng 4 cái có sẵn) · commit <hash2> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
+- 26/08 · A7-2 → 🧭 đảo-vá sống sót 9/9 ca ⇒ lộ nhánh `banDo` chưa ai đo, ca G10 sinh ra từ đó — chi tiết §9 · commit <hash2> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
+
 - 26/08 · A7-1 → ✅ xong — migration 013: khoá định danh khách là (team, NƯỚC, SĐT); nước lấy từ `ket_noi_pos.market` ngay tại `docDon`, `coalesce` bịt lỗ hai-NULL, có lưới migration lùi-và-kêu · commit 2d94649 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
 - 26/08 · A7-1 → đo trên Postgres 16.15 THẬT: cổng a7-1 6/6 rc=0 · bộ ca 11 pass/0 fail · đảo-vá bỏ nước ⇒ 2 ca đỏ · hồi quy 473 ca 458 pass/4 fail, cả 4 A/B ra có sẵn · commit 2d94649 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
 - 26/08 · A7-1 → 🧭 RF-23 gọi tên sai nước (nhóm 8 số 0 va chạm · Saudi∩UAE 6) · dân số đơn thật 122.615 chứ không 5.144 · cổng của tôi báo trượt cho thứ đang xanh — chi tiết §9 · commit 2d94649 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md

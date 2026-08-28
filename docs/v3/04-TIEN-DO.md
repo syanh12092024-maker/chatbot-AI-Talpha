@@ -495,6 +495,17 @@ Kế hoạch: `docs/v3/gd2/00-KE-HOACH-GD2.md`. Sáu module, làm TUẦN TỰ.
 
 | **A7-1** | Khoá định danh khách = (team, **NƯỚC**, SĐT) — migration 013 | ✅ **26/08** | cổng a7-1 **6/6 rc=0** · bộ ca **11 pass / 0 fail** trên Postgres 16.15 thật · **đảo-vá** bỏ nước khỏi khoá ⇒ 2 ca đỏ (thước có răng) · quét hồi quy 473 ca **458 pass / 4 fail**, cả 4 đã A/B là có sẵn |
 
+| **A7-2** | Nối hội thoại Messenger vào hồ sơ khách (`hoi_thoai.khach_id`) | ✅ **26/08** | cổng a7-2 **8/8 rc=0** · bộ ca **10 pass / 0 fail** · ca chính: POS tạo khách trước → Messenger NỐI VÀO, **1 hồ sơ / 2 kênh** · quét hồi quy 482 ca **467 pass / 4 fail** (cùng 4 cái có sẵn) |
+
+**A7-2 gỡ chặn màn «Hồ sơ khách hàng».** Chặn ghi ở bảng trên là *«`khach` 0 dòng **và**
+0/28.953 hội thoại có `khach_id`»* — vế thứ hai nay có cửa: `noiKhachChoHoiThoai()`
+(`src/chat/ho-so-khach.js`) nối bằng ĐÚNG khoá của cửa POS, nên hai kênh về một hồ sơ.
+Đo trên CSDL thật 26/08: **790/28.953** hội thoại có SĐT, **789/790 (99,9%)** tra được nước
+qua `pos_shop_id` — và 746 trong số đó là Saudi (520) + UAE (226), tức **94% nằm đúng cặp
+nước va chạm** mà A7-1 vừa tách. Làm A7-2 trước A7-1 thì 94% dữ liệu vào sai chỗ.
+
+⚠️ Vế thứ nhất (`khach` 0 dòng) vẫn chờ **chạy đồng bộ POS thật** — code đã sẵn, chưa chạy.
+
 **A7-1 · vì sao khoá cũ sai, đo 26/08 trên POS thật.** `UNIQUE (team_id, so_dien_thoai)` +
 bảy shop POS cùng ở team 1 = «một số điện thoại là một người, xuyên bảy nước». POS lưu SĐT
 ở dạng **nội địa, không mã nước** (Kuwait `66410373` · Saudi/UAE `5xxxxxxxx`) ⇒ `chuanHoaSdt`
