@@ -575,6 +575,36 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   một hình dạng lỗi với lượt đảo-vá của A7-2 hôm nay — **fixture dựng hai vế bằng nhau thì
   mọi luật phân biệt hai vế đều xanh giả**, đã là lần thứ ba kể từ B-Y7 25/08.
 
+- 28/08 · A7 (người A) — 🔴 **HAI BẢN KHAI CỦA LUẬT TẦNG HOÀN ĐÃ TRÔI KHỎI NHAU, VÀ ĐÂY LÀ
+  ĐƯỜNG TIỀN.** Màn «Rủi ro hoàn hàng» (`v3/src/ui/rui-ro-hoan/kho-rui-ro.js`, người B) tự
+  tính tầng hoàn thay vì đọc `khach.tang_hoan`. Lệch `src/orders/ti-le-hoan.js` ở **ba** chỗ:
+
+  | | `ti-le-hoan.js` (L3-M2, có đo) | màn của B |
+  |---|---|---|
+  | nhóm hoàn | `{4,5,6,7}` — **KHÔNG có 8** | `{4,5,6,7,`**`8`**`}` |
+  | mẫu số | đơn ĐÃ KẾT `{4,5,6,7,3,16}` | MỌI đơn |
+  | sàn | `toi_thieu_don_ket = 2` | không có |
+
+  Đo trên CSDL thật 28/08 (57.600 đơn đã nạp, lượt nạp CÒN ĐANG CHẠY): luật `ti-le-hoan`
+  ra **2.318** khách nhóm 30–65%, luật của màn ra **2.555**; riêng mã 8 làm **53** khách đổi
+  tỉ lệ. Mã 8 = `packing` là một bước **TIẾN** (án lệ L1-M1: `status_history` đơn 47397 UAE
+  đi `0→1→12→8`) — đếm nó là hoàn thì dán nhãn rủi ro cho khách đang được đóng gói.
+  `ti-le-hoan.js` decision ① ghi rõ bản v1 `src/pancake-orders.js:13` khai `{4,5,6,7,8}` là
+  **nợ N1, không phải chuẩn để chép theo** — và bản chép theo đã ra đời.
+
+  KHÔNG tự sửa: `v3/src/*` là đất người B (luật 4 §0a). Vì sao B phải tự tính thì cũng đã
+  ghi ngay trong file của B — *«cột `khach.tang_hoan` có sẵn nhưng chưa gán cho khách nào»*.
+  Đúng: job `chamTiLeHoan()` **chưa từng chạy** trên dữ liệu này (`tang_hoan` NULL trên
+  44.779/44.779 khách). **Việc của tôi là chạy job cho cột có số, để màn đọc cột thay vì đẻ
+  luật thứ hai** — làm ngay sau khi lượt nạp xong.
+
+- 28/08 · A7 (người A) — 🧭 **CON SỐ «945 KHÁCH HOÀN 30–64%» TRONG `04-TIEN-DO.md` ĐÃ CŨ LÚC
+  VỪA VIẾT RA.** Nó đo lúc `don_hang` có 27.719 dòng; lượt nạp POS vẫn đang chạy và nay đã
+  57.600 (đích: 122.615). Đo lại cùng luật của màn ngay lúc này ra **2.555**. Không phải lỗi
+  của ai — nhưng đúng cái bẫy §9 đã ghi 26/08 về mốc «5.144 đơn»: **một con số đo giữa lượt
+  nạp mà viết vào tài liệu như số cuối là một con số sẽ nói dối người đọc sau.** Mọi phân bố
+  tầng hoàn phải đo LẠI khi lượt nạp báo XONG, và câu kết luận phải kèm «đo trên N đơn».
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
