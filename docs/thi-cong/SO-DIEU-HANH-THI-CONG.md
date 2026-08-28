@@ -1025,9 +1025,9 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
-- 26/08 · A7-2 → ✅ xong — `noiKhachChoHoiThoai()` nối `hoi_thoai.khach_id` bằng ĐÚNG khoá của cửa POS; đi bằng `suaTheoId` chứ không đẻ cửa UPDATE hẹp thứ NĂM; hội thoại không tra được nước thì BỎ QUA + kê tên page · commit <hash2> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
-- 26/08 · A7-2 → đo trên Postgres 16.15 THẬT: cổng a7-2 8/8 rc=0 · bộ ca 10 pass/0 fail · ca chính POS-trước-Messenger-sau ra ĐÚNG 1 hồ sơ · hồi quy 482 ca 467 pass/4 fail (cùng 4 cái có sẵn) · commit <hash2> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
-- 26/08 · A7-2 → 🧭 đảo-vá sống sót 9/9 ca ⇒ lộ nhánh `banDo` chưa ai đo, ca G10 sinh ra từ đó — chi tiết §9 · commit <hash2> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
+- 26/08 · A7-2 → ✅ xong — `noiKhachChoHoiThoai()` nối `hoi_thoai.khach_id` bằng ĐÚNG khoá của cửa POS; đi bằng `suaTheoId` chứ không đẻ cửa UPDATE hẹp thứ NĂM; hội thoại không tra được nước thì BỎ QUA + kê tên page · commit 361144b · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
+- 26/08 · A7-2 → đo trên Postgres 16.15 THẬT: cổng a7-2 8/8 rc=0 · bộ ca 10 pass/0 fail · ca chính POS-trước-Messenger-sau ra ĐÚNG 1 hồ sơ · hồi quy 482 ca 467 pass/4 fail (cùng 4 cái có sẵn) · commit 361144b · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
+- 26/08 · A7-2 → 🧭 đảo-vá sống sót 9/9 ca ⇒ lộ nhánh `banDo` chưa ai đo, ca G10 sinh ra từ đó — chi tiết §9 · commit 361144b · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
 
 - 26/08 · A7-1 → ✅ xong — migration 013: khoá định danh khách là (team, NƯỚC, SĐT); nước lấy từ `ket_noi_pos.market` ngay tại `docDon`, `coalesce` bịt lỗ hai-NULL, có lưới migration lùi-và-kêu · commit 2d94649 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
 - 26/08 · A7-1 → đo trên Postgres 16.15 THẬT: cổng a7-1 6/6 rc=0 · bộ ca 11 pass/0 fail · đảo-vá bỏ nước ⇒ 2 ca đỏ · hồi quy 473 ca 458 pass/4 fail, cả 4 A/B ra có sẵn · commit 2d94649 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-1.md
