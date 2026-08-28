@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rủi ro hoàn hàng — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3; --xam:#8b95a1;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1000px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  .nguy{background:#fff4f4;border:1px solid #f0c2c2;border-left:4px solid var(--bad);
+        border-radius:var(--r);padding:13px 16px;margin-bottom:14px;line-height:1.65}
+  .nguy b{color:#991b1b}
+  .nguy .so{font-size:20px;font-weight:700;color:#991b1b;font-variant-numeric:tabular-nums}
+  .canh{background:var(--warnSoft);border:1px solid #f0d3a4;color:#8a4a06;border-radius:var(--r);
+        padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
+  .nguon{background:var(--priSoft);border:1px solid #b8dde0;color:#0b4a52;border-radius:var(--r);
+         padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
+
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:#fafbfc}
+  th.p,td.p{text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:last-child td{border-bottom:0}
+  .bao{display:block;overflow-x:auto}
+
+  /* ma trận — ô càng đậm càng nhiều người */
+  td.o{text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
+  td.o.z{color:#cfd6dd;font-weight:400}
+  td.o.n1{background:#fef6f6} td.o.n2{background:#fde8e8}
+  td.o.n3{background:#fbd5d5;color:#7f1d1d} td.o.n4{background:#f8bcbc;color:#7f1d1d}
+  td.tin{background:#f6fbf7}
+
+  .ss{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;
+      background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .ss .v{text-align:center}
+  .ss .v .n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+  .ss .v .c{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .ss .v.cu .n{color:var(--muted)} .ss .v.moi .n{color:var(--bad)}
+  .ss .mui{font-size:19px;color:var(--muted)}
+
+  .the{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+  .the.chua{background:var(--warnSoft);color:#8a4a06}
+  .nho{color:var(--muted);font-size:11.5px;line-height:1.55}
+  code{background:#f1f3f5;padding:1px 5px;border-radius:4px;font-size:11.5px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
+  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+
+  @media (max-width:720px){
+    header{padding:12px 14px} main{padding:12px 14px 50px}
+    .than{padding:12px} th,td{padding:8px 8px}
+    .ss{grid-template-columns:1fr;gap:8px} .ss .mui{transform:rotate(90deg)}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Rủi ro hoàn hàng</h1>
+  <span class="sub" id="hTeam">…</span>
+  <span class="sp"></span>
+  <a href="/bao-cao">Báo cáo →</a>
+  <a href="/trang-chu">← Trang chủ</a>
+</header>
+
+<main>
+  <div id="dai"></div>
+
+  <div class="panel">
+    <h2>Tỉ lệ hoàn <span class="hint">theo lằn ranh đề xuất — chưa phải chính sách</span></h2>
+    <div id="lanRanh"><div class="than nho">Đang tải…</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Cùng tỉ lệ, khác số đơn <span class="hint">ô xanh nhạt = đủ đơn để tỉ lệ có nghĩa</span></h2>
+    <div id="matTran"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Tài liệu nói vs đo được</h2>
+    <div class="than"><div id="soSanh"></div></div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const d0 = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN'));
+const pc = (x) => (x == null ? '—' : Math.round(x * 100) + '%');
+
+async function goi(u) {
+  const r = await fetch(u, { credentials: 'same-origin' });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Lỗi ' + r.status);
+  return j;
+}
+
+function veDai(d) {
+  let h = '';
+  // Cảnh báo trung tâm: tỉ lệ trên một đơn là nhiễu.
+  const c = d.canhBaoMotDon;
+  if (c) {
+    h += `<div class="nguy"><b>Tỉ lệ hoàn tính trên MỘT đơn không nói lên điều gì.</b><br>
+      ${esc(c.noi)}<div class="nho" style="margin-top:7px;color:#7f1d1d">${esc(c.viSao)}</div></div>`;
+  }
+  // Chính sách chưa chốt — nói trước khi người ta kịp coi bảng dưới là luật.
+  if (d.chinhSach && !d.chinhSach.daChot) {
+    h += `<div class="canh">⚖️ <b>Chưa có chính sách nào được áp.</b> ${esc(d.chinhSach.noi.replace(/`/g, ''))}
+      <br><span class="nho" style="color:#8a4a06">${esc(d.chinhSach.cot.replace(/`/g, ''))}</span></div>`;
+  }
+  if (d.chamTran && d.chamTran.co) {
+    h += `<div class="canh">📏 <b>${esc(d.chamTran.noi)}</b></div>`;
+  }
+  if (d.dem && d.dem.soDonKhongQuyDuoc) {
+    h += `<div class="nguon">ℹ️ Đọc ${d0(d.dem.soDonDoc)} đơn của ${d0(d.dem.soKhachCoDon)} khách.
+      <b>${d0(d.dem.soDonKhongQuyDuoc)} đơn</b> chưa nối được về khách nào — chúng không nằm trong bảng dưới.</div>`;
+  }
+  $('#dai').innerHTML = h;
+}
+
+function veLanRanh(ds) {
+  $('#lanRanh').innerHTML = `<div class="bao"><table>
+    <thead><tr><th>Lằn ranh</th><th class="p">Khách</th><th class="p">Đơn</th>
+      <th class="p">Đủ đơn để tin</th><th class="p">Chỉ có 1 đơn</th></tr></thead>
+    <tbody>${ds.map((r) => `
+      <tr>
+        <td><b>${esc(r.ten)}</b><div class="nho">${pc(r.tu)} – ${r.den > 1 ? '100%' : pc(r.den)}</div></td>
+        <td class="p"><b>${d0(r.soKhach)}</b></td>
+        <td class="p">${d0(r.soDon)}</td>
+        <td class="p" style="color:var(--ok)">${d0(r.soKhachDuTin)}</td>
+        <td class="p" style="color:var(--muted)">${d0(r.soKhachMotDon)}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+}
+
+function veMatTran(ds) {
+  if (!ds || !ds.length) { $('#matTran').innerHTML = ''; return; }
+  const cot = ds[0].o;
+  const dam = (n) => (n === 0 ? 'z' : n < 20 ? 'n1' : n < 100 ? 'n2' : n < 1000 ? 'n3' : 'n4');
+  $('#matTran').innerHTML = `<div class="bao"><table>
+    <thead><tr><th>Tỉ lệ hoàn</th>${cot.map((c) => `<th class="p">${esc(c.ten)}</th>`).join('')}</tr></thead>
+    <tbody>${ds.map((r) => `
+      <tr><td><b>${esc(r.ten.split('—')[0].trim())}</b></td>
+        ${r.o.map((o) => `<td class="o ${dam(o.so)} ${o.ma !== 'd1' && o.ma !== 'd2' ? 'tin' : ''}">${d0(o.so)}</td>`).join('')}
+      </tr>`).join('')}</tbody></table>
+    <div class="than nho">Hai cột phải là chỗ tỉ lệ bắt đầu có nghĩa. Hai cột trái, kể cả ô
+      đậm nhất, vẫn chỉ là một hai dữ kiện cho mỗi người.</div></div>`;
+}
+
+function veSoSanh(s) {
+  $('#soSanh').innerHTML = `<div class="ss">
+    <div class="v cu"><div class="n">${d0(s.taiLieuNoi)}</div><div class="c">tài liệu nói (đo 23/08)</div></div>
+    <div class="mui">→</div>
+    <div class="v moi"><div class="n">${d0(s.doDuoc)}</div><div class="c">đo được hôm nay, toàn bộ đơn</div></div>
+  </div>
+  <div class="nho" style="margin-top:10px">${esc(s.viSaoKhac.replace(/\*\*/g, ''))}</div>`;
+}
+
+async function tai() {
+  try {
+    const d = await goi('/api/rui-ro-hoan');
+    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    veDai(d);
+    if (!d.lanRanh || !d.dem.soKhachCoDon) {
+      $('#lanRanh').innerHTML = `<div class="trong"><div class="ti">${esc(d.trong ? d.trong.noi : 'Chưa có dữ liệu')}</div>
+        <div>${esc(d.trong ? d.trong.diTiep : '')}</div></div>`;
+      return;
+    }
+    veLanRanh(d.lanRanh);
+    veMatTran(d.theoSoDon);
+    veSoSanh(d.soLieu);
+  } catch (e) {
+    $('#lanRanh').innerHTML = `<div class="than"><div class="nguy" style="margin:0">
+      <b>Không đọc được:</b> ${esc(e.message)}</div></div>`;
+  }
+}
+
+tai();
+</script>
+</body>
+</html>
