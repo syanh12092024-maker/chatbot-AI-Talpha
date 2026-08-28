@@ -139,6 +139,27 @@ test('③c · tiền thiếu thì nói, không cộng ngầm', async () => {
   assert.equal(l.soDonCoTien, 1);
 });
 
+/* ═══════════ ③d CHẠM TRẦN PHẢI NÓI ═══════════ */
+
+test('③d · đọc chạm trần → NÓI RA, và nói cả chuyện tỉ lệ hai luồng cũng sai theo', async () => {
+  // Bắt được lúc soát bằng mắt 28/08: hai luồng cộng lại ra ĐÚNG 60.000 — bằng chằn chặn
+  // trần đọc — mà màn im lặng. Hai màn Rủi ro hoàn và Hồ sơ khách đã có cảnh báo này; màn
+  // này quên. Một tổng bị cắt trông y hệt một tổng đúng.
+  const nhieu = Array.from({ length: nk.TRAN_DOC }, (_, i) =>
+    d('x' + i, i % 2 ? 'messenger' : 'trang_ban_hang'));
+  dung({ don: nhieu });
+  const r = await nk.manNguon(bc());
+  assert.equal(r.chamTran.co, true);
+  assert.match(r.chamTran.noi, /MỘT PHẦN/i);
+  assert.match(r.chamTran.noi, /TỈ LỆ/i, 'phải nói cả chuyện tỉ lệ hai luồng sai theo');
+});
+
+test('③e · chưa chạm trần thì KHÔNG bịa cảnh báo', async () => {
+  dung({ don: [d('a', 'messenger')] });
+  const r = await nk.manNguon(bc());
+  assert.equal(r.chamTran.co, false);
+});
+
 /* ═══════════ ④ TEAM ═══════════ */
 
 test('④ · chỉ đơn của TEAM MÌNH', async () => {

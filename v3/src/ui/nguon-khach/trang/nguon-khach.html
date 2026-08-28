@@ -79,6 +79,8 @@
 </header>
 
 <main>
+  <div id="dai"></div>
+
   <div class="panel">
     <h2>Hai luồng chạy song song <span class="hint">chỉ gặp nhau ở đích</span></h2>
     <div class="than"><div class="so" id="luong"></div><div class="dich" id="dich"></div></div>
@@ -159,6 +161,9 @@ async function tai() {
   try {
     const d = await goi('/api/nguon-khach');
     $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    if (d.chamTran && d.chamTran.co) {
+      $('#dai').innerHTML = `<div class="canh">📏 <b>${esc(d.chamTran.noi)}</b></div>`;
+    }
     veLuong(d.luong);
     $('#dich').innerHTML = `↓ <b>Gặp nhau ở đây</b> ↓<br>${esc(d.gapNhauO)}
       ${d.donKhac ? `<div class="nho" style="margin-top:6px">${d0(d.donKhac.so)} đơn mang nguồn khác: ${d.donKhac.nguon.map(esc).join(', ')}</div>` : ''}`;

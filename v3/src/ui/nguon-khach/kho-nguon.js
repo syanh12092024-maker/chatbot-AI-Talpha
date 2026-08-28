@@ -31,6 +31,16 @@ export const VAI_VAO_DUOC = Object.freeze([VAI.QUAN_TRI, VAI.QUAN_LY, VAI.MARKET
 
 export const NGUON_DON = Object.freeze({ MESSENGER: 'messenger', TRANG: 'trang_ban_hang' });
 
+/**
+ * Trần đọc mỗi lượt. **Chạm trần thì PHẢI nói** — hai màn Rủi ro hoàn và Hồ sơ khách đã có
+ * cảnh báo này, màn Nguồn khách thì bản đầu QUÊN. Bắt được lúc soát bằng mắt 28/08: hai luồng
+ * cộng lại ra **đúng 60.000**, bằng chằn chặn trần — tức bảng đã bị cắt và màn im lặng.
+ *
+ * Một tổng bị cắt trông y hệt một tổng đúng, và ở màn này nó còn tệ hơn: tỉ lệ giữa hai luồng
+ * cũng sai theo, vì phép cắt không chia đều cho hai bên.
+ */
+export const TRAN_DOC = 60000;
+
 /** Bậc phễu theo thứ tự, tên tiếng Việt. Mã lấy từ `/ops/conv-state`. */
 export const BAC = Object.freeze([
   { ma: 'GREET', ten: 'Vừa chào' },
@@ -70,7 +80,8 @@ export async function manNguon(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
   const db = truyVan(bc);
 
-  const don = await db.chon(BANG_DON, {}, { gioiHan: 60000 });
+  const don = await db.chon(BANG_DON, {}, { gioiHan: TRAN_DOC });
+  const chamTran = don.length >= TRAN_DOC;
   const mes = don.filter((d) => String(d.nguon) === NGUON_DON.MESSENGER);
   const trang = don.filter((d) => String(d.nguon) === NGUON_DON.TRANG);
   const khac = don.filter((d) => ![NGUON_DON.MESSENGER, NGUON_DON.TRANG].includes(String(d.nguon)));
@@ -82,6 +93,11 @@ export async function manNguon(boiCanh) {
 
   return {
     teamId: bc.teamId,
+    chamTran: chamTran
+      ? { co: true, tran: TRAN_DOC,
+          noi: `Đã đọc tới trần ${TRAN_DOC} đơn — hai con số dưới đây là MỘT PHẦN, và TỈ LỆ `
+            + 'giữa hai luồng cũng sai theo, vì phép cắt không chia đều cho hai bên.' }
+      : { co: false },
     luong: [
       luong('messenger', 'Messenger', mes,
         'Khách nhắn trước, bot tư vấn rồi chốt TRONG hội thoại.'),
