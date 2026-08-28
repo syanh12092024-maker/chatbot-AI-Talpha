@@ -57,7 +57,11 @@ import {
   datChanDangNhap as datChanDangNhapBoLuat, datChanVai as datChanVaiBoLuat, taoRouterBoLuat,
   datCuaBoLuat, manBoLuat,
 } from './ui/bo-luat/index.js';
-import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe } from './noi-day/cau-bot-v1.js';
+import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/cau-bot-v1.js';
+import {
+  datTaoTruyVan as datTruyVanNguon, datDocPheu,
+  datChanDangNhap as datChanDangNhapNguon, datChanVai as datChanVaiNguon, taoRouterNguon,
+} from './ui/nguon-khach/index.js';
 import {
   datTaoTruyVan as datTruyVanKhach,
   datChanDangNhap as datChanDangNhapKhach, datChanVai as datChanVaiKhach, taoRouterKhach,
@@ -166,7 +170,7 @@ import {
  */
 export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa,
   docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
-  docChiPhi, docSoAiV3, docDonHang, docHaiLuong, ghiSoAi, canhBao, express } = {}) {
+  docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -220,6 +224,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datDocKhoAnh(kho);
   // Màn sáu chặng dùng LẠI cả hai bộ đọc — cửa kiểm và cấu hình kịch bản. Không bộ nào riêng.
   const docTien = typeof docChiPhi === 'function' ? docChiPhi : chiPhiToanHe;
+  datTruyVanNguon(taoTruyVan);
+  datDocPheu(typeof docPheu === 'function' ? docPheu : pheuHoiThoai);
   datTruyVanKhach(taoTruyVan);
   datTruyVanRuiRo(taoTruyVan);
   datTruyVanBaoCao(taoTruyVan);
@@ -361,6 +367,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiRuiRo(batBuocVaiHTTP);
   datChanDangNhapKhach(batBuocDangNhap);
   datChanVaiKhach(batBuocVaiHTTP);
+  datChanDangNhapNguon(batBuocDangNhap);
+  datChanVaiNguon(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -389,7 +397,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterBaoCao());     //   /bao-cao · /api/bao-cao
   app.use(taoRouterRuiRo());      //   /rui-ro-hoan · /api/rui-ro-hoan
   app.use(taoRouterKhach());      //   /ho-so-khach · /api/ho-so-khach
-  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng → trang chủ → sản phẩm & kho → thư viện ảnh → đưa lên chạy → chi phí AI → báo cáo → rủi ro hoàn → hồ sơ khách');
+  app.use(taoRouterNguon());      //   /nguon-khach · /api/nguon-khach
+  daNoi.push('router: bối cảnh → đăng nhập → chặn xuyên team → điều phối → cấu hình team → page & bot → kết nối → model AI → bộ luật chung → kỹ năng → prompt của page → kịch bản → sức khoẻ → nhật ký → AI đề xuất → cửa kiểm sẵn sàng → trang chủ → sản phẩm & kho → thư viện ảnh → đưa lên chạy → chi phí AI → báo cáo → rủi ro hoàn → hồ sơ khách → nguồn khách');
 
   for (const t of thieu) console.warn(`[vai-b] chưa nối: ${t}`);
   return { daNoi, thieu };

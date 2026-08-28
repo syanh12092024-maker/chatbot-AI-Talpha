@@ -203,6 +203,29 @@ export async function sanSangToanHe() {
   };
 }
 
+/* ─────────────────────────── phễu hội thoại (G2-G4) ─────────────────────────── */
+
+/**
+ * Phân bố hội thoại theo BẬC PHỄU và theo CHỦ SỞ HỮU, từ `/admin/api/ops/conv-state`.
+ *
+ * Đo 28/08: 29.557 hội thoại — GREET 20.702 · QUALIFY 5.190 · SELLING 680 · CLOSING 23 ·
+ * POST_SALE 1.978 · HANDOFF 984. Chủ sở hữu: BOTCAKE 20.702 · AI 5.876 · SALE 2.979.
+ *
+ * ⚠️ ĐÂY LÀ ẢNH CHỤP HIỆN TẠI, KHÔNG PHẢI DÒNG CHẢY. Mỗi hội thoại đứng ở đúng một bậc lúc
+ *    này; nó KHÔNG nói có bao nhiêu người đã đi qua bậc đó rồi rời đi. Lấy hiệu hai bậc rồi
+ *    gọi là «tỉ lệ rơi» là đọc sai bản chất — nơi gọi phải nói rõ điều đó.
+ */
+export async function pheuHoiThoai() {
+  const d = await goi('/ops/conv-state', { hetGio: 20000 });
+  const chung = (d && d.overall) || {};
+  return {
+    tong: Number(chung.total || 0),
+    theoBac: chung.byState || {},
+    theoChuSoHuu: chung.byOwner || {},
+    bac: Array.isArray(d?.states) ? d.states : [],
+  };
+}
+
 /* ─────────────────────────── đơn hàng (G2-G1) ─────────────────────────── */
 
 /**

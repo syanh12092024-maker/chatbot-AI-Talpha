@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nguồn khách vào — AI Closer v3</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
+    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
+    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
+    --warn:#b45309; --warnSoft:#fdf3e3; --xam:#8b95a1; --tim:#6d28d9; --timSoft:#f1ebfd;
+    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sp{flex:1}
+  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  main{padding:16px 22px 60px;max-width:1000px;margin:0 auto}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .panel h2 .sp{flex:1}
+  .than{padding:14px 15px}
+
+  /* hai luồng song song, gặp nhau ở đích */
+  .so{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .so .l{border:1px solid var(--line);border-top:4px solid var(--pri);border-radius:10px;padding:14px 15px}
+  .so .l:nth-child(2){border-top-color:var(--tim)}
+  .so .l .n{font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;color:var(--pri)}
+  .so .l:nth-child(2) .n{color:var(--tim)}
+  .so .l .ten{font-weight:600;margin:4px 0 3px}
+  .so .l .mo{color:var(--muted);font-size:12px;line-height:1.55}
+  .so .l .ph{margin-top:7px;font-size:11.5px;color:var(--muted)}
+  .dich{margin-top:12px;text-align:center;background:#fafbfc;border:1px dashed #cfd6dd;
+        border-radius:10px;padding:12px 15px;line-height:1.6;font-size:12.5px;color:var(--muted)}
+  .dich b{color:var(--ink)}
+
+  .bac{display:grid;gap:7px}
+  .bac .b{display:flex;align-items:center;gap:11px}
+  .bac .b .t{width:132px;flex:0 0 auto;font-size:12.5px}
+  .bac .b .thanh{flex:1;height:22px;background:#f1f3f5;border-radius:5px;overflow:hidden;position:relative}
+  .bac .b .thanh i{display:block;height:100%;background:var(--pri);opacity:.8}
+  .bac .b .s{width:78px;flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+
+  .canh{background:var(--warnSoft);border:1px solid #f0d3a4;color:#8a4a06;border-radius:var(--r);
+        padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
+  .mu2{background:#fbfcfd;border:1px dashed #cfd6dd;border-radius:var(--r);padding:14px 16px;line-height:1.65}
+  .mu2 .ti{font-weight:600;margin-bottom:4px}
+  .mu2 .di{margin-top:8px;font-size:12px;color:var(--muted)}
+  .cu{display:inline-block;background:#f1f3f5;color:var(--muted);border-radius:20px;
+      padding:2px 9px;font-size:11.5px;font-weight:600}
+
+  .nho{color:var(--muted);font-size:11.5px;line-height:1.55}
+  code{background:#f1f3f5;padding:1px 5px;border-radius:4px;font-size:11.5px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
+  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+
+  @media (max-width:720px){
+    header{padding:12px 14px} main{padding:12px 14px 50px}
+    .than{padding:12px} .so{grid-template-columns:1fr}
+    .bac .b .t{width:92px;font-size:11.5px} .bac .b .s{width:62px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Nguồn khách vào</h1>
+  <span class="sub" id="hTeam">…</span>
+  <span class="sp"></span>
+  <a href="/bao-cao">Báo cáo →</a>
+  <a href="/trang-chu">← Trang chủ</a>
+</header>
+
+<main>
+  <div class="panel">
+    <h2>Hai luồng chạy song song <span class="hint">chỉ gặp nhau ở đích</span></h2>
+    <div class="than"><div class="so" id="luong"></div><div class="dich" id="dich"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Chỗ rơi <span class="hint">số cũ 37,4% — «BUY NOW không được gửi WhatsApp»</span></h2>
+    <div class="than"><div id="choRoi"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Hội thoại đang đứng ở đâu <span class="hint" id="hPheu"></span></h2>
+    <div class="than"><div id="pheu"></div></div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const d0 = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN'));
+
+async function goi(u) {
+  const r = await fetch(u, { credentials: 'same-origin' });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Lỗi ' + r.status);
+  return j;
+}
+
+function veLuong(ds) {
+  $('#luong').innerHTML = ds.map((l) => `
+    <div class="l">
+      <div class="n">${d0(l.soDon)}</div>
+      <div class="ten">${esc(l.ten)}</div>
+      <div class="mo">${esc(l.moTa)}</div>
+      <div class="ph">${l.tienDayDu && l.soDonCoTien
+        ? `tổng tiền ${d0(l.tongTien)}`
+        : `<b>${d0(l.soDonCoTien)}/${d0(l.soDon)}</b> đơn có tổng tiền — số tiền chưa đủ để cộng`}</div>
+    </div>`).join('');
+}
+
+function veChoRoi(c) {
+  if (!c.doDuoc) {
+    // KHÔNG hiện 37,4% như một chỉ số đang sống — nó là số đo cũ.
+    $('#choRoi').innerHTML = `<div class="mu2">
+      <div class="ti">— chưa đo lại được <span class="cu">số cũ: ${Math.round(c.taiLieuNoi * 100)}%</span></div>
+      <div>${esc(c.noi.replace(/`/g, ''))}</div>
+      <div class="di">👉 ${esc(c.diTiep.replace(/`/g, ''))}</div></div>`;
+    return;
+  }
+  $('#choRoi').innerHTML = `<div class="canh">
+    <b>${d0(c.soKhongGui)}/${d0(c.soDonTrang)} đơn</b> từ trang bán hàng chưa được gửi WhatsApp
+    — <b>${Math.round(c.tiLe * 100)}%</b> <span class="cu">số cũ: ${Math.round(c.taiLieuNoi * 100)}%</span>
+    ${c.lyDo && c.lyDo.length ? `<div class="nho" style="margin-top:5px;color:#8a4a06">lý do: ${c.lyDo.map(esc).join(' · ')}</div>` : ''}
+  </div>`;
+}
+
+function vePheu(p) {
+  if (!p.docDuoc) {
+    $('#pheu').innerHTML = `<div class="mu2"><div class="ti">— chưa đọc được</div>
+      <div>${esc(p.noi)}</div><div class="di">👉 ${esc(p.diTiep)}</div></div>`;
+    return;
+  }
+  $('#hPheu').textContent = `${d0(p.tong)} hội thoại · toàn hệ, không theo team`;
+  const max = Math.max(...p.bac.map((b) => b.so), 1);
+  $('#pheu').innerHTML = `<div class="canh">📸 ${esc(p.canhBao)}</div>
+    <div class="bac">${p.bac.map((b) => `
+      <div class="b">
+        <div class="t">${esc(b.ten)}</div>
+        <div class="thanh"><i style="width:${Math.max(1, (b.so / max) * 100)}%"></i></div>
+        <div class="s">${d0(b.so)}</div>
+      </div>`).join('')}</div>
+    ${Object.keys(p.theoChuSoHuu || {}).length ? `<div class="nho" style="margin-top:11px">
+      Ai đang giữ: ${Object.entries(p.theoChuSoHuu).map(([k, v]) => `<b>${esc(k)}</b> ${d0(v)}`).join(' · ')}</div>` : ''}`;
+}
+
+async function tai() {
+  try {
+    const d = await goi('/api/nguon-khach');
+    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    veLuong(d.luong);
+    $('#dich').innerHTML = `↓ <b>Gặp nhau ở đây</b> ↓<br>${esc(d.gapNhauO)}
+      ${d.donKhac ? `<div class="nho" style="margin-top:6px">${d0(d.donKhac.so)} đơn mang nguồn khác: ${d.donKhac.nguon.map(esc).join(', ')}</div>` : ''}`;
+    veChoRoi(d.choRoi);
+    vePheu(d.pheu);
+  } catch (e) {
+    $('#luong').innerHTML = `<div class="canh" style="grid-column:1/-1;margin:0">
+      <b>Không đọc được:</b> ${esc(e.message)}</div>`;
+  }
+}
+
+tai();
+</script>
+</body>
+</html>
