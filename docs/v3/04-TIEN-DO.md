@@ -10,10 +10,10 @@
 |---|---|
 | Người A (trục dữ liệu) | **6/6 module + 2 phiếu chen XONG** — cổng: A1 26/27 · A2 58/59 · B-Y3 14/14 · A3 6/6 · B-Y4 6/6 · A4 12/12 · A5+A6 15/15 |
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
-| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 4/5 · SÓNG 3 4/5 · SÓNG 4 6/10** (20 màn). Bốn màn còn lại: 1 làm được, 3 chặn thật |
+| Luồng đang làm | **24/24 MÀN XONG** — cộng màn «AI đề xuất» ngoài danh sách là 25 |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **618 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **664 xanh** (316 trước giai đoạn 2) |
 
 ---
 
@@ -54,9 +54,20 @@ liệu có sẵn ở `/token-cost` và `/stats`, đúng những con số kế ho
 Người A cũng vừa giao `src/db/so-lieu.js` (`baoCaoHaiLuong`, `chiPhiAiTheoPage`,
 `hieuQuaKichBan`) và migration 012 cho lớp trả lời 0 đồng — bốn màn nữa có tầng dữ liệu.
 
-**Chặn THẬT, đã kiểm ở nguồn:** «Nguồn khách vào» (`hoi_thoai` không có cột `nguon`, v1 cũng
-không trả trường nguồn) · «Hồ sơ khách hàng» (`khach` 0 dòng **và** 0/28.953 hội thoại có
-`khach_id`) · «Rủi ro hoàn hàng» (`don_hang` 0 dòng, chưa nối POS).
+### ⚠️ DANH SÁCH «CHẶN» ĐÓ CŨNG SAI NỐT — người A nhập liệu ngày 28/08
+
+Ba màn tôi gọi là «chặn thật» đều dựng được, vì hai lý do khác nhau:
+
+| Màn | Tôi nói | Sự thật |
+|---|---|---|
+| Nguồn khách vào | `hoi_thoai` không có cột `nguon` | **Tôi đọc sai tên màn.** Yêu cầu đòi sơ đồ HAI LUỒNG ĐƠN, và cột `nguon` nằm ở `don_hang` |
+| Hồ sơ khách hàng | `khach` 0 dòng | Di trú 013 nhập **21.848 dòng**, mọi dòng có số điện thoại |
+| Rủi ro hoàn hàng | `don_hang` 0 dòng | Nhập **27.719 đơn**, có `khach_id` và `trang_thai_pos` thật |
+
+Bài học: **một câu phủ định về dữ liệu phải đo lúc chạy, không đóng băng vào code hay vào
+báo cáo.** Màn Báo cáo của tôi đã đẩy lên máy chủ và nói «luồng trang bán hàng chưa có
+nguồn» trong lúc `don_hang` đã có 559 đơn của luồng đó — nói sai đúng vào lúc tình hình vừa
+tốt lên. Đã sửa: `luongTrangBanHang()` hỏi lại dữ liệu mỗi lượt.
 
 | Màn | Đường | Trạng thái |
 |---|---|---|
@@ -67,7 +78,12 @@ không trả trường nguồn) · «Hồ sơ khách hàng» (`khach` 0 dòng **
 | **Thư viện ảnh** | `/thu-vien-anh` | xong — 459 ảnh, 8 chủ đề, đọc theo trang |
 | **Đưa sản phẩm mới lên chạy** | `/len-chay` | xong — sáu chặng, **chặng 2 không có ô để điền** |
 | **Chi phí AI** | `/chi-phi` | xong — 127 đ/tin · 6.705 đ/đơn · **13 page đốt tiền 0 đơn** |
-| **Báo cáo** | `/bao-cao` | xong — **ba thước đơn, không cộng**; luồng trang bán hàng chưa có nguồn |
+| **Báo cáo** | `/bao-cao` | xong — **ba thước đơn, không cộng**; hai luồng đo lúc chạy |
+| **Rủi ro hoàn hàng** | `/rui-ro-hoan` | xong — **945 khách hoàn 30–64%** (tài liệu nói 144) |
+| **Hồ sơ khách hàng** | `/ho-so-khach` | xong — gộp theo SĐT; kênh hội thoại chưa nối |
+| **Nguồn khách vào** | `/nguon-khach` | xong — hai luồng; 37,4% dán nhãn **số cũ** |
+| **Hiệu quả kịch bản** | `/hieu-qua` | xong — thiếu CẢ HAI vế, tách hai câu chỉ việc |
+| **Lớp trả lời 0 đồng** | `/lop-0-dong` | xong — bảng có, chưa ai nhập mẫu |
 
 **«Hai đường khác nhau» đã chạy thật, đủ bốn bước**, đo trên máy chủ xem thử 25/08:
 nhận đề xuất → `nguon='ai'`, v3, chưa duyệt · áp ngay → **400 `ai_chua_duyet`** · duyệt →
