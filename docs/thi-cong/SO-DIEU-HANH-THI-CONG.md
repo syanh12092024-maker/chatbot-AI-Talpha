@@ -200,6 +200,7 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | H7  | Chốt mapping page/sản phẩm/thị trường ↔ 3 team                                       | di trú gán team thật · **VÀ mọi màn hình v3**                  | 🔴 **CHẶN TOÀN BỘ MÀN HÌNH v3.** Di trú 24/08: **514/514 page + 28.953/28.953 hội thoại đều ở `chua-phan`**. Team nghiệp vụ có 0 page → bảng điều phối rỗng vĩnh viễn. Không có màn hình nào để gán (nhóm 6 = giai đoạn 2) → phải gán bằng SQL |
 | H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                           | L2-M2                                                          | ⬜         |
 | H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm                                | ⬜         |
+| H10 | **Báo NGƯỜI B đổi màn «Rủi ro hoàn hàng» sang ĐỌC `khach.tang_hoan`**, bỏ phép tính riêng trong `v3/src/ui/rui-ro-hoan/kho-rui-ro.js` | màn đường TIỀN đang nói sai **6,7 lần** | 🔴 **A đã gỡ nguyên nhân gốc 28/08** — cột `tang_hoan` nay có số trên 89.484/89.484 khách (job `chamTiLeHoan()` đã chạy), nên màn không còn phải tự tính. Chỗ lệch đo được: màn nói **40.064** khách «hoàn cao», luật đã ký nói **5.990** — vì màn thiếu sàn `toi_thieu_don_ket=2` (34.187/40.064 khách chỉ có ĐÚNG MỘT đơn) và tính cả mã 8 (`packing` = bước TIẾN). **A KHÔNG tự sửa: `v3/src/*` là đất B (luật 4 §0a).** Chi tiết §9 28/08 |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
@@ -604,6 +605,49 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   của ai — nhưng đúng cái bẫy §9 đã ghi 26/08 về mốc «5.144 đơn»: **một con số đo giữa lượt
   nạp mà viết vào tài liệu như số cuối là một con số sẽ nói dối người đọc sau.** Mọi phân bố
   tầng hoàn phải đo LẠI khi lượt nạp báo XONG, và câu kết luận phải kèm «đo trên N đơn».
+
+- 28/08 · A7 (người A) — ✅ **LƯỢT NẠP POS XONG: 123.629 đơn · 89.484 khách · 7/7 shop.**
+  `chamTiLeHoan()` đã chạy, `tang_hoan` có số trên cả 89.484 dòng. **Bốn con số nền của A8,
+  đo trên TOÀN BỘ dữ liệu** (thay cho mốc 23/08 đo trên 5.144 đơn = 4,2%):
+
+  | tầng | khách | mốc cũ |
+  |---|---|---|
+  | `chua_du_don` (<2 đơn kết) | **72.777** | — |
+  | `tot` (0–15%) | 4.759 | 63 |
+  | `binh_thuong` (15–30%) | 509 | 1 |
+  | `canh_bao` (**30–65%**) | **5.449** | 100 (01 §11 nói «144») |
+  | `rui_ro_cao` (≥65%) | 5.990 | 119 |
+
+  «144 khách» của 01 §11 thật ra là **5.449**. Và 81% khách (72.777/89.484) chưa đủ 2 đơn
+  kết để xếp tầng — con số đó mới là điều đáng nói với người quyết, không phải 5.449.
+
+- 28/08 · A7 (người A) — 🔴 **ĐO XONG CHỖ LỆCH HAI LUẬT: 34.074 KHÁCH BỊ DÁN NHÃN RỦI RO CAO
+  OAN.** Trên toàn bộ 123.629 đơn:
+
+  | | luật `ti-le-hoan.js` | luật màn của B |
+  |---|---|---|
+  | nhóm 30–65% | 5.449 | 5.932 |
+  | **nhóm ≥65% («rủi ro cao»)** | **5.990** | **40.064** |
+
+  Chênh **6,7 lần**, và nguyên nhân chính KHÔNG phải mã 8 (chỉ 55 đơn / 55 khách). Nguyên
+  nhân là **thiếu sàn `toi_thieu_don_ket = 2`**: trong 40.064 khách «hoàn cao» của màn,
+  **34.187 (85%) có ĐÚNG MỘT đơn**. Một đơn hoàn ⇒ 100% ⇒ «rủi ro cao». Đúng cảnh
+  `ti-le-hoan.js` decision ③ đã ghi: *«xếp tầng bằng một điểm dữ liệu là biến nhiễu thành
+  bản án»* — nên nó có nhãn RIÊNG `chua_du_don`, không gộp vào `tot` mà cũng không để NULL.
+
+  Nay `khach.tang_hoan` ĐÃ CÓ SỐ nên màn đọc cột được, không phải tự tính nữa. **Việc người:
+  báo B đổi màn sang đọc `khach.tang_hoan`** (đề nghị §8). Nếu để nguyên, màn đang nói 40k
+  khách là rủi ro cao trong khi luật đã ký nói 6k — và đây là màn dùng để quyết chặn COD.
+
+- 28/08 · A7 (người A) — 🧭 **SCRIPT NẠP KHÔNG CÓ LỚP THỬ LẠI, MỘT LỖI 500 GIẾT LƯỢT CHẠY
+  100 PHÚT.** POS trả HTTP 500 đúng trang đầu Saudi ⇒ tiến trình đổ, 6 shop trước đó may mà
+  đã ghi xong. Thăm dò lại ngay sau đó: 4/4 lượt GET Saudi đều OK ⇒ 500 là NHẤT THỜI. Vá:
+  bọc thử lại quanh `fetch` (tầng THẤP NHẤT với tới được) chứ không quanh `docDon` — Saudi
+  là 631 trang, một lỗi ở trang 400 mà chạy lại từ trang 1 là ~47 phút đọc lại; và CHỈ thử
+  lại 5xx, vì thử lại một 4xx là spam POS bằng cùng một lỗi. Lượt chạy lại: `daThuLai=0`
+  (không cần đến), `giuNguyen=11.119` — tức lượt chết đã kịp ghi 11k đơn Saudi và lượt sau
+  NHẬN RA chúng thay vì tạo trùng: tính idempotent được chứng minh trên dữ liệu thật, không
+  chỉ trong bộ ca.
 
 ═══════════════════════════════════════════════════════════════════════════════
 

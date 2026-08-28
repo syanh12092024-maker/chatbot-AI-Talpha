@@ -515,6 +515,27 @@ Kế hoạch: `docs/v3/gd2/00-KE-HOACH-GD2.md`. Sáu module, làm TUẦN TỰ.
 
 | **A7-3** | Cửa đọc hồ sơ khách — `timKhach` · `docHoSoKhach` (`src/orders/doc-ho-so.js`) | ✅ **26/08** | cổng a7-3 **9/9 rc=0** · bộ ca **12 pass / 0 fail** · quét hồi quy 495 ca **481 pass / 3 fail** (chỉ còn D1·D9·D10 có sẵn) |
 
+**✅ LƯỢT NẠP POS XONG (28/08) — `khach` và `don_hang` hết rỗng.** 7/7 shop:
+**123.629 đơn · 89.484 khách**, mọi khách mang thị trường, 0 dòng thiếu nước. `chamTiLeHoan()`
+đã chạy ⇒ `khach.tang_hoan` có số trên 89.484/89.484. Hai vế chặn màn «Hồ sơ khách hàng»
+(`khach` 0 dòng · `khach_id` 0/28.953) nay đều đã gỡ.
+
+**Bốn con số nền của A8 — đo trên TOÀN BỘ, thay mốc 23/08 (5.144 đơn = 4,2%):**
+
+| tầng | khách | mốc cũ |
+|---|---|---|
+| `chua_du_don` (<2 đơn kết) | **72.777** (81%) | — |
+| `tot` 0–15% | 4.759 | 63 |
+| `binh_thuong` 15–30% | 509 | 1 |
+| `canh_bao` **30–65%** | **5.449** | 100 · 01 §11 nói «144» |
+| `rui_ro_cao` ≥65% | 5.990 | 119 |
+
+🔴 **Màn «Rủi ro hoàn hàng» đang nói sai 6,7 lần** — nó tự tính thay vì đọc `tang_hoan`
+(lúc dựng thì cột còn rỗng, nay đã có số). Màn nói **40.064** khách «hoàn cao», luật đã ký
+nói **5.990**; **34.187/40.064 khách đó chỉ có ĐÚNG MỘT đơn**. `ti-le-hoan.js` có sàn
+`toi_thieu_don_ket=2` chính vì *«xếp tầng bằng một điểm dữ liệu là biến nhiễu thành bản án»*.
+Đã ghi **§8 H10** — sửa màn là việc của B, người A không đụng `v3/src/*`.
+
 **A7-3 · hai thứ cửa đọc này CỐ Ý không làm.** ① Không dựng phép gộp thứ hai: việc gộp đã
 xảy ra ở tầng GHI (khoá 013, cùng một `khoaKhach` cho cửa POS và cửa Messenger), nên đường
 đọc chỉ đọc cái đã gộp — hai bản khai của một luật luôn trôi khỏi nhau. ② Không khai đã gộp
