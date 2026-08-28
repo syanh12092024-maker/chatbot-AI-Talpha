@@ -10,14 +10,29 @@
 |---|---|
 | Người A (trục dữ liệu) | **6/6 module + 2 phiếu chen XONG** — cổng: A1 26/27 · A2 58/59 · B-Y3 14/14 · A3 6/6 · B-Y4 6/6 · A4 12/12 · A5+A6 15/15 |
 | Giai đoạn | **2 — sóng 0 đang chạy** (giai đoạn 1: A 12/12 module · B phần rìa xong) |
-| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 4/5 · SÓNG 3 2/5 · SÓNG 4 5/10** (18 màn). Ba màn chặn THẬT, đã kiểm ở nguồn v1 |
+| Luồng đang làm | **SÓNG 0, 1 XONG · SÓNG 2 4/5 · SÓNG 3 4/5 · SÓNG 4 6/10** (20 màn). Bốn màn còn lại: 1 làm được, 3 chặn thật |
 | Bốn điểm kiểm chặn | **đã đo xong**, kết quả bên dưới |
 | Nhánh code v3 | `main` · code nằm ở thư mục `v3/`, **không đụng `src/` đang chạy** |
-| Bài test vai B | **595 xanh** (316 trước giai đoạn 2) |
+| Bài test vai B | **618 xanh** (316 trước giai đoạn 2) |
 
 ---
 
-## Giai đoạn 2 · sóng 4 — VẬN HÀNH (6/10 màn, 26/08)
+## Giai đoạn 2 · sóng 4 — VẬN HÀNH (6/10 màn) + hai màn sóng 3 (26/08)
+
+### Ba con số đơn hàng, ba câu hỏi — truy tận nơi tính 26/08
+
+| Con số | Đo gì | Phạm vi | Nơi tính |
+|---|---|---|---|
+| **896** | đơn THẬT ở POS Pancake quy cho hội thoại có AI, đã bỏ đơn huỷ/hoàn | 60 ngày | `src/pancake-orders.js#aiOrderStats` |
+| **263** | đơn do CHÍNH BOT tạo qua lời gọi công cụ, khử trùng theo khách | toàn thời gian | `src/stats.js#incOrder` ← `src/tools.js:202` |
+| **883** | số HỘI THOẠI dẫn tới ít nhất một đơn | 60 ngày | cùng phép quét POS |
+
+Lệch hơn **ba lần** và **cả ba đều đúng**: khách chat với bot rồi sale chốt hộ, hoặc khách
+tự đặt sau khi chat, đều vào 896 mà không vào 263. Khoảng thời gian cũng khác nhau.
+
+Màn Báo cáo hiện **cả ba, xếp dọc, không có trường tổng nào** — có bài test cấm mọi khoá bắt
+đầu bằng `tong`, và một bài đọc CSS cấm xếp ba thước thành cột ngang (xếp ngang trông y như
+ba phần của một tổng).
 
 ### ⚠️ DANH SÁCH «CHẶN» CŨ CỦA TÔI SAI — đã đo lại ở nguồn v1 ngày 26/08
 
@@ -51,6 +66,8 @@ không trả trường nguồn) · «Hồ sơ khách hàng» (`khach` 0 dòng **
 | **Sản phẩm & kho** | `/san-pham` | xong — đọc nguồn thật, **68/71 sản phẩm không có tên** |
 | **Thư viện ảnh** | `/thu-vien-anh` | xong — 459 ảnh, 8 chủ đề, đọc theo trang |
 | **Đưa sản phẩm mới lên chạy** | `/len-chay` | xong — sáu chặng, **chặng 2 không có ô để điền** |
+| **Chi phí AI** | `/chi-phi` | xong — 127 đ/tin · 6.705 đ/đơn · **13 page đốt tiền 0 đơn** |
+| **Báo cáo** | `/bao-cao` | xong — **ba thước đơn, không cộng**; luồng trang bán hàng chưa có nguồn |
 
 **«Hai đường khác nhau» đã chạy thật, đủ bốn bước**, đo trên máy chủ xem thử 25/08:
 nhận đề xuất → `nguon='ai'`, v3, chưa duyệt · áp ngay → **400 `ai_chua_duyet`** · duyệt →
