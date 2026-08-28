@@ -497,6 +497,19 @@ Kế hoạch: `docs/v3/gd2/00-KE-HOACH-GD2.md`. Sáu module, làm TUẦN TỰ.
 
 | **A7-2** | Nối hội thoại Messenger vào hồ sơ khách (`hoi_thoai.khach_id`) | ✅ **26/08** | cổng a7-2 **8/8 rc=0** · bộ ca **10 pass / 0 fail** · ca chính: POS tạo khách trước → Messenger NỐI VÀO, **1 hồ sơ / 2 kênh** · quét hồi quy 482 ca **467 pass / 4 fail** (cùng 4 cái có sẵn) |
 
+| **A7-3** | Cửa đọc hồ sơ khách — `timKhach` · `docHoSoKhach` (`src/orders/doc-ho-so.js`) | ✅ **26/08** | cổng a7-3 **9/9 rc=0** · bộ ca **12 pass / 0 fail** · quét hồi quy 495 ca **481 pass / 3 fail** (chỉ còn D1·D9·D10 có sẵn) |
+
+**A7-3 · hai thứ cửa đọc này CỐ Ý không làm.** ① Không dựng phép gộp thứ hai: việc gộp đã
+xảy ra ở tầng GHI (khoá 013, cùng một `khoaKhach` cho cửa POS và cửa Messenger), nên đường
+đọc chỉ đọc cái đã gộp — hai bản khai của một luật luôn trôi khỏi nhau. ② Không khai đã gộp
+WhatsApp: `kenh.coMat` **đếm từ dữ liệu thật** của từng khách và `kenh.chuaNoi` kê đích danh
+WhatsApp kèm lý do. Tiêu chí sóng 4 viết *«Messenger lẫn WhatsApp cùng số → một hồ sơ»* —
+hôm nay chỉ kiểm được nửa Messenger + trang bán hàng, và màn phải nói ra đúng nửa đó.
+
+Hồ sơ trả kèm `ruiRoHoan` **đọc lại** từ job đêm (`ti-le-hoan.js`) — kèm `chamLuc`, vì một
+tỉ lệ hoàn không có ngày chấm là số không kiểm được — và khai thẳng `khongChan`: 01 §11 vẫn
+Chờ chốt, không dòng mã nào đọc `tang_hoan` để chặn.
+
 **A7-2 gỡ chặn màn «Hồ sơ khách hàng».** Chặn ghi ở bảng trên là *«`khach` 0 dòng **và**
 0/28.953 hội thoại có `khach_id`»* — vế thứ hai nay có cửa: `noiKhachChoHoiThoai()`
 (`src/chat/ho-so-khach.js`) nối bằng ĐÚNG khoá của cửa POS, nên hai kênh về một hồ sơ.

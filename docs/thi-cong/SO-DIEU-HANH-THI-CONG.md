@@ -549,6 +549,32 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   ca; thiếu đúng một lượt chạy. Lượt đó ghi vào CSDL thật nên là việc cần người gật — và
   nên chạy SAU khi 013 lên được VPS, kẻo khách nạp vào theo khoá cũ rồi phải gỡ ngược.
 
+- 26/08 · A7-3 — 🧭 **CỔNG CỦA TÔI BẮT TỘI FILE VÌ NÓ ĐÃ GHI LẠI LÝ DO.** Hai phép «KHÔNG
+  được có X» của `a7-3.sh` TRƯỢT ngay lượt đầu — không phải vì mã có X, mà vì đoạn chú thích
+  giải thích *vì sao không dùng X* có chứa chữ X (`await import(` và `khoaKhach`). Đo lại:
+  bỏ dòng chú thích ra thì **0 dòng mã** khớp. Một cổng phạt người ta vì đã viết lý do là
+  một cổng dạy người ta xoá lý do đi — nguy hơn hẳn một cổng lỏng. Vá: `ma()` lọc chú thích
+  trước khi grep. Đây là lần thứ HAI trong hai ngày cổng của chính tôi nói dối (lần trước:
+  `grep -q` + `pipefail` ở a7-1) ⇒ **mọi cổng mới phải tự đo trên một ca ĐÃ BIẾT đáp án
+  trước khi tin nó**, án lệ #27.
+
+- 26/08 · A7-3 — 🧭 **VÒNG NHẬP THẬT, VÀ `await import()` KHÔNG PHẢI CÁCH VÁ.** Viết cửa đọc
+  hồ sơ ở `src/db/` cho gần `so-lieu.js`, rồi phát hiện nó cần `chuanHoaSdt` mà
+  `orders/loc-trung.js` lại `import … from "../db/index.js"` ⇒ vòng
+  `db/index → db/ho-so-khach → orders/loc-trung → db/index`. Bản đầu tôi né bằng import
+  ĐỘNG trong thân hàm — nó chạy được, nhưng chỉ giấu phụ thuộc khỏi người đọc và khỏi mọi
+  công cụ dò vòng. Sửa đúng là ĐỔI CHỖ FILE: `src/orders/doc-ho-so.js`, cùng tầng
+  `loc-trung.js`/`ti-le-hoan.js` (bảng `khach` vốn đã là đất của `ti-le-hoan.js`), nhập XUÔI
+  xuống `src/db`. Cổng ① canh cả hai vế: nạp được `orders/index.js`, và mã không có
+  `await import(`.
+
+- 26/08 · A7-3 — 🧭 **CA H7 CỦA TÔI LÀ CA RỖNG, ĐẢO-VÁ CHỈ RA.** H7 dựng khách có ĐỦ hai
+  kênh rồi khẳng định `kenh.coMat` bằng cả hai — nên nó xanh y hệt khi `coMat` bị gõ cứng
+  `[...KENH_CO_THAT]`. Tức bài test không phân biệt «đếm từ dữ liệu» với «khai sẵn». Ca H12
+  (khách chỉ có MỘT kênh) sinh ra từ lượt đảo-vá, và phép ⑥ của cổng giữ nó lại. Cùng đúng
+  một hình dạng lỗi với lượt đảo-vá của A7-2 hôm nay — **fixture dựng hai vế bằng nhau thì
+  mọi luật phân biệt hai vế đều xanh giả**, đã là lần thứ ba kể từ B-Y7 25/08.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -1025,6 +1051,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   số, KHÔNG cùng họ bug này, không cần vá.)
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
+- 26/08 · A7-3 → ✅ xong — `timKhach`/`docHoSoKhach` ở `src/orders/doc-ho-so.js`; KHÔNG dựng phép gộp thứ hai (gộp đã ở tầng ghi), KHÔNG khai đã gộp WhatsApp, tỉ lệ hoàn chỉ ĐỌC kèm ngày chấm · commit <hash3> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md
+- 26/08 · A7-3 → đo trên Postgres 16.15 THẬT: cổng a7-3 9/9 rc=0 · bộ ca 12 pass/0 fail · hồi quy 495 ca 481 pass/3 fail (chỉ D1·D9·D10 có sẵn) · commit <hash3> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md
+- 26/08 · A7-3 → 🧭 cổng bắt tội file vì đã ghi lý do · vòng nhập thật mà `await import()` chỉ giấu · ca H7 rỗng, H12 sinh từ đảo-vá — chi tiết §9 · commit <hash3> · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md
+
 - 26/08 · A7-2 → ✅ xong — `noiKhachChoHoiThoai()` nối `hoi_thoai.khach_id` bằng ĐÚNG khoá của cửa POS; đi bằng `suaTheoId` chứ không đẻ cửa UPDATE hẹp thứ NĂM; hội thoại không tra được nước thì BỎ QUA + kê tên page · commit 361144b · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
 - 26/08 · A7-2 → đo trên Postgres 16.15 THẬT: cổng a7-2 8/8 rc=0 · bộ ca 10 pass/0 fail · ca chính POS-trước-Messenger-sau ra ĐÚNG 1 hồ sơ · hồi quy 482 ca 467 pass/4 fail (cùng 4 cái có sẵn) · commit 361144b · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md
 - 26/08 · A7-2 → 🧭 đảo-vá sống sót 9/9 ca ⇒ lộ nhánh `banDo` chưa ai đo, ca G10 sinh ra từ đó — chi tiết §9 · commit 361144b · nhật ký docs/thi-cong/nhat-ky/phieu-a7-2.md

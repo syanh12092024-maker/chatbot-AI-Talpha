@@ -124,3 +124,13 @@ export {
   LoiHangChoDaXuLy,
   LoiThieuHangCho,
 } from "./hang-cho.js";
+
+export {
+  timKhach,
+  docHoSoKhach,
+  VAI_XEM_HO_SO,
+  KENH_CO_THAT,
+  KENH_CHUA_NOI,
+  MOI_TRANG_MAC_DINH,
+  MOI_TRANG_TOI_DA,
+} from "./doc-ho-so.js";
