@@ -99,6 +99,7 @@ const bao = dungPhanB(app, {
   // Sổ cái `so_ai` của v3 — dùng để ĐỐI CHIẾU với số đo của tiến trình bot, không phải
   // nguồn chính. Hai sổ lệch thì màn Chi phí nói ra kèm cả hai con số.
   docSoAiV3: (bc) => soLieu.chiPhiAiTheoPage(pool, ctxCuaA(bc)),
+  docHieuQua: (bc) => soLieu.hieuQuaKichBan(pool, ctxCuaA(bc)),
   dungBanMay: (cfg) => dungBanChoMay(cfg),
   // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM tiến trình bot, qua đúng cửa v1.
   dayKichBanLenBot: async (pageIdFacebook, cfg) => {
