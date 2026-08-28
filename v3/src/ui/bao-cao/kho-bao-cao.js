@@ -18,9 +18,14 @@
 // Chọn một cái rồi gọi nó là «số đơn» là làm hai chuyện cùng lúc: báo sai, và giấu mất hai
 // con số kia. Màn hiện CẢ BA, mỗi cái một nhãn nói rõ nó đo gì và trong bao lâu.
 //
-// ═══ LUỒNG TRANG BÁN HÀNG: KHÔNG CÓ NGUỒN NÀO ════════════════════════════════════════
-// `don_hang` của v3 có 0 dòng, và tiến trình bot chỉ biết luồng Messenger. Nên nửa thứ hai
-// của yêu cầu chưa đo được. Màn khai thẳng, KHÔNG lấy số Messenger lấp vào chỗ đó.
+// ═══ LUỒNG TRANG BÁN HÀNG: NAY CÓ NGUỒN — VÀ TÔI ĐÃ NÓI SAI MỘT LƯỢT ═════════════════
+// Bản đầu của màn khai «chưa có nguồn nào» vì `don_hang` lúc đó 0 dòng. Ngày 28/08 người A
+// nhập xong: **11.824 đơn, tách đúng hai luồng** (`nguon = messenger` / `trang_ban_hang`).
+// Màn đã đẩy lên máy chủ và nói một câu KHÔNG CÒN ĐÚNG trong quãng đó.
+//
+// Bài học không phải «đo lại thường xuyên hơn» — mà là: câu «chưa có nguồn» phải ĐO LÚC
+// CHẠY, không được đóng băng thành hằng số trong code. Nay `luongTrangBanHang()` đọc thẳng
+// `don_hang` mỗi lượt và tự biết mình có dữ liệu hay không.
 
 import { batBuocBoiCanh, VAI } from '../../auth/boi-canh.js';
 
@@ -59,6 +64,11 @@ export class LoiBaoCao extends Error {
   }
 }
 
+export const BANG_DON = 'don_hang';
+
+/** Hai giá trị của cột `don_hang.nguon`. Chép tay ⇒ có bài test so với lược đồ thật. */
+export const NGUON_DON = Object.freeze({ MESSENGER: 'messenger', TRANG: 'trang_ban_hang' });
+
 let _taoTruyVan = null;
 let _docDon = null;
 let _docChiPhi = null;
@@ -87,7 +97,7 @@ export async function manBaoCao(boiCanh) {
 
   if (!_docDon) {
     return {
-      teamId: bc.teamId, messenger: null, trangBanHang: khongCoNguon(), thuoc: THUOC,
+      teamId: bc.teamId, messenger: null, trangBanHang: await luongTrangBanHang(bc), thuoc: THUOC,
       trong: {
         rong: true, vi: 'chua-nap',
         noi: 'Chưa nối cầu sang tiến trình bot nên chưa đọc được đơn hàng.',
@@ -146,7 +156,7 @@ export async function manBaoCao(boiCanh) {
         : null,
       quetLuc: don.quetLuc,
     },
-    trangBanHang: khongCoNguon(),
+    trangBanHang: await luongTrangBanHang(bc),
     viSaoKhongCong:
       '`01-QUYET-DINH §1` — hai luồng đo bằng HAI THƯỚC khác nhau: trang bán hàng có đơn '
       + 'trước rồi mới hỏi, Messenger thì chốt trong hội thoại. Cộng lại là trả lời sai mọi '
@@ -162,18 +172,45 @@ export async function manBaoCao(boiCanh) {
 }
 
 /**
- * Luồng trang bán hàng — chưa có nguồn nào. KHÔNG lấy số Messenger lấp vào: lấp vào là biến
- * một nửa yêu cầu chưa làm được thành một con số trông như đã đo.
+ * Luồng trang bán hàng — ĐO LÚC CHẠY, không đóng băng câu «chưa có nguồn» vào code.
+ *
+ * Bản đầu trả một hằng số «chưa có nguồn». Nó đúng lúc viết và SAI ba ngày sau, khi người A
+ * nhập xong 11.824 đơn. Một câu phủ định về dữ liệu phải hỏi lại dữ liệu mỗi lượt — nếu
+ * không, màn sẽ nói dối đúng vào lúc tình hình vừa tốt lên.
+ *
+ * KHÔNG lấy số Messenger lấp vào chỗ này, kể cả khi luồng kia rỗng.
  */
-function khongCoNguon() {
+async function luongTrangBanHang(bc) {
+  let ds = [];
+  try {
+    ds = await truyVan(bc).chon(BANG_DON, { nguon: NGUON_DON.TRANG });
+  } catch (e) {
+    return {
+      coNguon: false, soDon: null, vi: 'khong-doc-duoc',
+      noi: `Không đọc được \`don_hang\`: ${e?.message || e}`,
+      diTiep: 'Con số của luồng này là **chưa biết**, không phải 0.',
+    };
+  }
+  if (!ds.length) {
+    return {
+      coNguon: false, soDon: null, vi: 'chua-co-nguon',
+      noi: 'Bảng `don_hang` không có dòng nào mang `nguon = "trang_ban_hang"`.',
+      diTiep: 'Cần nối đường đọc đơn của trang bán hàng vào `don_hang`. Chừng nào chưa có, '
+        + 'con số của luồng này là **chưa biết**, không phải 0.',
+    };
+  }
+  const coTien = ds.filter((d) => d.tong_tien != null);
   return {
-    coNguon: false,
-    soDon: null,
-    vi: 'chua-co-nguon',
-    noi: 'Chưa đo được. Bảng `don_hang` của CSDL v3 có 0 dòng, và tiến trình bot chỉ biết '
-      + 'luồng Messenger — không nơi nào ghi đơn đến từ trang bán hàng.',
-    diTiep: 'Cần nối đường đọc đơn của trang bán hàng vào `don_hang` (cột `nguon = '
-      + '"trang_ban_hang"`). Chừng nào chưa có, con số của luồng này là **chưa biết**, '
-      + 'không phải 0.',
+    coNguon: true,
+    soDon: ds.length,
+    soDonCoTien: coTien.length,
+    tongTien: coTien.reduce((s, d) => s + Number(d.tong_tien || 0), 0),
+    vi: 'xong',
+    // `tong_tien` cố ý để NULL ở nhiều đường (nợ N4 của người A) — nói ra, đừng để người
+    // đọc tưởng «tổng tiền thấp» nghĩa là bán được ít.
+    canhBao: ds.length > coTien.length
+      ? `${ds.length - coTien.length}/${ds.length} đơn CHƯA có \`tong_tien\` — tổng tiền dưới `
+        + 'đây chỉ là của phần CÓ tiền.'
+      : null,
   };
 }

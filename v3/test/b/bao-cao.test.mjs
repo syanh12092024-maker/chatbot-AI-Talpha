@@ -30,11 +30,11 @@ const donCo = (pages, o = {}) => async () => ({
 });
 const p = (pageId, o = {}) => ({ pageId, hoiThoaiCoDon: 8, posQuyChoAi: 9, soCu: false, ...o });
 
-function dung({ don, chiPhi } = {}) {
+function dung({ don, chiPhi, donHang = [] } = {}) {
   const { taoTruyVan } = dungCongGia({
     team: [{ id: 't1', slug: 'a', ten: 'A', la_ky_thuat: false },
            { id: 't2', slug: 'b', ten: 'B', la_ky_thuat: false }],
-    page: PAGE,
+    page: PAGE, don_hang: donHang,
   });
   bcao.datTaoTruyVan(taoTruyVan);
   bcao.datDocDon(don === undefined ? donCo([p('111')]) : don);
@@ -90,6 +90,31 @@ test('②a · luồng trang bán hàng khai CHƯA CÓ NGUỒN, số là `null` c
   assert.equal(d.trangBanHang.coNguon, false);
   assert.equal(d.trangBanHang.soDon, null, '0 nghĩa là «bán không được đơn nào» — đó là kết luận sai');
   assert.match(d.trangBanHang.diTiep, /chưa biết/i);
+});
+
+test('②a2 · CÓ đơn trang bán hàng → đo được, không còn nói «chưa có nguồn»', async () => {
+  // Bản đầu của màn trả một HẰNG SỐ «chưa có nguồn». Nó đúng lúc viết và SAI ba ngày sau,
+  // khi người A nhập xong 11.824 đơn — màn đã đẩy lên máy chủ và nói một câu không còn đúng.
+  // Một câu phủ định về dữ liệu phải hỏi lại dữ liệu MỖI LƯỢT.
+  dung({ donHang: [
+    { id: 'x1', team_id: 't1', nguon: 'trang_ban_hang', tong_tien: 100 },
+    { id: 'x2', team_id: 't1', nguon: 'trang_ban_hang', tong_tien: null },
+    { id: 'x3', team_id: 't1', nguon: 'messenger', tong_tien: 50 },
+  ] });
+  const d = await bcao.manBaoCao(bc());
+  const t = d.trangBanHang;
+  assert.equal(t.coNguon, true);
+  assert.equal(t.soDon, 2, 'chỉ đếm đơn nguon=trang_ban_hang, không lẫn messenger');
+  assert.equal(t.soDonCoTien, 1);
+  assert.equal(t.tongTien, 100);
+  assert.match(t.canhBao, /CHƯA có/, 'đơn thiếu tong_tien phải nói ra, đừng để tưởng bán ít');
+});
+
+test('②a3 · hai mã `nguon` khớp lược đồ thật, không gõ sai', () => {
+  // Chép tay hai chuỗi này là đúng kiểu lỗi `quan_tri` vs `quan-tri`. Lược đồ thật đo 28/08:
+  // don_hang.nguon có đúng hai giá trị `messenger` (10.331) và `trang_ban_hang` (559).
+  assert.equal(bcao.NGUON_DON.MESSENGER, 'messenger');
+  assert.equal(bcao.NGUON_DON.TRANG, 'trang_ban_hang');
 });
 
 test('②b · KHÔNG lấy số Messenger lấp vào luồng kia', async () => {

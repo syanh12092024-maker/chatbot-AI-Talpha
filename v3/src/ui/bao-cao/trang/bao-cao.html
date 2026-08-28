@@ -167,12 +167,24 @@ async function tai() {
     $('#hTeam').textContent = 'team ' + (d.teamId || '?');
     $('#khongCong').innerHTML = `🚫 <b>Màn này KHÔNG cộng.</b> ${esc(d.viSaoKhongCong.replace(/`/g, ''))}`;
 
-    // luồng trang bán hàng — chưa có nguồn
+    // luồng trang bán hàng — đo lúc chạy, có thể có hoặc chưa
     const t = d.trangBanHang;
-    $('#tbh').innerHTML = `<div class="mu2">
-      <div class="ti">— chưa đo được</div>
-      <div>${esc(t.noi)}</div>
-      <div class="di">👉 ${esc(t.diTiep.replace(/\*\*/g, ''))}</div></div>`;
+    if (t.coNguon) {
+      $('#tbh').innerHTML = `<div class="thuoc"><div class="t">
+        <div class="n">${d0(t.soDon)}</div>
+        <div class="d">
+          <div class="ten">Đơn từ trang bán hàng</div>
+          <div class="mo">Đơn có trước, rồi mới hỏi khách — thước khác hẳn luồng Messenger.</div>
+          <div class="kh"><span class="b">${d0(t.soDonCoTien)} đơn có tổng tiền</span>
+            <span class="nho"> · nguồn: don_hang WHERE nguon = trang_ban_hang</span></div>
+        </div></div></div>
+        ${t.canhBao ? `<div class="canh">⚠️ ${esc(t.canhBao.replace(/`/g, ''))}</div>` : ''}`;
+    } else {
+      $('#tbh').innerHTML = `<div class="mu2">
+        <div class="ti">— chưa đo được</div>
+        <div>${esc(t.noi.replace(/`/g, ''))}</div>
+        <div class="di">👉 ${esc(t.diTiep.replace(/\*\*/g, ''))}</div></div>`;
+    }
 
     if (!d.messenger) {
       $('#thuoc').innerHTML = `<div class="mu2"><div class="ti">${esc(d.trong.noi)}</div>
