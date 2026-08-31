@@ -63,7 +63,10 @@ async function voiCuaMo(fn, { batBot = true } = {}) {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   };
-  process.env.V3_BOT_GHI = '1';
+  // KHÔNG đặt `V3_BOT_GHI` nữa: cửa ghi nay MỞ mặc định. Đặt nó ở đây sẽ che mất chuyện
+  // mặc định có thật sự mở hay không.
+  delete process.env.V3_BOT_GHI;
+  delete process.env.V3_BOT_KHOA;
   delete process.env.PANCAKE_READONLY;
   process.env.ADMIN_USER = 'u'; process.env.ADMIN_PASS = 'p';
   process.env.V3_BOT_V1_GOC = 'http://bot.thu';
@@ -199,17 +202,110 @@ test('danhSachPage · cắt trang, và trang vượt biên bị kẹp về trang
 
 /* ═══════════ công tắc BOT AI — đi qua cầu, KHÔNG ghi thẳng cột ═══════════ */
 
-test('công tắc bot · cửa ghi ĐÓNG thì từ chối, và nói rõ thiếu gì', async () => {
+// ═══ CỬA GHI: MỞ MẶC ĐỊNH, KHOÁ ĐƯỢC ═══════════════════════════════════════════════
+//
+// Bản trước ĐÓNG mặc định, phải đặt `V3_BOT_GHI=1`. Đổi vì nó là chốt thứ TÁM trên một
+// đường đã có bảy chốt, và là chốt duy nhất đòi SSH — nên người ta bỏ v3 quay về dashboard
+// cũ, nơi bật AI chỉ có một mật khẩu dùng chung và KHÔNG ghi nhật ký ai bấm.
+
+test('cửa ghi MỞ mặc định khi không khai cờ nào', async () => {
   dungKho();
-  const cu = process.env.V3_BOT_GHI;
-  delete process.env.V3_BOT_GHI;
-  try {
-    await assert.rejects(() => ct.datCongTacBot(bcQt(), 'p1', false), (e) => {
-      assert.equal(e.ma, 'cua_ghi_dong');
-      assert.match(e.message, /V3_BOT_GHI/);
+  await voiCuaMo(async () => {
+    const kq = await ct.datCongTacBot(bcQt(), 'p1', false);
+    assert.equal(kq.id, 'p1', 'không cờ nào mà vẫn từ chối là quay lại chốt thứ tám');
+  }, { batBot: false });
+});
+
+test('`V3_BOT_KHOA=1` khoá lại được', async () => {
+  dungKho();
+  await voiCuaMo(async () => {
+    process.env.V3_BOT_KHOA = '1';
+    try {
+      await assert.rejects(() => ct.datCongTacBot(bcQt(), 'p1', false), (e) => {
+        assert.equal(e.ma, 'cua_ghi_dong');
+        assert.match(e.message, /V3_BOT_KHOA/);
+        return true;
+      });
+    } finally { delete process.env.V3_BOT_KHOA; }
+  });
+});
+
+test('cờ cũ `V3_BOT_GHI=0` vẫn được tôn trọng', async () => {
+  // Ai đã cố ý tắt bằng cờ cũ thì đổi mặc định KHÔNG được âm thầm bật lại giúp họ.
+  dungKho();
+  await voiCuaMo(async () => {
+    process.env.V3_BOT_GHI = '0';
+    try {
+      await assert.rejects(() => ct.datCongTacBot(bcQt(), 'p1', false), (e) => {
+        assert.equal(e.ma, 'cua_ghi_dong');
+        return true;
+      });
+    } finally { delete process.env.V3_BOT_GHI; }
+  });
+});
+
+test('`PANCAKE_READONLY=1` vẫn khoá — máy dev không chạm bot thật', async () => {
+  dungKho();
+  await voiCuaMo(async () => {
+    process.env.PANCAKE_READONLY = '1';
+    try {
+      await assert.rejects(() => ct.datCongTacBot(bcQt(), 'p1', false), (e) => {
+        assert.equal(e.ma, 'cua_ghi_dong');
+        assert.match(e.message, /PANCAKE_READONLY/);
+        return true;
+      });
+    } finally { delete process.env.PANCAKE_READONLY; }
+  });
+});
+
+/* ═══════════ TRẦN BẬT HÀNG LOẠT ═══════════ */
+
+test('trần · bật quá số cho phép trong một đợt thì DỪNG', async () => {
+  const { kho } = dungKho();
+  ct.xoaDemBat();
+  // Gieo đủ page để bật.
+  for (let i = 0; i < ct.TRAN_BAT_MOT_DOT + 2; i += 1) {
+    kho.bang.get('page').push({ id: 'g' + i, team_id: 't1', page_id: '90' + i, ten: 'G' + i, bot_ai_bat: false });
+  }
+  await voiCuaMo(async () => {
+    for (let i = 0; i < ct.TRAN_BAT_MOT_DOT; i += 1) await ct.datCongTacBot(bcQt(), 'g' + i, true);
+    assert.equal(ct.conBatDuoc(), 0);
+    await assert.rejects(() => ct.datCongTacBot(bcQt(), 'g' + ct.TRAN_BAT_MOT_DOT, true), (e) => {
+      assert.equal(e.ma, 'qua_tran_bat');
+      assert.equal(e.status, 429);
+      assert.match(e.message, /một cú bấm nhầm/i, 'phải nói VÌ SAO có trần, không chỉ chặn');
       return true;
     });
-  } finally { if (cu === undefined) delete process.env.V3_BOT_GHI; else process.env.V3_BOT_GHI = cu; }
+  });
+});
+
+test('trần · TẮT bot KHÔNG BAO GIỜ bị chặn, kể cả khi đã chạm trần', async () => {
+  // Lúc cần tắt gấp là lúc đang có sự cố. Một cái trần chặn người ta tắt bot là cái trần
+  // GÂY RA thiệt hại chứ không ngăn.
+  const { kho } = dungKho();
+  ct.xoaDemBat();
+  for (let i = 0; i < ct.TRAN_BAT_MOT_DOT + 1; i += 1) {
+    kho.bang.get('page').push({ id: 'h' + i, team_id: 't1', page_id: '80' + i, ten: 'H' + i, bot_ai_bat: false });
+  }
+  await voiCuaMo(async () => {
+    for (let i = 0; i < ct.TRAN_BAT_MOT_DOT; i += 1) await ct.datCongTacBot(bcQt(), 'h' + i, true);
+    assert.equal(ct.conBatDuoc(), 0, 'đã chạm trần');
+  });
+  await voiCuaMo(async () => {
+    const kq = await ct.datCongTacBot(bcQt(), 'h0', false);
+    assert.equal(kq.botAiBat, false, 'tắt phải luôn đi được');
+  }, { batBot: false });
+});
+
+test('trần · gạt lại page ĐANG BẬT không tốn lượt', async () => {
+  const { kho } = dungKho();
+  ct.xoaDemBat();
+  kho.bang.get('page').push({ id: 'x1', team_id: 't1', page_id: '7001', ten: 'X', bot_ai_bat: true });
+  await voiCuaMo(async () => {
+    const con = ct.conBatDuoc();
+    await ct.datCongTacBot(bcQt(), 'x1', true);
+    assert.equal(ct.conBatDuoc(), con, 'nó vốn đã bật — không có page nào vừa lên');
+  });
 });
 
 test('công tắc bot · gọi SANG TIẾN TRÌNH BOT bằng id Facebook, không phải id CSDL', async () => {

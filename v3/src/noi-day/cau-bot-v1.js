@@ -38,6 +38,29 @@
 // trạng thái lại đúng là thứ giúp người ta quyết định. Màn hình hiện đủ, và nói rõ cửa ghi
 // đang đóng — thay vì hiện một màn trống rồi để người ta đoán.
 
+/**
+ * ═══ CỬA GHI: MỞ MẶC ĐỊNH, CÓ KHOÁ TUỲ CHỌN ═══════════════════════════════════════
+ *
+ * Bản trước ĐÓNG mặc định, phải đặt `V3_BOT_GHI=1` mới ghi được. Sai, và sai theo cách
+ * phản tác dụng — chủ dự án hỏi thẳng «tại sao chỗ này phức tạp thế».
+ *
+ * Đường bật bot của v3 ĐÃ CÓ BẢY CHỐT trước cái cờ này:
+ *   đăng nhập · vai ở router · vai ở cửa ghi · vai ở tầng dưới (chỉ `quan-tri`) ·
+ *   cửa kiểm sẵn sàng của v1 từ chối page bị chặn · ghi nhật ký ai bấm · hộp xác nhận
+ *
+ * Cờ này là chốt thứ TÁM, và là chốt duy nhất đòi SSH vào máy chủ. Hậu quả đo được:
+ * người ta bỏ v3 và quay về dashboard cũ ở cổng 3100 — nơi `POST /pages/:id/ai` chỉ có
+ * MỘT mật khẩu dùng chung, **không biết ai bấm, không ghi nhật ký, không xác nhận**.
+ *
+ * Tức chốt an toàn của tôi làm đường CÓ dấu vết khó đi, đẩy người dùng sang đường KHÔNG
+ * có dấu vết. Bảo vệ mà đẩy người ta sang cửa sau thì không phải bảo vệ.
+ *
+ * Nay: mở mặc định, và thay bằng hai thứ đặt đúng chỗ rủi ro thật sự nằm —
+ *   · `V3_BOT_KHOA=1`  khoá lại cho ai cần (máy dev, bản demo, lúc sự cố)
+ *   · trần bật hàng loạt (`TRAN_BAT_MOT_DOT`) — xem `cong-tac.js`
+ */
+export const BIEN_KHOA = 'V3_BOT_KHOA';
+/** Giữ tên cũ để ai đã đặt `V3_BOT_GHI=0` vẫn được tôn trọng. */
 export const BIEN_CO_GHI = 'V3_BOT_GHI';
 export const BIEN_CHAN_DOC = 'PANCAKE_READONLY';
 export const BIEN_GOC = 'V3_BOT_V1_GOC';
@@ -78,9 +101,13 @@ export const coTaiKhoan = () => !!(env('ADMIN_USER') && env('ADMIN_PASS'));
  */
 export function trangThaiCau() {
   const thieu = [];
-  if (env(BIEN_CO_GHI) !== '1') {
-    thieu.push('`' + BIEN_CO_GHI + '` chưa đặt bằng `1` — cửa ghi của v3 mặc định ĐÓNG, đây là '
-      + 'đường chạm khách thật (bật bot cho một page là bot bắt đầu tự trả lời người thật)');
+  if (env(BIEN_KHOA) === '1') {
+    thieu.push('`' + BIEN_KHOA + '=1` đang bật — máy này bị khoá không cho ghi sang tiến trình bot');
+  }
+  // Ai đã cố ý tắt bằng cờ cũ thì vẫn tắt. Cờ cũ KHÔNG còn là điều kiện để MỞ.
+  if (env(BIEN_CO_GHI) === '0') {
+    thieu.push('`' + BIEN_CO_GHI + '=0` đang đặt — cờ cũ vẫn được tôn trọng. Bỏ dòng đó, '
+      + 'hoặc dùng `' + BIEN_KHOA + '` nếu muốn khoá.');
   }
   if (env(BIEN_CHAN_DOC) === '1') {
     thieu.push('`' + BIEN_CHAN_DOC + '=1` đang bật — máy này ở chế độ CHỈ ĐỌC với Pancake');
