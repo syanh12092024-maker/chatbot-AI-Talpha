@@ -447,10 +447,22 @@ test('cầu bot · MẶC ĐỊNH MỞ, nhưng ba thứ vẫn khoá được', as
 });
 
 test('cầu bot · vì sao đóng phải nói được bằng tiếng người, không phải một cờ trần', () => {
-  delete process.env.V3_BOT_GHI;
-  const t = cau.trangThaiCau();
-  assert.ok(t.thieu.length > 0);
-  for (const câu of t.thieu) {
-    assert.ok(câu.length > 30, `lý do "${câu}" quá ngắn để ai đó biết phải làm gì tiếp`);
+  // Phải TỰ KHOÁ rồi mới hỏi lý do. Bản trước chỉ `delete V3_BOT_GHI` và tin là cửa sẽ
+  // đóng — đúng ở máy dev (có PANCAKE_READONLY=1), sai ở máy chủ. Cùng chỗ che đã gặp ở
+  // bài ngay trên.
+  const cu = { k: process.env.V3_BOT_KHOA, r: process.env.PANCAKE_READONLY };
+  try {
+    process.env.V3_BOT_KHOA = '1';
+    process.env.PANCAKE_READONLY = '1';
+    const t = cau.trangThaiCau();
+    assert.equal(t.mo, false, 'đã khoá hai đường mà vẫn mở thì phép khoá hỏng');
+    assert.ok(t.thieu.length > 0);
+    for (const câu of t.thieu) {
+      assert.ok(câu.length > 30, `lý do "${câu}" quá ngắn để ai đó biết phải làm gì tiếp`);
+    }
+  } finally {
+    for (const [k, v] of [['V3_BOT_KHOA', cu.k], ['PANCAKE_READONLY', cu.r]]) {
+      if (v === undefined) delete process.env[k]; else process.env[k] = v;
+    }
   }
 });
