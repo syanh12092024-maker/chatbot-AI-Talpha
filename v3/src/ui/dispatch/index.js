@@ -60,7 +60,7 @@ export {
   taoRouterDieuPhoi,
   datChanDangNhap, datChanVai, datPheuNhatKy,
   daNoiChan, daNoiPheuNhatKy, ghiNhatKyDieuPhoi,
-  VAI_VAO_DUOC,
+  VAI_VAO_DUOC, DUONG_TRANG,
   // hai đường trả trang: đá về đăng nhập thay vì phun JSON
   muonTrang, locTiep, TRANG_MAC_DINH,
 } from './router.js';

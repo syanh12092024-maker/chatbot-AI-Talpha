@@ -58,6 +58,13 @@ export const VAI_VAO_DUOC = Object.freeze([VAI.SALE, VAI.QUAN_TRI]);
  */
 export const VAI_SUA_DUOC = VAI_VAO_DUOC;
 
+/**
+ * Đường của trang. Màn này (giai đoạn 1) trước khai đường thẳng trong `r.get('/dieu-phoi')`,
+ * không thành hằng số — nên sổ đăng ký menu (`chung/man-hinh.js`) đọc ra `undefined` và nút
+ * dẫn tới trang trống. Nay khai như 23 màn kia, và `r.get` dùng chính hằng số này.
+ */
+export const DUONG_TRANG = '/dieu-phoi';
+
 /* ─────────────────────────── ba chỗ tiêm từ ngoài ─────────────────────────── */
 
 let _chanDangNhap = null;
@@ -384,7 +391,7 @@ export function taoRouterDieuPhoi({ dongHo = () => Date.now(), gioiHan = 100 } =
   const chan = [chanDangNhapMw(), chanVaiMw(), chanTeamTrenUrl()];
 
   /* ── hai trang ── `chanTrang()` đứng trước để trình duyệt nhận trang, không nhận JSON ── */
-  r.get('/dieu-phoi', chanTrang(), ...chan, (_req, res) => res.sendFile(TRANG('dieu-phoi.html')));
+  r.get(DUONG_TRANG, chanTrang(), ...chan, (_req, res) => res.sendFile(TRANG('dieu-phoi.html')));
   r.get('/viec/:id', chanTrang(), ...chan, (_req, res) => res.sendFile(TRANG('chi-tiet-viec.html')));
 
   /* ── hai danh sách ── */

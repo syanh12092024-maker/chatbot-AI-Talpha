@@ -57,6 +57,7 @@ import {
   datChanDangNhap as datChanDangNhapBoLuat, datChanVai as datChanVaiBoLuat, taoRouterBoLuat,
   datCuaBoLuat, manBoLuat,
 } from './ui/bo-luat/index.js';
+import { taoRouterDieuHuong } from './ui/chung/router-dieu-huong.js';
 import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/cau-bot-v1.js';
 import {
   datTaoTruyVan as datTruyVanHieuQua, datDocHieuQua,
@@ -391,6 +392,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(lopBoiCanh());          // ① đọc cookie vé → req.boiCanh. PHẢI đứng trước router auth.
   app.use(taoRouterAuth());       //   /dang-nhap · /api/dang-nhap · /api/chon-team · /api/toi
   app.use(chanTeamTrenUrl());     //   ?team_id=<team khác> → 403 + ghi nhật ký
+  app.use(taoRouterDieuHuong());  //   /chung/dieu-huong.js · /api/dieu-huong (menu chung)
   app.use(taoRouterDieuPhoi());   //   /dieu-phoi · /viec/:id · /api/dieu-phoi/*
   app.use(taoRouterCauHinhTeam()); //  /cau-hinh-team · /api/team/*
   app.use(taoRouterPageBot());    //   /page-bot · /api/page-bot/*
