@@ -122,18 +122,26 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let DL = null;
-let locHien = 'chan';
+// Mở màn ở «bật được ngay», không phải «bị chặn». Người ta tới đây để bật page, và mở ra
+// thấy ngay 445 dòng hỏng thì câu trả lời họ cần bị chôn dưới đó.
+let locHien = 'bat_duoc';
 
+// `bat_duoc` đứng ĐẦU vì đó là câu hỏi người ta mang tới màn này. Ba bộ lọc sau nó là
+// cách chẻ nhỏ; ai cần mới dùng.
 const LOC = [
+  { ma: 'bat_duoc', ten: 'Bật được ngay' },
   { ma: 'chan', ten: 'Bị chặn' },
   { ma: 'nhac', ten: 'Chỉ nhắc' },
-  { ma: 'san', ten: 'Sẵn sàng' },
+  { ma: 'san', ten: 'Sạch hoàn toàn' },
   { ma: 'chay', ten: 'Đang chạy' },
   { ma: 'tat_ca', ten: 'Tất cả' },
 ];
 
 function locPage() {
   const ds = DL.page;
+  // Bật được = KHÔNG vướng điều kiện chặn nào. Cảnh báo không chặn, nên page «chỉ nhắc»
+  // vẫn nằm trong đây.
+  if (locHien === 'bat_duoc') return ds.filter((p) => !p.botKhongThay && !p.chan.length);
   if (locHien === 'chan') return ds.filter((p) => p.chan.length);
   if (locHien === 'nhac') return ds.filter((p) => !p.chan.length && p.nhac.length);
   if (locHien === 'san') return ds.filter((p) => !p.botKhongThay && !p.chan.length && !p.nhac.length);
@@ -177,10 +185,13 @@ function veBang() {
     return;
   }
   if (!ds.length) {
+    const noi = locHien === 'chan'
+      ? 'Đây là tin <b>tốt</b> — không page nào bị chặn.'
+      : (locHien === 'bat_duoc'
+        ? 'Mọi page của team đều đang vướng ít nhất một điều kiện chặn. Xem bộ lọc «Bị chặn» để biết vướng gì.'
+        : 'Không page nào ở nhóm này.');
     b.innerHTML = `<div class="trong">
-      <div class="ti">Không page nào ở nhóm này</div>
-      <div>Đây là tin <b>tốt</b> nếu bộ lọc đang là «Bị chặn» — nghĩa là không page nào bị chặn.</div>
-    </div>`;
+      <div class="ti">Không page nào ở nhóm này</div><div>${noi}</div></div>`;
     return;
   }
 
@@ -205,10 +216,11 @@ function veBang() {
 
 function veDem(k) {
   $('#dem').innerHTML = [
+    { n: k.batDuoc, c: 'BẬT ĐƯỢC NGAY — không vướng điều kiện chặn nào', l: k.batDuoc ? 'tot' : '' },
     { n: k.tong, c: 'page của team', l: '' },
-    { n: k.chan, c: 'BỊ CHẶN — bot không bật được', l: 'xau' },
-    { n: k.nhac, c: 'chỉ nhắc — bot vẫn chạy được', l: 'nhac' },
-    { n: k.san, c: 'đủ điều kiện', l: 'tot' },
+    { n: k.chan, c: 'bị chặn — bot không bật được', l: 'xau' },
+    { n: k.nhac, c: 'trong số bật được: có cảnh báo, không chặn', l: 'nhac' },
+    { n: k.san, c: 'trong số bật được: sạch hoàn toàn', l: '' },
     { n: k.dangChay, c: 'bot đang thật sự chạy', l: k.dangChay ? 'tot' : '' },
     ...(k.chayMaBiChan ? [{ n: k.chayMaBiChan, c: 'ĐANG CHẠY MÀ BỊ CHẶN', l: 'xau' }] : []),
     ...(k.botKhongThay ? [{ n: k.botKhongThay, c: 'bot không thấy page', l: 'nhac' }] : []),

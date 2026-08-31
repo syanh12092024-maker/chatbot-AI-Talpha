@@ -193,7 +193,10 @@ export async function manSanSang(boiCanh) {
   };
 }
 
-const demRong = () => ({ tong: 0, chan: 0, nhac: 0, san: 0, botKhongThay: 0, dangChay: 0, chayMaBiChan: 0 });
+const demRong = () => ({
+  tong: 0, chan: 0, nhac: 0, san: 0, batDuoc: 0,
+  botKhongThay: 0, dangChay: 0, chayMaBiChan: 0,
+});
 
 function dem(page) {
   const k = demRong();
@@ -203,6 +206,16 @@ function dem(page) {
     if (p.chan.length) k.chan += 1;
     else if (p.nhac.length) k.nhac += 1;
     else k.san += 1;
+
+    // ⚠️ CON SỐ NGƯỜI DÙNG THẬT SỰ CẦN: bao nhiêu page BẬT ĐƯỢC NGAY.
+    //
+    // `san` (sạch hoàn toàn) và `nhac` (chỉ vướng cảnh báo) đều bật được — cảnh báo KHÔNG
+    // chặn. Nhưng bản đầu của màn chỉ hiện hai ô đó tách rời, và chủ dự án đọc «đủ điều kiện
+    // = 1» rồi tưởng cả team chỉ bật được một page. Thật ra là 69.
+    //
+    // Người ta tới màn này để hỏi «tôi bật được page nào», không phải «page nào sạch nhất».
+    // Bắt họ tự cộng hai ô là bắt họ tự trả lời câu hỏi mà màn sinh ra để trả lời.
+    if (!p.chan.length) k.batDuoc += 1;
     if (p.botTheoBot) {
       k.dangChay += 1;
       // Page đang chạy MÀ vẫn có điều kiện chặn — hàng nguy hiểm nhất bảng.

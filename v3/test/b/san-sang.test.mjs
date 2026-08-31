@@ -128,6 +128,38 @@ test('②b · page CSDL có mà bot không thấy → «không biết», KHÔNG 
   assert.equal(d.dem.botKhongThay, 1);
 });
 
+/* ═════════════ ②b CON SỐ NGƯỜI DÙNG THẬT SỰ CẦN ═════════════ */
+
+test('②b1 · đếm BẬT ĐƯỢC NGAY = page không vướng điều kiện CHẶN nào', async () => {
+  // Bản đầu chỉ có `san` (sạch hoàn toàn) và `nhac` (có cảnh báo) tách rời trên hai ô. Chủ
+  // dự án đọc «đủ điều kiện = 1» rồi tưởng cả team bật được một page — thật ra 69. Cảnh báo
+  // KHÔNG chặn, nên page «chỉ nhắc» vẫn bật được.
+  dung(PAGE, CAU([
+    rd('111', { warnings: [{ code: 'THIN_SCRIPT', detail: 'x' }] }),
+    rd('222'),
+  ]));
+  const d = await ss.manSanSang(bc());
+  assert.equal(d.dem.batDuoc, 2, 'page chỉ vướng CẢNH BÁO vẫn bật được');
+  assert.equal(d.dem.san, 1, 'sạch hoàn toàn thì chỉ một — đó là con số dễ đọc nhầm');
+  assert.equal(d.dem.nhac, 1);
+});
+
+test('②b2 · page bị CHẶN không được tính vào «bật được»', async () => {
+  dung(PAGE, CAU([
+    rd('111', { aiAllowed: false, blockers: [{ code: 'NO_TOKEN', detail: 'x' }] }),
+    rd('222'),
+  ]));
+  const d = await ss.manSanSang(bc());
+  assert.equal(d.dem.batDuoc, 1);
+});
+
+test('②b3 · TRANG mở mặc định ở «bật được», và CÓ bộ lọc đó', () => {
+  // Mở ra thấy ngay 445 dòng hỏng thì câu trả lời người ta cần bị chôn dưới đó.
+  const html = readFileSync(path.join(GOC, 'v3/src/ui/san-sang/trang/san-sang.html'), 'utf8');
+  assert.match(html, /let locHien = 'bat_duoc'/, 'màn vẫn mở ở bộ lọc «bị chặn»');
+  assert.match(html, /ma: 'bat_duoc'/, 'thiếu bộ lọc «bật được ngay»');
+});
+
 /* ═════════════ ③ CẦU HỎNG ≠ MỌI PAGE ĐỀU ỔN ═════════════ */
 
 test('③ · cầu hỏng thì NÉM, không trả bảng rỗng', async () => {
