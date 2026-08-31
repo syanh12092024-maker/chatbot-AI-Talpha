@@ -404,24 +404,45 @@ test('datTrongDiem · ghi thẳng CSDL, không cần cửa ghi sang bot', async 
 
 /* ═══════════ cây cầu ═══════════ */
 
-test('cầu bot · MẶC ĐỊNH ĐÓNG, và PANCAKE_READONLY=1 vẫn đóng dù đã bật cờ', async () => {
-  const cu = { g: process.env.V3_BOT_GHI, r: process.env.PANCAKE_READONLY };
-  try {
-    delete process.env.V3_BOT_GHI; delete process.env.PANCAKE_READONLY;
-    assert.equal(cau.trangThaiCau().mo, false, 'không đặt gì thì phải ĐÓNG');
-
-    // Hai điều kiện, thiếu một là đóng — cùng quy ước với V3_PANCAKE_GUI của người A.
-    process.env.V3_BOT_GHI = '1';
+test('cầu bot · MẶC ĐỊNH MỞ, nhưng ba thứ vẫn khoá được', async () => {
+  // ⚠️ Bài này trước canh «mặc định ĐÓNG». Khi đổi hợp đồng, nó XANH NHẦM ở máy dev vì máy
+  //    đó luôn có `PANCAKE_READONLY=1` (luật của chủ dự án) nên cửa đóng dù sao — chỉ máy
+  //    chủ mới lộ ra. Bài học: một bài test phụ thuộc biến môi trường của máy chạy nó thì
+  //    xanh ở đây không có nghĩa là đúng ở kia. Nay dọn sạch env trước mỗi phép khẳng định.
+  const cu = {
+    g: process.env.V3_BOT_GHI, k: process.env.V3_BOT_KHOA, r: process.env.PANCAKE_READONLY,
+    u: process.env.ADMIN_USER, p: process.env.ADMIN_PASS,
+  };
+  const don = () => {
+    delete process.env.V3_BOT_GHI; delete process.env.V3_BOT_KHOA;
+    delete process.env.PANCAKE_READONLY;
     process.env.ADMIN_USER = 'u'; process.env.ADMIN_PASS = 'p';
-    process.env.PANCAKE_READONLY = '1';
-    const t = cau.trangThaiCau();
-    assert.equal(t.mo, false, 'PANCAKE_READONLY=1 phải thắng cờ V3_BOT_GHI');
+  };
+  try {
+    don();
+    assert.equal(cau.trangThaiCau().mo, true,
+      'không khai cờ nào thì phải MỞ — bắt SSH mới ghi được là đẩy người ta sang dashboard cũ');
+
+    don(); process.env.V3_BOT_KHOA = '1';
+    let t = cau.trangThaiCau();
+    assert.equal(t.mo, false, '`V3_BOT_KHOA=1` phải khoá');
+    assert.ok(t.thieu.some((x) => /V3_BOT_KHOA/.test(x)));
+
+    don(); process.env.V3_BOT_GHI = '0';
+    assert.equal(cau.trangThaiCau().mo, false, 'cờ cũ đặt `0` vẫn phải được tôn trọng');
+
+    don(); process.env.PANCAKE_READONLY = '1';
+    t = cau.trangThaiCau();
+    assert.equal(t.mo, false, 'PANCAKE_READONLY=1 phải thắng mọi thứ — máy dev không chạm bot thật');
     assert.ok(t.thieu.some((x) => /PANCAKE_READONLY/.test(x)));
+
+    don(); delete process.env.ADMIN_USER; delete process.env.ADMIN_PASS;
+    assert.equal(cau.trangThaiCau().mo, false, 'không có tài khoản thì gọi sang bot cũng không được');
   } finally {
-    for (const [k, v] of [['V3_BOT_GHI', cu.g], ['PANCAKE_READONLY', cu.r]]) {
+    for (const [k, v] of [['V3_BOT_GHI', cu.g], ['V3_BOT_KHOA', cu.k],
+      ['PANCAKE_READONLY', cu.r], ['ADMIN_USER', cu.u], ['ADMIN_PASS', cu.p]]) {
       if (v === undefined) delete process.env[k]; else process.env[k] = v;
     }
-    delete process.env.ADMIN_USER; delete process.env.ADMIN_PASS;
   }
 });
 
