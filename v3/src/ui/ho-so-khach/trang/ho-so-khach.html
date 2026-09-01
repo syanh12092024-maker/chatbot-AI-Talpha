@@ -175,7 +175,7 @@ function veBang(d) {
           ${x.thiTruong ? `<div class="nho">${esc(x.thiTruong)}</div>` : ''}</td>
         <td class="p"><b>${d0(x.soDon)}</b></td>
         <td class="p">${x.soDonHoan
-          ? `<span class="the hoan">${x.soDonHoan}${x.tiLeHoan != null ? ' · ' + Math.round(x.tiLeHoan * 100) + '%' : ''}</span>`
+          ? `<span class="the hoan">${x.soDonHoan}${x.tiLeHoan != null ? ' · ' + x.tiLeHoan + '%' : ''}${x.tangHoan && typeof x.tangHoan === 'string' ? ' · ' + esc(x.tangHoan) : ''}</span>`
           : '<span class="nho">0</span>'}</td>
         <td><span class="the mu">chưa nối</span></td>
         <td class="p">${x.soDonCoTien ? d0(x.tongTien) : '<span class="nho">—</span>'}

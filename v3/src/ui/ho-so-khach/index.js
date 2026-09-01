@@ -5,7 +5,7 @@
 
 export {
   manKhach, datTaoTruyVan, daNoiKhach, chuanSo,
-  KENH, MA_HOAN, TRAN_DOC, MOI_TRANG, BANG_KHACH, BANG_DON, BANG_HOI_THOAI, LoiKhach,
+  KENH, CHU_HOAN, TRAN_DOC, MOI_TRANG, BANG_KHACH, BANG_DON, BANG_HOI_THOAI, LoiKhach,
 } from './kho-khach.js';
 
 export {

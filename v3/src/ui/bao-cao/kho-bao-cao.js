@@ -80,7 +80,15 @@ export function datTaoTruyVan(fn) {
 }
 export function datDocDon(fn) { _docDon = fn || null; return _docDon; }
 export function datDocChiPhi(fn) { _docChiPhi = fn || null; return _docChiPhi; }
-/** `baoCaoHaiLuong` của người A — nguồn DUY NHẤT biết tách hai luồng. */
+/**
+ * `baoCaoHaiLuong` của người A — nguồn DUY NHẤT tách hai luồng NGAY TRONG CSDL (một câu
+ * `GROUP BY nguon`, có lớp vai, có `boiCanh` giải thích vì sao rỗng).
+ *
+ * ⚠️ Khai xong phải ĐỌC LẠI. Bản trước có đúng hàm này mà `_docHaiLuong` không xuất hiện ở
+ * một dòng nào khác trong file ⇒ cửa của A thành mã chết, còn màn thì tự đếm `don_hang` lần
+ * hai (`luongTrangBanHang`). Hai bản khai của một con số bao giờ cũng trôi khỏi nhau —
+ * chính là bệnh vừa vá ở màn «Rủi ro hoàn hàng».
+ */
 export function datDocHaiLuong(fn) { _docHaiLuong = fn || null; return _docHaiLuong; }
 export const daNoiBaoCao = () => typeof _taoTruyVan === 'function' && typeof _docDon === 'function';
 
@@ -138,9 +146,14 @@ export async function manBaoCao(boiCanh) {
 
   const soCu = page.filter((p) => p.soCu);
 
+  // Hai luồng đo THẲNG trong CSDL bằng cửa của người A khi đã nối; chưa nối thì lùi về
+  // phép đếm tại chỗ và NÓI RÕ đang đứng ở nguồn nào (không im lặng đổi nguồn số).
+  const haiLuong = await docHaiLuongCuaA(bc);
+
   return {
     teamId: bc.teamId,
     thuoc: THUOC,
+    haiLuong,
     messenger: {
       botTuTao,
       posQuyChoAi: page.reduce((s, p) => s + p.posQuyChoAi, 0),
@@ -156,7 +169,7 @@ export async function manBaoCao(boiCanh) {
         : null,
       quetLuc: don.quetLuc,
     },
-    trangBanHang: await luongTrangBanHang(bc),
+    trangBanHang: haiLuong?.co ? haiLuong.trangBanHang : await luongTrangBanHang(bc),
     viSaoKhongCong:
       '`01-QUYET-DINH §1` — hai luồng đo bằng HAI THƯỚC khác nhau: trang bán hàng có đơn '
       + 'trước rồi mới hỏi, Messenger thì chốt trong hội thoại. Cộng lại là trả lời sai mọi '
@@ -169,6 +182,43 @@ export async function manBaoCao(boiCanh) {
         + 'xem Cửa kiểm sẵn sàng.',
     },
   };
+}
+
+/**
+ * Gọi `baoCaoHaiLuong` của người A và dịch sang hình dạng màn đang dùng.
+ *
+ * Trả `{co:false, viSao}` khi CHƯA nối cửa (v3 chạy bằng `xem-thu.js`, hoặc `chay-that.js`
+ * chưa truyền `docHaiLuong`) — màn khi đó lùi về `luongTrangBanHang`. Cửa ném thì cũng
+ * `co:false` kèm nguyên văn lỗi: một con số sai trông giống hệt một con số đúng.
+ */
+async function docHaiLuongCuaA(bc) {
+  if (!_docHaiLuong) {
+    return { co: false, vi: 'chua-noi',
+      noi: 'Chưa nối `baoCaoHaiLuong` của người A — số hai luồng dưới đây đếm tại màn.' };
+  }
+  try {
+    const r = await _docHaiLuong(bc);
+    const khoi = (x, ten) => ({
+      coNguon: true,
+      soDon: x?.soDon ?? 0,
+      soDonCoTien: x?.soDonCoTien ?? 0,
+      tongTien: x?.tongTien ?? 0,
+      canhBao: x?.canhBao || null,
+      noi: `${x?.soDon ?? 0} đơn ${ten} trong khoảng đo.`,
+    });
+    return {
+      co: true,
+      nguon: r?.nguon || 'src/db/so-lieu.js#baoCaoHaiLuong',
+      khoang: r?.khoang || null,
+      boiCanh: r?.boiCanh || null,
+      trangBanHang: khoi(r?.trangBanHang, 'trang bán hàng'),
+      messenger: khoi(r?.messenger, 'Messenger'),
+    };
+  } catch (e) {
+    return { co: false, vi: 'cua-hong',
+      noi: `Cửa \`baoCaoHaiLuong\` của người A ném: ${e?.message || e}. Số hai luồng dưới đây `
+        + 'đếm tại màn — KHÔNG phải số của cửa đó.' };
+  }
 }
 
 /**

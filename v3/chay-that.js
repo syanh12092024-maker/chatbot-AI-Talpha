@@ -100,6 +100,10 @@ const bao = dungPhanB(app, {
   // nguồn chính. Hai sổ lệch thì màn Chi phí nói ra kèm cả hai con số.
   docSoAiV3: (bc) => soLieu.chiPhiAiTheoPage(pool, ctxCuaA(bc)),
   docHieuQua: (bc) => soLieu.hieuQuaKichBan(pool, ctxCuaA(bc)),
+  // Hai luồng đơn đo THẲNG trong CSDL (một câu GROUP BY nguon, có lớp vai). Không truyền
+  // thì màn Báo cáo tự đếm `don_hang` lần hai — bản khai thứ hai của một con số, đúng
+  // bệnh vừa vá ở màn «Rủi ro hoàn hàng» (01/09).
+  docHaiLuong: (bc) => soLieu.baoCaoHaiLuong(pool, ctxCuaA(bc)),
   dungBanMay: (cfg) => dungBanChoMay(cfg),
   // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM tiến trình bot, qua đúng cửa v1.
   dayKichBanLenBot: async (pageIdFacebook, cfg) => {

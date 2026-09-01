@@ -30,7 +30,7 @@ const donCo = (pages, o = {}) => async () => ({
 });
 const p = (pageId, o = {}) => ({ pageId, hoiThoaiCoDon: 8, posQuyChoAi: 9, soCu: false, ...o });
 
-function dung({ don, chiPhi, donHang = [] } = {}) {
+function dung({ don, chiPhi, donHang = [], haiLuong = null } = {}) {
   const { taoTruyVan } = dungCongGia({
     team: [{ id: 't1', slug: 'a', ten: 'A', la_ky_thuat: false },
            { id: 't2', slug: 'b', ten: 'B', la_ky_thuat: false }],
@@ -39,6 +39,7 @@ function dung({ don, chiPhi, donHang = [] } = {}) {
   bcao.datTaoTruyVan(taoTruyVan);
   bcao.datDocDon(don === undefined ? donCo([p('111')]) : don);
   bcao.datDocChiPhi(chiPhi === undefined ? null : chiPhi);
+  bcao.datDocHaiLuong(haiLuong);
 }
 
 const bc = (team = 't1') => taoBoiCanh({
@@ -173,4 +174,54 @@ test('⑤c · gói chi phí hỏng → `botTuTao` là null, hai thước kia v�
   const d = await bcao.manBaoCao(bc());
   assert.equal(d.messenger.botTuTao, null, '0 ở đây là một kết luận, và ta chưa có quyền kết luận');
   assert.equal(d.messenger.posQuyChoAi, 9, 'một thước hỏng không được làm mất hai thước kia');
+});
+
+/* ═══════════ ⑦ CỬA HAI LUỒNG CỦA NGƯỜI A — khai xong phải ĐỌC LẠI ═══════════ */
+// Bản trước có `datDocHaiLuong` mà không dòng nào đọc `_docHaiLuong` ⇒ cửa của A thành mã
+// chết và màn tự đếm `don_hang` lần hai. Ba ca dưới khoá cả ba trạng thái của đường nối.
+
+test('⑦a · nối cửa của A → số trang bán hàng lấy TỪ CỬA, khai đúng nguồn', async () => {
+  dung({
+    donHang: [{ id: 'd1', team_id: 't1', nguon: 'trang_ban_hang', trang_thai_pos: '16' }],
+    haiLuong: async () => ({
+      nguon: 'don_hang WHERE team_id=? GROUP BY nguon',
+      khoang: { tu: '2026-08-01', den: '2026-09-01' },
+      trangBanHang: { soDon: 559, soDonCoTien: 0, tongTien: 0,
+        canhBao: '559/559 đơn CHƯA có tong_tien' },
+      messenger: { soDon: 11265, soDonCoTien: 11265, tongTien: 1000, canhBao: null },
+    }),
+  });
+  const d = await bcao.manBaoCao(bc());
+  assert.equal(d.haiLuong.co, true);
+  assert.match(d.haiLuong.nguon, /GROUP BY nguon/);
+  assert.equal(d.trangBanHang.soDon, 559, 'số phải là của CỬA, không phải phép đếm tại màn');
+  assert.match(d.trangBanHang.canhBao, /CHƯA có tong_tien/);
+  assert.equal(d.haiLuong.messenger.soDon, 11265);
+});
+
+test('⑦b · CHƯA nối cửa → lùi về đếm tại màn, và NÓI RÕ đang ở nguồn nào', async () => {
+  dung({ donHang: [{ id: 'd1', team_id: 't1', nguon: 'trang_ban_hang', trang_thai_pos: '16' }] });
+  const d = await bcao.manBaoCao(bc());
+  assert.equal(d.haiLuong.co, false);
+  assert.equal(d.haiLuong.vi, 'chua-noi');
+  assert.match(d.haiLuong.noi, /đếm tại màn/);
+  assert.equal(d.trangBanHang.soDon, 1, 'vẫn có số, nhưng là số đếm tại màn');
+});
+
+test('⑦c · cửa của A NÉM → không im lặng nuốt, khai lỗi kèm nguyên văn', async () => {
+  dung({
+    donHang: [{ id: 'd1', team_id: 't1', nguon: 'trang_ban_hang', trang_thai_pos: '16' }],
+    haiLuong: async () => { throw new Error('thiếu vai xem số liệu'); },
+  });
+  const d = await bcao.manBaoCao(bc());
+  assert.equal(d.haiLuong.co, false);
+  assert.equal(d.haiLuong.vi, 'cua-hong');
+  assert.match(d.haiLuong.noi, /thiếu vai xem số liệu/);
+});
+
+test('⑦d · `chay-that.js` có TRUYỀN `docHaiLuong` — cửa được nối ở bản chạy thật', () => {
+  const src = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)),
+    '../../chay-that.js'), 'utf8');
+  assert.match(src, /docHaiLuong:\s*\(bc\)\s*=>\s*soLieu\.baoCaoHaiLuong/,
+    'khai hàm mà không truyền vào `dungPhanB` thì cửa của A vẫn là mã chết');
 });

@@ -5,6 +5,9 @@
 //      với nhiều lịch sử mua khác nhau, và người dùng tin cái nào cũng sai.
 //   ② Kênh hội thoại CHƯA nối (`hoi_thoai.khach_id` = 0/28.953). Cột đó phải là «chưa biết»,
 //      không phải 0 — một hồ sơ 0 hội thoại trông y hệt một khách chưa từng nhắn tin.
+//   ③ Rủi ro hoàn phải ĐỌC cột đã chấm, không tự đếm trên `don_hang` (sửa 01/09 cùng lượt
+//      với màn Rủi ro hoàn): bản trước đếm bằng mã hoàn {4,5,6,7,8} của v1, mẫu số là mọi
+//      đơn, không sàn — ba chiều đều lệch luật `src/orders/ti-le-hoan.js`.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -27,7 +30,11 @@ function dung({ khach = [], don = [], hoiThoai = [] } = {}) {
 const bc = (team = 't1') => taoBoiCanh({
   nguoiDungId: 'u1', tenDangNhap: 'an@talpha.vn', teamId: team, vai: [VAI.QUAN_TRI],
 });
+// `ket`/`hoan` = hai cột do job đêm chấm (`so_don_ket`/`so_don_hoan`), `tang` = `tang_hoan`.
+// Không truyền = job CHƯA chấm dòng đó.
 const k = (id, so, o = {}) => ({ id, team_id: 't1', so_dien_thoai: so, ten: 'K' + id, ...o });
+const kCham = (id, so, ket, hoan, tang, o = {}) =>
+  k(id, so, { so_don_ket: ket, so_don_hoan: hoan, tang_hoan: tang, ...o });
 const d = (id, khachId, tt = '16', o = {}) => ({ id, team_id: 't1', khach_id: khachId, trang_thai_pos: tt, nguon: 'messenger', ...o });
 
 /* ═══════════ ① GỘP THEO SỐ ĐIỆN THOẠI ═══════════ */
@@ -41,7 +48,8 @@ test('①a · chuẩn hoá số — bỏ dấu cách, gạch, dấu cộng', () 
 
 test('①b · hai dòng cùng số = MỘT người, và lịch sử mua GỘP lại', async () => {
   dung({
-    khach: [k('a', '+966 50 111 2222'), k('b', '966501112222')],
+    khach: [kCham('a', '+966 50 111 2222', 1, 0, 'chua_du_don'),
+            kCham('b', '966501112222', 2, 1, 'rui_ro_cao')],
     don: [d('d1', 'a'), d('d2', 'b'), d('d3', 'b', '5')],
   });
   const r = await hs.manKhach(bc());
@@ -51,7 +59,36 @@ test('①b · hai dòng cùng số = MỘT người, và lịch sử mua GỘP l
   const x = r.khach[0];
   assert.equal(x.soDongGop, 2);
   assert.equal(x.soDon, 3, 'đơn của cả hai dòng phải về một người');
+  // Hai cột đếm CỘNG DỒN; tỉ lệ lấy trên tổng, đơn vị phần trăm 0–100.
+  assert.equal(x.soDonKet, 3);
   assert.equal(x.soDonHoan, 1);
+  assert.equal(x.tiLeHoan, 33.3);
+  // Hai dòng hai tầng khác nhau ⇒ KHÔNG bịa ra một tầng gộp, kê cả hai.
+  assert.deepEqual(x.tangHoan, ['chua_du_don', 'rui_ro_cao']);
+});
+
+test('①b2 · RỦI RO HOÀN đọc cột đã chấm, KHÔNG đếm lại `don_hang` (luật ti-le-hoan.js)', async () => {
+  // Ba đơn mã '8' = packing. Bản cũ chép {4,5,6,7,8} của v1 nên đếm thành 3 đơn hoàn;
+  // luật đã chốt loại 8 khỏi nhóm hoàn, và cột chấm nói 0 đơn hoàn.
+  dung({
+    khach: [kCham('a', '966500000001', 3, 0, 'tot')],
+    don: [d('d1', 'a', '8'), d('d2', 'a', '8'), d('d3', 'a', '8')],
+  });
+  const r = await hs.manKhach(bc());
+  const x = r.khach[0];
+  assert.equal(x.soDon, 3, 'vẫn đếm được tổng đơn');
+  assert.equal(x.soDonHoan, 0, 'mã 8 = packing, KHÔNG phải hoàn — đọc cột chứ không tự đếm');
+  assert.equal(x.tangHoan, 'tot');
+  assert.equal(x.tiLeHoan, 0);
+});
+
+test('①b3 · job CHƯA chấm dòng nào của số này → tỉ lệ `null`, không quy về 0', async () => {
+  dung({ khach: [k('a', '966500000002')], don: [d('d1', 'a', '5')] });
+  const r = await hs.manKhach(bc());
+  const x = r.khach[0];
+  assert.equal(x.tiLeHoan, null, 'chưa chấm thì KHÔNG được nói 0% — mù phải nói ra');
+  assert.equal(x.tangHoan, null);
+  assert.equal(x.soHoSoChuaCham, 1);
 });
 
 test('①c · dòng khách KHÔNG có số điện thoại → đếm riêng, không lẫn vào bảng', async () => {

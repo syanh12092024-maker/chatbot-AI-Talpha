@@ -28,8 +28,22 @@ export const BANG_DON = 'don_hang';
 export const BANG_HOI_THOAI = 'hoi_thoai';
 export const VAI_VAO_DUOC = Object.freeze([VAI.QUAN_TRI, VAI.QUAN_LY]);
 
-/** Mã hoàn — chép từ `src/pancake-orders.js:13`, có bài test so. Xem màn Rủi ro hoàn. */
-export const MA_HOAN = Object.freeze(['4', '5', '6', '7', '8']);
+/**
+ * KHÔNG khai mã hoàn ở đây (sửa 01/09, cùng lượt với màn Rủi ro hoàn).
+ *
+ * Bản trước chép `CANCEL` của `src/pancake-orders.js` = {4,5,6,7,8} rồi tự đếm hoàn trên
+ * `don_hang`. Đó là bản khai THỨ HAI của một chỉ số đã có bản chuẩn, và nó lệch luật đã
+ * chốt (`src/orders/ti-le-hoan.js`) theo ba chiều: có mã `8` (packing — một bước TIẾN),
+ * mẫu số là MỌI đơn thay vì đơn ĐÃ KẾT, và không có sàn `toi_thieu_don_ket = 2`.
+ *
+ * Nay đọc thẳng bốn cột do job đêm chấm: `ti_le_hoan` · `tang_hoan` · `so_don_ket` ·
+ * `so_don_hoan`. Một số điện thoại có thể ứng NHIỀU dòng `khach` (khoá là team+NƯỚC+SĐT,
+ * migration 013) — cộng hai cột đếm rồi lấy tỉ lệ trên tổng, KHÔNG bịa ra một tầng gộp.
+ */
+export const CHU_HOAN = Object.freeze({
+  cot: ['ti_le_hoan', 'tang_hoan', 'so_don_ket', 'so_don_hoan'],
+  job: 'src/orders/ti-le-hoan.js#chamTiLeHoan',
+});
 
 /** Ba kênh mà yêu cầu đòi gộp, kèm trạng thái nối THẬT. */
 export const KENH = Object.freeze([
@@ -62,8 +76,6 @@ function truyVan(bc) {
   return _taoTruyVan(bc);
 }
 
-const laHoan = (d) => MA_HOAN.includes(String(d.trang_thai_pos ?? ''));
-
 /** Chuẩn hoá số điện thoại để gộp: bỏ mọi thứ không phải chữ số, giữ nguyên phần đuôi. */
 export function chuanSo(s) {
   const chu = String(s ?? '').replace(/\D+/g, '');
@@ -87,10 +99,19 @@ export async function manKhach(boiCanh, { tim = '', trang = 0 } = {}) {
     const so = chuanSo(k.so_dien_thoai);
     if (!so) { khongCoSo += 1; continue; }
     let x = theoSo.get(so);
-    if (!x) { x = { so, dong: [], ten: '', thiTruong: '', donIds: new Set() }; theoSo.set(so, x); }
+    if (!x) {
+      x = { so, dong: [], ten: '', thiTruong: '', donIds: new Set(),
+            donKet: 0, donHoan: 0, tang: [], chuaCham: 0 };
+      theoSo.set(so, x);
+    }
     x.dong.push(String(k.id));
     if (!x.ten && k.ten) x.ten = k.ten;
     if (!x.thiTruong && k.thi_truong) x.thiTruong = k.thi_truong;
+    // Bốn cột do job đêm chấm — cộng dồn, KHÔNG tự đếm lại từ `don_hang`.
+    x.donKet += Number(k.so_don_ket) || 0;
+    x.donHoan += Number(k.so_don_hoan) || 0;
+    if (k.tang_hoan == null || k.tang_hoan === '') x.chuaCham += 1;
+    else if (!x.tang.includes(String(k.tang_hoan))) x.tang.push(String(k.tang_hoan));
   }
   // Bao nhiêu người bị tách thành nhiều dòng — nếu không đếm, cùng một người hiện hai lần.
   const soBiTach = [...theoSo.values()].filter((x) => x.dong.length > 1).length;
@@ -105,23 +126,27 @@ export async function manKhach(boiCanh, { tim = '', trang = 0 } = {}) {
     const so = d.khach_id == null ? null : dongToiSo.get(String(d.khach_id));
     if (!so) { donKhongQuyDuoc += 1; continue; }
     let a = donCuaSo.get(so);
-    if (!a) { a = { tong: 0, hoan: 0, tien: 0, coTien: 0, nguon: new Set() }; donCuaSo.set(so, a); }
+    if (!a) { a = { tong: 0, tien: 0, coTien: 0, nguon: new Set() }; donCuaSo.set(so, a); }
     a.tong += 1;
-    if (laHoan(d)) a.hoan += 1;
     if (d.tong_tien != null) { a.tien += Number(d.tong_tien); a.coTien += 1; }
     if (d.nguon) a.nguon.add(String(d.nguon));
   }
 
   let ds = [...theoSo.values()].map((x) => {
-    const a = donCuaSo.get(x.so) || { tong: 0, hoan: 0, tien: 0, coTien: 0, nguon: new Set() };
+    const a = donCuaSo.get(x.so) || { tong: 0, tien: 0, coTien: 0, nguon: new Set() };
     return {
       so: x.so,
       ten: x.ten || '',
       thiTruong: x.thiTruong || '',
       soDongGop: x.dong.length,
       soDon: a.tong,
-      soDonHoan: a.hoan,
-      tiLeHoan: a.tong > 0 ? +(a.hoan / a.tong).toFixed(3) : null,
+      // ── RỦI RO HOÀN: đọc cột đã chấm, đơn vị PHẦN TRĂM 0–100 như CHECK của migration 005.
+      // `null` = job chưa chấm dòng nào của số này (mù thì nói ra, không quy về 0).
+      soDonKet: x.donKet,
+      soDonHoan: x.donHoan,
+      tiLeHoan: x.donKet > 0 ? +((x.donHoan / x.donKet) * 100).toFixed(1) : null,
+      tangHoan: x.tang.length === 1 ? x.tang[0] : (x.tang.length ? x.tang : null),
+      soHoSoChuaCham: x.chuaCham,
       // Tiền chỉ đúng khi MỌI đơn có `tong_tien`. Đo 28/08: 0/1502 đơn trang bán hàng có.
       tongTien: a.tien,
       soDonCoTien: a.coTien,
