@@ -21,3 +21,17 @@ Ba luật khi thêm biến:
 1. Chiều an toàn: vắng = đóng. Cấm biến kiểu "đặt để TẮT".
 2. Tên `V3_` + tiếng Việt không dấu, một nghĩa một biến.
 3. Cửa đọc biến phải in GIÁ TRỊ ĐO ĐƯỢC trong thông điệp lỗi (khuôn `LoiCuaGuiDong`).
+
+---
+
+> **⚠️ Giới hạn của `V3_RAP_PROMPT_BAT` — đọc trước khi hứa với ai (đo 01/09):**
+> Bật cờ làm ba khối **kỹ năng · kịch bản · sản phẩm** có hiệu lực thật trên đường chat
+> (`buildSystem` đọc thẳng `kb.config` và `kb.text`). Nhưng khối **bộ luật chung KHÔNG thay
+> được hằng `CORE`** cứng trong `src/prompts.js` (file cấm sửa, luật 4 §0a) — bản trong CSDL
+> đi vào khối `# KNOWLEDGE BASE` ở CUỐI prompt, tức **bổ sung, không thay thế**. Vì vậy tiêu
+> chí `07-KE-HOACH-GD2.md` G2 nghiệm thu ① («sửa bộ luật trên màn → lượt chat kế tiếp dùng
+> bản mới, không deploy») mới **đạt một nửa**: nội dung tới được model, nhưng CORE vẫn đứng
+> đầu và tự tuyên bố thẩm quyền. Đóng nốt nửa còn lại = cutover `prompts.js` cho
+> `buildSystem` đọc `kb.boLuatChung` — việc chạm FILE CẤM, phải xin chủ dự án.
+> Màn «Prompt của page» nay hiện đủ NĂM khối (CORE + bốn khối CSDL) và nói rõ khối nào đang
+> điều khiển; chưa nối bộ đọc hiệu lực thì nó nói «chưa biết», không đoán là đang bật.
