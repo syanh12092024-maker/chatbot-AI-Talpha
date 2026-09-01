@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; }
+    a { color: #0e7c86; } a:hover { color: #0b646d; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; height: 940px; background: #f5f7f9; display: flex; flex-direction: column;">
+
+  <div style="background: #0b2125; color: #fff; padding: 14px 22px; display: flex; align-items: center; gap: 14px;">
+    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">Cài đặt</h1>
+    <div style="font-size: 11.5px; color: #7fa3a8;">vào đúng hai lần: hôm cài đặt, và hôm có sự cố</div>
+  </div>
+
+  <div style="background: #fff; border-bottom: 1px solid #e4e9ee; padding: 0 22px; display: flex; gap: 2px;">
+    <sc-for list="{{tab}}" as="t" hint-placeholder-count="5">
+      <div style="padding: 11px 12px 9px; border-bottom: 2px solid {{t.gach}}; color: {{t.mau}}; font-size: 12.5px; font-weight: {{t.dam}};">{{t.ten}}</div>
+    </sc-for>
+  </div>
+
+  <div style="flex: 1; padding: 16px 22px; display: flex; gap: 16px; min-height: 0;">
+
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 14px 16px;">
+        <div style="display: flex; align-items: baseline; gap: 9px;">
+          <div style="font-weight: 600; font-size: 13px;">Chín đèn</div>
+          <div style="flex: 1;"></div>
+          <div style="font-size: 11px; color: #8b95a1;">tự nạp lại mỗi phút</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 12px;">
+          <sc-for list="{{den}}" as="d" hint-placeholder-count="9">
+            <div style="border: 1px solid {{d.vien}}; background: {{d.nen}}; border-radius: 10px; padding: 10px 12px;">
+              <div style="display: flex; gap: 7px; align-items: center;">
+                <div style="width: 9px; height: 9px; border-radius: 50%; background: {{d.cham}}; flex-shrink: 0;"></div>
+                <div style="font-size: 12px; font-weight: 600; color: {{d.mauTen}};">{{d.ten}}</div>
+              </div>
+              <div style="font-size: 11px; color: #667085; line-height: 1.45; margin-top: 5px;">{{d.noi}}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="border-top: 1px solid #e4e9ee; margin-top: 12px; padding-top: 9px; font-size: 11.5px; color: #667085; line-height: 1.55;">
+          <b style="color: #101828;">Đèn XÁM tách khỏi đèn ĐỎ.</b> Xám là «chưa đo được», đỏ là «đo được và đang hỏng» —
+          gộp hai thứ đó làm một thì người trực đêm không biết nên đi sửa hay đi cài đặt.
+        </div>
+      </div>
+
+      <div style="background: #fdf3e3; border: 1px solid #f0d3a4; border-radius: 9px; padding: 11px 14px; font-size: 11.5px; line-height: 1.6; color: #8a4a06;">
+        <b>Hai đèn công tắc bot đọc nguồn THẬT</b> (<span style="font-family: ui-monospace, Menlo, monospace;">ai-enabled.json</span> của tiến trình bot),
+        không đọc cột trong cơ sở dữ liệu — hai chỗ đã có lần lệch 50. Khi lệch, màn hiện cả hai con số và số page lệch, không chọn hộ một bên.
+      </div>
+
+    </div>
+
+    <div style="width: 350px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05); padding: 13px 15px;">
+        <div style="font-weight: 600; font-size: 12.5px;">Bốn tab còn lại</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+          <sc-for list="{{con}}" as="c" hint-placeholder-count="4">
+            <div>
+              <div style="font-size: 12px; font-weight: 600;">{{c.ten}}</div>
+              <div style="font-size: 11px; color: #667085; line-height: 1.5; margin-top: 1px;">{{c.noi}}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: #e6f4f5; border: 1px solid #b8dde0; border-radius: 12px; padding: 13px 15px;">
+        <div style="font-weight: 600; font-size: 12.5px; color: #0b646d;">Đổi team và đăng xuất KHÔNG nằm ở đây</div>
+        <div style="font-size: 11.5px; color: #0b646d; line-height: 1.6; margin-top: 5px;">
+          Chúng là hai nút ở CHÂN thanh bên, có mặt trên cả 25 trang và không lọc theo vai.
+          Trước 01/09 chỉ màn «Cấu hình team» có lối này — mà vai <span style="font-family: ui-monospace, Menlo, monospace;">sale</span>
+          không vào được màn đó, nên sale muốn sang team khác phải xoá cookie.
+        </div>
+        <div style="display: flex; gap: 7px; margin-top: 10px;">
+          <div style="flex: 1; background: #0b2125; color: #dfeaec; border-radius: 7px; padding: 6px 9px; font-size: 11.5px; font-weight: 600; text-align: center;">Đổi team</div>
+          <div style="flex: 1; background: #0b2125; color: #dfeaec; border-radius: 7px; padding: 6px 9px; font-size: 11.5px; font-weight: 600; text-align: center;">Đăng xuất</div>
+        </div>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; padding: 13px 15px;">
+        <div style="font-weight: 600; font-size: 12.5px;">Nhật ký: không sửa, không xoá</div>
+        <div style="font-size: 11px; color: #667085; line-height: 1.55; margin-top: 4px;">
+          Ghi cả việc máy làm (01 §9). Tách hai làn người / máy, vì trộn vào nhau thì một
+          lượt job đêm đẩy trôi mọi thao tác người trong ngày.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const t = (ten, dang) => ({
+      ten,
+      gach: dang ? '#0e7c86' : 'transparent',
+      mau: dang ? '#0e7c86' : '#344054',
+      dam: dang ? 700 : 600,
+    });
+    const D = (ten, noi, muc) => ({
+      ten, noi,
+      cham: muc === 'xanh' ? '#16a34a' : muc === 'vang' ? '#b45309' : muc === 'do' ? '#dc2626' : '#8b95a1',
+      nen: muc === 'do' ? '#fdecec' : muc === 'vang' ? '#fdf3e3' : '#fff',
+      vien: muc === 'do' ? '#f3c2c2' : muc === 'vang' ? '#f0d3a4' : '#e4e9ee',
+      mauTen: muc === 'xam' ? '#8b95a1' : '#101828',
+    });
+    return {
+      tab: [
+        t('Sức khoẻ hệ thống', true), t('Cấu hình team', false), t('Kết nối & token', false),
+        t('Model AI & khoá', false), t('Nhật ký thao tác', false),
+      ],
+      den: [
+        D('Model AI', 'Kimi K2.6 · dự phòng đã đặt · khoá còn hạn.', 'xanh'),
+        D('Kho token Pancake', '6 token · token phủ nhiều page nhất KHÔNG đứng đầu.', 'vang'),
+        D('Kết nối POS', '7 thị trường nối đủ, đọc được danh mục.', 'xanh'),
+        D('Công tắc bot', '0 page bật theo nguồn thật, cột nói 50 — lệch 50.', 'do'),
+        D('Page có kịch bản', '70/514 có bản LIVE; 444 dùng bản kế thừa.', 'vang'),
+        D('Sổ AI', 'Chưa có dòng nào — luồng chat v3 chưa chạy trong tiến trình thật.', 'xam'),
+        D('Hàng đợi việc', '0 dòng trong khi 988 hội thoại ở HANDOFF — chưa nạp.', 'xam'),
+        D('Cầu sang tiến trình bot', 'Đọc được; cửa GHI đang ĐÓNG (V3_BOT_GHI chưa đặt).', 'vang'),
+        D('Lớp 0 đồng', 'Bảng mẫu rỗng, chưa ai nhập — chưa chặn được lượt nào.', 'xam'),
+      ],
+      con: [
+        { ten: 'Cấu hình team', noi: 'Thành viên và vai · kết nối POS · gán page cho team. Đổi team của một page thì hội thoại đi theo, không để page một nơi hội thoại một nẻo.' },
+        { ten: 'Kết nối & token', noi: 'Kho token Pancake theo thứ tự dự phòng. Toàn hệ, KHÔNG theo team — màn nói thẳng điều đó vì mọi màn khác đều theo team.' },
+        { ten: 'Model AI & khoá', noi: 'Ba vai model (chính · dự phòng · nền) và khoá bốn nhà. Khoá vào được, KHÔNG ra được: không đường nào trả khoá ra màn.' },
+        { ten: 'Nhật ký thao tác', noi: 'Chỉ thêm, không sửa không xoá. 1.043 dòng hiện có 100% là lượt ĐỌC — chưa ai gạt công tắc nào.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

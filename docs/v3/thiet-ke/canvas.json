@@ -1,7 +1,8 @@
 {
   "pages": [
     { "id": "page-1", "name": "Điều hướng" },
-    { "id": "page-2", "name": "Luồng nghiệp vụ" }
+    { "id": "page-2", "name": "Từng mục" },
+    { "id": "page-3", "name": "Luồng nghiệp vụ" }
   ],
   "artboards": [
     {
@@ -9,8 +10,8 @@
       "x": 0,
       "y": 0,
       "w": 1180,
-      "h": 940,
-      "title": "Thiết kế lại — 6 mục đang hiện",
+      "h": 1120,
+      "title": "Thiết kế lại — 6 mục, bung hết 24 màn",
       "page": "page-1"
     },
     {
@@ -25,20 +26,66 @@
     {
       "file": "BanDoGom.dc.html",
       "x": 0,
-      "y": 1080,
+      "y": 1260,
       "w": 1180,
       "h": 1180,
       "title": "Bản đồ đầy đủ — 37 màn → 7 mục",
       "page": "page-1"
     },
+
+    {
+      "file": "ViecCanXu.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1180,
+      "h": 940,
+      "title": "Mục 2 — Việc cần xử (3 tab)",
+      "page": "page-2"
+    },
     {
       "file": "BotNoiGi.dc.html",
+      "x": 1300,
+      "y": 0,
+      "w": 1180,
+      "h": 940,
+      "title": "Mục 3 — Bot nói gì (7 tab)",
+      "page": "page-2"
+    },
+    {
+      "file": "PageSanPham.dc.html",
+      "x": 0,
+      "y": 1080,
+      "w": 1180,
+      "h": 940,
+      "title": "Mục 5 — Page & sản phẩm (4 tab)",
+      "page": "page-2"
+    },
+    {
+      "file": "SoLieu.dc.html",
       "x": 1300,
       "y": 1080,
       "w": 1180,
       "h": 940,
-      "title": "Mục nặng nhất — Bot nói gì",
-      "page": "page-1"
+      "title": "Mục 6 — Số liệu (6 tab)",
+      "page": "page-2"
+    },
+    {
+      "file": "CaiDat.dc.html",
+      "x": 0,
+      "y": 2160,
+      "w": 1180,
+      "h": 940,
+      "title": "Mục 7 — Cài đặt (5 tab)",
+      "page": "page-2"
+    },
+    {
+      "file": "NhanChoKhach.dc.html",
+      "x": 1300,
+      "y": 2160,
+      "w": 1180,
+      "h": 940,
+      "title": "Mục 4 — Nhắn cho khách (6 tab, GĐ3)",
+      "page": "page-2"
     },
 
     {
@@ -48,7 +95,7 @@
       "w": 1180,
       "h": 940,
       "title": "Hai luồng đơn — §1",
-      "page": "page-2"
+      "page": "page-3"
     },
     {
       "file": "LuongChat.dc.html",
@@ -57,16 +104,7 @@
       "w": 1180,
       "h": 940,
       "title": "Một tin của khách đi qua những gì",
-      "page": "page-2"
-    },
-    {
-      "file": "NhanChoKhach.dc.html",
-      "x": 0,
-      "y": 1080,
-      "w": 1180,
-      "h": 940,
-      "title": "Mục thứ bảy — Nhắn cho khách (GĐ3)",
-      "page": "page-2"
+      "page": "page-3"
     }
   ],
   "annotations": [
@@ -87,13 +125,21 @@
       "text": "ĐỀ XUẤT\nBảy mục xếp theo NHỊP LÀM VIỆC; sáu mục có màn, mục thứ bảy khai sẵn\ncho giai đoạn 3. Không xoá màn nào — 37 màn đều có chỗ."
     },
     {
+      "id": "tung-muc",
+      "x": 0,
+      "y": -160,
+      "w": 700,
+      "page": "page-2",
+      "text": "TỪNG MỤC, ĐỦ THANH TAB\nMỗi khung là một mục với thanh tab đầy đủ của nó, và nội dung của tab\nđang mở. Mục 1 «Hôm nay» chỉ có một màn nên nằm ở trang Điều hướng."
+    },
+    {
       "id": "luong-ghi-chu",
       "x": 0,
       "y": -160,
       "w": 640,
-      "page": "page-2",
-      "text": "LUỒNG NGHIỆP VỤ\nHai luồng đơn tách hẳn nhau (§1), một tin của khách đi qua tám chặng,\nvà mục thứ bảy dành cho việc ta CHỦ ĐỘNG nhắn khách (§5)."
+      "page": "page-3",
+      "text": "LUỒNG NGHIỆP VỤ\nHai luồng đơn tách hẳn nhau (§1) và một tin của khách đi qua tám chặng,\nkèm ngân sách thời gian §3 và ba van chặn của luật 1."
     }
   ],
-  "launch": { "view": "canvas", "page": "page-1" }
+  "launch": { "view": "canvas", "page": "page-2" }
 }

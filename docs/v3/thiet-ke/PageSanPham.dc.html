@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; }
+    a { color: #0e7c86; } a:hover { color: #0b646d; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; height: 940px; background: #f5f7f9; display: flex; flex-direction: column;">
+
+  <div style="background: #0b2125; color: #fff; padding: 14px 22px; display: flex; align-items: center; gap: 14px;">
+    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">Page &amp; sản phẩm</h1>
+    <div style="font-size: 11.5px; color: #7fa3a8;">bốn màn cùng trả lời một câu: «page này bán được chưa»</div>
+  </div>
+
+  <div style="background: #fff; border-bottom: 1px solid #e4e9ee; padding: 0 22px; display: flex; gap: 2px;">
+    <sc-for list="{{tab}}" as="t" hint-placeholder-count="4">
+      <div style="padding: 11px 13px 9px; border-bottom: 2px solid {{t.gach}}; color: {{t.mau}}; font-size: 13px; font-weight: {{t.dam}};">{{t.ten}}</div>
+    </sc-for>
+  </div>
+
+  <div style="flex: 1; padding: 16px 22px; display: flex; gap: 16px; min-height: 0;">
+
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+
+      <div style="display: flex; gap: 10px;">
+        <sc-for list="{{o}}" as="x" hint-placeholder-count="4">
+          <div style="flex: 1; background: #fff; border: 1px solid {{x.vien}}; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05); padding: 12px 14px;">
+            <div style="font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; color: {{x.mau}};">{{x.so}}</div>
+            <div style="font-size: 11.5px; color: #667085; margin-top: 5px; line-height: 1.4;">{{x.ten}}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden;">
+        <div style="padding: 11px 15px; border-bottom: 1px solid #e4e9ee; display: flex; align-items: baseline; gap: 9px;">
+          <div style="font-weight: 600; font-size: 13px;">Bảy điều kiện — bấm ô đỏ là nhảy tới chỗ sửa</div>
+          <div style="flex: 1;"></div>
+          <div style="font-size: 11px; color: #8b95a1;">page: Kreain Nature PH-Ksa</div>
+        </div>
+
+        <sc-for list="{{dieuKien}}" as="d" hint-placeholder-count="7">
+          <div style="padding: 9px 15px; border-bottom: 1px solid #f0f3f5; display: flex; gap: 11px; align-items: center;">
+            <div style="width: 9px; height: 9px; border-radius: 50%; background: {{d.mau}}; flex-shrink: 0;"></div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 12.5px; font-weight: 600;">{{d.ten}}</div>
+              <div style="font-size: 11px; color: #667085; line-height: 1.45; margin-top: 1px;">{{d.noi}}</div>
+            </div>
+            <div style="font-size: 11.5px; color: {{d.mau}}; font-weight: 600; flex-shrink: 0;">{{d.trangThai}}</div>
+            <sc-if value="{{d.suaO}}" hint-placeholder-val="{{true}}">
+              <div style="border: 1px solid #cfd8de; border-radius: 7px; padding: 3px 9px; font-size: 11px; font-weight: 600; color: #0e7c86; flex-shrink: 0;">{{d.suaO}}</div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+    </div>
+
+    <div style="width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+
+      <div style="background: #fdecec; border: 1px solid #f3c2c2; border-radius: 12px; padding: 13px 15px;">
+        <div style="font-weight: 600; font-size: 12.5px; color: #991b1b;">Công tắc bot: hai sổ đang lệch</div>
+        <div style="display: flex; gap: 14px; margin: 10px 0 8px;">
+          <div>
+            <div style="font-size: 20px; font-weight: 700; color: #991b1b; font-variant-numeric: tabular-nums;">50</div>
+            <div style="font-size: 10.5px; color: #991b1b;">cột trong CSDL</div>
+          </div>
+          <div style="align-self: center; color: #f3c2c2; font-size: 15px;">≠</div>
+          <div>
+            <div style="font-size: 20px; font-weight: 700; color: #991b1b; font-variant-numeric: tabular-nums;">0</div>
+            <div style="font-size: 10.5px; color: #991b1b;">nguồn thật của bot</div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #991b1b; line-height: 1.55;">
+          Cột chỉ là bản sao. Công tắc thật nằm trong RAM tiến trình bot — nên nút bật/tắt
+          gọi thẳng sang đó rồi mới chép kết quả về cột, không ghi cột trước.
+        </div>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05); padding: 13px 15px;">
+        <div style="font-weight: 600; font-size: 12.5px;">Đưa sản phẩm mới lên chạy</div>
+        <div style="font-size: 11px; color: #667085; line-height: 1.5; margin-top: 3px;">Sáu chặng, mỗi chặng một cửa kiểm.</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+          <sc-for list="{{chang}}" as="c" hint-placeholder-count="6">
+            <div style="display: flex; gap: 9px; align-items: center;">
+              <div style="width: 18px; height: 18px; border-radius: 50%; background: {{c.nen}}; color: {{c.mau}}; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{c.so}}</div>
+              <div style="flex: 1; font-size: 11.5px; color: {{c.mauChu}};">{{c.ten}}</div>
+              <div style="font-size: 10.5px; color: {{c.mau}}; font-weight: 600;">{{c.nhan}}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size: 11px; color: #8a4a06; line-height: 1.5; margin-top: 9px; border-top: 1px solid #e4e9ee; padding-top: 8px;">
+          <b>Chặng 2 chưa có ô để điền.</b> Nó bắt buộc phải có «động cơ» — vì sao bán món này —
+          mà màn hiện chưa dựng chỗ nhập, nên chặng đó luôn đỏ.
+        </div>
+      </div>
+
+      <div style="background: #fdf3e3; border: 1px solid #f0d3a4; border-radius: 9px; padding: 11px 13px; font-size: 11.5px; line-height: 1.6; color: #8a4a06;">
+        <b>68/71 sản phẩm không có tên.</b> Chỉ có bảng giá và ảnh — bot không biết gọi món
+        hàng là gì khi nói với khách. Phải lấy tên và mã từ POS (01 §12).
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const t = (ten, dang) => ({
+      ten,
+      gach: dang ? '#0e7c86' : 'transparent',
+      mau: dang ? '#0e7c86' : '#344054',
+      dam: dang ? 700 : 600,
+    });
+    const D = (ten, noi, ok, suaO) => ({
+      ten, noi, suaO: suaO || 0,
+      mau: ok === 'xanh' ? '#16a34a' : ok === 'vang' ? '#b45309' : ok === 'xam' ? '#8b95a1' : '#dc2626',
+      trangThai: ok === 'xanh' ? 'đạt' : ok === 'vang' ? 'nhắc' : ok === 'xam' ? 'chưa đo' : 'CHẶN',
+    });
+    const C = (so, ten, tt) => ({
+      so, ten,
+      nen: tt === 'xong' ? '#e8f7ee' : tt === 'dang' ? '#e6f4f5' : '#fdecec',
+      mau: tt === 'xong' ? '#166534' : tt === 'dang' ? '#0b646d' : '#991b1b',
+      mauChu: tt === 'cho' ? '#8b95a1' : '#101828',
+      nhan: tt === 'xong' ? 'xong' : tt === 'dang' ? 'đang làm' : 'chặn',
+    });
+    return {
+      tab: [t('Cửa kiểm sẵn sàng', true), t('Page & Bot', false), t('Sản phẩm & kho', false), t('Đưa sản phẩm lên chạy', false)],
+      o: [
+        { so: '514', ten: 'page của team', mau: '#101828', vien: '#e4e9ee' },
+        { so: '0', ten: 'đang bật bot (nguồn thật)', mau: '#b45309', vien: '#f0d3a4' },
+        { so: '70', ten: 'có kịch bản riêng', mau: '#101828', vien: '#e4e9ee' },
+        { so: '514', ten: 'chưa gán marketer', mau: '#dc2626', vien: '#f3c2c2' },
+      ],
+      dieuKien: [
+        D('Có kết nối POS', 'Shop POS đã nối, khoá còn hạn.', 'xanh'),
+        D('Có kịch bản LIVE', 'Page dùng bản riêng hoặc kế thừa tầng trên.', 'xanh'),
+        D('Có bảng giá', 'Không có giá thì cửa tiền đóng, bot không chốt được đơn.', 'xanh'),
+        D('Sản phẩm có TÊN', '68/71 sản phẩm chỉ có bảng giá và ảnh.', 'do', 'Sản phẩm & kho'),
+        D('Đã gán marketer', 'Không có người phụ trách thì cảnh báo không biết nhắc ai.', 'do', 'Page & Bot'),
+        D('Botcake đã tắt', 'Tắt Botcake trước rồi mới gạt công tắc — không thì hai bot cùng trả lời.', 'vang', 'Page & Bot'),
+        D('Lớp 0 đồng có mẫu', 'Bảng mẫu đang rỗng, chưa ai nhập.', 'xam', 'Bot nói gì'),
+      ],
+      chang: [
+        C(1, 'Chọn sản phẩm từ POS', 'xong'),
+        C(2, 'Động cơ: vì sao bán món này', 'chan'),
+        C(3, 'Soạn kịch bản cho page', 'dang'),
+        C(4, 'Nạp ảnh và bảng giá', 'cho'),
+        C(5, 'Chạy thử 20 hội thoại', 'cho'),
+        C(6, 'Bật bot, theo dõi 3 ngày', 'cho'),
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

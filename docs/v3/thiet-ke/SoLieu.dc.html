@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; }
+    a { color: #0e7c86; } a:hover { color: #0b646d; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; height: 940px; background: #f5f7f9; display: flex; flex-direction: column;">
+
+  <div style="background: #0b2125; color: #fff; padding: 14px 22px; display: flex; align-items: center; gap: 14px;">
+    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">Số liệu</h1>
+    <div style="font-size: 11.5px; color: #7fa3a8;">sáu màn để ĐỌC, không màn nào để ra lệnh</div>
+  </div>
+
+  <div style="background: #fff; border-bottom: 1px solid #e4e9ee; padding: 0 22px; display: flex; gap: 2px;">
+    <sc-for list="{{tab}}" as="t" hint-placeholder-count="6">
+      <div style="padding: 11px 12px 9px; border-bottom: 2px solid {{t.gach}}; color: {{t.mau}}; font-size: 12.5px; font-weight: {{t.dam}}; display: flex; gap: 6px; align-items: center;">
+        {{t.ten}}
+        <sc-if value="{{t.nhan}}" hint-placeholder-val="{{true}}">
+          <span style="background: #f5f7f9; color: #8b95a1; border-radius: 20px; padding: 1px 7px; font-size: 10.5px; font-weight: 700;">{{t.nhan}}</span>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="flex: 1; padding: 16px 22px; display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+
+    <div style="background: #fdecec; border: 1px solid #f3c2c2; border-radius: 9px; padding: 10px 14px; font-size: 12px; line-height: 1.6; color: #991b1b;">
+      <b>Ba con số này KHÔNG cộng được với nhau — chúng đo ba chuyện khác nhau.</b>
+      Màn cố ý xếp chúng theo chiều DỌC, không xếp ngang: ba thước xếp ngang trông y như ba phần của một tổng.
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 9px;">
+      <sc-for list="{{thuoc}}" as="t" hint-placeholder-count="3">
+        <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05); padding: 13px 16px; display: flex; gap: 16px; align-items: center;">
+          <div style="font-size: 27px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; min-width: 74px; text-align: right; color: #101828;">{{t.so}}</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 600;">{{t.ten}}</div>
+            <div style="font-size: 11.5px; color: #667085; line-height: 1.55; margin-top: 2px;">{{t.noi}}</div>
+          </div>
+          <div style="text-align: right; flex-shrink: 0;">
+            <div style="font-size: 11px; color: #8b95a1;">{{t.pham}}</div>
+            <div style="font-size: 10.5px; color: #8b95a1; margin-top: 2px; font-family: ui-monospace, Menlo, monospace;">{{t.nguon}}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; gap: 12px; flex: 1; min-height: 0;">
+
+      <div style="flex: 1; background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05); padding: 13px 16px; min-width: 0;">
+        <div style="font-weight: 600; font-size: 13px;">Hai luồng đơn — đo bằng hai thước</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 11px;">
+          <sc-for list="{{luong}}" as="l" hint-placeholder-count="2">
+            <div style="border-left: 3px solid {{l.mau}}; padding-left: 11px;">
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <div style="font-size: 19px; font-weight: 700; color: {{l.mau}}; font-variant-numeric: tabular-nums;">{{l.so}}</div>
+                <div style="font-size: 12.5px; font-weight: 600;">{{l.ten}}</div>
+              </div>
+              <div style="font-size: 11px; color: #667085; line-height: 1.5; margin-top: 2px;">{{l.noi}}</div>
+              <sc-if value="{{l.canh}}" hint-placeholder-val="{{true}}">
+                <div style="font-size: 11px; color: #8a4a06; line-height: 1.5; margin-top: 4px;">{{l.canh}}</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="border-top: 1px solid #e4e9ee; margin-top: 11px; padding-top: 9px; font-size: 11px; color: #667085; line-height: 1.55;">
+          Không có ô «tổng» nào trên màn này, và có bài test cấm mọi khoá bắt đầu bằng
+          <span style="font-family: ui-monospace, Menlo, monospace;">tong</span> —
+          01 §1: cộng lại là trả lời sai mọi câu hỏi sau đó.
+        </div>
+      </div>
+
+      <div style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05); padding: 13px 15px;">
+          <div style="font-weight: 600; font-size: 12.5px;">Năm màn còn lại nói gì</div>
+          <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 10px;">
+            <sc-for list="{{con}}" as="c" hint-placeholder-count="5">
+              <div>
+                <div style="display: flex; gap: 7px; align-items: baseline;">
+                  <div style="font-size: 12px; font-weight: 600; color: {{c.mauTen}};">{{c.ten}}</div>
+                  <div style="font-size: 10.5px; color: {{c.mauNhan}}; font-weight: 600;">{{c.nhan}}</div>
+                </div>
+                <div style="font-size: 11px; color: #667085; line-height: 1.5; margin-top: 1px;">{{c.noi}}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const t = (ten, dang, nhan) => ({
+      ten, nhan: nhan || 0,
+      gach: dang ? '#0e7c86' : 'transparent',
+      mau: nhan ? '#8b95a1' : (dang ? '#0e7c86' : '#344054'),
+      dam: dang ? 700 : 600,
+    });
+    return {
+      tab: [
+        t('Báo cáo', true), t('Chi phí AI', false), t('Rủi ro hoàn hàng', false),
+        t('Hồ sơ khách hàng', false), t('Nguồn khách vào', false),
+        t('Hiệu quả kịch bản', false, 'chưa đo được'),
+      ],
+      thuoc: [
+        { so: '896', ten: 'Đơn THẬT ở POS quy cho hội thoại có AI', pham: '60 ngày',
+          noi: 'Đã bỏ đơn huỷ và đơn hoàn. Gồm cả đơn khách chat với bot rồi sale chốt hộ.',
+          nguon: 'pancake-orders#aiOrderStats' },
+        { so: '263', ten: 'Đơn do CHÍNH BOT tạo qua lời gọi công cụ', pham: 'toàn thời gian',
+          noi: 'Khử trùng theo khách. Nhỏ hơn 896 vì nhiều đơn do người chốt sau khi bot nói chuyện.',
+          nguon: 'stats#incOrder' },
+        { so: '883', ten: 'Hội thoại dẫn tới ít nhất một đơn', pham: '60 ngày',
+          noi: 'Đếm HỘI THOẠI, không đếm đơn — một hội thoại có thể ra hai đơn.',
+          nguon: 'cùng phép quét POS' },
+      ],
+      luong: [
+        { so: '11.265', ten: 'Luồng Messenger', mau: '#0e7c86',
+          noi: 'Chốt trong hội thoại rồi sale duyệt mới vào POS.', canh: 0 },
+        { so: '559', ten: 'Luồng trang bán hàng', mau: '#b45309',
+          noi: 'Đơn vào POS ngay khi bấm BUY NOW, xác nhận sau bằng WhatsApp.',
+          canh: '559/559 đơn CHƯA có tổng tiền — cột đó cố ý để trống ở cửa POS, nên số tiền dưới đây là của phần CÓ tiền thôi.' },
+      ],
+      con: [
+        { ten: 'Chi phí AI', nhan: '', mauTen: '#101828', mauNhan: '#8b95a1',
+          noi: '127 đ/tin · 6.705 đ/đơn · bảng theo page tìm chỗ đốt tiền mà không ra đơn (13 page).' },
+        { ten: 'Rủi ro hoàn hàng', nhan: 'chính sách CHỜ CHỐT', mauTen: '#101828', mauNhan: '#8a4a06',
+          noi: 'Đọc cột đã chấm: bốn tầng + nhãn «chưa đủ đơn». Màn KHÔNG chặn ai — 01 §11 chưa ký.' },
+        { ten: 'Hồ sơ khách hàng', nhan: '', mauTen: '#101828', mauNhan: '#8b95a1',
+          noi: 'Gộp theo số điện thoại; khoá là (team · NƯỚC · số) vì POS lưu số nội địa.' },
+        { ten: 'Nguồn khách vào', nhan: '', mauTen: '#101828', mauNhan: '#8b95a1',
+          noi: 'Hai luồng song song, và chỗ rơi 37,4% khách bấm BUY NOW rồi không gửi WhatsApp.' },
+        { ten: 'Hiệu quả kịch bản', nhan: 'thiếu cả hai vế', mauTen: '#8b95a1', mauNhan: '#8b95a1',
+          noi: 'A/B cần lượt để so và bản để so — hôm nay chưa có cái nào. Màn nói thẳng thay vì hiện 0%.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
