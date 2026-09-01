@@ -128,6 +128,11 @@ const pool = taoPool();
 const teams = (await pool.query("SELECT id, slug FROM team WHERE NOT la_ky_thuat ORDER BY slug")).rows;
 const truoc = [];
 for (const t of teams) { const r = await docBoLuatChung(pool, t.id); truoc.push(`${t.slug}=v${r?.phien_ban}`); }
+// Hạ bản cũ TRƯỚC rồi mới nâng bản mới — đúng thứ tự đường ghi thật làm
+// (src/db/noi-dung.js#apBanBoLuat). Chèn thẳng bản thứ hai dang_dung=true là
+// vi phạm bo_luat_chung_mot_ban_dang_ap (009): câu đo này viết trước 009, và
+// từ hôm 009 lên nó ném ở đây chứ không đo được gì (đã im 6 lần chạy).
+await pool.query("UPDATE bo_luat_chung SET dang_dung=false WHERE team_id IS NULL AND dang_dung");
 await pool.query("INSERT INTO bo_luat_chung (team_id,phien_ban,noi_dung,dang_dung,nguoi_sua) VALUES (NULL,2,$1,true,$2)", ["v2 test cong", "cong-l2m3"]);
 const sau = await docBoLuatChung(pool, teams[0].id);
 console.log(`${truoc.join(",")}|sau_chen_v2=v${sau.phien_ban}`);

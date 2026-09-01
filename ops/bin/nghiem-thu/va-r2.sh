@@ -85,15 +85,49 @@ node --env-file=.env --test test/va-r2-tien-tao-don.test.js 2>&1 \
 bang "bộ ca VA-R2 (8 ca: R2-1..R2-8)" "$(dem_ca test/va-r2-tien-tao-don.test.js)" "pass=8 fail=0"
 
 # ═══ ⑦ · migration 007 idempotent + down→up ; schema.sql khớp ; hồi quy ═════════
-muc "⑦ migration 007 — trạng thái · lùi-về-ranh (down 1 bản = 007) · up lại · schema sinh khớp"
-TT_TRUOC="$(node --env-file=.env db/migrate.js trang-thai 2>&1 | grep -c '✔ đã áp')"
-so "bản đã áp trước phép" "${TT_TRUOC}"
-GO="$(node --env-file=.env db/migrate.js down 2>&1 | grep -oE 'GỠ\s+\S+' | awk '{print $2}')"
-bang "down gỡ đúng bản MỚI NHẤT" "${GO}" "007_idempotent_tao_don_va_don_vi_tien"
-AP="$(node --env-file=.env db/migrate.js 2>&1 | grep -oE 'ÁP\s+\S+' | awk '{print $2}')"
-bang "up áp lại đúng 007" "${AP}" "007_idempotent_tao_don_va_don_vi_tien"
-bang "áp lần 2 = 0 bản (idempotent)" "$(node --env-file=.env db/migrate.js 2>&1 | grep -oE 'áp mới: [0-9]+' | awk '{print $3}')" "0"
+#
+# Phép này chạy trong SANDBOX, không đụng `aicloser_v3`. Hai lý do, cả hai đã cắn:
+#  · `down` gỡ bản MỚI NHẤT, mà bản mới nhất nay là 013. `013.down` cố ý NÉM khi dữ
+#    liệu có hai khách khác nước cùng số (CSDL dev đang giữ 6.436 khách), và trước
+#    khi ném nó đã DROP INDEX — CSDL kẹt nửa chừng. Nó còn DROP COLUMN thi_truong,
+#    tức là mất dữ liệu thật cho một phép đo.
+#  · Thước cũ gõ cứng "007" nên từ ngày 008 lên là đỏ oan. Nay đo tên bản mới nhất
+#    ĐỘNG từ db/migrate/ (án lệ: thước neo số tuyệt đối sẽ trôi).
+muc "⑦ migration — trạng thái · lùi-về-ranh (down 1 bản) · up lại · schema sinh khớp (SANDBOX)"
+SB_DB="aicloser_v3_nt_var2"
+SB_URL="$(node --input-type=module -e '
+const { chuoiNoi } = await import("./db/ket-noi.js");
+const u = new URL(chuoiNoi()); u.pathname = "/" + process.argv[1]; console.log(u.toString());
+' "${SB_DB}")"
+SB_QL="$(node --input-type=module -e '
+const { chuoiNoi } = await import("./db/ket-noi.js");
+const u = new URL(chuoiNoi()); u.pathname = "/postgres"; console.log(u.toString());
+')"
+sb_sql() { DATABASE_URL_V3="${SB_QL}" node --input-type=module -e '
+import pg from "pg";
+const p = new pg.Pool({ connectionString: process.env.DATABASE_URL_V3, max: 1 });
+try { await p.query(process.argv[1]); } finally { await p.end(); }
+' "$1" >/dev/null 2>&1; }
+sb_don() { sb_sql "DROP DATABASE IF EXISTS ${SB_DB} WITH (FORCE)"; }
+trap sb_don EXIT
+sb_don
+if ! sb_sql "CREATE DATABASE ${SB_DB}"; then
+  echo "✘ không tạo được CSDL sandbox ${SB_DB} — phép ⑦ không đo được"; exit 2
+fi
+export DATABASE_URL_V3="${SB_URL}"
+node db/migrate.js >/dev/null 2>&1
+MOI_NHAT="$(basename "$(ls db/migrate/*.up.sql | sort | tail -1)" .up.sql)"
+so "bản mới nhất trong db/migrate/ (đo động)" "${MOI_NHAT}"
+TT_TRUOC="$(node db/migrate.js trang-thai 2>&1 | grep -c '✔ đã áp')"
+so "bản đã áp trước phép (sandbox)" "${TT_TRUOC}"
+GO="$(node db/migrate.js down 2>&1 | grep -oE 'GỠ\s+\S+' | awk '{print $2}')"
+bang "down gỡ đúng bản MỚI NHẤT" "${GO}" "${MOI_NHAT}"
+AP="$(node db/migrate.js 2>&1 | grep -oE 'ÁP\s+\S+' | awk '{print $2}')"
+bang "up áp lại đúng bản vừa gỡ" "${AP}" "${MOI_NHAT}"
+bang "áp lần 2 = 0 bản (idempotent)" "$(node db/migrate.js 2>&1 | grep -oE 'áp mới: [0-9]+' | awk '{print $3}')" "0"
 bang "007 không thêm bảng (CREATE TABLE)" "$(grep -c '^CREATE TABLE' db/migrate/007_*.up.sql)" "0"
+# Hết phần sandbox — trả hai phép dưới về CSDL dev (chúng đo dev có thật cái index 007).
+sb_don; trap - EXIT; unset DATABASE_URL_V3
 SCHEMA_CU="$(mktemp)"; cp db/schema.sql "${SCHEMA_CU}"
 node --env-file=.env db/migrate.js schema >/dev/null 2>&1
 bang "db/schema.sql khớp bản sinh từ migrate/ (diff)" "$(diff -q "${SCHEMA_CU}" db/schema.sql >/dev/null && echo khop || echo lech)" "khop"

@@ -183,18 +183,27 @@ await voiPool(async (pool) => {
   const kSau2 = (await pool.query("SELECT count(*)::int c FROM khach")).rows[0].c;
 
   const don = await pool.query(
-    "SELECT ma_pos, nguon, san_pham_ma, khach_id FROM don_hang WHERE ma_pos = ANY($1)",
+    "SELECT ma_pos, nguon, san_pham_ma, khach_id, tao_luc FROM don_hang WHERE ma_pos = ANY($1)",
     [[`${a1.shopId}:68771`, `${a1.shopId}:68769`]]);
   const spChung = don.rows[0]?.san_pham_ma?.find(x => don.rows[1]?.san_pham_ma?.includes(x)) ?? null;
 
+  // Cửa sổ tra tính ĐỘNG theo tuổi thật của cặp đơn, không để mặc định 7 ngày.
+  // Cặp #68771/#68769 tạo 22/08/2026 và KHÔNG trẻ lại. Cổng viết 23/08 nên nó nằm
+  // trong cửa sổ 7 ngày và phép xanh; từ 30/08 trở đi nó rơi ra ngoài và phép đỏ —
+  // đỏ vì LỊCH TRÔI, không vì mã hỏng (đo 01/09: keo_ngay=7 → 0 đơn · =30 → 2 đơn,
+  // trung_khop_san_pham · ca_hai). Đây là án lệ «thước neo số tuyệt đối sẽ trôi» ở
+  // chiều thời gian. Vế «mặc định đúng 7 ngày» đo riêng ở phép ④b bên dưới.
+  const tuoiNgay = Math.ceil(
+    (Date.now() - new Date(don.rows.map(r => r.tao_luc).sort()[0]).getTime()) / 86400000);
+  const keoNgay = tuoiNgay + 3;
   const kq = await kiemTrung(pool, ctxHeThong(), {
-    soDienThoai: "966501984606", sanPhamId: spChung, teamId: t,
+    soDienThoai: "966501984606", sanPhamId: spChung, teamId: t, keo_ngay: keoNgay,
   });
   console.log(JSON.stringify({
     dTruoc, dSau1, dSau2, kTruoc, kSau1, kSau2,
     them1: a1.them, them2: a2.them, capNhat1: a1.capNhat, capNhat2: a2.capNhat,
     donHaiDong: don.rows.map(r => ({ma_pos:r.ma_pos, nguon:r.nguon, spCount:(r.san_pham_ma||[]).length, coKhach: r.khach_id!=null})),
-    spChung,
+    spChung, tuoiNgay, keoNgay,
     trung: kq.trung, ly_do: kq.ly_do, nguon_trung: kq.nguon_trung, soDon: kq.don.length,
     donIn: kq.don.map(d => d.ma_pos),
   }));
@@ -231,7 +240,14 @@ else
     "$(printf '%s' "${KQ4}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{console.log(JSON.parse(s).ly_do)})')" "trung_khop_san_pham"
   bang "④ nguon_trung = ca_hai (đúng một đơn messenger + một trang_ban_hang)" \
     "$(printf '%s' "${KQ4}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{console.log(JSON.parse(s).nguon_trung)})')" "ca_hai"
+  so "tuổi thật của cặp đơn · cửa sổ tra đã dùng (ngày)" \
+    "$(printf '%s' "${KQ4}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);console.log(`${j.tuoiNgay} ngày → keo_ngay=${j.keoNgay}`)})')"
 fi
+
+# ═══ ④b CỬA SỔ MẶC ĐỊNH VẪN LÀ 7 NGÀY — vế bị phép ④ bỏ lại khi tra động ═════════
+muc "④b keo_ngay mặc định = 7 (phép ④ truyền cửa sổ động nên KHÔNG còn đo hộ vế này)"
+bang "KEO_NGAY_MAC_DINH = 7 ngày" \
+  "$(nodex 'const m = await import("./src/orders/loc-trung.js"); console.log(m.KEO_NGAY_MAC_DINH);')" "7"
 
 # ═══ ⑥ BỘ CA VA-Q12 + HỒI QUY l1-m1 · l3-m2 · l0-m1 (thước lược đồ) ═══════════
 muc "⑥ node --test: bộ ca VA-Q12 xanh + hồi quy l1-m1/l3-m2/l0-m1 không gãy"
@@ -243,14 +259,29 @@ dem_ca() {
   fi
   printf '%s' "${ra:-LOI-NODE}"
 }
+# Thước SÀN, không thước neo bằng-đúng: đo «0 ca đỏ VÀ không ai bớt ca đi». Neo
+# `pass=N` chặn được việc xoá ca, nhưng cũng đỏ oan mỗi lần THÊM ca — bộ l0-m1 lên 13
+# ca là cổng này đỏ, dù không ca nào hỏng. Sàn giữ vế chặn-xoá và bỏ vế đỏ oan.
+bang_san() {
+  local ten="$1" ra="$2" san="$3"
+  so "${ten}" "${ra}"
+  case "${ra}" in *LOI-NODE*) truot "${ten}: câu đo HỎNG (LOI-NODE) — không đọc là đạt"; return ;; esac
+  local p f
+  p="$(printf '%s' "${ra}" | grep -oE 'pass=[0-9]+' | cut -d= -f2)"
+  f="$(printf '%s' "${ra}" | grep -oE 'fail=[0-9]+' | cut -d= -f2)"
+  if [ -z "${p}" ] || [ -z "${f}" ]; then truot "${ten}: không đọc được pass/fail từ «${ra}»"; return; fi
+  if [ "${f}" -ne 0 ]; then truot "${ten}: ${f} ca ĐỎ"; return; fi
+  if [ "${p}" -lt "${san}" ]; then truot "${ten}: chỉ còn ${p} ca, sàn là ${san} — có ca bị bớt đi"; return; fi
+  dat "${ten} = pass=${p} fail=0 (sàn ${san})"
+}
 CA_Q12="$(dem_ca test/va-q12-doc-don.test.js)"
-bang "bộ ca VA-Q12 (10 ca: K·P·B·I)" "${CA_Q12}" "pass=10 fail=0"
+bang_san "bộ ca VA-Q12 (K·P·B·I)" "${CA_Q12}" 10
 CA_L1="$(dem_ca test/l1-m1-doc-pos.test.js test/l1-m1-ghi-nguoc.test.js)"
-bang "hồi quy L1-M1 (35 ca)" "${CA_L1}" "pass=35 fail=0"
+bang_san "hồi quy L1-M1" "${CA_L1}" 35
 CA_L3="$(dem_ca test/l3-m2-loc-trung.test.js test/l3-m2-ti-le-hoan.test.js test/l3-m1-may-trang-thai.test.js test/l3-m1-quet-don.test.js)"
-bang "hồi quy L3-M2 + L3-M1 (66 ca)" "${CA_L3}" "pass=66 fail=0"
+bang_san "hồi quy L3-M2 + L3-M1" "${CA_L3}" 66
 CA_L0="$(dem_ca test/l0-m1-luoc-do.test.js)"
-bang "thước lược đồ L0-M1 (12 ca, S11 = schema.sql khớp regen)" "${CA_L0}" "pass=12 fail=0"
+bang_san "thước lược đồ L0-M1 (S11 = schema.sql khớp regen)" "${CA_L0}" 12
 
 # ═══ TỔNG KẾT ═════════════════════════════════════════════════════════════════
 printf '\n──────────────────────────────────────────────────────────────\n'

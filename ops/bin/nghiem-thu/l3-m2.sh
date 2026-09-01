@@ -331,14 +331,18 @@ await voiPool(async (pool) => {
   await len(pool, { im: true });
   const cot3 = await demCot();
   const bang1 = await demBang();
-  console.log(`${chotTruocDown}|chayLai=${chayLai} cotSauChayLai=${cot1} cotSauDown=${cot2} cotSauUp=${cot3} bangTruoc=${bang0} bangSau=${bang1}`);
+  // In ĐỘ LỆCH số bảng, không in con số tuyệt đối: điều cần đo là «down→up không
+  // thêm/bớt bảng nào». Thước cũ neo bangTruoc=21 nên mỗi bản migration tạo bảng mới
+  // (008–013 thêm 3 bảng) là cổng đỏ oan — án lệ thước neo số tuyệt đối sẽ trôi.
+  console.log(`${chotTruocDown}|chayLai=${chayLai} cotSauChayLai=${cot1} cotSauDown=${cot2} cotSauUp=${cot3} bangLech=${bang1 - bang0} (đếm ${bang0})`);
 });
 ')"
 so "⑦ bản chót TRƯỚC khi down 005 (phải LÙI về đúng 005 trước, không phải 006)" \
    "$(echo "${KQ7}" | cut -d'|' -f1)"
 bang "⑦ bản chót trước down = 005 chính nó" "$(echo "${KQ7}" | cut -d'|' -f1)" "005_loc_trung_va_ti_le_hoan"
-bang "005 chạy lại được · down→up tròn · số bảng không đổi" "$(echo "${KQ7}" | cut -d'|' -f2-)" \
-     "chayLai=OK cotSauChayLai=5 cotSauDown=0 cotSauUp=5 bangTruoc=21 bangSau=21"
+bang "005 chạy lại được · down→up tròn · số bảng không đổi" \
+     "$(echo "${KQ7}" | cut -d'|' -f2- | sed 's/ (đếm [0-9]*)$//')" \
+     "chayLai=OK cotSauChayLai=5 cotSauDown=0 cotSauUp=5 bangLech=0"
 
 # ═══ ⑧ BỘ CA L3-M2 + HỒI QUY L3-M1 ════════════════════════════════════════════
 muc "⑧ node --test: bộ ca L3-M2 xanh + hồi quy L3-M1 KHÔNG gãy"

@@ -306,17 +306,34 @@ bang "③b tất cả ca CHẶN đúng nguồn + POST=0" "${N3_BAD:-LOI-NODE}" "
 muc "③b kiemTrung THẬT trên ${URL_DEV##*/} (3.218 khách / 3.784 đơn) — CHỈ ĐỌC, known-answer"
 KQ3B="$(DATABASE_URL_V3="${URL_DEV}" nodex '
 const { chayNamCua, KET_NGUON } = await import("./src/orders/hang-cho.js");
-const { kiemTrung } = await import("./src/orders/loc-trung.js");
+const { kiemTrung, KEO_NGAY_MAC_DINH } = await import("./src/orders/loc-trung.js");
 const { ctxHeThong } = await import("./src/db/index.js");
 const { voiPool } = await import("./db/ket-noi.js");
 await voiPool(async (pool) => {
   const truoc = (await pool.query("SELECT (SELECT count(*) FROM hang_cho_tao_don)::int h, (SELECT count(*) FROM don_hang)::int d")).rows[0];
-  const SP = "1328205216:3e272c3b-ea70-4d10-981e-e9049090322b";
-  const kt = await kiemTrung(pool, ctxHeThong(), { soDienThoai: "966501984606", sanPhamId: SP, teamId: 4 });
+  // Cặp trùng chéo đo phép này được TÌM MỖI LƯỢT, không gõ cứng nữa. Cặp cũ
+  // (966501984606 / #68771·#68769, tạo 22/08) rơi ra ngoài cửa sổ 7 ngày từ 30/08,
+  // nên từ hôm đó năm phép ③b đỏ vì LỊCH TRÔI chứ không vì mã hỏng. Phép ③b5 đi qua
+  // `chayNamCua` — đường thật, không truyền cửa sổ vào được — nên lối duy nhất giữ
+  // được vế đó là dùng một cặp CÒN TRONG HẠN. Không tìm ra cặp nào thì HOÃN, ở dưới.
+  const cap = (await pool.query(`
+    SELECT k.so_dien_thoai AS sdt, sp.ma AS sp
+      FROM don_hang d
+      JOIN khach k ON k.id = d.khach_id AND k.team_id = d.team_id
+      CROSS JOIN LATERAL unnest(d.san_pham_ma) AS sp(ma)
+     WHERE d.team_id = 4 AND k.so_dien_thoai IS NOT NULL
+       AND d.tao_luc >= now() - ($1 * interval $$1 day$$)
+     GROUP BY 1, 2
+    HAVING count(*) >= 2 AND count(DISTINCT d.nguon) = 2
+     ORDER BY max(d.tao_luc) DESC
+     LIMIT 1`, [KEO_NGAY_MAC_DINH])).rows[0];
+  if (!cap) { console.log("KHONG-CO-CAP"); return; }
+  const SP = cap.sp;
+  const kt = await kiemTrung(pool, ctxHeThong(), { soDienThoai: cap.sdt, sanPhamId: SP, teamId: 4 });
   const nam = await chayNamCua(pool, ctxHeThong(), {
     teamId: 4, hoiThoai: { trang_thai: "SELLING" }, pageId: null,
     pageIdText: "khong-co", psid: "khong-co", convId: null, market: null,
-    duLieu: { ten: "x", sdt: "966501984606", dia_chi: "y", so_luong: 1, tong_tien: 1,
+    duLieu: { ten: "x", sdt: cap.sdt, dia_chi: "y", so_luong: 1, tong_tien: 1,
               tien_te: "SAR", san_pham_ma: SP },
     tinId: null,
   }, { nap: async () => { throw new Error("GATE: cấm chạm mạng"); } });
@@ -325,22 +342,30 @@ await voiPool(async (pool) => {
   const phu = (await pool.query(`
     SELECT count(*) FILTER (WHERE kn.id IS NOT NULL)::int qua_shop, count(*)::int tong
       FROM page p LEFT JOIN ket_noi_pos kn ON kn.team_id=p.team_id AND kn.shop_id=p.pos_shop_id AND kn.bat`)).rows[0];
+  console.error("   cặp đo lượt này: sđt=" + cap.sdt + " sp=" + SP);
   console.error("   danh sách đơn kiemTrung bắt được: " + JSON.stringify(kt.don.map((d) => d.ma_pos + "/" + d.nguon)));
   console.error("   chan_vi (③b): " + JSON.stringify(nam.chan_vi));
   console.log([kt.trung, kt.ly_do, kt.nguon_trung, kt.don.length, e.ket,
     truoc.h + "/" + sau.h, truoc.d + "/" + sau.d, phu.qua_shop + "/" + phu.tong].join("|"));
 });')"
 so "kết quả ③b (trùng|lý do|nguồn|số đơn|nguồn e|hàngchờ trước/sau|đơn trước/sau|phủ POS)" "${KQ3B}"
+if [ "${KQ3B}" = "KHONG-CO-CAP" ]; then
+  # HOÃN chứ không giả xanh: CSDL dev lúc này không có cặp đơn nào cùng khách + cùng
+  # sản phẩm, hai luồng khác nhau, còn trong cửa sổ 7 ngày. Nạp POS một lượt là có lại.
+  hoan "③b1–b5 kiemTrung THẬT — không có cặp trùng chéo nào còn trong cửa sổ ${KEO_NGAY:-7} ngày trên dev; chạy \`npm run nap-pos\` rồi đo lại"
+  hoan "③b6–b8 phép chỉ-đọc trên dev — đi kèm ③b, hoãn theo"
+else
 bang "③b1 kiemTrung THẬT bắt được cặp trùng chéo" "$(echo "${KQ3B}" | cut -d'|' -f1)" "true"
 bang "③b2 lý do = trùng ĐÃ XÁC MINH" "$(echo "${KQ3B}" | cut -d'|' -f2)" "trung_khop_san_pham"
 bang "③b3 nguồn trùng = cả hai luồng" "$(echo "${KQ3B}" | cut -d'|' -f3)" "ca_hai"
-bang "③b4 số đơn bắt được" "$(echo "${KQ3B}" | cut -d'|' -f4)" "2"
+bang "③b4 số đơn bắt được ≥ 2" "$(( $(echo "${KQ3B}" | cut -d'|' -f4) >= 2 ? 1 : 0 ))" "1"
 bang "③b5 nguồn (e) trong chayNamCua = dương" "$(echo "${KQ3B}" | cut -d'|' -f5)" "duong"
 DEV_H="$(echo "${KQ3B}" | cut -d'|' -f6)"
 DEV_D="$(echo "${KQ3B}" | cut -d'|' -f7)"
 bang "③b6 DEV hang_cho_tao_don KHÔNG đổi (phép chỉ-đọc)" "${DEV_H}" "${DEV_H%%/*}/${DEV_H%%/*}"
 bang "③b7 DEV don_hang KHÔNG đổi (0 đơn thật bị đụng)" "${DEV_D}" "${DEV_D%%/*}/${DEV_D%%/*}"
 so   "③b8 độ phủ resolver POS theo page trên DEV (qua pos_shop_id / tổng)" "$(echo "${KQ3B}" | cut -d'|' -f8)"
+fi
 
 # ═══ ④ — DUYỆT ĐƯỜNG LÀNH ══════════════════════════════════════════════════════
 muc "④ DUYỆT ĐƯỜNG LÀNH — mock POST ⇒ đơn tạo đúng payload · don_hang +1 · máy · so_ai +1"
