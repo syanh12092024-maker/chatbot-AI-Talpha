@@ -1,0 +1,163 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; }
+    a { color: #0e7c86; } a:hover { color: #0b646d; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; height: 940px; background: #f5f7f9; display: flex; flex-direction: column;">
+
+  <div style="background: #0b2125; color: #fff; padding: 14px 22px; display: flex; align-items: center; gap: 14px;">
+    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">Bot nói gì</h1>
+    <div style="font-size: 11.5px; color: #7fa3a8;">bảy màn cũ thành bảy tab · mục nặng nhất của cả hệ</div>
+  </div>
+
+  <div style="background: #fff; border-bottom: 1px solid #e4e9ee; padding: 0 22px; display: flex; gap: 2px;">
+    <sc-for list="{{tab}}" as="t" hint-placeholder-count="7">
+      <div style="padding: 11px 13px 9px; border-bottom: 2px solid {{t.gach}}; color: {{t.mau}}; font-size: 13px; font-weight: {{t.dam}}; display: flex; gap: 6px; align-items: center;">
+        {{t.ten}}
+        <sc-if value="{{t.nhan}}" hint-placeholder-val="{{true}}">
+          <span style="background: {{t.nhanNen}}; color: {{t.nhanMau}}; border-radius: 20px; padding: 1px 7px; font-size: 10.5px; font-weight: 700;">{{t.nhan}}</span>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="flex: 1; padding: 18px 22px; display: flex; gap: 16px; min-height: 0;">
+
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+
+      <div style="background: #fdf3e3; border: 1px solid #f0d3a4; border-radius: 9px; padding: 11px 14px; font-size: 12px; line-height: 1.6; color: #8a4a06;">
+        <b style="color: #7a3f05;">Bản trong cơ sở dữ liệu chưa điều khiển bot.</b>
+        Khối <span style="font-family: ui-monospace, Menlo, monospace; font-size: 11.5px;">CORE</span> nằm trong mã nguồn, vẫn đứng đầu mọi prompt và không sửa được từ màn này;
+        bản dưới đây là khối BỔ SUNG. Sửa xong nhớ mở tab «Prompt của page» để thấy thứ bot thật sự gửi.
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 16px 18px; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <div style="display: flex; align-items: baseline; gap: 10px;">
+          <div style="font-weight: 700; font-size: 14px;">Bộ luật chung</div>
+          <div style="background: #e6f4f5; color: #0b646d; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 600;">bản v1 · toàn hệ · đang áp</div>
+          <div style="flex: 1;"></div>
+          <div style="font-size: 11.5px; color: #8b95a1;">2.256 token · nội dung dưới đây là MẪU minh hoạ</div>
+        </div>
+
+        <div style="border: 1px solid #e4e9ee; border-radius: 10px; background: #fbfcfd; padding: 13px 15px; margin-top: 12px; flex: 1; overflow: hidden; font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; line-height: 1.75; color: #344054;">
+          <sc-for list="{{dong}}" as="d" hint-placeholder-count="10">
+            <div style="color: {{d.mau}};">{{d.t}}</div>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 13px;">
+          <div style="background: #0e7c86; color: #fff; padding: 7px 15px; border-radius: 8px; font-size: 12.5px; font-weight: 600;">Cho áp bản này</div>
+          <div style="border: 1px solid #cfd8de; color: #101828; padding: 7px 13px; border-radius: 8px; font-size: 12.5px; font-weight: 600;">Xem bản cũ</div>
+          <div style="flex: 1;"></div>
+          <div style="font-size: 11.5px; color: #667085;">áp là <b>0 page</b> đổi cách nói ngay — vì hôm nay chưa page nào bật bot</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 14px 16px;">
+        <div style="font-weight: 600; font-size: 13px;">Trước khi bấm áp</div>
+        <div style="color: #667085; font-size: 11.5px; line-height: 1.55; margin-top: 3px;">Ba con số bắt buộc hiện — không có đủ ba thì nút áp mờ.</div>
+        <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 12px;">
+          <sc-for list="{{soAnhHuong}}" as="s" hint-placeholder-count="3">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px;">
+              <div style="font-size: 12px; color: #667085;">{{s.ten}}</div>
+              <div style="font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: {{s.mau}};">{{s.so}}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="border-top: 1px solid #e4e9ee; margin-top: 11px; padding-top: 9px; font-size: 11px; color: #8b95a1; line-height: 1.55;">
+          Số page bật bot đọc từ nguồn thật của tiến trình bot, không đọc cột trong cơ sở dữ liệu — hai chỗ đã có lần lệch 50.
+        </div>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 14px 16px;">
+        <div style="font-weight: 600; font-size: 13px;">Năm khối gửi cho model</div>
+        <div style="font-size: 11px; color: #8b95a1; line-height: 1.5; margin: 3px 0 9px;">§6 khai bốn khối; khối thứ năm là CORE cứng trong mã nguồn — nó CHÍNH LÀ «bộ luật chung» hôm nay, nên đừng cộng hai dòng 2.256 lại.</div>
+        <div style="display: flex; flex-direction: column; gap: 7px;">
+          <sc-for list="{{khoi}}" as="k" hint-placeholder-count="5">
+            <div style="display: flex; gap: 9px; align-items: center;">
+              <div style="width: 3px; height: 26px; border-radius: 2px; background: {{k.mau}}; flex-shrink: 0;"></div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 12px; font-weight: 600;">{{k.ten}}</div>
+                <div style="font-size: 11px; color: #8b95a1;">{{k.ai}}</div>
+              </div>
+              <div style="font-size: 11.5px; color: #667085; font-variant-numeric: tabular-nums;">{{k.tok}}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: #e6f4f5; border: 1px solid #b8dde0; border-radius: 9px; padding: 11px 13px; font-size: 11.5px; line-height: 1.6; color: #0b646d;">
+        <b>Vì sao gộp bảy màn:</b> người sửa bot không nghĩ theo bảng dữ liệu, họ nghĩ «tôi muốn bot nói khác đi».
+        Bảy đường riêng bắt họ tự nhớ thứ tự; bảy tab thì thứ tự nằm ngay trên màn.
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const t = (ten, dang, nhan, xam) => ({
+      ten,
+      gach: dang ? '#0e7c86' : 'transparent',
+      mau: xam ? '#8b95a1' : (dang ? '#0e7c86' : '#344054'),
+      dam: dang ? 700 : 600,
+      nhan: nhan || 0,
+      nhanNen: nhan === 'chưa có dữ liệu' ? '#f5f7f9' : '#fdecec',
+      nhanMau: nhan === 'chưa có dữ liệu' ? '#8b95a1' : '#991b1b',
+    });
+    return {
+      tab: [
+        t('Bộ luật chung', true),
+        t('Thư viện kỹ năng', false),
+        t('Kịch bản', false),
+        t('AI đề xuất', false),
+        t('Lớp 0 đồng', false, 'chưa có dữ liệu', true),
+        t('Thư viện ảnh', false),
+        t('Prompt của page', false),
+      ],
+      dong: [
+        { t: '# VAI TRÒ', mau: '#0b646d' },
+        { t: 'Bạn là nhân viên tư vấn bán hàng qua tin nhắn. Trả lời ngắn,', mau: '#344054' },
+        { t: 'đúng giá trong bảng, không hứa ngày giao cụ thể.', mau: '#344054' },
+        { t: '', mau: '#344054' },
+        { t: '# MƯỜI QUY TẮC CỨNG', mau: '#0b646d' },
+        { t: '1. Không bao giờ báo giá khác bảng giá của page.', mau: '#344054' },
+        { t: '2. Khách hỏi thật/giả → trả lời theo mục bảo hành của page.', mau: '#344054' },
+        { t: '3. Chốt đơn phải đủ: tên · số điện thoại · địa chỉ · số lượng.', mau: '#344054' },
+        { t: '4. Khách nói phủ định («chưa chắc», «không») → KHÔNG coi là đồng ý.', mau: '#344054' },
+        { t: '…', mau: '#8b95a1' },
+      ],
+      soAnhHuong: [
+        { ten: 'Page của team', so: '514', mau: '#101828' },
+        { ten: 'Đang bật bot (nguồn thật)', so: '0', mau: '#b45309' },
+        { ten: 'Cột trong CSDL nói', so: '50', mau: '#dc2626' },
+      ],
+      khoi: [
+        { ten: 'CORE (trong mã nguồn)', ai: 'chỉ lập trình viên · phải deploy', tok: '2.256', mau: '#8b95a1' },
+        { ten: 'Bộ luật chung (CSDL)', ai: 'quản trị · BỔ SUNG, chưa thay được CORE', tok: 'bổ sung', mau: '#0e7c86' },
+        { ten: 'Kỹ năng', ai: 'marketer · bật theo nhóm hàng', tok: '180', mau: '#0e7c86' },
+        { ten: 'Kịch bản page', ai: 'marketer phụ trách page', tok: '1.400', mau: '#0e7c86' },
+        { ten: 'Dữ liệu sản phẩm', ai: 'đồng bộ từ POS', tok: '1.500', mau: '#0e7c86' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

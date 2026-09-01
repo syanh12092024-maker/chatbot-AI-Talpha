@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; }
+    a { color: #0e7c86; } a:hover { color: #0b646d; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; height: 940px; background: #f5f7f9; display: flex; flex-direction: column;">
+
+  <div style="background: #0b2125; color: #fff; padding: 14px 22px; display: flex; align-items: baseline; gap: 14px;">
+    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">24 màn → 6 mục</h1>
+    <div style="font-size: 11.5px; color: #7fa3a8;">không xoá màn nào — chúng thành TAB trong mục</div>
+  </div>
+
+  <div style="flex: 1; padding: 18px 22px; display: flex; flex-direction: column; gap: 11px; min-height: 0;">
+
+    <sc-for list="{{muc}}" as="m" hint-placeholder-count="6">
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 13px 16px; display: flex; gap: 16px; align-items: flex-start;">
+
+        <div style="width: 176px; flex-shrink: 0;">
+          <div style="font-weight: 700; font-size: 14px; color: #101828;">{{m.ten}}</div>
+          <div style="font-size: 11.5px; color: #667085; margin-top: 3px; line-height: 1.5;">{{m.nhip}}</div>
+          <div style="display: inline-block; background: {{m.nen}}; color: {{m.mau}}; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-top: 7px; white-space: nowrap;">{{m.gom}}</div>
+        </div>
+
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <sc-for list="{{m.tab}}" as="t" hint-placeholder-count="4">
+              <div style="border: 1px solid {{t.vien}}; background: {{t.nen}}; color: {{t.mau}}; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 600;">{{t.ten}}</div>
+            </sc-for>
+          </div>
+          <div style="color: #667085; font-size: 12px; line-height: 1.6; margin-top: 9px;">{{m.vi}}</div>
+        </div>
+
+      </div>
+    </sc-for>
+
+    <div style="display: flex; gap: 11px;">
+      <div style="flex: 1; background: #e8f7ee; border: 1px solid #b7e4c7; border-radius: 9px; padding: 11px 14px; font-size: 12px; line-height: 1.6; color: #166534;">
+        <b>Tab xám = chưa có dữ liệu để nói.</b> Chúng vẫn mở được, nhưng không còn chiếm một dòng ngang hàng
+        trên menu chính — vào mục rồi mới thấy, kèm câu «còn thiếu gì để đo được».
+      </div>
+      <div style="flex: 1; background: #fdf3e3; border: 1px solid #f0d3a4; border-radius: 9px; padding: 11px 14px; font-size: 12px; line-height: 1.6; color: #8a4a06;">
+        <b>Vai sale không đổi:</b> vẫn vào thẳng «Việc cần xử» và không thấy năm mục kia — 01-QUYẾT-ĐỊNH §10.
+        Menu lọc ở máy chủ như hiện nay, không ẩn bằng CSS.
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const co = { nen: '#fff', vien: '#cfd8de', mau: '#101828' };
+    const mo = { nen: '#f5f7f9', vien: '#e4e9ee', mau: '#8b95a1' };
+    const dem = (n) => ({ gom: n + ' màn', nen: n >= 6 ? '#fdecec' : '#e6f4f5', mau: n >= 6 ? '#991b1b' : '#0b646d' });
+    return {
+      muc: [
+        { ten: 'Hôm nay', nhip: 'Mở mỗi sáng', ...dem(1),
+          tab: [{ ten: 'Trang chủ', ...co }],
+          vi: 'Đứng một mình vì nó là chỗ trả lời «hôm nay làm gì». Gộp nó vào chỗ khác là bỏ mất câu hỏi đó.' },
+
+        { ten: 'Việc cần xử', nhip: 'Mở mỗi sáng · sale vào thẳng đây', ...dem(1),
+          tab: [{ ten: 'Bảng điều phối', ...co }],
+          vi: 'Đường duy nhất của vai sale. Giữ nguyên hình dạng hiện tại — nó đang đúng §10.' },
+
+        { ten: 'Bot nói gì', nhip: 'Khi sửa cách bot trả lời', ...dem(7),
+          tab: [{ ten: 'Bộ luật chung', ...co }, { ten: 'Thư viện kỹ năng', ...co }, { ten: 'Kịch bản', ...co },
+                { ten: 'AI đề xuất', ...co }, { ten: 'Lớp 0 đồng', ...mo }, { ten: 'Thư viện ảnh', ...co },
+                { ten: 'Prompt của page', ...co }],
+          vi: 'Bảy màn cũ là bảy MẶT của một việc. §6 nói prompt có bốn khối — người dùng nghĩ theo «bot nói gì», không nghĩ theo bảng dữ liệu. «Prompt của page» là tab CUỐI vì nó là chỗ kiểm lại sau khi sửa, không phải chỗ bắt đầu.' },
+
+        { ten: 'Page & sản phẩm', nhip: 'Khi mở page mới hoặc lên hàng mới', ...dem(4),
+          tab: [{ ten: 'Page & Bot', ...co }, { ten: 'Cửa kiểm sẵn sàng', ...co },
+                { ten: 'Sản phẩm & kho', ...co }, { ten: 'Đưa sản phẩm lên chạy', ...co }],
+          vi: 'Bốn màn cùng trả lời một câu: «page này bán được chưa». Cửa kiểm là bảng điểm, ba màn kia là chỗ sửa cho điểm xanh.' },
+
+        { ten: 'Số liệu', nhip: 'Cuối ngày / cuối tuần', ...dem(6),
+          tab: [{ ten: 'Báo cáo', ...co }, { ten: 'Chi phí AI', ...co }, { ten: 'Rủi ro hoàn', ...co },
+                { ten: 'Hồ sơ khách', ...co }, { ten: 'Nguồn khách', ...co }, { ten: 'Hiệu quả kịch bản', ...mo }],
+          vi: 'Không màn nào trong đây dùng để RA LỆNH — chúng để đọc. Nhịp khác hẳn bốn mục trên, nên đứng thành một mục riêng thay vì trộn vào.' },
+
+        { ten: 'Cài đặt', nhip: 'Một lần rồi thôi · vào khi có sự cố', ...dem(5),
+          tab: [{ ten: 'Cấu hình team', ...co }, { ten: 'Kết nối & token', ...co }, { ten: 'Model AI & khoá', ...co },
+                { ten: 'Sức khoẻ hệ thống', ...co }, { ten: 'Nhật ký thao tác', ...co }],
+          vi: 'Đây là chỗ người ta vào đúng hai lần: hôm cài đặt, và hôm có sự cố. Để nó ngang hàng với việc hằng ngày là chiếm chỗ của thứ dùng mỗi sáng.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -40,13 +40,35 @@ import * as hieuQua from '../hieu-qua/index.js';
 import * as sucKhoe from '../suc-khoe/index.js';
 import * as nhatKy from '../nhat-ky/index.js';
 
-/** Nhóm hiển thị. Thứ tự ở đây là thứ tự trên menu. */
+/**
+ * SÁU MỤC, XẾP THEO NHỊP LÀM VIỆC — không theo cấu trúc dữ liệu.
+ *
+ * ═══ VÌ SAO ĐỔI (01/09) ════════════════════════════════════════════════════════════
+ * Bản trước có 5 nhóm nhưng vẫn là một danh sách 24 dòng: `menuCua()` đo được vai
+ * `quan-tri` thấy 24 màn, `quan-ly` 22, `marketer` 14. Ba chỗ hỏng:
+ *   ① BẢY màn phục vụ MỘT việc — sửa cách bot nói (bộ luật · kỹ năng · kịch bản · lớp 0
+ *     đồng · ảnh · prompt · đề xuất AI). `01-QUYET-DINH.md` §6 nói prompt có BỐN khối;
+ *     giao diện tách thành bảy đường và bắt người dùng tự nhớ thứ tự.
+ *   ② Nhật ký thao tác (mở khi có sự cố) đứng ngang hàng Bảng điều phối (mở mỗi sáng) —
+ *     menu không nói cái nào dùng hằng ngày, cái nào một lần rồi thôi.
+ *   ③ Màn chưa có dữ liệu (Hiệu quả kịch bản, Lớp 0 đồng) chiếm một dòng ngang hàng với
+ *     màn đang chạy; người dùng vào rồi ra tay không.
+ *
+ * Nên mục xếp theo CÂU HỎI người dùng mang tới, theo nhịp họ mở máy:
+ *   mỗi sáng → `hom-nay` · `viec-can-xu`
+ *   khi cần  → `bot-noi-gi` · `page-san-pham`
+ *   cuối kỳ  → `so-lieu`
+ *   một lần  → `cai-dat`
+ *
+ * KHÔNG màn nào bị xoá: 24 màn vẫn còn đủ 24 đường, chỉ đổi chỗ đứng trên menu.
+ */
 export const NHOM = Object.freeze([
-  { ma: 'hang-ngay', ten: 'Hằng ngày' },
-  { ma: 'noi-dung', ten: 'Nội dung bot' },
-  { ma: 'san-pham', ten: 'Sản phẩm' },
-  { ma: 'so-lieu', ten: 'Số liệu' },
-  { ma: 'he-thong', ten: 'Hệ thống' },
+  { ma: 'hom-nay', ten: 'Hôm nay', mo: 'Việc của bạn, gấp lên trước' },
+  { ma: 'viec-can-xu', ten: 'Việc cần xử', mo: 'Hội thoại và đơn chờ người' },
+  { ma: 'bot-noi-gi', ten: 'Bot nói gì', mo: 'Bộ luật · kỹ năng · kịch bản · ảnh · prompt' },
+  { ma: 'page-san-pham', ten: 'Page & sản phẩm', mo: 'Bật bot, cửa kiểm, kho hàng' },
+  { ma: 'so-lieu', ten: 'Số liệu', mo: 'Đơn · tiền · khách · hoàn hàng' },
+  { ma: 'cai-dat', ten: 'Cài đặt', mo: 'Team · kết nối · model · nhật ký' },
 ]);
 
 /**
@@ -60,22 +82,29 @@ const dat = (m, ten, nhom, moTa = '') => ({
 });
 
 export const MAN = Object.freeze([
-  dat(trangChu, 'Trang chủ', 'hang-ngay', 'Việc của vai bạn, gấp lên trước'),
-  dat(dispatch, 'Bảng điều phối', 'hang-ngay', 'Việc cần người xử, có đồng hồ đếm ngược'),
-  dat(sanSang, 'Cửa kiểm sẵn sàng', 'hang-ngay', 'Bảy điều kiện, bấm ô đỏ nhảy tới chỗ sửa'),
-  dat(pageBot, 'Page & Bot', 'hang-ngay', 'Công tắc bot, marketer, page trọng điểm'),
+  dat(trangChu, 'Trang chủ', 'hom-nay', 'Việc của vai bạn, gấp lên trước'),
 
-  dat(boLuat, 'Bộ luật chung', 'noi-dung', 'Dùng chung mọi page — sửa là cả team đổi'),
-  dat(kyNang, 'Thư viện kỹ năng', 'noi-dung', 'Ba phạm vi, đếm page thật sự nhận'),
-  dat(promptPage, 'Prompt của page', 'noi-dung', 'Bốn khối, token từng khối, soi mâu thuẫn'),
-  dat(kichBan, 'Kịch bản', 'noi-dung', 'Soạn, duyệt, đưa lên LIVE, nhập từ Pancake'),
-  dat(aiDeXuat, 'AI đề xuất', 'noi-dung', 'Bản do AI đề xuất — phải duyệt mới áp được'),
-  dat(lop0, 'Lớp trả lời 0 đồng', 'noi-dung', 'Mẫu miễn phí — mỗi câu bắt được là 127 đ'),
-  dat(thuVienAnh, 'Thư viện ảnh', 'noi-dung', 'Ảnh gắn nhãn theo chủ đề'),
+  // Đường DUY NHẤT của vai `sale` — 01 §10: «sale không làm việc trên hệ thống này».
+  dat(dispatch, 'Bảng điều phối', 'viec-can-xu', 'Việc cần người xử, có đồng hồ đếm ngược'),
 
-  dat(sanPham, 'Sản phẩm & kho', 'san-pham', 'Đọc từ Sheet của bot, không từ bảng v3'),
-  dat(lenChay, 'Đưa sản phẩm lên chạy', 'san-pham', 'Sáu chặng, mỗi chặng một cửa kiểm'),
+  // Bảy MẶT của một việc. Thứ tự là thứ tự người ta đi: sửa luật chung trước, rồi thu hẹp
+  // dần tới từng page, và «Prompt của page» đứng CUỐI vì nó là chỗ KIỂM LẠI sau khi sửa.
+  dat(boLuat, 'Bộ luật chung', 'bot-noi-gi', 'Dùng chung mọi page — sửa là cả team đổi'),
+  dat(kyNang, 'Thư viện kỹ năng', 'bot-noi-gi', 'Ba phạm vi, đếm page thật sự nhận'),
+  dat(kichBan, 'Kịch bản', 'bot-noi-gi', 'Soạn, duyệt, đưa lên LIVE, nhập từ Pancake'),
+  dat(aiDeXuat, 'AI đề xuất', 'bot-noi-gi', 'Bản do AI đề xuất — phải duyệt mới áp được'),
+  dat(lop0, 'Lớp trả lời 0 đồng', 'bot-noi-gi', 'Mẫu miễn phí — mỗi câu bắt được là 127 đ'),
+  dat(thuVienAnh, 'Thư viện ảnh', 'bot-noi-gi', 'Ảnh gắn nhãn theo chủ đề'),
+  dat(promptPage, 'Prompt của page', 'bot-noi-gi', 'Xem lại prompt thật sau khi sửa'),
 
+  // Bốn màn cùng trả lời một câu: «page này bán được chưa». Cửa kiểm là BẢNG ĐIỂM, ba màn
+  // kia là chỗ sửa cho điểm xanh — nên cửa kiểm đứng đầu.
+  dat(sanSang, 'Cửa kiểm sẵn sàng', 'page-san-pham', 'Bảy điều kiện, bấm ô đỏ nhảy tới chỗ sửa'),
+  dat(pageBot, 'Page & Bot', 'page-san-pham', 'Công tắc bot, marketer, page trọng điểm'),
+  dat(sanPham, 'Sản phẩm & kho', 'page-san-pham', 'Đọc từ nguồn của bot, không từ bảng v3'),
+  dat(lenChay, 'Đưa sản phẩm lên chạy', 'page-san-pham', 'Sáu chặng, mỗi chặng một cửa kiểm'),
+
+  // Không màn nào ở đây dùng để RA LỆNH — chúng để ĐỌC. Nhịp khác hẳn bốn mục trên.
   dat(baoCao, 'Báo cáo', 'so-lieu', 'Hai luồng đơn, ba thước — không cộng'),
   dat(chiPhi, 'Chi phí AI', 'so-lieu', 'đ/tin · đ/đơn · page đốt tiền không ra đơn'),
   dat(ruiRo, 'Rủi ro hoàn hàng', 'so-lieu', 'Phân bố tỉ lệ hoàn × số đơn'),
@@ -83,20 +112,36 @@ export const MAN = Object.freeze([
   dat(nguonKhach, 'Nguồn khách vào', 'so-lieu', 'Hai luồng song song, gặp nhau ở POS'),
   dat(hieuQua, 'Hiệu quả kịch bản', 'so-lieu', 'A/B — chưa đủ mẫu thì nói chưa kết luận'),
 
-  dat(team, 'Cấu hình team', 'he-thong', 'Thành viên, vai, POS, gán page'),
-  dat(ketNoi, 'Kết nối & token', 'he-thong', 'Kho token Pancake — hạ tầng dùng chung'),
-  dat(model, 'Model AI & khoá', 'he-thong', 'Ba vai model, bảng giá, khoá theo nhà'),
-  dat(sucKhoe, 'Sức khoẻ hệ thống', 'he-thong', 'Chín đèn, tự nạp lại mỗi phút'),
-  dat(nhatKy, 'Nhật ký thao tác', 'he-thong', 'Ai làm gì, lúc nào — tách làn người/máy'),
+  // Vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
+  dat(team, 'Cấu hình team', 'cai-dat', 'Thành viên, vai, POS, gán page'),
+  dat(ketNoi, 'Kết nối & token', 'cai-dat', 'Kho token Pancake — hạ tầng dùng chung'),
+  dat(model, 'Model AI & khoá', 'cai-dat', 'Ba vai model, bảng giá, khoá theo nhà'),
+  dat(sucKhoe, 'Sức khoẻ hệ thống', 'cai-dat', 'Chín đèn, tự nạp lại mỗi phút'),
+  dat(nhatKy, 'Nhật ký thao tác', 'cai-dat', 'Ai làm gì, lúc nào — tách làn người/máy'),
 ]);
 
-/** Menu của MỘT người — lọc theo vai ở máy chủ, không ẩn bằng CSS. */
+/**
+ * Menu của MỘT người — lọc theo vai ở máy chủ, không ẩn bằng CSS.
+ *
+ * Mục nào không còn màn nào vai đó vào được thì BIẾN MẤT, không hiện rỗng: một mục trống
+ * là một lời mời bấm vào rồi không có gì. Vai `sale` vì thế chỉ còn đúng một mục.
+ */
 export function menuCua(vai = []) {
   const cua = new Set((Array.isArray(vai) ? vai : [vai]).map(String));
   const duoc = MAN.filter((m) => (m.vai || []).some((v) => cua.has(String(v))));
   return NHOM
     .map((n) => ({ ...n, man: duoc.filter((m) => m.nhom === n.ma) }))
     .filter((n) => n.man.length);
+}
+
+/**
+ * Mục đang mở, suy từ đường hiện tại. Menu dùng nó để bung đúng mục và tô dòng đang đứng —
+ * không có nó thì người dùng thấy sáu mục đóng và không biết mình đang ở đâu.
+ */
+export function mucCuaDuong(duong) {
+  const d = String(duong || '').replace(/\/$/, '') || '/';
+  const man = MAN.find((m) => m.duong === d);
+  return man ? man.nhom : null;
 }
 
 export { VAI };

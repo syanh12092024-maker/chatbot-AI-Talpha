@@ -1,0 +1,53 @@
+{
+  "artboards": [
+    {
+      "file": "HienTrang.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1180,
+      "h": 940,
+      "title": "Hiện trạng — 24 mục"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 1300,
+      "y": 0,
+      "w": 1180,
+      "h": 940,
+      "title": "Thiết kế lại — 6 mục"
+    },
+    {
+      "file": "BanDoGom.dc.html",
+      "x": 0,
+      "y": 1080,
+      "w": 1180,
+      "h": 940,
+      "title": "Bản đồ gom 24 → 6"
+    },
+    {
+      "file": "BotNoiGi.dc.html",
+      "x": 1300,
+      "y": 1080,
+      "w": 1180,
+      "h": 940,
+      "title": "Mục nặng nhất — Bot nói gì"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "chan-doan",
+      "x": 0,
+      "y": -150,
+      "w": 520,
+      "text": "CHẨN ĐOÁN\nĐo bằng menuCua(): vai quản trị thấy 24 màn, quản lý 22, marketer 14.\nBảy trong số đó phục vụ MỘT việc — sửa cách bot nói."
+    },
+    {
+      "id": "de-xuat",
+      "x": 1300,
+      "y": -150,
+      "w": 520,
+      "text": "ĐỀ XUẤT\nSáu mục xếp theo NHỊP LÀM VIỆC (mỗi sáng · khi cần · một lần rồi thôi),\nkhông theo cấu trúc dữ liệu. Không xoá màn nào — chúng thành tab."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

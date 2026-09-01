@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; }
+    a { color: #0e7c86; } a:hover { color: #0b646d; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; height: 940px; background: #f5f7f9; display: flex; flex-direction: column;">
+
+  <div style="background: #0b2125; color: #fff; padding: 14px 22px; display: flex; align-items: center; gap: 14px;">
+    <div style="background: rgba(255,255,255,.14); color: #fff; border-radius: 8px; padding: 6px 11px; font-size: 13px; font-weight: 600;">☰ Màn hình</div>
+    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">AI Closer v3</h1>
+    <div style="font-size: 11.5px; color: #7fa3a8;">hiện trạng 01/09 · vai quản trị</div>
+  </div>
+
+  <div style="display: flex; flex: 1; min-height: 0;">
+
+    <div style="width: 300px; background: #0b2125; color: #dfeaec; font-size: 13.5px; overflow: hidden; position: relative;">
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(rgba(11,33,37,0), #0b2125 62%); padding: 26px 17px 11px; font-size: 11px; color: #9fd3d8; font-weight: 600;">
+        ↓ còn 11 mục nữa phải cuộn mới thấy
+      </div>
+      <div style="padding: 15px 17px 12px; border-bottom: 1px solid rgba(255,255,255,.1);">
+        <b style="font-size: 15px; color: #fff; display: block;">AI Closer v3</b>
+        <div style="font-size: 11.5px; color: #7fa3a8; margin-top: 3px; line-height: 1.5;">chu@talpha.vn<br>team 1 · vai: quan-tri</div>
+      </div>
+
+      <sc-for list="{{nhom}}" as="n" hint-placeholder-count="5">
+        <div style="padding: 13px 17px 4px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: #5f8a90; font-weight: 700;">{{n.ten}}</div>
+        <sc-for list="{{n.man}}" as="m" hint-placeholder-count="7">
+          <div style="padding: 8px 17px; line-height: 1.4;">
+            <div style="font-weight: 600;">{{m.ten}}</div>
+            <div style="font-size: 11px; color: #7fa3a8; margin-top: 1px;">{{m.mo}}</div>
+          </div>
+        </sc-for>
+      </sc-for>
+    </div>
+
+    <div style="flex: 1; padding: 22px 26px; display: flex; flex-direction: column; gap: 14px; min-width: 0;">
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-left: 4px solid #dc2626; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 16px 18px;">
+        <div style="font-weight: 700; font-size: 15px; color: #101828;">Menu hiện tại: 24 mục trong 5 nhóm — vẫn là một danh sách dài</div>
+        <div style="color: #667085; font-size: 12px; line-height: 1.6; margin-top: 6px;">
+          Đo bằng <span style="font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; background: #f5f7f9; padding: 1px 5px; border-radius: 4px;">menuCua()</span> trên năm vai — số màn mỗi vai thấy:
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap;">
+          <sc-for list="{{vai}}" as="v" hint-placeholder-count="5">
+            <div style="border: 1px solid #e4e9ee; background: #fff; border-radius: 10px; padding: 8px 12px; min-width: 104px;">
+              <div style="font-size: 22px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; color: {{v.mau}};">{{v.so}}</div>
+              <div style="font-size: 11.5px; color: #667085; margin-top: 4px;">{{v.ten}}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 16px 18px;">
+        <div style="font-weight: 600; font-size: 13.5px; margin-bottom: 4px;">Bốn chỗ hỏng, xếp theo mức đau</div>
+        <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 12px;">
+          <sc-for list="{{loi}}" as="l" hint-placeholder-count="4">
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: {{l.nen}}; color: {{l.mau}}; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{l.so}}</div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 600; font-size: 13px;">{{l.ten}}</div>
+                <div style="color: #667085; font-size: 12px; line-height: 1.6; margin-top: 2px;">{{l.noi}}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: #fdf3e3; border: 1px solid #f0d3a4; color: #8a4a06; border-radius: 9px; padding: 11px 14px; line-height: 1.6; font-size: 12px;">
+        <b style="color: #7a3f05;">Chỗ đang làm ĐÚNG, giữ nguyên:</b> vai <span style="font-family: ui-monospace, Menlo, monospace;">sale</span> chỉ thấy MỘT màn.
+        01-QUYẾT-ĐỊNH §10: «sale không làm việc trên hệ thống này — màn hình chỉ có hai danh sách, bấm là nhảy sang Pancake».
+        Bản thiết kế lại không đụng vào vai này.
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      vai: [
+        { ten: 'quan-tri', so: 24, mau: '#dc2626' },
+        { ten: 'quan-ly', so: 22, mau: '#dc2626' },
+        { ten: 'marketer', so: 14, mau: '#b45309' },
+        { ten: 'duyet-kich-ban', so: 6, mau: '#101828' },
+        { ten: 'sale', so: 1, mau: '#16a34a' },
+      ],
+      loi: [
+        { so: '1', nen: '#fdecec', mau: '#991b1b', ten: 'Bảy màn cho MỘT việc: sửa cách bot nói',
+          noi: 'Bộ luật · Kỹ năng · Prompt của page · Kịch bản · AI đề xuất · Lớp 0 đồng · Thư viện ảnh. 01-QUYẾT-ĐỊNH §6 nói prompt có BỐN khối; giao diện tách thành bảy đường.' },
+        { so: '2', nen: '#fdecec', mau: '#991b1b', ten: 'Xếp theo cấu trúc dữ liệu, không theo nhịp làm việc',
+          noi: 'Nhật ký thao tác (xem khi có sự cố) đứng ngang hàng Bảng điều phối (mở mỗi sáng). Menu không nói cái nào mở hằng ngày, cái nào một lần rồi thôi.' },
+        { so: '3', nen: '#fdf3e3', mau: '#8a4a06', ten: 'Màn chưa có dữ liệu chiếm chỗ ngang màn đang chạy',
+          noi: 'Hiệu quả kịch bản thiếu cả hai vế (không có lượt để so, cũng không có bản để so); Lớp 0 đồng bảng rỗng. Người dùng vào rồi ra tay không — mỗi lần là một lần mất niềm tin vào menu.' },
+        { so: '4', nen: '#fdf3e3', mau: '#8a4a06', ten: 'Ngăn kéo che nội dung, không có chỗ đứng',
+          noi: 'Menu là ngăn kéo bật ra rồi tắt: không thấy mình đang ở đâu trong hệ, và mỗi lần chuyển màn là hai cú bấm.' },
+      ],
+      nhom: [
+        { ten: 'Hằng ngày', man: [
+          { ten: 'Trang chủ', mo: 'Việc của vai bạn, gấp lên trước' },
+          { ten: 'Bảng điều phối', mo: 'Việc cần người xử, có đồng hồ' },
+          { ten: 'Cửa kiểm sẵn sàng', mo: 'Bảy điều kiện, bấm ô đỏ nhảy tới' },
+          { ten: 'Page & Bot', mo: 'Công tắc bot, marketer, trọng điểm' },
+        ] },
+        { ten: 'Nội dung bot', man: [
+          { ten: 'Bộ luật chung', mo: 'Sửa là cả team đổi' },
+          { ten: 'Thư viện kỹ năng', mo: 'Ba phạm vi' },
+          { ten: 'Prompt của page', mo: 'Bốn khối, token từng khối' },
+          { ten: 'Kịch bản', mo: 'Soạn, duyệt, đưa lên LIVE' },
+          { ten: 'AI đề xuất', mo: 'Phải duyệt mới áp được' },
+          { ten: 'Lớp trả lời 0 đồng', mo: 'Mỗi câu bắt được là 127 đ' },
+          { ten: 'Thư viện ảnh', mo: 'Ảnh gắn nhãn theo chủ đề' },
+        ] },
+        { ten: 'Sản phẩm', man: [
+          { ten: 'Sản phẩm & kho', mo: 'Đọc từ nguồn của bot' },
+          { ten: 'Đưa sản phẩm lên chạy', mo: 'Sáu chặng, mỗi chặng một cửa' },
+        ] },
+        { ten: 'Số liệu', man: [
+          { ten: 'Báo cáo', mo: 'Hai luồng đơn, ba thước' },
+          { ten: 'Chi phí AI', mo: 'đ/tin · đ/đơn' },
+          { ten: 'Rủi ro hoàn hàng', mo: 'Phân bố tỉ lệ hoàn × số đơn' },
+          { ten: 'Hồ sơ khách hàng', mo: 'Gộp theo số điện thoại' },
+          { ten: 'Nguồn khách vào', mo: 'Hai luồng song song' },
+          { ten: 'Hiệu quả kịch bản', mo: 'A/B — chưa đủ mẫu thì nói' },
+        ] },
+        { ten: 'Hệ thống', man: [
+          { ten: 'Cấu hình team', mo: 'Thành viên, vai, POS, gán page' },
+          { ten: 'Kết nối & token', mo: 'Kho token Pancake' },
+          { ten: 'Model AI & khoá', mo: 'Ba vai model, bảng giá' },
+          { ten: 'Sức khoẻ hệ thống', mo: 'Chín đèn' },
+          { ten: 'Nhật ký thao tác', mo: 'Ai làm gì, lúc nào' },
+        ] },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

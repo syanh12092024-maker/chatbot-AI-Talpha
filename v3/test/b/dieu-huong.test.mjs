@@ -107,3 +107,49 @@ test('③ · mọi trang HTML đều nhúng `dieu-huong.js`', () => {
   assert.deepEqual(sot, [],
     `trang thiếu menu: ${sot.join(', ')} — người dùng vào đó là kẹt, không đi đâu được`);
 });
+
+/* ═══════════ ④ SÁU MỤC, XẾP THEO NHỊP — không mọc dài trở lại ═══════════ */
+// Menu cũ là 24 dòng phẳng: vai `quan-tri` phải quét 24 mục để tìm một màn. Bốn bài dưới
+// khoá đúng cái vừa sửa, vì thứ dễ trôi nhất ở một sổ đăng ký là có người thêm nhóm mới.
+
+test('④a · đúng SÁU mục, không hơn — thêm mục thứ bảy là quay lại danh sách dài', () => {
+  assert.equal(mh.NHOM.length, 6, `đang có ${mh.NHOM.length} mục: ${mh.NHOM.map((n) => n.ten)}`);
+  for (const n of mh.NHOM) {
+    assert.ok(n.ma && n.ten, 'mục phải có mã và tên');
+    assert.ok(n.mo && n.mo.length > 8, `mục ${n.ten}: thiếu câu mô tả — người dùng không đoán được trong đó có gì`);
+  }
+});
+
+test('④b · mọi màn thuộc về một mục CÓ THẬT — không màn nào rơi ra ngoài menu', () => {
+  const ma = new Set(mh.NHOM.map((n) => n.ma));
+  const lac = mh.MAN.filter((m) => !ma.has(m.nhom));
+  assert.deepEqual(lac.map((m) => `${m.ten} → nhóm "${m.nhom}"`), [],
+    'màn khai nhóm không có trong NHOM sẽ biến mất khỏi menu mà không ai báo');
+});
+
+test('④c · vai QUẢN TRỊ thấy 6 mục nhưng vẫn đủ 24 màn — gom chứ không xoá', () => {
+  const menu = mh.menuCua([VAI.QUAN_TRI]);
+  assert.equal(menu.length, 6, 'quản trị phải thấy đủ sáu mục');
+  const soMan = menu.reduce((a, n) => a + n.man.length, 0);
+  assert.equal(soMan, mh.MAN.length, 'gom nhóm KHÔNG được làm rơi màn nào');
+  // Mục nặng nhất là «Bot nói gì» — bảy mặt của một việc (01 §6 bốn khối).
+  const bot = menu.find((n) => n.ma === 'bot-noi-gi');
+  assert.equal(bot.man.length, 7);
+  assert.equal(bot.man[bot.man.length - 1].ten, 'Prompt của page',
+    'màn xem lại prompt phải đứng CUỐI — nó là chỗ kiểm sau khi sửa, không phải chỗ bắt đầu');
+});
+
+test('④d · SALE chỉ thấy MỘT mục, và mục đó chỉ có một màn — §10', () => {
+  const menu = mh.menuCua([VAI.SALE]);
+  assert.equal(menu.length, 1, 'sale không được thấy mục nào khác');
+  assert.equal(menu[0].ma, 'viec-can-xu');
+  assert.deepEqual(menu[0].man.map((m) => m.ten), ['Bảng điều phối']);
+});
+
+test('④e · `mucCuaDuong` chỉ đúng mục đang đứng — menu phải bung được đúng chỗ', () => {
+  assert.equal(mh.mucCuaDuong('/bo-luat'), 'bot-noi-gi');
+  assert.equal(mh.mucCuaDuong('/dieu-phoi'), 'viec-can-xu');
+  assert.equal(mh.mucCuaDuong('/nhat-ky'), 'cai-dat');
+  assert.equal(mh.mucCuaDuong('/dieu-phoi/'), 'viec-can-xu', 'gạch chéo cuối không được làm lệch');
+  assert.equal(mh.mucCuaDuong('/khong-co-that'), null, 'đường lạ trả null, không đoán bừa');
+});
