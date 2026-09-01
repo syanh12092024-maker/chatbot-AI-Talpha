@@ -17,6 +17,33 @@
 
 ---
 
+## Giai đoạn 2 · SÓNG VÁ P1–P9 (01/09) — đóng chỗ «màn dựng xong nhưng là vỏ»
+
+Rà lại toàn bộ 23 màn bằng cách hỏi ĐÚNG MỘT câu: *màn này có nối vào nguồn thật và có
+hiệu lực thật không, hay chỉ ghi/hiện dữ liệu mà bot không bao giờ đọc?* Kết quả: 8 màn nối
+thật, 6 màn là vỏ, 1 màn đường tiền nói sai 6,7 lần. Chín phiếu đã đóng:
+
+| # | Việc | Kết quả đo được |
+|---|---|---|
+| P1 | Thước GD2 | 3 cổng `a7-*` đỏ vì đọc khuôn `# pass` của Node ≤24 (máy chạy v25) và không tự nạp `.env`; `g2-a3` đỏ thật vì hai cửa giao dịch 009/010 chưa khai lý do. **8/8 cổng GD2 rc=0** |
+| P2 | Màn «Rủi ro hoàn hàng» (H10) | Bỏ phép tự tính mã `{4,5,6,7,8}` của v1 → ĐỌC `khach.tang_hoan`. Màn từng nói 40.064 khách «hoàn cao», luật nói 5.990 — 34.187 trong số đó chỉ có MỘT đơn |
+| P3 | Hồ sơ khách + Báo cáo | Hồ sơ khách thôi tự đếm hoàn; Báo cáo dùng `baoCaoHaiLuong` của A (trước đây khai `datDocHaiLuong` mà không dòng nào đọc lại ⇒ mã chết) |
+| P4 | Ba màn đếm cột lệch | Sức khỏe hỏi `ai-enabled.json` và ĐẾM độ lệch; Cấu hình team khai rõ cột chỉ là bản sao |
+| P5 | Màn «Prompt của page» | Hiện NĂM khối (CORE + bốn khối CSDL) và nói đúng hiệu lực: cờ tắt ⇒ bot vẫn dùng `kb.js` cũ; CORE cứng ⇒ bộ luật CSDL chỉ BỔ SUNG |
+| P6 | Lớp trả lời 0 đồng | Nối bộ đếm vào đường chat (tiêu chí «chặn ≥33%» lần đầu đo được) + cửa ghi mẫu, vai ghi hẹp hơn vai đọc |
+| P7 | Worker v3 | `npm run worker-v3` — luồng chat v3 lần đầu có tiến trình chạy; `src/server.js` (file cấm) không import `src/queue/*` nên `so_ai`/`viec_can_xu_ly` mới rỗng |
+| P8 | B-Y8 + B-Y9 | `phanBoRuiRoHoan` gom tầng × số đơn trong CSDL; di trú nối `hoi_thoai.khach_id`, có lưới migration |
+| P9 | Thước trên Postgres thật | Bộ ca HỢP ĐỒNG giả↔thật — bắt ngay 2 chỗ bản giả dễ tính hơn (`tao_luc`, kiểu `nguoiDungId`) |
+
+**Đo sau sóng:** test A 476/476 · test B 719/719 (có Postgres) · 8 cổng GD2 rc=0.
+
+⚠️ **Còn mở, đã ghi §9 sổ điều hành:** 8/25 cổng cũ đỏ khi CSDL dev có dữ liệu (đối chứng
+trên commit `4e72228`: đỏ giống hệt ⇒ do dữ liệu nền, không phải mã) · CSDL dev còn ở
+migration 007 · bộ luật chung vẫn chưa thay được hằng `CORE` (cần cutover `prompts.js`,
+xin chủ dự án) · `V3_RAP_PROMPT_BAT` chưa bật ở đâu.
+
+---
+
 ## Giai đoạn 2 · sóng 4 — VẬN HÀNH (6/10 màn) + hai màn sóng 3 (26/08)
 
 ### Ba con số đơn hàng, ba câu hỏi — truy tận nơi tính 26/08
