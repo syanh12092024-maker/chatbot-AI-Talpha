@@ -649,6 +649,26 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   NHẬN RA chúng thay vì tạo trùng: tính idempotent được chứng minh trên dữ liệu thật, không
   chỉ trong bộ ca.
 
+- 01/09 · SÓNG VÁ GD2 (P1–P9) — NGOÀI PHẠM VI, ghi lại để người sau khỏi chẩn nhầm:
+  (1) 🔴 **8/25 cổng nghiệm thu ĐỎ khi CSDL dev có dữ liệu.** Đo 01/09: sau `npm run di-tru`
+  trên `aicloser_v3` (502 page · 18.790 hội thoại · 6.428 khách · 5.671 đơn · 137 sản phẩm),
+  các cổng `l0-m1 · l0-m2 · l1-m1 · l2-m3 · l3-m2 · l3-m4 · va-q12 · va-r2` chuyển đỏ. ĐÃ
+  ĐỐI CHỨNG trên worktree ở commit `4e72228` (trước mọi sửa của sóng này): đỏ **giống hệt
+  từng dòng** ⇒ do DỮ LIỆU NỀN, không phải hồi quy mã. Gốc: chúng đo trên CSDL dev CHUNG
+  thay vì tự dựng sandbox (án lệ #28). Phiếu sau: chuyển sang `dungSandbox()`, hoặc neo
+  bằng DELTA thay vì con số tuyệt đối.
+  (2) CSDL máy dev còn ở migration **007** — thiếu 008–013, nên cổng `l0-m1` báo lệch neo
+  bảng và bộ ca a7-* chỉ chạy được trong sandbox. Người dùng chưa cho áp; `npm run migrate`
+  là việc một lệnh khi có lệnh.
+  (3) `npm test` trên máy này còn 9 ca đỏ ở suite CŨ (A8 · D6 · D8 · F2 · F5 · F5b · F6 ·
+  I3 · V4): tiến trình bot v1 đang chạy GHI `conv-state.json` giữa lượt đo (đo được: kích
+  thước đổi 5.459.361 → 5.461.675 trong một lượt chạy). Cây sạch trong worktree: 406/406.
+  Thước phụ thuộc tệp trạng thái runtime — ghi nợ, chưa sửa.
+  (4) Bộ luật chung vẫn KHÔNG thay được hằng `CORE` (`src/prompts.js`, file cấm sửa) —
+  tiêu chí G2 ① mới đạt một nửa. Đóng nốt = cutover `prompts.js`, phải xin chủ dự án.
+  (5) `V3_RAP_PROMPT_BAT` chưa bật ở đâu ⇒ ba khối kỹ năng/kịch bản/sản phẩm từ CSDL chưa
+  điều khiển đường chat. Bật là việc người (H9 cutover).
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -1333,3 +1353,12 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   Thêm một bẫy nối dây: `dungPhanB` tự đặt cổng danh tính bằng `taoTruyVanHeThong`, nên gọi
   `datCongDanhTinh` riêng ở trước là bị ghi đè → đăng nhập nổ «nguoi_dung không nằm trong
   BANG_NGHIEP_VU_CHUAN». Cổng danh tính phải TRUYỀN VÀO, không đặt ngoài.
+- 01/09 · SÓNG VÁ GD2 (P1–P9) → ✅ 9/9 phiếu — thước GD2 (3 cổng a7 nhận khuôn Node 25 +
+  tự nạp .env · g2-a3 khai hai cửa giao dịch 009/010) · H10 đóng: màn Rủi ro hoàn ĐỌC
+  `khach.tang_hoan` thay vì tự tính mã {4,5,6,7,8} của v1 (lệch 6,7 lần) · hồ sơ khách +
+  báo cáo cắt sang cửa của A · hai đèn công tắc bot đọc `ai-enabled.json` · màn Prompt của
+  page hiện NĂM khối kèm hiệu lực thật · lớp 0 đồng có bộ đếm trên đường chat + cửa ghi mẫu
+  · `npm run worker-v3` (luồng chat v3 lần đầu có tiến trình chạy) · B-Y8 `phanBoRuiRoHoan`
+  hai chiều + B-Y9 di trú nối `hoi_thoai.khach_id` · bộ ca HỢP ĐỒNG chạy trên Postgres thật
+  (đóng bài học ① — bắt ngay 2 chỗ bản giả dễ tính hơn). Test A 476/476 · B 719/719 · 8 cổng
+  GD2 rc=0 · commit 0535cb4→d31614f · nợ mới ghi §9 (8 cổng đỏ vì dữ liệu nền, không phải mã).
