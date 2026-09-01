@@ -86,8 +86,45 @@ Bạn là người BÁN HÀNG, không phải tổng đài trả lời câu hỏi
 Gọi khi: khách ĐÃ MUA mà hàng lỗi/sai/chưa nhận, đòi trả hàng–hoàn tiền, bị tính sai tiền; tố lừa đảo, chửi bới, doạ report/kiện; đơn giá trị cao bất thường; khách đòi gặp người thật; bạn không chắc thông tin.
 ⛔ DO DỰ HAY TỪ CHỐI KHÔNG PHẢI lý do chuyển người — chê đắt, xin nghĩ thêm, chưa có tiền, nghi ngờ hiệu quả, so giá chỗ khác đều là PHẢN ĐỐI BÁN HÀNG, KHÔNG phải khiếu nại. Đó là lúc phải bán: chạy đủ ladder mục 9 rồi mới buông.`;
 
+/**
+ * CUTOVER 01/09 — khối «bộ luật chung» đọc từ CSDL khi có, `CORE` là đường LÙI.
+ *
+ * ═══ VÌ SAO ĐỘNG VÀO FILE NÀY ═══════════════════════════════════════════════════════
+ * `07-KE-HOACH-GD2.md` G2 nghiệm thu ①: *«sửa bộ luật chung trên màn hình → lượt chat kế
+ * tiếp dùng bản mới, KHÔNG deploy»*. Trước hôm nay tiêu chí đó mới đạt một nửa: bản trong
+ * CSDL đi vào khối `# KNOWLEDGE BASE` ở CUỐI (bổ sung), còn hằng `CORE` cứng ở đây vẫn
+ * đứng ĐẦU và tự tuyên bố thắng mọi khối sau — nên marketer sửa trên màn thì model vẫn
+ * nghe CORE. Đóng nốt nửa còn lại bắt buộc phải sửa đúng dòng này. Chủ dự án duyệt 01/09.
+ *
+ * ═══ FAIL-SAFE: THIẾU THÌ DÙNG CORE, KHÔNG ĐỂ TRỐNG ════════════════════════════════
+ * `kb.boLuatChung` rỗng / không phải chuỗi / chưa nối đường DB ⇒ dùng `CORE` y như trước.
+ * 51 page đang chạy thật KHÔNG được đổi hành vi cho tới khi có bản thay hợp lệ; và một
+ * prompt MẤT khối luật còn nguy hiểm hơn một prompt dùng khối luật cũ.
+ *
+ * ⚠️ Bản thay PHẢI tự mang thẩm quyền. `CORE` thắng các khối sau nhờ đoạn «THẨM QUYỀN»
+ * viết thẳng trong chữ, không nhờ vị trí. Bản trong CSDL thiếu đoạn đó thì kịch bản page
+ * ghi đè được quy tắc sống còn — nên chỗ này kiểm và TỪ CHỐI thay, có nói ra
+ * (`kb.boLuatChungBiTuChoi`), thay vì im lặng nhận một khối luật không có răng.
+ */
+export const THAM_QUYEN = 'THẨM QUYỀN';
+
+export function khoiBoLuat(kb) {
+  const ban = typeof kb?.boLuatChung === 'string' ? kb.boLuatChung.trim() : '';
+  if (!ban) return { text: CORE, nguon: 'CORE', lyDo: null };
+  if (!ban.includes(THAM_QUYEN)) {
+    return {
+      text: CORE,
+      nguon: 'CORE',
+      lyDo: `bản trong CSDL thiếu đoạn "${THAM_QUYEN}" — nó sẽ không thắng được kịch bản page, ` +
+        'nên KHÔNG thay; sửa bản đó rồi áp lại.',
+    };
+  }
+  return { text: ban, nguon: 'csdl', lyDo: null };
+}
+
 export function buildSystem(kb) {
-  const blocks = [{ type: 'text', text: CORE }];
+  const luat = khoiBoLuat(kb);
+  const blocks = [{ type: 'text', text: luat.text }];
 
   // Hướng dẫn RIÊNG cho page: CHỈ để tùy biến giọng điệu / câu chào / cách bán sản phẩm —
   // KHÔNG được ghi đè các NGUYÊN TẮC CỨNG trong CORE (CORE tự tuyên bố thẩm quyền ở đầu khối).

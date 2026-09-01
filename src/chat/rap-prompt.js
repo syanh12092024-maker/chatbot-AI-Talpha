@@ -266,6 +266,13 @@ export async function rapKb(pool, { teamId, pageIdText }) {
     config,
     text,
     products,
+    // CUTOVER 01/09 — khối BỘ LUẬT CHUNG đi thẳng vào `buildSystem` thay hằng `CORE`.
+    // Trước đó bản này chỉ nằm trong `text` (khối KNOWLEDGE BASE ở CUỐI) nên nó BỔ SUNG
+    // chứ không THAY được luật cứng; tiêu chí G2 ① («sửa trên màn → lượt chat kế tiếp dùng
+    // bản mới, không deploy») vì thế mới đạt một nửa. `prompts.js#khoiBoLuat` tự lùi về
+    // CORE khi trường này rỗng hoặc khi bản đó thiếu đoạn THẨM QUYỀN — nên page chưa có
+    // bản trong CSDL vẫn chạy y như cũ.
+    boLuatChung: luat ? String(luat.noi_dung || "") : "",
     // Cùng khuôn kb.js#getKBForPage: KHÔNG sản phẩm ⇒ noData (handler bàn giao, không bịa).
     noData: !sp.length,
     trongDiem,

@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { CORE, buildSystem } from '../src/prompts.js';
+import { CORE, buildSystem, khoiBoLuat, THAM_QUYEN } from '../src/prompts.js';
 import { classify } from '../src/classifier.js';
 import { toolDefs } from '../src/tools.js';
 
@@ -239,4 +239,57 @@ test('④ Giữ sanitizeMessages/sanitizeSystem — bỏ là khách ngồi im v�
 test('④ Closer không bao giờ trả "..." cho khách', () => {
   const src = readFileSync(join(SRC, 'closer.js'), 'utf8');
   assert.ok(!/return\s*'\.\.\.'/.test(src) && !/return\s*"\.\.\."/.test(src));
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ⑤ CUTOVER 01/09 — bộ luật chung đọc từ CSDL, CORE là đường LÙI
+// ─────────────────────────────────────────────────────────────────────────────
+// Tiêu chí G2 ①: «sửa bộ luật trên màn → lượt chat kế tiếp dùng bản mới, KHÔNG deploy».
+// Trước cutover, bản trong CSDL chỉ đi vào khối KNOWLEDGE BASE ở CUỐI nên nó BỔ SUNG chứ
+// không THAY được CORE — marketer sửa trên màn mà model vẫn nghe hằng cứng.
+
+test('⑤ thiếu bản CSDL → dùng CORE y như trước, 51 page đang chạy KHÔNG đổi hành vi', () => {
+  for (const kb of [{ text: 'kb', config: {} },
+                    { text: 'kb', config: {}, boLuatChung: '' },
+                    { text: 'kb', config: {}, boLuatChung: '   ' },
+                    { text: 'kb', config: {}, boLuatChung: 123 }]) {
+    assert.equal(buildSystem(kb)[0].text, CORE, `kb=${JSON.stringify(kb)} phải lùi về CORE`);
+  }
+});
+
+test('⑤ có bản CSDL HỢP LỆ → khối đầu là bản đó, không phải CORE', () => {
+  const ban = `# BỘ LUẬT CHUNG v9\n⚠️ ${THAM_QUYEN}: khối này THẮNG MỌI KHỐI SAU.\nKhông bịa giá.`;
+  const blocks = buildSystem({ text: 'kb', config: {}, boLuatChung: ban });
+  assert.equal(blocks[0].text, ban, 'sửa trên màn phải tới được model — đây là cả điểm của cutover');
+  assert.notEqual(blocks[0].text, CORE);
+  // Cấu trúc khối và điểm neo cache KHÔNG được đổi theo.
+  assert.equal(blocks.length, 2);
+  assert.equal(blocks.filter((b) => b.cache_control).length, 1);
+  assert.equal(blocks[blocks.length - 1].cache_control.type, 'ephemeral');
+});
+
+test('⑤ bản CSDL thiếu đoạn THẨM QUYỀN → TỪ CHỐI thay, và NÓI vì sao', () => {
+  // CORE thắng các khối sau nhờ đoạn «THẨM QUYỀN» viết thẳng trong chữ, không nhờ vị trí.
+  // Nhận một bản không có đoạn đó là để kịch bản page ghi đè được quy tắc sống còn.
+  const r = khoiBoLuat({ boLuatChung: '# BỘ LUẬT\nKhông bịa giá.' });
+  assert.equal(r.nguon, 'CORE');
+  assert.equal(r.text, CORE);
+  assert.match(r.lyDo, /THẨM QUYỀN/);
+  assert.equal(buildSystem({ text: 'kb', config: {}, boLuatChung: '# x' })[0].text, CORE);
+});
+
+test('⑤ khoiBoLuat khai NGUỒN của khối — không đoán được bằng cách nhìn chuỗi', () => {
+  assert.equal(khoiBoLuat({}).nguon, 'CORE');
+  assert.equal(khoiBoLuat({}).lyDo, null, 'không có bản thì KHÔNG phải một lỗi — đừng bịa lý do');
+  const ban = `x ${THAM_QUYEN} y`;
+  assert.equal(khoiBoLuat({ boLuatChung: ban }).nguon, 'csdl');
+});
+
+test('⑤ `rap-prompt.js` CÓ truyền `boLuatChung` xuống — khai mà không nối là cutover câm', () => {
+  const src = readFileSync(new URL('../src/chat/rap-prompt.js', import.meta.url), 'utf8');
+  // Khớp CHÍNH XÁC dòng truyền NỘI DUNG. `rapKb` còn một `boLuatChung:` thứ hai trong
+  // `blocks` (chỉ mang phiên bản và độ dài, để màn Prompt hiện) — regex lỏng khớp nhầm
+  // dòng đó thì bỏ dòng thật đi bài test vẫn xanh (đo bằng đảo-vá 01/09).
+  assert.match(src, /boLuatChung:\s*luat\s*\?\s*String\(luat\.noi_dung/,
+    'rapKb phải truyền NỘI DUNG bộ luật xuống kb.boLuatChung, không thì buildSystem mãi lùi về CORE');
 });
