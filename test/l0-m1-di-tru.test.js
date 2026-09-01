@@ -321,3 +321,41 @@ test("Y4-5 · marketer là cột NGƯỜI đặt DUY NHẤT trong câu ghi đè 
   // không bao giờ nhận được marketer từ nguồn.
   assert.match(khoi[1], /marketer\s*=\s*CASE/);
 });
+
+// ══ B-Y9 · NỐI HỘI THOẠI VỀ HỒ SƠ KHÁCH ═══════════════════════════════════════════
+// Cột `hoi_thoai.khach_id` có trong lược đồ từ 013 mà chưa lần nào được ghi (0/28.953 đo
+// 28/08): hàm nối đã có (A7-2), chỗ thiếu là một đường CHẠY nó. Ba ca dưới khoá đúng ba
+// điều phiếu B-Y9 đòi: có nối, đếm được phần KHÔNG nối, và không nối bừa.
+
+test("D-Y9a · bộ di trú CÓ chạy bước nối, và trả thống kê đủ để trả lời «vì sao chưa nối»", async () => {
+  const nk = kq1.noiHoSoKhach;
+  assert.ok(nk, "di trú phải chạy bước nối hồ sơ khách");
+  if (nk.chuaCoCot) {
+    // Sandbox áp trọn 13 bản nên nhánh này KHÔNG được xảy ra ở đây — nếu xảy ra thì
+    // migration 013 đã biến mất khỏi cây.
+    assert.fail(`sandbox thiếu cột: ${nk.thieu?.join(", ")}`);
+  }
+  for (const k of ["xet", "noiMoi", "noiVaoCoSan", "thieuNuoc", "sdtKhongDocDuoc", "conChuaNoi"]) {
+    assert.equal(typeof nk[k], "number", `thiếu số đếm \`${k}\` — «chưa nối» phải đếm được`);
+  }
+  assert.ok(Array.isArray(nk.pageThieuShop));
+});
+
+test("D-Y9b · KHÔNG nối bừa: mọi `hoi_thoai.khach_id` trỏ tới khách CÓ THẬT, CÙNG team", async () => {
+  const r = await sb.pool.query(
+    `SELECT count(*)::int c
+       FROM hoi_thoai h
+       LEFT JOIN khach k ON k.id = h.khach_id AND k.team_id = h.team_id
+      WHERE h.khach_id IS NOT NULL AND k.id IS NULL`,
+  );
+  assert.equal(r.rows[0].c, 0, "nối sai còn tệ hơn không nối — phiếu B-Y9 ⑤");
+});
+
+test("D-Y9c · chạy LẠI không đẻ thêm hội thoại nối trùng (idempotent)", async () => {
+  const dem = async () => (await sb.pool.query(
+    "SELECT count(khach_id)::int c FROM hoi_thoai",
+  )).rows[0].c;
+  const truoc = await dem();
+  await chay(sb.pool, GOC);
+  assert.equal(await dem(), truoc, "lượt hai phải giữ nguyên — khoá (team, nước, sđt) khớp lại dòng cũ");
+});

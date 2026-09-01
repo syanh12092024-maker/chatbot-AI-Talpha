@@ -13,6 +13,7 @@ import { diTruTatCa } from "./nap.js";
 import { napSoAi } from "./so-ai.js";
 import { diTruKetNoiPos, TEP_NGUON as TEP_SHOP } from "./ket-noi-pos.js";
 import { seedBoLuatVaKyNang } from "./bo-luat-va-ky-nang.js";
+import { noiKhachChoHoiThoai } from "../../src/chat/ho-so-khach.js";
 
 function thamSo(ten) {
   const p = process.argv.find((a) => a.startsWith(`--${ten}=`));
@@ -37,10 +38,69 @@ export async function chay(
     kichBan: await dem("kich_ban"),
   };
   kq.ketNoiPos = await diTruKetNoiPos(pool, goc);
+  // B-Y9 — NỐI HỘI THOẠI VỀ HỒ SƠ KHÁCH (`hoi_thoai.khach_id`).
+  //
+  // Cột có trong lược đồ từ 013 nhưng chưa lần nào được ghi: đo 28/08 là 0/28.953. Hai kênh
+  // kia (khách ↔ đơn) đã nối và chạy, nên màn «Hồ sơ khách hàng» hiện kênh thứ ba là «chưa
+  // biết» cho MỌI khách — đúng, nhưng là một sự thật do chưa ai chạy job chứ không phải do
+  // dữ liệu. `noiKhachChoHoiThoai` (A7-2) đã có sẵn và idempotent; chỗ thiếu là một đường
+  // CHẠY nó. Đặt ở đây vì di trú là lượt duy nhất đã đi qua mọi team và CHẠY LẠI ĐƯỢC.
+  //
+  // Nối được bao nhiêu thì nối; phần còn lại ĐẾM RA (thiếu nước · sđt không đọc được · mất
+  // tranh). Phiếu B-Y9 ⑤ nói thẳng: nối sai còn tệ hơn không nối — nên không có nhánh nào
+  // đoán theo tên hay theo page.
+  kq.noiHoSoKhach = await noiHoSoKhachMoiTeam(pool);
   // L2-M3 — seed mồi bo_luat_chung v1 (rút từ prompts.js) + ky_nang "hỏi size".
   kq.boLuatVaKyNang = await seedBoLuatVaKyNang(pool);
   if (soAi) kq.soAi = await napSoAi(pool, soAi, { maModelCu });
   return kq;
+}
+
+/**
+ * Chạy `noiKhachChoHoiThoai` cho MỌI team, cộng dồn thống kê.
+ *
+ * ⚠️ LƯỚI MIGRATION (án lệ #7). Bộ nối cần `khach.thi_truong` + `hoi_thoai.khach_id` của
+ * migration 013. Cây code luôn đi trước CSDL ở ít nhất một máy: bản đầu của bước này ném
+ * `column "thi_truong" does not exist` và làm CHẾT cả lượt `npm run di-tru` trên một CSDL
+ * mới ở 007 — tức một bước THÊM VÀO đã phá bộ di trú vốn đang chạy tốt. Nay thiếu cột thì
+ * BỎ QUA và nói ra, không chết.
+ */
+async function noiHoSoKhachMoiTeam(pool) {
+  const cot = await pool.query(
+    `SELECT
+       (SELECT count(*) FROM information_schema.columns
+         WHERE table_name='khach' AND column_name='thi_truong')::int      AS co_thi_truong,
+       (SELECT count(*) FROM information_schema.columns
+         WHERE table_name='hoi_thoai' AND column_name='khach_id')::int    AS co_khach_id`,
+  );
+  const { co_thi_truong: coTt, co_khach_id: coKid } = cot.rows[0];
+  if (!coTt || !coKid) {
+    return {
+      chuaCoCot: true,
+      thieu: [!coTt && "khach.thi_truong", !coKid && "hoi_thoai.khach_id"].filter(Boolean),
+      noi: "chưa áp migration 013 — BỎ QUA bước nối, không phải «không nối được cái nào»",
+    };
+  }
+  const teams = (await pool.query("SELECT id, slug FROM team ORDER BY id")).rows;
+  const tong = {
+    team: teams.length, xet: 0, noiMoi: 0, noiVaoCoSan: 0, khachMoi: 0,
+    thieuNuoc: 0, sdtKhongDocDuoc: 0, mataTranh: 0, chamTran: [], pageThieuShop: [],
+  };
+  for (const t of teams) {
+    const r = await noiKhachChoHoiThoai(pool, { teamId: t.id, job: "di-tru" });
+    for (const k of ["xet", "noiMoi", "noiVaoCoSan", "khachMoi", "thieuNuoc", "sdtKhongDocDuoc", "mataTranh"]) {
+      tong[k] += Number(r[k] || 0);
+    }
+    if (r.chamTran) tong.chamTran.push(t.slug);
+    for (const p of r.pageThieuShop || []) {
+      if (!tong.pageThieuShop.includes(p)) tong.pageThieuShop.push(p);
+    }
+  }
+  const con = await pool.query(
+    "SELECT count(*)::int c FROM hoi_thoai WHERE khach_id IS NULL",
+  );
+  tong.conChuaNoi = con.rows[0].c;
+  return tong;
 }
 
 function inBaoCao(kq) {
@@ -82,6 +142,27 @@ function inBaoCao(kq) {
         `(${bl.kyNang.them.join(", ") || "-"}) · giữ nguyên ${bl.kyNang.giuNguyen.length} ` +
         `(${bl.kyNang.giuNguyen.join(", ") || "-"})`,
     );
+  }
+  const nk = kq.noiHoSoKhach;
+  if (nk?.chuaCoCot) {
+    console.log(
+      `hồ sơ khách   BỎ QUA — thiếu cột ${nk.thieu.join(", ")} (${nk.noi})`,
+    );
+  } else if (nk) {
+    console.log(
+      `hồ sơ khách   xét ${nk.xet} hội thoại có SĐT (${nk.team} team)  →  nối ${nk.noiMoi + nk.noiVaoCoSan}` +
+        ` (${nk.noiVaoCoSan} vào khách có sẵn · ${nk.noiMoi} kèm khách mới ${nk.khachMoi})`,
+    );
+    console.log(
+      `              CHƯA nối: ${nk.conChuaNoi} hội thoại — thiếu nước ${nk.thieuNuoc}` +
+        ` · sđt không đọc được ${nk.sdtKhongDocDuoc} · mất tranh ${nk.mataTranh}` +
+        (nk.chamTran.length ? ` · CHẠM TRẦN ở team ${nk.chamTran.join(", ")} (chạy lại để nối tiếp)` : ""),
+    );
+    if (nk.pageThieuShop.length) {
+      console.log(
+        `              page chưa nối shop POS (không tra được nước): ${nk.pageThieuShop.join(", ")}`,
+      );
+    }
   }
   if (kq.soAi) {
     console.log(
