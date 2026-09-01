@@ -112,12 +112,25 @@ test('③ · mọi trang HTML đều nhúng `dieu-huong.js`', () => {
 // Menu cũ là 24 dòng phẳng: vai `quan-tri` phải quét 24 mục để tìm một màn. Bốn bài dưới
 // khoá đúng cái vừa sửa, vì thứ dễ trôi nhất ở một sổ đăng ký là có người thêm nhóm mới.
 
-test('④a · đúng SÁU mục, không hơn — thêm mục thứ bảy là quay lại danh sách dài', () => {
-  assert.equal(mh.NHOM.length, 6, `đang có ${mh.NHOM.length} mục: ${mh.NHOM.map((n) => n.ten)}`);
+test('④a · BẢY mục khai sẵn, người dùng thấy nhiều nhất SÁU — mục thứ tám là quay lại danh sách dài', () => {
+  // Trần là bảy vì `03-MAN-HINH.md` có 37 màn, và sáu màn của giai đoạn 3 (nhắn hàng loạt ·
+  // đuổi theo · xin phép nhận tin · chiến dịch · trả lời bình luận · xác nhận đơn WhatsApp)
+  // KHÔNG thuộc mục nào trong sáu mục đầu. Khai trước một mục cho chúng thì đến lượt dựng
+  // chỉ phải thêm một dòng; cấm mục thứ bảy rồi ba tuần sau tự phá luật thì tệ hơn.
+  assert.equal(mh.NHOM.length, 7, `đang có ${mh.NHOM.length} mục: ${mh.NHOM.map((n) => n.ten)}`);
   for (const n of mh.NHOM) {
     assert.ok(n.ma && n.ten, 'mục phải có mã và tên');
     assert.ok(n.mo && n.mo.length > 8, `mục ${n.ten}: thiếu câu mô tả — người dùng không đoán được trong đó có gì`);
   }
+  // Mục dự trù phải KHAI RÕ là dự trù, và phải chưa có màn nào — nếu không thì nó là mục
+  // thứ bảy đang hiện thật, tức menu đã dài thêm mà không ai chốt.
+  for (const ma of mh.MUC_DU_TRU) {
+    assert.ok(mh.NHOM.some((n) => n.ma === ma), `mục dự trù "${ma}" không có trong NHOM`);
+    assert.equal(mh.MAN.filter((m) => m.nhom === ma).length, 0,
+      `mục "${ma}" đã có màn — bỏ nó khỏi MUC_DU_TRU và cập nhật bài test này`);
+  }
+  const hien = mh.menuCua([VAI.QUAN_TRI]).length;
+  assert.ok(hien <= 6, `vai thấy nhiều nhất phải ≤ 6 mục, đang thấy ${hien}`);
 });
 
 test('④b · mọi màn thuộc về một mục CÓ THẬT — không màn nào rơi ra ngoài menu', () => {
@@ -129,7 +142,7 @@ test('④b · mọi màn thuộc về một mục CÓ THẬT — không màn nà
 
 test('④c · vai QUẢN TRỊ thấy 6 mục nhưng vẫn đủ 24 màn — gom chứ không xoá', () => {
   const menu = mh.menuCua([VAI.QUAN_TRI]);
-  assert.equal(menu.length, 6, 'quản trị phải thấy đủ sáu mục');
+  assert.equal(menu.length, 6, 'quản trị phải thấy đủ sáu mục CÓ MÀN (mục dự trù tự ẩn)');
   const soMan = menu.reduce((a, n) => a + n.man.length, 0);
   assert.equal(soMan, mh.MAN.length, 'gom nhóm KHÔNG được làm rơi màn nào');
   // Mục nặng nhất là «Bot nói gì» — bảy mặt của một việc (01 §6 bốn khối).
@@ -152,4 +165,37 @@ test('④e · `mucCuaDuong` chỉ đúng mục đang đứng — menu phải bun
   assert.equal(mh.mucCuaDuong('/nhat-ky'), 'cai-dat');
   assert.equal(mh.mucCuaDuong('/dieu-phoi/'), 'viec-can-xu', 'gạch chéo cuối không được làm lệch');
   assert.equal(mh.mucCuaDuong('/khong-co-that'), null, 'đường lạ trả null, không đoán bừa');
+});
+
+/* ═══════════ ⑤ LỐI RA: đổi team và đăng xuất phải có ở MỌI trang ═══════════ */
+// 01 §8 chốt BA team, và một người có thể thuộc nhiều team. Trước 01/09 chỉ MỘT trong 25
+// trang có lối tới `/chon-team` — vai `sale` (không vào được Cấu hình team) thì kẹt hẳn:
+// muốn sang team khác phải xoá cookie.
+
+test('⑤a · menu dùng chung có nút đổi team và nút đăng xuất', () => {
+  const js = readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
+  assert.match(js, /\/chon-team/, 'thiếu lối đổi team');
+  assert.match(js, /\/api\/dang-xuat/, 'thiếu lối đăng xuất');
+  assert.match(js, /method:\s*['"]POST['"]/,
+    'đăng xuất là cửa POST (xoá cookie ở máy chủ) — một thẻ <a> không gọi được');
+});
+
+test('⑤b · vì menu nhúng ở mọi trang, MỌI trang đều có lối ra — kể cả trang của vai sale', () => {
+  // Bài ③ đã canh mọi trang nhúng `dieu-huong.js`; bài này canh cái nhúng đó CÓ lối ra.
+  // Hai bài cộng lại mới là câu «không trang nào kẹt».
+  const js = readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
+  const trongMenu = js.includes('/chon-team') && js.includes('/api/dang-xuat');
+  assert.ok(trongMenu, 'lối ra phải nằm trong menu dùng chung, không phải trong từng trang');
+  // Và nó KHÔNG được nằm sau lớp vai: sale cũng phải thoát được.
+  assert.ok(!/VAI\.|vai\s*===|batBuocVai/.test(js.split('.dh-tk')[1] || ''),
+    'khối tài khoản không được lọc theo vai — mọi người đều phải ra được');
+});
+
+test('⑤c · `dieu-huong.js` PHẢI PARSE ĐƯỢC — một dấu huyền ngược lạc chỗ là mất menu ở cả 25 trang', () => {
+  // Án lệ 01/09: một comment CSS chứa dấu huyền ngược nằm trong template literal của biến
+  // `css` đóng chuỗi sớm ⇒ cả tệp thành lỗi cú pháp. Trình duyệt bỏ qua trong im lặng
+  // (menu bọc trong try/catch của chính nó), mọi trang vẫn hiện — chỉ là không còn menu.
+  // Bài ③ đếm được thẻ <script> nhúng, KHÔNG đọc được rằng tệp bên trong có chạy hay không.
+  const js = readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
+  assert.doesNotThrow(() => new Function(js), 'tệp menu không parse được');
 });

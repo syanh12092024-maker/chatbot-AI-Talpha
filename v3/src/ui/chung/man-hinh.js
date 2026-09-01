@@ -66,10 +66,25 @@ export const NHOM = Object.freeze([
   { ma: 'hom-nay', ten: 'Hôm nay', mo: 'Việc của bạn, gấp lên trước' },
   { ma: 'viec-can-xu', ten: 'Việc cần xử', mo: 'Hội thoại và đơn chờ người' },
   { ma: 'bot-noi-gi', ten: 'Bot nói gì', mo: 'Bộ luật · kỹ năng · kịch bản · ảnh · prompt' },
+  { ma: 'nhan-cho-khach', ten: 'Nhắn cho khách', mo: 'Ta chủ động nhắn — hàng loạt, đuổi theo, xin phép' },
   { ma: 'page-san-pham', ten: 'Page & sản phẩm', mo: 'Bật bot, cửa kiểm, kho hàng' },
   { ma: 'so-lieu', ten: 'Số liệu', mo: 'Đơn · tiền · khách · hoàn hàng' },
   { ma: 'cai-dat', ten: 'Cài đặt', mo: 'Team · kết nối · model · nhật ký' },
 ]);
+
+/**
+ * MỤC ĐÃ KHAI NHƯNG CHƯA CÓ MÀN NÀO — dự trù cho giai đoạn sau.
+ *
+ * `nhan-cho-khach` là chỗ của sáu màn `02-KE-HOACH-CODE.md` xếp vào giai đoạn 3 (nhắn hàng
+ * loạt · đuổi theo · xin phép nhận tin · chiến dịch đã gửi · trả lời bình luận) cộng «xác
+ * nhận đơn qua WhatsApp» của `03-MAN-HINH.md` nhóm 2. Chúng KHÔNG thuộc mục nào khác:
+ * «Bot nói gì» là bot TRẢ LỜI khách, còn đây là ta CHỦ ĐỘNG đi tìm khách — có tiền, và
+ * `01-QUYET-DINH.md` §5 nói giá phải trả khi làm sai là mất page.
+ *
+ * Khai trước để đến lượt dựng thì chỉ thêm một dòng `dat(...)`, không phải xếp lại cả menu.
+ * `menuCua` tự ẩn mục rỗng, nên hôm nay người dùng vẫn thấy đúng sáu mục có màn.
+ */
+export const MUC_DU_TRU = Object.freeze(['nhan-cho-khach']);
 
 /**
  * `m` là module `index.js` của màn — đường và vai lấy từ đó.

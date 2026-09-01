@@ -13,8 +13,13 @@
 //   · màn HẸP: giữ nguyên ngăn kéo — 244px trên điện thoại là ăn hết chỗ đọc.
 // Cùng một dữ liệu, cùng một lớp lọc vai; chỉ khác cách bày.
 //
-// Sáu mục xếp theo NHỊP LÀM VIỆC (xem `man-hinh.js#NHOM`), mỗi mục bung ra màn con. Mục
-// đang đứng tự bung; mục khác đóng — sáu dòng thay vì hai mươi bốn.
+// Mục xếp theo NHỊP LÀM VIỆC (xem `man-hinh.js#NHOM`), mỗi mục bung ra màn con. Mục đang
+// đứng tự bung; mục khác đóng — sáu dòng thay vì hai mươi bốn. Sổ khai BẢY mục; mục
+// `nhan-cho-khach` chưa có màn nào (giai đoạn 3) nên `menuCua` tự ẩn.
+//
+// Chân thanh bên là KHỐI TÀI KHOẢN: đổi team và đăng xuất. Trước 01/09 chỉ MỘT trong 25
+// trang có lối này, nên người thuộc nhiều team (01 §8 chốt ba team) phải xoá cookie mới
+// sang được team khác, còn vai `sale` — không vào được màn Cấu hình team — thì kẹt hẳn.
 
 (function () {
   const esc = (s) =>
@@ -65,8 +70,20 @@
     .dh-con a:hover{background:rgba(255,255,255,.07);color:#dfeaec}
     .dh-con a.day{color:#fff;font-weight:600;background:rgba(159,211,216,.1)}
 
-    .dh-chan{padding:12px 16px 18px;font-size:11px;color:#5f8a90;line-height:1.55;
-      border-top:1px solid rgba(255,255,255,.1);margin-top:auto}
+    /* KHỐI TÀI KHOẢN — đổi team và đăng xuất. Trước đây chỉ MỘT trong 25 trang có lối này,
+       nên người thuộc nhiều team phải xoá cookie mới sang được team khác, và vai sale
+       (không vào được màn Cấu hình team) thì kẹt hẳn. 01 §8 chốt BA team.
+       ⚠️ KHÔNG dùng dấu huyền ngược trong comment CSS: cả khối này nằm TRONG một template
+       literal, một dấu là đóng chuỗi sớm và cả tệp thành lỗi cú pháp — menu biến mất khỏi
+       25 trang mà trang vẫn hiện bình thường (đã dính thật 01/09). */
+    .dh-tk{border-top:1px solid rgba(255,255,255,.1);padding:10px 16px 12px;margin-top:auto}
+    .dh-tk .ai{font-size:11.5px;color:#7fa3a8;line-height:1.5;margin-bottom:8px;word-break:break-word}
+    .dh-tk .ai b{color:#dfeaec;font-weight:600;display:block;font-size:12.5px}
+    .dh-tk .hang{display:flex;gap:7px}
+    .dh-tk button{flex:1;background:rgba(255,255,255,.08);color:#dfeaec;border:0;border-radius:7px;
+      padding:6px 9px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600;text-align:center}
+    .dh-tk button:hover{background:rgba(255,255,255,.16);color:#fff}
+    .dh-tk button.ra:hover{background:rgba(220,38,38,.22);color:#fff}
 
     /* Màn HẸP: thanh bên thu về ngăn kéo, trang lấy lại toàn bộ bề ngang. */
     @media (max-width:${NGUONG - 1}px){
@@ -99,7 +116,7 @@
 
     ngan.innerHTML = `
       <div class="dh-dau"><b>AI Closer v3</b>
-        <div class="m">${esc(d.tenDangNhap || "")}<br>team ${esc(d.teamId || "?")} · vai: ${esc((d.vai || []).join(", ") || "không có")}</div></div>
+        <div class="m">Bot bán hàng Messenger &amp; WhatsApp</div></div>
       <div class="dh-than">
         ${(d.nhom || [])
           .map((n, i) => {
@@ -125,7 +142,19 @@
           })
           .join("")}
       </div>
-      <div class="dh-chan">Chỉ hiện màn vai bạn vào được — danh sách lọc ở máy chủ.</div>`;
+      <div class="dh-tk">
+        <div class="ai">
+          <b>${esc(d.tenDangNhap || '')}</b>
+          team ${esc(d.teamId || '?')} · vai: ${esc((d.vai || []).join(', ') || 'không có')}
+        </div>
+        <div class="hang">
+          <button type="button" class="doi">Đổi team</button>
+          <button type="button" class="ra">Đăng xuất</button>
+        </div>
+        <div style="font-size:10.5px;color:#5f8a90;line-height:1.5;margin-top:9px">
+          Chỉ hiện màn vai bạn vào được — danh sách lọc ở máy chủ.
+        </div>
+      </div>`;
 
     document.body.appendChild(phu);
     document.body.appendChild(ngan);
@@ -144,6 +173,17 @@
         con.classList.toggle("bung");
       };
     }
+
+    // Đổi team: về đúng màn chọn team của `auth/router.js`, không tự dựng màn thứ hai.
+    ngan.querySelector('.dh-tk .doi').onclick = () => { location.href = '/chon-team'; };
+
+    // Đăng xuất: cửa là POST (xoá cookie ở máy chủ), nên không thể là một thẻ <a>.
+    // Hỏng thì vẫn đưa người ta về trang đăng nhập — kẹt lại trong hệ tệ hơn.
+    ngan.querySelector('.dh-tk .ra').onclick = async () => {
+      try { await fetch('/api/dang-xuat', { method: 'POST', credentials: 'same-origin' }); }
+      catch { /* mạng hỏng — vẫn đi tiếp */ }
+      location.href = '/dang-nhap';
+    };
 
     // Trang chừa chỗ cho thanh bên. Chỉ ở màn rộng — media query trên tự gỡ ở màn hẹp.
     document.body.style.paddingLeft = `${RONG}px`;
