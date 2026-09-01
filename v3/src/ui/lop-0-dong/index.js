@@ -4,7 +4,7 @@
 // lượt gọi model không xảy ra — 127 đ mỗi lượt.
 
 export {
-  manLop0, datTaoTruyVan, daNoiLop0, VND_MOI_TIN, BANG, LoiLop0,
+  manLop0, luuMau, chuanTuKhoa, datTaoTruyVan, datPheuNhatKy, daNoiLop0, VND_MOI_TIN, BANG, LoiLop0,
 } from './kho-lop-0.js';
 
 export {

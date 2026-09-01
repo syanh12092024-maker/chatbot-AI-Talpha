@@ -77,9 +77,11 @@ test('HQ ②b · giữ nguyên `tiLeChot: null` của A khi chưa đủ mẫu �
 
 /* ═════════════════ LỚP TRẢ LỜI 0 ĐỒNG ═════════════════ */
 
-function dungL0(mau = []) {
-  const { taoTruyVan } = dungCongGia({ team: TEAM, mau_0_dong: mau });
+function dungL0(mau = [], { pheu } = {}) {
+  const { taoTruyVan, kho } = dungCongGia({ team: TEAM, mau_0_dong: mau });
   l0.datTaoTruyVan(taoTruyVan);
+  l0.datPheuNhatKy(pheu === undefined ? () => {} : pheu);
+  return { kho };
 }
 
 test('L0 ①a · bảng CÓ mà rỗng → «chưa ai nhập», KHÁC «không có bảng»', async () => {
@@ -137,4 +139,78 @@ test('L0 ③ · chỉ mẫu của TEAM MÌNH', async () => {
   const d = await l0.manLop0(bc());
   assert.equal(d.dem.tongMau, 1);
   assert.equal(d.dem.tongChan, 1, 'cộng nhầm số chặn của team khác');
+});
+
+/* ═════ CỬA GHI MẪU 0 ĐỒNG — màn phải NHẬP được, không chỉ ngắm ═════ */
+// Bảng rỗng vì router trước đây chỉ có GET: không đường nào nhập mẫu thì «chưa ai nhập»
+// mãi mãi đúng, và tiêu chí «chặn ≥33% lưu lượng» mãi không đo được.
+
+const bcGhi = (vai) => taoBoiCanh({
+  nguoiDungId: 'u1', tenDangNhap: 'an@talpha.vn', teamId: 't1', vai,
+});
+
+test('L0 ghi ①a · tạo mẫu mới, chuẩn hoá từ khoá, ghi nhật ký', async () => {
+  const sổ = [];
+  const { kho } = dungL0([], { pheu: (bc, ban) => sổ.push(ban) });
+  const r = await l0.luuMau(bcGhi([VAI.QUAN_TRI]), {
+    ma: 'howto', ten: 'Cách đặt hàng',
+    tuKhoa: ' How To Order , paano mag order,\nhow to order ',
+    noiDung: 'Bấm nút BUY NOW rồi điền tên và số điện thoại nhé.',
+    bat: true,
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.taoMoi, true);
+  // Chuẩn hoá: thường hoá, cắt khoảng trắng, BỎ TRÙNG.
+  assert.deepEqual(r.mau.tuKhoa, ['how to order', 'paano mag order']);
+  assert.equal(r.demDuoc, true, 'mã `howto` nằm trong bộ luật đang chạy');
+  assert.equal(r.canhBao, null);
+  assert.equal(kho.bang.get('mau_0_dong').length, 1);
+  assert.equal(sổ.length, 1);
+  assert.equal(sổ[0].hanhDong, 'tao_mau_0_dong');
+});
+
+test('L0 ghi ①b · lưu lại cùng `ma` là SỬA, không đẻ dòng thứ hai', async () => {
+  const { kho } = dungL0([]);
+  await l0.luuMau(bcGhi([VAI.QUAN_TRI]), { ma: 'howto', tuKhoa: 'a', noiDung: 'x', bat: false });
+  const r2 = await l0.luuMau(bcGhi([VAI.QUAN_TRI]), { ma: 'howto', tuKhoa: 'b', noiDung: 'y', bat: true });
+  assert.equal(r2.taoMoi, false);
+  assert.equal(kho.bang.get('mau_0_dong').length, 1, 'khoá tự nhiên là `ma` — không được đẻ bản thứ hai');
+  assert.equal(kho.bang.get('mau_0_dong')[0].bat, true);
+});
+
+test('L0 ghi ①c · mã NGOÀI bộ luật đang chạy → vẫn lưu, nhưng CẢNH BÁO sẽ không bao giờ đếm', async () => {
+  dungL0([]);
+  const r = await l0.luuMau(bcGhi([VAI.QUAN_TRI]), {
+    ma: 'khuyen_mai_tet', tuKhoa: 'tet', noiDung: 'x', bat: true,
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.demDuoc, false);
+  assert.match(r.canhBao, /KHÔNG BAO GIỜ tăng/);
+});
+
+test('L0 ghi ①d · thiếu nội dung / thiếu từ khoá / thiếu mã → TỪ CHỐI kèm mã lỗi', async () => {
+  dungL0([]);
+  const bc0 = bcGhi([VAI.QUAN_TRI]);
+  await assert.rejects(() => l0.luuMau(bc0, { tuKhoa: 'a', noiDung: 'x' }), /thiếu .?ma/i);
+  await assert.rejects(() => l0.luuMau(bc0, { ma: 'howto', tuKhoa: 'a' }), /trả lời khách bằng gì/);
+  await assert.rejects(() => l0.luuMau(bc0, { ma: 'howto', noiDung: 'x' }), /không bao giờ khớp/);
+});
+
+test('L0 ghi ①e · `quan-ly` XEM được nhưng KHÔNG sửa được lời bot nói', async () => {
+  dungL0([]);
+  await assert.rejects(
+    () => l0.luuMau(bcGhi([VAI.QUAN_LY]), { ma: 'howto', tuKhoa: 'a', noiDung: 'x' }),
+    (e) => e.ma === 'thieu_vai' && e.status === 403,
+  );
+  // Marketer thì được — §9: kịch bản do người viết áp thẳng, không cần duyệt.
+  const r = await l0.luuMau(bcGhi([VAI.MARKETER]), { ma: 'howto', tuKhoa: 'a', noiDung: 'x' });
+  assert.equal(r.ok, true);
+});
+
+test('L0 ghi ①f · CHƯA nối phễu nhật ký → TỪ CHỐI ghi, không sửa lén', async () => {
+  dungL0([], { pheu: null });
+  await assert.rejects(
+    () => l0.luuMau(bcGhi([VAI.QUAN_TRI]), { ma: 'howto', tuKhoa: 'a', noiDung: 'x' }),
+    /truy ngược/,
+  );
 });

@@ -64,7 +64,7 @@ import {
   datChanDangNhap as datChanDangNhapHieuQua, datChanVai as datChanVaiHieuQua, taoRouterHieuQua,
 } from './ui/hieu-qua/index.js';
 import {
-  datTaoTruyVan as datTruyVanLop0,
+  datTaoTruyVan as datTruyVanLop0, datPheuNhatKy as datPheuNhatKyLop0,
   datChanDangNhap as datChanDangNhapLop0, datChanVai as datChanVaiLop0, taoRouterLop0,
 } from './ui/lop-0-dong/index.js';
 import {
@@ -265,7 +265,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   // Ghi thẳng bằng `ghiNhatKy` của L0-M4 chứ không qua module trung gian: ba module kia
   // không được import `../audit/…`, nhưng ở đây thì được — đây chính là chỗ nối dây.
   for (const dat of [datPheuNhatKyAuth, datPheuNhatKyModel, datPheuNhatKyDieuPhoi, datPheuNhatKyTeam,
-    datPheuNhatKyPageBot, datPheuNhatKyKetNoi, datPheuNhatKyBoLuat, datPheuNhatKyKyNang, datPheuNhatKyKichBan]) {
+    datPheuNhatKyPageBot, datPheuNhatKyKetNoi, datPheuNhatKyBoLuat, datPheuNhatKyKyNang, datPheuNhatKyKichBan,
+    // Mẫu 0 đồng là LỜI BOT NÓI VỚI KHÁCH — sửa phải để lại dấu vết (01 §9).
+    datPheuNhatKyLop0]) {
     dat((boiCanh, ban) => {
       // Đăng nhập hỏng và chọn team không thuộc xảy ra TRƯỚC khi có bối cảnh — vai B cố ý
       // không dựng bối cảnh giả để lách (bối cảnh giả là thứ nguy hiểm nhất trong hệ này).

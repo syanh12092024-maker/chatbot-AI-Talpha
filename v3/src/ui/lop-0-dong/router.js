@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
-import { manLop0, VAI_VAO_DUOC, LoiLop0 } from './kho-lop-0.js';
+import { manLop0, luuMau, VAI_VAO_DUOC, VAI_GHI_DUOC, LoiLop0 } from './kho-lop-0.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -111,7 +111,19 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
     res.json({ ok: true, ...(await manLop0(cuaBoiCanh(req))) });
   }));
 
+  // CỬA GHI. Cùng một đường cho tạo và sửa (khoá tự nhiên là `ma`) — hai đường thì sớm muộn
+  // có hai luật hợp lệ. Lớp vai ở TẦNG ĐỌC (`luuMau` tự kiểm `VAI_GHI_DUOC`) chứ không chỉ
+  // ở middleware: middleware chặn theo `VAI_VAO_DUOC` rộng hơn, và `quan-ly` xem được nhưng
+  // KHÔNG được sửa lời bot nói.
+  r.post('/api/lop-0-dong/mau', canDangNhap, canVai, boc(async (req, res) => {
+    const t = req.body || {};
+    res.json(await luuMau(cuaBoiCanh(req), {
+      ma: t.ma, ten: t.ten, tuKhoa: t.tuKhoa, noiDung: t.noiDung,
+      bat: t.bat === true || t.bat === 'true', nhomSp: t.nhomSp,
+    }));
+  }));
+
   return r;
 }
 
-export { LoiLop0 };
+export { LoiLop0, VAI_GHI_DUOC };

@@ -269,3 +269,50 @@ test("M09 (outbound-guard) KHÔNG bị miễn kiểm cho câu trả lời của 
   assert.equal(r.rows[0].lane, "tu_khoa_v3");
   assert.match(r.rows[0].ly_do, /guard_noi_dung:VIETNAMESE/);
 });
+
+// ═══ BỘ ĐẾM LỚP 0 ĐỒNG — tiêu chí «chặn ≥33% lưu lượng» (GD2 sóng 2) ════════════════
+// Lượt 0 đồng KHÔNG gọi model nên KHÔNG đẻ dòng `so_ai` nào ⇒ không đếm ở `mau_0_dong`
+// thì không đếm được ở đâu, và tiêu chí kia mãi «không đo được».
+
+test("lớp 0 đồng · mỗi lượt chặn gọi ĐÚNG MỘT lần bộ đếm, kèm mã luật", async () => {
+  const goi = [];
+  const { kq } = await motLuot({
+    noiDung: "is this original?",
+    kb: { config: { fastLaneAuth: "Yes po, original." } },
+    deps: {
+      demChan0Dong: async (_pool, t) => {
+        goi.push(t);
+        return 7;
+      },
+    },
+  });
+  assert.equal(kq.lyDo, "tu_khoa_v3:that_gia");
+  assert.equal(goi.length, 1, "đúng MỘT lượt đếm cho một lượt chặn");
+  assert.equal(goi[0].ma, "that_gia", "mã đếm phải là mã luật vừa khớp");
+  assert.ok(goi[0].teamId != null, "phải đếm theo team, không đếm toàn hệ");
+});
+
+test("lớp 0 đồng · bộ đếm NÉM thì lượt chat vẫn xong — khách đã nhận trả lời rồi", async () => {
+  const { kq, guiTinCalls } = await motLuot({
+    noiDung: "is this original?",
+    kb: { config: { fastLaneAuth: "Yes po, original." } },
+    deps: {
+      demChan0Dong: async () => {
+        throw new Error("mau_0_dong chưa có dòng nào");
+      },
+    },
+  });
+  assert.equal(kq.ketQua, KET_QUA.XONG);
+  assert.equal(kq.lyDo, "tu_khoa_v3:that_gia");
+  assert.equal(guiTinCalls.length, 1, "tin vẫn phải bay đi");
+});
+
+test("lớp 0 đồng · KHÔNG khớp luật nào thì KHÔNG đếm (không đếm cái không xảy ra)", async () => {
+  const goi = [];
+  await motLuot({
+    noiDung: "cho mình hỏi giá bao nhiêu vậy shop",
+    kb: { config: {} },
+    deps: { demChan0Dong: async (_p, t) => (goi.push(t), 1) },
+  });
+  assert.equal(goi.length, 0);
+});

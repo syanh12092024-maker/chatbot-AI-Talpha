@@ -84,6 +84,7 @@ import {
   conNganSach as conNganSachMacDinh,
 } from "./ngan-sach-luot.js";
 import { vaoHangCho as vaoHangChoMacDinh } from "../orders/hang-cho.js";
+import { ghiNhanChan0Dong as ghiNhanChan0DongMacDinh } from "../db/so-lieu.js";
 import { docEnvTuyetDoi } from "../queue/nap.js";
 
 // ══ VAN GỬI + CỔNG HTTP GHI (VA-R1 · RF-1/RF-2) ══════════════════════════════════════
@@ -219,6 +220,10 @@ function depsMacDinh(deps = {}) {
     // L3-M4 ②.1: hàng chờ tạo đơn (bước 11b). Tiêm qua deps như mọi cửa ngoài khác —
     // bộ ca đếm được «vào hàng chờ mấy lượt» mà không cần dựng cả bảng.
     vaoHangCho: deps.vaoHangCho || vaoHangChoMacDinh,
+    // L2-M2 · lớp 0 đồng: đếm mỗi lượt lớp từ-khoá trả lời THAY model. Không đếm ở đây thì
+    // không đếm được ở đâu — lượt 0 đồng KHÔNG gọi model nên KHÔNG đẻ dòng `so_ai` nào, và
+    // tiêu chí «lớp 0 đồng chặn ≥33% lưu lượng» (07-KE-HOACH-GD2 sóng 2) mãi không đo được.
+    demChan0Dong: deps.demChan0Dong || ghiNhanChan0DongMacDinh,
     depsHangCho: deps.depsHangCho || {},
     lichSu: Array.isArray(deps.lichSu) ? deps.lichSu : [],
     bayGio: deps.bayGio || (() => Date.now()),
@@ -435,12 +440,21 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         return { ketQua: KET_QUA.XONG, lyDo: `guard_noi_dung:${v.rule}`, dem };
       }
       await guiChu(tk.reply);
+      // Đếm ở `mau_0_dong.so_lan_chan`. Lỗi bộ đếm KHÔNG được làm hỏng lượt chat (khách đã
+      // nhận trả lời rồi) — nhưng cũng KHÔNG nuốt im: `null` nghĩa là chưa có mẫu nào mang
+      // mã này hoặc mẫu đang tắt, và con số đó đi vào `so_ai` để người sau đọc được.
+      let dem0Dong = null;
+      try {
+        dem0Dong = await d.demChan0Dong(pool, { teamId, ma: tk.rule });
+      } catch (e) {
+        dem0Dong = `loi:${e?.message || e}`.slice(0, 120);
+      }
       await ghi(LOAI.REPLY, {
         maModel: KHONG_GOI_MODEL, // lớp từ khoá KHÔNG gọi model — xem so-ai.js
         lane: LANE_TU_KHOA,
         trangThai: hoiThoai.trang_thai,
         lyDo: tk.lyDo,
-        duLieu: { text: tk.reply.slice(0, 200), rule: tk.rule },
+        duLieu: { text: tk.reply.slice(0, 200), rule: tk.rule, dem_0_dong: dem0Dong },
       });
       state.lastAiText = tk.reply;
       await luuLai({ daGoiModel: false, daGuiText: true, textDaGui: tk.reply });
