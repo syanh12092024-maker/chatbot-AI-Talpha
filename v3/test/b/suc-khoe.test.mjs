@@ -12,7 +12,7 @@ const sk = await import('../../src/ui/suc-khoe/kho-suc-khoe.js');
 
 const bcQt = () => taoBoiCanh({ nguoiDungId: 'u1', tenDangNhap: 'an', teamId: 't1', vai: [VAI.QUAN_TRI] });
 
-function dungKho(hat = {}, { khoToken, cauBot } = {}) {
+function dungKho(hat = {}, { khoToken, cauBot, sanSang } = {}) {
   const { taoTruyVan, kho } = dungCongGia({
     team: [{ id: 't1', slug: 'tieu-alpha', ten: 'T', la_ky_thuat: false }],
     page: hat.page ?? [
@@ -27,6 +27,7 @@ function dungKho(hat = {}, { khoToken, cauBot } = {}) {
   sk.datTaoTruyVan(taoTruyVan);
   sk.datDocKhoToken(khoToken ?? null);
   sk.datTrangThaiCauBot(cauBot ?? null);
+  sk.datDocSanSang(sanSang ?? null);
   return { kho };
 }
 
@@ -180,4 +181,40 @@ test('bảng đèn · đủ CHÍN đèn, mã không trùng, đèn nào cũng có
 test('thiếu bối cảnh thì NÉM', async () => {
   dungKho();
   await assert.rejects(() => sk.bangDen(null), /bối cảnh|teamId/i);
+});
+
+/* ═══════ CÔNG TẮC BOT: đọc NGUỒN THẬT, không đếm cột bản sao ═══════ */
+// Cột `page.bot_ai_bat` đã lệch một lần đo được: CSDL v3 ghi 50 page bật, `ai-enabled.json`
+// là [] (0 page). Hai đèn ⑤⑥ dựng trên cột đó, nên phải hỏi tiến trình bot trước.
+
+test('nguồn công tắc · nối cửa kiểm → đếm theo `aiEnabled` của bot, và NÓI ra độ lệch', async () => {
+  dungKho({}, {
+    // Cột nói p1 bật; bot nói p1 TẮT, p2 BẬT — hai bên lệch cả hai page.
+    sanSang: async () => ({ pages: [
+      { pageId: '111', aiEnabled: false },
+      { pageId: '222', aiEnabled: true },
+    ] }),
+  });
+  const d = await sk.bangDen(bcQt());
+  assert.equal(d.nguonBotBat.nguon, 'ai-enabled.json');
+  assert.equal(d.nguonBotBat.lech.theoCot, 1);
+  assert.equal(d.nguonBotBat.lech.theoBot, 1);
+  assert.equal(d.nguonBotBat.lech.soLech, 2, 'phải ĐẾM được có bao nhiêu page lệch');
+  const den = d.den.find((x) => /bot/i.test(x.ten) || /bật bot/i.test(x.vi || ''));
+  assert.ok(den, 'vẫn phải có đèn công tắc bot');
+});
+
+test('nguồn công tắc · CHƯA nối cửa → đếm cột nhưng khai rõ đó là BẢN SAO', async () => {
+  dungKho();
+  const d = await sk.bangDen(bcQt());
+  assert.equal(d.nguonBotBat.nguon, 'cot_csdl');
+  assert.match(d.nguonBotBat.noi, /BẢN SAO/);
+  assert.equal(d.nguonBotBat.lech, null);
+});
+
+test('nguồn công tắc · cửa NÉM → lùi về cột, nói nguyên văn lỗi, không im', async () => {
+  dungKho({}, { sanSang: async () => { throw new Error('bot không trả lời'); } });
+  const d = await sk.bangDen(bcQt());
+  assert.equal(d.nguonBotBat.nguon, 'cot_csdl');
+  assert.match(d.nguonBotBat.noi, /bot không trả lời/);
 });

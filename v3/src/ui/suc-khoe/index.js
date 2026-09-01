@@ -8,7 +8,7 @@
 // làm người ta yên tâm về đúng thứ không ai biết.
 export {
   bangDen, den, MUC, CHU_MUC, NGUONG,
-  datTaoTruyVan, datDocKhoToken, datTrangThaiCauBot, LoiSucKhoe,
+  datTaoTruyVan, datDocKhoToken, datDocSanSang, datTrangThaiCauBot, LoiSucKhoe,
 } from './kho-suc-khoe.js';
 
 export {

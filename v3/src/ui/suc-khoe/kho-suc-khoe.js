@@ -43,6 +43,16 @@ export class LoiSucKhoe extends Error {
 
 let _taoTruyVan = null;
 let _docKhoToken = null;
+/**
+ * Bộ đọc CỬA KIỂM của tiến trình bot (`sanSangToanHe`) — nguồn THẬT của công tắc AI.
+ *
+ * Cột `page.bot_ai_bat` chỉ là BẢN SAO và đã lệch một lần đo được: CSDL v3 ghi 50 page bật
+ * bot trong khi `ai-enabled.json` là `[]` (0 page) — 50 page bị tắt qua dashboard v1, v3
+ * không biết. Hai đèn ⑤ và ⑥ của màn này dựng trên đúng cột đó, nên chưa nối cửa thì chúng
+ * đếm bằng bản sao; nay nối được thì đọc nguồn thật, và dù đứng ở nguồn nào cũng phải NÓI
+ * RA (`nguonBotBat`), không im lặng đổi nguồn số.
+ */
+let _docSanSang = null;
 let _trangThaiCauBot = null;
 
 export function datTaoTruyVan(fn) {
@@ -52,6 +62,11 @@ export function datTaoTruyVan(fn) {
 }
 
 /** Kho token Pancake — tiêm để không import chéo sang module `ket-noi`. */
+export function datDocSanSang(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiSucKhoe('datDocSanSang cần một hàm');
+  _docSanSang = fn || null;
+  return _docSanSang;
+}
 export function datDocKhoToken(fn) {
   if (fn != null && typeof fn !== 'function') throw new LoiSucKhoe('datDocKhoToken cần một hàm');
   _docKhoToken = fn || null;
@@ -108,7 +123,38 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
     db.chon('viec_can_xu_ly', {}),
   ]);
 
-  const botBat = pages.filter((p) => p.bot_ai_bat === true);
+  // ── CÔNG TẮC BOT: hỏi nguồn THẬT trước, cột chỉ là đường lùi ──
+  let botBat = pages.filter((p) => p.bot_ai_bat === true);
+  let nguonBotBat = {
+    nguon: 'cot_csdl',
+    noi: 'Đếm từ cột `page.bot_ai_bat` — BẢN SAO, đã có lần lệch 50 so với nguồn thật.',
+    lech: null,
+  };
+  if (_docSanSang) {
+    try {
+      const r = await _docSanSang();
+      const theoBot = new Map(
+        (r?.pages || []).map((x) => [String(x.pageId ?? x.page_id ?? ''), !!x.aiEnabled]),
+      );
+      const batThat = pages.filter((p) => theoBot.get(String(p.page_id)) === true);
+      const soLech = pages.filter(
+        (p) => theoBot.has(String(p.page_id)) && theoBot.get(String(p.page_id)) !== (p.bot_ai_bat === true),
+      ).length;
+      nguonBotBat = {
+        nguon: 'ai-enabled.json',
+        noi: 'Đếm từ RAM tiến trình bot (`/readiness`) — đây là sự thật về việc bot có trả lời page đó không.',
+        lech: { soLech, theoCot: botBat.length, theoBot: batThat.length },
+      };
+      botBat = batThat;
+    } catch (e) {
+      nguonBotBat = {
+        nguon: 'cot_csdl',
+        noi: `Không hỏi được tiến trình bot (${e?.message || e}) ⇒ đếm từ cột \`page.bot_ai_bat\`, `
+          + 'là BẢN SAO có thể đã lệch.',
+        lech: null,
+      };
+    }
+  }
   const coKichBan = new Set(kichBan.map((k) => String(k.page_id)));
   const ds = [];
 
@@ -231,6 +277,8 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
     den: ds,
     dem,
     chuMuc: CHU_MUC,
+    // Hai đèn công tắc bot đếm bằng nguồn nào — nói ra, kể cả khi không lệch.
+    nguonBotBat,
     // Mức xấu nhất của cả bảng — để đầu trang nói một câu, không bắt người đọc tự quét.
     tongThe: dem.do ? MUC.DO : dem.vang ? MUC.VANG : dem.xam ? MUC.XAM : MUC.XANH,
   };

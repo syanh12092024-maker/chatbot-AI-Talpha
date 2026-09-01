@@ -131,7 +131,17 @@ export async function tongQuanTeam(boiCanh) {
 
   const pages = await db.chon(BANG_PAGE, {});
   const soPage = pages.length;
+  // ⚠️ CỘT `page.bot_ai_bat` LÀ BẢN SAO. Nguồn thật của công tắc AI là `ai-enabled.json` +
+  // RAM tiến trình bot; đo 25/08 hai bên lệch 50 (cột nói 50 page bật, bot nói 0). Màn này
+  // cố ý KHÔNG gọi sang tiến trình bot — nó là màn cấu hình team, không phải màn vận hành,
+  // và một lượt gọi HTTP 10–13 giây cho mỗi lần mở màn là cái giá sai chỗ. Nên nó đếm cột
+  // NHƯNG khai rõ đang đứng ở bản sao (`nguonBotBat`), và chỉ sang màn có nguồn thật.
   const botBat = pages.filter((p) => p.bot_ai_bat === true).length;
+  const nguonBotBat = {
+    nguon: 'cot_csdl',
+    noi: 'Đếm từ cột `page.bot_ai_bat` — BẢN SAO của công tắc thật, đã có lần lệch 50 page.',
+    xemO: 'Số thật ở màn «Cửa kiểm sẵn sàng» và «Page & Bot» (hỏi thẳng tiến trình bot).',
+  };
   const coMarketer = pages.filter((p) => String(p.marketer || '').trim() !== '').length;
   const trongDiem = pages.filter((p) => p.trong_diem === true).length;
 
@@ -144,7 +154,8 @@ export async function tongQuanTeam(boiCanh) {
 
   return {
     teamId: bc.teamId,
-    page: { tong: soPage, botBat, coMarketer, thieuMarketer: soPage - coMarketer, trongDiem },
+    page: { tong: soPage, botBat, coMarketer, thieuMarketer: soPage - coMarketer, trongDiem,
+            nguonBotBat },
     hoiThoai: soHoiThoai,
     model: { soDong: dongModel.length, daCauHinh: dongModel.length > 0 },
     thanhVien: thanhVien.length,

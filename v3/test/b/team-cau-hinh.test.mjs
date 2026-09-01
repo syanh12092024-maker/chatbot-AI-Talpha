@@ -456,3 +456,13 @@ test('lát 4 · danh sách page để chọn có lọc, và nói rõ khi bị c�
   assert.equal(cat.page.length, 1);
   assert.equal(cat.catBot, 1, 'phải nói còn bao nhiêu page không hiện, không im lặng cắt');
 });
+
+test('nguồn công tắc bot · khai rõ cột là BẢN SAO, chỉ sang màn có nguồn thật', async () => {
+  // Cột `page.bot_ai_bat` đã lệch 50 vs 0 một lần. Màn này đếm cột (cố ý, để khỏi gọi HTTP
+  // 10–13 giây mỗi lượt mở) nhưng KHÔNG được im lặng — im lặng là cách con số sai sống lâu.
+  dungKho();
+  const t = await kt.tongQuanTeam(bcQt());
+  assert.equal(t.page.nguonBotBat.nguon, 'cot_csdl');
+  assert.match(t.page.nguonBotBat.noi, /BẢN SAO/);
+  assert.match(t.page.nguonBotBat.xemO, /Cửa kiểm sẵn sàng|Page & Bot/);
+});

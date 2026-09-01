@@ -126,7 +126,7 @@ import {
   datChanDangNhap as datChanDangNhapNhatKy, datChanVai as datChanVaiNhatKy, taoRouterNhatKy,
 } from './ui/nhat-ky/index.js';
 import {
-  datTaoTruyVan as datTruyVanSucKhoe, datDocKhoToken, datTrangThaiCauBot,
+  datTaoTruyVan as datTruyVanSucKhoe, datDocKhoToken, datTrangThaiCauBot, datDocSanSang as datDocSanSangSucKhoe,
   datChanDangNhap as datChanDangNhapSucKhoe, datChanVai as datChanVaiSucKhoe, taoRouterSucKhoe,
 } from './ui/suc-khoe/index.js';
 import {
@@ -255,6 +255,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datDocSanSangTrangChu(docCuaKiem);   // CÙNG bộ đọc — hai màn không được ra hai con số
   if (typeof docSanSang === 'function') daNoi.push('bộ đọc cửa kiểm GIẢ → màn Cửa kiểm sẵn sàng');
   datTruyVanSucKhoe(taoTruyVan);
+  // CÙNG bộ đọc cửa kiểm với ba màn kia — hai đèn công tắc bot của màn Sức khỏe phải đọc
+  // nguồn THẬT (`ai-enabled.json`), không đếm cột `page.bot_ai_bat` đã lệch 50 vs 0.
+  datDocSanSangSucKhoe(docCuaKiem);
   daNoi.push('cổng dữ liệu → nhật ký · lớp model · bảng điều phối · kho người dùng · cấu hình team · page & bot');
 
   // ── ② Nhật ký: ba module ghi, một chỗ nhận ──
