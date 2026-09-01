@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; }
+    a { color: #0e7c86; } a:hover { color: #0b646d; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; height: 940px; background: #f5f7f9; display: flex; flex-direction: column;">
+
+  <div style="background: #0b2125; color: #fff; padding: 14px 22px; display: flex; align-items: baseline; gap: 14px;">
+    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">Hai luồng đơn — và màn nào đứng ở đâu</h1>
+    <div style="font-size: 11.5px; color: #7fa3a8;">01-QUYẾT-ĐỊNH §1 · «quyết định quan trọng nhất về nghiệp vụ, và cũng là chỗ dễ hiểu sai nhất»</div>
+  </div>
+
+  <div style="flex: 1; padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; min-height: 0;">
+
+    <div style="display: flex; gap: 14px; flex: 1; min-height: 0;">
+
+      <sc-for list="{{luong}}" as="l" hint-placeholder-count="2">
+        <div style="flex: 1; background: #fff; border: 1px solid #e4e9ee; border-top: 3px solid {{l.mau}}; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 15px 17px; display: flex; flex-direction: column; min-width: 0;">
+
+          <div style="font-weight: 700; font-size: 14.5px; color: {{l.mau}};">{{l.ten}}</div>
+          <div style="font-size: 11.5px; color: #667085; margin-top: 3px; line-height: 1.5;">{{l.tu}}</div>
+
+          <div style="display: flex; flex-direction: column; gap: 0; margin-top: 14px; flex: 1;">
+            <sc-for list="{{l.buoc}}" as="b" hint-placeholder-count="6">
+              <div style="display: flex; gap: 11px; align-items: flex-start;">
+                <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0; align-self: stretch;">
+                  <div style="width: 9px; height: 9px; border-radius: 50%; background: {{b.cham}}; margin-top: 4px; flex-shrink: 0;"></div>
+                  <div style="width: 2px; flex: 1; background: #e4e9ee; margin: 3px 0;"></div>
+                </div>
+                <div style="flex: 1; min-width: 0; padding-bottom: 12px;">
+                  <div style="font-size: 12.5px; font-weight: 600; color: #101828;">{{b.ten}}</div>
+                  <div style="font-size: 11.5px; color: #667085; line-height: 1.5; margin-top: 2px;">{{b.noi}}</div>
+                  <div style="display: inline-block; margin-top: 5px; border: 1px solid {{b.vienMan}}; background: {{b.nenMan}}; color: {{b.mauMan}}; border-radius: 7px; padding: 3px 8px; font-size: 11px; font-weight: 600;">{{b.man}}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background: {{l.nenY}}; border: 1px solid {{l.vienY}}; border-radius: 8px; padding: 9px 11px; font-size: 11.5px; line-height: 1.55; color: {{l.mauY}}; margin-top: 4px;">
+            {{l.y}}
+          </div>
+        </div>
+      </sc-for>
+
+    </div>
+
+    <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 14px 17px;">
+      <div style="font-weight: 600; font-size: 13px;">Hai luồng gặp nhau ở đâu, và ở đâu thì KHÔNG</div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 11px;">
+        <sc-for list="{{gap}}" as="g" hint-placeholder-count="3">
+          <div style="border: 1px solid {{g.vien}}; background: {{g.nen}}; border-radius: 10px; padding: 10px 12px;">
+            <div style="font-size: 12.5px; font-weight: 600; color: {{g.mau}};">{{g.ten}}</div>
+            <div style="font-size: 11.5px; color: #667085; line-height: 1.55; margin-top: 4px;">{{g.noi}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="background: #fdecec; border: 1px solid #f3c2c2; border-radius: 9px; padding: 10px 13px; font-size: 11.5px; line-height: 1.6; color: #991b1b;">
+      <b>Chỗ rơi lớn nhất bot sinh ra để bịt:</b> 37,4% khách bấm BUY NOW rồi KHÔNG bấm gửi WhatsApp.
+      Màn «Nguồn khách vào» đo chỗ rơi đó; màn «Xác nhận đơn qua WhatsApp» (giai đoạn 3) là chỗ xử nó.
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const M = { nenMan: '#e6f4f5', vienMan: '#b8dde0', mauMan: '#0b646d' };   // màn đã dựng
+    const C = { nenMan: '#fdf3e3', vienMan: '#f0d3a4', mauMan: '#8a4a06' };   // màn chưa dựng
+    const K = { nenMan: '#f5f7f9', vienMan: '#e4e9ee', mauMan: '#8b95a1' };   // không qua màn nào
+    return {
+      luong: [
+        {
+          ten: 'Luồng TRANG BÁN HÀNG', mau: '#b45309',
+          tu: 'Quảng cáo → form LadiPage. Đơn vào POS NGAY khi khách bấm BUY NOW.',
+          nenY: '#fdf3e3', vienY: '#f0d3a4', mauY: '#8a4a06',
+          y: 'Vì sao phải xác nhận: khách điền form xong là đơn đã nằm trong POS, nhưng CHƯA AI nói chuyện với họ. Đóng gói gửi đi mà không hỏi là ôm rủi ro bom hàng.',
+          buoc: [
+            { cham: '#b45309', ten: 'Khách bấm BUY NOW', noi: 'Đơn vào POS ở trạng thái Chờ xác nhận.', man: 'không qua màn nào', ...K },
+            { cham: '#b45309', ten: 'Bot nhắn WhatsApp hỏi xác nhận', noi: 'BẮT BUỘC có WhatsApp. Đây là điểm kiểm chặn số 1 — chưa thử gửi thật lần nào.', man: 'Xác nhận đơn qua WhatsApp · GĐ3', ...C },
+            { cham: '#dc2626', ten: '37,4% không bấm gửi', noi: 'Chỗ rơi lớn nhất. Đo được ở màn Nguồn khách vào.', man: 'Nguồn khách vào', ...M },
+            { cham: '#16a34a', ten: 'Khách xác nhận → Chờ in', noi: 'Đơn đổi trạng thái, đi tiếp sang đóng gói.', man: 'Báo cáo · luồng trang bán hàng', ...M },
+          ],
+        },
+        {
+          ten: 'Luồng MESSENGER', mau: '#0e7c86',
+          tu: 'Quảng cáo → khách nhắn inbox. Đơn CHỈ vào POS khi sale duyệt.',
+          nenY: '#e6f4f5', vienY: '#b8dde0', mauY: '#0b646d',
+          y: 'Vì sao KHÔNG cần xác nhận: khách đã chat với bot, đã đưa đủ tên · số · địa chỉ và nói đồng ý trả tiền khi nhận. Nhắn WhatsApp hỏi lại là làm phiền và làm chậm.',
+          buoc: [
+            { cham: '#0e7c86', ten: 'Khách nhắn, bot trả lời', noi: 'Lớp 0 đồng chặn trước; không bắt được thì mới gọi model.', man: 'Lớp 0 đồng · Prompt của page', ...M },
+            { cham: '#0e7c86', ten: 'Bot chốt được đơn', noi: 'Đủ tên · SĐT · địa chỉ · số lượng · đồng ý COD.', man: 'Bảng điều phối · Hàng chờ tạo đơn', ...M },
+            { cham: '#b45309', ten: 'Sale DUYỆT — năm cửa kiểm', noi: 'Đủ trường · tiền khớp bảng giá · không trùng đơn · rủi ro hoàn · tạo đơn POS.', man: 'Bảng điều phối', ...M },
+            { cham: '#16a34a', ten: 'Đơn tạo thẳng ở Chờ in', noi: 'Không đi qua Chờ xác nhận — khách đã xác nhận trong chat rồi.', man: 'Báo cáo · luồng Messenger', ...M },
+          ],
+        },
+      ],
+      gap: [
+        { ten: 'Gặp nhau ở POS', nen: '#e8f7ee', vien: '#b7e4c7', mau: '#166534',
+          noi: 'Cả hai đích đến đều là một đơn trong POS. Lọc trùng phải kiểm CHÉO cả hai luồng — cùng một khách vào được bằng hai đường.' },
+        { ten: 'KHÔNG gặp ở báo cáo', nen: '#fdecec', vien: '#f3c2c2', mau: '#991b1b',
+          noi: 'Hai thước khác nhau: trang bán hàng có đơn TRƯỚC rồi mới hỏi; Messenger chốt TRONG hội thoại. Cộng lại là trả lời sai mọi câu hỏi sau đó.' },
+        { ten: 'Gặp nhau ở hồ sơ khách', nen: '#e6f4f5', vien: '#b8dde0', mau: '#0b646d',
+          noi: 'Gộp theo số điện thoại, khoá là (team · NƯỚC · số) — POS lưu số nội địa không mã nước, nên thiếu vế nước là hai người Saudi và UAE thành một.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; }
+    a { color: #0e7c86; } a:hover { color: #0b646d; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; height: 940px; background: #f5f7f9; display: flex; flex-direction: column;">
+
+  <div style="background: #0b2125; color: #fff; padding: 14px 22px; display: flex; align-items: baseline; gap: 14px;">
+    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">Một tin của khách đi qua những gì</h1>
+    <div style="font-size: 11.5px; color: #7fa3a8;">và mỗi chặng thì màn nào điều khiển nó</div>
+  </div>
+
+  <div style="flex: 1; padding: 18px 22px; display: flex; gap: 16px; min-height: 0;">
+
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+      <sc-for list="{{chang}}" as="c" hint-placeholder-count="8">
+        <div style="background: #fff; border: 1px solid #e4e9ee; border-left: 4px solid {{c.vien}}; border-radius: 10px; padding: 10px 13px; display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width: 26px; flex-shrink: 0; text-align: center; font-size: 11px; font-weight: 700; color: #8b95a1; font-variant-numeric: tabular-nums; padding-top: 2px;">{{c.so}}</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap;">
+              <div style="font-size: 13px; font-weight: 600;">{{c.ten}}</div>
+              <div style="font-size: 11px; color: {{c.mauCho}}; font-weight: 600;">{{c.cho}}</div>
+            </div>
+            <div style="font-size: 11.5px; color: #667085; line-height: 1.55; margin-top: 2px;">{{c.noi}}</div>
+            <div style="display: inline-block; margin-top: 5px; border: 1px solid {{c.vienMan}}; background: {{c.nenMan}}; color: {{c.mauMan}}; border-radius: 7px; padding: 3px 8px; font-size: 11px; font-weight: 600;">{{c.man}}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 14px 16px;">
+        <div style="font-weight: 600; font-size: 13px;">Ngân sách thời gian</div>
+        <div style="font-size: 11.5px; color: #667085; line-height: 1.5; margin-top: 3px;">01 §3 — đo từ cấu hình thật trên máy chủ.</div>
+        <div style="display: flex; flex-direction: column; gap: 7px; margin-top: 11px;">
+          <sc-for list="{{gio}}" as="g" hint-placeholder-count="6">
+            <div style="display: flex; justify-content: space-between; gap: 10px; align-items: baseline;">
+              <div style="font-size: 11.5px; color: {{g.mau}}; font-weight: {{g.dam}};">{{g.ten}}</div>
+              <div style="font-size: 12px; color: {{g.mau}}; font-weight: {{g.dam}}; font-variant-numeric: tabular-nums; white-space: nowrap;">{{g.so}}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="border-top: 1px solid #e4e9ee; margin-top: 10px; padding-top: 9px; font-size: 11px; color: #8a4a06; line-height: 1.55;">
+          <b>26–34 giây tồn tại chỉ vì Botcake dùng chung page.</b> Tắt Botcake và đổi vòng hỏi
+          sang nhận đẩy thì còn 6–10 giây — đó là toàn bộ lý do của mục «tắt Botcake theo đợt».
+        </div>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 14px 16px;">
+        <div style="font-weight: 600; font-size: 13px;">Ba van chặn, mặc định ĐÓNG</div>
+        <div style="font-size: 11.5px; color: #667085; line-height: 1.5; margin-top: 3px;">Luật 1: máy dev không được gửi ra khách thật.</div>
+        <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 11px;">
+          <sc-for list="{{van}}" as="v" hint-placeholder-count="3">
+            <div>
+              <div style="font-size: 12px; font-weight: 600; font-family: ui-monospace, Menlo, monospace;">{{v.ten}}</div>
+              <div style="font-size: 11px; color: #667085; line-height: 1.5; margin-top: 1px;">{{v.noi}}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: #e6f4f5; border: 1px solid #b8dde0; border-radius: 9px; padding: 11px 13px; font-size: 11.5px; line-height: 1.6; color: #0b646d;">
+        <b>Lớp 0 đồng đứng TRƯỚC model.</b> Mỗi câu bắt được ở đó là một lượt gọi model không
+        xảy ra — 127 đ. Nó cũng là mặt kia của công tắc Botcake: tắt Botcake không phải mất
+        lớp miễn phí, mà là bật lại lớp miễn phí đang nằm im (01 §2).
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const M = { nenMan: '#e6f4f5', vienMan: '#b8dde0', mauMan: '#0b646d' };
+    const C = { nenMan: '#fdf3e3', vienMan: '#f0d3a4', mauMan: '#8a4a06' };
+    const K = { nenMan: '#f5f7f9', vienMan: '#e4e9ee', mauMan: '#8b95a1' };
+    return {
+      chang: [
+        { so: '1', ten: 'Tin mới về', cho: 'vòng hỏi 0–6 s', mauCho: '#8b95a1',
+          noi: 'Bộ nạp hỏi Pancake, xếp tin vào hàng đợi. Webhook không tồn tại (đã đo sáu đường, 406) nên giữ vòng hỏi.',
+          man: 'không màn nào — chạy nền', ...K },
+        { so: '2', ten: 'Van nguồn', cho: 'chặn hoặc cho qua', mauCho: '#b45309',
+          noi: 'Máy READONLY chỉ nạp khi V3_NAP_DEV=1 VÀ cơ sở dữ liệu trỏ localhost. Sai một vế là tin thật vào hàng đợi máy dev.',
+          man: 'Sức khoẻ hệ thống', ...M },
+        { so: '3', ten: 'Lớp trả lời 0 đồng', cho: '0 token', mauCho: '#16a34a',
+          noi: 'Khớp từ khoá thì trả lời ngay bằng mẫu, KHÔNG gọi model. Mỗi lần khớp là 127 đ không tiêu.',
+          man: 'Lớp 0 đồng', ...M },
+        { so: '4', ten: 'Fast Lane', cho: '0 token', mauCho: '#16a34a',
+          noi: 'Câu chào, sticker, «ok» — trả lời hoặc im lặng có chủ đích.',
+          man: 'Kịch bản · phần câu mẫu', ...M },
+        { so: '5', ten: 'Ráp prompt bốn khối', cho: 'đọc CSDL', mauCho: '#8b95a1',
+          noi: 'Bộ luật chung + kỹ năng đang bật + kịch bản LIVE của page + dữ liệu sản phẩm.',
+          man: 'Prompt của page', ...M },
+        { so: '6', ten: 'Gọi model', cho: '3–5 s · tốn tiền', mauCho: '#dc2626',
+          noi: 'Theo cấu hình model của TEAM: chính · dự phòng · nền. Hết tiền nhà chính thì tự chuyển.',
+          man: 'Model AI & khoá · Chi phí AI', ...M },
+        { so: '7', ten: 'Cửa cuối trước khách', cho: 'chặn nội dung', mauCho: '#b45309',
+          noi: 'Soi PII, giá bịa, mã đơn bịa, tiếng Việt lọt ra khách Ả Rập. Chặn thì KHÔNG gửi gì.',
+          man: 'Bộ luật chung · Nhật ký', ...M },
+        { so: '8', ten: 'Chốt đơn hoặc đẩy sang người', cho: 'đồng hồ 10 phút', mauCho: '#dc2626',
+          noi: 'Chốt được thì vào hàng chờ tạo đơn, sale duyệt. Không chốt được thì đẩy sang người kèm LÝ DO.',
+          man: 'Bảng điều phối', ...M },
+      ],
+      gio: [
+        { ten: 'Vòng hỏi tin mới', so: '0–6 s', mau: '#667085', dam: 400 },
+        { ten: 'Đợi khách gõ xong', so: '5 s', mau: '#667085', dam: 400 },
+        { ten: 'Nhường Botcake', so: '6 s', mau: '#b45309', dam: 600 },
+        { ten: 'Chờ riêng của AI', so: '20–28 s', mau: '#b45309', dam: 600 },
+        { ten: 'Gọi model', so: '3–5 s', mau: '#667085', dam: 400 },
+        { ten: 'TỔNG hôm nay', so: '34–50 s', mau: '#dc2626', dam: 700 },
+        { ten: 'Sau khi tắt Botcake', so: '6–10 s', mau: '#16a34a', dam: 700 },
+      ],
+      van: [
+        { ten: 'PANCAKE_READONLY', noi: 'Máy dev luôn =1. Không gửi tin, không ghi ra khách thật.' },
+        { ten: 'V3_PANCAKE_GUI', noi: 'Vắng = ĐÓNG. Đóng thì worker chốt chan_guard ngay, 0 token.' },
+        { ten: 'V3_NAP_DEV', noi: 'Chỉ mở van nguồn khi CSDL trỏ localhost — không phải cứ đặt là mở.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

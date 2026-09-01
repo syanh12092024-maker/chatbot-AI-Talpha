@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; }
+    a { color: #0e7c86; } a:hover { color: #0b646d; }
+  </style>
+</helmet>
+
+<div style="width: 1180px; height: 940px; background: #f5f7f9; display: flex; flex-direction: column;">
+
+  <div style="background: #0b2125; color: #fff; padding: 14px 22px; display: flex; align-items: center; gap: 14px;">
+    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">Nhắn cho khách</h1>
+    <div style="font-size: 11.5px; color: #7fa3a8;">mục thứ bảy · giai đoạn 3 · chưa dựng màn nào</div>
+    <div style="flex: 1;"></div>
+    <div style="background: #b45309; color: #fff; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700;">BẢN VẼ, CHƯA CÓ CODE</div>
+  </div>
+
+  <div style="background: #fff; border-bottom: 1px solid #e4e9ee; padding: 0 22px; display: flex; gap: 2px;">
+    <sc-for list="{{tab}}" as="t" hint-placeholder-count="6">
+      <div style="padding: 11px 12px 9px; border-bottom: 2px solid {{t.gach}}; color: {{t.mau}}; font-size: 12.5px; font-weight: {{t.dam}};">{{t.ten}}</div>
+    </sc-for>
+  </div>
+
+  <div style="flex: 1; padding: 18px 22px; display: flex; gap: 16px; min-height: 0;">
+
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 15px 17px;">
+        <div style="font-weight: 700; font-size: 14px;">Soạn tin hàng loạt</div>
+        <div style="color: #667085; font-size: 11.5px; line-height: 1.55; margin-top: 3px;">
+          Chọn page · chọn sản phẩm · viết nội dung. Đây là màn tiêu tiền và có rủi ro mất page,
+          nên nó khác mọi màn khác ở một điểm: <b>bảng phân đường nằm NGAY CẠNH nút gửi</b>.
+        </div>
+
+        <div style="border: 1px solid #e4e9ee; border-radius: 10px; margin-top: 13px; overflow: hidden;">
+          <div style="background: #fbfcfd; border-bottom: 1px solid #e4e9ee; padding: 8px 13px; font-size: 11.5px; font-weight: 600; color: #344054;">
+            2.847 người trong danh sách — họ sẽ đi bằng bốn đường khác nhau
+          </div>
+          <sc-for list="{{duong}}" as="d" hint-placeholder-count="4">
+            <div style="display: flex; gap: 12px; align-items: center; padding: 9px 13px; border-bottom: 1px solid #f0f3f5;">
+              <div style="width: 3px; height: 30px; border-radius: 2px; background: {{d.mau}}; flex-shrink: 0;"></div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 12.5px; font-weight: 600;">{{d.ten}}</div>
+                <div style="font-size: 11px; color: #667085; line-height: 1.5; margin-top: 1px;">{{d.dieu}}</div>
+              </div>
+              <div style="text-align: right; flex-shrink: 0;">
+                <div style="font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: {{d.mau}};">{{d.so}}</div>
+                <div style="font-size: 10.5px; color: #8b95a1;">{{d.gia}}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 13px;">
+          <div style="background: #0e7c86; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;">Gửi cho 1.902 người</div>
+          <div style="font-size: 11.5px; color: #667085; line-height: 1.5;">
+            Nút KHÔNG nói «gửi 2.847» — 945 người trong danh sách không có đường nào hợp lệ,
+            và con số đó phải nằm trước mắt lúc bấm, không nằm trong báo cáo hôm sau.
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #fdecec; border: 1px solid #f3c2c2; border-radius: 9px; padding: 11px 14px; font-size: 11.5px; line-height: 1.6; color: #991b1b;">
+        <b>Vì sao mục này KHÔNG nằm trong «Bot nói gì»:</b> ở đó bot TRẢ LỜI người đã nhắn mình.
+        Ở đây ta CHỦ ĐỘNG nhắn người chưa nhắn — 01 §5: dùng nhãn tin để lách gửi khuyến mãi
+        ngoài 24 giờ là vi phạm chính sách, và giá phải trả là mất page cùng toàn bộ traffic
+        quảng cáo đang chạy. Hai việc khác nhau về bản chất thì không chung một mục.
+      </div>
+
+    </div>
+
+    <div style="width: 330px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+
+      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 14px 16px;">
+        <div style="font-weight: 600; font-size: 13px;">Sáu màn của mục này</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 11px;">
+          <sc-for list="{{man}}" as="m" hint-placeholder-count="6">
+            <div>
+              <div style="display: flex; gap: 7px; align-items: baseline;">
+                <div style="font-size: 12.5px; font-weight: 600;">{{m.ten}}</div>
+                <div style="font-size: 10.5px; color: {{m.mauNhan}}; font-weight: 600;">{{m.nhan}}</div>
+              </div>
+              <div style="font-size: 11px; color: #667085; line-height: 1.5; margin-top: 1px;">{{m.noi}}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: #fdf3e3; border: 1px solid #f0d3a4; border-radius: 9px; padding: 11px 13px; font-size: 11.5px; line-height: 1.6; color: #8a4a06;">
+        <b>Hai điểm kiểm CHẶN chưa có câu trả lời:</b> gửi WhatsApp bằng API Pancake chưa thử
+        thật lần nào (điểm kiểm 1), và Marketing Message chưa xác nhận có bật cho Trung Đông
+        không (điểm kiểm 4 — app Meta đang bị chặn API hoàn toàn). Dựng màn trước khi có hai
+        câu trả lời đó là dựng một cái nút không bấm được.
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const t = (ten, dang) => ({
+      ten,
+      gach: dang ? '#0e7c86' : 'transparent',
+      mau: dang ? '#0e7c86' : '#344054',
+      dam: dang ? 700 : 600,
+    });
+    return {
+      tab: [
+        t('Xác nhận đơn WhatsApp', false),
+        t('Trả lời bình luận', false),
+        t('Soạn tin hàng loạt', true),
+        t('Xin phép nhận tin', false),
+        t('Chiến dịch đã gửi', false),
+        t('Đuổi theo 24 giờ', false),
+      ],
+      duong: [
+        { ten: 'Trong 24 giờ — nhắn thẳng', dieu: 'Khách vừa nhắn lại trong 24 giờ qua. Không cần xin phép, không cần Meta duyệt.',
+          so: '412', gia: 'miễn phí', mau: '#16a34a' },
+        { ten: 'Marketing Message', dieu: 'Khách đã đồng ý nhận tin và nội dung đã được Meta duyệt. Trần 1 tin / 48 giờ mỗi người.',
+          so: '1.203', gia: 'tính phí', mau: '#0e7c86' },
+        { ten: 'WhatsApp có mẫu duyệt', dieu: 'Đi qua Pancake, mẫu tin đã nộp Meta. Cần số đã nối vào WABA.',
+          so: '287', gia: 'tính phí', mau: '#b45309' },
+        { ten: 'KHÔNG có đường nào hợp lệ', dieu: 'Ngoài 24 giờ, chưa đồng ý nhận tin, không có số WhatsApp. Nhắn là vi phạm.',
+          so: '945', gia: 'không gửi', mau: '#dc2626' },
+      ],
+      man: [
+        { ten: 'Xác nhận đơn qua WhatsApp', nhan: 'BẮT BUỘC', mauNhan: '#991b1b',
+          noi: 'Chỉ đơn trang bán hàng. 01 §1 nói luồng này bắt buộc có WhatsApp — chỗ rơi 37,4% nằm đúng đây.' },
+        { ten: 'Trả lời bình luận', nhan: 'CHẶN việc khác', mauNhan: '#8a4a06',
+          noi: 'Sáu luật theo loại bình luận. 01 §2: đây là điều kiện để tắt Botcake diện rộng — tắt mà chưa thay là mất 11% nguồn khách.' },
+        { ten: 'Soạn tin hàng loạt', nhan: '', mauNhan: '#8b95a1',
+          noi: 'Bảng phân đường cạnh nút gửi. Con số thật ở đúng chỗ bấm nút.' },
+        { ten: 'Xin phép nhận tin', nhan: 'nút thắt', mauNhan: '#8a4a06',
+          noi: 'Nút thắt của mọi việc nhắn ngoài 24 giờ: năm chỗ xin, chỗ nào ăn nhất.' },
+        { ten: 'Chiến dịch đã gửi', nhan: '', mauNhan: '#8b95a1',
+          noi: 'Kho tin đã Meta duyệt, trần tần suất tự bảo vệ.' },
+        { ten: 'Đuổi theo trong 24 giờ', nhan: '', mauNhan: '#8b95a1',
+          noi: 'Bậc thang theo mốc giờ: +2h nhắc nhẹ, +12h freeship, +20h tặng quà.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -13,45 +13,52 @@
   </style>
 </helmet>
 
-<div style="width: 1180px; height: 940px; background: #f5f7f9; display: flex; flex-direction: column;">
+<div style="width: 1180px; height: 1180px; background: #f5f7f9; display: flex; flex-direction: column;">
 
   <div style="background: #0b2125; color: #fff; padding: 14px 22px; display: flex; align-items: baseline; gap: 14px;">
-    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">24 màn → 6 mục</h1>
-    <div style="font-size: 11.5px; color: #7fa3a8;">không xoá màn nào — chúng thành TAB trong mục</div>
+    <h1 style="font-size: 16px; margin: 0; font-weight: 700;">37 màn → 7 mục</h1>
+    <div style="font-size: 11.5px; color: #7fa3a8;">không xoá màn nào · mục thứ bảy khai sẵn, chưa có màn</div>
   </div>
 
-  <div style="flex: 1; padding: 18px 22px; display: flex; flex-direction: column; gap: 11px; min-height: 0;">
+  <div style="flex: 1; padding: 16px 22px; display: flex; flex-direction: column; gap: 9px; min-height: 0;">
 
-    <sc-for list="{{muc}}" as="m" hint-placeholder-count="6">
-      <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 13px 16px; display: flex; gap: 16px; align-items: flex-start;">
+    <sc-for list="{{muc}}" as="m" hint-placeholder-count="8">
+      <div style="background: {{m.nenThe}}; border: 1px solid {{m.vienThe}}; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); padding: 12px 15px; display: flex; gap: 15px; align-items: flex-start;">
 
-        <div style="width: 176px; flex-shrink: 0;">
-          <div style="font-weight: 700; font-size: 14px; color: #101828;">{{m.ten}}</div>
-          <div style="font-size: 11.5px; color: #667085; margin-top: 3px; line-height: 1.5;">{{m.nhip}}</div>
-          <div style="display: inline-block; background: {{m.nen}}; color: {{m.mau}}; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-top: 7px; white-space: nowrap;">{{m.gom}}</div>
+        <div style="width: 168px; flex-shrink: 0;">
+          <div style="font-weight: 700; font-size: 13.5px; color: {{m.mauTen}};">{{m.ten}}</div>
+          <div style="font-size: 11px; color: #667085; margin-top: 3px; line-height: 1.45;">{{m.nhip}}</div>
+          <div style="display: inline-block; background: {{m.nen}}; color: {{m.mau}}; border-radius: 20px; padding: 2px 8px; font-size: 10.5px; font-weight: 600; margin-top: 6px; white-space: nowrap;">{{m.gom}}</div>
         </div>
 
         <div style="flex: 1; min-width: 0;">
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <sc-for list="{{m.tab}}" as="t" hint-placeholder-count="4">
-              <div style="border: 1px solid {{t.vien}}; background: {{t.nen}}; color: {{t.mau}}; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 600;">{{t.ten}}</div>
+          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+            <sc-for list="{{m.tab}}" as="t" hint-placeholder-count="7">
+              <div style="border: 1px solid {{t.vien}}; background: {{t.nen}}; color: {{t.mau}}; border-radius: 7px; padding: 4px 9px; font-size: 11.5px; font-weight: 600;">{{t.ten}}</div>
             </sc-for>
           </div>
-          <div style="color: #667085; font-size: 12px; line-height: 1.6; margin-top: 9px;">{{m.vi}}</div>
+          <div style="color: #667085; font-size: 11.5px; line-height: 1.55; margin-top: 7px;">{{m.vi}}</div>
         </div>
 
       </div>
     </sc-for>
 
-    <div style="display: flex; gap: 11px;">
-      <div style="flex: 1; background: #e8f7ee; border: 1px solid #b7e4c7; border-radius: 9px; padding: 11px 14px; font-size: 12px; line-height: 1.6; color: #166534;">
-        <b>Tab xám = chưa có dữ liệu để nói.</b> Chúng vẫn mở được, nhưng không còn chiếm một dòng ngang hàng
-        trên menu chính — vào mục rồi mới thấy, kèm câu «còn thiếu gì để đo được».
+    <div style="background: #fff; border: 1px solid #e4e9ee; border-radius: 12px; padding: 12px 15px;">
+      <div style="font-weight: 600; font-size: 12.5px; margin-bottom: 8px;">Đọc bảng màu</div>
+      <div style="display: flex; gap: 18px; flex-wrap: wrap; font-size: 11.5px; color: #667085;">
+        <sc-for list="{{chuGiai}}" as="c" hint-placeholder-count="4">
+          <div style="display: flex; gap: 7px; align-items: center;">
+            <div style="width: 26px; height: 15px; border-radius: 5px; border: 1px solid {{c.vien}}; background: {{c.nen}}; flex-shrink: 0;"></div>
+            <div>{{c.noi}}</div>
+          </div>
+        </sc-for>
       </div>
-      <div style="flex: 1; background: #fdf3e3; border: 1px solid #f0d3a4; border-radius: 9px; padding: 11px 14px; font-size: 12px; line-height: 1.6; color: #8a4a06;">
-        <b>Vai sale không đổi:</b> vẫn vào thẳng «Việc cần xử» và không thấy năm mục kia — 01-QUYẾT-ĐỊNH §10.
-        Menu lọc ở máy chủ như hiện nay, không ẩn bằng CSS.
-      </div>
+    </div>
+
+    <div style="background: #fdf3e3; border: 1px solid #f0d3a4; border-radius: 9px; padding: 10px 13px; font-size: 11.5px; line-height: 1.6; color: #8a4a06;">
+      <b>Vai sale không đổi:</b> vẫn vào thẳng «Việc cần xử» và không thấy sáu mục kia — 01 §10.
+      <b style="margin-left: 8px;">Lối ra có ở mọi trang:</b> đổi team và đăng xuất nằm ở chân thanh bên, không lọc theo vai —
+      01 §8 chốt ba team, mà trước 01/09 chỉ một trong 25 trang có lối này.
     </div>
 
   </div>
@@ -61,39 +68,69 @@
 <script data-dc-script>
 class Component extends DCLogic {
   renderVals() {
-    const co = { nen: '#fff', vien: '#cfd8de', mau: '#101828' };
-    const mo = { nen: '#f5f7f9', vien: '#e4e9ee', mau: '#8b95a1' };
-    const dem = (n) => ({ gom: n + ' màn', nen: n >= 6 ? '#fdecec' : '#e6f4f5', mau: n >= 6 ? '#991b1b' : '#0b646d' });
+    const co = { nen: '#fff', vien: '#cfd8de', mau: '#101828' };      // đã dựng, chạy được
+    const mo = { nen: '#f5f7f9', vien: '#e4e9ee', mau: '#8b95a1' };   // đã dựng, chưa có dữ liệu
+    const sau = { nen: '#fdf3e3', vien: '#f0d3a4', mau: '#8a4a06' };  // chưa dựng — giai đoạn 3
+    const xa = { nen: '#fbfcfd', vien: '#e4e9ee', mau: '#b6bfc8' };   // để dành, giai đoạn sau
+    const dem = (n, chua) => ({
+      gom: chua ? `${n} màn · chưa dựng` : `${n} màn`,
+      nen: chua ? '#fdf3e3' : (n >= 6 ? '#fdecec' : '#e6f4f5'),
+      mau: chua ? '#8a4a06' : (n >= 6 ? '#991b1b' : '#0b646d'),
+    });
+    const the = { nenThe: '#fff', vienThe: '#e4e9ee', mauTen: '#101828' };
+    const theChua = { nenThe: '#fffdf8', vienThe: '#f0d3a4', mauTen: '#8a4a06' };
+
     return {
       muc: [
-        { ten: 'Hôm nay', nhip: 'Mở mỗi sáng', ...dem(1),
+        { ten: 'Hôm nay', nhip: 'Mở mỗi sáng', ...dem(1), ...the,
           tab: [{ ten: 'Trang chủ', ...co }],
-          vi: 'Đứng một mình vì nó là chỗ trả lời «hôm nay làm gì». Gộp nó vào chỗ khác là bỏ mất câu hỏi đó.' },
+          vi: 'Chỗ trả lời «hôm nay làm gì». Gộp vào chỗ khác là bỏ mất câu hỏi đó.' },
 
-        { ten: 'Việc cần xử', nhip: 'Mở mỗi sáng · sale vào thẳng đây', ...dem(1),
-          tab: [{ ten: 'Bảng điều phối', ...co }],
-          vi: 'Đường duy nhất của vai sale. Giữ nguyên hình dạng hiện tại — nó đang đúng §10.' },
+        { ten: 'Việc cần xử', nhip: 'Mở mỗi sáng · sale vào thẳng đây', ...dem(3), ...the,
+          tab: [{ ten: 'Bảng điều phối', ...co }, { ten: 'Chi tiết việc', ...co },
+                { ten: 'Hàng chờ tạo đơn', ...co }],
+          vi: 'Đường DUY NHẤT của vai sale (01 §10). Hai danh sách — hội thoại cần xử và đơn cần xử; «hàng chờ tạo đơn» là đích của luồng Messenger, sale duyệt là đơn vào POS ở Chờ in.' },
 
-        { ten: 'Bot nói gì', nhip: 'Khi sửa cách bot trả lời', ...dem(7),
-          tab: [{ ten: 'Bộ luật chung', ...co }, { ten: 'Thư viện kỹ năng', ...co }, { ten: 'Kịch bản', ...co },
-                { ten: 'AI đề xuất', ...co }, { ten: 'Lớp 0 đồng', ...mo }, { ten: 'Thư viện ảnh', ...co },
+        { ten: 'Bot nói gì', nhip: 'Khi sửa cách bot TRẢ LỜI', ...dem(7), ...the,
+          tab: [{ ten: 'Bộ luật chung', ...co }, { ten: 'Thư viện kỹ năng', ...co },
+                { ten: 'Kịch bản', ...co }, { ten: 'Soạn kịch bản', ...co },
+                { ten: 'Nhập từ Pancake', ...co }, { ten: 'AI đề xuất', ...co },
+                { ten: 'Lớp 0 đồng', ...mo }, { ten: 'Thư viện ảnh', ...co },
                 { ten: 'Prompt của page', ...co }],
-          vi: 'Bảy màn cũ là bảy MẶT của một việc. §6 nói prompt có bốn khối — người dùng nghĩ theo «bot nói gì», không nghĩ theo bảng dữ liệu. «Prompt của page» là tab CUỐI vì nó là chỗ kiểm lại sau khi sửa, không phải chỗ bắt đầu.' },
+          vi: '01 §6: prompt có BỐN khối. Người sửa bot nghĩ «tôi muốn bot nói khác đi», không nghĩ theo bảng dữ liệu. «Prompt của page» đứng CUỐI vì nó là chỗ kiểm lại sau khi sửa. Soạn kịch bản và Nhập từ Pancake là hai lát trong màn Kịch bản.' },
 
-        { ten: 'Page & sản phẩm', nhip: 'Khi mở page mới hoặc lên hàng mới', ...dem(4),
-          tab: [{ ten: 'Page & Bot', ...co }, { ten: 'Cửa kiểm sẵn sàng', ...co },
+        { ten: 'Nhắn cho khách', nhip: 'Giai đoạn 3 · ta CHỦ ĐỘNG nhắn', ...dem(6, true), ...theChua,
+          tab: [{ ten: 'Xác nhận đơn qua WhatsApp', ...sau }, { ten: 'Trả lời bình luận', ...sau },
+                { ten: 'Soạn tin hàng loạt', ...sau }, { ten: 'Xin phép nhận tin', ...sau },
+                { ten: 'Chiến dịch đã gửi', ...sau }, { ten: 'Đuổi theo trong 24 giờ', ...sau }],
+          vi: 'MỤC MỚI — sáu màn này không thuộc mục nào ở trên. «Bot nói gì» là bot TRẢ LỜI khách; đây là ta ĐI TÌM khách: có tiền, và 01 §5 nói làm sai thì mất page. Xác nhận WhatsApp là bắt buộc của luồng trang bán hàng (§1); trả lời bình luận là điều kiện tắt Botcake diện rộng (§2). Mục đã khai trong sổ, chưa có màn nên menu tự ẩn.' },
+
+        { ten: 'Page & sản phẩm', nhip: 'Khi mở page mới hoặc lên hàng mới', ...dem(4), ...the,
+          tab: [{ ten: 'Cửa kiểm sẵn sàng', ...co }, { ten: 'Page & Bot', ...co },
                 { ten: 'Sản phẩm & kho', ...co }, { ten: 'Đưa sản phẩm lên chạy', ...co }],
-          vi: 'Bốn màn cùng trả lời một câu: «page này bán được chưa». Cửa kiểm là bảng điểm, ba màn kia là chỗ sửa cho điểm xanh.' },
+          vi: 'Bốn màn cùng trả lời một câu: «page này bán được chưa». Cửa kiểm là BẢNG ĐIỂM và đứng đầu; ba màn kia là chỗ sửa cho điểm xanh.' },
 
-        { ten: 'Số liệu', nhip: 'Cuối ngày / cuối tuần', ...dem(6),
-          tab: [{ ten: 'Báo cáo', ...co }, { ten: 'Chi phí AI', ...co }, { ten: 'Rủi ro hoàn', ...co },
-                { ten: 'Hồ sơ khách', ...co }, { ten: 'Nguồn khách', ...co }, { ten: 'Hiệu quả kịch bản', ...mo }],
-          vi: 'Không màn nào trong đây dùng để RA LỆNH — chúng để đọc. Nhịp khác hẳn bốn mục trên, nên đứng thành một mục riêng thay vì trộn vào.' },
+        { ten: 'Số liệu', nhip: 'Cuối ngày / cuối tuần', ...dem(6), ...the,
+          tab: [{ ten: 'Báo cáo', ...co }, { ten: 'Chi phí AI', ...co }, { ten: 'Rủi ro hoàn hàng', ...co },
+                { ten: 'Hồ sơ khách hàng', ...co }, { ten: 'Nguồn khách vào', ...co },
+                { ten: 'Hiệu quả kịch bản', ...mo }],
+          vi: 'Không màn nào ở đây dùng để RA LỆNH — chúng để ĐỌC. Nhịp khác hẳn bốn mục trên nên đứng riêng.' },
 
-        { ten: 'Cài đặt', nhip: 'Một lần rồi thôi · vào khi có sự cố', ...dem(5),
-          tab: [{ ten: 'Cấu hình team', ...co }, { ten: 'Kết nối & token', ...co }, { ten: 'Model AI & khoá', ...co },
-                { ten: 'Sức khoẻ hệ thống', ...co }, { ten: 'Nhật ký thao tác', ...co }],
-          vi: 'Đây là chỗ người ta vào đúng hai lần: hôm cài đặt, và hôm có sự cố. Để nó ngang hàng với việc hằng ngày là chiếm chỗ của thứ dùng mỗi sáng.' },
+        { ten: 'Cài đặt', nhip: 'Một lần rồi thôi · vào khi có sự cố', ...dem(6), ...the,
+          tab: [{ ten: 'Cấu hình team', ...co }, { ten: 'Kết nối & token', ...co },
+                { ten: 'Model AI & khoá', ...co }, { ten: 'Sức khoẻ hệ thống', ...co },
+                { ten: 'Nhật ký thao tác', ...co }, { ten: 'Chọn team / Đăng xuất', ...co }],
+          vi: 'Vào đúng hai lần: hôm cài đặt và hôm có sự cố. «Chọn team» không nằm trên menu — nó là hai nút ở CHÂN thanh bên, có mặt ở mọi trang và không lọc theo vai.' },
+
+        { ten: 'Để dành', nhip: 'Đã thiết kế, chưa làm (01 §11)', ...dem(2, true), ...theChua,
+          tab: [{ ten: 'Kho ưu đãi', ...xa }, { ten: 'Hậu bán & mua lại', ...xa }],
+          vi: 'KHÔNG phải một mục trên menu — để ở đây cho đủ 37 màn của 03-MAN-HÌNH. Khi làm, cả hai về mục «Nhắn cho khách» (đều là chủ động chạm lại khách cũ).' },
+      ],
+      chuGiai: [
+        { nen: '#fff', vien: '#cfd8de', noi: 'đã dựng, chạy được' },
+        { nen: '#f5f7f9', vien: '#e4e9ee', noi: 'đã dựng, chưa có dữ liệu để nói' },
+        { nen: '#fdf3e3', vien: '#f0d3a4', noi: 'chưa dựng — giai đoạn 3' },
+        { nen: '#fbfcfd', vien: '#e4e9ee', noi: 'để dành, giai đoạn sau' },
       ],
     };
   }
