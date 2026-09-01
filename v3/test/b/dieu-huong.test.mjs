@@ -199,3 +199,49 @@ test('⑤c · `dieu-huong.js` PHẢI PARSE ĐƯỢC — một dấu huyền ngư
   const js = readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
   assert.doesNotThrow(() => new Function(js), 'tệp menu không parse được');
 });
+
+/* ═══════════ ⑥ THANH TAB CỦA MỤC — và header thôi tự chế link ═══════════ */
+// Design mới: mỗi mục hiện như MỘT trang nhiều tab. Không gộp 24 trang thành 6 (mỗi màn
+// giữ đường riêng, router riêng, lớp vai riêng) — thanh tab chỉ nói ra rằng những màn này
+// thuộc cùng một việc, và cho đi ngang bằng một cú bấm thay vì quay lại menu.
+
+test('⑥a · menu dùng chung có dựng thanh tab, và chỉ dựng khi mục có TỪ HAI màn', () => {
+  const js = readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
+  assert.match(js, /dungThanhTab/, 'thiếu hàm dựng thanh tab');
+  assert.match(js, /man\s*\|\|\s*\[\]\)\.length\s*<\s*2/,
+    'phải bỏ qua mục chỉ có một màn — một tab đơn độc là nhiễu');
+  assert.match(js, /insertAdjacentElement\("afterend"|insertAdjacentElement\('afterend'/,
+    'thanh tab phải nằm ngay dưới <header>');
+});
+
+test('⑥b · mỗi mục có từ hai màn thì thanh tab của nó liệt kê ĐÚNG các màn đó', () => {
+  // Thanh tab dựng từ chính `menuCua`, nên bài này canh dữ liệu: mục nào ra thanh tab,
+  // mục nào không, và số tab bằng số màn vai đó vào được.
+  const menu = mh.menuCua([VAI.QUAN_TRI]);
+  const coTab = menu.filter((n) => n.man.length >= 2).map((n) => `${n.ma}:${n.man.length}`);
+  assert.deepEqual(coTab, ['bot-noi-gi:7', 'page-san-pham:4', 'so-lieu:6', 'cai-dat:5'],
+    `mục có thanh tab: ${coTab}`);
+  // «Hôm nay» và «Việc cần xử» mỗi mục một màn ⇒ KHÔNG có thanh tab.
+  for (const ma of ['hom-nay', 'viec-can-xu']) {
+    const n = menu.find((x) => x.ma === ma);
+    assert.equal(n.man.length, 1, `mục ${ma} có ${n.man.length} màn — nếu >1 thì phải cập nhật bài này`);
+  }
+});
+
+test('⑥c · header của MỌI trang thôi tự chế link điều hướng', () => {
+  // Trước 01/09 header 25 trang mang 61 link do từng tác giả tự nghĩ ra — người dùng chỉ
+  // tới được màn nào ngẫu nhiên được nhắc ở trang đang đứng. Nay menu lo dọc, tab lo ngang;
+  // link tự chế trong header vừa trùng vừa trôi khỏi sổ đăng ký khi đổi đường.
+  const sot = [];
+  for (const ten of readdirSync(GOC_UI)) {
+    const thu = path.join(GOC_UI, ten, 'trang');
+    if (!existsSync(thu)) continue;
+    for (const f of readdirSync(thu).filter((x) => x.endsWith('.html'))) {
+      const s = readFileSync(path.join(thu, f), 'utf8');
+      const m = s.match(/<header[^>]*>([\s\S]*?)<\/header>/);
+      if (m && /<a\s+href="\//.test(m[1])) sot.push(`${ten}/${f}`);
+    }
+  }
+  assert.deepEqual(sot, [],
+    `header còn link tự chế: ${sot.join(', ')} — chuyển vào sổ đăng ký màn, đừng gắn tay`);
+});

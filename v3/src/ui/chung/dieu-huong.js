@@ -85,6 +85,21 @@
     .dh-tk button:hover{background:rgba(255,255,255,.16);color:#fff}
     .dh-tk button.ra:hover{background:rgba(220,38,38,.22);color:#fff}
 
+    /* THANH TAB CỦA MỘT MỤC — các màn cùng mục nằm cạnh nhau ngay dưới thanh tiêu đề.
+       Mỗi màn vẫn giữ ĐƯỜNG RIÊNG của nó (không gộp 24 trang thành 6): thanh này chỉ nói
+       ra rằng chúng thuộc cùng một việc, và cho đi ngang giữa chúng bằng MỘT cú bấm thay
+       vì quay lại menu. Mục chỉ có một màn thì không có thanh — một tab đơn độc là nhiễu. */
+    .dh-tab{background:#fff;border-bottom:1px solid #e4e9ee;padding:0 22px;display:flex;
+      gap:2px;overflow-x:auto;scrollbar-width:none}
+    .dh-tab::-webkit-scrollbar{display:none}
+    .dh-tab a{padding:11px 13px 9px;color:#344054;text-decoration:none;font-size:13px;
+      font-weight:600;border-bottom:2px solid transparent;white-space:nowrap;
+      display:flex;gap:6px;align-items:center}
+    .dh-tab a:hover{color:#0e7c86}
+    .dh-tab a.day{color:#0e7c86;font-weight:700;border-bottom-color:#0e7c86}
+    .dh-tab .muc{font-size:11px;color:#8b95a1;font-weight:600;align-self:center;
+      padding-right:9px;margin-right:4px;border-right:1px solid #e4e9ee;white-space:nowrap}
+
     /* Màn HẸP: thanh bên thu về ngăn kéo, trang lấy lại toàn bộ bề ngang. */
     @media (max-width:${NGUONG - 1}px){
       .dh-nut{display:inline-block}
@@ -185,6 +200,8 @@
       location.href = '/dang-nhap';
     };
 
+    dungThanhTab(d, nay);
+
     // Trang chừa chỗ cho thanh bên. Chỉ ở màn rộng — media query trên tự gỡ ở màn hẹp.
     document.body.style.paddingLeft = `${RONG}px`;
 
@@ -209,6 +226,38 @@
     const dau = document.querySelector("header");
     if (dau) dau.insertBefore(nut, dau.firstChild);
     else document.body.insertBefore(nut, document.body.firstChild);
+  }
+
+  /**
+   * Thanh tab của MỤC đang đứng — chèn ngay dưới `<header>` của trang.
+   *
+   * Không gộp 24 trang thành 6: mỗi màn giữ đường riêng, giữ router riêng, giữ lớp vai
+   * riêng. Thanh này chỉ làm một việc — nói ra rằng những màn này thuộc CÙNG một việc, và
+   * cho đi ngang giữa chúng bằng một cú bấm thay vì quay lại menu rồi bấm tiếp.
+   *
+   * Trang không có `<header>` thì bỏ qua trong im lặng: thanh tab là thứ thêm vào, không
+   * được phép làm hỏng một trang vốn chạy được.
+   */
+  function dungThanhTab(d, nay) {
+    const muc = (d.nhom || []).find((n) => (n.man || []).some((m) => m.duong === nay));
+    if (!muc || (muc.man || []).length < 2) return;
+
+    const dau = document.querySelector("header");
+    if (!dau) return;
+
+    const tab = document.createElement("nav");
+    tab.className = "dh-tab";
+    tab.innerHTML =
+      `<div class="muc">${esc(muc.ten)}</div>` +
+      muc.man
+        .map(
+          (m) =>
+            `<a href="${esc(m.duong)}" class="${m.duong === nay ? "day" : ""}"` +
+            ` title="${esc(m.moTa || "")}">${esc(m.ten)}</a>`,
+        )
+        .join("");
+
+    dau.insertAdjacentElement("afterend", tab);
   }
 
   fetch("/api/dieu-huong", { credentials: "same-origin" })
