@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
-import { manRuiRo, VAI_VAO_DUOC, LAN_RANH, LoiRuiRo } from './kho-rui-ro.js';
+import { manRuiRo, VAI_VAO_DUOC, TANG, LoiRuiRo } from './kho-rui-ro.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -114,4 +114,4 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   return r;
 }
 
-export { LAN_RANH, LoiRuiRo };
+export { TANG, LoiRuiRo };

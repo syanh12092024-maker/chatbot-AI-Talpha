@@ -1,9 +1,14 @@
 // MÀN «RỦI RO HOÀN HÀNG» (G2-G7) — *«Bốn tầng chính sách thay vì một ngưỡng cứng»*.
 //
-// Hai chỗ dễ sai nhất, và bài test dồn vào đúng đó:
-//   ① Mã trạng thái hoàn chép tay từ v1 — lệch một mã là lệch cả bảng phân bố.
-//   ② Tỉ lệ hoàn tính trên MỘT đơn là nhiễu. Đo 28/08: 4.436 khách «hoàn 100%», trong đó
-//      4.139 chỉ có đúng một đơn. Một danh sách xếp theo tỉ lệ sẽ đề nghị chặn cả 4.139.
+// Ba chỗ dễ sai nhất, và bài test dồn vào đúng đó:
+//   ① Nhãn tầng + ngưỡng chép tay từ luật — lệch một nhãn là lệch cả bảng phân bố. Thước
+//      đọc THẲNG `src/orders/ti-le-hoan.js` rồi so (bài học ② của `07-KE-HOACH-GD2.md` §0:
+//      chuỗi gõ tay hai chỗ là bẫy im lặng).
+//   ② Màn KHÔNG được tự tính lại tỉ lệ hoàn (H10). Bản trước quét `don_hang` với mã hoàn
+//      {4,5,6,7,8} của v1, mẫu số là mọi đơn, không có sàn — ra 40.064 «hoàn cao» trong khi
+//      luật đã ký nói 5.990. Thước khoá: không đọc `don_hang`, và mã `'8'` không được xuất
+//      hiện trong mã nguồn màn.
+//   ③ Job chưa chấm ⇒ NÓI RA, không rơi về phép tính riêng.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -19,39 +24,70 @@ const { taoBoiCanh, VAI } = await import('../../src/auth/boi-canh.js');
 const rr = await import('../../src/ui/rui-ro-hoan/kho-rui-ro.js');
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const NGUON_V1 = path.join(GOC, 'src/pancake-orders.js');
+const NGUON_LUAT = path.join(GOC, 'src/orders/ti-le-hoan.js');
+const MA_MAN = readFileSync(path.join(GOC, 'v3/src/ui/rui-ro-hoan/kho-rui-ro.js'), 'utf8');
 
-/* ═══════════ ① MÃ HOÀN PHẢI KHỚP v1, TỪNG MÃ MỘT ═══════════ */
+/* ═══════════ ① NHÃN VÀ NGƯỠNG PHẢI KHỚP LUẬT ĐÃ CHỐT, TỪNG CÁI MỘT ═══════════ */
 
-test('①a · `MA_HOAN` khớp đúng `CANCEL` của `src/pancake-orders.js`', () => {
-  const src = readFileSync(NGUON_V1, 'utf8');
-  const m = src.match(/const\s+CANCEL\s*=\s*new\s+Set\(\[([^\]]*)\]\)/);
-  assert.ok(m, '`src/pancake-orders.js` không còn `const CANCEL = new Set([...])` — v1 đổi hình');
-  const cua_v1 = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort();
-  assert.deepEqual([...rr.MA_HOAN].sort(), cua_v1,
-    `màn chép: ${[...rr.MA_HOAN].sort()} · v1 có: ${cua_v1}. Lệch một mã là lệch cả bảng phân bố.`);
+test('①a · `TANG` khớp đúng `TANG_HOAN` của `src/orders/ti-le-hoan.js`', () => {
+  const src = readFileSync(NGUON_LUAT, 'utf8');
+  const m = src.match(/export const TANG_HOAN = Object\.freeze\(\[([\s\S]*?)\]\)/);
+  assert.ok(m, '`ti-le-hoan.js` không còn `export const TANG_HOAN = Object.freeze([...])` — luật đổi hình');
+  const cuaLuat = [...m[1].matchAll(/"([a-z_]+)"/g)].map((x) => x[1]);
+  assert.deepEqual(rr.TANG.map((t) => t.ma), cuaLuat,
+    `màn khai: ${rr.TANG.map((t) => t.ma)} · luật có: ${cuaLuat}. Lệch một nhãn là lệch cả bảng.`);
+  // `chua_du_don` KHÔNG phải tầng — nó là nhãn vắng mặt.
+  assert.equal(rr.TANG.find((t) => t.ma === 'chua_du_don').xepTang, false);
+  assert.equal(rr.TANG.filter((t) => t.xepTang).length, 4, 'đúng BỐN tầng, không phải năm');
 });
 
-test('①b · phép bóc có bắt được thật không', () => {
-  const gia = "const CANCEL = new Set(['4', '5']); // x";
-  const m = gia.match(/const\s+CANCEL\s*=\s*new\s+Set\(\[([^\]]*)\]\)/);
-  assert.deepEqual([...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]), ['4', '5']);
+test('①b · `NGUONG` khớp đúng `CAU_HINH_TANG` của luật', () => {
+  const src = readFileSync(NGUON_LUAT, 'utf8');
+  const m = src.match(/export const CAU_HINH_TANG = Object\.freeze\(\{([\s\S]*?)\}\)/);
+  assert.ok(m, '`ti-le-hoan.js` không còn `CAU_HINH_TANG` — luật đổi hình');
+  const cuaLuat = Object.fromEntries(
+    [...m[1].matchAll(/(\w+):\s*(\d+)/g)].map((x) => [x[1], Number(x[2])]),
+  );
+  assert.deepEqual({ ...rr.NGUONG }, cuaLuat,
+    `màn khai: ${JSON.stringify(rr.NGUONG)} · luật: ${JSON.stringify(cuaLuat)}`);
+  assert.equal(rr.NGUONG.toi_thieu_don_ket, 2, 'sàn 2 đơn đã kết — quyết định ③ của luật');
+});
+
+test('①c · phép bóc có bắt được thật không (thước tự soi mình)', () => {
+  const gia = 'export const TANG_HOAN = Object.freeze([\n  "a", // x\n  "b",\n]);';
+  const m = gia.match(/export const TANG_HOAN = Object\.freeze\(\[([\s\S]*?)\]\)/);
+  assert.deepEqual([...m[1].matchAll(/"([a-z_]+)"/g)].map((x) => x[1]), ['a', 'b']);
+});
+
+/* ═══════════ ② MÀN KHÔNG ĐƯỢC TỰ TÍNH LẠI (H10) ═══════════ */
+
+test('②a · mã nguồn màn KHÔNG chứa mã hoàn `8` của v1, và không đọc `don_hang`', () => {
+  const dongCode = MA_MAN.split('\n').filter((d) => {
+    const t = d.trim();
+    return t && !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*');
+  }).join('\n');
+  assert.ok(!/'8'/.test(dongCode) && !/"8"/.test(dongCode),
+    "màn không được khai mã '8' (8 = packing, một bước TIẾN — luật loại nó khỏi nhóm hoàn)");
+  assert.ok(!/don_hang/.test(dongCode),
+    'màn không được quét `don_hang` — nguồn là cột `khach.tang_hoan` đã chấm (H10)');
+  assert.ok(!/BANG_DON|MA_HOAN|LAN_RANH/.test(dongCode),
+    'không còn hằng của bản tự tính cũ');
 });
 
 /* ═══════════ dựng kho ═══════════ */
 
-const don = (khachId, trangThai) => ({
-  id: 'd' + Math.random().toString(36).slice(2, 9), team_id: 't1',
-  khach_id: khachId, trang_thai_pos: trangThai, nguon: 'messenger',
+let idKhach = 0;
+const khach = (tang, ket = 0, hoan = 0) => ({
+  id: 'k' + (++idKhach), team_id: 't1', so_dien_thoai: '9715' + idKhach,
+  tang_hoan: tang, so_don_ket: ket, so_don_hoan: hoan,
+  ti_le_hoan: ket ? Math.round((hoan / ket) * 100) : null,
 });
-const hoan = (k) => don(k, '5');
-const ket = (k) => don(k, '16');
 
-function dung(donHang) {
+function dung(ds) {
   const { taoTruyVan } = dungCongGia({
     team: [{ id: 't1', slug: 'a', ten: 'A', la_ky_thuat: false },
            { id: 't2', slug: 'b', ten: 'B', la_ky_thuat: false }],
-    don_hang: donHang,
+    khach: ds,
   });
   rr.datTaoTruyVan(taoTruyVan);
 }
@@ -59,117 +95,112 @@ function dung(donHang) {
 const bc = (team = 't1') => taoBoiCanh({
   nguoiDungId: 'u1', tenDangNhap: 'an@talpha.vn', teamId: team, vai: [VAI.QUAN_TRI],
 });
-const nhom = (d, ma) => d.lanRanh.find((x) => x.ma === ma);
+const tang = (d, ma) => d.theoTang.find((x) => x.ma === ma);
 
-/* ═══════════ ② TỈ LỆ LUÔN KÈM SỐ ĐƠN ═══════════ */
+/* ═══════════ ③ ĐỌC CỘT ĐÃ CHẤM ═══════════ */
 
-test('②a · khách 1 đơn hoàn KHÔNG được coi là «đủ tin»', async () => {
-  dung([hoan('k1')]);
-  const d = await rr.manRuiRo(bc());
-  const cao = nhom(d, 'cao');
-  assert.equal(cao.soKhach, 1, 'vẫn phải đếm — người này có thật');
-  assert.equal(cao.soKhachDuTin, 0, 'một đơn không đủ để kết luận gì về người ta');
-  assert.equal(cao.soKhachMotDon, 1);
-});
-
-test('②b · cảnh báo một-đơn nêu ĐÚNG ba con số', async () => {
-  // 3 khách hoàn 100%: hai người 1 đơn, một người 3 đơn.
+test('③a · gom đúng theo `tang_hoan`, kèm số đơn ĐÃ KẾT của từng tầng', async () => {
   dung([
-    hoan('a'),
-    hoan('b'),
-    hoan('c'), hoan('c'), hoan('c'),
+    khach('rui_ro_cao', 4, 3), khach('rui_ro_cao', 2, 2),
+    khach('canh_bao', 3, 1),
+    khach('tot', 5, 0),
+    khach('chua_du_don', 1, 1),
   ]);
   const d = await rr.manRuiRo(bc());
-  assert.equal(d.canhBaoMotDon.soHoanHet, 3);
-  assert.equal(d.canhBaoMotDon.soMotDon, 2);
-  assert.equal(d.canhBaoMotDon.soDuTin, 1, 'chỉ người có đủ đơn mới đáng gọi là rủi ro');
-  assert.match(d.canhBaoMotDon.viSao, /một dữ kiện duy nhất/i);
+  assert.equal(tang(d, 'rui_ro_cao').soKhach, 2);
+  assert.equal(tang(d, 'rui_ro_cao').soDonKet, 6);
+  assert.equal(tang(d, 'rui_ro_cao').soDonHoan, 5);
+  assert.equal(tang(d, 'canh_bao').soKhach, 1);
+  assert.equal(tang(d, 'chua_du_don').soKhach, 1);
+  assert.equal(d.dem.soDaCham, 5);
+  assert.equal(d.dem.soChuaCham, 0);
 });
 
-test('②c · ma trận tách được cùng-tỉ-lệ-khác-số-đơn', async () => {
-  dung([hoan('a'), hoan('b'), hoan('c'), hoan('c'), hoan('c'), hoan('c')]);
+test('③b · khách một-đơn-hoàn nằm ở `chua_du_don`, KHÔNG rơi vào «hoàn cao»', async () => {
+  // Đây đúng ca đã làm màn cũ nói sai 6,7 lần: 34.187/40.064 khách «hoàn cao» chỉ có 1 đơn.
+  dung([khach('chua_du_don', 1, 1), khach('chua_du_don', 1, 1), khach('rui_ro_cao', 3, 3)]);
   const d = await rr.manRuiRo(bc());
-  const cao = d.theoSoDon.find((x) => x.ma === 'cao');
-  assert.equal(cao.o.find((o) => o.ma === 'd1').so, 2, 'hai người một đơn');
-  assert.equal(cao.o.find((o) => o.ma === 'd35').so, 1, 'một người bốn đơn');
+  assert.equal(tang(d, 'rui_ro_cao').soKhach, 1, 'chỉ người có ≥2 đơn đã kết mới bị xếp tầng');
+  assert.equal(tang(d, 'chua_du_don').soKhach, 2);
+  assert.equal(d.canhBaoChuaDuDon.soDuoiSan, 2);
+  assert.match(d.canhBaoChuaDuDon.viSao, /nhiễu thành bản án/);
 });
 
-/* ═══════════ ③ PHÂN NHÓM ĐÚNG LẰN RANH ═══════════ */
-
-test('③ · xếp đúng bốn lằn ranh', async () => {
-  dung([
-    ket('sach'), ket('sach'),                                  // 0%
-    hoan('thap'), ket('thap'), ket('thap'), ket('thap'), ket('thap'),  // 20%
-    hoan('vua'), hoan('vua'), ket('vua'), ket('vua'),          // 50%
-    hoan('cao'), hoan('cao'), hoan('cao'), ket('cao'),         // 75%
-  ]);
+test('③c · ma trận tầng × số đơn đã kết — chiều thứ hai của cùng một tầng', async () => {
+  dung([khach('canh_bao', 2, 1), khach('canh_bao', 4, 2), khach('canh_bao', 9, 4)]);
   const d = await rr.manRuiRo(bc());
-  assert.equal(nhom(d, 'sach').soKhach, 1);
-  assert.equal(nhom(d, 'thap').soKhach, 1);
-  assert.equal(nhom(d, 'vua').soKhach, 1);
-  assert.equal(nhom(d, 'cao').soKhach, 1);
-  // Ai cũng có >= 3 đơn nên đều đủ tin, trừ nhóm sạch (2 đơn).
-  assert.equal(nhom(d, 'vua').soKhachDuTin, 1);
+  const hang = d.theoSoDon.find((x) => x.ma === 'canh_bao');
+  assert.equal(hang.o.find((o) => o.ma === 'd2').so, 1);
+  assert.equal(hang.o.find((o) => o.ma === 'd35').so, 1);
+  assert.equal(hang.o.find((o) => o.ma === 'd6').so, 1);
 });
 
-/* ═══════════ ④ KHÔNG TỰ CHỐT HỘ CHÍNH SÁCH ═══════════ */
+/* ═══════════ ④ MÙ THÌ NÓI RA ═══════════ */
 
-test('④a · màn khai chính sách CHƯA CHỐT và chưa xếp tầng cho ai', async () => {
-  dung([hoan('a')]);
+test('④a · có khách nhưng job CHƯA chấm → nói rõ, KHÔNG tự tính bù', async () => {
+  dung([khach(null, 0, 0), khach(null, 0, 0)]);
   const d = await rr.manRuiRo(bc());
-  assert.equal(d.chinhSach.daChot, false, '`01-QUYET-DINH §11` xếp bốn tầng vào bảng CHỜ CHỐT');
-  assert.match(d.chinhSach.cot, /tang_hoan/, 'phải nói rõ cột xếp tầng chưa gán cho ai');
+  assert.equal(d.dem.soChuaCham, 2);
+  assert.equal(d.dem.soDaCham, 0);
+  assert.ok(d.trong?.rong, 'phải báo trống');
+  assert.match(d.trong.noi, /chưa chạy|chamTiLeHoan/);
+  assert.match(d.trong.diTiep, /KHÔNG tự tính thay/);
 });
 
-test('④b · KHÔNG có trường nào bảo «chặn khách này»', async () => {
-  dung([hoan('a'), hoan('a'), hoan('a')]);
-  const d = await rr.manRuiRo(bc());
-  const van = JSON.stringify(d);
-  assert.ok(!/"chan"|"nenChan"|"khoa"|"cam"/i.test(van),
-    'màn ĐO phân bố, không ra lệnh — chốt chính sách là việc của chủ dự án');
-});
-
-/* ═══════════ ⑤ SO VỚI TÀI LIỆU ═══════════ */
-
-test('⑤ · nêu cả con số tài liệu lẫn con số đo được, và VÌ SAO khác', async () => {
-  dung([hoan('vua'), ket('vua')]);
-  const d = await rr.manRuiRo(bc());
-  assert.equal(d.soLieu.taiLieuNoi, 144);
-  assert.equal(typeof d.soLieu.doDuoc, 'number');
-  assert.match(d.soLieu.viSaoKhac, /4,2%/, 'phải nói tài liệu đo trên bao nhiêu phần dân số');
-});
-
-/* ═══════════ ⑥ ĐƠN KHÔNG QUY ĐƯỢC / TEAM / TRẦN ═══════════ */
-
-test('⑥a · đơn không có `khach_id` được đếm riêng, không bỏ im', async () => {
-  dung([hoan('a'), { id: 'x', team_id: 't1', khach_id: null, trang_thai_pos: '5' }]);
-  const d = await rr.manRuiRo(bc());
-  assert.equal(d.dem.soDonKhongQuyDuoc, 1);
-  assert.equal(d.dem.soKhachCoDon, 1);
-});
-
-test('⑥b · chỉ đọc đơn của TEAM MÌNH', async () => {
-  const { taoTruyVan } = dungCongGia({
-    team: [{ id: 't1', slug: 'a', ten: 'A', la_ky_thuat: false },
-           { id: 't2', slug: 'b', ten: 'B', la_ky_thuat: false }],
-    don_hang: [
-      { id: 'd1', team_id: 't1', khach_id: 'k1', trang_thai_pos: '5' },
-      { id: 'd2', team_id: 't2', khach_id: 'kx', trang_thai_pos: '5' },
-    ],
-  });
-  rr.datTaoTruyVan(taoTruyVan);
-  const d = await rr.manRuiRo(bc());
-  assert.equal(d.dem.soDonDoc, 1, 'đơn của team khác lọt vào phép đếm');
-});
-
-test('⑥c · SALE không vào được — §9 nói sale vào thẳng bảng điều phối', () => {
-  assert.ok(!rr.VAI_VAO_DUOC.includes(VAI.SALE));
-});
-
-test('⑥d · team chưa có đơn → nói rõ, không hiện bảng rỗng câm', async () => {
+test('④b · team không có khách nào → nói «chưa có khách», khác hẳn «job chưa chạy»', async () => {
   dung([]);
   const d = await rr.manRuiRo(bc());
-  assert.equal(d.dem.soKhachCoDon, 0);
-  assert.ok(d.trong, 'rỗng thì phải nói vì sao');
-  assert.match(d.trong.diTiep, /theo KHÁCH|nối được đơn/i);
+  assert.ok(d.trong?.rong);
+  assert.match(d.trong.noi, /chưa có khách nào/);
+});
+
+test('④c · chấm một phần → tầng chỉ đếm người ĐÃ chấm, người chưa chấm đếm riêng', async () => {
+  dung([khach('tot', 3, 0), khach(null, 0, 0)]);
+  const d = await rr.manRuiRo(bc());
+  assert.equal(tang(d, 'tot').soKhach, 1);
+  assert.equal(d.dem.soChuaCham, 1);
+  assert.equal(d.canhBaoChuaDuDon.chuaChamNoi, '1 khách CHƯA được job chấm — không nằm trong bảng phân bố.');
+});
+
+/* ═══════════ ⑤ KHÔNG CHỐT HỘ CHÍNH SÁCH, VÀ NÓI ĐÚNG NGUỒN ═══════════ */
+
+test('⑤a · màn khai chính sách CHƯA chốt và không có nhánh chặn', async () => {
+  dung([khach('rui_ro_cao', 5, 5)]);
+  const d = await rr.manRuiRo(bc());
+  assert.equal(d.chinhSach.daChot, false);
+  assert.match(d.chinhSach.noi, /CHỜ CHỐT/);
+  assert.match(d.chinhSach.chan, /KHÔNG dòng mã nào|Không dòng mã nào/);
+  // Và trong chính mã nguồn màn: không có nhánh chặn nào theo tầng.
+  assert.ok(!/chan\s*\(|return\s+chan/.test(MA_MAN), 'màn không được có nhánh chặn');
+});
+
+test('⑤b · khai đúng NGUỒN số: cột + job, kèm bốn quyết định của luật', async () => {
+  dung([khach('tot', 2, 0)]);
+  const d = await rr.manRuiRo(bc());
+  assert.match(d.nguon.cot, /tang_hoan/);
+  assert.match(d.nguon.job, /ti-le-hoan\.js/);
+  assert.match(d.nguon.luat.maHoan, /KHÔNG có 8/);
+  assert.match(d.nguon.luat.mauSo, /ĐÃ KẾT/);
+  assert.match(d.nguon.luat.san, /toi_thieu_don_ket = 2/);
+});
+
+test('⑤c · số tài liệu (144) hiện cạnh số đọc được, kèm vì sao khác', async () => {
+  dung([khach('canh_bao', 3, 1), khach('canh_bao', 4, 2)]);
+  const d = await rr.manRuiRo(bc());
+  assert.equal(d.soLieu.taiLieuNoi, 144);
+  assert.equal(d.soLieu.doDuoc, 2);
+  assert.match(d.soLieu.viSaoKhac, /4,2%/);
+});
+
+/* ═══════════ ⑥ LỚP TEAM ═══════════ */
+
+test('⑥a · chỉ đọc khách của team mình', async () => {
+  dung([khach('tot', 3, 0)]);
+  const d = await rr.manRuiRo(bc('t2'));
+  assert.equal(d.dem.soKhachDoc, 0, 'team khác không thấy khách của t1');
+});
+
+test('⑥b · thiếu bối cảnh team → ném, không trả rỗng', async () => {
+  dung([khach('tot', 3, 0)]);
+  await assert.rejects(() => rr.manRuiRo(null));
 });
