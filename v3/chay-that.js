@@ -107,6 +107,8 @@ const bao = dungPhanB(app, {
   // thì màn Báo cáo tự đếm `don_hang` lần hai — bản khai thứ hai của một con số, đúng
   // bệnh vừa vá ở màn «Rủi ro hoàn hàng» (01/09).
   docHaiLuong: (bc) => soLieu.baoCaoHaiLuong(pool, ctxCuaA(bc)),
+  // Phân bố tầng × số đơn đã kết — gom bằng một câu GROUP BY thay vì kéo `khach` về màn.
+  docPhanBoHoan: (bc) => soLieu.phanBoRuiRoHoan(pool, ctxCuaA(bc)),
   // Hiệu lực THẬT của prompt cho màn «Prompt của page»: cờ ráp-4-khối và hằng `CORE` của
   // `src/prompts.js` (chỉ ĐỌC — file cấm sửa). Thiếu hai thứ này thì màn khoe một prompt
   // mà bot chưa chắc đang gửi.

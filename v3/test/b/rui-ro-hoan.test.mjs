@@ -204,3 +204,51 @@ test('⑥b · thiếu bối cảnh team → ném, không trả rỗng', async ()
   dung([khach('tot', 3, 0)]);
   await assert.rejects(() => rr.manRuiRo(null));
 });
+
+/* ═══ ⑦ CỬA GOM CỦA NGƯỜI A (phiếu B-Y8) — nối thì dùng, hỏng thì lùi có NÓI ═══ */
+
+const phanBoGia = () => ({
+  chuaCham: 3,
+  nhomSoDon: ['0-1', '2', '3-5', '6+'],
+  theoTang: [
+    { tang: 'chua_du_don', soKhach: 12, donKet: 12, donHoan: 9,
+      theoSoDon: [{ nhom: '0-1', soKhach: 12 }] },
+    { tang: 'canh_bao', soKhach: 5, donKet: 20, donHoan: 8,
+      theoSoDon: [{ nhom: '2', soKhach: 2 }, { nhom: '3-5', soKhach: 3 }] },
+  ],
+  luat: { maHoan: [4, 5, 6, 7], khongCo8: '8 = packing, một bước TIẾN', mauSo: 'đơn ĐÃ KẾT',
+          toiThieuDonKet: 2 },
+  nguon: 'khach GROUP BY tang_hoan × bậc(so_don_ket)',
+});
+
+test('⑦a · nối cửa của A → số lấy TỪ CỬA, không kéo bảng `khach` về màn', async () => {
+  // Kho CỐ Ý rỗng: nếu màn vẫn đọc `khach` thì mọi con số sẽ là 0 và ca này đỏ.
+  dung([]);
+  rr.datDocPhanBo(async () => phanBoGia());
+  const d = await rr.manRuiRo(bc());
+  assert.equal(tang(d, 'canh_bao').soKhach, 5);
+  assert.equal(tang(d, 'canh_bao').soDonKet, 20);
+  assert.equal(tang(d, 'chua_du_don').soKhach, 12);
+  assert.equal(d.dem.soChuaCham, 3);
+  assert.match(d.nguon.noi, /GROUP BY/);
+  assert.match(d.nguon.luat.maHoan, /KHÔNG có 8|4,5,6,7/);
+  // Chiều thứ hai vẫn còn: cùng tầng, khác số đơn ⇒ khác ô.
+  const hang = d.theoSoDon.find((x) => x.ma === 'canh_bao');
+  assert.equal(hang.o.find((o) => o.ma === 'd3-5').so, 3);
+  rr.datDocPhanBo(null);
+});
+
+test('⑦b · cửa của A NÉM → lùi về đọc cột, và NÓI vì sao lùi', async () => {
+  dung([khach('tot', 3, 0)]);
+  rr.datDocPhanBo(async () => { throw new Error('thiếu vai xem số liệu'); });
+  const d = await rr.manRuiRo(bc());
+  assert.equal(tang(d, 'tot').soKhach, 1, 'vẫn có số — đường lùi đọc cùng bốn cột');
+  assert.match(d.nguon.luiVi, /thiếu vai xem số liệu/);
+  rr.datDocPhanBo(null);
+});
+
+test('⑦c · CHƯA nối cửa → đường lùi, `luiVi` để null (không bịa lý do)', async () => {
+  dung([khach('tot', 3, 0)]);
+  const d = await rr.manRuiRo(bc());
+  assert.equal(d.nguon.luiVi, null);
+});

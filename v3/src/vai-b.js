@@ -76,7 +76,7 @@ import {
   datChanDangNhap as datChanDangNhapKhach, datChanVai as datChanVaiKhach, taoRouterKhach,
 } from './ui/ho-so-khach/index.js';
 import {
-  datTaoTruyVan as datTruyVanRuiRo,
+  datTaoTruyVan as datTruyVanRuiRo, datDocPhanBo as datDocPhanBoRuiRo,
   datChanDangNhap as datChanDangNhapRuiRo, datChanVai as datChanVaiRuiRo, taoRouterRuiRo,
 } from './ui/rui-ro-hoan/index.js';
 import {
@@ -180,6 +180,7 @@ import {
 export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa,
   docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
+  docPhanBoHoan,
   ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
@@ -241,6 +242,12 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datDocPheu(typeof docPheu === 'function' ? docPheu : pheuHoiThoai);
   datTruyVanKhach(taoTruyVan);
   datTruyVanRuiRo(taoTruyVan);
+  // Phân bố rủi ro hoàn gom SẴN trong CSDL (phiếu B-Y8). Không nối thì màn lùi về đọc cột
+  // tại chỗ — cùng bốn cột, nên hai đường không ra hai con số.
+  if (typeof docPhanBoHoan === 'function') {
+    datDocPhanBoRuiRo(docPhanBoHoan);
+    daNoi.push('phân bố rủi ro hoàn (gom trong CSDL) → màn Rủi ro hoàn hàng');
+  }
   datTruyVanBaoCao(taoTruyVan);
   datDocDon(typeof docDonHang === 'function' ? docDonHang : donHangToanHe);
   datDocChiPhiChoBaoCao(docTien);   // CÙNG bộ đọc với màn Chi phí — không hai con số

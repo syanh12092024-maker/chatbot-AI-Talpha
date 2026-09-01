@@ -92,6 +92,20 @@ export class LoiRuiRo extends Error {
   }
 }
 
+let _docPhanBo = null;
+/**
+ * `phanBoRuiRoHoan` của người A (`src/db/so-lieu.js`, phiếu B-Y8) — gom TẦNG × SỐ ĐƠN ĐÃ
+ * KẾT bằng một câu `GROUP BY` ngay trong CSDL.
+ *
+ * Nối được thì dùng: màn khỏi kéo tới 40.000 dòng `khach` về JS mỗi lượt mở, và con số đi
+ * qua đúng lớp vai của A. Chưa nối thì lùi về đọc cột tại màn — vẫn CÙNG bốn cột đó, nên
+ * hai đường không thể ra hai con số; và màn khai rõ nó đang đứng ở đường nào.
+ */
+export function datDocPhanBo(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiRuiRo('datDocPhanBo cần một hàm');
+  _docPhanBo = fn || null; return _docPhanBo;
+}
+
 let _taoTruyVan = null;
 export function datTaoTruyVan(fn) {
   if (fn != null && typeof fn !== "function")
@@ -111,9 +125,116 @@ const so = (v) => (v == null ? 0 : Number(v) || 0);
 
 export async function manRuiRo(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
-  const db = truyVan(bc);
+  if (_docPhanBo) {
+    try {
+      return dungTuPhanBo(bc, await _docPhanBo(bc));
+    } catch (e) {
+      // Cửa của A hỏng thì lùi về đọc cột — nhưng KHÔNG im: `nguon.luiVi` nói vì sao.
+      return dungTuCot(bc, await truyVan(bc).chon(BANG_KHACH, {}, { gioiHan: TRAN_DOC }),
+        `cửa \`phanBoRuiRoHoan\` của người A ném: ${e?.message || e}`);
+    }
+  }
+  return dungTuCot(
+    bc,
+    await truyVan(bc).chon(BANG_KHACH, {}, { gioiHan: TRAN_DOC }),
+    null,
+  );
+}
 
-  const khach = await db.chon(BANG_KHACH, {}, { gioiHan: TRAN_DOC });
+/** Dựng màn từ phân bố ĐÃ GOM của người A — tầng này không đụng một dòng `khach` nào. */
+function dungTuPhanBo(bc, r) {
+  const theoTang = TANG.map((t) => {
+    const x = (r?.theoTang || []).find((y) => y.tang === t.ma) || {};
+    return {
+      ma: t.ma,
+      ten: t.ten,
+      xepTang: t.xepTang,
+      soKhach: Number(x.soKhach || 0),
+      soDonKet: Number(x.donKet || 0),
+      soDonHoan: Number(x.donHoan || 0),
+    };
+  });
+  const daCham = theoTang.reduce((a, t) => a + t.soKhach, 0);
+  const chuaCham = Number(r?.chuaCham || 0);
+  const duoiSan = theoTang.find((t) => t.ma === "chua_du_don")?.soKhach || 0;
+  const oCua = (ma) => {
+    const x = (r?.theoTang || []).find((y) => y.tang === ma);
+    return (r?.nhomSoDon || []).map((n) => ({
+      ma: `d${n}`,
+      ten: `${n} đơn kết`,
+      so: Number((x?.theoSoDon || []).find((o) => o.nhom === n)?.soKhach || 0),
+    }));
+  };
+  return {
+    teamId: bc.teamId,
+    dem: {
+      soKhachDoc: daCham + chuaCham,
+      soDaCham: daCham,
+      soChuaCham: chuaCham,
+      chamTran: false,
+    },
+    chamTran: { co: false },
+    theoTang,
+    theoSoDon: TANG.map((t) => ({ ma: t.ma, ten: t.ten, o: oCua(t.ma) })),
+    canhBaoChuaDuDon:
+      daCham || chuaCham
+        ? {
+            soDuoiSan: duoiSan,
+            soDaCham: daCham,
+            soChuaCham: chuaCham,
+            tiLeDuoiSan: daCham ? duoiSan / daCham : null,
+            noi:
+              `${duoiSan}/${daCham} khách đã chấm mang nhãn \`chua_du_don\` — chưa đủ ` +
+              `${NGUONG.toi_thieu_don_ket} đơn ĐÃ KẾT để một tỉ lệ nói lên điều gì.`,
+            viSao:
+              "Xếp tầng bằng một điểm dữ liệu là biến nhiễu thành bản án: một đơn bị hủy " +
+              "thành «hoàn 100%».",
+            chuaChamNoi: chuaCham
+              ? `${chuaCham} khách CHƯA được job chấm — không nằm trong bảng phân bố.`
+              : null,
+          }
+        : null,
+    nguon: {
+      cot: "`khach.tang_hoan` · `ti_le_hoan` · `so_don_ket` · `so_don_hoan`",
+      job: r?.nguon || "src/db/so-lieu.js#phanBoRuiRoHoan",
+      noi: "Gom bằng MỘT câu GROUP BY ở tầng dữ liệu của người A — màn không kéo bảng `khach` về.",
+      luiVi: null,
+      luat: {
+        maHoan: `{${(r?.luat?.maHoan || [4, 5, 6, 7]).join(",")}} — ${r?.luat?.khongCo8 || "KHÔNG có 8"}`,
+        mauSo: r?.luat?.mauSo || "đơn ĐÃ KẾT",
+        san: `toi_thieu_don_ket = ${r?.luat?.toiThieuDonKet ?? NGUONG.toi_thieu_don_ket}`,
+        nguong: `${NGUONG.nguong_tot} / ${NGUONG.nguong_binh_thuong} / ${NGUONG.nguong_canh_bao} (%)`,
+      },
+    },
+    chinhSach: {
+      daChot: false,
+      noi:
+        "`01-QUYET-DINH.md` §11 xếp «chia bốn tầng» vào bảng CHỜ CHỐT. Màn này ĐỌC phân bố " +
+        "đã chấm để chốt được bằng số, và KHÔNG áp chính sách nào lên khách nào.",
+      chan: "Không dòng mã nào đọc `tang_hoan` để CHẶN — kể cả tầng `rui_ro_cao`.",
+    },
+    soLieu: {
+      taiLieuNoi: 144,
+      doDuoc: theoTang.find((t) => t.ma === "canh_bao")?.soKhach || 0,
+      viSaoKhac:
+        "`04-TIEN-DO.md`: mốc 23/08 đo trên **4,2% dân số** nên mọi số dẫn xuất chỉ là ước.",
+    },
+    trong: daCham
+      ? null
+      : {
+          rong: true,
+          vi: "chua-nap",
+          noi: chuaCham
+            ? `Đọc được ${chuaCham} khách nhưng KHÔNG khách nào có \`tang_hoan\` — job đêm ` +
+              "`chamTiLeHoan` chưa chạy trên team này."
+            : r?.boiCanh?.viSaoRong || "Team này chưa có khách nào.",
+          diTiep: "Chạy job chấm tỉ lệ hoàn; màn cố ý KHÔNG tự tính thay.",
+        },
+  };
+}
+
+/** Đường LÙI — đọc thẳng cột `khach` tại màn. CÙNG bốn cột, nên không ra số khác được. */
+function dungTuCot(bc, khach, luiVi) {
   const chamTran = khach.length >= TRAN_DOC;
 
   // Khách chưa được job chấm — đếm RIÊNG, không gộp vào tầng nào. `tang_hoan` NULL nghĩa là
@@ -159,6 +280,7 @@ export async function manRuiRo(boiCanh) {
     nguon: {
       cot: "`khach.tang_hoan` · `ti_le_hoan` · `so_don_ket` · `so_don_hoan`",
       job: "src/orders/ti-le-hoan.js#chamTiLeHoan (job đêm)",
+      luiVi: luiVi || null,
       noi: "Màn ĐỌC cột đã chấm, KHÔNG tự tính — hai màn tự tính là hai con số cho một khách.",
       luat: {
         maHoan: "{4,5,6,7} — KHÔNG có 8 (8 = packing, một bước TIẾN)",

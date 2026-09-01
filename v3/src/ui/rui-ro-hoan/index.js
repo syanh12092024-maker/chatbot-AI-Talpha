@@ -5,7 +5,7 @@
 // không tự tính lại (H10). Luôn trả tầng KÈM số đơn ĐÃ KẾT: tỉ lệ trên một đơn là nhiễu.
 
 export {
-  manRuiRo, datTaoTruyVan, daNoiRuiRo,
+  manRuiRo, datTaoTruyVan, datDocPhanBo, daNoiRuiRo,
   TANG, NGUONG, TRAN_DOC, BANG_KHACH, LoiRuiRo,
 } from './kho-rui-ro.js';
 

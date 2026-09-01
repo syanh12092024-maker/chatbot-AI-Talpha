@@ -306,3 +306,68 @@ test("S18 · tỉ lệ chặn lấy MẪU SỐ đúng — lượt 0 đồng khô
   // …và hàm phải TỰ KHAI chỗ hai vế khác thước, đừng để người đọc tưởng là tỉ lệ 7 ngày.
   assert.match(kq.canhBao, /CỘNG DỒN/);
 });
+
+// ══ PHÂN BỐ RỦI RO HOÀN — HAI CHIỀU (phiếu B-Y8) ══════════════════════════════════
+// Nghiệm thu ⑤ của phiếu: khách 1 đơn hoàn và khách nhiều đơn hoàn hết có CÙNG tỉ lệ 100%
+// mà phải ra HAI kết luận khác nhau. Gộp họ là tái tạo đúng cái ngưỡng cứng bốn tầng thay.
+
+async function themKhach(teamId, sdt, tang, ket, hoan) {
+  // `cham_hoan_luc` đi CẶP với `tang_hoan` (CHECK `khach_tang_di_kem_moc_cham`, migration
+  // 005): một tỉ lệ hoàn không có ngày chấm là số không kiểm được.
+  return mot(
+    `INSERT INTO khach (team_id, so_dien_thoai, ten, tang_hoan, so_don_ket, so_don_hoan,
+                        ti_le_hoan, cham_hoan_luc)
+     VALUES ($1,$2,'K',$3,$4,$5,$6,$7) RETURNING id`,
+    [teamId, sdt, tang, ket, hoan,
+     ket ? Math.round((hoan / ket) * 100) : null,
+     tang ? new Date() : null],
+  );
+}
+
+test("R1 · phân bố HAI CHIỀU: cùng tầng, khác số đơn đã kết ⇒ đếm riêng", async () => {
+  const { phanBoRuiRoHoan } = await import("../src/db/so-lieu.js");
+  await q("DELETE FROM khach WHERE team_id = $1", [tA]);
+  // Hai người CÙNG tỉ lệ 100%: một người 1 đơn (luật giữ ở `chua_du_don`), một người 4 đơn.
+  await themKhach(tA, "971500000101", "chua_du_don", 1, 1);
+  await themKhach(tA, "971500000102", "rui_ro_cao", 4, 4);
+  await themKhach(tA, "971500000103", "canh_bao", 3, 1);
+  const r = await phanBoRuiRoHoan(sb.pool, ctx);
+
+  const chuaDu = r.theoTang.find((t) => t.tang === "chua_du_don");
+  const cao = r.theoTang.find((t) => t.tang === "rui_ro_cao");
+  assert.equal(chuaDu.soKhach, 1);
+  assert.equal(chuaDu.xepTang, false, "`chua_du_don` là nhãn VẮNG MẶT, không phải tầng thứ năm");
+  assert.equal(cao.soKhach, 1);
+  // Chiều thứ hai: người 1 đơn và người 4 đơn KHÔNG rơi cùng một ô.
+  assert.equal(chuaDu.theoSoDon.find((x) => x.nhom === "0-1").soKhach, 1);
+  assert.equal(cao.theoSoDon.find((x) => x.nhom === "3-5").soKhach, 1);
+  assert.equal(cao.theoSoDon.find((x) => x.nhom === "0-1").soKhach, 0);
+});
+
+test("R2 · khai LUẬT đang dùng, và luật đó KHÔNG có mã 8", async () => {
+  const { phanBoRuiRoHoan } = await import("../src/db/so-lieu.js");
+  const r = await phanBoRuiRoHoan(sb.pool, ctx);
+  assert.deepEqual(r.luat.maHoan, [4, 5, 6, 7], "phiếu B-Y8 khai {4,5,6,7,8} — luật đã chốt bỏ 8");
+  assert.equal(r.luat.toiThieuDonKet, 2);
+  assert.match(r.luat.mauSo, /ĐÃ KẾT/);
+  assert.match(r.nguon, /chamTiLeHoan/);
+});
+
+test("R3 · khách CHƯA được chấm đếm RIÊNG, không gộp vào tầng nào", async () => {
+  const { phanBoRuiRoHoan } = await import("../src/db/so-lieu.js");
+  await q("DELETE FROM khach WHERE team_id = $1", [tA]);
+  await themKhach(tA, "971500000201", null, 0, 0);
+  await themKhach(tA, "971500000202", "tot", 5, 0);
+  const r = await phanBoRuiRoHoan(sb.pool, ctx);
+  assert.equal(r.chuaCham, 1);
+  assert.equal(r.theoTang.reduce((a, t) => a + t.soKhach, 0), 1, "chỉ người ĐÃ chấm vào tầng");
+});
+
+test("R4 · team chưa có khách nào → số 0 kèm VÌ SAO, và vai sale bị chặn", async () => {
+  const { phanBoRuiRoHoan } = await import("../src/db/so-lieu.js");
+  const r = await phanBoRuiRoHoan(sb.pool, ctxTrong);
+  assert.equal(r.theoTang.reduce((a, t) => a + t.soKhach, 0), 0);
+  assert.equal(r.boiCanh.coDuLieu, false);
+  assert.ok(r.boiCanh.viSaoRong, "số 0 phải nói vì sao nó là 0");
+  await assert.rejects(() => phanBoRuiRoHoan(sb.pool, ctxSale), /vai|quyen|quyền/i);
+});

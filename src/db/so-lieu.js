@@ -354,18 +354,102 @@ async function boiCanhRong(khach, teamId, soDong, bang, { tu, den }) {
         "«không có gì xảy ra». Gán page cho team ở màn Cấu hình team (việc người H7).",
     };
   }
+  // Có hàm đo TOÀN THỜI GIAN (phân bố rủi ro hoàn) — không có khoảng thì đừng in khoảng,
+  // và nhất là đừng gọi `.toISOString()` trên `null` (bản trước ném ngay tại câu giải thích
+  // vì sao rỗng — chỗ chẳng ai muốn nó ném nhất).
+  const khoang = tu && den ? ` trong khoảng ${tu.toISOString()} → ${den.toISOString()}` : "";
   return {
     coDuLieu: false,
     viSaoRong:
-      `team có ${p.rows[0].c} page nhưng bảng \`${bang}\` không có dòng nào trong khoảng ` +
-      `${tu.toISOString()} → ${den.toISOString()}. Kiểm: bot có đang bật không, và khoảng ` +
-      `đo có đúng không.`,
+      `team có ${p.rows[0].c} page nhưng bảng \`${bang}\` không có dòng nào${khoang}. ` +
+      `Kiểm: bot có đang bật không, và khoảng đo có đúng không.`,
   };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════
 // LỚP TRẢ LỜI 0 ĐỒNG — đếm «chặn được bao nhiêu» (B-Y6 ⓑ)
 // ═══════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * PHÂN BỐ RỦI RO HOÀN — HAI CHIỀU: tầng × số đơn ĐÃ KẾT (phiếu B-Y8).
+ *
+ * ═══ ĐỌC CỘT ĐÃ CHẤM, KHÔNG TÍNH LẠI ══════════════════════════════════════════════
+ * Nguồn là bốn cột `khach.tang_hoan · ti_le_hoan · so_don_ket · so_don_hoan` do job đêm
+ * `src/orders/ti-le-hoan.js#chamTiLeHoan` ghi. Hàm này KHÔNG tự quét `don_hang`: một chỉ
+ * số hai bản khai thì hai màn nói hai con số — đã xảy ra thật, màn «Rủi ro hoàn hàng» tự
+ * đếm và nói 40.064 khách «hoàn cao» trong khi luật đã ký nói 5.990 (lệch 6,7 lần).
+ *
+ * ⚠️ PHIẾU B-Y8 KHAI SAI MỘT NGUYÊN LIỆU, và đây là chỗ ghi lại để người sau khỏi chép
+ * theo: phiếu đưa mã hoàn `{4,5,6,7,8}` dẫn từ `src/pancake-orders.js:13`. Luật v3 đã chốt
+ * `{4,5,6,7}` — **KHÔNG có 8** (`8 = packing` là một bước TIẾN; tính vào nhóm hoàn thì 108
+ * khách đổi tỉ lệ), mẫu số là đơn ĐÃ KẾT chứ không phải mọi đơn, và có sàn
+ * `toi_thieu_don_ket = 2`. Vì thế mọi con số trong bảng của phiếu (638 khách 30–64%, 4.436
+ * khách hoàn 100%) là số của phép tính CŨ, không phải số phải khớp. Chúng khác nhau đúng ở
+ * chỗ nguy hiểm nhất: 4.139/4.436 người «hoàn 100%» kia chỉ có ĐÚNG MỘT đơn — luật giữ họ
+ * ở nhãn `chua_du_don` thay vì kết án.
+ *
+ * ═══ VÌ SAO PHẢI HAI CHIỀU ════════════════════════════════════════════════════════
+ * Nghiệm thu ⑤ của phiếu: khách 1 đơn hoàn và khách nhiều đơn hoàn hết có CÙNG tỉ lệ 100%
+ * và phải ra HAI kết luận khác nhau. Một danh sách xếp theo tỉ lệ gộp họ lại, tức tái tạo
+ * đúng cái ngưỡng cứng mà bốn tầng sinh ra để thay.
+ */
+export async function phanBoRuiRoHoan(pool, ctx, { toiThieuDonKet = 2 } = {}) {
+  const khach = await pool.connect();
+  try {
+    await batBuocVai(khach, ctx, VAI_XEM_SO_LIEU, "xem phân bố rủi ro hoàn");
+    const r = await khach.query(
+      `SELECT coalesce(tang_hoan, '(chua_cham)')      AS tang,
+              CASE WHEN coalesce(so_don_ket, 0) <= 1 THEN '0-1'
+                   WHEN so_don_ket = 2               THEN '2'
+                   WHEN so_don_ket BETWEEN 3 AND 5   THEN '3-5'
+                   ELSE '6+' END                     AS nhom_don,
+              count(*)::int                          AS so_khach,
+              coalesce(sum(so_don_ket), 0)::int      AS don_ket,
+              coalesce(sum(so_don_hoan), 0)::int     AS don_hoan
+         FROM khach
+        WHERE team_id = $1
+        GROUP BY 1, 2`,
+      [ctx.teamId],
+    );
+    const tong = r.rows.reduce((a, x) => a + x.so_khach, 0);
+    const gom = (loc) => r.rows.filter(loc).reduce(
+      (a, x) => ({
+        soKhach: a.soKhach + x.so_khach,
+        donKet: a.donKet + x.don_ket,
+        donHoan: a.donHoan + x.don_hoan,
+      }),
+      { soKhach: 0, donKet: 0, donHoan: 0 },
+    );
+    const NHOM = ["0-1", "2", "3-5", "6+"];
+    const TANG = ["chua_du_don", "tot", "binh_thuong", "canh_bao", "rui_ro_cao"];
+    return {
+      // `(chua_cham)` KHÔNG phải một tầng: đó là người job chưa chấm. Gộp họ vào `tot` là
+      // nói dối theo chiều dễ chịu; bỏ họ đi là giấu mất phần dân số chưa đo.
+      chuaCham: gom((x) => x.tang === "(chua_cham)").soKhach,
+      theoTang: TANG.map((t) => ({
+        tang: t,
+        xepTang: t !== "chua_du_don",
+        ...gom((x) => x.tang === t),
+        theoSoDon: NHOM.map((n) => ({
+          nhom: n,
+          soKhach: gom((x) => x.tang === t && x.nhom_don === n).soKhach,
+        })),
+      })),
+      nhomSoDon: NHOM,
+      luat: {
+        maHoan: [4, 5, 6, 7],
+        khongCo8: "8 = packing, một bước TIẾN — KHÔNG tính là hoàn",
+        mauSo: "đơn ĐÃ KẾT ({4,5,6,7} ∪ {3,16})",
+        toiThieuDonKet,
+        nguon_luat: "src/orders/ti-le-hoan.js",
+      },
+      boiCanh: await boiCanhRong(khach, ctx.teamId, tong, "khach", { tu: null, den: null }),
+      nguon: "khach GROUP BY tang_hoan × bậc(so_don_ket) — cột do chamTiLeHoan() chấm",
+    };
+  } finally {
+    khach.release();
+  }
+}
 
 /**
  * Ghi nhận MỘT lượt mẫu 0 đồng trả lời thay model. Cộng NGUYÊN TỬ ngay trong CSDL.
