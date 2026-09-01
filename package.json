@@ -18,7 +18,8 @@
     "tpl-approve": "node src/approve-templates.js",
     "migrate": "node db/migrate.js",
     "di-tru": "node db/di-tru/index.js",
-    "test": "node --test 'test/*.test.*' 'v3/test/b/*.test.mjs'"
+    "test": "node --test 'test/*.test.*' 'v3/test/b/*.test.mjs'",
+    "worker-v3": "node --env-file=.env src/queue/chay-worker.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.0",
