@@ -31,8 +31,9 @@ test('bốn khối · khối nào THIẾU thì khai ra kèm LÝ DO, không im', 
   // prompt vốn thế, và đi tìm lỗi ở chỗ khác.
   dungKho({});
   const d = await pp.promptCua(bcQt(), '111');
-  assert.equal(d.khoi.length, 4);
-  assert.equal(d.soKhoiThieu, 4);
+  assert.equal(d.khoi.length, 5, 'CORE + bốn khối CSDL');
+  // 4 khối CSDL thiếu + khối CORE cũng thiếu vì test không nối bộ đọc hiệu lực.
+  assert.equal(d.soKhoiThieu, 5);
   for (const k of d.khoi) {
     assert.equal(k.thieu, true);
     assert.ok(k.lyDoThieu && k.lyDoThieu.length > 25, `khối ${k.ma} thiếu mà không nói vì sao`);
@@ -40,11 +41,14 @@ test('bốn khối · khối nào THIẾU thì khai ra kèm LÝ DO, không im', 
   }
 });
 
-test('bốn khối · đúng thứ tự và đúng tên của §6', async () => {
+test('NĂM khối · CORE đứng ĐẦU, rồi bốn khối CSDL theo đúng thứ tự §6', async () => {
   dungKho({});
   const d = await pp.promptCua(bcQt(), '111');
+  // CORE phải là khối đầu: trong prompt thật nó đứng trước mọi thứ, và nó là khối duy nhất
+  // KHÔNG sửa được từ màn — để nó vắng mặt là màn khai thiếu đúng khối mạnh nhất.
   assert.deepEqual(d.khoi.map((k) => k.ma),
-    ['bo_luat_chung', 'ky_nang', 'kich_ban', 'san_pham']);
+    ['core', 'bo_luat_chung', 'ky_nang', 'kich_ban', 'san_pham']);
+  assert.match(d.khoi[0].aiSua, /lập trình viên|prompts\.js/);
 });
 
 test('token · đếm từng khối và cộng đúng tổng', async () => {
@@ -84,7 +88,7 @@ test('khối kỹ năng · mốc thiết kế nhân theo SỐ kỹ năng, không
 test('khối bộ luật · nói rõ đang dùng bản của team hay bản KẾ THỪA toàn hệ', async () => {
   dungKho({ boLuat: { noi_dung: 'x'.repeat(400), phien_ban: 1, team_id: null } });
   const d = await pp.promptCua(bcQt(), '111');
-  assert.match(d.khoi[0].phu, /toàn hệ|kế thừa/i);
+  assert.match(d.khoi.find((k) => k.ma === 'bo_luat_chung').phu, /toàn hệ|kế thừa/i);
 });
 
 /* ═══════════ soi mâu thuẫn ═══════════ */
@@ -184,4 +188,44 @@ test('mỗi lượt xem đọc `san_pham` ĐÚNG MỘT LẦN, không hai', async
   assert.equal(dem.sanPham, 1, 'đọc san_pham đúng một lần');
   assert.equal(dem.kyNang, 1);
   assert.deepEqual(dem.maNhan, ['SP-1'], 'mã SP phải TRUYỀN XUỐNG, không để bộ đọc tự tra lại');
+});
+
+/* ═══════ HIỆU LỰC THẬT — màn không được khoe một prompt bot chưa gửi ═══════ */
+
+test('hiệu lực · CHƯA nối bộ đọc → nói «chưa biết», KHÔNG đoán là đang bật', async () => {
+  dungKho({});
+  const d = await pp.promptCua(bcQt(), '111');
+  assert.equal(d.hieuLuc.coBat, null);
+  assert.match(d.hieuLuc.noi, /CHƯA BIẾT/);
+  assert.equal(d.hieuLuc.core.dungDau, true);
+});
+
+test('hiệu lực · cờ VẮNG → nói thẳng bot vẫn dùng `kb.js` cũ', async () => {
+  dungKho({});
+  pp.datDocHieuLuc(() => ({ coBat: false, core: 'CORE giả' }));
+  const d = await pp.promptCua(bcQt(), '111');
+  assert.equal(d.hieuLuc.coBat, false);
+  assert.match(d.hieuLuc.noi, /kb\.js/);
+  assert.match(d.hieuLuc.noi, /KHÔNG phải thứ bot đang gửi/);
+  pp.datDocHieuLuc(null);
+});
+
+test('hiệu lực · cờ BẬT → khối CORE có nội dung thật và vẫn khai «bổ sung, không thay thế»', async () => {
+  dungKho({ boLuat: { noi_dung: 'luật DB', phien_ban: 3, team_id: 't1' } });
+  pp.datDocHieuLuc(() => ({ coBat: true, core: 'A'.repeat(300) }));
+  const d = await pp.promptCua(bcQt(), '111');
+  const core = d.khoi.find((k) => k.ma === 'core');
+  assert.equal(core.thieu, false);
+  assert.equal(core.uocToken > 0, true);
+  assert.equal(d.hieuLuc.coBat, true);
+  assert.match(d.hieuLuc.core.noi, /BỔ SUNG, KHÔNG thay thế/);
+  pp.datDocHieuLuc(null);
+});
+
+test('hiệu lực · bộ đọc NÉM → vẫn trả màn, không sập, và không nói dối là đang bật', async () => {
+  dungKho({});
+  pp.datDocHieuLuc(() => { throw new Error('không đọc được cờ'); });
+  const d = await pp.promptCua(bcQt(), '111');
+  assert.equal(d.hieuLuc.coBat, false);
+  pp.datDocHieuLuc(null);
 });

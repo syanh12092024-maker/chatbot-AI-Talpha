@@ -118,7 +118,7 @@ import {
   datChanDangNhap as datChanDangNhapKyNang, datChanVai as datChanVaiKyNang, taoRouterKyNang,
 } from './ui/ky-nang/index.js';
 import {
-  datTaoTruyVan as datTruyVanPrompt, datDocKhoi,
+  datTaoTruyVan as datTruyVanPrompt, datDocKhoi, datDocHieuLuc,
   datChanDangNhap as datChanDangNhapPrompt, datChanVai as datChanVaiPrompt, taoRouterPromptPage,
 } from './ui/prompt-page/index.js';
 import {
@@ -179,7 +179,8 @@ import {
  */
 export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa,
   docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
-  docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, ghiSoAi, canhBao, express } = {}) {
+  docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
+  ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -318,6 +319,15 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
 
   if (docKhoi && typeof docKhoi.boLuat === 'function') { datDocKhoi(docKhoi); daNoi.push('bốn bộ đọc khối prompt → màn Prompt của page'); }
   else thieu.push('docKhoi — màn «Prompt của page» không dựng được bốn khối, và nó nói rõ đó là lỗi cấu hình chứ không phải "page này không có prompt"');
+
+  // Hiệu lực THẬT của prompt: cờ `V3_RAP_PROMPT_BAT` + hằng `CORE`. Không nối thì màn nói
+  // «chưa biết», KHÔNG được đoán là đang bật — xem `kho-prompt.js#datDocHieuLuc`.
+  if (typeof docHieuLucPrompt === 'function') {
+    datDocHieuLuc(docHieuLucPrompt);
+    daNoi.push('bộ đọc hiệu lực prompt (cờ + CORE) → màn Prompt của page');
+  } else {
+    thieu.push('docHieuLucPrompt — màn «Prompt của page» không biết đường chat đang dùng bốn khối CSDL hay `kb.js` cũ, nên nó nói «chưa biết» thay vì khoe một prompt bot chưa chắc gửi');
+  }
 
   if (khoKhoa && typeof khoKhoa.docKhoa === 'function') { datKhoKhoa(khoKhoa); daNoi.push('kho khoá theo nhà → lớp model · màn Model AI'); }
   else thieu.push('khoKhoa — lớp model CHỈ đọc được khoá từ biến môi trường; khoá riêng của team trong bảng `khoa_nha` không tới được, và màn Model AI không dán khoá được');

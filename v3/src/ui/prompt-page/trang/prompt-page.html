@@ -129,9 +129,10 @@
 <main>
   <div class="loi" id="loi"></div>
   <div class="ok" id="baoOk"></div>
-  <div class="banner i">Đây là prompt <b>THẬT</b> gửi cho model, đọc từ đúng bốn bộ đọc khối mà
-    đường chat đang dùng (<code>src/chat/rap-prompt.js</code>) — không phải một bản dựng lại.
-    Màn này <b>chỉ đọc</b>; sửa khối nào thì sang màn của khối đó.</div>
+  <div class="banner i">Các khối dưới đây đọc từ đúng bốn bộ đọc của
+    <code>src/chat/rap-prompt.js</code> — không phải một bản dựng lại. Màn này <b>chỉ đọc</b>;
+    sửa khối nào thì sang màn của khối đó.</div>
+  <div class="banner" id="hieuLuc" style="display:none"></div>
 
   <section class="panel">
     <h2>Chọn page <span class="hint" id="tomTatPage"></span></h2>
@@ -167,7 +168,19 @@ function veTrong(t){
 
 let D = null, DS = null, TIM = '';
 
+/** Ba trạng thái, ba câu KHÁC nhau — «chưa biết» không được trông giống «đang bật». */
+function veHieuLuc(hl){
+  const o = $('#hieuLuc');
+  if (!o) return;
+  if (!hl) { o.style.display = 'none'; return; }
+  o.style.display = '';
+  o.className = 'banner ' + (hl.coBat === true ? 'i' : 'canh');
+  o.innerHTML = `${hl.coBat === true ? '✅' : '⚠️'} ${esc(String(hl.noi || '').replace(/`/g, ''))}
+    <div class="hint" style="margin-top:6px">${esc(String((hl.core && hl.core.noi) || '').replace(/`/g, ''))}</div>`;
+}
+
 function veKetQua(){
+  veHieuLuc(D.hieuLuc);
   $('#teamHien').textContent = `${D.page.ten || D.page.pageId}` + (D.page.botAiBat ? ' · bot BẬT' : ' · bot tắt');
   const mt = D.mauThuan.length ? `<div class="panel"><h2>Chỗ đáng đọc lại
       <span class="hint">dò theo từ khoá — bắt được mâu thuẫn thô, bỏ sót kiểu tinh vi. Đây là gợi ý, không phải phán quyết.</span></h2>
@@ -179,7 +192,7 @@ function veKetQua(){
 
   $('#ketQua').innerHTML = `
     <section class="panel">
-      <h2>Bốn khối của prompt
+      <h2>Năm khối của prompt
         <span class="hint">tổng ≈ <b>${so(D.tongToken)}</b> token (ước lượng)${D.soKhoiThieu ? ` · ${D.soKhoiThieu} khối THIẾU` : ''}</span>
       </h2>
       <div class="than">${D.khoi.map((k) => `

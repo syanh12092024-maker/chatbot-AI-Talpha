@@ -14,7 +14,7 @@ const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
 async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi,
-  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat } = {}) {
+  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -41,7 +41,7 @@ async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, do
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
     ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi,
-    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, express,
+    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -141,6 +141,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   // dán khoá không xuống được, và khoá riêng của team trong `khoa_nha` tàng hình.
   assert.ok(bao.thieu.some((x) => /khoKhoa/.test(x)), 'phải nêu thiếu khoKhoa');
   assert.ok(bao.thieu.some((x) => /docKhoi/.test(x)), 'phải nêu thiếu docKhoi');
+  assert.ok(bao.thieu.some((x) => /docHieuLucPrompt/.test(x)), 'phải nêu thiếu docHieuLucPrompt');
   for (const t of ['dungBanMay', 'dayKichBanLenBot', 'bocPancake', 'cuaBoLuat']) {
     assert.ok(bao.thieu.some((x) => x.includes(t)), `phải nêu thiếu ${t}`);
   }
@@ -155,6 +156,9 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
     },
     dungBanMay: () => '', dayKichBanLenBot: async () => ({}), bocPancake: async () => ({}),
     cuaBoLuat: { taoBan: async () => ({}), ap: async () => ({}), duyet: async () => ({}) },
+    // Hiệu lực thật của prompt (cờ ráp-4-khối + hằng CORE) — thiếu thì màn «Prompt của
+    // page» không biết bot đang gửi bốn khối CSDL hay `kb.js` cũ.
+    docHieuLucPrompt: () => ({ coBat: false, core: 'CORE' }),
   });
   t.after(() => sv2.close());
   assert.deepEqual(bao2.thieu, [], 'nối đủ thì không còn thiếu gì');

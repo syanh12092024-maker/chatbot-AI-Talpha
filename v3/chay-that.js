@@ -64,6 +64,9 @@ const { parsePancakeScript } = await import(`${GOC}/src/kb.js`);
 const noiDung = await import(`${GOC}/src/db/noi-dung.js`);
 // Sổ số liệu của người A (G2-A6) — dùng ĐỐI CHIẾU ở màn Chi phí AI.
 const soLieu = await import(`${GOC}/src/db/so-lieu.js`);
+// CHỈ ĐỌC hằng `CORE` — `src/prompts.js` là file cấm sửa, nhưng nó tự export CORE cho các
+// bộ nghiệm thu (`test/l4-prompt.test.mjs`), và màn Prompt của page cần đúng khối đó.
+const { CORE: CORE_PROMPT } = await import(`${GOC}/src/prompts.js`);
 const { datBotAi: _unused } = await import('./src/noi-day/cau-bot-v1.js');
 const _slug = new Map();
 async function slugCua(teamId) {
@@ -104,6 +107,13 @@ const bao = dungPhanB(app, {
   // thì màn Báo cáo tự đếm `don_hang` lần hai — bản khai thứ hai của một con số, đúng
   // bệnh vừa vá ở màn «Rủi ro hoàn hàng» (01/09).
   docHaiLuong: (bc) => soLieu.baoCaoHaiLuong(pool, ctxCuaA(bc)),
+  // Hiệu lực THẬT của prompt cho màn «Prompt của page»: cờ ráp-4-khối và hằng `CORE` của
+  // `src/prompts.js` (chỉ ĐỌC — file cấm sửa). Thiếu hai thứ này thì màn khoe một prompt
+  // mà bot chưa chắc đang gửi.
+  docHieuLucPrompt: () => ({
+    coBat: process.env.V3_RAP_PROMPT_BAT === '1',
+    core: CORE_PROMPT,
+  }),
   dungBanMay: (cfg) => dungBanChoMay(cfg),
   // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM tiến trình bot, qua đúng cửa v1.
   dayKichBanLenBot: async (pageIdFacebook, cfg) => {

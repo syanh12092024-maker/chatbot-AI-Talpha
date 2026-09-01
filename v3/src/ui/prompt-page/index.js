@@ -8,7 +8,7 @@
 // MÀN CHỈ ĐỌC. Sửa khối nào thì sang đúng màn của khối đó.
 export {
   promptCua, pageChonDuoc, soiMauThuan, uocToken,
-  datTaoTruyVan, datDocKhoi, daNoiDocKhoi,
+  datTaoTruyVan, datDocKhoi, datDocHieuLuc, daNoiDocKhoi,
   KHOI, TEN_KHOI, AI_SUA, TOKEN_THIET_KE, CAP_DOI_NHAU, LoiPrompt,
 } from './kho-prompt.js';
 

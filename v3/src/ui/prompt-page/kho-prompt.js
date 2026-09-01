@@ -34,6 +34,8 @@ import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 
 /** Bốn khối, đúng thứ tự và đúng tên của `01-QUYET-DINH.md` §6. */
 export const KHOI = Object.freeze({
+  // Khối CỨNG đứng đầu mọi prompt, KHÔNG sửa được từ màn nào — xem `hieuLuc` dưới đây.
+  CORE: 'core',
   BO_LUAT: 'bo_luat_chung',
   KY_NANG: 'ky_nang',
   KICH_BAN: 'kich_ban',
@@ -42,6 +44,7 @@ export const KHOI = Object.freeze({
 
 /** Token tham chiếu của §6 — để so «khối này đang phình so với thiết kế bao nhiêu». */
 export const TOKEN_THIET_KE = Object.freeze({
+  core: 2256,          // §6 khai 2.256 token cho «bộ luật chung» — hôm nay chính là CORE
   bo_luat_chung: 2256,
   ky_nang: 180,        // mỗi kỹ năng
   kich_ban: 1400,
@@ -49,13 +52,15 @@ export const TOKEN_THIET_KE = Object.freeze({
 });
 
 export const TEN_KHOI = Object.freeze({
-  bo_luat_chung: 'Bộ luật chung',
+  core: 'CORE (cứng trong mã nguồn)',
+  bo_luat_chung: 'Bộ luật chung (CSDL)',
   ky_nang: 'Kỹ năng',
   kich_ban: 'Kịch bản page',
   san_pham: 'Dữ liệu sản phẩm',
 });
 
 export const AI_SUA = Object.freeze({
+  core: 'CHỈ lập trình viên · `src/prompts.js`, file cấm sửa — đổi phải deploy',
   bo_luat_chung: 'Quản trị · dùng chung mọi page của team',
   ky_nang: 'Marketer · bật theo nhóm sản phẩm',
   kich_ban: 'Marketer phụ trách page',
@@ -127,6 +132,25 @@ export async function pageChonDuoc(boiCanh, { tim = '', gioiHan = 200 } = {}) {
   };
 }
 
+let _docHieuLuc = null;
+/**
+ * Bộ đọc HIỆU LỰC THẬT của prompt — `{ coBat, core }`.
+ *
+ * Hai sự thật màn này BẮT BUỘC phải nói, vì thiếu chúng thì màn hiện một prompt KHÁC cái
+ * bot đang gửi — đúng thứ nó sinh ra để loại trừ:
+ *   ① Cờ `V3_RAP_PROMPT_BAT`. VẮNG (mặc định) ⇒ `rapKb` lùi về `kb.js#getKBForPage` và
+ *      KHÔNG đọc bốn khối này một chữ nào. Bốn khối dưới vẫn là thứ SẼ dùng khi bật cờ,
+ *      nhưng hôm nay chưa điều khiển gì.
+ *   ② Hằng `CORE` trong `src/prompts.js` (file CẤM SỬA) luôn là khối ĐẦU của mọi prompt và
+ *      không đường nào thay được từ màn. Bộ luật chung trong CSDL đi vào khối KNOWLEDGE
+ *      BASE ở CUỐI — nó BỔ SUNG, không thay thế. Muốn thay CORE là cutover `prompts.js`,
+ *      một việc phải xin chủ dự án (luật 4 §0a).
+ */
+export function datDocHieuLuc(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiPrompt('datDocHieuLuc cần một hàm');
+  _docHieuLuc = fn || null; return _docHieuLuc;
+}
+
 /**
  * Bốn khối của MỘT page, kèm token từng khối và các chỗ đáng đọc lại.
  * Khối nào thiếu thì khai `thieu: true` kèm lý do — «mù thì phải nói ra», không im.
@@ -155,7 +179,16 @@ export async function promptCua(boiCanh, pageIdFacebook) {
     _docKhoi.kichBan(bc.teamId, page.id),
   ]);
 
+  const hl = docHieuLuc();
   const khoi = [
+    // Khối 0 — CORE. Đứng đầu prompt thật, nên phải đứng đầu ở đây; để nó vắng mặt là màn
+    // khai thiếu đúng khối đang điều khiển model mạnh nhất.
+    dungKhoi(KHOI.CORE, hl.core, {
+      lyDoThieu: 'Không đọc được `CORE` của `src/prompts.js` — máy chủ dựng thiếu một dây, '
+        + 'KHÔNG phải «prompt không có khối này».',
+      duongSua: null,
+      phu: 'cứng trong mã nguồn · luôn đứng ĐẦU prompt · không sửa được từ màn',
+    }),
     dungKhoi(KHOI.BO_LUAT, boLuat ? boLuat.noi_dung : null, {
       lyDoThieu: 'Team chưa có bộ luật chung nào đang áp, và cũng không kế thừa bản toàn hệ nào.',
       duongSua: '/bo-luat',
@@ -191,6 +224,43 @@ export async function promptCua(boiCanh, pageIdFacebook) {
     tenKhoi: TEN_KHOI,
     aiSua: AI_SUA,
     tokenThietKe: TOKEN_THIET_KE,
+    hieuLuc: hl.khai,
+  };
+}
+
+/** Đọc hiệu lực; chưa nối cửa thì nói CHƯA BIẾT, không đoán là «đang bật». */
+function docHieuLuc() {
+  if (!_docHieuLuc) {
+    return {
+      core: null,
+      khai: {
+        coBat: null,
+        noi: 'CHƯA BIẾT đường chat đang dùng bốn khối này hay `kb.js` cũ — máy chủ chưa nối '
+          + 'bộ đọc hiệu lực. Đừng đọc bảng dưới thành «đây là prompt đang chạy».',
+        core: { doc: false, dungDau: true,
+          noi: '`CORE` của `src/prompts.js` luôn đứng ĐẦU prompt và không sửa được từ màn.' },
+      },
+    };
+  }
+  let r = null;
+  try { r = _docHieuLuc(); } catch { r = null; }
+  const coBat = r?.coBat === true;
+  return {
+    core: r?.core ?? null,
+    khai: {
+      coBat,
+      noi: coBat
+        ? 'Cờ `V3_RAP_PROMPT_BAT`=1 — đường chat ĐANG ráp prompt từ bốn khối dưới đây.'
+        : 'Cờ `V3_RAP_PROMPT_BAT` VẮNG ⇒ đường chat vẫn dùng `kb.js#getKBForPage` cũ. Bốn '
+          + 'khối dưới đây là thứ SẼ dùng khi bật cờ, KHÔNG phải thứ bot đang gửi hôm nay.',
+      core: {
+        doc: r?.core != null,
+        dungDau: true,
+        noi: '`CORE` (src/prompts.js, file cấm sửa) luôn là khối ĐẦU. Bộ luật chung trong CSDL '
+          + 'đi vào khối KNOWLEDGE BASE ở CUỐI — nó BỔ SUNG, KHÔNG thay thế CORE. Muốn thay '
+          + 'là cutover `prompts.js`, phải xin chủ dự án.',
+      },
+    },
   };
 }
 
