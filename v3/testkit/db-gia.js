@@ -181,6 +181,11 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
     },
 
     async them(bang, banGhi = {}) {
+      // `tao_luc` do Postgres tự điền (DEFAULT now()) ở MỌI bảng nghiệp vụ. Bản giả trước
+      // đây không sinh, nên mọi phép «bao lâu rồi» chạy xanh trên giả rồi vỡ trên thật —
+      // đúng bài học ① của `07-KE-HOACH-GD2.md` §0. Bộ ca `cong-that-hop-dong` bắt được
+      // (01/09). Cổng thật quy `Date` → ms ở `quyNgay`, nên bản giả cũng sinh ms.
+      if (banGhi.tao_luc === undefined) banGhi = { ...banGhi, tao_luc: Date.now() };
       const dk = gan(bang, { team_id: banGhi.team_id }, true);   // GHI: không đặc cách
       const moi = { id: banGhi.id ?? idMoi(bang), ...banGhi };
       if (!BANG_DUNG_CHUNG.has(bang)) moi.team_id = dk.team_id;
