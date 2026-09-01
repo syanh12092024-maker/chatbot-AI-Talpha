@@ -49,7 +49,16 @@ muc "② kiểm kê cả đất người A — cửa thứ tư mọc lên là Đ
 # Trần đo ngày 25/08 bằng CHÍNH bộ đếm dưới đây (không phải bằng tay — bản gõ tay đầu
 # tiên lệch với phép đo ở bốn tệp, và một cái hộp kiểm kê nói sai là hai lỗi chứ không
 # phải một). Trần chỉ được GIẢM: ai gộp thêm thì hạ nó xuống.
-TRAN=8
+# ── MỐC 01/09 (dời từ 8 → 15) ─────────────────────────────────────────────────────────
+# Mốc 25/08 là 8. Bảy câu mọc thêm KHÔNG phải cửa ghi mới lẻn vào: chúng là hai cửa GIAO
+# DỊCH của chính giai đoạn 2, đã khai lý do bên dưới —
+#   · src/db/kich-ban.js  (4) · G2-A5, migration 010: hạ bản LIVE cũ xuống ARCHIVED rồi
+#     nâng bản mới, trong MỘT giao dịch có `FOR UPDATE`. Ràng buộc «đúng một bản LIVE mỗi
+#     phạm vi» (07-KE-HOACH-GD2 · G3 nghiệm thu 5) không viết được bằng bộ dựng chung.
+#   · src/db/noi-dung.js  (3) · G2-A4, migration 009: duyệt (đóng dấu người+giờ) và áp
+#     (hạ `dang_dung` cũ, nâng bản mới) — đóng RF-17 «hai bản cùng đang áp KHÔNG tồn tại».
+# Dời mốc là việc CÓ CHỦ Ý, ghi §9; từ mốc này trở đi luật cũ giữ nguyên: CHỈ ĐƯỢC GIẢM.
+TRAN=15
 
 # LÝ DO từng tệp — phần DUY NHẤT gõ tay ở đây. Con số thì luôn ĐO, không khai.
 ly_do() {
@@ -60,6 +69,8 @@ ly_do() {
     src/orders/hang-cho.js)    echo "🟨 hang_cho_tao_don — gộp được, ngoài phạm vi (§9)" ;;
     src/orders/ti-le-hoan.js)  echo "🟨 khach — gộp được, nhưng có hợp đồng CẤM chạm sua_luc" ;;
     src/queue/kho.js)          echo "⛔ tin_cho_xu_ly — CỐ Ý ngoài BANG_NGHIEP_VU_CHUAN" ;;
+    src/db/kich-ban.js)        echo "✅ G2-A5 · giao dịch «đúng MỘT bản LIVE» (010), có FOR UPDATE" ;;
+    src/db/noi-dung.js)        echo "✅ G2-A4 · giao dịch duyệt+áp bộ luật (009, RF-17), có FOR UPDATE" ;;
     src/queue/worker.js)       echo "➖ KHÔNG phải SQL — cụm «UPDATE tay» trong câu tiếng Việt" ;;
     src/chat/handler-v3.js)    echo "➖ KHÔNG phải SQL — cụm «UPDATE tay» trong câu tiếng Việt" ;;
     *)                         echo "❓ CHƯA KHAI LÝ DO — khai vào ly_do() hoặc gộp đi" ;;

@@ -12,8 +12,15 @@ kiem() { if eval "$2" >/dev/null 2>&1; then echo "  ĐẠT   $1"; DAT=$((DAT+1))
 
 echo "═══ A7-3 · cửa đọc hồ sơ khách ═══"
 
+# Nạp `.env` của repo khi biến chưa có sẵn trong môi trường — mọi cổng l*/va-* chạy bộ ca
+# bằng `node --env-file=.env`, cổng này thì không, nên nó thoát 2 ngay trên chính máy có
+# .env đầy đủ (đo 01/09). Biến đặt sẵn ngoài shell vẫn THẮNG (không ghi đè).
+if [ -z "${DATABASE_URL_V3:-}" ] && [ -f .env ]; then
+  eval "$(grep -E '^(DATABASE_URL_V3|V3_KHOA_MA_HOA)=' .env | sed 's/^/export /')"
+fi
+
 if [ -z "${DATABASE_URL_V3:-}" ]; then
-  echo "  ⛔ thiếu DATABASE_URL_V3 — cổng này KHÔNG đo được gì. Thoát 2 (không phải ĐẠT)."
+  echo "  ⛔ thiếu DATABASE_URL_V3 (và .env cũng không có) — cổng này KHÔNG đo được gì. Thoát 2 (không phải ĐẠT)."
   exit 2
 fi
 
@@ -44,7 +51,9 @@ kiem "không có nhánh chặn theo tầng hoàn" \
 
 echo "⑤ bộ ca chạy trên Postgres THẬT"
 RA="$(chay)"
-kiem "12/12 ca a7-3 xanh" "grep -qE '^# fail 0$' <<< \"\$RA\" && grep -qE '^# pass 12$' <<< \"\$RA\""
+# Node <=24 in "# pass N", Node >=25 in "ℹ pass N" — nhận CẢ HAI. Đo 01/09: máy chạy
+# v25.8.0, bộ ca xanh trọn mà cổng vẫn TRƯỢT — thước cũ đọc thành "lỗi code".
+kiem "12/12 ca a7-3 xanh" "grep -qE '^(#|ℹ) fail 0$' <<< \"\$RA\" && grep -qE '^(#|ℹ) pass 12$' <<< \"\$RA\""
 
 echo "⑥ ĐẢO-VÁ: gõ cứng kenh.coMat ⇒ bộ ca PHẢI ĐỎ"
 # H7 dựng khách có ĐỦ hai kênh nên nó xanh cả khi coMat bị khai sẵn; ca H12 (khách chỉ có
@@ -62,7 +71,7 @@ if goc in s:
     p.write_text(s.replace(goc, "    const kenhCoMat = [...KENH_CO_THAT];"))
 PY
 RA_DB="$(chay)"
-if grep -qE '^# fail 0$' <<< "$RA_DB"; then
+if grep -qE '^(#|ℹ) fail 0$' <<< "$RA_DB"; then
   echo "  TRƯỢT đảo-vá — không ca nào phân biệt «đếm từ dữ liệu» với «khai sẵn»"
   TRUOT=$((TRUOT+1))
 else

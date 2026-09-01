@@ -13,8 +13,15 @@ kiem() { if eval "$2" >/dev/null 2>&1; then echo "  ĐẠT   $1"; DAT=$((DAT+1))
 
 echo "═══ A7-2 · nối hội thoại vào hồ sơ khách ═══"
 
+# Nạp `.env` của repo khi biến chưa có sẵn trong môi trường — mọi cổng l*/va-* chạy bộ ca
+# bằng `node --env-file=.env`, cổng này thì không, nên nó thoát 2 ngay trên chính máy có
+# .env đầy đủ (đo 01/09). Biến đặt sẵn ngoài shell vẫn THẮNG (không ghi đè).
+if [ -z "${DATABASE_URL_V3:-}" ] && [ -f .env ]; then
+  eval "$(grep -E '^(DATABASE_URL_V3|V3_KHOA_MA_HOA)=' .env | sed 's/^/export /')"
+fi
+
 if [ -z "${DATABASE_URL_V3:-}" ]; then
-  echo "  ⛔ thiếu DATABASE_URL_V3 — cổng này KHÔNG đo được gì. Thoát 2 (không phải ĐẠT)."
+  echo "  ⛔ thiếu DATABASE_URL_V3 (và .env cũng không có) — cổng này KHÔNG đo được gì. Thoát 2 (không phải ĐẠT)."
   exit 2
 fi
 
@@ -34,7 +41,9 @@ kiem "neu khach_id null" "grep -q 'khach_id: null' src/chat/ho-so-khach.js"
 
 echo "④ bộ ca chạy trên Postgres THẬT"
 RA="$(chay)"
-kiem "10/10 ca a7-2 xanh" "grep -qE '^# fail 0$' <<< \"\$RA\" && grep -qE '^# pass 10$' <<< \"\$RA\""
+# Node <=24 in "# pass N", Node >=25 in "ℹ pass N" — nhận CẢ HAI. Đo 01/09: máy chạy
+# v25.8.0, bộ ca xanh trọn mà cổng vẫn TRƯỢT — thước cũ đọc thành "lỗi code".
+kiem "10/10 ca a7-2 xanh" "grep -qE '^(#|ℹ) fail 0$' <<< \"\$RA\" && grep -qE '^(#|ℹ) pass 10$' <<< \"\$RA\""
 
 echo "⑤ ĐẢO-VÁ: bỏ nước khỏi khoá bản đồ trong lượt ⇒ bộ ca PHẢI ĐỎ"
 # Đột biến này TỪNG SỐNG SÓT cả 9 ca đầu (câu tra CSDL còn kẹp thi_truong nên cứu được
@@ -51,7 +60,7 @@ if goc in s:
     p.write_text(s.replace(goc, "const khoa = khoaKhach(null, h.sdt_tho);"))
 PY
 RA_DB="$(chay)"
-if grep -qE '^# fail 0$' <<< "$RA_DB"; then
+if grep -qE '^(#|ℹ) fail 0$' <<< "$RA_DB"; then
   echo "  TRƯỢT đảo-vá — thước KHÔNG bắt được, nhánh bản đồ trong lượt đang không ai đo"
   TRUOT=$((TRUOT+1))
 else
