@@ -1,6 +1,7 @@
 // Nghiệm thu TIN ĐẦU (tpl_intro) — phải đủ ẢNH + GIÁ + COD + câu chốt.
 // Xuất xứ: 94,4% ảnh của hệ thống (2.872/3.041) nằm ở lượt AI đầu tiên — đúng lượt
 // Fast Lane chặn. Không gửi ảnh = Fast Lane biến lượt giới thiệu thành tin chữ trơ.
+import './_bat-cua-de-do.mjs';   // PHẢI đứng trước mọi import khác
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fastLane, buildIntro } from '../src/fast-lane.js';

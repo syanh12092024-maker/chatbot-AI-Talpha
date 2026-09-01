@@ -113,11 +113,18 @@ psqlx "INSERT INTO don_hang (team_id, ma_pos, nguon, trang_thai_he, trang_thai_p
 DON_TRUOC="$(psqlx "SELECT count(*) FROM don_hang")"
 # 23/08 TỔNG vá (nợ VA-P1): chuỗi migration nay dài hơn 002 — `down` một phát gỡ bản MỚI
 # NHẤT (004/005…), không phải 002. Lùi từng bản tới khi 002 là bản chót rồi gỡ đúng nó.
-for _ in 1 2 3 4 5 6 7 8 9 10; do
+# 01/09: trần vòng lặp gõ cứng 10, mà từ 013 về 002 cần 11 lượt — vòng hết trước khi
+# tới nơi, `down` cuối gỡ nhầm 003, `ket_noi_pos` còn nguyên và phép đỏ oan. Trần nay
+# tính theo SỐ BẢN THẬT trong db/migrate/ + biên, nên thêm bản mới không đỏ lại nữa.
+TRAN_LUI=$(( $(ls db/migrate/*.up.sql | wc -l) + 5 ))
+LUI=0
+while [ "${LUI}" -lt "${TRAN_LUI}" ]; do
   CHOT="$(psqlx "SELECT ma FROM _migrations ORDER BY ma DESC LIMIT 1")"
   [ "${CHOT}" = "002_ket_noi_pos" ] && break
   node db/migrate.js down >/dev/null 2>&1
+  LUI=$((LUI + 1))
 done
+so "số bản đã lùi để đưa 002 về làm bản chót (trần ${TRAN_LUI})" "${LUI}"
 node db/migrate.js down >/dev/null 2>&1
 CO_BANG_SAU_DOWN="$(psqlx "SELECT count(*) FROM information_schema.tables
   WHERE table_schema='public' AND table_name='ket_noi_pos'")"

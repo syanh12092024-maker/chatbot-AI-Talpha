@@ -1,5 +1,6 @@
 // Nghiệm thu 4 việc khớp nối cuối: bóc dữ kiện bot khác · tin đầu là câu hỏi thật ·
 // khách quay lại · (việc 5 ghi Sổ AI kiểm bằng tay trên VPS sau deploy).
+import './_bat-cua-de-do.mjs';   // PHẢI đứng trước mọi import khác
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyProfile, absorbOtherBot, hydrateProfile, buildProfileBlock } from '../src/context.js';

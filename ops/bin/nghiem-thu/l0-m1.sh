@@ -135,7 +135,12 @@ kiem_2_den_8() {
 muc "② DANH SÁCH bảng ↔ NEO NGOÀI 19 tên trích từ 02-KE-HOACH-CODE §Nền dữ liệu"
 # 22/08 TỔNG vá: +ket_noi_pos (20). 23/08: +tin_cho_xu_ly (21, migration 003 của L2-M1).
 # 25/08 G2-A2: +khoa_nha (22, migration 008 — khoá API tách khỏi cau_hinh_model).
-NEO="$(printf '%s\n' ket_noi_pos tin_cho_xu_ly khoa_nha team nguoi_dung vai thanh_vien_team cau_hinh_model page san_pham \
+# 01/09: +ky_nang_lich_su (23, migration 009 — lịch sử bản kỹ năng, đi cùng UNIQUE
+#        bo_luat_chung_mot_ban_dang_ap) và +mau_0_dong (24, migration 012 — bảng mẫu
+#        lớp 0 đồng). Neo này CỐ Ý viết tay và cố ý phải sửa mỗi lần thêm bảng: sinh nó
+#        từ db/schema.sql thì nó tự khớp với thứ đang đo, và phép mất hết răng.
+NEO="$(printf '%s\n' ket_noi_pos tin_cho_xu_ly khoa_nha ky_nang_lich_su mau_0_dong \
+  team nguoi_dung vai thanh_vien_team cau_hinh_model page san_pham \
   goi_gia khach hoi_thoai so_ai don_hang viec_can_xu_ly hang_cho_tao_don kich_ban \
   bo_luat_chung ky_nang lich_nhac nhat_ky | sort)"
 THAT="$(psqlx "SELECT table_name FROM information_schema.tables
@@ -146,7 +151,7 @@ THUA="$(comm -13 <(printf '%s\n' "${NEO}") <(printf '%s\n' "${THAT}") | tr '\n' 
 so "số bảng thật (không kể _migrations)" "$(printf '%s\n' "${THAT}" | wc -l | tr -d ' ')"
 so "THIẾU so với neo" "${THIEU:-(không)}"
 so "THỪA so với neo" "${THUA:-(không)}"
-if [ -z "${THIEU}${THUA}" ]; then dat "danh sách bảng khớp neo 22 tên"
+if [ -z "${THIEU}${THUA}" ]; then dat "danh sách bảng khớp neo $(printf '%s\n' "${NEO}" | wc -l | tr -d ' ') tên"
 else truot "danh sách bảng LỆCH neo — xem từng tên ở trên"; fi
 CO_MIG="$(psqlx "SELECT count(*) FROM information_schema.tables
   WHERE table_schema='public' AND table_name='_migrations'")"
@@ -286,9 +291,15 @@ dem_ctx() {
          WHERE team_id=(SELECT id FROM team WHERE slug='$1') OR team_id IS NULL"
 }
 T_TA="$(dem_ctx tieu-alpha)"; T_AU="$(dem_ctx auus)"; T_PI="$(dem_ctx pialpha-eu)"
-psqlq "INSERT INTO bo_luat_chung (team_id,noi_dung) VALUES (NULL,'luat toan he')"
-psqlq "INSERT INTO bo_luat_chung (team_id,noi_dung)
-       SELECT id,'luat rieng tieu-alpha' FROM team WHERE slug='tieu-alpha'"
+# 01/09: hai lượt chèn dưới đây bỏ trống `phien_ban` nên cả hai lấy cùng một số mặc
+# định, và từ migration 009 UNIQUE (COALESCE(team_id,0), phien_ban) chặn chúng. Lượt
+# chèn dòng-toàn-hệ trượt lặng lẽ (psqlq nuốt rc), nên ba DELTA ra 1/0/0 thay vì 2/1/1
+# — cổng đỏ vì CÂU CHÈN CŨ, không vì hợp đồng đọc. Nay chèn bản KẾ TIẾP tường minh.
+psqlq "INSERT INTO bo_luat_chung (team_id,phien_ban,noi_dung)
+       VALUES (NULL,(SELECT coalesce(max(phien_ban),0)+1 FROM bo_luat_chung WHERE team_id IS NULL),'luat toan he')"
+psqlq "INSERT INTO bo_luat_chung (team_id,phien_ban,noi_dung)
+       SELECT t.id,(SELECT coalesce(max(phien_ban),0)+1 FROM bo_luat_chung b WHERE b.team_id=t.id),'luat rieng tieu-alpha'
+         FROM team t WHERE t.slug='tieu-alpha'"
 S_TA="$(dem_ctx tieu-alpha)"; S_AU="$(dem_ctx auus)"; S_PI="$(dem_ctx pialpha-eu)"
 bang "DELTA bối cảnh tieu-alpha (thấy CẢ HAI dòng vừa chèn)" "$((S_TA - T_TA))" "2"
 bang "DELTA bối cảnh auus (chỉ thấy dòng toàn hệ)" "$((S_AU - T_AU))" "1"

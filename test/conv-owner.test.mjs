@@ -1,5 +1,6 @@
 // Nghiệm thu M05 · Conversation Owner. Dữ liệu lấy NGUYÊN VĂN từ hội thoại thật
 // kéo về từ Pancake ngày 10/08/2026.
+import './_bat-cua-de-do.mjs';   // PHẢI đứng trước mọi import khác
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { looksHuman, decideConv, S, OWNER } from '../src/conv-owner.js';

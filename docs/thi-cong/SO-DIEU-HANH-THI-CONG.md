@@ -1362,3 +1362,39 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   hai chiều + B-Y9 di trú nối `hoi_thoai.khach_id` · bộ ca HỢP ĐỒNG chạy trên Postgres thật
   (đóng bài học ① — bắt ngay 2 chỗ bản giả dễ tính hơn). Test A 476/476 · B 719/719 · 8 cổng
   GD2 rc=0 · commit 0535cb4→d31614f · nợ mới ghi §9 (8 cổng đỏ vì dữ liệu nền, không phải mã).
+- 01/09 · CODER A · **8 CỔNG ĐỎ ĐÓNG HẾT — không cổng nào đỏ vì mã.** Ghi nhật ký hôm qua đoán
+  "dữ liệu nền"; đo ra thì **cả tám đỏ vì THƯỚC**, và đối chứng trên worktree ở commit cũ
+  (`b554e61`, trước cả sóng GD2) cho **đỏ giống hệt** — nợ có sẵn, không phải hồi quy.
+  Năm kiểu thước hỏng, xếp theo mức nguy hiểm:
+  ① **Thước làm hỏng dữ liệu thật.** `va-r2` ⑦ chạy `migrate down` trên `aicloser_v3` để đo
+  round-trip. Hôm viết, bản mới nhất là 007 nên vô hại. Nay là 013 — `013.down` **DROP COLUMN
+  thi_truong** (mất dữ liệu) và cố ý NÉM khi có hai khách khác nước cùng số (dev đang giữ
+  6.436 khách), mà nó ném SAU khi đã `DROP INDEX` ⇒ CSDL kẹt nửa chừng. Cổng đã đo trên CSDL
+  thật suốt và chưa nổ chỉ vì `down` dừng ở bản cũ. Chuyển hẳn vào sandbox riêng.
+  ② **Neo vào SỐ TUYỆT ĐỐI** — `l3-m2` neo 21 bảng, `va-q12` neo `pass=12`. Điều cần đo là
+  «down→up không thêm/bớt bảng» và «0 ca đỏ». Đổi sang đo ĐỘ LỆCH và thước SÀN (`fail=0` VÀ
+  `pass ≥ sàn`) — giữ vế chặn-xoá-ca, bỏ vế đỏ oan khi thêm ca.
+  ③ **Neo vào LỊCH** — mới. `va-q12` ④ và `l3-m4` ③b dùng cặp trùng chéo 966501984606 làm đề.
+  Cặp đó tạo 22/08 và **không trẻ lại**; cửa sổ khử trùng là 7 ngày, nên từ 30/08 phép đỏ.
+  Đo 01/09: `keo_ngay=7` → 0 đơn · `=30` → 2 đơn, `trung_khop_san_pham`, `ca_hai`. Cổng nay
+  TỰ TÌM cặp còn trong hạn mỗi lượt; không có thì HOÃN minh bạch.
+  ④ **Trần vòng lặp gõ cứng** — `l1-m1` lùi tối đa 10 bản để đưa 002 về làm bản chót, mà từ
+  013 cần **11**. Vòng hết trước khi tới nơi, `down` cuối gỡ nhầm 003. Trần nay đếm từ
+  `db/migrate/`. `l3-m2` có cùng bẫy (trần 10, cần 8) — vá trước khi nó cắn.
+  ⑤ **Câu đo tự nó ném, và thước đọc lỗi thành TRƯỢT** — `l2-m3` ② chèn bản bộ luật thứ hai
+  `dang_dung=true`, vi phạm UNIQUE `bo_luat_chung_mot_ban_dang_ap` (009). Nó ném từ ngày 009
+  lên; **sáu lượt chạy vừa qua phép này không đo được gì**, chỉ in "câu đo HỎNG".
+  Và **8 ca đỏ của bộ ca cũ**: không ca nào hỏng. Năm tệp (`conv-owner` `guard-fastlane`
+  `intro` `l8-botcake-rules` `viec-2345`) đo HỢP ĐỒNG của ba cửa khi cửa MỞ, nhưng `.env` máy
+  dev cố ý TẮT cả ba (`HUMAN_TAKEOVER=0` vì M05 nhận nhầm người thật 30,2%; hai cửa `FASTLANE`
+  vì trùng khoá Botcake). Chuỗi import của `src` kéo theo `dotenv/config` nên `.env` vào **cả
+  khi chạy không `--env-file`** — đó là lý do đổi cách chạy mãi không hết đỏ. Thêm
+  `test/_bat-cua-de-do.mjs`, import ở dòng đầu năm tệp; `DO_THEO_ENV=1` để đo dưới cấu hình
+  vận hành. Đảo-vá: bật lại cờ đó thì đỏ đúng ca.
+  📌 Án lệ gộp: **một phép đo không được mượn cấu hình vận hành làm điều kiện của nó** — và
+  cấu hình vận hành thì không phải chỗ để chiều bài test.
+  Kết: **25/25 cổng rc=0** · test 923 ca 0 đỏ (suite A 490 · 24 tệp còn lại 420) ·
+  cutover `src/prompts.js` xong (`1d5e61c`) — bộ luật chung trong CSDL nay thật sự thay được
+  hằng `CORE`; bản v1 trong `bo_luat_chung` **bằng CORE từng ký tự** nên chưa đổi chữ nào bot
+  nói, chỉ mở đường · `V3_RAP_PROMPT_BAT=1` đã bật trên máy dev (đo: khối 1 lấy từ nguồn
+  `csdl`, 6.734 ký tự). Còn chờ người: bật cờ đó trên VPS `169.58.33.8`.

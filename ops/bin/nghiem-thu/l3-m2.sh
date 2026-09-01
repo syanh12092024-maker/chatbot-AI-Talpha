@@ -318,7 +318,10 @@ await voiPool(async (pool) => {
   //     (khuôn ops/bin/nghiem-thu/l1-m1.sh dòng ~112 đã vá 23/08, xem PHIẾU VA-T1 #3).
   let xong = await daAp(pool);
   let vongLui = 0;
-  while (xong[xong.length - 1] !== "005_loc_trung_va_ti_le_hoan" && vongLui < 10) {
+  // Trần vòng lùi tính theo SỐ BẢN THẬT, không gõ cứng: trần 10 vừa đủ tới 013 nhưng
+  // sẽ hết trước khi tới 005 kể từ bản 016 — cùng cái bẫy đã làm l1-m1 đỏ oan hôm nay.
+  const tranLui = fs.readdirSync("db/migrate").filter(f => f.endsWith(".up.sql")).length + 5;
+  while (xong[xong.length - 1] !== "005_loc_trung_va_ti_le_hoan" && vongLui < tranLui) {
     await xuong(pool, { im: true });
     xong = await daAp(pool);
     vongLui++;

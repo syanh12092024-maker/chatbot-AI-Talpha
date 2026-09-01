@@ -1,6 +1,7 @@
 // Nghiệm thu M06 (Fast Lane) + M09 (Outbound Guard) — chạy: npm test
 // Không gọi mạng, không cần .env. Dữ liệu test lấy từ TIN THẬT đo trên VPS 10/08/2026.
 
+import './_bat-cua-de-do.mjs';   // PHẢI đứng trước mọi import khác
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { guardOutbound, looksVietnamese, hasVietnameseNoun, extractMoney } from '../src/outbound-guard.js';

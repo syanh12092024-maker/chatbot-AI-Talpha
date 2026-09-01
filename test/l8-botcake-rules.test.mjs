@@ -5,6 +5,7 @@
 //   ① KHÔNG có đường nào GHI lên Botcake (kể cả send_flow).
 //   ② Từ khoá thuộc 6 nhóm CẤM (§2) KHÔNG BAO GIỜ chạy được, kể cả người ghi "BẬT".
 
+import './_bat-cua-de-do.mjs';   // PHẢI đứng trước mọi import khác
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
