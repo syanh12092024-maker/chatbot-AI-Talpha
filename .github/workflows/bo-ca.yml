@@ -1,0 +1,66 @@
+# BỘ CA + CỔNG NGHIỆM THU — CHẠY TAY.
+#
+# ⚠️ CHƯA AI NGHIỆM THU WORKFLOW NÀY. Nó được viết theo đúng cách dựng môi
+# trường ghi ở docs/thi-cong/BAN-GIAO-CHUYEN-CONG-CU.md §3, nhưng chưa từng chạy
+# xanh ở đâu — máy dev 09/09 không có Docker nên không đối chứng được.
+#
+# Cách nhận nuôi nó:
+#   1. Chạy xanh ở máy có Postgres: `npm run migrate && npm test`
+#   2. Chạy tay workflow này một lượt (tab Actions → Run workflow), đọc số
+#   3. Xanh rồi thì đổi `on:` thành push/pull_request và ghi một dòng vào §10 sổ
+#
+# `npm run di-tru` KHÔNG chạy được ở đây: nó cần dữ liệu thật (pages.json,
+# conv-state.json…) vốn bị gitignore và chỉ có trên máy dev/VPS. Bộ ca nào cần
+# dữ liệu đã di trú sẽ đỏ — đó là giới hạn THẬT của cổng này, không phải lỗi.
+
+name: bộ ca (chạy tay)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  bo-ca:
+    name: npm test trên Postgres 16
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: aicloser
+          POSTGRES_PASSWORD: aicloser_dev
+          POSTGRES_DB: aicloser_v3
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+
+    env:
+      DATABASE_URL_V3: postgres://aicloser:aicloser_dev@localhost:5433/aicloser_v3
+      PANCAKE_READONLY: '1'          # luật 1 §0a — runner không bao giờ gửi tin cho khách
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Lược đồ
+        run: npm run migrate
+
+      - name: Bộ ca
+        run: npm test
+
+      - name: Cổng nghiệm thu (rc TÁCH DÒNG từng cổng)
+        run: |
+          do=0
+          for f in ops/bin/nghiem-thu/*.sh; do
+            case "$f" in */_chan1.sh) continue;; esac
+            bash "$f" >/dev/null 2>&1; rc=$?
+            [ $rc -eq 0 ] || { do=$((do+1)); echo "🔴 $(basename "$f") rc=$rc"; }
+          done
+          echo "cổng đỏ: $do"
+          exit $((do > 0))

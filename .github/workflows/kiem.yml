@@ -1,0 +1,35 @@
+# CỔNG TĨNH trên CI — những phép KHÔNG cần CSDL, KHÔNG cần secret.
+#
+# Vì sao chỉ có bấy nhiêu: `npm test` (923 ca) và 25 cổng nghiệm thu đều cần
+# Postgres 16 + dữ liệu di trú + `.env` thật. Dựng đủ thứ đó trên runner công
+# cộng là việc riêng, chưa ai nghiệm thu — nên nó nằm ở workflow `bo-ca.yml`,
+# CHẠY TAY, và chỉ được bật tự động sau khi có người chạy xanh và ký.
+#
+# Luật của repo: một cổng chỉ được khai đúng tầm nó đo. Cổng này đo CÚ PHÁP và
+# HỢP ĐỒNG GIẤY TỜ, không đo hành vi.
+
+name: cổng tĩnh
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tinh:
+    name: cú pháp · cổng · docs:verify · marker
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Cổng tĩnh
+        run: bash ops/bin/kiem-tinh.sh
+
+      - name: Khoá gói còn khớp package.json
+        run: npm ci --ignore-scripts --no-audit --no-fund
