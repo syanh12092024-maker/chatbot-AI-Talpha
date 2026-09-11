@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 import { cuaBoiCanh } from '../../auth/boi-canh.js';
 import { menuCua } from './man-hinh.js';
+import { docTrangThai } from './trang-thai.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 
@@ -35,6 +36,20 @@ export function taoRouterDieuHuong() {
       vai: bc.vai,
       nhom: menuCua(bc.vai),
     });
+  });
+
+  // Cửa RIÊNG cho dải trạng thái. Tách khỏi `/api/dieu-huong` vì bộ đọc gọi sang tiến
+  // trình bot v1 và có thể mất tới 25 giây — menu không được chờ nó.
+  r.get('/api/trang-thai-bot', async (req, res) => {
+    let bc = null;
+    try { bc = cuaBoiCanh(req); } catch { bc = null; }
+    if (!bc) return res.status(401).json({ ok: false, ma: 'chua_dang_nhap' });
+    try {
+      return res.json({ ok: true, ...(await docTrangThai()) });
+    } catch (e) {
+      // Dải trạng thái hỏng KHÔNG được làm hỏng trang.
+      return res.json({ ok: true, docDuoc: false, aiBat: null, tong: null, viSao: String(e?.message || e) });
+    }
   });
 
   return r;

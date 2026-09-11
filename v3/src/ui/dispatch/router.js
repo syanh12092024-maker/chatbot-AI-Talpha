@@ -394,6 +394,14 @@ export function taoRouterDieuPhoi({ dongHo = () => Date.now(), gioiHan = 100 } =
   r.get(DUONG_TRANG, chanTrang(), ...chan, (_req, res) => res.sendFile(TRANG('dieu-phoi.html')));
   r.get('/viec/:id', chanTrang(), ...chan, (_req, res) => res.sendFile(TRANG('chi-tiet-viec.html')));
 
+  // Khối «Đánh dấu đã xử» dùng chung cho HAI trang (chi tiết + ô xem nhanh của bảng điều
+  // phối). Một bản duy nhất: hai chỗ cùng ghi một dòng việc là hai chỗ phải giữ đồng bộ,
+  // và cái thứ hai bao giờ cũng là cái trôi. Vẫn sau lớp vai như mọi đường của màn này.
+  r.get('/dieu-phoi/dong-viec-ui.js', ...chan, (_req, res) => {
+    res.type('application/javascript');
+    res.sendFile(TRANG('dong-viec-ui.js'));
+  });
+
   /* ── hai danh sách ── */
   r.get('/api/dieu-phoi/hang-cho', ...chan, async (req, res) => {
     try {

@@ -40,6 +40,7 @@ import {
 import {
   datTaoTruyVan as datTruyVanPageBot, datPheuNhatKy as datPheuNhatKyPageBot,
   datChanDangNhap as datChanDangNhapPageBot, datChanVai as datChanVaiPageBot,
+  datDocSanSang as datDocSanSangPageBot,
   taoRouterPageBot,
 } from './ui/page-bot/index.js';
 import { khoToken } from './ui/ket-noi/index.js';
@@ -58,6 +59,7 @@ import {
   datCuaBoLuat, manBoLuat,
 } from './ui/bo-luat/index.js';
 import { taoRouterDieuHuong } from './ui/chung/router-dieu-huong.js';
+import { datDocSanSang as datDocSanSangDai } from './ui/chung/trang-thai.js';
 import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/cau-bot-v1.js';
 import {
   datTaoTruyVan as datTruyVanHieuQua, datDocHieuQua,
@@ -261,6 +263,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datDocSanSangLenChay(docCuaKiem);
   datDocMotPageLenChay(kho.motPage);
   datDocSanSangTrangChu(docCuaKiem);   // CÙNG bộ đọc — hai màn không được ra hai con số
+  datDocSanSangPageBot(docCuaKiem);    // cột «Còn thiếu gì» của bảng Page — cùng nguồn nốt
+  datDocSanSangDai(docCuaKiem);        // dải trạng thái trên mọi trang — cùng nguồn nốt
   if (typeof docSanSang === 'function') daNoi.push('bộ đọc cửa kiểm GIẢ → màn Cửa kiểm sẵn sàng');
   datTruyVanSucKhoe(taoTruyVan);
   // CÙNG bộ đọc cửa kiểm với ba màn kia — hai đèn công tắc bot của màn Sức khỏe phải đọc

@@ -76,6 +76,21 @@ function truyVan(bc) {
   return _taoTruyVan(bc);
 }
 
+/**
+ * KHOẢNG THỜI GIAN của màn này — và nó KHÔNG phải một khoảng.
+ *
+ * Phễu hội thoại đọc từ `/admin/api/ops/conv-state`: mỗi hội thoại đang đứng ở đúng một
+ * bậc LÚC NÀY. Nó không nói có bao nhiêu người đã đi qua bậc đó rồi rời đi. Chú thích
+ * trong `noi-day/cau-bot-v1.js#pheuHoiThoai` ghi thẳng: «nơi gọi phải nói rõ điều đó» —
+ * đây là nơi gọi, nên đây nói.
+ */
+export const KHOANG = Object.freeze({
+  chu: 'ảnh chụp lúc này',
+  noi: 'Chỗ đứng hiện tại của từng hội thoại, không phải số đếm trong một khoảng ngày.',
+  canhBao: 'KHÔNG lấy hiệu hai bậc rồi gọi là «tỉ lệ rơi» — đó là đọc sai bản chất. '
+    + 'Muốn biết bao nhiêu khách đã rơi thì phải đếm theo thời gian, phép này không đếm được.',
+});
+
 export async function manNguon(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
   const db = truyVan(bc);
@@ -93,6 +108,7 @@ export async function manNguon(boiCanh) {
 
   return {
     teamId: bc.teamId,
+    khoang: KHOANG,
     chamTran: chamTran
       ? { co: true, tran: TRAN_DOC,
           noi: `Đã đọc tới trần ${TRAN_DOC} đơn — hai con số dưới đây là MỘT PHẦN, và TỈ LỆ `

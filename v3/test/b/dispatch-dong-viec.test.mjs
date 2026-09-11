@@ -698,11 +698,22 @@ test('L4-M2 · màn chi tiết đắp vào đúng ô đã chừa, không mọc �
   const { res, than } = await goi('/viec/w_ht', { tieuDe: { accept: 'text/html' } });
   assert.equal(res.status, 200);
   assert.match(than, /id="o-dong-viec"><\/div>/, 'đổi mất id của ô đã chừa');
-  assert.match(than, /Đánh dấu đã xử/);
-  assert.match(than, /Nhận việc/);
-  assert.match(than, /Đóng việc/);
-  assert.match(than, /bang-ket-qua/);
-  assert.match(than, /Đã xử bởi /);
+
+  // 11/09: khối «Đánh dấu đã xử» chuyển sang `trang/dong-viec-ui.js` để bảng điều phối
+  // dùng chung MỘT bản. Trang phải NẠP nó; chức năng không được biến mất theo.
+  assert.match(than, /<script src="\/dieu-phoi\/dong-viec-ui\.js">/,
+    'trang không nạp khối dùng chung — ô đã chừa sẽ rỗng vĩnh viễn');
+  assert.match(than, /DongViecUI\.gan\(/, 'trang không gọi khối dùng chung');
+
+  const ui = await (await goi('/dieu-phoi/dong-viec-ui.js')).than;
+  for (const chu of ['Đánh dấu đã xử', 'Nhận việc', 'Đóng việc', 'bang-ket-qua', 'Đã xử bởi ']) {
+    assert.ok(ui.includes(chu), `khối dùng chung thiếu "${chu}"`);
+  }
+  // VẾ QUAN TRỌNG NHẤT: chức năng chỉ được nằm ở MỘT chỗ. Thấy lại mấy chuỗi này trong
+  // thân trang nghĩa là có người chép khối về — và hai chỗ cùng ghi một dòng việc thì cái
+  // thứ hai bao giờ cũng là cái ghi theo luật cũ.
+  assert.ok(!than.includes('Đánh dấu đã xử'),
+    'khối đóng việc bị chép ngược vào trang — phải gọi DongViecUI, không chép');
   assert.ok(!/<textarea/.test(than), 'màn chi tiết mọc ô soạn tin — 01-QUYET-DINH mục 10');
   // Các khối của L4-M1 còn nguyên. Khối "Đoạn chat" ĐÃ BỎ ngày 23/08 (chủ dự án duyệt):
   // `so_ai` không giữ nội dung tin và không có tin của khách, nên dựng ở đây là dựng một

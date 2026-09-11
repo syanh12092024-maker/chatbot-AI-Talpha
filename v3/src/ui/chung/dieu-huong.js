@@ -70,12 +70,31 @@
     .dh-con a:hover{background:rgba(255,255,255,.07);color:#dfeaec}
     .dh-con a.day{color:#fff;font-weight:600;background:rgba(159,211,216,.1)}
 
+    /* VẠCH «Ít dùng» — ranh giới trong MỘT mục, không phải mục thứ năm. Màn dưới vạch
+       là màn chưa có dữ liệu để hiện, hoặc đang tắt trên máy chủ, hoặc một năm dùng một
+       lần. Chúng vẫn ở đây: bỏ hẳn khỏi menu thì người vào bằng đường dẫn là kẹt. */
+    .dh-vach{display:flex;align-items:center;gap:8px;padding:9px 16px 5px 30px;
+      font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#5f8a90}
+    .dh-vach::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.09)}
+
     /* KHỐI TÀI KHOẢN — đổi team và đăng xuất. Trước đây chỉ MỘT trong 25 trang có lối này,
        nên người thuộc nhiều team phải xoá cookie mới sang được team khác, và vai sale
        (không vào được màn Cấu hình team) thì kẹt hẳn. 01 §8 chốt BA team.
        ⚠️ KHÔNG dùng dấu huyền ngược trong comment CSS: cả khối này nằm TRONG một template
        literal, một dấu là đóng chuỗi sớm và cả tệp thành lỗi cú pháp — menu biến mất khỏi
        25 trang mà trang vẫn hiện bình thường (đã dính thật 01/09). */
+    /* DẢI TRẠNG THÁI — câu trả lời cho «hệ có đang phục vụ khách không».
+       Số nổi bật là SỐ PAGE ĐANG BẬT, tổng page chỉ là mẫu số. Ngày 11/09 người tiếp quản
+       đọc huy hiệu 501 page thành «đang chạy 501 page», trong khi thật ra 0 page bật AI. */
+    .dh-dai{margin:10px 16px 0;border-radius:9px;padding:8px 11px;font-size:11.5px;line-height:1.45;
+      background:rgba(255,255,255,.06);color:#a9c4c8}
+    .dh-dai b{display:block;font-size:13px;font-weight:700;color:#dfeaec;margin-bottom:1px}
+    .dh-dai.tat{background:rgba(220,38,38,.16);color:#f0b6b0}
+    .dh-dai.tat b{color:#ffd9d4}
+    .dh-dai.chay{background:rgba(22,163,74,.15);color:#a9d9bb}
+    .dh-dai.chay b{color:#d6f0e0}
+    .dh-dai.mu{background:rgba(255,255,255,.05);color:#7fa3a8}
+
     .dh-tk{border-top:1px solid rgba(255,255,255,.1);padding:10px 16px 12px;margin-top:auto}
     .dh-tk .ai{font-size:11.5px;color:#7fa3a8;line-height:1.5;margin-bottom:8px;word-break:break-word}
     .dh-tk .ai b{color:#dfeaec;font-weight:600;display:block;font-size:12.5px}
@@ -132,6 +151,7 @@
     ngan.innerHTML = `
       <div class="dh-dau"><b>AI Closer v3</b>
         <div class="m">Bot bán hàng Messenger &amp; WhatsApp</div></div>
+      <div class="dh-dai mu" id="dh-dai"><b>Đang đọc…</b>bao nhiêu page đang bật bot</div>
       <div class="dh-than">
         ${(d.nhom || [])
           .map((n, i) => {
@@ -146,12 +166,15 @@
           </button>
           <div class="dh-con ${bung ? "bung" : ""}" data-con="${i}">
             ${n.man
-              .map(
-                (
-                  m,
-                ) => `<a href="${esc(m.duong)}" class="${m.duong === nay ? "day" : ""}"
-              title="${esc(m.moTa || "")}">${esc(m.ten)}</a>`,
-              )
+              .map((m, k) => {
+                // Vạch chèn TRƯỚC màn ít dùng đầu tiên của mục — một lần duy nhất.
+                const dauItDung = m.itDung && !(n.man[k - 1] || {}).itDung;
+                return (
+                  (dauItDung ? `<div class="dh-vach">Ít dùng</div>` : "") +
+                  `<a href="${esc(m.duong)}" class="${m.duong === nay ? "day" : ""}"
+              title="${esc(m.moTa || "")}">${esc(m.ten)}</a>`
+                );
+              })
               .join("")}
           </div>`;
           })
@@ -201,6 +224,7 @@
     };
 
     dungThanhTab(d, nay);
+    dungDaiTrangThai(ngan);
 
     // Trang chừa chỗ cho thanh bên. Chỉ ở màn rộng — media query trên tự gỡ ở màn hẹp.
     document.body.style.paddingLeft = `${RONG}px`;
@@ -240,7 +264,13 @@
    */
   function dungThanhTab(d, nay) {
     const muc = (d.nhom || []).find((n) => (n.man || []).some((m) => m.duong === nay));
-    if (!muc || (muc.man || []).length < 2) return;
+    if (!muc) return;
+
+    // Thanh tab chỉ mang màn THƯỜNG DÙNG của mục, cộng chính màn đang đứng nếu nó là màn
+    // ít dùng — để người đang ở đó vẫn thấy mình đang ở đâu. Mười ba tab ngang thì không
+    // ai đọc, và tab cuối bị cuộn khuất.
+    const man = (muc.man || []).filter((m) => !m.itDung || m.duong === nay);
+    if (man.length < 2) return;
 
     const dau = document.querySelector("header");
     if (!dau) return;
@@ -249,7 +279,7 @@
     tab.className = "dh-tab";
     tab.innerHTML =
       `<div class="muc">${esc(muc.ten)}</div>` +
-      muc.man
+      man
         .map(
           (m) =>
             `<a href="${esc(m.duong)}" class="${m.duong === nay ? "day" : ""}"` +
@@ -258,6 +288,38 @@
         .join("");
 
     dau.insertAdjacentElement("afterend", tab);
+  }
+
+  /**
+   * Dải trạng thái. Nạp RIÊNG và SAU menu: cửa của nó gọi sang tiến trình bot v1 và có thể
+   * mất tới 25 giây. Hỏng thì nói «chưa đọc được» — KHÔNG hiện số 0, vì «0 page đang bật»
+   * và «chưa biết page nào đang bật» là hai câu khác hẳn nhau.
+   */
+  function dungDaiTrangThai(ngan) {
+    const o = ngan.querySelector("#dh-dai");
+    if (!o) return;
+    fetch("/api/trang-thai-bot", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || !d.ok) throw new Error("khong doc duoc");
+        if (!d.docDuoc) {
+          o.className = "dh-dai mu";
+          o.innerHTML =
+            "<b>Chưa đọc được</b>" +
+            esc(d.viSao || "Không rõ có page nào đang bật bot.");
+          return;
+        }
+        const bat = Number(d.aiBat) || 0;
+        const tong = Number(d.tong) || 0;
+        o.className = "dh-dai " + (bat > 0 ? "chay" : "tat");
+        o.innerHTML = bat > 0
+          ? `<b>Bot đang chạy ${bat}/${tong} page</b>số page còn lại chưa bật`
+          : `<b>Bot đang tắt ở mọi page</b>0/${tong} page bật — hệ đang không phục vụ khách`;
+      })
+      .catch(() => {
+        o.className = "dh-dai mu";
+        o.innerHTML = "<b>Chưa đọc được</b>không rõ có page nào đang bật bot";
+      });
   }
 
   fetch("/api/dieu-huong", { credentials: "same-origin" })

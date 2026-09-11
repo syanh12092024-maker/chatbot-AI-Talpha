@@ -165,6 +165,11 @@ function veCanhBao(d){
       <b>${so(d.dem.thieu_marketer)}/${so(d.soTong)} page chưa có marketer.</b>
       Báo cáo cắt theo marketer sẽ trống với những page đó.</div>`);
   }
+  if (d.cuaKiemDocDuoc === false) {
+    kh.push(`<div class="banner o"><b>Chưa đọc được cửa kiểm sẵn sàng.</b>
+      Cột «Còn thiếu gì» đang mù cho MỌI page — không có nghĩa là mọi page đều ổn.<br>
+      ${esc(d.cuaKiemViSao || '')}</div>`);
+  }
   $('#canhBao').innerHTML = kh.join('');
 }
 
@@ -177,6 +182,15 @@ function veThanhLoc(d){
   }));
 }
 
+// Ô «Còn thiếu gì». Ba màu: đỏ = bot KHÔNG bật được, cam = bật được nhưng nên sửa,
+// xanh = đủ điều kiện. Chưa đọc được cửa kiểm thì nói «chưa đọc được» — KHÔNG để trống:
+// một ô trống trông y hệt «page này không thiếu gì», và đó là kết luận ngược hẳn sự thật.
+function veCuaKiem(c){
+  if (!c) return '<span class="pill m" title="Chưa nối cầu sang tiến trình bot">chưa đọc được</span>';
+  const mau = c.muc === 'chan' ? 'r' : c.muc === 'nhac' ? 'o' : 'g';
+  return `<span class="pill ${mau}">${esc(c.ten)}</span>`;
+}
+
 function veBang(d){
   $('#tomTat').textContent = d.soKhop === d.soTong
     ? `${so(d.soTong)} page` : `${so(d.soKhop)}/${so(d.soTong)} page khớp`;
@@ -184,7 +198,7 @@ function veBang(d){
   if (d.trong) { $('#bang').innerHTML = veTrong(d.trong); $('#phanTrang').innerHTML = ''; return; }
 
   $('#bang').innerHTML = `<table><thead><tr>
-      <th>Page</th><th>Thị trường</th><th>Marketer</th><th>Bot AI</th><th>Trọng điểm</th>
+      <th>Page</th><th>Thị trường</th><th>Marketer</th><th>Bot AI</th><th>Còn thiếu gì</th><th>Trọng điểm</th>
     </tr></thead><tbody>${d.page.map((p) => `
     <tr>
       <td data-nhan="Page">
@@ -203,6 +217,7 @@ function veBang(d){
           <span class="nhan">${p.botAiBat ? 'BẬT' : 'tắt'}</span>
         </label>
       </td>
+      <td data-nhan="Còn thiếu gì">${veCuaKiem(p.cuaKiem)}</td>
       <td data-nhan="Trọng điểm">
         <label class="ct ${SUA ? '' : 'khoa'}">
           <input type="checkbox" data-td="${esc(p.id)}" ${p.trongDiem ? 'checked' : ''} ${SUA ? '' : 'disabled'} />

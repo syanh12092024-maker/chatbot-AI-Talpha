@@ -37,6 +37,24 @@ export const NGUON = Object.freeze({
   KHONG_DOC_DUOC: 'khong-doc-duoc',
 });
 
+/**
+ * KHOẢNG THỜI GIAN của màn này — khai ra, đừng để người đọc tự đoán.
+ *
+ * Án lệ 11/09: ba màn số liệu dùng BA cửa sổ khác nhau («toàn thời gian» ở màn Báo cáo,
+ * «60 ngày» ở hai thước khác, «ảnh chụp lúc này» ở màn Nguồn khách) mà chỉ màn Báo cáo
+ * nói ra. Người quản lý mở ba màn cạnh nhau rồi so — đó là so ba khoảng khác nhau.
+ *
+ * Cửa `/token-cost` của bot v1 nhận `from`/`to`; v3 gọi KHÔNG kèm tham số nào, nên
+ * `tokenStats` quét trọn Sổ AI.
+ */
+export const KHOANG = Object.freeze({
+  chu: 'toàn thời gian',
+  noi: 'Cộng trọn Sổ AI, không cắt theo ngày.',
+  // Cảnh báo này lấy từ chính chú thích của `src/admin.js#/token-cost`, không phải tôi đoán.
+  canhBao: 'Token chỉ được ghi từ 06/08/2026. Tin cũ hơn KHÔNG có số đo, nên đơn giá chia '
+    + 'trên số tin ĐO ĐƯỢC, không chia trên tổng tin — chia trên tổng sẽ ra đơn giá rẻ giả.',
+});
+
 export class LoiChiPhi extends Error {
   constructor(thongDiep, ma = 'chi_phi', status = 400) {
     super(thongDiep);
@@ -74,7 +92,7 @@ export async function manChiPhi(boiCanh) {
 
   if (!_docChiPhiBot) {
     return {
-      teamId: bc.teamId, nguon: NGUON.KHONG_DOC_DUOC, tong: null, page: [], soAi: null,
+      teamId: bc.teamId, khoang: KHOANG, nguon: NGUON.KHONG_DOC_DUOC, tong: null, page: [], soAi: null,
       trong: {
         rong: true, vi: 'chua-nap',
         noi: 'Chưa nối cầu sang tiến trình bot nên chưa đọc được chi phí.',
@@ -134,6 +152,7 @@ export async function manChiPhi(boiCanh) {
 
   return {
     teamId: bc.teamId,
+    khoang: KHOANG,
     nguon: NGUON.BOT_V1,
     nhaCungCap: bot.nhaCungCap,
     tong: {

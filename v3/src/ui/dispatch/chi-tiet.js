@@ -54,6 +54,55 @@ const motTheoId = (db, bang, id) => (chuoi(id) ? db.mot(bang, { id: chuoi(id) })
  *   hoiThoai:object|null, donHang:object|null,
  *   lienKet:{pancake:string|null,pos:string|null}, lyDoChu:string}>}
  */
+/** Nhãn tầng rủi ro hoàn — chữ người đọc được, và nói rõ khi CHƯA CHẤM. */
+export const CHU_TANG_HOAN = Object.freeze({
+  tot: { chu: 'Mua tốt', muc: 'san' },
+  binh_thuong: { chu: 'Bình thường', muc: 'san' },
+  can_theo_doi: { chu: 'Cần theo dõi', muc: 'nhac' },
+  hoan_cao: { chu: 'Hay hoàn hàng', muc: 'chan' },
+  chua_du_don: { chu: 'Chưa đủ đơn để xếp', muc: 'mu' },
+});
+
+/**
+ * Hồ sơ gọn của khách, cho cột phải màn chi tiết việc.
+ *
+ * Mọi trường đều CÓ THỂ rỗng và phải nói ra khi rỗng: khách Messenger giữa chừng chưa đưa
+ * số điện thoại là cảnh THƯỜNG (lược đồ cho `so_dien_thoai` NULL), không phải lỗi.
+ */
+export function hoSoCua(khach, donKhach = [], viec = null) {
+  if (!khach) {
+    return {
+      co: false,
+      viSao: viec && viec.hoi_thoai_id
+        ? 'Hội thoại này chưa nối được với hồ sơ khách nào — thường là khách chưa đưa số điện thoại.'
+        : 'Việc này không gắn khách nào.',
+    };
+  }
+  const don = Array.isArray(donKhach) ? donKhach : [];
+  const ma = String(khach.tang_hoan || '') || null;
+  return {
+    co: true,
+    ten: (khach.ten || '').trim(),
+    soDienThoai: (khach.so_dien_thoai || '').trim(),
+    diaChi: [khach.dia_chi, khach.thanh_pho].map((x) => (x || '').trim()).filter(Boolean).join(' · '),
+    // `tang_hoan` chưa chấm → nói «chưa chấm», KHÔNG hiện «Mua tốt». Một khách chưa đo mà
+    // hiện xanh là chìa cho sale một lời bảo đảm không ai ký.
+    tangHoan: ma ? (CHU_TANG_HOAN[ma] || { chu: ma, muc: 'mu' }) : { chu: 'Chưa chấm', muc: 'mu' },
+    tiLeHoan: khach.ti_le_hoan == null ? null : Number(khach.ti_le_hoan),
+    soDon: don.length,
+    donGanDay: don.slice(-3).reverse().map((d) => ({
+      id: String(d.id),
+      maPos: d.ma_pos || '',
+      nguon: d.nguon === 'trang_ban_hang' ? 'Trang bán hàng' : 'Messenger',
+      trangThai: d.trang_thai_he || '',
+      // CỐ Ý không lấy cột ngày tạo của đơn ra đây. Bài «không còn tên cột B tự đoán»
+      // cấm dạng đọc đó trong cả module: dòng VIỆC dùng `day_luc`, và một lần chép nhầm
+      // giữa hai bảng là một cột ngày sai mà không ai thấy. Thứ tự đã do `sapXep` của
+      // tầng truy vấn lo, còn màn này không hiện ngày — nên cũng không cần đọc.
+    })),
+  };
+}
+
 export async function chiTietViec(boiCanh, viecId, bo = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   const { bay = Date.now() } = bo;
@@ -82,6 +131,17 @@ export async function chiTietViec(boiCanh, viecId, bo = {}) {
     motTheoId(db, 'page', hoiThoai?.page_id),
   ]);
 
+  // HỒ SƠ KHÁCH — cột phải của bản vẽ 11/09. Trước đây sale phải mở Pancake mới biết
+  // khách này là ai, đã mua bao nhiêu lần, có hay bom hàng không.
+  //
+  // ⚠️ ĐỌC cột `tang_hoan` đã chấm sẵn, KHÔNG tự tính lại từ mã trạng thái đơn. Án lệ
+  //    H10 (28/08): một màn tự tính tầng rủi ro đã báo 40.064 khách «hoàn cao» trong khi
+  //    luật đã ký nói 5.990 — lệch 6,7 lần, vì nó thiếu sàn «tối thiểu 2 đơn kết» và tính
+  //    cả mã 8 (`packing`, vốn là bước TIẾN). Job `chamTiLeHoan` là nơi DUY NHẤT chấm.
+  const donKhach = khach
+    ? await db.chon('don_hang', { khach_id: khach.id }, { sapXep: 'tao_luc' })
+    : [];
+
   const lyDoDong = tachLyDoDong(viec.ly_do_dong);
 
   return {
@@ -98,6 +158,7 @@ export async function chiTietViec(boiCanh, viecId, bo = {}) {
       lyDoDongGhiChu: lyDoDong.ghiChu,
     },
     khach,
+    hoSoKhach: hoSoCua(khach, donKhach, viec),
     page,
     hoiThoai,
     donHang,

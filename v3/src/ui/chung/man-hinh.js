@@ -55,21 +55,26 @@ import * as nhatKy from '../nhat-ky/index.js';
  *     màn đang chạy; người dùng vào rồi ra tay không.
  *
  * Nên mục xếp theo CÂU HỎI người dùng mang tới, theo nhịp họ mở máy:
- *   mỗi sáng → `hom-nay` · `viec-can-xu`
- *   khi cần  → `bot-noi-gi` · `page-san-pham`
+ *   mỗi sáng → `viec`
+ *   khi cần  → `page`
  *   cuối kỳ  → `so-lieu`
- *   một lần  → `cai-dat`
+ *   một lần  → `cai-dat` (kèm chín màn ít dùng)
+ *
+ * ═══ GOM TIẾP CÒN BỐN (11/09) ══════════════════════════════════════════════════════
+ * Người tiếp quản mở giao diện lên và nói «nhiều tính năng quá, từ ngữ khó hiểu, quá dài
+ * dòng». Sáu mục vẫn buộc đọc sáu câu mô tả rồi bung mục mới biết bên trong có gì. Nay
+ * bốn mục, mỗi mục một câu ngắn; chín màn ít dùng (chưa có dữ liệu, hoặc đang tắt trên
+ * máy chủ, hoặc một năm dùng một lần) dồn xuống cuối mục «Cài đặt» thay vì đứng ngang
+ * hàng với màn mở hằng ngày. Vẫn KHÔNG màn nào bị xoá.
  *
  * KHÔNG màn nào bị xoá: 24 màn vẫn còn đủ 24 đường, chỉ đổi chỗ đứng trên menu.
  */
 export const NHOM = Object.freeze([
-  { ma: 'hom-nay', ten: 'Hôm nay', mo: 'Việc của bạn, gấp lên trước' },
-  { ma: 'viec-can-xu', ten: 'Việc cần xử', mo: 'Hội thoại và đơn chờ người' },
-  { ma: 'bot-noi-gi', ten: 'Bot nói gì', mo: 'Bộ luật · kỹ năng · kịch bản · ảnh · prompt' },
+  { ma: 'viec', ten: 'Việc', mo: 'Hội thoại và đơn đang chờ người' },
+  { ma: 'page', ten: 'Page', mo: 'Bật bot, xem còn thiếu gì, sửa lời bot' },
+  { ma: 'so-lieu', ten: 'Số liệu', mo: 'Khách, đơn, tiền — một khoảng ngày cho tất cả' },
+  { ma: 'cai-dat', ten: 'Cài đặt', mo: 'Kết nối, model, người — và màn ít dùng' },
   { ma: 'nhan-cho-khach', ten: 'Nhắn cho khách', mo: 'Ta chủ động nhắn — hàng loạt, đuổi theo, xin phép' },
-  { ma: 'page-san-pham', ten: 'Page & sản phẩm', mo: 'Bật bot, cửa kiểm, kho hàng' },
-  { ma: 'so-lieu', ten: 'Số liệu', mo: 'Đơn · tiền · khách · hoàn hàng' },
-  { ma: 'cai-dat', ten: 'Cài đặt', mo: 'Team · kết nối · model · nhật ký' },
 ]);
 
 /**
@@ -90,49 +95,55 @@ export const MUC_DU_TRU = Object.freeze(['nhan-cho-khach']);
  * `m` là module `index.js` của màn — đường và vai lấy từ đó.
  * `ten` và `nhom` là thứ DUY NHẤT khai ở đây, vì màn không tự biết mình tên gì trên menu.
  */
-const dat = (m, ten, nhom, moTa = '') => ({
+const dat = (m, ten, nhom, moTa = '', itDung = false) => ({
   duong: m.DUONG_TRANG,
   vai: m.VAI_VAO_DUOC,
   ten, nhom, moTa,
+  // `itDung` KHÔNG đổi quyền và KHÔNG bỏ màn khỏi menu — màn vẫn nằm trong mục của nó,
+  // vẫn bấm tới được, bài ④b vẫn xanh. Nó chỉ nói với thanh bên: xếp xuống dưới một vạch
+  // «Ít dùng», và đừng chìa lên thanh tab ngang. Mục «Cài đặt» có 13 màn; để cả 13 ngang
+  // hàng nhau là bắt người dùng đọc 13 dòng mỗi lần tìm một thứ họ dùng hằng tuần.
+  itDung,
 });
 
 export const MAN = Object.freeze([
-  dat(trangChu, 'Trang chủ', 'hom-nay', 'Việc của vai bạn, gấp lên trước'),
+  // ① VIỆC — mở mỗi sáng. Đây là mục DUY NHẤT vai `sale` thấy (01 §10), nên không màn
+  //    nào khác trong mục này được mở cho `sale`.
+  dat(dispatch, 'Bảng điều phối', 'viec', 'Việc chờ người, có đồng hồ đếm ngược'),
+  dat(trangChu, 'Trang chủ', 'viec', 'Việc của vai bạn, gấp lên trước'),
+  dat(hoSoKhach, 'Hồ sơ khách hàng', 'viec', 'Gộp ba kênh theo số điện thoại'),
+  dat(sucKhoe, 'Sức khoẻ hệ thống', 'viec', 'Chín đèn — hệ còn sống không'),
 
-  // Đường DUY NHẤT của vai `sale` — 01 §10: «sale không làm việc trên hệ thống này».
-  dat(dispatch, 'Bảng điều phối', 'viec-can-xu', 'Việc cần người xử, có đồng hồ đếm ngược'),
+  // ② PAGE — «page này bán được chưa, và bot nói gì trên đó».
+  dat(pageBot, 'Page & Bot', 'page', 'Công tắc bot, người phụ trách'),
+  dat(sanSang, 'Cửa kiểm sẵn sàng', 'page', 'Page còn thiếu gì mới bật được bot'),
+  dat(kichBan, 'Kịch bản', 'page', 'Lời bot nói riêng trên từng page'),
+  dat(sanPham, 'Sản phẩm & kho', 'page', 'Đọc từ POS, không gõ tay'),
 
-  // Bảy MẶT của một việc. Thứ tự là thứ tự người ta đi: sửa luật chung trước, rồi thu hẹp
-  // dần tới từng page, và «Prompt của page» đứng CUỐI vì nó là chỗ KIỂM LẠI sau khi sửa.
-  dat(boLuat, 'Bộ luật chung', 'bot-noi-gi', 'Dùng chung mọi page — sửa là cả team đổi'),
-  dat(kyNang, 'Thư viện kỹ năng', 'bot-noi-gi', 'Ba phạm vi, đếm page thật sự nhận'),
-  dat(kichBan, 'Kịch bản', 'bot-noi-gi', 'Soạn, duyệt, đưa lên LIVE, nhập từ Pancake'),
-  dat(aiDeXuat, 'AI đề xuất', 'bot-noi-gi', 'Bản do AI đề xuất — phải duyệt mới áp được'),
-  dat(lop0, 'Lớp trả lời 0 đồng', 'bot-noi-gi', 'Mẫu miễn phí — mỗi câu bắt được là 127 đ'),
-  dat(thuVienAnh, 'Thư viện ảnh', 'bot-noi-gi', 'Ảnh gắn nhãn theo chủ đề'),
-  dat(promptPage, 'Prompt của page', 'bot-noi-gi', 'Xem lại prompt thật sau khi sửa'),
+  // ③ SỐ LIỆU — để ĐỌC, không để ra lệnh. Cùng một khoảng ngày cho cả mục.
+  dat(baoCao, 'Báo cáo', 'so-lieu', 'Đơn và tỉ lệ chốt, tách hai luồng'),
+  dat(chiPhi, 'Chi phí AI', 'so-lieu', 'Tiền model theo page'),
+  dat(nguonKhach, 'Nguồn khách vào', 'so-lieu', 'Hai luồng đơn và chỗ khách rơi'),
 
-  // Bốn màn cùng trả lời một câu: «page này bán được chưa». Cửa kiểm là BẢNG ĐIỂM, ba màn
-  // kia là chỗ sửa cho điểm xanh — nên cửa kiểm đứng đầu.
-  dat(sanSang, 'Cửa kiểm sẵn sàng', 'page-san-pham', 'Bảy điều kiện, bấm ô đỏ nhảy tới chỗ sửa'),
-  dat(pageBot, 'Page & Bot', 'page-san-pham', 'Công tắc bot, marketer, page trọng điểm'),
-  dat(sanPham, 'Sản phẩm & kho', 'page-san-pham', 'Đọc từ nguồn của bot, không từ bảng v3'),
-  dat(lenChay, 'Đưa sản phẩm lên chạy', 'page-san-pham', 'Sáu chặng, mỗi chặng một cửa kiểm'),
+  // ④ CÀI ĐẶT — vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
+  dat(team, 'Cấu hình team', 'cai-dat', 'Thành viên, vai, gán page'),
+  dat(ketNoi, 'Kết nối & token', 'cai-dat', 'Pancake, POS, WhatsApp, Botcake'),
+  dat(model, 'Model AI & khoá', 'cai-dat', 'Nhà model, khoá, bảng giá'),
+  dat(nhatKy, 'Nhật ký thao tác', 'cai-dat', 'Ai làm gì — không sửa, không xoá'),
 
-  // Không màn nào ở đây dùng để RA LỆNH — chúng để ĐỌC. Nhịp khác hẳn bốn mục trên.
-  dat(baoCao, 'Báo cáo', 'so-lieu', 'Hai luồng đơn, ba thước — không cộng'),
-  dat(chiPhi, 'Chi phí AI', 'so-lieu', 'đ/tin · đ/đơn · page đốt tiền không ra đơn'),
-  dat(ruiRo, 'Rủi ro hoàn hàng', 'so-lieu', 'Phân bố tỉ lệ hoàn × số đơn'),
-  dat(hoSoKhach, 'Hồ sơ khách hàng', 'so-lieu', 'Gộp theo số điện thoại'),
-  dat(nguonKhach, 'Nguồn khách vào', 'so-lieu', 'Hai luồng song song, gặp nhau ở POS'),
-  dat(hieuQua, 'Hiệu quả kịch bản', 'so-lieu', 'A/B — chưa đủ mẫu thì nói chưa kết luận'),
-
-  // Vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
-  dat(team, 'Cấu hình team', 'cai-dat', 'Thành viên, vai, POS, gán page'),
-  dat(ketNoi, 'Kết nối & token', 'cai-dat', 'Kho token Pancake — hạ tầng dùng chung'),
-  dat(model, 'Model AI & khoá', 'cai-dat', 'Ba vai model, bảng giá, khoá theo nhà'),
-  dat(sucKhoe, 'Sức khoẻ hệ thống', 'cai-dat', 'Chín đèn, tự nạp lại mỗi phút'),
-  dat(nhatKy, 'Nhật ký thao tác', 'cai-dat', 'Ai làm gì, lúc nào — tách làn người/máy'),
+  // ⑤ CÙNG MỤC CÀI ĐẶT, phần «ít dùng». Chín màn này chưa có dữ liệu để hiện, hoặc đang
+  //    tắt trên máy chủ, hoặc một năm dùng một lần — để chúng ngang hàng với bốn màn trên
+  //    là bắt người dùng đọc mười ba dòng mỗi lần tìm một thứ. KHÔNG màn nào bị xoá:
+  //    đường dẫn còn nguyên, và chúng vẫn nằm trong menu nên không ai vào rồi kẹt.
+  dat(boLuat, 'Quy tắc chung của bot', 'cai-dat', 'Dùng chung mọi page — sửa là cả team đổi', true),
+  dat(kyNang, 'Thư viện kỹ năng', 'cai-dat', 'Bật theo nhóm sản phẩm', true),
+  dat(promptPage, 'Prompt thật của page', 'cai-dat', 'Xem lại đoạn chữ đang gửi cho model', true),
+  dat(lop0, 'Trả lời sẵn theo từ khoá', 'cai-dat', 'Câu miễn phí — đang tắt trên máy chủ', true),
+  dat(thuVienAnh, 'Thư viện ảnh', 'cai-dat', 'Ảnh gắn nhãn theo chủ đề', true),
+  dat(aiDeXuat, 'Gợi ý từ AI', 'cai-dat', 'Phải duyệt mới áp được', true),
+  dat(hieuQua, 'So hai bản kịch bản', 'cai-dat', 'Chưa đủ mẫu thì nói chưa kết luận', true),
+  dat(lenChay, 'Đưa sản phẩm lên chạy', 'cai-dat', 'Sáu chặng, mỗi chặng một cửa kiểm', true),
+  dat(ruiRo, 'Rủi ro hoàn hàng', 'cai-dat', 'Bốn tầng, đọc cột đã chấm sẵn', true),
 ]);
 
 /**

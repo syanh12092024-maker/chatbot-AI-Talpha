@@ -12,6 +12,7 @@
 export {
   datTaoTruyVan, daNoiTruyVanPage, congTruyVan,
   danhSachPage, motPage, gonPage, demTheoLoc, viSaoRong,
+  datDocSanSang, daNoiCuaKiem, gonCuaKiem, TEN_NGAN,
   LOC, CHU_LOC, MOI_TRANG, BANG, COT_BI_DI_TRU_GHI_DE, COT_SUA_DUOC,
   LoiPageBot,
 } from './kho-page.js';

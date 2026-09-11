@@ -114,6 +114,59 @@ function hopTim(p, tim) {
 export const MOI_TRANG = 50;
 
 /**
+ * BỘ ĐỌC CỬA KIỂM — tiêm từ `vai-b.js`, và phải là CÙNG hàm mà màn «Cửa kiểm sẵn sàng»
+ * dùng. Hai màn đọc hai nguồn là hai con số, rồi không ai biết tin cái nào.
+ *
+ * ⚠️ Không nối được ≠ mọi page đều ổn. Thiếu bộ đọc thì cột «Còn thiếu gì» phải nói
+ *    «chưa đọc được», KHÔNG được để trống — một ô trống trông y hệt «page này không
+ *    thiếu gì», và đó là kết luận ngược hẳn sự thật.
+ */
+let _docSanSang = null;
+export function datDocSanSang(fn) {
+  if (fn != null && typeof fn !== 'function') throw new TypeError('datDocSanSang: cần một hàm');
+  _docSanSang = fn || null;
+}
+export const daNoiCuaKiem = () => typeof _docSanSang === 'function';
+
+/** Đọc cửa kiểm một lần cho cả mẻ. Hỏng thì trả lý do, không ném — bảng page vẫn phải hiện. */
+async function docCuaKiem() {
+  if (!_docSanSang) {
+    return { doc: null, viSao: 'Chưa nối cầu sang tiến trình bot — xem màn Sức khoẻ hệ thống.' };
+  }
+  try {
+    const kq = await _docSanSang();
+    return { doc: new Map((kq?.pages || []).map((x) => [String(x.pageId), x])), viSao: null };
+  } catch (e) {
+    return { doc: null, viSao: `Cầu sang tiến trình bot lỗi: ${e?.message || e}` };
+  }
+}
+
+/** Một dòng cửa kiểm, rút gọn còn thứ bảng page cần: hiện gì trong ô, và màu gì. */
+export function gonCuaKiem(r) {
+  if (!r) return { ma: 'BOT_KHONG_THAY', ten: 'Bot không thấy page này', muc: 'chan' };
+  const chan = (r.blockers || [])[0];
+  if (chan) return { ma: chan.code, ten: TEN_NGAN[chan.code] || chan.code, muc: 'chan' };
+  const nhac = (r.warnings || [])[0];
+  if (nhac) return { ma: nhac.code, ten: TEN_NGAN[nhac.code] || nhac.code, muc: 'nhac' };
+  return { ma: 'READY', ten: 'Đủ điều kiện', muc: 'san' };
+}
+
+/**
+ * Tên NGẮN cho ô bảng — bảng có 50 dòng, câu dài làm vỡ cột.
+ * Câu đầy đủ và nút «đi sửa» vẫn ở màn «Cửa kiểm sẵn sàng`; đây chỉ là cái nhãn.
+ */
+export const TEN_NGAN = Object.freeze({
+  NO_TOKEN: 'Không có token',
+  MISSING_TAGS: 'Thiếu thẻ Pancake',
+  MISSING_PRODUCT: 'Chưa có bảng giá',
+  MISSING_SCRIPT: 'Chưa có lời chào',
+  MISSING_POS: 'Chưa nối POS',
+  THIN_SCRIPT: 'Kịch bản mỏng',
+  SCRIPT_STALE: 'Kịch bản cũ',
+  READY: 'Đủ điều kiện',
+});
+
+/**
  * Danh sách page của TEAM ĐANG MỞ, đã lọc và cắt trang.
  *
  * Lọc và cắt trang trong JS chứ không đẩy xuống SQL: tầng truy vấn của người A chỉ dựng
@@ -133,8 +186,16 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
   const t = Math.min(Math.max(0, Number(trang) || 0), soTrang - 1);
   const cat = daLoc.slice(t * MOI_TRANG, (t + 1) * MOI_TRANG);
 
+  // Cửa kiểm đọc MỘT lần cho cả trang, không phải mỗi dòng một lượt.
+  const { doc, viSao } = await docCuaKiem();
+
   return {
-    page: cat.map(gonPage),
+    page: cat.map((p) => ({
+      ...gonPage(p),
+      cuaKiem: doc ? gonCuaKiem(doc.get(String(p.page_id))) : null,
+    })),
+    cuaKiemDocDuoc: !!doc,
+    cuaKiemViSao: viSao,
     trang: t,
     soTrang,
     soKhop: daLoc.length,

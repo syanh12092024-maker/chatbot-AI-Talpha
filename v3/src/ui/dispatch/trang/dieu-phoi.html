@@ -56,6 +56,25 @@
   .hai{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   @media (max-width:1060px){ .hai{grid-template-columns:1fr} }
 
+  /* HAI CỘT (bản vẽ 11/09): danh sách bên trái, ô xem nhanh bên phải. Trước đây bấm một
+     dòng là nhảy hẳn sang trang khác, xem xong phải quay lại và tìm lại chỗ cũ.
+     Trang chi tiết KHÔNG bị bỏ: nó vẫn là nơi đóng việc, và vẫn mở thẳng bằng đường dẫn. */
+  .cot{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:16px;align-items:start}
+  @media (max-width:1280px){ .cot{grid-template-columns:1fr} }
+  .xem{position:sticky;top:16px}
+  .xem .body{padding:13px 15px}
+  .xem .hg{display:flex;gap:8px;align-items:baseline;padding:3px 0}
+  .xem .hg .nh{min-width:92px;color:var(--muted);font-size:12px}
+  .xem .nut-hang{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+  /* Cùng kiểu nút với trang chi tiết — hai trang cùng một việc thì không được hai kiểu.
+     Nhỏ hơn một bậc vì ô này hẹp 372px, không phải cả trang. */
+  .xem a.nut{display:inline-block;background:var(--pri);color:#fff;border-radius:9px;
+             padding:9px 15px;font-weight:700;font-size:13px;text-decoration:none}
+  .xem a.nut:hover{background:var(--priDark)}
+  .xem a.nut.phu{background:#fff;color:var(--pri);border:1px solid var(--line)}
+  .xem span.nut.mo{display:inline-block;background:#eef1f3;color:#9aa4ad;border-radius:9px;
+             padding:9px 15px;font-weight:700;font-size:13px}
+
   /* Đồng hồ: chữ số đều nhau để con số không nhảy ngang mỗi giây. */
   .dh{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
   .dh.gap{color:var(--warn)}
@@ -116,6 +135,8 @@
 <main>
   <div id="bao-dong"></div>
 
+  <div class="cot">
+  <div>
   <div class="hai">
     <section class="panel">
       <h2>Hội thoại cần xử <span class="pill m" id="n-ht">0</span>
@@ -141,6 +162,12 @@
   </div>
 
   <p class="empty" style="padding-top:4px">Tự làm mới mỗi 15 giây. Bấm một dòng để xem chi tiết rồi nhảy sang Pancake.</p>
+  </div>
+    <aside class="panel xem" id="o-xem">
+      <h2>Xem nhanh</h2>
+      <div class="empty">Bấm một dòng bên trái để xem khách là ai</div>
+    </aside>
+  </div>
 </main>
 
 <script>
@@ -296,18 +323,94 @@ async function tai() {
   } finally { dangTai = false; }
 }
 
-// Bấm bất cứ đâu trên dòng là mở màn chi tiết. Bấm đúng cái tên thì để thẻ <a> tự đi —
-// giữ được mở tab mới bằng chuột giữa.
+/* ═══════════ Ô XEM NHANH — cột phải ═══════════════════════════════════════════════
+ * Bấm một dòng thì nạp hồ sơ khách vào đây, KHÔNG rời trang. Trang chi tiết vẫn là nơi
+ * đóng việc (kết quả · lý do · chi phí) — nút «Mở việc đầy đủ» đi sang đó, và thẻ <a> ở
+ * cột tên vẫn mở tab mới bằng chuột giữa như cũ.
+ *
+ * Ô này CHỈ ĐỌC. Mọi lệnh ghi vẫn nằm trọn ở trang chi tiết: hai chỗ cùng ghi một dòng
+ * việc là hai chỗ phải giữ đồng bộ, và cái thứ hai bao giờ cũng là cái trôi.
+ */
+let xemId = null;
+
+function veXemRong(chu) {
+  document.getElementById('o-xem').innerHTML =
+    '<h2>Xem nhanh</h2><div class="empty">' + esc(chu) + '</div>';
+}
+
+function veHoSo(h) {
+  if (!h) return '';
+  if (!h.co) return '<div class="empty">' + esc(h.viSao || 'Không có hồ sơ khách') + '</div>';
+  const mau = h.tangHoan.muc === 'chan' ? 'r' : h.tangHoan.muc === 'nhac' ? 'o'
+    : h.tangHoan.muc === 'san' ? 'g' : 'm';
+  const hg = (nh, gt) => gt ? '<div class="hg"><span class="nh">' + nh + '</span><span>' + esc(gt) + '</span></div>' : '';
+  return '<div class="hg"><span class="nh">Rủi ro hoàn</span>'
+      + '<span class="pill ' + mau + '">' + esc(h.tangHoan.chu) + '</span></div>'
+    + hg('Tên', h.ten)
+    + hg('Số điện thoại', h.soDienThoai || '(khách chưa đưa số)')
+    + hg('Địa chỉ', h.diaChi)
+    + hg('Tổng số đơn', String(h.soDon));
+}
+
+async function moXem(id) {
+  xemId = id;
+  veXemRong('Đang đọc…');
+  let d;
+  try {
+    d = await doc('/api/dieu-phoi/viec/' + encodeURIComponent(id));
+  } catch (e) {
+    if (xemId !== id) return;                 // người dùng đã bấm dòng khác
+    veXemRong('Không đọc được việc này: ' + (e && e.message ? e.message : 'lỗi mạng'));
+    return;
+  }
+  if (xemId !== id) return;
+  const v = (d && d.viec) || {};
+  const lk = (d && d.lienKet) || {};
+  document.getElementById('o-xem').innerHTML =
+    '<h2>Xem nhanh<span class="sp"></span>'
+      + '<span class="hint">' + esc(v.tenPage || '') + '</span></h2>'
+    + '<div class="body">'
+      + '<div style="font-weight:700;font-size:14px;margin-bottom:2px">'
+        + esc(v.tenKhach || '(chưa có tên)') + '</div>'
+      + '<div class="chu" style="color:var(--muted);margin-bottom:9px">'
+        + esc((d && d.lyDoChu) || '') + '</div>'
+      + veHoSo(d && d.hoSoKhach)
+      + '<div class="nut-hang">'
+        + (lk.pancake
+            ? '<a class="nut" target="_blank" rel="noopener" href="' + esc(lk.pancake) + '">Mở Pancake</a>'
+            : '<span class="nut mo" title="Việc này không gắn hội thoại nào">Mở Pancake</span>')
+        + '<a class="nut phu" href="/viec/' + encodeURIComponent(id) + '">Mở việc đầy đủ</a>'
+      + '</div>'
+      // Ô cho khối «Đánh dấu đã xử». CÙNG một bản với trang chi tiết
+      // (`trang/dong-viec-ui.js`) — không chép, vì hai chỗ cùng ghi một dòng việc thì cái
+      // thứ hai bao giờ cũng là cái ghi theo luật cũ.
+      + '<div id="o-dong-viec" style="margin-top:12px"></div>'
+    + '</div>';
+
+  if (window.DongViecUI) {
+    // Ghi xong thì tải lại CẢ danh sách (số đếm và thứ tự đổi theo) rồi mở lại chính việc
+    // này — để người dùng thấy trạng thái vừa ghi, không phải tự đoán.
+    window.DongViecUI.gan(d, { sauKhiGhi: async () => { await tai(); await moXem(id); } });
+  } else {
+    document.getElementById('o-dong-viec').innerHTML =
+      '<div class="banner o">Không tải được khối đánh dấu đã xử.<span class="s">'
+      + 'Tải lại trang, hoặc bấm “Mở việc đầy đủ”.</span></div>';
+  }
+}
+
+// Bấm bất cứ đâu trên dòng là mở Ô XEM NHANH bên phải. Bấm đúng cái tên thì để thẻ <a>
+// tự đi sang trang chi tiết — giữ được mở tab mới bằng chuột giữa.
 document.addEventListener('click', (ev) => {
   if (ev.target.closest('a')) return;
   const tr = ev.target.closest('tr[data-id]');
-  if (tr) location.href = '/viec/' + encodeURIComponent(tr.getAttribute('data-id'));
+  if (tr) moXem(tr.getAttribute('data-id'));
 });
 
 setInterval(nhipDongHo, 1000);
 setInterval(tai, CHU_KY_TAI_MS);
 tai();
 </script>
+<script src="/dieu-phoi/dong-viec-ui.js"></script>
 <script src="/chung/dieu-huong.js"></script>
 </body>
 </html>
