@@ -669,6 +669,73 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   (5) `V3_RAP_PROMPT_BAT` chưa bật ở đâu ⇒ ba khối kỹ năng/kịch bản/sản phẩm từ CSDL chưa
   điều khiển đường chat. Bật là việc người (H9 cutover).
 
+
+- 11/09 · TIẾP QUẢN — 🔴 **BOT TẮT 13,7 NGÀY MÀ BẢNG SỨC KHOẺ BÁO XANH TOÀN BỘ.**
+  Đo trên cổng 3100 lúc 02:55 UTC 11/09: `aiPages: 0` · `repliesSinceBoot: 0` (chạy 21,3
+  giờ) · Sổ AI dòng cuối **28/08/2026 09:56 UTC**. Tầng LLM KHOẺ (probe ok 773ms,
+  kimi-k2.6), token Pancake 0/6 chết, 0 page backoff ⇒ **không phải H6 tái phát**. Bot
+  không chết; bot đang TẮT, và `ai-enabled.json` rỗng.
+  Vì sao không đèn nào đỏ — hai check đáng đỏ bị ép xanh bởi CÙNG một điều kiện:
+  `ai_silent: (peak && aiPages > 0 && replies1h === 0) ? RED : GREEN` ·
+  `log_stale: (peak && aiPages > 0 && staleMin > 30) ? RED : GREEN`.
+  Logic «chưa bật gì thì đừng kêu» tự nó đúng, nhưng hệ quả là hệ tắt hoàn toàn thì bảng
+  xanh hết — đúng cảnh M19 sinh ra để chống, lọt qua bằng cửa khác. THIẾU đúng một đèn:
+  `aiPages === 0` → mức CAM, câu «hệ đang không phục vụ ai, Sổ AI dòng cuối <ngày>». Vá ở
+  `src/health.js`. ⚠️ Việc NGƯỜI đi TRƯỚC: hỏi ai tắt ngày 28/08 và vì sao — bật lại mà
+  chưa biết lý do là tái hiện đúng sự cố đã khiến người ta tắt.
+  Nhật ký: `docs/thi-cong/nhat-ky/tiep-quan-09-09.md` §3a.
+
+- 11/09 · TIẾP QUẢN — 🔴 **MÁY CHỦ CHẠY HAI APP, TÀI LIỆU CHỈ KHAI MỘT.**
+  `docs/TONG-QUAN-HE-THONG.md §3.2` liệt kê bốn app dùng chung VPS: 3000 · 3001 · 3002 ·
+  3100. Thực tế còn **cổng 3102 = bản v3** (`v3/chay-that.js:144`, `CHAYTHAT_CONG || 3102`),
+  phục vụ `/dieu-phoi`, `/page-bot`, `/kich-ban`… Đo: `GET http://169.58.33.8:3102/` → 302
+  tới `/dieu-phoi`; `GET :3100/admin/api/pages` → 401 «Cần đăng nhập.» (nguyên văn
+  `src/server.js:48`) ⇒ 3100 = repo này. Người tiếp quản mở 3102, gọi `/admin/api/*` (đường
+  của v1) và nhận 404 — mất nửa buổi vì tưởng mất mã nguồn. Vá: thêm một dòng vào bảng
+  §3.2, ghi rõ **3100 = v1 (`/admin`) · 3102 = v3 (`/dieu-phoi`)**.
+  Nhật ký: `tiep-quan-09-09.md` §3b.
+
+- 11/09 · TIẾP QUẢN — 🔴 **LƯỢC ĐỒ KHÔNG MÔ HÌNH HOÁ ĐƯỢC «MỘT SẢN PHẨM Ở NHIỀU PAGE».**
+  Người quyết mô tả 11/09: mỗi page bán một SP, nhưng **một SP xuất hiện ở nhiều page,
+  nhiều thị trường**. Lược đồ 001 cho `san_pham` có `UNIQUE (team_id, ma)` và ĐÚNG MỘT cột
+  `page_id`. Cùng một biến thể POS bán trên ba page thì chỉ một page được nối; hai page kia
+  `docSanPhamGoiGia()` trả rỗng ⇒ `kb.noData` ⇒ bot nói «chưa có sản phẩm» rồi bàn giao.
+  Không migration nào từ 002→013 nới ràng buộc đó.
+  ⚠️ **SUY TỪ LƯỢC ĐỒ, CHƯA ĐO TRÊN DỮ LIỆU THẬT** (máy tiếp quản không có CSDL). Có thể
+  thực tế mỗi page dùng một variation POS riêng dù bán cùng mặt hàng — một câu SQL trên VPS
+  là biết. Đo trước khi kết luận.
+
+- 11/09 · TIẾP QUẢN — 🔴 **TẦNG «SẢN PHẨM» CỦA CÂY KỊCH BẢN BA TẦNG KHÔNG PHỦ ĐƯỢC NHIỀU NƯỚC.**
+  `kich_ban.san_pham_ma` dùng chung vốn từ với `ky_nang.bat_cho_nhom_sp`, tức `san_pham.ma`.
+  Mà `san_pham.ma` dựng ở `src/pos/doc-danh-muc.js:102` là `` `${ketNoi.shopId}:${v.id}` `` —
+  MANG THEO mã shop, và mỗi thị trường là một shop POS riêng. Hệ quả: cùng một sản phẩm ở
+  Saudi và UAE có hai mã khác nhau, nên bản `cap='san_pham'` thực chất là «sản phẩm trong
+  MỘT shop», và tầng `cap='nuoc'` — khoá `(san_pham_ma, thi_truong)` — thành dư thừa.
+  Cộng chú thích sẵn có ở migration 010: `page.thi_truong` mới có ở **140/514** page ⇒ tầng
+  nước chỉ với tới 27% số page. Đây đúng hình dạng kinh doanh mà cây ba tầng sinh ra để
+  phục vụ, nên đáng cân TRƯỚC khi GD2 đi tiếp. Cùng cảnh báo «chưa đo dữ liệu thật» như mục trên.
+
+- 11/09 · UI-GOM-4 — 🧭 **ÁN LỆ: THAY CHUỖI BẰNG MỘT KHÚC CON CỦA KHAI BÁO DÀI HƠN.**
+  Sửa `chi-tiet-viec.html` bằng phép thay chuỗi `"function veDongViec(d) {"` — mà nó là khúc
+  con của `"async function veDongViec(d) {"`. Khối mới rơi vào GIỮA `async` và `function`.
+  Trang thành lỗi cú pháp: **vẫn hiện bình thường, mọi nút trên đó chết**, và **104 bài test
+  của dispatch vẫn XANH** vì không bài nào đọc script trong trang. Cùng họ với án lệ ⑤c
+  (01/09, dấu huyền ngược trong `dieu-huong.js`), chỉ khác cơ chế.
+  Đã vá: `v3/test/b/trang-parse-duoc.test.mjs` đọc MỌI `trang/*.html` và bắt phân tích từng
+  khối `<script>` — bắt được đúng lỗi này ngay lượt chạy đầu. 📌 Bài học: neo phép thay chuỗi
+  vào RANH GIỚI DÒNG, đừng neo vào một chuỗi có thể là khúc con của chuỗi dài hơn.
+  Nhật ký: `docs/thi-cong/nhat-ky/ui-gom-4-11-09.md` §3.
+
+- 11/09 · TIẾP QUẢN — ⬜ **GIẤY TỜ TRÔI, SỬA MỘT LƯỢT (việc của TỔNG).**
+  ① Nhịp tim đầu sổ đứng ở 23/08 («SÓNG VÁ 2/4, đang chạy VA-R1+VA-R2»), trong khi VA-R1 ✅
+     `1562d58`, VA-R2 ✅ `5caf5be`, gate RVA ✅ — §10 đã ghi tới 01/09.
+  ② Bảng §5b vẫn ghi VA-R1 · VA-R2 «🎫 chờ review», dù cả hai đã có cổng riêng
+     (`va-r1.sh` 12/12 · `va-r2.sh` 17/17) và §10 01/09 báo 25/25 cổng rc=0.
+  ③ `BAN-GIAO-CHUYEN-CONG-CU.md §1` ghi «chưa push — ~100 commit local»; thực tế
+     `origin/main` = `af1e764`, nay còn 3 commit chưa push.
+  ④ Sổ ghi «Node v25»; máy tiếp quản chạy **v24.19.0**, mà ba cổng `a7-*` nhận khuôn Node 25.
+  Nhật ký: `tiep-quan-09-09.md` §2.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
@@ -1398,3 +1465,16 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   hằng `CORE`; bản v1 trong `bo_luat_chung` **bằng CORE từng ký tự** nên chưa đổi chữ nào bot
   nói, chỉ mở đường · `V3_RAP_PROMPT_BAT=1` đã bật trên máy dev (đo: khối 1 lấy từ nguồn
   `csdl`, 6.734 ký tự). Còn chờ người: bật cờ đó trên VPS `169.58.33.8`.
+
+
+- 09/09 · TIẾP QUẢN (phiên mới, chưa nhận vai tổng) → 🔎 — đo bảy phép, **bốn đo được ba
+  mù** vì máy không có `.env` lẫn Postgres; bốn chỗ sổ khai lệch với máy đã ghi §9. Cổng
+  tĩnh `ops/bin/kiem-tinh.sh` rc=0 (PHÉP=5 ĐỎ=0) · không commit · nhật ký
+  `docs/thi-cong/nhat-ky/tiep-quan-09-09.md`.
+- 11/09 · UI-GOM-4 (lệnh trực tiếp người quyết, KHÔNG qua phiếu) → ✅ — gom giao diện v3 còn
+  bốn màn: thanh bên 24→4 + vạch «Ít dùng» · dải trạng thái «bot đang bật N/M page» trên mọi
+  trang · cột «Còn thiếu gì» trong bảng Page · hồ sơ khách trong chi tiết việc · hai cột +
+  đóng việc tại chỗ trên bảng điều phối · ba màn số liệu khai khoảng đo. KHÔNG màn nào bị
+  xoá. Test 263/263 xanh (16 bộ chạy được không cần CSDL) · cổng tĩnh PHÉP=5 ĐỎ=0 · commit
+  `7cd8cac` · ⛔ chưa push · CHƯA chạy `npm test` và 25 cổng · nhật ký
+  `docs/thi-cong/nhat-ky/ui-gom-4-11-09.md`.
