@@ -1,17 +1,31 @@
 # BỘ CA + CỔNG NGHIỆM THU — CHẠY TAY.
 #
-# ⚠️ CHƯA AI NGHIỆM THU WORKFLOW NÀY. Nó được viết theo đúng cách dựng môi
-# trường ghi ở docs/thi-cong/BAN-GIAO-CHUYEN-CONG-CU.md §3, nhưng chưa từng chạy
-# xanh ở đâu — máy dev 09/09 không có Docker nên không đối chứng được.
+# ═══ LƯỢT CHẠY ĐẦU TIÊN: 14/09/2026, run 34795871010 ══════════════════════════════
+# 1.664 ca · 1.639 xanh · 23 ĐỎ. Môi trường CHẠY ĐƯỢC: Postgres 16 lên, `npm run migrate`
+# dựng đủ 21 bảng. Trước lượt này workflow chưa từng chạy xanh ở đâu.
 #
-# Cách nhận nuôi nó:
-#   1. Chạy xanh ở máy có Postgres: `npm run migrate && npm test`
-#   2. Chạy tay workflow này một lượt (tab Actions → Run workflow), đọc số
-#   3. Xanh rồi thì đổi `on:` thành push/pull_request và ghi một dòng vào §10 sổ
+# 21 trong 23 ca đỏ là vì CI KHÔNG CÓ DỮ LIỆU THẬT (`pages.json`, `conv-state.json`,
+# `ai-enabled.json`… đều gitignore, chỉ có trên máy dev/VPS) — đúng giới hạn đã ghi trước.
+# Nay chúng HOÃN MINH BẠCH thay vì đỏ, qua `test/_can-du-lieu-that.mjs`: trên máy CÓ dữ
+# liệu chúng vẫn chạy như thường, không mất phép đo nào.
+#   · 19 ca `test/l0-m1-di-tru.test.js`  — cả tệp là phép di trú
+#   · 2 ca `test/l0-m2-noi-dung.test.js` (N5 · N11) — đọc nguồn thật `ai-enabled.json`
 #
-# `npm run di-tru` KHÔNG chạy được ở đây: nó cần dữ liệu thật (pages.json,
-# conv-state.json…) vốn bị gitignore và chỉ có trên máy dev/VPS. Bộ ca nào cần
-# dữ liệu đã di trú sẽ đỏ — đó là giới hạn THẬT của cổng này, không phải lỗi.
+# ⚠️ CÒN 2 CA ĐỎ CHƯA GIẢI THÍCH ĐƯỢC — `test/l2-m1-nhac-truong.test.js` N1a và N4:
+#     N1a: `cuaV3.guiAnh` kỳ vọng 2, đo được 0 («2 ảnh của KB, qua cửa v3»)
+#     N4:  `thiếu loại 'image'` — hệ quả của N1a
+#   KB của N1a là fixture GÕ CỨNG trong test (ảnh là URL tuyệt đối `https://vi-du.test/…`),
+#   và `lopTuKhoa` không có cổng môi trường nào. Nên KHÔNG phải thiếu dữ liệu.
+#   CỐ Ý ĐỂ ĐỎ. Hoãn một ca chưa hiểu là tự dựng cổng mù — đúng cảnh «màn trống vẫn đạt».
+#   Phải chạy hai ca này trên máy CÓ `.env` rồi so, mới biết nó là lỗi mã hay lỗi thước.
+#
+# ═══ CÁCH NHẬN NUÔI (bước 1–2 XONG, bước 3 chờ hai ca trên) ═══════════════════════
+#   1. ✅ Chạy được trên Postgres: `npm run migrate && npm test`
+#   2. ✅ Chạy tay workflow này một lượt, đọc số
+#   3. ⬜ Giải quyết N1a/N4 → xanh trọn → đổi `on:` thành push/pull_request + ghi §10 sổ
+#
+# `npm run di-tru` KHÔNG chạy được ở đây: nó cần dữ liệu thật vốn bị gitignore và chỉ có
+# trên máy dev/VPS. Đó là giới hạn THẬT của cổng này, không phải lỗi.
 
 name: bộ ca (chạy tay)
 

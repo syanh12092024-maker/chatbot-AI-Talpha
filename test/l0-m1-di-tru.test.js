@@ -5,6 +5,7 @@
 // phép nào chỉ nói «chạy xong không lỗi».
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
+import { thieuDuLieuThat } from "./_can-du-lieu-that.mjs";
 import fs from "node:fs";
 import { dungSandbox } from "../db/sandbox.js";
 import { GOC } from "../db/ket-noi.js";
@@ -34,16 +35,27 @@ const vanTayNguon = () =>
     }),
   );
 
+// CẢ TỆP đo phép DI TRÚ: đọc `pages.json` · `conv-state.json` · `ai-enabled.json` ·
+// `script-versions/` ở gốc repo rồi ghi sang lược đồ mới. Không có mấy tệp đó thì không có
+// gì để di trú — 19 ca này HOÃN, không đỏ. Trên máy dev/VPS chúng chạy như thường.
+const canNguonThat = {
+  skip: thieuDuLieuThat("pages.json", "conv-state.json", "ai-enabled.json"),
+};
+
 before(async () => {
+  // Hoãn thì KHÔNG dựng sandbox và KHÔNG chạy di trú — `before` nổ thì 19 ca thành ĐỎ
+  // chứ không thành HOÃN, và ta quay về đúng chỗ vừa đi ra.
+  if (canNguonThat.skip) return;
   sb = await dungSandbox("ditru");
   dauTep = vanTayNguon();
   kq1 = await chay(sb.pool, GOC);
 });
 after(async () => {
+  if (canNguonThat.skip) return;
   await sb.don();
 });
 
-test("D1 · mọi trường của conv-state.json đều có ĐÍCH khai trong bản đồ (không rơi im lặng)", () => {
+test("D1 · mọi trường của conv-state.json đều có ĐÍCH khai trong bản đồ (không rơi im lặng)", canNguonThat, () => {
   const that = docConvState(GOC).khoaThat;
   const khongCoDich = that.filter((k) => !(k in BAN_DO_CONV_STATE));
   const khaiThua = Object.keys(BAN_DO_CONV_STATE).filter(
@@ -55,7 +67,7 @@ test("D1 · mọi trường của conv-state.json đều có ĐÍCH khai trong b
   );
 });
 
-test("D2 · tập page_id: pages.json ↔ bảng page, diff HAI CHIỀU = rỗng", async () => {
+test("D2 · tập page_id: pages.json ↔ bảng page, diff HAI CHIỀU = rỗng", canNguonThat, async () => {
   const nguon = new Set(docPages(GOC).map((p) => p.pageId));
   const r = await sb.pool.query("SELECT page_id FROM page");
   const dich = new Set(r.rows.map((x) => x.page_id));
@@ -69,7 +81,7 @@ test("D2 · tập page_id: pages.json ↔ bảng page, diff HAI CHIỀU = rỗng
   assert.equal(dich.size, nguon.size);
 });
 
-test("D3 · CÔNG TẮC AI: diff hai chiều, chiều thiếu ĐÚNG BẰNG danh sách page lạc", async () => {
+test("D3 · CÔNG TẮC AI: diff hai chiều, chiều thiếu ĐÚNG BẰNG danh sách page lạc", canNguonThat, async () => {
   const bat = new Set(docAiEnabled(GOC));
   const r = await sb.pool.query("SELECT page_id FROM page WHERE bot_ai_bat");
   const trongDb = new Set(r.rows.map((x) => x.page_id));
@@ -89,7 +101,7 @@ test("D3 · CÔNG TẮC AI: diff hai chiều, chiều thiếu ĐÚNG BẰNG danh
   assert.equal(trongDb.size + thieu.length, bat.size);
 });
 
-test("D4 · hội thoại: số khoá hợp khuôn ↔ count(hoi_thoai), khoá lạ được liệt kê", async () => {
+test("D4 · hội thoại: số khoá hợp khuôn ↔ count(hoi_thoai), khoá lạ được liệt kê", canNguonThat, async () => {
   const { hoiThoai, khoaLa } = docConvState(GOC);
   const r = await sb.pool.query("SELECT count(*)::int c FROM hoi_thoai");
   assert.equal(r.rows[0].c, hoiThoai.length);
@@ -97,7 +109,7 @@ test("D4 · hội thoại: số khoá hợp khuôn ↔ count(hoi_thoai), khoá l
   assert.equal(hoiThoai.length + khoaLa.length, Object.keys(raw).length);
 });
 
-test("D5 · PHÉP QUY ĐỔI kịch bản: (bản script-versions + bản kb riêng) − bản của page lạc", async () => {
+test("D5 · PHÉP QUY ĐỔI kịch bản: (bản script-versions + bản kb riêng) − bản của page lạc", canNguonThat, async () => {
   const { ban, soTepLichSu, soMucKb, kbRieng, kbKhongCfg } = docKichBan(GOC);
   // VẾ NGUỒN đo LẠI ĐỘC LẬP, không lấy từ chính hàm đang bị đo.
   const d = duongDan(GOC);
@@ -130,7 +142,7 @@ test("D5 · PHÉP QUY ĐỔI kịch bản: (bản script-versions + bản kb ri�
   }
 });
 
-test("D6 · IDEMPOTENT: lượt hai không đổi một con số nào", async () => {
+test("D6 · IDEMPOTENT: lượt hai không đổi một con số nào", canNguonThat, async () => {
   const dem = async () => {
     const r = await sb.pool.query(`SELECT
       (SELECT count(*) FROM page)::int page,
@@ -145,7 +157,7 @@ test("D6 · IDEMPOTENT: lượt hai không đổi một con số nào", async ()
   assert.deepEqual(await dem(), truoc);
 });
 
-test("D7 · page LẠC được liệt kê đủ, kèm nguồn nhắc tới nó", async () => {
+test("D7 · page LẠC được liệt kê đủ, kèm nguồn nhắc tới nó", canNguonThat, async () => {
   const lac = pageLac(GOC);
   const trongSoCai = new Set(docPages(GOC).map((p) => p.pageId));
   for (const p of lac) {
@@ -163,11 +175,11 @@ test("D7 · page LẠC được liệt kê đủ, kèm nguồn nhắc tới nó"
   );
 });
 
-test("D8 · CHỈ ĐỌC: kích thước + mtime của mọi tệp nguồn không đổi sau di trú", () => {
+test("D8 · CHỈ ĐỌC: kích thước + mtime của mọi tệp nguồn không đổi sau di trú", canNguonThat, () => {
   assert.deepEqual(vanTayNguon(), dauTep);
 });
 
-test("D9 · llmTurns là MẢNG MỐC: luot_llm = độ dài, mốc giữ nguyên (không phải epoch)", async () => {
+test("D9 · llmTurns là MẢNG MỐC: luot_llm = độ dài, mốc giữ nguyên (không phải epoch)", canNguonThat, async () => {
   const raw = JSON.parse(fs.readFileSync(duongDan(GOC).convState, "utf8"));
   const mau = Object.entries(raw)
     .filter(
@@ -196,7 +208,7 @@ test("D9 · llmTurns là MẢNG MỐC: luot_llm = độ dài, mốc giữ nguyê
   }
 });
 
-test("D10 · kịch bản giữ CẢ HAI bản: bản-cho-người 6 trường + bản-cho-máy", async () => {
+test("D10 · kịch bản giữ CẢ HAI bản: bản-cho-người 6 trường + bản-cho-máy", canNguonThat, async () => {
   const r = await sb.pool.query(
     `SELECT noi_dung_nguoi, noi_dung_may FROM kich_ban
      WHERE trang_thai='LIVE' AND noi_dung_may <> '' LIMIT 3`,
@@ -219,7 +231,7 @@ test("D10 · kịch bản giữ CẢ HAI bản: bản-cho-người 6 trường +
   }
 });
 
-test("D11 · toàn bộ dữ liệu di trú nằm ở team KỸ THUẬT chua-phan (chờ H7), 0 dòng team nghiệp vụ", async () => {
+test("D11 · toàn bộ dữ liệu di trú nằm ở team KỸ THUẬT chua-phan (chờ H7), 0 dòng team nghiệp vụ", canNguonThat, async () => {
   const r = await sb.pool.query(
     `SELECT t.slug, count(*)::int c FROM page p JOIN team t ON t.id = p.team_id GROUP BY 1`,
   );
@@ -242,7 +254,7 @@ test("D11 · toàn bộ dữ liệu di trú nằm ở team KỸ THUẬT chua-pha
 const mocPage = async () =>
   (await sb.pool.query("SELECT page_id FROM page ORDER BY id LIMIT 1")).rows[0].page_id;
 
-test("Y4-1 · marketer NGƯỜI đặt SỐNG SÓT qua một lượt di trú", async () => {
+test("Y4-1 · marketer NGƯỜI đặt SỐNG SÓT qua một lượt di trú", canNguonThat, async () => {
   const pid = await mocPage();
   await sb.pool.query("UPDATE page SET marketer = $1 WHERE page_id = $2", [
     "chi-lan-y4",
@@ -254,7 +266,7 @@ test("Y4-1 · marketer NGƯỜI đặt SỐNG SÓT qua một lượt di trú", a
   assert.equal(r.rows[0].marketer, "chi-lan-y4");
 });
 
-test("Y4-2 · page CHƯA ai gán thì VẪN nhận marketer từ nguồn (không khoá cứng)", async () => {
+test("Y4-2 · page CHƯA ai gán thì VẪN nhận marketer từ nguồn (không khoá cứng)", canNguonThat, async () => {
   // ⚠️ Nhánh này KHÔNG chạm được bằng dữ liệu thật: `pages.json` của repo có 0 marketer
   // (đo 25/08). Nên dựng một GỐC tạm mang đúng một page có marketer, và khai rõ ở đây là
   // ca này chạy trên HẠT GIỐNG, không phải trên nguồn thật.
@@ -285,7 +297,7 @@ test("Y4-2 · page CHƯA ai gán thì VẪN nhận marketer từ nguồn (không
   }
 });
 
-test("Y4-3 · marketer rỗng + nguồn rỗng → vẫn rỗng, không nổ", async () => {
+test("Y4-3 · marketer rỗng + nguồn rỗng → vẫn rỗng, không nổ", canNguonThat, async () => {
   const pid = await mocPage();
   await sb.pool.query("UPDATE page SET marketer = '' WHERE page_id = $1", [pid]);
   await napPage(sb.pool, GOC);
@@ -293,7 +305,7 @@ test("Y4-3 · marketer rỗng + nguồn rỗng → vẫn rỗng, không nổ", a
   assert.equal(r.rows[0].marketer, "");
 });
 
-test("Y4-4 · cột MÁY đặt VẪN được ghi đè — vá này không được làm cứng cả bảng", async () => {
+test("Y4-4 · cột MÁY đặt VẪN được ghi đè — vá này không được làm cứng cả bảng", canNguonThat, async () => {
   const pid = await mocPage();
   const truoc = (
     await sb.pool.query("SELECT ten FROM page WHERE page_id = $1", [pid])
@@ -306,7 +318,7 @@ test("Y4-4 · cột MÁY đặt VẪN được ghi đè — vá này không đư
   assert.equal(sau, truoc, "cột do MÁY đặt phải quay về giá trị nguồn");
 });
 
-test("Y4-5 · marketer là cột NGƯỜI đặt DUY NHẤT trong câu ghi đè (đọc file thật)", async () => {
+test("Y4-5 · marketer là cột NGƯỜI đặt DUY NHẤT trong câu ghi đè (đọc file thật)", canNguonThat, async () => {
   // Đối chiếu bằng chính văn bản SQL, không gõ lại theo trí nhớ. Ai thêm một cột NGƯỜI
   // đặt vào câu đó sau này thì ca này phải đỏ — đó là cả lý do nó tồn tại.
   const src = fs.readFileSync(`${GOC}/db/di-tru/nap.js`, "utf8");
@@ -327,7 +339,7 @@ test("Y4-5 · marketer là cột NGƯỜI đặt DUY NHẤT trong câu ghi đè 
 // 28/08): hàm nối đã có (A7-2), chỗ thiếu là một đường CHẠY nó. Ba ca dưới khoá đúng ba
 // điều phiếu B-Y9 đòi: có nối, đếm được phần KHÔNG nối, và không nối bừa.
 
-test("D-Y9a · bộ di trú CÓ chạy bước nối, và trả thống kê đủ để trả lời «vì sao chưa nối»", async () => {
+test("D-Y9a · bộ di trú CÓ chạy bước nối, và trả thống kê đủ để trả lời «vì sao chưa nối»", canNguonThat, async () => {
   const nk = kq1.noiHoSoKhach;
   assert.ok(nk, "di trú phải chạy bước nối hồ sơ khách");
   if (nk.chuaCoCot) {
@@ -341,7 +353,7 @@ test("D-Y9a · bộ di trú CÓ chạy bước nối, và trả thống kê đ�
   assert.ok(Array.isArray(nk.pageThieuShop));
 });
 
-test("D-Y9b · KHÔNG nối bừa: mọi `hoi_thoai.khach_id` trỏ tới khách CÓ THẬT, CÙNG team", async () => {
+test("D-Y9b · KHÔNG nối bừa: mọi `hoi_thoai.khach_id` trỏ tới khách CÓ THẬT, CÙNG team", canNguonThat, async () => {
   const r = await sb.pool.query(
     `SELECT count(*)::int c
        FROM hoi_thoai h
@@ -351,7 +363,7 @@ test("D-Y9b · KHÔNG nối bừa: mọi `hoi_thoai.khach_id` trỏ tới khách
   assert.equal(r.rows[0].c, 0, "nối sai còn tệ hơn không nối — phiếu B-Y9 ⑤");
 });
 
-test("D-Y9c · chạy LẠI không đẻ thêm hội thoại nối trùng (idempotent)", async () => {
+test("D-Y9c · chạy LẠI không đẻ thêm hội thoại nối trùng (idempotent)", canNguonThat, async () => {
   const dem = async () => (await sb.pool.query(
     "SELECT count(khach_id)::int c FROM hoi_thoai",
   )).rows[0].c;
