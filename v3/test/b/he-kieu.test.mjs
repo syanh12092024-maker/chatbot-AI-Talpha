@@ -195,53 +195,19 @@ test("HK7 · màn «Bắt đầu» KHÔNG dựng nguồn dữ liệu hay cửa g
     "nút bật phải gọi ĐÚNG đường đã có của màn Page & Bot");
 });
 
-test("HK8 · CẦU DI TRÚ phải TEO đi — đếm số màn còn phụ thuộc tên cũ", () => {
-  // Cầu di trú (20 token tên cũ trong `ds-dau`) là lớp TẠM. Hai tên cho một thứ chính là
-  // mầm lệch nhau; giữ nó chỉ để 25 màn không mất màu giữa đường.
+test("HK8 · CẦU DI TRÚ đã gỡ — và không màn nào được dùng lại tên cũ", () => {
+  // Cầu di trú (20 token tên cũ trong `ds-dau`) là lớp TẠM, dựng 14/09 để 25 màn không mất
+  // màu giữa đường. Cùng ngày, cả 25 màn rời hết CSS riêng, nên cầu đã được GỠ.
   //
-  // Ca này neo CON SỐ. Viết lại một màn theo tên mới thì số giảm và ca đỏ — người sửa hạ
-  // con số xuống, và thấy rõ mình vừa đi được một bước. Thêm màn dùng tên cũ thì cũng đỏ.
-  // Khi số về 0, xoá cả khối cầu trong `kieu.css` và xoá luôn ca này.
-  const UI = path.join(GOC, "v3/src/ui");
+  // Ca này đổi chiều: trước đây đếm số màn còn phụ thuộc (số phải giảm); nay canh KHÔNG ai
+  // dựng lại. Hai tên cho một thứ là mầm lệch nhau, và lần sau mọc lại thì mọc lặng lẽ.
   const TEN_CU = /var\(\s*--(bg|panel|ink|muted|xam|line|side|r|sh|pri|priDark|priSoft|ok|okSoft|bad|badSoft|warn|warnSoft|tim|timSoft)\s*\)/;
 
+  assert.ok(!/--ink\s*:\s*var\(/.test(khongChuThich) && !/--priSoft\s*:\s*var\(/.test(khongChuThich),
+    "khối cầu di trú mọc lại trong `kieu.css` — 25 màn không còn ai cần nó");
+
+  const UI = path.join(GOC, "v3/src/ui");
   const conDung = [];
-  for (const d of fs.readdirSync(UI, { withFileTypes: true })) {
-    if (!d.isDirectory()) continue;
-    const t = path.join(UI, d.name, "trang");
-    if (!fs.existsSync(t)) continue;
-    for (const f of fs.readdirSync(t).filter((x) => x.endsWith(".html"))) {
-      const s = fs.readFileSync(path.join(t, f), "utf8");
-      const kieu = (s.match(/<style>[\s\S]*?<\/style>/g) || []).join("\n");
-      if (TEN_CU.test(kieu)) conDung.push(`${d.name}/${f}`);
-    }
-  }
-
-  // 14/09 · 25 → 24: «Công tắc từng page» viết lại trên hệ kiểu, bỏ hết 96 dòng CSS riêng.
-  // 14/09 · 24 → 23: «Việc của tôi». 23 → 22: «Kịch bản của page». 22 → 21: «Quy tắc chung».
-  //         21 → 20: «Câu trả lời sẵn». 20 → 19: «Chi phí AI».
-  //         19 → 18: «Ai đã sửa gì». 18 → 17: «Người và team».
-  //         17 → 16: «Kết nối & token». 16 → 15: «Model AI & khoá».
-  //         15 → 14: «Page còn thiếu gì». 14 → 13: «Hệ còn sống không».
-  //         13 → 11: hai màn của «Việc đang chờ». 11 → 10: «Khách hàng».
-  //         10 → 9: «Kỹ năng theo sản phẩm». 9 → 8: «Đơn và tỉ lệ chốt».
-  //         8 → 7: «Khách vào từ đâu».
-  //         7 → 6: «Rủi ro hoàn hàng».
-  //         6 → 5: «Đoạn chữ gửi cho AI».
-  //         5 → 4: «Ảnh gửi khách».
-  //         4 → 3: «Gợi ý từ AI».
-  //         3 → 2: «So hai bản kịch bản».
-  //         2 → 1: «Sản phẩm & kho». 1 → 0: «Đưa sản phẩm lên chạy».
-  //         HẾT: 25/25 màn đã rời cầu di trú.
-  assert.equal(
-    conDung.length,
-    0,
-    `số màn còn phụ thuộc cầu di trú: ${conDung.length} (neo: 0). `
-      + "Giảm được thì HẠ con số này. Tăng lên là có màn mới dùng tên cũ — đừng.",
-  );
-
-  // Và không màn nào được TỰ KHAI lại token cũ: khai lại là đè hệ kiểu, tức bảng màu mới
-  // không tới được màn đó. Đây là chỗ đã đo 14/09 và dọn xong 25/25.
   const tuKhai = [];
   for (const d of fs.readdirSync(UI, { withFileTypes: true })) {
     if (!d.isDirectory()) continue;
@@ -250,9 +216,12 @@ test("HK8 · CẦU DI TRÚ phải TEO đi — đếm số màn còn phụ thuộ
     for (const f of fs.readdirSync(t).filter((x) => x.endsWith(".html"))) {
       const s = fs.readFileSync(path.join(t, f), "utf8");
       const kieu = (s.match(/<style>[\s\S]*?<\/style>/g) || []).join("\n");
+      if (TEN_CU.test(kieu)) conDung.push(`${d.name}/${f}`);
+      // Khai lại là đè hệ kiểu, tức bảng màu mới không tới được màn đó.
       if (/(^|[;{\s])--(bg|ink|line|pri|muted|panel|side|sh|r)\s*:/.test(kieu)) tuKhai.push(`${d.name}/${f}`);
     }
   }
+  assert.deepEqual(conDung, [], `màn dùng lại token tên cũ (cầu đã gỡ, chúng không giải được nữa): ${conDung.join(", ")}`);
   assert.deepEqual(tuKhai, [], `màn TỰ KHAI lại token — hệ kiểu không tới được: ${tuKhai.join(", ")}`);
 });
 

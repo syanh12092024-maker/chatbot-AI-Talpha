@@ -183,18 +183,14 @@
     --tren-toi: var(--text-primary); --tren-toi-2: var(--text-muted); --tren-toi-nhan: var(--text-link);
 
     /* ════════════════════════════════════════════════════════════════════════════════
-       ③ CẦU DI TRÚ — 20 TÊN CŨ của 25 màn. Lớp TẠM; HK8 đếm, số phải giảm.
+       ③ CẦU DI TRÚ — ĐÃ GỠ ngày 14/09/2026.
+       Hai mươi tên cũ (`--ink`, `--pri`, `--bad`…) từng được khai ở đây để 25 màn không mất
+       màu giữa đường di trú. Cả 25 màn nay không còn một dòng CSS riêng nào, nên không còn
+       ai gọi chúng — giữ lại là giữ hai tên cho một thứ, tức mầm lệch nhau.
+       Phép canh HK8 nay canh chiều ngược lại: khối này KHÔNG được mọc lại, và không màn nào
+       được dùng lại tên cũ. Hai trang đăng nhập (`src/auth/trang/`) tự khai bảng màu riêng
+       của chúng, không đi qua tệp này.
        ════════════════════════════════════════════════════════════════════════════════ */
-    --bg: var(--app-bg);           --panel: var(--surface);         --ink: var(--text-primary);
-    --muted: var(--text-muted);    --xam: var(--text-muted);        --line: var(--border-default);
-    --side: var(--surface);        --r: var(--radius-lg);           --sh: none;
-    --pri: var(--primary);         --priDark: var(--primary-hover); --priSoft: var(--primary-subtle);
-    --ok: var(--success);          --okSoft: var(--success-bg);
-    --bad: var(--danger);          --badSoft: var(--danger-bg);
-    --warn: var(--warning);        --warnSoft: var(--warning-bg);
-    /* `--tim` là một trạng thái hệ không có. Trỏ về `info` — gần nghĩa nhất với «AI đề
-       xuất, chờ duyệt». Người chủ màn ai-de-xuat nên đổi hẳn sang `info`. */
-    --tim: var(--info);            --timSoft: var(--info-bg);
   }
 }
 
