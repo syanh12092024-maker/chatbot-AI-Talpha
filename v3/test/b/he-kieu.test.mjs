@@ -220,10 +220,11 @@ test("HK8 · CẦU DI TRÚ phải TEO đi — đếm số màn còn phụ thuộ
   // 14/09 · 25 → 24: «Công tắc từng page» viết lại trên hệ kiểu, bỏ hết 96 dòng CSS riêng.
   // 14/09 · 24 → 23: «Việc của tôi». 23 → 22: «Kịch bản của page». 22 → 21: «Quy tắc chung».
   //         21 → 20: «Câu trả lời sẵn». 20 → 19: «Chi phí AI».
+  //         19 → 18: «Ai đã sửa gì».
   assert.equal(
     conDung.length,
-    19,
-    `số màn còn phụ thuộc cầu di trú: ${conDung.length} (neo: 19). `
+    18,
+    `số màn còn phụ thuộc cầu di trú: ${conDung.length} (neo: 18). `
       + "Giảm được thì HẠ con số này. Tăng lên là có màn mới dùng tên cũ — đừng.",
   );
 
@@ -414,6 +415,7 @@ test("HK15 · màn ĐÃ DI TRÚ không mọc lại CSS riêng — và danh sách
     "bo-luat/bo-luat.html",
     "lop-0-dong/lop-0-dong.html",
     "chi-phi/chi-phi.html",
+    "nhat-ky/nhat-ky.html",
   ];
   const UI = path.join(GOC, "v3/src/ui");
   const loi = [];

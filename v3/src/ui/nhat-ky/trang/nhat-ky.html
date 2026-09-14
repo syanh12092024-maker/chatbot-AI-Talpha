@@ -3,117 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Nhật ký thao tác — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  /* dải cảnh báo NGUY — màn này phải trông khác mọi màn khác */
-  .nguy{background:var(--loi-nen);border:1px solid var(--loi-vien);border-left:4px solid var(--bad);
-        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
-  .nguy b{color:var(--loi-chu)}
-  .nguy .so{font-size:19px;font-weight:700;color:var(--loi-chu);font-variant-numeric:tabular-nums}
-
-  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
-  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .banner.i{background:var(--priSoft);color:var(--chinh-dam);border:1px solid var(--chinh-vien)}
-
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
-  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
-  tbody tr:last-child td{border-bottom:none}
-  tbody tr.ap{background:var(--priSoft)}
-  .num{font-variant-numeric:tabular-nums}
-  .ten{font-weight:600;overflow-wrap:anywhere}
-  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
-
-  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
-  .pill.g{background:var(--okSoft);color:var(--ok)}
-  .pill.o{background:var(--warnSoft);color:var(--warn)}
-  .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:var(--nen-3);color:var(--chu-2)}
-  .pill.p{background:var(--priSoft);color:var(--priDark)}
-
-  /* khối so sánh */
-  .diff{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:400px;background:var(--nen-2)}
-  .diff pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6}
-  .diff .d{padding:1px 10px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid transparent}
-  .diff .d.them{background:var(--dat-nen);border-left-color:var(--ok)}
-  .diff .d.bo{background:var(--loi-nen);border-left-color:var(--bad);text-decoration:line-through;opacity:.8}
-  .diff .d.giu{color:var(--muted)}
-
-  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit;
-           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6;
-           min-height:260px;resize:vertical}
-
-  button{font:inherit}
-  .nut{background:var(--pri);color:var(--nen);border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
-  .nut:hover{background:var(--priDark)}
-  .nut[disabled]{background:var(--vien-dam);cursor:not-allowed}
-  .nut.nho{padding:4px 10px;font-size:11.5px;font-weight:600}
-  .nut.nguy{background:var(--bad)}
-  .nut.nguy:hover{background:var(--loi-chu)}
-  .nut.phu{background:transparent;color:var(--priDark);border:1px solid var(--line)}
-  .nut.phu:hover{background:var(--priSoft)}
-  .hang{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
-
-  .trong{padding:20px 15px;text-align:center;line-height:1.6}
-  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
-  .trong.chua{color:var(--luu-chu);background:var(--warnSoft)}
-  .loi{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien);border-radius:8px;
-       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .loi.hien{display:block}
-  .ok{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien);border-radius:8px;
-      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .ok.hien{display:block}
-
-  @media (max-width:700px){
-    .panel h2{padding:10px 12px} .than{padding:12px}
-    table,thead,tbody,th,td,tr{display:block}
-    thead{display:none}
-    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
-    tbody tr:last-child{margin-bottom:0}
-    td{border:none;padding:4px 0}
-    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
-      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
-  }
-
-  .luoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:11px}
-  .d{border:1px solid var(--line);border-radius:10px;padding:12px 13px;background:var(--nen-2);
-     border-left:4px solid var(--line);min-width:0}
-  .d.xanh{border-left-color:var(--ok);background:#f7fdf9}
-  .d.vang{border-left-color:var(--warn);background:var(--luu-nen)}
-  .d.do{border-left-color:var(--bad);background:#fff5f5}
-  .d.xam{border-left-color:var(--vien-dam);background:#fafbfb}
-  .d .dau{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:5px}
-  .d h3{font-size:13px;margin:0;flex:1;min-width:0}
-  .d .vi{font-size:12px;color:var(--muted);line-height:1.55}
-  .d .so{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .d .di{display:inline-block;margin-top:8px;font-size:11.5px;font-weight:700;color:var(--priDark);
-         background:var(--nen);border:1px solid var(--line);border-radius:7px;padding:4px 10px;text-decoration:none}
-  .tong{border-radius:var(--r);padding:13px 15px;margin-bottom:14px;line-height:1.55;font-weight:600}
-  .tong.xanh{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien)}
-  .tong.vang{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .tong.do{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien)}
-  .tong.xam{background:#f1f4f5;color:#475467;border:1px solid var(--line)}
-  .tong .dem{display:block;font-weight:400;font-size:12px;margin-top:4px}
-
-  .lan{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
-  .lan button{border:1px solid var(--line);background:var(--nen);border-radius:20px;padding:5px 12px;
-              font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
-  .lan button.chon{background:var(--priSoft);border-color:var(--pri);color:var(--priDark)}
-  .dong{border-bottom:1px solid var(--line);padding:9px 0;display:flex;gap:11px;flex-wrap:wrap;align-items:baseline}
-  .dong:last-child{border-bottom:none}
-  .dong .gio{font-variant-numeric:tabular-nums;font-size:11.5px;color:var(--muted);white-space:nowrap;min-width:118px}
-  .dong .hd{font-weight:600;min-width:0}
-  .dong .ai{font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
-  .dong .gc{flex:1 1 100%;font-size:11.5px;color:var(--muted);line-height:1.5;overflow-wrap:anywhere}
-  .dong.may{opacity:.72}
-</style>
+<title>Ai đã sửa gì — AI Closer</title>
+<!-- Dựng trên hệ kiểu (mục M11: nhật ký đọc như lịch sử hoạt động — ai · làm gì · lên cái gì ·
+     lúc nào). KHÔNG CSS riêng — trước lượt này là 96 dòng, nhiều nhất trong 25 màn. Dòng nhật
+     ký là một BẢNG có cột, không phải một chuỗi chữ tràn dòng; trạng thái trước/sau (có sẵn
+     trong dữ liệu nhưng chưa từng hiện) mở trong ngăn kéo phải. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -121,117 +16,153 @@
 <body>
 <header>
   <h1>Ai đã sửa gì</h1>
-  <span class="sub" id="teamHien">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Mọi thao tác của người và máy trên team này. Nhật ký chỉ thêm — không sửa được, không xoá được.</span>
 </header>
 
 <main>
-  <div class="loi" id="loi"></div>
-  <div class="ok" id="baoOk"></div>
-  <div class="banner i" style="background:var(--priSoft);color:#0b4a52;border:1px solid #b8dde0">
-    Bảng <code>nhat_ky</code> <b>chỉ thêm, không sửa không xoá</b> — trigger chặn ở tầng CSDL,
-    kể cả với chủ cơ sở dữ liệu.</div>
-  <div id="canhBao"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <section class="panel">
-    <h2>Dòng nhật ký <span class="hint" id="tomTat"></span></h2>
-    <div class="than">
-      <div class="lan" id="thanhLan"></div>
-      <select id="chonMa" style="border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:#fff;font:inherit;max-width:100%"></select>
+  <section class="table-wrap" aria-labelledby="tieu-nk">
+    <h2 id="tieu-nk" class="sr-only">Dòng nhật ký</h2>
+    <div class="tabs" role="tablist" aria-label="Làn nhật ký" id="thanhLan"></div>
+    <div class="table-toolbar">
+      <label for="chonMa" class="sr-only">Lọc theo hành động</label>
+      <select id="chonMa"><option value="">Mọi hành động</option></select>
+      <span class="table-count" id="tomTat" aria-live="polite"></span>
     </div>
-    <div class="than" style="padding-top:0" id="ds"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
-    <div class="trang" id="phanTrang" style="display:flex;gap:8px;align-items:center;justify-content:center;padding:11px;flex-wrap:wrap;color:var(--muted);font-size:12px"></div>
+    <div id="ds"><div class="empty-state"><span class="skeleton"></span></div></div>
+    <div id="phanTrang"></div>
   </section>
+
+  <p class="page-note">Tầng cơ sở dữ liệu chặn sửa và xoá bảng nhật ký, kể cả với chủ cơ sở dữ liệu.</p>
 </main>
+
+<dialog class="drawer" id="ngan" aria-labelledby="ngan-tieu">
+  <div class="drawer-header">
+    <div class="gian"><h2 id="ngan-tieu">Chi tiết</h2><div class="text-muted text-sm" id="ngan-phu"></div></div>
+    <button type="button" class="icon-btn" id="ngan-dong" aria-label="Đóng"></button>
+  </div>
+  <div class="drawer-body" id="ngan-than"></div>
+</dialog>
+
 <script>
+const { esc, text, icon, statusBadge, button, alert: canhBao, emptyState, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const so = (n) => Number(n || 0).toLocaleString('vi-VN');
-function baoLoi(t){ const o=$('#loi'); o.textContent=t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
-function baoOk(t){ const o=$('#baoOk'); o.textContent=t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
-function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
-async function goi(duong, tuyChon){
-  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+
+// Trạng thái lọc nằm trong URL (mục J) — gửi đường dẫn cho người khác là họ thấy đúng lát cắt.
+const qs = new URLSearchParams(location.search);
+let D = null, LAN = qs.get('lan') || 'nguoi', MA = qs.get('hanhDong') || '', TRANG = Math.max(0, Number(qs.get('trang')) || 0);
+
+function ghiUrl() {
+  const u = new URL(location.href);
+  LAN !== 'nguoi' ? u.searchParams.set('lan', LAN) : u.searchParams.delete('lan');
+  MA ? u.searchParams.set('hanhDong', MA) : u.searchParams.delete('hanhDong');
+  TRANG ? u.searchParams.set('trang', String(TRANG)) : u.searchParams.delete('trang');
+  history.replaceState(null, '', u);
+}
+
+async function goi(duong, tuyChon) {
+  const r = await fetch(duong, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, ...tuyChon });
   if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   let d = null; try { d = await r.json(); } catch { /* null */ }
   if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
   return d;
 }
-function veTrong(t){
-  if (!t) return '';
-  const di = t.diTiep && t.diTiep.duong ? `<a class="di" href="${esc(t.diTiep.duong)}">${esc(t.diTiep.chu)}</a>` : '';
-  return `<div class="trong chua"><span class="ic">⚠️</span><div>${esc(t.noi)}</div>${di}</div>`;
+
+const gio = (t) => (t ? new Date(Number(t) || t).toLocaleString('vi-VN') : '—');
+
+function veBangTin(loi) {
+  const kh = [];
+  if (loi) kh.push(canhBao({ level: 'error', title: 'Không tải được nhật ký', body: loi }));
+  for (const c of (D && D.canhBao) || []) kh.push(canhBao({ level: c.muc === 'vang' ? 'warning' : 'info', body: c.chu }));
+  $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-4">${kh.join('')}</div>` : '';
 }
 
-let D = null, LAN = 'nguoi', MA = '', TRANG = 0;
-
-function veCanhBao(){
-  $('#canhBao').innerHTML = (D.canhBao || []).map((c) =>
-    `<div class="banner ${c.muc === 'vang' ? 'o' : 'i'}"
-       style="${c.muc==='tin'?'background:var(--priSoft);color:#0b4a52;border:1px solid #b8dde0':''}">${esc(c.chu)}</div>`).join('');
-}
-
-function veLan(){
+function veLan() {
   $('#thanhLan').innerHTML = Object.entries(D.chuLan).map(([ma, chu]) => {
     const n = ma === 'tat_ca' ? (D.dem.nguoi + D.dem.may) : D.dem[ma];
-    return `<button data-lan="${esc(ma)}" class="${ma === LAN ? 'chon' : ''}">${esc(chu)}
-      <span style="opacity:.7;font-weight:400">${so(n)}</span></button>`;
+    return `<button type="button" class="tab" role="tab" data-lan="${esc(ma)}" aria-selected="${ma === LAN}">${esc(chu)}<span class="count">${so(n)}</span></button>`;
   }).join('');
   document.querySelectorAll('[data-lan]').forEach((b) => b.addEventListener('click', () => {
     LAN = b.dataset.lan; TRANG = 0; nap();
   }));
 
-  if (D.nhomMa && !$('#chonMa').dataset.dung) {
-    const nhom = Object.entries(D.nhomMa).map(([ten, ds]) =>
-      `<optgroup label="${esc(ten)}">${ds.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join('')}</optgroup>`);
-    $('#chonMa').innerHTML = '<option value="">— mọi hành động —</option>' + nhom.join('');
-    $('#chonMa').dataset.dung = '1';
-    $('#chonMa').addEventListener('change', () => { MA = $('#chonMa').value; TRANG = 0; nap(); });
+  const o = $('#chonMa');
+  if (D.nhomMa && !o.dataset.dung) {
+    const chu = (m) => (D.chuMa && D.chuMa[m]) || m;
+    o.innerHTML = '<option value="">Mọi hành động</option>' + Object.entries(D.nhomMa).map(([nhom, ds]) =>
+      `<optgroup label="${esc(nhom.replace(/_/g, ' '))}">${ds.map((m) =>
+        `<option value="${esc(m)}" ${m === MA ? 'selected' : ''}>${esc(chu(m))}</option>`).join('')}</optgroup>`).join('');
+    o.dataset.dung = '1';
+    o.addEventListener('change', () => { MA = o.value; TRANG = 0; nap(); });
   }
 }
 
-function veDs(){
-  $('#teamHien').textContent = `team #${D.teamId}`;
-  $('#tomTat').textContent = `${so(D.soKhop)} dòng ở làn này · ${so(D.tongCaBang)} dòng cả bảng`
-    + (D.catBot ? ' · có thể còn nữa' : '');
+function veDs() {
+  $('#tomTat').textContent = `${so(D.soKhop)} dòng ở làn này · ${so(D.tongCaBang)} cả bảng${D.catBot ? ' · có thể còn nữa' : ''}`;
 
   if (!D.dong.length) {
-    $('#ds').innerHTML = veTrong({
-      vi: 'khong_khop',
-      noi: LAN === 'nguoi'
-        ? 'Chưa có thao tác nào do người bấm ở khoảng này. Đây là «chưa ai làm gì», KHÔNG phải «nhật ký hỏng».'
-        : 'Không dòng nào khớp bộ lọc đang chọn.',
-    });
+    $('#ds').innerHTML = emptyState({ icon: 'inbox',
+      title: LAN === 'nguoi' ? 'Chưa có thao tác nào do người làm' : 'Không dòng nào khớp bộ lọc',
+      body: LAN === 'nguoi' ? 'Đây là «chưa ai làm gì» trong khoảng đang xem, không phải nhật ký hỏng.' : 'Đổi làn hoặc bỏ lọc hành động để xem thêm.' });
     $('#phanTrang').innerHTML = '';
     return;
   }
 
-  $('#ds').innerHTML = D.dong.map((d) => `<div class="dong ${esc(d.lan)}">
-    <span class="gio">${d.thoiGian ? new Date(Number(d.thoiGian) || d.thoiGian).toLocaleString('vi-VN') : '—'}</span>
-    <span class="hd">${esc(d.chuHanhDong)}</span>
-    <span class="ai">${esc(d.ai)}</span>
-    ${d.doiTuong ? `<span class="pill m">${esc(d.doiTuong)}${d.doiTuongId ? ' #' + esc(d.doiTuongId) : ''}</span>` : ''}
-    ${d.ghiChu ? `<span class="gc">${esc(d.ghiChu)}</span>` : ''}
-  </div>`).join('');
+  $('#ds').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Lúc</th><th scope="col">Ai</th><th scope="col">Hành động</th>
+      <th scope="col">Đối tượng</th><th scope="col">Ghi chú</th>
+      <th scope="col" class="actions"><span class="sr-only">Chi tiết</span></th>
+    </tr></thead><tbody>${D.dong.map((d, i) => `
+    <tr>
+      <td class="meta tabular">${esc(gio(d.thoiGian))}</td>
+      <td>${d.lan === 'may' ? `<span class="badge">Máy</span> <span class="meta">${esc(String(d.ai || '').replace(/^may:/, ''))}</span>` : esc(d.ai)}</td>
+      <td class="manh">${esc(d.chuHanhDong)}</td>
+      <td>${d.doiTuong ? `${esc(d.doiTuong)}${d.doiTuongId ? ` <span class="meta">#${esc(d.doiTuongId)}</span>` : ''}` : '<span class="text-muted">—</span>'}</td>
+      <td class="meta"><span class="cat-2">${esc(d.ghiChu || '')}</span></td>
+      <td class="actions">${(d.truoc || d.sau) ? button('Xem', { size: 'sm', variant: 'ghost', data: { dong: i } }) : ''}</td>
+    </tr>`).join('')}</tbody></table>`;
+  document.querySelectorAll('[data-dong]').forEach((b) => b.addEventListener('click', () => xem(D.dong[+b.dataset.dong])));
 
-  $('#phanTrang').innerHTML = D.soTrang > 1 ? `
-    <button class="nut nho phu" id="lui" ${D.trang === 0 ? 'disabled' : ''}>← Trước</button>
-    <span>Trang ${D.trang + 1} / ${D.soTrang}</span>
-    <button class="nut nho phu" id="toi" ${D.trang >= D.soTrang - 1 ? 'disabled' : ''}>Sau →</button>` : '';
+  $('#phanTrang').innerHTML = D.soTrang > 1 ? `<div class="pagination">
+      <span>Trang ${D.trang + 1} / ${D.soTrang}</span>
+      <span class="hang">${button('Trước', { size: 'sm', id: 'lui', disabled: D.trang === 0 })}
+        ${button('Sau', { size: 'sm', id: 'toi', disabled: D.trang >= D.soTrang - 1 })}</span>
+    </div>` : '';
   if (D.soTrang > 1) {
     $('#lui').addEventListener('click', () => { TRANG = Math.max(0, TRANG - 1); nap(); });
     $('#toi').addEventListener('click', () => { TRANG += 1; nap(); });
   }
 }
 
-async function nap(){
+// ── NGĂN KÉO — trạng thái TRƯỚC và SAU của thao tác ─────────────────────────────────
+function xem(d) {
+  const khoi = (nhan, v) => `<div class="field"><span class="field-label">${nhan}</span>
+    ${v == null ? '<span class="text-muted text-sm">(không có)</span>' : `<pre class="code-block">${esc(JSON.stringify(v, null, 2))}</pre>`}</div>`;
+  $('#ngan-tieu').textContent = d.chuHanhDong;
+  $('#ngan-phu').textContent = `${d.lan === 'may' ? 'Máy' : d.ai} · ${gio(d.thoiGian)}`;
+  $('#ngan-than').innerHTML = `<div class="form-stack">
+    ${d.doiTuong ? `<div class="field"><span class="field-label">Đối tượng</span><span>${esc(d.doiTuong)}${d.doiTuongId ? ' #' + esc(d.doiTuongId) : ''}</span></div>` : ''}
+    ${d.ghiChu ? `<div class="field"><span class="field-label">Ghi chú</span><span class="be-chu">${esc(d.ghiChu)}</span></div>` : ''}
+    ${khoi('Trước', d.truoc)}${khoi('Sau', d.sau)}
+    <div class="field"><span class="field-label">Mã hành động</span><code>${esc(d.hanhDong)}</code></div>
+  </div>`;
+  $('#ngan').showModal();
+}
+$('#ngan-dong').innerHTML = icon('x');
+$('#ngan-dong').addEventListener('click', () => $('#ngan').close());
+
+async function nap() {
   try {
     const d = await goi(`/api/nhat-ky?lan=${encodeURIComponent(LAN)}&hanhDong=${encodeURIComponent(MA)}&trang=${TRANG}`);
     if (!d) return;
-    D = d; TRANG = d.trang;
-    veCanhBao(); veLan(); veDs();
-  } catch (e) { baoLoi(e.message); }
+    D = d; TRANG = d.trang; LAN = d.lan || LAN;
+    ghiUrl();
+    veBangTin(); veLan(); veDs();
+  } catch (e) {
+    veBangTin(e.message);
+    $('#ds').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' });
+  }
 }
 nap();
 </script>

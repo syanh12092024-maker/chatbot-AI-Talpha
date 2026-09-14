@@ -114,6 +114,11 @@ export async function manNhatKy(boiCanh, { lan = LAN.NGUOI, hanhDong = '', trang
     lan,
     chuLan: CHU_LAN,
     nhomMa: _nhomMa || null,
+    // Chữ của từng mã, để bộ lọc «hành động» hiện «Đăng xuất» thay vì `dang_xuat`. Cùng hàm
+    // `moTa` đã dựng `chuHanhDong` của từng dòng — không phải bản đồ thứ hai.
+    chuMa: _nhomMa
+      ? Object.fromEntries(Object.values(_nhomMa).flat().map((m) => [m, _moTa ? _moTa(m) : m]))
+      : null,
     canhBao: canhBaoNhatKy({ dem, tong }),
   };
 }
