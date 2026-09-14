@@ -3,74 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cửa kiểm sẵn sàng — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  .o{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;margin-bottom:16px}
-  .o .k{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh)}
-  .o .k .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
-  .o .k .c{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
-  .o .k.xau .n{color:var(--bad)} .o .k.nhac .n{color:var(--warn)} .o .k.tot .n{color:var(--ok)}
-
-  .lech{background:var(--loi-nen);border:1px solid var(--loi-vien);border-left:4px solid var(--bad);
-        border-radius:var(--r);padding:12px 15px;margin-bottom:16px;line-height:1.6}
-  .lech b{color:var(--loi-chu)}
-  .lech table{margin-top:9px;font-size:12px;width:auto}
-  .lech td{padding:3px 12px 3px 0;border:0}
-
-  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
-  .banner.o2{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .banner.i{background:var(--priSoft);color:var(--chinh-dam);border:1px solid var(--chinh-vien)}
-
-  .loc{display:flex;gap:7px;flex-wrap:wrap;padding:11px 15px;border-bottom:1px solid var(--line);background:var(--nen-2)}
-  .loc button{font:inherit;border:1px solid var(--line);background:var(--nen);color:var(--chu-2);border-radius:20px;
-              padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600}
-  .loc button.on{background:var(--pri);border-color:var(--pri);color:var(--nen)}
-
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:var(--nen-2)}
-  tbody tr:last-child td{border-bottom:0}
-  .bao{display:block;overflow-x:auto}
-
-  /* ô đỏ BẤM ĐƯỢC — cả yêu cầu của màn nằm ở đây */
-  .ma{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:7px;font-size:11.5px;
-      font-weight:600;margin:2px 4px 2px 0;border:1px solid transparent;text-decoration:none;white-space:nowrap}
-  .ma.chan{background:var(--badSoft);color:var(--loi-chu);border-color:#f3c9c9}
-  .ma.nhac{background:var(--warnSoft);color:var(--luu-chu);border-color:var(--luu-vien)}
-  a.ma:hover{filter:brightness(.95);text-decoration:none}
-  a.ma::after{content:"→";font-weight:700;opacity:.7}
-  span.ma[data-khong]{opacity:.95;cursor:help;border-style:dashed}
-  .ct{color:var(--muted);font-size:11.5px;line-height:1.5;margin-top:3px}
-
-  .cham{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
-  .cham.b{background:var(--ok)} .cham.t{background:var(--vien-dam)}
-  .the{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-  .the.chan{background:var(--badSoft);color:var(--loi-chu)}
-  .the.nhac{background:var(--warnSoft);color:var(--luu-chu)}
-  .the.san{background:var(--okSoft);color:var(--dat-chu)}
-  .the.la{background:var(--nen-3);color:var(--muted)}
-
-  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
-  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
-  .trong .di{margin-top:10px;font-size:12px;background:var(--priSoft);color:var(--chinh-dam);
-             display:inline-block;padding:9px 13px;border-radius:9px;text-align:left;max-width:520px}
-  .nho{color:var(--muted);font-size:11.5px;line-height:1.5}
-  code{background:var(--nen-3);padding:1px 5px;border-radius:4px;font-size:11.5px;
-       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-
-  @media (max-width:720px){
-    .than{padding:12px} th,td{padding:8px 9px}
-    .o{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
-    .o .k{padding:10px 11px} .o .k .n{font-size:19px}
-  }
-</style>
+<title>Page còn thiếu gì — AI Closer</title>
+<!-- Dựng trên hệ kiểu (mục M4: kiểm tra sẵn sàng). KHÔNG CSS riêng — trước lượt này là 55 dòng.
+     Tám ô số rời → bốn chỉ số; sáu nút lọc tự vẽ → tab có số đếm; điều kiện thiếu là huy hiệu
+     theo NGHĨA (chặn = danger, nhắc = warning) và bấm được sang chỗ sửa.
+     ⚠️ Giữ nguyên `locHien = 'bat_duoc'` và bộ lọc `bat_duoc`: ca ②b3 của `san-sang.test.mjs`
+        canh màn mở mặc định ở «bật được ngay», không mở ở «bị chặn». -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -78,41 +17,44 @@
 <body>
 <header>
   <h1>Page còn thiếu gì</h1>
-  <span class="sub" id="hTeam">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Bảy điều kiện để bot chạy được trên một page. Bậc chặn thì bot không bật được; bậc nhắc thì bật vẫn được.</span>
 </header>
 
 <main>
-  <div id="canhBao"></div>
-  <div class="o" id="dem"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <div class="panel">
-    <h2>Page của team <span class="hint" id="hSo"></span>
-      <span class="sp"></span>
-      <span class="hint">bấm ô đỏ để nhảy tới chỗ sửa</span></h2>
-    <div class="loc" id="loc"></div>
-    <div id="bang"><div class="than nho">Đang tải…</div></div>
-  </div>
+  <section class="section" aria-label="Tình hình page">
+    <div id="dem"><div class="metric-row"><div class="metric"><span class="skeleton"></span></div></div></div>
+  </section>
 
-  <div class="panel">
-    <h2>Bảy điều kiện <span class="hint">bậc nào chặn, bậc nào chỉ nhắc</span></h2>
-    <div class="than"><div class="bao"><table id="dsDk"></table></div></div>
-  </div>
+  <section class="section table-wrap" aria-labelledby="tieu-page">
+    <h2 id="tieu-page" class="sr-only">Page của team</h2>
+    <div class="tabs" role="tablist" aria-label="Lọc page" id="loc"></div>
+    <div class="table-toolbar">
+      <span class="text-muted text-sm">Bấm một điều kiện để sang thẳng chỗ sửa.</span>
+      <span class="table-count" id="hSo" aria-live="polite"></span>
+    </div>
+    <div id="bang"><div class="empty-state"><span class="skeleton"></span></div></div>
+  </section>
+
+  <section class="section table-wrap" aria-labelledby="tieu-dk">
+    <div class="table-toolbar"><h2 id="tieu-dk">Bảy điều kiện</h2>
+      <span class="table-count">Bậc nào chặn, bậc nào chỉ nhắc</span></div>
+    <div id="dsDk"></div>
+  </section>
 </main>
 
 <script>
+const { esc, statusBadge, button, alert: canhBao, emptyState, metricRow, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let DL = null;
 // Mở màn ở «bật được ngay», không phải «bị chặn». Người ta tới đây để bật page, và mở ra
 // thấy ngay 445 dòng hỏng thì câu trả lời họ cần bị chôn dưới đó.
 let locHien = 'bat_duoc';
 
-// `bat_duoc` đứng ĐẦU vì đó là câu hỏi người ta mang tới màn này. Ba bộ lọc sau nó là
-// cách chẻ nhỏ; ai cần mới dùng.
+// `bat_duoc` đứng ĐẦU vì đó là câu hỏi người ta mang tới màn này. Các bộ lọc sau là cách
+// chẻ nhỏ; ai cần mới dùng.
 const LOC = [
   { ma: 'bat_duoc', ten: 'Bật được ngay' },
   { ma: 'chan', ten: 'Bị chặn' },
@@ -122,140 +64,132 @@ const LOC = [
   { ma: 'tat_ca', ten: 'Tất cả' },
 ];
 
-function locPage() {
+function locPage(ma = locHien) {
   const ds = DL.page;
   // Bật được = KHÔNG vướng điều kiện chặn nào. Cảnh báo không chặn, nên page «chỉ nhắc»
   // vẫn nằm trong đây.
-  if (locHien === 'bat_duoc') return ds.filter((p) => !p.botKhongThay && !p.chan.length);
-  if (locHien === 'chan') return ds.filter((p) => p.chan.length);
-  if (locHien === 'nhac') return ds.filter((p) => !p.chan.length && p.nhac.length);
-  if (locHien === 'san') return ds.filter((p) => !p.botKhongThay && !p.chan.length && !p.nhac.length);
-  if (locHien === 'chay') return ds.filter((p) => p.botTheoBot);
+  if (ma === 'bat_duoc') return ds.filter((p) => !p.botKhongThay && !p.chan.length);
+  if (ma === 'chan') return ds.filter((p) => p.chan.length);
+  if (ma === 'nhac') return ds.filter((p) => !p.chan.length && p.nhac.length);
+  if (ma === 'san') return ds.filter((p) => !p.botKhongThay && !p.chan.length && !p.nhac.length);
+  if (ma === 'chay') return ds.filter((p) => p.botTheoBot);
   return ds;
 }
 
 function veLoc() {
   $('#loc').innerHTML = LOC.map((l) =>
-    `<button data-l="${l.ma}" class="${l.ma === locHien ? 'on' : ''}">${l.ten}</button>`).join('');
+    `<button type="button" class="tab" role="tab" data-l="${l.ma}" aria-selected="${l.ma === locHien}">${esc(l.ten)}<span class="count">${so(locPage(l.ma).length)}</span></button>`).join('');
   $('#loc').querySelectorAll('[data-l]').forEach((n) => {
     n.onclick = () => { locHien = n.dataset.l; veLoc(); veBang(); };
   });
 }
 
 /**
- * Ô điều kiện. Tên bậc / chỗ nhảy / câu chỉ việc tra từ `DL.dieuKien` theo mã — gói dữ liệu
- * KHÔNG chở chúng theo từng page (xem chú thích ở `kho-san-sang.js#nhan`).
- * Có chỗ nhảy → thẻ <a> bấm được. Không có → <span> viền đứt, kèm lời chỉ việc.
+ * Một điều kiện đang vướng. Tên bậc / chỗ nhảy / câu chỉ việc tra từ `DL.dieuKien` theo mã —
+ * gói dữ liệu KHÔNG chở chúng theo từng page (xem chú thích ở `kho-san-sang.js#nhan`).
+ * Có chỗ nhảy thì là <a> bấm được; không có thì là huy hiệu thường, kèm lời chỉ việc ở title.
  */
 function veO(x) {
   const dk = (DL.dieuKien && DL.dieuKien[x.ma]) || null;
-  const lop = x.chan ? 'chan' : 'nhac';
-  const nhan = esc(dk ? dk.ten : x.ma) + (x.la ? ' (mã lạ)' : '');
-  const lam = esc(dk ? dk.lam : 'Mã này v1 vừa thêm, màn chưa biết cách chỉ chỗ sửa.');
-  if (dk && dk.di) return `<a class="ma ${lop}" href="${esc(dk.di)}" title="${lam}">${nhan}</a>`;
-  return `<span class="ma ${lop}" data-khong="1" title="${lam}">${nhan}</span>`;
+  const nhan = (dk ? dk.ten : x.ma) + (x.la ? ' (mã lạ)' : '');
+  const lam = dk ? dk.lam : 'Mã này tiến trình bot vừa thêm, màn chưa biết cách chỉ chỗ sửa.';
+  const hh = statusBadge(x.chan ? 'blocked' : 'needs_attention', { label: nhan });
+  if (dk && dk.di) return `<a href="${esc(dk.di)}" title="${esc(lam)}">${hh}</a>`;
+  return `<span title="${esc(lam)}">${hh}</span>`;
 }
 
 function veBang() {
   const ds = locPage();
-  $('#hSo').textContent = `${ds.length}/${DL.page.length}`;
+  $('#hSo').textContent = `${so(ds.length)}/${so(DL.page.length)} page`;
   const b = $('#bang');
 
   if (!DL.page.length) {
-    b.innerHTML = `<div class="trong">
-      <div class="ti">${esc(DL.trong ? DL.trong.noi : 'Chưa có dữ liệu')}</div>
-      <div>Màn này chưa dùng được — <b>không phải</b> vì mọi thứ đã xong.</div>
-      ${DL.trong && DL.trong.diTiep ? `<div class="di">👉 ${esc(DL.trong.diTiep)}</div>` : ''}
-    </div>`;
+    b.innerHTML = emptyState({ icon: 'triangle-alert',
+      title: DL.trong ? DL.trong.noi : 'Chưa đọc được page nào',
+      body: `Màn này chưa dùng được — KHÔNG phải vì mọi thứ đã xong. ${DL.trong && DL.trong.diTiep ? DL.trong.diTiep : ''}` });
     return;
   }
   if (!ds.length) {
-    const noi = locHien === 'chan'
-      ? 'Đây là tin <b>tốt</b> — không page nào bị chặn.'
-      : (locHien === 'bat_duoc'
-        ? 'Mọi page của team đều đang vướng ít nhất một điều kiện chặn. Xem bộ lọc «Bị chặn» để biết vướng gì.'
-        : 'Không page nào ở nhóm này.');
-    b.innerHTML = `<div class="trong">
-      <div class="ti">Không page nào ở nhóm này</div><div>${noi}</div></div>`;
+    b.innerHTML = emptyState({ icon: locHien === 'chan' ? 'circle-check' : 'search',
+      title: 'Không page nào ở nhóm này',
+      body: locHien === 'chan' ? 'Đây là tin tốt — không page nào bị chặn.'
+        : locHien === 'bat_duoc' ? 'Mọi page của team đều đang vướng ít nhất một điều kiện chặn. Xem tab «Bị chặn» để biết vướng gì.'
+        : 'Đổi tab để xem nhóm khác.' });
     return;
   }
 
-  b.innerHTML = `<div class="bao"><table>
-    <thead><tr><th>Page</th><th>Bot</th><th>Chặn</th><th>Nhắc</th><th>Marketer</th></tr></thead>
-    <tbody>${ds.map((p) => `
-      <tr>
-        <td><b>${esc(p.ten)}</b><div class="nho">${esc(p.pageId)}</div></td>
-        <td style="white-space:nowrap">
-          <span class="cham ${p.botTheoBot ? 'b' : 't'}"></span>${p.botTheoBot ? 'đang chạy' : 'tắt'}
-          ${p.botTheoCsdl !== p.botTheoBot && !p.botKhongThay
-            ? `<div class="nho" style="color:var(--bad)">CSDL ghi ${p.botTheoCsdl ? 'bật' : 'tắt'}</div>` : ''}
-          ${p.botKhongThay ? '<div class="nho">bot không thấy page này</div>' : ''}
-        </td>
-        <td>${p.botKhongThay ? '<span class="the la">không biết</span>'
-              : (p.chan.length ? p.chan.map(veO).join('') : '<span class="the san">không</span>')}
-          ${p.chan.length ? `<div class="ct">${esc(p.chan.map((x) => x.chiTiet).filter(Boolean).join(' · '))}</div>` : ''}</td>
-        <td>${p.nhac.length ? p.nhac.map(veO).join('') : '<span class="nho">—</span>'}</td>
-        <td class="nho">${esc(p.marketer) || '<i>chưa gán</i>'}</td>
-      </tr>`).join('')}</tbody></table></div>`;
+  b.innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Page</th><th scope="col">Bot</th><th scope="col">Điều kiện chặn</th>
+      <th scope="col">Nhắc</th><th scope="col">Marketer</th>
+    </tr></thead><tbody>${ds.map((p) => `
+    <tr>
+      <td><div class="page-identity-name">${esc(p.ten)}</div><div class="page-identity-sub">${esc(p.pageId)}</div></td>
+      <td>${p.botKhongThay ? statusBadge('not_seen') : statusBadge(p.botTheoBot ? 'bot_on' : 'bot_off')}
+        ${p.botTheoCsdl !== p.botTheoBot && !p.botKhongThay
+          ? `<div class="meta" title="Cột trong cơ sở dữ liệu là bản sao — con số đúng là của tiến trình bot">CSDL ghi ${p.botTheoCsdl ? 'bật' : 'tắt'}</div>` : ''}</td>
+      <td>${p.botKhongThay ? statusBadge('unknown', { label: 'Chưa biết' })
+            : (p.chan.length ? `<div class="chip-list">${p.chan.map(veO).join('')}</div>` : '<span class="text-muted">Không vướng gì</span>')}
+        ${p.chan.length ? `<div class="meta">${esc(p.chan.map((x) => x.chiTiet).filter(Boolean).join(' · '))}</div>` : ''}</td>
+      <td>${p.nhac.length ? `<div class="chip-list">${p.nhac.map(veO).join('')}</div>` : '<span class="text-muted">—</span>'}</td>
+      <td>${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
+    </tr>`).join('')}</tbody></table>`;
 }
 
 function veDem(k) {
-  $('#dem').innerHTML = [
-    { n: k.batDuoc, c: 'BẬT ĐƯỢC NGAY — không vướng điều kiện chặn nào', l: k.batDuoc ? 'tot' : '' },
-    { n: k.tong, c: 'page của team', l: '' },
-    { n: k.chan, c: 'bị chặn — bot không bật được', l: 'xau' },
-    { n: k.nhac, c: 'trong số bật được: có cảnh báo, không chặn', l: 'nhac' },
-    { n: k.san, c: 'trong số bật được: sạch hoàn toàn', l: '' },
-    { n: k.dangChay, c: 'bot đang thật sự chạy', l: k.dangChay ? 'tot' : '' },
-    ...(k.chayMaBiChan ? [{ n: k.chayMaBiChan, c: 'ĐANG CHẠY MÀ BỊ CHẶN', l: 'xau' }] : []),
-    ...(k.botKhongThay ? [{ n: k.botKhongThay, c: 'bot không thấy page', l: 'nhac' }] : []),
-  ].map((x) => `<div class="k ${x.l}"><div class="n">${x.n}</div><div class="c">${x.c}</div></div>`).join('');
+  $('#dem').innerHTML = metricRow([
+    { label: 'Bật được ngay', value: k.batDuoc, hint: `trên ${so(k.tong)} page của team`,
+      statusHtml: k.batDuoc ? statusBadge('ready') : statusBadge('blocked', { label: 'Không page nào' }) },
+    { label: 'Bị chặn', value: k.chan,
+      statusHtml: k.chan ? statusBadge('blocked', { label: 'Bot không bật được' }) : '' },
+    { label: 'Bot đang thật sự chạy', value: k.dangChay,
+      statusHtml: k.dangChay ? statusBadge('bot_on') : '' },
+    { label: 'Bot không thấy page', value: k.botKhongThay,
+      statusHtml: k.botKhongThay ? statusBadge('not_seen', { label: 'Chưa biết tình trạng' }) : '' },
+  ]);
 }
 
 function veDieuKien(dk) {
   const r = Object.entries(dk).filter(([m]) => m !== 'READY');
-  $('#dsDk').innerHTML = `
-    <thead><tr><th>Mã</th><th>Điều kiện</th><th>Mức</th><th>Phải làm gì</th></tr></thead>
-    <tbody>${r.map(([ma, d]) => `
-      <tr>
-        <td><code>${esc(ma)}</code></td>
-        <td>${esc(d.ten)}</td>
-        <td><span class="the ${d.chan ? 'chan' : 'nhac'}">${d.chan ? 'CHẶN bot' : 'chỉ nhắc'}</span></td>
-        <td>${esc(d.lam)}${d.di ? ` <a href="${esc(d.di)}" style="color:var(--pri);font-weight:600;text-decoration:none">${esc(d.nutDi)} →</a>` : ''}</td>
-      </tr>`).join('')}</tbody>`;
+  $('#dsDk').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Điều kiện</th><th scope="col">Mức</th><th scope="col">Phải làm gì</th>
+      <th scope="col" class="actions"><span class="sr-only">Chỗ sửa</span></th>
+    </tr></thead><tbody>${r.map(([ma, d]) => `
+    <tr>
+      <td><div class="manh">${esc(d.nhan || d.ten)}</div><div class="meta"><code>${esc(ma)}</code></div></td>
+      <td>${statusBadge(d.chan ? 'blocked' : 'needs_attention', { label: d.chan ? 'Chặn bot' : 'Chỉ nhắc' })}</td>
+      <td>${esc(d.lam)}</td>
+      <td class="actions">${d.di ? button(d.nutDi || 'Đi sửa', { href: d.di, size: 'sm' }) : ''}</td>
+    </tr>`).join('')}</tbody></table>`;
 }
 
 async function tai() {
   try {
-    const r = await fetch('/api/san-sang', { credentials: 'same-origin' });
+    const r = await fetch('/api/san-sang', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+    if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return; }
     const d = await r.json();
-    if (!r.ok || d.ok === false) throw new Error(d.thongDiep || 'Lỗi ' + r.status);
+    if (!r.ok || d.ok === false) throw new Error(d.thongDiep || 'Máy chủ trả ' + r.status + '.');
     DL = d;
-    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
 
-    let cb = '';
+    const kh = [];
     if (d.lech) {
-      cb += `<div class="lech"><b>⚠️ CSDL v3 và tiến trình bot đang nói khác nhau.</b><br>${esc(d.lech.noi)}
-        <table><tbody>${d.lech.viDu.map((v) => `<tr>
-          <td>${esc(v.ten)}</td><td class="nho">${esc(v.pageId)}</td>
-          <td>CSDL: <b>${v.csdl ? 'bật' : 'tắt'}</b></td>
-          <td>bot: <b>${v.bot ? 'bật' : 'tắt'}</b></td></tr>`).join('')}</tbody></table></div>`;
+      kh.push(canhBao({ level: 'warning', title: 'Cơ sở dữ liệu v3 và tiến trình bot đang nói khác nhau',
+        body: d.lech.noi,
+        detail: d.lech.viDu.map((v) => `${v.ten} (${v.pageId}) — CSDL: ${v.csdl ? 'bật' : 'tắt'} · bot: ${v.bot ? 'bật' : 'tắt'}`) }));
     }
     if (d.dem.chayMaBiChan) {
-      cb += `<div class="banner o2"><b>${d.dem.chayMaBiChan} page đang chạy nhưng có điều kiện chặn.</b>
-        Bot vẫn trả lời khách trên các page này dù chưa đủ điều kiện — xem bộ lọc «Đang chạy».</div>`;
+      kh.push(canhBao({ level: 'error', title: `${so(d.dem.chayMaBiChan)} page đang chạy nhưng có điều kiện chặn`,
+        body: 'Bot vẫn trả lời khách trên các page này dù chưa đủ điều kiện. Xem tab «Đang chạy».' }));
     }
-    $('#canhBao').innerHTML = cb;
+    $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 
-    veDem(d.dem);
-    veDieuKien(d.dieuKien);
-    veLoc();
-    veBang();
+    veDem(d.dem); veDieuKien(d.dieuKien); veLoc(); veBang();
   } catch (e) {
-    $('#bang').innerHTML = `<div class="than"><div class="banner o2" style="margin:0">
-      <b>Không đọc được cửa kiểm:</b> ${esc(e.message)}<br>
-      Màn <b>từ chối</b> hiện bảng rỗng ở đây — một bảng rỗng trông y như «mọi page đều ổn».</div></div>`;
     $('#dem').innerHTML = '';
+    $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được điều kiện sẵn sàng',
+      body: 'Màn này TỪ CHỐI hiện bảng rỗng — một bảng rỗng ở đây trông y như «mọi page đều ổn».',
+      detail: [e.message] })}</div>`;
+    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không đọc được cửa kiểm',
+      body: 'Kiểm kết nối sang tiến trình bot rồi tải lại trang.' });
   }
 }
 
