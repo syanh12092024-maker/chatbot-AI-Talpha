@@ -225,10 +225,11 @@ test("HK8 · CẦU DI TRÚ phải TEO đi — đếm số màn còn phụ thuộ
   //         15 → 14: «Page còn thiếu gì». 14 → 13: «Hệ còn sống không».
   //         13 → 11: hai màn của «Việc đang chờ». 11 → 10: «Khách hàng».
   //         10 → 9: «Kỹ năng theo sản phẩm». 9 → 8: «Đơn và tỉ lệ chốt».
+  //         8 → 7: «Khách vào từ đâu».
   assert.equal(
     conDung.length,
-    8,
-    `số màn còn phụ thuộc cầu di trú: ${conDung.length} (neo: 8). `
+    7,
+    `số màn còn phụ thuộc cầu di trú: ${conDung.length} (neo: 7). `
       + "Giảm được thì HẠ con số này. Tăng lên là có màn mới dùng tên cũ — đừng.",
   );
 
@@ -430,6 +431,7 @@ test("HK15 · màn ĐÃ DI TRÚ không mọc lại CSS riêng — và danh sách
     "ho-so-khach/ho-so-khach.html",
     "ky-nang/ky-nang.html",
     "bao-cao/bao-cao.html",
+    "nguon-khach/nguon-khach.html",
   ];
   const UI = path.join(GOC, "v3/src/ui");
   const loi = [];

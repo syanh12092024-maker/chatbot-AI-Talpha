@@ -3,62 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Nguồn khách vào — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-
-  /* Dải khoảng đo — nhạt hơn cảnh báo, nhưng luôn hiện. Nó là chú thích của MỌI con số
-     trên màn, không phải một thông báo nhất thời. */
-  .kdai{background:var(--nen-2);border:1px solid var(--line);border-left:3px solid var(--pri);
-        border-radius:var(--r);padding:9px 13px;margin-bottom:14px;line-height:1.55;font-size:12.5px}
-  .kdai b{display:inline-block;margin-right:8px;color:var(--ink)}
-  .kdai span{color:var(--muted)}
-  .kdai .cb{display:block;margin-top:4px;color:var(--luu-chu)}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  /* hai luồng song song, gặp nhau ở đích */
-  .so{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .so .l{border:1px solid var(--line);border-top:4px solid var(--pri);border-radius:10px;padding:14px 15px}
-  .so .l:nth-child(2){border-top-color:var(--tim)}
-  .so .l .n{font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;color:var(--pri)}
-  .so .l:nth-child(2) .n{color:var(--tim)}
-  .so .l .ten{font-weight:600;margin:4px 0 3px}
-  .so .l .mo{color:var(--muted);font-size:12px;line-height:1.55}
-  .so .l .ph{margin-top:7px;font-size:11.5px;color:var(--muted)}
-  .dich{margin-top:12px;text-align:center;background:var(--nen-2);border:1px dashed var(--vien-dam);
-        border-radius:10px;padding:12px 15px;line-height:1.6;font-size:12.5px;color:var(--muted)}
-  .dich b{color:var(--ink)}
-
-  .bac{display:grid;gap:7px}
-  .bac .b{display:flex;align-items:center;gap:11px}
-  .bac .b .t{width:132px;flex:0 0 auto;font-size:12.5px}
-  .bac .b .thanh{flex:1;height:22px;background:var(--nen-3);border-radius:5px;overflow:hidden;position:relative}
-  .bac .b .thanh i{display:block;height:100%;background:var(--pri);opacity:.8}
-  .bac .b .s{width:78px;flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-
-  .canh{background:var(--warnSoft);border:1px solid var(--luu-vien);color:var(--luu-chu);border-radius:var(--r);
-        padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
-  .mu2{background:var(--nen-2);border:1px dashed var(--vien-dam);border-radius:var(--r);padding:14px 16px;line-height:1.65}
-  .mu2 .ti{font-weight:600;margin-bottom:4px}
-  .mu2 .di{margin-top:8px;font-size:12px;color:var(--muted)}
-  .cu{display:inline-block;background:var(--nen-3);color:var(--muted);border-radius:20px;
-      padding:2px 9px;font-size:11.5px;font-weight:600}
-
-  .nho{color:var(--muted);font-size:11.5px;line-height:1.55}
-  code{background:var(--nen-3);padding:1px 5px;border-radius:4px;font-size:11.5px;
-       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
-  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
-
-  @media (max-width:720px){
-    .than{padding:12px} .so{grid-template-columns:1fr}
-    .bac .b .t{width:92px;font-size:11.5px} .bac .b .s{width:62px}
-  }
-</style>
+<title>Khách vào từ đâu — AI Closer</title>
+<!-- Dựng trên hệ kiểu. KHÔNG CSS riêng — trước lượt này là 46 dòng.
+     ⚠️ HAI LUẬT RIÊNG CỦA MÀN NÀY, giữ nguyên:
+        ① Số 37,4% là số ĐO CŨ trong tài liệu, không phải chỉ số đang sống — chỗ nào nhắc nó
+          cũng phải có nhãn «số cũ» ngay cạnh (ca ①c của `nguon-khach.test.mjs` canh).
+        ② Phễu là ẢNH CHỤP chỗ đứng hiện tại, KHÔNG phải tỉ lệ rơi theo thời gian — nên
+          thanh ngang chỉ so độ lớn giữa các bậc, không có mũi tên «rơi bao nhiêu phần trăm». -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -66,122 +18,129 @@
 <body>
 <header>
   <h1>Khách vào từ đâu</h1>
-  <span class="sub" id="hTeam">…</span>
+  <span class="sub">Hai luồng bán chạy song song và chỉ gặp nhau ở POS.</span>
   <span class="sp"></span>
-
+  <span id="khoang"></span>
 </header>
 
 <main>
-  <div id="dai"></div>
-  <div id="khoang"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <div class="panel">
-    <h2>Hai luồng chạy song song <span class="hint">chỉ gặp nhau ở đích</span></h2>
-    <div class="than"><div class="so" id="luong"></div><div class="dich" id="dich"></div></div>
-  </div>
+  <section class="section" aria-labelledby="tieu-luong">
+    <div class="section-header"><div>
+      <h2 id="tieu-luong">Hai luồng chạy song song</h2>
+      <div class="section-desc" id="dich"></div>
+    </div></div>
+    <ul class="item-list" id="luong"><li class="item"><div><span class="skeleton"></span></div></li></ul>
+  </section>
 
-  <div class="panel">
-    <h2>Chỗ rơi <span class="hint">số cũ 37,4% — «BUY NOW không được gửi WhatsApp»</span></h2>
-    <div class="than"><div id="choRoi"></div></div>
-  </div>
+  <section class="section" aria-labelledby="tieu-roi">
+    <div class="section-header"><div>
+      <h2 id="tieu-roi">Chỗ rơi</h2>
+      <div class="section-desc">Đơn từ trang bán hàng không được gửi WhatsApp — số cũ trong tài liệu: 37,4%.</div>
+    </div></div>
+    <div id="choRoi"></div>
+  </section>
 
-  <div class="panel">
-    <h2>Hội thoại đang đứng ở đâu <span class="hint" id="hPheu"></span></h2>
-    <div class="than"><div id="pheu"></div></div>
-  </div>
+  <section class="section" aria-labelledby="tieu-pheu">
+    <div class="section-header"><div>
+      <h2 id="tieu-pheu">Hội thoại đang đứng ở đâu</h2>
+      <div class="section-desc" id="hPheu">Ảnh chụp chỗ đứng hiện tại, không phải số đếm trong một khoảng ngày.</div>
+    </div></div>
+    <div id="pheu"></div>
+  </section>
 </main>
 
 <script>
+const { esc, text, statusBadge, alert: canhBao, emptyState, formatNumber } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const d0 = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN'));
+const d0 = (n) => (n == null ? '—' : formatNumber(n));
 
 async function goi(u) {
-  const r = await fetch(u, { credentials: 'same-origin' });
+  const r = await fetch(u, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   const j = await r.json().catch(() => null);
-  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Lỗi ' + r.status);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Máy chủ trả ' + r.status + '.');
   return j;
 }
 
 function veLuong(ds) {
-  $('#luong').innerHTML = ds.map((l) => `
-    <div class="l">
-      <div class="n">${d0(l.soDon)}</div>
-      <div class="ten">${esc(l.ten)}</div>
-      <div class="mo">${esc(l.moTa)}</div>
-      <div class="ph">${l.tienDayDu && l.soDonCoTien
-        ? `tổng tiền ${d0(l.tongTien)}`
-        : `<b>${d0(l.soDonCoTien)}/${d0(l.soDon)}</b> đơn có tổng tiền — số tiền chưa đủ để cộng`}</div>
-    </div>`).join('');
+  $('#luong').innerHTML = ds.map((l) => `<li class="item">
+    <div class="item-lead"${l.coDuLieu ? '' : ' data-muted'}>${d0(l.soDon)}</div>
+    <div>
+      <div class="item-title">${esc(l.ten)}</div>
+      <div class="item-desc">${esc(l.moTa)}</div>
+      <div class="item-detail">${l.tienDayDu && l.soDonCoTien
+        ? `Tổng tiền ${d0(l.tongTien)}`
+        : `${d0(l.soDonCoTien)}/${d0(l.soDon)} đơn có tổng tiền — số tiền chưa đủ để cộng`}</div>
+    </div>
+    <div class="item-trail">${l.coDuLieu ? '' : statusBadge('unknown', { label: 'Chưa có dữ liệu' })}</div>
+  </li>`).join('');
 }
 
 function veChoRoi(c) {
   if (!c.doDuoc) {
-    // KHÔNG hiện 37,4% như một chỉ số đang sống — nó là số đo cũ.
-    $('#choRoi').innerHTML = `<div class="mu2">
-      <div class="ti">— chưa đo lại được <span class="cu">số cũ: ${Math.round(c.taiLieuNoi * 100)}%</span></div>
-      <div>${esc(c.noi.replace(/`/g, ''))}</div>
-      <div class="di">👉 ${esc(c.diTiep.replace(/`/g, ''))}</div></div>`;
+    // KHÔNG hiện 37,4% như một chỉ số đang sống — nó là số đo cũ, và nhãn «số cũ» đi kèm.
+    $('#choRoi').innerHTML = `<div class="panel"><div class="feature-row" data-state="off">
+      <div><div class="feature-name">Chưa đo lại được chỗ rơi <span class="meta">· số cũ ${(c.taiLieuNoi * 100).toFixed(1).replace('.', ',')}%</span></div>
+        <div class="feature-desc">${text(c.noi)}</div>
+        <div class="feature-reason">${text(c.diTiep)}</div></div>
+      ${statusBadge('unknown', { label: 'Chưa đo được' })}
+    </div></div>`;
     return;
   }
-  $('#choRoi').innerHTML = `<div class="canh">
-    <b>${d0(c.soKhongGui)}/${d0(c.soDonTrang)} đơn</b> từ trang bán hàng chưa được gửi WhatsApp
-    — <b>${Math.round(c.tiLe * 100)}%</b> <span class="cu">số cũ: ${Math.round(c.taiLieuNoi * 100)}%</span>
-    ${c.lyDo && c.lyDo.length ? `<div class="nho" style="margin-top:5px;color:#8a4a06">lý do: ${c.lyDo.map(esc).join(' · ')}</div>` : ''}
-  </div>`;
+  $('#choRoi').innerHTML = canhBao({ level: 'warning',
+    title: `${d0(c.soKhongGui)}/${d0(c.soDonTrang)} đơn từ trang bán hàng chưa được gửi WhatsApp — ${Math.round(c.tiLe * 100)}%`,
+    body: `Số cũ trong tài liệu là ${(c.taiLieuNoi * 100).toFixed(1).replace('.', ',')}%.`,
+    detail: c.lyDo && c.lyDo.length ? [`Lý do: ${c.lyDo.join(' · ')}`] : [] });
 }
 
 function vePheu(p) {
   if (!p.docDuoc) {
-    $('#pheu').innerHTML = `<div class="mu2"><div class="ti">— chưa đọc được</div>
-      <div>${esc(p.noi)}</div><div class="di">👉 ${esc(p.diTiep)}</div></div>`;
+    $('#pheu').innerHTML = `<div class="panel"><div class="feature-row" data-state="off">
+      <div><div class="feature-name">Chưa đọc được phân bố hội thoại</div>
+        <div class="feature-desc">${text(p.noi)}</div>
+        <div class="feature-reason">${text(p.diTiep)}</div></div>
+      ${statusBadge('unknown', { label: 'Chưa đọc được' })}
+    </div></div>`;
     return;
   }
-  $('#hPheu').textContent = `${d0(p.tong)} hội thoại · toàn hệ, không theo team`;
+  $('#hPheu').textContent = `${d0(p.tong)} hội thoại · toàn hệ, không cắt theo team · ảnh chụp chỗ đứng hiện tại`;
   const max = Math.max(...p.bac.map((b) => b.so), 1);
-  $('#pheu').innerHTML = `<div class="canh">📸 ${esc(p.canhBao)}</div>
-    <div class="bac">${p.bac.map((b) => `
-      <div class="b">
-        <div class="t">${esc(b.ten)}</div>
-        <div class="thanh"><i style="width:${Math.max(1, (b.so / max) * 100)}%"></i></div>
-        <div class="s">${d0(b.so)}</div>
-      </div>`).join('')}</div>
-    ${Object.keys(p.theoChuSoHuu || {}).length ? `<div class="nho" style="margin-top:11px">
-      Ai đang giữ: ${Object.entries(p.theoChuSoHuu).map(([k, v]) => `<b>${esc(k)}</b> ${d0(v)}`).join(' · ')}</div>` : ''}`;
-}
-
-/**
- * DẢI KHOẢNG THỜI GIAN — màn nào cũng phải nói nó đang đo trên khoảng nào.
- *
- * Ba màn số liệu dùng BA cửa sổ khác nhau. Chỉ màn Báo cáo nói ra; hai màn kia im, nên
- * người quản lý mở cạnh nhau rồi so — đó là so ba khoảng khác nhau mà tưởng cùng một kỳ.
- */
-function veKhoang(k) {
-  const o = document.getElementById('khoang');
-  if (!o || !k) return;
-  o.innerHTML = '<div class="kdai"><b>Khoảng đo: ' + esc(k.chu) + '</b>'
-    + '<span>' + esc(k.noi || '') + '</span>'
-    + (k.canhBao ? '<span class="cb">' + esc(k.canhBao) + '</span>' : '')
-    + '</div>';
+  $('#pheu').innerHTML = `<div class="panel">
+    <div class="bar-list">${p.bac.map((b) => `<div class="bar-row">
+      <span class="bar-name">${esc(b.ten)}</span>
+      <progress max="${max}" value="${b.so}" aria-label="${esc(b.ten)}: ${d0(b.so)} hội thoại"></progress>
+      <span class="bar-value">${d0(b.so)}</span>
+    </div>`).join('')}</div>
+    ${Object.keys(p.theoChuSoHuu || {}).length ? `<div class="page-note">Ai đang giữ: ${
+      Object.entries(p.theoChuSoHuu).map(([k, v]) => `${esc(k)} ${d0(v)}`).join(' · ')}</div>` : ''}
+  </div>`
+  + (p.canhBao ? `<div class="tren-3">${canhBao({ level: 'info', body: p.canhBao })}</div>` : '');
 }
 
 async function tai() {
   try {
     const d = await goi('/api/nguon-khach');
-    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
-    if (d.chamTran && d.chamTran.co) {
-      $('#dai').innerHTML = `<div class="canh">📏 <b>${esc(d.chamTran.noi)}</b></div>`;
+    if (!d) return;
+    if (d.khoang) {
+      $('#khoang').innerHTML = `<span class="badge" title="${esc(d.khoang.noi || '')}">Khoảng đo: ${esc(d.khoang.chu)}</span>`;
     }
-    veKhoang(d.khoang);
+    const kh = [];
+    if (d.chamTran && d.chamTran.co) kh.push(canhBao({ level: 'warning', title: 'Đã đọc tới trần', body: d.chamTran.noi }));
+    // Tiêu đề nói ĐIỀU CẦN NHỚ, không lặp lại cái huy hiệu khoảng đo đã nói ở đầu trang.
+    if (d.khoang && d.khoang.canhBao) kh.push(canhBao({ level: 'info', title: 'Đây là ảnh chụp, không phải tỉ lệ rơi', body: d.khoang.canhBao }));
+    $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
+
+    $('#dich').innerHTML = esc(d.gapNhauO)
+      + (d.donKhac ? ` · ${d0(d.donKhac.so)} đơn mang nguồn khác: ${d.donKhac.nguon.map(esc).join(', ')}` : '');
     veLuong(d.luong);
-    $('#dich').innerHTML = `↓ <b>Gặp nhau ở đây</b> ↓<br>${esc(d.gapNhauO)}
-      ${d.donKhac ? `<div class="nho" style="margin-top:6px">${d0(d.donKhac.so)} đơn mang nguồn khác: ${d.donKhac.nguon.map(esc).join(', ')}</div>` : ''}`;
     veChoRoi(d.choRoi);
     vePheu(d.pheu);
   } catch (e) {
-    $('#luong').innerHTML = `<div class="canh" style="grid-column:1/-1;margin:0">
-      <b>Không đọc được:</b> ${esc(e.message)}</div>`;
+    $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được nguồn khách', body: e.message })}</div>`;
+    $('#luong').innerHTML = '';
+    $('#pheu').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' });
   }
 }
 

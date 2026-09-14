@@ -743,6 +743,23 @@
   .option-meta { display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 1px;
                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+  /* ─── THANH NGANG SO SÁNH — phân bố theo bậc ─────────────────────────────────────────
+     Thanh là <progress> GỐC: có nghĩa với trình đọc màn hình, và bề dài đặt bằng thuộc tính
+     `value`, không bằng `style="width:…"` gõ trong trang (phép canh HK15 cấm). */
+  .bar-list { display: flex; flex-direction: column; gap: var(--space-2); }
+  .bar-row { display: grid; grid-template-columns: minmax(0, 160px) minmax(0, 1fr) auto;
+             gap: var(--space-3); align-items: center; font-size: var(--text-sm); }
+  .bar-row > .bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-row > .bar-value { font-variant-numeric: tabular-nums; font-weight: var(--weight-medium);
+                          text-align: right; min-width: 6ch; }
+  .bar-row progress { display: block; width: 100%; height: 8px; border: 0; border-radius: var(--radius-full);
+                      background: var(--surface-muted); appearance: none; -webkit-appearance: none; overflow: hidden; }
+  .bar-row progress::-webkit-progress-bar { background: var(--surface-muted); border-radius: var(--radius-full); }
+  .bar-row progress::-webkit-progress-value { background: var(--primary); border-radius: var(--radius-full); }
+  .bar-row progress::-moz-progress-bar { background: var(--primary); border-radius: var(--radius-full); }
+  @media (max-width: 720px) { .bar-row { grid-template-columns: minmax(0, 1fr) auto; }
+                              .bar-row progress { grid-column: 1 / -1; } }
+
   /* ─── KHỐI MÃ — bản máy đọc, prompt, JSON. Chỉ đọc, cuộn trong khung của nó. ────────── */
   .code-block { margin: 0; padding: var(--space-3); font-family: var(--font-mono); font-size: var(--text-xs);
                 line-height: 18px; color: var(--text-secondary); background: var(--surface-subtle);
