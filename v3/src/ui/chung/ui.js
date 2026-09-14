@@ -84,6 +84,11 @@
     script_archived:  { tone: "neutral", label: "Đã lưu trữ" },
     script_missing:   { tone: "warning", label: "Chưa có kịch bản" },
     // luật AI (mục M9)
+    rule_active:        { tone: "success", label: "Đang áp" },
+    rule_draft:         { tone: "neutral", label: "Bản nháp" },
+    rule_approved:      { tone: "info",    label: "Đã duyệt, chưa áp" },
+    rule_ai_unreviewed: { tone: "warning", label: "AI đề xuất, chưa duyệt" },
+    rule_inherited:     { tone: "neutral", label: "Kế thừa toàn hệ" },
     guard_passed:  { tone: "success", label: "Đạt" },
     guard_blocked: { tone: "danger",  label: "Đã chặn" },
     // tính năng (mục N, O)

@@ -3,85 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Quy tắc chung của bot — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  /* dải cảnh báo NGUY — màn này phải trông khác mọi màn khác */
-  .nguy{background:var(--loi-nen);border:1px solid var(--loi-vien);border-left:4px solid var(--bad);
-        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
-  .nguy b{color:var(--loi-chu)}
-  .nguy .so{font-size:19px;font-weight:700;color:var(--loi-chu);font-variant-numeric:tabular-nums}
-
-  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
-  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .banner.i{background:var(--priSoft);color:var(--chinh-dam);border:1px solid var(--chinh-vien)}
-
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
-  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
-  tbody tr:last-child td{border-bottom:none}
-  tbody tr.ap{background:var(--priSoft)}
-  .num{font-variant-numeric:tabular-nums}
-  .ten{font-weight:600;overflow-wrap:anywhere}
-  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
-
-  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
-  .pill.g{background:var(--okSoft);color:var(--ok)}
-  .pill.o{background:var(--warnSoft);color:var(--warn)}
-  .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:var(--nen-3);color:var(--chu-2)}
-  .pill.p{background:var(--priSoft);color:var(--priDark)}
-
-  /* khối so sánh */
-  .diff{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:400px;background:var(--nen-2)}
-  .diff pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6}
-  .diff .d{padding:1px 10px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid transparent}
-  .diff .d.them{background:var(--dat-nen);border-left-color:var(--ok)}
-  .diff .d.bo{background:var(--loi-nen);border-left-color:var(--bad);text-decoration:line-through;opacity:.8}
-  .diff .d.giu{color:var(--muted)}
-
-  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit;
-           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6;
-           min-height:260px;resize:vertical}
-
-  button{font:inherit}
-  .nut{background:var(--pri);color:var(--nen);border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
-  .nut:hover{background:var(--priDark)}
-  .nut[disabled]{background:var(--vien-dam);cursor:not-allowed}
-  .nut.nho{padding:4px 10px;font-size:11.5px;font-weight:600}
-  .nut.nguy{background:var(--bad)}
-  .nut.nguy:hover{background:var(--loi-chu)}
-  .nut.phu{background:transparent;color:var(--priDark);border:1px solid var(--line)}
-  .nut.phu:hover{background:var(--priSoft)}
-  .hang{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
-
-  .trong{padding:20px 15px;text-align:center;line-height:1.6}
-  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
-  .trong.chua{color:var(--luu-chu);background:var(--warnSoft)}
-  .loi{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien);border-radius:8px;
-       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .loi.hien{display:block}
-  .ok{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien);border-radius:8px;
-      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .ok.hien{display:block}
-
-  @media (max-width:700px){
-    .panel h2{padding:10px 12px} .than{padding:12px}
-    table,thead,tbody,th,td,tr{display:block}
-    thead{display:none}
-    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
-    tbody tr:last-child{margin-bottom:0}
-    td{border:none;padding:4px 0}
-    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
-      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
-  }
-</style>
+<title>Quy tắc chung mọi page — AI Closer</title>
+<!-- Dựng trên hệ kiểu (mục M9 của bản đặc tả: luật AI là thứ rủi ro cao — phạm vi ảnh hưởng
+     phải thấy TRƯỚC khi bấm). KHÔNG CSS riêng — trước lượt này là 66 dòng. Phạm vi ảnh hưởng
+     là một hàng chỉ số thường trực; so sánh và áp nằm trong ngăn kéo phải, nên danh sách
+     phiên bản không bị đẩy đi mỗi lần mở một bản. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -89,63 +16,59 @@
 <body>
 <header>
   <h1>Quy tắc chung mọi page</h1>
-  <span class="sub" id="teamHien">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Luật mọi page trong team cùng dùng. Áp một bản là cả team đổi cách nói với khách.</span>
 </header>
 
 <main>
-  <div class="loi" id="loi"></div>
-  <div class="ok" id="baoOk"></div>
-  <div id="nguy"></div>
-  <div id="canhBao"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <section class="panel">
-    <h2>Các phiên bản <span class="hint" id="tomTatBan"></span></h2>
-    <div id="bangBan"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+  <section class="section" aria-label="Phạm vi ảnh hưởng">
+    <div id="anhHuong"><div class="metric-row"><div class="metric"><span class="skeleton"></span></div></div></div>
+    <div id="nguonSo" class="tren-3"></div>
   </section>
 
-  <section class="panel" id="khoiSoSanh" style="display:none">
-    <h2>Khác bản đang áp chỗ nào <span class="hint" id="tomTatDiff"></span>
-      <span class="sp"></span>
-      <button class="nut nho phu" id="dongSoSanh">Đóng</button>
-    </h2>
-    <div class="than">
-      <div class="diff" id="diff"></div>
-      <div class="hang" style="margin-top:12px" id="nutAp"></div>
+  <section class="section table-wrap" aria-labelledby="tieu-ban">
+    <div class="table-toolbar"><h2 id="tieu-ban">Các phiên bản</h2>
+      <span class="table-count" id="tomTatBan"></span></div>
+    <div id="bangBan"></div>
+  </section>
+
+  <section class="section panel" aria-labelledby="tieu-soan">
+    <div class="section-header"><div>
+      <h2 id="tieu-soan">Soạn bản mới</h2>
+      <div class="section-desc">Lưu xong chưa có hiệu lực. Mở «So sánh» ở bảng phiên bản để xem khác gì rồi mới áp.</div>
+    </div></div>
+    <div class="field">
+      <label class="sr-only" for="oNoiDung">Nội dung bộ quy tắc</label>
+      <textarea id="oNoiDung" class="mono" rows="14" spellcheck="false" placeholder="Nội dung bộ quy tắc chung…"></textarea>
+      <div class="field-hint tabular" id="demChu"></div>
     </div>
-  </section>
-
-  <section class="panel" id="soan">
-    <h2>Soạn bản mới
-      <span class="hint">lưu xong KHÔNG áp ngay — phải bấm áp ở bảng trên, đó là cửa duyệt</span>
-    </h2>
-    <div class="than">
-      <textarea id="oNoiDung" spellcheck="false" placeholder="Nội dung bộ luật chung…"></textarea>
-      <div class="hang" style="margin-top:9px">
-        <button class="nut phu" id="nutChep">Chép bản đang áp vào ô</button>
-        <span class="phu" id="demChu"></span>
-        <span class="sp" style="flex:1"></span>
-        <button class="nut" id="nutLuu">Lưu bản nháp</button>
-      </div>
-      <div class="phu" style="margin-top:7px" id="ghiChuSoan"></div>
+    <div class="form-actions">
+      <button type="button" class="btn" data-variant="primary" data-size="md" id="nutLuu"><span>Lưu bản nháp</span></button>
+      <button type="button" class="btn" data-variant="outline" data-size="md" id="nutChep"><span>Chép bản đang áp vào ô</span></button>
+      <span class="text-muted" id="ghiChuSoan"></span>
     </div>
   </section>
 </main>
 
+<dialog class="drawer" data-size="lg" id="ngan" aria-labelledby="ngan-tieu">
+  <div class="drawer-header">
+    <div class="gian"><h2 id="ngan-tieu">So sánh</h2><div class="hang tren-1" id="ngan-tom"></div></div>
+    <button type="button" class="icon-btn" id="ngan-dong" aria-label="Đóng"></button>
+  </div>
+  <div class="drawer-body"><div class="diff-view" id="diff" role="region" aria-label="Các dòng khác nhau"></div></div>
+  <div class="drawer-footer" id="nutAp"></div>
+</dialog>
+
 <script>
+const { esc, text, icon, statusBadge, button, setBusy, alert: canhBao, emptyState, metricRow, toast,
+        confirmDialog, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const so = (n) => Number(n || 0).toLocaleString('vi-VN');
 
-let D = null, SUA = false, DANG_SO = null;
+let D = null, SUA = false, LOI = null;
 
-function baoLoi(t){ const o=$('#loi'); o.textContent=t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
-function baoOk(t){ const o=$('#baoOk'); o.textContent=t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
-function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
-
-async function goi(duong, tuyChon){
-  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+async function goi(duong, tuyChon) {
+  const r = await fetch(duong, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, ...tuyChon });
   if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   let d = null;
   try { d = await r.json(); } catch { /* null */ }
@@ -153,192 +76,209 @@ async function goi(duong, tuyChon){
   return d;
 }
 
-/** Dải NGUY — con số page bị ảnh hưởng, hiện thường trực chứ không đợi lúc bấm. */
-function veNguy(){
-  const a = D.anhHuong;
-  $('#nguy').innerHTML = `<div class="nguy">
-    <b>Bộ luật chung dùng chung cho MỌI page của team.</b>
-    Sửa và áp một bản là <span class="so">${so(a.tongPage)}</span> page đổi cách nói với khách,
-    trong đó <span class="so">${so(a.dangBatBot)}</span> page <b>đang BẬT bot</b> — tức là đang
-    nói chuyện với khách thật ngay lúc này.
-    ${a.tenVaiPage.length ? `<div class="phu" style="margin-top:5px">Ví dụ: ${a.tenVaiPage.map(esc).join(' · ')}${a.dangBatBot > a.tenVaiPage.length ? ' …' : ''}</div>` : ''}
-    ${veNguonSo(a)}
-  </div>`;
-}
+function baoLoi(title, body) { LOI = { title, body }; veBangTin(); }
 
-/**
- * CON SỐ NÀY LẤY TỪ ĐÂU — hiện ngay dưới nó, không giấu.
- *
- * Người ta bấm ÁP dựa trên con số này, nên «nó đáng tin tới đâu» là một phần của con số.
- * B-Y7: cột `page.bot_ai_bat` từng lệch 50 page so với `ai-enabled.json` suốt từ 24/08, và
- * màn vẫn hiện con số cột như thể nó là sự thật.
- */
-function veNguonSo(a){
-  if (!a.nguon) return '';
+const MA_TRANG_THAI = {
+  dang_ap: 'rule_active', cho_duyet: 'rule_draft', da_duyet: 'rule_approved',
+  ai_chua_duyet: 'rule_ai_unreviewed', ke_thua: 'rule_inherited',
+};
+const trangThai = (b) => statusBadge(MA_TRANG_THAI[b.trangThai] || b.trangThai,
+  { label: (D.chuTrangThai && D.chuTrangThai[b.trangThai]) || undefined });
+
+// ── PHẠM VI ẢNH HƯỞNG — hiện thường trực, không đợi lúc bấm áp ───────────────────────
+function veAnhHuong() {
+  const a = D.anhHuong;
+  const cho = D.ban.filter((b) => b.trangThai === 'cho_duyet' || b.trangThai === 'ai_chua_duyet').length;
+  $('#anhHuong').innerHTML = metricRow([
+    { label: 'Page dùng bộ quy tắc này', value: a.tongPage },
+    { label: 'Trong đó đang bật bot', value: a.dangBatBot,
+      hint: a.tenVaiPage.length ? `Ví dụ: ${a.tenVaiPage.join(' · ')}${a.dangBatBot > a.tenVaiPage.length ? ' …' : ''}` : '' },
+    { label: 'Bản đang áp', value: D.dangAp ? `v${D.dangAp.phienBan}` : '—',
+      statusHtml: D.dangAp ? '' : statusBadge('blocked', { label: 'Không có bản nào' }),
+      hint: D.dangAp ? `≈ ${so(D.dangAp.uocToken)} token mỗi lượt chat` : '' },
+    { label: 'Chờ duyệt hoặc chưa áp', value: cho },
+  ]);
+
+  // CON SỐ NÀY LẤY TỪ ĐÂU — người ta bấm ÁP dựa trên nó, nên «đáng tin tới đâu» là một phần
+  // của con số. B-Y7: cột `page.bot_ai_bat` từng lệch 50 page so với `ai-enabled.json`.
+  if (!a.nguon) { $('#nguonSo').innerHTML = ''; return; }
   const that = a.nguon !== 'cot_csdl';
   const lech = a.lech && a.lech.co;
-  return `<div class="phu" style="margin-top:7px;padding-top:7px;border-top:1px solid #f0c2c2">
-    ${that ? '✅' : '⚠️'} Con số «đang bật bot» đọc từ <b>${esc(a.nguon)}</b>${that ? '' : ' — <b>bản sao, có thể cũ</b>'}.
-    ${lech ? `<br>⚠️ <b>Lệch với cột trong CSDL:</b> ${esc(a.lech.viSao || '')}` : ''}
-    ${!that && a.lech ? `<br>${esc(a.lech.viSao || '')}` : ''}
-  </div>`;
+  $('#nguonSo').innerHTML = (!that || lech) ? canhBao({
+    level: 'warning',
+    title: lech ? 'Số page đang bật bot lệch với cơ sở dữ liệu' : 'Số page đang bật bot có thể đã cũ',
+    body: that ? `Đọc từ ${a.nguon}.` : 'Con số được đếm từ một bản sao trong cơ sở dữ liệu, không phải từ tiến trình bot.',
+    detail: a.lech && a.lech.viSao ? [a.lech.viSao] : [],
+  }) : '';
 }
 
-function veCanhBao(){
+function veBangTin() {
   const kh = [];
-  if (D.keThua) {
-    kh.push(`<div class="banner i">Team này <b>chưa có bộ luật riêng</b> — đang <b>kế thừa bản
-      toàn hệ</b> (dùng chung mọi team). Soạn một bản ở dưới là team có bản riêng, và bản riêng
-      sẽ thắng bản kế thừa.</div>`);
+  if (LOI) kh.push(canhBao({ level: 'error', title: LOI.title, body: LOI.body }));
+  if (D && !D.dangAp) {
+    kh.push(canhBao({ level: 'error', title: 'Không có bản nào đang áp',
+      body: 'Bot đang trả lời khách mà không có quy tắc chung nào. Áp một bản ở bảng phiên bản.' }));
   }
-  if (!D.dangAp) {
-    kh.push(`<div class="banner o"><b>Không có bản nào đang áp.</b> Prompt của page đang thiếu
-      hẳn khối quy tắc cứng — bot trả lời khách mà không có luật chung nào.</div>`);
+  if (D) {
+    // CHỈ đếm bản của team — bản toàn hệ mang trạng thái 'ke_thua', không phải chờ duyệt.
+    // Bản AI chưa duyệt là cảnh RIÊNG và nặng hơn: `apBoLuat` TỪ CHỐI áp nó (01-QUYET-DINH §9).
+    const aiCho = D.ban.filter((b) => b.trangThai === 'ai_chua_duyet').length;
+    if (aiCho) {
+      kh.push(canhBao({ level: 'warning', title: `${so(aiCho)} bản do AI đề xuất chưa ai duyệt`,
+        body: 'Không áp được cho tới khi có người duyệt. Người viết áp thẳng được; đề xuất của AI phải qua người.' }));
+    }
+    const cho = D.ban.filter((b) => b.trangThai === 'cho_duyet').length;
+    if (cho) {
+      kh.push(canhBao({ level: 'info', title: `${so(cho)} bản nháp chưa áp`,
+        body: 'Chưa ảnh hưởng gì tới bot. Mở «So sánh» rồi bấm áp thì mới có hiệu lực.' }));
+    }
+    if (D.keThua) {
+      kh.push(canhBao({ level: 'info', title: 'Team này chưa có bộ quy tắc riêng',
+        body: 'Đang kế thừa bản toàn hệ dùng chung mọi team. Soạn một bản bên dưới là team có bản riêng, và bản riêng sẽ thắng bản kế thừa.' }));
+    }
   }
-  // CHỈ đếm bản của team — bản toàn hệ mang trạng thái 'ke_thua', không phải chờ duyệt.
-  // Bản AI chưa duyệt là cảnh RIÊNG và nặng hơn: `apBoLuat` TỪ CHỐI áp nó (01-QUYET-DINH §9).
-  const aiCho = D.ban.filter((b) => b.trangThai === 'ai_chua_duyet').length;
-  if (aiCho) {
-    kh.push(`<div class="banner o"><b>${so(aiCho)} bản do AI đề xuất, CHƯA ai duyệt.</b>
-      Không áp được cho tới khi có người duyệt — 01-QUYET-DINH §9: kịch bản người viết áp
-      thẳng, nhưng đề xuất của AI phải qua người.</div>`);
-  }
-  const cho = D.ban.filter((b) => b.trangThai === 'cho_duyet').length;
-  if (cho) {
-    kh.push(`<div class="banner o"><b>${so(cho)} bản đang chờ duyệt.</b> Chúng chưa ảnh hưởng
-      gì tới bot — phải bấm <b>Áp bản này</b> thì mới có hiệu lực.</div>`);
-  }
-  $('#canhBao').innerHTML = kh.join('');
+  $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 }
 
-function veBang(){
-  $('#teamHien').textContent = `team #${D.teamId}`;
-  $('#tomTatBan').textContent = `${D.soBanCuaTeam} bản của team · ${D.soBanToanHe} bản toàn hệ`;
-  if (D.trong) { $('#bangBan').innerHTML = `<div class="trong chua"><span class="ic">⚠️</span>
-    <div>${esc(D.trong.noi)}</div></div>`; return; }
-
-  $('#bangBan').innerHTML = `<table><thead><tr>
-      <th>Phiên bản</th><th>Trạng thái</th><th>Cỡ</th><th>Người sửa</th><th></th>
+function veBang() {
+  $('#tomTatBan').textContent = `${so(D.soBanCuaTeam)} bản của team · ${so(D.soBanToanHe)} bản toàn hệ`;
+  if (D.trong) { $('#bangBan').innerHTML = emptyState({ icon: 'triangle-alert', title: D.trong.noi }); return; }
+  $('#bangBan').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Phiên bản</th><th scope="col">Trạng thái</th><th scope="col" class="num">Cỡ</th>
+      <th scope="col">Người sửa</th><th scope="col">Lúc</th>
+      <th scope="col" class="actions"><span class="sr-only">Thao tác</span></th>
     </tr></thead><tbody>${D.ban.map((b) => `
-    <tr class="${b.dangDung ? 'ap' : ''}">
-      <td data-nhan="Phiên bản"><span class="ten">v${b.phienBan}</span>
-        ${b.toanHe ? ' <span class="pill m">toàn hệ · kế thừa</span>' : ''}</td>
-      <td data-nhan="Trạng thái"><span class="pill ${b.trangThai === 'dang_ap' ? 'g'
-          : b.trangThai === 'ai_chua_duyet' ? 'r' : b.trangThai === 'cho_duyet' ? 'o' : 'm'}">
-        ${esc(D.chuTrangThai[b.trangThai])}</span>
-        ${b.nguon === 'ai' ? '<div class="phu">AI đề xuất</div>' : ''}</td>
-      <td data-nhan="Cỡ" class="num">${so(b.soKyTu)} ký tự<div class="phu">≈ ${so(b.uocToken)} token (ước lượng)</div></td>
-      <td data-nhan="Người sửa"><span class="phu">${esc(b.nguoiSua || '—')}<br>${b.suaLuc ? new Date(b.suaLuc).toLocaleString('vi-VN') : ''}</span></td>
-      <td data-nhan="">
-        <button class="nut nho phu" data-so="${esc(b.id)}">Xem khác chỗ nào</button>
-      </td>
+    <tr ${b.dangDung ? 'aria-selected="true"' : ''}>
+      <td><span class="manh">v${b.phienBan}</span>
+        ${b.toanHe ? ' <span class="badge">Toàn hệ</span>' : ''}${b.nguon === 'ai' ? ' <span class="badge" data-variant="info">AI đề xuất</span>' : ''}</td>
+      <td>${trangThai(b)}</td>
+      <td class="num">${so(b.soKyTu)} ký tự <span class="meta">· ≈ ${so(b.uocToken)} token</span></td>
+      <td>${esc(b.nguoiSua || '—')}</td>
+      <td class="meta tabular">${b.suaLuc ? esc(new Date(b.suaLuc).toLocaleString('vi-VN')) : '—'}</td>
+      <td class="actions">${button('So sánh', { size: 'sm', data: { so: b.id } })}</td>
     </tr>`).join('')}</tbody></table>`;
-
-  document.querySelectorAll('[data-so]').forEach((b) => b.addEventListener('click', () => xemSoSanh(b.dataset.so)));
+  document.querySelectorAll('[data-so]').forEach((b) => b.addEventListener('click', () => xemSoSanh(b.dataset.so, b)));
 }
 
-async function xemSoSanh(id){
-  xoaBao();
+// ── SO SÁNH · ÁP — trong ngăn kéo, luôn kèm phạm vi ảnh hưởng ─────────────────────────
+async function xemSoSanh(id, nut) {
+  LOI = null; veBangTin();
+  setBusy(nut, true);
   try {
     const d = await goi('/api/bo-luat/' + encodeURIComponent(id) + '/so-sanh');
     if (!d) return;
-    DANG_SO = d;
-    const t = d.tomTat;
-    $('#tomTatDiff').textContent = d.dangAp
-      ? `v${d.ban.phienBan} so với v${d.dangAp.phienBan} đang áp · +${t.them} dòng · −${t.bo} dòng · ${t.tokenChenh >= 0 ? '+' : ''}${so(t.tokenChenh)} token`
-      : `v${d.ban.phienBan} — chưa có bản nào đang áp để so`;
-
-    $('#diff').innerHTML = '<pre>' + d.dong.map((x) =>
-      `<div class="d ${x.loai}">${x.loai === 'them' ? '+ ' : x.loai === 'bo' ? '- ' : '  '}${esc(x.chu) || '&nbsp;'}</div>`
-    ).join('') + '</pre>';
+    const t = d.tomTat, b = d.ban;
+    $('#ngan-tieu').textContent = d.dangAp ? `v${b.phienBan} so với v${d.dangAp.phienBan} đang áp` : `v${b.phienBan}`;
+    $('#ngan-tom').innerHTML = d.dangAp
+      ? `<span class="badge" data-variant="success">+${so(t.them)} dòng</span>
+         <span class="badge" data-variant="danger">−${so(t.bo)} dòng</span>
+         <span class="badge">${t.tokenChenh >= 0 ? '+' : '−'}${so(Math.abs(t.tokenChenh))} token</span>`
+      : '<span class="text-muted text-sm">Chưa có bản nào đang áp để so.</span>';
+    $('#diff').innerHTML = d.dong.map((x) =>
+      `<div class="diff-line" data-kind="${esc(x.loai)}">${esc(x.chu) || ' '}</div>`).join('');
 
     // Nút áp chỉ hiện khi ĐƯỢC PHÉP và bản đó áp được — và luôn kèm con số ảnh hưởng.
-    const b = d.ban;
+    const a = D.anhHuong;
+    let chan, lui = false;
     if (!SUA) {
-      $('#nutAp').innerHTML = '<span class="phu">Vai của bạn chỉ xem được.</span>';
+      chan = '<span class="text-muted text-sm">Vai của bạn chỉ xem được.</span>';
     } else if (b.toanHe) {
-      $('#nutAp').innerHTML = '<span class="phu">Bản toàn hệ dùng chung mọi team — màn này không '
-        + 'sửa và không áp nó được. Soạn một bản riêng của team ở dưới.</span>';
+      chan = '<span class="text-muted text-sm">Bản toàn hệ dùng chung mọi team — màn này không sửa và không áp nó được. Soạn một bản riêng của team.</span>';
     } else if (b.dangDung) {
-      $('#nutAp').innerHTML = '<span class="pill g">Bản này đang áp</span>';
+      chan = statusBadge('rule_active', { label: 'Bản này đang áp' });
     } else if (b.trangThai === 'ai_chua_duyet') {
-      $('#nutAp').innerHTML = `<button class="nut" id="btDuyet">Duyệt bản v${b.phienBan}</button>
-        <span class="phu">Bản này do <b>AI đề xuất</b> — phải có người duyệt mới áp được
-          (01-QUYET-DINH §9). Duyệt xong mới hiện nút áp.</span>`;
-      $('#btDuyet').addEventListener('click', () => duyet(b));
+      chan = `<span class="text-muted text-sm gian">Bản do AI đề xuất phải có người duyệt mới áp được.</span>
+        ${button(`Duyệt bản v${b.phienBan}`, { variant: 'primary', id: 'btDuyet' })}`;
     } else {
-      const lui = d.dangAp && b.phienBan < d.dangAp.phienBan;
-      $('#nutAp').innerHTML = `<button class="nut ${lui ? '' : 'nguy'}" id="btAp">
-          ${lui ? `↩ Lùi về bản v${b.phienBan}` : `Áp bản v${b.phienBan}`}</button>
-        <span class="phu">sẽ đổi cách nói của <b>${so(D.anhHuong.tongPage)}</b> page
-          (<b>${so(D.anhHuong.dangBatBot)}</b> đang bật bot)</span>`;
-      $('#btAp').addEventListener('click', () => ap(b, lui));
+      lui = !!(d.dangAp && b.phienBan < d.dangAp.phienBan);
+      chan = `<span class="text-muted text-sm gian">Đổi cách nói của ${so(a.tongPage)} page, trong đó ${so(a.dangBatBot)} page đang bật bot.</span>
+        ${button(lui ? `Lùi về bản v${b.phienBan}` : `Áp bản v${b.phienBan}`, { variant: 'primary', id: 'btAp' })}`;
     }
-    $('#khoiSoSanh').style.display = '';
-    $('#khoiSoSanh').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  } catch (e) { baoLoi(e.message); }
+    $('#nutAp').innerHTML = chan;
+    if ($('#btAp')) $('#btAp').addEventListener('click', () => ap(b, lui));
+    if ($('#btDuyet')) $('#btDuyet').addEventListener('click', () => duyet(b));
+    $('#ngan').showModal();
+  } catch (e) { baoLoi('Không so sánh được', e.message); }
+  finally { setBusy(nut, false); }
 }
 
-async function ap(b, lui){
+async function ap(b, lui) {
   const a = D.anhHuong;
-  if (!confirm(`${lui ? 'LÙI VỀ' : 'ÁP'} bản v${b.phienBan}?\n\n`
-    + `${a.tongPage} page sẽ đổi cách nói với khách, trong đó ${a.dangBatBot} page ĐANG BẬT BOT `
-    + 'và đang nói chuyện với khách thật.\n\n'
-    + 'Có hiệu lực ngay ở lượt chat kế tiếp.')) return;
-  xoaBao();
-  $('#btAp').disabled = true;
+  const dongY = await confirmDialog({
+    title: `${lui ? 'Lùi về' : 'Áp'} bản v${b.phienBan}?`,
+    body: `${so(a.tongPage)} page sẽ đổi cách nói với khách, trong đó ${so(a.dangBatBot)} page đang bật bot và đang nói chuyện với khách thật. Có hiệu lực ngay ở lượt chat kế tiếp.`,
+    confirmLabel: lui ? 'Lùi về bản này' : 'Áp bản này',
+    danger: true,
+  });
+  if (!dongY) return;
+  const nut = $('#btAp');
+  setBusy(nut, true);
   try {
-    const kq = await goi('/api/bo-luat/' + encodeURIComponent(b.id) + '/ap', { method:'POST', body: JSON.stringify({}) });
-    baoOk(`Đã ${kq.laLui ? 'lùi về' : 'áp'} bản v${kq.phienBan} — ${so(kq.anhHuong.tongPage)} page dùng bản này từ lượt chat kế tiếp.`);
-    $('#khoiSoSanh').style.display = 'none';
+    const kq = await goi('/api/bo-luat/' + encodeURIComponent(b.id) + '/ap', { method: 'POST', body: JSON.stringify({}) });
+    $('#ngan').close();
+    toast(`Đã ${kq.laLui ? 'lùi về' : 'áp'} bản v${kq.phienBan}. ${so(kq.anhHuong.tongPage)} page dùng bản này từ lượt chat kế tiếp.`);
     await nap();
-  } catch (e) { baoLoi(e.message); $('#btAp').disabled = false; }
+  } catch (e) { $('#ngan').close(); baoLoi('Không áp được bản này', e.message); }
+  finally { setBusy(nut, false); }
 }
 
-async function duyet(b){
-  if (!confirm(`Duyệt bản v${b.phienBan} do AI đề xuất?\n\nDuyệt KHÔNG phải là áp — duyệt xong `
-    + 'mới hiện nút áp, và lúc đó mới hỏi lại số page bị ảnh hưởng.')) return;
-  xoaBao();
+async function duyet(b) {
+  const dongY = await confirmDialog({
+    title: `Duyệt bản v${b.phienBan} do AI đề xuất?`,
+    body: 'Duyệt KHÔNG phải là áp. Duyệt xong mới áp được, và lúc áp sẽ hỏi lại số page bị ảnh hưởng.',
+    confirmLabel: 'Duyệt',
+  });
+  if (!dongY) return;
+  const nut = $('#btDuyet');
+  setBusy(nut, true);
   try {
-    await goi('/api/bo-luat/' + encodeURIComponent(b.id) + '/duyet', { method:'POST', body: JSON.stringify({}) });
-    baoOk(`Đã duyệt v${b.phienBan}. CHƯA áp — bấm "Xem khác chỗ nào" rồi áp.`);
-    $('#khoiSoSanh').style.display = 'none';
+    await goi('/api/bo-luat/' + encodeURIComponent(b.id) + '/duyet', { method: 'POST', body: JSON.stringify({}) });
+    $('#ngan').close();
+    toast(`Đã duyệt v${b.phienBan}. Chưa áp — mở «So sánh» rồi áp.`);
     await nap();
-  } catch (e) { baoLoi(e.message); }
+  } catch (e) { $('#ngan').close(); baoLoi('Không duyệt được bản này', e.message); }
+  finally { setBusy(nut, false); }
 }
 
-$('#dongSoSanh').addEventListener('click', () => { $('#khoiSoSanh').style.display = 'none'; });
+$('#ngan-dong').innerHTML = icon('x');
+$('#ngan-dong').addEventListener('click', () => $('#ngan').close());
 
+// ── SOẠN ─────────────────────────────────────────────────────────────────────────────
 $('#nutChep').addEventListener('click', () => {
-  if (!D.dangAp) { baoLoi('Chưa có bản nào đang áp để chép.'); return; }
+  if (!D.dangAp) { baoLoi('Chưa có bản nào đang áp để chép', 'Soạn từ đầu trong ô bên trên.'); return; }
   $('#oNoiDung').value = D.dangAp.noiDung;
   demChu();
 });
 
-function demChu(){
+function demChu() {
   const n = $('#oNoiDung').value.length;
   const tk = Math.round(n / D.kyTuMoiToken);
   const goc = D.dangAp ? D.dangAp.soKyTu : 0;
-  $('#demChu').innerHTML = `${so(n)} ký tự · ≈ ${so(tk)} token (ước lượng)`
+  $('#demChu').textContent = `${so(n)} ký tự · ≈ ${so(tk)} token (ước lượng)`
     + (goc ? ` · bản đang áp ${so(goc)} ký tự` : '');
 }
-$('#oNoiDung').addEventListener('input', demChu);
+$('#oNoiDung').addEventListener('input', () => { $('#oNoiDung').removeAttribute('aria-invalid'); demChu(); });
 
 $('#nutLuu').addEventListener('click', async () => {
   const noiDung = $('#oNoiDung').value;
-  if (!noiDung.trim()) { baoLoi('Ô soạn đang trống.'); return; }
-  xoaBao();
-  $('#nutLuu').disabled = true;
+  if (!noiDung.trim()) {
+    $('#oNoiDung').setAttribute('aria-invalid', 'true');
+    $('#demChu').textContent = 'Ô soạn đang trống.';
+    $('#oNoiDung').focus();
+    return;
+  }
+  LOI = null; veBangTin();
+  const nut = $('#nutLuu');
+  setBusy(nut, true);
   try {
-    const kq = await goi('/api/bo-luat/nhap', { method:'POST', body: JSON.stringify({ noiDung }) });
-    baoOk(`Đã lưu bản nháp v${kq.phienBan}. CHƯA áp — bot vẫn đang chạy bản cũ. `
-      + 'Bấm "Xem khác chỗ nào" ở bảng trên rồi mới áp.');
+    const kq = await goi('/api/bo-luat/nhap', { method: 'POST', body: JSON.stringify({ noiDung }) });
+    toast(`Đã lưu bản nháp v${kq.phienBan}. Chưa áp — bot vẫn chạy bản cũ.`);
     await nap();
-  } catch (e) { baoLoi(e.message); }
-  finally { $('#nutLuu').disabled = !SUA; }
+  } catch (e) { baoLoi('Không lưu được bản nháp', e.message); }
+  finally { setBusy(nut, false); nut.disabled = !SUA; }
 });
 
-async function nap(){
+async function nap() {
   try {
     const d = await goi('/api/bo-luat');
     if (!d) return;
@@ -347,8 +287,11 @@ async function nap(){
     $('#oNoiDung').disabled = !SUA;
     $('#nutChep').disabled = !SUA;
     $('#ghiChuSoan').textContent = SUA ? '' : 'Vai của bạn chỉ xem được — không soạn và không áp được.';
-    veNguy(); veCanhBao(); veBang(); demChu();
-  } catch (e) { baoLoi(e.message); }
+    veAnhHuong(); veBangTin(); veBang(); demChu();
+  } catch (e) {
+    baoLoi('Không tải được bộ quy tắc', e.message);
+    $('#bangBan').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' });
+  }
 }
 nap();
 </script>

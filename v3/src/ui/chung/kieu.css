@@ -518,6 +518,7 @@
     flex-direction: column; overscroll-behavior: contain;
   }
   dialog.drawer[open] { display: flex; }
+  dialog.drawer[data-size="lg"] { width: min(760px, 100vw); }
   dialog.drawer::backdrop { background: var(--scrim); }
   .drawer-header { display: flex; align-items: flex-start; gap: var(--space-3);
                    padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-default); }
@@ -681,6 +682,20 @@
                 line-height: 18px; color: var(--text-secondary); background: var(--surface-subtle);
                 border: 1px solid var(--border-default); border-radius: var(--radius-md);
                 white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow: auto; }
+
+  /* ─── SO SÁNH HAI BẢN — dòng thêm · bỏ · giữ ────────────────────────────────────────
+     Dấu +/− ở ĐẦU dòng là tín hiệu chính, màu nền là phụ (mục T). KHÔNG gạch ngang dòng
+     bỏ: bản cũ gạch ngang + mờ 80% — đúng dòng người duyệt cần đọc kỹ nhất lại khó đọc nhất. */
+  .diff-view { margin: 0; font-family: var(--font-mono); font-size: var(--text-xs); line-height: 20px;
+               border: 1px solid var(--border-default); border-radius: var(--radius-md);
+               background: var(--surface); overflow: auto; max-height: 60vh; }
+  .diff-line { display: grid; grid-template-columns: 20px minmax(0, 1fr); padding: 0 var(--space-3) 0 var(--space-2);
+               white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-secondary); }
+  .diff-line::before { content: " "; color: var(--text-disabled); user-select: none; }
+  .diff-line[data-kind="them"] { background: var(--success-bg); color: var(--text-primary); }
+  .diff-line[data-kind="them"]::before { content: "+"; color: var(--success); font-weight: var(--weight-semibold); }
+  .diff-line[data-kind="bo"] { background: var(--danger-bg); color: var(--text-primary); }
+  .diff-line[data-kind="bo"]::before { content: "−"; color: var(--danger); font-weight: var(--weight-semibold); }
 
   /* ─── FORM — trường xếp dọc, hàng hành động cuối ────────────────────────────────── */
   .form-stack { display: flex; flex-direction: column; gap: var(--space-4); }
