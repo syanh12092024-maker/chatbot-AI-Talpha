@@ -1478,3 +1478,38 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   xoá. Test 263/263 xanh (16 bộ chạy được không cần CSDL) · cổng tĩnh PHÉP=5 ĐỎ=0 · commit
   `7cd8cac` · ⛔ chưa push · CHƯA chạy `npm test` và 25 cổng · nhật ký
   `docs/thi-cong/nhat-ky/ui-gom-4-11-09.md`.
+
+---
+
+### 14/09/2026 · dãy S của `test/l0-m2-so-lieu.test.js` CHẬP CHỜN khi có dữ liệu thật
+
+**Đo được, không suy đoán.** Máy có đủ gói bàn giao (`.env` + 6 nguồn di trú) + Postgres
+18.6. Chạy `node --test test/l0-m1-*.test.js test/l0-m2-*.test.js` **bốn lượt**:
+
+| lượt | lớp chặn ghi | ca đỏ |
+|---|---|---|
+| 1 | không | D7 · **S8** |
+| 2 | không | D7 · **S4 · S5 · S8** |
+| 3 | có | D7 · **S3 · S8** |
+| 4 | có | D7 · **S4 · S8** |
+
+`D7` là ca đỏ SẴN (sổ đã ghi). `S8` đỏ **cả bốn lượt**. Còn `S3`/`S4`/`S5` **đổi chỗ cho
+nhau mỗi lượt** — cùng mã, cùng dữ liệu, khác kết quả.
+
+**Ba điều đã loại trừ, đừng đi lại đường đó:**
+1. *Không* phải đụng tên sandbox: `aicloser_v3_test_ditru` ≠ `aicloser_v3_test_l0m2solieu`.
+2. *Không* phải do `.env`: chạy RIÊNG `l0-m2-so-lieu.test.js`, có hay không `.env`, đều XANH.
+3. *Không* phải do bộ ca ghi đè `conv-state.json`: thêm `test/_an-toan.mjs` vẫn chập chờn
+   (lượt 3–4). Lớp chặn ấy có giá trị riêng của nó, nhưng KHÔNG phải thuốc cho ca này.
+
+**Chỉ đỏ khi chạy CHUNG với `l0-m1-*`**, tức chỉ đỏ khi bộ ca di trú THẬT SỰ CHẠY — mà nó
+chỉ chạy khi máy có dữ liệu thật. Nên CI không bao giờ thấy (21 ca hoãn), và máy thợ trước
+14/09 cũng không (chưa có gói bàn giao). Ca này **đã chập chờn từ lâu mà không ai đo được**.
+
+**Hệ quả đang chịu:** hai cổng `l0-m2.sh` và `g2-a5-a6.sh` đỏ ở máy có dữ liệu thật —
+đỏ vì THƯỚC, không vì mã. Đo 14/09 tại máy: 25 cổng = **20 xanh · 5 đỏ** (b-y4 · g2-a5-a6 ·
+l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S này.
+
+**CẤM vá bằng cách cho chạy tuần tự hay bỏ qua ca.** Phải tìm ra dãy S phụ thuộc cái gì
+(nghi: trạng thái dùng chung trong mô-đun bị đo, hoặc cửa sổ thời gian — S7/S8 đo «đủ mẫu
+30 khách»). Một ca chập chờn được làm cho im là một ca mù.
