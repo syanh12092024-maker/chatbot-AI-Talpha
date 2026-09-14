@@ -8,10 +8,16 @@
 # `ai-enabled.json`… đều gitignore, chỉ có trên máy dev/VPS) — đúng giới hạn đã ghi trước.
 # Nay chúng HOÃN MINH BẠCH thay vì đỏ, qua `test/_can-du-lieu-that.mjs`: trên máy CÓ dữ
 # liệu chúng vẫn chạy như thường, không mất phép đo nào.
-#   · 19 ca `test/l0-m1-di-tru.test.js`  — cả tệp là phép di trú
-#   · 2 ca `test/l0-m2-noi-dung.test.js` (N5 · N11) — đọc nguồn thật `ai-enabled.json`
+#   · 19 ca `test/l0-m1-di-tru.test.js` — cả tệp là phép di trú, tự chứa sandbox riêng
 #
-# ⚠️ CÒN 2 CA ĐỎ CHƯA GIẢI THÍCH ĐƯỢC — `test/l2-m1-nhac-truong.test.js` N1a và N4:
+# ⚠️ N5 · N11 (`l0-m2-noi-dung`) KHÔNG hoãn được, dù chúng cũng chỉ thiếu `ai-enabled.json`.
+#   Thử rồi và PHẢI TRẢ LẠI: tệp đó là một CHUỖI CÓ TRẠNG THÁI — N5 là ca ÁP bản v2, còn
+#   N7 («LÙI là cùng một hàm») cần có v2 mới lùi được. Cho N5 hoãn thì N7 đang xanh hoá đỏ.
+#   Đo được: lượt 34796256969 · fail 23 → 3, nhưng một trong ba là N7 do chính phép hoãn đẻ ra.
+#   📌 ÁN LỆ: hoãn một ca trong chuỗi có trạng thái là gãy mắt sau. Hoãn chỉ an toàn với tệp
+#      tự chứa (dựng sandbox riêng, không ca nào ăn trạng thái của ca trước) — như di-tru.
+#
+# ⚠️ CÒN 4 CA ĐỎ: N5 · N11 (thiếu `ai-enabled.json`, xem trên) và hai ca CHƯA GIẢI THÍCH ĐƯỢC — `test/l2-m1-nhac-truong.test.js` N1a và N4:
 #     N1a: `cuaV3.guiAnh` kỳ vọng 2, đo được 0 («2 ảnh của KB, qua cửa v3»)
 #     N4:  `thiếu loại 'image'` — hệ quả của N1a
 #   KB của N1a là fixture GÕ CỨNG trong test (ảnh là URL tuyệt đối `https://vi-du.test/…`),
@@ -22,7 +28,8 @@
 # ═══ CÁCH NHẬN NUÔI (bước 1–2 XONG, bước 3 chờ hai ca trên) ═══════════════════════
 #   1. ✅ Chạy được trên Postgres: `npm run migrate && npm test`
 #   2. ✅ Chạy tay workflow này một lượt, đọc số
-#   3. ⬜ Giải quyết N1a/N4 → xanh trọn → đổi `on:` thành push/pull_request + ghi §10 sổ
+#   3. ⬜ Giải quyết N1a/N4 + cấp `ai-enabled.json` mẫu cho CI → xanh trọn →
+#         đổi `on:` thành push/pull_request + ghi §10 sổ
 #
 # `npm run di-tru` KHÔNG chạy được ở đây: nó cần dữ liệu thật vốn bị gitignore và chỉ có
 # trên máy dev/VPS. Đó là giới hạn THẬT của cổng này, không phải lỗi.

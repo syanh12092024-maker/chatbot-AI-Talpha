@@ -5,7 +5,6 @@
 // giao dịch thật, chỉ mục thật, vai đọc từ `thanh_vien_team` thật.
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import { thieuDuLieuThat } from "./_can-du-lieu-that.mjs";
 import { dungSandbox } from "../db/sandbox.js";
 import {
   taoBanBoLuat,
@@ -137,13 +136,7 @@ test("N4 · đề xuất của AI CHƯA duyệt → TỪ CHỐI áp (01 §9)", a
   assert.equal(Number(van.phien_ban), 1, "bản đang áp không được đổi");
 });
 
-// N5 và N11 đọc NGUỒN THẬT của công tắc bot là `ai-enabled.json` (B-Y7 25/08: thôi hỏi
-// cột `page.bot_ai_bat`, vì cột chỉ là bản sao và đo được lệch — cột nói 50, nguồn nói
-// khác). Không có tệp đó thì hai ca này đo trên nguồn không tồn tại; HOÃN và nói ra, đừng
-// đỏ oan. Trên máy có dữ liệu, `thieuDuLieuThat` trả `false` nên chúng chạy như thường.
-const canCongTacThat = { skip: thieuDuLieuThat("ai-enabled.json") };
-
-test("N5 · áp bản người viết → đổi bản đang chạy, và TRẢ VỀ số page bị ảnh hưởng", canCongTacThat, async () => {
+test("N5 · áp bản người viết → đổi bản đang chạy, và TRẢ VỀ số page bị ảnh hưởng", async () => {
   const b = await mot("SELECT id FROM bo_luat_chung WHERE team_id=$1 AND phien_ban=2", [tA]);
   const kq = await apBoLuat(sb.pool, ctxDuyet, { id: b.id, lyDo: "chốt nội dung mới" });
   console.log(
@@ -232,7 +225,7 @@ test("N10 · vai `sale` không sửa/áp/duyệt được; ctxHeThong bị từ 
   );
 });
 
-test("N11 · xemAnhHuongBoLuat tách «tổng page» khỏi «page đang bật bot»", canCongTacThat, async () => {
+test("N11 · xemAnhHuongBoLuat tách «tổng page» khỏi «page đang bật bot»", async () => {
   const ah = await xemAnhHuongBoLuat(sb.pool, ctxSoan);
   console.log(
     `   [N11] ${ah.soPage} page · ${ah.soPageDangBatBot} bật (nguồn: ${ah.nguon}) · cột nói ${ah.theoCotCsdl}`,
