@@ -3,105 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sức khoẻ hệ thống — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  /* dải cảnh báo NGUY — màn này phải trông khác mọi màn khác */
-  .nguy{background:var(--loi-nen);border:1px solid var(--loi-vien);border-left:4px solid var(--bad);
-        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
-  .nguy b{color:var(--loi-chu)}
-  .nguy .so{font-size:19px;font-weight:700;color:var(--loi-chu);font-variant-numeric:tabular-nums}
-
-  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
-  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .banner.i{background:var(--priSoft);color:var(--chinh-dam);border:1px solid var(--chinh-vien)}
-
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
-  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
-  tbody tr:last-child td{border-bottom:none}
-  tbody tr.ap{background:var(--priSoft)}
-  .num{font-variant-numeric:tabular-nums}
-  .ten{font-weight:600;overflow-wrap:anywhere}
-  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
-
-  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
-  .pill.g{background:var(--okSoft);color:var(--ok)}
-  .pill.o{background:var(--warnSoft);color:var(--warn)}
-  .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:var(--nen-3);color:var(--chu-2)}
-  .pill.p{background:var(--priSoft);color:var(--priDark)}
-
-  /* khối so sánh */
-  .diff{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:400px;background:var(--nen-2)}
-  .diff pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6}
-  .diff .d{padding:1px 10px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid transparent}
-  .diff .d.them{background:var(--dat-nen);border-left-color:var(--ok)}
-  .diff .d.bo{background:var(--loi-nen);border-left-color:var(--bad);text-decoration:line-through;opacity:.8}
-  .diff .d.giu{color:var(--muted)}
-
-  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit;
-           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6;
-           min-height:260px;resize:vertical}
-
-  button{font:inherit}
-  .nut{background:var(--pri);color:var(--nen);border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
-  .nut:hover{background:var(--priDark)}
-  .nut[disabled]{background:var(--vien-dam);cursor:not-allowed}
-  .nut.nho{padding:4px 10px;font-size:11.5px;font-weight:600}
-  .nut.nguy{background:var(--bad)}
-  .nut.nguy:hover{background:var(--loi-chu)}
-  .nut.phu{background:transparent;color:var(--priDark);border:1px solid var(--line)}
-  .nut.phu:hover{background:var(--priSoft)}
-  .hang{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
-
-  .trong{padding:20px 15px;text-align:center;line-height:1.6}
-  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
-  .trong.chua{color:var(--luu-chu);background:var(--warnSoft)}
-  .loi{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien);border-radius:8px;
-       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .loi.hien{display:block}
-  .ok{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien);border-radius:8px;
-      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .ok.hien{display:block}
-
-  @media (max-width:700px){
-    .panel h2{padding:10px 12px} .than{padding:12px}
-    table,thead,tbody,th,td,tr{display:block}
-    thead{display:none}
-    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
-    tbody tr:last-child{margin-bottom:0}
-    td{border:none;padding:4px 0}
-    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
-      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
-  }
-
-  .luoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:11px}
-  .d{border:1px solid var(--line);border-radius:10px;padding:12px 13px;background:var(--nen-2);
-     border-left:4px solid var(--line);min-width:0}
-  .d.xanh{border-left-color:var(--ok);background:#f7fdf9}
-  .d.vang{border-left-color:var(--warn);background:var(--luu-nen)}
-  .d.do{border-left-color:var(--bad);background:#fff5f5}
-  .d.xam{border-left-color:var(--vien-dam);background:#fafbfb}
-  .d .dau{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:5px}
-  .d h3{font-size:13px;margin:0;flex:1;min-width:0}
-  .d .vi{font-size:12px;color:var(--muted);line-height:1.55}
-  .d .so{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .d .di{display:inline-block;margin-top:8px;font-size:11.5px;font-weight:700;color:var(--priDark);
-         background:var(--nen);border:1px solid var(--line);border-radius:7px;padding:4px 10px;text-decoration:none}
-  .tong{border-radius:var(--r);padding:13px 15px;margin-bottom:14px;line-height:1.55;font-weight:600}
-  .tong.xanh{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien)}
-  .tong.vang{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .tong.do{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien)}
-  .tong.xam{background:#f1f4f5;color:#475467;border:1px solid var(--line)}
-  .tong .dem{display:block;font-weight:400;font-size:12px;margin-top:4px}
-</style>
+<title>Hệ còn sống không — AI Closer</title>
+<!-- Dựng trên hệ kiểu. KHÔNG CSS riêng — trước lượt này là 85 dòng. Chín thẻ đèn xếp lưới →
+     một danh sách một cột: đèn hỏng nằm trên, lý do đọc hết một dòng thay vì bị cắt trong ô
+     hẹp. Bốn màu đèn (do · vang · xam · xanh) đi qua ánh xạ trạng thái tập trung — «xám» là
+     `unknown`, không bao giờ là xanh (luật «chưa đo được ≠ đạt»). -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -109,78 +16,85 @@
 <body>
 <header>
   <h1>Hệ còn sống không</h1>
-  <span class="sub" id="teamHien">…</span>
+  <span class="sub">Chín đèn hạ tầng. Đèn xám là chưa đo được — khác hẳn «đang ổn».</span>
   <span class="sp"></span>
-
+  <span class="text-muted text-sm" id="nhipNap">Tự nạp lại mỗi phút</span>
 </header>
 
 <main>
-  <div class="loi" id="loi"></div>
-  <div class="ok" id="baoOk"></div>
-  <div id="tong"></div>
-  <section class="panel">
-    <h2>Chín đèn
-      <span class="hint">đèn XÁM = chưa đo được, KHÁC HẲN «đang ổn» — tô xanh chỗ đang mù là điều nguy nhất một bảng sức khoẻ có thể làm</span>
-    </h2>
-    <div class="than"><div class="luoi" id="luoi">
-      <div class="trong"><span class="ic">⋯</span>đang đọc…</div>
-    </div></div>
+  <div id="bang-tin" aria-live="polite"></div>
+  <div id="dem"></div>
+
+  <section class="section" aria-labelledby="tieu-den">
+    <div class="section-header"><h2 id="tieu-den">Chín đèn</h2>
+      <span class="text-muted text-sm">Hỏng và cần để ý xếp lên trước</span></div>
+    <ul class="item-list" id="luoi"><li class="item"><div><span class="skeleton"></span></div></li></ul>
   </section>
 </main>
+
 <script>
+const { esc, text, statusBadge, button, alert: canhBao, metricRow, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const so = (n) => Number(n || 0).toLocaleString('vi-VN');
-function baoLoi(t){ const o=$('#loi'); o.textContent=t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
-function baoOk(t){ const o=$('#baoOk'); o.textContent=t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
-function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
-async function goi(duong, tuyChon){
-  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+
+let D = null;
+
+async function goi(duong) {
+  const r = await fetch(duong, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
   if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   let d = null; try { d = await r.json(); } catch { /* null */ }
   if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
   return d;
 }
-function veTrong(t){
-  if (!t) return '';
-  const di = t.diTiep && t.diTiep.duong ? `<a class="di" href="${esc(t.diTiep.duong)}">${esc(t.diTiep.chu)}</a>` : '';
-  return `<div class="trong chua"><span class="ic">⚠️</span><div>${esc(t.noi)}</div>${di}</div>`;
-}
 
-let D = null;
+// Bốn mức của kho → bốn trạng thái của hệ. «xam» = chưa đo được: KHÔNG BAO GIỜ tô xanh.
+const MA = { do: 'blocked', vang: 'needs_attention', xam: 'unknown', xanh: 'ready' };
+const MUC_CANH = { do: 'error', vang: 'warning', xam: 'info', xanh: 'success' };
 
-function ve(){
-  $('#teamHien').textContent = `team #${D.teamId}`;
+function ve() {
   const m = D.tongThe;
-  const cau = m === 'do' ? 'Có chỗ ĐANG HỎNG.'
-    : m === 'vang' ? 'Không có gì hỏng, nhưng có chỗ cần để ý.'
-    : m === 'xam' ? 'Không có gì hỏng — nhưng có đèn CHƯA ĐO ĐƯỢC.'
-    : 'Mọi đèn đều ổn.';
-  $('#tong').innerHTML = `<div class="tong ${esc(m)}">${esc(cau)}
-    <span class="dem">${so(D.dem.do)} đang hỏng · ${so(D.dem.vang)} cần để ý ·
-      ${so(D.dem.xanh)} ổn · ${so(D.dem.xam)} chưa đo được</span></div>`;
+  const cau = m === 'do' ? 'Có chỗ đang hỏng'
+    : m === 'vang' ? 'Không có gì hỏng, nhưng có chỗ cần để ý'
+    : m === 'xam' ? 'Không có gì hỏng — nhưng có đèn chưa đo được'
+    : 'Mọi đèn đều ổn';
+  $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: MUC_CANH[m] || 'info', title: cau,
+    body: m === 'xanh' ? 'Chín đèn hạ tầng đều xanh ở lượt đo gần nhất.'
+      : 'Xem danh sách bên dưới: đèn hỏng và đèn cần để ý xếp lên trước.' })}</div>`;
+
+  $('#dem').innerHTML = metricRow([
+    { label: 'Đang hỏng', value: D.dem.do, statusHtml: D.dem.do ? statusBadge('blocked', { label: 'Cần sửa ngay' }) : '' },
+    { label: 'Cần để ý', value: D.dem.vang, statusHtml: D.dem.vang ? statusBadge('needs_attention') : '' },
+    { label: 'Chưa đo được', value: D.dem.xam, statusHtml: D.dem.xam ? statusBadge('unknown', { label: 'Không phải là ổn' }) : '' },
+    { label: 'Đang ổn', value: D.dem.xanh, statusHtml: D.dem.xanh ? statusBadge('ready', { label: 'Đo được và đạt' }) : '' },
+  ]);
 
   // Xếp theo mức: đỏ trước, rồi vàng, rồi xám, rồi xanh. Đèn xanh xếp trên là nó đẩy đèn
   // đỏ xuống dưới màn hình, và người ta cuộn qua đúng thứ cần nhìn.
   const thu = { do: 0, vang: 1, xam: 2, xanh: 3 };
   const ds = [...D.den].sort((a, b) => thu[a.muc] - thu[b.muc]);
 
-  $('#luoi').innerHTML = ds.map((d) => `<div class="d ${esc(d.muc)}">
-    <div class="dau"><h3>${esc(d.ten)}</h3>
-      <span class="so">${esc(D.chuMuc[d.muc])}${d.so ? ' · ' + esc(d.so) : ''}</span></div>
-    <div class="vi">${esc(d.vi)}</div>
-    ${d.diTiep ? (d.diTiep.duong
-      ? `<a class="di" href="${esc(d.diTiep.duong)}">${esc(d.diTiep.chu)} →</a>`
-      : `<div class="di" style="cursor:default">${esc(d.diTiep.chu)}</div>`) : ''}
-  </div>`).join('');
+  $('#luoi').innerHTML = ds.map((d) => `<li class="item">
+    <div>
+      <div class="item-title">${esc(d.ten)}${d.so ? ` <span class="meta">· ${esc(d.so)}</span>` : ''}</div>
+      <div class="item-desc">${text(d.vi)}</div>
+      ${d.diTiep && !d.diTiep.duong ? `<div class="item-detail">Việc cần làm: ${text(d.diTiep.chu)}</div>` : ''}
+    </div>
+    <div class="item-trail">
+      ${statusBadge(MA[d.muc] || 'unknown', { label: (D.chuMuc && D.chuMuc[d.muc]) || undefined })}
+      ${d.diTiep && d.diTiep.duong ? button(d.diTiep.chu, { href: d.diTiep.duong, size: 'sm' }) : ''}
+    </div>
+  </li>`).join('');
 }
 
-async function nap(){
+async function nap() {
   try {
     const d = await goi('/api/suc-khoe');
     if (!d) return;
     D = d; ve();
-  } catch (e) { baoLoi(e.message); }
+    $('#nhipNap').textContent = `Đo lúc ${new Date().toLocaleTimeString('vi-VN')} · tự nạp lại mỗi phút`;
+  } catch (e) {
+    $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được bảng sức khoẻ',
+      body: 'Chưa đo được đèn nào. Đây là «chưa biết», không phải «mọi thứ đều ổn».', detail: [e.message] })}</div>`;
+  }
 }
 nap();
 setInterval(nap, 60000);   // tự nạp lại mỗi phút — đây là màn người ta để mở
