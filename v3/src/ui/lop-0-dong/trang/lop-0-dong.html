@@ -3,54 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Trả lời sẵn theo từ khoá — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  /* hai luồng song song, gặp nhau ở đích */
-  .so{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .so .l{border:1px solid var(--line);border-top:4px solid var(--pri);border-radius:10px;padding:14px 15px}
-  .so .l:nth-child(2){border-top-color:var(--tim)}
-  .so .l .n{font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;color:var(--pri)}
-  .so .l:nth-child(2) .n{color:var(--tim)}
-  .so .l .ten{font-weight:600;margin:4px 0 3px}
-  .so .l .mo{color:var(--muted);font-size:12px;line-height:1.55}
-  .so .l .ph{margin-top:7px;font-size:11.5px;color:var(--muted)}
-  .dich{margin-top:12px;text-align:center;background:var(--nen-2);border:1px dashed var(--vien-dam);
-        border-radius:10px;padding:12px 15px;line-height:1.6;font-size:12.5px;color:var(--muted)}
-  .dich b{color:var(--ink)}
-
-  .bac{display:grid;gap:7px}
-  .bac .b{display:flex;align-items:center;gap:11px}
-  .bac .b .t{width:132px;flex:0 0 auto;font-size:12.5px}
-  .bac .b .thanh{flex:1;height:22px;background:var(--nen-3);border-radius:5px;overflow:hidden;position:relative}
-  .bac .b .thanh i{display:block;height:100%;background:var(--pri);opacity:.8}
-  .bac .b .s{width:78px;flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-
-  .canh{background:var(--warnSoft);border:1px solid var(--luu-vien);color:var(--luu-chu);border-radius:var(--r);
-        padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
-  .mu2{background:var(--nen-2);border:1px dashed var(--vien-dam);border-radius:var(--r);padding:14px 16px;line-height:1.65}
-  .mu2 .ti{font-weight:600;margin-bottom:4px}
-  .mu2 .di{margin-top:8px;font-size:12px;color:var(--muted)}
-  .cu{display:inline-block;background:var(--nen-3);color:var(--muted);border-radius:20px;
-      padding:2px 9px;font-size:11.5px;font-weight:600}
-
-  .nho{color:var(--muted);font-size:11.5px;line-height:1.55}
-  code{background:var(--nen-3);padding:1px 5px;border-radius:4px;font-size:11.5px;
-       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
-  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
-
-  @media (max-width:720px){
-    .than{padding:12px} .so{grid-template-columns:1fr}
-    .bac .b .t{width:92px;font-size:11.5px} .bac .b .s{width:62px}
-  }
-</style>
+<title>Câu trả lời sẵn — AI Closer</title>
+<!-- Dựng trên hệ kiểu (mục M9). KHÔNG CSS riêng — trước lượt này là 39 dòng, trong đó hai
+     thẻ số viền trên màu «tím» (một trạng thái hệ kiểu không có) và hai màu chữ gõ tay.
+     Tiền tiết kiệm nay là một hàng chỉ số; đối chiếu Botcake là tính năng CHƯA CÓ nên vẽ
+     theo mục O («chưa khả dụng» không được trông như đang chạy). -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -58,82 +16,94 @@
 <body>
 <header>
   <h1>Câu trả lời sẵn</h1>
-  <span class="sub" id="hTeam">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Câu hỏi khớp từ khoá được trả lời bằng mẫu có sẵn — không gọi model, không tốn tiền.</span>
 </header>
 
 <main>
-  <div class="so" id="dem"></div>
-  <div id="dai" style="margin-top:14px"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <div class="panel">
-    <h2>Mẫu <span class="hint" id="hSo"></span></h2>
-    <div id="bang"><div class="than nho">Đang tải…</div></div>
-  </div>
+  <section class="section" aria-label="Hiệu quả">
+    <div id="dem"><div class="metric-row"><div class="metric"><span class="skeleton"></span></div></div></div>
+  </section>
 
-  <div class="panel">
-    <h2>Đối chiếu bộ từ khoá Botcake</h2>
-    <div class="than"><div id="botcake"></div></div>
-  </div>
+  <section class="section table-wrap" aria-labelledby="tieu-mau">
+    <div class="table-toolbar"><h2 id="tieu-mau">Mẫu trả lời</h2>
+      <span class="table-count" id="hSo"></span></div>
+    <div id="bang"></div>
+  </section>
+
+  <section class="section" aria-labelledby="tieu-bc">
+    <div class="section-header"><h2 id="tieu-bc">Tính năng liên quan</h2></div>
+    <div class="panel" id="botcake"></div>
+  </section>
 </main>
 
 <script>
+const { esc, text, statusBadge, alert: canhBao, emptyState, metricRow, formatNumber, formatVnd } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const d0 = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN'));
+// Số CHƯA ĐẾM ĐƯỢC hiện «—», không hiện 0 — 0 là «đếm rồi, không có».
+const d0 = (n) => (n == null ? '—' : formatNumber(n));
+const boMa = (s) => String(s == null ? '' : s).replace(/`/g, '');
 
 async function tai() {
   try {
-    const r = await fetch('/api/lop-0-dong', { credentials: 'same-origin' });
+    const r = await fetch('/api/lop-0-dong', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+    if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return; }
     const d = await r.json();
-    if (!r.ok || d.ok === false) throw new Error(d.thongDiep || 'Lỗi ' + r.status);
-    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    if (!r.ok || d.ok === false) throw new Error(d.thongDiep || 'Máy chủ trả ' + r.status + '.');
     const k = d.dem;
 
-    $('#dem').innerHTML = `
-      <div class="l"><div class="n">${d0(k.tongChan)}</div>
-        <div class="ten">lượt gọi model KHÔNG xảy ra</div>
-        <div class="mo">Mỗi câu bắt được ở đây là một lượt bot không phải hỏi model.</div></div>
-      <div class="l"><div class="n">${d0(k.tienTietKiem)}</div>
-        <div class="ten">đồng tiết kiệm</div>
-        <div class="mo">${d0(k.tongChan)} lượt × ${k.vndMoiTin} đ/tin, lấy từ màn Chi phí AI.</div></div>`;
+    $('#dem').innerHTML = metricRow([
+      { label: 'Lượt không phải gọi model', value: d0(k.tongChan), hint: 'Mỗi lượt khớp một mẫu là một lượt model không chạy.' },
+      { label: 'Tiền tiết kiệm', value: k.tienTietKiem == null ? '—' : formatVnd(k.tienTietKiem),
+        hint: `${d0(k.tongChan)} lượt × ${d0(k.vndMoiTin)} đ/tin, theo giá ở màn Chi phí AI` },
+      { label: 'Mẫu đang bật', value: `${d0(k.dangBat)}/${d0(k.tongMau)}` },
+      { label: 'Bật mà chưa khớp lần nào', value: d0(k.soMauChuaChanLanNao),
+        statusHtml: k.soMauChuaChanLanNao ? statusBadge('needs_attention', { label: 'Xem lại từ khoá' }) : '' },
+    ]);
 
-    let h = '';
+    const kh = [];
     if (k.soMauChuaChanLanNao) {
-      h += `<div class="canh">🕸 <b>${k.soMauChuaChanLanNao} mẫu đang bật nhưng chưa chặn lần nào</b>
-        — từ khoá có thể không khớp cách khách thật sự gõ.</div>`;
+      kh.push(canhBao({ level: 'warning', title: `${formatNumber(k.soMauChuaChanLanNao)} mẫu đang bật nhưng chưa khớp lần nào`,
+        body: 'Từ khoá có thể không khớp cách khách thật sự gõ. Thử đọc vài hội thoại thật rồi thêm từ khoá.' }));
     }
-    $('#dai').innerHTML = h;
+    if (k.soMauKhongDemDuoc) {
+      kh.push(canhBao({ level: 'info', title: `${formatNumber(k.soMauKhongDemDuoc)} mẫu chưa đếm được số lần khớp`,
+        body: 'Cột «Đã khớp» của những mẫu này hiện «—». Đó là chưa biết, không phải bằng 0.' }));
+    }
+    $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 
     $('#hSo').textContent = `${d0(k.dangBat)}/${d0(k.tongMau)} mẫu đang bật`;
     if (!d.mau.length) {
-      $('#bang').innerHTML = `<div class="trong">
-        <div class="ti">${esc(d.trong.noi.replace(/`/g, ''))}</div>
-        <div class="di" style="display:inline-block;margin-top:10px;background:var(--priSoft);
-          color:#0b4a52;padding:9px 13px;border-radius:9px;text-align:left;max-width:560px">
-          👉 ${esc(d.trong.diTiep)}</div></div>`;
+      // Tiêu đề nói bằng lời người dùng; câu của kho (có tên bảng) là chi tiết cho người quản trị.
+      $('#bang').innerHTML = emptyState({ icon: 'inbox', title: 'Chưa có mẫu trả lời nào',
+        body: d.trong ? `${boMa(d.trong.diTiep)} (${boMa(d.trong.noi)})` : '' });
     } else {
-      $('#bang').innerHTML = `<div class="bao"><table>
-        <thead><tr><th>Mã</th><th>Tên</th><th>Từ khoá</th><th class="p">Đã chặn</th><th>Trạng thái</th></tr></thead>
-        <tbody>${d.mau.map((m) => `
-          <tr><td><code>${esc(m.ma)}</code></td>
-            <td>${esc(m.ten)}</td>
-            <td class="nho">${m.tuKhoa.slice(0, 6).map(esc).join(' · ')}${m.tuKhoa.length > 6 ? ' …' : ''}</td>
-            <td class="p"><b>${d0(m.soLanChan)}</b></td>
-            <td>${m.bat ? '<span class="cu" style="background:var(--okSoft);color:#166534">đang bật</span>'
-                          : '<span class="cu">tắt</span>'}</td>
-          </tr>`).join('')}</tbody></table></div>`;
+      $('#bang').innerHTML = `<table class="data-table"><thead><tr>
+          <th scope="col">Mã</th><th scope="col">Tên</th><th scope="col">Từ khoá</th>
+          <th scope="col" class="num">Đã khớp</th><th scope="col">Trạng thái</th>
+        </tr></thead><tbody>${d.mau.map((m) => `
+        <tr>
+          <td><code>${esc(m.ma)}</code></td>
+          <td>${esc(m.ten)}</td>
+          <td class="meta">${m.tuKhoa.slice(0, 6).map(esc).join(' · ')}${m.tuKhoa.length > 6 ? ` · +${formatNumber(m.tuKhoa.length - 6)}` : ''}</td>
+          <td class="num" ${m.soLanChan == null ? 'title="Chưa đếm được"' : ''}>${d0(m.soLanChan)}</td>
+          <td>${statusBadge(m.bat ? 'feature_on' : 'feature_off', { label: m.bat ? 'Đang bật' : 'Tắt' })}</td>
+        </tr>`).join('')}</tbody></table>`;
     }
 
-    $('#botcake').innerHTML = `<div class="mu2">
-      <div class="ti">— chưa đối chiếu được</div>
-      <div>${esc(d.botcake.noi)}</div>
-      <div class="di">👉 ${esc(d.botcake.viSaoCan)}</div></div>`;
+    const bc = d.botcake || {};
+    $('#botcake').innerHTML = `<div class="feature-row" data-state="${bc.doiChieuDuoc ? 'on' : 'off'}">
+      <div>
+        <div class="feature-name">Đối chiếu với bộ từ khoá Botcake</div>
+        <div class="feature-desc">${text(bc.viSaoCan || '')}</div>
+        ${bc.noi ? `<div class="feature-reason">${text(bc.noi)}</div>` : ''}
+      </div>
+      ${statusBadge(bc.doiChieuDuoc ? 'feature_on' : 'feature_unavailable', { label: bc.doiChieuDuoc ? 'Đã đối chiếu' : 'Chưa khả dụng' })}
+    </div>`;
   } catch (e) {
-    $('#bang').innerHTML = `<div class="than"><div class="canh" style="margin:0">
-      <b>Không đọc được:</b> ${esc(e.message)}</div></div>`;
+    $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không tải được câu trả lời sẵn', body: e.message })}</div>`;
+    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' });
   }
 }
 tai();
