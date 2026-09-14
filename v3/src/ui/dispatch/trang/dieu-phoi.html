@@ -8,11 +8,6 @@
   /* Hệ thiết kế chép từ `public/ops.html` dòng 10–17 — cùng màu, cùng bo góc, cùng cỡ chữ
      với dashboard sale đang dùng. Trang RIÊNG, một file, không khung nào, không gọi mạng
      ra ngoài: bốn luồng v3 sửa song song, dùng chung file CSS là xung đột. */
-  header{background:var(--side);color:var(--nen);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  header h1{font-size:16px;margin:0;font-weight:700}
-  header .sub{font-size:11.5px;color:var(--tren-toi-2)}
-  header .sp{flex:1}
-  main{padding:16px 22px 60px;max-width:1440px;margin:0 auto}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
   .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -87,8 +82,6 @@
      Khổ rộng KHÔNG ĐỔI một dòng nào — nó vốn đã đúng. Nền đỏ dòng quá hạn và đồng hồ đếm
      lên (`+3:20`) giữ nguyên ở cả hai khổ vì cả hai đều gắn vào `tr` và `.dh`. */
   @media (max-width:720px){
-    main{padding:12px 12px 48px}
-    header{padding:12px 14px}
     .hai{gap:12px}
     /* Không cuộn ngang: bỏ khung cuộn của bảng, thẻ tự vừa bề rộng màn hình. */
     .scroll{max-height:none;overflow:visible}
@@ -116,7 +109,7 @@
 </head>
 <body>
 <header>
-  <h1>Bảng điều phối</h1>
+  <h1>Việc đang chờ</h1>
   <span class="sub">Việc bot đẩy sang · mốc 10 phút</span>
   <span class="sp"></span>
   <span class="sub" id="nhip">đang tải…</span>

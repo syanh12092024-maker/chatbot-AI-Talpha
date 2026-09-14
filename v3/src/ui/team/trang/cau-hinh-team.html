@@ -7,12 +7,6 @@
 <style>
   /* Cùng hệ thiết kế với `dieu-phoi.html` (gốc: `public/ops.html`). Trang RIÊNG, một file,
      không gọi mạng ra ngoài — bốn luồng v3 sửa song song, dùng chung file CSS là xung đột. */
-  header{background:var(--side);color:var(--nen);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  header h1{font-size:16px;margin:0;font-weight:700}
-  header .sub{font-size:11.5px;color:var(--tren-toi-2)}
-  header .sp{flex:1}
-  header a{color:var(--tren-toi-nhan);text-decoration:none;font-size:12px;font-weight:600}
-  main{padding:16px 22px 60px;max-width:1120px;margin:0 auto}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
   .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -91,8 +85,6 @@
 
   /* ─── KHỔ HẸP (điện thoại 375px): bảng thành thẻ xếp dọc, KHÔNG cuộn ngang ─── */
   @media (max-width:640px){
-    header{padding:12px 14px}
-    main{padding:12px 14px 48px}
     .panel h2{padding:10px 12px}
     .than{padding:12px}
     .so{grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:8px}
@@ -109,7 +101,7 @@
 </head>
 <body>
 <header>
-  <h1>Cấu hình team</h1>
+  <h1>Người và team</h1>
   <span class="sub" id="teamHien">…</span>
   <span class="sp"></span>
 

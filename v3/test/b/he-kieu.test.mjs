@@ -268,3 +268,49 @@ test("HK9 · hệ kiểu và thanh điều hướng KHÔNG được cache dài �
   assert.deepEqual(khongDuPhong, [],
     `thanh bên còn ${khongDuPhong.length} lời gọi token chữ-trên-nền-tối KHÔNG có dự phòng`);
 });
+
+test("HK10 · tên trên đầu trang KHỚP tên trong menu — «tôi đang ở đâu?»", () => {
+  // Mục C của bản đặc tả: mỗi màn phải trả lời trong ~3 giây «tôi đang ở đâu?».
+  // Đo 14/09/2026: 17/25 màn có <h1> KHÁC tên menu. Bấm «Công tắc từng page» trên menu
+  // thì mở ra trang tên «Page & Bot»; bấm «Ai đã sửa gì» thì ra «Nhật ký thao tác».
+  // Người dùng phải tự đoán hai tên ấy là một.
+  // Tên màn có MỘT nguồn: `chung/man-hinh.js`. Ca này đỏ khi <h1> trôi khỏi nguồn ấy.
+  const UI = path.join(GOC, "v3/src/ui");
+  const mh = fs.readFileSync(path.join(UI, "chung/man-hinh.js"), "utf8");
+  const bien = Object.fromEntries(
+    [...mh.matchAll(/import \* as (\w+) from '\.\.\/([a-z0-9-]+)\/index\.js'/g)].map((m) => [m[1], m[2]]));
+  const tenTheoThuMuc = {};
+  for (const m of mh.matchAll(/dat\((\w+),\s*'([^']+)'/g)) tenTheoThuMuc[bien[m[1]]] = m[2];
+
+  const lech = [];
+  for (const [thuMuc, ten] of Object.entries(tenTheoThuMuc)) {
+    const t = path.join(UI, thuMuc, "trang");
+    if (!fs.existsSync(t)) continue;
+    const tep = fs.readdirSync(t).filter((x) => x.endsWith(".html"));
+    const chinh = tep.length === 1 ? tep[0] : tep.find((x) => x === "dieu-phoi.html");
+    if (!chinh) continue;
+    const h1 = (fs.readFileSync(path.join(t, chinh), "utf8").match(/<h1>([^<]*)<\/h1>/) || [])[1];
+    if (h1 == null) continue;
+    const giaiMa = h1.replace(/&amp;/g, "&").trim();
+    if (giaiMa !== ten) lech.push(`${thuMuc}: đầu trang «${giaiMa}» · menu «${ten}»`);
+  }
+  assert.deepEqual(lech, [], "đầu trang và menu gọi cùng một màn bằng hai tên:\n  " + lech.join("\n  "));
+});
+
+test("HK11 · KHÔNG màn nào tự dựng khung trang — khuôn PageHeader là của hệ", () => {
+  // Mục G: mọi màn cùng một khuôn. Đo 14/09: 26/26 màn tự khai CSS cho <header> và
+  // `main` — 23 header giống hệt nhau, và `main` có 12 biến thể chỉ khác bề rộng nội
+  // dung (900 → 1.440px). Khai lại là đè khuôn chung (CSS không-layer thắng layer).
+  const UI = path.join(GOC, "v3/src/ui");
+  const tuDung = [];
+  for (const d of fs.readdirSync(UI, { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    const t = path.join(UI, d.name, "trang");
+    if (!fs.existsSync(t)) continue;
+    for (const f of fs.readdirSync(t).filter((x) => x.endsWith(".html"))) {
+      const k = (fs.readFileSync(path.join(t, f), "utf8").match(/<style>[\s\S]*?<\/style>/) || [""])[0];
+      if (/^\s*(header(\s+(h1|\.sub|\.sp|a))?|main)\s*\{/m.test(k)) tuDung.push(`${d.name}/${f}`);
+    }
+  }
+  assert.deepEqual(tuDung, [], `màn còn tự dựng khung trang: ${tuDung.join(", ")}`);
+});
