@@ -3,57 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Báo cáo — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  /* ba thước — cố ý KHÔNG xếp thành hàng cộng được */
-  .thuoc{display:grid;gap:11px}
-  .thuoc .t{border:1px solid var(--line);border-left:4px solid var(--pri);border-radius:10px;
-            padding:13px 15px;display:flex;gap:15px;align-items:flex-start;background:var(--nen)}
-  .thuoc .t .n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;
-               min-width:92px;text-align:right;color:var(--pri)}
-  .thuoc .t.mu{border-left-color:var(--xam)} .thuoc .t.mu .n{color:var(--xam);font-size:19px}
-  .thuoc .t .d{flex:1;min-width:0}
-  .thuoc .t .ten{font-weight:600;margin-bottom:3px}
-  .thuoc .t .mo{color:var(--muted);font-size:12px;line-height:1.55}
-  .thuoc .t .kh{margin-top:5px;font-size:11.5px}
-  .kh .b{display:inline-block;background:var(--nen-3);color:var(--chu-2);border-radius:20px;padding:2px 9px;font-weight:600}
-
-  .khongCong{background:var(--warnSoft);border:1px solid var(--luu-vien);color:var(--luu-chu);border-radius:var(--r);
-             padding:12px 15px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
-  .khongCong b{color:#7a3f05}
-  .canh{background:var(--warnSoft);border:1px solid var(--luu-vien);color:var(--luu-chu);border-radius:10px;
-        padding:10px 13px;margin-top:10px;line-height:1.6;font-size:12px}
-  .mu2{background:var(--nen-2);border:1px dashed var(--vien-dam);border-radius:var(--r);padding:14px 16px;line-height:1.65}
-  .mu2 .ti{font-weight:600;margin-bottom:4px}
-  .mu2 .di{margin-top:8px;font-size:12px;color:var(--muted)}
-
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:var(--nen-2)}
-  th.p,td.p{text-align:right;font-variant-numeric:tabular-nums}
-  tbody tr:last-child td{border-bottom:0}
-  .bao{display:block;overflow-x:auto}
-  .the{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
-  .the.cu{background:var(--warnSoft);color:var(--luu-chu)}
-
-  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
-  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
-  .nho{color:var(--muted);font-size:11.5px;line-height:1.5}
-  code{background:var(--nen-3);padding:1px 5px;border-radius:4px;font-size:11.5px;
-       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-
-  @media (max-width:720px){
-    .than{padding:12px} th,td{padding:8px 9px}
-    .thuoc .t{padding:11px 12px;gap:11px} .thuoc .t .n{min-width:64px;font-size:21px}
-  }
-</style>
+<title>Đơn và tỉ lệ chốt — AI Closer</title>
+<!-- Dựng trên hệ kiểu. KHÔNG CSS riêng — trước lượt này là 42 dòng.
+     ⚠️ LUẬT RIÊNG CỦA MÀN NÀY: ba con số Messenger KHÔNG được xếp ngang cạnh nhau — xếp
+        ngang là mời người ta cộng lại, mà cộng ba thước đo ba thứ khác nhau thì ra một số
+        vô nghĩa. Nên chúng dùng `.item-list` (một cột theo cấu tạo), KHÔNG dùng `.metric-row`.
+        Ca ①c của `bao-cao.test.mjs` canh đúng điều đó. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -61,41 +17,48 @@
 <body>
 <header>
   <h1>Đơn và tỉ lệ chốt</h1>
-  <span class="sub" id="hTeam">…</span>
+  <span class="sub">Hai luồng bán tách hẳn nhau, và ba thước của luồng Messenger đo ba thứ khác nhau.</span>
   <span class="sp"></span>
-
+  <span class="text-muted text-sm" id="hQuet"></span>
 </header>
 
 <main>
-  <div class="khongCong" id="khongCong"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <div class="panel">
-    <h2>Luồng Messenger <span class="hint" id="hQuet"></span></h2>
-    <div class="than"><div class="thuoc" id="thuoc"></div><div id="canh"></div></div>
-  </div>
+  <section class="section" aria-labelledby="tieu-mess">
+    <div class="section-header"><div>
+      <h2 id="tieu-mess">Luồng Messenger</h2>
+      <div class="section-desc">Khách nhắn trước, bot trả lời, rồi mới thành đơn.</div>
+    </div></div>
+    <ul class="item-list" id="thuoc"><li class="item"><div><span class="skeleton"></span></div></li></ul>
+    <div id="canh" class="tren-3"></div>
+  </section>
 
-  <div class="panel">
-    <h2>Luồng trang bán hàng</h2>
-    <div class="than"><div id="tbh"></div></div>
-  </div>
+  <section class="section" aria-labelledby="tieu-tbh">
+    <div class="section-header"><div>
+      <h2 id="tieu-tbh">Luồng trang bán hàng</h2>
+      <div class="section-desc">Đơn có trước, rồi mới hỏi khách — thước khác hẳn luồng Messenger.</div>
+    </div></div>
+    <div id="tbh"></div>
+  </section>
 
-  <div class="panel">
-    <h2>Theo page <span class="hint" id="hSo"></span>
-      <span class="sp"></span><span class="hint">xếp theo đơn POS quy cho AI</span></h2>
-    <div id="bang"><div class="than nho">Đang tải…</div></div>
-  </div>
+  <section class="section table-wrap" aria-labelledby="tieu-page">
+    <div class="table-toolbar"><h2 id="tieu-page">Theo page</h2>
+      <span class="table-count" id="hSo"></span></div>
+    <div id="bang"></div>
+  </section>
 </main>
 
 <script>
+const { esc, text, statusBadge, button, alert: canhBao, emptyState, formatNumber } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const d0 = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN'));
+const d0 = (n) => (n == null ? '—' : formatNumber(n));
 
 async function goi(u) {
-  const r = await fetch(u, { credentials: 'same-origin' });
+  const r = await fetch(u, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   const j = await r.json().catch(() => null);
-  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Lỗi ' + r.status);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Máy chủ trả ' + r.status + '.');
   return j;
 }
 
@@ -106,86 +69,96 @@ function veThuoc(m, T) {
     { k: T.BOT_TU_TAO, v: m.botTuTao },
     { k: T.HOI_THOAI_CO_DON, v: m.hoiThoaiCoDon },
   ];
-  $('#thuoc').innerHTML = hang.map((x) => `
-    <div class="t ${x.v == null ? 'mu' : ''}">
-      <div class="n">${x.v == null ? '—' : d0(x.v)}</div>
-      <div class="d">
-        <div class="ten">${esc(x.k.ten)}</div>
-        <div class="mo">${esc(x.k.doGi)}</div>
-        <div class="kh"><span class="b">${esc(x.k.khoang)}</span>
-          <span class="nho"> · nguồn: ${esc(x.k.nguon.replace(/`/g, ''))}</span></div>
-      </div>
-    </div>`).join('');
+  $('#thuoc').innerHTML = hang.map((x) => `<li class="item">
+    <div class="item-lead"${x.v == null ? ' data-muted' : ''}>${d0(x.v)}</div>
+    <div>
+      <div class="item-title">${esc(x.k.ten)}</div>
+      <div class="item-desc">${esc(x.k.doGi)}</div>
+      <div class="item-detail">Khoảng đo: ${esc(x.k.khoang)} · nguồn: ${text(x.k.nguon)}</div>
+    </div>
+    <div class="item-trail">${x.v == null ? statusBadge('unknown', { label: 'Chưa đo được' }) : ''}</div>
+  </li>`).join('');
 }
 
 function veCanh(m) {
-  let h = '';
-  if (m.thieu && m.thieu.co) h += `<div class="canh">⚠️ <b>${esc(m.thieu.noi)}</b></div>`;
-  if (m.soCu) h += `<div class="canh">🕗 ${esc(m.soCu.noi)}</div>`;
-  $('#canh').innerHTML = h;
+  const kh = [];
+  if (m.thieu && m.thieu.co) kh.push(canhBao({ level: 'warning', body: m.thieu.noi }));
+  if (m.soCu) kh.push(canhBao({ level: 'info', body: m.soCu.noi }));
+  $('#canh').innerHTML = kh.join('');
 }
 
 function veBang(d) {
-  const ds = d.messenger.page.filter((p) => p.posQuyChoAi > 0 || p.hoiThoaiCoDon > 0);
-  $('#hSo').textContent = `${ds.length} page có đơn`;
-  const b = $('#bang');
+  const ds = d.messenger ? d.messenger.page.filter((p) => p.posQuyChoAi > 0 || p.hoiThoaiCoDon > 0) : [];
+  $('#hSo').textContent = `${formatNumber(ds.length)} page có đơn · xếp theo đơn POS quy cho AI`;
   if (!ds.length) {
-    b.innerHTML = `<div class="trong"><div class="ti">${esc(d.trong ? d.trong.noi : 'Chưa page nào có đơn')}</div>
-      <div>${esc(d.trong ? d.trong.diTiep : '')}</div></div>`;
+    $('#bang').innerHTML = emptyState({ icon: 'inbox', title: d.trong ? d.trong.noi : 'Chưa page nào có đơn',
+      body: d.trong && d.trong.diTiep ? d.trong.diTiep : '' });
     return;
   }
-  b.innerHTML = `<div class="bao"><table>
-    <thead><tr><th>Page</th><th class="p">Đơn POS quy cho AI</th><th class="p">Hội thoại có đơn</th><th>Marketer</th></tr></thead>
-    <tbody>${ds.map((p) => `
-      <tr>
-        <td><b>${esc(p.ten)}</b><div class="nho">${esc(p.pageId)}</div>
-          ${p.soCu ? '<span class="the cu">số lần quét trước</span>' : ''}</td>
-        <td class="p"><b>${d0(p.posQuyChoAi)}</b></td>
-        <td class="p">${d0(p.hoiThoaiCoDon)}</td>
-        <td class="nho">${esc(p.marketer) || '<i>chưa gán</i>'}</td>
-      </tr>`).join('')}</tbody></table></div>`;
+  $('#bang').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Page</th><th scope="col" class="num">Đơn POS quy cho AI</th>
+      <th scope="col" class="num">Hội thoại có đơn</th><th scope="col">Marketer</th>
+    </tr></thead><tbody>${ds.map((p) => `
+    <tr>
+      <td><div class="page-identity-name">${esc(p.ten)}</div>
+        <div class="page-identity-sub">${esc(p.pageId)}${p.soCu ? ' · <span class="meta">số lần quét trước</span>' : ''}</div></td>
+      <td class="num manh">${d0(p.posQuyChoAi)}</td>
+      <td class="num">${d0(p.hoiThoaiCoDon)}</td>
+      <td>${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function veTrangBanHang(t) {
+  if (t.coNguon) {
+    $('#tbh').innerHTML = `<ul class="item-list"><li class="item">
+        <div class="item-lead">${d0(t.soDon)}</div>
+        <div><div class="item-title">Đơn từ trang bán hàng</div>
+          <div class="item-desc">${d0(t.soDonCoTien)} đơn có tổng tiền · nguồn: đơn hàng có nguồn «trang bán hàng»</div></div>
+        <div class="item-trail"></div>
+      </li></ul>`
+      + (t.canhBao ? `<div class="tren-3">${canhBao({ level: 'warning', body: t.canhBao })}</div>` : '');
+    return;
+  }
+  // Chưa có nguồn: KHÔNG hiện 0. «0 đơn» ở đây đọc ra là «bán không được đơn nào» (mục O).
+  $('#tbh').innerHTML = `<div class="panel"><div class="feature-row" data-state="off">
+    <div><div class="feature-name">Chưa đo được luồng trang bán hàng</div>
+      <div class="feature-desc">${text(t.noi)}</div>
+      <div class="feature-reason">${text(t.diTiep)}</div></div>
+    ${statusBadge('unknown', { label: 'Chưa đo được' })}
+  </div></div>`;
 }
 
 async function tai() {
   try {
     const d = await goi('/api/bao-cao');
-    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
-    $('#khongCong').innerHTML = `🚫 <b>Màn này KHÔNG cộng.</b> ${esc(d.viSaoKhongCong.replace(/`/g, ''))}`;
+    if (!d) return;
 
-    // luồng trang bán hàng — đo lúc chạy, có thể có hoặc chưa
-    const t = d.trangBanHang;
-    if (t.coNguon) {
-      $('#tbh').innerHTML = `<div class="thuoc"><div class="t">
-        <div class="n">${d0(t.soDon)}</div>
-        <div class="d">
-          <div class="ten">Đơn từ trang bán hàng</div>
-          <div class="mo">Đơn có trước, rồi mới hỏi khách — thước khác hẳn luồng Messenger.</div>
-          <div class="kh"><span class="b">${d0(t.soDonCoTien)} đơn có tổng tiền</span>
-            <span class="nho"> · nguồn: don_hang WHERE nguon = trang_ban_hang</span></div>
-        </div></div></div>
-        ${t.canhBao ? `<div class="canh">⚠️ ${esc(t.canhBao.replace(/`/g, ''))}</div>` : ''}`;
-    } else {
-      $('#tbh').innerHTML = `<div class="mu2">
-        <div class="ti">— chưa đo được</div>
-        <div>${esc(t.noi.replace(/`/g, ''))}</div>
-        <div class="di">👉 ${esc(t.diTiep.replace(/\*\*/g, ''))}</div></div>`;
-    }
+    const kh = [canhBao({ level: 'info', title: 'Màn này không cộng ba con số lại', body: d.viSaoKhongCong })];
+    $('#bang-tin').innerHTML = `<div class="duoi-5">${kh.join('')}</div>`;
+
+    veTrangBanHang(d.trangBanHang);
 
     if (!d.messenger) {
-      $('#thuoc').innerHTML = `<div class="mu2"><div class="ti">${esc(d.trong.noi)}</div>
-        <div class="di">👉 ${esc(d.trong.diTiep)}</div></div>`;
-      $('#bang').innerHTML = '';
+      $('#thuoc').innerHTML = `<li class="item"><div>
+        <div class="item-title">${esc(d.trong ? d.trong.noi : 'Chưa đo được luồng Messenger')}</div>
+        <div class="item-desc">${esc(d.trong ? d.trong.diTiep : '')}</div></div>
+        <div class="item-trail">${statusBadge('unknown', { label: 'Chưa đo được' })}</div></li>`;
+      $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa có số theo page',
+        body: 'Chưa đọc được đơn của luồng Messenger.' });
       return;
     }
     if (d.messenger.quetLuc) {
-      $('#hQuet').textContent = 'quét POS lúc ' + new Date(d.messenger.quetLuc).toLocaleString('vi-VN', { hour12: false });
+      $('#hQuet').textContent = 'Quét POS lúc ' + new Date(d.messenger.quetLuc).toLocaleString('vi-VN', { hour12: false });
     }
     veThuoc(d.messenger, d.thuoc);
     veCanh(d.messenger);
     veBang(d);
   } catch (e) {
-    $('#bang').innerHTML = `<div class="than"><div class="canh" style="margin:0">
-      <b>Không đọc được báo cáo:</b> ${esc(e.message)}</div></div>`;
+    $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được báo cáo',
+      body: 'Màn này TỪ CHỐI hiện 0 khi chưa đọc được — «0 đơn» là câu dễ tin nhất và sai nhất.',
+      detail: [e.message] })}</div>`;
+    $('#thuoc').innerHTML = '';
+    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa có số liệu', body: 'Kiểm kết nối sang tiến trình bot rồi tải lại trang.' });
   }
 }
 

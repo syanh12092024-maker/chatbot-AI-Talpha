@@ -75,12 +75,21 @@ test('①b · ba con số đi ra RỜI NHAU, không có trường tổng nào', 
 });
 
 test('①c · TRANG xếp ba thước theo chiều DỌC — xếp ngang là mời người ta cộng', () => {
-  const html = readFileSync(TRANG, 'utf8');
-  // `.thuoc` phải là grid một cột. Có `grid-template-columns` với nhiều cột là xếp ngang.
-  const m = html.match(/\.thuoc\s*\{([^}]*)\}/);
-  assert.ok(m, 'không tìm thấy khối .thuoc');
-  assert.ok(!/grid-template-columns/.test(m[1]),
+  // 14/09: màn bỏ hết CSS riêng, dùng hệ kiểu. Điều được canh KHÔNG đổi — chỉ đổi chỗ đo:
+  // ba thước phải nằm trong `.item-list` (một cột theo cấu tạo) và màn KHÔNG được dùng
+  // `.metric-row` (hàng chỉ số xếp ngang) cho chúng.
+  // Bỏ chú thích trước khi đo: chính chú thích của trang nhắc chữ `.metric-row` để giải
+  // thích VÌ SAO không dùng nó — đo cả chú thích là tự làm thước kêu oan.
+  const html = readFileSync(TRANG, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+  assert.match(html, /id="thuoc"[^>]*class="item-list"|class="item-list"[^>]*id="thuoc"/,
+    'ba thước phải nằm trong danh sách một cột `.item-list`');
+  assert.ok(!/metric-row/.test(html),
     'ba thước xếp thành cột ngang cạnh nhau trông y như ba phần của một tổng');
+
+  const kieu = readFileSync(new URL('../../src/ui/chung/kieu.css', import.meta.url), 'utf8');
+  const m = kieu.match(/\.item-list\s*\{([^}]*)\}/);
+  assert.ok(m, 'hệ kiểu không có `.item-list`');
+  assert.ok(!/grid-template-columns/.test(m[1]), '`.item-list` không được xếp ngang');
 });
 
 /* ═══════════ ② LUỒNG TRANG BÁN HÀNG: CHƯA CÓ NGUỒN ═══════════ */
