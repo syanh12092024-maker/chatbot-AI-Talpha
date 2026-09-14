@@ -1,32 +1,37 @@
-// MENU ĐIỀU HƯỚNG — nhúng vào MỌI trang bằng một thẻ <script>.
+// KHUNG ỨNG DỤNG — thanh bên + thanh trên cùng. Nhúng vào MỌI trang bằng một thẻ <script>.
 //
-// Không trang nào phải viết lại menu, và thêm một màn mới thì chỉ khai một dòng ở
+// Không trang nào phải viết lại khung, và thêm một màn mới thì chỉ khai một dòng ở
 // `chung/man-hinh.js`.
 //
 // ⚠️ Menu tải từ `/api/dieu-huong`, đã LỌC THEO VAI ở máy chủ. Trang không tự lọc.
 //
-// ═══ HAI HÌNH DẠNG, MỘT NGUỒN (đổi 01/09) ═══════════════════════════════════════════
-// Bản trước là NGĂN KÉO: bật ra, chọn, tắt. Ba cái giá đo được — không thấy mình đang ở
-// đâu trong hệ, mỗi lần chuyển màn là hai cú bấm, và danh sách 24 dòng phẳng dài hơn màn
-// hình nên hơn chục mục cuối bị cuộn khuất. Nay:
-//   · màn RỘNG (≥ 900px): thanh bên CỐ ĐỊNH 244px, luôn thấy sáu mục và chỗ mình đang đứng;
-//   · màn HẸP: giữ nguyên ngăn kéo — 244px trên điện thoại là ăn hết chỗ đọc.
-// Cùng một dữ liệu, cùng một lớp lọc vai; chỉ khác cách bày.
+// ═══ BẢN 3 · 14/09/2026 — theo mục F của bản đặc tả vận hành ═════════════════════════
+// Bản 2 là thanh bên TỐI, mỗi mục HAI dòng (tên + mô tả), tài khoản dưới đáy, và một
+// THANH TAB liệt kê các màn cùng mục. Ba chuyện đo được:
+//   · thanh tab lặp đúng thứ thanh bên đã hiện — hai nơi điều hướng cho cùng một việc;
+//   · chữ trên nền tối là chỗ vừa TÀNG HÌNH khi CSS và JS lệch bản (ảnh chụp 14/09);
+//   · không có thanh trên cùng, nên không có chỗ nào nói «tôi đang ở đâu» ngoài <h1>.
+// Nay:
+//   · THANH BÊN (F1) — sáng, 240px, mục 36px có biểu tượng, nhóm là nhãn gọn. Mục chứa
+//     màn đang đứng tự bung. Tối đa HAI tầng (nhóm → màn), không lồng sâu hơn.
+//   · THANH TRÊN CÙNG (F2) — 52px. Trái: đường dẫn vị trí «Nhóm / Màn». Phải: menu tài
+//     khoản. KHÔNG nút riêng của từng màn — đó là việc của PageHeader.
+//   · BỎ THANH TAB — trùng với thanh bên.
+//   · Màn hẹp (< 900px): thanh bên thành ngăn kéo, thanh trên cùng có nút mở.
 //
-// Mục xếp theo NHỊP LÀM VIỆC (xem `man-hinh.js#NHOM`), mỗi mục bung ra màn con. Mục đang
-// đứng tự bung; mục khác đóng — sáu dòng thay vì hai mươi bốn. Sổ khai BẢY mục; mục
-// `nhan-cho-khach` chưa có màn nào (giai đoạn 3) nên `menuCua` tự ẩn.
-//
-// Chân thanh bên là KHỐI TÀI KHOẢN: đổi team và đăng xuất. Trước 01/09 chỉ MỘT trong 25
-// trang có lối này, nên người thuộc nhiều team (01 §8 chốt ba team) phải xoá cookie mới
-// sang được team khác, còn vai `sale` — không vào được màn Cấu hình team — thì kẹt hẳn.
+// ⛔ LUẬT CỦA TỆP NÀY (mỗi luật là một lần đã hỏng thật):
+//   · KHÔNG dấu huyền ngược trong chú thích CSS — CSS nằm TRONG một template literal,
+//     một dấu là đóng chuỗi sớm, cả tệp lỗi cú pháp, menu biến mất khỏi mọi trang mà
+//     trang vẫn hiện bình thường (01/09). Ca ⑤c canh.
+//   · Mọi màu trong khung CÓ GIÁ TRỊ DỰ PHÒNG: khung là thứ duy nhất không được tàng hình,
+//     kể cả khi hệ kiểu chưa về kịp (14/09). Ca HK9 canh.
+//   · Lối đổi team và đăng xuất KHÔNG lọc theo vai: vai sale cũng phải thoát được. Ca ⑤b.
+//   · Menu hỏng KHÔNG được làm hỏng trang: mọi thứ bọc trong try/catch của chính nó.
 
 (function () {
   // ── HỆ KIỂU: nạp `chung/kieu.css` cho MỌI trang ─────────────────────────────────
-  // Chèn ở đây, không bắt 25 màn tự khai <link> — một dòng ở đây là phủ hết, và màn mới
-  // không thể quên. Đặt LÊN ĐẦU <head> để nó nằm trước <style> của trang cho đúng thứ tự
-  // đọc; riêng chuyện ai thắng ai thì đã do `@layer` trong tệp ấy định, không do thứ tự.
-  // Vì thế thêm tệp này KHÔNG đổi vẻ ngoài màn nào đang có — xem khối đầu `kieu.css`.
+  // Chèn ở đây để 26 màn không phải tự khai, và màn mới không thể quên. Đặt LÊN ĐẦU <head>;
+  // chuyện ai thắng ai do `@layer` trong tệp ấy định, không do thứ tự.
   (function napHeKieu() {
     if (document.querySelector('link[data-ds="v3"]')) return;
     const l = document.createElement("link");
@@ -37,16 +42,14 @@
     dau.insertBefore(l, dau.firstChild);
   })();
 
-  // ── LỐI BỎ QUA: một đường tắt cho người đi bằng bàn phím ────────────────────────
-  // Trước đây muốn tới nội dung phải Tab qua CẢ thanh bên — 24 mục, ở MỌI trang. Nay
-  // phím Tab đầu tiên là «Tới nội dung». Ẩn cho tới khi lấy nét, nên không đổi gì về
-  // mặt nhìn. Cả 25 màn đều có <main> (đã đo), chỉ gán id nếu nó chưa có.
+  // ── LỐI BỎ QUA: Tab đầu tiên ở mọi trang là «Tới nội dung» ──────────────────────
+  // Không có nó thì người dùng bàn phím phải Tab qua cả thanh bên và thanh trên cùng.
   document.addEventListener("DOMContentLoaded", function catLoiBoQua() {
     if (document.querySelector("a.bo-qua")) return;
     const than = document.querySelector("main");
-    if (!than) return; // không có mốc thì thôi, đừng trỏ vào chỗ không tồn tại
+    if (!than) return;
     if (!than.id) than.id = "noi-dung";
-    than.setAttribute("tabindex", "-1"); // để nhảy tới được mà không thành mục Tab
+    than.setAttribute("tabindex", "-1");
     const a = document.createElement("a");
     a.className = "bo-qua";
     a.href = "#" + than.id;
@@ -57,154 +60,200 @@
   const esc = (s) =>
     String(s == null ? "" : s).replace(
       /[&<>"']/g,
-      (c) =>
-        ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        })[c],
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
     );
 
-  const RONG = 244; // bề ngang thanh bên
-  const NGUONG = 900; // dưới ngưỡng này thì quay về ngăn kéo
+  // ── BIỂU TƯỢNG — MỘT bộ duy nhất (mục Q): Lucide, giấy phép ISC ────────────────
+  // Chỉ nhúng đúng các biểu tượng khung cần, không kéo cả thư viện, không bước build.
+  // Thuộc tính vẽ đặt THẲNG trên <svg>: hệ kiểu chưa về thì biểu tượng vẫn là nét, không
+  // thành khối đen. Lucide © Lucide Contributors (ISC) · phần gốc Feather © Cole Bemis (MIT).
+  const BIEU_TUONG = {"bot":"<path d=\"M12 8V4H8\" /> <rect width=\"16\" height=\"12\" x=\"4\" y=\"8\" rx=\"2\" /> <path d=\"M2 14h2\" /> <path d=\"M20 14h2\" /> <path d=\"M15 13v2\" /> <path d=\"M9 13v2\" />","chart-no-axes-column":"<line x1=\"18\" x2=\"18\" y1=\"20\" y2=\"10\" /> <line x1=\"12\" x2=\"12\" y1=\"20\" y2=\"4\" /> <line x1=\"6\" x2=\"6\" y1=\"20\" y2=\"14\" />","chevron-right":"<path d=\"m9 18 6-6-6-6\" />","circle-alert":"<circle cx=\"12\" cy=\"12\" r=\"10\" /> <line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\" /> <line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\" />","circle-check":"<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"m9 12 2 2 4-4\" />","circle-x":"<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"m15 9-6 6\" /> <path d=\"m9 9 6 6\" />","inbox":"<polyline points=\"22 12 16 12 14 15 10 15 8 12 2 12\" /> <path d=\"M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z\" />","info":"<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"M12 16v-4\" /> <path d=\"M12 8h.01\" />","layout-dashboard":"<rect width=\"7\" height=\"9\" x=\"3\" y=\"3\" rx=\"1\" /> <rect width=\"7\" height=\"5\" x=\"14\" y=\"3\" rx=\"1\" /> <rect width=\"7\" height=\"9\" x=\"14\" y=\"12\" rx=\"1\" /> <rect width=\"7\" height=\"5\" x=\"3\" y=\"16\" rx=\"1\" />","log-out":"<path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\" /> <polyline points=\"16 17 21 12 16 7\" /> <line x1=\"21\" x2=\"9\" y1=\"12\" y2=\"12\" />","menu":"<line x1=\"4\" x2=\"20\" y1=\"12\" y2=\"12\" /> <line x1=\"4\" x2=\"20\" y1=\"6\" y2=\"6\" /> <line x1=\"4\" x2=\"20\" y1=\"18\" y2=\"18\" />","repeat":"<path d=\"m17 2 4 4-4 4\" /> <path d=\"M3 11v-1a4 4 0 0 1 4-4h14\" /> <path d=\"m7 22-4-4 4-4\" /> <path d=\"M21 13v1a4 4 0 0 1-4 4H3\" />","search":"<circle cx=\"11\" cy=\"11\" r=\"8\" /> <path d=\"m21 21-4.3-4.3\" />","settings":"<path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\" /> <circle cx=\"12\" cy=\"12\" r=\"3\" />","triangle-alert":"<path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\" /> <path d=\"M12 9v4\" /> <path d=\"M12 17h.01\" />","x":"<path d=\"M18 6 6 18\" /> <path d=\"m6 6 12 12\" />"};
+  function bieuTuong(ten, lop) {
+    return (
+      '<svg class="icon' + (lop ? " " + lop : "") + '" viewBox="0 0 24 24" width="16" height="16"' +
+      ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"' +
+      ' stroke-linejoin="round" aria-hidden="true" focusable="false">' +
+      (BIEU_TUONG[ten] || "") + "</svg>"
+    );
+  }
+
+  const RONG = 240; // mục F1
+  const NGUONG = 900; // dưới ngưỡng này thanh bên thành ngăn kéo
 
   const css = `
-    .dh-nut{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:8px;
-      padding:6px 11px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;margin-right:2px;display:none}
-    .dh-nut:hover{background:rgba(255,255,255,.24)}
-    .dh-phu{position:fixed;inset:0;background:rgba(15, 20, 25,.45);z-index:9998;display:none}
+    .dh-ngan{position:fixed;top:0;left:0;bottom:0;width:${RONG}px;z-index:9999;display:flex;
+      flex-direction:column;background:var(--surface, #ffffff);color:var(--text-primary, #101828);
+      border-right:1px solid var(--border-default, #e1e4ea);font-size:14px}
+    .dh-dau{flex:none;height:52px;display:flex;align-items:center;gap:10px;padding:0 16px;
+      border-bottom:1px solid var(--border-subtle, #eaecf0)}
+    .dh-logo{width:26px;height:26px;flex:none;border-radius:6px;display:inline-flex;
+      align-items:center;justify-content:center;background:var(--primary, #1d4ed8);
+      color:var(--primary-foreground, #ffffff)}
+    .dh-ten{font-weight:600;font-size:14px;line-height:1.2}
+    .dh-ten small{display:block;font-weight:400;font-size:12px;color:var(--text-muted, #667085)}
+
+    /* DẢI TRẠNG THÁI — trả lời «cái gì đang chạy» (mục C). Số nổi bật là SỐ PAGE ĐANG BẬT;
+       tổng page chỉ là mẫu số. Ngày 11/09 người tiếp quản đọc «501 page» thành «đang chạy
+       501 page» trong khi thật ra 0 page bật AI. Chấm có HÌNH khác nhau theo nghĩa — mục T. */
+    .dh-dai{flex:none;margin:12px 12px 4px;padding:8px 10px;border-radius:6px;font-size:12px;
+      line-height:1.4;border:1px solid var(--border-default, #e1e4ea);
+      background:var(--surface-subtle, #fafbfc);color:var(--text-muted, #667085)}
+    .dh-dai b{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
+      color:var(--text-primary, #101828)}
+    .dh-dai b::before{content:"";width:7px;height:7px;flex:none;border-radius:50%;background:currentColor}
+    .dh-dai[data-tone="success"] b{color:var(--success, #067647)}
+    .dh-dai[data-tone="danger"] b{color:var(--danger, #b42318)}
+    .dh-dai[data-tone="danger"] b::before{border-radius:1px}
+    .dh-dai[data-tone="neutral"] b::before{background:transparent;box-shadow:inset 0 0 0 1.5px currentColor}
+
+    .dh-than{flex:1;overflow-y:auto;padding:8px;overscroll-behavior:contain}
+    .dh-muc{width:100%;height:36px;display:flex;align-items:center;gap:10px;padding:0 10px;
+      border:0;border-radius:6px;background:none;cursor:pointer;text-align:left;
+      font:inherit;font-size:14px;font-weight:500;color:var(--text-secondary, #475467)}
+    .dh-muc:hover{background:var(--surface-hover, #f5f7fa);color:var(--text-primary, #101828)}
+    .dh-muc[data-dang-o="true"]{color:var(--text-primary, #101828)}
+    .dh-mui{margin-left:auto;color:var(--text-disabled, #98a2b3);transition:transform 120ms ease}
+    .dh-muc[aria-expanded="true"] .dh-mui{transform:rotate(90deg)}
+    .dh-con{padding:2px 0 8px}
+    .dh-con[hidden]{display:none}
+    .dh-con a{display:flex;align-items:center;height:32px;padding:0 10px 0 36px;border-radius:6px;
+      text-decoration:none;font-size:13px;color:var(--text-secondary, #475467);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .dh-con a:hover{background:var(--surface-hover, #f5f7fa);color:var(--text-primary, #101828)}
+    .dh-con a[aria-current="page"]{background:var(--surface-selected, #eef3ff);
+      color:var(--primary, #1d4ed8);font-weight:500}
+
+    /* VẠCH «Ít dùng» — ranh giới BÊN TRONG một nhóm. Màn dưới vạch vẫn ở menu: bỏ hẳn
+       thì người vào bằng đường dẫn là kẹt. */
+    .dh-vach{display:flex;align-items:center;gap:8px;padding:10px 10px 4px 36px;font-size:11px;
+      font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--text-disabled, #98a2b3)}
+    .dh-vach::after{content:"";flex:1;height:1px;background:var(--border-subtle, #eaecf0)}
+
+    .dh-chan{flex:none;padding:10px 16px;border-top:1px solid var(--border-subtle, #eaecf0);
+      font-size:12px;line-height:1.4;color:var(--text-muted, #667085)}
+
+    /* THANH TRÊN CÙNG — mục F2. Chỉ thứ dùng chung cho cả sản phẩm. */
+    .dh-top{position:sticky;top:0;z-index:9990;height:52px;display:flex;align-items:center;gap:12px;
+      padding:0 24px;background:var(--surface, #ffffff);border-bottom:1px solid var(--border-default, #e1e4ea)}
+    .dh-dd{display:flex;align-items:center;gap:6px;min-width:0;margin:0;padding:0;list-style:none;
+      font-size:13px;color:var(--text-muted, #667085)}
+    .dh-dd li{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}
+    .dh-dd li + li::before{content:"/";color:var(--text-disabled, #98a2b3)}
+    .dh-dd li[aria-current="page"]{color:var(--text-primary, #101828);font-weight:500;
+      overflow:hidden;text-overflow:ellipsis}
+    .dh-khoang{flex:1}
+
+    .dh-tai-khoan{position:relative;flex:none}
+    .dh-tk-nut{display:flex;align-items:center;gap:8px;height:36px;padding:0 8px 0 4px;border:0;
+      border-radius:6px;background:none;cursor:pointer;font:inherit;font-size:13px;
+      color:var(--text-primary, #101828)}
+    .dh-tk-nut:hover{background:var(--surface-muted, #f2f4f7)}
+    .dh-avatar{width:28px;height:28px;flex:none;border-radius:50%;display:inline-flex;
+      align-items:center;justify-content:center;font-size:12px;font-weight:600;
+      background:var(--surface-muted, #f2f4f7);color:var(--text-secondary, #475467)}
+    .dh-tk-ten{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;text-align:left}
+    .dh-tk-ten small{font-size:11px;color:var(--text-muted, #667085)}
+
+    /* KHỐI TÀI KHOẢN — đổi team và đăng xuất. Trước 01/09 chỉ MỘT trong 25 trang có lối
+       này: người thuộc nhiều team phải xoá cookie, và vai sale thì kẹt hẳn. */
+    .dh-tk{position:absolute;right:0;top:calc(100% + 6px);width:248px;padding:6px;z-index:10000;
+      background:var(--surface, #ffffff);border:1px solid var(--border-default, #e1e4ea);border-radius:8px;
+      box-shadow:var(--shadow-popover, 0 4px 12px rgba(16,24,40,.08))}
+    .dh-tk[hidden]{display:none}
+    .dh-tk-dau{padding:8px 10px 10px;margin-bottom:4px;font-size:12px;line-height:1.45;
+      color:var(--text-muted, #667085);border-bottom:1px solid var(--border-subtle, #eaecf0)}
+    .dh-tk-dau b{display:block;font-size:13px;font-weight:600;color:var(--text-primary, #101828)}
+    .dh-tk button{width:100%;height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;
+      border:0;border-radius:6px;background:none;cursor:pointer;text-align:left;font:inherit;
+      font-size:13px;color:var(--text-primary, #101828)}
+    .dh-tk button:hover{background:var(--surface-hover, #f5f7fa)}
+    .dh-tk button.ra{color:var(--danger, #b42318)}
+    .dh-tk button.ra:hover{background:var(--danger-bg, #fef3f2)}
+
+    .dh-nut{display:none;align-items:center;justify-content:center;width:36px;height:36px;flex:none;
+      margin-left:-8px;border:0;border-radius:6px;background:none;cursor:pointer;
+      color:var(--text-secondary, #475467)}
+    .dh-nut:hover{background:var(--surface-muted, #f2f4f7)}
+    .dh-phu{position:fixed;inset:0;z-index:9998;display:none;background:var(--scrim, rgba(16,24,40,.38))}
     .dh-phu.mo{display:block}
 
-    .dh-ngan{position:fixed;top:0;left:0;bottom:0;width:${RONG}px;background:var(--toi, #101419);
-      color:var(--tren-toi, #f2f5f8);z-index:9999;overflow-y:auto;font-size:13.5px;display:flex;flex-direction:column}
-    .dh-dau{padding:15px 16px 12px;border-bottom:1px solid rgba(255,255,255,.1)}
-    .dh-dau b{font-size:15px;color:#fff;display:block}
-    .dh-dau .m{font-size:11.5px;color:var(--tren-toi-2, #9aa7b4);margin-top:3px;line-height:1.5}
-
-    /* MỘT MỤC — hàng bấm được, mở/đóng danh sách màn con của nó. */
-    .dh-muc{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;
-      font:inherit;cursor:pointer;padding:9px 16px;display:flex;gap:10px;align-items:center}
-    .dh-muc:hover{background:rgba(255,255,255,.06)}
-    .dh-muc.day{background:rgba(143, 178, 251,.14);box-shadow:inset 3px 0 0 var(--tren-toi-nhan, #8fb2fb)}
-    .dh-muc .t{font-weight:600;font-size:13.5px;color:var(--tren-toi, #f2f5f8)}
-    .dh-muc.day .t{color:#fff}
-    .dh-muc .d{font-size:11px;color:var(--tren-toi-2, #9aa7b4);margin-top:1px;line-height:1.35}
-    .dh-muc .than{flex:1;min-width:0}
-    .dh-muc .mui{color:var(--tren-toi-2, #9aa7b4);font-size:10px;transition:transform .14s ease;flex-shrink:0}
-    .dh-muc.bung .mui{transform:rotate(90deg)}
-
-    .dh-con{display:none;padding:1px 0 6px}
-    .dh-con.bung{display:block}
-    .dh-con a{display:block;padding:6px 16px 6px 30px;color:var(--tren-toi-2, #9aa7b4);text-decoration:none;
-      line-height:1.35;font-size:12.5px}
-    .dh-con a:hover{background:rgba(255,255,255,.07);color:var(--tren-toi, #f2f5f8)}
-    .dh-con a.day{color:#fff;font-weight:600;background:rgba(143, 178, 251,.1)}
-
-    /* VẠCH «Ít dùng» — ranh giới trong MỘT mục, không phải mục thứ năm. Màn dưới vạch
-       là màn chưa có dữ liệu để hiện, hoặc đang tắt trên máy chủ, hoặc một năm dùng một
-       lần. Chúng vẫn ở đây: bỏ hẳn khỏi menu thì người vào bằng đường dẫn là kẹt. */
-    .dh-vach{display:flex;align-items:center;gap:8px;padding:9px 16px 5px 30px;
-      font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tren-toi-2, #9aa7b4)}
-    .dh-vach::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.09)}
-
-    /* KHỐI TÀI KHOẢN — đổi team và đăng xuất. Trước đây chỉ MỘT trong 25 trang có lối này,
-       nên người thuộc nhiều team phải xoá cookie mới sang được team khác, và vai sale
-       (không vào được màn Cấu hình team) thì kẹt hẳn. 01 §8 chốt BA team.
-       ⚠️ KHÔNG dùng dấu huyền ngược trong comment CSS: cả khối này nằm TRONG một template
-       literal, một dấu là đóng chuỗi sớm và cả tệp thành lỗi cú pháp — menu biến mất khỏi
-       25 trang mà trang vẫn hiện bình thường (đã dính thật 01/09). */
-    /* DẢI TRẠNG THÁI — câu trả lời cho «hệ có đang phục vụ khách không».
-       Số nổi bật là SỐ PAGE ĐANG BẬT, tổng page chỉ là mẫu số. Ngày 11/09 người tiếp quản
-       đọc huy hiệu 501 page thành «đang chạy 501 page», trong khi thật ra 0 page bật AI. */
-    .dh-dai{margin:10px 16px 0;border-radius:9px;padding:8px 11px;font-size:11.5px;line-height:1.45;
-      background:rgba(255,255,255,.06);color:var(--tren-toi-2, #9aa7b4)}
-    .dh-dai b{display:block;font-size:13px;font-weight:700;color:var(--tren-toi, #f2f5f8);margin-bottom:1px}
-    .dh-dai.tat{background:rgba(220,38,38,.16);color:#f0b6b0}
-    .dh-dai.tat b{color:#ffd9d4}
-    .dh-dai.chay{background:rgba(22,163,74,.15);color:#a9d9bb}
-    .dh-dai.chay b{color:#d6f0e0}
-    .dh-dai.mu{background:rgba(255,255,255,.05);color:var(--tren-toi-2, #9aa7b4)}
-
-    .dh-tk{border-top:1px solid rgba(255,255,255,.1);padding:10px 16px 12px;margin-top:auto}
-    .dh-tk .ai{font-size:11.5px;color:var(--tren-toi-2, #9aa7b4);line-height:1.5;margin-bottom:8px;word-break:break-word}
-    .dh-tk .ai b{color:var(--tren-toi, #f2f5f8);font-weight:600;display:block;font-size:12.5px}
-    .dh-tk .hang{display:flex;gap:7px}
-    .dh-tk button{flex:1;background:rgba(255,255,255,.08);color:var(--tren-toi, #f2f5f8);border:0;border-radius:7px;
-      padding:6px 9px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600;text-align:center}
-    .dh-tk button:hover{background:rgba(255,255,255,.16);color:#fff}
-    .dh-tk button.ra:hover{background:rgba(220,38,38,.22);color:#fff}
-
-    /* THANH TAB CỦA MỘT MỤC — các màn cùng mục nằm cạnh nhau ngay dưới thanh tiêu đề.
-       Mỗi màn vẫn giữ ĐƯỜNG RIÊNG của nó (không gộp 24 trang thành 6): thanh này chỉ nói
-       ra rằng chúng thuộc cùng một việc, và cho đi ngang giữa chúng bằng MỘT cú bấm thay
-       vì quay lại menu. Mục chỉ có một màn thì không có thanh — một tab đơn độc là nhiễu. */
-    .dh-tab{background:#fff;border-bottom:1px solid var(--vien, #e5e8ed);padding:0 22px;display:flex;
-      gap:2px;overflow-x:auto;scrollbar-width:none}
-    .dh-tab::-webkit-scrollbar{display:none}
-    .dh-tab a{padding:11px 13px 9px;color:#344054;text-decoration:none;font-size:13px;
-      font-weight:600;border-bottom:2px solid transparent;white-space:nowrap;
-      display:flex;gap:6px;align-items:center}
-    .dh-tab a:hover{color:var(--chinh, #1c4ed8)}
-    .dh-tab a.day{color:var(--chinh, #1c4ed8);font-weight:700;border-bottom-color:var(--chinh, #1c4ed8)}
-    .dh-tab .muc{font-size:11px;color:#8b95a1;font-weight:600;align-self:center;
-      padding-right:9px;margin-right:4px;border-right:1px solid var(--vien, #e5e8ed);white-space:nowrap}
-
-    /* Màn HẸP: thanh bên thu về ngăn kéo, trang lấy lại toàn bộ bề ngang. */
+    /* Màn HẸP: thanh bên thành ngăn kéo, trang lấy lại toàn bộ bề ngang. */
     @media (max-width:${NGUONG - 1}px){
-      .dh-nut{display:inline-block}
-      .dh-ngan{width:280px;max-width:86vw;transform:translateX(-100%);transition:transform .16s ease}
+      .dh-nut{display:inline-flex}
+      .dh-ngan{width:280px;max-width:86vw;transform:translateX(-100%);transition:transform 180ms ease;
+        box-shadow:var(--shadow-overlay, 0 20px 48px rgba(16,24,40,.18))}
       .dh-ngan.mo{transform:none}
       body{padding-left:0 !important}
+      .dh-top{padding:0 16px}
+      .dh-tk-ten{display:none}
+    }
+    @media (prefers-reduced-motion: reduce){
+      .dh-ngan,.dh-mui{transition:none}
     }`;
 
-  const MUI =
-    '<svg class="mui" width="10" height="10" viewBox="0 0 10 10" fill="none" ' +
-    'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="M3.5 2L6.5 5L3.5 8"/></svg>';
+  function chuDau(ten) {
+    const t = String(ten || "?").trim();
+    return esc((t[0] || "?").toUpperCase());
+  }
+
+  // Màn đang đứng: khớp đúng đường, hoặc là màn CON của một màn trong menu
+  // (ví dụ `/dieu-phoi/viec/123` là chi tiết của «Việc đang chờ»).
+  function timChoDung(d, nay) {
+    for (const n of d.nhom || []) {
+      for (const m of n.man || []) {
+        if (m.duong === nay) return { nhom: n, man: m, sau: null };
+      }
+    }
+    for (const n of d.nhom || []) {
+      for (const m of n.man || []) {
+        if (m.duong !== "/" && nay.startsWith(m.duong + "/")) return { nhom: n, man: m, sau: true };
+      }
+    }
+    return null;
+  }
 
   function dung(d) {
     const nay = location.pathname.replace(/\/$/, "") || "/";
+    const cho = timChoDung(d, nay);
+
     const s = document.createElement("style");
     s.textContent = css;
     document.head.appendChild(s);
 
+    // ── THANH BÊN ─────────────────────────────────────────────────────────────────
     const phu = document.createElement("div");
     phu.className = "dh-phu";
     const ngan = document.createElement("nav");
     ngan.className = "dh-ngan";
-
-    // Mục nào chứa đường đang mở thì bung sẵn — người dùng phải thấy mình đang đứng ở đâu.
-    const mucDangO = (d.nhom || []).findIndex((n) =>
-      (n.man || []).some((m) => m.duong === nay),
-    );
+    ngan.setAttribute("aria-label", "Điều hướng chính");
 
     ngan.innerHTML = `
-      <div class="dh-dau"><b>AI Closer v3</b>
-        <div class="m">Bot bán hàng Messenger &amp; WhatsApp</div></div>
-      <div class="dh-dai mu" id="dh-dai"><b>Đang đọc…</b>bao nhiêu page đang bật bot</div>
+      <div class="dh-dau">
+        <span class="dh-logo">${bieuTuong("bot")}</span>
+        <span class="dh-ten">AI Closer<small>Vận hành bán hàng có AI</small></span>
+      </div>
+      <div class="dh-dai" id="dh-dai" data-tone="neutral" aria-live="polite"><b>Đang đọc…</b>bao nhiêu page đang bật bot</div>
       <div class="dh-than">
         ${(d.nhom || [])
           .map((n, i) => {
-            const bung = i === mucDangO;
+            const dangO = !!(cho && cho.nhom === n);
+            const idCon = "dh-con-" + i;
             return `
-          <button type="button" class="dh-muc ${bung ? "day bung" : ""}" data-muc="${i}">
-            <div class="than">
-              <div class="t">${esc(n.ten)}</div>
-              ${n.mo ? `<div class="d">${esc(n.mo)}</div>` : ""}
-            </div>
-            ${n.man.length > 1 ? MUI : ""}
+          <button type="button" class="dh-muc" data-muc="${i}" data-dang-o="${dangO}"
+            aria-expanded="${dangO}" aria-controls="${idCon}" title="${esc(n.mo || "")}">
+            ${bieuTuong(n.bieuTuong || "layout-dashboard")}
+            <span>${esc(n.ten)}</span>
+            ${bieuTuong("chevron-right", "dh-mui")}
           </button>
-          <div class="dh-con ${bung ? "bung" : ""}" data-con="${i}">
-            ${n.man
+          <div class="dh-con" id="${idCon}" ${dangO ? "" : "hidden"}>
+            ${(n.man || [])
               .map((m, k) => {
-                // Vạch chèn TRƯỚC màn ít dùng đầu tiên của mục — một lần duy nhất.
                 const dauItDung = m.itDung && !(n.man[k - 1] || {}).itDung;
+                const laDay = !!(cho && cho.man === m);
                 return (
-                  (dauItDung ? `<div class="dh-vach">Ít dùng</div>` : "") +
-                  `<a href="${esc(m.duong)}" class="${m.duong === nay ? "day" : ""}"
-              title="${esc(m.moTa || "")}">${esc(m.ten)}</a>`
+                  (dauItDung ? '<div class="dh-vach">Ít dùng</div>' : "") +
+                  `<a href="${esc(m.duong)}" title="${esc(m.moTa || "")}"` +
+                  `${laDay ? ' aria-current="page"' : ""}>${esc(m.ten)}</a>`
                 );
               })
               .join("")}
@@ -212,114 +261,89 @@
           })
           .join("")}
       </div>
-      <div class="dh-tk">
-        <div class="ai">
-          <b>${esc(d.tenDangNhap || '')}</b>
-          team ${esc(d.teamId || '?')} · vai: ${esc((d.vai || []).join(', ') || 'không có')}
-        </div>
-        <div class="hang">
-          <button type="button" class="doi">Đổi team</button>
-          <button type="button" class="ra">Đăng xuất</button>
-        </div>
-        <div style="font-size:10.5px;color:var(--tren-toi-2, #9aa7b4);line-height:1.5;margin-top:9px">
-          Chỉ hiện màn vai bạn vào được — danh sách lọc ở máy chủ.
-        </div>
-      </div>`;
+      <div class="dh-chan">Chỉ hiện màn vai bạn vào được — danh sách lọc ở máy chủ.</div>`;
 
     document.body.appendChild(phu);
     document.body.appendChild(ngan);
 
-    // Mục CHỈ CÓ MỘT màn thì bấm vào mục là đi thẳng — không bắt bung ra để bấm lần hai.
     for (const nut of ngan.querySelectorAll(".dh-muc")) {
       const i = Number(nut.dataset.muc);
       const n = d.nhom[i];
-      const con = ngan.querySelector(`.dh-con[data-con="${i}"]`);
+      const con = ngan.querySelector("#dh-con-" + i);
       nut.onclick = () => {
-        if (n.man.length === 1) {
-          location.href = n.man[0].duong;
-          return;
-        }
-        nut.classList.toggle("bung");
-        con.classList.toggle("bung");
+        // Nhóm CHỈ CÓ MỘT màn thì bấm là đi thẳng — không bắt bung ra để bấm lần hai.
+        if ((n.man || []).length === 1) { location.href = n.man[0].duong; return; }
+        const mo = nut.getAttribute("aria-expanded") !== "true";
+        nut.setAttribute("aria-expanded", String(mo));
+        con.hidden = !mo;
       };
     }
 
+    // ── THANH TRÊN CÙNG ───────────────────────────────────────────────────────────
+    const top = document.createElement("div");
+    top.className = "dh-top";
+    const tenTrang = (document.querySelector("body > header h1") || {}).textContent || "";
+    const vungDuong = cho
+      ? `<li>${esc(cho.nhom.ten)}</li>` +
+        (cho.sau
+          ? `<li><a href="${esc(cho.man.duong)}">${esc(cho.man.ten)}</a></li>` +
+            `<li aria-current="page">${esc(tenTrang.trim() || "Chi tiết")}</li>`
+          : `<li aria-current="page">${esc(cho.man.ten)}</li>`)
+      : `<li aria-current="page">${esc(tenTrang.trim() || document.title)}</li>`;
+    top.innerHTML = `
+      <button type="button" class="dh-nut" aria-label="Mở menu">${bieuTuong("menu")}</button>
+      <ol class="dh-dd" aria-label="Vị trí">${vungDuong}</ol>
+      <span class="dh-khoang"></span>
+      <div class="dh-tai-khoan">
+        <button type="button" class="dh-tk-nut" aria-haspopup="menu" aria-expanded="false" aria-controls="dh-tk">
+          <span class="dh-avatar">${chuDau(d.tenDangNhap)}</span>
+          <span class="dh-tk-ten">${esc(d.tenDangNhap || "")}<small>team ${esc(d.teamId || "?")}</small></span>
+        </button>
+        <div class="dh-tk" id="dh-tk" role="menu" hidden>
+          <div class="dh-tk-dau"><b>${esc(d.tenDangNhap || "")}</b>
+            team ${esc(d.teamId || "?")} · vai: ${esc((d.vai || []).join(", ") || "không có")}</div>
+          <button type="button" class="doi" role="menuitem">${bieuTuong("repeat")}Đổi team</button>
+          <button type="button" class="ra" role="menuitem">${bieuTuong("log-out")}Đăng xuất</button>
+        </div>
+      </div>`;
+    document.body.insertBefore(top, document.body.firstChild);
+
+    const nutTk = top.querySelector(".dh-tk-nut");
+    const hopTk = top.querySelector(".dh-tk");
+    const dongTk = () => { hopTk.hidden = true; nutTk.setAttribute("aria-expanded", "false"); };
+    nutTk.onclick = (e) => {
+      e.stopPropagation();
+      const mo = hopTk.hidden;
+      hopTk.hidden = !mo;
+      nutTk.setAttribute("aria-expanded", String(mo));
+      if (mo) (hopTk.querySelector("button") || {}).focus?.();
+    };
+    document.addEventListener("click", (e) => { if (!hopTk.hidden && !hopTk.contains(e.target)) dongTk(); });
+
     // Đổi team: về đúng màn chọn team của `auth/router.js`, không tự dựng màn thứ hai.
-    ngan.querySelector('.dh-tk .doi').onclick = () => { location.href = '/chon-team'; };
+    hopTk.querySelector(".doi").onclick = () => { location.href = "/chon-team"; };
 
     // Đăng xuất: cửa là POST (xoá cookie ở máy chủ), nên không thể là một thẻ <a>.
     // Hỏng thì vẫn đưa người ta về trang đăng nhập — kẹt lại trong hệ tệ hơn.
-    ngan.querySelector('.dh-tk .ra').onclick = async () => {
-      try { await fetch('/api/dang-xuat', { method: 'POST', credentials: 'same-origin' }); }
+    hopTk.querySelector(".ra").onclick = async () => {
+      try { await fetch("/api/dang-xuat", { method: "POST", credentials: "same-origin" }); }
       catch { /* mạng hỏng — vẫn đi tiếp */ }
-      location.href = '/dang-nhap';
+      location.href = "/dang-nhap";
     };
 
-    dungThanhTab(d, nay);
-    dungDaiTrangThai(ngan);
-
-    // Trang chừa chỗ cho thanh bên. Chỉ ở màn rộng — media query trên tự gỡ ở màn hẹp.
+    // Trang chừa chỗ cho thanh bên. Màn hẹp thì media query tự gỡ.
     document.body.style.paddingLeft = `${RONG}px`;
 
-    const dong = () => {
-      phu.classList.remove("mo");
-      ngan.classList.remove("mo");
-    };
-    phu.onclick = dong;
+    const dongNgan = () => { phu.classList.remove("mo"); ngan.classList.remove("mo"); };
+    phu.onclick = dongNgan;
+    top.querySelector(".dh-nut").onclick = () => { phu.classList.add("mo"); ngan.classList.add("mo"); };
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") dong();
+      if (e.key !== "Escape") return;
+      dongNgan();
+      if (!hopTk.hidden) { dongTk(); nutTk.focus(); }
     });
 
-    const nut = document.createElement("button");
-    nut.className = "dh-nut";
-    nut.type = "button";
-    nut.innerHTML = "☰ Màn hình";
-    nut.onclick = () => {
-      phu.classList.add("mo");
-      ngan.classList.add("mo");
-    };
-
-    const dau = document.querySelector("header");
-    if (dau) dau.insertBefore(nut, dau.firstChild);
-    else document.body.insertBefore(nut, document.body.firstChild);
-  }
-
-  /**
-   * Thanh tab của MỤC đang đứng — chèn ngay dưới `<header>` của trang.
-   *
-   * Không gộp 24 trang thành 6: mỗi màn giữ đường riêng, giữ router riêng, giữ lớp vai
-   * riêng. Thanh này chỉ làm một việc — nói ra rằng những màn này thuộc CÙNG một việc, và
-   * cho đi ngang giữa chúng bằng một cú bấm thay vì quay lại menu rồi bấm tiếp.
-   *
-   * Trang không có `<header>` thì bỏ qua trong im lặng: thanh tab là thứ thêm vào, không
-   * được phép làm hỏng một trang vốn chạy được.
-   */
-  function dungThanhTab(d, nay) {
-    const muc = (d.nhom || []).find((n) => (n.man || []).some((m) => m.duong === nay));
-    if (!muc) return;
-
-    // Thanh tab chỉ mang màn THƯỜNG DÙNG của mục, cộng chính màn đang đứng nếu nó là màn
-    // ít dùng — để người đang ở đó vẫn thấy mình đang ở đâu. Mười ba tab ngang thì không
-    // ai đọc, và tab cuối bị cuộn khuất.
-    const man = (muc.man || []).filter((m) => !m.itDung || m.duong === nay);
-    if (man.length < 2) return;
-
-    const dau = document.querySelector("header");
-    if (!dau) return;
-
-    const tab = document.createElement("nav");
-    tab.className = "dh-tab";
-    tab.innerHTML =
-      `<div class="muc">${esc(muc.ten)}</div>` +
-      man
-        .map(
-          (m) =>
-            `<a href="${esc(m.duong)}" class="${m.duong === nay ? "day" : ""}"` +
-            ` title="${esc(m.moTa || "")}">${esc(m.ten)}</a>`,
-        )
-        .join("");
-
-    dau.insertAdjacentElement("afterend", tab);
+    dungDaiTrangThai(ngan);
   }
 
   /**
@@ -335,21 +359,19 @@
       .then((d) => {
         if (!d || !d.ok) throw new Error("khong doc duoc");
         if (!d.docDuoc) {
-          o.className = "dh-dai mu";
-          o.innerHTML =
-            "<b>Chưa đọc được</b>" +
-            esc(d.viSao || "Không rõ có page nào đang bật bot.");
+          o.dataset.tone = "neutral";
+          o.innerHTML = "<b>Chưa đọc được</b>" + esc(d.viSao || "Không rõ có page nào đang bật bot.");
           return;
         }
         const bat = Number(d.aiBat) || 0;
         const tong = Number(d.tong) || 0;
-        o.className = "dh-dai " + (bat > 0 ? "chay" : "tat");
+        o.dataset.tone = bat > 0 ? "success" : "danger";
         o.innerHTML = bat > 0
           ? `<b>Bot đang chạy ${bat}/${tong} page</b>số page còn lại chưa bật`
-          : `<b>Bot đang tắt ở mọi page</b>0/${tong} page bật — hệ đang không phục vụ khách`;
+          : `<b>Bot đang tắt ở mọi page</b>0/${tong} page bật — hệ không phục vụ khách`;
       })
       .catch(() => {
-        o.className = "dh-dai mu";
+        o.dataset.tone = "neutral";
         o.innerHTML = "<b>Chưa đọc được</b>không rõ có page nào đang bật bot";
       });
   }

@@ -263,10 +263,15 @@ test("HK9 · hệ kiểu và thanh điều hướng KHÔNG được cache dài �
 
   // Lưới đỡ: thanh điều hướng là thứ DUY NHẤT không bao giờ được tàng hình — mất nó là
   // mất lối đi tới mọi màn khác. Mọi lời gọi token chữ-trên-nền-tối phải có giá trị dự phòng.
+  // ⚠️ SIẾT LẠI 14/09 (khung bản 3): bản đầu chỉ soi token chữ-trên-nền-tối. Khung mới
+  //    là thanh SÁNG, không còn dùng token ấy — nên phép cũ XANH VÌ KHÔNG CÒN GÌ ĐỂ ĐO,
+  //    đúng cảnh «màn trống vẫn đạt». Nay soi MỌI lời gọi token trong khung.
   const nav = fs.readFileSync(path.join(GOC, "v3/src/ui/chung/dieu-huong.js"), "utf8");
-  const khongDuPhong = nav.match(/var\(--(tren-toi[a-z0-9-]*|toi)\)/g) || [];
+  const tatCa = nav.match(/var\(--[a-z0-9-]+[^)]*\)/g) || [];
+  assert.ok(tatCa.length > 20, `khung chỉ có ${tatCa.length} lời gọi token — thước đang đo nhầm chỗ`);
+  const khongDuPhong = tatCa.filter((v) => !v.includes(","));
   assert.deepEqual(khongDuPhong, [],
-    `thanh bên còn ${khongDuPhong.length} lời gọi token chữ-trên-nền-tối KHÔNG có dự phòng`);
+    `khung còn ${khongDuPhong.length} lời gọi token KHÔNG có dự phòng — hệ kiểu chưa về là tàng hình`);
 });
 
 test("HK10 · tên trên đầu trang KHỚP tên trong menu — «tôi đang ở đâu?»", () => {

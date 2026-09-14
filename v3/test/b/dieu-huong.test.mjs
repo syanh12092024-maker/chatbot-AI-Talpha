@@ -128,7 +128,14 @@ test('④a · BỐN mục người dùng thấy — mục thứ năm là quay l�
   // KHÔNG màn nào bị xoá, KHÔNG đường nào đổi — chỉ đổi TÊN và CHỖ NGỒI.
   // NHOM khai BẢY: sáu mục trên + hai mục dự trù (`bot-noi` chưa có màn, `nhan-cho-khach`
   // của giai đoạn 3) — cả hai tự ẩn.
-  assert.equal(mh.NHOM.length, 7, `đang có ${mh.NHOM.length} mục: ${mh.NHOM.map((n) => n.ten)}`);
+  // ═══ ĐỔI LẦN NỮA · 14/09/2026 · lượt 3 — theo mục F1 của bản đặc tả vận hành ═════════
+  //   Tổng quan · Vận hành · AI Bot · Phân tích · Quản trị   (+ dự trù «Nhắn cho khách»)
+  // Năm việc người dùng kể ở lượt 2 KHỚP năm nhóm này, chỉ khác nhãn; lời của năm việc
+  // giữ lại trong câu mô tả `mo`. `bot-noi` bỏ khỏi dự trù: «Hội thoại» nay thuộc Vận hành.
+  assert.equal(mh.NHOM.length, 6, `đang có ${mh.NHOM.length} mục: ${mh.NHOM.map((n) => n.ten)}`);
+  for (const n of mh.NHOM) {
+    assert.ok(n.bieuTuong, `mục ${n.ten}: thiếu biểu tượng — mục Q, một bộ biểu tượng cho cả khung`);
+  }
   for (const n of mh.NHOM) {
     assert.ok(n.ma && n.ten, 'mục phải có mã và tên');
     assert.ok(n.mo && n.mo.length > 8, `mục ${n.ten}: thiếu câu mô tả — người dùng không đoán được trong đó có gì`);
@@ -151,13 +158,12 @@ test('④b · mọi màn thuộc về một mục CÓ THẬT — không màn nà
 
 test('④c · vai QUẢN TRỊ thấy 5 mục nhưng vẫn đủ 25 màn — gom chứ không xoá', () => {
   const menu = mh.menuCua([VAI.QUAN_TRI]);
-  assert.equal(menu.length, 5, 'quản trị phải thấy đúng năm mục CÓ MÀN (hai mục dự trù tự ẩn)');
+  assert.equal(menu.length, 5, 'quản trị phải thấy đúng năm mục CÓ MÀN (mục dự trù tự ẩn)');
   const soMan = menu.reduce((a, n) => a + n.man.length, 0);
   assert.equal(soMan, mh.MAN.length, 'gom nhóm KHÔNG được làm rơi màn nào');
-  assert.deepEqual(menu.map((n) => n.ma), ['viec', 'bat-bot', 'day-bot', 'tien', 'khac'],
-    'thứ tự mục là thứ tự nhịp làm việc: việc hằng ngày trước, màn khác sau cùng');
-  // «Việc» là mục mở mỗi sáng — nó phải đứng ĐẦU, và Bảng điều phối phải là màn đầu của nó.
-  assert.equal(menu[0].man[0].ten, 'Việc đang chờ');
+  assert.deepEqual(menu.map((n) => n.ma), ['tong-quan', 'van-hanh', 'ai-bot', 'phan-tich', 'quan-tri'],
+    'thứ tự mục F1: Tổng quan trước — «cái gì cần để ý ngay» là câu hỏi đầu tiên (mục M1)');
+  assert.equal(menu[0].man[0].ten, 'Việc của tôi', 'Tổng quan mở bằng việc của chính người xem');
   // Chín màn ít dùng dồn vào Cài đặt. Đếm ở đây để nếu có người kéo một màn ít dùng trở
   // lên mục hằng ngày thì bài này đỏ, chứ không trôi lặng lẽ.
   // Bảy màn ít dùng nay tản ra ba mục theo ĐÚNG việc của chúng, không dồn hết vào một
@@ -169,15 +175,15 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng vẫn đủ 25 màn — gom
 test('④d · SALE chỉ thấy MỘT mục, và mục đó chỉ có một màn — §10', () => {
   const menu = mh.menuCua([VAI.SALE]);
   assert.equal(menu.length, 1, 'sale không được thấy mục nào khác');
-  assert.equal(menu[0].ma, 'viec');
+  assert.equal(menu[0].ma, 'van-hanh');
   assert.deepEqual(menu[0].man.map((m) => m.ten), ['Việc đang chờ']);
 });
 
 test('④e · `mucCuaDuong` chỉ đúng mục đang đứng — menu phải bung được đúng chỗ', () => {
-  assert.equal(mh.mucCuaDuong('/bo-luat'), 'day-bot');
-  assert.equal(mh.mucCuaDuong('/dieu-phoi'), 'viec');
-  assert.equal(mh.mucCuaDuong('/nhat-ky'), 'khac');
-  assert.equal(mh.mucCuaDuong('/dieu-phoi/'), 'viec', 'gạch chéo cuối không được làm lệch');
+  assert.equal(mh.mucCuaDuong('/bo-luat'), 'ai-bot');
+  assert.equal(mh.mucCuaDuong('/dieu-phoi'), 'van-hanh');
+  assert.equal(mh.mucCuaDuong('/nhat-ky'), 'quan-tri');
+  assert.equal(mh.mucCuaDuong('/dieu-phoi/'), 'van-hanh', 'gạch chéo cuối không được làm lệch');
   assert.equal(mh.mucCuaDuong('/khong-co-that'), null, 'đường lạ trả null, không đoán bừa');
 });
 
@@ -250,38 +256,44 @@ test('⑤c · `dieu-huong.js` PHẢI PARSE ĐƯỢC — một dấu huyền ngư
   assert.doesNotThrow(() => new Function(js), 'tệp menu không parse được');
 });
 
-/* ═══════════ ⑥ THANH TAB CỦA MỤC — và header thôi tự chế link ═══════════ */
-// Design mới: mỗi mục hiện như MỘT trang nhiều tab. Không gộp 24 trang thành 6 (mỗi màn
-// giữ đường riêng, router riêng, lớp vai riêng) — thanh tab chỉ nói ra rằng những màn này
-// thuộc cùng một việc, và cho đi ngang bằng một cú bấm thay vì quay lại menu.
+/* ═══════════ ⑥ THANH TRÊN CÙNG — và header thôi tự chế link ═══════════ */
+// ĐỔI 14/09/2026 (mục F2 của bản đặc tả): BỎ thanh tab. Nó liệt kê đúng các màn mà thanh bên
+// đã hiện — hai nơi điều hướng cho cùng một việc. Thay bằng thanh trên cùng 52px: trái là
+// đường dẫn vị trí «Nhóm / Màn», phải là menu tài khoản. Không nút riêng của từng màn.
 
-test('⑥a · menu dùng chung có dựng thanh tab, và chỉ dựng khi mục có TỪ HAI màn', () => {
+test('⑥a · khung có thanh trên cùng với đường dẫn vị trí, và KHÔNG còn thanh tab trùng lặp', () => {
   const js = readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
-  assert.match(js, /dungThanhTab/, 'thiếu hàm dựng thanh tab');
-  assert.match(js, /man\.length\s*<\s*2/,
-    'phải bỏ qua mục chỉ có một màn — một tab đơn độc là nhiễu');
-  // Thanh tab chỉ mang màn THƯỜNG DÙNG, cộng chính màn đang đứng nếu nó là màn ít dùng.
-  // Mục «Cài đặt» có 13 màn: mười ba tab ngang thì tab cuối bị cuộn khuất, không ai đọc.
-  assert.match(js, /!m\.itDung\s*\|\|\s*m\.duong\s*===\s*nay/,
-    'thanh tab phải lọc màn ít dùng, trừ màn đang đứng');
-  assert.match(js, /insertAdjacentElement\("afterend"|insertAdjacentElement\('afterend'/,
-    'thanh tab phải nằm ngay dưới <header>');
+  assert.match(js, /class="dh-top"|className = "dh-top"/, 'thiếu thanh trên cùng');
+  assert.match(js, /aria-label="Vị trí"/, 'đường dẫn vị trí phải có nhãn cho trình đọc màn hình');
+  assert.match(js, /aria-current="page"/, 'mục đang đứng phải đánh dấu aria-current');
+  assert.doesNotMatch(js, /dungThanhTab|class="dh-tab"/,
+    'thanh tab đã bỏ — nó lặp đúng thứ thanh bên hiện (mục F2)');
+  // Tối đa HAI tầng (mục F1): nhóm → màn. Nhóm là nút bung, màn là liên kết.
+  assert.match(js, /aria-expanded/, 'nút nhóm phải báo trạng thái bung cho trình đọc màn hình');
 });
 
-test('⑥b · mỗi mục có từ hai màn thì thanh tab của nó liệt kê ĐÚNG các màn đó', () => {
-  // Thanh tab dựng từ chính `menuCua`, nên bài này canh dữ liệu: mục nào ra thanh tab,
-  // mục nào không, và số tab bằng số màn vai đó vào được.
-  const menu = mh.menuCua([VAI.QUAN_TRI]);
-  const coTab = menu.filter((n) => n.man.length >= 2).map((n) => `${n.ma}:${n.man.length}`);
-  // Neo SỐ, cố ý: thêm màn hoặc xếp lại mục là ca này đỏ, buộc khai ra mình vừa làm gì.
-  // 14/09/2026 · lượt 1: page 4 → 5 (thêm màn «Bắt đầu»).
-  // 14/09/2026 · lượt 2: xếp lại mục theo NĂM VIỆC người dùng kể — xem ④a.
-  assert.deepEqual(coTab, ['viec:3', 'bat-bot:3', 'day-bot:8', 'tien:4', 'khac:7'],
-    `mục có thanh tab: ${coTab}`);
-  // Vai `sale` chỉ vào được MỘT màn của mục «Việc» ⇒ họ KHÔNG được thấy thanh tab: một
-  // thanh tab đơn độc là nhiễu, và nó còn chìa ra tên ba màn họ không có quyền mở.
-  const cuaSale = mh.menuCua([VAI.SALE]);
-  assert.equal(cuaSale[0].man.length, 1, 'sale chỉ vào được Bảng điều phối');
+test('⑥b · đường dẫn vị trí tìm ra ĐÚNG nhóm cho mọi màn — kể cả màn chi tiết', async () => {
+  // Chạy chính hàm tìm chỗ đứng của khung trên dữ liệu thật của sổ màn: mọi đường trong
+  // menu phải ra đúng nhóm của nó, và một đường CON (màn chi tiết) phải ra nhóm của màn cha.
+  const js = readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
+  const than = js.match(/function timChoDung\(d, nay\) \{[\s\S]*?\n  \}\n/);
+  assert.ok(than, 'không tìm thấy hàm timChoDung trong khung');
+  const timChoDung = new Function(`${than[0]}; return timChoDung;`)();
+
+  const d = { nhom: mh.menuCua([VAI.QUAN_TRI]) };
+  for (const n of d.nhom) {
+    for (const m of n.man) {
+      const cho = timChoDung(d, m.duong);
+      assert.ok(cho, `không tìm ra chỗ đứng cho ${m.duong}`);
+      assert.equal(cho.nhom.ma, n.ma, `${m.duong} phải thuộc nhóm ${n.ma}`);
+      assert.equal(cho.sau, null, `${m.duong} là màn chính, không phải màn con`);
+    }
+  }
+  const chiTiet = timChoDung(d, '/dieu-phoi/viec/123');
+  assert.ok(chiTiet, 'màn chi tiết phải tìm ra màn cha');
+  assert.equal(chiTiet.nhom.ma, 'van-hanh');
+  assert.equal(chiTiet.man.duong, '/dieu-phoi');
+  assert.equal(timChoDung(d, '/khong-co-that'), null, 'đường lạ trả null, không đoán bừa');
 });
 
 test('⑥c · header của MỌI trang thôi tự chế link điều hướng', () => {
