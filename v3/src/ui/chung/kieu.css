@@ -746,6 +746,23 @@
   .form-actions .text-muted { font-size: var(--text-sm); }
   textarea.mono, .textarea.mono { font-family: var(--font-mono); font-size: var(--text-sm); }
 
+  /* ─── HÀNG CÀI ĐẶT — nhãn và giải thích bên trái, điều khiển bên phải ─────────────────
+     Cho màn cấu hình: mỗi lựa chọn một hàng, cùng một đường căn. Không một thẻ màu cho mỗi
+     lựa chọn — đo 14/09 màn Model AI: ba thẻ nền vàng cạnh nhau, không biết thẻ nào hỏng. */
+  .setting-list { display: flex; flex-direction: column; }
+  .setting-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--space-2) var(--space-6);
+                 padding: var(--space-4) 0; border-bottom: 1px solid var(--border-subtle); }
+  .setting-row:first-child { padding-top: 0; }
+  .setting-row:last-child { border-bottom: 0; padding-bottom: 0; }
+  .setting-name { font-weight: var(--weight-medium); }
+  .setting-desc { font-size: var(--text-sm); color: var(--text-muted); margin-top: 2px; }
+  .setting-control { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+  .setting-control .field-hint { font-variant-numeric: tabular-nums; }
+  .range-row { display: flex; align-items: center; gap: var(--space-3); }
+  .range-row output { min-width: 3ch; font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; }
+  :where(input[type="range"]) { flex: 1; accent-color: var(--primary); height: 20px; margin: 0; }
+  @media (max-width: 720px) { .setting-row { grid-template-columns: minmax(0, 1fr); } }
+
   /* Đầu vùng chi tiết: định danh bản ghi bên trái, trạng thái bên phải. */
   .detail-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
                  gap: var(--space-3); margin-bottom: var(--space-4); }
