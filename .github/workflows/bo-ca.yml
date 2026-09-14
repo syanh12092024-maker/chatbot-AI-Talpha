@@ -35,36 +35,35 @@
 #   Nay bộ ca TỰ DỰNG nguồn của mình trong thư mục tạm, như N18/N19/N20 vẫn làm.
 #   KHÔNG cấp tệp mẫu ở CI: làm thế là dựng lại đúng chỗ phụ thuộc vừa gỡ.
 #
-# ═══ SỐ ĐO 14/09/2026 (lượt 34800176998) ═════════════════════════════════════════
-#   npm test    : 1665 ca · 1644 xanh · 0 ĐỎ · 21 hoãn minh bạch
-#   cổng nghiệm thu: XANH=19 · ĐỎ=6  (lượt 34801106602, sau khi gỡ nút docker)
-#     Trước đó XANH=10 · ĐỎ=15: mười cổng dựng sandbox bằng `docker exec talpha-pg`, mà
-#     container ấy không còn ở đâu ⇒ rc=2. Nay dùng gói `pg` (án lệ #28) ⇒ chín cổng xanh,
-#     cổng thứ mười (l1-m1) đo được thật và lộ ra là nó cần KẾT NỐI POS.
+# ═══ SỐ ĐO 14/09/2026 (lượt cuối 34802341360) ════════════════════════════════════
+#   npm test        : 1665 ca · 1644 xanh · 0 ĐỎ · 21 hoãn minh bạch
+#   cổng nghiệm thu : XANH=19 · ĐỎ=0 · CHƯA ĐO ĐƯỢC=6
 #
-#   SÁU CỔNG ĐỎ CÒN LẠI — KHÔNG cổng nào đỏ vì mã. Cả sáu thiếu thứ CI không có:
-#     · va-r1 · va-r2 — `node --env-file=.env` ⇒ `.env: not found` ⇒ LOI-NODE, và kịch bản
-#       repro chết ngay nên mọi «khối Fx không thấy trong log».
-#     · b-y4 · l0-m1 — cần `npm run di-tru` trên dữ liệu THẬT (`pages.json`…): cùng gốc với
-#       21 ca hoãn minh bạch.
-#     · g2-a4 — đọc `ai-enabled.json` ở gốc repo ⇒ `nguon` rơi về `cot_csdl`. CÙNG BỆNH với
-#       N5/N11 đã chữa trong bộ ca hôm nay, chỉ là ở cổng thì chưa chữa.
-#     · l1-m1 — `LoiThieuKetNoiPos`: cổng chạm POS pages.fm thật (chỉ ĐỌC). Đầu tệp cổng đã
-#       khai «mạng hỏng ⇒ ⏸ HOÃN», nhưng phép dò không nhận ra «THIẾU KẾT NỐI» cũng là
-#       không-đo-được, nên nó khai TRƯỢT.
+#   Đường đi trong ngày, để lượt sau đọc được vì sao:
+#     10/25 → 19/25  gỡ nút `docker exec talpha-pg` (container không còn ở đâu) → gói `pg`
+#     ĐỎ 6 → ĐỎ 0    sáu cổng khai TRƯỢT trong khi sự thật là KHÔNG ĐO ĐƯỢC — nói đúng bệnh
 #
-#   ⚠️ NỢ THƯỚC: cả sáu đang khai «TRƯỢT» trong khi sự thật là «KHÔNG ĐO ĐƯỢC». Đó là vi
-#      phạm chính luật của sổ (⏸ ≠ ✘). Sửa ĐÚNG là dạy chúng nói ⏸ — KHÔNG phải làm chúng
-#      xanh. Sửa THẬT là cấp gói bàn giao (.env + tệp dữ liệu) cho CI qua secrets.
+#   SÁU CỔNG CHƯA ĐO ĐƯỢC, và thiếu ĐÚNG cái gì:
+#     va-r1 · va-r2  `.env`                (cổng gọi `node --env-file=.env`)
+#     b-y4           `pages.json`          (phép ①②③; ④⑤ vẫn đo được)
+#     l0-m1          `pages.json` · `ai-enabled.json`   (phép ④–⑧, kéo ⑨ theo)
+#     g2-a4          `ai-enabled.json`     (1/16 phép; 15 phép kia vẫn đo được)
+#     l1-m1          `pancake-shops.json`  (phép ②, ⑤b2, ⑤b3)
+#
+#   ⚠️ CHƯA ĐO ĐƯỢC ≠ ĐẠT, và bước cổng VẪN THẤT BẠI khi còn cổng nào như thế. Khác lúc
+#      trước là nay nó thất bại với LÝ DO ĐỌC ĐƯỢC. `rc=2` là loại RIÊNG, đừng gộp vào 0.
+#   ⚠️ `l1-m1` in CẢ HAI chữ: HOÃN (4 phép — CỐ Ý chưa chạy, chờ diễn tập VPS) và KHÔNG ĐO
+#      ĐƯỢC (3 phép — máy thiếu đồ nghề). Hai chữ khác nhau, đừng gộp.
 #
 # ═══ CÁCH NHẬN NUÔI ══════════════════════════════════════════════════════════════
 #   1. ✅ Chạy được trên Postgres: `npm run migrate && npm test`
 #   2. ✅ Chạy tay workflow này một lượt, đọc số
 #   3. ✅ `npm test` xanh trọn trên CI
-#   4. ⬜ Gỡ ba nút môi trường của 15 cổng (xem bảng trên) → cổng xanh trọn →
-#         đổi `on:` thành push/pull_request + ghi §10 sổ
-#   ⛔ Tới khi xong bước 4, CẤM nói «CI xanh» trống không: phải nói RÕ là `npm test`
-#      xanh, còn cổng nghiệm thu thì 10/25.
+#   4. ✅ Gỡ nút docker + dạy cổng nói «không đo được» → 19 xanh · 0 đỏ · 6 chưa đo
+#   5. ⬜ Cấp GÓI BÀN GIAO cho CI qua secrets (`.env` + 4 tệp dữ liệu ở bảng trên) →
+#         cổng xanh trọn → đổi `on:` thành push/pull_request + ghi §10 sổ
+#   ⛔ Tới khi xong bước 5, CẤM nói «CI xanh» trống không: phải nói RÕ là `npm test`
+#      xanh, còn cổng nghiệm thu thì 19/25 đo được — 6 cổng chưa đo.
 #
 # `npm run di-tru` KHÔNG chạy được ở đây: nó cần dữ liệu thật vốn bị gitignore và chỉ có
 # trên máy dev/VPS. Đó là giới hạn THẬT của cổng này, không phải lỗi.
