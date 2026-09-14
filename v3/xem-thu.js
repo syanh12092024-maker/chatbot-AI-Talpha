@@ -272,6 +272,18 @@ const bao = dungPhanB(app, {
   dayKichBanLenBot: async () => ({ ok: true }),   // bản giả: không có tiến trình bot để đẩy
   bocPancake: async () => ({ greeting: '(bản giả — không bóc file thật)', tone: '', salesPrompt: '' }),
 
+  // Bản xem thử KHÔNG nạp thật: nó không có Postgres và không có sáu tệp nguồn. Trả một kết
+  // quả giả sau 1,2 giây để người xem thấy đúng ba trạng thái của nút (đang chạy · xong ·
+  // con số về), mà không ghi một dòng nào.
+  chayNapLai: async () => {
+    await new Promise((r) => setTimeout(r, 1200));
+    return {
+      dich: { page: 5, pageBatAi: 2, hoiThoai: 4, kichBan: 1 },
+      ketNoiPos: { dich: 3 },
+      noiHoSoKhach: { noiMoi: 2, conChuaNoi: 1 },
+    };
+  },
+
   // CỬA KIỂM SẴN SÀNG — bản GIẢ, bắt buộc phải truyền.
   //
   // Bỏ trống thì `dungPhanB` dùng cầu THẬT sang `127.0.0.1:3100`, và trên máy chủ thì bản

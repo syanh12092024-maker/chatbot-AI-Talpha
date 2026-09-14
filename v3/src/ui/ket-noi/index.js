@@ -15,6 +15,7 @@
 export {
   khoToken, ketNoiPosCua, datDocKetNoiPos, daNoiKetNoiPosKN,
   sucKhoeToken, canhBaoKhoToken, trangThaiCau, gocBot,
+  datChayNapLai, daNoiNapLai, batDauNapLai, trangThaiNapLai, tomTatNap,
   LA_TOAN_HE, GIAI_THICH_THU_TU, NGUONG_SAP_HET_NGAY, LoiKetNoi,
 } from './kho-ket-noi.js';
 

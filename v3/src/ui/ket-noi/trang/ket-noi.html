@@ -49,6 +49,19 @@
       <span class="table-count">Khoá API không bao giờ hiện ở đây</span></div>
     <div id="bangPos"><div class="empty-state"><span class="skeleton"></span></div></div>
   </section>
+
+  <section class="section panel" aria-labelledby="tieu-nap">
+    <div class="section-header"><div>
+      <h2 id="tieu-nap">Kéo dữ liệu về</h2>
+      <div class="section-desc">Đọc lại page, hội thoại, kịch bản và kết nối POS từ tiến trình bot, ghi vào nền v3. Trước đây việc này chỉ gõ được bằng lệnh trên máy chủ.</div>
+    </div>
+      <span id="trangThaiNap"></span></div>
+    <div id="ketQuaNap"></div>
+    <div class="form-actions">
+      <button type="button" class="btn" data-variant="primary" data-size="md" id="nutNap"><span>Kéo dữ liệu về</span></button>
+      <span class="text-muted" id="ghiChuNap"></span>
+    </div>
+  </section>
 </main>
 
 <script>
@@ -179,7 +192,81 @@ $('#nutThem').addEventListener('click', async () => {
   finally { setBusy(nut, false); nut.disabled = !CUA.mo; }
 });
 
+/* ── KÉO DỮ LIỆU VỀ ───────────────────────────────────────────────────────────────────
+ * Lượt nạp chạy NỀN ở máy chủ; trang chỉ bấm rồi hỏi lại trạng thái mỗi 2 giây. Không giữ
+ * kết nối chờ — nạp 18.790 hội thoại không phải việc của một yêu cầu web.
+ */
+let henNap = null;
+
+function veNap(t) {
+  const nut = $('#nutNap');
+  const gio = (ms) => (ms ? new Date(ms).toLocaleString('vi-VN') : '');
+
+  if (!t.noiDuoc) {
+    $('#trangThaiNap').innerHTML = statusBadge('feature_unavailable', { label: 'Chưa khả dụng' });
+    $('#ghiChuNap').textContent = 'Máy chủ chưa nối bộ nạp dữ liệu — đây là lỗi cấu hình, không phải «không có gì để nạp».';
+    nut.disabled = true;
+    return;
+  }
+  nut.disabled = t.dangChay;
+  setBusy(nut, t.dangChay);
+  $('#trangThaiNap').innerHTML = t.dangChay
+    ? statusBadge('unknown', { label: 'Đang chạy' })
+    : (t.loi ? statusBadge('blocked', { label: 'Lượt gần nhất hỏng' })
+             : (t.xongLuc ? statusBadge('ready', { label: 'Xong' }) : ''));
+  $('#ghiChuNap').textContent = t.dangChay
+    ? `Bắt đầu lúc ${gio(t.batDau)}${t.nguoiChay ? ` · ${t.nguoiChay} bấm` : ''}. Trang tự hỏi lại mỗi 2 giây.`
+    : (t.xongLuc ? `Lượt gần nhất: ${gio(t.xongLuc)}${t.nguoiChay ? ` · ${t.nguoiChay}` : ''}.`
+                 : 'Chưa chạy lần nào kể từ lúc khởi động dịch vụ.');
+
+  if (t.loi) {
+    $('#ketQuaNap').innerHTML = `<div class="duoi-4">${canhBao({ level: 'error', title: 'Lượt kéo dữ liệu hỏng giữa chừng',
+      body: 'Dữ liệu đã ghi được tới đâu vẫn giữ nguyên — lượt nạp chạy lại được, không cần dọn gì.',
+      detail: [t.loi] })}</div>`;
+  } else if (t.tomTat) {
+    const s = t.tomTat;
+    const d0 = (n) => (n == null ? '—' : so(n));
+    $('#ketQuaNap').innerHTML = `<div class="duoi-4">${canhBao({ level: 'success', title: 'Đã kéo xong',
+      body: `${d0(s.page)} page (${d0(s.pageBatAi)} đang bật bot) · ${d0(s.hoiThoai)} hội thoại · ${d0(s.kichBan)} bản kịch bản`
+        + `${s.ketNoiPos != null ? ` · ${d0(s.ketNoiPos)} kết nối POS` : ''}`,
+      detail: s.hoiThoaiNoiKhach != null
+        ? [`Nối thêm ${d0(s.hoiThoaiNoiKhach)} hội thoại về hồ sơ khách; còn ${d0(s.hoiThoaiChuaNoi)} chưa nối được.`]
+        : [] })}</div>`;
+  }
+
+  clearTimeout(henNap);
+  if (t.dangChay) henNap = setTimeout(hoiNap, 2000);
+}
+
+async function hoiNap() {
+  try { const t = await goi('/api/ket-noi/nap-lai'); if (t) veNap(t); }
+  catch (e) { LOI['Không đọc được trạng thái lượt nạp'] = e.message; veBangTin(); }
+}
+
+$('#nutNap').addEventListener('click', async () => {
+  const dongY = await confirmDialog({
+    title: 'Kéo dữ liệu từ tiến trình bot về?',
+    body: 'Đọc lại page, hội thoại, kịch bản và kết nối POS rồi ghi đè phần ĐỌC của nền v3. '
+      + 'Công tắc bot, marketer và trọng điểm do người đặt KHÔNG bị đụng tới. '
+      + 'Lượt nạp chạy nền, có thể mất vài phút với hàng chục nghìn hội thoại.',
+    confirmLabel: 'Kéo dữ liệu về',
+  });
+  if (!dongY) return;
+  setBusy($('#nutNap'), true);
+  try {
+    await goi('/api/ket-noi/nap-lai', { method: 'POST', body: JSON.stringify({}) });
+    delete LOI['Không kéo được dữ liệu']; veBangTin();
+    $('#ketQuaNap').innerHTML = '';
+    await hoiNap();
+  } catch (e) {
+    setBusy($('#nutNap'), false);
+    LOI['Không kéo được dữ liệu'] = e.message; veBangTin();
+    await hoiNap();
+  }
+});
+
 async function nap() {
+  hoiNap();
   // Nạp từng khối riêng — kho token hỏng thì bảng POS vẫn hiện.
   for (const [ten, duong, ve, cho] of [['Không tải được kho token', '/api/ket-noi/kho-token', veKho, '#bangToken'],
                                        ['Không tải được kết nối POS', '/api/ket-noi/pos', vePos, '#bangPos']]) {

@@ -23,6 +23,8 @@
 // phải nói thẳng bằng chữ (`LA_TOAN_HE`), không để người ta tự suy.
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
+import { ghiNhatKy } from '../../audit/index.js';
+import { HANH_DONG } from '../../audit/hanh-dong.js';
 import {
   danhSachToken, trangThaiCau, coTaiKhoan, gocBot,
   LoiCauBotDong, LoiCauBotHong,
@@ -202,6 +204,115 @@ export async function ketNoiPosCua(boiCanh) {
       diTiep: { chu: 'Nạp từ pancake-shops.json bằng `npm run di-tru`', duong: null },
     },
   };
+}
+
+/* ═══════════════════ KÉO DỮ LIỆU VỀ (nạp lại) ═══════════════════════════════════════
+ *
+ * `npm run di-tru` đọc sáu nguồn của tiến trình bot (pages.json · ai-enabled.json ·
+ * conv-state.json · kb-overrides.json · script-versions/ · pancake-shops.json) rồi ghi vào
+ * nền v3. Trước 14/09 nó CHỈ chạy được bằng lệnh trên máy chủ — nên «kéo dữ liệu về» là việc
+ * không ai làm được từ giao diện.
+ *
+ * BỐN LUẬT của cửa này, đừng nới:
+ *   ① CHỈ ĐỌC tệp nguồn. Lượt nạp không sửa, không xoá file nào của tiến trình bot.
+ *   ② KHÔNG ĐÈ CỘT NGƯỜI ĐẶT. `nap.js` upsert theo `page_id` và câu `ON CONFLICT` cố ý bỏ
+ *      `marketer`, `trong_diem`, `bot_ai_bat`, `botcake_tat` ra ngoài — ca B-Y4 ④ canh điều
+ *      đó. Vì vậy bấm nút này KHÔNG làm mất công gán marketer hay công tắc bot của ai.
+ *   ③ MỘT LƯỢT MỘT LÚC. Hai lượt chồng nhau là hai câu ghi cùng một dòng; cửa từ chối lượt
+ *      thứ hai bằng 409 kèm giờ lượt đang chạy, KHÔNG xếp hàng âm thầm.
+ *   ④ CHẠY NỀN, không giữ kết nối HTTP. Nạp 18.790 hội thoại không phải việc của một yêu
+ *      cầu web; trang hỏi lại trạng thái mỗi vài giây.
+ */
+
+let _chayNapLai = null;
+
+export function datChayNapLai(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiKetNoi('datChayNapLai cần một hàm');
+  _chayNapLai = fn || null;
+  return _chayNapLai;
+}
+export const daNoiNapLai = () => typeof _chayNapLai === 'function';
+
+/** Trạng thái của lượt nạp — sống trong bộ nhớ tiến trình, mất khi khởi động lại. */
+const NAP = { dangChay: false, batDau: null, xongLuc: null, nguoiChay: null, kq: null, loi: null };
+
+export function trangThaiNapLai() {
+  return {
+    noiDuoc: daNoiNapLai(),
+    dangChay: NAP.dangChay,
+    batDau: NAP.batDau,
+    xongLuc: NAP.xongLuc,
+    nguoiChay: NAP.nguoiChay,
+    tomTat: NAP.kq ? tomTatNap(NAP.kq) : null,
+    loi: NAP.loi,
+  };
+}
+
+/** Rút gọn kết quả thô của `di-tru` thành thứ đọc được trên màn. */
+export function tomTatNap(kq) {
+  const d = (kq && kq.dich) || {};
+  const hs = kq && kq.noiHoSoKhach;
+  return {
+    page: d.page ?? null,
+    pageBatAi: d.pageBatAi ?? null,
+    hoiThoai: d.hoiThoai ?? null,
+    kichBan: d.kichBan ?? null,
+    ketNoiPos: kq && kq.ketNoiPos && !kq.ketNoiPos.chuaCoBang ? kq.ketNoiPos.dich ?? null : null,
+    hoiThoaiNoiKhach: hs && !hs.chuaCoCot ? (hs.noiMoi ?? null) : null,
+    hoiThoaiChuaNoi: hs && !hs.chuaCoCot ? (hs.conChuaNoi ?? null) : null,
+  };
+}
+
+export async function batDauNapLai(boiCanh) {
+  const bc = batBuocBoiCanh(boiCanh);
+  if (!_chayNapLai) {
+    throw new LoiKetNoi(
+      'máy chủ chưa nối bộ nạp dữ liệu — đây là lỗi cấu hình, KHÔNG phải «không có gì để nạp».',
+      'chua_noi', 500,
+    );
+  }
+  if (NAP.dangChay) {
+    throw new LoiKetNoi(
+      `một lượt nạp đang chạy từ ${new Date(NAP.batDau).toLocaleString('vi-VN')}`
+      + `${NAP.nguoiChay ? ` (do ${NAP.nguoiChay} bấm)` : ''} — chờ nó xong đã.`,
+      'dang_chay', 409,
+    );
+  }
+
+  NAP.dangChay = true;
+  NAP.batDau = Date.now();
+  NAP.xongLuc = null;
+  NAP.kq = null;
+  NAP.loi = null;
+  NAP.nguoiChay = String(bc.tenDangNhap || bc.nguoiDungId || '');
+
+  await ghiNhatKy(bc, {
+    hanhDong: HANH_DONG.NAP_LAI_DU_LIEU,
+    ghiChu: 'bắt đầu kéo dữ liệu từ tiến trình bot về nền v3',
+  });
+
+  // CHẠY NỀN: không `await`. Lỗi được giữ lại để màn đọc, không ném ra ngoài tiến trình.
+  Promise.resolve()
+    .then(() => _chayNapLai())
+    .then(async (kq) => {
+      NAP.kq = kq || null;
+      NAP.loi = null;
+      await ghiNhatKy(bc, {
+        hanhDong: HANH_DONG.NAP_LAI_DU_LIEU,
+        sau: tomTatNap(kq),
+        ghiChu: 'kéo dữ liệu xong',
+      }).catch(() => {});
+    })
+    .catch(async (e) => {
+      NAP.loi = String((e && e.message) || e);
+      await ghiNhatKy(bc, {
+        hanhDong: HANH_DONG.NAP_LAI_DU_LIEU,
+        ghiChu: `kéo dữ liệu HỎNG: ${NAP.loi}`,
+      }).catch(() => {});
+    })
+    .finally(() => { NAP.dangChay = false; NAP.xongLuc = Date.now(); });
+
+  return { ok: true, batDau: NAP.batDau };
 }
 
 export { trangThaiCau, gocBot };

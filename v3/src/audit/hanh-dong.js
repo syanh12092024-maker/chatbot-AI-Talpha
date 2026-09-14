@@ -60,6 +60,15 @@ export const HANH_DONG = Object.freeze({
   // ── giai đoạn 2 · sóng 2 ──
   LUU_BAN_NHAP_KICH_BAN: 'luu_ban_nhap_kich_ban',
   DUA_KICH_BAN_LEN_LIVE: 'dua_kich_ban_len_live',
+
+  // ── 14/09 ──
+  // Hai mã của mẫu 0 đồng vốn ĐÃ ĐƯỢC GỌI từ `kho-lop-0.js#luuMau` mà chưa bao giờ khai ở
+  // đây ⇒ `hopLeHanhDong` từ chối, lượt ghi nhật ký bị nuốt, và mọi lần sửa mẫu đi qua mà
+  // không để lại dấu vết nào. Lỗ ấy nay lộ ra vì màn mới cho sửa mẫu ngay trên giao diện.
+  TAO_MAU_0_DONG: 'tao_mau_0_dong',
+  SUA_MAU_0_DONG: 'sua_mau_0_dong',
+  // Kéo dữ liệu từ tiến trình bot về nền v3 (page · hội thoại · kịch bản · kết nối POS).
+  NAP_LAI_DU_LIEU: 'nap_lai_du_lieu',
 });
 
 /** Nhóm để màn hình xếp bộ lọc thành từng cụm, không phải để module này dùng. */
@@ -79,7 +88,10 @@ export const NHOM = Object.freeze({
   page_bot: Object.freeze([
     HANH_DONG.BAT_TAT_BOT_AI, HANH_DONG.GAN_MARKETER, HANH_DONG.DAT_TRONG_DIEM,
   ]),
-  ket_noi: Object.freeze([HANH_DONG.THEM_TOKEN_PANCAKE, HANH_DONG.BO_TOKEN_PANCAKE]),
+  ket_noi: Object.freeze([
+    HANH_DONG.THEM_TOKEN_PANCAKE, HANH_DONG.BO_TOKEN_PANCAKE, HANH_DONG.NAP_LAI_DU_LIEU,
+  ]),
+  lop_0_dong: Object.freeze([HANH_DONG.TAO_MAU_0_DONG, HANH_DONG.SUA_MAU_0_DONG]),
   bo_luat: Object.freeze([HANH_DONG.LUU_BAN_NHAP_BO_LUAT, HANH_DONG.AP_BO_LUAT]),
   ky_nang: Object.freeze([HANH_DONG.BAT_TAT_KY_NANG, HANH_DONG.DAT_NHOM_KY_NANG]),
   kich_ban: Object.freeze([HANH_DONG.LUU_BAN_NHAP_KICH_BAN, HANH_DONG.DUA_KICH_BAN_LEN_LIVE]),
@@ -168,6 +180,9 @@ const MO_TA = Object.freeze({
   [HANH_DONG.DAT_NHOM_KY_NANG]: 'Khoanh nhóm sản phẩm cho kỹ năng',
   [HANH_DONG.LUU_BAN_NHAP_KICH_BAN]: 'Lưu bản nháp kịch bản',
   [HANH_DONG.DUA_KICH_BAN_LEN_LIVE]: 'Đưa kịch bản lên LIVE',
+  [HANH_DONG.TAO_MAU_0_DONG]: 'Tạo mẫu trả lời sẵn',
+  [HANH_DONG.SUA_MAU_0_DONG]: 'Sửa mẫu trả lời sẵn',
+  [HANH_DONG.NAP_LAI_DU_LIEU]: 'Kéo dữ liệu từ tiến trình bot về',
 });
 
 /** Chữ tiếng Việt cho màn hình. Mã lạ → trả lại chính mã, kèm một tiếng kêu ở console. */

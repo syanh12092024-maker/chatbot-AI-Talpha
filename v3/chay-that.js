@@ -123,6 +123,15 @@ const bao = dungPhanB(app, {
     return goiAdminV1(`/kb/${encodeURIComponent(pageIdFacebook)}/config`, { phuongThuc: 'POST', than: cfg, ghi: true });
   },
   bocPancake: async (b64) => parsePancakeScript(b64),
+
+  // «Kéo dữ liệu về» — đúng lượt `npm run di-tru`, gọi từ trong tiến trình màn hình.
+  // CHỈ ĐỌC sáu tệp nguồn của tiến trình bot; ghi vào nền v3 bằng upsert theo `page_id`, và
+  // câu `ON CONFLICT` cố ý KHÔNG đè bốn cột người đặt (marketer · trọng điểm · công tắc bot ·
+  // botcake) — ca B-Y4 ④ canh điều đó, nên bấm nút này không làm mất công gán của ai.
+  chayNapLai: async () => {
+    const { chay } = await import(`${GOC}/db/di-tru/index.js`);
+    return chay(pool, GOC);
+  },
   docKhoi: {
     boLuat: (teamId) => rap.docBoLuatChung(pool, teamId),
     // `docKyNang` lọc theo MÃ sản phẩm của page. Nơi gọi truyền sẵn mã xuống — nó đã đọc

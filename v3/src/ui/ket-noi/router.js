@@ -5,6 +5,8 @@
 // | GET    /api/ket-noi/pos        | kết nối POS của team đang mở                          |
 // | POST   /api/ket-noi/token      | thêm một token   (chỉ `quan-tri`, qua tiến trình bot) |
 // | DELETE /api/ket-noi/token/:i   | bỏ một token     (chỉ `quan-tri`, qua tiến trình bot) |
+// | POST   /api/ket-noi/nap-lai    | kéo dữ liệu từ tiến trình bot về nền v3 (chạy NỀN)     |
+// | GET    /api/ket-noi/nap-lai    | trạng thái lượt nạp đang chạy / vừa xong              |
 //
 // ⚠️ MÀN NÀY SỬA TÀI NGUYÊN TOÀN HỆ, không phải dữ liệu team. Xem `LA_TOAN_HE` ở
 //    `kho-ket-noi.js`. Vì vậy nó CHỈ cho `quan-tri` vào — khác hai màn kia (cho cả `quan-ly`
@@ -21,6 +23,7 @@ import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import {
   khoToken, ketNoiPosCua, trangThaiCau, LA_TOAN_HE, GIAI_THICH_THU_TU, LoiKetNoi,
+  batDauNapLai, trangThaiNapLai,
 } from './kho-ket-noi.js';
 import { themToken, boToken } from '../../noi-day/cau-bot-v1.js';
 
@@ -185,6 +188,17 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
       ghiChu: `bỏ token Pancake thứ tự ${req.params.i}`,
     });
     res.json({ ok: true, ...kq });
+  }));
+
+  // ── KÉO DỮ LIỆU VỀ ────────────────────────────────────────────────────────────────
+  // Hai đường: một để BẤM (chạy nền, trả ngay), một để HỎI LẠI trạng thái. Không có đường
+  // nào giữ kết nối HTTP suốt lượt nạp — 18.790 hội thoại không phải việc của một yêu cầu web.
+  r.post('/api/ket-noi/nap-lai', canDangNhap, canVai, boc(async (req, res) => {
+    res.json(await batDauNapLai(cuaBoiCanh(req)));
+  }));
+
+  r.get('/api/ket-noi/nap-lai', canDangNhap, canVai, boc(async (_req, res) => {
+    res.json({ ok: true, ...trangThaiNapLai() });
   }));
 
   return r;

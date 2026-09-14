@@ -46,7 +46,7 @@ import {
 import { khoToken } from './ui/ket-noi/index.js';
 import { trangThaiCau as trangThaiCauBot } from './noi-day/cau-bot-v1.js';
 import {
-  datDocKetNoiPos as datDocKetNoiPosKN, datPheuNhatKy as datPheuNhatKyKetNoi,
+  datDocKetNoiPos as datDocKetNoiPosKN, datPheuNhatKy as datPheuNhatKyKetNoi, datChayNapLai,
   datChanDangNhap as datChanDangNhapKetNoi, datChanVai as datChanVaiKetNoi,
   taoRouterKetNoi,
 } from './ui/ket-noi/index.js';
@@ -189,6 +189,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan,
+  chayNapLai,
   ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
@@ -335,6 +336,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
 
   if (typeof bocPancake === 'function') { datBocPancake(bocPancake); daNoi.push('bộ bóc file kịch bản Pancake'); }
   else thieu.push('bocPancake — không nhập được kịch bản từ file Pancake');
+
+  if (typeof chayNapLai === 'function') { datChayNapLai(chayNapLai); daNoi.push('bộ nạp dữ liệu → nút «Kéo dữ liệu về» ở màn Kết nối'); }
+  else thieu.push('chayNapLai — màn Kết nối KHÔNG kéo dữ liệu về được; việc ấy vẫn phải gõ `npm run di-tru` trên máy chủ');
 
   if (docKhoi && typeof docKhoi.boLuat === 'function') { datDocKhoi(docKhoi); daNoi.push('bốn bộ đọc khối prompt → màn Prompt của page'); }
   else thieu.push('docKhoi — màn «Prompt của page» không dựng được bốn khối, và nó nói rõ đó là lỗi cấu hình chứ không phải "page này không có prompt"');

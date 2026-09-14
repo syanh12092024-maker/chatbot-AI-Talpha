@@ -14,7 +14,7 @@ const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
 async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi,
-  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt } = {}) {
+  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -41,7 +41,7 @@ async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, do
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
     ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi,
-    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, express,
+    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -145,6 +145,9 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   for (const t of ['dungBanMay', 'dayKichBanLenBot', 'bocPancake', 'cuaBoLuat']) {
     assert.ok(bao.thieu.some((x) => x.includes(t)), `phải nêu thiếu ${t}`);
   }
+  // `chayNapLai` thiếu thì nút «Kéo dữ liệu về» ở màn Kết nối không chạy được — việc kéo
+  // dữ liệu lại phải gõ `npm run di-tru` trên máy chủ, đúng thứ cái nút sinh ra để xoá.
+  assert.ok(bao.thieu.some((x) => /chayNapLai/.test(x)), 'phải nêu thiếu chayNapLai');
 
   const { sv: sv2, bao: bao2 } = await dungThu({
     ghiSoAi: () => {}, canhBao: () => {}, docKetNoiPos: async () => [],
@@ -159,6 +162,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
     // Hiệu lực thật của prompt (cờ ráp-4-khối + hằng CORE) — thiếu thì màn «Prompt của
     // page» không biết bot đang gửi bốn khối CSDL hay `kb.js` cũ.
     docHieuLucPrompt: () => ({ coBat: false, core: 'CORE' }),
+    chayNapLai: async () => ({ dich: { page: 0, pageBatAi: 0, hoiThoai: 0, kichBan: 0 } }),
   });
   t.after(() => sv2.close());
   assert.deepEqual(bao2.thieu, [], 'nối đủ thì không còn thiếu gì');
