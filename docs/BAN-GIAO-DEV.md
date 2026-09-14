@@ -179,6 +179,15 @@ tar xzf ~/Downloads/aicloser-data.tgz -C <thư-mục-repo>
 **Pancake**
 `PANCAKE_TOKEN` (token thử **đầu tiên**), `PANCAKE_TOKENS_EXTRA` (danh sách ngăn cách bằng dấu phẩy), `PANCAKE_API_KEY`, `PANCAKE_SHOP_ID`, `PANCAKE_POLL_MS`
 
+> ⛔ **`AICLOSER_SINH_TOKEN` — MẶC ĐỊNH TẮT, và đừng bật nếu chưa đọc hết đoạn này.**
+> Pancake chỉ giữ **MỘT** `page_access_token` còn hiệu lực cho mỗi page. `getPageAccessToken`
+> (`src/pancake.js`) sinh token mới cho page chưa có trong cache — và lượt sinh đó **giết
+> token mà `/opt/pancake-tool` đang dùng** cho chính page ấy. Page đó câm lặng: không lên
+> đơn, không chat, **không một cảnh báo nào**. Đã xảy ra thật, khoá lại ngày 10/09/2026.
+> Repo đã sinh xong 45 page hồi 20/08 và cache vĩnh viễn (`pancake-page-tokens.json`), nên
+> đường này giờ chỉ chạm tới khi gặp page **MỚI**. Bật `AICLOSER_SINH_TOKEN=1` chỉ khi đã
+> hẹn trước với người giữ `/opt/pancake-tool`, và tắt lại ngay sau khi xong.
+
 > **Quy tắc kho token Pancake:** thứ tự trong `.env` **chính là thứ tự failover** khi page dính lỗi 103/105/121. Token chính phải là token phủ nhiều page đang bật AI nhất; token phủ nhiều page nhưng 0 page bật AI để cuối. Không giữ 2 token của cùng một tài khoản (so `uid` trong payload JWT, không so chuỗi token).
 
 **Server / Dashboard**

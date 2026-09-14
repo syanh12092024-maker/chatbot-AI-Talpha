@@ -115,6 +115,15 @@ try { _pageToks = JSON.parse(fs.readFileSync(PAGE_TOKS_FILE, 'utf8')); } catch {
 async function getPageAccessToken(pageId) {
   const k = String(pageId);
   if (_pageToks[k]) return _pageToks[k];
+  // KHOÁ SINH TOKEN (thêm 2026-09-10). Pancake chỉ giữ MỘT page_access_token còn hiệu lực
+  // cho mỗi page: sinh mới ở đây là giết token mà /opt/pancake-tool đang dùng cho page đó,
+  // và cả page đó câm lặng — không lên đơn, không chat, không ai báo. Repo này đã sinh xong
+  // 45 page hồi 20/08 và cache vĩnh viễn, nên đường này giờ chỉ chạy khi gặp page MỚI.
+  // Muốn mở lại thì đặt AICLOSER_SINH_TOKEN=1 trong .env, và nhớ là nó sẽ cướp token.
+  if (process.env.AICLOSER_SINH_TOKEN !== '1') {
+    console.warn(`[unread] KHÔNG sinh page token cho ${k} — đang khoá (AICLOSER_SINH_TOKEN != 1) để không cướp token của pancake-tool`);
+    return null;
+  }
   for (const t of allToks()) {
     try {
       const r = await fetch(`${PK_BASE}/pages/${pageId}/generate_page_access_token?access_token=${t}`, { method: 'POST' });
