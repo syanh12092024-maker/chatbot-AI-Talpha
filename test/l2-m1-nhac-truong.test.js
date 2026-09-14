@@ -405,7 +405,7 @@ test(
 // ở MỌI phép khác nên không ai thấy rằng nhánh model CHƯA TỪNG CHẠY. «Nhánh không chạy
 // không tính là đạt» — đây là phép đo cho chính lời đó.
 test("N1a′ · câu hỏi của dân số a lọt qua CẢ HAI lớp 0đ (lopTuKhoa + fastLane)", async () => {
-  const { fastLane } = await import("../src/fast-lane.js");
+  const { fastLane, fastLaneConfig } = await import("../src/fast-lane.js");
   const { lopTuKhoa } = await import("../src/chat/lop-tu-khoa.js");
   const text = "is the strap leather or silicone"; // PHẢI khớp `noiDung` của N1a
 
@@ -423,8 +423,18 @@ test("N1a′ · câu hỏi của dân số a lọt qua CẢ HAI lớp 0đ (lopTu
   });
   assert.ok(!fl.handled, `Fast Lane đã trả lời ở làn '${fl.lane}' — model không được gọi`);
 
-  // Và neo chiều ngược lại: câu CŨ đúng là bị làn 0đ nuốt. Nếu ngày nào đó ASK_SHIP đổi
-  // thì ca này đỏ và người sửa biết ngay vì sao N1a từng đỏ.
+  // ── chiều ngược lại: câu CŨ có thật sự bị làn 0đ nuốt không ───────────────────
+  // ⚠️ VẾ NÀY PHỤ THUỘC CẤU HÌNH, và đó là bài học đắt của lượt 14/09/2026.
+  // `npm test` chạy với `--env-file-if-exists=.env`. Máy CÓ `.env` (dev/VPS) và máy KHÔNG
+  // (CI) chạy HAI cấu hình khác nhau:
+  //   · CI, không .env  → `FASTLANE_TEMPLATES` vắng ⇒ mặc định BẬT ⇒ câu hỏi ship rơi vào
+  //     làn `tpl_ship`. Đây là cảnh làm N1a đỏ suốt trên CI.
+  //   · máy dev, .env SẢN XUẤT → `FASTLANE_TEMPLATES=0` (tắt 11/08 vì trùng từ khoá
+  //     Botcake, chủ dự án quyết) ⇒ làn template KHÔNG chạy ⇒ cùng câu ấy leo lên model.
+  // Nên khẳng định thẳng `lane === "tpl_ship"` là ĐỎ OAN ở máy dev. Ca này đo theo ĐÚNG
+  // cấu hình đang chạy, và IN RA nó — hai lượt chạy ra hai kết quả khác nhau mà không nói
+  // mình chạy cấu hình nào thì người đọc không biết vừa đo cái gì.
+  const lanTemplateBat = fastLaneConfig.templates;
   const cu = fastLane({
     text: "do you deliver to Abu Dhabi and how long does shipping take",
     kb: KB,
@@ -434,7 +444,15 @@ test("N1a′ · câu hỏi của dân số a lọt qua CẢ HAI lớp 0đ (lopTu
     usedLanes: new Set(),
     pageId: PAGE,
   });
-  assert.equal(cu.lane, "tpl_ship", "câu hỏi giao hàng phải do làn 0đ trả lời, KHÔNG tốn token");
+  console.log(
+    `   [N1a′] FASTLANE_TEMPLATES=${lanTemplateBat ? "bật" : "TẮT"} → câu hỏi ship ` +
+      `${cu.handled ? `do làn '${cu.lane}' trả lời` : "leo lên model"}`,
+  );
+  if (lanTemplateBat) {
+    assert.equal(cu.lane, "tpl_ship", "làn template ĐANG BẬT thì câu hỏi ship phải do nó trả lời, KHÔNG tốn token");
+  } else {
+    assert.ok(!cu.handled, "làn template ĐANG TẮT thì không làn 0đ nào được nhận câu hỏi ship");
+  }
 });
 
 // ══ DÂN SỐ b — ÉP NHÁNH CHỐT ĐƠN ══════════════════════════════════════════════════
