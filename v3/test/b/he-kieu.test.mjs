@@ -148,3 +148,49 @@ test("HK5 · nav cắm LỐI BỎ QUA, và trỏ vào mốc có thật", () => {
     });
   assert.deepEqual(thieu, [], `màn thiếu <main> nên lối bỏ qua vô dụng ở đó: ${thieu.join(", ")}`);
 });
+
+test("HK6 · màn «Bắt đầu» KHÔNG có CSS riêng — nó là bản mẫu để di trú 25 màn kia", () => {
+  // Màn này là màn ĐẦU TIÊN dùng trọn hệ kiểu, nên nó cũng là cái chứng minh hệ kiểu ĐỦ
+  // dùng. Có một dòng CSS riêng ở đây là hệ còn thiếu — và chỗ sửa là hệ, không phải trang.
+  //
+  // Đo 14/09/2026: bản đầu của tôi có 24 thuộc tính `style=` gõ thẳng. Chúng đều dùng
+  // token nên không sinh màu lạ, nhưng vẫn là CSS tuỳ hứng trong trang — đúng bệnh 2.206
+  // dòng vừa chữa, chỉ nhỏ hơn. Và màn kế tiếp sẽ chép lại chúng rồi lệch dần.
+  const tho = fs.readFileSync(path.join(GOC, "v3/src/ui/bat-dau/trang/bat-dau.html"), "utf8");
+  // Bỏ chú thích HTML trước khi đo. Chính chú thích của trang có nhắc chữ `<style>` để
+  // giải thích VÌ SAO nó không dùng — đo cả chú thích là tự làm thước kêu oan, và lượt
+  // đầu nó kêu oan thật.
+  const t = tho.replace(/<!--[\s\S]*?-->/g, "");
+
+  const theStyle = t.match(/<style[\s>]/g) || [];
+  assert.deepEqual(theStyle, [], "màn Bắt đầu không được có thẻ <style>");
+
+  const goThang = t.match(/\sstyle\s*=\s*"/g) || [];
+  assert.equal(
+    goThang.length,
+    0,
+    `còn ${goThang.length} thuộc tính style= gõ thẳng — đặt tên lớp trong `
+      + "`chung/kieu.css` rồi dùng lại, đừng gõ trong trang",
+  );
+
+  assert.match(tho, /\/chung\/kieu\.css/, "phải nạp hệ kiểu");
+});
+
+test("HK7 · màn «Bắt đầu» KHÔNG dựng nguồn dữ liệu hay cửa ghi thứ hai", () => {
+  // Đây là phép canh chống «màn thứ tư hiện cùng một dữ liệu». Ba màn đã trả lời từng
+  // phần câu «cần làm gì để bot chạy»: /san-sang nói thiếu gì, /page-bot có công tắc,
+  // /trang-chu là màn mở đầu. Màn này chỉ NỐI chúng thành một chuỗi có đích đến.
+  // Nếu lượt sau ai đó cho nó tự đọc `/readiness` hay tự mở cửa ghi, ca này đỏ.
+  const kho = fs.readFileSync(path.join(GOC, "v3/src/ui/bat-dau/kho-bat-dau.js"), "utf8");
+  assert.match(kho, /from ['"]\.\.\/san-sang\/kho-san-sang\.js['"]/, "số liệu phải lấy từ /san-sang");
+  assert.match(kho, /manSanSang/, "phải gọi manSanSang, KHÔNG tính lại cửa kiểm");
+  assert.ok(!/_docSanSang|\/readiness|goiAdminV1/.test(kho), "không được tự đọc cửa kiểm bằng đường riêng");
+
+  const rt = fs.readFileSync(path.join(GOC, "v3/src/ui/bat-dau/router.js"), "utf8");
+  const cuaGhi = rt.match(/r\.(post|put|patch|delete)\(/g) || [];
+  assert.deepEqual(cuaGhi, [], "màn Bắt đầu KHÔNG được có cửa ghi riêng — nút bật gọi /api/page-bot/:id/bot");
+
+  const trang = fs.readFileSync(path.join(GOC, "v3/src/ui/bat-dau/trang/bat-dau.html"), "utf8");
+  assert.match(trang, /\/api\/page-bot\/\$\{encodeURIComponent\(p\.pageId\)\}\/bot/,
+    "nút bật phải gọi ĐÚNG đường đã có của màn Page & Bot");
+});

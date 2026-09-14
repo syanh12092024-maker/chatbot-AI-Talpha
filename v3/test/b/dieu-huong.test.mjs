@@ -247,7 +247,9 @@ test('⑥b · mỗi mục có từ hai màn thì thanh tab của nó liệt kê 
   // mục nào không, và số tab bằng số màn vai đó vào được.
   const menu = mh.menuCua([VAI.QUAN_TRI]);
   const coTab = menu.filter((n) => n.man.length >= 2).map((n) => `${n.ma}:${n.man.length}`);
-  assert.deepEqual(coTab, ['viec:4', 'page:4', 'so-lieu:3', 'cai-dat:13'],
+  // Neo SỐ, cố ý: thêm một màn là ca này đỏ, buộc người thêm phải khai ra mình vừa làm gì.
+  // 14/09/2026: page 4 → 5 vì thêm màn «Bắt đầu» (đứng đầu nhóm, lối đi cho người mới).
+  assert.deepEqual(coTab, ['viec:4', 'page:5', 'so-lieu:3', 'cai-dat:13'],
     `mục có thanh tab: ${coTab}`);
   // Vai `sale` chỉ vào được MỘT màn của mục «Việc» ⇒ họ KHÔNG được thấy thanh tab: một
   // thanh tab đơn độc là nhiễu, và nó còn chìa ra tên ba màn họ không có quyền mở.

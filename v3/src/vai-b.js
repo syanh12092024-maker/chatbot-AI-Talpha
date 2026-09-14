@@ -111,6 +111,12 @@ import {
   datTaoTruyVan as datTruyVanSanSang, datDocSanSang,
   datChanDangNhap as datChanDangNhapSanSang, datChanVai as datChanVaiSanSang, taoRouterSanSang,
 } from './ui/san-sang/index.js';
+// Màn «Bắt đầu» KHÔNG có cầu riêng và KHÔNG có cửa ghi riêng: nó gọi `manSanSang()` của
+// màn Cửa kiểm (nên tự ăn theo `datTruyVanSanSang` + `datDocSanSang`), và nút bật bot của
+// nó gọi `POST /api/page-bot/:id/bot` đã có. Ở đây chỉ cần nối HAI cái chắn.
+import {
+  datChanDangNhap as datChanDangNhapBatDau, datChanVai as datChanVaiBatDau, taoRouterBatDau,
+} from './ui/bat-dau/index.js';
 import {
   datDocBoLuat as datDocBoLuatChoDeXuat, datCuaBoLuat as datCuaBoLuatChoDeXuat,
   datChanDangNhap as datChanDangNhapDeXuat, datChanVai as datChanVaiDeXuat, taoRouterDeXuat,
@@ -389,6 +395,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   datChanVaiDeXuat(batBuocVaiHTTP);
   datChanDangNhapSanSang(batBuocDangNhap);
   datChanVaiSanSang(batBuocVaiHTTP);
+  datChanDangNhapBatDau(batBuocDangNhap);
+  datChanVaiBatDau(batBuocVaiHTTP);
   datChanDangNhapTrangChu(batBuocDangNhap);
   datChanVaiTrangChu(batBuocVaiHTTP);
   datChanDangNhapSanPham(batBuocDangNhap);
@@ -432,6 +440,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
   app.use(taoRouterNhatKy());     //   /nhat-ky · /api/nhat-ky
   app.use(taoRouterDeXuat());     //   /ai-de-xuat · /api/ai-de-xuat/*
   app.use(taoRouterSanSang());    //   /san-sang · /api/san-sang
+  app.use(taoRouterBatDau());     //   /bat-dau · /api/bat-dau
   app.use(taoRouterTrangChu());   //   /trang-chu · /api/trang-chu
   app.use(taoRouterSanPham());    //   /san-pham · /api/san-pham/*
   app.use(taoRouterAnh());        //   /thu-vien-anh · /api/thu-vien-anh

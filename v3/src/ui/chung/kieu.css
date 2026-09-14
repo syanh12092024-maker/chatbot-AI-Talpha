@@ -252,6 +252,53 @@
            overflow: hidden; }
   .be-chu { overflow-wrap: anywhere; word-break: break-word; }
 
+  /* ─── LỚP TIỆN DỤNG ───────────────────────────────────────────────────────────
+     Vì sao có khối này: trang đầu tiên dùng hệ kiểu (`bat-dau.html`) ban đầu có 24
+     thuộc tính `style=` gõ thẳng. Chúng đều dùng token nên không sinh màu lạ — nhưng
+     vẫn là CSS tuỳ hứng trong trang, đúng bệnh vừa chữa, chỉ nhỏ hơn. Và màn kế tiếp
+     sẽ chép lại chúng rồi lệch dần. Nên: đặt tên, để dùng lại.
+     Thang KHOẢNG trên/dưới chỉ có sáu bậc, đúng bằng thang `--k1..--k6`. Cần bậc thứ
+     bảy là dấu hiệu bố cục đang sai, không phải dấu hiệu thiếu lớp. */
+  .tren-1 { margin-top: var(--k1) }  .duoi-1 { margin-bottom: var(--k1) }
+  .tren-2 { margin-top: var(--k2) }  .duoi-2 { margin-bottom: var(--k2) }
+  .tren-3 { margin-top: var(--k3) }  .duoi-3 { margin-bottom: var(--k3) }
+  .tren-4 { margin-top: var(--k4) }  .duoi-4 { margin-bottom: var(--k4) }
+  .tren-5 { margin-top: var(--k5) }  .duoi-5 { margin-bottom: var(--k5) }
+  .tren-6 { margin-top: var(--k6) }  .duoi-6 { margin-bottom: var(--k6) }
+
+  .manh { font-weight: 600 }
+  .gian { flex: 1; min-width: 0 }        /* con flex GIÃN ra, và cho phép cắt chữ */
+  .vua { flex: 0 0 auto }                /* con flex giữ đúng bề rộng của nó */
+  .hep { max-width: 440px }
+  /* Cột chữ để ĐỌC. 62 ký tự là bề rộng mắt đọc thoải mái; dài hơn thì mắt mất dòng. */
+  .rong-doc { max-width: 62ch }
+
+  /* HAI CỘT «danh sách · chi tiết» — khuôn của mọi màn chọn-rồi-xem. Màn hẹp thì xếp
+     dọc, vì 320px cạnh nội dung trên điện thoại là không còn chỗ đọc. */
+  .cot-ds { display: grid; gap: var(--k4); grid-template-columns: minmax(0, 320px) minmax(0, 1fr); }
+  @media (max-width: 860px) { .cot-ds { grid-template-columns: minmax(0, 1fr); } }
+
+  /* Danh sách dài tự cuộn TRONG tấm, không đẩy cả trang dài ra. */
+  .cuon-doc { max-height: 62vh; overflow-y: auto; overscroll-behavior: contain; }
+
+  /* Một DÒNG bấm được trong danh sách — nút tràn bề rộng, chữ dồn trái. */
+  .nut-dong {
+    display: flex; width: 100%; justify-content: space-between; text-align: left;
+    min-height: 44px;
+  }
+  .nut-dong[aria-current="true"] { border-color: var(--chinh); background: var(--chinh-nhat); }
+
+  /* Một VIỆC trong danh sách việc — nhãn trạng thái, nội dung, nút đi sửa. */
+  .viec {
+    display: flex; gap: var(--k3);
+    padding: var(--k3) 0; border-bottom: 1px solid var(--vien);
+  }
+  .viec:last-child { border-bottom: 0 }
+  /* Nhãn trạng thái nhích 2px cho khớp DÒNG CHỮ ĐẦU bên cạnh — chữ có phần nhô trên
+     (ascender) nên canh theo hộp thì nhãn trông cao hơn chữ. 2px không nằm trong thang
+     `--k*` và cũng không nên: nó là canh chỉnh của THÀNH PHẦN này, không phải khoảng bố cục. */
+  .viec > .vua:first-child { padding-top: 2px }
+
   /* CHỮ PHỤ */
   .mo { color: var(--chu-mo); }
   .nho { font-size: var(--co-nho); }

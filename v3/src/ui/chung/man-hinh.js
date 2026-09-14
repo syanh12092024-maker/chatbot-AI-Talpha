@@ -30,6 +30,7 @@ import * as thuVienAnh from '../thu-vien-anh/index.js';
 import * as sanPham from '../san-pham/index.js';
 import * as lenChay from '../len-chay/index.js';
 import * as sanSang from '../san-sang/index.js';
+import * as batDau from '../bat-dau/index.js';
 import * as trangChu from '../trang-chu/index.js';
 import * as baoCao from '../bao-cao/index.js';
 import * as chiPhi from '../chi-phi/index.js';
@@ -115,6 +116,11 @@ export const MAN = Object.freeze([
   dat(sucKhoe, 'Sức khoẻ hệ thống', 'viec', 'Chín đèn — hệ còn sống không'),
 
   // ② PAGE — «page này bán được chưa, và bot nói gì trên đó».
+  // «Bắt đầu» đứng ĐẦU nhóm, và đó là cả ý nghĩa của cái tên: người mới mở v3 lần đầu
+  // phải có MỘT lối đi, không phải hai mươi bốn lối. Nó không thêm dữ liệu nào — số liệu
+  // và câu chữ đều của «Cửa kiểm sẵn sàng», nút bật là của «Page & Bot» — nó chỉ nối ba
+  // màn ấy thành một chuỗi có ĐÍCH ĐẾN. Xem `bat-dau/kho-bat-dau.js` đầu tệp.
+  dat(batDau, 'Bắt đầu', 'page', 'Bốn việc để một page chạy được, rồi bật'),
   dat(pageBot, 'Page & Bot', 'page', 'Công tắc bot, người phụ trách'),
   dat(sanSang, 'Cửa kiểm sẵn sàng', 'page', 'Page còn thiếu gì mới bật được bot'),
   dat(kichBan, 'Kịch bản', 'page', 'Lời bot nói riêng trên từng page'),
