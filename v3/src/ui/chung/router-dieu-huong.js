@@ -21,16 +21,26 @@ export function taoRouterDieuHuong() {
   const r = express.Router();
 
   // HỆ KIỂU — một nguồn cho màu/khoảng/cỡ chữ/thành phần của cả 25 màn. Xem `kieu.css`.
-  // Gói trong `@layer` nên KHÔNG đè được <style> của trang: màn cũ giữ nguyên vẻ ngoài,
-  // màn mới dùng trọn hệ. Cho cache 1 giờ — tệp này đổi rất thưa.
+  //
+  // ⚠️ `no-cache`, KHÔNG phải `max-age`. Bản đầu cho cache 1 giờ với lý do «tệp này đổi
+  //    rất thưa» — sai, và sai đúng lúc tệp đổi nhiều nhất. Đo 14/09/2026 qua ảnh chụp của
+  //    chủ dự án: trình duyệt giữ `kieu.css` CŨ (chưa có token cầu `--side` và token
+  //    `--tren-toi*`) trong khi lấy `dieu-huong.js` MỚI (đã gọi các token ấy). JS mới đòi
+  //    token mà CSS cũ không có ⇒ `var()` không giải được ⇒ chữ trên nền tối rơi về màu
+  //    mặc định: thanh bên chữ tối trên nền tối, tiêu đề trắng trên nền trắng.
+  //    Hai tệp này PHẢI đi cùng nhau. `no-cache` = trình duyệt hỏi lại mỗi lần tải, máy
+  //    chủ trả 304 nếu tệp không đổi (ETag có sẵn) — tốn một yêu cầu rỗng, đổi lại không
+  //    bao giờ lệch nhau. Với một màn vận hành, đúng quan trọng hơn tiết kiệm một 304.
   r.get('/chung/kieu.css', (_req, res, next) => {
     res.type('text/css');
-    res.set('Cache-Control', 'public, max-age=3600');
+    res.set('Cache-Control', 'no-cache');
     res.sendFile(path.join(THU_MUC, 'kieu.css'), (e) => (e ? next(e) : undefined));
   });
 
   r.get('/chung/dieu-huong.js', (_req, res, next) => {
     res.type('application/javascript');
+    // Cùng lý do với `kieu.css` ở trên: hai tệp này gọi token của nhau, lệch bản là hỏng.
+    res.set('Cache-Control', 'no-cache');
     res.sendFile(path.join(THU_MUC, 'dieu-huong.js'), (e) => (e ? next(e) : undefined));
   });
 

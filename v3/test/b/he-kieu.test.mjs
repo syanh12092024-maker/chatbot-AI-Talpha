@@ -239,3 +239,32 @@ test("HK8 · CẦU DI TRÚ phải TEO đi — đếm số màn còn phụ thuộ
   }
   assert.deepEqual(tuKhai, [], `màn TỰ KHAI lại token — hệ kiểu không tới được: ${tuKhai.join(", ")}`);
 });
+
+test("HK9 · hệ kiểu và thanh điều hướng KHÔNG được cache dài — lệch bản là tàng hình", () => {
+  // ═══ ĐO 14/09/2026, qua ảnh chụp của chủ dự án ═══════════════════════════════════
+  // Bản đầu gửi `kieu.css` với `Cache-Control: public, max-age=3600` («tệp này đổi rất
+  // thưa»). Trình duyệt giữ bản CSS CŨ — chưa có token cầu `--side` và token `--tren-toi*`
+  // — trong khi lấy `dieu-huong.js` MỚI, đã gọi các token ấy. `var()` không giải được thì
+  // rơi về màu mặc định, và kết quả trên ảnh:
+  //     · thanh bên: chữ TỐI trên nền TỐI, hai nút «Đổi team» «Đăng xuất» chìm hẳn
+  //     · tiêu đề màn: chữ TRẮNG trên nền TRẮNG
+  // Tám phép canh khác đều xanh. Không phép nào đo được chuyện hai tệp đi LỆCH BẢN nhau,
+  // vì trên đĩa chúng khớp — chúng chỉ lệch trong bộ đệm của trình duyệt.
+  const rt = fs.readFileSync(path.join(GOC, "v3/src/ui/chung/router-dieu-huong.js"), "utf8");
+
+  for (const tep of ["kieu.css", "dieu-huong.js"]) {
+    const i = rt.indexOf(`'/chung/${tep}'`);
+    assert.ok(i > 0, `router phải phục vụ /chung/${tep}`);
+    const khoi = rt.slice(i, rt.indexOf("});", i));
+    assert.ok(!/max-age\s*=\s*[1-9]/.test(khoi),
+      `/chung/${tep} KHÔNG được cache dài — hai tệp gọi token của nhau, lệch bản là tàng hình`);
+    assert.match(khoi, /no-cache/, `/chung/${tep} phải gửi Cache-Control: no-cache`);
+  }
+
+  // Lưới đỡ: thanh điều hướng là thứ DUY NHẤT không bao giờ được tàng hình — mất nó là
+  // mất lối đi tới mọi màn khác. Mọi lời gọi token chữ-trên-nền-tối phải có giá trị dự phòng.
+  const nav = fs.readFileSync(path.join(GOC, "v3/src/ui/chung/dieu-huong.js"), "utf8");
+  const khongDuPhong = nav.match(/var\(--(tren-toi[a-z0-9-]*|toi)\)/g) || [];
+  assert.deepEqual(khongDuPhong, [],
+    `thanh bên còn ${khongDuPhong.length} lời gọi token chữ-trên-nền-tối KHÔNG có dự phòng`);
+});
