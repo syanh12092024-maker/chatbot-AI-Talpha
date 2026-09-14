@@ -217,10 +217,11 @@ test("HK8 · CẦU DI TRÚ phải TEO đi — đếm số màn còn phụ thuộ
     }
   }
 
+  // 14/09 · 25 → 24: «Công tắc từng page» viết lại trên hệ kiểu, bỏ hết 96 dòng CSS riêng.
   assert.equal(
     conDung.length,
-    25,
-    `số màn còn phụ thuộc cầu di trú: ${conDung.length} (neo: 25). `
+    24,
+    `số màn còn phụ thuộc cầu di trú: ${conDung.length} (neo: 24). `
       + "Giảm được thì HẠ con số này. Tăng lên là có màn mới dùng tên cũ — đừng.",
   );
 

@@ -372,8 +372,11 @@
   .field-hint  { font-size: var(--text-xs); color: var(--text-muted); line-height: 18px; }
   .field-error { font-size: var(--text-xs); color: var(--danger); line-height: 18px; }
 
+  /* ⚠️ `input:not([type])` — một <input> KHÔNG ghi `type` là ô chữ theo chuẩn HTML, nhưng bộ
+     chọn `[type="text"]` KHÔNG khớp nó (bộ chọn thuộc tính đòi thuộc tính phải CÓ). Đo 14/09
+     trên ảnh chụp: ô marketer thiếu `type` rơi về viền lõm 2px đen mặc định của trình duyệt. */
   .input, .select, .textarea,
-  input[type="text"], input[type="search"], input[type="number"], input[type="email"],
+  input:not([type]), input[type="text"], input[type="search"], input[type="number"], input[type="email"],
   input[type="tel"], input[type="url"], input[type="date"], input[type="password"],
   select, textarea {
     width: 100%; height: var(--control-md); padding: 0 var(--space-3);
@@ -410,6 +413,9 @@
   .switch input:checked { background: var(--primary); }
   .switch input:checked::after { transform: translateX(14px); }
   .switch input:disabled { background: var(--surface-muted); cursor: not-allowed; }
+  /* Đang BẬT mà bị khoá vẫn phải ĐỌC RA là bật — giữ sắc màu chính, chỉ nhạt đi. Đo 14/09
+     trên ảnh chụp: bật-bị-khoá và tắt-bị-khoá cùng một vệt xám, chỉ khác vị trí núm. */
+  .switch input:checked:disabled { background: var(--primary-border); }
 
   /* ─── H7 · HUY HIỆU — gọn, không trang trí ───────────────────────────────────────── */
   .badge {
@@ -573,6 +579,24 @@
   }
   .data-table .actions { text-align: right; width: 1%; white-space: nowrap; }
   .data-table .meta { color: var(--text-muted); font-size: var(--text-xs); }
+  /* Điều khiển TRONG bảng gọn hơn điều khiển trên form (mục R: mật độ vận hành) — một ô nhập
+     36px trong dòng 44px là đẩy dòng phình ra. */
+  /* ⚠️ CHỈ ô chữ và ô chọn. Bản đầu viết `.data-table input` — cùng độ ưu tiên với
+     `.switch input` mà đứng SAU trong tệp, nên đè chiều cao công tắc 18px thành 32px; ô
+     vuông 32×32 với bo tròn 999px thành HÌNH TRÒN. Đo 14/09 trên ảnh chụp màn Công tắc. */
+  .data-table input:not([type="checkbox"]):not([type="radio"]),
+  .data-table select { height: var(--control-sm); font-size: var(--text-sm); }
+  .data-table .cell-input { max-width: 220px; }
+  .data-table .cell-control { display: inline-flex; align-items: center; gap: var(--space-2);
+                              font-size: var(--text-sm); color: var(--text-muted); white-space: nowrap; }
+
+  /* Bảng có thanh lọc dính liền phía trên — một đối tượng, không hai thẻ rời (mục Z). */
+  .table-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
+                   padding: var(--space-3); border-bottom: 1px solid var(--border-default); }
+  .table-toolbar input[type="search"] { width: 280px; max-width: 100%; height: var(--control-md); }
+  .table-toolbar select { width: auto; min-width: 190px; }
+  .table-toolbar .table-count { margin-left: auto; font-size: var(--text-sm); color: var(--text-muted);
+                                font-variant-numeric: tabular-nums; white-space: nowrap; }
 
   .pagination { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
                 padding: var(--space-2) var(--space-3); border-top: 1px solid var(--border-subtle);
