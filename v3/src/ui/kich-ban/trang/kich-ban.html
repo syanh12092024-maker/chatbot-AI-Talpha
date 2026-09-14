@@ -3,106 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Kịch bản — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  /* dải cảnh báo NGUY — màn này phải trông khác mọi màn khác */
-  .nguy{background:var(--loi-nen);border:1px solid var(--loi-vien);border-left:4px solid var(--bad);
-        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
-  .nguy b{color:var(--loi-chu)}
-  .nguy .so{font-size:19px;font-weight:700;color:var(--loi-chu);font-variant-numeric:tabular-nums}
-
-  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
-  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .banner.i{background:var(--priSoft);color:var(--chinh-dam);border:1px solid var(--chinh-vien)}
-
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
-  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
-  tbody tr:last-child td{border-bottom:none}
-  tbody tr.ap{background:var(--priSoft)}
-  .num{font-variant-numeric:tabular-nums}
-  .ten{font-weight:600;overflow-wrap:anywhere}
-  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
-
-  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
-  .pill.g{background:var(--okSoft);color:var(--ok)}
-  .pill.o{background:var(--warnSoft);color:var(--warn)}
-  .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:var(--nen-3);color:var(--chu-2)}
-  .pill.p{background:var(--priSoft);color:var(--priDark)}
-
-  /* khối so sánh */
-  .diff{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:400px;background:var(--nen-2)}
-  .diff pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6}
-  .diff .d{padding:1px 10px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid transparent}
-  .diff .d.them{background:var(--dat-nen);border-left-color:var(--ok)}
-  .diff .d.bo{background:var(--loi-nen);border-left-color:var(--bad);text-decoration:line-through;opacity:.8}
-  .diff .d.giu{color:var(--muted)}
-
-  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit;
-           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6;
-           min-height:260px;resize:vertical}
-
-  button{font:inherit}
-  .nut{background:var(--pri);color:var(--nen);border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
-  .nut:hover{background:var(--priDark)}
-  .nut[disabled]{background:var(--vien-dam);cursor:not-allowed}
-  .nut.nho{padding:4px 10px;font-size:11.5px;font-weight:600}
-  .nut.nguy{background:var(--bad)}
-  .nut.nguy:hover{background:var(--loi-chu)}
-  .nut.phu{background:transparent;color:var(--priDark);border:1px solid var(--line)}
-  .nut.phu:hover{background:var(--priSoft)}
-  .hang{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
-
-  .trong{padding:20px 15px;text-align:center;line-height:1.6}
-  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
-  .trong.chua{color:var(--luu-chu);background:var(--warnSoft)}
-  .loi{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien);border-radius:8px;
-       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .loi.hien{display:block}
-  .ok{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien);border-radius:8px;
-      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .ok.hien{display:block}
-
-  @media (max-width:700px){
-    .panel h2{padding:10px 12px} .than{padding:12px}
-    table,thead,tbody,th,td,tr{display:block}
-    thead{display:none}
-    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
-    tbody tr:last-child{margin-bottom:0}
-    td{border:none;padding:4px 0}
-    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
-      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
-  }
-
-  .cay{border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .nhanh > summary{padding:9px 13px;cursor:pointer;font-weight:600;background:var(--nen-2);
-                   border-bottom:1px solid var(--line);display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-  .nhanh > summary::-webkit-details-marker{display:none}
-  .nhanh > summary::before{content:"▸";display:inline-block;transition:transform .12s;color:var(--muted)}
-  .nhanh[open] > summary::before{transform:rotate(90deg)}
-  .nhanh.chua > summary{background:var(--luu-nen)}
-  .la{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:7px 13px 7px 30px;
-      border-bottom:1px solid var(--line);cursor:pointer}
-  .la:last-child{border-bottom:none}
-  .la:hover{background:var(--priSoft)}
-  .la.chon{background:var(--priSoft)}
-  .la .n{font-weight:600;overflow-wrap:anywhere;flex:1;min-width:120px}
-  .o-truong{margin-bottom:11px}
-  .o-truong label{display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:3px}
-  .o-truong textarea{min-height:62px}
-  .o-truong.dai textarea{min-height:130px}
-  .may{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.6;
-       background:#f7fafa;border:1px solid var(--line);border-radius:8px;padding:10px 12px;
-       white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto}
-</style>
+<title>Kịch bản của page — AI Closer</title>
+<!-- Dựng trên hệ kiểu (mục M8 của bản đặc tả: bản nháp và bản đang chạy tách bạch, đưa lên
+     chạy phải xác nhận). KHÔNG CSS riêng — trước lượt này là 86 dòng. Bố cục danh sách ·
+     chi tiết như màn «Bắt đầu»: chọn page bên trái, soạn bên phải. Trước đây khung soạn mở
+     ở CUỐI trang, dưới cả cây page — bấm một page xong phải cuộn xuống tìm. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -110,176 +16,266 @@
 <body>
 <header>
   <h1>Kịch bản của page</h1>
-  <span class="sub" id="teamHien">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Lời bot nói riêng trên từng page. Lưu là bản nháp; chỉ bản đưa lên chạy mới có hiệu lực.</span>
 </header>
 
 <main>
-  <div class="loi" id="loi"></div>
-  <div class="ok" id="baoOk"></div>
-  <div id="canhBao"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <section class="panel">
-    <h2>Cây kịch bản <span class="hint" id="tomTatCay"></span></h2>
-    <div class="than">
-      <input class="tim" id="oTim" type="search" placeholder="Lọc theo tên page, id Facebook, thị trường…"
-             style="width:100%;max-width:340px;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;margin-bottom:9px" />
-      <div id="cay"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
-    </div>
-  </section>
+  <div class="cot-ds">
+    <section class="panel" aria-labelledby="tieu-cay">
+      <div class="section-header">
+        <h2 id="tieu-cay">Page</h2>
+        <span class="text-muted text-sm tabular" id="tomTatCay"></span>
+      </div>
+      <label for="oTim" class="sr-only">Lọc page</label>
+      <input id="oTim" type="search" placeholder="Tên page, id Facebook, thị trường…" autocomplete="off" spellcheck="false">
+      <div id="cay" class="option-list tren-3 cuon-doc"><span class="skeleton"></span></div>
+    </section>
 
-  <section class="panel" id="soan" style="display:none">
-    <h2 id="tieuDeSoan">Soạn kịch bản</h2>
-    <div class="than" id="thanSoan"></div>
-  </section>
+    <section id="soan" aria-live="polite"></section>
+  </div>
 </main>
+
+<dialog class="drawer" id="ngan" aria-labelledby="ngan-tieu">
+  <div class="drawer-header">
+    <div class="gian"><h2 id="ngan-tieu">Bản kịch bản</h2><div class="text-muted text-sm" id="ngan-phu"></div></div>
+    <button type="button" class="icon-btn" id="ngan-dong" aria-label="Đóng"></button>
+  </div>
+  <div class="drawer-body" id="ngan-than"></div>
+</dialog>
+
 <script>
+const { esc, text, icon, statusBadge, button, setBusy, alert: canhBao, emptyState, toast, confirmDialog,
+        formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const so = (n) => Number(n || 0).toLocaleString('vi-VN');
-function baoLoi(t){ const o=$('#loi'); o.textContent=t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
-function baoOk(t){ const o=$('#baoOk'); o.textContent=t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
-function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
-async function goi(duong, tuyChon){
-  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+
+let D = null, P = null, TIM = '', SUA = false, DUYET = false, KQ_LUU = null;
+let CHON = new URLSearchParams(location.search).get('page') || null;
+
+async function goi(duong, tuyChon) {
+  const r = await fetch(duong, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, ...tuyChon });
   if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   let d = null; try { d = await r.json(); } catch { /* null */ }
   if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
   return d;
 }
-function veTrong(t){
-  if (!t) return '';
-  const di = t.diTiep && t.diTiep.duong ? `<a class="di" href="${esc(t.diTiep.duong)}">${esc(t.diTiep.chu)}</a>` : '';
-  return `<div class="trong chua"><span class="ic">⚠️</span><div>${esc(t.noi)}</div>${di}</div>`;
-}
 
-let D = null, P = null, TIM = '', SUA = false, DUYET = false;
-
-function veCanhBao(){
-  const kh = (D.tangTrong || []).map((t) => `<div class="banner o">${esc(t.chu)}</div>`);
-  if (D.soThieuKichBan) {
-    kh.unshift(`<div class="banner o"><b>${so(D.soThieuKichBan)}/${so(D.soPage)} page chưa có
-      kịch bản riêng.</b> Bot của những page đó chạy bằng bộ luật chung + dữ liệu sản phẩm,
-      KHÔNG có hướng dẫn riêng nào về giọng điệu, câu chào hay cách bán.</div>`);
+// ── BĂNG TIN — cảnh báo của cả team + lỗi thao tác gần nhất ─────────────────────────
+let LOI = null;
+function baoLoi(title, body) { LOI = { title, body }; veBangTin(); }
+function veBangTin() {
+  const kh = [];
+  if (LOI) kh.push(canhBao({ level: 'error', title: LOI.title, body: LOI.body }));
+  if (D && D.soThieuKichBan) {
+    kh.push(canhBao({ level: 'warning',
+      title: `${so(D.soThieuKichBan)}/${so(D.soPage)} page chưa có kịch bản riêng`,
+      body: 'Bot của những page đó chạy bằng quy tắc chung và dữ liệu sản phẩm, không có hướng dẫn riêng về giọng điệu, câu chào hay cách bán.' }));
   }
-  $('#canhBao').innerHTML = kh.join('');
+  for (const t of (D && D.tangTrong) || []) kh.push(canhBao({ level: 'info', body: t.chu }));
+  $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-4">${kh.join('')}</div>` : '';
 }
 
-function veCay(){
-  $('#teamHien').textContent = D.teamId ? `team #${D.teamId}` : '';
-  $('#tomTatCay').textContent = `${so(D.soCoKichBan)}/${so(D.soPage)} page có kịch bản riêng`;
-  if (D.trong) { $('#cay').innerHTML = veTrong(D.trong); return; }
+function trangThaiBan(tt, label) {
+  const ma = { LIVE: 'script_published', DRAFT: 'script_draft', REVIEW: 'script_review', ARCHIVED: 'script_archived' }[tt];
+  const chu = { LIVE: 'Đang chạy', DRAFT: 'Bản nháp', REVIEW: 'Chờ duyệt', ARCHIVED: 'Đã lưu trữ' }[tt];
+  return statusBadge(ma || tt, { label: label || chu || tt });
+}
 
-  $('#cay').innerHTML = `<div class="cay">${D.nhanh.map((n) => `
-    <details class="nhanh ${n.chuaPhanLoai ? 'chua' : ''}" ${D.nhanh.length <= 3 ? 'open' : ''}>
-      <summary>${esc(n.nuoc)}
-        <span class="phu">${so(n.soPage)} page · ${so(n.soCoKichBan)} có kịch bản · ${so(n.soBotBat)} bật bot</span>
-      </summary>
-      ${n.page.map((p) => `<div class="la" data-page="${esc(p.id)}">
-        <span class="n">${esc(p.ten || '(chưa có tên)')}</span>
-        ${p.botAiBat ? '<span class="pill g">bot BẬT</span>' : ''}
-        ${p.coKichBan
-          ? `<span class="pill p">v${p.phienBanLive} LIVE</span><span class="phu">≈ ${so(p.uocToken)} token</span>`
-          : '<span class="pill o">chưa có kịch bản riêng</span>'}
-        ${p.soBan > 1 ? `<span class="phu">${so(p.soBan)} bản</span>` : ''}
-      </div>`).join('')}
-    </details>`).join('')}</div>`;
-
+// ── CỘT TRÁI — page gom theo thị trường ──────────────────────────────────────────────
+function veCay() {
+  $('#tomTatCay').textContent = `${so(D.soCoKichBan)}/${so(D.soPage)} có kịch bản`;
+  if (D.trong) {
+    $('#cay').innerHTML = emptyState({ icon: 'triangle-alert', title: D.trong.noi,
+      actionsHtml: D.trong.diTiep && D.trong.diTiep.duong ? button(D.trong.diTiep.chu, { href: D.trong.diTiep.duong, size: 'sm' }) : '' });
+    return;
+  }
+  if (!D.nhanh.length) {
+    $('#cay').innerHTML = emptyState({ icon: 'search', title: 'Không page nào khớp', body: 'Xoá chữ trong ô lọc để xem lại tất cả.' });
+    return;
+  }
+  $('#cay').innerHTML = D.nhanh.map((n) => `
+    <div class="option-group"><span>${esc(n.nuoc)}</span>
+      <span class="meta">${so(n.soCoKichBan)}/${so(n.soPage)} có kịch bản</span></div>
+    ${n.page.map((p) => `
+      <button type="button" class="option" data-page="${esc(p.id)}" aria-current="${p.id === CHON ? 'true' : 'false'}">
+        <span class="gian">
+          <span class="option-title">${esc(p.ten || '(chưa có tên)')}</span>
+          <span class="option-meta">${p.botAiBat ? 'Bot đang chạy' : 'Bot tắt'}${p.coKichBan ? ` · ≈ ${so(p.uocToken)} token` : ''}${p.soBan > 1 ? ` · ${so(p.soBan)} bản` : ''}</span>
+        </span>
+        ${p.coKichBan ? trangThaiBan('LIVE', `v${p.phienBanLive}`) : statusBadge('script_missing', { label: 'Chưa có' })}
+      </button>`).join('')}`).join('');
   document.querySelectorAll('[data-page]').forEach((el) => el.addEventListener('click', () => moPage(el.dataset.page)));
 }
 
-async function moPage(id){
-  xoaBao();
+// ── CỘT PHẢI — soạn và các bản ───────────────────────────────────────────────────────
+async function moPage(id) {
+  LOI = null; veBangTin();
   try {
     const d = await goi('/api/kich-ban/page/' + encodeURIComponent(id));
     if (!d) return;
-    P = d; SUA = !!d.suaDuoc; DUYET = !!d.duyetDuoc;
+    if (!P || P.page.id !== d.page.id) KQ_LUU = null;
+    P = d; SUA = !!d.suaDuoc; DUYET = !!d.duyetDuoc; CHON = d.page.id;
+    const u = new URL(location.href); u.searchParams.set('page', CHON); history.replaceState(null, '', u);
+    document.querySelectorAll('[data-page]').forEach((el) => el.setAttribute('aria-current', String(el.dataset.page === CHON)));
     veSoan();
-    $('#soan').style.display = '';
-    $('#soan').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  } catch (e) { baoLoi(e.message); }
+  } catch (e) { baoLoi('Không mở được kịch bản của page', e.message); }
 }
 
-function veSoan(){
-  const g = P.live ? P.live.nguoi : {};
-  $('#tieuDeSoan').innerHTML = `Soạn kịch bản — <b>${esc(P.page.ten || P.page.pageId)}</b>
-    <span class="hint">${P.live ? `đang chạy v${P.live.phienBan}` : 'chưa có bản nào'}</span>`;
+function veSoanTrong() {
+  $('#soan').innerHTML = `<div class="panel">${emptyState({ icon: 'inbox', title: 'Chưa chọn page nào',
+    body: 'Bấm một page ở danh sách bên trái để xem bản đang chạy và soạn bản mới.' })}</div>`;
+}
 
-  $('#thanSoan').innerHTML = `
-    ${P.trong ? veTrong(P.trong) : ''}
-    <div class="banner i" style="margin-bottom:12px">Viết bằng <b>tiếng Việt cho người đọc</b>.
-      Bấm lưu là hệ thống tự dựng <b>bản cho máy</b> và lưu cả hai — không sửa thẳng bản máy được.
-      Ba trường đầu đi vào prompt (tốn token mỗi lượt chat); ba trường sau là câu trả lời có sẵn,
-      <b>không tốn token</b>.</div>
-    ${P.truong.map((k) => `<div class="o-truong ${k === 'salesPrompt' ? 'dai' : ''}">
-      <label>${esc(P.nhanTruong[k])}${P.truongVaoPrompt.includes(k) ? ' · vào prompt' : ' · trả lời có sẵn, 0 token'}</label>
-      <textarea data-t="${esc(k)}" ${SUA ? '' : 'disabled'}>${esc(g[k] || '')}</textarea>
-    </div>`).join('')}
-    <div class="hang" style="margin-top:4px">
-      <button class="nut" id="nutLuu" ${SUA ? '' : 'disabled'}>Lưu bản nháp</button>
-      <span class="phu">${SUA ? 'lưu xong CHƯA lên LIVE — bot vẫn chạy bản cũ' : 'vai của bạn chỉ xem được'}</span>
+function veSoan() {
+  const g = P.live ? P.live.nguoi : {};
+  const ten = P.page.ten || P.page.pageId;
+  const nhanTruong = (k) => P.truongVaoPrompt.includes(k)
+    ? '<span class="meta">· đi vào prompt, tốn token mỗi lượt</span>'
+    : '<span class="meta">· câu trả lời có sẵn, 0 token</span>';
+
+  $('#soan').innerHTML = `
+    <div class="detail-head">
+      <div class="page-identity">
+        <span class="page-avatar" aria-hidden="true">${esc((ten.trim()[0] || '?').toUpperCase())}</span>
+        <div class="page-identity-text">
+          <div class="page-identity-name">${esc(ten)}</div>
+          <div class="page-identity-sub">${esc(P.page.pageId)}${P.page.thiTruong ? ' · ' + esc(P.page.thiTruong) : ''}</div>
+        </div>
+      </div>
+      <div class="hang">
+        ${P.live ? trangThaiBan('LIVE', `v${P.live.phienBan} đang chạy`) : statusBadge('script_missing', { label: 'Chưa có bản nào chạy' })}
+        ${statusBadge(P.page.botAiBat ? 'bot_on' : 'bot_off', { label: P.page.botAiBat ? 'Bot đang chạy' : 'Bot tắt' })}
+      </div>
     </div>
-    <div id="xemMay" style="margin-top:12px"></div>
-    <h2 style="margin:16px -15px 0;padding:11px 15px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:13px">Các bản của page này</h2>
-    ${P.ban.length ? `<table style="margin-top:0"><thead><tr>
-        <th>Bản</th><th>Trạng thái</th><th>Người sửa</th><th></th></tr></thead><tbody>${P.ban.map((b) => `
-      <tr class="${b.trangThai === 'LIVE' ? 'ap' : ''}">
-        <td data-nhan="Bản"><span class="ten">v${b.phienBan}</span><div class="phu">≈ ${so(b.uocToken)} token</div></td>
-        <td data-nhan="Trạng thái"><span class="pill ${b.trangThai === 'LIVE' ? 'g' : b.trangThai === 'DRAFT' ? 'o' : 'm'}">${esc(b.trangThai)}</span></td>
-        <td data-nhan="Người sửa"><span class="phu">${esc(b.nguoiSua || '—')}<br>${b.suaLuc ? new Date(b.suaLuc).toLocaleString('vi-VN') : ''}</span></td>
-        <td data-nhan="">${b.trangThai === 'LIVE' ? ''
-          : (DUYET ? `<button class="nut nho" data-live="${esc(b.id)}">Đưa lên LIVE</button>`
-                   : '<span class="phu">cần vai duyệt kịch bản</span>')}
-          <button class="nut nho phu" data-chep="${esc(b.id)}">Chép vào ô soạn</button></td>
-      </tr>`).join('')}</tbody></table>` : ''}`;
+
+    <div class="stack">
+      ${P.trong ? canhBao({ level: 'warning', body: P.trong.noi }) : ''}
+
+      <section class="panel" aria-labelledby="tieu-soan">
+        <div class="section-header"><div>
+          <h2 id="tieu-soan">Soạn bản mới</h2>
+          <div class="section-desc">Viết bằng tiếng Việt cho người đọc. Bấm lưu, hệ thống tự dựng bản cho máy và lưu cả hai.${P.live ? ` Ô soạn đang chứa nội dung bản v${P.live.phienBan}.` : ''}</div>
+        </div></div>
+        <div class="form-stack">
+          ${P.truong.map((k) => `<div class="field">
+            <label class="field-label" for="t-${esc(k)}">${esc(P.nhanTruong[k])} ${nhanTruong(k)}</label>
+            <textarea id="t-${esc(k)}" data-t="${esc(k)}" ${k === 'salesPrompt' ? 'rows="8"' : 'rows="3"'} ${SUA ? '' : 'disabled'}>${esc(g[k] || '')}</textarea>
+          </div>`).join('')}
+        </div>
+        <div class="form-actions">
+          ${button('Lưu bản nháp', { variant: 'primary', id: 'nutLuu', disabled: !SUA })}
+          <span class="text-muted">${SUA ? 'Bản nháp chưa có hiệu lực. Bot vẫn nói theo bản đang chạy.' : 'Vai của bạn chỉ xem được, không lưu được.'}</span>
+        </div>
+        <div id="ketQuaLuu">${veKetQuaLuu()}</div>
+      </section>
+
+      <section class="table-wrap" aria-labelledby="tieu-ban">
+        <div class="table-toolbar"><h2 id="tieu-ban">Các bản của page này</h2>
+          <span class="table-count">${so(P.ban.length)} bản</span></div>
+        ${P.ban.length ? `<table class="data-table"><thead><tr>
+            <th scope="col">Bản</th><th scope="col">Trạng thái</th><th scope="col">Người sửa</th>
+            <th scope="col">Lúc</th><th scope="col" class="actions"><span class="sr-only">Thao tác</span></th>
+          </tr></thead><tbody>${P.ban.map((b) => `
+          <tr ${b.trangThai === 'LIVE' ? 'aria-selected="true"' : ''}>
+            <td><span class="manh">v${b.phienBan}</span> <span class="meta">≈ ${so(b.uocToken)} token</span></td>
+            <td>${trangThaiBan(b.trangThai)}</td>
+            <td>${esc(b.nguoiSua || '—')}</td>
+            <td class="meta tabular">${b.suaLuc ? esc(new Date(b.suaLuc).toLocaleString('vi-VN')) : '—'}</td>
+            <td class="actions"><span class="row-actions">
+              ${button('Xem', { size: 'sm', variant: 'ghost', data: { xem: b.id } })}
+              ${button('Chép vào ô soạn', { size: 'sm', variant: 'ghost', disabled: !SUA, data: { chep: b.id } })}
+              ${b.trangThai === 'LIVE' ? ''
+                : DUYET ? button('Đưa lên chạy', { size: 'sm', data: { live: b.id } })
+                        : '<span class="meta" title="Cần vai Người duyệt kịch bản">Cần vai duyệt</span>'}
+            </span></td>
+          </tr>`).join('')}</tbody></table>`
+          : emptyState({ icon: 'inbox', title: 'Chưa có bản nào', body: 'Soạn ở khung phía trên rồi bấm Lưu bản nháp để tạo bản đầu tiên.' })}
+      </section>
+    </div>`;
 
   if (SUA) $('#nutLuu').addEventListener('click', luu);
-  document.querySelectorAll('[data-live]').forEach((b) => b.addEventListener('click', () => lenLive(b.dataset.live)));
+  document.querySelectorAll('[data-live]').forEach((b) => b.addEventListener('click', () => lenLive(b.dataset.live, b)));
   document.querySelectorAll('[data-chep]').forEach((b) => b.addEventListener('click', () => chep(b.dataset.chep)));
+  document.querySelectorAll('[data-xem]').forEach((b) => b.addEventListener('click', () => xemBan(b.dataset.xem)));
+}
+
+// Kết quả lưu ở LẠI trên màn (không toast): nó nói hai điều người ta phải biết — bản nháp
+// CHƯA chạy, và máy sẽ đọc đúng đoạn nào. Bản cũ vẽ đoạn máy rồi gọi `moPage()` vẽ lại cả
+// khung, nên đoạn máy biến mất ngay khi vừa hiện.
+function veKetQuaLuu() {
+  if (!KQ_LUU) return '';
+  return `<div class="tren-4">${canhBao({ level: 'success',
+      title: `Đã lưu bản nháp v${KQ_LUU.phienBan} (≈ ${so(KQ_LUU.uocToken)} token)`,
+      body: 'Chưa có hiệu lực — bot vẫn nói theo bản đang chạy. Đưa lên chạy ở bảng «Các bản» bên dưới.' })}
+    <div class="field tren-3"><span class="field-label">Bản cho máy vừa dựng <span class="meta">· không sửa thẳng được</span></span>
+      <pre class="code-block">${esc(KQ_LUU.may) || '(trống)'}</pre></div></div>`;
 }
 
 const layO = () => Object.fromEntries([...document.querySelectorAll('[data-t]')].map((o) => [o.dataset.t, o.value]));
 
-function chep(id){
+function chep(id) {
   const b = P.ban.find((x) => x.id === id);
   if (!b) return;
   for (const [k, v] of Object.entries(b.nguoi)) {
     const o = document.querySelector(`[data-t="${k}"]`);
     if (o) o.value = v || '';
   }
-  baoOk(`Đã chép bản v${b.phienBan} vào ô soạn. Sửa rồi bấm lưu để tạo bản mới.`);
+  toast(`Đã chép bản v${b.phienBan} vào ô soạn. Sửa rồi lưu để tạo bản mới.`);
+  $('#tieu-soan').scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 
-async function luu(){
-  xoaBao();
-  $('#nutLuu').disabled = true;
+function xemBan(id) {
+  const b = P.ban.find((x) => x.id === id);
+  if (!b) return;
+  $('#ngan-tieu').textContent = `Bản v${b.phienBan}`;
+  $('#ngan-phu').innerHTML = `${trangThaiBan(b.trangThai)} · ${esc(b.nguoiSua || '—')}${b.suaLuc ? ' · ' + esc(new Date(b.suaLuc).toLocaleString('vi-VN')) : ''}`;
+  $('#ngan-than').innerHTML = `<div class="form-stack">
+    ${P.truong.map((k) => `<div class="field"><span class="field-label">${esc(P.nhanTruong[k])}</span>
+      <div class="text-sm be-chu">${b.nguoi[k] ? esc(b.nguoi[k]) : '<span class="text-muted">(trống)</span>'}</div></div>`).join('')}
+    <div class="field"><span class="field-label">Bản cho máy <span class="meta">· ≈ ${so(b.uocToken)} token</span></span>
+      <pre class="code-block">${esc(b.may) || '(trống)'}</pre></div>
+  </div>`;
+  $('#ngan').showModal();
+}
+$('#ngan-dong').innerHTML = icon('x');
+$('#ngan-dong').addEventListener('click', () => $('#ngan').close());
+
+async function luu() {
+  const nut = $('#nutLuu');
+  setBusy(nut, true);
+  LOI = null; veBangTin();
   try {
     const kq = await goi(`/api/kich-ban/page/${encodeURIComponent(P.page.id)}/nhap`,
-      { method:'POST', body: JSON.stringify({ nguoi: layO() }) });
-    baoOk(`Đã lưu bản nháp v${kq.phienBan} (≈ ${so(kq.uocToken)} token). CHƯA lên LIVE — bot vẫn chạy bản cũ.`);
-    $('#xemMay').innerHTML = `<label class="phu" style="font-weight:700">Bản cho máy vừa dựng — không sửa thẳng được</label>
-      <div class="may">${esc(kq.may) || '<i>(trống)</i>'}</div>`;
+      { method: 'POST', body: JSON.stringify({ nguoi: layO() }) });
+    KQ_LUU = kq;
     await moPage(P.page.id);
     await nap();
-  } catch (e) { baoLoi(e.message); }
-  finally { const n = $('#nutLuu'); if (n) n.disabled = !SUA; }
+  } catch (e) { baoLoi('Không lưu được bản nháp', e.message); }
+  finally { const n = $('#nutLuu'); if (n) { setBusy(n, false); n.disabled = !SUA; } }
 }
 
-async function lenLive(id){
+async function lenLive(id, nut) {
   const b = P.ban.find((x) => x.id === id);
-  if (!confirm(`Đưa bản v${b.phienBan} lên LIVE cho "${P.page.ten || P.page.pageId}"?\n\n`
-    + (P.page.botAiBat
-      ? 'Page này ĐANG BẬT BOT — bot sẽ nói theo bản này với khách thật, có hiệu lực trong ~60 giây.'
-      : 'Page này đang tắt bot, nên chưa ảnh hưởng khách. Bật bot lên là bot dùng bản này.'))) return;
-  xoaBao();
+  const ten = P.page.ten || P.page.pageId;
+  const dongY = await confirmDialog({
+    title: `Đưa bản v${b.phienBan} lên chạy cho «${ten}»?`,
+    body: P.page.botAiBat
+      ? 'Page này đang bật bot: bot sẽ nói theo bản này với khách thật, có hiệu lực trong khoảng 60 giây. Bản đang chạy sẽ chuyển sang lưu trữ.'
+      : 'Page này đang tắt bot nên chưa ảnh hưởng khách. Bật bot lên là bot dùng bản này.',
+    confirmLabel: 'Đưa lên chạy',
+  });
+  if (!dongY) return;
+  setBusy(nut, true);
+  LOI = null; veBangTin();
   try {
     const kq = await goi(`/api/kich-ban/page/${encodeURIComponent(P.page.id)}/live`,
-      { method:'POST', body: JSON.stringify({ id }) });
-    baoOk(`Đã đưa v${kq.phienBan} lên LIVE${kq.haBan ? ` (hạ v${kq.haBan})` : ''}.`);
+      { method: 'POST', body: JSON.stringify({ id }) });
+    toast(`Đã đưa v${kq.phienBan} lên chạy${kq.haBan ? `, v${kq.haBan} chuyển sang lưu trữ` : ''}.`);
+    KQ_LUU = null;
     await moPage(P.page.id);
     await nap();
-  } catch (e) { baoLoi(e.message); }
+  } catch (e) { setBusy(nut, false); baoLoi('Không đưa được bản lên chạy', e.message); }
 }
 
 let hen = null;
@@ -288,15 +284,20 @@ $('#oTim').addEventListener('input', (e) => {
   hen = setTimeout(() => { TIM = e.target.value.trim(); nap(); }, 250);
 });
 
-async function nap(){
+async function nap() {
   try {
     const d = await goi('/api/kich-ban/cay?tim=' + encodeURIComponent(TIM));
     if (!d) return;
     D = d;
-    veCanhBao(); veCay();
-  } catch (e) { baoLoi(e.message); }
+    veBangTin(); veCay();
+  } catch (e) {
+    baoLoi('Không tải được danh sách page', e.message);
+    $('#cay').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' });
+  }
 }
-nap();
+
+veSoanTrong();
+nap().then(() => { if (CHON) moPage(CHON); });
 </script>
 <script src="/chung/dieu-huong.js"></script>
 </body>

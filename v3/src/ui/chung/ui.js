@@ -80,6 +80,9 @@
     // kịch bản (mục M8)
     script_draft:     { tone: "neutral", label: "Bản nháp" },
     script_published: { tone: "success", label: "Đã xuất bản" },
+    script_review:    { tone: "warning", label: "Chờ duyệt" },
+    script_archived:  { tone: "neutral", label: "Đã lưu trữ" },
+    script_missing:   { tone: "warning", label: "Chưa có kịch bản" },
     // luật AI (mục M9)
     guard_passed:  { tone: "success", label: "Đạt" },
     guard_blocked: { tone: "danger",  label: "Đã chặn" },
@@ -106,8 +109,12 @@
     const bien = o.variant || "outline";
     const co = o.size || "md";
     const noiDung = (o.icon ? icon(o.icon) : "") + `<span>${esc(label)}</span>`;
+    // `data: { live: id }` → `data-live="…"` — trang gắn việc vào nút qua thuộc tính dữ liệu,
+    // không phải chèn chuỗi vào HTML hàm này trả về.
+    const duLieu = Object.entries(o.data || {})
+      .map(([k, v]) => ` data-${String(k).replace(/[^a-z0-9-]/gi, "")}="${esc(v)}"`).join("");
     const chung = ` class="btn" data-variant="${esc(bien)}" data-size="${esc(co)}"` +
-      (o.id ? ` id="${esc(o.id)}"` : "");
+      (o.id ? ` id="${esc(o.id)}"` : "") + (o.title ? ` title="${esc(o.title)}"` : "") + duLieu;
     if (o.href) return `<a${chung} href="${esc(o.href)}">${noiDung}</a>`;
     return `<button type="button"${chung}${o.disabled ? " disabled" : ""}>${noiDung}</button>`;
   }

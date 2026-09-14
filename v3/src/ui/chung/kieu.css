@@ -584,6 +584,11 @@
     text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap;
   }
   .data-table .actions { text-align: right; width: 1%; white-space: nowrap; }
+  /* Cột thao tác co về bề rộng NHỎ NHẤT (`width: 1%`), nên một hàng nút được phép xuống dòng
+     sẽ xuống dòng từng nút — đo 14/09 trên ảnh chụp màn Kịch bản: «Xem» và «Chép vào ô soạn»
+     chồng lên nhau, dòng bảng cao gấp đôi. */
+  .row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--space-1);
+                 flex-wrap: nowrap; }
   .data-table .meta { color: var(--text-muted); font-size: var(--text-xs); }
   /* Điều khiển TRONG bảng gọn hơn điều khiển trên form (mục R: mật độ vận hành) — một ô nhập
      36px trong dòng 44px là đẩy dòng phình ra. */
@@ -650,6 +655,46 @@
     .item:not(:has(> .item-lead)) { grid-template-columns: minmax(0, 1fr); }
     .item-trail { grid-column: -2; justify-content: flex-start; }
   }
+
+  /* ─── DANH SÁCH CHỌN — cột trái của bố cục danh sách · chi tiết ────────────────────
+     Mỗi mục là một <button>: tên · dòng phụ · trạng thái. Mục đang mở có `aria-current`.
+     Nhóm (thị trường, loại…) là một nhãn nhỏ, không phải một hộp gập có nền màu. */
+  .option-list { display: flex; flex-direction: column; gap: 2px; }
+  .option-group { margin-top: var(--space-3); padding: 0 var(--space-2) var(--space-1);
+                  display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2);
+                  font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--text-secondary); }
+  .option-group:first-child { margin-top: 0; }
+  .option-group .meta { font-weight: var(--weight-regular); color: var(--text-muted); white-space: nowrap; }
+  .option { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: center;
+            width: 100%; min-height: var(--control-lg); padding: var(--space-2); text-align: left;
+            font: inherit; color: var(--text-primary); background: transparent; cursor: pointer;
+            border: 1px solid transparent; border-radius: var(--radius-md);
+            transition: background-color var(--duration-fast) var(--ease); }
+  .option:hover { background: var(--surface-hover); }
+  .option[aria-current="true"] { background: var(--surface-selected); border-color: var(--primary-border); }
+  .option-title { display: block; font-weight: var(--weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .option-meta { display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 1px;
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ─── KHỐI MÃ — bản máy đọc, prompt, JSON. Chỉ đọc, cuộn trong khung của nó. ────────── */
+  .code-block { margin: 0; padding: var(--space-3); font-family: var(--font-mono); font-size: var(--text-xs);
+                line-height: 18px; color: var(--text-secondary); background: var(--surface-subtle);
+                border: 1px solid var(--border-default); border-radius: var(--radius-md);
+                white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow: auto; }
+
+  /* ─── FORM — trường xếp dọc, hàng hành động cuối ────────────────────────────────── */
+  .form-stack { display: flex; flex-direction: column; gap: var(--space-4); }
+  .field-label .meta { font-weight: var(--weight-regular); color: var(--text-muted); }
+  .form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3);
+                  padding-top: var(--space-4); margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); }
+  .form-actions .text-muted { font-size: var(--text-sm); }
+  textarea.mono, .textarea.mono { font-family: var(--font-mono); font-size: var(--text-sm); }
+
+  /* Đầu vùng chi tiết: định danh bản ghi bên trái, trạng thái bên phải. */
+  .detail-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+                 gap: var(--space-3); margin-bottom: var(--space-4); }
+  .detail-head .page-identity-name { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-4); }
 
   /* Chú thích cuối trang — nói giới hạn của màn, không phải một thẻ. */
   .page-note { margin-top: var(--space-6); font-size: var(--text-sm); color: var(--text-muted);
@@ -794,7 +839,11 @@
               min-height: var(--control-lg); padding: var(--space-2) var(--space-3); }
   .nut-dong[aria-current="true"] { border-color: var(--primary-border); background: var(--surface-selected); }
 
-  .cot-ds { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 320px) minmax(0, 1fr); }
+  /* `align-items: start` — cột trái cao theo NỘI DUNG của nó. Mặc định `stretch` kéo tấm danh
+     sách dài bằng khung soạn bên phải: đo 14/09 trên ảnh chụp màn Kịch bản, tấm 5 page cao
+     1.400px, trắng trơn từ giữa trở xuống. */
+  .cot-ds { display: grid; gap: var(--space-4); align-items: start;
+            grid-template-columns: minmax(0, 320px) minmax(0, 1fr); }
   @media (max-width: 1100px) { .cot-ds { grid-template-columns: minmax(0, 1fr); } }
   .cuon-doc { max-height: 62vh; overflow-y: auto; overscroll-behavior: contain; }
 
