@@ -278,6 +278,13 @@
     body > header { padding-inline: var(--space-8); }
     body > main { padding-inline: var(--space-8); }
   }
+  /* Màn hẹp. Trước đây 22 màn tự viết dòng này trong @media riêng, mỗi màn một ngưỡng
+     (700 · 720px) và một số đo — nay là một chỗ. */
+  @media (max-width: 720px) {
+    body > header { padding: var(--space-3) var(--space-4); }
+    body > header h1 { font-size: var(--text-xl); line-height: 28px; }
+    body > main { padding: var(--space-4) var(--space-4) var(--space-12); }
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════════════
