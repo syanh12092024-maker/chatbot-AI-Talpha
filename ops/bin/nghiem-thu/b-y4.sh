@@ -139,7 +139,10 @@ console.log(ghiDe.filter((c) => nguoi.includes(c)).join(",") || "khong-co");')"
 bang "cột NGƯỜI đặt lọt vào câu ghi đè" "${CON}" "khong-co"
 
 muc "⑤ bộ ca di trú"
-if node --test test/l0-m1-di-tru.test.js >/tmp/by4-test.txt 2>&1; then
+# ⚠️ 14/09: `node --test` của Node 24 in dạng SPEC (✖ / ℹ fail) chứ không phải TAP, nên
+#    `grep '^not ok'` bên dưới đếm được 0 — cổng đỏ mà không nêu được ca nào, và ngoại lệ
+#    D7 không bao giờ khớp. Ép reporter TAP để câu đo khớp lại với thứ nó định đo.
+if node --test --test-reporter=tap test/l0-m1-di-tru.test.js >/tmp/by4-test.txt 2>&1; then
   dat "test/l0-m1-di-tru.test.js: 0 đỏ"
 else
   DO="$(grep -cE '^not ok' /tmp/by4-test.txt)"

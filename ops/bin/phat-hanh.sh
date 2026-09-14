@@ -54,6 +54,11 @@ else
   OUT=$(npm test 2>&1 || true)
   PASS=$(printf '%s' "$OUT" | grep -oE '^# pass [0-9]+' | tail -1 | grep -oE '[0-9]+' || echo "")
   FAIL=$(printf '%s' "$OUT" | grep -oE '^# fail [0-9]+' | tail -1 | grep -oE '[0-9]+' || echo "")
+  # ⚠️ 14/09: Node 24 in bảng đếm dạng SPEC («ℹ pass 1677») chứ không phải TAP («# pass»),
+  #    nên hai câu trên rỗng và phép ③ luôn HOÃN — cổng phát hành không bao giờ đo được bộ
+  #    ca. Đọc thêm dạng SPEC; bắt theo TỪ KHOÁ vì ký tự đầu dòng là đa byte.
+  [ -z "$PASS" ] && PASS=$(printf '%s' "$OUT" | grep -oE 'pass [0-9]+' | tail -1 | grep -oE '[0-9]+' || echo "")
+  [ -z "$FAIL" ] && FAIL=$(printf '%s' "$OUT" | grep -oE 'fail [0-9]+' | tail -1 | grep -oE '[0-9]+' || echo "")
   if [ -z "$PASS" ] || [ -z "$FAIL" ]; then
     so "không đọc được bảng đếm của node --test" "LOI-NODE"
     hoan "bộ ca: câu đo HỎNG"

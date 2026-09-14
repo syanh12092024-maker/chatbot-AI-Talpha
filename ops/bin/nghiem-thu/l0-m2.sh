@@ -226,10 +226,12 @@ muc "⑧ npm test xanh toàn bộ (test cũ + l0-m1 + l0-m2)"
 so "node --version" "$(node --version)"
 # ⚠️ `node --test test/` KHÔNG chạy được trên Node v25 (nhận thư mục làm tệp mở đầu) —
 #    kế thừa nguyên vá của l0-m1.sh: gọi thẳng glob tệp, không gọi bare `test/`.
-if node --test test/l0-m1-*.test.js test/l0-m2-*.test.js >/tmp/l0m2-test-moi.txt 2>&1; then
-  dat "bộ ca l0-m1 + l0-m2: $(grep -c '^✔' /tmp/l0m2-test-moi.txt) xanh / 0 đỏ"
+# ⚠️ 14/09: ép reporter TAP — cùng lý do đã vá ở `l0-m1.sh` (Node 24 in dạng SPEC).
+if node --test --test-reporter=tap test/l0-m1-*.test.js test/l0-m2-*.test.js >/tmp/l0m2-test-moi.txt 2>&1; then
+  dat "bộ ca l0-m1 + l0-m2: $(grep -cE '^ok ' /tmp/l0m2-test-moi.txt) xanh / 0 đỏ"
 else
-  truot "bộ ca l0-m1 + l0-m2 có ca đỏ:"; grep -E '^✖|not ok' /tmp/l0m2-test-moi.txt | head -10
+  truot "bộ ca l0-m1 + l0-m2 có $(grep -cE '^not ok' /tmp/l0m2-test-moi.txt) ca đỏ:"
+  grep -E '^not ok' /tmp/l0m2-test-moi.txt | head -10
 fi
 # Bộ ca CŨ (bản đang chạy) — cùng vá CONV_STATE_FILE tạm như l0-m1.sh, cùng lý do
 # (test cũ ghi thẳng vào conv-state.json thật ở gốc repo — nợ §9, không phải việc phiếu này).

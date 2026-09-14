@@ -19,6 +19,21 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 14/09/2026 — giao diện v3 viết lại trên một hệ kiểu chung
+
+- **Hai lỗi làm chết màn, sửa** (`ad6cf46`): khối «Đánh dấu đã xử» không hiện ở hai màn điều
+  phối, nên sale không đóng được việc nào từ v3; và màn «Chi tiết việc cần xử» (`/viec/:id`)
+  chết trắng chỉ còn một dòng đỏ, sống như vậy từ 11/09. Cả hai bắt được bằng ảnh chụp thật.
+- **25/25 màn dùng chung một hệ kiểu** (`2fca1bb` → `268f2eb`): không màn nào còn CSS riêng
+  (1.468 dòng → 0), trạng thái đi qua một bảng ánh xạ duy nhất, thao tác chạm khách thật có
+  hộp xác nhận nói rõ hệ quả thay `confirm()` gốc.
+- **«Chưa đo được» thôi đội lốt «đạt»**: ô chưa biết hiện «—» hoặc huy hiệu xám kèm lý do,
+  không bao giờ hiện 0 hay tô xanh — áp cho chi phí, báo cáo, tồn kho, hạn token, phễu khách.
+- **Câu chữ nói việc cần làm**: cảnh báo mở đầu bằng lời người dùng, tên biến kỹ thuật
+  (`ADMIN_USER`…) xuống dòng chi tiết nhỏ hơn.
+- Gỡ cầu di trú 20 token màu tên cũ (`036c286`); vá câu đo bộ ca của 4 cổng nghiệm thu vốn
+  đếm theo dạng TAP trong khi Node 24 in dạng SPEC.
+
 > **Chưa có phiên bản nào được phát hành.** 398 commit (27/06/2026 → 01/09/2026), **0 tag**.
 > Toàn bộ phần dưới đang nằm trên `main` mà chưa được niêm phong thành bản nào.
 > Nội dung dựng lại từ §10 sổ điều hành + git log, mốc 01/09/2026.

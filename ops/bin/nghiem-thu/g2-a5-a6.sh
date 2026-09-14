@@ -117,10 +117,13 @@ bang "chưa đủ mẫu → KHÔNG lộ tỉ lệ" "${A6_5}" "an-tiLe"
 
 muc "④ bộ ca chi tiết"
 for f in l0-m2-kich-ban l0-m2-so-lieu; do
-  if node --test "test/${f}.test.js" >"/tmp/a56-${f}.txt" 2>&1; then
-    dat "test/${f}.test.js: $(grep -c '^# Subtest' "/tmp/a56-${f}.txt") ca, 0 đỏ"
+  # ⚠️ 14/09: ép reporter TAP — Node 24 in dạng SPEC nên `^not ok` và `^# Subtest` đều
+  #    không khớp: cổng đỏ mà không nêu được ca nào, và số ca in ra là 0.
+  if node --test --test-reporter=tap "test/${f}.test.js" >"/tmp/a56-${f}.txt" 2>&1; then
+    dat "test/${f}.test.js: $(grep -cE '^ok ' "/tmp/a56-${f}.txt") ca, 0 đỏ"
   else
-    truot "test/${f}.test.js có ca đỏ:"; grep -E '^not ok' "/tmp/a56-${f}.txt" | head -5
+    truot "test/${f}.test.js có $(grep -cE '^not ok' "/tmp/a56-${f}.txt") ca đỏ:"
+    grep -E '^not ok' "/tmp/a56-${f}.txt" | head -5
   fi
 done
 

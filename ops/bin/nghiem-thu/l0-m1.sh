@@ -364,10 +364,13 @@ muc "⑩ test"
 #    làm tệp mở đầu. Sửa script `test` NGOÀI phạm vi phiếu này ⇒ đã ghi §9 sổ nợ.
 #    Cổng gọi thẳng bộ ca, và đo bộ cũ theo TỪNG TỆP để so với mốc nền.
 so "node --version" "$(node --version)"
-if node --test test/l0-m1-*.test.js >/tmp/l0m1-test-moi.txt 2>&1; then
-  dat "bộ ca MỚI của phiếu: $(grep -c '^✔' /tmp/l0m1-test-moi.txt) xanh / 0 đỏ"
+# ⚠️ 14/09: ép reporter TAP — Node 24 in dạng SPEC, nên `grep '^not ok'` đếm 0 và cổng đỏ
+#    mà KHÔNG nêu được ca nào. Ép TAP thì cả hai nhánh dưới đọc đúng thứ chúng định đọc.
+if node --test --test-reporter=tap test/l0-m1-*.test.js >/tmp/l0m1-test-moi.txt 2>&1; then
+  dat "bộ ca MỚI của phiếu: $(grep -cE '^ok ' /tmp/l0m1-test-moi.txt) xanh / 0 đỏ"
 else
-  truot "bộ ca MỚI có ca đỏ:"; grep -E '^✖|not ok' /tmp/l0m1-test-moi.txt | head -10
+  truot "bộ ca MỚI có $(grep -cE '^not ok' /tmp/l0m1-test-moi.txt) ca đỏ:"
+  grep -E '^not ok' /tmp/l0m1-test-moi.txt | head -10
 fi
 # ⚠️ Bộ ca CŨ GHI THẲNG vào `conv-state.json` thật ở gốc repo (chỉ l5-ab-followup tự trỏ
 #    sổ đi nơi khác) — chạy cổng một lượt là đẻ thêm hội thoại `convN_…` vào dữ liệu vận
