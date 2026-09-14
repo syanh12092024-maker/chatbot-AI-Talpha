@@ -3,72 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Gợi ý từ AI — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  /* hai đường — cả điểm của màn này nằm ở hình này */
-  .duong{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-  .duong .d{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--panel);line-height:1.55}
-  .duong .d b{display:block;font-size:12.5px;margin-bottom:4px}
-  .duong .d .m{color:var(--muted);font-size:11.5px}
-  .duong .d.nguoi{border-left:4px solid var(--ok)}
-  .duong .d.ai{border-left:4px solid var(--tim);background:var(--timSoft)}
-  .duong .d .buoc{margin-top:7px;font-size:11.5px;font-weight:600;color:var(--muted)}
-
-  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
-  .banner.i{background:var(--priSoft);color:var(--chinh-dam);border:1px solid var(--chinh-vien)}
-  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:var(--nen-2)}
-  tbody tr:last-child td{border-bottom:0}
-  .bao{display:block;overflow-x:auto}
-
-  .the{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-  .the.cho{background:var(--warnSoft);color:var(--luu-chu)}
-  .the.duyet{background:var(--okSoft);color:var(--dat-chu)}
-  .the.ai{background:var(--timSoft);color:#5b21b6}
-  .the.tat{background:var(--nen-3);color:var(--muted)}
-
-  button{font:inherit;border:0;border-radius:8px;padding:7px 13px;cursor:pointer;font-weight:600}
-  .b1{background:var(--pri);color:var(--nen)}
-  .b1:hover{background:var(--priDark)}
-  .b2{background:#eef1f4;color:var(--chu-2)}
-  button[disabled]{opacity:.5;cursor:not-allowed}
-  textarea,input[type=text]{font:inherit;width:100%;padding:9px 11px;border:1px solid var(--line);
-        border-radius:8px;background:var(--nen);color:var(--ink);resize:vertical}
-  textarea{min-height:150px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.6}
-  label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin:0 0 5px}
-  .hang{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:10px}
-
-  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
-  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
-  .trong .di{margin-top:10px;font-size:12px}
-
-  .tang{display:grid;gap:8px}
-  .tang .t{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:9px;line-height:1.55}
-  .tang .t.chua{background:var(--nen-2)}
-  .tang .t .ch{font-size:14px;line-height:1.2}
-  .tang .t b{font-size:12.5px}
-  .tang .t .vi{color:var(--muted);font-size:11.5px;margin-top:3px}
-
-  .nho{color:var(--muted);font-size:11.5px;line-height:1.55}
-  code{background:var(--nen-3);padding:1px 5px;border-radius:4px;font-size:11.5px;
-       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-
-  @media (max-width:720px){
-    .duong{grid-template-columns:1fr}
-    .than{padding:12px}
-    th,td{padding:8px 10px}
-  }
-</style>
+<title>Gợi ý từ AI — AI Closer</title>
+<!-- Dựng trên hệ kiểu. KHÔNG CSS riêng — trước lượt này là 53 dòng. Hai «đường» người/AI vẽ
+     bằng thẻ màu → hai hàng mục nói rõ SỐ BƯỚC của mỗi đường. `prompt()` gốc của trình duyệt
+     khi duyệt → hộp thoại của hệ có tiêu đề và nói hệ quả. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -76,126 +15,140 @@
 <body>
 <header>
   <h1>Gợi ý từ AI</h1>
-  <span class="sub" id="hTeam">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Bản do AI đề xuất phải có người duyệt mới áp được — tầng dữ liệu chặn, không phải giao diện ẩn nút.</span>
 </header>
 
 <main>
-  <div class="duong">
-    <div class="d nguoi">
-      <b>✍️ Người viết</b>
-      <div class="m">Quản trị tự gõ ở màn <a href="/bo-luat">Bộ luật chung</a>.</div>
-      <div class="buoc">Lưu → Áp. Hai bước.</div>
-    </div>
-    <div class="d ai">
-      <b>🤖 AI đề xuất</b>
-      <div class="m">Vào bằng cửa này. Ghi <code>nguon='ai'</code>.</div>
-      <div class="buoc">Nhận → <b>Duyệt</b> → Áp. Ba bước.</div>
-    </div>
-  </div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <div class="banner i">
-    Bản do AI đề xuất <b>không áp được</b> khi chưa có người bấm duyệt — tầng dữ liệu chặn,
-    không phải giao diện ẩn nút. Duyệt xong vẫn phải sang màn Bộ luật bấm áp: duyệt là
-    «nội dung này chấp nhận được», áp là «từ giờ mọi page của team nói theo bản này».
-  </div>
+  <section class="section" aria-labelledby="tieu-duong">
+    <div class="section-header"><div><h2 id="tieu-duong">Hai đường vào bộ quy tắc</h2>
+      <div class="section-desc">Duyệt là «nội dung này chấp nhận được». Áp là «từ giờ mọi page của team nói theo bản này».</div></div></div>
+    <ul class="item-list">
+      <li class="item">
+        <div><div class="item-title">Người viết</div>
+          <div class="item-desc">Quản trị tự gõ ở màn Quy tắc chung mọi page.</div></div>
+        <div class="item-trail"><span class="badge">Lưu → Áp · 2 bước</span></div>
+      </li>
+      <li class="item">
+        <div><div class="item-title">AI đề xuất</div>
+          <div class="item-desc">Vào bằng cửa của màn này, ghi nguồn là «ai».</div></div>
+        <div class="item-trail"><span class="badge" data-variant="info">Nhận → Duyệt → Áp · 3 bước</span></div>
+      </li>
+    </ul>
+  </section>
 
-  <div class="panel">
-    <h2>Đang chờ duyệt <span class="hint" id="hDem"></span></h2>
-    <div id="dsBox"><div class="than nho">Đang tải…</div></div>
-  </div>
+  <section class="section table-wrap" aria-labelledby="tieu-cho">
+    <div class="table-toolbar"><h2 id="tieu-cho">Đang chờ duyệt</h2>
+      <span class="table-count" id="hDem"></span></div>
+    <div id="dsBox"><div class="empty-state"><span class="skeleton"></span></div></div>
+  </section>
 
-  <div class="panel" id="pNhan" hidden>
-    <h2>Nhận một đề xuất <span class="hint">ghi vào hàng chờ, chưa đụng bản đang chạy</span></h2>
-    <div class="than">
-      <label for="fNoi">Nội dung đề xuất</label>
-      <textarea id="fNoi" placeholder="Dán toàn văn bản bộ luật mà AI đề xuất…"></textarea>
-      <div class="hang" style="margin-top:10px;display:block">
-        <label for="fLy">Lý do — <span style="font-weight:400">bắt buộc. Người duyệt cần biết đổi cái gì và vì sao.</span></label>
-        <input type="text" id="fLy" placeholder="VD: rút gọn phần chào, thêm luật không hứa ngày giao" />
+  <section class="section panel" id="pNhan" hidden aria-labelledby="tieu-nhan">
+    <div class="section-header"><div><h2 id="tieu-nhan">Nhận một đề xuất</h2>
+      <div class="section-desc">Ghi vào hàng chờ, chưa đụng bản đang chạy.</div></div></div>
+    <div class="form-stack">
+      <div class="field">
+        <label class="field-label" for="fNoi">Nội dung đề xuất</label>
+        <textarea id="fNoi" class="mono" rows="8" placeholder="Dán toàn văn bản bộ quy tắc mà AI đề xuất…"></textarea>
       </div>
-      <div class="hang">
-        <button class="b1" id="bNhan">Đưa vào hàng chờ</button>
-        <span class="nho" id="mNhan"></span>
+      <div class="field">
+        <label class="field-label" for="fLy">Lý do <span class="meta">· bắt buộc</span></label>
+        <input type="text" id="fLy" placeholder="VD: rút gọn phần chào, thêm luật không hứa ngày giao">
+        <div class="field-hint" id="mNhan">Người duyệt cần biết đổi cái gì và vì sao.</div>
       </div>
     </div>
-  </div>
+    <div class="form-actions">
+      <button type="button" class="btn" data-variant="primary" data-size="md" id="bNhan"><span>Đưa vào hàng chờ</span></button>
+    </div>
+  </section>
 
-  <div class="panel">
-    <h2>Ba tầng <span class="hint">tầng nào nhận được đề xuất hôm nay</span></h2>
-    <div class="than"><div class="tang" id="dsTang"></div></div>
-  </div>
+  <section class="section" aria-labelledby="tieu-tang">
+    <div class="section-header"><div><h2 id="tieu-tang">Ba tầng</h2>
+      <div class="section-desc">Tầng nào nhận được đề xuất của AI hôm nay.</div></div></div>
+    <div class="panel" id="dsTang"></div>
+  </section>
 </main>
 
 <script>
+const { esc, text, statusBadge, button, setBusy, alert: canhBao, emptyState, toast, confirmDialog, formatNumber } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const gio = (t) => (t ? new Date(t).toLocaleString('vi-VN', { hour12: false }) : '—');
 
-let suaDuoc = false;
+let suaDuoc = false, LOI = null;
 
 async function goi(duong, tuyChon) {
-  const r = await fetch(duong, { credentials: 'same-origin', ...tuyChon });
+  const r = await fetch(duong, { credentials: 'same-origin', headers: { Accept: 'application/json' }, ...tuyChon });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   let d = null;
   try { d = await r.json(); } catch { d = null; }
-  if (!r.ok || !d || d.ok === false) {
-    throw new Error((d && d.thongDiep) || 'Lỗi ' + r.status);
-  }
+  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || 'Máy chủ trả ' + r.status + '.');
   return d;
 }
 
+function veBangTin() {
+  const kh = [];
+  if (LOI) kh.push(canhBao({ level: 'error', title: LOI.title, body: LOI.body }));
+  kh.push(canhBao({ level: 'info', title: 'Duyệt xong vẫn chưa áp',
+    body: 'Bản đã duyệt phải sang màn Quy tắc chung mọi page bấm áp thì mới có hiệu lực với khách.',
+    actionsHtml: button('Mở Quy tắc chung', { href: '/bo-luat', size: 'sm' }) }));
+  $('#bang-tin').innerHTML = `<div class="duoi-5">${kh.join('')}</div>`;
+}
+function baoLoi(title, body) { LOI = { title, body }; veBangTin(); }
+
 function veTang(ds) {
   $('#dsTang').innerHTML = ds.map((t) => `
-    <div class="t ${t.duoc ? '' : 'chua'}">
-      <span class="ch">${t.duoc ? '✅' : '⏳'}</span>
-      <div><b>${esc(t.ten)}</b>
-        ${t.duoc ? '<span class="the duyet" style="margin-left:6px">nhận được</span>'
-                 : '<span class="the tat" style="margin-left:6px">chưa nhận được</span>'}
-        ${t.vi ? `<div class="vi">${esc(t.vi)}</div>` : ''}</div>
+    <div class="feature-row" data-state="${t.duoc ? 'on' : 'off'}">
+      <div><div class="feature-name">${esc(t.ten)}</div>
+        ${t.vi ? `<div class="feature-desc">${text(t.vi)}</div>` : ''}</div>
+      ${statusBadge(t.duoc ? 'feature_on' : 'feature_unavailable',
+        { label: t.duoc ? 'Nhận được đề xuất' : 'Chưa nhận được' })}
     </div>`).join('');
 }
 
 function veDs(d) {
-  const b = $('#dsBox');
-  $('#hDem').textContent = d.soChoDuyet ? `${d.soChoDuyet} bản` : '';
+  $('#hDem').textContent = d.soChoDuyet ? `${formatNumber(d.soChoDuyet)} bản chờ duyệt` : 'Không có bản nào chờ';
   if (!d.deXuat.length) {
     // Rỗng vì XONG, không phải vì chưa cài đặt — nói rõ để không ai đi tìm cái không hỏng.
-    b.innerHTML = `<div class="trong">
-      <div class="ti">Chưa có đề xuất nào đang chờ</div>
-      <div>${esc(d.trong ? d.trong.noi : '')}</div>
-      <div class="di">Đây là trạng thái <b>bình thường</b> — không phải màn hỏng.</div>
-    </div>`;
+    $('#dsBox').innerHTML = emptyState({ icon: 'circle-check', title: 'Chưa có đề xuất nào đang chờ',
+      body: (d.trong && d.trong.noi) || 'Đây là trạng thái bình thường — màn này chỉ có việc khi ai đó đưa một đề xuất vào.' });
     return;
   }
-  b.innerHTML = `<div class="bao"><table>
-    <thead><tr><th>Bản</th><th>Lý do</th><th>Đưa vào</th><th>Trạng thái</th><th></th></tr></thead>
-    <tbody>${d.deXuat.map((x) => `
-      <tr>
-        <td><b>v${x.phienBan}</b><div class="nho">${x.soKyTu} ký tự · ~${x.uocToken} token</div></td>
-        <td style="max-width:340px">${esc(x.ghiChu) || '<span class="nho">—</span>'}</td>
-        <td class="nho">${esc(x.nguoiSua)}<br>${gio(x.suaLuc)}</td>
-        <td>${x.daDuyet
-          ? `<span class="the duyet">đã duyệt</span><div class="nho">${esc(x.duyetBoi || '')}<br>${gio(x.duyetLuc)}</div>`
-          : '<span class="the cho">chờ duyệt</span>'}</td>
-        <td>${x.daDuyet
-          ? '<a href="/bo-luat" style="color:var(--pri);font-weight:600;text-decoration:none">Sang áp →</a>'
-          : (suaDuoc ? `<button class="b1" data-duyet="${esc(x.id)}">Duyệt</button>` : '<span class="nho">—</span>')}</td>
-      </tr>`).join('')}</tbody></table></div>`;
+  $('#dsBox').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Bản</th><th scope="col">Lý do</th><th scope="col">Đưa vào</th>
+      <th scope="col">Trạng thái</th><th scope="col" class="actions"><span class="sr-only">Thao tác</span></th>
+    </tr></thead><tbody>${d.deXuat.map((x) => `
+    <tr>
+      <td><span class="manh">v${x.phienBan}</span><div class="meta">${formatNumber(x.soKyTu)} ký tự · ≈ ${formatNumber(x.uocToken)} token</div></td>
+      <td><span class="cat-2">${esc(x.ghiChu) || '<span class="text-muted">—</span>'}</span></td>
+      <td><div>${esc(x.nguoiSua)}</div><div class="meta tabular">${esc(gio(x.suaLuc))}</div></td>
+      <td>${x.daDuyet
+        ? `${statusBadge('rule_approved', { label: 'Đã duyệt, chưa áp' })}<div class="meta">${esc(x.duyetBoi || '')} · ${esc(gio(x.duyetLuc))}</div>`
+        : statusBadge('rule_ai_unreviewed', { label: 'Chờ duyệt' })}</td>
+      <td class="actions">${x.daDuyet
+        ? button('Sang áp', { href: '/bo-luat', size: 'sm' })
+        : (suaDuoc ? button('Duyệt', { size: 'sm', variant: 'primary', data: { duyet: x.id, ban: x.phienBan } })
+                   : '<span class="meta">Cần vai Quản trị</span>')}</td>
+    </tr>`).join('')}</tbody></table>`;
 
-  b.querySelectorAll('[data-duyet]').forEach((n) => {
+  $('#dsBox').querySelectorAll('[data-duyet]').forEach((n) => {
     n.onclick = async () => {
-      const ly = prompt('Ghi chú khi duyệt (không bắt buộc):', '');
-      if (ly === null) return;
-      n.disabled = true; n.textContent = 'Đang duyệt…';
+      const dongY = await confirmDialog({
+        title: `Duyệt bản v${n.dataset.ban} do AI đề xuất?`,
+        body: 'Duyệt KHÔNG phải là áp: bản này vẫn chưa nói với khách. Sau khi duyệt, phải sang màn Quy tắc chung bấm áp.',
+        confirmLabel: 'Duyệt bản này',
+      });
+      if (!dongY) return;
+      setBusy(n, true);
       try {
         await goi('/api/ai-de-xuat/' + encodeURIComponent(n.dataset.duyet) + '/duyet', {
           method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ ghiChu: ly }),
+          body: JSON.stringify({ ghiChu: '' }),
         });
+        LOI = null;
+        toast(`Đã duyệt v${n.dataset.ban}. Chưa áp — sang màn Quy tắc chung để áp.`);
         await tai();
-      } catch (e) { alert('Không duyệt được: ' + e.message); n.disabled = false; n.textContent = 'Duyệt'; }
+      } catch (e) { baoLoi('Không duyệt được đề xuất', e.message); setBusy(n, false); }
     };
   });
 }
@@ -203,30 +156,40 @@ function veDs(d) {
 async function tai() {
   try {
     const d = await goi('/api/ai-de-xuat');
-    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    if (!d) return;
     suaDuoc = !!d.suaDuoc;
     $('#pNhan').hidden = !suaDuoc;
-    veTang(d.tang || []);
-    veDs(d);
+    veBangTin(); veTang(d.tang || []); veDs(d);
   } catch (e) {
-    $('#dsBox').innerHTML = `<div class="than"><div class="banner o" style="margin:0">
-      Không tải được: ${esc(e.message)}</div></div>`;
+    baoLoi('Không tải được danh sách đề xuất', e.message);
+    $('#dsBox').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' });
   }
 }
 
 $('#bNhan').onclick = async () => {
-  const b = $('#bNhan'); const m = $('#mNhan');
-  b.disabled = true; m.textContent = 'Đang gửi…';
+  const b = $('#bNhan');
+  const oNoi = $('#fNoi'), oLy = $('#fLy');
+  if (!oNoi.value.trim() || !oLy.value.trim()) {
+    const thieu = !oNoi.value.trim() ? oNoi : oLy;
+    thieu.setAttribute('aria-invalid', 'true');
+    thieu.focus();
+    $('#mNhan').textContent = !oNoi.value.trim() ? 'Chưa dán nội dung đề xuất.' : 'Lý do là bắt buộc — người duyệt cần biết đổi cái gì và vì sao.';
+    return;
+  }
+  setBusy(b, true);
   try {
     const kq = await goi('/api/ai-de-xuat', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ noiDung: $('#fNoi').value, ghiChu: $('#fLy').value }),
+      body: JSON.stringify({ noiDung: oNoi.value, ghiChu: oLy.value }),
     });
-    m.textContent = `Đã vào hàng chờ — bản v${kq.phienBan}. Chưa áp.`;
-    $('#fNoi').value = ''; $('#fLy').value = '';
+    LOI = null;
+    toast(`Đã vào hàng chờ — bản v${kq.phienBan}. Chưa áp.`);
+    oNoi.value = ''; oLy.value = '';
+    oNoi.removeAttribute('aria-invalid'); oLy.removeAttribute('aria-invalid');
+    $('#mNhan').textContent = 'Người duyệt cần biết đổi cái gì và vì sao.';
     await tai();
-  } catch (e) { m.textContent = '⛔ ' + e.message; }
-  b.disabled = false;
+  } catch (e) { baoLoi('Không đưa được đề xuất vào hàng chờ', e.message); }
+  finally { setBusy(b, false); }
 };
 
 tai();
