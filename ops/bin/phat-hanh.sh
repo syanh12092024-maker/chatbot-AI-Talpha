@@ -67,12 +67,21 @@ fi
 muc "④ cổng nghiệm thu (rc TÁCH DÒNG từng cổng)"
 if [ "${BO_QUA_CONG:-0}" = "1" ]; then
   hoan "bỏ qua theo BO_QUA_CONG=1"
-elif ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^talpha-pg$'; then
-  hoan "container talpha-pg không chạy — cổng cần CSDL, chưa đo được"
+elif ! node -e '
+const { chuoiNoi } = await import("./db/ket-noi.js");
+const pg = (await import("pg")).default;
+const p = new pg.Pool({ connectionString: chuoiNoi(), max: 1 });
+try { await p.query("SELECT 1"); } finally { await p.end(); }
+' >/dev/null 2>&1; then
+  # TỪNG hỏi `docker ps | grep talpha-pg`. Container ấy không còn ở đâu (máy dev · VPS ·
+  # CI đều không có) nên phép này HOÃN vĩnh viễn — tức 25 cổng chưa lượt phát hành nào đo.
+  # Nay hỏi đúng câu cần hỏi: CÓ NỐI ĐƯỢC POSTGRES KHÔNG. Cổng nay tự dựng sandbox bằng
+  # gói `pg` (án lệ #28, xem `ops/bin/nghiem-thu/_csdl.sh`), không cần docker.
+  hoan "không nối được Postgres — cổng cần CSDL, chưa đo được"
 else
   CONG_DO=0; CONG_XANH=0
   for f in ops/bin/nghiem-thu/*.sh; do
-    case "$f" in */_chan1.sh) continue;; esac
+    case "$f" in */_*.sh) continue;; esac   # `_*.sh` là tệp trợ giúp, không phải cổng
     bash "$f" >/dev/null 2>&1
     rc=$?                                   # rc đo TÁCH DÒNG — luật của gate
     if [ $rc -eq 0 ]; then CONG_XANH=$((CONG_XANH+1))

@@ -109,7 +109,7 @@ jobs:
           set +e
           soDo=0; soXanh=0; dsDo=""
           for f in ops/bin/nghiem-thu/*.sh; do
-            case "$f" in */_chan1.sh) continue;; esac
+            case "$f" in */_*.sh) continue;; esac   # `_*.sh` là tệp trợ giúp, không phải cổng
             ten=$(basename "$f")
             ra=$(bash "$f" 2>&1); rc=$?
             if [ $rc -eq 0 ]; then

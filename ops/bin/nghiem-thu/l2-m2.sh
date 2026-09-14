@@ -20,7 +20,6 @@ set -uo pipefail
 GOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "${GOC}" || exit 2
 
-CONTAINER="talpha-pg"
 DB="aicloser_v3_nt_l2m2"
 LOI=0
 PHEP=0
@@ -52,13 +51,15 @@ nodex() {
 }
 
 # ── dựng sandbox ────────────────────────────────────────────────────────────────
-if ! docker ps --format '{{.Names}}' | grep -qx "${CONTAINER}"; then
-  echo "✘ container ${CONTAINER} không chạy — cổng không đo được"; exit 2
-fi
-docker exec "${CONTAINER}" psql -U aicloser -d postgres -tAc \
-  "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" >/dev/null 2>&1
-if ! docker exec "${CONTAINER}" psql -U aicloser -d postgres -v ON_ERROR_STOP=1 -tAc \
-  "CREATE DATABASE ${DB}" >/dev/null 2>&1; then
+# Dựng/dọn sandbox bằng gói `pg` của repo — xem `_csdl.sh`. TỪNG gọi `docker exec
+# talpha-pg`, mà container ấy không còn ở đâu (máy dev · VPS · CI đều không có) nên
+# cổng chết câm rc=2. Cùng ca với l0-m1/l0-m2 hôm 25/08, án lệ #28. KHÔNG đo được
+# vẫn là rc=2 — tệp trợ giúp không nới luật đó.
+# shellcheck source=ops/bin/nghiem-thu/_csdl.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_csdl.sh"
+csdl_san_sang "${DB}" || exit 2
+pg_qt "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" >/dev/null 2>&1
+if ! pg_qt "CREATE DATABASE ${DB}" >/dev/null 2>&1; then
   echo "✘ không tạo được CSDL sandbox ${DB} — cổng dừng"; exit 2
 fi
 
@@ -74,8 +75,7 @@ don_dep() {
   if [ "${GIU_SANDBOX:-0}" = "1" ]; then
     printf '\n(giữ lại CSDL %s theo GIU_SANDBOX=1)\n' "${DB}"
   else
-    docker exec "${CONTAINER}" psql -U aicloser -d postgres -tAc \
-      "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" >/dev/null 2>&1
+    pg_qt "DROP DATABASE IF EXISTS ${DB} WITH (FORCE)" >/dev/null 2>&1
   fi
 }
 trap don_dep EXIT
