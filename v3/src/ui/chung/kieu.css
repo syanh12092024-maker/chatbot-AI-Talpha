@@ -10,7 +10,7 @@
    Riêng ý «ổn» có SÁU sắc xanh nhạt khác nhau: #e8f7ee #e9f8ee #f7fdf9 #f6fdf9
    #f6fbf7 #fbfefc. Không ai chọn sáu màu ấy — chúng sinh ra vì không có chỗ nào để tra.
 
-   ═══ HAI QUYẾT ĐỊNH, và lý do ════════════════════════════════════════════════════
+   ═══ HAI QUYẾT ĐỊNH NỀN MÓNG, và lý do ═══════════════════════════════════════════
    ① TỆP .css THẬT, không phải chuỗi trong JS. CSS nằm trong template string của JS đã
       sinh ra án lệ 01/09 (dấu ` trong chú thích CSS làm gãy cả tệp). Tệp .css thì không
       có cửa cho lỗi ấy, lại được trình duyệt cache.
@@ -19,9 +19,29 @@
       trong khi màn mới dùng được trọn hệ. Không có lượt «đổi hệ kiểu làm hỏng 25 màn».
       Và di trú một màn = XOÁ <style> của nó, hệ tự nhận việc. Không phải sửa từng dòng.
 
+   ═══ BẢN 2 · 14/09/2026 — «hiện đại, sạch, có khoảng trắng» ══════════════════════
+   Chủ dự án yêu cầu dựng lại cho phù hợp một sản phẩm AI chatbot. Bản 1 thừa hưởng bảng
+   màu cũ của mã (xanh cổ vịt + kem) — nó không sai, nhưng nó không nói gì về sản phẩm.
+   TÊN TOKEN VÀ TÊN LỚP GIỮ NGUYÊN TỪNG CHỮ, chỉ đổi GIÁ TRỊ: nhờ vậy 25 màn và màn
+   «Bắt đầu» không phải sửa một dòng nào, mà diện mạo đổi hết. Đó cũng là phép thử của
+   chính hệ kiểu — nếu phải sửa trang thì hệ chưa làm đúng việc của nó.
+
+   Ba lựa chọn, và lý do chúng thuộc về SẢN PHẨM NÀY:
+     · KHÔNG gradient tím-xanh, KHÔNG nền đen kèm một điểm xanh chanh. Đó là khuôn mẫu
+       mà mọi sản phẩm AI đang mặc. Một bảng điều khiển vận hành không cần trông như
+       trang giới thiệu.
+     · MỰC ĐEN HƠI LẠNH TRÊN GIẤY TRẮNG, một màu nhận diện duy nhất (azure). Sản phẩm
+       này là CHỮ: hội thoại, lượt, token, câu bot nói. Nên để chữ dẫn, để chrome mờ đi.
+     · CHỈ TIỀN VÀ SỰ CỐ ĐƯỢC LÊN TIẾNG. Màu bão hoà dành cho bốn trạng thái và cho con
+       số tiền — không rải khắp màn. Một màn mà mọi thứ đều nổi thì không gì nổi.
+
+   Khoảng trắng: thang khoảng nâng lên 4·8·14·20·32·48 (bản 1: 4·8·12·16·24·32), chữ
+   thân 13.5 → 14px, dòng 1.5 → 1.55, bo góc 6 → 8px, và BỎ GẦN HẾT BÓNG — vạch tóc
+   thay bóng. Bóng đổ trên mọi khối là cách làm phẳng thứ bậc, không phải cách tạo nó.
+
    ═══ CÁCH DÙNG ═══════════════════════════════════════════════════════════════════
    `chung/dieu-huong.js` tự chèn <link> tệp này vào ĐẦU <head> mọi trang. Không màn nào
-   phải tự nạp. Màn mới: dùng thẳng .nut .pill .panel .dai ... và ĐỪNG viết <style>.
+   phải tự nạp. Màn mới: dùng thẳng .nut .pill .panel ... và ĐỪNG viết <style>.
    Cần một kiểu chưa có ở đây? Thêm vào đây, đừng thêm vào trang — nếu không thì 6 tháng
    nữa lại có 86 màu.
    ═══════════════════════════════════════════════════════════════════════════════════ */
@@ -35,50 +55,68 @@
        ăn theo khai này. Thiếu nó thì máy đang bật chế độ tối vẽ ô nhập nền đen chữ đen. */
     color-scheme: light;
 
-    /* CHỮ — ba bậc, đủ cho mọi màn. Bậc bốn là dấu hiệu màn đang nói quá nhiều thứ. */
-    --chu:        #0b2125;
-    --chu-2:      #40616a;
-    --chu-mo:     #7b969c;
+    /* ═══ CHỮ — ba bậc. Bậc bốn là dấu hiệu màn đang nói quá nhiều thứ một lúc. ═══
+       Mực có sắc LẠNH rất nhẹ (hơi ngả lam), không phải đen tuyệt đối: đen #000 trên
+       trắng #fff là cặp tương phản gắt, đọc lâu mỏi mắt — mà đây là màn mở suốt ngày. */
+    --chu:        #0f1419;
+    --chu-2:      #59646f;
+    --chu-mo:     #98a2ad;
 
-    /* NỀN — ba bậc: mặt phẳng, vùng chìm, vùng chìm sâu (đầu bảng, thanh công cụ). */
+    /* ═══ GIẤY — ba bậc: mặt phẳng, vùng chìm, vùng chìm sâu (đầu bảng, thanh công cụ).
+       Xám ngả lam cùng hướng với màu nhận diện, không phải xám trung tính vô hồn. ═══ */
     --nen:        #ffffff;
-    --nen-2:      #f5f7f9;
-    --nen-3:      #eef2f5;
-    --vien:       #e1e7ec;
-    --vien-dam:   #c9d4da;
+    --nen-2:      #f8f9fb;
+    --nen-3:      #f0f2f5;
 
-    /* CHÍNH — xanh cổ vịt, giữ đúng màu thanh bên đang dùng. */
-    --chinh:      #0e7c86;
-    --chinh-dam:  #0a5c64;
-    --chinh-nhat: #e6f3f4;
-    --chinh-vien: #a8d6da;
-    --vong:       rgba(14, 124, 134, .26);   /* quầng lấy nét — phải THẤY được */
-    --tren-chinh: #ffffff;   /* chữ ĐẶT TRÊN nền --chinh. Có token riêng để không ai gõ #fff */
-    --toi:        #0b2125;   /* nền thanh bên */
+    /* VẠCH TÓC — thay cho bóng đổ. Đây là thứ dựng thứ bậc trong bản này. */
+    --vien:       #e5e8ed;
+    --vien-dam:   #cbd2da;
 
-    /* TRẠNG THÁI — mỗi trạng thái ĐÚNG BA màu: nền · viền · chữ. Không hơn.
-       Muốn nhạt hơn thì dùng nền; muốn đậm hơn thì dùng chữ. Đừng đẻ sắc thứ tư. */
-    --dat-nen:  #e8f7ee;  --dat-vien:  #b7e4c7;  --dat-chu:  #14532d;
-    --luu-nen:  #fdf3e3;  --luu-vien:  #f0d3a4;  --luu-chu:  #8a4a06;
-    --loi-nen:  #fdecec;  --loi-vien:  #f3bdbd;  --loi-chu:  #991b1b;
-    --im-nen:   #f1f3f5;  --im-vien:   #dde3e8;  --im-chu:   #5b6b72;
+    /* ═══ NHẬN DIỆN — azure. MỘT màu, dùng cho: nút chính, liên kết, dòng đang chọn,
+       quầng lấy nét. Hết. Không dùng nó để trang trí tiêu đề hay vạch kẻ. ═══ */
+    --chinh:      #1c4ed8;
+    --chinh-dam:  #1740a8;
+    --chinh-nhat: #eff4fe;
+    --chinh-vien: #bfd0f9;
+    --vong:       rgba(28, 78, 216, .22);   /* quầng lấy nét — phải THẤY được */
+    --tren-chinh: #ffffff;                   /* chữ ĐẶT TRÊN nền --chinh */
+    --toi:        #101419;                   /* nền thanh bên */
 
-    /* KHOẢNG — thang 4px. Sáu bậc. Cần bậc thứ bảy là dấu hiệu bố cục đang sai. */
-    --k1: 4px;  --k2: 8px;  --k3: 12px;  --k4: 16px;  --k5: 24px;  --k6: 32px;
+    /* ═══ TRẠNG THÁI — mỗi trạng thái ĐÚNG BA màu: nền · viền · chữ. Không hơn.
+       Muốn nhạt hơn thì dùng nền; muốn đậm hơn thì dùng chữ. Đừng đẻ sắc thứ tư.
+       Bốn NGHĨA là cố định trên cả 25 màn, đừng chọn theo cảm giác:
+         dat = xong/ổn · luu = cần để ý · loi = chặn/sai · im = CHƯA BIẾT
+       Cái thứ tư quan trọng hơn vẻ ngoài của nó: sổ điều hành có luật «chưa đo được ≠
+       đạt». Tô xanh một ô chưa đo là cách nhanh nhất để lỗi thật đi qua. ═══ */
+    --dat-nen:  #e8f7ef;  --dat-vien:  #b3e3c9;  --dat-chu:  #0b6b41;
+    --luu-nen:  #fef6e8;  --luu-vien:  #f3dca8;  --luu-chu:  #8a5a05;
+    --loi-nen:  #fef1f0;  --loi-vien:  #f7c2bc;  --loi-chu:  #b42318;
+    --im-nen:   #f2f4f7;  --im-vien:   #dee3e9;  --im-chu:   #59646f;
 
-    /* BO GÓC */
-    --tron-1: 6px;  --tron-2: 9px;  --tron-3: 14px;  --tron-het: 999px;
+    /* ═══ KHOẢNG — sáu bậc. Cần bậc thứ bảy là dấu hiệu bố cục đang sai. ═══ */
+    --k1: 4px;  --k2: 8px;  --k3: 14px;  --k4: 20px;  --k5: 32px;  --k6: 48px;
 
-    /* CỠ CHỮ — thang cố định. Trước đây mỗi màn tự chọn một cỡ lẻ. */
-    --co-mini: 11px;  --co-nho: 12.5px;  --co-thuong: 13.5px;
-    --co-lon: 15px;   --co-de: 19px;     --co-to: 25px;
+    /* BO GÓC — bốn bậc */
+    --tron-1: 8px;  --tron-2: 10px;  --tron-3: 16px;  --tron-het: 999px;
 
-    /* BÓNG — hai bậc: nổi nhẹ (thẻ) và nổi rõ (lớp phủ). */
-    --bong-1: 0 1px 2px rgba(11, 33, 37, .06), 0 1px 8px rgba(11, 33, 37, .04);
-    --bong-2: 0 8px 28px rgba(11, 33, 37, .16);
+    /* ═══ CỠ CHỮ — thang cố định. Trước đây mỗi màn tự chọn một cỡ lẻ. ═══ */
+    --co-mini: 11.5px;  --co-nho: 13px;   --co-thuong: 14px;
+    --co-lon: 16px;     --co-de: 21px;    --co-to: 30px;
 
-    --chu-he: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-              Arial, "Noto Sans", sans-serif;
+    /* ═══ BÓNG — hai bậc, và bậc một gần như vô hình. Trong bản này thứ bậc do VẠCH
+       dựng, không do bóng. Bóng chỉ dành cho thứ thật sự nổi LÊN TRÊN trang: lớp phủ,
+       ngăn kéo, hộp thoại. ═══ */
+    --bong-1: 0 1px 2px rgba(15, 20, 25, .04);
+    --bong-2: 0 16px 48px rgba(15, 20, 25, .14);
+
+    /* ═══ CHỮ — dùng bộ chữ của HỆ ĐIỀU HÀNH, có chủ ý.
+       Đây là màn mở suốt ngày làm việc, và người dùng ở Việt Nam còn máy chủ ở châu Âu.
+       Một bộ chữ tải từ mạng ngoài là thêm một lượt chờ trên MỌI trang, cộng nguy cơ
+       chữ nhảy khi nó về muộn. Bộ của hệ điều hành (SF Pro trên máy Apple, Segoe UI
+       Variable trên Windows) đã là chữ hiện đại, dấu tiếng Việt đủ, và tải 0ms.
+       Muốn đổi sang bộ chữ riêng thì sửa ĐÚNG dòng này, không sửa 25 màn. ═══ */
+    --chu-he: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI",
+              Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
     --chu-so: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
     --nhanh: .14s ease;
@@ -93,25 +131,30 @@
     margin: 0;
     font-family: var(--chu-he);
     font-size: var(--co-thuong);
-    line-height: 1.5;
+    line-height: 1.55;
+    /* Siết chữ một chút — thứ làm nên vẻ «hiện đại» phần lớn là khoảng cách, không phải
+       hình dáng chữ. Chỉ áp cho chữ thân; số trong bảng thì không (xem `--chu-so`). */
+    letter-spacing: -.011em;
     color: var(--chu);
     background: var(--nen-2);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   /* `text-wrap: balance` chia dòng cho đều — không để tiêu đề rớt một chữ xuống dòng cuối. */
-  h1, h2, h3 { margin: 0; line-height: 1.3; font-weight: 700; text-wrap: balance; }
-  h1 { font-size: var(--co-to); letter-spacing: -.01em; }
+  h1, h2, h3 { margin: 0; line-height: 1.25; font-weight: 650; text-wrap: balance;
+               letter-spacing: -.022em; }
+  h1 { font-size: var(--co-to); }
   h2 { font-size: var(--co-de); }
-  h3 { font-size: var(--co-lon); }
+  h3 { font-size: var(--co-lon); letter-spacing: -.014em; }
 
-  p { margin: 0 0 var(--k3); }
+  p { margin: 0 0 var(--k3); max-width: 68ch; }   /* cột chữ để ĐỌC, không tràn hết bề ngang */
   p:last-child { margin-bottom: 0; }
 
   a { color: var(--chinh); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  a:hover { text-decoration: underline; text-underline-offset: 2px; }
 
-  code, kbd, samp { font-family: var(--chu-so); font-size: .92em; }
+  code, kbd, samp { font-family: var(--chu-so); font-size: .9em; letter-spacing: 0; }
 
   /* VÒNG LẤY NÉT — bàn phím phải thấy mình đang ở đâu. Trước đây không màn nào có,
      nên đi bằng Tab là đi trong tối. Chỉ hiện khi dùng bàn phím, không hiện khi bấm chuột. */
@@ -129,53 +172,54 @@
 @layer ds-phan {
 
   /* KHUNG TRANG — bù chỗ cho thanh bên, và giữ lề hai bên ở mọi bề ngang. */
-  .trang { padding: var(--k5); max-width: 1240px; }
+  .trang { padding: var(--k5); max-width: 1280px; }
   @media (max-width: 900px) { .trang { padding: var(--k4); } }
 
-  /* TẤM — hộp nội dung. Trước đây dựng lại 106 lần. */
+  /* TẤM — hộp nội dung. Trước đây dựng lại 106 lần.
+     Trong bản 2 tấm KHÔNG có bóng: vạch tóc đủ nói «đây là một khối riêng», và bóng đổ
+     trên mọi khối làm phẳng thứ bậc. Tấm cần nổi lên thật thì thêm `.noi`. */
   .panel {
     background: var(--nen);
     border: 1px solid var(--vien);
     border-radius: var(--tron-3);
     padding: var(--k4);
-    box-shadow: var(--bong-1);
   }
-  .panel + .panel { margin-top: var(--k4); }
+  .panel.noi { box-shadow: var(--bong-1); }
+  .panel + .panel { margin-top: var(--k3); }
   .panel > h2, .panel > h3 { margin-bottom: var(--k3); }
 
-  /* NÚT — ba dạng, không hơn: chính · thường · nhạt. Cao 38px để bấm được trên điện thoại. */
+  /* NÚT — ba dạng, không hơn: chính · thường · nhạt. Cao 40px để bấm được trên điện thoại. */
   .nut {
     display: inline-flex; align-items: center; justify-content: center; gap: var(--k2);
-    min-height: 38px; padding: 0 var(--k4);
-    font: inherit; font-weight: 600; font-size: var(--co-nho);
+    min-height: 40px; padding: 0 var(--k4);
+    font: inherit; font-weight: 600; font-size: var(--co-nho); letter-spacing: -.006em;
     color: var(--chu); background: var(--nen); cursor: pointer;
     border: 1px solid var(--vien-dam); border-radius: var(--tron-2);
+    text-decoration: none; white-space: nowrap;
     /* `touch-action: manipulation` bỏ 300ms trễ chờ-nhấn-đôi trên cảm ứng — nút bấm
        thấy nhanh hơn hẳn mà không đổi một pixel nào. Và tự định màu chớp khi chạm, thay
        cho màu xám mặc định của trình duyệt. */
     touch-action: manipulation;
     -webkit-tap-highlight-color: var(--vong);
     /* CHỈ liệt kê thuộc tính cần — `transition: all` là điều luật cấm thẳng. */
-    transition: background var(--nhanh), border-color var(--nhanh);
-    text-decoration: none; white-space: nowrap;
+    transition: background var(--nhanh), border-color var(--nhanh), color var(--nhanh);
   }
   .nut:hover { background: var(--nen-2); text-decoration: none; }
   .nut:active { background: var(--nen-3); }
   .nut[disabled], .nut[aria-disabled="true"] {
-    opacity: .5; cursor: not-allowed; pointer-events: none;
+    opacity: .45; cursor: not-allowed; pointer-events: none;
   }
   .nut.chinh { background: var(--chinh); border-color: var(--chinh); color: var(--tren-chinh); }
   .nut.chinh:hover { background: var(--chinh-dam); border-color: var(--chinh-dam); }
   .nut.nhat { background: none; border-color: transparent; color: var(--chinh); }
   .nut.nhat:hover { background: var(--chinh-nhat); }
-  .nut.nho { min-height: 30px; padding: 0 var(--k3); font-size: var(--co-mini); }
+  .nut.nho { min-height: 32px; padding: 0 var(--k3); font-size: var(--co-mini); }
 
-  /* THẺ TRẠNG THÁI — bốn màu, mỗi màu một NGHĨA cố định. Đừng chọn theo cảm giác:
-     .dat = xong/ổn · .luu = cần để ý · .loi = chặn/sai · .im = chưa có gì để nói. */
+  /* THẺ TRẠNG THÁI — bốn màu, mỗi màu một NGHĨA cố định (xem khối token). */
   .pill {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 2px var(--k2); border-radius: var(--tron-het);
-    font-size: var(--co-mini); font-weight: 700; line-height: 1.7;
+    font-size: var(--co-mini); font-weight: 650; line-height: 1.75; letter-spacing: 0;
     border: 1px solid var(--im-vien); background: var(--im-nen); color: var(--im-chu);
     white-space: nowrap;
   }
@@ -185,80 +229,74 @@
 
   /* BẢNG */
   table { width: 100%; border-collapse: collapse; font-size: var(--co-nho); }
-  th, td { padding: var(--k2) var(--k3); text-align: left; border-bottom: 1px solid var(--vien); }
+  th, td { padding: var(--k3) var(--k3); text-align: left; border-bottom: 1px solid var(--vien); }
   th {
-    background: var(--nen-3); color: var(--chu-2); font-weight: 700;
-    font-size: var(--co-mini); text-transform: uppercase; letter-spacing: .04em;
+    background: var(--nen); color: var(--chu-mo); font-weight: 650;
+    font-size: var(--co-mini); text-transform: uppercase; letter-spacing: .06em;
+    padding-top: var(--k2); padding-bottom: var(--k2);
     position: sticky; top: 0; z-index: 1;
+    border-bottom-color: var(--vien-dam);
   }
   tbody tr:hover { background: var(--nen-2); }
-  td.so, th.so { text-align: right; font-family: var(--chu-so); font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.so, th.so { text-align: right; font-family: var(--chu-so); font-variant-numeric: tabular-nums;
+                 letter-spacing: 0; }
   /* Bảng rộng KHÔNG được làm cả trang trôi ngang — bọc trong .cuon-ngang. */
   .cuon-ngang { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
   /* Ô NHẬP */
   input[type="text"], input[type="search"], input[type="number"],
   input[type="date"], select, textarea {
-    width: 100%; min-height: 38px; padding: var(--k2) var(--k3);
+    width: 100%; min-height: 40px; padding: var(--k2) var(--k3);
     font: inherit; font-size: var(--co-nho); color: var(--chu);
     background: var(--nen); border: 1px solid var(--vien-dam); border-radius: var(--tron-2);
     transition: border-color var(--nhanh), box-shadow var(--nhanh);
   }
+  input::placeholder, textarea::placeholder { color: var(--chu-mo); }
   /* ⚠️ `outline: none` chỉ được phép khi CÓ thay thế thấy được — luật Focus States.
-     Bản đầu của tôi thay bằng quầng màu `--chinh-nhat` (#e6f3f4), nhạt đến mức trên nền
-     trắng gần như không thấy: tức là vi phạm luật trong khi trông như đã tuân. Nay quầng
-     dùng `--vong` (chính, 26% đục) — thấy rõ trên cả nền trắng lẫn nền chìm.
-     Và dùng `:focus-visible`, không phải `:focus`: bấm chuột thì không hiện quầng. */
+     Bản đầu thay bằng quầng màu nhạt tới mức trên nền trắng gần như không thấy: tức là
+     vi phạm luật trong khi trông như đã tuân. Nay quầng dùng `--vong` — thấy rõ trên cả
+     nền trắng lẫn nền chìm. Và dùng `:focus-visible`: bấm chuột thì không hiện quầng. */
   input:focus-visible, select:focus-visible, textarea:focus-visible {
     border-color: var(--chinh); box-shadow: 0 0 0 3px var(--vong); outline: none;
   }
   input:focus, select:focus, textarea:focus { border-color: var(--chinh); outline: none; }
-  textarea { min-height: 84px; resize: vertical; line-height: 1.55; }
+  textarea { min-height: 92px; resize: vertical; line-height: 1.6; }
   label { display: block; font-size: var(--co-nho); font-weight: 600; margin-bottom: var(--k1); }
   /* Câu gợi ý dưới ô nhập — chỗ để nói VÌ SAO cần trường này. */
-  .goi-y { font-size: var(--co-mini); color: var(--chu-mo); margin-top: var(--k1); line-height: 1.45; }
+  .goi-y { font-size: var(--co-mini); color: var(--chu-mo); margin-top: var(--k1); line-height: 1.5; }
 
   /* BĂNG TIN — một câu cho cả trang. Dùng cùng bốn nghĩa như .pill. */
   .bang {
     display: flex; gap: var(--k3); align-items: flex-start;
     padding: var(--k3) var(--k4); border-radius: var(--tron-2);
     border: 1px solid var(--im-vien); background: var(--im-nen); color: var(--im-chu);
-    font-size: var(--co-nho); line-height: 1.5;
+    font-size: var(--co-nho); line-height: 1.55;
   }
   .bang.dat { background: var(--dat-nen); border-color: var(--dat-vien); color: var(--dat-chu); }
   .bang.luu { background: var(--luu-nen); border-color: var(--luu-vien); color: var(--luu-chu); }
   .bang.loi { background: var(--loi-nen); border-color: var(--loi-vien); color: var(--loi-chu); }
   .bang b { display: block; }
 
-  /* CON SỐ LỚN — ô thống kê. Số là thứ người ta tới để đọc, nhãn chỉ để biết số đó là gì. */
-  .so-to { font-family: var(--chu-so); font-size: var(--co-to); font-weight: 700;
-           font-variant-numeric: tabular-nums; line-height: 1.15; }
+  /* CON SỐ LỚN — ô thống kê. Số là thứ người ta tới để đọc; nhãn chỉ để biết số đó là gì.
+     Tiền và số lượng là CHỖ DUY NHẤT ngoài trạng thái được phép nổi trong bản này. */
+  .so-to { font-family: var(--chu-so); font-size: var(--co-to); font-weight: 650;
+           font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: -.03em; }
   .nhan { font-size: var(--co-mini); color: var(--chu-mo); text-transform: uppercase;
-          letter-spacing: .05em; font-weight: 700; }
+          letter-spacing: .07em; font-weight: 650; }
 
   /* XẾP — thay cho việc mỗi màn tự viết một grid. */
   .hang { display: flex; gap: var(--k3); align-items: center; flex-wrap: wrap; }
-  .hang > * { min-width: 0; }   /* xem chú thích .cat ở trên — thiếu dòng này là cắt chữ không ăn */
+  .hang > * { min-width: 0; }   /* xem chú thích .cat ở dưới — thiếu dòng này là cắt chữ không ăn */
   .hang.day { justify-content: space-between; }
   .luoi { display: grid; gap: var(--k3); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-
-  /* CHỮ DÀI — luật Content Handling. Nội dung do NGƯỜI nhập thì phải chịu được cả câu
-     một chữ lẫn câu hai trăm chữ. Tên khách, tên page, lý do chuyển người đều là chữ
-     người nhập; không có mấy lớp này thì một tên dài làm vỡ cả bảng.
-     ⚠️ `.cat` KHÔNG chạy được trong con của flex nếu thiếu `min-width: 0` — đó là bẫy
-     cổ điển: cắt chữ trông như không có tác dụng. Nên `.hang > *` tự đặt sẵn. */
-  .cat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .cat-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-           overflow: hidden; }
-  .be-chu { overflow-wrap: anywhere; word-break: break-word; }
 
   /* ─── LỚP TIỆN DỤNG ───────────────────────────────────────────────────────────
      Vì sao có khối này: trang đầu tiên dùng hệ kiểu (`bat-dau.html`) ban đầu có 24
      thuộc tính `style=` gõ thẳng. Chúng đều dùng token nên không sinh màu lạ — nhưng
      vẫn là CSS tuỳ hứng trong trang, đúng bệnh vừa chữa, chỉ nhỏ hơn. Và màn kế tiếp
      sẽ chép lại chúng rồi lệch dần. Nên: đặt tên, để dùng lại.
-     Thang KHOẢNG trên/dưới chỉ có sáu bậc, đúng bằng thang `--k1..--k6`. Cần bậc thứ
-     bảy là dấu hiệu bố cục đang sai, không phải dấu hiệu thiếu lớp. */
+     Thang KHOẢNG trên/dưới chỉ có sáu bậc, đúng bằng thang `--k1..--k6`. */
   .tren-1 { margin-top: var(--k1) }  .duoi-1 { margin-bottom: var(--k1) }
   .tren-2 { margin-top: var(--k2) }  .duoi-2 { margin-bottom: var(--k2) }
   .tren-3 { margin-top: var(--k3) }  .duoi-3 { margin-bottom: var(--k3) }
@@ -269,13 +307,13 @@
   .manh { font-weight: 600 }
   .gian { flex: 1; min-width: 0 }        /* con flex GIÃN ra, và cho phép cắt chữ */
   .vua { flex: 0 0 auto }                /* con flex giữ đúng bề rộng của nó */
-  .hep { max-width: 440px }
-  /* Cột chữ để ĐỌC. 62 ký tự là bề rộng mắt đọc thoải mái; dài hơn thì mắt mất dòng. */
-  .rong-doc { max-width: 62ch }
+  .hep { max-width: 460px }
+  /* Cột chữ để ĐỌC. 68 ký tự là bề rộng mắt đọc thoải mái; dài hơn thì mắt mất dòng. */
+  .rong-doc { max-width: 68ch }
 
   /* HAI CỘT «danh sách · chi tiết» — khuôn của mọi màn chọn-rồi-xem. Màn hẹp thì xếp
      dọc, vì 320px cạnh nội dung trên điện thoại là không còn chỗ đọc. */
-  .cot-ds { display: grid; gap: var(--k4); grid-template-columns: minmax(0, 320px) minmax(0, 1fr); }
+  .cot-ds { display: grid; gap: var(--k3); grid-template-columns: minmax(0, 320px) minmax(0, 1fr); }
   @media (max-width: 860px) { .cot-ds { grid-template-columns: minmax(0, 1fr); } }
 
   /* Danh sách dài tự cuộn TRONG tấm, không đẩy cả trang dài ra. */
@@ -298,6 +336,16 @@
      (ascender) nên canh theo hộp thì nhãn trông cao hơn chữ. 2px không nằm trong thang
      `--k*` và cũng không nên: nó là canh chỉnh của THÀNH PHẦN này, không phải khoảng bố cục. */
   .viec > .vua:first-child { padding-top: 2px }
+
+  /* CHỮ DÀI — luật Content Handling. Nội dung do NGƯỜI nhập thì phải chịu được cả câu
+     một chữ lẫn câu hai trăm chữ. Tên khách, tên page, lý do chuyển người đều là chữ
+     người nhập; không có mấy lớp này thì một tên dài làm vỡ cả bảng.
+     ⚠️ `.cat` KHÔNG chạy được trong con của flex nếu thiếu `min-width: 0` — đó là bẫy
+     cổ điển: cắt chữ trông như không có tác dụng. Nên `.hang > *` tự đặt sẵn. */
+  .cat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cat-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+           overflow: hidden; }
+  .be-chu { overflow-wrap: anywhere; word-break: break-word; }
 
   /* CHỮ PHỤ */
   .mo { color: var(--chu-mo); }
@@ -327,11 +375,11 @@
     position: absolute; left: var(--k3); top: var(--k3); z-index: 10000;
     transform: translateY(-200%);
     background: var(--chinh); color: var(--tren-chinh);
-    padding: var(--k2) var(--k4); border-radius: var(--tron-2); font-weight: 700;
+    padding: var(--k2) var(--k4); border-radius: var(--tron-2); font-weight: 650;
   }
   .bo-qua:focus-visible { transform: translateY(0); text-decoration: none; }
 
-  /* Bấm bằng ngón tay: mọi thứ bấm được phải đủ 40px trên cảm ứng. */
+  /* Bấm bằng ngón tay: mọi thứ bấm được phải đủ 44px trên cảm ứng. */
   @media (pointer: coarse) {
     .nut { min-height: 44px; }
     input, select, textarea { min-height: 44px; }
