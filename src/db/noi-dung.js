@@ -423,7 +423,14 @@ export async function duyetBoLuat(pool, ctx, { id, ghiChu = "" } = {}) {
  * Chỉ mục `bo_luat_chung_mot_ban_dang_ap` (009) là cái rào thứ hai: kể cả có ai ghi thẳng
  * qua đường khác thì trạng thái «hai bản cùng đang áp» cũng KHÔNG tồn tại được.
  */
-export async function apBoLuat(pool, ctx, { id, lyDo = "" } = {}) {
+/**
+ * @param {string} goc thư mục gốc chứa `ai-enabled.json` — CÙNG lý do như
+ *        `xemAnhHuongBoLuat`: để bài test tự dựng nguồn thật của mình thay vì phụ thuộc
+ *        vào tệp ở gốc repo (tệp đó gitignore nên CI KHÔNG có, và máy nào cũng khác nhau).
+ *        ⛔ Đây là tham số CỦA MÁY, không phải của người dùng: đường HTTP tuyệt đối không
+ *        được `spread` thân yêu cầu vào đây, kẻo khách chỉ được chỗ đọc tệp.
+ */
+export async function apBoLuat(pool, ctx, { id, lyDo = "", goc = GOC } = {}) {
   const khach = await pool.connect();
   try {
     await khach.query("BEGIN");
@@ -475,7 +482,7 @@ export async function apBoLuat(pool, ctx, { id, lyDo = "" } = {}) {
     const laLui = banCu ? Number(ban.phien_ban) < Number(banCu.phien_ban) : false;
     // Cùng một bộ đếm với `xemAnhHuongBoLuat` — con số hiện lúc XEM TRƯỚC và con số ghi
     // vào nhật ký lúc ÁP phải là cùng một phép đo, không phải hai câu SQL giống nhau.
-    const anhHuong = await demPageBatBot(khach, ctx.teamId);
+    const anhHuong = await demPageBatBot(khach, ctx.teamId, goc);
 
     await ghiNhatKy(khach, {
       teamId: ctx.teamId,

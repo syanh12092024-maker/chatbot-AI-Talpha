@@ -5,6 +5,9 @@
 // giao dịch thật, chỉ mục thật, vai đọc từ `thanh_vien_team` thật.
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { dungSandbox } from "../db/sandbox.js";
 import {
   taoBanBoLuat,
@@ -30,6 +33,14 @@ const mot = async (sql, p) => (await q(sql, p)).rows[0];
 let tA, soanGia, duyetGia, saleA;
 let ctxSoan, ctxDuyet, ctxSale;
 let pageCoSize, pageKhongSize;
+
+// ⚠️ NGUỒN THẬT CỦA RIÊNG BỘ CA. `ai-enabled.json` ở gốc repo là TRẠNG THÁI VẬN HÀNH THẬT:
+// nó gitignore nên CI không hề có, và ở máy thợ thì nội dung mỗi người một khác. Ca nào đọc
+// nó là ca đo trạng thái của MÁY chứ không đo mã — N5 và N11 từng đỏ suốt trên Actions đúng
+// vì thế (`nguon` rơi về `cot_csdl`, và rơi về cột chính là cái B-Y7 đi bịt).
+// Nay bộ ca tự dựng nguồn của mình, KHỚP với cột, để hai ca kia đo được CON SỐ CHÍNH XÁC
+// thay vì chỉ `typeof === 'number'`. Nhánh LỆCH và nhánh MÙ đã có N18/N19/N20 lo.
+let nguonThat;
 
 before(async () => {
   sb = await dungSandbox("l0m2noidung");
@@ -79,9 +90,17 @@ before(async () => {
      VALUES ($1,'hoi-size','Hỏi size','Luôn hỏi size trước khi chốt.','{}',true,1)`,
     [tA],
   );
+
+  // Khớp ĐÚNG cột: fb-size và fb-nosize bật, fb-tat tắt ⇒ lech.co phải là false.
+  nguonThat = fs.mkdtempSync(path.join(os.tmpdir(), "l0m2-nguon-"));
+  fs.writeFileSync(
+    path.join(nguonThat, "ai-enabled.json"),
+    JSON.stringify(["fb-size", "fb-nosize"]),
+  );
 });
 after(async () => {
   await sb.don();
+  if (nguonThat) fs.rmSync(nguonThat, { recursive: true, force: true });
 });
 
 const banDangAp = () =>
@@ -138,16 +157,23 @@ test("N4 · đề xuất của AI CHƯA duyệt → TỪ CHỐI áp (01 §9)", a
 
 test("N5 · áp bản người viết → đổi bản đang chạy, và TRẢ VỀ số page bị ảnh hưởng", async () => {
   const b = await mot("SELECT id FROM bo_luat_chung WHERE team_id=$1 AND phien_ban=2", [tA]);
-  const kq = await apBoLuat(sb.pool, ctxDuyet, { id: b.id, lyDo: "chốt nội dung mới" });
+  const kq = await apBoLuat(sb.pool, ctxDuyet, {
+    id: b.id,
+    lyDo: "chốt nội dung mới",
+    goc: nguonThat, // nguồn thật CỦA BỘ CA — xem khối khai ở đầu tệp
+  });
   console.log(
-    `   [N5] ảnh hưởng: ${kq.anhHuong.soPage} page · ${kq.anhHuong.soPageDangBatBot} đang bật bot`,
+    `   [N5] ảnh hưởng: ${kq.anhHuong.soPage} page · ${kq.anhHuong.soPageDangBatBot} đang bật bot (nguồn: ${kq.anhHuong.nguon})`,
   );
   assert.equal(Number((await banDangAp()).phien_ban), 2);
   assert.equal(kq.anhHuong.soPage, 3);
   // ⚠️ SỬA 25/08 (B-Y7): `soPageDangBatBot` KHÔNG còn lấy từ cột `page.bot_ai_bat` nữa —
   // cột đó là BẢN SAO và đã lệch 50 trên máy chủ thật. Nay lấy từ `ai-enabled.json`.
   assert.equal(kq.anhHuong.nguon, "ai-enabled.json");
-  assert.equal(typeof kq.anhHuong.soPageDangBatBot, "number");
+  // CON SỐ CHÍNH XÁC, không phải `typeof === 'number'`. Bản cũ chỉ đo được kiểu dữ liệu vì
+  // nó đọc tệp ở gốc repo nên không biết trước sẽ thấy gì — tức phép đo yếu đi vì hạ tầng,
+  // không phải vì đề bài. Nguồn tự dựng trả lại con số cho nó.
+  assert.equal(kq.anhHuong.soPageDangBatBot, 2);
   assert.equal(kq.laLui, false);
 });
 
@@ -226,12 +252,17 @@ test("N10 · vai `sale` không sửa/áp/duyệt được; ctxHeThong bị từ 
 });
 
 test("N11 · xemAnhHuongBoLuat tách «tổng page» khỏi «page đang bật bot»", async () => {
-  const ah = await xemAnhHuongBoLuat(sb.pool, ctxSoan);
+  const ah = await xemAnhHuongBoLuat(sb.pool, ctxSoan, { goc: nguonThat });
   console.log(
     `   [N11] ${ah.soPage} page · ${ah.soPageDangBatBot} bật (nguồn: ${ah.nguon}) · cột nói ${ah.theoCotCsdl}`,
   );
   assert.equal(ah.soPage, 3);
   assert.equal(ah.nguon, "ai-enabled.json", "phải hỏi NGUỒN THẬT, không hỏi cột");
+  // Và TÁCH được hai con số ra thật: 3 page tổng, 2 đang bật bot. Đây là điều tên ca hứa —
+  // bản cũ dừng ở `nguon` nên cái «tách» chưa ca nào đo.
+  assert.equal(ah.soPageDangBatBot, 2);
+  assert.equal(ah.theoCotCsdl, 2);
+  assert.equal(ah.lech.co, false, "nguồn dựng KHỚP cột — không được báo lệch vô cớ");
 });
 
 // ══ B-Y7 — CỘT LỆCH KHỎI SỰ THẬT, VÀ ĐÓ LÀ CON SỐ CHO PHÉP BẤM ÁP ═══════════════════
