@@ -3,58 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Trang chủ — AI Closer v3</title>
-<style>
-
-  .chao{margin:0 0 16px;line-height:1.55}
-  .chao b{font-size:15px}
-  /* KHÔNG đặt tên `.v` cho dòng này: `.v` là thẻ việc, và dòng vai sẽ ăn nguyên khung thẻ. */
-  .chao .vaiToi{color:var(--muted);font-size:12px;margin-top:2px}
-
-  .ds{display:grid;gap:10px}
-
-  .v{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);
-     border-radius:var(--r);box-shadow:var(--sh);padding:14px 16px;display:flex;gap:14px;align-items:flex-start}
-  .v.gap{border-left-color:var(--bad)}
-  .v.yen{border-left-color:var(--ok)}
-  .v.mu{border-left-color:var(--xam);background:var(--nen-2)}
-
-  .v .so{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;
-         min-width:58px;text-align:right;padding-top:2px}
-  .v.gap .so{color:var(--bad)} .v.yen .so{color:var(--ok)}
-  .v.mu .so{color:var(--xam);font-size:17px;font-weight:600}
-  .v .than{flex:1;min-width:0}
-  .v .ten{font-weight:600;font-size:13.5px;margin-bottom:3px}
-  .v .lam{color:var(--muted);font-size:12px;line-height:1.55}
-  .v .noi{font-size:12px;line-height:1.6;margin-top:6px}
-  .v .di{margin-top:9px}
-  .v .di a{display:inline-block;background:var(--pri);color:var(--nen);text-decoration:none;
-           padding:6px 13px;border-radius:8px;font-size:12px;font-weight:600}
-  .v .di a:hover{background:var(--priDark)}
-  .v .di .khong{color:var(--muted);font-size:12px;font-style:italic}
-
-  /* ba trạng thái rỗng, ba màu — cả điểm của màn này */
-  .vi{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;
-      margin-bottom:5px;white-space:nowrap}
-  .vi.xong{background:var(--okSoft);color:var(--dat-chu)}
-  .vi.chua-nap{background:var(--warnSoft);color:var(--luu-chu)}
-  .vi.chua-co-bang{background:var(--badSoft);color:var(--loi-chu)}
-  .canh{background:var(--warnSoft);border:1px solid var(--luu-vien);color:var(--luu-chu);border-radius:9px;
-        padding:9px 12px;margin-top:7px;line-height:1.6;font-size:12px}
-  .canh b{color:#7a3f05}
-
-  .chan{margin-top:18px;color:var(--muted);font-size:11.5px;line-height:1.6;
-        background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 15px}
-  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6;
-         background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
-  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
-  code{background:var(--nen-3);padding:1px 5px;border-radius:4px;font-size:11.5px;
-       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-
-  @media (max-width:720px){
-    .v{padding:12px 13px;gap:11px} .v .so{min-width:44px;font-size:22px}
-  }
-</style>
+<title>Việc của tôi — AI Closer</title>
+<!-- Dựng trên hệ kiểu (mục M1 của bản đặc tả: «việc cần để ý trước, số liệu sau»). KHÔNG CSS
+     riêng. Trước lượt này màn có 50 dòng CSS dựng mỗi việc thành một thẻ viền trái màu, và
+     tô «đã xong» cùng cỡ chữ, cùng chỗ đứng với «5 việc đang cần bạn» — mắt phải đọc từng thẻ
+     mới biết thẻ nào cần làm. Nay việc được XẾP NHÓM theo trạng thái: cần xử lý · chưa đọc
+     được · đã ổn. Nhóm nói trạng thái, hàng chỉ nói việc. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -62,89 +17,121 @@
 <body>
 <header>
   <h1>Việc của tôi</h1>
-  <span class="sub" id="hTeam">…</span>
-  <span class="sp"></span>
-
+  <span class="sub" id="hTeam">Việc theo vai của bạn, việc gấp xếp lên đầu.</span>
 </header>
 
 <main>
-  <div class="chao" id="chao"></div>
-  <div class="ds" id="ds"><div class="trong">Đang tải…</div></div>
-  <div class="chan" id="chan"></div>
+  <div id="bang-tin" aria-live="polite"></div>
+  <div id="ds"><div class="item-list" aria-busy="true">
+    <div class="item"><div><span class="skeleton"></span></div></div>
+    <div class="item"><div><span class="skeleton"></span></div></div>
+    <div class="item"><div><span class="skeleton"></span></div></div>
+  </div></div>
+  <div class="page-note" id="chan"></div>
 </main>
 
 <script>
+const { esc, text, statusBadge, button, alert: canhBao, emptyState, formatNumber: so, roleName } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const CHU_VI = {
-  'xong': 'đã xong',
-  'chua-nap': 'chưa có dữ liệu',
-  'chua-co-bang': 'chưa có bảng',
-};
-
-function veViec(v) {
-  // Ba cảnh, ba cách vẽ:
-  //   ① có việc            → viền đỏ, số to, nút bấm sang
-  //   ② hết việc thật      → viền xanh, «đã xong»
-  //   ③ chưa đọc được / chưa nạp → viền xám, KHÔNG hiện số 0 (số 0 ở đây là tin mừng giả)
+// Ba nhóm, và chúng KHÁC NHAU (xem khối chú thích đầu `kho-trang-chu.js`):
+//   gap  — có việc thật, có chỗ bấm sang
+//   chua — chưa đọc được / bảng chưa nạp: KHÔNG hiện số 0 (0 ở đây là tin mừng giả)
+//   on   — có nguồn, đếm được, và đúng là 0
+function nhomCua(v) {
+  if (v.gap) return 'gap';
   const chuaBiet = v.so === null || (v.so === 0 && v.viRong !== 'xong');
-  const lop = v.gap ? 'gap' : (chuaBiet ? 'mu' : 'yen');
-  const so = v.so === null ? '—' : (chuaBiet ? '?' : v.so);
+  return chuaBiet ? 'chua' : 'on';
+}
 
-  let noi = '';
-  if (!v.gap) {
-    noi = `<div class="noi"><span class="vi ${esc(v.viRong)}">${esc(CHU_VI[v.viRong] || v.viRong)}</span><br>${esc(v.noiRong || '')}</div>`;
-    if (v.diTiepRong) noi += `<div class="canh"><b>Đi tiếp:</b> ${esc(v.diTiepRong)}</div>`;
+function tieuDe(v) {
+  const tong = v.tong != null ? ` <span class="meta">/ ${so(v.tong)} ${esc(v.donVi || 'page')}</span>` : '';
+  return `<div class="item-title">${esc(v.ten)}${tong}</div>`;
+}
+
+let _chinhDaDung = false;
+function veHang(v, nhom) {
+  if (nhom === 'gap') {
+    // Mục H1: tối đa MỘT nút chính trên vùng nhìn — việc gấp nhất.
+    const bien = _chinhDaDung ? 'outline' : 'primary';
+    _chinhDaDung = true;
+    const duoi = v.di
+      ? button('Xem và xử lý', { href: v.di, size: 'sm', variant: bien })
+      : `<span>${esc(v.chuaCoMan || 'Chưa có màn để xử lý')}</span>`;
+    return `<li class="item">
+      <div class="item-lead">${so(v.so)}</div>
+      <div>${tieuDe(v)}<div class="item-desc">${esc(v.lam)}</div></div>
+      <div class="item-trail">${duoi}</div>
+    </li>`;
   }
+  if (nhom === 'chua') {
+    return `<li class="item">
+      <div class="item-lead" data-muted><span aria-hidden="true">—</span><span class="sr-only">chưa biết</span></div>
+      <div>${tieuDe(v)}<div class="item-desc">${esc(v.lam)}</div>
+        ${v.noiRong ? `<div class="item-detail">${text(v.noiRong)}</div>` : ''}
+        ${v.diTiepRong ? `<div class="item-detail"><b>Cách xử lý:</b> ${text(v.diTiepRong)}</div>` : ''}
+      </div>
+      <div class="item-trail">${statusBadge(v.viRong === 'chua-co-bang' ? 'feature_unavailable' : 'unknown',
+        { label: v.viRong === 'chua-co-bang' ? 'Chưa có bảng' : 'Chưa có dữ liệu' })}</div>
+    </li>`;
+  }
+  return `<li class="item">
+    <div class="item-lead" data-muted>${so(v.so)}</div>
+    <div>${tieuDe(v)}<div class="item-desc">${text(v.noiRong || v.lam)}</div></div>
+    <div class="item-trail">${v.di ? button('Mở', { href: v.di, size: 'sm', variant: 'ghost' }) : ''}</div>
+  </li>`;
+}
 
-  const di = v.gap && v.di
-    ? `<div class="di"><a href="${esc(v.di)}">Xem và xử →</a></div>`
-    : (v.di ? '' : '<div class="di"><span class="khong">chưa có màn để bấm sang</span></div>');
-
-  return `<div class="v ${lop}">
-    <div class="so">${so}</div>
-    <div class="than">
-      <div class="ten">${esc(v.ten)}${v.tong != null ? ` <span class="lam">/ ${v.tong} ${esc(v.donVi || 'page')}</span>` : ''}</div>
-      <div class="lam">${esc(v.lam)}</div>
-      ${noi}${di}
-    </div>
-  </div>`;
+function veNhom(tieu, moTa, huyHieu, ds, nhom) {
+  if (!ds.length) return '';
+  return `<section class="section" aria-label="${esc(tieu)}">
+    <div class="section-header"><div><h2>${esc(tieu)}</h2>${moTa ? `<div class="section-desc">${esc(moTa)}</div>` : ''}</div>${huyHieu}</div>
+    <ul class="item-list">${ds.map((v) => veHang(v, nhom)).join('')}</ul>
+  </section>`;
 }
 
 async function tai() {
   try {
-    const r = await fetch('/api/trang-chu', { credentials: 'same-origin' });
+    const r = await fetch('/api/trang-chu', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+    if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return; }
     const d = await r.json();
-    if (!r.ok || d.ok === false) throw new Error(d.thongDiep || 'Lỗi ' + r.status);
+    if (!r.ok || d.ok === false) throw new Error(d.thongDiep || 'Máy chủ trả ' + r.status + '.');
 
-    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
-    $('#chao').innerHTML = `<b>${esc(d.tenDangNhap || '')}</b>
-      ${d.soGap ? `— <b style="color:var(--bad)">${d.soGap} việc đang cần bạn</b>` : '— không có việc nào gấp'}
-      <div class="vaiToi">vai: ${esc((d.vai || []).join(', ') || 'không có')}</div>`;
+    const vai = (d.vai || []).map(roleName).join(', ') || 'chưa có vai';
+    $('#hTeam').textContent = d.soGap
+      ? `${so(d.soGap)} việc đang cần bạn · theo vai ${vai}`
+      : `Không có việc nào gấp · theo vai ${vai}`;
 
     if (!d.viec.length) {
-      $('#ds').innerHTML = `<div class="trong">
-        <div class="ti">${esc(d.trong ? d.trong.noi : 'Không có việc nào')}</div>
-        <div>${esc(d.trong ? d.trong.diTiep : '')}</div></div>`;
+      $('#ds').innerHTML = emptyState({
+        icon: 'inbox',
+        title: d.trong ? d.trong.noi : 'Không có việc nào',
+        body: d.trong ? d.trong.diTiep : '',
+      });
     } else {
-      $('#ds').innerHTML = d.viec.map(veViec).join('');
+      const nhom = { gap: [], chua: [], on: [] };
+      for (const v of d.viec) nhom[nhomCua(v)].push(v);
+      _chinhDaDung = false;
+      $('#ds').innerHTML =
+        (nhom.gap.length ? '' : `<div class="duoi-5">${canhBao({ level: 'success', title: 'Không có việc nào gấp',
+          body: 'Mọi việc theo vai của bạn đều đã ổn hoặc chưa có dữ liệu để đếm.' })}</div>`)
+        + veNhom('Cần xử lý', 'Việc có người phải làm, xếp theo độ gấp.',
+            statusBadge('blocked', { label: `${so(nhom.gap.length)} việc` }), nhom.gap, 'gap')
+        + veNhom('Chưa đọc được số', 'Hiện «—» thay vì 0: số 0 ở đây sẽ là tin mừng giả.',
+            statusBadge('unknown', { label: `${so(nhom.chua.length)} mục` }), nhom.chua, 'chua')
+        + veNhom('Đã ổn', null,
+            statusBadge('ready', { label: `${so(nhom.on.length)} mục` }), nhom.on, 'on');
     }
 
     const ghi = [];
-    if (d.soChuaDocDuoc) {
-      ghi.push(`<b>${d.soChuaDocDuoc} ô chưa đọc được số</b> — hiện «—» hoặc «?» thay vì «0». `
-        + 'Số 0 ở những ô đó sẽ là tin mừng giả.');
-    }
     if (d.soAnVaiKhac) {
-      ghi.push(`Còn <b>${d.soAnVaiKhac} việc</b> thuộc vai khác, không hiện ở đây — `
-        + 'màn này chỉ cho bạn xem việc của vai bạn, không phải toàn bộ hệ thống.');
+      ghi.push(`<p>Còn ${so(d.soAnVaiKhac)} việc thuộc vai khác không hiện ở đây. Màn này chỉ hiện việc theo vai của bạn, không phải toàn bộ hệ thống.</p>`);
     }
-    ghi.push('Màn này là danh sách <b>việc</b>. Con số kinh doanh nằm ở màn Báo cáo.');
-    $('#chan').innerHTML = ghi.join('<br>');
+    ghi.push('<p>Màn này là danh sách việc. Số đơn và tỉ lệ chốt nằm ở màn <a href="/bao-cao">Đơn và tỉ lệ chốt</a>.</p>');
+    $('#chan').innerHTML = ghi.join('');
   } catch (e) {
-    $('#ds').innerHTML = `<div class="trong"><div class="ti">Không tải được</div><div>${esc(e.message)}</div></div>`;
+    $('#bang-tin').innerHTML = canhBao({ level: 'error', title: 'Không tải được danh sách việc', body: e.message });
+    $('#ds').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' });
   }
 }
 

@@ -119,16 +119,30 @@
     else { nut.removeAttribute("aria-busy"); nut.disabled = false; }
   }
 
+  // ── CHỮ CÓ MÃ — chữ máy chủ viết cho người vận hành ────────────────────────────────
+  // Tầng kho viết câu kiểu «thiếu `ADMIN_USER` — …» (dấu ` bao tên kỹ thuật). Đo 14/09: 11 màn
+  // tự xử theo 3 cách — xoá dấu `, đổi thành <code>, hoặc để nguyên. Nay một cách: THOÁT KÝ TỰ
+  // TRƯỚC, rồi mới đổi `…` thành <code> và bỏ `**` — không bao giờ để lọt HTML thô.
+  function text(s) {
+    return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/`/g, "").replace(/\*\*/g, "");
+  }
+
   // ── H9 · CẢNH BÁO — phải có thông tin HÀNH ĐỘNG được ──────────────────────────────
+  // `detail` = chi tiết KỸ THUẬT (tên biến, đường API) cho người quản trị hệ thống. Tách khỏi
+  // `body` để câu chính nói bằng lời người dùng; chi tiết nhỏ và mờ hơn, nhưng không giấu —
+  // người sửa được lỗi cần đúng những chữ ấy. Đo 14/09 trên ảnh chụp: cảnh báo màn Công tắc
+  // mở đầu bằng «thiếu ADMIN_USER/ADMIN_PASS — không gọi được /admin/api».
   const BIEU_TUONG_MUC = { info: "info", success: "circle-check", warning: "triangle-alert", error: "circle-alert" };
   function alert(opts) {
     const o = opts || {};
     const muc = o.level || "info";
+    const chiTiet = [].concat(o.detail || []).filter(Boolean);
     return (
       `<div class="alert" data-level="${esc(muc)}" role="${muc === "error" ? "alert" : "status"}">` +
       icon(BIEU_TUONG_MUC[muc] || "info") +
       `<div>${o.title ? `<div class="alert-title">${esc(o.title)}</div>` : ""}` +
-      (o.body ? `<div class="alert-body">${esc(o.body)}</div>` : "") + "</div>" +
+      (o.body ? `<div class="alert-body">${text(o.body)}</div>` : "") +
+      (chiTiet.length ? `<div class="alert-detail">${chiTiet.map(text).join("<br>")}</div>` : "") + "</div>" +
       (o.actionsHtml ? `<div class="alert-actions">${o.actionsHtml}</div>` : "<span></span>") +
       "</div>"
     );
@@ -245,9 +259,17 @@
     });
   }
 
+  // ── TÊN VAI — mã vai là mã máy (`quan-tri`), người đọc thấy tên người (`Quản trị`) ──
+  // Cùng bộ mã với `auth/boi-canh.js#VAI`. Mã lạ hiện nguyên, không nuốt.
+  const TEN_VAI = Object.freeze({
+    "quan-tri": "Quản trị", "quan-ly": "Quản lý", marketer: "Marketer", sale: "Sale",
+    "duyet-kich-ban": "Người duyệt kịch bản",
+  });
+  const roleName = (ma) => TEN_VAI[ma] || String(ma == null ? "" : ma);
+
   window.UI = Object.freeze({
-    esc, icon, statusBadge, button, setBusy, alert, emptyState, metricRow, readiness,
-    toast, confirmDialog,
+    esc, text, icon, statusBadge, button, setBusy, alert, emptyState, metricRow, readiness,
+    toast, confirmDialog, roleName,
     formatNumber: (n) => soVi.format(Number(n) || 0),
     formatVnd: (n) => tienVi.format(Number(n) || 0),
     TRANG_THAI,

@@ -40,7 +40,7 @@
 </main>
 
 <script>
-const { esc, statusBadge, badge = null, button, alert: canhBao, emptyState, toast, confirmDialog,
+const { esc, statusBadge, button, alert: canhBao, emptyState, toast, confirmDialog,
         formatNumber } = window.UI;
 const $ = (s) => document.querySelector(s);
 const so = (n) => formatNumber(n);
@@ -84,8 +84,9 @@ function veBangTin(d, loi) {
       kh.push(canhBao({
         level: 'warning',
         title: 'Chưa bật tắt bot được từ màn này',
-        body: 'Công tắc chạm khách thật nên cửa ghi của v3 đang khoá. '
-          + (CUA.thieu || []).map((x) => String(x).replace(/`/g, '')).join(' · '),
+        body: 'Máy chủ này chưa được phép ghi sang tiến trình bot, vì công tắc chạm khách thật. '
+          + 'Nhờ người quản trị hệ thống mở cửa ghi.',
+        detail: CUA.thieu || [],
       }));
     }
     if (d.dem && d.dem.thieu_marketer > 0) {

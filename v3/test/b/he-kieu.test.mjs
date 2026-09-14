@@ -218,10 +218,11 @@ test("HK8 · CẦU DI TRÚ phải TEO đi — đếm số màn còn phụ thuộ
   }
 
   // 14/09 · 25 → 24: «Công tắc từng page» viết lại trên hệ kiểu, bỏ hết 96 dòng CSS riêng.
+  // 14/09 · 24 → 23: «Việc của tôi».
   assert.equal(
     conDung.length,
-    24,
-    `số màn còn phụ thuộc cầu di trú: ${conDung.length} (neo: 24). `
+    23,
+    `số màn còn phụ thuộc cầu di trú: ${conDung.length} (neo: 23). `
       + "Giảm được thì HẠ con số này. Tăng lên là có màn mới dùng tên cũ — đừng.",
   );
 
@@ -398,4 +399,26 @@ test("HK14 · biểu tượng có MỘT nguồn, và ba tệp khung đi cùng b�
     }
   }
   assert.deepEqual(sai, [], `màn chưa nạp ui.js đồng bộ trong <head>: ${sai.join(", ")}`);
+});
+
+test("HK15 · màn ĐÃ DI TRÚ không mọc lại CSS riêng — và danh sách chỉ được DÀI thêm", () => {
+  // HK6 canh màn «Bắt đầu». Từ màn thứ hai trở đi, mỗi màn viết lại trên hệ kiểu được ghi
+  // tên vào đây. Một <style> hay một `style="…"` mọc lại trong màn đã di trú là CSS tuỳ hứng
+  // quay về — đúng bệnh 2.206 dòng vừa chữa. Chỗ sửa là `chung/kieu.css`, không phải trang.
+  const DA_DI_TRU = [
+    "bat-dau/bat-dau.html",
+    "page-bot/page-bot.html",
+    "trang-chu/trang-chu.html",
+  ];
+  const UI = path.join(GOC, "v3/src/ui");
+  const loi = [];
+  for (const ten of DA_DI_TRU) {
+    const [thu, tep] = ten.split("/");
+    const t = fs.readFileSync(path.join(UI, thu, "trang", tep), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+    if (/<style[\s>]/.test(t)) loi.push(`${ten}: có thẻ <style>`);
+    const n = (t.match(/\sstyle\s*=\s*["'`$]/g) || []).length;
+    if (n) loi.push(`${ten}: ${n} thuộc tính style= gõ thẳng`);
+    if (!/\/chung\/kieu\.css/.test(t)) loi.push(`${ten}: không nạp hệ kiểu`);
+  }
+  assert.deepEqual(loi, [], "màn đã di trú mọc lại CSS riêng:\n  " + loi.join("\n  "));
 });

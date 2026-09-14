@@ -201,11 +201,10 @@ async function vSanPhamHetHang(d) {
   const het = ds.filter((s) => Number(s.ton_kho ?? 0) <= 0);
   return {
     ma: 'san_pham_het_hang', ten: 'Sản phẩm hết hàng', so: het.length, gap: het.length > 0,
-    // ⛔ `di: null` — màn «Sản phẩm & kho» CHƯA DỰNG. Bản đầu trỏ `/san-pham` và nút hiện ra
-    //    thật trên bản xem thử; bấm vào là 404. Một nút chết còn tệ hơn không có nút: người
-    //    ta tưởng mình bấm sai. Nối lại khi màn đó có.
-    vai: [VAI.MARKETER, VAI.QUAN_TRI, VAI.QUAN_LY], di: null,
-    chuaCoMan: 'Màn «Sản phẩm & kho» chưa dựng. Tạm thời sửa tồn kho bên POS.',
+    // Bản đầu để `di: null` vì màn «Sản phẩm & kho» CHƯA DỰNG (trỏ tới là 404). Màn ấy đã
+    // dựng, và ô này vẫn hiện «Màn Sản phẩm & kho chưa dựng» — một câu SAI ngay trên màn mở
+    // đầu (đo 14/09 trên ảnh chụp). Ca ⑦b của `trang-chu.test.mjs` canh đường này có thật.
+    vai: [VAI.MARKETER, VAI.QUAN_TRI, VAI.QUAN_LY], di: '/san-pham',
     lam: 'Page vẫn chạy quảng cáo cho mặt hàng đã hết là đốt tiền vào đơn không giao được.',
     // `donVi` — đừng để trình duyệt gõ cứng «page»: ô này đếm SẢN PHẨM. Bản đầu hiện
     // «Sản phẩm hết hàng / 2 page», một nhãn sai ngay trên con số.
