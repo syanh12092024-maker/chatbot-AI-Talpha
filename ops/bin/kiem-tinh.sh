@@ -37,9 +37,11 @@ so "tệp đã soi" "$N"; so "tệp sai cú pháp" "$XAU"
 [ "$XAU" -eq 0 ] && dat "mọi tệp parse được" || truot "$XAU tệp sai cú pháp"
 
 muc "③ cổng nghiệm thu còn nguyên vẹn"
-NC=$(find ops/bin/nghiem-thu -name '*.sh' 2>/dev/null | wc -l | tr -d ' ')
+# Tệp `_*.sh` là tệp trợ giúp được `source` (_csdl.sh · _can.sh), không phải cổng — không cần shebang,
+# và vòng chạy cổng cũng bỏ qua chúng. Đếm và soi giống hệt vòng chạy cổng.
+NC=$(find ops/bin/nghiem-thu -name '*.sh' ! -name '_*' 2>/dev/null | wc -l | tr -d ' ')
 THIEU=0
-for f in ops/bin/nghiem-thu/*.sh; do head -1 "$f" | grep -q '^#!' || { THIEU=$((THIEU+1)); printf '   🔴 thiếu shebang: %s\n' "$f"; }; done
+for f in ops/bin/nghiem-thu/*.sh; do case "$(basename "$f")" in _*) continue ;; esac; head -1 "$f" | grep -q '^#!' || { THIEU=$((THIEU+1)); printf '   🔴 thiếu shebang: %s\n' "$f"; }; done
 so "số cổng" "$NC"; so "cổng thiếu shebang" "$THIEU"
 [ "$THIEU" -eq 0 ] && dat "mọi cổng có shebang" || truot "$THIEU cổng hỏng"
 
