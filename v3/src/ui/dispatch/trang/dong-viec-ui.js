@@ -19,41 +19,10 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const gio2 = (t) => (t ? new Date(t).toLocaleString('vi-VN', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' }) : '—');
 
-  /* KIỂU CỦA KHỐI — bơm một lần, ngay tại đây.
-     Chép sang trang thứ hai là sinh bản thứ hai, rồi một hôm sửa một bên: hai trang cùng
-     một nút mà hai màu. Cách này giống `chung/dieu-huong.js` — tệp tự mang kiểu của nó.
-     KHÔNG dùng dấu huyền ngược trong khối dưới (án lệ 01/09: một dấu là đóng chuỗi sớm,
-     cả tệp thành lỗi cú pháp, mà trang vẫn hiện bình thường). */
-  (function bomKieu() {
-    if (document.getElementById('dv-kieu')) return;
-    const st = document.createElement('style');
-    st.id = 'dv-kieu';
-    st.textContent = [
-      ".chu-nut{font-size:11.5px;color:var(--muted);margin-top:5px}",
-      ".dv-de{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);",
-      "font-weight:700;margin:0 0 6px}",
-      ".dv-de .buoc{color:var(--bad);text-transform:none;letter-spacing:0;font-weight:600}",
-      ".seg{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}",
-      ".seg button{background:#fff;border:1px solid var(--line);border-radius:20px;padding:8px 15px;",
-      "font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit}",
-      ".seg button:hover{border-color:var(--pri);color:var(--pri)}",
-      ".seg button.on{background:var(--pri);border-color:var(--pri);color:#fff}",
-      ".o-nhap{margin-bottom:14px}",
-      ".o-nhap select,.o-nhap input{width:100%;max-width:420px;padding:9px 11px;border:1px solid var(--line);",
-      "border-radius:9px;font-size:13.5px;font-family:inherit;color:var(--ink);background:#fff}",
-      ".o-nhap select:focus,.o-nhap input:focus{outline:2px solid var(--priSoft);border-color:var(--pri)}",
-      ".o-nhap .goi-y{font-size:11.5px;color:var(--muted);margin-top:5px}",
-      ".dv-hang{display:flex;gap:12px;align-items:center;flex-wrap:wrap}",
-      ".dv-giu{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4;border-radius:9px;",
-      "padding:9px 12px;margin-bottom:13px;line-height:1.5}",
-      ".dv-loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:9px;",
-      "padding:9px 12px;margin-bottom:13px;font-weight:600;line-height:1.5}",
-      ".da-xu{background:var(--okSoft);border:1px solid #bfe6cd;border-radius:9px;padding:12px 14px;line-height:1.6}",
-      ".da-xu .to{font-size:15px;font-weight:700;color:#166534}",
-      ".da-xu .them{color:var(--muted);font-size:12.5px;margin-top:4px}",
-    ].join('\n');
-    document.head.appendChild(st);
-  })();
+  /* KIỂU của khối này nằm ở `chung/kieu.css` — KHÔNG bơm <style> từ JS nữa (14/09).
+     Bản cũ bơm 22 dòng CSS có màu gõ tay vào `document.head`; CSS ấy không nằm trong
+     @layer nên nó đè cả hệ kiểu, và hai trang dùng chung khối này thừa hưởng luôn. */
+  const UI = window.UI || null;
 
   let _id = '';
   let _sauKhiGhi = async () => {};
@@ -112,12 +81,16 @@ function khoiDaXu(v) {
     v.chi_phi != null && v.chi_phi !== '' ? 'Chi phí: ' + esc(tien(v.chi_phi)) + ' đ' : null,
   ].filter(Boolean).join(' · ');
 
-  return '<section class="panel"><h2>Đã xử</h2><div class="body">'
-    + '<div class="da-xu"><div class="to">✔ Đã xử bởi '
-      + esc(v.tenNguoiNhan || '(không rõ)')
-      + ' lúc ' + esc(gio2(Number(v.dong_luc))) + ' · ' + doi + '</div>'
-    + (them ? '<div class="them">' + them + '</div>' : '')
-    + '</div></div></section>';
+  // `doi` và `them` đã thoát ký tự ở trên — dựng thẳng khuôn cảnh báo của hệ, không qua
+  // `UI.alert` (hàm ấy thoát ký tự lần nữa, dấu · và tên người sẽ thành thực thể HTML).
+  return '<section class="panel"><h2>Đã xử</h2>'
+    + '<div class="alert" data-level="success" role="status">'
+    + (UI ? UI.icon('circle-check') : '')
+    + '<div><div class="alert-title">Đã xử bởi ' + esc(v.tenNguoiNhan || '(không rõ)')
+      + ' lúc ' + esc(gio2(Number(v.dong_luc))) + '</div>'
+    + '<div class="alert-body">' + doi + '</div>'
+    + (them ? '<div class="alert-detail">' + them + '</div>' : '')
+    + '</div><span></span></div></section>';
 }
 
 function veOThem() {
@@ -132,28 +105,28 @@ function veOThem() {
   // Ô lý do chỉ hiện SAU KHI chọn kết quả cần lý do — hiện sẵn cả sáu ô thì màn này thành
   // một cái biểu mẫu, mà sale chỉ có mười giây cho mỗi việc.
   const oLyDo = dsLyDo.length
-    ? '<div class="o-nhap"><div class="dv-de">Lý do <span class="buoc">· bắt buộc</span></div>'
+    ? '<div class="field"><label class="field-label" for="dv-ly-do">Lý do <span class="meta">· bắt buộc</span></label>'
       + '<select id="dv-ly-do"><option value="">— chọn lý do —</option>'
       + dsLyDo.map((x) => '<option value="' + esc(x.ma) + '"' + (chon.lyDo === x.ma ? ' selected' : '') + '>'
           + esc(x.chu) + '</option>').join('')
       + '</select>'
-      + '<div class="goi-y">Đây là thứ dùng để sửa bot — không có lý do thì con số sau này không nói lên gì.</div>'
+      + '<div class="field-hint">Đây là thứ dùng để sửa bot — không có lý do thì con số sau này không nói lên gì.</div>'
       + '</div>'
     : '';
 
-  const oGhiChu = '<div class="o-nhap"><div class="dv-de">Ghi chú'
-    + (canGhiChu ? ' <span class="buoc">· bắt buộc, ít nhất 5 ký tự</span>' : ' <span class="buoc" style="color:var(--muted)">· không bắt buộc</span>')
-    + '</div><input type="text" id="dv-ghi-chu" maxlength="500" value="' + esc(chon.ghiChu) + '" '
+  const oGhiChu = '<div class="field"><label class="field-label" for="dv-ghi-chu">Ghi chú'
+    + (canGhiChu ? ' <span class="meta">· bắt buộc, ít nhất 5 ký tự</span>' : ' <span class="meta">· không bắt buộc</span>')
+    + '</label><input type="text" id="dv-ghi-chu" maxlength="500" value="' + esc(chon.ghiChu) + '" '
     + 'placeholder="' + (canGhiChu ? 'Chọn “khác” thì phải ghi rõ ra' : 'Điều gì đáng nhớ về lần này') + '" /></div>';
 
   // Ô chi phí: chỉ đơn đã chốt được mới có. Cờ này do MÁY CHỦ tính, trang không tự suy lại.
   const oChiPhi = k.coChiPhi
-    ? '<div class="o-nhap"><div class="dv-de">Chi phí đóng đơn (đồng)</div>'
-      + '<input type="text" inputmode="numeric" id="dv-chi-phi" value="' + esc(chon.chiPhi) + '" placeholder="để trống nếu chưa biết" />'
-      + '<div class="goi-y">Số nguyên đồng, để trống được. Không biết thì bỏ trống, đừng gõ 0.</div></div>'
+    ? '<div class="field"><label class="field-label" for="dv-chi-phi">Chi phí đóng đơn (đồng)</label>'
+      + '<input type="text" inputmode="numeric" id="dv-chi-phi" value="' + esc(chon.chiPhi) + '" placeholder="Để trống nếu chưa biết" />'
+      + '<div class="field-hint">Số nguyên đồng, để trống được. Không biết thì bỏ trống, đừng gõ 0.</div></div>'
     : '';
 
-  o.innerHTML = oLyDo + oGhiChu + oChiPhi;
+  o.innerHTML = '<div class="form-stack tren-4">' + oLyDo + oGhiChu + oChiPhi + '</div>';
 
   const sel = document.getElementById('dv-ly-do');
   if (sel) sel.addEventListener('change', (ev) => { chon.lyDo = ev.target.value || null; veOThem(); dongMo(); });
@@ -183,7 +156,7 @@ function baoLoi(chu) {
   o.textContent = chu;
 }
 
-async /**
+/**
  * HỒ SƠ KHÁCH — tên, số, địa chỉ, tầng rủi ro hoàn, mấy đơn gần đây.
  *
  * Hai luật của khối này:
@@ -196,32 +169,28 @@ function veHoSoKhach(h) {
   if (!h) return '';
   if (!h.co) {
     return '<section class="panel"><h2>Hồ sơ khách</h2>'
-      + '<div class="empty">' + esc(h.viSao || 'Không có hồ sơ khách') + '</div></section>';
+      + '<div class="text-muted tren-2">' + esc(h.viSao || 'Không có hồ sơ khách') + '</div></section>';
   }
-  const mauTang = h.tangHoan.muc === 'chan' ? 'r' : h.tangHoan.muc === 'nhac' ? 'o'
-    : h.tangHoan.muc === 'san' ? 'g' : 'm';
+  // Tầng rủi ro đi qua ánh xạ trạng thái tập trung: «chưa chấm» là CHƯA BIẾT, không tô xanh.
+  const maTang = { chan: 'blocked', nhac: 'needs_attention', san: 'ready' }[h.tangHoan.muc] || 'unknown';
+  const huyHieu = UI ? UI.statusBadge(maTang, { label: h.tangHoan.chu })
+    : '<span class="status-badge">' + esc(h.tangHoan.chu) + '</span>';
   const hang = (nhan, gia) => gia
-    ? '<div class="dv-hang" style="gap:8px"><span class="chu" style="min-width:96px;color:var(--muted)">'
-      + nhan + '</span><span>' + esc(gia) + '</span></div>'
+    ? '<div class="hang"><span class="text-muted text-sm hep-nhan">' + nhan + '</span><span>' + esc(gia) + '</span></div>'
     : '';
   const don = (h.donGanDay || []).map((x) =>
-    '<div class="dv-hang" style="gap:8px;padding:3px 0">'
-    + '<span class="pill m">' + esc(x.nguon) + '</span>'
+    '<div class="hang"><span class="badge">' + esc(x.nguon) + '</span>'
     + '<span>' + esc(x.maPos || '(chưa có mã POS)') + '</span>'
-    + '<span class="chu" style="color:var(--muted)">' + esc(x.trangThai) + '</span></div>').join('');
+    + '<span class="text-muted text-sm">' + esc(x.trangThai) + '</span></div>').join('');
 
-  return '<section class="panel"><h2>Hồ sơ khách'
-      + '<span class="pill ' + mauTang + '">' + esc(h.tangHoan.chu) + '</span></h2>'
-    + '<div class="body">'
+  return '<section class="panel"><div class="section-header"><h2>Hồ sơ khách</h2>' + huyHieu + '</div>'
       + hang('Tên', h.ten)
       + hang('Số điện thoại', h.soDienThoai || '(khách chưa đưa số)')
       + hang('Địa chỉ', h.diaChi)
       + hang('Tỉ lệ hoàn', h.tiLeHoan == null ? 'chưa chấm' : h.tiLeHoan + '%')
       + hang('Tổng số đơn', String(h.soDon))
-      + (don ? '<div style="margin-top:9px;border-top:1px solid var(--line);padding-top:8px">'
-          + '<div class="chu" style="color:var(--muted);margin-bottom:4px">Đơn gần đây</div>'
-          + don + '</div>' : '')
-    + '</div></section>';
+      + (don ? '<div class="tren-3"><div class="text-muted text-sm duoi-1">Đơn gần đây</div>' + don + '</div>' : '')
+    + '</section>';
 }
 
 async function veDongViec(d) {
@@ -234,8 +203,9 @@ async function veDongViec(d) {
   try {
     ds = await bangKetQua(VIEC.loai);
   } catch (e) {
-    o.innerHTML = '<div class="banner o">Không tải được danh sách kết quả.<span class="s">'
-      + esc(e && e.message ? e.message : 'lỗi mạng') + '</span></div>';
+    o.innerHTML = UI ? UI.alert({ level: 'error', title: 'Không tải được danh sách kết quả',
+      body: 'Tải lại trang rồi thử lại.', detail: [e && e.message ? e.message : 'lỗi mạng'] })
+      : 'Không tải được danh sách kết quả.';
     return;
   }
 
@@ -243,32 +213,36 @@ async function veDongViec(d) {
   if (VIEC.trangThai === 'da_xu') { o.innerHTML = khoiDaXu(VIEC); return; }
 
   const giu = VIEC.tenNguoiNhan;
-  o.innerHTML = '<section class="panel"><h2>Đánh dấu đã xử<span class="sp"></span>'
-      + '<span class="hint">chọn kết quả rồi bấm “Đóng việc”</span></h2><div class="body">'
-    + (VIEC.trangThai === 'dang_xu' && giu
-        ? '<div class="dv-giu">Đang do <b>' + esc(giu) + '</b> giữ từ ' + esc(gio2(Number(VIEC.nhan_luc)))
-          + '. Nếu không phải bạn thì hỏi họ một câu trước khi đóng.</div>'
+  o.innerHTML = '<section class="panel">'
+    + '<div class="section-header"><div><h2>Đánh dấu đã xử</h2>'
+      + '<div class="section-desc">Chọn kết quả rồi bấm «Đóng việc».</div></div></div>'
+    + (VIEC.trangThai === 'dang_xu' && giu && UI
+        ? '<div class="duoi-4">' + UI.alert({ level: 'warning', title: 'Việc này đang có người giữ',
+            body: giu + ' giữ từ ' + gio2(Number(VIEC.nhan_luc)) + '. Nếu không phải bạn thì hỏi họ một câu trước khi đóng.' }) + '</div>'
         : '')
     + (VIEC.trangThai === 'cho'
-        ? '<div class="dv-hang" style="margin-bottom:14px">'
-          + '<button type="button" class="nut phu" id="dv-nhan">Nhận việc</button>'
-          + '<span class="chu-nut" style="margin:0">hoặc chọn thẳng kết quả bên dưới — hệ thống tự nhận hộ</span></div>'
+        ? '<div class="hang duoi-4">'
+          + '<button type="button" class="btn" data-variant="outline" data-size="md" id="dv-nhan"><span>Nhận việc</span></button>'
+          + '<span class="text-muted text-sm">hoặc chọn thẳng kết quả bên dưới — hệ thống tự nhận hộ</span></div>'
         : '')
-    + '<div class="dv-de">Kết quả</div>'
-    + '<div class="seg" id="dv-kq">'
-      + ds.map((k) => '<button type="button" data-kq="' + esc(k.ma) + '">' + esc(k.chu) + '</button>').join('')
+    + '<div class="field-label duoi-2">Kết quả</div>'
+    + '<div class="hang" id="dv-kq" role="group" aria-label="Kết quả xử việc">'
+      + ds.map((k) => '<button type="button" class="btn" data-size="md" aria-pressed="false" data-kq="' + esc(k.ma) + '">'
+          + '<span>' + esc(k.chu) + '</span></button>').join('')
     + '</div>'
     + '<div id="dv-them"></div>'
-    + '<div class="dv-loi" id="dv-loi" hidden></div>'
-    + '<div class="dv-hang"><button type="button" class="nut" id="dv-dong" disabled>Đóng việc</button></div>'
-    + '</div></section>';
+    + '<div class="field-error tren-3" id="dv-loi" role="alert" hidden></div>'
+    + '<div class="form-actions">'
+      + '<button type="button" class="btn" data-variant="primary" data-size="md" id="dv-dong" disabled><span>Đóng việc</span></button>'
+    + '</div>'
+    + '</section>';
 
   document.getElementById('dv-kq').addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-kq]');
     if (!b) return;
     chon.ketQua = b.getAttribute('data-kq');
     chon.lyDo = null;
-    for (const x of document.querySelectorAll('#dv-kq button')) x.classList.toggle('on', x === b);
+    for (const x of document.querySelectorAll('#dv-kq button')) x.setAttribute('aria-pressed', String(x === b));
     baoLoi('');
     veOThem();
   });
@@ -299,6 +273,16 @@ async function gui(nut, duoi, than) {
 
 
   window.DongViecUI = {
+    /**
+     * Khối HỒ SƠ KHÁCH, trả về chuỗi HTML.
+     *
+     * ⚠️ 14/09: trang chi tiết gọi thẳng `veHoSoKhach(...)` — một hàm nằm TRONG hàm bọc của
+     *    tệp này, nên trang không thấy. Cả trang chi tiết chết trắng với «veHoSoKhach is not
+     *    defined» từ lượt tách khối 11/09 tới nay, và không phép canh nào đỏ vì không ca nào
+     *    chạy trang trong trình duyệt. Nay khối ấy đi ra ngoài qua đúng một cửa: chỗ này.
+     */
+    hoSoKhachHtml(h) { return veHoSoKhach(h); },
+
     /**
      * Đắp khối vào ô `#o-dong-viec` của trang đang mở.
      * @param {object} d          dữ liệu `/api/dieu-phoi/viec/:id`

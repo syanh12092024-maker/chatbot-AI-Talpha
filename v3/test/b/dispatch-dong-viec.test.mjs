@@ -728,8 +728,16 @@ test('L4-M2 · bảng điều phối có ĐÚNG MỘT cột "Đang xử" và ở
   const { than } = await goi('/dieu-phoi', { tieuDe: { accept: 'text/html' } });
   assert.equal((than.match(/>Đang xử</g) || []).length, 2, 'hai bảng, mỗi bảng đúng một cột');
   assert.match(than, /colspan="5"/, 'dòng "không có việc nào" phải trải hết năm cột');
-  assert.match(than, /@media \(max-width:720px\)/);
-  assert.match(than, /td\.c-dem\{grid-column:2\/-1;grid-row:1/, 'đồng hồ phải nằm ở hàng đầu của thẻ');
+  // 14/09: khuôn «bảng thành thẻ ở khổ hẹp» chuyển sang HỆ KIỂU (`chung/kieu.css`,
+  // `.data-table[data-hep="the"]`) để bảng nào cũng dùng được. Phép canh theo đó chuyển
+  // chỗ đo, GIỮ NGUYÊN điều được canh: ở khổ hẹp dòng xếp thành thẻ, và ô đồng hồ đếm
+  // ngược nằm ở HÀNG ĐẦU — thứ sale nhìn trước nhất phải ở chỗ mắt rơi vào trước nhất.
+  assert.match(than, /data-hep="the"/, 'bảng điều phối phải khai chế độ xếp thẻ ở khổ hẹp');
+  const kieu = fs.readFileSync(new URL('../../src/ui/chung/kieu.css', import.meta.url), 'utf8');
+  assert.match(kieu, /@media \(max-width: 720px\)[\s\S]*?data-hep="the"/,
+    'hệ kiểu thiếu khuôn xếp thẻ ở khổ hẹp');
+  assert.match(kieu, /data-hep="the"\] td\.c-dem \{ grid-column: 2; grid-row: 1/,
+    'đồng hồ phải nằm ở hàng đầu của thẻ');
   assert.match(than, /trangThai !== 'dang_xu'/, 'cột Đang xử phải trống khi việc còn ở `cho`');
   assert.ok(!/<textarea/.test(than));
 });

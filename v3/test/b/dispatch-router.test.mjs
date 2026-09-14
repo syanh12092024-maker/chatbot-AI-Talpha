@@ -143,7 +143,9 @@ test('L4-M1 HTTP · GET /dieu-phoi trả trang hai danh sách', async () => {
   const { res, than, kieu } = await nhu('/dieu-phoi');
   assert.equal(res.status, 200);
   assert.match(kieu, /text\/html/);
-  assert.match(than, /Bảng điều phối/);
+  // 14/09: màn đổi tên thành «Việc đang chờ» — tên trong SỔ ĐĂNG KÝ MÀN (`chung/man-hinh.js`),
+  // và phép canh HK10 bắt <h1> phải khớp sổ. Canh đúng cái tên đang dùng, không canh tên cũ.
+  assert.match(than, /Việc đang chờ/);
   assert.match(than, /Hội thoại cần xử/);
   assert.match(than, /Đơn cần xử/);
   assert.match(than, /Không có việc nào đang chờ/);

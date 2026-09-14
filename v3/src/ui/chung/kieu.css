@@ -334,6 +334,12 @@
   .btn[data-variant="danger"] { background: var(--surface); border-color: var(--danger-border); color: var(--danger); }
   .btn[data-variant="danger"]:hover { background: var(--danger-bg); }
 
+  /* Nút CHỌN trong một nhóm (chọn kết quả, chọn khoảng) — trạng thái bằng `aria-pressed`,
+     không bằng một lớp `.on` mỗi màn tự đặt tên. */
+  .btn[aria-pressed="true"] { background: var(--primary); border-color: var(--primary);
+                              color: var(--primary-foreground); }
+  .btn[aria-pressed="true"]:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+
   .btn:disabled, .btn[aria-disabled="true"] {
     background: var(--surface-disabled); border-color: var(--border-subtle);
     color: var(--text-disabled); cursor: not-allowed; pointer-events: none;
@@ -626,6 +632,25 @@
   .data-table .cell-input { max-width: 220px; }
   .data-table .cell-control { display: inline-flex; align-items: center; gap: var(--space-2);
                               font-size: var(--text-sm); color: var(--text-muted); white-space: nowrap; }
+
+  /* ─── S · BẢNG THÀNH THẺ Ở KHỔ HẸP ────────────────────────────────────────────────
+     Dưới 720px, một bảng 5 cột không cuộn ngang nổi. `data-hep="the"` xếp mỗi dòng thành
+     một thẻ: nhãn cột đi vào từng ô (`data-nhan`), và ô ĐỒNG HỒ ĐẾM NGƯỢC (`.c-dem`) nhảy
+     lên hàng đầu bên phải — thứ sale nhìn trước nhất phải ở chỗ mắt rơi vào trước nhất.
+     Trước 14/09 quy tắc này nằm trong `<style>` của màn điều phối; nay là của hệ, để bảng
+     nào cũng dùng được. Ca «L4-M2 · bảng điều phối… ở khổ hẹp thì xếp thẻ» canh nó. */
+  @media (max-width: 720px) {
+    .data-table[data-hep="the"] thead { display: none; }
+    .data-table[data-hep="the"] tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto;
+      gap: 2px var(--space-3); padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--border-subtle); }
+    .data-table[data-hep="the"] tbody tr:last-child { border-bottom: 0; }
+    .data-table[data-hep="the"] td { display: block; height: auto; padding: 0; border: 0; }
+    .data-table[data-hep="the"] td[data-nhan]::before { content: attr(data-nhan) ": ";
+      color: var(--text-muted); font-size: var(--text-xs); }
+    .data-table[data-hep="the"] td.c-dem { grid-column: 2; grid-row: 1; text-align: right; }
+    .data-table[data-hep="the"] td[colspan] { grid-column: 1 / -1; }
+  }
 
   /* Bảng có thanh lọc dính liền phía trên — một đối tượng, không hai thẻ rời (mục Z). */
   .table-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
@@ -924,6 +949,9 @@
      1.400px, trắng trơn từ giữa trở xuống. */
   .cot-ds { display: grid; gap: var(--space-4); align-items: start;
             grid-template-columns: minmax(0, 320px) minmax(0, 1fr); }
+  /* Danh sách BÊN TRÁI rộng, ô xem nhanh bên phải — ngược với bố cục chọn-rồi-xem. */
+  .cot-ds[data-huong="phai"] { grid-template-columns: minmax(0, 1fr) minmax(0, 360px); }
+  @media (max-width: 1100px) { .cot-ds[data-huong="phai"] { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 1100px) { .cot-ds { grid-template-columns: minmax(0, 1fr); } }
   .cuon-doc { max-height: 62vh; overflow-y: auto; overscroll-behavior: contain; }
 
@@ -960,6 +988,7 @@
   .gian { flex: 1; min-width: 0 }
   .vua { flex: 0 0 auto }
   .hep { max-width: 460px }
+  .hep-nhan { min-width: 96px }   /* nhãn trái của một hàng nhãn–giá trị */
   .rong-doc { max-width: 68ch }
   .mo, .text-muted { color: var(--text-muted); }
   .nho, .text-sm { font-size: var(--text-sm); }

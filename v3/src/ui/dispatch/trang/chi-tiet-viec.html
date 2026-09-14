@@ -3,65 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Chi tiết việc cần xử — AI Closer v3</title>
-<style>
-  /* Hệ thiết kế chép từ `public/ops.html` dòng 10–17. Một file, không khung nào, không gọi
-     mạng ra ngoài. */
-
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh)}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .panel .body{padding:13px 15px}
-  .tablecard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
-  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
-  .banner.r{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien)}
-  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .banner .s{display:block;font-weight:400;font-size:12px;margin-top:4px}
-  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
-  .pill.g{background:var(--okSoft);color:var(--ok)}
-  .pill.o{background:var(--warnSoft);color:var(--warn)}
-  .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:var(--nen-3);color:var(--chu-2)}
-  .empty{padding:22px 15px;text-align:center;color:var(--muted)}
-  .lnk{color:var(--pri);text-decoration:underline;text-underline-offset:2px}
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
-  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap;width:180px}
-
-  /* KHỐI 1 — lý do bot dừng. Nổi nhất, trên cùng: đây là câu sale cần trả lời trước khi
-     quyết định mở Pancake hay bỏ qua. */
-  .ly-do{border-left:5px solid var(--pri);margin-bottom:14px}
-  .ly-do.gap{border-left-color:var(--warn)}
-  .ly-do.qua{border-left-color:var(--bad);background:#fffafa}
-  .ly-do .chu{font-size:19px;font-weight:700;line-height:1.35;margin:2px 0 6px}
-  .ly-do .ai{color:var(--muted);font-size:12.5px;line-height:1.6}
-  .dh{font-variant-numeric:tabular-nums;font-weight:700}
-  .dh.gap{color:var(--warn)} .dh.qua{color:var(--bad)}
-
-  /* Hai nút to — cả màn hình tồn tại để dẫn tới đây. */
-  .nut-hang{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 16px}
-  a.nut{display:inline-block;background:var(--pri);color:var(--nen);border-radius:10px;padding:13px 22px;
-        font-weight:700;font-size:14.5px;text-decoration:none}
-  a.nut:hover{background:var(--priDark)}
-  a.nut.phu{background:var(--nen);color:var(--pri);border:1px solid var(--line)}
-  span.nut.mo{display:inline-block;background:#eef1f3;color:#9aa4ad;border-radius:10px;padding:13px 22px;
-              font-weight:700;font-size:14.5px;cursor:not-allowed}
-
-  /* KHỐI 2 — đoạn chat, cũ trước, đọc như trên Pancake. */
-  .chi-duong{margin:0 0 16px;padding:11px 14px;border-radius:var(--r);background:var(--priSoft);
-             color:var(--priDark);border:1px solid #cfe6e8;font-size:12.5px;line-height:1.5}
-
-  /* KHỐI 4 (L4-M2) — đánh dấu đã xử. Thao tác DUY NHẤT sale làm trên hệ thống này, nên nó
-     là thứ duy nhất trên màn có nút bấm được. */
-  button.nut{background:var(--pri);color:var(--nen);border:0;border-radius:10px;padding:13px 22px;
-             font-weight:700;font-size:14.5px;cursor:pointer;font-family:inherit}
-  button.nut:hover:not(:disabled){background:var(--priDark)}
-  button.nut:disabled{background:#eef1f3;color:#9aa4ad;cursor:not-allowed}
-  button.nut.phu{background:var(--nen);color:var(--pri);border:1px solid var(--line)}
-  button.nut.phu:hover{background:var(--priSoft)}
-</style>
+<title>Chi tiết việc cần xử — AI Closer</title>
+<!-- Dựng trên hệ kiểu. KHÔNG CSS riêng — trước lượt này là 51 dòng.
+     ⚠️ 14/09: màn này ĐANG CHẾT TRẮNG trước lượt viết lại — nó gọi `veHoSoKhach(...)`, một
+        hàm nằm trong hàm bọc của `dong-viec-ui.js` nên trang không thấy; cả thân trang rơi
+        vào nhánh lỗi «veHoSoKhach is not defined» kể từ lượt tách khối 11/09. Nay khối ấy đi
+        ra qua `DongViecUI.hoSoKhachHtml()`. Bắt được bằng ẢNH CHỤP THẬT, không ca nào đỏ. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -70,15 +18,14 @@
 <header>
   <h1>Chi tiết việc cần xử</h1>
   <span class="sub" id="phu-de"></span>
-  <span class="sp"></span>
-
 </header>
 
-<main id="than"><div class="empty">Đang tải…</div></main>
+<main id="than"><div class="panel"><span class="skeleton"></span></div></main>
 
 <script>
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-const gio2 = (t) => (t ? new Date(t).toLocaleString('vi-VN', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' }) : '—');
+const { esc, statusBadge, button, alert: canhBao, emptyState } = window.UI;
+const $ = (s) => document.querySelector(s);
+const gio2 = (t) => (t ? new Date(t).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—');
 
 /* Id lấy từ ĐƯỜNG DẪN, không phải query string: "Không nhét dữ liệu khách vào query
    string" — mọi thứ đi qua `/api/...` với id. */
@@ -94,13 +41,13 @@ function chuoiDem(han) {
   const p = Math.floor(giay / 60), g = giay % 60;
   return (con < 0 ? '+' : '') + p + ':' + String(g).padStart(2, '0');
 }
-const lopDem = (han) => (!Number.isFinite(han) ? '' : (han - gio() < 0 ? ' qua' : (han - gio() <= 300000 ? ' gap' : '')));
+const tonDem = (han) => (!Number.isFinite(han) ? 'neutral' : (han - gio() < 0 ? 'danger' : (han - gio() <= 300000 ? 'warning' : 'neutral')));
 
 function nhipDongHo() {
   for (const el of document.querySelectorAll('[data-han]')) {
     const han = Number(el.getAttribute('data-han'));
     el.textContent = chuoiDem(han);
-    el.className = 'dh' + lopDem(han);
+    el.dataset.tone = tonDem(han);
   }
 }
 
@@ -109,14 +56,14 @@ function nhipDongHo() {
 const NHAN = {
   // Hai mã KHÁC NHAU, đừng để chung một nhãn: sale đọc mã cho kho mà đọc nhầm mã nội bộ
   // thì kho không tra ra đơn nào. `ma_pos` là "<shop>:<số đơn POS>", không phải số trần.
-  id:'Mã trong hệ thống', ma_pos:'Mã đơn trên POS',
+  id: 'Mã trong hệ thống', ma_pos: 'Mã đơn trên POS',
   // HAI cột trạng thái TÁCH HẲN nhau trong lược đồ thật: đơn có thể «chờ khách trả lời»
   // trong hệ mà trên POS vẫn «chờ xác nhận». Gộp một nhãn là giấu mất một nửa sự thật.
-  trang_thai_he:'Trạng thái trong hệ', trang_thai_pos:'Trạng thái POS',
-  tong_tien:'Tổng tiền', tien_te:'Tiền tệ', so_luong:'Số lượng', san_pham:'Sản phẩm',
-  nguon:'Nguồn', dia_chi:'Địa chỉ', thanh_pho:'Thành phố', quoc_gia:'Quốc gia',
-  so_dien_thoai:'Số điện thoại', ten_khach:'Tên khách', ghi_chu:'Ghi chú',
-  tao_luc:'Tạo lúc', sua_luc:'Sửa lúc', dong_luc:'Đóng lúc',
+  trang_thai_he: 'Trạng thái trong hệ', trang_thai_pos: 'Trạng thái POS',
+  tong_tien: 'Tổng tiền', tien_te: 'Tiền tệ', so_luong: 'Số lượng', san_pham: 'Sản phẩm',
+  nguon: 'Nguồn', dia_chi: 'Địa chỉ', thanh_pho: 'Thành phố', quoc_gia: 'Quốc gia',
+  so_dien_thoai: 'Số điện thoại', ten_khach: 'Tên khách', ghi_chu: 'Ghi chú',
+  tao_luc: 'Tạo lúc', sua_luc: 'Sửa lúc', dong_luc: 'Đóng lúc',
 };
 // Khoá ngoại và cột nội bộ: giấu đi vì chúng là SỐ, sale không tra được gì bằng chúng —
 // thứ chúng trỏ tới đã hiện sẵn ở khối trên (khách, page, hội thoại).
@@ -125,93 +72,97 @@ const AN = new Set(['team_id', 'khach_id', 'page_id', 'hoi_thoai_id']);
 function bangDoiTuong(o) {
   const hang = Object.entries(o)
     .filter(([k, v]) => !AN.has(k) && v != null && v !== '' && typeof v !== 'object')
-    .map(([k, v]) => '<tr><th>' + esc(NHAN[k] || k) + '</th><td>' + esc(v) + '</td></tr>')
+    .map(([k, v]) => `<tr><th scope="row">${esc(NHAN[k] || k)}</th><td>${esc(v)}</td></tr>`)
     .join('');
-  return hang ? '<table>' + hang + '</table>' : '<div class="empty">Không có thông tin</div>';
+  return hang ? `<table class="data-table">${hang}</table>`
+    : emptyState({ icon: 'inbox', title: 'Không có thông tin đơn' });
 }
 
 function ve(d) {
   const v = d.viec || {};
   const han = Number(v.han_luc);
-  const mucKhan = v.mucKhan === 'qua_han' ? 'qua' : (v.mucKhan === 'gap' ? 'gap' : '');
-  const pill = v.quaHan ? '<span class="pill r">QUÁ HẠN</span>'
-    : (v.mucKhan === 'gap' ? '<span class="pill o">SẮP HẾT GIỜ</span>' : '<span class="pill g">CÒN GIỜ</span>');
+  const huyHieu = v.quaHan ? statusBadge('blocked', { label: 'Quá hạn' })
+    : v.mucKhan === 'gap' ? statusBadge('needs_attention', { label: 'Sắp hết giờ' })
+    : statusBadge('ready', { label: 'Còn giờ' });
 
   const ai = [
-    v.tenKhach ? 'Khách: <b>' + esc(v.tenKhach) + '</b>' : null,
+    v.tenKhach ? `Khách ${esc(v.tenKhach)}` : null,
     v.soDienThoai ? esc(v.soDienThoai) : null,
-    v.tenPage ? 'Page: ' + esc(v.tenPage) : null,
-    'Bot đẩy sang lúc ' + esc(gio2(Number(v.day_luc))),
+    v.tenPage ? `Page ${esc(v.tenPage)}` : null,
+    `Bot đẩy sang lúc ${esc(gio2(Number(v.day_luc)))}`,
   ].filter(Boolean).join(' · ');
 
-  const posMo = !d.lienKet || !d.lienKet.pos;
-  const nutPos = posMo
-    ? '<div><span class="nut mo">Mở POS</span><div class="chu-nut">'
-        + (v.don_hang_id ? 'chưa cấu hình đường POS' : 'việc này không gắn đơn nào') + '</div></div>'
-    : '<div><a class="nut phu" href="' + esc(d.lienKet.pos) + '" target="_blank" rel="noopener">Mở POS</a></div>';
-
   const nutPancake = d.lienKet && d.lienKet.pancake
-    ? '<div><a class="nut" href="' + esc(d.lienKet.pancake) + '" target="_blank" rel="noopener">Mở Pancake</a></div>'
-    : '<div><span class="nut mo">Mở Pancake</span><div class="chu-nut">việc này không gắn hội thoại nào</div></div>';
+    ? button('Mở Pancake', { href: d.lienKet.pancake, variant: 'primary' })
+      .replace('<a ', '<a target="_blank" rel="noopener" ')
+    : `<span class="btn" data-variant="primary" aria-disabled="true" title="Việc này không gắn hội thoại nào"><span>Mở Pancake</span></span>`;
+  const nutPos = d.lienKet && d.lienKet.pos
+    ? button('Mở POS', { href: d.lienKet.pos }).replace('<a ', '<a target="_blank" rel="noopener" ')
+    : `<span class="btn" aria-disabled="true" title="${v.don_hang_id ? 'Chưa cấu hình đường POS' : 'Việc này không gắn đơn nào'}"><span>Mở POS</span></span>`;
 
-  document.getElementById('than').innerHTML =
-    // KHỐI 1 — lý do bot dừng
-    '<div class="card ly-do ' + mucKhan + '">'
-      + '<div>' + pill + ' <span class="dh' + lopDem(han) + '" data-han="' + (Number.isFinite(han) ? han : '') + '">'
-      + chuoiDem(han) + '</span></div>'
-      + '<div class="chu">' + esc(d.lyDoChu) + '</div>'
-      + '<div class="ai">' + ai + '</div>'
-    + '</div>'
-    // Hai nút to
-    + '<div class="nut-hang">' + nutPancake + nutPos + '</div>'
-    // KHỐI 2 — hội thoại: KHÔNG chép về đây. Bỏ đoạn chat ngày 23/08 (chủ dự án duyệt):
-    // `so_ai` chỉ ghi hành động của bot, không giữ nội dung tin và không có tin của khách,
-    // nên dựng ở đây là dựng một nửa cuộc nói chuyện. Bản đầy đủ nằm ở Pancake — một cú bấm.
-    + '<div class="chi-duong">Hội thoại đầy đủ nằm ở Pancake. Bấm <b>Mở Pancake</b> ở trên '
-      + 'để đọc và trả lời khách.</div>'
-    // KHỐI 2b — HỒ SƠ KHÁCH (bản vẽ 11/09, cột phải). Trước đây sale phải mở Pancake
-    // mới biết khách này là ai và đã mua bao nhiêu lần.
-    + veHoSoKhach(d.hoSoKhach)
-    // KHỐI 3 — thông tin đơn
-    + '<section class="panel"><h2>Thông tin đơn</h2>'
-      + (d.donHang
-        ? '<div class="tablecard" style="border:0;box-shadow:none">' + bangDoiTuong(d.donHang) + '</div>'
-        : '<div class="empty">Việc này không gắn với đơn nào</div>')
+  $('#than').innerHTML =
+    // KHỐI 1 — lý do bot dừng, và đồng hồ
+    '<section class="panel">'
+      + '<div class="detail-head">'
+        + `<div><h2>${esc(d.lyDoChu)}</h2><div class="text-muted text-sm tren-1">${ai}</div></div>`
+        + `<div class="hang">${huyHieu}<span class="status-badge" data-tone="${tonDem(han)}" data-han="${Number.isFinite(han) ? han : ''}">${chuoiDem(han)}</span></div>`
+      + '</div>'
+      + `<div class="hang">${nutPancake}${nutPos}</div>`
+      // KHỐI 2 — hội thoại: KHÔNG chép về đây. Bỏ đoạn chat ngày 23/08 (chủ dự án duyệt):
+      // `so_ai` chỉ ghi hành động của bot, không giữ nội dung tin và không có tin của khách,
+      // nên dựng ở đây là dựng một nửa cuộc nói chuyện. Bản đầy đủ nằm ở Pancake — một cú bấm.
+      + '<p class="page-note">Hội thoại đầy đủ nằm ở Pancake. Bấm «Mở Pancake» để đọc và trả lời khách.</p>'
     + '</section>'
-    // Chỗ để sẵn cho L4-M2 (đánh dấu đã xử). ĐỂ RỖNG — đắp gì vào đây là việc của module đó.
-    + '<div id="o-dong-viec"></div>';
 
-  document.getElementById('phu-de').textContent = d.lyDoChu || '';
+    + '<div class="cot-ds tren-4" data-huong="phai">'
+      // KHỐI 3 — thông tin đơn
+      + '<section class="table-wrap"><div class="table-toolbar"><h2>Thông tin đơn</h2></div>'
+        + (d.donHang ? bangDoiTuong(d.donHang) : emptyState({ icon: 'inbox', title: 'Việc này không gắn với đơn nào',
+            body: 'Việc đến từ một hội thoại, chưa có đơn nào được tạo.' }))
+      + '</section>'
+      + '<div class="stack">'
+        // KHỐI 2b — HỒ SƠ KHÁCH (bản vẽ 11/09). Dùng CHUNG một bản với ô xem nhanh của bảng
+        // điều phối, lấy qua `DongViecUI.hoSoKhachHtml`.
+        + (window.DongViecUI ? window.DongViecUI.hoSoKhachHtml(d.hoSoKhach) : '')
+        // Chỗ để sẵn cho L4-M2 (đánh dấu đã xử). ĐỂ RỖNG — đắp gì vào đây là việc của module đó.
+        + '<div id="o-dong-viec"></div>'
+      + '</div>'
+    + '</div>';
+
+  $('#phu-de').textContent = d.lyDoChu || '';
   nhipDongHo();
   veDongViec(d);                       // KHỐI 4 — L4-M2, đắp vào ô đã chừa ở trên
 }
 
-/* ══════════════════════ KHỐI 4 · ĐÁNH DẤU ĐÃ XỬ (L4-M2) ══════════════════════
+/* ══════════════════════ KHỐI 4 · L4-M2 ══════════════════════
    Khối này ĐÃ CHUYỂN sang `trang/dong-viec-ui.js` (11/09) để bảng điều phối dùng chung
    một bản. Mọi lệnh ghi (`/nhan`, `/dong`) nằm trọn trong tệp đó — trang này KHÔNG được
    tự gọi lại chúng, vì hai chỗ cùng ghi một dòng việc thì cái thứ hai bao giờ cũng trôi. */
 
 function veDongViec(d) {
   if (!window.DongViecUI) {
-    document.getElementById('o-dong-viec').innerHTML =
-      '<div class="banner o">Không tải được khối đánh dấu đã xử.<span class="s">Tải lại trang.</span></div>';
+    $('#o-dong-viec').innerHTML = canhBao({ level: 'warning', title: 'Không tải được khối xử việc',
+      body: 'Tải lại trang. Nếu vẫn không được, xử tạm bên Pancake rồi quay lại đóng việc.' });
     return;
   }
   return window.DongViecUI.gan(d, { sauKhiGhi: tai });
+}
+
+function baoTrang(level, title, body, actionsHtml) {
+  $('#than').innerHTML = canhBao({ level, title, body, actionsHtml: actionsHtml || '' });
 }
 
 async function tai() {
   try {
     const r = await fetch('/api/dieu-phoi/viec/' + encodeURIComponent(VIEC_ID), { headers: { accept: 'application/json' } });
     if (r.status === 401) {
-      document.getElementById('than').innerHTML =
-        '<div class="banner o">Phiên đăng nhập đã hết.<span class="s"><a class="lnk" href="/dang-nhap">Đăng nhập lại</a></span></div>';
+      baoTrang('warning', 'Phiên đăng nhập đã hết', 'Đăng nhập lại rồi mở lại việc này.',
+        button('Đăng nhập lại', { href: '/dang-nhap', size: 'sm', variant: 'primary' }));
       return;
     }
     if (r.status === 404) {
-      document.getElementById('than').innerHTML =
-        '<div class="banner o">Không có việc này.<span class="s">Có thể việc đã bị xoá khỏi hàng chờ, hoặc đường dẫn sai. '
-        + '<a class="lnk" href="/dieu-phoi">Về bảng điều phối</a></span></div>';
+      baoTrang('warning', 'Không có việc này', 'Có thể việc đã rời hàng chờ, hoặc đường dẫn sai.',
+        button('Về Việc đang chờ', { href: '/dieu-phoi', size: 'sm' }));
       return;
     }
     const j = await r.json().catch(() => null);
@@ -219,8 +170,10 @@ async function tai() {
     if (Number.isFinite(j.bay)) lech = j.bay - Date.now();
     ve(j);
   } catch (e) {
-    document.getElementById('than').innerHTML =
-      '<div class="banner r">Không tải được việc này.<span class="s">' + esc(e && e.message ? e.message : 'lỗi mạng') + '</span></div>';
+    baoTrang('error', 'Không tải được việc này', 'Kiểm kết nối rồi tải lại trang.',
+      button('Về Việc đang chờ', { href: '/dieu-phoi', size: 'sm' }));
+    const o = document.querySelector('.alert-body');
+    if (o) o.insertAdjacentHTML('afterend', `<div class="alert-detail">${esc(e && e.message ? e.message : 'lỗi mạng')}</div>`);
   }
 }
 
