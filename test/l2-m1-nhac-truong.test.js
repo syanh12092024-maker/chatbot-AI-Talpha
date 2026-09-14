@@ -354,14 +354,23 @@ test(
   boQua,
   async () => {
     const { kq, cuaV3 } = await motLuot({
-      noiDung: "do you deliver to Abu Dhabi and how long does shipping take",
+      // ⚠️ CÂU HỎI PHẢI TỚI ĐƯỢC MODEL. Câu cũ — «do you deliver to Abu Dhabi and how
+      // long does shipping take» — KHÔNG BAO GIỜ tới: `fast-lane.js:65 ASK_SHIP` khớp cả
+      // «deliver» lẫn «how long», nên lượt bị làn 0đ `tpl_ship` trả lời và handler THOÁT
+      // ở nhánh `fl.handled` (handler-v3.js:474) — trước cả lời gọi model đầu tiên.
+      // Kịch bản model không ai đụng tới, tool `send_product_image` không chạy,
+      // `state.pendingImages` rỗng ⇒ `xaAnh()` trả 0 ⇒ guiAnh=0 và so_ai thiếu loại
+      // `image` (kéo N4 đỏ theo). Ca đỏ từ lúc mới đẻ ở 4261900, KHÔNG phải hồi quy.
+      // Đo lại 14/09/2026: câu dưới đây qua SẠCH cả hai lớp 0đ (lopTuKhoa + fastLane).
+      // Đổi câu này thì PHẢI đo lại — xem ca «LÀN 0đ vẫn canh đúng» ngay dưới.
+      noiDung: "is the strap leather or silicone",
       msgId: "a-1",
       kichBan: [
         traLoiTool("send_product_image", {
           caption: "here you go",
           category: "",
         }),
-        traLoiChu("Yes we deliver there, usually two to four days."),
+        traLoiChu("It comes with a soft silicone strap, very light to wear."),
       ],
     });
     inBang("a", cuaV3);
@@ -389,6 +398,44 @@ test(
     assert.equal(kq.dem.goiModel, 1);
   },
 );
+
+// ── CANH CỬA CHO N1a: câu hỏi của dân số a phải THẬT SỰ tới được model ─────────────
+// Ca này KHÔNG cần CSDL, KHÔNG cần mock module — chạy được cả ở máy thợ. Nó tồn tại vì
+// một ca đỏ có thật: N1a từng dùng câu hỏi giao hàng, bị `tpl_ship` nuốt, và bộ ca xanh
+// ở MỌI phép khác nên không ai thấy rằng nhánh model CHƯA TỪNG CHẠY. «Nhánh không chạy
+// không tính là đạt» — đây là phép đo cho chính lời đó.
+test("N1a′ · câu hỏi của dân số a lọt qua CẢ HAI lớp 0đ (lopTuKhoa + fastLane)", async () => {
+  const { fastLane } = await import("../src/fast-lane.js");
+  const { lopTuKhoa } = await import("../src/chat/lop-tu-khoa.js");
+  const text = "is the strap leather or silicone"; // PHẢI khớp `noiDung` của N1a
+
+  const tk = lopTuKhoa({ text, kb: KB });
+  assert.ok(!tk?.handled, `lớp từ khoá đã trả lời — model không được gọi (${tk?.rule})`);
+
+  const fl = fastLane({
+    text,
+    kb: KB,
+    aiTurns: 0,
+    lastAiText: "",
+    idleMs: 0,
+    usedLanes: new Set(),
+    pageId: PAGE,
+  });
+  assert.ok(!fl.handled, `Fast Lane đã trả lời ở làn '${fl.lane}' — model không được gọi`);
+
+  // Và neo chiều ngược lại: câu CŨ đúng là bị làn 0đ nuốt. Nếu ngày nào đó ASK_SHIP đổi
+  // thì ca này đỏ và người sửa biết ngay vì sao N1a từng đỏ.
+  const cu = fastLane({
+    text: "do you deliver to Abu Dhabi and how long does shipping take",
+    kb: KB,
+    aiTurns: 0,
+    lastAiText: "",
+    idleMs: 0,
+    usedLanes: new Set(),
+    pageId: PAGE,
+  });
+  assert.equal(cu.lane, "tpl_ship", "câu hỏi giao hàng phải do làn 0đ trả lời, KHÔNG tốn token");
+});
 
 // ══ DÂN SỐ b — ÉP NHÁNH CHỐT ĐƠN ══════════════════════════════════════════════════
 test(
