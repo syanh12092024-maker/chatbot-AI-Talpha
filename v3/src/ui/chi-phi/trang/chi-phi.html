@@ -3,65 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Chi phí AI — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-
-  /* Dải khoảng đo — nhạt hơn cảnh báo, nhưng luôn hiện. Nó là chú thích của MỌI con số
-     trên màn, không phải một thông báo nhất thời. */
-  .kdai{background:var(--nen-2);border:1px solid var(--line);border-left:3px solid var(--pri);
-        border-radius:var(--r);padding:9px 13px;margin-bottom:14px;line-height:1.55;font-size:12.5px}
-  .kdai b{display:inline-block;margin-right:8px;color:var(--ink)}
-  .kdai span{color:var(--muted)}
-  .kdai .cb{display:block;margin-top:4px;color:var(--luu-chu)}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  .o{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
-  .o .k{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;box-shadow:var(--sh)}
-  .o .k .n{font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
-  .o .k .n small{font-size:13px;font-weight:600;color:var(--muted)}
-  .o .k .c{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
-  .o .k.xau .n{color:var(--bad)} .o .k.tot .n{color:var(--ok)}
-
-  .nguy{background:var(--loi-nen);border:1px solid var(--loi-vien);border-left:4px solid var(--bad);
-        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
-  .nguy b{color:var(--loi-chu)}
-  .nguon{background:var(--priSoft);border:1px solid var(--chinh-vien);color:var(--chinh-dam);border-radius:var(--r);
-         padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
-  .canh{background:var(--warnSoft);border:1px solid var(--luu-vien);color:var(--luu-chu);border-radius:var(--r);
-        padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
-
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:var(--nen-2)}
-  th.p,td.p{text-align:right;font-variant-numeric:tabular-nums}
-  tbody tr:last-child td{border-bottom:0}
-  tbody tr.dot{background:#fffafa}
-  .bao{display:block;overflow-x:auto}
-
-  .the{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-  .the.dot{background:var(--badSoft);color:var(--loi-chu)}
-  .the.uoc{background:var(--warnSoft);color:var(--luu-chu)}
-  .the.that{background:var(--okSoft);color:var(--dat-chu)}
-
-  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
-  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
-  .trong .di{margin-top:10px;font-size:12px;background:var(--priSoft);color:var(--chinh-dam);
-             display:inline-block;padding:9px 13px;border-radius:9px;text-align:left;max-width:540px}
-  .nho{color:var(--muted);font-size:11.5px;line-height:1.5}
-  code{background:var(--nen-3);padding:1px 5px;border-radius:4px;font-size:11.5px;
-       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-
-  @media (max-width:720px){
-    .than{padding:12px} th,td{padding:8px 9px}
-    .o{grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px}
-    .o .k{padding:11px 12px} .o .k .n{font-size:19px}
-  }
-</style>
+<title>Chi phí AI — AI Closer</title>
+<!-- Dựng trên hệ kiểu (mục M10: chi phí). KHÔNG CSS riêng — trước lượt này là 48 dòng. Sáu thẻ
+     số rời → một hàng bốn chỉ số (mục M1: 4 là trần), số phụ đi vào dòng gợi ý dưới số chính.
+     Bốn dải màu đầu trang (xanh · vàng · đỏ · xanh viền trái) → cảnh báo theo mức của hệ, và
+     khoảng đo lên đầu trang cạnh tiêu đề: màn số liệu nào cũng phải nói nó đo trên khoảng nào. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -69,130 +16,128 @@
 <body>
 <header>
   <h1>Chi phí AI</h1>
-  <span class="sub" id="hTeam">…</span>
+  <span class="sub">Tiền gọi model theo page, đo tại tiến trình bot — nơi tiền thật sự bị tiêu.</span>
   <span class="sp"></span>
-
+  <span id="khoangDau"></span>
 </header>
 
 <main>
-  <div id="dai"></div>
-  <div id="khoang"></div>
-  <div class="o" id="dem"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <div class="panel">
-    <h2>Chi phí theo page <span class="hint" id="hSo"></span>
-      <span class="sp"></span><span class="hint">xếp theo tiền, nhiều nhất lên trước</span></h2>
-    <div id="bang"><div class="than nho">Đang tải…</div></div>
-  </div>
+  <section class="section" aria-label="Tổng chi phí">
+    <div id="dem"><div class="metric-row"><div class="metric"><span class="skeleton"></span></div></div></div>
+    <div class="page-note tren-3" id="nguon"></div>
+  </section>
+
+  <section class="section table-wrap" aria-labelledby="tieu-bang">
+    <div class="table-toolbar"><h2 id="tieu-bang">Chi phí theo page</h2>
+      <span class="table-count" id="hSo"></span></div>
+    <div id="bang"></div>
+  </section>
 </main>
 
 <script>
+const { esc, text, statusBadge, alert: canhBao, emptyState, metricRow, formatNumber, formatVnd } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const d0 = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN'));
+// Số CHƯA TÍNH ĐƯỢC hiện «—». «0 đồng» ở màn chi phí là câu dễ tin nhất và sai nhất.
+const d0 = (n) => (n == null ? '—' : formatNumber(n));
+const dong = (n) => (n == null ? '—' : formatVnd(n));
 
 async function goi(u) {
-  const r = await fetch(u, { credentials: 'same-origin' });
+  const r = await fetch(u, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   const j = await r.json().catch(() => null);
-  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Lỗi ' + r.status);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Máy chủ trả ' + r.status + '.');
   return j;
 }
 
-function veDai(d) {
-  let h = '';
-  // ① Con số này đo ở đâu — hiện TRƯỚC con số, không phải chú thích cuối trang.
-  h += `<div class="nguon">💰 Tiền đọc từ <b>tiến trình bot v1</b> — nơi lượt gọi model thật
-    sự xảy ra. Nhà cung cấp: <code>${esc(d.nhaCungCap || '?')}</code>.
-    ${d.tong.tiLeDoThat != null ? `<br><b>${d.tong.tiLeDoThat}%</b> số lượt có token đo thật
-      từ nhà cung cấp; phần còn lại ước từ độ dài chữ.` : ''}</div>`;
-
-  // ② Hai sổ lệch nhau — nói ra, kèm số.
+function veBangTin(d) {
+  const kh = [];
+  // Đốt tiền không ra đơn — cảnh báo chính của màn.
+  if (d.dotTien && d.dotTien.so) {
+    kh.push(canhBao({ level: 'warning',
+      title: `${formatNumber(d.dotTien.so)} page tiêu tiền mà không ra đơn nào — tổng ${formatVnd(d.dotTien.tien)}`,
+      body: d.dotTien.ds.map((p) => `${p.ten} (${formatVnd(p.tienVnd)} · ${formatNumber(p.soLuot)} tin)`).join(' · ') }));
+  }
+  // Hai sổ lệch nhau — nói ra, kèm số. Con số trên màn vẫn theo tiến trình bot.
   if (d.soAi && d.soAi.docDuoc && d.soAi.coLech) {
-    h += `<div class="canh">📒 <b>Hai cuốn sổ đang nói khác nhau.</b><br>
-      ${esc(d.soAi.noi.replace(/\*\*/g, ''))}
-      ${d.soAi.viSao ? `<br><span class="nho" style="color:#8a4a06">${esc(d.soAi.viSao)}</span>` : ''}</div>`;
+    kh.push(canhBao({ level: 'info', title: 'Sổ chi phí của v3 chưa khớp với tiến trình bot',
+      body: `Sổ v3 ghi ${formatNumber(d.soAi.soLuot)} lượt / ${formatVnd(d.soAi.tienVnd)}; tiến trình bot đo được `
+        + `${formatNumber(d.tong.soLuot)} lượt / ${formatVnd(d.tong.tienVnd)}. Màn này lấy theo tiến trình bot — nơi tiền thật sự bị tiêu.`,
+      detail: [d.soAi.viSao] }));
   }
   if (d.soAi && !d.soAi.docDuoc) {
-    h += `<div class="canh">📒 ${esc(d.soAi.noi)}</div>`;
+    kh.push(canhBao({ level: 'info', title: 'Chưa đối chiếu được với sổ chi phí của v3', detail: [d.soAi.noi] }));
   }
-
-  // ③ Đốt tiền không ra đơn — cảnh báo chính của màn.
-  if (d.dotTien && d.dotTien.so) {
-    h += `<div class="nguy"><b>${d.dotTien.so} page tiêu tiền mà KHÔNG ra đơn nào</b> —
-      tổng <b>${d0(d.dotTien.tien)} đ</b>.
-      <div class="nho" style="margin-top:6px;color:#7f1d1d">${d.dotTien.ds.map((p) =>
-        `${esc(p.ten)} (${d0(p.tienVnd)} đ · ${d0(p.soLuot)} tin)`).join(' · ')}</div></div>`;
-  }
-  $('#dai').innerHTML = h;
+  $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 }
 
-function veDem(t) {
-  $('#dem').innerHTML = [
-    { n: d0(t.tienVnd) + ' <small>đ</small>', c: 'tổng tiền model của team', l: '' },
-    { n: d0(t.vndMoiTin) + ' <small>đ</small>', c: 'mỗi tin trả lời', l: '' },
-    { n: d0(t.vndMoiDon) + ' <small>đ</small>', c: 'mỗi đơn ra được', l: t.vndMoiDon ? '' : 'xau' },
-    { n: t.tinMoiDon == null ? '—' : t.tinMoiDon, c: 'tin cho một đơn', l: '' },
-    { n: d0(t.soLuot), c: 'lượt trả lời', l: '' },
-    { n: d0(t.soDon), c: 'đơn', l: t.soDon ? 'tot' : 'xau' },
-  ].map((x) => `<div class="k ${x.l}"><div class="n">${x.n}</div><div class="c">${x.c}</div></div>`).join('');
+function veDem(d) {
+  const t = d.tong;
+  $('#dem').innerHTML = metricRow([
+    { label: 'Tổng tiền model của team', value: dong(t.tienVnd), hint: `${d0(t.soLuot)} lượt trả lời` },
+    { label: 'Mỗi tin trả lời', value: dong(t.vndMoiTin),
+      hint: t.tiLeDoThat != null ? `${t.tiLeDoThat}% lượt có token đo thật` : 'Chưa có lượt nào đo thật' },
+    { label: 'Mỗi đơn ra được', value: dong(t.vndMoiDon),
+      hint: t.tinMoiDon != null ? `${String(t.tinMoiDon).replace('.', ',')} tin cho một đơn` : '' },
+    { label: 'Đơn', value: d0(t.soDon),
+      statusHtml: t.soDon === 0 ? statusBadge('blocked', { label: 'Chưa ra đơn nào' }) : '' },
+  ]);
+  $('#nguon').innerHTML = `<p>Nguồn: tiến trình bot${d.nhaCungCap ? ` · nhà cung cấp <code>${esc(d.nhaCungCap)}</code>` : ''}. `
+    + `Phần lượt không có token đo thật được ước từ độ dài chữ.</p>`
+    + (d.khoang && d.khoang.canhBao ? `<p>${text(d.khoang.canhBao)}</p>` : '');
 }
 
 function veBang(d) {
   const ds = d.page.filter((p) => p.soLuot > 0);
-  $('#hSo').textContent = `${ds.length} page có tiêu`;
-  const b = $('#bang');
+  $('#hSo').textContent = `${formatNumber(ds.length)} page có tiêu · nhiều tiền nhất lên trước`;
   if (!ds.length) {
-    b.innerHTML = `<div class="trong"><div class="ti">${esc(d.trong ? d.trong.noi : 'Chưa có lượt gọi nào')}</div>
-      ${d.trong && d.trong.diTiep ? `<div class="di">👉 ${esc(d.trong.diTiep)}</div>` : ''}</div>`;
+    $('#bang').innerHTML = emptyState({ icon: 'inbox', title: d.trong ? d.trong.noi : 'Chưa có lượt gọi model nào',
+      body: d.trong && d.trong.diTiep ? d.trong.diTiep : '' });
     return;
   }
-  b.innerHTML = `<div class="bao"><table>
-    <thead><tr><th>Page</th><th class="p">Tiền</th><th class="p">Tin</th><th class="p">Đơn</th>
-      <th class="p">đ/tin</th><th class="p">đ/đơn</th><th>Đo thật</th><th>Marketer</th></tr></thead>
-    <tbody>${ds.map((p) => `
-      <tr class="${p.dotTienKhongRaDon ? 'dot' : ''}">
-        <td><b>${esc(p.ten)}</b><div class="nho">${esc(p.pageId)}</div>
-          ${p.dotTienKhongRaDon ? '<span class="the dot">đốt tiền, 0 đơn</span>' : ''}</td>
-        <td class="p"><b>${d0(p.tienVnd)}</b></td>
-        <td class="p">${d0(p.soLuot)}</td>
-        <td class="p">${d0(p.soDon)}</td>
-        <td class="p">${d0(p.vndMoiTin)}</td>
-        <td class="p">${p.soDon ? d0(p.vndMoiDon) : '—'}</td>
-        <td><span class="the ${p.tiLeDoThat >= 80 ? 'that' : 'uoc'}">${p.tiLeDoThat == null ? '—' : p.tiLeDoThat + '%'}</span></td>
-        <td class="nho">${esc(p.marketer) || '<i>chưa gán</i>'}</td>
-      </tr>`).join('')}</tbody></table></div>`;
-}
-
-/**
- * DẢI KHOẢNG THỜI GIAN — màn nào cũng phải nói nó đang đo trên khoảng nào.
- *
- * Ba màn số liệu dùng BA cửa sổ khác nhau. Chỉ màn Báo cáo nói ra; hai màn kia im, nên
- * người quản lý mở cạnh nhau rồi so — đó là so ba khoảng khác nhau mà tưởng cùng một kỳ.
- */
-function veKhoang(k) {
-  const o = document.getElementById('khoang');
-  if (!o || !k) return;
-  o.innerHTML = '<div class="kdai"><b>Khoảng đo: ' + esc(k.chu) + '</b>'
-    + '<span>' + esc(k.noi || '') + '</span>'
-    + (k.canhBao ? '<span class="cb">' + esc(k.canhBao) + '</span>' : '')
-    + '</div>';
+  $('#bang').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Page</th><th scope="col" class="num">Tiền</th><th scope="col" class="num">Tin</th>
+      <th scope="col" class="num">Đơn</th><th scope="col" class="num">Mỗi tin</th><th scope="col" class="num">Mỗi đơn</th>
+      <th scope="col" class="num">Đo thật</th><th scope="col">Marketer</th>
+    </tr></thead><tbody>${ds.map((p) => `
+    <tr>
+      <td><div class="page-identity-name">${esc(p.ten)}</div>
+        <div class="page-identity-sub">${esc(p.pageId)}${p.dotTienKhongRaDon ? ` · ${statusBadge('needs_attention', { label: 'Tiêu tiền, 0 đơn' })}` : ''}</div></td>
+      <td class="num manh">${dong(p.tienVnd)}</td>
+      <td class="num">${d0(p.soLuot)}</td>
+      <td class="num">${d0(p.soDon)}</td>
+      <td class="num">${dong(p.vndMoiTin)}</td>
+      <td class="num">${p.soDon ? dong(p.vndMoiDon) : '—'}</td>
+      <td class="num">${p.tiLeDoThat == null ? '—'
+        : p.tiLeDoThat >= 80 ? `${p.tiLeDoThat}%`
+        : `<span class="badge" data-variant="warning" title="Dưới 80% lượt có token đo thật — phần còn lại là ước lượng">${p.tiLeDoThat}% · ước</span>`}</td>
+      <td>${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
+    </tr>`).join('')}</tbody></table>`;
 }
 
 async function tai() {
   try {
     const d = await goi('/api/chi-phi');
-    $('#hTeam').textContent = 'team ' + (d.teamId || '?');
+    if (!d) return;
+    if (d.khoang) $('#khoangDau').innerHTML = `<span class="badge" title="${esc(d.khoang.noi || '')}">Khoảng đo: ${esc(d.khoang.chu)}</span>`;
     if (!d.tong) {
-      $('#bang').innerHTML = `<div class="trong"><div class="ti">${esc(d.trong.noi)}</div>
-        <div class="di">👉 ${esc(d.trong.diTiep)}</div></div>`;
+      $('#dem').innerHTML = '';
+      $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'warning', title: 'Chưa đọc được chi phí',
+        body: 'v3 chưa được nối sang tiến trình bot. Nhờ người quản trị hệ thống cấu hình kết nối.',
+        detail: d.trong ? [d.trong.noi, d.trong.diTiep] : [] })}</div>`;
+      $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa có số liệu chi phí',
+        body: 'Màn này không hiện 0 khi chưa đọc được — 0 đồng ở đây sẽ là con số sai.' });
       return;
     }
-    veDai(d); veKhoang(d.khoang); veDem(d.tong); veBang(d);
+    veBangTin(d); veDem(d); veBang(d);
   } catch (e) {
-    $('#bang').innerHTML = `<div class="than"><div class="nguy" style="margin:0">
-      <b>Không đọc được chi phí:</b> ${esc(e.message)}</div></div>`;
     $('#dem').innerHTML = '';
+    $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được chi phí',
+      body: 'Chưa lấy được số từ tiến trình bot. Nếu lỗi còn lặp lại, gửi dòng chi tiết bên dưới cho người quản trị hệ thống.',
+      detail: [e.message] })}</div>`;
+    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa có số liệu chi phí',
+      body: 'Màn này không hiện 0 khi chưa đọc được — 0 đồng ở đây sẽ là con số sai.' });
   }
 }
 
