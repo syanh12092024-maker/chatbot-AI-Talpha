@@ -30,13 +30,31 @@
 #   lớp 0đ) + thêm ca N1a′ canh chính lựa chọn đó, cả hai chiều.
 #   ⚠️ Ca đỏ này có từ 4261900 — từ lúc mới đẻ, KHÔNG phải hồi quy.
 #
-# ⚠️ CÒN 2 CA ĐỎ: N5 · N11 (thiếu `ai-enabled.json`, xem trên).
+# ✅ N5/N11 — ĐÓNG 14/09/2026. Chúng đọc `ai-enabled.json` ở GỐC REPO, tức đo trạng thái
+#   của MÁY chứ không đo mã (tệp gitignore ⇒ CI không có ⇒ `nguon` rơi về `cot_csdl`).
+#   Nay bộ ca TỰ DỰNG nguồn của mình trong thư mục tạm, như N18/N19/N20 vẫn làm.
+#   KHÔNG cấp tệp mẫu ở CI: làm thế là dựng lại đúng chỗ phụ thuộc vừa gỡ.
 #
-# ═══ CÁCH NHẬN NUÔI (bước 1–2 XONG, bước 3 chỉ còn thiếu tệp mẫu) ════════════════
+# ═══ SỐ ĐO 14/09/2026 (lượt 34800176998) ═════════════════════════════════════════
+#   npm test    : 1665 ca · 1644 xanh · 0 ĐỎ · 21 hoãn minh bạch
+#   cổng nghiệm thu: XANH=10 · ĐỎ=15 — lần ĐẦU TIÊN 25 cổng được đo trên CI.
+#   CẢ 15 cổng đỏ đều đỏ vì MÔI TRƯỜNG, không cổng nào đỏ vì mã:
+#     · 10 cổng (l1-m1·l1-m2·l1-m3·l2-m1·l2-m2·l2-m3·l3-m1..l3-m4) gõ cứng
+#       `CONTAINER="talpha-pg"`. CI chạy Postgres bằng service container của GitHub,
+#       không có tên ấy ⇒ rc=2 «KHÔNG ĐO ĐƯỢC» (khác hẳn rc=1 «trượt») — cổng từ chối
+#       giả xanh, đúng luật. Phải dạy cổng nhận CSDL qua `DATABASE_URL_V3`.
+#     · va-r1 · va-r2 gọi `node --env-file=.env` ⇒ `.env: not found` ⇒ LOI-NODE.
+#     · b-y4 · g2-a4 · l0-m1 cần tệp dữ liệu THẬT (`pages.json` · `ai-enabled.json`
+#       · `conv-state.json`) — cùng gốc với 21 ca hoãn minh bạch.
+#
+# ═══ CÁCH NHẬN NUÔI ══════════════════════════════════════════════════════════════
 #   1. ✅ Chạy được trên Postgres: `npm run migrate && npm test`
 #   2. ✅ Chạy tay workflow này một lượt, đọc số
-#   3. ⬜ Cấp `ai-enabled.json` mẫu cho CI (N5/N11) → xanh trọn →
+#   3. ✅ `npm test` xanh trọn trên CI
+#   4. ⬜ Gỡ ba nút môi trường của 15 cổng (xem bảng trên) → cổng xanh trọn →
 #         đổi `on:` thành push/pull_request + ghi §10 sổ
+#   ⛔ Tới khi xong bước 4, CẤM nói «CI xanh» trống không: phải nói RÕ là `npm test`
+#      xanh, còn cổng nghiệm thu thì 10/25.
 #
 # `npm run di-tru` KHÔNG chạy được ở đây: nó cần dữ liệu thật vốn bị gitignore và chỉ có
 # trên máy dev/VPS. Đó là giới hạn THẬT của cổng này, không phải lỗi.
