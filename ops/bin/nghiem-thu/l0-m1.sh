@@ -27,6 +27,8 @@ muc()  { printf '\n── %s\n' "$1"; }
 so()   { printf '   %-58s %s\n' "$1" "$2"; }
 dat()  { PHEP=$((PHEP + 1)); printf '   ✔ %s\n' "$1"; }
 truot() { PHEP=$((PHEP + 1)); LOI=$((LOI + 1)); printf '   ✘ %s\n' "$1"; }
+# shellcheck source=ops/bin/nghiem-thu/_can.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_can.sh"
 # bang <nhãn> <giá trị thật> <giá trị chờ>
 bang() {
   so "$1" "$2"
@@ -171,6 +173,13 @@ K2="$(psqlx "SELECT string_agg(table_name,',' ORDER BY table_name)
 bang "bảng có team_id NULLABLE" "${K2}" "bo_luat_chung"
 
 muc "④ DI TRÚ — hai vế mỗi phép"
+# Phân biệt HAI cảnh trước khi kết luận: di trú hỏng vì MÃ, hay vì máy này KHÔNG CÓ
+# nguyên liệu. Đo 14/09 trên CI: không tệp nguồn nào ⇒ cổng khai ✘ ba lần, tức nói sai bệnh.
+THIEU_NGUON="$(thieu_tep pages.json conv-state.json ai-enabled.json)"
+if [ -n "${THIEU_NGUON}" ]; then
+  khong_do "phép ④–⑧ (DI TRÚ đầu-cuối): ${THIEU_NGUON}"
+  return 2
+fi
 if ! node db/di-tru/index.js > /tmp/l0m1-ditru-1.txt 2>&1; then
   truot "di-tru lượt 1 hỏng — dừng phép ④, không đo tiếp trên CSDL rỗng"
   sed -n '1,20p' /tmp/l0m1-ditru-1.txt
@@ -339,8 +348,14 @@ CON_LAI="$(psqlx "SELECT count(*) FROM information_schema.tables
 bang "bảng còn lại sau down" "${CON_LAI}" "0"
 node db/migrate.js >/dev/null 2>&1
 LOI_TRUOC_LAP="${LOI}"
+HOAN_TRUOC_LAP="${KHONG_DO}"
 kiem_2_den_8
-if [ "${LOI}" = "${LOI_TRUOC_LAP}" ]; then dat "⑨ · ②–⑧ vẫn đạt sau vòng down→up→di-tru"
+# ⚠️ Phép ⑨ đọc HIỆU của bộ đếm, nên phải soi CẢ HAI: nếu ②–⑧ vừa HOÃN (thiếu nguyên
+# liệu) thì LOI không đổi — và ⑨ sẽ khai «vẫn đạt» về một vòng CHƯA HỀ CHẠY. Đúng bẫy
+# «màn trống vẫn đạt». Hoãn thì ⑨ cũng hoãn.
+if [ "${KHONG_DO}" != "${HOAN_TRUOC_LAP}" ]; then
+  khong_do "⑨ · ②–⑧ vừa HOÃN nên không có gì để so — vòng down→up→di-tru chưa đo được"
+elif [ "${LOI}" = "${LOI_TRUOC_LAP}" ]; then dat "⑨ · ②–⑧ vẫn đạt sau vòng down→up→di-tru"
 else truot "⑨ · có phép ②–⑧ đỏ sau vòng down→up→di-tru"; fi
 
 # ═══ ⑩ TEST ═════════════════════════════════════════════════════════════════
@@ -453,5 +468,6 @@ bang "lược đồ trước ↔ sau round-trip 008" "${LD_SAU}" "${LD_TRUOC}"
 
 # ── tổng ─────────────────────────────────────────────────────────────────────
 printf '\n═══════════════════════════════════════════════════════════════\n'
-printf 'TỔNG: %d phép · ĐẠT %d · TRƯỢT %d\n' "${PHEP}" "$((PHEP - LOI))" "${LOI}"
-[ "${LOI}" -eq 0 ] && exit 0 || exit 1
+printf 'TỔNG: %d phép · ĐẠT %d · TRƯỢT %d · KHÔNG ĐO ĐƯỢC %d (⏸ ≠ đạt)\n' \
+  "${PHEP}" "$((PHEP - LOI))" "${LOI}" "${KHONG_DO}"
+thoat_ba_trang_thai "${LOI}"

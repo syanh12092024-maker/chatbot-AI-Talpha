@@ -52,6 +52,19 @@ trap don_dep EXIT
 echo "CỔNG NGHIỆM THU B-Y4 · $(date '+%F %T') · cây $(git rev-parse --short HEAD 2>/dev/null)"
 echo "CSDL đo: ${DB} (sandbox) · máy chủ $(node -e 'console.log(new URL(process.argv[1]).host)' "${GOC_URL}")"
 
+# ── ba phép đầu cần `pages.json` ────────────────────────────────────────────
+# Phép ①②③ đọc nguồn di trú THẬT. Thiếu tệp thì `docPages` ném, `npm run di-tru` nạp 0
+# page, và `SELECT … LIMIT 1` không có hàng nào ⇒ mọi phép sau khai LOI-NODE. Đo 14/09
+# trên CI: cổng in ✘ ba lần, tức NÓI SAI BỆNH — mã không hỏng, máy đo thiếu nguyên liệu.
+# shellcheck source=ops/bin/nghiem-thu/_can.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_can.sh"
+THIEU_NGUON="$(thieu_tep pages.json)"
+
+if [ -n "${THIEU_NGUON}" ]; then
+  muc "①②③ nguyên liệu di trú"
+  khong_do "phép ① ② ③: ${THIEU_NGUON}"
+else
+
 muc "① nguyên liệu — pages.json có mang marketer nào không"
 NGUON="$(nodex '
 const { docPages } = await import("./db/di-tru/nguon.js");
@@ -112,6 +125,8 @@ await voiPool(async (p) => {
 });")"
 bang "cột \`ten\` (máy đặt) sau di trú" "${KQ3}" "DA-DONG-BO-LAI"
 
+fi
+
 muc "④ không cột NGƯỜI đặt nào còn nằm trong câu ghi đè thẳng"
 CON="$(nodex '
 const fs = await import("node:fs");
@@ -137,5 +152,8 @@ else
 fi
 
 printf '\n═══════════════════════════════════════════════════════════════\n'
-printf 'TỔNG: %d phép · ĐẠT %d · TRƯỢT %d\n' "${PHEP}" "$((PHEP - LOI))" "${LOI}"
-[ "${LOI}" -eq 0 ] && exit 0 || exit 1
+printf 'TỔNG: %d phép · ĐẠT %d · TRƯỢT %d · KHÔNG ĐO ĐƯỢC %d (⏸ ≠ đạt)\n' \
+  "${PHEP}" "$((PHEP - LOI))" "${LOI}" "${KHONG_DO}"
+# BA mã thoát, không phải hai: 1 = có phép TRƯỢT (mã sai) · 2 = không trượt nhưng còn phép
+# KHÔNG ĐO ĐƯỢC (máy thiếu đồ nghề) · 0 = đo hết và đạt hết. Gộp 2 vào 0 là dựng cổng mù.
+thoat_ba_trang_thai "${LOI}"

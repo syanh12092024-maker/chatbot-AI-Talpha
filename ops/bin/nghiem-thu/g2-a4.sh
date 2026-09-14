@@ -17,6 +17,8 @@ muc()   { printf '\n── %s\n' "$1"; }
 so()    { printf '   %-58s %s\n' "$1" "$2"; }
 dat()   { PHEP=$((PHEP + 1)); printf '   ✔ %s\n' "$1"; }
 truot() { PHEP=$((PHEP + 1)); LOI=$((LOI + 1)); printf '   ✘ %s\n' "$1"; }
+# shellcheck source=ops/bin/nghiem-thu/_can.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_can.sh"
 bang() {
   so "$1" "$2"
   case "$2" in *LOI-NODE*) truot "$1: câu đo HỎNG — không đọc là đạt"; return ;; esac
@@ -140,7 +142,17 @@ bang "áp bản AI chưa duyệt" "${A4_AI}" "bi-chan"
 # ⚠️ SỬA 25/08 (B-Y7): trước đây phép này khẳng định một CON SỐ lấy từ cột `bot_ai_bat`.
 # Cột đó là BẢN SAO và đã lệch 50 trên máy chủ thật. Nay canh NGUỒN của con số, không canh
 # giá trị: giá trị đúng bao nhiêu là tuỳ `ai-enabled.json`, nhưng nó PHẢI đến từ đó.
-bang "nguồn của con số «đang bật bot»" "${A4_AH}" "ai-enabled.json"
+# Phép này hỏi «con số ĐẾN TỪ ĐÂU», nên nó chỉ trả lời được khi nguồn THẬT có mặt. Thiếu
+# `ai-enabled.json` thì `demPageBatBot` khai thẳng `cot_csdl` + lý do — đó là hành vi ĐÚNG
+# (nó từ chối lặng lẽ rơi về cột), nhưng phép thì KHÔNG ĐO ĐƯỢC. Đo 14/09 trên CI: cổng khai
+# ✘, tức đọc hành vi đúng thành lỗi. Cùng bệnh với N5/N11 của `test/l0-m2-noi-dung.test.js`.
+THIEU_AIE="$(thieu_tep ai-enabled.json)"
+if [ -n "${THIEU_AIE}" ]; then
+  so "nguồn của con số «đang bật bot»" "${A4_AH}"
+  khong_do "nguồn của con số «đang bật bot»: ${THIEU_AIE}"
+else
+  bang "nguồn của con số «đang bật bot»" "${A4_AH}" "ai-enabled.json"
+fi
 bang "lượt áp tiến / lượt áp lùi" "${A4_L1}/${A4_L2}" "tien/lui"
 bang "số dòng nhật ký ap_bo_luat" "${A4_NK}" "2"
 
@@ -212,5 +224,6 @@ else
 fi
 
 printf '\n═══════════════════════════════════════════════════════════════\n'
-printf 'TỔNG: %d phép · ĐẠT %d · TRƯỢT %d\n' "${PHEP}" "$((PHEP - LOI))" "${LOI}"
-[ "${LOI}" -eq 0 ] && exit 0 || exit 1
+printf 'TỔNG: %d phép · ĐẠT %d · TRƯỢT %d · KHÔNG ĐO ĐƯỢC %d (⏸ ≠ đạt)\n' \
+  "${PHEP}" "$((PHEP - LOI))" "${LOI}" "${KHONG_DO}"
+thoat_ba_trang_thai "${LOI}"

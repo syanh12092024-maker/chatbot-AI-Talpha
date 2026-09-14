@@ -16,6 +16,20 @@ set -uo pipefail
 GOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "${GOC}" || exit 2
 
+# ── cổng này cần `.env` ──────────────────────────────────────────────────────
+# Mọi phép ở đây đi qua `node --env-file=.env`. Thiếu tệp thì node chết ngay với
+# «.env: not found», kịch bản repro không in nổi một khối nào, và cổng khai một loạt
+# ✘ «khối Fx không thấy trong log repro» — tức NÓI SAI BỆNH: người đọc tưởng thước đổi
+# cấu trúc trong khi thật ra máy đo thiếu đồ nghề. Đo 14/09/2026 trên CI, lượt 34801106602.
+# shellcheck source=ops/bin/nghiem-thu/_can.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_can.sh"
+LY_DO_HOAN="$(thieu_env)"
+if [ -n "${LY_DO_HOAN}" ]; then
+  echo "⏸ CỔNG HOÃN — KHÔNG ĐO ĐƯỢC: ${LY_DO_HOAN}"
+  echo "   (hoãn KHÁC trượt. Cấp gói bàn giao cho máy này rồi chạy lại.)"
+  exit 2
+fi
+
 LOI=0
 PHEP=0
 

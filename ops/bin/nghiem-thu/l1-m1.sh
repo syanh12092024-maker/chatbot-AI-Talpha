@@ -33,6 +33,10 @@ so()    { printf '   %-58s %s\n' "$1" "$2"; }
 dat()   { PHEP=$((PHEP + 1)); printf '   ✔ %s\n' "$1"; }
 truot() { PHEP=$((PHEP + 1)); LOI=$((LOI + 1)); printf '   ✘ %s\n' "$1"; }
 hoan()  { HOAN=$((HOAN + 1)); printf '   ⏸ HOÃN — %s\n' "$1"; }
+# `hoan()` ở trên = CỐ Ý chưa chạy ở đây (ghi ngược THẬT phải diễn tập trên VPS) — không
+# đổi mã thoát. `khong_do()` dưới đây = MÁY NÀY THIẾU ĐỒ NGHỀ — đổi mã thoát sang 2.
+# shellcheck source=ops/bin/nghiem-thu/_can.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_can.sh"
 
 bang() {
   so "$1" "$2"
@@ -144,6 +148,13 @@ console.log(JSON.parse(fs.readFileSync("pancake-shops.json","utf8")).length)')"
 DICH_TT="$(psqlx "SELECT count(*) FROM ket_noi_pos")"
 so "vế NGUỒN pancake-shops.json (thị trường)" "${NGUON_TT}"
 so "vế ĐÍCH bảng ket_noi_pos (dòng)" "${DICH_TT}"
+# Cả hai phép của ② đọc `pancake-shops.json` (khoá THẬT của 7 shop, gitignore). Thiếu tệp
+# thì vế NGUỒN là LOI-NODE còn vế ĐÍCH là 0 — cổng khai ✘ «hai vế khớp: thật=0 · chờ=LOI-NODE»,
+# tức nói sai bệnh. Đo 14/09 trên CI, lượt 34801106602.
+THIEU_SHOP="$(thieu_tep pancake-shops.json)"
+if [ -n "${THIEU_SHOP}" ]; then
+  khong_do "② hai vế ket_noi_pos + khoá phải mã hoá: ${THIEU_SHOP}"
+else
 bang "hai vế khớp" "${DICH_TT}" "${NGUON_TT}"
 so "danh sách thị trường trong CSDL" "$(psqlx "SELECT string_agg(market,',' ORDER BY market) FROM ket_noi_pos")"
 so "10 ký tự đầu của mọi khoá trong CSDL" "$(psqlx "SELECT string_agg(DISTINCT left(api_key_ma,10),' ') FROM ket_noi_pos")"
@@ -156,6 +167,7 @@ await voiPool(async (pool) => {
   console.log(tho.length);
 });')"
 bang "số khoá nằm NGUYÊN VĂN trong cột (phải 0)" "${KHOA_TRAN}" "0"
+fi
 
 # ═══ ③ ĐỌC DANH MỤC + TỒN KHO THẬT ═══════════════════════════════════════════
 muc "③ docDanhMuc trên shop THẬT ${CHO} — hết cảnh suy sản phẩm từ 25 đơn (01 §12)"
@@ -321,10 +333,20 @@ else
   bang "⑤a fail-CLOSED, KHÔNG chạm API, có ghi sổ" "${P5A}" "LoiVanGhiDong;0;1"
   so "⑤b chuyển ngoài bảng (van MỞ) → lỗi;lượt gọi API;nhat_ky" "${P5B}"
   bang "⑤b chặn trước khi chạm API" "${P5B}" "LoiChuyenNgoaiBang;0;1"
+  # ⑤b2/⑤b3 chỉ chạy được khi CSDL có DÒNG kết nối POS — dòng ấy do di trú nạp từ
+  # `pancake-shops.json`. Thiếu tệp thì mã dừng sớm ở `LoiThieuKetNoiPos`, tức phép KHÔNG
+  # ĐO ĐƯỢC chứ không phải mã sai. Đầu tệp cổng đã khai «mạng hỏng ⇒ ⏸», nhưng phép dò cũ
+  # không nhận ra THIẾU KẾT NỐI cũng thuộc loại đó.
+  bang_pos() { # $1 = nhãn · $2 = đo được · $3 = chờ
+    case "$2" in
+      LoiThieuKetNoiPos*) so "$1" "$2"; khong_do "$1: chưa có dòng ket_noi_pos (${THIEU_SHOP:-di trú chưa nạp})"; return ;;
+    esac
+    bang "$1" "$2" "$3"
+  }
   so "⑤b2 compare-and-set live≠tu → lỗi;lượt PUT;nhat_ky" "${P5B2}"
-  bang "⑤b2 từ chối ghi đè, PUT 0 lượt" "${P5B2}" "LoiTrangThaiDaDoi;0;1"
+  bang_pos "⑤b2 từ chối ghi đè, PUT 0 lượt" "${P5B2}" "LoiTrangThaiDaDoi;0;1"
   so "⑤b3 PUT mất phản hồi → lỗi;dòng bắt-đầu;dòng kết-quả" "${P5B3}"
-  bang "⑤b3 dòng bắt-đầu MỒ CÔI (1 bắt đầu, 0 kết quả)" "${P5B3}" "LoiPosKhongTraLoi;1;0"
+  bang_pos "⑤b3 dòng bắt-đầu MỒ CÔI (1 bắt đầu, 0 kết quả)" "${P5B3}" "LoiPosKhongTraLoi;1;0"
 fi
 hoan "⑤c GHI NGƯỢC THẬT trên đơn nháp (0→12 rồi 12→0): CHƯA CHẠY — chờ diễn tập VPS.
         Máy dev KHÔNG có V3_POS_GHI và cổng này cố ý không đặt nó. Câu diễn tập phải
@@ -357,6 +379,7 @@ bang "0 ca đỏ" "${T_FAIL:-?}" "0"
 
 # ── tổng ─────────────────────────────────────────────────────────────────────
 printf '\n═══════════════════════════════════════════════════════════════\n'
-printf 'TỔNG: %d phép · ĐẠT %d · TRƯỢT %d · HOÃN %d (⏸ = cố ý chưa chạy, không phải đạt)\n' \
-  "${PHEP}" "$((PHEP - LOI))" "${LOI}" "${HOAN}"
-[ "${LOI}" -eq 0 ] && exit 0 || exit 1
+printf 'TỔNG: %d phép · ĐẠT %d · TRƯỢT %d · HOÃN %d · KHÔNG ĐO ĐƯỢC %d\n' \
+  "${PHEP}" "$((PHEP - LOI))" "${LOI}" "${HOAN}" "${KHONG_DO}"
+printf '  (HOÃN = cố ý chưa chạy ở đây · KHÔNG ĐO ĐƯỢC = máy này thiếu đồ nghề. Cả hai ≠ đạt.)\n'
+thoat_ba_trang_thai "${LOI}"
