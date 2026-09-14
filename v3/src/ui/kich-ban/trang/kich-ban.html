@@ -35,6 +35,10 @@
 
     <section id="soan" aria-live="polite"></section>
   </div>
+
+  <!-- Ô chọn tệp nằm NGOÀI vùng vẽ lại: `#soan` bị `innerHTML` mỗi lần đổi page, và nếu ô
+       này nằm trong đó thì lượt vẽ lại giữa lúc người dùng đang chọn tệp sẽ vứt mất nó. -->
+  <input type="file" id="oFile" accept=".xlsx,.xls" hidden>
 </main>
 
 <dialog class="drawer" id="ngan" aria-labelledby="ngan-tieu">
@@ -156,7 +160,9 @@ function veSoan() {
         <div class="section-header"><div>
           <h2 id="tieu-soan">Soạn bản mới</h2>
           <div class="section-desc">Viết bằng tiếng Việt cho người đọc. Bấm lưu, hệ thống tự dựng bản cho máy và lưu cả hai.${P.live ? ` Ô soạn đang chứa nội dung bản v${P.live.phienBan}.` : ''}</div>
-        </div></div>
+        </div>
+        ${SUA ? button('Nhập từ file Pancake', { size: 'sm', id: 'nutNhap' }) : ''}</div>
+        <div id="ketQuaNhap"></div>
         <div class="form-stack">
           ${P.truong.map((k) => `<div class="field">
             <label class="field-label" for="t-${esc(k)}">${esc(P.nhanTruong[k])} ${nhanTruong(k)}</label>
@@ -195,6 +201,7 @@ function veSoan() {
     </div>`;
 
   if (SUA) $('#nutLuu').addEventListener('click', luu);
+  if (SUA && $('#nutNhap')) $('#nutNhap').addEventListener('click', () => $('#oFile').click());
   document.querySelectorAll('[data-live]').forEach((b) => b.addEventListener('click', () => lenLive(b.dataset.live, b)));
   document.querySelectorAll('[data-chep]').forEach((b) => b.addEventListener('click', () => chep(b.dataset.chep)));
   document.querySelectorAll('[data-xem]').forEach((b) => b.addEventListener('click', () => xemBan(b.dataset.xem)));
@@ -213,6 +220,47 @@ function veKetQuaLuu() {
 }
 
 const layO = () => Object.fromEntries([...document.querySelectorAll('[data-t]')].map((o) => [o.dataset.t, o.value]));
+
+// ── NHẬP TỪ FILE PANCAKE ─────────────────────────────────────────────────────────────
+// Cửa `/api/kich-ban/nhap-pancake` CHỈ BÓC, không ghi: nó trả về một bản nháp, người đọc
+// lại rồi mới bấm «Lưu bản nháp». Giữ đúng nghĩa đó ở đây — không tự lưu hộ.
+// Bộ bóc chỉ dựng được ba trường (giọng điệu · câu chào · cách bán); ba ô «trả lời nhanh»
+// KHÔNG bị đụng tới, vì file Pancake không có thứ tương ứng và ghi đè chúng bằng chuỗi rỗng
+// là xoá công người khác.
+$('#oFile').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';                       // chọn lại cùng một tệp vẫn nổ sự kiện
+  if (!f || !P) return;
+  const nut = $('#nutNhap');
+  setBusy(nut, true);
+  LOI = null; veBangTin();
+  try {
+    const b64 = await new Promise((xong, hong) => {
+      const r = new FileReader();
+      r.onload = () => xong(String(r.result).replace(/^data:.*?;base64,/, ''));
+      r.onerror = () => hong(new Error('Không đọc được tệp trên máy bạn.'));
+      r.readAsDataURL(f);
+    });
+    const kq = await goi('/api/kich-ban/nhap-pancake', { method: 'POST', body: JSON.stringify({ dataBase64: b64 }) });
+    if (!kq) return;
+    const n = kq.nhap || {};
+    let daDien = 0;
+    for (const k of ['tone', 'greeting', 'salesPrompt']) {
+      const o = document.querySelector(`[data-t="${k}"]`);
+      if (o && n[k]) { o.value = n[k]; daDien += 1; }
+    }
+    const st = n.stats || {};
+    $('#ketQuaNhap').innerHTML = `<div class="tren-4">${canhBao({ level: 'success',
+      title: `Đã bóc «${f.name}» — điền ${so(daDien)}/3 ô`,
+      body: 'Chưa lưu gì cả. Đọc lại nội dung rồi bấm «Lưu bản nháp» thì mới thành một bản.',
+      detail: [[st.topics != null ? `${so(st.topics)} chủ đề` : '', st.images != null ? `${so(st.images)} ảnh` : '',
+                st.tiers != null ? `${so(st.tiers)} bậc giá` : ''].filter(Boolean).join(' · '),
+               'Ảnh và bảng giá trong file KHÔNG vào kịch bản — chúng thuộc dữ liệu sản phẩm, đọc từ POS.'] })}</div>`;
+    $('#tieu-soan').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  } catch (err) {
+    baoLoi('Không bóc được file kịch bản', err.message);
+  } finally { setBusy(nut, false); }
+});
 
 function chep(id) {
   const b = P.ban.find((x) => x.id === id);

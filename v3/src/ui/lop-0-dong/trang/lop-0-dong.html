@@ -28,7 +28,8 @@
 
   <section class="section table-wrap" aria-labelledby="tieu-mau">
     <div class="table-toolbar"><h2 id="tieu-mau">Mẫu trả lời</h2>
-      <span class="table-count" id="hSo"></span></div>
+      <span class="table-count" id="hSo"></span>
+      <span id="nutThem"></span></div>
     <div id="bang"></div>
   </section>
 
@@ -38,12 +39,139 @@
   </section>
 </main>
 
+<dialog class="dialog" data-size="lg" id="hop" aria-labelledby="hop-tieu">
+  <div class="dialog-header"><h2 id="hop-tieu">Thêm mẫu</h2></div>
+  <div class="dialog-body">
+    <div class="form-stack">
+      <div class="field">
+        <label class="field-label" for="f-ma">Mã mẫu</label>
+        <input id="f-ma" autocomplete="off" spellcheck="false" placeholder="that_gia">
+        <div class="field-hint" id="f-ma-goi"></div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="f-ten">Tên để người đọc hiểu</label>
+        <input id="f-ten" autocomplete="off" placeholder="Khách hỏi giá">
+      </div>
+      <div class="field">
+        <label class="field-label" for="f-tk">Từ khoá <span class="meta">· mỗi dòng một từ, hoặc cách nhau bằng dấu phẩy</span></label>
+        <textarea id="f-tk" rows="3" spellcheck="false" placeholder="giá bao nhiêu&#10;bao nhiêu tiền&#10;how much"></textarea>
+        <div class="field-hint">Không có từ khoá nào thì mẫu không bao giờ khớp.</div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="f-nd">Câu bot sẽ trả lời</label>
+        <textarea id="f-nd" rows="5" placeholder="Câu trả lời gửi thẳng cho khách, không qua model."></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label" for="f-nhom">Chỉ áp cho nhóm sản phẩm <span class="meta">· bỏ trống = mọi sản phẩm</span></label>
+        <input id="f-nhom" autocomplete="off" spellcheck="false" placeholder="77:1001, 77:1002">
+      </div>
+      <label class="switch"><input type="checkbox" role="switch" id="f-bat"><span>Bật mẫu này</span></label>
+      <div class="field-error" id="f-loi" role="alert" hidden></div>
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <button type="button" class="btn" data-variant="ghost" data-size="md" id="f-huy"><span>Huỷ</span></button>
+    <button type="button" class="btn" data-variant="primary" data-size="md" id="f-luu"><span>Lưu mẫu</span></button>
+  </div>
+</dialog>
+
 <script>
-const { esc, text, statusBadge, alert: canhBao, emptyState, metricRow, formatNumber, formatVnd } = window.UI;
+const { esc, text, statusBadge, button, setBusy, alert: canhBao, emptyState, metricRow, toast,
+        formatNumber, formatVnd } = window.UI;
 const $ = (s) => document.querySelector(s);
 // Số CHƯA ĐẾM ĐƯỢC hiện «—», không hiện 0 — 0 là «đếm rồi, không có».
 const d0 = (n) => (n == null ? '—' : formatNumber(n));
 const boMa = (s) => String(s == null ? '' : s).replace(/`/g, '');
+
+let D = null;            // gói dữ liệu lượt nạp gần nhất
+let DANG_SUA = null;     // mẫu đang mở trong hộp thoại, null = đang thêm mới
+
+async function ghi(than) {
+  const r = await fetch('/api/lop-0-dong/mau', {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(than),
+  });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Máy chủ trả ' + r.status + '.');
+  return j;
+}
+
+/** Một mẫu → thân yêu cầu ĐẦY ĐỦ. Cửa ghi không có đường sửa từng phần: mọi lượt ghi là
+ *  ghi cả mẫu, nên gạt công tắc cũng phải gửi lại đúng nội dung và từ khoá đang có. */
+const thanCuaMau = (m, doi) => ({
+  ma: m.ma, ten: m.ten, tuKhoa: m.tuKhoa, noiDung: m.noiDung,
+  bat: m.bat, nhomSp: m.nhomSp || [], ...doi,
+});
+
+function moHop(m) {
+  DANG_SUA = m || null;
+  $('#hop-tieu').textContent = m ? `Sửa mẫu «${m.ma}»` : 'Thêm mẫu trả lời sẵn';
+  $('#f-ma').value = m ? m.ma : '';
+  // Mã là KHOÁ của mẫu: đổi mã ở đây không phải «đổi tên», mà là đẻ ra một mẫu thứ hai.
+  $('#f-ma').disabled = !!m;
+  $('#f-ma-goi').textContent = D && D.maDemDuoc
+    ? `Bộ luật đang chạy chỉ đếm ba mã: ${D.maDemDuoc.join(' · ')}. Mã khác vẫn lưu được nhưng số «đã khớp» sẽ không bao giờ tăng.`
+    : '';
+  $('#f-ten').value = m ? m.ten : '';
+  $('#f-tk').value = m ? (m.tuKhoa || []).join('\n') : '';
+  $('#f-nd').value = m ? m.noiDung : '';
+  $('#f-nhom').value = m && Array.isArray(m.nhomSp) ? m.nhomSp.join(', ') : '';
+  $('#f-bat').checked = m ? m.bat : true;
+  $('#f-loi').hidden = true;
+  $('#hop').showModal();
+}
+
+function loiHop(chu) {
+  const o = $('#f-loi');
+  if (!chu) { o.hidden = true; o.textContent = ''; return; }
+  o.hidden = false; o.textContent = chu;
+}
+
+$('#f-huy').addEventListener('click', () => $('#hop').close());
+$('#hop').addEventListener('cancel', () => loiHop(''));
+
+$('#f-luu').addEventListener('click', async () => {
+  const tuKhoa = $('#f-tk').value.split(/[,\n]/).map((x) => x.trim()).filter(Boolean);
+  // Chặn tại chỗ đúng ba điều kho sẽ chặn — để người ta biết trước khi bấm, không phải sau.
+  if (!$('#f-ma').value.trim()) return loiHop('Thiếu mã — bộ đếm cộng theo mã này.');
+  if (!tuKhoa.length) return loiHop('Chưa có từ khoá nào thì mẫu không bao giờ khớp.');
+  if (!$('#f-nd').value.trim()) return loiHop('Mẫu rỗng thì lớp 0 đồng trả lời khách bằng gì?');
+  const nut = $('#f-luu');
+  setBusy(nut, true);
+  try {
+    const kq = await ghi({
+      ma: $('#f-ma').value.trim(),
+      ten: $('#f-ten').value.trim(),
+      tuKhoa,
+      noiDung: $('#f-nd').value,
+      bat: $('#f-bat').checked,
+      nhomSp: $('#f-nhom').value.split(/[,\n]/).map((x) => x.trim()).filter(Boolean),
+    });
+    if (!kq) return;
+    $('#hop').close();
+    toast(kq.taoMoi ? `Đã tạo mẫu «${kq.mau.ma}».` : `Đã lưu mẫu «${kq.mau.ma}».`);
+    CANH_GHI = kq.canhBao || null;
+    await tai();
+  } catch (e) { loiHop(e.message); }
+  finally { setBusy(nut, false); }
+});
+
+/** Gạt công tắc ngay trên dòng — thao tác hay dùng nhất, không bắt mở hộp thoại. */
+async function gat(el, m) {
+  el.disabled = true;
+  try {
+    await ghi(thanCuaMau(m, { bat: el.checked }));
+    toast(el.checked ? `Đã bật mẫu «${m.ma}».` : `Đã tắt mẫu «${m.ma}».`);
+    await tai();
+  } catch (e) {
+    el.checked = !el.checked;
+    $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đổi được trạng thái mẫu', body: e.message })}</div>`;
+  } finally { el.disabled = false; }
+}
+
+let CANH_GHI = null;     // cảnh báo của lượt ghi gần nhất (mã ngoài bộ đếm)
 
 async function tai() {
   try {
@@ -51,7 +179,12 @@ async function tai() {
     if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return; }
     const d = await r.json();
     if (!r.ok || d.ok === false) throw new Error(d.thongDiep || 'Máy chủ trả ' + r.status + '.');
+    D = d;
     const k = d.dem;
+
+    // Nút thêm chỉ hiện với vai ghi được — ẩn còn hơn để người ta bấm rồi ăn 403.
+    $('#nutThem').innerHTML = d.suaDuoc ? button('Thêm mẫu', { size: 'sm', variant: 'primary', id: 'nutThemMau' }) : '';
+    if (d.suaDuoc) $('#nutThemMau').addEventListener('click', () => moHop(null));
 
     $('#dem').innerHTML = metricRow([
       { label: 'Lượt không phải gọi model', value: d0(k.tongChan), hint: 'Mỗi lượt khớp một mẫu là một lượt model không chạy.' },
@@ -63,6 +196,10 @@ async function tai() {
     ]);
 
     const kh = [];
+    if (CANH_GHI) {
+      kh.push(canhBao({ level: 'warning', title: 'Mẫu vừa lưu nằm ngoài bộ đếm', body: CANH_GHI }));
+      CANH_GHI = null;
+    }
     if (k.soMauChuaChanLanNao) {
       kh.push(canhBao({ level: 'warning', title: `${formatNumber(k.soMauChuaChanLanNao)} mẫu đang bật nhưng chưa khớp lần nào`,
         body: 'Từ khoá có thể không khớp cách khách thật sự gõ. Thử đọc vài hội thoại thật rồi thêm từ khoá.' }));
@@ -77,19 +214,28 @@ async function tai() {
     if (!d.mau.length) {
       // Tiêu đề nói bằng lời người dùng; câu của kho (có tên bảng) là chi tiết cho người quản trị.
       $('#bang').innerHTML = emptyState({ icon: 'inbox', title: 'Chưa có mẫu trả lời nào',
-        body: d.trong ? `${boMa(d.trong.diTiep)} (${boMa(d.trong.noi)})` : '' });
+        body: d.trong ? `${boMa(d.trong.diTiep)} (${boMa(d.trong.noi)})` : '',
+        actionsHtml: d.suaDuoc ? button('Thêm mẫu đầu tiên', { size: 'sm', variant: 'primary', id: 'nutThemDau' }) : '' });
+      if (d.suaDuoc) $('#nutThemDau').addEventListener('click', () => moHop(null));
     } else {
       $('#bang').innerHTML = `<table class="data-table"><thead><tr>
           <th scope="col">Mã</th><th scope="col">Tên</th><th scope="col">Từ khoá</th>
           <th scope="col" class="num">Đã khớp</th><th scope="col">Trạng thái</th>
-        </tr></thead><tbody>${d.mau.map((m) => `
+          ${d.suaDuoc ? '<th scope="col" class="actions"><span class="sr-only">Thao tác</span></th>' : ''}
+        </tr></thead><tbody>${d.mau.map((m, i) => `
         <tr>
-          <td><code>${esc(m.ma)}</code></td>
+          <td><code>${esc(m.ma)}</code>${d.maDemDuoc.includes(m.ma) ? ''
+            : ' <span class="badge" data-variant="warning" title="Mã ngoài bộ luật đang chạy — mẫu vẫn trả lời nếu bộ luật gọi tới, nhưng số «đã khớp» không bao giờ tăng">ngoài bộ đếm</span>'}</td>
           <td>${esc(m.ten)}</td>
           <td class="meta">${m.tuKhoa.slice(0, 6).map(esc).join(' · ')}${m.tuKhoa.length > 6 ? ` · +${formatNumber(m.tuKhoa.length - 6)}` : ''}</td>
           <td class="num" ${m.soLanChan == null ? 'title="Chưa đếm được"' : ''}>${d0(m.soLanChan)}</td>
-          <td>${statusBadge(m.bat ? 'feature_on' : 'feature_off', { label: m.bat ? 'Đang bật' : 'Tắt' })}</td>
+          <td>${d.suaDuoc
+            ? `<label class="switch cell-control"><input type="checkbox" role="switch" data-gat="${i}" aria-label="Bật mẫu ${esc(m.ma)}" ${m.bat ? 'checked' : ''}><span>${m.bat ? 'Đang bật' : 'Tắt'}</span></label>`
+            : statusBadge(m.bat ? 'feature_on' : 'feature_off', { label: m.bat ? 'Đang bật' : 'Tắt' })}</td>
+          ${d.suaDuoc ? `<td class="actions">${button('Sửa', { size: 'sm', data: { sua: i } })}</td>` : ''}
         </tr>`).join('')}</tbody></table>`;
+      document.querySelectorAll('[data-gat]').forEach((el) => el.addEventListener('change', () => gat(el, d.mau[+el.dataset.gat])));
+      document.querySelectorAll('[data-sua]').forEach((b) => b.addEventListener('click', () => moHop(d.mau[+b.dataset.sua])));
     }
 
     const bc = d.botcake || {};

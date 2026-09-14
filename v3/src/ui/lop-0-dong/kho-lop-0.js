@@ -150,13 +150,20 @@ export async function manLop0(boiCanh) {
     chanLanCuoi: m.chan_lan_cuoi || null,
     nhomSp: m.bat_cho_nhom_sp || null,
     daiNoiDung: String(m.noi_dung || '').length,
+    // 14/09: trả kèm NỘI DUNG. Cửa ghi `luuMau` đòi đủ `ma` + `tuKhoa` + `noiDung` trong
+    // một lượt (không có cửa sửa từng phần), nên màn KHÔNG sửa được mẫu nào nếu nó chưa
+    // bao giờ đọc được nội dung đang có — nó sẽ ghi đè bằng chuỗi rỗng.
+    noiDung: String(m.noi_dung || ''),
   }));
 
   const bat = mau.filter((m) => m.bat);
   const tongChan = mau.reduce((s, m) => s + m.soLanChan, 0);
 
+  const vai = Array.isArray(bc.vai) ? bc.vai : [];
   return {
     teamId: bc.teamId,
+    // Màn phải biết vai này có ghi được không, để ẩn nút thay vì để người ta bấm rồi ăn 403.
+    suaDuoc: vai.some((v) => VAI_GHI_DUOC.includes(v)),
     mau,
     dem: {
       tongMau: mau.length,
