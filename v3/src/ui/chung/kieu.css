@@ -647,6 +647,10 @@
   .table-footer .text-muted { font-size: var(--text-sm); }
   .data-table .check { width: 36px; padding-right: 0; }
 
+  /* Chú thích của bảng — nói cách đọc bảng (thứ tự nghĩa là gì), nằm dưới dòng cuối. */
+  .table-note { padding: var(--space-2) var(--space-3); border-top: 1px solid var(--border-subtle);
+                font-size: var(--text-xs); line-height: 18px; color: var(--text-muted); }
+
   .pagination { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
                 padding: var(--space-2) var(--space-3); border-top: 1px solid var(--border-subtle);
                 font-size: var(--text-sm); color: var(--text-muted); }

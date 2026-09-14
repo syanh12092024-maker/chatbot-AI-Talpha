@@ -91,6 +91,11 @@
     rule_inherited:     { tone: "neutral", label: "Kế thừa toàn hệ" },
     guard_passed:  { tone: "success", label: "Đạt" },
     guard_blocked: { tone: "danger",  label: "Đã chặn" },
+    // token kết nối (mục M12) — «không đọc được hạn» là CHƯA BIẾT, không phải còn hạn
+    token_valid:    { tone: "success", label: "Còn hạn" },
+    token_expiring: { tone: "warning", label: "Sắp hết hạn" },
+    token_expired:  { tone: "danger",  label: "Đã hết hạn" },
+    token_unknown:  { tone: "neutral", label: "Không đọc được hạn" },
     // tính năng (mục N, O)
     feature_on:          { tone: "success", label: "Bật" },
     feature_off:         { tone: "neutral", label: "Tắt" },

@@ -3,80 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Kết nối &amp; token — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .than{padding:13px 15px}
-
-  /* dải "toàn hệ" — phải trông KHÁC hẳn mọi màn theo team, vì nó là ngoại lệ */
-  .toanhe{background:#eef4fb;border:1px solid #c9dcf0;color:#1c3d5f;border-radius:var(--r);
-          padding:11px 14px;margin-bottom:14px;line-height:1.55}
-  .toanhe b{display:block;margin-bottom:2px}
-
-  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
-  .banner.r{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien)}
-  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .banner code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:11.5px}
-
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
-  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
-  tbody tr:last-child td{border-bottom:none}
-  .ten{font-weight:600;overflow-wrap:anywhere}
-  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
-  .ma{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
-      background:#f1f4f5;padding:1px 6px;border-radius:5px}
-
-  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
-  .pill.g{background:var(--okSoft);color:var(--ok)}
-  .pill.o{background:var(--warnSoft);color:var(--warn)}
-  .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:var(--nen-3);color:var(--chu-2)}
-  .pill.p{background:var(--priSoft);color:var(--priDark)}
-
-  /* số thứ tự dự phòng — cái này là NỘI DUNG, không phải trang trí */
-  .bac{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;
-       border-radius:50%;background:var(--priSoft);color:var(--priDark);font-weight:700;font-size:11.5px}
-  .bac.chinh{background:var(--pri);color:var(--nen)}
-
-  .trong{padding:20px 15px;text-align:center;line-height:1.6}
-  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
-  .trong.chua{color:var(--luu-chu);background:var(--warnSoft)}
-  .trong .di{display:inline-block;margin-top:8px;font-weight:700;color:var(--priDark);background:var(--nen);
-             border:1px solid var(--line);border-radius:8px;padding:6px 12px;text-decoration:none}
-
-  button{font:inherit}
-  .nut{background:var(--pri);color:var(--nen);border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
-  .nut:hover{background:var(--priDark)}
-  .nut[disabled]{background:var(--vien-dam);cursor:not-allowed}
-  .nut.nho{padding:4px 9px;font-size:11.5px;font-weight:600}
-  .nut.xoa{background:transparent;color:var(--bad);border:1px solid var(--loi-vien)}
-  .nut.xoa:hover{background:var(--badSoft)}
-  .nut.xoa[disabled]{background:transparent;color:#bbb;border-color:var(--line)}
-  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;
-           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;min-height:64px;resize:vertical}
-
-  .loi{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien);border-radius:8px;
-       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .loi.hien{display:block}
-  .ok{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien);border-radius:8px;
-      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .ok.hien{display:block}
-
-  @media (max-width:700px){
-    .panel h2{padding:10px 12px} .than{padding:11px 12px}
-    table,thead,tbody,th,td,tr{display:block}
-    thead{display:none}
-    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
-    tbody tr:last-child{margin-bottom:0}
-    td{border:none;padding:4px 0}
-    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
-      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
-  }
-</style>
+<title>Kết nối &amp; token — AI Closer</title>
+<!-- Dựng trên hệ kiểu (mục M12). KHÔNG CSS riêng — trước lượt này là 61 dòng. Màn này sửa tài
+     nguyên CẤP MÁY CHỦ, dùng chung mọi team — điều đó được nói ở đầu trang bằng một cảnh báo
+     có tiêu đề, không phải một dải nền màu gõ tay. Hạn token đi qua ánh xạ trạng thái tập
+     trung: «không đọc được hạn» là chưa biết, không bao giờ tô xanh. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -84,48 +16,53 @@
 <body>
 <header>
   <h1>Kết nối &amp; token</h1>
-  <span class="sub" id="teamHien">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Token Pancake và shop POS mà bot dùng để đọc tin và trả lời khách.</span>
 </header>
 
 <main>
-  <div class="loi" id="loi"></div>
-  <div class="ok" id="baoOk"></div>
-  <div class="toanhe" id="toanHe"></div>
-  <div id="canhBao"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <section class="panel">
-    <h2>Kho token Pancake <span class="hint" id="giaiThich"></span></h2>
-    <div id="bangToken"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
-    <div class="than" id="themToken" style="border-top:1px solid var(--line)">
-      <div class="phu" style="margin-bottom:6px">Dán token JWT lấy từ Pancake. Hệ thống thử token
-        trước khi nhận, và <b>không cần khởi động lại</b> — page tự dò lại chân ở lượt quét kế tiếp.</div>
-      <textarea id="oToken" placeholder="eyJhbGciOi… (ba phần a.b.c)" spellcheck="false"></textarea>
-      <div style="margin-top:8px"><button class="nut" id="nutThem">Thêm token</button></div>
+  <section class="section table-wrap" aria-labelledby="tieu-token">
+    <div class="table-toolbar"><h2 id="tieu-token">Kho token Pancake</h2>
+      <span class="table-count" id="demToken"></span></div>
+    <div id="bangToken"><div class="empty-state"><span class="skeleton"></span></div></div>
+    <div class="table-note" id="giaiThich" hidden></div>
+  </section>
+
+  <section class="section panel" aria-labelledby="tieu-them">
+    <div class="section-header"><div>
+      <h2 id="tieu-them">Thêm token</h2>
+      <div class="section-desc">Dán token JWT lấy từ Pancake. Hệ thống thử token trước khi nhận, không cần khởi động lại — page tự dò lại ở lượt quét kế tiếp.</div>
+    </div></div>
+    <div class="field">
+      <label class="sr-only" for="oToken">Token Pancake</label>
+      <textarea id="oToken" class="mono" rows="3" placeholder="eyJhbGciOi… (ba phần a.b.c)" spellcheck="false" autocomplete="off"></textarea>
+      <div class="field-hint" id="goiYToken"></div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn" data-variant="primary" data-size="md" id="nutThem"><span>Thử và thêm token</span></button>
     </div>
   </section>
 
-  <section class="panel">
-    <h2>Kết nối POS <span class="hint">của team đang mở · khoá API không bao giờ hiện ở đây</span></h2>
-    <div id="bangPos"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+  <section class="section table-wrap" aria-labelledby="tieu-pos">
+    <div class="table-toolbar"><h2 id="tieu-pos">Kết nối POS của team đang mở</h2>
+      <span class="table-count">Khoá API không bao giờ hiện ở đây</span></div>
+    <div id="bangPos"><div class="empty-state"><span class="skeleton"></span></div></div>
   </section>
 </main>
 
 <script>
+const { esc, text, statusBadge, button, setBusy, alert: canhBao, emptyState, toast, confirmDialog,
+        formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ngay = (ms) => (ms ? new Date(ms).toLocaleDateString('vi-VN') : '—');
-const maHoa = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+const hoaDau = (s) => { const t = String(s || ''); return t.charAt(0).toUpperCase() + t.slice(1); };
 
-let CUA = { mo: false, thieu: [] };
+let CUA = { mo: false, thieu: [] }, KHO = null;
+const LOI = {};
 
-function baoLoi(t){ const o = $('#loi'); o.textContent = t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
-function baoOk(t){ const o = $('#baoOk'); o.textContent = t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
-function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
-
-async function goi(duong, tuyChon){
-  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+async function goi(duong, tuyChon) {
+  const r = await fetch(duong, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, ...tuyChon });
   if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   let d = null;
   try { d = await r.json(); } catch { /* null */ }
@@ -133,91 +70,124 @@ async function goi(duong, tuyChon){
   return d;
 }
 
-function veTrong(t){
-  if (!t) return '';
-  const di = t.diTiep ? `<a class="di" href="${esc(t.diTiep.duong || '#')}">${esc(t.diTiep.chu)}</a>` : '';
-  return `<div class="trong chua"><span class="ic">⚠️</span><div>${maHoa(t.noi)}</div>${di}</div>`;
+function veBangTin() {
+  const kh = Object.entries(LOI).map(([k, m]) => canhBao({ level: 'error', title: k, body: m }));
+  if (KHO) {
+    const toanHe = String(KHO.laToanHe || '').replace('Kho token này dùng chung cho MỌI team. ', '');
+    kh.push(canhBao({ level: 'info', title: 'Kho token dùng chung cho mọi team', body: toanHe }));
+    if (!CUA.mo) {
+      kh.push(canhBao({ level: 'warning', title: 'Chưa sửa được kho token từ màn này',
+        body: 'Xem được, nhưng thêm hay bỏ token cần máy chủ được phép ghi sang tiến trình bot. Nhờ người quản trị hệ thống mở cửa ghi.',
+        detail: CUA.thieu }));
+    }
+    for (const c of KHO.canhBao || []) kh.push(canhBao({ level: c.muc === 'do' ? 'error' : 'warning', body: c.chu }));
+  }
+  $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 }
 
-function veKho(d){
-  CUA = d.cua || { mo: false, thieu: [] };
-  $('#toanHe').innerHTML = `<b>Màn này là hạ tầng dùng chung</b>${esc(d.laToanHe).replace(
-    'Kho token này dùng chung cho MỌI team. ', '')}`;
+const MA_SUC_KHOE = { xanh: 'token_valid', vang: 'token_expiring', do: 'token_expired' };
+
+function veKho(d) {
+  KHO = d; CUA = d.cua || { mo: false, thieu: [] };
+  veBangTin();
   $('#giaiThich').textContent = d.giaiThichThuTu || '';
+  $('#giaiThich').hidden = !d.giaiThichThuTu || !!d.trong;
 
-  const kh = (d.canhBao || []).map((c) =>
-    `<div class="banner ${c.muc === 'do' ? 'r' : 'o'}">${esc(c.chu)}</div>`);
-  if (!CUA.mo) {
-    kh.unshift(`<div class="banner o"><b>Cửa ghi đang ĐÓNG — xem được, sửa không được.</b><br>${
-      CUA.thieu.map((x) => '• ' + maHoa(x)).join('<br>')}</div>`);
-  }
-  $('#canhBao').innerHTML = kh.join('');
-
-  if (d.trong) { $('#bangToken').innerHTML = veTrong(d.trong); }
-  else {
-    $('#bangToken').innerHTML = `<table><thead><tr>
-      <th>Thứ tự dự phòng</th><th>Tài khoản</th><th>Nguồn</th><th>Hạn</th><th>Page đang dùng</th><th></th>
+  if (d.trong) {
+    $('#demToken').textContent = '';
+    $('#bangToken').innerHTML = emptyState({ icon: 'triangle-alert', title: 'Chưa đọc được kho token',
+      body: String(d.trong.noi || '').replace(/`/g, ''),
+      actionsHtml: d.trong.diTiep && d.trong.diTiep.duong ? button(d.trong.diTiep.chu, { href: d.trong.diTiep.duong, size: 'sm' }) : '' });
+  } else {
+    $('#demToken').textContent = `${so(d.token.length)} token`;
+    $('#bangToken').innerHTML = d.token.length ? `<table class="data-table"><thead><tr>
+        <th scope="col" class="num">Thứ tự</th><th scope="col">Tài khoản</th><th scope="col">Nguồn</th>
+        <th scope="col">Hạn</th><th scope="col" class="num">Page đang dùng</th>
+        <th scope="col" class="actions"><span class="sr-only">Thao tác</span></th>
       </tr></thead><tbody>${d.token.map((t) => `
       <tr>
-        <td data-nhan="Thứ tự dự phòng">
-          <span class="bac ${t.thuTu === 0 ? 'chinh' : ''}">${t.thuTu + 1}</span>
-          ${t.thuTu === 0 ? ' <span class="pill p">token chính</span>' : ''}
-        </td>
-        <td data-nhan="Tài khoản"><div class="ten">${esc(t.ten)}</div>
-          <div class="phu">…<span class="ma">${esc(t.duoi)}</span></div></td>
-        <td data-nhan="Nguồn"><span class="phu">${esc(t.nguon)}</span></td>
-        <td data-nhan="Hạn">
-          <span class="pill ${t.sucKhoe.muc === 'xanh' ? 'g' : t.sucKhoe.muc === 'vang' ? 'o' : t.sucKhoe.muc === 'do' ? 'r' : 'm'}">${esc(t.sucKhoe.chu)}</span>
-          <div class="phu">${ngay(t.het)}</div></td>
-        <td data-nhan="Page đang dùng"><b>${t.soPageDangDung}</b></td>
-        <td data-nhan="">${t.boDuoc
-          ? `<button class="nut nho xoa" data-bo="${t.thuTu}" ${CUA.mo ? '' : 'disabled'}
-               title="${CUA.mo ? 'Bỏ token này' : 'Cửa ghi đang đóng'}">Bỏ</button>`
-          : '<span class="phu">token .env — sửa trong cấu hình máy chủ</span>'}</td>
-      </tr>`).join('')}</tbody></table>`;
+        <td class="num">${t.thuTu === 0 ? '<span class="badge" data-variant="info">Chính</span> ' : ''}${so(t.thuTu + 1)}</td>
+        <td><div class="manh">${esc(t.ten)}</div><div class="meta">đuôi <code>…${esc(t.duoi)}</code></div></td>
+        <td class="meta">${esc(t.nguon)}</td>
+        <td>${statusBadge(MA_SUC_KHOE[t.sucKhoe.muc] || 'token_unknown', { label: hoaDau(t.sucKhoe.chu) })}
+          <div class="meta tabular">${esc(ngay(t.het))}</div></td>
+        <td class="num">${so(t.soPageDangDung)}</td>
+        <td class="actions">${t.boDuoc
+          ? button('Bỏ', { size: 'sm', variant: 'danger', disabled: !CUA.mo, data: { bo: t.thuTu },
+              title: CUA.mo ? 'Bỏ token này khỏi kho' : 'Cửa ghi đang đóng' })
+          : '<span class="meta" title="Token nằm trong cấu hình máy chủ (.env)">Sửa trong cấu hình máy chủ</span>'}</td>
+      </tr>`).join('')}</tbody></table>`
+      : emptyState({ icon: 'triangle-alert', title: 'Không có token Pancake nào', body: 'Bot không đọc và không gửi được tin nào. Thêm token ở khung bên dưới.' });
   }
 
   $('#nutThem').disabled = !CUA.mo;
   $('#oToken').disabled = !CUA.mo;
-  document.querySelectorAll('[data-bo]').forEach((b) => b.addEventListener('click', () => bo(b.dataset.bo)));
+  $('#goiYToken').textContent = CUA.mo ? 'Token được thử với Pancake trước; token hỏng bị từ chối, kho không đổi.' : 'Cửa ghi đang đóng — xem cảnh báo đầu trang.';
+  document.querySelectorAll('[data-bo]').forEach((b) => b.addEventListener('click', () => bo(b.dataset.bo, b)));
 }
 
-function vePos(d){
-  if (d.trong) { $('#bangPos').innerHTML = veTrong(d.trong); return; }
-  $('#bangPos').innerHTML = `<table><thead><tr>
-    <th>Thị trường</th><th>Shop POS</th><th>Trạng thái</th></tr></thead><tbody>${d.pos.map((k) => `
-    <tr><td data-nhan="Thị trường"><span class="ten">${esc(k.market)}</span></td>
-      <td data-nhan="Shop POS"><span class="ma">${esc(k.shopId)}</span></td>
-      <td data-nhan="Trạng thái">${k.bat ? '<span class="pill g">đang bật</span>' : '<span class="pill m">đã tắt</span>'}</td>
+function vePos(d) {
+  if (d.trong) {
+    $('#bangPos').innerHTML = emptyState({ icon: 'inbox', title: String(d.trong.noi || '').replace(/`/g, ''),
+      actionsHtml: d.trong.diTiep && d.trong.diTiep.duong ? button(d.trong.diTiep.chu, { href: d.trong.diTiep.duong, size: 'sm' }) : '' });
+    return;
+  }
+  $('#bangPos').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Thị trường</th><th scope="col">Shop POS</th><th scope="col">Trạng thái</th>
+    </tr></thead><tbody>${d.pos.map((k) => `
+    <tr><td class="manh">${esc(k.market)}</td>
+      <td><code>${esc(k.shopId)}</code></td>
+      <td>${statusBadge(k.bat ? 'feature_on' : 'feature_off', { label: k.bat ? 'Đang bật' : 'Đã tắt' })}</td>
     </tr>`).join('')}</tbody></table>`;
 }
 
-async function bo(thuTu){
-  if (!confirm('Bỏ token này khỏi kho?\n\nCác page đang định tuyến qua nó sẽ tự dò sang token khác.')) return;
-  xoaBao();
-  try { await goi('/api/ket-noi/token/' + encodeURIComponent(thuTu), { method:'DELETE' }); baoOk('Đã bỏ token.'); await nap(); }
-  catch (e) { baoLoi(e.message); }
+async function bo(thuTu, nut) {
+  const t = (KHO.token || []).find((x) => String(x.thuTu) === String(thuTu)) || {};
+  const dongY = await confirmDialog({
+    title: `Bỏ token của «${t.ten || 'tài khoản này'}»?`,
+    body: `Kho dùng chung mọi team. ${t.soPageDangDung ? `${so(t.soPageDangDung)} page đang dùng token này sẽ tự dò sang token khác.` : 'Không page nào đang dùng token này.'}`,
+    confirmLabel: 'Bỏ token', danger: true,
+  });
+  if (!dongY) return;
+  setBusy(nut, true);
+  try {
+    await goi('/api/ket-noi/token/' + encodeURIComponent(thuTu), { method: 'DELETE' });
+    delete LOI['Không bỏ được token'];
+    toast('Đã bỏ token.');
+    await nap();
+  } catch (e) { LOI['Không bỏ được token'] = e.message; veBangTin(); setBusy(nut, false); }
 }
 
+$('#oToken').addEventListener('input', () => $('#oToken').removeAttribute('aria-invalid'));
 $('#nutThem').addEventListener('click', async () => {
   const token = $('#oToken').value.trim();
-  if (!token) return;
-  xoaBao();
-  $('#nutThem').disabled = true;
-  $('#nutThem').textContent = 'Đang thử token…';
+  if (!token) {
+    $('#oToken').setAttribute('aria-invalid', 'true');
+    $('#goiYToken').textContent = 'Dán token vào ô trước.';
+    $('#oToken').focus();
+    return;
+  }
+  const nut = $('#nutThem');
+  setBusy(nut, true);
   try {
-    const kq = await goi('/api/ket-noi/token', { method:'POST', body: JSON.stringify({ token }) });
+    const kq = await goi('/api/ket-noi/token', { method: 'POST', body: JSON.stringify({ token }) });
     $('#oToken').value = '';
-    baoOk(`Đã thêm token của "${kq.ten}" — phủ ${kq.soPage} page. Không cần khởi động lại.`);
+    delete LOI['Không thêm được token'];
+    toast(`Đã thêm token của «${kq.ten}» — phủ ${so(kq.soPage)} page.`);
     await nap();
-  } catch (e) { baoLoi(e.message); }
-  finally { $('#nutThem').disabled = !CUA.mo; $('#nutThem').textContent = 'Thêm token'; }
+  } catch (e) { LOI['Không thêm được token'] = e.message; veBangTin(); }
+  finally { setBusy(nut, false); nut.disabled = !CUA.mo; }
 });
 
-async function nap(){
-  for (const [ten, duong, ve] of [['kho token', '/api/ket-noi/kho-token', veKho], ['kết nối POS', '/api/ket-noi/pos', vePos]]) {
-    try { const d = await goi(duong); if (d) ve(d); }
-    catch (e) { baoLoi(`Khối "${ten}" hỏng: ${e.message}`); }
+async function nap() {
+  // Nạp từng khối riêng — kho token hỏng thì bảng POS vẫn hiện.
+  for (const [ten, duong, ve, cho] of [['Không tải được kho token', '/api/ket-noi/kho-token', veKho, '#bangToken'],
+                                       ['Không tải được kết nối POS', '/api/ket-noi/pos', vePos, '#bangPos']]) {
+    try { const d = await goi(duong); if (d) { delete LOI[ten]; ve(d); } }
+    catch (e) {
+      LOI[ten] = e.message; veBangTin();
+      $(cho).innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Xem cảnh báo đầu trang.' });
+    }
   }
 }
 nap();
