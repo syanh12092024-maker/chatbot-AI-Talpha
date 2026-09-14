@@ -3,185 +3,174 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f5f7f9">
+<meta name="theme-color" content="#ffffff">
 <title>Bắt đầu — AI Closer</title>
-<!-- KHÔNG có <style> trong trang này. Đó là chủ ý: đây là màn ĐẦU TIÊN dùng trọn hệ kiểu
-     (`chung/kieu.css`), nên nó cũng là bản mẫu để di trú 25 màn còn lại. Cần một kiểu chưa
-     có? Thêm vào hệ kiểu, đừng thêm vào đây — nếu không thì lại có 86 màu như trước. -->
-<link rel="stylesheet" href="/chung/kieu.css">
+<!-- BẢN MẪU của hệ kiểu v3: KHÔNG một dòng CSS riêng, KHÔNG một thuộc tính style=. Mọi thứ
+     đi qua `chung/kieu.css` và `chung/ui.js`. Cần một kiểu chưa có? Thêm vào hệ, đừng thêm
+     vào đây. Ca HK6 và HK7 canh. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
+<!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
+     lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
+<script src="/chung/ui.js"></script>
 </head>
 <body>
-<main class="trang">
-  <header class="duoi-5">
-    <h1>Bắt đầu</h1>
-    <p class="mo tren-2 rong-doc">
-      Bốn việc để một page bắt đầu chạy. Chọn một page, làm cho hết ô đỏ, rồi bật bot.
-      Bot chỉ bật được khi cả bốn đã xanh — đó là cửa kiểm của chính tiến trình bot, không
-      phải luật riêng của màn này.
-    </p>
-  </header>
+<header>
+  <h1>Bắt đầu</h1>
+  <span class="sub">Làm cho đủ bốn điều kiện của một page, rồi bật bot.</span>
+</header>
 
+<main>
   <div id="bang-tin" aria-live="polite"></div>
 
-  <div class="luoi duoi-5" id="dem"></div>
+  <section class="section" aria-label="Tình hình các page">
+    <div id="dem"></div>
+  </section>
 
-  <div id="khung" class="cot-ds">
+  <div id="khung" class="cot-ds tren-6">
+    <!-- Danh sách chọn là MỘT đối tượng tự đứng — nên nó là tấm. Bên phải thì KHÔNG bọc tấm:
+         bên trong đã có khung kiểm tra sẵn sàng, bọc thêm là thẻ lồng thẻ (mục Z). -->
     <section class="panel" aria-labelledby="tieu-ds">
-      <h3 id="tieu-ds">Chọn một page</h3>
-      <label for="tim">Tìm theo tên</label>
-      <input id="tim" type="search" placeholder="gõ tên page…" autocomplete="off" spellcheck="false">
+      <h2 id="tieu-ds">Chọn một page</h2>
+      <label for="tim" class="sr-only">Tìm page theo tên</label>
+      <input id="tim" type="search" placeholder="Tìm theo tên page…" autocomplete="off" spellcheck="false">
       <div id="ds" role="list" class="tren-3 cuon-doc"></div>
     </section>
 
-    <section class="panel" id="chi-tiet" aria-live="polite">
-      <div class="trong"><b>Chưa chọn page nào</b>Bấm một page ở danh sách bên trái.</div>
-    </section>
+    <section id="chi-tiet" aria-live="polite"></section>
   </div>
 </main>
 
 <script>
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
-  (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const soVi = new Intl.NumberFormat('vi-VN');
+const { esc, statusBadge, button, setBusy, alert: canhBao, emptyState, metricRow, readiness,
+        toast, confirmDialog, formatNumber } = window.UI;
 
 let DL = null;
 let chonId = new URLSearchParams(location.search).get('page') || null;
 
-function banner(muc, tieu, than) {
+function banner(level, title, body) {
   document.getElementById('bang-tin').innerHTML =
-    `<div class="bang ${muc}" class="duoi-4"><div><b>${esc(tieu)}</b>${esc(than)}</div></div>`;
+    `<div class="duoi-4">${canhBao({ level, title, body })}</div>`;
 }
 
-// ── bốn con số ở đầu trang ────────────────────────────────────────────────────────
+// ── HÀNG CHỈ SỐ — bốn con số, CHUNG MỘT viền (mục M1) ─────────────────────────────
 function veDem(d) {
-  const o = [
-    ['Đang chạy', d.dangChay, 'dat'],
-    ['Sẵn sàng, chưa bật', d.sanChuaBat, 'luu'],
-    ['Còn việc phải làm', d.conViec, 'loi'],
-    ['Bot không thấy', d.botKhongThay, ''],
-  ];
-  document.getElementById('dem').innerHTML = o.map(([ten, n, m]) => `
-    <div class="panel">
-      <div class="nhan">${esc(ten)}</div>
-      <div class="so-to tren-1">${soVi.format(n || 0)}</div>
-      ${m && n ? `<div class="tren-2"><span class="pill ${m}">${esc(ten)}</span></div>` : ''}
-    </div>`).join('');
+  document.getElementById('dem').innerHTML = metricRow([
+    { label: 'Đang chạy', value: d.dangChay || 0,
+      statusHtml: d.dangChay ? statusBadge('bot_on') : '' },
+    { label: 'Sẵn sàng, chưa bật', value: d.sanChuaBat || 0,
+      statusHtml: d.sanChuaBat ? statusBadge('ready') : '' },
+    { label: 'Còn thiếu điều kiện', value: d.conViec || 0,
+      statusHtml: d.conViec ? statusBadge('blocked') : '' },
+    { label: 'Bot không thấy', value: d.botKhongThay || 0,
+      statusHtml: d.botKhongThay ? statusBadge('not_seen') : '' },
+  ]);
+}
+
+// Trạng thái của MỘT page — màu do ánh xạ tập trung quyết, trang chỉ nói nghĩa.
+function trangThaiPage(p) {
+  if (p.botKhongThay) return statusBadge('not_seen');
+  if (p.dangChay) return statusBadge('bot_on');
+  if (p.batDuoc) return statusBadge('ready');
+  return statusBadge('blocked', { label: `Thiếu ${formatNumber(p.chan.length)}` });
 }
 
 // ── danh sách page ────────────────────────────────────────────────────────────────
-function theCuaPage(p) {
-  if (p.botKhongThay) return '<span class="pill">Bot không thấy</span>';
-  if (p.dangChay) return '<span class="pill dat">Đang chạy</span>';
-  if (p.batDuoc) return '<span class="pill luu">Sẵn sàng</span>';
-  return `<span class="pill loi">Còn ${soVi.format(p.chan.length)} việc</span>`;
-}
-
 function veDanhSach() {
   const q = document.getElementById('tim').value.trim().toLowerCase();
   const ds = DL.page.filter((p) => !q || p.ten.toLowerCase().includes(q));
+  const o = document.getElementById('ds');
   if (!ds.length) {
-    document.getElementById('ds').innerHTML =
-      '<div class="trong"><b>Không page nào khớp</b>Xoá chữ trong ô tìm để xem lại tất cả.</div>';
+    o.innerHTML = emptyState({ icon: 'search', title: 'Không page nào khớp',
+      body: 'Xoá chữ trong ô tìm để xem lại tất cả.' });
     return;
   }
-  document.getElementById('ds').innerHTML = ds.map((p) => `
+  o.innerHTML = ds.map((p) => `
     <button type="button" class="nut nut-dong duoi-1 mot-page" data-id="${esc(p.pageId)}" role="listitem"
       aria-current="${p.pageId === chonId ? 'true' : 'false'}">
       <span class="cat manh">${esc(p.ten)}</span>
-      ${theCuaPage(p)}
+      ${trangThaiPage(p)}
     </button>`).join('');
-  for (const b of document.querySelectorAll('.mot-page')) {
-    b.addEventListener('click', () => chon(b.dataset.id));
-  }
+  for (const b of o.querySelectorAll('.mot-page')) b.addEventListener('click', () => chon(b.dataset.id));
 }
 
-// ── một việc: đỏ/xanh + v1 nói cụ thể gì + làm gì + đi đâu ────────────────────────
-function veMotViec(ma, con, bi) {
-  const dk = (DL.dieuKien && DL.dieuKien[ma]) || null;
-  const ten = dk ? dk.ten : ma;
-  return `
-    <div class="viec">
-      <div class="vua">
-        <span class="pill ${con ? 'loi' : 'dat'}">${con ? 'Chưa xong' : 'Xong'}</span>
-      </div>
-      <div class="gian">
-        <div class="manh">${esc(ten)}</div>
-        ${con && bi && bi.chiTiet
-          ? `<div class="nho be-chu tren-1"><b>Bot nói:</b> ${esc(bi.chiTiet)}</div>` : ''}
-        ${con && dk && dk.lam ? `<div class="goi-y be-chu">${esc(dk.lam)}</div>` : ''}
-      </div>
-      ${con && dk && dk.di
-        ? `<div class="vua"><a class="nut nho" href="${esc(dk.di)}">${esc(dk.nutDi || 'Đi sửa')}</a></div>` : ''}
+// ── M4 · KIỂM TRA SẴN SÀNG ─────────────────────────────────────────────────────────
+// Tên điều kiện là tên TRUNG TÍNH (`nhan`). Tên dạng lỗi (`ten`) chỉ hợp khi điều kiện hỏng —
+// dùng cho điều kiện đã đạt thì ra «Xong · Không token nào phủ page», tự mâu thuẫn.
+function mucKiem(ma, bi, laNhac) {
+  const dk = (DL.dieuKien && DL.dieuKien[ma]) || {};
+  const hong = !!bi;
+  const chiTiet = hong
+    ? [bi.chiTiet ? `Bot nói: ${bi.chiTiet}` : '', dk.lam || ''].filter(Boolean).join(' · ')
+    : '';
+  return {
+    ok: hong ? (laNhac ? 'warn' : false) : true,
+    name: dk.nhan || dk.ten || ma,
+    detail: chiTiet,
+    actionHtml: hong && dk.di ? button(dk.nutDi || 'Đi sửa', { href: dk.di, size: 'sm' }) : '',
+  };
+}
+
+function chanTrangKiem(p) {
+  if (p.botKhongThay) {
+    return canhBao({ level: 'info', title: 'Bot không thấy page này',
+      body: 'Page có trong v3 nhưng tiến trình bot không nhận ra nó — đây là «chưa biết», không phải «sẵn sàng». Kiểm token ở màn Kết nối trước.',
+      actionsHtml: button('Mở kết nối', { href: '/ket-noi', size: 'sm' }) });
+  }
+  if (p.dangChay) {
+    return `<div class="hang day">
+      <span>${statusBadge('bot_on')} <span class="mo nho">Bot đang trả lời khách của page này.</span></span>
+      <span class="hang">${button('Xem tốn bao nhiêu', { href: '/chi-phi', size: 'sm' })}
+        ${button('Tắt ở Công tắc từng page', { href: '/page-bot', size: 'sm', variant: 'ghost' })}</span>
+    </div>`;
+  }
+  if (!p.batDuoc) {
+    return `<span class="mo">Bot chưa thể bật — còn thiếu ${formatNumber(p.chan.length)} điều kiện.</span>`;
+  }
+  return `<div class="hang day">
+      <span class="mo nho">Lượt bật được ghi nhật ký kèm tên người bấm.</span>
+      ${button('Bật bot cho page này', { variant: 'primary', id: 'nut-bat', icon: 'bot' })}
     </div>`;
 }
 
-// ── đích đến ──────────────────────────────────────────────────────────────────────
-function veDich(p) {
-  if (p.botKhongThay) {
-    return `<div class="bang"><div><b>Chưa bật được: bot không thấy page này</b>
-      Page có trong cơ sở dữ liệu v3 nhưng tiến trình bot không nhận ra nó. Đây là
-      «không biết», không phải «sẵn sàng» — kiểm token ở màn Kết nối trước.</div></div>`;
-  }
-  if (p.dangChay) {
-    return `<div class="bang dat"><div><b>Page này đang chạy</b>
-      Bot đang trả lời khách. Soi chất lượng ở màn Nhật ký, soi tiền ở màn Chi phí AI.</div></div>
-      <div class="hang tren-3">
-        <a class="nut" href="/nhat-ky">Xem bot đã nói gì</a>
-        <a class="nut" href="/chi-phi">Xem tốn bao nhiêu</a>
-        <a class="nut nhat" href="/page-bot">Tắt bot ở màn Page &amp; Bot</a>
-      </div>`;
-  }
-  if (!p.batDuoc) {
-    return `<div class="bang loi"><div><b>Chưa bật được — còn ${soVi.format(p.chan.length)} việc</b>
-      Cửa kiểm của tiến trình bot sẽ TỪ CHỐI bật AI khi còn ô đỏ. Làm hết rồi tải lại trang.</div></div>`;
-  }
-  return `
-    <div class="bang luu"><div><b>Đủ điều kiện để bật</b>
-      ${p.nhac.length
-        ? `Còn ${soVi.format(p.nhac.length)} điều đáng biết ở trên — không chặn, nhưng đọc rồi hãy bật.`
-        : 'Cả bốn việc đã xong.'}</div></div>
-    <div class="hang tren-3">
-      <button type="button" class="nut chinh" id="nut-bat">Bật bot cho page này</button>
-      <span class="mini mo">Lượt bật được ghi nhật ký kèm tên người bấm.</span>
-    </div>
-    <div id="kq-bat" aria-live="polite" class="tren-3"></div>`;
-}
-
 function veChiTiet() {
-  const p = DL.page.find((x) => x.pageId === chonId);
   const o = document.getElementById('chi-tiet');
+  const p = DL.page.find((x) => x.pageId === chonId);
   if (!p) {
-    o.innerHTML = '<div class="trong"><b>Chưa chọn page nào</b>Bấm một page ở danh sách bên trái.</div>';
+    o.innerHTML = emptyState({ icon: 'inbox', title: 'Chưa chọn page nào',
+      body: 'Bấm một page ở danh sách bên trái.' });
     return;
   }
-  const biTheoMa = new Map([...p.chan, ...p.nhac].map((b) => [b.ma, b]));
+  const theoMa = new Map([...p.chan, ...p.nhac].map((b) => [b.ma, b]));
+
   o.innerHTML = `
-    <div class="hang day">
-      <div class="gian">
-        <h2 class="cat">${esc(p.ten)}</h2>
-        <div class="mini mo">Mã page ${esc(p.pageId)}${p.marketer ? ' · marketer ' + esc(p.marketer) : ''}</div>
+    <div class="hang day duoi-4">
+      <div class="page-identity">
+        <span class="page-avatar" aria-hidden="true">${esc((p.ten || '?').trim()[0] || '?').toUpperCase()}</span>
+        <div class="page-identity-text">
+          <h2 class="page-identity-name">${esc(p.ten)}</h2>
+          <div class="page-identity-sub">Mã page ${esc(p.pageId)}${p.marketer ? ' · marketer ' + esc(p.marketer) : ''}</div>
+        </div>
       </div>
-      ${theCuaPage(p)}
+      ${trangThaiPage(p)}
     </div>
 
-    ${p.lechBanSao ? `<div class="bang luu tren-3"><div>
-      <b>Hai nguồn đang nói khác nhau</b>Tiến trình bot và bản sao trong cơ sở dữ liệu v3
-      không khớp về việc page này có bật hay không. Con số đúng là của tiến trình bot.</div></div>` : ''}
+    ${p.lechBanSao ? `<div class="duoi-4">${canhBao({ level: 'warning', title: 'Hai nguồn đang nói khác nhau',
+      body: 'Tiến trình bot và bản sao trong v3 không khớp về việc page này có bật hay không. Số đúng là của tiến trình bot.' })}</div>` : ''}
 
-    <h3 class="tren-4 duoi-1">Bốn việc bắt buộc</h3>
-    <div>${DL.maChan.map((ma) => veMotViec(ma, biTheoMa.has(ma), biTheoMa.get(ma))).join('')}</div>
+    ${readiness({
+      title: 'Bốn điều kiện bắt buộc',
+      items: DL.maChan.map((ma) => mucKiem(ma, theoMa.get(ma), false)),
+      footHtml: chanTrangKiem(p),
+    })}
 
-    <h3 class="tren-5 duoi-1">Đáng biết, không chặn</h3>
-    ${p.nhac.length
-      ? `<div>${p.nhac.map((b) => veMotViec(b.ma, true, b)).join('')}</div>`
-      : '<p class="mo nho">Không có điều nào.</p>'}
+    ${p.nhac.length ? `<div class="tren-4">${readiness({
+      title: 'Đáng biết, không chặn',
+      mode: 'advisory',
+      items: p.nhac.map((b) => mucKiem(b.ma, b, true)),
+    })}</div>` : ''}
 
-    ${p.la.length ? `<div class="bang luu tren-3"><div>
-      <b>Bot trả về điều kiện màn này chưa biết</b>${esc(p.la.map((b) => b.ma).join(', '))} —
-      v1 vừa thêm bậc mới. Hiện ra để không lặng lẽ biến mất; khai nó ở
-      <code>san-sang/kho-san-sang.js#DIEU_KIEN</code>.</div></div>` : ''}
-
-    <div class="tren-5">${veDich(p)}</div>`;
+    ${p.la.length ? `<div class="tren-4">${canhBao({ level: 'warning', title: 'Bot trả về điều kiện màn này chưa biết',
+      body: `${p.la.map((b) => b.ma).join(', ')} — tầng dưới vừa thêm bậc mới. Hiện ra để nó không lặng lẽ biến mất.` })}</div>` : ''}`;
 
   const nut = document.getElementById('nut-bat');
   if (nut) nut.addEventListener('click', () => batBot(p, nut));
@@ -196,12 +185,15 @@ function chon(id) {
   veChiTiet();
 }
 
-// ── bật bot: gọi ĐƯỜNG ĐÃ CÓ của màn Page & Bot ───────────────────────────────────
+// ── bật bot: gọi ĐƯỜNG ĐÃ CÓ của màn Công tắc từng page (bảy chốt, nhật ký, xác nhận) ────
 async function batBot(p, nut) {
-  const kq = document.getElementById('kq-bat');
-  if (!confirm(`Bật bot cho «${p.ten}»?\n\nBot sẽ bắt đầu trả lời khách thật của page này.`)) return;
-  nut.disabled = true;
-  nut.textContent = 'Đang bật…';
+  const dongY = await confirmDialog({
+    title: `Bật bot cho «${p.ten}»?`,
+    body: 'Bot sẽ bắt đầu trả lời khách thật của page này. Lượt bật được ghi nhật ký kèm tên bạn.',
+    confirmLabel: 'Bật bot',
+  });
+  if (!dongY) return;
+  setBusy(nut, true);
   try {
     const r = await fetch(`/api/page-bot/${encodeURIComponent(p.pageId)}/bot`, {
       method: 'POST',
@@ -211,22 +203,17 @@ async function batBot(p, nut) {
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || j.ok === false) {
-      // Lỗi phải kèm BƯỚC TIẾP THEO, không chỉ nêu vấn đề.
-      kq.innerHTML = `<div class="bang loi"><div><b>Chưa bật được</b>
-        ${esc(j.thongDiep || `Máy chủ trả ${r.status}.`)}<br>
-        Nếu là do quyền thì cần vai Quản trị; nếu là do cửa ghi đang khoá thì bỏ
-        <code>V3_BOT_KHOA</code> trong <code>.env</code> của v3 rồi khởi động lại.</div></div>`;
-      nut.disabled = false;
-      nut.textContent = 'Bật bot cho page này';
+      // Lỗi phải kèm BƯỚC TIẾP THEO, không chỉ nêu vấn đề (mục P).
+      setBusy(nut, false);
+      banner('error', 'Không thể bật bot',
+        `${j.thongDiep || `Máy chủ trả ${r.status}.`} Nếu do quyền thì cần vai Quản trị; nếu cửa ghi đang khoá thì bỏ V3_BOT_KHOA trong .env của v3 rồi khởi động lại.`);
       return;
     }
-    kq.innerHTML = '<div class="bang dat"><div><b>Đã bật</b>Đang tải lại trạng thái…</div></div>';
+    toast('Đã bật bot.');
     await tai();
   } catch (e) {
-    kq.innerHTML = `<div class="bang loi"><div><b>Không gọi được máy chủ</b>
-      ${esc(e && e.message ? e.message : String(e))}<br>Kiểm mạng rồi bấm lại.</div></div>`;
-    nut.disabled = false;
-    nut.textContent = 'Bật bot cho page này';
+    setBusy(nut, false);
+    toast('Không gọi được máy chủ. Kiểm mạng rồi bấm lại.', { level: 'error' });
   }
 }
 
@@ -237,26 +224,27 @@ async function tai() {
     if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent('/bat-dau'); return; }
     const j = await r.json();
     if (!r.ok || j.ok === false) {
-      banner('loi', 'Không đọc được cửa kiểm',
-        (j.thongDiep || `Máy chủ trả ${r.status}.`) + ' Màn này TỪ CHỐI đoán: một danh sách rỗng ở đây trông y như «mọi page đều ổn».');
+      banner('error', 'Không đọc được cửa kiểm',
+        `${j.thongDiep || `Máy chủ trả ${r.status}.`} Màn này không đoán: một danh sách rỗng ở đây trông y như «mọi page đều ổn».`);
       return;
     }
     DL = j;
     document.getElementById('bang-tin').innerHTML = '';
+    veDem(DL.dem);
+    const khung = document.getElementById('khung');
     if (DL.trong && DL.trong.rong) {
-      banner('luu', DL.trong.noi || 'Chưa có gì để hiện', DL.trong.diTiep || '');
-      document.getElementById('khung').style.display = 'none';
-      veDem(DL.dem);
+      banner('warning', DL.trong.noi || 'Chưa có gì để hiện', DL.trong.diTiep || '');
+      khung.hidden = true;
       return;
     }
-    veDem(DL.dem);
+    khung.hidden = false;
     if (!chonId || !DL.page.some((p) => p.pageId === chonId)) {
       chonId = DL.page.length ? DL.page[0].pageId : null;   // mở sẵn page gần xong nhất
     }
     veDanhSach();
     veChiTiet();
   } catch (e) {
-    banner('loi', 'Không gọi được máy chủ', (e && e.message ? e.message : String(e)) + ' Kiểm mạng rồi tải lại trang.');
+    banner('error', 'Không gọi được máy chủ', `${e && e.message ? e.message : String(e)} Kiểm mạng rồi tải lại trang.`);
   }
 }
 

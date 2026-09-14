@@ -319,3 +319,82 @@ test("HK11 · KHÔNG màn nào tự dựng khung trang — khuôn PageHeader là
   }
   assert.deepEqual(tuDung, [], `màn còn tự dựng khung trang: ${tuDung.join(", ")}`);
 });
+
+// ── HK12–HK14 · window.UI — hàm dựng thành phần (giai đoạn 5–6) ──────────────────────
+async function napUI() {
+  // ui.js là script cổ điển gán `window.UI`. Chạy nó trong một «window» giả để đọc bảng
+  // ánh xạ THẬT — không chép lại bảng vào ca kiểm (chép lại thì hai bảng lệch nhau).
+  const js = fs.readFileSync(path.join(GOC, "v3/src/ui/chung/ui.js"), "utf8");
+  const win = {};
+  new Function("window", "document", js)(win, {});
+  return win.UI;
+}
+
+test("HK12 · ánh xạ trạng thái: «chưa biết» và «không hoạt động» KHÔNG BAO GIỜ tô xanh", async () => {
+  // Luật của sổ điều hành: «chưa đo được ≠ đạt». Một ô chưa biết mà tô xanh là cách nhanh
+  // nhất để lỗi thật đi qua. Mục H8 của bản đặc tả: ánh xạ ở MỘT chỗ, trang không chọn màu.
+  const UI = await napUI();
+  const M = UI.TRANG_THAI;
+  for (const k of ["unknown", "not_seen", "bot_off", "feature_off", "feature_unavailable",
+                   "owner_paused", "owner_closed", "order_collecting", "script_draft"]) {
+    assert.ok(M[k], `thiếu trạng thái ${k}`);
+    assert.notEqual(M[k].tone, "success", `«${k}» không được tô xanh — chưa biết/không chạy ≠ đạt`);
+  }
+  // Trạng thái lỗi/chặn phải là danger — không được nhẹ tay thành warning.
+  for (const k of ["auto_disabled", "blocked", "check_todo", "order_error", "guard_blocked"]) {
+    assert.equal(M[k].tone, "danger", `«${k}» phải là danger`);
+  }
+  // Trạng thái lạ: HIỆN RA với tone neutral, không nuốt, không đoán màu.
+  const la = UI.statusBadge("trang_thai_chua_ai_khai");
+  assert.match(la, /data-tone="neutral"/);
+  assert.match(la, /trang_thai_chua_ai_khai/);
+  // Mọi tone phải là một trong năm nghĩa của hệ (mục E1).
+  const hop = new Set(["success", "warning", "danger", "info", "neutral"]);
+  for (const [k, v] of Object.entries(M)) assert.ok(hop.has(v.tone), `«${k}» có tone lạ: ${v.tone}`);
+});
+
+test("HK13 · hàm dựng THOÁT KÝ TỰ mọi chữ đưa vào — không lỗ chèn HTML", async () => {
+  const UI = await napUI();
+  const doc = '<img src=x onerror=alert(1)>';
+  for (const html of [
+    UI.statusBadge("bot_on", { label: doc }),
+    UI.button(doc),
+    UI.alert({ title: doc, body: doc }),
+    UI.emptyState({ title: doc, body: doc }),
+    UI.metricRow([{ label: doc, value: doc }]),
+    UI.readiness({ title: doc, items: [{ ok: false, name: doc, detail: doc }] }),
+  ]) {
+    assert.ok(!html.includes("<img"), `hàm dựng để lọt thẻ HTML thô: ${html.slice(0, 80)}`);
+  }
+});
+
+test("HK14 · biểu tượng có MỘT nguồn, và ba tệp khung đi cùng bản", () => {
+  // Mục Q: một bộ biểu tượng. Bản đầu của khung nhúng một bản chép riêng — hai nguồn cho
+  // cùng một bộ là mầm lệch nhau. Nay chỉ `ui.js` giữ dữ liệu; khung đọc qua `window.UI`.
+  const nav = fs.readFileSync(path.join(GOC, "v3/src/ui/chung/dieu-huong.js"), "utf8");
+  const ui = fs.readFileSync(path.join(GOC, "v3/src/ui/chung/ui.js"), "utf8");
+  assert.ok(!/<path d=/.test(nav), "khung còn nhúng dữ liệu biểu tượng — phải đọc từ window.UI");
+  assert.match(ui, /BIEU_TUONG = Object\.freeze\(\{/, "ui.js phải giữ bộ biểu tượng");
+  assert.match(ui, /ISC/, "phải ghi giấy phép của bộ biểu tượng");
+
+  const rt = fs.readFileSync(path.join(GOC, "v3/src/ui/chung/router-dieu-huong.js"), "utf8");
+  const i = rt.indexOf("'/chung/ui.js'");
+  assert.ok(i > 0, "router phải phục vụ /chung/ui.js");
+  assert.match(rt.slice(i, rt.indexOf("});", i)), /no-cache/, "/chung/ui.js phải no-cache — khung gọi nó");
+
+  // Mọi màn nhúng khung phải nạp ui.js ĐỒNG BỘ trong <head> — `defer` chạy SAU khung.
+  const UI_DIR = path.join(GOC, "v3/src/ui");
+  const sai = [];
+  for (const d of fs.readdirSync(UI_DIR, { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    const t = path.join(UI_DIR, d.name, "trang");
+    if (!fs.existsSync(t)) continue;
+    for (const f of fs.readdirSync(t).filter((x) => x.endsWith(".html"))) {
+      const s = fs.readFileSync(path.join(t, f), "utf8");
+      if (!s.includes("/chung/dieu-huong.js")) continue;
+      const dau = (s.match(/<head>[\s\S]*?<\/head>/) || [""])[0];
+      if (!/<script src="\/chung\/ui\.js"><\/script>/.test(dau)) sai.push(`${d.name}/${f}`);
+    }
+  }
+  assert.deepEqual(sai, [], `màn chưa nạp ui.js đồng bộ trong <head>: ${sai.join(", ")}`);
+});

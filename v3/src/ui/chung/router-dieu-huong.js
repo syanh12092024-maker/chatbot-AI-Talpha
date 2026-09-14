@@ -37,6 +37,14 @@ export function taoRouterDieuHuong() {
     res.sendFile(path.join(THU_MUC, 'kieu.css'), (e) => (e ? next(e) : undefined));
   });
 
+  // HÀM DỰNG THÀNH PHẦN — window.UI. Khung ứng dụng lấy biểu tượng từ đây, nên ba tệp
+  // (kieu.css · ui.js · dieu-huong.js) PHẢI đi cùng bản: cùng `no-cache`.
+  r.get('/chung/ui.js', (_req, res, next) => {
+    res.type('application/javascript');
+    res.set('Cache-Control', 'no-cache');
+    res.sendFile(path.join(THU_MUC, 'ui.js'), (e) => (e ? next(e) : undefined));
+  });
+
   r.get('/chung/dieu-huong.js', (_req, res, next) => {
     res.type('application/javascript');
     // Cùng lý do với `kieu.css` ở trên: hai tệp này gọi token của nhau, lệch bản là hỏng.

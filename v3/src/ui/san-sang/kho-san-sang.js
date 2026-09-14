@@ -41,46 +41,53 @@ export const VAI_VAO_DUOC = Object.freeze([VAI.QUAN_TRI, VAI.QUAN_LY, VAI.MARKET
  * `lam` phải nói người ta làm gì thay thế. Một ô đỏ không bấm được mà cũng không nói phải
  * làm sao là đúng cái lỗi 24/08: người ta ngồi nhìn một màn không biết nó hỏng hay đã xong.
  */
+// ⚠️ HAI TÊN cho mỗi điều kiện, có chủ ý (thêm 14/09/2026):
+//   · `ten`  — viết như LỖI («Không token nào phủ page»). Đúng ở màn này, vì màn này CHỈ hiện
+//              điều kiện khi nó hỏng.
+//   · `nhan` — tên TRUNG TÍNH («Token Pancake»). Dùng khi hiện CẢ điều kiện ĐÃ ĐẠT.
+// Đo trên ảnh chụp màn «Bắt đầu»: dùng `ten` cho điều kiện đã đạt ra câu «✓ Xong · Không token
+// nào phủ page» — tức «Đã xong: không có token», tự mâu thuẫn. Mục M4 của bản đặc tả dùng
+// danh từ trung tính. Hai tên ở CÙNG một chỗ, nên vẫn là một bảng từ vựng — không lệch được.
 export const DIEU_KIEN = Object.freeze({
   NO_TOKEN: {
-    chan: true, ten: 'Không token nào phủ page',
+    chan: true, nhan: 'Token Pancake', ten: 'Không token nào phủ page',
     di: '/ket-noi', nutDi: 'Mở kho token',
     lam: 'Thêm một token Pancake có phủ page này, hoặc thay token đã chết.',
   },
   MISSING_TAGS: {
-    chan: true, ten: 'Thiếu thẻ Pancake',
+    chan: true, nhan: 'Thẻ hội thoại', ten: 'Thiếu thẻ Pancake',
     di: null, nutDi: null,
     lam: 'Thẻ nằm bên Pancake, v3 chưa có màn sửa. Vào Pancake → cài đặt page → thẻ hội thoại, '
       + 'tạo đủ các thẻ còn thiếu ghi ở cột bên phải.',
   },
   MISSING_PRODUCT: {
-    chan: true, ten: 'Chưa có sản phẩm/giá',
+    chan: true, nhan: 'Sản phẩm và giá', ten: 'Chưa có sản phẩm/giá',
     di: null, nutDi: null,
     lam: 'Sản phẩm và giá lấy từ Google Sheet của page. Điền sản phẩm vào Sheet — màn «Sản phẩm '
       + '& kho» của v3 chưa dựng (chờ bảng `san_pham` có dữ liệu).',
   },
   MISSING_SCRIPT: {
-    chan: true, ten: 'Thiếu kịch bản bán',
+    chan: true, nhan: 'Kịch bản bán hàng', ten: 'Thiếu kịch bản bán',
     di: '/kich-ban', nutDi: 'Soạn kịch bản',
     lam: 'Page chưa có câu chào hoặc chưa có cách bán. Soạn rồi đưa lên LIVE.',
   },
   MISSING_POS: {
-    chan: false, ten: 'Chưa nối shop POS',
+    chan: false, nhan: 'Kết nối shop POS', ten: 'Chưa nối shop POS',
     di: '/cau-hinh-team', nutDi: 'Nối POS',
     lam: 'AI vẫn tư vấn và chốt được, chỉ là không đẩy nổi đơn sang POS. Nối shop ở mục «Kết nối POS».',
   },
   THIN_SCRIPT: {
-    chan: false, ten: 'Kịch bản mỏng',
+    chan: false, nhan: 'Kịch bản đủ chi tiết', ten: 'Kịch bản mỏng',
     di: '/kich-ban', nutDi: 'Bổ sung kịch bản',
     lam: 'Thiếu giọng điệu hoặc phần cách bán quá ngắn. Bot vẫn chạy nhưng trả lời sẽ chung chung.',
   },
   SCRIPT_STALE: {
-    chan: false, ten: 'Kịch bản cũ, chốt kém',
+    chan: false, nhan: 'Kịch bản còn hiệu quả', ten: 'Kịch bản cũ, chốt kém',
     di: '/kich-ban', nutDi: 'Xem lại kịch bản',
     lam: 'Lâu không sửa VÀ tỉ lệ chốt dưới 1%. Cũ mà vẫn ra đơn thì v1 không báo.',
   },
   READY: {
-    chan: false, ten: 'Đủ điều kiện',
+    chan: false, nhan: 'Đủ điều kiện', ten: 'Đủ điều kiện',
     di: null, nutDi: null, lam: '',
   },
 });

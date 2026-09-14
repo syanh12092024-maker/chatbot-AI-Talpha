@@ -98,6 +98,9 @@
           border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin-top:5px;overflow-wrap:anywhere}
   select{border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--nen);font:inherit;max-width:100%}
 </style>
+<!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
+     lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
+<script src="/chung/ui.js"></script>
 </head>
 <body>
 <header>

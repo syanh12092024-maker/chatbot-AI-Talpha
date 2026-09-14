@@ -204,6 +204,12 @@
 @layer ds-nen {
   *, *::before, *::after { box-sizing: border-box; }
 
+  /* `hidden` PHẢI ẩn được, bất kể thành phần. Quy tắc `[hidden]{display:none}` mặc định của
+     trình duyệt THUA mọi CSS của tác giả — kể cả CSS nằm trong layer — nên một `.cot-ds` hay
+     `.hang` có `display:grid/flex` sẽ phớt lờ `el.hidden = true`. Không có dòng này, cách ẩn
+     đúng chuẩn lại là cách không chạy, và người viết màn quay về `style.display = 'none'`. */
+  [hidden] { display: none !important; }
+
   html { -webkit-text-size-adjust: 100%; }
 
   body {
@@ -607,9 +613,14 @@
   .readiness-head { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle); }
   .readiness-head-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
   .readiness-count { font-size: var(--text-sm); color: var(--text-muted); font-variant-numeric: tabular-nums; }
-  .readiness-bar { height: 4px; background: var(--surface-muted); border-radius: var(--radius-full);
-                   overflow: hidden; margin-top: var(--space-2); }
-  .readiness-bar > span { display: block; height: 100%; background: var(--success); }
+  /* Thanh tiến độ là <progress> GỐC: có nghĩa với trình đọc màn hình, và không cần
+     `style="width:…"` gõ trong trang (HK6 cấm). */
+  .readiness-progress { display: block; width: 100%; height: 4px; margin-top: var(--space-2);
+                        border: 0; border-radius: var(--radius-full); overflow: hidden;
+                        background: var(--surface-muted); appearance: none; -webkit-appearance: none; }
+  .readiness-progress::-webkit-progress-bar { background: var(--surface-muted); border-radius: var(--radius-full); }
+  .readiness-progress::-webkit-progress-value { background: var(--success); border-radius: var(--radius-full); }
+  .readiness-progress::-moz-progress-bar { background: var(--success); border-radius: var(--radius-full); }
   .readiness-list { list-style: none; margin: 0; padding: var(--space-1) 0; }
   .readiness-item { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: var(--space-3);
                     align-items: start; padding: var(--space-2) var(--space-4); }
@@ -657,6 +668,10 @@
            border-radius: var(--radius-lg); padding: var(--space-4); }
   .panel.noi { box-shadow: var(--shadow-popover); }
   .panel + .panel { margin-top: var(--space-3); }
+  /* ⚠️ Lề trên CHỈ cho tấm xếp dọc theo dòng chảy thường. Trong lưới hay hàng ngang, chính
+     quy tắc trên đẩy tấm thứ 2, 3, 4 xuống 12px so với tấm đầu — đo 14/09 trên ảnh chụp màn
+     «Bắt đầu»: bốn ô số lệch nhau. Mục «Let layout do the spacing»: trong lưới, `gap` lo. */
+  :is(.luoi, .hang, .cot-ds, .metric-row, .filter-bar) > .panel + .panel { margin-top: 0; }
   .panel > h2, .panel > h3 { margin-bottom: var(--space-3); }
 
   .nut {
