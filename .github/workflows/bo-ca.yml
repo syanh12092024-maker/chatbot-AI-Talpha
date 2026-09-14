@@ -37,15 +37,25 @@
 #
 # ═══ SỐ ĐO 14/09/2026 (lượt 34800176998) ═════════════════════════════════════════
 #   npm test    : 1665 ca · 1644 xanh · 0 ĐỎ · 21 hoãn minh bạch
-#   cổng nghiệm thu: XANH=10 · ĐỎ=15 — lần ĐẦU TIÊN 25 cổng được đo trên CI.
-#   CẢ 15 cổng đỏ đều đỏ vì MÔI TRƯỜNG, không cổng nào đỏ vì mã:
-#     · 10 cổng (l1-m1·l1-m2·l1-m3·l2-m1·l2-m2·l2-m3·l3-m1..l3-m4) gõ cứng
-#       `CONTAINER="talpha-pg"`. CI chạy Postgres bằng service container của GitHub,
-#       không có tên ấy ⇒ rc=2 «KHÔNG ĐO ĐƯỢC» (khác hẳn rc=1 «trượt») — cổng từ chối
-#       giả xanh, đúng luật. Phải dạy cổng nhận CSDL qua `DATABASE_URL_V3`.
-#     · va-r1 · va-r2 gọi `node --env-file=.env` ⇒ `.env: not found` ⇒ LOI-NODE.
-#     · b-y4 · g2-a4 · l0-m1 cần tệp dữ liệu THẬT (`pages.json` · `ai-enabled.json`
-#       · `conv-state.json`) — cùng gốc với 21 ca hoãn minh bạch.
+#   cổng nghiệm thu: XANH=19 · ĐỎ=6  (lượt 34801106602, sau khi gỡ nút docker)
+#     Trước đó XANH=10 · ĐỎ=15: mười cổng dựng sandbox bằng `docker exec talpha-pg`, mà
+#     container ấy không còn ở đâu ⇒ rc=2. Nay dùng gói `pg` (án lệ #28) ⇒ chín cổng xanh,
+#     cổng thứ mười (l1-m1) đo được thật và lộ ra là nó cần KẾT NỐI POS.
+#
+#   SÁU CỔNG ĐỎ CÒN LẠI — KHÔNG cổng nào đỏ vì mã. Cả sáu thiếu thứ CI không có:
+#     · va-r1 · va-r2 — `node --env-file=.env` ⇒ `.env: not found` ⇒ LOI-NODE, và kịch bản
+#       repro chết ngay nên mọi «khối Fx không thấy trong log».
+#     · b-y4 · l0-m1 — cần `npm run di-tru` trên dữ liệu THẬT (`pages.json`…): cùng gốc với
+#       21 ca hoãn minh bạch.
+#     · g2-a4 — đọc `ai-enabled.json` ở gốc repo ⇒ `nguon` rơi về `cot_csdl`. CÙNG BỆNH với
+#       N5/N11 đã chữa trong bộ ca hôm nay, chỉ là ở cổng thì chưa chữa.
+#     · l1-m1 — `LoiThieuKetNoiPos`: cổng chạm POS pages.fm thật (chỉ ĐỌC). Đầu tệp cổng đã
+#       khai «mạng hỏng ⇒ ⏸ HOÃN», nhưng phép dò không nhận ra «THIẾU KẾT NỐI» cũng là
+#       không-đo-được, nên nó khai TRƯỢT.
+#
+#   ⚠️ NỢ THƯỚC: cả sáu đang khai «TRƯỢT» trong khi sự thật là «KHÔNG ĐO ĐƯỢC». Đó là vi
+#      phạm chính luật của sổ (⏸ ≠ ✘). Sửa ĐÚNG là dạy chúng nói ⏸ — KHÔNG phải làm chúng
+#      xanh. Sửa THẬT là cấp gói bàn giao (.env + tệp dữ liệu) cho CI qua secrets.
 #
 # ═══ CÁCH NHẬN NUÔI ══════════════════════════════════════════════════════════════
 #   1. ✅ Chạy được trên Postgres: `npm run migrate && npm test`
