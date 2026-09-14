@@ -1513,3 +1513,19 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 **CẤM vá bằng cách cho chạy tuần tự hay bỏ qua ca.** Phải tìm ra dãy S phụ thuộc cái gì
 (nghi: trạng thái dùng chung trong mô-đun bị đo, hoặc cửa sổ thời gian — S7/S8 đo «đủ mẫu
 30 khách»). Một ca chập chờn được làm cho im là một ca mù.
+
+- 14/09 · MỞ VAN «UI HỆ KIỂU» (lệnh trực tiếp người quyết) → ✅ ĐÃ MỞ — 25/25 màn v3 trên hệ
+  kiểu chung lên VPS (`51b454f` → `afe9ce0`, 39 commit); chỉ `git pull` + restart HAI dịch vụ
+  v3, **`aicloser` không chạm và không restart**; +10′ ba dịch vụ `active`, 1 lần khởi động
+  (của chính lượt mở), 0 lỗi trong log v3 và log bot, `:3102`/`:3101` = 200,
+  `localhost:3100/health` = `{"ok":true,"pages":119}` · commit `afe9ce0` · nhật ký
+  `docs/thi-cong/nhat-ky/phat-hanh-14-09-ui-he-kieu.md`.
+- 14/09 · THƯỚC 4 CỔNG → ✅ ĐÃ VÁ — 5 cổng đỏ mà **không cổng nào nêu được ca đỏ nào**: chúng
+  grep dạng TAP (`^not ok`, `^# pass`) trong khi `node --test` của Node 24 in dạng SPEC (`✖`,
+  `ℹ pass`). Ép `--test-reporter=tap` ở `b-y4` · `l0-m1` · `l0-m2` · `g2-a5-a6` và đọc thêm
+  dạng SPEC ở `phat-hanh.sh ③`. KHÔNG nới ngưỡng nào: b-y4 xanh lại nhờ chính ngoại lệ D7 của
+  nó, ba cổng kia vẫn đỏ nhưng nay nêu đích danh ca · commit `afe9ce0` · nhật ký như trên.
+- 14/09 · DÃY S `l0-m2-so-lieu` → 🔴 CÒN NỢ, có dữ kiện MỚI — đo thêm 14/09 chiều: chạy
+  **RIÊNG một mình** tệp ấy cũng ĐỎ (`S8` một lượt; `S3`+`S5` lượt sau, qua khuôn của
+  `npm test`) ⇒ phủ nhận điều «2. không phải do .env — chạy riêng đều XANH» ở mục trên. Chập
+  chờn không cần chạy chung `l0-m1`. Vẫn CẤM vá bằng cách bỏ qua ca · commit `afe9ce0`.

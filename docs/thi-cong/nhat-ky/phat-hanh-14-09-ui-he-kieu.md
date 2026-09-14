@@ -70,17 +70,35 @@ cd /opt/aicloser && git pull --ff-only origin main && systemctl restart aicloser
 ```
 Mất khoảng 3 phút. **Không mất dữ liệu**: lô này không có di trú lược đồ và không ghi gì.
 
-## ⑥ Lệnh đã gõ — điền theo thứ tự
+## ⑥ Lệnh đã gõ — theo thứ tự
 
-_(điền khi mở)_
+```
+# máy dev
+CHO_PHEP_MO_VAN=1 git push origin main          # 036c286, rồi afe9ce0
+# VPS (root@169.58.33.8)
+cd /opt/aicloser && git fetch origin main && git pull --ff-only origin main
+systemctl restart aicloser-v3 aicloser-v3-xemthu     # KHÔNG restart aicloser
+```
+
+Trước khi kéo, đã soi: 15 tệp bẩn trên VPS đều là **tệp sao lưu chưa theo dõi** (`??`) —
+`git diff --stat` rỗng, không có bản vá sửa tay nào bị đè (bài học `51b454f`).
 
 ## ⑦ Số đo tại từng mốc
 
-_(điền khi quan sát)_
+| Mốc | Đo | Kết quả |
+| --- | --- | --- |
+| +0′ | ba dịch vụ | `aicloser-v3` active · `aicloser-v3-xemthu` active · `aicloser` active |
+| +0′ | bot | `localhost:3100/health` = 200 |
+| +0′ | màn v3 | `:3102/dang-nhap` = 200 · `:3101/dang-nhap` = 200 · `/chung/kieu.css` = 200, 80.918 byte |
+| +1′ | vòng lặp restart | 1 lần khởi động (của chính lượt mở) · 0 lỗi trong log |
+| +2′ | HÀNH VI, không chỉ mã trả về | mở hầm SSH tới bản xem thử của VPS rồi chụp `/bat-dau` và `/dieu-phoi` — màn dựng đúng hệ kiểu mới, ô xem nhanh mở được |
+| +10′ | ba dịch vụ | vẫn `active` cả ba · 1 lần khởi động · **0** lỗi log v3 · **0** lỗi log bot |
+| +10′ | bot | `{"ok":true,"pages":119}` |
 
 ## ⑧ Kết
 
-_(giữ / lùi / mở bậc sau)_
+**GIỮ.** Không ngưỡng nào chạm. Không mở bậc sau — lô này không có bậc sau: nó là màn nội bộ,
+không có cờ nào để mở rộng, và cửa ghi không đổi.
 
 ## ⑨ Nợ phát sinh
 
