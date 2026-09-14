@@ -107,19 +107,32 @@ jobs:
       - name: Cổng nghiệm thu (rc TÁCH DÒNG từng cổng)
         run: |
           set +e
+          mkdir -p nhat-ky-cong
           soDo=0; soXanh=0; dsDo=""
           for f in ops/bin/nghiem-thu/*.sh; do
             case "$f" in */_*.sh) continue;; esac   # `_*.sh` là tệp trợ giúp, không phải cổng
-            ten=$(basename "$f")
-            ra=$(bash "$f" 2>&1); rc=$?
+            ten=$(basename "$f" .sh)
+            bash "$f" > "nhat-ky-cong/${ten}.log" 2>&1; rc=$?
+            echo "rc=$rc" >> "nhat-ky-cong/${ten}.log"
             if [ $rc -eq 0 ]; then
               soXanh=$((soXanh+1)); echo "🟢 $ten"
             else
               soDo=$((soDo+1)); dsDo="$dsDo $ten"
-              echo "🔴 $ten rc=$rc"
-              printf '%s\n' "$ra" | tail -n 12 | sed 's/^/        /'
+              echo "🔴 $ten rc=$rc — các phép TRƯỢT:"
+              # Chỉ in dòng ✘ và dòng TỔNG. Bản trước dùng `tail -12` nên cắt mất đúng phần
+              # cần đọc: phép trượt nằm GIỮA bài, không nằm cuối — đo 14/09 ở cổng l1-m1.
+              grep -E '✘|^TỔNG|TỔNG:' "nhat-ky-cong/${ten}.log" | head -n 20 | sed 's/^/        /'
             fi
           done
           echo "═══ CỔNG NGHIỆM THU · XANH=$soXanh · ĐỎ=$soDo ═══"
           [ $soDo -eq 0 ] || echo "đỏ:$dsDo"
+          echo "(nhật ký ĐẦY ĐỦ từng cổng: hiện vật «nhat-ky-cong» của lượt chạy này)"
           [ $soDo -eq 0 ]
+
+      - name: Giữ nhật ký cổng làm hiện vật
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nhat-ky-cong
+          path: nhat-ky-cong/
+          retention-days: 14
