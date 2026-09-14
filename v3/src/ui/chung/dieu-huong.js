@@ -22,6 +22,38 @@
 // sang được team khác, còn vai `sale` — không vào được màn Cấu hình team — thì kẹt hẳn.
 
 (function () {
+  // ── HỆ KIỂU: nạp `chung/kieu.css` cho MỌI trang ─────────────────────────────────
+  // Chèn ở đây, không bắt 25 màn tự khai <link> — một dòng ở đây là phủ hết, và màn mới
+  // không thể quên. Đặt LÊN ĐẦU <head> để nó nằm trước <style> của trang cho đúng thứ tự
+  // đọc; riêng chuyện ai thắng ai thì đã do `@layer` trong tệp ấy định, không do thứ tự.
+  // Vì thế thêm tệp này KHÔNG đổi vẻ ngoài màn nào đang có — xem khối đầu `kieu.css`.
+  (function napHeKieu() {
+    if (document.querySelector('link[data-ds="v3"]')) return;
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "/chung/kieu.css";
+    l.dataset.ds = "v3";
+    const dau = document.head || document.documentElement;
+    dau.insertBefore(l, dau.firstChild);
+  })();
+
+  // ── LỐI BỎ QUA: một đường tắt cho người đi bằng bàn phím ────────────────────────
+  // Trước đây muốn tới nội dung phải Tab qua CẢ thanh bên — 24 mục, ở MỌI trang. Nay
+  // phím Tab đầu tiên là «Tới nội dung». Ẩn cho tới khi lấy nét, nên không đổi gì về
+  // mặt nhìn. Cả 25 màn đều có <main> (đã đo), chỉ gán id nếu nó chưa có.
+  document.addEventListener("DOMContentLoaded", function catLoiBoQua() {
+    if (document.querySelector("a.bo-qua")) return;
+    const than = document.querySelector("main");
+    if (!than) return; // không có mốc thì thôi, đừng trỏ vào chỗ không tồn tại
+    if (!than.id) than.id = "noi-dung";
+    than.setAttribute("tabindex", "-1"); // để nhảy tới được mà không thành mục Tab
+    const a = document.createElement("a");
+    a.className = "bo-qua";
+    a.href = "#" + than.id;
+    a.textContent = "Tới nội dung";
+    document.body.insertBefore(a, document.body.firstChild);
+  });
+
   const esc = (s) =>
     String(s == null ? "" : s).replace(
       /[&<>"']/g,

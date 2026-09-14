@@ -20,6 +20,15 @@ const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 export function taoRouterDieuHuong() {
   const r = express.Router();
 
+  // HỆ KIỂU — một nguồn cho màu/khoảng/cỡ chữ/thành phần của cả 25 màn. Xem `kieu.css`.
+  // Gói trong `@layer` nên KHÔNG đè được <style> của trang: màn cũ giữ nguyên vẻ ngoài,
+  // màn mới dùng trọn hệ. Cho cache 1 giờ — tệp này đổi rất thưa.
+  r.get('/chung/kieu.css', (_req, res, next) => {
+    res.type('text/css');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.sendFile(path.join(THU_MUC, 'kieu.css'), (e) => (e ? next(e) : undefined));
+  });
+
   r.get('/chung/dieu-huong.js', (_req, res, next) => {
     res.type('application/javascript');
     res.sendFile(path.join(THU_MUC, 'dieu-huong.js'), (e) => (e ? next(e) : undefined));
