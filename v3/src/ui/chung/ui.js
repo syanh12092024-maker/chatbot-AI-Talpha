@@ -177,7 +177,7 @@
   function metricRow(items) {
     const ds = (items || []).slice(0, 4); // mục M1: 4 chỉ số là trần
     return (
-      '<div class="metric-row">' +
+      `<div class="metric-row" data-count="${ds.length}">` +
       ds.map((m) =>
         `<div class="metric"><div class="metric-label">${esc(m.label)}</div>` +
         `<div class="metric-value">${typeof m.value === "number" ? soVi.format(m.value) : esc(m.value)}</div>` +

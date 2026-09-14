@@ -3,101 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cấu hình team — AI Closer v3</title>
-<style>
-  /* Cùng hệ thiết kế với `dieu-phoi.html` (gốc: `public/ops.html`). Trang RIÊNG, một file,
-     không gọi mạng ra ngoài — bốn luồng v3 sửa song song, dùng chung file CSS là xung đột. */
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  /* ─── ô số đo: tự xuống dòng, không bao giờ đẩy trang rộng ra ─── */
-  .so{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px}
-  .o{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--nen-2);min-width:0}
-  .o .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15;overflow-wrap:anywhere}
-  .o .t{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
-  .o.xau .n{color:var(--bad)}
-  .o.canh .n{color:var(--warn)}
-
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
-  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
-  tbody tr:last-child td{border-bottom:none}
-
-  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
-  .pill.g{background:var(--okSoft);color:var(--ok)}
-  .pill.o{background:var(--warnSoft);color:var(--warn)}
-  .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:var(--nen-3);color:var(--chu-2)}
-  .pill.p{background:var(--priSoft);color:var(--priDark)}
-
-  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
-  .banner.r{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien)}
-  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .banner .s{display:block;font-weight:400;font-size:12px;margin-top:4px}
-
-  /* ─── TRẠNG THÁI RỖNG — hai kiểu, trông KHÁC HẲN nhau ───────────────────────────────
-     Đây là chỗ đã dính lỗi thật 24/08: bảng rỗng đọc như tin mừng trong khi sự thật là
-     chưa cài đặt xong. Nên «xong» thì xanh và im, «chưa cài đặt» thì vàng và có nút. */
-  .trong{padding:18px 15px;text-align:center;line-height:1.6}
-  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
-  .trong.xong{color:var(--ok);background:var(--okSoft)}
-  .trong.chua{color:var(--luu-chu);background:var(--warnSoft);border-top:1px solid var(--luu-vien)}
-  .trong .di{display:inline-block;margin-top:8px;font-weight:700;color:var(--priDark);
-             background:var(--nen);border:1px solid var(--line);border-radius:8px;padding:6px 12px;text-decoration:none}
-
-  /* ─── lát bị chặn: hiện MỜ kèm lý do, không giấu đi ─── */
-  .chan{background:#fafbfb;border:1px dashed #cfd8dc;border-radius:10px;padding:14px;color:var(--muted);line-height:1.6}
-  .chan b{color:var(--ink)}
-  .chan .ma{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
-            background:#eef2f3;padding:1px 6px;border-radius:5px}
-
-  /* ─── lát 4: chọn page để chuyển team ─── */
-  .chon-page{border:1px solid var(--line);border-radius:10px;max-height:280px;overflow-y:auto;margin-top:8px}
-  .chon-page label{display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-bottom:1px solid var(--line);cursor:pointer}
-  .chon-page label:last-child{border-bottom:none}
-  .chon-page label:hover{background:#fafcfc}
-  .chon-page input{margin-top:2px;flex:none}
-  .chon-page .n{font-weight:600;overflow-wrap:anywhere}
-  .kq{margin-top:10px;border-radius:8px;padding:10px 12px;line-height:1.6}
-  .kq.g{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien)}
-  .kq.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .kq ul{margin:6px 0 0;padding-left:18px}
-
-  button,select{font:inherit}
-  .nut{background:var(--pri);color:var(--nen);border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
-  .nut:hover{background:var(--priDark)}
-  .nut[disabled]{background:var(--vien-dam);cursor:not-allowed}
-  .nut.nho{padding:4px 9px;font-size:11.5px;font-weight:600}
-  .nut.xoa{background:transparent;color:var(--bad);border:1px solid var(--loi-vien)}
-  .nut.xoa:hover{background:var(--badSoft)}
-  select{border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--nen);max-width:100%}
-
-  .hang{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .ten{font-weight:600;overflow-wrap:anywhere}
-  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
-  .loi{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien);border-radius:8px;
-       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .loi.hien{display:block}
-
-  /* ─── KHỔ HẸP (điện thoại 375px): bảng thành thẻ xếp dọc, KHÔNG cuộn ngang ─── */
-  @media (max-width:640px){
-    .panel h2{padding:10px 12px}
-    .than{padding:12px}
-    .so{grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:8px}
-    .o .n{font-size:19px}
-    table,thead,tbody,th,td,tr{display:block}
-    thead{display:none}
-    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:9px 11px}
-    tbody tr:last-child{margin-bottom:0}
-    td{border:none;padding:3px 0}
-    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;
-      text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:1px}
-  }
-</style>
+<title>Người và team — AI Closer</title>
+<!-- Dựng trên hệ kiểu (mục M12: cài đặt chia nhóm, thao tác nguy hiểm tách riêng và hỏi lại).
+     KHÔNG CSS riêng — trước lượt này là 81 dòng. Bốn khối xếp dọc một trang dài → hàng chỉ số
+     + ba tab (Thành viên · Kết nối POS · Chuyển page). Chuyển page là đổi CHỦ dữ liệu, nên nó
+     ở tab riêng, có thanh chọn hàng loạt và hộp xác nhận nói hệ quả. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -105,292 +16,323 @@
 <body>
 <header>
   <h1>Người và team</h1>
-  <span class="sub" id="teamHien">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Ai trong team mang vai gì, shop POS nào nối vào, và page nào thuộc team này.</span>
 </header>
 
 <main>
-  <div class="loi" id="loi"></div>
-  <div id="canhBao"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <!-- ─── LÁT 1 · tổng quan ─────────────────────────────────────────────────────── -->
-  <section class="panel">
-    <h2>Tổng quan team này
-      <span class="hint">chỉ đếm được team đang mở — lớp team chặn nhìn sang team khác</span>
-    </h2>
-    <div class="than"><div class="so" id="soDo">
-      <div class="o"><div class="n">…</div><div class="t">đang đọc</div></div>
-    </div></div>
+  <section class="section" aria-label="Tổng quan team">
+    <div id="soDo"><div class="metric-row"><div class="metric"><span class="skeleton"></span></div></div></div>
   </section>
 
-  <!-- ─── LÁT 2 · thành viên và vai ─────────────────────────────────────────────── -->
-  <section class="panel">
-    <h2>Thành viên và vai <span class="sp"></span>
-      <span class="hint" id="ghiChuVai"></span>
-    </h2>
-    <div id="khoiThanhVien"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
-    <div class="than" id="themThanhVien" style="display:none;border-top:1px solid var(--line)">
-      <div class="hang">
-        <select id="chonNguoi" aria-label="Chọn người"></select>
-        <select id="chonVai" aria-label="Chọn vai"></select>
-        <button class="nut" id="nutThem">Cấp vai</button>
-      </div>
-      <div class="phu" style="margin-top:7px">Một người mang được nhiều vai trong cùng một team.</div>
+  <section class="section">
+    <div class="tabs duoi-4" role="tablist" aria-label="Phần cấu hình">
+      <button type="button" class="tab" role="tab" id="tab-tv" aria-controls="p-tv" data-tab="tv">Thành viên</button>
+      <button type="button" class="tab" role="tab" id="tab-pos" aria-controls="p-pos" data-tab="pos">Kết nối POS</button>
+      <button type="button" class="tab" role="tab" id="tab-gan" aria-controls="p-gan" data-tab="gan">Chuyển page sang team khác</button>
     </div>
-  </section>
 
-  <!-- ─── LÁT 3 · kết nối ───────────────────────────────────────────────────────── -->
-  <section class="panel">
-    <h2>Kết nối POS <span class="hint">khoá API không bao giờ hiện ở đây</span></h2>
-    <div id="khoiKetNoi"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
-  </section>
+    <div role="tabpanel" id="p-tv" aria-labelledby="tab-tv">
+      <div class="table-wrap">
+        <div class="table-toolbar"><h2>Thành viên và vai</h2><span class="table-count" id="demTv"></span></div>
+        <div id="khoiThanhVien"><div class="empty-state"><span class="skeleton"></span></div></div>
+        <div class="table-footer" id="themThanhVien" hidden>
+          <label for="chonNguoi" class="sr-only">Chọn người</label>
+          <select id="chonNguoi"></select>
+          <label for="chonVai" class="sr-only">Chọn vai</label>
+          <select id="chonVai"></select>
+          <button type="button" class="btn" data-variant="primary" data-size="md" id="nutThem"><span>Cấp vai</span></button>
+          <span class="text-muted">Một người mang được nhiều vai trong cùng một team.</span>
+        </div>
+      </div>
+    </div>
 
-  <!-- ─── LÁT 4 · gán page ↔ team ───────────────────────────────────────────────── -->
-  <section class="panel">
-    <h2>Gán page ↔ team
-      <span class="hint">chuyển page sang team khác — hội thoại, kịch bản và sản phẩm của page đi theo</span>
-    </h2>
-    <div class="than" id="khoiGanPage"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+    <div role="tabpanel" id="p-pos" aria-labelledby="tab-pos" hidden>
+      <div class="table-wrap">
+        <div class="table-toolbar"><h2>Kết nối POS</h2><span class="table-count">Khoá API không bao giờ hiện ở đây</span></div>
+        <div id="khoiKetNoi"><div class="empty-state"><span class="skeleton"></span></div></div>
+      </div>
+    </div>
+
+    <div role="tabpanel" id="p-gan" aria-labelledby="tab-gan" hidden>
+      <div id="khoiGanPage"><div class="empty-state"><span class="skeleton"></span></div></div>
+    </div>
   </section>
 </main>
 
 <script>
+const { esc, text, icon, statusBadge, button, setBusy, alert: canhBao, emptyState, metricRow, toast,
+        confirmDialog, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const so = (n) => Number(n || 0).toLocaleString('vi-VN');
 
-function baoLoi(t){ const o=$('#loi'); o.textContent=t; o.classList.add('hien'); }
-function xoaLoi(){ const o=$('#loi'); o.textContent=''; o.classList.remove('hien'); }
-
-async function goi(duong, tuyChon){
-  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+async function goi(duong, tuyChon) {
+  const r = await fetch(duong, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, ...tuyChon });
   if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   let d = null;
   try { d = await r.json(); } catch { /* để nguyên null */ }
-  if (!r.ok || !d || d.ok === false) {
-    throw new Error((d && d.thongDiep) || `Máy chủ trả ${r.status}.`);
-  }
+  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || `Máy chủ trả ${r.status}.`);
   return d;
 }
 
-/* Vẽ trạng thái rỗng — hai kiểu trông KHÁC HẲN nhau. Không có kiểu thứ ba, và không có
-   đường vẽ một ô trắng: mọi chỗ rỗng của màn này đều phải nói vì sao. */
-function veTrong(t){
-  if (!t) return '';
-  const chua = t.vi === 'chua_cai_dat';
-  const di = chua && t.diTiep
-    ? `<a class="di" href="${esc(t.diTiep.duong || '#')}">${esc(t.diTiep.chu)}</a>` : '';
-  return `<div class="trong ${chua ? 'chua' : 'xong'}">
-    <span class="ic">${chua ? '⚠️' : '✓'}</span>
-    <div>${esc(t.noi)}</div>${di}</div>`;
+// ── BĂNG TIN — cảnh báo của team + lỗi của từng khối, khối nào hỏng nói khối đó ────────
+let CANH = [], LOI = {};
+function veBangTin() {
+  const kh = Object.entries(LOI).map(([k, m]) => canhBao({ level: 'error', title: `Khối «${k}» không tải được`, body: m }));
+  const diTiep = {
+    thieu_marketer: button('Gán marketer', { href: '/page-bot', size: 'sm' }),
+    chua_cau_hinh_model: button('Chọn model', { href: '/model-ai', size: 'sm' }),
+    bot_bat_ma_khong_model: button('Chọn model', { href: '/model-ai', size: 'sm' }),
+  };
+  for (const c of CANH) {
+    kh.push(canhBao({ level: c.muc === 'do' ? 'error' : 'warning', body: c.chu, actionsHtml: diTiep[c.ma] || '' }));
+  }
+  $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
+}
+function baoLoi(khoi, m) { LOI[khoi] = m; veBangTin(); }
+function xoaLoi(khoi) { delete LOI[khoi]; veBangTin(); }
+
+// ── TAB — nhớ trong URL (#thanh-vien…) để F5 không nhảy về tab đầu ───────────────────
+const TEN_TAB = { tv: 'thanh-vien', pos: 'ket-noi-pos', gan: 'chuyen-page' };
+function moTab(ma) {
+  document.querySelectorAll('[data-tab]').forEach((b) => {
+    const dung = b.dataset.tab === ma;
+    b.setAttribute('aria-selected', String(dung));
+    b.tabIndex = dung ? 0 : -1;
+    $('#' + b.getAttribute('aria-controls')).hidden = !dung;
+  });
+  history.replaceState(null, '', '#' + TEN_TAB[ma]);
+}
+document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => moTab(b.dataset.tab)));
+moTab(Object.keys(TEN_TAB).find((k) => '#' + TEN_TAB[k] === location.hash) || 'tv');
+
+/* ─── tổng quan ─── */
+function veTongQuan(t) {
+  const p = t.page;
+  $('#soDo').innerHTML = metricRow([
+    { label: 'Page thuộc team', value: p.tong, hint: `${so(p.trongDiem)} trọng điểm · ${so(t.hoiThoai)} hội thoại` },
+    { label: 'Đang bật bot', value: p.botBat,
+      hint: p.nguonBotBat && p.nguonBotBat.nguon === 'cot_csdl' ? 'Đếm từ bản sao trong CSDL — số thật ở màn Công tắc từng page' : '' },
+    { label: 'Chưa có marketer', value: p.thieuMarketer,
+      statusHtml: p.thieuMarketer ? statusBadge(p.coMarketer === 0 ? 'blocked' : 'needs_attention', { label: `${so(p.thieuMarketer)}/${so(p.tong)} page` }) : '' },
+    { label: 'Model AI', value: t.model.daCauHinh ? `${so(t.model.soDong)} dòng` : '—',
+      statusHtml: t.model.daCauHinh ? statusBadge('ready', { label: 'Đã cấu hình' }) : statusBadge('blocked', { label: 'Chưa cấu hình' }) },
+  ]);
+  CANH = t.canhBao || [];
+  veBangTin();
 }
 
-/* ─── lát 1 ─── */
-function veTongQuan(t){
-  $('#teamHien').textContent = `team #${t.teamId}`;
-  const thieu = t.page.thieuMarketer;
-  $('#soDo').innerHTML = [
-    ['page', so(t.page.tong), 'page thuộc team này', t.page.tong === 0 ? 'canh' : ''],
-    ['bot', so(t.page.botBat), 'page đang bật BOT AI', ''],
-    ['mkt', so(thieu), 'page CHƯA có marketer', thieu > 0 ? (t.page.coMarketer === 0 ? 'xau' : 'canh') : ''],
-    ['hoi', so(t.hoiThoai), 'hội thoại', ''],
-    ['mdl', t.model.daCauHinh ? so(t.model.soDong) : '0', t.model.daCauHinh ? 'dòng cấu hình model' : 'CHƯA cấu hình model', t.model.daCauHinh ? '' : 'xau'],
-    ['tv', so(t.thanhVien), 'dòng cấp quyền', t.thanhVien === 0 ? 'xau' : ''],
-  ].map(([, n, nhan, lop]) => `<div class="o ${lop}"><div class="n">${esc(n)}</div><div class="t">${esc(nhan)}</div></div>`).join('');
+/* ─── thành viên ─── */
+let VAI_HIEN = [], TV = [];
+function veThanhVien(d) {
+  VAI_HIEN = d.vai || []; TV = d.thanhVien || [];
+  $('#demTv').textContent = d.suaDuoc ? `${so(TV.length)} người` : `${so(TV.length)} người · vai của bạn chỉ xem được`;
 
-  $('#canhBao').innerHTML = (t.canhBao || []).map((c) =>
-    `<div class="banner ${c.muc === 'do' ? 'r' : 'o'}">${esc(c.chu)}</div>`).join('');
-}
-
-/* ─── lát 2 ─── */
-let VAI_HIEN = [];
-function veThanhVien(d){
-  VAI_HIEN = d.vai || [];
-  $('#ghiChuVai').textContent = d.suaDuoc ? '' : 'vai của bạn chỉ xem được, không sửa được';
-
-  if (d.trong) { $('#khoiThanhVien').innerHTML = veTrong(d.trong); }
-  else {
-    $('#khoiThanhVien').innerHTML = `<table><thead><tr>
-      <th>Người</th><th>Vai</th><th></th></tr></thead><tbody>${d.thanhVien.map((n) => `
+  if (d.trong) {
+    $('#khoiThanhVien').innerHTML = emptyState({ icon: 'inbox', title: d.trong.noi,
+      actionsHtml: d.trong.diTiep && d.trong.diTiep.duong ? button(d.trong.diTiep.chu, { href: d.trong.diTiep.duong, size: 'sm' }) : '' });
+  } else {
+    $('#khoiThanhVien').innerHTML = `<table class="data-table"><thead><tr>
+        <th scope="col">Người</th><th scope="col">Vai trong team</th><th scope="col">Tài khoản</th>
+      </tr></thead><tbody>${TV.map((n) => `
       <tr>
-        <td data-nhan="Người"><div class="ten">${esc(n.email)}</div>
-          ${n.ten ? `<div class="phu">${esc(n.ten)}</div>` : ''}
-          ${n.hoatDong ? '' : '<div class="phu"><span class="pill r">tài khoản đã khoá</span></div>'}</td>
-        <td data-nhan="Vai">${n.vai.map((v) => `<span class="pill p">${esc(v.ten)}</span>`).join('') || '<span class="pill m">không có vai</span>'}</td>
-        <td data-nhan="">${d.suaDuoc ? n.vai.map((v) =>
-          `<button class="nut nho xoa" data-bot="${esc(n.nguoiDungId)}" data-vai="${esc(v.ma)}"
-             title="Rút vai ${esc(v.ten)}">Rút ${esc(v.ten)}</button>`).join(' ') : ''}</td>
+        <td><div class="manh">${esc(n.ten || n.email)}</div>${n.ten ? `<div class="meta">${esc(n.email)}</div>` : ''}</td>
+        <td><div class="chip-list">${n.vai.length ? n.vai.map((v) => `<span class="chip">${esc(v.ten)}${d.suaDuoc
+          ? `<button type="button" data-rut="${esc(n.nguoiDungId)}" data-vai="${esc(v.ma)}" aria-label="Rút vai ${esc(v.ten)} của ${esc(n.email)}" title="Rút vai ${esc(v.ten)}">${icon('x')}</button>` : ''}</span>`).join('')
+          : '<span class="text-muted">Không có vai</span>'}</div></td>
+        <td>${statusBadge(n.hoatDong ? 'feature_on' : 'blocked', { label: n.hoatDong ? 'Hoạt động' : 'Đã khoá' })}</td>
       </tr>`).join('')}</tbody></table>`;
   }
 
-  const oThem = $('#themThanhVien');
-  oThem.style.display = d.suaDuoc ? '' : 'none';
+  $('#themThanhVien').hidden = !d.suaDuoc;
   if (d.suaDuoc) {
-    const chon = (d.nguoiChonDuoc || []);
+    const chon = d.nguoiChonDuoc || [];
     $('#chonNguoi').innerHTML = chon.length
       ? chon.map((n) => `<option value="${esc(n.nguoiDungId)}">${esc(n.email)}${n.daO ? ' (đã ở team)' : ''}</option>`).join('')
-      : '<option value="">— không có tài khoản nào —</option>';
+      : '<option value="">Không có tài khoản nào</option>';
     $('#chonVai').innerHTML = VAI_HIEN.map((v) => `<option value="${esc(v.ma)}">${esc(v.ten)}</option>`).join('');
     $('#nutThem').disabled = !chon.length;
   }
-
-  document.querySelectorAll('[data-bot]').forEach((b) => b.addEventListener('click', () => rut(b.dataset.bot, b.dataset.vai)));
+  document.querySelectorAll('[data-rut]').forEach((b) => b.addEventListener('click', () => rut(b.dataset.rut, b.dataset.vai)));
 }
 
-async function rut(nguoiDungId, maVai){
+async function rut(nguoiDungId, maVai) {
   const ten = (VAI_HIEN.find((v) => v.ma === maVai) || {}).ten || maVai;
-  if (!confirm(`Rút vai "${ten}" của người này khỏi team?`)) return;
-  xoaLoi();
+  const nguoi = (TV.find((n) => n.nguoiDungId === nguoiDungId) || {}).email || 'người này';
+  const dongY = await confirmDialog({
+    title: `Rút vai «${ten}» của ${nguoi}?`,
+    body: 'Người này mất ngay quyền của vai đó trong team. Các vai khác của họ giữ nguyên. Lượt rút được ghi nhật ký.',
+    confirmLabel: 'Rút vai', danger: true,
+  });
+  if (!dongY) return;
   try {
-    await goi('/api/team/thanh-vien', { method:'DELETE', body: JSON.stringify({ nguoiDungId, maVai }) });
+    await goi('/api/team/thanh-vien', { method: 'DELETE', body: JSON.stringify({ nguoiDungId, maVai }) });
+    xoaLoi('thành viên');
+    toast(`Đã rút vai «${ten}» của ${nguoi}.`);
     await napThanhVien(); await napTongQuan();
-  } catch (e) { baoLoi(e.message); }
+  } catch (e) { baoLoi('thành viên', e.message); }
 }
 
 $('#nutThem').addEventListener('click', async () => {
   const nguoiDungId = $('#chonNguoi').value;
   const maVai = $('#chonVai').value;
   if (!nguoiDungId) return;
-  xoaLoi();
-  $('#nutThem').disabled = true;
+  const nut = $('#nutThem');
+  setBusy(nut, true);
   try {
-    const kq = await goi('/api/team/thanh-vien', { method:'POST', body: JSON.stringify({ nguoiDungId, maVai }) });
-    if (kq.daCo) baoLoi('Người này đã có sẵn vai đó trong team — không thêm gì cả.');
+    const kq = await goi('/api/team/thanh-vien', { method: 'POST', body: JSON.stringify({ nguoiDungId, maVai }) });
+    xoaLoi('thành viên');
+    toast(kq.daCo ? 'Người này đã có sẵn vai đó — không thêm gì.' : 'Đã cấp vai.');
     await napThanhVien(); await napTongQuan();
-  } catch (e) { baoLoi(e.message); }
-  finally { $('#nutThem').disabled = false; }
+  } catch (e) { baoLoi('thành viên', e.message); }
+  finally { setBusy(nut, false); }
 });
 
-/* ─── lát 3 ─── */
-function veKetNoi(d){
-  if (d.trong) { $('#khoiKetNoi').innerHTML = veTrong(d.trong); return; }
-  $('#khoiKetNoi').innerHTML = `<table><thead><tr>
-    <th>Thị trường</th><th>Shop POS</th><th>Trạng thái</th></tr></thead><tbody>${d.pos.map((k) => `
-    <tr><td data-nhan="Thị trường"><span class="ten">${esc(k.market)}</span></td>
-      <td data-nhan="Shop POS"><span class="phu">${esc(k.shopId)}</span></td>
-      <td data-nhan="Trạng thái">${k.bat ? '<span class="pill g">đang bật</span>' : '<span class="pill m">đã tắt</span>'}</td>
+/* ─── kết nối POS ─── */
+function veKetNoi(d) {
+  if (d.trong) {
+    $('#khoiKetNoi').innerHTML = emptyState({ icon: 'inbox', title: d.trong.noi,
+      actionsHtml: d.trong.diTiep && d.trong.diTiep.duong ? button(d.trong.diTiep.chu, { href: d.trong.diTiep.duong, size: 'sm' }) : '' });
+    return;
+  }
+  $('#khoiKetNoi').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Thị trường</th><th scope="col">Shop POS</th><th scope="col">Trạng thái</th>
+    </tr></thead><tbody>${d.pos.map((k) => `
+    <tr><td class="manh">${esc(k.market)}</td>
+      <td><code>${esc(k.shopId)}</code></td>
+      <td>${statusBadge(k.bat ? 'feature_on' : 'feature_off', { label: k.bat ? 'Đang bật' : 'Đã tắt' })}</td>
     </tr>`).join('')}</tbody></table>`;
 }
 
-/* ─── lát 4 · gán page ↔ team ─── */
-let TIM_PAGE = '';
+/* ─── chuyển page ↔ team ─── */
+let TIM_PAGE = '', G = null;
 
-function veGanPage(d){
+function veGanPage(d) {
+  G = d;
   const g = d.ganPage;
   if (!g.moDuoc) {
-    // Chưa nối dây thì hiện MỜ kèm lý do — không giấu đi, để người ta biết đang đợi gì.
-    $('#khoiGanPage').innerHTML = `<div class="chan">
-      <b>Chưa mở được.</b> ${esc(g.lyDo || '')}
-      <div style="margin-top:9px">Team này đang có <b>${so(g.soPageTeamNay)}</b> page. ${esc(g.ghiChu)}</div>
-    </div>`;
+    // Chưa nối dây thì hiện kèm lý do — không giấu đi, để người ta biết đang đợi gì (mục O).
+    $('#khoiGanPage').innerHTML = `<div class="panel"><div class="feature-row" data-state="off">
+      <div><div class="feature-name">Chuyển page sang team khác</div>
+        <div class="feature-desc">Team này đang có ${so(g.soPageTeamNay)} page. ${text(g.ghiChu || '')}</div>
+        ${g.lyDo ? `<div class="feature-reason">${text(g.lyDo)}</div>` : ''}</div>
+      ${statusBadge('feature_unavailable')}</div></div>`;
     return;
   }
   if (!d.teamDich.length) {
-    $('#khoiGanPage').innerHTML = veTrong({ vi: 'chua_cai_dat',
-      noi: 'Không có team nào khác để chuyển sang — hệ thống chỉ có một team nghiệp vụ.',
-      diTiep: { chu: 'Xem lại danh sách team', duong: '/chon-team' } });
+    $('#khoiGanPage').innerHTML = `<div class="panel">${emptyState({ icon: 'inbox',
+      title: 'Không có team nào khác để chuyển sang', body: 'Hệ thống chỉ có một team nghiệp vụ.',
+      actionsHtml: button('Xem danh sách team', { href: '/chon-team', size: 'sm' }) })}</div>`;
     return;
   }
 
   $('#khoiGanPage').innerHTML = `
-    <div class="phu">Team này đang có <b>${so(g.soPageTeamNay)}</b> page. Chuyển tối đa
-      <b>${d.toiDaMotMe}</b> page mỗi lần.</div>
-    <input class="tim" id="timPage" type="search" placeholder="Lọc page theo tên, id Facebook, thị trường…"
-           value="${esc(TIM_PAGE)}" style="margin-top:8px" />
-    <div class="hang" style="margin-top:8px">
-      <button class="nut nho" id="chonHet">Chọn hết ${d.page.length} page đang hiện</button>
-      <button class="nut nho" id="boChon">Bỏ chọn</button>
-      <span class="phu" id="demChon">chưa chọn page nào</span>
+    <div class="duoi-4">${canhBao({ level: 'warning', title: 'Chuyển page là đổi chủ dữ liệu',
+      body: `Hội thoại, kịch bản và sản phẩm của page đi theo sang team mới; team này sẽ không còn thấy chúng. Tối đa ${so(d.toiDaMotMe)} page mỗi lần.` })}</div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <label for="timPage" class="sr-only">Lọc page</label>
+        <input id="timPage" type="search" placeholder="Tên page, id Facebook, thị trường…" value="${esc(TIM_PAGE)}" autocomplete="off">
+        <span class="table-count">${d.soKhop === d.soTong ? `${so(d.soTong)} page` : `${so(d.soKhop)}/${so(d.soTong)} page khớp`}</span>
+      </div>
+      ${d.page.length ? `<table class="data-table"><thead><tr>
+          <th scope="col" class="check"><input type="checkbox" id="chonHet" aria-label="Chọn hết ${so(d.page.length)} page đang hiện"></th>
+          <th scope="col">Page</th><th scope="col">Thị trường</th><th scope="col">Bot</th>
+        </tr></thead><tbody id="dsPage">${d.page.map((p) => `
+        <tr>
+          <td class="check"><input type="checkbox" value="${esc(p.id)}" id="cp-${esc(p.id)}"></td>
+          <td><label for="cp-${esc(p.id)}"><span class="option-title">${esc(p.ten || '(chưa có tên)')}</span>
+            <span class="option-meta">${esc(p.pageId)}</span></label></td>
+          <td class="meta">${esc(p.thiTruong || '—')}</td>
+          <td>${statusBadge(p.botAiBat ? 'bot_on' : 'bot_off')}</td>
+        </tr>`).join('')}</tbody></table>`
+        : emptyState({ icon: 'search', title: 'Không page nào khớp', body: 'Xoá chữ trong ô lọc để xem lại tất cả.' })}
+      ${d.catBot ? `<div class="pagination"><span>Còn ${so(d.catBot)} page không hiện — gõ vào ô lọc để thu hẹp (danh sách cắt ở 200 dòng).</span></div>` : ''}
+      <div class="table-footer">
+        <span class="text-muted tabular" id="demChon" aria-live="polite">Chưa chọn page nào</span>
+        <span class="gian"></span>
+        <label for="teamDich" class="text-muted">Chuyển sang</label>
+        <select id="teamDich">${d.teamDich.map((t) => `<option value="${esc(t.teamId)}">${esc(t.ten)}</option>`).join('')}</select>
+        ${button('Chuyển page đã chọn', { variant: 'danger', id: 'nutChuyen', disabled: true })}
+      </div>
     </div>
-    <div class="chon-page" id="dsPage">${d.page.map((p) => `
-      <label><input type="checkbox" value="${esc(p.id)}" />
-        <span><span class="n">${esc(p.ten || '(chưa có tên)')}</span>
-          <span class="phu">${esc(p.pageId)}${p.thiTruong ? ' · ' + esc(p.thiTruong) : ''}${p.botAiBat ? ' · <span class="pill g">bot BẬT</span>' : ''}</span>
-        </span></label>`).join('')}</div>
-    ${d.catBot ? `<div class="phu" style="margin-top:6px">Còn ${so(d.catBot)} page nữa không hiện —
-      gõ vào ô lọc để thu hẹp. Danh sách cắt ở 200 dòng cho đỡ nặng.</div>` : ''}
-    <div class="hang" style="margin-top:11px">
-      <select id="teamDich" aria-label="Team đích">
-        ${d.teamDich.map((t) => `<option value="${esc(t.teamId)}">${esc(t.ten)}</option>`).join('')}
-      </select>
-      <button class="nut" id="nutChuyen" ${d.suaDuoc ? '' : 'disabled'}>Chuyển sang team này</button>
-    </div>
-    ${d.suaDuoc ? '' : '<div class="phu" style="margin-top:6px">Vai của bạn chỉ xem được.</div>'}
-    <div id="kqChuyen"></div>`;
+    ${d.suaDuoc ? '' : '<p class="page-note">Vai của bạn chỉ xem được.</p>'}
+    <div id="kqChuyen" class="tren-4"></div>`;
 
-  const ds = $('#dsPage');
+  const dsChon = () => [...document.querySelectorAll('#dsPage input:checked')];
   const demChon = () => {
-    const n = ds.querySelectorAll('input:checked').length;
-    $('#demChon').textContent = n ? `đã chọn ${so(n)} page` : 'chưa chọn page nào';
+    const n = dsChon().length;
+    $('#demChon').textContent = n ? `Đã chọn ${so(n)} page` : 'Chưa chọn page nào';
+    $('#nutChuyen').disabled = !n || !d.suaDuoc;
+    const het = $('#chonHet');
+    if (het) { const tong = document.querySelectorAll('#dsPage input').length; het.checked = n > 0 && n === tong; het.indeterminate = n > 0 && n < tong; }
   };
-  ds.addEventListener('change', demChon);
-  $('#chonHet').addEventListener('click', () => {
-    ds.querySelectorAll('input').forEach((c) => { c.checked = true; }); demChon();
-  });
-  $('#boChon').addEventListener('click', () => {
-    ds.querySelectorAll('input').forEach((c) => { c.checked = false; }); demChon();
+  if ($('#dsPage')) $('#dsPage').addEventListener('change', demChon);
+  if ($('#chonHet')) $('#chonHet').addEventListener('change', (e) => {
+    document.querySelectorAll('#dsPage input').forEach((c) => { c.checked = e.target.checked; }); demChon();
   });
   let henP = null;
   $('#timPage').addEventListener('input', (e) => {
     clearTimeout(henP);
-    henP = setTimeout(() => { TIM_PAGE = e.target.value.trim(); napGanPage(); }, 250);
+    henP = setTimeout(() => { TIM_PAGE = e.target.value.trim(); napGanPage().then(() => { const o = $('#timPage'); o.focus(); o.setSelectionRange(o.value.length, o.value.length); }); }, 250);
   });
   $('#nutChuyen').addEventListener('click', chuyen);
 }
 
-async function chuyen(){
+async function chuyen() {
   const ds = [...document.querySelectorAll('#dsPage input:checked')].map((c) => c.value);
-  if (!ds.length) { baoLoi('Chưa chọn page nào.'); return; }
+  if (!ds.length) return;
   const oTeam = $('#teamDich');
   const tenTeam = oTeam.options[oTeam.selectedIndex].textContent.trim();
   // Hỏi lại và nói RÕ hệ quả: đây là đổi chủ dữ liệu, không phải một cờ hiển thị.
-  if (!confirm(`Chuyển ${ds.length} page sang team "${tenTeam}"?\n\n`
-    + 'Hội thoại, kịch bản và sản phẩm của những page đó sẽ đi theo sang team mới.\n'
-    + 'Team hiện tại sẽ KHÔNG còn nhìn thấy chúng.')) return;
-
-  xoaLoi();
-  $('#nutChuyen').disabled = true;
-  $('#nutChuyen').textContent = 'Đang chuyển…';
+  const dongY = await confirmDialog({
+    title: `Chuyển ${so(ds.length)} page sang team «${tenTeam}»?`,
+    body: 'Hội thoại, kịch bản và sản phẩm của những page đó sẽ đi theo sang team mới. Team hiện tại sẽ KHÔNG còn nhìn thấy chúng.',
+    confirmLabel: 'Chuyển page', danger: true,
+  });
+  if (!dongY) return;
+  const nut = $('#nutChuyen');
+  setBusy(nut, true);
   try {
     const kq = await goi('/api/team/gan-page', { method: 'POST',
       body: JSON.stringify({ pageIds: ds, teamDichId: oTeam.value, lyDo: `chuyển sang ${tenTeam}` }) });
+    xoaLoi('chuyển page');
+    await napGanPage();
     veKetQuaChuyen(kq, tenTeam);
     await napTongQuan();
-  } catch (e) { baoLoi(e.message); }
-  finally { $('#nutChuyen').disabled = false; $('#nutChuyen').textContent = 'Chuyển sang team này'; }
+  } catch (e) { baoLoi('chuyển page', e.message); setBusy(nut, false); }
 }
 
-function veKetQuaChuyen(kq, tenTeam){
-  const con = Object.entries(kq.daChuyen || {}).filter(([, n]) => n > 0);
+function veKetQuaChuyen(kq, tenTeam) {
+  const di = Object.entries(kq.daChuyen || {}).filter(([, n]) => n > 0);
   const lai = Object.entries(kq.boLai || {}).filter(([, n]) => n > 0);
   const hong = kq.ketQua.filter((r) => !r.xong);
-  // Hiện CẢ phần xong lẫn phần hỏng. Gộp thành một chữ "lỗi" là lấy mất thứ người ta cần.
-  $('#kqChuyen').innerHTML = `<div class="kq ${hong.length ? 'o' : 'g'}">
-    <b>Chuyển xong ${so(kq.soXong)}/${so(kq.soChon)} page sang "${esc(tenTeam)}".</b>
-    ${con.length ? `<div>Đi theo: ${con.map(([b, n]) => `${so(n)} ${esc(b)}`).join(' · ')}</div>` : ''}
-    ${lai.length ? `<div>Cố ý ở lại team cũ: ${lai.map(([b, n]) => `${so(n)} ${esc(b)}`).join(' · ')}
-      <span class="phu">(số liệu lịch sử — xem PHIEU-B-Y3 mục ⑧)</span></div>` : ''}
-    ${hong.length ? `<div>Không chuyển được ${so(hong.length)} page:<ul>${
-      hong.slice(0, 8).map((r) => `<li>page ${esc(r.pageId)}: ${esc(r.loi)}</li>`).join('')}</ul></div>` : ''}
-  </div>`;
+  // Hiện CẢ phần xong lẫn phần hỏng. Gộp thành một chữ «lỗi» là lấy mất thứ người ta cần.
+  $('#kqChuyen').innerHTML = canhBao({
+    level: hong.length ? 'warning' : 'success',
+    title: `Chuyển xong ${so(kq.soXong)}/${so(kq.soChon)} page sang «${tenTeam}»`,
+    body: [di.length ? `Đi theo: ${di.map(([b, n]) => `${so(n)} ${b}`).join(' · ')}.` : '',
+           lai.length ? `Cố ý ở lại team cũ (số liệu lịch sử): ${lai.map(([b, n]) => `${so(n)} ${b}`).join(' · ')}.` : ''].filter(Boolean).join(' '),
+    detail: hong.slice(0, 8).map((r) => `page ${r.pageId}: ${r.loi}`),
+  });
 }
 
 /* ─── nạp ─── */
-async function napTongQuan(){ const d = await goi('/api/team/tong-quan'); if (d) veTongQuan(d.tongQuan); }
-async function napThanhVien(){ const d = await goi('/api/team/thanh-vien'); if (d) veThanhVien(d); }
-async function napKetNoi(){ const d = await goi('/api/team/ket-noi'); if (d) veKetNoi(d); }
-async function napGanPage(){
-  const d = await goi('/api/team/gan-page?tim=' + encodeURIComponent(TIM_PAGE));
-  if (d) veGanPage(d);
-}
+async function napTongQuan() { const d = await goi('/api/team/tong-quan'); if (d) veTongQuan(d.tongQuan); }
+async function napThanhVien() { const d = await goi('/api/team/thanh-vien'); if (d) veThanhVien(d); }
+async function napKetNoi() { const d = await goi('/api/team/ket-noi'); if (d) veKetNoi(d); }
+async function napGanPage() { const d = await goi('/api/team/gan-page?tim=' + encodeURIComponent(TIM_PAGE)); if (d) veGanPage(d); }
 
-(async function nap(){
+(async function nap() {
   // Nạp từng khối riêng: một khối hỏng thì ba khối kia vẫn hiện. Gộp `Promise.all` rồi để
   // một lỗi làm trắng cả trang là đúng thứ màn này sinh ra để chống.
-  for (const [ten, fn] of [['tổng quan', napTongQuan], ['thành viên', napThanhVien],
-                           ['kết nối', napKetNoi], ['gán page', napGanPage]]) {
-    try { await fn(); } catch (e) { baoLoi(`Khối "${ten}" hỏng: ${e.message}`); }
+  const khoi = [['tổng quan', napTongQuan, null], ['thành viên', napThanhVien, '#khoiThanhVien'],
+                ['kết nối POS', napKetNoi, '#khoiKetNoi'], ['chuyển page', napGanPage, '#khoiGanPage']];
+  for (const [ten, fn, cho] of khoi) {
+    try { await fn(); } catch (e) {
+      baoLoi(ten, e.message);
+      if (cho) $(cho).innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Xem cảnh báo đầu trang.' });
+    }
   }
 })();
 </script>
