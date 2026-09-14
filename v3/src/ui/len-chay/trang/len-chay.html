@@ -3,70 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Đưa sản phẩm mới lên chạy — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  .nguy{background:var(--loi-nen);border:1px solid var(--loi-vien);border-left:4px solid var(--bad);
-        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
-  .nguy b{color:var(--loi-chu)}
-  select{font:inherit;padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--nen);
-         color:var(--ink);max-width:100%}
-
-  .duong{display:grid;gap:9px;position:relative}
-  .c{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;
-     padding:12px 14px;background:var(--nen);display:flex;gap:13px;align-items:flex-start}
-  .c.xong{border-left-color:var(--ok);background:#fbfefc}
-  .c.dang-do{border-left-color:var(--warn);background:#fffdf8}
-  .c.chua{border-left-color:var(--vien-dam)}
-  .c.khong-co-o{border-left-color:var(--bad);background:#fff6f6}
-  .c.khong-biet{border-left-color:var(--xam);background:var(--nen-2)}
-
-  .c .n{width:30px;height:30px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;
-        justify-content:center;font-weight:700;font-size:13px;background:#eef1f4;color:#475467}
-  .c.xong .n{background:var(--okSoft);color:var(--dat-chu)}
-  .c.dang-do .n{background:var(--warnSoft);color:var(--luu-chu)}
-  .c.khong-co-o .n{background:var(--badSoft);color:var(--loi-chu)}
-  .c .t{flex:1;min-width:0}
-  .c .ten{font-weight:600;margin-bottom:2px}
-  .c .noi{color:var(--muted);font-size:12px;line-height:1.55}
-  .c .lam{margin-top:6px;font-size:12px;line-height:1.6;background:#f7f9fa;border-radius:8px;padding:8px 10px}
-  .c.khong-co-o .lam{background:var(--loi-nen);color:var(--loi-chu)}
-  .c .di{margin-top:8px}
-  .c .di a{display:inline-block;background:var(--pri);color:var(--nen);text-decoration:none;
-           padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600}
-
-  .tt{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-left:6px}
-  .tt.xong{background:var(--okSoft);color:var(--dat-chu)}
-  .tt.dang-do{background:var(--warnSoft);color:var(--luu-chu)}
-  .tt.chua{background:var(--nen-3);color:var(--muted)}
-  .tt.khong-co-o{background:var(--badSoft);color:var(--loi-chu)}
-  .tt.khong-biet{background:var(--nen-3);color:var(--xam)}
-
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:var(--nen-2)}
-  tbody tr:last-child td{border-bottom:0}
-  .bao{display:block;overflow-x:auto}
-  .co{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
-  .co.k{background:var(--badSoft);color:var(--loi-chu)}
-  .co.c{background:var(--okSoft);color:var(--dat-chu)}
-  .co.n{background:var(--warnSoft);color:var(--luu-chu)}
-
-  .nho{color:var(--muted);font-size:11.5px;line-height:1.5}
-  code{background:var(--nen-3);padding:1px 5px;border-radius:4px;font-size:11.5px;
-       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-
-  @media (max-width:720px){
-    .than{padding:12px} th,td{padding:8px 9px}
-    .c{padding:11px 12px;gap:10px}
-  }
-</style>
+<title>Đưa sản phẩm lên chạy — AI Closer</title>
+<!-- Dựng trên hệ kiểu. KHÔNG CSS riêng — trước lượt này là 53 dòng.
+     ⚠️ LUẬT RIÊNG: màn này CHỈ ĐỌC và tuyệt đối KHÔNG có ô nhập nào — ba chất liệu của chặng
+        2 chưa có trường nào để chứa, nên vẽ một ô nhập là hứa một chỗ chứa không tồn tại:
+        người ta gõ vào, bấm lưu, chữ đi vào hư không, rồi tưởng chặng 2 đã xong.
+        Ca ①d của `len-chay.test.mjs` canh điều đó bằng cách soi CẢ TỆP, kể cả chú thích —
+        nên ngay cả dòng này cũng không được gõ tên thẻ ô nhập ra. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -74,113 +18,124 @@
 <body>
 <header>
   <h1>Đưa sản phẩm lên chạy</h1>
-  <span class="sub" id="hTeam">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Sáu chặng từ «có hàng» tới «bot bán được». Màn này chỉ đọc — mỗi chặng có màn riêng để làm.</span>
 </header>
 
 <main>
-  <div id="dai"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <div class="panel">
-    <h2>Chọn page <span class="hint">sáu chặng của page đó</span></h2>
-    <div class="than"><select id="chon"><option>Đang tải…</option></select></div>
-  </div>
+  <section class="section panel" aria-labelledby="tieu-chon">
+    <div class="section-header"><h2 id="tieu-chon">Chọn page</h2>
+      <span class="text-muted text-sm" id="dungLai"></span></div>
+    <label for="chon" class="sr-only">Page</label>
+    <select id="chon"><option>Đang tải…</option></select>
+  </section>
 
-  <div class="panel">
-    <h2 id="tieuDe">Sáu chặng</h2>
-    <div id="chang"><div class="than nho">Chọn một page ở trên.</div></div>
-  </div>
+  <section class="section" aria-labelledby="tieuDe">
+    <div class="section-header"><h2 id="tieuDe">Sáu chặng</h2>
+      <span class="text-muted text-sm" id="toiChang"></span></div>
+    <ul class="item-list" id="chang"><li class="item"><div class="item-desc">Chọn một page ở trên.</div></li></ul>
+  </section>
 
-  <div class="panel">
-    <h2>Năm chất liệu của chặng 2 <span class="hint">chỗ nào có nhà, chỗ nào chưa</span></h2>
-    <div class="than"><div class="bao"><table id="cl"></table></div></div>
-  </div>
+  <section class="section table-wrap" aria-labelledby="tieu-cl">
+    <div class="table-toolbar"><h2 id="tieu-cl">Năm chất liệu của chặng 2</h2>
+      <span class="table-count">Chỗ nào có nhà, chỗ nào chưa</span></div>
+    <div id="cl"></div>
+  </section>
 </main>
 
 <script>
+const { esc, text, statusBadge, button, alert: canhBao, emptyState, formatNumber } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const CHU = { xong: 'xong', 'dang-do': 'đang dở', chua: 'chưa làm',
-  'khong-co-o': 'KHÔNG CÓ CHỖ CHỨA', 'khong-biet': 'chưa đọc được' };
+// Năm trạng thái chặng → ánh xạ trạng thái tập trung. «Không có chỗ chứa» là CHẶN, không
+// phải «chưa làm»: không ai làm được nó bằng cách cố gắng hơn.
+const MA = { xong: 'check_done', 'dang-do': 'needs_attention', chua: 'unknown',
+             'khong-co-o': 'blocked', 'khong-biet': 'unknown' };
+const CHU = { xong: 'Xong', 'dang-do': 'Đang dở', chua: 'Chưa làm',
+              'khong-co-o': 'Không có chỗ chứa', 'khong-biet': 'Chưa đọc được' };
 
 let DL = null;
 
 async function goi(d) {
-  const r = await fetch(d, { credentials: 'same-origin' });
+  const r = await fetch(d, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   const j = await r.json().catch(() => null);
-  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Lỗi ' + r.status);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Máy chủ trả ' + r.status + '.');
   return j;
 }
 
 function veChatLieu(ds) {
-  $('#cl').innerHTML = `
-    <thead><tr><th>Chất liệu</th><th>Chỗ chứa</th><th></th></tr></thead>
-    <tbody>${ds.map((x) => `
-      <tr>
-        <td><b>${esc(x.ten)}</b></td>
-        <td>${x.o
-          ? `<span class="co ${x.ma === 'bo_phan_doi' ? 'n' : 'c'}">${esc(x.o)}</span>`
-          : '<span class="co k">KHÔNG CÓ TRƯỜNG NÀO</span>'}</td>
-        <td class="nho">${esc(x.noi)}</td>
-      </tr>`).join('')}</tbody>`;
+  $('#cl').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Chất liệu</th><th scope="col">Chỗ chứa</th><th scope="col">Là gì</th>
+    </tr></thead><tbody>${ds.map((x) => `
+    <tr>
+      <td class="manh">${esc(x.ten)}</td>
+      <td>${x.o
+        ? `<code>${esc(x.o)}</code>`
+        : statusBadge('blocked', { label: 'Không có trường nào' })}</td>
+      <td class="meta">${text(x.noi)}</td>
+    </tr>`).join('')}</tbody></table>`;
 }
 
 function veChang(d) {
-  $('#tieuDe').innerHTML = `<b>${esc(d.ten)}</b>
-    <span class="hint">đi được tới chặng ${d.toiChang}/6</span>
-    ${d.dungLaiO ? `<span class="sp"></span><span class="hint">dừng ở chặng ${d.dungLaiO.so} · ${esc(d.dungLaiO.ten)}</span>` : ''}`;
+  $('#tieuDe').textContent = `Sáu chặng của ${d.ten}`;
+  $('#toiChang').textContent = `Đi được tới chặng ${d.toiChang}/6`
+    + (d.dungLaiO ? ` · dừng ở chặng ${d.dungLaiO.so}: ${d.dungLaiO.ten}` : '');
 
-  $('#chang').innerHTML = `<div class="than"><div class="duong">${d.chang.map((c) => `
-    <div class="c ${esc(c.trangThai)}">
-      <div class="n">${c.so}</div>
-      <div class="t">
-        <div class="ten">${esc(c.ten)}<span class="tt ${esc(c.trangThai)}">${esc(CHU[c.trangThai] || c.trangThai)}</span>
-          ${c.soDo != null ? `<span class="nho"> — ${c.soDo} ${esc(c.donVi || '')}</span>` : ''}</div>
-        <div class="noi">${esc(c.noi)}</div>
-        ${c.lam ? `<div class="lam">${esc(c.lam)}</div>` : ''}
-        ${c.di ? `<div class="di"><a href="${esc(c.di)}">Làm chặng này →</a></div>` : ''}
-      </div>
-    </div>`).join('')}</div></div>`;
+  $('#chang').innerHTML = d.chang.map((c) => `<li class="item">
+    <div class="item-lead"${c.trangThai === 'xong' ? '' : ' data-muted'}>${c.so}</div>
+    <div>
+      <div class="item-title">${esc(c.ten)}${c.soDo != null ? ` <span class="meta">· ${formatNumber(c.soDo)} ${esc(c.donVi || '')}</span>` : ''}</div>
+      <div class="item-desc">${text(c.noi)}</div>
+      ${c.lam ? `<div class="item-detail">Việc cần làm: ${text(c.lam)}</div>` : ''}
+    </div>
+    <div class="item-trail">
+      ${statusBadge(MA[c.trangThai] || 'unknown', { label: CHU[c.trangThai] || c.trangThai })}
+      ${c.di ? button('Làm chặng này', { href: c.di, size: 'sm' }) : ''}
+    </div>
+  </li>`).join('');
 }
 
 async function moPage(id) {
   if (!id) return;
-  $('#chang').innerHTML = '<div class="than nho">Đang đọc sáu chặng…</div>';
+  $('#chang').innerHTML = '<li class="item"><div><span class="skeleton"></span></div></li>';
   try {
-    veChang(await goi('/api/len-chay/' + encodeURIComponent(id)));
+    const d = await goi('/api/len-chay/' + encodeURIComponent(id));
+    if (d) veChang(d);
   } catch (e) {
-    $('#chang').innerHTML = `<div class="than"><div class="nguy" style="margin:0">${esc(e.message)}</div></div>`;
+    $('#chang').innerHTML = `<li class="item"><div>${emptyState({ icon: 'circle-alert',
+      title: 'Không đọc được sáu chặng của page này', body: e.message })}</div></li>`;
   }
 }
 
 async function tai() {
   try {
     DL = await goi('/api/len-chay');
-    $('#hTeam').textContent = 'team ' + (DL.teamId || '?');
+    if (!DL) return;
 
     if (DL.chan2) {
-      $('#dai').innerHTML = `<div class="nguy">
-        <b>Mọi page đều dừng ở chặng 2, và không page nào tự gỡ được.</b><br>${esc(DL.chan2.noi)}
-        <div class="nho" style="margin-top:7px;color:#7f1d1d">
-          Đây <b>không phải</b> ô để trống — là ô không tồn tại. Màn này cố ý KHÔNG vẽ ô nhập
-          cho «động cơ»: gõ vào một ô không có chỗ chứa thì chữ đi vào hư không.</div></div>`;
+      $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error',
+        title: 'Mọi page đều dừng ở chặng 2, và không page nào tự gỡ được',
+        body: DL.chan2.noi,
+        detail: ['Đây KHÔNG phải ô để trống — là ô không tồn tại. Màn này cố ý không vẽ ô nhập cho «động cơ»: gõ vào một ô không có chỗ chứa thì chữ đi vào hư không.'] })}</div>`;
     }
     veChatLieu(DL.chatLieu || []);
 
     const s = $('#chon');
     if (!DL.page.length) {
-      s.innerHTML = '<option>— chưa có page nào —</option>';
-      $('#chang').innerHTML = `<div class="than nho">${esc(DL.trong ? DL.trong.diTiep : '')}</div>`;
+      s.innerHTML = '<option>Chưa có page nào</option>';
+      $('#chang').innerHTML = `<li class="item"><div>${emptyState({ icon: 'inbox',
+        title: 'Team này chưa có page nào', body: DL.trong ? DL.trong.diTiep : '' })}</div></li>`;
       return;
     }
-    s.innerHTML = '<option value="">— chọn page —</option>'
+    s.innerHTML = '<option value="">— Chọn page —</option>'
       + DL.page.map((p) => `<option value="${esc(p.pageId)}">${esc(p.ten)}</option>`).join('');
     s.onchange = () => moPage(s.value);
   } catch (e) {
-    $('#chang').innerHTML = `<div class="than"><div class="nguy" style="margin:0">${esc(e.message)}</div></div>`;
+    $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được sáu chặng', body: e.message })}</div>`;
+    $('#chang').innerHTML = `<li class="item"><div>${emptyState({ icon: 'circle-alert',
+      title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' })}</div></li>`;
   }
 }
 
