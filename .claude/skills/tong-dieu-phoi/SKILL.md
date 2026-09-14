@@ -86,11 +86,15 @@ phiếu. BẢNG trạng thái sổ do TỔNG sửa."_
 
 ## Gate cuối sóng
 
-- Gate NHỎ (R0, RN): tổng tự chạy tuần tự — CI cây gộp · 2 lượt full pytest (KHÔNG lượt thứ
-  hai nào chạy song song — DB test dùng chung) · toàn bộ `ops/bin/nghiem-thu/*.sh` của sóng ·
-  smoke.
+- Gate NHỎ (R0, RN): tổng tự chạy tuần tự — **2 lượt `npm test` đầy đủ** (KHÔNG lượt thứ
+  hai nào chạy song song — DB test dùng chung) · toàn bộ `ops/bin/nghiem-thu/*.sh` của sóng
+  (**rc đo TÁCH DÒNG** từng cổng — `npm test` KHÔNG chạy các cổng này) · smoke.
+  CI có từ 11/09: `.github/workflows/kiem.yml` (cổng TĨNH — chạy mỗi lần push, KHÔNG cần CSDL)
+  và `bo-ca.yml` (bộ ca đầy đủ trên Postgres 16, chạy TAY). ⚠️ «CI xanh» chỉ được nói khi biết
+  ĐANG NÓI WORKFLOW NÀO: `kiem.yml` xanh KHÔNG có nghĩa bộ ca xanh. Và cổng nghiệm thu
+  (`ops/bin/nghiem-thu/*.sh`) tới nay VẪN chưa workflow nào chạy — phần đó còn là tổng tự chạy tay.
 - Gate LỚN (R1 mở van · R3 · R5): dùng **Workflow** (CEO đã opt-in 17/08) — fan-out kiểm song
-  song: CI · full pytest · từng script nghiệm thu · smoke · adversarial-verify các finding còn
+  song: `npm test` · từng script nghiệm thu · smoke · adversarial-verify các finding còn
   mở; gom về một bảng. Trình CEO bản 10 dòng; CEO gật mới sang sóng; **mỗi gate kết bằng một
   lượt push + deploy** (CEO gật — luật 12).
 

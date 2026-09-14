@@ -62,17 +62,26 @@ Mày nhận ĐÚNG MỘT PHIẾU. Phiếu là hợp đồng; sổ là trạng th
 13. **Thấy mâu thuẫn/tradeoff thì NÓI RA**, đừng lặng lẽ chọn một bên — một dòng nhật ký:
     "chọn A thay B vì X, giá phải trả là Y".
 14. **Trước khi khai xong/xanh: chạy lại lệnh, dán bằng chứng** — khuôn đầy đủ ở skill
-    `verification-before-completion`; nhận feedback review thì theo `receiving-code-review`
-    (kiểm chứng claim trước khi sửa theo, cấm gật lễ phép).
+    `viet-thuoc` (mục «Trước khi khai xanh» + đảo-vá). Nhận feedback review thì **kiểm chứng
+    claim trước khi sửa theo, cấm gật lễ phép**: mỗi finding phải tự dựng lại được bằng một
+    lệnh, không dựng lại được thì hỏi lại người review chứ đừng sửa mò.
+    *(09/09: hai skill `verification-before-completion` và `receiving-code-review` được trỏ
+    tới ở bản cũ chưa bao giờ tồn tại trong repo — nay gộp vào `viet-thuoc` + dòng trên.)*
 
 ## Bẫy án lệ bổ sung — chưng cất tại gate R1 (17/08, tổng ghi)
 
-15. **`__pycache__` giữ code đột biến** sau khi khôi phục nguồn cùng-giây (mtime+size không
-    đổi) ⇒ test đỏ trên nguồn ĐÚNG. Harness đảo-vá phải xoá `__pycache__` sau mỗi lượt ghi
-    file; «đỏ rồi tự xanh không sửa gì» = hỏng THƯỚC.
-16. **Đo trong worktree phải xác nhận cây**: venv `.pth` + `sys.path[0]` của script đều có
-    thể nạp `app` từ CÂY CHÍNH — `print(module.__file__)` trước khi tin con số; script tự
-    `export PYTHONPATH=$PWD` + in cây đang đo.
+15. **Cache giữ bản đột biến** ⇒ test đỏ trên nguồn ĐÚNG, hoặc xanh trên nguồn SAI.
+    Ở Node: cache module trong **cùng một tiến trình** (`require.cache` · đồ thị ESM đã nạp)
+    không đổi khi mày ghi lại file — nên **mỗi lượt đảo-vá phải là một TIẾN TRÌNH MỚI**, đừng
+    đảo-vá bằng cách ghi file giữa hai `it()` của cùng một lượt `node --test`. Kèm theo:
+    `NODE_COMPILE_CACHE` và `node_modules/.cache` của công cụ cũng phải dọn khi harness tự ghi
+    file. Luật đọc kết quả không đổi: «đỏ rồi tự xanh mà không sửa gì» = hỏng THƯỚC.
+    *(Án lệ gốc là `__pycache__` của một dự án Python — cơ chế khác, bẫy y hệt.)*
+16. **Đo trong worktree phải xác nhận cây**: symlink trong `node_modules`, `NODE_PATH`, hay
+    một lệnh chạy từ thư mục khác đều có thể nạp module của **CÂY CHÍNH** trong khi mày tưởng
+    đang đo cây phụ. In `import.meta.url` (hoặc `__filename`) của chính tệp bị đo +
+    `process.cwd()` **trước khi tin con số**; và in luôn `DATABASE_URL_V3` đang dùng — đo nhầm
+    CSDL còn đắt hơn đo nhầm cây.
 17. **Phanh tiền phải MỘT CỬA**: gác rải theo nhánh thì cửa mở ra ngày mai lại lọt — dồn mọi
     đường ra verdict/tiền về một `return` duy nhất rồi đặt MỘT gác sau tất cả.
 18. **«Cùng LUẬT» chưa đủ — còn phải cùng THỜI ĐIỂM**: hai phép tính cùng công thức chạy ở
@@ -104,9 +113,12 @@ Mày nhận ĐÚNG MỘT PHIẾU. Phiếu là hợp đồng; sổ là trạng th
 27. **Thước đỏ giống hệt code đỏ — sửa luật phải sửa cả THƯỚC** (5 án lệ một sóng): trước khi
     kết luận «code sai», hỏi «thước của ca này còn khớp hợp đồng mới không»; và ca biên phải
     đọc MÃ CHẶN, không chỉ `allowed` (guard khác cắn trước làm ca xanh giả).
-28. **Script nghiệm thu phải TỰ dựng sandbox từ khuôn trần** (`salesos_t3`) và tự dọn — script
-    chỉ xanh trên sandbox tay của thợ là script không tái chạy được; máy dev macOS KHÔNG có
-    `timeout` (dùng shim/gtimeout, kẻo «không chạy» đọc thành «hỏng»).
+28. **Script nghiệm thu phải TỰ dựng sandbox và tự dọn** — CSDL riêng cho từng cổng
+    (`aicloser_v3_nt_<mã>`, hoặc `aicloser_v3_test_<mã>` cho bộ ca; dựng qua `db/sandbox.js` +
+    `db/migrate.js`, container `talpha-pg` cổng 5433). Script chỉ xanh trên CSDL tay của thợ là
+    script không tái chạy được, và **cấm đo trên `aicloser_v3` dev** (luật 11 sổ). Cho
+    `GIU_SANDBOX=1` để soi tay khi cần. Máy dev macOS KHÔNG có `timeout` — dùng
+    `gtimeout`/shim, kẻo «không chạy» đọc thành «hỏng».
 29. **Đảo-vá đo «mã có đổi» không đo «thẻ có ĐI»** — mỗi phanh/cổng cần ít nhất một ca
     CHO-QUA thật (allowed=True chiều lành) và một ca hành-vi (thẻ thật đi trọn đường), không
     chỉ known-answer hằng trong test (test lấy đáp án từ code bị đo = đột biến sống).
@@ -124,8 +136,11 @@ Mày nhận ĐÚNG MỘT PHIẾU. Phiếu là hợp đồng; sổ là trạng th
     mặc-định-trong-file không phải target đã ký — cần cờ «đã KHAI» tách khỏi «đang hiệu lực»).
 34. **Độ tươi hỏi đúng NHÁNH nguồn + tuổi HIỆU LỰC = tuổi dữ liệu + tuổi lát chụp** — đọc cờ
     stale của nhánh khác (ads vs pos) hay quên tuổi lát chụp đều làm phanh PAUSE bắn bằng dữ
-    liệu trễ; CI chỉ canh được nơi CI THẬT chạy (phép đo sống trong w2*.sh mà CI chạy pytest
-    thì đột biến sống).
+    liệu trễ; **phép đo chỉ canh được nơi nó THẬT SỰ được chạy lại.** Ở repo này `npm test`
+    chỉ chạy `test/*.test.*` + `v3/test/b/*.test.mjs` — **không** chạy
+    `ops/bin/nghiem-thu/*.sh`. Phép đo nào chỉ sống trong cổng thì giữa hai gate không ai chạy
+    nó: đột biến sống suốt quãng đó. Luật quan trọng thì phải có **một ca trong bộ ca** nữa,
+    đừng để nó chỉ nằm trong cổng.
 
 
 ## Bổ sung v3 (21/08 — CEO duyệt hồ sơ TOI-UU-QUY-TRINH-TONG)
