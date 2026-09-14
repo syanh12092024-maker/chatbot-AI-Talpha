@@ -8,19 +8,9 @@
   /* Hệ thiết kế chép từ `public/ops.html` dòng 10–17 — cùng màu, cùng bo góc, cùng cỡ chữ
      với dashboard sale đang dùng. Trang RIÊNG, một file, không khung nào, không gọi mạng
      ra ngoài: bốn luồng v3 sửa song song, dùng chung file CSS là xung đột. */
-  :root{
-    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
-    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
-    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
-    --warn:#b45309; --warnSoft:#fdf3e3;
-    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
-  }
-  *{box-sizing:border-box} html,body{margin:0}
-  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
-  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header{background:var(--side);color:var(--nen);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   header h1{font-size:16px;margin:0;font-weight:700}
-  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sub{font-size:11.5px;color:var(--tren-toi-2)}
   header .sp{flex:1}
   main{padding:16px 22px 60px;max-width:1440px;margin:0 auto}
 
@@ -44,10 +34,10 @@
   .pill.g{background:var(--okSoft);color:var(--ok)}
   .pill.o{background:var(--warnSoft);color:var(--warn)}
   .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:#f1f1f1;color:#777}
+  .pill.m{background:var(--nen-3);color:var(--chu-2)}
   .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
-  .banner.r{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
-  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner.r{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien)}
+  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
   .banner .s{display:block;font-weight:400;font-size:12px;margin-top:4px}
   .lnk{color:var(--pri);text-decoration:underline;text-underline-offset:2px}
   .empty{padding:22px 15px;text-align:center;color:var(--muted)}
@@ -68,10 +58,10 @@
   .xem .nut-hang{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
   /* Cùng kiểu nút với trang chi tiết — hai trang cùng một việc thì không được hai kiểu.
      Nhỏ hơn một bậc vì ô này hẹp 372px, không phải cả trang. */
-  .xem a.nut{display:inline-block;background:var(--pri);color:#fff;border-radius:9px;
+  .xem a.nut{display:inline-block;background:var(--pri);color:var(--nen);border-radius:9px;
              padding:9px 15px;font-weight:700;font-size:13px;text-decoration:none}
   .xem a.nut:hover{background:var(--priDark)}
-  .xem a.nut.phu{background:#fff;color:var(--pri);border:1px solid var(--line)}
+  .xem a.nut.phu{background:var(--nen);color:var(--pri);border:1px solid var(--line)}
   .xem span.nut.mo{display:inline-block;background:#eef1f3;color:#9aa4ad;border-radius:9px;
              padding:9px 15px;font-weight:700;font-size:13px}
 

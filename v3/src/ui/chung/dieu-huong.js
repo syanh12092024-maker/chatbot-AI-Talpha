@@ -74,39 +74,39 @@
     .dh-nut{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:8px;
       padding:6px 11px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;margin-right:2px;display:none}
     .dh-nut:hover{background:rgba(255,255,255,.24)}
-    .dh-phu{position:fixed;inset:0;background:rgba(11,33,37,.45);z-index:9998;display:none}
+    .dh-phu{position:fixed;inset:0;background:rgba(15, 20, 25,.45);z-index:9998;display:none}
     .dh-phu.mo{display:block}
 
-    .dh-ngan{position:fixed;top:0;left:0;bottom:0;width:${RONG}px;background:#0b2125;
-      color:#dfeaec;z-index:9999;overflow-y:auto;font-size:13.5px;display:flex;flex-direction:column}
+    .dh-ngan{position:fixed;top:0;left:0;bottom:0;width:${RONG}px;background:var(--toi);
+      color:var(--tren-toi);z-index:9999;overflow-y:auto;font-size:13.5px;display:flex;flex-direction:column}
     .dh-dau{padding:15px 16px 12px;border-bottom:1px solid rgba(255,255,255,.1)}
     .dh-dau b{font-size:15px;color:#fff;display:block}
-    .dh-dau .m{font-size:11.5px;color:#7fa3a8;margin-top:3px;line-height:1.5}
+    .dh-dau .m{font-size:11.5px;color:var(--tren-toi-2);margin-top:3px;line-height:1.5}
 
     /* MỘT MỤC — hàng bấm được, mở/đóng danh sách màn con của nó. */
     .dh-muc{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;
       font:inherit;cursor:pointer;padding:9px 16px;display:flex;gap:10px;align-items:center}
     .dh-muc:hover{background:rgba(255,255,255,.06)}
-    .dh-muc.day{background:rgba(159,211,216,.14);box-shadow:inset 3px 0 0 #9fd3d8}
-    .dh-muc .t{font-weight:600;font-size:13.5px;color:#dfeaec}
+    .dh-muc.day{background:rgba(143, 178, 251,.14);box-shadow:inset 3px 0 0 var(--tren-toi-nhan)}
+    .dh-muc .t{font-weight:600;font-size:13.5px;color:var(--tren-toi)}
     .dh-muc.day .t{color:#fff}
-    .dh-muc .d{font-size:11px;color:#7fa3a8;margin-top:1px;line-height:1.35}
+    .dh-muc .d{font-size:11px;color:var(--tren-toi-2);margin-top:1px;line-height:1.35}
     .dh-muc .than{flex:1;min-width:0}
-    .dh-muc .mui{color:#5f8a90;font-size:10px;transition:transform .14s ease;flex-shrink:0}
+    .dh-muc .mui{color:var(--tren-toi-2);font-size:10px;transition:transform .14s ease;flex-shrink:0}
     .dh-muc.bung .mui{transform:rotate(90deg)}
 
     .dh-con{display:none;padding:1px 0 6px}
     .dh-con.bung{display:block}
-    .dh-con a{display:block;padding:6px 16px 6px 30px;color:#a9c4c8;text-decoration:none;
+    .dh-con a{display:block;padding:6px 16px 6px 30px;color:var(--tren-toi-2);text-decoration:none;
       line-height:1.35;font-size:12.5px}
-    .dh-con a:hover{background:rgba(255,255,255,.07);color:#dfeaec}
-    .dh-con a.day{color:#fff;font-weight:600;background:rgba(159,211,216,.1)}
+    .dh-con a:hover{background:rgba(255,255,255,.07);color:var(--tren-toi)}
+    .dh-con a.day{color:#fff;font-weight:600;background:rgba(143, 178, 251,.1)}
 
     /* VẠCH «Ít dùng» — ranh giới trong MỘT mục, không phải mục thứ năm. Màn dưới vạch
        là màn chưa có dữ liệu để hiện, hoặc đang tắt trên máy chủ, hoặc một năm dùng một
        lần. Chúng vẫn ở đây: bỏ hẳn khỏi menu thì người vào bằng đường dẫn là kẹt. */
     .dh-vach{display:flex;align-items:center;gap:8px;padding:9px 16px 5px 30px;
-      font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#5f8a90}
+      font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tren-toi-2)}
     .dh-vach::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.09)}
 
     /* KHỐI TÀI KHOẢN — đổi team và đăng xuất. Trước đây chỉ MỘT trong 25 trang có lối này,
@@ -119,19 +119,19 @@
        Số nổi bật là SỐ PAGE ĐANG BẬT, tổng page chỉ là mẫu số. Ngày 11/09 người tiếp quản
        đọc huy hiệu 501 page thành «đang chạy 501 page», trong khi thật ra 0 page bật AI. */
     .dh-dai{margin:10px 16px 0;border-radius:9px;padding:8px 11px;font-size:11.5px;line-height:1.45;
-      background:rgba(255,255,255,.06);color:#a9c4c8}
-    .dh-dai b{display:block;font-size:13px;font-weight:700;color:#dfeaec;margin-bottom:1px}
+      background:rgba(255,255,255,.06);color:var(--tren-toi-2)}
+    .dh-dai b{display:block;font-size:13px;font-weight:700;color:var(--tren-toi);margin-bottom:1px}
     .dh-dai.tat{background:rgba(220,38,38,.16);color:#f0b6b0}
     .dh-dai.tat b{color:#ffd9d4}
     .dh-dai.chay{background:rgba(22,163,74,.15);color:#a9d9bb}
     .dh-dai.chay b{color:#d6f0e0}
-    .dh-dai.mu{background:rgba(255,255,255,.05);color:#7fa3a8}
+    .dh-dai.mu{background:rgba(255,255,255,.05);color:var(--tren-toi-2)}
 
     .dh-tk{border-top:1px solid rgba(255,255,255,.1);padding:10px 16px 12px;margin-top:auto}
-    .dh-tk .ai{font-size:11.5px;color:#7fa3a8;line-height:1.5;margin-bottom:8px;word-break:break-word}
-    .dh-tk .ai b{color:#dfeaec;font-weight:600;display:block;font-size:12.5px}
+    .dh-tk .ai{font-size:11.5px;color:var(--tren-toi-2);line-height:1.5;margin-bottom:8px;word-break:break-word}
+    .dh-tk .ai b{color:var(--tren-toi);font-weight:600;display:block;font-size:12.5px}
     .dh-tk .hang{display:flex;gap:7px}
-    .dh-tk button{flex:1;background:rgba(255,255,255,.08);color:#dfeaec;border:0;border-radius:7px;
+    .dh-tk button{flex:1;background:rgba(255,255,255,.08);color:var(--tren-toi);border:0;border-radius:7px;
       padding:6px 9px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600;text-align:center}
     .dh-tk button:hover{background:rgba(255,255,255,.16);color:#fff}
     .dh-tk button.ra:hover{background:rgba(220,38,38,.22);color:#fff}
@@ -140,16 +140,16 @@
        Mỗi màn vẫn giữ ĐƯỜNG RIÊNG của nó (không gộp 24 trang thành 6): thanh này chỉ nói
        ra rằng chúng thuộc cùng một việc, và cho đi ngang giữa chúng bằng MỘT cú bấm thay
        vì quay lại menu. Mục chỉ có một màn thì không có thanh — một tab đơn độc là nhiễu. */
-    .dh-tab{background:#fff;border-bottom:1px solid #e4e9ee;padding:0 22px;display:flex;
+    .dh-tab{background:#fff;border-bottom:1px solid var(--vien);padding:0 22px;display:flex;
       gap:2px;overflow-x:auto;scrollbar-width:none}
     .dh-tab::-webkit-scrollbar{display:none}
     .dh-tab a{padding:11px 13px 9px;color:#344054;text-decoration:none;font-size:13px;
       font-weight:600;border-bottom:2px solid transparent;white-space:nowrap;
       display:flex;gap:6px;align-items:center}
-    .dh-tab a:hover{color:#0e7c86}
-    .dh-tab a.day{color:#0e7c86;font-weight:700;border-bottom-color:#0e7c86}
+    .dh-tab a:hover{color:var(--chinh)}
+    .dh-tab a.day{color:var(--chinh);font-weight:700;border-bottom-color:var(--chinh)}
     .dh-tab .muc{font-size:11px;color:#8b95a1;font-weight:600;align-self:center;
-      padding-right:9px;margin-right:4px;border-right:1px solid #e4e9ee;white-space:nowrap}
+      padding-right:9px;margin-right:4px;border-right:1px solid var(--vien);white-space:nowrap}
 
     /* Màn HẸP: thanh bên thu về ngăn kéo, trang lấy lại toàn bộ bề ngang. */
     @media (max-width:${NGUONG - 1}px){
@@ -221,7 +221,7 @@
           <button type="button" class="doi">Đổi team</button>
           <button type="button" class="ra">Đăng xuất</button>
         </div>
-        <div style="font-size:10.5px;color:#5f8a90;line-height:1.5;margin-top:9px">
+        <div style="font-size:10.5px;color:var(--tren-toi-2);line-height:1.5;margin-top:9px">
           Chỉ hiện màn vai bạn vào được — danh sách lọc ở máy chủ.
         </div>
       </div>`;

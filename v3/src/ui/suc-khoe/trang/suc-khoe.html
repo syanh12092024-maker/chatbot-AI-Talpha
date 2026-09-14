@@ -5,21 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Sức khoẻ hệ thống — AI Closer v3</title>
 <style>
-  :root{
-    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
-    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
-    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
-    --warn:#b45309; --warnSoft:#fdf3e3;
-    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
-  }
-  *{box-sizing:border-box} html,body{margin:0}
-  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
-  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header{background:var(--side);color:var(--nen);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   header h1{font-size:16px;margin:0;font-weight:700}
-  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sub{font-size:11.5px;color:var(--tren-toi-2)}
   header .sp{flex:1}
-  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  header a{color:var(--tren-toi-nhan);text-decoration:none;font-size:12px;font-weight:600}
   main{padding:16px 22px 60px;max-width:1160px;margin:0 auto}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
@@ -29,14 +19,14 @@
   .than{padding:14px 15px}
 
   /* dải cảnh báo NGUY — màn này phải trông khác mọi màn khác */
-  .nguy{background:#fff4f4;border:1px solid #f0c2c2;border-left:4px solid var(--bad);
+  .nguy{background:var(--loi-nen);border:1px solid var(--loi-vien);border-left:4px solid var(--bad);
         border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
-  .nguy b{color:#991b1b}
-  .nguy .so{font-size:19px;font-weight:700;color:#991b1b;font-variant-numeric:tabular-nums}
+  .nguy b{color:var(--loi-chu)}
+  .nguy .so{font-size:19px;font-weight:700;color:var(--loi-chu);font-variant-numeric:tabular-nums}
 
   .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
-  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
-  .banner.i{background:var(--priSoft);color:#0b4a52;border:1px solid #b8dde0}
+  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
+  .banner.i{background:var(--priSoft);color:var(--chinh-dam);border:1px solid var(--chinh-vien)}
 
   table{width:100%;border-collapse:collapse;font-size:12.5px}
   th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -51,15 +41,15 @@
   .pill.g{background:var(--okSoft);color:var(--ok)}
   .pill.o{background:var(--warnSoft);color:var(--warn)}
   .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:#f1f1f1;color:#777}
+  .pill.m{background:var(--nen-3);color:var(--chu-2)}
   .pill.p{background:var(--priSoft);color:var(--priDark)}
 
   /* khối so sánh */
-  .diff{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:400px;background:#fcfdfd}
+  .diff{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:400px;background:var(--nen-2)}
   .diff pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6}
   .diff .d{padding:1px 10px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid transparent}
-  .diff .d.them{background:#e9f8ee;border-left-color:var(--ok)}
-  .diff .d.bo{background:#fdecec;border-left-color:var(--bad);text-decoration:line-through;opacity:.8}
+  .diff .d.them{background:var(--dat-nen);border-left-color:var(--ok)}
+  .diff .d.bo{background:var(--loi-nen);border-left-color:var(--bad);text-decoration:line-through;opacity:.8}
   .diff .d.giu{color:var(--muted)}
 
   textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit;
@@ -67,23 +57,23 @@
            min-height:260px;resize:vertical}
 
   button{font:inherit}
-  .nut{background:var(--pri);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
+  .nut{background:var(--pri);color:var(--nen);border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
   .nut:hover{background:var(--priDark)}
-  .nut[disabled]{background:#c3cdd0;cursor:not-allowed}
+  .nut[disabled]{background:var(--vien-dam);cursor:not-allowed}
   .nut.nho{padding:4px 10px;font-size:11.5px;font-weight:600}
   .nut.nguy{background:var(--bad)}
-  .nut.nguy:hover{background:#b91c1c}
+  .nut.nguy:hover{background:var(--loi-chu)}
   .nut.phu{background:transparent;color:var(--priDark);border:1px solid var(--line)}
   .nut.phu:hover{background:var(--priSoft)}
   .hang{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 
   .trong{padding:20px 15px;text-align:center;line-height:1.6}
   .trong .ic{font-size:20px;display:block;margin-bottom:6px}
-  .trong.chua{color:#8a4a06;background:var(--warnSoft)}
-  .loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:8px;
+  .trong.chua{color:var(--luu-chu);background:var(--warnSoft)}
+  .loi{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien);border-radius:8px;
        padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
   .loi.hien{display:block}
-  .ok{background:var(--okSoft);color:#14532d;border:1px solid #b7e4c7;border-radius:8px;
+  .ok{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien);border-radius:8px;
       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
   .ok.hien{display:block}
 
@@ -100,22 +90,22 @@
   }
 
   .luoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:11px}
-  .d{border:1px solid var(--line);border-radius:10px;padding:12px 13px;background:#fcfdfd;
+  .d{border:1px solid var(--line);border-radius:10px;padding:12px 13px;background:var(--nen-2);
      border-left:4px solid var(--line);min-width:0}
   .d.xanh{border-left-color:var(--ok);background:#f7fdf9}
-  .d.vang{border-left-color:var(--warn);background:#fffbf5}
+  .d.vang{border-left-color:var(--warn);background:var(--luu-nen)}
   .d.do{border-left-color:var(--bad);background:#fff5f5}
-  .d.xam{border-left-color:#c3cdd0;background:#fafbfb}
+  .d.xam{border-left-color:var(--vien-dam);background:#fafbfb}
   .d .dau{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:5px}
   .d h3{font-size:13px;margin:0;flex:1;min-width:0}
   .d .vi{font-size:12px;color:var(--muted);line-height:1.55}
   .d .so{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
   .d .di{display:inline-block;margin-top:8px;font-size:11.5px;font-weight:700;color:var(--priDark);
-         background:#fff;border:1px solid var(--line);border-radius:7px;padding:4px 10px;text-decoration:none}
+         background:var(--nen);border:1px solid var(--line);border-radius:7px;padding:4px 10px;text-decoration:none}
   .tong{border-radius:var(--r);padding:13px 15px;margin-bottom:14px;line-height:1.55;font-weight:600}
-  .tong.xanh{background:var(--okSoft);color:#14532d;border:1px solid #b7e4c7}
-  .tong.vang{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
-  .tong.do{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
+  .tong.xanh{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien)}
+  .tong.vang{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
+  .tong.do{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien)}
   .tong.xam{background:#f1f4f5;color:#475467;border:1px solid var(--line)}
   .tong .dem{display:block;font-weight:400;font-size:12px;margin-top:4px}
 </style>
@@ -160,7 +150,6 @@ function veTrong(t){
   const di = t.diTiep && t.diTiep.duong ? `<a class="di" href="${esc(t.diTiep.duong)}">${esc(t.diTiep.chu)}</a>` : '';
   return `<div class="trong chua"><span class="ic">⚠️</span><div>${esc(t.noi)}</div>${di}</div>`;
 }
-
 
 let D = null;
 

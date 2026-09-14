@@ -5,21 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Model AI &amp; khoá — AI Closer v3</title>
 <style>
-  :root{
-    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
-    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
-    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
-    --warn:#b45309; --warnSoft:#fdf3e3;
-    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
-  }
-  *{box-sizing:border-box} html,body{margin:0}
-  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
-  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header{background:var(--side);color:var(--nen);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   header h1{font-size:16px;margin:0;font-weight:700}
-  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sub{font-size:11.5px;color:var(--tren-toi-2)}
   header .sp{flex:1}
-  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  header a{color:var(--tren-toi-nhan);text-decoration:none;font-size:12px;font-weight:600}
   main{padding:16px 22px 60px;max-width:1100px;margin:0 auto}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
@@ -29,19 +19,19 @@
   .than{padding:14px 15px}
 
   .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
-  .banner.r{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
-  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
-  .banner.i{background:var(--priSoft);color:#0b4a52;border:1px solid #b8dde0;font-weight:400}
+  .banner.r{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien)}
+  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
+  .banner.i{background:var(--priSoft);color:var(--chinh-dam);border:1px solid var(--chinh-vien);font-weight:400}
 
   /* ba ô vai trò */
   .ba{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-  .vai{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fcfdfd;min-width:0}
+  .vai{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--nen-2);min-width:0}
   .vai h3{font-size:12.5px;margin:0 0 3px}
   .vai .gt{font-size:11.5px;color:var(--muted);line-height:1.45;margin-bottom:9px;min-height:32px}
-  .vai select{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff;font:inherit;font-size:12.5px}
+  .vai select{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--nen);font:inherit;font-size:12.5px}
   .vai .gia{margin-top:7px;font-size:11.5px;color:var(--muted);line-height:1.5}
   .vai .gia b{color:var(--ink);font-variant-numeric:tabular-nums}
-  .vai.canh{border-color:#f0c2a4;background:#fffbf5}
+  .vai.canh{border-color:#f0c2a4;background:var(--luu-nen)}
 
   .khoa-o{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:8px}
   .khoa-o input{flex:1;min-width:130px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;
@@ -61,21 +51,21 @@
   .pill.g{background:var(--okSoft);color:var(--ok)}
   .pill.o{background:var(--warnSoft);color:var(--warn)}
   .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:#f1f1f1;color:#777}
+  .pill.m{background:var(--nen-3);color:var(--chu-2)}
   .pill.p{background:var(--priSoft);color:var(--priDark)}
 
   button{font:inherit}
-  .nut{background:var(--pri);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
+  .nut{background:var(--pri);color:var(--nen);border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
   .nut:hover{background:var(--priDark)}
-  .nut[disabled]{background:#c3cdd0;cursor:not-allowed}
+  .nut[disabled]{background:var(--vien-dam);cursor:not-allowed}
   .nut.nho{padding:5px 10px;font-size:11.5px;font-weight:600}
   .hang{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
   input[type=range]{width:100%;max-width:220px}
 
-  .loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:8px;
+  .loi{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien);border-radius:8px;
        padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
   .loi.hien{display:block}
-  .ok{background:var(--okSoft);color:#14532d;border:1px solid #b7e4c7;border-radius:8px;
+  .ok{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien);border-radius:8px;
       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
   .ok.hien{display:block}
 

@@ -194,3 +194,48 @@ test("HK7 · màn «Bắt đầu» KHÔNG dựng nguồn dữ liệu hay cửa g
   assert.match(trang, /\/api\/page-bot\/\$\{encodeURIComponent\(p\.pageId\)\}\/bot/,
     "nút bật phải gọi ĐÚNG đường đã có của màn Page & Bot");
 });
+
+test("HK8 · CẦU DI TRÚ phải TEO đi — đếm số màn còn phụ thuộc tên cũ", () => {
+  // Cầu di trú (20 token tên cũ trong `ds-dau`) là lớp TẠM. Hai tên cho một thứ chính là
+  // mầm lệch nhau; giữ nó chỉ để 25 màn không mất màu giữa đường.
+  //
+  // Ca này neo CON SỐ. Viết lại một màn theo tên mới thì số giảm và ca đỏ — người sửa hạ
+  // con số xuống, và thấy rõ mình vừa đi được một bước. Thêm màn dùng tên cũ thì cũng đỏ.
+  // Khi số về 0, xoá cả khối cầu trong `kieu.css` và xoá luôn ca này.
+  const UI = path.join(GOC, "v3/src/ui");
+  const TEN_CU = /var\(\s*--(bg|panel|ink|muted|xam|line|side|r|sh|pri|priDark|priSoft|ok|okSoft|bad|badSoft|warn|warnSoft|tim|timSoft)\s*\)/;
+
+  const conDung = [];
+  for (const d of fs.readdirSync(UI, { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    const t = path.join(UI, d.name, "trang");
+    if (!fs.existsSync(t)) continue;
+    for (const f of fs.readdirSync(t).filter((x) => x.endsWith(".html"))) {
+      const s = fs.readFileSync(path.join(t, f), "utf8");
+      const kieu = (s.match(/<style>[\s\S]*?<\/style>/g) || []).join("\n");
+      if (TEN_CU.test(kieu)) conDung.push(`${d.name}/${f}`);
+    }
+  }
+
+  assert.equal(
+    conDung.length,
+    25,
+    `số màn còn phụ thuộc cầu di trú: ${conDung.length} (neo: 25). `
+      + "Giảm được thì HẠ con số này. Tăng lên là có màn mới dùng tên cũ — đừng.",
+  );
+
+  // Và không màn nào được TỰ KHAI lại token cũ: khai lại là đè hệ kiểu, tức bảng màu mới
+  // không tới được màn đó. Đây là chỗ đã đo 14/09 và dọn xong 25/25.
+  const tuKhai = [];
+  for (const d of fs.readdirSync(UI, { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    const t = path.join(UI, d.name, "trang");
+    if (!fs.existsSync(t)) continue;
+    for (const f of fs.readdirSync(t).filter((x) => x.endsWith(".html"))) {
+      const s = fs.readFileSync(path.join(t, f), "utf8");
+      const kieu = (s.match(/<style>[\s\S]*?<\/style>/g) || []).join("\n");
+      if (/(^|[;{\s])--(bg|ink|line|pri|muted|panel|side|sh|r)\s*:/.test(kieu)) tuKhai.push(`${d.name}/${f}`);
+    }
+  }
+  assert.deepEqual(tuKhai, [], `màn TỰ KHAI lại token — hệ kiểu không tới được: ${tuKhai.join(", ")}`);
+});

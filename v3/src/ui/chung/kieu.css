@@ -81,6 +81,12 @@
     --vong:       rgba(28, 78, 216, .22);   /* quầng lấy nét — phải THẤY được */
     --tren-chinh: #ffffff;                   /* chữ ĐẶT TRÊN nền --chinh */
     --toi:        #101419;                   /* nền thanh bên */
+    /* CHỮ TRÊN NỀN TỐI — ba bậc, cho thanh bên và tiêu đề tối. Bản cũ gõ cứng ba màu
+       xanh cổ vịt (#dfeaec #7fa3a8 #9fd3d8) vào 25 màn; trên nền gần-đen mới chúng ngả
+       xanh lạc hẳn. Ba token này là chỗ tra, không phải ba màu đoán lại mỗi màn. */
+    --tren-toi:     #f2f5f8;
+    --tren-toi-2:   #9aa7b4;
+    --tren-toi-nhan:#8fb2fb;
 
     /* ═══ TRẠNG THÁI — mỗi trạng thái ĐÚNG BA màu: nền · viền · chữ. Không hơn.
        Muốn nhạt hơn thì dùng nền; muốn đậm hơn thì dùng chữ. Đừng đẻ sắc thứ tư.
@@ -120,6 +126,46 @@
     --chu-so: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
     --nhanh: .14s ease;
+
+    /* ═══════════════════════════════════════════════════════════════════════════════
+       CẦU DI TRÚ — 20 TÊN CŨ của 25 màn, trỏ về token mới.
+
+       ĐO 14/09/2026: repo này VỐN ĐÃ CÓ một hệ kiểu — cùng bộ tên token, cùng bộ tên
+       lớp — chỉ là CHÉP VÀO 25 TỆP thay vì định nghĩa một chỗ. 20 tên dưới đây được
+       382 lượt dùng trong 25 màn, và mỗi màn tự khai lại y hệt giá trị.
+       Tôi đã đặt một bộ tên thứ hai song song (tiếng Việt) mà không biết điều đó.
+
+       Nên: KHÔNG đổi tên 25 màn theo tôi. Nhận tên của chúng vào hệ, trỏ về token mới.
+       Nhờ vậy bỏ khối `:root` trong từng màn là cả màn đổi sang bảng màu mới, KHÔNG
+       phải sửa một luật nào của nó.
+
+       ⚠️ ĐÂY LÀ LỚP TẠM, có chủ ý. Hai tên cho một thứ chính là mầm lệch nhau. Màn nào
+          đã viết lại theo tên mới thì bỏ tên cũ khỏi màn đó; khi không màn nào còn dùng,
+          xoá cả khối này. Phép đo `HK8` đếm số màn còn phụ thuộc — số ấy phải GIẢM.
+       ═══════════════════════════════════════════════════════════════════════════════ */
+    --bg:       var(--nen-2);
+    --panel:    var(--nen);
+    --ink:      var(--chu);
+    --muted:    var(--chu-mo);
+    --xam:      var(--chu-mo);
+    --line:     var(--vien);
+    --side:     var(--toi);
+    --r:        var(--tron-3);
+    --sh:       var(--bong-1);
+    --pri:      var(--chinh);
+    --priDark:  var(--chinh-dam);
+    --priSoft:  var(--chinh-nhat);
+    --ok:       var(--dat-chu);
+    --okSoft:   var(--dat-nen);
+    --bad:      var(--loi-chu);
+    --badSoft:  var(--loi-nen);
+    --warn:     var(--luu-chu);
+    --warnSoft: var(--luu-nen);
+    /* `--tim` (tím) là màu của một trạng thái THỨ NĂM mà hệ mới KHÔNG có — hệ chỉ có
+       bốn nghĩa. Bốn màn còn dùng nó (ai-de-xuat và họ hàng); người chủ mấy màn ấy phải
+       chọn lấy một trong bốn. Giữ tạm ở đây để chúng không mất màu giữa đường. */
+    --tim:      #5b4bd6;
+    --timSoft:  #eeecfd;
   }
 }
 
@@ -346,6 +392,31 @@
   .cat-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
            overflow: hidden; }
   .be-chu { overflow-wrap: anywhere; word-break: break-word; }
+
+  /* ─── TÊN CŨ CỦA 25 MÀN — một định nghĩa cho mỗi tên ─────────────────────────
+     Đo 14/09/2026: mấy tên này được 25 màn dùng chung từ trước khi có hệ kiểu, mỗi màn
+     tự khai lại. Mức nhất quán đo được (số biến thể của cùng một selector):
+         .sub  25 lần · 1 biến thể     .hint 24 lần · 1 biến thể
+         .sp   49 lần · 2 biến thể     .ok    9 lần · 1 biến thể
+         .ti   16 lần · 2 biến thể     .phu  12 lần · 3 biến thể
+         .banner 14 lần · 2 biến thể   .canh 10 lần · 3 biến thể
+     Nhận vào đây theo BIẾN THỂ ĐA SỐ, quy giá trị về token. Màn nào cần khác thì tự
+     khai trong `<style>` của nó — CSS không-layer vẫn thắng, nên không ai bị kẹt.
+     ⚠️ KHÔNG nhận `.o` `.di` `.ten` và các lớp MỘT CHỮ (`.n` `.m` `.t` `.p` …): `.di`
+        có 9 biến thể, `.o` có 7, và lớp một chữ gần như chắc chắn là thứ KHÁC NHAU ở
+        mỗi màn. Gom chúng vào hệ là gây vỡ chéo giữa các màn. */
+  .sub { font-size: var(--co-mini); color: var(--tren-toi-2); }
+  .hint { font-weight: 400; font-size: var(--co-mini); color: var(--chu-mo); }
+  .sp { flex: 1; }
+  .ti { font-size: var(--co-thuong); font-weight: 600; color: var(--chu); margin-bottom: var(--k2); }
+  .phu { font-size: var(--co-mini); color: var(--chu-mo); margin-top: 2px; overflow-wrap: anywhere; }
+  .ic { font-size: var(--co-de); display: block; margin-bottom: var(--k2); }
+  .banner { border-radius: var(--tron-2); padding: var(--k3) var(--k4);
+            margin-bottom: var(--k3); line-height: 1.55; }
+  .ok { background: var(--dat-nen); color: var(--dat-chu); border: 1px solid var(--dat-vien);
+        border-radius: var(--tron-1); padding: var(--k2) var(--k3); margin: 0 0 var(--k3); }
+  .canh { background: var(--luu-nen); border: 1px solid var(--luu-vien); color: var(--luu-chu);
+          border-radius: var(--tron-2); padding: var(--k3) var(--k4); margin-bottom: var(--k3); }
 
   /* CHỮ PHỤ */
   .mo { color: var(--chu-mo); }

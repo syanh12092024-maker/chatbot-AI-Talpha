@@ -7,21 +7,11 @@
 <style>
   /* Cùng hệ thiết kế với `dieu-phoi.html` (gốc: `public/ops.html`). Trang RIÊNG, một file,
      không gọi mạng ra ngoài — bốn luồng v3 sửa song song, dùng chung file CSS là xung đột. */
-  :root{
-    --bg:#f5f7f9; --panel:#fff; --ink:#101828; --muted:#667085; --line:#e4e9ee;
-    --pri:#0e7c86; --priDark:#0b646d; --priSoft:#e6f4f5;
-    --ok:#16a34a; --okSoft:#e8f7ee; --bad:#dc2626; --badSoft:#fdecec;
-    --warn:#b45309; --warnSoft:#fdf3e3;
-    --side:#0b2125; --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06); --r:12px;
-  }
-  *{box-sizing:border-box} html,body{margin:0}
-  body{font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-       background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
-  header{background:var(--side);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header{background:var(--side);color:var(--nen);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   header h1{font-size:16px;margin:0;font-weight:700}
-  header .sub{font-size:11.5px;color:#7fa3a8}
+  header .sub{font-size:11.5px;color:var(--tren-toi-2)}
   header .sp{flex:1}
-  header a{color:#9fd3d8;text-decoration:none;font-size:12px;font-weight:600}
+  header a{color:var(--tren-toi-nhan);text-decoration:none;font-size:12px;font-weight:600}
   main{padding:16px 22px 60px;max-width:1120px;margin:0 auto}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
@@ -32,7 +22,7 @@
 
   /* ─── ô số đo: tự xuống dòng, không bao giờ đẩy trang rộng ra ─── */
   .so{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px}
-  .o{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fcfdfd;min-width:0}
+  .o{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--nen-2);min-width:0}
   .o .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15;overflow-wrap:anywhere}
   .o .t{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
   .o.xau .n{color:var(--bad)}
@@ -47,12 +37,12 @@
   .pill.g{background:var(--okSoft);color:var(--ok)}
   .pill.o{background:var(--warnSoft);color:var(--warn)}
   .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:#f1f1f1;color:#777}
+  .pill.m{background:var(--nen-3);color:var(--chu-2)}
   .pill.p{background:var(--priSoft);color:var(--priDark)}
 
   .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-weight:600;line-height:1.5}
-  .banner.r{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc}
-  .banner.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .banner.r{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien)}
+  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
   .banner .s{display:block;font-weight:400;font-size:12px;margin-top:4px}
 
   /* ─── TRẠNG THÁI RỖNG — hai kiểu, trông KHÁC HẲN nhau ───────────────────────────────
@@ -61,9 +51,9 @@
   .trong{padding:18px 15px;text-align:center;line-height:1.6}
   .trong .ic{font-size:20px;display:block;margin-bottom:6px}
   .trong.xong{color:var(--ok);background:var(--okSoft)}
-  .trong.chua{color:#8a4a06;background:var(--warnSoft);border-top:1px solid #f0d3a4}
+  .trong.chua{color:var(--luu-chu);background:var(--warnSoft);border-top:1px solid var(--luu-vien)}
   .trong .di{display:inline-block;margin-top:8px;font-weight:700;color:var(--priDark);
-             background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 12px;text-decoration:none}
+             background:var(--nen);border:1px solid var(--line);border-radius:8px;padding:6px 12px;text-decoration:none}
 
   /* ─── lát bị chặn: hiện MỜ kèm lý do, không giấu đi ─── */
   .chan{background:#fafbfb;border:1px dashed #cfd8dc;border-radius:10px;padding:14px;color:var(--muted);line-height:1.6}
@@ -79,23 +69,23 @@
   .chon-page input{margin-top:2px;flex:none}
   .chon-page .n{font-weight:600;overflow-wrap:anywhere}
   .kq{margin-top:10px;border-radius:8px;padding:10px 12px;line-height:1.6}
-  .kq.g{background:var(--okSoft);color:#14532d;border:1px solid #b7e4c7}
-  .kq.o{background:var(--warnSoft);color:#8a4a06;border:1px solid #f0d3a4}
+  .kq.g{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien)}
+  .kq.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
   .kq ul{margin:6px 0 0;padding-left:18px}
 
   button,select{font:inherit}
-  .nut{background:var(--pri);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
+  .nut{background:var(--pri);color:var(--nen);border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
   .nut:hover{background:var(--priDark)}
-  .nut[disabled]{background:#c3cdd0;cursor:not-allowed}
+  .nut[disabled]{background:var(--vien-dam);cursor:not-allowed}
   .nut.nho{padding:4px 9px;font-size:11.5px;font-weight:600}
-  .nut.xoa{background:transparent;color:var(--bad);border:1px solid #f0c2c2}
+  .nut.xoa{background:transparent;color:var(--bad);border:1px solid var(--loi-vien)}
   .nut.xoa:hover{background:var(--badSoft)}
-  select{border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:#fff;max-width:100%}
+  select{border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--nen);max-width:100%}
 
   .hang{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .ten{font-weight:600;overflow-wrap:anywhere}
   .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
-  .loi{background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc;border-radius:8px;
+  .loi{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien);border-radius:8px;
        padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
   .loi.hien{display:block}
 
