@@ -775,6 +775,11 @@
      Cho màn cấu hình: mỗi lựa chọn một hàng, cùng một đường căn. Không một thẻ màu cho mỗi
      lựa chọn — đo 14/09 màn Model AI: ba thẻ nền vàng cạnh nhau, không biết thẻ nào hỏng. */
   .setting-list { display: flex; flex-direction: column; }
+  /* Danh sách cài đặt nằm trong một tấm có viền thì phải có lề hai bên — không thì chữ dính
+     mép viền (đo 14/09 trên ảnh chụp màn Kỹ năng). */
+  .table-wrap > .setting-list, .panel > .setting-list { padding: 0 var(--space-4); }
+  .table-wrap > .setting-list > .setting-row:first-child { padding-top: var(--space-4); }
+  .table-wrap > .setting-list > .setting-row:last-child { padding-bottom: var(--space-4); }
   .setting-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--space-2) var(--space-6);
                  padding: var(--space-4) 0; border-bottom: 1px solid var(--border-subtle); }
   .setting-row:first-child { padding-top: 0; }

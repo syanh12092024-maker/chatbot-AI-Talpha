@@ -3,104 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Thư viện kỹ năng — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  /* dải cảnh báo NGUY — màn này phải trông khác mọi màn khác */
-  .nguy{background:var(--loi-nen);border:1px solid var(--loi-vien);border-left:4px solid var(--bad);
-        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
-  .nguy b{color:var(--loi-chu)}
-  .nguy .so{font-size:19px;font-weight:700;color:var(--loi-chu);font-variant-numeric:tabular-nums}
-
-  .banner{border-radius:var(--r);padding:11px 14px;margin-bottom:14px;line-height:1.55}
-  .banner.o{background:var(--warnSoft);color:var(--luu-chu);border:1px solid var(--luu-vien)}
-  .banner.i{background:var(--priSoft);color:var(--chinh-dam);border:1px solid var(--chinh-vien)}
-
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
-  th{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
-  tbody tr:last-child td{border-bottom:none}
-  tbody tr.ap{background:var(--priSoft)}
-  .num{font-variant-numeric:tabular-nums}
-  .ten{font-weight:600;overflow-wrap:anywhere}
-  .phu{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
-
-  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;margin:1px 3px 1px 0}
-  .pill.g{background:var(--okSoft);color:var(--ok)}
-  .pill.o{background:var(--warnSoft);color:var(--warn)}
-  .pill.r{background:var(--badSoft);color:var(--bad)}
-  .pill.m{background:var(--nen-3);color:var(--chu-2)}
-  .pill.p{background:var(--priSoft);color:var(--priDark)}
-
-  /* khối so sánh */
-  .diff{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:400px;background:var(--nen-2)}
-  .diff pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6}
-  .diff .d{padding:1px 10px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid transparent}
-  .diff .d.them{background:var(--dat-nen);border-left-color:var(--ok)}
-  .diff .d.bo{background:var(--loi-nen);border-left-color:var(--bad);text-decoration:line-through;opacity:.8}
-  .diff .d.giu{color:var(--muted)}
-
-  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit;
-           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6;
-           min-height:260px;resize:vertical}
-
-  button{font:inherit}
-  .nut{background:var(--pri);color:var(--nen);border:none;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer}
-  .nut:hover{background:var(--priDark)}
-  .nut[disabled]{background:var(--vien-dam);cursor:not-allowed}
-  .nut.nho{padding:4px 10px;font-size:11.5px;font-weight:600}
-  .nut.nguy{background:var(--bad)}
-  .nut.nguy:hover{background:var(--loi-chu)}
-  .nut.phu{background:transparent;color:var(--priDark);border:1px solid var(--line)}
-  .nut.phu:hover{background:var(--priSoft)}
-  .hang{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
-
-  .trong{padding:20px 15px;text-align:center;line-height:1.6}
-  .trong .ic{font-size:20px;display:block;margin-bottom:6px}
-  .trong.chua{color:var(--luu-chu);background:var(--warnSoft)}
-  .loi{background:var(--badSoft);color:var(--loi-chu);border:1px solid var(--loi-vien);border-radius:8px;
-       padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .loi.hien{display:block}
-  .ok{background:var(--okSoft);color:var(--dat-chu);border:1px solid var(--dat-vien);border-radius:8px;
-      padding:9px 12px;margin:0 0 12px;display:none;line-height:1.5}
-  .ok.hien{display:block}
-
-  @media (max-width:700px){
-    .panel h2{padding:10px 12px} .than{padding:12px}
-    table,thead,tbody,th,td,tr{display:block}
-    thead{display:none}
-    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;padding:10px 11px}
-    tbody tr:last-child{margin-bottom:0}
-    td{border:none;padding:4px 0}
-    td[data-nhan]::before{content:attr(data-nhan);display:block;font-size:10px;text-transform:uppercase;
-      letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
-  }
-
-  .ky{border:1px solid var(--line);border-radius:10px;padding:13px 14px;margin-bottom:11px;background:var(--nen-2)}
-  .ky.bat{border-color:#a7d9c4;background:#f6fdf9}
-  .ky h3{font-size:13px;margin:0 0 3px}
-  .ky .nd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.55;
-           color:var(--muted);background:var(--nen);border:1px solid var(--line);border-radius:7px;
-           padding:8px 10px;margin-top:9px;max-height:120px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
-  .ct{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
-  .ct input{position:absolute;opacity:0;width:0;height:0}
-  .ct .ray{width:38px;height:22px;border-radius:20px;background:#cfd8dc;position:relative;transition:background .15s;flex:none}
-  .ct .ray::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
-                  background:var(--nen);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
-  .ct input:checked + .ray{background:var(--ok)}
-  .ct input:checked + .ray::after{transform:translateX(16px)}
-  .ct.khoa{cursor:not-allowed;opacity:.45}
-  .sp-chon{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-  .sp-chon label{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);
-                 border-radius:20px;padding:3px 10px;font-size:11.5px;cursor:pointer;background:var(--nen)}
-  .sp-chon label.chon{border-color:var(--pri);background:var(--priSoft);color:var(--priDark);font-weight:600}
-</style>
+<title>Kỹ năng theo sản phẩm — AI Closer</title>
+<!-- Dựng trên hệ kiểu. KHÔNG CSS riêng — trước lượt này là 84 dòng, gồm cả một công tắc tự
+     vẽ bằng `.ray` (kiểu thứ ba của công tắc trong sản phẩm). Mỗi kỹ năng nay là một hàng
+     cài đặt: tên và phạm vi bên trái, công tắc bên phải, khoanh sản phẩm ở dưới. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -108,114 +15,123 @@
 <body>
 <header>
   <h1>Kỹ năng theo sản phẩm</h1>
-  <span class="sub" id="teamHien">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Khối tư vấn dùng lại được — bật cho đúng sản phẩm cần, nằm giữa quy tắc chung và kịch bản page.</span>
 </header>
+
 <main>
-  <div class="loi" id="loi"></div>
-  <div class="ok" id="baoOk"></div>
-  <div class="banner i">Kỹ năng là <b>tầng giữa</b> bộ luật chung và kịch bản page: khối tư vấn
-    dùng lại được, bật cho đúng sản phẩm cần. §6 đo được: hai sản phẩm <b>có size</b> đang hoàn
-    <b>26,8%</b> và <b>19,2%</b>, trong khi sản phẩm không size hoàn <b>9,3%</b> — và cả hai đều
-    chưa bật kỹ năng hỏi size.</div>
-  <div id="canhBao"></div>
-  <section class="panel">
-    <h2>Kỹ năng của team <span class="hint" id="tomTat"></span></h2>
-    <div class="than" id="ds"><div class="trong"><span class="ic">⋯</span>đang đọc…</div></div>
+  <div id="bang-tin" aria-live="polite"></div>
+
+  <section class="section table-wrap" aria-labelledby="tieu-ky">
+    <div class="table-toolbar"><h2 id="tieu-ky">Kỹ năng của team</h2>
+      <span class="table-count" id="tomTat"></span></div>
+    <div class="setting-list" id="ds"><div class="empty-state"><span class="skeleton"></span></div></div>
   </section>
+
+  <p class="page-note">Không chọn sản phẩm nào nghĩa là áp cho CẢ TEAM — khác hẳn với tắt. Muốn ngừng hẳn thì gạt công tắc.</p>
 </main>
+
 <script>
+const { esc, statusBadge, alert: canhBao, emptyState, button, toast, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const so = (n) => Number(n || 0).toLocaleString('vi-VN');
-function baoLoi(t){ const o=$('#loi'); o.textContent=t; o.classList.add('hien'); $('#baoOk').classList.remove('hien'); }
-function baoOk(t){ const o=$('#baoOk'); o.textContent=t; o.classList.add('hien'); $('#loi').classList.remove('hien'); }
-function xoaBao(){ $('#loi').classList.remove('hien'); $('#baoOk').classList.remove('hien'); }
-async function goi(duong, tuyChon){
-  const r = await fetch(duong, { headers:{'Accept':'application/json','Content-Type':'application/json'}, ...tuyChon });
+
+let D = null, SUA = false, LOI = null;
+
+async function goi(duong, tuyChon) {
+  const r = await fetch(duong, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, ...tuyChon });
   if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   let d = null; try { d = await r.json(); } catch { /* null */ }
   if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
   return d;
 }
-function veTrong(t){
-  if (!t) return '';
-  const di = t.diTiep && t.diTiep.duong ? `<a class="di" href="${esc(t.diTiep.duong)}">${esc(t.diTiep.chu)}</a>` : '';
-  return `<div class="trong chua"><span class="ic">⚠️</span><div>${esc(t.noi)}</div>${di}</div>`;
+
+function veBangTin() {
+  const kh = [];
+  if (LOI) kh.push(canhBao({ level: 'error', title: LOI.title, body: LOI.body }));
+  for (const c of (D && D.canhBao) || []) kh.push(canhBao({ level: c.muc === 'do' ? 'error' : 'warning', body: c.chu }));
+  if (D && !SUA) kh.push(canhBao({ level: 'info', title: 'Vai của bạn chỉ xem được', body: 'Bật tắt kỹ năng và khoanh sản phẩm cần vai Quản trị.' }));
+  $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 }
+function baoLoi(title, body) { LOI = { title, body }; veBangTin(); }
 
-let D = null, SUA = false;
+function veDs() {
+  $('#tomTat').textContent = `${so(D.kyNang.length)} kỹ năng · ${so(D.soPage)} page · ${so(D.sanPham.length)} sản phẩm`;
+  if (D.trong) {
+    $('#ds').innerHTML = emptyState({ icon: 'triangle-alert', title: D.trong.noi,
+      actionsHtml: D.trong.diTiep && D.trong.diTiep.duong ? button(D.trong.diTiep.chu, { href: D.trong.diTiep.duong, size: 'sm' }) : '' });
+    return;
+  }
 
-function veCanhBao(){
-  $('#canhBao').innerHTML = (D.canhBao || []).map((c) =>
-    `<div class="banner ${c.muc === 'do' ? 'r' : 'o'}" style="${c.muc==='do'?'background:var(--badSoft);color:#991b1b;border:1px solid #f4bcbc':''}">${esc(c.chu)}</div>`).join('');
-}
-
-function veDs(){
-  $('#teamHien').textContent = `team #${D.teamId}`;
-  $('#tomTat').textContent = `${D.kyNang.length} kỹ năng · ${D.soPage} page · ${D.sanPham.length} sản phẩm`;
-  if (D.trong) { $('#ds').innerHTML = veTrong(D.trong); return; }
-
-  $('#ds').innerHTML = D.kyNang.map((k) => `
-    <div class="ky ${k.bat ? 'bat' : ''}">
-      <div class="hang" style="justify-content:space-between">
-        <div style="min-width:0">
-          <h3>${esc(k.ten)} <span class="phu" style="display:inline">${esc(k.ma)}</span></h3>
-          <div class="phu">≈ ${so(k.uocToken)} token (ước lượng) · ${so(k.soKyTu)} ký tự</div>
+  $('#ds').innerHTML = D.kyNang.map((k) => {
+    // «Bật mà không page nào nhận» là cảnh nguy: trông như đang chạy, thật ra không vào
+    // prompt của ai. Nói ngay tại hàng đó, không chỉ ở băng tin đầu trang.
+    const rong = k.bat && k.soPageNhan === 0;
+    return `<div class="setting-row" data-ky="${esc(k.id)}">
+      <div>
+        <div class="setting-name">${esc(k.ten)} <span class="meta"><code>${esc(k.ma)}</code></span></div>
+        <div class="setting-desc">${esc(D.chuPhamVi[k.phamVi])}</div>
+        <div class="tren-2 hang">
+          ${statusBadge(rong ? 'blocked' : k.bat ? 'feature_on' : 'feature_off',
+            { label: rong ? 'Bật nhưng 0 page nhận' : k.bat ? `${so(k.soPageNhan)}/${so(D.soPage)} page nhận` : 'Đang tắt' })}
+          <span class="meta">≈ ${so(k.uocToken)} token mỗi lượt · ${so(k.soKyTu)} ký tự</span>
         </div>
-        <label class="ct ${SUA ? '' : 'khoa'}">
-          <input type="checkbox" data-bat="${esc(k.id)}" ${k.bat ? 'checked' : ''} ${SUA ? '' : 'disabled'} />
-          <span class="ray"></span>
+      </div>
+      <div class="setting-control">
+        <label class="switch" ${SUA ? '' : 'title="Cần vai Quản trị"'}>
+          <input type="checkbox" role="switch" data-bat="${esc(k.id)}" aria-label="Bật kỹ năng ${esc(k.ten)}"
+                 ${k.bat ? 'checked' : ''} ${SUA ? '' : 'disabled'}>
+          <span>${k.bat ? 'Đang bật' : 'Tắt'}</span>
         </label>
+        ${D.sanPham.length ? `<div class="tren-2">
+          <div class="field-label duoi-1">Khoanh theo sản phẩm</div>
+          <div class="chip-list" data-nhom="${esc(k.id)}">
+            ${D.sanPham.map((s) => `<label class="chip"><input type="checkbox" value="${esc(s.ma)}"
+              ${k.nhom.includes(s.ma) ? 'checked' : ''} ${SUA ? '' : 'disabled'}> ${esc(s.ten)}</label>`).join('')}
+          </div>
+          <div class="field-hint">Bỏ trống = áp cho cả team.</div>
+        </div>` : '<div class="field-hint tren-2">Chưa có sản phẩm nào để khoanh nhóm — kỹ năng bật sẽ áp cho cả team.</div>'}
+        <details class="tren-2"><summary class="text-sm">Xem nội dung kỹ năng</summary>
+          <pre class="code-block tren-2">${esc(k.noiDung)}</pre></details>
       </div>
-      <div style="margin-top:8px">
-        <span class="pill ${k.phamVi === 'tat' ? 'm' : k.phamVi === 'ca_team' ? 'p' : 'g'}">${esc(D.chuPhamVi[k.phamVi])}</span>
-        <span class="pill ${k.bat && k.soPageNhan === 0 ? 'r' : 'm'}">${so(k.soPageNhan)} page nhận</span>
-      </div>
-      ${D.sanPham.length ? `<div class="sp-chon" data-nhom="${esc(k.id)}">
-        ${D.sanPham.map((s) => `<label class="${k.nhom.includes(s.ma) ? 'chon' : ''}">
-          <input type="checkbox" value="${esc(s.ma)}" ${k.nhom.includes(s.ma) ? 'checked' : ''} ${SUA ? '' : 'disabled'} />
-          ${esc(s.ten)}</label>`).join('')}
-        </div>
-        <div class="phu" style="margin-top:5px">Không chọn sản phẩm nào = áp cho <b>CẢ TEAM</b>
-          (khác hẳn với TẮT — tắt thì dùng công tắc ở trên).</div>`
-      : '<div class="phu" style="margin-top:6px">Chưa có sản phẩm nào để khoanh nhóm — kỹ năng bật sẽ áp cho cả team.</div>'}
-      <div class="nd">${esc(k.noiDung)}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   document.querySelectorAll('[data-bat]').forEach((el) => el.addEventListener('change', () => gat(el)));
   document.querySelectorAll('[data-nhom]').forEach((o) => o.addEventListener('change', () => datNhom(o)));
 }
 
-async function gat(el){
-  xoaBao(); el.disabled = true;
+async function gat(el) {
+  LOI = null; veBangTin();
+  el.disabled = true;
   try {
     const kq = await goi(`/api/ky-nang/${encodeURIComponent(el.dataset.bat)}/bat`,
-      { method:'POST', body: JSON.stringify({ bat: el.checked }) });
-    baoOk(kq.bat ? 'Đã BẬT — page nhận kỹ năng này từ lượt chat kế tiếp.' : 'Đã TẮT.');
+      { method: 'POST', body: JSON.stringify({ bat: el.checked }) });
+    toast(kq.bat ? 'Đã bật — page nhận kỹ năng này từ lượt chat kế tiếp.' : 'Đã tắt kỹ năng.');
     await nap();
-  } catch (e) { el.checked = !el.checked; baoLoi(e.message); }
+  } catch (e) { el.checked = !el.checked; baoLoi('Không đổi được trạng thái kỹ năng', e.message); }
   finally { el.disabled = false; }
 }
 
-async function datNhom(o){
+async function datNhom(o) {
   const nhom = [...o.querySelectorAll('input:checked')].map((c) => c.value);
-  xoaBao();
+  LOI = null; veBangTin();
   try {
     await goi(`/api/ky-nang/${encodeURIComponent(o.dataset.nhom)}/nhom`,
-      { method:'POST', body: JSON.stringify({ nhom }) });
+      { method: 'POST', body: JSON.stringify({ nhom }) });
+    toast(nhom.length ? `Đã khoanh ${so(nhom.length)} sản phẩm.` : 'Đã bỏ khoanh — kỹ năng áp cho cả team.');
     await nap();
-  } catch (e) { baoLoi(e.message); await nap(); }
+  } catch (e) { baoLoi('Không lưu được nhóm sản phẩm', e.message); await nap(); }
 }
 
-async function nap(){
+async function nap() {
   try {
     const d = await goi('/api/ky-nang');
     if (!d) return;
     D = d; SUA = !!d.suaDuoc;
-    veCanhBao(); veDs();
-  } catch (e) { baoLoi(e.message); }
+    veBangTin(); veDs();
+  } catch (e) {
+    baoLoi('Không tải được danh sách kỹ năng', e.message);
+    $('#ds').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' });
+  }
 }
 nap();
 </script>
