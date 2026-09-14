@@ -82,13 +82,26 @@ jobs:
       - name: Bộ ca
         run: npm test
 
+      # ⚠️ `set +e` BẮT BUỘC: GitHub chạy bước bằng `bash -e`, nên `bash "$f"; rc=$?` làm
+      # CẢ VÒNG LẶP chết ngay ở cổng đỏ ĐẦU TIÊN — không đếm được cổng nào, không in được
+      # lý do nào, chỉ còn «exit code 1» trơ. Đo 14/09/2026: đúng cảnh đó đã xảy ra một lượt.
+      # Và giữ lại ĐẦU RA của cổng đỏ: một con `rc` không nói được vì sao nó đỏ.
       - name: Cổng nghiệm thu (rc TÁCH DÒNG từng cổng)
         run: |
-          do=0
+          set +e
+          soDo=0; soXanh=0; dsDo=""
           for f in ops/bin/nghiem-thu/*.sh; do
             case "$f" in */_chan1.sh) continue;; esac
-            bash "$f" >/dev/null 2>&1; rc=$?
-            [ $rc -eq 0 ] || { do=$((do+1)); echo "🔴 $(basename "$f") rc=$rc"; }
+            ten=$(basename "$f")
+            ra=$(bash "$f" 2>&1); rc=$?
+            if [ $rc -eq 0 ]; then
+              soXanh=$((soXanh+1)); echo "🟢 $ten"
+            else
+              soDo=$((soDo+1)); dsDo="$dsDo $ten"
+              echo "🔴 $ten rc=$rc"
+              printf '%s\n' "$ra" | tail -n 12 | sed 's/^/        /'
+            fi
           done
-          echo "cổng đỏ: $do"
-          exit $((do > 0))
+          echo "═══ CỔNG NGHIỆM THU · XANH=$soXanh · ĐỎ=$soDo ═══"
+          [ $soDo -eq 0 ] || echo "đỏ:$dsDo"
+          [ $soDo -eq 0 ]
