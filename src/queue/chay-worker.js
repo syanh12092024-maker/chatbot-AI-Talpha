@@ -51,6 +51,34 @@ export async function dsPageDeNap(pool, { gioiHan = 500 } = {}) {
 }
 
 /**
+ * DANH SÁCH PAGE ĐƯỢC PHÉP — van bậc phơi (14/09).
+ *
+ * ⚠️ VÌ SAO PHẢI CÓ: `dsPageDeNap` trả MỌI page trong bảng (502 page). Bật worker mà không
+ *    có van này là mở thẳng bậc ⑥ «toàn bộ» — trong khi bot v1 vẫn đang trả lời 51 page
+ *    thật, tức khách của những page ấy nhận tin từ HAI tiến trình. Bậc phơi ③ («1 page thử,
+ *    người ngồi canh») của skill `mo-van` KHÔNG thực hiện được nếu thiếu chỗ này.
+ *
+ * Chiều an toàn theo luật 1 của `bien-moi-truong-v3.md`: **vắng = đóng**. Không đặt biến thì
+ * danh sách RỖNG và worker không nạp page nào — không phải «nạp tất».
+ *
+ * Van này chỉ THU HẸP, không bao giờ mở rộng: id không có trong bảng `page` bị bỏ qua, nên
+ * gõ nhầm một id không tạo ra một page ma (án lệ #22 «danh sách gõ tay là lỗ hẹn giờ»).
+ */
+export function dsPageChoPhep() {
+  return String(process.env.V3_PAGE_XU_LY || "")
+    .split(/[,\s]+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+export function lyDoChuaChoPageNao() {
+  return (
+    "V3_PAGE_XU_LY chưa đặt ⇒ worker KHÔNG nạp page nào (vắng = đóng). Đặt danh sách id " +
+    "page ngăn cách bằng dấu phẩy để mở đúng bậc phơi cần thử."
+  );
+}
+
+/**
  * MỘT lượt: nạp tin mới của mọi page rồi xử hết hàng đợi.
  * Trả bảng đếm — cấm trả `void`, vì cái duy nhất chứng minh vòng lặp đang làm việc là số.
  */
@@ -62,10 +90,21 @@ export async function motLuot(pool, deps = {}) {
   if (!ket.nap.mo) {
     ket.nap.lyDo = lyDoNguonDong();
   } else {
-    const pages = deps.dsPage
+    const trongBang = deps.dsPage
       ? await deps.dsPage(pool)
       : await dsPageDeNap(pool);
+    // GIAO của hai danh sách: bảng `page` nói page nào CÓ THẬT, biến môi trường nói page nào
+    // ĐƯỢC PHÉP ở bậc phơi này. Thiếu một trong hai thì page ấy không được nạp.
+    const choPhep = deps.dsChoPhep ? deps.dsChoPhep() : dsPageChoPhep();
+    ket.nap.choPhep = choPhep.length;
+    const pages = trongBang.filter((p) => choPhep.includes(p));
     ket.nap.page = pages.length;
+    if (!choPhep.length) ket.nap.lyDo = lyDoChuaChoPageNao();
+    else if (!pages.length) {
+      ket.nap.lyDo =
+        `V3_PAGE_XU_LY có ${choPhep.length} id nhưng KHÔNG id nào có trong bảng \`page\` ` +
+        "— van chỉ thu hẹp, không tạo page mới. Kiểm lại id.";
+    }
     for (const pageId of pages) {
       try {
         const r = await napTuPoll(pool, { pageId }, deps.depsNap || {});
@@ -97,9 +136,11 @@ function inLuot(ket) {
 async function main() {
   const pool = taoPool();
   const motLuotThoi = process.env.V3_WORKER_MOT_LUOT === "1";
+  const choPhep = dsPageChoPhep();
   console.log(
     `[worker-v3] khởi động · nhịp ${NHIP_MS}ms · trần ${TRAN_MOI_LUOT} tin/lượt · ` +
-      `nguồn ${nguonDangMo() ? "MỞ" : "ĐÓNG"} · V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)}`,
+      `nguồn ${nguonDangMo() ? "MỞ" : "ĐÓNG"} · V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)} · ` +
+      `page được phép: ${choPhep.length ? choPhep.join(",") : "KHÔNG CÓ (vắng V3_PAGE_XU_LY = đóng)"}`,
   );
   let dung = false;
   for (const tin of ["SIGINT", "SIGTERM"]) {

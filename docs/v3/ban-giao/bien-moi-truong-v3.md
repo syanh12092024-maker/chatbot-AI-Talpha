@@ -13,6 +13,14 @@
 | `V3_NAP_DEV`        | Cho bộ NẠP enqueue tin khi `PANCAKE_READONLY=1` — **chỉ hiệu lực khi `DATABASE_URL_V3` trỏ localhost/127.0.0.1** (VA-R1 RF-2); DB xa ⇒ vẫn đóng. `PANCAKE_READONLY` đọc theo `.env` tuyệt đối (không phụ thuộc cwd) | vắng = không nạp; `1` chỉ trong harness test | KHÔNG đặt (VPS không READONLY)                                | L2-M1 · VA-R1            |
 | `V3_RAP_PROMPT_BAT` | Bật `rap-prompt.js` ráp `kb` từ 4 bảng DB (bo_luat_chung/ky_nang/kich_ban/san_pham); vắng ⇒ lùi nguyên `kb.js#getKBForPage` cũ | vắng = dùng kb.js cũ                         | `1` khi cutover từng phần đã kiểm 4 khối khớp dữ liệu thật    | L2-M3                    |
 
+| `V3_PAGE_XU_LY`     | **Van BẬC PHƠI của worker v3.** Danh sách id page (ngăn bằng dấu phẩy) mà `src/queue/chay-worker.js` được phép nạp và xử. Van chỉ THU HẸP: id không có trong bảng `page` bị bỏ qua | vắng = không nạp page nào             | đặt ĐÚNG page đang thử ở bậc phơi hiện tại; bậc ⑥ mới liệt kê hết | VA-P7 · mở van 14/09     |
+
+> **Vì sao biến này phải có trước khi bật worker (đo 14/09):** `dsPageDeNap` đọc MỌI page
+> trong bảng (502 dòng). Bật worker mà không có van này là mở thẳng bậc ⑥ «toàn bộ» — trong
+> khi bot v1 vẫn đang trả lời 51 page thật, tức khách của những page ấy nhận tin từ HAI tiến
+> trình. Bậc phơi ③ của skill `mo-van` («1 page thử, người ngồi canh») KHÔNG thực hiện được
+> nếu thiếu chỗ này.
+
 Biến kế thừa từ bản đang chạy (không thuộc bảng này nhưng liên quan cửa):
 `PANCAKE_READONLY=1` — luật 1 §0a: máy cá nhân LUÔN có, VPS không đặt.
 

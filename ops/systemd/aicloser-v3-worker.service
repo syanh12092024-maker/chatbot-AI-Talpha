@@ -1,0 +1,35 @@
+# WORKER v3 — vòng NẠP rồi XỬ. CHƯA CÀI trên VPS: đây là bản mẫu để lượt mở van sau dùng.
+#
+# ⚠️ ĐỌC TRƯỚC KHI CÀI (skill `mo-van`, bậc phơi):
+#   · `V3_PAGE_XU_LY` là van bậc phơi. VẮNG = worker quay nhưng KHÔNG nạp page nào.
+#     Đặt ĐÚNG id page đang thử; bậc ⑥ «toàn bộ» mới liệt kê hết.
+#   · `V3_PANCAKE_GUI` là van GỬI. Vắng = worker nạp và dừng ở `chan_guard`: 0 token, 0 HTTP
+#     ghi, KHÔNG một byte nào tới khách. Bậc ② (đường đọc) chạy ở trạng thái này.
+#   · Mở van GỬI cho một page thì page ấy PHẢI được tắt ở bot v1 trước, nếu không khách nhận
+#     tin từ hai tiến trình.
+#   · Tin bị chốt `chan_guard` KHÔNG tự thử lại (luật N6): mở van rồi phải UPDATE tay về `cho`.
+#
+# Cài:  cp ops/systemd/aicloser-v3-worker.service /etc/systemd/system/
+#       systemctl daemon-reload && systemctl enable --now aicloser-v3-worker
+# Lùi:  systemctl stop aicloser-v3-worker   (bot v1 không bị đụng — hai tiến trình tách hẳn)
+
+[Unit]
+Description=AI Closer v3 — worker nap/xu (BAC PHOI theo V3_PAGE_XU_LY)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/aicloser
+EnvironmentFile=/opt/aicloser/.env
+# Van bậc phơi đặt Ở ĐÂY, không đặt trong .env chung: đổi bậc phơi là sửa một dòng của
+# chính dịch vụ này rồi restart, không đụng tới ba dịch vụ kia.
+Environment=V3_PAGE_XU_LY=
+ExecStart=/usr/bin/node src/queue/chay-worker.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

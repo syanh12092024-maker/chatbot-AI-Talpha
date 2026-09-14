@@ -59,6 +59,34 @@ test("P7-1 · đọc danh sách page TỪ BẢNG, không gõ tay (án lệ #22)"
   assert.deepEqual(ds.sort(), ["970000000001", "970000000002"]);
 });
 
+test("P7-1b · VẮNG `V3_PAGE_XU_LY` ⇒ KHÔNG nạp page nào, và nói lý do (vắng = đóng)", async () => {
+  // Bảng `page` có 502 dòng trên máy chủ thật. Bật worker mà không có van bậc phơi là mở
+  // thẳng bậc ⑥ trong khi bot v1 vẫn trả lời 51 page — khách nhận tin từ hai tiến trình.
+  let goiCua = 0;
+  const ket = await voiEnv(
+    // Nguồn MỞ (khuôn harness như P7-3) để phép đo này soi ĐÚNG van bậc phơi, không soi nhầm
+    // van nguồn: hai van đóng vì hai lý do khác nhau và phải đọc ra hai câu khác nhau.
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_PAGE_XU_LY: undefined },
+    () =>
+      motLuot(pool, {
+        depsNap: { docHoiThoai: async () => ((goiCua += 1), []) },
+      }),
+  );
+  assert.equal(ket.nap.mo, true, "van NGUỒN phải mở thì phép đo này mới nói về van bậc phơi");
+  assert.equal(ket.nap.page, 0, "vắng van mà vẫn nạp page là mở sai bậc phơi");
+  assert.equal(goiCua, 0, "không page nào được phép thì KHÔNG hỏi Pancake một lượt nào");
+  assert.match(ket.nap.lyDo, /V3_PAGE_XU_LY/);
+});
+
+test("P7-1c · van CHỈ THU HẸP: id ngoài bảng `page` bị bỏ qua, không đẻ page ma", async () => {
+  const ket = await voiEnv(
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_PAGE_XU_LY: "970000000001, 999999999999" },
+    () => motLuot(pool, { depsNap: { docHoiThoai: async () => [] } }),
+  );
+  assert.equal(ket.nap.choPhep, 2, "hai id được khai");
+  assert.equal(ket.nap.page, 1, "chỉ id CÓ TRONG BẢNG mới được nạp");
+});
+
 test("P7-2 · van NGUỒN đóng (máy READONLY) ⇒ KHÔNG gọi cửa Pancake một lượt nào, và NÓI lý do", async () => {
   let goiCua = 0;
   const ket = await voiEnv(
@@ -83,7 +111,8 @@ test("P7-2 · van NGUỒN đóng (máy READONLY) ⇒ KHÔNG gọi cửa Pancake 
 });
 
 test("P7-3 · van nguồn MỞ (harness) ⇒ nạp theo TỪNG page và cộng đúng số", async () => {
-  const ket = await voiEnv({ PANCAKE_READONLY: "1", V3_NAP_DEV: "1" }, () =>
+  const ket = await voiEnv(
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_PAGE_XU_LY: "970000000001,970000000002" }, () =>
     motLuot(pool, {
       depsNap: {
         docHoiThoai: async () => [
@@ -119,7 +148,8 @@ test("P7-3 · van nguồn MỞ (harness) ⇒ nạp theo TỪNG page và cộng �
 
 test("P7-4 · MỘT page hỏng KHÔNG dừng cả vòng, nhưng phải ĐẾM ra", async () => {
   let lan = 0;
-  const ket = await voiEnv({ PANCAKE_READONLY: "1", V3_NAP_DEV: "1" }, () =>
+  const ket = await voiEnv(
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_PAGE_XU_LY: "970000000001,970000000002" }, () =>
     motLuot(pool, {
       depsNap: {
         docHoiThoai: async () => {
