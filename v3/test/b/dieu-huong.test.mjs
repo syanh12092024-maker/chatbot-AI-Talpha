@@ -54,7 +54,7 @@ test('①c · không đường nào trùng nhau', () => {
 const ten = (vai) => mh.menuCua([vai]).flatMap((n) => n.man.map((m) => m.ten));
 
 test('②a · SALE chỉ thấy Bảng điều phối — §9', () => {
-  assert.deepEqual(ten(VAI.SALE), ['Bảng điều phối']);
+  assert.deepEqual(ten(VAI.SALE), ['Việc đang chờ']);
 });
 
 test('②b · MARKETER không thấy màn hạ tầng', () => {
@@ -66,7 +66,7 @@ test('②b · MARKETER không thấy màn hạ tầng', () => {
 
 test('②c · NGƯỜI DUYỆT KỊCH BẢN thấy bộ luật nhưng không thấy màn hạ tầng', () => {
   const t = ten(VAI.DUYET_KICH_BAN);
-  assert.ok(t.includes('Quy tắc chung của bot'), 'họ cần biết luật chung để duyệt kịch bản cho khớp');
+  assert.ok(t.includes('Quy tắc chung mọi page'), 'họ cần biết luật chung để duyệt kịch bản cho khớp');
   assert.ok(!t.includes('Kết nối & token'));
 });
 
@@ -119,8 +119,16 @@ test('④a · BỐN mục người dùng thấy — mục thứ năm là quay l�
   //   Việc · Page · Số liệu · Cài đặt
   // KHÔNG màn nào bị xoá — 24 màn vẫn đủ 24 đường, và vẫn nằm trong menu nên bài ③
   // (không trang nào kẹt) giữ nguyên hiệu lực.
-  // NHOM khai NĂM: bốn mục trên + `nhan-cho-khach` dự trù cho giai đoạn 3, tự ẩn.
-  assert.equal(mh.NHOM.length, 5, `đang có ${mh.NHOM.length} mục: ${mh.NHOM.map((n) => n.ten)}`);
+  // ═══ ĐỔI 14/09/2026 ═══════════════════════════════════════════════════════════
+  // Người tiếp quản nói «toàn bộ đều khó dùng» và chỉ ra bốn bệnh: quá nhiều màn · từ
+  // ngữ khó hiểu · không biết thứ tự việc · một màn quá nhiều thứ. Được hỏi «hằng ngày
+  // anh thật sự cần app này làm gì», họ kể NĂM việc. Tên mục nay là ĐÚNG NĂM CÂU ĐÓ:
+  //   Bot nói gì với khách · Việc cần người làm · Bật bot cho page ·
+  //   Dạy bot nói gì · Tốn bao nhiêu tiền   (+ «Màn khác» cho phần còn lại)
+  // KHÔNG màn nào bị xoá, KHÔNG đường nào đổi — chỉ đổi TÊN và CHỖ NGỒI.
+  // NHOM khai BẢY: sáu mục trên + hai mục dự trù (`bot-noi` chưa có màn, `nhan-cho-khach`
+  // của giai đoạn 3) — cả hai tự ẩn.
+  assert.equal(mh.NHOM.length, 7, `đang có ${mh.NHOM.length} mục: ${mh.NHOM.map((n) => n.ten)}`);
   for (const n of mh.NHOM) {
     assert.ok(n.ma && n.ten, 'mục phải có mã và tên');
     assert.ok(n.mo && n.mo.length > 8, `mục ${n.ten}: thiếu câu mô tả — người dùng không đoán được trong đó có gì`);
@@ -131,7 +139,7 @@ test('④a · BỐN mục người dùng thấy — mục thứ năm là quay l�
       `mục "${ma}" đã có màn — bỏ nó khỏi MUC_DU_TRU và cập nhật bài test này`);
   }
   const hien = mh.menuCua([VAI.QUAN_TRI]).length;
-  assert.ok(hien <= 4, `vai thấy nhiều nhất phải ≤ 4 mục, đang thấy ${hien}`);
+  assert.ok(hien <= 5, `vai thấy nhiều nhất phải ≤ 5 mục, đang thấy ${hien}`);
 });
 
 test('④b · mọi màn thuộc về một mục CÓ THẬT — không màn nào rơi ra ngoài menu', () => {
@@ -141,54 +149,72 @@ test('④b · mọi màn thuộc về một mục CÓ THẬT — không màn nà
     'màn khai nhóm không có trong NHOM sẽ biến mất khỏi menu mà không ai báo');
 });
 
-test('④c · vai QUẢN TRỊ thấy 4 mục nhưng vẫn đủ 24 màn — gom chứ không xoá', () => {
+test('④c · vai QUẢN TRỊ thấy 5 mục nhưng vẫn đủ 25 màn — gom chứ không xoá', () => {
   const menu = mh.menuCua([VAI.QUAN_TRI]);
-  assert.equal(menu.length, 4, 'quản trị phải thấy đúng bốn mục CÓ MÀN (mục dự trù tự ẩn)');
+  assert.equal(menu.length, 5, 'quản trị phải thấy đúng năm mục CÓ MÀN (hai mục dự trù tự ẩn)');
   const soMan = menu.reduce((a, n) => a + n.man.length, 0);
   assert.equal(soMan, mh.MAN.length, 'gom nhóm KHÔNG được làm rơi màn nào');
-  assert.deepEqual(menu.map((n) => n.ma), ['viec', 'page', 'so-lieu', 'cai-dat'],
-    'thứ tự mục là thứ tự nhịp làm việc: việc hằng ngày trước, cài đặt sau cùng');
+  assert.deepEqual(menu.map((n) => n.ma), ['viec', 'bat-bot', 'day-bot', 'tien', 'khac'],
+    'thứ tự mục là thứ tự nhịp làm việc: việc hằng ngày trước, màn khác sau cùng');
   // «Việc» là mục mở mỗi sáng — nó phải đứng ĐẦU, và Bảng điều phối phải là màn đầu của nó.
-  assert.equal(menu[0].man[0].ten, 'Bảng điều phối');
+  assert.equal(menu[0].man[0].ten, 'Việc đang chờ');
   // Chín màn ít dùng dồn vào Cài đặt. Đếm ở đây để nếu có người kéo một màn ít dùng trở
   // lên mục hằng ngày thì bài này đỏ, chứ không trôi lặng lẽ.
-  const caiDat = menu.find((n) => n.ma === 'cai-dat');
-  assert.equal(caiDat.man.length, 13, 'Cài đặt = 4 màn cấu hình + 9 màn ít dùng');
+  // Bảy màn ít dùng nay tản ra ba mục theo ĐÚNG việc của chúng, không dồn hết vào một
+  // chỗ nữa. Đếm ở đây để ai kéo một màn ít dùng lên mục hằng ngày thì ca này đỏ.
+  const itDung = mh.MAN.filter((m) => m.itDung);
+  assert.equal(itDung.length, 7, `đang có ${itDung.length} màn ít dùng`);
 });
 
 test('④d · SALE chỉ thấy MỘT mục, và mục đó chỉ có một màn — §10', () => {
   const menu = mh.menuCua([VAI.SALE]);
   assert.equal(menu.length, 1, 'sale không được thấy mục nào khác');
   assert.equal(menu[0].ma, 'viec');
-  assert.deepEqual(menu[0].man.map((m) => m.ten), ['Bảng điều phối']);
+  assert.deepEqual(menu[0].man.map((m) => m.ten), ['Việc đang chờ']);
 });
 
 test('④e · `mucCuaDuong` chỉ đúng mục đang đứng — menu phải bung được đúng chỗ', () => {
-  assert.equal(mh.mucCuaDuong('/bo-luat'), 'cai-dat');
+  assert.equal(mh.mucCuaDuong('/bo-luat'), 'day-bot');
   assert.equal(mh.mucCuaDuong('/dieu-phoi'), 'viec');
-  assert.equal(mh.mucCuaDuong('/nhat-ky'), 'cai-dat');
+  assert.equal(mh.mucCuaDuong('/nhat-ky'), 'khac');
   assert.equal(mh.mucCuaDuong('/dieu-phoi/'), 'viec', 'gạch chéo cuối không được làm lệch');
   assert.equal(mh.mucCuaDuong('/khong-co-that'), null, 'đường lạ trả null, không đoán bừa');
 });
 
-test('④f · ĐÚNG chín màn nằm dưới vạch «Ít dùng», và không màn nào của mục khác', () => {
-  // Chín màn này chưa có dữ liệu để hiện, hoặc đang tắt trên máy chủ, hoặc một năm dùng
-  // một lần. Cờ `itDung` KHÔNG đổi quyền và KHÔNG bỏ màn khỏi menu — bài ④b vẫn canh
-  // «không màn nào rơi ra ngoài». Nó chỉ đổi CHỖ ĐỨNG trong mục.
-  const itDung = mh.MAN.filter((m) => m.itDung);
-  assert.deepEqual(itDung.map((m) => m.ten), [
-    'Quy tắc chung của bot', 'Thư viện kỹ năng', 'Prompt thật của page',
-    'Trả lời sẵn theo từ khoá', 'Thư viện ảnh', 'Gợi ý từ AI',
-    'So hai bản kịch bản', 'Đưa sản phẩm lên chạy', 'Rủi ro hoàn hàng',
+test('④f · trong MỖI mục, màn ít dùng đứng SAU hết — vạch «Ít dùng» mới có nghĩa', () => {
+  // ═══ ĐỔI LUẬT 14/09/2026, không chỉ đổi số ════════════════════════════════════
+  // Luật cũ: MỌI màn ít dùng phải nằm trong mục «Cài đặt» — vì nếu một màn ít dùng lạc
+  // sang mục hằng ngày thì vạch «Ít dùng» mọc ra giữa mục đó và thành một ranh giới vô
+  // nghĩa. Luật ấy đúng khi cả chín màn bị dồn vào một chỗ.
+  //
+  // Nay mục đặt theo VIỆC của người dùng, và màn ít dùng tản về đúng việc của chúng:
+  // «Đoạn chữ gửi cho AI» thuộc việc «Dạy bot nói gì», không thuộc «Cài đặt». Vạch vẫn
+  // có nghĩa — nó chia «hay dùng» với «ít dùng» BÊN TRONG cùng một việc.
+  // Luật THẬT SỰ cần canh là: trong mỗi mục, không màn ít dùng nào đứng TRƯỚC một màn
+  // hay dùng. Vỡ điều đó thì vạch cắt ngang giữa những màn hay dùng.
+  const theoNhom = new Map();
+  for (const m of mh.MAN) {
+    if (!theoNhom.has(m.nhom)) theoNhom.set(m.nhom, []);
+    theoNhom.get(m.nhom).push(m);
+  }
+  const sai = [];
+  for (const [nhom, ds] of theoNhom) {
+    const viTriItDungDau = ds.findIndex((m) => m.itDung);
+    if (viTriItDungDau === -1) continue;
+    const hayDungSauVach = ds.slice(viTriItDungDau).filter((m) => !m.itDung);
+    for (const m of hayDungSauVach) sai.push(`${nhom}: «${m.ten}» hay dùng mà đứng SAU vạch`);
+  }
+  assert.deepEqual(sai, [], sai.join(' · '));
+
+  // Neo SỐ, cố ý: đổi cờ `itDung` của một màn là ca này đỏ, buộc khai ra.
+  // 14/09: 9 → 7. Ba màn rời khỏi «ít dùng» vì chúng là việc SỐ NĂM người dùng kể ra
+  // («cấu hình cho page mới đủ để chat đúng»): Quy tắc chung mọi page · Câu trả lời sẵn ·
+  // Kỹ năng theo sản phẩm. Một màn thêm vào: không có.
+  const itDung = mh.MAN.filter((m) => m.itDung).map((m) => m.ten);
+  assert.deepEqual(itDung, [
+    'Đoạn chữ gửi cho AI', 'Ảnh gửi khách', 'Gợi ý từ AI', 'So hai bản kịch bản',
+    'Rủi ro hoàn hàng', 'Sản phẩm & kho', 'Đưa sản phẩm lên chạy',
   ]);
-  // Tất cả phải nằm trong «Cài đặt»: một màn ít dùng lạc sang mục hằng ngày thì vạch
-  // «Ít dùng» mọc ra giữa mục đó, và người dùng thấy một ranh giới không có nghĩa.
-  for (const m of itDung) assert.equal(m.nhom, 'cai-dat', `${m.ten} không thuộc Cài đặt`);
-  // Và bốn màn cấu hình thật phải đứng TRƯỚC vạch.
-  const caiDat = mh.MAN.filter((m) => m.nhom === 'cai-dat');
-  assert.deepEqual(caiDat.slice(0, 4).map((m) => m.itDung), [false, false, false, false],
-    'bốn màn cấu hình phải đứng trên vạch');
-  assert.ok(caiDat.slice(4).every((m) => m.itDung), 'phần sau vạch phải toàn màn ít dùng');
 });
 
 /* ═══════════ ⑤ LỐI RA: đổi team và đăng xuất phải có ở MỌI trang ═══════════ */
@@ -247,9 +273,10 @@ test('⑥b · mỗi mục có từ hai màn thì thanh tab của nó liệt kê 
   // mục nào không, và số tab bằng số màn vai đó vào được.
   const menu = mh.menuCua([VAI.QUAN_TRI]);
   const coTab = menu.filter((n) => n.man.length >= 2).map((n) => `${n.ma}:${n.man.length}`);
-  // Neo SỐ, cố ý: thêm một màn là ca này đỏ, buộc người thêm phải khai ra mình vừa làm gì.
-  // 14/09/2026: page 4 → 5 vì thêm màn «Bắt đầu» (đứng đầu nhóm, lối đi cho người mới).
-  assert.deepEqual(coTab, ['viec:4', 'page:5', 'so-lieu:3', 'cai-dat:13'],
+  // Neo SỐ, cố ý: thêm màn hoặc xếp lại mục là ca này đỏ, buộc khai ra mình vừa làm gì.
+  // 14/09/2026 · lượt 1: page 4 → 5 (thêm màn «Bắt đầu»).
+  // 14/09/2026 · lượt 2: xếp lại mục theo NĂM VIỆC người dùng kể — xem ④a.
+  assert.deepEqual(coTab, ['viec:3', 'bat-bot:3', 'day-bot:8', 'tien:4', 'khac:7'],
     `mục có thanh tab: ${coTab}`);
   // Vai `sale` chỉ vào được MỘT màn của mục «Việc» ⇒ họ KHÔNG được thấy thanh tab: một
   // thanh tab đơn độc là nhiễu, và nó còn chìa ra tên ba màn họ không có quyền mở.

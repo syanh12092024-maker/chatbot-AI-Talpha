@@ -71,10 +71,30 @@ import * as nhatKy from '../nhat-ky/index.js';
  * KHÔNG màn nào bị xoá: 24 màn vẫn còn đủ 24 đường, chỉ đổi chỗ đứng trên menu.
  */
 export const NHOM = Object.freeze([
-  { ma: 'viec', ten: 'Việc', mo: 'Hội thoại và đơn đang chờ người' },
-  { ma: 'page', ten: 'Page', mo: 'Bật bot, xem còn thiếu gì, sửa lời bot' },
-  { ma: 'so-lieu', ten: 'Số liệu', mo: 'Khách, đơn, tiền — một khoảng ngày cho tất cả' },
-  { ma: 'cai-dat', ten: 'Cài đặt', mo: 'Kết nối, model, người — và màn ít dùng' },
+  // ═══ NĂM VIỆC, THEO LỜI CHỦ DỰ ÁN (14/09/2026) ═══════════════════════════════════
+  // Bản trước đặt tên nhóm theo cách HỆ nghĩ: «Việc · Page · Số liệu · Cài đặt». Người
+  // tiếp quản đọc bốn chữ ấy và không biết mở cái nào — họ nói thẳng: «toàn bộ đều khó
+  // dùng», và chỉ ra bốn bệnh: quá nhiều màn · từ ngữ khó hiểu · không biết thứ tự việc ·
+  // một màn quá nhiều thứ.
+  //
+  // Được hỏi «hằng ngày anh thật sự cần app này làm gì», họ kể NĂM việc. Năm dòng dưới
+  // đây là ĐÚNG NĂM CÂU ĐÓ, giữ nguyên cách nói của họ:
+  //     xem bot nói gì với khách · xem tốn bao nhiêu tiền · bật/tắt bot cho page ·
+  //     xem đơn và việc cần người · cấu hình cho page mới đủ để chat đúng
+  // Tên nhóm KHÔNG phải chỗ để khoe từ vựng của hệ. Nó là chỗ người dùng tìm việc của họ.
+  //
+  // ⚠️ `bot-noi` CHƯA có màn nào — v3 chưa từng có màn đọc lại hội thoại (xem
+  //    `dispatch/chi-tiet.js`: «so_ai KHÔNG có cột nội dung tin, KHÔNG có dòng nào cho tin
+  //    của KHÁCH»). Khai trước ở đây, và `menuCua` tự ẩn nhóm rỗng nên nó chưa hiện.
+  //    Đây là việc người dùng xếp ĐẦU TIÊN mà hệ chưa làm được — đừng để nó trôi.
+  { ma: 'bot-noi', ten: 'Bot nói gì với khách', mo: 'Đọc lại từng lượt, kèm tiền của lượt đó' },
+  { ma: 'viec', ten: 'Việc cần người làm', mo: 'Đơn chờ duyệt, hội thoại bot chuyển sang' },
+  { ma: 'bat-bot', ten: 'Bật bot cho page', mo: 'Page còn thiếu gì, rồi gạt công tắc' },
+  { ma: 'day-bot', ten: 'Dạy bot nói gì', mo: 'Kịch bản, quy tắc, câu trả lời sẵn' },
+  { ma: 'tien', ten: 'Tốn bao nhiêu tiền', mo: 'Chi phí AI, đơn, tỉ lệ chốt' },
+  { ma: 'khac', ten: 'Màn khác', mo: 'Kết nối, người, model — mở lúc cài đặt hoặc lúc sự cố' },
+  // Nhóm dự trù của lượt trước (giai đoạn 3). Tôi KHÔNG xoá lộ trình của người khác trong
+  // một lượt đổi tên — nó rỗng nên `menuCua` tự ẩn, không tốn một chỗ nào trên menu.
   { ma: 'nhan-cho-khach', ten: 'Nhắn cho khách', mo: 'Ta chủ động nhắn — hàng loạt, đuổi theo, xin phép' },
 ]);
 
@@ -90,7 +110,9 @@ export const NHOM = Object.freeze([
  * Khai trước để đến lượt dựng thì chỉ thêm một dòng `dat(...)`, không phải xếp lại cả menu.
  * `menuCua` tự ẩn mục rỗng, nên hôm nay người dùng vẫn thấy đúng sáu mục có màn.
  */
-export const MUC_DU_TRU = Object.freeze(['nhan-cho-khach']);
+// `bot-noi` vào đây 14/09/2026: người tiếp quản xếp «xem bot nói gì với khách» là việc SỐ
+// MỘT của họ, mà v3 chưa từng có màn ấy. Khai trước để nó không trôi khỏi tầm mắt.
+export const MUC_DU_TRU = Object.freeze(['bot-noi', 'nhan-cho-khach']);
 
 /**
  * `m` là module `index.js` của màn — đường và vai lấy từ đó.
@@ -108,48 +130,48 @@ const dat = (m, ten, nhom, moTa = '', itDung = false) => ({
 });
 
 export const MAN = Object.freeze([
-  // ① VIỆC — mở mỗi sáng. Đây là mục DUY NHẤT vai `sale` thấy (01 §10), nên không màn
-  //    nào khác trong mục này được mở cho `sale`.
-  dat(dispatch, 'Bảng điều phối', 'viec', 'Việc chờ người, có đồng hồ đếm ngược'),
-  dat(trangChu, 'Trang chủ', 'viec', 'Việc của vai bạn, gấp lên trước'),
-  dat(hoSoKhach, 'Hồ sơ khách hàng', 'viec', 'Gộp ba kênh theo số điện thoại'),
-  dat(sucKhoe, 'Sức khoẻ hệ thống', 'viec', 'Chín đèn — hệ còn sống không'),
+  // ⚠️ TÊN MÀN cũng đổi cùng lượt này, theo cùng một luật: gọi bằng câu người dùng nói,
+  //    không bằng từ vựng của hệ. «Cửa kiểm sẵn sàng» → «Page còn thiếu gì». «Nhật ký
+  //    thao tác» → «Ai đã sửa gì». «Prompt thật của page» → «Đoạn chữ gửi cho AI».
+  //    ĐƯỜNG DẪN KHÔNG ĐỔI — đổi đường là làm chết mọi liên kết đã lưu.
 
-  // ② PAGE — «page này bán được chưa, và bot nói gì trên đó».
-  // «Bắt đầu» đứng ĐẦU nhóm, và đó là cả ý nghĩa của cái tên: người mới mở v3 lần đầu
-  // phải có MỘT lối đi, không phải hai mươi bốn lối. Nó không thêm dữ liệu nào — số liệu
-  // và câu chữ đều của «Cửa kiểm sẵn sàng», nút bật là của «Page & Bot» — nó chỉ nối ba
-  // màn ấy thành một chuỗi có ĐÍCH ĐẾN. Xem `bat-dau/kho-bat-dau.js` đầu tệp.
-  dat(batDau, 'Bắt đầu', 'page', 'Bốn việc để một page chạy được, rồi bật'),
-  dat(pageBot, 'Page & Bot', 'page', 'Công tắc bot, người phụ trách'),
-  dat(sanSang, 'Cửa kiểm sẵn sàng', 'page', 'Page còn thiếu gì mới bật được bot'),
-  dat(kichBan, 'Kịch bản', 'page', 'Lời bot nói riêng trên từng page'),
-  dat(sanPham, 'Sản phẩm & kho', 'page', 'Đọc từ POS, không gõ tay'),
+  // ① BOT NÓI GÌ VỚI KHÁCH — việc người dùng xếp ĐẦU. Chưa có màn nào; xem khai ở NHOM.
 
-  // ③ SỐ LIỆU — để ĐỌC, không để ra lệnh. Cùng một khoảng ngày cho cả mục.
-  dat(baoCao, 'Báo cáo', 'so-lieu', 'Đơn và tỉ lệ chốt, tách hai luồng'),
-  dat(chiPhi, 'Chi phí AI', 'so-lieu', 'Tiền model theo page'),
-  dat(nguonKhach, 'Nguồn khách vào', 'so-lieu', 'Hai luồng đơn và chỗ khách rơi'),
+  // ② VIỆC CẦN NGƯỜI LÀM — mở mỗi sáng. Mục DUY NHẤT vai `sale` thấy (01 §10).
+  dat(dispatch, 'Việc đang chờ', 'viec', 'Có đồng hồ đếm ngược từng việc'),
+  dat(trangChu, 'Việc của tôi', 'viec', 'Lọc theo vai bạn, gấp lên trước'),
+  dat(hoSoKhach, 'Khách hàng', 'viec', 'Gộp ba kênh theo số điện thoại'),
 
-  // ④ CÀI ĐẶT — vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
-  dat(team, 'Cấu hình team', 'cai-dat', 'Thành viên, vai, gán page'),
-  dat(ketNoi, 'Kết nối & token', 'cai-dat', 'Pancake, POS, WhatsApp, Botcake'),
-  dat(model, 'Model AI & khoá', 'cai-dat', 'Nhà model, khoá, bảng giá'),
-  dat(nhatKy, 'Nhật ký thao tác', 'cai-dat', 'Ai làm gì — không sửa, không xoá'),
+  // ③ BẬT BOT CHO PAGE — «Bắt đầu» đứng đầu: một lối đi cho người mới.
+  dat(batDau, 'Bắt đầu', 'bat-bot', 'Bốn việc để một page chạy được, rồi bật'),
+  dat(pageBot, 'Công tắc từng page', 'bat-bot', 'Bật tắt, người phụ trách'),
+  dat(sanSang, 'Page còn thiếu gì', 'bat-bot', 'Bảy điều kiện, xem cả đội một lượt'),
 
-  // ⑤ CÙNG MỤC CÀI ĐẶT, phần «ít dùng». Chín màn này chưa có dữ liệu để hiện, hoặc đang
-  //    tắt trên máy chủ, hoặc một năm dùng một lần — để chúng ngang hàng với bốn màn trên
-  //    là bắt người dùng đọc mười ba dòng mỗi lần tìm một thứ. KHÔNG màn nào bị xoá:
-  //    đường dẫn còn nguyên, và chúng vẫn nằm trong menu nên không ai vào rồi kẹt.
-  dat(boLuat, 'Quy tắc chung của bot', 'cai-dat', 'Dùng chung mọi page — sửa là cả team đổi', true),
-  dat(kyNang, 'Thư viện kỹ năng', 'cai-dat', 'Bật theo nhóm sản phẩm', true),
-  dat(promptPage, 'Prompt thật của page', 'cai-dat', 'Xem lại đoạn chữ đang gửi cho model', true),
-  dat(lop0, 'Trả lời sẵn theo từ khoá', 'cai-dat', 'Câu miễn phí — đang tắt trên máy chủ', true),
-  dat(thuVienAnh, 'Thư viện ảnh', 'cai-dat', 'Ảnh gắn nhãn theo chủ đề', true),
-  dat(aiDeXuat, 'Gợi ý từ AI', 'cai-dat', 'Phải duyệt mới áp được', true),
-  dat(hieuQua, 'So hai bản kịch bản', 'cai-dat', 'Chưa đủ mẫu thì nói chưa kết luận', true),
-  dat(lenChay, 'Đưa sản phẩm lên chạy', 'cai-dat', 'Sáu chặng, mỗi chặng một cửa kiểm', true),
-  dat(ruiRo, 'Rủi ro hoàn hàng', 'cai-dat', 'Bốn tầng, đọc cột đã chấm sẵn', true),
+  // ④ DẠY BOT NÓI GÌ — đúng câu người dùng thêm vào: «cấu hình cho page mới, chatbot
+  //    mới đủ để chat đúng». Bốn màn đầu là đường thường đi; bốn màn sau ít dùng.
+  dat(kichBan, 'Kịch bản của page', 'day-bot', 'Lời bot nói riêng trên từng page'),
+  dat(boLuat, 'Quy tắc chung mọi page', 'day-bot', 'Sửa là cả team đổi cách nói'),
+  dat(lop0, 'Câu trả lời sẵn', 'day-bot', 'Trả theo từ khoá, không tốn tiền'),
+  dat(kyNang, 'Kỹ năng theo sản phẩm', 'day-bot', 'Bật theo nhóm sản phẩm'),
+  dat(promptPage, 'Đoạn chữ gửi cho AI', 'day-bot', 'Xem đúng thứ model đang đọc', true),
+  dat(thuVienAnh, 'Ảnh gửi khách', 'day-bot', 'Ảnh gắn nhãn theo chủ đề', true),
+  dat(aiDeXuat, 'Gợi ý từ AI', 'day-bot', 'Phải duyệt mới áp được', true),
+  dat(hieuQua, 'So hai bản kịch bản', 'day-bot', 'Chưa đủ mẫu thì nói chưa kết luận', true),
+
+  // ⑤ TỐN BAO NHIÊU TIỀN — để ĐỌC, không để ra lệnh.
+  dat(chiPhi, 'Chi phí AI', 'tien', 'Tiền model theo page'),
+  dat(baoCao, 'Đơn và tỉ lệ chốt', 'tien', 'Tách hai luồng, không gộp một tổng'),
+  dat(nguonKhach, 'Khách vào từ đâu', 'tien', 'Hai luồng đơn và chỗ khách rơi'),
+  dat(ruiRo, 'Rủi ro hoàn hàng', 'tien', 'Bốn tầng, đọc cột đã chấm sẵn', true),
+
+  // ⑥ MÀN KHÁC — vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
+  dat(team, 'Người và team', 'khac', 'Thành viên, vai, gán page'),
+  dat(ketNoi, 'Kết nối & token', 'khac', 'Pancake, POS, WhatsApp, Botcake'),
+  dat(model, 'Model AI & khoá', 'khac', 'Nhà model, khoá, bảng giá'),
+  dat(nhatKy, 'Ai đã sửa gì', 'khac', 'Không sửa được, không xoá được'),
+  dat(sucKhoe, 'Hệ còn sống không', 'khac', 'Chín đèn'),
+  dat(sanPham, 'Sản phẩm & kho', 'khac', 'Đọc từ POS, không gõ tay', true),
+  dat(lenChay, 'Đưa sản phẩm lên chạy', 'khac', 'Sáu chặng, mỗi chặng một cửa kiểm', true),
 ]);
 
 /**
