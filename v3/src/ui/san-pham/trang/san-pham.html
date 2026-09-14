@@ -3,73 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sản phẩm &amp; kho — AI Closer v3</title>
-<style>
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
-  .panel h2{font-size:13px;margin:0;padding:11px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .panel h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
-  .panel h2 .sp{flex:1}
-  .than{padding:14px 15px}
-
-  .o{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
-  .o .k{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh)}
-  .o .k .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
-  .o .k .c{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
-  .o .k.xau .n{color:var(--bad)} .o .k.tot .n{color:var(--ok)} .o .k.mu .n{color:var(--xam);font-size:17px}
-
-  .nguy{background:var(--loi-nen);border:1px solid var(--loi-vien);border-left:4px solid var(--bad);
-        border-radius:var(--r);padding:12px 15px;margin-bottom:14px;line-height:1.6}
-  .nguy b{color:var(--loi-chu)}
-  .nguon{background:var(--priSoft);border:1px solid var(--chinh-vien);color:var(--chinh-dam);border-radius:var(--r);
-         padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
-  .canh{background:var(--warnSoft);border:1px solid var(--luu-vien);color:var(--luu-chu);border-radius:var(--r);
-        padding:11px 14px;margin-bottom:14px;line-height:1.6;font-size:12.5px}
-
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:var(--nen-2)}
-  tbody tr:last-child td{border-bottom:0}
-  tbody tr.bam{cursor:pointer} tbody tr.bam:hover{background:var(--nen-2)}
-  .bao{display:block;overflow-x:auto}
-
-  .the{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-  .the.thieu{background:var(--badSoft);color:var(--loi-chu)}
-  .the.ok{background:var(--okSoft);color:var(--dat-chu)}
-  .the.mu{background:var(--nen-3);color:var(--muted)}
-  .cham{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
-  .cham.b{background:var(--ok)} .cham.t{background:var(--vien-dam)}
-
-  .sp{display:grid;gap:10px}
-  .sp .m{border:1px solid var(--line);border-radius:10px;padding:12px 13px;display:flex;gap:12px}
-  .sp .m.thieu{border-left:4px solid var(--bad)}
-  .sp .m img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:var(--nen-3);flex:0 0 auto}
-  .sp .m .t{flex:1;min-width:0}
-  .sp .m .ten{font-weight:600;margin-bottom:3px}
-  /* `khuyet`, KHÔNG đặt là `trong`: `.trong` đã là lớp của khung rỗng cả màn
-     (padding 34px + text-align:center), nên tên sản phẩm sẽ ăn nguyên căn giữa của nó.
-     Đây là lần THỨ HAI trùng tên lớp kiểu này — lần trước là `.v` ở Trang chủ. */
-  .sp .m .ten.khuyet{color:var(--bad);font-style:italic;font-weight:500}
-  .sp .m .gia{font-size:12px;color:var(--muted);line-height:1.6;margin-top:3px}
-  .sp .m .gia b{color:var(--ink);font-variant-numeric:tabular-nums}
-
-  .trong{padding:34px 20px;text-align:center;color:var(--muted);line-height:1.6}
-  .trong .ti{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
-  .trong .di{margin-top:10px;font-size:12px;background:var(--priSoft);color:var(--chinh-dam);
-             display:inline-block;padding:9px 13px;border-radius:9px;text-align:left;max-width:540px}
-  .nho{color:var(--muted);font-size:11.5px;line-height:1.5}
-  code{background:var(--nen-3);padding:1px 5px;border-radius:4px;font-size:11.5px;
-       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  button{font:inherit;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:600;
-         background:#eef1f4;color:var(--chu-2)}
-
-  @media (max-width:720px){
-    .than{padding:12px} th,td{padding:8px 9px}
-    .o{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
-    .o .k{padding:10px 11px} .o .k .n{font-size:19px}
-    .sp .m img{width:52px;height:52px}
-  }
-</style>
+<title>Sản phẩm &amp; kho — AI Closer</title>
+<!-- Dựng trên hệ kiểu. KHÔNG CSS riêng — trước lượt này là 56 dòng. Lưới sản phẩm dùng
+     `.thumb-grid` của hệ. Hai luật của màn giữ nguyên: tồn kho ĐỂ TRỐNG chứ không hiện 0
+     (chưa có nguồn), và sản phẩm thiếu tên KHÔNG được bịa tên thay. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
@@ -77,133 +15,132 @@
 <body>
 <header>
   <h1>Sản phẩm &amp; kho</h1>
-  <span class="sub" id="hTeam">…</span>
-  <span class="sp"></span>
-
+  <span class="sub">Thứ bot đang chào bán, đọc từ dữ liệu sản phẩm của tiến trình bot — không gõ tay ở đây.</span>
 </header>
 
 <main>
-  <div id="dai"></div>
-  <div class="o" id="dem"></div>
+  <div id="bang-tin" aria-live="polite"></div>
 
-  <div class="panel">
-    <h2 id="tieuDe">Page có sản phẩm <span class="hint" id="hSo"></span>
-      <span class="sp"></span>
-      <span class="hint">bấm một dòng để xem sản phẩm của page đó</span></h2>
-    <div id="bang"><div class="than nho">Đang tải…</div></div>
-  </div>
+  <section class="section" aria-label="Tình hình sản phẩm">
+    <div id="dem"></div>
+  </section>
+
+  <section class="section table-wrap" aria-labelledby="tieuDe">
+    <div class="table-toolbar"><h2 id="tieuDe">Page có sản phẩm</h2>
+      <span class="table-count" id="hSo"></span>
+      <span id="nutVe"></span></div>
+    <div id="bang"><div class="empty-state"><span class="skeleton"></span></div></div>
+  </section>
 </main>
 
 <script>
+const { esc, icon, statusBadge, button, alert: canhBao, emptyState, metricRow, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const so = (n) => Number(n || 0).toLocaleString('vi-VN');
 
 let DL = null;
 
 async function goi(d) {
-  const r = await fetch(d, { credentials: 'same-origin' });
+  const r = await fetch(d, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
   const j = await r.json().catch(() => null);
-  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Lỗi ' + r.status);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Máy chủ trả ' + r.status + '.');
   return j;
 }
 
-function veDem(k, d) {
-  $('#dem').innerHTML = [
-    { n: so(k.tongSanPham), c: 'sản phẩm bot đang bán', l: 'tot' },
-    { n: so(k.coSanPham), c: 'page có sản phẩm', l: '' },
-    { n: so(k.khongCoSanPham), c: 'page KHÔNG có sản phẩm — bot không chào bán được gì', l: k.khongCoSanPham ? 'xau' : '' },
-    { n: '?', c: 'tồn kho — chưa có nguồn', l: 'mu' },
-  ].map((x) => `<div class="k ${x.l}"><div class="n">${x.n}</div><div class="c">${x.c}</div></div>`).join('');
+function veDem(k) {
+  $('#dem').innerHTML = metricRow([
+    { label: 'Sản phẩm bot đang bán', value: so(k.tongSanPham) },
+    { label: 'Page có sản phẩm', value: `${so(k.coSanPham)}/${so(k.tongPage)}` },
+    { label: 'Page không có sản phẩm', value: so(k.khongCoSanPham),
+      statusHtml: k.khongCoSanPham ? statusBadge('blocked', { label: 'Bot không chào bán được gì' }) : '' },
+    // Tồn kho ĐỂ TRỐNG, không hiện 0 — 0 ở đây đọc ra là «hết hàng», một kết luận sai.
+    { label: 'Tồn kho', value: '—', statusHtml: statusBadge('unknown', { label: 'Chưa có nguồn' }) },
+  ]);
 }
 
-function veDai(d) {
-  let h = '';
-  if (d.nguon) {
-    h += `<div class="nguon">📖 Số liệu màn này đọc từ <b>${esc(d.nguon.ten)}</b>,
-      <b>không</b> từ ${esc(d.nguon.khongPhai)}.<br>${esc(d.nguon.viSao)}</div>`;
-  }
+function veBangTin(d) {
+  const kh = [];
   if (d.tonKho && !d.tonKho.co) {
-    h += `<div class="canh">📦 <b>Cột tồn kho để trống, không hiện 0.</b> ${esc(d.tonKho.noi)}
-      <br>${esc(d.tonKho.diTiep)}</div>`;
+    kh.push(canhBao({ level: 'info', title: 'Cột tồn kho để trống, không hiện 0',
+      body: d.tonKho.noi, detail: [d.tonKho.diTiep] }));
   }
-  $('#dai').innerHTML = h;
+  $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
+  if (d.nguon) {
+    $('#hSo').textContent = `Nguồn: ${d.nguon.ten}`;
+  }
 }
 
 function veBang(d) {
+  $('#nutVe').innerHTML = '';
+  $('#tieuDe').textContent = 'Page có sản phẩm';
   const ds = d.page.filter((p) => p.soSanPham > 0);
-  $('#hSo').textContent = `${ds.length}/${d.dem.tongPage}`;
-  const b = $('#bang');
+  $('#hSo').textContent = `${so(ds.length)}/${so(d.dem.tongPage)} page · bấm một dòng để xem sản phẩm`;
   if (!ds.length) {
-    b.innerHTML = `<div class="trong"><div class="ti">${esc(d.trong ? d.trong.noi : 'Không có page nào')}</div>
-      ${d.trong && d.trong.diTiep ? `<div class="di">👉 ${esc(d.trong.diTiep)}</div>` : ''}</div>`;
+    $('#bang').innerHTML = emptyState({ icon: 'inbox', title: d.trong ? d.trong.noi : 'Chưa page nào có sản phẩm',
+      body: d.trong && d.trong.diTiep ? d.trong.diTiep : '',
+      actionsHtml: button('Xem Page còn thiếu gì', { href: '/san-sang', size: 'sm' }) });
     return;
   }
-  b.innerHTML = `<div class="bao"><table>
-    <thead><tr><th>Page</th><th>Sản phẩm</th><th>Tồn kho</th><th>Bot</th><th>Thị trường</th><th>Marketer</th></tr></thead>
-    <tbody>${ds.map((p) => `
-      <tr class="bam" data-id="${esc(p.pageId)}">
-        <td><b>${esc(p.ten)}</b><div class="nho">${esc(p.pageId)}</div></td>
-        <td><b>${p.soSanPham}</b></td>
-        <td><span class="the mu">chưa có nguồn</span></td>
-        <td style="white-space:nowrap"><span class="cham ${p.botBat ? 'b' : 't'}"></span>${p.botBat ? 'bật' : 'tắt'}</td>
-        <td class="nho">${esc(p.thiTruong) || '—'}</td>
-        <td class="nho">${esc(p.marketer) || '<i>chưa gán</i>'}</td>
-      </tr>`).join('')}</tbody></table></div>`;
-
-  b.querySelectorAll('[data-id]').forEach((n) => { n.onclick = () => moPage(n.dataset.id); });
+  $('#bang').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Page</th><th scope="col" class="num">Sản phẩm</th><th scope="col">Tồn kho</th>
+      <th scope="col">Bot</th><th scope="col">Thị trường</th><th scope="col">Marketer</th>
+    </tr></thead><tbody>${ds.map((p) => `
+    <tr data-clickable data-id="${esc(p.pageId)}">
+      <td><div class="page-identity-name">${esc(p.ten)}</div><div class="page-identity-sub">${esc(p.pageId)}</div></td>
+      <td class="num manh">${so(p.soSanPham)}</td>
+      <td>${statusBadge('unknown', { label: 'Chưa có nguồn' })}</td>
+      <td>${statusBadge(p.botBat ? 'bot_on' : 'bot_off')}</td>
+      <td class="meta">${esc(p.thiTruong) || '—'}</td>
+      <td>${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
+    </tr>`).join('')}</tbody></table>`;
+  $('#bang').querySelectorAll('[data-id]').forEach((n) => { n.onclick = () => moPage(n.dataset.id); });
 }
 
 async function moPage(id) {
-  $('#tieuDe').innerHTML = 'Đang mở page…';
-  $('#bang').innerHTML = '<div class="than nho">Đang đọc sản phẩm…</div>';
+  $('#bang').innerHTML = '<div class="empty-state"><span class="skeleton"></span></div>';
   try {
     const d = await goi('/api/san-pham/' + encodeURIComponent(id));
-    $('#tieuDe').innerHTML = `<b>${esc(d.tenPage)}</b>
-      <span class="hint">${d.dem.tong} sản phẩm · ${d.dem.tongAnh} ảnh${d.dem.tienTe.length ? ' · ' + esc(d.dem.tienTe.join(', ')) : ''}</span>
-      <span class="sp"></span><button id="ve">← Về danh sách</button>`;
-    $('#ve') && ($('#ve').onclick = () => { veBangLai(); });
+    if (!d) return;
+    $('#tieuDe').textContent = d.tenPage;
+    $('#hSo').textContent = `${so(d.dem.tong)} sản phẩm · ${so(d.dem.tongAnh)} ảnh${d.dem.tienTe.length ? ' · ' + d.dem.tienTe.join(', ') : ''}`;
+    $('#nutVe').innerHTML = button('Về danh sách page', { size: 'sm', id: 've' });
+    $('#ve').onclick = () => { veBangTin(DL); veBang(DL); };
 
     if (!d.sanPham.length) {
-      $('#bang').innerHTML = `<div class="trong"><div class="ti">${esc(d.trong.noi)}</div>
-        <div class="di">👉 ${esc(d.trong.diTiep)}</div></div>`;
+      $('#bang').innerHTML = emptyState({ icon: 'inbox', title: d.trong.noi, body: d.trong.diTiep });
       return;
     }
+    // Sản phẩm THIẾU TÊN: nói ra, và KHÔNG bịa tên thay — bịa một cái tên là làm lỗ này biến
+    // mất khỏi màn trong khi khách vẫn thấy nguyên.
     const canh = d.dem.thieuTen
-      ? `<div class="nguy"><b>${d.dem.thieuTen}/${d.dem.tong} sản phẩm KHÔNG CÓ TÊN.</b>
-         Bot chào bán được ảnh và giá, nhưng không gọi được tên món hàng.
-         Tên phải lấy từ POS — màn này <b>không bịa tên thay</b>, vì bịa một cái tên là làm lỗ
-         này biến mất khỏi màn trong khi khách vẫn thấy nguyên.</div>` : '';
-    $('#bang').innerHTML = `<div class="than">${canh}<div class="sp">${d.sanPham.map((s) => `
-      <div class="m ${s.thieuTen ? 'thieu' : ''}">
-        ${s.anh.length ? `<img src="${esc(s.anh[0].duong)}" alt="" loading="lazy">` : '<img alt="">'}
-        <div class="t">
-          <div class="ten ${s.thieuTen ? 'khuyet' : ''}">${esc(s.goiLa)}</div>
-          <div class="nho">mã <code>${esc(s.ma)}</code>${s.bienThe ? ' · ' + esc(s.bienThe) : ''} · ${s.soAnh} ảnh</div>
-          <div class="gia">${s.bacGia.map((g) => `${esc(g.nhan)}: <b>${so(g.gia)} ${esc(s.tienTe)}</b>`).join('<br>') || '<i>chưa có bậc giá</i>'}</div>
-        </div>
-      </div>`).join('')}</div></div>`;
+      ? `<div class="duoi-4">${canhBao({ level: 'warning',
+          title: `${so(d.dem.thieuTen)}/${so(d.dem.tong)} sản phẩm không có tên`,
+          body: 'Bot chào bán được ảnh và giá, nhưng không gọi được tên món hàng. Tên phải lấy từ POS — màn này không bịa tên thay.' })}</div>`
+      : '';
+    $('#bang').innerHTML = `<div class="an-toan tren-4">${canh}<div class="thumb-grid">${d.sanPham.map((s) => `
+      <figure class="thumb">
+        ${s.anh.length ? `<img src="${esc(s.anh[0].duong)}" alt="${esc(s.goiLa)}" loading="lazy">`
+          : `<div class="thumb-empty" role="img" aria-label="Chưa có ảnh">${icon('inbox')}</div>`}
+        <figcaption class="thumb-meta">
+          <div class="thumb-name">${s.thieuTen ? `<span class="text-muted">${esc(s.goiLa)}</span>` : esc(s.goiLa)}</div>
+          <div class="thumb-sub">mã ${esc(s.ma)}${s.bienThe ? ' · ' + esc(s.bienThe) : ''} · ${so(s.soAnh)} ảnh</div>
+          <div class="thumb-sub">${s.bacGia.map((g) => `${esc(g.nhan)}: ${so(g.gia)} ${esc(s.tienTe)}`).join(' · ') || 'Chưa có bậc giá'}</div>
+        </figcaption>
+      </figure>`).join('')}</div></div>`;
   } catch (e) {
-    $('#bang').innerHTML = `<div class="than"><div class="canh" style="margin:0">${esc(e.message)}</div></div>`;
+    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không đọc được sản phẩm của page này', body: e.message });
   }
-}
-
-function veBangLai() {
-  $('#tieuDe').innerHTML = `Page có sản phẩm <span class="hint" id="hSo"></span>
-    <span class="sp"></span><span class="hint">bấm một dòng để xem sản phẩm của page đó</span>`;
-  veBang(DL);
 }
 
 async function tai() {
   try {
     DL = await goi('/api/san-pham');
-    $('#hTeam').textContent = 'team ' + (DL.teamId || '?');
-    veDai(DL); veDem(DL.dem, DL); veBang(DL);
+    if (!DL) return;
+    veBangTin(DL); veDem(DL.dem); veBang(DL);
   } catch (e) {
-    $('#bang').innerHTML = `<div class="than"><div class="canh" style="margin:0">
-      <b>Không đọc được kho sản phẩm:</b> ${esc(e.message)}</div></div>`;
     $('#dem').innerHTML = '';
+    $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được kho sản phẩm', body: e.message })}</div>`;
+    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối sang tiến trình bot rồi tải lại trang.' });
   }
 }
 

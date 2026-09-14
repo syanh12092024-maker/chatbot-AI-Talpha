@@ -762,8 +762,13 @@
 
   /* ─── LƯỚI ẢNH — ảnh gửi khách, ảnh sản phẩm ─────────────────────────────────────── */
   .thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space-3); }
-  .thumb { border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden;
-           background: var(--surface); min-width: 0; }
+  /* `margin: 0` — <figure> mặc định của trình duyệt có lề 1em/40px hai bên; đo 14/09 trên
+     ảnh chụp: ô ảnh chỉ rộng 96px trong một cột 176px, chữ bị cắt còn «Kem dưỡ…». */
+  .thumb { margin: 0; border: 1px solid var(--border-default); border-radius: var(--radius-lg);
+           overflow: hidden; background: var(--surface); min-width: 0; }
+  .thumb-empty { display: flex; align-items: center; justify-content: center; aspect-ratio: 1 / 1;
+                 background: var(--surface-muted); color: var(--text-disabled); }
+  .thumb-empty .icon { width: 24px; height: 24px; }
   .thumb img { display: block; width: 100%; max-width: 100%; aspect-ratio: 1 / 1; object-fit: cover;
                background: var(--surface-muted); }
   .thumb-meta { padding: var(--space-2) var(--space-3); }
