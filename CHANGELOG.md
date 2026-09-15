@@ -19,6 +19,45 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 15/09/2026 — bốn chỗ trước nay phải mở `psql` mới sửa được
+
+Lượt này không đổi một chữ nào bot nói với khách. Nó mở bốn cửa mà người vận hành trước
+nay phải SSH vào máy chủ rồi gõ SQL tay mới làm được.
+
+- 🔴 **Kết nối POS sửa được trên màn** (`73c5d16`): thêm một thị trường, đổi khoá API của
+  một shop, tắt tạm một shop — trước nay chỉ làm được bằng `psql`, và **không để lại dấu
+  vết nào**. Nay có bốn nút ở màn «Kết nối & token», mỗi lượt đổi ghi một dòng nhật ký nói
+  ai đổi cái gì (có nói **có đổi khoá hay không**, nhưng không bao giờ ghi khoá). Khoá API
+  chỉ đi một chiều: gõ vào được, không màn nào đọc lại được.
+  Ngừng dùng một shop thì **TẮT**, đừng bỏ — tắt là cửa POS của thị trường ấy đóng ngay mà
+  khoá vẫn còn để bật lại; bỏ là mất khoá, phải đi xin lại.
+  ⚠️ Màn **không** gọi thử sang POS, nên khoá gõ sai chỉ lộ ở lượt tạo đơn đầu tiên của thị
+  trường đó. Màn nói thẳng điều này ngay dưới bảng.
+- **Thị trường và ngành hàng của page điền được** (`0c35188`): trước nay hai ô này chỉ nhận
+  giá trị từ `pages.json`, mà `pages.json` chỉ có thị trường cho **140/514 page** — 374 page
+  còn lại không ai điền được. Nay điền ngay trên màn «Page & bot».
+  Kèm một bản vá **quan trọng hơn cái nút**: lượt «Kéo dữ liệu về» trước đây **ghi đè** hai ô
+  này, nên nếu mở nút mà không vá thì mỗi lượt kéo dữ liệu sẽ xoá sạch công người nhập, im
+  lặng. Nay nguồn chỉ **điền vào chỗ trống**, không bao giờ xoá chỗ đã có — cùng luật đã áp
+  cho ô Marketer từ 25/08. Đổi lại: nguồn không sửa được một thị trường đã có giá trị, muốn
+  đổi thì đổi trên màn.
+- **Đánh dấu «page này đã tắt Botcake»** (`0c35188`): một ô tick để ghi nhận, phục vụ việc
+  chọn page thử. ⚠️ Đây là **lời khai, không phải công tắc** — bấm vào đây KHÔNG tắt Botcake;
+  việc tắt vẫn làm bằng tay trong giao diện Botcake.
+- 🔴 **Tạo người dùng mới ngay trên màn «Cấu hình team»** (`5328911`): trước nay màn cấp vai
+  được nhưng chỉ cấp cho người **đã có tài khoản**, mà không có đường nào tạo một tài khoản
+  ngoài `psql`. Nay tạo tài khoản và cấp vai trong một lượt. Bắt buộc đặt mật khẩu (từ 8 ký
+  tự) vì hệ **chưa có màn đặt lại mật khẩu** — tài khoản không mật khẩu là tài khoản không ai
+  đăng nhập được và không ai sửa được. Mật khẩu lưu dạng băm; nhật ký ghi ai tạo tài khoản
+  nào, không bao giờ ghi mật khẩu.
+- **Ô Marketer trên màn «Page & bot» chuyển thành chỉ đọc** (`5328911`): cột và bản tin «page
+  chưa chạy được bot» cắt theo marketer vẫn giữ nguyên; giá trị nay tới từ `pages.json` qua
+  lượt «Kéo dữ liệu về».
+- **Giấy tờ vận hành khớp lại với máy** (`dc746d8`, `277ba77`): bảng khai biến môi trường
+  thiếu 11 biến, trong đó có biến mà **thiếu nó thì dịch vụ v3 không khởi động được** —
+  người cutover trước đây không có dòng giấy nào để tra. Nay khai đủ, và có bài kiểm tự động
+  canh cả hai chiều để giấy không trôi khỏi mã lần nữa.
+
 ### 14/09/2026 — giao diện v3 viết lại trên một hệ kiểu chung
 
 - **Hai lỗi làm chết màn, sửa** (`ad6cf46`): khối «Đánh dấu đã xử» không hiện ở hai màn điều

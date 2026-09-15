@@ -58,7 +58,21 @@ muc "② kiểm kê cả đất người A — cửa thứ tư mọc lên là Đ
 #   · src/db/noi-dung.js  (3) · G2-A4, migration 009: duyệt (đóng dấu người+giờ) và áp
 #     (hạ `dang_dung` cũ, nâng bản mới) — đóng RF-17 «hai bản cùng đang áp KHÔNG tồn tại».
 # Dời mốc là việc CÓ CHỦ Ý, ghi §9; từ mốc này trở đi luật cũ giữ nguyên: CHỈ ĐƯỢC GIẢM.
-TRAN=15
+# ── MỐC 15/09 (dời từ 15 → 17) ────────────────────────────────────────────────────────
+# Hai câu mọc thêm ở `src/pos/ket-noi.js` — `suaKetNoi` và `batTatKetNoi`, cửa GHI kết nối
+# POS mở trên màn ngày 15/09 (trước đó bảng `ket_noi_pos` chỉ vào được bằng psql tay).
+#
+# VÌ SAO KHÔNG GỘP ĐƯỢC VÀO BỘ DỰNG CHUNG — cùng lý do với `src/queue/kho.js` đứng trên:
+# `ket_noi_pos` CHỨA BÍ MẬT (khoá API POS, AES-256-GCM) nên nó CỐ Ý nằm ngoài
+# `BANG_NGHIEP_VU_CHUAN` — không mở bảng này ra cho một hàm `SELECT *` dùng chung. Điều đó
+# đã đúng với bộ ĐỌC từ L1-M1 (xem khối chú thích đầu `src/pos/ket-noi.js`); cửa GHI đi
+# cùng một đường là nhất quán, không phải ngoại lệ mới.
+#
+# ⚠️ ĐÂY LÀ NỚI TRẦN CHO CHÍNH MÃ VỪA VIẾT, nên nói thẳng ra: cái giữ cho nó không thành
+#    thói quen KHÔNG phải con số, mà là vế thứ hai của phép ② — `ly_do()` phải khai tên
+#    tệp, và tệp chưa khai thì cổng đỏ dù tổng có dưới trần. Con số nới được; lời khai thì
+#    người sau đọc được và cãi được.
+TRAN=17
 
 # LÝ DO từng tệp — phần DUY NHẤT gõ tay ở đây. Con số thì luôn ĐO, không khai.
 ly_do() {
@@ -69,6 +83,7 @@ ly_do() {
     src/orders/hang-cho.js)    echo "🟨 hang_cho_tao_don — gộp được, ngoài phạm vi (§9)" ;;
     src/orders/ti-le-hoan.js)  echo "🟨 khach — gộp được, nhưng có hợp đồng CẤM chạm sua_luc" ;;
     src/queue/kho.js)          echo "⛔ tin_cho_xu_ly — CỐ Ý ngoài BANG_NGHIEP_VU_CHUAN" ;;
+    src/pos/ket-noi.js)        echo "⛔ ket_noi_pos — CỐ Ý ngoài BANG_NGHIEP_VU_CHUAN (chứa khoá API mã hoá)" ;;
     src/db/kich-ban.js)        echo "✅ G2-A5 · giao dịch «đúng MỘT bản LIVE» (010), có FOR UPDATE" ;;
     src/db/noi-dung.js)        echo "✅ G2-A4 · giao dịch duyệt+áp bộ luật (009, RF-17), có FOR UPDATE" ;;
     src/queue/worker.js)       echo "➖ KHÔNG phải SQL — cụm «UPDATE tay» trong câu tiếng Việt" ;;

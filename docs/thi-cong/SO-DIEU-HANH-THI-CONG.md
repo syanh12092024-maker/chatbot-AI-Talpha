@@ -783,6 +783,18 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
      **Ghi ở đây để lượt «soi cửa ghi» sau ĐỪNG báo nhầm nó là cửa mồ côi cần nối** — nó mồ
      côi có chủ ý.
 
+- 15/09 · DỜI TRẦN KIỂM KÊ `g2-a3` 15 → 17 — ⬜ **NỚI TRẦN CHO CHÍNH MÃ VỪA VIẾT, ghi để cãi được.**
+  Cổng `g2-a3` bắt đúng lượt CRUD kết nối POS: `src/pos/ket-noi.js` thêm HAI câu `UPDATE` tay
+  (`suaKetNoi`, `batTatKetNoi`), kiểm kê đất A đi từ 15 → 17 ⇒ cổng đỏ «CÓ CỬA GHI MỚI».
+  Không gộp được vào bộ dựng chung, và lý do đã có sẵn từ L1-M1: `ket_noi_pos` CHỨA BÍ MẬT
+  (khoá API POS mã hoá) nên CỐ Ý nằm ngoài `BANG_NGHIEP_VU_CHUAN` — cùng loại với
+  `src/queue/kho.js` đã được khai. Bộ ĐỌC của bảng ấy vốn đã viết SQL trần vì đúng lý do đó;
+  cửa GHI đi cùng đường là nhất quán.
+  Dời mốc theo đúng tiền lệ 01/09 (8 → 15): khai lý do trong `ly_do()`, ghi khối chú thích
+  inline, và ghi §9. 📌 Điều giữ cho việc này không thành thói quen KHÔNG phải con số mà là
+  vế thứ hai của phép ②: tệp chưa khai lý do thì cổng đỏ dù tổng dưới trần. Con số nới được;
+  lời khai thì người sau đọc được và cãi được.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
