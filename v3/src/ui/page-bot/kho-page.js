@@ -23,17 +23,24 @@ export const BANG = 'page';
 /** Cột `napPage` GHI ĐÈ mỗi lượt di trú (`db/di-tru/nap.js`, câu ON CONFLICT DO UPDATE).
  *  Đọc thẳng từ đó, KHÔNG gõ lại theo trí nhớ — bài test đối chiếu với file thật. */
 export const COT_BI_DI_TRU_GHI_DE = Object.freeze([
-  'ten', 'thi_truong', 'nganh_hang', 'pos_shop_id', 'pos_via',
+  'ten', 'pos_shop_id', 'pos_via',
   'token_idx', 'the_pancake', 'mat_dau', 'kiem_luc',
 ]);
 
 /** Cột màn này cho sửa, và cột đó có bị di trú ghi đè không. */
 export const COT_SUA_DUOC = Object.freeze({
-  // Cả hai nay đều BỀN. `marketer` từng không bền — `PHIEU-B-Y4` (A làm 25/08) đổi câu di
+  // Cả năm nay đều BỀN. `marketer` từng không bền — `PHIEU-B-Y4` (A làm 25/08) đổi câu di
   // trú thành `CASE WHEN page.marketer <> '' THEN page.marketer ELSE EXCLUDED.marketer END`:
   // nguồn ĐIỀN VÀO CHỖ TRỐNG nhưng KHÔNG BAO GIỜ XOÁ CHỖ ĐÃ CÓ.
   marketer: { benVung: true, vi: null },
   trong_diem: { benVung: true, vi: null },
+  // 15/09: ba cột nữa mở cho sửa. `thi_truong`/`nganh_hang` phải VÁ DI TRÚ TRƯỚC (cùng
+  // nhánh CASE) — trước lượt này chúng bị ghi đè trần, nên mở nút mà không vá là hứa với
+  // người dùng một thứ lượt «Kéo dữ liệu về» kế tiếp sẽ xoá.
+  thi_truong: { benVung: true, vi: null },
+  nganh_hang: { benVung: true, vi: null },
+  // `botcake_tat` chưa bao giờ nằm trong câu ghi đè — an toàn sẵn, như `trong_diem`.
+  botcake_tat: { benVung: true, vi: null },
 });
 
 export class LoiPageBot extends Error {

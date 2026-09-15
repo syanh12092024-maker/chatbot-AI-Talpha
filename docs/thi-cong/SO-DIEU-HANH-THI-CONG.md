@@ -760,6 +760,17 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
      giống nhau nên không ai phát hiện, nhưng người sau đọc câu đó rồi đi tìm một danh sách
      loại trừ không tồn tại.
 
+- 15/09 · 🧭 **ÁN LỆ: DẤU HUYỀN NGƯỢC TRONG CHÚ THÍCH SQL — và cái thước đọc-chữ không thấy.**
+  Thêm chú thích vào câu `ON CONFLICT` của `db/di-tru/nap.js`, trong đó có `` `thi_truong` ``.
+  Câu SQL ấy nằm trong CHUỖI MẪU, nên một dấu huyền ngược đóng chuỗi giữa chừng ⇒ `nap.js`
+  **chết cú pháp**, `npm run di-tru` không chạy được nữa. Cùng họ án lệ ⑤c (01/09, `dieu-huong.js`).
+  Điều đáng ghi không phải cái lỗi — mà là **ca canh đúng tệp đó vẫn XANH**: ca
+  `COT_BI_DI_TRU_GHI_DE` đọc `nap.js` bằng `readFileSync` + biểu thức chính quy, tức nó đo
+  VĂN BẢN, không đo một mô-đun nạp được. Thứ bắt được là bộ ca HÀNH VI mới
+  (`test/di-tru-giu-cot-nguoi-dat.test.js`) vì nó `import` thật rồi chạy hai lượt `napPage`.
+  📌 Bài học: **thước đọc file bằng regex không chứng minh file còn chạy được.** Tệp nào chỉ
+  được test đọc dưới dạng văn bản thì phải có ít nhất một ca IMPORT nó.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)

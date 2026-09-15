@@ -5,6 +5,9 @@
 // | POST   /api/page-bot/:id/bot        | gạt công tắc BOT AI   (qua tiến trình bot v1)    |
 // | POST   /api/page-bot/:id/marketer   | gán marketer          (CSDL v3)                  |
 // | POST   /api/page-bot/:id/trong-diem | cờ page trọng điểm    (CSDL v3)                  |
+// | POST   /api/page-bot/:id/thi-truong | đặt thị trường        (CSDL v3, di trú không xoá)|
+// | POST   /api/page-bot/:id/nganh-hang | đặt ngành hàng        (CSDL v3, di trú không xoá)|
+// | POST   /api/page-bot/:id/botcake    | LỜI KHAI «đã tắt Botcake» — KHÔNG tắt Botcake    |
 //
 // Page của team khác → **404**, không phải 403 (403 xác nhận dòng đó có thật ở team khác).
 
@@ -17,6 +20,7 @@ import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { danhSachPage, LOC, CHU_LOC, MOI_TRANG, LoiPageBot } from './kho-page.js';
 import {
   datCongTacBot, ganMarketer, datTrongDiem, trangThaiCau,
+  datThiTruong, datNganhHang, datBotcakeTat,
   VAI_SUA_DUOC, CANH_BAO_MARKETER, PHIEU_MARKETER,
 } from './cong-tac.js';
 
@@ -166,6 +170,21 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 
   r.post('/api/page-bot/:id/trong-diem', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
     const kq = await datTrongDiem(cuaBoiCanh(req), req.params.id, laBat(req.body?.bat));
+    res.json({ ok: true, ...kq });
+  }));
+
+  r.post('/api/page-bot/:id/thi-truong', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    const kq = await datThiTruong(cuaBoiCanh(req), req.params.id, req.body?.thiTruong);
+    res.json({ ok: true, ...kq });
+  }));
+
+  r.post('/api/page-bot/:id/nganh-hang', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    const kq = await datNganhHang(cuaBoiCanh(req), req.params.id, req.body?.nganhHang);
+    res.json({ ok: true, ...kq });
+  }));
+
+  r.post('/api/page-bot/:id/botcake', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    const kq = await datBotcakeTat(cuaBoiCanh(req), req.params.id, laBat(req.body?.bat));
     res.json({ ok: true, ...kq });
   }));
 

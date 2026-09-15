@@ -78,6 +78,13 @@ export const HANH_DONG = Object.freeze({
   SUA_KET_NOI_POS: 'sua_ket_noi_pos',
   BAT_TAT_KET_NOI_POS: 'bat_tat_ket_noi_pos',
   BO_KET_NOI_POS: 'bo_ket_noi_pos',
+
+  // ── 15/09 · thuộc tính page sửa được trên màn ──
+  // `thi_truong` là cột tầng «nước» của cây kịch bản ba tầng đọc; `botcake_tat` là LỜI KHAI
+  // «page này đã tắt Botcake rồi», không phải một công tắc tắt Botcake.
+  DAT_THI_TRUONG: 'dat_thi_truong',
+  DAT_NGANH_HANG: 'dat_nganh_hang',
+  BAT_TAT_BOTCAKE: 'bat_tat_botcake',
 });
 
 /** Nhóm để màn hình xếp bộ lọc thành từng cụm, không phải để module này dùng. */
@@ -96,6 +103,7 @@ export const NHOM = Object.freeze({
   ]),
   page_bot: Object.freeze([
     HANH_DONG.BAT_TAT_BOT_AI, HANH_DONG.GAN_MARKETER, HANH_DONG.DAT_TRONG_DIEM,
+    HANH_DONG.DAT_THI_TRUONG, HANH_DONG.DAT_NGANH_HANG, HANH_DONG.BAT_TAT_BOTCAKE,
   ]),
   ket_noi: Object.freeze([
     HANH_DONG.THEM_TOKEN_PANCAKE, HANH_DONG.BO_TOKEN_PANCAKE, HANH_DONG.NAP_LAI_DU_LIEU,
@@ -206,6 +214,9 @@ const MO_TA = Object.freeze({
   [HANH_DONG.SUA_KET_NOI_POS]: 'Sửa kết nối POS',
   [HANH_DONG.BAT_TAT_KET_NOI_POS]: 'Bật/tắt kết nối POS',
   [HANH_DONG.BO_KET_NOI_POS]: 'Bỏ kết nối POS',
+  [HANH_DONG.DAT_THI_TRUONG]: 'Đặt thị trường cho page',
+  [HANH_DONG.DAT_NGANH_HANG]: 'Đặt ngành hàng cho page',
+  [HANH_DONG.BAT_TAT_BOTCAKE]: 'Đánh dấu page đã tắt Botcake',
 });
 
 /** Chữ tiếng Việt cho màn hình. Mã lạ → trả lại chính mã, kèm một tiếng kêu ở console. */

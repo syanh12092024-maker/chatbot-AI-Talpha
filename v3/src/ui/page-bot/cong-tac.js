@@ -25,11 +25,16 @@ import { datBotAi, trangThaiCau } from '../../noi-day/cau-bot-v1.js';
 export const HANH_DONG_BOT = 'bat_tat_bot_ai';
 export const HANH_DONG_MARKETER = 'gan_marketer';
 export const HANH_DONG_TRONG_DIEM = 'dat_trong_diem';
+export const HANH_DONG_THI_TRUONG = 'dat_thi_truong';
+export const HANH_DONG_NGANH_HANG = 'dat_nganh_hang';
+export const HANH_DONG_BOTCAKE = 'bat_tat_botcake';
 
 /** Vai được sửa. `quan-ly` xem được màn nhưng không gạt được công tắc. */
 export const VAI_SUA_DUOC = Object.freeze([VAI.QUAN_TRI]);
 
 export const DAI_MARKETER = 120;
+/** Thị trường và ngành hàng là NHÃN, không phải mô tả — dài hơn thế là người ta đang gõ nhầm ô. */
+export const DAI_NHAN = 120;
 
 /**
  * Câu này TỪNG là một cảnh báo: di trú ghi đè cột `marketer` bằng `pages.json` (nguồn rỗng),
@@ -208,3 +213,84 @@ export async function datTrongDiem(boiCanh, id, bat) {
 
 /** Trạng thái cửa ghi sang tiến trình bot — màn hình hiện để biết vì sao công tắc mờ. */
 export { trangThaiCau };
+
+/* ─────────────── ④⑤ thị trường · ngành hàng ─────────────── */
+
+/**
+ * Hai cột này TỪNG bị `napPage` ghi đè trần — tức trước 15/09, mở nút sửa ở đây là hứa một
+ * thứ lượt «Kéo dữ liệu về» kế tiếp sẽ xoá sạch, im lặng. Vá di trú (nhánh `CASE WHEN`) đi
+ * CÙNG LƯỢT với cái nút, không phải sau; `COT_BI_DI_TRU_GHI_DE` + bài test đối chiếu thẳng
+ * `db/di-tru/nap.js` là chỗ canh việc ấy.
+ *
+ * Vì sao đáng mở: `page.thi_truong` mới có ở **140/514** page (chú thích migration 010), mà
+ * tầng `cap='nuoc'` của cây kịch bản ba tầng sống bằng đúng cột đó — 374 page còn lại không
+ * ai điền được nếu không mở `psql`.
+ */
+async function datNhan(boiCanh, id, gia, { cot, hanhDong, ten }) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const p = await traTrongTeam(bc, id);
+
+  const moi = String(gia == null ? '' : gia).trim();
+  if (moi.length > DAI_NHAN) {
+    throw new LoiPageBot(`${ten} dài quá ${DAI_NHAN} ký tự.`, 'qua_dai');
+  }
+  const cu = cot === 'thi_truong' ? p.thiTruong : p.nganhHang;
+  if (moi === cu) return { id: String(id), [cot]: moi, doi: false };
+
+  const db = congTruyVan(bc);
+  await db.sua(BANG, { id: String(id) }, { [cot]: moi, sua_luc: new Date().toISOString() });
+
+  await ghi(bc, {
+    hanhDong,
+    doiTuongLoai: BANG,
+    doiTuongId: String(id),
+    truoc: { [cot]: cu },
+    sau: { [cot]: moi },
+    ghiChu: moi
+      ? `đặt ${ten} "${moi}" cho page ${p.ten || p.pageId}`
+      : `xoá ${ten} khỏi page ${p.ten || p.pageId}`,
+  });
+
+  return { id: String(id), [cot]: moi, doi: true };
+}
+
+export const datThiTruong = (bc, id, gia) => datNhan(bc, id, gia, {
+  cot: 'thi_truong', hanhDong: HANH_DONG_THI_TRUONG, ten: 'thị trường',
+});
+export const datNganhHang = (bc, id, gia) => datNhan(bc, id, gia, {
+  cot: 'nganh_hang', hanhDong: HANH_DONG_NGANH_HANG, ten: 'ngành hàng',
+});
+
+/* ─────────────── ⑥ cờ đã tắt Botcake ─────────────── */
+
+/**
+ * ⚠️ CỜ NÀY LÀ LỜI KHAI, KHÔNG PHẢI CÔNG TẮC. Bật nó KHÔNG tắt Botcake — Botcake tắt bằng
+ * tay trong giao diện Botcake, v3 không có đường nào với tới đó. Cột chỉ ghi lại «page này
+ * đã được tắt Botcake rồi», để các màn đếm đúng và để việc H8 (chọn 3 page thử) có chỗ ghi.
+ *
+ * Nói thẳng ở đây vì đây đúng chỗ dễ hiểu nhầm nhất: một ô tick tên «đã tắt Botcake» trông
+ * y hệt một công tắc. Câu trả về mang theo `laLoiKhai` để màn hiện đúng nghĩa.
+ */
+export async function datBotcakeTat(boiCanh, id, bat) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const p = await traTrongTeam(bc, id);
+  const moi = !!bat;
+  if (moi === p.botcakeTat) return { id: String(id), botcakeTat: moi, doi: false, laLoiKhai: true };
+
+  const db = congTruyVan(bc);
+  await db.sua(BANG, { id: String(id) }, { botcake_tat: moi, sua_luc: new Date().toISOString() });
+
+  await ghi(bc, {
+    hanhDong: HANH_DONG_BOTCAKE,
+    doiTuongLoai: BANG,
+    doiTuongId: String(id),
+    truoc: { botcake_tat: p.botcakeTat },
+    sau: { botcake_tat: moi },
+    ghiChu: `${moi ? 'đánh dấu ĐÃ TẮT' : 'bỏ dấu đã tắt'} Botcake cho page ${p.ten || p.pageId}`
+      + ' — đây là LỜI KHAI, không phải lượt tắt Botcake thật',
+  });
+
+  return { id: String(id), botcakeTat: moi, doi: true, laLoiKhai: true };
+}

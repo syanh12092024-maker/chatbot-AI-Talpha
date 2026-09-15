@@ -58,11 +58,29 @@ export async function napPage(pool, goc) {
                          pos_shop_id, pos_via, token_idx, the_pancake, mat_dau, kiem_luc)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        ON CONFLICT (page_id) DO UPDATE SET
-         ten = EXCLUDED.ten, thi_truong = EXCLUDED.thi_truong, nganh_hang = EXCLUDED.nganh_hang,
-         -- marketer là cột NGƯỜI đặt (màn Page & Bot), không phải cột máy đồng bộ.
-         -- Nguồn ĐIỀN VÀO CHỖ TRỐNG nhưng KHÔNG BAO GIỜ XOÁ CHỖ ĐÃ CÓ. Xem ghi chú đầu hàm.
+         ten = EXCLUDED.ten,
+         -- BA CỘT NGƯỜI ĐẶT (màn Page & Bot), không phải cột máy đồng bộ. Cùng một luật:
+         -- nguồn ĐIỀN VÀO CHỖ TRỐNG nhưng KHÔNG BAO GIỜ XOÁ CHỖ ĐÃ CÓ.
+         --
+         -- marketer vào luật này từ PHIEU-B-Y4 (25/08). thi_truong và nganh_hang vào
+         -- 15/09, cùng lượt màn Page & Bot cho sửa hai cột ấy: trước đó chúng bị ghi đè trần,
+         -- nên một nút sửa thị trường sẽ bị lượt «Kéo dữ liệu về» kế tiếp xoá sạch mà không
+         -- ai được báo. page.thi_truong mới có ở 140/514 page — phần còn lại chỉ người điền
+         -- được, và công ấy không được phép bốc hơi.
+         --
+         -- ⛔ KHÔNG DẤU HUYỀN NGƯỢC TRONG KHỐI NÀY: đây là chuỗi mẫu, một dấu là tệp chết
+         --    cú pháp. Án lệ 15/09 — chính chú thích này từng làm nap.js không nạp được, và
+         --    ca đọc-chữ của màn Page & Bot vẫn xanh vì nó chỉ đọc tệp dưới dạng văn bản.
+         --
+         -- GIÁ PHẢI TRẢ, nói thẳng: nguồn KHÔNG sửa lại được một thị trường đã có giá trị.
+         -- Nguồn ghi sai rồi thì phải sửa trên màn. Đổi lại là công người nhập không bị xoá —
+         -- và mất công người là thứ không có đường lùi, còn sửa một ô trên màn thì có.
          marketer = CASE WHEN page.marketer <> '' THEN page.marketer
                          ELSE EXCLUDED.marketer END,
+         thi_truong = CASE WHEN page.thi_truong <> '' THEN page.thi_truong
+                           ELSE EXCLUDED.thi_truong END,
+         nganh_hang = CASE WHEN page.nganh_hang <> '' THEN page.nganh_hang
+                           ELSE EXCLUDED.nganh_hang END,
          pos_shop_id = EXCLUDED.pos_shop_id, pos_via = EXCLUDED.pos_via,
          token_idx = EXCLUDED.token_idx, the_pancake = EXCLUDED.the_pancake,
          mat_dau = EXCLUDED.mat_dau, kiem_luc = EXCLUDED.kiem_luc, sua_luc = now()`,

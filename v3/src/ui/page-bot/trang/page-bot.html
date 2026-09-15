@@ -145,8 +145,9 @@ function veBang(d) {
   const lyDoKhoaBot = !SUA ? 'Cần vai Quản trị để bật tắt bot' : 'Cửa ghi đang khoá — xem cảnh báo phía trên';
 
   $('#bang').innerHTML = `<table class="data-table"><thead><tr>
-      <th scope="col">Page</th><th scope="col">Thị trường</th><th scope="col">Marketer</th>
+      <th scope="col">Page</th><th scope="col">Thị trường · ngành hàng</th><th scope="col">Marketer</th>
       <th scope="col">Bot</th><th scope="col">Còn thiếu gì</th><th scope="col">Trọng điểm</th>
+      <th scope="col">Đã tắt Botcake</th>
     </tr></thead><tbody>${d.page.map((p) => {
       const ten = p.ten || '(chưa có tên)';
       return `
@@ -160,7 +161,14 @@ function veBang(d) {
           </div>
         </div>
       </td>
-      <td class="meta">${esc(p.thiTruong || '—')}${p.nganhHang ? ' · ' + esc(p.nganhHang) : ''}</td>
+      <td>
+        <label class="sr-only" for="tt-${esc(p.id)}">Thị trường của ${esc(ten)}</label>
+        <input type="text" class="cell-input" id="tt-${esc(p.id)}" data-tt="${esc(p.id)}" value="${esc(p.thiTruong)}"
+               placeholder="Chưa có" ${SUA ? '' : 'disabled'} autocomplete="off" spellcheck="false">
+        <label class="sr-only" for="nh-${esc(p.id)}">Ngành hàng của ${esc(ten)}</label>
+        <input type="text" class="cell-input meta" id="nh-${esc(p.id)}" data-nh="${esc(p.id)}" value="${esc(p.nganhHang)}"
+               placeholder="Ngành hàng" ${SUA ? '' : 'disabled'} autocomplete="off" spellcheck="false">
+      </td>
       <td>
         <label class="sr-only" for="mkt-${esc(p.id)}">Marketer của ${esc(ten)}</label>
         <input type="text" class="cell-input" id="mkt-${esc(p.id)}" data-mkt="${esc(p.id)}" value="${esc(p.marketer)}"
@@ -178,6 +186,12 @@ function veBang(d) {
         <label class="switch" ${SUA ? '' : 'title="Cần vai Quản trị"'}>
           <input type="checkbox" role="switch" data-td="${esc(p.id)}" aria-label="Page trọng điểm: ${esc(ten)}"
                  ${p.trongDiem ? 'checked' : ''} ${SUA ? '' : 'disabled'}>
+        </label>
+      </td>
+      <td>
+        <label class="switch" title="LỜI KHAI, không phải công tắc: đánh dấu ở đây KHÔNG tắt Botcake. Botcake tắt bằng tay trong giao diện Botcake.">
+          <input type="checkbox" role="switch" data-bc="${esc(p.id)}" aria-label="Đã tắt Botcake cho ${esc(ten)}"
+                 ${p.botcakeTat ? 'checked' : ''} ${SUA ? '' : 'disabled'}>
         </label>
       </td>
     </tr>`; }).join('')}</tbody></table>`;
@@ -198,6 +212,16 @@ function veBang(d) {
     el.addEventListener('blur', () => luuMarketer(el));
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter') el.blur(); });
   });
+  document.querySelectorAll('[data-bc]').forEach((el) => el.addEventListener('change', () => gatBotcake(el)));
+  for (const [thuoc, duong, ten, khoa] of [
+    ['data-tt', 'thi-truong', 'thị trường', 'thiTruong'],
+    ['data-nh', 'nganh-hang', 'ngành hàng', 'nganhHang'],
+  ]) {
+    document.querySelectorAll(`[${thuoc}]`).forEach((el) => {
+      el.addEventListener('blur', () => luuNhan(el, { duong, ten, khoa }));
+      el.addEventListener('keydown', (e) => { if (e.key === 'Enter') el.blur(); });
+    });
+  }
 }
 
 // ── GHI · bật tắt bot — chạm KHÁCH THẬT, nên hỏi lại có tiêu đề và hệ quả (mục L) ─────
@@ -246,6 +270,38 @@ async function luuMarketer(el) {
     if (kq.canhBao) baoLoi('Đã lưu, nhưng cần để ý', kq.canhBao);
     await napNhe();
   } catch (e) { el.value = el.defaultValue || ''; baoLoi('Không lưu được người phụ trách', e.message); }
+}
+
+// ── GHI · thị trường / ngành hàng — cùng khuôn với marketer ────────────────────────
+// Hai cột này ĐƯỢC BẢO VỆ khỏi lượt «Kéo dữ liệu về» từ 15/09 (nhánh CASE trong
+// `db/di-tru/nap.js`). Trước đó gõ vào đây là gõ lên cát.
+async function luuNhan(el, { duong, ten, khoa }) {
+  const moi = el.value.trim();
+  if (moi === (el.defaultValue || '').trim()) return;
+  const id = el.dataset.tt || el.dataset.nh;
+  try {
+    await goi(`/api/page-bot/${encodeURIComponent(id)}/${duong}`,
+      { method: 'POST', body: JSON.stringify({ [khoa]: moi }) });
+    el.defaultValue = moi;
+    toast(moi ? `Đã lưu ${ten}.` : `Đã xoá ${ten}.`);
+    await napNhe();
+  } catch (e) { el.value = el.defaultValue || ''; baoLoi(`Không lưu được ${ten}`, e.message); }
+}
+
+// ── GHI · lời khai «đã tắt Botcake» ────────────────────────────────────────────────
+async function gatBotcake(el) {
+  el.disabled = true;
+  try {
+    await goi(`/api/page-bot/${encodeURIComponent(el.dataset.bc)}/botcake`,
+      { method: 'POST', body: JSON.stringify({ bat: el.checked }) });
+    // Nói lại nghĩa mỗi lần bấm — một ô tick trông y hệt một công tắc, và nhầm chỗ này
+    // nghĩa là tưởng đã tắt Botcake trong khi Botcake vẫn đang cướp khách.
+    toast(el.checked
+      ? 'Đã ghi nhận «page này đã tắt Botcake». Việc tắt thật làm trong giao diện Botcake.'
+      : 'Đã bỏ ghi nhận đã tắt Botcake.');
+    await napNhe();
+  } catch (e) { el.checked = !el.checked; baoLoi('Không lưu được ghi nhận Botcake', e.message); }
+  finally { el.disabled = false; }
 }
 
 /** Nạp lại số đếm mà KHÔNG vẽ lại bảng — để con trỏ không nhảy khỏi ô đang gõ. */
