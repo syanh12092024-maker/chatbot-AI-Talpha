@@ -1,11 +1,11 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG (đo lại 15/09):** sóng vá refute ✅ 4/4 + gate RVA ✅ · UI hệ kiểu 25/25 màn
-> ĐÃ LÊN VPS 14/09, `origin/main` = `e657af1`. **⛔ 4 commit chưa push** (3 mã + 1 sổ) — `4ac1519` hai cửa ghi ·
-> `922cff0` nút «Kéo dữ liệu về» · `c8309a2` van `V3_PAGE_XU_LY`; cả ba dọn đường **MỞ LUỒNG
-> SỐNG bậc ③**, unit `aicloser-v3-worker.service` CHƯA cài trên VPS. 🔴 chặn: dãy S
-> `l0-m2-so-lieu` chập chờn (2 cổng đỏ vì THƯỚC) · H7 514/514 page `chua-phan` · H6 hết tiền model.
-> Điểm dừng kế = người quyết gật push + mở van worker.
+> 💓 **NHỊP TIM TỔNG (đo lại 15/09, vòng 2):** sóng vá refute ✅ 4/4 · UI hệ kiểu 25/25 màn đã lên
+> VPS 14/09, `origin/main` = `e657af1`. **⛔ 8 commit chưa push** — 3 của phiên 14/09 (hai cửa ghi ·
+> nút «Kéo dữ liệu về» · van `V3_PAGE_XU_LY`) + 5 của 15/09 (ghi bù sổ · khai bù 12 biến `V3_*` ·
+> CRUD kết nối POS · thuộc tính page · tạo người dùng). Cửa ghi v3: **24 → 32, mồ côi 0**.
+> 🔴 chặn: dãy S `l0-m2-so-lieu` chập chờn · H7 514/514 page `chua-phan` · H6 hết tiền model ·
+> chưa có đường đặt lại mật khẩu. Điểm dừng kế = người quyết gật push + mở van worker.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -1606,3 +1606,35 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   trước lượt ghi này. 🔴 **Dãy S `l0-m2-so-lieu`: lượt này S1–S12 XANH HẾT** — chập chờn KHÔNG có
   nghĩa đã hết, chỉ nghĩa là lượt này nó không nổ; nợ giữ nguyên, vẫn CẤM vá bằng cách bỏ qua ca.
   Đã đóng mục nợ «giấy tờ trôi» 11/09 (4 chỗ) · commit: lượt ghi sổ này.
+
+- 15/09 · KHAI BÙ BIẾN `V3_*` → ✅ — bảng «nơi khai duy nhất» khai 7 biến trong khi code đọc 18;
+  nặng nhất là `V3_KHOA_VE` (thiếu ⇒ `chay-that.js` exit(1), dịch vụ v3 KHÔNG LÊN) và `V3_KHOA_CHU`
+  (VẮNG ngay trên máy này). Khai thêm 10 biến + 2 KHUÔN tên động + ADMIN_USER/ADMIN_PASS. Ghi ra
+  một mâu thuẫn thay vì lặng lẽ chọn: `V3_BOT_KHOA` là biến «đặt để TẮT», đúng thứ luật 1 của bảng
+  cấm — nay là ngoại lệ CÓ CHỦ Ý viết thẳng dưới luật đó. Thước `bien-moi-truong-khai-du.test.mjs`
+  canh hai chiều, không có danh sách gõ tay · commit `277ba77`.
+
+- 15/09 · CRUD KẾT NỐI POS → ✅ — `ket_noi_pos` (thị trường · shop · khoá API) trước nay chỉ ghi
+  được bằng `db/di-tru/ket-noi-pos.js` đọc `pancake-shops.json`; đổi một khoá API trên đường TIỀN
+  phải SSH + SQL, không dấu vết. Nay 4 cửa trên màn Kết nối: thêm · sửa · bật/tắt · bỏ. Khoá đi MỘT
+  CHIỀU, mọi câu ghi kèm `team_id` trong WHERE, `market` không đổi được, 2 UNIQUE nói thành câu.
+  4 mã nhật ký (3 mã BẮT BUỘC, cùng họ `doi_khoa`) + kiểm phễu nhật ký TRƯỚC khi ghi. Thước 2 tầng:
+  11 ca router + **12 ca trên Postgres THẬT** (vòng ghi→đọc bằng chính `layKetNoi`) · commit `73c5d16`.
+
+- 15/09 · THUỘC TÍNH PAGE → ✅ — sửa được `thi_truong` · `nganh_hang` · `botcake_tat` trên màn Page
+  & bot. **Vá `nap.js` TRƯỚC khi mở nút**: hai cột đầu bị di trú ghi đè trần, mở nút mà không vá là
+  hứa một thứ nút «Kéo dữ liệu về» ở màn bên cạnh sẽ xoá sạch. Nay theo luật PHIEU-B-Y4 của
+  `marketer`. `botcake_tat` là LỜI KHAI, không phải công tắc — nói ở 3 chỗ. Thước: 12 ca hành vi +
+  **5 ca hai lượt `napPage` thật** · commit `0c35188`.
+
+- 15/09 · TẠO NGƯỜI DÙNG → ✅ — **đổi một luật đã ghi thành chữ, người quyết chốt**: nới cổng danh
+  tính cho ĐÚNG `nguoi_dung`, giữ cấm `team` + `vai` (ca BIÊN khoá `BANG_GHI_DUOC.size === 2`). Lệnh
+  cấm cũ trỏ vào chỗ RỖNG — không di trú, không migration, không script nào tạo người dùng; chỉ có
+  `psql`. Tạo + cấp vai một lượt, bắt buộc mật khẩu ≥8, băm scrypt, mật khẩu và băm KHÔNG vào nhật
+  ký. Marketer: bỏ ô nhập khỏi màn theo lệnh người quyết, giữ cột + cửa API + bản tin readiness
+  · commit `5328911`.
+
+- 15/09 · TỔNG · **KẾT LƯỢT** — cửa ghi v3 đi từ **24 → 32, mồ côi 0**. npm test 1736 ca · 1732 xanh
+  · 2 đỏ đều là nợ cũ (D7 · dãy S chập chờn, chạy riêng 4 lượt ra 4 tập khác nhau) · cổng tĩnh
+  PHÉP=5 ĐỎ=0. Bốn lỗ «phải mở psql» đã bịt 3, lỗ thứ tư (sản phẩm/giá) giữ nguyên vì nó vào bằng
+  POS sync đúng ý đồ. 6 nợ mới ghi §9. ⛔ TẤT CẢ CHƯA PUSH.
