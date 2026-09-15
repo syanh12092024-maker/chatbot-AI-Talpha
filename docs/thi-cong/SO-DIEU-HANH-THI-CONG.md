@@ -1,8 +1,11 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG:** vòng cuối 12:10 23/08 · SÓNG VÁ 2/4 ✅ (VA-R3 · VA-R4) · đang chạy
-> VA-R1 + VA-R2 (opus) · repro refute-tong-the-1 còn ĐÚNG 5 dấu 🔴, tất cả thuộc đất VA-R2
-> (F1·F3a·F3b·F4·F6); F2·F5 của VA-R3 đã sạch · ⛔ chưa push.
+> 💓 **NHỊP TIM TỔNG (đo lại 15/09):** sóng vá refute ✅ 4/4 + gate RVA ✅ · UI hệ kiểu 25/25 màn
+> ĐÃ LÊN VPS 14/09, `origin/main` = `e657af1`. **⛔ 4 commit chưa push** (3 mã + 1 sổ) — `4ac1519` hai cửa ghi ·
+> `922cff0` nút «Kéo dữ liệu về» · `c8309a2` van `V3_PAGE_XU_LY`; cả ba dọn đường **MỞ LUỒNG
+> SỐNG bậc ③**, unit `aicloser-v3-worker.service` CHƯA cài trên VPS. 🔴 chặn: dãy S
+> `l0-m2-so-lieu` chập chờn (2 cổng đỏ vì THƯỚC) · H7 514/514 page `chua-phan` · H6 hết tiền model.
+> Điểm dừng kế = người quyết gật push + mở van worker.
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -31,7 +34,7 @@ mâu thuẫn) → `docs/v3/02-KE-HOACH-CODE.md` (kế hoạch + 18 bảng + nghi
 `docs/v3/05-PHAN-VIEC.md` (ranh giới file) → `docs/TONG-QUAN-HE-THONG.md` (bản đang chạy).
 
 **Môi trường dev:** Postgres 16 container `talpha-pg` cổng **5433**, chuỗi nối ở `.env`
-biến `DATABASE_URL_V3`. Node v25. Dữ liệu thật để di trú nằm ở gốc repo (`pages.json`
+biến `DATABASE_URL_V3`. Node: máy A đo 15/09 = **v24.19.0** (sổ cũ ghi v25; ba cổng `a7-*` nhận khuôn Node 25). Dữ liệu thật để di trú nằm ở gốc repo (`pages.json`
 `kb-overrides.json` `conv-state.json` `script-versions/` `stats.json`…, đã trải từ gói bàn
 giao 19/08 — đều bị gitignore). Token Pancake từ IP máy cá nhân bị chặn (lỗi 121) — số đo
 Pancake thật phải lấy trên VPS, đừng debug ở local.
@@ -181,11 +184,11 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 
 | Mã    | Cụm                                                           | Phụ thuộc | Đụng file                                        | Trạng thái    |
 | ----- | ------------------------------------------------------------- | --------- | ------------------------------------------------ | ------------- |
-| VA-R1 | C1 bộ-não-HTTP (RF-1/2/3)                                     | review(a) | chat/handler-v3 · queue/worker · queue/nap       | 🎫 chờ review |
-| VA-R2 | C2 tiền+tạo-đơn (RF-9/10/11/12/21/15)                         | review(a) | orders/hang-cho · pos/tao-don · pos/doc-danh-muc | 🎫 chờ review |
+| VA-R1 | C1 bộ-não-HTTP (RF-1/2/3)                                     | review(a) | chat/handler-v3 · queue/worker · queue/nap       | ✅ 23/08 `1562d58` · cổng `va-r1.sh` 12/12 |
+| VA-R2 | C2 tiền+tạo-đơn (RF-9/10/11/12/21/15)                         | review(a) | orders/hang-cho · pos/tao-don · pos/doc-danh-muc | ✅ 23/08 `5caf5be` · cổng `va-r2.sh` 17/17 |
 | VA-R3 | C3 máy trạng thái (RF-13/14)                                  | —         | orders/may-trang-thai · quet-don-moi             | ✅            |
 | VA-R4 | C4 đọc ý (RF-20)                                              | —         | orders/doc-y                                     | ✅            |
-| RVA   | **GATE SÓNG VÁ** — 13 cổng cũ + 4 va-r* + repro 2 bộ đảo xanh | VA-R1..R4 | TỔNG                                             | ⬜            |
+| RVA   | **GATE SÓNG VÁ** — 13 cổng cũ + 4 va-r* + repro 2 bộ đảo xanh | VA-R1..R4 | TỔNG                                             | ✅ 23/08 · 17 cổng rc=0 · 352/352 · repro tổng-thể-1 🔴=0 (MẢNG-2 còn ❌ F4/F5 mức NÊN, §9) |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
@@ -726,7 +729,7 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   vào RANH GIỚI DÒNG, đừng neo vào một chuỗi có thể là khúc con của chuỗi dài hơn.
   Nhật ký: `docs/thi-cong/nhat-ky/ui-gom-4-11-09.md` §3.
 
-- 11/09 · TIẾP QUẢN — ⬜ **GIẤY TỜ TRÔI, SỬA MỘT LƯỢT (việc của TỔNG).**
+- 11/09 · TIẾP QUẢN — ✅ **ĐÃ SỬA 15/09** · GIẤY TỜ TRÔI, SỬA MỘT LƯỢT (việc của TỔNG).
   ① Nhịp tim đầu sổ đứng ở 23/08 («SÓNG VÁ 2/4, đang chạy VA-R1+VA-R2»), trong khi VA-R1 ✅
      `1562d58`, VA-R2 ✅ `5caf5be`, gate RVA ✅ — §10 đã ghi tới 01/09.
   ② Bảng §5b vẫn ghi VA-R1 · VA-R2 «🎫 chờ review», dù cả hai đã có cổng riêng
@@ -735,6 +738,11 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
      `origin/main` = `af1e764`, nay còn 3 commit chưa push.
   ④ Sổ ghi «Node v25»; máy tiếp quản chạy **v24.19.0**, mà ba cổng `a7-*` nhận khuôn Node 25.
   Nhật ký: `tiep-quan-09-09.md` §2.
+  ✅ **15/09 vá cả bốn:** ① nhịp tim viết lại theo số đo 15/09 · ② §5b điền ✅ + hash cho VA-R1
+  (`1562d58`) · VA-R2 (`5caf5be`) · RVA · ③ `BAN-GIAO-CHUYEN-CONG-CU.md §1` sửa thành
+  `origin/main` = `e657af1`, còn 3 commit local · ④ §0a khai Node đo được `v24.19.0`.
+  **Còn nguyên một điều KHÔNG vá được bằng giấy:** ba cổng `a7-*` vẫn nhận khuôn Node 25 trong
+  khi máy A chạy 24 — đó là mã, không phải chữ; ai đụng tới `a7-*` thì đo lại trước.
 
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1529,3 +1537,33 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   **RIÊNG một mình** tệp ấy cũng ĐỎ (`S8` một lượt; `S3`+`S5` lượt sau, qua khuôn của
   `npm test`) ⇒ phủ nhận điều «2. không phải do .env — chạy riêng đều XANH» ở mục trên. Chập
   chờn không cần chạy chung `l0-m1`. Vẫn CẤM vá bằng cách bỏ qua ca · commit `afe9ce0`.
+
+- 14/09 · UI-CỬA-GHI *(ghi bù 15/09 — phiên trước commit lúc 17:32, sổ đóng lúc 17:08)* → ✅ mã xong ·
+  ⛔ CHƯA PUSH — soi 26 cửa ghi của v3, hai cửa viết xong ở máy chủ mà KHÔNG màn nào gọi tới nay đã có
+  nút: `POST /api/kich-ban/nhap-pancake` (chỉ BÓC, điền vào ô soạn, nói rõ «chưa lưu gì cả») và
+  `POST /api/lop-0-dong/mau` (thêm/sửa/công-tắc ngay trên dòng — trước đó muốn thêm một mẫu phải gõ
+  thẳng vào CSDL) · commit `4ac1519` · nhật ký: KHÔNG CÓ, chứng cứ nằm trong thân commit.
+
+- 14/09 · UI-NÚT-DI-TRÚ *(ghi bù 15/09)* → ✅ mã xong · ⛔ CHƯA PUSH — nút «Kéo dữ liệu về» ở màn Kết
+  nối & token, thay việc gõ `npm run di-tru` trên VPS; bốn luật viết thẳng trong mã (chỉ ĐỌC 6 tệp
+  nguồn · `ON CONFLICT` KHÔNG đè cột người đặt — marketer/trọng điểm/công tắc bot/botcake · lượt thứ
+  hai ăn 409 kèm giờ + tên người bấm, không xếp hàng âm thầm · chạy NỀN, trang hỏi lại mỗi 2s). Kèm
+  ba mã nhật ký còn thiếu: `tao_mau_0_dong` và `sua_mau_0_dong` ĐÃ ĐƯỢC GỌI từ `kho-lop-0.js` mà chưa
+  bao giờ khai trong `hanh-dong.js` ⇒ mọi lượt sửa mẫu 0 đồng trước nay không để lại dấu vết
+  · commit `922cff0` · nhật ký: KHÔNG CÓ, chứng cứ nằm trong thân commit.
+
+- 14/09 · VAN BẬC PHƠI WORKER *(ghi bù 15/09)* → ✅ mã xong · ⛔ CHƯA PUSH · ⛔ CHƯA CÀI VPS —
+  `dsPageDeNap` đọc MỌI page trong bảng (502 dòng trên máy chủ), nên bật worker khi không có van là mở
+  thẳng bậc ⑥ «toàn bộ» trong lúc bot v1 vẫn trả 51 page thật ⇒ khách ăn tin từ HAI tiến trình. Van
+  `V3_PAGE_XU_LY`: vắng = KHÔNG page nào và worker IN RA LÝ DO thay vì im · chỉ THU HẸP, id lạ bị bỏ
+  qua (án lệ #22, không đẻ page ma) · van NGUỒN và van BẬC PHƠI đọc ra hai câu khác nhau. Kèm mẫu unit
+  `ops/systemd/aicloser-v3-worker.service` (**chưa cài**) + khai biến ở `bien-moi-truong-v3.md`. Ba ca
+  P7-1b/P7-1c + P7-3/P7-4 · commit `c8309a2` · nhật ký: KHÔNG CÓ, chứng cứ nằm trong thân commit.
+
+- 15/09 · TỔNG · **GHI BÙ SỔ + ĐO LẠI** → ✅ — phiên 14/09 để lại 3 commit không có dòng nào trong sổ
+  (sổ sửa 17:08, commit cuối 17:38); nay đã ghi ở trên. Số đo 15/09 tại máy A: `npm test` →
+  **tests 1682 · pass 1679 · fail 1 · skipped 2**, ca đỏ duy nhất là **D7** (đỏ sẵn, §9) ·
+  `origin/main` = `e657af1` sau `git fetch`, còn ĐÚNG 3 commit local · Node **v24.19.0** · cây sạch
+  trước lượt ghi này. 🔴 **Dãy S `l0-m2-so-lieu`: lượt này S1–S12 XANH HẾT** — chập chờn KHÔNG có
+  nghĩa đã hết, chỉ nghĩa là lượt này nó không nổ; nợ giữ nguyên, vẫn CẤM vá bằng cách bỏ qua ca.
+  Đã đóng mục nợ «giấy tờ trôi» 11/09 (4 chỗ) · commit: lượt ghi sổ này.

@@ -20,7 +20,7 @@
 | **VA-R1** (bộ não bắn HTTP thật) | ✅ 23/08 · commit `1562d58` · cổng `va-r1.sh` 12/12 |
 | **VA-R2** (tiền ×hệ-số + tạo đơn) | ✅ 23/08 · commit `5caf5be` (gộp nhánh `wip/va-r2` vào `main`, nhánh wip có thể xoá) · cổng `va-r2.sh` 17/17 |
 | Gate RVA (chốt sóng vá) | ✅ 23/08 · 17 cổng rc=0 · 352/352 test · repro tổng-thể-1 🔴=0 · MẢNG-2 còn ❌ F4/F5 mức NÊN (§9) |
-| Push lên GitHub | ⬜ **chưa push — ~100 commit local trên `main`** |
+| Push lên GitHub | 🟡 **đo 15/09: `origin/main` = `e657af1` (đã push tới lượt mở van UI 14/09); còn ĐÚNG 3 commit local** — `4ac1519` · `922cff0` · `c8309a2` |
 
 ## 2. Việc phải làm tiếp — theo thứ tự
 
