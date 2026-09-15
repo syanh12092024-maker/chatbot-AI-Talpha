@@ -36,8 +36,11 @@ mâu thuẫn) → `docs/v3/02-KE-HOACH-CODE.md` (kế hoạch + 18 bảng + nghi
 **Môi trường dev:** Postgres 16 container `talpha-pg` cổng **5433**, chuỗi nối ở `.env`
 biến `DATABASE_URL_V3`. Node: máy A đo 15/09 = **v24.19.0** (sổ cũ ghi v25; ba cổng `a7-*` nhận khuôn Node 25). Dữ liệu thật để di trú nằm ở gốc repo (`pages.json`
 `kb-overrides.json` `conv-state.json` `script-versions/` `stats.json`…, đã trải từ gói bàn
-giao 19/08 — đều bị gitignore). Token Pancake từ IP máy cá nhân bị chặn (lỗi 121) — số đo
-Pancake thật phải lấy trên VPS, đừng debug ở local.
+giao 19/08 — đều bị gitignore). ⚠️ **SỬA 15/09:** dòng cũ ở đây ghi «Token Pancake từ IP máy
+cá nhân bị chặn (lỗi 121) — phải lấy số đo trên VPS, đừng debug ở local». **SAI.** Đo lại từ
+chính máy này: `GET /pages` → 200, 218 page; API POS đọc được 2.500 đơn. Lỗi 121 =
+«Không tìm thấy gói cước nào cho người dùng này», đi **theo PAGE** chứ không theo IP — page
+có gói thì gọi được từ local. Chi tiết + bằng chứng: §9 mục 15/09.
 
 **Route model thợ (sửa 22/08 — tiết kiệm token):** MẶC ĐỊNH **sonnet** cho mọi phiếu code
 — phiếu đã viết sẵn nghiệm thu máy chi tiết nên cổng ④ gánh phần chất lượng; **opus** chỉ
@@ -704,9 +707,34 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   `page_id`. Cùng một biến thể POS bán trên ba page thì chỉ một page được nối; hai page kia
   `docSanPhamGoiGia()` trả rỗng ⇒ `kb.noData` ⇒ bot nói «chưa có sản phẩm» rồi bàn giao.
   Không migration nào từ 002→013 nới ràng buộc đó.
-  ⚠️ **SUY TỪ LƯỢC ĐỒ, CHƯA ĐO TRÊN DỮ LIỆU THẬT** (máy tiếp quản không có CSDL). Có thể
-  thực tế mỗi page dùng một variation POS riêng dù bán cùng mặt hàng — một câu SQL trên VPS
-  là biết. Đo trước khi kết luận.
+  ✅ **ĐO ĐƯỢC 15/09 — KHÔNG CÒN LÀ SUY ĐOÁN, VÀ NẶNG HƠN SUY ĐOÁN.** Đọc thẳng đơn POS của
+  7 shop (API POS gọi được từ máy dev, không cần VPS). Sản phẩm Fitgum Acai Berry:
+
+  | Shop | Đơn Fitgum / 600 | Số PAGE bán nó | `variation_id` |
+  | --- | --- | --- | --- |
+  | Saudi | 23 | 1 | `e4108b77-8685-487e-a712-8cc103d00eb7` |
+  | Kuwait | 80 | 1 | `717bfb27-4a96-4c16-b934-527d0dcce8ab` |
+  | Oman | 82 | **2** | `e87acfbd-cb26-446c-b0eb-4903f861d2d5` |
+
+  Ba shop ⇒ **ba `variation_id` khác nhau cho CÙNG một sản phẩm** ⇒ ba `san_pham.ma`. Giả
+  thuyết «mỗi page một variation riêng» ở trên là ĐÚNG, nhưng nó không cứu được gì: nó chính
+  là cái làm hỏng tầng `cap='nuoc'` (mục dưới).
+
+  🔴 **VÀ MỘT HÌNH DẠNG CHƯA AI KHAI: PAGE CHẾT, SẢN PHẨM SỐNG TIẾP.** Người quyết nói 15/09:
+  «page này die có thể chuyển sang page khác với sp tương ứng». Đo ra đang xảy ra thật, ở Oman:
+
+  | Page bán Fitgum ở Oman | Đơn | Trạng thái |
+  | --- | --- | --- |
+  | `1102295119636847` | **56** | ⚠️ **KHÔNG có trong `pages.json`** — hệ chưa biết page này tồn tại |
+  | `1173895229141558` «Healthy Figure PH in Oman» | 26 | ⚰️ `lost: true` — đã chết |
+
+  Và chết page là NHỊP THƯỜNG, không phải sự cố: **115/577 page = 19,9% đang `lost`**, riêng
+  tháng 9/2026 có **106 page** bị đánh dấu chết.
+
+  📌 Hệ quả cho lược đồ, viết lại cho đúng tầm: không chỉ «một sản phẩm ở nhiều page». Mà là
+  **sản phẩm phải SỐNG LÂU HƠN page**. Lược đồ 001 cho `san_pham` đúng một cột `page_id` nên
+  nó mô hình hoá ngược chiều — buộc sản phẩm chết theo page. Với nhịp 20% page chết, đây
+  không phải ca biên mà là đường chính.
 
 - 11/09 · TIẾP QUẢN — 🔴 **TẦNG «SẢN PHẨM» CỦA CÂY KỊCH BẢN BA TẦNG KHÔNG PHỦ ĐƯỢC NHIỀU NƯỚC.**
   `kich_ban.san_pham_ma` dùng chung vốn từ với `ky_nang.bat_cho_nhom_sp`, tức `san_pham.ma`.
@@ -716,7 +744,13 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   MỘT shop», và tầng `cap='nuoc'` — khoá `(san_pham_ma, thi_truong)` — thành dư thừa.
   Cộng chú thích sẵn có ở migration 010: `page.thi_truong` mới có ở **140/514** page ⇒ tầng
   nước chỉ với tới 27% số page. Đây đúng hình dạng kinh doanh mà cây ba tầng sinh ra để
-  phục vụ, nên đáng cân TRƯỚC khi GD2 đi tiếp. Cùng cảnh báo «chưa đo dữ liệu thật» như mục trên.
+  phục vụ, nên đáng cân TRƯỚC khi GD2 đi tiếp.
+  ✅ **ĐO ĐƯỢC 15/09** (thay cho cảnh báo «chưa đo» cũ): ba `variation_id` khác nhau cho cùng
+  Fitgum ở Saudi · Kuwait · Oman — xem bảng ở mục trên. Suy luận «cùng một SP ở hai nước có
+  hai mã khác nhau» ĐÚNG NGUYÊN VĂN trên dữ liệu thật, nên tầng `cap='nuoc'` dư thừa đúng như
+  đã lo. Thêm một số đo có ích: giá của cùng SP ở ba nước **bóc được tự động từ đơn POS**
+  (Saudi 99/149/199 SAR · Kuwait 10,90/15,90/18,90 KWD · Oman 12/18/25 OMR), nên nếu gộp mã
+  sản phẩm theo thương hiệu thì bảng giá theo nước sinh được, không phải nhập tay.
 
 - 11/09 · UI-GOM-4 — 🧭 **ÁN LỆ: THAY CHUỖI BẰNG MỘT KHÚC CON CỦA KHAI BÁO DÀI HƠN.**
   Sửa `chi-tiet-viec.html` bằng phép thay chuỗi `"function veDongViec(d) {"` — mà nó là khúc
@@ -794,6 +828,57 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   inline, và ghi §9. 📌 Điều giữ cho việc này không thành thói quen KHÔNG phải con số mà là
   vế thứ hai của phép ②: tệp chưa khai lý do thì cổng đỏ dù tổng dưới trần. Con số nới được;
   lời khai thì người sau đọc được và cãi được.
+
+- 15/09 · 🔴🔴 **HỆ SỐ TIỀN `KWD` NGHI SAI 10 LẦN — ĐƯỜNG TIỀN, BẢN V1 ĐANG CHẠY.**
+  `CCY_FACTOR` (`src/pancake-orders.js:162`, bản đang phục vụ 51 page) và bản chép của nó
+  `HE_SO_TE` (`src/pos/tao-don.js:96`) đều khai `KWD/OMR/BHD ×1000`. Hệ số này nhân vào
+  **giá AI chốt với khách** rồi gửi POS (`hang-cho.js:151` ở v3; `pancake-orders.js:165` ở v1).
+
+  Đo trên đơn THẬT của shop Kuwait: giá khai bằng chữ trong kịch bản của 3 page Kuwait khác
+  khớp `cod ÷ 100`, **không** khớp `÷ 1000`, sáu giá trên sáu:
+
+  | Kịch bản ghi | ÷100 | ÷1000 | Có trong dữ liệu? |
+  | --- | --- | --- | --- |
+  | Luxoria `8,9 KWD` | 890 | 8900 | **890 có** · 8900 không |
+  | Luxoria `12,9 KWD` | 1290 | 12900 | **1290 có (183 đơn)** · không |
+  | Luxe Charm `11 KWD` | 1100 | 11000 | **1100 có** · không |
+  | Luxe Charm `16 KWD` | 1600 | 16000 | **1600 có** · không |
+  | Amoura `13 KWD` | 1300 | 13000 | **1300 có** · không |
+  | Amoura `22 KWD` | 2200 | 22000 | **2200 = đúng p99** · không |
+
+  Cùng phép đo này xác nhận `SAR ×100` là ĐÚNG (Saudi `SL2→9900` = 99 SAR y như kịch bản),
+  nên thước dùng chung cho cả hai, không phải thước riêng cho kết luận mình muốn.
+
+  **Hậu quả nếu đúng:** AI chốt «10,90 KWD» → ghi `10900` → POS thu **109 KWD**, gấp 10.
+  Chưa nổ diện rộng (quét 2.500 đơn Kuwait: p99 = 2.200, chỉ 6 đơn ≥ 8.000 và đều giải thích
+  được) vì nhánh `agreed` chỉ chạy khi AI bóc được `total_price` thành số; phần lớn đơn rơi
+  về bảng giá học từ đơn cũ, vốn đã đúng đơn vị. **Nhưng là mìn đã cài**, và ba tệ dính:
+  KWD · OMR · BHD.
+  ⛔ CHƯA SỬA: `src/pancake-orders.js` nằm trong 62 tệp phẳng CẤM SỬA (luật 4 §0a), và kết
+  luận này là SUY TỪ DỮ LIỆU — phép xác nhận cuối cùng là mở POS xem một đơn Kuwait hiện
+  `10,900 KD` hay `1,090 KD`. Người quyết xác nhận rồi mới mở phiếu vá, kèm bộ ca đối chiếu
+  giá-kịch-bản ↔ `cod` cho từng thị trường.
+
+- 15/09 · ✅ **SỬA MỘT LỜI KHAI SAI TRONG CHÍNH SỔ NÀY: lỗi 121 KHÔNG phải chặn theo IP.**
+  §0a đang ghi «Token Pancake từ IP máy cá nhân bị chặn (lỗi 121) — số đo Pancake thật phải
+  lấy trên VPS, đừng debug ở local». Đo 15/09 từ đúng máy cá nhân đó: `GET /pages` → **200,
+  218 page**. Lỗi 121 nguyên văn là `"Không tìm thấy gói cước nào cho người dùng này"` và nó
+  đi **theo PAGE**: `Amoura Gold KW` qua được, hai page Healthy Figure (kể cả page Saudi đang
+  chạy 788 hội thoại) thì 121. API POS cũng gọi được từ local (đã đọc 2.500 đơn).
+  📌 Giá đã trả cho lời khai sai này: một quãng dài không ai dám đo Pancake ở local. Án lệ #3
+  đúng chỗ — «mỗi câu chú thích khai về hành vi của hệ khác phải kèm một phép đo trong lượt».
+  §0a đã sửa cùng commit.
+
+- 15/09 · ⬜ **ẢNH CHỤP DỮ LIỆU TRÊN MÁY DEV ĐÃ CŨ HƠN HỆ THẬT.** Màn Kịch bản của hệ thật
+  (ảnh người quyết gửi 15/09) hiện một page bán «Aeekiv Comfort Massage Cream», kịch bản
+  tiếng Indonesia, mang dấu «(nhập từ Pancake)». Page ấy **không có trong `kb-overrides.json`**
+  của gói bàn giao 19/08 mà máy dev đang dùng. Hệ quả phải nhớ: mọi kết luận kiểu «page X
+  chưa có kịch bản» đọc từ máy dev chỉ đúng với ảnh chụp cũ, không đúng với hệ thật. Trước
+  khi kết luận một page thiếu gì, mở màn Kịch bản của hệ thật mà xem.
+  (Thêm chứng cứ đường nhập liệu: **73/77** page trong `kb-overrides.json` mang dấu
+  «(nhập từ Pancake)» ⇒ export `.xlsx` → `src/import-script.js` là đường CHUẨN, không phải
+  ngoại lệ. API Pancake không có endpoint trả «trả lời nhanh» — đã đọc đặc tả chính thức
+  `developer.pancake.biz/openapi/openapi.yaml`, 4.343 dòng, đúng 28 endpoint, không có.)
 
 ═══════════════════════════════════════════════════════════════════════════════
 
