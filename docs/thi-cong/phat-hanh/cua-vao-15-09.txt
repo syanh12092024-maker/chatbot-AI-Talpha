@@ -1,0 +1,45 @@
+═══ CỔNG PHÁT HÀNH · 15/09/2026 10:57 · aeda3b8
+
+── ① cây làm việc
+   tệp chưa commit                                   0
+   ✔ cây sạch
+
+── ② so với origin/main
+   commit local chưa push                              10
+   commit trên remote chưa lấy về                 0
+   ✔ không bị bỏ lại phía sau
+
+── ③ bộ ca (npm test)
+   ca xanh                                              1733
+   ca đỏ                                             1
+   ✘ bộ ca còn 1 ca đỏ
+
+── ④ cổng nghiệm thu (rc TÁCH DÒNG từng cổng)
+   🔴 g2-a5-a6.sh                                rc=1
+   🔴 l0-m1.sh                                   rc=1
+   🔴 l0-m2.sh                                   rc=1
+   cổng xanh                                          22
+   cổng đỏ                                         3
+   ✘ 3 cổng đỏ — hỏi «đỏ vì mã hay vì THƯỚC»
+
+── ⑤ luật 1 §0a — máy dev không gửi tin cho khách
+   ✔ PANCAKE_READONLY=1
+
+── ⑥ docs:verify — biến V3_* phải có dòng trong bảng khai
+   biến chưa khai trong bảng                       3
+   ⚠️  V3_GIA_DEEPSEEK_V4_FLASH V3_GIA_GPT_5_6_LUNA V3_GIA_KIMI_K2_6
+   ⚠️ CẢNH BÁO, KHÔNG CHẶN — grep có thể bắt cả tên ghép động; soi tay rồi bổ sung bảng
+
+── ⑦ marker [NEEDS CLARIFICATION] chưa trả lời
+   marker trong CODE (src·v3·db·test)                0
+   marker trên GIẤY (phiếu·nhật ký·sổ)      5
+   ✔ code không còn marker
+   ⚠️  docs/thi-cong/phieu/PHIEU-B-Y6.md:154:`[NEEDS CLARIFICATION: ảnh của bot hiện lưu ở đâu?]`
+   ⚠️  docs/thi-cong/phieu/PHIEU-B-Y6.md:159:`[NEEDS CLARIFICATION: đếm «lớp 0 đồng chặn bao nhiêu %» bằng cột nào?]`
+   ⚠️  docs/thi-cong/phieu/PHIEU-B-Y3.md:221:`[NEEDS CLARIFICATION: so_ai của page được chuyển thì đi hay ở?]`
+   ⚠️  docs/thi-cong/nhat-ky/phieu-b-y3.md:85:`[NEEDS CLARIFICATION: so_ai của page được chuyển thì đi hay ở?]`
+   ⚠️  docs/thi-cong/SO-DIEU-HANH-THI-CONG.md:314:  (1) `[NEEDS CLARIFICATION: so_ai của page được chuyển thì đi hay ở?]` — làm theo cách (a
+   ⚠️ CẢNH BÁO, KHÔNG CHẶN — câu hỏi tổng còn nợ; trả lời hoặc chuyển §9 SỔ NỢ
+
+═══ PHÉP=6 · ĐỎ=2 · HOÃN=0
+⛔ CHƯA ĐỦ ĐIỀU KIỆN PHÁT HÀNH — đóng hết ĐỎ và đo nốt phần HOÃN.
