@@ -771,6 +771,18 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   📌 Bài học: **thước đọc file bằng regex không chứng minh file còn chạy được.** Tệp nào chỉ
   được test đọc dưới dạng văn bản thì phải có ít nhất một ca IMPORT nó.
 
+- 15/09 · TẠO NGƯỜI DÙNG — ⬜ **HAI NỢ MỚI.**
+  ① 🔴 **KHÔNG CÓ ĐƯỜNG ĐẶT LẠI MẬT KHẨU.** Grep 15/09: không `doiMatKhau`/`datMatKhau` nào
+     trong `v3/src`. Cửa tạo người dùng vì thế BẮT BUỘC đặt mật khẩu lúc tạo (nếu không sẽ
+     đẻ ra tài khoản không ai đăng nhập được và không ai sửa được). Hệ quả còn lại: người
+     dùng QUÊN mật khẩu thì phải `psql` — đúng cái lỗ vừa bịt, chỉ dịch sang một bước. Phiếu
+     sau nên cấp: quản trị đặt lại mật khẩu cho một thành viên trong team mình.
+  ② ⬜ **`POST /api/page-bot/:id/marketer` nay là cửa API KHÔNG MÀN NÀO GỌI** — người quyết
+     chốt 15/09 bỏ ô nhập khỏi màn, giữ cột và giữ bản tin `src/readiness.js` cắt theo
+     marketer. Cửa vẫn sống, vẫn có ca test, giá trị nay tới từ `pages.json` qua lượt di trú.
+     **Ghi ở đây để lượt «soi cửa ghi» sau ĐỪNG báo nhầm nó là cửa mồ côi cần nối** — nó mồ
+     côi có chủ ý.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)

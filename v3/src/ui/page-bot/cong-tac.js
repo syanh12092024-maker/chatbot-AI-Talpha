@@ -2,6 +2,9 @@
 //
 //   ① bật/tắt BOT AI  → KHÔNG chạm CSDL. Đi qua `noi-day/cau-bot-v1.js` sang tiến trình bot.
 //   ② gán marketer    → CSDL v3. Bền — `PHIEU-B-Y4` đã chặn di trú xoá cột này.
+//                        ⚠️ 15/09: ô nhập ĐÃ BỎ khỏi màn theo lệnh người quyết. Cột,
+//                        cửa API và ca test vẫn còn; giá trị nay tới từ `pages.json`
+//                        qua lượt di trú, và `src/readiness.js` vẫn cắt bản tin theo nó.
 //   ③ cờ trọng điểm   → CSDL v3, an toàn (cột không nằm trong câu ghi đè của di trú).
 //
 // ─── VÌ SAO ① KHÔNG GHI XUỐNG CỘT `bot_ai_bat` ─────────────────────────────────────────

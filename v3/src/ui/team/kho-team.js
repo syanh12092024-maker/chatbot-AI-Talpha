@@ -33,11 +33,18 @@ export const BANG_VAI = 'vai';
 export const BANG_TEAM = 'team';
 
 export class LoiCauHinhTeam extends Error {
-  constructor(thongDiep, ma = 'cau_hinh_team') {
+  /**
+   * `status` mở ra 15/09 — trước đó hằng 400, và một tham số thứ ba truyền vào bị NUỐT im
+   * lặng. Cửa tạo người dùng cần phân biệt «anh gõ sai» (400) với «thứ này đã có rồi» (409):
+   * hai câu ấy dẫn người dùng đi hai hướng khác nhau. Mặc định giữ nguyên 400 nên mọi lời
+   * gọi cũ không đổi một ký tự. Hai lớp lỗi anh em (`LoiPageBot`, `LoiKetNoi`) vốn đã có
+   * tham số này — chỗ thiếu là ở đây.
+   */
+  constructor(thongDiep, ma = 'cau_hinh_team', status = 400) {
     super(thongDiep);
     this.name = 'LoiCauHinhTeam';
     this.ma = ma;
-    this.status = 400;
+    this.status = status;
   }
 }
 

@@ -23,9 +23,16 @@
 
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
 import { BANG_THANH_VIEN, BANG_VAI, BANG_NGUOI_DUNG, LoiCauHinhTeam } from './kho-team.js';
+import { bam } from '../../auth/mat-khau.js';
 
 export const HANH_DONG_THEM = 'them_thanh_vien';
 export const HANH_DONG_BOT = 'bot_thanh_vien';
+export const HANH_DONG_TAO_NGUOI = 'tao_nguoi_dung';
+
+/** Email chỉ cần đúng HÌNH DẠNG — kiểm sâu hơn là đuổi theo RFC, và cột đã có UNIQUE. */
+const HINH_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Dưới tám ký tự thì băm scrypt bao nhiêu vòng cũng vô nghĩa. */
+export const DAI_MAT_KHAU_TOI_THIEU = 8;
 
 export class LoiRutQuanTriCuoi extends Error {
   constructor() {
@@ -180,4 +187,82 @@ export async function botThanhVien(boiCanh, { nguoiDungId, maVai } = {}) {
   });
 
   return { soXoa, nguoiDungId: String(nguoiDungId), maVai: vai.ma };
+}
+
+/* ═══════════════════ TẠO NGƯỜI DÙNG (15/09/2026) ═══════════════════════════════════
+ *
+ * Trước lượt này KHÔNG có đường nào tạo một `nguoi_dung`: không phải di trú (`db/di-tru/`
+ * không có dòng nào), không phải migration (không seed), không phải script (`ops/bin/` không
+ * có), không phải màn hình (cổng danh tính cấm). `INSERT INTO nguoi_dung` chỉ sống trong hai
+ * tệp cổng nghiệm thu. Người mới vào công ty ⇒ mở `psql` trên 169.58.33.8.
+ *
+ * Người quyết chốt 15/09: nới cổng danh tính cho ĐÚNG bảng `nguoi_dung`, giữ cấm `team` và
+ * `vai`. Lý do đầy đủ nằm ở khối chú thích đầu `v3/src/noi-day/cong-danh-tinh.js`.
+ *
+ * BA LUẬT của cửa này:
+ *   ① TẠO VÀ CẤP VAI LÀ MỘT LƯỢT. Một tài khoản không vai đăng nhập được nhưng không thấy
+ *      gì — và màn hình không nói vì sao. Tạo xong mà quên cấp vai là đẻ ra một lỗi câm,
+ *      nên hai việc đi cùng nhau hoặc không việc nào xảy ra.
+ *   ② BẮT BUỘC CÓ MẬT KHẨU. Lược đồ cho `mat_khau_hash` NULL, nhưng v3 CHƯA có đường đặt
+ *      lại mật khẩu (grep 15/09: không có `doiMatKhau`/`datMatKhau` nào). Tạo tài khoản
+ *      không mật khẩu lúc này là tạo một thứ không ai đăng nhập được và không ai sửa được.
+ *   ③ MẬT KHẨU KHÔNG BAO GIỜ ĐI NGƯỢC RA, và không vào nhật ký. `nhat_ky` là bảng chỉ-thêm.
+ */
+export async function taoNguoiDung(boiCanh, { email, ten, matKhau, maVai } = {}) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, VAI.QUAN_TRI);
+
+  const e = String(email || '').trim().toLowerCase();
+  const t = String(ten || '').trim();
+  const mk = String(matKhau || '');
+  if (!HINH_EMAIL.test(e)) throw new LoiCauHinhTeam('email không đúng hình dạng', 'email_la');
+  if (!t) throw new LoiCauHinhTeam('thiếu tên người dùng', 'thieu_tham_so');
+  if (mk.length < DAI_MAT_KHAU_TOI_THIEU) {
+    throw new LoiCauHinhTeam(
+      `mật khẩu phải từ ${DAI_MAT_KHAU_TOI_THIEU} ký tự — v3 chưa có đường đặt lại, `
+      + 'nên đặt yếu lúc này là để yếu mãi', 'mat_khau_yeu',
+    );
+  }
+  if (!maVai) throw new LoiCauHinhTeam('thiếu mã vai — tạo mà không cấp vai là đẻ ra tài khoản câm', 'thieu_tham_so');
+
+  // Kiểm vai TRƯỚC khi tạo người: vai lạ mà tạo trước thì còn lại một dòng `nguoi_dung`
+  // mồ côi, không vai, không ai dọn — và không màn nào xoá được nó.
+  const vai = await traVai(maVai);
+
+  const dt = cong();
+  const trung = await dt.mot(BANG_NGUOI_DUNG, { email: e });
+  if (trung) {
+    throw new LoiCauHinhTeam(
+      `đã có người dùng với email ${e}. Cấp thêm vai cho người đó thay vì tạo bản thứ hai `
+      + '— hai dòng cùng một người là hai lịch sử thao tác không gộp lại được.',
+      'trung_email', 409,
+    );
+  }
+
+  const nguoi = await dt.them(BANG_NGUOI_DUNG, {
+    email: e, ten: t, mat_khau_hash: await bam(mk), hoat_dong: true,
+  });
+  const nguoiDungId = String(nguoi.id);
+
+  const cap = await dt.them(BANG_THANH_VIEN, {
+    team_id: bc.teamId, nguoi_dung_id: nguoiDungId, vai_id: vai.id,
+  });
+
+  await ghi(bc, {
+    hanhDong: HANH_DONG_TAO_NGUOI,
+    doiTuongLoai: BANG_NGUOI_DUNG,
+    doiTuongId: nguoiDungId,
+    // ⛔ KHÔNG `matKhau`, KHÔNG `mat_khau_hash`. Băm không đọc ngược ra được, nhưng nó vẫn
+    //    là thứ đem đi dò offline — và `nhat_ky` không xoá được dòng nào.
+    sau: { email: e, ten: t, vai: vai.ma, team_id: bc.teamId, coMatKhau: true },
+    ghiChu: `tạo người dùng ${e} và cấp vai ${vai.ma}`,
+  });
+
+  return {
+    nguoiDungId,
+    email: e,
+    ten: t,
+    maVai: vai.ma,
+    capId: cap ? String(cap.id) : null,
+  };
 }

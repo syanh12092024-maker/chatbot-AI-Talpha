@@ -18,6 +18,25 @@
 //     thêm một team hay sửa một mã vai là việc của di trú, không phải của một màn hình.
 //     `vai` mà sửa được từ giao diện thì mã vai thành thứ gõ tay lần thứ hai — đúng cái
 //     bom hẹn giờ mà `VAI` trong `auth/boi-canh.js` sinh ra để gỡ.
+//
+// ─── NỚI 15/09/2026 — `nguoi_dung`, người quyết chốt ──────────────────────────────────
+// Lệnh cấm trên gộp ba bảng làm một, và đo lại 15/09 thì lý do chỉ đúng với HAI trong ba:
+//   · `vai` — đúng như đã viết: mã vai là enum mà `auth/boi-canh.js` và mọi cửa phân quyền
+//     phụ thuộc; sửa từ giao diện là đẻ nguồn sự thật thứ hai. GIỮ CẤM.
+//   · `team` — đổi danh mục team kéo theo `team_id` của 18 bảng nghiệp vụ. GIỮ CẤM.
+//   · `nguoi_dung` — KHÔNG cùng loại. Một dòng ở đây là (email, tên, băm mật khẩu); không
+//     mã nào phụ thuộc vào giá trị của nó, và nó không kéo theo bảng nào.
+//
+// Và lệnh cấm ấy trỏ vào một chỗ RỖNG: nó nói «việc của di trú», nhưng `db/di-tru/` không
+// có một dòng `nguoi_dung` nào, `db/migrate/*.sql` không seed, `ops/bin/` không có script.
+// `INSERT INTO nguoi_dung` chỉ tồn tại trong HAI tệp cổng nghiệm thu. Tức việc này không
+// thuộc về ai, và đường duy nhất đang là `psql` gõ tay trên máy chủ.
+//
+// Hệ quả đo được: màn «Cấu hình team» CẤP VAI được, nhưng chỉ cấp cho người ĐÃ tồn tại —
+// nửa cửa, mà chính repo này đặt luật «nửa cửa còn khó hiểu hơn không cửa».
+//
+// Nới ĐÚNG MỘT BẢNG, giữ nguyên hai bảng kia. Ranh giới mới nằm ở `BANG_GHI_DUOC` ngay
+// dưới, không rải rác trong lời gọi.
 //   · KHÔNG có `sua`. `thanh_vien_team` có `UNIQUE (team_id, nguoi_dung_id, vai_id)`, nên
 //     «đổi vai» thật ra là bớt một dòng và thêm một dòng — diễn đạt bằng hai lời gọi rõ
 //     ràng hơn một lời gọi `UPDATE` giả vờ là một thao tác nguyên tử mà không phải.
@@ -30,7 +49,7 @@
 
 const CHO_PHEP = new Set(['team', 'nguoi_dung', 'vai', 'thanh_vien_team']);
 /** Bảng DUY NHẤT cổng này ghi được. Đọc kỹ khối chú thích trên trước khi thêm tên vào đây. */
-export const BANG_GHI_DUOC = new Set(['thanh_vien_team']);
+export const BANG_GHI_DUOC = new Set(['thanh_vien_team', 'nguoi_dung']);
 const TEN_COT = /^[a-z_][a-z0-9_]*$/;
 
 /** Lỗi có tên cho hai rào ở tầng CSDL, để router dịch ra câu người đọc được thay vì 500. */
@@ -70,8 +89,8 @@ export function taoCongDanhTinh(pool) {
     }
     if (!BANG_GHI_DUOC.has(bang)) {
       throw new Error(`Cổng danh tính CHỈ ĐỌC bảng "${bang}" — ${viec}() chỉ mở cho `
-        + `${[...BANG_GHI_DUOC].join(', ')}. Thêm team/người dùng/vai là việc của di trú, `
-        + 'không phải của một màn hình.');
+        + `${[...BANG_GHI_DUOC].join(', ')}. Thêm một team hay sửa một mã vai là việc của `
+        + 'di trú, không phải của một màn hình — xem khối chú thích đầu tệp.');
     }
   }
 

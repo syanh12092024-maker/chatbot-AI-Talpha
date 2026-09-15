@@ -93,7 +93,9 @@ function veBangTin(d, loi) {
       kh.push(canhBao({
         level: 'warning',
         title: `${so(d.dem.thieu_marketer)}/${so(d.soTong)} page chưa có người phụ trách`,
-        body: 'Báo cáo cắt theo marketer sẽ trống với những page đó. Gán ngay trong cột Marketer.',
+        body: 'Báo cáo cắt theo marketer sẽ trống với những page đó, và bản tin «page chưa chạy '
+          + 'được bot» không biết gửi cho ai. Cột này nhận giá trị từ pages.json qua lượt «Kéo '
+          + 'dữ liệu về» — màn này không sửa (người quyết chốt 15/09).',
       }));
     }
     if (d.cuaKiemDocDuoc === false) {
@@ -169,11 +171,7 @@ function veBang(d) {
         <input type="text" class="cell-input meta" id="nh-${esc(p.id)}" data-nh="${esc(p.id)}" value="${esc(p.nganhHang)}"
                placeholder="Ngành hàng" ${SUA ? '' : 'disabled'} autocomplete="off" spellcheck="false">
       </td>
-      <td>
-        <label class="sr-only" for="mkt-${esc(p.id)}">Marketer của ${esc(ten)}</label>
-        <input type="text" class="cell-input" id="mkt-${esc(p.id)}" data-mkt="${esc(p.id)}" value="${esc(p.marketer)}"
-               placeholder="Chưa gán" ${SUA ? '' : 'disabled'} autocomplete="off">
-      </td>
+      <td class="meta">${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
       <td>
         <label class="switch cell-control" ${khoaBot ? `title="${esc(lyDoKhoaBot)}"` : ''}>
           <input type="checkbox" role="switch" data-bot="${esc(p.id)}" aria-label="Bot của ${esc(ten)}"
@@ -208,10 +206,6 @@ function veBang(d) {
 
   document.querySelectorAll('[data-bot]').forEach((el) => el.addEventListener('change', () => gatBot(el)));
   document.querySelectorAll('[data-td]').forEach((el) => el.addEventListener('change', () => gatTrongDiem(el)));
-  document.querySelectorAll('[data-mkt]').forEach((el) => {
-    el.addEventListener('blur', () => luuMarketer(el));
-    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') el.blur(); });
-  });
   document.querySelectorAll('[data-bc]').forEach((el) => el.addEventListener('change', () => gatBotcake(el)));
   for (const [thuoc, duong, ten, khoa] of [
     ['data-tt', 'thi-truong', 'thị trường', 'thiTruong'],
@@ -258,19 +252,12 @@ async function gatTrongDiem(el) {
   finally { el.disabled = false; }
 }
 
-// ── GHI · marketer — lưu khi rời ô hoặc bấm Enter ──────────────────────────────────
-async function luuMarketer(el) {
-  const moi = el.value.trim();
-  if (moi === (el.defaultValue || '').trim()) return;
-  try {
-    const kq = await goi(`/api/page-bot/${encodeURIComponent(el.dataset.mkt)}/marketer`,
-      { method: 'POST', body: JSON.stringify({ marketer: moi }) });
-    el.defaultValue = moi;
-    toast(moi ? 'Đã lưu người phụ trách.' : 'Đã bỏ người phụ trách.');
-    if (kq.canhBao) baoLoi('Đã lưu, nhưng cần để ý', kq.canhBao);
-    await napNhe();
-  } catch (e) { el.value = el.defaultValue || ''; baoLoi('Không lưu được người phụ trách', e.message); }
-}
+// ── marketer: CHỈ ĐỌC trên màn này từ 15/09 ───────────────────────────────────────
+// Người quyết chốt: giữ cột và giữ bản tin cắt theo marketer trong `src/readiness.js`,
+// nhưng bỏ ô nhập ở đây. Hàm `luuMarketer` đi theo ô — để lại một hàm không ai gọi là để
+// lại một cái bẫy cho người đọc sau. Cửa `POST /api/page-bot/:id/marketer` VẪN CÒN và vẫn
+// có ca test: nó là đường lập trình, đã ghi §9 để lượt «soi cửa ghi» sau không báo nhầm
+// nó là cửa mồ côi.
 
 // ── GHI · thị trường / ngành hàng — cùng khuôn với marketer ────────────────────────
 // Hai cột này ĐƯỢC BẢO VỆ khỏi lượt «Kéo dữ liệu về» từ 15/09 (nhánh CASE trong

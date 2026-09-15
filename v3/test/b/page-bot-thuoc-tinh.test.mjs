@@ -178,3 +178,28 @@ test('BA MÃ đã khai trong danh mục — nếu chưa, mọi dòng nhật ký 
   assert.equal(ct.HANH_DONG_NGANH_HANG, HANH_DONG.DAT_NGANH_HANG);
   assert.equal(ct.HANH_DONG_BOTCAKE, HANH_DONG.BAT_TAT_BOTCAKE);
 });
+
+/* ═══════════ ⑥ MARKETER: CHỈ ĐỌC TRÊN MÀN (người quyết chốt 15/09) ═══════════ */
+
+test('MARKETER · màn KHÔNG còn ô nhập, nhưng cột và bản tin readiness vẫn sống', () => {
+  const trang = readFileSync(
+    path.join(GOC_REPO, 'v3/src/ui/page-bot/trang/page-bot.html'), 'utf8',
+  );
+  // Quyết định của người quyết, khoá bằng máy: bỏ Ô NHẬP, giữ CỘT và giữ bản tin.
+  assert.ok(!/data-mkt=/.test(trang), 'ô nhập marketer quay lại — người quyết chốt bỏ nó khỏi màn');
+  assert.ok(!/addEventListener\('blur', \(\) => luuMarketer/.test(trang), 'tay ghi marketer còn nối');
+  assert.match(trang, /p\.marketer/, 'vẫn phải HIỆN marketer — bỏ ô nhập không phải bỏ thông tin');
+
+  // Nửa còn lại: câu cảnh báo cũ bảo người ta «Gán ngay trong cột Marketer» — một lời chỉ
+  // đường tới cái nút vừa bị bỏ. Chỉ đường tới hư không còn tệ hơn không chỉ đường.
+  assert.ok(!/Gán ngay trong cột Marketer/.test(trang),
+    'cảnh báo còn trỏ vào ô nhập đã bỏ');
+  assert.match(trang, /pages\.json/, 'cảnh báo phải nói giá trị nay tới từ đâu');
+});
+
+test('MARKETER · cột vẫn nằm trong COT_SUA_DUOC vì cửa API còn sống', () => {
+  // Không phải thừa: `POST /api/page-bot/:id/marketer` vẫn còn (đường lập trình), nên di trú
+  // vẫn KHÔNG được phép xoá cột. Bỏ ô nhập mà bỏ luôn lớp bảo vệ là mở lại đúng cái lỗ cũ.
+  assert.equal(kp.COT_SUA_DUOC.marketer?.benVung, true);
+  assert.ok(!kp.COT_BI_DI_TRU_GHI_DE.includes('marketer'));
+});

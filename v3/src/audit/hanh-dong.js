@@ -85,6 +85,11 @@ export const HANH_DONG = Object.freeze({
   DAT_THI_TRUONG: 'dat_thi_truong',
   DAT_NGANH_HANG: 'dat_nganh_hang',
   BAT_TAT_BOTCAKE: 'bat_tat_botcake',
+
+  // ── 15/09 · tạo người dùng ──
+  // Cùng họ CẤP QUYỀN với `them_thanh_vien`: một dòng `nguoi_dung` mới là một người mới
+  // đăng nhập được vào hệ. Mất dấu ở đây là mất câu trả lời «ai mở tài khoản này».
+  TAO_NGUOI_DUNG: 'tao_nguoi_dung',
 });
 
 /** Nhóm để màn hình xếp bộ lọc thành từng cụm, không phải để module này dùng. */
@@ -100,6 +105,7 @@ export const NHOM = Object.freeze({
   may_lam: Object.freeze([HANH_DONG.VIEC_TU_DONG]),
   cau_hinh_team: Object.freeze([
     HANH_DONG.THEM_THANH_VIEN, HANH_DONG.BOT_THANH_VIEN, HANH_DONG.CHUYEN_PAGE_TEAM,
+    HANH_DONG.TAO_NGUOI_DUNG,
   ]),
   page_bot: Object.freeze([
     HANH_DONG.BAT_TAT_BOT_AI, HANH_DONG.GAN_MARKETER, HANH_DONG.DAT_TRONG_DIEM,
@@ -136,6 +142,8 @@ export const nhomBatBuoc = Object.freeze(new Set([
   // «vì sao người này thấy được dữ liệu đó».
   HANH_DONG.THEM_THANH_VIEN,
   HANH_DONG.BOT_THANH_VIEN,
+  // Mở một tài khoản đăng nhập được là cấp quyền ở mức gốc nhất — bắt buộc có dấu.
+  HANH_DONG.TAO_NGUOI_DUNG,
   // Đổi chủ dữ liệu: một lượt chuyển kéo theo hội thoại, kịch bản, sản phẩm sang team khác.
   HANH_DONG.CHUYEN_PAGE_TEAM,
   // Gạt công tắc bot là đổi cách hệ thống nói chuyện với KHÁCH THẬT.
@@ -217,6 +225,7 @@ const MO_TA = Object.freeze({
   [HANH_DONG.DAT_THI_TRUONG]: 'Đặt thị trường cho page',
   [HANH_DONG.DAT_NGANH_HANG]: 'Đặt ngành hàng cho page',
   [HANH_DONG.BAT_TAT_BOTCAKE]: 'Đánh dấu page đã tắt Botcake',
+  [HANH_DONG.TAO_NGUOI_DUNG]: 'Tạo người dùng mới',
 });
 
 /** Chữ tiếng Việt cho màn hình. Mã lạ → trả lại chính mã, kèm một tiếng kêu ở console. */

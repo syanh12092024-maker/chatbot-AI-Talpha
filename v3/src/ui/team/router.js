@@ -3,14 +3,20 @@
 // | GET    /cau-hinh-team            | trang                                              |
 // | GET    /api/team/tong-quan       | số đo team đang mở + cảnh báo                      |
 // | GET    /api/team/thanh-vien      | thành viên · người chưa vào · năm vai              |
+// | POST   /api/team/nguoi-dung      | TẠO người dùng + cấp vai ngay  (chỉ `quan-tri`)    |
 // | POST   /api/team/thanh-vien      | cấp một vai cho một người      (chỉ `quan-tri`)    |
 // | DELETE /api/team/thanh-vien      | rút một vai của một người      (chỉ `quan-tri`)    |
 // | GET    /api/team/ket-noi         | kết nối POS (KHÔNG bao giờ trả khoá)               |
 // | GET    /api/team/gan-page        | trạng thái + team đích + page chọn được            |
 // | POST   /api/team/gan-page        | chuyển một mẻ page sang team khác  (chỉ `quan-tri`)|
 //
-// HAI CỬA GHI DUY NHẤT là `POST`/`DELETE /api/team/thanh-vien`, và cả hai chỉ chạm
-// `thanh_vien_team`. Router chỉ dịch tham số và mã lỗi; luật nằm trong `thanh-vien.js`.
+// CỬA GHI: `POST`/`DELETE /api/team/thanh-vien` chạm `thanh_vien_team`, và từ 15/09 thêm
+// `POST /api/team/nguoi-dung` chạm `nguoi_dung` + `thanh_vien_team` trong một lượt. Router
+// chỉ dịch tham số và mã lỗi; luật nằm trong `thanh-vien.js`.
+//
+// Vì sao tạo người dùng nằm ở màn NÀY chứ không phải một màn riêng: nó là nửa còn thiếu của
+// đúng việc màn này đang làm. Trước 15/09 màn cấp vai được nhưng chỉ cho người ĐÃ tồn tại,
+// mà không có đường nào làm cho một người «đã tồn tại» ngoài `psql`.
 //
 // PHÂN QUYỀN HAI TẦNG, CỐ Ý:
 //   · vào màn  → `quan-tri` hoặc `quan-ly` (quản lý xem được, để đi kiểm)
@@ -28,7 +34,7 @@ import {
   tongQuanTeam, thanhVienCua, nguoiChuaVaoTeam, danhSachVai, ketNoiCua, trangThaiGanPage,
   LoiCauHinhTeam,
 } from './kho-team.js';
-import { themThanhVien, botThanhVien, LoiRutQuanTriCuoi } from './thanh-vien.js';
+import { taoNguoiDung, themThanhVien, botThanhVien, LoiRutQuanTriCuoi } from './thanh-vien.js';
 import {
   danhSachTeamDich, pageDeChuyen, chuyenNhieuPage, daNoiChuyenPage,
   TOI_DA_MOT_ME, LoiChuyenPage,
@@ -196,6 +202,14 @@ ${escHtml((bc.vai || []).join(', ') || 'không có vai nào')}.</p>
       vai,
       suaDuoc: coVai(bc, ...VAI_GHI_DUOC),
     });
+  }));
+
+  r.post('/api/team/nguoi-dung', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    const { email, ten, matKhau, maVai } = req.body || {};
+    const kq = await taoNguoiDung(cuaBoiCanh(req), { email, ten, matKhau, maVai });
+    // `kq` do `taoNguoiDung` dựng và cố ý KHÔNG mang mật khẩu lẫn băm. Trải thẳng ra đây là
+    // an toàn vì hợp đồng ấy được ca test khoá, không phải vì tôi tin lời gọi.
+    res.json({ ok: true, ...kq });
   }));
 
   r.post('/api/team/thanh-vien', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {

@@ -22,6 +22,39 @@
 <main>
   <div id="bang-tin" aria-live="polite"></div>
 
+  <dialog class="dialog" data-size="md" id="hopNguoi" aria-labelledby="hopNguoi-tieu">
+    <div class="dialog-header"><h2 id="hopNguoi-tieu">Tạo người dùng mới</h2></div>
+    <div class="dialog-body">
+      <div class="form-stack">
+        <div class="field">
+          <label class="field-label" for="n-email">Email đăng nhập</label>
+          <input id="n-email" type="email" autocomplete="off" spellcheck="false" placeholder="binh@talpha.vn">
+          <div class="field-hint">Đây cũng là tên đăng nhập. Không đổi được sau khi tạo.</div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="n-ten">Tên hiển thị</label>
+          <input id="n-ten" autocomplete="off" placeholder="Bình">
+        </div>
+        <div class="field">
+          <label class="field-label" for="n-vai">Vai trong team đang mở</label>
+          <select id="n-vai"></select>
+          <div class="field-hint">Tạo và cấp vai đi cùng nhau — tài khoản không vai đăng nhập được nhưng không thấy gì.</div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="n-mk">Mật khẩu đầu tiên</label>
+          <input id="n-mk" type="password" autocomplete="new-password" placeholder="ít nhất 8 ký tự">
+          <div class="field-hint">Bắt buộc: v3 CHƯA có màn đặt lại mật khẩu, nên tài khoản không mật khẩu
+            là tài khoản không ai đăng nhập được và không ai sửa được. Gửi cho người dùng qua kênh riêng.</div>
+        </div>
+        <div class="field-error" id="n-loi" role="alert" hidden></div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn" data-variant="ghost" data-size="md" id="n-huy"><span>Huỷ</span></button>
+      <button type="button" class="btn" data-variant="primary" data-size="md" id="n-luu"><span>Tạo tài khoản</span></button>
+    </div>
+  </dialog>
+
   <section class="section" aria-label="Tổng quan team">
     <div id="soDo"><div class="metric-row"><div class="metric"><span class="skeleton"></span></div></div></div>
   </section>
@@ -43,6 +76,7 @@
           <label for="chonVai" class="sr-only">Chọn vai</label>
           <select id="chonVai"></select>
           <button type="button" class="btn" data-variant="primary" data-size="md" id="nutThem"><span>Cấp vai</span></button>
+          <button type="button" class="btn" data-variant="ghost" data-size="md" id="nutTaoNguoi"><span>Tạo người dùng mới</span></button>
           <span class="text-muted">Một người mang được nhiều vai trong cùng một team.</span>
         </div>
       </div>
@@ -145,6 +179,7 @@ function veThanhVien(d) {
   }
 
   $('#themThanhVien').hidden = !d.suaDuoc;
+  $('#nutTaoNguoi').hidden = !d.suaDuoc;
   if (d.suaDuoc) {
     const chon = d.nguoiChonDuoc || [];
     $('#chonNguoi').innerHTML = chon.length
@@ -155,6 +190,48 @@ function veThanhVien(d) {
   }
   document.querySelectorAll('[data-rut]').forEach((b) => b.addEventListener('click', () => rut(b.dataset.rut, b.dataset.vai)));
 }
+
+// ── TẠO NGƯỜI DÙNG ────────────────────────────────────────────────────────────────
+// Nửa còn thiếu của chính màn này: trước 15/09 cấp vai được, nhưng chỉ cho người ĐÃ tồn tại,
+// mà không có đường nào làm cho một người «đã tồn tại» ngoài psql trên máy chủ.
+function loiNguoi(chu) {
+  const o = $('#n-loi');
+  if (!chu) { o.hidden = true; o.textContent = ''; return; }
+  o.hidden = false; o.textContent = chu;
+}
+
+$('#nutTaoNguoi').addEventListener('click', () => {
+  $('#n-email').value = ''; $('#n-ten').value = ''; $('#n-mk').value = '';
+  $('#n-vai').innerHTML = VAI_HIEN.map((v) => `<option value="${esc(v.ma)}">${esc(v.ten)}</option>`).join('');
+  loiNguoi('');
+  $('#hopNguoi').showModal();
+});
+$('#n-huy').addEventListener('click', () => $('#hopNguoi').close());
+$('#hopNguoi').addEventListener('cancel', () => loiNguoi(''));
+
+$('#n-luu').addEventListener('click', async () => {
+  const email = $('#n-email').value.trim();
+  const ten = $('#n-ten').value.trim();
+  const matKhau = $('#n-mk').value;
+  const maVai = $('#n-vai').value;
+  // Chặn sẵn đúng ba điều kho sẽ chặn, để người ta biết trước khi bấm.
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return loiNguoi('Email không đúng hình dạng.');
+  if (!ten) return loiNguoi('Thiếu tên hiển thị.');
+  if (matKhau.length < 8) return loiNguoi('Mật khẩu phải từ 8 ký tự.');
+  if (!maVai) return loiNguoi('Chọn một vai — tạo mà không cấp vai là đẻ ra tài khoản câm.');
+
+  const nut = $('#n-luu');
+  setBusy(nut, true);
+  try {
+    const kq = await goi('/api/team/nguoi-dung',
+      { method: 'POST', body: JSON.stringify({ email, ten, matKhau, maVai }) });
+    $('#hopNguoi').close();
+    $('#n-mk').value = '';
+    toast(`Đã tạo ${kq.email} với vai ${kq.maVai}. Gửi mật khẩu cho họ qua kênh riêng.`);
+    await nap();
+  } catch (e) { loiNguoi(e.message); }
+  finally { setBusy(nut, false); }
+});
 
 async function rut(nguoiDungId, maVai) {
   const ten = (VAI_HIEN.find((v) => v.ma === maVai) || {}).ten || maVai;
