@@ -54,6 +54,52 @@ export const GIAI_THICH_THU_TU =
 
 let _docKetNoiPos = null;
 
+/* ═══════════════════ CỬA GHI KẾT NỐI POS (15/09) ═══════════════════════════════════
+ *
+ * Bảng `ket_noi_pos` trước nay chỉ vào được bằng `npm run di-tru` đọc `pancake-shops.json`.
+ * Bốn hàm dưới là đường người bấm. Chúng KHÔNG tự viết câu SQL nào — tầng dưới
+ * (`src/pos/ket-noi.js`) giữ cả mã hoá lẫn vế `team_id` trong WHERE, đúng như bộ đọc.
+ *
+ * ⛔ KHOÁ API chỉ đi MỘT CHIỀU: vào. Không hàm nào ở đây trả khoá ra, kể cả đã mã hoá.
+ */
+let _ghiKetNoiPos = null;
+
+/** Nhận bộ bốn hàm ghi. Thiếu một hàm là từ chối cả cụm — nửa cửa còn khó hiểu hơn không cửa. */
+export function datGhiKetNoiPos(cua) {
+  if (cua == null) { _ghiKetNoiPos = null; return null; }
+  const thieu = ['them', 'sua', 'batTat', 'bo'].filter((k) => typeof cua[k] !== 'function');
+  if (thieu.length) {
+    throw new LoiKetNoi(`datGhiKetNoiPos thiếu hàm: ${thieu.join(', ')}`, 'noi_day_thieu', 500);
+  }
+  _ghiKetNoiPos = cua;
+  return _ghiKetNoiPos;
+}
+export const daNoiGhiKetNoiPos = () => _ghiKetNoiPos != null;
+
+function batBuocCuaGhi() {
+  if (!_ghiKetNoiPos) {
+    throw new LoiKetNoi(
+      'Máy chủ chưa nối cửa ghi kết nối POS — đây là lỗi cấu hình, không phải «không sửa được». '
+      + 'Xem `datGhiKetNoiPos` trong v3/src/vai-b.js.',
+      'chua_noi', 500,
+    );
+  }
+  return _ghiKetNoiPos;
+}
+
+export async function themPos(boiCanh, thamSo) {
+  return batBuocCuaGhi().them(batBuocBoiCanh(boiCanh), thamSo);
+}
+export async function suaPos(boiCanh, id, thamSo) {
+  return batBuocCuaGhi().sua(batBuocBoiCanh(boiCanh), id, thamSo);
+}
+export async function batTatPos(boiCanh, id, bat) {
+  return batBuocCuaGhi().batTat(batBuocBoiCanh(boiCanh), id, bat);
+}
+export async function boPos(boiCanh, id) {
+  return batBuocCuaGhi().bo(batBuocBoiCanh(boiCanh), id);
+}
+
 export function datDocKetNoiPos(fn) {
   if (fn != null && typeof fn !== 'function') throw new LoiKetNoi('datDocKetNoiPos cần một hàm');
   _docKetNoiPos = fn || null;
@@ -196,12 +242,17 @@ export async function ketNoiPosCua(boiCanh) {
     };
   }
   const pos = await _docKetNoiPos(bc);
+  // `suaDuoc` để màn ẨN nút thay vì cho bấm rồi ăn 500 — cùng án lệ với `lop-0-dong`.
+  const suaDuoc = daNoiGhiKetNoiPos();
   return {
     pos,
+    suaDuoc,
     trong: pos.length ? null : {
       rong: true, vi: 'chua_cai_dat',
       noi: 'Team này chưa có kết nối POS nào — chưa có thì không tạo được đơn cho thị trường nào.',
-      diTiep: { chu: 'Nạp từ pancake-shops.json bằng `npm run di-tru`', duong: null },
+      diTiep: suaDuoc
+        ? { chu: 'Thêm một kết nối ngay dưới đây', duong: null }
+        : { chu: 'Nạp từ pancake-shops.json bằng `npm run di-tru`', duong: null },
     },
   };
 }

@@ -83,13 +83,22 @@ async function slugCua(teamId) {
 //
 // Nối vào đây thay vì để trống, vì để trống thì màn hình nói «chưa nối bộ đọc kết nối POS»
 // — đúng sự thật, nhưng là một sự thật do chính máy chủ này gây ra chứ không phải do dữ liệu.
-const { lietKeThiTruong } = await import(`${GOC}/src/pos/ket-noi.js`);
+const { lietKeThiTruong, themKetNoi, suaKetNoi, batTatKetNoi, boKetNoi }
+  = await import(`${GOC}/src/pos/ket-noi.js`);
 
 const app = express();
 const bao = dungPhanB(app, {
   taoTruyVan,
   taoTruyVanHeThong: () => taoCongDanhTinh(pool),
   docKetNoiPos: (bc) => lietKeThiTruong(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId || null }),
+  // Cùng `ctx` với bộ đọc — vế `team_id` trong WHERE của tầng dưới lấy từ đây, nên bối cảnh
+  // sai là sửa nhầm team, không phải lỗi hiển thị.
+  ghiKetNoiPos: {
+    them: (bc, t) => themKetNoi(pool, ctxCuaA(bc), t),
+    sua: (bc, id, t) => suaKetNoi(pool, ctxCuaA(bc), id, t),
+    batTat: (bc, id, bat) => batTatKetNoi(pool, ctxCuaA(bc), id, bat),
+    bo: (bc, id) => boKetNoi(pool, ctxCuaA(bc), id),
+  },
   chuyenPage: (bc, t) => chuyenPageSangTeam(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId }, t),
   cuaBoLuat: {
     taoBan: (bc, t) => noiDung.taoBanBoLuat(pool, ctxCuaA(bc), t),

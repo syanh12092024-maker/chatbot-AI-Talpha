@@ -47,6 +47,7 @@ import { khoToken } from './ui/ket-noi/index.js';
 import { trangThaiCau as trangThaiCauBot } from './noi-day/cau-bot-v1.js';
 import {
   datDocKetNoiPos as datDocKetNoiPosKN, datPheuNhatKy as datPheuNhatKyKetNoi, datChayNapLai,
+  datGhiKetNoiPos,
   datChanDangNhap as datChanDangNhapKetNoi, datChanVai as datChanVaiKetNoi,
   taoRouterKetNoi,
 } from './ui/ket-noi/index.js';
@@ -180,12 +181,17 @@ import {
  *                                                              (người A giao: `src/pos/ket-noi.js#lietKeThiTruong`).
  *                                                              Thiếu thì màn cấu hình team nói «chưa nối bộ đọc»,
  *                                                              KHÔNG nói «không có kết nối nào».
+ * @param {{them:Function,sua:Function,batTat:Function,bo:Function}} [phuThuoc.ghiKetNoiPos]
+ *                                                              bốn cửa GHI kết nối POS (người A giao:
+ *                                                              `src/pos/ket-noi.js#themKetNoi|suaKetNoi|batTatKetNoi|boKetNoi`).
+ *                                                              Thiếu thì màn Kết nối chỉ ĐỌC, và nó nói rằng
+ *                                                              thêm/sửa kết nối vẫn phải chạy `npm run di-tru`.
  * @param {(ban:object)=>void}      [phuThuoc.ghiSoAi]          người A giao. Thiếu thì lớp model kêu mỗi 100 lượt.
  * @param {(canh:object)=>void}     [phuThuoc.canhBao]          nơi nhận cảnh báo chuyển dự phòng (Telegram, log…).
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, chuyenPage, khoKhoa,
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, chuyenPage, khoKhoa,
   docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan,
@@ -364,6 +370,15 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ch
     daNoi.push('kết nối POS → màn cấu hình team · màn kết nối & token');
   }
   else thieu.push('docKetNoiPos — màn cấu hình team hiện «chưa nối bộ đọc kết nối POS». KHÔNG hiện «không có kết nối», vì hai câu đó dẫn người đọc đi hai hướng khác nhau');
+
+  // Cửa GHI kết nối POS tách khỏi cửa ĐỌC: đọc được mà không ghi được là một trạng thái
+  // HỢP LỆ (bản xem thử, máy chưa có khoá mã hoá), và màn phải nói đúng trạng thái đó chứ
+  // không ẩn nút một cách câm lặng.
+  if (ghiKetNoiPos && typeof ghiKetNoiPos.them === 'function') {
+    datGhiKetNoiPos(ghiKetNoiPos);
+    daNoi.push('cửa ghi kết nối POS → màn kết nối & token (thêm · sửa · bật/tắt · bỏ)');
+  }
+  else thieu.push('ghiKetNoiPos — màn Kết nối chỉ ĐỌC kết nối POS; thêm một thị trường hay đổi khoá API vẫn phải gõ SQL trên máy chủ, đúng thứ lượt 15/09 sinh ra để xoá');
 
   // ── ④ Chắn đăng nhập và chắn vai cho bảng điều phối ──
   // Truyền HÀM DỰNG, không phải cái chắn đã dựng. Bảng điều phối nhận được cả hai kiểu,

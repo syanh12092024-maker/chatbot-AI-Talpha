@@ -46,9 +46,39 @@
 
   <section class="section table-wrap" aria-labelledby="tieu-pos">
     <div class="table-toolbar"><h2 id="tieu-pos">Kết nối POS của team đang mở</h2>
-      <span class="table-count">Khoá API không bao giờ hiện ở đây</span></div>
+      <span class="table-count">Khoá API không bao giờ hiện ở đây</span>
+      <button type="button" class="btn" data-variant="primary" data-size="sm" id="nutThemPos" hidden>
+        <span>Thêm kết nối</span></button></div>
     <div id="bangPos"><div class="empty-state"><span class="skeleton"></span></div></div>
+    <div class="table-note" id="ghiChuPos" hidden></div>
   </section>
+
+  <dialog class="dialog" data-size="md" id="hopPos" aria-labelledby="hopPos-tieu">
+    <div class="dialog-header"><h2 id="hopPos-tieu">Thêm kết nối POS</h2></div>
+    <div class="dialog-body">
+      <div class="form-stack">
+        <div class="field">
+          <label class="field-label" for="p-market">Thị trường</label>
+          <input id="p-market" autocomplete="off" spellcheck="false" placeholder="Saudi">
+          <div class="field-hint" id="p-market-goi"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="p-shop">Shop id trên POS Pancake</label>
+          <input id="p-shop" autocomplete="off" spellcheck="false" inputmode="numeric" placeholder="123456">
+        </div>
+        <div class="field">
+          <label class="field-label" for="p-khoa">Khoá API của shop</label>
+          <input id="p-khoa" type="password" autocomplete="off" spellcheck="false" placeholder="dán khoá API">
+          <div class="field-hint" id="p-khoa-goi"></div>
+        </div>
+        <div class="field-error" id="p-loi" role="alert" hidden></div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn" data-variant="ghost" data-size="md" id="p-huy"><span>Huỷ</span></button>
+      <button type="button" class="btn" data-variant="primary" data-size="md" id="p-luu"><span>Lưu kết nối</span></button>
+    </div>
+  </dialog>
 
   <section class="section panel" aria-labelledby="tieu-nap">
     <div class="section-header"><div>
@@ -139,7 +169,25 @@ function veKho(d) {
   document.querySelectorAll('[data-bo]').forEach((b) => b.addEventListener('click', () => bo(b.dataset.bo, b)));
 }
 
+/* ── KẾT NỐI POS ──────────────────────────────────────────────────────────────────────
+ * `suaDuoc` = máy chủ có nối cửa ghi hay không. Không nối thì ẨN nút, chứ không cho bấm
+ * rồi trả 500 — người dùng không có cách nào biết đó là lỗi cấu hình của máy chủ.
+ */
+let POS = [];
+let SUA_DUOC_POS = false;
+
 function vePos(d) {
+  POS = Array.isArray(d.pos) ? d.pos : [];
+  SUA_DUOC_POS = !!d.suaDuoc;
+  $('#nutThemPos').hidden = !SUA_DUOC_POS;
+  const chu = $('#ghiChuPos');
+  chu.hidden = !SUA_DUOC_POS;
+  // Nói thẳng giới hạn đã biết thay vì để người ta phát hiện bằng một đơn hỏng: cửa này
+  // KHÔNG gọi thử sang POS, nên khoá sai chỉ lộ ở lượt tạo đơn đầu tiên.
+  chu.textContent = 'Lưu xong KHÔNG có nghĩa là khoá đúng — màn này không gọi thử sang POS. '
+    + 'Khoá sai chỉ lộ ở lượt tạo đơn đầu tiên của thị trường đó. Ngừng dùng một shop thì TẮT, '
+    + 'đừng bỏ: tắt là cửa POS của thị trường ấy đóng ngay mà khoá vẫn còn để bật lại.';
+
   if (d.trong) {
     $('#bangPos').innerHTML = emptyState({ icon: 'inbox', title: String(d.trong.noi || '').replace(/`/g, ''),
       actionsHtml: d.trong.diTiep && d.trong.diTiep.duong ? button(d.trong.diTiep.chu, { href: d.trong.diTiep.duong, size: 'sm' }) : '' });
@@ -147,12 +195,122 @@ function vePos(d) {
   }
   $('#bangPos').innerHTML = `<table class="data-table"><thead><tr>
       <th scope="col">Thị trường</th><th scope="col">Shop POS</th><th scope="col">Trạng thái</th>
-    </tr></thead><tbody>${d.pos.map((k) => `
+      ${SUA_DUOC_POS ? '<th scope="col">Việc</th>' : ''}
+    </tr></thead><tbody>${POS.map((k) => `
     <tr><td class="manh">${esc(k.market)}</td>
       <td><code>${esc(k.shopId)}</code></td>
       <td>${statusBadge(k.bat ? 'feature_on' : 'feature_off', { label: k.bat ? 'Đang bật' : 'Đã tắt' })}</td>
+      ${SUA_DUOC_POS ? `<td class="row-actions">
+        <button type="button" class="btn" data-variant="ghost" data-size="sm" data-sua-pos="${esc(k.id)}"><span>Sửa</span></button>
+        <button type="button" class="btn" data-variant="ghost" data-size="sm" data-bat-pos="${esc(k.id)}"><span>${k.bat ? 'Tắt' : 'Bật'}</span></button>
+        <button type="button" class="btn" data-variant="ghost" data-size="sm" data-bo-pos="${esc(k.id)}"><span>Bỏ</span></button>
+      </td>` : ''}
     </tr>`).join('')}</tbody></table>`;
 }
+
+function loiPos(chu) {
+  const o = $('#p-loi');
+  if (!chu) { o.hidden = true; o.textContent = ''; return; }
+  o.hidden = false; o.textContent = chu;
+}
+
+/** `k` = bản ghi đang sửa, hoặc null khi thêm mới. */
+function moPos(k) {
+  $('#hopPos').dataset.id = k ? k.id : '';
+  $('#hopPos-tieu').textContent = k ? `Sửa kết nối «${k.market}»` : 'Thêm kết nối POS';
+  $('#p-market').value = k ? k.market : '';
+  // Thị trường là khoá NGƯỜI mà cửa tạo đơn tra mỗi lượt. Đổi tên lúc đang chạy thì cửa
+  // POS ngừng tìm thấy kết nối mà không ai báo — nên đổi thị trường = bỏ rồi thêm.
+  $('#p-market').disabled = !!k;
+  $('#p-market-goi').textContent = k
+    ? 'Không đổi được tên thị trường — đó là khoá cửa tạo đơn tra mỗi lượt. Đổi thì bỏ rồi thêm lại.'
+    : 'Viết ĐÚNG như trong pancake-shops.json (Saudi · UAE · Kuwait…). Sai một chữ là cửa POS không tìm ra.';
+  $('#p-shop').value = k ? k.shopId : '';
+  $('#p-khoa').value = '';
+  $('#p-khoa-goi').textContent = k
+    ? 'Để trống = giữ khoá đang có. Màn không bao giờ đọc được khoá cũ, nên không bắt gõ lại.'
+    : 'Khoá đi một chiều: lưu xong không màn nào đọc lại được.';
+  loiPos('');
+  $('#hopPos').showModal();
+}
+
+$('#nutThemPos').addEventListener('click', () => moPos(null));
+$('#p-huy').addEventListener('click', () => $('#hopPos').close());
+$('#hopPos').addEventListener('cancel', () => loiPos(''));
+
+$('#p-luu').addEventListener('click', async () => {
+  const id = $('#hopPos').dataset.id;
+  const market = $('#p-market').value.trim();
+  const shopId = $('#p-shop').value.trim();
+  const apiKey = $('#p-khoa').value.trim();
+  // Chặn sẵn đúng ba điều kho sẽ chặn, để người ta biết TRƯỚC khi bấm.
+  if (!id && !market) return loiPos('Thiếu tên thị trường.');
+  if (!shopId) return loiPos('Thiếu shop id.');
+  if (!id && !apiKey) return loiPos('Thiếu khoá API — kết nối mới bắt buộc có khoá.');
+
+  const nut = $('#p-luu');
+  setBusy(nut, true);
+  try {
+    const duong = id ? '/api/ket-noi/pos/' + encodeURIComponent(id) : '/api/ket-noi/pos';
+    await goi(duong, { method: 'POST', body: JSON.stringify(id ? { shopId, apiKey } : { market, shopId, apiKey }) });
+    $('#hopPos').close();
+    delete LOI['Không lưu được kết nối POS'];
+    toast(id ? 'Đã sửa kết nối POS.' : `Đã thêm kết nối POS «${market}».`);
+    await nap();
+  } catch (e) { loiPos(e.message); }
+  finally { setBusy(nut, false); }
+});
+
+$('#bangPos').addEventListener('click', async (ev) => {
+  const nut = ev.target.closest('button');
+  if (!nut) return;
+  const idSua = nut.dataset.suaPos;
+  const idBat = nut.dataset.batPos;
+  const idBo = nut.dataset.boPos;
+  const tim = (i) => POS.find((x) => String(x.id) === String(i)) || {};
+
+  if (idSua) return moPos(tim(idSua));
+
+  if (idBat) {
+    const k = tim(idBat);
+    if (k.bat) {
+      const dongY = await confirmDialog({
+        title: `Tắt kết nối POS «${k.market}»?`,
+        body: 'Tắt xong, mọi lượt tạo đơn cho thị trường này sẽ NÉM chứ không im lặng bỏ qua. '
+          + 'Khoá API vẫn được giữ để bật lại.',
+        confirmLabel: 'Tắt kết nối', danger: true,
+      });
+      if (!dongY) return;
+    }
+    setBusy(nut, true);
+    try {
+      await goi('/api/ket-noi/pos/' + encodeURIComponent(idBat) + '/bat',
+        { method: 'POST', body: JSON.stringify({ bat: !k.bat }) });
+      delete LOI['Không đổi được trạng thái kết nối POS'];
+      toast(k.bat ? `Đã tắt «${k.market}».` : `Đã bật «${k.market}».`);
+      await nap();
+    } catch (e) { LOI['Không đổi được trạng thái kết nối POS'] = e.message; veBangTin(); setBusy(nut, false); }
+    return;
+  }
+
+  if (idBo) {
+    const k = tim(idBo);
+    const dongY = await confirmDialog({
+      title: `Bỏ hẳn kết nối POS «${k.market}»?`,
+      body: 'KHOÁ API MẤT THEO, không lấy lại được — muốn dùng lại phải đi xin khoá lần nữa. '
+        + 'Chỉ ngừng dùng shop này thì TẮT là đủ.',
+      confirmLabel: 'Bỏ hẳn', danger: true,
+    });
+    if (!dongY) return;
+    setBusy(nut, true);
+    try {
+      await goi('/api/ket-noi/pos/' + encodeURIComponent(idBo), { method: 'DELETE' });
+      delete LOI['Không bỏ được kết nối POS'];
+      toast(`Đã bỏ kết nối «${k.market}».`);
+      await nap();
+    } catch (e) { LOI['Không bỏ được kết nối POS'] = e.message; veBangTin(); setBusy(nut, false); }
+  }
+});
 
 async function bo(thuTu, nut) {
   const t = (KHO.token || []).find((x) => String(x.thuTu) === String(thuTu)) || {};

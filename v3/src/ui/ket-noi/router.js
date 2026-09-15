@@ -7,6 +7,10 @@
 // | DELETE /api/ket-noi/token/:i   | bỏ một token     (chỉ `quan-tri`, qua tiến trình bot) |
 // | POST   /api/ket-noi/nap-lai    | kéo dữ liệu từ tiến trình bot về nền v3 (chạy NỀN)     |
 // | GET    /api/ket-noi/nap-lai    | trạng thái lượt nạp đang chạy / vừa xong              |
+// | POST   /api/ket-noi/pos        | thêm kết nối POS (market + shop + khoá API)           |
+// | POST   /api/ket-noi/pos/:id    | sửa shop id và/hoặc khoá; `market` KHÔNG sửa được     |
+// | POST   /api/ket-noi/pos/:id/bat| bật/tắt — cách ĐÚNG để ngừng dùng một shop            |
+// | DELETE /api/ket-noi/pos/:id    | bỏ hẳn, mất luôn khoá đã mã hoá                       |
 //
 // ⚠️ MÀN NÀY SỬA TÀI NGUYÊN TOÀN HỆ, không phải dữ liệu team. Xem `LA_TOAN_HE` ở
 //    `kho-ket-noi.js`. Vì vậy nó CHỈ cho `quan-tri` vào — khác hai màn kia (cho cả `quan-ly`
@@ -24,7 +28,9 @@ import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import {
   khoToken, ketNoiPosCua, trangThaiCau, LA_TOAN_HE, GIAI_THICH_THU_TU, LoiKetNoi,
   batDauNapLai, trangThaiNapLai,
+  themPos, suaPos, batTatPos, boPos,
 } from './kho-ket-noi.js';
+import { HANH_DONG } from '../../audit/hanh-dong.js';
 import { themToken, boToken } from '../../noi-day/cau-bot-v1.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
@@ -43,8 +49,10 @@ export const VAI_SUA_DUOC = VAI_VAO_DUOC;
 
 export const DUONG_TRANG = '/ket-noi';
 
-export const HANH_DONG_THEM_TOKEN = 'them_token_pancake';
-export const HANH_DONG_BO_TOKEN = 'bo_token_pancake';
+// Giữ hai tên export này vì `index.js` đang dùng, nhưng GIÁ TRỊ lấy từ danh mục — gõ lại
+// chuỗi ở đây là bản khai thứ hai, và `hopLeHanhDong` là bên deny-by-default có tiếng nói.
+export const HANH_DONG_THEM_TOKEN = HANH_DONG.THEM_TOKEN_PANCAKE;
+export const HANH_DONG_BO_TOKEN = HANH_DONG.BO_TOKEN_PANCAKE;
 
 let _chanDangNhap = null;
 let _chanVai = null;
@@ -74,6 +82,26 @@ async function ghi(bc, banGhi) {
     throw new LoiKetNoi('chưa nối phễu nhật ký — từ chối sửa kho token vì không truy ngược được', 'chua_noi', 500);
   }
   return _pheuNhatKy(bc, banGhi);
+}
+
+/**
+ * Kiểm phễu nhật ký TRƯỚC khi ghi, không phải sau.
+ *
+ * `ghi()` đã ném khi thiếu phễu — nhưng nó chạy SAU lượt sửa, nên cửa hỏng theo kiểu tệ
+ * nhất: kết nối POS đã đổi thật, người bấm nhận 500, và KHÔNG có dòng nhật ký nào. Bốn mã
+ * kết nối POS nằm trong `nhomBatBuoc` đúng vì mất dấu ở đây là mất khả năng trả lời «ai
+ * đổi khoá POS» — nên chặn ở cửa vào, đừng phát hiện ở cửa ra.
+ *
+ * ⚠️ Hai đường token (`POST`/`DELETE /api/ket-noi/token`) CÓ CÙNG HÌNH DẠNG NÀY và chưa
+ *    được vá — ngoài phạm vi lượt 15/09, đã ghi §9 sổ nợ.
+ */
+function batBuocPheu() {
+  if (!_pheuNhatKy) {
+    throw new LoiKetNoi(
+      'chưa nối phễu nhật ký — từ chối sửa kết nối POS vì không truy ngược được ai đổi khoá',
+      'chua_noi', 500,
+    );
+  }
 }
 
 function chanChuaNoi(ten) {
@@ -155,6 +183,79 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 
   r.get('/api/ket-noi/pos', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, ...(await ketNoiPosCua(cuaBoiCanh(req))) });
+  }));
+
+  // ── SỬA KẾT NỐI POS ───────────────────────────────────────────────────────────────
+  // ⛔ KHOÁ API KHÔNG VÀO NHẬT KÝ. `nhat_ky` là bảng CHỈ-THÊM (lược đồ 001): một khoá lọt
+  //    vào đó là lọt vĩnh viễn, không xoá được. Ghi `market` + `shopId` là đủ truy ngược
+  //    «ai đổi kết nối nào lúc nào» — cùng lý do đường thêm token chỉ ghi tên tài khoản.
+  r.post('/api/ket-noi/pos', canDangNhap, canVai, boc(async (req, res) => {
+    batBuocPheu();
+    const bc = cuaBoiCanh(req);
+    const kq = await themPos(bc, {
+      market: req.body?.market,
+      shopId: req.body?.shopId,
+      apiKey: req.body?.apiKey,
+    });
+    await ghi(bc, {
+      hanhDong: HANH_DONG.THEM_KET_NOI_POS,
+      doiTuongLoai: 'ket_noi_pos',
+      doiTuongId: kq.id,
+      sau: { market: kq.market, shopId: kq.shopId, bat: kq.bat },
+      ghiChu: `thêm kết nối POS "${kq.market}" → shop ${kq.shopId}`,
+    });
+    res.json({ ok: true, pos: kq });
+  }));
+
+  r.post('/api/ket-noi/pos/:id', canDangNhap, canVai, boc(async (req, res) => {
+    batBuocPheu();
+    const bc = cuaBoiCanh(req);
+    const doiKhoa = !!String(req.body?.apiKey || '').trim();
+    const kq = await suaPos(bc, req.params.id, {
+      shopId: req.body?.shopId,
+      apiKey: req.body?.apiKey,
+    });
+    await ghi(bc, {
+      hanhDong: HANH_DONG.SUA_KET_NOI_POS,
+      doiTuongLoai: 'ket_noi_pos',
+      doiTuongId: kq.id,
+      sau: { market: kq.market, shopId: kq.shopId, doiKhoa },
+      // Khai RÕ có đổi khoá hay không: đó là nửa quan trọng của dòng nhật ký này, và là
+      // thứ duy nhất nói được về khoá mà không lộ khoá.
+      ghiChu: `sửa kết nối POS "${kq.market}" → shop ${kq.shopId}`
+        + (doiKhoa ? ' · ĐỔI KHOÁ API' : ' · khoá giữ nguyên'),
+    });
+    res.json({ ok: true, pos: kq });
+  }));
+
+  r.post('/api/ket-noi/pos/:id/bat', canDangNhap, canVai, boc(async (req, res) => {
+    batBuocPheu();
+    const bc = cuaBoiCanh(req);
+    const bat = req.body?.bat === true || req.body?.bat === 'true' || req.body?.bat === 1;
+    const kq = await batTatPos(bc, req.params.id, bat);
+    await ghi(bc, {
+      hanhDong: HANH_DONG.BAT_TAT_KET_NOI_POS,
+      doiTuongLoai: 'ket_noi_pos',
+      doiTuongId: kq.id,
+      sau: { market: kq.market, bat: kq.bat },
+      ghiChu: `${kq.bat ? 'BẬT' : 'TẮT'} kết nối POS "${kq.market}"`
+        + (kq.bat ? '' : ' — thị trường này ngừng tạo được đơn'),
+    });
+    res.json({ ok: true, pos: kq });
+  }));
+
+  r.delete('/api/ket-noi/pos/:id', canDangNhap, canVai, boc(async (req, res) => {
+    batBuocPheu();
+    const bc = cuaBoiCanh(req);
+    const kq = await boPos(bc, req.params.id);
+    await ghi(bc, {
+      hanhDong: HANH_DONG.BO_KET_NOI_POS,
+      doiTuongLoai: 'ket_noi_pos',
+      doiTuongId: kq.id,
+      truoc: { market: kq.market, shopId: kq.shopId, bat: kq.bat },
+      ghiChu: `BỎ HẲN kết nối POS "${kq.market}" (shop ${kq.shopId}) — khoá API mất theo`,
+    });
+    res.json({ ok: true, pos: kq });
   }));
 
   r.post('/api/ket-noi/token', canDangNhap, canVai, boc(async (req, res) => {

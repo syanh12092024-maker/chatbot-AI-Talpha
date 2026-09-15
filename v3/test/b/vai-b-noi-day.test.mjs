@@ -13,7 +13,7 @@ const { bam } = await import('../../src/auth/mat-khau.js');
 const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
-async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi,
+async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, ghiKetNoiPos, chuyenPage, khoKhoa, docKhoi,
   dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
@@ -40,7 +40,7 @@ async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, do
   const bao = dungPhanB(app, {
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
-    ghiSoAi, canhBao, docKetNoiPos, chuyenPage, khoKhoa, docKhoi,
+    ghiSoAi, canhBao, docKetNoiPos, ghiKetNoiPos, chuyenPage, khoKhoa, docKhoi,
     dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, express,
   });
   const sv = http.createServer(app);
@@ -148,9 +148,17 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   // `chayNapLai` thiếu thì nút «Kéo dữ liệu về» ở màn Kết nối không chạy được — việc kéo
   // dữ liệu lại phải gõ `npm run di-tru` trên máy chủ, đúng thứ cái nút sinh ra để xoá.
   assert.ok(bao.thieu.some((x) => /chayNapLai/.test(x)), 'phải nêu thiếu chayNapLai');
+  // `ghiKetNoiPos` TÁCH khỏi `docKetNoiPos`, và tách có lý do: đọc được mà không ghi được là
+  // một trạng thái HỢP LỆ (bản xem thử chạy dữ liệu giả, máy chưa có khoá mã hoá). Màn phải
+  // biết để ẩn nút, và danh sách `thiếu` phải nói ra — chứ không để người ta bấm rồi ăn 500.
+  assert.ok(bao.thieu.some((x) => /ghiKetNoiPos/.test(x)), 'phải nêu thiếu ghiKetNoiPos');
 
   const { sv: sv2, bao: bao2 } = await dungThu({
     ghiSoAi: () => {}, canhBao: () => {}, docKetNoiPos: async () => [],
+    ghiKetNoiPos: {
+      them: async () => ({}), sua: async () => ({}),
+      batTat: async () => ({}), bo: async () => ({}),
+    },
     chuyenPage: async () => ({ teamCu: 't1', teamMoi: 't2', daChuyen: {}, boLai: {} }),
     khoKhoa: { coKhoa: async () => false, docKhoa: async () => null, ghiKhoa: async () => 1 },
     docKhoi: {

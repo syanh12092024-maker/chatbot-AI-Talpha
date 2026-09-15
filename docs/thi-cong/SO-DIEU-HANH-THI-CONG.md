@@ -744,6 +744,22 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   **Còn nguyên một điều KHÔNG vá được bằng giấy:** ba cổng `a7-*` vẫn nhận khuôn Node 25 trong
   khi máy A chạy 24 — đó là mã, không phải chữ; ai đụng tới `a7-*` thì đo lại trước.
 
+- 15/09 · CRUD KẾT NỐI POS — ⬜ **BA NỢ ĐẺ RA TỪ LƯỢT NÀY, ghi chứ không tiện tay sửa.**
+  ① **Hai đường TOKEN ghi nhật ký SAU khi đã sửa.** `POST`/`DELETE /api/ket-noi/token` gọi
+     `themToken`/`boToken` rồi mới `ghi()`; phễu chưa nối thì token ĐÃ thêm/bỏ thật, người
+     bấm nhận 500, và không có dòng nào truy ngược. Bốn cửa POS mới đã chặn ở cửa VÀO
+     (`batBuocPheu()`), hai cửa token thì chưa — cùng hình dạng, ngoài phạm vi lượt này.
+  ② **Không có nút «Thử kết nối» cho POS.** Cửa thêm/sửa kết nối KHÔNG gọi sang POS để kiểm
+     khoá, vì lượt gọi thử là một đường ra ngoài và dự án này cho mọi đường ra ngoài đi qua
+     van. Hệ quả đang chịu: khoá sai chỉ lộ ở lượt TẠO ĐƠN đầu tiên của thị trường đó. Màn
+     nói thẳng điều này, nhưng nói không thay được đo. Phiếu sau: cấp nút thử đi qua đúng
+     cửa POS đã có (`src/pos/doc-danh-muc.js`), không mở đường HTTP thứ hai.
+  ③ **Một câu chú thích khai sai về code khác** (án lệ #3). `v3/src/ui/ket-noi/kho-ket-noi.js`
+     luật ② viết «câu `ON CONFLICT` cố ý bỏ `marketer` … ra ngoài»; đọc `db/di-tru/nap.js:57`
+     thì `marketer` CÓ trong `SET`, được giữ bằng `CASE WHEN page.marketer <> ''`. Hiệu quả
+     giống nhau nên không ai phát hiện, nhưng người sau đọc câu đó rồi đi tìm một danh sách
+     loại trừ không tồn tại.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)

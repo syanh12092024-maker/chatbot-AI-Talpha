@@ -69,6 +69,15 @@ export const HANH_DONG = Object.freeze({
   SUA_MAU_0_DONG: 'sua_mau_0_dong',
   // Kéo dữ liệu từ tiến trình bot về nền v3 (page · hội thoại · kịch bản · kết nối POS).
   NAP_LAI_DU_LIEU: 'nap_lai_du_lieu',
+
+  // ── 15/09 · kết nối POS sửa được trên màn ──
+  // Bốn mã này canh đường TIỀN: `ket_noi_pos` quyết định đơn của một thị trường đi vào
+  // shop nào, bằng khoá nào. Trước 15/09 bảng ấy chỉ đổi được bằng SQL trên máy chủ —
+  // tức mọi lượt đổi đều KHÔNG có dấu vết. Nay có màn thì phải có dấu.
+  THEM_KET_NOI_POS: 'them_ket_noi_pos',
+  SUA_KET_NOI_POS: 'sua_ket_noi_pos',
+  BAT_TAT_KET_NOI_POS: 'bat_tat_ket_noi_pos',
+  BO_KET_NOI_POS: 'bo_ket_noi_pos',
 });
 
 /** Nhóm để màn hình xếp bộ lọc thành từng cụm, không phải để module này dùng. */
@@ -90,6 +99,8 @@ export const NHOM = Object.freeze({
   ]),
   ket_noi: Object.freeze([
     HANH_DONG.THEM_TOKEN_PANCAKE, HANH_DONG.BO_TOKEN_PANCAKE, HANH_DONG.NAP_LAI_DU_LIEU,
+    HANH_DONG.THEM_KET_NOI_POS, HANH_DONG.SUA_KET_NOI_POS,
+    HANH_DONG.BAT_TAT_KET_NOI_POS, HANH_DONG.BO_KET_NOI_POS,
   ]),
   lop_0_dong: Object.freeze([HANH_DONG.TAO_MAU_0_DONG, HANH_DONG.SUA_MAU_0_DONG]),
   bo_luat: Object.freeze([HANH_DONG.LUU_BAN_NHAP_BO_LUAT, HANH_DONG.AP_BO_LUAT]),
@@ -121,6 +132,14 @@ export const nhomBatBuoc = Object.freeze(new Set([
   HANH_DONG.CHUYEN_PAGE_TEAM,
   // Gạt công tắc bot là đổi cách hệ thống nói chuyện với KHÁCH THẬT.
   HANH_DONG.BAT_TAT_BOT_AI,
+
+  // ── thêm 15/09 ──
+  // CÙNG HỌ VỚI `DOI_KHOA`, và lý do y hệt: `ket_noi_pos` giữ khoá API của shop POS, tức
+  // là đường đơn đi vào đâu và bằng quyền của ai. Mất một dòng ở đây là không truy được ai
+  // đổi khoá POS — mà đó là đường TIỀN, không phải một tuỳ chọn giao diện.
+  HANH_DONG.THEM_KET_NOI_POS,
+  HANH_DONG.SUA_KET_NOI_POS,
+  HANH_DONG.BO_KET_NOI_POS,
   // ⚠️ `AP_BO_LUAT` bắt buộc vì một lý do KHÁC HẲN mấy mã trên: nó vừa là dấu vết vừa là
   //    DỮ LIỆU. Màn bộ luật suy «bản cũ» hay «chờ duyệt» bằng cách hỏi bảng nhật ký xem
   //    phiên bản này đã từng áp chưa (`bo_luat_chung` không có cột `trang_thai`). Ghi hụt
@@ -183,6 +202,10 @@ const MO_TA = Object.freeze({
   [HANH_DONG.TAO_MAU_0_DONG]: 'Tạo mẫu trả lời sẵn',
   [HANH_DONG.SUA_MAU_0_DONG]: 'Sửa mẫu trả lời sẵn',
   [HANH_DONG.NAP_LAI_DU_LIEU]: 'Kéo dữ liệu từ tiến trình bot về',
+  [HANH_DONG.THEM_KET_NOI_POS]: 'Thêm kết nối POS',
+  [HANH_DONG.SUA_KET_NOI_POS]: 'Sửa kết nối POS',
+  [HANH_DONG.BAT_TAT_KET_NOI_POS]: 'Bật/tắt kết nối POS',
+  [HANH_DONG.BO_KET_NOI_POS]: 'Bỏ kết nối POS',
 });
 
 /** Chữ tiếng Việt cho màn hình. Mã lạ → trả lại chính mã, kèm một tiếng kêu ở console. */
