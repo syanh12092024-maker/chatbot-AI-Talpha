@@ -25,6 +25,21 @@ EnvironmentFile=/opt/aicloser/.env
 # Van bậc phơi đặt Ở ĐÂY, không đặt trong .env chung: đổi bậc phơi là sửa một dòng của
 # chính dịch vụ này rồi restart, không đụng tới ba dịch vụ kia.
 Environment=V3_PAGE_XU_LY=
+
+# ⛔ VAN GỬI — ĐÓNG CỨNG Ở ĐÂY, và đây KHÔNG phải thừa.
+#
+# `EnvironmentFile` ngay trên nạp `/opt/aicloser/.env`, mà bảng khai biến nói VPS có
+# `V3_PANCAKE_GUI=1` (cửa gửi Messenger của v3). Không có dòng dưới thì cài unit này với một
+# id trong `V3_PAGE_XU_LY` là NHẢY THẲNG sang gửi tin cho khách thật — bỏ qua bậc ②, và bỏ
+# qua luôn cơ hội xem luồng chạy đúng chưa.
+#
+# Dòng rỗng này ĐÈ biến của EnvironmentFile (systemd: directive sau thắng). Ở trạng thái này
+# worker nạp và xử trọn vòng rồi dừng ở `chan_guard`: 0 token, 0 HTTP ghi, không một byte nào
+# tới khách — nhưng `so_ai` và `viec_can_xu_ly` BẮT ĐẦU CÓ DÒNG, tức ba màn đang mù sáng lên.
+#
+# Sang bậc ③ (gửi thật) thì XOÁ dòng này, và trước đó phải TẮT bot v1 cho đúng page ấy —
+# nếu không khách nhận tin từ hai tiến trình. Xoá dòng, đừng sửa thành `=0`.
+Environment=V3_PANCAKE_GUI=
 ExecStart=/usr/bin/node src/queue/chay-worker.js
 Restart=on-failure
 RestartSec=10
