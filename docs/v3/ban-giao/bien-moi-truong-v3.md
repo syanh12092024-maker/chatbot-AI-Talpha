@@ -14,6 +14,18 @@
 | `V3_RAP_PROMPT_BAT` | Bật `rap-prompt.js` ráp `kb` từ 4 bảng DB (bo_luat_chung/ky_nang/kich_ban/san_pham); vắng ⇒ lùi nguyên `kb.js#getKBForPage` cũ | vắng = dùng kb.js cũ                         | `1` khi cutover từng phần đã kiểm 4 khối khớp dữ liệu thật    | L2-M3                    |
 
 | `V3_PAGE_XU_LY`     | **Van BẬC PHƠI của worker v3.** Danh sách id page (ngăn bằng dấu phẩy) mà `src/queue/chay-worker.js` được phép nạp và xử. Van chỉ THU HẸP: id không có trong bảng `page` bị bỏ qua | vắng = không nạp page nào             | đặt ĐÚNG page đang thử ở bậc phơi hiện tại; bậc ⑥ mới liệt kê hết | VA-P7 · mở van 14/09     |
+| `V3_KHOA_VE`        | Khoá 32 byte (base64) KÝ VÉ ĐĂNG NHẬP (`v3/src/auth/ve.js`). **Thiếu = `v3/chay-that.js` TỪ CHỐI CHẠY** (`exit 1`, dòng 18) — không phải cửa đóng câm mà là dịch vụ không lên | đã đặt (đo 15/09)                            | **BẮT BUỘC, khoá RIÊNG** — dùng lại khoá dev = ai có khoá dev ký được vé prod | L0-M3(B) |
+| `V3_KHOA_CHU`       | Khoá chủ 32 byte (base64) bọc khoá API model trong bảng `khoa_nha` (`v3/src/model/kho-khoa.js`). Thiếu ⇒ NÉM ngay lần gọi đầu, không tự sinh khoá tạm | **VẮNG trên máy này (đo 15/09)** — mọi lượt đọc khoá model sẽ ném | **BẮT BUỘC, khoá RIÊNG** khi dùng lớp model v3 | L1-M4(B) |
+| `V3_BOT_V1_GOC`     | Gốc HTTP của tiến trình bot v1 để v3 gọi `/admin/api`. Vắng ⇒ tự suy `http://127.0.0.1:${PORT||3100}` | vắng = 127.0.0.1:3100                        | vắng là ĐÚNG khi v3 và bot cùng máy                            | G2-B4 |
+| `V3_BOT_KHOA`       | `=1` KHOÁ cửa ghi sang tiến trình bot v1 (thêm/bỏ token · gạt công tắc bot). ⚠️ **NGOẠI LỆ CÓ CHỦ Ý của luật 1 dưới** — cửa này MỞ mặc định; lý do đầy đủ ở `v3/src/noi-day/cau-bot-v1.js` §CỬA GHI | nên đặt `1` trên máy demo; máy này đã đóng sẵn bằng `PANCAKE_READONLY=1` | KHÔNG đặt (để mở) — trừ lúc sự cố cần khoá gấp | G2-B4 |
+| `V3_BOT_GHI`        | Cờ CŨ của cùng cửa trên. `=0` vẫn được tôn trọng (ai đã cố ý tắt thì vẫn tắt); `=1` KHÔNG còn là điều kiện để MỞ | không đặt                                    | không đặt                                                      | G2-B4 |
+| `V3_POS_MAU_DON`    | Mẫu URL mở một đơn trên POS, dạng `https://pos.pages.fm/shops/{shop}/orders/{don}`. Vắng ⇒ nút «Mở POS» hiện MỜ kèm chú «chưa cấu hình đường POS», không dẫn tới 404 | vắng = nút mờ                                | đặt để sale bấm thẳng sang POS                                 | L4-M1 |
+| `V3_POS_SHOP_ID`    | Shop id chèn vào `{shop}` của mẫu trên                                                                                          | vắng = nút mờ                                | đặt cùng lượt với `V3_POS_MAU_DON`                             | L4-M1 |
+| `V3_WORKER_NHIP_MS` | Nhịp vòng của worker v3, mili-giây. Vắng ⇒ **6000**                                                                            | vắng                                         | vắng, trừ khi cần thưa nhịp lúc phơi                           | VA-P7 |
+| `V3_WORKER_TRAN`    | Trần số tin xử mỗi lượt. Vắng ⇒ **50**                                                                                         | vắng                                         | ĐẶT THẤP (5–10) ở bậc phơi ③, tăng dần                         | VA-P7 |
+| `V3_WORKER_MOT_LUOT`| `=1` chạy ĐÚNG một lượt rồi thoát — dùng để diễn tập, không dùng cho dịch vụ chạy dài                                          | dùng khi đo tay                              | KHÔNG đặt trong unit systemd                                   | VA-P7 |
+| `V3_KHOA_<NHÀ>`     | **KHUÔN, không phải một biến**: khoá API của từng nhà model (`V3_KHOA_CLAUDE` · `V3_KHOA_OPENAI` · `V3_KHOA_KIMI` · `V3_KHOA_DEEPSEEK`). Tên sinh trong `v3/src/model/` | đặt nhà nào dùng nhà đó                      | H6 — đây đúng là việc «nạp tiền 4 nhà» đang treo               | L1-M4(B) |
+| `V3_GIA_<MÃ_MODEL>` | **KHUÔN**: đơn giá token của một model, tên sinh bởi `bang-model.js#tenBienGia` (`'claude-haiku-4.5'` → `V3_GIA_CLAUDE_HAIKU_4_5`). Vắng ⇒ dùng bảng giá gắn trong mã | vắng                                         | đặt khi giá nhà đổi mà chưa kịp ra bản mới                     | L1-M4(B) |
 
 > **Vì sao biến này phải có trước khi bật worker (đo 14/09):** `dsPageDeNap` đọc MỌI page
 > trong bảng (502 dòng). Bật worker mà không có van này là mở thẳng bậc ⑥ «toàn bộ» — trong
@@ -23,10 +35,19 @@
 
 Biến kế thừa từ bản đang chạy (không thuộc bảng này nhưng liên quan cửa):
 `PANCAKE_READONLY=1` — luật 1 §0a: máy cá nhân LUÔN có, VPS không đặt.
+`ADMIN_USER` / `ADMIN_PASS` — Basic auth của `/admin/api` tiến trình bot v1. **Thiếu là cửa
+ghi sang bot ĐÓNG CÂM**: nút «Thêm token» và công tắc bot trả 409 «thiếu ADMIN_USER/ADMIN_PASS».
+Hai dịch vụ v3 phải thấy được hai biến này (chúng nằm trong `/opt/aicloser/.env`).
+`DATABASE_URL_V3` — thiếu là `chay-that.js` từ chối chạy, cùng chỗ với `V3_KHOA_VE`.
 
 Ba luật khi thêm biến:
 
 1. Chiều an toàn: vắng = đóng. Cấm biến kiểu "đặt để TẮT".
+   **Ngoại lệ duy nhất đã ký: `V3_BOT_KHOA`.** Cửa ghi sang bot v1 đã có BẢY chốt trước nó
+   (đăng nhập · vai ở router · vai ở cửa ghi · vai ở tầng dưới · cửa kiểm sẵn sàng của v1 ·
+   nhật ký ai bấm · hộp xác nhận); chốt thứ tám đòi SSH khiến người ta bỏ v3 quay về
+   dashboard cũ cổng 3100 — nơi KHÔNG biết ai bấm và KHÔNG ghi nhật ký. Đẩy người dùng
+   sang cửa không dấu vết thì không phải bảo vệ. Thêm ngoại lệ mới = phải ghi ở đây.
 2. Tên `V3_` + tiếng Việt không dấu, một nghĩa một biến.
 3. Cửa đọc biến phải in GIÁ TRỊ ĐO ĐƯỢC trong thông điệp lỗi (khuôn `LoiCuaGuiDong`).
 
