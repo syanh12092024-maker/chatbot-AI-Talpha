@@ -7,6 +7,13 @@ import { createPancakeOrder, ordersEnabled, conversationHasOrder, markConversati
 import { config } from './config.js';
 import { markClosing } from './conv-owner.js';
 import { recordClosedOrder } from './order-bridge.js'; // M14 · ghi chú chuẩn + hàng chờ tạo đơn
+// ── BH1 (16/09) · ba cửa mới, đều ở lõi chung ────────────────────────────────────────
+//   `tinhTong`      — tổng tiền do SERVER quyết, model chỉ được ĐỀ NGHỊ (src/core/gia.js)
+//   `vanGuiDangMo`  — luật số 1: máy READONLY không chạm khách thật (src/core/van-gui.js)
+//   `peekConv`      — hội thoại này chốt đơn chưa? ĐỌC THUẦN, không đẻ bản ghi rác
+import { tinhTong } from './core/gia.js';
+import { vanGuiDangMo } from './core/van-gui.js';
+import { peekConv } from './conv-state.js';
 
 // Định nghĩa tool (function calling) cho closer.
 export const toolDefs = [
@@ -118,6 +125,14 @@ async function sendImageWithRetry(state, viaPancake, url, caption = '') {
 export async function flushPendingImages(state) {
   const queue = state.pendingImages || [];
   if (!queue.length) return { sent: 0, total: 0 };
+  // BH1 · VAN READONLY. Ảnh là lượt GỬI RA KHÁCH THẬT — luật số 1 áp ở đây, không chỉ ở
+  // vòng poll. Trả về êm (không ném) vì hai nơi gọi hàm này (`pancake-poll.js:502`,
+  // `handler.js:273`) đều gọi TRẦN, không bọc try — ném ở đây là làm vỡ cả lượt chat.
+  if (!vanGuiDangMo()) {
+    state.pendingImages = []; state.pendingCaption = '';
+    console.warn(`[van] PANCAKE_READONLY=1 → BỎ ${queue.length} ảnh, không gửi cho khách (page ${state.pageId})`);
+    return { sent: 0, total: queue.length, error: 'PANCAKE_READONLY=1' };
+  }
   state.pendingImages = [];
   const viaPancake = state.pkConvId && state.pkCustId;
   const seen = state.sentImages || (state.sentImages = new Set());
@@ -167,14 +182,58 @@ export async function executeTool(name, input, ctx) {
         if (!input.phone || String(input.phone).replace(/\D/g, '').length < 7) {
           return { content: 'Từ chối tạo đơn: số điện thoại chưa hợp lệ. Hãy xin lại SĐT liên hệ.', isError: true };
         }
-        // CHỐNG ĐƠN TRÙNG: hội thoại này đã có đơn (do AI/nhân viên/FB Commerce tạo) → KHÔNG tạo nữa.
-        if (ordersEnabled() && await conversationHasOrder(state.pageId, state.pkConvId)) {
-          state.closed = true;
-          return { content: 'Khách này ĐÃ CÓ ĐƠN trong hệ thống rồi — TUYỆT ĐỐI không tạo đơn mới, không chốt lại. Chỉ trả lời câu hỏi của khách về đơn đã đặt (thời gian giao, COD...) và báo nhân viên sẽ liên hệ.', isError: true };
+        // ── BH1 · CỬA CHỐT: hội thoại này ĐÃ chốt đơn ở lượt trước → không chốt lần hai ──
+        // Trước BH1, luật "mỗi khách 1 đơn" chỉ nằm trong prompt (`CORE §5`) và trong
+        // `state.closed` — mà `state` là RAM theo psid, mất sạch khi restart. `markClosing`
+        // ghi `orderAt` vào conv-state (BỀN qua restart) từ lâu, nhưng **chưa ai đọc nó**:
+        // `grep orderAt src/*.js` chỉ ra chỗ GHI. Nên khách nhắn tiếp sau khi đã chốt là AI
+        // bán lại từ đầu và có thể gọi tool này lần nữa — đơn trùng chỉ bị chặn ở lớp sau
+        // (`ai-created-orders.json`, 4 cửa của order-bridge), tức chặn được nhờ may, không
+        // nhờ đúng chỗ. Cửa này đọc sổ bền, rẻ (0 lượt mạng) và đứng TRƯỚC cửa POS bên dưới.
+        {
+          const ht = state.pkConvId ? peekConv(state.pkConvId) : null;
+          if (ht && ht.orderAt) {
+            state.closed = true;
+            return { content: 'Hội thoại này ĐÃ CHỐT ĐƠN trước đó rồi — TUYỆT ĐỐI không tạo đơn mới, '
+              + 'không hỏi lại thông tin, không chào bán lại. Chỉ trả lời ngắn câu hỏi của khách về đơn đã đặt '
+              + '(thời gian giao, COD) và báo nhân viên sẽ liên hệ.', isError: true };
+          }
         }
         // Page 1 SP: tự điền sản phẩm nếu AI không truyền mã (không bắt khách chọn).
         const prod = findProduct(kb, input.product_id);
         if (prod) { input.product_id = prod.id; input.product_name = prod.name; input.currency = prod.currency || ''; }
+
+        // ── BH1 · CỬA TIỀN: model ĐỀ NGHỊ, server QUYẾT ──────────────────────────────
+        // `total_price` vốn là số MODEL tự gõ và đi thẳng tới `pancake-orders.js:164` →
+        // `shipping_fee` → **số tiền người giao hàng thu của khách**. Mô tả tool nói «LẤY
+        // TỪ bảng giá KB» chỉ là lời dặn trong prompt, không phải cái cửa. Vụ 07/08/2026
+        // (báo gấp đôi giá → khách huỷ đơn + BLOCK page) là cái giá của việc thiếu cửa này.
+        //
+        // ⚠️ CHỈ chặn số SAI, KHÔNG chặn THIẾU số (xem `gia.js#tinhTong` đầu hàm): đường
+        // "model không nêu tổng" đã fail-closed sẵn ở cửa ⑤ của order-bridge (`NO_TOTAL`
+        // khoá nút Tạo đơn của sale), và chặn thêm ở đây sẽ phá hợp đồng đang xanh của
+        // `test/l2-m1-nhac-truong.js` ca N1b (chốt đơn KHÔNG kèm total_price).
+        const tien = tinhTong({ kb, variant: input.variant, qty: input.qty, tong: input.total_price });
+        if (tien.chan) {
+          console.warn(`[gia] page ${state.pageId} TỪ CHỐI chốt đơn (${tien.ma}): model khai ${input.total_price}, hợp lệ ${tien.hopLe.join('/') || '—'}`);
+          return { content: tien.lyDo, isError: true };
+        }
+        // Số đi tiếp là số của SERVER. Khi model không nêu mà server suy được đúng một gói
+        // thì đơn có tổng ĐÚNG thay vì trống — sale bớt một lượt gõ tay.
+        if (tien.tong > 0) {
+          input.total_price = tien.tong;
+          if (tien.tienTe) input.currency = tien.tienTe;
+        }
+
+        // CHỐNG ĐƠN TRÙNG: hội thoại này đã có đơn (do AI/nhân viên/FB Commerce tạo) → KHÔNG tạo nữa.
+        // BH1 chuyển cửa này XUỐNG DƯỚI hai cửa cục bộ ở trên: nó là cửa DUY NHẤT trong
+        // tool phải đi mạng (quét tối đa 6 trang đơn POS). Nguyên tắc «rẻ trước, đắt sau»
+        // của chính dự án (§2.3 TONG-QUAN) — lượt bị chặn vì giá sai nay không còn tốn một
+        // vòng POS nào, và bộ ca kiểm được cửa giá mà không chạm mạng thật.
+        if (ordersEnabled() && await conversationHasOrder(state.pageId, state.pkConvId)) {
+          state.closed = true;
+          return { content: 'Khách này ĐÃ CÓ ĐƠN trong hệ thống rồi — TUYỆT ĐỐI không tạo đơn mới, không chốt lại. Chỉ trả lời câu hỏi của khách về đơn đã đặt (thời gian giao, COD...) và báo nhân viên sẽ liên hệ.', isError: true };
+        }
         // TẠO ĐƠN THẬT trong Pancake — chỉ khi BẬT công tắc (config.autoCreateOrder).
         // ĐANG TẮT theo yêu cầu: AI vẫn chốt & ghi nhận, nhân viên tạo đơn thủ công.
         let dedup = false;
@@ -193,7 +252,8 @@ export async function executeTool(name, input, ctx) {
         try { if (state.pkConvId) markClosing(state.pkConvId, `AI chốt đơn: ${input.name || '?'} · ${input.qty || 1} sp`); } catch { /* không chặn chốt đơn */ }
         try { markConversationOrdered(state.pkConvId); } catch { /* nhớ ngay để không tạo lần 2 */ }
         // Gắn thẻ "Mua hàng" trên Pancake để sale lọc nhanh đơn AI chốt.
-        if (config.pkTags.order) {
+        // BH1: van READONLY — đây là lượt GHI ra Pancake, máy cá nhân không được chạm.
+        if (config.pkTags.order && vanGuiDangMo()) {
           pkTagByName(state.pageId, state.pkConvId, config.pkTags.order)
             .then((t) => { if (!t.ok) console.warn(`[tag] ${state.pageId}: ${t.error} (chốt đơn)`); })
             .catch(() => {});
@@ -204,7 +264,14 @@ export async function executeTool(name, input, ctx) {
           // M14 · Order Bridge: ghi chú Pancake theo MẪU CHUẨN máy đọc được + đưa vào hàng chờ
           // "chờ tạo đơn" để sale bấm 1 nút trên dashboard. Thay cho ghi chú tự do trước đây —
           // ghi chú tự do buộc sale đọc rồi gõ lại từng trường sang form Pancake.
-          try { await recordClosedOrder(state.pageId, state.pkCustId, input, state.pkConvId, { kb, created: config.autoCreateOrder }); } catch (e) { console.warn('[order-bridge] ghi nhận đơn lỗi:', e.message); }
+          // BH1 · `skipNote` khi van đóng: hàng chờ + kiểm giá là việc NỘI BỘ (phải giữ),
+          // còn ghi chú Pancake là lượt GHI ra ngoài (phải chặn ở máy READONLY). Tách đúng
+          // hai việc đó bằng cờ có sẵn của order-bridge, không phải bỏ cả lượt ghi nhận —
+          // bỏ cả lượt là đánh rơi một đơn đã chốt mà không ai biết.
+          try {
+            await recordClosedOrder(state.pageId, state.pkCustId, input, state.pkConvId,
+              { kb, created: config.autoCreateOrder, skipNote: !vanGuiDangMo() });
+          } catch (e) { console.warn('[order-bridge] ghi nhận đơn lỗi:', e.message); }
         }
         // KHÔNG trả mã đơn cho khách. AI chỉ xác nhận đã nhận thông tin, nhân viên sẽ liên hệ.
         return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã ghi nhận đủ thông tin đơn. Báo khách "đã nhận đơn, nhân viên sẽ liên hệ xác nhận & giao 2-5 ngày". TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn cho khách.' }) };
@@ -262,13 +329,17 @@ export async function executeTool(name, input, ctx) {
         state.handoff = true;
         state.handoffReason = input.reason || '';
         try { logAi(state.pageId, state.pkCustId, 'handoff', { reason: input.reason || '', kind: 'ai', conv: state.pkConvId || '' }); } catch { /* sổ AI không chặn */ }
-        if (config.pkTags.handoff) {
+        // BH1 · van READONLY cho HAI lượt GHI ra Pancake dưới đây. Sổ AI ở trên vẫn ghi
+        // bình thường — nó là sổ nội bộ, và hàng chờ sale trên dashboard đọc từ đó.
+        if (config.pkTags.handoff && vanGuiDangMo()) {
           pkTagByName(state.pageId, state.pkConvId, config.pkTags.handoff)
             .then((t) => { if (!t.ok) console.warn(`[tag] ${state.pageId}: ${t.error} (AI chuyển người)`); })
             .catch(() => {});
         }
         // Báo SALE ngay trong Pancake để biết hội thoại này cần người.
-        try { await pkAddNote(state.pageId, state.pkCustId, `🙋 AI CHUYỂN NGƯỜI — cần sale vào hỗ trợ\nLý do: ${input.reason || 'không rõ'}`); } catch { /* không chặn */ }
+        if (vanGuiDangMo()) {
+          try { await pkAddNote(state.pageId, state.pkCustId, `🙋 AI CHUYỂN NGƯỜI — cần sale vào hỗ trợ\nLý do: ${input.reason || 'không rõ'}`); } catch { /* không chặn */ }
+        }
         return { content: 'Đã chuyển cho nhân viên. Hãy báo khách sẽ có người hỗ trợ ngay.' };
       }
       default:

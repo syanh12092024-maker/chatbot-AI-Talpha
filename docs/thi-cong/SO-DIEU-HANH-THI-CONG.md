@@ -1,11 +1,20 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
-> 💓 **NHỊP TIM TỔNG (đo lại 15/09, vòng 2):** sóng vá refute ✅ 4/4 · UI hệ kiểu 25/25 màn đã lên
-> VPS 14/09, `origin/main` = `e657af1`. **⛔ 8 commit chưa push** — 3 của phiên 14/09 (hai cửa ghi ·
-> nút «Kéo dữ liệu về» · van `V3_PAGE_XU_LY`) + 5 của 15/09 (ghi bù sổ · khai bù 12 biến `V3_*` ·
-> CRUD kết nối POS · thuộc tính page · tạo người dùng). Cửa ghi v3: **24 → 32, mồ côi 0**.
-> 🔴 chặn: dãy S `l0-m2-so-lieu` chập chờn · H7 514/514 page `chua-phan` · H6 hết tiền model ·
-> chưa có đường đặt lại mật khẩu. Điểm dừng kế = người quyết gật push + mở van worker.
+> 💓 **NHỊP TIM TỔNG (16/09 — MỞ SÓNG BÁN HÀNG):** audit toàn hệ xong + quét **719 hội thoại
+> thật**. Người quyết gật hai việc: **①** nới §0a luật 4 — năm file bộ não SỬA ĐƯỢC (khai
+> «Đụng bộ não» trong phiếu, cổng `_chan1.sh` ⑤ canh); **②** mở **§5c SÓNG BH1–BH6**, 6 phiếu
+> 🎫 đã soạn, thước `ops/bin/do-duong-ban.mjs` có 6 số + mốc nền. Hậu mãi/RTO **HOÃN** (nợ
+> N-HOÀN §9: hoàn KSA **40,6%** vs UAE 20,4% trên 4.423 đơn/60 ngày — khoản tiền lớn nhất,
+> mở lại sau BH). `npm test` 1769/1772 (D7 đỏ sẵn, nợ dữ liệu 25/08).
+> 🔴 chặn cũ còn nguyên: dãy S `l0-m2-so-lieu` chập chờn · H7 514/514 page `chua-phan` ·
+> H6 hết tiền model · chưa có đường đặt lại mật khẩu · **8 commit chưa push** (từ 15/09).
+> 🔴 chặn mới: **N-C5** — `rap-prompt.js:122` tra `san_pham.page_id` mà cột đó NULL cho mọi
+> dòng ⇒ bật `V3_RAP_PROMPT_BAT` là 100% page rơi `noData`. Phải vá trước mọi lượt cutover v3.
+> **BH1 ✅ 16/09** (cổng 10/10 · bộ ca 26/26 · đảo-vá 5 ca đỏ trên bản cũ): giá đơn nay do
+> SERVER tính (`src/core/gia.js`), hội thoại đã chốt bị khoá trong CODE, van READONLY đã có ở
+> 5 lượt ghi của `tools.js` — **`pkSendReply` còn hở**, nợ N-SEND.
+> Điểm dừng kế = người quyết gật **push** rồi phát BH2 · BH4 · BH5 (song song được; BH3 chờ
+> BH1 ✅ nên phát được luôn, BH6 chờ BH3).
 
 > Lập 22/08/2026 (mốc hồ sơ `219a2a5`). **MỌI session đọc sổ này TRƯỚC khi làm bất cứ gì,
 > và update trạng thái NGAY khi xong việc.** Người quyết ra lệnh bằng MÃ VIỆC trong sổ
@@ -26,8 +35,29 @@ hàng, 12 module). Người B (phần rìa: auth, audit, model, màn sale) làm 
 4. ⛔ KHÔNG đụng bản đang chạy: 62 file phẳng ngay dưới `src/` + `db cũ (15 file JSON)`
    đang phục vụ 51 page khách thật. Code v3 sống ở **thư mục con mới**: `src/db/` `src/pos/`
    `src/channels/` `src/chat/` `src/orders/` `src/queue/` + `db/` (schema/migrate).
-   Bộ não chat DÙNG NGUYÊN, cấm sửa: `src/prompts.js` `src/closer.js` `src/tools.js`
-   `src/fast-lane.js` `src/outbound-guard.js`.
+
+   ⚠️ **SỬA 16/09 — người quyết gật, sau lượt audit + đo 719 hội thoại thật.** Luật cũ
+   viết «bộ não chat DÙNG NGUYÊN, cấm sửa: `prompts.js` `closer.js` `tools.js`
+   `fast-lane.js` `outbound-guard.js`». Luật đó đã **hết tác dụng bảo vệ và bắt đầu gây
+   hại**, đo được ba chỗ:
+   · ba lỗi nặng nhất của hệ (giá đơn do MODEL điền — `tools.js:38` + `pancake-orders.js:164`;
+     hội thoại đã CHỐT không bị khoá — `conv-owner.js:102` không xét `CLOSING`;
+     `PANCAKE_READONLY` không có ở primitive gửi — `pancake.js`/`messenger.js`) đều nằm
+     TRONG nhóm file cấm, nên không đường nào vá được;
+   · v3 `import` nguyên năm file đó (`src/chat/handler-v3.js:64-74`) ⇒ lỗi đi thẳng sang
+     bản mới, và v3 phải dựng cổng `globalThis.fetch` chỉ để bù cho việc không sửa được
+     file cấm — bản vá ở tầng sai;
+   · đo thật 16/09: tin page >300 ký tự chỉ được khách trả lời **9,5%** (tin 21–80 ký tự:
+     41,2%), mà `closer.js:38` đang để `max_tokens=400`. Không sửa file não = không sửa
+     được cách bot nói.
+
+   **Luật mới:** năm file trên là **BỘ NÃO CHUNG của cả hai bản**, SỬA ĐƯỢC, với ba rào:
+   ① phiếu phải khai dòng `**Đụng bộ não:** <danh sách file> — <lý do một câu>` (cổng
+   `_chan1.sh` phép ⑤ đỏ nếu đụng mà không khai); ② mọi thay đổi chạm cách bot NÓI phải
+   đo lại bằng `ops/bin/do-duong-ban.mjs` (sáu số, mốc nền 16/09 nằm trong chính file đó)
+   + chạy **ba lượt model** như nghiệm thu sóng 1 dặn; ③ deploy theo gate, có đường lùi
+   bằng cờ `.env`, không đổi hành vi 51 page giữa chừng.
+   Các file phẳng `src/` CÒN LẠI (57 file) giữ nguyên luật cấm cũ.
 
 **Nguồn sự thật đọc theo thứ tự:** `docs/v3/01-QUYET-DINH.md` (ý đồ — thắng mọi thứ khi
 mâu thuẫn) → `docs/v3/02-KE-HOACH-CODE.md` (kế hoạch + 18 bảng + nghiệm thu) →
@@ -192,6 +222,43 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
 | VA-R3 | C3 máy trạng thái (RF-13/14)                                  | —         | orders/may-trang-thai · quet-don-moi             | ✅            |
 | VA-R4 | C4 đọc ý (RF-20)                                              | —         | orders/doc-y                                     | ✅            |
 | RVA   | **GATE SÓNG VÁ** — 13 cổng cũ + 4 va-r* + repro 2 bộ đảo xanh | VA-R1..R4 | TỔNG                                             | ✅ 23/08 · 17 cổng rc=0 · 352/352 · repro tổng-thể-1 🔴=0 (MẢNG-2 còn ❌ F4/F5 mức NÊN, §9) |
+
+## §5c · SÓNG BÁN HÀNG (BH1–BH6) — mở 16/09 theo lệnh người quyết
+
+**Vì sao mở sóng này:** lượt audit 16/09 + quét **719 hội thoại thật** (14 page đông nhất,
+3.027 tin khách · 7.281 tin page, chỉ đọc) cho ra ba sự thật làm đổi thứ tự việc:
+
+- bot AI **gần như không chạy**: 12/719 hội thoại (1,7%) có lượt model; 57,2% tin page là
+  template Botcake, 12% người gõ tay. Mọi tối ưu prompt trước nay tối ưu cho thứ đang tắt;
+- **độ dài quyết định tất cả**: tin page >300 ký tự chỉ được khách trả lời **9,5%**, tin
+  21–80 ký tự **41,2%**, tin TỰ SOẠN 151–300 ký tự **50%** (cao nhất). `closer.js` đang để
+  `max_tokens=400` ≈ 550 ký tự — nằm gọn trong vùng tệ nhất;
+- **ép chốt làm mất khách**: hội thoại CÓ đơn dùng 0,4 câu chốt/ht, KHÔNG đơn 0,7 (tương
+  quan NGHỊCH). «any other questions?» → 90,5% khách im · khan hiếm → 92,5% · «friendly
+  reminder» → 94,3% · «still there?» → 78,7%.
+
+**Thước của sóng:** `ops/bin/do-duong-ban.mjs` — sáu số, mốc nền 16/09 nằm trong chính
+file đó. Mọi phiếu BH so lại với sáu số ấy, không so bằng cảm giác.
+
+| Mã  | Việc                                                           | Phụ thuộc | Đụng bộ não                                      | Trạng thái |
+| --- | -------------------------------------------------------------- | --------- | ------------------------------------------------ | ---------- |
+| BH1 | Giá do SERVER tính · khoá hội thoại đã CHỐT · van READONLY      | —         | `tools.js` `outbound-guard.js` `conv-owner.js`   | ✅ 16/09 · cổng `bh1.sh` 10/10 · bộ ca 26/26 · đảo-vá 5 ca đỏ trên bản cũ |
+| BH2 | Hồ sơ khách đọc được ý (nhu cầu · đã hỏi · đã từ chối · sẵn sàng) | —       | `context.js`                                     | 🎫 |
+| BH3 | Bot NÓI NHƯ NGƯỜI: tin ngắn · bỏ ép chốt · 5 luật guard mới     | **BH1**   | `prompts.js` `closer.js` `outbound-guard.js` `tools.js` | 🎫 |
+| BH4 | Ngân sách lượt theo đường chốt thật (AM 3→5 · NONG 6→8)         | —         | `lead-score.js`                                  | 🎫 |
+| BH5 | Soi lỗ hổng kiến thức của page → việc cho marketer              | —         | không                                            | 🎫 |
+| BH6 | Bỏ `get_price` · hai điểm neo cache · đo tiền thật              | BH1·BH3   | `prompts.js` `tools.js`                          | 🎫 |
+| RBH | **GATE SÓNG BÁN** — 6 cổng bh*.sh + `do-duong-ban` 6 số đạt đích + 3 lượt model | BH1..BH6 | TỔNG | ⬜ |
+
+**Đích của gate RBH** (so mốc nền 16/09): tin page được trả lời 31,8% → **≥40%** · hội
+thoại ≥4 tin khách 39,4% → **≥50%** · cho SĐT 19,5% → **≥25%** · có thẻ đơn 22,9% →
+**≥27%** · tin >300 ký tự 21,3% → **<5%** · câu giết/100 tin 18,6 → **≤6** · đ/tin 127đ →
+**≤90đ**. Ngưỡng LÙI: thẻ đơn giảm >10% tương đối, hoặc guard chặn >12% tin.
+
+⚠️ Sóng này chạy **trên bản đang chạy (v2)**, vì đó là bản đang phục vụ khách. Bộ não là
+file dùng chung nên v3 hưởng nguyên — xem §0a luật 4 bản 16/09.
+**Hậu mãi/RTO hoãn theo lệnh người quyết 16/09** (tỷ lệ hoàn KSA 40,6% vs UAE 20,4%, đo
+trên 4.423 đơn POS 60 ngày — đã ghi §9 để không rơi mất).
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
@@ -911,7 +978,207 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   Bảng khai nên tách hai cột «VPS: mục tiêu» và «VPS: đo được ngày nào», kẻo người đọc tin
   cột mục tiêu là hiện trạng — đúng cái tôi vừa tin.
 
+- 16/09 · 🟡 **NGUỒN «PAGE BÁN SẢN PHẨM NÀO» — ĐO LẠI, BA SỐ TRONG WIREFRAME/ĐỀ XUẤT CŨ SAI.**
+  Bóc từ `pages.json` + đơn POS thật hôm nay:
+  | điều tôi từng khai | đo được 16/09 |
+  |---|---|
+  | «514 page» | **577 page** (`pages.json`), 115 `lost` (19,9%) ⇒ **462 còn sống** = mẫu số thật |
+  | «marketer tới từ `pages.json`» | trường `marketer` **rỗng 100%** (0/577) — không tới từ đâu cả |
+  | «lấy SP của page từ danh mục» | ⛔ **TÔI ĐO SAI** — xem dòng tự sửa ngay dưới |
+  ⛔ **TỰ SỬA (cùng phiên):** tôi khai «trường `products` rỗng 100% (0/577) ⇒ bóc từ ĐƠN là
+  đường DUY NHẤT». SAI vì tôi kiểm bằng `Array.isArray(x.products)` — mà `products` là **số
+  đếm**, không phải mảng (`src/page-registry.js:196` ghi `products: kb.products || 0`).
+  Đo lại đúng kiểu: **76/577 page CÓ sản phẩm** (74 page có 1 · 2 page có 2 · 501 page có 0).
+  ⇒ Nguồn page→sản phẩm ĐÃ TỒN TẠI cho 76 page: bảng tính KB (`src/kb.js:53` đọc các cột
+  page · market · category · marketer · products). Bóc từ đơn là đường bổ sung, KHÔNG phải
+  đường duy nhất. 📌 Án lệ: kiểm một trường bằng vị từ sai kiểu (`Array.isArray` trên số) cho
+  ra «rỗng 100%» — đúng cái bẫy «lời khai sai là bằng chứng giả» (án lệ #3), lần này tôi tự gây.
+  ⇒ Cũng giải thích luôn vì sao `market` có 157 mà `marketer` có 0: cùng một bảng tính, cột
+  marketer bỏ trống.
+  Và hai chỗ mù chưa bản nào đếm, đo trên 12.933 dòng hàng (Saudi):
+  **28,7% dòng đơn KHÔNG có `page_id`** (đơn tay/kênh khác ⇒ không gán về page được) ·
+  **18,9% tên biến thể KHÔNG có số hiệu** ⇒ không suy ra SP gốc. Gần ⅓ lịch sử đơn vô dụng
+  cho việc gán, và cả `goi-y-gan-page.mjs` lẫn `goi-y-gop-san-pham.mjs` đều im về nó.
+  ➜ NÊN: mọi báo cáo gợi ý phải in TỬ SỐ/MẪU SỐ kèm phần bị loại, không in số tuyệt đối trần.
+
+- 16/09 · 🟡 **ĐỘ SÂU ĐỌC LẶNG LẼ QUYẾT CÂU TRẢ LỜI (án lệ #35, đã chưng vào `tho-thi-cong`).**
+  Cùng ngày, cùng 7 shop, chỉ đổi `--trang`: 500 đơn/shop ⇒ 120 page · 81 «bán 1 SP» (67,5%
+  sạch); 3000 đơn/shop ⇒ **199 page · 109 «bán 1 SP» (54,8% sạch)**. Độ phủ TĂNG, độ chắc
+  TỤT — hai trục ngược chiều, không có độ sâu nào «đúng». Riêng Saudi, độ phủ **không hội tụ**:
+  100 đơn→20 page · 10.000 đơn→92 page · cạn→103 page.
+  Nguyên nhân gốc: câu «page bán gì» có hai tham số ẩn (độ sâu đọc + cửa sổ thời gian) mà
+  script cũ in một con số như thể nó vô điều kiện. Đã vá: `goi-y-gan-page.mjs` tách trục ĐỘ
+  PHỦ khỏi trục PHÂN LOẠI, in tham số lên đầu báo cáo, và thêm `ops/bin/do-don-tho.mjs` đổ
+  thô một lần để tính lại offline (đọc POS lại mỗi lần đổi tham số thì hai lượt đọc hai tập
+  dữ liệu khác nhau ⇒ KHÔNG so được).
+  Đo thêm: POS trả đơn **mới→cũ tuyệt đối** (5.721 dòng Saudi, 0% nghịch thứ tự) ⇒ dừng theo
+  MỐC NGÀY là chắc chắn, không cần trần số trang. Và Saudi ~200 đơn/ngày ⇒ «đọc cạn» là hàng
+  trăm nghìn đơn mà KHÔNG cần: tập đầy đủ của page là `pages.json`, không phải lịch sử đơn.
+
+- 16/09 · 🟡 **THỊ TRƯỜNG CỦA PAGE: liên kết `posShopId` chỉ phủ 22,4%, và 1 kết luận của tôi
+  đã SAI.** Người quyết chỉ ra (đúng) rằng thị trường màn «Nhận page» nên theo TÀI KHOẢN POS,
+  không phải suy từ tên. Đo `pages.json`: `posShopId` có ở **129/577 (22,4%)** — UAE 44 ·
+  Kuwait 29 · Saudi 26 · Qatar 12 · Bahrain 9 · Oman 9 · **Taiwan 0**. `posVia` nói liên kết
+  ấy tới từ đâu: `khớp thị trường` 68 (phỏng đoán) · `đơn thật` 61 · `null` 448.
+  Đơn thật mở rộng liên kết rất mạnh: riêng phần Saudi đã đọc cho thêm **131 page** chưa có
+  `posShopId`.
+  ⛔ **TỰ SỬA:** tôi đã khai «0 page bán qua nhiều thị trường ⇒ page gộp theo thị trường là
+  sự thật đo được». SAI — lúc đo, lượt đọc mới chỉ có đơn của **một** shop (Saudi), nên không
+  page nào CÓ THỂ xuất hiện ở hai thị trường. Bằng chứng ngược nằm ngay trong dữ liệu ấy:
+  `Minty Fresh Smile UAE` từng được liên kết sang UAE bằng `posVia=đơn thật`, nay có 6 dòng
+  đơn ở Saudi ⇒ page bán qua HAI shop. Câu «page có gộp theo thị trường không» chỉ trả lời
+  được khi đủ 7 shop — CHƯA CHỐT, đang đọc.
+  📌 Bài học cùng họ với án lệ #35: **một tập dữ liệu chưa đầy đủ không chỉ làm số sai lệch,
+  nó có thể làm một kết luận PHỦ ĐỊNH ra đúng một cách giả tạo.** «Không thấy ca nào» trên
+  tập thiếu 6/7 nguồn thì không phải bằng chứng.
+
+- 16/09 · 🔴 **NGUỒN PAGE: SỔ NÀY ĐANG KHAI SAI — POS CHO CẢ PAGE, KHÔNG CHỈ SHOP.**
+  Người quyết hỏi «page lấy từ đâu? POS, Pancake hay khai tay?» ⇒ đo lại, và điều tôi đã ghi
+  («POS cho products/orders/stock; page tới từ `pages.fm`») là **SAI**.
+  `GET /shops/{id}/pages` trả 200 kèm trọn danh sách: **653 page qua 7 shop, trong 7 lượt gọi.**
+  | nguồn | page | |
+  |---|---|---|
+  | POS 7 shop | **653** | Saudi 274 · UAE 156 · Kuwait 93 · Qatar 50 · Oman 32 · Taiwan 28 · Bahrain 20 |
+  | `pages.json` | 577 | 115 `lost` |
+  | có ở CẢ HAI | 546 | |
+  | CHỈ POS có | **107** | POS biết mà tệp Pancake không |
+  | CHỈ `pages.json` có | 31 | ngược lại |
+  Mỗi bản ghi page POS mang: `id · name · username · settings · shop_id · phone_number ·
+  platform · tags_ref`. **Không có sản phẩm** ⇒ C3 vẫn phải bóc từ đơn.
+  ➜ HỆ QUẢ: `posShopId` chỉ phủ 129/577 (22,4%) vì hệ đang SUY liên kết page→shop
+  (`posVia`: `khớp thị trường` 68 — phỏng đoán từ tên · `đơn thật` 61 · `null` 448) trong khi
+  POS **trả thẳng** quan hệ đó. Phải đổi nguồn nạp page sang `/shops/{id}/pages`.
+
+- 16/09 · ✅ **«PAGE GỘP THEO THỊ TRƯỜNG» — ĐÚNG, đo trên trọn 7 shop: 0/653 page thuộc >1 shop.**
+  Nên shop → thị trường là 1–1, KHÔNG cần đoán. Việc này chốt luôn hai thứ tôi đề xuất sai
+  trong cùng phiên:
+  ① tôi đề xuất suy thị trường từ TÊN page (phủ 83%) — **bỏ**, nguồn yếu hơn hẳn;
+  ② tôi báo «6 page lệch giữa khai và tên» rồi «5 page đơn nói khác `posShopId`» — **5/6 là
+     GIẢ**, sinh ra vì lúc đo lượt đọc chỉ có đơn của Saudi nên page nào có một đơn lẻ tạo ở
+     shop Saudi cũng bị kết luận thuộc Saudi. `page_id` trên ĐƠN là tín hiệu YẾU (đơn có thể
+     do người tạo ở shop khác); danh sách page của shop là tín hiệu MẠNH.
+  📌 Cùng họ án lệ #35: tập dữ liệu thiếu không chỉ làm số lệch, nó sinh ra cả ca lệch KHÔNG
+     TỒN TẠI — và một kết luận phủ định («0 ca») trên tập thiếu 6/7 nguồn là vô nghĩa.
+
+- 16/09 · 🟡 **CHỐT SỐ C3 trên mẫu số THẬT — máy gợi ý được ~21%, không phải ~67%.**
+  Bản mới `ops/bin/do-page-pos.mjs` hỏi thẳng từng page (`orders?page_id=X` lọc ĐÚNG — kiểm
+  653/653 page, 0 đơn lạc). Đọc 50 đơn mới nhất mỗi page, cửa sổ 90 ngày:
+  | | page | /653 |
+  |---|---|---|
+  | có đơn (bất kể ngày) | 549 | 84,1% |
+  | CHƯA có đơn nào | 104 | 15,9% ⛔ gán tay |
+  | có đơn nhưng tên biến thể THIẾU số hiệu | 175 | 26,8% ⛔ |
+  | đơn cuối đã quá 90 ngày (nguội) | 225 | ⛔ đừng gán theo lịch sử cũ |
+  | **bán 1 SP trong 90 ngày** | 115 | 17,6% |
+  | nhiều SP, 1 cái ≥80% | 27 | 4,1% |
+  | bán lẫn thật | 67 | 10,3% ⚠️ người quyết |
+  ⇒ **~142/653 page (21,7%) máy đề xuất được**; 559 page còn sống ⇒ phần còn lại là việc NGƯỜI.
+  ⚠️ **Tự kiểm theo án lệ #35 và nó bắt được lỗi thật:** 55/115 page «bán 1 SP» chạm trần 50
+  đơn ⇒ đọc sâu lại 55 page ấy (tới 600 đơn) ⇒ **21 page lộ thêm SP**. 19 ca chỉ là đơn lạc
+  (áp đảo ≥96%, không đổi kết luận), nhưng 2 ca đổi HẲN:
+  · `Kreain Nature PH in Saudi` — 50 đơn nói SP `205`; 500 đơn nói `121:291 / 205:149` ⇒ **50
+    đơn gọi SAI TÊN sản phẩm chính**. Gán theo nó thì bot tư vấn sai giá cho khách.
+  · `FlexiCare Joint Gel Saudi` — đọc 356 đơn mà 90 ngày chỉ có 2 đơn ⇒ không đủ cơ sở gán.
+  📌 Bài học bổ sung cho #35: đọc mỏng không chỉ THIẾU dữ liệu, nó **gọi sai tên** — và sai
+     ở đúng chỗ dẫn tới sai giá bán. Mọi page chạm trần cửa sổ đọc phải bị đánh dấu
+     «CHƯA KIỂM», không được đưa vào câu `UPDATE` gợi ý.
+  ➜ `ops/bin/goi-y-gan-page.mjs` đã đánh dấu LẠC HẬU ngay đầu tệp (mẫu số của nó là tập con
+     tình cờ lọt cửa sổ đọc, nên mọi số nó in đều sai cùng một hướng).
+
+- 16/09 · ✅ **ĐÃ VÁ HỆ SỐ TỆ — nợ 🔴 15/09 ĐÓNG. Người quyết xác nhận: POS hiện `10.9`.**
+  Điều kiện mà §9 tự đặt («xác nhận rồi mới mở phiếu vá, kèm bộ ca đối chiếu giá ↔ `cod` từng
+  thị trường») đã đủ. Đo thêm để khỏi suy từ một tệ — đọc 100 đơn mới nhất mỗi shop:
+  | thị trường | `cod` thật | ÷100 | ÷1000 | bảng khai cũ |
+  |---|---|---|---|---|
+  | Kuwait | 990·1090·1290·1890 | **9,90·10,90·12,90·18,90** ✓ | 0,99·1,09 ✘ | `1000` ✘ |
+  | Oman | 1000·1100·1200·2900 | **10·11·12·29** ✓ | 1,0·1,2 ✘ | `1000` ✘ |
+  | Bahrain | 1100·1200·1800·2800 | **11·12·18·28** ✓ | 1,1·1,8 ✘ | `1000` ✘ |
+  | Saudi · UAE · Qatar | 6900…19900 | **69…199** ✓ | 6,9…19,9 ✘ | `100` ✓ |
+  Neo tuyệt đối: page `Healthy Figure PH in Kuwait` hiện **10.9 KWD**, `cod` đúng đơn đó =
+  **1090**. ⇒ **POS lưu ×100 cho MỌI tệ**, không theo ISO 4217.
+  📌 Vì sao lỗi sống lâu: KWD·OMR·BHD thật sự có 3 chữ số thập phân, và **người Kuwait viết
+  giá 3 số lẻ** («13,900 KD» = 13,9 KD). Nên `1000` vừa đúng chuẩn tệ vừa đúng cách người
+  viết — chỉ sai ở cách POS LƯU. Hai quy ước, không được gộp: «13,900 KD» → 13,9 → ×100 →
+  `cod` 1390. `parseOffers` bóc ở 3 số lẻ là ĐÚNG, đừng sửa theo.
+  **ĐÃ SỬA** `src/pos/tao-don.js` `HE_SO_TE`: KWD·OMR·BHD 1000→100, kèm khối chú thích mang
+  toàn bộ số đo. Bộ ca mới `test/he-so-te-doi-chieu-don-that.test.js` (5 ca, known-answer,
+  KHÔNG gọi mạng): H1 đối chiếu mọi mức `cod` thật ↔ khoảng tiền hợp lý từng thị trường ·
+  **H2 là ca đo SỨC BẮT** — dựng lại hệ số cũ và đòi nó bị bắt ≥15 lần, kẻo H1 xanh vì
+  khoảng quá rộng chứ không vì hệ số đúng · H3 neo `10,9 KWD ⇔ 1090` · H4 chặn lượt thêm tệ
+  mới theo chuẩn ISO (đếm TỪ NGUỒN, án lệ #22) · H5 tệ lạ ⇒ null.
+  **BỐN THƯỚC ĐANG BẢO VỆ LỖI — đã sửa cả bốn** (án lệ #27 «đổi luật thì đổi thước»):
+  `l3-m4-hang-cho:150` KWD 10→10000 · `l3-m4-duyet:230` `doiSangDonViNho(12,KWD)`→12000 ·
+  `va-r2:172` KWD 15→15000 · `va-r2:149` neo `bang.some(x=>x.includes("×1000"))` — neo này
+  CHẾT THEO phiếu vá, nên tôi giữ Ý ĐỒ («quét nhiều tệ») và đổi phép đo sang đếm từ
+  `Object.keys(HE_SO_TE).length` (án lệ ②+④).
+  ⚠️ Lượt grep đầu của tôi bỏ sót `va-r2:172` vì mẫu tìm `1000` không khớp `15000`.
+  📌 Án lệ: tìm hằng số sai bằng grep GIÁ TRỊ là tìm thiếu — phải quét theo TÊN TỆ kèm mọi
+  số, rồi soi từng dòng. Bộ ca chỉ xanh trọn sau lượt quét thứ hai.
+  **CÒN NỢ, KHÔNG SỬA ĐƯỢC Ở PHIẾU NÀY** — cả hai trong 62 tệp phẳng CẤM SỬA (luật 4 §0a):
+  · 🔴 `src/pancake-orders.js:162` `CCY_FACTOR` — đường tạo đơn **v1**, vẫn ×1000;
+  · 🟡 `src/admin.js:369` `CCY_DIV` — đường **HIỂN THỊ**, nó CHIA 1000 ⇒ dashboard đang hiện
+    tiền Kuwait·Oman·Bahrain **NHỎ ĐI 10 LẦN**. Lỗi này chưa ai ghi, tôi thấy khi quét.
+  Hai bản chép ấy sai, bảng ở `src/pos/tao-don.js` đúng — **đừng "đồng bộ" ngược lại.**
+  Bộ ca: 1772 ca · 1769 xanh · **1 đỏ = D7** (đỏ có sẵn, không liên quan tiền).
+
+- 16/09 · 🟡 **D7 ĐỎ VÌ THƯỚC, KHÔNG VÌ MÃ — và lý do là ảnh chụp dev.**
+  `test/l0-m1-di-tru.test.js:172` đòi «ít nhất một page lạc phải là page ĐANG BẬT AI». Trên
+  máy dev `ai-enabled.json` là `[]` ⇒ tiền đề KHÔNG THỂ đúng, ca đỏ bất kể mã. Cổng phát hành
+  đếm 2 ca đỏ, lượt chạy tay đếm 1 ⇒ bộ ca còn CHẬP CHỜN, chưa ổn định.
+  ➜ NÊN: ca này phải tự dựng dữ liệu (một page vừa `lost` vừa bật AI) thay vì đọc tệp thật —
+  đúng án lệ #1 `tho-thi-cong` «cái thước cũng phải qua cổng». Chưa sửa: ngoài phạm vi phiếu
+  vá tiền, và sửa ca của phiếu khác là án lệ #25.
+
 ═══════════════════════════════════════════════════════════════════════════════
+
+- 16/09 · **AUDIT TOÀN HỆ + QUÉT 719 HỘI THOẠI THẬT** — nợ mở, xếp theo tiền:
+
+  🔴 **N-HOÀN (lớn nhất về tiền, HOÃN theo lệnh người quyết 16/09).** Đo 4.423 đơn POS 60
+  ngày / 14 page: hoàn+huỷ (mã 4·5·6·7) **Saudi 40,6%** (1.269/3.122) vs **UAE 20,4%**
+  (252/1.236) vs Kuwait 13,8%. Cùng sản phẩm, cùng kịch bản: Golden Soap KSA 41,8% vs
+  Golden Soap UAE 20,9%. Với phí ship hai chiều ~25 SAR/đơn (**chưa xác nhận với team**)
+  thì riêng 14 page là ~38k SAR/60 ngày — lớn hơn **hai bậc** so với toàn bộ tiền token từ
+  trước tới nay (1,03 triệu VNĐ). Ba việc đã thiết kế nhưng chưa mở phiếu: Order Assistant
+  trả lời «khi nào giao» từ POS (0 token, `ordersForConv` đã có) · nối `orders/ti-le-hoan.js`
+  vào cửa 5 hàng chờ · xác nhận trước giao cho KSA. **Mở lại sau sóng BH.**
+
+  🔴 **N-C5 (chặn cutover v3).** `src/chat/rap-prompt.js:122` tra sản phẩm bằng
+  `san_pham.page_id`, mà migration 015 tự khai cột đó **NULL cho mọi dòng, luôn luôn**
+  ⇒ bật `V3_RAP_PROMPT_BAT=1` hôm nay là **mọi page rơi `noData` → bàn giao 100%**. Vá
+  đúng: tra qua `page.san_pham_goc_ma` (015 đã dựng cột). Trùng RF-15.
+
+  🟠 **N-INVIS.** 146/719 hội thoại (**20,3%**) có tin page mang ký tự vô hình
+  U+E0000–E01EF — kỹ thuật né bộ lọc trùng của Meta, phát ra từ **công cụ RTO/broadcast
+  khác**, không phải bot này (91 hội thoại mang chuỗi «hello, your order has been
+  created…»). `outbound-guard.js:187` đã chặn đúng loại này ở chiều RA và gắn cờ «rủi ro
+  mất page» — nhưng không ai soi chiều ĐỌC. Việc rẻ: quét hằng ngày, báo page nào bị bơm.
+
+  🟠 **N-SEND.** `PANCAKE_READONLY` kiểm ở vòng poll (`pancake-poll.js:229`) chứ không ở
+  primitive: `pancake.js` `messenger.js` `pancake-orders.js` có **0 dòng** nhắc biến này.
+  Hai đường đi vòng: `POST /webhook → server.js:112 processMessage → sendText`, và
+  `POST /admin/api/conversation/:psid/send` (`admin.js:347`). BH1 đặt `assertCanSend()` ở
+  `src/core/van-gui.js` và gọi từ `tools.js`; **`pkSendReply` của `pancake-poll.js` vẫn hở**
+  — cần mở thêm 2 file cấm, chờ người quyết (phiếu BH1b).
+
+  🟠 **N-HOOK (BH1 phát hiện).** `.claude/hooks/` bị loại khỏi git bằng
+  `.git/info/exclude:11` ⇒ **hook KHÔNG đi theo repo**. Luật 4 bản 16/09 đã sửa ở sổ và ở
+  cổng `_chan1.sh` (cả hai có trong commit), nhưng bản hook trên MÁY KHÁC vẫn là bản cũ và
+  sẽ CHẶN lượt Edit vào năm file bộ não. Ai lấy repo về mà thấy bị chặn: sửa
+  `.claude/hooks/canh-file-cam.sh` theo §0a luật 4 — hoặc ta bỏ dòng exclude đó để hook
+  thành tài sản chung. Cần người quyết chọn.
+
+  🟡 Nợ nhỏ đã đo, chưa phiếu: `admin.js:97 /token-cost` bỏ `cwrite` ⇒ lệch `economics.js`
+  (hai màn tiền nói hai số) · vé phiên v3 HMAC 8h **không thu hồi được** (`v3/src/auth/ve.js:19`,
+  logout chỉ xoá cookie) · thiếu index `hang_cho_tao_don(team,hoi_thoai_id,du_lieu_don->>'tin_id')`
+  và `nhat_ky(team,doi_tuong,doi_tuong_id)` — cái sau bị quét TOÀN BẢNG trước **mỗi** POST
+  POS (`pos/tao-don.js:303`) · FK composite 014:74/015:40 dùng `ON DELETE SET NULL` không kê
+  cột ⇒ nulls cả `team_id NOT NULL` ⇒ lỗi thay vì gỡ liên kết · `db/migrate.js` không
+  checksum, không advisory lock.
+
+  🧭 **Án lệ: dữ liệu bác thiết kế, và dữ liệu thắng.** Bốn luật trong `CORE` đang dạy
+  NGƯỢC với số đo (ép chốt bằng lựa chọn · gửi nhiều ảnh · cấm checklist · tin dài). Không
+  ai viết sai — chúng được viết khi chưa có phép đo nào cho «nói khéo». Bài học cho phiếu
+  sau: **luật hành vi phải kèm thước ngay từ lúc viết**, nếu không nó sống mãi bằng niềm tin.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -1821,3 +2088,28 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   kết luận mối nối page↔sản phẩm đã có. Cột tồn tại; giá trị thì không. Phép đo đúng không
   phải «có cột đó không» mà là «bao nhiêu dòng có giá trị, và điều kiện để nó có giá trị có
   xảy ra không». Ở đây điều kiện là «shop có đúng 1 page» — chưa bao giờ đúng với shop nào.
+
+- 16/09 · **BH1 (giá SERVER tính · khoá CLOSING · van READONLY)** → ✅ — cổng `bh1.sh` 10/10 ·
+  bộ ca `test/bh1-gia-va-cua-chot.test.js` 26/26 · `npm test` 1795/1798 (D7 đỏ sẵn, đo 2 lượt).
+  **ĐẢO-VÁ:** lùi 3 file về bản cũ → **5 ca đỏ** (G1-tool · G2-tool-b · G5 · G6 · G7c), khôi
+  phục → 26/26. Thước có răng, không phải xanh rỗng.
+  Lõi chung mới: `src/core/gia.js` (`tinhTong` — model ĐỀ NGHỊ, server QUYẾT) và
+  `src/core/van-gui.js`. `outbound-guard#allowedPrices` nay gọi xuống lõi ⇒ chiều RA và
+  chiều TẠO ĐƠN dùng **một** bảng giá, không hai bản.
+  · nhật ký `docs/thi-cong/nhat-ky/phieu-bh1.md`
+- 16/09 · 🧭 **THỨ TỰ CỬA LÀ MỘT QUYẾT ĐỊNH VỀ TIỀN, KHÔNG PHẢI VỀ THẨM MỸ.** Cửa tiền vốn
+  đứng SAU `conversationHasOrder` — cửa duy nhất đi mạng (quét tới 6 trang đơn POS). Đo được
+  khi viết bộ ca: ca «giá sai → phải từ chối» chạy **34.842 ms** ở bản cũ, **0,58 ms** ở bản
+  mới; ca «hội thoại đã chốt» 28.504 ms → 0,05 ms. Tức mỗi lượt chốt đơn bị từ chối đang tốn
+  một vòng POS vô ích, và bộ ca nào chạm nhánh đó là chạm API thật.
+  📌 Luật: cửa CỤC BỘ luôn đứng trước cửa MẠNG. Phép ⑤ của `bh1.sh` neo thứ tự bằng số dòng.
+- 16/09 · 🧭 **LUẬT HÀNH VI SỐNG Ở BA CHỖ: sổ · cổng · hook.** Sửa §0a luật 4 xong vẫn bị
+  `.claude/hooks/canh-file-cam.sh` từ chối lượt Edit đầu tiên — hook đang thi hành bản luật
+  cũ. Đổi một chỗ mà quên hai chỗ kia thì luật mới chỉ là chữ trong sổ.
+  📌 Ai đổi luật 4 lần sau: sửa ĐỦ BA nơi trong CÙNG một lượt.
+- 16/09 · 🧭 **THƯỚC BẮT NHẦM CHÚ THÍCH.** Cổng `bh1.sh` lượt đầu đỏ 3 phép, cả ba là lỗi của
+  chính cổng: ③ đếm chuỗi thô `productTiers` nên đỏ vì một dòng CHÚ THÍCH nhắc tên hàm (thước
+  kiểu này dạy người ta xoá chú thích) · ④b đếm sai vì một file có cả import lẫn chú thích ·
+  ⑧ kiểm pathspec bằng `git diff HEAD` nên bắt nhầm file chưa commit của phiên khác — đã BỎ
+  hẳn phép ⑧ vì `_chan1.sh` ④ so `base..HEAD` và làm đúng hơn. Neo phải trỏ vào CODE
+  (`^import …`), không trỏ vào văn bản.

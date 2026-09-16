@@ -49,3 +49,7 @@ ban-giao-noi-bo-*/
 
 # Gói quy trình dây chuyền AI — tài liệu nội bộ, không push (bản cài đã nằm ở .claude/skills/)
 goi-day-chuyen-ai*/
+
+# Mẫu hội thoại cho thước đường bán (ops/bin/do-duong-ban.mjs) — dữ liệu khách THẬT,
+# đã che SĐT/tên nhưng vẫn là dữ liệu khách. KHÔNG commit.
+mau-duong-ban.json

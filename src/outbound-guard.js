@@ -12,7 +12,9 @@
 // THUẦN LUẬT, không gọi LLM, chạy dưới 1ms. Trả verdict, KHÔNG tự sửa tin —
 // người gọi quyết định: xin model viết lại (action='rewrite') hay im (action='block').
 
-import { productTiers } from './kb.js';
+// BH1: tập giá nay dựng ở lõi chung (`src/core/gia.js`) — file này không còn tự đọc
+// `productTiers` nữa, xem ghi chú tại `allowedPrices`.
+import { giaHopLe } from './core/gia.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tiện ích
@@ -88,12 +90,14 @@ export function extractMoney(text) {
 }
 
 // Tập giá HỢP LỆ của page = mọi mức giá gói trong KB. Không có gói nào → không kiểm được.
+//
+// BH1 (16/09): thân hàm chuyển xuống `src/core/gia.js#giaHopLe` — cùng một tập giá nay
+// phục vụ CẢ HAI chiều: chiều RA (luật 4 dưới đây, chặn tin nói sai giá) và chiều TẠO ĐƠN
+// (`tools.js` → `tinhTong`). Giữ hai bản dựng tập giá là giữ hai sự thật, và bản thứ hai
+// bao giờ cũng là bản trôi. Chữ ký + kiểu trả về KHÔNG đổi (`Set<number>`) nên mọi nơi
+// gọi (`order-bridge.js:116`, `l8-botcake-rules`, `l7-miner-order`) chạy y như cũ.
 export function allowedPrices(kb) {
-  const set = new Set();
-  for (const p of (kb?.products || [])) {
-    for (const t of productTiers(p)) if (t.price > 0) set.add(Number(t.price));
-  }
-  return set;
+  return giaHopLe(kb);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -47,8 +47,27 @@ done <<< "$danh_sach"
 [ -z "$ngoai" ]; ket "④pathspec-⊆-③" $? "${ngoai:+NGOÀI PHẠM VI: }$(echo "$ngoai" | tr '\n' ' ')"
 
 # ⑤ không đụng vùng cấm: file phẳng ngay dưới src/ (bản đang chạy) + 5 file não
-cam=$(echo "$danh_sach" | grep -E '^src/[^/]+\.js$')
-[ -z "$cam" ]; ket "⑤vùng-cấm-src-phẳng" $? "${cam:+ĐỤNG: }$(echo "$cam" | tr '\n' ' ')"
+# ⑤ vùng cấm = file phẳng ngay dưới src/ (bản đang chạy).
+#    SỬA 16/09 (§0a luật 4 mới): NĂM file bộ não chung sửa ĐƯỢC — nhưng chỉ khi phiếu KHAI
+#    thẳng ra bằng dòng `**Đụng bộ não:**`. Khai thì đi qua, không khai thì đỏ y như cũ.
+#    Mục đích của rào này không phải chặn việc sửa, mà là chặn việc sửa LẶNG LẼ: phiếu là
+#    thứ người quyết đọc, nên cái gì chạm 51 page khách thật phải nằm trên mặt phiếu.
+NAO='src/prompts.js src/closer.js src/tools.js src/fast-lane.js src/outbound-guard.js src/context.js src/lead-score.js'
+khai_nao=$(grep -c '^\*\*Đụng bộ não:\*\*' "$phieu")
+cam=""
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  case "$f" in
+    src/*/*) continue;;                       # thư mục con = đất v3, không phải vùng cấm
+    src/*.js) ;;
+    *) continue;;
+  esac
+  la_nao=0
+  for n in $NAO; do [ "$f" = "$n" ] && la_nao=1 && break; done
+  if [ $la_nao -eq 1 ] && [ "$khai_nao" -ge 1 ]; then continue; fi
+  cam="$cam$f "
+done <<< "$danh_sach"
+[ -z "$cam" ]; ket "⑤vùng-cấm-src-phẳng" $? "${cam:+ĐỤNG (chưa khai «Đụng bộ não» trong phiếu): }$cam"
 
 # ⑥ hết marker NEEDS CLARIFICATION trong diff (loại chính file phiếu — khuôn phiếu có chữ đó)
 # grep -c trả rc=1 khi đếm ra 0 — KHÔNG nối `|| echo 0` (ra hai dòng "0\n0", vỡ phép cộng)

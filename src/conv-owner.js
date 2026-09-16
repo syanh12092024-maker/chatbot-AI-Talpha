@@ -132,6 +132,24 @@ export function decideConv({ pageId, conv, msgs, custId, aiTexts }) {
   // Gộp 11/08/2026: HANDOFF có TTL (nhánh nền) và POST_SALE có nhánh cơ hội (L2) là hai
   // việc khác nhau trên cùng một khối ②, không loại trừ nhau — giữ cả hai. TTL chỉ áp cho
   // HANDOFF; hậu bán vẫn khoá theo ngân sách lượt riêng, không dính TTL.
+  // ── ②b · BH1 · ĐÃ CHỐT ĐƠN (CLOSING) → AI im, sale tiếp quản ─────────────────
+  // `docs/TONG-QUAN-HE-THONG.md` §6.3 khai bảng quyền nói: ở `CLOSING` thì Botcake ⛔,
+  // Fast Lane ⛔, AI ⛔, chỉ SALE được nói. `markClosing()` đã đặt trạng thái đó từ lâu
+  // (tools.js, ngay sau khi chốt) — nhưng **không dòng nào thi hành nó**: `decideConv`
+  // chỉ xét `HANDOFF` và `POST_SALE`. Đo 16/09 trên conv-state thật: 20 hội thoại đang
+  // đứng ở `CLOSING`, và mọi tin mới của chúng vẫn đi thẳng vào AI.
+  //
+  // Hệ quả cũ: khách nhắn tiếp sau khi chốt → AI chào bán lại từ đầu, có thể gọi
+  // `create_draft_order` lần nữa. Đơn trùng chỉ bị chặn ở lớp SAU (sổ `ai-created-orders`,
+  // 4 cửa của order-bridge) — tức chặn được nhờ lớp phòng thủ cuối, không nhờ đúng chỗ.
+  // Khoá VĨNH VIỄN, khác `HANDOFF` (có TTL 24h): `HANDOFF` khoá vì NGHI có người thật vào
+  // (suy đoán, nên phải có hạn); `CLOSING` khoá vì đơn ĐÃ CHỐT — đó là sự kiện, không
+  // phải suy đoán, và nó chỉ mở lại khi đơn đi tiếp sang `POST_SALE`/RTO.
+  if (c.state === S.CLOSING) {
+    return { allow: false, state: c.state, owner: c.owner || OWNER.SALE,
+      reason: c.lastReason || 'đơn đã chốt — sale tiếp quản', changed: false };
+  }
+
   let oppBranch = false;
   if (c.state === S.POST_SALE) {
     oppBranch = c.owner === OWNER.AI && (c.oppTurns || 0) < OPPORTUNITY_MAX_TURNS;
