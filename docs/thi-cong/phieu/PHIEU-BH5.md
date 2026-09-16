@@ -1,6 +1,6 @@
 # PHIẾU BH5 — Soi LỖ HỔNG kiến thức của page: câu khách hỏi mà KB không trả lời được
 
-**Base:** `0c6c1ed` · **Làn:** 🟩 (chỉ ĐỌC + sinh báo cáo, không đụng đường chat) · thợ **sonnet**
+**Base:** `22561be` · **Làn:** 🟩 (chỉ ĐỌC + sinh báo cáo, không đụng đường chat) · thợ **sonnet**
 **Đụng bộ não:** không.
 
 > Thợ nạp `tho-thi-cong`. Phụ thuộc: KHÔNG. Chạy song song mọi phiếu khác.

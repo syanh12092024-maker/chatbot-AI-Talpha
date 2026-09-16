@@ -1,6 +1,6 @@
 # PHIẾU BH3 — Bot NÓI NHƯ NGƯỜI: tin ngắn lại, bỏ câu ép chốt, chặn 5 mẫu câu giết hội thoại
 
-**Base:** `<sha sau khi BH1 xong>` · **Làn:** 🟥 (đổi TRỰC TIẾP cách bot nói với 51 page
+**Base:** `22561be` · **Làn:** 🟥 (đổi TRỰC TIẾP cách bot nói với 51 page
 khách thật) · thợ **opus**
 **Đụng bộ não:** `src/prompts.js` `src/closer.js` `src/outbound-guard.js` `src/tools.js`
 — đây là phiếu về CÁCH NÓI, mà cách nói nằm trọn trong bốn file này.

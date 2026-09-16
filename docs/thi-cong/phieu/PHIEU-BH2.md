@@ -1,6 +1,6 @@
 # PHIẾU BH2 — Hồ sơ khách ĐỌC ĐƯỢC Ý: nhu cầu · đã hỏi · đã từ chối · sẵn sàng mua
 
-**Base:** `0c6c1ed` · **Làn:** 🟨 (chỉ đổi NGỮ CẢNH đưa vào model, không mở đường gửi)
+**Base:** `22561be` · **Làn:** 🟨 (chỉ đổi NGỮ CẢNH đưa vào model, không mở đường gửi)
 · thợ **sonnet**
 **Đụng bộ não:** `src/context.js` — hồ sơ khách sống ở đây, và đây là file cả v2 lẫn v3
 cùng gọi (`handler.js:16`, `handler-v3.js:68-73`).

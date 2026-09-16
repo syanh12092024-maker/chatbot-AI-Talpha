@@ -1,6 +1,6 @@
 # PHIẾU BH4 — Ngân sách lượt định cỡ lại theo ĐƯỜNG CHỐT THẬT (7,1 lượt page tới SĐT)
 
-**Base:** `0c6c1ed` · **Làn:** 🟨 (đổi NHỊP tiêu tiền, không mở đường gửi) · thợ **sonnet**
+**Base:** `22561be` · **Làn:** 🟨 (đổi NHỊP tiêu tiền, không mở đường gửi) · thợ **sonnet**
 **Đụng bộ não:** `src/lead-score.js` — bảng điểm và bậc ngân sách nằm trọn ở đây.
 
 > Thợ nạp `tho-thi-cong` + `viet-thuoc`. Phụ thuộc: KHÔNG (pathspec rời hẳn BH1/BH2/BH3).
