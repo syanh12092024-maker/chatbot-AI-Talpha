@@ -196,10 +196,23 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
   // Cửa kiểm đọc MỘT lần cho cả trang, không phải mỗi dòng một lượt.
   const { doc, viSao } = await docCuaKiem();
 
+  // CR-15/09 — sản phẩm GỐC của từng page trong trang. Đọc MỘT mẻ cho cả trang, cùng lý do
+  // với cửa kiểm ở trên: 25 dòng × 1 truy vấn là 25 lượt đi CSDL cho một lần vẽ bảng.
+  const sanPhamGoc = await docSanPhamGocCuaTrang(db, cat);
+  const dsGoc = await db.chon('san_pham_goc', {}, { sapXep: 'ten' });
+
   return {
     page: cat.map((p) => ({
       ...gonPage(p),
       cuaKiem: doc ? gonCuaKiem(doc.get(String(p.page_id))) : null,
+      // Mảng, không phải một giá trị: một page BÁN ĐƯỢC nhiều sản phẩm gốc, và gộp chúng
+      // thành một chuỗi là mất thông tin ngay ở chỗ CR này sinh ra để giữ.
+      sanPhamGoc: sanPhamGoc.get(String(p.id)) || [],
+    })),
+    // Danh mục để màn dựng ô chọn. Rỗng = chưa ai soát gộp (phiếu CR3), và màn phải nói
+    // đúng câu đó chứ không hiện một ô chọn trống không lý do.
+    sanPhamGocChonDuoc: dsGoc.map((g) => ({
+      maGoc: g.ma_goc, ten: g.ten || g.ma_goc, soHieu: g.so_hieu || null,
     })),
     cuaKiemDocDuoc: !!doc,
     cuaKiemViSao: viSao,
@@ -210,6 +223,45 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
     dem: demTheoLoc(tatCa),
     trong: cat.length ? null : viSaoRong({ soTong: tatCa.length, loc, tim }),
   };
+}
+
+/**
+ * Sản phẩm GỐC của từng page trong trang (CR-15/09) → Map<pageId, [{maGoc, ten, soBienThe}]>.
+ *
+ * Đọc `san_pham` của cả trang MỘT mẻ rồi gộp ở tầng JS. Biến thể chưa ai gộp (`ma_goc` null)
+ * bị bỏ qua ở đây — nhưng KHÔNG im lặng: `soBienTheChuaGop` đếm chúng, để màn nói được
+ * «page này có 3 biến thể mà chưa cái nào gộp» thay vì hiện một ô trống.
+ */
+async function docSanPhamGocCuaTrang(db, cat) {
+  const ra = new Map();
+  if (!cat.length) return ra;
+  const ids = cat.map((p) => String(p.id));
+  const sp = await db.chon('san_pham', { page_id: ids });
+  const ten = new Map();
+  for (const g of await db.chon('san_pham_goc', {})) ten.set(g.ma_goc, g.ten || g.ma_goc);
+
+  for (const pid of ids) ra.set(pid, []);
+  const dem = new Map(); // pageId → Map<maGoc, số biến thể>
+  const chuaGop = new Map();
+  for (const r of sp) {
+    const pid = String(r.page_id);
+    if (!ra.has(pid)) continue;
+    if (!r.ma_goc) { chuaGop.set(pid, (chuaGop.get(pid) || 0) + 1); continue; }
+    if (!dem.has(pid)) dem.set(pid, new Map());
+    const m = dem.get(pid);
+    m.set(r.ma_goc, (m.get(r.ma_goc) || 0) + 1);
+  }
+  for (const [pid, m] of dem) {
+    ra.set(pid, [...m.entries()]
+      .map(([maGoc, soBienThe]) => ({ maGoc, ten: ten.get(maGoc) || maGoc, soBienThe }))
+      .sort((a, b) => a.ten.localeCompare(b.ten)));
+  }
+  for (const [pid, n] of chuaGop) {
+    const ds = ra.get(pid) || [];
+    ds.soBienTheChuaGop = n; // gắn vào mảng, màn đọc được mà không đổi hình dạng phần tử
+    ra.set(pid, ds);
+  }
+  return ra;
 }
 
 /** Chỉ trả ra thứ màn hình dùng. `page.id` để gọi API, `page_id` là id Facebook để người đọc. */

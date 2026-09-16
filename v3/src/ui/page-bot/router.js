@@ -8,6 +8,7 @@
 // | POST   /api/page-bot/:id/thi-truong | đặt thị trường        (CSDL v3, di trú không xoá)|
 // | POST   /api/page-bot/:id/nganh-hang | đặt ngành hàng        (CSDL v3, di trú không xoá)|
 // | POST   /api/page-bot/:id/botcake    | LỜI KHAI «đã tắt Botcake» — KHÔNG tắt Botcake    |
+// | POST   /api/page-bot/:id/san-pham-goc| gán sản phẩm GỐC (CR-15/09) — ghi lên `san_pham`|
 //
 // Page của team khác → **404**, không phải 403 (403 xác nhận dòng đó có thật ở team khác).
 
@@ -20,7 +21,7 @@ import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { danhSachPage, LOC, CHU_LOC, MOI_TRANG, LoiPageBot } from './kho-page.js';
 import {
   datCongTacBot, ganMarketer, datTrongDiem, trangThaiCau,
-  datThiTruong, datNganhHang, datBotcakeTat,
+  datThiTruong, datNganhHang, datBotcakeTat, ganSanPhamGoc,
   VAI_SUA_DUOC, CANH_BAO_MARKETER, PHIEU_MARKETER,
 } from './cong-tac.js';
 
@@ -185,6 +186,11 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 
   r.post('/api/page-bot/:id/botcake', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
     const kq = await datBotcakeTat(cuaBoiCanh(req), req.params.id, laBat(req.body?.bat));
+    res.json({ ok: true, ...kq });
+  }));
+
+  r.post('/api/page-bot/:id/san-pham-goc', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    const kq = await ganSanPhamGoc(cuaBoiCanh(req), req.params.id, req.body?.maGoc);
     res.json({ ok: true, ...kq });
   }));
 

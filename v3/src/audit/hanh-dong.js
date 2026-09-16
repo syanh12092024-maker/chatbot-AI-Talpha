@@ -90,6 +90,11 @@ export const HANH_DONG = Object.freeze({
   // Cùng họ CẤP QUYỀN với `them_thanh_vien`: một dòng `nguoi_dung` mới là một người mới
   // đăng nhập được vào hệ. Mất dấu ở đây là mất câu trả lời «ai mở tài khoản này».
   TAO_NGUOI_DUNG: 'tao_nguoi_dung',
+
+  // ── CR-15/09 ──
+  // Gán sản phẩm GỐC cho page. Đổi nó là đổi KỊCH BẢN page ấy đọc (bộ giải ba tầng tra theo
+  // mã gốc), tức đổi cách bot nói với khách — nên phải có dấu.
+  GAN_SAN_PHAM_GOC: 'gan_san_pham_goc',
 });
 
 /** Nhóm để màn hình xếp bộ lọc thành từng cụm, không phải để module này dùng. */
@@ -110,6 +115,7 @@ export const NHOM = Object.freeze({
   page_bot: Object.freeze([
     HANH_DONG.BAT_TAT_BOT_AI, HANH_DONG.GAN_MARKETER, HANH_DONG.DAT_TRONG_DIEM,
     HANH_DONG.DAT_THI_TRUONG, HANH_DONG.DAT_NGANH_HANG, HANH_DONG.BAT_TAT_BOTCAKE,
+    HANH_DONG.GAN_SAN_PHAM_GOC,
   ]),
   ket_noi: Object.freeze([
     HANH_DONG.THEM_TOKEN_PANCAKE, HANH_DONG.BO_TOKEN_PANCAKE, HANH_DONG.NAP_LAI_DU_LIEU,
@@ -226,6 +232,7 @@ const MO_TA = Object.freeze({
   [HANH_DONG.DAT_NGANH_HANG]: 'Đặt ngành hàng cho page',
   [HANH_DONG.BAT_TAT_BOTCAKE]: 'Đánh dấu page đã tắt Botcake',
   [HANH_DONG.TAO_NGUOI_DUNG]: 'Tạo người dùng mới',
+  [HANH_DONG.GAN_SAN_PHAM_GOC]: 'Gán sản phẩm gốc cho page',
 });
 
 /** Chữ tiếng Việt cho màn hình. Mã lạ → trả lại chính mã, kèm một tiếng kêu ở console. */

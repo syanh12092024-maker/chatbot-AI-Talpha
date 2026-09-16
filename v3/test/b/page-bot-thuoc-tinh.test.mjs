@@ -44,6 +44,14 @@ function dungKho() {
         nganh_hang: '', marketer: '', bot_ai_bat: false, botcake_tat: false,
         trong_diem: false, mat_dau: false },
     ],
+    san_pham_goc: [
+      { id: 'g1', team_id: 't1', ma_goc: 'fitgum-acai-berry', ten: 'Fitgum Acai Berry', so_hieu: '125' },
+    ],
+    san_pham: [
+      { id: 's1', team_id: 't1', page_id: 'p1', ma: '111:a', ten: 'SP A', ma_goc: null },
+      { id: 's2', team_id: 't1', page_id: 'p1', ma: '111:b', ten: 'SP B', ma_goc: null },
+      { id: 's9', team_id: 't2', page_id: 'p9', ma: '999:z', ten: 'SP Z', ma_goc: null },
+    ],
   });
   const nhatKy = [];
   kp.datTaoTruyVan(taoTruyVan);
@@ -202,4 +210,67 @@ test('MARKETER · cột vẫn nằm trong COT_SUA_DUOC vì cửa API còn sống
   // vẫn KHÔNG được phép xoá cột. Bỏ ô nhập mà bỏ luôn lớp bảo vệ là mở lại đúng cái lỗ cũ.
   assert.equal(kp.COT_SUA_DUOC.marketer?.benVung, true);
   assert.ok(!kp.COT_BI_DI_TRU_GHI_DE.includes('marketer'));
+});
+
+/* ═══════════ ⑦ GÁN SẢN PHẨM GỐC (CR-15/09) ═══════════ */
+
+test('SẢN PHẨM GỐC · gán ghi lên MỌI biến thể POS của page, không lên bảng `page`', async () => {
+  const { kho, nhatKy } = dungKho();
+  const kq = await ct.ganSanPhamGoc(bcQt(), 'p1', 'fitgum-acai-berry');
+  assert.equal(kq.doi, true);
+  assert.equal(kq.soBienThe, 2, 'page p1 có HAI biến thể — cả hai phải được gán');
+
+  const sp = kho.docThang('san_pham').filter((r) => String(r.page_id) === 'p1');
+  assert.deepEqual(sp.map((r) => r.ma_goc), ['fitgum-acai-berry', 'fitgum-acai-berry']);
+  // Bộ giải ba tầng đọc `san_pham.ma_goc`. Ghi thêm một cột `page.ma_goc` là khai cùng một
+  // sự thật ở hai chỗ, và bản thứ hai bao giờ cũng là bản trôi.
+  assert.ok(!('ma_goc' in dong(kho, 'p1')), 'KHÔNG được đẻ cột ma_goc trên bảng page');
+
+  assert.equal(nhatKy[0].hanhDong, HANH_DONG.GAN_SAN_PHAM_GOC);
+  assert.deepEqual(nhatKy[0].truoc.ma_goc, []);
+  assert.equal(nhatKy[0].sau.so_bien_the, 2);
+});
+
+test('SẢN PHẨM GỐC · mã lạ ⇒ 404 kèm chỉ đường, không ghi gì', async () => {
+  const { kho } = dungKho();
+  await assert.rejects(
+    () => ct.ganSanPhamGoc(bcQt(), 'p1', 'khong-ton-tai'),
+    (e) => e.ma === 'khong_co_san_pham_goc' && e.status === 404
+      && /goi-y-gop-san-pham/.test(e.message),
+  );
+  assert.ok(kho.docThang('san_pham').every((r) => !r.ma_goc), 'từ chối mà vẫn ghi là chặn giả');
+});
+
+test('SẢN PHẨM GỐC · page KHÔNG có biến thể POS ⇒ 409, vì gán là ghi vào hư không', async () => {
+  const { kho } = dungKho();
+  await assert.rejects(
+    () => ct.ganSanPhamGoc(bcQt(), 'p2', 'fitgum-acai-berry'),
+    (e) => e.ma === 'page_chua_co_bien_the' && e.status === 409 && /Kéo dữ liệu về/.test(e.message),
+  );
+  assert.equal(kho.docThang('san_pham').filter((r) => String(r.page_id) === 'p2').length, 0);
+});
+
+test('SẢN PHẨM GỐC · bỏ gán được (chuỗi rỗng ⇒ null), người soát nhầm rút lại được', async () => {
+  const { kho } = dungKho();
+  await ct.ganSanPhamGoc(bcQt(), 'p1', 'fitgum-acai-berry');
+  const kq = await ct.ganSanPhamGoc(bcQt(), 'p1', '');
+  assert.equal(kq.maGoc, null);
+  assert.ok(kho.docThang('san_pham').filter((r) => String(r.page_id) === 'p1')
+    .every((r) => r.ma_goc === null));
+});
+
+test('SẢN PHẨM GỐC · gán lại đúng cái đang có ⇒ KHÔNG ghi nhật ký', async () => {
+  const { nhatKy } = dungKho();
+  await ct.ganSanPhamGoc(bcQt(), 'p1', 'fitgum-acai-berry');
+  const kq = await ct.ganSanPhamGoc(bcQt(), 'p1', 'fitgum-acai-berry');
+  assert.equal(kq.doi, false);
+  assert.equal(nhatKy.length, 1, 'nhật ký đầy tiếng ồn là nhật ký không ai đọc');
+});
+
+test('SẢN PHẨM GỐC · page team khác ⇒ 404 · vai quan-ly ⇒ chặn', async () => {
+  const { kho } = dungKho();
+  await assert.rejects(() => ct.ganSanPhamGoc(bcQt(), 'p9', 'fitgum-acai-berry'),
+    (e) => e.ma === 'khong_thay' && e.status === 404);
+  await assert.rejects(() => ct.ganSanPhamGoc(bcQuanLy(), 'p1', 'fitgum-acai-berry'), /vai|quyền/i);
+  assert.ok(kho.docThang('san_pham').every((r) => !r.ma_goc));
 });

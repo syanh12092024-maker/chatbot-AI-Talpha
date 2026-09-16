@@ -148,7 +148,8 @@ function veBang(d) {
 
   $('#bang').innerHTML = `<table class="data-table"><thead><tr>
       <th scope="col">Page</th><th scope="col">Thị trường · ngành hàng</th><th scope="col">Marketer</th>
-      <th scope="col">Bot</th><th scope="col">Còn thiếu gì</th><th scope="col">Trọng điểm</th>
+      <th scope="col">Bot</th><th scope="col">Còn thiếu gì</th>
+      <th scope="col">Sản phẩm gốc</th><th scope="col">Trọng điểm</th>
       <th scope="col">Đã tắt Botcake</th>
     </tr></thead><tbody>${d.page.map((p) => {
       const ten = p.ten || '(chưa có tên)';
@@ -180,6 +181,7 @@ function veBang(d) {
         </label>
       </td>
       <td>${veCuaKiem(p.cuaKiem)}</td>
+      <td>${veSanPhamGoc(p)}</td>
       <td>
         <label class="switch" ${SUA ? '' : 'title="Cần vai Quản trị"'}>
           <input type="checkbox" role="switch" data-td="${esc(p.id)}" aria-label="Page trọng điểm: ${esc(ten)}"
@@ -207,6 +209,7 @@ function veBang(d) {
   document.querySelectorAll('[data-bot]').forEach((el) => el.addEventListener('change', () => gatBot(el)));
   document.querySelectorAll('[data-td]').forEach((el) => el.addEventListener('change', () => gatTrongDiem(el)));
   document.querySelectorAll('[data-bc]').forEach((el) => el.addEventListener('change', () => gatBotcake(el)));
+  document.querySelectorAll('[data-spg]').forEach((el) => el.addEventListener('change', () => luuSanPhamGoc(el)));
   for (const [thuoc, duong, ten, khoa] of [
     ['data-tt', 'thi-truong', 'thị trường', 'thiTruong'],
     ['data-nh', 'nganh-hang', 'ngành hàng', 'nganhHang'],
@@ -275,6 +278,52 @@ async function luuNhan(el, { duong, ten, khoa }) {
   } catch (e) { el.value = el.defaultValue || ''; baoLoi(`Không lưu được ${ten}`, e.message); }
 }
 
+// ── SẢN PHẨM GỐC (CR-15/09) ───────────────────────────────────────────────────────
+// Cột này là thứ làm kịch bản dùng chung được cho nhiều thị trường: hai page bán cùng một
+// sản phẩm gốc thì đọc CÙNG một bản kịch bản, không phải chép tay hai lần.
+let SPG_CHON = [];
+
+function veSanPhamGoc(p) {
+  const ds = p.sanPhamGoc || [];
+  const chuaGop = ds.soBienTheChuaGop || 0;
+  if (!SUA) {
+    return ds.length ? ds.map((g) => esc(g.ten)).join(', ') : '<span class="text-muted">—</span>';
+  }
+  if (!SPG_CHON.length) {
+    // Rỗng vì CHƯA AI SOÁT GỘP, không phải vì page thiếu gì. Hai câu đó dẫn người đọc đi hai
+    // hướng khác nhau, nên phải nói đúng câu (bài học «màn rỗng phải nói vì sao rỗng»).
+    return '<span class="text-muted" title="Chạy ops/bin/goi-y-gop-san-pham.mjs rồi soát">'
+      + 'chưa có sản phẩm gốc nào</span>';
+  }
+  // Page có >1 sản phẩm gốc: KHÔNG cho sửa ở đây. Ô chọn một giá trị không diễn tả được
+  // «page này bán hai sản phẩm», và gộp hộ thành một là mất thông tin.
+  const nhieu = ds.length > 1;
+  const dangChon = ds.length === 1 ? ds[0].maGoc : '';
+  const chu = nhieu
+    ? 'Page này có ' + ds.length + ' sản phẩm gốc — màn không gộp hộ'
+    : (chuaGop ? chuaGop + ' biến thể POS chưa gộp' : '');
+  return `<select class="cell-input" data-spg="${esc(p.id)}" data-truoc="${esc(dangChon)}"
+      ${nhieu ? 'disabled' : ''} title="${esc(chu)}">
+    <option value="">${nhieu ? esc(ds.map((g) => g.ten).join(', ')) : '— chưa gán —'}</option>
+    ${SPG_CHON.map((g) => `<option value="${esc(g.maGoc)}"${g.maGoc === dangChon ? ' selected' : ''}>${esc(g.ten)}${g.soHieu ? ' · ' + esc(g.soHieu) : ''}</option>`).join('')}
+  </select>${chuaGop && !nhieu ? `<div class="meta">${so(chuaGop)} biến thể chưa gộp</div>` : ''}`;
+}
+
+async function luuSanPhamGoc(el) {
+  const truoc = el.dataset.truoc || '';
+  el.disabled = true;
+  try {
+    const kq = await goi(`/api/page-bot/${encodeURIComponent(el.dataset.spg)}/san-pham-goc`,
+      { method: 'POST', body: JSON.stringify({ maGoc: el.value }) });
+    el.dataset.truoc = el.value;
+    toast(kq.maGoc
+      ? `Đã gán sản phẩm gốc cho ${so(kq.soBienThe)} biến thể POS của page.`
+      : 'Đã bỏ gán sản phẩm gốc.');
+    await napNhe();
+  } catch (e) { el.value = truoc; baoLoi('Không gán được sản phẩm gốc', e.message); }
+  finally { el.disabled = false; }
+}
+
 // ── GHI · lời khai «đã tắt Botcake» ────────────────────────────────────────────────
 async function gatBotcake(el) {
   el.disabled = true;
@@ -303,6 +352,7 @@ async function nap() {
     const d = await goi(`/api/page-bot/danh-sach?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}&trang=${TRANG}`);
     if (!d) return;
     SUA = d.suaDuoc; CUA = d.cuaBot; TRANG = d.trang;
+    SPG_CHON = d.sanPhamGocChonDuoc || [];
     ghiUrl();
     veBangTin(d); veThanhLoc(d); veBang(d);
   } catch (e) {

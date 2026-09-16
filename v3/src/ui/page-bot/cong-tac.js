@@ -31,6 +31,7 @@ export const HANH_DONG_TRONG_DIEM = 'dat_trong_diem';
 export const HANH_DONG_THI_TRUONG = 'dat_thi_truong';
 export const HANH_DONG_NGANH_HANG = 'dat_nganh_hang';
 export const HANH_DONG_BOTCAKE = 'bat_tat_botcake';
+export const HANH_DONG_SP_GOC = 'gan_san_pham_goc';
 
 /** Vai được sửa. `quan-ly` xem được màn nhưng không gạt được công tắc. */
 export const VAI_SUA_DUOC = Object.freeze([VAI.QUAN_TRI]);
@@ -296,4 +297,73 @@ export async function datBotcakeTat(boiCanh, id, bat) {
   });
 
   return { id: String(id), botcakeTat: moi, doi: true, laLoiKhai: true };
+}
+
+/* ─────────────── ⑦ gán SẢN PHẨM GỐC cho page (CR-15/09) ─────────────── */
+
+/**
+ * Gán một sản phẩm GỐC cho page: ghi `ma_goc` lên MỌI biến thể POS đang gắn page ấy.
+ *
+ * ⚠️ VÌ SAO GHI LÊN `san_pham` CHỨ KHÔNG PHẢI LÊN `page`: quan hệ thật là
+ * «page bán những biến thể POS này, mỗi biến thể thuộc một sản phẩm gốc». Thêm một cột
+ * `page.ma_goc` là khai cùng một sự thật ở hai chỗ, và bản thứ hai bao giờ cũng là bản trôi
+ * (án lệ của chính dự án này). Bộ giải ba tầng đọc `san_pham.ma_goc`, nên ghi đúng chỗ nó đọc.
+ *
+ * ⚠️ `maGoc = ''` nghĩa là BỎ GÁN (về null), không phải lỗi — người soát nhầm thì phải rút
+ *    lại được mà không cần psql.
+ *
+ * Page chưa có biến thể POS nào ⇒ NÉM. Gán một sản phẩm cho page không có hàng là ghi vào
+ * hư không: bộ giải tra `san_pham WHERE page_id`, không có dòng nào thì không có gì để tra.
+ */
+export async function ganSanPhamGoc(boiCanh, id, maGoc) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const p = await traTrongTeam(bc, id);
+
+  const moi = String(maGoc == null ? '' : maGoc).trim();
+  const db = congTruyVan(bc);
+
+  if (moi) {
+    const co = await db.chon('san_pham_goc', { ma_goc: moi });
+    if (!co.length) {
+      throw new LoiPageBot(
+        `không có sản phẩm gốc "${moi}" — chạy \`node ops/bin/goi-y-gop-san-pham.mjs\` để `
+        + 'xem danh sách gợi ý, hoặc tạo sản phẩm gốc trước',
+        'khong_co_san_pham_goc', 404,
+      );
+    }
+  }
+
+  const bienThe = await db.chon('san_pham', { page_id: String(id) });
+  if (!bienThe.length) {
+    throw new LoiPageBot(
+      `page ${p.ten || p.pageId} chưa có biến thể POS nào gắn vào (\`san_pham.page_id\`) — `
+      + 'gán sản phẩm gốc lúc này là ghi vào hư không. Chạy lượt «Kéo dữ liệu về» trước.',
+      'page_chua_co_bien_the', 409,
+    );
+  }
+
+  const truoc = [...new Set(bienThe.map((r) => r.ma_goc).filter(Boolean))].sort();
+  if (truoc.length === (moi ? 1 : 0) && (!moi || truoc[0] === moi)) {
+    return { id: String(id), maGoc: moi || null, doi: false, soBienThe: bienThe.length };
+  }
+
+  for (const r of bienThe) {
+    await db.sua('san_pham', { id: String(r.id) }, {
+      ma_goc: moi || null, sua_luc: new Date().toISOString(),
+    });
+  }
+
+  await ghi(bc, {
+    hanhDong: HANH_DONG_SP_GOC,
+    doiTuongLoai: BANG,
+    doiTuongId: String(id),
+    truoc: { ma_goc: truoc },
+    sau: { ma_goc: moi || null, so_bien_the: bienThe.length },
+    ghiChu: moi
+      ? `gán sản phẩm gốc "${moi}" cho page ${p.ten || p.pageId} (${bienThe.length} biến thể POS)`
+      : `bỏ gán sản phẩm gốc khỏi page ${p.ten || p.pageId}`,
+  });
+
+  return { id: String(id), maGoc: moi || null, doi: true, soBienThe: bienThe.length };
 }
