@@ -19,6 +19,7 @@
 //    `is_sell_negative_variation = true`). Cột `san_pham.ton_kho` là `int` nên giữ được
 //    số âm — KHÔNG kẹp về 0: kẹp là xoá mất tín hiệu «đã bán quá tồn».
 import { layNhieu, themMoi } from "../db/index.js";
+import { tachSoHieu } from "./ten-goc.js";
 import { xacDinhTeam, suaTheoIdPos } from "./kho.js";
 import { layKetNoi } from "./ket-noi.js";
 import { guiDocBienThe } from "./api.js";
@@ -83,6 +84,12 @@ export async function docDanhMuc(
     giaKhongBietTe: [],
     tongPos: 0,
     tonKhoAm: 0,
+    // CR-15/09 — hai con số của việc nối `ma_goc`. Cố ý ĐẾM và TRẢ RA thay vì im lặng:
+    // «chưa nối được» là trạng thái thật và người vận hành phải thấy nó, kẻo tưởng đã gán
+    // xong rồi đi mở van (bài học «màn rỗng phải phân biệt xong-hết với chưa-cài-xong»).
+    chuaCoSanPhamGoc: new Set(), // số hiệu đọc được mà CHƯA có san_pham_goc → việc CR3
+    khongCoSoHieu: [],           // mã POS không mang số hiệu → người phải gán tay
+    noiMaGoc: 0,                 // số biến thể nối được `ma_goc`
   };
 
   for (let trang = 1; trang <= soTrangToiDa; trang++) {
@@ -101,6 +108,30 @@ export async function docDanhMuc(
       // nó của shop nào — bảng không có cột shop.
       const ma = `${ketNoi.shopId}:${v.id}`;
       const ten = tenBienThe(v);
+
+      // ── CR-15/09 · TỰ NỐI `ma_goc` THEO SỐ HIỆU ──────────────────────────────────
+      // Đội vận hành gõ số hiệu vào đầu tên POS (`125 - Fitgum Acai Berry`), và đo 15/09
+      // trên 7 shop: 78 số hiệu có mặt ở >1 shop, 75/78 tên khớp. Nên khi một sản phẩm gốc
+      // ĐÃ TỒN TẠI với số hiệu ấy, biến thể của shop mới nối vào được mà không cần người.
+      //
+      // Đó chính là thứ làm «mở thị trường mới» rẻ đi: người đặt tên sản phẩm MỘT lần, các
+      // shop sau tự khớp.
+      //
+      // ⛔ KHÔNG TỰ TẠO `san_pham_goc`. Đặt tên một sản phẩm là quyết định của người (mã gốc
+      //    là thứ hiện trên màn và trong kịch bản). Máy tự tạo thì 113 biến thể không có số
+      //    hiệu sẽ sinh ra 113 sản phẩm gốc rác, và không ai dọn.
+      // ⛔ KHÔNG ghi đè `ma_goc` đã có. Người soát (CR3) thắng máy.
+      const { soHieu } = tachSoHieu(ten);
+      let maGoc = null;
+      if (soHieu) {
+        const goc = await layNhieu(pool, ctx, "san_pham_goc", {
+          dieuKien: { team_id: team.teamId, so_hieu: soHieu },
+        });
+        if (goc.length) { maGoc = goc[0].ma_goc; kq.noiMaGoc++; }
+        else kq.chuaCoSanPhamGoc.add(soHieu);
+      } else {
+        kq.khongCoSoHieu.push(ma);
+      }
       if (!ten) kq.khongCoTen.push(ma);
       const tonKho =
         v.remain_quantity == null ? null : Number(v.remain_quantity);
@@ -123,6 +154,7 @@ export async function docDanhMuc(
           ton_kho: tonKho,
           het_hang: tonKho != null && tonKho <= 0,
           nguon: "pos",
+          ma_goc: maGoc, // null = chưa có sản phẩm gốc cho số hiệu này (người gán ở CR3)
         });
         spId = moi.id;
         kq.them++;
@@ -189,5 +221,7 @@ export async function docDanhMuc(
     }
     if (lo.bienThe.length < coTrang) break;
   }
+  // `Set` không tuần tự hoá được qua JSON — đổi sang mảng ở CỬA RA, đúng một chỗ.
+  kq.chuaCoSanPhamGoc = [...kq.chuaCoSanPhamGoc].sort((a, b) => Number(a) - Number(b));
   return kq;
 }

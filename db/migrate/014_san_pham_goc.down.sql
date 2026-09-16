@@ -23,4 +23,5 @@ DROP INDEX IF EXISTS san_pham_ma_goc;
 ALTER TABLE san_pham DROP CONSTRAINT IF EXISTS san_pham_ma_goc_co_that;
 ALTER TABLE san_pham DROP COLUMN IF EXISTS ma_goc;
 
+DROP INDEX IF EXISTS san_pham_goc_so_hieu;
 DROP TABLE IF EXISTS san_pham_goc;

@@ -1180,10 +1180,25 @@ CREATE TABLE san_pham_goc (
   ma_goc  text        NOT NULL CHECK (ma_goc <> '' AND ma_goc !~ ':'),
   ten     text        NOT NULL DEFAULT '',
   mo_ta   text        NOT NULL DEFAULT '',
+  -- SỐ HIỆU nội bộ mà đội vận hành gõ vào ĐẦU TÊN sản phẩm trên POS: `125 - Fitgum Acai
+  -- Berry`. Đo 15/09 trên danh mục 7 shop: 173 số hiệu, **78 số có mặt ở >1 shop**, và
+  -- **75/78 tên khớp nhau** giữa các shop (3 cái còn lại chỉ lệch chính tả: `Birth Stone
+  -- Set` / `Birthstone Set` / `Birth stone set`). Tức số hiệu là khoá gộp CHẮC HƠN so tên.
+  --
+  -- Vì sao không gộp bằng tên: Saudi có cả `125 - Fitgum Acai Berry` VÀ `128 - Fitgum
+  -- Organic Barley` — tên gần giống mà là hai sản phẩm. So tên thì gộp nhầm; số thì không.
+  --
+  -- NULLABLE: 113 biến thể trong danh mục KHÔNG có số đầu tên, chúng phải do người gán.
+  so_hieu text        CHECK (so_hieu IS NULL OR so_hieu ~ '^[0-9]{1,4}$'),
   tao_luc timestamptz NOT NULL DEFAULT now(),
   sua_luc timestamptz NOT NULL DEFAULT now(),
   UNIQUE (team_id, ma_goc)
 );
+
+-- Một số hiệu = một sản phẩm gốc. Đây là cái làm cho «mở thị trường mới» KHÔNG cần người:
+-- biến thể mới của shop mới mang cùng số hiệu ⇒ `doc-danh-muc.js` tự nối `ma_goc`.
+CREATE UNIQUE INDEX san_pham_goc_so_hieu ON san_pham_goc (team_id, so_hieu)
+  WHERE so_hieu IS NOT NULL;
 
 COMMENT ON TABLE  san_pham_goc        IS 'Sản phẩm THẬT (CR-15/09): không mang shop, không gắn page. Sống lâu hơn page.';
 COMMENT ON COLUMN san_pham_goc.ma_goc IS 'Mã người đặt, CẤM chứa dấu ":" — dấu đó là của mã POS <shop>:<variation>.';
