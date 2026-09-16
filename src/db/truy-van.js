@@ -66,6 +66,10 @@ export const BANG_NGHIEP_VU_CHUAN = new Set([
   // ⛔ `khoa_nha` (008) và `ky_nang_lich_su` (009) CỐ Ý không có mặt: cái đầu chứa khoá đã
   //    mã hoá (đi qua `db/khoa.js`), cái sau chỉ ghi qua `suaKyNang`/`luiKyNang`.
   "mau_0_dong",
+  // CR-15/09 (migration 014): sản phẩm THẬT, không mang shop. Bảng nghiệp vụ bình thường
+  // (`team_id NOT NULL`, không chứa bí mật) nên nó vào đây — không vào thì màn gán «page
+  // này bán sản phẩm nào» không đụng được nó bằng đường nào cả.
+  "san_pham_goc",
 ]);
 
 const RE_TEN_HOP_LE = /^[a-z_][a-z0-9_]*$/;

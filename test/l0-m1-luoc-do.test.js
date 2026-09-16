@@ -19,7 +19,11 @@ import { GOC } from "../db/ket-noi.js";
 // 25/08 G2-A4: +ky_nang_lich_su (bảng 23, migration 009) — ảnh các bản CŨ của kỹ năng.
 // Bản ĐANG DÙNG vẫn ở chính `ky_nang` (một dòng mỗi team×ma), cố ý: màn «Thư viện kỹ
 // năng» của người B đọc `db.chon('ky_nang', {})` và hiện mỗi dòng là một kỹ năng.
+// 15/09 CR-15/09: +san_pham_goc (bảng 24, migration 014) — sản phẩm THẬT, không mang shop,
+// không gắn page. Thêm bảng là đổi con số mà ca S1 neo vào, nên nó được sửa CÙNG COMMIT với
+// migration (skill `doi-y-do` §4: sửa luật thì sửa cả thước).
 const NEO_19_BANG = [
+  "san_pham_goc",
   "ket_noi_pos",
   "tin_cho_xu_ly",
   "khoa_nha",
@@ -72,7 +76,13 @@ test("S1 · danh sách bảng khớp NEO NGOÀI 19 tên của 02 (+ _migrations)
   const thieu = NEO_19_BANG.filter((t) => !that.includes(t));
   const thua = that.filter((t) => !NEO_19_BANG.includes(t));
   assert.deepEqual({ thieu, thua }, { thieu: [], thua: [] });
-  assert.equal(that.length, 24); // 19 của 02 + ket_noi_pos + tin_cho_xu_ly + khoa_nha (008) + ky_nang_lich_su (009)
+  // 15/09 (CR-15/09): đổi từ số TUYỆT ĐỐI (`24`) sang độ dài của chính cái NEO — đúng án lệ ②
+  // đã ghi §10 ngày 01/09 («neo vào số tuyệt đối»). Hai vế `thieu`/`thua` ở trên đã chứng minh
+  // hai tập BẰNG NHAU, nên dòng này là lưới dự phòng chống trùng lặp trong NEO, không phải
+  // phép đo thứ hai. Giữ một con số cứng ở đây là giữ một nguồn sự thật thứ hai để nó trôi:
+  // mỗi lần thêm bảng lại phải sửa hai chỗ, và quên một chỗ thì cổng đỏ mà không nêu được bảng nào.
+  assert.equal(that.length, NEO_19_BANG.length);
+  assert.equal(new Set(NEO_19_BANG).size, NEO_19_BANG.length, 'NEO có tên trùng');
 });
 
 test("S2 · phủ team_id: 0 bảng nghiệp vụ thiếu cột, chỉ bo_luat_chung được NULLABLE", async () => {
@@ -380,6 +390,13 @@ test("S12 · diễn tập down → up trên CSDL ĐÃ có dữ liệu: sạch r�
     truoc.c > 0,
     "ca này phải chạy trên CSDL đã có dữ liệu, không phải DB vừa up xong",
   );
+  // 15/09 (CR-15/09): đếm bảng TRƯỚC lượt down, để vế cuối so ĐỘ LỆCH chứ không so một số
+  // tuyệt đối. Điều ca này cần chứng minh là «down rồi up không thêm, không bớt bảng nào» —
+  // một con số cứng đo nhầm thứ đó và bắt sửa thước mỗi lần thêm bảng (án lệ ② · 01/09).
+  const bangTruoc = await mot(
+    `SELECT count(*)::int c FROM information_schema.tables
+     WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> '_migrations'`,
+  );
   await xuong(sb.pool, { het: true, im: true });
   const con = await mot(
     `SELECT count(*)::int c FROM information_schema.tables
@@ -391,5 +408,7 @@ test("S12 · diễn tập down → up trên CSDL ĐÃ có dữ liệu: sạch r�
     `SELECT count(*)::int c FROM information_schema.tables
      WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> '_migrations'`,
   );
-  assert.equal(sau.c, 24); // 19 + ket_noi_pos + tin_cho_xu_ly + khoa_nha + ky_nang_lich_su
+  assert.equal(sau.c, bangTruoc.c,
+    'down→up làm đổi SỐ BẢNG — một bản .down.sql không gỡ hết, hoặc một .up.sql không dựng lại');
+  assert.equal(sau.c, NEO_19_BANG.length, 'và phải khớp đúng cái NEO ngoài');
 });
