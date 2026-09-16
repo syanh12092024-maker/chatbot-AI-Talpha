@@ -203,4 +203,38 @@ gợi ý bằng so tên rồi người duyệt.
 9. Đường lùi: giữ hai cột song song, bỏ cột cũ ở phiếu sau ≥1 tuần chạy ổn.
 10. 6 phiếu, trong đó 1 việc người và 1 phiếu 🟥 (di trú `kich_ban` trên VPS).
 
-**⏸ DỪNG — chờ chữ «áp».** Người quyết chọn: áp trọn · áp một phần · hoãn · bỏ.
+## ✅ ĐÃ ÁP — 16/09/2026, người quyết gõ «áp»
+
+| Phiếu | Trạng thái | Commit |
+| --- | --- | --- |
+| **CR1** lược đồ (migration 014) | ✅ | `26d2b4b` |
+| **CR2** sinh mã + gợi ý gộp | ✅ | `185353b` |
+| **CR3** người soát 137 dòng | ⏸ **VIỆC NGƯỜI** — `node ops/bin/goi-y-gop-san-pham.mjs` |
+| **CR4** bộ giải ba tầng | ✅ | `0963a61` |
+| **CR5** di trú `kich_ban` trên VPS | ⏸ **điểm dừng ②** — phiên áp không có SSH |
+| **CR6** màn gán sản phẩm gốc | ✅ | `3b80737` |
+
+Số đo lúc đóng: `npm test` **1.762 ca · 1.759 xanh · 1 đỏ = D7** (nợ cũ) · cổng tĩnh
+PHÉP=5 ĐỎ=0 · 12 cổng có nhắc `san_pham` đều về đúng mức trước CR.
+
+### Ba lỗi của tôi trong lượt áp, bộ ca bắt hết — ghi để không tái phạm
+
+1. **Rào của 010 chặn đúng thứ nó sinh ra để mở.** `kich_ban_khoa_dung_cap` đòi
+   `san_pham_ma IS NOT NULL`, nên không chèn được dòng chỉ có khoá gốc. Bản đầu tôi ghi
+   «dòng mới mang CẢ HAI khoá» — viết ca test mới thấy câu đó vô nghĩa: kịch bản dùng chung
+   cho ba shop thì `san_pham_ma` điền cái gì?
+2. **Nới rào thì chép theo bản 010, không đọc bản 012.** 012 đã nới `cap='nuoc'` cho phép
+   `san_pham_ma IS NULL`. Ba ca K17/K18/K19 đỏ ngay.
+   📌 **Rào của một bảng là TỔNG của mọi migration đã sửa nó**, không phải bản khai đầu tiên.
+3. **Neo vào số tuyệt đối, hai chỗ trong một tệp thước.** `assert.equal(…, 24)` ở S1 và S12
+   của `l0-m1-luoc-do`. Không nới 24→25 mà sửa gốc: S1 so với `NEO.length`, S12 đếm bảng
+   TRƯỚC lượt down rồi so ĐỘ LỆCH. Từ nay thêm bảng chỉ sửa MỘT chỗ. Cổng `l0-m1.sh` còn
+   một BẢN NEO THỨ HAI của cùng danh sách — đã vá luôn.
+
+### Còn nợ, đã ghi §9
+
+- `san_pham` vẫn đúng một `page_id` ⇒ lời hứa «page chết, page mới kế thừa 0 cấu hình» chỉ
+  đúng khi shop có 1 page. Shop nhiều page thì `san_pham.page_id` null và bộ giải không tra
+  được. **CR này giao được «một kịch bản cho nhiều thị trường», CHƯA giao được «page chết
+  thì thay không cần cấu hình».**
+- Bỏ cột `san_pham_ma` cũ: phiếu SAU, cách CR5 ít nhất một tuần chạy ổn.

@@ -1735,3 +1735,21 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   · 2 đỏ đều là nợ cũ (D7 · dãy S chập chờn, chạy riêng 4 lượt ra 4 tập khác nhau) · cổng tĩnh
   PHÉP=5 ĐỎ=0. Bốn lỗ «phải mở psql» đã bịt 3, lỗ thứ tư (sản phẩm/giá) giữ nguyên vì nó vào bằng
   POS sync đúng ý đồ. 6 nợ mới ghi §9. ⛔ TẤT CẢ CHƯA PUSH.
+
+- 16/09 · **CR-15/09 · ÁP 4/6 PHIẾU** → ✅ — mã sản phẩm tách hai vai: `san_pham.ma`
+  (`<shop>:<uuid>`, khoá KỸ THUẬT trỏ POS) + `ma_goc` (khoá NGHIỆP VỤ, không mang shop).
+  Kịch bản ba tầng của migration 010 nay CHẠY ĐƯỢC: một bản `cap='san_pham'` phục vụ cả page
+  Kuwait lẫn Saudi (ca Q2 đo thật trên Postgres). Khoá gộp là SỐ HIỆU đội vận hành gõ đầu tên
+  POS — đo 7 shop: 470 biến thể · 173 số hiệu · **78 số ở >1 shop** · 75/78 tên khớp · 113
+  biến thể không có số. Gộp theo TÊN thì trộn `125 - Fitgum Acai Berry` với `128 - Fitgum
+  Organic Barley`; số thì không. CR1 `26d2b4b` · CR2 `185353b` · CR4 `0963a61` · CR6 `3b80737`
+  · hồ sơ `docs/thi-cong/doi-y-do/CR-15-09-ma-san-pham-khong-mang-shop.md`.
+- 16/09 · CR-15/09 · **HAI PHIẾU DỪNG CHỜ NGƯỜI** → ⏸ — CR3 (soát gộp 137 dòng, chạy
+  `node ops/bin/goi-y-gop-san-pham.mjs`) và CR5 (di trú `kich_ban` trên VPS, điểm dừng ②).
+  Máy chỉ gợi ý được: nó không biết `1328205216:e4108b77…` và `1328205226:717bfb27…` là cùng
+  một sản phẩm, chỉ TÊN nói lên, mà tên thì người gõ.
+- 16/09 · CR-15/09 · 🧭 **BA ÁN LỆ trong một lượt áp** — ① rào của 010 chặn đúng thứ nó sinh
+  ra để mở ② **rào của một bảng là TỔNG mọi migration đã sửa nó**, chép theo bản đầu là xoá
+  lặng lẽ phần 012 đã nới ③ neo vào SỐ TUYỆT ĐỐI, hai chỗ trong một tệp thước + một bản neo
+  thứ hai trong cổng; sửa gốc (so `NEO.length` và so ĐỘ LỆCH) thay vì nới số. Cả ba do bộ ca
+  bắt, không do người đọc lại.
