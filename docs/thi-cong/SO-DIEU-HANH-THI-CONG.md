@@ -36,7 +36,7 @@ mâu thuẫn) → `docs/v3/02-KE-HOACH-CODE.md` (kế hoạch + 18 bảng + nghi
 **Môi trường dev:** Postgres 16 container `talpha-pg` cổng **5433**, chuỗi nối ở `.env`
 biến `DATABASE_URL_V3`. Node: máy A đo 15/09 = **v24.19.0** (sổ cũ ghi v25; ba cổng `a7-*` nhận khuôn Node 25). Dữ liệu thật để di trú nằm ở gốc repo (`pages.json`
 `kb-overrides.json` `conv-state.json` `script-versions/` `stats.json`…, đã trải từ gói bàn
-giao 19/08 — đều bị gitignore). ⚠️ **SỬA 15/09:** dòng cũ ở đây ghi «Token Pancake từ IP máy
+giao 19/08 — đều bị gitignore). **Lược đồ VPS đo 16/09: đã áp 001→014 (14 bản).** ⚠️ **SỬA 15/09:** dòng cũ ở đây ghi «Token Pancake từ IP máy
 cá nhân bị chặn (lỗi 121) — phải lấy số đo trên VPS, đừng debug ở local». **SAI.** Đo lại từ
 chính máy này: `GET /pages` → 200, 218 page; API POS đọc được 2.500 đơn. Lỗi 121 =
 «Không tìm thấy gói cước nào cho người dùng này», đi **theo PAGE** chứ không theo IP — page
@@ -1784,3 +1784,18 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   lặng lẽ phần 012 đã nới ③ neo vào SỐ TUYỆT ĐỐI, hai chỗ trong một tệp thước + một bản neo
   thứ hai trong cổng; sửa gốc (so `NEO.length` và so ĐỘ LỆCH) thay vì nới số. Cả ba do bộ ca
   bắt, không do người đọc lại.
+
+- 16/09 · **VPS: ĐO ĐƯỢC LƯỢC ĐỒ VÀ DỊCH VỤ** → ✅ — sổ ghi hồi 24/08 rằng VPS áp «001→007»;
+  đo 16/09 bằng `node db/migrate.js trang-thai`: đã áp **001→013**, và lượt này áp thêm
+  **014_san_pham_goc** (`áp mới: 1 · tổng đã áp: 14`). Migration 014 chỉ THÊM, và rào
+  `kich_ban_khoa_dung_cap` bản mới lỏng hơn-hoặc-bằng bản 012 ở cả ba tầng nên không dòng cũ
+  nào vi phạm — kiểm bằng lý lẽ trước khi gõ, không thử rồi xem.
+  Dịch vụ sau deploy: `aicloser` **active** (không chạm, `{"ok":true,"pages":123}`) ·
+  `aicloser-v3` active · `:3102`=200 · `:3101`=200. Lô 21 commit
+  (`e657af1..429667d`) đã lên prod.
+- 16/09 · 🧭 **ÁN LỆ VẬN HÀNH: đừng đưa người quyết một khối dán trộn `ssh` với lệnh máy chủ.**
+  Hai lần nhiễu trong một buổi: lần đầu 4 dòng lệnh bị nuốt vào ô nhập mật khẩu ⇒ `Permission
+  denied` và KHÔNG lệnh nào chạy (tôi tưởng đã deploy); lần sau terminal ngắt dòng giữa chuỗi
+  nháy ⇒ `aicloser-v3-xemthu` thành một lệnh riêng «command not found».
+  📌 Luật: mỗi lệnh máy chủ là MỘT dòng `ssh host '…'` ngắn dưới ~70 ký tự. Không khối nhiều
+  dòng, không trộn lệnh máy cá nhân với lệnh máy chủ.
