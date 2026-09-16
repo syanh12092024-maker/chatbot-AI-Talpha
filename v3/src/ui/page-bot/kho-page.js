@@ -198,8 +198,13 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
 
   // CR-15/09 — sản phẩm GỐC của từng page trong trang. Đọc MỘT mẻ cho cả trang, cùng lý do
   // với cửa kiểm ở trên: 25 dòng × 1 truy vấn là 25 lượt đi CSDL cho một lần vẽ bảng.
-  const sanPhamGoc = await docSanPhamGocCuaTrang(db, cat);
-  const dsGoc = await db.chon('san_pham_goc', {}, { sapXep: 'ten' });
+  // LƯỚI MIGRATION 014 (án lệ #7). Deploy code trước khi áp 014 thì bảng `san_pham_goc`
+  // chưa tồn tại và MỌI lượt vẽ bảng này ném — màn Page & bot chết trắng. Đã xảy ra thật
+  // 16/09: code CR6 lên prod trước migration vì tôi nói «014 chưa cần chạy».
+  // Mù thì NÓI RA: cột hiện «chưa áp 014», không ném, và không giả vờ «page chưa gán».
+  const coBangGoc = await coBangSanPhamGoc(db);
+  const sanPhamGoc = coBangGoc ? await docSanPhamGocCuaTrang(db, cat) : new Map();
+  const dsGoc = coBangGoc ? await db.chon('san_pham_goc', {}, { sapXep: 'ten' }) : [];
 
   return {
     page: cat.map((p) => ({
@@ -214,6 +219,9 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
     sanPhamGocChonDuoc: dsGoc.map((g) => ({
       maGoc: g.ma_goc, ten: g.ten || g.ma_goc, soHieu: g.so_hieu || null,
     })),
+    // Phân biệt «chưa áp migration» với «chưa ai soát gộp» — hai câu dẫn người đọc đi hai
+    // hướng khác nhau, và chỉ một trong hai là việc của họ.
+    sanPhamGocApDuoc: coBangGoc,
     cuaKiemDocDuoc: !!doc,
     cuaKiemViSao: viSao,
     trang: t,
@@ -223,6 +231,30 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
     dem: demTheoLoc(tatCa),
     trong: cat.length ? null : viSaoRong({ soTong: tatCa.length, loc, tim }),
   };
+}
+
+/**
+ * Bảng `san_pham_goc` có tồn tại chưa (migration 014)? Đọc MỘT lần rồi nhớ.
+ * `to_regclass` trả NULL thay vì ném khi bảng không có — đúng khuôn lưới migration của
+ * `src/db/kich-ban.js#coCotCap`.
+ */
+let _coBangGoc = null;
+async function coBangSanPhamGoc(db) {
+  if (_coBangGoc !== null) return _coBangGoc;
+  try {
+    // Tầng truy vấn chung không cho câu SQL trần, nên thử đọc một mẻ rỗng: bảng chưa có thì
+    // `pg` ném `42P01`, và ta đọc đúng mã ấy chứ không nuốt mọi lỗi.
+    await db.chon('san_pham_goc', {});
+    _coBangGoc = true;
+  } catch (e) {
+    if (e?.code === '42P01' || /san_pham_goc.*does not exist|relation .* does not exist/i.test(e?.message || '')) {
+      _coBangGoc = false;
+      console.warn('[page-bot] migration 014 chưa áp — cột «Sản phẩm gốc» TẮT. Chạy `npm run migrate`.');
+    } else {
+      throw e; // lỗi khác thì phải nổ, đừng đội lốt «chưa áp migration»
+    }
+  }
+  return _coBangGoc;
 }
 
 /**

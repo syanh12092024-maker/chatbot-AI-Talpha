@@ -51,6 +51,50 @@ async function coCotCap(khach) {
   return _coCap;
 }
 
+/**
+ * LƯỚI MIGRATION CHO 014 (CR-15/09) — cùng án lệ #7 với `coCotCap` ở trên, và nó phải là
+ * MỘT LƯỚI RIÊNG chứ không dùng chung.
+ *
+ * Bài học trả giá 16/09: lưới `coCotCap` chỉ canh cột `cap` của 010. Tôi thêm câu tra
+ * `san_pham_goc_ma` (014) NẰM SAU lưới ấy, nên khi 010 đã áp mà 014 chưa, lưới cho qua rồi
+ * câu mới ném `42703`. Deploy code trước migration là đúng thứ tự án lệ #7 cấm — và tôi còn
+ * nói với người quyết rằng «014 chưa cần chạy», sai.
+ *
+ * 📌 Mỗi migration thêm cột mà reader mới đọc thì cần LƯỚI RIÊNG của nó. Một lưới canh
+ *    migration cũ không che được cột của migration mới.
+ */
+let _coSpMaGoc = null;
+async function coCotSanPhamMaGoc(khach) {
+  if (_coSpMaGoc !== null) return _coSpMaGoc;
+  const r = await khach.query(
+    `SELECT count(*)::int c FROM information_schema.columns
+      WHERE table_schema='public' AND table_name='san_pham' AND column_name='ma_goc'`,
+  );
+  _coSpMaGoc = r.rows[0].c > 0;
+  return _coSpMaGoc;
+}
+
+let _coGoc = null;
+async function coCotGoc(khach) {
+  if (_coGoc !== null) return _coGoc;
+  const r = await khach.query(
+    `SELECT count(*)::int c FROM information_schema.columns
+      WHERE table_schema='public' AND table_name='kich_ban' AND column_name='san_pham_goc_ma'`,
+  );
+  _coGoc = r.rows[0].c > 0;
+  return _coGoc;
+}
+
+let _daKeuGoc = false;
+function keuThieu014() {
+  if (_daKeuGoc) return;
+  _daKeuGoc = true;
+  console.warn(
+    "[kich-ban] migration 014 chưa áp — kịch bản theo MÃ GỐC tắt, chỉ tra khoá POS cũ. " +
+      "Một bản dùng chung cho nhiều thị trường sẽ KHÔNG tới được page nào. Chạy `npm run migrate`.",
+  );
+}
+
 let _daKeu = false;
 function keuThieuMigration() {
   if (_daKeu) return;
@@ -68,8 +112,11 @@ async function khoaTangCuaPage(khach, teamId, pageRowId) {
     [pageRowId, teamId],
   );
   if (!p.rowCount) return null;
+  // `san_pham.ma_goc` cũng là cột của 014 — cùng lưới, cùng lý do.
+  const coMaGoc = await coCotSanPhamMaGoc(khach);
   const sp = await khach.query(
-    "SELECT ma, ma_goc FROM san_pham WHERE team_id = $1 AND page_id = $2 ORDER BY ma",
+    `SELECT ma${coMaGoc ? ", ma_goc" : ", NULL::text AS ma_goc"} FROM san_pham
+      WHERE team_id = $1 AND page_id = $2 ORDER BY ma`,
     [teamId, pageRowId],
   );
   return {
@@ -110,6 +157,17 @@ export async function docKichBanChoPage(pool, teamId, pageRowId) {
  * 0. Ca K9 bắt được. Mọi phép đếm bên trong giao dịch phải đi bằng chính client của giao
  * dịch đó.
  */
+/**
+ * Hai đường tra, theo thứ tự: khoá GỐC trước, khoá POS sau.
+ * Chưa áp 014 ⇒ bỏ hẳn đường gốc và KÊU RA — mù thì phải nói, không được ném.
+ */
+function duongTra(k, coGoc) {
+  const ds = [];
+  if (coGoc) ds.push(["san_pham_goc_ma", k.maGoc, "gốc"]);
+  ds.push(["san_pham_ma", k.maSp, "POS"]);
+  return ds;
+}
+
 async function giaiChoPage(khach, teamId, pageRowId) {
   // ═══ LƯỚI MIGRATION (án lệ #7) ══════════════════════════════════════════════
   // Hàm này nằm trên ĐƯỜNG CHAT SỐNG (`rap-prompt.js#docKichBanLive` gọi nó). Deploy code
@@ -147,6 +205,8 @@ async function giaiChoPage(khach, teamId, pageRowId) {
         khoa: { thiTruong: "", maSp: [], maGoc: [] },
       };
     }
+    const coGoc = await coCotGoc(khach);
+    if (!coGoc) keuThieu014();
     const khoa = { thiTruong: k.thiTruong, maSp: k.maSp, maGoc: k.maGoc };
 
     // ① tầng PAGE — hẹp nhất, thắng
@@ -172,10 +232,7 @@ async function giaiChoPage(khach, teamId, pageRowId) {
       // CR-15/09 — THỨ TỰ: khoá GỐC trước, khoá POS cũ sau. Bản viết theo mã gốc là bản
       // mới nhất; tìm thấy nó thì dừng. Đảo thứ tự là để một dòng di sản che một dòng mới,
       // và không ai thấy vì cả hai đều trả về «có kịch bản».
-      for (const [cot, ds, nhan] of [
-        ["san_pham_goc_ma", k.maGoc, "gốc"],
-        ["san_pham_ma", k.maSp, "POS"],
-      ]) {
+      for (const [cot, ds, nhan] of duongTra(k, coGoc)) {
         if (!ds.length) continue;
         const hep = await khach.query(
           `SELECT * FROM kich_ban
@@ -211,10 +268,7 @@ async function giaiChoPage(khach, teamId, pageRowId) {
     }
 
     // ③ tầng SẢN PHẨM — rộng nhất
-    for (const [cot, ds, nhan] of [
-      ["san_pham_goc_ma", k.maGoc, "gốc"],
-      ["san_pham_ma", k.maSp, "POS"],
-    ]) {
+    for (const [cot, ds, nhan] of duongTra(k, coGoc)) {
       if (!ds.length) continue;
       const sp = await khach.query(
         `SELECT * FROM kich_ban

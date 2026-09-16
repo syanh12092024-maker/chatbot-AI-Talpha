@@ -282,12 +282,18 @@ async function luuNhan(el, { duong, ten, khoa }) {
 // Cột này là thứ làm kịch bản dùng chung được cho nhiều thị trường: hai page bán cùng một
 // sản phẩm gốc thì đọc CÙNG một bản kịch bản, không phải chép tay hai lần.
 let SPG_CHON = [];
+let SPG_AP = null;   // null = chưa biết · false = bảng chưa có (migration 014 chưa áp)
 
 function veSanPhamGoc(p) {
   const ds = p.sanPhamGoc || [];
   const chuaGop = ds.soBienTheChuaGop || 0;
   if (!SUA) {
     return ds.length ? ds.map((g) => esc(g.ten)).join(', ') : '<span class="text-muted">—</span>';
+  }
+  if (SPG_AP === false) {
+    // «Chưa áp migration» KHÁC «chưa ai soát gộp». Nói đúng câu, kẻo người vận hành đi soát
+    // sản phẩm trong khi việc thật là chạy một lệnh migrate.
+    return '<span class="text-muted" title="Chạy npm run migrate trên máy chủ">chưa áp 014</span>';
   }
   if (!SPG_CHON.length) {
     // Rỗng vì CHƯA AI SOÁT GỘP, không phải vì page thiếu gì. Hai câu đó dẫn người đọc đi hai
@@ -353,6 +359,7 @@ async function nap() {
     if (!d) return;
     SUA = d.suaDuoc; CUA = d.cuaBot; TRANG = d.trang;
     SPG_CHON = d.sanPhamGocChonDuoc || [];
+    SPG_AP = d.sanPhamGocApDuoc !== false;
     ghiUrl();
     veBangTin(d); veThanhLoc(d); veBang(d);
   } catch (e) {

@@ -880,6 +880,37 @@ Mọi phép cần thế-giới-thật của các phiếu được code-với-moc
   ngoại lệ. API Pancake không có endpoint trả «trả lời nhanh» — đã đọc đặc tả chính thức
   `developer.pancake.biz/openapi/openapi.yaml`, 4.343 dòng, đúng 28 endpoint, không có.)
 
+- 16/09 · 🔴 **SỰ CỐ DO TÔI: DEPLOY CODE TRƯỚC MIGRATION — và tôi còn nói với người quyết
+  rằng không cần chạy migration.** Đẩy CR4+CR6 lên prod kèm câu «014 chưa cần chạy hôm nay,
+  nó chỉ thêm cột». SAI: CR4 đọc `kich_ban.san_pham_goc_ma`, CR6 đọc bảng `san_pham_goc`.
+  Lược đồ prod dừng ở 013 ⇒ **màn Page & bot của v3 ném `42703`**.
+  ✅ **Đường chat KHÔNG bị ảnh hưởng, đo được**: `rap-prompt.js` chỉ được `handler-v3.js` gọi,
+  mà worker v3 chưa cài trên VPS; `prompts.js` · `kb.js` · `handler.js` · `closer.js` (đường
+  v1 đang phục vụ 123 page) có **0** dòng chạm mã mới. Chỉ dashboard v3 (:3102) hỏng.
+  📌 HAI án lệ, cái thứ hai mới:
+  ① Án lệ #7 sẵn có («reader mới phải có lưới migration») + luật §5 skill `mo-van`
+     («migration lên TRƯỚC, code mới ra SAU») — tôi đảo cả hai.
+  ② **MỘT LƯỚI CANH MIGRATION CŨ KHÔNG CHE ĐƯỢC CỘT CỦA MIGRATION MỚI.** `kich-ban.js` ĐÃ
+     có lưới `coCotCap` (canh cột `cap` của 010) và tôi tưởng thế là đủ. Câu tra mới dùng
+     cột của 014 và nằm SAU lưới ấy, nên lưới cho qua rồi câu mới ném. Mỗi migration mà
+     reader mới đọc cần LƯỚI RIÊNG của nó.
+  Đã vá: `coCotGoc` + `coCotSanPhamMaGoc` (kich-ban) · `coBangSanPhamGoc` bằng mã `42P01`
+  (kho-page, và ném lại mọi lỗi khác chứ không nuốt) · màn phân biệt «chưa áp 014» với «chưa
+  ai soát gộp» vì hai câu ấy dẫn người đọc đi hai hướng. Thước
+  `test/cr1509-luoi-migration.test.js` dựng cảnh thật bằng `xuong()` — gỡ đúng 014 bằng bản
+  `.down.sql` THẬT, nên nó canh luôn việc bản down có gỡ sạch. Đảo-vá: gỡ lưới ⇒ đúng
+  `42703 column "ma_goc" does not exist`.
+
+- 16/09 · ⬜ **BẢNG KHAI BIẾN: cột «VPS v3» là MỤC TIÊU, không phải HIỆN TRẠNG.** Đo thật
+  trên `/opt/aicloser/.env` ngày 16/09: có `ADMIN_USER` · `V3_KHOA_VE`; **KHÔNG có**
+  `V3_KHOA_CHU` · `V3_PANCAKE_GUI` · `V3_POS_GHI` · `AUTO_CREATE_ORDER=1`.
+  Hệ quả tốt: hai cửa ghi ra ngoài của v3 đang ĐÓNG (fail-closed đúng), và cửa tạo đơn tự
+  động của v1 cũng TẮT ⇒ nợ 🔴 `CCY_FACTOR.KWD` **không nổ được** hôm nay.
+  Hệ quả phải nhớ: thiếu `V3_KHOA_CHU` thì mọi lượt đọc khoá model trong `khoa_nha` sẽ NÉM —
+  chạm ngay việc H6 (nạp tiền model) nếu dùng khoá riêng theo team.
+  Bảng khai nên tách hai cột «VPS: mục tiêu» và «VPS: đo được ngày nào», kẻo người đọc tin
+  cột mục tiêu là hiện trạng — đúng cái tôi vừa tin.
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
