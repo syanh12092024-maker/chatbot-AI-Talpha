@@ -203,16 +203,15 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
   // 16/09: code CR6 lên prod trước migration vì tôi nói «014 chưa cần chạy».
   // Mù thì NÓI RA: cột hiện «chưa áp 014», không ném, và không giả vờ «page chưa gán».
   const coBangGoc = await coBangSanPhamGoc(db);
-  const sanPhamGoc = coBangGoc ? await docSanPhamGocCuaTrang(db, cat) : new Map();
   const dsGoc = coBangGoc ? await db.chon('san_pham_goc', {}, { sapXep: 'ten' }) : [];
+  const tenGoc = new Map(dsGoc.map((g) => [g.ma_goc, g.ten || g.ma_goc]));
 
   return {
     page: cat.map((p) => ({
       ...gonPage(p),
       cuaKiem: doc ? gonCuaKiem(doc.get(String(p.page_id))) : null,
-      // Mảng, không phải một giá trị: một page BÁN ĐƯỢC nhiều sản phẩm gốc, và gộp chúng
-      // thành một chuỗi là mất thông tin ngay ở chỗ CR này sinh ra để giữ.
-      sanPhamGoc: sanPhamGoc.get(String(p.id)) || [],
+      // 015 — page khai MỘT sản phẩm gốc. Kèm tên để màn không phải tra lần nữa.
+      sanPhamGocTen: p.san_pham_goc_ma ? (tenGoc.get(p.san_pham_goc_ma) || p.san_pham_goc_ma) : null,
     })),
     // Danh mục để màn dựng ô chọn. Rỗng = chưa ai soát gộp (phiếu CR3), và màn phải nói
     // đúng câu đó chứ không hiện một ô chọn trống không lý do.
@@ -235,65 +234,24 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
 
 /**
  * Bảng `san_pham_goc` có tồn tại chưa (migration 014)? Đọc MỘT lần rồi nhớ.
- * `to_regclass` trả NULL thay vì ném khi bảng không có — đúng khuôn lưới migration của
- * `src/db/kich-ban.js#coCotCap`.
+ * Bảng chưa có thì `pg` ném `42P01`; đọc đúng mã ấy, và NÉM LẠI mọi lỗi khác — một lỗi
+ * khác đội lốt «chưa áp migration» là lỗi thứ hai.
  */
 let _coBangGoc = null;
 async function coBangSanPhamGoc(db) {
   if (_coBangGoc !== null) return _coBangGoc;
   try {
-    // Tầng truy vấn chung không cho câu SQL trần, nên thử đọc một mẻ rỗng: bảng chưa có thì
-    // `pg` ném `42P01`, và ta đọc đúng mã ấy chứ không nuốt mọi lỗi.
     await db.chon('san_pham_goc', {});
     _coBangGoc = true;
   } catch (e) {
-    if (e?.code === '42P01' || /san_pham_goc.*does not exist|relation .* does not exist/i.test(e?.message || '')) {
+    if (e?.code === '42P01' || /relation .* does not exist/i.test(e?.message || '')) {
       _coBangGoc = false;
       console.warn('[page-bot] migration 014 chưa áp — cột «Sản phẩm gốc» TẮT. Chạy `npm run migrate`.');
     } else {
-      throw e; // lỗi khác thì phải nổ, đừng đội lốt «chưa áp migration»
+      throw e;
     }
   }
   return _coBangGoc;
-}
-
-/**
- * Sản phẩm GỐC của từng page trong trang (CR-15/09) → Map<pageId, [{maGoc, ten, soBienThe}]>.
- *
- * Đọc `san_pham` của cả trang MỘT mẻ rồi gộp ở tầng JS. Biến thể chưa ai gộp (`ma_goc` null)
- * bị bỏ qua ở đây — nhưng KHÔNG im lặng: `soBienTheChuaGop` đếm chúng, để màn nói được
- * «page này có 3 biến thể mà chưa cái nào gộp» thay vì hiện một ô trống.
- */
-async function docSanPhamGocCuaTrang(db, cat) {
-  const ra = new Map();
-  if (!cat.length) return ra;
-  const ids = cat.map((p) => String(p.id));
-  const sp = await db.chon('san_pham', { page_id: ids });
-  const ten = new Map();
-  for (const g of await db.chon('san_pham_goc', {})) ten.set(g.ma_goc, g.ten || g.ma_goc);
-
-  for (const pid of ids) ra.set(pid, []);
-  const dem = new Map(); // pageId → Map<maGoc, số biến thể>
-  const chuaGop = new Map();
-  for (const r of sp) {
-    const pid = String(r.page_id);
-    if (!ra.has(pid)) continue;
-    if (!r.ma_goc) { chuaGop.set(pid, (chuaGop.get(pid) || 0) + 1); continue; }
-    if (!dem.has(pid)) dem.set(pid, new Map());
-    const m = dem.get(pid);
-    m.set(r.ma_goc, (m.get(r.ma_goc) || 0) + 1);
-  }
-  for (const [pid, m] of dem) {
-    ra.set(pid, [...m.entries()]
-      .map(([maGoc, soBienThe]) => ({ maGoc, ten: ten.get(maGoc) || maGoc, soBienThe }))
-      .sort((a, b) => a.ten.localeCompare(b.ten)));
-  }
-  for (const [pid, n] of chuaGop) {
-    const ds = ra.get(pid) || [];
-    ds.soBienTheChuaGop = n; // gắn vào mảng, màn đọc được mà không đổi hình dạng phần tử
-    ra.set(pid, ds);
-  }
-  return ra;
 }
 
 /** Chỉ trả ra thứ màn hình dùng. `page.id` để gọi API, `page_id` là id Facebook để người đọc. */
@@ -308,6 +266,7 @@ export function gonPage(p) {
     botAiBat: co(p.bot_ai_bat),
     botcakeTat: co(p.botcake_tat),
     trongDiem: co(p.trong_diem),
+    sanPhamGocMa: p.san_pham_goc_ma || null,   // 015 — page khai nó bán gì
     matDau: co(p.mat_dau),
   };
 }

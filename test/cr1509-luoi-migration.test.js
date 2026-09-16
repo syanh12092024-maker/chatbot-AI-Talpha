@@ -24,14 +24,17 @@ let pageId;
 const mot = async (sql, p) => (await sb.pool.query(sql, p)).rows[0];
 
 before(async () => {
-  sb = await dungSandbox("cr1509luoi");            // áp TRỌN, gồm 014
-  const ban = danhSachBan();
-  const chot = ban[ban.length - 1];
-  assert.match(String(chot.ten ?? chot), /^014_/, "ca này giả định 014 là bản chót");
+  sb = await dungSandbox("cr1509luoi");            // áp TRỌN
 
-  // Gỡ ĐÚNG MỘT bản — bằng chính `014_*.down.sql` thật, không phải DROP gõ tay. Dùng bản
-  // down thật thì ca này còn canh luôn việc bản down có gỡ sạch hay không.
-  await xuong(sb.pool, { im: true });
+  // Lùi cho tới khi CẢ HAI cột của 014/015 đều biến mất — KHÔNG neo vào số hiệu migration
+  // nào. Bản đầu của ca này khai «014 là bản chót»; thêm 015 là nó gỡ nhầm bản và đỏ oan.
+  // Đúng án lệ ④: trần vòng lặp đếm TỪ NGUỒN (`danhSachBan()`), không gõ cứng.
+  const tran = danhSachBan().length;
+  for (let i = 0; i < tran; i += 1) {
+    if (!(await coCot())) break;
+    await xuong(sb.pool, { im: true });
+  }
+  assert.equal(await coCot(), false, "lùi hết trần mà cột mới vẫn còn — bản .down.sql không gỡ sạch");
 
   team = (await mot("SELECT id FROM team WHERE slug='tieu-alpha'")).id;
   pageId = (await mot(
@@ -50,9 +53,20 @@ before(async () => {
   );
 });
 
+/** Còn cột nào của 014/015 không? Một trong hai còn là chưa lùi đủ. */
+async function coCot() {
+  const r = await mot(
+    `SELECT count(*)::int c FROM information_schema.columns
+      WHERE table_schema='public'
+        AND ((table_name='kich_ban' AND column_name='san_pham_goc_ma')
+          OR (table_name='page'     AND column_name='san_pham_goc_ma'))`,
+  );
+  return r.c > 0;
+}
+
 after(async () => sb && (await sb.don()));
 
-test("L1 · sau khi gỡ 014: cột/bảng của nó THẬT SỰ không còn", async () => {
+test("L1 · sau khi lùi: cột/bảng của 014+015 THẬT SỰ không còn", async () => {
   const cot = await mot(
     `SELECT count(*)::int c FROM information_schema.columns
       WHERE table_name='kich_ban' AND column_name='san_pham_goc_ma'`,
@@ -62,6 +76,11 @@ test("L1 · sau khi gỡ 014: cột/bảng của nó THẬT SỰ không còn", a
     `SELECT count(*)::int c FROM information_schema.tables WHERE table_name='san_pham_goc'`,
   );
   assert.equal(bang.c, 0);
+  const cotPage = await mot(
+    `SELECT count(*)::int c FROM information_schema.columns
+      WHERE table_name='page' AND column_name='san_pham_goc_ma'`,
+  );
+  assert.equal(cotPage.c, 0, "015 cũng phải đã lùi — ca này đo cả hai lưới");
 });
 
 test("L2 · bộ giải KHÔNG NÉM, vẫn giải được bằng khoá POS cũ", async () => {

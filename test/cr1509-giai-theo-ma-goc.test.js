@@ -206,3 +206,60 @@ test("Q10 · một page có NHIỀU biến thể POS cùng mã gốc ⇒ khoá g
   assert.deepEqual(r.khoa.maGoc, ["fitgum-acai-berry"], "ba biến thể ⇒ MỘT mã gốc");
   assert.equal(r.khoa.maSp.length, 3, "nhưng vẫn giữ đủ ba mã POS — chúng là ba thứ thật");
 });
+
+/* ═══════════ ⑤ 015 · PAGE TỰ KHAI, KHÔNG CẦN `san_pham.page_id` ═══════════ */
+
+test("Q11 · page khai `san_pham_goc_ma` ⇒ giải được KỂ CẢ KHI không có dòng `san_pham` nào", async () => {
+  // Đây là ca chính của 015, và nó đo đúng hiện trạng prod: `san_pham.page_id` NULL sạch vì
+  // 6/6 shop đều nhiều page (Kuwait 26 · UAE 35), nên đường cũ KHÔNG BAO GIỜ tới được.
+  const p = await mot(
+    `INSERT INTO page (team_id, page_id, ten, thi_truong, san_pham_goc_ma)
+     VALUES ($1,'p-khai','Page tự khai','Bahrain','fitgum-acai-berry') RETURNING id`,
+    [team],
+  );
+  // CỐ Ý không chèn dòng `san_pham` nào cho page này.
+  const sp = await mot(
+    "SELECT count(*)::int c FROM san_pham WHERE page_id = $1", [p.id],
+  );
+  assert.equal(sp.c, 0, "ca này chỉ có nghĩa khi page KHÔNG có biến thể POS nào gắn vào");
+
+  const r = await docKichBanChoPage(sb.pool, team, p.id);
+  assert.equal(r.cap, "san_pham", "phải kế thừa bản dùng chung qua lời khai của PAGE");
+  assert.match(r.tuDau, /khoá gốc/);
+  assert.deepEqual(r.khoa.maGoc, ["fitgum-acai-berry"]);
+});
+
+test("Q12 · page CHƯA khai ⇒ nói đúng câu «page chưa khai», chỉ sang màn và script gợi ý", async () => {
+  const p = await mot(
+    `INSERT INTO page (team_id, page_id, ten, thi_truong) VALUES ($1,'p-chua','Chưa khai','Qatar')
+     RETURNING id`,
+    [team],
+  );
+  const r = await docKichBanChoPage(sb.pool, team, p.id);
+  assert.equal(r.ban, null);
+  assert.match(r.viSao, /CHƯA KHAI/, "ba lý do rỗng khác nhau thì phải nói ra đúng cái đang gặp");
+  assert.match(r.viSao, /goi-y-gan-page/, "và chỉ sang đúng công cụ");
+});
+
+test("Q13 · lời khai của PAGE thắng đường `san_pham.page_id` cũ", async () => {
+  await sb.pool.query(
+    `INSERT INTO san_pham_goc (team_id, ma_goc, ten, so_hieu)
+     VALUES ($1,'san-pham-khac','Sản phẩm khác','999')`,
+    [team],
+  );
+  const p = await mot(
+    `INSERT INTO page (team_id, page_id, ten, thi_truong, san_pham_goc_ma)
+     VALUES ($1,'p-ca-hai','Cả hai','Bahrain','fitgum-acai-berry') RETURNING id`,
+    [team],
+  );
+  // Đường cũ trỏ sang sản phẩm KHÁC — nếu nó thắng thì page đọc nhầm kịch bản.
+  await sb.pool.query(
+    `INSERT INTO san_pham (team_id, page_id, ma, ten, ma_goc)
+     VALUES ($1,$2,'7:x','X','san-pham-khac')`,
+    [team, p.id],
+  );
+  const r = await docKichBanChoPage(sb.pool, team, p.id);
+  assert.equal(r.khoa.maGoc[0], "fitgum-acai-berry",
+    "lời khai của page phải đứng TRƯỚC trong danh sách khoá");
+  assert.equal(r.cap, "san_pham");
+});

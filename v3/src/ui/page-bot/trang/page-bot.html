@@ -285,34 +285,22 @@ let SPG_CHON = [];
 let SPG_AP = null;   // null = chưa biết · false = bảng chưa có (migration 014 chưa áp)
 
 function veSanPhamGoc(p) {
-  const ds = p.sanPhamGoc || [];
-  const chuaGop = ds.soBienTheChuaGop || 0;
-  if (!SUA) {
-    return ds.length ? ds.map((g) => esc(g.ten)).join(', ') : '<span class="text-muted">—</span>';
-  }
+  const ten = p.sanPhamGocTen;
+  if (!SUA) return ten ? esc(ten) : '<span class="text-muted">—</span>';
   if (SPG_AP === false) {
-    // «Chưa áp migration» KHÁC «chưa ai soát gộp». Nói đúng câu, kẻo người vận hành đi soát
-    // sản phẩm trong khi việc thật là chạy một lệnh migrate.
-    return '<span class="text-muted" title="Chạy npm run migrate trên máy chủ">chưa áp 014</span>';
+    // «Chưa áp migration» KHÁC «chưa ai soát gộp» KHÁC «page chưa gán». Ba câu, ba việc khác
+    // nhau — nói đúng câu, kẻo người vận hành đi làm việc thứ ba trong khi việc thật là thứ nhất.
+    return '<span class="text-muted" title="Chạy npm run migrate trên máy chủ">chưa áp migration</span>';
   }
   if (!SPG_CHON.length) {
-    // Rỗng vì CHƯA AI SOÁT GỘP, không phải vì page thiếu gì. Hai câu đó dẫn người đọc đi hai
-    // hướng khác nhau, nên phải nói đúng câu (bài học «màn rỗng phải nói vì sao rỗng»).
     return '<span class="text-muted" title="Chạy ops/bin/goi-y-gop-san-pham.mjs rồi soát">'
       + 'chưa có sản phẩm gốc nào</span>';
   }
-  // Page có >1 sản phẩm gốc: KHÔNG cho sửa ở đây. Ô chọn một giá trị không diễn tả được
-  // «page này bán hai sản phẩm», và gộp hộ thành một là mất thông tin.
-  const nhieu = ds.length > 1;
-  const dangChon = ds.length === 1 ? ds[0].maGoc : '';
-  const chu = nhieu
-    ? 'Page này có ' + ds.length + ' sản phẩm gốc — màn không gộp hộ'
-    : (chuaGop ? chuaGop + ' biến thể POS chưa gộp' : '');
-  return `<select class="cell-input" data-spg="${esc(p.id)}" data-truoc="${esc(dangChon)}"
-      ${nhieu ? 'disabled' : ''} title="${esc(chu)}">
-    <option value="">${nhieu ? esc(ds.map((g) => g.ten).join(', ')) : '— chưa gán —'}</option>
+  const dangChon = p.sanPhamGocMa || '';
+  return `<select class="cell-input" data-spg="${esc(p.id)}" data-truoc="${esc(dangChon)}">
+    <option value="">— chưa gán —</option>
     ${SPG_CHON.map((g) => `<option value="${esc(g.maGoc)}"${g.maGoc === dangChon ? ' selected' : ''}>${esc(g.ten)}${g.soHieu ? ' · ' + esc(g.soHieu) : ''}</option>`).join('')}
-  </select>${chuaGop && !nhieu ? `<div class="meta">${so(chuaGop)} biến thể chưa gộp</div>` : ''}`;
+  </select>`;
 }
 
 async function luuSanPhamGoc(el) {
@@ -323,8 +311,8 @@ async function luuSanPhamGoc(el) {
       { method: 'POST', body: JSON.stringify({ maGoc: el.value }) });
     el.dataset.truoc = el.value;
     toast(kq.maGoc
-      ? `Đã gán sản phẩm gốc cho ${so(kq.soBienThe)} biến thể POS của page.`
-      : 'Đã bỏ gán sản phẩm gốc.');
+      ? 'Đã khai page này bán sản phẩm đó — kịch bản tầng sản phẩm bắt đầu áp.'
+      : 'Đã bỏ khai — page mất kế thừa kịch bản tầng trên.');
     await napNhe();
   } catch (e) { el.value = truoc; baoLoi('Không gán được sản phẩm gốc', e.message); }
   finally { el.disabled = false; }

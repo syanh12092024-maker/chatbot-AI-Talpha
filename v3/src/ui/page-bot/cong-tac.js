@@ -299,21 +299,19 @@ export async function datBotcakeTat(boiCanh, id, bat) {
   return { id: String(id), botcakeTat: moi, doi: true, laLoiKhai: true };
 }
 
-/* ─────────────── ⑦ gán SẢN PHẨM GỐC cho page (CR-15/09) ─────────────── */
+/* ─────────────── ⑦ gán SẢN PHẨM GỐC cho page (015) ─────────────── */
 
 /**
- * Gán một sản phẩm GỐC cho page: ghi `ma_goc` lên MỌI biến thể POS đang gắn page ấy.
+ * Page khai nó bán sản phẩm GỐC nào → ghi `page.san_pham_goc_ma`.
  *
- * ⚠️ VÌ SAO GHI LÊN `san_pham` CHỨ KHÔNG PHẢI LÊN `page`: quan hệ thật là
- * «page bán những biến thể POS này, mỗi biến thể thuộc một sản phẩm gốc». Thêm một cột
- * `page.ma_goc` là khai cùng một sự thật ở hai chỗ, và bản thứ hai bao giờ cũng là bản trôi
- * (án lệ của chính dự án này). Bộ giải ba tầng đọc `san_pham.ma_goc`, nên ghi đúng chỗ nó đọc.
+ * ⚠️ BẢN ĐẦU (014/CR6) GHI LÊN `san_pham`, VÀ ĐÓ LÀ SAI. Tôi lập luận «ghi lên `page` là
+ *    khai cùng một sự thật ở hai chỗ» — tiền đề sai. Đo 16/09: `src/pos/doc-danh-muc.js:69`
+ *    chỉ gán `san_pham.page_id` khi shop có ĐÚNG MỘT page, mà **6/6 shop đều nhiều page**
+ *    (Kuwait 26 · UAE 35) ⇒ cột ấy NULL sạch, không nối gì. Và nó không THỂ nối: một biến
+ *    thể POS ở Kuwait được 26 page cùng bán — N–M nhét vào một cột 1–1.
+ *    Nên `page.san_pham_goc_ma` là chỗ DUY NHẤT chứa được sự thật này.
  *
- * ⚠️ `maGoc = ''` nghĩa là BỎ GÁN (về null), không phải lỗi — người soát nhầm thì phải rút
- *    lại được mà không cần psql.
- *
- * Page chưa có biến thể POS nào ⇒ NÉM. Gán một sản phẩm cho page không có hàng là ghi vào
- * hư không: bộ giải tra `san_pham WHERE page_id`, không có dòng nào thì không có gì để tra.
+ * `maGoc = ''` ⇒ BỎ GÁN (về null). Người gán nhầm phải rút lại được mà không cần psql.
  */
 export async function ganSanPhamGoc(boiCanh, id, maGoc) {
   const bc = batBuocBoiCanh(boiCanh);
@@ -327,43 +325,31 @@ export async function ganSanPhamGoc(boiCanh, id, maGoc) {
     const co = await db.chon('san_pham_goc', { ma_goc: moi });
     if (!co.length) {
       throw new LoiPageBot(
-        `không có sản phẩm gốc "${moi}" — chạy \`node ops/bin/goi-y-gop-san-pham.mjs\` để `
-        + 'xem danh sách gợi ý, hoặc tạo sản phẩm gốc trước',
+        `không có sản phẩm gốc "${moi}" — chạy \`node ops/bin/goi-y-gop-san-pham.mjs\` để xem `
+        + 'danh sách gợi ý, hoặc tạo sản phẩm gốc trước',
         'khong_co_san_pham_goc', 404,
       );
     }
   }
 
-  const bienThe = await db.chon('san_pham', { page_id: String(id) });
-  if (!bienThe.length) {
-    throw new LoiPageBot(
-      `page ${p.ten || p.pageId} chưa có biến thể POS nào gắn vào (\`san_pham.page_id\`) — `
-      + 'gán sản phẩm gốc lúc này là ghi vào hư không. Chạy lượt «Kéo dữ liệu về» trước.',
-      'page_chua_co_bien_the', 409,
-    );
-  }
+  const cu = p.sanPhamGocMa || null;
+  if ((cu || '') === moi) return { id: String(id), maGoc: moi || null, doi: false };
 
-  const truoc = [...new Set(bienThe.map((r) => r.ma_goc).filter(Boolean))].sort();
-  if (truoc.length === (moi ? 1 : 0) && (!moi || truoc[0] === moi)) {
-    return { id: String(id), maGoc: moi || null, doi: false, soBienThe: bienThe.length };
-  }
-
-  for (const r of bienThe) {
-    await db.sua('san_pham', { id: String(r.id) }, {
-      ma_goc: moi || null, sua_luc: new Date().toISOString(),
-    });
-  }
+  await db.sua(BANG, { id: String(id) }, {
+    san_pham_goc_ma: moi || null, sua_luc: new Date().toISOString(),
+  });
 
   await ghi(bc, {
     hanhDong: HANH_DONG_SP_GOC,
     doiTuongLoai: BANG,
     doiTuongId: String(id),
-    truoc: { ma_goc: truoc },
-    sau: { ma_goc: moi || null, so_bien_the: bienThe.length },
+    truoc: { san_pham_goc_ma: cu },
+    sau: { san_pham_goc_ma: moi || null },
+    // Nói HẬU QUẢ, không chỉ nói hành động: đổi cột này là đổi kịch bản page ấy đọc.
     ghiChu: moi
-      ? `gán sản phẩm gốc "${moi}" cho page ${p.ten || p.pageId} (${bienThe.length} biến thể POS)`
-      : `bỏ gán sản phẩm gốc khỏi page ${p.ten || p.pageId}`,
+      ? `page ${p.ten || p.pageId} nay khai bán sản phẩm "${moi}" — kịch bản tầng sản phẩm/nước của sản phẩm ấy bắt đầu áp cho page này`
+      : `bỏ khai sản phẩm của page ${p.ten || p.pageId} — page mất kế thừa kịch bản tầng trên`,
   });
 
-  return { id: String(id), maGoc: moi || null, doi: true, soBienThe: bienThe.length };
+  return { id: String(id), maGoc: moi || null, doi: true };
 }

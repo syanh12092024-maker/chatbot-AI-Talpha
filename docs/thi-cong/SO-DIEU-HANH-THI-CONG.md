@@ -1799,3 +1799,25 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   nháy ⇒ `aicloser-v3-xemthu` thành một lệnh riêng «command not found».
   📌 Luật: mỗi lệnh máy chủ là MỘT dòng `ssh host '…'` ngắn dưới ~70 ký tự. Không khối nhiều
   dòng, không trộn lệnh máy cá nhân với lệnh máy chủ.
+
+- 16/09 · **PHIẾU 015 · PAGE KHAI NÓ BÁN SẢN PHẨM NÀO** → ✅ — `page.san_pham_goc_ma`. Đây là
+  phiếu SỬA MỘT LẬP LUẬN SAI CỦA TÔI Ở 014: ở đó tôi từ chối cột này với lý lẽ «thêm nó là
+  khai cùng một sự thật ở hai chỗ, vì `san_pham.page_id` đã nối rồi». Tiền đề sai — đo
+  `pages.json` 16/09: **6/6 shop đều nhiều page** (UAE 35 · Kuwait 26 · Saudi 23 · Qatar 10 ·
+  Bahrain 7 · Oman 7), mà `doc-danh-muc.js:69` chỉ gán `page_id` khi shop có ĐÚNG MỘT page ⇒
+  `san_pham.page_id` **NULL cho mọi sản phẩm, luôn luôn**. Và nó không THỂ nối: một biến thể
+  POS ở Kuwait được 26 page cùng bán — N–M nhét vào cột 1–1.
+  Mở được ba thứ đang tắc: tầng kịch bản `cap='san_pham'` (chưa bao giờ với tới page nào) ·
+  cột «Sản phẩm gốc» của màn (trước đó trả 409 cho mọi page) · cảnh «page chết → page mới
+  khai cùng sản phẩm là kế thừa hết».
+  Kèm `ops/bin/goi-y-gan-page.mjs` bóc từ ĐƠN THẬT: **122 page có đơn · 83 bán đúng 1 sản
+  phẩm (gán được ngay) · 8 có một SP áp đảo ≥80% · 31 bán lẫn (người quyết)**. Nó nhận đúng
+  `Healthy Figure PH in Kuwait → 125 → Fitgum Acai Berry`.
+  npm test 1.767 ca · 1.764 xanh · 1 đỏ = D7. Cổng: l0-m1 58/59 · l0-m2 30/31 · g2-a3 6/6 ·
+  g2-a4 16/16 · b-y3 14/14 · l1-m1 24/24 · l2-m3 11/11 · g2-a5-a6 14/15 (S3/S8 — dãy S chập
+  chờn, nợ 14/09).
+- 16/09 · 🧭 **ÁN LỆ: MỘT CỘT CÓ THỂ TỒN TẠI MÀ KHÔNG BAO GIỜ CÓ GIÁ TRỊ — và lập luận «đã có
+  chỗ nối rồi» phải ĐO trước khi tin.** Tôi đọc lược đồ thấy `san_pham.page_id` tồn tại và
+  kết luận mối nối page↔sản phẩm đã có. Cột tồn tại; giá trị thì không. Phép đo đúng không
+  phải «có cột đó không» mà là «bao nhiêu dòng có giá trị, và điều kiện để nó có giá trị có
+  xảy ra không». Ở đây điều kiện là «shop có đúng 1 page» — chưa bao giờ đúng với shop nào.

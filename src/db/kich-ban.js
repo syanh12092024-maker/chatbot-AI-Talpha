@@ -63,6 +63,21 @@ async function coCotCap(khach) {
  * 📌 Mỗi migration thêm cột mà reader mới đọc thì cần LƯỚI RIÊNG của nó. Một lưới canh
  *    migration cũ không che được cột của migration mới.
  */
+/**
+ * LƯỚI MIGRATION 015 — `page.san_pham_goc_ma`. Lưới RIÊNG, cùng bài học đã trả giá 16/09:
+ * một lưới canh migration cũ không che được cột của migration mới.
+ */
+let _coPageGoc = null;
+async function coCotPageGoc(khach) {
+  if (_coPageGoc !== null) return _coPageGoc;
+  const r = await khach.query(
+    `SELECT count(*)::int c FROM information_schema.columns
+      WHERE table_schema='public' AND table_name='page' AND column_name='san_pham_goc_ma'`,
+  );
+  _coPageGoc = r.rows[0].c > 0;
+  return _coPageGoc;
+}
+
 let _coSpMaGoc = null;
 async function coCotSanPhamMaGoc(khach) {
   if (_coSpMaGoc !== null) return _coSpMaGoc;
@@ -107,8 +122,11 @@ function keuThieuMigration() {
 
 /** Khoá tầng của một page: mã sản phẩm nó bán, và thị trường của nó. */
 async function khoaTangCuaPage(khach, teamId, pageRowId) {
+  // 015 — `page.san_pham_goc_ma` là NGUỒN CHÍNH của khoá tầng sản phẩm từ 16/09.
+  const coPageGoc = await coCotPageGoc(khach);
   const p = await khach.query(
-    "SELECT id, page_id, ten, thi_truong FROM page WHERE id = $1 AND team_id = $2",
+    `SELECT id, page_id, ten, thi_truong${coPageGoc ? ", san_pham_goc_ma" : ", NULL::text AS san_pham_goc_ma"}
+       FROM page WHERE id = $1 AND team_id = $2`,
     [pageRowId, teamId],
   );
   if (!p.rowCount) return null;
@@ -126,7 +144,15 @@ async function khoaTangCuaPage(khach, teamId, pageRowId) {
     // CR-15/09 — mã GỐC, không mang shop. `DISTINCT` ở tầng JS vì nhiều biến thể POS của
     // cùng một sản phẩm (size M/L/XL) trỏ về MỘT `ma_goc`; để trùng thì câu `= ANY()` vẫn
     // đúng nhưng `ORDER BY` chọn bản LIVE theo thứ tự khó đoán.
-    maGoc: [...new Set(sp.rows.map((r) => r.ma_goc).filter(Boolean))].sort(),
+    // HỢP của hai nguồn, và `page` đứng TRƯỚC:
+    //   · `page.san_pham_goc_ma` (015) — lời khai của page, nguồn chính
+    //   · `san_pham.ma_goc` (014) qua `san_pham.page_id` — đường cũ, thực tế NULL sạch vì
+    //     mọi shop đều nhiều page (đo 16/09: 6/6 shop, Kuwait 26 page · UAE 35 page)
+    // Giữ cả hai để lược đồ nào cũng chạy; `page` trước để nó thắng khi cả hai có giá trị.
+    maGoc: [...new Set([
+      p.rows[0].san_pham_goc_ma,
+      ...sp.rows.map((r) => r.ma_goc),
+    ].filter(Boolean))],
   };
 }
 
@@ -288,31 +314,39 @@ async function giaiChoPage(khach, teamId, pageRowId) {
     }
 
     // ④ KHÔNG CÓ GÌ — và đây là chỗ phải nói cho ra nhẽ, không được trả `null` trần.
-    // Ba lý do khác hẳn nhau, và cách sửa cũng khác hẳn nhau.
+    // BỐN lý do khác hẳn nhau, và cách sửa cũng khác hẳn nhau.
+    //
+    // 16/09 (phiếu 015) — VIẾT LẠI ĐIỀU KIỆN. Bản trước neo vào `k.maSp` (`san_pham.ma` qua
+    // `san_pham.page_id`) và câu chữ chỉ người ta đi sửa `san_pham.page_id`. Sai đường: đo
+    // 16/09 thì cột ấy NULL cho MỌI sản phẩm, vì `doc-danh-muc.js` chỉ gán nó khi shop có
+    // đúng một page, mà 6/6 shop đều nhiều page. Người đọc câu cũ sẽ đi sửa một cột không
+    // bao giờ sửa được. Nguồn thật của khoá tầng sản phẩm nay là `page.san_pham_goc_ma`.
     const thieu = [];
-    if (!k.maSp.length && !k.thiTruong) {
+    const khongSp = !k.maGoc.length;
+    if (khongSp && !k.thiTruong) {
       thieu.push(
-        "page chưa gắn sản phẩm nào (`san_pham.page_id`) VÀ chưa khai `thi_truong` — " +
-          "không tầng trên nào tới được",
+        "page CHƯA KHAI nó bán sản phẩm gốc nào (`page.san_pham_goc_ma`) VÀ chưa khai " +
+          "`thi_truong` — không tầng trên nào tới được. Gán cả hai ở màn Page & bot.",
       );
-    } else if (!k.maSp.length) {
+    } else if (khongSp) {
+      // Hai cảnh cùng rơi vào nhánh này, và chúng có VIỆC PHẢI LÀM khác nhau — nên nói khác
+      // nhau (ca K4 canh đúng nguyên tắc ấy):
+      //   · page có biến thể POS gắn vào mà chưa cái nào gộp về mã gốc ⇒ thêm việc CR3;
+      //   · page không có biến thể nào ⇒ chỉ cần khai sản phẩm, không liên quan CR3.
       thieu.push(
-        "page chưa gắn sản phẩm nào (`san_pham.page_id`) nên tầng SẢN PHẨM không tới được; " +
-          `tầng NƯỚC thì chưa có bản LIVE nào cho "${k.thiTruong}"`,
+        "page chưa gắn sản phẩm nào theo nghĩa tầng trên đọc được — CHƯA KHAI " +
+          "`page.san_pham_goc_ma`" +
+          (k.maSp.length
+            ? `, và ${k.maSp.length} biến thể POS gắn vào page cũng chưa được gộp về mã gốc `
+              + "(chạy `node ops/bin/goi-y-gop-san-pham.mjs` rồi soát)"
+            : "") +
+          `. Tầng SẢN PHẨM không tới được; tầng NƯỚC chưa có bản LIVE nào cho ` +
+          `"${k.thiTruong}". Gán ở cột «Sản phẩm gốc» màn Page & bot, hoặc chạy ` +
+          "`node ops/bin/goi-y-gan-page.mjs` để lấy gợi ý từ đơn cũ.",
       );
     } else if (!k.thiTruong) {
       thieu.push(
         "page chưa khai `thi_truong` nên tầng NƯỚC không tới được; tầng SẢN PHẨM thì chưa có bản LIVE",
-      );
-    } else if (!k.maGoc.length) {
-      // CR-15/09 — lý do THỨ TƯ, khác hẳn ba cái trên và cách sửa cũng khác: page có sản
-      // phẩm, có thị trường, nhưng chưa sản phẩm nào được gộp về một MÃ GỐC. Nghĩa là
-      // người chưa soát (phiếu CR3). Tầng trên vẫn tra được bằng khoá POS cũ, nhưng kịch
-      // bản viết MỘT LẦN dùng cho nhiều thị trường thì chưa tới được page này.
-      thieu.push(
-        "page có sản phẩm và có thị trường, nhưng chưa sản phẩm nào gắn `san_pham.ma_goc` " +
-          "— chạy `node ops/bin/goi-y-gop-san-pham.mjs` rồi soát, hoặc viết kịch bản theo " +
-          "khoá POS cũ (chỉ dùng được cho MỘT thị trường)",
       );
     } else {
       thieu.push("không tầng nào có bản LIVE cho khoá của page này");
@@ -321,7 +355,8 @@ async function giaiChoPage(khach, teamId, pageRowId) {
       ban: null, cap: null, keThua: false, tuDau: "không có bản nào",
       viSao:
         `page "${k.page.page_id}" chưa có kịch bản riêng, và ${thieu[0]}. ` +
-        `Khoá đang có: sản phẩm=[${k.maSp.join(", ") || "—"}] · nước="${k.thiTruong || "—"}".`,
+        `Khoá đang có: sản phẩm gốc=[${k.maGoc.join(", ") || "—"}] · ` +
+        `mã POS=[${k.maSp.join(", ") || "—"}] · nước="${k.thiTruong || "—"}".`,
       khoa,
     };
   }

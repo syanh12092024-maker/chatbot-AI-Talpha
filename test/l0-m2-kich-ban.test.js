@@ -117,9 +117,14 @@ test("K4 · KHÔNG có gì → viSao nói rõ THIẾU KHOÁ NÀO, không trả n
   assert.match(kq.viSao, /sp:nen/); // khai khoá page đang có, để marketer biết sửa ở đâu
 
   // …và page KHÔNG có sản phẩm nào phải nói một lý do KHÁC HẲN.
+  // 16/09 (phiếu 015): cả hai cảnh nay cùng thiếu `page.san_pham_goc_ma`, nhưng VIỆC PHẢI
+  // LÀM khác nhau — page có biến thể POS thì còn thêm việc gộp (CR3), page không có thì
+  // không. Câu chữ phải phân biệt đúng chỗ đó, chứ không phân biệt bằng một cột đã chết.
   const kq2 = await docKichBanChoPage(sb.pool, tA, pKhongSp.id);
   console.log(`   [K4] viSao (page không SP)="${kq2.viSao}"`);
   assert.match(kq2.viSao, /chưa gắn sản phẩm nào/);
+  assert.match(kq.viSao, /chưa được gộp về mã gốc/, "page CÓ biến thể POS thì phải nhắc việc gộp");
+  assert.ok(!/chưa được gộp về mã gốc/.test(kq2.viSao), "page KHÔNG có biến thể thì đừng nhắc việc ấy");
   assert.notEqual(kq2.viSao, kq.viSao, "hai lý do khác nhau phải nói khác nhau");
 });
 
