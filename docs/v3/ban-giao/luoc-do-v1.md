@@ -63,7 +63,8 @@ Mọi bảng còn lại có `team_id NOT NULL`; **ngoại lệ duy nhất** là 
 | `cau_hinh_model`     | model từng team, BA dòng một team | `vai_tro` ∈ chinh/du_phong/nen · `nha_cung_cap` · `ma_model` · `do_ngau_nhien` · ~~`khoa_api_ma`~~ (bỏ ở 008) |
 | `khoa_nha` (008)     | khoá API — MỘT bản mỗi (team × nhà) | `UNIQUE (team_id, nha_cung_cap)` · **`khoa_api_ma` MÃ HOÁ** · ngoài `BANG_NGHIEP_VU_CHUAN` |
 | `page`               | sổ cái page                      | `page_id` (id FB, UNIQUE) · **`bot_ai_bat`** · `botcake_tat` · `trong_diem` · `the_pancake` · `mat_dau` |
-| `san_pham` `goi_gia` | danh mục                         | **chưa nạp ở L0-M1** — nguồn là POS (L1-M1)                                                             |
+| `san_pham_goc`       | sản phẩm THẬT (CR-15/09)         | **không shop, không page** · UNIQUE (team, `ma_goc`) · khoá của tầng kịch bản «sản phẩm» + `ky_nang`     |
+| `san_pham` `goi_gia` | danh mục                         | **chưa nạp ở L0-M1** — nguồn là POS (L1-M1) · `ma_goc` → `san_pham_goc` (nullable tới khi người soát)   |
 | `khach`              | hồ sơ khách                      | `so_dien_thoai` **NULL được**, UNIQUE trong team khi có giá trị · `ti_le_hoan`                          |
 | `hoi_thoai`          | trạng thái hội thoại             | UNIQUE (page, psid) · `khach_id` **nullable** · `moc_luot_llm` (sổ ngân sách 24h)                       |
 | `so_ai`              | mọi hành động bot                | **CHỈ INSERT** · `ma_model` NOT NULL · `nguon_tep`+`nguon_dong` (neo idempotent)                        |

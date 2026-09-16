@@ -166,7 +166,8 @@ Mọi bảng có `team_id`, trừ ba bảng dùng chung.
 | `nguoi_dung` `vai` `thanh_vien_team` | Người, vai, ai thuộc team nào | dùng chung · một người vào được nhiều team |
 | `cau_hinh_model` | Model và khoá từng team | **mới** · chính, dự phòng, model nền · khoá mã hoá khi lưu |
 | `page` | Sổ cái page | cờ `botcake_tat`, `bot_ai_bat`, `trong_diem` |
-| `san_pham` `goi_gia` | Danh mục từ POS | tồn kho, cờ hết hàng tự tắt bot |
+| `san_pham_goc` | **Sản phẩm THẬT** (CR-15/09) | một dòng một sản phẩm, **không mang shop, không gắn page** — khoá của tầng kịch bản «sản phẩm» và của `ky_nang` |
+| `san_pham` `goi_gia` | Danh mục từ POS | tồn kho, cờ hết hàng tự tắt bot · `ma` = `<shop>:<variation>` là khoá KỸ THUẬT; `ma_goc` trỏ về `san_pham_goc` |
 | `khach` | Hồ sơ khách | **số điện thoại là khoá nối** ba kênh · giữ tỉ lệ hoàn |
 | `hoi_thoai` | Trạng thái hội thoại | ai đang làm chủ, đang ở bước nào |
 | `so_ai` | Mọi hành động bot làm | **chỉ thêm, không sửa** · có token, mã kịch bản, **mã model** |

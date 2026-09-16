@@ -137,6 +137,13 @@ Luật Meta đổi trong năm 2026:
 |---|---:|---|---|
 | Bộ luật chung | 2.256 | Quản trị · dùng chung 51 page | Hiếm |
 | Kỹ năng | ~180/kỹ năng | Marketer · bật theo sản phẩm | Thỉnh thoảng |
+
+> **CR-15/09 · không đổi quyết định nào ở trên, chỉ làm cho nó chạy được.** «Bật theo sản
+> phẩm» và ba tầng kịch bản (migration 010) vốn đã ký, nhưng mã sản phẩm mang theo mã shop
+> (`<shopId>:<variationId>`) nên «một sản phẩm» thực chất là «một sản phẩm TRONG MỘT SHOP» —
+> đo 15/09: Fitgum Acai Berry ra **ba** mã ở ba thị trường. CR thêm `ma_goc` (mã sản phẩm
+> thật, không mang shop) để tầng sản phẩm và tầng nước có nghĩa.
+> Hồ sơ: `docs/thi-cong/doi-y-do/CR-15-09-ma-san-pham-khong-mang-shop.md`.
 | Kịch bản page | ~1.400 | Marketer phụ trách | Thường xuyên |
 | Dữ liệu sản phẩm | ~1.500 | Đồng bộ từ POS | Tự động |
 
