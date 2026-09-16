@@ -69,13 +69,17 @@ async function khoaTangCuaPage(khach, teamId, pageRowId) {
   );
   if (!p.rowCount) return null;
   const sp = await khach.query(
-    "SELECT ma FROM san_pham WHERE team_id = $1 AND page_id = $2 ORDER BY ma",
+    "SELECT ma, ma_goc FROM san_pham WHERE team_id = $1 AND page_id = $2 ORDER BY ma",
     [teamId, pageRowId],
   );
   return {
     page: p.rows[0],
     thiTruong: (p.rows[0].thi_truong || "").trim(),
     maSp: sp.rows.map((r) => r.ma),
+    // CR-15/09 — mã GỐC, không mang shop. `DISTINCT` ở tầng JS vì nhiều biến thể POS của
+    // cùng một sản phẩm (size M/L/XL) trỏ về MỘT `ma_goc`; để trùng thì câu `= ANY()` vẫn
+    // đúng nhưng `ORDER BY` chọn bản LIVE theo thứ tự khó đoán.
+    maGoc: [...new Set(sp.rows.map((r) => r.ma_goc).filter(Boolean))].sort(),
   };
 }
 
@@ -131,7 +135,7 @@ async function giaiChoPage(khach, teamId, pageRowId) {
         ? null
         : "migration 010 CHƯA áp trên CSDL này — cây ba tầng chưa dùng được, mới chỉ tra " +
           "được bản riêng của page. Chạy `npm run migrate` rồi hỏi lại.",
-      khoa: { thiTruong: "", maSp: [] },
+      khoa: { thiTruong: "", maSp: [], maGoc: [] },
     };
   }
   {
@@ -140,10 +144,10 @@ async function giaiChoPage(khach, teamId, pageRowId) {
       return {
         ban: null, cap: null, keThua: false, tuDau: "không có page",
         viSao: `không có page id=${pageRowId} trong team ${teamId}.`,
-        khoa: { thiTruong: "", maSp: [] },
+        khoa: { thiTruong: "", maSp: [], maGoc: [] },
       };
     }
-    const khoa = { thiTruong: k.thiTruong, maSp: k.maSp };
+    const khoa = { thiTruong: k.thiTruong, maSp: k.maSp, maGoc: k.maGoc };
 
     // ① tầng PAGE — hẹp nhất, thắng
     const riengPage = await khach.query(
@@ -165,19 +169,26 @@ async function giaiChoPage(khach, teamId, pageRowId) {
     // tầng nước của tôi chưa bao giờ tới được. `page.thi_truong` thì có ở 140/514 page.
     // Tôi đã treo một tầng dùng được vào một tầng chưa tồn tại; 012 gỡ đúng chỗ đó.
     if (k.thiTruong) {
-      if (k.maSp.length) {
+      // CR-15/09 — THỨ TỰ: khoá GỐC trước, khoá POS cũ sau. Bản viết theo mã gốc là bản
+      // mới nhất; tìm thấy nó thì dừng. Đảo thứ tự là để một dòng di sản che một dòng mới,
+      // và không ai thấy vì cả hai đều trả về «có kịch bản».
+      for (const [cot, ds, nhan] of [
+        ["san_pham_goc_ma", k.maGoc, "gốc"],
+        ["san_pham_ma", k.maSp, "POS"],
+      ]) {
+        if (!ds.length) continue;
         const hep = await khach.query(
           `SELECT * FROM kich_ban
             WHERE team_id = $1 AND cap = 'nuoc' AND trang_thai = 'LIVE'
-              AND san_pham_ma = ANY($2) AND thi_truong = $3
-            ORDER BY san_pham_ma LIMIT 1`,
-          [teamId, k.maSp, k.thiTruong],
+              AND ${cot} = ANY($2) AND thi_truong = $3
+            ORDER BY ${cot} LIMIT 1`,
+          [teamId, ds, k.thiTruong],
         );
         if (hep.rowCount) {
           const b = hep.rows[0];
           return {
             ban: b, cap: CAP.NUOC, keThua: true,
-            tuDau: `${CHU_CAP.nuoc} (${b.san_pham_ma} × ${b.thi_truong})`,
+            tuDau: `${CHU_CAP.nuoc} (${b[cot]} × ${b.thi_truong}, khoá ${nhan})`,
             viSao: null, khoa,
           };
         }
@@ -200,19 +211,23 @@ async function giaiChoPage(khach, teamId, pageRowId) {
     }
 
     // ③ tầng SẢN PHẨM — rộng nhất
-    if (k.maSp.length) {
+    for (const [cot, ds, nhan] of [
+      ["san_pham_goc_ma", k.maGoc, "gốc"],
+      ["san_pham_ma", k.maSp, "POS"],
+    ]) {
+      if (!ds.length) continue;
       const sp = await khach.query(
         `SELECT * FROM kich_ban
           WHERE team_id = $1 AND cap = 'san_pham' AND trang_thai = 'LIVE'
-            AND san_pham_ma = ANY($2)
-          ORDER BY san_pham_ma LIMIT 1`,
-        [teamId, k.maSp],
+            AND ${cot} = ANY($2)
+          ORDER BY ${cot} LIMIT 1`,
+        [teamId, ds],
       );
       if (sp.rowCount) {
         const b = sp.rows[0];
         return {
           ban: b, cap: CAP.SAN_PHAM, keThua: true,
-          tuDau: `${CHU_CAP.san_pham} (${b.san_pham_ma})`,
+          tuDau: `${CHU_CAP.san_pham} (${b[cot]}, khoá ${nhan})`,
           viSao: null, khoa,
         };
       }
@@ -234,6 +249,16 @@ async function giaiChoPage(khach, teamId, pageRowId) {
     } else if (!k.thiTruong) {
       thieu.push(
         "page chưa khai `thi_truong` nên tầng NƯỚC không tới được; tầng SẢN PHẨM thì chưa có bản LIVE",
+      );
+    } else if (!k.maGoc.length) {
+      // CR-15/09 — lý do THỨ TƯ, khác hẳn ba cái trên và cách sửa cũng khác: page có sản
+      // phẩm, có thị trường, nhưng chưa sản phẩm nào được gộp về một MÃ GỐC. Nghĩa là
+      // người chưa soát (phiếu CR3). Tầng trên vẫn tra được bằng khoá POS cũ, nhưng kịch
+      // bản viết MỘT LẦN dùng cho nhiều thị trường thì chưa tới được page này.
+      thieu.push(
+        "page có sản phẩm và có thị trường, nhưng chưa sản phẩm nào gắn `san_pham.ma_goc` " +
+          "— chạy `node ops/bin/goi-y-gop-san-pham.mjs` rồi soát, hoặc viết kịch bản theo " +
+          "khoá POS cũ (chỉ dùng được cho MỘT thị trường)",
       );
     } else {
       thieu.push("không tầng nào có bản LIVE cho khoá của page này");

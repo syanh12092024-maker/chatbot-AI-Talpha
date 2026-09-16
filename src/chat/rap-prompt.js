@@ -76,9 +76,10 @@ export async function docBoLuatChung(pool, teamId) {
  * `bat_cho_nhom_sp` RỖNG ⇒ áp dụng CHO CẢ TEAM (quản trị đã BẬT có chủ đích, không khoanh
  * nhóm cụ thể) — KHÁC "kỹ năng chưa ai bật" (bat=false, không vào danh sách này).
  *
- * @param {string[]} dsMaSp  danh sách `san_pham.ma` của page đang xử lý
+ * @param {string[]} dsMaSp   danh sách `san_pham.ma` của page đang xử lý
+ * @param {string[]} dsMaGoc  danh sách `san_pham.ma_goc` (CR-15/09) — vốn từ MỚI, thắng
  */
-export async function docKyNang(pool, teamId, dsMaSp = []) {
+export async function docKyNang(pool, teamId, dsMaSp = [], dsMaGoc = []) {
   const rows = await layNhieu(pool, CTX_DOC, "ky_nang", {
     dieuKien: { team_id: teamId, bat: true },
     thuTu: "ma",
@@ -86,7 +87,7 @@ export async function docKyNang(pool, teamId, dsMaSp = []) {
   // ⚠️ Vị từ này DÙNG CHUNG với phép đếm «kỹ năng này chạm bao nhiêu page» ở
   // `src/db/noi-dung.js`. Gõ lại nó ở đây là đẻ bản khai thứ hai — và bản thứ hai bao giờ
   // cũng là bản trôi, tức màn hình nói «3 page» trong khi bot đổi giọng ở 51 page.
-  return rows.filter((r) => apDungChoPage(r, dsMaSp));
+  return rows.filter((r) => apDungChoPage(r, dsMaSp, dsMaGoc));
 }
 
 /** Đọc dòng `page` theo khoá tự nhiên TEXT (Facebook page_id) — cần `page.id` (bigint)

@@ -1220,11 +1220,52 @@ CREATE INDEX san_pham_ma_goc ON san_pham (team_id, ma_goc) WHERE ma_goc IS NOT N
 COMMENT ON COLUMN san_pham.ma     IS 'Khoá KỸ THUẬT "<shopId>:<variationId>" — trỏ POS để tạo đơn. KHÔNG phải khoá nghiệp vụ.';
 COMMENT ON COLUMN san_pham.ma_goc IS 'Khoá NGHIỆP VỤ → san_pham_goc.ma_goc. NULL = chưa ai soát gộp (CR3).';
 
--- Tầng kịch bản: cột MỚI cạnh cột cũ. Rào `kich_ban_khoa_dung_cap` của 010 KHÔNG đổi ở
--- migration này — 010 vẫn đòi `san_pham_ma IS NOT NULL` cho hai tầng trên, nên dòng cũ vẫn
--- hợp lệ và dòng mới phải mang CẢ HAI trong suốt quãng chuyển. Bỏ cột cũ là một phiếu SAU,
--- cách CR5 ít nhất một tuần chạy ổn (đường lùi của CR).
+-- Tầng kịch bản: cột MỚI cạnh cột cũ. Bỏ cột cũ là một phiếu SAU, cách CR5 ít nhất một
+-- tuần chạy ổn (đường lùi của CR).
 ALTER TABLE kich_ban ADD COLUMN san_pham_goc_ma text;
+
+-- ⚠️ PHẢI NỚI RÀO CỦA 010 — phát hiện lúc viết thước, không phải lúc thiết kế.
+--
+-- Bản đầu của migration này giữ nguyên `kich_ban_khoa_dung_cap` và ghi «dòng mới phải mang
+-- CẢ HAI khoá trong quãng chuyển». Viết ca test mới thì thấy câu đó VÔ NGHĨA: một kịch bản
+-- dùng CHUNG cho Saudi · Kuwait · Oman thì `san_pham_ma` phải điền cái gì? Không có một mã
+-- POS nào đại diện cho ba shop — đó chính là lý do CR này tồn tại. Rào cũ khoá đúng thứ nó
+-- sinh ra để mở.
+--
+-- ⚠️ VÀ NỚI TỪ BẢN CỦA **012**, KHÔNG PHẢI BẢN 010 — tôi viết sai chỗ này lần đầu và bộ ca
+--    K17/K18/K19 bắt được. 012 đã nới `cap='nuoc'` cho phép `san_pham_ma IS NULL` («bản cho
+--    CẢ NƯỚC, bất kể sản phẩm nào») vì lúc ấy `san_pham` còn 0 dòng. Chép lại rào theo bản
+--    010 là xoá lặng lẽ tầng «chỉ nước» — tầng duy nhất dùng được hồi 25/08.
+--    📌 Bài học: rào của một bảng là TỔNG của mọi migration đã sửa nó, không phải bản khai
+--    ở migration đầu tiên. Đọc bản MỚI NHẤT trước khi viết lại.
+--
+-- Nới: tầng `san_pham` nhận «CÓ ÍT NHẤT MỘT trong hai khoá». Tầng `nuoc` giữ đúng 012 —
+-- chỉ bắt buộc `thi_truong`, hai khoá sản phẩm đều tuỳ. `cap='page'` vẫn KHÔNG được mang
+-- khoá sản phẩm nào, kể cả khoá mới.
+ALTER TABLE kich_ban DROP CONSTRAINT kich_ban_khoa_dung_cap;
+ALTER TABLE kich_ban ADD CONSTRAINT kich_ban_khoa_dung_cap CHECK (
+  (cap = 'page'     AND page_id IS NOT NULL
+                    AND san_pham_ma IS NULL AND san_pham_goc_ma IS NULL
+                    AND thi_truong IS NULL)
+  OR
+  (cap = 'nuoc'     AND page_id IS NULL AND thi_truong IS NOT NULL)
+  OR
+  (cap = 'san_pham' AND page_id IS NULL
+                    AND (san_pham_ma IS NOT NULL OR san_pham_goc_ma IS NOT NULL)
+                    AND thi_truong IS NULL)
+);
+
+-- Và ĐÚNG MỘT BẢN LIVE cho phạm vi theo khoá GỐC — song song với hai chỉ mục của 010 theo
+-- khoá POS. Thiếu chỗ này thì hai bản LIVE cùng `(team, ma_goc)` cùng tồn tại, và bộ giải
+-- chọn bản nào là do `ORDER BY` quyết — đúng kiểu hỏng im lặng mà 010 dựng chỉ mục để chặn.
+CREATE UNIQUE INDEX kich_ban_mot_live_goc_san_pham
+  ON kich_ban (team_id, san_pham_goc_ma)
+  WHERE trang_thai = 'LIVE' AND cap = 'san_pham' AND san_pham_goc_ma IS NOT NULL;
+-- Tầng nước theo khoá gốc: lọc `IS NOT NULL` để KHÔNG đụng chỉ mục «chỉ nước» của 012
+-- (`coalesce(san_pham_ma,'')`). Hai chỉ mục canh hai phạm vi khác nhau, không chồng nhau.
+CREATE UNIQUE INDEX kich_ban_mot_live_goc_nuoc
+  ON kich_ban (team_id, san_pham_goc_ma, thi_truong)
+  WHERE trang_thai = 'LIVE' AND cap = 'nuoc' AND san_pham_goc_ma IS NOT NULL;
 CREATE INDEX kich_ban_san_pham_goc_ma ON kich_ban (team_id, san_pham_goc_ma)
   WHERE san_pham_goc_ma IS NOT NULL;
 

@@ -141,7 +141,8 @@ muc "② DANH SÁCH bảng ↔ NEO NGOÀI 19 tên trích từ 02-KE-HOACH-CODE �
 #        bo_luat_chung_mot_ban_dang_ap) và +mau_0_dong (24, migration 012 — bảng mẫu
 #        lớp 0 đồng). Neo này CỐ Ý viết tay và cố ý phải sửa mỗi lần thêm bảng: sinh nó
 #        từ db/schema.sql thì nó tự khớp với thứ đang đo, và phép mất hết răng.
-NEO="$(printf '%s\n' ket_noi_pos tin_cho_xu_ly khoa_nha ky_nang_lich_su mau_0_dong \
+# 15/09 CR-15/09: +san_pham_goc (25, migration 014 — sản phẩm THẬT, không mang shop).
+NEO="$(printf '%s\n' san_pham_goc ket_noi_pos tin_cho_xu_ly khoa_nha ky_nang_lich_su mau_0_dong \
   team nguoi_dung vai thanh_vien_team cau_hinh_model page san_pham \
   goi_gia khach hoi_thoai so_ai don_hang viec_can_xu_ly hang_cho_tao_don kich_ban \
   bo_luat_chung ky_nang lich_nhac nhat_ky | sort)"

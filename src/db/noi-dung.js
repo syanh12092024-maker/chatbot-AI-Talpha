@@ -48,14 +48,31 @@ export const VAI_SUA_KY_NANG = Object.freeze(["quan-tri", "marketer"]);
  *
  * `bat_cho_nhom_sp` RỖNG ⇒ áp cho CẢ TEAM (quản trị bật có chủ đích, không khoanh nhóm).
  * Khác hẳn «kỹ năng chưa ai bật» (`bat=false`) — chỗ đó không gọi tới hàm này.
+ *
+ * CR-15/09: nhận CẢ HAI vốn từ. `bat_cho_nhom_sp_goc` (mã GỐC, không mang shop) là hàng
+ * mới và nó THẮNG; `bat_cho_nhom_sp` (mã POS `<shop>:<variation>`) là hàng cũ, chỉ đọc khi
+ * hàng mới rỗng. Xem lý do «thắng, không lấy hợp» ở trong thân hàm.
+ * @param {string[]} dsMaSp   `san_pham.ma` của page
+ * @param {string[]} dsMaGoc  `san_pham.ma_goc` của page (CR-15/09)
  */
-export function apDungChoPage(kyNang, dsMaSp = []) {
-  const nhom = Array.isArray(kyNang?.bat_cho_nhom_sp)
-    ? kyNang.bat_cho_nhom_sp.filter(Boolean)
-    : [];
-  if (!nhom.length) return true;
-  const co = new Set(dsMaSp.map(String));
-  return nhom.some((g) => co.has(String(g)));
+export function apDungChoPage(kyNang, dsMaSp = [], dsMaGoc = []) {
+  const mang = (x) => (Array.isArray(x) ? x.filter(Boolean) : []);
+  const nhomGoc = mang(kyNang?.bat_cho_nhom_sp_goc);
+  const nhomCu = mang(kyNang?.bat_cho_nhom_sp);
+
+  // CR-15/09 · KHOÁ GỐC THẮNG, KHÔNG PHẢI HỢP CỦA HAI.
+  //
+  // Quản trị khoanh nhóm bằng mã GỐC rồi (`bat_cho_nhom_sp_goc` khác rỗng) thì đó là lời
+  // khai MỚI NHẤT, và hàng cũ `bat_cho_nhom_sp` là di sản còn sót. Lấy HỢP của hai là mở
+  // rộng phạm vi kỹ năng ra ngoài điều quản trị vừa khai — tức bot đổi giọng ở những page
+  // người ta vừa cố ý bỏ ra. Đúng họ lỗi «fail-OPEN trá hình».
+  if (nhomGoc.length) {
+    const co = new Set(mang(dsMaGoc).map(String));
+    return nhomGoc.some((g) => co.has(String(g)));
+  }
+  if (!nhomCu.length) return true; // rỗng cả hai ⇒ áp cho CẢ TEAM (nghĩa cũ, giữ nguyên)
+  const co = new Set(mang(dsMaSp).map(String));
+  return nhomCu.some((g) => co.has(String(g)));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════

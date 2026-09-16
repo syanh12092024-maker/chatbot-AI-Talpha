@@ -16,8 +16,21 @@
 
 ALTER TABLE ky_nang DROP COLUMN IF EXISTS bat_cho_nhom_sp_goc;
 
+DROP INDEX IF EXISTS kich_ban_mot_live_goc_nuoc;
+DROP INDEX IF EXISTS kich_ban_mot_live_goc_san_pham;
 DROP INDEX IF EXISTS kich_ban_san_pham_goc_ma;
+
+-- Trả rào về đúng bản của 010 TRƯỚC khi bỏ cột, kẻo rào còn nhắc một cột không còn tồn tại.
+ALTER TABLE kich_ban DROP CONSTRAINT IF EXISTS kich_ban_khoa_dung_cap;
 ALTER TABLE kich_ban DROP COLUMN IF EXISTS san_pham_goc_ma;
+-- Trả về đúng bản của **012** (không phải 010): `cap='nuoc'` cho phép `san_pham_ma IS NULL`.
+ALTER TABLE kich_ban ADD CONSTRAINT kich_ban_khoa_dung_cap CHECK (
+  (cap = 'page'     AND page_id IS NOT NULL AND san_pham_ma IS NULL     AND thi_truong IS NULL)
+  OR
+  (cap = 'nuoc'     AND page_id IS NULL     AND thi_truong IS NOT NULL)
+  OR
+  (cap = 'san_pham' AND page_id IS NULL     AND san_pham_ma IS NOT NULL AND thi_truong IS NULL)
+);
 
 DROP INDEX IF EXISTS san_pham_ma_goc;
 ALTER TABLE san_pham DROP CONSTRAINT IF EXISTS san_pham_ma_goc_co_that;
