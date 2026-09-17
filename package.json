@@ -19,7 +19,13 @@
     "migrate": "node db/migrate.js",
     "di-tru": "node db/di-tru/index.js",
     "test": "node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimental-test-module-mocks --test 'test/*.test.*' 'v3/test/b/*.test.mjs'",
-    "worker-v3": "node --env-file=.env src/queue/chay-worker.js"
+    "worker-v3": "node --env-file=.env src/queue/chay-worker.js",
+    "ui-v3": "node --env-file=.env v3/chay-that.js",
+    "local:new": "node ops/bin/local-dev.mjs new",
+    "local:start": "node ops/bin/local-dev.mjs start",
+    "local:stop": "node ops/bin/local-dev.mjs stop",
+    "local:token": "node ops/bin/local-dev.mjs token",
+    "soi:tin": "node ops/bin/soi-tin-pancake.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.0",

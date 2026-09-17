@@ -371,3 +371,44 @@ test("D-Y9c · chạy LẠI không đẻ thêm hội thoại nối trùng (idemp
   await chay(sb.pool, GOC);
   assert.equal(await dem(), truoc, "lượt hai phải giữ nguyên — khoá (team, nước, sđt) khớp lại dòng cũ");
 });
+
+/* ═══════════ NGUỒN VẮNG: BỎ QUA VÀ NÓI RA, KHÔNG CHẾT ═══════════════════════════════
+ *
+ * Đo 17/09 trên bản local dev sạch (`ops/bin/local-dev.mjs` cố ý KHÔNG chép `pages.json`
+ * và bạn bè sang): bấm «Kéo dữ liệu về» ⇒ `ENOENT ... pages.json` ném ra giữa lượt, màn
+ * báo «Lượt kéo dữ liệu hỏng giữa chừng». Câu đó sai hai lần — không có gì hỏng, và cái
+ * cần nói là KHÔNG CÓ GÌ ĐỂ KÉO. Ba ca dưới chạy trên một thư mục RỖNG nên không cần dữ
+ * liệu thật, và chúng là lưới duy nhất canh điều đó.
+ */
+test("DV1 · thư mục không có tệp nguồn nào → nguonVang gọi đủ tên, pageLac KHÔNG ném", async () => {
+  const { nguonCoSan, nguonVang } = await import("../db/di-tru/nguon.js");
+  const rong = fs.mkdtempSync(path.join(os.tmpdir(), "ditru-rong-"));
+  try {
+    assert.deepEqual(Object.values(nguonCoSan(rong)), [false, false, false, false, false]);
+    assert.deepEqual(nguonVang(rong), [
+      "pages.json", "ai-enabled.json", "conv-state.json", "kb-overrides.json", "script-versions/",
+    ]);
+    // Không có sổ cái thì khái niệm «page lạc» vô nghĩa — trả rỗng, đừng ném.
+    assert.deepEqual(pageLac(rong), []);
+  } finally {
+    fs.rmSync(rong, { recursive: true, force: true });
+  }
+});
+
+test("DV2 · chay() trên thư mục rỗng: KHÔNG ném, khai đủ nguồn bỏ qua, không ghi gì", async (t) => {
+  if (!sb) return t.skip("cần CSDL sandbox");
+  const rong = fs.mkdtempSync(path.join(os.tmpdir(), "ditru-rong-"));
+  try {
+    const truoc = Number((await sb.pool.query("SELECT count(*) c FROM page")).rows[0].c);
+    const kq = await chay(sb.pool, rong);
+    assert.equal(kq.page, null, "không có pages.json thì bước nạp page không chạy");
+    assert.equal(kq.congTac, null);
+    assert.equal(kq.hoiThoai, null);
+    assert.equal(kq.kichBan, null);
+    assert.equal(kq.boQuaNguon.length, 5, "phải khai ĐỦ năm nguồn vắng, không nuốt im");
+    const sau = Number((await sb.pool.query("SELECT count(*) c FROM page")).rows[0].c);
+    assert.equal(sau, truoc, "một lượt không có nguồn thì KHÔNG được đụng vào dữ liệu đã có");
+  } finally {
+    fs.rmSync(rong, { recursive: true, force: true });
+  }
+});

@@ -14,6 +14,7 @@
 | `V3_RAP_PROMPT_BAT` | Bật `rap-prompt.js` ráp `kb` từ 4 bảng DB (bo_luat_chung/ky_nang/kich_ban/san_pham); vắng ⇒ lùi nguyên `kb.js#getKBForPage` cũ | vắng = dùng kb.js cũ                         | `1` khi cutover từng phần đã kiểm 4 khối khớp dữ liệu thật    | L2-M3                    |
 
 | `V3_PAGE_XU_LY`     | **Van BẬC PHƠI của worker v3.** Danh sách id page (ngăn bằng dấu phẩy) mà `src/queue/chay-worker.js` được phép nạp và xử. Van chỉ THU HẸP: id không có trong bảng `page` bị bỏ qua | vắng = không nạp page nào             | đặt ĐÚNG page đang thử ở bậc phơi hiện tại; bậc ⑥ mới liệt kê hết | VA-P7 · mở van 14/09     |
+| `V3_LEGACY_POLL_OFF`| `=1` ⇒ `src/server.js` KHÔNG khởi động poll / follow-up / miner của bộ cũ. Bộ deploy v3 đặt cờ này để pilot một page không vô tình đánh thức các page legacy. Cũng là MỘT trong năm điều kiện `assertConfig` miễn khoá AI cho bản local dev (`src/config.js#configureLocal`) | `1` trên bản local dev sạch (`ops/bin/local-dev.mjs`) | `1` khi pilot v3; vắng ⇒ giữ nguyên hành vi bộ cũ | VA-P7 · local dev |
 | `V3_KHOA_VE`        | Khoá 32 byte (base64) KÝ VÉ ĐĂNG NHẬP (`v3/src/auth/ve.js`). **Thiếu = `v3/chay-that.js` TỪ CHỐI CHẠY** (`exit 1`, dòng 18) — không phải cửa đóng câm mà là dịch vụ không lên | đã đặt (đo 15/09)                            | **BẮT BUỘC, khoá RIÊNG** — dùng lại khoá dev = ai có khoá dev ký được vé prod | L0-M3(B) |
 | `V3_KHOA_CHU`       | Khoá chủ 32 byte (base64) bọc khoá API model trong bảng `khoa_nha` (`v3/src/model/kho-khoa.js`). Thiếu ⇒ NÉM ngay lần gọi đầu, không tự sinh khoá tạm | **VẮNG trên máy này (đo 15/09)** — mọi lượt đọc khoá model sẽ ném | **BẮT BUỘC, khoá RIÊNG** khi dùng lớp model v3 | L1-M4(B) |
 | `V3_BOT_V1_GOC`     | Gốc HTTP của tiến trình bot v1 để v3 gọi `/admin/api`. Vắng ⇒ tự suy `http://127.0.0.1:${PORT||3100}` | vắng = 127.0.0.1:3100                        | vắng là ĐÚNG khi v3 và bot cùng máy                            | G2-B4 |
@@ -64,3 +65,4 @@ Ba luật khi thêm biến:
 > `buildSystem` đọc `kb.boLuatChung` — việc chạm FILE CẤM, phải xin chủ dự án.
 > Màn «Prompt của page» nay hiện đủ NĂM khối (CORE + bốn khối CSDL) và nói rõ khối nào đang
 > điều khiển; chưa nối bộ đọc hiệu lực thì nó nói «chưa biết», không đoán là đang bật.
+

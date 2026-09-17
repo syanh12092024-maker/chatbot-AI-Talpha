@@ -3,6 +3,8 @@
 // Mọi dòng di trú vào team KỸ THUẬT `chua-phan` — chưa chốt mapping page↔team
 // (chờ H7 §8 sổ). ⛔ KHÔNG đoán team theo thị trường: đoán sai là trộn khách hai team.
 import {
+  nguonCoSan,
+  nguonVang,
   docPages,
   docAiEnabled,
   docConvState,
@@ -236,9 +238,17 @@ export async function napKichBan(pool, goc) {
 
 // ── chạy trọn lượt ─────────────────────────────────────────────────────────
 export async function diTruTatCa(pool, goc) {
-  const page = await napPage(pool, goc);
-  const congTac = await napCongTacAi(pool, goc);
-  const hoiThoai = await napHoiThoai(pool, goc);
-  const kichBan = await napKichBan(pool, goc);
-  return { page, congTac, hoiThoai, kichBan, pageLac: pageLac(goc) };
+  // NGUỒN VẮNG THÌ BỎ QUA, KHÔNG CHẾT. Bốn bước dưới đọc bốn tệp của tiến trình bot v1;
+  // máy nào không có tệp nào thì bước ấy không có việc để làm. Bản trước ném ENOENT ngay
+  // bước đầu, nên trên bản local dev sạch (cố ý không chép `pages.json`) nút «Kéo dữ liệu
+  // về» báo «lượt kéo hỏng giữa chừng» — nghe như dữ liệu vừa hỏng, trong khi sự thật là
+  // KHÔNG CÓ GÌ ĐỂ KÉO. Hai câu đó dẫn người đọc đi hai hướng khác hẳn nhau.
+  const co = nguonCoSan(goc);
+  const boQua = nguonVang(goc);
+  const page = co.pages ? await napPage(pool, goc) : null;
+  const congTac = co.aiEnabled ? await napCongTacAi(pool, goc) : null;
+  const hoiThoai = co.convState ? await napHoiThoai(pool, goc) : null;
+  // Kịch bản đọc CẢ HAI nguồn (`kb-overrides.json` + `script-versions/`); có một là chạy.
+  const kichBan = (co.kbOverrides || co.scriptVersions) ? await napKichBan(pool, goc) : null;
+  return { page, congTac, hoiThoai, kichBan, pageLac: pageLac(goc), boQuaNguon: boQua };
 }

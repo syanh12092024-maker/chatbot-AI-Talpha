@@ -55,6 +55,39 @@ export function boVaSurrogate() {
   return { va, vaSau, dem: () => n };
 }
 
+/**
+ * NGUỒN NÀO CÓ MẶT TRÊN MÁY NÀY.
+ *
+ * Bộ di trú sinh ra để kéo dữ liệu của tiến trình bot v1 sang nền v3, nên nó giả định năm
+ * tệp nguồn luôn nằm cạnh mã. Giả định đó SAI ở đúng cái máy cần nó nhất: bản local dev
+ * sạch (`ops/bin/local-dev.mjs`) cố ý không chép `pages.json` và bạn bè sang. Đo 17/09:
+ * bấm «Kéo dữ liệu về» ⇒ `ENOENT: ... pages.json` ném ra giữa lượt, màn báo «lượt kéo hỏng
+ * giữa chừng» — nghe như dữ liệu vừa hỏng, trong khi sự thật chỉ là KHÔNG CÓ GÌ ĐỂ KÉO.
+ *
+ * Cùng khuôn với lưới migration (án lệ #7) đã áp cho `noiHoSoKhachMoiTeam`: thiếu thì BỎ
+ * QUA và NÓI RA, không chết.
+ */
+export function nguonCoSan(goc = GOC) {
+  const d = duongDan(goc);
+  const co = (p) => { try { return fs.existsSync(p); } catch { return false; } };
+  return {
+    pages: co(d.pages),
+    aiEnabled: co(d.aiEnabled),
+    convState: co(d.convState),
+    kbOverrides: co(d.kbOverrides),
+    scriptVersions: co(d.scriptVersions),
+  };
+}
+
+/** Tên tệp của những nguồn VẮNG — để màn hình gọi đúng tên thứ đang thiếu. */
+export function nguonVang(goc = GOC) {
+  const ten = {
+    pages: 'pages.json', aiEnabled: 'ai-enabled.json', convState: 'conv-state.json',
+    kbOverrides: 'kb-overrides.json', scriptVersions: 'script-versions/',
+  };
+  return Object.entries(nguonCoSan(goc)).filter(([, co]) => !co).map(([k]) => ten[k]);
+}
+
 export function duongDan(goc = GOC) {
   return {
     pages: path.join(goc, "pages.json"),
@@ -257,6 +290,10 @@ export function docKichBan(goc = GOC) {
 // Mọi page_id được nhắc bởi các nguồn khác NHƯNG không có trong pages.json (sổ cái).
 // Trả về bản đồ page_id → những nguồn nhắc tới nó, để LIỆT KÊ RA — cấm nuốt im.
 export function pageLac(goc = GOC) {
+  const co = nguonCoSan(goc);
+  // Không có sổ cái thì không có khái niệm «lạc» — mọi page đều lạc, và câu trả lời đó vô
+  // nghĩa. Trả rỗng, để `diTruTatCa` là chỗ khai ra rằng nguồn vắng.
+  if (!co.pages) return [];
   const trongSoCai = new Set(docPages(goc).map((p) => p.pageId));
   const map = new Map();
   const them = (id, nguon) => {
@@ -264,12 +301,15 @@ export function pageLac(goc = GOC) {
     if (!map.has(id)) map.set(id, []);
     if (!map.get(id).includes(nguon)) map.get(id).push(nguon);
   };
-  for (const id of docAiEnabled(goc)) them(id, "ai-enabled.json");
-  for (const c of docConvState(goc).hoiThoai) them(c.pageId, "conv-state.json");
-  const kb = doc(duongDan(goc).kbOverrides);
-  for (const id of Object.keys(kb)) them(String(id), "kb-overrides.json");
-  for (const b of docKichBan(goc).ban)
-    them(b.pageId, `${b.nguon} (v${b.phienBan} ${b.trangThai})`);
+  if (co.aiEnabled) for (const id of docAiEnabled(goc)) them(id, "ai-enabled.json");
+  if (co.convState) for (const c of docConvState(goc).hoiThoai) them(c.pageId, "conv-state.json");
+  if (co.kbOverrides) {
+    const kb = doc(duongDan(goc).kbOverrides);
+    for (const id of Object.keys(kb)) them(String(id), "kb-overrides.json");
+  }
+  if (co.kbOverrides || co.scriptVersions) {
+    for (const b of docKichBan(goc).ban) them(b.pageId, `${b.nguon} (v${b.phienBan} ${b.trangThai})`);
+  }
   return [...map.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([pageId, nguon]) => ({ pageId, nguon }));
