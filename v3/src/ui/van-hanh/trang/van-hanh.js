@@ -251,8 +251,10 @@ function renderPage(than, p) {
   const o = hang(than, [
     `<div class="manh">${esc(p.ten || p.page_id)}</div><div class="meta">${esc(p.page_id)}</div>`
       + (p.note ? `<div class="meta">${esc(p.note)}</div>` : "")
-      + (p.blockers || []).map((w) => `<div class="meta">Còn thiếu: ${esc(w)}</div>`).join(""),
-    statusBadge(p.enabled ? "ready" : "blocked", { label: p.enabled ? "AI bật" : "AI tắt" }),
+      + (p.blockers || []).map((w) => `<div class="meta">Còn thiếu: ${esc(w)}</div>`).join("")
+      + (p.luuY || []).map((w) => `<div class="meta">ⓘ ${esc(w)}</div>`).join(""),
+    statusBadge(p.enabled ? "ready" : "blocked", { label: p.enabled ? "AI bật" : "AI tắt" })
+      + (p.dienTap ? " " + statusBadge("pending", { label: "diễn tập — không gửi" }) : ""),
     "",
     "",
   ]);
