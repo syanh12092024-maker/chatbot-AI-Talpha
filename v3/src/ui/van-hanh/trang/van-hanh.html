@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vận hành chat V3 — AI Closer</title>
+<!-- 17/09: đưa màn về HỆ KIỂU. Trước lượt này màn mang 84 dòng CSS gõ tay trong tệp và tự
+     dựng DOM bằng một hàm `el()` trần, nên nó là màn duy nhất của v3 trông khác hẳn phần
+     còn lại: nút xám vuông, bảng rỗng ra một dòng chữ trần, không trạng thái, không nhãn.
+     Hành vi giữ NGUYÊN — mọi luật an toàn của đường duyệt đơn không đổi một chữ. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
+<!-- window.UI — ĐỒNG BỘ, không `defer`: khung ứng dụng ở cuối trang lấy biểu tượng từ đây. -->
+<script src="/chung/ui.js"></script>
+</head>
+<body>
+<header>
+  <h1>Vận hành chat V3</h1>
+  <span class="sub">Page, giá bán, đơn chờ duyệt và hội thoại đang xử lý.</span>
+</header>
+
+<main>
+  <div id="bang-tin" aria-live="polite"></div>
+
+  <section class="section table-wrap" aria-labelledby="tieu-ds">
+    <div class="table-toolbar">
+      <h2 id="tieu-ds">Danh sách</h2>
+      <div class="filter-bar" id="tabs" role="tablist"></div>
+      <span class="table-count" id="dem" aria-live="polite"></span>
+    </div>
+    <div id="list"><div class="empty-state"><span class="skeleton"></span></div></div>
+    <div class="table-note hang" id="phan-trang"></div>
+  </section>
+</main>
+
+<dialog class="dialog" data-size="lg" id="detail" aria-labelledby="detail-tieu">
+  <div class="dialog-header"><h2 id="detail-tieu">Chi tiết</h2></div>
+  <div class="dialog-body">
+    <div id="detail-status" aria-live="polite"></div>
+    <div id="content"></div>
+  </div>
+  <div class="dialog-footer" id="detail-nut"></div>
+</dialog>
+
+<script type="module" src="/van-hanh-v3.js"></script>
+<script src="/chung/dieu-huong.js"></script>
+</body>
+</html>

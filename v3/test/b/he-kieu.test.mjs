@@ -415,6 +415,9 @@ test("HK15 · màn ĐÃ DI TRÚ không mọc lại CSS riêng — và danh sách
     "hieu-qua/hieu-qua.html",
     "san-pham/san-pham.html",
     "len-chay/len-chay.html",
+    // 17/09: màn cuối cùng còn CSS gõ tay (84 dòng) về hệ kiểu. Tệp chuyển vào `trang/`
+    // theo đúng quy ước — thước này đọc `ui/<màn>/trang/<tệp>`, để ngoài là màn không ai canh.
+    "van-hanh/van-hanh.html",
   ];
   const UI = path.join(GOC, "v3/src/ui");
   const loi = [];

@@ -234,6 +234,14 @@
 
   code, kbd, samp { font-family: var(--font-mono); font-size: .92em; }
 
+  /* NGUYÊN VĂN, CÓ XUỐNG DÒNG. Tin của khách và của bot phải giữ nguyên ngắt dòng, nhưng
+     một tin dài không được đẩy ngang cả hộp thoại. Thêm 17/09 khi màn «Vận hành chat V3»
+     về hệ kiểu — trước đó nó tự khai `pre { white-space: pre-wrap }` trong CSS riêng. */
+  pre.nguyen-van {
+    margin: 0; font-family: var(--font-mono); font-size: var(--text-sm);
+    white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-primary);
+  }
+
   /* Mục T: lấy nét phải THẤY được. Chỉ hiện khi dùng bàn phím. */
   :focus-visible {
     outline: 2px solid var(--border-focus);
