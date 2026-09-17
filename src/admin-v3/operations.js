@@ -218,13 +218,24 @@ export async function saveProduct(pool, bc, id, input) {
     ]);
     for (const g of input.offers)
       await c.query(
-        "INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te) VALUES($1,$2,$3,$4,$5)",
+        `INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te,
+                             gia_goc,khuyen_mai,phi_ship,mien_ship,bat)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [
           bc.teamId,
           id,
           g.so_luong,
           Math.round(g.price * HE_SO_TE[g.tien_te]),
           g.tien_te,
+          // Ưu đãi (021). Cùng đơn vị NHỎ với `gia` — nhân hệ số tệ đúng một lần, ở đây.
+          g.gia_goc == null || g.gia_goc === "" ? null : Math.round(Number(g.gia_goc) * HE_SO_TE[g.tien_te]),
+          String(g.khuyen_mai ?? "").slice(0, 300),
+          g.phi_ship == null || g.phi_ship === "" ? null : Math.round(Number(g.phi_ship) * HE_SO_TE[g.tien_te]),
+          // `mien_ship` giữ ba trạng thái: chưa khai (null) · miễn (true) · KHÔNG miễn
+          // (false). Quy null thành false ở đây là thay người vận hành hứa một điều họ
+          // chưa khai — chỗ này cấm tiện tay.
+          g.mien_ship == null || g.mien_ship === "" ? null : !!g.mien_ship,
+          g.bat === false ? false : true,
         ],
       );
     await audit(c, bc, "san_pham", id, "v3_sua_san_pham", [

@@ -104,8 +104,13 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {} } = {
       const products = await rows(
         q,
         `SELECT s.*,s.xmin::text AS version,
-      COALESCE((SELECT jsonb_agg(jsonb_build_object('so_luong',g.so_luong,'gia',g.gia,'tien_te',g.tien_te) ORDER BY g.so_luong)
-      FROM goi_gia g WHERE g.team_id=s.team_id AND g.san_pham_id=s.id),'[]') AS offers
+      COALESCE((SELECT jsonb_agg(jsonb_build_object(
+          'so_luong',g.so_luong,'gia',g.gia,'tien_te',g.tien_te,
+          'gia_goc',g.gia_goc,'khuyen_mai',g.khuyen_mai,'phi_ship',g.phi_ship,
+          'mien_ship',g.mien_ship,'bat',g.bat) ORDER BY g.so_luong)
+      FROM goi_gia g WHERE g.team_id=s.team_id AND g.san_pham_id=s.id),'[]') AS offers,
+      COALESCE((SELECT gg.kien_thuc FROM san_pham_goc gg
+                 WHERE gg.team_id=s.team_id AND gg.ma_goc=s.ma_goc),'{}') AS kien_thuc
       FROM san_pham s WHERE s.team_id=$1 ORDER BY s.id LIMIT 50 OFFSET $2`,
         [offset(q)],
       );
@@ -116,6 +121,9 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {} } = {
           offers: p.offers.map((g) => ({
             ...g,
             price: Number(g.gia) / (HE_SO_TE[g.tien_te] || 1),
+            // Đưa về đơn vị LỚN cho ô nhập; `null` giữ nguyên null (chưa khai ≠ 0).
+            gia_goc: g.gia_goc == null ? null : Number(g.gia_goc) / (HE_SO_TE[g.tien_te] || 1),
+            phi_ship: g.phi_ship == null ? null : Number(g.phi_ship) / (HE_SO_TE[g.tien_te] || 1),
           })),
         })),
       });

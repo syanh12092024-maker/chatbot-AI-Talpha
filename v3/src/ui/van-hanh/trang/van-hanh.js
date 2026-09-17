@@ -280,6 +280,13 @@ function product(p) {
     "Áp dụng cho các Page dùng cùng sản phẩm trong shop này. Giá nhập theo đơn vị tiền hiển thị cho khách.",
     c,
   );
+  if (p.kien_thuc && Object.keys(p.kien_thuc).length) {
+    const v = el("div", undefined, c);
+    v.className = "panel";
+    v.innerHTML = '<div class="manh">Kiến thức sản phẩm (từ sản phẩm gốc)</div>'
+      + Object.entries(p.kien_thuc).filter(([, x]) => String(x ?? "").trim())
+        .map(([k, x]) => `<div class="meta">${esc(k)}: ${esc(Array.isArray(x) ? x.join("; ") : String(x))}</div>`).join("");
+  }
   const name = field(c, "Tên", p.ten),
     desc = field(
       c,
@@ -291,7 +298,7 @@ function product(p) {
   const table = el("table", undefined, c);
   table.className = "data-table";
   const head = el("tr", undefined, el("thead", undefined, table));
-  ["Số lượng", "Giá cả gói", "Tiền tệ", ""].forEach((x) => {
+  ["Số lượng", "Giá cả gói", "Tiền tệ", "Giá gốc", "Khuyến mãi", "Phí ship", "Miễn ship", "Bật", ""].forEach((x) => {
     const th = el("th", x, head);
     th.scope = "col";
     if (!x) th.className = "actions";
@@ -301,8 +308,19 @@ function product(p) {
     const tr = el("tr", undefined, table),
       q = field(el("td", undefined, tr), "", g.so_luong, "number"),
       price = field(el("td", undefined, tr), "", g.price, "number"),
-      currency = field(el("td", undefined, tr), "", g.tien_te);
-    const entry = { tr, q, price, currency };
+      currency = field(el("td", undefined, tr), "", g.tien_te),
+      // Ưu đãi (021): trước đây ba thứ này chỉ sống trong CHỮ của kịch bản, nên bot hứa
+      // một đằng mà cửa tiền tính một nẻo.
+      giaGoc = field(el("td", undefined, tr), "", g.gia_goc ?? "", "number"),
+      km = field(el("td", undefined, tr), "", g.khuyen_mai ?? ""),
+      ship = field(el("td", undefined, tr), "", g.phi_ship ?? "", "number"),
+      // BA TRẠNG THÁI, nên là `select` chứ không phải checkbox: checkbox không diễn đạt
+      // được «chưa khai», mà đó chính là trạng thái phải giữ được.
+      mienShip = select(el("td", undefined, tr), "",
+        [["", "chưa khai"], ["1", "miễn ship"], ["0", "KHÔNG miễn"]],
+        g.mien_ship == null ? "" : (g.mien_ship ? "1" : "0")),
+      bat = field(el("td", undefined, tr), "", g.bat !== false, "checkbox");
+    const entry = { tr, q, price, currency, giaGoc, km, ship, mienShip, bat };
     offers.push(entry);
     button(el("td", undefined, tr), "Bỏ gói", () => {
       tr.remove();
@@ -321,6 +339,11 @@ function product(p) {
         so_luong: Number(g.q.value),
         price: Number(g.price.value),
         tien_te: g.currency.value.trim().toUpperCase(),
+        gia_goc: g.giaGoc.value === "" ? null : Number(g.giaGoc.value),
+        khuyen_mai: g.km.value,
+        phi_ship: g.ship.value === "" ? null : Number(g.ship.value),
+        mien_ship: g.mienShip.value === "" ? null : g.mienShip.value === "1",
+        bat: g.bat.checked,
       })),
     });
     $("#detail").close();

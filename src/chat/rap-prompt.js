@@ -37,6 +37,8 @@ import {
 // GHI của file này (nếu có sau này) vẫn để lại dấu vết như thường.
 const CTX_DOC = ctxHeThong({ ghiNhatKy: false });
 import { getKBForPage } from "../kb.js";
+import { docSanPhamGoiGia } from "../products/catalog.js";
+import { HE_SO_TE } from "../pos/tao-don.js";
 
 /** Bốn tên khối — dùng để khai `nguon_thieu` (mù-có-nói-ra, không im — luật án lệ #7). */
 export const KHOI = Object.freeze({
@@ -117,21 +119,7 @@ export { docKichBanChoPage };
 /** Đọc danh mục sản phẩm + bảng giá của page. `goi_gia` không có cột `page_id` nên phải
  *  tra theo TỪNG `san_pham.id` — một page thường 1 SP (prompts.js:44 "MỖI PAGE CHỈ BÁN 1
  *  SP") nên vòng lặp không phải N+1 thật sự. */
-export async function docSanPhamGoiGia(pool, teamId, pageRowId) {
-  const sp = await layNhieu(pool, CTX_DOC, "san_pham", {
-    dieuKien: { team_id: teamId, page_id: pageRowId },
-    thuTu: "ma",
-  });
-  const ra = [];
-  for (const s of sp) {
-    const goiGia = await layNhieu(pool, CTX_DOC, "goi_gia", {
-      dieuKien: { team_id: teamId, san_pham_id: s.id },
-      thuTu: "so_luong",
-    });
-    ra.push({ ...s, goiGia });
-  }
-  return ra;
-}
+export { docSanPhamGoiGia } from "../products/catalog.js";
 
 /** NHÃN PHẢI LÀ TIẾNG ANH — bài học kb.js đã trả giá (comment kb.js dòng 282-284: nhãn
  *  tiếng Việt cứng từng gửi "Mua 1 cái — 99 AED" cho khách Trung Đông, sửa 11/08/2026).
@@ -141,7 +129,31 @@ function nhanGoiGia(soLuong) {
   return `Buy ${soLuong}`;
 }
 
-function xayVanBanSanPham(dsSp) {
+export function goiGiaChoChat(g) {
+  const currency = String(g.tien_te || "").toUpperCase();
+  const factor = HE_SO_TE[currency];
+  if (!factor || !Number.isFinite(Number(g.gia)) || Number(g.gia) <= 0 ||
+      !Number.isInteger(Number(g.so_luong)) || Number(g.so_luong) < 1) {
+    throw new Error("Bảng giá POS không hợp lệ; không thể tư vấn giá");
+  }
+  // ƯU ĐÃI ĐI KÈM GIÁ (021). Trước lượt này bot đọc khuyến mãi/freeship từ CHỮ trong kịch
+  // bản, còn server tính tiền từ `goi_gia` — hai nguồn, và không lớp nào bắt được lúc
+  // chúng nói khác nhau. Nay cùng một hàm trả ra cả hai, nên lệch là lệch ở một chỗ.
+  //
+  // ⚠️ `mienShip`/`phiShip` giữ nguyên `null` khi chưa khai — nơi gọi PHẢI phân biệt
+  //    «chưa khai» với «không miễn». Quy null thành false ở đây là bịa một lời hứa.
+  const soTien = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v) / factor);
+  return { label: nhanGoiGia(g.so_luong), qty: Number(g.so_luong),
+    price: Number(g.gia) / factor, currency,
+    giaGoc: soTien(g.gia_goc),
+    khuyenMai: String(g.khuyen_mai || "").trim(),
+    phiShip: soTien(g.phi_ship),
+    mienShip: g.mien_ship == null ? null : !!g.mien_ship };
+}
+
+/** Xuất để BỘ CA đọc thẳng — khối này là thứ khách sẽ nghe lại qua lời bot, nên nó phải
+ *  kiểm được mà không cần dựng cả CSDL. */
+export function xayVanBanSanPham(dsSp) {
   const out = [
     "# SẢN PHẨM & GIÁ (nguồn: san_pham/goi_gia · đồng bộ từ POS, không bịa)",
   ];
@@ -150,19 +162,49 @@ function xayVanBanSanPham(dsSp) {
     return out.join("\n");
   }
   for (const sp of dsSp) {
-    const dong = [`- [${sp.ma}]${sp.ten ? " " + sp.ten : ""}`];
+    const dong = [`- [${sp.ma}]${sp.ten || sp.tenGoc ? " " + (sp.ten || sp.tenGoc) : ""}`];
     if (sp.mo_ta) dong.push(`— ${sp.mo_ta}`);
     out.push(dong.join(" "));
-    if (Array.isArray(sp.goiGia) && sp.goiGia.length) {
-      const gia = sp.goiGia.map(
-        (g) => `${nhanGoiGia(g.so_luong)}: ${g.gia} ${g.tien_te}`,
-      );
-      out.push(`    Giá — ${gia.join(" | ")}`);
+
+    // KIẾN THỨC CÓ NHÃN (021). Trước đây năm thứ này nằm lẫn trong một khối văn xuôi 3.540
+    // ký tự của kịch bản: tốn token mỗi lượt, và sửa một công dụng là sửa giữa đoạn văn.
+    for (const [khoa, nhan] of NHAN_KIEN_THUC) {
+      const v = sp.kienThuc?.[khoa];
+      const chu = Array.isArray(v) ? v.filter(Boolean).join("; ") : String(v ?? "").trim();
+      if (chu) out.push(`    ${nhan}: ${chu}`);
     }
+
+    if (Array.isArray(sp.goiGia) && sp.goiGia.length) {
+      const gia = sp.goiGia.map((g) => {
+        const t = goiGiaChoChat(g);
+        const them = [
+          t.giaGoc != null && t.giaGoc > t.price ? `giá gốc ${t.giaGoc}` : "",
+          t.khuyenMai,
+          t.mienShip === true ? "miễn ship" : (t.phiShip != null ? `ship ${t.phiShip}` : ""),
+        ].filter(Boolean).join(", ");
+        return `${t.label}: ${t.price} ${t.currency}${them ? ` (${them})` : ""}`;
+      });
+      out.push(`    Giá — ${gia.join(" | ")}`);
+      // Nói rõ chỗ CHƯA KHAI, thay vì để bot tự đoán rồi hứa nhầm.
+      if (sp.goiGia.every((g) => g.mien_ship == null && g.phi_ship == null)) {
+        out.push("    (phí ship CHƯA khai trong bảng giá — KHÔNG hứa miễn ship, mời khách hỏi sale)");
+      }
+    }
+    if (sp.goiGiaTat) out.push(`    (${sp.goiGiaTat} bậc giá đang TẮT — không chào)`);
     if (sp.het_hang) out.push(`    (⚠️ hết hàng — cửa POS đánh dấu het_hang)`);
   }
   return out.join("\n");
 }
+
+/** Thứ tự các nhãn CÓ Ý NGHĨA: công dụng trước (khách hỏi nhiều nhất), cảnh báo cuối. */
+const NHAN_KIEN_THUC = Object.freeze([
+  ["cong_dung", "Công dụng"],
+  ["hop_voi", "Hợp với"],
+  ["cach_dung", "Cách dùng"],
+  ["thanh_phan", "Thành phần"],
+  ["canh_bao", "Lưu ý / cảnh báo"],
+  ["them", "Thông tin thêm"],
+]);
 
 function xayVanBanKyNang(dsKyNang) {
   if (!dsKyNang.length) return "";
@@ -232,7 +274,7 @@ export async function rapKb(pool, { teamId, pageIdText }) {
     };
   }
 
-  const sp = await docSanPhamGoiGia(pool, teamId, trang.id);
+  const sp = await docSanPhamGoiGia(pool, teamId, trang.id, trang);
   const dsMaSp = sp.map((s) => s.ma);
   const [luat, kyNang, kichBan] = await Promise.all([
     docBoLuatChung(pool, teamId),
@@ -261,6 +303,12 @@ export async function rapKb(pool, { teamId, pageIdText }) {
     desc: s.mo_ta,
     stock: s.ton_kho,
     hetHang: s.het_hang,
+    currency: (() => {
+      const currencies = new Set(s.goiGia.map(g => goiGiaChoChat(g).currency));
+      if (currencies.size > 1) throw new Error("Một sản phẩm có nhiều tiền tệ trong cùng shop");
+      return [...currencies][0] || "";
+    })(),
+    tiers: s.goiGia.map(goiGiaChoChat),
   }));
 
   return {
