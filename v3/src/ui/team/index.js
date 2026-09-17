@@ -29,6 +29,7 @@ export {
 export {
   datChuyenPage, daNoiChuyenPage, danhSachTeamDich, pageDeChuyen, chuyenNhieuPage,
   VAI_CHUYEN_DUOC, TOI_DA_MOT_ME, LoiChuyenPage,
+  datDocKhoTam, daNoiKhoTam,
 } from './gan-page.js';
 
 // Hai hàm DUY NHẤT của module có ghi xuống CSDL, và cả hai chỉ chạm `thanh_vien_team`.

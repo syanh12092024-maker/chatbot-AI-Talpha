@@ -283,6 +283,10 @@ function veKetNoi(d) {
 
 /* ─── chuyển page ↔ team ─── */
 let TIM_PAGE = '', G = null;
+/* NGUỒN PAGE: team đang mở, hay kho «chưa phân». Kho ấy là nơi page quét từ Pancake rơi
+   vào, mà lược đồ cấm gán thành viên vào team kỹ thuật — không có lối này thì page nằm đó
+   vĩnh viễn (đo 17/09: 305 page). */
+let NGUON_PAGE = 'team';
 
 function veGanPage(d) {
   G = d;
@@ -303,11 +307,19 @@ function veGanPage(d) {
     return;
   }
 
+  const tuKhoTam = NGUON_PAGE === 'chua-phan';
   $('#khoiGanPage').innerHTML = `
-    <div class="duoi-4">${canhBao({ level: 'warning', title: 'Chuyển page là đổi chủ dữ liệu',
-      body: `Hội thoại, kịch bản và sản phẩm của page đi theo sang team mới; team này sẽ không còn thấy chúng. Tối đa ${so(d.toiDaMotMe)} page mỗi lần.` })}</div>
+    <div class="duoi-4">${canhBao(tuKhoTam
+      ? { level: 'info', title: 'Kéo page từ kho «Chưa phân team» về team đang mở',
+          body: `Page mới quét từ Pancake và page di trú rơi vào kho này. Không ai đứng được trong team kỹ thuật, nên đây là đường DUY NHẤT đưa chúng về team thật. Tối đa ${so(d.toiDaMotMe)} page mỗi lần.` }
+      : { level: 'warning', title: 'Chuyển page là đổi chủ dữ liệu',
+          body: `Hội thoại, kịch bản và sản phẩm của page đi theo sang team mới; team này sẽ không còn thấy chúng. Tối đa ${so(d.toiDaMotMe)} page mỗi lần.` })}</div>
     <div class="table-wrap">
       <div class="table-toolbar">
+        <div class="filter-bar" role="group" aria-label="Nguồn page">
+          ${button('Page của team này', { size: 'sm', id: 'nguonTeam', variant: tuKhoTam ? 'outline' : 'primary' })}
+          ${button('Kho chưa phân team', { size: 'sm', id: 'nguonKho', variant: tuKhoTam ? 'primary' : 'outline' })}
+        </div>
         <label for="timPage" class="sr-only">Lọc page</label>
         <input id="timPage" type="search" placeholder="Tên page, id Facebook, thị trường…" value="${esc(TIM_PAGE)}" autocomplete="off">
         <span class="table-count">${d.soKhop === d.soTong ? `${so(d.soTong)} page` : `${so(d.soKhop)}/${so(d.soTong)} page khớp`}</span>
@@ -328,13 +340,19 @@ function veGanPage(d) {
       <div class="table-footer">
         <span class="text-muted tabular" id="demChon" aria-live="polite">Chưa chọn page nào</span>
         <span class="gian"></span>
-        <label for="teamDich" class="text-muted">Chuyển sang</label>
+        <label for="teamDich" class="text-muted">${tuKhoTam ? 'Kéo về' : 'Chuyển sang'}</label>
         <select id="teamDich">${d.teamDich.map((t) => `<option value="${esc(t.teamId)}">${esc(t.ten)}</option>`).join('')}</select>
-        ${button('Chuyển page đã chọn', { variant: 'danger', id: 'nutChuyen', disabled: true })}
+        ${button(tuKhoTam ? 'Kéo page đã chọn về' : 'Chuyển page đã chọn',
+          { variant: tuKhoTam ? 'primary' : 'danger', id: 'nutChuyen', disabled: true })}
       </div>
     </div>
     ${d.suaDuoc ? '' : '<p class="page-note">Vai của bạn chỉ xem được.</p>'}
     <div id="kqChuyen" class="tren-4"></div>`;
+
+  for (const [id, nguon] of [['#nguonTeam', 'team'], ['#nguonKho', 'chua-phan']]) {
+    const n = $(id);
+    if (n) n.addEventListener('click', () => { NGUON_PAGE = nguon; napGanPage(); });
+  }
 
   const dsChon = () => [...document.querySelectorAll('#dsPage input:checked')];
   const demChon = () => {
@@ -372,7 +390,8 @@ async function chuyen() {
   setBusy(nut, true);
   try {
     const kq = await goi('/api/team/gan-page', { method: 'POST',
-      body: JSON.stringify({ pageIds: ds, teamDichId: oTeam.value, lyDo: `chuyển sang ${tenTeam}` }) });
+      body: JSON.stringify({ pageIds: ds, teamDichId: oTeam.value, tuKhoTam,
+        lyDo: tuKhoTam ? `kéo từ kho chưa phân về ${tenTeam}` : `chuyển sang ${tenTeam}` }) });
     xoaLoi('chuyển page');
     await napGanPage();
     veKetQuaChuyen(kq, tenTeam);
@@ -398,7 +417,10 @@ function veKetQuaChuyen(kq, tenTeam) {
 async function napTongQuan() { const d = await goi('/api/team/tong-quan'); if (d) veTongQuan(d.tongQuan); }
 async function napThanhVien() { const d = await goi('/api/team/thanh-vien'); if (d) veThanhVien(d); }
 async function napKetNoi() { const d = await goi('/api/team/ket-noi'); if (d) veKetNoi(d); }
-async function napGanPage() { const d = await goi('/api/team/gan-page?tim=' + encodeURIComponent(TIM_PAGE)); if (d) veGanPage(d); }
+async function napGanPage() {
+  const d = await goi(`/api/team/gan-page?tim=${encodeURIComponent(TIM_PAGE)}&nguon=${encodeURIComponent(NGUON_PAGE)}`);
+  if (d) veGanPage(d);
+}
 
 (async function nap() {
   // Nạp từng khối riêng: một khối hỏng thì ba khối kia vẫn hiện. Gộp `Promise.all` rồi để

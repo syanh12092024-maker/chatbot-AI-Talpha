@@ -466,3 +466,52 @@ test('nguồn công tắc bot · khai rõ cột là BẢN SAO, chỉ sang màn c
   assert.match(t.page.nguonBotBat.noi, /BẢN SAO/);
   assert.match(t.page.nguonBotBat.xemO, /Cửa kiểm sẵn sàng|Page & Bot/);
 });
+
+/* ═══════════ KHO TẠM: page ở team kỹ thuật phải kéo về được ═══════════════════════════
+ *
+ * Đo 17/09: quét Pancake về 305 page, tất cả rơi vào team «chưa phân» — và nằm đó vĩnh
+ * viễn. Lược đồ CẤM gán thành viên vào team kỹ thuật (trigger `chan_tv_team_ky_thuat`), nên
+ * không ai đứng vào đó để chuyển chúng ra, còn lát này thì chỉ liệt kê page của team đang
+ * mở. Cả một đường quét page trở thành vô dụng vì thiếu đúng khúc cuối này.
+ */
+test('KT1 · nguồn «chua-phan» đọc kho tạm, KHÔNG đọc page của team đang mở', async () => {
+  const goi = [];
+  gp.datDocKhoTam(async (t) => {
+    goi.push(t);
+    return { page: [{ id: '9', pageId: '999', ten: 'Page kho tạm', thiTruong: '', botAiBat: false }], soKhop: 1, catBot: 0 };
+  });
+  try {
+    const d = await gp.pageDeChuyen(bcQt(), { nguon: 'chua-phan', tim: 'abc' });
+    assert.equal(d.page.length, 1);
+    assert.equal(d.page[0].ten, 'Page kho tạm');
+    assert.equal(goi.length, 1, 'phải đi qua cửa kho tạm');
+    assert.equal(goi[0].tim, 'abc', 'chữ lọc phải xuống tới tầng dưới, không lọc lại ở đây');
+  } finally { gp.datDocKhoTam(null); }
+});
+
+test('KT2 · chưa nối cửa kho tạm thì NÉM lỗi cấu hình, không trả danh sách rỗng', async () => {
+  // Rỗng và «máy chủ thiếu dây» dẫn người đọc đi hai hướng khác hẳn nhau.
+  gp.datDocKhoTam(null);
+  await assert.rejects(
+    () => gp.pageDeChuyen(bcQt(), { nguon: 'chua-phan' }),
+    (e) => /chưa nối bộ đọc kho tạm/.test(e.message),
+  );
+});
+
+test('KT3 · kéo từ kho tạm: team đích ĐƯỢC PHÉP là team đang mở', async () => {
+  // Chốt «team đích trùng team đang mở» sinh ra để canh lượt ĐẨY ĐI. Áp nhầm nó lên lượt
+  // KÉO VỀ là khoá đúng việc mà cả đường quét page sinh ra để làm.
+  const daGoi = [];
+  gp.datChuyenPage(async (bc, t) => { daGoi.push(t); return { pageId: t.pageId, teamCu: '4', teamMoi: t.teamDichId, daChuyen: {}, boLai: {} }; });
+  try {
+    const bc = bcQt();
+    await assert.rejects(
+      () => gp.chuyenNhieuPage(bc, { pageIds: ['1'], teamDichId: bc.teamId }),
+      (e) => e.ma === 'trung_team',
+      'đẩy đi mà đích là chính team mình ⇒ vẫn phải chặn',
+    );
+    const kq = await gp.chuyenNhieuPage(bc, { pageIds: ['1'], teamDichId: bc.teamId, tuKhoTam: true });
+    assert.equal(kq.soXong, 1);
+    assert.equal(daGoi.length, 1);
+  } finally { gp.datChuyenPage(null); }
+});

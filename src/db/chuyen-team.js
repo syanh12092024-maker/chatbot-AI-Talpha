@@ -287,3 +287,43 @@ export async function demMoCoi(pool) {
     khach.release();
   }
 }
+
+/**
+ * PAGE ĐANG NẰM Ở KHO TẠM (team kỹ thuật) — nguồn cho lượt gán page về team thật.
+ *
+ * Vì sao cần một cửa đọc riêng, không dùng tầng truy vấn thường: page mới (quét từ Pancake,
+ * hoặc bộ di trú mang sang) rơi vào team `la_ky_thuat`, mà lược đồ CẤM gán thành viên vào
+ * team đó (trigger `chan_tv_team_ky_thuat`). Không ai đứng vào được ⇒ tầng truy vấn có
+ * điều kiện team không bao giờ trả về chúng ⇒ page nằm đó vĩnh viễn, không nút nào chữa.
+ * Đo 17/09: 305 page vừa quét về rơi đúng vào cảnh này.
+ *
+ * Cửa này KHÔNG phải lỗ hổng lớp team: nó chỉ đọc team `la_ky_thuat` — kho dùng chung, không
+ * phải dữ liệu của một team nghiệp vụ nào — và `chuyenPageSangTeam` vốn đã cho phép `ctx`
+ * thuộc team ĐÍCH kéo page về. Không có nhánh nào ở đây đọc được page của team khác.
+ *
+ * ⛔ CHỈ ĐỌC, và chỉ những cột cần cho việc chọn. Không trả cột cấu hình nào.
+ */
+export async function pageChuaPhan(pool, { tim = "", gioiHan = 200 } = {}) {
+  const t = String(tim || "").trim().toLowerCase();
+  const r = await pool.query(
+    `SELECT p.id, p.page_id, p.ten, p.thi_truong, p.bot_ai_bat, t.ten AS team_ten
+       FROM page p JOIN team t ON t.id = p.team_id
+      WHERE t.la_ky_thuat = true
+        AND ($1 = '' OR lower(p.ten) LIKE '%' || $1 || '%' OR lower(p.page_id) LIKE '%' || $1 || '%'
+             OR lower(p.thi_truong) LIKE '%' || $1 || '%')
+      ORDER BY p.ten, p.id`,
+    [t],
+  );
+  return {
+    page: r.rows.slice(0, gioiHan).map((p) => ({
+      id: String(p.id),
+      pageId: String(p.page_id || ""),
+      ten: p.ten || "",
+      thiTruong: p.thi_truong || "",
+      botAiBat: p.bot_ai_bat === true,
+      teamTen: p.team_ten,
+    })),
+    soKhop: r.rowCount,
+    catBot: r.rowCount > gioiHan ? r.rowCount - gioiHan : 0,
+  };
+}

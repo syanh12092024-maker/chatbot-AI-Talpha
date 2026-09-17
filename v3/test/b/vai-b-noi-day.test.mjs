@@ -13,7 +13,7 @@ const { bam } = await import('../../src/auth/mat-khau.js');
 const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
-async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, khoKhoa, docKhoi,
+async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
   dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
@@ -40,7 +40,7 @@ async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, ghiKetNoiPos, khoTokenV
   const bao = dungPhanB(app, {
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
-    ghiSoAi, canhBao, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, khoKhoa, docKhoi,
+    ghiSoAi, canhBao, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
     dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, express,
   });
   const sv = http.createServer(app);
@@ -145,6 +145,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   assert.ok(bao.thieu.some((x) => /khoTokenV3/.test(x)), 'phải nêu thiếu khoTokenV3');
   assert.ok(bao.thieu.some((x) => /quetPagePancake/.test(x)), 'phải nêu thiếu quetPagePancake');
   assert.ok(bao.thieu.some((x) => /keoDanhMucPos/.test(x)), 'phải nêu thiếu keoDanhMucPos');
+  assert.ok(bao.thieu.some((x) => /docKhoTamPage/.test(x)), 'phải nêu thiếu docKhoTamPage');
   // Thiếu kho sản phẩm gốc thì danh mục ấy chỉ vào hệ được bằng SQL tay — đúng thứ lượt
   // 17/09 sinh ra để xoá, nên nó phải nằm trong danh sách «chưa nối», không im lặng.
   assert.ok(bao.thieu.some((x) => /khoSanPhamGoc/.test(x)), 'phải nêu thiếu khoSanPhamGoc');
@@ -168,6 +169,9 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
       batTat: async () => ({}), bo: async () => ({}),
     },
     chuyenPage: async () => ({ teamCu: 't1', teamMoi: 't2', daChuyen: {}, boLai: {} }),
+    // Thiếu cửa này thì page quét về nằm lại team kỹ thuật vĩnh viễn — lược đồ cấm gán
+    // thành viên vào đó nên không ai đứng vào để chuyển chúng ra.
+    docKhoTamPage: async () => ({ page: [], soKhop: 0, catBot: 0 }),
     // Kho token Pancake trong CSDL (019). Thiếu nó thì màn Kết nối không xem và không thêm
     // được token — kho token lùi về đường sửa tay `.env`, tức đường KHÔNG có dấu vết.
     khoTokenV3: { ds: async () => [], them: async () => ({}), bo: async () => ({}) },

@@ -235,13 +235,16 @@ ${escHtml((bc.vai || []).join(', ') || 'không có vai nào')}.</p>
     const noiRoi = daNoiChuyenPage();
     const [tt, dich, ds] = await Promise.all([
       trangThaiGanPage(bc, { daNoiChuyen: noiRoi }),
-      danhSachTeamDich(bc),
-      pageDeChuyen(bc, { tim: req.query.tim || '' }),
+      danhSachTeamDich(bc, { nguon: req.query.nguon === 'chua-phan' ? 'chua-phan' : 'team' }),
+      // `nguon=chua-phan` → đọc KHO TẠM (team kỹ thuật). Đó là nơi page quét từ Pancake
+      // và page di trú rơi vào, mà không ai đứng vào được (lược đồ cấm gán thành viên).
+      pageDeChuyen(bc, { tim: req.query.tim || '', nguon: req.query.nguon === 'chua-phan' ? 'chua-phan' : 'team' }),
     ]);
     res.json({
       ok: true,
       ganPage: tt,
       teamDich: dich,
+      nguon: req.query.nguon === 'chua-phan' ? 'chua-phan' : 'team',
       ...ds,
       toiDaMotMe: TOI_DA_MOT_ME,
       suaDuoc: coVai(bc, ...VAI_GHI_DUOC),
@@ -249,8 +252,8 @@ ${escHtml((bc.vai || []).join(', ') || 'không có vai nào')}.</p>
   }));
 
   r.post('/api/team/gan-page', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
-    const { pageIds, teamDichId, lyDo } = req.body || {};
-    const kq = await chuyenNhieuPage(cuaBoiCanh(req), { pageIds, teamDichId, lyDo });
+    const { pageIds, teamDichId, lyDo, tuKhoTam } = req.body || {};
+    const kq = await chuyenNhieuPage(cuaBoiCanh(req), { pageIds, teamDichId, lyDo, tuKhoTam: tuKhoTam === true });
     // Trả 200 kể cả khi có page hỏng: mẻ chạy hết, và nơi gọi cần ĐỦ kết quả từng page để
     // hiện ra. Gộp thành một mã lỗi là lấy mất thứ người dùng cần để biết làm gì tiếp.
     res.json({ ok: true, ...kq });

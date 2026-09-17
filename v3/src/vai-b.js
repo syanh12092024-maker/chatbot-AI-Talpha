@@ -36,7 +36,7 @@ import {
   datTaoTruyVan as datTruyVanTeam, datCongDanhTinh as datDanhTinhTeam,
   datCongDanhTinhGhi as datDanhTinhTeamGhi, datPheuNhatKy as datPheuNhatKyTeam,
   datDocKetNoiPos, datChanDangNhap as datChanDangNhapTeam, datChanVai as datChanVaiTeam,
-  taoRouterCauHinhTeam, datChuyenPage,
+  taoRouterCauHinhTeam, datChuyenPage, datDocKhoTam,
 } from './ui/team/index.js';
 import {
   datTaoTruyVan as datTruyVanPageBot, datPheuNhatKy as datPheuNhatKyPageBot,
@@ -196,7 +196,7 @@ import {
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, khoKhoa,
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa,
   docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan,
@@ -367,6 +367,12 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
 
   if (khoKhoa && typeof khoKhoa.docKhoa === 'function') { datKhoKhoa(khoKhoa); daNoi.push('kho khoá theo nhà → lớp model · màn Model AI'); }
   else thieu.push('khoKhoa — lớp model CHỈ đọc được khoá từ biến môi trường; khoá riêng của team trong bảng `khoa_nha` không tới được, và màn Model AI không dán khoá được');
+
+  if (typeof docKhoTamPage === 'function') {
+    datDocKhoTam(docKhoTamPage);
+    daNoi.push('kho tạm page (team kỹ thuật) → lát gán page ↔ team: page quét về/di trú kéo được về team thật');
+  }
+  else thieu.push('docKhoTamPage — page mới rơi vào team «chưa phân» sẽ nằm đó vĩnh viễn: lược đồ cấm gán thành viên vào team kỹ thuật nên không ai đứng vào để chuyển chúng ra');
 
   if (typeof chuyenPage === 'function') { datChuyenPage(chuyenPage); daNoi.push('chuyển page ↔ team → màn cấu hình team (lát 4)'); }
   else thieu.push('chuyenPage — lát «gán page ↔ team» hiện MỜ. Không có nó thì gán page vẫn phải chạy psql tay, đúng thứ sóng 0 sinh ra để xoá');

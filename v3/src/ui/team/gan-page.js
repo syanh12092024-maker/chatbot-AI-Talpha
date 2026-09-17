@@ -52,20 +52,50 @@ export const daNoiChuyenPage = () => typeof _chuyenPage === 'function';
  * Team kỹ thuật không có ở đây — hàm của A cũng từ chối, nhưng hiện nó ra rồi để người ta
  * bấm và nhận lỗi thì tệ hơn là không hiện.
  */
-export async function danhSachTeamDich(boiCanh) {
+export async function danhSachTeamDich(boiCanh, { nguon = 'team' } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   const dt = congDanhTinh();
   const ds = await dt.chon(BANG_TEAM, {}, { sapXep: 'ten' });
   return ds
-    .filter((t) => t.la_ky_thuat !== true && String(t.id) !== String(bc.teamId))
+    // Kéo TỪ kho tạm thì team đang mở LÀ đích hợp lệ — và là đích thường dùng nhất. Đẩy đi
+    // thì ngược lại: chuyển vào chính team mình là một lượt rỗng nghĩa.
+    .filter((t) => t.la_ky_thuat !== true
+      && (nguon === 'chua-phan' || String(t.id) !== String(bc.teamId)))
     .map((t) => ({ teamId: String(t.id), slug: t.slug, ten: t.ten }));
 }
 
-/** Page của team đang mở, để chọn. Tìm theo tên hoặc id Facebook. */
-export async function pageDeChuyen(boiCanh, { tim = '', gioiHan = 200 } = {}) {
+/* ═══ HAI NGUỒN PAGE, VÀ VÌ SAO NGUỒN THỨ HAI PHẢI ĐI CỬA HỆ THỐNG ═════════════════════
+ *
+ * Page mới — quét từ Pancake về, hoặc bộ di trú mang sang — rơi vào team KỸ THUẬT
+ * «chưa phân». Nhưng KHÔNG AI ĐỨNG ĐƯỢC trong team đó: trigger `chan_tv_team_ky_thuat()`
+ * của lược đồ cấm gán thành viên vào nó. Nên nếu lát này chỉ liệt kê page của team đang
+ * mở thì 305 page vừa quét về nằm ngoài tầm với VĨNH VIỄN, và không nút nào chữa được —
+ * đo 17/09 trên bản dev.
+ *
+ * Đọc kho «chưa phân» bằng cửa hệ thống KHÔNG phải lách lớp team, vì ba lẽ:
+ *   · team kỹ thuật là KHO TẠM dùng chung, không phải dữ liệu của một team nào;
+ *   · `chuyenPageSangTeam` của người A đã cho phép đúng việc này — `ctx` chỉ cần thuộc MỘT
+ *     TRONG HAI team (nguồn hoặc đích), nên đứng ở team đích mà kéo về là hợp lệ;
+ *   · và nó là cách DUY NHẤT còn lại, khi lược đồ đã cấm đứng vào team nguồn.
+ *
+ * Giới hạn giữ chặt: chỉ team `la_ky_thuat`, chỉ để CHỌN rồi kéo về team đang mở. Không có
+ * đường nào ở đây đọc page của một team nghiệp vụ khác.
+ */
+
+/** Page để chọn. `nguon='chua-phan'` đọc kho tạm; mặc định là page của team đang mở. */
+export async function pageDeChuyen(boiCanh, { tim = '', gioiHan = 200, nguon = 'team' } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
-  const db = congTruyVan(bc);
-  const tatCa = await db.chon(BANG_PAGE, {}, { sapXep: 'ten' });
+  if (nguon === 'chua-phan') {
+    if (!_docKhoTam) {
+      throw new LoiCauHinhTeam(
+        'chưa nối bộ đọc kho tạm — máy chủ dựng thiếu một dây, KHÔNG phải «kho tạm rỗng».',
+        'chua_noi', 500,
+      );
+    }
+    const kq = await _docKhoTam({ tim, gioiHan });
+    return { ...kq, soTong: kq.soKhop };
+  }
+  const tatCa = await congTruyVan(bc).chon(BANG_PAGE, {}, { sapXep: 'ten' });
   const t = String(tim || '').trim().toLowerCase();
   const khop = t
     ? tatCa.filter((p) => [p.ten, p.page_id, p.thi_truong, p.marketer]
@@ -85,6 +115,18 @@ export async function pageDeChuyen(boiCanh, { tim = '', gioiHan = 200 } = {}) {
   };
 }
 
+/* Kho tạm đi CỬA RIÊNG của tầng A (`src/db/chuyen-team.js#pageChuaPhan`), không đi cổng
+ * danh tính: cổng ấy CỐ Ý chỉ cho bốn bảng dùng chung, `page` là bảng nghiệp vụ. Thử đi
+ * vòng qua nó là nhận đúng câu từ chối ấy — và câu từ chối đó đúng. */
+let _docKhoTam = null;
+
+export function datDocKhoTam(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiCauHinhTeam('datDocKhoTam cần một hàm');
+  _docKhoTam = fn || null;
+  return _docKhoTam;
+}
+export const daNoiKhoTam = () => typeof _docKhoTam === 'function';
+
 /* ─────────────────────────── ghi ─────────────────────────── */
 
 export class LoiChuyenPage extends Error {
@@ -103,7 +145,7 @@ export class LoiChuyenPage extends Error {
  * cả phần xong lẫn phần hỏng; gộp thành một chữ «lỗi» là lấy mất thông tin người ta cần để
  * biết phải làm gì tiếp.
  */
-export async function chuyenNhieuPage(boiCanh, { pageIds, teamDichId, lyDo = '' } = {}) {
+export async function chuyenNhieuPage(boiCanh, { pageIds, teamDichId, lyDo = '', tuKhoTam = false } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   batBuocVai(bc, ...VAI_CHUYEN_DUOC);
 
@@ -116,7 +158,11 @@ export async function chuyenNhieuPage(boiCanh, { pageIds, teamDichId, lyDo = '' 
   const ds = [...new Set((Array.isArray(pageIds) ? pageIds : []).map(String).filter(Boolean))];
   if (!ds.length) throw new LoiChuyenPage('chưa chọn page nào.', 'thieu_tham_so');
   if (!teamDichId) throw new LoiChuyenPage('chưa chọn team đích.', 'thieu_tham_so');
-  if (String(teamDichId) === String(bc.teamId)) {
+  // Chốt này canh lượt ĐẨY ĐI: chuyển page của team mình vào chính team mình là rỗng nghĩa.
+  // Lượt KÉO VỀ từ kho tạm thì ngược hẳn — đích chính là team đang mở, và hàm của người A
+  // cho phép (`ctx` chỉ cần thuộc một trong hai team). Nhầm hai chiều này là khoá đúng việc
+  // mà cả đường quét page sinh ra để làm.
+  if (!tuKhoTam && String(teamDichId) === String(bc.teamId)) {
     throw new LoiChuyenPage('team đích trùng team đang mở — không có gì để chuyển.', 'trung_team');
   }
   if (ds.length > TOI_DA_MOT_ME) {

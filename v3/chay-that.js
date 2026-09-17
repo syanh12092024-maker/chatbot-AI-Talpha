@@ -42,7 +42,7 @@ const { taoCongDanhTinh } = await import('./src/noi-day/cong-danh-tinh.js');
 // Chuyển page giữa các team — `PHIEU-B-Y3`, người A giao 25/08. Hàm này tự lo giao dịch,
 // khoá dòng, kiểm vai `quan-tri` trong bảng `thanh_vien_team`, và ghi `nhat_ky` NGAY TRONG
 // giao dịch. Lớp v3 chỉ dịch bối cảnh và gom kết quả từng page.
-const { chuyenPageSangTeam } = await import(`${GOC}/src/db/chuyen-team.js`);
+const { chuyenPageSangTeam, pageChuaPhan } = await import(`${GOC}/src/db/chuyen-team.js`);
 
 // Kho khoá API theo (team × nhà) — bảng `khoa_nha`, migration 008 (`PHIEU-B-Y2`).
 // `ghiKhoaNha` của A nhận `teamSlug` chứ không nhận `teamId`, nên mảnh nối tra slug hộ.
@@ -141,6 +141,8 @@ const bao = dungPhanB(app, {
     sua: (bc, id, t) => spGoc.suaSanPhamGoc(pool, bc.teamId, id, t),
     bo: (bc, id) => spGoc.boSanPhamGoc(pool, bc.teamId, id),
   },
+  // Kho tạm: page ở team kỹ thuật, nguồn cho lát «gán page ↔ team».
+  docKhoTamPage: (t) => pageChuaPhan(pool, t),
   chuyenPage: (bc, t) => chuyenPageSangTeam(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId }, t),
   cuaBoLuat: {
     taoBan: (bc, t) => noiDung.taoBanBoLuat(pool, ctxCuaA(bc), t),
