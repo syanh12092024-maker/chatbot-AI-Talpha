@@ -1,3 +1,4 @@
+import { docSanPhamGoiGia } from "../products/catalog.js";
 // HÀNG CHỜ TẠO ĐƠN — luồng MESSENGER (phiếu L3-M4, làn 🟥 · module cuối của phần việc A).
 //
 // 01-QUYET-DINH §1: bot chốt đủ tên/số/địa chỉ + đồng ý COD **trong chat** → vào **hàng
@@ -191,8 +192,8 @@ export function chuanHoaHoSo(hoSo = {}) {
 export function cua1DuTruong(duLieu = {}) {
   const thieu = TRUONG_BAT_BUOC.filter((k) => {
     const v = duLieu[k];
-    if (k === "so_luong" || k === "tong_tien")
-      return !Number.isFinite(Number(v)) || Number(v) <= 0;
+    if (k === "so_luong") return !Number.isSafeInteger(Number(v)) || Number(v) <= 0;
+    if (k === "tong_tien") return !Number.isFinite(Number(v)) || Number(v) <= 0;
     return !chu(v);
   });
   return {
@@ -217,14 +218,10 @@ export async function cua2Tien(pool, { teamId, pageId, duLieu = {} }) {
   const tong = Number(duLieu.tong_tien);
   const sl = Number(duLieu.so_luong);
   const te = chu(duLieu.tien_te).toUpperCase();
-  const r = await pool.query(
-    `SELECT g.id, g.so_luong, g.gia::float8 gia, g.tien_te
-       FROM goi_gia g
-       JOIN san_pham s ON s.id = g.san_pham_id AND s.team_id = g.team_id
-      WHERE g.team_id = $1 AND s.page_id = $2
-      ORDER BY g.so_luong, g.gia`,
-    [teamId, pageId],
-  );
+  const page = (await pool.query('SELECT * FROM page WHERE id=$1 AND team_id=$2', [pageId, teamId])).rows[0];
+  const products = page ? await docSanPhamGoiGia(pool, teamId, pageId, page) : [];
+  const r = { rows: products.filter(p => !duLieu.san_pham_ma || p.ma === duLieu.san_pham_ma)
+    .flatMap(p => p.goiGia.map(g => ({ ...g, gia: Number(g.gia) }))) };
   const bang = r.rows.map((x) => ({
     so_luong: x.so_luong,
     gia: x.gia,
@@ -764,7 +761,7 @@ export async function vaoHangCho(
 export async function duyet(
   pool,
   ctx,
-  { hangChoId, boSung = null, teamId = null, nguoiDuyetId = null } = {},
+  { hangChoId, boSung = null, teamId = null, nguoiDuyetId = null, expectedVersion = null } = {},
   deps = {},
 ) {
   const team = teamHieuLuc(ctx, teamId);
@@ -782,7 +779,7 @@ export async function duyet(
   try {
     await client.query("BEGIN");
     const r = await client.query(
-      "SELECT * FROM hang_cho_tao_don WHERE team_id = $1 AND id = $2 FOR UPDATE",
+      "SELECT *,xmin::text AS version FROM hang_cho_tao_don WHERE team_id = $1 AND id = $2 FOR UPDATE",
       [team, hangChoId],
     );
     if (!r.rowCount) {
@@ -792,6 +789,7 @@ export async function duyet(
       );
     }
     const dong = r.rows[0];
+    if (expectedVersion && dong.version !== expectedVersion) throw Object.assign(new Error('Đơn đã đổi; tải lại trước khi duyệt'), { status: 409 });
     if (dong.trang_thai !== "cho_duyet") {
       await client.query("ROLLBACK");
       throw new LoiHangChoDaXuLy(
@@ -915,11 +913,24 @@ export async function duyet(
       { ...deps, poolNhatKy: deps.poolNhatKy || pool },
     );
 
+    // CHỤP GIÁ LÚC TẠO (022). Lấy từ CHÍNH bậc mà cửa 2 đã khớp — không đọc lại `goi_gia`,
+    // vì đọc lại là đọc giá của HÔM NAY cho một đơn của hôm nay-về-sau: đổi một bậc giá
+    // là mọi con số lịch sử đổi theo, im lặng.
+    const goiKhop = cuaKiem?.cong?.["2_tien"]?.goi || null;
+    const maGoc = duLieu.san_pham_ma
+      ? (await client.query(
+          "SELECT ma_goc FROM san_pham WHERE team_id = $1 AND ma = $2",
+          [team, duLieu.san_pham_ma],
+        )).rows[0]?.ma_goc ?? null
+      : null;
+
     const dh = await client.query(
       `INSERT INTO don_hang
          (team_id, ma_pos, nguon, trang_thai_he, trang_thai_pos, khach_id,
-          hoi_thoai_id, page_id, tong_tien, tien_te, san_pham_ma)
-       VALUES ($1,$2,'messenger','moi_tu_pos',$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+          hoi_thoai_id, page_id, tong_tien, tien_te, san_pham_ma,
+          so_luong, gia_goi, phi_ship, khuyen_mai, san_pham_goc_ma)
+       VALUES ($1,$2,'messenger','moi_tu_pos',$3,$4,$5,$6,$7,$8,$9,
+               $10,$11,$12,$13,$14) RETURNING *`,
       [
         team,
         kqPos.maPos,
@@ -930,6 +941,13 @@ export async function duyet(
         duLieu.tong_tien ?? null,
         duLieu.tien_te || null,
         duLieu.san_pham_ma ? [duLieu.san_pham_ma] : [],
+        Number.isFinite(Number(duLieu.so_luong)) ? Number(duLieu.so_luong) : null,
+        goiKhop?.gia ?? null,
+        // NULL giữ nguyên NULL: «chưa khai phí ship» KHÁC «ship 0 đồng», và báo cáo phải
+        // phân biệt được hai cái đó.
+        goiKhop?.phi_ship ?? null,
+        String(goiKhop?.khuyen_mai ?? ""),
+        maGoc,
       ],
     );
     const don = dh.rows[0];
