@@ -162,64 +162,140 @@ test('canhBaoKhoToken · kho khoẻ thì IM', () => {
   assert.deepEqual(c, []);
 });
 
-/* ═══════════ đọc kho ═══════════ */
+/* ═══════════ kho token CSDL (migration 019) ═══════════
+ *
+ * Từ 17/09 nguồn CHÍNH của màn là bảng `token_pancake`, không phải tiến trình bot. Hai
+ * bài cũ «thiếu ADMIN_USER» và «bot không chạy» vì thế đổi nghĩa: chúng KHÔNG còn là lý do
+ * màn trống, mà chỉ là lý do thiếu phần «token này phủ mấy page».
+ */
 
-test('khoToken · giữ NGUYÊN thứ tự dự phòng do tiến trình bot trả về', async () => {
-  // Thứ tự là NỘI DUNG (chính → phụ .env → dashboard), không phải cách sắp cho đẹp. Sắp lại
-  // theo tên hay theo hạn là nói dối về việc token nào được dùng trước.
-  await voiBot([tok(0, { name: 'Chính' }), tok(1, { name: 'Phụ' }), tok(2, { name: 'Thêm sau' })], async () => {
-    const d = await kn.khoToken();
-    assert.deepEqual(d.token.map((t) => t.ten), ['Chính', 'Phụ', 'Thêm sau']);
-    assert.deepEqual(d.token.map((t) => t.thuTu), [0, 1, 2]);
+/** JWT giả — chỉ phần payload là thật, đủ để `docJwt` đọc tên/hạn. */
+function jwtGia({ name = 'TK env', exp = Math.floor((BAY + 90 * NGAY) / 1000), uid = 'u9' } = {}) {
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  return `${b64({ alg: 'HS256' })}.${b64({ name, exp, uid })}.chuky`;
+}
+
+/** Khoá cứng hai biến token trong `.env` — nếu không, bài test đọc token THẬT của máy. */
+async function voiEnvToken({ chinh = '', phu = '' }, fn) {
+  const cu = { c: process.env.PANCAKE_TOKEN, p: process.env.PANCAKE_TOKENS_EXTRA };
+  if (chinh) process.env.PANCAKE_TOKEN = chinh; else delete process.env.PANCAKE_TOKEN;
+  if (phu) process.env.PANCAKE_TOKENS_EXTRA = phu; else delete process.env.PANCAKE_TOKENS_EXTRA;
+  try { return await fn(); } finally {
+    if (cu.c === undefined) delete process.env.PANCAKE_TOKEN; else process.env.PANCAKE_TOKEN = cu.c;
+    if (cu.p === undefined) delete process.env.PANCAKE_TOKENS_EXTRA; else process.env.PANCAKE_TOKENS_EXTRA = cu.p;
+  }
+}
+
+/** Kho token CSDL giả. Trả luôn cái mảng để bài test soi cái gì đã được ghi. */
+function khoGia(banDau = []) {
+  const kho = [...banDau];
+  kn.datKhoTokenV3({
+    ds: async () => kho.map((t, i) => ({
+      id: String(i + 1), ten: t.ten, uid: '', duoi: t.duoi || `dddd${i}`,
+      hetHan: t.hetHan === undefined ? BAY + 90 * NGAY : t.hetHan,
+      hetHanRoi: !!t.hetHanRoi, bat: t.bat !== false, themBoi: null, taoLuc: BAY, nguon: 'CSDL (v3)',
+    })),
+    them: async ({ token, nguoiDungId }) => {
+      kho.push({ ten: 'TK mới', duoi: String(token).slice(-8), nguoiDungId });
+      return { id: String(kho.length), ten: 'TK mới', duoi: String(token).slice(-8), hetHan: BAY + 90 * NGAY };
+    },
+    bo: async (id) => {
+      const t = kho.splice(Number(id) - 1, 1)[0];
+      return { id: String(id), ten: t?.ten || '?', duoi: t?.duoi || '', hetHan: 0 };
+    },
   });
+  return kho;
+}
+
+test('khoToken · thứ tự dự phòng: `.env` trước, CSDL sau', async () => {
+  // Thứ tự là NỘI DUNG, không phải cách sắp cho đẹp: `src/pancake.js#allToks` ghép đúng
+  // dãy này, nên màn sắp khác đi là nói dối về việc token nào được dùng trước.
+  khoGia([{ ten: 'Trong CSDL' }]);
+  await voiEnvToken({ chinh: jwtGia({ name: 'Chính env' }) }, async () => {
+    await voiBot([], async () => {
+      const d = await kn.khoToken();
+      assert.deepEqual(d.token.map((t) => t.ten), ['Chính env', 'Trong CSDL']);
+      assert.deepEqual(d.token.map((t) => t.nguon), ['chính (.env)', 'CSDL (v3)']);
+      assert.deepEqual(d.token.map((t) => t.boDuoc), [false, true], 'token .env chỉ xem, token CSDL bỏ được');
+    });
+  });
+  kn.datKhoTokenV3(null);
 });
 
-test('khoToken · KHÔNG có trường nào mang token đầy đủ', async () => {
-  await voiBot([tok(0), tok(1)], async () => {
-    const d = await kn.khoToken();
-    const chu = JSON.stringify(d);
-    for (const cam of ['eyJ', 'access_token', 'jwt']) {
-      assert.ok(!chu.toLowerCase().includes(cam.toLowerCase()), `kho token KHÔNG được mang "${cam}"`);
-    }
-    // Chỉ tám ký tự cuối, đúng như `src/pancake.js#listPancakeTokens` trả về.
-    assert.ok(d.token.every((t) => String(t.duoi).length <= 8));
+test('khoToken · bot KHÔNG chạy: màn VẪN đủ dùng, chỉ khai rõ thiếu phần phủ page', async () => {
+  // Trước 17/09 đây là màn trống. Cả kho token nằm trong tiến trình bot nên bot chết là
+  // mất màn — đúng lúc người ta cần nó nhất.
+  khoGia([{ ten: 'Trong CSDL' }]);
+  await voiEnvToken({}, async () => {
+    await voiBot([], async () => {
+      const d = await kn.khoToken();
+      assert.equal(d.token.length, 1);
+      assert.equal(d.trong, null, 'có token thì KHÔNG hiện màn rỗng');
+      assert.match(String(d.botIm), /ECONNREFUSED|bot/i);
+    }, { hong: 'ECONNREFUSED' });
   });
+  kn.datKhoTokenV3(null);
 });
 
-test('khoToken · thiếu tài khoản gọi bot thì nói ĐÚNG NHƯ VẬY, không nói «không có token»', async () => {
+test('khoToken · thiếu ADMIN_USER/PASS không còn là lý do trống màn', async () => {
+  khoGia([{ ten: 'Trong CSDL' }]);
   const cu = { u: process.env.ADMIN_USER, p: process.env.ADMIN_PASS };
   delete process.env.ADMIN_USER; delete process.env.ADMIN_PASS;
   try {
-    const d = await kn.khoToken();
-    assert.equal(d.token.length, 0);
-    assert.equal(d.trong.vi, 'chua_cai_dat');
-    // Hai câu này dẫn người đọc đi hai hướng khác hẳn: sửa cấu hình máy chủ, hay đi xin token.
-    assert.match(d.trong.noi, /ADMIN_USER/);
-    assert.match(d.trong.noi, /KHÔNG phải/i);
+    await voiEnvToken({}, async () => {
+      const d = await kn.khoToken();
+      assert.equal(d.token.length, 1);
+      assert.match(String(d.botIm), /ADMIN_USER/);
+    });
   } finally {
     if (cu.u === undefined) delete process.env.ADMIN_USER; else process.env.ADMIN_USER = cu.u;
     if (cu.p === undefined) delete process.env.ADMIN_PASS; else process.env.ADMIN_PASS = cu.p;
+    kn.datKhoTokenV3(null);
   }
 });
 
-test('khoToken · bot KHÔNG chạy thì hiện lý do, KHÔNG ném ra trang lỗi', async () => {
-  // Bot chết là lúc người ta cần màn này nhất. Ném 500 ở đây là lấy mất cái màn hình đúng
-  // vào đúng lúc cần nó.
-  await voiBot([], async () => {
-    const d = await kn.khoToken();
-    assert.equal(d.trong.vi, 'chua_cai_dat');
-    assert.match(d.trong.noi, /bot có đang chạy không/i);
-  }, { hong: 'ECONNREFUSED' });
+test('khoToken · CHƯA NỐI kho CSDL thì nói là lỗi dựng ứng dụng, không nói «chưa có token»', async () => {
+  kn.datKhoTokenV3(null);
+  const d = await kn.khoToken();
+  assert.equal(d.quanLyDuoc, false);
+  assert.match(d.trong.noi, /chưa nối kho token/i);
+  assert.match(d.trong.noi, /KHÔNG phải/);
 });
 
 test('khoToken · kho rỗng thật thì chỉ đường thêm token', async () => {
-  await voiBot([], async () => {
-    const d = await kn.khoToken();
-    assert.equal(d.trong.vi, 'chua_cai_dat');
-    assert.ok(d.trong.diTiep);
-    assert.match(d.trong.noi, /không đọc và không gửi được/i);
+  khoGia([]);
+  await voiEnvToken({}, async () => {
+    await voiBot([], async () => {
+      const d = await kn.khoToken();
+      assert.equal(d.trong.vi, 'chua_cai_dat');
+      assert.ok(d.trong.diTiep);
+      assert.match(d.trong.noi, /không đọc và không gửi được/i);
+    });
   });
+  kn.datKhoTokenV3(null);
 });
+
+test('khoToken · KHÔNG có trường nào mang token đầy đủ, kể cả token `.env`', async () => {
+  khoGia([{ ten: 'Trong CSDL' }]);
+  const jwt = jwtGia({ name: 'Chính env' });
+  await voiEnvToken({ chinh: jwt }, async () => {
+    await voiBot([], async () => {
+      const d = await kn.khoToken();
+      const chu = JSON.stringify(d);
+      assert.ok(!chu.includes(jwt), 'token .env KHÔNG được ra màn');
+      for (const cam of ['access_token', 'token_ma']) assert.ok(!chu.includes(cam));
+      assert.ok(d.token.every((t) => String(t.duoi).length <= 8));
+    });
+  });
+  kn.datKhoTokenV3(null);
+});
+
+/* ═══════════ đọc kho ═══════════ */
+
+
+
+
+
 
 /* ═══════════ kết nối POS — phần DUY NHẤT có lớp team ═══════════ */
 

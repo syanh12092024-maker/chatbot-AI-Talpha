@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { config, assertConfig } from './config.js';
 import { loadKB, syncFromSheet } from './kb.js';
 import { getSheetId } from './sheets.js';
-import { handleIncoming } from './handler.js';
-import { sendText, sendTyping, verifySignature } from './messenger.js';
+import { taoPool } from '../db/ket-noi.js';
+import { taoWebhookHandler } from './queue/webhook.js';
 import { loadPageTokens, pageCount } from './pages.js';
 import { adminRouter } from './admin.js';
 import { startPancakePolling } from './pancake-poll.js';
@@ -25,6 +25,19 @@ if (getSheetId()) {
 // là tự xuất hiện trên dashboard, không cần bấm gì.
 loadPageTokens().catch((e) => console.error('[pages] lỗi nạp token:', e.message));
 setInterval(() => loadPageTokens().catch((e) => console.error('[pages] refresh lỗi:', e.message)), 10 * 60 * 1000);
+
+// KHO TOKEN CSDL (migration 019) — nguồn thứ tư của `src/pancake.js`, ngang hàng `.env`.
+// Nối ở đây để tiến trình bot thấy token người ta thêm bằng màn v3 mà KHÔNG phải restart:
+// `datKhoTokenDb` tự nạp ngay rồi làm mới mỗi 5 phút, và màn v3 gọi `POST /admin/api/
+// pancake-tokens/nap-lai` để nạp tức thì sau mỗi lượt thêm/bỏ.
+if (process.env.DATABASE_URL_V3) {
+  const poolToken = taoPool();
+  const { docTokenSong } = await import('./token-pancake.js');
+  const { datKhoTokenDb } = await import('./pancake.js');
+  datKhoTokenDb(() => docTokenSong(poolToken));
+} else {
+  console.log('[token] không có DATABASE_URL_V3 → chỉ dùng kho token .env + pancake-tokens.json');
+}
 
 const app = express();
 app.use(express.json({ limit: '12mb', verify: (req, _res, buf) => { req.rawBody = buf; } }));
@@ -53,6 +66,12 @@ app.use('/admin', adminAuth);
 app.use('/admin/api', adminRouter);
 app.get('/admin', (_req, res) => res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html')));
 
+// Pancake polling/POS không cần endpoint Meta. Tắt cả GET/POST trước khi xác thực/lưu.
+app.use('/webhook', (_req, res, next) => {
+  if (process.env.META_WEBHOOK_OFF === '1') return res.sendStatus(404);
+  next();
+});
+
 // Verify webhook (Meta gọi 1 lần khi đăng ký).
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
@@ -64,28 +83,9 @@ app.get('/webhook', (req, res) => {
   return res.sendStatus(403);
 });
 
-// Nhận sự kiện tin nhắn — 1 webhook phục vụ TẤT CẢ page.
-app.post('/webhook', (req, res) => {
-  console.log('[webhook] ⬅️ nhận POST | object=', req.body?.object, '| body=', JSON.stringify(req.body || {}).slice(0, 400));
-  if (!verifySignature(req.rawBody, req.get('x-hub-signature-256'))) {
-    console.log('[webhook] ❌ sai chữ ký → 403');
-    return res.sendStatus(403);
-  }
-  const body = req.body;
-  if (body.object !== 'page') return res.sendStatus(404);
-  res.sendStatus(200); // trả nhanh cho Meta, xử lý nền
-
-  for (const entry of body.entry || []) {
-    const pageId = entry.id; // page nhận tin → chọn đúng token để trả lời
-    for (const ev of entry.messaging || []) {
-      const psid = ev.sender?.id;
-      const text = ev.message?.text;
-      if (psid && text && !ev.message.is_echo) {
-        processMessage(psid, text, pageId).catch((e) => console.error('[process] lỗi:', e));
-      }
-    }
-  }
-});
+// Chỉ ACK sau khi đã lưu tin; xử lý qua worker V3, không gọi bot legacy song song.
+let webhookPool;
+app.post('/webhook', taoWebhookHandler({ layPool: () => (webhookPool ||= taoPool()) }));
 
 // Tải lại KB sau khi cập nhật file.
 app.post('/reload-kb', adminAuth, (_req, res) => {
@@ -109,20 +109,19 @@ app.post('/reload-tokens', adminAuth, async (_req, res) => {
 
 app.get('/health', (_req, res) => res.json({ ok: true, pages: pageCount() }));
 
-async function processMessage(psid, text, pageId) {
-  await sendTyping(psid, true, pageId);
-  const { reply } = await handleIncoming({ psid, text, pageId });
-  await sendTyping(psid, false, pageId);
-  if (reply) await sendText(psid, reply, pageId);
-}
-
-app.listen(config.port, () => {
+app.listen(config.port, process.env.HOST, () => {
   console.log(`[server] Đang chạy tại http://localhost:${config.port}  (webhook: /webhook)`);
 });
 
-// Nhận/gửi tin qua Pancake (song song với webhook FB) — không cần URL công khai.
-startPancakePolling();
-
-// L7 · M15 mổ hội thoại + tự học sổ template, 02:00 mỗi đêm (tắt trên máy PANCAKE_READONLY=1).
-import('./scheduler-miner.js').then((m) => { const r = m.startMinerScheduler(); if (!r.started) console.log(`[miner] lịch mổ đêm TẮT — ${r.why}`); }).catch((e) => console.error('[miner] không nạp được lịch:', e.message));
-(await import('./scheduler-followup.js')).startL5Schedulers(); // L5 · M17 quét A/B mỗi giờ + M12 đuổi theo mỗi 15 phút (tự im khi công tắc đóng)
+// Poll legacy bỏ qua các Page đã chuyển sang V3_PAGE_XU_LY.
+if (process.env.V3_LEGACY_POLL_OFF !== '1') {
+  startPancakePolling();
+  // Legacy background jobs stay off during a dedicated V3 deployment.
+  import('./scheduler-miner.js').then((m) => {
+    const r = m.startMinerScheduler();
+    if (!r.started) console.log(`[miner] lịch mổ đêm TẮT — ${r.why}`);
+  }).catch((e) => console.error('[miner] không nạp được lịch:', e.message));
+  (await import('./scheduler-followup.js')).startL5Schedulers();
+} else {
+  console.log('[server] Legacy poll/follow-up/miner tắt: triển khai V3 riêng.');
+}

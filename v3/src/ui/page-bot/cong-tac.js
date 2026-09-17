@@ -32,6 +32,7 @@ export const HANH_DONG_THI_TRUONG = 'dat_thi_truong';
 export const HANH_DONG_NGANH_HANG = 'dat_nganh_hang';
 export const HANH_DONG_BOTCAKE = 'bat_tat_botcake';
 export const HANH_DONG_SP_GOC = 'gan_san_pham_goc';
+export const HANH_DONG_QUET = 'quet_page_pancake';
 
 /** Vai được sửa. `quan-ly` xem được màn nhưng không gạt được công tắc. */
 export const VAI_SUA_DUOC = Object.freeze([VAI.QUAN_TRI]);
@@ -55,6 +56,9 @@ export const PHIEU_MARKETER = 'PHIEU-B-Y4';
 /* ─── phễu tiêm ─── */
 
 let _pheuNhatKy = null;
+let _congTacV3 = null;
+export function datCongTacV3(fn) { _congTacV3 = fn; }
+
 
 export function datPheuNhatKy(fn) {
   if (fn != null && typeof fn !== 'function') throw new LoiPageBot('datPheuNhatKy cần một hàm');
@@ -140,6 +144,10 @@ export async function datCongTacBot(boiCanh, id, bat) {
     throw new LoiPageBot(`page id=${id} không có id Facebook — không gạt được công tắc.`, 'thieu_page_id');
   }
 
+  if (_congTacV3) {
+    const v3 = await _congTacV3(bc, id, bat);
+    if (v3) return v3;
+  }
   const truoc = p.botAiBat;
   const kq = await datBotAi(p.pageId, bat);        // ném LoiCauBotDong nếu cửa ghi bị khoá
 
@@ -352,4 +360,50 @@ export async function ganSanPhamGoc(boiCanh, id, maGoc) {
   });
 
   return { id: String(id), maGoc: moi || null, doi: true };
+}
+
+/* ═══════════ ④ QUÉT PANCAKE → BẢNG `page` (17/09) ═══════════════════════════════════
+ *
+ * Đây là đường DUY NHẤT đưa page vào hệ mà không cần tệp `pages.json` của tiến trình bot
+ * v1. Trước lượt này, `INSERT INTO page` chỉ có ở `db/di-tru/nap.js` — nên một máy chỉ
+ * chạy v3 dán token xong thì màn này rỗng vĩnh viễn và không nút nào chữa được.
+ *
+ * Bộ quét thật nằm ở `src/quet-page.js` (tầng A). Ở đây chỉ có ba việc của tầng B: kiểm
+ * VAI, gọi, và GHI NHẬT KÝ — cùng phân vai với công tắc bot.
+ *
+ * KHÔNG lấy `boiCanh.teamId` làm team của page mới: kho page là danh mục TOÀN HỆ, page mới
+ * rơi vào `chua-phan` rồi người gán tiếp ở màn «Cấu hình team». Ai quét cũng ra một kết quả.
+ */
+let _quetPage = null;
+
+export function datQuetPage(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiPageBot('datQuetPage cần một hàm');
+  _quetPage = fn || null;
+  return _quetPage;
+}
+export const daNoiQuetPage = () => _quetPage != null;
+
+export async function quetPageTuPancake(boiCanh) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  if (!_quetPage) {
+    throw new LoiPageBot(
+      'máy chủ chưa nối bộ quét Pancake — đây là lỗi dựng ứng dụng, KHÔNG phải «không có page nào».',
+      'chua_noi', 500,
+    );
+  }
+  const kq = await _quetPage();
+
+  // Quét ra RỖNG vẫn ghi nhật ký: «đã bấm mà không có gì» là một sự thật đáng truy ngược
+  // y như «đã thêm 47 page» — nhất là khi nó có nghĩa là kho token đang hỏng.
+  await ghi(bc, {
+    hanhDong: HANH_DONG_QUET,
+    doiTuongLoai: BANG,
+    doiTuongId: null,
+    sau: { nguon: kq.nguon, them: kq.them, capNhat: kq.capNhat, khongThay: kq.khongThay },
+    ghiChu: kq.rong
+      ? 'quét Pancake: KHÔNG token nào trả về page — kho page giữ nguyên'
+      : `quét Pancake: ${kq.nguon} page (${kq.them} mới · ${kq.capNhat} cập nhật · ${kq.khongThay} trong CSDL không thấy ở lượt này)`,
+  });
+  return kq;
 }

@@ -13,6 +13,7 @@
 <script src="/chung/ui.js"></script>
 </head>
 <body>
+<p style="padding:12px"><a href="/van-hanh-v3">Vận hành V3: trạng thái Page, chỉnh sản phẩm/giá, đơn chờ duyệt và hội thoại</a></p>
 <header>
   <h1>Sản phẩm &amp; kho</h1>
   <span class="sub">Thứ bot đang chào bán, đọc từ dữ liệu sản phẩm của tiến trình bot — không gõ tay ở đây.</span>
@@ -30,6 +31,29 @@
       <span class="table-count" id="hSo"></span>
       <span id="nutVe"></span></div>
     <div id="bang"><div class="empty-state"><span class="skeleton"></span></div></div>
+  </section>
+
+  <!-- SẢN PHẨM GỐC (bảng 014): danh mục do NGƯỜI định nghĩa, không mang shop, không gắn
+       page. Đây là khoá mà biến thể POS của MỌI thị trường nối vào theo SỐ HIỆU — đặt tên
+       một lần, shop mở sau tự khớp. -->
+  <section class="section table-wrap" aria-labelledby="tieuGoc">
+    <div class="table-toolbar"><h2 id="tieuGoc">Sản phẩm gốc</h2>
+      <span class="table-count" id="demGoc"></span></div>
+    <div id="giaGoc"></div>
+    <div id="choGoc"></div>
+    <div id="bangGoc"><div class="empty-state"><span class="skeleton"></span></div></div>
+    <div class="form-stack" id="khungTaoGoc" hidden>
+      <div class="hang">
+        <div class="field"><label class="field-label" for="gSo">Số hiệu</label>
+          <input id="gSo" inputmode="numeric" autocomplete="off" placeholder="125" size="6"></div>
+        <div class="field"><label class="field-label" for="gMa">Mã gốc</label>
+          <input id="gMa" autocomplete="off" spellcheck="false" placeholder="fitgum-acai-berry"></div>
+        <div class="field"><label class="field-label" for="gTen">Tên</label>
+          <input id="gTen" autocomplete="off" placeholder="Fitgum Acai Berry"></div>
+        <button type="button" class="btn" data-variant="primary" data-size="sm" id="nutTaoGoc"><span>Tạo</span></button>
+      </div>
+      <div class="field-hint" id="goiYGoc">Mã gốc là khoá của kịch bản — đặt rồi thì KHÔNG sửa được, chỉ tên và số hiệu sửa được.</div>
+    </div>
   </section>
 </main>
 
@@ -132,6 +156,117 @@ async function moPage(id) {
   }
 }
 
+/* ── SẢN PHẨM GỐC ────────────────────────────────────────────────────────────────────
+ * Hai bảng, một việc: bảng dưới là thứ ĐÃ đặt tên, dãy chip phía trên là số hiệu POS đang
+ * CHỜ người đặt tên — con số mà mỗi lượt «Kéo danh mục» in ra rồi bỏ đó. Bấm một chip là
+ * điền sẵn số hiệu và tên POS vào ô tạo, để việc còn lại chỉ là đặt mã gốc.
+ */
+let GOC = null;
+
+async function goiGhi(duong, tuyChon) {
+  const r = await fetch(duong, {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    ...tuyChon,
+  });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Máy chủ trả ' + r.status + '.');
+  return j;
+}
+
+function veGoc(d) {
+  GOC = d;
+  $('#khungTaoGoc').hidden = !d.suaDuoc;
+  $('#demGoc').textContent = `${so(d.goc.length)} sản phẩm gốc · ${so(d.cho.length)} số hiệu chờ đặt tên`;
+
+  /* GIÁ: nói thẳng còn bao nhiêu món chưa có bậc giá, và chỉ đúng chỗ nhập.
+   * KHÔNG dựng ô nhập giá ở màn này: cửa ghi giá đã có ở màn Vận hành V3 (`saveProduct`),
+   * kèm khoá chống đụng lượt đồng bộ POS, kiểm phiên bản, và cờ `cau_hinh_tay` để lượt kéo
+   * sau không đè. Dựng cửa thứ hai là đẻ hai bản luật cho một con số — đúng án lệ «cửa RA
+   * đúng một cái» mà dự án này đã trả giá. */
+  const g = d.gia || { tong: 0, coGia: 0, chuaCoGia: 0, nhapTay: 0 };
+  $('#giaGoc').innerHTML = g.tong
+    ? `<div class="duoi-4">${canhBao({
+        level: g.chuaCoGia ? 'warning' : 'info',
+        title: g.chuaCoGia
+          ? `${so(g.chuaCoGia)}/${so(g.tong)} sản phẩm chưa có bậc giá nào`
+          : `Cả ${so(g.tong)} sản phẩm đều đã có bậc giá`,
+        body: g.chuaCoGia
+          ? 'Danh mục POS của các shop này không mang giá (đo 22/08: giá về 0 trên toàn bộ biến thể mẫu) — giá thật nằm trong từng đơn. '
+            + 'Nhập tay ở màn Vận hành V3; sản phẩm đã nhập tay sẽ không bị lượt «Kéo danh mục» sau đè lên.'
+          : `${so(g.nhapTay)} sản phẩm đang ở chế độ nhập tay, không bị lượt kéo danh mục ghi đè.`,
+        detail: [],
+      })}<p><a href="/van-hanh-v3">Mở màn Vận hành V3 để nhập giá và sửa tên sản phẩm →</a></p></div>`
+    : '';
+
+  $('#choGoc').innerHTML = d.cho.length
+    ? `<div class="duoi-4">${canhBao({ level: 'warning',
+        title: `${so(d.cho.length)} số hiệu POS chưa có sản phẩm gốc`,
+        body: 'Biến thể mang những số này chưa nối được vào kịch bản. Bấm một số để điền sẵn rồi đặt mã gốc.',
+        detail: d.khongCoSoHieu ? [`${so(d.khongCoSoHieu)} biến thể KHÔNG có số hiệu ở đầu tên — máy không gộp được, phải gõ số vào tên trên POS.`] : [] })}
+       <div class="chip-list">${d.cho.map((c) => `
+         <button type="button" class="btn" data-size="sm" data-cho="${esc(c.soHieu)}"
+           title="${esc((c.ten || []).join(' · ') || 'chưa có tên')}">
+           ${esc(c.soHieu)} — ${esc((c.ten || [])[0] || 'chưa có tên')}${c.soBienThe > 1 ? ` (${so(c.soBienThe)} biến thể)` : ''}
+         </button>`).join('')}</div></div>`
+    : '';
+
+  $('#bangGoc').innerHTML = d.goc.length
+    ? `<table class="data-table"><thead><tr>
+        <th scope="col" class="num">Số hiệu</th><th scope="col">Mã gốc</th><th scope="col">Tên</th>
+        <th scope="col" class="num">Biến thể đã nối</th>
+        <th scope="col" class="actions"><span class="sr-only">Thao tác</span></th>
+      </tr></thead><tbody>${d.goc.map((g) => `
+      <tr>
+        <td class="num">${g.soHieu ? esc(g.soHieu) : '<span class="meta">chưa gán</span>'}</td>
+        <td><code>${esc(g.maGoc)}</code></td>
+        <td>${g.ten ? esc(g.ten) : '<span class="meta">chưa đặt tên</span>'}</td>
+        <td class="num">${so(g.soBienThe)}</td>
+        <td class="actions">${d.suaDuoc
+          ? button('Bỏ', { size: 'sm', variant: 'danger', data: { boGoc: g.id },
+              title: g.soBienThe ? 'Còn biến thể đang trỏ tới — sẽ bị từ chối' : 'Bỏ sản phẩm gốc này' })
+          : ''}</td>
+      </tr>`).join('')}</tbody></table>`
+    : emptyState({ icon: 'inbox', title: 'Chưa có sản phẩm gốc nào',
+        body: 'Biến thể POS chưa nối được vào kịch bản nào cho tới khi có danh mục này.' });
+
+  document.querySelectorAll('[data-cho]').forEach((b) => b.addEventListener('click', () => {
+    const c = d.cho.find((x) => x.soHieu === b.dataset.cho) || {};
+    $('#gSo').value = c.soHieu || '';
+    $('#gTen').value = (c.ten || [])[0] || '';
+    $('#gMa').value = ((c.ten || [])[0] || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    $('#gMa').focus();
+  }));
+  document.querySelectorAll('[data-bo-goc]').forEach((b) => b.addEventListener('click', () => boGoc(b.dataset.boGoc, b)));
+}
+
+async function taiGoc() {
+  try { veGoc(await goi('/api/san-pham/goc')); }
+  catch (e) {
+    $('#bangGoc').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không đọc được danh mục sản phẩm gốc', body: e.message });
+  }
+}
+
+async function taoGoc() {
+  const nut = $('#nutTaoGoc');
+  nut.disabled = true;
+  try {
+    await goiGhi('/api/san-pham/goc', { method: 'POST', body: JSON.stringify({
+      soHieu: $('#gSo').value.trim(), maGoc: $('#gMa').value.trim(), ten: $('#gTen').value.trim(),
+    }) });
+    for (const o of ['#gSo', '#gMa', '#gTen']) $(o).value = '';
+    $('#goiYGoc').textContent = 'Đã tạo. Lượt «Kéo danh mục» kế tiếp sẽ tự nối các biến thể mang số hiệu này.';
+    await taiGoc();
+  } catch (e) { $('#goiYGoc').textContent = e.message; }
+  finally { nut.disabled = false; }
+}
+
+async function boGoc(id, nut) {
+  nut.disabled = true;
+  try { await goiGhi('/api/san-pham/goc/' + encodeURIComponent(id), { method: 'DELETE' }); await taiGoc(); }
+  catch (e) { $('#goiYGoc').textContent = e.message; nut.disabled = false; }
+}
+
 async function tai() {
   try {
     DL = await goi('/api/san-pham');
@@ -145,6 +280,8 @@ async function tai() {
 }
 
 tai();
+taiGoc();
+$('#nutTaoGoc').addEventListener('click', taoGoc);
 </script>
 <script src="/chung/dieu-huong.js"></script>
 </body>

@@ -18,6 +18,8 @@ export {
   datChayNapLai, daNoiNapLai, batDauNapLai, trangThaiNapLai, tomTatNap,
   LA_TOAN_HE, GIAI_THICH_THU_TU, NGUONG_SAP_HET_NGAY, LoiKetNoi,
   datGhiKetNoiPos, daNoiGhiKetNoiPos,
+  datKhoTokenV3, daNoiKhoTokenV3, tokenTuEnv,
+  datKeoDanhMuc, daNoiKeoDanhMuc, keoDanhMucPos,
 } from './kho-ket-noi.js';
 
 export {

@@ -2,6 +2,7 @@
 //
 // | GET    /page-bot                    | trang                                            |
 // | GET    /api/page-bot/danh-sach      | danh sách đã lọc + số đếm + trạng thái cửa ghi   |
+// | POST   /api/page-bot/quet          | quét Pancake → upsert bảng `page` (CSDL v3)      |
 // | POST   /api/page-bot/:id/bot        | gạt công tắc BOT AI   (qua tiến trình bot v1)    |
 // | POST   /api/page-bot/:id/marketer   | gán marketer          (CSDL v3)                  |
 // | POST   /api/page-bot/:id/trong-diem | cờ page trọng điểm    (CSDL v3)                  |
@@ -21,7 +22,7 @@ import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { danhSachPage, LOC, CHU_LOC, MOI_TRANG, LoiPageBot } from './kho-page.js';
 import {
   datCongTacBot, ganMarketer, datTrongDiem, trangThaiCau,
-  datThiTruong, datNganhHang, datBotcakeTat, ganSanPhamGoc,
+  datThiTruong, datNganhHang, datBotcakeTat, ganSanPhamGoc, quetPageTuPancake,
   VAI_SUA_DUOC, CANH_BAO_MARKETER, PHIEU_MARKETER,
 } from './cong-tac.js';
 
@@ -157,6 +158,13 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
       canhBaoMarketer: CANH_BAO_MARKETER,
       phieuMarketer: PHIEU_MARKETER,
     });
+  }));
+
+  // QUÉT PANCAKE → bảng `page`. Đặt TRƯỚC các đường `/:id/...` vì `quet` sẽ bị bắt làm
+  // `:id` nếu đứng sau — một lỗi định tuyến câm, trả 404 «không có page tên quet».
+  r.post('/api/page-bot/quet', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    const kq = await quetPageTuPancake(cuaBoiCanh(req));
+    res.json({ ok: true, ...kq });
   }));
 
   r.post('/api/page-bot/:id/bot', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {

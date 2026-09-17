@@ -412,6 +412,13 @@ adminRouter.post('/translate', async (req, res) => {
 
 // ---- TOKEN PANCAKE (đa tài khoản, failover): xem / thêm / xóa từ dashboard ----
 adminRouter.get('/pancake-tokens', (_req, res) => res.json(listPancakeTokens()));
+// Nạp lại kho token CSDL NGAY (migration 019). Màn «Kết nối & token» của v3 gọi đường này
+// sau mỗi lượt thêm/bỏ để token có hiệu lực tức thì thay vì chờ hết nhịp làm mới.
+// Đây KHÔNG phải cửa ghi sang Pancake: nó chỉ bảo tiến trình này đọc lại một bảng.
+adminRouter.post('/pancake-tokens/nap-lai', async (_req, res) => {
+  const { lamMoiTokenDb } = await import('./pancake.js');
+  res.json({ ok: true, soToken: await lamMoiTokenDb() });
+});
 adminRouter.post('/pancake-tokens', async (req, res) => {
   const r = await addPancakeToken(req.body?.token);
   if (!r.ok) return res.status(400).json(r);

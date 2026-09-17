@@ -2,8 +2,8 @@
 //
 // Khác `v3/xem-thu.js` (dữ liệu giả trong RAM): file này đọc `aicloser_v3` thật.
 //
-// VẪN KHÔNG GỬI TIN CHO AI. Nó chỉ nạp `v3/src/ui/dispatch` + `v3/src/auth` và tầng truy vấn
-// `src/db/` — không nạp bộ não chat, không nạp cửa Pancake, không có đường ra ngoài.
+// UI vận hành đọc/ghi PostgreSQL. Duyệt đơn gọi business service và có thể tạo đơn POS
+// khi các điều kiện cấu hình cho phép. Worker chat vẫn là tiến trình riêng.
 //
 //   DATABASE_URL_V3=... CHAYTHAT_CONG=3102 node v3/chay-that.js
 
@@ -86,9 +86,17 @@ async function slugCua(teamId) {
 const { lietKeThiTruong, themKetNoi, suaKetNoi, batTatKetNoi, boKetNoi }
   = await import(`${GOC}/src/pos/ket-noi.js`);
 
+const khoToken = await import(`${GOC}/src/token-pancake.js`);
+const { quetVaGhiPage } = await import(`${GOC}/src/quet-page.js`);
+const { keoDanhMucTeam } = await import(`${GOC}/src/pos/keo-danh-muc.js`);
+const spGoc = await import(`${GOC}/src/products/san-pham-goc.js`);
+const { noiVanHanhV3 } = await import('./src/noi-day/van-hanh-v3.js');
+const docSanSangV3 = noiVanHanhV3(pool);
 const app = express();
 const bao = dungPhanB(app, {
   taoTruyVan,
+  vanHanh: { pool },
+  docSanSang: docSanSangV3,
   taoTruyVanHeThong: () => taoCongDanhTinh(pool),
   docKetNoiPos: (bc) => lietKeThiTruong(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId || null }),
   // Cùng `ctx` với bộ đọc — vế `team_id` trong WHERE của tầng dưới lấy từ đây, nên bối cảnh
@@ -98,6 +106,30 @@ const bao = dungPhanB(app, {
     sua: (bc, id, t) => suaKetNoi(pool, ctxCuaA(bc), id, t),
     batTat: (bc, id, bat) => batTatKetNoi(pool, ctxCuaA(bc), id, bat),
     bo: (bc, id) => boKetNoi(pool, ctxCuaA(bc), id),
+  },
+  // Kho token Pancake: v3 ghi thẳng bảng `token_pancake`, tiến trình bot đọc cùng bảng đó
+  // qua `src/pancake.js#datKhoTokenDb`. Không còn đường «muốn thêm token phải nhờ v1».
+  khoTokenV3: {
+    ds: () => khoToken.dsToken(pool),
+    them: ({ token, nguoiDungId }) => khoToken.themToken(pool, { token, nguoiDungId }),
+    bo: (id) => khoToken.boToken(pool, id),
+    batTat: (id, bat) => khoToken.batTatToken(pool, id, bat),
+  },
+  // Quét Pancake bằng kho token (env + bảng `token_pancake`) rồi upsert bảng `page`.
+  // Đây là đường thay cho `pages.json`: máy chỉ chạy v3 vẫn dựng được danh mục page.
+  quetPagePancake: () => quetVaGhiPage(pool),
+  // Kéo danh mục + tồn kho POS cho team đang mở. Cùng `ctx` với bộ đọc kết nối POS — vế
+  // `team_id` trong WHERE lấy từ đây, nên bối cảnh sai là kéo nhầm kho của team khác.
+  keoDanhMucPos: (bc) => keoDanhMucTeam(pool, ctxCuaA(bc)),
+  // Kho sản phẩm GỐC — danh mục do người định nghĩa (014). Tầng A giữ luật dữ liệu; lớp
+  // trên chỉ kiểm vai và ghi nhật ký.
+  khoSanPhamGoc: {
+    ds: (bc) => spGoc.dsSanPhamGoc(pool, bc.teamId),
+    cho: (bc) => spGoc.soHieuChuaCoGoc(pool, bc.teamId),
+    dem: (bc) => spGoc.demGia(pool, bc.teamId),
+    tao: (bc, t) => spGoc.taoSanPhamGoc(pool, bc.teamId, t),
+    sua: (bc, id, t) => spGoc.suaSanPhamGoc(pool, bc.teamId, id, t),
+    bo: (bc, id) => spGoc.boSanPhamGoc(pool, bc.teamId, id),
   },
   chuyenPage: (bc, t) => chuyenPageSangTeam(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId }, t),
   cuaBoLuat: {
@@ -160,8 +192,8 @@ const bao = dungPhanB(app, {
 app.get('/', (_q, r) => r.redirect('/dieu-phoi'));
 
 const CONG = Number(process.env.CHAYTHAT_CONG || 3102);
-http.createServer(app).listen(CONG, () => {
-  console.log(`[chay-that] DỮ LIỆU THẬT · cổng ${CONG} · KHÔNG gửi tin cho ai`);
+http.createServer(app).listen(CONG, process.env.HOST, () => {
+  console.log(`[chay-that] DỮ LIỆU THẬT · cổng ${CONG} · UI vận hành V3`);
   for (const d of bao.daNoi) console.log(`[chay-that] đã nối: ${d}`);
   for (const t of bao.thieu) console.log(`[chay-that] chưa nối: ${t}`);
 });

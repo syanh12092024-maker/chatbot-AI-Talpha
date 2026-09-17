@@ -22,7 +22,11 @@ import { GOC } from "../db/ket-noi.js";
 // 15/09 CR-15/09: +san_pham_goc (bảng 24, migration 014) — sản phẩm THẬT, không mang shop,
 // không gắn page. Thêm bảng là đổi con số mà ca S1 neo vào, nên nó được sửa CÙNG COMMIT với
 // migration (skill `doi-y-do` §4: sửa luật thì sửa cả thước).
+// 17/09: +token_pancake (migration 019) — kho token Pancake rời `.env`/`pancake-tokens.json`
+// vào CSDL, để màn «Kết nối & token» của v3 không phải hỏi HTTP sang tiến trình bot mới xem
+// và sửa được. Bảng TOÀN HỆ, không `team_id` (xem ca S2) — sửa NEO cùng commit với migration.
 const NEO_19_BANG = [
+  "token_pancake",
   "san_pham_goc",
   "ket_noi_pos",
   "tin_cho_xu_ly",
@@ -89,7 +93,11 @@ test("S2 · phủ team_id: 0 bảng nghiệp vụ thiếu cột, chỉ bo_luat_c
   const thieu = await q(
     `SELECT t.table_name FROM information_schema.tables t
      WHERE t.table_schema='public' AND t.table_type='BASE TABLE'
-       AND t.table_name NOT IN ('team','nguoi_dung','vai','_migrations')
+       -- token_pancake (019) KHÔNG có team_id, và đó là khai báo có chủ ý: một tài khoản
+       -- Pancake phủ một NHÓM PAGE có thể thuộc nhiều team, nên chia kho token theo team là
+       -- vỡ cơ chế dự phòng đa-token. Bảng nằm ngoài tầng truy vấn chung, chỉ đi qua bộ
+       -- đọc/ghi riêng src/token-pancake.js, và màn hình nói thẳng nó là TOÀN HỆ.
+       AND t.table_name NOT IN ('team','nguoi_dung','vai','_migrations','token_pancake')
        AND NOT EXISTS (SELECT 1 FROM information_schema.columns c
                        WHERE c.table_schema='public' AND c.table_name=t.table_name
                          AND c.column_name='team_id')`,

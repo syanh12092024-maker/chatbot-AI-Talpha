@@ -18,16 +18,52 @@ export function decodeTok(t) {
     return { name: j.name || j.fb_name || '?', exp: (j.exp || 0) * 1000, uid: j.uid || '', iat: (j.iat || 0) * 1000 };
   } catch { return { name: '(token lỗi định dạng)', exp: 0, uid: '', iat: 0 }; }
 }
+// ─── NGUỒN THỨ TƯ: KHO TOKEN TRONG CSDL (migration 019) ────────────────────────────
+// Cắt sợi dây «muốn thêm token phải đi qua /admin/api của tiến trình bot»: v3 ghi thẳng
+// bảng `token_pancake`, còn file này chỉ NHẬN danh sách qua một cửa tiêm. Tiêm thay vì
+// import `pg` ở đây, vì `src/pancake.js` còn chạy trong những tiến trình không có pool
+// (bộ ca, script one-shot) — nối được thì nối, không nối thì kho cũ vẫn chạy y như trước.
+let _docTokenDb = null;   // () => Promise<string[]>
+let _dbToks = [];
+let _hen = null;
+/** Nối bộ đọc kho token CSDL. Gọi một lần lúc dựng tiến trình. `null` để gỡ. */
+export function datKhoTokenDb(fn, { nhipMs = 5 * 60e3 } = {}) {
+  if (fn != null && typeof fn !== 'function') throw new TypeError('datKhoTokenDb cần một hàm');
+  _docTokenDb = fn || null;
+  if (_hen) { clearInterval(_hen); _hen = null; }
+  if (!_docTokenDb) { _dbToks = []; return null; }
+  lamMoiTokenDb().catch(() => {});
+  _hen = setInterval(() => { lamMoiTokenDb().catch(() => {}); }, nhipMs);
+  _hen.unref?.();          // đừng giữ tiến trình sống chỉ vì cái hẹn giờ này
+  return _docTokenDb;
+}
+/** Nạp lại kho token CSDL NGAY — gọi sau khi màn v3 thêm/bỏ một token. */
+export async function lamMoiTokenDb() {
+  if (!_docTokenDb) return 0;
+  try {
+    const ds = await _docTokenDb();
+    _dbToks = Array.isArray(ds) ? ds.filter((t) => typeof t === 'string' && t.trim()) : [];
+    _pageTokIdx.clear();   // chỉ số token đổi → page tự dò lại chân tốt nhất, không cần restart
+    return _dbToks.length;
+  } catch (e) {
+    // Giữ nguyên danh sách cũ: CSDL chớp một nhịp không được làm bot mất hết token.
+    console.error('[token] đọc kho CSDL lỗi:', e.message);
+    return _dbToks.length;
+  }
+}
+
 function allToks() {
-  // Token HẾT HẠN bị loại tự động (gọi cũng vô ích). Thứ tự: chính → phụ env → phụ dashboard.
-  return [config.pancakeToken, ...config.pancakeTokensExtra, ..._fileToks]
+  // Token HẾT HẠN bị loại tự động (gọi cũng vô ích). Thứ tự: chính → phụ env → phụ
+  // dashboard → CSDL (v3). CSDL đứng cuối vì hai kho trước là cấu hình máy chủ, có trước.
+  return [config.pancakeToken, ...config.pancakeTokensExtra, ..._fileToks, ..._dbToks]
     .filter(Boolean)
     .filter((t) => { const d = decodeTok(t); return !d.exp || d.exp > Date.now(); });
 }
 // ---- Quản lý từ dashboard ----
 export function listPancakeTokens() {
-  const toks = [config.pancakeToken, ...config.pancakeTokensExtra, ..._fileToks].filter(Boolean);
+  const toks = [config.pancakeToken, ...config.pancakeTokensExtra, ..._fileToks, ..._dbToks].filter(Boolean);
   const nEnv = 1 + config.pancakeTokensExtra.length;
+  const nFile = nEnv + _fileToks.length;   // từ đây trở đi là token của CSDL, bỏ ở màn v3
   const routing = {}; // token index (trong allToks) -> số page đang định tuyến
   const live = allToks();
   for (const idx of _pageTokIdx.values()) routing[idx] = (routing[idx] || 0) + 1;
@@ -36,8 +72,9 @@ export function listPancakeTokens() {
     const liveIdx = live.indexOf(t);
     return {
       i, name: d.name, exp: d.exp, expired: !!d.exp && d.exp <= Date.now(),
-      source: i === 0 ? 'chính (.env)' : i < nEnv ? 'phụ (.env)' : 'dashboard',
-      removable: i >= nEnv, pagesRouted: liveIdx >= 0 ? (routing[liveIdx] || 0) : 0,
+      source: i === 0 ? 'chính (.env)' : i < nEnv ? 'phụ (.env)' : i < nFile ? 'dashboard' : 'CSDL (v3)',
+      // Token CSDL bỏ ở màn «Kết nối & token» của v3 (có vai + nhật ký), không bỏ ở đây.
+      removable: i >= nEnv && i < nFile, pagesRouted: liveIdx >= 0 ? (routing[liveIdx] || 0) : 0,
       tail: String(t).slice(-8),
     };
   });

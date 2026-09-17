@@ -17,6 +17,7 @@
 <script src="/chung/ui.js"></script>
 </head>
 <body>
+<p style="padding:12px"><a href="/van-hanh-v3">Vận hành V3: trạng thái Page, chỉnh sản phẩm/giá, đơn chờ duyệt và hội thoại</a></p>
 <header>
   <h1>Công tắc từng page</h1>
   <span class="sub">Bật tắt bot và gán người phụ trách cho từng page.</span>
@@ -33,6 +34,8 @@
       <label for="oLoc" class="sr-only">Lọc page</label>
       <select id="oLoc"></select>
       <span class="table-count" id="tomTat" aria-live="polite"></span>
+      <button type="button" class="btn" data-variant="primary" data-size="sm" id="nutQuet"
+        title="Hỏi Pancake bằng kho token đang có, cập nhật danh mục page"><span>Quét Pancake</span></button>
     </div>
     <div id="bang"></div>
     <div id="phanTrang"></div>
@@ -152,6 +155,7 @@ function veBang(d) {
       <th scope="col">Sản phẩm gốc</th><th scope="col">Trọng điểm</th>
       <th scope="col">Đã tắt Botcake</th>
     </tr></thead><tbody>${d.page.map((p) => {
+      const khoaBotDong = p.runtime === 'v3' ? !SUA : khoaBot;
       const ten = p.ten || '(chưa có tên)';
       return `
     <tr>
@@ -174,9 +178,9 @@ function veBang(d) {
       </td>
       <td class="meta">${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
       <td>
-        <label class="switch cell-control" ${khoaBot ? `title="${esc(lyDoKhoaBot)}"` : ''}>
+        <label class="switch cell-control" ${khoaBotDong ? `title="${esc(lyDoKhoaBot)}"` : ''}>
           <input type="checkbox" role="switch" data-bot="${esc(p.id)}" aria-label="Bot của ${esc(ten)}"
-                 ${p.botAiBat ? 'checked' : ''} ${khoaBot ? 'disabled' : ''}>
+                 ${p.botAiBat ? 'checked' : ''} ${khoaBotDong ? 'disabled' : ''}>
           <span>${p.botAiBat ? 'Đang chạy' : 'Tắt'}</span>
         </label>
       </td>
@@ -335,6 +339,32 @@ async function gatBotcake(el) {
 }
 
 /** Nạp lại số đếm mà KHÔNG vẽ lại bảng — để con trỏ không nhảy khỏi ô đang gõ. */
+/* ── QUÉT PANCAKE → BẢNG page ────────────────────────────────────────────────────────
+ * Đây là đường DUY NHẤT đưa page vào hệ mà không cần tệp `pages.json` của tiến trình bot
+ * v1. Nút nằm cạnh bộ lọc vì nó trả lời đúng câu người ta hỏi khi thấy bảng rỗng: «page
+ * của tôi đâu?».
+ *
+ * KHÔNG hỏi xác nhận: lượt quét chỉ THÊM và cập nhật TÊN, không xoá và không đụng công
+ * tắc. Hộp xác nhận cho một thao tác an toàn chỉ dạy người ta bấm OK theo phản xạ.
+ */
+async function quetPancake() {
+  const nut = document.querySelector('#nutQuet');
+  if (!nut) return;
+  nut.disabled = true;
+  try {
+    const kq = await goi('/api/page-bot/quet', { method: 'POST', body: JSON.stringify({}) });
+    if (kq.rong) {
+      baoLoi('Quét xong nhưng không thấy page nào',
+        'Không token Pancake nào trả về page. Kiểm kho token ở màn «Kết nối & token» — token hết hạn hay mất quyền đều ra kết quả này. Danh mục page trong CSDL giữ nguyên.');
+    } else {
+      toast(`Quét xong: ${formatNumber(kq.nguon)} page · ${formatNumber(kq.them)} mới · ${formatNumber(kq.capNhat)} cập nhật`
+        + (kq.khongThay ? ` · ${formatNumber(kq.khongThay)} page trong CSDL không thấy ở lượt này` : ''));
+      await nap();
+    }
+  } catch (e) { baoLoi('Không quét được Pancake', e.message); }
+  finally { nut.disabled = false; }
+}
+
 async function napNhe() {
   const d = await goi(`/api/page-bot/danh-sach?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}&trang=${TRANG}`);
   if (!d) return;
@@ -364,6 +394,7 @@ $('#oTim').addEventListener('input', (e) => {
   hen = setTimeout(() => { TIM = e.target.value.trim(); TRANG = 0; nap(); }, 250);
 });
 $('#oLoc').addEventListener('change', (e) => { LOC = e.target.value; TRANG = 0; nap(); });
+$('#nutQuet').addEventListener('click', quetPancake);
 
 $('#bang').innerHTML = '<div class="empty-state"><span class="skeleton"></span></div>';
 nap();

@@ -17,6 +17,7 @@
 //
 // Người A chỉ cần giao ba thứ và gọi một hàm — xem `v3/docs/hop-dong-b-voi-a.md` mục 8.
 
+import { taoRouterVanHanh } from './ui/van-hanh/router.js';
 import {
   datCongDanhTinh, datPheuNhatKy as datPheuNhatKyAuth, taoRouterAuth,
   lopBoiCanh, batBuocDangNhap, batBuocVaiHTTP, chanTeamTrenUrl,
@@ -42,12 +43,15 @@ import {
   datChanDangNhap as datChanDangNhapPageBot, datChanVai as datChanVaiPageBot,
   datDocSanSang as datDocSanSangPageBot,
   taoRouterPageBot,
+  datQuetPage,
 } from './ui/page-bot/index.js';
 import { khoToken } from './ui/ket-noi/index.js';
 import { trangThaiCau as trangThaiCauBot } from './noi-day/cau-bot-v1.js';
 import {
   datDocKetNoiPos as datDocKetNoiPosKN, datPheuNhatKy as datPheuNhatKyKetNoi, datChayNapLai,
   datGhiKetNoiPos,
+  datKhoTokenV3,
+  datKeoDanhMuc,
   datChanDangNhap as datChanDangNhapKetNoi, datChanVai as datChanVaiKetNoi,
   taoRouterKetNoi,
 } from './ui/ket-noi/index.js';
@@ -103,6 +107,7 @@ import {
 import {
   datTaoTruyVan as datTruyVanSanPham, datDocKhoSanPham,
   datChanDangNhap as datChanDangNhapSanPham, datChanVai as datChanVaiSanPham, taoRouterSanPham,
+  datKhoGoc, datPheuNhatKyGoc,
 } from './ui/san-pham/index.js';
 import {
   datTaoTruyVan as datTruyVanTrangChu, datDocSanSang as datDocSanSangTrangChu,
@@ -191,11 +196,11 @@ import {
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, chuyenPage, khoKhoa,
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, khoKhoa,
   docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan,
-  chayNapLai,
+  chayNapLai, vanHanh,
   ghiSoAi, canhBao, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
@@ -291,7 +296,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   for (const dat of [datPheuNhatKyAuth, datPheuNhatKyModel, datPheuNhatKyDieuPhoi, datPheuNhatKyTeam,
     datPheuNhatKyPageBot, datPheuNhatKyKetNoi, datPheuNhatKyBoLuat, datPheuNhatKyKyNang, datPheuNhatKyKichBan,
     // Mẫu 0 đồng là LỜI BOT NÓI VỚI KHÁCH — sửa phải để lại dấu vết (01 §9).
-    datPheuNhatKyLop0]) {
+    datPheuNhatKyLop0,
+    // Sản phẩm GỐC — danh mục do người định nghĩa, và là khoá của tầng kịch bản.
+    datPheuNhatKyGoc]) {
     dat((boiCanh, ban) => {
       // Đăng nhập hỏng và chọn team không thuộc xảy ra TRƯỚC khi có bối cảnh — vai B cố ý
       // không dựng bối cảnh giả để lách (bối cảnh giả là thứ nguy hiểm nhất trong hệ này).
@@ -380,6 +387,41 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   }
   else thieu.push('ghiKetNoiPos — màn Kết nối chỉ ĐỌC kết nối POS; thêm một thị trường hay đổi khoá API vẫn phải gõ SQL trên máy chủ, đúng thứ lượt 15/09 sinh ra để xoá');
 
+  // Kho token Pancake trong CSDL (migration 019). Không nối thì màn Kết nối nói thẳng
+  // «máy chủ v3 chưa nối kho token» — lỗi dựng ứng dụng, chứ không hiện một màn rỗng rồi
+  // để người ta tưởng hệ thống chưa có token nào.
+  if (khoTokenV3 && typeof khoTokenV3.ds === 'function') {
+    datKhoTokenV3(khoTokenV3);
+    daNoi.push('kho token Pancake (CSDL) → màn kết nối & token (xem · thêm · bỏ, không qua tiến trình bot)');
+  }
+  else thieu.push('khoTokenV3 — màn Kết nối không xem và không thêm được token; kho token chỉ còn đường sửa tay `.env` trên máy chủ');
+
+  // Kho sản phẩm GỐC. Không nối thì màn Sản phẩm chỉ xem được — mà danh mục gốc là thứ
+  // `doc-danh-muc.js` cần để tự nối biến thể của shop mới, nên thiếu nó là mỗi lượt kéo
+  // danh mục lại đếm ra một đống «số hiệu chưa có sản phẩm gốc» mà không ai đóng được.
+  if (khoSanPhamGoc && typeof khoSanPhamGoc.ds === 'function') {
+    datKhoGoc(khoSanPhamGoc);
+    daNoi.push('kho sản phẩm gốc → màn Sản phẩm & kho (xem · tạo · sửa · bỏ)');
+  }
+  else thieu.push('khoSanPhamGoc — không tạo được sản phẩm gốc bằng giao diện; danh mục ấy chỉ vào hệ được bằng SQL tay trên máy chủ');
+
+  // Kéo danh mục POS → `san_pham`/`goi_gia`. Không nối thì bảng sản phẩm của v3 chỉ đầy
+  // được bằng bộ di trú, và tồn kho thật của POS không có đường nào vào hệ.
+  if (typeof keoDanhMucPos === 'function') {
+    datKeoDanhMuc(keoDanhMucPos);
+    daNoi.push('kéo danh mục POS → bảng san_pham/goi_gia (màn Kết nối có nút kéo danh mục)');
+  }
+  else thieu.push('keoDanhMucPos — danh mục và tồn kho POS không có đường vào `san_pham`; bảng sản phẩm v3 chỉ đầy bằng bộ di trú');
+
+  // Quét Pancake → bảng `page`. Không nối thì màn «Page & bot» chỉ có page do bộ di trú
+  // đọc `pages.json` của tiến trình bot v1 mang về — tức một máy chỉ chạy v3 không có
+  // đường nào đưa page vào hệ.
+  if (typeof quetPagePancake === 'function') {
+    datQuetPage(quetPagePancake);
+    daNoi.push('quét Pancake → bảng page (màn Page & bot có nút kéo danh mục page về)');
+  }
+  else thieu.push('quetPagePancake — page chỉ vào hệ được bằng bộ di trú đọc `pages.json` của tiến trình bot v1');
+
   // ── ④ Chắn đăng nhập và chắn vai cho bảng điều phối ──
   // Truyền HÀM DỰNG, không phải cái chắn đã dựng. Bảng điều phối nhận được cả hai kiểu,
   // nhưng truyền hàm dựng mới đúng ý — nó tự chọn vai nào vào được.
@@ -446,6 +488,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   app.use(taoRouterAuth());       //   /dang-nhap · /api/dang-nhap · /api/chon-team · /api/toi
   app.use(chanTeamTrenUrl());     //   ?team_id=<team khác> → 403 + ghi nhật ký
   app.use(taoRouterDieuHuong());  //   /chung/dieu-huong.js · /api/dieu-huong (menu chung)
+  app.use(taoRouterVanHanh(vanHanh));
   app.use(taoRouterDieuPhoi());   //   /dieu-phoi · /viec/:id · /api/dieu-phoi/*
   app.use(taoRouterCauHinhTeam()); //  /cau-hinh-team · /api/team/*
   app.use(taoRouterPageBot());    //   /page-bot · /api/page-bot/*

@@ -8,6 +8,7 @@
 // | POST   /api/ket-noi/nap-lai    | kéo dữ liệu từ tiến trình bot về nền v3 (chạy NỀN)     |
 // | GET    /api/ket-noi/nap-lai    | trạng thái lượt nạp đang chạy / vừa xong              |
 // | POST   /api/ket-noi/pos        | thêm kết nối POS (market + shop + khoá API)           |
+// | POST   /api/ket-noi/pos/keo-danh-muc | kéo danh mục + tồn kho POS → `san_pham`/`goi_gia`|
 // | POST   /api/ket-noi/pos/:id    | sửa shop id và/hoặc khoá; `market` KHÔNG sửa được     |
 // | POST   /api/ket-noi/pos/:id/bat| bật/tắt — cách ĐÚNG để ngừng dùng một shop            |
 // | DELETE /api/ket-noi/pos/:id    | bỏ hẳn, mất luôn khoá đã mã hoá                       |
@@ -27,11 +28,11 @@ import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import {
   khoToken, ketNoiPosCua, trangThaiCau, LA_TOAN_HE, GIAI_THICH_THU_TU, LoiKetNoi,
+  batBuocKhoTokenV3, thuTokenSong, epBotNapLai, keoDanhMucPos,
   batDauNapLai, trangThaiNapLai,
   themPos, suaPos, batTatPos, boPos,
 } from './kho-ket-noi.js';
 import { HANH_DONG } from '../../audit/hanh-dong.js';
-import { themToken, boToken } from '../../noi-day/cau-bot-v1.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -189,6 +190,27 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   // ⛔ KHOÁ API KHÔNG VÀO NHẬT KÝ. `nhat_ky` là bảng CHỈ-THÊM (lược đồ 001): một khoá lọt
   //    vào đó là lọt vĩnh viễn, không xoá được. Ghi `market` + `shopId` là đủ truy ngược
   //    «ai đổi kết nối nào lúc nào» — cùng lý do đường thêm token chỉ ghi tên tài khoản.
+  /* KÉO DANH MỤC POS → `san_pham` / `goi_gia`.
+   * Đặt TRƯỚC `/api/ket-noi/pos/:id` — đứng sau thì `keo-danh-muc` bị bắt làm `:id` và
+   * trả 404 «không có kết nối đó», một lỗi định tuyến câm.
+   * Nhật ký KHÔNG bắt buộc (cùng họ với «Kéo dữ liệu về»): lượt kéo đã chạy xong rồi mới
+   * tới đây, ném ở đây chỉ làm mất báo cáo chứ không lùi được gì. */
+  r.post('/api/ket-noi/pos/keo-danh-muc', canDangNhap, canVai, boc(async (req, res) => {
+    const bc = cuaBoiCanh(req);
+    const kq = await keoDanhMucPos(bc);
+    await ghi(bc, {
+      hanhDong: HANH_DONG.KEO_DANH_MUC_POS,
+      doiTuongLoai: 'ket_noi_pos',
+      doiTuongId: null,
+      sau: { thiTruong: kq.thiTruong, docDuoc: kq.docDuoc, them: kq.them, capNhat: kq.capNhat, giaGhiDuoc: kq.giaGhiDuoc, hong: kq.hong.length },
+      ghiChu: kq.rong
+        ? 'kéo danh mục POS: team chưa có kết nối POS nào đang bật'
+        : `kéo danh mục POS ${kq.thiTruong} thị trường: ${kq.docDuoc} biến thể · ${kq.them} sản phẩm mới · ${kq.giaGhiDuoc} bậc giá`
+          + (kq.hong.length ? ` · ${kq.hong.length} thị trường LỖI (${kq.hong.map((h) => h.market).join(', ')})` : ''),
+    });
+    res.json({ ok: true, ...kq });
+  }));
+
   r.post('/api/ket-noi/pos', canDangNhap, canVai, boc(async (req, res) => {
     batBuocPheu();
     const bc = cuaBoiCanh(req);
@@ -258,37 +280,54 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
     res.json({ ok: true, pos: kq });
   }));
 
+  /* ═══ THÊM / BỎ TOKEN — nay ghi thẳng CSDL, KHÔNG qua cửa ghi sang tiến trình bot ═══
+   *
+   * Cửa ghi ấy (`PANCAKE_READONLY`) sinh ra để chặn thứ CHẠM KHÁCH THẬT: gạt công tắc bot
+   * cho một page là bot bắt đầu tự trả lời người thật. Thêm một token thì KHÔNG gửi cho ai
+   * — nó chỉ là quản khoá đọc. Gộp hai việc vào một van khiến máy dev không cấu hình nổi
+   * bằng giao diện, và người ta quay về sửa tay `.env` — đường không có dấu vết. Nên tách:
+   * công tắc bot giữ nguyên van, kho token đi lối riêng có ĐĂNG NHẬP + VAI `quan-tri` +
+   * NHẬT KÝ BẮT BUỘC + Pancake tự từ chối token sai.
+   */
   r.post('/api/ket-noi/token', canDangNhap, canVai, boc(async (req, res) => {
+    batBuocPheu();
     const bc = cuaBoiCanh(req);
     const token = String(req.body?.token || '').trim();
     if (!token) throw new LoiKetNoi('thiếu token', 'thieu_tham_so');
 
-    // `themToken` tự kiểm cửa ghi (`V3_BOT_GHI` + `PANCAKE_READONLY`) rồi mới gọi sang bot.
-    const kq = await themToken(token);
+    // THỬ SỐNG trước khi nhận — một lượt GET, không phải lượt gửi. Nhận token chết vào kho
+    // là để dành một sự cố câm cho lượt chat đầu tiên của khách.
+    const thu = await thuTokenSong(token);
+    if (!thu.ok) throw new LoiKetNoi(thu.loi, 'token_khong_song', 400);
+
+    const kq = await batBuocKhoTokenV3().them({ token, nguoiDungId: bc.nguoiDungId ?? null });
 
     // ⛔ KHÔNG ghi token vào nhật ký. Nhật ký là bảng chỉ-thêm, không xoá được — một token
     //    lọt vào đó là lọt vĩnh viễn. Ghi tên tài khoản và hạn, đủ để truy ngược.
     await ghi(bc, {
       hanhDong: HANH_DONG_THEM_TOKEN,
-      doiTuongLoai: 'pancake_token',
-      doiTuongId: null,
-      sau: { ten: kq?.name || null, het: kq?.exp || null, soPage: kq?.pages ?? null },
-      ghiChu: `thêm token Pancake của tài khoản "${kq?.name || '?'}" (${kq?.pages ?? '?'} page)`,
+      doiTuongLoai: 'token_pancake',
+      doiTuongId: kq.id,
+      sau: { ten: kq.ten, duoi: kq.duoi, het: kq.hetHan || null, soPage: thu.soPage },
+      ghiChu: `thêm token Pancake của tài khoản "${kq.ten}" (…${kq.duoi}, ${thu.soPage} page)`,
     });
-    res.json({ ok: true, ten: kq?.name, soPage: kq?.pages, het: kq?.exp });
+    await epBotNapLai();
+    res.json({ ok: true, id: kq.id, ten: kq.ten, soPage: thu.soPage, het: kq.hetHan });
   }));
 
   r.delete('/api/ket-noi/token/:i', canDangNhap, canVai, boc(async (req, res) => {
+    batBuocPheu();
     const bc = cuaBoiCanh(req);
-    const kq = await boToken(req.params.i);
+    const kq = await batBuocKhoTokenV3().bo(req.params.i);
     await ghi(bc, {
       hanhDong: HANH_DONG_BO_TOKEN,
-      doiTuongLoai: 'pancake_token',
-      doiTuongId: String(req.params.i),
-      truoc: { thuTu: String(req.params.i), ten: kq?.name || null },
-      ghiChu: `bỏ token Pancake thứ tự ${req.params.i}`,
+      doiTuongLoai: 'token_pancake',
+      doiTuongId: kq.id,
+      truoc: { ten: kq.ten, duoi: kq.duoi, het: kq.hetHan || null },
+      ghiChu: `bỏ token Pancake của tài khoản "${kq.ten}" (…${kq.duoi})`,
     });
-    res.json({ ok: true, ...kq });
+    await epBotNapLai();
+    res.json({ ok: true, id: kq.id, ten: kq.ten });
   }));
 
   // ── KÉO DỮ LIỆU VỀ ────────────────────────────────────────────────────────────────

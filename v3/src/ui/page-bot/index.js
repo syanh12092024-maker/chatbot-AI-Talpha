@@ -22,6 +22,7 @@ export {
   datPheuNhatKy, daNoiPheuNhatKyPage, trangThaiCau,
   HANH_DONG_BOT, HANH_DONG_MARKETER, HANH_DONG_TRONG_DIEM,
   VAI_SUA_DUOC, DAI_MARKETER, CANH_BAO_MARKETER, PHIEU_MARKETER,
+  datQuetPage, daNoiQuetPage, quetPageTuPancake,
 } from './cong-tac.js';
 
 export {

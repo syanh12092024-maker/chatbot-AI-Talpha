@@ -26,6 +26,9 @@
 // `chan_guard` mà không một byte nào ra khách. In ra số đếm để thấy nó đang đứng ở đâu.
 import { napTuPoll, nguonDangMo, lyDoNguonDong } from "./nap.js";
 import { chayToiKhiHet } from "./worker.js";
+import { dsPageV3 } from "./page-routing.js";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { taoPool } from "../../db/ket-noi.js";
 
 /** Nhịp quay khi hàng đợi rỗng. Cùng bậc với vòng poll của bản đang chạy (6–13 giây). */
@@ -64,12 +67,7 @@ export async function dsPageDeNap(pool, { gioiHan = 500 } = {}) {
  * Van này chỉ THU HẸP, không bao giờ mở rộng: id không có trong bảng `page` bị bỏ qua, nên
  * gõ nhầm một id không tạo ra một page ma (án lệ #22 «danh sách gõ tay là lỗ hẹn giờ»).
  */
-export function dsPageChoPhep() {
-  return String(process.env.V3_PAGE_XU_LY || "")
-    .split(/[,\s]+/)
-    .map((x) => x.trim())
-    .filter(Boolean);
-}
+export const dsPageChoPhep = dsPageV3;
 
 export function lyDoChuaChoPageNao() {
   return (
@@ -89,7 +87,7 @@ export async function motLuot(pool, deps = {}) {
   };
   if (!ket.nap.mo) {
     ket.nap.lyDo = lyDoNguonDong();
-  } else {
+  } else if (!deps.boQuaNap) {
     const trongBang = deps.dsPage
       ? await deps.dsPage(pool)
       : await dsPageDeNap(pool);
@@ -117,8 +115,10 @@ export async function motLuot(pool, deps = {}) {
       }
     }
   }
+  if (deps.boQuaXu) return ket;
   ket.xu = await chayToiKhiHet(pool, {
     toiDa: TRAN_MOI_LUOT,
+    pageIds: deps.dsChoPhep ? deps.dsChoPhep() : dsPageChoPhep(),
     ...(deps.depsXuLy || {}),
   });
   return ket;
@@ -135,6 +135,14 @@ function inLuot(ket) {
 
 async function main() {
   const pool = taoPool();
+  const poolGui = taoPool(); // sổ gửi luôn có kết nối ngoài transaction xử lý
+  // Worker là tiến trình GỬI THẬT, nên nó phải thấy đúng kho token mà người ta quản ở màn
+  // v3 (bảng `token_pancake`, migration 019) — không chỉ `.env` của máy chủ.
+  {
+    const { docTokenSong } = await import("../token-pancake.js");
+    const { datKhoTokenDb } = await import("../pancake.js");
+    datKhoTokenDb(() => docTokenSong(pool));
+  }
   const motLuotThoi = process.env.V3_WORKER_MOT_LUOT === "1";
   const choPhep = dsPageChoPhep();
   console.log(
@@ -149,23 +157,37 @@ async function main() {
       dung = true;
     });
   }
-  try {
-    do {
+  const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const pollLoop = async () => {
+    while (!dung) {
+      const started = Date.now();
+      try { inLuot(await motLuot(pool, { boQuaXu: true })); }
+      catch (e) { console.error('[worker-v3] nạp lỗi:', e.name); }
+      while (!dung && Date.now() - started < NHIP_MS) await pause(250);
+    }
+  };
+  const workLoop = async () => {
+    while (!dung) {
       try {
-        inLuot(await motLuot(pool));
-      } catch (e) {
-        // Vòng lặp KHÔNG được chết vì một lượt hỏng — nhưng lỗi phải hiện nguyên văn.
-        console.error(`[worker-v3] lượt hỏng: ${e?.stack || e?.message || e}`);
-      }
-      if (motLuotThoi || dung) break;
-      await new Promise((r) => setTimeout(r, NHIP_MS));
-    } while (true);
+        const ket = await motLuot(pool, { boQuaNap: true, depsXuLy: { poolGui, dongThoi: 1 } });
+        if (ket.xu?.vong) inLuot(ket);
+        else await pause(250);
+      } catch (e) { console.error('[worker-v3] xử lý lỗi:', e.name); await pause(1000); }
+    }
+  };
+  try {
+    if (motLuotThoi) inLuot(await motLuot(pool, { depsXuLy: { poolGui, dongThoi: 3 } }));
+    else {
+      // Ba vòng độc lập, không đợi worker chậm nhất trước khi nhận khách mới.
+      // Kết nối thứ tư của pool dành cho poll. Sổ gửi có pool riêng.
+      await Promise.all([pollLoop(), workLoop(), workLoop(), workLoop()]);
+    }
   } finally {
-    await pool.end();
+    await Promise.all([pool.end(), poolGui.end()]);
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   main().catch((e) => {
     console.error(`[worker-v3] chết: ${e?.stack || e?.message || e}`);
     process.exit(1);

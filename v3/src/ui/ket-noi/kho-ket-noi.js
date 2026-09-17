@@ -23,10 +23,11 @@
 // phải nói thẳng bằng chữ (`LA_TOAN_HE`), không để người ta tự suy.
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
+import { docJwt } from '../../../../src/token-pancake.js';
 import { ghiNhatKy } from '../../audit/index.js';
 import { HANH_DONG } from '../../audit/hanh-dong.js';
 import {
-  danhSachToken, trangThaiCau, coTaiKhoan, gocBot,
+  danhSachToken, trangThaiCau, coTaiKhoan, gocBot, goiAdminV1,
   LoiCauBotDong, LoiCauBotHong,
 } from '../../noi-day/cau-bot-v1.js';
 
@@ -42,13 +43,91 @@ export class LoiKetNoi extends Error {
 /** Câu hiện thẳng trên đầu màn. Không giấu vào tài liệu. */
 export const LA_TOAN_HE =
   'Kho token này dùng chung cho MỌI team. Khác với các màn khác của v3 — ở đây bạn đang nhìn '
-  + 'và sửa tài nguyên cấp máy chủ (`.env` + `pancake-tokens.json`), không phải dữ liệu của '
-  + 'riêng team đang mở. Thêm hay bỏ một token là đổi cho cả ba team.';
+  + 'và sửa tài nguyên cấp máy chủ (bảng `token_pancake`, cộng token khai trong `.env`), '
+  + 'không phải dữ liệu của riêng team đang mở. Thêm hay bỏ một token là đổi cho cả ba team.';
 
 /** Thứ tự trong danh sách CHÍNH LÀ thứ tự dự phòng — không phải thứ tự sắp cho đẹp. */
 export const GIAI_THICH_THU_TU =
   'Thứ tự trên xuống chính là thứ tự dự phòng: token chính (.env) trước, rồi token phụ (.env), '
   + 'cuối cùng là token thêm từ giao diện. Token hết hạn bị bỏ qua tự động.';
+
+/* ═══════════════ KHO TOKEN TRONG CSDL (migration 019) ═══════════════════════════════
+ *
+ * Trước: màn này chỉ có MỘT nguồn token — hỏi HTTP sang `/admin/api` của tiến trình bot.
+ * Hai hệ quả đo được 17/09: tắt bot là màn chết, và cửa ghi ấy bị `PANCAKE_READONLY`
+ * chắn nên máy dev KHÔNG thêm được token bằng giao diện, dù thêm token chẳng gửi cho ai.
+ *
+ * Nay nguồn CHÍNH là bảng `token_pancake` (v3 ghi thẳng, có vai + nhật ký). Tiến trình bot
+ * đọc cùng bảng đó qua `src/pancake.js#datKhoTokenDb`, nên hai bên không lệch kho.
+ * Token trong `.env` vẫn hiện (chỉ xem — muốn đổi thì sửa `.env`), và kho cũ
+ * `pancake-tokens.json` chỉ hiện THÊM khi tiến trình bot còn sống; không gọi được thì màn
+ * vẫn đủ dùng, chỉ mất phần «token này đang phủ mấy page».
+ */
+let _khoTokenV3 = null;
+
+/** Nhận bộ đọc/ghi kho token CSDL. Thiếu một hàm là từ chối cả cụm — nửa cửa khó hiểu hơn không cửa. */
+export function datKhoTokenV3(cua) {
+  if (cua == null) { _khoTokenV3 = null; return null; }
+  const thieu = ['ds', 'them', 'bo'].filter((k) => typeof cua[k] !== 'function');
+  if (thieu.length) throw new LoiKetNoi(`datKhoTokenV3 thiếu hàm: ${thieu.join(', ')}`, 'noi_day_thieu', 500);
+  _khoTokenV3 = cua;
+  return _khoTokenV3;
+}
+export const daNoiKhoTokenV3 = () => _khoTokenV3 != null;
+export function batBuocKhoTokenV3() {
+  if (!_khoTokenV3) {
+    throw new LoiKetNoi(
+      'chưa nối kho token CSDL — máy chủ v3 dựng thiếu cửa, không phải bạn thiếu quyền',
+      'chua_noi', 500,
+    );
+  }
+  return _khoTokenV3;
+}
+
+/** Token khai trong `.env` của CHÍNH tiến trình này — chỉ xem, không sửa được từ màn. */
+export function tokenTuEnv(env = process.env) {
+  const chinh = String(env.PANCAKE_TOKEN || '').trim();
+  const phu = String(env.PANCAKE_TOKENS_EXTRA || '').split(',').map((t) => t.trim()).filter(Boolean);
+  const dong = (t, nguon) => {
+    const d = docJwt(t) || { ten: '(token lỗi định dạng)', hetHan: null };
+    const het = d.hetHan ? d.hetHan.getTime() : 0;
+    return {
+      thuTu: null, id: null, ten: d.ten || '(không tên)', het, daHet: !!het && het <= Date.now(),
+      nguon, boDuoc: false, soPageDangDung: 0, duoi: String(t).slice(-8),
+    };
+  };
+  return [...(chinh ? [dong(chinh, 'chính (.env)')] : []), ...phu.map((t) => dong(t, 'phụ (.env)'))];
+}
+
+/* ═══════════ KÉO DANH MỤC POS → `san_pham` / `goi_gia` ═══════════════════════════════
+ *
+ * Bộ đọc danh mục (`src/pos/doc-danh-muc.js`) đã có từ L1-M1 và chưa nút nào gọi — chú
+ * thích đầu `v3/src/ui/san-pham/kho-san-pham.js` ghi thẳng: «Cửa POS đọc được tồn kho
+ * nhưng chưa ai nối», nên bảng `san_pham` rỗng và màn Sản phẩm phải đọc Sheet của bot v1.
+ *
+ * Nút nằm Ở ĐÂY chứ không ở màn Sản phẩm, vì nguồn của lượt kéo là chính bảng kết nối POS
+ * ngay bên dưới nó: kéo được hay không phụ thuộc shop và khoá API khai ở đó. Màn Sản phẩm
+ * là nơi NHÌN kết quả (qua màn Vận hành V3, chỗ đọc thẳng `san_pham`).
+ */
+let _keoDanhMuc = null;
+
+export function datKeoDanhMuc(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiKetNoi('datKeoDanhMuc cần một hàm');
+  _keoDanhMuc = fn || null;
+  return _keoDanhMuc;
+}
+export const daNoiKeoDanhMuc = () => _keoDanhMuc != null;
+
+export async function keoDanhMucPos(boiCanh) {
+  const bc = batBuocBoiCanh(boiCanh);
+  if (!_keoDanhMuc) {
+    throw new LoiKetNoi(
+      'máy chủ chưa nối cửa kéo danh mục POS — lỗi dựng ứng dụng, KHÔNG phải «không có sản phẩm».',
+      'chua_noi', 500,
+    );
+  }
+  return _keoDanhMuc(bc);
+}
 
 /* ─── cổng tiêm cho kết nối POS (đọc theo team — thứ DUY NHẤT của màn này có team) ─── */
 
@@ -190,42 +269,106 @@ export function canhBaoKhoToken(ds, bay = Date.now()) {
  */
 export async function khoToken() {
   const cua = trangThaiCau();
-  if (!coTaiKhoan()) {
+  const kho = _khoTokenV3;
+  if (!kho) {
     return {
-      token: [], canhBao: [], cua,
+      token: [], canhBao: [], cua, quanLyDuoc: false,
       trong: {
         rong: true, vi: 'chua_cai_dat',
-        noi: `Chưa đọc được kho token: máy chủ v3 thiếu \`ADMIN_USER\`/\`ADMIN_PASS\` nên không `
-          + `gọi được tiến trình bot ở ${gocBot()}. Đây là lỗi cấu hình máy chủ, KHÔNG phải «không có token».`,
-        diTiep: { chu: 'Đặt hai biến đó rồi khởi động lại dịch vụ v3', duong: null },
+        noi: 'Máy chủ v3 chưa nối kho token CSDL — đây là lỗi dựng ứng dụng, KHÔNG phải «không có token».',
+        diTiep: { chu: 'Xem log khởi động của dịch vụ v3', duong: null },
       },
     };
   }
-  try {
-    const ds = await danhSachToken();
-    return {
-      token: ds.map((t) => ({ ...t, sucKhoe: sucKhoeToken(t) })),
-      canhBao: canhBaoKhoToken(ds),
-      cua,
-      trong: ds.length ? null : {
-        rong: true, vi: 'chua_cai_dat',
-        noi: 'Không có token Pancake nào — bot không đọc và không gửi được tin nào.',
-        diTiep: { chu: 'Thêm token đầu tiên', duong: '#them-token' },
-      },
-    };
-  } catch (e) {
-    if (e instanceof LoiCauBotDong || e instanceof LoiCauBotHong) {
-      return {
-        token: [], canhBao: [], cua,
-        trong: {
-          rong: true, vi: 'chua_cai_dat',
-          noi: `Chưa đọc được kho token: ${e.message}`,
-          diTiep: { chu: 'Kiểm tiến trình bot đang chạy chưa', duong: null },
-        },
-      };
+
+  // ① Nguồn CHÍNH: bảng `token_pancake`. ② `.env` của chính tiến trình này — chỉ xem.
+  const tuDb = (await kho.ds()).map((t) => ({
+    thuTu: null, id: t.id, ten: t.ten, het: t.hetHan, daHet: t.hetHanRoi,
+    nguon: t.nguon, boDuoc: true, bat: t.bat, soPageDangDung: 0, duoi: t.duoi,
+  }));
+  const ds = [...tuEnvSapXep(), ...tuDb];
+
+  // ③ Kho cũ của tiến trình bot (`pancake-tokens.json`) + «token này đang phủ mấy page».
+  //    KHÔNG bắt buộc: bot tắt thì màn vẫn đủ dùng, chỉ thiếu phần trang trí — đó chính là
+  //    điều khiến màn này sống độc lập được với tiến trình v1.
+  let botIm = null;
+  if (coTaiKhoan()) {
+    try {
+      const cu = await danhSachToken();
+      const theoDuoi = new Map(cu.map((t) => [t.duoi, t]));
+      for (const t of ds) {
+        const g = theoDuoi.get(t.duoi);
+        if (g) t.soPageDangDung = g.soPageDangDung;
+      }
+      for (const t of cu) {
+        if (t.nguon === 'dashboard' && !ds.some((x) => x.duoi === t.duoi)) {
+          ds.push({ ...t, id: null, boDuoc: false, nguon: 'pancake-tokens.json (v1)' });
+        }
+      }
+    } catch (e) {
+      if (!(e instanceof LoiCauBotDong || e instanceof LoiCauBotHong)) throw e;
+      botIm = e.message;
     }
-    throw e;
+  } else {
+    botIm = 'thiếu `ADMIN_USER`/`ADMIN_PASS` nên không hỏi được tiến trình bot';
   }
+
+  return {
+    token: ds.map((t) => ({ ...t, sucKhoe: sucKhoeToken(t) })),
+    canhBao: canhBaoKhoToken(ds),
+    cua,
+    quanLyDuoc: true,
+    // Nói ra chỗ KHÔNG đọc được, thay vì im lặng hiện thiếu.
+    botIm,
+    trong: ds.length ? null : {
+      rong: true, vi: 'chua_cai_dat',
+      noi: 'Không có token Pancake nào — bot không đọc và không gửi được tin nào.',
+      diTiep: { chu: 'Thêm token đầu tiên', duong: '#them-token' },
+    },
+  };
+}
+
+/**
+ * THỬ TOKEN SỐNG — một lượt `GET /pages` sang Pancake, không phải lượt gửi.
+ *
+ * Vì sao được phép đi ra Internet từ đây, trong khi `src/pos/ket-noi.js` cố ý KHÔNG thử
+ * khoá POS: van `V3_PANCAKE_GUI` chỉ áp nhóm GỬI/GHI (POST/PUT/PATCH/DELETE), cửa ĐỌC
+ * không bị chặn — xem bảng biến. Và cái giá của việc không thử đã đo được ở kho cũ: token
+ * chết nằm im trong kho, tới lượt chat đầu tiên của khách mới lộ.
+ */
+export async function thuTokenSong(token, { hetGio = 12000, fetchFn = fetch } = {}) {
+  const bo = AbortSignal.timeout ? AbortSignal.timeout(hetGio) : undefined;
+  try {
+    const res = await fetchFn(`https://pages.fm/api/v1/pages?access_token=${encodeURIComponent(token)}`, { signal: bo });
+    const j = await res.json().catch(() => ({}));
+    if (!j?.categorized) {
+      return { ok: false, soPage: 0, loi: `Pancake từ chối token (HTTP ${res.status}) — đăng nhập lại lấy token mới?` };
+    }
+    return { ok: true, soPage: (j.categorized.activated || []).length, loi: '' };
+  } catch (e) {
+    return { ok: false, soPage: 0, loi: `Không gọi được Pancake để thử token: ${e.message}` };
+  }
+}
+
+/**
+ * Ép tiến trình bot nạp lại kho token NGAY. Best-effort có chủ ý: bot tự nạp lại theo nhịp
+ * (`datKhoTokenDb`), nên gọi hụt chỉ làm token có hiệu lực chậm vài phút — KHÔNG được biến
+ * một lượt thêm token thành công thành một lỗi đỏ trên màn.
+ */
+export async function epBotNapLai() {
+  if (!coTaiKhoan()) return { ok: false, vi: 'thiếu ADMIN_USER/ADMIN_PASS' };
+  try {
+    await goiAdminV1('/pancake-tokens/nap-lai', { phuongThuc: 'POST', ghi: false, hetGio: 5000 });
+    return { ok: true };
+  } catch (e) {
+    console.warn('[ket-noi] không ép được tiến trình bot nạp lại kho token:', e.message);
+    return { ok: false, vi: e.message };
+  }
+}
+
+/** `.env` đứng TRƯỚC token CSDL — đúng thứ tự dự phòng của `src/pancake.js#allToks`. */
+function tuEnvSapXep() {
+  return tokenTuEnv();
 }
 
 /** Kết nối POS của TEAM ĐANG MỞ — phần duy nhất của màn này có lớp team. */
@@ -304,6 +447,9 @@ export function tomTatNap(kq) {
   const d = (kq && kq.dich) || {};
   const hs = kq && kq.noiHoSoKhach;
   return {
+    // Nguồn nào KHÔNG có trên máy này. Rỗng = kéo đủ; có tên = bước đó không có việc để
+    // làm, và màn phải nói ra thay vì khoe một con số 0 trông như «kéo xong, chẳng có gì».
+    boQuaNguon: Array.isArray(kq && kq.boQuaNguon) ? kq.boQuaNguon : [],
     page: d.page ?? null,
     pageBatAi: d.pageBatAi ?? null,
     hoiThoai: d.hoiThoai ?? null,

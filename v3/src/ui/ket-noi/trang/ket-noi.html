@@ -47,9 +47,13 @@
   <section class="section table-wrap" aria-labelledby="tieu-pos">
     <div class="table-toolbar"><h2 id="tieu-pos">Kết nối POS của team đang mở</h2>
       <span class="table-count">Khoá API không bao giờ hiện ở đây</span>
+      <button type="button" class="btn" data-size="sm" id="nutKeoDanhMuc" hidden
+        title="Đọc danh mục + tồn kho của mọi kết nối đang bật, ghi vào bảng sản phẩm của v3">
+        <span>Kéo danh mục sản phẩm</span></button>
       <button type="button" class="btn" data-variant="primary" data-size="sm" id="nutThemPos" hidden>
         <span>Thêm kết nối</span></button></div>
     <div id="bangPos"><div class="empty-state"><span class="skeleton"></span></div></div>
+    <div id="ketQuaDanhMuc"></div>
     <div class="table-note" id="ghiChuPos" hidden></div>
   </section>
 
@@ -101,7 +105,13 @@ const $ = (s) => document.querySelector(s);
 const ngay = (ms) => (ms ? new Date(ms).toLocaleDateString('vi-VN') : '—');
 const hoaDau = (s) => { const t = String(s || ''); return t.charAt(0).toUpperCase() + t.slice(1); };
 
-let CUA = { mo: false, thieu: [] }, KHO = null;
+let KHO = null;
+// Màn này KHÔNG còn nhìn cửa ghi sang tiến trình bot (`d.cua`). Cửa đó nay chỉ canh công
+// tắc bật/tắt bot cho page — thứ chạm khách thật — và công tắc ấy nằm ở màn «Page & bot».
+// Kho token đi đường riêng: bảng `token_pancake`. `QUAN_LY` nói màn có quản được kho không.
+// Gộp hai thứ vào một cờ chính là lỗi đã vá 17/09: máy dev bật `PANCAKE_READONLY` thì không
+// thêm nổi một token, dù thêm token không gửi cho ai một tin nào.
+let QUAN_LY = false;
 const LOI = {};
 
 async function goi(duong, tuyChon) {
@@ -118,10 +128,14 @@ function veBangTin() {
   if (KHO) {
     const toanHe = String(KHO.laToanHe || '').replace('Kho token này dùng chung cho MỌI team. ', '');
     kh.push(canhBao({ level: 'info', title: 'Kho token dùng chung cho mọi team', body: toanHe }));
-    if (!CUA.mo) {
-      kh.push(canhBao({ level: 'warning', title: 'Chưa sửa được kho token từ màn này',
-        body: 'Xem được, nhưng thêm hay bỏ token cần máy chủ được phép ghi sang tiến trình bot. Nhờ người quản trị hệ thống mở cửa ghi.',
-        detail: CUA.thieu }));
+    if (!QUAN_LY) {
+      kh.push(canhBao({ level: 'error', title: 'Máy chủ v3 chưa nối kho token',
+        body: 'Đây là lỗi dựng ứng dụng, KHÔNG phải «hệ thống chưa có token». Xem log khởi động của dịch vụ v3.' }));
+    }
+    if (KHO.botIm) {
+      kh.push(canhBao({ level: 'info', title: 'Chưa hỏi được tiến trình bot',
+        body: 'Kho token vẫn xem và sửa được bình thường. Chỉ thiếu cột «page đang dùng» và những token cũ còn nằm trong pancake-tokens.json của tiến trình bot.',
+        detail: [String(KHO.botIm)] }));
     }
     for (const c of KHO.canhBao || []) kh.push(canhBao({ level: c.muc === 'do' ? 'error' : 'warning', body: c.chu }));
   }
@@ -131,14 +145,15 @@ function veBangTin() {
 const MA_SUC_KHOE = { xanh: 'token_valid', vang: 'token_expiring', do: 'token_expired' };
 
 function veKho(d) {
-  KHO = d; CUA = d.cua || { mo: false, thieu: [] };
+  KHO = d; QUAN_LY = !!d.quanLyDuoc;
   veBangTin();
   $('#giaiThich').textContent = d.giaiThichThuTu || '';
   $('#giaiThich').hidden = !d.giaiThichThuTu || !!d.trong;
 
   if (d.trong) {
     $('#demToken').textContent = '';
-    $('#bangToken').innerHTML = emptyState({ icon: 'triangle-alert', title: 'Chưa đọc được kho token',
+    $('#bangToken').innerHTML = emptyState({ icon: 'triangle-alert',
+      title: QUAN_LY ? 'Chưa có token Pancake nào' : 'Chưa đọc được kho token',
       body: String(d.trong.noi || '').replace(/`/g, ''),
       actionsHtml: d.trong.diTiep && d.trong.diTiep.duong ? button(d.trong.diTiep.chu, { href: d.trong.diTiep.duong, size: 'sm' }) : '' });
   } else {
@@ -147,25 +162,27 @@ function veKho(d) {
         <th scope="col" class="num">Thứ tự</th><th scope="col">Tài khoản</th><th scope="col">Nguồn</th>
         <th scope="col">Hạn</th><th scope="col" class="num">Page đang dùng</th>
         <th scope="col" class="actions"><span class="sr-only">Thao tác</span></th>
-      </tr></thead><tbody>${d.token.map((t) => `
+      </tr></thead><tbody>${d.token.map((t, i) => `
       <tr>
-        <td class="num">${t.thuTu === 0 ? '<span class="badge" data-variant="info">Chính</span> ' : ''}${so(t.thuTu + 1)}</td>
+        <td class="num">${i === 0 ? '<span class="badge" data-variant="info">Chính</span> ' : ''}${so(i + 1)}</td>
         <td><div class="manh">${esc(t.ten)}</div><div class="meta">đuôi <code>…${esc(t.duoi)}</code></div></td>
         <td class="meta">${esc(t.nguon)}</td>
         <td>${statusBadge(MA_SUC_KHOE[t.sucKhoe.muc] || 'token_unknown', { label: hoaDau(t.sucKhoe.chu) })}
           <div class="meta tabular">${esc(ngay(t.het))}</div></td>
         <td class="num">${so(t.soPageDangDung)}</td>
         <td class="actions">${t.boDuoc
-          ? button('Bỏ', { size: 'sm', variant: 'danger', disabled: !CUA.mo, data: { bo: t.thuTu },
-              title: CUA.mo ? 'Bỏ token này khỏi kho' : 'Cửa ghi đang đóng' })
-          : '<span class="meta" title="Token nằm trong cấu hình máy chủ (.env)">Sửa trong cấu hình máy chủ</span>'}</td>
+          ? button('Bỏ', { size: 'sm', variant: 'danger', disabled: !QUAN_LY, data: { bo: t.id },
+              title: QUAN_LY ? 'Bỏ token này khỏi kho' : 'Máy chủ v3 chưa nối kho token' })
+          : '<span class="meta" title="Token nằm trong cấu hình máy chủ (.env) hoặc kho cũ của tiến trình bot">Sửa ở cấu hình máy chủ</span>'}</td>
       </tr>`).join('')}</tbody></table>`
       : emptyState({ icon: 'triangle-alert', title: 'Không có token Pancake nào', body: 'Bot không đọc và không gửi được tin nào. Thêm token ở khung bên dưới.' });
   }
 
-  $('#nutThem').disabled = !CUA.mo;
-  $('#oToken').disabled = !CUA.mo;
-  $('#goiYToken').textContent = CUA.mo ? 'Token được thử với Pancake trước; token hỏng bị từ chối, kho không đổi.' : 'Cửa ghi đang đóng — xem cảnh báo đầu trang.';
+  $('#nutThem').disabled = !QUAN_LY;
+  $('#oToken').disabled = !QUAN_LY;
+  $('#goiYToken').textContent = QUAN_LY
+    ? 'Token được thử với Pancake trước; token hỏng bị từ chối, kho không đổi.'
+    : 'Máy chủ v3 chưa nối kho token — xem cảnh báo đầu trang.';
   document.querySelectorAll('[data-bo]').forEach((b) => b.addEventListener('click', () => bo(b.dataset.bo, b)));
 }
 
@@ -180,6 +197,9 @@ function vePos(d) {
   POS = Array.isArray(d.pos) ? d.pos : [];
   SUA_DUOC_POS = !!d.suaDuoc;
   $('#nutThemPos').hidden = !SUA_DUOC_POS;
+  // Nút kéo danh mục chỉ có nghĩa khi CÓ kết nối đang bật — hiện nó trên một bảng rỗng là
+  // mời người ta bấm một nút chắc chắn không làm gì.
+  $('#nutKeoDanhMuc').hidden = !POS.some((k) => k.bat);
   const chu = $('#ghiChuPos');
   chu.hidden = !SUA_DUOC_POS;
   // Nói thẳng giới hạn đã biết thay vì để người ta phát hiện bằng một đơn hỏng: cửa này
@@ -234,6 +254,40 @@ function moPos(k) {
   $('#hopPos').showModal();
 }
 
+/* ── KÉO DANH MỤC POS → bảng sản phẩm của v3 ─────────────────────────────────────────
+ * Lượt này gọi POS thật cho TỪNG thị trường đang bật nên có thể lâu; nút tự khoá trong
+ * lúc chạy. Một thị trường hỏng không làm hỏng các thị trường còn lại — màn gọi tên cái
+ * hỏng thay vì nuốt.
+ */
+async function keoDanhMuc() {
+  const nut = $('#nutKeoDanhMuc');
+  setBusy(nut, true);
+  $('#ketQuaDanhMuc').innerHTML = '';
+  try {
+    const k = await goi('/api/ket-noi/pos/keo-danh-muc', { method: 'POST', body: JSON.stringify({}) });
+    const chiTiet = [
+      ...(k.hong || []).map((h) => `${h.market} (shop ${h.shopId}): ${h.loi}`),
+      ...(k.khongCoTen ? [`${so(k.khongCoTen)} biến thể POS KHÔNG có tên — bot không gọi được tên món nó đang bán.`] : []),
+      ...((k.chuaCoSanPhamGoc || []).length
+        ? [`${so(k.chuaCoSanPhamGoc.length)} số hiệu chưa có sản phẩm gốc: ${k.chuaCoSanPhamGoc.slice(0, 12).join(', ')}${k.chuaCoSanPhamGoc.length > 12 ? '…' : ''}`]
+        : []),
+    ];
+    $('#ketQuaDanhMuc').innerHTML = `<div class="duoi-4">${canhBao({
+      level: k.hong && k.hong.length ? 'warning' : 'success',
+      title: k.rong ? 'Không có kết nối POS nào đang bật' : 'Đã kéo danh mục',
+      body: k.rong
+        ? 'Thêm một kết nối POS (hoặc bật lại kết nối đã tắt) rồi kéo lại.'
+        : `${so(k.thiTruong)} thị trường · ${so(k.docDuoc)} biến thể đọc được · ${so(k.them)} sản phẩm mới · `
+          + `${so(k.capNhat)} cập nhật · ${so(k.giaGhiDuoc)} bậc giá`,
+      detail: chiTiet,
+    })}</div>`;
+    if (!k.rong) toast(`Kéo xong: ${so(k.them)} sản phẩm mới, ${so(k.giaGhiDuoc)} bậc giá.`);
+  } catch (e) {
+    LOI['Không kéo được danh mục POS'] = e.message; veBangTin();
+  } finally { setBusy(nut, false); }
+}
+
+$('#nutKeoDanhMuc').addEventListener('click', keoDanhMuc);
 $('#nutThemPos').addEventListener('click', () => moPos(null));
 $('#p-huy').addEventListener('click', () => $('#hopPos').close());
 $('#hopPos').addEventListener('cancel', () => loiPos(''));
@@ -312,8 +366,8 @@ $('#bangPos').addEventListener('click', async (ev) => {
   }
 });
 
-async function bo(thuTu, nut) {
-  const t = (KHO.token || []).find((x) => String(x.thuTu) === String(thuTu)) || {};
+async function bo(id, nut) {
+  const t = (KHO.token || []).find((x) => String(x.id) === String(id)) || {};
   const dongY = await confirmDialog({
     title: `Bỏ token của «${t.ten || 'tài khoản này'}»?`,
     body: `Kho dùng chung mọi team. ${t.soPageDangDung ? `${so(t.soPageDangDung)} page đang dùng token này sẽ tự dò sang token khác.` : 'Không page nào đang dùng token này.'}`,
@@ -322,7 +376,7 @@ async function bo(thuTu, nut) {
   if (!dongY) return;
   setBusy(nut, true);
   try {
-    await goi('/api/ket-noi/token/' + encodeURIComponent(thuTu), { method: 'DELETE' });
+    await goi('/api/ket-noi/token/' + encodeURIComponent(id), { method: 'DELETE' });
     delete LOI['Không bỏ được token'];
     toast('Đã bỏ token.');
     await nap();
@@ -347,7 +401,7 @@ $('#nutThem').addEventListener('click', async () => {
     toast(`Đã thêm token của «${kq.ten}» — phủ ${so(kq.soPage)} page.`);
     await nap();
   } catch (e) { LOI['Không thêm được token'] = e.message; veBangTin(); }
-  finally { setBusy(nut, false); nut.disabled = !CUA.mo; }
+  finally { setBusy(nut, false); nut.disabled = !QUAN_LY; }
 });
 
 /* ── KÉO DỮ LIỆU VỀ ───────────────────────────────────────────────────────────────────
@@ -384,12 +438,24 @@ function veNap(t) {
   } else if (t.tomTat) {
     const s = t.tomTat;
     const d0 = (n) => (n == null ? '—' : so(n));
-    $('#ketQuaNap').innerHTML = `<div class="duoi-4">${canhBao({ level: 'success', title: 'Đã kéo xong',
-      body: `${d0(s.page)} page (${d0(s.pageBatAi)} đang bật bot) · ${d0(s.hoiThoai)} hội thoại · ${d0(s.kichBan)} bản kịch bản`
-        + `${s.ketNoiPos != null ? ` · ${d0(s.ketNoiPos)} kết nối POS` : ''}`,
-      detail: s.hoiThoaiNoiKhach != null
-        ? [`Nối thêm ${d0(s.hoiThoaiNoiKhach)} hội thoại về hồ sơ khách; còn ${d0(s.hoiThoaiChuaNoi)} chưa nối được.`]
-        : [] })}</div>`;
+    const vang = Array.isArray(s.boQuaNguon) ? s.boQuaNguon : [];
+    // KHÔNG CÓ NGUỒN NÀO ≠ KÉO XONG MÀ RỖNG. Máy này (bản dev sạch, hoặc máy chỉ chạy v3)
+    // không có tệp của tiến trình bot v1, nên nút không có việc để làm — nói thẳng, đừng
+    // khoe một dãy số 0 trông như dữ liệu vừa bốc hơi.
+    $('#ketQuaNap').innerHTML = vang.length >= 5
+      ? `<div class="duoi-4">${canhBao({ level: 'info', title: 'Không có gì để kéo trên máy này',
+          body: 'Nút này kéo dữ liệu từ các tệp của tiến trình bot v1. Máy này không có tệp nào trong số đó — '
+            + 'bình thường với máy chỉ chạy v3 hoặc bản dev sạch. Không có gì hỏng, và không có gì thay đổi.',
+          detail: vang })}</div>`
+      : `<div class="duoi-4">${canhBao({ level: 'success', title: 'Đã kéo xong',
+          body: `${d0(s.page)} page (${d0(s.pageBatAi)} đang bật bot) · ${d0(s.hoiThoai)} hội thoại · ${d0(s.kichBan)} bản kịch bản`
+            + `${s.ketNoiPos != null ? ` · ${d0(s.ketNoiPos)} kết nối POS` : ''}`,
+          detail: [
+            ...(vang.length ? [`Bỏ qua ${vang.length} nguồn không có trên máy này: ${vang.join(', ')}.`] : []),
+            ...(s.hoiThoaiNoiKhach != null
+              ? [`Nối thêm ${d0(s.hoiThoaiNoiKhach)} hội thoại về hồ sơ khách; còn ${d0(s.hoiThoaiChuaNoi)} chưa nối được.`]
+              : []),
+          ] })}</div>`;
   }
 
   clearTimeout(henNap);

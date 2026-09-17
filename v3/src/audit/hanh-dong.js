@@ -95,6 +95,22 @@ export const HANH_DONG = Object.freeze({
   // Gán sản phẩm GỐC cho page. Đổi nó là đổi KỊCH BẢN page ấy đọc (bộ giải ba tầng tra theo
   // mã gốc), tức đổi cách bot nói với khách — nên phải có dấu.
   GAN_SAN_PHAM_GOC: 'gan_san_pham_goc',
+
+  // Quét Pancake bằng kho token rồi upsert bảng `page` (17/09). Đây là đường DUY NHẤT đưa
+  // page vào hệ mà không cần tệp `pages.json` của tiến trình bot v1 — nên nó cũng là chỗ
+  // trả lời «page này ở đâu ra, ai kéo nó về, lúc nào».
+  QUET_PAGE_PANCAKE: 'quet_page_pancake',
+
+  // Kéo danh mục + tồn kho từ POS về `san_pham`/`goi_gia` (17/09). Lượt này ĐỔI GIÁ mà bot
+  // đang chào khách, nên phải trả lời được «giá đổi lúc nào, do lượt kéo nào».
+  KEO_DANH_MUC_POS: 'keo_danh_muc_pos',
+
+  // Sản phẩm GỐC (bảng 014) — danh mục do NGƯỜI định nghĩa, và là khoá mà `san_pham.ma_goc`,
+  // `kich_ban.san_pham_goc_ma`, `page.san_pham_goc_ma` trỏ tới. Đặt tên một sản phẩm là đổi
+  // thứ bot gọi tên trước mặt khách, nên ba thao tác này phải có dấu.
+  TAO_SAN_PHAM_GOC: 'tao_san_pham_goc',
+  SUA_SAN_PHAM_GOC: 'sua_san_pham_goc',
+  BO_SAN_PHAM_GOC: 'bo_san_pham_goc',
 });
 
 /** Nhóm để màn hình xếp bộ lọc thành từng cụm, không phải để module này dùng. */
@@ -119,10 +135,14 @@ export const NHOM = Object.freeze({
   ]),
   ket_noi: Object.freeze([
     HANH_DONG.THEM_TOKEN_PANCAKE, HANH_DONG.BO_TOKEN_PANCAKE, HANH_DONG.NAP_LAI_DU_LIEU,
+    HANH_DONG.QUET_PAGE_PANCAKE, HANH_DONG.KEO_DANH_MUC_POS,
     HANH_DONG.THEM_KET_NOI_POS, HANH_DONG.SUA_KET_NOI_POS,
     HANH_DONG.BAT_TAT_KET_NOI_POS, HANH_DONG.BO_KET_NOI_POS,
   ]),
   lop_0_dong: Object.freeze([HANH_DONG.TAO_MAU_0_DONG, HANH_DONG.SUA_MAU_0_DONG]),
+  san_pham: Object.freeze([
+    HANH_DONG.TAO_SAN_PHAM_GOC, HANH_DONG.SUA_SAN_PHAM_GOC, HANH_DONG.BO_SAN_PHAM_GOC,
+  ]),
   bo_luat: Object.freeze([HANH_DONG.LUU_BAN_NHAP_BO_LUAT, HANH_DONG.AP_BO_LUAT]),
   ky_nang: Object.freeze([HANH_DONG.BAT_TAT_KY_NANG, HANH_DONG.DAT_NHOM_KY_NANG]),
   kich_ban: Object.freeze([HANH_DONG.LUU_BAN_NHAP_KICH_BAN, HANH_DONG.DUA_KICH_BAN_LEN_LIVE]),
@@ -224,6 +244,11 @@ const MO_TA = Object.freeze({
   [HANH_DONG.TAO_MAU_0_DONG]: 'Tạo mẫu trả lời sẵn',
   [HANH_DONG.SUA_MAU_0_DONG]: 'Sửa mẫu trả lời sẵn',
   [HANH_DONG.NAP_LAI_DU_LIEU]: 'Kéo dữ liệu từ tiến trình bot về',
+  [HANH_DONG.QUET_PAGE_PANCAKE]: 'Quét Pancake, cập nhật danh mục page',
+  [HANH_DONG.KEO_DANH_MUC_POS]: 'Kéo danh mục + tồn kho từ POS',
+  [HANH_DONG.TAO_SAN_PHAM_GOC]: 'Tạo sản phẩm gốc',
+  [HANH_DONG.SUA_SAN_PHAM_GOC]: 'Sửa sản phẩm gốc',
+  [HANH_DONG.BO_SAN_PHAM_GOC]: 'Bỏ sản phẩm gốc',
   [HANH_DONG.THEM_KET_NOI_POS]: 'Thêm kết nối POS',
   [HANH_DONG.SUA_KET_NOI_POS]: 'Sửa kết nối POS',
   [HANH_DONG.BAT_TAT_KET_NOI_POS]: 'Bật/tắt kết nối POS',

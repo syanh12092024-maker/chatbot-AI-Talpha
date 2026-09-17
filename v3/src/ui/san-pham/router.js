@@ -14,6 +14,15 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manSanPham, sanPhamCuaMotPage, VAI_VAO_DUOC, VI_RONG, LoiSanPham } from './kho-san-pham.js';
+import { manSanPhamGoc, taoGoc, suaGoc, boGoc, VAI_SUA_DUOC } from './kho-goc.js';
+
+/**
+ * Vai GHI của màn — khai TƯỜNG MINH ở router dù nó chỉ chuyển tiếp từ `kho-goc.js`.
+ * Lưới quét phân quyền (`v3/test/b/phan-quyen-nam-vai.test.mjs`) đọc CHÍNH tệp này; màn có
+ * cửa ghi mà router không xuất danh sách thì lưới đọc ra `[]` và một lượt nới quyền sau
+ * này đi lọt — đúng lỗ mà bài test ấy sinh ra để bịt.
+ */
+export { VAI_SUA_DUOC };
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -111,6 +120,32 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 
   r.get('/api/san-pham', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, ...(await manSanPham(cuaBoiCanh(req))) });
+  }));
+
+  /* ── SẢN PHẨM GỐC (bảng 014) ───────────────────────────────────────────────────────
+   * Bốn đường này đứng TRƯỚC `/api/san-pham/:id` — đứng sau thì `goc` bị bắt làm `:id`
+   * và trả 404 «không có page đó», một lỗi định tuyến câm.
+   */
+  r.get('/api/san-pham/goc', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await manSanPhamGoc(cuaBoiCanh(req))) });
+  }));
+
+  r.post('/api/san-pham/goc', canDangNhap, canVai, boc(async (req, res) => {
+    const kq = await taoGoc(cuaBoiCanh(req), {
+      maGoc: req.body?.maGoc, ten: req.body?.ten,
+      moTa: req.body?.moTa, soHieu: req.body?.soHieu,
+    });
+    res.json({ ok: true, goc: kq });
+  }));
+
+  r.post('/api/san-pham/goc/:id', canDangNhap, canVai, boc(async (req, res) => {
+    const than = {};
+    for (const k of ['ten', 'moTa', 'soHieu']) if (req.body?.[k] !== undefined) than[k] = req.body[k];
+    res.json({ ok: true, goc: await suaGoc(cuaBoiCanh(req), req.params.id, than) });
+  }));
+
+  r.delete('/api/san-pham/goc/:id', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, goc: await boGoc(cuaBoiCanh(req), req.params.id) });
   }));
 
   r.get('/api/san-pham/:id', canDangNhap, canVai, boc(async (req, res) => {

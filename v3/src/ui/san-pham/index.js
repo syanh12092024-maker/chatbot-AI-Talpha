@@ -12,3 +12,8 @@ export {
   taoRouterSanPham, datChanDangNhap, datChanVai, daNoiChanSanPham,
   VAI_VAO_DUOC, DUONG_TRANG,
 } from './router.js';
+
+export {
+  datKhoGoc, daNoiKhoGoc, datPheuNhatKyGoc, manSanPhamGoc, taoGoc, suaGoc, boGoc,
+  VAI_SUA_DUOC,
+} from './kho-goc.js';

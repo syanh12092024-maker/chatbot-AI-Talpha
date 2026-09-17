@@ -48,13 +48,26 @@ export async function docDanhMuc(
   pool,
   ctx,
   { shop, teamId = null, tienTe = null, soTrangToiDa = 20, coTrang = 100 } = {},
-  { nap = fetch, env = process.env } = {},
+  { nap = fetch, env = process.env, trongGiaoDich = false } = {},
 ) {
   if (!shop)
     throw new Error(
       "docDanhMuc: thiếu `shop` (tên thị trường trong ket_noi_pos).",
     );
   const team = await xacDinhTeam(pool, ctx, { teamId, doiTuong: "san_pham" });
+  // Serialize catalog sync with operator edits. Otherwise a sync that read the old
+  // manual-config flag could overwrite a price just saved in the UI.
+  if (!trongGiaoDich && typeof pool.connect === 'function') {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [`catalog:${team.teamId}`]);
+      const result = await docDanhMuc(client, ctx, { shop, teamId, tienTe, soTrangToiDa, coTrang }, { nap, env, trongGiaoDich:true });
+      await client.query('COMMIT');
+      return result;
+    } catch (error) { await client.query('ROLLBACK'); throw error; }
+    finally { client.release(); }
+  }
   const ketNoi = await layKetNoi(pool, ctx, shop, { teamId, env });
 
   // RF-15 — GÁN `san_pham.page_id`. Danh mục POS đọc theo SHOP, nhưng `cua2Tien`
@@ -161,11 +174,21 @@ export async function docDanhMuc(
       } else {
         const cu = daCo[0];
         spId = cu.id;
-        const doiTen = String(cu.ten ?? "") !== ten;
+        const doiTen = !cu.cau_hinh_tay && String(cu.ten ?? "") !== ten;
         const doiTon = String(cu.ton_kho ?? "") !== String(tonKho ?? "");
         // RF-15 — backfill page_id cho san_pham cũ còn NULL (di trú/L1-M1 tạo trước).
         const thieuPage = pageId != null && cu.page_id == null;
-        if (!doiTen && !doiTon && !thieuPage) {
+        // 17/09 — BACKFILL `ma_goc`, cùng khuôn và cùng lý do với `thieuPage`.
+        //
+        // Nhánh nối `ma_goc` ở trên chỉ chạy cho biến thể MỚI. Nên sản phẩm gốc đặt tên
+        // SAU khi biến thể đã có trong bảng thì không bao giờ nối được: đo trên bản dev,
+        // tạo gốc cho số hiệu 8 xong kéo lại ⇒ `chuaCoSanPhamGoc` giảm 55→54 (máy ĐÃ thấy
+        // gốc) nhưng `san_pham.ma_goc` vẫn NULL. Tức lời hứa «đặt tên một lần, shop sau tự
+        // khớp» chỉ đúng nửa vế, và đúng 137 dòng cũ của CR3 là nửa vế còn lại.
+        //
+        // ⛔ Vẫn KHÔNG ghi đè `ma_goc` đã có — người soát thắng máy. Chỉ điền chỗ NULL.
+        const thieuGoc = maGoc != null && cu.ma_goc == null;
+        if (!doiTen && !doiTon && !thieuPage && !thieuGoc) {
           kq.giuNguyen++;
         } else {
           await suaTheoIdPos(pool, ctx, {
@@ -173,15 +196,16 @@ export async function docDanhMuc(
             bang: "san_pham",
             id: cu.id,
             duLieu: {
-              ten,
+              ...(!cu.cau_hinh_tay ? { ten, het_hang: tonKho != null && tonKho <= 0 } : {}),
               ton_kho: tonKho,
-              het_hang: tonKho != null && tonKho <= 0,
               ...(thieuPage ? { page_id: pageId } : {}),
+              ...(thieuGoc ? { ma_goc: maGoc } : {}),
               sua_luc: new Date(),
             },
             hanhDong: "pos_doc_danh_muc_refresh",
           });
           kq.capNhat++;
+          if (thieuGoc) kq.noiMaGoc++;   // đếm cả lượt nối muộn, không chỉ lượt nối lúc tạo
         }
       }
 
@@ -190,7 +214,7 @@ export async function docDanhMuc(
       // `tien_te`. Cửa tạo đơn (`tao-don.js`) dùng con số này TRỰC TIẾP, KHÔNG nhân
       // `HE_SO_TE` lần nữa — nhân ở đây rồi lại nhân bên kia = thu ×100/×1000.
       const gia = Number(v.retail_price ?? 0);
-      if (gia > 0) {
+      if (gia > 0 && !daCo[0]?.cau_hinh_tay) {
         if (!tienTe) {
           kq.giaKhongBietTe.push({ ma, gia });
           continue;
