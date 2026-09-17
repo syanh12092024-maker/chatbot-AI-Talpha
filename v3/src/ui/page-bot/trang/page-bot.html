@@ -354,8 +354,11 @@ async function quetPancake() {
   try {
     const kq = await goi('/api/page-bot/quet', { method: 'POST', body: JSON.stringify({}) });
     if (kq.rong) {
-      baoLoi('Quét xong nhưng không thấy page nào',
-        'Không token Pancake nào trả về page. Kiểm kho token ở màn «Kết nối & token» — token hết hạn hay mất quyền đều ra kết quả này. Danh mục page trong CSDL giữ nguyên.');
+      // HAI CẢNH KHÁC NHAU, HAI CÂU KHÁC NHAU. Gộp chúng lại là chỉ người đi kiểm sai chỗ:
+      // 17/09 màn bảo «kiểm kho token» trong khi kho token đúng, lỗi nằm ở dây nối máy chủ.
+      baoLoi('Quét xong nhưng không thấy page nào', kq.soToken === 0
+        ? 'Tiến trình này KHÔNG thấy token Pancake nào. Thêm token ở màn «Kết nối & token»; nếu ở đó đã có token thì đây là lỗi nối dây của máy chủ, xem log khởi động dịch vụ v3.'
+        : `Có ${formatNumber(kq.soToken)} token nhưng không token nào trả về page — token hết hạn hoặc mất quyền trên mọi page đều ra kết quả này. Danh mục page trong CSDL giữ nguyên.`);
     } else {
       toast(`Quét xong: ${formatNumber(kq.nguon)} page · ${formatNumber(kq.them)} mới · ${formatNumber(kq.capNhat)} cập nhật`
         + (kq.khongThay ? ` · ${formatNumber(kq.khongThay)} page trong CSDL không thấy ở lượt này` : ''));

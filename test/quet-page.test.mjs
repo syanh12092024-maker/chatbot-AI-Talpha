@@ -31,9 +31,10 @@ function poolGia({ team = [{ id: 't9' }], daCo = [] } = {}) {
   };
 }
 
-const quetGia = (ds) => ({
+const quetGia = (ds, soToken = 1) => ({
   quet: async () => ds.length,
   doc: () => new Map(ds.map((p) => [String(p.id), p])),
+  demToken: () => new Array(soToken).fill({}),
 });
 
 test('QP1 · page mới vào team chưa-phân, page cũ chỉ được cập nhật', async () => {
@@ -81,4 +82,18 @@ test('QP4 · page trong CSDL mà lượt quét không thấy: ĐẾM ra, KHÔNG 
   assert.equal(kq.khongThay, 1, 'page 300 không thấy ở lượt này');
   const doi = pool.cau.filter((c) => /UPDATE page SET|mat_dau/.test(c.sql));
   assert.deepEqual(doi, [], 'một lượt quét thiếu page KHÔNG chứng minh page biến mất — cấm tự đánh dấu');
+});
+
+test('QP5 · trả ra SỐ TOKEN tiến trình này thấy — kho rỗng khác hẳn «có token mà không page»', async () => {
+  // Đo 17/09: kho CSDL có 1 token sống, nhưng tiến trình giao diện chưa nối `datKhoTokenDb`
+  // nên `src/pancake.js` trong nó thấy 0 token. Màn báo «kiểm kho token ở màn Kết nối» —
+  // và người đi kiểm đúng chỗ đang không hỏng, trong khi lỗi nằm ở dây nối của máy chủ.
+  // Hai cảnh phải phân biệt được bằng SỐ, không bằng cùng một câu.
+  const khoRong = await quetVaGhiPage(poolGia(), quetGia([], 0));
+  assert.equal(khoRong.rong, true);
+  assert.equal(khoRong.soToken, 0, 'kho rỗng ⇒ 0 token');
+
+  const coTokenKhongPage = await quetVaGhiPage(poolGia(), quetGia([], 2));
+  assert.equal(coTokenKhongPage.rong, true);
+  assert.equal(coTokenKhongPage.soToken, 2, 'có token mà không page ⇒ vẫn đếm đúng 2');
 });

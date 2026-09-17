@@ -88,6 +88,14 @@ const { lietKeThiTruong, themKetNoi, suaKetNoi, batTatKetNoi, boKetNoi }
 
 const khoToken = await import(`${GOC}/src/token-pancake.js`);
 const { quetVaGhiPage } = await import(`${GOC}/src/quet-page.js`);
+// TIẾN TRÌNH NÀY CŨNG PHẢI THẤY KHO TOKEN CSDL.
+//
+// `src/pancake.js` giữ kho token theo TỪNG tiến trình. Bản đầu tôi chỉ nối ở `src/server.js`
+// và worker — nhưng lượt quét Pancake chạy trong CHÍNH tiến trình giao diện này, nên nó
+// thấy 0 token và báo «không token nào trả về page» trong khi kho token có token sống.
+// Nối ở đây là điều kiện để nút «Quét Pancake» hoạt động.
+const { datKhoTokenDb, lamMoiTokenDb } = await import(`${GOC}/src/pancake.js`);
+datKhoTokenDb(() => khoToken.docTokenSong(pool));
 const { keoDanhMucTeam } = await import(`${GOC}/src/pos/keo-danh-muc.js`);
 const spGoc = await import(`${GOC}/src/products/san-pham-goc.js`);
 const { noiVanHanhV3 } = await import('./src/noi-day/van-hanh-v3.js');
@@ -117,7 +125,9 @@ const bao = dungPhanB(app, {
   },
   // Quét Pancake bằng kho token (env + bảng `token_pancake`) rồi upsert bảng `page`.
   // Đây là đường thay cho `pages.json`: máy chỉ chạy v3 vẫn dựng được danh mục page.
-  quetPagePancake: () => quetVaGhiPage(pool),
+  // Nạp lại kho token NGAY trước khi quét: người vừa dán token xong bấm quét luôn, không
+  // ai chờ hết nhịp làm mới 5 phút.
+  quetPagePancake: async () => { await lamMoiTokenDb(); return quetVaGhiPage(pool); },
   // Kéo danh mục + tồn kho POS cho team đang mở. Cùng `ctx` với bộ đọc kết nối POS — vế
   // `team_id` trong WHERE lấy từ đây, nên bối cảnh sai là kéo nhầm kho của team khác.
   keoDanhMucPos: (bc) => keoDanhMucTeam(pool, ctxCuaA(bc)),

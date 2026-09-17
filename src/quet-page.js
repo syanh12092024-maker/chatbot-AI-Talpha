@@ -27,7 +27,7 @@
 // mất quyền. `src/page-registry.js` phải dựng cả lá chắn 70% cho chuyện này. Ở đây chọn
 // đường hẹp hơn mà thành thật: ĐẾM số page trong CSDL mà lượt quét không thấy, trả ra cho
 // màn nói, và KHÔNG đổi một cột nào của chúng.
-import { refreshPancakePages, pancakePages } from './pancake.js';
+import { refreshPancakePages, pancakePages, listPancakeTokens } from './pancake.js';
 
 /** Team nhận page MỚI. Cùng giá trị với bộ di trú — hai đường không được rơi hai chỗ. */
 export const TEAM_CHUA_PHAN = 'chua-phan';
@@ -57,13 +57,24 @@ async function idTeamChuaPhan(pool) {
  * @param {{quet?: Function, doc?: Function}} [cua]  tiêm bộ quét cho bộ ca; mặc định gọi Pancake thật
  * @returns {Promise<{nguon:number, them:number, capNhat:number, khongThay:number, teamMoi:string}>}
  */
-export async function quetVaGhiPage(pool, { quet = refreshPancakePages, doc = pancakePages } = {}) {
+export async function quetVaGhiPage(
+  pool,
+  { quet = refreshPancakePages, doc = pancakePages, demToken = listPancakeTokens } = {},
+) {
+  // ĐẾM TOKEN TIẾN TRÌNH NÀY THẤY, và trả ra kèm kết quả.
+  //
+  // «Không token nào trả về page» gộp HAI chuyện rất khác nhau: kho rỗng, hay có token mà
+  // token không phủ page nào. Đo 17/09: kho CSDL có 1 token sống, nhưng tiến trình giao
+  // diện chưa nối `datKhoTokenDb` nên `src/pancake.js` trong nó thấy 0 token — màn báo
+  // «kiểm kho token» trong khi kho token hoàn toàn đúng, và người đi tìm sai chỗ.
+  const soToken = (() => { try { return demToken().length; } catch { return null; } })();
   const soPage = await quet();
   const ds = [...doc().values()];
   if (!ds.length) {
-    // Không token, hoặc token không phủ page nào. Hai chuyện khác nhau, nhưng cùng một
-    // hệ quả ở đây — và cả hai đều KHÔNG được đụng vào dữ liệu đã có.
-    return { nguon: 0, them: 0, capNhat: 0, khongThay: 0, teamMoi: TEAM_CHUA_PHAN, rong: true, soPageQuet: soPage };
+    return {
+      nguon: 0, them: 0, capNhat: 0, khongThay: 0, teamMoi: TEAM_CHUA_PHAN,
+      rong: true, soPageQuet: soPage, soToken,
+    };
   }
 
   const teamId = await idTeamChuaPhan(pool);
@@ -87,5 +98,5 @@ export async function quetVaGhiPage(pool, { quet = refreshPancakePages, doc = pa
   const trongDb = await pool.query('SELECT page_id FROM page');
   const khongThay = trongDb.rows.filter((x) => !thay.has(String(x.page_id))).length;
 
-  return { nguon: ds.length, them, capNhat, khongThay, teamMoi: TEAM_CHUA_PHAN, rong: false, soPageQuet: soPage };
+  return { nguon: ds.length, them, capNhat, khongThay, teamMoi: TEAM_CHUA_PHAN, rong: false, soPageQuet: soPage, soToken };
 }
