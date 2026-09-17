@@ -314,7 +314,37 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {} } = {
         `SELECT l.id,l.noi_dung,l.trang_thai,l.tao_luc FROM lan_gui l JOIN tin_cho_xu_ly t ON t.id=l.tin_id AND t.team_id=l.team_id WHERE l.team_id=$1 AND t.page_id=$2 AND t.psid=$3 ORDER BY l.id DESC LIMIT 30`,
         [h.page_text, h.psid],
       );
-      s.json({ ok: true, item: h, incoming, outgoing });
+      // LỊCH SỬ THẬT TRÊN PANCAKE — thứ KHÁCH nhìn thấy, gồm cả tin sale gõ tay và tin
+      // Botcake. Hai bảng trên chỉ có phần đi qua hàng đợi v3: tin bot xử lý, và tin bot
+      // gửi/định gửi. Chấm «bot hiểu hội thoại không» mà chỉ nhìn phần của bot là chấm
+      // một nửa cuộc nói chuyện.
+      //
+      // Đây là lượt ĐỌC (GET) nên không đụng van gửi — cùng luật với `thuTokenSong`. Best
+      // effort: không có token, hoặc Pancake lỗi, thì trả lý do cho màn NÓI RA, chứ không
+      // để người dùng tưởng hội thoại chỉ có bấy nhiêu tin.
+      let lichSu = [];
+      let lichSuLoi = null;
+      const moc = (await rows(
+        q,
+        "SELECT conv_id, cust_id FROM tin_cho_xu_ly WHERE team_id=$1 AND page_id=$2 AND psid=$3 ORDER BY id DESC LIMIT 1",
+        [h.page_text, h.psid],
+      ))[0];
+      if (!moc) lichSuLoi = "chưa có tin nào của hội thoại này đi qua hàng đợi v3, nên không biết mã hội thoại bên Pancake";
+      else {
+        try {
+          const { pkGetMessages } = await import("../../../../src/pancake.js");
+          const ds = await pkGetMessages(h.page_text, moc.conv_id, moc.cust_id);
+          lichSu = (Array.isArray(ds) ? ds : []).slice(-60).map((m) => ({
+            luc: m.inserted_at || null,
+            laPage: String(m?.from?.id) === String(h.page_text),
+            ten: m?.from?.name || "",
+            text: String(m.original_message || m.message || "").replace(/<[^>]*>/g, " ").trim(),
+          }));
+        } catch (e) {
+          lichSuLoi = String(e?.message || e).slice(0, 200);
+        }
+      }
+      s.json({ ok: true, item: h, incoming, outgoing, lichSu, lichSuLoi });
     }),
   );
   r.post(

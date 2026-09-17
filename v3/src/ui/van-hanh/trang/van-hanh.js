@@ -476,31 +476,63 @@ async function conversation(id) {
     await load();
   });
   resumeButton.disabled = !admin;
-  el("h3", "Tin khách gần nhất", c);
-  for (const m of d.incoming) {
+  /* ── MỘT DÒNG THỜI GIAN, BA LOẠI TIN ────────────────────────────────────────────
+   * Trước: hai khối rời — «tin khách» rồi «lượt gửi của bot». Đọc kiểu đó không chấm được
+   * chất lượng tư vấn, vì thứ cần thấy là bot trả lời CÂU NÀO.
+   *
+   *   · lịch sử thật trên Pancake  → gồm cả tin sale gõ tay và tin Botcake
+   *   · lượt bot ĐỊNH gửi          → chỉ có trong sổ, KHÔNG có trên Pancake (diễn tập)
+   *   · tin trong hàng đợi bị lỗi  → để biết vì sao một câu của khách không được trả lời
+   */
+  el("h3", "Dòng hội thoại", c);
+  if (d.lichSuLoi) {
+    const v = el("div", undefined, c);
+    v.innerHTML = canhBao({ level: "warning", title: "Chưa đọc được lịch sử thật từ Pancake",
+      body: "Phần dưới chỉ là tin đã đi qua hàng đợi v3 và lượt của bot — thiếu tin sale gõ tay và tin Botcake.",
+      detail: [String(d.lichSuLoi)] });
+  }
+
+  const moc = [];
+  for (const m of d.lichSu || []) {
+    moc.push({ luc: m.luc ? Date.parse(m.luc) : 0, ben: m.laPage ? "page" : "khach", text: m.text, nhan: m.laPage ? "phía page (Pancake)" : "khách" });
+  }
+  for (const m of d.outgoing || []) {
+    const chu = m.noi_dung?.text || m.noi_dung?.url || (typeof m.noi_dung === "string" ? m.noi_dung : "Thao tác trên kênh");
+    // Lượt ĐÃ gửi đã nằm trong lịch sử Pancake rồi — thêm lần nữa là đếm đôi. Chỉ chèn
+    // những lượt KHÔNG có bên Pancake: diễn tập, đang gửi, không rõ.
+    if (m.trang_thai === "da_gui") continue;
+    moc.push({ luc: Date.parse(m.tao_luc), ben: "bot", text: chu, nhan: m.trang_thai, trangThai: m.trang_thai });
+  }
+  for (const m of d.incoming || []) {
+    if (!["loi", "chan_guard"].includes(m.trang_thai)) continue;
+    moc.push({ luc: Date.parse(m.tao_luc), ben: "loi", text: m.noi_dung, nhan: m.trang_thai, lyDo: m.ly_do, id: m.id });
+  }
+  moc.sort((a, b) => a.luc - b.luc);
+
+  if (!moc.length) el("p", "Chưa có tin nào.", c).className = "meta";
+  for (const m of moc) {
     const a = el("div", undefined, c);
     a.className = "panel";
     const dau = el("div", undefined, a);
     dau.className = "hang";
-    dau.innerHTML = statusBadge(m.trang_thai === "loi" || m.trang_thai === "chan_guard" ? "blocked" : "unknown",
-      { label: m.trang_thai }) + (m.ly_do ? `<span class="meta">${esc(m.ly_do)}</span>` : "");
-    const noi = el("pre", m.noi_dung, a);
+    dau.innerHTML =
+      (m.ben === "khach" ? statusBadge("unknown", { label: "khách" })
+        : m.ben === "page" ? statusBadge("ready", { label: "phía page — đã lên Pancake" })
+        : m.ben === "bot" ? statusBadge(m.trangThai === "dien_tap" ? "pending" : "blocked",
+            { label: m.trangThai === "dien_tap" ? "bot ĐỊNH gửi (diễn tập, chưa bay)" : `bot · ${m.nhan}` })
+        : statusBadge("blocked", { label: `tin lỗi · ${m.nhan}` }))
+      + `<span class="meta">${esc(m.luc ? new Date(m.luc).toLocaleString("vi-VN") : "—")}</span>`
+      + (m.lyDo ? `<span class="meta">${esc(m.lyDo)}</span>` : "");
+    const noi = el("pre", m.text, a);
     noi.className = "nguyen-van";
-    if (admin && ["loi", "chan_guard"].includes(m.trang_thai))
+    if (admin && m.ben === "loi")
       button(a, "Đã đối chiếu, bàn giao sale", async () => {
         await api(`messages/${m.id}/reconcile`, { reason: reason.value });
         await conversation(id);
         message("Đã bàn giao sale, không tự gửi lại tin.");
       });
   }
-  el("h3", "Lượt gửi của bot", c);
-  for (const m of d.outgoing) {
-    const a = el("div", undefined, c);
-    a.className = "panel";
-    a.innerHTML = statusBadge("unknown", { label: m.trang_thai });
-    const noi = el("pre", m.noi_dung?.text || m.noi_dung?.url || "Thao tác trên kênh", a);
-    noi.className = "nguyen-van";
-  }
+
 }
 $("#close").onclick = () => $("#detail").close();
 $("#reload").onclick = () => load().catch((e) => message(e.message, true));
