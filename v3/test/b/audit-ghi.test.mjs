@@ -208,16 +208,16 @@ test('luật 4 · mã hành động lạ hoặc thiếu thì không lưu, nhưng
 
 // ---- LUẬT 6 ------------------------------------------------------------------------
 
-test('luật 6 · thoi_gian do module đặt, không tin thời gian của nơi gọi', async () => {
+test('luật 6 · xay_ra_luc do module đặt, không tin thời gian của nơi gọi', async () => {
   const kho = chuanBi();
   datDongHo(() => 1_700_000_000_000);
-  const luu = await ghiNhatKy(bcA, { hanhDong: HANH_DONG.NHAN_VIEC, thoi_gian: 1, thoiGian: 2 });
-  assert.equal(luu.thoi_gian, 1_700_000_000_000);
-  assert.equal(dongCua(kho)[0].thoi_gian, 1_700_000_000_000);
+  const luu = await ghiNhatKy(bcA, { hanhDong: HANH_DONG.NHAN_VIEC, xay_ra_luc: 1, thoiGian: 2 });
+  assert.equal(luu.xay_ra_luc, 1_700_000_000_000);
+  assert.equal(dongCua(kho)[0].xay_ra_luc, 1_700_000_000_000);
 
   datDongHo(null);
   const nay = await ghiNhatKy(bcA, { hanhDong: HANH_DONG.NHAN_VIEC });
-  assert.ok(Math.abs(nay.thoi_gian - Date.now()) < 5_000);
+  assert.ok(Math.abs(nay.xay_ra_luc - Date.now()) < 5_000);
 });
 
 // ---- PHỄU --------------------------------------------------------------------------

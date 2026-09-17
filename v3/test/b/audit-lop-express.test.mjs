@@ -77,12 +77,12 @@ test('POST 2xx → ghi một dòng viec_tu_dong, kèm ip, đối tượng và th
   assert.equal(d.team_id, 't1');
   assert.equal(d.tac_nhan, 'nguoi');
   assert.equal(d.nguoi_dung_id, 'u1');
-  assert.equal(d.doi_tuong_loai, 'viec_can_xu_ly');
+  assert.equal(d.doi_tuong, 'viec_can_xu_ly');
   assert.equal(d.doi_tuong_id, '7');
   assert.deepEqual(d.sau, { id: 7, ghi_chu: 'khách đồng ý' });
   assert.ok(d.ip, 'lấy ip từ req.ip');
   assert.match(d.ghi_chu, /POST \/api\/viec → 200/);
-  assert.ok(Math.abs(d.thoi_gian - Date.now()) < 5000);
+  assert.ok(Math.abs(d.xay_ra_luc - Date.now()) < 5000);
 });
 
 test('res.locals.hanhDong và res.locals.truoc được dùng khi nơi gọi có đặt', async () => {

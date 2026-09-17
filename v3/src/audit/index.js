@@ -15,7 +15,7 @@
 //   4. Ghi hỏng không được làm hỏng việc chính → nuốt lỗi, trả `null`. TRỪ bốn mã trong
 //      `nhomBatBuoc`: sự cố an ninh mà nuốt lặng còn tệ hơn hỏng việc.
 //   5. `truoc`/`sau` lọc chỗ nhạy cảm trước khi lưu.
-//   6. Không tin thời gian của nơi gọi — `thoi_gian` do file này đặt.
+//   6. Không tin thời gian của nơi gọi — `xay_ra_luc` do file này đặt.
 //   7. `docNhatKy` không nhận `team_id` từ nơi gọi.
 //
 // KHÔNG GỌI THẲNG XUỐNG CƠ SỞ DỮ LIỆU. Cổng truy vấn tiêm từ ngoài vào bằng
@@ -156,18 +156,28 @@ export async function ghiNhatKy(boiCanh, ban = {}) {
       console.warn('[nhat-ky] bỏ qua tac_nhan do nơi gọi tự đặt — tac_nhan luôn suy từ boiCanh.nguon');
     }
 
+    // TÊN CỘT LÀ TÊN THẬT TRONG `nhat_ky` (001 · db/schema.sql), không phải tên nội bộ của
+    // module này. Bản trước ghi `thoi_gian` / `doi_tuong_loai` — hai cột KHÔNG TỒN TẠI, nên
+    // mọi lượt ghi đều ném `column ... does not exist`, và mã thuộc `nhomBatBuoc` ném tiếp
+    // thành 500 SAU KHI việc chính đã chạy. Bộ ca chạy trên cổng giả (nhận mọi tên cột) nên
+    // không thấy; thước `nhat-ky-cot-that.test.mjs` nay đối chiếu thẳng với lược đồ.
+    //
+    // Bốn cột `NOT NULL DEFAULT ''` của 001 (`doi_tuong`, `doi_tuong_id`, `ghi_chu`, `ip`):
+    // truyền `null` tường minh là VI PHẠM NOT NULL — DEFAULT chỉ áp khi VẮNG cột. Nên rỗng
+    // ở đây phải là `''`, không phải `null`.
     const banGhi = {
       // KHÔNG đặt team_id: điều kiện team do cổng truy vấn chèn (spec "Bảng dữ liệu").
-      thoi_gian: _dongHo(),                                   // luật 6
+      xay_ra_luc: new Date(_dongHo()),                        // luật 6 · Date: cổng thật
+                                                              //   đưa vào timestamptz, đọc ra quy về ms (`quyNgay`)
       tac_nhan: tacNhanCua(bc),                               // luật 2
       nguoi_dung_id: bc.nguon === NGUON.MAY ? null : (bc.nguoiDungId ?? null),
       hanh_dong: hanhDong,
-      doi_tuong_loai: ban.doiTuongLoai ?? null,
-      doi_tuong_id: ban.doiTuongId == null ? null : String(ban.doiTuongId),
+      doi_tuong: ban.doiTuongLoai ?? '',
+      doi_tuong_id: ban.doiTuongId == null ? '' : String(ban.doiTuongId),
       truoc: ban.truoc === undefined ? null : cheNhayCam(ban.truoc),   // luật 5
       sau: ban.sau === undefined ? null : cheNhayCam(ban.sau),         // luật 5
-      ip: ban.ip ?? bc.ip ?? null,
-      ghi_chu: ban.ghiChu ?? (bc.nguon === NGUON.MAY && bc.lyDo ? `việc nền: ${bc.lyDo}` : null),
+      ip: ban.ip ?? bc.ip ?? '',
+      ghi_chu: ban.ghiChu ?? (bc.nguon === NGUON.MAY && bc.lyDo ? `việc nền: ${bc.lyDo}` : ''),
     };
 
     const db = congTruyVan(bc);
@@ -221,19 +231,19 @@ export async function docNhatKy(boiCanh, bo = {}) {
   const dieuKien = {};
   if (hanhDong != null && hanhDong !== '') dieuKien.hanh_dong = hanhDong;   // chuỗi hoặc mảng mã
   if (nguoiDungId != null && nguoiDungId !== '') dieuKien.nguoi_dung_id = nguoiDungId;
-  if (doiTuongLoai != null && doiTuongLoai !== '') dieuKien.doi_tuong_loai = doiTuongLoai;
+  if (doiTuongLoai != null && doiTuongLoai !== '') dieuKien.doi_tuong = doiTuongLoai;
   if (doiTuongId != null && doiTuongId !== '') dieuKien.doi_tuong_id = String(doiTuongId);
   const moc = {};
   if (tuNgay != null) moc['>='] = mocThoiGian(tuNgay);
   if (denNgay != null) moc['<='] = mocThoiGian(denNgay, true);
-  if (Object.keys(moc).length) dieuKien.thoi_gian = moc;
+  if (Object.keys(moc).length) dieuKien.xay_ra_luc = moc;
   // Đẩy tiếp xuống cổng để cổng của người A đối chiếu lần thứ hai.
   if (teamXin != null && teamXin !== '') dieuKien.team_id = teamXin;
 
   try {
     const db = congTruyVan(bc);
     const [dong, tong] = await Promise.all([
-      db.chon(BANG, dieuKien, { sapXep: 'thoi_gian', giamDan: true, gioiHan, buoc }),
+      db.chon(BANG, dieuKien, { sapXep: 'xay_ra_luc', giamDan: true, gioiHan, buoc }),
       db.dem(BANG, dieuKien),
     ]);
     return { dong, tong };

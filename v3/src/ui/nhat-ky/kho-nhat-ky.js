@@ -127,7 +127,7 @@ function gon(d) {
   const ma = d.hanh_dong;
   return {
     id: String(d.id ?? ''),
-    thoiGian: d.thoi_gian ?? d.xay_ra_luc ?? null,
+    thoiGian: d.xay_ra_luc ?? d.thoi_gian ?? null,
     lan: lanCua(d),
     tacNhan: d.tac_nhan || '',
     // `nguoi:<email>` → `<email>`; `may:<job>` → `<job>`. Hiện nguyên `may:tang-truy-van`
@@ -135,7 +135,7 @@ function gon(d) {
     ai: String(d.tac_nhan || '').replace(/^(nguoi|may):/, '') || '(không rõ)',
     hanhDong: ma,
     chuHanhDong: _moTa ? _moTa(ma) : ma,
-    doiTuong: d.doi_tuong_loai ?? d.doi_tuong ?? null,
+    doiTuong: d.doi_tuong ?? d.doi_tuong_loai ?? null,
     doiTuongId: d.doi_tuong_id ?? null,
     ghiChu: d.ghi_chu || '',
     truoc: d.truoc ?? null,

@@ -1328,3 +1328,107 @@ CREATE INDEX page_san_pham_goc_ma ON page (team_id, san_pham_goc_ma)
 
 COMMENT ON COLUMN page.san_pham_goc_ma IS
   'Page này bán sản phẩm GỐC nào (015). Khoá của tầng kịch bản «sản phẩm»/«nước». NULL = chưa gán. Thay cho san_pham.page_id vốn NULL sạch vì mọi shop đều nhiều page.';
+
+-- ─── 016_webhook_va_gui_ben ───────────────────────────────────────────────────────
+
+-- Một nguồn nhận tin cho mỗi Page. Gửi vẫn đi qua Pancake hiện có.
+ALTER TABLE page ADD COLUMN nguon_tin text NOT NULL DEFAULT 'poll'
+  CHECK (nguon_tin IN ('poll', 'webhook'));
+ALTER TABLE tin_cho_xu_ly ADD COLUMN nguon text NOT NULL DEFAULT 'poll'
+  CHECK (nguon IN ('poll', 'webhook'));
+ALTER TABLE tin_cho_xu_ly ADD COLUMN thu_lai_luc timestamptz NOT NULL DEFAULT now();
+CREATE UNIQUE INDEX tin_webhook_mid ON tin_cho_xu_ly(page_id,msg_id) WHERE nguon='webhook';
+CREATE INDEX tin_cho_hoi_thoai ON tin_cho_xu_ly(team_id,page_id,psid,id)
+  WHERE trang_thai IN ('cho','dang_xu');
+
+-- Ghi trên kết nối độc lập TRƯỚC HTTP, sống qua rollback của lượt xử lý.
+-- Không hứa exactly-once khi provider không có idempotency key: dang_gui/khong_ro
+-- cần đối chiếu thủ công, không tự phát lại.
+CREATE TABLE lan_gui (
+  id bigserial PRIMARY KEY,
+  team_id bigint NOT NULL REFERENCES team(id),
+  -- Không FK tới queue: worker đang FOR UPDATE dòng tin; FK trên kết nối sổ gửi
+  -- độc lập sẽ chờ chính worker đó. Caller truyền id tin đã lưu bền.
+  tin_id bigint NOT NULL,
+  buoc integer NOT NULL CHECK (buoc > 0),
+  loai text NOT NULL CHECK (loai IN ('guiTin','guiAnh','ghiNote','gatThe')),
+  noi_dung jsonb NOT NULL,
+  trang_thai text NOT NULL CHECK (trang_thai IN ('dang_gui','da_gui','khong_ro')),
+  provider_id text,
+  tao_luc timestamptz NOT NULL DEFAULT now(),
+  sua_luc timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(team_id,tin_id,buoc)
+);
+CREATE INDEX lan_gui_can_doi_chieu ON lan_gui(team_id,tao_luc)
+  WHERE trang_thai <> 'da_gui';
+
+-- ─── 017_cong_tac_v3 ───────────────────────────────────────────────────────
+
+-- NULL preserves already allowlisted workers until the operator explicitly sets a switch.
+ALTER TABLE page ADD COLUMN v3_ai_bat boolean;
+COMMENT ON COLUMN page.v3_ai_bat IS 'V3 switch; NULL preserves existing allowlist behavior. Independent of legacy bot_ai_bat.';
+
+ALTER TABLE san_pham ADD COLUMN cau_hinh_tay boolean NOT NULL DEFAULT false;
+COMMENT ON COLUMN san_pham.cau_hinh_tay IS 'Operator owns product text / availability / offers; POS sync only updates inventory.';
+
+-- ─── 018_nhat_ky_ip ───────────────────────────────────────────────────────
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 018_nhat_ky_ip — CỘT `ip` CHO BẢNG NHẬT KÝ
+--
+-- VÌ SAO (đo 17/09/2026): `v3/src/audit/index.js` ghi `ip` từ lượt HTTP
+-- (`v3/src/audit/lop-express.js` lấy `req.ip`) nhưng bảng `nhat_ky` của 001 KHÔNG có cột
+-- này — nên MỌI lượt ghi nhật ký của v3 đều ném `column ... does not exist`. Mã nào thuộc
+-- `nhomBatBuoc` thì ném tiếp lên HTTP: người bấm nhận 500 SAU KHI việc chính đã chạy
+-- (đo được: thêm kết nối POS tạo hàng thật rồi trả 500, không một dòng nhật ký).
+--
+-- Vá đi hai hướng: hai cột kia (`thoi_gian`→`xay_ra_luc`, `doi_tuong_loai`→`doi_tuong`)
+-- sửa Ở CODE vì lược đồ mới là bản đã ký và `src/db/nhat-ky.js` — cửa ghi audit dùng chung
+-- của người A — đã dùng đúng tên đó từ đầu. Riêng `ip` là dữ liệu THẬT đang bị vứt: sự cố
+-- an ninh (`dang_nhap_that_bai`, `chan_xuyen_team`) mà không có IP thì mất nửa manh mối.
+--
+-- CỘNG THÊM, KHÔNG SỬA CHỖ CŨ: `NOT NULL DEFAULT ''` nên bản code cũ (không ghi cột này)
+-- vẫn chạy được sau khi migrate — thứ tự deploy code/migration nào cũng an toàn, đúng bài
+-- học của lưới migration 014.
+-- ═══════════════════════════════════════════════════════════════════════════
+ALTER TABLE nhat_ky ADD COLUMN IF NOT EXISTS ip text NOT NULL DEFAULT '';
+
+-- ─── 019_kho_token_pancake ───────────────────────────────────────────────────────
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 019_kho_token_pancake — KHO TOKEN PANCAKE VÀO CSDL
+--
+-- VÌ SAO: token Pancake đang sống ở hai nơi ngoài CSDL — biến `.env` và tệp
+-- `pancake-tokens.json` của tiến trình bot v1. Hệ quả đo được 17/09/2026:
+--   · màn «Kết nối & token» của v3 phải gọi HTTP sang `/admin/api` của v1 để xem và sửa,
+--     nên tắt v1 là màn chết; và cửa ghi ấy bị van `PANCAKE_READONLY` chắn, khiến máy dev
+--     KHÔNG thêm được token bằng giao diện dù thêm token không gửi một tin nào cho ai;
+--   · không có dấu vết ai thêm/bỏ token lúc nào — tệp JSON không biết người.
+--
+-- TOÀN HỆ, KHÔNG THEO TEAM — và đó là sự thật của nghiệp vụ, không phải đường tắt: một
+-- tài khoản Pancake phủ một NHÓM PAGE, nhóm ấy có thể thuộc nhiều team. Chia theo team là
+-- vỡ cơ chế dự phòng đa-token (`src/pancake.js#_pageTokIdx`). Vì vậy bảng này KHÔNG có
+-- `team_id`, không vào `BANG_NGHIEP_VU` của tầng truy vấn chung, và chỉ đi qua bộ đọc/ghi
+-- riêng `src/token-pancake.js` — cùng khuôn với `ket_noi_pos`, bảng cũng chứa bí mật.
+-- Màn hình đã nói thẳng điều này bằng chữ (`LA_TOAN_HE` trong `kho-ket-noi.js`).
+--
+-- ⛔ TOKEN KHÔNG NẰM TRẦN: `token_ma` là bản mã hoá bằng `V3_KHOA_MA_HOA` (db/khoa.js),
+--    y hệt `ket_noi_pos.api_key_ma`. `duoi` giữ 8 ký tự cuối để người nhận mặt được token
+--    mà không cần giải mã; `token_bam` là SHA-256 để chặn thêm trùng mà không so bản rõ.
+-- ═══════════════════════════════════════════════════════════════════════════
+CREATE TABLE token_pancake (
+  id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  ten         text        NOT NULL DEFAULT '',   -- tên tài khoản đọc từ payload JWT
+  uid         text        NOT NULL DEFAULT '',   -- uid trong JWT, để đối chiếu khi trùng tên
+  duoi        text        NOT NULL DEFAULT '',   -- 8 ký tự cuối — KHÔNG đủ để dùng lại token
+  het_han     timestamptz,                       -- `exp` của JWT; NULL = token không khai hạn
+  token_ma    text        NOT NULL,              -- ⛔ BÍ MẬT (đã mã hoá)
+  token_bam   text        NOT NULL UNIQUE,       -- SHA-256 bản rõ — chặn thêm trùng
+  bat         boolean     NOT NULL DEFAULT true, -- tắt để ngừng dùng mà không mất dấu vết
+  them_boi    bigint      REFERENCES nguoi_dung(id) ON DELETE SET NULL,
+  tao_luc     timestamptz NOT NULL DEFAULT now(),
+  sua_luc     timestamptz NOT NULL DEFAULT now()
+);
+-- Bộ gửi hỏi bảng này mỗi vòng làm mới: lấy token còn bật, còn hạn, cũ trước (thứ tự
+-- thêm CHÍNH LÀ thứ tự dự phòng, giống hệt quy ước của kho cũ).
+CREATE INDEX token_pancake_dung_duoc ON token_pancake (bat, het_han, id);

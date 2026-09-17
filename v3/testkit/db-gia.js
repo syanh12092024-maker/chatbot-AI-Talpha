@@ -106,11 +106,13 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
   const bc = batBuocBoiCanh(boiCanh);   // ← thiếu bối cảnh là ném ngay tại đây
 
   const chanXuyenTeam = (bang, teamXin) => {
+    // Tên cột lấy theo `nhat_ky` THẬT (001) — cổng giả mà đặt tên khác thì nó che đúng
+    // loại lỗi đã xảy ra 17/09: code ghi `thoi_gian`/`doi_tuong_loai`, bảng không có.
     const ban = {
-      thoi_gian: Date.now(), team_id: bc.teamId, tac_nhan: bc.nguon === 'may' ? 'may' : 'nguoi',
+      xay_ra_luc: Date.now(), team_id: bc.teamId, tac_nhan: bc.nguon === 'may' ? 'may' : 'nguoi',
       nguoi_dung_id: bc.nguoiDungId, hanh_dong: 'chan_xuyen_team',
-      doi_tuong_loai: bang, doi_tuong_id: null,
-      truoc: null, sau: { team_xin: String(teamXin), team_cua: bc.teamId }, ip: bc.ip,
+      doi_tuong: bang, doi_tuong_id: '',
+      truoc: null, sau: { team_xin: String(teamXin), team_cua: bc.teamId }, ip: bc.ip ?? '',
       ghi_chu: `chặn truy cập xuyên team ở bảng ${bang}`,
     };
     kho.nhatKy.push(ban);
@@ -186,6 +188,12 @@ export function taoTruyVanGia(kho, boiCanh, { ghiNhatKy } = {}) {
       // đúng bài học ① của `07-KE-HOACH-GD2.md` §0. Bộ ca `cong-that-hop-dong` bắt được
       // (01/09). Cổng thật quy `Date` → ms ở `quyNgay`, nên bản giả cũng sinh ms.
       if (banGhi.tao_luc === undefined) banGhi = { ...banGhi, tao_luc: Date.now() };
+      // Cùng lý do, cùng chỗ: cổng thật nhận `Date` rồi trả về ms (`quyNgay` trong
+      // `cong-du-lieu-that.js`). Bản giả giữ nguyên đối tượng `Date` thì phép lọc theo
+      // mốc thời gian so `Date` với số — xanh ở đây, vỡ ngoài kia.
+      for (const [k, v] of Object.entries(banGhi)) {
+        if (v instanceof Date) banGhi = { ...banGhi, [k]: v.getTime() };
+      }
       const dk = gan(bang, { team_id: banGhi.team_id }, true);   // GHI: không đặc cách
       const moi = { id: banGhi.id ?? idMoi(bang), ...banGhi };
       if (!BANG_DUNG_CHUNG.has(bang)) moi.team_id = dk.team_id;

@@ -1,0 +1,19 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 018_nhat_ky_ip — CỘT `ip` CHO BẢNG NHẬT KÝ
+--
+-- VÌ SAO (đo 17/09/2026): `v3/src/audit/index.js` ghi `ip` từ lượt HTTP
+-- (`v3/src/audit/lop-express.js` lấy `req.ip`) nhưng bảng `nhat_ky` của 001 KHÔNG có cột
+-- này — nên MỌI lượt ghi nhật ký của v3 đều ném `column ... does not exist`. Mã nào thuộc
+-- `nhomBatBuoc` thì ném tiếp lên HTTP: người bấm nhận 500 SAU KHI việc chính đã chạy
+-- (đo được: thêm kết nối POS tạo hàng thật rồi trả 500, không một dòng nhật ký).
+--
+-- Vá đi hai hướng: hai cột kia (`thoi_gian`→`xay_ra_luc`, `doi_tuong_loai`→`doi_tuong`)
+-- sửa Ở CODE vì lược đồ mới là bản đã ký và `src/db/nhat-ky.js` — cửa ghi audit dùng chung
+-- của người A — đã dùng đúng tên đó từ đầu. Riêng `ip` là dữ liệu THẬT đang bị vứt: sự cố
+-- an ninh (`dang_nhap_that_bai`, `chan_xuyen_team`) mà không có IP thì mất nửa manh mối.
+--
+-- CỘNG THÊM, KHÔNG SỬA CHỖ CŨ: `NOT NULL DEFAULT ''` nên bản code cũ (không ghi cột này)
+-- vẫn chạy được sau khi migrate — thứ tự deploy code/migration nào cũng an toàn, đúng bài
+-- học của lưới migration 014.
+-- ═══════════════════════════════════════════════════════════════════════════
+ALTER TABLE nhat_ky ADD COLUMN IF NOT EXISTS ip text NOT NULL DEFAULT '';
