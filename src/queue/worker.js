@@ -1,3 +1,4 @@
+import { nhanDienSale } from '../chat/human.js';
 // WORKER — rút MỘT tin khỏi hàng đợi rồi giao cho nhạc trưởng (phiếu L2-M1 ②.2b).
 //
 // Hai khoá (khoá DÒNG + khoá HỘI THOẠI) nằm ở `kho.js`; file này quyết định
@@ -19,6 +20,16 @@ import { moPhienRut, TRANG_THAI, THU_LAI, ghiNhatKyHangDoi } from "./kho.js";
 import { xuLyMotTin, KET_QUA, vanGuiDangMo } from "../chat/handler-v3.js";
 import { docTin as cuaDocTin } from "../channels/messenger/index.js";
 import { ctxHeThong } from "../db/index.js";
+import * as cuaMessenger from "../channels/messenger/index.js";
+import { daBatDauGui, bocCuaGuiBen, dangDienTap, LoiCanDoiChieuGui } from "./lan-gui.js";
+
+async function banGiaoLoi(db, tin) {
+  await db.query(`UPDATE hoi_thoai h SET chu_so_huu='SALE',trang_thai='HANDOFF',
+          ly_do_cuoi='loi_xu_ly_can_doi_chieu',nguoi_that_luc=now(),sua_luc=now()
+          FROM page p WHERE h.page_id=p.id AND h.team_id=$1 AND p.page_id=$2 AND h.psid=$3
+            AND h.chu_so_huu='AI' AND h.trang_thai IN ('GREET','QUALIFY','SELLING')`,
+          [tin.team_id, tin.page_id, tin.psid]);
+}
 
 /** Trần số lượt RÚT một tin. Chạm trần ⇒ `loi` vĩnh viễn, không quay lại `cho` nữa. */
 export const TRAN_THU = 3;
@@ -31,17 +42,24 @@ export const TRAN_THU = 3;
  */
 export async function chayMotVong(pool, deps = {}) {
   const khoaWorker = deps.khoaWorker || `w-${process.pid}`;
-  const phien = await moPhienRut(pool, { khoaWorker });
+  const phien = await moPhienRut(pool, { khoaWorker, pageIds: deps.pageIds ?? null });
   if (!phien) return null;
 
   const { tin, khach } = phien;
+  const poolGui = deps.poolGui || pool;
   try {
+    // Dấu gửi sống qua crash/rollback. Không chạy lại model để tạo câu trả lời khác.
+    if (await daBatDauGui(poolGui, tin)) throw new LoiCanDoiChieuGui();
     // VA-R1 · RF-2: worker ĐỌC VAN GỬI trước khi giao tin cho nhạc trưởng. Van đóng ⇒
     // chốt `chan_guard` NGAY (0 lượt đọc lịch sử, 0 token, 0 HTTP) — không chờ tới lượt
     // cửa chặn ở cuối. Bản cũ không đọc van: mọi tin lọt vào hàng đợi (V3_NAP_DEV, cwd
     // lạ) đều được chạy trọn bộ não trước khi cửa nói «đóng». Chỉ áp khi dùng CỬA THẬT
     // (cửa TIÊM = harness, tự gánh van) — cùng luật với bước 7 của handler-v3.
-    if (!deps.cua && !vanGuiDangMo()) {
+    // DIỄN TẬP đi qua được chốt này — và đó là đúng: chốt sinh ra để khỏi đốt token cho
+    // tin không giao được, còn diễn tập thì token chi ra CHÍNH LÀ thứ đang đo. Lượt gửi
+    // vẫn không bay: cửa gửi (`bocCuaGuiBen`) ghi sổ rồi dừng, và cổng HTTP ghi của
+    // `handler-v3` vẫn chặn mọi POST tới pages.fm — lưới cuối KHÔNG gỡ khi diễn tập.
+    if (!deps.cua && !vanGuiDangMo() && !dangDienTap()) {
       const lyDo =
         `Van GỬI đóng (V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)} · ` +
         `PANCAKE_READONLY=${JSON.stringify(process.env.PANCAKE_READONLY)}) — worker không ` +
@@ -61,33 +79,64 @@ export async function chayMotVong(pool, deps = {}) {
         soLanThu: tin.so_lan_thu,
       };
     }
-    // Lịch sử hội thoại cho ngữ cảnh model — đọc QUA CỬA (đường ĐỌC, không bị guard
-    // GỬI chặn). Lỗi mạng ở đây KHÔNG làm hỏng lượt: bộ não vẫn trả lời được với hồ sơ
-    // nén + tin hiện tại, chỉ nghèo ngữ cảnh hơn. Thà trả lời với ít ngữ cảnh còn hơn
-    // đẩy tin sang `loi` rồi thử lại (mỗi lượt thử là một lượt model).
+    let tinXuLy = tin;
+    let batchIds = [];
+    if (tin.nguon === 'webhook') {
+      const page = (await khach.query('SELECT nguon_tin FROM page WHERE team_id=$1 AND page_id=$2',
+        [tin.team_id, tin.page_id])).rows[0];
+      if (page?.nguon_tin !== 'webhook') {
+        await phien.ketThuc(TRANG_THAI.CHAN_GUARD, 'Page đã đổi nguồn nhận tin');
+        return { tinId: tin.id, ketQua: KET_QUA.CHAN_GUARD, lyDo: 'nguon_da_doi', dem: {}, soLanThu: tin.so_lan_thu };
+      }
+      // Không đoán conv_id = psid: chỉ dùng mapping mà Pancake xác nhận.
+      const ds = await (deps.docHoiThoai || cuaMessenger.docHoiThoai)(khach,
+        ctxHeThong(), { pageId: tin.page_id }, deps.depsPancake || {});
+      const matches = (ds || []).filter(c => String(c.from_psid) === String(tin.psid));
+      const c = matches.length === 1 ? matches[0] : null;
+      if (!c?.id || !c.customers?.[0]?.id) {
+        const e = new Error('Pancake chưa trả mapping duy nhất cho khách webhook');
+        e.name = 'LoiChoMappingPancake';
+        e.treMs = 5000;
+        throw e;
+      }
+      tinXuLy = { ...tin, conv_id: String(c.id), cust_id: String(c.customers[0].id) };
+    }
+    if (tin.nguon === 'webhook') {
+      // Gom tối đa 5 tin đã chờ sẵn, không thêm debounce làm chậm tin đầu.
+      // Giữ mọi raw event; chỉ đánh dấu cùng xử lý sau khi lượt chính thành công.
+      const more = await khach.query(`SELECT id,noi_dung,nguon,trang_thai,thu_lai_luc FROM tin_cho_xu_ly
+        WHERE team_id=$1 AND page_id=$2 AND psid=$3 AND id>$4
+          AND trang_thai NOT IN ('xong','chan_guard')
+        ORDER BY id LIMIT 5 FOR UPDATE NOWAIT`, [tin.team_id, tin.page_id, tin.psid, tin.id]);
+      const selected = [];
+      let length = String(tin.noi_dung || '').length;
+      for (const item of more.rows) {
+        if (item.nguon !== 'webhook' || item.trang_thai !== 'cho' || new Date(item.thu_lai_luc).getTime() > Date.now()) break;
+        if (length + item.noi_dung.length > 20000) break;
+        selected.push(item); length += item.noi_dung.length + 1;
+      }
+      batchIds = selected.map(r => r.id);
+      tinXuLy = { ...tinXuLy, noi_dung: [tin.noi_dung, ...selected.map(r => r.noi_dung)].join('\n') };
+    }
+    // Không trả lời mù khi API lịch sử lỗi: có thể sale đã tiếp quản hoặc khách
+    // đã sửa thông tin. Retry có backoff trước khi tốn token.
     let lichSu = [];
     if (deps.docLichSu !== false) {
       const docT = deps.docTin || cuaDocTin;
-      lichSu =
-        (await docT(
-          pool,
-          ctxHeThong(),
-          {
-            pageId: tin.page_id,
-            psid: tin.psid,
-            convId: tin.conv_id,
-            custId: tin.cust_id,
-          },
-          deps.depsPancake || {},
-        ).catch(() => [])) || [];
+      lichSu = (await docT(khach, ctxHeThong(), {
+        pageId: tin.page_id, psid: tin.psid, convId: tinXuLy.conv_id, custId: tinXuLy.cust_id,
+      }, deps.depsPancake || {})) || [];
     }
+
+    await nhanDienSale(khach, { teamId: tin.team_id, pageId: tin.page_id, psid: tin.psid, messages: lichSu });
 
     // ⚠️ Truyền `khach` (client của giao dịch đang mở), KHÔNG phải `pool`: mọi lượt ghi
     // của nhạc trưởng phải nằm TRONG cùng giao dịch với việc chốt trạng thái tin. Dùng
     // `pool` là mở một kết nối thứ hai — nó sẽ ĐỨNG CHỜ chính hàng `tin_cho_xu_ly` mà
     // giao dịch này đang khoá nếu có ai đụng tới, và tệ hơn: sổ AI ghi xong rồi giao
     // dịch rollback thì sổ nói bot đã trả lời một tin vẫn đang ở 'cho'.
-    const kq = await xuLyMotTin(khach, tin, { ...deps, lichSu });
+    const cua = bocCuaGuiBen(poolGui, tin, { ...cuaMessenger, ...deps.cua });
+    const kq = await xuLyMotTin(khach, tinXuLy, { ...deps, cua, lichSu });
 
     if (kq.ketQua === KET_QUA.CHAN_GUARD) {
       await ghiNhatKyHangDoi(khach, {
@@ -99,20 +148,34 @@ export async function chayMotVong(pool, deps = {}) {
       await phien.ketThuc(TRANG_THAI.CHAN_GUARD, kq.lyDo);
       return { tinId: tin.id, ...kq, soLanThu: tin.so_lan_thu };
     }
+    if (batchIds.length) await khach.query(`UPDATE tin_cho_xu_ly SET trang_thai='xong',
+      ly_do=$3,sua_luc=now() WHERE team_id=$1 AND id=ANY($2::bigint[])`,
+      [tin.team_id, batchIds, `gom_vao_tin:${tin.id}`]);
     await phien.ketThuc(TRANG_THAI.XONG, kq.lyDo);
     return { tinId: tin.id, ...kq, soLanThu: tin.so_lan_thu };
   } catch (e) {
+    // Lỗi SQL sau HTTP cũng không được tự gửi lại. Mất kết nối với sổ gửi = chưa rõ.
+    const daGui = await daBatDauGui(poolGui, tin).catch(() => true);
     // Trần thử lại. `tin.so_lan_thu` đã được câu rút CỘNG 1 rồi, nên so trực tiếp.
-    const hetLuot = Number(tin.so_lan_thu) >= TRAN_THU;
+    const hetLuot = daGui || e?.khongThuLai === true || [400,401,403,404,422].includes(Number(e?.status)) || Number(tin.so_lan_thu) >= TRAN_THU;
     const trangThai = hetLuot ? TRANG_THAI.LOI : THU_LAI;
     const lyDo = `${e?.name || "Error"}: ${e?.message || ""}`;
     try {
-      await phien.ketThuc(trangThai, lyDo);
+      if (hetLuot) await banGiaoLoi(khach, tin);
+      await phien.ketThuc(trangThai, lyDo, e.treMs || Math.min(30000, 1000 * 2 ** (Number(tin.so_lan_thu) - 1)));
     } catch {
-      // Giao dịch đã hỏng (vd lỗi SQL làm abort) ⇒ không chốt được trạng thái. ROLLBACK
-      // trả tin về 'cho' NGUYÊN TRẠNG kể cả `so_lan_thu` — tin sẽ được thử lại và có thể
-      // lặp mãi. Đây là ca đã biết, ghi §9 làm nợ chứ không giả vờ đã xử lý.
+      // Giao dịch SQL đã abort: rollback trước, rồi lưu attempt ngoài giao dịch
+      // để một lỗi SQL lặp lại không làm reset ngân sách thử mãi về 0.
       await phien.huy().catch(() => {});
+      // SQL lỗi làm rollback cả attempt counter. Ghi lại ngoài giao dịch hỏng,
+      // có CAS để không ghi đè nếu worker khác đã rút tin sau khi khóa nhả.
+      const recovered = await pool.query(
+        `UPDATE tin_cho_xu_ly SET trang_thai=$3,so_lan_thu=$4,ly_do=$5,khoa_worker=NULL,
+          sua_luc=now(),thu_lai_luc=now()+interval '5 seconds'
+         WHERE id=$1 AND team_id=$2 AND trang_thai='cho' AND so_lan_thu=$4-1`,
+        [tin.id, tin.team_id, trangThai, Number(tin.so_lan_thu), lyDo.slice(0, 500)],
+      ).catch(() => null);
+      if (hetLuot && recovered?.rowCount) await banGiaoLoi(pool, tin).catch(() => {});
     }
     return {
       tinId: tin.id,
@@ -128,14 +191,20 @@ export async function chayMotVong(pool, deps = {}) {
  * Chạy nhiều vòng cho tới khi hết việc (hoặc chạm `toiDa`). Trả bảng đếm theo kết quả.
  * Đây là hình dạng mà một tiến trình worker thật sẽ gọi trong vòng lặp có ngủ.
  */
-export async function chayToiKhiHet(pool, { toiDa = 100, ...deps } = {}) {
+export async function chayToiKhiHet(pool, { toiDa = 100, dongThoi = 1, ...deps } = {}) {
   const dem = { vong: 0, xong: 0, chan_guard: 0, loi: 0, thu_lai: 0 };
-  for (let i = 0; i < toiDa; i++) {
-    const r = await chayMotVong(pool, deps);
-    if (!r) break;
-    dem.vong += 1;
-    dem[r.ketQua] = (dem[r.ketQua] || 0) + 1;
-  }
+  // Dành kết nối cho sổ gửi nếu caller không cấp pool riêng.
+  const max = Math.max(1, (pool.options?.max || 4) - (deps.poolGui && deps.poolGui !== pool ? 0 : 1));
+  const workers = Math.min(max, Math.max(1, Math.floor(Number(dongThoi) || 1)), Math.max(1, toiDa));
+  let reserved = 0;
+  await Promise.all(Array.from({ length: workers }, async () => {
+    while (reserved++ < toiDa) {
+      const r = await chayMotVong(pool, deps);
+      if (!r) return;
+      dem.vong++;
+      dem[r.ketQua] = (dem[r.ketQua] || 0) + 1;
+    }
+  }));
   return dem;
 }
 

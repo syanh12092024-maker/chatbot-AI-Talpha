@@ -11,6 +11,7 @@
 const { esc, statusBadge, button: nutHtml, alert: canhBao, emptyState, formatNumber } = window.UI;
 
 const $ = (s) => document.querySelector(s);
+const gio = (ms) => (ms ? new Date(ms).toLocaleString("vi-VN") : "—");
 const el = (tag, text, parent) => {
   const n = document.createElement(tag);
   if (text !== undefined) n.textContent = text;
@@ -103,11 +104,12 @@ function hang(bang, cot) {
   return td;
 }
 
-let tab = "orders",
+let tab = "dien-tap",
   offset = 0,
   request = 0,
   admin = false;
 const names = {
+  "dien-tap": "Diễn tập (không gửi)",
   pages: "Page & trạng thái",
   products: "Sản phẩm & giá",
   orders: "Đơn chờ duyệt",
@@ -120,6 +122,8 @@ async function load() {
   if (token !== request) return;
   $("#list").replaceChildren();
   $("#dem").textContent = `${formatNumber(d.items.length)} dòng${offset ? ` · từ dòng ${formatNumber(offset + 1)}` : ""}`;
+  if (tab === "dien-tap") veTomTatDienTap(d);
+  else if ($("#bang-tin").dataset.tu === "dien-tap") { $("#bang-tin").innerHTML = ""; delete $("#bang-tin").dataset.tu; }
   vePhanTrang(d.items.length);
 
   if (!d.items.length) {
@@ -141,6 +145,7 @@ async function load() {
   const dau = el("thead", undefined, bang);
   const trDau = el("tr", undefined, dau);
   const cotDau = {
+    "dien-tap": ["Khách nói", "Bot ĐỊNH trả lời", "Độ trễ", ""],
     pages: ["Page", "Trạng thái", "Nguồn tin", ""],
     products: ["Sản phẩm", "Mã POS", "Sản phẩm gốc", ""],
     orders: ["Đơn", "Page", "Trạng thái", ""],
@@ -154,6 +159,23 @@ async function load() {
   const than = el("tbody", undefined, bang);
 
   for (const item of d.items) {
+    if (tab === "dien-tap") {
+      const tre = item.treLuotMs == null ? null : Math.round(item.treLuotMs / 100) / 10;
+      hang(than, [
+        `<div class="manh">${esc(item.pageTen)}</div><div class="meta">${esc(item.psid)} · ${esc(gio(item.tinLuc))}</div>`
+          + `<pre class="nguyen-van">${esc(String(item.tinKhach || "").slice(0, 400))}</pre>`,
+        `<pre class="nguyen-van">${esc(String(item.dinhGui || "").slice(0, 600))}</pre>`
+          + `<div class="meta">${esc(item.loai)}${item.maModel ? ` · ${esc(item.maModel)}` : ""}`
+          + `${item.lane ? ` · làn ${esc(item.lane)}` : ""}`
+          + `${item.tokenVao != null ? ` · ${formatNumber(item.tokenVao)}+${formatNumber(item.tokenRa || 0)} token` : ""}</div>`,
+        tre == null
+          ? '<span class="meta">chưa đo được</span>'
+          : `<span class="manh tabular">${tre}s</span>`
+            + (item.treNaoMs != null ? `<div class="meta tabular">bộ não ${Math.round(item.treNaoMs / 100) / 10}s</div>` : ""),
+        "",
+      ]);
+      continue;
+    }
     if (tab === "pages") renderPage(than, item);
     if (tab === "products") {
       const o = hang(than, [
@@ -186,6 +208,23 @@ async function load() {
     }
   }
   message("");
+}
+
+/* Ba con số đọc trước khi đọc từng dòng, và MỘT câu nói rõ chế độ đang bật hay tắt —
+ * «không gửi» là lời hứa, nên nó phải được khẳng định bằng trạng thái thật của máy chủ,
+ * không phải bằng niềm tin của người đang đo. */
+function veTomTatDienTap(d) {
+  const t = d.tomTat || {};
+  const giay = (ms) => (ms == null ? "—" : `${Math.round(ms / 100) / 10}s`);
+  $("#bang-tin").dataset.tu = "dien-tap";
+  $("#bang-tin").innerHTML = `<div class="duoi-4">${canhBao(d.dangBat
+    ? { level: "info", title: "Chế độ diễn tập ĐANG BẬT — bot không gửi cho khách",
+        body: `Bot vẫn đọc tin, gọi model và soạn câu trả lời; tới cửa gửi thì ghi vào sổ rồi dừng. `
+          + `${formatNumber(t.soLuot || 0)} lượt · ${formatNumber(t.soKhach || 0)} khách · ${formatNumber(t.soPage || 0)} page. `
+          + `Độ trễ giữa ${giay(t.treGiuaMs)} · lâu nhất ${giay(t.treLauNhatMs)}.` }
+    : { level: "warning", title: "Chế độ diễn tập đang TẮT",
+        body: `Máy chủ không đặt \`V3_DIEN_TAP=1\`, nên những lượt mới KHÔNG được ghi vào đây — và nếu van gửi mở thì bot gửi thật. `
+          + `Bảng dưới là ${formatNumber(t.soLuot || 0)} lượt diễn tập cũ.` })}</div>`;
 }
 
 function vePhanTrang(soDong) {

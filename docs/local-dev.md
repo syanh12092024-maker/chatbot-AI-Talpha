@@ -37,3 +37,23 @@ Spec chính thức: `https://developer.pancake.biz/openapi/openapi.yaml` (tải 
 
 - `Message.from` khai `uid` · `admin_id` · `admin_name` · `ai_generated` · `is_automated` — đúng cái nhãn inbox hiện dưới mỗi tin. `src/pancake.js#pkGetMessages` hiện chỉ đọc `from.id`, tức đang vứt hết. Còn phải đo xem đường `api/v1` (code đang dùng) có trả không, hay chỉ `public_api/v1` mới có.
 - Thân `reply_inbox` nhận `sender_id` (UUID nhân viên, lấy từ `GET /pages/{page_id}/users`) — đặt tên người gửi cho tin bot KHÔNG cần token riêng của tài khoản đó.
+
+## Diễn tập: chấm bot mà không gửi cho khách
+
+Bot đọc tin thật, gọi model, soạn xong câu trả lời rồi **ghi vào sổ và dừng** — không một lượt gọi mạng nào tới Pancake. Đọc kết quả ở `/van-hanh-v3` → tab **«Diễn tập (không gửi)»**: khách nói gì · bot ĐỊNH trả lời gì · độ trễ · model · token.
+
+Bốn biến phải cùng có trong `.env` của bản dev, rồi chạy worker:
+
+```
+V3_DIEN_TAP=1            # ghi sổ rồi dừng, KHÔNG gửi — thắng mọi cờ khác
+V3_NAP_DEV=1             # cho phép nạp tin thật trên máy READONLY (chỉ khi CSDL là localhost)
+V3_PAGE_XU_LY=<page_id>  # CHỈ page đang đo; vắng = không nạp page nào
+PANCAKE_READONLY=1       # giữ nguyên
+npm run worker-v3
+```
+
+Ba lưới vẫn nguyên khi diễn tập: cửa gửi không gọi mạng, cổng HTTP ghi của `handler-v3` chặn mọi POST tới `pages.fm`, và `V3_PANCAKE_GUI` vẫn đóng. Diễn tập chỉ nới đúng hai chốt cấu trúc (worker và handler từ chối chạy bộ não khi van đóng) — vì tiền token chi ra chính là thứ phép đo mua.
+
+Cái diễn tập KHÔNG che được: nó vẫn **đọc** hội thoại thật từ Pancake, và vẫn ghi trạng thái hội thoại + hồ sơ khách vào CSDL của bản dev như một lượt thật. Đó là chủ ý — không ghi thì không đo được hành vi qua nhiều lượt.
+
+Độ trễ ghi vào `so_ai.du_lieu`: `tre_luot_ms` (cả lượt, tính từ lúc nhận tin) và `tre_nao_ms` (riêng phần model + vòng tool). Báo cáo lấy trung vị, không lấy trung bình.

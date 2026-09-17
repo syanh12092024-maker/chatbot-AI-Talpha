@@ -1,58 +1,7 @@
-// HANDLER v3 — NHẠC TRƯỞNG MỚI quanh bộ não CŨ (phiếu L2-M1 ②.3).
-//
-// ⛔ BỘ NÃO DÙNG NGUYÊN, KHÔNG SỬA MỘT DÒNG: `classifier.js` `fast-lane.js` `closer.js`
-//    `tools.js` `prompts.js` `outbound-guard.js` `context.js` `kb.js` KHÔNG bị đụng một
-//    dòng nào (luật 4 §0a sổ điều hành). File này chỉ thay phần ĐIỀU PHỐI mà `handler.js` +
-//    `pancake-poll.js` đang làm: lấy tin ở đâu, ghi trạng thái vào đâu, và — quan trọng
-//    nhất — TIN ĐI RA BẰNG ĐƯỜNG NÀO.
-//    (L2-M3) `kb.js#getKBForPage` không còn import TRỰC TIẾP ở đây — mặc định `layKb` nay
-//    là `rap-prompt.js#rapKb`, TỰ gọi `getKBForPage` bên trong làm đường LÙI khi cờ
-//    `V3_RAP_PROMPT_BAT` vắng (xem rap-prompt.js). kb.js vẫn nguyên vẹn, chỉ đổi ai gọi nó.
-//
-// ══ VÌ SAO PHẢI CÓ FILE NÀY: NỢ N2 (§9 sổ điều hành, L1-M2) ═══════════════════════════
-// Cửa Messenger v3 (`src/channels/messenger/`) đặt guard fail-closed cho MỌI lượt gửi —
-// nhưng bộ não cũ không đi qua cửa đó. Đo lại 22/08 trên chính cây này:
-//
-//   ĐƯỜNG RA CỦA BẢN CŨ                                         | v3 thay bằng
-//   -------------------------------------------------------------|-------------------
-//   pancake-poll.js:520  pkSendReply(...)            (tin chữ)    | cửa `guiTin`
-//   tools.js:132→97      pkSendImage(...)            (ảnh Pancake)| cửa `guiAnh`
-//   tools.js:104         sendImage(...)  → GRAPH API (ảnh FB)     | cửa `guiAnh`
-//   pancake-poll.js:465  pkTagByName(pkTags.ai)                   | cửa `gatThe`
-//   -------------------------------------------------------------|-------------------
-//   tools.js:197         pkTagByName(pkTags.order)   ⬅ CÒN NGUYÊN — nằm TRONG executeTool
-//   tools.js:266         pkTagByName(pkTags.handoff) ⬅ CÒN NGUYÊN
-//   tools.js:271         pkAddNote('🙋 AI CHUYỂN NGƯỜI…') ⬅ CÒN NGUYÊN
-//   order-bridge.js:255  pkAddNote(<ghi chú đơn>)    ⬅ CÒN NGUYÊN — LỆCH ĐỀ BÀI ①
-//   pancake-orders.js:25 fetch(POS pages.fm) ĐỌC     ⬅ CÒN NGUYÊN — LỆCH ĐỀ BÀI ②
-//   pancake-orders.js:108  ─"─                         (không phải gửi tin, nhưng vẫn là
-//                        HTTP ra ngoài, bằng KHOÁ THẬT của 7 shop)
-//
-// ⚠️ LỆCH ĐỀ BÀI (án lệ #4 skill tho-thi-cong — đo lại nguyên liệu): phiếu ② khai «BA
-//    CHỖ GỬI NGẦM», đo ra **NĂM đường thoát**, hai đường mới đều GỌI GIÁN TIẾP nên grep
-//    trong `tools.js` không thấy:
-//      ① `tools.js:208 recordClosedOrder(...)` → `order-bridge.js:255 pkAddNote(...)`
-//      ② `tools.js:171 ordersEnabled() && conversationHasOrder(...)` →
-//         `pancake-orders.js` bắn HTTP tới POS pages.fm bằng khoá thật của
-//         `pancake-shops.json`. ĐO ĐƯỢC: bẫy `fetch` trong bộ ca bắt **7 lượt** ở lượt
-//         chạy đầu tiên, trong khi mock `pancake.js`+`messenger.js` vẫn báo sạch — tức
-//         danh sách mock của phiếu THIẾU thì phép ④#4 xanh giả. Đường này không có một
-//         dòng `PANCAKE_READONLY` nào canh (grep `pancake-orders.js` = 0) và `catch {}`
-//         nuốt lỗi, nên nó hỏng trong im lặng. Đã ghi §9 sổ điều hành.
-//
-// Năm chỗ dưới nằm TRONG `executeTool`, chạy giữa lòng `runCloser` — không sửa được
-// `tools.js`/`order-bridge.js`/`pancake-orders.js` thì không route được chúng qua cửa.
-// Phiếu chặn HAI TẦNG:
-//   (a) TẦNG NGUỒN — bộ NẠP từ chối enqueue khi `PANCAKE_READONLY=1` (trừ `V3_NAP_DEV=1`),
-//       nên trên máy dev KHÔNG có tin thật nào vào hàng đợi ⇒ `executeTool` không bao giờ
-//       chạy trên hội thoại thật ở đây. Xem `src/queue/nap.js`.
-//   (b) TẦNG ĐO — bộ ca mock `pancake.js` · `messenger.js` · `pancake-orders.js` (+ bẫy
-//       `globalThis.fetch` làm chốt chặn cuối) và IN BẢNG ĐẾM cho ba dân số (tin thường ·
-//       ép chốt đơn · ép chuyển người), nên năm chỗ trên có bay là THẤY.
-// Ở VPS (môi trường ĐƯỢC PHÉP gửi) năm chỗ đó vẫn đi thẳng — đã ghi §9 làm nợ dài hạn,
-// kèm hệ quả cụ thể: nhánh chuyển người sẽ có HAI ghi chú (một của tools.js:271, một của
-// cửa v3 ở đây) và thẻ được gắn hai lượt (gắn thẻ là thao tác lũy đẳng nên vô hại; ghi
-// chú thì KHÔNG). Đừng "sửa" bằng cách bỏ đường cửa v3 — bỏ nó là mất luôn guard.
+import { historyBeforeMessage } from './history.js';
+import { templateSafety } from './template-safety.js';
+// Điều phối V3: quyền hội thoại, backend nhận đơn và cửa gửi có kiểm soát.
+import { ketQuaNhanDon } from "../orders/draft.js";
 import { ctxHeThong } from "../db/index.js";
 import {
   guiTin as cuaGuiTin,
@@ -67,6 +16,7 @@ import { runCloser } from "../closer.js";
 import { guardOutbound } from "../outbound-guard.js";
 import {
   emptyProfile,
+  hydrateProfile,
   extractFromText,
   absorbToolUses,
   buildContextMessages,
@@ -75,7 +25,7 @@ import { cleanText } from "../text.js";
 import { config } from "../config.js";
 import { layModel as layModelMacDinh } from "./model.js";
 import { ghiSoAi, LOAI, KHONG_GOI_MODEL } from "./so-ai.js";
-import { dungState, ganTuState } from "./trang-thai.js";
+import { aiDuocTraLoi, dungState, ganTuState } from "./trang-thai.js";
 import { suaHoiThoai, docHoiThoaiTheoPageText } from "./kho.js";
 import { lopTuKhoa, LANE as LANE_TU_KHOA } from "./lop-tu-khoa.js";
 import { rapKb as rapKbMacDinh } from "./rap-prompt.js";
@@ -86,6 +36,7 @@ import {
 import { vaoHangCho as vaoHangChoMacDinh } from "../orders/hang-cho.js";
 import { ghiNhanChan0Dong as ghiNhanChan0DongMacDinh } from "../db/so-lieu.js";
 import { docEnvTuyetDoi } from "../queue/nap.js";
+import { dangDienTap } from "../queue/lan-gui.js";
 
 // ══ VAN GỬI + CỔNG HTTP GHI (VA-R1 · RF-1/RF-2) ══════════════════════════════════════
 /**
@@ -188,6 +139,21 @@ export class LoiThieuHoiThoai extends Error {
   }
 }
 
+/** Lỗi gửi có thể là mất ACK: dừng tự thử lại để tránh gửi trùng. */
+export async function guiDaXacNhan(gui) {
+  try {
+    const r = await gui();
+    if (r?.ok !== true) throw new Error("Channel chưa xác nhận gửi thành công");
+    return r;
+  } catch (e) {
+    if (e?.name === "LoiCuaGuiDong") throw e;
+    const loi = new Error("Không xác nhận được kết quả gửi; cần kiểm tra trước khi thử lại", { cause: e });
+    loi.name = "LoiGuiChuaXacNhan";
+    loi.khongThuLai = true;
+    throw loi;
+  }
+}
+
 export const KET_QUA = Object.freeze({
   XONG: "xong",
   CHAN_GUARD: "chan_guard",
@@ -239,6 +205,9 @@ function depsMacDinh(deps = {}) {
  * @returns {Promise<{ketQua: string, lyDo: string, dem: object}>}
  */
 export async function xuLyMotTin(pool, tin, deps = {}) {
+  // Mốc đầu lượt — dùng cho `tre_luot_ms` trong sổ AI. Đặt ở dòng đầu để nó bao trọn cả
+  // phần đọc lịch sử và nạp hồ sơ, không chỉ phần gọi model: khách đo bằng thời gian CHỜ.
+  const mocLuot = Date.now();
   const d = depsMacDinh(deps);
   const ctx = ctxHeThong();
   const teamId = tin.team_id;
@@ -255,6 +224,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
   // thật sự chạy đều SAU khi `kb` đã gán, dù `ghi` khai TRƯỚC nó trong văn bản (thứ tự
   // hàm ≠ thứ tự thực thi trong JS). L2-M3 ②.3: đóng dấu cờ page trọng điểm + khối rỗng
   // vào MỌI dòng so_ai của lượt này (mù-có-nói-ra, không im — cùng khuôn án lệ #7).
+  let traceState;
   const ghi = async (loai, phan) => {
     const { duLieu, ...con } = phan || {};
     const r = await ghiSoAi(pool, {
@@ -266,6 +236,9 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       ...con,
       duLieu: {
         ...(duLieu || {}),
+        ...(traceState?.promptVersion ? { prompt_version: traceState.promptVersion,
+          provider: traceState.providerUsed, llm_ms: traceState.lastUsage?.ms || 0,
+          tools: traceState.toolTrace || [] } : {}),
         trong_diem: kb.trongDiem === true,
         ...(kb.nguon_thieu?.length ? { kb_nguon_thieu: kb.nguon_thieu } : {}),
       },
@@ -287,17 +260,35 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     );
   }
 
+  if (hoiThoai.v3_ai_bat === false || !aiDuocTraLoi(hoiThoai) || (tin.nguon && hoiThoai.nguon_tin !== tin.nguon)) {
+    return { ketQua: KET_QUA.CHAN_GUARD, lyDo: "hoi_thoai_khong_thuoc_ai", dem };
+  }
+  const assertCanAct = async () => {
+    const moi = await docHoiThoaiTheoPageText(pool, {
+      teamId, pageIdText: tin.page_id, psid: tin.psid,
+    });
+    if (moi?.v3_ai_bat === false || moi?.phien_ban !== hoiThoai.phien_ban || !aiDuocTraLoi(moi) || (tin.nguon && moi.nguon_tin !== tin.nguon)) {
+      const e = new Error("Hội thoại đã chuyển khỏi AI");
+      e.name = "LoiQuyenHoiThoai";
+      throw e;
+    }
+  };
+
   // ── 2 · KB + MODEL ───────────────────────────────────────────────────────────────
   const kb = (await d.layKb(pool, { teamId, pageIdText: tin.page_id })) || {};
-  const model = await d.layModel(pool, { teamId }, { vaiTro: "chinh" });
+  let model; // Chỉ resolve model khi thật sự cần gọi LLM.
 
   // ── 3 · STATE + HỒ SƠ ────────────────────────────────────────────────────────────
   const state = dungState({ tin, hoiThoai, bayGio });
+  traceState = state;
   const prof =
     hoiThoai.ho_so && Object.keys(hoiThoai.ho_so).length
       ? { ...emptyProfile(), ...hoiThoai.ho_so }
       : emptyProfile();
   const text = String(tin.noi_dung || "");
+  const history = historyBeforeMessage(d.lichSu, tin);
+  if (!prof.hydratedAt && history.length) hydrateProfile(history, tin.page_id, prof);
+  extractFromText(text, prof);
 
   // ── 3b · M11 v3 · CHẤM ĐIỂM LEAD (L2-M3 ②.2) ─────────────────────────────────────
   // SỚM — TRƯỚC lớp từ-khoá/Fast Lane (bước 4b/5), đúng vị trí `updateLead` của
@@ -321,6 +312,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
   };
 
   const luuLai = async ({ daGoiModel, daGuiText, textDaGui }) => {
+    await assertCanAct();
     const patch = ganTuState({
       hoiThoai,
       state,
@@ -338,18 +330,27 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     // ⚠️ KHÔNG dùng `suaTheoId` của tầng truy vấn — nó không nhận `ctxHeThong()`, và
     // 100% dữ liệu di trú đậu ở team KỸ THUẬT nên ctx người dùng bị từ chối (nợ N3 của
     // L1-M1, §9 sổ điều hành). Đi qua cửa hẹp `src/chat/kho.js` — cùng khuôn src/pos/kho.js.
-    await suaHoiThoai(pool, { teamId, id: hoiThoai.id, giaTri: patch });
+    const saved = await suaHoiThoai(pool, {
+      teamId, id: hoiThoai.id, giaTri: patch,
+      neu: { chu_so_huu: hoiThoai.chu_so_huu, trang_thai: hoiThoai.trang_thai, xmin: hoiThoai.phien_ban },
+    });
+    if (!saved) {
+      const e = new Error("Quyền hoặc trạng thái hội thoại đã thay đổi; bỏ snapshot cũ");
+      e.name = "LoiQuyenHoiThoai";
+      throw e;
+    }
   };
 
   // Gửi tin chữ QUA CỬA. `LoiCuaGuiDong` KHÔNG bắt ở đây — nó nổi lên tới đáy hàm để
   // worker đặt tin sang `chan_guard` (một chỗ quyết định, án lệ #31 "cửa RA đúng một cái").
   const guiChu = async (noiDung) => {
-    const r = await d.cua.guiTin(
+    await assertCanAct();
+    const r = await guiDaXacNhan(() => d.cua.guiTin(
       pool,
       ctx,
       { ...diaChi, text: noiDung },
       d.depsPancake,
-    );
+    ));
     dem.guiTin += 1;
     return r;
   };
@@ -365,12 +366,16 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     state.pendingCaption = "";
     let gui = 0;
     for (const im of hang) {
-      await d.cua.guiAnh(
+      await assertCanAct();
+      await guiDaXacNhan(() => d.cua.guiAnh(
         pool,
         ctx,
         { ...diaChi, url: im.url, caption },
         d.depsPancake,
-      );
+      ));
+      state.sentImages.add(im.url);
+      const cat = String(im.cat || "sản phẩm");
+      if (!prof.imagesSent.includes(cat)) prof.imagesSent.push(cat);
       dem.guiAnh += 1;
       gui += 1;
       caption = ""; // lời dẫn chỉ kèm tấm ĐẦU — lặp dưới mỗi tấm trông như spam
@@ -381,15 +386,15 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
   // Bàn giao sale QUA CỬA: thẻ + ghi chú. Xem khối đầu file về ghi chú TRÙNG ở VPS.
   const banGiaoSale = async (lyDo) => {
     if (config.pkTags.handoff) {
-      await d.cua.gatThe(
+      await guiDaXacNhan(() => d.cua.gatThe(
         pool,
         ctx,
         { ...diaChi, name: config.pkTags.handoff, on: true },
         d.depsPancake,
-      );
+      ));
       dem.gatThe += 1;
     }
-    await d.cua.ghiNote(
+    await guiDaXacNhan(() => d.cua.ghiNote(
       pool,
       ctx,
       {
@@ -398,7 +403,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         message: `🙋 AI CHUYỂN NGƯỜI — cần sale vào hỗ trợ\nLý do: ${lyDo || "không rõ"}`,
       },
       d.depsPancake,
-    );
+    ));
     dem.ghiNote += 1;
   };
 
@@ -422,8 +427,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     // không đọc DB — xem src/chat/lop-tu-khoa.js đầu file để biết vì sao NHƯỜNG (không
     // bịa) khi KB trang chưa có `fastLaneAuth`/`fastLaneSize`. Cùng cửa `d.kiemTinRa`
     // (M09) với Fast Lane/AI — câu trả lời của lớp này KHÔNG được miễn kiểm nội dung.
-    const tk = lopTuKhoa({ text, kb });
-    if (tk.handled) {
+    const tk = lopTuKhoa({ text, kb, profile: prof });
+    if (tk.handled && !state.fastLanesUsed.has(`keyword:${tk.rule}`)) {
       const v = d.kiemTinRa(tk.reply, {
         kb,
         pageId: state.pageId,
@@ -456,13 +461,15 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         lyDo: tk.lyDo,
         duLieu: { text: tk.reply.slice(0, 200), rule: tk.rule, dem_0_dong: dem0Dong },
       });
+      state.fastLanesUsed.add(`keyword:${tk.rule}`);
       state.lastAiText = tk.reply;
       await luuLai({ daGoiModel: false, daGuiText: true, textDaGui: tk.reply });
       return { ketQua: KET_QUA.XONG, lyDo: `tu_khoa_v3:${tk.rule}`, dem };
     }
 
     // ── 5 · FAST LANE — chặn TRƯỚC mọi lượt gọi model (0 token) ──────────────────
-    const fl = d.lanNhanh({
+    const safety = templateSafety(text, prof);
+    const fl = safety.safe ? d.lanNhanh({
       text,
       kb,
       aiTurns: Math.max(state.aiTurns, state.botTurns || 0),
@@ -470,7 +477,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       idleMs: state.idleMs,
       usedLanes: state.fastLanesUsed,
       pageId: state.pageId,
-    });
+      hasOrder: state.daChotTruoc,
+    }) : { handled: false, reason: safety.reason };
     noteFastLane(fl);
     if (fl.handled) {
       if (!fl.reply) {
@@ -570,16 +578,21 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     // vừa để note/tag bay ra trước khi cửa kịp nói «đóng» (refute S1). Ném cùng lỗi
     // `LoiCuaGuiDong` ⇒ rơi vào nhánh `chan_guard` dưới đáy, worker KHÔNG thử lại (N6).
     // Chỉ áp khi dùng CỬA THẬT: cửa được TIÊM (test/harness) tự gánh van của nó.
-    if (!deps.cua && !vanGuiDangMo()) {
+    // Diễn tập được chạy bộ não (xem chú thích cùng chốt ở `worker.js`): tiền token là
+    // thứ phép đo mua, và không lượt gửi nào bay ra — cửa gửi ghi sổ rồi dừng, cổng HTTP
+    // ghi vẫn chặn POST tới pages.fm.
+    if (!deps.cua && !vanGuiDangMo() && !dangDienTap()) {
       throw new LoiCuaGuiDong(
         `Van GỬI đóng (V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)} · ` +
           `PANCAKE_READONLY=${JSON.stringify(process.env.PANCAKE_READONLY)}) — ` +
           `KHÔNG gọi bộ não (0 token, 0 HTTP ghi). Mở van rồi UPDATE tay tin chan_guard về cho.`,
       );
     }
+    model = await d.layModel(pool, { teamId }, { vaiTro: "chinh" });
     const { messages } = buildContextMessages({
       prof,
-      msgs: d.lichSu,
+      msgs: history,
+      keepTrailingUser: tin.nguon === 'webhook',
       pageId: state.pageId,
       meta: {
         state: hoiThoai.trang_thai,
@@ -591,15 +604,41 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       },
     });
     state.messages = messages;
+    state.profile = prof;
+    state.customerText = text;
     state.messages.push({
       role: "user",
       content: cleanText(text).trim() || "(khách gửi ảnh/sticker)",
     });
 
-    // `model` đi xuống closer qua `ctx.model`. ⚠️ `src/closer.js` (CẤM SỬA) hardcode
-    // `import { anthropic } from './llm.js'` nên nó CHƯA đọc trường này — đây là CHỖ CẮM
-    // cho L1-M4 của người B, khai trong `duong-tin-v1.md`. Đừng đọc thành "đã cắm xong".
-    const text2 = await d.chayCloser({ kb, state, model });
+    // Model đã resolve được truyền thẳng vào closer.
+    await assertCanAct();
+    const business = {
+      captureOrder: async order => {
+        await assertCanAct();
+        const saved = await d.vaoHangCho(pool, ctx, {
+          hoiThoaiId: hoiThoai.id, teamId, convId: tin.conv_id, tinId: tin.id,
+          hoSo: { ...order, san_pham_ma: String(order.product_id).includes(':') ? order.product_id : '' },
+        }, d.depsHangCho);
+        if (!saved?.id) throw new Error('Hàng chờ chưa xác nhận lưu đơn');
+        if (saved.daCo && saved.trang_thai !== 'cho_duyet') throw new Error('Thông tin đơn này đã được nhân viên xử lý');
+        state.orderDraftId = saved.id;
+        return ketQuaNhanDon(order, saved.id);
+      },
+      handoff: async reason => {
+        await assertCanAct();
+        state.handoff = true;
+        state.handoffReason = reason;
+        await banGiaoSale(reason);
+        return { ok: true };
+      },
+    };
+    // ĐO ĐỘ TRỄ của lượt gọi bộ não. Không có cột riêng và không cần: `so_ai.du_lieu` là
+    // jsonb. «Trả lời nhanh không» là một trong ba thứ phép đo diễn tập phải trả lời được,
+    // mà trước lượt này không chỗ nào trong hệ ghi lại thời gian một lượt.
+    const mocNao = Date.now();
+    const text2 = await d.chayCloser({ kb, state, model, assertCanAct, business });
+    const treNaoMs = Date.now() - mocNao;
     dem.goiModel += 1;
 
     // ── 8 · HÚT HỒ SƠ (M07) ──────────────────────────────────────────────────────
@@ -621,7 +660,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         // TÓM TẮT xác nhận (tên/SĐT/địa chỉ) + có thể nhắc «order number»; thiếu hai cờ
         // này guard chặn nhầm PII_ECHO/FAKE_ORDER_ID ⇒ khách câm đúng lượt xác nhận đơn
         // trong khi hệ đã ghi so_ai ORDER + đẩy hàng chờ.
-        orderCreated: !!state.orderCreatedThisTurn,
+        orderCreated: !!state.orderResult?.pos_created,
         isOrderSummary: !!state.orderCreatedThisTurn,
       });
       if (!v.ok) guarded = ""; // v3 KHÔNG xin model viết lại (một lượt = một lượt model)
@@ -633,36 +672,6 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
           dung,
         });
       }
-    }
-
-    // ── 10 · ẢNH TRƯỚC, CHỮ SAU — cả hai QUA CỬA ─────────────────────────────────
-    const nAnh = await xaAnh();
-    if (nAnh) {
-      await ghi(LOAI.IMAGE, {
-        maModel: model.maModel,
-        lane: "AI",
-        duLieu: { n: nAnh },
-      });
-    }
-    if (guarded) {
-      await guiChu(guarded);
-      await ghi(LOAI.REPLY, {
-        maModel: model.maModel,
-        lane: "AI",
-        trangThai: hoiThoai.trang_thai,
-        dung,
-        duLieu: { text: guarded.slice(0, 200), nguon_model: model.nguon },
-      });
-      state.lastAiText = guarded;
-    } else if (!nAnh && dung.calls) {
-      // ĐÃ TIÊU TOKEN MÀ KHÔNG GỬI GÌ — khoản chi tàng hình của §11.2. Đã ghi ở nhánh
-      // guard phía trên thì thôi (neo idempotent của so_ai tự chặn dòng thứ hai).
-      await ghi(LOAI.SPENT_NO_SEND, {
-        maModel: model.maModel,
-        lane: "AI",
-        lyDo: "model không viết được chữ",
-        dung,
-      });
     }
 
     // ── 11 · CỜ BỘ NÃO ĐỂ LẠI → sổ AI (N5) ──────────────────────────────────────
@@ -683,7 +692,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
             city: prof.city,
             qty: prof.qty,
           },
-          auto_create_order: config.autoCreateOrder, // GIỮ TẮT — hàng chờ tạo đơn là L3-M4
+          auto_create_order: false, // GIỮ TẮT — hàng chờ tạo đơn là L3-M4
         },
       });
       // ── 11b · L3-M4 · VÀO HÀNG CHỜ SALE DUYỆT ─────────────────────────────
@@ -694,7 +703,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       // này ra (`tinId`), nếu không mọi dòng đều tự báo mình trùng.
       // Lỗi KHÔNG bị nuốt: cùng khuôn `ghi(...)`/`luuLai(...)` quanh nó — nuốt ở đây là
       // đánh rơi một đơn đã chốt mà không ai biết.
-      await d.vaoHangCho(
+      if (!state.orderDraftId) await d.vaoHangCho(
         pool,
         ctx,
         {
@@ -707,8 +716,43 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         d.depsHangCho,
       );
     }
+
+    // ── 10 · ẢNH TRƯỚC, CHỮ SAU — cả hai QUA CỬA ─────────────────────────────────
+    const nAnh = await xaAnh();
+    if (nAnh) {
+      await ghi(LOAI.IMAGE, {
+        maModel: model.maModel,
+        lane: "AI",
+        duLieu: { n: nAnh },
+      });
+    }
+    if (guarded) {
+      await guiChu(guarded);
+      await ghi(LOAI.REPLY, {
+        maModel: model.maModel,
+        lane: "AI",
+        trangThai: hoiThoai.trang_thai,
+        dung,
+        duLieu: {
+          text: guarded.slice(0, 200), nguon_model: model.nguon,
+          tre_nao_ms: treNaoMs,                 // riêng lượt bộ não (model + vòng tool)
+          tre_luot_ms: Date.now() - mocLuot,    // cả lượt: đọc lịch sử → soạn → qua cửa
+        },
+      });
+      state.lastAiText = guarded;
+    } else if (!nAnh && dung.calls) {
+      // ĐÃ TIÊU TOKEN MÀ KHÔNG GỬI GÌ — khoản chi tàng hình của §11.2. Đã ghi ở nhánh
+      // guard phía trên thì thôi (neo idempotent của so_ai tự chặn dòng thứ hai).
+      await ghi(LOAI.SPENT_NO_SEND, {
+        maModel: model.maModel,
+        lane: "AI",
+        lyDo: "model không viết được chữ",
+        dung,
+      });
+    }
+
     if (state.handoff) {
-      await banGiaoSale(state.handoffReason || "AI yêu cầu chuyển người");
+      if (!state.handoffNotified) await banGiaoSale(state.handoffReason || "AI yêu cầu chuyển người");
       await ghi(LOAI.HANDOFF, {
         maModel: model.maModel,
         lane: "AI",
@@ -727,6 +771,10 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       dem,
     };
   } catch (e) {
+    if (e?.name === "LoiQuyenHoiThoai") {
+      // Không lưu snapshot cũ đè lên việc nhân viên vừa tiếp quản.
+      return { ketQua: KET_QUA.CHAN_GUARD, lyDo: e.message, dem };
+    }
     if (e instanceof LoiCuaGuiDong || e?.name === "LoiCuaGuiDong") {
       // CỬA GỬI ĐÓNG. Token có thể đã tiêu (model chạy trước lượt gửi) ⇒ ghi
       // `spent_no_send` để khoản chi không tàng hình, rồi trả về `chan_guard` để worker
@@ -742,6 +790,13 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         () => {},
       );
       return { ketQua: KET_QUA.CHAN_GUARD, lyDo: e.message, dem };
+    }
+    // Lỗi LLM/kênh không được làm mất dữ kiện đã thu thập hoặc quyền bàn giao.
+    // Nếu SQL đã abort thì worker rollback và sổ gửi độc lập vẫn chặn phát lại.
+    await luuLai({ daGoiModel: (state.lastUsage?.calls || 0) > 0, daGuiText: false }).catch(() => {});
+    if ((state.lastUsage?.calls || 0) > 0) {
+      await ghi(LOAI.SPENT_NO_SEND, { maModel: state.modelUsed || model?.maModel || KHONG_GOI_MODEL,
+        lane: 'AI', lyDo: `loi:${e.name || 'Error'}`, dung: state.lastUsage }).catch(() => {});
     }
     throw e;
   }

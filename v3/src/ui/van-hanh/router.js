@@ -15,6 +15,7 @@ import {
   resumeConversation,
   handoffFailedMessage,
 } from "../../../../src/queue/reconcile.js";
+import { baoCaoDienTap, tomTatDienTap } from "../../../../src/admin-v3/dien-tap.js";
 import { docSanPhamGoiGia } from "../../../../src/products/catalog.js";
 import { duyet, loai } from "../../../../src/orders/hang-cho.js";
 import { HE_SO_TE } from "../../../../src/pos/index.js";
@@ -60,6 +61,17 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {} } = {
     (await pool.query(sql, [q.boiCanh.teamId, ...args])).rows;
   const offset = (q) =>
     Math.min(100000, Math.max(0, Number.parseInt(q.query.offset, 10) || 0));
+  // DIỄN TẬP — chấm bot mà không cho nó chạm khách. Chỉ ĐỌC, nên không đòi `X-V3-Action`.
+  r.get(
+    "/api/van-hanh/dien-tap",
+    wrap(async (q, s) => {
+      const [ds, tomTat] = await Promise.all([
+        baoCaoDienTap(pool, q.boiCanh, { gioiHan: 50, offset: offset(q) }),
+        tomTatDienTap(pool, q.boiCanh),
+      ]);
+      s.json({ ok: true, ...ds, tomTat, dangBat: process.env.V3_DIEN_TAP === "1" });
+    }),
+  );
   r.get(
     "/api/van-hanh/pages",
     admin,
