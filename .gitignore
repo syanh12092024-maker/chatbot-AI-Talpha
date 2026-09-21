@@ -56,3 +56,8 @@ mau-duong-ban.json
 
 # Isolated local dev runtime, credentials and logs
 .local-dev/
+
+# Bộ chuẩn dán nhãn ý định (ops/bin/do-dinh-tuyen.mjs) — 146 tin khách THẬT, đã che
+# SĐT nhưng vẫn là lời của người thật. Giữ ở scratchpad, KHÔNG commit.
+nhan-chuan*.json
+tin-khach*.json
