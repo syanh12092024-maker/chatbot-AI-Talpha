@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import { dungSandbox } from "../db/sandbox.js";
 import {
   chuyenPageSangTeam,
+  O_LAI,
   demMoCoi,
   VAI_DUOC_CHUYEN,
   ctxHeThong,
@@ -70,6 +71,12 @@ async function dungPageDayDu(teamId, hau) {
      VALUES ($1,$2,$3,$4,$5,$6)`,
     [teamId, fb, `psid-${hau}`, `conv-${hau}`, `msg-${hau}`, "xin chào"],
   );
+  // `nap_bo_qua` (migration 023) — dấu vết tin bị lọc, `page_id` dạng text như hàng đợi.
+  await q(
+    `INSERT INTO nap_bo_qua (team_id, page_id, conv_id, psid, ly_do, chu_thich)
+     VALUES ($1,$2,$3,$4,'the_chan','thẻ 3')`,
+    [teamId, fb, `conv-bq-${hau}`, `psid-${hau}`],
+  );
   // `so_ai` — CỐ Ý ở lại (trigger cấm UPDATE). Ca 7 khoá hành vi này lại.
   await q(
     `INSERT INTO so_ai (team_id, xay_ra_luc, page_id, psid, loai, ma_model, nguon_tep, nguon_dong)
@@ -131,14 +138,23 @@ test("Y3-a · chuyển page → MỌI bảng con đi theo, kể cả don_hang v�
   assert.equal(kq.teamCu, String(tA));
   assert.equal(kq.teamMoi, String(tB));
 
-  // Danh mục con là TỰ SINH — nên ca này khẳng định đủ NĂM bảng, không phải ba như phiếu kê.
-  assert.deepEqual(Object.keys(kq.daChuyen).sort(), [
-    "don_hang",
-    "hoi_thoai",
-    "kich_ban",
-    "san_pham",
-    "tin_cho_xu_ly",
-  ]);
+  // Danh mục con là TỰ SINH từ lược đồ. Nên THƯỚC cũng phải sinh từ lược đồ — gõ tay
+  // năm cái tên ở đây là dựng lại đúng cái lỗ hẹn giờ mà `chuyen-team.js` cảnh báo:
+  // thêm một bảng có `page_id`+`team_id` thì ca này đỏ vì THƯỚC cũ, chứ không phải vì
+  // mã sai. (Bắt được 21/09 khi migration 023 thêm `nap_bo_qua`.)
+  const conTheoLuocDo = (await sb.pool.query(
+    `SELECT c.table_name AS bang FROM information_schema.columns c
+      WHERE c.table_schema='public' AND c.column_name='page_id' AND c.table_name<>'page'
+        AND EXISTS (SELECT 1 FROM information_schema.columns t
+                     WHERE t.table_schema='public' AND t.table_name=c.table_name
+                       AND t.column_name='team_id')
+      ORDER BY 1`,
+  )).rows.map((r) => r.bang).filter((b) => !O_LAI.has(b));
+  assert.deepEqual(Object.keys(kq.daChuyen).sort(), conTheoLuocDo);
+  // Và vẫn giữ neo CỨNG cho những bảng ĐÃ TỪNG BỊ SÓT — chúng là bài học, không được rơi.
+  for (const b of ["don_hang", "tin_cho_xu_ly", "hoi_thoai", "kich_ban", "san_pham"]) {
+    assert.ok(b in kq.daChuyen, `bảng "${b}" phải đi theo page`);
+  }
   for (const [bang, n] of Object.entries(kq.daChuyen))
     assert.equal(n, 1, `${bang} phải chuyển đúng 1 dòng`);
 
@@ -161,14 +177,19 @@ test("Y3-b · 0 dòng MỒ CÔI sau khi chuyển, và số CỐ Ý ở lại tá
   );
   for (const [bang, n] of Object.entries(moCoi))
     assert.equal(n, 0, `${bang} có ${n} dòng mồ côi`);
-  // Năm bảng phải đi theo — kể cả hai bảng PHIẾU KÊ SÓT — đều nằm trong nhóm phải-bằng-0.
-  assert.deepEqual(Object.keys(moCoi).sort(), [
-    "don_hang",
-    "hoi_thoai",
-    "kich_ban",
-    "san_pham",
-    "tin_cho_xu_ly",
-  ]);
+  // Nhóm phải-bằng-0 = MỌI bảng con theo lược đồ, trừ nhóm cố ý ở lại. Sinh từ lược đồ
+  // vì `demMoCoi` cũng sinh từ lược đồ — gõ tay ở đây là dựng lại lỗ hẹn giờ (án lệ #22).
+  const conTheoLuocDo = (await sb.pool.query(
+    `SELECT c.table_name AS bang FROM information_schema.columns c
+      WHERE c.table_schema='public' AND c.column_name='page_id' AND c.table_name<>'page'
+        AND EXISTS (SELECT 1 FROM information_schema.columns t
+                     WHERE t.table_schema='public' AND t.table_name=c.table_name
+                       AND t.column_name='team_id')
+      ORDER BY 1`,
+  )).rows.map((r) => r.bang).filter((b) => !O_LAI.has(b));
+  assert.deepEqual(Object.keys(moCoi).sort(), conTheoLuocDo);
+  // Neo CỨNG cho hai bảng PHIẾU KÊ SÓT — chúng là bài học, không được rơi khỏi phép đếm.
+  for (const b of ["don_hang", "tin_cho_xu_ly"]) assert.ok(b in moCoi, `"${b}" phải được đếm mồ côi`);
   // `so_ai` ở nhóm riêng, và sau lượt chuyển của Y3-a nó PHẢI > 0 — đó là hành vi đã chốt,
   // không phải hỏng. Khoá lại để người sau không "sửa" nó thành 0.
   assert.deepEqual(Object.keys(boLaiCoChuDich), ["so_ai"]);

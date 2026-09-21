@@ -25,7 +25,15 @@ import { GOC } from "../db/ket-noi.js";
 // 17/09: +token_pancake (migration 019) — kho token Pancake rời `.env`/`pancake-tokens.json`
 // vào CSDL, để màn «Kết nối & token» của v3 không phải hỏi HTTP sang tiến trình bot mới xem
 // và sửa được. Bảng TOÀN HỆ, không `team_id` (xem ca S2) — sửa NEO cùng commit với migration.
+// 21/09: +nap_bo_qua (migration 023) — dấu vết của tin BỊ NĂM CỬA LỌC chặn. Trước đó số
+// đó chỉ có trong stdout của worker, nên một cửa bắt oan là khách im lặng mà không màn
+// nào nói ra. NEO sửa cùng commit với migration.
+// 17/09: +lan_gui (migration 016) — mỗi lần bot ĐỊNH gửi một tin ra ngoài là một dòng, kể
+// cả lượt diễn tập (`trang_thai='dien_tap'`, không gọi kênh). Thêm bảng là đổi con số ca S1
+// neo vào; NEO được sửa cùng commit với migration.
 const NEO_19_BANG = [
+  "nap_bo_qua",
+  "lan_gui",
   "token_pancake",
   "san_pham_goc",
   "ket_noi_pos",

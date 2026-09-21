@@ -15,6 +15,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   BAN_DO_CONV_STATE,
+  TRUONG_KICH_BAN,
   docPages,
   docAiEnabled,
   docConvState,
@@ -208,21 +209,16 @@ test("D9 · llmTurns là MẢNG MỐC: luot_llm = độ dài, mốc giữ nguyê
   }
 });
 
-test("D10 · kịch bản giữ CẢ HAI bản: bản-cho-người 6 trường + bản-cho-máy", canNguonThat, async () => {
+test("D10 · kịch bản giữ CẢ HAI bản: bản-cho-người đủ trường + bản-cho-máy", canNguonThat, async () => {
   const r = await sb.pool.query(
     `SELECT noi_dung_nguoi, noi_dung_may FROM kich_ban
      WHERE trang_thai='LIVE' AND noi_dung_may <> '' LIMIT 3`,
   );
   assert.ok(r.rowCount > 0);
   for (const row of r.rows) {
-    assert.deepEqual(Object.keys(row.noi_dung_nguoi).sort(), [
-      "fastLaneHowto",
-      "fastLanePrice",
-      "fastLaneShip",
-      "greeting",
-      "salesPrompt",
-      "tone",
-    ]);
+    // Neo vào chính danh sách mà bộ di trú dùng — gõ lại là đẻ bản sao thứ hai, và bản sao
+    // sẽ lệch đúng lúc ai đó thêm một trường (án lệ ②: không gõ tay danh sách).
+    assert.deepEqual(Object.keys(row.noi_dung_nguoi).sort(), [...TRUONG_KICH_BAN].sort());
     assert.ok(/Giọng điệu|Câu chào|Cách bán/.test(row.noi_dung_may));
     // Bản cho máy KHÔNG mang câu mẫu Fast Lane (chúng bắn thẳng cho khách, không vào prompt).
     if (row.noi_dung_nguoi.fastLanePrice) {

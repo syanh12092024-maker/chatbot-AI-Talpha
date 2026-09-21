@@ -51,6 +51,8 @@ export {
   chuyenPageSangTeam,
   demMoCoi,
   VAI_DUOC_CHUYEN,
+  // Bảng CỐ Ý ở lại team cũ. Bộ ca neo vào đây để không gõ tay lại danh mục bảng con.
+  O_LAI,
 } from "./chuyen-team.js";
 export {
   BANG_NGHIEP_VU_CHUAN,

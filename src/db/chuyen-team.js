@@ -31,8 +31,10 @@ import { ghiNhatKy } from "./nhat-ky.js";
  *  lượt gọi và ném to nếu không khớp: gõ sai thì đỏ, không phải câm. */
 export const VAI_DUOC_CHUYEN = "quan-tri";
 
-/** Bảng có `page_id` + `team_id` nhưng CỐ Ý Ở LẠI team cũ, kèm lý do hiện ra được. */
-const O_LAI = new Map([
+/** Bảng có `page_id` + `team_id` nhưng CỐ Ý Ở LẠI team cũ, kèm lý do hiện ra được.
+ *  XUẤT RA để bộ ca neo vào ĐÂY thay vì gõ tay lại danh sách bảng con — gõ tay là đúng
+ *  cái lỗ hẹn giờ mà khối chú thích đầu file vừa cảnh báo. */
+export const O_LAI = new Map([
   [
     "so_ai",
     "trigger `tg_chi_insert_so_ai` cấm UPDATE (bảng chỉ-INSERT). Nới trigger là tháo một " +
