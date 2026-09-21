@@ -24,7 +24,7 @@ export const TRANG_THAI = Object.freeze({
 });
 
 const COT = `id, team_id, page_id, psid, conv_id, cust_id, msg_id, noi_dung,
-             trang_thai, so_lan_thu, khoa_worker, ly_do, thoi_diem, sua_luc`;
+             trang_thai, so_lan_thu, khoa_worker, ly_do, thoi_diem, sua_luc, nguon, thu_lai_luc`;
 
 /**
  * Xếp MỘT tin vào hàng đợi. Idempotent theo UNIQUE (page_id, conv_id, msg_id):
@@ -33,10 +33,15 @@ const COT = `id, team_id, page_id, psid, conv_id, cust_id, msg_id, noi_dung,
  * @returns {Promise<{them: boolean, id: string|null}>} them=false ⇒ đã có sẵn.
  */
 export async function xepTin(pool, tin) {
+  // `hoanMs` — GIỮ tin lại trong hàng đợi thêm chừng đó mili-giây trước khi worker được
+  // phép rút. Câu rút đã có sẵn `AND c.thu_lai_luc <= now()`, nên đây là cách hoãn KHÔNG
+  // phải ngủ, không giữ kết nối, không giữ khoá hội thoại. Dùng cho cửa «để Botcake nói
+  // trước» — xem `nap.js#IM_BOTCAKE_MS`.
+  const hoan = Number(tin.hoanMs) > 0 ? Number(tin.hoanMs) : 0;
   const r = await pool.query(
-    `INSERT INTO tin_cho_xu_ly (team_id, page_id, psid, conv_id, cust_id, msg_id, noi_dung)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     ON CONFLICT (page_id, conv_id, msg_id) DO NOTHING
+    `INSERT INTO tin_cho_xu_ly (team_id, page_id, psid, conv_id, cust_id, msg_id, noi_dung, nguon, thu_lai_luc)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now() + ($9 || ' milliseconds')::interval)
+     ON CONFLICT DO NOTHING
      RETURNING id`,
     [
       tin.teamId,
@@ -46,6 +51,8 @@ export async function xepTin(pool, tin) {
       String(tin.custId ?? ""),
       String(tin.msgId),
       String(tin.noiDung ?? ""),
+      tin.nguon || "poll",
+      String(hoan),
     ],
   );
   return { them: r.rowCount > 0, id: r.rowCount ? r.rows[0].id : null };
@@ -60,14 +67,9 @@ export async function xepTin(pool, tin) {
 // bị hai bên ghi đè lẫn nhau — tức ngân sách lượt trừ SAI theo chiều có lợi cho việc
 // đốt token.
 //
-// Nên khoá thứ hai là `pg_try_advisory_xact_lock(hashtext(conv_id))`: khoá theo HỘI
-// THOẠI, giữ tới khi giao dịch kết thúc. Không lấy được ⇒ hàng bị BỎ QUA ngay trong
-// câu quét (tin vẫn nằm ở 'cho', không đổi trạng thái, không tăng `so_lan_thu`) và
-// worker đi tìm hội thoại khác.
-//
-// ⚠️ Advisory lock của Postgres dùng chung MỘT không gian khoá cho cả CSDL. CSDL v3
-//    hiện chỉ có đúng chỗ này dùng advisory lock (grep `advisory` trong repo). Ai thêm
-//    chỗ thứ hai phải đổi cả hai sang dạng hai khoá `(namespace, hashtext(...))`.
+// Khoá theo team + Page + khách, thống nhất dù webhook và poll dùng conv_id khác.
+// FIFO giữ tin sau chờ tin trước, kể cả khi tin trước đang backoff. Tin lỗi có dấu
+// đã gửi chặn cả hội thoại tới khi người vận hành đối chiếu xong.
 const SQL_RUT = `
   UPDATE tin_cho_xu_ly t
      SET trang_thai  = 'dang_xu',
@@ -78,7 +80,17 @@ const SQL_RUT = `
            SELECT c.id
              FROM tin_cho_xu_ly c
             WHERE c.trang_thai = 'cho'
-              AND pg_try_advisory_xact_lock(hashtext(c.conv_id))
+              AND c.thu_lai_luc <= now()
+              AND ($2::text[] IS NULL OR c.page_id = ANY($2::text[]))
+              AND NOT EXISTS (
+                SELECT 1 FROM tin_cho_xu_ly truoc
+                WHERE truoc.team_id=c.team_id AND truoc.page_id=c.page_id AND truoc.psid=c.psid
+                  AND truoc.id<c.id AND (truoc.trang_thai IN ('cho','dang_xu') OR
+                    (truoc.trang_thai='loi' AND EXISTS (
+                      SELECT 1 FROM lan_gui g WHERE g.team_id=truoc.team_id AND g.tin_id=truoc.id
+                    )))
+              )
+              AND pg_try_advisory_xact_lock(hashtextextended(c.team_id::text || ':' || c.page_id || ':' || c.psid, 0))
             ORDER BY c.id
             FOR UPDATE SKIP LOCKED
             LIMIT 1
@@ -97,43 +109,47 @@ const SQL_RUT = `
  * Người gọi BẮT BUỘC kết bằng `ketThuc(...)` hoặc `huy()` — không thì kết nối rò và
  * khoá hội thoại không bao giờ nhả.
  */
-export async function moPhienRut(pool, { khoaWorker }) {
+export async function moPhienRut(pool, { khoaWorker, pageIds = null }) {
   const khach = await pool.connect();
   try {
     await khach.query("BEGIN");
-    const r = await khach.query(SQL_RUT, [String(khoaWorker)]);
+    const r = await khach.query(SQL_RUT, [String(khoaWorker), pageIds]);
     if (!r.rowCount) {
       await khach.query("ROLLBACK");
       khach.release();
       return null;
     }
     const tin = r.rows[0];
+    let daNha = false;
+    const nha = () => { if (!daNha) { daNha = true; khach.release(); } };
     return {
       tin,
       khach,
       /** Chốt trạng thái cuối rồi COMMIT (nhả luôn advisory lock). */
-      async ketThuc(trangThai, lyDo = "") {
+      async ketThuc(trangThai, lyDo = "", treMs = 0) {
         try {
           await khach.query(
             `UPDATE tin_cho_xu_ly
-                SET trang_thai = $2, ly_do = $3, khoa_worker = NULL, sua_luc = now()
+                SET trang_thai = $2, ly_do = $3, khoa_worker = NULL, sua_luc = now(),
+                    thu_lai_luc = now() + ($5::double precision * interval '1 millisecond')
               WHERE id = $1 AND team_id = $4`,
-            [tin.id, trangThai, String(lyDo).slice(0, 500), tin.team_id],
+            [tin.id, trangThai, String(lyDo).slice(0, 500), tin.team_id, treMs],
           );
           await khach.query("COMMIT");
         } catch (e) {
           await khach.query("ROLLBACK").catch(() => {});
           throw e;
         } finally {
-          khach.release();
+          nha();
         }
       },
       /** Bỏ lượt: ROLLBACK ⇒ tin quay về 'cho' NGUYÊN TRẠNG (kể cả `so_lan_thu`). */
       async huy() {
+        if (daNha) return;
         try {
           await khach.query("ROLLBACK");
         } finally {
-          khach.release();
+          nha();
         }
       },
     };

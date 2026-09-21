@@ -82,7 +82,8 @@ export function lyDoChuaChoPageNao() {
  */
 export async function motLuot(pool, deps = {}) {
   const ket = {
-    nap: { mo: nguonDangMo(), them: 0, trung: 0, page: 0, loi: 0 },
+    nap: { mo: nguonDangMo(), them: 0, trung: 0, page: 0, loi: 0,
+      boQuaPageNoiCuoi: 0, boQuaMoc: 0, boQuaDaDoc: 0, boQuaThe: 0 },
     xu: null,
   };
   if (!ket.nap.mo) {
@@ -108,6 +109,12 @@ export async function motLuot(pool, deps = {}) {
         const r = await napTuPoll(pool, { pageId }, deps.depsNap || {});
         ket.nap.them += r.them || 0;
         ket.nap.trung += r.trung || 0;
+        // Ba cửa lọc phải HIỆN RA trong log. Một vòng "0 mới" mà không nói vì sao thì
+        // không phân biệt được "không ai nhắn" với "cửa lọc đang nuốt oan khách".
+        ket.nap.boQuaPageNoiCuoi += r.boQuaPageNoiCuoi || 0;
+        ket.nap.boQuaMoc += r.boQuaMoc || 0;
+        ket.nap.boQuaDaDoc += r.boQuaDaDoc || 0;
+        ket.nap.boQuaThe += r.boQuaThe || 0;
       } catch (e) {
         // Một page hỏng KHÔNG được dừng cả vòng — nhưng phải ĐẾM, không nuốt im.
         ket.nap.loi += 1;
@@ -127,8 +134,15 @@ export async function motLuot(pool, deps = {}) {
 function inLuot(ket) {
   const n = ket.nap;
   const x = ket.xu || {};
+  const loc = [
+    n.boQuaThe ? `${n.boQuaThe} thẻ-chặn` : "",
+    n.boQuaPageNoiCuoi ? `${n.boQuaPageNoiCuoi} page-nói-cuối` : "",
+    n.boQuaMoc ? `${n.boQuaMoc} mốc-cũ` : "",
+    n.boQuaDaDoc ? `${n.boQuaDaDoc} ĐÃ-ĐỌC(bỏ)` : "",
+  ].filter(Boolean).join(" · ");
   const dong = n.mo
-    ? `nạp: ${n.them} mới · ${n.trung} trùng · ${n.page} page${n.loi ? ` · ${n.loi} page LỖI (${n.loiCuoi})` : ""}`
+    ? `nạp: ${n.them} mới · ${n.trung} trùng · ${n.page} page${loc ? ` · lọc: ${loc}` : ""}`
+      + `${n.loi ? ` · ${n.loi} page LỖI (${n.loiCuoi})` : ""}`
     : `nạp: ĐÓNG — ${n.lyDo}`;
   console.log(`[worker-v3] ${dong} | xử: ${JSON.stringify(x)}`);
 }

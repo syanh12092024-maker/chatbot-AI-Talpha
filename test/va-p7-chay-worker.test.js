@@ -115,6 +115,9 @@ test("P7-3 · van nguồn MỞ (harness) ⇒ nạp theo TỪNG page và cộng �
     { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_PAGE_XU_LY: "970000000001,970000000002" }, () =>
     motLuot(pool, {
       depsNap: {
+        // Ca này đo van bậc phơi + phép cộng theo page, KHÔNG đo cửa chờ-khách-gõ-xong
+        // (cửa đó có ca riêng S4j). Mức chờ 0 để một vòng là đủ kết luận.
+        doiGoXong: () => ({ ms: 0 }),
         docHoiThoai: async () => [
           { id: "conv-1", from_psid: "psid-1", customers: [{ id: "cust-1" }] },
         ],
