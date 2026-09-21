@@ -60,17 +60,34 @@ datKhoTokenDb(() => docTokenSong(pool));
 const [tok] = await docTokenSong(pool);
 if (!tok) { console.error("Không có token Pancake nào đang bật."); process.exit(1); }
 
-const GET = async (u) => (await fetch(u, { signal: AbortSignal.timeout(20000) })).json().catch(() => ({}));
+// Bộ này gọi Pancake ~1 + N lần liên tiếp. Mạng rớt MỘT lần là chết cả lượt phát lại —
+// đã xảy ra hai lần khi chạy thật (UND_ERR_CONNECT_TIMEOUT giữa chừng). Thử lại có lùi;
+// hết lượt thì NÉM kèm tên hội thoại, chứ không trả `{}` im lặng rồi báo "0 tin".
+const nghi = (ms) => new Promise((r) => setTimeout(r, ms));
+async function GET(u, nhan = "") {
+  let loiCuoi;
+  for (let lan = 1; lan <= 4; lan++) {
+    try {
+      const r = await fetch(u, { signal: AbortSignal.timeout(25000) });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.json();
+    } catch (e) {
+      loiCuoi = e;
+      if (lan < 4) { process.stderr.write(`\r  mạng rớt (${nhan}), thử lại ${lan}/3…    `); await nghi(1500 * lan); }
+    }
+  }
+  throw new Error(`Pancake không trả lời sau 4 lần${nhan ? ` (${nhan})` : ""}: ${loiCuoi?.message || loiCuoi}`);
+}
 const gon = (s) => String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 const che = (s) => String(s).replace(/[\w.+-]+@[\w.-]+\.\w+/g, "<EMAIL>").replace(/[+(]?\d[\d\s().-]{6,}\d/g, "<SĐT>");
 const laPage = (m) => String(m?.from?.id) === String(pageIdFb);
 
 // ── gom tin khách THẬT, mới nhất trước ───────────────────────────────────────
-const jc = await GET(`https://pages.fm/api/v1/pages/${pageIdFb}/conversations?access_token=${tok}&page_number=1`);
+const jc = await GET(`https://pages.fm/api/v1/pages/${pageIdFb}/conversations?access_token=${tok}&page_number=1`, "danh sách hội thoại");
 const kho = new Map();
 const ungVien = [];
 for (const c of (jc.conversations || []).filter((x) => x.from_psid && (x.customers || [])[0]?.id)) {
-  const jm = await GET(`https://pages.fm/api/v1/pages/${pageIdFb}/conversations/${c.id}/messages?access_token=${tok}&customer_id=${c.customers[0].id}`);
+  const jm = await GET(`https://pages.fm/api/v1/pages/${pageIdFb}/conversations/${c.id}/messages?access_token=${tok}&customer_id=${c.customers[0].id}`, c.from?.name || c.id);
   const ds = (jm.messages || []).slice().sort((a, b) => String(a.inserted_at).localeCompare(String(b.inserted_at)));
   if (!ds.length) continue;
   kho.set(c.id, { conv: c, ds });
@@ -137,14 +154,45 @@ const docTinCat = async () => {
 // Đặt lại các hội thoại ĐƯỢC PHÁT về `GREET/AI`. Đây là lựa chọn CÓ CHỦ ĐÍCH và nó đổi
 // thứ đang đo: ta đo «bot sẽ nói gì với tin này», KHÔNG đo «bot sẽ nói gì với tin này
 // trong hội thoại đã bị sale tiếp quản». Muốn đo cái thứ hai thì bỏ bước này (`--giu`).
+// ── DỌN DẤU VẾT CỦA CHÍNH MÌNH ───────────────────────────────────────────────
+// Câu rút việc có luật FIFO theo hội thoại: một tin chỉ được rút khi KHÔNG còn tin cũ
+// hơn của cùng (team, page, psid) đang ở `cho`/`dang_xu`, hoặc ở `loi` mà đã có dấu gửi.
+// Lượt phát lại trước để lại đúng những dòng đó ⇒ lượt sau bị kẹt sau chúng và KHÔNG BAO
+// GIỜ được xử. Đo thật 21/09: lượt 3 xếp 30 tin, cả 30 nằm nguyên ở `cho`, 0 câu trả lời.
+//
+// Xoá theo ĐÚNG tiền tố `phatlai:` — không đụng tin thật của bộ nạp.
+//
+// ⚠️ HỆ QUẢ ĐÃ BIẾT: `so_ai` là sổ CHỈ-GHI (CSDL chặn DELETE), nên các dòng tiền của lượt
+//    phát lại cũ ở lại với `nguon_dong` trỏ vào tin đã xoá — màn «chi phí theo tin» sẽ
+//    thấy chúng nhưng không tra ngược được câu chữ. Chấp nhận được trên CSDL dev; TUYỆT
+//    ĐỐI không chạy bộ này trên CSDL thật.
+{
+  const { rowCount: nGui } = await pool.query(
+    `DELETE FROM lan_gui g USING tin_cho_xu_ly t
+      WHERE g.team_id=t.team_id AND g.tin_id=t.id AND t.msg_id LIKE 'phatlai:%'`);
+  const { rowCount: nTin } = await pool.query(
+    "DELETE FROM tin_cho_xu_ly WHERE msg_id LIKE 'phatlai:%'");
+  if (nTin) console.log(`  dọn lượt trước    : ${nTin} tin + ${nGui} dòng sổ gửi của các lượt phát lại cũ`);
+}
+
 const giuTrangThai = process.argv.includes("--giu");
 if (!giuTrangThai) {
   const psids = [...new Set(chon.map((x) => x.psid))];
+  // ĐẶT LẠI TRỌN VẸN, không chỉ trạng thái. Lượt phát lại TIÊU trạng thái: nó đẩy hội
+  // thoại sang HANDOFF, tiêu ngân sách `luot_llm` (trần 1 lượt/24h với khách lạnh), ghi
+  // `ai_noi_luc`. Chạy lần hai trên cùng dữ liệu vì thế ra 0 câu trả lời — đo thật 21/09:
+  // lượt đầu 10 câu, lượt hai 0 câu, 56 hội thoại nằm ở HANDOFF.
+  //
+  // Một bộ đo mà chạy hai lần ra hai kết quả khác nhau thì không đo được gì. Nên mỗi lượt
+  // bắt đầu từ mặt bằng sạch: trạng thái, chủ sở hữu, bộ đếm lượt, hồ sơ khách, mốc AI nói.
   const r = await pool.query(
-    `UPDATE hoi_thoai SET trang_thai='GREET', chu_so_huu='AI', sua_luc=now()
-      WHERE team_id=$1 AND page_id=$2 AND psid=ANY($3::text[]) AND (trang_thai<>'GREET' OR chu_so_huu<>'AI')`,
+    `UPDATE hoi_thoai SET trang_thai='GREET', chu_so_huu='AI',
+            luot_llm=0, moc_luot_llm='[]'::jsonb, luot_ai=0, luot_doi_thu=0, nhac_da_gui=0,
+            ho_so='{}'::jsonb, ai_noi_luc=NULL, ai_noi_gi='', nguoi_that_luc=NULL,
+            ly_do_cuoi='', chot_don_luc=NULL, sua_luc=now()
+      WHERE team_id=$1 AND page_id=$2 AND psid=ANY($3::text[])`,
     [trang.team_id, trang.id, psids]);
-  console.log(`  mặt bằng          : đặt lại ${r.rowCount}/${psids.length} hội thoại về GREET/AI (thêm --giu để giữ nguyên)`);
+  console.log(`  mặt bằng          : đặt lại ${r.rowCount}/${psids.length} hội thoại (trạng thái + ngân sách lượt + hồ sơ). --giu để giữ nguyên`);
 }
 
 const ket = [];
@@ -162,19 +210,27 @@ for (const [i, x] of chon.entries()) {
   try { kq = await chayMotVong(pool, { pageIds: [pageIdFb], poolGui, docTin: docTinCat }); }
   catch (e) { kq = { ketQua: "NÉM", lyDo: String(e?.message || e).slice(0, 120) }; }
   ket.push({ x, chu, tinId: r.id, kq, treMs: Date.now() - t0 });
+  // Giãn nhịp: đo thật 21/09 — 9/30 lượt ăn HTTP 429 «Organization Rate limit exceeded»
+  // của Moonshot. Bắn dồn thì phép đo mất mẫu chứ không phải bot hỏng.
+  if (i < chon.length - 1) await nghi(Number(arg("--nhip", "4000")));
   process.stderr.write(`\r  đã phát ${i + 1}/${chon.length}…`);
 }
 process.stderr.write("\r" + " ".repeat(40) + "\r");
 
 // ── đọc lại sổ: bot ĐỊNH gửi gì, tốn bao nhiêu ───────────────────────────────
 const ids = ket.filter((k) => k.tinId).map((k) => k.tinId);
+// TÁCH tin GỬI KHÁCH khỏi thao tác NỘI BỘ. `lan_gui` ghi cả bốn loại (`guiTin` `guiAnh`
+// `ghiNote` `gatThe`); gộp hết vào một cột thì lượt bàn giao hiện ra dưới dạng JSON thô
+// của thẻ và ghi chú, trông y như bot gửi rác cho khách. Đo lần đầu đúng như vậy.
 const { rows: gui } = await pool.query(
-  `SELECT tin_id, string_agg(noi_dung::text, E'\\n' ORDER BY buoc) AS noi_dung
+  `SELECT tin_id,
+          string_agg(noi_dung::text, E'\n' ORDER BY buoc) FILTER (WHERE loai='guiTin')  AS cho_khach,
+          string_agg(loai,            ', ' ORDER BY buoc) FILTER (WHERE loai<>'guiTin') AS noi_bo
      FROM lan_gui WHERE team_id=$1 AND tin_id=ANY($2::bigint[]) GROUP BY tin_id`, [trang.team_id, ids]);
 const { rows: so } = await pool.query(
   `SELECT nguon_dong AS tin_id, loai, lane, ma_model, token_vao, token_ra, cache_doc, cache_ghi, du_lieu
      FROM so_ai WHERE team_id=$1 AND nguon_dong=ANY($2::bigint[])`, [trang.team_id, ids]);
-const mGui = new Map(gui.map((r) => [String(r.tin_id), r.noi_dung]));
+const mGui = new Map(gui.map((r) => [String(r.tin_id), r]));
 const mSo = new Map(so.map((r) => [String(r.tin_id), r]));
 
 const { tienMotDong } = await import("../../src/admin-v3/chi-phi-tin.js");
@@ -187,11 +243,14 @@ for (const k of ket) {
   console.log(`\n${String(k.x.m.inserted_at).slice(5, 16)} · ${k.x.khach || k.x.psid}`);
   console.log(`  👤 ${che(k.chu).slice(0, 88)}`);
   if (k.bo) { console.log(`  ⏭  ${k.bo}`); continue; }
-  const gt = mGui.get(String(k.tinId));
-  if (gt) {
-    let txt = gt; try { const j = JSON.parse(gt); txt = j.text || gt; } catch { /* nhiều bước */ }
+  const g = mGui.get(String(k.tinId));
+  if (g?.cho_khach) {
+    let txt = g.cho_khach; try { const j = JSON.parse(g.cho_khach); txt = j.text || g.cho_khach; } catch { /* nhiều bước */ }
     console.log(`  🤖 ĐỊNH GỬI:`);
     for (const d of String(txt).split("\\n").join("\n").split("\n")) console.log(`     │ ${d}`);
+    if (g.noi_bo) console.log(`     (kèm thao tác nội bộ: ${g.noi_bo})`);
+  } else if (g?.noi_bo) {
+    console.log(`  🤖 KHÔNG nhắn khách — chỉ thao tác nội bộ: ${g.noi_bo}`);
   } else {
     console.log(`  🤖 (không gửi gì) — ${k.kq?.ketQua || "?"}${k.kq?.lyDo ? ` · ${String(k.kq.lyDo).slice(0, 70)}` : ""}`);
   }
