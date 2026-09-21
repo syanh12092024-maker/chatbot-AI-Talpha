@@ -158,6 +158,10 @@ export const KET_QUA = Object.freeze({
   XONG: "xong",
   CHAN_GUARD: "chan_guard",
   LOI: "loi",
+  // Page (Botcake/sale/POS) đã trả lời trong lúc tin nằm hàng đợi ⇒ worker nhường,
+  // KHÔNG gọi model. Tách riêng khỏi XONG để số đo phân biệt được "bot đã trả lời"
+  // với "khỏi cần bot trả lời" — hai thứ đó nói hai điều khác hẳn nhau về page.
+  NHUONG_PAGE: "nhuong_page",
 });
 
 function depsMacDinh(deps = {}) {

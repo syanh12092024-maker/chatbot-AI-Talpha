@@ -32,9 +32,33 @@ export async function daBatDauGui(pool, tin) {
 export const dangDienTap = (env = process.env) => env.V3_DIEN_TAP === '1';
 
 /** pool phải độc lập với transaction xử lý tin. Không dùng transaction client. */
-export function bocCuaGuiBen(pool, tin, cua, { env = process.env } = {}) {
+/* ═══ ĐÁNH DẤU CHƯA ĐỌC SAU KHI BOT NÓI ═════════════════════════════════════════════
+ *
+ * Pancake coi hội thoại là ĐÃ ĐỌC ngay khi page gửi tin — kể cả tin do bot gửi. Hệ quả:
+ * bot trả lời xong là hội thoại **trôi khỏi hàng chờ của sale**, và không ai biết có một
+ * khách vừa được máy trả lời mà chưa người nào ngó qua.
+ *
+ * Đường v1 đã chặn chuyện này từ lâu (`pancake-poll.js:539` gọi `/unread` sau MỖI tin AI
+ * gửi). Đường v3 thì KHÔNG — `pancake-poll.js` bỏ qua page v3, nên cửa đó không chạy cho
+ * bất kỳ page nào đã chuyển sang v3. Nối lại ở đây, chỗ DUY NHẤT mọi lượt gửi của v3 đi qua.
+ *
+ * Ba điều kiện, thiếu một là không gọi:
+ *   · đã gửi THẬT (diễn tập thì không có gì để sale check)
+ *   · là tin nhắn cho khách (`guiTin`) — ghi chú/thẻ nội bộ không làm hội thoại «đã đọc»
+ *   · `PK_MARK_UNREAD` chưa tắt (giữ đúng tên cờ của v1 — một cờ, một hành vi, hai đường)
+ *
+ * Lỗi ở đây KHÔNG được làm hỏng lượt chat: tin đã tới khách rồi, ném ra là worker tưởng
+ * gửi lỗi và có thể gửi lại. Chỉ ghi log.
+ */
+const BAT_CHUA_DOC = (env) => env.PK_MARK_UNREAD !== '0';
+
+export function bocCuaGuiBen(pool, tin, cua, { env = process.env, danhDauChuaDoc } = {}) {
   let buoc = 0;
   const dienTap = dangDienTap(env);
+  const chuaDoc = danhDauChuaDoc || (async (pageId, convId) => {
+    const { pkMarkUnread } = await import('../pancake.js');
+    return pkMarkUnread(pageId, convId);
+  });
   return Object.fromEntries(['guiTin', 'guiAnh', 'ghiNote', 'gatThe'].map(loai => [loai,
     async (...args) => {
       const r = await pool.query(
@@ -50,6 +74,14 @@ export function bocCuaGuiBen(pool, tin, cua, { env = process.env } = {}) {
         if (result?.ok !== true) throw new LoiCanDoiChieuGui();
         await pool.query("UPDATE lan_gui SET trang_thai='da_gui',provider_id=$2,sua_luc=now() WHERE id=$1 AND team_id=$3",
           [id, result.id == null ? null : String(result.id), tin.team_id]);
+        if (loai === 'guiTin' && BAT_CHUA_DOC(env) && tin.conv_id) {
+          try {
+            const u = await chuaDoc(String(tin.page_id), String(tin.conv_id));
+            if (u && u.ok !== true) console.warn(`[chua-doc] page ${tin.page_id} conv ${tin.conv_id}: ${u.error}`);
+          } catch (e) {
+            console.warn(`[chua-doc] page ${tin.page_id}: ${e?.message || e}`);
+          }
+        }
         return result;
       } catch (cause) {
         await pool.query("UPDATE lan_gui SET trang_thai='khong_ro',sua_luc=now() WHERE id=$1 AND team_id=$2",

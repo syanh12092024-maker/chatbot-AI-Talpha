@@ -22,6 +22,8 @@ import { docTin as cuaDocTin } from "../channels/messenger/index.js";
 import { ctxHeThong } from "../db/index.js";
 import * as cuaMessenger from "../channels/messenger/index.js";
 import { daBatDauGui, bocCuaGuiBen, dangDienTap, LoiCanDoiChieuGui } from "./lan-gui.js";
+import { gomCumTinKhach } from "./nap.js";
+import { ghiSoAi, LOAI as LOAI_SO_AI, KHONG_GOI_MODEL } from "../chat/so-ai.js";
 
 async function banGiaoLoi(db, tin) {
   await db.query(`UPDATE hoi_thoai h SET chu_so_huu='SALE',trang_thai='HANDOFF',
@@ -129,6 +131,48 @@ export async function chayMotVong(pool, deps = {}) {
     }
 
     await nhanDienSale(khach, { teamId: tin.team_id, pageId: tin.page_id, psid: tin.psid, messages: lichSu });
+
+    // ── NHƯỜNG BOTCAKE/SALE — kiểm NGAY TRƯỚC khi tốn token ────────────────────────
+    //
+    // Bộ nạp đã bỏ qua hội thoại mà page nói cuối, nhưng đó là ảnh chụp lúc NẠP. Giữa
+    // lúc xếp hàng và lúc worker rút việc còn một khoảng (chờ gõ xong + hàng đợi), và
+    // đúng khoảng đó Botcake hay chen vào. `pancake-poll.js` §"CHỜ TỚI KHI BOTCAKE IM
+    // HẲN" đo 11/08: **50% tiền token chảy vào nhóm tin bị vứt** vì page đã trả lời rồi.
+    //
+    // Ở v1 phải ngủ rồi hỏi lại API. Ở đây KHÔNG tốn gì thêm: `lichSu` vài dòng trên vừa
+    // đọc lại từ Pancake đúng lúc này. `gomCumTinKhach` trả `null` ⇔ tin cuối là của
+    // page — cùng một phép của bộ nạp, nên hai nơi không thể kết luận khác nhau.
+    //
+    // ⚠️ Chỉ chặn khi CHẮC CHẮN đọc được lịch sử. `docLichSu === false` (bộ ca truyền vào)
+    //    hay API lỗi trả mảng rỗng thì KHÔNG suy ra "page đã nói" — đoán sai ở đây là bot
+    //    câm với khách thật.
+    if (deps.docLichSu !== false && lichSu.length && !gomCumTinKhach(lichSu, tin.page_id)) {
+      // VÀO SỔ AI. Lượt nhường KHÔNG tốn đồng nào, và đó CHÍNH LÀ con số đáng biết: màn
+      // chi phí phải đếm được "đã nhường bao nhiêu lượt" bên cạnh "đã tiêu bao nhiêu".
+      // Không ghi thì tiền tiết kiệm được là một con số không ai nhìn thấy. Sổ đã có sẵn
+      // loại `yielded` cho đúng việc này (`so-ai.js#LOAI`).
+      await ghiSoAi(khach, {
+        teamId: tin.team_id, tinId: tin.id, loai: LOAI_SO_AI.YIELDED,
+        maModel: KHONG_GOI_MODEL, pageId: tin.page_id, psid: tin.psid,
+        lyDo: "page da tra loi truoc",
+      });
+      await ghiNhatKyHangDoi(khach, {
+        teamId: tin.team_id,
+        hanhDong: "tin_nhuong_page",
+        tinId: tin.id,
+        ghiChu: "page (Botcake/sale/POS) đã trả lời sau khi tin vào hàng đợi",
+      });
+      if (batchIds.length) {
+        await khach.query(
+          `UPDATE tin_cho_xu_ly SET trang_thai='xong', ly_do=$3, sua_luc=now()
+            WHERE team_id=$1 AND id=ANY($2::bigint[])`,
+          [tin.team_id, batchIds, `gom_vao_tin:${tin.id}`],
+        );
+      }
+      const lyDo = "page đã trả lời trước — nhường, không gọi model";
+      await phien.ketThuc(TRANG_THAI.XONG, lyDo);
+      return { tinId: tin.id, ketQua: KET_QUA.NHUONG_PAGE, lyDo, soLanThu: tin.so_lan_thu };
+    }
 
     // ⚠️ Truyền `khach` (client của giao dịch đang mở), KHÔNG phải `pool`: mọi lượt ghi
     // của nhạc trưởng phải nằm TRONG cùng giao dịch với việc chốt trạng thái tin. Dùng
