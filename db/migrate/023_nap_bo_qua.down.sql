@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS nap_bo_qua;

@@ -16,6 +16,8 @@ import {
   handoffFailedMessage,
 } from "../../../../src/queue/reconcile.js";
 import { baoCaoDienTap, tomTatDienTap } from "../../../../src/admin-v3/dien-tap.js";
+import { chiPhiTheoTin, gomChiPhi, GOM_THEO } from "../../../../src/admin-v3/chi-phi-tin.js";
+import { dsBoQua, tomTatBoQua, LY_DO } from "../../../../src/admin-v3/nap-bo-qua.js";
 import { docSanPhamGoiGia } from "../../../../src/products/catalog.js";
 import { duyet, loai } from "../../../../src/orders/hang-cho.js";
 import { HE_SO_TE } from "../../../../src/pos/index.js";
@@ -301,6 +303,45 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {} } = {
       }),
     ),
   );
+  // ── TIN BỊ LỌC ────────────────────────────────────────────────────────────────
+  // Năm cửa lọc loại phần lớn hội thoại mỗi vòng. Trước migration 023 con số đó chỉ có
+  // trong stdout của worker ⇒ một cửa bắt OAN là khách im lặng mà không ai biết.
+  r.get(
+    "/api/van-hanh/bo-qua",
+    wrap(async (q, s) => {
+      const pageId = q.query.page || null;
+      const [items, tomTat] = await Promise.all([
+        dsBoQua(pool, q.boiCanh, { pageId, lyDo: q.query.ly_do || null, gioiHan: 100, offset: offset(q) }),
+        tomTatBoQua(pool, q.boiCanh, { pageId }),
+      ]);
+      s.json({ ok: true, items, tomTat, lyDoCo: Object.entries(LY_DO).map(([ma, v]) => ({ ma, ...v })) });
+    }),
+  );
+
+  // ── CHI PHÍ THEO TỪNG TIN ─────────────────────────────────────────────────────
+  // `/chi-phi` cũ cộng tiền từ tiến trình bot v1 và gom theo page. Page chạy v3 thì v1
+  // không xử lượt nào ⇒ màn đó hiện 0đ trong khi bot đang tiêu tiền. Đường này đọc thẳng
+  // `so_ai` của v3 và tra ngược được về ĐÚNG câu khách đã nhắn.
+  r.get(
+    "/api/van-hanh/chi-phi-tin",
+    wrap(async (q, s) => {
+      const theo = String(q.query.theo || "");
+      const khoang = { tu: q.query.tu || null, den: q.query.den || null };
+      s.json({
+        ok: true,
+        ...(theo
+          ? { theo, nhan: GOM_THEO[theo]?.nhan || theo, gom: await gomChiPhi(pool, q.boiCanh, { theo, ...khoang }) }
+          : {
+            items: await chiPhiTheoTin(pool, q.boiCanh, {
+              pageId: q.query.page || null, psid: q.query.psid || null,
+              ...khoang, gioiHan: 100, offset: offset(q),
+            }),
+          }),
+        gomDuoc: Object.entries(GOM_THEO).map(([ma, v]) => ({ ma, nhan: v.nhan })),
+      });
+    }),
+  );
+
   r.get(
     "/api/van-hanh/conversations/:id",
     wrap(async (q, s) => {
@@ -352,7 +393,12 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {} } = {
           lichSuLoi = String(e?.message || e).slice(0, 200);
         }
       }
-      s.json({ ok: true, item: h, incoming, outgoing, lichSu, lichSuLoi });
+      // Tiền của TỪNG LƯỢT trong đúng hội thoại này — để chấm "câu này đáng bao nhiêu"
+      // ngay tại chỗ đọc câu đó, không phải mở màn khác rồi tự ghép lại.
+      const chiPhi = await chiPhiTheoTin(pool, q.boiCanh, {
+        pageId: h.page_text, psid: h.psid, gioiHan: 100,
+      });
+      s.json({ ok: true, item: h, incoming, outgoing, lichSu, lichSuLoi, chiPhi });
     }),
   );
   r.post(

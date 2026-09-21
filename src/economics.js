@@ -71,7 +71,10 @@ const emptyBucket = () => ({
 
 // GHI cache tính riêng: đắt hơn ĐỌC cache nhiều lần. Bản ghi cũ không có `cwrite`
 // nên coi như 0 — số cũ vì thế là CẬN DƯỚI, đừng so thẳng với số mới.
-const usdOf = (b, P) =>
+// XUẤT RA (21/09): màn «chi phí theo tin» của v3 tính tiền cho TỪNG dòng `so_ai`. Nó phải
+// dùng ĐÚNG công thức này — chép sang một bản thứ hai là hai màn cùng nói về tiền mà cộng
+// khác nhau, và bản chép bao giờ cũng là bản trôi khi đơn giá đổi.
+export const usdOf = (b, P) =>
   (b.tin * P.in + b.cread * P.cache + (b.cwrite || 0) * (P.cacheWrite ?? P.in) + b.tout * P.out) / 1e6;
 const r2 = (x, n = 4) => (x == null ? null : +x.toFixed(n));
 const pct = (a, b) => (b > 0 ? +((a / b) * 100).toFixed(1) : null);

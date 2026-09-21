@@ -114,16 +114,127 @@ const names = {
   products: "Sản phẩm & giá",
   orders: "Đơn chờ duyệt",
   conversations: "Hội thoại",
+  "chi-phi-tin": "Chi phí theo tin",
+  "bo-qua": "Tin bị lọc",
 };
+// Gom theo gì ở tab «Chi phí theo tin». Rỗng = liệt kê từng lượt, không gom.
+let gomTheo = "";
+const nhanGom = () => ({ khach: "Khách", page: "Page", thi_truong: "Thị trường" }[gomTheo] || "Nhóm");
+const tien = (v) => (v == null ? '<span class="meta">chưa đo được</span>'
+  : `<span class="manh tabular">${formatNumber(v)}đ</span>`);
+
+/* ── MỘT DÒNG = MỘT LƯỢT BOT XỬ LÝ ───────────────────────────────────────────────
+ * Tiền đi KÈM ngay câu chữ đã đẻ ra nó. Tách bảng tiền sang màn khác thì phải tự ghép
+ * lại bằng mắt, và không ai ghép — đó là lý do "chi phí ngầm" tồn tại được.
+ *
+ * `vnd: null` KHÔNG phải 0đ: nhà cung cấp không trả `usage` cho lượt đó. Hiện thẳng
+ * "chưa đo được", vì một con số 0 ở cột tiền là lời nói dối dễ tin nhất trên màn này.
+ */
+/* ── TIN BỊ LỌC ───────────────────────────────────────────────────────────────────
+ * Còn dòng ở đây = hội thoại ĐANG không được trả lời. Hai loại rất khác nhau:
+ *   · bình thường  — page vừa nói, không có gì mới, đang chờ khách gõ xong
+ *   · ĐÁNG SOI     — thẻ chặn (gắn nhầm?), đã-có-người-mở, thiếu psid, chờ gõ quá 5 phút
+ * Tô riêng nhóm thứ hai, vì gộp chung thì 46 dòng bình thường sẽ chôn mất 1 dòng thật sự
+ * là khách bị bỏ quên.
+ */
+function veTomTatBoQua(d) {
+  const o = $("#bang-tin");
+  o.dataset.tu = "bo-qua";
+  o.replaceChildren();
+  const t = d.tomTat || {};
+  if (t.trongVi) { el("p", t.trongVi, o).className = "meta"; return; }
+  const dong = el("div", undefined, o);
+  dong.className = "hang";
+  dong.innerHTML = `<span class="meta">Đang bỏ qua <span class="manh tabular">${formatNumber(t.tongHoiThoai || 0)}</span> hội thoại`
+    + (t.soDangNgo ? ` · <span class="manh">${formatNumber(t.soDangNgo)} ĐÁNG SOI</span>` : " · không dòng nào đáng ngờ")
+    + "</span>";
+  for (const x of t.theoLyDo || []) {
+    const n = el("div", undefined, o);
+    n.className = "meta";
+    n.innerHTML = `${x.dangNgo ? "⚠️ " : "· "}<b>${esc(x.chu)}</b>: ${formatNumber(x.soHoiThoai)} hội thoại`
+      + ` (${formatNumber(x.soVong)} lượt quét)`
+      + (x.lauNhatMs > 60000 ? ` · lâu nhất ${Math.round(x.lauNhatMs / 60000)} phút` : "")
+      + `<br><span class="meta">${esc(x.vi)}</span>`;
+  }
+}
+
+function veBoQua(than, x) {
+  const keoDai = x.keoDaiMs < 60000 ? `${Math.round(x.keoDaiMs / 1000)}s`
+    : x.keoDaiMs < 3600e3 ? `${Math.round(x.keoDaiMs / 60000)} phút`
+      : `${Math.round(x.keoDaiMs / 3600e3)} giờ`;
+  hang(than, [
+    `<div class="manh">${esc(x.pageTen || x.pageId)}</div>`
+      + `<div class="meta">${esc(x.thiTruong || "(chưa khai thị trường)")} · ${esc(x.psid || "(thiếu psid)")}</div>`
+      + `<div class="meta">${esc(x.convId)}</div>`,
+    (x.dangNgo ? statusBadge("blocked", { label: x.lyDoChu }) : statusBadge("unknown", { label: x.lyDoChu }))
+      + (x.chuThich ? `<div class="meta">${esc(x.chuThich)}</div>` : "")
+      + `<div class="meta">${esc(x.lyDoVi)}</div>`,
+    `<span class="tabular">${keoDai}</span><div class="meta tabular">${formatNumber(x.soLan)} vòng</div>`,
+    "",
+  ]);
+}
+
+function veThanhGom(d) {
+  const o = $("#bang-tin");
+  o.dataset.tu = "chi-phi-tin";
+  o.replaceChildren();
+  const hangNut = el("div", undefined, o);
+  hangNut.className = "hang";
+  el("span", "Gom theo:", hangNut).className = "meta";
+  for (const [ma, nhan] of [["", "từng tin"], ...(d.gomDuoc || []).map((g) => [g.ma, g.nhan])]) {
+    const n = button(hangNut, nhan, async () => { gomTheo = ma; offset = 0; await load(); });
+    if (ma === gomTheo) n.classList.add("dang-chon");
+  }
+}
+
+function veChiPhiTin(than, x) {
+  if (gomTheo) {
+    const phu = gomTheo === "khach" ? `${esc(x.pageTen || "")}${x.thiTruong ? ` · ${esc(x.thiTruong)}` : ""}`
+      : gomTheo === "page" ? esc(x.thiTruong || "(chưa khai thị trường)")
+        : `${formatNumber(x.soLuot)} lượt`;
+    hang(than, [
+      `<div class="manh">${esc(String(x.khoa || "(trống)"))}</div><div class="meta">${phu}</div>`,
+      `<span class="tabular">${formatNumber(x.soLuot)}</span>`
+        + `<div class="meta tabular">đo được ${formatNumber(x.soLuotDoThat)}</div>`,
+      `<span class="meta tabular">${formatNumber(x.token.vao)}+${formatNumber(x.token.ra)}`
+        + ` · cache ${formatNumber(x.token.cacheDoc)}/${formatNumber(x.token.cacheGhi)}</span>`,
+      tien(x.vnd)
+        + (x.vndMoiLuot == null ? '<div class="meta">chưa có đơn giá</div>'
+          : `<div class="meta tabular">${formatNumber(x.vndMoiLuot)}đ/lượt</div>`)
+        + (x.vndMoiDon == null ? "" : `<div class="meta tabular">${formatNumber(x.vndMoiDon)}đ/đơn</div>`),
+    ]);
+    return;
+  }
+  const tre = x.treLuotMs == null ? "" : `<div class="meta tabular">${Math.round(x.treLuotMs / 100) / 10}s</div>`;
+  hang(than, [
+    `<div class="manh">${esc(x.pageTen || x.pageId)}</div>`
+      + `<div class="meta">${esc(x.thiTruong || "(chưa khai thị trường)")} · ${esc(x.psid)} · ${esc(gio(x.luc))}</div>`
+      + `<pre class="nguyen-van">${esc(String(x.tinKhach || "(không có tin trong hàng đợi)").slice(0, 400))}</pre>`,
+    `<pre class="nguyen-van">${esc(String(x.botGui || "—").slice(0, 600))}</pre>`
+      + `<div class="meta">${esc(x.loai)}${x.lane ? ` · làn ${esc(x.lane)}` : ""} · ${esc(x.maModel)}</div>`,
+    x.token.vao == null
+      ? '<span class="meta">không gọi model</span>'
+      : `<span class="tabular">${formatNumber(x.token.vao)}+${formatNumber(x.token.ra || 0)}</span>`
+        + `<div class="meta tabular">cache ${formatNumber(x.token.cacheDoc || 0)}/${formatNumber(x.token.cacheGhi || 0)}</div>` + tre,
+    tien(x.vnd),
+  ]);
+}
+
 async function load() {
   const token = ++request;
   message("Đang tải…");
-  const d = await api(`${tab}?offset=${offset}`);
+  const d = await api(tab === "bo-qua" ? `bo-qua?offset=${offset}` : tab === "chi-phi-tin"
+    ? `chi-phi-tin?offset=${offset}${gomTheo ? `&theo=${gomTheo}` : ""}`
+    : `${tab}?offset=${offset}`);
+  if (tab === "chi-phi-tin") d.items = d.gom || d.items || [];
   if (token !== request) return;
   $("#list").replaceChildren();
   $("#dem").textContent = `${formatNumber(d.items.length)} dòng${offset ? ` · từ dòng ${formatNumber(offset + 1)}` : ""}`;
   if (tab === "dien-tap") veTomTatDienTap(d);
   else if ($("#bang-tin").dataset.tu === "dien-tap") { $("#bang-tin").innerHTML = ""; delete $("#bang-tin").dataset.tu; }
+  if (tab === "bo-qua") veTomTatBoQua(d);
+  else if ($("#bang-tin").dataset.tu === "bo-qua") { $("#bang-tin").innerHTML = ""; delete $("#bang-tin").dataset.tu; }
+  if (tab === "chi-phi-tin") veThanhGom(d);
   vePhanTrang(d.items.length);
 
   if (!d.items.length) {
@@ -150,6 +261,10 @@ async function load() {
     products: ["Sản phẩm", "Mã POS", "Sản phẩm gốc", ""],
     orders: ["Đơn", "Page", "Trạng thái", ""],
     conversations: ["Hội thoại", "Chủ sở hữu", "Trạng thái", ""],
+    "bo-qua": ["Hội thoại", "Vì sao KHÔNG trả lời", "Kéo dài", ""],
+    "chi-phi-tin": gomTheo
+      ? [nhanGom(), "Lượt · đo được", "Token", "Tiền"]
+      : ["Khách nói", "Bot đã gửi / định gửi", "Token · độ trễ", "Tiền"],
   }[tab];
   for (const c of cotDau) {
     const th = el("th", c || "", trDau);
@@ -176,6 +291,8 @@ async function load() {
       ]);
       continue;
     }
+    if (tab === "bo-qua") { veBoQua(than, item); continue; }
+    if (tab === "chi-phi-tin") { veChiPhiTin(than, item); continue; }
     if (tab === "pages") renderPage(than, item);
     if (tab === "products") {
       const o = hang(than, [
@@ -517,6 +634,22 @@ async function conversation(id) {
       detail: [String(d.lichSuLoi)] });
   }
 
+  // TIỀN NGAY TRONG DÒNG HỘI THOẠI. Tra theo `tin_id` (khoá `so_ai.nguon_dong`), lùi về
+  // ghép theo thời gian khi lượt đó không có dòng hàng đợi (vd tin của Botcake).
+  const phiTheoTin = new Map();
+  let phiTong = 0, phiDoThat = 0;
+  for (const x of d.chiPhi || []) {
+    if (x.vnd != null) { phiTong += x.vnd; phiDoThat += 1; }
+    if (x.tinKhach) phiTheoTin.set(String(x.tinKhach).slice(0, 120), x);
+  }
+  if ((d.chiPhi || []).length) {
+    const t = el("p", undefined, c);
+    t.className = "meta";
+    t.innerHTML = `Hội thoại này đã tốn <span class="manh tabular">${formatNumber(phiTong)}đ</span>`
+      + ` qua ${formatNumber(d.chiPhi.length)} lượt bot xử lý`
+      + (phiDoThat < d.chiPhi.length ? ` (${formatNumber(d.chiPhi.length - phiDoThat)} lượt chưa đo được token)` : "");
+  }
+
   const moc = [];
   for (const m of d.lichSu || []) {
     moc.push({ luc: m.luc ? Date.parse(m.luc) : 0, ben: m.laPage ? "page" : "khach", text: m.text, nhan: m.laPage ? "phía page (Pancake)" : "khách" });
@@ -538,6 +671,17 @@ async function conversation(id) {
   for (const m of moc) {
     const a = el("div", undefined, c);
     a.className = "panel";
+    if (m.ben === "khach") {
+      const p2 = phiTheoTin.get(String(m.text || "").slice(0, 120));
+      if (p2) {
+        const g = el("div", undefined, a);
+        g.className = "meta tabular";
+        g.textContent = p2.vnd == null
+          ? `lượt này: ${p2.loai}${p2.lane ? ` · làn ${p2.lane}` : ""} · 0 đồng (không gọi model)`
+          : `lượt này: ${formatNumber(p2.vnd)}đ · ${formatNumber(p2.token.vao || 0)}+${formatNumber(p2.token.ra || 0)} token`
+            + (p2.treLuotMs != null ? ` · ${Math.round(p2.treLuotMs / 100) / 10}s` : "");
+      }
+    }
     const dau = el("div", undefined, a);
     dau.className = "hang";
     dau.innerHTML =
