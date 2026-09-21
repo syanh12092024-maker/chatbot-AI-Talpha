@@ -53,3 +53,6 @@ goi-day-chuyen-ai*/
 # Mẫu hội thoại cho thước đường bán (ops/bin/do-duong-ban.mjs) — dữ liệu khách THẬT,
 # đã che SĐT/tên nhưng vẫn là dữ liệu khách. KHÔNG commit.
 mau-duong-ban.json
+
+# Isolated local dev runtime, credentials and logs
+.local-dev/
