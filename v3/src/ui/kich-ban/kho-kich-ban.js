@@ -40,8 +40,8 @@ export const VAI_SUA_DUOC = Object.freeze([VAI.QUAN_TRI, VAI.MARKETER]);
 /** Đưa lên LIVE là đổi cách bot nói với khách thật — thêm người duyệt kịch bản. */
 export const VAI_DUYET_DUOC = Object.freeze([VAI.QUAN_TRI, VAI.DUYET_KICH_BAN]);
 
-/** Đúng SÁU trường của `src/kb.js#SCRIPT_FIELDS`. Gõ lại là đẻ bản sao thứ hai. */
-export const TRUONG = Object.freeze(['tone', 'greeting', 'salesPrompt', 'fastLanePrice', 'fastLaneShip', 'fastLaneHowto']);
+/** Đúng TÁM trường của `src/kb.js#SCRIPT_FIELDS`. Gõ lại là đẻ bản sao thứ hai. */
+export const TRUONG = Object.freeze(['tone', 'greeting', 'salesPrompt', 'fastLanePrice', 'fastLaneShip', 'fastLaneHowto', 'fastLaneAuth', 'fastLaneSize']);
 
 export const NHAN_TRUONG = Object.freeze({
   tone: 'Giọng điệu / phong cách',
@@ -49,7 +49,9 @@ export const NHAN_TRUONG = Object.freeze({
   salesPrompt: 'Cách bán / điểm mạnh riêng',
   fastLanePrice: 'Trả lời nhanh — hỏi giá',
   fastLaneShip: 'Trả lời nhanh — hỏi ship',
-  fastLaneHowto: 'Trả lời nhanh — hỏi cách dùng',
+  fastLaneHowto: 'Trả lời nhanh — hỏi cách đặt',
+  fastLaneAuth: 'Trả lời nhanh — hỏi hàng thật/giả',
+  fastLaneSize: 'Trả lời nhanh — hỏi size / dung tích',
 });
 
 /** Ba trường ĐI VÀO PROMPT (khối «hướng dẫn riêng cho page»). Ba trường còn lại là câu trả
@@ -362,7 +364,7 @@ export async function duaLenLive(boiCanh, pageRowId, id, { lyDo = '' } = {}) {
   if (b.trangThai === 'LIVE') throw new LoiKichBan(`bản v${b.phienBan} đang LIVE rồi.`, 'dang_live');
 
   // ① Bot trước.
-  await _dayLenBot(page.pageId, b.nguoi);
+  const dongBoBot = await daySangBot(page.pageId, b.nguoi);
 
   // ② Rồi mới tới cột. Hạ bản cũ trước — `UNIQUE INDEX` chặn hai bản LIVE cùng lúc.
   const db = congTruyVan(bc);
@@ -374,9 +376,37 @@ export async function duaLenLive(boiCanh, pageRowId, id, { lyDo = '' } = {}) {
     doiTuongLoai: BANG,
     doiTuongId: String(b.id),
     truoc: live ? { phien_ban: live.phienBan, id: live.id } : null,
-    sau: { phien_ban: b.phienBan, page: page.pageId, bot_ai_bat: page.botAiBat },
+    sau: { phien_ban: b.phienBan, page: page.pageId, bot_ai_bat: page.botAiBat,
+      dong_bo_bot: dongBoBot.ok ? 'ok' : `bỏ qua: ${dongBoBot.ghiChu}` },
     ghiChu: lyDo || `đưa kịch bản v${b.phienBan} lên LIVE cho ${page.ten || page.pageId}`,
   });
 
-  return { id: String(b.id), phienBan: b.phienBan, haBan: live ? live.phienBan : null };
+  return { id: String(b.id), phienBan: b.phienBan, haBan: live ? live.phienBan : null, dongBoBot };
+}
+
+/** Máy này ráp prompt TỪ CSDL? (`src/chat/rap-prompt.js` đọc thẳng bản `kich_ban` LIVE.) */
+const rapPromptTuDb = () => process.env.V3_RAP_PROMPT_BAT === '1';
+
+/**
+ * Đẩy bản NGƯỜI sang tiến trình bot — và phân biệt HAI cảnh mà bản trước gộp làm một:
+ *
+ *   · cửa HỎNG (bot không trả lời, sai mật khẩu, chưa nối dây) → vẫn TỪ CHỐI. Sửa cột mà
+ *     bot nói y như cũ thì màn hình nói dối, đúng như khối chú thích của `duaLenLive`.
+ *   · cửa bị một CỜ KHOÁ LẠI (`PANCAKE_READONLY=1`, `V3_BOT_KHOA=1` — máy chỉ đọc, máy dev)
+ *     TRONG KHI máy ráp prompt từ CSDL → đi tiếp. Ở chế độ đó dòng LIVE trong bảng `kich_ban`
+ *     CHÍNH LÀ bản bot đọc mỗi lượt chat, nên `kb-overrides.json` của v1 không còn là nguồn
+ *     thật nữa; chặn ở đây là cấm sửa lời bot trên chính cái máy dựng ra để diễn tập.
+ *
+ * Không bao giờ im lặng: lý do bỏ qua đi vào nhật ký và trả về cho màn hình nói ra.
+ */
+async function daySangBot(pageIdFacebook, nguoi) {
+  try {
+    await _dayLenBot(pageIdFacebook, nguoi);
+    return { ok: true, ghiChu: '' };
+  } catch (e) {
+    if (e?.ma === 'cua_ghi_dong' && rapPromptTuDb()) {
+      return { ok: false, ghiChu: String((e && e.message) || e) };
+    }
+    throw e;
+  }
 }

@@ -49,11 +49,11 @@ const bcQt = () => taoBoiCanh({ nguoiDungId: 'u4', tenDangNhap: 'a@t.vn', teamId
 
 const NGUOI = { tone: 'Thân thiện', greeting: 'Xin chào', salesPrompt: 'Nhấn mạnh bảo hành' };
 
-/* ═══════════ sáu trường — neo vào `src/kb.js`, không gõ lại ═══════════ */
+/* ═══════════ tám trường — neo vào `src/kb.js`, không gõ lại ═══════════ */
 
-test('TRUONG · đúng sáu trường của `src/kb.js#SCRIPT_FIELDS`, đối chiếu THẲNG file', () => {
-  // Gõ lại sáu tên này là đẻ bản sao thứ hai của một sự thật nằm ở file khác — và bản sao
-  // sẽ lệch đúng lúc ai đó thêm trường thứ bảy.
+test('TRUONG · đúng các trường của `src/kb.js#SCRIPT_FIELDS`, đối chiếu THẲNG file', () => {
+  // Gõ lại danh sách này là đẻ bản sao thứ hai của một sự thật nằm ở file khác — và bản sao
+  // sẽ lệch đúng lúc ai đó thêm một trường nữa.
   const src = readFileSync(path.join(GOC_REPO, 'src/kb.js'), 'utf8');
   const m = src.match(/export const SCRIPT_FIELDS\s*=\s*\[([^\]]*)\]/);
   assert.ok(m, 'không tìm thấy SCRIPT_FIELDS trong src/kb.js');
@@ -62,18 +62,18 @@ test('TRUONG · đúng sáu trường của `src/kb.js#SCRIPT_FIELDS`, đối ch
   for (const t of kb.TRUONG) assert.ok(kb.NHAN_TRUONG[t], `trường "${t}" chưa có nhãn tiếng Việt`);
 });
 
-test('TRUONG_VAO_PROMPT · đúng ba trường đi vào prompt, ba trường kia là trả lời 0 đồng', () => {
+test('TRUONG_VAO_PROMPT · đúng ba trường đi vào prompt, các trường kia là trả lời 0 đồng', () => {
   assert.deepEqual([...kb.TRUONG_VAO_PROMPT], ['tone', 'greeting', 'salesPrompt']);
   // Người viết cần biết trường nào tốn token mỗi lượt chat và trường nào không.
   const conLai = kb.TRUONG.filter((t) => !kb.TRUONG_VAO_PROMPT.includes(t));
-  assert.deepEqual(conLai, ['fastLanePrice', 'fastLaneShip', 'fastLaneHowto']);
+  assert.deepEqual(conLai, ['fastLanePrice', 'fastLaneShip', 'fastLaneHowto', 'fastLaneAuth', 'fastLaneSize']);
 });
 
-test('lamSach · giữ đúng sáu trường, BỎ trường lạ, cắt khoảng trắng', () => {
+test('lamSach · giữ đúng tám trường, BỎ trường lạ, cắt khoảng trắng', () => {
   const r = kb.lamSach({ tone: '  x  ', greeting: 'y', truongLa: 'phải bị bỏ' });
   assert.equal(r.tone, 'x');
   assert.ok(!('truongLa' in r), 'trường lạ lọt vào là ghi một thứ prompt không đọc');
-  assert.equal(Object.keys(r).length, 6);
+  assert.equal(Object.keys(r).length, kb.TRUONG.length);
 });
 
 /* ═══════════ HAI BƯỚC KHÔNG ĐƯỢC ĐẢO ═══════════ */
@@ -156,6 +156,67 @@ test('duaLenLive · chưa nối cửa đẩy sang bot thì TỪ CHỐI, không s
   const kq = await kb.luuBanNhap(bcMkt(), 'p1', { nguoi: NGUOI });
   await assert.rejects(() => kb.duaLenLive(bcQt(), 'p1', kq.id), (e) => e.ma === 'chua_noi');
   assert.equal(kho.docThang(kb.BANG)[0].trang_thai, 'DRAFT', 'cột không được đổi');
+});
+
+/* ═══════════ cửa sang bot: HỎNG ≠ BỊ CỜ KHOÁ ═══════════ */
+
+/** Dựng kho có cửa đẩy NÉM đúng lỗi «cửa ghi đóng» của `noi-day/cau-bot-v1.js`. */
+function khoCuaDong() {
+  const r = dungKho();
+  kb.datDayLenBot(async () => {
+    const e = new Error('Cửa ghi sang tiến trình bot đang ĐÓNG: `PANCAKE_READONLY=1` đang bật');
+    e.ma = 'cua_ghi_dong';
+    throw e;
+  });
+  return r;
+}
+
+test('duaLenLive · cửa bị CỜ khoá + máy ráp prompt từ CSDL → vẫn lên LIVE, và NÓI RA', async () => {
+  // Ở chế độ này dòng LIVE trong bảng CHÍNH LÀ bản bot đọc mỗi lượt chat. Chặn ở đây là
+  // cấm sửa lời bot trên chính cái máy dựng ra để diễn tập.
+  const cu = process.env.V3_RAP_PROMPT_BAT;
+  process.env.V3_RAP_PROMPT_BAT = '1';
+  try {
+    const { kho, nhatKy } = khoCuaDong();
+    const kq = await kb.luuBanNhap(bcMkt(), 'p1', { nguoi: NGUOI });
+    const ra = await kb.duaLenLive(bcQt(), 'p1', kq.id);
+    assert.equal(kho.docThang(kb.BANG)[0].trang_thai, 'LIVE');
+    assert.equal(ra.dongBoBot.ok, false);
+    assert.match(ra.dongBoBot.ghiChu, /PANCAKE_READONLY/, 'phải trả về LÝ DO, không nuốt');
+    const v = nhatKy.find((x) => x.hanhDong === kb.HANH_DONG_LIVE);
+    assert.match(String(v.sau.dong_bo_bot), /^bỏ qua: /, 'nhật ký phải ghi là đã BỎ QUA bước đẩy');
+  } finally {
+    if (cu === undefined) delete process.env.V3_RAP_PROMPT_BAT; else process.env.V3_RAP_PROMPT_BAT = cu;
+  }
+});
+
+test('duaLenLive · cửa bị CỜ khoá mà máy KHÔNG ráp prompt từ CSDL → vẫn từ chối', async () => {
+  // Không có cờ đó thì `kb-overrides.json` của v1 mới là nguồn thật — sửa cột mà không đẩy
+  // sang bot là màn hình báo LIVE trong khi bot nói y như cũ.
+  const cu = process.env.V3_RAP_PROMPT_BAT;
+  delete process.env.V3_RAP_PROMPT_BAT;
+  try {
+    const { kho } = khoCuaDong();
+    const kq = await kb.luuBanNhap(bcMkt(), 'p1', { nguoi: NGUOI });
+    await assert.rejects(() => kb.duaLenLive(bcQt(), 'p1', kq.id), (e) => e.ma === 'cua_ghi_dong');
+    assert.equal(kho.docThang(kb.BANG)[0].trang_thai, 'DRAFT', 'cột không được đổi');
+  } finally {
+    if (cu !== undefined) process.env.V3_RAP_PROMPT_BAT = cu;
+  }
+});
+
+test('duaLenLive · cửa HỎNG (không phải cờ khoá) thì từ chối kể cả khi ráp prompt từ CSDL', async () => {
+  const cu = process.env.V3_RAP_PROMPT_BAT;
+  process.env.V3_RAP_PROMPT_BAT = '1';
+  try {
+    const { kho } = dungKho();
+    kb.datDayLenBot(async () => { const e = new Error('bot không trả lời'); e.ma = 'cau_bot_hong'; throw e; });
+    const kq = await kb.luuBanNhap(bcMkt(), 'p1', { nguoi: NGUOI });
+    await assert.rejects(() => kb.duaLenLive(bcQt(), 'p1', kq.id), (e) => e.ma === 'cau_bot_hong');
+    assert.equal(kho.docThang(kb.BANG)[0].trang_thai, 'DRAFT', 'cột không được đổi');
+  } finally {
+    if (cu === undefined) delete process.env.V3_RAP_PROMPT_BAT; else process.env.V3_RAP_PROMPT_BAT = cu;
+  }
 });
 
 test('duaLenLive · áp lại bản đang LIVE thì chặn', async () => {

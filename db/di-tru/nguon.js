@@ -14,7 +14,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { GOC } from "../ket-noi.js";
 
-// Đúng 6 trường của một bản kịch bản — chép từ `src/kb.js` SCRIPT_FIELDS (bản đang chạy).
+// Đúng 8 trường của một bản kịch bản — chép từ `src/kb.js` SCRIPT_FIELDS (bản đang chạy).
+// Thiếu một trường ở đây là bộ di trú NUỐT trường đó trên đường từ kb-overrides vào DB.
 export const TRUONG_KICH_BAN = [
   "tone",
   "greeting",
@@ -22,6 +23,8 @@ export const TRUONG_KICH_BAN = [
   "fastLanePrice",
   "fastLaneShip",
   "fastLaneHowto",
+  "fastLaneAuth",
+  "fastLaneSize",
 ];
 
 const doc = (p) => JSON.parse(fs.readFileSync(p, "utf8"));

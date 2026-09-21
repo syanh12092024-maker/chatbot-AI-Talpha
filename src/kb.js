@@ -200,13 +200,20 @@ export function productImages(p) {
 
 // Cấu hình AI theo page (lời chào / giọng điệu / hướng dẫn bán hàng riêng).
 //
-// SÁU TRƯỜNG, hai nhóm KHÁC HẲN NHAU về mức độ nguy hiểm — validator (M02) đối xử khác nhau:
+// TÁM TRƯỜNG, hai nhóm KHÁC HẲN NHAU về mức độ nguy hiểm — validator (M02) đối xử khác nhau:
 //   · NỘI BỘ  (tone, salesPrompt)              — chỉ dẫn cho model đọc, viết tiếng Việt là ĐÚNG.
 //   · GỬI KHÁCH (greeting, fastLane*)           — bắn NGUYÊN VĂN cho khách, lọt tiếng Việt là lỗi nặng.
 // fastLane* đã được `fast-lane.js` đọc sẵn (kb.config.fastLanePrice/Ship/Howto) từ trước nhưng
 // CHƯA CÓ ĐƯỜNG NÀO ĐIỀN — updatePageConfig cũ cắt mất 3 trường này. Nay giữ lại.
-export const SCRIPT_FIELDS = ['tone', 'greeting', 'salesPrompt', 'fastLanePrice', 'fastLaneShip', 'fastLaneHowto'];
-export const CUSTOMER_FACING_FIELDS = ['greeting', 'fastLanePrice', 'fastLaneShip', 'fastLaneHowto'];
+//
+// `fastLaneAuth` + `fastLaneSize` (17/09): `chat/lop-tu-khoa.js:118,134` ĐỌC hai trường này
+// từ `kb.config` để trả lời «hàng thật/giả» và «size» mà không gọi model — nhưng cả HAI
+// đường ghi (cleanConfig ở đây và `v3 kho-kich-ban.js#lamSach`) đều lọc theo danh sách này,
+// nên hai trường luôn bị cắt trước khi xuống DB. Lớp từ khoá vì thế KHÔNG BAO GIỜ chặn được
+// hai ý đó — nó nhường AI đúng như code nói, và người viết kịch bản không có ô nào để điền.
+// Thêm vào đây là mở đường ghi; `CUSTOMER_FACING_FIELDS` nhận luôn vì chúng bắn nguyên văn.
+export const SCRIPT_FIELDS = ['tone', 'greeting', 'salesPrompt', 'fastLanePrice', 'fastLaneShip', 'fastLaneHowto', 'fastLaneAuth', 'fastLaneSize'];
+export const CUSTOMER_FACING_FIELDS = ['greeting', 'fastLanePrice', 'fastLaneShip', 'fastLaneHowto', 'fastLaneAuth', 'fastLaneSize'];
 
 function cleanConfig(config) {
   const out = {};
