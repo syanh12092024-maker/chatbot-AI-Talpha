@@ -12,6 +12,26 @@ const stateFile = path.join(home, 'current.json');
 const action = process.argv[2] || 'start';
 fs.mkdirSync(home, { recursive: true, mode: 0o700 });
 const readState = () => JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+
+// Bản dev là bản CHÉP của mã nguồn, không phải liên kết. Nên sửa mã trong repo rồi khởi
+// động lại instance là chạy MÃ CŨ — lỗi im lặng, và đã cắn nhiều lần: cổng vẫn mở, log vẫn
+// sạch, chỉ hành vi là của hôm qua. `start` vì thế luôn chép lại trước khi chạy.
+const chepNguon = (dir) => {
+  const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
+    { cwd: root, encoding: 'utf8' }).split('\0');
+  const allowed = new Set(['src', 'v3', 'db', 'public', 'ops']);
+  let n = 0;
+  for (const rel of new Set(files)) {
+    if (!rel || !(allowed.has(rel.split('/')[0]) || ['package.json', 'package-lock.json'].includes(rel))) continue;
+    const from = path.join(root, rel), to = path.join(dir, rel);
+    if (!fs.existsSync(from) || !fs.statSync(from).isFile()) continue;
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.copyFileSync(from, to);
+    n += 1;
+  }
+  return n;
+};
+
 if (action === 'new') {
   const source = dotenv.parse(fs.readFileSync(path.join(root, '.env')));
   const url = new URL(source.DATABASE_URL_V3);
@@ -19,14 +39,7 @@ if (action === 'new') {
   const name = 'aicloser_dev_' + Date.now();
   const dir = path.join(home, name);
   fs.mkdirSync(dir, { mode: 0o700 });
-  const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: root, encoding: 'utf8' }).split('\0');
-  const allowed = new Set(['src','v3','db','public','ops']);
-  for (const rel of new Set(files)) {
-    if (!rel || !(allowed.has(rel.split('/')[0]) || ['package.json','package-lock.json'].includes(rel))) continue;
-    const from = path.join(root, rel), to = path.join(dir, rel);
-    if (!fs.statSync(from).isFile()) continue;
-    fs.mkdirSync(path.dirname(to), { recursive: true }); fs.copyFileSync(from, to);
-  }
+  chepNguon(dir);
   fs.symlinkSync(path.join(root, 'node_modules'), path.join(dir, 'node_modules'), 'dir');
   const adminUrl = new URL(url); adminUrl.pathname = '/postgres';
   const admin = new pg.Pool({ connectionString: adminUrl.toString(), connectionTimeoutMillis:5000 });
@@ -117,8 +130,13 @@ if (action === 'new') {
   console.log(`  page đọc được: ${(j.categorized.activated || []).length}`);
   console.log(`  hết hạn   : ${han ? new Date(han).toLocaleString('vi-VN') : 'không ghi hạn'}`);
   console.log('Khởi động lại (Ctrl-C rồi `npm run local:start`) để bot nạp token. Van gửi VẪN đóng.');
+} else if (action === 'sync') {
+  const state = readState();
+  console.log(`Đã chép lại ${chepNguon(state.dir)} tệp mã nguồn vào ${state.name}.`);
+  console.log('Khởi động lại (`npm run local:stop` rồi `npm run local:start`) để nạp.');
 } else if (action === 'start') {
   const state = readState();
+  console.log(`Đồng bộ mã nguồn: ${chepNguon(state.dir)} tệp.`);
   const clean = { PATH:process.env.PATH, HOME:process.env.HOME, TMPDIR:process.env.TMPDIR };
   // Keep this command running; Ctrl-C stops both processes. No worker in configure mode.
   const children = [];
@@ -130,4 +148,4 @@ if (action === 'new') {
   }
   for(const signal of ['SIGINT','SIGTERM']) process.on(signal,()=>children.forEach(c=>c.kill(signal)));
   console.log('Local dev: http://127.0.0.1:3202/dang-nhap — Ctrl-C để dừng.');
-} else throw Error('Dùng new, start, stop hoặc token');
+} else throw Error('Dùng new, start, sync, stop hoặc token');

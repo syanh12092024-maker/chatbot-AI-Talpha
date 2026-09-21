@@ -24,6 +24,7 @@
     "local:new": "node ops/bin/local-dev.mjs new",
     "local:start": "node ops/bin/local-dev.mjs start",
     "local:stop": "node ops/bin/local-dev.mjs stop",
+    "local:sync": "node ops/bin/local-dev.mjs sync",
     "local:token": "node ops/bin/local-dev.mjs token",
     "soi:tin": "node ops/bin/soi-tin-pancake.mjs"
   },
