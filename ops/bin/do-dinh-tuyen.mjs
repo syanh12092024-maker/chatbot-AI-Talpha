@@ -27,7 +27,15 @@ if (!tepTin || !tepNhan) {
   console.error("Dùng: node ops/bin/do-dinh-tuyen.mjs <tin.json> <nhan-chuan.json>");
   process.exit(2);
 }
-const tin = JSON.parse(fs.readFileSync(tepTin, "utf8"));
+// ⚠️ BỘ QUÉT che SĐT/email thành `<SĐT>`/`<EMAIL>` trước khi lưu (đúng, đó là dữ liệu
+// người thật). Nhưng `HAS_PHONE` — cửa NHƯỜNG đứng đầu cả `fast-lane` lẫn `lop-tu-khoa`
+// — bắt SỐ, không bắt chữ `<SĐT>`. Chấm trên dữ liệu đã che là chấm một cỗ máy KHÁC cái
+// đang chạy: ở bản thật những tin đó đã bị nhường từ đầu. Trả lại một số giả có cùng
+// HÌNH DẠNG để cửa đó bắn đúng như production.
+const boChe = (t) => String(t)
+  .replace(/<SĐT>/g, "0551234567")
+  .replace(/<EMAIL>/g, "a@b.com");
+const tin = JSON.parse(fs.readFileSync(tepTin, "utf8")).map(boChe);
 const chuan = JSON.parse(fs.readFileSync(tepNhan, "utf8"));
 const nhan = chuan.nhan;
 if (tin.length !== nhan.length) {
@@ -61,7 +69,8 @@ async function boRegex() {
   return (t) => {
     const k = lopTuKhoa({ text: t, kb });
     if (k?.handled) {
-      const m = { that_gia: "hang_that", hoi_size: "size", howto: "dat_hang" };
+      const m = { that_gia: "hang_that", hoi_size: "size", howto: "dat_hang",
+        paano_gap: "dat_hang", muon_dat: "dat_hang", hoi_ship: "ship", gia_sai_chinh_ta: "gia" };
       return { y: m[k.rule] || "khac", tin_cay: 1 };
     }
     const f = fastLane({ text: t, kb, aiTurns: 1, usedLanes: new Set(), pageId: "x" });
@@ -174,6 +183,10 @@ for (const y of Y_DINH) {
     + `${nham ? `   · nhận nhầm vào đây: ${nham}` : ""}`);
 }
 
+if (banNham.length) {
+  console.log(`\n── BẮN NHẦM (không nguy hiểm) — ${banNham.length} tin:`);
+  for (const x of banNham) console.log(`   #${x.i} thật=${x.that} → ${x.doan}   "${String(x.text).replace(/\s+/g," ").slice(0,60)}"`);
+}
 if (nguyHiem.length) {
   console.log(`\n⚠️  BẮN NHẦM NGUY HIỂM — ${nguyHiem.length} tin:`);
   for (const x of nguyHiem.slice(0, 8)) {

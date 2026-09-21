@@ -1,3 +1,4 @@
+import { templateSafety } from './template-safety.js';
 // LỚP TỪ KHOÁ v3 — hai luật Botcake chưa phủ + vá lỗ `paano mag order` (phiếu L2-M2).
 //
 // Đứng TRƯỚC fastLane/classify trong handler-v3.js (đề bài ①: "lớp này đứng TRƯỚC
@@ -81,6 +82,97 @@ const HOWTO_FALLBACK = {
   ar: "سهلة جداً! 😊 أرسل لنا:\nالاسم · رقم الجوال · العنوان\nالدفع عند الاستلام. نبدأ؟ 🚚",
 };
 
+/* ═══ NỚI BA Ý YẾU + BA CỬA NHƯỜNG (21/09) ═════════════════════════════════════════
+ *
+ * Đo trên 146 tin khách thật của page 1220547807799752, chấm bằng bộ chuẩn dán nhãn tay
+ * (`ops/bin/do-dinh-tuyen.mjs`): lớp 0 đồng phủ **17,8%**, và bắn RẤT chính xác khi bắn
+ * (92,3% đúng, 0 ca nguy hiểm). Nhưng ba ý gần như trượt sạch:
+ *
+ *     ship       3/29   10,3%      dat_hang   0/12   0%      hang_that  0/2   0%
+ *
+ * Thử nới từ khoá KHÔNG kèm cửa nhường: phủ lên 57,5% — và đẻ ra **12 ca bắn nhầm
+ * nguy hiểm**. Chúng giống nhau đến mức thành quy luật:
+ *
+ *     "Walapa tumawag saakin hihintay ko nga ang twg"   → bắn mẫu SHIP
+ *     "sabimo darating ang delivery pero Hindi pa dumating" → bắn mẫu SHIP
+ *
+ * Người đang bức xúc vì CHƯA nhận được hàng, nhận lại câu «đơn của bạn được giao miễn
+ * phí, mất 2-5 ngày». Tệ hơn hẳn việc im và để AI/người vào.
+ *
+ * Lý do gốc: bốn lớp `khieu_nai` · `cho_thong_tin` · `chot` · `hen_sau` DÙNG CHUNG TỪ
+ * VỰNG với các ý có mẫu (delivery, order, waiting, riyal) nhưng đòi hành động NGƯỢC LẠI.
+ * Từ khoá không phân biệt được — nên cách duy nhất an toàn là NHẬN DIỆN CHÚNG TRƯỚC và
+ * nhường, rồi mới cho các luật nới chạy trên phần còn lại.
+ *
+ * ⚠️ Bốn cửa dưới đây chỉ NHƯỜNG, không bao giờ trả lời. Sai một cửa ⇒ mất một lượt
+ *    0 đồng (tốn ~110đ), KHÔNG phải gửi nhầm cho khách. Lệch đúng chiều được phép lệch.
+ */
+
+/** ① KHIẾU NẠI — phủ định + giao hàng, hoặc đòi huỷ/hoàn/sai hàng. */
+const KHIEU_NAI =
+  /\b(wala\s*pa|walapa|hindi\s+pa|di\s+pa|hindi\s+dumating|walang\s+tumawag|no\s*body|nobody|no\s+one|not\s+yet|still\s+(?:not|no)\b|haven'?t\s+(?:received|got|gotten)|hasn'?t\s+(?:arrived|come)|never\s+(?:arrived|came)|waiting\s+(?:too|to)\s+long|too\s+long|cancel(?:led|led)?|refund|wrong\s+(?:item|product|address))\b/i;
+
+/** ② KHÁCH ĐANG CHO THÔNG TIN — link bản đồ. (SĐT đã có `HAS_PHONE` chặn ở trên.) */
+const CHO_VI_TRI = /maps\.app\.goo\.gl|google\.[a-z.]+\/maps|goo\.gl\/maps/i;
+
+/** ③ CHỐT GÓI — nêu con số tiền hoặc tên gói. Phải vào luồng đơn, không bắn mẫu. */
+const CHOT_GOI =
+  /\b(?:buy\s*\d|\d\s*x\s*\d|get\s*\d\s*free|\d+\s*(?:sar|sr|riyal)\b|combo\s*\d)/i;
+
+/** ④ HẸN SAU — chờ lương, tháng sau. Đây là lúc phải GỠ phản đối, không phải báo giá. */
+const HEN_SAU =
+  /\b(?:next\s+month|sa\s+\w+\s+\d|salary|sahod|sweldo|payday|maybe\s+(?:next|later)|next\s+time)\b/i;
+
+/* ═══ KHÔNG CƯỚP VIỆC CỦA FAST-LANE ════════════════════════════════════════════════
+ *
+ * Lớp này chạy TRƯỚC fast-lane. Nếu nó bắt luôn những câu fast-lane vốn bắt đúng thì
+ * `so_ai.lane` ghi `tu_khoa_v3` thay cho `tpl_price`/`tpl_ship`/`tpl_howto` — và mọi
+ * phép so «lớp nào chặn bao nhiêu» từ trước tới nay hết đối chiếu được. Hai ca kiểm
+ * của `l2-m2` khoá đúng điều đó lại.
+ *
+ * Nên tính BỔ SUNG phải là CẤU TRÚC, không phải khéo tay chỉnh regex cho khỏi đè: mọi
+ * luật MỚI dưới đây chỉ chạy khi `DA_CO_O_FASTLANE` KHÔNG khớp.
+ *
+ * ⛔ Ba regex dưới đây CHÉP NGUYÊN VĂN từ `fast-lane.js` (hằng private, không export
+ *    được — cùng lý do và cùng cách đã làm với `HAS_PHONE` ở trên). Sửa bên đó mà quên
+ *    bên này thì lớp này bắt đè, và hai ca kiểm `l2-m2` sẽ đỏ — đó là lưới an toàn.
+ */
+const DA_CO_O_FASTLANE = new RegExp([
+  // ASK_PRICE
+  "(how much|howmuch|magkano|mgkano|price|presyo|cost|pricelist|price list|bahin sa presyo|كم السعر|السعر|بكم|كم سعر|بكام)",
+  // ASK_SHIP
+  "(shipping|delivery|deliver|ilang araw|ilang days|how long|how many days|kailan (?:dumating|darating|makukuha)|when (?:will|can) i (?:get|receive)|free (?:ship|delivery)|libre ba ang (?:ship|delivery)|متى يصل|التوصيل|الشحن)",
+  // ASK_HOWTO
+  "(how to order|how do i order|how can i order|paano (?:mag)?(?:order|umorder|bumili)|pano (?:mag)?order|pa ?order|kaano|كيف أطلب|كيفية الطلب|طريقة الطلب)",
+].join("|"), "i");
+
+/** Hỏi/hẹn GIAO HÀNG — nới từ `ASK_SHIP` của fast-lane bằng từ vựng lịch hẹn. */
+const SHIP_Q =
+  /\b(?:when|what\s+time|anong\s+oras|how\s+long|how\s+many\s+days|kailan|kelan|ilang\s+araw|ilang\s+days|deliver(?:y|ed|ing)?|shipping|courier|parcel|arrive|arriving|dumating|darating|hintay|naghihintay)\b/i;
+const LICH_GIAO =
+  /\b(?:available|next\s+week|this\s+week|tomorrow|today|taday|monday|tuesday|wednesday|thursday|friday|saturday|sunday|bukas|ngayon|mamaya)\b/i;
+
+/** MUỐN ĐẶT — nới `ASK_HOWTO`, gồm cả câu khẳng định "i want to order". */
+const DAT_HANG =
+  /\b(?:i\s+(?:want|need|will|would\s+like|can)\s+(?:to\s+)?order|place\s+an?\s+order|mag[\s-]?order|umorder|pa[\s-]?order|maka[\s-]?order|order\s+po|i\s+order\b|try\s+ko|gusto\s+ko)\b/i;
+
+/** ⑤ HỎI VỀ KHUYẾN MÃI (bao giờ hết promo) — KHÔNG phải hỏi giao hàng, dù có "kailan". */
+const HOI_PROMO = /\bpromo\b|\bpromotion\b|\bdiscount\b/i;
+
+/** ⑥ ĐÃ NHẬN ĐƯỢC HÀNG — bắn "hàng tới trong 2-5 ngày" vào đây là nói chuyện quá khứ. */
+const DA_NHAN =
+  /\bna\s+deliver|\bdelivered\s+na\b|\bnatanggap\s+na\b|\bnakuha\s+ko\b|\bi\s+recieved?\b|\bi\s+got\s+it\b/i;
+
+/** HỎI GIÁ, BIẾN THỂ SAI CHÍNH TẢ mà `ASK_PRICE` của fast-lane bỏ sót.
+ *  Đo 17/09: "mabkanonpo ma'am?" và "parice" đều NOMATCH ở regex gốc ⇒ mỗi tin một lượt
+ *  gọi closer (~110đ) cho một câu hỏi đã có sẵn mẫu.
+ *  ⛔ Cố ý KHÔNG khớp chính tả ĐÚNG (`magkano`, `how much`…): fast-lane đã bắt chúng, và
+ *     để hai nơi cùng bắt một chữ là hai nơi cùng ghi `so_ai.lane` — số liệu hết so được. */
+const GIA_SAI = /\b(?!magkano\b)m[ab][bgk]kano|\bmgkano\b|\bpar?ice\b|\bpriice\b/i;
+
+/** THẬT/GIẢ — thêm biến thể Taglish "true ba / true b yan" mà `AUTH_Q` bỏ sót. */
+const AUTH_THEM = /\btrue\s*b(?:a)?\b|\bscam\b|\bfake\s+ba\b/i;
+
 /**
  * Bậc từ khoá v3 — chạy TRƯỚC fastLane/classify (đề bài ①). Hàm THUẦN: không đọc DB,
  * không ghi gì — handler-v3.js lo ghi `so_ai`/`hoi_thoai` khi `handled:true`.
@@ -93,10 +185,13 @@ const HOWTO_FALLBACK = {
  *   vẫn được điền khi khớp từ khoá nhưng thiếu KB (NHƯỜNG có chủ đích), để nhật ký/test
  *   phân biệt được "không khớp luật nào" với "khớp luật nhưng trang chưa có dữ liệu".
  */
-export function lopTuKhoa({ text, kb }) {
+export function lopTuKhoa({ text, kb, profile = {} }) {
   const raw = String(text || "");
   const s = norm(raw);
   const nhuong = (rule, lyDo) => ({ handled: false, reply: null, rule, lyDo });
+
+  const safety = templateSafety(raw, profile);
+  if (!safety.safe) return nhuong(null, safety.reason);
 
   if (!s)
     return nhuong(null, "tin rỗng/sticker — nhường lớp im lặng của fastLane");
@@ -110,7 +205,21 @@ export function lopTuKhoa({ text, kb }) {
   if (words > WORD_CAP)
     return nhuong(null, `tin dài >${WORD_CAP} từ — nhường AI`);
 
-  if (AUTH_Q.test(raw)) {
+  // ── BỐN CỬA NHƯỜNG — chạy TRƯỚC mọi luật trả lời (xem khối chú thích ở trên) ──
+  if (KHIEU_NAI.test(raw))
+    return nhuong(null, "có dấu hiệu KHIẾU NẠI (chưa nhận hàng/đòi huỷ) — nhường người thật");
+  if (CHO_VI_TRI.test(raw))
+    return nhuong(null, "khách gửi vị trí — đang giữa lượt chốt đơn, nhường AI");
+  if (CHOT_GOI.test(raw))
+    return nhuong(null, "khách nêu gói/số tiền — vào luồng đơn, không bắn mẫu");
+  if (HEN_SAU.test(raw))
+    return nhuong(null, "khách hẹn sau (chờ lương/tháng sau) — cần AI gỡ phản đối");
+  if (HOI_PROMO.test(raw))
+    return nhuong(null, "hỏi về khuyến mãi (hạn promo) — không có mẫu, nhường AI");
+  if (DA_NHAN.test(raw))
+    return nhuong(null, "khách nói ĐÃ nhận hàng — mẫu giao hàng nói chuyện quá khứ, nhường AI");
+
+  if (AUTH_Q.test(raw) || AUTH_THEM.test(raw)) {
     const kbText = String(kb?.config?.fastLaneAuth || "").trim();
     if (!kbText) {
       return nhuong(
@@ -151,6 +260,53 @@ export function lopTuKhoa({ text, kb }) {
       reply,
       rule: "paano_gap",
       lyDo: "vá lỗ paano mag order (biến thể tách chữ) — trả lời cách đặt hàng",
+    };
+  }
+
+  // Từ đây là ba luật MỚI — chỉ chạy trên phần fast-lane KHÔNG phủ (xem khối trên).
+  const fastLaneLo = DA_CO_O_FASTLANE.test(raw);
+
+  if (!fastLaneLo && GIA_SAI.test(raw)) {
+    const kbText = String(kb?.config?.fastLanePrice || "").trim();
+    if (!kbText) {
+      return nhuong(
+        "gia_sai_chinh_ta",
+        "hỏi giá (sai chính tả) nhưng page chưa có kb.config.fastLanePrice — nhường AI",
+      );
+    }
+    return {
+      handled: true,
+      reply: kbText,
+      rule: "gia_sai_chinh_ta",
+      lyDo: "hỏi giá viết sai chính tả — trả lời từ KB page (regex gốc bỏ sót)",
+    };
+  }
+
+  if (!fastLaneLo && DAT_HANG.test(raw)) {
+    const lang = detectLang(raw);
+    const kbText = String(kb?.config?.fastLaneHowto || "").trim();
+    const reply = kbText || HOWTO_FALLBACK[lang] || HOWTO_FALLBACK.en;
+    return {
+      handled: true,
+      reply,
+      rule: "muon_dat",
+      lyDo: "khách nói muốn đặt hàng — xin thông tin giao hàng",
+    };
+  }
+
+  if (!fastLaneLo && (SHIP_Q.test(raw) || LICH_GIAO.test(raw))) {
+    const kbText = String(kb?.config?.fastLaneShip || "").trim();
+    if (!kbText) {
+      return nhuong(
+        "hoi_ship",
+        "hỏi/hẹn giao hàng nhưng page chưa có kb.config.fastLaneShip — nhường AI (không bịa)",
+      );
+    }
+    return {
+      handled: true,
+      reply: kbText,
+      rule: "hoi_ship",
+      lyDo: "khớp từ khoá giao hàng/lịch hẹn — trả lời từ KB page",
     };
   }
 

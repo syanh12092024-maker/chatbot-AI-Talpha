@@ -205,3 +205,106 @@ test("Tin rỗng/sticker không văng lỗi, NHƯỜNG", () => {
   assert.equal(r.handled, false);
   assert.equal(r.rule, null);
 });
+
+/* ═══════════ NỚI BA Ý + SÁU CỬA NHƯỜNG (21/09) ═══════════
+ *
+ * Nới từ khoá mà KHÔNG có cửa nhường thì phủ lên 57,5% nhưng đẻ 12 ca bắn nhầm nguy
+ * hiểm — người đang bức xúc vì chưa nhận hàng nhận lại câu «giao miễn phí, 2-5 ngày».
+ * Sáu cửa dưới đây là thứ giữ con số đó ở 0. Mỗi ca ở đây là một ca thật trong 146 tin
+ * đã quét của page 1220547807799752.
+ */
+const kbDu = {
+  config: {
+    ...kbDay.config,
+    fastLanePrice: "🎁 Buy 1 Get 1 – 109 SAR\n🎁 Buy 2 Get 2 – 159 SAR",
+    fastLaneShip: "Your order is free delivery dear 🚚\nIt take 2 - 5 days to delivery dear",
+  },
+};
+
+test("CỬA NHƯỜNG · khiếu nại giao hàng KHÔNG BAO GIỜ bị bắn mẫu ship", () => {
+  // Cả bốn câu đều chứa từ vựng giao hàng. Nới regex mà thiếu cửa này là bắn câu
+  // «đơn của bạn được giao miễn phí» vào mặt người đang tố chưa nhận được hàng.
+  for (const c of [
+    "Sir Walapa tumawag saakin hihintay ko nga ang twg pero Walapa sir",
+    "Hallo sir sabimo darating ang delivery pero Hindi pa dumating sir",
+    "No body call",
+    "Am waiting to long",
+    "The order said my friend she want cancel",
+  ]) {
+    // Điều phải bảo đảm là KHÔNG BẮN. Cửa nào bắt thì không quan trọng — `templateSafety`
+    // vốn đã chặn một phần trong số này, và neo vào tên cửa là làm ca kiểm giòn.
+    const r = lopTuKhoa({ text: c, kb: kbDu });
+    assert.equal(r.handled, false, `"${c}" phải NHƯỜNG, không bắn mẫu`);
+    assert.ok(r.reply == null, `"${c}" không được có câu trả lời`);
+  }
+});
+
+test("CỬA NHƯỜNG · khách CHO THÔNG TIN / CHỐT GÓI / HẸN SAU → vào luồng đơn, không bắn mẫu", () => {
+  const ca = [
+    ["https://maps.app.goo.gl/kiUkumS2pJYDT6GT9", /vị trí/],
+    ["2 x 2 = 149 SR", /gói|số tiền/],
+    ["Buy 2 Get 2 Free - 159 SR. COD", /gói|số tiền/],
+    ["99 SAR", /gói|số tiền/],
+    ["pwede maka order sa October 1", /hẹn sau/],
+    ["If my salary coming I well messages you.thank you.", /hẹn sau/],
+  ];
+  for (const [c, vi] of ca) {
+    const r = lopTuKhoa({ text: c, kb: kbDu });
+    assert.equal(r.handled, false, `"${c}" phải NHƯỜNG`);
+    assert.match(r.lyDo, vi, `"${c}" nhường sai lý do: ${r.lyDo}`);
+  }
+});
+
+test("CỬA NHƯỜNG · hỏi hạn PROMO và «đã nhận hàng» không phải câu hỏi giao hàng", () => {
+  for (const c of ["Hanggang kailan ang promo!", "J&T na deliver naman ang items ko"]) {
+    assert.equal(lopTuKhoa({ text: c, kb: kbDu }).handled, false, `"${c}" phải NHƯỜNG`);
+  }
+});
+
+test("NỚI · muốn đặt hàng — câu KHẲNG ĐỊNH mà `ASK_HOWTO` bỏ sót", () => {
+  for (const c of ["I want to order", "I need order", "Place an order", "I order po", "Try ko itong product"]) {
+    const r = lopTuKhoa({ text: c, kb: kbDu });
+    assert.equal(r.handled, true, `"${c}" phải bắt`);
+    assert.equal(r.rule, "muon_dat");
+    assert.equal(r.reply, kbDu.config.fastLaneHowto);
+    assert.equal(ASK_HOWTO_BAN_CU.test(c), false, `"${c}" mà fastLane cũ đã bắt thì đây KHÔNG được bắt`);
+  }
+});
+
+test("NỚI · hỏi/hẹn giao hàng — lịch hẹn mà `ASK_SHIP` bỏ sót", () => {
+  for (const c of ["What time he come", "Kailan po sir", "I'm available Saturday to Thursday", "Pwede sa Sunday or Monday po si"]) {
+    const r = lopTuKhoa({ text: c, kb: kbDu });
+    assert.equal(r.handled, true, `"${c}" phải bắt`);
+    assert.equal(r.rule, "hoi_ship");
+    assert.equal(r.reply, kbDu.config.fastLaneShip);
+  }
+});
+
+test("NỚI · hỏi giá SAI CHÍNH TẢ — và KHÔNG cướp chính tả đúng của fastLane", () => {
+  const r = lopTuKhoa({ text: "mabkanonpo ma'am?", kb: kbDu });
+  assert.equal(r.handled, true, "«mabkanonpo» (magkano) phải bắt — đo 17/09: regex gốc trượt");
+  assert.equal(r.rule, "gia_sai_chinh_ta");
+  assert.equal(r.reply, kbDu.config.fastLanePrice);
+  // Chính tả ĐÚNG là việc của fast-lane. Bắt ở đây là ghi sai `so_ai.lane`.
+  for (const c of ["magkano po", "how much", "presyo?"]) {
+    assert.equal(lopTuKhoa({ text: c, kb: kbDu }).rule, null, `"${c}" phải để fastLane lo`);
+  }
+});
+
+test("NỚI · KHÔNG có KB thì NHƯỜNG, không bịa — đúng luật cũ của lớp này", () => {
+  for (const [c, rule] of [["What time he come", "hoi_ship"], ["mabkanonpo", "gia_sai_chinh_ta"]]) {
+    const r = lopTuKhoa({ text: c, kb: kbRong });
+    assert.equal(r.handled, false);
+    assert.equal(r.rule, rule, "vẫn khai rule để nhật ký phân biệt «không khớp» với «khớp mà thiếu KB»");
+  }
+});
+
+test("GIỮ NGUYÊN · cửa an toàn cũ vẫn thắng mọi luật mới", () => {
+  // SĐT và tin dài phải nhường TRƯỚC khi bất kỳ luật nới nào kịp chạy.
+  const coSdt = lopTuKhoa({ text: "I want to order 0551234567", kb: kbDu });
+  assert.equal(coSdt.handled, false);
+  assert.match(coSdt.lyDo, /số điện thoại/);
+  const dai = lopTuKhoa({ text: "kailan po ba " + "x ".repeat(15), kb: kbDu });
+  assert.equal(dai.handled, false);
+  assert.match(dai.lyDo, /dài/);
+});
