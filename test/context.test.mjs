@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   emptyProfile, extractFromText, absorbToolUses, hydrateProfile, cleanHistory,
   buildProfileBlock, buildContextMessages, missingSteps, estimateTokens,
-  RECENT_MSGS,
+  RECENT_MSGS, khoangCach, NGAT_MACH_MS, laPingKhach, chonCuaSo,
 } from '../src/context.js';
 
 const PAGE = 'P07';
@@ -47,22 +47,25 @@ test('C4 · gói + COD + phản đối vào hồ sơ', () => {
   assert.deepEqual(p.objections, ['obj_price']);
 });
 
-test('C5 · tham số tool là nguồn CHÍNH XÁC nhất — ghi đè được regex', () => {
+test('C5 · chỉ ghi nhớ đơn đã được backend xác nhận, dùng giá backend', () => {
+  const order = { name: 'Amy Añoza', phone: '0536064249', address: 'District 1', city: 'Jeddah', variant: 'Buy 1 Get 1', qty: 2, total_price: 109, cod_confirmed: true };
+  const request = { role: 'assistant', content: [
+    { type: 'tool_use', id: 'order1', name: 'create_draft_order', input: { ...order, total_price: 1 } },
+    { type: 'tool_use', id: 'image1', name: 'send_product_image', input: { category: 'feedback' } },
+  ] };
+  for (const result of [null, { ok: false }, { ok: true }, 'invalid']) {
+    const p = emptyProfile();
+    absorbToolUses([request, { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'order1', content: JSON.stringify(result) }] }], p);
+    assert.equal(p.total, '');
+    assert.equal(p.cod, false);
+    assert.deepEqual(p.imagesSent, []);
+  }
   const p = emptyProfile();
-  absorbToolUses([{
-    role: 'assistant',
-    content: [
-      { type: 'tool_use', name: 'send_product_image', input: { category: 'feedback' } },
-      { type: 'tool_use', name: 'send_product_image', input: { category: 'feedback' } }, // trùng → chỉ 1
-      { type: 'tool_use', name: 'create_draft_order', input: { name: 'Amy Añoza', phone: '0536064249', address: 'District 1', city: 'Jeddah', variant: 'Buy 1 Get 1', qty: 2, total_price: '109 SAR', cod_confirmed: true } },
-    ],
-  }], p);
-  assert.deepEqual(p.imagesSent, ['feedback']);
+  absorbToolUses([request, { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'order1', content: JSON.stringify({ ok: true, order }) }] }], p);
+  assert.equal(p.total, '109');
   assert.equal(p.name, 'Amy Añoza');
   assert.equal(p.cod, true);
-  assert.match(p.address, /District 1, Jeddah/);
-  assert.equal(p.qty, 2);
-  assert.deepEqual(missingSteps(p), [], 'đủ thông tin → không còn bước thiếu');
+  assert.deepEqual(missingSteps(p), []);
 });
 
 test('C6 · bước còn thiếu suy ra từ checklist COD, không hỏi model', () => {
@@ -167,4 +170,131 @@ test('C14 · ⭐ hồ sơ sống sót qua restart → AI KHÔNG chào lại từ
   assert.match(block, /0536064249/);
   assert.match(block, /Jeddah/);
   assert.ok(after.hydratedAt > 0, 'đã hydrate rồi thì không được hydrate lại');
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ④ MẠCH TƯ VẤN — khách bỏ dở rồi quay lại
+//
+// Hồ sơ nén giữ DỮ KIỆN, không giữ LẬP LUẬN. `hoi_thoai.ai_noi_gi` đã có sẵn trong CSDL
+// và đã được nạp vào `state.lastAiText`, nhưng trước lượt vá này chỉ cửa chống-lặp dùng —
+// prompt không hề thấy. Khách im ba ngày rồi gõ "hello / are you there / ?" thì ba tin
+// rỗng đó đẩy đúng đoạn tư vấn ra khỏi cửa sổ 6 tin, và bot chào lại từ đầu.
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('C15 · ⭐ câu AI nói gần nhất PHẢI vào prompt — kèm nó đã nói bao lâu trước', () => {
+  const p = extractFromText('Melody Tiqui\n0551234567', emptyProfile());
+  const block = buildProfileBlock(p, {
+    state: 'SELLING', used: 2, max: 6, tier: 'ấm',
+    lastAi: 'Buy 2 Get 2 mas sulit po — 4 tuýp 159 SAR.\nIlan po ang gusto niyo?',
+    idleMs: 3 * 24 * 3600e3,
+  });
+  assert.match(block, /AI nói gần nhất \(3 ngày trước\)/);
+  assert.match(block, /159 SAR/, 'lập luận của lượt trước phải còn đọc được');
+  // Ép MỘT DÒNG: khối hồ sơ đọc theo dòng, một câu hai dòng làm lệch cả khối.
+  const dong = block.split('\n').find((l) => l.startsWith('AI nói gần nhất'));
+  assert.ok(dong.includes('/ Ilan po'), 'xuống dòng trong câu cũ phải gộp thành " / "');
+});
+
+test('C16 · ⭐ im lâu thì NÓI THẲNG tiếp nối; liền mạch thì không thêm dòng thừa', () => {
+  const p = emptyProfile();
+  const xa = buildProfileBlock(p, { lastAi: 'Ilan po?', idleMs: NGAT_MACH_MS });
+  assert.match(xa, /TIẾP NỐI đúng chỗ đang dở/);
+  assert.match(xa, /đừng chào lại từ đầu/);
+  // Chữ nghĩa phải ĐÚNG thứ đang đo: `idleMs` tính từ lượt AI nói, không phải lượt khách.
+  assert.match(xa, /kể từ lượt AI nói gần nhất/);
+  assert.doesNotMatch(xa, /[Kk]hách im/, 'không được suy diễn "khách im" — sale/Botcake có thể đã nói');
+
+  const gan = buildProfileBlock(p, { lastAi: 'Ilan po?', idleMs: NGAT_MACH_MS - 1 });
+  assert.doesNotMatch(gan, /TIẾP NỐI/, 'cùng một phiên chat thì 6 tin gần nhất đã đủ');
+
+  const chuaNoi = buildProfileBlock(p, {});
+  assert.doesNotMatch(chuaNoi, /AI nói gần nhất/, 'AI chưa nói lượt nào thì không có dòng này');
+  assert.doesNotMatch(chuaNoi, /TIẾP NỐI/);
+});
+
+test('C17 · ⭐⭐ hai dòng mới KHÔNG được phá ngưỡng token', () => {
+  // Ngưỡng khối hồ sơ của C11 là 250; ca tệ nhất (có cả hai dòng) phải vẫn lọt 320.
+  const p = extractFromText('Amy Añoza\n0536064249\nAlrawdah Jeddah District 1 house 118', emptyProfile());
+  p.tier = 'Buy 2 Get 2'; p.qty = 2; p.objections = ['obj_price', 'obj_trust'];
+  p.imagesSent = ['feedback', 'chung_nhan']; p.otherBot.quotedPrice = true; p.otherBot.greeted = true;
+  const block = buildProfileBlock(p, {
+    state: 'SELLING', used: 3, max: 10, tier: 'đang chốt',
+    lastAi: 'x'.repeat(500),  // câu cũ dài — phải bị cắt, không được nuốt trọn
+    idleMs: 5 * 24 * 3600e3,
+  });
+  assert.ok(estimateTokens(block) <= 320, `khối hồ sơ ca tệ nhất đang ${estimateTokens(block)} token`);
+  assert.ok(!block.includes('x'.repeat(220)), 'câu AI cũ phải cắt ở 200 ký tự');
+});
+
+test('C18 · khoangCach đọc được bằng tiếng người ở cả bốn bậc', () => {
+  assert.equal(khoangCach(45e3), '45 giây');
+  assert.equal(khoangCach(20 * 60e3), '20 phút');
+  assert.equal(khoangCach(3 * 3600e3), '3 giờ');
+  assert.equal(khoangCach(3 * 24 * 3600e3), '3 ngày');
+  assert.equal(khoangCach(0), '0 giây');
+  assert.equal(khoangCach(undefined), '0 giây', 'thiếu mốc KHÔNG được ném');
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ⑤ CỬA SỔ CHỌN THEO NỘI DUNG, KHÔNG THEO VỊ TRÍ
+//
+// Sáu dòng cuối bất kể chúng nói gì: khách im mấy ngày rồi gõ "hello" · "?" · "are you
+// there" là ba slot bay mất, đẩy đúng đoạn tư vấn đang dở ra ngoài cửa sổ.
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('C19 · ⭐⭐ TÍN HIỆU MUA không bao giờ được coi là ping', () => {
+  // Đây là ca QUAN TRỌNG NHẤT của luật này. Sau câu "ilan po?" thì "1" là SỐ LƯỢNG và
+  // "ok"/"opo"/"👍" là ĐỒNG Ý. Bỏ nhầm một trong số đó là bỏ đúng lượt chốt đơn.
+  for (const t of ['ok', 'okay', 'sige', 'yes', 'opo', 'oo', 'no', '1', '2', '👍',
+                   'hm', 'magkano po', 'Riyadh city', '0551234567', 'ok po sir']) {
+    assert.equal(laPingKhach(t), false, `KHÔNG được coi là ping: ${JSON.stringify(t)}`);
+  }
+});
+
+test('C20 · ping rỗng: chào suông, gọi suông, chỉ dấu câu', () => {
+  for (const t of ['hello', 'Hello po', 'hi sir', 'kumusta', 'good morning', 'السلام عليكم',
+                   '?', '???', '...', 'are you there', 'you there', 'po', 'sir', 'maam',
+                   'anybody', 'reply', 'up', '', '   ']) {
+    assert.equal(laPingKhach(t), true, `phải là ping: ${JSON.stringify(t)}`);
+  }
+});
+
+test('C21 · ⭐ cửa sổ giữ câu hỏi thật, vứt ba tiếng gọi — cùng trần, đúng tin hơn', () => {
+  const rows = [
+    { role: 'user', text: 'magkano po' },
+    { role: 'assistant', text: 'Buy 1 Get 1 — 109 SAR. Ilan po?' },
+    { role: 'user', text: 'hello' },
+    { role: 'user', text: '?' },
+    { role: 'user', text: 'are you there' },
+    { role: 'assistant', text: 'Nandito po ako' },
+    { role: 'user', text: 'ok' },
+  ];
+  const cu = rows.slice(-RECENT_MSGS);
+  const moi = chonCuaSo(rows, RECENT_MSGS);
+  assert.equal(cu.some((r) => r.text === 'magkano po'), false, 'phép cũ ĐÃ đánh rơi câu hỏi gốc');
+  assert.equal(moi.some((r) => r.text === 'magkano po'), true, 'phép mới phải giữ lại nó');
+  assert.equal(moi.some((r) => r.text === 'ok'), true, 'tín hiệu mua phải còn');
+  assert.equal(moi.some((r) => laPingKhach(r.text) && r.role === 'user'), false);
+  assert.ok(moi.length <= RECENT_MSGS, 'không được nới trần');
+});
+
+test('C22 · cả hội thoại chỉ có tiếng gọi ⇒ giữ phép cũ, không trả cửa sổ rỗng', () => {
+  const rows = [{ role: 'user', text: 'hello' }, { role: 'user', text: '?' }];
+  assert.deepEqual(chonCuaSo(rows, RECENT_MSGS), rows, 'trống rỗng còn tệ hơn một câu chào');
+});
+
+test('C23 · ⭐ khách giục ≥2 lần thì BÓC THÀNH DỮ KIỆN trước khi vứt', () => {
+  const nen = (n) => {
+    const msgs = [
+      { from: { id: PAGE }, message: 'Buy 1 Get 1 — 109 SAR. Ilan po?' },
+      ...Array.from({ length: n }, (_, i) => ({ from: { id: 'cust' }, message: i ? '?' : 'hello' })),
+      { from: { id: PAGE }, message: 'Nandito po ako' },
+    ];
+    return buildContextMessages({ prof: emptyProfile(), msgs, pageId: PAGE }).messages[0].content;
+  };
+  assert.match(nen(3), /Khách đã gọi 3 lần/, 'giục nhiều lần là dữ kiện bán hàng, không phải rác');
+  assert.match(nen(3), /vào THẲNG việc/);
+  assert.doesNotMatch(nen(1), /Khách đã gọi/, 'một lời chào là bình thường, đừng làm loãng hồ sơ');
 });

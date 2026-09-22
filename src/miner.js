@@ -265,6 +265,10 @@ export async function collectPageConvs(pageId, opt = {}) {
         who: String(m?.from?.id) === String(pageId) ? 'page' : 'cust',
         text: msgText(m),
         at: tsOf(m.inserted_at || m.created_time || m.updated_at),
+        // GIỮ `from` THÔ. `template-learner` gọi `looksHuman` trên chính mảng này để đo
+        // «bao nhiêu % hội thoại bị khoá»; bỏ `from` đi là nó phải đoán qua chữ và đo ra
+        // con số CŨ (75% thay vì 7%) ⇒ đề xuất thêm mẫu để vá một lỗ đã vá bằng danh tính.
+        from: m?.from,
       })).filter((m) => m.text);
     } catch (e) {
       c.msgs = []; c.fetchError = e.message;

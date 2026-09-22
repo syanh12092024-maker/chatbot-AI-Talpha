@@ -90,6 +90,19 @@ const DEFAULT_PATTERNS = [
   'please send me (a )?pictures? of the',
   'have you received my product',
   'your order is being shipped',
+
+  // ═══ BỔ SUNG 22/09/2026 — CHÀO TỰ ĐỘNG CỦA FACEBOOK (Instant Reply / Welcome Message)
+  // Đây là mẫu ĐẮT NHẤT còn sót. Đo trên page 1220547807799752: 42 tin
+  // "Welcome to <tên page>. How may we assist you today?" — payload KHÔNG kèm một trường
+  // định danh nào (`from` chỉ có `{id, name}`), nên `danhTinhNguoiGui` trả 'khong_ro' và
+  // phép đoán chữ chấm nó là NGƯỜI (một dòng, 62 ký tự, 0 emoji, không giọng quảng cáo).
+  // MỘT MÌNH nó khoá 29/56 hội thoại — nhiều hơn mọi mẫu khác cộng lại.
+  //
+  // Mẫu do Facebook sinh nên giống hệt nhau ở mọi page, chỉ khác tên page ở giữa.
+  'how may (?:we|i|.{0,40}) assist you(?: today)?\\?',
+  '^\\s*welcome to .{1,60}[.!]',
+  // Botcake gọi tên khách rồi giục — ngắn, ít emoji, lọt hết mọi ngưỡng của looksHuman.
+  'this product has never let me down',
 ];
 
 let compiled = null;   // [{ re, pattern, builtin }] — giữ cả chuỗi gốc để M18 nói được

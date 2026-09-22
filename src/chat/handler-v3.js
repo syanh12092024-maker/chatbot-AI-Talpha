@@ -13,7 +13,7 @@ import {
 import { classify } from "../classifier.js";
 import { fastLane, noteFastLane } from "../fast-lane.js";
 import { runCloser } from "../closer.js";
-import { guardOutbound } from "../outbound-guard.js";
+import { guardOutbound, canFixLocally, localFix } from "../outbound-guard.js";
 import {
   emptyProfile,
   hydrateProfile,
@@ -177,6 +177,10 @@ function depsMacDinh(deps = {}) {
     lanNhanh: deps.lanNhanh || fastLane,
     chayCloser: deps.chayCloser || runCloser,
     kiemTinRa: deps.kiemTinRa || guardOutbound,
+    // BẬC SỬA TẠI CHỖ của cửa ra. Hai hàm THUẦN, KHÔNG gọi model, 0 token — xem
+    // `quaCuaRa` trong `xuLyMotTin` để biết vì sao v3 thiếu bậc này là đốt tiền.
+    suaDuocTaiCho: deps.suaDuocTaiCho || canFixLocally,
+    suaTaiCho: deps.suaTaiCho || localFix,
     // L2-M3 ②.2: ngân sách lượt theo độ nóng, thay trần 4 lượt cứng.
     chamVaTinhNganSach: deps.chamVaTinhNganSach || chamVaTinhNganSachMacDinh,
     conNganSach: deps.conNganSach || conNganSachMacDinh,
@@ -249,6 +253,47 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     });
     if (r.ghi) dem.soAi[loai] = (dem.soAi[loai] || 0) + 1;
     return r;
+  };
+
+  // ── CỬA RA · THANG HAI BẬC (M09) ─────────────────────────────────────────────────
+  // `guardOutbound` trả HAI loại phán quyết khác hẳn nhau: `block` (cấm hẳn — bịa doạ
+  // khách, lọt tiếng Việt, ký tự vô hình) và `rewrite` (câu SAI HÌNH THỨC, sửa xong là
+  // gửi được). Bản trước gộp cả hai vào một dòng `if (!v.ok) guarded = ""` ⇒ mọi lượt
+  // `rewrite` đều bị vứt trắng.
+  //
+  // v3 KHÔNG xin model viết lại (một lượt = một lượt model — thang bậc 3 của v1
+  // `src/handler.js:467-475` cố tình không mang sang). Nhưng bậc 2 — `localFix` — là
+  // hàm THUẦN, không chạm mạng, KHÔNG TỐN MỘT TOKEN NÀO. Bỏ nó đi là trả tiền cho một
+  // câu rồi đem vứt.
+  //
+  // ĐO 21/09/2026, phát lại 48 tin thật của page 1220547807799752: 5 lượt chết ở cửa ra
+  // = 498đ trên tổng 1.735đ (28,7% tiền của cả lần chạy), trong đó 3 lượt là CHECKLIST —
+  // `collapseChecklist` gộp được, 0 đồng. Chạy lại sau bản vá (14 tin, 22/09): 2 lượt
+  // CHECKLIST được cứu và GỬI ĐI, 0 lượt `khong_gui` còn lại.
+  //
+  // Trả `{ text, v, daSua }`: `text` rỗng ⇒ KHÔNG gửi được, `v` là phán quyết cuối cùng
+  // (để ghi sổ đúng luật đã chặn), `daSua` là mã luật đã sửa tại chỗ (rỗng nếu không sửa).
+  const quaCuaRa = (text, ctxGuard) => {
+    const v = d.kiemTinRa(text, ctxGuard);
+    if (v.ok) return { text, v, daSua: "" };
+    if (v.action === "block" || !d.suaDuocTaiCho(v.rule)) return { text: "", v, daSua: "" };
+    const sua = d.suaTaiCho(text, v.rule);
+    if (!sua) return { text: "", v, daSua: "" };
+    // Chỉ nhận bản sửa khi nó QUA ĐƯỢC chính cửa đó lần nữa — cắt xong vẫn phạm thì thà
+    // im (cùng khuôn v1 handler.js:457-464).
+    const v2 = d.kiemTinRa(sua, ctxGuard);
+    if (!v2.ok) return { text: "", v: v2, daSua: "" };
+    return { text: sua, v: v2, daSua: v.rule };
+  };
+
+  // KHÁCH NHẮN MÀ KHÔNG NHẬN ĐƯỢC CHỮ NÀO thì SALE PHẢI BIẾT. Trước bản này, cửa ra chặn
+  // xong là lượt kết thúc im lặng: không thẻ, không ghi chú, không ai hay. `ngan_sach_het`
+  // có bàn giao, `guard_noi_dung` thì không — cùng một cảnh khách bị bỏ rơi.
+  const banGiaoViCuaRa = async (rule, maModel, lane, dung) => {
+    state.handoff = true;
+    state.handoffReason = `cửa ra chặn: ${rule}`;
+    if (!state.handoffNotified) await banGiaoSale(state.handoffReason);
+    await ghi(LOAI.HANDOFF, { maModel, lane, lyDo: state.handoffReason, ...(dung ? { dung } : {}) });
   };
 
   // ── 1 · HỘI THOẠI ────────────────────────────────────────────────────────────────
@@ -433,22 +478,26 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     // (M09) với Fast Lane/AI — câu trả lời của lớp này KHÔNG được miễn kiểm nội dung.
     const tk = lopTuKhoa({ text, kb, profile: prof });
     if (tk.handled && !state.fastLanesUsed.has(`keyword:${tk.rule}`)) {
-      const v = d.kiemTinRa(tk.reply, {
+      const cua = quaCuaRa(tk.reply, {
         kb,
         pageId: state.pageId,
         custName: state.custName,
         lastAiText: state.lastAiText,
       });
-      if (!v.ok) {
+      if (!cua.text) {
         await ghi(LOAI.SPENT_NO_SEND, {
           maModel: KHONG_GOI_MODEL,
           lane: LANE_TU_KHOA,
-          lyDo: `guard_noi_dung:${v.rule}`,
+          lyDo: `guard_noi_dung:${cua.v.rule}`,
+          // GIỮ CÂU BỊ CHẶN. Không giữ thì không ai phán được cửa bắt ĐÚNG hay bắt NHẦM —
+          // đo 21/09: 5 dòng `spent_no_send` chỉ có `llm_ms`/`provider`, câu chữ mất sạch.
+          duLieu: { text_bi_chan: String(tk.reply).slice(0, 200), guard_ly_do: cua.v.reason || "" },
         });
+        await banGiaoViCuaRa(cua.v.rule, KHONG_GOI_MODEL, LANE_TU_KHOA);
         await luuLai({ daGoiModel: false, daGuiText: false });
-        return { ketQua: KET_QUA.XONG, lyDo: `guard_noi_dung:${v.rule}`, dem };
+        return { ketQua: KET_QUA.XONG, lyDo: `guard_noi_dung:${cua.v.rule}`, dem };
       }
-      await guiChu(tk.reply);
+      await guiChu(cua.text);
       // Đếm ở `mau_0_dong.so_lan_chan`. Lỗi bộ đếm KHÔNG được làm hỏng lượt chat (khách đã
       // nhận trả lời rồi) — nhưng cũng KHÔNG nuốt im: `null` nghĩa là chưa có mẫu nào mang
       // mã này hoặc mẫu đang tắt, và con số đó đi vào `so_ai` để người sau đọc được.
@@ -463,11 +512,12 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         lane: LANE_TU_KHOA,
         trangThai: hoiThoai.trang_thai,
         lyDo: tk.lyDo,
-        duLieu: { text: tk.reply.slice(0, 200), rule: tk.rule, dem_0_dong: dem0Dong },
+        duLieu: { text: cua.text.slice(0, 200), rule: tk.rule, dem_0_dong: dem0Dong,
+          ...(cua.daSua ? { sua_tai_cho: cua.daSua } : {}) },
       });
       state.fastLanesUsed.add(`keyword:${tk.rule}`);
-      state.lastAiText = tk.reply;
-      await luuLai({ daGoiModel: false, daGuiText: true, textDaGui: tk.reply });
+      state.lastAiText = cua.text;
+      await luuLai({ daGoiModel: false, daGuiText: true, textDaGui: cua.text });
       return { ketQua: KET_QUA.XONG, lyDo: `tu_khoa_v3:${tk.rule}`, dem };
     }
 
@@ -491,20 +541,22 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         await luuLai({ daGoiModel: false, daGuiText: false });
         return { ketQua: KET_QUA.XONG, lyDo: `fastlane_im:${fl.lane}`, dem };
       }
-      const v = d.kiemTinRa(fl.reply, {
+      const cua = quaCuaRa(fl.reply, {
         kb,
         pageId: state.pageId,
         custName: state.custName,
         lastAiText: state.lastAiText,
       });
-      if (!v.ok) {
+      if (!cua.text) {
         await ghi(LOAI.SPENT_NO_SEND, {
           maModel: KHONG_GOI_MODEL,
           lane: fl.lane,
-          lyDo: `guard_noi_dung:${v.rule}`,
+          lyDo: `guard_noi_dung:${cua.v.rule}`,
+          duLieu: { text_bi_chan: String(fl.reply).slice(0, 200), guard_ly_do: cua.v.reason || "" },
         });
+        await banGiaoViCuaRa(cua.v.rule, KHONG_GOI_MODEL, fl.lane);
         await luuLai({ daGoiModel: false, daGuiText: false });
-        return { ketQua: KET_QUA.XONG, lyDo: `guard_noi_dung:${v.rule}`, dem };
+        return { ketQua: KET_QUA.XONG, lyDo: `guard_noi_dung:${cua.v.rule}`, dem };
       }
       if (Array.isArray(fl.images) && fl.images.length) {
         state.pendingImages = fl.images.map((im) => ({
@@ -521,16 +573,16 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
           duLieu: { n: nAnh },
         });
       }
-      await guiChu(fl.reply);
+      await guiChu(cua.text);
       await ghi(LOAI.REPLY, {
         maModel: KHONG_GOI_MODEL, // Fast Lane KHÔNG gọi model — xem so-ai.js
         lane: fl.lane,
         trangThai: hoiThoai.trang_thai,
         lyDo: fl.reason || "",
-        duLieu: { text: fl.reply.slice(0, 200) },
+        duLieu: { text: cua.text.slice(0, 200), ...(cua.daSua ? { sua_tai_cho: cua.daSua } : {}) },
       });
-      state.lastAiText = fl.reply;
-      await luuLai({ daGoiModel: false, daGuiText: true, textDaGui: fl.reply });
+      state.lastAiText = cua.text;
+      await luuLai({ daGoiModel: false, daGuiText: true, textDaGui: cua.text });
       return { ketQua: KET_QUA.XONG, lyDo: `fastlane:${fl.lane}`, dem };
     }
 
@@ -605,6 +657,11 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         // (context.js#buildProfileBlock đọc {used,max,tier} y nguyên — không đổi hàm đó).
         max: budget.max,
         tier: budget.tier,
+        // MẠCH TƯ VẤN (context.js): câu AI nói gần nhất + khách im bao lâu. Cả hai ĐÃ có
+        // sẵn trong `state` (trang-thai.js:85-86 nạp từ `hoi_thoai.ai_noi_gi`/`ai_noi_luc`)
+        // — trước lượt này chỉ cửa chống-lặp dùng, prompt không hề thấy.
+        lastAi: state.lastAiText,
+        idleMs: state.idleMs,
       },
     });
     state.messages = messages;
@@ -653,9 +710,12 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     const dung = state.lastUsage || {};
 
     // ── 9 · CỬA CUỐI TRƯỚC KHÁCH (outbound-guard, M09) ───────────────────────────
-    let guarded = String(text2 || "");
+    const guarded0 = String(text2 || ""); // bản GỐC của model, giữ để ghi sổ khi bị chặn
+    let guarded = guarded0;
+    let cuaRaChan = null;   // phán quyết đã GIẾT câu — để ghi lý do đúng ở đường thoát
+    let cuaRaSua = "";      // mã luật đã sửa tại chỗ (0 token) — để đếm được bậc 2 cứu mấy lượt
     if (guarded) {
-      const v = d.kiemTinRa(guarded, {
+      const cua = quaCuaRa(guarded, {
         kb,
         pageId: state.pageId,
         custName: state.custName,
@@ -667,13 +727,18 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         orderCreated: !!state.orderResult?.pos_created,
         isOrderSummary: !!state.orderCreatedThisTurn,
       });
-      if (!v.ok) guarded = ""; // v3 KHÔNG xin model viết lại (một lượt = một lượt model)
-      if (!v.ok) {
+      guarded = cua.text;   // rỗng ⇒ cửa giết thật; v3 KHÔNG xin model viết lại (bậc 3)
+      cuaRaSua = cua.daSua;
+      if (!guarded) {
+        cuaRaChan = cua.v;
         await ghi(LOAI.SPENT_NO_SEND, {
           maModel: model.maModel,
           lane: "AI",
-          lyDo: `guard_noi_dung:${v.rule}`,
+          lyDo: `guard_noi_dung:${cua.v.rule}`,
           dung,
+          // Câu model đã viết — ĐÃ TRẢ TIỀN cho nó, phải giữ lại mới soi được cửa bắt
+          // đúng hay nhầm. Cắt 200 ký tự như nhánh REPLY.
+          duLieu: { text_bi_chan: guarded0.slice(0, 200), guard_ly_do: cua.v.reason || "" },
         });
       }
     }
@@ -739,6 +804,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         dung,
         duLieu: {
           text: guarded.slice(0, 200), nguon_model: model.nguon,
+          ...(cuaRaSua ? { sua_tai_cho: cuaRaSua } : {}),
           tre_nao_ms: treNaoMs,                 // riêng lượt bộ não (model + vòng tool)
           tre_luot_ms: Date.now() - mocLuot,    // cả lượt: đọc lịch sử → soạn → qua cửa
         },
@@ -753,6 +819,14 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         lyDo: "model không viết được chữ",
         dung,
       });
+    }
+
+    // Cửa ra giết câu ⇒ khách không nhận được gì. Nâng cờ TRƯỚC khối bàn giao dưới đây
+    // để đi chung một đường (thẻ + ghi chú + dòng HANDOFF + `ganTuState` đẩy hội thoại
+    // sang HANDOFF, nên lượt sau sale giữ quyền chứ bot không nhắc lại lỗi cũ).
+    if (!guarded && cuaRaChan && !state.handoff) {
+      state.handoff = true;
+      state.handoffReason = `cửa ra chặn: ${cuaRaChan.rule}`;
     }
 
     if (state.handoff) {
@@ -771,7 +845,9 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     });
     return {
       ketQua: KET_QUA.XONG,
-      lyDo: guarded ? "tra_loi" : "khong_gui",
+      // `khong_gui` chỉ còn nghĩa "model không viết được chữ". Cửa ra chặn thì NÓI RÕ
+      // luật nào — đo 21/09: cả 5 lượt `khong_gui` đều là cửa ra, không lượt nào là model câm.
+      lyDo: guarded ? "tra_loi" : cuaRaChan ? `guard_noi_dung:${cuaRaChan.rule}` : "khong_gui",
       dem,
     };
   } catch (e) {

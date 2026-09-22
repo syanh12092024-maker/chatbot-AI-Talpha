@@ -211,7 +211,7 @@ export function lockRate(bundles, extraPatterns = [], opt = {}) {
       }
       for (const m of tail) {
         if (matchAny(m.text, res)) continue;             // mẫu mới đã nhận ra: là máy
-        if (looksHuman(m.text, ours)) {
+        if (looksHuman(m.text, ours, m.from)) {
           locked++;
           if (samples.length < 10) samples.push({ convId: c.convId, text: m.text.slice(0, 90) });
           break;

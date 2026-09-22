@@ -59,10 +59,59 @@ function isOurs(text, aiTexts) {
   return false;
 }
 
-/** Tin page này trông như NGƯỜI THẬT gõ tay không? */
-export function looksHuman(text, aiTexts) {
+// ─────────────────────────────────────────────────────────────────────────────
+// DANH TÍNH NGƯỜI GỬI — ĐỌC THẲNG, đừng đoán qua chữ.
+//
+// `looksHuman` bên dưới chỉ nhìn CHỮ (độ dài, giọng quảng cáo, đếm emoji) vì khi viết nó
+// ta tưởng payload không có định danh. `ops/bin/soi-tin-pancake.mjs` (17/09) đo lại và
+// thấy đường `api/v1` ĐANG DÙNG vẫn trả `from.admin_name` · `uid` · `app_id` · `bot_id` ·
+// `flow_id` · `is_automated`. Đoán trong khi sự thật nằm ngay trong payload là tự chuốc lỗi.
+//
+// ĐO 22/09/2026 — 1.146 tin page thật của 1220547807799752, đối chiếu danh tính vs chữ:
+//
+//              looksHuman=false   looksHuman=true
+//   máy             685                 56   ← chữ bắt NHẦM, danh tính sửa được ngay
+//   không rõ        267                 42   ← payload không kèm định danh nào
+//   người            67                 29
+//
+// Ở mức HỘI THOẠI (56 hội thoại hoạt động trong 24h), số bị khoá oan:
+//   chỉ chữ (cũ)                              42/56 = 75%
+//   + danh tính máy⇒không phải người          33/56 = 59%
+//   + mẫu chào tự động của Facebook (M05)      4/56 =  7%   ← và cả 4 là SALE THẬT
+//
+// `admin_name` thấy trên page: Botcake 575 · Public API 24 · POS 22 · AI LEADER 18 —
+// và 15 tên người thật (Quỳnh Trang, Thu Hiền, Nguyễn Duyên…). Tên máy là danh sách
+// ĐÓNG và ngắn; tên người là phần còn lại.
+const TEN_MAY = /^(botcake|public\s*api|ai\s*leader|pos|api|zalo|chatbot|autoresponder)$/i;
+
+/**
+ * `from` của một tin page nói gì về người gửi?
+ *   'may'      — chắc chắn máy: cờ tự động, app, luồng bot, hoặc tên nằm trong danh sách máy
+ *   'nguoi'    — có nhãn nhân viên Pancake và nhãn đó không phải tên máy
+ *   'khong_ro' — payload không kèm định danh nào ⇒ phải rơi về phép đoán theo chữ
+ *
+ * Lệch một chiều CÓ CHỦ Ý: chỉ 'may' mới được quyền kết luận ngay. 'nguoi' vẫn phải qua
+ * phép đoán chữ, vì sale hay DÁN template marketing — đo được 67 tin như vậy, và nếu tin
+ * nhãn nhân viên vô điều kiện thì mỗi lần sale dán mẫu là AI tự khoá mình.
+ */
+export function danhTinhNguoiGui(from) {
+  const f = from && typeof from === 'object' ? from : null;
+  if (!f) return 'khong_ro';
+  if (f.is_automated === true) return 'may';
+  if (f.app_id != null || f.bot_id != null || f.flow_id != null) return 'may';
+  const ten = String(f.admin_name || '').trim();
+  if (ten) return TEN_MAY.test(ten) ? 'may' : 'nguoi';
+  return 'khong_ro';
+}
+
+/**
+ * Tin page này trông như NGƯỜI THẬT gõ tay không?
+ * @param {object} [from] `msg.from` của Pancake — có thì dùng, không có thì đoán như cũ.
+ */
+export function looksHuman(text, aiTexts, from) {
   const raw = String(text || '').trim();
   if (!raw) return false;                                  // tin rỗng / chỉ đính kèm
+  if (danhTinhNguoiGui(from) === 'may') return false;      // payload đã NÓI rõ: máy gửi
   if (/^<div><\/div>$/.test(raw) || /^\.{2,}$/.test(raw)) return false;
   if (isOurFixedMessage(raw)) return false;                // chuỗi CỐ ĐỊNH của code mình
   if (isAutomationTemplate(raw)) return false;             // template đã biết
@@ -183,7 +232,7 @@ export function decideConv({ pageId, conv, msgs, custId, aiTexts }) {
     }
     for (const m of tail) {
       const tx = textOf(m);
-      if (looksHuman(tx, ours)) {
+      if (looksHuman(tx, ours, m?.from)) {
         console.log(`[owner] 👤 người thật đã vào chat (${conv?.from?.name || convId}): "${tx.slice(0, 50)}" → AI nhường`);
         const r = setConvState(convId, S.HANDOFF, OWNER.SALE, `nhân viên đã tiếp quản: "${tx.slice(0, 60)}"`, { humanAt: Date.now() });
         return { allow: false, state: S.HANDOFF, owner: OWNER.SALE, reason: r.conv.lastReason, changed: r.changed };

@@ -205,10 +205,23 @@ for (const [i, x] of chon.entries()) {
     custId: x.custId, msgId: `phatlai:${maLuot}:${x.m.id}`, noiDung: chu, hoanMs: 0,
   });
   if (!r.them) { ket.push({ x, chu, bo: "trùng — đã phát rồi" }); continue; }
+  // MỘT TIN XẾP HÀNG ≠ MỘT VÒNG WORKER. Bản đầu giả định vậy và SAI im lặng: worker rút
+  // tin CŨ NHẤT còn rút được, nên mỗi lượt THỬ LẠI (`thu_lai`, ở đây gần như toàn bộ là
+  // HTTP 429 của Moonshot) ăn thêm một vòng của tin sau nó. Đo 21/09 trên 48 tin: 4 tin
+  // chạy 2-3 lần ⇒ thừa đúng 6 vòng ⇒ 6 tin cuối KHÔNG BAO GIỜ được xử mà báo cáo vẫn in
+  // kết quả cho chúng — mượn của tin khác. Mọi cột kết quả từ lần thử lại đầu tiên trở đi
+  // đều lệch. Nay: chạy tiếp cho tới khi worker rút ĐÚNG tin vừa xếp.
   const t0 = Date.now();
-  let kq;
-  try { kq = await chayMotVong(pool, { pageIds: [pageIdFb], poolGui, docTin: docTinCat }); }
-  catch (e) { kq = { ketQua: "NÉM", lyDo: String(e?.message || e).slice(0, 120) }; }
+  const TRAN_VONG = Number(arg("--tran-vong", "8"));
+  let kq = null;
+  for (let vong = 0; vong < TRAN_VONG; vong += 1) {
+    let v;
+    try { v = await chayMotVong(pool, { pageIds: [pageIdFb], poolGui, docTin: docTinCat }); }
+    catch (e) { kq = { ketQua: "NÉM", lyDo: String(e?.message || e).slice(0, 120) }; break; }
+    if (!v) break;                                   // hàng đợi cạn (tin của ta đang bị hoãn)
+    if (String(v.tinId) === String(r.id)) { kq = v; break; }
+    // Vòng này xử tin KHÁC (thử lại của lượt trước) — không tính là kết quả của tin ta.
+  }
   ket.push({ x, chu, tinId: r.id, kq, treMs: Date.now() - t0 });
   // Giãn nhịp: đo thật 21/09 — 9/30 lượt ăn HTTP 429 «Organization Rate limit exceeded»
   // của Moonshot. Bắn dồn thì phép đo mất mẫu chứ không phải bot hỏng.
@@ -232,6 +245,13 @@ const { rows: so } = await pool.query(
      FROM so_ai WHERE team_id=$1 AND nguon_dong=ANY($2::bigint[])`, [trang.team_id, ids]);
 const mGui = new Map(gui.map((r) => [String(r.tin_id), r]));
 const mSo = new Map(so.map((r) => [String(r.tin_id), r]));
+// NGUỒN SỰ THẬT của «tin này ra sao» là DÒNG CỦA CHÍNH NÓ trong `tin_cho_xu_ly`, không
+// phải giá trị `chayMotVong` trả về — xem ghi chú TRẦN VÒNG ở vòng phát phía trên.
+const { rows: tt } = await pool.query(
+  `SELECT id, trang_thai, ly_do, so_lan_thu FROM tin_cho_xu_ly WHERE team_id=$1 AND id=ANY($2::bigint[])`,
+  [trang.team_id, ids]);
+const mTin = new Map(tt.map((r) => [String(r.id), r]));
+const conCho = tt.filter((r) => r.trang_thai === "cho" || r.trang_thai === "dang_xu");
 
 const { tienMotDong } = await import("../../src/admin-v3/chi-phi-tin.js");
 let tong = 0, nModel = 0, nMien = 0;
@@ -252,11 +272,21 @@ for (const k of ket) {
   } else if (g?.noi_bo) {
     console.log(`  🤖 KHÔNG nhắn khách — chỉ thao tác nội bộ: ${g.noi_bo}`);
   } else {
-    console.log(`  🤖 (không gửi gì) — ${k.kq?.ketQua || "?"}${k.kq?.lyDo ? ` · ${String(k.kq.lyDo).slice(0, 70)}` : ""}`);
+    const d = k.tinId ? mTin.get(String(k.tinId)) : null;
+    const tt2 = d ? d.trang_thai : k.kq?.ketQua || "?";
+    const ld = d ? d.ly_do : k.kq?.lyDo || "";
+    console.log(`  🤖 (không gửi gì) — ${tt2}${ld ? ` · ${String(ld).slice(0, 70)}` : ""}` +
+      (d && d.so_lan_thu > 1 ? `  [thử ${d.so_lan_thu} lần]` : ""));
   }
   console.log(`  ⏱  ${(k.treMs / 1000).toFixed(1)}s · ${s ? `${s.loai}/${s.lane || "-"} · ${s.token_vao ?? 0}+${s.token_ra ?? 0} token · ${t.vnd == null ? "chưa đo được" : t.vnd + "đ"}` : "0 đồng"}`);
 }
 console.log("\n" + "═".repeat(94));
-console.log(`TỔNG ${ket.length} tin phát lại · ${nModel} lượt gọi model · ${nMien} lượt 0 đồng`);
-console.log(`TIỀN THẬT: ${tong.toLocaleString("vi-VN")}đ  ⇒  ${Math.round(tong / Math.max(1, ket.length))}đ/tin khách`);
+const daXu = ids.length - conCho.length;   // `ids` = tin THỰC SỰ xếp được (bỏ dòng trùng)
+console.log(`TỔNG ${ket.length} tin phát lại · ${daXu} tin ĐƯỢC XỬ · ${nModel} lượt gọi model · ${nMien} lượt 0 đồng`);
+console.log(`TIỀN THẬT: ${tong.toLocaleString("vi-VN")}đ  ⇒  ${Math.round(tong / Math.max(1, daXu))}đ/tin ĐƯỢC XỬ`);
+if (conCho.length) {
+  // Số liệu chia cho tổng tin PHÁT thay vì tin ĐƯỢC XỬ là số liệu đẹp giả. Nói thẳng.
+  console.log(`\n⚠️  ${conCho.length} tin còn nằm hàng đợi, KHÔNG được xử (${conCho.map((r) => r.id).join(", ")}).`);
+  console.log(`    Tăng --tran-vong (đang ${arg("--tran-vong", "8")}) hoặc soi FIFO của hội thoại đó rồi chạy lại.`);
+}
 await pool.end(); await poolGui.end();

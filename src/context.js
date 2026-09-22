@@ -13,6 +13,47 @@
 import { cleanText } from './text.js';
 import { isAutomationTemplate } from './bot-registry.js';
 import { hasPhone, hasAddress, scanSignals } from './lead-score.js';
+// DÙNG LẠI luật chào của M05, KHÔNG viết bản thứ hai: `conv-owner.js#isJustGreeting` đã
+// phân biệt "chỉ chào" với "câu hỏi thật" và đã được hiệu chỉnh trên tin thật (nó cố ý
+// lệch một chiều: không chắc thì coi là CÂU HỎI THẬT). Hai bản luật chào là hai sự thật.
+// Không có vòng nhập: conv-owner và các phụ thuộc của nó không nhập context.js.
+import { isJustGreeting } from './conv-owner.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PING RỖNG — tin của khách KHÔNG mang tin mới, đừng để nó chiếm chỗ trong cửa sổ
+//
+// Cửa sổ 6 tin trước đây chọn theo VỊ TRÍ: sáu dòng cuối, bất kể chúng nói gì. Khách im
+// mấy ngày rồi gõ "hello" · "?" · "are you there" là ba slot bay mất, đẩy đúng đoạn tư
+// vấn đang dở ra ngoài — trong khi ba dòng đó không thêm một dữ kiện nào cho model.
+//
+// ⚠️ TẬP NÀY CỐ Ý HẸP. "ok" · "yes" · "sige" · "opo" KHÔNG phải ping: sau một câu báo giá
+// chúng là TÍN HIỆU MUA, bỏ đi là bỏ đúng lượt chốt. Chỉ bỏ lời chào và tiếng gọi suông.
+//
+// Chỉ áp cho dòng của KHÁCH. Lời chào của chính bot thường kèm luôn câu chào hàng, cắt
+// theo cùng một thước là cắt mất nội dung.
+const GOI_SUONG = /^(?:\?+|po+|sir+|ma'?am|maam|boss|hello+|helo+|hi+|are\s+you\s+there|you\s+there|still\s+there|any\s*one|anybody|reply|answer|up|nasaan\s+ka|hoy)[\s\p{P}]*$/iu;
+
+/** Dòng này của khách có phải PING rỗng không (chào suông / gọi suông / chỉ dấu câu)? */
+export function laPingKhach(text) {
+  const t = String(text || '').trim();
+  if (!t) return true;
+  // CHỈ dấu câu mới là ping. KHÔNG dùng "không có chữ cái nào": "1" là SỐ LƯỢNG khách
+  // trả lời cho câu "ilan po?", và "👍" là đồng ý — bỏ hai thứ đó là bỏ đúng lượt chốt.
+  if (/^[\s\p{P}]+$/u.test(t)) return true;      // "???" · "..." · "—"
+  if (isJustGreeting(t)) return true;
+  return GOI_SUONG.test(t);
+}
+
+/**
+ * Chọn cửa sổ tin đưa vào prompt theo NỘI DUNG, không theo vị trí.
+ * Giữ nguyên thứ tự thời gian và giữ nguyên trần `recent` — cùng số token, đúng tin hơn.
+ */
+export function chonCuaSo(rows, recent = RECENT_MSGS) {
+  const dac = rows.filter((r) => !(r.role === 'user' && laPingKhach(r.text)));
+  // Cả cửa sổ toàn ping (khách mới chỉ chào) ⇒ giữ phép cũ. Thà thừa còn hơn trống rỗng:
+  // model không có ngữ cảnh nào còn tệ hơn model đọc một câu chào.
+  return (dac.length ? dac : rows).slice(-recent);
+}
 
 export const RECENT_MSGS = 6;       // số tin nguyên văn giữ lại
 export const MSG_MAX_CHARS = 300;   // cắt mỗi tin (spec §M07)
@@ -64,8 +105,8 @@ function firstPhone(text) {
 // Địa chỉ: giữ NGUYÊN VĂN câu/dòng chứa địa chỉ (model cần chi tiết để điền tool), cắt 90 ký tự.
 function firstAddress(text) {
   const parts = String(text || '').split(/[\n;]+/).map((s) => s.trim()).filter(Boolean);
-  for (const p of parts) if (hasAddress(p)) return p.slice(0, 90);
-  return hasAddress(text) ? String(text).trim().slice(0, 90) : '';
+  for (const p of parts) if (hasAddress(p)) return p.slice(0, 1000);
+  return hasAddress(text) ? String(text).trim().slice(0, 1000) : '';
 }
 
 function firstName(text) {
@@ -93,7 +134,9 @@ export function extractFromText(text, prof = emptyProfile()) {
   if (!prof.address) { const a = firstAddress(s); if (a) prof.address = a; }
   if (!prof.name) { const n = firstName(s); if (n) prof.name = n; }
   if (!prof.tier) { const t = s.match(TIER_TEXT); if (t) prof.tier = t[0].trim(); }
-  if (!prof.cod && COD_OK.test(s)) prof.cod = true;
+  const codDenied = /(?:no|not|don't|dont|hindi|ayaw|không).{0,35}\bcod\b|\bcod\b.{0,25}(?:not|cancel|không)/i.test(s);
+  if (codDenied) prof.cod = false;
+  else if (!prof.cod && COD_OK.test(s)) prof.cod = true;
 
   for (const k of scanSignals(s)) {
     if (k.startsWith('obj_') && !prof.objections.includes(k)) prof.objections.push(k);
@@ -101,33 +144,34 @@ export function extractFromText(text, prof = emptyProfile()) {
   return prof;
 }
 
-/**
- * Rút thông tin từ THAM SỐ TOOL của lượt vừa rồi — nguồn chính xác nhất, không tốn token
- * thêm (tool_use đã nằm sẵn trong state.messages).
- *   create_draft_order → tên/SĐT/địa chỉ/gói/tổng tiền/COD
- *   send_product_image → loại ảnh đã gửi
- */
+/** Chỉ ghi nhớ dữ liệu đơn đã được backend xác nhận, không tin tham số model. */
 export function absorbToolUses(messages = [], prof = emptyProfile()) {
+  const orders = new Set();
   for (const m of messages) {
     if (m?.role !== 'assistant' || !Array.isArray(m.content)) continue;
     for (const b of m.content) {
-      if (b?.type !== 'tool_use') continue;
-      const inp = b.input || {};
-      if (b.name === 'send_product_image') {
-        const cat = String(inp.category || 'sản phẩm').trim().toLowerCase();
-        if (cat && !prof.imagesSent.includes(cat)) prof.imagesSent.push(cat);
-      } else if (b.name === 'create_draft_order') {
-        if (inp.name) prof.name = String(inp.name).slice(0, 40);
-        if (inp.phone) prof.phone = String(inp.phone).slice(0, 20);
-        if (inp.address) prof.address = [inp.address, inp.city].filter(Boolean).join(', ').slice(0, 90);
-        if (inp.city) prof.city = String(inp.city).slice(0, 40);
-        if (inp.variant) prof.tier = String(inp.variant).slice(0, 40);
-        if (inp.qty) prof.qty = Number(inp.qty) || 0;
-        if (inp.total_price) prof.total = String(inp.total_price);
-        if (inp.cod_confirmed) prof.cod = true;
-      }
+      if (b?.type === 'tool_use' && b.name === 'create_draft_order' && b.id) orders.add(b.id);
     }
   }
+  for (const m of messages) {
+    if (m?.role !== 'user' || !Array.isArray(m.content)) continue;
+    for (const b of m.content) {
+      if (b?.type !== 'tool_result' || b.is_error || !orders.has(b.tool_use_id)) continue;
+      let result;
+      try { result = JSON.parse(b.content); } catch { continue; }
+      if (result?.ok !== true || !result.order || typeof result.order !== 'object') continue;
+      const inp = result.order;
+      if (inp.name) prof.name = String(inp.name).slice(0, 40);
+      if (inp.phone) prof.phone = String(inp.phone).slice(0, 20);
+      if (inp.address) prof.address = [inp.address, inp.city].filter(Boolean).join(', ').slice(0, 1000);
+      if (inp.city) prof.city = String(inp.city).slice(0, 40);
+      if (inp.variant) prof.tier = String(inp.variant).slice(0, 40);
+      if (inp.qty) prof.qty = Number(inp.qty) || 0;
+      if (inp.total_price) prof.total = String(inp.total_price);
+      if (inp.cod_confirmed === true) prof.cod = true;
+    }
+  }
+  // send_product_image chỉ xếp hàng, chưa xác nhận giao ảnh thành công.
   return prof;
 }
 
@@ -200,6 +244,41 @@ export function hydrateProfile(msgs = [], pageId, prof = emptyProfile()) {
 
 const OBJ_LABEL = { obj_price: 'chê đắt', obj_trust: 'nghi hàng giả', obj_wait: 'để nghĩ thêm' };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MẠCH TƯ VẤN — thứ hồ sơ KHÔNG giữ được, và cửa sổ 6 tin làm rơi mất
+//
+// Hồ sơ nén giữ DỮ KIỆN (tên, SĐT, gói, phản đối, bước còn thiếu) nên khách quay lại sau
+// mấy ngày thì bot vẫn không hỏi lại thứ khách đã cho. Nhưng nó KHÔNG giữ LẬP LUẬN: "lượt
+// trước tôi đang thuyết phục khách lên gói 159 vì rẻ hơn theo tuýp" không nằm ở đâu cả.
+//
+// Mà `hoi_thoai.ai_noi_gi` — câu AI nói gần nhất — ĐÃ có sẵn trong CSDL và đã được
+// `trang-thai.js:85` nạp vào `state.lastAiText`. Trước lượt này nó chỉ phục vụ cửa chống
+// lặp (`DUPLICATE` của outbound-guard) và fast-lane, KHÔNG hề đi vào prompt. Bot tự quên
+// chính câu mình vừa nói, trong khi câu đó nằm cách prompt đúng một dòng.
+//
+// Cửa sổ 6 tin cũng không cứu được: khách im ba ngày rồi gõ "hello / are you there / ?" là
+// ba tin rỗng đó đẩy đúng đoạn tư vấn ra khỏi cửa sổ.
+//
+// Hai dòng dưới đây tốn ~60 token, KHÔNG thêm một lời gọi model nào, và KHÔNG đẻ cột mới:
+// mọi thứ suy ra tại chỗ từ dữ kiện đã có. Giữ một bản tóm tắt trong CSDL là giữ hai sự
+// thật, và bản thứ hai bao giờ cũng là bản trôi.
+
+/** Khoảng thời gian đọc được bằng tiếng người. */
+export function khoangCach(ms) {
+  const s = Math.max(0, Math.round(Number(ms) || 0) / 1000);
+  if (s < 90) return `${Math.round(s)} giây`;
+  const ph = s / 60;
+  if (ph < 90) return `${Math.round(ph)} phút`;
+  const gi = ph / 60;
+  if (gi < 36) return `${Math.round(gi)} giờ`;
+  return `${Math.round(gi / 24)} ngày`;
+}
+
+// Im bao lâu thì coi là ĐỨT MẠCH và phải nói thẳng cho model biết. 30 phút: dưới ngưỡng đó
+// là cùng một phiên chat, model nhìn 6 tin gần nhất là đủ; trên ngưỡng đó khách đã đi làm,
+// đi ngủ, hoặc đã quên — và đó đúng là lúc bot hay chào lại từ đầu.
+export const NGAT_MACH_MS = 30 * 60e3;
+
 /** Bước còn thiếu để chốt đơn COD — suy ra từ checklist, không hỏi model. */
 export function missingSteps(prof) {
   const miss = [];
@@ -242,6 +321,25 @@ export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
   const miss = missingSteps(prof);
   L.push(`Bước còn thiếu: ${miss.length ? miss.join(', ') : 'đủ thông tin — chốt đơn được'}`);
   if (meta.max) L.push(`Lượt đã dùng: ${meta.used || 0}/${meta.max}${meta.tier ? ` (khách ${meta.tier})` : ''} · Trạng thái: ${meta.state || 'SELLING'}`);
+  // ① CÂU AI NÓI GẦN NHẤT — xem khối ghi chú "MẠCH TƯ VẤN" phía trên.
+  // Cắt 200 ký tự và ép về một dòng: đây là gợi nhớ, không phải chép lại cả tin.
+  // SĐT/địa chỉ nếu có trong câu cũ vẫn do dòng ⚠️ cuối khối và luật PII_ECHO của
+  // outbound-guard canh — không nới lỏng gì thêm ở đây.
+  const cuoi = String(meta.lastAi || '').replace(/\s*\n+\s*/g, ' / ').trim();
+  if (cuoi) L.push(`AI nói gần nhất${meta.idleMs ? ` (${khoangCach(meta.idleMs)} trước)` : ''}: "${cuoi.slice(0, 200)}"`);
+  // ③ KHÁCH GIỤC — dữ kiện bóc ra từ những ping vừa bị loại khỏi cửa sổ (xem `chonCuaSo`).
+  // Một lời "hello" là bình thường; hai lần trở lên là khách đang sốt ruột, và lượt này
+  // phải vào thẳng việc chứ không chào hỏi vòng vo.
+  if (Number(meta.giuc) >= 2) L.push(`Khách đã gọi ${meta.giuc} lần mà chưa được trả lời — vào THẲNG việc, đừng chào hỏi vòng vo.`);
+  // ② ĐỨT MẠCH — nói thẳng "tiếp nối", vì đây đúng chỗ bot hay chào lại từ đầu.
+  //
+  // CHỮ NGHĨA CHÍNH XÁC: `idleMs` đo từ lúc **AI** nói gần nhất (trang-thai.js:86 —
+  // `bayGio - ai_noi_luc`), KHÔNG phải từ lúc khách nói gần nhất. Trong khoảng đó sale
+  // hoặc Botcake có thể đã nói. Viết "khách im 3 ngày" là suy diễn có thể sai; viết "kể
+  // từ lượt AI nói gần nhất" là đúng thứ đang đo, mà vẫn ra đúng một chỉ thị cho model.
+  if (Number(meta.idleMs) >= NGAT_MACH_MS) {
+    L.push(`⏸ Đã ${khoangCach(meta.idleMs)} kể từ lượt AI nói gần nhất — TIẾP NỐI đúng chỗ đang dở: đừng chào lại từ đầu, đừng báo giá lại nếu đã báo, đừng hỏi lại thứ đã có ở trên.`);
+  }
   // Nhắc lại đúng hai điều dễ sai nhất khi model có sẵn SĐT/địa chỉ trong tay.
   L.push('⚠️ SĐT/địa chỉ ở trên CHỈ để điền tool — TUYỆT ĐỐI không đọc lại cho khách (trừ lượt tóm tắt đơn) và không hỏi lại.');
   return L.join('\n');
@@ -269,21 +367,28 @@ function mergeTurns(rows) {
  *
  * @returns {{messages:Array, kept:number, dropped:number}}
  */
-export function buildContextMessages({ prof, msgs = [], pageId, meta = {}, recent = RECENT_MSGS }) {
+export function buildContextMessages({ prof, msgs = [], pageId, meta = {}, recent = RECENT_MSGS, keepTrailingUser = false }) {
   const rows = cleanHistory(msgs, pageId, prof); // truyền prof để bóc dữ kiện bot khác (việc 2)
   const dropped = msgs.length - rows.length;
   // bỏ cụm tin khách đang xử lý ở cuối
-  while (rows.length && rows[rows.length - 1].role === 'user') rows.pop();
-  const tail = rows.slice(-recent);
+  if (!keepTrailingUser) while (rows.length && rows[rows.length - 1].role === 'user') rows.pop();
+  // ĐẾM TRƯỚC KHI VỨT — cùng khuôn `cleanHistory` bóc dữ kiện bot khác rồi mới bỏ template.
+  // Khách giục hai lần trở lên là một dữ kiện bán hàng thật, không phải rác.
+  let giuc = 0;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    if (rows[i].role !== 'user') { if (giuc) break; else continue; }
+    if (laPingKhach(rows[i].text)) giuc += 1; else break;
+  }
+  const tail = chonCuaSo(rows, recent);
   // Claude yêu cầu mở đầu bằng user; ta chèn khối hồ sơ làm lượt user đầu tiên nên luôn đúng.
   const turns = [
-    { role: 'user', content: buildProfileBlock(prof, meta) },
+    { role: 'user', content: buildProfileBlock(prof, giuc >= 2 ? { ...meta, giuc } : meta) },
     { role: 'assistant', content: 'Đã nắm hồ sơ khách, tiếp tục hội thoại.' },
     ...tail.map((r) => ({ role: r.role, content: r.text })),
   ];
   const messages = mergeTurns(turns);
   // Phải kết bằng assistant vì handler sẽ đẩy tin khách (user) vào ngay sau.
-  while (messages.length && messages[messages.length - 1].role !== 'assistant') messages.pop();
+  if (!keepTrailingUser) while (messages.length && messages[messages.length - 1].role !== 'assistant') messages.pop();
   return { messages, kept: tail.length, dropped };
 }
 
