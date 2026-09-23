@@ -16,7 +16,7 @@
 <body>
 <header>
   <h1>Bắt đầu</h1>
-  <span class="sub">Làm cho đủ bốn điều kiện của một page, rồi bật bot.</span>
+  <span class="sub">Làm cho đủ điều kiện của một page, rồi bật bot. Page chạy bot cũ và bot mới có hai bộ điều kiện khác nhau.</span>
 </header>
 
 <main>
@@ -148,7 +148,7 @@ function veChiTiet() {
         <span class="page-avatar" aria-hidden="true">${esc((p.ten || '?').trim()[0] || '?').toUpperCase()}</span>
         <div class="page-identity-text">
           <h2 class="page-identity-name">${esc(p.ten)}</h2>
-          <div class="page-identity-sub">Mã page ${esc(p.pageId)}${p.marketer ? ' · marketer ' + esc(p.marketer) : ''}</div>
+          <div class="page-identity-sub">Mã page ${esc(p.pageId)} · ${p.banBot === 'moi' ? 'chạy bằng bot mới' : 'chạy bằng bot cũ'}${p.marketer ? ' · marketer ' + esc(p.marketer) : ''}</div>
         </div>
       </div>
       ${trangThaiPage(p)}
@@ -158,8 +158,9 @@ function veChiTiet() {
       body: 'Tiến trình bot và bản sao trong v3 không khớp về việc page này có bật hay không. Số đúng là của tiến trình bot.' })}</div>` : ''}
 
     ${readiness({
-      title: 'Bốn điều kiện bắt buộc',
-      items: DL.maChan.map((ma) => mucKiem(ma, theoMa.get(ma), false)),
+      // Danh sách của CHÍNH page này: page bản cũ và page bản mới không cùng một bộ điều kiện.
+      title: `${formatNumber((p.maChan || []).length)} điều kiện bắt buộc`,
+      items: (p.maChan || []).map((ma) => mucKiem(ma, theoMa.get(ma), false)),
       footHtml: chanTrangKiem(p),
     })}
 

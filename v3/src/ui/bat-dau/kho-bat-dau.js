@@ -19,7 +19,9 @@
 // ⚠️ Thêm một điều kiện mới thì sửa `DIEU_KIEN` ở `san-sang/kho-san-sang.js`, ĐỪNG sửa ở
 //    đây. Hai bảng từ vựng cho cùng bảy điều kiện là cách chắc chắn để chúng lệch nhau.
 
-import { manSanSang, DIEU_KIEN, MA_DIEU_KIEN } from '../san-sang/kho-san-sang.js';
+import {
+  manSanSang, DIEU_KIEN, MA_DIEU_KIEN, DIEU_KIEN_V3, MA_DIEU_KIEN_V3, DIEU_KIEN_TAT_CA,
+} from '../san-sang/kho-san-sang.js';
 
 export class LoiBatDau extends Error {
   constructor(thongDiep, ma = 'bat_dau', status = 400) {
@@ -30,10 +32,21 @@ export class LoiBatDau extends Error {
   }
 }
 
-/** Mã CHẶN — page còn một cái là v1 TỪ CHỐI bật AI. Lấy từ `DIEU_KIEN`, không gõ lại. */
+/** Mã CHẶN — page còn một cái là bản cũ TỪ CHỐI bật AI. Lấy từ `DIEU_KIEN`, không gõ lại. */
 export const MA_CHAN = Object.freeze(MA_DIEU_KIEN.filter((m) => DIEU_KIEN[m].chan));
 /** Mã NHẮC — bật được, nhưng người bật phải biết mình đang nhận cái gì. */
 export const MA_NHAC = Object.freeze(MA_DIEU_KIEN.filter((m) => !DIEU_KIEN[m].chan));
+
+/* ═══ PAGE CHẠY BẢN MỚI CÓ DANH SÁCH ĐIỀU KIỆN RIÊNG (GD1 · 23/09/2026) ════════════════
+ * Trước lượt này màn chỉ biết bốn điều kiện của bản CŨ và lọc theo đúng bốn mã đó. Page
+ * chạy bản mới vướng `BOTMOI_THIEU_GIA` thì mã ấy không nằm trong danh sách ⇒ rơi ra ngoài,
+ * màn hiện «4/4 điều kiện hoàn thành» cho một page bot đang KHÔNG chạy được. Mỗi page phải
+ * được chấm bằng danh sách của chính bản bot nó chạy.
+ */
+export const MA_CHAN_MOI = Object.freeze(MA_DIEU_KIEN_V3.filter((m) => DIEU_KIEN_V3[m].chan));
+export const MA_NHAC_MOI = Object.freeze(MA_DIEU_KIEN_V3.filter((m) => !DIEU_KIEN_V3[m].chan));
+const maChanCua = (banBot) => (banBot === 'moi' ? MA_CHAN_MOI : MA_CHAN);
+const maNhacCua = (banBot) => (banBot === 'moi' ? MA_NHAC_MOI : MA_NHAC);
 
 /**
  * Xếp page theo thứ tự NGƯỜI MỚI NÊN LÀM, không theo tên.
@@ -66,8 +79,10 @@ function xepMotPage(p) {
   for (const b of [...(p.chan || []), ...(p.nhac || [])]) theoMa.set(b.ma, b);
   // Đọc theo THỨ TỰ của `MA_CHAN`/`MA_NHAC` để bốn việc luôn hiện cùng thứ tự ở mọi page —
   // người mới học được nhịp, không phải đọc lại từ đầu mỗi page.
-  const chan = MA_CHAN.filter((m) => theoMa.has(m)).map((m) => theoMa.get(m));
-  const nhac = MA_NHAC.filter((m) => theoMa.has(m)).map((m) => theoMa.get(m));
+  const maChan = maChanCua(p.banBot);
+  const maNhac = maNhacCua(p.banBot);
+  const chan = maChan.filter((m) => theoMa.has(m)).map((m) => theoMa.get(m));
+  const nhac = maNhac.filter((m) => theoMa.has(m)).map((m) => theoMa.get(m));
   // Mã v1 trả mà bảng từ vựng chưa biết — dồn vào cuối, KHÔNG bỏ.
   const la = [...theoMa.values()].filter((b) => b.la);
 
@@ -79,6 +94,11 @@ function xepMotPage(p) {
     // lối duy nhất màn này có việc để làm.
     id: String(p.id || ''),
     pageId: String(p.pageId || ''),
+    banBot: p.banBot === 'moi' ? 'moi' : 'cu',
+    // Danh sách điều kiện PHẢI ĐẠT của chính page này — màn đếm «x/y xong» theo danh sách
+    // này, không theo một danh sách chung cho cả hai bản bot.
+    maChan,
+    maNhac,
     ten: p.ten || String(p.pageId || ''),
     marketer: p.marketer || '',
     // SỰ THẬT là `botTheoBot` (RAM tiến trình bot), không phải cột bản sao của CSDL v3.
@@ -117,7 +137,8 @@ export async function manBatDau(boiCanh) {
     teamId: m.teamId,
     page: ds,
     dem,
-    dieuKien: DIEU_KIEN,
+    dieuKien: DIEU_KIEN_TAT_CA,
+    // Giữ cho tương thích: danh sách của bản CŨ. Màn đọc `p.maChan` của từng page.
     maChan: MA_CHAN,
     maNhac: MA_NHAC,
     trong: m.trong || null,

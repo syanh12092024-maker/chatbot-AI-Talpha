@@ -65,7 +65,7 @@ import {
 } from './ui/bo-luat/index.js';
 import { taoRouterDieuHuong } from './ui/chung/router-dieu-huong.js';
 import { menuCua } from './ui/chung/man-hinh.js';
-import { datDocSanSang as datDocSanSangDai } from './ui/chung/trang-thai.js';
+import { datDocSanSang as datDocSanSangDai, datDemTeam } from './ui/chung/trang-thai.js';
 import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/cau-bot-v1.js';
 import {
   datTaoTruyVan as datTruyVanHieuQua, datDocHieuQua,
@@ -118,6 +118,7 @@ import {
   datTaoTruyVan as datTruyVanSanSang, datDocSanSang,
   datChanDangNhap as datChanDangNhapSanSang, datChanVai as datChanVaiSanSang, taoRouterSanSang,
 } from './ui/san-sang/index.js';
+import { manSanSang } from './ui/san-sang/kho-san-sang.js';
 // Màn «Bắt đầu» KHÔNG có cầu riêng và KHÔNG có cửa ghi riêng: nó gọi `manSanSang()` của
 // màn Cửa kiểm (nên tự ăn theo `datTruyVanSanSang` + `datDocSanSang`), và nút bật bot của
 // nó gọi `POST /api/page-bot/:id/bot` đã có. Ở đây chỉ cần nối HAI cái chắn.
@@ -283,7 +284,14 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datDocMotPageLenChay(kho.motPage);
   datDocSanSangTrangChu(docCuaKiem);   // CÙNG bộ đọc — hai màn không được ra hai con số
   datDocSanSangPageBot(docCuaKiem);    // cột «Còn thiếu gì» của bảng Page — cùng nguồn nốt
-  datDocSanSangDai(docCuaKiem);        // dải trạng thái trên mọi trang — cùng nguồn nốt
+  datDocSanSangDai(docCuaKiem);        // đường lui: đếm toàn hệ khi chưa có bối cảnh team
+  // DẢI TRẠNG THÁI ĐẾM THEO TEAM, bằng ĐÚNG phép đếm của màn «Page còn thiếu gì» — không
+  // phải một phép đếm thứ hai viết lại. Trước 23/09 dải đếm mọi page cầu trả về (toàn hệ)
+  // nên hiện «1/1 page» trong khi team có 4 page, và nó hiện ở MỌI trang.
+  datDemTeam(async (bc) => {
+    const d = await manSanSang(bc);
+    return { aiBat: d.dem.dangChay, tong: d.dem.tong };
+  });
   if (typeof docSanSang === 'function') daNoi.push('bộ đọc cửa kiểm GIẢ → màn Cửa kiểm sẵn sàng');
   datTruyVanSucKhoe(taoTruyVan);
   // CÙNG bộ đọc cửa kiểm với ba màn kia — hai đèn công tắc bot của màn Sức khỏe phải đọc

@@ -72,7 +72,7 @@ export function taoRouterDieuHuong() {
     try { bc = cuaBoiCanh(req); } catch { bc = null; }
     if (!bc) return res.status(401).json({ ok: false, ma: 'chua_dang_nhap' });
     try {
-      return res.json({ ok: true, ...(await docTrangThai()) });
+      return res.json({ ok: true, ...(await docTrangThai({ boiCanh: bc })) });
     } catch (e) {
       // Dải trạng thái hỏng KHÔNG được làm hỏng trang.
       return res.json({ ok: true, docDuoc: false, aiBat: null, tong: null, viSao: String(e?.message || e) });

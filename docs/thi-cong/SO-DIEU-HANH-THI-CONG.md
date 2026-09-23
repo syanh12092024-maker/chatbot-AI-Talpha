@@ -2144,4 +2144,17 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 23/09 · 🧭 **BỘ CA KHÔNG MỞ MÀN BẰNG TRÌNH DUYỆT THÌ KHÔNG THẤY MÀN TRẮNG.** 1.955 ca xanh
   trong khi màn duy nhất duyệt được đơn nằm im 5 ngày: lỗi ở tầng ngoài cùng của mô-đun, HTML
   vẫn trả 200, mọi ca API vẫn xanh. 📌 Mỗi lượt đụng giao diện: chạy `ops/bin/do-giao-dien.mjs`.
-
+- 23/09 · GD1 (một nguồn cho mỗi câu hỏi) → ✅ — điều kiện của page chạy BẢN MỚI nay mang MÃ có
+  tên và nút sửa (trước: câu chữ tự do ⇒ màn hiện «mã lạ»), mỗi page khai chạy bằng bản cũ hay
+  bản mới và được chấm bằng danh sách của chính bản đó, dải trạng thái đếm page CỦA TEAM bằng
+  đúng phép đếm của màn «Page còn thiếu gì» (trước: 1/1 toàn hệ trong khi team có 4 page).
+  Cổng `ops/bin/nghiem-thu/gd1.sh` 8/8 · bộ ca mới 11/11 · đảo-vá 3 đột biến đều đỏ đúng ca ·
+  `npm test` 1958 xanh / 6 đỏ (đúng 6 ca đỏ có sẵn). Nhật ký: `docs/thi-cong/nhat-ky/phieu-GD1.md`.
+- 23/09 · 🧭 **MÃ ĐIỀU KIỆN ĐỪNG MANG KHUÔN TÊN CỦA BIẾN MÔI TRƯỜNG.** Đặt mã `V3_THIEU_GIA…`
+  làm thước `bien-moi-truong-khai-du` đỏ — nó quét `\bV3_[A-Z0-9_]+` và đòi mỗi tên có dòng
+  trong bảng biến môi trường. Thước đỏ ĐÚNG. 📌 Đổi tên mã (`BOTMOI_*`), đừng nới thước và
+  đừng thêm dòng giả vào bảng giấy.
+- 23/09 · 🧭 **MÃ HOÁ MỘT NGUỒN THÌ PHẢI ĐI HẾT ĐƯỜNG DÙNG NÓ.** Dịch câu chữ thành mã xong,
+  màn «Bắt đầu» vẫn lọc theo bốn mã của bản cũ ⇒ điều kiện của bản mới rơi ra ngoài và màn
+  báo «4/4 hoàn thành» cho page bot KHÔNG chạy được — bản vá tự đẻ lỗi mới (án lệ #26).
+  📌 Đổi khuôn dữ liệu thì grep hết nơi lọc theo khuôn cũ trong CÙNG lượt.

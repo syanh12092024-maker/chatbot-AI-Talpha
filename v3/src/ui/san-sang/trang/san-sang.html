@@ -17,7 +17,7 @@
 <body>
 <header>
   <h1>Page còn thiếu gì</h1>
-  <span class="sub">Bảy điều kiện để bot chạy được trên một page. Bậc chặn thì bot không bật được; bậc nhắc thì bật vẫn được.</span>
+  <span class="sub">Điều kiện để bot chạy được trên một page. Bậc chặn thì bot không bật được; bậc nhắc thì bật vẫn được. Page chạy bot cũ và page chạy bot mới có hai bộ điều kiện khác nhau.</span>
 </header>
 
 <main>
@@ -38,7 +38,7 @@
   </section>
 
   <section class="section table-wrap" aria-labelledby="tieu-dk">
-    <div class="table-toolbar"><h2 id="tieu-dk">Bảy điều kiện</h2>
+    <div class="table-toolbar"><h2 id="tieu-dk">Các điều kiện</h2>
       <span class="table-count">Bậc nào chặn, bậc nào chỉ nhắc</span></div>
     <div id="dsDk"></div>
   </section>
@@ -123,7 +123,7 @@ function veBang() {
       <th scope="col">Nhắc</th><th scope="col">Marketer</th>
     </tr></thead><tbody>${ds.map((p) => `
     <tr>
-      <td><div class="page-identity-name">${esc(p.ten)}</div><div class="page-identity-sub">${esc(p.pageId)}</div></td>
+      <td><div class="page-identity-name">${esc(p.ten)}</div><div class="page-identity-sub">${esc(p.pageId)} · ${p.banBot === 'moi' ? 'bot mới' : 'bot cũ'}</div></td>
       <td>${p.botKhongThay ? statusBadge('not_seen') : statusBadge(p.botTheoBot ? 'bot_on' : 'bot_off')}
         ${p.botTheoCsdl !== p.botTheoBot && !p.botKhongThay
           ? `<div class="meta" title="Cột trong cơ sở dữ liệu là bản sao — con số đúng là của tiến trình bot">CSDL ghi ${p.botTheoCsdl ? 'bật' : 'tắt'}</div>` : ''}</td>
@@ -148,18 +148,25 @@ function veDem(k) {
   ]);
 }
 
+// Bảng điều kiện chở CẢ HAI bộ: của bot cũ và của bot mới. Tách nhóm có nhãn, vì không page
+// nào phải đạt cả hai bộ — gộp một mạch là bắt người đọc tự đoán dòng nào áp cho page của họ.
 function veDieuKien(dk) {
-  const r = Object.entries(dk).filter(([m]) => m !== 'READY');
-  $('#dsDk').innerHTML = `<table class="data-table"><thead><tr>
-      <th scope="col">Điều kiện</th><th scope="col">Mức</th><th scope="col">Phải làm gì</th>
-      <th scope="col" class="actions"><span class="sr-only">Chỗ sửa</span></th>
-    </tr></thead><tbody>${r.map(([ma, d]) => `
+  const hang = ([ma, d]) => `
     <tr>
       <td><div class="manh">${esc(d.nhan || d.ten)}</div><div class="meta"><code>${esc(ma)}</code></div></td>
       <td>${statusBadge(d.chan ? 'blocked' : 'needs_attention', { label: d.chan ? 'Chặn bot' : 'Chỉ nhắc' })}</td>
       <td>${esc(d.lam)}</td>
       <td class="actions">${d.di ? button(d.nutDi || 'Đi sửa', { href: d.di, size: 'sm' }) : ''}</td>
-    </tr>`).join('')}</tbody></table>`;
+    </tr>`;
+  const r = Object.entries(dk).filter(([m]) => m !== 'READY');
+  const cu = r.filter(([m]) => !m.startsWith('BOTMOI_'));
+  const moi = r.filter(([m]) => m.startsWith('BOTMOI_'));
+  const nhomHang = (ten, so) => `<tr><th colspan="4" scope="colgroup" class="meta">${esc(ten)} · ${so} điều kiện</th></tr>`;
+  $('#dsDk').innerHTML = `<table class="data-table"><thead><tr>
+      <th scope="col">Điều kiện</th><th scope="col">Mức</th><th scope="col">Phải làm gì</th>
+      <th scope="col" class="actions"><span class="sr-only">Chỗ sửa</span></th>
+    </tr></thead><tbody>${nhomHang('Page chạy bot cũ', cu.length)}${cu.map(hang).join('')}`
+    + `${moi.length ? nhomHang('Page chạy bot mới', moi.length) + moi.map(hang).join('') : ''}</tbody></table>`;
 }
 
 async function tai() {

@@ -163,7 +163,7 @@ function veBang(d) {
           <span class="page-avatar" aria-hidden="true">${esc((ten.trim()[0] || '?').toUpperCase())}</span>
           <div class="page-identity-text">
             <div class="page-identity-name ten">${esc(ten)}</div>
-            <div class="page-identity-sub">${esc(p.pageId)}${p.matDau ? ' · ' + statusBadge('order_error', { label: 'Mất dấu' }) : ''}</div>
+            <div class="page-identity-sub">${esc(p.pageId)} · ${p.runtime === 'v3' ? 'bot mới' : 'bot cũ'}${p.matDau ? ' · ' + statusBadge('order_error', { label: 'Mất dấu' }) : ''}</div>
           </div>
         </div>
       </td>

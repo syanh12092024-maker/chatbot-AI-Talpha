@@ -171,6 +171,17 @@ export const TEN_NGAN = Object.freeze({
   THIN_SCRIPT: 'Kịch bản mỏng',
   SCRIPT_STALE: 'Kịch bản cũ',
   READY: 'Đủ điều kiện',
+  // Điều kiện của page chạy bằng BẢN MỚI. Thiếu mấy dòng này thì ô bảng hiện nguyên mã máy
+  // («BOTMOI_THIEU_GIA») — đúng cái lỗi «mã lạ» mà lượt GD1 đang dọn.
+  BOTMOI_NGOAI_DANH_SACH: 'Chưa được bật ở máy chủ',
+  BOTMOI_CHUA_MO_GUI: 'Cửa gửi tin đang đóng',
+  BOTMOI_CHUA_RAP_LOI: 'Chưa bật cách ghép lời',
+  BOTMOI_THIEU_SAN_PHAM: 'Chưa có sản phẩm',
+  BOTMOI_THIEU_GIA: 'Chưa có giá bán',
+  BOTMOI_THIEU_MODEL: 'Chưa có model hoặc khoá',
+  BOTMOI_MODEL_HONG: 'Cấu hình model lỗi',
+  BOTMOI_DIEN_TAP: 'Đang chạy thử',
+  BOTMOI_CHUA_DO_MAY_CHAY_BOT: 'Chưa đo máy chạy bot',
 });
 
 /**
@@ -188,14 +199,17 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
   const db = congTruyVan(bc);
   const tatCa = await db.chon(BANG, {}, { sapXep: 'ten' });
 
+  const { doc, viSao } = await docCuaKiem();
+  for (const p of tatCa) {
+    const r = doc?.get(String(p.page_id));
+    if (r?.runtime === 'v3') { p.bot_ai_bat = r.aiEnabled; p.runtime = 'v3'; }
+  }
   const daLoc = tatCa.filter((p) => hopLoc(p, loc) && hopTim(p, tim));
   const soTrang = Math.max(1, Math.ceil(daLoc.length / MOI_TRANG));
   const t = Math.min(Math.max(0, Number(trang) || 0), soTrang - 1);
   const cat = daLoc.slice(t * MOI_TRANG, (t + 1) * MOI_TRANG);
 
   // Cửa kiểm đọc MỘT lần cho cả trang, không phải mỗi dòng một lượt.
-  const { doc, viSao } = await docCuaKiem();
-
   // CR-15/09 — sản phẩm GỐC của từng page trong trang. Đọc MỘT mẻ cho cả trang, cùng lý do
   // với cửa kiểm ở trên: 25 dòng × 1 truy vấn là 25 lượt đi CSDL cho một lần vẽ bảng.
   // LƯỚI MIGRATION 014 (án lệ #7). Deploy code trước khi áp 014 thì bảng `san_pham_goc`
@@ -209,6 +223,7 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
   return {
     page: cat.map((p) => ({
       ...gonPage(p),
+      runtime: p.runtime || 'legacy',
       cuaKiem: doc ? gonCuaKiem(doc.get(String(p.page_id))) : null,
       // 015 — page khai MỘT sản phẩm gốc. Kèm tên để màn không phải tra lần nữa.
       sanPhamGocTen: p.san_pham_goc_ma ? (tenGoc.get(p.san_pham_goc_ma) || p.san_pham_goc_ma) : null,

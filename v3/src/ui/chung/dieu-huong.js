@@ -363,9 +363,12 @@
         const bat = Number(d.aiBat) || 0;
         const tong = Number(d.tong) || 0;
         o.dataset.tone = bat > 0 ? "success" : "danger";
+        // MẪU SỐ PHẢI NÓI RÕ LÀ CỦA AI. «1/1 page» của toàn hệ và «1/4 page của team» là hai
+        // câu khác nhau, và dải này hiện ở mọi trang nên nó sai thì sai khắp nơi.
+        const cua = d.theoTeam === false ? 'trên toàn hệ' : 'trong team đang mở';
         o.innerHTML = bat > 0
-          ? `<b>Bot đang chạy ${bat}/${tong} page</b>số page còn lại chưa bật`
-          : `<b>Bot đang tắt ở mọi page</b>0/${tong} page bật — hệ không phục vụ khách`;
+          ? `<b>Bot đang chạy ${bat}/${tong} page</b>${cua} · số còn lại chưa bật`
+          : `<b>Bot đang tắt ở mọi page</b>0/${tong} page ${cua} — hệ không phục vụ khách`;
       })
       .catch(() => {
         o.dataset.tone = "neutral";

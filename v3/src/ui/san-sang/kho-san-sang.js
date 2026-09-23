@@ -95,6 +95,90 @@ export const DIEU_KIEN = Object.freeze({
 /** Bảy bậc THẬT SỰ là điều kiện — `READY` là kết quả, không phải điều kiện. */
 export const MA_DIEU_KIEN = Object.freeze(Object.keys(DIEU_KIEN).filter((m) => m !== 'READY'));
 
+/* ═══ ĐIỀU KIỆN CỦA PAGE CHẠY BẰNG BẢN MỚI (GD1 · 23/09/2026) ═══════════════════════════
+ *
+ * Page của hệ chia làm hai: chạy bằng BẢN CŨ (tiến trình bot v1, bậc thang `LADDER` ở trên)
+ * hoặc bằng BẢN MỚI (`pageStatus` của `src/admin-v3/operations.js`). Hai bên tính điều kiện
+ * bằng hai bộ luật khác nhau — đó là sự thật của hệ, không phải lỗi.
+ *
+ * Lỗi là ở CÁCH CHỞ: bản mới trả điều kiện dưới dạng CÂU CHỮ tự do, cầu nối nhét nguyên câu
+ * vào ô `code`, nên mọi màn tra bảng từ vựng đều trượt và hiện ra «mã lạ» — một ô đỏ không
+ * tên, không nút sửa. Đo 22/09 trên bản dev: page duy nhất đang chạy hiện «Chỉ kiểm tra cấu
+ * hình V3 (mã lạ)» ở màn Page còn thiếu gì, và màn Bắt đầu báo «Bot trả về điều kiện màn này
+ * chưa biết».
+ *
+ * Nên bảng này đặt TÊN cho từng điều kiện của bản mới, đúng khuôn với bảng của bản cũ: có
+ * `nhan` trung tính, có `chan` hay chỉ nhắc, có `lam` (làm gì) và `di` (bấm đi đâu).
+ *
+ * ⚠️ CHÉP TAY — và được khoá bằng bài test. `v3/test/b/gd1-mot-nguon.test.mjs` đọc thẳng
+ *    `src/admin-v3/operations.js`, bóc mọi câu `blockers.push("…")` ra và đòi mỗi câu phải
+ *    có một mã ở đây. Bên kia thêm một điều kiện mà quên khai → bài test đỏ, không phải đợi
+ *    người dùng gặp một ô đỏ không tên.
+ */
+export const DIEU_KIEN_V3 = Object.freeze({
+  BOTMOI_NGOAI_DANH_SACH: {
+    chan: true, nhan: 'Page được phép chạy bản mới', ten: 'Chưa nằm trong danh sách bản mới',
+    di: null, nutDi: null,
+    lam: 'Danh sách này nằm ở cấu hình máy chủ, màn chưa sửa được. Nhờ người quản trị hệ thống '
+      + 'thêm page rồi khởi động lại dịch vụ.',
+  },
+  BOTMOI_CHUA_MO_GUI: {
+    chan: true, nhan: 'Cửa gửi tin cho khách', ten: 'Máy chủ chưa mở cửa gửi tin',
+    di: null, nutDi: null,
+    lam: 'Máy chủ đang ở chế độ chỉ đọc: bot nghĩ ra câu trả lời nhưng không gửi cho khách. '
+      + 'Nhờ người quản trị hệ thống mở cửa gửi.',
+  },
+  BOTMOI_CHUA_RAP_LOI: {
+    chan: true, nhan: 'Cách ghép lời cho bot', ten: 'Máy chủ chưa bật cách ghép lời mới',
+    di: null, nutDi: null,
+    lam: 'Chưa bật thì bot không đọc được kịch bản và giá của page. Nhờ người quản trị hệ thống bật.',
+  },
+  BOTMOI_THIEU_SAN_PHAM: {
+    chan: true, nhan: 'Sản phẩm của page', ten: 'Page chưa có sản phẩm nào',
+    di: '/page-bot', nutDi: 'Gán sản phẩm gốc',
+    lam: 'Page chưa gắn sản phẩm gốc, hoặc kho chưa kéo sản phẩm của shop này về.',
+  },
+  BOTMOI_THIEU_GIA: {
+    chan: true, nhan: 'Giá bán', ten: 'Chưa có gói giá hợp lệ',
+    di: '/van-hanh-v3', nutDi: 'Nhập giá bán',
+    lam: 'Sản phẩm có rồi nhưng chưa ai đặt giá bán. Bot không được tự chế giá, nên chưa chào được.',
+  },
+  BOTMOI_THIEU_MODEL: {
+    chan: true, nhan: 'Model AI và khoá', ten: 'Chưa chọn model hoặc chưa dán khoá',
+    di: '/model-ai', nutDi: 'Mở màn Model AI',
+    lam: 'Chọn model chính rồi dán khoá của nhà đó. Chưa có khoá thì bot không gọi được model nào.',
+  },
+  BOTMOI_MODEL_HONG: {
+    // Tên phải KHÁC `BOTMOI_THIEU_MODEL`: hai dòng cùng tên trên một màn trông như màn hỏng,
+    // và người đọc không biết mình đang phải sửa cái nào (đo trên ảnh chụp 23/09).
+    chan: true, nhan: 'Cấu hình model đọc lên bị lỗi', ten: 'Đọc cấu hình model không được',
+    di: '/model-ai', nutDi: 'Mở màn Model AI',
+    lam: 'Cấu hình model của team đọc lên bị lỗi. Mở màn Model AI, chọn lại model và lưu.',
+  },
+  // ── Hai mã NHẮC: không chặn, nhưng người bật bot phải biết mình đang nhận cái gì ──
+  BOTMOI_DIEN_TAP: {
+    chan: false, nhan: 'Đang chạy thử', ten: 'Đang chạy thử, không gửi cho khách',
+    di: null, nutDi: null,
+    lam: 'Bot đọc tin thật, soạn câu trả lời và ghi sổ, nhưng KHÔNG gửi đi. Đây là cấu hình cố ý.',
+  },
+  BOTMOI_CHUA_DO_MAY_CHAY_BOT: {
+    chan: false, nhan: 'Máy chạy bot', ten: 'Chưa đo máy chạy bot',
+    di: '/suc-khoe', nutDi: 'Xem hệ còn sống không',
+    lam: 'Các điều kiện trên mới kiểm CẤU HÌNH. Chưa ai xác nhận máy chạy bot còn sống và kết nối '
+      + 'ra ngoài còn tốt.',
+  },
+});
+
+export const MA_DIEU_KIEN_V3 = Object.freeze(Object.keys(DIEU_KIEN_V3));
+
+/**
+ * MỘT bảng từ vựng cho cả hai bản bot — thứ mọi màn tra theo mã.
+ *
+ * Giữ `DIEU_KIEN` riêng (chỉ bản cũ) vì bài test `san-sang` khoá nó vào `LADDER` của v1:
+ * thêm mã của bản mới vào đó là làm hỏng chính cái khoá ấy.
+ */
+export const DIEU_KIEN_TAT_CA = Object.freeze({ ...DIEU_KIEN, ...DIEU_KIEN_V3 });
+
 export class LoiSanSang extends Error {
   constructor(thongDiep, ma = 'san_sang', status = 400) {
     super(thongDiep);
@@ -136,7 +220,7 @@ export async function manSanSang(boiCanh) {
   if (!_docSanSang) {
     // Rỗng vì CHƯA CÀI ĐẶT XONG — nói thẳng, và chỉ đường đi tiếp.
     return {
-      teamId: bc.teamId, page: [], dem: demRong(), lech: null, dieuKien: DIEU_KIEN,
+      teamId: bc.teamId, page: [], dem: demRong(), lech: null, dieuKien: DIEU_KIEN_TAT_CA,
       trong: {
         rong: true, vi: 'chua-cai-dat',
         noi: 'Chưa nối cầu sang tiến trình bot, nên chưa đọc được sáu điều kiện của page nào.',
@@ -170,6 +254,11 @@ export async function manSanSang(boiCanh) {
       pageId: String(p.page_id),
       ten: p.ten || String(p.page_id),
       marketer: (p.marketer || '').trim(),
+      // BẢN BOT ĐANG CHẠY PAGE NÀY — `cu` (tiến trình bot v1) hay `moi` (đường v3).
+      // Không có nó thì hai bộ điều kiện khác nhau nằm lẫn trong một bảng mà không ai biết
+      // dòng nào tính bằng luật nào; người dùng đọc «thiếu sản phẩm» ở hai dòng rồi đi sửa
+      // cùng một chỗ, mà thật ra hai dòng ấy đo hai thứ khác nhau.
+      banBot: r?.runtime === 'v3' ? 'moi' : 'cu',
       // ⚠️ HAI CON SỐ, CỐ Ý GIỮ CẢ HAI. `botTheoBot` là sự thật (RAM của tiến trình bot),
       //    `botTheoCsdl` là cột bản sao trong CSDL v3. Gộp một là mất khả năng phát hiện lệch.
       botTheoBot: r ? !!r.aiEnabled : null,
@@ -190,7 +279,7 @@ export async function manSanSang(boiCanh) {
     page,
     dem: dem(page),
     lech: lech(page),
-    dieuKien: DIEU_KIEN,
+    dieuKien: DIEU_KIEN_TAT_CA,
     toanHe: toanHe.toanHe || null,
     trong: page.length ? null : {
       rong: true, vi: 'chua-cai-dat',
@@ -273,7 +362,9 @@ function lech(page) {
  */
 function nhan(b, laChan) {
   const ma = String(b?.code || '');
-  const dk = DIEU_KIEN[ma] || null;
+  // Tra bảng CHUNG: page bản cũ mang mã của `LADDER`, page bản mới mang mã `V3_*`. Một bảng
+  // cho cả hai, nên không màn nào phải biết page đang chạy bằng bản nào mới đọc được điều kiện.
+  const dk = DIEU_KIEN_TAT_CA[ma] || null;
   return {
     ma,
     chiTiet: String(b?.detail || ''),

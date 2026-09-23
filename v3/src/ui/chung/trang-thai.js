@@ -18,17 +18,35 @@
 const NHO_MS = 60_000;
 
 let _docSanSang = null;
-let _nho = null; // { luc, kq }
+let _demTeam = null;
+const _nho = new Map(); // khoá team → { luc, kq }
 
 export function datDocSanSang(fn) {
   if (fn != null && typeof fn !== 'function') throw new TypeError('datDocSanSang: cần một hàm');
   _docSanSang = fn || null;
-  _nho = null;
+  _nho.clear();
 }
-export const daNoiTrangThai = () => typeof _docSanSang === 'function';
+
+/**
+ * ĐẾM THEO TEAM ĐANG MỞ — nguồn ĐÚNG của dải trạng thái (GD1 · 23/09/2026).
+ *
+ * ⚠️ MẪU SỐ CŨ SAI. Bản trước đếm mọi page mà cầu trả về, tức TOÀN HỆ, trong khi mọi màn
+ *    khác đếm page CỦA TEAM. Đo 22/09 trên bản dev: dải ghi «Bot đang chạy 1/1 page» trong
+ *    khi team có 4 page — vì cầu sang bản cũ đang đóng nên nó chỉ thấy 1 page của bản mới.
+ *    Hai con số cùng tên, hai mẫu số, và cái hiện ở MỌI trang lại là cái sai.
+ *
+ * Hàm truyền vào nhận bối cảnh và trả `{ aiBat, tong }` — nơi nối dây đưa thẳng phép đếm của
+ * màn «Page còn thiếu gì» vào, nên dải và danh sách page không thể lệch nhau được nữa.
+ */
+export function datDemTeam(fn) {
+  if (fn != null && typeof fn !== 'function') throw new TypeError('datDemTeam: cần một hàm');
+  _demTeam = fn || null;
+  _nho.clear();
+}
+export const daNoiTrangThai = () => typeof _docSanSang === 'function' || typeof _demTeam === 'function';
 
 /** Chỉ dùng trong bài test — xoá bộ nhớ tạm để đo lại từ đầu. */
-export function xoaNho() { _nho = null; }
+export function xoaNho() { _nho.clear(); }
 
 /**
  * `{ docDuoc, aiBat, tong, viSao }`.
@@ -37,8 +55,31 @@ export function xoaNho() { _nho = null; }
  *    `docDuoc:false` và `aiBat:null` — vì «0 page đang bật» và «chưa biết page nào đang
  *    bật» là hai câu khác hẳn nhau, và câu thứ nhất là câu gọi người dậy giữa đêm.
  */
-export async function docTrangThai({ bayGio = Date.now() } = {}) {
-  if (_nho && bayGio - _nho.luc < NHO_MS) return _nho.kq;
+export async function docTrangThai({ bayGio = Date.now(), boiCanh = null } = {}) {
+  const khoa = boiCanh?.teamId ? `team:${boiCanh.teamId}` : 'toan-he';
+  const cu = _nho.get(khoa);
+  if (cu && bayGio - cu.luc < NHO_MS) return cu.kq;
+
+  // ĐƯỜNG CHÍNH: đếm page của TEAM, bằng đúng phép đếm của màn «Page còn thiếu gì».
+  if (_demTeam && boiCanh?.teamId) {
+    try {
+      const d = await _demTeam(boiCanh);
+      const kqTeam = {
+        docDuoc: true,
+        aiBat: Number(d?.aiBat) || 0,
+        tong: Number(d?.tong) || 0,
+        theoTeam: true,
+        viSao: null,
+      };
+      _nho.set(khoa, { luc: bayGio, kq: kqTeam });
+      return kqTeam;
+    } catch (e) {
+      // Hỏng thì NÓI HỎNG, không rơi xuống đường đếm toàn hệ: rơi xuống là lại hiện một mẫu
+      // số khác dưới cùng một cái tên, đúng cái lỗi lượt này đang sửa.
+      return { docDuoc: false, aiBat: null, tong: null, theoTeam: true,
+        viSao: `Chưa đọc được page của team: ${e?.message || e}` };
+    }
+  }
 
   if (!_docSanSang) {
     return { docDuoc: false, aiBat: null, tong: null,
@@ -53,14 +94,17 @@ export async function docTrangThai({ bayGio = Date.now() } = {}) {
       docDuoc: true,
       aiBat: ds.filter((p) => p && p.aiEnabled === true).length,
       tong: ds.length,
+      // Mẫu số TOÀN HỆ — đường lui khi chưa nối phép đếm theo team. Màn phải nói ra, vì
+      // «3/514 page» và «3/4 page của team» là hai câu khác hẳn nhau.
+      theoTeam: false,
       viSao: null,
     };
   } catch (e) {
     // Hỏng thì NÓI HỎNG, không trả 0. Xem ghi chú trên.
-    return { docDuoc: false, aiBat: null, tong: null,
+    return { docDuoc: false, aiBat: null, tong: null, theoTeam: false,
       viSao: `Cầu sang tiến trình bot lỗi: ${e?.message || e}` };
   }
 
-  _nho = { luc: bayGio, kq };
+  _nho.set(khoa, { luc: bayGio, kq });
   return kq;
 }
