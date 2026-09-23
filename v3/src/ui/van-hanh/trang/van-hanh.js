@@ -703,16 +703,13 @@ async function conversation(id) {
   }
 
 }
-$("#close").onclick = () => $("#detail").close();
-$("#reload").onclick = () => load().catch((e) => message(e.message, true));
-$("#prev").onclick = () => {
-  offset = Math.max(0, offset - 50);
-  $("#reload").click();
-};
-$("#next").onclick = () => {
-  offset += 50;
-  $("#reload").click();
-};
+// ⚠️ 22/09: chỗ này từng gắn tay bốn nút `#close` `#reload` `#prev` `#next` của bản TRƯỚC
+// lượt đổi giao diện 17/09. Lượt ấy bỏ bốn nút khỏi `trang.html` — nay nút Đóng do `modal()`
+// dựng, còn Trang trước/Trang sau/Tải lại do `vePhanTrang()` dựng — nhưng bốn dòng gắn tay
+// ở lại. Chúng chạy ở tầng ngoài cùng của mô-đun, nên `$("#close")` trả `null` là NÉM NGAY:
+// cả mô-đun dừng trước `load()`, và màn ra trắng (chỉ còn chữ "Danh sách"). Màn duy nhất
+// duyệt được đơn và bàn giao hội thoại v3 nằm im như vậy từ 17/09 tới 22/09.
+// Bài học: nút dựng bằng JS thì ĐỪNG còn chỗ nào tra lại nó bằng id trong HTML tĩnh.
 try {
   const me = await (await fetch("/api/toi")).json();
   admin = (me.boiCanh?.vai || me.toi?.vai || me.vai || []).includes("quan-tri");

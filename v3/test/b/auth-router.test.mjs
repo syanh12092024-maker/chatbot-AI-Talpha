@@ -565,3 +565,76 @@ test('tiêu chí 6 · đăng nhập bằng `email` chạy, và tên trường C�
   assert.equal(caHai.than.toi.nguoiDungId, 'u_an');
   xoaBoDemThuSai();
 });
+
+/* ── 22/09 · MÀN ĐẦU SAU KHI ĐĂNG NHẬP ĐI THEO VAI ─────────────────────────────────
+ * Trước lượt này `duongSauKhiVao` là một CHUỖI, mặc định `/dieu-phoi` cho mọi vai — mà màn
+ * ấy chỉ mở cho vai sale và quản trị. vai quản lý và marketer đăng nhập đúng mật khẩu xong
+ * là gặp ngay màn bị từ chối. Nay nhận thêm một HÀM, và `vai-b.js` đưa vào hàm lấy màn đầu
+ * tiên trên menu của chính vai đó.
+ */
+test('22/09 · đích sau đăng nhập nhận HÀM theo vai, và hàm ném thì rơi về đường cũ', async () => {
+  const dich = (vai) => {
+    if (vai.includes('sale') && !vai.includes('quan-tri')) return '/dieu-phoi';
+    return '/trang-chu';
+  };
+  const app2 = express();
+  app2.use(express.json());
+  app2.use(lopBoiCanh());
+  app2.use(taoRouterAuth({ duongSauKhiVao: dich }));
+  const sv2 = http.createServer(app2);
+  await new Promise((r) => sv2.listen(0, '127.0.0.1', r));
+  sv2.unref();
+  const goc2 = `http://127.0.0.1:${sv2.address().port}`;
+  after(() => new Promise((r) => sv2.close(r)));
+
+  const vao = async (email, matKhau) => {
+    xoaBoDemThuSai();
+    const res = await fetch(goc2 + '/api/dang-nhap', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, matKhau }), redirect: 'manual',
+    });
+    return { res, than: await res.json() };
+  };
+
+  // `u_an` chỉ mang vai `sale` ở t1 → vẫn vào bảng điều phối.
+  const an = await vao(EMAIL.an, MK.an);
+  assert.equal(an.res.status, 200);
+  assert.equal(an.than.diTiep, '/dieu-phoi');
+
+  // `u_binh` thuộc HAI team (t1 sale · t2 quản trị) → bước một là chọn team, bước hai mới
+  // ra đích theo vai của ĐÚNG team vừa chọn.
+  const dung = await vao(EMAIL.binh, MK.binh);
+  assert.equal(dung.than.diTiep, '/chon-team', 'nhiều team thì đích vẫn là màn chọn team');
+  const ve = decodeURIComponent(
+    (typeof dung.res.headers.getSetCookie === 'function'
+      ? dung.res.headers.getSetCookie()
+      : [dung.res.headers.get('set-cookie')])
+      .find((c) => c.startsWith('v3_ve=')).slice('v3_ve='.length).split(';')[0],
+  );
+  const chon = await fetch(goc2 + '/api/chon-team', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', cookie: `v3_ve=${encodeURIComponent(ve)}` },
+    body: JSON.stringify({ teamId: 't2' }), redirect: 'manual',
+  });
+  const chonThan = await chon.json();
+  assert.equal(chon.status, 200);
+  assert.equal(chonThan.diTiep, '/trang-chu', 'vai quan-tri ở t2 không được ném vào /dieu-phoi');
+
+  // Hàm ném → đăng nhập KHÔNG được chết theo, rơi về đường cũ.
+  const app3 = express();
+  app3.use(express.json());
+  app3.use(lopBoiCanh());
+  app3.use(taoRouterAuth({ duongSauKhiVao: () => { throw new Error('menu hỏng'); } }));
+  const sv3 = http.createServer(app3);
+  await new Promise((r) => sv3.listen(0, '127.0.0.1', r));
+  sv3.unref();
+  after(() => new Promise((r) => sv3.close(r)));
+  xoaBoDemThuSai();
+  const hong = await fetch(`http://127.0.0.1:${sv3.address().port}/api/dang-nhap`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: EMAIL.an, matKhau: MK.an }), redirect: 'manual',
+  });
+  assert.equal(hong.status, 200);
+  assert.equal((await hong.json()).diTiep, '/dieu-phoi');
+  xoaBoDemThuSai();
+});

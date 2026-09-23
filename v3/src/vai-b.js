@@ -64,6 +64,7 @@ import {
   datCuaBoLuat, manBoLuat,
 } from './ui/bo-luat/index.js';
 import { taoRouterDieuHuong } from './ui/chung/router-dieu-huong.js';
+import { menuCua } from './ui/chung/man-hinh.js';
 import { datDocSanSang as datDocSanSangDai } from './ui/chung/trang-thai.js';
 import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/cau-bot-v1.js';
 import {
@@ -491,7 +492,13 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
   if (express && typeof express.json === 'function') app.use(express.json());
   app.use(lopBoiCanh());          // ① đọc cookie vé → req.boiCanh. PHẢI đứng trước router auth.
-  app.use(taoRouterAuth());       //   /dang-nhap · /api/dang-nhap · /api/chon-team · /api/toi
+  // MÀN ĐẦU TIÊN SAU KHI ĐĂNG NHẬP = màn đầu tiên trên menu CỦA CHÍNH VAI ẤY.
+  // Trước 22/09 chỗ này để mặc định `/dieu-phoi` cho mọi vai, mà màn đó chỉ mở cho vai sale
+  // và quản trị: vai quản lý và marketer đăng nhập xong là gặp ngay một màn bị từ chối. Lấy
+  // thẳng từ `menuCua` thì đích đi theo quyền, và thêm/bớt màn về sau không làm nó lệch lại.
+  app.use(taoRouterAuth({
+    duongSauKhiVao: (vai) => menuCua(vai)?.[0]?.man?.[0]?.duong || '/dieu-phoi',
+  }));                            //   /dang-nhap · /api/dang-nhap · /api/chon-team · /api/toi
   app.use(chanTeamTrenUrl());     //   ?team_id=<team khác> → 403 + ghi nhật ký
   app.use(taoRouterDieuHuong());  //   /chung/dieu-huong.js · /api/dieu-huong (menu chung)
   app.use(taoRouterVanHanh(vanHanh));

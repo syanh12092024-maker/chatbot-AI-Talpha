@@ -191,8 +191,12 @@ test("HK7 · màn «Bắt đầu» KHÔNG dựng nguồn dữ liệu hay cửa g
   assert.deepEqual(cuaGhi, [], "màn Bắt đầu KHÔNG được có cửa ghi riêng — nút bật gọi /api/page-bot/:id/bot");
 
   const trang = fs.readFileSync(path.join(GOC, "v3/src/ui/bat-dau/trang/bat-dau.html"), "utf8");
-  assert.match(trang, /\/api\/page-bot\/\$\{encodeURIComponent\(p\.pageId\)\}\/bot/,
-    "nút bật phải gọi ĐÚNG đường đã có của màn Page & Bot");
+  // ⚠️ 22/09 · ca này TỪNG neo `p.pageId`, tức là neo đúng con bọ. Cửa `/api/page-bot/:id/bot`
+  //    tra `page.id` (khoá dòng CSDL v3 — `kho-page.js#motPage`), không tra mã Facebook; gửi
+  //    `pageId` vào đó là 404 ở đúng nút DUY NHẤT màn này có. Ca đúng phải canh `p.id`.
+  //    Bài học: ca «gọi đúng đường của màn kia» phải neo cả ĐƯỜNG lẫn THAM SỐ đường ấy nhận.
+  assert.match(trang, /\/api\/page-bot\/\$\{encodeURIComponent\(p\.id\)\}\/bot/,
+    "nút bật phải gọi ĐÚNG đường đã có của màn Page & Bot, và truyền `page.id` chứ không phải mã Facebook");
 });
 
 test("HK8 · CẦU DI TRÚ đã gỡ — và không màn nào được dùng lại tên cũ", () => {

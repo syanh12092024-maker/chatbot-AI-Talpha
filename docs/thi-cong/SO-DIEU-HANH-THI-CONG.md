@@ -277,6 +277,22 @@ trên 4.423 đơn POS 60 ngày — đã ghi §9 để không rơi mất).
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
+- 23/09 · **N-GIAODIEN** (lượt đo giao diện, ngoài phạm vi phiếu nào) — kế hoạch đầy đủ ở
+  `docs/v3/09-KE-HOACH-GIAO-DIEN.md`, đã sửa ba chỗ VỠ (xem §10), còn lại là NỢ:
+  (1) **`page.pos_shop_id` không màn nào ghi được** (`db/di-tru/nap.js:60` là đường duy nhất)
+  ⇒ page quét từ Pancake không bao giờ hết «thiếu sản phẩm» nếu chỉ dùng giao diện.
+  (2) **Chữ đã cũ trên màn**: `/san-sang` bảo «màn Sản phẩm & kho của v3 chưa dựng» (có rồi);
+  nút «Gán marketer» ở `cau-hinh-team.html:117` dẫn sang ô đã khoá từ 15/09 (`page-bot.html:261`);
+  `docs/local-dev.md` dòng 17 và dòng 28 nói ngược nhau về việc thêm token bằng giao diện.
+  (3) **`/len-chay` chặng 2 gõ cứng là không bao giờ qua được** (`kho-len-chay.js:184-191`) —
+  màn đỏ vĩnh viễn, không ai gỡ được bằng thao tác.
+  (4) **Bàn giao ở Vận hành V3 không đẻ việc** (`src/admin-v3/operations.js:133-156`) nên
+  «Việc đang chờ» rỗng trong khi hội thoại HANDOFF vẫn còn — trang chủ tự khai chỗ lệch này.
+  (5) **Worker v3 không phát nhịp tim**: đèn «Tiến trình bot» chỉ kiểm biến môi trường
+  (`kho-suc-khoe.js:307-326`), worker đứng nhiều ngày thì đèn vẫn xanh.
+  (6) **Không có nút dừng bot cả team** ở bất kỳ giao diện nào — chỉ sửa `.env` rồi khởi động lại.
+  Mỗi khoản là một phiếu GD trong kế hoạch; chờ người quyết gật Q1–Q6 mục 8 của kế hoạch đó.
+
 - 23/08 · REFUTE (mảng prompt/toàn-cục) — **PHÁN ĐẠT, 0 CHẶN.** Verify XANH: migration
   001→006 trên DB sạch áp trọn 21 bảng · down--het→up round-trip sạch · HARD_MAX=12 không
   vượt ca nóng · ngân sách lạnh lượt đầu không chặn oan · seed=CORE nguyên văn idempotent ·
@@ -2113,3 +2129,19 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   ⑧ kiểm pathspec bằng `git diff HEAD` nên bắt nhầm file chưa commit của phiên khác — đã BỎ
   hẳn phép ⑧ vì `_chan1.sh` ④ so `base..HEAD` và làm đúng hơn. Neo phải trỏ vào CODE
   (`^import …`), không trỏ vào văn bản.
+
+- 23/09 · GD0 (sửa chỗ vỡ giao diện) → ✅ — ba chỗ VỠ đã vá: «Vận hành chat V3» trắng vì bốn
+  dòng gắn tay `#close/#reload/#prev/#next` còn sót sau lượt đổi giao diện 17/09 · nút «Bật bot»
+  ở màn Bắt đầu gửi mã Facebook vào cửa tra `page.id` (404) · đăng nhập xong ai cũng bị ném vào
+  `/dieu-phoi` mà vai quản lý và marketer không có quyền. Thêm cổng `ops/bin/do-giao-dien.mjs`
+  (mở mọi màn bằng Brave headless, `pageerror` là đỏ) — đảo-vá đã thử: đặt lại một dòng cũ thì
+  cổng đỏ đúng màn đó. `npm test` 1947 xanh / 6 đỏ (cả 6 thuộc nhóm chat/đơn của phiên khác,
+  D7 đỏ sẵn từ 16/09). Kế hoạch đầy đủ: `docs/v3/09-KE-HOACH-GIAO-DIEN.md` · nợ: §9 N-GIAODIEN.
+- 23/09 · 🧭 **CA CANH VIẾT THEO MÃ ĐANG CÓ SẼ KHOÁ CON BỌ LẠI.** Ca HK7 đòi màn «Bắt đầu» gọi
+  `/api/page-bot/${encodeURIComponent(p.pageId)}/bot` — đúng bằng dòng đang sai, nên nó canh cho
+  con bọ sống thay vì bắt. Ca đúng phải neo HỢP ĐỒNG của cửa (cửa tra `page.id`), không neo chữ
+  của bên gọi. 📌 Viết ca «gọi đúng đường màn kia» thì neo cả ĐƯỜNG lẫn THAM SỐ đường ấy nhận.
+- 23/09 · 🧭 **BỘ CA KHÔNG MỞ MÀN BẰNG TRÌNH DUYỆT THÌ KHÔNG THẤY MÀN TRẮNG.** 1.955 ca xanh
+  trong khi màn duy nhất duyệt được đơn nằm im 5 ngày: lỗi ở tầng ngoài cùng của mô-đun, HTML
+  vẫn trả 200, mọi ca API vẫn xanh. 📌 Mỗi lượt đụng giao diện: chạy `ops/bin/do-giao-dien.mjs`.
+

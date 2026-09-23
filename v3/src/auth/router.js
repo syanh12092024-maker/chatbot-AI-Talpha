@@ -110,10 +110,25 @@ const xoaCookieVe = (res) => res.append('Set-Cookie', thanhPhanCookie('', 0));
 /* ──────────────────────────────────── router ──────────────────────────────────────── */
 
 /**
- * @param {{duongSauKhiVao?:string, duongChonTeam?:string}} [tuyChon]
+ * `duongSauKhiVao` nhận được MỘT HÀM `(vai) => đường`, không chỉ một chuỗi.
+ *
+ * ⚠️ 22/09: trước lượt này nó là hằng `/dieu-phoi` cho MỌI vai — mà `/dieu-phoi` chỉ mở cho
+ *    vai sale và quản trị. Vai vai quản lý và marketer đăng nhập đúng mật khẩu xong bị ném
+ *    thẳng vào một màn họ không có quyền: câu đầu tiên hệ nói với họ là một lời từ chối.
+ *    Nơi nối dây (`vai-b.js`) nay đưa vào hàm trả về màn ĐẦU TIÊN trong menu của chính vai
+ *    đó, nên không thể lệch với quyền được nữa.
+ *
+ * @param {{duongSauKhiVao?:string|((vai:string[])=>string), duongChonTeam?:string}} [tuyChon]
  */
 export function taoRouterAuth({ duongSauKhiVao = '/dieu-phoi', duongChonTeam = '/chon-team' } = {}) {
   const r = express.Router();
+
+  // Hỏng thì rơi về `/dieu-phoi` như cũ: đăng nhập KHÔNG được chết vì chuyện chọn màn đích.
+  const dichCua = (vai) => {
+    if (typeof duongSauKhiVao !== 'function') return duongSauKhiVao;
+    try { return duongSauKhiVao(Array.isArray(vai) ? vai : [vai]) || '/dieu-phoi'; }
+    catch { return '/dieu-phoi'; }
+  };
 
   // Tự đọc JSON để router dùng được cả khi ứng dụng chưa mount express.json().
   // body-parser tự bỏ qua khi thân đã được đọc rồi, nên mount hai lần không sao.
@@ -197,7 +212,7 @@ export function taoRouterAuth({ duongSauKhiVao = '/dieu-phoi', duongChonTeam = '
         ghiChu: 'đăng nhập, chỉ thuộc một team nên vào thẳng',
       });
       return res.json({
-        ok: true, canChonTeam: false, diTiep: duongSauKhiVao,
+        ok: true, canChonTeam: false, diTiep: dichCua(t.vai),
         toi: { nguoiDungId: nd.id, tenDangNhap: nd.email, hoTen: nd.ten, teamId: t.teamId, vai: t.vai },
         dsTeam,
       });
@@ -250,7 +265,7 @@ export function taoRouterAuth({ duongSauKhiVao = '/dieu-phoi', duongChonTeam = '
         ghiChu: bcCu ? 'đổi sang team khác' : 'chọn team sau khi đăng nhập',
       });
       return res.json({
-        ok: true, diTiep: duongSauKhiVao,
+        ok: true, diTiep: dichCua(vai),
         toi: { nguoiDungId, tenDangNhap, teamId, vai, tenTeam: t.tenTeam },
       });
     } catch (e) { return next(e); }

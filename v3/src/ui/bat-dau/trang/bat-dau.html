@@ -195,7 +195,9 @@ async function batBot(p, nut) {
   if (!dongY) return;
   setBusy(nut, true);
   try {
-    const r = await fetch(`/api/page-bot/${encodeURIComponent(p.pageId)}/bot`, {
+    // `p.id` (khoá dòng CSDL), KHÔNG phải `p.pageId` (mã Facebook): cửa này tra theo
+    // `page.id`. Gửi nhầm mã là 404, và người mới không có cách nào đoán ra vì sao.
+    const r = await fetch(`/api/page-bot/${encodeURIComponent(p.id)}/bot`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },

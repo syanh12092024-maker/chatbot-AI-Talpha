@@ -72,6 +72,12 @@ function xepMotPage(p) {
   const la = [...theoMa.values()].filter((b) => b.la);
 
   return {
+    // HAI mã, và chúng KHÔNG thay nhau được. `pageId` là mã Facebook — thứ hiện cho người
+    // đọc và dùng làm khoá chọn page trên màn. `id` là khoá dòng trong CSDL v3 — thứ cửa
+    // `POST /api/page-bot/:id/bot` tra (`kho-page.js#motPage` tìm theo `page.id`). Lượt đầu
+    // màn này gửi `pageId` vào cửa ấy nên nút «Bật bot» 404 — lối vào của người mới, và là
+    // lối duy nhất màn này có việc để làm.
+    id: String(p.id || ''),
     pageId: String(p.pageId || ''),
     ten: p.ten || String(p.pageId || ''),
     marketer: p.marketer || '',
