@@ -215,7 +215,9 @@ test('khoToken · thứ tự dự phòng: `.env` trước, CSDL sau', async () =
     await voiBot([], async () => {
       const d = await kn.khoToken();
       assert.deepEqual(d.token.map((t) => t.ten), ['Chính env', 'Trong CSDL']);
-      assert.deepEqual(d.token.map((t) => t.nguon), ['chính (.env)', 'CSDL (v3)']);
+      // GD4 · 24/09: nhãn nguồn nay dịch sang lời người vận hành ở tầng màn (`tenNguon`),
+      // nhãn gốc của người A giữ nguyên bên `src/`. Ca này vẫn canh THỨ TỰ — thứ tự là nội dung.
+      assert.deepEqual(d.token.map((t) => t.nguon), ['cấu hình máy chủ · chính', 'thêm từ màn này']);
       assert.deepEqual(d.token.map((t) => t.boDuoc), [false, true], 'token .env chỉ xem, token CSDL bỏ được');
     });
   });
@@ -245,7 +247,10 @@ test('khoToken · thiếu ADMIN_USER/PASS không còn là lý do trống màn', 
     await voiEnvToken({}, async () => {
       const d = await kn.khoToken();
       assert.equal(d.token.length, 1);
-      assert.match(String(d.botIm), /ADMIN_USER/);
+      // GD4 · 24/09: mặt màn nói bằng lời người vận hành, nguyên nhân bằng tên biến dời sang
+      // trường riêng (màn đưa xuống ô «Nguồn số»). Vẫn phải NÓI RA, chỉ đổi chỗ đứng.
+      assert.match(String(d.botIm), /tài khoản quản trị/i, 'câu trên màn phải đọc hiểu được');
+      assert.match(String(d.botImKyThuat), /ADMIN_USER/, 'người sửa máy chủ vẫn cần tên biến');
     });
   } finally {
     if (cu.u === undefined) delete process.env.ADMIN_USER; else process.env.ADMIN_USER = cu.u;

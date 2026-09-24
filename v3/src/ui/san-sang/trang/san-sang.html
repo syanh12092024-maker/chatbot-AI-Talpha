@@ -42,10 +42,14 @@
       <span class="table-count">Bậc nào chặn, bậc nào chỉ nhắc</span></div>
     <div id="dsDk"></div>
   </section>
+
+  <section class="section" aria-label="Nguồn của các con số">
+    <div id="nguon-so"></div>
+  </section>
 </main>
 
 <script>
-const { esc, statusBadge, button, alert: canhBao, emptyState, metricRow, formatNumber: so } = window.UI;
+const { esc, statusBadge, button, alert: canhBao, emptyState, metricRow, nguonSo, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
 
 let DL = null;
@@ -153,7 +157,7 @@ function veDem(k) {
 function veDieuKien(dk) {
   const hang = ([ma, d]) => `
     <tr>
-      <td><div class="manh">${esc(d.nhan || d.ten)}</div><div class="meta"><code>${esc(ma)}</code></div></td>
+      <td><div class="manh">${esc(d.nhan || d.ten)}</div></td>
       <td>${statusBadge(d.chan ? 'blocked' : 'needs_attention', { label: d.chan ? 'Chặn bot' : 'Chỉ nhắc' })}</td>
       <td>${esc(d.lam)}</td>
       <td class="actions">${d.di ? button(d.nutDi || 'Đi sửa', { href: d.di, size: 'sm' }) : ''}</td>
@@ -167,6 +171,25 @@ function veDieuKien(dk) {
       <th scope="col" class="actions"><span class="sr-only">Chỗ sửa</span></th>
     </tr></thead><tbody>${nhomHang('Page chạy bot cũ', cu.length)}${cu.map(hang).join('')}`
     + `${moi.length ? nhomHang('Page chạy bot mới', moi.length) + moi.map(hang).join('') : ''}</tbody></table>`;
+}
+
+/* Ô «Nguồn số» — luật 8 của sổ vẫn nguyên, chỉ đổi CHỖ ĐỨNG: người vận hành không phải đọc
+   tên bảng và mã máy giữa mặt màn, người đi kiểm mở ô này ra là có đủ. */
+function veNguonSo(d) {
+  const ma = Object.entries(d.dieuKien || {})
+    .filter(([m]) => m !== 'READY')
+    .map(([m, x]) => `${x.nhan || x.ten} = \`${m}\``)
+    .join(' · ');
+  $('#nguon-so').innerHTML = nguonSo({
+    dong: [
+      { ten: 'Page của team', tu: 'bảng page của team đang mở — không gồm page team khác và page chưa phân team' },
+      { ten: 'Bot có đang chạy', tu: 'hỏi thẳng tiến trình bot, không đọc cột bản sao trong cơ sở dữ liệu' },
+      { ten: 'Điều kiện của page bot cũ', tu: 'cửa kiểm của tiến trình bot (`src/readiness.js`), đọc qua cầu HTTP' },
+      { ten: 'Điều kiện của page bot mới', tu: 'phép kiểm cấu hình của đường v3 (`pageStatus`) — mới kiểm cấu hình, chưa hỏi máy chạy bot còn sống' },
+      { ten: 'Mã máy của từng điều kiện', tu: ma },
+    ],
+    chuY: 'Cầu sang tiến trình bot hỏng thì màn TỪ CHỐI đoán: nó nói hỏng chứ không hiện một bảng rỗng.',
+  });
 }
 
 async function tai() {
@@ -189,7 +212,7 @@ async function tai() {
     }
     $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 
-    veDem(d.dem); veDieuKien(d.dieuKien); veLoc(); veBang();
+    veDem(d.dem); veDieuKien(d.dieuKien); veLoc(); veBang(); veNguonSo(d);
   } catch (e) {
     $('#dem').innerHTML = '';
     $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được điều kiện sẵn sàng',

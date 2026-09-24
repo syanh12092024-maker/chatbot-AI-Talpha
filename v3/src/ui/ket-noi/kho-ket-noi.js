@@ -40,16 +40,32 @@ export class LoiKetNoi extends Error {
   }
 }
 
+/* TÊN NGUỒN BẰNG LỜI NGƯỜI DÙNG (GD4 · 24/09/2026).
+ *
+ * Nhãn gốc đến từ `src/token-pancake.js` và `src/pancake.js` — đất của người A, và ở đó
+ * «CSDL (v3)» là tên đúng. Trên màn thì không: người vận hành không biết CSDL là gì, và
+ * cũng không cần biết. Dịch ở tầng màn, KHÔNG sửa file bên kia.
+ *
+ * Nhãn lạ thì giữ nguyên văn — bên kia thêm một kho mới mà màn nuốt mất là giấu đi một
+ * nguồn tài khoản đang chạy thật.
+ */
+const TEN_NGUON = Object.freeze({
+  'chính (.env)': 'cấu hình máy chủ · chính',
+  'phụ (.env)': 'cấu hình máy chủ · phụ',
+  'CSDL (v3)': 'thêm từ màn này',
+  dashboard: 'thêm từ màn cũ',
+});
+const tenNguon = (n) => TEN_NGUON[String(n || '')] || String(n || '');
+
 /** Câu hiện thẳng trên đầu màn. Không giấu vào tài liệu. */
 export const LA_TOAN_HE =
-  'Kho token này dùng chung cho MỌI team. Khác với các màn khác của v3 — ở đây bạn đang nhìn '
-  + 'và sửa tài nguyên cấp máy chủ (bảng `token_pancake`, cộng token khai trong `.env`), '
-  + 'không phải dữ liệu của riêng team đang mở. Thêm hay bỏ một token là đổi cho cả ba team.';
+  'Kho tài khoản Pancake dùng chung cho MỌI team. Khác với các màn khác: ở đây bạn sửa thứ của '
+  + 'cả hệ, không phải dữ liệu của riêng team đang mở. Thêm hay bỏ một tài khoản là đổi cho cả ba team.';
 
 /** Thứ tự trong danh sách CHÍNH LÀ thứ tự dự phòng — không phải thứ tự sắp cho đẹp. */
 export const GIAI_THICH_THU_TU =
-  'Thứ tự trên xuống chính là thứ tự dự phòng: token chính (.env) trước, rồi token phụ (.env), '
-  + 'cuối cùng là token thêm từ giao diện. Token hết hạn bị bỏ qua tự động.';
+  'Thứ tự trên xuống chính là thứ tự dự phòng: tài khoản chính trước, rồi tài khoản phụ, cuối '
+  + 'cùng là tài khoản thêm từ màn này. Tài khoản hết hạn bị bỏ qua tự động.';
 
 /* ═══════════════ KHO TOKEN TRONG CSDL (migration 019) ═══════════════════════════════
  *
@@ -291,7 +307,11 @@ export async function khoToken() {
   // ③ Kho cũ của tiến trình bot (`pancake-tokens.json`) + «token này đang phủ mấy page».
   //    KHÔNG bắt buộc: bot tắt thì màn vẫn đủ dùng, chỉ thiếu phần trang trí — đó chính là
   //    điều khiến màn này sống độc lập được với tiến trình v1.
+  // HAI TRƯỜNG, CỐ Ý (GD4 · 24/09): `botIm` là câu cho người vận hành đọc trên màn;
+  // `botImKyThuat` là nguyên nhân bằng tên biến, dành cho người đi sửa máy chủ — màn dồn nó
+  // xuống ô «Nguồn số». Gộp một trường thì hoặc mặt màn đầy chữ máy, hoặc người sửa mất manh mối.
   let botIm = null;
+  let botImKyThuat = null;
   if (coTaiKhoan()) {
     try {
       const cu = await danhSachToken();
@@ -302,28 +322,31 @@ export async function khoToken() {
       }
       for (const t of cu) {
         if (t.nguon === 'dashboard' && !ds.some((x) => x.duoi === t.duoi)) {
-          ds.push({ ...t, id: null, boDuoc: false, nguon: 'pancake-tokens.json (v1)' });
+          ds.push({ ...t, id: null, boDuoc: false, nguon: 'kho cũ của tiến trình bot' });
         }
       }
     } catch (e) {
       if (!(e instanceof LoiCauBotDong || e instanceof LoiCauBotHong)) throw e;
-      botIm = e.message;
+      botIm = 'chưa hỏi được tiến trình bot, nên thiếu cột «page đang dùng»';
+      botImKyThuat = e.message;
     }
   } else {
-    botIm = 'thiếu `ADMIN_USER`/`ADMIN_PASS` nên không hỏi được tiến trình bot';
+    botIm = 'máy chủ chưa có tài khoản quản trị để hỏi tiến trình bot';
+    botImKyThuat = 'thiếu `ADMIN_USER`/`ADMIN_PASS` trong cấu hình máy chủ';
   }
 
   return {
-    token: ds.map((t) => ({ ...t, sucKhoe: sucKhoeToken(t) })),
+    token: ds.map((t) => ({ ...t, nguon: tenNguon(t.nguon), sucKhoe: sucKhoeToken(t) })),
     canhBao: canhBaoKhoToken(ds),
     cua,
     quanLyDuoc: true,
     // Nói ra chỗ KHÔNG đọc được, thay vì im lặng hiện thiếu.
     botIm,
+    botImKyThuat,
     trong: ds.length ? null : {
       rong: true, vi: 'chua_cai_dat',
-      noi: 'Không có token Pancake nào — bot không đọc và không gửi được tin nào.',
-      diTiep: { chu: 'Thêm token đầu tiên', duong: '#them-token' },
+      noi: 'Chưa có tài khoản Pancake nào — bot không đọc và không gửi được tin nào.',
+      diTiep: { chu: 'Thêm tài khoản đầu tiên', duong: '#them-token' },
     },
   };
 }

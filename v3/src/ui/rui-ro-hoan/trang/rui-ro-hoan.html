@@ -42,7 +42,7 @@
 </main>
 
 <script>
-const { esc, text, statusBadge, alert: canhBao, emptyState, metricRow, formatNumber } = window.UI;
+const { esc, text, statusBadge, alert: canhBao, emptyState, metricRow, nguonSo, formatNumber } = window.UI;
 const $ = (s) => document.querySelector(s);
 const d0 = (n) => (n == null ? '—' : formatNumber(n));
 
@@ -70,9 +70,18 @@ function veBangTin(d) {
   if (d.chamTran && d.chamTran.co) kh.push(canhBao({ level: 'warning', title: 'Đã đọc tới trần', body: d.chamTran.noi }));
   $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 
+  // Lời khai nguồn (luật 8) xuống ô gập ở chân màn: người vận hành đọc bảng, người đi kiểm mở ô.
   if (d.nguon) {
-    $('#nguon').innerHTML = `<p>Số đọc từ cột ${text(d.nguon.cot)}, do <b>${esc(d.nguon.job)}</b> chấm. Màn này không tự tính lại — hai màn tự tính là hai con số cho một khách.</p>`
-      + `<p>Luật: mã hoàn ${text(d.nguon.luat.maHoan)} · mẫu số ${text(d.nguon.luat.mauSo)} · sàn ${text(d.nguon.luat.san)} · ngưỡng ${text(d.nguon.luat.nguong)}.</p>`;
+    $('#nguon').innerHTML = nguonSo({
+      dong: [
+        { ten: 'Tỉ lệ hoàn của khách', tu: `cột ${d.nguon.cot} — do ${d.nguon.job} chấm sẵn, màn không tự tính lại` },
+        { ten: 'Đơn nào tính là hoàn', tu: d.nguon.luat.maHoan },
+        { ten: 'Mẫu số', tu: d.nguon.luat.mauSo },
+        { ten: 'Sàn để được xếp tầng', tu: d.nguon.luat.san },
+        { ten: 'Ngưỡng bốn tầng', tu: d.nguon.luat.nguong },
+      ],
+      chuY: 'Hai màn cùng tự tính là hai con số cho một khách, nên màn này chỉ ĐỌC con số đã chấm.',
+    });
   }
   if (d.dem) {
     $('#demTang').textContent = `${d0(d.dem.soDaCham)}/${d0(d.dem.soKhachDoc)} khách đã chấm · ${d0(d.dem.soChuaCham)} chưa chấm`;

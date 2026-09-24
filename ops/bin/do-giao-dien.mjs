@@ -112,7 +112,12 @@ try {
       // ⚠️ ĐỪNG đếm trên `cloneNode()`: bản sao tách khỏi tài liệu nên `innerText` rơi về
       //    kiểu `textContent` và đếm luôn phần đang ẩn (tab chưa mở, hộp thoại chưa bật).
       //    Đo 22/09 trên màn «Người và team»: 122 chữ đang hiện mà bản sao đếm ra 238.
-      const BO = 'table, [role="list"], [role="listbox"], select, pre, [hidden], [aria-hidden="true"]';
+      // ⚠️ `details` đóng: Chrome mới KHÔNG dùng `display:none` cho phần thân mà dùng
+      //    `content-visibility: hidden` — phần tử vẫn có hộp bố cục, nên phép đếm theo
+      //    `offsetParent` vẫn đếm nó. Đo 24/09: ô «Nguồn số» đang đóng làm chữ diễn giải của
+      //    ba màn TĂNG sau khi dọn. Phải loại thẳng theo bộ chọn.
+      const BO = 'table, [role="list"], [role="listbox"], select, pre, [hidden], [aria-hidden="true"],'
+        + ' details:not([open]) > *:not(summary), .nguon-so';
       const diBo = document.createTreeWalker(than, NodeFilter.SHOW_TEXT);
       let chuVan = 0;
       for (let n = diBo.nextNode(); n; n = diBo.nextNode()) {
@@ -126,29 +131,34 @@ try {
         chu,
         chuVan,
         canhBao: than.querySelectorAll('.alert').length,
-        ma: than.querySelectorAll('code').length,
+        // MÃ LỘ TRÊN MẶT MÀN — không tính phần nằm trong ô «Nguồn số» đã gập. Luật 8 của sổ
+        // vẫn đòi khai nguồn; GD4 chỉ dời lời khai ấy xuống ô gập, nên đếm ở đây phải trừ nó
+        // ra, kẻo thước bảo «chưa dọn» trong khi việc đã làm đúng cách.
+        ma: than.querySelectorAll('code').length - than.querySelectorAll('.nguon-so code').length,
+        oNguonSo: than.querySelectorAll('.nguon-so').length,
         thaoTac: than.querySelectorAll(
           'button:not([disabled]), input:not([type=hidden]), select, textarea',
         ).length,
       };
-    }).catch(() => ({ chu: 0, chuVan: 0, canhBao: 0, ma: 0, thaoTac: 0 }));
+    }).catch(() => ({ chu: 0, chuVan: 0, canhBao: 0, ma: 0, oNguonSo: 0, thaoTac: 0 }));
 
     hang.push({ ...m, ...so, loi });
   }
 
   const rong = (s, n) => String(s).padEnd(n).slice(0, n);
-  console.log(`\n${rong('MÀN', 26)}${rong('ĐƯỜNG', 18)}${'CHỮ'.padStart(6)}${'DIỄN GIẢI'.padStart(11)}${'CẢNH BÁO'.padStart(10)}${'MÃ KT'.padStart(7)}${'THAO TÁC'.padStart(10)}  LỖI`);
+  console.log(`\n${rong('MÀN', 26)}${rong('ĐƯỜNG', 18)}${'CHỮ'.padStart(6)}${'DIỄN GIẢI'.padStart(11)}${'CẢNH BÁO'.padStart(10)}${'MÃ HỞ'.padStart(7)}${'NGUỒN SỐ'.padStart(10)}${'THAO TÁC'.padStart(10)}  LỖI`);
   for (const h of hang) {
     console.log(rong(h.ten, 26) + rong(h.duong, 18)
       + String(h.chu).padStart(6) + String(h.chuVan).padStart(11) + String(h.canhBao).padStart(10)
-      + String(h.ma).padStart(7) + String(h.thaoTac).padStart(10)
+      + String(h.ma).padStart(7) + String(h.oNguonSo).padStart(10) + String(h.thaoTac).padStart(10)
       + (h.loi.length ? `  ❌ ${h.loi.join(' · ')}` : ''));
   }
 
   const tong = (k) => hang.reduce((a, h) => a + h[k], 0);
   const vo = hang.filter((h) => h.loi.length);
   console.log(`\n${hang.length} màn · ${tong('chu')} chữ (trong đó ${tong('chuVan')} chữ DIỄN GIẢI)`
-    + ` · ${tong('canhBao')} hộp cảnh báo · ${tong('ma')} chỗ lộ mã kỹ thuật`);
+    + ` · ${tong('canhBao')} hộp cảnh báo · ${tong('ma')} chỗ lộ mã kỹ thuật trên mặt màn`
+    + ` · ${tong('oNguonSo')} màn có ô «Nguồn số»`);
   console.log(`Màn vỡ: ${vo.length}${vo.length ? ' — ' + vo.map((h) => h.ten).join(', ') : ''}`);
 
   await browser.close();

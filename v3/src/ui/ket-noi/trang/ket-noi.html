@@ -15,37 +15,45 @@
 </head>
 <body>
 <header>
+  <!-- ⚠️ Tên này PHẢI khớp tên trong menu (`chung/man-hinh.js`) — ca HK10 canh. Menu còn chữ
+       «token»; đổi cả hai cùng lúc là việc của lượt sắp menu, vì tệp menu đang có thay đổi
+       chưa commit của phiên khác. Xem `docs/v3/THUAT-NGU.md` mục «chỗ chưa dọn». -->
   <h1>Kết nối &amp; token</h1>
-  <span class="sub">Token Pancake và shop POS mà bot dùng để đọc tin và trả lời khách.</span>
+  <span class="sub">Tài khoản Pancake và kho hàng mà bot dùng để đọc tin, trả lời khách và đẩy đơn.</span>
 </header>
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
 
   <section class="section table-wrap" aria-labelledby="tieu-token">
-    <div class="table-toolbar"><h2 id="tieu-token">Kho token Pancake</h2>
+    <div class="table-toolbar"><h2 id="tieu-token">Tài khoản Pancake</h2>
       <span class="table-count" id="demToken"></span></div>
+    <div class="table-note" id="ghi-chu-kho"></div>
     <div id="bangToken"><div class="empty-state"><span class="skeleton"></span></div></div>
     <div class="table-note" id="giaiThich" hidden></div>
   </section>
 
+  <section class="section" aria-label="Nguồn của các con số">
+    <div id="nguon-so"></div>
+  </section>
+
   <section class="section panel" aria-labelledby="tieu-them">
     <div class="section-header"><div>
-      <h2 id="tieu-them">Thêm token</h2>
-      <div class="section-desc">Dán token JWT lấy từ Pancake. Hệ thống thử token trước khi nhận, không cần khởi động lại — page tự dò lại ở lượt quét kế tiếp.</div>
+      <h2 id="tieu-them">Thêm tài khoản</h2>
+      <div class="section-desc">Dán chuỗi tài khoản lấy từ Pancake. Hệ thử trước khi nhận, không cần khởi động lại — page tự dò lại ở lượt quét kế tiếp.</div>
     </div></div>
     <div class="field">
-      <label class="sr-only" for="oToken">Token Pancake</label>
+      <label class="sr-only" for="oToken">Chuỗi tài khoản Pancake</label>
       <textarea id="oToken" class="mono" rows="3" placeholder="eyJhbGciOi… (ba phần a.b.c)" spellcheck="false" autocomplete="off"></textarea>
       <div class="field-hint" id="goiYToken"></div>
     </div>
     <div class="form-actions">
-      <button type="button" class="btn" data-variant="primary" data-size="md" id="nutThem"><span>Thử và thêm token</span></button>
+      <button type="button" class="btn" data-variant="primary" data-size="md" id="nutThem"><span>Thử và thêm tài khoản</span></button>
     </div>
   </section>
 
   <section class="section table-wrap" aria-labelledby="tieu-pos">
-    <div class="table-toolbar"><h2 id="tieu-pos">Kết nối POS của team đang mở</h2>
+    <div class="table-toolbar"><h2 id="tieu-pos">Kho hàng của team đang mở</h2>
       <span class="table-count">Khoá API không bao giờ hiện ở đây</span>
       <button type="button" class="btn" data-size="sm" id="nutKeoDanhMuc" hidden
         title="Đọc danh mục + tồn kho của mọi kết nối đang bật, ghi vào bảng sản phẩm của v3">
@@ -58,7 +66,7 @@
   </section>
 
   <dialog class="dialog" data-size="md" id="hopPos" aria-labelledby="hopPos-tieu">
-    <div class="dialog-header"><h2 id="hopPos-tieu">Thêm kết nối POS</h2></div>
+    <div class="dialog-header"><h2 id="hopPos-tieu">Thêm kho hàng</h2></div>
     <div class="dialog-body">
       <div class="form-stack">
         <div class="field">
@@ -67,7 +75,7 @@
           <div class="field-hint" id="p-market-goi"></div>
         </div>
         <div class="field">
-          <label class="field-label" for="p-shop">Shop id trên POS Pancake</label>
+          <label class="field-label" for="p-shop">Mã cửa hàng trên Pancake</label>
           <input id="p-shop" autocomplete="off" spellcheck="false" inputmode="numeric" placeholder="123456">
         </div>
         <div class="field">
@@ -87,7 +95,7 @@
   <section class="section panel" aria-labelledby="tieu-nap">
     <div class="section-header"><div>
       <h2 id="tieu-nap">Kéo dữ liệu về</h2>
-      <div class="section-desc">Đọc lại page, hội thoại, kịch bản và kết nối POS từ tiến trình bot, ghi vào nền v3. Trước đây việc này chỉ gõ được bằng lệnh trên máy chủ.</div>
+      <div class="section-desc">Đọc lại page, hội thoại, kịch bản và kho hàng từ tiến trình bot rồi ghi vào cơ sở dữ liệu. Trước đây việc này chỉ gõ được bằng lệnh trên máy chủ.</div>
     </div>
       <span id="trangThaiNap"></span></div>
     <div id="ketQuaNap"></div>
@@ -100,7 +108,7 @@
 
 <script>
 const { esc, text, statusBadge, button, setBusy, alert: canhBao, emptyState, toast, confirmDialog,
-        formatNumber: so } = window.UI;
+        nguonSo, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
 const ngay = (ms) => (ms ? new Date(ms).toLocaleDateString('vi-VN') : '—');
 const hoaDau = (s) => { const t = String(s || ''); return t.charAt(0).toUpperCase() + t.slice(1); };
@@ -123,23 +131,44 @@ async function goi(duong, tuyChon) {
   return d;
 }
 
+/* GD4 · 24/09: đầu màn chỉ giữ hộp cảnh báo CÓ VIỆC PHẢI LÀM. Hai câu «kho dùng chung cho mọi
+   team» và «chưa hỏi được tiến trình bot» không đòi ai làm gì — chúng là ghi chú của bảng, nên
+   xuống làm ghi chú của bảng. Trước lượt này màn mở ra là ba hộp cảnh báo liền nhau, và người
+   đọc học được cách bỏ qua cả ba. */
 function veBangTin() {
   const kh = Object.entries(LOI).map(([k, m]) => canhBao({ level: 'error', title: k, body: m }));
   if (KHO) {
-    const toanHe = String(KHO.laToanHe || '').replace('Kho token này dùng chung cho MỌI team. ', '');
-    kh.push(canhBao({ level: 'info', title: 'Kho token dùng chung cho mọi team', body: toanHe }));
     if (!QUAN_LY) {
-      kh.push(canhBao({ level: 'error', title: 'Máy chủ v3 chưa nối kho token',
-        body: 'Đây là lỗi dựng ứng dụng, KHÔNG phải «hệ thống chưa có token». Xem log khởi động của dịch vụ v3.' }));
-    }
-    if (KHO.botIm) {
-      kh.push(canhBao({ level: 'info', title: 'Chưa hỏi được tiến trình bot',
-        body: 'Kho token vẫn xem và sửa được bình thường. Chỉ thiếu cột «page đang dùng» và những token cũ còn nằm trong pancake-tokens.json của tiến trình bot.',
-        detail: [String(KHO.botIm)] }));
+      kh.push(canhBao({ level: 'error', title: 'Máy chủ chưa nối kho tài khoản Pancake',
+        body: 'Đây là lỗi dựng ứng dụng, KHÔNG phải «hệ thống chưa có tài khoản nào». Báo người quản trị hệ thống xem nhật ký khởi động.' }));
     }
     for (const c of KHO.canhBao || []) kh.push(canhBao({ level: c.muc === 'do' ? 'error' : 'warning', body: c.chu }));
   }
   $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
+
+  const gc = [];
+  if (KHO) {
+    gc.push(String(KHO.laToanHe || ''));
+    if (KHO.botIm) gc.push(`Đang ${KHO.botIm}.`);
+  }
+  $('#ghi-chu-kho').innerHTML = gc.map((x) => `<div>${esc(x)}</div>`).join('');
+}
+
+/* Ô «Nguồn số» — chỗ ở mới của lời khai kỹ thuật (luật 8 của sổ). Người vận hành không phải
+   đọc tên bảng và tên biến giữa mặt màn; người sửa máy chủ mở ô này ra là có đủ. */
+function veNguonSo(d) {
+  const dong = [
+    { ten: 'Tài khoản Pancake', tu: 'bảng `token_pancake` của cơ sở dữ liệu, cộng các tài khoản khai trong `.env` của máy chủ — tài nguyên cấp máy chủ, không theo team' },
+    { ten: 'Hạn còn lại', tu: 'đọc từ chính tài khoản (phần hạn trong JWT), không phải một cột người nhập' },
+    { ten: 'Page đang dùng', tu: 'hỏi tiến trình bot qua `/admin/api`; bot im thì cột này trống chứ không phải bằng 0' },
+    { ten: 'Kết nối kho hàng', tu: 'bảng `ket_noi_pos` của team đang mở. Khoá API không bao giờ đọc ngược ra được' },
+  ];
+  if (d.botImKyThuat) dong.push({ ten: 'Vì sao chưa hỏi được bot', tu: d.botImKyThuat });
+  $('#nguon-so').innerHTML = nguonSo({
+    dong,
+    chuY: 'Lưu một kết nối kho hàng KHÔNG có nghĩa là khoá đúng — màn không gọi thử sang kho hàng. '
+      + 'Khoá sai chỉ lộ ở lượt tạo đơn đầu tiên của thị trường đó.',
+  });
 }
 
 const MA_SUC_KHOE = { xanh: 'token_valid', vang: 'token_expiring', do: 'token_expired' };
@@ -147,13 +176,14 @@ const MA_SUC_KHOE = { xanh: 'token_valid', vang: 'token_expiring', do: 'token_ex
 function veKho(d) {
   KHO = d; QUAN_LY = !!d.quanLyDuoc;
   veBangTin();
+  veNguonSo(d);
   $('#giaiThich').textContent = d.giaiThichThuTu || '';
   $('#giaiThich').hidden = !d.giaiThichThuTu || !!d.trong;
 
   if (d.trong) {
     $('#demToken').textContent = '';
     $('#bangToken').innerHTML = emptyState({ icon: 'triangle-alert',
-      title: QUAN_LY ? 'Chưa có token Pancake nào' : 'Chưa đọc được kho token',
+      title: QUAN_LY ? 'Chưa có tài khoản Pancake nào' : 'Chưa đọc được kho tài khoản',
       body: String(d.trong.noi || '').replace(/`/g, ''),
       actionsHtml: d.trong.diTiep && d.trong.diTiep.duong ? button(d.trong.diTiep.chu, { href: d.trong.diTiep.duong, size: 'sm' }) : '' });
   } else {
@@ -165,23 +195,23 @@ function veKho(d) {
       </tr></thead><tbody>${d.token.map((t, i) => `
       <tr>
         <td class="num">${i === 0 ? '<span class="badge" data-variant="info">Chính</span> ' : ''}${so(i + 1)}</td>
-        <td><div class="manh">${esc(t.ten)}</div><div class="meta">đuôi <code>…${esc(t.duoi)}</code></div></td>
+        <td><div class="manh">${esc(t.ten)}</div><div class="meta tabular">đuôi …${esc(t.duoi)}</div></td>
         <td class="meta">${esc(t.nguon)}</td>
         <td>${statusBadge(MA_SUC_KHOE[t.sucKhoe.muc] || 'token_unknown', { label: hoaDau(t.sucKhoe.chu) })}
           <div class="meta tabular">${esc(ngay(t.het))}</div></td>
         <td class="num">${so(t.soPageDangDung)}</td>
         <td class="actions">${t.boDuoc
           ? button('Bỏ', { size: 'sm', variant: 'danger', disabled: !QUAN_LY, data: { bo: t.id },
-              title: QUAN_LY ? 'Bỏ token này khỏi kho' : 'Máy chủ v3 chưa nối kho token' })
+              title: QUAN_LY ? 'Bỏ tài khoản này khỏi kho' : 'Máy chủ chưa nối kho tài khoản' })
           : '<span class="meta" title="Token nằm trong cấu hình máy chủ (.env) hoặc kho cũ của tiến trình bot">Sửa ở cấu hình máy chủ</span>'}</td>
       </tr>`).join('')}</tbody></table>`
-      : emptyState({ icon: 'triangle-alert', title: 'Không có token Pancake nào', body: 'Bot không đọc và không gửi được tin nào. Thêm token ở khung bên dưới.' });
+      : emptyState({ icon: 'triangle-alert', title: 'Không có tài khoản Pancake nào', body: 'Bot không đọc và không gửi được tin nào. Thêm một tài khoản ở khung bên dưới.' });
   }
 
   $('#nutThem').disabled = !QUAN_LY;
   $('#oToken').disabled = !QUAN_LY;
   $('#goiYToken').textContent = QUAN_LY
-    ? 'Token được thử với Pancake trước; token hỏng bị từ chối, kho không đổi.'
+    ? 'Hệ gọi thử sang Pancake trước; tài khoản hỏng bị từ chối, kho không đổi.'
     : 'Máy chủ v3 chưa nối kho token — xem cảnh báo đầu trang.';
   document.querySelectorAll('[data-bo]').forEach((b) => b.addEventListener('click', () => bo(b.dataset.bo, b)));
 }
@@ -214,11 +244,11 @@ function vePos(d) {
     return;
   }
   $('#bangPos').innerHTML = `<table class="data-table"><thead><tr>
-      <th scope="col">Thị trường</th><th scope="col">Shop POS</th><th scope="col">Trạng thái</th>
+      <th scope="col">Thị trường</th><th scope="col">Cửa hàng</th><th scope="col">Trạng thái</th>
       ${SUA_DUOC_POS ? '<th scope="col">Việc</th>' : ''}
     </tr></thead><tbody>${POS.map((k) => `
     <tr><td class="manh">${esc(k.market)}</td>
-      <td><code>${esc(k.shopId)}</code></td>
+      <td class="tabular">${esc(k.shopId)}</td>
       <td>${statusBadge(k.bat ? 'feature_on' : 'feature_off', { label: k.bat ? 'Đang bật' : 'Đã tắt' })}</td>
       ${SUA_DUOC_POS ? `<td class="row-actions">
         <button type="button" class="btn" data-variant="ghost" data-size="sm" data-sua-pos="${esc(k.id)}"><span>Sửa</span></button>
@@ -274,7 +304,7 @@ async function keoDanhMuc() {
     ];
     $('#ketQuaDanhMuc').innerHTML = `<div class="duoi-4">${canhBao({
       level: k.hong && k.hong.length ? 'warning' : 'success',
-      title: k.rong ? 'Không có kết nối POS nào đang bật' : 'Đã kéo danh mục',
+      title: k.rong ? 'Không có kho hàng nào đang bật' : 'Đã kéo danh mục sản phẩm',
       body: k.rong
         ? 'Thêm một kết nối POS (hoặc bật lại kết nối đã tắt) rồi kéo lại.'
         : `${so(k.thiTruong)} thị trường · ${so(k.docDuoc)} biến thể đọc được · ${so(k.them)} sản phẩm mới · `
@@ -329,7 +359,7 @@ $('#bangPos').addEventListener('click', async (ev) => {
     const k = tim(idBat);
     if (k.bat) {
       const dongY = await confirmDialog({
-        title: `Tắt kết nối POS «${k.market}»?`,
+        title: `Tắt kho hàng «${k.market}»?`,
         body: 'Tắt xong, mọi lượt tạo đơn cho thị trường này sẽ NÉM chứ không im lặng bỏ qua. '
           + 'Khoá API vẫn được giữ để bật lại.',
         confirmLabel: 'Tắt kết nối', danger: true,
@@ -350,7 +380,7 @@ $('#bangPos').addEventListener('click', async (ev) => {
   if (idBo) {
     const k = tim(idBo);
     const dongY = await confirmDialog({
-      title: `Bỏ hẳn kết nối POS «${k.market}»?`,
+      title: `Bỏ hẳn kho hàng «${k.market}»?`,
       body: 'KHOÁ API MẤT THEO, không lấy lại được — muốn dùng lại phải đi xin khoá lần nữa. '
         + 'Chỉ ngừng dùng shop này thì TẮT là đủ.',
       confirmLabel: 'Bỏ hẳn', danger: true,

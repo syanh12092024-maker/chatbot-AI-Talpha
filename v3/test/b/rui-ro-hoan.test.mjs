@@ -168,8 +168,10 @@ test('⑤a · màn khai chính sách CHƯA chốt và không có nhánh chặn',
   dung([khach('rui_ro_cao', 5, 5)]);
   const d = await rr.manRuiRo(bc());
   assert.equal(d.chinhSach.daChot, false);
-  assert.match(d.chinhSach.noi, /CHỜ CHỐT/);
-  assert.match(d.chinhSach.chan, /KHÔNG dòng mã nào|Không dòng mã nào/);
+  // GD4 · 24/09: câu trên màn viết bằng lời người vận hành (bỏ tên tài liệu nội bộ và tên
+  // cột). Điều PHẢI GIỮ là hai lời khai: chính sách chưa chốt, và chưa chỗ nào dùng tầng để chặn.
+  assert.match(d.chinhSach.noi, /chờ người quyết chốt|CHỜ CHỐT/i);
+  assert.match(d.chinhSach.chan, /chưa chỗ nào|KHÔNG dòng mã nào|Không dòng mã nào/i);
   // Và trong chính mã nguồn màn: không có nhánh chặn nào theo tầng.
   assert.ok(!/chan\s*\(|return\s+chan/.test(MA_MAN), 'màn không được có nhánh chặn');
 });

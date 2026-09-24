@@ -209,9 +209,9 @@ function dungTuPhanBo(bc, r) {
     chinhSach: {
       daChot: false,
       noi:
-        "`01-QUYET-DINH.md` §11 xếp «chia bốn tầng» vào bảng CHỜ CHỐT. Màn này ĐỌC phân bố " +
-        "đã chấm để chốt được bằng số, và KHÔNG áp chính sách nào lên khách nào.",
-      chan: "Không dòng mã nào đọc `tang_hoan` để CHẶN — kể cả tầng `rui_ro_cao`.",
+        "Cách chia bốn tầng rủi ro vẫn đang chờ người quyết chốt. Màn này chỉ ĐỌC phân bố đã " +
+        "chấm để chốt được bằng số, và KHÔNG áp chính sách nào lên khách nào.",
+      chan: "Chưa chỗ nào trong hệ dùng tầng rủi ro để chặn khách — kể cả tầng cao nhất.",
     },
     soLieu: {
       taiLieuNoi: 144,
@@ -293,9 +293,9 @@ function dungTuCot(bc, khach, luiVi) {
     chinhSach: {
       daChot: false,
       noi:
-        "`01-QUYET-DINH.md` §11 xếp «chia bốn tầng» vào bảng CHỜ CHỐT. Màn này ĐỌC phân bố " +
-        "đã chấm để chốt được bằng số, và KHÔNG áp chính sách nào lên khách nào.",
-      chan: "Không dòng mã nào đọc `tang_hoan` để CHẶN — kể cả tầng `rui_ro_cao`.",
+        "Cách chia bốn tầng rủi ro vẫn đang chờ người quyết chốt. Màn này chỉ ĐỌC phân bố đã " +
+        "chấm để chốt được bằng số, và KHÔNG áp chính sách nào lên khách nào.",
+      chan: "Chưa chỗ nào trong hệ dùng tầng rủi ro để chặn khách — kể cả tầng cao nhất.",
     },
     soLieu: {
       taiLieuNoi: 144,

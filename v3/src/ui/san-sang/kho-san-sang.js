@@ -50,41 +50,48 @@ export const VAI_VAO_DUOC = Object.freeze([VAI.QUAN_TRI, VAI.QUAN_LY, VAI.MARKET
 // danh từ trung tính. Hai tên ở CÙNG một chỗ, nên vẫn là một bảng từ vựng — không lệch được.
 export const DIEU_KIEN = Object.freeze({
   NO_TOKEN: {
-    chan: true, nhan: 'Token Pancake', ten: 'Không token nào phủ page',
-    di: '/ket-noi', nutDi: 'Mở kho token',
-    lam: 'Thêm một token Pancake có phủ page này, hoặc thay token đã chết.',
+    chan: true, nhan: 'Tài khoản Pancake', ten: 'Chưa có tài khoản Pancake nào phủ page này',
+    di: '/ket-noi', nutDi: 'Mở màn Kết nối',
+    lam: 'Đây là đường bot đọc tin khách và gửi câu trả lời. Thêm một tài khoản Pancake có quyền '
+      + 'trên page này, hoặc thay tài khoản đã hết hạn.',
   },
   MISSING_TAGS: {
     chan: true, nhan: 'Thẻ hội thoại', ten: 'Thiếu thẻ Pancake',
     di: null, nutDi: null,
-    lam: 'Thẻ nằm bên Pancake, v3 chưa có màn sửa. Vào Pancake → cài đặt page → thẻ hội thoại, '
-      + 'tạo đủ các thẻ còn thiếu ghi ở cột bên phải.',
+    lam: 'Thẻ hội thoại nằm bên Pancake, màn này chưa sửa được. Vào Pancake → cài đặt page → '
+      + 'thẻ hội thoại, tạo đủ các thẻ còn thiếu ghi ở cột bên phải, rồi mở lại màn này.',
   },
   MISSING_PRODUCT: {
-    chan: true, nhan: 'Sản phẩm và giá', ten: 'Chưa có sản phẩm/giá',
-    di: null, nutDi: null,
-    lam: 'Sản phẩm và giá lấy từ Google Sheet của page. Điền sản phẩm vào Sheet — màn «Sản phẩm '
-      + '& kho» của v3 chưa dựng (chờ bảng `san_pham` có dữ liệu).',
+    chan: true, nhan: 'Sản phẩm và giá', ten: 'Chưa có sản phẩm nào kèm giá bán',
+    di: '/san-pham', nutDi: 'Xem sản phẩm của page',
+    lam: 'Page chạy bot cũ lấy sản phẩm và giá từ Google Sheet của page. Điền sản phẩm vào Sheet, '
+      + 'rồi mở màn «Sản phẩm & kho» để xem bot đã đọc được chưa.',
   },
   MISSING_SCRIPT: {
     chan: true, nhan: 'Kịch bản bán hàng', ten: 'Thiếu kịch bản bán',
     di: '/kich-ban', nutDi: 'Soạn kịch bản',
-    lam: 'Page chưa có câu chào hoặc chưa có cách bán. Soạn rồi đưa lên LIVE.',
+    lam: 'Page chưa có câu chào hoặc chưa có cách bán, nên bot không biết mở lời thế nào. Soạn một '
+      + 'bản rồi cho chạy.',
   },
   MISSING_POS: {
-    chan: false, nhan: 'Kết nối shop POS', ten: 'Chưa nối shop POS',
-    di: '/cau-hinh-team', nutDi: 'Nối POS',
-    lam: 'AI vẫn tư vấn và chốt được, chỉ là không đẩy nổi đơn sang POS. Nối shop ở mục «Kết nối POS».',
+    chan: false, nhan: 'Kết nối kho hàng', ten: 'Chưa nối kho hàng của thị trường này',
+    // ⚠️ 24/09: nút cũ dẫn sang «Người và team» — màn đó CHỈ ĐỌC danh sách kết nối từ 15/09,
+    //    bấm vào không sửa được gì. Chỗ sửa thật là màn «Kết nối & token».
+    di: '/ket-noi', nutDi: 'Nối kho hàng',
+    lam: 'Bot vẫn tư vấn và chốt được, chỉ là đơn chốt xong không đẩy sang kho hàng được, nên phải '
+      + 'nhập tay. Nối shop của thị trường này ở màn Kết nối.',
   },
   THIN_SCRIPT: {
     chan: false, nhan: 'Kịch bản đủ chi tiết', ten: 'Kịch bản mỏng',
     di: '/kich-ban', nutDi: 'Bổ sung kịch bản',
-    lam: 'Thiếu giọng điệu hoặc phần cách bán quá ngắn. Bot vẫn chạy nhưng trả lời sẽ chung chung.',
+    lam: 'Kịch bản thiếu giọng điệu, hoặc phần cách bán quá ngắn. Bot vẫn chạy nhưng câu trả lời '
+      + 'sẽ chung chung, khách hỏi sâu là hụt.',
   },
   SCRIPT_STALE: {
     chan: false, nhan: 'Kịch bản còn hiệu quả', ten: 'Kịch bản cũ, chốt kém',
     di: '/kich-ban', nutDi: 'Xem lại kịch bản',
-    lam: 'Lâu không sửa VÀ tỉ lệ chốt dưới 1%. Cũ mà vẫn ra đơn thì v1 không báo.',
+    lam: 'Kịch bản lâu không sửa VÀ tỉ lệ chốt đang dưới 1%. Kịch bản cũ mà vẫn ra đơn đều thì hệ '
+      + 'không nhắc — dòng này chỉ hiện khi cả hai điều cùng đúng.',
   },
   READY: {
     chan: false, nhan: 'Đủ điều kiện', ten: 'Đủ điều kiện',

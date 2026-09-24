@@ -165,6 +165,35 @@
     );
   }
 
+  /* ── Ô «NGUỒN SỐ» — luật 8 của sổ, đặt ĐÚNG CHỖ (GD4 · 24/09/2026) ────────────────────
+   *
+   * Luật 8 bắt mọi con số trên màn phải khai được nguồn. Luật đúng; chỗ đặt thì sai. Đo
+   * 22/09 trên 26 màn: 6.790 chữ diễn giải, 71 chỗ lộ tên bảng / tên tệp / mã phiếu ngay
+   * giữa mặt màn — phần lớn là lời khai nguồn. Người vận hành mở màn để biết phải làm gì,
+   * không để đọc `src/pancake-orders.js#aiOrderStats`.
+   *
+   * Nên nguồn số KHÔNG bị xoá, mà dồn vào một ô gập sẵn ở chân màn: người kiểm tra mở ra là
+   * có đủ, người làm việc hằng ngày không phải đọc.
+   *
+   * `dong`: `[{ ten, tu }]` — `ten` là con số trên màn, `tu` là nó lấy ở đâu.
+   * `chuY`: một câu cho cả khối, ví dụ khoảng đo hoặc điều đã biết là chưa đo được.
+   */
+  function nguonSo(opts) {
+    const o = opts || {};
+    const dong = [].concat(o.dong || []).filter((d) => d && (d.ten || d.tu));
+    if (!dong.length && !o.chuY) return "";
+    return (
+      '<details class="nguon-so"><summary>' + icon("info") + "Nguồn số</summary>" +
+      '<div class="nguon-so-than">' +
+      dong
+        .map((d) => '<div class="nguon-so-dong">'
+          + `<b>${esc(d.ten || "")}</b><span>${text(d.tu || "")}</span></div>`)
+        .join("") +
+      (o.chuY ? `<div class="nguon-so-chu-y">${text(o.chuY)}</div>` : "") +
+      "</div></details>"
+    );
+  }
+
   // ── TRẠNG THÁI RỖNG — bắt buộc nói VÌ SAO rỗng ─────────────────────────────────────
   function emptyState(opts) {
     const o = opts || {};
@@ -286,7 +315,7 @@
 
   window.UI = Object.freeze({
     esc, text, icon, statusBadge, button, setBusy, alert, emptyState, metricRow, readiness,
-    toast, confirmDialog, roleName,
+    toast, confirmDialog, roleName, nguonSo,
     formatNumber: (n) => soVi.format(Number(n) || 0),
     formatVnd: (n) => tienVi.format(Number(n) || 0),
     TRANG_THAI,

@@ -1065,6 +1065,27 @@
     .btn, .nut { min-height: 40px; }
   }
 
+  /* ── Ô «NGUỒN SỐ» (GD4) — lời khai nguồn của luật 8, gập sẵn ở chân màn ─────────────
+     Mở ra thì đủ cho người đi kiểm; đóng lại thì mặt màn sạch cho người làm việc. Chữ nhỏ
+     và mờ, KHÔNG viền đậm: nó là chú thích, không phải một cảnh báo thứ hai. */
+  .nguon-so { margin-top: var(--space-4); font-size: var(--text-xs); color: var(--text-muted); }
+  .nguon-so > summary { display: inline-flex; align-items: center; gap: var(--space-2);
+                        height: 28px; padding: 0 var(--space-3); border: 1px solid var(--border-default);
+                        border-radius: var(--radius-md); background: var(--surface);
+                        cursor: pointer; list-style: none; width: fit-content; }
+  .nguon-so > summary::-webkit-details-marker { display: none; }
+  .nguon-so > summary:hover { background: var(--surface-hover); color: var(--text-secondary); }
+  .nguon-so > summary:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+  .nguon-so[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .nguon-so-than { padding: var(--space-3); border: 1px solid var(--border-default);
+                   border-radius: var(--radius-md); border-top-left-radius: 0;
+                   background: var(--surface-subtle); line-height: var(--leading-normal); }
+  .nguon-so-dong { display: flex; gap: var(--space-3); padding: var(--space-1) 0; }
+  .nguon-so-dong b { flex: none; min-width: 148px; font-weight: var(--weight-medium); color: var(--text-secondary); }
+  .nguon-so-chu-y { margin-top: var(--space-2); padding-top: var(--space-2);
+                    border-top: 1px solid var(--border-subtle); }
+  .nguon-so code { font-family: var(--font-mono); font-size: 11px; }
+
   /* Mục U: tôn trọng người tắt chuyển động. */
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
