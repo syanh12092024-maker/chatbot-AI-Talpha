@@ -277,6 +277,15 @@ trên 4.423 đơn POS 60 ngày — đã ghi §9 để không rơi mất).
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
+- 25/09 · **N-CADUNGCHUNG** (thấy khi làm GD4, ngoài phạm vi) — `npm test` mỗi lượt đỏ một nhóm
+  KHÁC NHAU, chạy riêng thì xanh: N1b/N4 (23/09) → S3/S5/S8 (24/09) → D1/D7/D9 (25/09). Đo
+  được nguyên nhân: `ai-messages.jsonl` và `conv-state.json` **ở gốc repo** bị ghi lại lúc
+  09:03 ngày 25/09 và đang chứa dữ liệu MỒI của chính bộ ca (`CUST-GIA`, `PAGE-BH1`). Nhiều
+  suite cùng ghi rồi cùng đọc hai tệp ấy ⇒ thứ tự chạy quyết định ai thắng. Hệ quả nặng: không
+  lượt `npm test` nào đọc được, và một hồi quy THẬT sẽ chìm giữa những ca đỏ giả. Cách chữa:
+  mỗi suite dựng tệp dữ liệu trong thư mục tạm riêng (như `ops/bin/test-phase0.sh` đã làm với
+  CSDL), không đụng tệp gốc repo. Ngoài phạm vi GD4 — chờ người quyết phát phiếu.
+
 - 23/09 · **N-GIAODIEN** (lượt đo giao diện, ngoài phạm vi phiếu nào) — kế hoạch đầy đủ ở
   `docs/v3/09-KE-HOACH-GIAO-DIEN.md`, đã sửa ba chỗ VỠ (xem §10), còn lại là NỢ:
   (1) **`page.pos_shop_id` không màn nào ghi được** (`db/di-tru/nap.js:60` là đường duy nhất)
@@ -2158,3 +2167,21 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   màn «Bắt đầu» vẫn lọc theo bốn mã của bản cũ ⇒ điều kiện của bản mới rơi ra ngoài và màn
   báo «4/4 hoàn thành» cho page bot KHÔNG chạy được — bản vá tự đẻ lỗi mới (án lệ #26).
   📌 Đổi khuôn dữ liệu thì grep hết nơi lọc theo khuôn cũ trong CÙNG lượt.
+
+- 25/09 · GD4 (lượt lời lẽ) → ✅ phần đo được — mã kỹ thuật trên mặt màn 80 → **0**, hộp cảnh báo
+  31 → 17 và KHÔNG màn nào quá 1, chữ diễn giải 6.849 → 4.357, 0 màn vỡ. Dựng ba thứ dùng lại
+  được: ô «ⓘ Nguồn số» của hệ kiểu, khuôn hai trường (câu người đọc + `…KyThuat` cho người sửa
+  máy chủ, đã dùng 5 chỗ), và bảng thuật ngữ `docs/v3/THUAT-NGU.md`. Bảy thước cũ sửa theo luật
+  mới, giữ nguyên điều chúng canh. Sáu commit `5282ad8`…`89c847b` · nhật ký
+  `docs/thi-cong/nhat-ky/phieu-GD4.md`. CHƯA đạt: chữ diễn giải ≤3.400 — đề nghị đổi đích sang
+  «không màn nào quá 250 chữ» (nhật ký mục 4).
+- 25/09 · 🧭 **ĐÍCH ĐẶT THEO MỘT PHÉP ĐO CŨ THÌ PHẢI ĐẶT LẠI KHI PHÉP ĐO ĐÚNG HƠN.** Đích «chữ
+  ≤3.400» tính khi thước còn đếm cả tên sản phẩm trong bảng. Sửa thước cho đúng thì hai màn
+  «dài nhất» tụt 1.276→122 và 1.027→281 — cùng một màn, không đổi một chữ. 📌 Số trước và số sau
+  chỉ so được khi CÙNG một thước; đổi thước thì đích cũng phải đổi, đừng cắt nội dung cho vừa
+  con số cũ.
+- 25/09 · 🧭 **DỮ LIỆU KHÔNG PHẢI CHỮ DIỄN GIẢI — KHAI ĐÚNG VAI THÌ MÁY ĐẾM ĐÚNG.** Dãy chip tên
+  sản phẩm là dữ liệu; nó bị đếm thành văn xuôi chỉ vì markup không khai vai. Khai `role="list"`
+  / `role="group"` vừa đúng cho người dùng trình đọc màn hình, vừa làm phép đo hết nói dối.
+  📌 Trước khi cắt nội dung cho vừa một chỉ số, hỏi «chỉ số này có đang đo đúng thứ nó nói không».
+
