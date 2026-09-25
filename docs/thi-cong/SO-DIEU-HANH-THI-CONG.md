@@ -2385,3 +2385,16 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   qua trọn luồng. 📌 Sau khi dựng xong một luồng, dựng một bản ghi ảo và đi hết luồng ấy —
   rẻ hơn mọi thước, và bắt đúng loại lỗi mà thước không với tới (cùng họ với bài học «chụp một
   ảnh và đặt cạnh màn cũ»).
+- 25/09 · **ĐĂNG NHẬP GIAO DIỆN MỚI TRÊN MÁY CHỦ BỊ ĐÁ VỀ MÀN ĐĂNG NHẬP** — người quyết gặp
+  thật. Nguyên nhân: unit systemd `aicloser-v3` đặt `Environment=NODE_ENV=production` ⇒ cookie
+  vé mang cờ `Secure` ⇒ trình duyệt từ chối lưu nó trên `http://169.58.33.8:3102` ⇒ đăng nhập
+  «thành công» nhưng lượt gọi kế tiếp không có vé, màn Chọn team rỗng rồi bật về đăng nhập.
+  Dữ liệu không sai (`chu@talpha.vn` có đủ 3 team). Lối vào tạm: đường hầm SSH tới
+  `localhost` (trình duyệt coi localhost là an toàn nên chịu lưu cookie `Secure`). Chữa gốc:
+  **HTTPS trước cổng 3102** — nợ đã ghi, nay lên hàng đầu vì nó CHẶN người dùng vào.
+- 25/09 · 🧭 **ĐỌC BIẾN MÔI TRƯỜNG CỦA TIẾN TRÌNH ĐANG CHẠY, ĐỪNG ĐỌC `.env`.** Tôi kiểm
+  `NODE_ENV` bằng `grep .env` → «không đặt» → báo người quyết «đăng nhập qua HTTP chạy được».
+  Sai: unit systemd đặt nó. Cùng lỗi phương pháp ấy nằm trong phép «van gửi = 0 cờ» của ba
+  lượt deploy hôm nay (kết luận vẫn đúng — unit đặt `PANCAKE_READONLY=1`, `V3_PANCAKE_GUI=0` —
+  nhưng đúng nhờ may). Skill `mo-van` bẫy ③ đã ghi sẵn: nghiệm thu env prod bằng
+  `/proc/<pid>/environ`. 📌 Có luật rồi mà không đọc lại trước khi đo thì cũng như không có.
