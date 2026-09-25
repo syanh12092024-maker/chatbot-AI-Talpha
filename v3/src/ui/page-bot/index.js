@@ -12,7 +12,7 @@
 export {
   datTaoTruyVan, daNoiTruyVanPage, congTruyVan,
   danhSachPage, motPage, gonPage, demTheoLoc, viSaoRong,
-  datDocSanSang, daNoiCuaKiem, gonCuaKiem, TEN_NGAN,
+  datDocSanSang, daNoiCuaKiem, gonCuaKiem, cuaKiemMotPage, TEN_NGAN,
   LOC, CHU_LOC, MOI_TRANG, BANG, COT_BI_DI_TRU_GHI_DE, COT_SUA_DUOC,
   LoiPageBot,
 } from './kho-page.js';
@@ -23,6 +23,7 @@ export {
   HANH_DONG_BOT, HANH_DONG_MARKETER, HANH_DONG_TRONG_DIEM,
   VAI_SUA_DUOC, DAI_MARKETER, CANH_BAO_MARKETER, PHIEU_MARKETER,
   datQuetPage, daNoiQuetPage, quetPageTuPancake,
+  giaoPage, trangThaiCauDaoGiao, HANH_DONG_GIAO,
 } from './cong-tac.js';
 
 export {

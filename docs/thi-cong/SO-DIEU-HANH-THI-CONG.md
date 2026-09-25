@@ -2237,3 +2237,26 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   KHÔNG có chuyển dự phòng, chứ không phải «có mà không ai được báo» (§9 N-DUPHONGCHATTHAT).
   📌 Nối xong một đầu dây, đi ngược lại tìm đầu kia; báo cáo «đã nối» mà đầu kia trống là một
   lời khai đúng chữ và sai ý.
+
+- 25/09 · Q1 (giao page sang bot mới bằng giao diện) → ✅ **người quyết gật**, đường đã dựng
+  xong, **cầu dao chưa bật ở đâu**. Migration **024** thêm cột `page.giao_bot_moi`; cầu dao
+  `V3_GIAO_PAGE_TREN_MAN` (vắng = đóng, y nguyên hành vi cũ); nút «Giao sang bot mới» ở màn
+  Công tắc từng page làm đúng bốn bước: tắt bot cũ → ĐỌC LẠI từ chính bot cũ → chưa xác nhận
+  thì DỪNG → mới ghi cờ. Chốt kèm: không giao page còn chặn, không giao khi chưa đọc được cửa
+  kiểm, không tự bật bot hộ ai. Thêm đèn ⑪ «Hai bot cùng một page» làm lưới cuối cho lỗ giao
+  diện cũ (Q2 còn treo). Nút thắt gỡ được là nhờ ĐO ĐƯỢC: `pancake-poll.js:262` và
+  `scheduler-followup.js:115` đều chỉ chạy trên page ĐANG BẬT AI ⇒ tắt công tắc AI là bot cũ
+  buông page, không cần khởi động lại. Thước: page-bot 35/35 · nguồn-page 9/9 (mới) ·
+  suc-khoe 29/29 · gd1 11/11 · `npm test` 2.004/0 · do-giao-dien 26 màn 0 vỡ. Nhật ký
+  `docs/thi-cong/nhat-ky/phieu-Q1-GIAO-PAGE.md`.
+- 25/09 · 🧭 **BỘ CA XANH KHÔNG THAY ĐƯỢC MỘT LẦN MỞ MÀN NHÌN BẰNG MẮT.** Bản đầu lấy GIAO của
+  hai tập nguồn và gọi biến môi trường là «phanh tay thu hẹp» — 9 ca xanh. Mở màn trên bản dev
+  thì 4 page đang chạy bot mới bỗng hiện «bot cũ»: bật cầu dao là hất chúng ra khỏi tay bot
+  mới trong khi bot cũ đã tránh chúng từ lâu ⇒ **không ai trả lời**, im lặng. 📌 Ca chỉ canh
+  được điều mình NGHĨ RA để canh; tôi không viết ca cho chiều ấy vì đã tin cái tên mình vừa
+  đặt. Đặt tên cho một cơ chế xong thì kiểm lại xem cái tên có đang thay mình suy nghĩ không.
+- 25/09 · 🧭 **NÚT THẮT THẬT THƯỜNG NHỎ HƠN NÓ TRÔNG.** «Phải sửa bot cũ mới giao page được»
+  đứng vững cho tới khi đọc đúng hai dòng: cả vòng hỏi tin lẫn vòng nhắc khách của bot cũ đều
+  chỉ chạy trên page ĐANG BẬT AI — mà công tắc ấy đã bấm được từ giao diện v3 từ lâu. 📌 Trước
+  khi xin sửa một tệp đóng băng, đi đọc xem nó THẬT SỰ đọc gì; câu trả lời hay nằm ở một dòng
+  `filter` chứ không ở kiến trúc.

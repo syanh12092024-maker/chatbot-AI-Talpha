@@ -1,4 +1,4 @@
-import { pageThuocV3, dsPageV3 } from "../../../src/queue/page-routing.js";
+import { pageThuocBotMoi, dsPageBotMoi } from "../../../src/queue/page-routing.js";
 import { setPage, pageStatus } from "../../../src/admin-v3/operations.js";
 import { datCongTacV3 } from "../ui/page-bot/cong-tac.js";
 import { sanSangToanHe } from "./cau-bot-v1.js";
@@ -18,6 +18,10 @@ import { sanSangToanHe } from "./cau-bot-v1.js";
  */
 const MA_CUA_CAU = Object.freeze({
   "Page chưa được đưa vào danh sách worker V3": "BOTMOI_NGOAI_DANH_SACH",
+  // 024: cùng một điều kiện, hai câu — vì chỗ đi sửa đổi theo cầu dao
+  // `V3_GIAO_PAGE_TREN_MAN`. Cùng mã, vì với người đọc nó vẫn là «page chưa thuộc bot mới».
+  "Page chưa được giao cho bot mới — bấm «Giao sang bot mới» ở màn Công tắc từng page":
+    "BOTMOI_NGOAI_DANH_SACH",
   "Máy chủ chưa mở gửi tin": "BOTMOI_CHUA_MO_GUI",
   "Máy chủ chưa bật cấu hình prompt V3": "BOTMOI_CHUA_RAP_LOI",
   "Thiếu sản phẩm đúng Page / shop": "BOTMOI_THIEU_SAN_PHAM",
@@ -46,7 +50,7 @@ export function noiVanHanhV3(
         id,
       ])
     ).rows[0];
-    if (!p || !pageThuocV3(p.page_id, env)) return null;
+    if (!p || !pageThuocBotMoi(p, env)) return null;
     try {
       const row = await setPage(pool, bc, id, { enabled: bat }, env);
       return {
@@ -67,10 +71,10 @@ export function noiVanHanhV3(
     } catch {
       /* Missing legacy bridge must not hide V3 pages. */
     }
+    // Nguồn của «page nào thuộc bot mới» đổi theo cầu dao (024) — hỏi ĐÚNG MỘT chỗ.
+    const dsMoi = await dsPageBotMoi(pool, env);
     const pages = (
-      await pool.query("SELECT * FROM page WHERE page_id=ANY($1::text[])", [
-        dsPageV3(env),
-      ])
+      await pool.query("SELECT * FROM page WHERE page_id=ANY($1::text[])", [dsMoi])
     ).rows;
     const v3 = [];
     for (const p of pages) {
@@ -95,7 +99,7 @@ export function noiVanHanhV3(
     return {
       ...old,
       pages: [
-        ...(old.pages || []).filter((p) => !pageThuocV3(p.pageId, env)),
+        ...(old.pages || []).filter((p) => !dsMoi.includes(String(p.pageId))),
         ...v3,
       ],
     };

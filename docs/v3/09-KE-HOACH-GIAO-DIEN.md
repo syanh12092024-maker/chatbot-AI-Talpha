@@ -255,9 +255,12 @@ Làn: 🟩 chỉ đổi cách hiện · 🟨 đổi hành vi màn hoặc cửa g
 | **GD2 · Trang một page + một công tắc** | 🟨→🟥 | B | GD1 | Danh sách page và trang một page (4a, 4c). Gộp Bắt đầu, Sẵn sàng, Công tắc: đường cũ **chuyển hướng**, không xoá. Chỉ còn một API bật/tắt, có hộp xác nhận, trần bật và nhật ký trước/sau. Công tắc ở Vận hành V3 và ở Bắt đầu đổi thành đường dẫn tới đó (K2) | Còn đúng 1 cửa ghi bật bot (grep) · E2E: bật và tắt trên bản dev sạch |
 | **GD3 · Cài đặt team + cửa ghi còn thiếu** | 🟨 | B + A | GD1 | Trang danh sách việc (4b). Cửa ghi `page.pos_shop_id` (C6). Gán marketer về một chỗ (chờ Q5). Việc ngoài hệ thành thẻ có nút «Kiểm lại» (luật 5). Bỏ các câu bảo chạy lệnh hay sửa biến môi trường khỏi mặt màn (C7) | Người mới, bản dev sạch: từ team rỗng tới page «sẵn sàng» mà **không mở terminal** (trừ bước allowlist, chờ Q1) |
 | **GD4 · Lượt lời lẽ** | 🟩 | B | GD0 | Thêm thành phần «ⓘ Nguồn số» (luật 3). Viết lại chữ cho 26 màn. Áp luật cảnh báo (luật 4). Bảng thuật ngữ `docs/v3/THUAT-NGU.md` là một nguồn, và ca HK10 (tên màn khớp `<h1>`) mở rộng ra để canh thuật ngữ | Mặt màn có 0 `<code>` (ngoài ô Nguồn số) · mỗi màn ≤ 1 hộp cảnh báo · tổng chữ ≤ 5.500 |
-| **GD5 · Kiểm soát** ✅ 25/09 (trừ nút dừng cả team và việc TÁCH hai màn — xem phiếu) | 🟨 | A + B | GD1 | Worker phát nhịp tim và dải trạng thái đọc nhịp đó (K4). Bàn giao sinh việc (K5). Nút tạm dừng cả team (K1, quy trình `mo-van`). Màn Hội thoại và màn Đơn chờ duyệt tách ra khỏi Vận hành V3 và tự làm mới. Nhật ký ghi trước/sau cho giá bán (K7). Truyền `canhBao` vào lúc khởi động (K8) | Tắt worker thì trong 2 phút dải trạng thái chuyển đỏ · bàn giao một hội thoại thì nó hiện ở Việc đang chờ · tạm dừng rồi bật lại được, nhật ký có đủ 2 dòng |
+| **GD5 · Kiểm soát** ✅ 25/09 · nút dừng cả team: người quyết bảo **TẠM CHƯA LÀM** (25/09) · tách hai màn: gộp vào GD2 | 🟨 | A + B | GD1 | Worker phát nhịp tim và dải trạng thái đọc nhịp đó (K4). Bàn giao sinh việc (K5). Nút tạm dừng cả team (K1, quy trình `mo-van`). Màn Hội thoại và màn Đơn chờ duyệt tách ra khỏi Vận hành V3 và tự làm mới. Nhật ký ghi trước/sau cho giá bán (K7). Truyền `canhBao` vào lúc khởi động (K8) | Tắt worker thì trong 2 phút dải trạng thái chuyển đỏ · bàn giao một hội thoại thì nó hiện ở Việc đang chờ · tạm dừng rồi bật lại được, nhật ký có đủ 2 dòng |
 | **GD6 · Menu đích** ✅ 25/09 (19 màn, không phải 16 — xem dưới) | 🟩 | B | ~~GD2, GD3, GD5~~ làm trước được | `man-hinh.js` theo 4a. Thêm cờ `thuNghiem` (luật 7). Việc của tôi gộp bản tóm tắt của Hệ còn sống không | Menu quản trị 16 màn · mọi đường cũ vẫn trả 200 hoặc chuyển hướng (không 404) |
 | **GD7 · Nghiệm thu bằng người** | — | người quyết | GD0 (đo mốc) · GD6 (đo lại) | Một người chưa từng dùng hệ, trên bản dev sạch: cài team rồi đưa một page tới bước «Chạy thử». Ghi thời gian, số lần phải hỏi, số lần lạc | Thời gian và số lần hỏi **giảm một nửa** so với mốc đo sau GD0 |
+
+> **Q1 đã gật 25/09** ⇒ GD2 và GD3 hết chặn. Cầu dao còn phải mở bằng `mo-van` trước khi
+> giao page thật.
 
 **Chạy song song được:** sau GD0 thì GD1 và GD4 chạy song song, vì một bên đụng tầng dữ liệu còn
 bên kia đụng chữ. Riêng hai phần cùng sửa tệp `.html` thì phải làm tuần tự theo luật 3. GD2, GD3
@@ -274,7 +277,7 @@ và GD5 đều chờ GD1. GD6 làm cuối.
 |---|---:|---:|
 | Màn trên menu (quản trị) | ~~26~~ → **19** (7 màn ẩn) | ≤ 16 — cần GD2 gộp ba màn page và GD3 dựng màn Cài đặt team |
 | Màn phải ghé để cài một page | 7 màn · 11 bước | 1 luồng |
-| Việc phải làm ngoài giao diện | 3 (+ terminal) | ≤ 2, đều có hướng dẫn, không cần terminal |
+| Việc phải làm ngoài giao diện | ~~3 (+ terminal)~~ → **2** (25/09: giao page nay bấm trên màn, chỉ còn bật cầu dao MỘT LẦN) | ≤ 2, đều có hướng dẫn, không cần terminal |
 | Nút bật bot | 5 (v3: 3 · v1: 2) | 1 trên v3 (v1 chờ Q2) |
 | Chỗ tự tính «page thiếu gì» | 6 | 1 hàm, hiện ở ≤ 2 chỗ |
 | Màn lỗi JS khi mở | ~~1~~ → **0** (GD0 xong) | 0, `do-giao-dien.mjs` canh |
@@ -282,7 +285,7 @@ và GD5 đều chờ GD1. GD6 làm cuối.
 | Hộp cảnh báo | 32 | ≤ 1 mỗi màn, chỉ loại có việc phải làm |
 | Màn diễn giải > 300 chữ | 5 | 0 |
 | Mã kỹ thuật lộ trên mặt màn | 71 | 0 (ngoài ô Nguồn số) |
-| Nút dừng toàn team | không có | có, hai bước xác nhận — **chưa làm**, cần `mo-van` |
+| Nút dừng toàn team | không có | **hoãn** — người quyết bảo tạm chưa làm (25/09) |
 | Worker chết thì màn biết sau | ~~không bao giờ~~ → **≤ ~105 giây** (25/09) | ≤ 2 phút ✅ |
 | Người mới cài một page | chưa đo (đo ở GD7 sau GD0) | giảm một nửa |
 
@@ -305,7 +308,7 @@ và GD5 đều chờ GD1. GD6 làm cuối.
 
 | # | Câu hỏi | Vì sao phải quyết | Đề xuất |
 |---|---|---|---|
-| Q1 | Danh sách page chạy bot mới (`V3_PAGE_XU_LY`, đang nằm trong `.env`) có chuyển vào CSDL để bật được từ giao diện không? | Đây là việc ngoài giao diện lớn nhất (C2). Nó chạm khách thật | Chuyển vào cột `page`, giữ biến môi trường làm **trần** (page phải có tên trong cả hai mới chạy). Làm theo `mo-van` |
+| ~~Q1~~ ✅ **GẬT 25/09** | Danh sách page chạy bot mới có chuyển vào CSDL để bật được từ giao diện không? | — | **Đã làm** (`phieu-Q1-GIAO-PAGE.md`): cột `page.giao_bot_moi` (024) + cầu dao `V3_GIAO_PAGE_TREN_MAN` (vắng = đóng) + nút «Giao sang bot mới» tắt bot cũ TRƯỚC rồi đọc lại xác nhận. Chủ sở hữu = HỢP của cột và biến môi trường. Cầu dao CHƯA bật ở đâu — bật là việc của `mo-van` |
 | Q2 | Giao diện v1 (`:3100/admin`) giữ song song hay đóng dần? | Hai giao diện, hai kiểu đăng nhập, không trỏ sang nhau (T7) | Giữ v1 cho 51 page cũ. Thêm dải dẫn sang v3. Sửa `HUONG-DAN-SALE-MKT.md` cho rõ giao diện nào dùng cho page nào |
 | Q3 | Vai nào được bật bot cho khách thật? | Quản lý và marketer mở được màn Bắt đầu nhưng bấm bật thì bị 403 | Chỉ quản trị bật. Vai khác chỉ thấy tình trạng, không thấy nút bật |
 | Q4 | Có ẩn 7 màn chưa có dữ liệu khỏi menu (cờ `thuNghiem`) không? | Màn trống làm người dùng vào rồi ra tay không | Ẩn |

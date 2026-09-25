@@ -1,0 +1,1 @@
+ALTER TABLE page DROP COLUMN IF EXISTS giao_bot_moi;

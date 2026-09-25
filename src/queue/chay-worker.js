@@ -26,7 +26,7 @@
 // `chan_guard` mà không một byte nào ra khách. In ra số đếm để thấy nó đang đứng ở đâu.
 import { napTuPoll, nguonDangMo, lyDoNguonDong } from "./nap.js";
 import { chayToiKhiHet } from "./worker.js";
-import { dsPageV3 } from "./page-routing.js";
+import { dsPageBotMoi, giaoTrenManDangMo, lyDoRong } from "./page-routing.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { taoPool } from "../../db/ket-noi.js";
@@ -67,13 +67,17 @@ export async function dsPageDeNap(pool, { gioiHan = 500 } = {}) {
  * Van này chỉ THU HẸP, không bao giờ mở rộng: id không có trong bảng `page` bị bỏ qua, nên
  * gõ nhầm một id không tạo ra một page ma (án lệ #22 «danh sách gõ tay là lỗ hẹn giờ»).
  */
-export const dsPageChoPhep = dsPageV3;
+/**
+ * Danh sách page worker được phép nạp và xử.
+ *
+ * ⚠️ NAY LÀ HÀM BẤT ĐỒNG BỘ (024 · 25/09): nguồn có thể là CSDL chứ không chỉ biến môi
+ * trường. Chỗ quyết định nằm ở `page-routing.js` — đừng đọc `V3_PAGE_XU_LY` thẳng ở đây,
+ * hai nơi đọc là hai luật.
+ */
+export const dsPageChoPhep = (pool, env = process.env) => dsPageBotMoi(pool, env);
 
-export function lyDoChuaChoPageNao() {
-  return (
-    "V3_PAGE_XU_LY chưa đặt ⇒ worker KHÔNG nạp page nào (vắng = đóng). Đặt danh sách id " +
-    "page ngăn cách bằng dấu phẩy để mở đúng bậc phơi cần thử."
-  );
+export function lyDoChuaChoPageNao(env = process.env) {
+  return lyDoRong(env);
 }
 
 /**
@@ -86,6 +90,11 @@ export async function motLuot(pool, deps = {}) {
       boQuaPageNoiCuoi: 0, boQuaMoc: 0, boQuaDaDoc: 0, boQuaThe: 0 },
     xu: null,
   };
+  // MỘT LƯỢT ĐỌC CHO CẢ VÒNG. Nguồn có thể là CSDL (024), nên hỏi hai lần trong một vòng
+  // vừa tốn một lời gọi vừa mở đường cho hai nửa của cùng một vòng chạy trên hai danh sách
+  // khác nhau — người vừa giao một page giữa chừng là thấy ngay.
+  const choPhep = await (deps.dsChoPhep ? deps.dsChoPhep() : dsPageChoPhep(pool));
+
   if (!ket.nap.mo) {
     ket.nap.lyDo = lyDoNguonDong();
   } else if (!deps.boQuaNap) {
@@ -94,15 +103,15 @@ export async function motLuot(pool, deps = {}) {
       : await dsPageDeNap(pool);
     // GIAO của hai danh sách: bảng `page` nói page nào CÓ THẬT, biến môi trường nói page nào
     // ĐƯỢC PHÉP ở bậc phơi này. Thiếu một trong hai thì page ấy không được nạp.
-    const choPhep = deps.dsChoPhep ? deps.dsChoPhep() : dsPageChoPhep();
     ket.nap.choPhep = choPhep.length;
+    ket.nap.nguonChoPhep = giaoTrenManDangMo() ? 'csdl' : 'bien_moi_truong';
     const pages = trongBang.filter((p) => choPhep.includes(p));
     ket.nap.page = pages.length;
     if (!choPhep.length) ket.nap.lyDo = lyDoChuaChoPageNao();
     else if (!pages.length) {
       ket.nap.lyDo =
-        `V3_PAGE_XU_LY có ${choPhep.length} id nhưng KHÔNG id nào có trong bảng \`page\` ` +
-        "— van chỉ thu hẹp, không tạo page mới. Kiểm lại id.";
+        `Danh sách cho phép có ${choPhep.length} id nhưng KHÔNG id nào có trong bảng ` +
+        "`page` — van chỉ thu hẹp, không tạo page mới. Kiểm lại id.";
     }
     for (const pageId of pages) {
       try {
@@ -125,7 +134,7 @@ export async function motLuot(pool, deps = {}) {
   if (deps.boQuaXu) return ket;
   ket.xu = await chayToiKhiHet(pool, {
     toiDa: TRAN_MOI_LUOT,
-    pageIds: deps.dsChoPhep ? deps.dsChoPhep() : dsPageChoPhep(),
+    pageIds: choPhep,
     ...(deps.depsXuLy || {}),
   });
   return ket;

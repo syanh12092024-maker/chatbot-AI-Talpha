@@ -53,7 +53,7 @@ const qs = new URLSearchParams(location.search);
 let TRANG = Math.max(0, Number(qs.get('trang')) || 0);
 let LOC = qs.get('loc') || 'tat_ca';
 let TIM = qs.get('tim') || '';
-let SUA = false, CUA = { mo: false, thieu: [] };
+let SUA = false, CUA = { mo: false, thieu: [] }, CAU_DAO = { mo: false };
 
 function ghiUrl() {
   const u = new URL(location.href);
@@ -160,7 +160,7 @@ function veBang(d) {
           <span class="page-avatar" aria-hidden="true">${esc((ten.trim()[0] || '?').toUpperCase())}</span>
           <div class="page-identity-text">
             <div class="page-identity-name ten">${esc(ten)}</div>
-            <div class="page-identity-sub">${esc(p.pageId)} · ${p.runtime === 'v3' ? 'bot mới' : 'bot cũ'}${p.matDau ? ' · ' + statusBadge('order_error', { label: 'Mất dấu' }) : ''}</div>
+            <div class="page-identity-sub">${esc(p.pageId)} · ${veChuBot(p)}${p.matDau ? ' · ' + statusBadge('order_error', { label: 'Mất dấu' }) : ''}</div>
           </div>
         </div>
       </td>
@@ -207,6 +207,7 @@ function veBang(d) {
   }
 
   document.querySelectorAll('[data-bot]').forEach((el) => el.addEventListener('change', () => gatBot(el)));
+  document.querySelectorAll('[data-giao]').forEach((el) => el.addEventListener('click', () => doiChuBot(el)));
   document.querySelectorAll('[data-td]').forEach((el) => el.addEventListener('change', () => gatTrongDiem(el)));
   document.querySelectorAll('[data-bc]').forEach((el) => el.addEventListener('change', () => gatBotcake(el)));
   document.querySelectorAll('[data-spg]').forEach((el) => el.addEventListener('change', () => luuSanPhamGoc(el)));
@@ -219,6 +220,42 @@ function veBang(d) {
       el.addEventListener('keydown', (e) => { if (e.key === 'Enter') el.blur(); });
     });
   }
+}
+
+// ── CHỦ SỞ HỮU PAGE: bot cũ hay bot mới, và đổi được ngay tại chỗ nói ra điều đó ──────
+//
+// Cầu dao đóng ⇒ chỉ là chữ. Bày một cái nút mà bấm vào trả 409 còn tệ hơn không có nút:
+// người ta bấm, bị từ chối, rồi không biết đi đâu.
+function veChuBot(p) {
+  const chu = p.runtime === 'v3' ? 'bot mới' : 'bot cũ';
+  if (!CAU_DAO.mo || !SUA) return esc(chu);
+  const sang = p.runtime === 'v3' ? 'cu' : 'moi';
+  return `${esc(chu)} ${button(sang === 'moi' ? 'Giao sang bot mới' : 'Trả về bot cũ',
+    { size: 'sm', variant: 'ghost', data: { giao: p.id, sang } })}`;
+}
+
+// ── GHI · ĐỔI CHỦ page. Hỏi lại bằng đúng cái giá phải trả, không bằng chữ «bạn có chắc» ──
+async function doiChuBot(el) {
+  const sangMoi = el.dataset.sang === 'moi';
+  const ten = el.closest('tr').querySelector('.ten').textContent.trim();
+  const dongY = await confirmDialog({
+    title: sangMoi ? `Giao «${ten}» sang bot mới?` : `Trả «${ten}» về bot cũ?`,
+    body: sangMoi
+      ? 'Bot cũ sẽ được TẮT cho page này trước, và chỉ khi nó xác nhận đã tắt thì page mới '
+        + 'đổi chủ. Sau đó chưa con bot nào trả lời page này cho tới khi bạn bấm Bật.'
+      : 'Bot mới buông page này. Bot cũ vẫn đang TẮT — bấm Bật nếu muốn nó trả lời lại.',
+    confirmLabel: sangMoi ? 'Giao sang bot mới' : 'Trả về bot cũ',
+    danger: true,
+  });
+  if (!dongY) return;
+  el.disabled = true;
+  try {
+    const kq = await goi(`/api/page-bot/${encodeURIComponent(el.dataset.giao)}/giao`,
+      { method: 'POST', body: JSON.stringify({ giao: sangMoi }) });
+    toast(kq.buocTiep || 'Đã đổi chủ page.');
+    await nap();
+  } catch (e) { baoLoi('Không đổi chủ được page này', e.message); }
+  finally { el.disabled = false; }
 }
 
 // ── GHI · bật tắt bot — chạm KHÁCH THẬT, nên hỏi lại có tiêu đề và hệ quả (mục L) ─────
@@ -367,14 +404,14 @@ async function quetPancake() {
 async function napNhe() {
   const d = await goi(`/api/page-bot/danh-sach?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}&trang=${TRANG}`);
   if (!d) return;
-  CUA = d.cuaBot; veBangTin(d); veThanhLoc(d);
+  CUA = d.cuaBot; CAU_DAO = d.cauDaoGiao || { mo: false }; veBangTin(d); veThanhLoc(d);
 }
 
 async function nap() {
   try {
     const d = await goi(`/api/page-bot/danh-sach?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}&trang=${TRANG}`);
     if (!d) return;
-    SUA = d.suaDuoc; CUA = d.cuaBot; TRANG = d.trang;
+    SUA = d.suaDuoc; CUA = d.cuaBot; CAU_DAO = d.cauDaoGiao || { mo: false }; TRANG = d.trang;
     SPG_CHON = d.sanPhamGocChonDuoc || [];
     SPG_AP = d.sanPhamGocApDuoc !== false;
     ghiUrl();

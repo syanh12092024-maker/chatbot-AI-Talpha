@@ -10,6 +10,7 @@
 // | POST   /api/page-bot/:id/nganh-hang | đặt ngành hàng        (CSDL v3, di trú không xoá)|
 // | POST   /api/page-bot/:id/botcake    | LỜI KHAI «đã tắt Botcake» — KHÔNG tắt Botcake    |
 // | POST   /api/page-bot/:id/san-pham-goc| gán sản phẩm GỐC (CR-15/09) — ghi lên `san_pham`|
+// | POST   /api/page-bot/:id/giao       | ĐỔI CHỦ: giao sang bot mới / trả về bot cũ (024) |
 //
 // Page của team khác → **404**, không phải 403 (403 xác nhận dòng đó có thật ở team khác).
 
@@ -23,6 +24,7 @@ import { danhSachPage, LOC, CHU_LOC, MOI_TRANG, LoiPageBot } from './kho-page.js
 import {
   datCongTacBot, ganMarketer, datTrongDiem, trangThaiCau,
   datThiTruong, datNganhHang, datBotcakeTat, ganSanPhamGoc, quetPageTuPancake,
+  giaoPage, trangThaiCauDaoGiao,
   VAI_SUA_DUOC, CANH_BAO_MARKETER, PHIEU_MARKETER,
 } from './cong-tac.js';
 
@@ -155,6 +157,9 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
       chuLoc: CHU_LOC,
       suaDuoc: coVai(bc, ...VAI_SUA_DUOC),
       cuaBot: trangThaiCau(),
+      // Cầu dao «giao page bằng giao diện». Đóng thì màn hiện lời giải thích thay cho nút —
+      // một cái nút bấm vào là 409 tệ hơn không có nút.
+      cauDaoGiao: trangThaiCauDaoGiao(),
       canhBaoMarketer: CANH_BAO_MARKETER,
       phieuMarketer: PHIEU_MARKETER,
     });
@@ -194,6 +199,14 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 
   r.post('/api/page-bot/:id/botcake', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
     const kq = await datBotcakeTat(cuaBoiCanh(req), req.params.id, laBat(req.body?.bat));
+    res.json({ ok: true, ...kq });
+  }));
+
+  // ĐỔI CHỦ page. Cùng lớp chắn với các đường ghi khác; cửa còn hai chốt riêng bên trong
+  // (`cong-tac.js#giaoPage`): cầu dao `V3_GIAO_PAGE_TREN_MAN`, và bắt buộc bot cũ xác nhận
+  // đã tắt TRƯỚC khi ghi cờ.
+  r.post('/api/page-bot/:id/giao', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    const kq = await giaoPage(cuaBoiCanh(req), req.params.id, laBat(req.body?.giao));
     res.json({ ok: true, ...kq });
   }));
 

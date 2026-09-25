@@ -21,6 +21,8 @@ import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 // Luật xét «máy chạy bot còn sống không» — CHUNG với dải trạng thái. Viết lại ở đây là hẹn
 // ngày hai chỗ nói hai điều khác nhau về cùng một máy.
 import { docNhipMayBot } from '../chung/nhip-may-bot.js';
+// Cầu dao «giao page bằng giao diện» (024) — đèn ⑪ chỉ có nghĩa khi biết nguồn nào đang dùng.
+import { giaoTrenManDangMo } from '../../../../src/queue/page-routing.js';
 
 export const MUC = Object.freeze({
   XANH: 'xanh',   // đo được, và đang ổn
@@ -278,6 +280,13 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
       so: `${dangMo.length} đang chờ`,
     }));
 
+  /* ⑪ HAI BOT CÙNG MỘT PAGE — cái hố mà việc «giao page bằng giao diện» mở ra.
+     Bot cũ KHÔNG đọc cột `giao_bot_moi`; thứ khiến nó buông một page là công tắc AI của
+     chính nó. Cửa giao đã tắt công tắc ấy và đọc lại xác nhận — nhưng giao diện cũ ở cổng
+     3100 vẫn bật lại được, bằng một mật khẩu dùng chung và không ghi ai bấm. Đèn này là
+     lưới cuối: bật lại ở đó thì ở đây đỏ. */
+  ds.push(denHaiBot(pages, nguonBotBat, botBat));
+
   const dem = { xanh: 0, vang: 0, do: 0, xam: 0 };
   for (const d of ds) dem[d.muc]++;
   return {
@@ -290,6 +299,60 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
     // Mức xấu nhất của cả bảng — để đầu trang nói một câu, không bắt người đọc tự quét.
     tongThe: dem.do ? MUC.DO : dem.vang ? MUC.VANG : dem.xam ? MUC.XAM : MUC.XANH,
   };
+}
+
+/**
+ * Page nào đang bị CẢ HAI con bot nhận là của mình.
+ *
+ * `botBat` là tập page bot CŨ đang bật, đã đọc từ nguồn thật (`ai-enabled.json`) khi nối
+ * được cầu; `nguonBotBat.nguon` nói rõ số ấy đến từ đâu. Đọc từ cột CSDL thì KHÔNG kết luận
+ * — cột đó là bản sao và đã có lần lệch 50, mà đây là cái đèn không được phép báo nhầm theo
+ * cả hai chiều.
+ */
+function denHaiBot(pages, nguonBotBat, botBat) {
+  if (!giaoTrenManDangMo()) {
+    return den({
+      ma: 'hai_bot_mot_page', ten: 'Hai bot cùng một page', muc: MUC.XANH,
+      vi: 'Không page nào có thể rơi vào cảnh ấy: chủ sở hữu page đang lấy từ cấu hình máy '
+        + 'chủ, mà bot cũ đọc đúng danh sách đó để tránh ra.',
+      so: 'không có',
+    });
+  }
+  const daGiao = pages.filter((p) => p.giao_bot_moi === true);
+  if (!daGiao.length) {
+    return den({
+      ma: 'hai_bot_mot_page', ten: 'Hai bot cùng một page', muc: MUC.XANH,
+      vi: 'Chưa page nào được giao cho bot mới bằng giao diện, nên chưa có chỗ nào để hai bot đụng nhau.',
+      so: '0 page đã giao',
+    });
+  }
+  if (nguonBotBat?.nguon !== 'ai-enabled.json') {
+    return den({
+      ma: 'hai_bot_mot_page', ten: 'Hai bot cùng một page', muc: MUC.XAM,
+      vi: `Chưa đo được: không hỏi được tiến trình bot cũ xem nó còn bật cho ${daGiao.length} `
+        + 'page đã giao hay không. Cột trong cơ sở dữ liệu chỉ là bản sao, không đủ để kết luận.',
+      diTiep: { chu: 'Sang màn Kết nối xem cầu sang tiến trình bot', duong: '/ket-noi' },
+      so: `${daGiao.length} page đã giao`,
+    });
+  }
+  const idBotCuBat = new Set(botBat.map((p) => String(p.page_id)));
+  const dung = daGiao.filter((p) => idBotCuBat.has(String(p.page_id)));
+  if (!dung.length) {
+    return den({
+      ma: 'hai_bot_mot_page', ten: 'Hai bot cùng một page', muc: MUC.XANH,
+      vi: `${daGiao.length} page đã giao cho bot mới, và bot cũ đã buông đủ cả ${daGiao.length}.`,
+      so: `0/${daGiao.length} page`,
+    });
+  }
+  const ten = dung.slice(0, 3).map((p) => p.ten || p.page_id).join(' · ');
+  return den({
+    ma: 'hai_bot_mot_page', ten: 'Hai bot cùng một page', muc: MUC.DO,
+    vi: `${dung.length} page đã giao cho bot mới NHƯNG bot cũ vẫn đang bật: ${ten}`
+      + `${dung.length > 3 ? ' …' : ''}. Khách của những page đó nhận HAI câu trả lời cho một `
+      + 'câu hỏi. Thường là có người vừa bật lại bot ở giao diện cũ.',
+    diTiep: { chu: 'Sang màn Công tắc từng page để tắt bot cũ cho những page ấy', duong: '/page-bot' },
+    so: `${dung.length} page`,
+  });
 }
 
 /**

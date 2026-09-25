@@ -30,15 +30,27 @@ const dai = await import('../../src/ui/chung/trang-thai.js');
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const NGUON_V3 = path.join(GOC, 'src/admin-v3/operations.js');
+const { lyDoChuaThuocBotMoi } = await import('../../../src/queue/page-routing.js');
 const CAU_NOI = path.join(GOC, 'v3/src/noi-day/van-hanh-v3.js');
 
 /* ═════════════ ① BẢNG DỊCH PHẢI PHỦ HẾT CÂU CỦA BÊN KIA ═════════════ */
 
-/** Bóc mọi câu `blockers.push("…")` ra khỏi mã nguồn bản mới mà KHÔNG nạp module. */
+/**
+ * Bóc mọi câu `blockers.push("…")` ra khỏi mã nguồn bản mới mà KHÔNG nạp module.
+ *
+ * ⚠️ 25/09 (024): MỘT câu đã dọn ra khỏi `operations.js` — điều kiện «page chưa thuộc bot
+ * mới» nay có HAI cách nói, tuỳ cầu dao `V3_GIAO_PAGE_TREN_MAN` (chỗ đi sửa đổi theo). Phép
+ * bóc bằng regex không thấy chúng nữa, nên nếu để nguyên thì thước này lặng lẽ thôi canh
+ * đúng cái câu hay đổi nhất. Gọi THẲNG hàm sinh câu — đúng nguồn, không phải trí nhớ.
+ */
 function docCauChan() {
   const src = readFileSync(NGUON_V3, 'utf8');
   const ra = [...src.matchAll(/blockers\.push\(\s*"([^"]+)"\s*\)/g)].map((m) => m[1]);
-  return [...new Set(ra)];
+  return [...new Set([
+    ...ra,
+    lyDoChuaThuocBotMoi({}),
+    lyDoChuaThuocBotMoi({ V3_GIAO_PAGE_TREN_MAN: '1' }),
+  ])];
 }
 
 /** Bóc bảng dịch câu → mã ở cầu nối. */

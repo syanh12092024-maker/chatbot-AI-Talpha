@@ -148,6 +148,19 @@ async function docCuaKiem() {
   }
 }
 
+/**
+ * Cửa kiểm của ĐÚNG MỘT page, cho những chỗ chỉ cần hỏi về một page (ví dụ cửa giao page
+ * sang bot mới). Dùng chung `docCuaKiem` với bảng 50 dòng — không dựng đường đọc thứ hai.
+ *
+ * @returns {Promise<{doc: object|null, viSao: string|null}>} `doc` null = chưa đọc được,
+ *   và chưa đọc được KHÁC «page này không thiếu gì».
+ */
+export async function cuaKiemMotPage(pageIdFacebook) {
+  const { doc, viSao } = await docCuaKiem();
+  if (!doc) return { doc: null, viSao };
+  return { doc: doc.get(String(pageIdFacebook)) || null, viSao: null };
+}
+
 /** Một dòng cửa kiểm, rút gọn còn thứ bảng page cần: hiện gì trong ô, và màu gì. */
 export function gonCuaKiem(r) {
   if (!r) return { ma: 'BOT_KHONG_THAY', ten: 'Bot không thấy page này', muc: 'chan' };
@@ -279,6 +292,9 @@ export function gonPage(p) {
     nganhHang: p.nganh_hang || '',
     marketer: p.marketer || '',
     botAiBat: co(p.bot_ai_bat),
+    // 024 — page này đã GIAO cho bot mới chưa. Khác `botAiBat` (bot CŨ đang bật hay tắt) và
+    // khác `v3_ai_bat` (trong số page đã giao, bot mới có đang bật không).
+    giaoBotMoi: co(p.giao_bot_moi),
     botcakeTat: co(p.botcake_tat),
     trongDiem: co(p.trong_diem),
     sanPhamGocMa: p.san_pham_goc_ma || null,   // 015 — page khai nó bán gì

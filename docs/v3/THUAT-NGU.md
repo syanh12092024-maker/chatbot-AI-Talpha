@@ -18,6 +18,7 @@ dịch sang thứ họ biết — mỗi lần dịch là một lần đoán, và
 | **kho hàng** | POS, `ket_noi_pos`, shop POS | Nơi đơn chạy về và nơi lấy sản phẩm. «POS» chỉ có nghĩa với người đã đọc tài liệu |
 | **cửa hàng** | shop id, `pos_shop_id` | Một kho hàng có nhiều cửa hàng theo thị trường |
 | **bot cũ · bot mới** | v1 · v3 · legacy · runtime | Hai bộ máy chạy song song. Người dùng cần biết page mình chạy bằng bộ nào, không cần biết tên phiên bản |
+| **giao page sang bot mới** | cutover, allowlist, `V3_PAGE_XU_LY` | Đổi CHỦ một page giữa hai bot. Khác hẳn «bật/tắt bot» — cái kia bảo con bot đang phụ trách nói hay im |
 | **máy chạy bot** | worker, `aicloser-worker-v3` | Thứ đang thật sự trả lời khách |
 | **cơ sở dữ liệu** (chỉ trong ô «Nguồn số») | CSDL, Postgres, `so_ai` | Trên mặt màn thì không nhắc tới; cần khai nguồn thì nói trong ô gập |
 | **cho chạy** | LIVE, publish, áp bản | Việc người dùng làm: cho một bản kịch bản chạy với khách |
@@ -47,3 +48,4 @@ dịch sang thứ họ biết — mỗi lần dịch là một lần đoán, và
 | Đoạn chữ gửi cho AI | ✅ 25/09 — 5 hộp cảnh báo → 0, đã đổi tên năm khối |
 | Sản phẩm & kho · Gợi ý từ AI · Khách vào từ đâu · Ai đã sửa gì · Việc của tôi | ✅ 25/09 dọn chữ; Sản phẩm & kho còn 4 mã và 3 hộp cảnh báo |
 | Điều kiện `MISSING_TAGS` | còn nhắc thao tác bên Pancake bằng lời cũ |
+| Giao diện cũ cổng 3100 | vẫn bật lại được bot cho page đã giao (một mật khẩu dùng chung, không ghi ai bấm). Đèn ⑪ «Hai bot cùng một page» là lưới, chữa gốc là Q2 |

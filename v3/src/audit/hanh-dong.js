@@ -50,6 +50,10 @@ export const HANH_DONG = Object.freeze({
   CHUYEN_PAGE_TEAM: 'chuyen_page_team',
   // page & bot
   BAT_TAT_BOT_AI: 'bat_tat_bot_ai',
+  // 25/09 (024): ĐỔI CHỦ một page giữa bot cũ và bot mới. Khác `bat_tat_bot_ai` (bảo con bot
+  // đang phụ trách nói hay im) — đây là việc bot cũ buông và bot mới nhặt, nên nó phải có
+  // dấu vết riêng: sau này truy «page này chạy bot nào từ bao giờ» là tra đúng mã này.
+  GIAO_PAGE_BOT_MOI: 'giao_page_bot_moi',
   GAN_MARKETER: 'gan_marketer',
   DAT_TRONG_DIEM: 'dat_trong_diem',
   // kết nối & token
@@ -135,7 +139,7 @@ export const NHOM = Object.freeze({
     HANH_DONG.TAO_NGUOI_DUNG,
   ]),
   page_bot: Object.freeze([
-    HANH_DONG.BAT_TAT_BOT_AI, HANH_DONG.GAN_MARKETER, HANH_DONG.DAT_TRONG_DIEM,
+    HANH_DONG.BAT_TAT_BOT_AI, HANH_DONG.GIAO_PAGE_BOT_MOI, HANH_DONG.GAN_MARKETER, HANH_DONG.DAT_TRONG_DIEM,
     HANH_DONG.DAT_THI_TRUONG, HANH_DONG.DAT_NGANH_HANG, HANH_DONG.BAT_TAT_BOTCAKE,
     HANH_DONG.GAN_SAN_PHAM_GOC,
   ]),
@@ -180,6 +184,9 @@ export const nhomBatBuoc = Object.freeze(new Set([
   HANH_DONG.CHUYEN_PAGE_TEAM,
   // Gạt công tắc bot là đổi cách hệ thống nói chuyện với KHÁCH THẬT.
   HANH_DONG.BAT_TAT_BOT_AI,
+  // Đổi chủ một page giữa hai con bot. Mất dấu ở đây là không bao giờ dựng lại được «từ
+  // bao giờ page này do bot mới trả lời» — câu hỏi đầu tiên của mọi lượt truy sự cố chat.
+  HANH_DONG.GIAO_PAGE_BOT_MOI,
 
   // ── thêm 15/09 ──
   // CÙNG HỌ VỚI `DOI_KHOA`, và lý do y hệt: `ket_noi_pos` giữ khoá API của shop POS, tức
@@ -237,6 +244,7 @@ const MO_TA = Object.freeze({
   [HANH_DONG.BOT_THANH_VIEN]: 'Rút vai của người trong team',
   [HANH_DONG.CHUYEN_PAGE_TEAM]: 'Chuyển page sang team khác',
   [HANH_DONG.BAT_TAT_BOT_AI]: 'Bật/tắt bot AI cho page',
+  [HANH_DONG.GIAO_PAGE_BOT_MOI]: 'Giao page sang bot mới / trả về bot cũ',
   [HANH_DONG.GAN_MARKETER]: 'Gán marketer cho page',
   [HANH_DONG.DAT_TRONG_DIEM]: 'Đánh dấu page trọng điểm',
   [HANH_DONG.THEM_TOKEN_PANCAKE]: 'Thêm token Pancake',

@@ -1,6 +1,6 @@
 // Application services shared by the V3 operator UI. All identifiers are team scoped.
 import { ghiNhatKy } from "../db/index.js";
-import { pageThuocV3 } from "../queue/page-routing.js";
+import { pageThuocBotMoi, lyDoChuaThuocBotMoi } from "../queue/page-routing.js";
 import { docSanPhamGoiGia } from "../products/catalog.js";
 import { layModel } from "../chat/model.js";
 import { HE_SO_TE } from "../pos/index.js";
@@ -43,8 +43,11 @@ export async function pageStatus(pool, p, env = process.env) {
   // cái đang đúng, và mở đúng cái van mà phép đo dựng ra để giữ đóng.
   const luuY = [];
   const dienTap = env.V3_DIEN_TAP === "1";
-  if (!pageThuocV3(p.page_id, env))
-    blockers.push("Page chưa được đưa vào danh sách worker V3");
+  // 024: nguồn của «page này thuộc bot nào» đổi theo cầu dao `V3_GIAO_PAGE_TREN_MAN`, và
+  // câu chỉ đường phải đổi theo — bảo người ta đi sửa cấu hình máy chủ trong khi việc ấy
+  // đã bấm được trên màn là đẩy họ đi một vòng vô ích.
+  const thuocBotMoi = pageThuocBotMoi(p, env);
+  if (!thuocBotMoi) blockers.push(lyDoChuaThuocBotMoi(env));
   if (env.V3_PANCAKE_GUI !== "1" || env.PANCAKE_READONLY === "1") {
     if (dienTap) luuY.push("Chế độ DIỄN TẬP: bot xử lý và ghi sổ, KHÔNG gửi cho khách — đúng cấu hình, không phải thiếu");
     else blockers.push("Máy chủ chưa mở gửi tin");
@@ -68,8 +71,8 @@ export async function pageStatus(pool, p, env = process.env) {
   }
   return {
     ...p,
-    runtime: pageThuocV3(p.page_id, env) ? "v3" : "legacy",
-    enabled: pageThuocV3(p.page_id, env) && p.v3_ai_bat !== false,
+    runtime: thuocBotMoi ? "v3" : "legacy",
+    enabled: thuocBotMoi && p.v3_ai_bat !== false,
     blockers,
     luuY,
     dienTap,
@@ -99,8 +102,7 @@ export async function setPage(pool, bc, id, input, env = process.env) {
       )
     ).rows[0];
     if (!p) throw fault("Không tìm thấy Page", 404);
-    if (!pageThuocV3(p.page_id, env))
-      throw fault("Page chưa thuộc worker V3; cần cấu hình máy chủ trước", 409);
+    if (!pageThuocBotMoi(p, env)) throw fault(`${lyDoChuaThuocBotMoi(env)}.`, 409);
     if (input.version && input.version !== p.version)
       throw fault("Cấu hình đã đổi; tải lại trước khi lưu", 409);
     if (input.source && input.source !== p.nguon_tin) {

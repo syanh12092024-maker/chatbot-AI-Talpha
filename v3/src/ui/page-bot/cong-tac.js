@@ -22,8 +22,9 @@
 // — không phải 403. 403 là xác nhận «dòng này có thật ở team khác».
 
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
-import { BANG, LoiPageBot, motPage, congTruyVan } from './kho-page.js';
+import { BANG, LoiPageBot, motPage, congTruyVan, cuaKiemMotPage, gonCuaKiem } from './kho-page.js';
 import { datBotAi, trangThaiCau } from '../../noi-day/cau-bot-v1.js';
+import { giaoTrenManDangMo, BIEN_GIAO_TREN_MAN } from '../../../../src/queue/page-routing.js';
 
 export const HANH_DONG_BOT = 'bat_tat_bot_ai';
 export const HANH_DONG_MARKETER = 'gan_marketer';
@@ -33,6 +34,7 @@ export const HANH_DONG_NGANH_HANG = 'dat_nganh_hang';
 export const HANH_DONG_BOTCAKE = 'bat_tat_botcake';
 export const HANH_DONG_SP_GOC = 'gan_san_pham_goc';
 export const HANH_DONG_QUET = 'quet_page_pancake';
+export const HANH_DONG_GIAO = 'giao_page_bot_moi';
 
 /** Vai được sửa. `quan-ly` xem được màn nhưng không gạt được công tắc. */
 export const VAI_SUA_DUOC = Object.freeze([VAI.QUAN_TRI]);
@@ -406,4 +408,123 @@ export async function quetPageTuPancake(boiCanh) {
       : `quét Pancake: ${kq.nguon} page (${kq.them} mới · ${kq.capNhat} cập nhật · ${kq.khongThay} trong CSDL không thấy ở lượt này)`,
   });
   return kq;
+}
+
+
+/* ────────────────────── ④ GIAO PAGE SANG BOT MỚI (024 · 25/09) ──────────────────────
+ *
+ * ═══ VIỆC NÀY KHÁC HẲN «BẬT/TẮT BOT» ═════════════════════════════════════════════════
+ * Bật/tắt (①) là bảo con bot ĐANG PHỤ TRÁCH page nói hay im. Giao page là **đổi chủ**:
+ * bot cũ buông, bot mới nhặt. Trước 25/09 việc ấy chỉ làm được bằng cách SSH vào máy chủ,
+ * sửa `V3_PAGE_XU_LY`, khởi động lại — tức không ai làm được từ giao diện.
+ *
+ * ═══ THỨ TỰ LÀ TOÀN BỘ SỰ AN TOÀN ════════════════════════════════════════════════════
+ *   ① TẮT bot cũ cho page
+ *   ② ĐỌC LẠI TỪ CHÍNH BOT CŨ để xác nhận nó đã tắt thật (`datBotAi` trả trạng thái SAU
+ *      khi đổi, đọc từ tiến trình bot — không đoán theo tham số vừa gửi)
+ *   ③ chưa xác nhận được ⇒ DỪNG, KHÔNG ghi cờ
+ *   ④ ghi cờ `giao_bot_moi` — bot mới nhặt page từ vòng kế tiếp
+ *
+ * Đảo thứ tự (ghi cờ trước) là mở đúng cái cảnh phải tránh: hai con bot cùng trả lời một
+ * khách. Làm đúng thứ tự thì chỗ hỏng xấu nhất là vài giây KHÔNG AI trả lời — hướng hỏng
+ * an toàn, và màn nói ra ngay.
+ *
+ * ⚠️ VÌ SAO BƯỚC ② KHÔNG BỎ ĐƯỢC: bot cũ KHÔNG đọc cột `giao_bot_moi`, nó chỉ biết
+ *    `V3_PAGE_XU_LY` (file máy chủ, cần khởi động lại). Thứ duy nhất khiến nó buông một page
+ *    giao bằng giao diện là công tắc AI của chính nó — đo tận nơi: `pancake-poll.js:262` và
+ *    `scheduler-followup.js:115` đều chỉ chạy trên page ĐANG BẬT AI.
+ *
+ * ═══ KHÔNG TỰ BẬT BOT MỚI, VÀ KHÔNG TỰ BẬT LẠI BOT CŨ ════════════════════════════════
+ * Giao xong, bot mới vẫn TẮT cho tới khi người ta bấm bật (cột `v3_ai_bat`). Trả về bot cũ
+ * cũng vậy. Một nút một nghĩa: nút này đổi CHỦ, không bật máy. Trạng thái «đã giao mà chưa
+ * bật» = không ai trả lời page ấy — hợp lệ, và màn phải nói thẳng ra.
+ */
+
+/** Page chưa đủ điều kiện chạy bot mới thì KHÔNG giao. Không giao một page cho con bot
+ *  chưa biết nói gì về nó. */
+async function batBuocSanSang(p) {
+  const { doc, viSao } = await cuaKiemMotPage(p.pageId);
+  if (viSao) {
+    throw new LoiPageBot(
+      `Chưa đọc được tình trạng page từ tiến trình bot (${viSao}) — không giao khi chưa biết `
+      + 'page này đã đủ điều kiện chưa.', 'chua_doc_duoc_cua_kiem', 503,
+    );
+  }
+  const g = gonCuaKiem(doc);
+  if (g.muc === 'chan') {
+    throw new LoiPageBot(
+      `Page còn thiếu điều kiện: ${g.ten}. Sửa ở màn «Page còn thiếu gì» rồi giao — giao bây `
+      + 'giờ là đưa khách cho một con bot chưa trả lời được page này.', 'con_chan', 409,
+    );
+  }
+}
+
+/**
+ * Giao page cho bot mới (`giao = true`) hoặc trả về bot cũ (`giao = false`).
+ */
+export async function giaoPage(boiCanh, id, giao) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  if (!giaoTrenManDangMo()) {
+    throw new LoiPageBot(
+      'Cầu dao «giao page bằng giao diện» đang đóng, nên việc này vẫn phải nhờ người quản trị '
+      + 'hệ thống. Nhờ họ bật một lần rồi từ đó bấm được trên màn.',
+      'cau_dao_dong', 409,
+    );
+  }
+  const p = await traTrongTeam(bc, id);
+  if (!p.pageId) {
+    throw new LoiPageBot(`page id=${id} không có id Facebook — không giao được.`, 'thieu_page_id');
+  }
+  const muon = !!giao;
+  if (muon === p.giaoBotMoi) {
+    return { id: String(id), pageId: p.pageId, giaoBotMoi: p.giaoBotMoi, doi: false };
+  }
+
+  const db = congTruyVan(bc);
+  const luc = new Date().toISOString();
+  let botCuBat = p.botAiBat;
+
+  if (muon) {
+    await batBuocSanSang(p);
+    const kq = await datBotAi(p.pageId, false);     // ① tắt bot cũ · ném nếu cửa ghi khoá
+    if (kq.batSauKhiDoi !== false) {                // ② đọc lại · ③ chưa buông thì dừng
+      throw new LoiPageBot(
+        'Bot cũ báo vẫn ĐANG BẬT cho page này sau khi đã gửi lệnh tắt — dừng lại, không giao. '
+        + 'Giao lúc này là để hai con bot cùng trả lời một khách. Thử lại, hoặc nhờ người quản '
+        + 'trị hệ thống xem tiến trình bot cũ.',
+        'bot_cu_chua_buong', 409,
+      );
+    }
+    botCuBat = false;
+    await db.sua(BANG, { id: String(id) }, { bot_ai_bat: false, giao_bot_moi: true, sua_luc: luc });
+  } else {
+    // Trả về bot cũ: bỏ cờ để bot mới buông. KHÔNG tự bật lại bot cũ — bật bot cho khách
+    // thật là một quyết định riêng, có trần và có nút riêng của nó.
+    await db.sua(BANG, { id: String(id) }, { giao_bot_moi: false, v3_ai_bat: false, sua_luc: luc });
+  }
+
+  await ghi(bc, {
+    hanhDong: HANH_DONG_GIAO,
+    doiTuongLoai: BANG,
+    doiTuongId: String(id),
+    truoc: { giao_bot_moi: p.giaoBotMoi, bot_ai_bat: p.botAiBat },
+    sau: { giao_bot_moi: muon, bot_ai_bat: botCuBat },
+    ghiChu: muon
+      ? `GIAO page ${p.ten || p.pageId} (${p.pageId}) sang bot mới; đã tắt bot cũ và đọc lại xác nhận`
+      : `TRẢ page ${p.ten || p.pageId} (${p.pageId}) về bot cũ; bot cũ vẫn đang TẮT, bật riêng nếu cần`,
+  });
+
+  return {
+    id: String(id), pageId: p.pageId, giaoBotMoi: muon, doi: true, botAiBat: botCuBat,
+    // Câu này hiện thẳng trên màn: sau khi đổi chủ thì CHƯA con nào đang trả lời page.
+    buocTiep: muon
+      ? 'Đã giao. Bot mới vẫn đang TẮT cho page này — bấm «Bật bot» khi muốn nó bắt đầu trả lời khách.'
+      : 'Đã trả về bot cũ. Bot cũ vẫn đang TẮT cho page này — bấm «Bật bot» nếu muốn nó trả lời lại.',
+  };
+}
+
+/** Cầu dao đang mở hay đóng, cho màn hiện nút hay hiện lời giải thích. */
+export function trangThaiCauDaoGiao() {
+  return { mo: giaoTrenManDangMo(), bien: BIEN_GIAO_TREN_MAN };
 }
