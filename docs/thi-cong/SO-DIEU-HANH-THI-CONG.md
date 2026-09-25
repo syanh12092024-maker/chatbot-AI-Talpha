@@ -2281,3 +2281,21 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   khoá nhầm giao diện v3 vì nginx trên máy phục vụ ứng dụng khác. Luật tường lửa không chạm tiến
   trình nào. 📌 Cùng một kết quả, hãy chọn đường không phải dừng thứ đang phục vụ khách; và nhớ
   hỏi «ba dịch vụ này có dùng chung tệp cấu hình không» TRƯỚC khi định sửa tệp ấy.
+
+- 25/09 · **DEPLOY GIAO DIỆN MỚI LÊN MÁY CHỦ** → ✅ ba dịch vụ active, 0 lỗi, `pages:133` bằng
+  đúng số trước deploy, giao diện v3 trả 200 và phục vụ đúng mã mới, cột 024 có trên CSDL thật,
+  **không cờ gửi nào bị mở**. Người quyết chọn phương án đè thẳng; tôi sao lưu TRƯỚC nên «mất 48
+  tệp sửa tại chỗ» thành «cất ở `/var/backups/aicloser/truoc-deploy-20260925T075932Z/`». Thứ tự:
+  đẩy nhánh → fetch/checkout -f → `npm ci` → **migrate 018→024 (lược đồ trước)** → restart. Nhật
+  ký `docs/thi-cong/nhat-ky/phat-hanh-20260925-giao-dien-moi.md`.
+  🔴 Mang theo nợ: **38 ca đỏ trên HEAD** vì đợt sửa 22 tệp (+448/−393) của phiên khác chưa
+  commit — prod đang chạy đúng bản ấy. Hệ đang im nên chưa có hậu quả, nhưng **cấm mở van gửi
+  trước khi bộ ca về xanh**.
+- 25/09 · 🧭 **`npm test` Ở CÂY LÀM VIỆC KHÔNG PHẢI PHÉP ĐO CỦA THỨ SẼ DEPLOY.** Cây làm việc
+  2.004 xanh / 0 đỏ; worktree sạch dựng từ HEAD: 46 đỏ, trong đó 43 chỉ vì một tệp chưa commit.
+  Kho code đã KHÔNG chạy được suốt ba ngày mà không ai thấy. 📌 Trước mọi lượt deploy, chạy bộ ca
+  trên một bản dựng từ HEAD — `git worktree add --detach` mất 10 giây và nó bắt đúng thứ mà
+  «xanh hết» đang che.
+- 25/09 · 🧭 **ĐO QUÁ SỚM CŨNG LÀ ĐO SAI.** Ngay sau restart, `/health` trả `pages:0` — đủ để lùi
+  oan. Bot nạp token mất ~30 giây (Google Sheet + Meta API). Đo lại: 133, đúng bằng trước deploy.
+  📌 Ngưỡng lùi phải kèm MỐC THỜI GIAN sớm nhất được phép đo, không chỉ kèm con số.
