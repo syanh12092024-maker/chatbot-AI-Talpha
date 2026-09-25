@@ -108,3 +108,28 @@ lược đồ **24 bản** · van gửi **0 cờ** (vẫn đóng).
 - 🟠 Một token Meta **hết hạn 11/09** (`Token app CHAT AI 13/7 (BM DN - Live)`) ⇒ chỉ 1/2 token khoẻ.
 - 🟠 Cổng **3102 mở thẳng ra Internet, không HTTPS**.
 - 🟠 Luật iptables cổng 3100 **chưa lưu** ⇒ reboot là cửa mở lại.
+
+
+## 12 · LƯỢT BA (cùng ngày) — GD2 lên máy chủ
+
+Cây sạch, HEAD đã xanh trên worktree sạch (2.031 ca · 0 đỏ) trước khi gõ.
+
+| Bước | Kết quả |
+|---|---|
+| Sao lưu CSDL trước khi đổi mã | `/var/backups/aicloser/truoc-gd2-20260925T092222Z/aicloser_v3.dump` (22 M) |
+| Đổi mã | `c80a0b6` → **`6103365`** |
+| `npm ci --omit=dev` | xong |
+| Lược đồ | **áp mới 0 · tổng 24** — GD2 không thêm bản nào |
+| Khởi động lại ba dịch vụ | cả ba `active` |
+
+Nghiệm thu (chờ bot nạp xong token rồi mới đo — án lệ «đo quá sớm cũng là đo sai» của lượt một):
+
+| Đo | Kết quả |
+|---|---|
+| Bot cũ | `{"ok":true,"pages":133}` |
+| Giao diện v3 | `/dang-nhap` → **200** trong lẫn ngoài |
+| Màn mới | `/page` → **302** (chuyển hướng về danh sách, đúng thiết kế) |
+| Mã thanh điều hướng | có dấu vết sửa GD2 (`mauCuoi`) — đang phục vụ đúng bản mới |
+| Lỗi mới 3 phút | **0 / 0 / 0** |
+| Van gửi | **0 cờ** — vẫn đóng |
+| Cổng 3100 | vẫn **đóng** với bên ngoài |

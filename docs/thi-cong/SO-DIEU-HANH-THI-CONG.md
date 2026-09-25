@@ -2349,3 +2349,9 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   dẫn (hai màn chẩn đoán riêng), nhưng mang sẵn page. **Không thêm một cửa ghi nào** — năm ô
   bấm vào đúng các đường `/api/page-bot/:id/*` đã có. Thước: mot-page 14/14 · `npm test`
   2.027/0 · do-giao-dien 24 màn 0 vỡ, 17 hộp cảnh báo.
+- 25/09 · **GD2 LÊN MÁY CHỦ** → ✅ prod `c80a0b6` → **`6103365`**; sao lưu CSDL trước; lược đồ
+  không thêm bản nào (vẫn 24); ba dịch vụ active, 0 lỗi, `pages:133`, UI 200 trong lẫn ngoài,
+  `/page` chuyển hướng đúng, mã thanh điều hướng đã là bản mới, **van gửi vẫn 0 cờ**, cổng
+  3100 vẫn đóng. Lần này gõ nhanh vì **cây sạch và HEAD đã xanh trên worktree sạch trước khi
+  đẩy** — đúng thứ sáng nay không có. Nhật ký mục 12 của
+  `docs/thi-cong/nhat-ky/phat-hanh-20260925-giao-dien-moi.md`.
