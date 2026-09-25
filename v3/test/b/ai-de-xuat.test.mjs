@@ -266,7 +266,10 @@ test('ba tầng — tầng nào chưa nhận được đề xuất phải nói L
   assert.ok(chua.length > 0, 'hôm nay mới một tầng nhận được — nếu hết thì sửa lại bài test');
   for (const t of chua) {
     assert.ok(t.vi && t.vi.length > 40, `tầng ${t.ma} chưa nhận được mà không nói vì sao`);
-    assert.match(t.vi, /cột|bảng/i, `lý do của tầng ${t.ma} phải chỉ ra cột/bảng thật`);
+    // GD4 · 25/09: lý do vẫn phải CỤ THỂ (thiếu đúng thứ gì), nhưng viết bằng lời người vận
+    // hành chứ không bắt buộc nêu tên cột — tên cột nay nằm ở ô «Nguồn số».
+    assert.match(t.vi, /chưa lưu được|chưa phân biệt|chưa có chỗ|cột|bảng/i,
+      `lý do của tầng ${t.ma} phải nói rõ đang thiếu thứ gì`);
   }
 });
 

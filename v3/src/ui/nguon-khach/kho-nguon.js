@@ -185,12 +185,11 @@ function choRoiWhatsApp(donTrang) {
       doDuoc: false,
       taiLieuNoi: 0.374,
       soDonTrang: donTrang.length,
-      noi: `Có ${donTrang.length} đơn từ trang bán hàng, nhưng cột \`so_lan_thu_wa\` bằng 0 ở `
-        + 'TẤT CẢ và `ly_do_khong_gui` rỗng ở tất cả — luồng gửi WhatsApp của v3 chưa chạy '
-        + 'lần nào.',
-      diTiep: 'Con số 37,4% là số ĐO CŨ ở `PHIEU-L3-M1`, không phải số đo hôm nay. Màn KHÔNG '
-        + 'hiện nó như một chỉ số đang sống. Khi luồng WhatsApp chạy, hai cột trên sẽ tự có '
-        + 'giá trị và ô này đo lại được.',
+      noi: `Có ${donTrang.length} đơn từ trang bán hàng, nhưng chưa đơn nào được thử gửi `
+        + 'WhatsApp và cũng không đơn nào ghi lý do không gửi — tức luồng gửi WhatsApp chưa '
+        + 'chạy lần nào.',
+      diTiep: 'Con số 37,4% là số đo CŨ trong tài liệu, không phải số đo hôm nay — màn cố ý '
+        + 'không hiện nó như một chỉ số đang sống. Khi luồng WhatsApp chạy, ô này tự đo lại được.',
     };
   }
   const khongGui = donTrang.filter((d) => Number(d.so_lan_thu_wa || 0) === 0);

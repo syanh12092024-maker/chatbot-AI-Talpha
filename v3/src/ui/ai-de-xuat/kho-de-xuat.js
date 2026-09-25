@@ -43,13 +43,13 @@ export const TANG_NHAN_DUOC = Object.freeze({
   bo_luat_chung: { duoc: true, vi: null },
   ky_nang: {
     duoc: false,
-    vi: 'Bảng `ky_nang` chưa có cột phân biệt nguồn (`nguon`) và chưa có `duyet_luc` — không '
-      + 'lưu được «ai đề xuất» và «ai đã duyệt», nên cửa duyệt không dựng được.',
+    vi: 'Tầng này chưa lưu được «ai đề xuất» và «ai đã duyệt», nên chưa dựng được đường duyệt. '
+      + 'Cần thêm chỗ chứa hai thông tin đó trước.',
   },
   kich_ban: {
     duoc: false,
-    vi: 'Bảng `kich_ban` có `trang_thai=REVIEW` nhưng KHÔNG có cột `nguon` — không phân biệt '
-      + 'được bản người viết với bản AI đề xuất, mà đó chính là chỗ §9 tách hai đường.',
+    vi: 'Kịch bản có trạng thái «chờ duyệt», nhưng chưa phân biệt được bản người viết với bản '
+      + 'AI đề xuất — mà đó đúng là chỗ hai đường phải tách nhau.',
   },
 });
 

@@ -60,7 +60,7 @@ test('①b · «chưa nạp» — bảng có nhưng chưa ai đổ dữ liệu v
   const o = oCua(d, 'san_pham_het_hang');
   assert.equal(o.viRong, tc.VI_RONG.CHUA_NAP);
   assert.notEqual(o.viRong, tc.VI_RONG.XONG, '0 dòng KHÔNG phải «không mặt hàng nào hết»');
-  assert.match(o.noiRong, /KHÔNG có dòng nào/);
+  assert.match(o.noiRong, /chưa có dòng nào|KHÔNG có dòng nào/i);
   assert.ok(o.diTiepRong && o.diTiepRong.length > 60, 'chưa nạp thì PHẢI chỉ đường đi tiếp');
   assert.match(o.diTiepRong, /chưa biết/i, 'phải nói rõ 0 ở đây nghĩa là «chưa biết»');
 });
@@ -120,7 +120,10 @@ test('③b · chưa nối cầu → cũng để `null` và chỉ đúng biến c
   const d = await tc.manTrangChu(bc(VAI.QUAN_TRI));
   const o = oCua(d, 'page_bi_chan');
   assert.equal(o.so, null);
-  assert.match(o.diTiepRong, /V3_BOT_V1_GOC|ADMIN_USER/);
+  // GD4 · 25/09: câu trên màn nói bằng lời người vận hành; tên biến phải đặt nay ở trường
+  // riêng (màn đưa xuống ô «Nguồn số»). Vẫn phải NÓI RA, chỉ đổi chỗ đứng.
+  assert.match(o.diTiepRong, /người quản trị hệ thống/i);
+  assert.match(o.diTiepRongKyThuat, /V3_BOT_V1_GOC|ADMIN_USER/);
 });
 
 test('③c · cầu chạy được thì hai ô đếm ĐÚNG và chỉ trên page của team', async () => {

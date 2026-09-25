@@ -200,12 +200,14 @@ test('hiệu lực · CHƯA nối bộ đọc → nói «chưa biết», KHÔNG 
   assert.equal(d.hieuLuc.core.dungDau, true);
 });
 
-test('hiệu lực · cờ VẮNG → nói thẳng bot vẫn dùng `kb.js` cũ', async () => {
+test('hiệu lực · chưa bật → nói thẳng bot vẫn dùng bản cũ', async () => {
   dungKho({});
   pp.datDocHieuLuc(() => ({ coBat: false, core: 'CORE giả' }));
   const d = await pp.promptCua(bcQt(), '111');
   assert.equal(d.hieuLuc.coBat, false);
-  assert.match(d.hieuLuc.noi, /kb\.js/);
+  // GD4 · 25/09: câu viết bằng lời người vận hành (bỏ tên tệp và tên cờ). Điều PHẢI GIỮ là
+  // hai lời khai: bot đang dùng bản CŨ, và bảng dưới KHÔNG phải thứ bot đang gửi.
+  assert.match(d.hieuLuc.noi, /bản cũ/i);
   assert.match(d.hieuLuc.noi, /KHÔNG phải thứ bot đang gửi/);
   pp.datDocHieuLuc(null);
 });
@@ -218,7 +220,7 @@ test('hiệu lực · cờ BẬT → khối CORE có nội dung thật và vẫn
   assert.equal(core.thieu, false);
   assert.equal(core.uocToken > 0, true);
   assert.equal(d.hieuLuc.coBat, true);
-  assert.match(d.hieuLuc.core.noi, /BỔ SUNG, KHÔNG thay thế/);
+  assert.match(d.hieuLuc.core.noi, /BỔ SUNG chứ không thay thế|BỔ SUNG, KHÔNG thay thế/);
   pp.datDocHieuLuc(null);
 });
 

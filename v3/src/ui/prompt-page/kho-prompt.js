@@ -52,19 +52,19 @@ export const TOKEN_THIET_KE = Object.freeze({
 });
 
 export const TEN_KHOI = Object.freeze({
-  core: 'CORE (cứng trong mã nguồn)',
-  bo_luat_chung: 'Bộ luật chung (CSDL)',
-  ky_nang: 'Kỹ năng',
-  kich_ban: 'Kịch bản page',
-  san_pham: 'Dữ liệu sản phẩm',
+  core: 'Quy tắc gốc (cứng trong sản phẩm)',
+  bo_luat_chung: 'Quy tắc chung của team',
+  ky_nang: 'Kỹ năng đang bật',
+  kich_ban: 'Kịch bản của page',
+  san_pham: 'Sản phẩm và giá',
 });
 
 export const AI_SUA = Object.freeze({
-  core: 'CHỈ lập trình viên · `src/prompts.js`, file cấm sửa — đổi phải deploy',
+  core: 'CHỈ lập trình viên sửa được — nó cứng trong mã nguồn, đổi là phải phát hành bản mới',
   bo_luat_chung: 'Quản trị · dùng chung mọi page của team',
   ky_nang: 'Marketer · bật theo nhóm sản phẩm',
   kich_ban: 'Marketer phụ trách page',
-  san_pham: 'Đồng bộ tự động từ POS',
+  san_pham: 'Tự lấy từ kho hàng — không ai gõ tay ở đây',
 });
 
 export const KY_TU_MOI_TOKEN = 2.985;
@@ -159,7 +159,7 @@ export async function promptCua(boiCanh, pageIdFacebook) {
   const bc = batBuocBoiCanh(boiCanh);
   if (!_docKhoi) {
     throw new LoiPrompt(
-      'chưa nối bộ đọc khối của người A (`src/chat/rap-prompt.js`) — máy chủ dựng thiếu một dây. '
+      'máy chủ chưa nối phép đọc các khối — đây là lỗi dựng ứng dụng, không phải page thiếu gì. '
       + 'Đây là lỗi cấu hình, KHÔNG phải "page này không có prompt".',
       'chua_noi', 500,
     );
@@ -184,7 +184,7 @@ export async function promptCua(boiCanh, pageIdFacebook) {
     // Khối 0 — CORE. Đứng đầu prompt thật, nên phải đứng đầu ở đây; để nó vắng mặt là màn
     // khai thiếu đúng khối đang điều khiển model mạnh nhất.
     dungKhoi(KHOI.CORE, hl.core, {
-      lyDoThieu: 'Không đọc được `CORE` của `src/prompts.js` — máy chủ dựng thiếu một dây, '
+      lyDoThieu: 'Không đọc được khối quy tắc gốc — máy chủ dựng thiếu một dây, '
         + 'KHÔNG phải «prompt không có khối này».',
       duongSua: null,
       phu: 'cứng trong mã nguồn · luôn đứng ĐẦU prompt · không sửa được từ màn',
@@ -207,7 +207,7 @@ export async function promptCua(boiCanh, pageIdFacebook) {
       phu: kichBan ? `v${kichBan.phien_ban} · LIVE` : null,
     }),
     dungKhoi(KHOI.SAN_PHAM, moTaSanPham(sanPham), {
-      lyDoThieu: 'Page này chưa có sản phẩm nào trong CSDL — bot không biết mình đang bán gì.',
+      lyDoThieu: 'Page này chưa có sản phẩm nào — bot không biết mình đang bán gì.',
       duongSua: null,
       phu: (sanPham || []).length ? `${sanPham.length} sản phẩm` : null,
       soPhan: (sanPham || []).length,
@@ -235,10 +235,10 @@ function docHieuLuc() {
       core: null,
       khai: {
         coBat: null,
-        noi: 'CHƯA BIẾT đường chat đang dùng bốn khối này hay `kb.js` cũ — máy chủ chưa nối '
-          + 'bộ đọc hiệu lực. Đừng đọc bảng dưới thành «đây là prompt đang chạy».',
+        noi: 'CHƯA BIẾT bot đang đọc mấy khối này hay bản cũ — máy chủ chưa nối phép đo. '
+          + 'Đừng đọc bảng dưới thành «đây là thứ bot đang gửi».',
         core: { doc: false, dungDau: true,
-          noi: '`CORE` của `src/prompts.js` luôn đứng ĐẦU prompt và không sửa được từ màn.' },
+          noi: 'Khối quy tắc gốc luôn đứng ĐẦU và không sửa được từ màn.' },
       },
     };
   }
@@ -250,15 +250,15 @@ function docHieuLuc() {
     khai: {
       coBat,
       noi: coBat
-        ? 'Cờ `V3_RAP_PROMPT_BAT`=1 — đường chat ĐANG ráp prompt từ bốn khối dưới đây.'
-        : 'Cờ `V3_RAP_PROMPT_BAT` VẮNG ⇒ đường chat vẫn dùng `kb.js#getKBForPage` cũ. Bốn '
-          + 'khối dưới đây là thứ SẼ dùng khi bật cờ, KHÔNG phải thứ bot đang gửi hôm nay.',
+        ? 'Bot ĐANG ghép lời từ các khối dưới đây.'
+        : 'Máy chủ chưa bật cách ghép lời mới, nên bot vẫn dùng bản cũ. Các khối dưới đây là thứ '
+          + 'SẼ dùng khi bật, KHÔNG phải thứ bot đang gửi hôm nay.',
       core: {
         doc: r?.core != null,
         dungDau: true,
-        noi: '`CORE` (src/prompts.js, file cấm sửa) luôn là khối ĐẦU. Bộ luật chung trong CSDL '
-          + 'đi vào khối KNOWLEDGE BASE ở CUỐI — nó BỔ SUNG, KHÔNG thay thế CORE. Muốn thay '
-          + 'là cutover `prompts.js`, phải xin chủ dự án.',
+        noi: 'Khối quy tắc gốc luôn đứng ĐẦU và không sửa được từ màn. Quy tắc chung của team '
+          + 'đi vào khối cuối — nó BỔ SUNG chứ không thay thế khối gốc. Muốn đổi khối gốc thì '
+          + 'phải phát hành bản mới và xin chủ dự án.',
       },
     },
   };

@@ -162,7 +162,7 @@ async function vViecChoNguoi(d) {
       : 'Không việc nào đang chờ người nhận.',
     diTiepRong: chuaNap
       ? 'Luồng sống của v3 chưa đẩy việc vào bảng này. Hội thoại hiện có là bản nhập từ lịch '
-        + 'sử (không dòng nào có `nguoi_that_luc`), nên v3 cũng không biết ai đã xử chúng. '
+        + 'sử và chưa dòng nào ghi người xử, nên hệ cũng không biết ai đã xử chúng. '
         + 'Sale vẫn phải làm việc trên Pancake cho tới khi luồng sống chạy.'
       : null,
     doiChung: { handoff, tongViec: tong },
@@ -190,9 +190,9 @@ async function vSanPhamHetHang(d) {
       lam: 'Page vẫn chạy quảng cáo cho mặt hàng đã hết là đốt tiền vào đơn không giao được.',
       viRong: coBang ? VI_RONG.CHUA_NAP : VI_RONG.CHUA_CO_BANG,
       noiRong: coBang
-        ? 'Bảng `san_pham` có nhưng KHÔNG có dòng nào — chưa đồng bộ danh mục từ POS về.'
-        : 'Chưa có bảng `san_pham`.',
-      diTiepRong: 'Cần đồng bộ danh mục sản phẩm từ POS vào bảng `san_pham` trước. Chừng nào '
+        ? 'Kho sản phẩm có nhưng chưa có dòng nào — chưa kéo danh mục từ kho hàng về.'
+        : 'Chưa có chỗ chứa sản phẩm nào.',
+      diTiepRong: 'Cần kéo danh mục sản phẩm từ kho hàng về trước. Chừng nào '
         + 'bảng còn rỗng, ô này KHÔNG có nghĩa «không mặt hàng nào hết» — nó có nghĩa «chưa '
         + 'biết». Màn «Sản phẩm & kho» cũng đang chờ đúng dữ liệu này.',
     };
@@ -229,8 +229,12 @@ async function vTuCuaKiem(d, bc) {
   if (!_docSanSang) {
     const noi = 'Chưa nối cầu sang tiến trình bot nên chưa đọc được cửa kiểm.';
     chan.noiRong = noi; mong.noiRong = noi;
-    chan.diTiepRong = 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` rồi khởi động lại v3.';
+    // HAI CÂU (GD4 · 25/09): câu trên màn nói bằng lời người vận hành; tên biến phải đặt thì
+    // để riêng cho người sửa máy chủ — màn đưa nó xuống ô «Nguồn số», không để giữa mặt màn.
+    chan.diTiepRong = 'Nhờ người quản trị hệ thống nối lại đường sang tiến trình bot rồi khởi động lại dịch vụ.';
+    chan.diTiepRongKyThuat = 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` trong cấu hình máy chủ rồi khởi động lại dịch vụ.';
     mong.diTiepRong = chan.diTiepRong;
+    mong.diTiepRongKyThuat = chan.diTiepRongKyThuat;
     return [chan, mong];
   }
 

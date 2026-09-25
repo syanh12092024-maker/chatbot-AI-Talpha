@@ -16,8 +16,9 @@
 <body>
 <header>
   <h1>Đoạn chữ gửi cho AI</h1>
-  <span class="sub">Đúng năm khối mà tiến trình bot ghép lại rồi gửi cho model. Màn này chỉ đọc.</span>
+  <span class="sub">Đúng những khối chữ mà bot ghép lại rồi gửi cho AI trước khi trả lời khách. Màn này chỉ đọc — sửa khối nào thì sang màn của khối đó.</span>
   <span class="sp"></span>
+  <span id="hieu-luc-gon"></span>
   <span id="dauPhai"></span>
 </header>
 
@@ -36,10 +37,13 @@
   </section>
 
   <div id="ketQua"></div>
+  <section class="section" aria-label="Nguồn của các con số">
+    <div id="nguon-so"></div>
+  </section>
 </main>
 
 <script>
-const { esc, text, statusBadge, button, alert: canhBao, emptyState, formatNumber: so } = window.UI;
+const { esc, text, statusBadge, button, alert: canhBao, emptyState, nguonSo, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
 
 let D = null, TIM = '', LOI = null;
@@ -57,20 +61,35 @@ function veBangTin() {
   const kh = [];
   if (LOI) kh.push(canhBao({ level: 'error', title: LOI.title, body: LOI.body }));
   const hl = D && D.hieuLuc;
-  if (hl) {
+  if (hl && hl.coBat !== true) {
     kh.push(canhBao({
-      level: hl.coBat === true ? 'success' : hl.coBat === false ? 'error' : 'warning',
-      title: hl.coBat === true ? 'Đường chat đang dùng đúng các khối này'
-        : hl.coBat === false ? 'Đường chat KHÔNG dùng các khối này'
-        : 'Chưa biết đường chat có dùng các khối này không',
+      level: hl.coBat === false ? 'error' : 'warning',
+      title: hl.coBat === false ? 'Bot KHÔNG dùng các khối này'
+        : 'Chưa biết bot có dùng các khối này không',
       body: hl.noi,
-      detail: [hl.core && hl.core.noi],
     }));
   }
-  kh.push(canhBao({ level: 'info', title: 'Màn này chỉ đọc',
-    body: 'Năm khối dưới đây đọc từ đúng bộ ghép prompt của tiến trình bot, không phải một bản dựng lại. Sửa khối nào thì sang màn của khối đó.' }));
-  $('#bang-tin').innerHTML = `<div class="duoi-5">${kh.join('')}</div>`;
+  $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
+  // Câu «bot có đang dùng mấy khối này không» khi ĐANG DÙNG thì không đòi ai làm gì — nó là
+  // trạng thái, nên đứng cạnh tiêu đề chứ không chiếm một hộp cảnh báo.
+  $('#hieu-luc-gon').innerHTML = hl && hl.coBat === true
+    ? `${statusBadge('ready', { label: 'Bot đang dùng' })}`
+    : '';
 }
+function veNguonSo() {
+  const hl = (D && D.hieuLuc) || {};
+  const dong = [
+    { ten: 'Nội dung từng khối', tu: 'đọc từ chính bộ ghép lời của tiến trình bot (`src/chat/rap-prompt.js`), không phải một bản dựng lại ở màn' },
+    { ten: 'Khối quy tắc gốc', tu: 'cứng trong mã nguồn (`src/prompts.js`) — chỉ lập trình viên đổi được, và phải phát hành bản mới' },
+    { ten: 'Độ dài (token)', tu: 'ước theo số ký tự, không phải số đo của nhà model' },
+    { ten: 'Bot có đang dùng các khối này', tu: hl.coBat === true ? 'cờ ráp lời của máy chủ đang BẬT' : 'cờ ráp lời của máy chủ đang tắt hoặc chưa đọc được' },
+  ];
+  $('#nguon-so').innerHTML = nguonSo({
+    dong,
+    chuY: 'Màn này chỉ ĐỌC. Không thao tác nào ở đây đổi được lời bot nói.',
+  });
+}
+
 function baoLoi(title, body) { LOI = { title, body }; veBangTin(); }
 
 function veKetQua() {
@@ -104,14 +123,14 @@ function veKetQua() {
             : `<span class="text-muted text-sm tabular">≈ ${so(k.uocToken)} token${k.phu ? ` · ${esc(k.phu)}` : ''}</span>`}</div>
           </div>
           ${k.thieu
-            ? `${canhBao({ level: 'warning', body: k.lyDoThieu,
-                actionsHtml: k.duongSua ? button('Sang màn sửa', { href: k.duongSua, size: 'sm' }) : '' })}`
+            ? `<div class="hang day duoi-2"><span class="text-muted text-sm">${text(k.lyDoThieu)}</span>
+                 ${k.duongSua ? button('Sang màn sửa', { href: k.duongSua, size: 'sm' }) : ''}</div>`
             : `<div class="bar-row duoi-3">
                  <span class="bar-name">So với thiết kế</span>
                  <progress max="2" value="${Math.min(2, k.soVoiThietKe)}" aria-label="Gấp ${k.soVoiThietKe} lần cỡ thiết kế"></progress>
                  <span class="bar-value">${String(k.soVoiThietKe).replace('.', ',')}×</span>
                </div>
-               <div class="field-hint duoi-2">Thiết kế §6 cho khối này là ${so(k.tokenThietKe)} token.</div>
+               <div class="field-hint duoi-2">Cỡ dự tính khi thiết kế: ${so(k.tokenThietKe)} token.</div>
                <pre class="code-block">${esc(k.noiDung)}</pre>`}
         </section>`).join('')}
       </div>
@@ -140,7 +159,7 @@ async function napPrompt() {
   try {
     const d = await goi('/api/prompt-page/' + encodeURIComponent($('#chonPage').value));
     if (!d) return;
-    D = d; veBangTin(); veKetQua();
+    D = d; veBangTin(); veKetQua(); veNguonSo();
   } catch (e) {
     baoLoi('Không đọc được prompt của page này', e.message);
     $('#ketQua').innerHTML = '';
