@@ -87,7 +87,8 @@ test('①c · màn PHẢI khai nó đọc từ đâu, và khai luôn nó KHÔNG 
   const d = await sp.manSanPham(bc());
   assert.ok(d.nguon, 'người ta sẽ hỏi «bảng san_pham rỗng mà sao có số» — phải trả lời sẵn');
   assert.match(d.nguon.ten, /bot|Sheet/i);
-  assert.match(d.nguon.khongPhai, /san_pham/);
+  // GD4 · 25/09: nói bằng lời người vận hành — «kho sản phẩm của cơ sở dữ liệu» thay cho tên bảng.
+  assert.match(d.nguon.khongPhai, /kho sản phẩm|san_pham/i);
   assert.ok(d.nguon.viSao.length > 60);
 });
 
@@ -174,7 +175,9 @@ test('⑤b · chưa nối cầu → nói RÕ là chưa cài đặt, kèm biến 
   dung({});
   const d = await sp.manSanPham(bc());
   assert.equal(d.trong.vi, sp.VI_RONG.CHUA_NAP);
-  assert.match(d.trong.diTiep, /V3_BOT_V1_GOC|ADMIN_USER/);
+  // Câu trên màn cho người vận hành; tên biến phải đặt ở trường riêng cho người sửa máy chủ.
+  assert.match(d.trong.diTiep, /người quản trị hệ thống/i);
+  assert.match(d.trong.diTiepKyThuat, /V3_BOT_V1_GOC|ADMIN_USER/);
 });
 
 test('⑤c · team không page nào có sản phẩm → chỉ sang Cửa kiểm, không bỏ lửng', async () => {

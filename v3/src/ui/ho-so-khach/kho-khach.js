@@ -48,8 +48,8 @@ export const CHU_HOAN = Object.freeze({
 /** Ba kênh mà yêu cầu đòi gộp, kèm trạng thái nối THẬT. */
 export const KENH = Object.freeze([
   { ma: 'khach', ten: 'Hồ sơ khách', khoa: 'số điện thoại' },
-  { ma: 'don_hang', ten: 'Đơn hàng', khoa: '`don_hang.khach_id`' },
-  { ma: 'hoi_thoai', ten: 'Hội thoại', khoa: '`hoi_thoai.khach_id`' },
+  { ma: 'don_hang', ten: 'Đơn hàng', khoa: 'mã khách trên đơn' },
+  { ma: 'hoi_thoai', ten: 'Hội thoại', khoa: 'mã khách trên hội thoại' },
 ]);
 
 export const TRAN_DOC = 40000;
@@ -214,9 +214,9 @@ function trangThaiKenh(soKhach, soDonNoi, soHoiThoaiNoi) {
       so: soHoiThoaiNoi,
       noi: soHoiThoaiNoi
         ? `${soHoiThoaiNoi} hội thoại nối được về khách.`
-        : 'KHÔNG hội thoại nào có `khach_id` — kênh này chưa gộp được.',
+        : 'Chưa hội thoại nào gắn được với một khách — kênh này chưa gộp được.',
       diTiep: soHoiThoaiNoi ? null
-        : 'Hội thoại có đủ dữ liệu (28.953 dòng) nhưng chưa ai nối khoá về `khach`. Chừng nào '
+        : 'Hội thoại có đủ dữ liệu nhưng chưa ai nối chúng về hồ sơ khách. Chừng nào '
           + 'chưa nối, cột «hội thoại» trong hồ sơ là **chưa biết**, không phải 0 — một hồ sơ '
           + 'không có hội thoại trông y hệt một khách chưa từng nhắn tin.',
     };

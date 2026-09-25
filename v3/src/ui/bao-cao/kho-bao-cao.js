@@ -38,14 +38,14 @@ export const THUOC = Object.freeze({
     ma: 'bot_tu_tao', ten: 'Bot tự tay chốt',
     doGi: 'Đơn do CHÍNH BOT tạo bằng lời gọi công cụ, mỗi khách đếm một lần.',
     khoang: 'toàn thời gian',
-    nguon: '`src/stats.js#incOrder`, gọi từ `src/tools.js`',
+    nguon: 'sổ đếm của tiến trình bot — cộng một lần mỗi khi chính bot tạo đơn',
   },
   POS_QUY_CHO_AI: {
     ma: 'pos_quy_cho_ai', ten: 'Đơn thật ở POS quy cho AI',
     doGi: 'Đơn CÓ THẬT trong POS Pancake, có hội thoại thuộc tập AI, đã bỏ đơn huỷ/hoàn. '
       + 'Gồm cả đơn sale chốt hộ hoặc khách tự đặt sau khi chat với bot.',
     khoang: '60 ngày gần nhất',
-    nguon: '`src/pancake-orders.js#aiOrderStats` — hỏi thẳng POS',
+    nguon: 'hỏi thẳng kho hàng, đếm đơn có thật',
   },
   HOI_THOAI_CO_DON: {
     ma: 'hoi_thoai_co_don', ten: 'Hội thoại có đơn',
@@ -109,8 +109,8 @@ export async function manBaoCao(boiCanh) {
       trong: {
         rong: true, vi: 'chua-nap',
         noi: 'Chưa nối cầu sang tiến trình bot nên chưa đọc được đơn hàng.',
-        diTiep: 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` rồi khởi động lại v3. '
-          + 'Bảng `don_hang` của v3 KHÔNG dùng thay được — nó có 0 dòng.',
+        diTiep: 'Nhờ người quản trị hệ thống nối lại đường sang tiến trình bot rồi khởi động lại '
+          + 'dịch vụ. Sổ đơn của cơ sở dữ liệu KHÔNG dùng thay được — nó chưa có dòng nào.',
       },
     };
   }

@@ -60,14 +60,16 @@ test('làn lạ bị chặn, không lặng lẽ trả tất cả', async () => {
   await assert.rejects(() => nk.manNhatKy(bcQt(), { lan: 'linh-tinh' }), (e) => e.ma === 'lan_la');
 });
 
-test('cảnh báo · ≥90% là việc máy thì kêu, và dẫn thẳng PHIEU-B-Y5', async () => {
+test('cảnh báo · ≥90% là việc máy thì kêu, và chỉ ra cách chữa thật', async () => {
   // Một cuốn sổ mà 99% số dòng là «có người mở ra xem» thì không ai đọc nó nữa — đó là hỏng
   // công cụ điều tra, không phải hỏng hiệu năng.
   const c = nk.canhBaoNhatKy({ dem: { nguoi: 1, may: 99 }, tong: 100 });
   const x = c.find((y) => y.ma === 'ngap_dong_may');
   assert.ok(x);
   assert.match(x.chu, /99%/);
-  assert.match(x.chu, /PHIEU-B-Y5/, 'phải chỉ ra thuốc thật, không chỉ than');
+  // GD4 · 25/09: mặt màn không mang mã phiếu nội bộ. Điều PHẢI GIỮ là câu vẫn chỉ ra CÁCH
+  // CHỮA (đường XEM đừng ghi nhật ký nữa), chứ không chỉ than là sổ ngập.
+  assert.match(x.chu, /đường XEM đừng ghi nhật ký|PHIEU-B-Y5/i, 'phải chỉ ra thuốc thật, không chỉ than');
   assert.match(x.chu, /cấm xoá/, 'và nói rõ vì sao không dọn lại được');
 });
 

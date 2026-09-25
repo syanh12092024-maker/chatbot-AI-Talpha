@@ -71,7 +71,9 @@ async function pageCuaTeam(bc) {
 const CHUA_NOI = {
   vi: VI_RONG.CHUA_NAP,
   noi: 'Chưa nối cầu sang tiến trình bot nên chưa đọc được kho sản phẩm.',
-  diTiep: 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` rồi khởi động lại v3.',
+  diTiep: 'Nhờ người quản trị hệ thống nối lại đường sang tiến trình bot rồi khởi động lại dịch vụ.',
+  // Tên biến để riêng cho người sửa máy chủ — màn đưa xuống ô «Nguồn số», không để giữa mặt màn.
+  diTiepKyThuat: 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` trong cấu hình máy chủ rồi khởi động lại dịch vụ.',
 };
 
 /* ─────────────────────────── màn chính ─────────────────────────── */
@@ -142,8 +144,8 @@ function dem(page, tongPageTeam) {
 /** Màn phải nói nó đọc từ đâu — vì bảng `san_pham` của v3 rỗng và người ta sẽ hỏi. */
 const nguonSo = () => ({
   ten: 'tiến trình bot v1 (Google Sheet của page)',
-  khongPhai: 'bảng `san_pham` của CSDL v3',
-  viSao: 'Bảng `san_pham` có 0 dòng vì chưa ai chạy nạp danh mục từ POS. Sản phẩm bot đang '
+  khongPhai: 'kho sản phẩm của cơ sở dữ liệu',
+  viSao: 'Kho sản phẩm chưa có dòng nào vì chưa ai kéo danh mục từ kho hàng về. Sản phẩm bot đang '
     + 'dùng để bán nằm trong Sheet, và đó là thứ màn này hiện. Hai chỗ chưa đồng bộ với nhau.',
 });
 
@@ -151,9 +153,9 @@ const KHONG_CO_TON_KHO = Object.freeze({
   co: false,
   vi: VI_RONG.CHUA_CO_NGUON,
   noi: 'Dữ liệu Sheet KHÔNG có trường tồn kho — chỉ mã, tên, giá, ảnh.',
-  diTiep: 'Nghiệm thu đòi «hết hàng thì tự tắt bot cho sản phẩm đó». Cửa POS (`docDanhMuc` '
-    + 'của L1-M1) đọc được tồn kho nhưng chưa ai nối vào. Chừng nào chưa nối, màn KHÔNG hiện '
-    + 'số 0 ở cột tồn kho — 0 nghĩa là hết hàng, và đó là điều màn chưa biết.',
+  diTiep: 'Yêu cầu là «hết hàng thì tự tắt bot cho sản phẩm đó». Đường đọc từ kho hàng lấy được '
+    + 'tồn kho nhưng chưa ai nối vào đây. Chừng nào chưa nối, màn KHÔNG hiện số 0 ở cột tồn kho '
+    + '— 0 nghĩa là hết hàng, và đó là điều màn chưa biết.',
 });
 
 /* ─────────────────────────── chi tiết một page ─────────────────────────── */

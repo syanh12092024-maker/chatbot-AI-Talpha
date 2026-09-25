@@ -175,7 +175,9 @@ test('⑤b · chưa nối cầu → nói rõ `don_hang` của v3 KHÔNG thay đ�
   dung({ don: null });
   const d = await bcao.manBaoCao(bc());
   assert.equal(d.messenger, null);
-  assert.match(d.trong.diTiep, /don_hang.*KHÔNG dùng thay được|0 dòng/);
+  // GD4 · 25/09: vẫn phải nói sổ đơn của hệ KHÔNG dùng thay được, chỉ bỏ tên bảng.
+  assert.match(d.trong.diTiep, /KHÔNG dùng thay được/);
+  assert.match(d.trong.diTiep, /sổ đơn|don_hang/i);
 });
 
 test('⑤c · gói chi phí hỏng → `botTuTao` là null, hai thước kia vẫn hiện', async () => {

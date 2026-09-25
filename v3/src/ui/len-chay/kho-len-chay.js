@@ -61,7 +61,7 @@ export const CHAT_LIEU = Object.freeze([
   { ma: 'dong_co', ten: 'Động cơ', o: null,
     noi: 'Thứ miễn phí khiến khách phải LÀM một việc. Cửa kiểm khó nhất và hay bỏ trống nhất.' },
   { ma: 'loi_hua', ten: 'Lời hứa trung tâm', o: null,
-    noi: 'Hiện lẫn trong `salesPrompt`, không có ô riêng nên không kiểm được.' },
+    noi: 'Hiện lẫn trong phần cách bán của kịch bản, không có ô riêng nên không kiểm được.' },
   { ma: 'nhom_nhu_cau', ten: 'Nhóm nhu cầu', o: null,
     noi: 'Mỗi nhóm một bằng chứng. Không có chỗ chứa.' },
   { ma: 'khoi_gia', ten: 'Khối giá', o: 'bậc giá của sản phẩm',
@@ -190,7 +190,7 @@ function c2RutChat(kb, loi) {
       + 'Cấu hình page chỉ có ba ô: câu chào, cách bán, giọng điệu.',
     di: null,
     lam: 'Đây KHÔNG phải ô để trống — là ô không tồn tại. Muốn qua chặng này phải thêm '
-      + 'trường vào `kb-overrides.json` (bên v1) hoặc dựng bảng chất liệu ở v3 trước. '
+      + 'chỗ chứa cho chúng trước — hoặc trong kịch bản của page, hoặc một bảng riêng. '
       + 'Màn này cố ý KHÔNG vẽ ô nhập cho động cơ: gõ vào một ô không có chỗ chứa thì chữ '
       + 'đi vào hư không.',
     loi: loi || null,

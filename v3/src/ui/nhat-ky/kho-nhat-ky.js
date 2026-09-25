@@ -156,9 +156,9 @@ export function canhBaoNhatKy({ dem, tong }) {
     ra.push({
       ma: 'ngap_dong_may', muc: 'vang',
       chu: `${Math.round(tiLeMay * 100)}% số dòng gần đây là việc MÁY (phần lớn là dấu vết `
-        + '`doc` của tầng truy vấn). Mỗi dòng thao tác thật đang bị chôn dưới hàng trăm dòng '
-        + 'như vậy, và `nhat_ky` cấm xoá ở tầng CSDL nên không dọn lại được. '
-        + 'Thuốc thật: `PHIEU-B-Y5` — cửa đọc không ghi nhật ký cho đường XEM.',
+        + 'dấu vết của những lượt ĐỌC). Mỗi dòng thao tác thật đang bị chôn dưới hàng trăm dòng '
+        + 'như vậy, và nhật ký cấm xoá nên không dọn lại được. '
+        + 'Cách chữa thật: đường XEM đừng ghi nhật ký nữa.',
     });
   }
   if (!dem.nguoi) {
