@@ -406,7 +406,11 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {} } = {
     wrap(async (q, s) =>
       s.json({
         ok: true,
-        ...(await handoffConversation(pool, q.boiCanh, q.params.id)),
+        // Lý do đi kèm sang bảng việc: sale mở «Việc đang chờ» phải thấy VÌ SAO khách này
+        // được giao lại, không chỉ thấy một dòng tên khách.
+        ...(await handoffConversation(pool, q.boiCanh, q.params.id, {
+          lyDo: String(q.body?.lyDo || "").slice(0, 300),
+        })),
       }),
     ),
   );

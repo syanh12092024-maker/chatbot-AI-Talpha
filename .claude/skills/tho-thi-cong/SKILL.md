@@ -143,6 +143,22 @@ Mày nhận ĐÚNG MỘT PHIẾU. Phiếu là hợp đồng; sổ là trạng th
     đừng để nó chỉ nằm trong cổng.
 
 
+35. **Tham số «đọc bao nhiêu» LẶNG LẼ quyết câu trả lời — script báo một con số như thể nó là
+    sự thật là script nói dối.** Án lệ: `goi-y-gan-page.mjs` đọc 5 trang/shop rồi in «120 page
+    có đơn · 81 bán 1 SP». Đo lại cùng ngày cùng shop, chỉ đổi độ sâu: 3000 đơn/shop ⇒ **199
+    page · 109 bán 1 SP**. Độ phủ TĂNG mà tỉ lệ «sạch» TỤT 67,5%→54,8% — hai trục ngược
+    chiều, nên không có độ sâu nào «đúng». Sâu hơn không phải chính xác hơn: page bán SP A
+    hai năm rồi đổi sang B thì xét cả lịch sử là «bán lẫn», xét gần đây là «bán 1 SP» — cùng
+    một dữ liệu, hai câu trả lời, cả hai đều thật, chỉ khác câu hỏi.
+    Ba việc bắt buộc khi script tổng hợp từ nguồn phân trang:
+    (a) **in tham số đọc lên đầu báo cáo**, cạnh con số, để người đọc biết nó là số có điều kiện;
+    (b) **tách trục ĐỘ PHỦ khỏi trục PHÂN LOẠI** và không gộp — mỗi trục có tham số riêng;
+    (c) **dừng theo NGƯỠNG NGHIỆP VỤ, không theo số trang** — số trang là trần an toàn, không
+    phải đích. Kiểm được thứ tự nguồn thì ngưỡng là chắc chắn (đo: POS trả mới→cũ tuyệt đối,
+    5.721 dòng Saudi 0% nghịch thứ tự ⇒ hết trang mà đơn cuối đã quá mốc thì dừng an toàn).
+    Và trước khi đọc sâu, hỏi: **tập đầy đủ có phải là nguồn này không?** Ở đây không —
+    tập đầy đủ của page là `pages.json` (514 page), không phải lịch sử đơn. Đọc cạn 200
+    đơn/ngày × nhiều năm để tìm page là đi đường dài tới một câu trả lời đã có sẵn chỗ khác.
 ## Bổ sung v3 (21/08 — CEO duyệt hồ sơ TOI-UU-QUY-TRINH-TONG)
 
 - **Nhật ký ghi MỘT LẦN**: note thô vào scratchpad trong lúc làm; **cuối lượt Write MỘT LẦN**

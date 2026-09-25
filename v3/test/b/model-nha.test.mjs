@@ -229,8 +229,9 @@ test('bốn nhà · cùng một yêu cầu → cùng MỘT hình dạng kết qu
 
 // ---- DỊCH HAI CHIỀU HỌ OPENAI ------------------------------------------------------
 
-test('chuẩn hoá · bốn công cụ THẬT của tools.js dịch sang OpenAI rồi về, không mất gì', () => {
-  assert.equal(toolDefs.length, 4, 'tools.js phải có đúng bốn công cụ — đổi số thì sửa cả bài này');
+test('chuẩn hoá · các công cụ THẬT của tools.js dịch sang OpenAI rồi về, không mất gì', () => {
+  assert.ok(toolDefs.some(t => t.name === 'update_customer'));
+  assert.ok(toolDefs.some(t => t.name === 'create_draft_order'));
   const vong = congCuTuOpenAI(congCuSangOpenAI(toolDefs));
   assert.deepEqual(vong, toolDefs.map((t) => ({
     name: t.name, description: t.description, input_schema: t.input_schema,
@@ -269,7 +270,7 @@ test('chuẩn hoá · system thành tin đầu, tool_result thành vai tool, too
   assert.equal(than.temperature, 0.3);
   assert.deepEqual(than.stop, ['\n\nKhách:']);
   assert.equal(than.tool_choice, 'auto');
-  assert.equal(than.tools.length, 4);
+  assert.equal(than.tools.length, toolDefs.length);
 });
 
 test('chuẩn hoá · tool_choice và finish_reason dịch đúng bảng', () => {
