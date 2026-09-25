@@ -83,10 +83,27 @@ systemctl restart aicloser aicloser-v3 aicloser-worker-v3
 # Đường đúng là lùi CODE, GIỮ SCHEMA; 018→024 đều là bản THÊM, mã cũ chạy được với chúng.
 ```
 
-## 7 · Nợ mang theo sau lượt này
+## 7 · LƯỢT HAI (cùng ngày) — nợ 38 ca đỏ đã TRẢ
 
-- 🔴 **38 ca đỏ trên HEAD** vì đợt sửa chưa commit của phiên khác. Prod đang chạy đúng bản ấy.
-  Hệ đang im nên chưa có hậu quả đo được, nhưng **mở van khi bộ ca còn đỏ là mở mù**.
+Người quyết ra lệnh đưa nốt đợt sửa đang dở của phiên song song vào repo:
+
+| | |
+|---|---|
+| `fe12262` | 20 tệp `src/` + 3 tệp mới + 9 bài kiểm — đường tiền và bộ não bot |
+| `c80a0b6` | phần ngoài `src/`: 4 công cụ đo, 4 tài liệu tiến độ, màn đơn, `.env.example`, skill |
+
+**Bộ ca trên worktree SẠCH dựng từ HEAD: 2.017 ca · 1.995 xanh · 0 ĐỎ · 22 bỏ qua.**
+Lần đầu tiên repo có tín hiệu xanh thật — trước đó «xanh» chỉ là con số của cây làm việc.
+
+Deploy lại lượt hai: prod nay đứng ở **`c80a0b6`**, đúng bằng HEAD đã xanh.
+Nghiệm thu lượt hai: ba dịch vụ `active` · lỗi mới **0/0/0** · `pages:133` · UI **200** ·
+lược đồ **24 bản** · van gửi **0 cờ** (vẫn đóng).
+
+⚠️ Lưu ý về lượt MỘT: lúc ấy prod bị đưa về bản chat CŨ HƠN thứ đang chạy sáng nay (vì
+`checkout -f` bỏ 48 tệp sửa tại chỗ, mà chúng chính là đợt sửa này). Lượt hai đã trả lại
+đúng — và nay chúng nằm trong commit, không còn là tệp trôi nổi trên máy chủ.
+
+## 8 · Nợ mang theo sau lượt này
 - 🔴 **Cả hệ không trả lời khách nào từ 28/08** — 0 page bật AI ở bot cũ, 0 page ở bot mới.
 - 🟠 Một token Meta **hết hạn 11/09** (`Token app CHAT AI 13/7 (BM DN - Live)`) ⇒ chỉ 1/2 token khoẻ.
 - 🟠 Cổng **3102 mở thẳng ra Internet, không HTTPS**.

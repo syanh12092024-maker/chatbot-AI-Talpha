@@ -2299,3 +2299,17 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 25/09 · 🧭 **ĐO QUÁ SỚM CŨNG LÀ ĐO SAI.** Ngay sau restart, `/health` trả `pages:0` — đủ để lùi
   oan. Bot nạp token mất ~30 giây (Google Sheet + Meta API). Đo lại: 133, đúng bằng trước deploy.
   📌 Ngưỡng lùi phải kèm MỐC THỜI GIAN sớm nhất được phép đo, không chỉ kèm con số.
+
+- 25/09 · **TRẢ NỢ 38 CA ĐỎ + DEPLOY LƯỢT HAI** → ✅. Người quyết ra lệnh đưa đợt sửa đang dở của
+  phiên song song vào repo: `fe12262` (20 tệp `src/` + 3 tệp mới + 9 bài kiểm — đụng `tools.js`,
+  `model.js`, `prompts.js`, `closer.js`, `pos/tao-don.js`) và `c80a0b6` (ops · tài liệu · màn
+  đơn · `.env.example` · skill). Hai commit khai rõ **đây là commit THU HỒI, không phải commit
+  thiết kế** — tôi không phải tác giả phần việc ấy.
+  **Bộ ca trên worktree SẠCH dựng từ HEAD: 2.017 ca · 1.995 xanh · 0 đỏ.** Lần đầu repo có tín
+  hiệu xanh thật. Prod deploy lại, nay đứng ở `c80a0b6` = HEAD; ba dịch vụ active, 0 lỗi,
+  `pages:133`, UI 200, lược đồ 24 bản, **van gửi vẫn 0 cờ**.
+  Cây làm việc nay **sạch hoàn toàn** (0 tệp chưa commit); `.1devtool/` và `.ua/` vào `.gitignore`.
+- 25/09 · 🧭 **CÂY BẨN LÂU NGÀY LÀ MỘT KHOẢN NỢ CÓ LÃI.** 22 tệp mã sửa dở nằm ngoài repo khiến:
+  repo không chạy được 3 ngày mà không ai thấy · prod chạy một bản không có bản sao ở đâu ·
+  và lượt deploy đầu tiên vô tình ĐƯA PROD VỀ BẢN CŨ HƠN. Ba hậu quả khác nhau từ một nguyên
+  nhân. 📌 «Để commit sau» không phải là hoãn một việc, mà là tạo một bản thứ hai của sự thật.
