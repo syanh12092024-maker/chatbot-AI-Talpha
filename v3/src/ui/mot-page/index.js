@@ -7,7 +7,7 @@
 // ⛔ Màn này CHỈ ĐỌC. Hai nút ghi trên đó bấm vào cửa đã có của màn danh sách
 //    (`/api/page-bot/:id/bot` và `/api/page-bot/:id/giao`) — xem `router.js` đầu tệp.
 
-export { trangMotPage, LoiMotPage } from './kho-mot-page.js';
+export { trangMotPage, noiDungPage, datDocKhoi, daNoiDocKhoi, LoiMotPage } from './kho-mot-page.js';
 
 export {
   taoRouterMotPage, datChanDangNhap, datChanVai, daNoiChanMotPage,

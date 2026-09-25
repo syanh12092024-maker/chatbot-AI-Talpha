@@ -281,6 +281,19 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
  * khác đội lốt «chưa áp migration» là lỗi thứ hai.
  */
 let _coBangGoc = null;
+/**
+ * Danh mục sản phẩm GỐC để dựng ô chọn — dùng chung với bảng danh sách, không dựng đường đọc
+ * thứ hai. Chưa áp migration 014 ⇒ trả `{ co: false }` và màn NÓI RA «chưa áp», chứ không
+ * hiện một ô chọn trống rồi để người ta tưởng team chưa có sản phẩm nào (án lệ #7).
+ */
+export async function danhMucGoc(boiCanh) {
+  const bc = batBuocBoiCanh(boiCanh);
+  const db = congTruyVan(bc);
+  if (!(await coBangSanPhamGoc(db))) return { co: false, ds: [] };
+  const ds = await db.chon('san_pham_goc', {}, { sapXep: 'ten' });
+  return { co: true, ds: ds.map((g) => ({ maGoc: g.ma_goc, ten: g.ten || g.ma_goc, soHieu: g.so_hieu || null })) };
+}
+
 async function coBangSanPhamGoc(db) {
   if (_coBangGoc !== null) return _coBangGoc;
   try {

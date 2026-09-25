@@ -69,7 +69,7 @@ import { datDocSanSang as datDocSanSangDai, datDemTeam } from './ui/chung/trang-
 import { datDocNhip } from './ui/chung/nhip-may-bot.js';
 import {
   taoRouterMotPage, datChanDangNhap as datChanDangNhapMotPage,
-  datChanVai as datChanVaiMotPage,
+  datChanVai as datChanVaiMotPage, datDocKhoi as datDocKhoiMotPage,
 } from './ui/mot-page/index.js';
 import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/cau-bot-v1.js';
 import {
@@ -380,7 +380,12 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   if (typeof chayNapLai === 'function') { datChayNapLai(chayNapLai); daNoi.push('bộ nạp dữ liệu → nút «Kéo dữ liệu về» ở màn Kết nối'); }
   else thieu.push('chayNapLai — màn Kết nối KHÔNG kéo dữ liệu về được; việc ấy vẫn phải gõ `npm run di-tru` trên máy chủ');
 
-  if (docKhoi && typeof docKhoi.boLuat === 'function') { datDocKhoi(docKhoi); daNoi.push('bốn bộ đọc khối prompt → màn Prompt của page'); }
+  if (docKhoi && typeof docKhoi.boLuat === 'function') {
+    datDocKhoi(docKhoi);
+    // CÙNG bộ đọc cho trang của một page — hai màn không được ra hai bản kịch bản.
+    datDocKhoiMotPage({ sanPham: docKhoi.sanPham, kichBan: docKhoi.kichBan });
+    daNoi.push('bốn bộ đọc khối prompt → màn Prompt của page + trang một page');
+  }
   else thieu.push('docKhoi — màn «Prompt của page» không dựng được bốn khối, và nó nói rõ đó là lỗi cấu hình chứ không phải "page này không có prompt"');
 
   // Hiệu lực THẬT của prompt: cờ `V3_RAP_PROMPT_BAT` + hằng `CORE`. Không nối thì màn nói

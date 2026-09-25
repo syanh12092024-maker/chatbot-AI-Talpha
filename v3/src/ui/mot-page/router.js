@@ -1,7 +1,8 @@
 // ĐƯỜNG HTTP CỦA MÀN «TRANG MỘT PAGE» (GD2 · 25/09/2026).
 //
 // | GET /page/:id      | trang                                                    |
-// | GET /api/page/:id  | thông tin page + điều kiện + bot nào phụ trách            |
+// | GET /api/page/:id            | thông tin page + điều kiện + bot nào phụ trách      |
+// | GET /api/page/:id/noi-dung   | sản phẩm kèm giá + kịch bản đang chạy (CHỈ ĐỌC)    |
 //
 // ⛔ KHÔNG CÓ ĐƯỜNG GHI NÀO Ở ĐÂY, cố ý. Bật/tắt bot vẫn bấm qua
 //    `POST /api/page-bot/:id/bot`; giao page sang bot mới vẫn qua
@@ -17,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
-import { trangMotPage, LoiMotPage } from './kho-mot-page.js';
+import { trangMotPage, noiDungPage, LoiMotPage } from './kho-mot-page.js';
 
 export const DUONG_TRANG = '/page';
 /** Cùng ba vai với màn «Page còn thiếu gì» — xem tình trạng page là việc chung. */
@@ -131,6 +132,18 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
       });
     }
     return res.json({ ok: true, ...d, suaDuoc: coVai(bc, ...VAI_SUA_DUOC) });
+  }));
+
+  // Hai khối nội dung, đọc riêng vì nặng hơn — chỉ gọi khi người ta mở đúng tab.
+  r.get(`/api/page/:id/noi-dung`, canDangNhap, canVai, boc(async (req, res) => {
+    const d = await noiDungPage(cuaBoiCanh(req), req.params.id);
+    if (!d) {
+      return res.status(404).json({
+        ok: false, ma: 'khong_thay',
+        thongDiep: `Không có page id=${req.params.id} trong team đang mở.`,
+      });
+    }
+    return res.json({ ok: true, ...d });
   }));
 
   return r;

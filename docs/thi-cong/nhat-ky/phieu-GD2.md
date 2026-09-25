@@ -86,11 +86,32 @@ Màn mới dựng xong thì bộ ca xanh, phép đo xanh, 0 lỗi JS — nhưng 
 đều lọt qua 852 ca xanh, 0 mã kỹ thuật, 0 màn vỡ — vì không thước nào đang đo «màn này có
 giống phần còn lại của ứng dụng không».
 
-## 6. Chưa làm
+## 5c. Lượt hai: «sao cài đặt page cứ nhảy sang màn khác?»
 
-- **Bốn tab trong trang của page** (Sản phẩm & giá · Kịch bản · Chạy thử · Đoạn chữ) như bản
-  vẽ: hôm nay là bốn ĐƯỜNG DẪN mang sẵn page, chưa nhúng vào trang. Nhúng là bốn màn nữa,
-  nên tách phiếu.
+Người quyết hỏi đúng chỗ tôi vừa hoãn. Bốn đường dẫn ở cuối trang nghĩa là gộp ba màn xong
+mà **đổi thị trường của một page vẫn phải rời trang** — chưa gộp xong.
+
+Nay trang page có **bốn tab**:
+
+| Tab | Sửa được ngay? | Nguồn |
+|---|---|---|
+| **Tình trạng** | bật/tắt bot · giao sang bot mới | cửa kiểm + hai cửa ghi đã có |
+| **Thiết lập** | ✅ thị trường · ngành hàng · sản phẩm gốc · trọng điểm · lời khai Botcake | năm cửa ghi đã có của màn danh sách, KHÔNG thêm cửa mới |
+| **Sản phẩm & giá** | chỉ đọc, kèm một nút sang màn sửa | `docKhoi.sanPham` — **cùng bộ đọc với đường ráp prompt của bot** |
+| **Kịch bản** | chỉ đọc, kèm một nút sang màn sửa | `docKhoi.kichBan` — cùng bộ đọc ấy |
+
+Hai thứ CỐ Ý vẫn là đường dẫn: **Chạy thử** và **Đoạn chữ gửi cho AI** — chúng là hai màn
+chẩn đoán có dữ liệu riêng, nhúng vào là dựng lại hai màn. Nhưng đường dẫn mang sẵn page.
+
+Tab nằm trong đường dẫn (`?tab=`) nên chia sẻ được và F5 không mất chỗ đang xem. Hai tab
+nặng chỉ đọc khi người ta mở đúng tab ấy.
+
+⚠️ Vẫn KHÔNG thêm cửa ghi nào: cả năm ô trong tab «Thiết lập» bấm vào đúng những đường
+`/api/page-bot/:id/...` đã có nhật ký và lớp vai.
+
+## 6. Chưa làm
+- **Sửa sản phẩm/giá và kịch bản NGAY TRONG tab**: hôm nay hai tab ấy chỉ đọc. Nhúng bộ sửa
+  là dựng lại hai màn editor, tách phiếu.
 - **Phép đo chưa mở `/page/:id`** — nó không có dòng menu nên bộ đo không tới. Chữ và hộp
   cảnh báo của màn mới (đo tay: 119 chữ · 1 hộp) chưa nằm trong tổng.
 - **`/san-sang` mất phần «cả đội một lượt»**: bộ lọc mới trả lời «page nào còn chặn», nhưng

@@ -18,20 +18,31 @@
 <main>
   <div id="bang-tin" aria-live="polite"></div>
 
-  <section aria-labelledby="t-bot">
-    <h2 id="t-bot">Bot có đang trả lời page này không</h2>
-    <div id="khoi-bot"></div>
-  </section>
+  <!-- CÀI ĐẶT MỘT PAGE NẰM TRONG MỘT MÀN. Trước lượt này mỗi việc là một màn khác: đổi thị
+       trường ở bảng danh sách, xem sản phẩm ở màn Sản phẩm & kho, xem kịch bản ở màn Kịch
+       bản — bốn lần rời trang cho một lần cài một page. -->
+  <div class="tabs" role="tablist" aria-label="Phần của page" id="thanhTab"></div>
 
-  <section aria-labelledby="t-thieu">
-    <h2 id="t-thieu">Còn thiếu gì để lên chạy</h2>
-    <div id="khoi-thieu"></div>
-  </section>
+  <div id="tab-tinh-trang" role="tabpanel">
+    <section aria-labelledby="t-bot">
+      <h2 id="t-bot">Bot có đang trả lời page này không</h2>
+      <div id="khoi-bot"></div>
+    </section>
 
-  <section aria-labelledby="t-tiep">
-    <h2 id="t-tiep">Làm tiếp với page này</h2>
-    <div id="khoi-tiep" role="list"></div>
-  </section>
+    <section aria-labelledby="t-thieu">
+      <h2 id="t-thieu">Còn thiếu gì để lên chạy</h2>
+      <div id="khoi-thieu"></div>
+    </section>
+
+    <section aria-labelledby="t-tiep">
+      <h2 id="t-tiep">Hai công cụ riêng cho page này</h2>
+      <div id="khoi-tiep" role="list"></div>
+    </section>
+  </div>
+
+  <div id="tab-thiet-lap" role="tabpanel" hidden></div>
+  <div id="tab-san-pham" role="tabpanel" hidden></div>
+  <div id="tab-kich-ban" role="tabpanel" hidden></div>
 
   <div id="nguon-so"></div>
   <p><a href="/page-bot">← Về danh sách page</a></p>
@@ -193,6 +204,126 @@ async function doiChuBot(sangMoi) {
   } catch (e) { baoLoi('Không đổi chủ được page này', e.message); }
 }
 
+/* ── TAB ─────────────────────────────────────────────────────────────────────────────
+   Tab nằm trong ĐƯỜNG DẪN (`?tab=`) — chia sẻ được, F5 không mất chỗ đang xem. */
+const TAB = [
+  ['tinh-trang', 'Tình trạng'],
+  ['thiet-lap', 'Thiết lập'],
+  ['san-pham', 'Sản phẩm & giá'],
+  ['kich-ban', 'Kịch bản'],
+];
+let dangO = new URLSearchParams(location.search).get('tab') || 'tinh-trang';
+if (!TAB.some(([m]) => m === dangO)) dangO = 'tinh-trang';
+let daDocNoiDung = null;
+
+function veTab() {
+  $('#thanhTab').innerHTML = TAB.map(([ma, chu]) =>
+    `<button type="button" class="tab" role="tab" data-tab="${ma}" aria-selected="${ma === dangO}">${esc(chu)}</button>`).join('');
+  for (const [ma] of TAB) $(`#tab-${ma}`).hidden = ma !== dangO;
+  document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+    dangO = b.dataset.tab;
+    const u = new URL(location.href);
+    u.searchParams.set('tab', dangO);
+    history.replaceState(null, '', u);
+    veTab();
+    if (dangO === 'san-pham' || dangO === 'kich-ban') veNoiDung();
+  }));
+}
+
+/* ── TAB «THIẾT LẬP» — sửa ngay tại chỗ, qua đúng những cửa ghi đã có ──────────────── */
+function veThietLap() {
+  const t = D.thietLap;
+  const khoa = D.suaDuoc ? '' : 'disabled';
+  const chonGoc = !t.danhMucGoc.co
+    ? '<span class="meta">Chưa áp bản cập nhật cơ sở dữ liệu cho danh mục sản phẩm gốc.</span>'
+    : `<select id="oGoc" ${khoa}>
+         <option value="">— chưa gán —</option>
+         ${t.danhMucGoc.ds.map((g) => `<option value="${esc(g.maGoc)}" ${g.maGoc === t.sanPhamGocMa ? 'selected' : ''}>${esc(g.ten)}</option>`).join('')}
+       </select>`;
+
+  $('#tab-thiet-lap').innerHTML = `
+    <div class="panel">
+      <div class="setting-row">
+        <div><label for="oTt"><b>Thị trường</b></label><div class="meta">Tầng «nước» của cây kịch bản ba tầng.</div></div>
+        <div><input id="oTt" type="text" value="${esc(t.thiTruong)}" placeholder="Chưa có" ${khoa}></div>
+      </div>
+      <div class="setting-row">
+        <div><label for="oNh"><b>Ngành hàng</b></label></div>
+        <div><input id="oNh" type="text" value="${esc(t.nganhHang)}" placeholder="Chưa có" ${khoa}></div>
+      </div>
+      <div class="setting-row">
+        <div><label for="oGoc"><b>Sản phẩm gốc</b></label><div class="meta">Page này bán món nào — khoá của tầng kịch bản.</div></div>
+        <div>${chonGoc}</div>
+      </div>
+      <div class="setting-row">
+        <div><label for="oTd"><b>Page trọng điểm</b></label></div>
+        <div><label class="switch"><input id="oTd" type="checkbox" role="switch" ${t.trongDiem ? 'checked' : ''} ${khoa}><span>${t.trongDiem ? 'Có' : 'Không'}</span></label></div>
+      </div>
+      <div class="setting-row">
+        <div><label for="oBc"><b>Đã tắt Botcake</b></label><div class="meta">LỜI KHAI, không phải công tắc: đánh dấu ở đây KHÔNG tắt Botcake.</div></div>
+        <div><label class="switch"><input id="oBc" type="checkbox" role="switch" ${t.botcakeTat ? 'checked' : ''} ${khoa}><span>${t.botcakeTat ? 'Đã tắt' : 'Chưa'}</span></label></div>
+      </div>
+      ${D.suaDuoc ? '' : '<p class="meta">Cần vai Quản trị để sửa.</p>'}
+    </div>`;
+
+  if (!D.suaDuoc) return;
+  const luu = async (duong, than, ten) => {
+    try {
+      await goi(`/api/page-bot/${encodeURIComponent(ID)}/${duong}`, { method: 'POST', body: JSON.stringify(than) });
+      toast(`Đã lưu ${ten}.`);
+      await nap();
+    } catch (e) { baoLoi(`Không lưu được ${ten}`, e.message); }
+  };
+  const oTt = $('#oTt'); const oNh = $('#oNh');
+  oTt.addEventListener('blur', () => { if (oTt.value !== D.thietLap.thiTruong) luu('thi-truong', { thiTruong: oTt.value }, 'thị trường'); });
+  oNh.addEventListener('blur', () => { if (oNh.value !== D.thietLap.nganhHang) luu('nganh-hang', { nganhHang: oNh.value }, 'ngành hàng'); });
+  for (const o of [oTt, oNh]) o.addEventListener('keydown', (e) => { if (e.key === 'Enter') o.blur(); });
+  const oGoc = $('#oGoc');
+  if (oGoc) oGoc.addEventListener('change', () => luu('san-pham-goc', { maGoc: oGoc.value || null }, 'sản phẩm gốc'));
+  $('#oTd').addEventListener('change', (e) => luu('trong-diem', { bat: e.target.checked }, 'cờ trọng điểm'));
+  $('#oBc').addEventListener('change', (e) => luu('botcake', { bat: e.target.checked }, 'lời khai Botcake'));
+}
+
+/* ── TAB «SẢN PHẨM & GIÁ» và «KỊCH BẢN» — CHỈ ĐỌC, cùng bộ đọc với đường ráp prompt ── */
+async function veNoiDung() {
+  const oSp = $('#tab-san-pham'); const oKb = $('#tab-kich-ban');
+  if (!daDocNoiDung) {
+    oSp.innerHTML = oKb.innerHTML = '<div class="panel"><p class="meta">Đang đọc…</p></div>';
+    try { daDocNoiDung = await goi(`/api/page/${encodeURIComponent(ID)}/noi-dung`); }
+    catch (e) {
+      oSp.innerHTML = oKb.innerHTML = `<div class="panel">${canhBao({ level: 'error',
+        title: 'Không đọc được nội dung của page', body: e.message })}</div>`;
+      return;
+    }
+  }
+  const d = daDocNoiDung;
+  if (d.chuaNoi) {
+    const c = `<div class="panel">${canhBao({ level: 'warning',
+      title: 'Máy chủ chưa nối bộ đọc', body: d.viSao })}</div>`;
+    oSp.innerHTML = oKb.innerHTML = c;
+    return;
+  }
+
+  const sp = Array.isArray(d.sanPham) ? d.sanPham : [];
+  oSp.innerHTML = `<div class="panel">
+    ${sp.length ? `<table class="data-table"><thead><tr><th scope="col">Sản phẩm</th><th scope="col">Bậc giá</th></tr></thead>
+      <tbody>${sp.map((x) => `<tr><td>${esc(x.ten || x.ma || x.so_hieu || '(chưa có tên)')}</td>
+        <td class="meta">${esc((x.goiGia || x.goi_gia || []).map((g) => `${g.so_luong ?? g.soLuong ?? '?'} → ${g.gia ?? '?'} ${g.tien_te ?? g.tienTe ?? ''}`).join(' · ') || 'chưa có giá')}</td></tr>`).join('')}</tbody></table>`
+      : emptyState({ icon: 'inbox', title: 'Page này chưa có sản phẩm nào kèm giá',
+          body: 'Bot không chào bán được món nào cho tới khi có. Sửa ở màn «Sản phẩm & kho».' })}
+    <p class="duoi-4">${button('Mở màn Sản phẩm & kho để sửa', { size: 'sm', href: '/san-pham' })}</p>
+  </div>`;
+
+  const kb = d.kichBan;
+  const chu = typeof kb === 'string' ? kb : (kb?.noi_dung || kb?.noiDung || '');
+  oKb.innerHTML = `<div class="panel">
+    ${chu ? `<pre class="khoi-chu">${esc(chu)}</pre>`
+      : emptyState({ icon: 'inbox', title: 'Page này chưa có kịch bản đang chạy',
+          body: 'Bot nói chuyện với khách mà không có hướng dẫn nào về giọng điệu hay cách bán.' })}
+    <p class="duoi-4">${button('Mở màn Kịch bản để sửa', { size: 'sm', href: '/kich-ban' })}</p>
+  </div>`;
+}
+
 async function nap() {
   try {
     D = await goi(`/api/page/${encodeURIComponent(ID)}`);
@@ -206,9 +337,12 @@ async function nap() {
   $('#phu').textContent = [D.page.pageId, D.page.thiTruong, D.page.nganhHang,
     D.page.marketer ? `phụ trách: ${D.page.marketer}` : ''].filter(Boolean).join(' · ');
   document.title = `${D.page.ten} — AI Closer`;
+  veTab();
   veBot();
   veThieu();
   veTiep();
+  veThietLap();
+  if (dangO === 'san-pham' || dangO === 'kich-ban') veNoiDung();
   $('#nguon-so').innerHTML = nguonSo({ dong: [
     { ten: 'Công tắc bot', tu: 'RAM tiến trình bot (cửa kiểm `/readiness`) — nguồn thật' },
     { ten: 'Bản sao đối chiếu', tu: 'cột `page.bot_ai_bat` trong cơ sở dữ liệu v3' },

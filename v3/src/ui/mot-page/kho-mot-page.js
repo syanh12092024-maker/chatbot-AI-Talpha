@@ -21,12 +21,29 @@
 //                 hai luật, và luật thứ hai luôn là luật quên cập nhật.
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
-import { motPage, cuaKiemMotPage, LoiPageBot } from '../page-bot/kho-page.js';
+import { motPage, cuaKiemMotPage, danhMucGoc, LoiPageBot } from '../page-bot/kho-page.js';
 import { trangThaiCau, trangThaiCauDaoGiao } from '../page-bot/cong-tac.js';
 import { DIEU_KIEN_TAT_CA } from '../san-sang/kho-san-sang.js';
 
 // `DUONG_TRANG` và `VAI_VAO_DUOC` khai ở `router.js` — đúng nếp của mọi màn khác, và thước
 // ①b («mọi đường trong menu trỏ tới màn có thật») đọc thẳng chữ trong tệp router.
+
+/* ─────────────────────── cổng tiêm: hai khối nội dung của page ───────────────────────
+ *
+ * CÙNG bộ đọc với màn «Đoạn chữ gửi cho AI» (`docKhoi.sanPham` · `docKhoi.kichBan`) — tức
+ * cùng bộ mà đường ráp prompt của bot dùng. Dựng bộ đọc thứ hai ở đây là hẹn ngày màn khoe
+ * một bản kịch bản khác cái bot đang gửi.
+ */
+let _docKhoi = null;
+export function datDocKhoi(bo) {
+  if (bo == null) { _docKhoi = null; return null; }
+  for (const t of ['sanPham', 'kichBan']) {
+    if (typeof bo[t] !== 'function') throw new LoiMotPage(`datDocKhoi: thiếu hàm \`${t}\`.`);
+  }
+  _docKhoi = bo;
+  return _docKhoi;
+}
+export const daNoiDocKhoi = () => !!_docKhoi;
 
 export class LoiMotPage extends Error {
   constructor(thongDiep, ma = 'mot_page', status = 400) {
@@ -143,11 +160,20 @@ export async function trangMotPage(boiCanh, id) {
       // «Sẵn sàng» CHỈ khi đo được và không còn chặn. Chưa đo được thì không kết luận.
       san: !chuaDoDuoc && chan.length === 0,
     },
-    // Bốn việc thường làm tiếp với một page. Mỗi đường dẫn mang sẵn page để màn kia lọc —
-    // người dùng không phải tìm lại page mình vừa đứng.
+    // NHỮNG THỨ SỬA ĐƯỢC NGAY TẠI ĐÂY. Trước lượt này chúng nằm rải trong bảng danh sách —
+    // sửa thị trường của một page phải đi tìm đúng dòng trong 514 dòng.
+    thietLap: {
+      thiTruong: p.thiTruong,
+      nganhHang: p.nganhHang,
+      sanPhamGocMa: p.sanPhamGocMa,
+      trongDiem: p.trongDiem,
+      botcakeTat: p.botcakeTat,
+      danhMucGoc: await danhMucGoc(bc),
+    },
+    // Hai việc còn lại là CÔNG CỤ RIÊNG, không nhét vào trang page được: chạy thử là một
+    // phiên đo có dữ liệu riêng, đoạn chữ gửi AI là màn chẩn đoán bốn khối. Giữ đường dẫn,
+    // mang sẵn page.
     diTiep: [
-      { chu: 'Sản phẩm & giá của page', duong: `/san-pham?page=${encodeURIComponent(p.pageId)}` },
-      { chu: 'Kịch bản của page', duong: `/kich-ban?page=${encodeURIComponent(p.pageId)}` },
       { chu: 'Chạy thử, chưa gửi ai', duong: `/van-hanh-v3?tab=dien-tap&page=${encodeURIComponent(p.pageId)}` },
       { chu: 'Đoạn chữ gửi cho AI', duong: `/prompt-page?page=${encodeURIComponent(p.pageId)}` },
     ],
@@ -156,3 +182,25 @@ export async function trangMotPage(boiCanh, id) {
 }
 
 export { LoiPageBot };
+
+
+/**
+ * HAI KHỐI NỘI DUNG của page — sản phẩm kèm giá, và kịch bản đang chạy.
+ *
+ * Tách khỏi `trangMotPage` vì chúng nặng hơn hẳn: chỉ đọc khi người ta mở đúng tab ấy.
+ * CHỈ ĐỌC — sửa vẫn ở màn chuyên của nó, và màn này nói thẳng điều đó.
+ */
+export async function noiDungPage(boiCanh, id) {
+  const bc = batBuocBoiCanh(boiCanh);
+  const p = await motPage(bc, id);
+  if (!p) return null;
+  if (!_docKhoi) {
+    // Chưa nối ≠ page không có gì. Nói ra, và nói rõ đó là lỗi dựng ứng dụng.
+    return { chuaNoi: true, viSao: 'Máy chủ chưa nối bộ đọc sản phẩm và kịch bản của page.' };
+  }
+  const [sanPham, kichBan] = await Promise.all([
+    Promise.resolve(_docKhoi.sanPham(bc.teamId, p.id)).catch((e) => ({ loi: String(e?.message || e) })),
+    Promise.resolve(_docKhoi.kichBan(bc.teamId, p.id)).catch((e) => ({ loi: String(e?.message || e) })),
+  ]);
+  return { chuaNoi: false, sanPham, kichBan };
+}

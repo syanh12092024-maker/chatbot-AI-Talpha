@@ -2340,3 +2340,12 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   thành tấm như mọi màn khác, nút giao page trông như chữ. Không thước nào đang đo «màn này
   có giống phần còn lại của ứng dụng không». 📌 Dựng màn MỚI thì chụp một ảnh và đặt cạnh một
   màn cũ — rẻ hơn mọi thước, và bắt đúng loại lỗi mà thước không với tới.
+- 25/09 · GD2 lượt hai — người quyết hỏi «sao cài đặt page cứ nhảy sang màn khác?», và câu
+  hỏi đúng: gộp ba màn xong mà đổi thị trường vẫn phải rời trang thì chưa gộp. Trang page nay
+  có **bốn tab**: Tình trạng · **Thiết lập** (thị trường · ngành hàng · sản phẩm gốc · trọng
+  điểm · lời khai Botcake — sửa ngay tại chỗ) · Sản phẩm & giá (chỉ đọc) · Kịch bản (chỉ
+  đọc). Hai tab đọc dùng **cùng bộ đọc với đường ráp prompt của bot**, nên màn không khoe
+  được một bản kịch bản khác cái bot đang gửi. Chạy thử và Đoạn-chữ-gửi-AI CỐ Ý vẫn là đường
+  dẫn (hai màn chẩn đoán riêng), nhưng mang sẵn page. **Không thêm một cửa ghi nào** — năm ô
+  bấm vào đúng các đường `/api/page-bot/:id/*` đã có. Thước: mot-page 14/14 · `npm test`
+  2.027/0 · do-giao-dien 24 màn 0 vỡ, 17 hộp cảnh báo.

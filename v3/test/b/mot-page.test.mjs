@@ -162,3 +162,58 @@ test('⑤b cửa cũ của màn «Hội thoại và đơn» TỪ CHỐI `enabled
     'cửa cũ phải chặn `enabled` chứ không lặng lẽ nhận');
   assert.match(src, /\/page\/</, 'lời từ chối phải chỉ sang trang của page');
 });
+
+/* ═══════════ ⑥ CÀI ĐẶT PAGE NẰM TRONG MỘT MÀN ═══════════
+ *
+ * Câu hỏi của người quyết, 25/09: «sao lúc cài đặt page không ở trong một màn mà cứ nhảy
+ * sang màn khác?». Đúng — gộp ba màn mà vẫn bắt rời trang để đổi thị trường thì chưa gộp.
+ */
+
+test('⑥ trang page mang đủ những thứ SỬA ĐƯỢC ngay tại chỗ', async () => {
+  dungKho({ sanSang: sanSangGia([{ pageId: '111', blockers: [] }]) });
+  const d = await mp.trangMotPage(bcQt(), 'p1');
+  const t = d.thietLap;
+  for (const k of ['thiTruong', 'nganhHang', 'sanPhamGocMa', 'trongDiem', 'botcakeTat']) {
+    assert.ok(k in t, `thiếu ô «${k}» thì việc ấy lại phải đi màn khác`);
+  }
+  assert.ok(t.danhMucGoc && Array.isArray(t.danhMucGoc.ds),
+    'phải mang sẵn danh mục sản phẩm gốc — không thì ô chọn rỗng mà không ai biết vì sao');
+});
+
+test('⑥b hai công cụ RIÊNG vẫn là đường dẫn, và mang sẵn page', async () => {
+  // Chạy thử và đoạn-chữ-gửi-AI là hai màn chẩn đoán có dữ liệu riêng, nhét vào đây là dựng
+  // lại hai màn. Nhưng đường dẫn phải mang sẵn page, không bắt người ta tìm lại.
+  dungKho({ sanSang: sanSangGia([{ pageId: '111', blockers: [] }]) });
+  const d = await mp.trangMotPage(bcQt(), 'p1');
+  assert.equal(d.diTiep.length, 2);
+  for (const x of d.diTiep) assert.match(x.duong, /page=111/, 'đường dẫn phải mang sẵn page');
+});
+
+test('⑦ nội dung page: CHƯA NỐI bộ đọc ⇒ nói ra, KHÔNG giả vờ page rỗng', async () => {
+  // «Page này chưa có sản phẩm nào» và «máy chủ chưa nối bộ đọc» là hai câu khác hẳn nhau,
+  // và câu thứ nhất khiến người ta đi nhập lại một danh mục vốn đã có.
+  dungKho({ sanSang: sanSangGia([]) });
+  mp.datDocKhoi(null);
+  const d = await mp.noiDungPage(bcQt(), 'p1');
+  assert.equal(d.chuaNoi, true);
+  assert.match(d.viSao, /chưa nối/i);
+});
+
+test('⑦b một khối hỏng KHÔNG kéo khối kia chết theo', async () => {
+  dungKho({ sanSang: sanSangGia([]) });
+  mp.datDocKhoi({
+    sanPham: async () => { throw new Error('bảng san_pham hỏng'); },
+    kichBan: async () => 'Chào anh chị, bên em…',
+  });
+  const d = await mp.noiDungPage(bcQt(), 'p1');
+  assert.match(d.sanPham.loi, /san_pham hỏng/);
+  assert.match(d.kichBan, /Chào anh chị/);
+  mp.datDocKhoi(null);
+});
+
+test('⑦c nội dung của page team khác ⇒ null (404, không phải 403)', async () => {
+  dungKho({ sanSang: sanSangGia([]) });
+  mp.datDocKhoi({ sanPham: async () => [], kichBan: async () => '' });
+  assert.equal(await mp.noiDungPage(bcQt(), 'p9'), null);
+  mp.datDocKhoi(null);
+});
