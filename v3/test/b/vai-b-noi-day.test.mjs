@@ -13,7 +13,7 @@ const { bam } = await import('../../src/auth/mat-khau.js');
 const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
-async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
+async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
   dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
@@ -40,7 +40,7 @@ async function dungThu({ ghiSoAi, canhBao, docKetNoiPos, ghiKetNoiPos, khoTokenV
   const bao = dungPhanB(app, {
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
-    ghiSoAi, canhBao, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
+    ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
     dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, express,
   });
   const sv = http.createServer(app);
@@ -130,6 +130,9 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   t.after(() => sv.close());
   assert.ok(bao.thieu.some((x) => /ghiSoAi/.test(x)), 'phải nêu thiếu ghiSoAi');
   assert.ok(bao.thieu.some((x) => /canhBao/.test(x)), 'phải nêu thiếu canhBao');
+  // `docNhipMayBot` thiếu thì KHÔNG ai biết máy chạy bot của bot mới còn sống hay đã tắt —
+  // và cái đèn ấy phải XÁM chứ không được xanh. Im lặng ở đây là hứa một điều không đo được.
+  assert.ok(bao.thieu.some((x) => /docNhipMayBot/.test(x)), 'phải nêu thiếu docNhipMayBot');
   // `docKetNoiPos` thiếu thì màn cấu hình team KHÔNG được nói «không có kết nối nào» —
   // hai câu đó dẫn người đọc đi hai hướng khác hẳn nhau (đi tìm kết nối bị mất, hay đi
   // sửa cấu hình máy chủ). Nên nó phải nằm trong danh sách `thiếu`, không im lặng.
@@ -163,7 +166,13 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   assert.ok(bao.thieu.some((x) => /ghiKetNoiPos/.test(x)), 'phải nêu thiếu ghiKetNoiPos');
 
   const { sv: sv2, bao: bao2 } = await dungThu({
-    ghiSoAi: () => {}, canhBao: () => {}, docKetNoiPos: async () => [],
+    ghiSoAi: () => {}, canhBao: () => {},
+    // Nhịp máy chạy bot — số đo của hàng đợi tin. Nối đủ nghĩa là có cả cái này.
+    docNhipMayBot: async () => ({
+      dangCho: 0, dangXu: 0, daXu: 0,
+      choLauNhatGiay: null, dangXuLauNhatGiay: null, xongGanNhatGiay: null,
+    }),
+    docKetNoiPos: async () => [],
     ghiKetNoiPos: {
       them: async () => ({}), sua: async () => ({}),
       batTat: async () => ({}), bo: async () => ({}),

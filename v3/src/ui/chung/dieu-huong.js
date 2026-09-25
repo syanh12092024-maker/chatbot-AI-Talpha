@@ -353,10 +353,28 @@
   function dungDaiTrangThai(ngan) {
     const o = ngan.querySelector("#dh-dai");
     if (!o) return;
+    doDai(o);
+    // ĐỌC LẠI ĐỊNH KỲ. Tiêu chí của phiếu GD5: tắt máy chạy bot thì trong HAI PHÚT dải phải
+    // chuyển đỏ. Dải chỉ vẽ một lần lúc mở trang thì người đang ngồi mở sẵn một màn sẽ không
+    // bao giờ thấy — mà đó đúng là người cần thấy nhất.
+    setInterval(() => doDai(o), 45_000);
+  }
+
+  function doDai(o) {
     fetch("/api/trang-thai-bot", { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d || !d.ok) throw new Error("khong doc duoc");
+        // MÁY CHẠY BOT ĐỨNG THÌ NÓ LÀ CÂU DUY NHẤT ĐÁNG HIỆN. Biết «3/4 page đang bật bot»
+        // trong lúc không tin nào của khách được xử là biết một sự thật vô dụng.
+        if (d.may && d.may.muc === "do") {
+          o.dataset.tone = "danger";
+          // Tiêu đề và thân KHÔNG được nói lại cùng một câu — dải chỉ cao một dòng, lặp lại
+          // là đẩy mất chỗ của con số và của việc phải làm.
+          o.innerHTML = "<b>" + esc(d.may.nhan) + "</b>"
+            + esc([d.may.so, d.may.viec].filter(Boolean).join(" · "));
+          return;
+        }
         if (!d.docDuoc) {
           o.dataset.tone = "neutral";
           o.innerHTML = "<b>Chưa đọc được</b>" + esc(d.viSao || "Không rõ có page nào đang bật bot.");

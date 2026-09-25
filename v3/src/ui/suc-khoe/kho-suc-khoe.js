@@ -18,6 +18,9 @@
 //    yên tâm về đúng thứ mình đang mù. Xám = «chưa đo được», và nói rõ vì sao chưa đo được.
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
+// Luật xét «máy chạy bot còn sống không» — CHUNG với dải trạng thái. Viết lại ở đây là hẹn
+// ngày hai chỗ nói hai điều khác nhau về cùng một máy.
+import { docNhipMayBot } from '../chung/nhip-may-bot.js';
 
 export const MUC = Object.freeze({
   XANH: 'xanh',   // đo được, và đang ổn
@@ -190,6 +193,11 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
   /* ③ TIẾN TRÌNH BOT */
   ds.push(denCauBot());
 
+  /* ③b MÁY CHẠY BOT — thứ thật sự trả lời khách của bot mới.
+     Đèn ③ nói về CỬA GHI sang tiến trình bot cũ; đèn này nói về máy xử tin của bot mới.
+     Hai thứ khác nhau, và trước 25/09 không đèn nào canh cái thứ hai. */
+  ds.push(denMayChayBot(await docNhipMayBot({ boiCanh: bc })));
+
   /* ④ TOKEN PANCAKE */
   ds.push(await denToken(bay));
 
@@ -282,6 +290,24 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
     // Mức xấu nhất của cả bảng — để đầu trang nói một câu, không bắt người đọc tự quét.
     tongThe: dem.do ? MUC.DO : dem.vang ? MUC.VANG : dem.xam ? MUC.XAM : MUC.XANH,
   };
+}
+
+/**
+ * Máy chạy bot của bot mới, đo bằng hàng đợi tin. Luật xét nằm ở `chung/nhip-may-bot.js` —
+ * ở đây chỉ dịch kết quả sang hình dạng một cái đèn.
+ *
+ * `diTiep` không có đường dẫn: chưa màn nào khởi động lại được máy chạy bot, và bịa một
+ * đường dẫn tới màn không làm được việc ấy còn tệ hơn là nói thẳng «nhờ người quản trị».
+ */
+function denMayChayBot(x) {
+  return den({
+    ma: 'may_chay_bot',
+    ten: 'Máy chạy bot',
+    muc: x.muc,
+    vi: x.cau,
+    so: x.so,
+    diTiep: x.viec ? { chu: x.viec, duong: null } : null,
+  });
 }
 
 async function denKhoaModel(bc, cauHinh) {

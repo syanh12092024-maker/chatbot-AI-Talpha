@@ -220,9 +220,13 @@ function veChiPhiTin(than, x) {
   ]);
 }
 
+/** Lượt tải NGẦM (đồng hồ gọi) thì không hiện chữ «Đang tải…» — nhấp nháy mỗi 45 giây là
+ *  cách nhanh nhất để người ta thôi nhìn màn này. */
+let lamMoiNgam = false;
+
 async function load() {
   const token = ++request;
-  message("Đang tải…");
+  if (!lamMoiNgam) message("Đang tải…");
   const d = await api(tab === "bo-qua" ? `bo-qua?offset=${offset}` : tab === "chi-phi-tin"
     ? `chi-phi-tin?offset=${offset}${gomTheo ? `&theo=${gomTheo}` : ""}`
     : `${tab}?offset=${offset}`);
@@ -602,16 +606,22 @@ async function conversation(id) {
   if (!admin) {
     el("p", "Bạn có quyền xem. Các thao tác xử lý dành cho quản trị.", c);
   }
+  // Ô lý do khai TRƯỚC nút bàn giao vì nút này đọc nó (GD5 · 25/09): bàn giao nay đẻ một
+  // dòng ở «Việc đang chờ», và dòng đó mang lý do — sale mở lên phải biết VÌ SAO khách này
+  // được giao lại, không chỉ thấy một cái tên.
+  const reason = field(
+    c,
+    "Lý do tiếp tục / đối soát / bàn giao (5–300 ký tự, không ghi thông tin cá nhân)",
+  );
   const handoffButton = button(c, "Chuyển nhân viên xử lý", async () => {
-    await api(`conversations/${id}/handoff`, {});
+    const r = await api(`conversations/${id}/handoff`, { lyDo: reason.value || "" });
+    message(r.viecMoi
+      ? "Đã bàn giao. Khách này nay nằm ở màn «Việc đang chờ»."
+      : "Đã bàn giao. Khách này đã có sẵn một việc đang chờ, không tạo thêm dòng mới.");
     await conversation(id);
     await load();
   });
   handoffButton.disabled = !admin;
-  const reason = field(
-    c,
-    "Lý do tiếp tục / đối soát (5–300 ký tự, không ghi thông tin cá nhân)",
-  );
   const resumeButton = button(c, "Cho AI tiếp tục", async () => {
     await api(`conversations/${id}/resume`, { reason: reason.value });
     await conversation(id);
@@ -710,6 +720,28 @@ async function conversation(id) {
 // cả mô-đun dừng trước `load()`, và màn ra trắng (chỉ còn chữ "Danh sách"). Màn duy nhất
 // duyệt được đơn và bàn giao hội thoại v3 nằm im như vậy từ 17/09 tới 22/09.
 // Bài học: nút dựng bằng JS thì ĐỪNG còn chỗ nào tra lại nó bằng id trong HTML tĩnh.
+/**
+ * TỰ LÀM MỚI HAI TAB VIỆC (GD5 · 25/09).
+ *
+ * «Đơn chờ duyệt» và «Hội thoại» là hàng chờ: người ngồi mở sẵn màn này để BIẾT có việc mới.
+ * Bắt họ bấm Tải lại thì cái biết ấy đến muộn đúng bằng khoảng cách giữa hai lần họ nhớ bấm.
+ *
+ * Ba điều kiện để một lượt làm mới ngầm được phép chạy — thiếu một là bỏ lượt:
+ *   ① đang ở tab hàng chờ (mấy tab kia là tra cứu, không đáng hỏi lại mỗi 45 giây);
+ *   ② hộp chi tiết ĐANG ĐÓNG — vẽ lại trong lúc người ta đang sửa một đơn là cướp việc họ gõ;
+ *   ③ thẻ trình duyệt đang hiện — tab nền thì không ai nhìn, hỏi lại chỉ tốn lượt gọi.
+ */
+const TAB_HANG_CHO = ['orders', 'conversations'];
+const NHIP_LAM_MOI_MS = 45_000;
+setInterval(async () => {
+  if (!TAB_HANG_CHO.includes(tab)) return;
+  if ($("#detail")?.open) return;
+  if (document.hidden) return;
+  lamMoiNgam = true;
+  try { await load(); } catch { /* mạng hỏng một lượt không được làm hỏng màn */ }
+  finally { lamMoiNgam = false; }
+}, NHIP_LAM_MOI_MS);
+
 try {
   const me = await (await fetch("/api/toi")).json();
   admin = (me.boiCanh?.vai || me.toi?.vai || me.vai || []).includes("quan-tri");

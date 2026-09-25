@@ -66,6 +66,7 @@ import {
 import { taoRouterDieuHuong } from './ui/chung/router-dieu-huong.js';
 import { menuCua } from './ui/chung/man-hinh.js';
 import { datDocSanSang as datDocSanSangDai, datDemTeam } from './ui/chung/trang-thai.js';
+import { datDocNhip } from './ui/chung/nhip-may-bot.js';
 import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/cau-bot-v1.js';
 import {
   datTaoTruyVan as datTruyVanHieuQua, datDocHieuQua,
@@ -195,6 +196,9 @@ import {
  *                                                              thêm/sửa kết nối vẫn phải chạy `npm run di-tru`.
  * @param {(ban:object)=>void}      [phuThuoc.ghiSoAi]          người A giao. Thiếu thì lớp model kêu mỗi 100 lượt.
  * @param {(canh:object)=>void}     [phuThuoc.canhBao]          nơi nhận cảnh báo chuyển dự phòng (Telegram, log…).
+ * @param {(bc:object)=>Promise<object>} [phuThuoc.docNhipMayBot] số đo hàng đợi tin của team
+ *                                                              (`src/queue/kho.js#nhipMayBot`). Thiếu thì đèn «Máy
+ *                                                              chạy bot» XÁM — nói chưa đo được, KHÔNG nói đang ổn.
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
@@ -203,7 +207,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan,
   chayNapLai, vanHanh,
-  ghiSoAi, canhBao, express } = {}) {
+  ghiSoAi, canhBao, docNhipMayBot, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -292,6 +296,16 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
     const d = await manSanSang(bc);
     return { aiBat: d.dem.dangChay, tong: d.dem.tong };
   });
+  // MÁY CHẠY BOT — một bộ đọc, hai chỗ hiện (dải trạng thái ở mọi trang + đèn ở màn «Hệ còn
+  // sống không»). Đo bằng hàng đợi tin chứ không bằng «tiến trình có `active` không»: ngày
+  // 08–10/08/2026 tiến trình `active` suốt hai ngày trong khi không khách nào được trả lời.
+  if (typeof docNhipMayBot === 'function') {
+    datDocNhip(docNhipMayBot);
+    daNoi.push('nhịp máy chạy bot ← hàng đợi tin (dải trạng thái + đèn Máy chạy bot)');
+  } else {
+    datDocNhip(null);
+    thieu.push('docNhipMayBot — không biết máy chạy bot của bot mới còn sống hay đã tắt; đèn «Máy chạy bot» đành để XÁM');
+  }
   if (typeof docSanSang === 'function') daNoi.push('bộ đọc cửa kiểm GIẢ → màn Cửa kiểm sẵn sàng');
   datTruyVanSucKhoe(taoTruyVan);
   // CÙNG bộ đọc cửa kiểm với ba màn kia — hai đèn công tắc bot của màn Sức khỏe phải đọc

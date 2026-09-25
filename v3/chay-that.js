@@ -100,6 +100,49 @@ const { keoDanhMucTeam } = await import(`${GOC}/src/pos/keo-danh-muc.js`);
 const spGoc = await import(`${GOC}/src/products/san-pham-goc.js`);
 const { noiVanHanhV3 } = await import('./src/noi-day/van-hanh-v3.js');
 const docSanSangV3 = noiVanHanhV3(pool);
+
+// ═══ MÁY CHẠY BOT CÒN SỐNG KHÔNG (GD5 · K4) ═══════════════════════════════════════════
+// Đo bằng HÀNG ĐỢI TIN, không bằng «tiến trình có `active` không». Ngày 08–10/08/2026
+// systemctl báo `active` suốt hai ngày trong khi không khách nào được trả lời — nên phép
+// đo phải nhìn vào việc tin của khách CÓ ĐƯỢC RÚT RA XỬ hay không.
+// Bảng nhịp tim riêng đo thẳng hơn, nhưng nó cần một migration; chỗ này thì đã có sẵn.
+const { nhipMayBot } = await import(`${GOC}/src/queue/kho.js`);
+
+// ═══ PHỄU CẢNH BÁO CỦA LỚP MODEL (GD5 · K8) ═══════════════════════════════════════════
+// Chưa nối thì `canhBao()` chỉ in ra console của tiến trình — tức lời báo «nhà chính hết
+// tiền, đã chuyển dự phòng» sống đúng bằng tuổi của một vòng log, và cảnh 06/08/2026 (ba
+// tiếng không ai biết) lặp lại y nguyên.
+//
+// ⚠️ CÓ CHỖ GIAO VỚI NHẬT KÝ SẴN CÓ, VÀ NÓI RA: lớp model đã tự ghi `chuyen_du_phong` /
+//    `lop_model_hong` cho hai lượt đổi trạng thái. Dòng ở đây KHÁC ở chỗ nó mang MỨC NẶNG
+//    NHẸ và CÂU NGƯỜI ĐỌC ĐƯỢC, và nó có mặt cả ở lượt «nhà đã sống lại» — lượt mà lớp
+//    model KHÔNG ghi nhật ký, tức trước hôm nay không chỗ nào lưu lại.
+//    Không sợ ngập: lớp model chỉ báo khi ĐỔI trạng thái (`vuaHong`, `_daBaoCaHai`).
+const { ghiNhatKy: ghiNhatKyV3, HANH_DONG } = await import('./src/audit/index.js');
+async function canhBaoLopModel(canh) {
+  const { muc = 'canh_bao', thongDiep = '', teamId = null, nha = '', maModel = '' } = canh || {};
+  const dong = `[chay-that] BÁO ĐỘNG lớp model (${muc}) team=${teamId ?? '?'} `
+    + `nhà=${nha || '?'} model=${maModel || '?'}: ${thongDiep}`;
+  if (muc === 'tin') console.warn(dong); else console.error(dong);
+  // `nhat_ky.team_id` là NOT NULL. Báo động không có team thì không có chỗ đứng trong bảng
+  // — in ra rồi thôi, chứ không gán bừa một team để cho vừa lược đồ.
+  if (teamId == null) return null;
+  try {
+    return await ghiNhatKyV3(auth.boiCanhMay(teamId, 'báo động từ lớp model'), {
+      hanhDong: HANH_DONG.CANH_BAO_MODEL,
+      doiTuongLoai: 'cau_hinh_model',
+      doiTuongId: maModel || nha || '',
+      sau: { muc, nha, ma_model: maModel },
+      ghiChu: String(thongDiep).slice(0, 300),
+    });
+  } catch (e) {
+    // Ghi hỏng KHÔNG được làm hỏng lượt gọi model đang chạy — nhưng phải kêu, vì im lặng ở
+    // đúng cái phễu báo động là mất luôn lớp phòng cuối.
+    console.error('[chay-that] ghi báo động vào nhật ký hỏng:', (e && e.message) || e);
+    return null;
+  }
+}
+
 const app = express();
 const bao = dungPhanB(app, {
   taoTruyVan,
@@ -199,6 +242,10 @@ const bao = dungPhanB(app, {
     ghiKhoa: async (teamId, nha, khoaApi) =>
       ghiKhoaNha(pool, { teamSlug: await slugCua(teamId), nhaCungCap: nha, khoaApi }),
   },
+  // Nhịp máy chạy bot: một bộ đọc, hai chỗ hiện (dải trạng thái ở mọi trang + đèn «Máy chạy
+  // bot» ở màn Hệ còn sống không). Kẹp `team_id` tường minh — luật 1 của kho hàng đợi.
+  docNhipMayBot: (bc) => nhipMayBot(pool, { teamId: bc?.teamId ?? null }),
+  canhBao: canhBaoLopModel,
   express,
 });
 app.get('/', (_q, r) => r.redirect('/dieu-phoi'));

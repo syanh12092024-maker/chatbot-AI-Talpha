@@ -15,6 +15,8 @@
 // lượt gọi có thể mất 25 giây trước khi thấy menu. Tách cửa riêng + nhớ tạm 60 giây:
 // menu hiện ngay, dải trạng thái điền sau.
 
+import { docNhipMayBot } from './nhip-may-bot.js';
+
 const NHO_MS = 60_000;
 
 let _docSanSang = null;
@@ -56,6 +58,14 @@ export function xoaNho() { _nho.clear(); }
  *    bật» là hai câu khác hẳn nhau, và câu thứ nhất là câu gọi người dậy giữa đêm.
  */
 export async function docTrangThai({ bayGio = Date.now(), boiCanh = null } = {}) {
+  // HAI PHÉP ĐO, HAI NHỊP. Số page đọc từ cầu sang tiến trình bot (đắt, nhớ tạm 60 giây);
+  // nhịp máy chạy bot đọc từ hàng đợi tin (rẻ, nhớ tạm 15 giây) — xem `nhip-may-bot.js`.
+  // Gộp nhịp vào bộ nhớ tạm 60 giây là ăn mất quá nửa ngân sách «2 phút phải chuyển đỏ».
+  const may = await docNhipMayBot({ boiCanh, bayGio });
+  return { ...(await docSoPage({ bayGio, boiCanh })), may };
+}
+
+async function docSoPage({ bayGio = Date.now(), boiCanh = null } = {}) {
   const khoa = boiCanh?.teamId ? `team:${boiCanh.teamId}` : 'toan-he';
   const cu = _nho.get(khoa);
   if (cu && bayGio - cu.luc < NHO_MS) return cu.kq;

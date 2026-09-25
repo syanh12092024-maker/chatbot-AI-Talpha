@@ -277,6 +277,16 @@ trên 4.423 đơn POS 60 ngày — đã ghi §9 để không rơi mất).
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
+- 25/09 · **N-DUPHONGCHATTHAT** (thấy khi nối phễu cảnh báo ở GD5, ngoài phạm vi) — đường chat
+  THẬT không đi qua lớp chuyển dự phòng. `src/chat/model.js:35` gọi thẳng `goiMotLan`, còn
+  `v3/src/model/du-phong.js#goiCoDuPhong` (nơi có luật «nhà chính hỏng thì sang nhà khác»,
+  đánh dấu nhà hỏng, báo động một lần) **không tiến trình nào gọi** — đo bằng `grep`: chỉ
+  `v3/src/model/index.js` import nó, và `goiModel` của index ấy không có nơi gọi nào. Hệ quả:
+  nhà chính hết tiền thì bot ĐỨNG (được `src/llm-health.js` chặn cho khỏi spam handoff), chứ
+  không tự chuyển sang nhà thứ hai — trong khi màn Model AI vẫn cho cấu hình vai trò
+  `du_phong` và màn Sức khoẻ vẫn kêu khi thiếu nó. Tức giao diện hứa một cơ chế mà đường chạy
+  thật không có. Sửa là đụng đường chạm khách thật (`src/chat/*`) ⇒ cần phiếu riêng + `mo-van`.
+
 - 25/09 · **N-CADUNGCHUNG** (thấy khi làm GD4, ngoài phạm vi) — `npm test` mỗi lượt đỏ một nhóm
   KHÁC NHAU, chạy riêng thì xanh: N1b/N4 (23/09) → S3/S5/S8 (24/09) → D1/D7/D9 (25/09). Đo
   được nguyên nhân: `ai-messages.jsonl` và `conv-state.json` **ở gốc repo** bị ghi lại lúc
@@ -295,10 +305,12 @@ trên 4.423 đơn POS 60 ngày — đã ghi §9 để không rơi mất).
   `docs/local-dev.md` dòng 17 và dòng 28 nói ngược nhau về việc thêm token bằng giao diện.
   (3) **`/len-chay` chặng 2 gõ cứng là không bao giờ qua được** (`kho-len-chay.js:184-191`) —
   màn đỏ vĩnh viễn, không ai gỡ được bằng thao tác.
-  (4) **Bàn giao ở Vận hành V3 không đẻ việc** (`src/admin-v3/operations.js:133-156`) nên
-  «Việc đang chờ» rỗng trong khi hội thoại HANDOFF vẫn còn — trang chủ tự khai chỗ lệch này.
-  (5) **Worker v3 không phát nhịp tim**: đèn «Tiến trình bot» chỉ kiểm biến môi trường
-  (`kho-suc-khoe.js:307-326`), worker đứng nhiều ngày thì đèn vẫn xanh.
+  (4) ✅ **TRẢ 25/09 (GD5 · K5)** — ~~Bàn giao ở Vận hành V3 không đẻ việc~~: nay chèn một dòng
+  `viec_can_xu_ly` có rào chống trùng, mang lý do người bấm gõ.
+  (5) ✅ **TRẢ 25/09 (GD5 · K4), theo đường khác** — ~~Worker v3 không phát nhịp tim~~: không
+  dựng bảng nhịp tim (cần migration, án lệ #25) mà ĐO BẰNG HÀNG ĐỢI TIN
+  (`src/queue/kho.js#nhipMayBot`). Đèn ⑩ «Máy chạy bot» + dải trạng thái. Rỗng-và-nguội thì
+  XÁM chứ không xanh; tin dồn mà vẫn xử được thì VÀNG chứ không đỏ.
   (6) **Không có nút dừng bot cả team** ở bất kỳ giao diện nào — chỉ sửa `.env` rồi khởi động lại.
   Mỗi khoản là một phiếu GD trong kế hoạch; chờ người quyết gật Q1–Q6 mục 8 của kế hoạch đó.
 
@@ -2200,3 +2212,28 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   vẫn trả 200, màn khác trỏ sang vẫn trỏ được. 📌 Muốn chặn quyền thì sửa vai, đừng sửa menu —
   hai việc đó nhìn giống nhau trên màn nhưng khác hẳn nhau khi có sự cố.
 
+
+- 25/09 · GD5 (kiểm soát) → ✅ bốn phần, ❌ một phần. **K5** bàn giao nay đẻ một dòng
+  `viec_can_xu_ly` có rào chống trùng và mang lý do (trước: 0 dòng việc / 56 hội thoại HANDOFF).
+  **K7** nhật ký sửa sản phẩm chụp `goi_gia` TRƯỚC và SAU (trước chỉ ghi tên cột, mất hẳn giá cũ).
+  **K4** «Máy chạy bot còn sống không» đo được mà KHÔNG cần bảng mới — đo bằng hàng đợi tin
+  (`src/queue/kho.js#nhipMayBot`, chỉ đọc), luật xét một chỗ (`ui/chung/nhip-may-bot.js`), hiện ở
+  dải trạng thái + đèn ⑩. Rỗng-và-nguội = XÁM, tin dồn mà vẫn xử được = VÀNG. **K8** `canhBao`
+  nối vào `nhat_ky` (`canh_bao_model`). **K1** nút dừng cả team CHƯA làm — cần `mo-van`.
+  Thước: suc-khoe 25/25 (3 lượt đảo-vá đều bắt) · e2e trên PostgreSQL thật canh cả câu SQL ·
+  trình duyệt thật đọc dải đỏ trong cảnh kẹt · `do-giao-dien` 26 màn 0 vỡ · `npm test` 1.980/1
+  (I1 đỏ sẵn). Nhật ký `docs/thi-cong/nhat-ky/phieu-GD5.md`. Nợ mới: §9 N-DUPHONGCHATTHAT.
+- 25/09 · 🧭 **MỘT ĐÍCH KHÔNG ĐẠT ĐƯỢC BẰNG ĐƯỜNG NÀY THÌ ĐO THỬ BẰNG ĐƯỜNG KHÁC TRƯỚC KHI XIN
+  PHÉP.** «Worker phát nhịp tim» cần bảng mới ⇒ cần số migration ⇒ án lệ #25 bắt chờ. Nhưng câu
+  hỏi thật là «tin của khách có được rút ra xử không», và hàng đợi đã ghi sẵn câu trả lời ấy.
+  📌 Hỏi «mình đang cần SỐ ĐO nào» trước khi hỏi «mình cần BẢNG nào» — nhiều lúc số đo đã nằm sẵn
+  trong dữ liệu đang chạy.
+- 25/09 · 🧭 **BÁO ĐỘNG GIẢ THÌ NGƯỜI TA TẮT CHUÔNG — NÊN MỖI ĐÈN ĐỎ PHẢI LOẠI ĐƯỢC CẢNH VÔ HẠI
+  GIỐNG NÓ.** «Tin chờ lâu» trông y hệt nhau ở hai cảnh khác hẳn: máy chết, và cao điểm 50 khách
+  cùng nhắn. Phân biệt bằng một vế thứ hai: «và không tin nào vừa xử xong». 📌 Trước khi đặt một
+  ngưỡng, kể ra cảnh VÔ HẠI gần giống nhất rồi hỏi ngưỡng ấy có bắt nhầm nó không.
+- 25/09 · 🧭 **NỐI MỘT CÁI PHỄU LÀ DỊP ĐI TÌM NGUỒN CỦA NÓ.** Nối `canhBao` xong thì lộ ra phễu
+  ấy chưa có nguồn: đường chat thật gọi thẳng `goiMotLan`, không đi qua lớp dự phòng — tức hệ
+  KHÔNG có chuyển dự phòng, chứ không phải «có mà không ai được báo» (§9 N-DUPHONGCHATTHAT).
+  📌 Nối xong một đầu dây, đi ngược lại tìm đầu kia; báo cáo «đã nối» mà đầu kia trống là một
+  lời khai đúng chữ và sai ý.

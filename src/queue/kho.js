@@ -207,3 +207,54 @@ export async function ghiNhatKyHangDoi(
     ghiChu,
   });
 }
+
+/**
+ * NHỊP CỦA MÁY CHẠY BOT — đo bằng CHÍNH HÀNG ĐỢI, không cần bảng nhịp tim riêng.
+ *
+ * ═══ VÌ SAO ĐO Ở ĐÂY ════════════════════════════════════════════════════════════════
+ * Câu hỏi «máy chạy bot còn sống không» hôm nay KHÔNG màn nào trả lời được: systemctl báo
+ * `active` cũng chẳng nói lên điều gì (đúng cảnh 08–10/08/2026 — tiến trình sống, tài khoản
+ * hết tiền, hai ngày không ai biết). Bảng nhịp tim riêng là cách đo thẳng nhất, nhưng nó cần
+ * một migration; bảng này thì đã có sẵn và nó ghi lại đúng thứ đáng quan tâm: **tin của khách
+ * có được rút ra xử hay không**.
+ *
+ * ⚠️ HÀNG ĐỢI RỖNG KHÔNG PHẢI LÀ «MÁY SỐNG». Đêm không ai nhắn thì hàng đợi rỗng dù worker
+ *    đã chết từ tối. Hàm này trả về SỐ ĐO, không trả về kết luận — chỗ xét là
+ *    `v3/src/ui/chung/nhip-may-bot.js`, và nó phải nói XÁM («chưa đo được») ở cảnh ấy chứ
+ *    không được nói XANH.
+ *
+ * ⚠️ ĐỒNG HỒ LÀ ĐỒNG HỒ CSDL. Mọi khoảng cách tính bằng `now()` trong cùng câu lệnh — máy
+ *    chạy giao diện và máy chạy CSDL lệch giờ là chuyện có thật, và lệch giờ ở đây đẻ ra
+ *    báo động giả (hoặc tệ hơn: giấu một báo động thật).
+ *
+ * @returns {Promise<{dangCho:number, choLauNhatGiay:number|null, dangXu:number,
+ *   dangXuLauNhatGiay:number|null, daXu:number, xongGanNhatGiay:number|null}>}
+ */
+export async function nhipMayBot(pool, { teamId = null } = {}) {
+  const XONG = "('xong','loi','chan_guard')";
+  const r = await pool.query(
+    `SELECT
+       count(*) FILTER (WHERE trang_thai = 'cho')::int                    AS dang_cho,
+       count(*) FILTER (WHERE trang_thai = 'dang_xu')::int                AS dang_xu,
+       count(*) FILTER (WHERE trang_thai IN ${XONG})::int                 AS da_xu,
+       EXTRACT(EPOCH FROM now() - min(thoi_diem)
+         FILTER (WHERE trang_thai = 'cho'))::int                          AS cho_lau_nhat_giay,
+       EXTRACT(EPOCH FROM now() - min(sua_luc)
+         FILTER (WHERE trang_thai = 'dang_xu'))::int                      AS dang_xu_lau_nhat_giay,
+       EXTRACT(EPOCH FROM now() - max(sua_luc)
+         FILTER (WHERE trang_thai IN ${XONG}))::int                       AS xong_gan_nhat_giay
+     FROM tin_cho_xu_ly
+     ${teamId ? "WHERE team_id = $1" : ""}`,
+    teamId ? [teamId] : [],
+  );
+  const x = r.rows[0] || {};
+  const so = (v) => (v == null ? null : Number(v));
+  return {
+    dangCho: Number(x.dang_cho || 0),
+    dangXu: Number(x.dang_xu || 0),
+    daXu: Number(x.da_xu || 0),
+    choLauNhatGiay: so(x.cho_lau_nhat_giay),
+    dangXuLauNhatGiay: so(x.dang_xu_lau_nhat_giay),
+    xongGanNhatGiay: so(x.xong_gan_nhat_giay),
+  };
+}

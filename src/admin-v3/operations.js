@@ -130,7 +130,10 @@ export async function setPage(pool, bc, id, input, env = process.env) {
     return r.rows[0];
   });
 }
-export async function handoffConversation(pool, bc, id) {
+/** Mốc 10 phút của bảng điều phối — cùng con số với việc đơn hàng (`dayChoSale`). */
+export const PHUT_HAN_VIEC = 10;
+
+export async function handoffConversation(pool, bc, id, { lyDo = "" } = {}) {
   return transaction(pool, async (c) => {
     const h = (
       await c.query(
@@ -151,8 +154,28 @@ export async function handoffConversation(pool, bc, id) {
       WHERE team_id=$1 AND id=$2`,
       [bc.teamId, id],
     );
+    // GD5 · 25/09: BÀN GIAO PHẢI ĐẺ RA MỘT DÒNG VIỆC.
+    //
+    // Trước lượt này, bàn giao chỉ đổi chủ sở hữu hội thoại. Không dòng nào vào
+    // `viec_can_xu_ly`, nên màn «Việc đang chờ» — màn DUY NHẤT vai sale thấy — vẫn trống
+    // trong khi khách đã bị giao lại. Đo 22/09 trên bản dev: hàng đợi 0 dòng, hội thoại
+    // HANDOFF 56 dòng, và chính màn «Việc của tôi» tự khai ra chỗ lệch đó.
+    //
+    // Chèn có điều kiện: đã có một việc CHƯA ĐÓNG cho hội thoại này thì thôi. Bấm bàn giao
+    // hai lần (hoặc bot giao lại sau khi sale trả về) không được đẻ hai dòng — sale sẽ thấy
+    // một khách xuất hiện hai lần và không biết cái nào là thật.
+    const viec = await c.query(
+      `INSERT INTO viec_can_xu_ly (team_id, loai, hoi_thoai_id, ly_do_day, han_luc)
+         SELECT $1, 'hoi_thoai', $2, $3, now() + ($4 || ' minutes')::interval
+         WHERE NOT EXISTS (
+           SELECT 1 FROM viec_can_xu_ly
+            WHERE team_id = $1 AND loai = 'hoi_thoai' AND hoi_thoai_id = $2 AND dong_luc IS NULL
+         )
+       RETURNING id`,
+      [bc.teamId, idOf(id), lyDo || "người bấm bàn giao cho sale", String(PHUT_HAN_VIEC)],
+    );
     await audit(c, bc, "hoi_thoai", id, "v3_ban_giao_sale", ["chu_so_huu"]);
-    return { owner: "SALE" };
+    return { owner: "SALE", viecId: viec.rows[0]?.id ?? null, viecMoi: viec.rowCount > 0 };
   });
 }
 export async function saveProduct(pool, bc, id, input) {
@@ -212,6 +235,16 @@ export async function saveProduct(pool, bc, id, input) {
       "UPDATE san_pham SET ten=$3,mo_ta=$4,het_hang=$5,cau_hinh_tay=true,sua_luc=now() WHERE team_id=$1 AND id=$2",
       [bc.teamId, id, input.ten.trim(), input.mo_ta, input.het_hang],
     );
+    // GD5 · 25/09: chụp GÓI GIÁ CŨ trước khi xoá. Nhật ký cũ chỉ ghi tên cột («goi_gia»),
+    // nên sau một lượt sửa giá không ai dựng lại được giá cũ là bao nhiêu — mà đây đúng là
+    // con số khách trả. Gói giá được XOÁ rồi CHÈN LẠI, nên không chụp trước là mất hẳn.
+    const giaCu = (
+      await c.query(
+        `SELECT so_luong, gia, tien_te, gia_goc, khuyen_mai, phi_ship, mien_ship, bat
+           FROM goi_gia WHERE team_id=$1 AND san_pham_id=$2 ORDER BY so_luong`,
+        [bc.teamId, id],
+      )
+    ).rows;
     await c.query("DELETE FROM goi_gia WHERE team_id=$1 AND san_pham_id=$2", [
       bc.teamId,
       id,
@@ -238,12 +271,27 @@ export async function saveProduct(pool, bc, id, input) {
           g.bat === false ? false : true,
         ],
       );
-    await audit(c, bc, "san_pham", id, "v3_sua_san_pham", [
-      "ten",
-      "mo_ta",
-      "het_hang",
-      "goi_gia",
-    ]);
+    const giaMoi = (
+      await c.query(
+        `SELECT so_luong, gia, tien_te, gia_goc, khuyen_mai, phi_ship, mien_ship, bat
+           FROM goi_gia WHERE team_id=$1 AND san_pham_id=$2 ORDER BY so_luong`,
+        [bc.teamId, id],
+      )
+    ).rows;
+    await ghiNhatKy(c, {
+      teamId: bc.teamId,
+      nguoiDungId: bc.nguoiDungId,
+      tacNhan: `nguoi:${bc.nguoiDungId}`,
+      doiTuong: "san_pham",
+      doiTuongId: String(id),
+      hanhDong: "v3_sua_san_pham",
+      truoc: { ten: p.ten, mo_ta: p.mo_ta, het_hang: p.het_hang, goi_gia: giaCu },
+      sau: {
+        ten: input.ten.trim(), mo_ta: input.mo_ta, het_hang: input.het_hang,
+        goi_gia: giaMoi,
+        cot: ["ten", "mo_ta", "het_hang", "goi_gia"],
+      },
+    });
     return { saved: true };
   });
 }
