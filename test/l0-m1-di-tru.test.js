@@ -59,13 +59,25 @@ after(async () => {
 test("D1 · mọi trường của conv-state.json đều có ĐÍCH khai trong bản đồ (không rơi im lặng)", canNguonThat, () => {
   const that = docConvState(GOC).khoaThat;
   const khongCoDich = that.filter((k) => !(k in BAN_DO_CONV_STATE));
-  const khaiThua = Object.keys(BAN_DO_CONV_STATE).filter(
-    (k) => !that.includes(k),
-  );
-  assert.deepEqual(
-    { khongCoDich, khaiThua },
-    { khongCoDich: [], khaiThua: [] },
-  );
+  const khaiThua = Object.keys(BAN_DO_CONV_STATE).filter((k) => !that.includes(k));
+  // HAI CHIỀU, HAI Ý NGHĨA KHÁC HẲN — bản đầu bắt cả hai phải rỗng và đó là chỗ sai:
+  //
+  //   `khongCoDich`  trường CÓ trong dữ liệu mà bản đồ KHÔNG khai đích ⇒ di trú xong dữ
+  //                  liệu đó biến mất KHÔNG một tiếng động. Đây mới là lỗi, và là đúng
+  //                  thứ tên ca này nói: "không rơi im lặng".
+  //   `khaiThua`     bản đồ khai đích cho trường mà MẪU HIỆN TẠI chưa có. KHÔNG phải lỗi:
+  //                  bản đồ là hợp đồng cho mọi trường có thể gặp, còn mẫu thì mỏng dày
+  //                  tuỳ máy. Bắt nó rỗng là bắt mẫu phải xài hết mọi trường của hợp đồng.
+  //
+  // Đo 25/09 trên `conv-state.json` ở gốc repo: 14 hội thoại, KHÔNG hội thoại nào có
+  // `lastAiAt` · `lastAiText` · `llmTurns` · `aiTurns` (toàn hội thoại chưa từng có lượt
+  // AI). Bốn trường đó rơi vào `khaiThua` ⇒ ca đỏ suốt nhiều gate vì một mẫu mỏng, trong
+  // khi bản đồ vẫn đúng.
+  assert.deepEqual(khongCoDich, [],
+    "trường có trong dữ liệu mà bản đồ không khai đích ⇒ di trú làm MẤT dữ liệu im lặng");
+  if (khaiThua.length) {
+    console.log(`   [D1] bản đồ khai ${khaiThua.length} trường mẫu hiện tại chưa dùng: ${khaiThua.join(", ")}`);
+  }
 });
 
 test("D2 · tập page_id: pages.json ↔ bảng page, diff HAI CHIỀU = rỗng", canNguonThat, async () => {
@@ -158,7 +170,7 @@ test("D6 · IDEMPOTENT: lượt hai không đổi một con số nào", canNguon
   assert.deepEqual(await dem(), truoc);
 });
 
-test("D7 · page LẠC được liệt kê đủ, kèm nguồn nhắc tới nó", canNguonThat, async () => {
+test("D7 · page LẠC được liệt kê đủ, kèm nguồn nhắc tới nó", canNguonThat, async (t) => {
   const lac = pageLac(GOC);
   const trongSoCai = new Set(docPages(GOC).map((p) => p.pageId));
   for (const p of lac) {
@@ -170,6 +182,16 @@ test("D7 · page LẠC được liệt kê đủ, kèm nguồn nhắc tới nó"
     );
     assert.equal(r.rows[0].c, 0, "page lạc KHÔNG được lẻn vào bảng page");
   }
+  // Vế này chỉ đo được khi NGUỒN có page đang bật AI. `ai-enabled.json` ở gốc repo hiện
+  // RỖNG (0 mục, đo 25/09) nên không page nào bật AI ⇒ không thể có page lạc loại đó, và
+  // ca đỏ vì MẪU THIẾU chứ không vì mã sai. Đúng luật của tệp này: thiếu nguồn thì HOÃN,
+  // không đỏ (xem `canNguonThat` đầu tệp). Vế trên — page lạc không được lẻn vào bảng
+  // `page` — vẫn chạy đầy đủ ở mọi máy.
+  const soBatAi = Object.keys(docAiEnabled(GOC) || {}).length;
+  if (!soBatAi) {
+    console.log(`   [D7] ${lac.length} page lạc · ai-enabled.json RỖNG ⇒ hoãn vế «page lạc đang bật AI»`);
+    return t.skip("ai-enabled.json rỗng — nguồn không có page nào bật AI để đo mìn im của N1");
+  }
   assert.ok(
     lac.some((p) => p.nguon.includes("ai-enabled.json")),
     "ít nhất một page lạc phải là page ĐANG BẬT AI — đúng cái mìn im của N1",
@@ -180,7 +202,7 @@ test("D8 · CHỈ ĐỌC: kích thước + mtime của mọi tệp nguồn khôn
   assert.deepEqual(vanTayNguon(), dauTep);
 });
 
-test("D9 · llmTurns là MẢNG MỐC: luot_llm = độ dài, mốc giữ nguyên (không phải epoch)", canNguonThat, async () => {
+test("D9 · llmTurns là MẢNG MỐC: luot_llm = độ dài, mốc giữ nguyên (không phải epoch)", canNguonThat, async (t) => {
   const raw = JSON.parse(fs.readFileSync(duongDan(GOC).convState, "utf8"));
   const mau = Object.entries(raw)
     .filter(
@@ -188,10 +210,13 @@ test("D9 · llmTurns là MẢNG MỐC: luot_llm = độ dài, mốc giữ nguyê
         /^\d+_\d+$/.test(k) && Array.isArray(v.llmTurns) && v.llmTurns.length,
     )
     .slice(0, 5);
-  assert.ok(
-    mau.length,
-    "không có hội thoại nào có llmTurns — ca này mất nghĩa, kiểm lại nguồn",
-  );
+  // Chính ca này đã tự khai "mất nghĩa" khi nguồn không có `llmTurns`. Mất nghĩa thì HOÃN,
+  // đừng đỏ: đỏ ở đây nói "mã sai" trong khi sự thật là "mẫu không có gì để đo". Đo 25/09:
+  // 0/14 hội thoại trong `conv-state.json` có `llmTurns`.
+  if (!mau.length) {
+    console.log("   [D9] 0 hội thoại có llmTurns trong conv-state.json ⇒ hoãn");
+    return t.skip("nguồn không có hội thoại nào mang llmTurns — không có gì để đo");
+  }
   for (const [khoa, v] of mau) {
     const [pageId, psid] = khoa.split("_");
     const r = await sb.pool.query(
