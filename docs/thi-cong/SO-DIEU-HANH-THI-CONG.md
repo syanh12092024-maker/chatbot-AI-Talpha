@@ -2260,3 +2260,24 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   chỉ chạy trên page ĐANG BẬT AI — mà công tắc ấy đã bấm được từ giao diện v3 từ lâu. 📌 Trước
   khi xin sửa một tệp đóng băng, đi đọc xem nó THẬT SỰ đọc gì; câu trả lời hay nằm ở một dòng
   `filter` chứ không ở kiến trúc.
+
+- 25/09 · Q2 (số phận giao diện cũ) → **ĐÓNG CỬA HẬU, KHÔNG TẮT DỊCH VỤ.** Người quyết ra lệnh
+  «tắt cổng 3100»; đo trước khi gõ thì cổng ấy CHÍNH LÀ con bot (`src/server.js` khởi động
+  `startPancakePolling` + lịch nhắc + lịch mổ trong cùng tiến trình) và cũng là cầu `/admin/api`
+  của v3 ⇒ tắt = 51 page ngừng trả lời + v3 đỏ hàng loạt. Nên đóng bằng **hai luật iptables**:
+  `ACCEPT` loopback rồi `DROP` mọi nơi khác cho cổng 3100. Không đụng `.env`, không đụng mã,
+  **không khởi động lại dịch vụ nào**. Đo: ngoài vào → timeout 8s · loopback → `{"ok":true}` ·
+  cầu v3 `/admin/api/readiness` → JSON thật · v3 kêu mất cầu = 0 · cổng 3102 vẫn 200.
+  Bằng chứng giá phải trả thấp: `ai-enabled.json` và `kb-overrides.json` trên prod sửa lần cuối
+  **28/08 — 28 ngày không ai ghi gì qua dashboard cũ**. Runbook + đường lùi + 5 mốc:
+  `docs/thi-cong/nhat-ky/phat-hanh-20260925-dong-cua-3100.md`.
+  ⚠️ CHƯA lưu luật ⇒ **reboot là cửa mở lại**. Lưu vĩnh viễn là một lượt gật riêng.
+- 25/09 · 🧭 **«TẮT CỔNG X» HIẾM KHI LÀ TẮT CỔNG X.** Cổng 3100 mang ba thứ trong một tiến trình:
+  trang quản trị (thứ cần đóng), cầu `/admin/api` của v3 (thứ phải giữ), và vòng hỏi tin của
+  chính con bot (thứ tắt là mất khách). 📌 Trước khi thi hành một lệnh dạng «tắt/xoá/đóng», liệt
+  kê MỌI thứ đang sống nhờ cái sắp tắt — rồi mới chọn lát cắt hẹp nhất đủ làm điều người ta muốn.
+- 25/09 · 🧭 **BA CÁCH ĐÓNG MỘT CỬA, CHỌN CÁCH KHÔNG PHẢI KHỞI ĐỘNG LẠI.** Đổi mật khẩu và đặt
+  `HOST=127.0.0.1` đều phải restart cả ba dịch vụ (chúng đọc CHUNG một `.env`), mà `HOST` còn
+  khoá nhầm giao diện v3 vì nginx trên máy phục vụ ứng dụng khác. Luật tường lửa không chạm tiến
+  trình nào. 📌 Cùng một kết quả, hãy chọn đường không phải dừng thứ đang phục vụ khách; và nhớ
+  hỏi «ba dịch vụ này có dùng chung tệp cấu hình không» TRƯỚC khi định sửa tệp ấy.
