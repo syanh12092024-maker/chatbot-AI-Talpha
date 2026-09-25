@@ -309,7 +309,24 @@ test("R1-6 · RF-3 (S3): lượt bot chốt đơn ⇒ guard nhận orderCreated+
   console.log(
     `   orderCreated=${c.orderCreated} isOrderSummary=${c.isOrderSummary} · ${kq.lyDo} · gửi ${chu.length} tin`,
   );
-  assert.equal(c.orderCreated, true);
+  // `orderCreated` KHÔNG BAO GIỜ true ở bản hiện tại, và đó là ĐÚNG — ca này từng neo
+  // `true` nên đỏ suốt nhiều gate, trong khi mã không hề sai.
+  //
+  // `grep -rn pos_created src/ test/ db/ v3/ ops/` ra ĐÚNG HAI dòng, cả hai đều ĐỌC:
+  //     src/handler.js:440        orderCreated: !!state.orderResult?.pos_created
+  //     src/chat/handler-v3.js    (cùng một dòng, v3 chép đúng hợp đồng của v1)
+  // Không một chỗ nào GÁN `pos_created`. Vì đường v3 chỉ tạo ĐƠN NHÁP CHỜ DUYỆT, không
+  // tạo đơn POS — `BUSINESS_CONTRACT` trong prompts.js nói thẳng: «create_draft_order
+  // thành công chỉ là nhận thông tin chờ duyệt, không phải tạo đơn POS; không đọc
+  // draft_id thành mã đơn». `orderCreated` là cửa cho luật FAKE_ORDER_ID: false vĩnh
+  // viễn nghĩa là bot KHÔNG BAO GIỜ được đọc mã đơn cho khách. Đúng ý đồ.
+  //
+  // Neo `false` chứ không xoá phép: ngày nào có người nối `pos_created` thật, ca này đỏ
+  // và buộc người đó quyết định có mở cửa FAKE_ORDER_ID hay không — thay vì mở lặng lẽ.
+  assert.equal(c.orderCreated, false,
+    "v3 chỉ tạo đơn nháp chờ duyệt ⇒ không được phép đọc mã đơn cho khách");
+  // Đây mới là thứ ca này sinh ra để đo: lượt TÓM TẮT ĐƠN được miễn luật PII_ECHO, nếu
+  // không thì khách câm đúng lượt xác nhận đơn trong khi hệ đã ghi sổ và đẩy hàng chờ.
   assert.equal(c.isOrderSummary, true);
   assert.equal(kq.lyDo, "tra_loi");
   assert.equal(chu.length, 1);
