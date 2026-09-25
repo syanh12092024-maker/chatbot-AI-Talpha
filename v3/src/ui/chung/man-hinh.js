@@ -15,6 +15,7 @@
 
 import { VAI } from '../../auth/boi-canh.js';
 
+import * as vanHanh from '../van-hanh/index.js';
 import * as dispatch from '../dispatch/index.js';
 import * as team from '../team/index.js';
 import * as pageBot from '../page-bot/index.js';
@@ -143,6 +144,7 @@ export const MAN = Object.freeze([
   dat(sucKhoe, 'Hệ còn sống không', 'tong-quan', 'Chín đèn'),
 
   // ② VẬN HÀNH — việc cần người. Mục DUY NHẤT vai `sale` thấy (01 §10).
+  dat(vanHanh, 'Vận hành chat V3', 'van-hanh', 'Page, sản phẩm, đơn và hội thoại V3'),
   dat(dispatch, 'Việc đang chờ', 'van-hanh', 'Có đồng hồ đếm ngược từng việc'),
   dat(hoSoKhach, 'Khách hàng', 'van-hanh', 'Gộp ba kênh theo số điện thoại'),
 
@@ -167,7 +169,7 @@ export const MAN = Object.freeze([
 
   // ⑤ QUẢN TRỊ — vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
   dat(team, 'Người và team', 'quan-tri', 'Thành viên, vai, gán page'),
-  dat(ketNoi, 'Kết nối & token', 'quan-tri', 'Pancake, POS, WhatsApp, Botcake'),
+  dat(ketNoi, 'Kết nối', 'quan-tri', 'Tài khoản Pancake và kho hàng'),
   dat(model, 'Model AI & khoá', 'quan-tri', 'Nhà model, khoá, bảng giá'),
   dat(nhatKy, 'Ai đã sửa gì', 'quan-tri', 'Không sửa được, không xoá được'),
   dat(sanPham, 'Sản phẩm & kho', 'quan-tri', 'Đọc từ POS, không gõ tay', true),
