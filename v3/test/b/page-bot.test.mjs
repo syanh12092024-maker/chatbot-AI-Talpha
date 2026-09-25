@@ -426,7 +426,8 @@ test('cầu bot · MẶC ĐỊNH MỞ, nhưng ba thứ vẫn khoá được', as
     don(); process.env.V3_BOT_KHOA = '1';
     let t = cau.trangThaiCau();
     assert.equal(t.mo, false, '`V3_BOT_KHOA=1` phải khoá');
-    assert.ok(t.thieu.some((x) => /V3_BOT_KHOA/.test(x)));
+    // GD4 · 25/09: `thieu` là câu người vận hành đọc; tên biến sang `thieuKyThuat`.
+    assert.ok(t.thieuKyThuat.some((x) => /V3_BOT_KHOA/.test(x)));
 
     don(); process.env.V3_BOT_GHI = '0';
     assert.equal(cau.trangThaiCau().mo, false, 'cờ cũ đặt `0` vẫn phải được tôn trọng');
@@ -434,7 +435,8 @@ test('cầu bot · MẶC ĐỊNH MỞ, nhưng ba thứ vẫn khoá được', as
     don(); process.env.PANCAKE_READONLY = '1';
     t = cau.trangThaiCau();
     assert.equal(t.mo, false, 'PANCAKE_READONLY=1 phải thắng mọi thứ — máy dev không chạm bot thật');
-    assert.ok(t.thieu.some((x) => /PANCAKE_READONLY/.test(x)));
+    assert.ok(t.thieuKyThuat.some((x) => /PANCAKE_READONLY/.test(x)));
+    assert.ok(t.thieu.some((x) => /CHỈ ĐỌC/.test(x)), 'và câu trên màn phải nói được bằng lời thường');
 
     don(); delete process.env.ADMIN_USER; delete process.env.ADMIN_PASS;
     assert.equal(cau.trangThaiCau().mo, false, 'không có tài khoản thì gọi sang bot cũng không được');

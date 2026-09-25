@@ -21,6 +21,7 @@
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
+  <div class="page-note" id="ghi-chu-ke-thua"></div>
   <div class="page-note" id="ghi-chu-ban"></div>
 
   <section class="section" aria-label="Phạm vi ảnh hưởng">
@@ -143,10 +144,11 @@ function veBangTin() {
     $('#ghi-chu-ban').innerHTML = cho
       ? `<div>${so(cho)} bản nháp chưa áp — chưa ảnh hưởng gì tới bot. Mở «So sánh» rồi bấm áp thì mới có hiệu lực.</div>`
       : '';
-    if (D.keThua) {
-      kh.push(canhBao({ level: 'info', title: 'Team này chưa có bộ quy tắc riêng',
-        body: 'Đang kế thừa bản toàn hệ dùng chung mọi team. Soạn một bản bên dưới là team có bản riêng, và bản riêng sẽ thắng bản kế thừa.' }));
-    }
+    // Kế thừa bản dùng chung là TÌNH TRẠNG, không phải việc phải làm — nói ở chú thích.
+    $('#ghi-chu-ke-thua').innerHTML = D.keThua
+      ? '<div>Team này chưa có bộ quy tắc riêng: đang dùng bản chung của cả hệ. Soạn một bản '
+        + 'bên dưới là team có bản riêng, và bản riêng sẽ thắng bản chung.</div>'
+      : '';
   }
   $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 }

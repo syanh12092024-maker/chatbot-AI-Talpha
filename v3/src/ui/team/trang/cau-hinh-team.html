@@ -63,7 +63,7 @@
     <div class="tabs duoi-4" role="tablist" aria-label="Phần cấu hình">
       <button type="button" class="tab" role="tab" id="tab-tv" aria-controls="p-tv" data-tab="tv">Thành viên</button>
       <button type="button" class="tab" role="tab" id="tab-pos" aria-controls="p-pos" data-tab="pos">Kết nối POS</button>
-      <button type="button" class="tab" role="tab" id="tab-gan" aria-controls="p-gan" data-tab="gan">Chuyển page sang team khác</button>
+      <button type="button" class="tab" role="tab" id="tab-gan" aria-controls="p-gan" data-tab="gan">Gán page ↔ team</button>
     </div>
 
     <div role="tabpanel" id="p-tv" aria-labelledby="tab-tv">
@@ -276,7 +276,7 @@ function veKetNoi(d) {
       <th scope="col">Thị trường</th><th scope="col">Shop POS</th><th scope="col">Trạng thái</th>
     </tr></thead><tbody>${d.pos.map((k) => `
     <tr><td class="manh">${esc(k.market)}</td>
-      <td><code>${esc(k.shopId)}</code></td>
+      <td><span class="tabular">${esc(k.shopId)}</span></td>
       <td>${statusBadge(k.bat ? 'feature_on' : 'feature_off', { label: k.bat ? 'Đang bật' : 'Đã tắt' })}</td>
     </tr>`).join('')}</tbody></table>`;
 }

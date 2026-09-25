@@ -72,7 +72,7 @@ function veChatLieu(ds) {
     <tr>
       <td class="manh">${esc(x.ten)}</td>
       <td>${x.o
-        ? `<code>${esc(x.o)}</code>`
+        ? `<span class="meta">${esc(x.o)}</span>`
         : statusBadge('blocked', { label: 'Không có trường nào' })}</td>
       <td class="meta">${text(x.noi)}</td>
     </tr>`).join('')}</tbody></table>`;

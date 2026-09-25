@@ -171,7 +171,7 @@ export async function manBaoCao(boiCanh) {
     },
     trangBanHang: haiLuong?.co ? haiLuong.trangBanHang : await luongTrangBanHang(bc),
     viSaoKhongCong:
-      '`01-QUYET-DINH §1` — hai luồng đo bằng HAI THƯỚC khác nhau: trang bán hàng có đơn '
+      'Hai luồng khách đo bằng HAI THƯỚC khác nhau: trang bán hàng có đơn '
       + 'trước rồi mới hỏi, Messenger thì chốt trong hội thoại. Cộng lại là trả lời sai mọi '
       + 'câu hỏi sau đó. Ba con số của luồng Messenger cũng KHÔNG cộng được với nhau — '
       + 'chúng đo ba chuyện khác nhau, không phải ba phần của một chuyện.',

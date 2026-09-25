@@ -100,27 +100,41 @@ export const coTaiKhoan = () => !!(env('ADMIN_USER') && env('ADMIN_PASS'));
  * Màn hình hiện thẳng câu này; «không bật được» mà không nói vì sao thì người ta đi hỏi vòng.
  */
 export function trangThaiCau() {
+  // HAI DANH SÁCH SONG SONG (GD4 · 25/09). `thieu` là câu người vận hành đọc trên màn;
+  // `thieuKyThuat` là cùng lý do đó viết bằng tên biến, dành cho người sửa máy chủ — màn đưa
+  // nó xuống ô «Nguồn số», còn thông báo lỗi thì mang cả hai (nhật ký cần tên biến).
   const thieu = [];
+  const thieuKyThuat = [];
   if (env(BIEN_KHOA) === '1') {
-    thieu.push('`' + BIEN_KHOA + '=1` đang bật — máy này bị khoá không cho ghi sang tiến trình bot');
+    thieu.push('máy này đang bị khoá, không cho ghi sang tiến trình bot');
+    thieuKyThuat.push('`' + BIEN_KHOA + '=1` đang bật');
   }
   // Ai đã cố ý tắt bằng cờ cũ thì vẫn tắt. Cờ cũ KHÔNG còn là điều kiện để MỞ.
   if (env(BIEN_CO_GHI) === '0') {
-    thieu.push('`' + BIEN_CO_GHI + '=0` đang đặt — cờ cũ vẫn được tôn trọng. Bỏ dòng đó, '
-      + 'hoặc dùng `' + BIEN_KHOA + '` nếu muốn khoá.');
+    thieu.push('có người đã tắt đường ghi bằng cấu hình cũ, và cấu hình đó vẫn được tôn trọng');
+    thieuKyThuat.push('`' + BIEN_CO_GHI + '=0` đang đặt — bỏ dòng đó, hoặc dùng `'
+      + BIEN_KHOA + '` nếu muốn khoá');
   }
   if (env(BIEN_CHAN_DOC) === '1') {
-    thieu.push('`' + BIEN_CHAN_DOC + '=1` đang bật — máy này ở chế độ CHỈ ĐỌC với Pancake');
+    thieu.push('máy này đang ở chế độ CHỈ ĐỌC với Pancake — xem được, nhưng không bật tắt bot '
+      + 'và không thêm tài khoản được');
+    thieuKyThuat.push('`' + BIEN_CHAN_DOC + '=1` đang bật');
   }
   if (!coTaiKhoan()) {
-    thieu.push('thiếu `ADMIN_USER`/`ADMIN_PASS` — không gọi được `/admin/api` của tiến trình bot');
+    thieu.push('máy chủ chưa có tài khoản quản trị để gọi sang tiến trình bot');
+    thieuKyThuat.push('thiếu `ADMIN_USER`/`ADMIN_PASS` — không gọi được `/admin/api`');
   }
-  return { mo: thieu.length === 0, thieu, goc: gocBot() };
+  return { mo: thieu.length === 0, thieu, thieuKyThuat, goc: gocBot() };
 }
 
 function batBuocMo() {
   const t = trangThaiCau();
-  if (!t.mo) throw new LoiCauBotDong('Cửa ghi sang tiến trình bot đang ĐÓNG: ' + t.thieu.join(' · '));
+  // Thông báo lỗi mang CẢ HAI: câu người đọc và tên biến — nó đi vào nhật ký và vào tay
+  // người sửa máy chủ, nơi tên biến là thứ cần nhất.
+  if (!t.mo) {
+    throw new LoiCauBotDong('Cửa ghi sang tiến trình bot đang ĐÓNG: ' + t.thieu.join(' · ')
+      + (t.thieuKyThuat.length ? ` (${t.thieuKyThuat.join(' · ')})` : ''));
+  }
 }
 
 function tieuDe() {

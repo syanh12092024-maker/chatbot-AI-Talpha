@@ -67,7 +67,7 @@ function veDs() {
     const rong = k.bat && k.soPageNhan === 0;
     return `<div class="setting-row" data-ky="${esc(k.id)}">
       <div>
-        <div class="setting-name">${esc(k.ten)} <span class="meta"><code>${esc(k.ma)}</code></span></div>
+        <div class="setting-name">${esc(k.ten)}</div>
         <div class="setting-desc">${esc(D.chuPhamVi[k.phamVi])}</div>
         <div class="tren-2 hang">
           ${statusBadge(rong ? 'blocked' : k.bat ? 'feature_on' : 'feature_off',

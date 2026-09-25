@@ -25,6 +25,7 @@
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
+  <div class="page-note" id="ghi-chu-anh-chup"></div>
 
   <section class="section" aria-labelledby="tieu-luong">
     <div class="section-header"><div>
@@ -129,7 +130,9 @@ async function tai() {
     const kh = [];
     if (d.chamTran && d.chamTran.co) kh.push(canhBao({ level: 'warning', title: 'Đã đọc tới trần', body: d.chamTran.noi }));
     // Tiêu đề nói ĐIỀU CẦN NHỚ, không lặp lại cái huy hiệu khoảng đo đã nói ở đầu trang.
-    if (d.khoang && d.khoang.canhBao) kh.push(canhBao({ level: 'info', title: 'Đây là ảnh chụp, không phải tỉ lệ rơi', body: d.khoang.canhBao }));
+    // Không phải việc phải làm — là điều cần nhớ khi đọc con số, nên đứng cạnh con số.
+    $('#ghi-chu-anh-chup').innerHTML = (d.khoang && d.khoang.canhBao)
+      ? `<div>Đây là ảnh chụp, không phải tỉ lệ rơi. ${esc(d.khoang.canhBao)}</div>` : '';
     $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 
     $('#dich').innerHTML = esc(d.gapNhauO)

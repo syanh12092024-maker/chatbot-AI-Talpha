@@ -219,7 +219,7 @@ function veGoc(d) {
       </tr></thead><tbody>${d.goc.map((g) => `
       <tr>
         <td class="num">${g.soHieu ? esc(g.soHieu) : '<span class="meta">chưa gán</span>'}</td>
-        <td><code>${esc(g.maGoc)}</code></td>
+        <td><span class="tabular">${esc(g.maGoc)}</span></td>
         <td>${g.ten ? esc(g.ten) : '<span class="meta">chưa đặt tên</span>'}</td>
         <td class="num">${so(g.soBienThe)}</td>
         <td class="actions">${d.suaDuoc

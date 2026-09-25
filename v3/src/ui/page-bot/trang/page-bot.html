@@ -24,6 +24,7 @@
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
+  <div class="page-note" id="ghi-chu-marketer"></div>
 
   <section class="table-wrap" aria-labelledby="tieu-bang">
     <h2 id="tieu-bang" class="sr-only">Danh sách page</h2>
@@ -92,13 +93,9 @@ function veBangTin(d, loi) {
       }));
     }
     if (d.dem && d.dem.thieu_marketer > 0) {
-      kh.push(canhBao({
-        level: 'warning',
-        title: `${so(d.dem.thieu_marketer)}/${so(d.soTong)} page chưa có người phụ trách`,
-        body: 'Báo cáo cắt theo marketer sẽ trống với những page đó, và bản tin «page chưa chạy '
-          + 'được bot» không biết gửi cho ai. Cột này nhận giá trị từ pages.json qua lượt «Kéo '
-          + 'dữ liệu về» — màn này không sửa (người quyết chốt 15/09).',
-      }));
+      $('#ghi-chu-marketer').innerHTML = `<div>${so(d.dem.thieu_marketer)}/${so(d.soTong)} page `
+        + 'chưa có người phụ trách — báo cáo cắt theo marketer sẽ trống với những page đó. '
+        + 'Cột này nhận giá trị từ lượt «Kéo dữ liệu về», màn này không sửa.</div>';
     }
     if (d.cuaKiemDocDuoc === false) {
       kh.push(canhBao({

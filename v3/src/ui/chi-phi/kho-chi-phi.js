@@ -97,7 +97,7 @@ export async function manChiPhi(boiCanh) {
         rong: true, vi: 'chua-nap',
         noi: 'Chưa nối cầu sang tiến trình bot nên chưa đọc được chi phí.',
         diTiep: 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` rồi khởi động lại v3. '
-          + 'Sổ `so_ai` của v3 KHÔNG dùng thay được — nó chưa có dòng nào.',
+          + 'Sổ tiền của cơ sở dữ liệu KHÔNG dùng thay được — nó chưa có dòng nào.',
       },
     };
   }
@@ -203,7 +203,7 @@ export async function manChiPhi(boiCanh) {
 function lechSoAi(soAi, luotBot, tienBot) {
   if (!soAi) return null;
   if (soAi.loi) {
-    return { docDuoc: false, noi: `Không đọc được sổ \`so_ai\` của v3: ${soAi.loi}` };
+    return { docDuoc: false, noi: `Không đọc được sổ tiền của cơ sở dữ liệu: ${soAi.loi}` };
   }
   const lech = soAi.soLuot !== luotBot;
   return {
@@ -213,12 +213,12 @@ function lechSoAi(soAi, luotBot, tienBot) {
     coLech: lech,
     canhBao: soAi.canhBao || null,
     noi: !lech
-      ? 'Sổ `so_ai` của v3 khớp với số đo của tiến trình bot.'
-      : `Sổ \`so_ai\` của CSDL v3 ghi **${soAi.soLuot} lượt / ${soAi.tienVnd.toLocaleString('vi-VN')} đ**, `
+      ? 'Sổ tiền của cơ sở dữ liệu khớp với số đo của tiến trình bot.'
+      : `Sổ tiền của cơ sở dữ liệu ghi **${soAi.soLuot} lượt / ${soAi.tienVnd.toLocaleString('vi-VN')} đ**, `
         + `còn tiến trình bot đo được **${luotBot} lượt / ${tienBot.toLocaleString('vi-VN')} đ**. `
         + 'Con số trên màn lấy theo TIẾN TRÌNH BOT — đó là nơi tiền thật sự bị tiêu.',
     viSao: soAi.viSaoRong
-      || (lech ? 'Luồng sống của v3 chưa ghi vào `so_ai`. Sổ cái dài hạn còn trống, không '
-        + 'phải vì không ai tiêu tiền.' : null),
+      || (lech ? 'Đường chat mới chưa ghi vào sổ tiền dài hạn. Sổ còn trống, không phải vì '
+        + 'không ai tiêu tiền.' : null),
   };
 }

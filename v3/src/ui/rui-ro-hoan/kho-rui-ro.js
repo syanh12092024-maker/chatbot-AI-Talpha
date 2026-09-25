@@ -217,7 +217,7 @@ function dungTuPhanBo(bc, r) {
       taiLieuNoi: 144,
       doDuoc: theoTang.find((t) => t.ma === "canh_bao")?.soKhach || 0,
       viSaoKhac:
-        "`04-TIEN-DO.md`: mốc 23/08 đo trên **4,2% dân số** nên mọi số dẫn xuất chỉ là ước.",
+        "Số trong tài liệu đo trên 4,2% dân số khách, nên mọi con số dẫn ra từ nó chỉ là ước.",
     },
     trong: daCham
       ? null
@@ -301,7 +301,7 @@ function dungTuCot(bc, khach, luiVi) {
       taiLieuNoi: 144,
       doDuoc: tangLa("canh_bao").soKhach,
       viSaoKhac:
-        "`04-TIEN-DO.md`: mốc 23/08 đo trên **4,2% dân số**, nên mọi số dẫn xuất từ nó " +
+        "Số trong tài liệu đo trên 4,2% dân số khách, nên mọi số dẫn ra từ nó " +
         "— gồm phân bố bốn tầng — chỉ là ước. Con số bên phải đọc từ cột đã chấm trên toàn bộ.",
     },
     trong: daCham.length

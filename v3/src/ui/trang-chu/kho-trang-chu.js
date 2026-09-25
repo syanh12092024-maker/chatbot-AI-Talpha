@@ -156,9 +156,9 @@ async function vViecChoNguoi(d) {
     lam: 'Hội thoại bot đã giao lại cho người, có đồng hồ đếm ngược.',
     viRong: chuaNap ? VI_RONG.CHUA_NAP : VI_RONG.XONG,
     noiRong: chuaNap
-      ? `Bảng \`viec_can_xu_ly\` KHÔNG có dòng nào, trong khi \`hoi_thoai\` có ${handoff} `
-        + 'hội thoại ở trạng thái HANDOFF. Hai điều đó không thể cùng đúng — nghĩa là hàng '
-        + 'đợi chưa được nạp, KHÔNG phải là hết việc.'
+      ? `Hàng đợi việc chưa có dòng nào, trong khi có ${handoff} hội thoại bot ĐÃ giao lại `
+        + 'cho người. Hai điều đó không thể cùng đúng — nghĩa là hàng đợi chưa được nạp, '
+        + 'KHÔNG phải là hết việc.'
       : 'Không việc nào đang chờ người nhận.',
     diTiepRong: chuaNap
       ? 'Luồng sống của v3 chưa đẩy việc vào bảng này. Hội thoại hiện có là bản nhập từ lịch '

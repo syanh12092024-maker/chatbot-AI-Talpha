@@ -37,7 +37,7 @@
 </main>
 
 <script>
-const { esc, text, statusBadge, alert: canhBao, emptyState, metricRow, formatNumber, formatVnd } = window.UI;
+const { esc, text, statusBadge, alert: canhBao, emptyState, metricRow, formatNumber, formatVnd, nguonSo } = window.UI;
 const $ = (s) => document.querySelector(s);
 // Số CHƯA TÍNH ĐƯỢC hiện «—». «0 đồng» ở màn chi phí là câu dễ tin nhất và sai nhất.
 const d0 = (n) => (n == null ? '—' : formatNumber(n));
@@ -83,9 +83,15 @@ function veDem(d) {
     { label: 'Đơn', value: d0(t.soDon),
       statusHtml: t.soDon === 0 ? statusBadge('blocked', { label: 'Chưa ra đơn nào' }) : '' },
   ]);
-  $('#nguon').innerHTML = `<p>Nguồn: tiến trình bot${d.nhaCungCap ? ` · nhà cung cấp <code>${esc(d.nhaCungCap)}</code>` : ''}. `
-    + `Phần lượt không có token đo thật được ước từ độ dài chữ.</p>`
-    + (d.khoang && d.khoang.canhBao ? `<p>${text(d.khoang.canhBao)}</p>` : '');
+  // Lời khai nguồn (luật 8) xuống ô gập — mặt màn giữ đúng con số và câu người dùng cần.
+  $('#nguon').innerHTML = nguonSo({
+    dong: [
+      { ten: 'Tiền model', tu: `đo tại tiến trình bot${d.nhaCungCap ? ` · nhà model: ${esc(d.nhaCungCap)}` : ''}` },
+      { ten: 'Lượt không đo được token', tu: 'ước từ độ dài chữ, không phải số đo của nhà model' },
+      { ten: 'Sổ tiền của cơ sở dữ liệu', tu: d.soAi && d.soAi.noi ? d.soAi.noi : 'chưa đối chiếu được' },
+    ],
+    chuY: d.khoang && d.khoang.canhBao ? d.khoang.canhBao : null,
+  });
 }
 
 function veBang(d) {
