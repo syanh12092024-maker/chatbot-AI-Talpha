@@ -1,0 +1,22 @@
+# Copy the needed entries into the server's existing .env; do not replace existing keys.
+# Fill real secrets directly on the server, never commit them.
+DATABASE_URL_V3=
+V3_KHOA_VE=
+V3_KHOA_MA_HOA=
+# Pancake polling + POS: disable direct Meta webhook; Meta secrets are optional.
+META_WEBHOOK_OFF=1
+APP_SECRET=
+VERIFY_TOKEN=
+ADMIN_USER=
+ADMIN_PASS=
+AI_PROVIDER=kimi
+KIMI_API_KEY=
+ANTHROPIC_API_KEY=
+PORT=3100
+CHAYTHAT_CONG=3102
+V3_RAP_PROMPT_BAT=1
+PANCAKE_READONLY=1
+V3_PANCAKE_GUI=0
+V3_POS_GHI=0
+V3_PAGE_XU_LY=
+V3_LEGACY_POLL_OFF=1
