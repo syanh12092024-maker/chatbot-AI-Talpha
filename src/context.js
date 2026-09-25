@@ -13,6 +13,7 @@
 import { cleanText } from './text.js';
 import { isAutomationTemplate } from './bot-registry.js';
 import { hasPhone, hasAddress, scanSignals } from './lead-score.js';
+import { extractMoney, allowedPrices } from './outbound-guard.js';
 // DÙNG LẠI luật chào của M05, KHÔNG viết bản thứ hai: `conv-owner.js#isJustGreeting` đã
 // phân biệt "chỉ chào" với "câu hỏi thật" và đã được hiệu chỉnh trên tin thật (nó cố ý
 // lệch một chiều: không chắc thì coi là CÂU HỎI THẬT). Hai bản luật chào là hai sự thật.
@@ -66,6 +67,15 @@ export const HYDRATE_MAX_MSGS = 20; // chỉ dùng ĐÚNG MỘT LẦN lúc dựn
 export function emptyProfile() {
   return {
     name: '', phone: '', address: '', city: '',
+    // TÊN FACEBOOK — CHỈ để xưng hô, TUYỆT ĐỐI không phải `name` của đơn.
+    //
+    // Đo 25/09: 8/8 tin khách mang sẵn `from.name`, nên lấy được miễn phí ngay trong lịch
+    // sử — không cần đụng bộ nạp, CSDL hay migration. Nhưng KHÔNG được đổ vào `prof.name`:
+    // `name` đi thẳng vào `create_draft_order` (tên người nhận hàng) và vào `missingSteps`.
+    // Tên Facebook thật trên page này gồm "Napagod Na Ako" · "Alas Uno" · "Rich Chie" —
+    // đổ vào `name` là bot thôi hỏi tên thật RỒI đẩy chuỗi đó xuống POS làm tên nhận hàng.
+    // Hai trường, hai việc: `tenFb` để gọi khách, `name` để ghi đơn.
+    tenFb: '',
     tier: '',            // gói/combo khách đang nhắm
     qty: 0,
     total: '',           // tổng tiền đã chốt (chỉ từ tham số tool — không bịa)
@@ -84,7 +94,20 @@ export function emptyProfile() {
       sentImages: false,   // đã có bot khác gửi ảnh
       askedAddress: false, // đã có bot khác xin tên/SĐT/địa chỉ
       orderNoted: false,   // đã có bot khác báo "đơn đã tạo"
+      // CON SỐ, không chỉ cái cờ. `quotedPrice: true` nói "đã báo giá" mà không nói BÁO
+      // GIÁ NÀO — vô dụng đúng lúc cần nhất. Đo 22/09 trên 99 hội thoại thật: chiến dịch
+      // cũ của page vẫn phát 99 SAR (73 lần) và 149 SAR (71 lần), NHIỀU HƠN giá đang chạy
+      // 109/159 (46 và 35 lần). Model đọc 99 trong ngữ cảnh rồi nhắc lại ⇒ 7 lượt bị cửa
+      // ra chặn PRICE_MISMATCH. Giữ lại con số thì mới đính chính được cho khách.
+      giaDaBao: [],
     },
+    // ── TRẠNG THÁI KHÁCH — thứ hồ sơ cũ không có chỗ để ghi ─────────────────
+    // Ca thật (Siti Labangin, 22/09): khách nói ở Philippines rồi chào tạm biệt HAI lần,
+    // lượt sau bot vẫn "Hello po! Welcome back 😊 … are you in Saudi Arabia now?" rồi dội
+    // lại checklist địa chỉ. Ngữ cảnh CÓ trong prompt — nhưng khối hồ sơ vẫn đều đặn in
+    // "Bước còn thiếu: … địa chỉ …" nên model đi xin địa chỉ của người không giao được.
+    ngoaiVung: '',       // nơi khách nói đang ở, khi nơi đó KHÔNG thuộc vùng giao
+    daTuChoi: false,     // khách đã chào tạm biệt / từ chối mua
     hydratedAt: 0,
   };
 }
@@ -141,6 +164,14 @@ export function extractFromText(text, prof = emptyProfile()) {
   for (const k of scanSignals(s)) {
     if (k.startsWith('obj_') && !prof.objections.includes(k)) prof.objections.push(k);
   }
+  // Hai dữ kiện ĐỔI HẲN việc phải làm ở lượt sau — xem khối ghi chú ở `noiNgoaiVung`.
+  // `ngoaiVung` chỉ GHI ĐÈ khi chưa có: khách nói "I'm in Philippines" một lần là đủ,
+  // câu sau nhắc lại "Saudi" không được xoá nó (cùng luật với tên/SĐT/địa chỉ).
+  if (!prof.ngoaiVung) { const n = noiNgoaiVung(s); if (n) prof.ngoaiVung = n; }
+  // `daTuChoi` thì NGƯỢC LẠI — bật/tắt theo lượt mới nhất: khách chào tạm biệt rồi quay
+  // lại hỏi giá là đã đổi ý, giữ cờ cũ thì bot câm với một người đang muốn mua.
+  if (khachTuChoi(s)) prof.daTuChoi = true;
+  else if (prof.daTuChoi && (TIER_TEXT.test(s) || hasPhone(s) || hasAddress(s))) prof.daTuChoi = false;
   return prof;
 }
 
@@ -196,8 +227,48 @@ export function absorbOtherBot(text, hasAttach, prof) {
   else if (OB_ADDR.test(t)) o.askedAddress = true;
   else if (OB_PRICE.test(t)) o.quotedPrice = true;
   else if (OB_GREET.test(t)) o.greeted = true;
+  // GIỮ CON SỐ trước khi vứt câu. Dùng lại `extractMoney` của cửa ra — cùng một phép đọc
+  // tiền cho cả chiều vào và chiều ra, không đẻ bản thứ hai.
+  if (!Array.isArray(o.giaDaBao)) o.giaDaBao = [];
+  for (const n of extractMoney(t)) {
+    if (o.giaDaBao.length >= 6) break;
+    if (!o.giaDaBao.includes(n)) { o.giaDaBao.push(n); o.quotedPrice = true; }
+  }
   return prof;
 }
+
+// ── TRẠNG THÁI KHÁCH ────────────────────────────────────────────────────────
+// Cả hai đều LỆCH MỘT CHIỀU có chủ ý: bắt hụt thì hệ chạy y như cũ, bắt nhầm thì bot im
+// với một người đang muốn mua. Nên chỉ bắt câu nói THẲNG, không suy diễn.
+//
+// `NOI_KHAC` không phải "mọi nước trên đời" mà là những nơi KHÁCH CỦA PAGE NÀY hay nói —
+// lao động Philippines/Nam Á ở vùng Vịnh nhắn về quê hoặc về nước bên cạnh. Page nào giao
+// vùng khác thì sửa danh sách, đừng sửa luật.
+const NOI_KHAC = /\b(philippines?|pilipinas|pinas|manila|cebu|davao|bangladesh|india|pakistan|nepal|indonesia|vietnam|egypt|sudan|yemen|jordan|lebanon)\b/i;
+
+// PHẢI có dấu hiệu «chính khách ở đó» hoặc «giao tới đó» ngay trước tên nơi. Nhắc tên
+// nước bâng quơ thì không tính.
+const TRUOC_NOI = /\b(?:i\s*(?:a|')?m|im|i\s+live|i\s+stay|i\s+work|ako|nasa|dito|sa|deliver(?:y|ing)?|ship(?:ping)?|send|from|to)\b[^.\n]{0,22}$/i;
+// …và KHÔNG phải nói về người khác. Đo lần đầu bắt nhầm "my friend in india bought it" —
+// bắt nhầm ở đây là bot từ chối một người ĐANG MUỐN MUA, tệ hơn hẳn bắt hụt.
+const NGUOI_KHAC = /\b(?:friend|kaibigan|sister|brother|cousin|tita|tito|someone|colleague|officemate|kapatid)\b[^.\n]{0,22}$/i;
+
+/** Khách có nói đang ở NƠI KHÁC (ngoài vùng giao) không? Trả tên nơi, hoặc ''. */
+export function noiNgoaiVung(text) {
+  const t = String(text || '');
+  const m = NOI_KHAC.exec(t);
+  if (!m) return '';
+  const truoc = t.slice(0, m.index);
+  if (NGUOI_KHAC.test(truoc)) return '';
+  return TRUOC_NOI.test(truoc) ? m[0] : '';
+}
+
+// Chỉ bắt câu nói THẲNG lời chia tay hoặc từ chối. "ok" · "yes" · "hm" KHÔNG tính — đó là
+// tiếng ừ hữ giữa cuộc, bắt nhầm là bot câm với một người đang muốn mua.
+const TU_CHOI = /\b(?:bye+|goodbye|good\s*bye|no\s*thanks?|not\s+interested|maybe\s+next\s+time|next\s+time|ayaw|hindi\s+na|cancel\s+(?:na|it|my\s+order))\b/i;
+
+/** Khách đã chào tạm biệt / từ chối chưa? */
+export const khachTuChoi = (text) => TU_CHOI.test(String(text || ''));
 
 export function cleanHistory(msgs = [], pageId, prof = null) {
   const out = [];
@@ -219,6 +290,19 @@ export function cleanHistory(msgs = [], pageId, prof = null) {
     }
   }
   return out;
+}
+
+/**
+ * Tên Facebook của khách, lấy từ tin ĐẦU TIÊN không phải của page.
+ * Rẻ tuyệt đối: payload đã có sẵn, không thêm một lời gọi nào.
+ */
+export function tenFbTu(msgs = [], pageId) {
+  for (const m of msgs) {
+    if (String(m?.from?.id) === String(pageId)) continue;
+    const t = String(m?.from?.name || '').trim();
+    if (t) return t.slice(0, 60);
+  }
+  return '';
 }
 
 /** Dựng hồ sơ lần đầu từ tối đa 20 tin Pancake — CHỈ CHẠY MỘT LẦN cho mỗi hội thoại. */
@@ -298,6 +382,11 @@ export function missingSteps(prof) {
 export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
   const L = [];
   L.push('[HỒ SƠ KHÁCH — dữ liệu nội bộ, ĐỌC để không hỏi lại thứ khách đã cho]');
+  // Xưng hô ĐỨNG RIÊNG, cách xa khối dữ liệu đơn, và nói rõ nó không phải tên người nhận.
+  if (prof.tenFb) {
+    L.push(`Khách tên Facebook là "${prof.tenFb}" — GỌI TÊN khách cho thân mật (tên riêng thôi). `
+      + `Đây KHÔNG phải tên người nhận hàng: vẫn phải hỏi tên thật để ghi đơn.`);
+  }
   const idLine = [
     `Tên: ${prof.name || '(chưa có)'}`,
     `SĐT: ${prof.phone || '(chưa có)'}`,
@@ -318,8 +407,25 @@ export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
   ].filter(Boolean);
   if (obL.length) L.push(`Kênh khác (Botcake/sale) đã làm: ${obL.join(', ')} — ĐỪNG lặp lại.`);
   L.push(`COD: ${prof.cod ? 'khách đã xác nhận' : 'chưa xác nhận'}`);
+  // GIÁ MÁY KHÁC ĐÃ BÁO — chỉ nói khi nó LỆCH bảng giá. Khớp thì im, đừng làm loãng khối.
+  const giaOk = allowedPrices(meta.kb || {});
+  const giaLech = (prof.otherBot?.giaDaBao || []).filter((n) => giaOk.size && !giaOk.has(n));
+  if (giaLech.length) {
+    L.push(`⚠️ Kênh khác ĐÃ BÁO SAI GIÁ ${giaLech.join(', ')} cho khách này (giá đúng: ${[...giaOk].sort((a, b) => a - b).join(', ')}). `
+      + `Khách nhắc con số cũ thì ĐÍNH CHÍNH nhẹ nhàng rồi báo giá đúng — TUYỆT ĐỐI không nhắc lại con số sai.`);
+  }
+  if (prof.ngoaiVung) {
+    L.push(`⛔ KHÁCH Ở "${prof.ngoaiVung}" — NGOÀI vùng giao. KHÔNG xin địa chỉ, KHÔNG chốt đơn. `
+      + `Nói thẳng là chưa giao tới đó, cảm ơn, kết thúc lịch sự.`);
+  }
+  if (prof.daTuChoi) {
+    L.push(`🙅 Khách đã chào tạm biệt / từ chối. ĐỪNG chào lại từ đầu, đừng dán lại bảng giá, `
+      + `đừng hỏi lại thông tin. Chỉ đáp ngắn và để ngỏ cửa.`);
+  }
   const miss = missingSteps(prof);
-  L.push(`Bước còn thiếu: ${miss.length ? miss.join(', ') : 'đủ thông tin — chốt đơn được'}`);
+  L.push(prof.ngoaiVung
+    ? 'Bước còn thiếu: KHÔNG CÓ — không phục vụ được khách này.'
+    : `Bước còn thiếu: ${miss.length ? miss.join(', ') : 'đủ thông tin — chốt đơn được'}`);
   if (meta.max) L.push(`Lượt đã dùng: ${meta.used || 0}/${meta.max}${meta.tier ? ` (khách ${meta.tier})` : ''} · Trạng thái: ${meta.state || 'SELLING'}`);
   // ① CÂU AI NÓI GẦN NHẤT — xem khối ghi chú "MẠCH TƯ VẤN" phía trên.
   // Cắt 200 ký tự và ép về một dòng: đây là gợi nhớ, không phải chép lại cả tin.
@@ -368,6 +474,10 @@ function mergeTurns(rows) {
  * @returns {{messages:Array, kept:number, dropped:number}}
  */
 export function buildContextMessages({ prof, msgs = [], pageId, meta = {}, recent = RECENT_MSGS, keepTrailingUser = false }) {
+  // Vá Ở ĐÂY chứ không chỉ trong `hydrateProfile`: hội thoại đã hydrate TRƯỚC lượt vá này
+  // sẽ không bao giờ chạy lại hydrate (`hydratedAt` chặn vĩnh viễn), nên tên sẽ rỗng mãi.
+  // Đặt ở đây thì hội thoại cũ tự có tên ngay lượt kế tiếp, không cần chạy lại gì.
+  if (!prof.tenFb) { const t = tenFbTu(msgs, pageId); if (t) prof.tenFb = t; }
   const rows = cleanHistory(msgs, pageId, prof); // truyền prof để bóc dữ kiện bot khác (việc 2)
   const dropped = msgs.length - rows.length;
   // bỏ cụm tin khách đang xử lý ở cuối

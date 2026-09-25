@@ -9,6 +9,7 @@ import {
   emptyProfile, extractFromText, absorbToolUses, hydrateProfile, cleanHistory,
   buildProfileBlock, buildContextMessages, missingSteps, estimateTokens,
   RECENT_MSGS, khoangCach, NGAT_MACH_MS, laPingKhach, chonCuaSo,
+  noiNgoaiVung, khachTuChoi, absorbOtherBot as _ab, tenFbTu,
 } from '../src/context.js';
 
 const PAGE = 'P07';
@@ -297,4 +298,140 @@ test('C23 · ⭐ khách giục ≥2 lần thì BÓC THÀNH DỮ KIỆN trước 
   assert.match(nen(3), /Khách đã gọi 3 lần/, 'giục nhiều lần là dữ kiện bán hàng, không phải rác');
   assert.match(nen(3), /vào THẲNG việc/);
   assert.doesNotMatch(nen(1), /Khách đã gọi/, 'một lời chào là bình thường, đừng làm loãng hồ sơ');
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ⑥ HIỂU NGỮ CẢNH MÀ KHÔNG ĐỌC LẠI — bóc thành DỮ KIỆN, rồi vứt câu
+//
+// `cleanHistory` vứt template của kênh khác khỏi prompt (đúng: đưa nguyên văn vào là dạy
+// model bắt chước thứ luật cứng đang cấm). Nhưng vứt mà không bóc thì mất luôn thông tin.
+// Đo 22/09 trên 99 hội thoại thật: chiến dịch cũ của page vẫn phát 99 SAR (73 lần) và
+// 149 SAR (71 lần) — NHIỀU HƠN giá đang chạy 109/159. Model đọc 99 trong chính ngữ cảnh
+// của nó rồi nhắc lại ⇒ 7 lượt bị cửa ra chặn PRICE_MISMATCH.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const KB_GIA = { products: [{ id: 'p', name: 'x', currency: 'SAR',
+  tiers: [{ label: 'B1G1', price: 109 }, { label: 'B2G2', price: 159 }] }] };
+
+test('C24 · ⭐⭐ giữ CON SỐ mà kênh khác đã báo, và nói ra khi nó LỆCH bảng giá', () => {
+  const p = emptyProfile();
+  absorbToolUses([], p);
+  _ab('🎉 SPECIAL PROMOTION! Buy 1 Get 1 FREE – Only 99 SAR · Buy 2 Get 2 – 149 SAR', false, p);
+  assert.deepEqual(p.otherBot.giaDaBao, [99, 149], 'phải giữ con số, không chỉ bật cờ');
+  const block = buildProfileBlock(p, { kb: KB_GIA });
+  assert.match(block, /ĐÃ BÁO SAI GIÁ 99, 149/);
+  assert.match(block, /giá đúng: 109, 159/);
+  assert.match(block, /không nhắc lại con số sai/);
+});
+
+test('C25 · giá KHỚP bảng thì im — đừng làm loãng khối hồ sơ', () => {
+  const p = emptyProfile();
+  _ab('Buy 1 Get 1 FREE – Only 109 SAR', false, p);
+  assert.deepEqual(p.otherBot.giaDaBao, [109]);
+  assert.doesNotMatch(buildProfileBlock(p, { kb: KB_GIA }), /BÁO SAI GIÁ/);
+});
+
+test('C26 · ⭐⭐ NGOÀI VÙNG GIAO — bắt đúng câu của Siti, không bắt nhầm người khác', () => {
+  // Ca thật 22/09: khách nói ở Philippines rồi chào tạm biệt hai lần, lượt sau bot vẫn
+  // "Welcome back 😊 … are you in Saudi Arabia now?" rồi dội lại checklist địa chỉ.
+  for (const t of ['how kon deliver and the philippines', 'I am in Philippines', 'sa pinas po',
+                   'im in bangladesh now', 'can you ship to nepal', 'from pakistan po ako']) {
+    assert.ok(noiNgoaiVung(t), `phải bắt: ${t}`);
+  }
+  // Bắt NHẦM ở đây là bot từ chối một người ĐANG MUỐN MUA — tệ hơn hẳn bắt hụt.
+  for (const t of ['my friend in india bought it', 'my sister in cebu tried it', 'Riyadh city',
+                   'my colleague in indonesia said its good', 'Jeddah District 1']) {
+    assert.equal(noiNgoaiVung(t), '', `KHÔNG được bắt: ${t}`);
+  }
+});
+
+test('C27 · ⭐ ngoài vùng ⇒ khối hồ sơ ĐỔI VIỆC PHẢI LÀM, không còn đòi địa chỉ', () => {
+  const p = extractFromText('how kon deliver and the philippines', emptyProfile());
+  assert.equal(p.ngoaiVung.toLowerCase(), 'philippines');
+  const block = buildProfileBlock(p, { kb: KB_GIA });
+  assert.match(block, /NGOÀI vùng giao/);
+  assert.match(block, /KHÔNG xin địa chỉ/);
+  assert.match(block, /Bước còn thiếu: KHÔNG CÓ/, 'đang in "còn thiếu địa chỉ" chính là chỗ đẩy model đi xin địa chỉ');
+  // Nói một lần là đủ — câu sau nhắc Saudi không được xoá dữ kiện đó.
+  extractFromText('ok Saudi Arabia', p);
+  assert.equal(p.ngoaiVung.toLowerCase(), 'philippines');
+});
+
+test('C28 · ⭐ đã chào tạm biệt ⇒ cấm chào lại; nhưng đổi ý thì MỞ LẠI', () => {
+  const p = extractFromText('h ok bye thank you agoin', emptyProfile());
+  assert.equal(p.daTuChoi, true);
+  assert.match(buildProfileBlock(p, { kb: KB_GIA }), /ĐỪNG chào lại từ đầu/);
+  for (const t of ['ok', 'yes', 'how much', 'magkano po']) {
+    assert.equal(khachTuChoi(t), false, `KHÔNG phải từ chối: ${t}`);
+  }
+  // Khách quay lại chọn gói ⇒ bỏ cờ, nếu không bot câm với người đang muốn mua.
+  extractFromText('ok buy 1 get 1 po', p);
+  assert.equal(p.daTuChoi, false);
+});
+
+test('C29 · ba dữ kiện mới KHÔNG phá ngưỡng token của khối hồ sơ', () => {
+  const p = extractFromText('Amy Añoza\n0536064249\nJeddah\nim in bangladesh now bye', emptyProfile());
+  _ab('Only 99 SAR · 149 SAR', false, p);
+  p.tier = 'Buy 2 Get 2'; p.objections = ['obj_price', 'obj_trust'];
+  const block = buildProfileBlock(p, { kb: KB_GIA, state: 'SELLING', used: 3, max: 10,
+    lastAi: 'x'.repeat(400), idleMs: 5 * 24 * 3600e3 });
+  assert.ok(estimateTokens(block) <= 420, `ca tệ nhất đang ${estimateTokens(block)} token`);
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ⑦ TÊN FACEBOOK — gọi khách cho thân mật, KHÔNG đụng tên người nhận hàng
+//
+// Đo 25/09: 8/8 tin khách mang sẵn `from.name`, lấy được miễn phí ngay trong lịch sử.
+// Đo 23/09 trên 13 lượt CHỐT ĐƠN: bot gọi tên khách 1/13 (8%) — vì `prof.name` chỉ điền
+// từ chữ khách GÕ, mà ở đúng lượt "Place an order" khách chưa gõ tên. Bot của Pancake gọi
+// được "Great, Abdul Mannan!" vì nó đọc thẳng tên Facebook.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const PG = 'page-tenfb';
+const tinPage = (t) => ({ from: { id: PG, name: 'Minty Fresh Smile KSA' }, original_message: t });
+const tinKhach = (t, ten) => ({ from: { id: 'cust-9', name: ten }, original_message: t });
+
+test('C30 · ⭐⭐ tên Facebook KHÔNG được chảy vào tên người nhận hàng', () => {
+  // Tên Facebook THẬT trên page này: "Napagod Na Ako" · "Alas Uno" · "Rich Chie".
+  // Đổ vào `prof.name` là bot thôi hỏi tên thật RỒI đẩy chuỗi đó xuống POS làm tên nhận
+  // hàng. Hai trường, hai việc — ca này là hàng rào giữa chúng.
+  const p = emptyProfile();
+  const msgs = [tinPage('promo'), tinKhach('Place an order', 'Napagod Na Ako')];
+  buildContextMessages({ prof: p, msgs, pageId: PG });
+  assert.equal(p.tenFb, 'Napagod Na Ako');
+  assert.equal(p.name, '', 'tên đơn PHẢI còn rỗng');
+  assert.ok(missingSteps(p).includes('tên'), 'vẫn phải hỏi tên thật để ghi đơn');
+});
+
+test('C31 · khối hồ sơ nói rõ đây là tên để GỌI, không phải tên ghi đơn', () => {
+  const p = emptyProfile(); p.tenFb = 'Mustafizur Rahman';
+  const block = buildProfileBlock(p, {});
+  assert.match(block, /GỌI TÊN khách/);
+  assert.match(block, /KHÔNG phải tên người nhận hàng/);
+  assert.ok(estimateTokens(block) <= 200, `đang ${estimateTokens(block)} token`);
+});
+
+test('C32 · lấy tin KHÁCH đầu tiên, bỏ qua mọi tin của page', () => {
+  assert.equal(tenFbTu([tinPage('a'), tinPage('b'), tinKhach('hi', 'Rich Chie')], PG), 'Rich Chie');
+  assert.equal(tenFbTu([tinPage('a')], PG), '', 'chỉ có tin page ⇒ rỗng, không ném');
+  assert.equal(tenFbTu([tinKhach('hi', '')], PG), '', 'tên rỗng ⇒ rỗng');
+  assert.equal(tenFbTu([], PG), '');
+  assert.equal(tenFbTu([tinKhach('hi', 'x'.repeat(200))], PG).length, 60, 'cắt 60 ký tự');
+});
+
+test('C33 · ⭐ hội thoại ĐÃ hydrate từ trước vẫn có tên ngay lượt kế tiếp', () => {
+  // `hydratedAt` chặn hydrate vĩnh viễn, nên vá chỉ trong `hydrateProfile` là mọi hội thoại
+  // cũ không bao giờ có tên. Vá ở `buildContextMessages` mới phủ được chúng.
+  const p = emptyProfile();
+  p.hydratedAt = Date.now() - 864e5;          // đã dựng hồ sơ từ hôm qua
+  buildContextMessages({ prof: p, msgs: [tinKhach('ok', 'Alas Uno')], pageId: PG });
+  assert.equal(p.tenFb, 'Alas Uno');
+});
+
+test('C34 · đã có tên rồi thì KHÔNG ghi đè (khách đổi tên FB giữa chừng)', () => {
+  const p = emptyProfile(); p.tenFb = 'Tên Cũ';
+  buildContextMessages({ prof: p, msgs: [tinKhach('ok', 'Tên Mới')], pageId: PG });
+  assert.equal(p.tenFb, 'Tên Cũ');
 });

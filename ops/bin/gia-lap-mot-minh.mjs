@@ -21,6 +21,10 @@
 // ⛔ AN TOÀN: đòi `V3_DIEN_TAP=1` và CSDL local. Không một byte nào tới Pancake.
 //
 //   DEVENV=<.env> node ops/bin/gia-lap-mot-minh.mjs --page <id> [--so 40] [--that]
+//   ... --kho <tệp.json>  đọc hội thoại từ tệp đã gom sẵn thay vì gọi Pancake. Gom một
+//                         lần rồi chạy lại nhiều lượt trên CÙNG dữ liệu — không thì mỗi
+//                         lượt chạy lại là một tập hội thoại khác và không so được.
+//   ... --ra  <tệp.json>  xuất kết quả có cấu trúc (để dựng màn hình đối chiếu).
 import fs from "node:fs";
 import pg from "pg";
 
@@ -29,6 +33,15 @@ const pageIdFb = arg("--page", "");
 const soLuot = Number(arg("--so", 40));
 const soGio = Number(arg("--gio", 24));
 const chayThat = process.argv.includes("--that");
+const tepKho = arg("--kho", "");
+const tepRa = arg("--ra", "");
+// KHOÁ VỀ ĐÚNG TẬP LƯỢT CỦA MỘT LẦN ĐO TRƯỚC. Không có nó thì mỗi lần chạy lại là một tập
+// hội thoại khác (page vẫn nhận tin mới hằng ngày) và hai lượt đo không so được với nhau.
+// Nhận chính tệp `--ra` của lần trước; khớp theo `convId` + mốc tin cuối của cụm.
+const tepChi = arg("--chi", "");
+// Mặc định GIỮ cửa nhường sale thật — nó là hành vi đúng của bản chạy. Cờ này chỉ để
+// ĐO CÂU CHỮ: muốn xem bot ĐỊNH nói gì ở những lượt mà ngoài đời sale đã tiếp quản.
+const khongNhuongSale = process.argv.includes("--khong-nhuong-sale");
 if (!pageIdFb || !process.env.DEVENV) {
   console.error("Dùng: DEVENV=<.env> node ops/bin/gia-lap-mot-minh.mjs --page <id> [--so 40] [--that]");
   process.exit(2);
@@ -71,22 +84,35 @@ function benNao(m) {
   return danhTinhNguoiGui(f) === "may" ? "máy (không nhãn)" : "page (không nhãn)";
 }
 
-// ── gom hội thoại + tin, khử trùng theo id ──────────────────────────────────
-const theoId = new Map();
-for (let t = 1; t <= 6; t++) {
-  const jc = await GET(`https://pages.fm/api/v1/pages/${pageIdFb}/conversations?access_token=${tok}&page_number=${t}`, `ds ${t}`);
-  const ds = jc.conversations || [];
-  if (!ds.length) break;
-  const truoc = theoId.size;
-  for (const c of ds) if (!theoId.has(c.id)) theoId.set(c.id, c);
-  if (theoId.size === truoc) break;
-  if (String(ds[ds.length - 1]?.updated_at || "") < mocCat) break;
+// ── nguồn dữ liệu ───────────────────────────────────────────────────────────
+// `page_number` của Pancake KHÔNG cuốn trang (đo 22/09: trang 1..6 trả VỀ CÙNG một danh
+// sách). `limit=` thì cuốn thật — 100 hội thoại duy nhất. Giữ cả khử-trùng theo id làm
+// lưới an toàn, vì đây là hành vi không có trong tài liệu.
+async function tuPancake() {
+  const theoId = new Map();
+  const jc = await GET(`https://pages.fm/api/v1/pages/${pageIdFb}/conversations?access_token=${tok}&limit=${Math.max(60, soLuot * 2)}`, "danh sách");
+  for (const c of (jc.conversations || [])) if (!theoId.has(c.id)) theoId.set(c.id, c);
+  const ra = [];
+  for (const c of [...theoId.values()].filter((x) => x.from_psid && (x.customers || [])[0]?.id && String(x.updated_at || "") >= mocCat)) {
+    const jm = await GET(`https://pages.fm/api/v1/pages/${pageIdFb}/conversations/${c.id}/messages?access_token=${tok}&customer_id=${c.customers[0].id}`, c.from?.name || c.id);
+    ra.push({ c, ds: (jm.messages || []) });
+  }
+  return ra;
 }
+
+/** Tệp do `ops/bin/` gom sẵn: `[{conv:{id,from,from_psid,custId,...}, msgs:[{id,from,at,text}]}]` */
+function tuTep(tep) {
+  return JSON.parse(fs.readFileSync(tep, "utf8")).map((k) => ({
+    c: { id: k.conv.id, from: k.conv.from, from_psid: k.conv.from_psid,
+         customers: [{ id: k.conv.custId }], tags: k.conv.tags, updated_at: k.conv.updated_at },
+    ds: k.msgs.map((m) => ({ id: m.id, from: m.from, inserted_at: m.at, original_message: m.text })),
+  }));
+}
+
 const kho = new Map();
 const cum = [];
-for (const c of [...theoId.values()].filter((x) => x.from_psid && (x.customers || [])[0]?.id && String(x.updated_at || "") >= mocCat)) {
-  const jm = await GET(`https://pages.fm/api/v1/pages/${pageIdFb}/conversations/${c.id}/messages?access_token=${tok}&customer_id=${c.customers[0].id}`, c.from?.name || c.id);
-  const ds = (jm.messages || []).slice().sort((a, b) => String(a.inserted_at).localeCompare(String(b.inserted_at)));
+for (const { c, ds: tho } of (tepKho ? tuTep(tepKho) : await tuPancake())) {
+  const ds = tho.slice().sort((a, b) => String(a.inserted_at).localeCompare(String(b.inserted_at)));
   if (!ds.length) continue;
   kho.set(c.id, { c, ds });
   let dang = null;
@@ -99,7 +125,14 @@ for (const c of [...theoId.values()].filter((x) => x.from_psid && (x.customers |
   }
   if (dang) cum.push(dang);
 }
+// Nhận cả hai hình dạng: tệp `--ra` thô (`{convId, moc}`) lẫn tệp đã ráp cho màn đối
+// chiếu (khoá gộp sẵn ở `id`). Đọc nhầm hình dạng thì khớp 0 lượt và im lặng — đã dính.
+const chiGiu = tepChi
+  ? new Set(JSON.parse(fs.readFileSync(tepChi, "utf8"))
+      .map((x) => String(x.id || `${x.convId}:${x.moc}`)))
+  : null;
 const chon = cum
+  .filter((k) => !chiGiu || chiGiu.has(`${k.convId}:${k.tin[k.tin.length - 1].m.inserted_at}`))
   .filter((k) => String(k.tin[k.tin.length - 1].m.inserted_at) >= mocCat)
   .sort((a, b) => String(a.tin[a.tin.length - 1].m.inserted_at).localeCompare(String(b.tin[b.tin.length - 1].m.inserted_at)))
   .slice(-soLuot);
@@ -107,7 +140,8 @@ const chon = cum
 const { rows: [mdl] } = await pool.query(
   "SELECT nha_cung_cap, ma_model FROM cau_hinh_model WHERE team_id=$1 AND vai_tro='chinh' AND bat LIMIT 1", [trang.team_id]);
 console.log(`GIẢ LẬP MỘT MÌNH · page ${pageIdFb} — ${trang.ten}`);
-console.log(`  lượt khách sẽ chạy: ${chon.length} (cửa sổ ${soGio}h, gom cụm)`);
+console.log(`  lượt khách sẽ chạy: ${chon.length} (cửa sổ ${soGio}h, gom cụm)`
+  + (chiGiu ? ` — KHOÁ theo ${tepChi}: ${chiGiu.size} lượt của lần đo trước, khớp ${chon.length}` : ""));
 console.log(`  model             : ${mdl ? `${mdl.nha_cung_cap} · ${mdl.ma_model}` : "(chưa cấu hình)"}`);
 console.log(`  van gửi           : V3_DIEN_TAP=1 · V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)} — KHÔNG gửi cho khách`);
 console.log(`  DỰ TOÁN xấu nhất  : ${chon.length} × ~117đ = ${(chon.length * 117).toLocaleString("vi-VN")}đ`);
@@ -131,6 +165,19 @@ const docTinCat = async () => {
   if (nTin) console.log(`  dọn lượt trước    : ${nTin} tin + ${nGui} dòng sổ gửi`);
 }
 
+// MẶT BẰNG SẠCH MỘT LẦN, đầu lượt chạy — KHÔNG phải mỗi lượt. Hồ sơ khách phải được
+// TÍCH LUỸ qua các lượt của cùng một hội thoại (đó chính là thứ đang đo: bot nhớ được gì
+// mà không đọc lại). Nhưng nếu để nguyên hồ sơ của LƯỢT CHẠY TRƯỚC thì tin đầu tiên đã có
+// sẵn dữ kiện, và bộ đo chạy hai lần ra hai kết quả.
+{
+  const psids = [...new Set(chon.map((x) => x.psid))];
+  const r = await pool.query(
+    `UPDATE hoi_thoai SET ho_so='{}'::jsonb, ai_noi_gi='', ai_noi_luc=NULL, luot_ai=0, sua_luc=now()
+      WHERE team_id=$1 AND page_id=$2 AND psid=ANY($3::text[])`,
+    [trang.team_id, trang.id, psids]);
+  console.log(`  mặt bằng          : xoá hồ sơ + mốc AI của ${r.rowCount}/${psids.length} hội thoại`);
+}
+
 const ket = [];
 for (const [i, k] of chon.entries()) {
   const cuoi = k.tin[k.tin.length - 1];
@@ -138,9 +185,14 @@ for (const [i, k] of chon.entries()) {
   hienTai = { convId: k.convId, moc: cuoi.m.inserted_at };
   await baoDamHoiThoai(pool, { teamId: trang.team_id, pageRowId: trang.id, psid: k.psid });
   // ĐẶT LẠI TRƯỚC MỖI LƯỢT — xem ② đầu file. Đây là chỗ giả định «không có ba bên kia».
+  // `--khong-nhuong-sale` đi qua ĐÚNG cửa hậu mà `chat/human.js#nhanDienSale` đã mở sẵn:
+  // `since = max(now-24h, ho_so.aiResumedAt, ai_noi_luc)`. Đặt `aiResumedAt` = bây giờ thì
+  // không tin page nào mới hơn ⇒ không ai bị coi là vừa tiếp quản. KHÔNG sửa mã đường chạy
+  // để chiều một phép đo — chỉ dùng cửa mà chính nó khai.
   await pool.query(
     `UPDATE hoi_thoai SET trang_thai='QUALIFY', chu_so_huu='AI', luot_llm=0, moc_luot_llm='[]'::jsonb,
             ly_do_cuoi='', nguoi_that_luc=NULL, sua_luc=now()
+            ${khongNhuongSale ? ", ho_so = coalesce(ho_so,'{}'::jsonb) || jsonb_build_object('aiResumedAt', to_char(now() at time zone 'UTC','YYYY-MM-DD\"T\"HH24:MI:SSZ'))" : ""}
       WHERE team_id=$1 AND page_id=$2 AND psid=$3`, [trang.team_id, trang.id, k.psid]);
   const r = await xepTin(pool, {
     teamId: trang.team_id, pageId: pageIdFb, psid: k.psid, convId: k.convId, custId: k.custId,
@@ -156,8 +208,28 @@ for (const [i, k] of chon.entries()) {
     if (!x) break;
     if (String(x.tinId) === String(r.id)) { kq = x; break; }
   }
-  ket.push({ k, chu, tinId: r.id, kq, treMs: Date.now() - t0 });
-  if (i < chon.length - 1) await nghi(Number(arg("--nhip", "7000")));
+  // ĐỌC SỔ NGAY, rồi DỌN DÒNG. Câu rút có luật FIFO theo hội thoại: một dòng còn ở `cho`
+  // hoặc `loi` chặn mọi tin SAU của cùng khách. Lượt ăn 429 để lại đúng dòng đó ⇒ các lượt
+  // sau của khách ấy không bao giờ được xử. Đo lần đầu: 19/84 lượt nằm nguyên ở `cho`.
+  const goc = (await pool.query(
+    `SELECT trang_thai, ly_do FROM tin_cho_xu_ly WHERE team_id=$1 AND id=$2`,
+    [trang.team_id, r.id])).rows[0] || {};
+  if (goc.trang_thai === "cho" || goc.trang_thai === "loi" || goc.trang_thai === "dang_xu") {
+    await pool.query(
+      `UPDATE tin_cho_xu_ly SET trang_thai='xong', khoa_worker=NULL WHERE team_id=$1 AND id=$2`,
+      [trang.team_id, r.id]);
+  }
+  ket.push({ k, chu, tinId: r.id, kq, treMs: Date.now() - t0, goc });
+
+  // NHỊP SAU MỌI LƯỢT CHẠM MODEL — kể cả lượt HỎNG. Hạn của tài khoản là số LỜI GỌI trên
+  // phút (đo 22/09: Moonshot trả 429 «organization max RPM: 3»). Bản trước chỉ ngủ khi
+  // `dem.goiModel > 0`, mà lượt ném lỗi KHÔNG tăng bộ đếm đó ⇒ lượt sau bắn ngay lập tức
+  // ⇒ 429 dây chuyền: 20/84 lượt hỏng liên tiếp. Ngủ theo LƯỢT THỬ, không theo lượt thành.
+  const loiNha = /LoiNhaCungCap|429|rate ?limit/i.test(String(kq?.lyDo || ""));
+  const chamModel = (kq?.dem?.goiModel || 0) > 0 || loiNha;
+  if (i < chon.length - 1 && chamModel) {
+    await nghi(Number(arg("--nhip", "7000")) * (loiNha ? 2 : 1));
+  }
   process.stderr.write(`\r  đã chạy ${i + 1}/${chon.length}…`);
 }
 process.stderr.write("\r" + " ".repeat(40) + "\r");
@@ -182,6 +254,7 @@ const inKhoi = (nhan, txt, cot = "     │ ") => {
   console.log(`  ${nhan}`);
   for (const d of String(txt).split("\\n").join("\n").split("\n")) console.log(`${cot}${d}`);
 };
+const raJson = [];
 let tong = 0, nModel = 0, n0Dong = 0, nCauTraLoi = 0;
 const treBot = [], treHo = new Map(), demBen = new Map();
 console.log("\n" + "═".repeat(96));
@@ -190,7 +263,7 @@ for (const x of ket) {
   const cuoi = k.tin[k.tin.length - 1];
   const s = x.tinId ? mSo.get(String(x.tinId)) : null;
   const t = s ? tienMotDong(s) : { vnd: null };
-  const d = x.tinId ? mTin.get(String(x.tinId)) : null;
+  const d = x.goc && x.goc.trang_thai ? x.goc : (x.tinId ? mTin.get(String(x.tinId)) : null);
   const g = mGui.get(String(x.tinId));
   if (t.vnd != null) { tong += t.vnd; nModel += 1; } else if (g?.cho_khach) n0Dong += 1;
 
@@ -211,16 +284,34 @@ for (const x of ket) {
   console.log(`     ⏱ ${(x.treMs / 1000).toFixed(1)}s · ${lane} · ${s ? `${s.token_vao ?? 0}+${s.token_ra ?? 0} tok` : "0 token"} · ${t.vnd == null ? "0đ" : t.vnd + "đ"}`);
   treBot.push(x.treMs / 1000);
 
+  let benTraLoi = null, treThat = null, chuThat = "";
   if (k.traLoi) {
-    const ben = benNao(k.traLoi);
-    const tre = Math.round((T(k.traLoi.inserted_at) - T(cuoi.m.inserted_at)) / 1000);
-    demBen.set(ben, (demBen.get(ben) || 0) + 1);
-    if (!treHo.has(ben)) treHo.set(ben, []);
-    treHo.get(ben).push(tre);
-    inKhoi(`🏷  THỰC TẾ · ${ben} · sau ${tre}s:`, che(gon(k.traLoi.original_message || k.traLoi.message)).slice(0, 400));
+    benTraLoi = benNao(k.traLoi);
+    treThat = Math.round((T(k.traLoi.inserted_at) - T(cuoi.m.inserted_at)) / 1000);
+    chuThat = che(gon(k.traLoi.original_message || k.traLoi.message));
+    demBen.set(benTraLoi, (demBen.get(benTraLoi) || 0) + 1);
+    if (!treHo.has(benTraLoi)) treHo.set(benTraLoi, []);
+    treHo.get(benTraLoi).push(treThat);
+    inKhoi(`🏷  THỰC TẾ · ${benTraLoi} · sau ${treThat}s:`, chuThat.slice(0, 400));
   } else {
     console.log(`  🏷  THỰC TẾ: KHÔNG AI TRẢ LỜI`);
     demBen.set("không ai trả lời", (demBen.get("không ai trả lời") || 0) + 1);
+  }
+
+  if (tepRa) {
+    let botChu = "";
+    if (g?.cho_khach) { botChu = g.cho_khach; try { botChu = JSON.parse(g.cho_khach).text || g.cho_khach; } catch { /* nhiều bước */ } }
+    raJson.push({
+      convId: k.convId, khach: k.khach, moc: cuoi.m.inserted_at,
+      khachNoi: k.tin.map((y) => che(y.tho)),
+      bot: {
+        chu: String(botChu).split("\\n").join("\n"), noiBo: g?.noi_bo || "",
+        lane: s?.lane || "", lyDo: d?.ly_do || "", trangThai: d?.trang_thai || "",
+        treMs: x.treMs, tokVao: s?.token_vao ?? null, tokRa: s?.token_ra ?? null, vnd: t.vnd,
+        suaTaiCho: s?.du_lieu?.sua_tai_cho || "", biChan: s?.du_lieu?.text_bi_chan || "",
+      },
+      that: { ben: benTraLoi, treS: treThat, chu: chuThat },
+    });
   }
 }
 
@@ -229,6 +320,7 @@ console.log("\n" + "═".repeat(96));
 console.log(`LƯỢT KHÁCH ${ket.length} · bot trả lời được ${nCauTraLoi} · trong đó ${n0Dong} lượt 0 đồng, ${nModel} lượt gọi model`);
 console.log(`TIỀN (giả lập MỘT MÌNH, mọi lượt đều được phép gọi model): ${tong.toLocaleString("vi-VN")}đ ⇒ ${Math.round(tong / Math.max(1, ket.length))}đ/lượt`);
 console.log(`ĐỘ TRỄ BOT MÌNH: p50 ${p(treBot, .5)?.toFixed(1)}s · p90 ${p(treBot, .9)?.toFixed(1)}s · max ${Math.max(...treBot).toFixed(1)}s`);
+if (tepRa) { fs.writeFileSync(tepRa, JSON.stringify(raJson)); console.log(`\nđã ghi ${raJson.length} lượt vào ${tepRa}`); }
 console.log(`\nTHỰC TẾ ai trả lời ${ket.length} lượt này:`);
 for (const [b, n] of [...demBen].sort((a, c) => c[1] - a[1])) {
   const a = treHo.get(b);

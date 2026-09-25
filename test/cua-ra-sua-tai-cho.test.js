@@ -180,12 +180,12 @@ test("PRICE_MISMATCH · giữ câu bị chặn trong sổ VÀ bàn giao sale", a
 // ═══ ④ cùng thang bậc đó áp cho LỚP 0 ĐỒNG ══════════════════════════════════════════
 test("Fast Lane · mẫu dính CHECKLIST cũng được sửa tại chỗ rồi gửi", async () => {
   const { kq, guiTinCalls, tinId } = await motLuot({
-    noiDung: "how to order",
+    noiDung: "how much po",
     deps: {
-      lanNhanh: () => ({ handled: true, reply: CHECKLIST, lane: "tpl_howto", reason: "hỏi cách đặt" }),
+      lanNhanh: () => ({ handled: true, reply: CHECKLIST, lane: "tpl_price", reason: "hỏi giá" }),
     },
   });
-  assert.equal(kq.lyDo, "fastlane:tpl_howto");
+  assert.equal(kq.lyDo, "fastlane:tpl_price");
   assert.equal(guiTinCalls.length, 1);
   assert.match(guiTinCalls[0], /Full name, Contact number, Complete address/);
   const [reply] = await soAi(tinId, "reply");
@@ -194,9 +194,9 @@ test("Fast Lane · mẫu dính CHECKLIST cũng được sửa tại chỗ rồi 
 
 test("Lớp 0 đồng · guard chặn hẳn thì cũng giữ câu + bàn giao, không im lặng", async () => {
   const { kq, guiTinCalls, tinId } = await motLuot({
-    noiDung: "how to order",
+    noiDung: "how much po",
     deps: {
-      lanNhanh: () => ({ handled: true, reply: "Dạ sản phẩm này là hàng chính hãng ạ.", lane: "tpl_howto", reason: "" }),
+      lanNhanh: () => ({ handled: true, reply: "Dạ sản phẩm này là hàng chính hãng ạ.", lane: "tpl_price", reason: "" }),
     },
   });
   assert.equal(guiTinCalls.length, 0, "tin lọt tiếng Việt không được tới khách Ả Rập/Philippines");

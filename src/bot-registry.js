@@ -103,6 +103,25 @@ const DEFAULT_PATTERNS = [
   '^\\s*welcome to .{1,60}[.!]',
   // Botcake gọi tên khách rồi giục — ngắn, ít emoji, lọt hết mọi ngưỡng của looksHuman.
   'this product has never let me down',
+
+  // ═══ BỔ SUNG 22/09/2026 — CHIẾN DỊCH PHÁT TÁN CỦA PAGE ═══════════════════════════════
+  // Đo trên 99 hội thoại thật (2.381 tin): sổ mẫu cũ chỉ bắt 182/410 tin page trong ngữ
+  // cảnh = 44%. 228 tin lọt, và hậu quả đo được ở hai chỗ:
+  //
+  //   ① 95% token ngữ cảnh đưa vào model là LỜI CỦA PAGE, không phải của khách
+  //      (10.487 token của page vs 526 token của khách, cộng dồn 84 lượt).
+  //   ② Chiến dịch cũ vẫn phát giá 99/149 — khách đã thấy giá SAI nhiều hơn giá đúng
+  //      (99 SAR 73 lần · 149 SAR 71 lần · 109 SAR 46 lần · 159 SAR 35 lần). Model đọc
+  //      99 SAR trong chính ngữ cảnh của nó rồi nhắc lại ⇒ 7 lượt bị PRICE_MISMATCH chặn.
+  //
+  // Neo vào cụm chữ ĐẶC TRƯNG, không neo vào một từ chung: "promotion" hay "order now"
+  // thì sale thật cũng gõ.
+  'a whiter smile\\s*[-–—]\\s*confidence that shines',
+  'special promotion\\s*[-–—]\\s*up to \\d+\\s*% ?off',
+  'es?pesyal na promo',
+  'promotional stock is limited',
+  'helps stimulate the growth of new teeth',
+  'would you like to place your order now',
 ];
 
 let compiled = null;   // [{ re, pattern, builtin }] — giữ cả chuỗi gốc để M18 nói được

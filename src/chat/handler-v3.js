@@ -164,6 +164,49 @@ export const KET_QUA = Object.freeze({
   NHUONG_PAGE: "nhuong_page",
 });
 
+// ── LƯỢT CHỐT ĐƠN KHÔNG TRẢ BẰNG MẪU CỨNG ────────────────────────────────────────────
+// Đo 23/09 trên 84 lượt khách thật của page 1220547807799752: 33 lượt do lớp 0 đồng trả.
+// 28 trong số đó ĐÚNG CHỖ — hỏi giá (19), chào (5), thời gian giao (4): câu trả lời cố
+// định, hỏi hai mươi lần đáp y hệt nhau, trả bằng mẫu là khôn.
+//
+// Bốn lượt còn lại là `muon_dat` + `tpl_howto` — khách vừa gõ "Place an order". Đó là
+// KHOẢNH KHẮC CHỐT, và mẫu cứng làm hỏng nó theo ba cách đo được:
+//
+//   · KHÔNG GỌI ĐƯỢC TÊN KHÁCH. 0/33 lượt mẫu có tên khách, model 7/32 = 22%. Hệ không
+//     có cơ chế thay biến trong mẫu (grep `{ten}`/`{name}`: 0 dòng) — chuỗi sao gửi vậy.
+//   · BỎ QUA CÂU HỎI SỐ LƯỢNG. Mẫu nhảy thẳng sang xin tên/SĐT/địa chỉ; thu đủ ba thứ đó
+//     rồi `missingSteps` VẪN còn "chọn gói/số lượng" ⇒ chưa tạo được đơn, phải hỏi thêm
+//     một lượt. Bot của Pancake ở cùng lượt đó hỏi "1 set or 2 sets?" TRƯỚC.
+//   · một chuỗi cho mọi tình huống, không bám được ngữ cảnh.
+//
+// Giá của việc nhường: 4 lượt × ~87đ ≈ 350đ trên 84 lượt (+7% mẻ đo). Tiết kiệm token ở
+// câu hỏi giá là khôn; tiết kiệm ở câu chốt đơn là tiếc 87 đồng để mất một đơn 109 SAR.
+//
+// ⚠️ CHẶN Ở ĐÂY, KHÔNG SỬA `fast-lane.js` — tệp đó thuộc nhóm CẤM SỬA (luật 4 §0a). Lane
+// vẫn khớp như cũ, chỉ không được quyền trả lời; nhờ vậy bộ đếm lane và mọi bộ ca của
+// `fast-lane` giữ nguyên hành vi.
+//
+// BA CỬA CÙNG TRẢ `kb.config.fastLaneHowto` — đo bằng grep, không bằng trí nhớ:
+//   lop-tu-khoa.js:287 → rule `muon_dat`   ("Place an order")          ← nhường
+//   fast-lane.js:411   → lane `tpl_howto`  (ASK_HOWTO)                 ← nhường
+//   lop-tu-khoa.js:256 → rule `paano_gap`  ("paano mag order")         ← CỐ Ý GIỮ MẪU
+//
+// `paano_gap` KHÔNG nằm trong mặc định dù nó là cùng một khoảnh khắc. Lý do: phiếu L2-M2
+// đã nghiệm thu và `test/l2-m2-handler.test.js:174` chốt rằng câu đó phải trả 0 token.
+// Đổi hành vi đã ký thì phải đi lối `doi-y-do` (đo tác động, người quyết gõ «áp»), không
+// phải lặng lẽ sửa thước của phiếu người khác. Muốn nhường nốt thì:
+//     V3_LAN_CHOT_MODEL=muon_dat,paano_gap,tpl_howto
+// và sửa ca L2-M2 cho khớp — một việc CÓ CHỦ ĐÍCH, không phải hệ quả phụ.
+//
+// Tắt hẳn bằng `V3_LAN_CHOT_MODEL=` (rỗng).
+const LAN_CHOT_MAC_DINH = "muon_dat,tpl_howto";
+export function lanChotNhuongModel() {
+  const v = docEnvTuyetDoi("V3_LAN_CHOT_MODEL");
+  return new Set(String(v == null ? LAN_CHOT_MAC_DINH : v)
+    .split(",").map((x) => x.trim()).filter(Boolean));
+}
+const laLanChot = (ten) => !!ten && lanChotNhuongModel().has(String(ten));
+
 function depsMacDinh(deps = {}) {
   return {
     // L2-M3 ②.1: mặc định nay là rap-prompt.js (ráp 4 khối từ DB, cờ V3_RAP_PROMPT_BAT
@@ -476,7 +519,10 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     // không đọc DB — xem src/chat/lop-tu-khoa.js đầu file để biết vì sao NHƯỜNG (không
     // bịa) khi KB trang chưa có `fastLaneAuth`/`fastLaneSize`. Cùng cửa `d.kiemTinRa`
     // (M09) với Fast Lane/AI — câu trả lời của lớp này KHÔNG được miễn kiểm nội dung.
-    const tk = lopTuKhoa({ text, kb, profile: prof });
+    const tkTho = lopTuKhoa({ text, kb, profile: prof });
+    // Lượt chốt ⇒ coi như lớp từ khoá KHÔNG nhận, tin đi tiếp xuống Fast Lane rồi model.
+    const tk = laLanChot(tkTho.rule) ? { handled: false, rule: tkTho.rule, reply: "",
+      lyDo: `lan_chot_nhuong_model:${tkTho.rule}` } : tkTho;
     if (tk.handled && !state.fastLanesUsed.has(`keyword:${tk.rule}`)) {
       const cua = quaCuaRa(tk.reply, {
         kb,
@@ -523,7 +569,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
 
     // ── 5 · FAST LANE — chặn TRƯỚC mọi lượt gọi model (0 token) ──────────────────
     const safety = templateSafety(text, prof);
-    const fl = safety.safe ? d.lanNhanh({
+    const flTho = safety.safe ? d.lanNhanh({
       text,
       kb,
       aiTurns: Math.max(state.aiTurns, state.botTurns || 0),
@@ -533,6 +579,11 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       pageId: state.pageId,
       hasOrder: state.daChotTruoc,
     }) : { handled: false, reason: safety.reason };
+    // Nhường TRƯỚC khi đếm: đếm rồi mới nhường thì bộ đếm lớp 0 đồng báo «đã chặn» trong
+    // khi lượt này thực tế vẫn đi lên model — số liệu tự dối.
+    const fl = laLanChot(flTho.lane)
+      ? { handled: false, lane: flTho.lane, reason: `lan_chot_nhuong_model:${flTho.lane}` }
+      : flTho;
     noteFastLane(fl);
     if (fl.handled) {
       if (!fl.reply) {
@@ -662,6 +713,9 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         // — trước lượt này chỉ cửa chống-lặp dùng, prompt không hề thấy.
         lastAi: state.lastAiText,
         idleMs: state.idleMs,
+        // KB để `buildProfileBlock` đối chiếu giá mà KÊNH KHÁC đã báo cho khách với bảng
+        // giá đang chạy. Không có nó thì khối hồ sơ chỉ nói "đã báo giá", không nói SAI.
+        kb,
       },
     });
     state.messages = messages;
