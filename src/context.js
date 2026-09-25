@@ -108,6 +108,27 @@ export function emptyProfile() {
     // "Bước còn thiếu: … địa chỉ …" nên model đi xin địa chỉ của người không giao được.
     ngoaiVung: '',       // nơi khách nói đang ở, khi nơi đó KHÔNG thuộc vùng giao
     daTuChoi: false,     // khách đã chào tạm biệt / từ chối mua
+    // CÓ MỘT ĐƠN ĐANG TRONG CUỘC — `{trangThai, cau, nguon}` hoặc null.
+    //
+    // Ca thật Rosalinda Ballesteros 24/09. Sale gõ "Your order has been cancelled.", khách
+    // hỏi "Bkit po cancelled po sir", bot đáp "Wala pa po akong natatanggap na order
+    // details from you" — nói với một người vừa bị huỷ đơn rằng chưa hề có đơn nào.
+    //
+    // Dựng lại ngữ cảnh thì thấy bot ĐỌC ĐƯỢC câu huỷ đơn: nó nằm ngay trong cửa sổ 6 tin.
+    // Nhưng khối hồ sơ lại in "Tên (chưa có) · SĐT (chưa có) · Bước còn thiếu: tên, SĐT,
+    // địa chỉ…" như một sự thật nội bộ, và model tin khối hồ sơ hơn tin hội thoại.
+    //
+    // `otherBot.orderNoted` đã có sẵn và `OB_ORDER` KHỚP câu đó — nhưng `absorbOtherBot`
+    // chỉ được gọi cho tin bị nhận là MẪU MÁY, mà câu này do sale thật gõ. Dữ kiện rơi
+    // đúng khe đó. Nay bóc cho MỌI tin của page, và giữ cả TRẠNG THÁI chứ không chỉ cờ.
+    // `nguon`: 'page' (sale/bot khác nói) hoặc 'khach' (chính khách nói). Một trường, hai
+    // nguồn — vì thứ đổi hành vi là «có đơn đang trong cuộc», không phải «ai nói ra».
+    //
+    // Ca thật Tara Singh 24/09 cho thấy vì sao phải có cả phía KHÁCH: sale chỉ viết "We
+    // will notify the shipping company to re-deliver your order" — không khớp mẫu trạng
+    // thái nào. Tín hiệu rõ nhất lại nằm ở câu của khách: "The delivery was scheduled for
+    // today", "I do not want this order", "fifteen days". Bắt một phía là hụt ca này.
+    donDaCo: null,
     hydratedAt: 0,
   };
 }
@@ -170,6 +191,7 @@ export function extractFromText(text, prof = emptyProfile()) {
   if (!prof.ngoaiVung) { const n = noiNgoaiVung(s); if (n) prof.ngoaiVung = n; }
   // `daTuChoi` thì NGƯỢC LẠI — bật/tắt theo lượt mới nhất: khách chào tạm biệt rồi quay
   // lại hỏi giá là đã đổi ý, giữ cờ cũ thì bot câm với một người đang muốn mua.
+  if (!prof.donDaCo) { const d = donTuTinKhach(s); if (d) prof.donDaCo = d; }
   if (khachTuChoi(s)) prof.daTuChoi = true;
   else if (prof.daTuChoi && (TIER_TEXT.test(s) || hasPhone(s) || hasAddress(s))) prof.daTuChoi = false;
   return prof;
@@ -265,7 +287,78 @@ export function noiNgoaiVung(text) {
 
 // Chỉ bắt câu nói THẲNG lời chia tay hoặc từ chối. "ok" · "yes" · "hm" KHÔNG tính — đó là
 // tiếng ừ hữ giữa cuộc, bắt nhầm là bot câm với một người đang muốn mua.
-const TU_CHOI = /\b(?:bye+|goodbye|good\s*bye|no\s*thanks?|not\s+interested|maybe\s+next\s+time|next\s+time|ayaw|hindi\s+na|cancel\s+(?:na|it|my\s+order))\b/i;
+// Đo 24/09 ca Rosalinda: ba câu từ chối LỌT HẾT vì tập này chỉ có tiếng Anh và hai chữ
+// Tagalog. Khách Philippines từ chối bằng lời lịch sự — "salamat na lang" (thôi cảm ơn),
+// "hwag na" (thôi khỏi), "di na po". Viết tắt kiểu nhắn tin: nlng · wag · dpo.
+const TU_CHOI = /\b(?:bye+|goodbye|good\s*bye|no\s*thanks?|not\s+interested|maybe\s+next\s+time|next\s+time|ayaw|hindi\s+na|cancel\s+(?:na|it|my\s+order))\b|\b(?:h?wag\s*(?:na|n?lng|na\s*lang)|salamat\s*(?:na\s*lang|n?lng)|d[ie]?\s*na\s*(?:po|lang)|hindi\s*n?a?\s*po\s*salamat)\b/i;
+
+// ── CÂU HỎI GIAO HÀNG MÀ MẪU CỨNG KHÔNG TRẢ LỜI ĐƯỢC ────────────────────────────────
+//
+// Mẫu `fastLaneShip` trả lời đúng MỘT câu: «bao lâu, bao nhiêu tiền». Nó không biết khách
+// đang ở đâu và không biết khách đã có đơn hay chưa, nên hai loại câu dưới đây lọt vào mẫu
+// là trả lời trật đề:
+//
+//   ① KHÁCH NÊU ĐỊA ĐIỂM — "Deliver riyadh" là hỏi CÓ GIAO TỚI ĐÓ KHÔNG. Mẫu đáp "Your
+//      order is free delivery dear / It take 2-5 days" — không hề xác nhận Riyadh. Bot của
+//      Pancake cùng lượt đó đáp "Yes Faisal, we deliver to Riyadh 😊 … How many sets would
+//      you like — and may I have your contact number and complete address?": gọi tên, xác
+//      nhận đúng nơi, rồi đẩy sang bước sau.
+//   ② KHÁCH NÓI VỀ ĐƠN ĐÃ CÓ — "The delivery was scheduled for today" là hỏi về một đơn
+//      đang chờ, không phải hỏi chính sách giao hàng. Đáp bảng thời gian là vô nghĩa.
+//
+// Danh sách địa danh là của TỪNG THỊ TRƯỜNG, giống `NOI_KHAC` ở trên: page này giao nội địa
+// Ả Rập Xê Út. Page bán ở nơi khác thì sửa danh sách, đừng sửa luật.
+const NOI_TRONG_VUNG = /\b(riyadh|riyad|riaydh|jeddah|jedah|jiddah|dammam|khobar|dhahran|makkah|mecca|madinah|medina|taif|tabuk|abha|jubail|yanbu|hail|qassim|buraidah|najran|jazan|al\s*ahsa|hofuf|ksa|saudi(?:\s*arabia)?)\b/i;
+// Dấu hiệu khách đang nói về MỘT ĐƠN ĐÃ CÓ, không phải hỏi chính sách.
+const DON_DA_CO = /\b(?:my\s+order|the\s+(?:order|delivery|parcel|package)|scheduled|already\s+(?:order|paid)|na\s+order|hasn'?t\s+(?:arrived|come)|not\s+(?:yet\s+)?(?:arrived|received|delivered)|wala\s+pa|hindi\s+pa\s+dumating|tracking)\b/i;
+
+/**
+ * Câu hỏi giao hàng này có VƯỢT QUÁ thứ mẫu cứng trả lời được không?
+ * Lệch một chiều: nghi ngờ thì cho lên model — trả lời trật đề tốn nhiều hơn 87 đồng.
+ */
+export function shipVuotMau(text) {
+  const t = String(text || '');
+  if (!t.trim()) return false;
+  return NOI_TRONG_VUNG.test(t) || DON_DA_CO.test(t) || !!noiNgoaiVung(t);
+}
+
+// ── ĐƠN MÀ KÊNH KHÁC ĐÃ XỬ LÝ ───────────────────────────────────────────────────────
+// Thứ tự xét là thứ tự ƯU TIÊN: trạng thái nặng nhất thắng. Lệch một chiều — bắt hụt thì
+// hệ chạy như cũ, bắt nhầm thì bot tưởng khách đã có đơn và thôi bán.
+const DON_TRANG_THAI = [
+  ['đã huỷ', /\b(?:order|đơn)[^.\n]{0,24}\b(?:cancel(?:led|ed)?|huỷ|huy)\b|\bcancel(?:led|ed)\b[^.\n]{0,16}\b(?:order|đơn)\b/i],
+  ['khách CHƯA nhận được hàng', /\b(?:haven'?t|hasn'?t|not)\s+(?:yet\s+)?receiv\w*[^.\n]{0,16}\border\b|\border\b[^.\n]{0,24}\b(?:not|haven'?t|hasn'?t)\s+(?:yet\s+)?(?:arriv|receiv|deliver)\w*/i],
+  ['đang giao', /\byour order (?:is|has been)\s+(?:being\s+)?(?:ship|dispatch|on its way|out for delivery)\w*/i],
+  ['đã tạo', /\byour order (?:has been|is)\s+(?:creat|confirm|receiv|plac)\w*|\border number\b|\bplaced an order\b/i],
+];
+
+/** Tin của PAGE có nói về một ĐƠN đã tồn tại không? Trả `{trangThai, cau, nguon}` hoặc null. */
+export function donTuTinPage(text) {
+  const t = String(text || '');
+  if (!t.trim()) return null;
+  for (const [trangThai, re] of DON_TRANG_THAI) {
+    if (re.test(t)) return { trangThai, cau: t.replace(/\s+/g, ' ').trim().slice(0, 120), nguon: 'page' };
+  }
+  return null;
+}
+
+// Phía KHÁCH. Hẹp hơn phía page: chỉ bắt câu nói THẲNG về một đơn/chuyến giao ĐANG CÓ,
+// không bắt câu hỏi mua hàng. Bắt nhầm ở đây là bot thôi bán với người đang muốn mua.
+const KHACH_NOI_VE_DON = [
+  ['khách KHÔNG muốn nhận nữa', /\b(?:i\s+d(?:o\s+not|on'?t)\s+want|don'?t\s+want)\b[^.\n]{0,24}\b(?:this\s+)?(?:order|item|product|delivery|parcel)\b|\bcancel\s+(?:my|the)\s+order\b|\bhindi\s+ko\s+na\s+kukunin\b/i],
+  ['khách đang hỏi về chuyến giao', /\bthe\s+(?:delivery|order|parcel|package|courier|rider)\b[^.\n]{0,40}\b(?:was|is|has|scheduled|today|tomorrow|call(?:ed)?|came|arriv\w*)\b|\bdelivery\s+(?:boy|guy|man|person|staff)\b/i],
+  ['khách nói ĐƠN CŨ chưa xong', /\b(?:my|the)\s+order\b[^.\n]{0,30}\b(?:not|haven'?t|hasn'?t|still|delay\w*|late)\b|\bwala\s+pa\b[^.\n]{0,20}\border\b|\b(?:fifteen|[0-9]{1,2})\s+days?\b[^.\n]{0,24}\b(?:order|deliver\w*|waiting)\b/i],
+];
+
+/** Câu của KHÁCH có nói về một ĐƠN đã tồn tại không? Trả `{trangThai, cau, nguon}` hoặc null. */
+export function donTuTinKhach(text) {
+  const t = String(text || '');
+  if (!t.trim()) return null;
+  for (const [trangThai, re] of KHACH_NOI_VE_DON) {
+    if (re.test(t)) return { trangThai, cau: t.replace(/\s+/g, ' ').trim().slice(0, 120), nguon: 'khach' };
+  }
+  return null;
+}
 
 /** Khách đã chào tạm biệt / từ chối chưa? */
 export const khachTuChoi = (text) => TU_CHOI.test(String(text || ''));
@@ -279,6 +372,10 @@ export function cleanHistory(msgs = [], pageId, prof = null) {
     if (isPage) {
       // Tin page RỖNG (sticker/ảnh/"...") = 13,7% tin page — không mang thông tin, bỏ.
       if (!raw || /^\.{2,}$/.test(raw)) continue;
+      // BÓC TRẠNG THÁI ĐƠN TRƯỚC MỌI NHÁNH KHÁC. `absorbOtherBot` phía dưới chỉ chạy cho
+      // tin bị nhận là MẪU MÁY; câu quyết định nhất lại thường do SALE THẬT gõ ("Your
+      // order has been cancelled."), nên nó rơi khỏi mọi đường bóc. Xem `donKenhKhac`.
+      if (prof) { const d = donTuTinPage(raw); if (d) prof.donDaCo = d; }
       // Template Botcake/RTO — KHÔNG đưa nguyên văn vào prompt (dạy model bắt chước
       // đúng thứ HARD_RULES cấm), nhưng phải BÓC DỮ KIỆN trước khi bỏ (việc 2).
       if (isAutomationTemplate(raw)) { absorbOtherBot(raw, hasAttach, prof); continue; }
@@ -418,6 +515,12 @@ export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
     L.push(`⛔ KHÁCH Ở "${prof.ngoaiVung}" — NGOÀI vùng giao. KHÔNG xin địa chỉ, KHÔNG chốt đơn. `
       + `Nói thẳng là chưa giao tới đó, cảm ơn, kết thúc lịch sự.`);
   }
+  if (prof.donDaCo) {
+    const ai = prof.donDaCo.nguon === 'khach' ? 'CHÍNH KHÁCH nói' : 'Kênh khác (sale/bot) nói';
+    L.push(`📦 ĐANG CÓ MỘT ĐƠN TRONG CUỘC — ${prof.donDaCo.trangThai} (${ai}: "${prof.donDaCo.cau}"). `
+      + `TUYỆT ĐỐI không nói "chưa nhận được thông tin đơn"/"chưa có đơn nào", KHÔNG xin lại tên/SĐT/địa chỉ, `
+      + `KHÔNG dán bảng giá. Bot không tra được đơn và không hứa được thay bộ phận giao hàng ⇒ CHUYỂN NGƯỜI.`);
+  }
   if (prof.daTuChoi) {
     L.push(`🙅 Khách đã chào tạm biệt / từ chối. ĐỪNG chào lại từ đầu, đừng dán lại bảng giá, `
       + `đừng hỏi lại thông tin. Chỉ đáp ngắn và để ngỏ cửa.`);
@@ -425,7 +528,11 @@ export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
   const miss = missingSteps(prof);
   L.push(prof.ngoaiVung
     ? 'Bước còn thiếu: KHÔNG CÓ — không phục vụ được khách này.'
-    : `Bước còn thiếu: ${miss.length ? miss.join(', ') : 'đủ thông tin — chốt đơn được'}`);
+    : prof.donDaCo
+      // Dòng "Bước còn thiếu: tên, SĐT, địa chỉ…" đọc như một mệnh lệnh đi thu thông tin.
+      // Với khách đã có đơn ở kênh khác, nó chính là thứ đẩy model đi chào hàng lại.
+      ? 'Bước còn thiếu: KHÔNG phải lượt thu thông tin — khách đang nói về ĐƠN ĐÃ CÓ ở trên.'
+      : `Bước còn thiếu: ${miss.length ? miss.join(', ') : 'đủ thông tin — chốt đơn được'}`);
   if (meta.max) L.push(`Lượt đã dùng: ${meta.used || 0}/${meta.max}${meta.tier ? ` (khách ${meta.tier})` : ''} · Trạng thái: ${meta.state || 'SELLING'}`);
   // ① CÂU AI NÓI GẦN NHẤT — xem khối ghi chú "MẠCH TƯ VẤN" phía trên.
   // Cắt 200 ký tự và ép về một dòng: đây là gợi nhớ, không phải chép lại cả tin.

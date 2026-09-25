@@ -20,6 +20,7 @@ import {
   extractFromText,
   absorbToolUses,
   buildContextMessages,
+  shipVuotMau,
 } from "../context.js";
 import { cleanText } from "../text.js";
 import { config } from "../config.js";
@@ -206,6 +207,18 @@ export function lanChotNhuongModel() {
     .split(",").map((x) => x.trim()).filter(Boolean));
 }
 const laLanChot = (ten) => !!ten && lanChotNhuongModel().has(String(ten));
+
+// LANE GIAO HÀNG — nhường theo NỘI DUNG CÂU KHÁCH, không theo tên lane.
+//
+// Khác `laLanChot` (nhường cả lane): mẫu giao hàng vẫn đúng cho câu hỏi «bao lâu / bao
+// nhiêu tiền», và đó là phần lớn. Chỉ nhường khi câu khách vượt quá thứ mẫu trả lời được —
+// nêu ĐỊA ĐIỂM, hoặc nói về ĐƠN ĐÃ CÓ. Xem `shipVuotMau` trong context.js để biết vì sao.
+//
+// Đo 25/09 trên 140 lượt khách thật: 2 lượt rơi vào mẫu giao hàng, 1 trong 2 vượt mẫu
+// ("The delivery was scheduled for today") — tức luật này gần như không thêm tiền, chỉ
+// đổi đúng những lượt mẫu đang trả lời trật đề.
+const LANE_SHIP = new Set(["tpl_ship", "hoi_ship"]);
+const shipNhuongModel = (lane, text) => LANE_SHIP.has(String(lane)) && shipVuotMau(text);
 
 function depsMacDinh(deps = {}) {
   return {
@@ -521,8 +534,9 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     // (M09) với Fast Lane/AI — câu trả lời của lớp này KHÔNG được miễn kiểm nội dung.
     const tkTho = lopTuKhoa({ text, kb, profile: prof });
     // Lượt chốt ⇒ coi như lớp từ khoá KHÔNG nhận, tin đi tiếp xuống Fast Lane rồi model.
-    const tk = laLanChot(tkTho.rule) ? { handled: false, rule: tkTho.rule, reply: "",
-      lyDo: `lan_chot_nhuong_model:${tkTho.rule}` } : tkTho;
+    const tk = (laLanChot(tkTho.rule) || shipNhuongModel(tkTho.rule, text))
+      ? { handled: false, rule: tkTho.rule, reply: "", lyDo: `nhuong_model:${tkTho.rule}` }
+      : tkTho;
     if (tk.handled && !state.fastLanesUsed.has(`keyword:${tk.rule}`)) {
       const cua = quaCuaRa(tk.reply, {
         kb,
@@ -581,8 +595,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     }) : { handled: false, reason: safety.reason };
     // Nhường TRƯỚC khi đếm: đếm rồi mới nhường thì bộ đếm lớp 0 đồng báo «đã chặn» trong
     // khi lượt này thực tế vẫn đi lên model — số liệu tự dối.
-    const fl = laLanChot(flTho.lane)
-      ? { handled: false, lane: flTho.lane, reason: `lan_chot_nhuong_model:${flTho.lane}` }
+    const fl = (laLanChot(flTho.lane) || shipNhuongModel(flTho.lane, text))
+      ? { handled: false, lane: flTho.lane, reason: `nhuong_model:${flTho.lane}` }
       : flTho;
     noteFastLane(fl);
     if (fl.handled) {

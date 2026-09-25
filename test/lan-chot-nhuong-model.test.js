@@ -125,3 +125,46 @@ test("④ `paano_gap` GIỮ NGUYÊN mẫu 0 đồng — phiếu L2-M2 đã chố
   assert.equal(r.kq.lyDo, "tu_khoa_v3:paano_gap");
   assert.match(r.gui[0], /MẪU CỨNG/);
 });
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ⑤ LANE GIAO HÀNG — nhường theo NỘI DUNG CÂU KHÁCH, không theo tên lane
+//
+// Ca thật 20/09 (Faisal Ishaq): khách gõ "Deliver riyadh" — hỏi CÓ GIAO TỚI ĐÓ KHÔNG.
+// Mẫu đáp "Your order is free delivery dear / It take 2-5 days to delivery dear": không
+// xác nhận Riyadh, không gọi tên, không có bước sau. Bot Pancake cùng lượt đó đáp
+// "Yes Faisal, we deliver to Riyadh 😊 … How many sets would you like — and may I have
+// your contact number and complete address?".
+//
+// Mẫu cứng KHÔNG biết khách ở đâu và KHÔNG biết khách đã có đơn chưa. Hai loại câu đó phải
+// lên model. Phần còn lại — "bao lâu", "bao nhiêu tiền" — vẫn 0 đồng.
+// ═══════════════════════════════════════════════════════════════════════════
+
+test("⑤ hỏi giao tới ĐỊA ĐIỂM ⇒ nhường model, không bắn mẫu cứng", async () => {
+  const r = await motLuot({
+    noiDung: "Deliver riyadh",
+    lanNhanh: () => ({ handled: true, reply: "MẪU CỨNG ship", lane: "tpl_ship", reason: "hỏi giao hàng" }),
+  });
+  assert.equal(r.goiModel, 1, "câu hỏi địa điểm phải tới model");
+  assert.equal(r.gui[0].includes("MẪU CỨNG"), false);
+});
+
+test("⑤ hỏi về ĐƠN ĐÃ CÓ ⇒ nhường model", async () => {
+  const r = await motLuot({
+    noiDung: "The delivery was scheduled for today.",
+    lanNhanh: () => ({ handled: true, reply: "MẪU CỨNG ship", lane: "tpl_ship", reason: "hỏi giao hàng" }),
+  });
+  assert.equal(r.goiModel, 1);
+  assert.equal(r.gui[0].includes("MẪU CỨNG"), false);
+});
+
+test("⑤ hỏi SỐ NGÀY thuần ⇒ GIỮ mẫu 0 đồng — đừng đổi thứ đang đúng", async () => {
+  for (const cau of ["ilan araw po bago deliver", "how many days", "free delivery?"]) {
+    const r = await motLuot({
+      noiDung: cau,
+      lanNhanh: () => ({ handled: true, reply: "MẪU CỨNG ship", lane: "tpl_ship", reason: "hỏi giao hàng" }),
+    });
+    assert.equal(r.goiModel, 0, `"${cau}" KHÔNG được leo lên model`);
+    assert.deepEqual(r.gui, ["MẪU CỨNG ship"]);
+  }
+});

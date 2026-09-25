@@ -9,7 +9,7 @@ import {
   emptyProfile, extractFromText, absorbToolUses, hydrateProfile, cleanHistory,
   buildProfileBlock, buildContextMessages, missingSteps, estimateTokens,
   RECENT_MSGS, khoangCach, NGAT_MACH_MS, laPingKhach, chonCuaSo,
-  noiNgoaiVung, khachTuChoi, absorbOtherBot as _ab, tenFbTu,
+  noiNgoaiVung, khachTuChoi, absorbOtherBot as _ab, tenFbTu, donTuTinPage, donTuTinKhach,
 } from '../src/context.js';
 
 const PAGE = 'P07';
@@ -434,4 +434,124 @@ test('C34 · đã có tên rồi thì KHÔNG ghi đè (khách đổi tên FB gi�
   const p = emptyProfile(); p.tenFb = 'Tên Cũ';
   buildContextMessages({ prof: p, msgs: [tinKhach('ok', 'Tên Mới')], pageId: PG });
   assert.equal(p.tenFb, 'Tên Cũ');
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ⑧ ĐƠN MÀ KÊNH KHÁC ĐÃ XỬ LÝ — đừng nói "chưa có đơn nào" với người vừa bị huỷ đơn
+//
+// Ca thật Rosalinda Ballesteros 24/09:
+//     sale   "Your order has been cancelled."
+//     khách  "Bkit po cancelled po sir"        (sao lại huỷ vậy anh)
+//     bot    "Wala pa po akong natatanggap na order details from you"  ← rồi CHÀO HÀNG LẠI
+//
+// Dựng lại ngữ cảnh thì bot ĐỌC ĐƯỢC câu huỷ đơn — nó nằm ngay trong cửa sổ 6 tin. Hỏng ở
+// chỗ khác: khối hồ sơ in "Tên (chưa có) · Bước còn thiếu: tên, SĐT, địa chỉ…" như sự thật
+// nội bộ, và model tin khối hồ sơ hơn tin hội thoại.
+//
+// `OB_ORDER` KHỚP câu đó, nhưng `absorbOtherBot` chỉ chạy cho tin bị nhận là MẪU MÁY — mà
+// câu quyết định nhất lại do SALE THẬT gõ. Dữ kiện rơi đúng khe giữa hai đường bóc.
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('C35 · ⭐ nhận ra TRẠNG THÁI đơn, không chỉ "có đơn hay không"', () => {
+  assert.equal(donTuTinPage('Your order has been cancelled.').trangThai, 'đã huỷ');
+  assert.equal(donTuTinPage("I noticed you haven't received the order.").trangThai,
+    'khách CHƯA nhận được hàng');
+  assert.equal(donTuTinPage('Your order is being shipped').trangThai, 'đang giao');
+  assert.equal(donTuTinPage('Your order has been created').trangThai, 'đã tạo');
+  // Bắt nhầm ⇒ bot tưởng khách đã có đơn và thôi bán. Lệch một chiều.
+  for (const t of ['How many sets would you like?', '🎉 SPECIAL PROMOTION – UP TO 70% OFF!',
+                   'Buy 1 Get 1 FREE — 109 SAR', '']) {
+    assert.equal(donTuTinPage(t), null, `KHÔNG được coi là đơn: ${JSON.stringify(t)}`);
+  }
+});
+
+test('C36 · ⭐⭐ bóc được từ tin SALE THẬT GÕ, không chỉ từ mẫu máy — đúng khe đã rơi', () => {
+  const p = emptyProfile();
+  const msgs = [
+    { from: { id: PG, admin_name: 'Nguyễn Duyên' }, original_message: 'Your order has been cancelled.' },
+    { from: { id: 'cust-9' }, original_message: 'Bkit po cancelled po sir' },
+  ];
+  cleanHistory(msgs, PG, p);
+  assert.ok(p.donDaCo, 'câu của sale thật KHÔNG phải mẫu máy — vẫn phải bóc được');
+  assert.equal(p.donDaCo.trangThai, 'đã huỷ');
+  assert.match(p.donDaCo.cau, /cancelled/);
+  // Và câu đó vẫn Ở LẠI trong ngữ cảnh — bóc dữ kiện không có nghĩa là vứt câu.
+  const rows = cleanHistory(msgs, PG, emptyProfile());
+  assert.ok(rows.some((r) => /cancelled/i.test(r.text)));
+});
+
+test('C37 · ⭐ có đơn ở kênh khác ⇒ khối hồ sơ CẤM nói "chưa có đơn" và đổi việc phải làm', () => {
+  const p = emptyProfile();
+  cleanHistory([{ from: { id: PG }, original_message: 'Your order has been cancelled.' }], PG, p);
+  const block = buildProfileBlock(p, {});
+  assert.match(block, /ĐANG CÓ MỘT ĐƠN TRONG CUỘC/);
+  assert.match(block, /đã huỷ/);
+  assert.match(block, /Kênh khác \(sale\/bot\) nói/);
+  assert.match(block, /TUYỆT ĐỐI không nói "chưa nhận được thông tin đơn"/);
+  assert.match(block, /CHUYỂN NGƯỜI/);
+  // Dòng "Bước còn thiếu: tên, SĐT, địa chỉ…" đọc như mệnh lệnh đi thu thông tin — chính
+  // nó đẩy model đi chào hàng lại với người vừa bị huỷ đơn.
+  assert.match(block, /Bước còn thiếu: KHÔNG phải lượt thu thông tin/);
+  assert.doesNotMatch(block, /Bước còn thiếu: tên/);
+});
+
+test('C38 · ⭐ khách Philippines từ chối bằng lời LỊCH SỰ — ba câu đã lọt hết', () => {
+  for (const t of ['Ok po salamat nlng po', 'Hwag nlng po salamat', 'wag na po',
+                   'salamat na lang po', 'di na po']) {
+    assert.equal(khachTuChoi(t), true, `phải là từ chối: ${t}`);
+  }
+  // "salamat" trơn là CẢM ƠN, không phải từ chối — bắt nhầm là bot câm với người đang mua.
+  for (const t of ['salamat po sir', 'Ok po', 'Mzta na po sir', 'ok sige po', 'yes po']) {
+    assert.equal(khachTuChoi(t), false, `KHÔNG phải từ chối: ${t}`);
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ⑨ ĐƠN ĐANG TRONG CUỘC — tín hiệu đến từ CẢ HAI PHÍA
+//
+// Ca thật Tara Singh 24/09: khách tranh chấp một đơn giao dở 15 ngày, người giao không cho
+// kiểm hàng. Lượt 2 bot đáp "Salamat po sa pag-update… Full name para sa order, Contact
+// number, Complete address" — đi xin lại thông tin của người đang đòi huỷ đơn.
+//
+// Bản vá ca Rosalinda KHÔNG bắt được ca này: ở đó sale gõ "Your order has been cancelled",
+// còn ở đây sale chỉ viết "We will notify the shipping company to re-deliver your order" —
+// không khớp mẫu trạng thái nào. Tín hiệu rõ nhất nằm ở câu CỦA KHÁCH.
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('C39 · ⭐⭐ câu của KHÁCH cũng dựng được dữ kiện «đang có đơn»', () => {
+  for (const t of ['The delivery was scheduled for today.', 'I do not want this order.',
+                   "the delivery boy has just called to say that he won't allow an inspection",
+                   'my order is still not here', 'cancel my order please',
+                   'You have been stringing me along for fifteen days regarding a single order']) {
+    assert.ok(donTuTinKhach(t), `phải bắt: ${t.slice(0, 50)}`);
+  }
+  // Bắt nhầm ⇒ bot thôi bán với người ĐANG MUỐN MUA. Lệch một chiều, như mọi luật khác.
+  for (const t of ['how much po', 'I want to order 2 sets', 'Place an order🎁', 'magkano po',
+                   'do you deliver to riyadh', 'Buy 1 Get 1 free po ba', 'ok sige po']) {
+    assert.equal(donTuTinKhach(t), null, `KHÔNG được bắt: ${t}`);
+  }
+});
+
+test('C40 · ⭐ khách nói về đơn ⇒ khối hồ sơ CẤM xin lại thông tin và CẤM dán bảng giá', () => {
+  const p = extractFromText('The delivery was scheduled for today.', emptyProfile());
+  assert.equal(p.donDaCo.nguon, 'khach');
+  const block = buildProfileBlock(p, {});
+  assert.match(block, /ĐANG CÓ MỘT ĐƠN TRONG CUỘC/);
+  assert.match(block, /CHÍNH KHÁCH nói/);
+  assert.match(block, /KHÔNG xin lại tên\/SĐT\/địa chỉ/);
+  assert.match(block, /KHÔNG dán bảng giá/);
+  assert.match(block, /CHUYỂN NGƯỜI/);
+  assert.match(block, /Bước còn thiếu: KHÔNG phải lượt thu thông tin/);
+});
+
+test('C41 · nguồn PAGE vẫn hoạt động như cũ, và không đè lên dữ kiện đã có', () => {
+  const p = emptyProfile();
+  cleanHistory([{ from: { id: PG }, original_message: 'Your order has been cancelled.' }], PG, p);
+  assert.equal(p.donDaCo.nguon, 'page');
+  assert.equal(p.donDaCo.trangThai, 'đã huỷ');
+  // Câu khách tới sau KHÔNG được ghi đè sự thật nặng hơn đã ghi.
+  extractFromText('The delivery was scheduled for today.', p);
+  assert.equal(p.donDaCo.trangThai, 'đã huỷ');
 });
