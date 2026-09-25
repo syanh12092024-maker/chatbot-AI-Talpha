@@ -2185,3 +2185,18 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   / `role="group"` vừa đúng cho người dùng trình đọc màn hình, vừa làm phép đo hết nói dối.
   📌 Trước khi cắt nội dung cho vừa một chỉ số, hỏi «chỉ số này có đang đo đúng thứ nó nói không».
 
+- 25/09 · GD6 (menu đích) → ✅ — năm mục đặt theo NHỊP MỞ MÁY (Hôm nay · Page & bot · Dạy bot ·
+  Số liệu · Cài đặt), bảy màn chưa dùng được mang cờ `thuNghiem` nên ra khỏi thanh bên mà đường
+  dẫn vẫn sống; «Vận hành chat V3» đổi tên thành «Hội thoại và đơn» (kèm `<h1>`, ca HK10 canh).
+  Menu quản trị 26 → **19 màn hiện + 7 ẩn**. Sáu ca canh menu sửa theo cấu trúc mới, giữ nguyên
+  điều chúng canh. `do-giao-dien` mở đủ 26 màn, 0 màn vỡ · `npm test` 1970 xanh / 3 đỏ (ca có
+  sẵn). Nhật ký `docs/thi-cong/nhat-ky/phieu-GD6.md`. CHƯA đạt đích «≤16 màn» — cần GD2 gộp ba
+  màn page và GD3 dựng màn Cài đặt team; không gộp bừa để chạm số.
+- 25/09 · 🧭 **ẨN KHỎI MENU KHÔNG ĐƯỢC LÀM MẤT ĐƯỜNG DẪN VỊ TRÍ.** Lọc thẳng màn ẩn khỏi
+  `menuCua` làm ca ⑥b đỏ — và nó đỏ ĐÚNG: thanh trên cùng tra «tôi đang ở đâu» bằng chính gói
+  menu, nên ai mở màn ẩn bằng đường dẫn sẽ thấy một trang không biết mình thuộc mục nào.
+  📌 Ẩn là việc của tầng VẼ (cờ `an`), không phải của tầng dữ liệu menu.
+- 25/09 · 🧭 **ẨN KHỎI MENU ≠ CHẶN QUYỀN.** Màn `thuNghiem` giữ nguyên `VAI_VAO_DUOC`, đường dẫn
+  vẫn trả 200, màn khác trỏ sang vẫn trỏ được. 📌 Muốn chặn quyền thì sửa vai, đừng sửa menu —
+  hai việc đó nhìn giống nhau trên màn nhưng khác hẳn nhau khi có sự cố.
+

@@ -105,9 +105,9 @@ async function vKichBanChoDuyet(d) {
     gap: so > 0,
     vai: [VAI.DUYET_KICH_BAN, VAI.QUAN_TRI],
     di: '/kich-ban',
-    lam: 'Bản nháp chưa đưa lên LIVE — page vẫn đang chạy bản cũ.',
+    lam: 'Bản nháp chưa được cho chạy — page vẫn đang dùng bản cũ.',
     viRong: VI_RONG.XONG,
-    noiRong: 'Không bản nháp nào chờ. Mọi kịch bản đang ở LIVE hoặc đã lưu trữ.',
+    noiRong: 'Không bản nháp nào chờ. Mọi kịch bản đang chạy hoặc đã cất đi.',
   };
 }
 

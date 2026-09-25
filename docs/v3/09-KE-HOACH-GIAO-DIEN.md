@@ -256,7 +256,7 @@ Làn: 🟩 chỉ đổi cách hiện · 🟨 đổi hành vi màn hoặc cửa g
 | **GD3 · Cài đặt team + cửa ghi còn thiếu** | 🟨 | B + A | GD1 | Trang danh sách việc (4b). Cửa ghi `page.pos_shop_id` (C6). Gán marketer về một chỗ (chờ Q5). Việc ngoài hệ thành thẻ có nút «Kiểm lại» (luật 5). Bỏ các câu bảo chạy lệnh hay sửa biến môi trường khỏi mặt màn (C7) | Người mới, bản dev sạch: từ team rỗng tới page «sẵn sàng» mà **không mở terminal** (trừ bước allowlist, chờ Q1) |
 | **GD4 · Lượt lời lẽ** | 🟩 | B | GD0 | Thêm thành phần «ⓘ Nguồn số» (luật 3). Viết lại chữ cho 26 màn. Áp luật cảnh báo (luật 4). Bảng thuật ngữ `docs/v3/THUAT-NGU.md` là một nguồn, và ca HK10 (tên màn khớp `<h1>`) mở rộng ra để canh thuật ngữ | Mặt màn có 0 `<code>` (ngoài ô Nguồn số) · mỗi màn ≤ 1 hộp cảnh báo · tổng chữ ≤ 5.500 |
 | **GD5 · Kiểm soát** | 🟥 | A + B | GD1 | Worker phát nhịp tim và dải trạng thái đọc nhịp đó (K4). Bàn giao sinh việc (K5). Nút tạm dừng cả team (K1, quy trình `mo-van`). Màn Hội thoại và màn Đơn chờ duyệt tách ra khỏi Vận hành V3 và tự làm mới. Nhật ký ghi trước/sau cho giá bán (K7). Truyền `canhBao` vào lúc khởi động (K8) | Tắt worker thì trong 2 phút dải trạng thái chuyển đỏ · bàn giao một hội thoại thì nó hiện ở Việc đang chờ · tạm dừng rồi bật lại được, nhật ký có đủ 2 dòng |
-| **GD6 · Menu đích** | 🟩 | B | GD2, GD3, GD5 | `man-hinh.js` theo 4a. Thêm cờ `thuNghiem` (luật 7). Việc của tôi gộp bản tóm tắt của Hệ còn sống không | Menu quản trị 16 màn · mọi đường cũ vẫn trả 200 hoặc chuyển hướng (không 404) |
+| **GD6 · Menu đích** ✅ 25/09 (19 màn, không phải 16 — xem dưới) | 🟩 | B | ~~GD2, GD3, GD5~~ làm trước được | `man-hinh.js` theo 4a. Thêm cờ `thuNghiem` (luật 7). Việc của tôi gộp bản tóm tắt của Hệ còn sống không | Menu quản trị 16 màn · mọi đường cũ vẫn trả 200 hoặc chuyển hướng (không 404) |
 | **GD7 · Nghiệm thu bằng người** | — | người quyết | GD0 (đo mốc) · GD6 (đo lại) | Một người chưa từng dùng hệ, trên bản dev sạch: cài team rồi đưa một page tới bước «Chạy thử». Ghi thời gian, số lần phải hỏi, số lần lạc | Thời gian và số lần hỏi **giảm một nửa** so với mốc đo sau GD0 |
 
 **Chạy song song được:** sau GD0 thì GD1 và GD4 chạy song song, vì một bên đụng tầng dữ liệu còn
@@ -272,7 +272,7 @@ và GD5 đều chờ GD1. GD6 làm cuối.
 
 | Chỉ số | Hôm nay (22/09) | Đích |
 |---|---:|---:|
-| Màn trên menu (quản trị) | 26 | ≤ 16 |
+| Màn trên menu (quản trị) | ~~26~~ → **19** (7 màn ẩn) | ≤ 16 — cần GD2 gộp ba màn page và GD3 dựng màn Cài đặt team |
 | Màn phải ghé để cài một page | 7 màn · 11 bước | 1 luồng |
 | Việc phải làm ngoài giao diện | 3 (+ terminal) | ≤ 2, đều có hướng dẫn, không cần terminal |
 | Nút bật bot | 5 (v3: 3 · v1: 2) | 1 trên v3 (v1 chờ Q2) |

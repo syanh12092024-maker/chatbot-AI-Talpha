@@ -244,8 +244,9 @@
           </button>
           <div class="dh-con" id="${idCon}" ${dangO ? "" : "hidden"}>
             ${(n.man || [])
-              .map((m, k) => {
-                const dauItDung = m.itDung && !(n.man[k - 1] || {}).itDung;
+              .filter((m) => !m.an)
+              .map((m, k, dsHien) => {
+                const dauItDung = m.itDung && !(dsHien[k - 1] || {}).itDung;
                 const laDay = !!(cho && cho.man === m);
                 return (
                   (dauItDung ? '<div class="dh-vach">Ít dùng</div>' : "") +
@@ -269,7 +270,8 @@
       const con = ngan.querySelector("#dh-con-" + i);
       nut.onclick = () => {
         // Nhóm CHỈ CÓ MỘT màn thì bấm là đi thẳng — không bắt bung ra để bấm lần hai.
-        if ((n.man || []).length === 1) { location.href = n.man[0].duong; return; }
+        const hien = (n.man || []).filter((m) => !m.an);
+        if (hien.length === 1) { location.href = hien[0].duong; return; }
         const mo = nut.getAttribute("aria-expanded") !== "true";
         nut.setAttribute("aria-expanded", String(mo));
         con.hidden = !mo;

@@ -88,7 +88,7 @@ export async function manHieuQua(boiCanh) {
         so: ket?.dsBan?.length ?? 0,
         noi: `Kịch bản hiện có: ${Object.entries(theoTrangThai).map(([k, v]) => `${k} ${v}`).join(' · ') || 'chưa có bản nào'}.`,
         diTiep: (ket?.dsBan?.length ?? 0) >= 2 ? null
-          : 'Mỗi page đang có đúng một bản LIVE, nên không có gì để so với gì. Muốn A/B thì '
+          : 'Mỗi page đang chạy đúng một bản, nên không có gì để so với gì. Muốn so hai bản thì '
             + 'phải có hai bản cùng chạy trên cùng tập khách.',
       },
     ],

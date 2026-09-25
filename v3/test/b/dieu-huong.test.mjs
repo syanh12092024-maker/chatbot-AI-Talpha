@@ -161,29 +161,38 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng vẫn đủ 25 màn — gom
   assert.equal(menu.length, 5, 'quản trị phải thấy đúng năm mục CÓ MÀN (mục dự trù tự ẩn)');
   const soMan = menu.reduce((a, n) => a + n.man.length, 0);
   assert.equal(soMan, mh.MAN.length, 'gom nhóm KHÔNG được làm rơi màn nào');
-  assert.deepEqual(menu.map((n) => n.ma), ['tong-quan', 'van-hanh', 'ai-bot', 'phan-tich', 'quan-tri'],
-    'thứ tự mục F1: Tổng quan trước — «cái gì cần để ý ngay» là câu hỏi đầu tiên (mục M1)');
-  assert.equal(menu[0].man[0].ten, 'Việc của tôi', 'Tổng quan mở bằng việc của chính người xem');
+  // ═══ ĐỔI GD6 · 25/09/2026 — mục đặt theo NHỊP MỞ MÁY ════════════════════════════════
+  //   Hôm nay · Page & bot · Dạy bot · Số liệu · Cài đặt   (+ dự trù «Nhắn cho khách»)
+  // Và bảy màn chưa dùng được mang cờ `thuNghiem`: KHÔNG vẽ ra thanh bên, nhưng vẫn nằm
+  // trong gói menu (cờ `an`) để thanh trên cùng tra được vị trí khi mở bằng đường dẫn.
+  assert.deepEqual(menu.map((n) => n.ma), ['hom-nay', 'page-bot', 'day-bot', 'so-lieu', 'cai-dat'],
+    'thứ tự mục theo nhịp mở máy: việc hôm nay trước, cài đặt sau cùng');
+  assert.equal(menu[0].man[0].ten, 'Việc của tôi', 'Hôm nay mở bằng việc của chính người xem');
+  const hienRa = menu.reduce((a, n) => a + n.man.filter((m) => !m.an).length, 0);
+  const an = menu.reduce((a, n) => a + n.man.filter((m) => m.an).length, 0);
+  assert.equal(hienRa, 19, `thanh bên đang vẽ ${hienRa} màn`);
+  assert.equal(an, 7, 'bảy màn chưa dùng được phải ẩn khỏi thanh bên nhưng còn trong gói');
   // Chín màn ít dùng dồn vào Cài đặt. Đếm ở đây để nếu có người kéo một màn ít dùng trở
   // lên mục hằng ngày thì bài này đỏ, chứ không trôi lặng lẽ.
   // Bảy màn ít dùng nay tản ra ba mục theo ĐÚNG việc của chúng, không dồn hết vào một
   // chỗ nữa. Đếm ở đây để ai kéo một màn ít dùng lên mục hằng ngày thì ca này đỏ.
   const itDung = mh.MAN.filter((m) => m.itDung);
-  assert.equal(itDung.length, 7, `đang có ${itDung.length} màn ít dùng`);
+  assert.equal(itDung.length, 9, `đang có ${itDung.length} màn ít dùng`);
 });
 
 test('④d · SALE chỉ thấy MỘT mục, và mục đó chỉ có một màn — §10', () => {
   const menu = mh.menuCua([VAI.SALE]);
   assert.equal(menu.length, 1, 'sale không được thấy mục nào khác');
-  assert.equal(menu[0].ma, 'van-hanh');
+  assert.equal(menu[0].ma, 'hom-nay');
   assert.deepEqual(menu[0].man.map((m) => m.ten), ['Việc đang chờ']);
 });
 
 test('④e · `mucCuaDuong` chỉ đúng mục đang đứng — menu phải bung được đúng chỗ', () => {
-  assert.equal(mh.mucCuaDuong('/bo-luat'), 'ai-bot');
-  assert.equal(mh.mucCuaDuong('/dieu-phoi'), 'van-hanh');
-  assert.equal(mh.mucCuaDuong('/nhat-ky'), 'quan-tri');
-  assert.equal(mh.mucCuaDuong('/dieu-phoi/'), 'van-hanh', 'gạch chéo cuối không được làm lệch');
+  assert.equal(mh.mucCuaDuong('/bo-luat'), 'day-bot');
+  assert.equal(mh.mucCuaDuong('/dieu-phoi'), 'hom-nay');
+  assert.equal(mh.mucCuaDuong('/nhat-ky'), 'cai-dat');
+  assert.equal(mh.mucCuaDuong('/hieu-qua'), 'day-bot', 'màn ẩn vẫn phải tra ra mục của nó');
+  assert.equal(mh.mucCuaDuong('/dieu-phoi/'), 'hom-nay', 'gạch chéo cuối không được làm lệch');
   assert.equal(mh.mucCuaDuong('/khong-co-that'), null, 'đường lạ trả null, không đoán bừa');
 });
 
@@ -216,10 +225,13 @@ test('④f · trong MỖI mục, màn ít dùng đứng SAU hết — vạch «�
   // 14/09: 9 → 7. Ba màn rời khỏi «ít dùng» vì chúng là việc SỐ NĂM người dùng kể ra
   // («cấu hình cho page mới đủ để chat đúng»): Quy tắc chung mọi page · Câu trả lời sẵn ·
   // Kỹ năng theo sản phẩm. Một màn thêm vào: không có.
+  // GD6 · 25/09: 7 → 9. Hai màn thêm vào «ít dùng» vì chúng chỉ mở khi cần tra cứu:
+  // «Khách hàng» và «Khách vào từ đâu». Thứ tự theo đúng thứ tự trong sổ đăng ký.
   const itDung = mh.MAN.filter((m) => m.itDung).map((m) => m.ten);
   assert.deepEqual(itDung, [
+    'Sản phẩm & kho', 'Đưa sản phẩm lên chạy',
     'Đoạn chữ gửi cho AI', 'Ảnh gửi khách', 'Gợi ý từ AI', 'So hai bản kịch bản',
-    'Rủi ro hoàn hàng', 'Sản phẩm & kho', 'Đưa sản phẩm lên chạy',
+    'Khách vào từ đâu', 'Rủi ro hoàn hàng', 'Khách hàng',
   ]);
 });
 
@@ -291,7 +303,7 @@ test('⑥b · đường dẫn vị trí tìm ra ĐÚNG nhóm cho mọi màn — 
   }
   const chiTiet = timChoDung(d, '/dieu-phoi/viec/123');
   assert.ok(chiTiet, 'màn chi tiết phải tìm ra màn cha');
-  assert.equal(chiTiet.nhom.ma, 'van-hanh');
+  assert.equal(chiTiet.nhom.ma, 'hom-nay');
   assert.equal(chiTiet.man.duong, '/dieu-phoi');
   assert.equal(timChoDung(d, '/khong-co-that'), null, 'đường lạ trả null, không đoán bừa');
 });

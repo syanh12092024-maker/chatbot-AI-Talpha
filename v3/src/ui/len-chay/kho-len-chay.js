@@ -208,11 +208,11 @@ function c3DungKichBan(kichBan) {
     trangThai: tt,
     soDo: kichBan.length,
     donVi: 'bản',
-    noi: live.length ? `Có ${live.length} bản LIVE.`
-      : (nhap.length ? `${nhap.length} bản còn ở nháp/chờ duyệt — chưa bản nào LIVE.`
+    noi: live.length ? `Có ${live.length} bản đang chạy.`
+      : (nhap.length ? `${nhap.length} bản còn ở nháp hoặc chờ duyệt — chưa bản nào được cho chạy.`
         : 'Chưa có bản kịch bản nào.'),
     di: '/kich-ban',
-    lam: tt === CHANG.XONG ? '' : 'Soạn kịch bản rồi đưa lên LIVE.',
+    lam: tt === CHANG.XONG ? '' : 'Soạn kịch bản rồi cho chạy.',
   };
 }
 
@@ -236,7 +236,7 @@ function c4NapVaoMay(kb, loi) {
       ? `Đã nạp ${co.length}/3 ô${co.length < 3 ? ' (thiếu giọng điệu — chỉ nhắc)' : ''}.`
       : `Mới ${co.length}/3 ô. Bot cần ÍT NHẤT câu chào và cách bán mới trả lời được.`,
     di: '/kich-ban',
-    lam: dayDu ? '' : 'Điền câu chào và cách bán rồi đưa lên LIVE.',
+    lam: dayDu ? '' : 'Điền câu chào và cách bán rồi cho chạy.',
   };
 }
 

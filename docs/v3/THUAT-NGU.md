@@ -42,7 +42,8 @@ dịch sang thứ họ biết — mỗi lần dịch là một lần đoán, và
 
 | Màn | Còn gì |
 |---|---|
-| Menu (`chung/man-hinh.js`) | ✅ 25/09 đổi «Kết nối & token» → «Kết nối». Còn «Vận hành chat V3» mang tên phiên bản — đổi ở lượt sắp menu |
+| Menu (`chung/man-hinh.js`) | ✅ 25/09 — «Kết nối & token» → «Kết nối», «Vận hành chat V3» → «Hội thoại và đơn». Còn «Model AI & khoá» dùng chữ viết tắt |
+| Bảy màn ẩn khỏi menu (cờ `thuNghiem`) | đường dẫn vẫn sống, nhưng mới «Gợi ý từ AI» có lối vào từ màn khác — sáu màn còn lại chưa có |
 | Đoạn chữ gửi cho AI | ✅ 25/09 — 5 hộp cảnh báo → 0, đã đổi tên năm khối |
 | Sản phẩm & kho · Gợi ý từ AI · Khách vào từ đâu · Ai đã sửa gì · Việc của tôi | ✅ 25/09 dọn chữ; Sản phẩm & kho còn 4 mã và 3 hộp cảnh báo |
 | Điều kiện `MISSING_TAGS` | còn nhắc thao tác bên Pancake bằng lời cũ |
