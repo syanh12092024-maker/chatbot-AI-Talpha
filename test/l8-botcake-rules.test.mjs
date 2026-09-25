@@ -163,7 +163,17 @@ test('A7 · có luật BẬT mà mù từ khoá → không dám bỏ chờ', () 
   assert.equal(bc.matchesBotcakeMap({ hasKey: true, read: false, rules: [] }, 'ano pong color'), true);
 });
 
-test('A8 · báo cáo trùng lặp trên page nháp = 3 TRÙNG · 2 BỔ SUNG · 1 tắt', async () => {
+// LUẬT ĐÃ ĐỔI (chốt 25/09, người quyết xác nhận «cố ý»): Fast Lane KHÔNG còn câu hứa
+// cứng trong mã. `priceTail` bỏ dòng «FREE delivery, COD», và lane `ship` bỏ hẳn câu mặc
+// định — nay lấy từ `kb.config.fastLaneShip` của từng page, không có thì KHÔNG đáp.
+//
+// Hệ quả cho báo cáo đối chiếu, và đây mới là cái đáng đo: Fast Lane phủ được gì bây giờ
+// PHỤ THUỘC KỊCH BẢN CỦA PAGE, không còn là hằng số của mã. Cùng một bộ luật Botcake:
+//   · page CHƯA cấu hình  → chỉ câu hỏi giá là TRÙNG; giao hàng/COD thành BỔ SUNG
+//   · page ĐÃ cấu hình    → cả ba TRÙNG như cũ
+// Hai ca dưới đây neo đúng hai đầu đó. Ca cũ neo «3 TRÙNG» như một hằng số nên đỏ ngay khi
+// luật đổi, mà không nói được vì sao.
+test('A8 · page CHƯA cấu hình kịch bản → chỉ câu hỏi GIÁ là trùng, giao hàng thành BỔ SUNG', async () => {
   bc.reloadBotcakeKeys(process.env.BOTCAKE_TOKENS);
   rs.setRules([]); // báo cáo phải đo Fast Lane THUẦN, không lẫn dòng kịch bản của test khác
   stubFetch();
@@ -172,14 +182,38 @@ test('A8 · báo cáo trùng lặp trên page nháp = 3 TRÙNG · 2 BỔ SUNG ·
     assert.equal(r.total, 6);
     assert.equal(r.activated, 5);
     assert.equal(r.off, 1, 'luật "Size" đang TẮT');
-    assert.equal(r.duplicate, 3, 'giá · số ngày giao · free delivery đều đã có mẫu Fast Lane');
-    assert.equal(r.complement, 2, 'pawnable-group và "don\'t have any money yet" là chỗ Fast Lane không phủ');
+    assert.equal(r.duplicate, 1, 'page chưa cấu hình ⇒ Fast Lane chỉ đáp được câu hỏi giá');
+    assert.equal(r.complement, 4,
+      'giao hàng · free delivery · pawnable · "chưa có tiền" — bốn chỗ Fast Lane KHÔNG phủ');
     assert.equal(r.blind, 0);
 
     const dup = r.items.filter((i) => i.verdict === 'TRÙNG' && i.isActivated).map((i) => i.keywords[0]);
-    assert.deepEqual(dup.sort(), ['How many days', 'Free delivery', 'how much'].sort());
+    assert.deepEqual(dup, ['how much']);
     // Không có route/hàm nào tự tắt — báo cáo chỉ đề xuất
-    for (const i of r.items) assert.match(String(i.suggestion), /TẮT|GIỮ|Mở Botcake/);
+    // Luật mới đẻ thêm một loại đề xuất: page chưa điền kịch bản thì Fast Lane có mẫu mà
+    // không đáp được, và báo cáo nói «ĐIỀN KB TRƯỚC» thay vì khuyên giữ Botcake. Đây là
+    // đề xuất ĐÚNG cho cảnh đó — thiếu nó trong phép kiểm thì ca đỏ mà không nói được gì.
+    for (const i of r.items) assert.match(String(i.suggestion), /TẮT|GIỮ|Mở Botcake|ĐIỀN KB/);
+  } finally { restoreFetch(); bc.clearBotcakeCache(); }
+});
+
+test('A8b · page ĐÃ cấu hình kịch bản → giao hàng & free delivery TRÙNG trở lại', async () => {
+  // ĐẦU KIA của cùng một luật. Fast Lane phủ được gì là do KỊCH BẢN PAGE quyết, không do
+  // mã — cùng bộ luật Botcake, chỉ khác page đã điền `fastLaneShip`. Thiếu ca này thì luật
+  // mới chỉ được neo một nửa, và không ai thấy điền kịch bản đổi được cái gì.
+  bc.reloadBotcakeKeys(process.env.BOTCAKE_TOKENS);
+  rs.setRules([]);
+  stubFetch();
+  try {
+    const KB_DA_CAU_HINH = { ...KB, config: {
+      fastLaneShip: 'Giao 2-5 ngày làm việc, FREE delivery. COD — xem hàng rồi mới trả tiền.',
+    } };
+    const r = await bc.compareWithFastLane(PAGE, KB_DA_CAU_HINH, fastLane);
+    assert.equal(r.total, 6);
+    assert.equal(r.duplicate, 3,
+      'điền kịch bản xong thì giá · số ngày giao · free delivery đều đã có mẫu Fast Lane');
+    const dup = r.items.filter((i) => i.verdict === 'TRÙNG' && i.isActivated).map((i) => i.keywords[0]);
+    assert.deepEqual(dup.sort(), ['How many days', 'Free delivery', 'how much'].sort());
   } finally { restoreFetch(); bc.clearBotcakeCache(); }
 });
 

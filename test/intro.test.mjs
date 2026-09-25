@@ -1,4 +1,10 @@
-// Nghiệm thu TIN ĐẦU (tpl_intro) — phải đủ ẢNH + GIÁ + COD + câu chốt.
+// Nghiệm thu TIN ĐẦU (tpl_intro) — phải đủ ẢNH + GIÁ + câu chốt.
+//
+// ⚠️ ĐỔI LUẬT 25/09 (người quyết xác nhận «cố ý»): mã KHÔNG còn hứa hẹn cứng. Dòng
+// «🚚 FREE delivery, and it's COD — you pay upon delivery» đã bị gỡ khỏi `priceTail` ở cả
+// ba ngôn ngữ, và lane `ship` bỏ hẳn câu mặc định. Lời hứa giao hàng/COD nay là CHUYỆN CỦA
+// KỊCH BẢN PAGE (`kb.config.fastLaneShip` · `fastLanePrice` · `greeting`), không phải hằng
+// số trong mã — cùng một nguyên tắc với «không có KB thì NHƯỜNG, đừng bịa».
 // Xuất xứ: 94,4% ảnh của hệ thống (2.872/3.041) nằm ở lượt AI đầu tiên — đúng lượt
 // Fast Lane chặn. Không gửi ảnh = Fast Lane biến lượt giới thiệu thành tin chữ trơ.
 import './_bat-cua-de-do.mjs';   // PHẢI đứng trước mọi import khác
@@ -23,14 +29,18 @@ const KB = {
 const KB_NO_PRICE = { text: '', products: [], config: {} };
 const FL = (text, extra = {}) => fastLane({ text, kb: KB, aiTurns: 0, lastAiText: '', usedLanes: new Set(), ...extra });
 
-test('I1 · tin đầu có ĐỦ: ảnh + móc + bảng giá + COD + câu chốt', () => {
+test('I1 · tin đầu có ĐỦ: ảnh + móc + bảng giá + câu chốt, và KHÔNG tự hứa COD', () => {
   const it = buildIntro(KB, 'en');
   assert.ok(it, 'phải dựng được tin đầu');
   assert.equal(it.images.length, 2, 'gửi 2 ảnh sản phẩm');
   assert.match(it.caption, /cold sensation/, 'caption = câu móc của page');
   assert.match(it.text, /99/); assert.match(it.text, /149/);
-  assert.match(it.text, /COD|delivery/i);
   assert.match(it.text, /\?/, 'phải kết bằng câu hỏi chốt (nguyên tắc 14)');
+  // Neo CHIỀU NGƯỢC: mã tự nói «FREE delivery / COD» là tự hứa thay page. Page nào có
+  // chính sách khác (thu phí ship, trả trước) thì câu đó thành lời hứa SAI gửi cho khách
+  // thật. Ai thêm lại hằng số đó vào mã sẽ thấy ca này đỏ.
+  assert.doesNotMatch(it.text, /COD|free delivery/i,
+    'lời hứa giao hàng/COD phải đến từ kịch bản page, không phải hằng số trong mã');
 });
 
 test('I2 · chỉ lấy ảnh SẢN PHẨM, không lấy feedback ở tin đầu', () => {
