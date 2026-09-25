@@ -2371,3 +2371,17 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   nằm ở `src/products/catalog.js`: có `san_pham_goc_ma` thì lấy theo mã gốc lọc theo shop.
   📌 Một màn tự nghĩ ra cách trả lời một câu hỏi mà hệ đã có câu trả lời = hai sự thật, và cái
   sai luôn là cái mới.
+- 25/09 · **LƯỢT THỬ A→Z** (người quyết yêu cầu): dựng page ảo + sản phẩm ảo trên bản dev, đi
+  hết luồng cài đặt bằng trình duyệt thật. Kết quả: **0 lỗi JS · 0 cửa 5xx**, mọi thứ gõ vào
+  đều xuống CSDL đúng (giá 129 SAR → 12900 đơn vị nhỏ; 1 dòng nhật ký sửa giá). Nhưng bắt được
+  **hai lỗi mà 2.038 ca xanh không thấy**: ① tab sản phẩm nói «page chưa có sản phẩm nào»
+  trong khi bot đang dùng một sản phẩm — vì ghép qua cửa cắt 50 dòng (và cửa ấy còn BỎ bậc giá
+  đang tắt ⇒ lưu tiếp là xoá mất chúng); ② «chưa đọc được tình trạng» gộp nhầm cảnh «bot chưa
+  biết page này» vào cảnh «cầu hỏng», đẩy người dùng đi hỏi người quản trị một việc họ tự sửa
+  được. Cả hai đã vá, có ca canh (mot-page 18/18). Dọn sạch dữ liệu thử; dòng nhật ký ở lại vì
+  `nhat_ky` là bảng chỉ-INSERT — đúng thiết kế.
+- 25/09 · 🧭 **BỘ CA CHẠY TRÊN DỮ LIỆU MÌNH TỰ DỰNG; LƯỢT THỬ A→Z CHẠY TRÊN DỮ LIỆU NHƯ THẬT.**
+  Hai lỗi trên đều là «màn nói một câu SAI», và cả hai chỉ lộ khi có một page thật sự trống đi
+  qua trọn luồng. 📌 Sau khi dựng xong một luồng, dựng một bản ghi ảo và đi hết luồng ấy —
+  rẻ hơn mọi thước, và bắt đúng loại lỗi mà thước không với tới (cùng họ với bài học «chụp một
+  ảnh và đặt cạnh màn cũ»).

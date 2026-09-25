@@ -40,6 +40,8 @@ export function datDocKhoi(bo) {
   for (const t of ['sanPham', 'kichBan']) {
     if (typeof bo[t] !== 'function') throw new LoiMotPage(`datDocKhoi: thiếu hàm \`${t}\`.`);
   }
+  // `sua` không bắt buộc: thiếu thì tab sản phẩm CHỈ ĐỌC và nói ra, chứ không im lặng
+  // hiện một danh sách không bấm được.
   _docKhoi = bo;
   return _docKhoi;
 }
@@ -120,9 +122,15 @@ export async function trangMotPage(boiCanh, id) {
     viSaoKhongDoc = `Cầu sang tiến trình bot lỗi: ${e?.message || e}`;
   }
 
-  // ⚠️ KHÔNG ĐỌC ĐƯỢC ≠ KHÔNG THIẾU GÌ. Hai câu ấy dẫn người đọc đi hai hướng ngược nhau,
-  //    và câu thứ hai là câu khiến người ta bật bot cho một page chưa sẵn sàng.
-  const chuaDoDuoc = !doc;
+  // ⚠️ BA CẢNH, KHÔNG PHẢI HAI (sửa 25/09 sau lượt thử A→Z):
+  //    ① cầu hỏng / chưa nối  ⇒ chưa đo được, và đó là việc của người quản trị hệ thống;
+  //    ② cầu ĐỌC ĐƯỢC nhưng KHÔNG thấy page này ⇒ đây là một câu trả lời THẬT: tiến trình
+  //       bot không biết page ấy (chưa quét về, hoặc token không phủ). Người dùng làm được;
+  //    ③ đọc được và thấy ⇒ có danh sách điều kiện.
+  //    Gộp ① và ② vào một câu «chưa đọc được» là đẩy người ta đi hỏi người quản trị một việc
+  //    họ tự sửa được. Đo được ở lượt thử A→Z: page vừa tạo rơi vào ②, màn nói như ①.
+  const botKhongThay = !doc && !viSaoKhongDoc;
+  const chuaDoDuoc = !doc && !!viSaoKhongDoc;
   const chan = (doc?.blockers || []).map((b) => vaCauDao(doDieuKien(b, true), cauDao));
   const nhac = (doc?.warnings || []).map((b) => vaCauDao(doDieuKien(b, false), cauDao));
 
@@ -154,11 +162,12 @@ export async function trangMotPage(boiCanh, id) {
     },
     tinhTrang: {
       chuaDoDuoc,
+      botKhongThay,
       viSaoKhongDoc,
       chan,
       nhac,
-      // «Sẵn sàng» CHỈ khi đo được và không còn chặn. Chưa đo được thì không kết luận.
-      san: !chuaDoDuoc && chan.length === 0,
+      // «Sẵn sàng» CHỈ khi ĐỌC ĐƯỢC, THẤY page, và không còn chặn. Hai cảnh kia không kết luận.
+      san: !chuaDoDuoc && !botKhongThay && chan.length === 0,
     },
     // NHỮNG THỨ SỬA ĐƯỢC NGAY TẠI ĐÂY. Trước lượt này chúng nằm rải trong bảng danh sách —
     // sửa thị trường của một page phải đi tìm đúng dòng trong 514 dòng.
@@ -202,5 +211,13 @@ export async function noiDungPage(boiCanh, id) {
     Promise.resolve(_docKhoi.sanPham(bc.teamId, p.id)).catch((e) => ({ loi: String(e?.message || e) })),
     Promise.resolve(_docKhoi.kichBan(bc.teamId, p.id)).catch((e) => ({ loi: String(e?.message || e) })),
   ]);
-  return { chuaNoi: false, sanPham, kichBan };
+  // BẢN SỬA ĐƯỢC lấy THEO ĐÚNG những sản phẩm bộ đọc của bot vừa trả về — một luật cho câu
+  // «page này bán gì», và bản sửa chỉ đi lấy thêm `version` cùng đủ bậc giá (kể cả bậc TẮT:
+  // thiếu chúng thì lượt lưu kế tiếp xoá mất, vì cửa ghi thay trọn danh sách).
+  let sanPhamSua = null;
+  if (typeof _docKhoi.sua === 'function' && Array.isArray(sanPham)) {
+    sanPhamSua = await Promise.resolve(_docKhoi.sua(bc, sanPham.map((x) => x.id)))
+      .catch((e) => ({ loi: String(e?.message || e) }));
+  }
+  return { chuaNoi: false, sanPham, kichBan, sanPhamSua };
 }

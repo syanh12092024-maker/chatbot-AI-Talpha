@@ -132,6 +132,18 @@ function veThieu() {
   const t = D.tinhTrang;
   const o = $('#khoi-thieu');
 
+  if (t.botKhongThay) {
+    // Cảnh này người dùng SỬA ĐƯỢC — đừng đẩy họ đi hỏi người quản trị hệ thống.
+    o.innerHTML = '<div class="panel">' + canhBao({
+      level: 'warning',
+      title: 'Tiến trình bot không thấy page này',
+      body: 'Page có trong cơ sở dữ liệu nhưng bot chưa biết nó — thường là chưa quét Pancake '
+        + 'về, hoặc chưa có tài khoản Pancake nào phủ page này. Chưa thấy KHÔNG có nghĩa là '
+        + 'page không thiếu gì.',
+    }) + `<p class="duoi-4">${button('Quét Pancake ở danh sách page', { size: 'sm', href: '/page-bot' })}
+      ${button('Xem tài khoản Pancake', { size: 'sm', href: '/ket-noi' })}</p></div>`;
+    return;
+  }
   if (t.chuaDoDuoc) {
     o.innerHTML = '<div class="panel">' + canhBao({
       level: 'warning',
@@ -338,22 +350,18 @@ async function veSanPham(o) {
   // `/api/van-hanh/products` chỉ để lấy thêm `version` (chống hai người sửa đè nhau) và bốn
   // ô nâng cao, ghép theo ID SẢN PHẨM, không ghép theo page.
   const cuaBot = Array.isArray(daDocNoiDung?.sanPham) ? daDocNoiDung.sanPham : [];
-  let theoId = new Map();
-  try {
-    const r = await goi('/api/van-hanh/products', { headers: { 'X-V3-Action': '1' } });
-    theoId = new Map((r.items || []).map((x) => [String(x.id), x]));
-  } catch (e) {
+  const sua = daDocNoiDung?.sanPhamSua;
+  if (sua && sua.loi) {
     o.innerHTML = `<div class="panel">${canhBao({ level: 'error',
-      title: 'Không đọc được bản sửa được của sản phẩm', body: e.message })}</div>`;
+      title: 'Không đọc được bản sửa được của sản phẩm', body: sua.loi })}</div>`;
     return;
   }
-  const thieuBan = [];
-  SP = [];
-  for (const x of cuaBot) {
-    const day = theoId.get(String(x.id));
-    if (day) SP.push(day); else thieuBan.push(x.ten || x.ma || String(x.id));
-  }
-  if (!SP.length) {
+  SP = Array.isArray(sua) ? sua : [];
+
+  // BỐN CÂU KHÁC NHAU, ĐỪNG GỘP. «Bot không có sản phẩm nào» và «có nhưng màn này chưa sửa
+  // được» dẫn người đọc đi hai hướng ngược nhau — và câu đầu, nói khi thật ra có, là một
+  // lời khai SAI. Đo được trong lượt thử A→Z 25/09: page thử có sản phẩm mà tab nói không.
+  if (!cuaBot.length) {
     o.innerHTML = `<div class="panel">${emptyState({ icon: 'inbox',
       title: 'Bot không có sản phẩm nào để chào bán ở page này',
       body: 'Page chưa khai sản phẩm gốc, hoặc kho hàng chưa kéo danh mục về. Cả hai sửa được '
@@ -361,6 +369,16 @@ async function veSanPham(o) {
       <p class="duoi-4">${button('Mở màn Kết nối', { size: 'sm', href: '/ket-noi' })}</p></div>`;
     return;
   }
+  if (!SP.length) {
+    o.innerHTML = `<div class="panel">${canhBao({ level: 'warning',
+      title: `Bot đang dùng ${cuaBot.length} sản phẩm cho page này, nhưng màn chưa sửa được`,
+      body: 'Máy chủ chưa nối bộ đọc bản sửa được. Xem tạm ở màn «Hội thoại và đơn».' })}
+      <ul role="list">${cuaBot.map((x) => `<li>${esc(x.ten || x.ma || String(x.id))}</li>`).join('')}</ul></div>`;
+    return;
+  }
+  const thieuBan = cuaBot.filter((x) => !SP.some((y) => String(y.id) === String(x.id)))
+    .map((x) => x.ten || x.ma || String(x.id));
+
   o.innerHTML = SP.map((x, i) => `
     <div class="panel" data-sp="${i}">
       <div class="setting-row">
@@ -423,11 +441,12 @@ async function luuSanPham(i, o) {
   };
   try {
     await goi(`/api/van-hanh/products/${encodeURIComponent(x.id)}`, {
-      method: 'POST', headers: { 'X-V3-Action': '1', 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'X-V3-Action': '1' },
       body: JSON.stringify(than),
     });
     toast('Đã lưu sản phẩm.');
-    await veSanPham(o);
+    daDocNoiDung = null;          // đọc lại để lấy `version` mới, không thì lượt lưu sau bị từ chối
+    await veNoiDung();
   } catch (e) { baoLoi('Không lưu được sản phẩm', e.message); }
 }
 

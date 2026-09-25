@@ -98,6 +98,42 @@ const { datKhoTokenDb, lamMoiTokenDb } = await import(`${GOC}/src/pancake.js`);
 datKhoTokenDb(() => khoToken.docTokenSong(pool));
 const { keoDanhMucTeam } = await import(`${GOC}/src/pos/keo-danh-muc.js`);
 const spGoc = await import(`${GOC}/src/products/san-pham-goc.js`);
+// BẢN SỬA ĐƯỢC của sản phẩm, lấy THEO ID (GD3 · 25/09).
+//
+// ⚠️ VÌ SAO KHÔNG DÙNG `/api/van-hanh/products`: cửa ấy cắt **50 dòng mỗi trang** và BỎ các
+//    bậc giá đang tắt. Tab sản phẩm của trang page ghép theo id, nên sản phẩm thứ 51 trở đi
+//    biến mất — đo được: page thử có sản phẩm id 236, cửa kia chỉ trả tới id ~120, và tab
+//    nói «page này chưa có sản phẩm nào». Một câu SAI, không phải một câu thiếu.
+//
+// ⚠️ VÀ PHẢI TRẢ ĐỦ BẬC TẮT: bộ đọc của đường ráp lời cố ý lọc bỏ bậc `bat=false` (bot không
+//    được chào giá đã ngừng bán). Nhưng màn SỬA mà thiếu chúng thì lượt lưu kế tiếp XOÁ MẤT
+//    chúng — cửa ghi thay trọn danh sách bậc giá.
+const { HE_SO_TE: HE_SO_TE_SUA } = await import(`${GOC}/src/pos/tao-don.js`);
+async function docSanPhamSua(bc, ids) {
+  const ds = (Array.isArray(ids) ? ids : []).map((x) => String(x)).filter(Boolean);
+  if (!ds.length) return [];
+  const r = await pool.query(
+    `SELECT s.id, s.ma, s.ten, s.mo_ta, s.het_hang, s.xmin::text AS version,
+       COALESCE((SELECT jsonb_agg(jsonb_build_object(
+           'so_luong',g.so_luong,'gia',g.gia,'tien_te',g.tien_te,'gia_goc',g.gia_goc,
+           'khuyen_mai',g.khuyen_mai,'phi_ship',g.phi_ship,'mien_ship',g.mien_ship,'bat',g.bat)
+           ORDER BY g.so_luong)
+         FROM goi_gia g WHERE g.team_id = s.team_id AND g.san_pham_id = s.id), '[]') AS offers
+     FROM san_pham s WHERE s.team_id = $1 AND s.id = ANY($2::bigint[]) ORDER BY s.ma`,
+    [bc.teamId, ds],
+  );
+  const lon = (v, tt) => (v == null ? null : Number(v) / (HE_SO_TE_SUA[tt] || 1));
+  return r.rows.map((x) => ({
+    ...x,
+    offers: (x.offers || []).map((g) => ({
+      ...g,
+      price: lon(g.gia, g.tien_te),
+      gia_goc: lon(g.gia_goc, g.tien_te),
+      phi_ship: lon(g.phi_ship, g.tien_te),
+    })),
+  }));
+}
+
 const { noiVanHanhV3 } = await import('./src/noi-day/van-hanh-v3.js');
 const docSanSangV3 = noiVanHanhV3(pool);
 
@@ -245,6 +281,7 @@ const bao = dungPhanB(app, {
   // Nhịp máy chạy bot: một bộ đọc, hai chỗ hiện (dải trạng thái ở mọi trang + đèn «Máy chạy
   // bot» ở màn Hệ còn sống không). Kẹp `team_id` tường minh — luật 1 của kho hàng đợi.
   docNhipMayBot: (bc) => nhipMayBot(pool, { teamId: bc?.teamId ?? null }),
+  docSanPhamSua,
   canhBao: canhBaoLopModel,
   express,
 });

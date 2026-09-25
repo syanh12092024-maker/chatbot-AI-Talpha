@@ -56,8 +56,13 @@ function veTomTat() {
   const { dem, tiepTheo } = D;
   const o = $('#tom-tat');
   if (!tiepTheo) {
-    o.innerHTML = `<div class="panel"><b>Xong cả ${dem.tong} việc.</b>
-      <div class="meta">Còn ba cái van ở cấu hình máy chủ — xem mục dưới.</div></div>`;
+    // Xong năm việc CỦA TEAM ≠ page nào cũng chạy được. Đo ở lượt thử A→Z 25/09: một page
+    // vừa tạo, chưa cài gì, mà màn này vẫn nói «xong cả 5» — đúng, nhưng dễ đọc thành «xong
+    // hết». Nói luôn chỗ đi tiếp.
+    o.innerHTML = `<div class="panel"><b>Xong cả ${dem.tong} việc của TEAM.</b>
+      <div class="meta">Từng page vẫn cài riêng: thị trường, sản phẩm, kịch bản, rồi mới bật bot.</div>
+      <div class="duoi-2">${button('Mở danh sách page', { size: 'sm', variant: 'primary', href: '/page-bot' })}</div>
+      <div class="meta duoi-2">Còn ba cái van ở cấu hình máy chủ — xem mục dưới.</div></div>`;
     return;
   }
   o.innerHTML = `<div class="panel">

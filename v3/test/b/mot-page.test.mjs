@@ -217,3 +217,51 @@ test('⑦c nội dung của page team khác ⇒ null (404, không phải 403)', 
   assert.equal(await mp.noiDungPage(bcQt(), 'p9'), null);
   mp.datDocKhoi(null);
 });
+
+/* ═══════════ ⑧ BA CẢNH CỦA CỬA KIỂM, KHÔNG PHẢI HAI (sửa 25/09 sau lượt thử A→Z) ═══════
+ *
+ * Lượt thử A→Z dựng một page ảo rồi đi hết luồng cài đặt. Page ấy có trong CSDL nhưng tiến
+ * trình bot chưa biết nó — màn lại nói «chưa đọc được tình trạng», tức đẩy người dùng đi hỏi
+ * người quản trị hệ thống một việc họ tự sửa được (quét Pancake, thêm tài khoản).
+ */
+
+test('⑧ cầu ĐỌC ĐƯỢC nhưng không thấy page ⇒ nói ĐÚNG cảnh ấy, không nói «chưa đọc được»', async () => {
+  dungKho({ sanSang: sanSangGia([{ pageId: '999-khac', blockers: [] }]) });  // không có page 111
+  const d = await mp.trangMotPage(bcQt(), 'p1');
+  assert.equal(d.tinhTrang.botKhongThay, true);
+  assert.equal(d.tinhTrang.chuaDoDuoc, false, 'cầu đọc được thì đừng đổ cho cầu');
+  assert.equal(d.tinhTrang.san, false, 'không thấy page thì tuyệt đối không kết luận sẵn sàng');
+});
+
+test('⑧b cầu HỎNG ⇒ vẫn là «chưa đọc được», và KHÔNG phải «bot không thấy»', async () => {
+  dungKho({ sanSang: async () => { throw new Error('hết giờ 25 giây'); } });
+  const d = await mp.trangMotPage(bcQt(), 'p1');
+  assert.equal(d.tinhTrang.chuaDoDuoc, true);
+  assert.equal(d.tinhTrang.botKhongThay, false);
+});
+
+test('⑨ bản sửa được của sản phẩm lấy THEO ID mà bộ đọc của bot trả về', async () => {
+  // Bản đầu ghép qua `/api/van-hanh/products` — cửa ấy cắt 50 dòng và BỎ bậc giá đang tắt.
+  // Đo được ở lượt thử A→Z: sản phẩm id 236 nằm ngoài 50 dòng ⇒ tab nói «page này chưa có
+  // sản phẩm nào», một câu SAI.
+  dungKho({ sanSang: sanSangGia([]) });
+  const xin = [];
+  mp.datDocKhoi({
+    sanPham: async () => [{ id: '236', ten: 'Vòng tay' }, { id: '999', ten: 'Nhẫn' }],
+    kichBan: async () => '',
+    sua: async (_bc, ids) => { xin.push(...ids); return ids.map((id) => ({ id, version: '1', offers: [] })); },
+  });
+  const d = await mp.noiDungPage(bcQt(), 'p1');
+  assert.deepEqual(xin, ['236', '999'], 'phải hỏi đúng những id bộ đọc của bot vừa trả');
+  assert.equal(d.sanPhamSua.length, 2);
+  mp.datDocKhoi(null);
+});
+
+test('⑨b thiếu bộ đọc bản sửa ⇒ `sanPhamSua` null, và tab phải nói ra chứ không im', async () => {
+  dungKho({ sanSang: sanSangGia([]) });
+  mp.datDocKhoi({ sanPham: async () => [{ id: '1' }], kichBan: async () => '' });
+  const d = await mp.noiDungPage(bcQt(), 'p1');
+  assert.equal(d.sanPhamSua, null);
+  assert.equal(d.sanPham.length, 1, 'vẫn phải biết bot đang dùng sản phẩm nào');
+  mp.datDocKhoi(null);
+});

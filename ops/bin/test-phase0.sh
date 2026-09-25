@@ -20,7 +20,7 @@ node --import ./test/_an-toan.mjs --experimental-test-module-mocks --test --test
   v3/test/b/phan-quyen-nam-vai.test.mjs test/l1-m1-doc-pos.test.js \
   test/deploy-v3.test.mjs test/frontend-v3-e2e.test.js \
   v3/test/b/model-nha.test.mjs v3/test/b/model-goi-mot-lan.test.mjs \
-  test/l4-prompt.test.mjs test/phase1-chat-flow.test.js test/l2-m2-lop-tu-khoa.test.js test/guard-fastlane.test.mjs \
+  test/l4-prompt.test.mjs test/phase1-chat-flow.test.js test/journey-chat-e2e.test.js test/l2-m2-lop-tu-khoa.test.js test/guard-fastlane.test.mjs \
   test/context.test.mjs test/phase0-chat-safety.test.js test/phase0-webhook-delivery.test.js \
   test/l2-m1-nhac-truong.test.js test/va-r2-tien-tao-don.test.js \
   test/bh1-gia-va-cua-chot.test.js test/l2-m3-rap-prompt.test.js \

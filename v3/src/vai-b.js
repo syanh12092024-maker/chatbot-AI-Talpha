@@ -216,7 +216,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan,
   chayNapLai, vanHanh,
-  ghiSoAi, canhBao, docNhipMayBot, express } = {}) {
+  ghiSoAi, canhBao, docNhipMayBot, docSanPhamSua, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -393,7 +393,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   if (docKhoi && typeof docKhoi.boLuat === 'function') {
     datDocKhoi(docKhoi);
     // CÙNG bộ đọc cho trang của một page — hai màn không được ra hai bản kịch bản.
-    datDocKhoiMotPage({ sanPham: docKhoi.sanPham, kichBan: docKhoi.kichBan });
+    datDocKhoiMotPage({ sanPham: docKhoi.sanPham, kichBan: docKhoi.kichBan, sua: docSanPhamSua || null });
     daNoi.push('bốn bộ đọc khối prompt → màn Prompt của page + trang một page');
   }
   else thieu.push('docKhoi — màn «Prompt của page» không dựng được bốn khối, và nó nói rõ đó là lỗi cấu hình chứ không phải "page này không có prompt"');

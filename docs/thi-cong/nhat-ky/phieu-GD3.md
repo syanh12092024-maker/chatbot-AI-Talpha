@@ -93,3 +93,47 @@ Cái sai này không một bộ ca nào bắt được — nó chỉ lộ khi c�
 - Danh sách sửa được cắt 50 dòng mỗi trang (giới hạn của cửa đang dùng); page có nhiều hơn
   thì tab nói rõ số còn lại và chỉ sang màn kia.
 - Phép đo vẫn chưa mở được `/page/:id` (màn không có dòng menu).
+
+
+## 7 · LƯỢT THỬ A→Z (người quyết yêu cầu) — dựng page ảo, cài từ đầu
+
+Dựng trên bản dev một page ảo + một sản phẩm ảo + một bậc giá, rồi đi hết luồng bằng trình
+duyệt thật: đăng nhập → Cài đặt team → tìm page → mở trang page → điền thị trường/ngành →
+sửa sản phẩm và giá → soạn kịch bản, lưu nháp → xem lại tình trạng.
+
+**Kết quả cuối: 0 lỗi JS · 0 cửa 5xx · mọi thứ gõ vào đều xuống tới cơ sở dữ liệu**
+(thị trường, ngành hàng, tên sản phẩm, giá **129 SAR → lưu 12900 đúng đơn vị nhỏ**, bản nháp
+kịch bản, và **1 dòng nhật ký sửa giá** — cửa audit của GD5·K7 có chạy).
+
+Thời gian mỗi bước: đăng nhập 1,6s · Cài đặt team 3,2s · tìm page 2,8s · mở trang page 3,0s ·
+lưu thiết lập 1,8s · lưu sản phẩm 2,5s · lưu kịch bản 2,5s.
+
+### Nhưng lượt thử bắt được HAI LỖI mà 2.038 ca xanh không thấy
+
+**① Tab sản phẩm nói SAI: «page này chưa có sản phẩm nào» trong khi bot đang dùng một sản phẩm.**
+Nguyên nhân: tab ghép bản-sửa-được qua `/api/van-hanh/products`, mà cửa ấy **cắt 50 dòng mỗi
+trang** (và còn **bỏ các bậc giá đang tắt** — lưu tiếp là xoá mất chúng, vì cửa ghi thay trọn
+danh sách bậc giá). Sản phẩm thử id 236 nằm ngoài 50 dòng ⇒ tab kết luận ngược sự thật.
+Nay có bộ đọc riêng **lấy theo ID** mà bộ đọc của bot vừa trả về: không phân trang, đủ cả bậc
+tắt. Và bốn câu tách bạch: *bot không có sản phẩm* · *có nhưng máy chủ chưa nối bộ đọc sửa* ·
+*có vài món tab chưa sửa được* · *sửa được*.
+
+**② «Chưa đọc được tình trạng» nói sai cảnh.** Page vừa tạo có trong CSDL nhưng tiến trình bot
+chưa biết nó. Màn gộp cảnh ấy vào «cầu hỏng» ⇒ đẩy người dùng đi hỏi người quản trị hệ thống
+một việc **họ tự sửa được** (quét Pancake, thêm tài khoản). Nay tách **ba cảnh**: cầu hỏng ·
+cầu đọc được nhưng không thấy page · thấy và có danh sách điều kiện. Cảnh giữa có nút đi làm.
+
+### Một chỗ chữ sửa theo
+
+Màn Cài đặt team nói «Xong cả 5 việc» trong khi page mới chưa cài gì. Đúng — năm việc ấy là
+của TEAM — nhưng dễ đọc thành «xong hết». Nay ghi rõ «xong cả 5 việc **của TEAM**», kèm câu
+«từng page vẫn cài riêng» và nút mở danh sách page.
+
+### Dọn sau khi đo
+
+Page ảo, sản phẩm ảo, bậc giá và bản nháp kịch bản đã xoá; bản dev về nguyên trạng. **Dòng
+nhật ký sửa giá ở lại** — `nhat_ky` là bảng chỉ-INSERT, trigger chặn DELETE. Đúng thiết kế:
+đó là bản ghi thật về một lần sửa thật, xoá nó mới là sai.
+
+📌 Bài học: **bộ ca chạy trên dữ liệu mình tự dựng; lượt thử A→Z chạy trên dữ liệu như thật.**
+Hai lỗi trên đều là lỗi «màn nói một câu SAI», và cả hai chỉ lộ khi có một page thật sự trống.
