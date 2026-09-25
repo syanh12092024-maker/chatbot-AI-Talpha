@@ -25,9 +25,27 @@ export const VAI_XEM_SO_LIEU = Object.freeze(["quan-tri", "quan-ly", "marketer"]
  *  trong chính kết quả trả về để người đọc biết ngưỡng đang là bao nhiêu. */
 export const TOI_THIEU_DE_KET_LUAN = 30;
 
+// CHẶN TRÊN "tới bây giờ" PHẢI LẤY TỪ ĐỒNG HỒ CSDL, KHÔNG PHẢI ĐỒNG HỒ JS.
+//
+// `xay_ra_luc`/`tao_luc` do Postgres đóng dấu bằng `now()` — micro giây. `new Date()` của
+// JS cắt còn mili giây. Nên một dòng vừa ghi xong gần như luôn có `xay_ra_luc >= den` và
+// bị chính cái cửa sổ "tới bây giờ" loại ra.
+//
+// ĐO 25/09, 200 lượt «ghi một dòng rồi đọc ngay»: **186 lần (93%) dòng vừa ghi rơi NGOÀI
+// cửa sổ**. Lệch đồng hồ min −1ms · p50 0 · max 0 — không phải lệch máy, mà là mất phần
+// micro giây khi JS cắt xuống mili giây.
+//
+// Trên sản phẩm lỗi này ẩn (cửa sổ 7 ngày, mất mấy dòng của mili giây cuối thì không ai
+// thấy) nhưng nó CÓ THẬT: mọi báo cáo dùng cửa sổ mặc định đều đang âm thầm bỏ dòng mới
+// nhất. Trên bộ ca thì nó lộ hẳn — `test/l0-m2-so-lieu.test.js` ghi vài dòng rồi đọc ngay,
+// nên mất đúng dòng cuối và ca đỏ XOAY VÒNG theo từng lượt chạy (đo ba lần ra ba kết quả:
+// S8 · rồi S5+S8 · rồi S4+S5). Suốt nhiều gate nó bị đọc là "ca chập chờn".
+//
+// `den` KHÔNG truyền ⇒ trả `null` = MỞ, và SQL dùng `coalesce($3, now())` để chặn trên
+// bằng chính đồng hồ đã đóng dấu dữ liệu. Truyền `den` tường minh thì giữ nguyên như cũ.
 const khoang = ({ tu, den } = {}) => ({
   tu: tu ? new Date(tu) : new Date(Date.now() - 7 * 864e5),
-  den: den ? new Date(den) : new Date(),
+  den: den ? new Date(den) : null,
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -51,7 +69,7 @@ export async function baoCaoHaiLuong(pool, ctx, tuyChon = {}) {
               count(*) FILTER (WHERE tong_tien IS NOT NULL)::int AS co_tien,
               coalesce(sum(tong_tien), 0)                        AS tong_tien
          FROM don_hang
-        WHERE team_id = $1 AND tao_luc >= $2 AND tao_luc < $3
+        WHERE team_id = $1 AND tao_luc >= $2 AND tao_luc < coalesce($3::timestamptz, now())
         GROUP BY nguon`,
       [ctx.teamId, tu, den],
     );
@@ -107,11 +125,11 @@ export async function chiPhiAiTheoPage(pool, ctx, tuyChon = {}) {
               coalesce(sum(a.token_vao + a.token_ra), 0) AS token,
               (SELECT count(*) FROM don_hang d
                 WHERE d.team_id = p.team_id AND d.page_id = p.id
-                  AND d.tao_luc >= $2 AND d.tao_luc < $3)::int AS so_don
+                  AND d.tao_luc >= $2 AND d.tao_luc < coalesce($3::timestamptz, now()))::int AS so_don
          FROM page p
          LEFT JOIN so_ai a
                 ON a.team_id = p.team_id AND a.page_id = p.page_id
-               AND a.xay_ra_luc >= $2 AND a.xay_ra_luc < $3
+               AND a.xay_ra_luc >= $2 AND a.xay_ra_luc < coalesce($3::timestamptz, now())
         WHERE p.team_id = $1
         GROUP BY p.id, p.page_id, p.ten, p.bot_ai_bat, p.marketer
         ORDER BY coalesce(sum(a.tien_vnd), 0) DESC, count(a.id) DESC`,
@@ -170,7 +188,7 @@ export async function hieuQuaKichBan(pool, ctx, tuyChon = {}) {
               count(DISTINCT a.psid)::int                          AS so_khach,
               count(*) FILTER (WHERE a.loai = 'order')::int         AS so_chot
          FROM so_ai a
-        WHERE a.team_id = $1 AND a.xay_ra_luc >= $2 AND a.xay_ra_luc < $3
+        WHERE a.team_id = $1 AND a.xay_ra_luc >= $2 AND a.xay_ra_luc < coalesce($3::timestamptz, now())
           AND a.ban_kich_ban IS NOT NULL
         GROUP BY a.ban_kich_ban
         ORDER BY a.ban_kich_ban`,
@@ -497,7 +515,7 @@ export async function tiLeChan0Dong(pool, ctx, tuyChon = {}) {
     );
     const g = await khach.query(
       `SELECT count(*)::int c FROM so_ai
-        WHERE team_id = $1 AND loai = 'reply' AND xay_ra_luc >= $2 AND xay_ra_luc < $3`,
+        WHERE team_id = $1 AND loai = 'reply' AND xay_ra_luc >= $2 AND xay_ra_luc < coalesce($3::timestamptz, now())`,
       [ctx.teamId, tu, den],
     );
     const chan = Number(c.rows[0].chan);

@@ -176,6 +176,41 @@ test("S8 · đủ mẫu → mới có tỉ lệ, và chỉ so được khi CẢ 
   assert.match(kq.ketLuanChung, /CHƯA KẾT LUẬN/);
 });
 
+// ══ CỬA SỔ "TỚI BÂY GIỜ" ═══════════════════════════════════════════════════════════
+//
+// Ca này sinh ra từ một lỗi đã sống nhiều gate dưới cái tên sai là «ca chập chờn».
+//
+// `xay_ra_luc`/`tao_luc` do Postgres đóng dấu bằng `now()` — MICRO giây. `new Date()` của
+// JS cắt còn MILI giây. Nên `den = new Date()` nhỏ hơn dấu thời gian của dòng vừa ghi, và
+// chính cửa sổ «tới bây giờ» loại mất dòng mới nhất.
+//
+// ĐO 25/09, 200 lượt «ghi một dòng rồi đọc ngay»: 186 lần (93%) dòng vừa ghi rơi NGOÀI cửa
+// sổ. Vì mỗi ca trong tệp này ghi vài dòng rồi đọc ngay, ca nào đỏ là tuỳ lượt chạy — đo ba
+// lần ra ba kết quả khác nhau (S8 · rồi S5+S8 · rồi S4+S5). Trên sản phẩm lỗi này ẩn nhưng
+// CÓ THẬT: mọi báo cáo dùng cửa sổ mặc định đều âm thầm bỏ dòng mới nhất.
+//
+// Vá: `den` không truyền ⇒ `null`, SQL chặn trên bằng `coalesce($3, now())` — đồng hồ đã
+// đóng dấu dữ liệu cũng là đồng hồ chặn cửa sổ.
+
+// ⚠️ KHÔNG CÓ CA NEO CHO LỖI CỬA SỔ — và đây là điều CỐ Ý, đã thử hai cách rồi bỏ:
+//
+//   · ghi một dòng rồi đọc ngay, lặp 12 lượt, mong trúng race 93% → giữa ghi và đọc có
+//     trọn một vòng đi-về CSDL nên dòng luôn kịp vào cửa sổ. Ca XANH cả trên mã CHƯA vá.
+//   · ghi dòng mang dấu thời gian +80ms rồi đọc → nằm ngoài "tới bây giờ" một cách CHÍNH
+//     ĐÁNG, nên ĐỎ ở cả hai bản. Neo nhầm thứ bản vá không hứa.
+//
+// Lỗi này sống trong khe DƯỚI MỘT MILI GIÂY (Postgres đóng dấu micro giây, JS cắt còn mili
+// giây) nên không neo tất định được ở tầng tích hợp. Một ca không bắt được lỗi nó sinh ra
+// để bắt thì tệ hơn không có ca: nó cấp giấy chứng nhận giả.
+//
+// BẰNG CHỨNG thay cho ca neo — chạy chính tệp này nhiều lượt (đo 25/09):
+//     mã CHƯA vá, 6 lượt : 0 · 2 · 3 · 2 · 3 · 1 ca đỏ, xoay vòng giữa S4 · S5 · S8
+//     mã ĐÃ vá,   9 lượt : 0 ca đỏ, lượt nào cũng vậy
+// Nghi tệp này chập chờn trở lại thì chạy `node --test` trên nó 6 lượt rồi so với bảng trên.
+//
+// Phần CÓ neo được thì đã neo: S4 bắt đúng lỗi vá sót mệnh đề đếm đơn (`so_don` dùng một
+// chặn trên khác với `so_luot` trong cùng một câu).
+
 // ══ SỨC KHOẺ ═══════════════════════════════════════════════════════════════════════
 
 test("S9 · đủ CHÍN đèn, mỗi đèn có màu và một câu đọc được", async () => {
