@@ -11,7 +11,7 @@
 </head>
 <body>
 <header>
-  <h1 id="tieu">Đang mở page…</h1>
+  <h1 id="tieu">Đang mở…</h1>
   <span class="sub" id="phu"></span>
 </header>
 
@@ -33,6 +33,7 @@
     <div id="khoi-tiep" role="list"></div>
   </section>
 
+  <div id="nguon-so"></div>
   <p><a href="/page-bot">← Về danh sách page</a></p>
 </main>
 
@@ -68,7 +69,7 @@ function veBot() {
 
   const doiChu = (chuBot.cauDao.mo && D.suaDuoc)
     ? button(laMoi ? 'Trả về bot cũ' : 'Giao sang bot mới',
-        { size: 'sm', variant: 'ghost', data: { giao: laMoi ? 'cu' : 'moi' } })
+        { size: 'sm', variant: 'outline', data: { giao: laMoi ? 'cu' : 'moi' } })
     : '';
 
   // Đèn công tắc đọc NGUỒN THẬT (tiến trình bot). Chưa đọc được thì nói chưa đọc được —
@@ -91,18 +92,20 @@ function veBot() {
     : '';
 
   o.innerHTML = `
-    <div class="page-note">
-      <div><b>Bot phụ trách:</b> ${laMoi ? 'bot mới' : 'bot cũ'} ${doiChu}</div>
-      <div class="duoi-2"><b>Công tắc:</b> ${huy} ${nutBat}</div>
+    <div class="panel">
+      <div class="setting-row">
+        <div><b>Bot phụ trách</b></div>
+        <div>${laMoi ? 'bot mới' : 'bot cũ'} ${doiChu}</div>
+      </div>
+      <div class="setting-row">
+        <div><b>Công tắc</b></div>
+        <div>${huy} ${nutBat}</div>
+      </div>
       ${lech}
       ${!D.cuaBot.mo ? `<p class="meta">Cửa ghi sang tiến trình bot đang đóng, nên các nút trên
         không bấm được: ${esc((D.cuaBot.thieu || []).join(' · '))}.</p>` : ''}
     </div>
-    ${nguonSo({ dong: [
-      { ten: 'Công tắc bot', tu: 'RAM tiến trình bot (cửa kiểm `/readiness`) — nguồn thật' },
-      { ten: 'Bản sao đối chiếu', tu: 'cột `page.bot_ai_bat` trong cơ sở dữ liệu v3' },
-      { ten: 'Bot phụ trách', tu: 'cột `page.giao_bot_moi` khi cầu dao mở, ngược lại là danh sách trong cấu hình máy chủ' },
-    ] })}`;
+`;
 
   const nb = o.querySelector('[data-bat]');
   if (nb) nb.addEventListener('click', () => gatBot(nb.dataset.bat === '1'));
@@ -116,23 +119,23 @@ function veThieu() {
   const o = $('#khoi-thieu');
 
   if (t.chuaDoDuoc) {
-    o.innerHTML = canhBao({
+    o.innerHTML = '<div class="panel">' + canhBao({
       level: 'warning',
       title: 'Chưa đọc được tình trạng của page này',
       body: (t.viSaoKhongDoc || '') + ' — chưa đọc được KHÔNG có nghĩa là page không thiếu gì.',
-    });
+    }) + '</div>';
     return;
   }
   if (t.san) {
-    o.innerHTML = emptyState({
+    o.innerHTML = '<div class="panel">' + emptyState({
       icon: 'circle-check',
       title: 'Đủ điều kiện để bật bot',
       body: t.nhac.length ? `${t.nhac.length} việc nên làm thêm, xem bên dưới.` : 'Không còn việc nào chặn.',
-    });
+    }) + '</div>';
   }
 
   const mot = (d) => `
-    <li class="page-note">
+    <li class="panel">
       <div><b>${esc(d.nhan)}</b> ${d.chan ? statusBadge('blocked', { label: 'Đang chặn' })
         : statusBadge('needs_attention', { label: 'Nên làm' })}
         ${d.la ? statusBadge('unknown', { label: 'Chưa có trong bảng từ' }) : ''}</div>
@@ -148,9 +151,9 @@ function veThieu() {
 }
 
 function veTiep() {
-  $('#khoi-tiep').innerHTML = D.diTiep
+  $('#khoi-tiep').innerHTML = `<div class="panel">${D.diTiep
     .map((x) => `<span role="listitem">${button(x.chu, { size: 'sm', href: x.duong })}</span>`)
-    .join(' ');
+    .join(' ')}</div>`;
 }
 
 /* ── GHI · hai nút, và cả hai dùng đúng cửa đã có của màn danh sách ─────────────────── */
@@ -206,6 +209,11 @@ async function nap() {
   veBot();
   veThieu();
   veTiep();
+  $('#nguon-so').innerHTML = nguonSo({ dong: [
+    { ten: 'Công tắc bot', tu: 'RAM tiến trình bot (cửa kiểm `/readiness`) — nguồn thật' },
+    { ten: 'Bản sao đối chiếu', tu: 'cột `page.bot_ai_bat` trong cơ sở dữ liệu v3' },
+    { ten: 'Bot phụ trách', tu: 'cột `page.giao_bot_moi` khi cầu dao mở, ngược lại là danh sách trong cấu hình máy chủ' },
+  ] });
 }
 
 nap();

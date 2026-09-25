@@ -2334,3 +2334,9 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   bật thẳng, không cả ba. Người ta bấm nút nào tiện hơn, không bấm nút nào an toàn hơn.
   📌 Khi thấy hai đường ghi cùng một thứ, đừng «đồng bộ» chúng — bỏ một, và bỏ đúng cái nghèo
   chốt hơn; thước `mot-page` ⑤ nay đếm số cửa bằng grep để nó không mọc lại.
+- 25/09 · 🧭 **BỘ CA XANH + PHÉP ĐO XANH VẪN KHÔNG THẤY THỨ MỘT ẢNH CHỤP THẤY NGAY.** Màn mới
+  `/page/:id` qua 852 ca xanh, 0 mã kỹ thuật, 0 màn vỡ, 0 lỗi JS — mà người quyết mở ra là
+  thấy ba lỗi: đường dẫn vị trí đứng lại ở chữ tạm «Đang mở page…», ba khối nằm trần không
+  thành tấm như mọi màn khác, nút giao page trông như chữ. Không thước nào đang đo «màn này
+  có giống phần còn lại của ứng dụng không». 📌 Dựng màn MỚI thì chụp một ảnh và đặt cạnh một
+  màn cũ — rẻ hơn mọi thước, và bắt đúng loại lỗi mà thước không với tới.

@@ -281,7 +281,8 @@
     // ── THANH TRÊN CÙNG ───────────────────────────────────────────────────────────
     const top = document.createElement("div");
     top.className = "dh-top";
-    const tenTrang = (document.querySelector("body > header h1") || {}).textContent || "";
+    const theH1 = document.querySelector("body > header h1");
+    const tenTrang = (theH1 || {}).textContent || "";
     const vungDuong = cho
       ? `<li>${esc(cho.nhom.ten)}</li>` +
         (cho.sau
@@ -341,6 +342,25 @@
       dongNgan();
       if (!hopTk.hidden) { dongTk(); nutTk.focus(); }
     });
+
+    // ĐƯỜNG DẪN VỊ TRÍ PHẢI ĐUỔI KỊP <h1> (GD2 · 25/09).
+    //
+    // Thanh này dựng NGAY khi trang mở, còn màn chi tiết thì mới biết mình tên gì sau khi
+    // gọi xong dữ liệu — nên mẩu cuối đứng lại ở chữ tạm. Đo trên `/page/:id`: đầu trang ghi
+    // «Active Relief KSA» trong khi đường dẫn vẫn ghi «Đang mở page…». Người đọc thấy hai
+    // tên cho một màn, và cái sai lại là cái nằm ở chỗ chuyên để trả lời «tôi đang ở đâu».
+    //
+    // Sửa Ở ĐÂY chứ không ở từng màn: màn chi tiết nào cũng sẽ vấp đúng chỗ này, và bắt mỗi
+    // màn tự nhớ cập nhật là hẹn ngày một màn quên.
+    if (theH1) {
+      const mauCuoi = top.querySelector('li[aria-current="page"]');
+      if (mauCuoi) {
+        new MutationObserver(() => {
+          const t = (theH1.textContent || "").trim();
+          if (t && t !== mauCuoi.textContent) mauCuoi.textContent = t;
+        }).observe(theH1, { childList: true, characterData: true, subtree: true });
+      }
+    }
 
     dungDaiTrangThai(ngan);
   }

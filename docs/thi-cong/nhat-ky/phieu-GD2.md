@@ -72,6 +72,20 @@ lần**. Nay phép đo nhớ đường đích: đường nào chuyển hướng 
 📌 Nếu không sửa thước, con số tổng sẽ nói dối theo chiều xấu đi đúng lúc việc đang tốt lên —
 và lần sau ai đó sẽ đi «tối ưu» một thứ không hỏng.
 
+## 5b. Ba lỗi mặt màn, người quyết chỉ ra bằng ảnh chụp
+
+Màn mới dựng xong thì bộ ca xanh, phép đo xanh, 0 lỗi JS — nhưng nhìn bằng mắt thì hỏng ba chỗ:
+
+| Thấy gì | Vì sao | Sửa |
+|---|---|---|
+| Đường dẫn vị trí đứng lại ở **«Đang mở page…»** trong khi đầu trang đã ghi tên page | thanh trên cùng dựng NGAY lúc mở trang, còn màn chi tiết chỉ biết tên mình SAU khi gọi xong dữ liệu | sửa ở `chung/dieu-huong.js`, không ở màn: theo dõi `<h1>` và cập nhật mẩu cuối. Màn chi tiết nào cũng sẽ vấp đúng chỗ này |
+| Ba khối nằm trần trên nền xám, không giống màn nào khác | tôi dùng `.page-note` (chú thích mờ) thay vì `.panel` (tấm trắng có viền) | ba khối đều thành `.panel` |
+| «Giao sang bot mới» trông như chữ, không như nút | `variant: ghost` = không viền | đổi sang `outline` |
+
+📌 Bài học: **bộ ca và phép đo không thấy được cái mà một ảnh chụp thấy ngay.** Ba lỗi trên
+đều lọt qua 852 ca xanh, 0 mã kỹ thuật, 0 màn vỡ — vì không thước nào đang đo «màn này có
+giống phần còn lại của ứng dụng không».
+
 ## 6. Chưa làm
 
 - **Bốn tab trong trang của page** (Sản phẩm & giá · Kịch bản · Chạy thử · Đoạn chữ) như bản
