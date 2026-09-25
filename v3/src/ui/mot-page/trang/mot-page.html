@@ -57,9 +57,12 @@ const ID = decodeURIComponent((location.pathname.split('/').filter(Boolean)[1] |
 
 let D = null;
 
-async function goi(duong, tuyChon) {
-  const r = await fetch(duong, { credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' }, ...tuyChon });
+async function goi(duong, tuyChon = {}) {
+  const r = await fetch(duong, {
+    credentials: 'same-origin',
+    ...tuyChon,
+    headers: { 'Content-Type': 'application/json', ...(tuyChon.headers || {}) },
+  });
   let d = null;
   try { d = await r.json(); } catch { /* null */ }
   if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
@@ -304,24 +307,173 @@ async function veNoiDung() {
     return;
   }
 
-  const sp = Array.isArray(d.sanPham) ? d.sanPham : [];
-  oSp.innerHTML = `<div class="panel">
-    ${sp.length ? `<table class="data-table"><thead><tr><th scope="col">Sản phẩm</th><th scope="col">Bậc giá</th></tr></thead>
-      <tbody>${sp.map((x) => `<tr><td>${esc(x.ten || x.ma || x.so_hieu || '(chưa có tên)')}</td>
-        <td class="meta">${esc((x.goiGia || x.goi_gia || []).map((g) => `${g.so_luong ?? g.soLuong ?? '?'} → ${g.gia ?? '?'} ${g.tien_te ?? g.tienTe ?? ''}`).join(' · ') || 'chưa có giá')}</td></tr>`).join('')}</tbody></table>`
-      : emptyState({ icon: 'inbox', title: 'Page này chưa có sản phẩm nào kèm giá',
-          body: 'Bot không chào bán được món nào cho tới khi có. Sửa ở màn «Sản phẩm & kho».' })}
-    <p class="duoi-4">${button('Mở màn Sản phẩm & kho để sửa', { size: 'sm', href: '/san-pham' })}</p>
+  await veSanPham(oSp);
+  await veKichBan(oKb);
+}
+
+/* ── SẢN PHẨM & GIÁ — SỬA ĐƯỢC NGAY TẠI ĐÂY ──────────────────────────────────────────
+ *
+ * ⚠️ ĐI ĐÚNG CỬA GHI ĐÃ CÓ: `POST /api/van-hanh/products/:id`. Không dựng cửa thứ hai cho
+ *    đường TIỀN — cửa ấy đã có kiểm phiên bản (chống hai người sửa đè nhau) và nhật ký ghi
+ *    giá TRƯỚC/SAU (thêm hôm nay ở GD5 · K7).
+ *
+ * ⚠️ BỐN Ô NÂNG CAO (giá gốc · khuyến mãi · phí ship · miễn ship) CỐ Ý KHÔNG hiện ở đây,
+ *    và được GỬI LẠI NGUYÊN VĂN như lúc đọc về. Vì vậy sửa ở tab này KHÔNG THỂ làm hỏng
+ *    chúng. Muốn sửa bốn ô ấy thì mở màn «Hội thoại và đơn» — bảng đầy đủ nằm ở đó.
+ *    Dựng bản thứ hai của một bảng tám cột trên đường tiền là chỗ dễ trôi khỏi nhau nhất.
+ */
+let SP = [];
+
+async function veSanPham(o) {
+  o.innerHTML = '<div class="panel"><p class="meta">Đang đọc…</p></div>';
+  // ⚠️ «PAGE NÀY BÁN GÌ» CÓ ĐÚNG MỘT LUẬT, VÀ NÓ KHÔNG PHẢI `page_id`.
+  //
+  // Bản đầu tôi lọc `san_pham.page_id === page.id`. Đo trên bản dev: **50/50 sản phẩm có
+  // `page_id` NULL** ⇒ tab rỗng với mọi page, trong khi bot vẫn chào bán bình thường. Luật
+  // thật (`src/products/catalog.js#docSanPhamGoiGia`, chính bộ mà đường ráp lời của bot
+  // dùng): page khai `san_pham_goc_ma` thì lấy theo MÃ GỐC lọc theo shop; không khai thì
+  // mới lấy theo `page_id`.
+  //
+  // Nên danh sách LẤY TỪ `/api/page/:id/noi-dung` — cùng bộ đọc với bot. Lượt gọi sang
+  // `/api/van-hanh/products` chỉ để lấy thêm `version` (chống hai người sửa đè nhau) và bốn
+  // ô nâng cao, ghép theo ID SẢN PHẨM, không ghép theo page.
+  const cuaBot = Array.isArray(daDocNoiDung?.sanPham) ? daDocNoiDung.sanPham : [];
+  let theoId = new Map();
+  try {
+    const r = await goi('/api/van-hanh/products', { headers: { 'X-V3-Action': '1' } });
+    theoId = new Map((r.items || []).map((x) => [String(x.id), x]));
+  } catch (e) {
+    o.innerHTML = `<div class="panel">${canhBao({ level: 'error',
+      title: 'Không đọc được bản sửa được của sản phẩm', body: e.message })}</div>`;
+    return;
+  }
+  const thieuBan = [];
+  SP = [];
+  for (const x of cuaBot) {
+    const day = theoId.get(String(x.id));
+    if (day) SP.push(day); else thieuBan.push(x.ten || x.ma || String(x.id));
+  }
+  if (!SP.length) {
+    o.innerHTML = `<div class="panel">${emptyState({ icon: 'inbox',
+      title: 'Bot không có sản phẩm nào để chào bán ở page này',
+      body: 'Page chưa khai sản phẩm gốc, hoặc kho hàng chưa kéo danh mục về. Cả hai sửa được '
+        + 'ở tab «Thiết lập» và màn «Kết nối».' })}
+      <p class="duoi-4">${button('Mở màn Kết nối', { size: 'sm', href: '/ket-noi' })}</p></div>`;
+    return;
+  }
+  o.innerHTML = SP.map((x, i) => `
+    <div class="panel" data-sp="${i}">
+      <div class="setting-row">
+        <div><label for="sp-ten-${i}"><b>Tên</b></label><div class="meta">${esc(x.ma || '')}</div></div>
+        <div><input id="sp-ten-${i}" type="text" value="${esc(x.ten || '')}" ${D.suaDuoc ? '' : 'disabled'}></div>
+      </div>
+      <div class="setting-row">
+        <div><label for="sp-mt-${i}"><b>Thông tin, cách dùng</b></label></div>
+        <div><textarea id="sp-mt-${i}" rows="3" ${D.suaDuoc ? '' : 'disabled'}>${esc(x.mo_ta || '')}</textarea></div>
+      </div>
+      <div class="setting-row">
+        <div><label for="sp-hh-${i}"><b>Hết hàng</b></label></div>
+        <div><label class="switch"><input id="sp-hh-${i}" type="checkbox" role="switch" ${x.het_hang ? 'checked' : ''} ${D.suaDuoc ? '' : 'disabled'}><span>${x.het_hang ? 'Hết' : 'Còn'}</span></label></div>
+      </div>
+      <table class="data-table"><thead><tr>
+        <th scope="col">Số lượng</th><th scope="col">Giá cả gói</th><th scope="col">Tiền tệ</th><th scope="col">Bật</th>
+      </tr></thead><tbody>
+        ${(x.offers || []).map((g, j) => `<tr>
+          <td><input type="number" min="1" data-g="${i}-${j}-sl" value="${esc(g.so_luong)}" ${D.suaDuoc ? '' : 'disabled'}></td>
+          <td><input type="number" step="0.01" data-g="${i}-${j}-gia" value="${esc(g.price)}" ${D.suaDuoc ? '' : 'disabled'}></td>
+          <td><input type="text" data-g="${i}-${j}-tt" value="${esc(g.tien_te)}" ${D.suaDuoc ? '' : 'disabled'}></td>
+          <td><input type="checkbox" data-g="${i}-${j}-bat" ${g.bat !== false ? 'checked' : ''} ${D.suaDuoc ? '' : 'disabled'}></td>
+        </tr>`).join('')}
+      </tbody></table>
+      <p class="meta">Giá gốc, khuyến mãi, phí ship và miễn ship không hiện ở đây — chúng được
+        giữ nguyên khi lưu. Sửa bốn ô đó ở màn «Hội thoại và đơn».</p>
+      ${D.suaDuoc ? `<div class="duoi-2">${button('Lưu sản phẩm này', { size: 'sm', variant: 'primary', data: { luusp: i } })}</div>` : ''}
+    </div>`).join('');
+
+  if (thieuBan.length) {
+    // Không giấu: bot đang bán mấy món này mà tab không sửa được (danh sách sửa được cắt 50
+    // dòng mỗi trang). Giấu đi là để người ta tưởng page chỉ có ngần này sản phẩm.
+    o.insertAdjacentHTML('beforeend', `<div class="panel"><p class="meta">Bot còn dùng
+      ${thieuBan.length} sản phẩm nữa cho page này mà tab chưa sửa được
+      (${esc(thieuBan.slice(0, 5).join(' · '))}${thieuBan.length > 5 ? '…' : ''}).
+      Sửa ở màn «Hội thoại và đơn».</p></div>`);
+  }
+  o.querySelectorAll('[data-luusp]').forEach((b) => b.addEventListener('click', () => luuSanPham(Number(b.dataset.luusp), o)));
+}
+
+async function luuSanPham(i, o) {
+  const x = SP[i];
+  const lay = (k) => o.querySelector(`[data-g="${i}-${k}"]`);
+  const than = {
+    version: x.version,
+    ten: o.querySelector(`#sp-ten-${i}`).value,
+    mo_ta: o.querySelector(`#sp-mt-${i}`).value,
+    het_hang: o.querySelector(`#sp-hh-${i}`).checked,
+    // Bốn ô nâng cao đi kèm NGUYÊN VĂN — tab này không hiện chúng nên không được đổi chúng.
+    offers: (x.offers || []).map((g, j) => ({
+      so_luong: Number(lay(`${j}-sl`).value),
+      price: Number(lay(`${j}-gia`).value),
+      tien_te: lay(`${j}-tt`).value.trim().toUpperCase(),
+      gia_goc: g.gia_goc ?? null,
+      khuyen_mai: g.khuyen_mai ?? '',
+      phi_ship: g.phi_ship ?? null,
+      mien_ship: g.mien_ship ?? null,
+      bat: lay(`${j}-bat`).checked,
+    })),
+  };
+  try {
+    await goi(`/api/van-hanh/products/${encodeURIComponent(x.id)}`, {
+      method: 'POST', headers: { 'X-V3-Action': '1', 'Content-Type': 'application/json' },
+      body: JSON.stringify(than),
+    });
+    toast('Đã lưu sản phẩm.');
+    await veSanPham(o);
+  } catch (e) { baoLoi('Không lưu được sản phẩm', e.message); }
+}
+
+/* ── KỊCH BẢN — SỬA ĐƯỢC, đi đúng hai cửa của màn Kịch bản ──────────────────────────
+ *
+ * Lưu bản nháp và đưa lên chạy là HAI cửa khác nhau, đòi HAI vai khác nhau — đó là luật
+ * «đề xuất phải có người duyệt» của dự án. Tab này KHÔNG gộp chúng lại.
+ */
+let KB = null;
+
+async function veKichBan(o) {
+  o.innerHTML = '<div class="panel"><p class="meta">Đang đọc…</p></div>';
+  try { KB = await goi(`/api/kich-ban/page/${encodeURIComponent(ID)}`); }
+  catch (e) {
+    o.innerHTML = `<div class="panel">${canhBao({ level: 'error',
+      title: 'Không đọc được kịch bản của page', body: e.message })}</div>`;
+    return;
+  }
+  const goc = KB.live?.nguoi || (KB.ban || [])[0]?.nguoi || {};
+  const truong = KB.truong || [];
+  o.innerHTML = `<div class="panel">
+    <div><b>${KB.live ? `Đang chạy: bản ${esc(String(KB.live.phienBan ?? KB.live.phien_ban ?? '?'))}` : 'Page này CHƯA có bản nào đang chạy'}</b></div>
+    ${truong.map((t) => `
+      <div class="setting-row">
+        <div><label for="kb-${esc(t)}"><b>${esc((KB.nhanTruong || {})[t] || t)}</b></label></div>
+        <div><textarea id="kb-${esc(t)}" rows="3" ${KB.suaDuoc ? '' : 'disabled'}>${esc(goc[t] || '')}</textarea></div>
+      </div>`).join('')}
+    ${KB.suaDuoc ? `<div class="duoi-2">${button('Lưu bản nháp', { size: 'sm', variant: 'primary', id: 'nutNhap' })}</div>`
+      : '<p class="meta">Cần vai soạn kịch bản để sửa.</p>'}
+    <p class="meta">Lưu bản nháp KHÔNG đưa lên chạy. Đưa một bản lên chạy là việc của người
+      duyệt, làm ở màn «Kịch bản» — hai việc, hai vai, cố ý tách.</p>
+    <p class="duoi-2">${button('Mở màn Kịch bản', { size: 'sm', href: '/kich-ban' })}</p>
   </div>`;
 
-  const kb = d.kichBan;
-  const chu = typeof kb === 'string' ? kb : (kb?.noi_dung || kb?.noiDung || '');
-  oKb.innerHTML = `<div class="panel">
-    ${chu ? `<pre class="khoi-chu">${esc(chu)}</pre>`
-      : emptyState({ icon: 'inbox', title: 'Page này chưa có kịch bản đang chạy',
-          body: 'Bot nói chuyện với khách mà không có hướng dẫn nào về giọng điệu hay cách bán.' })}
-    <p class="duoi-4">${button('Mở màn Kịch bản để sửa', { size: 'sm', href: '/kich-ban' })}</p>
-  </div>`;
+  const nut = o.querySelector('#nutNhap');
+  if (nut) nut.addEventListener('click', async () => {
+    const nguoi = {};
+    for (const t of truong) nguoi[t] = o.querySelector(`#kb-${t}`).value;
+    try {
+      await goi(`/api/kich-ban/page/${encodeURIComponent(ID)}/nhap`, {
+        method: 'POST', body: JSON.stringify({ nguoi, ghiChu: 'soạn ở trang của page' }),
+      });
+      toast('Đã lưu bản nháp. Đưa lên chạy ở màn Kịch bản.');
+      await veKichBan(o);
+    } catch (e) { baoLoi('Không lưu được bản nháp', e.message); }
+  });
 }
 
 async function nap() {

@@ -20,6 +20,7 @@ import * as dispatch from '../dispatch/index.js';
 import * as team from '../team/index.js';
 import * as pageBot from '../page-bot/index.js';
 import * as motPage from '../mot-page/index.js';
+import * as caiDatTeam from '../cai-dat-team/index.js';
 import * as ketNoi from '../ket-noi/index.js';
 import * as model from '../model/index.js';
 import * as boLuat from '../bo-luat/index.js';
@@ -184,6 +185,9 @@ export const MAN = Object.freeze([
   dat(hoSoKhach, 'Khách hàng', 'so-lieu', 'Gộp ba kênh theo số điện thoại', true, true),
 
   // ⑤ CÀI ĐẶT — vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
+  // GD3 · 25/09: màn ĐẦU TIÊN của mục Cài đặt — người mới mở nó để biết còn thiếu việc gì,
+  // thay vì tự dò 12 bước trên 7 màn.
+  dat(caiDatTeam, 'Cài đặt team', 'cai-dat', 'Năm việc làm một lần, và việc nào còn thiếu'),
   dat(team, 'Người và team', 'cai-dat', 'Thành viên, vai, gán page'),
   dat(ketNoi, 'Kết nối', 'cai-dat', 'Tài khoản Pancake và kho hàng'),
   dat(model, 'Model AI & khoá', 'cai-dat', 'Nhà model, khoá, bảng giá'),

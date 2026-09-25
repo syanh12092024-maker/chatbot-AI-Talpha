@@ -71,6 +71,11 @@ import {
   taoRouterMotPage, datChanDangNhap as datChanDangNhapMotPage,
   datChanVai as datChanVaiMotPage, datDocKhoi as datDocKhoiMotPage,
 } from './ui/mot-page/index.js';
+import {
+  taoRouterCaiDat, datTaoTruyVan as datTruyVanCaiDat,
+  datDocKhoToken as datDocKhoTokenCaiDat, datDocKetNoiPos as datDocKetNoiPosCaiDat,
+  datChanDangNhap as datChanDangNhapCaiDat, datChanVai as datChanVaiCaiDat,
+} from './ui/cai-dat-team/index.js';
 import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/cau-bot-v1.js';
 import {
   datTaoTruyVan as datTruyVanHieuQua, datDocHieuQua,
@@ -312,6 +317,11 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   }
   if (typeof docSanSang === 'function') daNoi.push('bộ đọc cửa kiểm GIẢ → màn Cửa kiểm sẵn sàng');
   datTruyVanSucKhoe(taoTruyVan);
+  // Màn «Cài đặt team»: CÙNG ba bộ đọc với các màn khác — kho token của màn Kết nối, kết nối
+  // POS của màn Người và team, cổng truy vấn chung. Không bộ đọc nào dựng riêng cho nó.
+  datTruyVanCaiDat(taoTruyVan);
+  datDocKhoTokenCaiDat(khoToken);
+  if (typeof docKetNoiPos === 'function') datDocKetNoiPosCaiDat(docKetNoiPos);
   // CÙNG bộ đọc cửa kiểm với ba màn kia — hai đèn công tắc bot của màn Sức khỏe phải đọc
   // nguồn THẬT (`ai-enabled.json`), không đếm cột `page.bot_ai_bat` đã lệch 50 vs 0.
   datDocSanSangSucKhoe(docCuaKiem);
@@ -521,6 +531,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   // Trang MỘT page (GD2) — chỉ đọc; hai nút ghi trên đó bấm vào cửa của màn danh sách.
   datChanDangNhapMotPage(batBuocDangNhap);
   datChanVaiMotPage(batBuocVaiHTTP);
+  // Màn «Cài đặt team» (GD3) — cũng chỉ đọc; mỗi bước dẫn sang màn có cửa ghi của nó.
+  datChanDangNhapCaiDat(batBuocDangNhap);
+  datChanVaiCaiDat(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -540,6 +553,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   app.use(taoRouterCauHinhTeam()); //  /cau-hinh-team · /api/team/*
   app.use(taoRouterPageBot());    //   /page-bot · /api/page-bot/*
   app.use(taoRouterMotPage());    //   /page/:id · /api/page/:id (CHỈ ĐỌC)
+  app.use(taoRouterCaiDat());     //   /cai-dat-team · /api/cai-dat-team (CHỈ ĐỌC)
   app.use(taoRouterKetNoi());     //   /ket-noi · /api/ket-noi/*
   app.use(taoRouterModel());      //   /model-ai · /api/model/*
   app.use(taoRouterBoLuat());     //   /bo-luat · /api/bo-luat/*

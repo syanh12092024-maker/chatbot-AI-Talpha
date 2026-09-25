@@ -2355,3 +2355,19 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   3100 vẫn đóng. Lần này gõ nhanh vì **cây sạch và HEAD đã xanh trên worktree sạch trước khi
   đẩy** — đúng thứ sáng nay không có. Nhật ký mục 12 của
   `docs/thi-cong/nhat-ky/phat-hanh-20260925-giao-dien-moi.md`.
+
+- 25/09 · GD3 (cài đặt team) + sửa-trong-tab → ✅. Màn mới `/cai-dat-team`: **năm việc, làm một
+  lần**, mỗi việc đo bằng số thật và dẫn sang đúng chỗ làm; ba cái van của máy chủ tách thành
+  mục riêng có nút «Kiểm lại» — trộn vào năm việc là bày một ô tích người dùng không tích được.
+  «Chưa đo được» là trạng thái THỨ BA, không gộp vào «chưa làm». Hai tab của trang page từ
+  chỉ-đọc thành **sửa được**, đi đúng hai cửa ghi đã có (`products/:id` và `kich-ban/.../nhap`);
+  bốn ô nâng cao của bậc giá cố ý không hiện và được **gửi lại nguyên văn** nên tab không thể
+  làm hỏng chúng — đã chạy vòng lưu THẬT trên bản dev với bốn ô khác rỗng để chứng minh.
+  Thước: cai-dat-team 7/7 mới · vai-b 857/857 · `npm test` 2.034/0 · do-giao-dien 25 màn 0 vỡ.
+  Nhật ký `docs/thi-cong/nhat-ky/phieu-GD3.md`.
+- 25/09 · 🧭 **TRƯỚC KHI TỰ VIẾT MỘT LUẬT, HỎI «CHỖ KHÁC TRẢ LỜI CÂU NÀY BẰNG LUẬT NÀO».**
+  Tab sản phẩm bản đầu lọc `san_pham.page_id` — bộ ca xanh, và rỗng với MỌI page trên dữ liệu
+  thật (50/50 sản phẩm có `page_id` NULL), trong khi bot vẫn chào bán bình thường. Luật thật
+  nằm ở `src/products/catalog.js`: có `san_pham_goc_ma` thì lấy theo mã gốc lọc theo shop.
+  📌 Một màn tự nghĩ ra cách trả lời một câu hỏi mà hệ đã có câu trả lời = hai sự thật, và cái
+  sai luôn là cái mới.

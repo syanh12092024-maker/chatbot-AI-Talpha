@@ -170,9 +170,9 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   assert.equal(menu[0].man[0].ten, 'Việc của tôi', 'Hôm nay mở bằng việc của chính người xem');
   const hienRa = menu.reduce((a, n) => a + n.man.filter((m) => !m.an).length, 0);
   const an = menu.reduce((a, n) => a + n.man.filter((m) => m.an).length, 0);
-  // GD2 · 25/09: 19 → 17. «Bắt đầu» và «Page còn thiếu gì» RA KHỎI MENU (cả hai chuyển
-  // hướng về danh sách page); «Công tắc từng page» đổi tên thành «Tất cả page».
-  assert.equal(hienRa, 17, `thanh bên đang vẽ ${hienRa} màn`);
+  // GD2 · 25/09: 19 → 17 («Bắt đầu» và «Page còn thiếu gì» ra khỏi menu, cả hai chuyển hướng
+  // về danh sách page). GD3 cùng ngày: +1 màn «Cài đặt team» ⇒ 18.
+  assert.equal(hienRa, 18, `thanh bên đang vẽ ${hienRa} màn`);
   assert.equal(an, 8, 'bảy màn chưa dùng được + một màn CẦN ID (trang một page) phải ẩn khỏi '
     + 'thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),

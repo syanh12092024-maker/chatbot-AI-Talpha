@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#ffffff">
+<title>Cài đặt team — AI Closer</title>
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
+<script src="/chung/ui.js"></script>
+</head>
+<body>
+<header>
+  <h1>Cài đặt team</h1>
+  <span class="sub">Năm việc, làm một lần. Màn này chỉ đọc — mỗi việc dẫn sang đúng chỗ làm.</span>
+</header>
+
+<main>
+  <div id="bang-tin" aria-live="polite"></div>
+  <div id="tom-tat"></div>
+
+  <section aria-labelledby="t-buoc">
+    <h2 id="t-buoc">Năm việc làm trên màn</h2>
+    <div id="khoi-buoc" role="list"></div>
+  </section>
+
+  <section aria-labelledby="t-ngoai">
+    <h2 id="t-ngoai">Việc phải nhờ người quản trị hệ thống</h2>
+    <div id="khoi-ngoai" role="list"></div>
+  </section>
+
+  <div id="nguon-so"></div>
+</main>
+
+<script>
+const { esc, statusBadge, button, alert: canhBao, nguonSo, toast } = window.UI;
+const $ = (s) => document.querySelector(s);
+let D = null;
+
+async function goi(duong) {
+  const r = await fetch(duong, { credentials: 'same-origin' });
+  let d = null;
+  try { d = await r.json(); } catch { /* null */ }
+  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
+  return d;
+}
+
+/* Ba trạng thái, không phải hai: xong · chưa · CHƯA ĐO ĐƯỢC. Gộp «chưa đo được» vào «chưa»
+   là bảo người ta đi làm lại một việc có thể họ đã làm rồi. */
+function huy(b) {
+  if (b.xong === true) return statusBadge('ready', { label: 'Xong' });
+  if (b.xong === null) return statusBadge('unknown', { label: 'Chưa đo được' });
+  return statusBadge('blocked', { label: 'Chưa làm' });
+}
+
+function veTomTat() {
+  const { dem, tiepTheo } = D;
+  const o = $('#tom-tat');
+  if (!tiepTheo) {
+    o.innerHTML = `<div class="panel"><b>Xong cả ${dem.tong} việc.</b>
+      <div class="meta">Còn ba cái van ở cấu hình máy chủ — xem mục dưới.</div></div>`;
+    return;
+  }
+  o.innerHTML = `<div class="panel">
+    <b>Xong ${dem.xong}/${dem.tong} việc.</b>
+    ${dem.chuaDo ? `<span class="meta"> · ${dem.chuaDo} việc chưa đo được</span>` : ''}
+    <div class="duoi-2">Việc tiếp theo: <b>${esc(tiepTheo.ten)}</b>
+      ${tiepTheo.di ? button(tiepTheo.nutDi || 'Đi làm', { size: 'sm', variant: 'primary', href: tiepTheo.di }) : ''}</div>
+  </div>`;
+}
+
+function veBuoc() {
+  $('#khoi-buoc').innerHTML = D.buoc.map((b, i) => `
+    <div class="panel" role="listitem">
+      <div><b>${i + 1}. ${esc(b.ten)}</b> ${huy(b)} ${b.so ? `<span class="meta">${esc(b.so)}</span>` : ''}</div>
+      <div>${esc(b.vi)}</div>
+      ${b.viSaoChuaDo ? `<div class="meta">${esc(b.viSaoChuaDo)}</div>` : ''}
+      ${b.di && b.xong !== true ? `<div class="duoi-2">${button(b.nutDi || 'Đi làm', { size: 'sm', href: b.di })}</div>` : ''}
+    </div>`).join('');
+}
+
+function veNgoai() {
+  $('#khoi-ngoai').innerHTML = D.ngoaiHe.map((v) => `
+    <div class="panel" role="listitem">
+      <div><b>${esc(v.ten)}</b> ${v.dangMo ? statusBadge('ready', { label: 'Đang mở' }) : statusBadge('needs_attention', { label: 'Đang đóng' })}</div>
+      <div>${esc(v.vi)}</div>
+    </div>`).join('')
+    + `<p class="meta">Ba việc này nằm ở cấu hình máy chủ, màn không sửa được — nhờ người quản
+       trị hệ thống. Sửa xong thì bấm ${button('Kiểm lại', { size: 'sm', id: 'nutKiem' })}</p>`;
+  $('#nutKiem').addEventListener('click', async () => { await nap(); toast('Đã đọc lại.'); });
+}
+
+async function nap() {
+  try { D = await goi('/api/cai-dat-team'); }
+  catch (e) {
+    $('#bang-tin').innerHTML = `<div class="duoi-4">${canhBao({ level: 'error',
+      title: 'Không đọc được đường cài đặt', body: e.message })}</div>`;
+    return;
+  }
+  $('#bang-tin').innerHTML = '';
+  veTomTat();
+  veBuoc();
+  veNgoai();
+  $('#nguon-so').innerHTML = nguonSo({ dong: [
+    { ten: 'Người trong team', tu: 'bảng `thanh_vien_team`' },
+    { ten: 'Tài khoản Pancake', tu: 'kho token (`.env` + bảng `token_pancake`)' },
+    { ten: 'Page', tu: 'bảng `page` của team đang mở' },
+    { ten: 'Model AI', tu: 'bảng `cau_hinh_model`' },
+    { ten: 'Kho hàng và sản phẩm', tu: 'bảng `ket_noi_pos`, `san_pham`, `goi_gia`' },
+    { ten: 'Ba cái van', tu: 'biến môi trường của tiến trình đang chạy' },
+  ] });
+}
+
+nap();
+</script>
+<script src="/chung/dieu-huong.js"></script>
+</body>
+</html>
