@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#ffffff">
+<title>Trang của một page — AI Closer</title>
+<!-- KHÔNG một dòng CSS riêng: trọn hệ kiểu `chung/kieu.css` + `chung/ui.js`. -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
+<script src="/chung/ui.js"></script>
+</head>
+<body>
+<header>
+  <h1 id="tieu">Đang mở page…</h1>
+  <span class="sub" id="phu"></span>
+</header>
+
+<main>
+  <div id="bang-tin" aria-live="polite"></div>
+
+  <section aria-labelledby="t-bot">
+    <h2 id="t-bot">Bot có đang trả lời page này không</h2>
+    <div id="khoi-bot"></div>
+  </section>
+
+  <section aria-labelledby="t-thieu">
+    <h2 id="t-thieu">Còn thiếu gì để lên chạy</h2>
+    <div id="khoi-thieu"></div>
+  </section>
+
+  <section aria-labelledby="t-tiep">
+    <h2 id="t-tiep">Làm tiếp với page này</h2>
+    <div id="khoi-tiep" role="list"></div>
+  </section>
+
+  <p><a href="/page-bot">← Về danh sách page</a></p>
+</main>
+
+<script>
+const { esc, statusBadge, button, alert: canhBao, emptyState, toast, confirmDialog, nguonSo } = window.UI;
+const $ = (s) => document.querySelector(s);
+
+// Id của page lấy từ chính đường dẫn — trang này luôn mở bằng /page/<id>.
+const ID = decodeURIComponent((location.pathname.split('/').filter(Boolean)[1] || ''));
+
+let D = null;
+
+async function goi(duong, tuyChon) {
+  const r = await fetch(duong, { credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' }, ...tuyChon });
+  let d = null;
+  try { d = await r.json(); } catch { /* null */ }
+  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
+  return d;
+}
+
+function baoLoi(tieuDe, than) {
+  $('#bang-tin').innerHTML = `<div class="duoi-4">${canhBao({ level: 'error', title: tieuDe, body: than })}</div>`;
+}
+
+/* ── KHỐI «BOT CÓ TRẢ LỜI KHÔNG» ────────────────────────────────────────────────────
+   Ba câu, theo đúng thứ tự người ta hỏi: page thuộc con bot nào · con bot ấy đang bật hay
+   tắt · nếu hai nguồn nói khác nhau thì nói ra chứ đừng chọn một cái. */
+function veBot() {
+  const { chuBot, bot, page } = D;
+  const laMoi = chuBot.la === 'moi';
+  const o = $('#khoi-bot');
+
+  const doiChu = (chuBot.cauDao.mo && D.suaDuoc)
+    ? button(laMoi ? 'Trả về bot cũ' : 'Giao sang bot mới',
+        { size: 'sm', variant: 'ghost', data: { giao: laMoi ? 'cu' : 'moi' } })
+    : '';
+
+  // Đèn công tắc đọc NGUỒN THẬT (tiến trình bot). Chưa đọc được thì nói chưa đọc được —
+  // một ô trống trông y hệt «đang tắt», mà hai câu ấy khác hẳn nhau.
+  const dangBat = bot.theoBot === null ? null : bot.theoBot;
+  const huy = dangBat === null
+    ? statusBadge('unknown', { label: 'Chưa đọc được' })
+    : dangBat ? statusBadge('ready', { label: 'Đang trả lời khách' })
+              : statusBadge('blocked', { label: 'Đang tắt' });
+
+  const nutBat = D.suaDuoc && dangBat !== null
+    ? button(dangBat ? 'Tắt bot cho page này' : 'Bật bot cho page này',
+        { size: 'sm', variant: dangBat ? 'outline' : 'primary', data: { bat: dangBat ? '0' : '1' } })
+    : '';
+
+  const lech = bot.lech
+    ? `<p class="meta">Hai nguồn đang nói khác nhau: tiến trình bot bảo
+       <b>${bot.theoBot ? 'đang bật' : 'đang tắt'}</b>, còn bản sao trong cơ sở dữ liệu ghi
+       <b>${bot.theoCsdl ? 'đang bật' : 'đang tắt'}</b>. Con số đúng là con số của tiến trình bot.</p>`
+    : '';
+
+  o.innerHTML = `
+    <div class="page-note">
+      <div><b>Bot phụ trách:</b> ${laMoi ? 'bot mới' : 'bot cũ'} ${doiChu}</div>
+      <div class="duoi-2"><b>Công tắc:</b> ${huy} ${nutBat}</div>
+      ${lech}
+      ${!D.cuaBot.mo ? `<p class="meta">Cửa ghi sang tiến trình bot đang đóng, nên các nút trên
+        không bấm được: ${esc((D.cuaBot.thieu || []).join(' · '))}.</p>` : ''}
+    </div>
+    ${nguonSo({ dong: [
+      { ten: 'Công tắc bot', tu: 'RAM tiến trình bot (cửa kiểm `/readiness`) — nguồn thật' },
+      { ten: 'Bản sao đối chiếu', tu: 'cột `page.bot_ai_bat` trong cơ sở dữ liệu v3' },
+      { ten: 'Bot phụ trách', tu: 'cột `page.giao_bot_moi` khi cầu dao mở, ngược lại là danh sách trong cấu hình máy chủ' },
+    ] })}`;
+
+  const nb = o.querySelector('[data-bat]');
+  if (nb) nb.addEventListener('click', () => gatBot(nb.dataset.bat === '1'));
+  const ng = o.querySelector('[data-giao]');
+  if (ng) ng.addEventListener('click', () => doiChuBot(ng.dataset.giao === 'moi'));
+}
+
+/* ── KHỐI «CÒN THIẾU GÌ» ───────────────────────────────────────────────────────────── */
+function veThieu() {
+  const t = D.tinhTrang;
+  const o = $('#khoi-thieu');
+
+  if (t.chuaDoDuoc) {
+    o.innerHTML = canhBao({
+      level: 'warning',
+      title: 'Chưa đọc được tình trạng của page này',
+      body: (t.viSaoKhongDoc || '') + ' — chưa đọc được KHÔNG có nghĩa là page không thiếu gì.',
+    });
+    return;
+  }
+  if (t.san) {
+    o.innerHTML = emptyState({
+      icon: 'circle-check',
+      title: 'Đủ điều kiện để bật bot',
+      body: t.nhac.length ? `${t.nhac.length} việc nên làm thêm, xem bên dưới.` : 'Không còn việc nào chặn.',
+    });
+  }
+
+  const mot = (d) => `
+    <li class="page-note">
+      <div><b>${esc(d.nhan)}</b> ${d.chan ? statusBadge('blocked', { label: 'Đang chặn' })
+        : statusBadge('needs_attention', { label: 'Nên làm' })}
+        ${d.la ? statusBadge('unknown', { label: 'Chưa có trong bảng từ' }) : ''}</div>
+      <div>${esc(d.ten)}${d.chiTiet ? ' — ' + esc(d.chiTiet) : ''}</div>
+      ${d.lam ? `<div class="meta">${esc(d.lam)}</div>` : ''}
+      ${d.di ? `<div class="duoi-2">${button(d.nutDi || 'Đi sửa', { size: 'sm', href: d.di })}</div>` : ''}
+    </li>`;
+
+  const ds = [...t.chan, ...t.nhac];
+  if (ds.length) {
+    o.innerHTML += `<ul role="list" class="danh-sach-moc">${ds.map(mot).join('')}</ul>`;
+  }
+}
+
+function veTiep() {
+  $('#khoi-tiep').innerHTML = D.diTiep
+    .map((x) => `<span role="listitem">${button(x.chu, { size: 'sm', href: x.duong })}</span>`)
+    .join(' ');
+}
+
+/* ── GHI · hai nút, và cả hai dùng đúng cửa đã có của màn danh sách ─────────────────── */
+async function gatBot(bat) {
+  const dongY = await confirmDialog({
+    title: `${bat ? 'Bật' : 'Tắt'} bot cho «${D.page.ten}»?`,
+    body: bat ? 'Bot sẽ bắt đầu tự trả lời khách thật của page này.'
+              : 'Bot sẽ ngừng trả lời. Khách của page này phải có người trực.',
+    confirmLabel: bat ? 'Bật bot' : 'Tắt bot',
+    danger: !bat,
+  });
+  if (!dongY) return;
+  try {
+    const kq = await goi(`/api/page-bot/${encodeURIComponent(ID)}/bot`,
+      { method: 'POST', body: JSON.stringify({ bat }) });
+    toast(`Đã ${kq.botAiBat ? 'bật' : 'tắt'} bot cho «${D.page.ten}».`);
+    await nap();
+  } catch (e) { baoLoi('Không đổi được trạng thái bot', e.message); }
+}
+
+async function doiChuBot(sangMoi) {
+  const dongY = await confirmDialog({
+    title: sangMoi ? `Giao «${D.page.ten}» sang bot mới?` : `Trả «${D.page.ten}» về bot cũ?`,
+    body: sangMoi
+      ? 'Bot cũ sẽ được TẮT cho page này trước, và chỉ khi nó xác nhận đã tắt thì page mới '
+        + 'đổi chủ. Sau đó chưa con bot nào trả lời page này cho tới khi bạn bấm Bật.'
+      : 'Bot mới buông page này. Bot cũ vẫn đang TẮT — bấm Bật nếu muốn nó trả lời lại.',
+    confirmLabel: sangMoi ? 'Giao sang bot mới' : 'Trả về bot cũ',
+    danger: true,
+  });
+  if (!dongY) return;
+  try {
+    const kq = await goi(`/api/page-bot/${encodeURIComponent(ID)}/giao`,
+      { method: 'POST', body: JSON.stringify({ giao: sangMoi }) });
+    toast(kq.buocTiep || 'Đã đổi chủ page.');
+    await nap();
+  } catch (e) { baoLoi('Không đổi chủ được page này', e.message); }
+}
+
+async function nap() {
+  try {
+    D = await goi(`/api/page/${encodeURIComponent(ID)}`);
+  } catch (e) {
+    $('#tieu').textContent = 'Không mở được page này';
+    baoLoi('Không mở được page này', e.message);
+    return;
+  }
+  $('#bang-tin').innerHTML = '';
+  $('#tieu').textContent = D.page.ten;
+  $('#phu').textContent = [D.page.pageId, D.page.thiTruong, D.page.nganhHang,
+    D.page.marketer ? `phụ trách: ${D.page.marketer}` : ''].filter(Boolean).join(' · ');
+  document.title = `${D.page.ten} — AI Closer`;
+  veBot();
+  veThieu();
+  veTiep();
+}
+
+nap();
+</script>
+<script src="/chung/dieu-huong.js"></script>
+</body>
+</html>

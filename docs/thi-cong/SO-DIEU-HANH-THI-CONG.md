@@ -2313,3 +2313,24 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   repo không chạy được 3 ngày mà không ai thấy · prod chạy một bản không có bản sao ở đâu ·
   và lượt deploy đầu tiên vô tình ĐƯA PROD VỀ BẢN CŨ HƠN. Ba hậu quả khác nhau từ một nguyên
   nhân. 📌 «Để commit sau» không phải là hoãn một việc, mà là tạo một bản thứ hai của sự thật.
+
+- 25/09 · GD2 (trang một page + một công tắc) → ✅ trừ bốn tab nhúng. Dựng màn MỚI
+  `/page/:id`: page này là gì · bot nào phụ trách (+ nút giao) · công tắc đọc nguồn thật ·
+  từng điều kiện kèm nút đi sửa · bốn đường làm tiếp mang sẵn page. «Công tắc từng page» đổi
+  tên **«Tất cả page»**, tên mỗi dòng dẫn sang trang của page, thêm hai bộ lọc lấy từ cửa
+  kiểm. `/bat-dau` và `/san-sang` **chuyển hướng** về danh sách (không xoá đường), menu
+  19 → **17 màn hiện**. Và tiêu chí của phiếu: còn **ĐÚNG MỘT** cửa ghi công tắc bot —
+  `/api/van-hanh/pages/:id` nay từ chối `enabled` (cửa ấy không có trần bật, không hộp xác
+  nhận, không nhật ký trước/sau). Thước: `mot-page` 9/9 mới (2 lượt đảo-vá bắt được) ·
+  vai-b 843/843 · e2e 8/8 trên PostgreSQL thật · `npm test` 2.022/0 · do-giao-dien 24 màn
+  0 vỡ · chữ diễn giải 4.414 → **4.187**. Nhật ký `docs/thi-cong/nhat-ky/phieu-GD2.md`.
+- 25/09 · 🧭 **GỘP MÀN LÀM CON SỐ ĐO XẤU ĐI, VÌ THƯỚC ĐẾM ĐƯỜNG CHUYỂN HƯỚNG HAI LẦN.** Sau
+  khi gộp, phép đo ra 18 hộp cảnh báo (trước 17) — do `/page` chuyển hướng về `/page-bot` và
+  cùng một màn bị đo hai lượt. Sửa thước: nhớ đường đích, đã đo rồi thì ghi «→ chuyển hướng
+  tới X» chứ không cộng vào tổng. 📌 Việc tốt lên mà chỉ số xấu đi thì nghi THƯỚC trước, và
+  nếu không sửa thì lần sau sẽ có người đi «tối ưu» một thứ không hỏng.
+- 25/09 · 🧭 **HAI CỬA GHI CHO MỘT CÔNG TẮC = CỬA NGHÈO CHỐT HƠN SẼ THẮNG.** Màn danh sách có
+  trần bật hàng loạt + hộp xác nhận + nhật ký trước/sau; màn «Hội thoại và đơn» có một nút
+  bật thẳng, không cả ba. Người ta bấm nút nào tiện hơn, không bấm nút nào an toàn hơn.
+  📌 Khi thấy hai đường ghi cùng một thứ, đừng «đồng bộ» chúng — bỏ một, và bỏ đúng cái nghèo
+  chốt hơn; thước `mot-page` ⑤ nay đếm số cửa bằng grep để nó không mọc lại.

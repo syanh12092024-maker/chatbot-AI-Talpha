@@ -67,6 +67,10 @@ import { taoRouterDieuHuong } from './ui/chung/router-dieu-huong.js';
 import { menuCua } from './ui/chung/man-hinh.js';
 import { datDocSanSang as datDocSanSangDai, datDemTeam } from './ui/chung/trang-thai.js';
 import { datDocNhip } from './ui/chung/nhip-may-bot.js';
+import {
+  taoRouterMotPage, datChanDangNhap as datChanDangNhapMotPage,
+  datChanVai as datChanVaiMotPage,
+} from './ui/mot-page/index.js';
 import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/cau-bot-v1.js';
 import {
   datTaoTruyVan as datTruyVanHieuQua, datDocHieuQua,
@@ -509,6 +513,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datChanVaiHieuQua(batBuocVaiHTTP);
   datChanDangNhapLop0(batBuocDangNhap);
   datChanVaiLop0(batBuocVaiHTTP);
+  // Trang MỘT page (GD2) — chỉ đọc; hai nút ghi trên đó bấm vào cửa của màn danh sách.
+  datChanDangNhapMotPage(batBuocDangNhap);
+  datChanVaiMotPage(batBuocVaiHTTP);
   daNoi.push('chắn đăng nhập + chắn vai → bảng điều phối · cấu hình team · page & bot · kết nối');
 
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
@@ -527,6 +534,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   app.use(taoRouterDieuPhoi());   //   /dieu-phoi · /viec/:id · /api/dieu-phoi/*
   app.use(taoRouterCauHinhTeam()); //  /cau-hinh-team · /api/team/*
   app.use(taoRouterPageBot());    //   /page-bot · /api/page-bot/*
+  app.use(taoRouterMotPage());    //   /page/:id · /api/page/:id (CHỈ ĐỌC)
   app.use(taoRouterKetNoi());     //   /ket-noi · /api/ket-noi/*
   app.use(taoRouterModel());      //   /model-ai · /api/model/*
   app.use(taoRouterBoLuat());     //   /bo-luat · /api/bo-luat/*

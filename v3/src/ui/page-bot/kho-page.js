@@ -81,6 +81,11 @@ export const LOC = Object.freeze({
   CO_MARKETER: 'co_marketer',
   TRONG_DIEM: 'trong_diem',
   MAT_DAU: 'mat_dau',
+  // GD2 · 25/09: hai bộ lọc lấy từ CỬA KIỂM, không từ cột CSDL — chúng là thứ màn «Page còn
+  // thiếu gì» vốn dùng để cắt danh sách. Có chúng ở đây thì `/san-sang` chuyển hướng về được
+  // mà người dùng không mất cách hỏi «page nào còn chặn».
+  CON_CHAN: 'con_chan',
+  SAN_SANG: 'san_sang',
 });
 const LOC_HOP_LE = new Set(Object.values(LOC));
 
@@ -92,6 +97,8 @@ export const CHU_LOC = Object.freeze({
   [LOC.CO_MARKETER]: 'Đã có marketer',
   [LOC.TRONG_DIEM]: 'Page trọng điểm',
   [LOC.MAT_DAU]: 'Mất dấu',
+  [LOC.CON_CHAN]: 'Còn điều kiện chặn',
+  [LOC.SAN_SANG]: 'Đủ điều kiện',
 });
 
 const co = (v) => v === true;
@@ -99,6 +106,11 @@ const chuoiCo = (v) => String(v == null ? '' : v).trim() !== '';
 
 function hopLoc(p, loc) {
   switch (loc) {
+    // `p._mucKiem` do `danhSachPage` gắn từ cửa kiểm. CHƯA ĐỌC ĐƯỢC (null) thì KHÔNG lọt vào
+    // cả hai bộ lọc: một page chưa đo được không phải «còn chặn», cũng không phải «đủ điều
+    // kiện» — nhét nó vào bên nào cũng là một lời khai mình không đo được.
+    case LOC.CON_CHAN: return p._mucKiem === 'chan';
+    case LOC.SAN_SANG: return p._mucKiem === 'san';
     case LOC.BOT_BAT: return co(p.bot_ai_bat);
     case LOC.BOT_TAT: return !co(p.bot_ai_bat);
     case LOC.THIEU_MARKETER: return !chuoiCo(p.marketer);
@@ -216,6 +228,9 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
   for (const p of tatCa) {
     const r = doc?.get(String(p.page_id));
     if (r?.runtime === 'v3') { p.bot_ai_bat = r.aiEnabled; p.runtime = 'v3'; }
+    // Mức của cửa kiểm, gắn TRƯỚC khi lọc — hai bộ lọc `con_chan`/`san_sang` đọc nó.
+    // Không đọc được cửa kiểm ⇒ `null`, và `null` không lọt vào bộ lọc nào.
+    p._mucKiem = doc ? gonCuaKiem(doc.get(String(p.page_id))).muc : null;
   }
   const daLoc = tatCa.filter((p) => hopLoc(p, loc) && hopTim(p, tim));
   const soTrang = Math.max(1, Math.ceil(daLoc.length / MOI_TRANG));

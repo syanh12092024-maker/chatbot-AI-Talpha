@@ -88,6 +88,11 @@ try {
   if (!man.length) dung(2, 'Menu rỗng — không có màn nào để đo.');
 
   const hang = [];
+  // ĐƯỜNG CHUYỂN HƯỚNG ĐẾM MỘT LẦN (GD2 · 25/09). Từ lượt gộp màn, vài đường cũ chuyển
+  // hướng về màn mới (`/bat-dau` → `/page-bot`), và `/page` trần cũng vậy. Đo cả hai là
+  // cộng đôi chữ và cộng đôi hộp cảnh báo của CÙNG một màn — con số tổng sẽ nói dối theo
+  // chiều xấu đi trong khi giao diện vừa gọn lại.
+  const daDo = new Map();
   for (const m of man) {
     const loi = [];
     const nhanLoi = (e) => loi.push(String(e?.message || e));
@@ -101,6 +106,14 @@ try {
     } catch (e) { loi.push(`không mở được: ${e.message}`); }
     trang.off('pageerror', nhanLoi);
     trang.off('response', nhanCua);
+
+    // Chuyển hướng về một màn đã đo ⇒ ghi một dòng nói rõ nó đi đâu, KHÔNG đo lại.
+    const dich = new URL(trang.url()).pathname;
+    if (dich !== m.duong && daDo.has(dich)) {
+      hang.push({ ...m, chuyenToi: daDo.get(dich), loi });
+      continue;
+    }
+    daDo.set(dich, m.ten);
 
     const so = await trang.evaluate(() => {
       const than = document.querySelector('main') || document.body;
@@ -148,15 +161,23 @@ try {
   const rong = (s, n) => String(s).padEnd(n).slice(0, n);
   console.log(`\n${rong('MÀN', 26)}${rong('ĐƯỜNG', 18)}${'CHỮ'.padStart(6)}${'DIỄN GIẢI'.padStart(11)}${'CẢNH BÁO'.padStart(10)}${'MÃ HỞ'.padStart(7)}${'NGUỒN SỐ'.padStart(10)}${'THAO TÁC'.padStart(10)}  LỖI`);
   for (const h of hang) {
+    if (h.chuyenToi) {
+      console.log(rong(h.ten, 26) + rong(h.duong, 18) + `     → chuyển hướng tới «${h.chuyenToi}», không đo lại`
+        + (h.loi.length ? `  ❌ ${h.loi.join(' · ')}` : ''));
+      continue;
+    }
     console.log(rong(h.ten, 26) + rong(h.duong, 18)
       + String(h.chu).padStart(6) + String(h.chuVan).padStart(11) + String(h.canhBao).padStart(10)
       + String(h.ma).padStart(7) + String(h.oNguonSo).padStart(10) + String(h.thaoTac).padStart(10)
       + (h.loi.length ? `  ❌ ${h.loi.join(' · ')}` : ''));
   }
 
-  const tong = (k) => hang.reduce((a, h) => a + h[k], 0);
+  const doThat = hang.filter((h) => !h.chuyenToi);
+  const tong = (k) => doThat.reduce((a, h) => a + h[k], 0);
   const vo = hang.filter((h) => h.loi.length);
-  console.log(`\n${hang.length} màn · ${tong('chu')} chữ (trong đó ${tong('chuVan')} chữ DIỄN GIẢI)`
+  console.log(`\n${doThat.length} màn đo được`
+    + (hang.length > doThat.length ? ` (+${hang.length - doThat.length} đường chuyển hướng)` : '')
+    + ` · ${tong('chu')} chữ (trong đó ${tong('chuVan')} chữ DIỄN GIẢI)`
     + ` · ${tong('canhBao')} hộp cảnh báo · ${tong('ma')} chỗ lộ mã kỹ thuật trên mặt màn`
     + ` · ${tong('oNguonSo')} màn có ô «Nguồn số»`);
   console.log(`Màn vỡ: ${vo.length}${vo.length ? ' — ' + vo.map((h) => h.ten).join(', ') : ''}`);

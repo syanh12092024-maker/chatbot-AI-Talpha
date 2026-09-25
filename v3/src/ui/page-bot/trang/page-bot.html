@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#ffffff">
-<title>Công tắc từng page — AI Closer</title>
+<title>Tất cả page — AI Closer</title>
 <!-- Màn thứ HAI dùng trọn hệ kiểu (sau «Bắt đầu»), theo mục M2 của bản đặc tả vận hành.
      KHÔNG một dòng CSS riêng. Trước lượt này màn có 96 dòng CSS tự dựng, trong đó có lỗi
      TRÙNG TÊN LỚP làm ô «chưa gán» phình thành khối vàng cao 60px:
@@ -18,8 +18,8 @@
 </head>
 <body>
 <header>
-  <h1>Công tắc từng page</h1>
-  <span class="sub">Bật tắt bot và gán người phụ trách cho từng page.</span>
+  <h1>Tất cả page</h1>
+  <span class="sub">Mỗi dòng một page. Bấm tên page để mở trang của nó: tình trạng, công tắc, việc làm tiếp.</span>
 </header>
 
 <main>
@@ -159,7 +159,7 @@ function veBang(d) {
         <div class="page-identity">
           <span class="page-avatar" aria-hidden="true">${esc((ten.trim()[0] || '?').toUpperCase())}</span>
           <div class="page-identity-text">
-            <div class="page-identity-name ten">${esc(ten)}</div>
+            <div class="page-identity-name ten"><a href="/page/${esc(p.id)}">${esc(ten)}</a></div>
             <div class="page-identity-sub">${esc(p.pageId)} · ${veChuBot(p)}${p.matDau ? ' · ' + statusBadge('order_error', { label: 'Mất dấu' }) : ''}</div>
           </div>
         </div>

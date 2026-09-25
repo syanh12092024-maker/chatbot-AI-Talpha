@@ -67,6 +67,12 @@ function boc(fn) {
 
 export function taoRouterBatDau() {
   const r = express.Router();
+  // GD2 · 25/09: màn «Bắt đầu» GỘP vào trang của một page (`/page/:id`) — cùng một câu hỏi
+  // «page này còn thiếu gì để lên chạy», nhưng hỏi cho ĐÚNG page thay vì cho một page được
+  // chọn sẵn. Đường cũ KHÔNG bị xoá: nó đưa người ta về danh sách để chọn page.
+  // Luật của kế hoạch: «Không đổi đường dẫn nào; đường cũ nào gộp đi thì chuyển hướng.»
+  r.get(DUONG_TRANG, (_req, res) => res.redirect('/page-bot'));
+
 
   r.get(DUONG_TRANG, (req, res, next) => {
     let bc;

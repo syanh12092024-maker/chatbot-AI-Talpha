@@ -156,7 +156,7 @@ test('④b · mọi màn thuộc về một mục CÓ THẬT — không màn nà
     'màn khai nhóm không có trong NHOM sẽ biến mất khỏi menu mà không ai báo');
 });
 
-test('④c · vai QUẢN TRỊ thấy 5 mục nhưng vẫn đủ 25 màn — gom chứ không xoá', () => {
+test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — gom chứ không xoá', () => {
   const menu = mh.menuCua([VAI.QUAN_TRI]);
   assert.equal(menu.length, 5, 'quản trị phải thấy đúng năm mục CÓ MÀN (mục dự trù tự ẩn)');
   const soMan = menu.reduce((a, n) => a + n.man.length, 0);
@@ -170,8 +170,16 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng vẫn đủ 25 màn — gom
   assert.equal(menu[0].man[0].ten, 'Việc của tôi', 'Hôm nay mở bằng việc của chính người xem');
   const hienRa = menu.reduce((a, n) => a + n.man.filter((m) => !m.an).length, 0);
   const an = menu.reduce((a, n) => a + n.man.filter((m) => m.an).length, 0);
-  assert.equal(hienRa, 19, `thanh bên đang vẽ ${hienRa} màn`);
-  assert.equal(an, 7, 'bảy màn chưa dùng được phải ẩn khỏi thanh bên nhưng còn trong gói');
+  // GD2 · 25/09: 19 → 17. «Bắt đầu» và «Page còn thiếu gì» RA KHỎI MENU (cả hai chuyển
+  // hướng về danh sách page); «Công tắc từng page» đổi tên thành «Tất cả page».
+  assert.equal(hienRa, 17, `thanh bên đang vẽ ${hienRa} màn`);
+  assert.equal(an, 8, 'bảy màn chưa dùng được + một màn CẦN ID (trang một page) phải ẩn khỏi '
+    + 'thanh bên nhưng còn trong gói');
+  // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
+  // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp
+  // một con số là ngày nào đó một màn hỏng lặng lẽ đội lốt màn cần id.
+  assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 7, 'bảy màn chưa dùng được');
+  assert.equal(mh.MAN.filter((m) => m.canId).length, 1, 'đúng một màn cần tham số để mở');
   // Chín màn ít dùng dồn vào Cài đặt. Đếm ở đây để nếu có người kéo một màn ít dùng trở
   // lên mục hằng ngày thì bài này đỏ, chứ không trôi lặng lẽ.
   // Bảy màn ít dùng nay tản ra ba mục theo ĐÚNG việc của chúng, không dồn hết vào một

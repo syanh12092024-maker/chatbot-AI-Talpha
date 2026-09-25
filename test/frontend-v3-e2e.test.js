@@ -116,6 +116,17 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
     const cookie = await login("admin@e2e.test"),
       otherCookie = await login("other@e2e.test"),
       saleCookie = await login("sale@e2e.test");
+    /** Bấm công tắc bot qua CỬA DUY NHẤT (màn «Tất cả page»). */
+    async function batBot(id, bat, c = cookie) {
+      const r = await fetch(base + `/api/page-bot/${encodeURIComponent(id)}/bot`, {
+        method: "POST",
+        headers: { Cookie: c, "Content-Type": "application/json", "X-V3-Action": "1" },
+        body: JSON.stringify({ bat }),
+      });
+      const d = await r.json().catch(() => ({}));
+      return { status: r.status, ...d };
+    }
+
     async function req(path, body, c = cookie, headers = {}) {
       const r = await fetch(base + "/api/van-hanh/" + path, {
         method: body === undefined ? "GET" : "POST",
@@ -146,12 +157,12 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
         0,
       );
       assert.equal(
-        (await req(`pages/${page.id}`, { enabled: false }, otherCookie)).status,
+        (await req(`pages/${page.id}`, { source: "poll" }, otherCookie)).status,
         404,
       );
       assert.equal(
         (
-          await req(`pages/${page.id}`, { enabled: false }, cookie, {
+          await req(`pages/${page.id}`, { source: "poll" }, cookie, {
             "X-V3-Action": "",
           })
         ).status,
@@ -291,10 +302,9 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
       async () => {
         await xuLyMotTin(pool, tin, chatDeps);
         assert.equal(sent, 0);
-        assert.equal(
-          (await req(`pages/${page.id}`, { enabled: true })).ok,
-          true,
-        );
+        // GD2 · 25/09: công tắc có ĐÚNG MỘT cửa — `/api/page-bot/:id/bot`. Cửa cũ
+        // `/api/van-hanh/pages/:id` nay TỪ CHỐI `enabled` (ca riêng ở dưới canh điều đó).
+        assert.equal((await batBot(page.id, true)).ok, true);
         await xuLyMotTin(pool, tin, chatDeps);
         assert.equal(sent, 1);
         assert.equal(
@@ -355,10 +365,7 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
           (await req(`pages/${page.id}`, { source: "webhook" })).status,
           409,
         );
-        assert.equal(
-          (await req(`pages/${page.id}`, { enabled: false })).ok,
-          true,
-        );
+        assert.equal((await batBot(page.id, false)).ok, true);
         assert.equal(
           (await req(`pages/${page.id}`, { source: "webhook" })).ok,
           true,

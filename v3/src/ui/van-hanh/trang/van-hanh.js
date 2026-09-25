@@ -388,10 +388,15 @@ function renderPage(than, p) {
     await api(`pages/${p.id}`, { source: source.value, version: p.version });
     await load();
   });
-  button(o, p.enabled ? "Tắt AI" : "Bật AI", async () => {
-    await api(`pages/${p.id}`, { enabled: !p.enabled, version: p.version });
-    await load();
-  }, { variant: p.enabled ? "danger" : "primary" });
+  // GD2 · 25/09: CÔNG TẮC Ở ĐÂY THÀNH MỘT ĐƯỜNG DẪN. Trước lượt này có HAI cửa ghi cho
+  // cùng một việc — cửa của màn danh sách (có trần bật, hộp xác nhận, nhật ký trước/sau) và
+  // cửa này (không có gì trong ba thứ đó). Hai cửa cho một công tắc là hẹn ngày chúng trôi
+  // khỏi nhau; giữ cửa có đủ chốt, bỏ cửa kia.
+  const nut = el("a", p.enabled ? "Đang bật — mở trang của page" : "Đang tắt — mở trang của page", o);
+  nut.href = `/page/${encodeURIComponent(p.id)}`;
+  nut.className = "btn";
+  nut.dataset.variant = "outline";
+  nut.dataset.size = "sm";
 }
 
 function product(p) {

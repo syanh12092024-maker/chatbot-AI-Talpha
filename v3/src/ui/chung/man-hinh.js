@@ -19,6 +19,7 @@ import * as vanHanh from '../van-hanh/index.js';
 import * as dispatch from '../dispatch/index.js';
 import * as team from '../team/index.js';
 import * as pageBot from '../page-bot/index.js';
+import * as motPage from '../mot-page/index.js';
 import * as ketNoi from '../ket-noi/index.js';
 import * as model from '../model/index.js';
 import * as boLuat from '../bo-luat/index.js';
@@ -122,7 +123,7 @@ export const MUC_DU_TRU = Object.freeze(['nhan-cho-khach']);
  * `m` là module `index.js` của màn — đường và vai lấy từ đó.
  * `ten` và `nhom` là thứ DUY NHẤT khai ở đây, vì màn không tự biết mình tên gì trên menu.
  */
-const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false) => ({
+const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false, canId = false) => ({
   duong: m.DUONG_TRANG,
   vai: m.VAI_VAO_DUOC,
   ten, nhom, moTa,
@@ -133,6 +134,11 @@ const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false) => ({
      mở ra rồi đi ra tay không — đó là cách nhanh nhất dạy người ta đừng tin menu.
      KHÁC `itDung`: `itDung` là màn DÙNG ĐƯỢC nhưng thưa, vẫn ở trong menu, chỉ xếp sau vạch. */
   thuNghiem,
+  /* `canId` = màn CẦN THAM SỐ để mở (trang của MỘT page: `/page/:id`). Nó không có dòng trên
+     thanh bên — một dòng menu dẫn tới `/page` trần thì không nói được page nào — nhưng vẫn
+     phải nằm trong gói menu để thanh trên cùng tra ra mục của nó (án lệ GD6 ⑥b).
+     KHÁC `thuNghiem`: màn này DÙNG ĐƯỢC và đang được dùng; nó chỉ không đứng riêng được. */
+  canId,
   // `itDung` KHÔNG đổi quyền và KHÔNG bỏ màn khỏi menu — màn vẫn nằm trong mục của nó,
   // vẫn bấm tới được, bài ④b vẫn xanh. Nó chỉ nói với thanh bên: xếp xuống dưới một vạch
   // «Ít dùng», và đừng chìa lên thanh tab ngang. Mục «Cài đặt» có 13 màn; để cả 13 ngang
@@ -149,9 +155,14 @@ export const MAN = Object.freeze([
   dat(vanHanh, 'Hội thoại và đơn', 'hom-nay', 'Bot nói gì với khách, và đơn chờ duyệt'),
 
   // ② PAGE & BOT — thêm hoặc sửa một page rồi bật. «Bắt đầu» đứng đầu: lối cho người mới.
-  dat(batDau, 'Bắt đầu', 'page-bot', 'Làm đủ điều kiện của một page, rồi bật'),
-  dat(pageBot, 'Công tắc từng page', 'page-bot', 'Bật tắt, người phụ trách'),
-  dat(sanSang, 'Page còn thiếu gì', 'page-bot', 'Xem cả đội một lượt, bấm là sang chỗ sửa'),
+  // GD2 · 25/09 — «Bắt đầu» và «Page còn thiếu gì» RA KHỎI MENU: cả hai nay chuyển hướng về
+  // danh sách page. Không xoá đường dẫn, chỉ thôi quảng cáo chúng như hai màn riêng, vì ba
+  // dòng menu cho một câu hỏi là đúng thứ khiến người ta ghé 7 màn để cài một page.
+  dat(pageBot, 'Tất cả page', 'page-bot', 'Một dòng một page: bot nào, bật hay tắt, còn thiếu gì'),
+  // Trang của MỘT page: mở từ danh sách, không đứng riêng trên menu — nhưng vẫn khai ở đây
+  // để thanh trên cùng tra được «tôi đang ở mục nào» (án lệ GD6 ⑥b). Cờ `canId` nói đúng
+  // lý do ẩn: màn DÙNG ĐƯỢC, chỉ là không mở được nếu thiếu tham số.
+  dat(motPage, 'Trang một page', 'page-bot', 'Một page: tình trạng, công tắc, việc làm tiếp', false, false, true),
   dat(sanPham, 'Sản phẩm & kho', 'page-bot', 'Bot đang chào bán gì, còn hàng không', true),
   dat(lenChay, 'Đưa sản phẩm lên chạy', 'page-bot', 'Sáu chặng, mỗi chặng một cửa kiểm', true, true),
 
@@ -200,7 +211,7 @@ export const MAN_THU_NGHIEM = Object.freeze(MAN.filter((m) => m.thuNghiem).map((
 export function menuCua(vai = []) {
   const cua = new Set((Array.isArray(vai) ? vai : [vai]).map(String));
   const duoc = MAN.filter((m) => (m.vai || []).some((v) => cua.has(String(v))))
-    .map((m) => ({ ...m, an: !!m.thuNghiem }));
+    .map((m) => ({ ...m, an: !!m.thuNghiem || !!m.canId }));
   return NHOM
     .map((n) => ({ ...n, man: duoc.filter((m) => m.nhom === n.ma) }))
     // Mục KHÔNG còn màn nào hiện được thì biến mất khỏi thanh bên — một mục bấm vào rồi
@@ -215,7 +226,13 @@ export function menuCua(vai = []) {
 export function mucCuaDuong(duong) {
   const d = String(duong || '').replace(/\/$/, '') || '/';
   const man = MAN.find((m) => m.duong === d);
-  return man ? man.nhom : null;
+  if (man) return man.nhom;
+  // ĐƯỜNG CÓ THAM SỐ (`/page/123`, GD2): khớp theo TIỀN TỐ, chọn màn có đường dài nhất khớp
+  // — `/page` không được cướp `/page-bot`. Thiếu nhánh này thì mọi trang chi tiết mở ra là
+  // thanh trên cùng không biết mình thuộc mục nào, đúng thứ ca ⑥b canh.
+  const khop = MAN.filter((m) => m.duong !== '/' && d.startsWith(`${m.duong}/`))
+    .sort((a, b) => b.duong.length - a.duong.length)[0];
+  return khop ? khop.nhom : null;
 }
 
 export { VAI };

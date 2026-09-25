@@ -252,7 +252,7 @@ Làn: 🟩 chỉ đổi cách hiện · 🟨 đổi hành vi màn hoặc cửa g
 |---|---|---|---|---|---|
 | **GD0 · Sửa chỗ vỡ** ✅ 23/09 (còn ④) | 🟩 | B | — | ① Vận hành V3 trắng: thêm bốn phần tử còn thiếu hoặc bỏ bốn dòng gọi (T1). ② Bắt đầu gửi `p.id` thay cho id Facebook (K2). ③ Sau khi đăng nhập, mỗi vai vào màn đầu tiên nó có quyền: quản trị, quản lý và marketer vào Việc của tôi, sale vào Việc đang chờ (T5). ④ Sửa chữ đã cũ: «Sản phẩm & kho chưa dựng», nút Gán marketer dẫn vào ô đã khoá, `local-dev.md` tự mâu thuẫn (C4, C6). ⑤ **Cổng mới:** mở mọi màn trong menu bằng Brave headless, có `pageerror` là đỏ | Cổng ⑤ xanh trên 26 màn · đảo-vá: gỡ bản sửa ① thì cổng đỏ |
 | **GD1 · Một nguồn cho mỗi câu hỏi** | 🟨 | B (+A đọc) | GD0 | `trangThaiPage()` gộp điều kiện v1 và v3 (4c). Dải trạng thái, Người và team, Hệ còn sống không dùng **cùng một mẫu số**. Mỗi page mang nhãn «Bot cũ» / «Bot mới». Chi phí AI đọc `so_ai` cho page v3 (K6) | Một ca kiểm: 6 chỗ hiện điều kiện cho cùng một page ra cùng một danh sách · dải trạng thái = Danh sách page |
-| **GD2 · Trang một page + một công tắc** | 🟨→🟥 | B | GD1 | Danh sách page và trang một page (4a, 4c). Gộp Bắt đầu, Sẵn sàng, Công tắc: đường cũ **chuyển hướng**, không xoá. Chỉ còn một API bật/tắt, có hộp xác nhận, trần bật và nhật ký trước/sau. Công tắc ở Vận hành V3 và ở Bắt đầu đổi thành đường dẫn tới đó (K2) | Còn đúng 1 cửa ghi bật bot (grep) · E2E: bật và tắt trên bản dev sạch |
+| **GD2 · Trang một page + một công tắc** ✅ 25/09 (trừ bốn tab nhúng) | 🟨 | B | GD1 | Danh sách page và trang một page (4a, 4c). Gộp Bắt đầu, Sẵn sàng, Công tắc: đường cũ **chuyển hướng**, không xoá. Chỉ còn một API bật/tắt, có hộp xác nhận, trần bật và nhật ký trước/sau. Công tắc ở Vận hành V3 và ở Bắt đầu đổi thành đường dẫn tới đó (K2) | Còn đúng 1 cửa ghi bật bot (grep) · E2E: bật và tắt trên bản dev sạch |
 | **GD3 · Cài đặt team + cửa ghi còn thiếu** | 🟨 | B + A | GD1 | Trang danh sách việc (4b). Cửa ghi `page.pos_shop_id` (C6). Gán marketer về một chỗ (chờ Q5). Việc ngoài hệ thành thẻ có nút «Kiểm lại» (luật 5). Bỏ các câu bảo chạy lệnh hay sửa biến môi trường khỏi mặt màn (C7) | Người mới, bản dev sạch: từ team rỗng tới page «sẵn sàng» mà **không mở terminal** (trừ bước allowlist, chờ Q1) |
 | **GD4 · Lượt lời lẽ** | 🟩 | B | GD0 | Thêm thành phần «ⓘ Nguồn số» (luật 3). Viết lại chữ cho 26 màn. Áp luật cảnh báo (luật 4). Bảng thuật ngữ `docs/v3/THUAT-NGU.md` là một nguồn, và ca HK10 (tên màn khớp `<h1>`) mở rộng ra để canh thuật ngữ | Mặt màn có 0 `<code>` (ngoài ô Nguồn số) · mỗi màn ≤ 1 hộp cảnh báo · tổng chữ ≤ 5.500 |
 | **GD5 · Kiểm soát** ✅ 25/09 · nút dừng cả team: người quyết bảo **TẠM CHƯA LÀM** (25/09) · tách hai màn: gộp vào GD2 | 🟨 | A + B | GD1 | Worker phát nhịp tim và dải trạng thái đọc nhịp đó (K4). Bàn giao sinh việc (K5). Nút tạm dừng cả team (K1, quy trình `mo-van`). Màn Hội thoại và màn Đơn chờ duyệt tách ra khỏi Vận hành V3 và tự làm mới. Nhật ký ghi trước/sau cho giá bán (K7). Truyền `canhBao` vào lúc khởi động (K8) | Tắt worker thì trong 2 phút dải trạng thái chuyển đỏ · bàn giao một hội thoại thì nó hiện ở Việc đang chờ · tạm dừng rồi bật lại được, nhật ký có đủ 2 dòng |
@@ -275,13 +275,13 @@ và GD5 đều chờ GD1. GD6 làm cuối.
 
 | Chỉ số | Hôm nay (22/09) | Đích |
 |---|---:|---:|
-| Màn trên menu (quản trị) | ~~26~~ → **19** (7 màn ẩn) | ≤ 16 — cần GD2 gộp ba màn page và GD3 dựng màn Cài đặt team |
-| Màn phải ghé để cài một page | 7 màn · 11 bước | 1 luồng |
+| Màn trên menu (quản trị) | ~~26~~ → ~~19~~ → **17** (8 màn ẩn) | ≤ 16 — còn GD3 dựng màn Cài đặt team |
+| Màn phải ghé để cài một page | ~~7 màn · 11 bước~~ → **1 trang** (`/page/:id`) | 1 luồng ✅ |
 | Việc phải làm ngoài giao diện | ~~3 (+ terminal)~~ → **2** (25/09: giao page nay bấm trên màn, chỉ còn bật cầu dao MỘT LẦN) | ≤ 2, đều có hướng dẫn, không cần terminal |
-| Nút bật bot | 5 (v3: 3 · v1: 2) | 1 trên v3 (v1 chờ Q2) |
-| Chỗ tự tính «page thiếu gì» | 6 | 1 hàm, hiện ở ≤ 2 chỗ |
+| Nút bật bot | ~~5~~ → **1 cửa ghi trên v3** (thước `mot-page` ⑤ canh) | 1 trên v3 ✅ (v1 nay chặn từ ngoài, xem 25/09) |
+| Chỗ tự tính «page thiếu gì» | ~~6~~ → **1 bảng từ vựng** (`DIEU_KIEN_TAT_CA`), hiện ở 2 chỗ | 1 hàm, hiện ở ≤ 2 chỗ ✅ |
 | Màn lỗi JS khi mở | ~~1~~ → **0** (GD0 xong) | 0, `do-giao-dien.mjs` canh |
-| Chữ DIỄN GIẢI trên các màn trong menu | ~~6.790~~ → **4.401** | ≤ 3.400 — đề nghị đổi đích, xem phiếu GD4 §4 |
+| Chữ DIỄN GIẢI trên các màn trong menu | ~~6.790~~ → **4.187** | ≤ 3.400 — đề nghị đổi đích, xem phiếu GD4 §4 |
 | Hộp cảnh báo | 32 | ≤ 1 mỗi màn, chỉ loại có việc phải làm |
 | Màn diễn giải > 300 chữ | 5 | 0 |
 | Mã kỹ thuật lộ trên mặt màn | 71 | 0 (ngoài ô Nguồn số) |

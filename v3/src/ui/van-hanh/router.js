@@ -89,15 +89,29 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {} } = {
       });
     }),
   );
+  // ⛔ CỬA NÀY KHÔNG CÒN BẬT/TẮT BOT (GD2 · 25/09). Công tắc có ĐÚNG MỘT cửa:
+  // `POST /api/page-bot/:id/bot` — nơi có trần bật hàng loạt, hộp xác nhận và nhật ký
+  // trước/sau. Cửa này giữ phần còn lại của `setPage` (đổi nguồn nhận tin poll/webhook).
+  // Hai cửa cho một công tắc là hẹn ngày chúng trôi khỏi nhau, và cửa nghèo chốt hơn sẽ là
+  // cửa người ta dùng.
   r.post(
     "/api/van-hanh/pages/:id",
     admin,
-    wrap(async (q, s) =>
-      s.json({
+    wrap(async (q, s) => {
+      if (q.body && Object.prototype.hasOwnProperty.call(q.body, "enabled")) {
+        return s.status(409).json({
+          ok: false,
+          ma: "sai_cua",
+          thongDiep:
+            "Bật/tắt bot bấm ở trang của page (/page/<id>) — cửa đó có hộp xác nhận, "
+            + "trần bật hàng loạt và nhật ký ai bấm. Cửa này chỉ còn đổi nguồn nhận tin.",
+        });
+      }
+      return s.json({
         ok: true,
         item: await setPage(pool, q.boiCanh, q.params.id, q.body, env),
-      }),
-    ),
+      });
+    }),
   );
   r.get(
     "/api/van-hanh/products",
