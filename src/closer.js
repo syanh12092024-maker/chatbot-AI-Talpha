@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { anthropic, aiExtras } from './llm.js';
 import { config } from './config.js';
 import { buildSystem } from './prompts.js';
@@ -12,6 +13,12 @@ export async function runCloser(ctx) {
   // invalid_request_error — lỗi bị coi là "không tự hồi phục" nên bot không thử lại và khách
   // ngồi im. Dọn ngay trước cửa gọi API thì mọi đường vào đều được chặn, kể cả đường mới thêm sau này.
   const system = sanitizeSystem(buildSystem(kb));
+  state.promptVersion = createHash('sha256').update(JSON.stringify(system)).digest('hex').slice(0, 16);
+  const selected = ctx.model || { client: anthropic, maModel: config.modelCloser, extras: aiExtras };
+  if (!selected.client?.messages?.create) throw new Error('Model đã chọn không có generate adapter');
+  state.modelUsed = selected.maModel;
+  state.providerUsed = selected.nhaCungCap || 'configured';
+  state.toolTrace = [];
 
   // ĐO TOKEN THẬT theo lượt (cộng dồn mọi vòng tool) — CỘNG TIẾP vào bộ đếm handler đã khởi tạo
   // (đã chứa token classifier); pancake-poll ghi vào Sổ AI để thống kê chi phí bằng SỐ ĐO.
@@ -22,15 +29,18 @@ export async function runCloser(ctx) {
   let askedForText = false; // đã xin model viết chữ khép lượt lần nào chưa
   while (true) {
     if (iterations++ >= config.maxToolIterations) {
-      return 'Em cần hỗ trợ thêm từ đồng nghiệp, anh/chị chờ em chút nhé ạ.';
+      await executeTool('handoff_human', { reason: 'Đã hết số vòng tool cho lượt này' }, ctx);
+      return '';
     }
 
     const { messages, fixed } = sanitizeMessages(state.messages);
     if (fixed) console.warn(`[text] đã dọn ${fixed} mảnh emoji lẻ trước khi gọi Claude (page ${state.pageId} · khách ${state.custName || state.psid})`);
     state.messages = messages; // giữ bản sạch để lượt sau không phải dọn lại
 
-    const res = await anthropic.messages.create({
-      model: config.modelCloser,
+    await ctx.assertCanAct?.();
+    const callStarted = Date.now();
+    const res = await selected.client.messages.create({
+      model: selected.maModel,
       // 400, hạ từ 1024 (11/08/2026 — M08 §4). Đo trên Sổ AI: tin trung bình 182 token,
       // chỉ 6,3% vượt 300. Trần thấp buộc model viết ngắn — đúng quy tắc "1-3 câu" của
       // CORE §1 và hợp Messenger mobile. Đây là TRẦN, không phải ép hành vi bằng code:
@@ -39,9 +49,10 @@ export async function runCloser(ctx) {
       system,
       tools: toolDefs,
       messages,
-      ...aiExtras, // Kimi: tắt thinking, nếu không tin trả về rỗng
+      ...(selected.extras || {}),
     });
 
+    usage.ms = (usage.ms || 0) + Date.now() - callStarted;
     usage.calls++;
     usage.tin += res.usage?.input_tokens || 0;
     usage.tout += res.usage?.output_tokens || 0;
@@ -71,6 +82,7 @@ export async function runCloser(ctx) {
       }
       // Vẫn không viết được → thà IM còn hơn gửi "..." cho khách.
       console.warn(`[closer] không soạn được tin chữ (page ${state.pageId} · khách ${state.custName || state.psid})${state.sentImageTurn ? ' — khách đã nhận ảnh kèm caption' : ''}`);
+      await executeTool('handoff_human', { reason: 'Model không trả nội dung sau hai lần yêu cầu' }, ctx);
       return '';
     }
 
@@ -78,7 +90,10 @@ export async function runCloser(ctx) {
     const toolUses = res.content.filter((b) => b.type === 'tool_use');
     const results = [];
     for (const tu of toolUses) {
+      await ctx.assertCanAct?.();
+      const started = Date.now();
       const out = await executeTool(tu.name, tu.input, ctx);
+      state.toolTrace.push({ tool: tu.name, ok: !out.isError, ms: Date.now() - started });
       results.push({
         type: 'tool_result',
         tool_use_id: tu.id,

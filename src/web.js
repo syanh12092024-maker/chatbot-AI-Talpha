@@ -38,7 +38,7 @@ app.post('/api/chat', async (req, res) => {
 });
 
 const WEB_PORT = Number(process.env.WEB_PORT || config.port + 1); // 3101 — tách khỏi webhook server (3100)
-app.listen(WEB_PORT, () => {
+app.listen(WEB_PORT, process.env.WEB_HOST || '127.0.0.1', () => {
   console.log(`[web] Mở http://localhost:${WEB_PORT} để chat thử (sandbox, không đụng khách thật).`);
   if (!config.anthropicApiKey) console.log('[web] ⚠️ Chưa có ANTHROPIC_API_KEY — UI mở được nhưng chat sẽ báo lỗi.');
 });

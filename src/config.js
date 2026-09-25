@@ -119,9 +119,20 @@ export const config = {
 
 export function assertConfig() {
   const missing = [];
-  if (config.aiProvider === 'kimi') {
+  if (process.env.NODE_ENV === 'production') {
+    if (process.env.META_WEBHOOK_OFF !== '1' && !config.appSecret) missing.push('APP_SECRET');
+    if (!config.adminUser) missing.push('ADMIN_USER');
+    if (!config.adminPass) missing.push('ADMIN_PASS');
+  }
+  const configureLocal = process.env.NODE_ENV === 'development'
+    && process.env.DEV_CONFIG_ONLY === '1'
+    && process.env.PANCAKE_READONLY === '1'
+    && process.env.V3_PANCAKE_GUI === '0'
+    && process.env.V3_POS_GHI === '0'
+    && process.env.V3_LEGACY_POLL_OFF === '1';
+  if (!configureLocal && config.aiProvider === 'kimi') {
     if (!config.kimi.apiKey) missing.push('KIMI_API_KEY');
-  } else if (!config.anthropicApiKey) {
+  } else if (!configureLocal && !config.anthropicApiKey) {
     missing.push('ANTHROPIC_API_KEY');
   }
   if (missing.length) {

@@ -130,7 +130,7 @@ const DON = {
 
 // ═══ RF-9 · ĐƠN VỊ TIỀN — một nguồn, HE_SO_TE đúng MỘT lần, đa tệ ════════════
 
-test("R2-1 · RF-9: tongTien ĐÃ minor ⇒ shipping_fee = chính nó, KHÔNG nhân HE_SO_TE (bảng từng tệ ×100 và ×1000)", () => {
+test("R2-1 · RF-9: tongTien ĐÃ minor ⇒ shipping_fee = chính nó, KHÔNG nhân HE_SO_TE (quét HẾT tệ trong bảng)", () => {
   const bang = [];
   for (const [te, he] of Object.entries(HE_SO_TE)) {
     const minor = 15 * he; // 15,00 <tệ> ở đơn vị nhỏ
@@ -145,10 +145,16 @@ test("R2-1 · RF-9: tongTien ĐÃ minor ⇒ shipping_fee = chính nó, KHÔNG nh
     assert.equal(pl.shipping_fee, minor, `${te}: thu ×${he} lần nữa`);
   }
   console.log("   " + bang.join("\n   "));
-  assert.ok(
-    bang.some((x) => x.includes("×1000")),
-    "bảng phải có tệ ×1000",
+  // 16/09: neo cũ là `bang.some(x => x.includes("×1000"))` — nó chết theo phiếu vá hệ số
+  // (KWD·OMR·BHD 1000→100, đo từ đơn thật). Ý ĐỒ của neo ấy là «bộ ca có quét NHIỀU tệ,
+  // không phải một tệ rồi khoe là đa tệ». Giữ nguyên ý đồ, đổi phép đo: đếm TỪ NGUỒN
+  // (`HE_SO_TE`), không gõ cứng số tệ cũng không gõ cứng hệ số (án lệ ② + ④).
+  assert.equal(
+    bang.length,
+    Object.keys(HE_SO_TE).length,
+    "phải quét HẾT tệ trong bảng, không bỏ tệ nào",
   );
+  assert.ok(bang.length >= 7, `bảng tệ teo lại còn ${bang.length} — quét thế này không chứng minh được đa tệ`);
   assert.equal(
     phiVanChuyenMinor(1500, "XYZ"),
     null,
@@ -164,7 +170,7 @@ test("R2-2 · RF-9: cửa vào khai đơn vị theo TÊN KHOÁ — khuôn cũ to
   );
   assert.equal(
     chuanHoaHoSo({ total_price: 15, currency: "KWD" }).tong_tien,
-    15000,
+    1500, // 16/09: hệ số KWD 1000→100 (đo đơn thật) ⇒ 15 KWD = 1500 minor, không phải 15000
   );
   assert.equal(
     chuanHoaHoSo({ tong_tien: 1500, tien_te: "AED" }).tong_tien,
@@ -476,4 +482,55 @@ test("R2-8 · RF-15: docDanhMuc ghi san_pham.page_id (shop 1 page) ⇒ cua2Tien 
     duLieu: chuanHoaHoSo({ total_price: 25, qty: 1, currency: "AED" }),
   });
   assert.equal(c2b.qua, true);
+});
+
+test('Legacy → duyệt V3: hai lượt đồng thời và retry chỉ POST một đơn', async () => {
+  const { taoDonTuLegacy } = await import('../src/orders/legacy.js');
+  await hoiThoai('psLegacyUnified', 'convLegacyUnified');
+  const nap = napTao(9810);
+  const input = { name: 'Ali', phone: '+971500000207', address: 'Street 9 Dubai', city: 'Dubai',
+    qty: 1, total_price: 15, currency: 'AED', cod_confirmed: true, kho_hang: 'kho-1' };
+  const deps = { pool, hangCho: { nap, env: MO, taoDon } };
+  const results = await Promise.all([
+    taoDonTuLegacy(pageText, input, 'convLegacyUnified', deps),
+    taoDonTuLegacy(pageText, input, 'convLegacyUnified', deps),
+  ]);
+  assert.ok(results.some(r => r.ok), JSON.stringify(results));
+  const retry = await taoDonTuLegacy(pageText, input, 'convLegacyUnified', deps);
+  assert.equal(retry.ok, true, JSON.stringify(retry));
+  assert.equal(retry.dedup, true);
+  assert.equal(nap.post, 1);
+  assert.equal(nap.payloads[0].status, 12);
+  assert.equal(nap.payloads[0].shipping_fee, 1500);
+  const count = await mot("SELECT count(*)::int n FROM hang_cho_tao_don WHERE du_lieu_don->>'conv_id'=$1", ['convLegacyUnified']);
+  assert.equal(count.n, 1);
+});
+
+test('Legacy từ chối giá ngoài DB và thiếu kho không tự đoán từ đơn cũ', async () => {
+  const { taoDonTuLegacy } = await import('../src/orders/legacy.js');
+  await hoiThoai('psLegacyInvalid', 'convLegacyInvalid');
+  const nap = napTao(9820);
+  const input = { name: 'Ali', phone: '+971500000208', address: 'Street 9 Dubai', city: 'Dubai',
+    qty: 1, total_price: 1, currency: 'AED', cod_confirmed: true };
+  const deps = { pool, hangCho: { nap, env: MO, taoDon } };
+  const wrong = await taoDonTuLegacy(pageText, input, 'convLegacyInvalid', deps);
+  assert.equal(wrong.ok, false);
+  assert.match(wrong.error, /gói giá DB/);
+  const noWarehouse = await taoDonTuLegacy(pageText, { ...input, total_price: 15 }, 'convLegacyInvalid', deps);
+  assert.equal(noWarehouse.ok, false);
+  assert.equal(nap.post, 0);
+});
+
+test('Page thay thế dùng giá sản phẩm gốc đúng shop, không nhận SKU thị trường khác', async () => {
+  await q("INSERT INTO san_pham_goc(team_id,ma_goc,ten) VALUES ($1,'unified-test','Shared product')", [TEAM]);
+  await q('UPDATE san_pham SET ma_goc=$1 WHERE team_id=$2 AND ma=$3', ['unified-test', TEAM, `${SHOP}:v-uuid-1`]);
+  const replacement = await mot(`INSERT INTO page(team_id,page_id,ten,pos_shop_id,san_pham_goc_ma)
+    VALUES ($1,'unified-replacement','New Page',$2,'unified-test') RETURNING id`, [TEAM, SHOP]);
+  const good = await cua2Tien(pool, { teamId: TEAM, pageId: replacement.id, duLieu: HO_SO });
+  assert.equal(good.qua, true);
+  const wrong = await cua2Tien(pool, { teamId: TEAM, pageId: replacement.id,
+    duLieu: { ...HO_SO, san_pham_ma: 'another-shop:v-uuid-1' } });
+  assert.equal(wrong.qua, false);
+  await q('UPDATE page SET pos_shop_id=$1 WHERE id=$2', ['another-shop', replacement.id]);
+  assert.equal((await cua2Tien(pool, { teamId: TEAM, pageId: replacement.id, duLieu: HO_SO })).qua, false);
 });

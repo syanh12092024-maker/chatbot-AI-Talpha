@@ -29,14 +29,14 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', 'src');
 // ─────────────────────────────────────────────────────────────────────────────
 const NGUYEN_TAC = [
   ['1 · Ngôn ngữ & giọng', ['Tagalog', 'TIẾNG VIỆT', 'po"/"opo', '1-3 câu', 'tôn giáo/chính trị', 'litrato']],
-  ['2 · Trung thực thông tin', ['CHỈ BÁN 1 SP', 'get_price', 'không bịa giá', 'khan hiếm', 'NỘI TỆ', 'CÒN HÀNG']],
+  ['2 · Trung thực thông tin', ['CHỈ BÁN 1 SP', 'get_price', 'không bịa giá', 'khan hiếm', 'NỘI TỆ', 'Tình trạng hàng']],
   ['2 · Ảnh luôn đi kèm chữ', ['send_product_image', 'caption', 'ảnh trơ', 'feedback', 'chứng nhận']],
-  ['3 · Chốt đơn COD đúng quy trình', ['cod_confirmed=true', 'THÀNH CÔNG trong lượt đó', 'Order ID']],
+  ['3 · Chốt đơn COD đúng quy trình', ['cod_confirmed=true', 'captured=true', 'Order ID']],
   ['3 · Cấm bịa tổng tiền', ['TỔNG TIỀN', 'MỘT gói trong bảng giá', 'nhân/cộng giá các gói', '2 sets']],
   ['4 · Chống spam làm phiền', ['KHÔNG hỏi lại thứ khách ĐÃ cho', 'Najma', 'checklist']],
   ['5 · Chống đơn trùng', ['KHÁCH ĐÃ CÓ ĐƠN', 'Facebook Commerce', 'đơn TRÙNG']],
   ['7 · Biết chuyển người', ['handoff_human', 'đòi gặp người thật', 'không chắc thông tin']],
-  ['11 · Không cam kết vượt thẩm quyền', ['2-5 ngày', 'đổi trả/hoàn tiền/bảo hành ngoài KB']],
+  ['11 · Không cam kết vượt thẩm quyền', ['khung giao hàng có trong KB', 'đổi trả/hoàn tiền/bảo hành ngoài KB']],
   ['12 · Bảo vệ PII', ['KHÔNG đọc lại đầy đủ SĐT', 'khách KHÁC']],
   ['14 · Văn phong phải chủ động bán', ['let me know po', 'mahal po', 'iisipin ko muna', '3 LẦN', 'MỘT GÓC KHÁC', 'walang risk', 'PHẢN ĐỐI BÁN HÀNG']],
 ];
@@ -210,7 +210,7 @@ test('③ lead_quality có nghĩa: có SĐT > có tín hiệu mua > hỏi vu vơ
 test('④ Đã bỏ tool score_lead, các tool còn lại nguyên vẹn', () => {
   const ten = toolDefs.map((t) => t.name);
   assert.ok(!ten.includes('score_lead'), 'score_lead chưa được gỡ');
-  assert.deepEqual(ten, ['get_price', 'create_draft_order', 'send_product_image', 'handoff_human']);
+  assert.deepEqual(ten, ['update_customer', 'get_price', 'create_draft_order', 'send_product_image', 'handoff_human']);
 });
 
 test('④ score_lead không còn sót trong CODE (ghi chú giải thích vì sao bỏ thì được giữ)', () => {
@@ -260,7 +260,8 @@ test('⑤ thiếu bản CSDL → dùng CORE y như trước, 51 page đang chạ
 test('⑤ có bản CSDL HỢP LỆ → khối đầu là bản đó, không phải CORE', () => {
   const ban = `# BỘ LUẬT CHUNG v9\n⚠️ ${THAM_QUYEN}: khối này THẮNG MỌI KHỐI SAU.\nKhông bịa giá.`;
   const blocks = buildSystem({ text: 'kb', config: {}, boLuatChung: ban });
-  assert.equal(blocks[0].text, ban, 'sửa trên màn phải tới được model — đây là cả điểm của cutover');
+  assert.ok(blocks[0].text.endsWith(ban), 'bản trên màn vẫn tới model nguyên vẹn');
+  assert.match(blocks[0].text, /QUY TẮC BACKEND BẮT BUỘC/);
   assert.notEqual(blocks[0].text, CORE);
   // Cấu trúc khối và điểm neo cache KHÔNG được đổi theo.
   assert.equal(blocks.length, 2);

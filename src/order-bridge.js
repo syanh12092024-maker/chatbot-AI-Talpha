@@ -7,7 +7,7 @@
 // HAI CHẾ ĐỘ, đổi bằng ĐÚNG một biến môi trường, không sửa dòng code nào:
 //   A (mặc định, AUTO_CREATE_ORDER=0) — ghi chú theo MẪU CHUẨN máy đọc được + hàng chờ
 //     "chờ tạo đơn"; nút [Tạo đơn Pancake] trên dashboard điền sẵn mọi trường.
-//   B (AUTO_CREATE_ORDER=1)           — `tools.js` gọi thẳng `createPancakeOrder` như v1.
+//   B (AUTO_CREATE_ORDER=1)           — `orders/legacy-capture.js` gọi adapter duyệt V3.
 //     Code chế độ B đã sẵn sàng nhưng KHÔNG được bật ở luồng này.
 //
 // LUẬT SỐ 1 CỦA DỰ ÁN: **không bao giờ xoá đơn Pancake**. Module này chỉ TẠO và ĐỌC;
@@ -219,7 +219,7 @@ const queueId = (pageId, convId, custId, t) => `${pageId}_${convId || custId || 
  * Gọi từ `tools.js` (create_draft_order) ở CẢ HAI chế độ — chế độ B chỉ khác ở chỗ đơn
  * đã được tạo trước đó nên bản ghi vào thẳng trạng thái `created`.
  *
- * KHÔNG ném lỗi ra ngoài: ghi chú/hàng chờ hỏng không được phép làm hỏng lượt chốt.
+ * Hàng chờ phải lưu thành công trước khi xác nhận chốt; ghi chú ngoài chỉ là phụ.
  */
 export async function recordClosedOrder(pageId, custId, input = {}, convId = '', opt = {}) {
   const now = opt.now || Date.now();
@@ -249,7 +249,7 @@ export async function recordClosedOrder(pageId, custId, input = {}, convId = '',
   const i = items.findIndex((x) => x.page === item.page && x.conv && x.conv === item.conv && x.status === 'pending');
   if (i >= 0) items[i] = { ...items[i], ...item, id: items[i].id, t: items[i].t };
   else items.push(item);
-  writeQueue(items);
+  if (!writeQueue(items)) throw new Error("Không lưu được thông tin đơn vào hàng chờ");
 
   if (!opt.skipNote) {
     try { await (opt.addNote || pkAddNote)(pageId, custId, note); }
@@ -319,7 +319,7 @@ export async function createFromQueue(id, opt = {}) {
   const create = opt.createOrder || createPancakeOrder;
   const r = await create(item.page, {
     name: item.name, phone: item.phone, address: item.address, city: item.city,
-    qty: item.qty, total_price: item.total_price, currency: item.currency,
+    qty: item.qty, total_price: item.total_price, currency: item.currency, cod_confirmed: item.cod_confirmed,
   }, item.conv);
   if (!r.ok) return { ok: false, error: r.error || 'Pancake từ chối tạo đơn' };
 

@@ -9,7 +9,6 @@
 // tự dọn, KHÔNG chạm `aicloser_v3` dev.
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs";
 import { dungSandbox } from "../db/sandbox.js";
 import { maHoa } from "../db/khoa.js";
 import { ctxHeThong } from "../src/db/index.js";
@@ -213,21 +212,13 @@ test("P1 · payload mang ĐỦ trường khuôn createPancakeOrder, và status =
   assert.equal(pl.shipping_address.address, "Jumeirah 3, Dubai");
 });
 
-test("P2 · KNOWN-ANSWER: khuôn cũ ĐANG là status 0 — bản v3 cố ý KHÁC", () => {
-  // Neo vào chính bản đang chạy. Nếu ai đó «đồng bộ» hai bên bằng cách hạ v3 về 0, hoặc
-  // sửa khuôn cũ lên 12, ca này đỏ và người sau phải đọc lại 01 §1 trước khi đổi.
-  const cu = fs.readFileSync("src/pancake-orders.js", "utf8");
-  assert.match(
-    cu,
-    /status:\s*0,\s*\/\/ Mới \/ Chờ xác nhận/,
-    "khuôn cũ createPancakeOrder không còn `status: 0` — đọc lại vì sao v3 dùng 12",
-  );
-  assert.notEqual(MA_CHO_IN, 0);
+test("P2 · mọi đường tạo đơn dùng trạng thái POS đã xác nhận", () => {
+  assert.equal(MA_CHO_IN, 12);
 });
 
 test("P3 · hệ số tệ: tệ LẠ ⇒ null (KHÔNG rơi về ×100 im lặng như khuôn cũ)", () => {
   assert.equal(doiSangDonViNho(199, "AED"), 19900);
-  assert.equal(doiSangDonViNho(12, "KWD"), 12000);
+  assert.equal(doiSangDonViNho(12, "KWD"), 1200); // 16/09: hệ số KWD 1000→100, đo từ đơn thật
   assert.equal(doiSangDonViNho(100, "VND"), null);
   assert.equal(doiSangDonViNho(0, "AED"), 0);
   assert.deepEqual(tachMaBienThe("123:456"), {

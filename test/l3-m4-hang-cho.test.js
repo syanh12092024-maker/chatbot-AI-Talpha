@@ -145,9 +145,12 @@ test("A1 · cửa ① liệt kê ĐÚNG TÊN trường thiếu (không chỉ tru
     chuanHoaHoSo({ name: "A", qty: 1, total_price: 10 }).tong_tien_lon,
     10,
   );
-  // Có tệ ⇒ quy ĐÚNG MỘT LẦN theo HE_SO_TE (AED ×100 · KWD ×1000); tên cột v3 giữ nguyên.
+  // Có tệ ⇒ quy ĐÚNG MỘT LẦN theo HE_SO_TE; tên cột v3 giữ nguyên.
+  // 16/09: KWD sửa 1000→100 (đo đơn thật: giá POS 10,9 KWD ⇔ `cod` 1090). Xem khối chú
+  // thích trên `HE_SO_TE` ở `src/pos/tao-don.js`. Trước đây ca này khẳng định 10000 — tức
+  // nó ĐANG BẢO VỆ lỗi thu gấp 10, đúng cảnh «thước cũng phải qua cổng».
   assert.equal(chuanHoaHoSo({ total_price: 10, currency: "AED" }).tong_tien, 1000);
-  assert.equal(chuanHoaHoSo({ total_price: 10, currency: "KWD" }).tong_tien, 10000);
+  assert.equal(chuanHoaHoSo({ total_price: 10, currency: "KWD" }).tong_tien, 1000);
   assert.equal(chuanHoaHoSo({ tong_tien: 1000, tien_te: "AED" }).tong_tien, 1000);
   // 0 và "" là THIẾU, không phải «có giá trị» — số 0 lọt qua là một đơn 0 đồng.
   assert.deepEqual(

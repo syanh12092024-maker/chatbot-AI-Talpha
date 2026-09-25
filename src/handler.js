@@ -151,6 +151,7 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
   state.pendingImages = [];
   state.pendingCaption = '';
   state.sentImageTurn = false;
+  delete state.orderResult;
   state.orderCreatedThisTurn = false; // cờ cho M09 — chỉ đúng trong phạm vi 1 lượt
 
   kb = kb || getKBForPage(pageId);
@@ -171,6 +172,8 @@ export async function handleIncoming({ psid, text, pageId, kb, pkConvId, pkCustI
 
   // M07: hồ sơ khách (bền qua restart) — mọi tầng bên dưới đọc chung một hồ sơ này.
   const prof = loadProfile(state, history, pageId);
+  state.profile = prof;
+  state.customerText = text;
 
   // ── KHÁCH ĐÒI NGỪNG NHẮN — cửa chặn ĐẦU TIÊN, trên cả hậu bán lẫn Fast Lane ──
   // Bàn giao TRONG IM LẶNG: không câu giữ chỗ, không template, không gì cả. Một tin nữa
@@ -434,7 +437,7 @@ async function guardAndMaybeRewrite(text, { kb, state, pageId, psid }) {
     pageId,
     custName: state.custName || psid,
     lastAiText: state.lastAiText || '',
-    orderCreated: !!state.orderCreatedThisTurn,
+    orderCreated: !!state.orderResult?.pos_created,
     isOrderSummary: !!state.orderCreatedThisTurn,
   };
   if (!String(text || '').trim()) return ''; // closer đã chủ động im — không phải vi phạm

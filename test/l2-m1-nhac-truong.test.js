@@ -273,6 +273,9 @@ after(async () => {
 async function motLuot({ noiDung, msgId, kichBan, deps = {}, moiTruong = {} }) {
   moiDem();
   kichBanModel = kichBan;
+  // Mỗi kịch bản độc lập phải bắt đầu khi AI được giao quyền rõ ràng.
+  // Ca trước có thể đã chốt/chuyển SALE; không trông chờ handler tự giành lại.
+  await sb.pool.query("UPDATE hoi_thoai SET chu_so_huu='AI', trang_thai='QUALIFY' WHERE team_id=$1 AND page_id=$2 AND psid=$3", [teamId, pageRowId, PSID]);
   const t = await xepTin(sb.pool, {
     teamId,
     pageId: PAGE,
@@ -486,20 +489,9 @@ test(
       "0 lượt LỌT RA NGOÀI mock — không HTTP thật nào",
     );
 
-    // ⚠️ HAI lượt gửi ngầm CÓ THẬT ở nhánh này, mock giữ lại chúng. Đây là NỢ DÀI HẠN của
-    // phiếu (§9): tools.js:197 `pkTagByName(pkTags.order)` và — LỆCH ĐỀ BÀI, phiếu chỉ
-    // khai 3 chỗ — order-bridge.js:255 `pkAddNote(<ghi chú đơn>)` gọi gián tiếp từ
-    // tools.js:208. Neo con số ở đây để lượt sau AI NỚI ra là ca ĐỎ ngay.
-    assert.equal(
-      guiNgam.pkTagByName,
-      1,
-      "tools.js:197 gắn thẻ 'AI Chốt' — bị mock bắt",
-    );
-    assert.equal(
-      guiNgam.pkAddNote,
-      1,
-      "order-bridge.js:255 ghi chú đơn — bị mock bắt",
-    );
+    // Tool lưu qua backend V3, không gọi adapter gửi legacy.
+    assert.equal(guiNgam.pkTagByName, 0);
+    assert.equal(guiNgam.pkAddNote, 0);
     assert.equal(guiNgam.pkSendReply, 0, "tin chữ KHÔNG được đi đường ngầm");
     assert.equal(guiNgam.pkSendImage + guiNgam.sendImage_graph, 0);
     assert.equal(cuaV3.guiTin, 1, "tin chữ đi qua cửa v3");
@@ -548,13 +540,13 @@ test(
 
     assert.equal(
       guiNgam.pkTagByName,
-      1,
-      "tools.js:266 — bị mock bắt (nợ dài hạn)",
+      0,
+      "Không gửi tag ngoài cửa V3",
     );
     assert.equal(
       guiNgam.pkAddNote,
-      1,
-      "tools.js:271 — bị mock bắt (nợ dài hạn)",
+      0,
+      "Không gửi note ngoài cửa V3",
     );
     assert.equal(cuaV3.gatThe, 1, "cửa v3 GÁNH thẻ bàn giao");
     assert.equal(cuaV3.ghiNote, 1, "cửa v3 GÁNH ghi chú bàn giao");

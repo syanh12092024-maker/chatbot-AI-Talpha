@@ -165,8 +165,22 @@ async function khoaTangCuaPage(khach, teamId, pageRowId) {
  * }>}
  *   `viSao` chỉ khác null khi KHÔNG có bản nào — và khi đó nó nói rõ THIẾU KHOÁ NÀO.
  */
-export async function docKichBanChoPage(pool, teamId, pageRowId) {
-  const khach = await pool.connect();
+export async function docKichBanChoPage(db, teamId, pageRowId) {
+  // NHẬN CẢ POOL LẪN CLIENT — và đây không phải tiện tay, là bắt buộc.
+  //
+  // Worker v3 CỐ Ý truyền `khach` (client của giao dịch đang mở) làm `pool` cho nhạc
+  // trưởng — lý do ghi ở `src/queue/worker.js:133`: mọi lượt ghi của một tin phải nằm
+  // trong cùng giao dịch với việc chốt trạng thái tin ấy. Hàm này lại gọi `.connect()`,
+  // mà `pg.Client` có sẵn phương thức đó và ném «Client has already been connected».
+  //
+  // Hậu quả đo được 17/09 trên lượt diễn tập đầu tiên: page CÓ kịch bản ⇒ MỌI lượt trả
+  // lời chết ngay trước khi gọi model. Không ai gặp trước đó vì chưa page nào trong CSDL
+  // v3 có bản LIVE — lỗi nằm im chờ đúng ngày cutover bật `V3_RAP_PROMPT_BAT`.
+  //
+  // Phân biệt bằng `release`: client lấy từ pool có, Pool thì không. (`connect` KHÔNG
+  // dùng để phân biệt được — cả hai đều có.)
+  if (typeof db.release === "function") return giaiChoPage(db, teamId, pageRowId);
+  const khach = await db.connect();
   try {
     return await giaiChoPage(khach, teamId, pageRowId);
   } finally {

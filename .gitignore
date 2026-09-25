@@ -61,3 +61,7 @@ mau-duong-ban.json
 # SĐT nhưng vẫn là lời của người thật. Giữ ở scratchpad, KHÔNG commit.
 nhan-chuan*.json
 tin-khach*.json
+
+# Bộ nhớ tạm của công cụ cục bộ — không phải mã dự án
+.1devtool/
+.ua/

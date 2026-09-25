@@ -79,7 +79,7 @@ export async function subscribePage(pageId) {
 
 // Xác thực chữ ký webhook X-Hub-Signature-256.
 export function verifySignature(rawBody, signatureHeader) {
-  if (!config.appSecret) return true; // chưa cấu hình -> bỏ qua (chỉ nên cho dev)
+  if (!config.appSecret) return process.env.NODE_ENV !== 'production';
   if (!signatureHeader) return false;
   const expected =
     'sha256=' + crypto.createHmac('sha256', config.appSecret).update(rawBody).digest('hex');

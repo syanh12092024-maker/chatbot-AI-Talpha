@@ -287,3 +287,29 @@ test('G7c · flushPendingImages: van đóng → 0 ảnh bay đi, hàng đợi đ
     if (cu === undefined) delete process.env.PANCAKE_READONLY; else process.env.PANCAKE_READONLY = cu;
   }
 });
+
+test('Backend draft: COD phải boolean, không nhận số lượng lẻ / sản phẩm lạ / gói sai số lượng', async () => {
+  const { chuanBiDon } = await import('../src/orders/draft.js');
+  const kb = { products: [{ id: 'sku', currency: 'AED', tiers: [{ label: 'Single', qty: 1, price: 15 }] }] };
+  const input = donDu({ product_id: 'sku', qty: 1, total_price: 15, variant: 'Single' });
+  for (const patch of [{ cod_confirmed: 'false' }, { qty: 1.5 }, { qty: 2 }, { product_id: 'alien' }, { total_price: Infinity }]) {
+    assert.throws(() => chuanBiDon(kb, { ...input, ...patch }), /TỪ CHỐI/);
+  }
+  assert.equal(chuanBiDon(kb, { ...input, currency: 'USD' }).currency, 'AED');
+});
+
+test('Tool chỉ xác nhận khi backend lưu thành công; tool lặp trong lượt không lưu hai lần', async () => {
+  const state = newState();
+  const input = donDu({ total_price: 199, variant: '1 Set' });
+  let count = 0;
+  const ctx = { kb: KB_SET, state, business: { captureOrder: async () => { count++; throw new Error('DB unavailable'); } } };
+  const failed = await executeTool('create_draft_order', input, ctx);
+  assert.equal(failed.isError, true);
+  assert.ok(!state.closed);
+  ctx.business.captureOrder = async order => { count++; return { ok: true, captured: true, draft_id: 'pending-1', order }; };
+  const saved = await executeTool('create_draft_order', input, ctx);
+  const replay = await executeTool('create_draft_order', input, ctx);
+  assert.equal(saved.isError, undefined);
+  assert.deepEqual(replay, saved);
+  assert.equal(count, 2, 'một lần fail + một lần lưu, không gọi lại khi replay');
+});

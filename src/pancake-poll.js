@@ -1,3 +1,4 @@
+import { pageThuocV3 } from './queue/page-routing.js';
 // Vòng lặp hỏi Pancake tin mới → AI trả lời → gửi lại qua Pancake.
 // KHÔNG cần webhook/URL công khai/tunnel/App Review — chỉ cần internet ra ngoài.
 import { config } from './config.js';
@@ -259,6 +260,7 @@ async function pollAll() {
   _pollRunning = true;
   try {
     const pages = listAiEnabled().filter((pageId) => {
+      if (pageThuocV3(pageId)) return false;
       const f = sendFail.get(pageId);
       return !(f && f.pausedUntil > Date.now()); // đang backoff → bỏ qua page này
     });
@@ -366,6 +368,7 @@ function noteConvError(pageId, c, psid, custId, e) {
 
 // Xử lý 1 hội thoại (chạy trong semaphore): đọc tin → AI soạn → gửi qua Pancake.
 async function processConv(pageId, c, psid, custId, mark = '') {
+  if (pageThuocV3(pageId)) return;
   let msgs = await pkGetMessages(pageId, c.id, custId);
   if (!msgs.length) return;
 
@@ -517,6 +520,7 @@ async function processConv(pageId, c, psid, custId, mark = '') {
     }
     return;
   }
+  if (pageThuocV3(pageId)) return;
   const r = await pkSendReply(pageId, c.id, custId, reply);
   noteSendResult(pageId, r.ok, r.error); // backoff: 2 lần lỗi liên tiếp → ngừng page 30 phút
   if (r.ok) {

@@ -7,8 +7,8 @@ import { noteLlmOk, noteLlmError } from './llm-health.js';
 // Dùng fallback chuỗi để khởi tạo không lỗi khi chưa có key (UI vẫn xem được);
 // nếu thiếu key thật, lời gọi API sẽ báo lỗi và được xử lý ở tầng trên.
 const client = config.aiProvider === 'kimi'
-  ? new Anthropic({ apiKey: config.kimi.apiKey || 'MISSING_KEY', baseURL: config.kimi.baseUrl })
-  : new Anthropic({ apiKey: config.anthropicApiKey || 'MISSING_KEY' });
+  ? new Anthropic({ timeout: 30000, maxRetries: 0, apiKey: config.kimi.apiKey || 'MISSING_KEY', baseURL: config.kimi.baseUrl })
+  : new Anthropic({ timeout: 30000, maxRetries: 0, apiKey: config.anthropicApiKey || 'MISSING_KEY' });
 
 // BỌC messages.create để MỌI lời gọi LLM đều báo cáo sức khoẻ về llm-health.js.
 // Không bọc thì lỗi hết tiền chỉ hiện trong log và không ai biết — đúng cảnh

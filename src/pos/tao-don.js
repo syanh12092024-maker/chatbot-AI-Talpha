@@ -86,21 +86,56 @@ export class LoiDonDaTao extends Error {
 }
 
 /**
- * HỆ SỐ ĐƠN VỊ NHỎ CỦA POS theo tệ — port NGUYÊN VĂN bảng `CCY_FACTOR` của
- * `src/pancake-orders.js:162` (bản đang chạy, CẤM SỬA nên chép chứ không import: file
- * đó đọc `pancake-shops.json` + bắn `fetch` ngay lúc nạp module). Dự án ĐA TỆ Trung Đông
- * — mỗi tệ một hệ số (AED/SAR/QAR/USD ×100 · KWD/OMR/BHD ×1000). KHÔNG có VND ở đây.
+ * HỆ SỐ ĐƠN VỊ NHỎ CỦA POS theo tệ. Dự án ĐA TỆ Trung Đông. KHÔNG có VND ở đây.
  * ⚠️ Tệ KHÔNG có trong bảng ⇒ hàm quy đổi trả `null` (KHÔNG rơi về ×100 im lặng như
- * khuôn cũ) — đoán sai hệ số là sai tiền 100 lần, và cửa gọi sẽ ném thay vì gửi con số bịa.
+ * khuôn cũ) — đoán sai hệ số là sai tiền, và cửa gọi sẽ ném thay vì gửi con số bịa.
+ *
+ * ═══ 16/09/2026 · SỬA KWD·OMR·BHD TỪ 1000 → 100. ĐÂY LÀ LỖI THU GẤP 10. ══════════════
+ * Bảng này trước đây port nguyên văn `CCY_FACTOR` của `src/pancake-orders.js:162`, khai
+ * `KWD/OMR/BHD ×1000` theo đúng chuẩn ISO 4217 (ba tệ ấy có 3 chữ số thập phân — fils).
+ * **POS KHÔNG theo chuẩn đó.** Nó lưu "cents" ×100 cho MỌI tệ. Đó là lý do lỗi sống lâu:
+ * nó đúng về lý thuyết tiền tệ và sai về thực tế POS.
+ *
+ * Đo 16/09 trên đơn THẬT, mỗi shop 100 đơn mới nhất (`cod` là trường mang tiền vì
+ * `total_price = 0` — catalog POS giá 0, tiền nằm ở `cod` = `shipping_fee`):
+ *
+ *     thị trường   cod hay gặp                ÷100 (đọc được)      ÷1000
+ *     Kuwait        990 · 1090 · 1290 · 1890   9,90·10,90·12,90·18,90   0,99·1,09  ✘
+ *     Oman         1000 · 1100 · 1200 · 2900   10·11·12·29              1,0·1,2    ✘
+ *     Bahrain      1100 · 1200 · 1800 · 2800   11·12·18·28              1,1·1,8    ✘
+ *     Saudi        9900 · 10900 · 19900        99·109·199               9,9·10,9   ✘
+ *     UAE          6900 · 9900 · 14900         69·99·149                6,9·9,9    ✘
+ *     Qatar        9900 · 10900 · 15900        99·109·159               9,9·10,9   ✘
+ *
+ * Phép xác nhận cuối (người quyết mở POS đọc, 16/09): đơn page `Healthy Figure PH in
+ * Kuwait` hiện giá **10.9 KWD**, và `cod` của đúng đơn đó là **1090** ⇒ hệ số **×100**.
+ * Sổ điều hành §9 đã đặt trước điều kiện này: «xác nhận rồi mới mở phiếu vá».
+ *
+ * Hậu quả nếu để 1000: `quyTongTienNho()` (`src/orders/hang-cho.js:151`) nhân hệ số ĐÚNG
+ * LÚC SALE BẤM DUYỆT ⇒ bot chốt «10,90 KWD» thành `tong_tien = 10900` ⇒ POS thu 109 KWD.
+ * `AUTO_CREATE_ORDER=0` KHÔNG che được: nó chỉ chặn đường TỰ ĐỘNG, không chặn nút duyệt.
+ *
+ * 📌 ĐỪNG LẪN HAI VIỆC — đây là chỗ làm lỗi cũ trông hợp lý:
+ *   · CÁCH NGƯỜI VIẾT giá ở Kuwait/Oman/Bahrain THẬT SỰ có 3 số lẻ («13,900 KD» = 13,9 KD).
+ *     `parseOffers` (`test/import-offers.test.mjs:60`) bóc đúng như vậy, và nó ĐÚNG — đừng sửa.
+ *   · CÁCH POS LƯU thì ×100 cho mọi tệ.
+ *   Chuỗi đúng: «13,900 KD» → 13,9 → ×100 → `cod` 1390. Hai bước, hai quy ước, không gộp.
+ *
+ * ⛔ HAI BẢN CHÉP CÒN SAI, nằm trong 62 tệp phẳng CẤM SỬA (luật 4 §0a) — KHÔNG sửa ở phiếu này:
+ *   · `src/pancake-orders.js:162` `CCY_FACTOR` — đường tạo đơn v1;
+ *   · `src/admin.js:369` `CCY_DIV` — đường HIỂN THỊ; nó CHIA 1000 nên dashboard đang hiện
+ *     tiền Kuwait·Oman·Bahrain NHỎ ĐI 10 LẦN.
+ * Cả hai đã ghi §9 sổ. Đừng "đồng bộ" bảng này về khớp chúng — chúng sai, bảng này đúng.
  */
 export const HE_SO_TE = Object.freeze({
   AED: 100,
   SAR: 100,
   QAR: 100,
   USD: 100,
-  KWD: 1000,
-  OMR: 1000,
-  BHD: 1000,
+  // Ba tệ ISO 3 chữ số thập phân. ×100 là số ĐO ĐƯỢC từ POS, không phải số theo chuẩn tệ.
+  KWD: 100,
+  OMR: 100,
+  BHD: 100,
 });
 
 /**
@@ -242,8 +277,10 @@ export async function guiTaoDon(ketNoi, payload, { nap = fetch } = {}) {
   }
   if (!r.ok || j == null || j.data?.id == null) {
     throw new LoiPosKhongTraLoi(
-      `POS TỪ CHỐI tạo đơn (HTTP ${r.status}): ${String(chu).slice(0, 200)}`,
-      { coPhanHoi: true, http: r.status },
+      `POS chưa xác nhận tạo đơn (HTTP ${r.status})`,
+      // 5xx, timeout HTTP và 2xx thiếu id có thể đã tạo đơn: giữ dấu bắt đầu để
+      // chặn tạo lại. Chỉ 4xx rõ ràng mới coi là từ chối trước khi tạo.
+      { coPhanHoi: r.status >= 400 && r.status < 500 && r.status !== 408, http: r.status },
     );
   }
   return { id: String(j.data.id), tho: j.data };

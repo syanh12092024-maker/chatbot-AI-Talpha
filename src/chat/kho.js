@@ -56,7 +56,7 @@ const COT_JSONB = new Set(["moc_luot_llm", "ho_so", "diem_lead"]);
  */
 export async function suaHoiThoai(
   pool,
-  { teamId, id, giaTri, hanhDong = "chat_cap_nhat_hoi_thoai" },
+  { teamId, id, giaTri, neu, hanhDong = "chat_cap_nhat_hoi_thoai" },
 ) {
   if (teamId == null) throw new Error("suaHoiThoai: thiếu teamId.");
   if (!id) throw new Error("suaHoiThoai: thiếu id.");
@@ -94,7 +94,7 @@ export async function suaHoiThoai(
     "hoi_thoai",
     id,
     { ...duLieu, team_id: teamId },
-    { datSuaLuc: true }, // `sua_luc = now()` — GIỮ đồng hồ CSDL như bản cũ
+    { datSuaLuc: true, neu }, // `sua_luc = now()` — GIỮ đồng hồ CSDL như bản cũ
   );
   if (!dong) return null;
 
@@ -154,7 +154,7 @@ export async function docHoiThoaiTheoPageText(
   { teamId, pageIdText, psid },
 ) {
   const r = await pool.query(
-    `SELECT h.* FROM hoi_thoai h
+    `SELECT h.*, h.xmin::text AS phien_ban, p.nguon_tin, p.v3_ai_bat FROM hoi_thoai h
        JOIN page p ON p.id = h.page_id
       WHERE h.team_id = $1 AND p.page_id = $2 AND h.psid = $3
       LIMIT 1`,

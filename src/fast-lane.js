@@ -1,3 +1,4 @@
+import { templateSafety } from './chat/template-safety.js';
 // M06 · FAST LANE — trả lời 0 token, đặt TRƯỚC mọi lần gọi LLM.
 // Spec: docs/v2/02-TANG-LUONG-CHAT.md § M06
 //
@@ -88,22 +89,19 @@ function priceLines(kb) {
 const FRAME = {
   tl: {
     priceHead: 'Hello po! 😊 Ito po ang presyo namin:',
-    priceTail: '\n🚚 FREE delivery po, at COD — bayad na lang pagdating.\nIlan po ang gusto niyong kunin? 😊',
-    ship: '2-5 working days po from our local warehouse, at FREE delivery. 🚚\nCOD po — tingnan niyo muna bago magbayad.\nGusto niyo na po bang i-process ang order? 😊',
+    priceTail: '\nIlan po ang gusto niyong kunin? 😊',
     howto: 'Sobrang dali lang po! 😊 I-send niyo lang:\nPangalan · Number · Address\nCOD po — bayad pagdating ng order. Simulan na po natin? 🚚',
     greetTail: '\nAno pong maitutulong ko sa inyo? 😊',
   },
   en: {
     priceHead: 'Hello po! 😊 Here are our prices:',
-    priceTail: '\n🚚 FREE delivery, and it\'s COD — you pay upon delivery.\nHow many would you like to get? 😊',
-    ship: '2-5 working days from our local warehouse, with FREE delivery. 🚚\nIt\'s COD — you check the item first, then pay.\nWould you like me to process your order? 😊',
+    priceTail: '\nHow many would you like to get? 😊',
     howto: 'It\'s very easy po! 😊 Just send:\nName · Contact number · Address\nCOD po — you pay when it arrives. Shall we start? 🚚',
     greetTail: '\nHow can I help you today? 😊',
   },
   ar: {
     priceHead: 'أهلاً! 😊 هذه أسعارنا:',
-    priceTail: '\n🚚 التوصيل مجاني، والدفع عند الاستلام.\nكم قطعة تحب تطلب؟ 😊',
-    ship: 'التوصيل خلال ٢-٥ أيام عمل من مستودعنا المحلي، والشحن مجاني. 🚚\nالدفع عند الاستلام — تشوف المنتج قبل ما تدفع.\nتحب أجهز لك الطلب؟ 😊',
+    priceTail: '\nكم قطعة تحب تطلب؟ 😊',
     howto: 'سهلة جداً! 😊 أرسل لنا:\nالاسم · رقم الجوال · العنوان\nالدفع عند الاستلام. نبدأ؟ 🚚',
     greetTail: '\nكيف أقدر أساعدك؟ 😊',
   },
@@ -347,6 +345,9 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', idleMs = 0, u
     return escalate('chào hỏi nhưng chưa dựng được câu chào từ KB');
   }
 
+  const safety = templateSafety(raw);
+  if (!safety.safe) return escalate(safety.reason);
+
   // ── LỚP 2 · kịch bản KB (0 token) ────────────────────────────────────────
   // Tin dài thì luôn có ngữ cảnh riêng → để AI. Trần này áp cho CẢ dòng kịch bản:
   // một dòng bắt từ khoá không hề biết 20 từ còn lại của khách đang nói gì.
@@ -408,7 +409,7 @@ export function fastLane({ text, kb, aiTurns = 0, lastAiText = '', idleMs = 0, u
     return tpl('price', kb?.config?.fastLanePrice || buildPrice(kb, lang), 'hỏi giá');
   }
   if (ASK_HOWTO.test(raw)) return tpl('howto', kb?.config?.fastLaneHowto || f.howto, 'hỏi cách đặt');
-  if (ASK_SHIP.test(raw)) return tpl('ship', kb?.config?.fastLaneShip || f.ship, 'hỏi giao hàng');
+  if (ASK_SHIP.test(raw)) return tpl('ship', kb?.config?.fastLaneShip || '', 'hỏi giao hàng');
 
   return escalate('cần AI thật sự');
 }

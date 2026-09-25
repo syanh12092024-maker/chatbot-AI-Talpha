@@ -1,3 +1,4 @@
+import { pageThuocV3 } from './queue/page-routing.js';
 // M12 · LỊCH ĐUỔI THEO — tầng DUY NHẤT trong luồng này được phép gửi tin cho khách.
 // Spec: docs/v2/03-TANG-TANG-CHOT.md § M12 · vòng 2: docs/v2/prompts/L5-AB-FOLLOWUP.md
 //
@@ -115,6 +116,7 @@ export async function collectCandidates({
 
   const out = []; const errors = [];
   for (const pageId of ids) {
+    if (pageThuocV3(pageId)) continue;
     const p = pageIdx.get(pageId) || { pageId, aiEnabled: true, ready: false, readiness: 'chưa rõ', market: '' };
     // Page tắt AI / chưa đủ điều kiện: bỏ NGAY, đừng tốn lời gọi API nào. `evaluateCandidate`
     // vẫn kiểm lại hai điều kiện này — đây chỉ là cắt sớm cho rẻ.
@@ -236,6 +238,7 @@ function pushSaleCall(item, { now, apply }) {
 // GỬI MỘT TIN
 // ─────────────────────────────────────────────────────────────────────────────
 async function sendOne(item, { now, apply, send = pkSendReply }) {
+  if (pageThuocV3(item.pageId)) return { ...item, sent: false, blocked: true, reason: 'Page đã chuyển V3' };
   // M09 — soi trước, kể cả khi chạy khô. Câu mẫu có thể bị sửa và lọt lỗi bất cứ lúc nào;
   // chạy khô mà không soi thì bản duyệt và bản gửi là hai thứ khác nhau.
   const kb = (() => { try { return getKBForPage(item.pageId); } catch { return {}; } })();

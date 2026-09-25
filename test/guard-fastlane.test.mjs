@@ -254,8 +254,8 @@ test('F5b · hỏi giá LẦN 2 → leo lên AI (template không thoả mãn đ�
   assert.equal(fastLane({ text: 'magkano po', kb: KB, aiTurns: 1, usedLanes: used }).handled, false);
 });
 
-test('F6 · hỏi ship / cách đặt → câu mẫu', () => {
-  assert.equal(FL('ilang araw po ang delivery').handled, true);
+test('F6 · thiếu chính sách ship thì không tự hứa; cách đặt vẫn có mẫu', () => {
+  assert.equal(FL('ilang araw po ang delivery').handled, false);
   assert.equal(FL('how to order po').handled, true);
 });
 

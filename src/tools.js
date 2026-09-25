@@ -1,22 +1,23 @@
-import { createOrder, pkSendImage, pkAddNote, pkTagByName } from './pancake.js';
+import { updateCustomer } from './chat/customer-state.js';
+import { pkSendImage } from './pancake.js';
+import { chuanBiDon } from './orders/draft.js';
+import { nhanDonLegacy, banGiaoLegacy } from './orders/legacy-capture.js';
 import { sendImage } from './messenger.js';
 import { productImages, productTiers } from './kb.js';
-import { incOrder } from './stats.js';
 import { logAi } from './ai-log.js';
-import { createPancakeOrder, ordersEnabled, conversationHasOrder, markConversationOrdered } from './pancake-orders.js';
 import { config } from './config.js';
-import { markClosing } from './conv-owner.js';
-import { recordClosedOrder } from './order-bridge.js'; // M14 · ghi chú chuẩn + hàng chờ tạo đơn
-// ── BH1 (16/09) · ba cửa mới, đều ở lõi chung ────────────────────────────────────────
-//   `tinhTong`      — tổng tiền do SERVER quyết, model chỉ được ĐỀ NGHỊ (src/core/gia.js)
-//   `vanGuiDangMo`  — luật số 1: máy READONLY không chạm khách thật (src/core/van-gui.js)
-//   `peekConv`      — hội thoại này chốt đơn chưa? ĐỌC THUẦN, không đẻ bản ghi rác
-import { tinhTong } from './core/gia.js';
 import { vanGuiDangMo } from './core/van-gui.js';
-import { peekConv } from './conv-state.js';
 
 // Định nghĩa tool (function calling) cho closer.
 export const toolDefs = [
+  {
+    name: 'update_customer',
+    description: 'Lưu thông tin mới hoặc sửa thông tin khách khi hồ sơ chưa đúng. Chỉ chép dữ kiện từ lời khách hiện tại. Không gọi nếu hồ sơ đã đúng, không cần gọi trước create_draft_order.',
+    input_schema: { type: 'object', additionalProperties: false, properties: {
+      name: { type: 'string' }, phone: { type: 'string' }, address: { type: 'string' },
+      city: { type: 'string' }, tier: { type: 'string' }, qty: { type: 'integer', minimum: 1 },
+    } },
+  },
   {
     name: 'get_price',
     description: 'Lấy giá lẻ và giá combo sản phẩm của page từ Knowledge Base. Page chỉ bán 1 SP nên KHÔNG cần mã — cứ gọi tool, tool tự lấy đúng sản phẩm. TUYỆT ĐỐI không hỏi khách mã/loại sản phẩm.',
@@ -31,7 +32,7 @@ export const toolDefs = [
   // nay làm bằng luật ở classifier (`lead_quality`) + M11 của Luồng 2 — 0 token, không gãy.
   {
     name: 'create_draft_order',
-    description: 'Tạo đơn nháp trong Pancake. CHỈ gọi sau khi khách xác nhận COD và đã có địa chỉ cụ thể.',
+    description: 'Lưu thông tin đơn vào backend để nhân viên duyệt. Thành công chỉ có nghĩa đã nhận thông tin, chưa phải đã tạo đơn POS. CHỈ gọi sau khi khách xác nhận COD và đủ địa chỉ.',
     input_schema: {
       type: 'object',
       properties: {
@@ -45,7 +46,7 @@ export const toolDefs = [
         total_price: { type: 'number', description: 'TỔNG tiền COD khách phải trả theo đúng gói đã chốt (số, nội tệ — vd 99 nghĩa là 99 SAR/AED). LẤY TỪ bảng giá KB, KHÔNG tự bịa.' },
         cod_confirmed: { type: 'boolean', description: 'Khách đã xác nhận thanh toán khi nhận hàng' },
       },
-      required: ['name', 'phone', 'address', 'city', 'qty', 'total_price', 'cod_confirmed'],
+      required: ['name', 'phone', 'address', 'city', 'qty', 'cod_confirmed'],
     },
   },
   {
@@ -159,7 +160,13 @@ export async function flushPendingImages(state) {
 export async function executeTool(name, input, ctx) {
   const { kb, state } = ctx;
   try {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Input tool phải là object');
     switch (name) {
+      case 'update_customer': {
+        await ctx.assertCanAct?.();
+        if (!state.profile) throw new Error('Hồ sơ chưa được nạp');
+        return { content: JSON.stringify(updateCustomer(input, state.profile, state.customerText)) };
+      }
       case 'get_price': {
         const p = findProduct(kb, input.product_id);
         if (!p) return { content: 'Page này chưa có sản phẩm trong KB. Hãy tư vấn chung, đừng hỏi khách chọn mã.', isError: true };
@@ -172,109 +179,18 @@ export async function executeTool(name, input, ctx) {
         };
       }
       case 'create_draft_order': {
-        if (!input.cod_confirmed) {
-          return { content: 'Từ chối tạo đơn: khách chưa xác nhận COD. Hãy hỏi lại cam kết thanh toán khi nhận.', isError: true };
-        }
-        if (!input.address || input.address.trim().length < 6) {
-          return { content: 'Từ chối tạo đơn: địa chỉ chưa đủ cụ thể. Hãy hỏi địa chỉ chi tiết hơn.', isError: true };
-        }
-        // Số điện thoại phải hợp lệ (tránh tạo đơn rác).
-        if (!input.phone || String(input.phone).replace(/\D/g, '').length < 7) {
-          return { content: 'Từ chối tạo đơn: số điện thoại chưa hợp lệ. Hãy xin lại SĐT liên hệ.', isError: true };
-        }
-        // ── BH1 · CỬA CHỐT: hội thoại này ĐÃ chốt đơn ở lượt trước → không chốt lần hai ──
-        // Trước BH1, luật "mỗi khách 1 đơn" chỉ nằm trong prompt (`CORE §5`) và trong
-        // `state.closed` — mà `state` là RAM theo psid, mất sạch khi restart. `markClosing`
-        // ghi `orderAt` vào conv-state (BỀN qua restart) từ lâu, nhưng **chưa ai đọc nó**:
-        // `grep orderAt src/*.js` chỉ ra chỗ GHI. Nên khách nhắn tiếp sau khi đã chốt là AI
-        // bán lại từ đầu và có thể gọi tool này lần nữa — đơn trùng chỉ bị chặn ở lớp sau
-        // (`ai-created-orders.json`, 4 cửa của order-bridge), tức chặn được nhờ may, không
-        // nhờ đúng chỗ. Cửa này đọc sổ bền, rẻ (0 lượt mạng) và đứng TRƯỚC cửa POS bên dưới.
-        {
-          const ht = state.pkConvId ? peekConv(state.pkConvId) : null;
-          if (ht && ht.orderAt) {
-            state.closed = true;
-            return { content: 'Hội thoại này ĐÃ CHỐT ĐƠN trước đó rồi — TUYỆT ĐỐI không tạo đơn mới, '
-              + 'không hỏi lại thông tin, không chào bán lại. Chỉ trả lời ngắn câu hỏi của khách về đơn đã đặt '
-              + '(thời gian giao, COD) và báo nhân viên sẽ liên hệ.', isError: true };
-          }
-        }
-        // Page 1 SP: tự điền sản phẩm nếu AI không truyền mã (không bắt khách chọn).
-        const prod = findProduct(kb, input.product_id);
-        if (prod) { input.product_id = prod.id; input.product_name = prod.name; input.currency = prod.currency || ''; }
-
-        // ── BH1 · CỬA TIỀN: model ĐỀ NGHỊ, server QUYẾT ──────────────────────────────
-        // `total_price` vốn là số MODEL tự gõ và đi thẳng tới `pancake-orders.js:164` →
-        // `shipping_fee` → **số tiền người giao hàng thu của khách**. Mô tả tool nói «LẤY
-        // TỪ bảng giá KB» chỉ là lời dặn trong prompt, không phải cái cửa. Vụ 07/08/2026
-        // (báo gấp đôi giá → khách huỷ đơn + BLOCK page) là cái giá của việc thiếu cửa này.
-        //
-        // ⚠️ CHỈ chặn số SAI, KHÔNG chặn THIẾU số (xem `gia.js#tinhTong` đầu hàm): đường
-        // "model không nêu tổng" đã fail-closed sẵn ở cửa ⑤ của order-bridge (`NO_TOTAL`
-        // khoá nút Tạo đơn của sale), và chặn thêm ở đây sẽ phá hợp đồng đang xanh của
-        // `test/l2-m1-nhac-truong.js` ca N1b (chốt đơn KHÔNG kèm total_price).
-        const tien = tinhTong({ kb, variant: input.variant, qty: input.qty, tong: input.total_price });
-        if (tien.chan) {
-          console.warn(`[gia] page ${state.pageId} TỪ CHỐI chốt đơn (${tien.ma}): model khai ${input.total_price}, hợp lệ ${tien.hopLe.join('/') || '—'}`);
-          return { content: tien.lyDo, isError: true };
-        }
-        // Số đi tiếp là số của SERVER. Khi model không nêu mà server suy được đúng một gói
-        // thì đơn có tổng ĐÚNG thay vì trống — sale bớt một lượt gõ tay.
-        if (tien.tong > 0) {
-          input.total_price = tien.tong;
-          if (tien.tienTe) input.currency = tien.tienTe;
-        }
-
-        // CHỐNG ĐƠN TRÙNG: hội thoại này đã có đơn (do AI/nhân viên/FB Commerce tạo) → KHÔNG tạo nữa.
-        // BH1 chuyển cửa này XUỐNG DƯỚI hai cửa cục bộ ở trên: nó là cửa DUY NHẤT trong
-        // tool phải đi mạng (quét tối đa 6 trang đơn POS). Nguyên tắc «rẻ trước, đắt sau»
-        // của chính dự án (§2.3 TONG-QUAN) — lượt bị chặn vì giá sai nay không còn tốn một
-        // vòng POS nào, và bộ ca kiểm được cửa giá mà không chạm mạng thật.
-        if (ordersEnabled() && await conversationHasOrder(state.pageId, state.pkConvId)) {
-          state.closed = true;
-          return { content: 'Khách này ĐÃ CÓ ĐƠN trong hệ thống rồi — TUYỆT ĐỐI không tạo đơn mới, không chốt lại. Chỉ trả lời câu hỏi của khách về đơn đã đặt (thời gian giao, COD...) và báo nhân viên sẽ liên hệ.', isError: true };
-        }
-        // TẠO ĐƠN THẬT trong Pancake — chỉ khi BẬT công tắc (config.autoCreateOrder).
-        // ĐANG TẮT theo yêu cầu: AI vẫn chốt & ghi nhận, nhân viên tạo đơn thủ công.
-        let dedup = false;
-        if (config.autoCreateOrder && ordersEnabled()) {
-          const r = await createPancakeOrder(state.pageId, input, state.pkConvId);
-          if (!r.ok) return { content: `Chưa tạo được đơn Pancake (${r.error}). TUYỆT ĐỐI chưa báo khách "đã đặt". Xin lại thông tin thiếu rồi thử lại, hoặc chuyển nhân viên.`, isError: true };
-          dedup = !!r.dedup;
-        } else {
-          await createOrder(input, ctx); // chỉ ghi nhận nội bộ, KHÔNG tạo đơn Pancake
-        }
+        if (state.handoff) throw new Error('Đã chuyển nhân viên; không nhận thêm đơn trong lượt này');
+        if (state.orderResult) return { content: JSON.stringify(state.orderResult) };
+        const order = chuanBiDon(kb, input);
+        Object.assign(input, order); // giữ hợp đồng caller cũ, nhưng chỉ gửi order đã lọc xuống backend
+        await ctx.assertCanAct?.();
+        const result = await (ctx.business?.captureOrder || nhanDonLegacy)(order, ctx);
+        if (result?.ok !== true || result.captured !== true || !result.draft_id)
+          throw new Error('Backend chưa xác nhận lưu thông tin đơn');
+        state.orderResult = result;
         state.closed = true;
-        // Cờ cho M09 (outbound-guard): lượt NÀY đã chốt đơn thành công → được phép
-        // tóm tắt đơn (đọc lại SĐT/địa chỉ đúng 1 lần) và được nhắc tới đơn hàng.
         state.orderCreatedThisTurn = true;
-        // M05: chuyển hội thoại sang CLOSING — sale tiếp quản, AI + Botcake khoá.
-        try { if (state.pkConvId) markClosing(state.pkConvId, `AI chốt đơn: ${input.name || '?'} · ${input.qty || 1} sp`); } catch { /* không chặn chốt đơn */ }
-        try { markConversationOrdered(state.pkConvId); } catch { /* nhớ ngay để không tạo lần 2 */ }
-        // Gắn thẻ "Mua hàng" trên Pancake để sale lọc nhanh đơn AI chốt.
-        // BH1: van READONLY — đây là lượt GHI ra Pancake, máy cá nhân không được chạm.
-        if (config.pkTags.order && vanGuiDangMo()) {
-          pkTagByName(state.pageId, state.pkConvId, config.pkTags.order)
-            .then((t) => { if (!t.ok) console.warn(`[tag] ${state.pageId}: ${t.error} (chốt đơn)`); })
-            .catch(() => {});
-        }
-        if (!dedup) { // hội thoại đã có đơn → không đếm lại
-          try { incOrder(state.pageId, state.pkCustId); } catch { /* thống kê không chặn */ }
-          try { logAi(state.pageId, state.pkCustId, 'order', { name: input.name, phone: input.phone, city: input.city, qty: input.qty, conv: state.pkConvId || '' }); } catch { /* sổ AI không chặn */ }
-          // M14 · Order Bridge: ghi chú Pancake theo MẪU CHUẨN máy đọc được + đưa vào hàng chờ
-          // "chờ tạo đơn" để sale bấm 1 nút trên dashboard. Thay cho ghi chú tự do trước đây —
-          // ghi chú tự do buộc sale đọc rồi gõ lại từng trường sang form Pancake.
-          // BH1 · `skipNote` khi van đóng: hàng chờ + kiểm giá là việc NỘI BỘ (phải giữ),
-          // còn ghi chú Pancake là lượt GHI ra ngoài (phải chặn ở máy READONLY). Tách đúng
-          // hai việc đó bằng cờ có sẵn của order-bridge, không phải bỏ cả lượt ghi nhận —
-          // bỏ cả lượt là đánh rơi một đơn đã chốt mà không ai biết.
-          try {
-            await recordClosedOrder(state.pageId, state.pkCustId, input, state.pkConvId,
-              { kb, created: config.autoCreateOrder, skipNote: !vanGuiDangMo() });
-          } catch (e) { console.warn('[order-bridge] ghi nhận đơn lỗi:', e.message); }
-        }
-        // KHÔNG trả mã đơn cho khách. AI chỉ xác nhận đã nhận thông tin, nhân viên sẽ liên hệ.
-        return { content: JSON.stringify({ ok: true, captured: true, note: 'Đã ghi nhận đủ thông tin đơn. Báo khách "đã nhận đơn, nhân viên sẽ liên hệ xác nhận & giao 2-5 ngày". TUYỆT ĐỐI KHÔNG đọc/bịa mã đơn cho khách.' }) };
+        return { content: JSON.stringify(result) };
       }
       case 'send_product_image': {
         const p = findProduct(kb, input.product_id);
@@ -326,26 +242,22 @@ export async function executeTool(name, input, ctx) {
         return { content: `Đã chuẩn bị ${toSend.length} ảnh (${catLabel}) — ảnh sẽ gửi cho khách NGAY TRƯỚC tin chữ của bạn, trong cùng một lượt.${caption ? '' : ' ⚠️ Lần này BẠN QUÊN caption — lần sau phải truyền caption.'} BÂY GIỜ HÃY VIẾT TIN CHỮ cho khách (tư vấn tiếp / hỏi chốt đơn) — bạn KHÔNG viết chữ thì ảnh cũng KHÔNG được gửi.${left > 0 ? ` Còn ${left} ảnh khác chưa dùng — có thể gửi ở lượt sau.` : ''}` };
       }
       case 'handoff_human': {
+        if (state.handoffNotified) return { content: JSON.stringify({ ok: true, handoff: true }) };
+        if (typeof input.reason !== 'string' || !input.reason.trim() || input.reason.length > 500)
+          throw new Error('Lý do chuyển nhân viên không hợp lệ');
+        await ctx.assertCanAct?.();
+        const result = await (ctx.business?.handoff || banGiaoLegacy)(input.reason.trim(), ctx);
+        if (result?.ok !== true) throw new Error('Backend chưa xác nhận bàn giao');
         state.handoff = true;
-        state.handoffReason = input.reason || '';
-        try { logAi(state.pageId, state.pkCustId, 'handoff', { reason: input.reason || '', kind: 'ai', conv: state.pkConvId || '' }); } catch { /* sổ AI không chặn */ }
-        // BH1 · van READONLY cho HAI lượt GHI ra Pancake dưới đây. Sổ AI ở trên vẫn ghi
-        // bình thường — nó là sổ nội bộ, và hàng chờ sale trên dashboard đọc từ đó.
-        if (config.pkTags.handoff && vanGuiDangMo()) {
-          pkTagByName(state.pageId, state.pkConvId, config.pkTags.handoff)
-            .then((t) => { if (!t.ok) console.warn(`[tag] ${state.pageId}: ${t.error} (AI chuyển người)`); })
-            .catch(() => {});
-        }
-        // Báo SALE ngay trong Pancake để biết hội thoại này cần người.
-        if (vanGuiDangMo()) {
-          try { await pkAddNote(state.pageId, state.pkCustId, `🙋 AI CHUYỂN NGƯỜI — cần sale vào hỗ trợ\nLý do: ${input.reason || 'không rõ'}`); } catch { /* không chặn */ }
-        }
-        return { content: 'Đã chuyển cho nhân viên. Hãy báo khách sẽ có người hỗ trợ ngay.' };
+        state.handoffReason = input.reason.trim();
+        state.handoffNotified = true;
+        return { content: JSON.stringify({ ok: true, handoff: true }) };
       }
       default:
         return { content: `Tool không xác định: ${name}`, isError: true };
     }
   } catch (err) {
+    if (err.khongThuLai || ['LoiQuyenHoiThoai', 'LoiCuaGuiDong'].includes(err.name)) throw err;
     return { content: `Lỗi tool ${name}: ${err.message}`, isError: true };
   }
 }
