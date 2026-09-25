@@ -42,8 +42,8 @@ export const THUOC = Object.freeze({
   },
   POS_QUY_CHO_AI: {
     ma: 'pos_quy_cho_ai', ten: 'Đơn thật ở POS quy cho AI',
-    doGi: 'Đơn CÓ THẬT trong POS Pancake, có hội thoại thuộc tập AI, đã bỏ đơn huỷ/hoàn. '
-      + 'Gồm cả đơn sale chốt hộ hoặc khách tự đặt sau khi chat với bot.',
+    doGi: 'Đơn có thật trong kho hàng, có hội thoại của bot, đã trừ đơn huỷ và hoàn. Gồm cả '
+      + 'đơn sale chốt hộ sau khi khách chat với bot.',
     khoang: '60 ngày gần nhất',
     nguon: 'hỏi thẳng kho hàng, đếm đơn có thật',
   },
@@ -171,10 +171,9 @@ export async function manBaoCao(boiCanh) {
     },
     trangBanHang: haiLuong?.co ? haiLuong.trangBanHang : await luongTrangBanHang(bc),
     viSaoKhongCong:
-      'Hai luồng khách đo bằng HAI THƯỚC khác nhau: trang bán hàng có đơn '
-      + 'trước rồi mới hỏi, Messenger thì chốt trong hội thoại. Cộng lại là trả lời sai mọi '
-      + 'câu hỏi sau đó. Ba con số của luồng Messenger cũng KHÔNG cộng được với nhau — '
-      + 'chúng đo ba chuyện khác nhau, không phải ba phần của một chuyện.',
+      'Hai luồng đo bằng hai thước: trang bán hàng có đơn trước rồi mới hỏi, Messenger thì '
+      + 'chốt trong hội thoại. Cộng lại là sai. Ba con số của luồng Messenger cũng không cộng '
+      + 'được với nhau — chúng đo ba chuyện khác nhau.',
     trong: page.length ? null : {
       rong: true, vi: 'chua-nap',
       noi: 'Không page nào của team có đơn nào trong lượt quét POS.',

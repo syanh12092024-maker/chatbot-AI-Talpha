@@ -192,18 +192,18 @@ function veGoc(d) {
           ? `${so(g.chuaCoGia)}/${so(g.tong)} sản phẩm chưa có bậc giá nào`
           : `Cả ${so(g.tong)} sản phẩm đều đã có bậc giá`,
         body: g.chuaCoGia
-          ? 'Danh mục POS của các shop này không mang giá (đo 22/08: giá về 0 trên toàn bộ biến thể mẫu) — giá thật nằm trong từng đơn. '
-            + 'Nhập tay ở màn Vận hành V3; sản phẩm đã nhập tay sẽ không bị lượt «Kéo danh mục» sau đè lên.'
+          ? 'Kho hàng gửi về tên và tồn, không gửi giá — giá thật nằm trong từng đơn. Nhập giá '
+            + 'tay ở màn Vận hành; lượt kéo danh mục sau không ghi đè giá đã nhập tay.'
           : `${so(g.nhapTay)} sản phẩm đang ở chế độ nhập tay, không bị lượt kéo danh mục ghi đè.`,
         detail: [],
       })}<p><a href="/van-hanh-v3">Mở màn Vận hành V3 để nhập giá và sửa tên sản phẩm →</a></p></div>`
     : '';
 
   $('#choGoc').innerHTML = d.cho.length
-    ? `<div class="duoi-4">${canhBao({ level: 'warning',
-        title: `${so(d.cho.length)} số hiệu POS chưa có sản phẩm gốc`,
-        body: 'Biến thể mang những số này chưa nối được vào kịch bản. Bấm một số để điền sẵn rồi đặt mã gốc.',
-        detail: d.khongCoSoHieu ? [`${so(d.khongCoSoHieu)} biến thể KHÔNG có số hiệu ở đầu tên — máy không gộp được, phải gõ số vào tên trên POS.`] : [] })}
+    ? `<div class="duoi-4"><div class="section-header"><div>
+         <h3>${so(d.cho.length)} số hiệu chưa có sản phẩm gốc</h3>
+         <div class="section-desc">Bấm một số để điền sẵn rồi đặt mã gốc.${d.khongCoSoHieu ? ` ${so(d.khongCoSoHieu)} biến thể không có số hiệu ở đầu tên — phải gõ số vào tên bên kho hàng.` : ''}</div>
+       </div></div>
        <div class="chip-list" role="list" aria-label="Số hiệu chờ đặt tên">${d.cho.map((c) => `
          <button type="button" role="listitem" class="btn" data-size="sm" data-cho="${esc(c.soHieu)}"
            title="${esc((c.ten || []).join(' · ') || 'chưa có tên')}">

@@ -232,9 +232,8 @@ function vePos(d) {
   chu.hidden = !SUA_DUOC_POS;
   // Nói thẳng giới hạn đã biết thay vì để người ta phát hiện bằng một đơn hỏng: cửa này
   // KHÔNG gọi thử sang POS, nên khoá sai chỉ lộ ở lượt tạo đơn đầu tiên.
-  chu.textContent = 'Lưu xong KHÔNG có nghĩa là khoá đúng — màn này không gọi thử sang POS. '
-    + 'Khoá sai chỉ lộ ở lượt tạo đơn đầu tiên của thị trường đó. Ngừng dùng một shop thì TẮT, '
-    + 'đừng bỏ: tắt là cửa POS của thị trường ấy đóng ngay mà khoá vẫn còn để bật lại.';
+  chu.textContent = 'Lưu xong không có nghĩa là khoá đúng: màn không gọi thử, khoá sai chỉ lộ '
+    + 'ở đơn đầu tiên. Ngừng dùng một cửa hàng thì TẮT, đừng bỏ — tắt thì bật lại được.';
 
   if (d.trong) {
     $('#bangPos').innerHTML = emptyState({ icon: 'inbox', title: String(d.trong.noi || '').replace(/`/g, ''),

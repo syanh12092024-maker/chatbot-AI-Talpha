@@ -298,8 +298,8 @@ async function denKhoaModel(bc, cauHinh) {
   const nha = [...new Set(cauHinh.map((c) => c.nha_cung_cap).filter(Boolean))];
   return den({
     ma: 'llm_khoa', ten: 'Khoá API model', muc: MUC.XAM,
-    vi: `Chưa đo được ở màn này: khoá nằm ở bảng riêng có mã hoá và cố ý không đọc từ đây. `
-      + `Team đang dùng ${nha.length} nhà (${nha.join(', ')}) — mở màn Model AI để xem nhà nào đã có khoá.`,
+    vi: `Khoá cất riêng và có mã hoá nên màn này cố ý không đọc. Team đang dùng ${nha.length} `
+      + `nhà (${nha.join(', ')}) — mở màn Model AI để xem nhà nào đã có khoá.`,
     diTiep: { chu: 'Sang màn Model AI & khoá', duong: '/model-ai' },
   });
 }
@@ -308,8 +308,8 @@ function denCauBot() {
   if (!_trangThaiCauBot) {
     return den({
       ma: 'tien_trinh_bot', ten: 'Tiến trình bot', muc: MUC.XAM,
-      vi: 'Chưa đo được: máy chủ v3 chưa nối cầu sang tiến trình bot.',
-      diTiep: { chu: 'Xem `datTrangThaiCauBot` trong v3/src/vai-b.js', duong: null },
+      vi: 'Chưa đo được: máy chủ chưa nối đường sang tiến trình bot.',
+      diTiep: { chu: 'Báo người quản trị hệ thống — đây là lỗi dựng ứng dụng', duong: null },
     });
   }
   const t = _trangThaiCauBot();
@@ -318,9 +318,8 @@ function denCauBot() {
       vi: `Cửa ghi sang tiến trình bot đang MỞ (${t.goc}).`, so: 'mở' })
     : den({
       ma: 'tien_trinh_bot', ten: 'Tiến trình bot', muc: MUC.VANG,
-      vi: `Cửa ghi sang tiến trình bot đang ĐÓNG: ${t.thieu.join(' · ')}. Xem và đọc thì được, `
-        + 'nhưng bật/tắt bot và thêm token thì không.',
-      diTiep: { chu: 'Đặt biến môi trường rồi khởi động lại dịch vụ v3', duong: null },
+      vi: `Cửa ghi sang tiến trình bot đang ĐÓNG: ${t.thieu.join(' · ')}.`,
+      diTiep: { chu: 'Nhờ người quản trị hệ thống mở rồi khởi động lại dịch vụ', duong: null },
       so: 'đóng',
     });
 }

@@ -47,10 +47,13 @@
       <span class="table-count" id="hSo"></span></div>
     <div id="bang"></div>
   </section>
+  <section class="section" aria-label="Nguồn của các con số">
+    <div id="nguon-so"></div>
+  </section>
 </main>
 
 <script>
-const { esc, text, statusBadge, button, alert: canhBao, emptyState, formatNumber } = window.UI;
+const { esc, text, statusBadge, button, alert: canhBao, emptyState, nguonSo, formatNumber } = window.UI;
 const $ = (s) => document.querySelector(s);
 const d0 = (n) => (n == null ? '—' : formatNumber(n));
 
@@ -74,7 +77,7 @@ function veThuoc(m, T) {
     <div>
       <div class="item-title">${esc(x.k.ten)}</div>
       <div class="item-desc">${esc(x.k.doGi)}</div>
-      <div class="item-detail">Khoảng đo: ${esc(x.k.khoang)} · nguồn: ${text(x.k.nguon)}</div>
+      <div class="item-detail">Khoảng đo: ${esc(x.k.khoang)}</div>
     </div>
     <div class="item-trail">${x.v == null ? statusBadge('unknown', { label: 'Chưa đo được' }) : ''}</div>
   </li>`).join('');
@@ -133,8 +136,15 @@ async function tai() {
     const d = await goi('/api/bao-cao');
     if (!d) return;
 
-    const kh = [canhBao({ level: 'info', title: 'Màn này không cộng ba con số lại', body: d.viSaoKhongCong })];
-    $('#bang-tin').innerHTML = `<div class="duoi-5">${kh.join('')}</div>`;
+    $('#bang-tin').innerHTML = '';
+    $('#nguon-so').innerHTML = nguonSo({
+      dong: [
+        { ten: 'Đơn thật quy cho bot', tu: T.POS_QUY_CHO_AI.nguon },
+        { ten: 'Bot tự tay chốt', tu: T.BOT_TU_TAO.nguon },
+        { ten: 'Hội thoại có đơn', tu: T.HOI_THOAI_CO_DON.nguon },
+      ],
+      chuY: d.viSaoKhongCong,
+    });
 
     veTrangBanHang(d.trangBanHang);
 

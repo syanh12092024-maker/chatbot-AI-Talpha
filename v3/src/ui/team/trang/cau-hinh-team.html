@@ -309,11 +309,9 @@ function veGanPage(d) {
 
   const tuKhoTam = NGUON_PAGE === 'chua-phan';
   $('#khoiGanPage').innerHTML = `
-    <div class="duoi-4">${canhBao(tuKhoTam
-      ? { level: 'info', title: 'Kéo page từ kho «Chưa phân team» về team đang mở',
-          body: `Page mới quét từ Pancake và page di trú rơi vào kho này. Không ai đứng được trong team kỹ thuật, nên đây là đường DUY NHẤT đưa chúng về team thật. Tối đa ${so(d.toiDaMotMe)} page mỗi lần.` }
-      : { level: 'warning', title: 'Chuyển page là đổi chủ dữ liệu',
-          body: `Hội thoại, kịch bản và sản phẩm của page đi theo sang team mới; team này sẽ không còn thấy chúng. Tối đa ${so(d.toiDaMotMe)} page mỗi lần.` })}</div>
+    <div class="page-note duoi-4">${tuKhoTam
+      ? `<div><b>Kéo page từ kho «Chưa phân team» về team đang mở.</b> Page mới quét từ Pancake rơi vào kho này; đây là đường duy nhất đưa chúng về team thật. Tối đa ${so(d.toiDaMotMe)} page mỗi lần.</div>`
+      : `<div><b>Chuyển page là đổi chủ dữ liệu:</b> hội thoại, kịch bản và sản phẩm đi theo sang team mới, team này sẽ không còn thấy chúng. Tối đa ${so(d.toiDaMotMe)} page mỗi lần.</div>`}</div>
     <div class="table-wrap">
       <div class="table-toolbar">
         <div class="filter-bar" role="group" aria-label="Nguồn page">

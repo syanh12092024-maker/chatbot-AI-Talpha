@@ -156,14 +156,12 @@ async function vViecChoNguoi(d) {
     lam: 'Hội thoại bot đã giao lại cho người, có đồng hồ đếm ngược.',
     viRong: chuaNap ? VI_RONG.CHUA_NAP : VI_RONG.XONG,
     noiRong: chuaNap
-      ? `Hàng đợi việc chưa có dòng nào, trong khi có ${handoff} hội thoại bot ĐÃ giao lại `
-        + 'cho người. Hai điều đó không thể cùng đúng — nghĩa là hàng đợi chưa được nạp, '
-        + 'KHÔNG phải là hết việc.'
+      ? `Hàng đợi trống trong khi có ${handoff} hội thoại bot đã giao lại cho người. Hai điều `
+        + 'đó không thể cùng đúng — hàng đợi chưa được nạp, KHÔNG phải hết việc.'
       : 'Không việc nào đang chờ người nhận.',
     diTiepRong: chuaNap
-      ? 'Luồng sống của v3 chưa đẩy việc vào bảng này. Hội thoại hiện có là bản nhập từ lịch '
-        + 'sử và chưa dòng nào ghi người xử, nên hệ cũng không biết ai đã xử chúng. '
-        + 'Sale vẫn phải làm việc trên Pancake cho tới khi luồng sống chạy.'
+      ? 'Đường chat mới chưa đẩy việc vào hàng đợi. Hội thoại hiện có là bản nhập từ lịch sử, '
+        + 'chưa dòng nào ghi người xử — sale vẫn làm trên Pancake cho tới khi đường mới chạy.'
       : null,
     doiChung: { handoff, tongViec: tong },
   };

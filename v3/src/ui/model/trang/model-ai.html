@@ -163,9 +163,9 @@ function veBangGia() {
       <td class="num">${m.soVoiDangDung == null ? '—'
         : `<span class="badge"${m.soVoiDangDung < 1 ? ' data-variant="success"' : m.soVoiDangDung > 1.5 ? ' data-variant="danger"' : ''}>${String(m.soVoiDangDung).replace('.', ',')}×</span>`}</td>
     </tr>`).join('')}</tbody></table>`;
-  $('#ghiChuGia').innerHTML = `Đo bằng tiền <b>mỗi đơn</b>, không phải mỗi tin: model thông minh hơn chốt bằng ít tin hơn, `
-    + `nên có thể đắt mỗi tin mà rẻ mỗi đơn. Cột «mỗi đơn» là <b>phóng chiếu</b> (đ/tin × ${so1(D.tinMoiDon)} tin/đơn đo được), `
-    + 'không phải một phép đo mới — muốn biết chắc thì phải chạy A/B.';
+  $('#ghiChuGia').innerHTML = `Nên đo bằng tiền <b>mỗi đơn</b>: model khôn hơn chốt bằng ít tin hơn, `
+    + `nên đắt mỗi tin mà vẫn rẻ mỗi đơn. Cột «mỗi đơn» là phóng chiếu từ ${so1(D.tinMoiDon)} tin/đơn `
+    + 'đo được, muốn chắc thì phải chạy thử hai bản.';
 }
 
 /* ─── ghi ─── */

@@ -87,8 +87,8 @@ function truyVan(bc) {
 export const KHOANG = Object.freeze({
   chu: 'ảnh chụp lúc này',
   noi: 'Chỗ đứng hiện tại của từng hội thoại, không phải số đếm trong một khoảng ngày.',
-  canhBao: 'KHÔNG lấy hiệu hai bậc rồi gọi là «tỉ lệ rơi» — đó là đọc sai bản chất. '
-    + 'Muốn biết bao nhiêu khách đã rơi thì phải đếm theo thời gian, phép này không đếm được.',
+  canhBao: 'Đừng lấy hiệu hai bậc rồi gọi là «tỉ lệ rơi» — muốn biết bao nhiêu khách đã rơi '
+    + 'thì phải đếm theo thời gian, phép này không đếm được.',
 });
 
 export async function manNguon(boiCanh) {
@@ -166,9 +166,8 @@ function pheuMessenger(pheu, loi) {
     laToanHe: true,
     bac: BAC.filter((x) => b[x.ma] != null).map((x) => ({ ...x, so: Number(b[x.ma]) })),
     theoChuSoHuu: pheu.theoChuSoHuu || {},
-    canhBao: 'Đây là ảnh chụp: mỗi hội thoại ĐANG đứng ở một bậc. Nó KHÔNG cho biết bao nhiêu '
-      + 'người đã đi qua bậc đó rồi rời đi — một hội thoại đã thành đơn không còn nằm ở «đang '
-      + 'bán» nữa. Vì vậy màn KHÔNG tính tỉ lệ rơi giữa hai bậc.',
+    canhBao: 'Ảnh chụp chỗ đứng hiện tại, không phải số người đã đi qua: hội thoại thành đơn '
+      + 'thì rời khỏi bậc «đang bán». Nên màn không tính tỉ lệ rơi giữa hai bậc.',
   };
 }
 
@@ -185,11 +184,10 @@ function choRoiWhatsApp(donTrang) {
       doDuoc: false,
       taiLieuNoi: 0.374,
       soDonTrang: donTrang.length,
-      noi: `Có ${donTrang.length} đơn từ trang bán hàng, nhưng chưa đơn nào được thử gửi `
-        + 'WhatsApp và cũng không đơn nào ghi lý do không gửi — tức luồng gửi WhatsApp chưa '
-        + 'chạy lần nào.',
-      diTiep: 'Con số 37,4% là số đo CŨ trong tài liệu, không phải số đo hôm nay — màn cố ý '
-        + 'không hiện nó như một chỉ số đang sống. Khi luồng WhatsApp chạy, ô này tự đo lại được.',
+      noi: `${donTrang.length} đơn từ trang bán hàng, chưa đơn nào được thử gửi WhatsApp và `
+        + 'cũng chưa đơn nào ghi lý do — luồng gửi WhatsApp chưa chạy lần nào.',
+      diTiep: 'Con số 37,4% là số đo cũ trong tài liệu, không phải số hôm nay. Khi luồng '
+        + 'WhatsApp chạy, ô này tự đo lại được.',
     };
   }
   const khongGui = donTrang.filter((d) => Number(d.so_lan_thu_wa || 0) === 0);
