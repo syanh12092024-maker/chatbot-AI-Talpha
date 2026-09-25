@@ -26,6 +26,12 @@
 //    `botTurns` = `luot_ai`. Gộp hai cái này là cách rẻ nhất để ngân sách lượt trừ sai.
 import { emptyProfile } from "../context.js";
 
+/** Chỉ hội thoại đang giao AI và chưa đóng/chuyển người mới được tự trả lời. */
+export function aiDuocTraLoi(hoiThoai) {
+  return hoiThoai?.chu_so_huu === "AI" &&
+    ["GREET", "QUALIFY", "SELLING"].includes(hoiThoai.trang_thai);
+}
+
 export const CUA_SO_LUOT_MS = 24 * 3600 * 1000; // = conv-state.js TURN_WINDOW_MS
 
 /** Số lượt gọi model còn trong cửa sổ 24h, đọc từ mảng mốc. */
@@ -78,14 +84,14 @@ export function dungState({ tin, hoiThoai, bayGio = Date.now() }) {
     botTurns: Number(hoiThoai.luot_ai || 0),
     lastAiText: String(hoiThoai.ai_noi_gi || ""),
     idleMs: aiNoiLuc ? bayGio - aiNoiLuc : 0,
-    fastLanesUsed: new Set(),
+    fastLanesUsed: new Set(hoiThoai.ho_so?.fastLanesUsed || []),
 
     // trạng thái lượt — reset ĐẦU MỖI LƯỢT, đúng như handler.js:144-154
     selfSent: 0,
     pendingImages: [],
     pendingCaption: "",
     sentImageTurn: false,
-    sentImages: new Set(),
+    sentImages: new Set(hoiThoai.ho_so?.sentImageUrls || []),
     orderCreatedThisTurn: false,
     // ⚠️ `closed` KHỞI TỪ FALSE MỖI LƯỢT, cố ý — nó là cờ "bộ não vừa chốt đơn TRONG
     // LƯỢT NÀY" (tools.js:188 đặt), không phải "hội thoại này đã từng chốt". Gieo nó
@@ -132,7 +138,7 @@ export function ganTuState({
     // Bot vừa nói mà chưa chốt/chưa bàn giao ⇒ đang bán. GREET chỉ đúng ở tin đầu.
     trangThai =
       hoiThoai.trang_thai === "GREET" ? "QUALIFY" : hoiThoai.trang_thai;
-    chuSoHuu = "AI";
+    // Không tự giành lại quyền từ SALE/BOTCAKE.
   }
 
   return {
@@ -157,6 +163,8 @@ export function ganTuState({
     moc_luot_llm: moc,
     luot_llm: moc.length,
     luot_ai: Number(hoiThoai.luot_ai || 0) + (daGuiText ? 1 : 0),
-    ho_so: prof || emptyProfile(),
+    ho_so: { ...(prof || emptyProfile()),
+      fastLanesUsed: [...(state.fastLanesUsed || [])].slice(-100),
+      sentImageUrls: [...(state.sentImages || [])].slice(-100) },
   };
 }
