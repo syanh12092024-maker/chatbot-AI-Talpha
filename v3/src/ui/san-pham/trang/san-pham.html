@@ -20,6 +20,7 @@
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
+  <div class="page-note" id="ghi-chu-ton"></div>
 
   <section class="section" aria-label="Tình hình sản phẩm">
     <div id="dem"></div>
@@ -83,11 +84,11 @@ function veDem(k) {
 
 function veBangTin(d) {
   const kh = [];
-  if (d.tonKho && !d.tonKho.co) {
-    kh.push(canhBao({ level: 'info', title: 'Cột tồn kho để trống, không hiện 0',
-      body: d.tonKho.noi, detail: [d.tonKho.diTiep] }));
-  }
   $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
+  // «Cột tồn kho để trống» không đòi ai làm gì — nó giải thích một ô trống, nên đứng cạnh bảng
+  // dưới dạng chú thích chứ không chiếm một hộp cảnh báo (luật 4 · GD4).
+  $('#ghi-chu-ton').innerHTML = (d.tonKho && !d.tonKho.co)
+    ? `<div>Cột tồn kho để trống chứ không hiện 0. ${esc(d.tonKho.noi)}</div>` : '';
   if (d.nguon) {
     $('#hSo').textContent = `Nguồn: ${d.nguon.ten}`;
   }
@@ -203,8 +204,8 @@ function veGoc(d) {
         title: `${so(d.cho.length)} số hiệu POS chưa có sản phẩm gốc`,
         body: 'Biến thể mang những số này chưa nối được vào kịch bản. Bấm một số để điền sẵn rồi đặt mã gốc.',
         detail: d.khongCoSoHieu ? [`${so(d.khongCoSoHieu)} biến thể KHÔNG có số hiệu ở đầu tên — máy không gộp được, phải gõ số vào tên trên POS.`] : [] })}
-       <div class="chip-list">${d.cho.map((c) => `
-         <button type="button" class="btn" data-size="sm" data-cho="${esc(c.soHieu)}"
+       <div class="chip-list" role="list" aria-label="Số hiệu chờ đặt tên">${d.cho.map((c) => `
+         <button type="button" role="listitem" class="btn" data-size="sm" data-cho="${esc(c.soHieu)}"
            title="${esc((c.ten || []).join(' · ') || 'chưa có tên')}">
            ${esc(c.soHieu)} — ${esc((c.ten || [])[0] || 'chưa có tên')}${c.soBienThe > 1 ? ` (${so(c.soBienThe)} biến thể)` : ''}
          </button>`).join('')}</div></div>`

@@ -116,8 +116,8 @@ try {
       //    `content-visibility: hidden` — phần tử vẫn có hộp bố cục, nên phép đếm theo
       //    `offsetParent` vẫn đếm nó. Đo 24/09: ô «Nguồn số» đang đóng làm chữ diễn giải của
       //    ba màn TĂNG sau khi dọn. Phải loại thẳng theo bộ chọn.
-      const BO = 'table, [role="list"], [role="listbox"], select, pre, [hidden], [aria-hidden="true"],'
-        + ' details:not([open]) > *:not(summary), .nguon-so';
+      const BO = 'table, [role="list"], [role="listbox"], [role="group"], .chip-list, select, pre,'
+        + ' [hidden], [aria-hidden="true"], details:not([open]) > *:not(summary), .nguon-so';
       const diBo = document.createTreeWalker(than, NodeFilter.SHOW_TEXT);
       let chuVan = 0;
       for (let n = diBo.nextNode(); n; n = diBo.nextNode()) {

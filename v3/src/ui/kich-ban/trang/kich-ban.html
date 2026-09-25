@@ -21,6 +21,7 @@
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
+  <div class="page-note" id="ghi-chu-tang"></div>
 
   <div class="cot-ds">
     <section class="panel" aria-labelledby="tieu-cay">
@@ -76,8 +77,12 @@ function veBangTin() {
       title: `${so(D.soThieuKichBan)}/${so(D.soPage)} page chưa có kịch bản riêng`,
       body: 'Bot của những page đó chạy bằng quy tắc chung và dữ liệu sản phẩm, không có hướng dẫn riêng về giọng điệu, câu chào hay cách bán.' }));
   }
-  for (const t of (D && D.tangTrong) || []) kh.push(canhBao({ level: 'info', body: t.chu }));
   $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-4">${kh.join('')}</div>` : '';
+  // Tầng trống KHÔNG đòi ai làm gì ngay — nó là chú thích của cây kịch bản, nên xuống làm
+  // chú thích. Ba hộp cảnh báo liền nhau chỉ dạy người đọc bỏ qua cả ba (luật 4 · GD4).
+  const tt = (D && D.tangTrong) || [];
+  $('#ghi-chu-tang').innerHTML = tt.length
+    ? tt.map((t) => `<div>${esc(t.chu)}</div>`).join('') : '';
 }
 
 function trangThaiBan(tt, label) {

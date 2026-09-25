@@ -21,6 +21,7 @@
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
+  <div class="page-note" id="ghi-chu-ban"></div>
 
   <section class="section" aria-label="Phạm vi ảnh hưởng">
     <div id="anhHuong"><div class="metric-row"><div class="metric"><span class="skeleton"></span></div></div></div>
@@ -62,7 +63,7 @@
 
 <script>
 const { esc, text, icon, statusBadge, button, setBusy, alert: canhBao, emptyState, metricRow, toast,
-        confirmDialog, formatNumber: so } = window.UI;
+        confirmDialog, formatNumber: so, nguonSo } = window.UI;
 const $ = (s) => document.querySelector(s);
 
 let D = null, SUA = false, LOI = null;
@@ -104,12 +105,22 @@ function veAnhHuong() {
   if (!a.nguon) { $('#nguonSo').innerHTML = ''; return; }
   const that = a.nguon !== 'cot_csdl';
   const lech = a.lech && a.lech.co;
-  $('#nguonSo').innerHTML = (!that || lech) ? canhBao({
+  // Lời khai nguồn (luật 8) xuống ô gập; chỉ giữ hộp cảnh báo khi hai nguồn ĐANG LỆCH —
+  // lệch là có việc phải làm, còn «đọc từ bản sao» chỉ là điều người đọc cần biết.
+  $('#nguonSo').innerHTML = (lech ? canhBao({
     level: 'warning',
-    title: lech ? 'Số page đang bật bot lệch với cơ sở dữ liệu' : 'Số page đang bật bot có thể đã cũ',
-    body: that ? `Đọc từ ${a.nguon}.` : 'Con số được đếm từ một bản sao trong cơ sở dữ liệu, không phải từ tiến trình bot.',
-    detail: a.lech && a.lech.viSao ? [a.lech.viSao] : [],
-  }) : '';
+    title: 'Số page đang bật bot lệch với cơ sở dữ liệu',
+    body: 'Số đúng là số của tiến trình bot. Mở màn Công tắc từng page để xem page nào lệch.',
+  }) : '') + nguonSo({
+    dong: [
+      { ten: 'Số page dùng bộ quy tắc này', tu: 'đếm page của team đang mở' },
+      { ten: 'Số page đang bật bot', tu: that
+        ? `đọc thẳng từ tiến trình bot (${a.nguon})`
+        : 'đếm từ một BẢN SAO trong cơ sở dữ liệu, không phải từ tiến trình bot — đã có lần lệch 50 page' },
+      { ten: 'Cỡ bộ quy tắc', tu: 'ước theo số ký tự, không phải số đo của nhà model' },
+    ],
+    chuY: a.lech && a.lech.viSao ? a.lech.viSao : null,
+  });
 }
 
 function veBangTin() {
@@ -128,10 +139,10 @@ function veBangTin() {
         body: 'Không áp được cho tới khi có người duyệt. Người viết áp thẳng được; đề xuất của AI phải qua người.' }));
     }
     const cho = D.ban.filter((b) => b.trangThai === 'cho_duyet').length;
-    if (cho) {
-      kh.push(canhBao({ level: 'info', title: `${so(cho)} bản nháp chưa áp`,
-        body: 'Chưa ảnh hưởng gì tới bot. Mở «So sánh» rồi bấm áp thì mới có hiệu lực.' }));
-    }
+    // Bản nháp chưa áp KHÔNG đòi ai làm gì — nói ở chú thích của bảng phiên bản là đủ.
+    $('#ghi-chu-ban').innerHTML = cho
+      ? `<div>${so(cho)} bản nháp chưa áp — chưa ảnh hưởng gì tới bot. Mở «So sánh» rồi bấm áp thì mới có hiệu lực.</div>`
+      : '';
     if (D.keThua) {
       kh.push(canhBao({ level: 'info', title: 'Team này chưa có bộ quy tắc riêng',
         body: 'Đang kế thừa bản toàn hệ dùng chung mọi team. Soạn một bản bên dưới là team có bản riêng, và bản riêng sẽ thắng bản kế thừa.' }));

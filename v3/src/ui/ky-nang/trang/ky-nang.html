@@ -83,7 +83,7 @@ function veDs() {
         </label>
         ${D.sanPham.length ? `<div class="tren-2">
           <div class="field-label duoi-1">Khoanh theo sản phẩm</div>
-          <div class="chip-list" data-nhom="${esc(k.id)}">
+          <div class="chip-list" role="group" aria-label="Khoanh sản phẩm cho kỹ năng ${esc(k.ten)}" data-nhom="${esc(k.id)}">
             ${D.sanPham.map((s) => `<label class="chip"><input type="checkbox" value="${esc(s.ma)}"
               ${k.nhom.includes(s.ma) ? 'checked' : ''} ${SUA ? '' : 'disabled'}> ${esc(s.ten)}</label>`).join('')}
           </div>
