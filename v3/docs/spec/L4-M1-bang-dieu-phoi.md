@@ -1,5 +1,12 @@
 # [L4-M1] Bảng điều phối — hai danh sách và màn chi tiết
 
+> **Đổi 28/09/2026 — CR-28-09** (`docs/thi-cong/doi-y-do/CR-28-09-ban-hoi-thoai-chi-doc.md`,
+> `01-QUYET-DINH.md` §10 mới). Màn sale thành **bàn hội thoại chỉ đọc**: danh sách hội thoại ·
+> khung chat đọc thẳng Pancake · cột bối cảnh khách. Điều GIỮ NGUYÊN của spec này: lý do bot đẩy
+> sang, đồng hồ 10 phút, nhảy sang Pancake/POS, và **KHÔNG ô soạn tin, KHÔNG nút gửi**. Điều ĐỔI:
+> «hai danh sách» và «màn nghèo nàn có chủ ý» bên dưới — đọc như lịch sử. Phiếu thi công:
+> UI-HT1..UI-HT4.
+
 ## Việc cần làm
 
 Dựng màn hình sale vào thẳng: **hai danh sách** (hội thoại cần xử · đơn cần xử), mỗi dòng

@@ -31,6 +31,10 @@ import { lienKetCua } from './lien-ket.js';
 // Nên màn chi tiết chỉ còn ba việc: nói LÝ DO bot dừng, cho xem THÔNG TIN ĐƠN, rồi đẩy
 // sang Pancake/POS. Muốn đọc hội thoại thì bấm "Mở Pancake" — một cú bấm, đúng chỗ.
 // Chép hội thoại vào đây là đẻ bản sao thứ hai, phải đồng bộ suốt đời.
+//
+// 28/09 — CR-28-09: đoạn chat trở lại ở BÀN HỘI THOẠI, nhưng bằng đường khác hẳn lý do trên:
+// đọc THẲNG lịch sử Pancake lúc mở (không dựng từ `so_ai`, không lưu bản sao). Lý do bỏ ở đây
+// vẫn đúng cho màn này.
 
 const chuoi = (v) => (v == null ? '' : String(v).trim());
 

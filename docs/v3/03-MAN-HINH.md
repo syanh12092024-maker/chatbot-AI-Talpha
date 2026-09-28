@@ -15,8 +15,8 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 |---|---|
 | Chọn team | Ba thẻ team: Tiểu Alpha · Auus · Pialpha EU. Dữ liệu tách ở tầng dữ liệu |
 | Trang chủ | Marketer vào thấy đúng việc của mình: đề xuất chờ duyệt, sản phẩm hết hàng, page kịch bản mỏng |
-| Bảng điều phối | Sale vào thẳng đây. Hai danh sách việc cần người, đồng hồ đếm ngược 10 phút |
-| Chi tiết việc cần xử | Đoạn chat + thông tin đơn + lý do bot dừng, rồi mới nhảy sang Pancake |
+| Bàn hội thoại | Sale vào thẳng đây (CR-28-09). Ba cột: danh sách hội thoại (Cần người · Bot đang xử · Tất cả, đồng hồ 10 phút) · khung chat đọc thẳng Pancake · bối cảnh khách. KHÔNG ô soạn tin — trả lời ở Pancake |
+| Chi tiết việc cần xử | Lý do bot dừng + thông tin đơn + đánh dấu đã xử; đoạn chat nằm ở bàn hội thoại, đọc thẳng Pancake |
 
 ## Nhóm 2 · Khách và đơn hàng
 
