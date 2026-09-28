@@ -249,6 +249,7 @@ file đó. Mọi phiếu BH so lại với sáu số ấy, không so bằng cả
 | BH5 | Soi lỗ hổng kiến thức của page → việc cho marketer              | —         | không                                            | 🎫 |
 | BH6 | Bỏ `get_price` · hai điểm neo cache · đo tiền thật              | BH1·BH3   | `prompts.js` `tools.js`                          | 🎫 |
 | BH7 | Kimi đọc tin Botcake khách đã nhận · tin ngắn 2–3 dòng     | —         | `context.js` `prompts.js`                        | ✅ 28/09 · cổng `bh7.sh` 9/9 · bộ ca 10/10 · đảo-vá 8/10 đỏ · đo model: xem nhật ký |
+| BH8 | HAI BẢN: người đọc tiếng Việt, model đọc tiếng Anh gọn · đích ≤50đ/lượt | BH7 | `prompts.js` `tools.js` `context.js` | 🎫 28/09 · nhận phần «cắt CORE» của BH3 + phần cache của BH6 |
 | RBH | **GATE SÓNG BÁN** — 6 cổng bh*.sh + `do-duong-ban` 6 số đạt đích + 3 lượt model | BH1..BH6 | TỔNG | ⬜ |
 
 **Đích của gate RBH** (so mốc nền 16/09): tin page được trả lời 31,8% → **≥40%** · hội
@@ -1227,6 +1228,14 @@ trên 4.423 đơn POS 60 ngày — đã ghi §9 để không rơi mất).
   2.466 token vào giá đầy đủ/lượt ≈ 61đ/102đ. Phần cố định thật: CORE **4.331 token**
   (tiếng Việt ~2× tiếng Anh) · kịch bản ~1.560 · KB ~660 · tools ~1.210. ③ Page có
   `bo_luat_chung` riêng trong CSDL thì CORE bị THAY ⇒ luật tin ngắn của BH7 không tới.
+
+  🔴 **N-TPD (28/09).** Tài khoản Moonshot chạm **hạn mức 1,5 triệu token/NGÀY cho cả tổ
+  chức** giữa lượt đo BH7/BH8 (lỗi «organization TPD rate limit, current 1 500 346»). Máy
+  chủ đọc log 24h: `aicloser` · `aicloser-v3` · `aicloser-worker-v3` KHÔNG có lỗi TPD /
+  nhà cung cấp — nhưng khoá máy chủ không nằm trong env (kho khoá CSDL) nên CHƯA xác định
+  được máy chủ có chung tổ chức với khoá dev không. Nếu chung: một lượt đo 60 lượt
+  (~400k token) ăn 1/4 hạn mức ngày của bot thật. Việc: xác định tổ chức của khoá máy chủ;
+  nếu chung thì tách khoá đo riêng. `gia-lap-mot-minh.mjs` chưa dừng ở lỗi TPD (BH8 thêm).
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -2509,3 +2518,4 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 28/09 · BH7 → ✅ — Kimi thấy tin Botcake (ghi chú có nhãn, trần riêng 3) + CORE tin 2–3 dòng, chỉ chào tin đầu, cấm markdown · commit (xem git log `BH7`) · nhật ký docs/thi-cong/nhat-ky/phieu-bh7.md
 - 28/09 · BH7 đo Kimi thật 60 lượt Minty (dev): ký tự p50 313→253 · `**` 62%→14% · token ra 140→89 · 119→104đ/lượt; chưa đạt: «Hello» 52%→59% (kịch bản page dạy ngược, §9 N-BH7)
 - 28/09 · Việc kế (người quyết gật): tìm vì sao cache Kimi hụt ~1.500 token/lượt ở đường thật — khoản lớn nhất của đích 50đ/lượt
+- 28/09 · BH8 → 🎫 — hai bản Việt (người) / Anh gọn (model) cho CORE + kịch bản + tool; cache Kimi đo: điểm dùng chung ở cuối system (6.144), tools sau điểm đó, `cache_control` vô tác dụng · phiếu docs/thi-cong/phieu/PHIEU-BH8.md
