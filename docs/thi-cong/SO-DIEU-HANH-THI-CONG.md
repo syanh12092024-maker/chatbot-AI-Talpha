@@ -286,12 +286,12 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
 | Mã  | Việc                                                                          | Phụ thuộc          | Làn | Trạng thái |
 | --- | ----------------------------------------------------------------------------- | ------------------ | --- | ---------- |
 | MN1 | Migration 025 `anh_san_pham` + tầng đọc/ghi + hợp đồng lược đồ                 | —                  | 🟨  | ✅ `b8d6a0f` (+`bien_the` ở `0bd772a`) |
-| MN2 | Nạp một lượt `kb-overrides.json` (77 page) → `san_pham`/`goi_gia`/`anh_san_pham`; báo page thiếu & link chết | MN1 | 🟥 | 🔨 code ✅ `f28df74` · chạy `--ghi` trên prod chờ deploy 025 (mở van) |
+| MN2 | Nạp một lượt `kb-overrides.json` (77 page) → `san_pham`/`goi_gia`/`anh_san_pham`; báo page thiếu & link chết | MN1 | 🟥 | ✅ prod 76 page · 78 SP · 154 bậc · 536 ảnh |
 | MN3 | Lưu sản phẩm · giá · ảnh trên v3 ⇒ đẩy sang bot; đẩy hỏng ⇒ lượt lưu báo lỗi   | MN1                | 🟥  | ✅ `0bd772a` (sản phẩm+giá; ảnh đi cùng MN4) |
 | MN4 | UI: sửa ảnh tại tab; «Sản phẩm & kho» + «Ảnh gửi khách» đọc CSDL v3            | MN1 · MN3          | 🟨  | ✅ `9e175ec` |
 | MN6 | Trang page = màn kịch bản đầy đủ, xếp theo thứ tự AI nhận; kịch bản lưu là chạy | MN3 · MN4          | 🟨  | ✅ `b0b1282` |
-| MN7 | Khối dùng chung Chính sách · FAQ · Phản đối — người quyết chọn (b) ĐỂ TRỐNG: bot thôi ghép khi tắt Sheet | MN3 | 🟨 | 🔨 gộp vào MN5 |
-| MN5 | Tắt đồng bộ Sheet trên prod + đo lệch CSDL↔bot định kỳ — **mở van, cần gật**    | MN2·MN3·MN4·MN7    | 🟥  | ⬜ |
+| MN7 | Khối dùng chung Chính sách · FAQ · Phản đối vào v3 — người quyết đổi sang (a) CHÉP (khách là OFW, Tagalog có chủ ý) | MN3 | 🟨 | ✅ `c0b829f` `2353f5b` |
+| MN5 | Deploy + nạp + cờ `V3_GHI_KHO_BOT` + `PUBLIC_URL` 3102 + `V3_SHEET_CHI_DANH_BA` — **mở van** | MN2·MN3·MN4·MN7    | 🟥  | ✅ A–E 28/09 · nhật ký `phat-hanh-20260928-mot-nguon.md` |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
@@ -2599,3 +2599,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 28/09 · UI-HT4 → ✅ — thước §10 phủ cả module bàn hội thoại (đồ thị import · cửa tiêm · chỉ GET · trang · khối đóng việc · Pancake GET đo hành vi) · HK10 siết (bản cũ để sống «bàn mất <h1>») · sale đăng nhập vào thẳng bàn · spec L4-M1 §7 hợp đồng hiện hành
   cổng ui-ht4.sh 17/17 (kèm ui-ht1..3) · đảo-vá 16/16 trong worktree riêng · sóng UI-HT1–4 xong, chưa deploy
   · commit 2e859fe · nhật ký docs/thi-cong/nhat-ky/phieu-UI-HT4.md
+- 28/09 · MN5 → ✅ MỞ VAN A–E trên prod — mã `2353f5b` · lược đồ 26 · ba cờ drop-in (`V3_GHI_KHO_BOT` · `PUBLIC_URL` 3102 · `V3_SHEET_CHI_DANH_BA`) · 76/76 page bản chép khớp · 36/36 ảnh máy mình tải được từ ngoài · ba khối chuyển Sheet→v3 giống từng ký tự (984) · danh bạ 447 page 0 lệch · 0 lỗi · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260928-mot-nguon.md
+- 28/09 · MN7 → ✅ `c0b829f` `2353f5b` — người quyết đổi (b)→(a) sau lượt thử đầu-cuối (khách OFW, Tagalog có chủ ý — nhận định «sai thị trường» của tổng là SAI) · chốt tách team: bot có MỘT bộ ba khối ⇒ chỉ team thật đang giữ bot được sửa · nợ §9 N-MN7: team thật thứ hai lên bot ⇒ phải tách ba khối theo page
+- 28/09 · 🧭 **ĐỌC QUY TẮC GỐC CỦA BOT TRƯỚC KHI PHÁN «SAI THỊ TRƯỜNG».** Tổng thấy Tagalog trong prompt page Trung Đông và kết luận nội dung sai; người quyết chọn theo kết luận ấy. `CORE` ghi rõ khách là người Philippines ở Trung Đông. Một dòng `grep` trước khi trình đã tránh được một lượt đổi ý.

@@ -1,6 +1,6 @@
 # MỞ VAN MN5 — MỘT NGUỒN CHO SẢN PHẨM · GIÁ · ẢNH · KỊCH BẢN (CR-28-09b)
 
-> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 28/09: «Đưa cùng lượt, chạy từng bước A→E» (UI-HT1–4 đi cùng lượt).** Bước A ✅ · B ✅ · C ✅ · D ✅ · E đang làm theo (a) (người quyết cần quyết lại ba khối Tagalog — xem mục 10). Các số «đo
+> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 28/09: «Đưa cùng lượt, chạy từng bước A→E» (UI-HT1–4 đi cùng lượt).** **Bước A ✅ · B ✅ · C ✅ · D ✅ · E ✅ (theo (a))** — MN5 XONG 28/09 (người quyết cần quyết lại ba khối Tagalog — xem mục 10). Các số «đo
 > 28/09» dưới đây là phép đo CHỈ ĐỌC (SSH đọc, người quyết cho phép).
 > Phiếu CR: `docs/thi-cong/doi-y-do/CR-28-09-mot-nguon-san-pham.md` · sổ §5e.
 
@@ -207,8 +207,16 @@ lùi D thì chúng không còn ở bot, nhưng còn nguyên trong CSDL để đ�
 3. `day-lai-ban-chep.mjs --page 1210276125493286` (page nhiều ảnh `/uploads` nhất: 12) → tải 3 ảnh từ NGOÀI máy chủ: 200 image/jpeg
 4. `day-lai-ban-chep.mjs --tat-ca` → «XONG: 76 page»
 
+**E** (hướng (a) — người quyết «ok làm tiếp đi»; MN7 `c0b829f` + chốt tách team `2353f5b`)
+1. prod → `c0b829f` · `npm ci` · `db/migrate.js` → **áp 026, tổng 26** · restart ba dịch vụ
+2. `nap-khoi-chung.mjs` lần 1 → TỪ CHỐI đúng: team 1 + team 4 có sản phẩm trên bot. Team 4 = «Chưa phân team (kỹ thuật)» ⇒ chốt luật: chỉ đếm team THẬT, cửa lưu từ chối khi ≥2 team thật (`2353f5b`) · prod → `2353f5b` · restart `aicloser-v3`
+3. `nap-khoi-chung.mjs` chạy thử: «GIỐNG từng ký tự (984)» · team thật: 1 → `--ghi`: bản 1, bot nhận + đọc lại khớp (nguồn còn «sheet»)
+4. chụp `/admin/api/kb-chung` + `/admin/api/pages` → drop-in `aicloser.service.d/mn5-sheet.conf` = `Environment=V3_SHEET_CHI_DANH_BA=1` · `daemon-reload` · `restart aicloser` · chụp lại
+
 ## 9 · Số đo tại từng mốc
 **A:** ba dịch vụ `active`, mỗi dịch vụ `Started` 1 lần · lỗi mới **0/0/0** (tới +6′) · `/health` `pages:131` sau 14 s (bằng trước) · UI 3102 **200** trong & ngoài · `anh_san_pham` có, 0 dòng · `goi_gia.nhan` có · mã mới đang phục vụ: `POST /api/anh-san-pham/1/link` **401** (có cửa, đòi đăng nhập; không phải 404) · `/uploads/<tệp>` qua 3102 **200** · trang page có «Bot trả lời thế nào» · env từ `/proc` cả ba: `PANCAKE_READONLY=1` `V3_PANCAKE_GUI=0` `V3_POS_GHI=0` — van gửi vẫn đóng, chưa cờ MN5 nào.
+
+**E:** `aicloser` active · Started 1 · lỗi **0** · `/health` 131 · env `/proc`: `V3_SHEET_CHI_DANH_BA=1` `PUBLIC_URL=…:3102` `PANCAKE_READONLY=1` · journal `[kb] Đa-page (Sheet): 316 page.` · **ba khối: nguồn sheet → v3, đoạn chữ 984 → 984 ký tự, GIỐNG TỪNG KÝ TỰ** · danh bạ page 447 → 447, **0 lệch** (tên · thị trường · marketer · số SP · có kịch bản). Ảnh chụp trước/sau: `/root/e-{truoc,sau}-{chung,pages}.json`.
 
 **D:** D.1 `aicloser-v3` active · Started 1 · lỗi 0 · `V3_GHI_KHO_BOT=1` còn · cửa lưu SP mới 401 (có) · D.2 `aicloser` active · Started 1 · lỗi 0 · `/health` 131 sau 12 s · env `/proc`: `PUBLIC_URL=http://169.58.33.8:3102` `PANCAKE_READONLY=1` · D.4 chạy thử lại **76/76 khớp** · `kb-overrides.json` còn `:3100/uploads/` = **0**, `:3102/uploads/` = **36** link · tải cả 36 từ NGOÀI: **36/36 × 200** · lỗi 10′ **0** · «5 ảnh đổi gốc» còn lại = 5 link trycloudflare chết (link ngoài có chữ `/uploads/`, không phải tệp máy mình).
 
@@ -218,7 +226,7 @@ lùi D thì chúng không còn ở bot, nhưng còn nguyên trong CSDL để đ�
 **B:** đếm lại từ CSDL: `san_pham nguon='kb'` **78** trên **76** page · bậc **154**, cả 154 có tên bậc (`nhan`) · ảnh **536** (= 543 − 7 ảnh của page thiếu dòng) · `day-lai-ban-chep.mjs` chạy thử: **74/76 khớp**, 2 lệch đúng hai ca đổi id `SP01-2` đã báo · «5 ảnh đổi gốc» là 5 link trycloudflare có chữ `/uploads/` trong đường (link NGOÀI đã chết, không phải tệp máy mình — thước đếm thô, ghi nhận) · `/health` 131 · lỗi 3′ **0** · bot không bị chạm (không lượt đẩy nào).
 
 ## 10 · Kết · nợ · ai gật
-- Kết: (giữ / lùi / mở bậc sau)
+- Kết: **GIỮ.** Từ 28/09 sản phẩm · giá · ảnh · kịch bản · Chính sách/FAQ/Phản đối có MỘT chỗ ghi là v3; bot nhận bản chép, đo lại khớp. Bot vẫn `PANCAKE_READONLY=1` — chưa khách nào nhận tin; bật bot là việc riêng.
 - Nợ mang theo (đề nghị §9): neo bảng `l0-m1.sh` thiếu `lan_gui` · `token_pancake` · `nap_bo_qua`;
   1 page có trong `kb-overrides.json` nhưng không có dòng `page` v3; 75/79 sản phẩm không tên;
   cổng 3102 mở thẳng Internet không HTTPS (nay còn là nơi Facebook tải ảnh).
