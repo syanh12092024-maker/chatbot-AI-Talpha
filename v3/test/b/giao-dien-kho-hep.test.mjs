@@ -17,11 +17,20 @@ test('Tất cả page · bảng xếp thẻ ở khổ hẹp, «Còn thiếu gì�
   }
 });
 
-test('Việc đang chờ · bấm dòng ở khổ hẹp thì cuộn tới ô xem nhanh, có nút về danh sách', () => {
+test('Việc đang chờ · xem nhanh là NGĂN KÉO — mở được ở mọi khổ, không nằm dưới đáy trang', () => {
+  // Bản 4 (28/09) thay cách vá cuộn-tới-ô của 7ed6dc6: ô xem nhanh thành <dialog class="drawer">,
+  // phủ trên danh sách ở mọi khổ — hết cảnh bấm dòng trên điện thoại mà không thấy gì.
   const h = doc('dispatch/trang/dieu-phoi.html');
-  assert.match(h, /oXemNamDuoi\(tr\)/);
-  assert.match(h, /scrollIntoView/);
-  assert.match(h, /data-ve-ds/);
+  assert.match(h, /<dialog class="drawer" id="ngan"/);
+  assert.match(h, /ngan\.showModal\(\)/);
+  assert.match(h, /id="o-xem"/, 'ô cho khối «Đánh dấu đã xử» vẫn phải có');
+});
+
+test('Việc đang chờ · MỘT hàng đợi xếp theo hạn, đồng hồ là cột đầu', () => {
+  const h = doc('dispatch/trang/dieu-phoi.html');
+  assert.match(h, /data-kieu="hang-doi"/);
+  assert.match(h, /<td class="num c-dem"><span class="dong-ho"/, 'đồng hồ phải là ô đầu của hàng');
+  assert.match(h, /\.sort\(\(a, b\) => han\(a\) - han\(b\)\)/, 'hai loại trộn lại phải xếp theo hạn');
 });
 
 test('nút × của nhãn · vùng bấm nở ra, màn cảm ứng ≥ 40px', () => {

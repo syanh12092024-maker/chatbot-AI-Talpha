@@ -723,6 +723,33 @@
     .data-table[data-hep="the"] td[colspan] { grid-column: 1 / -1; }
   }
 
+  /* ─── HÀNG ĐỢI — bảng có hạn chót (bản 4, màn Việc đang chờ) ─────────────────────────
+     Đồng hồ là CỘT ĐẦU, chữ số lớn; mức khẩn nằm ở VẠCH TRÁI của hàng (đỏ quá hạn, cam sắp
+     hết) và ở chữ đồng hồ — hai tín hiệu HÌNH, không chỉ màu. Dòng bấm được cả hàng. */
+  .dong-ho { font-family: var(--font-mono); font-size: var(--text-lg); line-height: var(--lh-lg);
+             font-weight: var(--weight-medium); font-variant-numeric: tabular-nums; color: var(--text-muted); }
+  .dong-ho[data-tone="warning"] { color: var(--warning); }
+  .dong-ho[data-tone="danger"]  { color: var(--danger); font-weight: var(--weight-semibold); }
+  .data-table[data-kieu="hang-doi"] tbody tr[data-id] { cursor: pointer; }
+  .data-table[data-kieu="hang-doi"] td.c-dem,
+  .data-table[data-kieu="hang-doi"] th.c-dem-dau { width: 104px; text-align: left; padding-left: var(--space-4); }
+  .data-table[data-kieu="hang-doi"] tr[data-muc="danger"]  td:first-child { box-shadow: inset var(--stripe) 0 0 var(--danger); }
+  .data-table[data-kieu="hang-doi"] tr[data-muc="warning"] td:first-child { box-shadow: inset var(--stripe) 0 0 var(--warning); }
+  @media (max-width: 720px) {
+    .data-table[data-kieu="hang-doi"] tbody tr[data-muc="danger"]  { box-shadow: inset var(--stripe) 0 0 var(--danger); }
+    .data-table[data-kieu="hang-doi"] tbody tr[data-muc="warning"] { box-shadow: inset var(--stripe) 0 0 var(--warning); }
+    .data-table[data-kieu="hang-doi"] tr[data-muc] td:first-child { box-shadow: none; }
+    .data-table[data-kieu="hang-doi"] td.c-dem { width: auto; padding-left: 0; }
+    /* Thẻ hàng đợi: dòng 1 tên khách + đồng hồ · dòng 2 lý do · dòng 3 loại/page · người nhận.
+       Tên và lý do tự nói nghĩa — bỏ nhãn «Khách:» «Lý do:» «Loại:». */
+    .data-table[data-kieu="hang-doi"] td[data-nhan="Khách"] { grid-column: 1; grid-row: 1; }
+    .data-table[data-kieu="hang-doi"] td[data-nhan]:not([data-nhan="Khách"]) { grid-column: 1 / -1; }
+    .data-table[data-kieu="hang-doi"] td:is([data-nhan="Khách"], [data-nhan="Lý do"], [data-nhan="Loại"])::before { content: none; }
+    .data-table[data-kieu="hang-doi"] td[data-nhan="Lý do"] { margin-top: var(--space-1); }
+  }
+  /* Dòng tóm tắt dưới tiêu đề mang tông khi có việc quá hạn — thay cho một hộp báo động. */
+  body > header > .sub[data-tone="danger"] { color: var(--danger); font-weight: var(--weight-medium); }
+
   /* Bảng có thanh lọc dính liền phía trên — một đối tượng, không hai thẻ rời (mục Z). */
   .table-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
                    min-height: 48px; padding: var(--space-2) var(--space-3);
@@ -790,10 +817,31 @@
   .item-detail code { padding: 0 3px; border-radius: var(--radius-sm); background: var(--surface-muted); }
   .item-trail { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2);
                 font-size: var(--text-sm); color: var(--text-muted); }
+  /* Danh sách BẤM ĐƯỢC CẢ HÀNG (bản 4): tiêu đề là <a class="lien-ke">, lớp phủ của nó trải
+     hết hàng — một đường bấm, không một nút lặp lại mỗi hàng. Mũi tên ở đuôi nói «bấm được». */
+  .item-list[data-bam] .item:has(.lien-ke) { position: relative; cursor: pointer;
+                                              transition: background-color var(--duration-fast) var(--ease); }
+  .item-list[data-bam] .item:has(.lien-ke):hover { background: var(--surface-hover); }
+  .item-list[data-bam] .item:has(.lien-ke) .item-trail { color: var(--text-disabled); }
+  .item-list[data-bam] .item:has(.lien-ke):hover .item-trail { color: var(--primary); }
+  .lien-ke { color: var(--text-primary); }
+  .lien-ke::after { content: ""; position: absolute; inset: 0; }
+  .lien-ke:hover { text-decoration: none; }
+
+  /* Một dòng mờ cho những thứ ĐÃ ỔN — không phải việc, không đáng một khu. */
+  .dong-on { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-4);
+             margin-top: var(--space-6); font-size: var(--text-sm); color: var(--text-muted); }
+  .dong-on a { color: var(--text-secondary); }
+  .nhan-hoa { font-size: var(--text-2xs); line-height: var(--lh-2xs); font-weight: var(--weight-semibold);
+              text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--text-muted); }
+
   @media (max-width: 720px) {
     .item, .item:has(> .item-lead) { grid-template-columns: 36px minmax(0, 1fr); }
     .item:not(:has(> .item-lead)) { grid-template-columns: minmax(0, 1fr); }
     .item-trail { grid-column: -2; justify-content: flex-start; }
+    /* Hàng bấm được: mũi tên vẫn ở mép phải, không rớt xuống dòng riêng. */
+    .item-list[data-bam] .item:has(.lien-ke):has(> .item-lead) { grid-template-columns: 28px minmax(0, 1fr) auto; }
+    .item-list[data-bam] .item:has(.lien-ke) .item-trail { grid-column: auto; }
   }
 
   /* ─── DANH SÁCH CHỌN — cột trái của bố cục danh sách · chi tiết ────────────────────
@@ -1109,6 +1157,7 @@
   .hep-nhan { min-width: 96px }   /* nhãn trái của một hàng nhãn–giá trị */
   .rong-doc { max-width: 68ch }
   .mo, .text-muted { color: var(--text-muted); }
+  .text-disabled { color: var(--text-disabled); }
   .nho, .text-sm { font-size: var(--text-sm); }
   .mini, .text-xs { font-size: var(--text-xs); }
   .tabular { font-variant-numeric: tabular-nums; }

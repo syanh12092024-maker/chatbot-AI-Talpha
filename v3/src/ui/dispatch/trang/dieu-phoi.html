@@ -16,46 +16,41 @@
 <body>
 <header>
   <h1>Việc đang chờ</h1>
-  <span class="sub">Việc bot đẩy sang cho người · mốc 10 phút</span>
+  <span class="sub" id="tom">đang tải…</span>
   <span class="sp"></span>
-  <span class="text-muted text-sm" id="nhip">đang tải…</span>
+  <span id="dau-phai"></span>
 </header>
 
 <main>
   <div id="bao-dong" aria-live="polite"></div>
 
-  <div class="cot-ds" data-huong="phai">
-    <div>
-      <section class="section table-wrap" aria-labelledby="tieu-ht">
-        <div class="table-toolbar"><h2 id="tieu-ht">Hội thoại cần xử</h2>
-          <span class="table-count"><span id="n-ht">0</span> việc · gần hết giờ nhất lên đầu</span></div>
-        <table class="data-table" data-hep="the">
-          <thead><tr><th scope="col">Khách</th><th scope="col">Page</th><th scope="col">Lý do bot đẩy sang</th>
-            <th scope="col">Đang xử</th><th scope="col" class="num">Còn lại</th></tr></thead>
-          <tbody id="tb-ht"></tbody>
-        </table>
-      </section>
-
-      <section class="section table-wrap" aria-labelledby="tieu-don">
-        <div class="table-toolbar"><h2 id="tieu-don">Đơn cần xử</h2>
-          <span class="table-count"><span id="n-don">0</span> việc · gần hết giờ nhất lên đầu</span></div>
-        <table class="data-table" data-hep="the">
-          <thead><tr><th scope="col">Khách</th><th scope="col">Page</th><th scope="col">Lý do bot đẩy sang</th>
-            <th scope="col">Đang xử</th><th scope="col" class="num">Còn lại</th></tr></thead>
-          <tbody id="tb-don"></tbody>
-        </table>
-      </section>
-
-      <p class="page-note">Tự làm mới mỗi 15 giây. Bấm một dòng để xem nhanh khách là ai; bấm tên khách để mở việc đầy đủ.</p>
+  <!-- HÀNG ĐỢI (bản 4, 28/09): MỘT danh sách, xếp theo hạn — hội thoại và đơn chung một hàng,
+       vì sale hỏi «việc nào gấp nhất», không hỏi «trong hai loại, loại nào». Trước đây là hai
+       bảng + hộp báo động đỏ + ô xem nhanh cố định: bốn khối cho một việc. Tab lọc giữ lại
+       cách tách theo loại cho ai cần. -->
+  <section class="section table-wrap" aria-labelledby="tieu-hd">
+    <h2 id="tieu-hd" class="sr-only">Hàng đợi</h2>
+    <div class="tabs" role="tablist" aria-label="Lọc theo loại việc">
+      <button type="button" class="tab" role="tab" aria-selected="true" data-loc="">Tất cả<span class="count" id="n-tat">0</span></button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-loc="hoi_thoai">Hội thoại<span class="count" id="n-ht">0</span></button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-loc="don_hang">Đơn<span class="count" id="n-don">0</span></button>
     </div>
+    <table class="data-table" data-hep="the" data-kieu="hang-doi">
+      <thead><tr><th scope="col" class="c-dem-dau">Còn lại</th><th scope="col">Khách</th><th scope="col">Lý do bot đẩy sang</th>
+        <th scope="col">Loại · page</th><th scope="col">Đang xử</th></tr></thead>
+      <tbody id="tb"></tbody>
+    </table>
+  </section>
 
-    <!-- Cột phải là một CHỒNG tấm, không phải một tấm bọc các tấm khác: khối «Đánh dấu đã
-         xử» dùng chung tự mang tấm của nó (mục Z — không thẻ trong thẻ). -->
-    <aside class="stack" id="o-xem" aria-live="polite">
-      <div class="panel"><h2>Xem nhanh</h2>
-        <p class="text-muted tren-2">Bấm một dòng bên trái để xem khách là ai.</p></div>
-    </aside>
-  </div>
+  <!-- XEM NHANH là NGĂN KÉO phải: danh sách giữ trọn bề ngang, và trên điện thoại ngăn kéo phủ
+       cả màn — hết cảnh ô xem nhanh nằm dưới đáy trang (audit 28/09). -->
+  <dialog class="drawer" id="ngan" aria-labelledby="ngan-tieu">
+    <div class="drawer-header">
+      <div class="gian"><h2 id="ngan-tieu">Xem nhanh</h2><div class="text-muted text-sm cat" id="ngan-phu"></div></div>
+      <button type="button" class="icon-btn" id="ngan-dong" aria-label="Đóng xem nhanh"></button>
+    </div>
+    <div class="drawer-body" id="o-xem"></div>
+  </dialog>
 </main>
 
 <script>
@@ -94,6 +89,8 @@ function nhipDongHo() {
     const han = Number(el.getAttribute('data-han'));
     el.textContent = chuoiDem(han);
     el.dataset.tone = tonDem(han);
+    const tr = el.closest('tr');
+    if (tr) tr.dataset.muc = tonDem(han);
   }
 }
 
@@ -109,19 +106,23 @@ function dangXuCua(v) {
   return esc(v.tenNguoiNhan || 'ai đó');
 }
 
+const TEN_LOAI = { hoi_thoai: 'Hội thoại', don_hang: 'Đơn' };
+
 function dongViec(v) {
   const han = Number(v.han_luc);
   const nhan = dangXuCua(v);
-  return '<tr data-id="' + esc(v.id) + '">'
+  // Đồng hồ là CỘT ĐẦU: thứ sale nhìn trước nhất. Ở khổ hẹp `c-dem` nhảy lên góc phải thẻ.
+  return '<tr data-id="' + esc(v.id) + '" data-loai="' + esc(v.loai || '') + '" data-muc="' + tonDem(han) + '" data-han-dong="'
+      + (Number.isFinite(han) ? han : '') + '">'
+    + '<td class="num c-dem"><span class="dong-ho" data-tone="' + tonDem(han) + '" data-han="'
+      + (Number.isFinite(han) ? han : '') + '">' + chuoiDem(han) + '</span></td>'
     + '<td data-nhan="Khách"><a class="manh" href="/viec/' + encodeURIComponent(v.id) + '">'
       + esc(v.tenKhach || '(chưa có tên)') + '</a>'
-      + (v.soDienThoai ? '<div class="meta">' + esc(v.soDienThoai) + '</div>' : '')
+      + (v.soDienThoai ? '<div class="meta so">' + esc(v.soDienThoai) + '</div>' : '')
     + '</td>'
-    + '<td class="meta" data-nhan="Page">' + esc(v.tenPage || '—') + '</td>'
     + '<td data-nhan="Lý do">' + esc(v.lyDoChu) + '</td>'
-    + '<td class="meta" data-nhan="Đang xử"' + (nhan ? ' title="' + nhan + '"' : '') + '>' + nhan + '</td>'
-    + '<td class="num c-dem"><span class="status-badge" data-tone="' + tonDem(han) + '" data-han="'
-      + (Number.isFinite(han) ? han : '') + '">' + chuoiDem(han) + '</span></td>'
+    + '<td class="meta" data-nhan="Loại">' + esc(TEN_LOAI[v.loai] || v.loai || '') + (v.tenPage ? ' · ' + esc(v.tenPage) : '') + '</td>'
+    + '<td class="meta" data-nhan="Đang xử"' + (nhan ? ' title="' + nhan + '"' : '') + '>' + (nhan || '<span class="text-disabled">chưa ai nhận</span>') + '</td>'
     + '</tr>';
 }
 
@@ -133,17 +134,23 @@ function dongViec(v) {
 let _tt = null;
 
 function khoiRong() {
+  if (LOC && _ds.length) return emptyState({ icon: 'circle-check', title: 'Không có việc loại này',
+    body: 'Còn ' + formatNumber(_ds.length) + ' việc loại khác ở tab «Tất cả».' });
   if (_tt && _tt.team && !_tt.team.daGanPage) {
     return emptyState({ icon: 'triangle-alert', title: 'Team này chưa được gán page nào',
-      body: 'Chưa phải «hết việc» — là chưa cài đặt xong. Page đang đậu ở team kỹ thuật chua-phan chờ chốt chủ. Gán page cho team xong thì việc mới chảy về đây.',
+      body: 'Gán page cho team xong thì việc mới chảy về đây.',
       actionsHtml: button('Mở Người và team', { href: '/cau-hinh-team', size: 'sm' }) });
   }
   return emptyState({ icon: 'circle-check', title: 'Không có việc nào đang chờ',
-    body: 'Bot đang tự trả lời. Việc nào bot không xử được sẽ hiện ở đây kèm đồng hồ đếm ngược.' });
+    body: 'Việc bot không xử được sẽ hiện ở đây, gấp nhất lên đầu.' });
 }
 
-function veBang(id, ds) {
-  const el = $(id);
+let _ds = [];
+let LOC = '';
+
+function veBang() {
+  const el = $('#tb');
+  const ds = LOC ? _ds.filter((v) => v.loai === LOC) : _ds;
   if (!ds.length) {
     el.innerHTML = '<tr><td colspan="5">' + khoiRong() + '</td></tr>';
     return;
@@ -151,24 +158,39 @@ function veBang(id, ds) {
   el.innerHTML = ds.map(dongViec).join('');
 }
 
+document.querySelectorAll('[data-loc]').forEach((b) => b.addEventListener('click', () => {
+  LOC = b.dataset.loc;
+  document.querySelectorAll('[data-loc]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+  veBang();
+}));
+
+// Tóm tắt nằm DƯỚI TIÊU ĐỀ, không trong một hộp đỏ: số việc, số quá hạn chưa ai nhận (con
+// số của MÁY CHỦ — `quaHanTong`, cùng công thức với tiêu chí L4), và lúc làm mới.
+function veTomTat(tt) {
+  _tt = tt;
+  const phan = [formatNumber(_ds.length) + ' việc'];
+  if (tt && tt.quaHanTong) phan.push(formatNumber(tt.quaHanTong) + ' quá 10 phút chưa ai nhận');
+  phan.push('làm mới ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  $('#tom').textContent = phan.join(' · ');
+  $('#tom').dataset.tone = tt && tt.quaHanTong ? 'danger' : '';
+  const cu = tt && tt.cuNhat;
+  $('#dau-phai').innerHTML = cu && tt.quaHanTong
+    ? button('Mở việc cũ nhất · quá ' + formatNumber(cu.phutQuaHan) + ' phút', { href: '/viec/' + encodeURIComponent(cu.id), size: 'sm', variant: 'primary' })
+    : '';
+}
+
+// Hộp cảnh báo CHỈ còn cho cảnh «chưa cài đặt xong» — đó là việc phải làm khác, không phải
+// một con số của hàng đợi.
 function veBaoDong(tt) {
   const el = $('#bao-dong');
-  _tt = tt;
-  // Chưa gán page: nói ngay ở dải trên cùng, đừng để người ta phải đoán từ bảng rỗng.
   if (tt && tt.team && !tt.team.daGanPage) {
-    el.innerHTML = '<div class="duoi-5">' + canhBao({ level: 'warning',
-      title: 'Chưa cài đặt xong — team này chưa được gán page nào',
-      body: 'Bảng dưới rỗng vì chưa có dữ liệu, không phải vì đã xử hết việc. Còn '
-        + formatNumber(tt.team.soHoiThoai || 0) + ' hội thoại của team này trong hệ thống.',
+    el.innerHTML = '<div class="duoi-4">' + canhBao({ level: 'warning',
+      title: 'Team này chưa được gán page nào',
+      body: 'Bảng dưới rỗng vì chưa có dữ liệu, không phải vì đã xử hết việc.',
       actionsHtml: button('Gán page cho team', { href: '/cau-hinh-team', size: 'sm' }) }) + '</div>';
     return;
   }
-  if (!tt || !tt.quaHanTong) { el.innerHTML = ''; return; }
-  const cu = tt.cuNhat;
-  el.innerHTML = '<div class="duoi-5">' + canhBao({ level: 'error',
-    title: formatNumber(tt.quaHanTong) + ' việc đã quá 10 phút chưa ai nhận',
-    body: cu ? 'Việc cũ nhất quá hạn ' + formatNumber(cu.phutQuaHan) + ' phút — khách đang chờ người trả lời.' : '',
-    actionsHtml: cu ? button('Mở việc cũ nhất', { href: '/viec/' + encodeURIComponent(cu.id), size: 'sm', variant: 'primary' }) : '' }) + '</div>';
+  el.innerHTML = '';
 }
 
 function veLoi(chu, dangNhapLai) {
@@ -198,32 +220,42 @@ async function tai() {
       doc('/api/dieu-phoi/hang-cho'),
     ]);
     if (Number.isFinite(hc.bay)) lech = hc.bay - Date.now();
+    // Gộp hai loại thành MỘT hàng đợi, xếp theo hạn. Máy chủ đã xếp từng loại theo `han_luc`
+    // (luật 2 của kho-viec.js); ở đây chỉ trộn hai dãy đã xếp — không có công thức thứ hai.
+    const han = (v) => { const h = Number(v.han_luc); return Number.isFinite(h) ? h : Infinity; };
+    _ds = [...(hc.hoiThoai || []).map((v) => ({ loai: 'hoi_thoai', ...v })),
+           ...(hc.don || []).map((v) => ({ loai: 'don_hang', ...v }))].sort((a, b) => han(a) - han(b));
     veBaoDong(tt);
-    veBang('#tb-ht', hc.hoiThoai || []);
-    veBang('#tb-don', hc.don || []);
+    veTomTat(tt);
+    veBang();
+    $('#n-tat').textContent = formatNumber(_ds.length);
     $('#n-ht').textContent = formatNumber((hc.hoiThoai || []).length);
     $('#n-don').textContent = formatNumber((hc.don || []).length);
-    $('#nhip').textContent = 'Làm mới lúc ' + new Date().toLocaleTimeString('vi-VN');
     nhipDongHo();
   } catch (e) {
     if (e && e.ma === 'het_phien') veLoi('Phiên đăng nhập đã hết', true);
     else veLoi('Không tải được danh sách việc: ' + (e && e.message ? e.message : 'lỗi mạng'));
-    $('#nhip').textContent = 'Lỗi lúc ' + new Date().toLocaleTimeString('vi-VN');
+    $('#tom').textContent = 'Lỗi lúc ' + new Date().toLocaleTimeString('vi-VN');
   } finally { dangTai = false; }
 }
 
-/* ═══════════ Ô XEM NHANH — cột phải ═══════════════════════════════════════════════
- * Bấm một dòng thì nạp hồ sơ khách vào đây, KHÔNG rời trang. Trang chi tiết vẫn là nơi
- * đóng việc (kết quả · lý do · chi phí) — nút «Mở việc đầy đủ» đi sang đó, và thẻ <a> ở
- * cột tên vẫn mở tab mới bằng chuột giữa như cũ.
+/* ═══════════ XEM NHANH — ngăn kéo phải ══════════════════════════════════════════════
+ * Bấm một dòng thì mở ngăn kéo với hồ sơ khách, KHÔNG rời trang. Trang chi tiết vẫn là nơi
+ * đóng việc đầy đủ — nút «Mở việc đầy đủ» đi sang đó, và thẻ <a> ở cột tên vẫn mở tab mới
+ * bằng chuột giữa như cũ. `<dialog>` gốc: bẫy lấy nét và phím Esc có sẵn, trả lấy nét về
+ * dòng vừa bấm khi đóng.
  *
- * Ô này CHỈ ĐỌC, trừ khối «Đánh dấu đã xử» dùng chung — mọi lệnh ghi nằm trọn trong
+ * Ngăn kéo CHỈ ĐỌC, trừ khối «Đánh dấu đã xử» dùng chung — mọi lệnh ghi nằm trọn trong
  * `dong-viec-ui.js`, một bản cho cả hai trang.
  */
 let xemId = null;
+const ngan = $('#ngan');
+$('#ngan-dong').innerHTML = window.UI.icon ? window.UI.icon('x') : '×';
+$('#ngan-dong').addEventListener('click', () => ngan.close());
+ngan.addEventListener('click', (e) => { if (e.target === ngan) ngan.close(); });
 
 function veXemRong(chu) {
-  $('#o-xem').innerHTML = '<div class="panel"><h2>Xem nhanh</h2><p class="text-muted tren-2">' + esc(chu) + '</p></div>';
+  $('#o-xem').innerHTML = '<p class="text-muted">' + esc(chu) + '</p>';
 }
 
 function veHoSo(h) {
@@ -241,7 +273,9 @@ function veHoSo(h) {
 
 async function moXem(id) {
   xemId = id;
+  $('#ngan-phu').textContent = '';
   veXemRong('Đang đọc…');
+  if (!ngan.open) ngan.showModal();
   let d;
   try {
     d = await doc('/api/dieu-phoi/viec/' + encodeURIComponent(id));
@@ -253,21 +287,20 @@ async function moXem(id) {
   if (xemId !== id) return;
   const v = (d && d.viec) || {};
   const lk = (d && d.lienKet) || {};
-  $('#o-xem').innerHTML = '<div class="panel">'
-    + '<div class="section-header"><h2>Xem nhanh</h2><span class="text-muted text-sm cat">' + esc(v.tenPage || '') + '</span></div>'
-    + '<div class="manh">' + esc(v.tenKhach || '(chưa có tên)') + '</div>'
-    + '<div class="text-muted text-sm duoi-3">' + esc((d && d.lyDoChu) || '') + '</div>'
-    + veHoSo(d && d.hoSoKhach)
-    + '<div class="hang tren-3">'
+  $('#ngan-tieu').textContent = v.tenKhach || '(chưa có tên)';
+  $('#ngan-phu').textContent = [v.tenPage, (d && d.lyDoChu)].filter(Boolean).join(' · ');
+  $('#o-xem').innerHTML = '<div class="stack">'
+    + '<div>' + veHoSo(d && d.hoSoKhach) + '</div>'
+    + '<div class="hang">'
       + (lk.pancake
-          ? '<a class="btn" data-variant="outline" data-size="sm" target="_blank" rel="noopener" href="' + esc(lk.pancake) + '"><span>Mở Pancake</span></a>'
+          ? '<a class="btn" data-variant="primary" data-size="sm" target="_blank" rel="noopener" href="' + esc(lk.pancake) + '"><span>Mở Pancake</span></a>'
           : '<span class="btn" data-variant="outline" data-size="sm" aria-disabled="true" title="Việc này không gắn hội thoại nào"><span>Mở Pancake</span></span>')
-      + '<a class="btn" data-variant="ghost" data-size="sm" href="/viec/' + encodeURIComponent(id) + '"><span>Mở việc đầy đủ</span></a>'
-    + '</div></div>'
+      + '<a class="btn" data-variant="outline" data-size="sm" href="/viec/' + encodeURIComponent(id) + '"><span>Mở việc đầy đủ</span></a>'
+    + '</div>'
     // Ô cho khối «Đánh dấu đã xử». CÙNG một bản với trang chi tiết (`trang/dong-viec-ui.js`)
     // — không chép, vì hai chỗ cùng ghi một dòng việc thì cái thứ hai bao giờ cũng là cái
     // ghi theo luật cũ.
-    + '<div id="o-dong-viec"></div>';
+    + '<div id="o-dong-viec"></div></div>';
 
   if (window.DongViecUI) {
     // Ghi xong thì tải lại CẢ danh sách (số đếm và thứ tự đổi theo) rồi mở lại chính việc
@@ -279,41 +312,12 @@ async function moXem(id) {
   }
 }
 
-// Bấm bất cứ đâu trên dòng là mở Ô XEM NHANH bên phải. Bấm đúng cái tên thì để thẻ <a>
-// tự đi sang trang chi tiết — giữ được mở tab mới bằng chuột giữa.
-//
-// KHỔ HẸP (≤1100px, `.cot-ds` còn một cột): ô xem nhanh rơi xuống DƯỚI hai bảng. Trước
-// 28/09 bấm dòng trên điện thoại chỉ làm dòng sáng lên — ô nằm ngoài màn hình, người dùng
-// tưởng bấm hỏng (audit ui-taste). Nay: ô nằm dưới dòng vừa bấm thì cuộn tới ô, và cho
-// một nút quay về đúng dòng đó.
-const oXemNamDuoi = (tr) => $('#o-xem').getBoundingClientRect().top > tr.getBoundingClientRect().bottom;
-const giamChuyenDong = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let dongVuaBam = null;
-
+// Bấm bất cứ đâu trên dòng là mở ngăn kéo. Bấm đúng cái tên thì để thẻ <a> tự đi sang trang
+// chi tiết — giữ được mở tab mới bằng chuột giữa.
 document.addEventListener('click', (ev) => {
-  if (ev.target.closest('[data-ve-ds]')) {
-    const tr = dongVuaBam && document.querySelector('tr[data-id="' + CSS.escape(dongVuaBam) + '"]');
-    (tr || $('#tieu-ht')).scrollIntoView({ behavior: giamChuyenDong() ? 'auto' : 'smooth', block: 'center' });
-    return;
-  }
-  if (ev.target.closest('a')) return;
+  if (ev.target.closest('a') || ev.target.closest('dialog')) return;
   const tr = ev.target.closest('tr[data-id]');
-  if (!tr) return;
-  dongVuaBam = tr.getAttribute('data-id');
-  const hep = oXemNamDuoi(tr);
-  const cuonToiO = () => $('#o-xem').scrollIntoView({ behavior: giamChuyenDong() ? 'auto' : 'smooth', block: 'start' });
-  moXem(dongVuaBam).then(() => {
-    if (!hep || xemId !== dongVuaBam) return;
-    const panel = $('#o-xem .panel');
-    if (panel && !panel.querySelector('[data-ve-ds]')) {
-      panel.insertAdjacentHTML('afterbegin',
-        '<button type="button" class="btn duoi-2" data-variant="ghost" data-size="sm" data-ve-ds>← Về danh sách</button>');
-    }
-    // Cuộn LẦN HAI sau khi nạp: lúc bấm, ô chỉ có «Đang đọc…» — trang chưa đủ dài để đưa ô
-    // lên đầu màn, lần cuộn đầu dừng lưng chừng.
-    cuonToiO();
-  });
-  if (hep) cuonToiO();
+  if (tr) moXem(tr.getAttribute('data-id'));
 });
 
 setInterval(nhipDongHo, 1000);

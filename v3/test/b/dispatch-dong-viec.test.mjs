@@ -726,7 +726,9 @@ test('L4-M2 · màn chi tiết đắp vào đúng ô đã chừa, không mọc �
 
 test('L4-M2 · bảng điều phối có ĐÚNG MỘT cột "Đang xử" và ở khổ hẹp thì xếp thẻ', async () => {
   const { than } = await goi('/dieu-phoi', { tieuDe: { accept: 'text/html' } });
-  assert.equal((than.match(/>Đang xử</g) || []).length, 2, 'hai bảng, mỗi bảng đúng một cột');
+  // Bản 4 (28/09): hội thoại và đơn gộp thành MỘT hàng đợi xếp theo hạn, tab lọc theo loại.
+  // Điều được canh giữ nguyên: đúng một cột «Đang xử».
+  assert.equal((than.match(/>Đang xử</g) || []).length, 1, 'một hàng đợi, đúng một cột');
   assert.match(than, /colspan="5"/, 'dòng "không có việc nào" phải trải hết năm cột');
   // 14/09: khuôn «bảng thành thẻ ở khổ hẹp» chuyển sang HỆ KIỂU (`chung/kieu.css`,
   // `.data-table[data-hep="the"]`) để bảng nào cũng dùng được. Phép canh theo đó chuyển

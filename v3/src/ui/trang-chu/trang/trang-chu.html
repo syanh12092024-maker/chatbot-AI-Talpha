@@ -31,7 +31,7 @@
 </main>
 
 <script>
-const { esc, text, statusBadge, button, alert: canhBao, emptyState, formatNumber: so, roleName } = window.UI;
+const { esc, text, icon, statusBadge, button, alert: canhBao, emptyState, formatNumber: so, roleName } = window.UI;
 const $ = (s) => document.querySelector(s);
 
 // Ba nhóm, và chúng KHÁC NHAU (xem khối chú thích đầu `kho-trang-chu.js`):
@@ -44,54 +44,52 @@ function nhomCua(v) {
   return chuaBiet ? 'chua' : 'on';
 }
 
-function tieuDe(v) {
-  // «2 trên 4 page», không phải «/ 4 page»: số to bên trái và «/ 4» đọc như hai con số khác
-  // nhau, người đọc không biết 2 là phần của 4 (audit 28/09).
+// BẢN 4 (28/09): cả HÀNG là chỗ bấm — tiêu đề là liên kết, lớp phủ của nó trải hết hàng. Trước
+// đó mỗi hàng một nút «Xem và xử lý»: năm nút giống hệt nhau, mắt không biết bấm cái nào trước.
+// Thứ tự đã nói việc nào gấp trước (máy chủ xếp); mũi tên ở đuôi nói «bấm được».
+function tieuDeLienKet(v) {
   const dv = esc(v.donVi || 'page');
   const tong = v.tong == null ? ''
     : ` <span class="meta">· ${v.so != null ? `${so(v.so)} trên ${so(v.tong)}` : `tổng ${so(v.tong)}`} ${dv}</span>`;
-  return `<div class="item-title">${esc(v.ten)}${tong}</div>`;
+  const ten = v.di ? `<a class="lien-ke" href="${esc(v.di)}">${esc(v.ten)}</a>` : esc(v.ten);
+  return `<div class="item-title">${ten}${tong}</div>`;
 }
 
-let _chinhDaDung = false;
 function veHang(v, nhom) {
   if (nhom === 'gap') {
-    // Mục H1: tối đa MỘT nút chính trên vùng nhìn — việc gấp nhất.
-    const bien = _chinhDaDung ? 'outline' : 'primary';
-    _chinhDaDung = true;
-    const duoi = v.di
-      ? button('Xem và xử lý', { href: v.di, size: 'sm', variant: bien })
-      : `<span>${esc(v.chuaCoMan || 'Chưa có màn để xử lý')}</span>`;
+    const duoi = v.di ? icon('chevron-right')
+      : `<span class="text-muted">${esc(v.chuaCoMan || 'Chưa có màn để xử lý')}</span>`;
     return `<li class="item">
       <div class="item-lead">${so(v.so)}</div>
-      <div>${tieuDe(v)}<div class="item-desc">${esc(v.lam)}</div></div>
+      <div>${tieuDeLienKet(v)}<div class="item-desc">${esc(v.lam)}</div></div>
       <div class="item-trail">${duoi}</div>
     </li>`;
   }
-  if (nhom === 'chua') {
-    return `<li class="item">
-      <div class="item-lead" data-muted><span aria-hidden="true">—</span><span class="sr-only">chưa biết</span></div>
-      <div>${tieuDe(v)}<div class="item-desc">${esc(v.lam)}</div>
-        ${v.noiRong ? `<div class="item-detail">${text(v.noiRong)}</div>` : ''}
-        ${v.diTiepRong ? `<div class="item-detail"><b>Cách xử lý:</b> ${text(v.diTiepRong)}</div>` : ''}
-      </div>
-      <div class="item-trail">${statusBadge(v.viRong === 'chua-co-bang' ? 'feature_unavailable' : 'unknown',
-        { label: v.viRong === 'chua-co-bang' ? 'Chưa có bảng' : 'Chưa có dữ liệu' })}</div>
-    </li>`;
-  }
+  // chua — chưa đọc được: giữ câu «vì sao» và «cách xử lý» (luật: rỗng phải nói vì sao).
   return `<li class="item">
-    <div class="item-lead" data-muted>${so(v.so)}</div>
-    <div>${tieuDe(v)}<div class="item-desc">${text(v.noiRong || v.lam)}</div></div>
-    <div class="item-trail">${v.di ? button('Mở', { href: v.di, size: 'sm', variant: 'outline' }) : ''}</div>
+    <div class="item-lead" data-muted><span aria-hidden="true">—</span><span class="sr-only">chưa biết</span></div>
+    <div>${tieuDeLienKet(v)}<div class="item-desc">${esc(v.lam)}</div>
+      ${v.noiRong ? `<div class="item-detail">${text(v.noiRong)}</div>` : ''}
+      ${v.diTiepRong ? `<div class="item-detail"><b>Cách xử lý:</b> ${text(v.diTiepRong)}</div>` : ''}
+    </div>
+    <div class="item-trail">${statusBadge(v.viRong === 'chua-co-bang' ? 'feature_unavailable' : 'unknown',
+      { label: v.viRong === 'chua-co-bang' ? 'Chưa có bảng' : 'Chưa có dữ liệu' })}</div>
   </li>`;
 }
 
-function veNhom(tieu, moTa, huyHieu, ds, nhom) {
+function veNhom(tieu, ds, nhom) {
   if (!ds.length) return '';
   return `<section class="section" aria-label="${esc(tieu)}">
-    <div class="section-header"><div><h2>${esc(tieu)}</h2>${moTa ? `<div class="section-desc">${esc(moTa)}</div>` : ''}</div>${huyHieu}</div>
-    <ul class="item-list">${ds.map((v) => veHang(v, nhom)).join('')}</ul>
+    <div class="section-header"><h2>${esc(tieu)}</h2></div>
+    <ul class="item-list" data-bam>${ds.map((v) => veHang(v, nhom)).join('')}</ul>
   </section>`;
+}
+
+// «Đã ổn» không phải việc — thu thành MỘT dòng mờ, vẫn bấm sang được từng mục.
+function veDaOn(ds) {
+  if (!ds.length) return '';
+  return `<p class="dong-on"><span class="nhan-hoa">Đã ổn</span>${ds.map((v) =>
+    `<span>${v.di ? `<a href="${esc(v.di)}">${esc(v.ten)}</a>` : esc(v.ten)} <span class="so">${so(v.so ?? 0)}</span></span>`).join('')}</p>`;
 }
 
 async function tai() {
@@ -103,8 +101,8 @@ async function tai() {
 
     const vai = (d.vai || []).map(roleName).join(', ') || 'chưa có vai';
     $('#hTeam').textContent = d.soGap
-      ? `${so(d.soGap)} việc đang cần bạn · theo vai ${vai}`
-      : `Không có việc nào gấp · theo vai ${vai}`;
+      ? `${so(d.soGap)} việc cần bạn · vai ${vai}`
+      : `Không có việc nào gấp · vai ${vai}`;
 
     if (!d.viec.length) {
       $('#ds').innerHTML = emptyState({
@@ -115,23 +113,16 @@ async function tai() {
     } else {
       const nhom = { gap: [], chua: [], on: [] };
       for (const v of d.viec) nhom[nhomCua(v)].push(v);
-      _chinhDaDung = false;
       $('#ds').innerHTML =
-        (nhom.gap.length ? '' : `<div class="duoi-5">${canhBao({ level: 'success', title: 'Không có việc nào gấp',
-          body: 'Mọi việc theo vai của bạn đều đã ổn hoặc chưa có dữ liệu để đếm.' })}</div>`)
-        + veNhom('Cần xử lý', 'Gấp xếp trước.',
-            statusBadge('blocked', { label: `${so(nhom.gap.length)} việc` }), nhom.gap, 'gap')
-        + veNhom('Chưa đọc được số', 'Hiện «—», không phải 0.',
-            statusBadge('unknown', { label: `${so(nhom.chua.length)} mục` }), nhom.chua, 'chua')
-        + veNhom('Đã ổn', null,
-            statusBadge('ready', { label: `${so(nhom.on.length)} mục` }), nhom.on, 'on');
+        veNhom('Cần xử lý', nhom.gap, 'gap')
+        + veNhom('Chưa đọc được số', nhom.chua, 'chua')
+        + veDaOn(nhom.on);
     }
 
     const ghi = [];
     if (d.soAnVaiKhac) {
       ghi.push(`<p>Còn ${so(d.soAnVaiKhac)} việc thuộc vai khác không hiện ở đây. Màn này chỉ hiện việc theo vai của bạn, không phải toàn bộ hệ thống.</p>`);
     }
-    ghi.push('<p>Số đơn xem ở <a href="/bao-cao">Đơn và tỉ lệ chốt</a>.</p>');
     $('#chan').innerHTML = ghi.join('');
   } catch (e) {
     $('#bang-tin').innerHTML = canhBao({ level: 'error', title: 'Không tải được danh sách việc', body: e.message });
