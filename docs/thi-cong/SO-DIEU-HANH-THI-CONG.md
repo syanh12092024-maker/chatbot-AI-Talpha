@@ -2007,6 +2007,9 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
 - 28/09 · UI-HT1 → ✅ — cửa đọc hội thoại thẳng Pancake: mã `<page_id>_<psid>`, mã khách hàng đợi v3 →
   Sổ AI bot cũ (phủ 92,5%), lỗi Pancake nói ra, nhớ 60s; cổng ui-ht1.sh 7/7 · đảo-vá 7/7
   · commit 5ac57ef · nhật ký docs/thi-cong/nhat-ky/phieu-UI-HT1.md
+- 28/09 · UI-HT2 → ✅ — màn «Bàn hội thoại» ba cột chỉ đọc; lát «Cần người» qua hangCho, hai lát kia SQL có
+  LIMIT (kéo cả bảng = 19,6 MB); ≤1180px bối cảnh thành ngăn phủ; cổng ui-ht2.sh 8/8
+  · commit 0cc381f · nhật ký docs/thi-cong/nhat-ky/phieu-UI-HT2.md
 
 ### 14/09/2026 · dãy S của `test/l0-m2-so-lieu.test.js` CHẬP CHỜN khi có dữ liệu thật
 
