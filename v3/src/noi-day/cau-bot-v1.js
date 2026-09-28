@@ -225,26 +225,10 @@ export async function daySanPhamLenBot(pageIdFacebook, products) {
   return { pageId: String(pageIdFacebook), soSanPham: that.length };
 }
 
-/** Trả chuỗi mô tả chỗ lệch đầu tiên, hoặc '' nếu khớp. Tách ra để thước gọi thẳng. */
-export function soBanChep(gui, that) {
-  if (gui.length !== that.length) return `số sản phẩm ${gui.length} ≠ ${that.length}`;
-  for (let i = 0; i < gui.length; i += 1) {
-    const a = gui[i]; const b = that[i] || {};
-    for (const k of ['id', 'name', 'desc', 'variant', 'currency']) {
-      if (String(a[k] ?? '') !== String(b[k] ?? '')) return `sản phẩm ${a.id}: «${k}» khác`;
-    }
-    const ta = (a.tiers || []).map((t) => `${t.label}=${Number(t.price)}`).join('|');
-    const tb = (b.tiers || []).map((t) => `${t.label}=${Number(t.price)}`).join('|');
-    if (ta !== tb) return `sản phẩm ${a.id}: bậc giá khác`;
-    const ia = a.images || []; const ib = b.images || [];
-    if (ia.length !== ib.length) return `sản phẩm ${a.id}: số ảnh ${ia.length} ≠ ${ib.length}`;
-    for (let j = 0; j < ia.length; j += 1) {
-      if (String(ia[j].label || '') !== String(ib[j].label || '')
-        || !String(ib[j].url || '').endsWith(String(ia[j].url || ''))) return `sản phẩm ${a.id}: ảnh ${j + 1} khác`;
-    }
-  }
-  return '';
-}
+// Phép so nằm ở `src/products/ban-chep-bot.js` — lượt nạp MN2 dùng CÙNG phép so để chứng minh
+// bản chép khớp bot trước khi ghi. Hai bản của một phép so là hai định nghĩa của «khớp».
+export { soBanChep } from '../../../src/products/ban-chep-bot.js';
+import { soBanChep } from '../../../src/products/ban-chep-bot.js';
 
 /* ────────────────────────────── công tắc BOT AI (G2-B2) ────────────────────────────── */
 
