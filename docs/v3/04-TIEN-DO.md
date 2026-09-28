@@ -513,6 +513,7 @@ trong giai đoạn 1 thì phải kéo nó vào — đây là đổi phạm vi, k
 | L4-M1 | Bảng điều phối — hai danh sách, màn chi tiết | B | 23/08 | 100 việc tốn **8 lời gọi cổng**; việc team khác → 404 (không 403); kho không đổi một byte | Mẫu đường POS chưa ai mở bằng mắt → để vào biến môi trường |
 | L4-M2 | Đánh dấu đã xử, chọn kết quả và lý do | B | 23/08 | hai người nhận cùng lúc → đúng 1 thắng; đóng lại → 409, kết quả cũ nguyên vẹn | Danh sách **kết quả và lý do** tài liệu chưa chốt → B đề xuất, cần chủ dự án duyệt |
 | — | Nối dây phần rìa (`v3/src/vai-b.js`) | B | 23/08 | người thuộc hai team đi hết đường đăng nhập → bảng điều phối | Sinh ra vì **cả hai cách nối sai đã xảy ra thật** lúc chạy thử |
+| UI-HT1–4 | Bàn hội thoại chỉ đọc (CR-28-09): chat đọc thẳng Pancake · danh sách ba lát · cột bối cảnh · thước §10 | B | 28/09 | 4 cổng `ui-ht1..4.sh` xanh; ca Postgres chạy trọn đường qua cổng thật; sale đăng nhập vào thẳng bàn | Chưa deploy — chưa đo tỉ lệ đọc được và tỉ lệ nhãn «Page» trên hội thoại thật |
 
 Chi tiết mọi chỗ tự quyết: **`docs/v3/SO-TAY-VAI-B.md`**.
 

@@ -277,18 +277,29 @@ test("HK10 · tên trên đầu trang KHỚP tên trong menu — «tôi đang �
   for (const m of mh.matchAll(/dat\((\w+),\s*'([^']+)'/g)) tenTheoThuMuc[bien[m[1]]] = m[2];
 
   const lech = [];
+  const daDo = [];
+  const boQua = [];
   for (const [thuMuc, ten] of Object.entries(tenTheoThuMuc)) {
     const t = path.join(UI, thuMuc, "trang");
-    if (!fs.existsSync(t)) continue;
+    if (!fs.existsSync(t)) { boQua.push(thuMuc); continue; }
     const tep = fs.readdirSync(t).filter((x) => x.endsWith(".html"));
     const chinh = tep.length === 1 ? tep[0] : tep.find((x) => x === "dieu-phoi.html");
-    if (!chinh) continue;
+    if (!chinh) { boQua.push(thuMuc); continue; }
     const h1 = (fs.readFileSync(path.join(t, chinh), "utf8").match(/<h1>([^<]*)<\/h1>/) || [])[1];
-    if (h1 == null) continue;
+    if (h1 == null) { boQua.push(thuMuc); continue; }
+    daDo.push(thuMuc);
     const giaiMa = h1.replace(/&amp;/g, "&").trim();
     if (giaiMa !== ten) lech.push(`${thuMuc}: đầu trang «${giaiMa}» · menu «${ten}»`);
   }
   assert.deepEqual(lech, [], "đầu trang và menu gọi cùng một màn bằng hai tên:\n  " + lech.join("\n  "));
+  // UI-HT4 (28/09): ba nhánh `continue` ở trên là ba cách XANH VÌ KHÔNG ĐO. Đo 28/09: 26 màn được
+  // đo, bỏ qua đúng MỘT — `mot-page` (đầu trang là tên page, đổi theo dữ liệu, không có <h1> tĩnh).
+  // Màn của sale theo §10 (CR-28-09) PHẢI nằm trong số được đo; màn mới lọt vào nhánh bỏ qua là đỏ.
+  for (const m of ["ban-hoi-thoai", "dispatch"]) assert.ok(daDo.includes(m), `HK10 không đo màn ${m}`);
+  const BO_QUA_DA_BIET = ["mot-page"];
+  assert.deepEqual(boQua.filter((m) => !BO_QUA_DA_BIET.includes(m)), [],
+    "màn mới lọt qua HK10 không được đo (thiếu trang/ · nhiều trang · không <h1>)");
+  assert.ok(daDo.length >= 20, `HK10 chỉ đo ${daDo.length} màn — thước đang đo nhầm chỗ`);
 });
 
 test("HK11 · KHÔNG màn nào tự dựng khung trang — khuôn PageHeader là của hệ", () => {

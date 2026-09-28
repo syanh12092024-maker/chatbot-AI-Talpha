@@ -1,4 +1,6 @@
 // L4-M1 · hai danh sách — tiêu chí 2 · 5 · 6 · 7 · 8 · 9 · 10.
+// (28/09: màn gộp hai danh sách thành MỘT hàng đợi «Việc đang chờ», và màn sale vào thẳng là
+// BÀN HỘI THOẠI — CR-28-09. `hangCho` vẫn là nguồn duy nhất của lát «Cần người» ở bàn.)
 //
 // Đồng hồ TIÊM VÀO (`bay`) chứ không chờ thật: đo "việc tạo cách đây 12 phút" mà phải chờ
 // 12 phút thì bộ test không ai chạy nữa.

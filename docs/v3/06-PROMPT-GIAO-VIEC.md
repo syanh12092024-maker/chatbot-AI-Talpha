@@ -220,6 +220,9 @@ bằng ít tin hơn, nên có thể đắt mỗi tin mà rẻ mỗi đơn.
 Khoá API phải mã hoá khi lưu, không để nguyên văn trong cơ sở dữ liệu.
 
 ═══ CHI TIẾT L4 — BẢNG ĐIỀU PHỐI ═══
+⚠️ ĐỔI 28/09/2026 — CR-28-09: màn sale nay là BÀN HỘI THOẠI CHỈ ĐỌC (danh sách hội thoại ·
+khung chat đọc thẳng Pancake · cột bối cảnh). Hợp đồng hiện hành: v3/docs/spec/L4-M1-bang-dieu-phoi.md
+§7. Đoạn dưới giữ làm lịch sử — vế «không ô soạn tin, trả lời ở Pancake» vẫn giữ.
 Sale KHÔNG làm việc trên hệ thống này. Màn hình chỉ có hai danh sách:
   - Hội thoại cần xử
   - Đơn cần xử

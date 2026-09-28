@@ -248,7 +248,8 @@ Báo «0 việc» ở cảnh đó là nói với sale rằng không có gì ph�
 **Cầu hỏng thì để `null`, không rơi về 0.** «0 page bị chặn» là tin mừng, và cầu hỏng không
 phải tin mừng. Màn hiện «—»/«?» và tự khai có mấy ô chưa đọc được.
 
-**Sale KHÔNG vào Trang chủ.** `03-MAN-HINH.md`: *«Bảng điều phối — Sale vào THẲNG đây»*. Bản
+**Sale KHÔNG vào Trang chủ.** `03-MAN-HINH.md`: *«Bảng điều phối — Sale vào THẲNG đây»* (28/09,
+CR-28-09: nay là *«Bàn hội thoại — Sale vào thẳng đây»*; ca `vai-b-noi-day` canh đích đăng nhập). Bản
 đầu của tôi cho sale vào; lưới quét `phan-quyen-nam-vai.test.mjs` bắt được. Thêm một bước vào
 đúng luồng cần nhanh nhất là làm hỏng luồng đó.
 

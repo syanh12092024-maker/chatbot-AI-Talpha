@@ -98,6 +98,13 @@ test('nối dây · BẪY ①: người thuộc hai team vào được tới b�
   });
   assert.equal(ct.status, 200);
   const ck2 = ct.headers.get('set-cookie').split(';')[0];
+  // UI-HT4 · §10 mới (CR-28-09), `03-MAN-HINH.md`: «Bàn hội thoại — sale vào thẳng đây». Đích đi
+  // theo màn ĐẦU TIÊN trên menu của vai (`vai-b.js#duongSauKhiVao`) — đổi thứ tự menu là đổi
+  // nơi sale đặt chân mỗi sáng, nên canh bằng HÀNH VI đăng nhập thật chứ không bằng thứ tự mảng.
+  assert.equal((await ct.json()).diTiep, '/ban-hoi-thoai', 'sale đăng nhập xong phải vào thẳng bàn hội thoại');
+  const ban = await fetch(`${goc}/api/ban-hoi-thoai`, { headers: { cookie: ck2 } });
+  assert.equal(ban.status, 200, 'bàn hội thoại phải mở được cho sale qua đúng dây nối thật');
+  assert.deepEqual((await ban.json()).items.map((x) => x.id), ['ht1']);
 
   const tk = await fetch(`${goc}/api/dieu-phoi/tom-tat`, { headers: { cookie: ck2 } });
   assert.equal(tk.status, 200, 'BẪY ②: chắn tiêm sai hình dạng thì chỗ này nổ 500');

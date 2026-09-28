@@ -718,6 +718,7 @@ test('L4-M2 · màn chi tiết đắp vào đúng ô đã chừa, không mọc �
   // Các khối của L4-M1 còn nguyên. Khối "Đoạn chat" ĐÃ BỎ ngày 23/08 (chủ dự án duyệt):
   // `so_ai` không giữ nội dung tin và không có tin của khách, nên dựng ở đây là dựng một
   // nửa cuộc nói chuyện — bản đầy đủ nằm ở Pancake. Chỗ đó nay là một dòng chỉ đường.
+  // 28/09 (CR-28-09): khung chat đọc thẳng Pancake nằm ở BÀN HỘI THOẠI, không ở màn này.
   assert.match(than, /Mở Pancake/);
   assert.match(than, /Thông tin đơn/);
   assert.ok(!/Đoạn chat/.test(than), 'đoạn chat mọc lại — xem ghi chú đầu chi-tiet.js');

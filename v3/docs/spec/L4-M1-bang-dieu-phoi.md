@@ -5,7 +5,7 @@
 > khung chat đọc thẳng Pancake · cột bối cảnh khách. Điều GIỮ NGUYÊN của spec này: lý do bot đẩy
 > sang, đồng hồ 10 phút, nhảy sang Pancake/POS, và **KHÔNG ô soạn tin, KHÔNG nút gửi**. Điều ĐỔI:
 > «hai danh sách» và «màn nghèo nàn có chủ ý» bên dưới — đọc như lịch sử. Phiếu thi công:
-> UI-HT1..UI-HT4.
+> UI-HT1..UI-HT4. **Hợp đồng hiện hành của màn sale: §7 cuối tệp.**
 
 ## Việc cần làm
 
@@ -18,6 +18,9 @@ Không làm: hàng chờ duyệt tạo đơn (`hang_cho_tao_don`, thuộc L3 c�
 dashboard cũ, không làm báo cáo.
 
 ## Vì sao màn này nghèo nàn có chủ ý
+
+> ⛔ **Lịch sử (CR-28-09).** Vế «sale không làm việc trên hệ» đã đổi: sale ĐỌC hội thoại ngay trên
+> bàn hội thoại (§7). Vế «không ô soạn tin, không nút gửi» GIỮ NGUYÊN và nay có thước riêng.
 
 Sale **không làm việc trên hệ thống này**. Họ đã quen Pancake; bắt học một nơi làm việc mới
 thì thường không ai dùng. Nên màn này chỉ là **bảng điều phối**: nói cho sale biết việc nào
@@ -66,6 +69,9 @@ về sau chỉ sửa chín cột nửa dưới. B không bao giờ `INSERT`, kh�
 ## Thiết kế bắt buộc
 
 ### 1 · Hai danh sách — `kho-viec.js`
+
+> 28/09: màn gộp hai danh sách thành MỘT hàng đợi «Việc đang chờ» (tab lọc theo loại). `hangCho`
+> giữ nguyên hợp đồng dưới đây và là nguồn DUY NHẤT của lát «Cần người» trên bàn hội thoại (§7).
 
 ```js
 await hangCho(boiCanh, { loai, gioiHan = 100, buoc = 0, bay = Date.now() })
@@ -122,6 +128,9 @@ Mã lạ không có trong bảng → hiện nguyên mã, **không** gộp im l�
 là cách chắc chắn để không bao giờ phát hiện ra bot đang đẩy việc vì một lý do mới.
 
 ### 3 · Màn chi tiết — `chi-tiet.js`
+
+> ⛔ `doanChat` ĐÃ BỎ 23/08 (`so_ai` không giữ nội dung tin, không có tin của khách — thước
+> `dispatch-chi-tiet` khoá lại). Khung chat nay ở bàn hội thoại, đọc THẲNG Pancake (§7).
 
 ```js
 await chiTietViec(boiCanh, viecId, { soTin = 20 })
@@ -208,3 +217,43 @@ nền `#f5f7f9` · chữ 13.5px). Có sẵn `.pill` `.card` `.panel` `.banner` �
 - Hàng chờ duyệt tạo đơn (L3, người A)
 - Đẩy thông báo ra Telegram khi quá hạn (giai đoạn 2)
 - Tìm kiếm, bộ lọc theo ngày/sản phẩm/marketer (giai đoạn 2)
+
+## 7 · BÀN HỘI THOẠI — hợp đồng HIỆN HÀNH của màn sale (CR-28-09 · UI-HT1..HT4)
+
+Sale đăng nhập xong vào thẳng `/ban-hoi-thoai` — màn đầu tiên trên menu của vai sale
+(`vai-b.js#duongSauKhiVao`). «Việc đang chờ» (`/dieu-phoi`) giữ làm đường lùi, cùng hàng đợi.
+
+| Đường | Việc | Module |
+|---|---|---|
+| `GET /ban-hoi-thoai` | trang ba cột: danh sách · khung chat · bối cảnh | `ui/ban-hoi-thoai/router.js` |
+| `GET /api/ban-hoi-thoai?loc=nguoi\|bot\|tat&tim=` | danh sách hội thoại | `kho-ban-hoi-thoai.js` |
+| `GET /api/ban-hoi-thoai/:id` | lịch sử chat đọc thẳng Pancake | `doc-hoi-thoai.js` (mắc ở router điều phối) |
+| `GET /api/ban-hoi-thoai/:id/boi-canh` | cột bối cảnh | `boi-canh-hoi-thoai.js` |
+
+Luật — mỗi luật một thước trong BỘ CA (không chỉ trong cổng):
+
+1. **Chỉ đọc.** Không ô soạn tin, không đường gửi, không phương thức ghi trên đường của bàn; đồ
+   thị import không chạm chỗ gửi; cửa tiêm là danh sách đã khai; Pancake chỉ được GET. Thao tác
+   duy nhất: nhận · trả bot · đóng việc, qua khối dùng chung `dong-viec-ui.js` (L4-M2), chỉ gọi
+   `/api/dieu-phoi/*`. — `ban-hoi-thoai-khong-gui.test.mjs` T1–T6.
+2. **Team khác = không có**: 404, không gọi Pancake, không gọi bộ giải kịch bản. —
+   `ban-hoi-thoai-doc` · `ban-hoi-thoai-boi-canh`.
+3. **Chat đọc thẳng Pancake, không lưu bản sao.** Mã `<page_id>_<psid>`; mã khách: hàng đợi v3
+   (dòng mới nhất) → Sổ AI bot cũ → hết nguồn thì nói lý do và KHÔNG gọi; nhớ 60 giây, nhiều người
+   mở cùng lúc chung một lượt; lỗi Pancake hiện nguyên văn. — `ban-hoi-thoai-doc`.
+4. **Bảng ngoài `BANG_NGHIEP_VU_CHUAN`** (`tin_cho_xu_ly`, `lan_gui`) KHÔNG đọc qua cổng — cổng thật
+   ném. Bộ đọc SQL kẹp `team_id = $1` từ bối cảnh, tiêm từ `chay-that.js`. — `test/ui-ht3-sql.test.js`
+   (chạy trọn đường qua cổng thật trên Postgres).
+5. **Nhãn tin page chỉ theo dữ liệu đối chiếu được**: Bot AI (mã tin v3 · đầu câu Sổ AI/lần gửi v3)
+   · Tự động (`flow_id` · mẫu máy) · Page (còn lại — KHÔNG gọi là sale; `from` của Pancake không
+   tách được bot với người, đo 28/09). — `ban-hoi-thoai-boi-canh`.
+6. **Danh sách**: «Cần người» đi qua `hangCho` (một công thức với điều phối); «Bot đang xử» · «Tất
+   cả» · tìm dùng SQL có LIMIT 100, cửa sổ 7 ngày; chưa có hồ sơ khách thì hiện tên Messenger. —
+   `ban-hoi-thoai-ds` · `test/ui-ht2-sql.test.js`.
+7. **Bối cảnh**: hồ sơ qua `hoSoCua` (chung với điều phối) · đơn đang bàn = đơn mới nhất của hội
+   thoại · nhãn trạng thái đơn so khoá máy trạng thái, nhãn POS so khoá `src/pos/ma-trang-thai.js#
+   BANG_MA` · kịch bản qua bộ giải ba tầng · Sổ AI v3 trống ⇒ «chưa có dữ liệu». —
+   `ban-hoi-thoai-boi-canh`.
+8. **Sale vào thẳng bàn** sau đăng nhập — `vai-b-noi-day` (đích `diTiep`). Tên đầu trang khớp menu,
+   và bàn nằm trong số màn HK10 thật sự đo — `he-kieu` HK10.
+

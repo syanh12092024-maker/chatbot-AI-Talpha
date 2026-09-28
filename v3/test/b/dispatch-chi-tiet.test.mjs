@@ -149,6 +149,8 @@ test('L4-M1 · id không có thật → null, id rỗng → null, thiếu bối 
 // `so_ai` thật chỉ ghi HÀNH ĐỘNG của bot: không có cột nội dung tin, không có dòng nào
 // cho tin của khách. Dựng đoạn chat từ đó là dựng một nửa cuộc nói chuyện. Hội thoại đầy
 // đủ nằm ở Pancake, đúng chỗ sale vốn làm việc (01-QUYET-DINH §10).
+// 28/09 — CR-28-09 (§10 mới): đoạn chat TRỞ LẠI, nhưng ở BÀN HỘI THOẠI và đọc THẲNG Pancake
+// (`ban-hoi-thoai/doc-hoi-thoai.js`), không dựng từ `so_ai`. Lý do trên vẫn đúng nguyên văn.
 // Ba bài dưới đây KHOÁ quyết định đó lại, để người sau không vô tình đắp lại.
 
 test('L4-M1 · màn chi tiết KHÔNG trả đoạn chat nữa', async () => {
