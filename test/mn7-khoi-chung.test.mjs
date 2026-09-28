@@ -95,6 +95,8 @@ before(async () => {
   sb = await dungSandbox("mn7");
   pool = sb.pool;
   team = (await pool.query("INSERT INTO team(slug,ten) VALUES('mn7','MN7') RETURNING id")).rows[0].id;
+  // team đang giữ bot: có sản phẩm nạp từ bot (nguon='kb')
+  await pool.query("INSERT INTO san_pham(team_id,ma,ten,nguon) VALUES($1,'kb:1:SP01','','kb')", [team]);
   const app = express();
   app.use(express.json());
   app.use((q, _s, next) => { q.boiCanh = { teamId: team, nguoiDungId: null, tenDangNhap: "mkt@t.vn", vai }; next(); });
@@ -131,4 +133,18 @@ test("KC7 · bot HỎNG ⇒ không lưu: CSDL giữ bản cũ", async () => {
   const d = (await pool.query("SELECT phien_ban, noi_dung FROM khoi_dung_chung WHERE team_id=$1", [team])).rows[0];
   assert.equal(d.phien_ban, 1);
   assert.equal(d.noi_dung.policies[0].topic, "Giao hàng");
+});
+
+test("KC8 · LUẬT TÁCH TEAM: team khác sửa ⇒ 403; hai team THẬT cùng trên bot ⇒ 409; team kỹ thuật không tính", async () => {
+  const khac = (await pool.query("INSERT INTO team(slug,ten) VALUES('mn7b','B') RETURNING id")).rows[0].id;
+  const kt = (await pool.query("SELECT id FROM team WHERE la_ky_thuat LIMIT 1")).rows[0]?.id;
+  if (kt) await pool.query("INSERT INTO san_pham(team_id,ma,ten,nguon) VALUES($1,'kb:9:SP01','','kb')", [kt]);
+  assert.equal((await luu({ noiDung: {}, phienBan: 1 })).status, 200, "team kỹ thuật không làm hỏng quyền của team thật");
+  const cu = team; team = khac;
+  try {
+    assert.equal((await luu({ noiDung: {}, phienBan: 0 })).status, 403);
+    await pool.query("INSERT INTO san_pham(team_id,ma,ten,nguon) VALUES($1,'kb:2:SP01','','kb')", [khac]);
+    assert.equal((await luu({ noiDung: {}, phienBan: 0 })).status, 409);
+  } finally { team = cu; }
+  assert.equal((await luu({ noiDung: {}, phienBan: 2 })).status, 409, "hai team thật ⇒ không ai sửa được, kể cả team cũ");
 });

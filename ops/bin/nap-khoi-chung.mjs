@@ -5,13 +5,13 @@
 //   node --env-file=.env ops/bin/nap-khoi-chung.mjs          → CHẠY THỬ: đọc Sheet, so với đoạn chữ bot đang ghép
 //   V3_GHI_KHO_BOT=1 node --env-file=.env ops/bin/nap-khoi-chung.mjs --ghi   → lưu v3 + đẩy bot + đọc lại
 //
-// Team: mọi team đang có sản phẩm trên bot (`san_pham.nguon='kb'`) — bot có MỘT bộ ba khối cho
-// mọi page, nên hơn một team thì script TỪ CHỐI (không đoán team nào thắng).
+// Team: team THẬT đang có sản phẩm trên bot (team kỹ thuật «Chưa phân» không tính) — bot có MỘT
+// bộ ba khối cho mọi page, nên hơn một team thật thì script TỪ CHỐI (không đoán team nào thắng).
 import { taoPool } from "../../db/ket-noi.js";
 import { config } from "../../src/config.js";
 import { getSheetId, fetchTabRows } from "../../src/sheets.js";
 import { parsePolicies, parseFaqs, parseObjections, buildShared } from "../../src/kb.js";
-import { sachKhoiChung, luuKhoiChung } from "../../src/products/khoi-chung.js";
+import { sachKhoiChung, luuKhoiChung, teamGiuKhoiChung } from "../../src/products/khoi-chung.js";
 import { dayKhoiChungLenBot, goiAdminV1 } from "../../v3/src/noi-day/cau-bot-v1.js";
 
 const GHI = process.argv.includes("--ghi");
@@ -30,9 +30,10 @@ if (!khop) { console.error("TỪ CHỐI: bản nạp không tái tạo đúng đ
 
 const pool = taoPool();
 try {
-  const team = (await pool.query("SELECT DISTINCT team_id FROM san_pham WHERE nguon = 'kb'")).rows.map((r) => r.team_id);
-  console.log(`Team có sản phẩm trên bot: ${team.join(", ") || "(không)"}`);
-  if (team.length !== 1) { console.error("TỪ CHỐI: cần đúng MỘT team (bot có một bộ ba khối cho mọi page)."); process.exit(1); }
+  // Team THẬT (bỏ team kỹ thuật «Chưa phân») — cùng luật với cửa lưu (`teamGiuKhoiChung`).
+  const team = await teamGiuKhoiChung(pool);
+  console.log(`Team thật có sản phẩm trên bot: ${team.join(", ") || "(không)"}`);
+  if (team.length !== 1) { console.error("TỪ CHỐI: cần đúng MỘT team thật (bot có một bộ ba khối cho mọi page)."); process.exit(1); }
   if (!GHI) { console.log("CHẠY THỬ — không ghi gì. Thêm --ghi."); process.exit(0); }
   const c = await pool.connect();
   try {

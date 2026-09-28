@@ -71,3 +71,31 @@ export async function luuKhoiChung(c, teamId, noiDung, { phienBanCu, nguoiSua = 
   );
   return { truoc: cu.noiDung, sau: sach, phienBan: r.rows[0].phien_ban };
 }
+
+/**
+ * TEAM ĐANG GIỮ BỘ BA KHỐI CỦA BOT. Bot v1 có MỘT bộ ba khối cho MỌI page (không biết team), nên
+ * chỉ được đúng MỘT team THẬT có sản phẩm trên bot — team kỹ thuật «Chưa phân» (page chưa giao ai,
+ * không ai đăng nhập được) không tính. Đo prod 28/09: Tiểu Alpha 74 page · team kỹ thuật 2 page.
+ * Hai team thật trở lên ⇒ lưu của team này đổi lời bot ở page của team kia (phá luật tách team
+ * §8) ⇒ TỪ CHỐI, tới khi bot tách ba khối theo page (nợ §9 N-MN7).
+ */
+export async function teamGiuKhoiChung(db) {
+  const r = await db.query(
+    `SELECT DISTINCT s.team_id FROM san_pham s JOIN team t ON t.id = s.team_id
+      WHERE s.nguon = 'kb' AND NOT t.la_ky_thuat`,
+  );
+  return r.rows.map((x) => String(x.team_id));
+}
+
+export async function batBuocGiuKhoiChung(db, teamId) {
+  const ds = await teamGiuKhoiChung(db);
+  if (ds.length > 1) {
+    throw new LoiKhoiChung(
+      `bot đang phục vụ page của ${ds.length} team, mà bot chỉ có MỘT bộ Chính sách/FAQ/Phản đối cho mọi page — `
+      + "sửa ở đây sẽ đổi lời bot ở page của team khác. Cần tách ba khối theo page trước.", "nhieu_team", 409,
+    );
+  }
+  if (ds.length === 1 && ds[0] !== String(teamId)) {
+    throw new LoiKhoiChung("bộ Chính sách/FAQ/Phản đối của bot đang thuộc một team khác — team này không sửa được.", "khac_team", 403);
+  }
+}

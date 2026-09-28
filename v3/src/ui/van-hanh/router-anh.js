@@ -39,7 +39,7 @@ import {
   themAnh, suaNhanAnh, boAnh, xepAnh, LoiAnhSanPham,
 } from "../../../../src/products/anh-san-pham.js";
 import { taoBuocDayBot } from "./router.js";
-import { luuKhoiChung, LoiKhoiChung } from "../../../../src/products/khoi-chung.js";
+import { luuKhoiChung, batBuocGiuKhoiChung, LoiKhoiChung } from "../../../../src/products/khoi-chung.js";
 
 export const DUOI_THEO_KIEU = Object.freeze({
   "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
@@ -153,6 +153,7 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
     }
     const bc = q.boiCanh;
     const kq = await transaction(pool, async (c) => {
+      await batBuocGiuKhoiChung(c, bc.teamId);   // bot có MỘT bộ ba khối — chỉ team đang giữ được sửa
       const l = await luuKhoiChung(c, bc.teamId, q.body?.noiDung, {
         phienBanCu: q.body?.phienBan, nguoiSua: bc.tenDangNhap || String(bc.nguoiDungId || ""),
       });
