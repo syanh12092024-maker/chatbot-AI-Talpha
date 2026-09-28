@@ -1276,6 +1276,15 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
   🔴 Nhưng ngày bật lại AI trên máy chủ, mọi lượt sẽ 401 — **phải thay khoá trước khi mở
   van AI** (việc người: cấp khoá Moonshot hợp lệ cho máy chủ, nạp vào kho khoá team).
 
+  🟠 **N-HT3 (28/09, phiếu UI-HT3 — bàn hội thoại).** Ngoài phạm vi âm của CR-28-09 (lược đồ):
+  ① chỉ mục `don_hang (team_id, hoi_thoai_id) WHERE hoi_thoai_id IS NOT NULL` — mỗi lượt mở hội
+  thoại quét 123.629 đơn (prod 28/09: 81–104 ms, 16.594 trang/lượt); ② `so_ai` chưa có chỉ mục theo
+  `psid` (hôm nay 0 dòng); ③ `tin_cho_hoi_thoai` là chỉ mục một phần (`cho`/`dang_xu`) nên đọc dấu vết
+  tin đã xong đi `tin_cho_xu_ly_conv` rồi lọc psid; ④ mã POS 17 (2 đơn gắn hội thoại) ngoài
+  `src/pos/ma-trang-thai.js#BANG_MA` — màn hiện «mã 17 · chưa xác minh»; ⑤ tỉ lệ tin page còn nhãn
+  «Page» trên hội thoại thật chưa đo (cần deploy); ⑥ phiếu UI-HT2 còn «mốc bot đẩy sang người» giữa
+  khung chat và tìm theo tên. Nhật ký `docs/thi-cong/nhat-ky/phieu-UI-HT3.md`.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2574,3 +2583,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 28/09 · MN1 → ✅ `b8d6a0f` — bảng `anh_san_pham` + `goi_gia.nhan` + `san_pham.bien_the` (025, chỉ thêm); catalog mang ảnh, không gãy khi 025 chưa áp · thước anh-san-pham 6/6
 - 28/09 · MN3 → ✅ `0bd772a` — lưu sản phẩm đẩy bản chép sang bot TRONG giao dịch, đọc lại xác minh, hỏng ⇒ ROLLBACK · `kb.js#writeOverrides` thôi nuốt lỗi ghi · thước mn3 10/10 · 🧭 bản đầu của thước ghi một page giả vào `kb-overrides.json` cục bộ qua `import` tĩnh bắc cầu — đã gỡ, và `test/_an-toan.mjs` nay chặn `KB_OVERRIDES_FILE`
 - 28/09 · MN2 → 🔨 `f28df74` — `ops/bin/nap-mot-nguon.mjs` chạy thử trên bản sao prod: 77/77 page khứ hồi khớp · 79 SP · 156 bậc · 543 ảnh (43 ảnh máy mình lưu tương đối) · chạy `--ghi` chờ deploy 025
+- 28/09 · UI-HT3 → ✅ — cột bối cảnh (khách+hoàn · đơn đang bàn · kịch bản qua bộ giải 3 tầng · lượt bot) + nhãn tin Bot AI/Tự động/Page theo dữ liệu đối chiếu + tên Messenger; VÁ lỗi UI-HT1 chưa deploy: cổng thật ném với `tin_cho_xu_ly` ⇒ mọi hội thoại 500 — nay đọc bằng SQL kẹp team
+  cổng ui-ht3.sh 12/12 · đảo-vá 19/19 · ca Postgres chạy trọn đường qua cổng thật · sửa thước ui-ht1.sh ③ (đỏ oan từ UI-HT2) · npm test 2.175/0
+  · commit f2ddaa3 · nhật ký docs/thi-cong/nhat-ky/phieu-UI-HT3.md
