@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { trangMotPage, noiDungPage, LoiMotPage } from './kho-mot-page.js';
+import { VAI_SUA_SAN_PHAM } from '../van-hanh/router-anh.js';
 
 export const DUONG_TRANG = '/page';
 /** Cùng ba vai với màn «Page còn thiếu gì» — xem tình trạng page là việc chung. */
@@ -131,7 +132,9 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
         thongDiep: `Không có page id=${req.params.id} trong team đang mở.`,
       });
     }
-    return res.json({ ok: true, ...d, suaDuoc: coVai(bc, ...VAI_SUA_DUOC) });
+    // `spSuaDuoc` (28/09): sản phẩm · giá · ảnh sửa được bởi quản trị + marketer — rộng hơn
+    // `suaDuoc` (thiết lập page, công tắc bot: chỉ quản trị). Cùng danh sách với cửa ghi.
+    return res.json({ ok: true, ...d, suaDuoc: coVai(bc, ...VAI_SUA_DUOC), spSuaDuoc: coVai(bc, ...VAI_SUA_SAN_PHAM) });
   }));
 
   // Hai khối nội dung, đọc riêng vì nặng hơn — chỉ gọi khi người ta mở đúng tab.

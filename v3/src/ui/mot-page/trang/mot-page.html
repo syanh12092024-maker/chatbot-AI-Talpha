@@ -74,7 +74,7 @@
 </main>
 
 <script>
-const { esc, statusBadge, button, alert: canhBao, emptyState, toast, confirmDialog, nguonSo } = window.UI;
+const { esc, statusBadge, button, setBusy, alert: canhBao, emptyState, toast, confirmDialog, nguonSo } = window.UI;
 const $ = (s) => document.querySelector(s);
 
 // Id của page lấy từ chính đường dẫn — trang này luôn mở bằng /page/<id>.
@@ -423,6 +423,23 @@ function noiNutSangTab(o) {
  *    Dựng bản thứ hai của một bảng tám cột trên đường tiền là chỗ dễ trôi khỏi nhau nhất.
  */
 let SP = [];
+/** Sản phẩm · giá · ảnh: quản trị + marketer (người quyết 28/09). Máy chủ cũ chưa trả cờ ⇒ theo `suaDuoc`. */
+const SUA_SP = () => (D && typeof D.spSuaDuoc === 'boolean' ? D.spSuaDuoc : !!(D && D.suaDuoc));
+
+/* ── VẼ LẠI TỪNG KHỐI, KHÔNG CẢ TAB (28/09 · lượt thử đầu-cuối) ───────────────────────
+ * Bản trước sau mỗi thao tác ảnh/sản phẩm gọi `veNoiDung()` — vẽ lại CẢ khối kịch bản, nên chữ
+ * đang gõ dở ở kịch bản (chưa lưu) MẤT, và trang nhảy vị trí cuộn. Nay: đọc lại dữ liệu rồi chỉ
+ * vẽ lại đúng khối vừa đổi (và dải «giá gõ cứng»), giữ nguyên chỗ người dùng đang đứng. */
+async function docLaiNoiDung() {
+  daDocNoiDung = await goi(`/api/page/${encodeURIComponent(ID)}/noi-dung`);
+  $('#o-gia').innerHTML = veGiaGoCung();
+  noiNutSangTab($('#o-gia'));
+}
+async function veLaiGiuCuon(ve) {
+  const y = window.scrollY;
+  await ve();
+  window.scrollTo(0, y);
+}
 
 async function veSanPham(o) {
   o.innerHTML = '<div class="panel"><p class="meta">Đang đọc…</p></div>';
@@ -471,35 +488,36 @@ async function veSanPham(o) {
     <div class="panel" data-sp="${i}">
       <div class="setting-row">
         <div><label for="sp-ten-${i}"><b>Tên</b></label><div class="meta">Bot gọi món bằng tên này${x.ten ? '' : ' — đang TRỐNG, bot không gọi được tên món'} · ${esc(x.ma || '')}</div></div>
-        <div><input id="sp-ten-${i}" type="text" value="${esc(x.ten || '')}" ${D.suaDuoc ? '' : 'disabled'}></div>
+        <div><input id="sp-ten-${i}" type="text" value="${esc(x.ten || '')}" ${SUA_SP() ? '' : 'disabled'}></div>
       </div>
       <div class="setting-row">
         <div><label for="sp-bt-${i}"><b>Phân loại</b></label><div class="meta">Bot in «(phân loại: …)» cạnh tên.</div></div>
-        <div><input id="sp-bt-${i}" type="text" value="${esc(x.bien_the || '')}" ${D.suaDuoc ? '' : 'disabled'}></div>
+        <div><input id="sp-bt-${i}" type="text" value="${esc(x.bien_the || '')}" ${SUA_SP() ? '' : 'disabled'}></div>
       </div>
       <div class="setting-row">
         <div><label for="sp-mt-${i}"><b>Thông tin, cách dùng</b></label></div>
-        <div><textarea id="sp-mt-${i}" rows="3" ${D.suaDuoc ? '' : 'disabled'}>${esc(x.mo_ta || '')}</textarea></div>
+        <div><textarea id="sp-mt-${i}" rows="3" ${SUA_SP() ? '' : 'disabled'}>${esc(x.mo_ta || '')}</textarea></div>
       </div>
       <div class="setting-row">
         <div><label for="sp-hh-${i}"><b>Hết hàng</b></label></div>
-        <div><label class="switch"><input id="sp-hh-${i}" type="checkbox" role="switch" ${x.het_hang ? 'checked' : ''} ${D.suaDuoc ? '' : 'disabled'}><span>${x.het_hang ? 'Hết' : 'Còn'}</span></label></div>
+        <div><label class="switch"><input id="sp-hh-${i}" type="checkbox" role="switch" ${x.het_hang ? 'checked' : ''} ${SUA_SP() ? '' : 'disabled'}><span>${x.het_hang ? 'Hết' : 'Còn'}</span></label></div>
       </div>
-      <table class="data-table"><thead><tr>
+      <div class="cuon-ngang"><table class="data-table"><thead><tr>
         <th scope="col">Tên bậc khách đọc</th><th scope="col">Số lượng</th><th scope="col">Giá cả gói</th><th scope="col">Tiền tệ</th><th scope="col">Bật</th>
       </tr></thead><tbody>
         ${(x.offers || []).map((g, j) => `<tr>
-          <td><input type="text" data-g="${i}-${j}-nhan" value="${esc(g.nhan || '')}" placeholder="Buy ${esc(g.so_luong)}" ${D.suaDuoc ? '' : 'disabled'}></td>
-          <td><input type="number" min="1" data-g="${i}-${j}-sl" value="${esc(g.so_luong)}" ${D.suaDuoc ? '' : 'disabled'}></td>
-          <td><input type="number" step="0.01" data-g="${i}-${j}-gia" value="${esc(g.price)}" ${D.suaDuoc ? '' : 'disabled'}></td>
-          <td><input type="text" data-g="${i}-${j}-tt" value="${esc(g.tien_te)}" ${D.suaDuoc ? '' : 'disabled'}></td>
-          <td><input type="checkbox" data-g="${i}-${j}-bat" ${g.bat !== false ? 'checked' : ''} ${D.suaDuoc ? '' : 'disabled'}></td>
+          <td><input type="text" data-g="${i}-${j}-nhan" value="${esc(g.nhan || '')}" placeholder="Buy ${esc(g.so_luong)}" ${SUA_SP() ? '' : 'disabled'}></td>
+          <td><input type="number" min="1" data-g="${i}-${j}-sl" value="${esc(g.so_luong)}" ${SUA_SP() ? '' : 'disabled'}></td>
+          <td><input type="number" step="0.01" data-g="${i}-${j}-gia" value="${esc(g.price)}" ${SUA_SP() ? '' : 'disabled'}></td>
+          <td><input type="text" data-g="${i}-${j}-tt" value="${esc(g.tien_te)}" ${SUA_SP() ? '' : 'disabled'}></td>
+          <td><input type="checkbox" data-g="${i}-${j}-bat" ${g.bat !== false ? 'checked' : ''} ${SUA_SP() ? '' : 'disabled'}></td>
         </tr>`).join('')}
-      </tbody></table>
+      </tbody></table></div>
       <p class="meta">Tên bậc là chữ bot gửi NGUYÊN VĂN cho khách; để trống thì bot nói «Buy &lt;số lượng&gt;».
         Giá gốc, khuyến mãi, phí ship và miễn ship không hiện ở đây — chúng được giữ nguyên khi
         lưu, và bot hiện CHƯA nói bốn ô đó với khách (chỉ dùng khi tạo đơn).</p>
-      ${D.suaDuoc ? `<div class="duoi-2">${button('Lưu sản phẩm này', { size: 'sm', variant: 'primary', data: { luusp: i } })}</div>` : ''}
+      ${SUA_SP() ? `<div class="duoi-2">${button('Lưu sản phẩm này', { size: 'sm', variant: 'primary', data: { luusp: i } })}</div>`
+        : '<p class="meta">Cần vai Quản trị hoặc Marketer để sửa sản phẩm, giá, ảnh.</p>'}
       ${veAnh(x, i)}
     </div>`).join('');
 
@@ -511,7 +529,7 @@ async function veSanPham(o) {
       (${esc(thieuBan.slice(0, 5).join(' · '))}${thieuBan.length > 5 ? '…' : ''}).
       Sửa ở màn «Hội thoại và đơn».</p></div>`);
   }
-  o.querySelectorAll('[data-luusp]').forEach((b) => b.addEventListener('click', () => luuSanPham(Number(b.dataset.luusp), o)));
+  o.querySelectorAll('[data-luusp]').forEach((b) => b.addEventListener('click', () => luuSanPham(Number(b.dataset.luusp), o, b)));
   noiAnh(o);
   noiNutSangTab(o);
 }
@@ -523,17 +541,24 @@ async function veSanPham(o) {
  * Bot chọn ảnh THEO NHÃN (khách hỏi feedback ⇒ ảnh có nhãn chứa «feedback»), nên nhãn là
  * thứ quan trọng nhất ở đây, không phải trang trí.
  */
-const NHAN_GOI_Y = ['Ảnh sản phẩm', 'Feedback khách', 'Chứng nhận', 'Thành phần', 'Cách dùng', 'Công dụng'];
+// NHÃN CHỌN TỪ DANH SÁCH (người quyết 28/09): bot chọn ảnh bằng `nhãn.includes(loại)` — gõ tay
+// «Feedbak» là ảnh ấy không bao giờ được gửi khi khách hỏi feedback. Nhãn cũ ngoài danh sách
+// (ảnh nạp từ bot cũ) vẫn HIỆN và giữ nguyên, chỉ không tạo mới được.
+const NHAN_GOI_Y = ['Ảnh sản phẩm', 'Feedback khách', 'Chứng nhận', 'Thành phần', 'Cách dùng', 'Công dụng', 'Khác'];
+function chonNhan(ma, dangCo, attrs) {
+  const ds = dangCo && !NHAN_GOI_Y.includes(dangCo) ? [dangCo, ...NHAN_GOI_Y] : NHAN_GOI_Y;
+  return `<select ${attrs}>${ds.map((n) => `<option value="${esc(n)}" ${n === (dangCo || 'Ảnh sản phẩm') ? 'selected' : ''}>${esc(n)}${NHAN_GOI_Y.includes(n) ? '' : ' (nhãn cũ)'}</option>`).join('')}</select>`;
+}
 
 function veAnh(x, i) {
   const ds = Array.isArray(x.anh) ? x.anh : [];
-  const khoa = D.suaDuoc ? '' : 'disabled';
+  const khoa = SUA_SP() ? '' : 'disabled';
   const the = ds.map((a, k) => `
     <figure class="thumb">
       <img src="${esc(a.duong)}" alt="${esc(a.nhan || 'Ảnh sản phẩm')}" loading="lazy">
       <figcaption class="thumb-meta">
-        <input type="text" list="nhan-anh" aria-label="Nhãn ảnh ${k + 1}" data-anhnhan="${esc(a.id)}" data-cu="${esc(a.nhan || '')}" value="${esc(a.nhan || '')}" placeholder="(không nhãn)" ${khoa}>
-        ${D.suaDuoc ? `<div class="duoi-2">
+        ${chonNhan(k, a.nhan || '', `aria-label="Nhãn ảnh ${k + 1}" data-anhnhan="${esc(a.id)}" data-cu="${esc(a.nhan || '')}" ${khoa}`)}
+        ${SUA_SP() ? `<div class="duoi-2">
           ${button('↑', { size: 'sm', variant: 'ghost', data: { anhlen: `${i}-${k}` }, disabled: !k })}
           ${button('↓', { size: 'sm', variant: 'ghost', data: { anhxuong: `${i}-${k}` }, disabled: k >= ds.length - 1 })}
           ${button('Bỏ', { size: 'sm', variant: 'ghost', data: { anhbo: a.id } })}
@@ -542,11 +567,10 @@ function veAnh(x, i) {
     </figure>`).join('');
   return `<h3 class="duoi-4">Ảnh bot gửi khách (${ds.length})</h3>
     ${ds.length ? `<div class="thumb-grid">${the}</div>` : '<p class="meta">Chưa có ảnh — bot sẽ tư vấn bằng lời.</p>'}
-    <datalist id="nhan-anh">${NHAN_GOI_Y.map((n) => `<option value="${esc(n)}">`).join('')}</datalist>
-    ${D.suaDuoc ? `<div class="setting-row">
+    ${SUA_SP() ? `<div class="setting-row">
       <div><b>Thêm ảnh</b><div class="meta">Bot chọn ảnh theo nhãn: «Ảnh sản phẩm» được gửi trước; khách hỏi feedback thì gửi ảnh có nhãn chứa «Feedback».</div></div>
       <div>
-        <input type="text" list="nhan-anh" id="anh-nhan-${i}" placeholder="Nhãn, ví dụ Ảnh sản phẩm" aria-label="Nhãn ảnh mới">
+        ${chonNhan(-1, 'Ảnh sản phẩm', `id="anh-nhan-${i}" aria-label="Nhãn ảnh mới"`)}
         <input type="file" id="anh-tep-${i}" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Chọn tệp ảnh">
         ${button('Tải ảnh lên', { size: 'sm', data: { anhtai: i } })}
         <input type="url" id="anh-link-${i}" placeholder="…hoặc dán link ảnh công khai https://" aria-label="Link ảnh">
@@ -555,14 +579,14 @@ function veAnh(x, i) {
     </div>` : ''}`;
 }
 
-/** Gọi cửa ảnh, báo kết quả ĐỒNG BỘ BOT, rồi đọc lại tab. */
-async function thaoTacAnh(duong, tuyChon, xong) {
+/** Gọi cửa ảnh, báo kết quả ĐỒNG BỘ BOT, rồi vẽ lại RIÊNG khối sản phẩm. */
+async function thaoTacAnh(duong, tuyChon, xong, nut) {
+  setBusy(nut, true);
   try {
     const kq = await goi(duong, { ...tuyChon, headers: { 'X-V3-Action': '1', ...(tuyChon.headers || {}) } });
     baoDongBo(kq, xong);
-    daDocNoiDung = null;
-    await veNoiDung();
-  } catch (e) { baoLoi('Không lưu được ảnh', e.message); }
+    await veLaiGiuCuon(async () => { await docLaiNoiDung(); await veSanPham($('#o-sp')); });
+  } catch (e) { setBusy(nut, false); baoLoi('Không lưu được ảnh', e.message); }
 }
 
 /** Mọi lượt lưu nói rõ bot đã nhận chưa — «đã lưu» mà bot chưa đổi là điều luật cấm. */
@@ -580,25 +604,25 @@ function noiAnh(o) {
   o.querySelectorAll('[data-anhnhan]').forEach((inp) => inp.addEventListener('change', () => {
     if (inp.value === inp.dataset.cu) return;
     thaoTacAnh(`/api/anh-san-pham/anh/${encodeURIComponent(inp.dataset.anhnhan)}`,
-      { method: 'POST', body: JSON.stringify({ nhan: inp.value }) }, 'Đã đổi nhãn ảnh');
+      { method: 'POST', body: JSON.stringify({ nhan: inp.value }) }, 'Đã đổi nhãn ảnh', inp);
   }));
   o.querySelectorAll('[data-anhbo]').forEach((b) => b.addEventListener('click', async () => {
     const ok = await confirmDialog({ title: 'Bỏ ảnh này?', body: 'Bot sẽ thôi gửi ảnh này cho khách ngay khi lưu.', confirmLabel: 'Bỏ ảnh', danger: true });
-    if (ok) thaoTacAnh(`/api/anh-san-pham/anh/${encodeURIComponent(b.dataset.anhbo)}`, { method: 'DELETE' }, 'Đã bỏ ảnh');
+    if (ok) thaoTacAnh(`/api/anh-san-pham/anh/${encodeURIComponent(b.dataset.anhbo)}`, { method: 'DELETE' }, 'Đã bỏ ảnh', b);
   }));
-  const doi = (i, k, buoc) => {
+  const doi = (i, k, buoc, nut) => {
     const ds = (SP[i].anh || []).map((a) => a.id);
     const j = k + buoc;
     if (j < 0 || j >= ds.length) return;
     [ds[k], ds[j]] = [ds[j], ds[k]];
     thaoTacAnh(`/api/anh-san-pham/${encodeURIComponent(SP[i].id)}/thu-tu`,
-      { method: 'POST', body: JSON.stringify({ ids: ds }) }, 'Đã xếp lại ảnh');
+      { method: 'POST', body: JSON.stringify({ ids: ds }) }, 'Đã xếp lại ảnh', nut);
   };
   o.querySelectorAll('[data-anhlen]').forEach((b) => b.addEventListener('click', () => {
-    const [i, k] = b.dataset.anhlen.split('-').map(Number); doi(i, k, -1);
+    const [i, k] = b.dataset.anhlen.split('-').map(Number); doi(i, k, -1, b);
   }));
   o.querySelectorAll('[data-anhxuong]').forEach((b) => b.addEventListener('click', () => {
-    const [i, k] = b.dataset.anhxuong.split('-').map(Number); doi(i, k, 1);
+    const [i, k] = b.dataset.anhxuong.split('-').map(Number); doi(i, k, 1, b);
   }));
   o.querySelectorAll('[data-anhtai]').forEach((b) => b.addEventListener('click', () => {
     const i = Number(b.dataset.anhtai);
@@ -607,7 +631,7 @@ function noiAnh(o) {
     if (tep.size > 10 * 1024 * 1024) { baoLoi('Ảnh quá lớn', 'Tối đa 10 MB.'); return; }
     const nhan = o.querySelector(`#anh-nhan-${i}`).value.trim();
     thaoTacAnh(`/api/anh-san-pham/${encodeURIComponent(SP[i].id)}/tai-len?nhan=${encodeURIComponent(nhan)}`,
-      { method: 'POST', body: tep, headers: { 'Content-Type': tep.type } }, 'Đã thêm ảnh');
+      { method: 'POST', body: tep, headers: { 'Content-Type': tep.type } }, 'Đã thêm ảnh', b);
   }));
   o.querySelectorAll('[data-anhlink]').forEach((b) => b.addEventListener('click', () => {
     const i = Number(b.dataset.anhlink);
@@ -615,11 +639,11 @@ function noiAnh(o) {
     const nhan = o.querySelector(`#anh-nhan-${i}`).value.trim();
     if (!duong) { baoLoi('Chưa có link', 'Dán link ảnh công khai bắt đầu bằng https://'); return; }
     thaoTacAnh(`/api/anh-san-pham/${encodeURIComponent(SP[i].id)}/link`,
-      { method: 'POST', body: JSON.stringify({ duong, nhan }) }, 'Đã thêm ảnh');
+      { method: 'POST', body: JSON.stringify({ duong, nhan }) }, 'Đã thêm ảnh', b);
   }));
 }
 
-async function luuSanPham(i, o) {
+async function luuSanPham(i, o, nut) {
   const x = SP[i];
   const lay = (k) => o.querySelector(`[data-g="${i}-${k}"]`);
   const than = {
@@ -641,15 +665,18 @@ async function luuSanPham(i, o) {
       bat: lay(`${j}-bat`).checked,
     })),
   };
+  setBusy(nut, true);
   try {
-    const kq = await goi(`/api/van-hanh/products/${encodeURIComponent(x.id)}`, {
+    // Cửa của TRANG PAGE (quản trị + marketer) — cùng `saveProduct` + bước đẩy bot với cửa của
+    // màn «Hội thoại và đơn», chỉ khác ai được gõ.
+    const kq = await goi(`/api/anh-san-pham/san-pham/${encodeURIComponent(x.id)}`, {
       method: 'POST', headers: { 'X-V3-Action': '1' },
       body: JSON.stringify(than),
     });
     baoDongBo(kq, 'Đã lưu sản phẩm');
-    daDocNoiDung = null;          // đọc lại để lấy `version` mới, không thì lượt lưu sau bị từ chối
-    await veNoiDung();
-  } catch (e) { baoLoi('Không lưu được sản phẩm', e.message); }
+    // Đọc lại để lấy `version` mới (không thì lượt lưu sau bị từ chối) — chỉ vẽ lại khối sản phẩm.
+    await veLaiGiuCuon(async () => { await docLaiNoiDung(); await veSanPham($('#o-sp')); });
+  } catch (e) { setBusy(nut, false); baoLoi('Không lưu được sản phẩm', e.message); }
 }
 
 /* ── KỊCH BẢN — LƯU LÀ CHẠY (CR-28-09b · MN6) ────────────────────────────────────────
@@ -671,32 +698,63 @@ async function veKichBan(o) {
   }
   const goc = KB.live?.nguoi || (KB.ban || [])[0]?.nguoi || {};
   const truong = KB.truong || [];
-  o.innerHTML = `<div class="panel">
-    <div><b>${KB.live ? `Đang chạy: bản ${esc(String(KB.live.phienBan ?? KB.live.phien_ban ?? '?'))}` : 'Page này CHƯA có bản nào đang chạy'}</b></div>
-    ${truong.map((t) => `
+  // Ba ô AI đọc mỗi lượt đứng trên; năm ô «trả lời nhanh» (0 đồng, chỉ bắn khi khớp câu hỏi)
+  // gập lại — chúng thường trống mà trước đây chiếm nửa màn (lượt thử 28/09).
+  const nhanh = truong.filter((t) => /^fastLane/.test(t));
+  const chinh = truong.filter((t) => !nhanh.includes(t));
+  const soDien = nhanh.filter((t) => String(goc[t] || '').trim()).length;
+  const o1 = (t) => `
       <div class="setting-row">
         <div><label for="kb-${esc(t)}"><b>${esc((KB.nhanTruong || {})[t] || t)}</b></label></div>
-        <div><textarea id="kb-${esc(t)}" rows="3" ${KB.suaDuoc ? '' : 'disabled'}>${esc(goc[t] || '')}</textarea></div>
-      </div>`).join('')}
+        <div><textarea id="kb-${esc(t)}" data-tu-co rows="${soDong(goc[t])}" ${KB.suaDuoc ? '' : 'disabled'}>${esc(goc[t] || '')}</textarea></div>
+      </div>`;
+  o.innerHTML = `<div class="panel">
+    <div><b>${KB.live ? `Đang chạy: bản ${esc(String(KB.live.phienBan ?? KB.live.phien_ban ?? '?'))}` : 'Page này CHƯA có bản nào đang chạy'}</b></div>
+    ${chinh.map(o1).join('')}
+    ${nhanh.length ? `<details class="tren-3 duoi-4">
+      <summary><b>Trả lời nhanh — ${nhanh.length} câu trả sẵn, không tốn tiền</b> <span class="meta">· ${soDien}/${nhanh.length} câu đã điền</span></summary>
+      <p class="meta">Bot bắn nguyên văn câu này khi khách hỏi đúng chủ đề (giá, ship, cách đặt…), không gọi AI. Để trống là AI tự trả lời.</p>
+      ${nhanh.map(o1).join('')}
+    </details>` : ''}
     ${KB.suaDuoc ? `<div class="duoi-2">${button('Lưu — bot dùng ngay', { size: 'sm', variant: 'primary', id: 'nutNhap' })}</div>`
       : '<p class="meta">Cần vai Quản trị hoặc Marketer để sửa.</p>'}
     <p class="meta">Lưu là chạy: bot nói theo bản này ngay khi lưu xong. Mỗi lần lưu là một bản
       mới; bản cũ giữ lại để quay về ở ${'<a href="/kich-ban">màn Kịch bản</a>'}.</p>
   </div>`;
 
+  tuCo(o);
   const nut = o.querySelector('#nutNhap');
   if (nut) nut.addEventListener('click', async () => {
     const nguoi = {};
     for (const t of truong) nguoi[t] = o.querySelector(`#kb-${t}`).value;
+    setBusy(nut, true);
     try {
       const kq = await goi(`/api/kich-ban/page/${encodeURIComponent(ID)}/luu-chay`, {
         method: 'POST', body: JSON.stringify({ nguoi, ghiChu: 'soạn ở trang của page' }),
       });
       toast(`Đã lưu v${kq.phienBan} — bot đang chạy bản này.`);
-      daDocNoiDung = null;          // giá gõ cứng trong kịch bản có thể vừa đổi — đọc lại cả tab
-      await veNoiDung();
-    } catch (e) { baoLoi('Bot CHƯA chạy bản này', e.message); await veKichBan(o); }
+      // Giá gõ cứng trong kịch bản có thể vừa đổi ⇒ đọc lại dải cảnh báo; vẽ lại RIÊNG khối
+      // kịch bản (lấy số bản mới), không đụng khối sản phẩm đang có thể dở tay.
+      await veLaiGiuCuon(async () => { await docLaiNoiDung(); await veKichBan(o); });
+    } catch (e) {
+      // LỖI ⇒ KHÔNG vẽ lại: chữ người vừa gõ phải còn nguyên để sửa rồi lưu lại.
+      setBusy(nut, false);
+      baoLoi('Bot CHƯA chạy bản này', e.message);
+    }
   });
+}
+
+/** Số dòng vừa với nội dung: tối thiểu 2, tối đa 12 — ô trống không chiếm chỗ, ô dài không cuộn trong. */
+function soDong(v) {
+  const s = String(v || '');
+  const dong = s.split('\n').reduce((n, d) => n + Math.max(1, Math.ceil(d.length / 70)), 0);
+  return Math.min(12, Math.max(2, dong));
+}
+/** Ô tự cao lên khi gõ (không nhảy trang, không thanh cuộn trong ô). */
+function tuCo(o) {
+  o.querySelectorAll('textarea[data-tu-co]').forEach((t) => t.addEventListener('input', () => {
+    t.rows = soDong(t.value);
+  }));
 }
 
 async function nap() {

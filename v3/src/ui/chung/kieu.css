@@ -976,6 +976,9 @@
   .thumb img { display: block; width: 100%; max-width: 100%; aspect-ratio: 1 / 1; object-fit: cover;
                background: var(--surface-muted); }
   .thumb-meta { padding: var(--space-2) var(--space-3); }
+  /* Ô chọn nhãn ảnh trong thẻ ảnh (trang page · CR-28-09b): chiếm trọn bề ngang thẻ, không cắt chữ. */
+  .thumb-meta select { width: 100%; max-width: 100%; font-size: var(--text-sm);
+    padding-left: var(--space-2); padding-right: var(--space-6); }
   .thumb-name { font-size: var(--text-sm); font-weight: var(--weight-medium);
                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .thumb-sub { font-size: var(--text-xs); color: var(--text-muted);

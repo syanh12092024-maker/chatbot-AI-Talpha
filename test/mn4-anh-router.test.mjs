@@ -77,10 +77,13 @@ test("AR2 · bot HỎNG ⇒ không thành: không dòng mới, và tệp vừa g
   assert.equal((await pool.query("SELECT count(*)::int n FROM anh_san_pham")).rows[0].n, n0);
 });
 
-test("AR3 · rào: không phải quản trị ⇒ 403 · thiếu X-V3-Action ⇒ 403 · không phải ảnh ⇒ 400 · link lạ ⇒ 400", async () => {
-  vai = ["marketer"];
-  try { assert.equal((await goi(`/api/anh-san-pham/${sp}/link`, { body: { duong: "https://x.vn/a.jpg" } })).status, 403); }
-  finally { vai = ["quan-tri"]; }
+test("AR3 · rào: sale/quản lý ⇒ 403 · thiếu X-V3-Action ⇒ 403 · không phải ảnh ⇒ 400 · link lạ ⇒ 400", async () => {
+  // 28/09: người quyết cho MARKETER sửa sản phẩm · giá · ảnh — rào nay là «quản trị hoặc marketer».
+  for (const v of [["sale"], ["quan-ly"]]) {
+    vai = v;
+    try { assert.equal((await goi(`/api/anh-san-pham/${sp}/link`, { body: { duong: "https://x.vn/a.jpg" } })).status, 403, v[0]); }
+    finally { vai = ["quan-tri"]; }
+  }
   assert.equal((await goi(`/api/anh-san-pham/${sp}/link`, { body: { duong: "https://x.vn/a.jpg" }, headers: { "X-V3-Action": "0" } })).status, 403);
   assert.equal((await goi(`/api/anh-san-pham/${sp}/tai-len`, { body: Buffer.from("abc"), type: "text/plain" })).status, 400);
   assert.equal((await goi(`/api/anh-san-pham/${sp}/link`, { body: { duong: "javascript:alert(1)" } })).status, 400);
@@ -118,4 +121,26 @@ test("AR6 · kho v3 cho ba màn: đếm theo luật page → sản phẩm, ảnh
   await pool.query("UPDATE san_pham SET het_hang=true WHERE id=$1", [sp]);
   assert.equal((await kho.danhSach()).find((p) => p.pageId === "4001").soSanPham, 0, "hết hàng thì bot không bán — đếm 0");
   assert.equal((await kho.motPage("4001")).sanPham[0].botDangBan, false);
+});
+
+test("AR7 · MARKETER sửa được: lưu sản phẩm (tên · tên bậc · giá) qua cửa trang page ⇒ bot nhận; nhật ký ghi đúng người", async () => {
+  await pool.query("UPDATE san_pham SET het_hang=false WHERE id=$1", [sp]);
+  const version = (await pool.query("SELECT xmin::text v FROM san_pham WHERE id=$1", [sp])).rows[0].v;
+  vai = ["marketer"]; botNhan = [];
+  try {
+    const r = await goi(`/api/anh-san-pham/san-pham/${sp}`, { body: {
+      version, ten: "Vòng Marketer", mo_ta: "Vòng", het_hang: false,
+      offers: [{ so_luong: 1, price: 205, tien_te: "AED", nhan: "1 set" }],
+    } });
+    assert.equal(r.status, 200, await r.clone().text());
+    assert.equal((await r.json()).dongBo.ok, true);
+    const a = await goi(`/api/anh-san-pham/${sp}/link`, { body: { duong: "https://content.pancake.vn/mkt.jpg", nhan: "Feedback khách" } });
+    assert.equal(a.status, 200);
+  } finally { vai = ["quan-tri"]; }
+  assert.deepEqual(botNhan[0].products[0].tiers, [{ label: "1 set", price: 205 }]);
+  assert.equal(botNhan[0].products[0].name, "Vòng Marketer");
+  assert.equal(botNhan.at(-1).products[0].images.at(-1).url, "https://content.pancake.vn/mkt.jpg");
+  // phiên bản cũ ⇒ 409 (hai người cùng sửa không đè nhau)
+  const cu = await goi(`/api/anh-san-pham/san-pham/${sp}`, { body: { version, ten: "x", mo_ta: "", het_hang: false, offers: [] } });
+  assert.equal(cu.status, 409);
 });

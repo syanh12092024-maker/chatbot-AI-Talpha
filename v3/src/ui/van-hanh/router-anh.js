@@ -7,6 +7,13 @@
 // | POST   /api/anh-san-pham/anh/:id             | { nhan }                                   |
 // | DELETE /api/anh-san-pham/anh/:id             |                                            |
 // | POST   /api/anh-san-pham/:spId/thu-tu        | { ids: [...] } — đúng tập ảnh hiện có      |
+// | POST   /api/anh-san-pham/san-pham/:spId      | lưu tên · mô tả · phân loại · hết hàng · bậc giá |
+//
+// ─── AI SỬA ĐƯỢC: QUẢN TRỊ + MARKETER (người quyết 28/09) ─────────────────────────────
+// Marketer là người viết kịch bản và dựng page — người quyết chốt họ sửa được cả sản phẩm, giá,
+// ảnh ngay trên trang page. Cửa lưu của màn «Hội thoại và đơn» (`/api/van-hanh/products/:id`)
+// giữ nguyên chỉ-quản-trị; cửa ở đây dùng ĐÚNG hàm `saveProduct` + bước đẩy bot, nên luật dữ
+// liệu, kiểm phiên bản và nhật ký giá trước/sau y hệt — chỉ khác ai được gõ.
 //
 // ─── LUẬT MỘT NGUỒN ────────────────────────────────────────────────────────────────────
 // Mỗi thao tác chạy trong MỘT giao dịch: ghi CSDL → đẩy bản chép của mọi page đang bán sản
@@ -26,7 +33,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { batBuocDangNhap, batBuocVaiHTTP, VAI } from "../../auth/index.js";
-import { transaction, fault } from "../../../../src/admin-v3/operations.js";
+import { transaction, fault, saveProduct } from "../../../../src/admin-v3/operations.js";
 import { ghiNhatKy } from "../../../../src/db/index.js";
 import {
   themAnh, suaNhanAnh, boAnh, xepAnh, LoiAnhSanPham,
@@ -37,6 +44,8 @@ export const DUOI_THEO_KIEU = Object.freeze({
   "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
 });
 export const TRAN_BYTE = 10 * 1024 * 1024;
+/** Ai sửa được sản phẩm · giá · ảnh trên trang page. */
+export const VAI_SUA_SAN_PHAM = Object.freeze([VAI.QUAN_TRI, VAI.MARKETER]);
 
 const wrap = (fn) => async (q, s, next) => { try { await fn(q, s); } catch (e) { next(e); } };
 
@@ -44,9 +53,9 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
   const r = express.Router();
   const dayBot = taoBuocDayBot({ day: daySanPhamLenBot, env });
 
-  // Cùng rào với cửa ghi của «Hội thoại và đơn»: đăng nhập · QUẢN TRỊ · cờ X-V3-Action · không
-  // nhận yêu cầu từ trang khác (chặn CSRF). Không có pool thì nói rõ, không 500.
-  r.use("/api/anh-san-pham", batBuocDangNhap(), batBuocVaiHTTP(VAI.QUAN_TRI), (q, s, next) => {
+  // Rào: đăng nhập · quản trị hoặc marketer · cờ X-V3-Action · không nhận yêu cầu từ trang khác
+  // (chặn CSRF). Không có pool thì nói rõ, không 500.
+  r.use("/api/anh-san-pham", batBuocDangNhap(), batBuocVaiHTTP(...VAI_SUA_SAN_PHAM), (q, s, next) => {
     s.set("Cache-Control", "no-store");
     if (q.get("X-V3-Action") !== "1" || q.get("Sec-Fetch-Site") === "cross-site") {
       return s.status(403).json({ ok: false, thongDiep: "Yêu cầu ghi không hợp lệ" });
@@ -127,6 +136,12 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
       return { sanPhamId: String(q.params.spId), sau: { thuTu: ds.map((a) => a.id) }, ra: { anh: ds } };
     });
     s.json({ ok: true, ...kq });
+  }));
+
+  // Lưu MỘT sản phẩm từ trang page — chính `saveProduct` (kiểm phiên bản · nhật ký giá trước/sau)
+  // + bước đẩy bot trong cùng giao dịch. Nhật ký ghi đúng người (quản trị hay marketer).
+  r.post("/api/anh-san-pham/san-pham/:spId", wrap(async (q, s) => {
+    s.json({ ok: true, ...(await saveProduct(pool, q.boiCanh, q.params.spId, q.body || {}, { sauKhiLuu: dayBot })) });
   }));
 
   r.use("/api/anh-san-pham", (e, _q, s, _next) => {
