@@ -45,7 +45,11 @@ function nhomCua(v) {
 }
 
 function tieuDe(v) {
-  const tong = v.tong != null ? ` <span class="meta">/ ${so(v.tong)} ${esc(v.donVi || 'page')}</span>` : '';
+  // «2 trên 4 page», không phải «/ 4 page»: số to bên trái và «/ 4» đọc như hai con số khác
+  // nhau, người đọc không biết 2 là phần của 4 (audit 28/09).
+  const dv = esc(v.donVi || 'page');
+  const tong = v.tong == null ? ''
+    : ` <span class="meta">· ${v.so != null ? `${so(v.so)} trên ${so(v.tong)}` : `tổng ${so(v.tong)}`} ${dv}</span>`;
   return `<div class="item-title">${esc(v.ten)}${tong}</div>`;
 }
 
@@ -78,7 +82,7 @@ function veHang(v, nhom) {
   return `<li class="item">
     <div class="item-lead" data-muted>${so(v.so)}</div>
     <div>${tieuDe(v)}<div class="item-desc">${text(v.noiRong || v.lam)}</div></div>
-    <div class="item-trail">${v.di ? button('Mở', { href: v.di, size: 'sm', variant: 'ghost' }) : ''}</div>
+    <div class="item-trail">${v.di ? button('Mở', { href: v.di, size: 'sm', variant: 'outline' }) : ''}</div>
   </li>`;
 }
 

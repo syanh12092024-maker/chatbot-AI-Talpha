@@ -582,6 +582,13 @@
 
   /* Mục Z: KHÔNG thẻ trong thẻ. Một khu vực = tiêu đề + vạch + nội dung. */
   .section + .section { margin-top: var(--space-8); }
+  /* Khu đứng SAU một khối không phải khu (thẻ tóm tắt, dải số, hộp cảnh báo) từng dính sát
+     khối ấy — quy tắc trên chỉ phủ khu-sau-khu (audit 28/09: Cài đặt team, Hệ còn sống không,
+     Kết nối). Bỏ qua khối RỖNG đứng trước: ô cảnh báo chưa có gì thì không được đẩy khu xuống.
+     `main` là khối thường nên lề dọc gộp: khối trước đã có `duoi-*` thì lấy số lớn hơn, không cộng. */
+  body > main > :not(:empty) + :is(section, .section, .table-wrap, .cot-ds) { margin-top: var(--space-6); }
+  /* Tiêu đề trơn đứng đầu một khu (không có `.section-header` bọc) cũng cần hở với thẻ dưới nó. */
+  body > main > section > h2:first-child { margin-bottom: var(--space-3); }
   .section-header { display: flex; align-items: center; justify-content: space-between;
                     gap: var(--space-3); margin-bottom: var(--space-3); }
   .section-header h2 { font-size: var(--text-lg); }
@@ -845,6 +852,9 @@
   .page-note { margin-top: var(--space-6); font-size: var(--text-sm); color: var(--text-muted);
                line-height: 20px; max-width: 80ch; }
   .page-note p { margin: 0 0 var(--space-1); }
+  /* Ghi chú RỖNG (chưa có gì để nói) vẫn giữ lề trên 24px ⇒ đầu màn Quy tắc chung trống một
+     khoảng không lý do (audit 28/09). Rỗng thì không chiếm chỗ. */
+  .page-note:empty { display: none; }
 
   /* ─── HÀNG CHỈ SỐ — tối đa 4, CHUNG MỘT viền, không bốn thẻ rời (mục M1) ─────────── */
   /* Vạch giữa các ô là KHE 1px lộ nền vạch, không phải `border-right` — nên hàng tự xuống

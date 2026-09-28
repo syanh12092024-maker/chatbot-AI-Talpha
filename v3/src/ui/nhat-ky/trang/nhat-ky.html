@@ -120,7 +120,7 @@ function veDs() {
       <td class="manh">${esc(d.chuHanhDong)}</td>
       <td>${d.doiTuong ? `${esc(d.doiTuong)}${d.doiTuongId ? ` <span class="meta">#${esc(d.doiTuongId)}</span>` : ''}` : '<span class="text-muted">—</span>'}</td>
       <td class="meta"><span class="cat-2">${esc(d.ghiChu || '')}</span></td>
-      <td class="actions">${(d.truoc || d.sau) ? button('Xem', { size: 'sm', variant: 'ghost', data: { dong: i } }) : ''}</td>
+      <td class="actions">${(d.truoc || d.sau) ? button('Xem', { size: 'sm', variant: 'outline', data: { dong: i } }) : ''}</td>
     </tr>`).join('')}</tbody></table>`;
   document.querySelectorAll('[data-dong]').forEach((b) => b.addEventListener('click', () => xem(D.dong[+b.dataset.dong])));
 

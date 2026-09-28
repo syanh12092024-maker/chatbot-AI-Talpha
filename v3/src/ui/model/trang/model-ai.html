@@ -38,7 +38,7 @@
 
   <section class="section table-wrap" aria-labelledby="tieu-khoa">
     <div class="table-toolbar"><h2 id="tieu-khoa">Khoá API của bốn nhà</h2>
-      <span class="table-count">Chưa dán khoá thì không chọn được model của nhà đó · dán vào được, không đọc ra được</span></div>
+      <span class="table-count">Dán vào được, không đọc ra được</span></div>
     <div id="bangKhoa"></div>
   </section>
 
@@ -174,7 +174,8 @@ function veKhoa() {
       ${SUA ? `<td><label class="sr-only" for="k-${esc(n.ma)}">Khoá API của ${esc(n.ten)}</label>
         <input type="password" class="cell-input" id="k-${esc(n.ma)}" data-khoa="${esc(n.ma)}" placeholder="Dán khoá API…" autocomplete="off" spellcheck="false"></td>
         <td class="actions">${button('Lưu', { size: 'sm', data: { luukhoa: n.ma } })}</td>` : ''}
-    </tr>`; }).join('')}</tbody></table>`;
+    </tr>`; }).join('')}</tbody></table>
+    <div class="table-note">Chưa dán khoá thì không chọn được model của nhà đó. Nhãn đỏ là nhà đang được dùng.</div>`;
   document.querySelectorAll('[data-luukhoa]').forEach((b) => b.addEventListener('click', () => luuKhoa(b.dataset.luukhoa, b)));
 }
 

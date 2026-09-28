@@ -178,9 +178,11 @@
     /* Màn HẸP: thanh bên thành ngăn kéo, trang lấy lại toàn bộ bề ngang. */
     @media (max-width:${NGUONG - 1}px){
       .dh-nut{display:inline-flex}
+      /* Bóng CHỈ khi mở: ngăn đóng nằm ở -100% nhưng bóng mờ 48px của nó vẫn lấn vào mép trái
+         mọi màn điện thoại thành một vệt xám (audit 28/09). */
       .dh-ngan{width:280px;max-width:86vw;transform:translateX(-100%);transition:transform 180ms ease;
-        box-shadow:var(--shadow-overlay, 0 20px 48px rgba(16,24,40,.18))}
-      .dh-ngan.mo{transform:none}
+        box-shadow:none}
+      .dh-ngan.mo{transform:none;box-shadow:var(--shadow-overlay, 0 20px 48px rgba(16,24,40,.18))}
       body{padding-left:0 !important}
       .dh-top{padding:0 16px}
       .dh-tk-ten{display:none}
