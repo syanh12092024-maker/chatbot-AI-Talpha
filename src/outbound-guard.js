@@ -14,7 +14,7 @@
 
 // BH1: tập giá nay dựng ở lõi chung (`src/core/gia.js`) — file này không còn tự đọc
 // `productTiers` nữa, xem ghi chú tại `allowedPrices`.
-import { giaHopLe } from './core/gia.js';
+import { giaHopLe, giaDuocNhac } from './core/gia.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tiện ích
@@ -99,6 +99,11 @@ export function extractMoney(text) {
 export function allowedPrices(kb) {
   return giaHopLe(kb);
 }
+
+// Giá được NHẮC (giá bán + giá gốc khai trong KB) — RỘNG hơn `allowedPrices` một cách có
+// chủ ý. Chỉ dùng cho các cửa xét VĂN BẢN. Cửa TIỀN (`order-bridge#checkTotal`) phải tiếp
+// tục gọi `allowedPrices`; xem ghi chú dài tại `core/gia.js#giaDuocNhac`.
+export { giaDuocNhac };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Các mẫu nhận dạng khác
@@ -217,18 +222,23 @@ export function guardOutbound(text, ctx = {}) {
   //   Ngoại lệ CÓ CHỦ Ý: "bẻ nhỏ giá trị" (~32 SAR each) là kỹ thuật gỡ phản đối giá
   //   mà HARD_RULES bước 1 của ladder KHUYẾN KHÍCH. Đơn giá suy ra từ gói KHÔNG phải
   //   bịa tổng. Chỉ chặn khi con số được nêu như một TỔNG TIỀN.
-  const allowed = allowedPrices(kb);
-  if (allowed.size) {
-    const maxTier = Math.max(...allowed);
+//   Ngoại lệ thứ hai: GIÁ GỐC đã khai trong KB ("109 SAR, original 199"). Khối KB nói
+//   thẳng «giá gốc 199» cho model đọc, nên chặn nó là hệ tự phạt model vì đã đọc đúng —
+//   19% lượt gọi model mất trắng khi đo 28/09. Nới bằng `giaDuocNhac`, KHÔNG nới `allowedPrices`,
+//   để cửa TIỀN (`checkTotal`) vẫn không cho 199 thành số người giao hàng thu của khách.
+  const banDuoc = allowedPrices(kb);
+  if (banDuoc.size) {
+    const nhacDuoc = giaDuocNhac(kb);
+    const maxTier = Math.max(...banDuoc);
     const perUnit = /(each|per\s*(?:pc|piece|bottle|box|set|tube)|\/\s*(?:pc|piece)|kada|bawat|isa|للحبة|للقطعة)/i.test(t);
     const bad = extractMoney(t).filter((n) => {
-      if (allowed.has(n)) return false;
+      if (nhacDuoc.has(n)) return false;
       if (perUnit && n < maxTier) return false; // đơn giá bẻ nhỏ — hợp lệ
       return true;
     });
     if (bad.length) {
       return rewrite('PRICE_MISMATCH',
-        `Nêu số tiền ${bad.join(', ')} không khớp gói nào trong bảng giá (hợp lệ: ${[...allowed].sort((a, b) => a - b).join(', ')}). Gọi get_price và chỉ dùng ĐÚNG giá một gói, không tự nhân/cộng.`);
+        `Nêu số tiền ${bad.join(', ')} không khớp gói nào trong bảng giá (giá bán hợp lệ: ${[...banDuoc].sort((a, b) => a - b).join(', ')}). Gọi get_price và chỉ dùng ĐÚNG giá một gói, không tự nhân/cộng.`);
     }
   }
 

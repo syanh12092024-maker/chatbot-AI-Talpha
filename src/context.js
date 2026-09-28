@@ -13,7 +13,7 @@
 import { cleanText } from './text.js';
 import { isAutomationTemplate } from './bot-registry.js';
 import { hasPhone, hasAddress, scanSignals } from './lead-score.js';
-import { extractMoney, allowedPrices } from './outbound-guard.js';
+import { extractMoney, giaDuocNhac } from './outbound-guard.js';
 // DÙNG LẠI luật chào của M05, KHÔNG viết bản thứ hai: `conv-owner.js#isJustGreeting` đã
 // phân biệt "chỉ chào" với "câu hỏi thật" và đã được hiệu chỉnh trên tin thật (nó cố ý
 // lệch một chiều: không chắc thì coi là CÂU HỎI THẬT). Hai bản luật chào là hai sự thật.
@@ -505,7 +505,10 @@ export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
   if (obL.length) L.push(`Kênh khác (Botcake/sale) đã làm: ${obL.join(', ')} — ĐỪNG lặp lại.`);
   L.push(`COD: ${prof.cod ? 'khách đã xác nhận' : 'chưa xác nhận'}`);
   // GIÁ MÁY KHÁC ĐÃ BÁO — chỉ nói khi nó LỆCH bảng giá. Khớp thì im, đừng làm loãng khối.
-  const giaOk = allowedPrices(meta.kb || {});
+  // `giaDuocNhac` chứ KHÔNG phải tập giá bán: Botcake nói "was 199, now 109" là nói ĐÚNG
+  // giá gốc trong KB. Dùng tập hẹp thì khối hồ sơ dặn model "ĐÍNH CHÍNH 199" — bắt nó sửa
+  // một câu vốn không sai, trước mặt khách.
+  const giaOk = giaDuocNhac(meta.kb || {});
   const giaLech = (prof.otherBot?.giaDaBao || []).filter((n) => giaOk.size && !giaOk.has(n));
   if (giaLech.length) {
     L.push(`⚠️ Kênh khác ĐÃ BÁO SAI GIÁ ${giaLech.join(', ')} cho khách này (giá đúng: ${[...giaOk].sort((a, b) => a - b).join(', ')}). `

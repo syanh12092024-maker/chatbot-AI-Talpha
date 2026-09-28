@@ -69,6 +69,39 @@ export function giaHopLe(kb) {
 }
 
 /**
+ * Tập số tiền ĐƯỢC PHÉP NHẮC trong tin gửi khách — RỘNG HƠN `giaHopLe` đúng phần GIÁ GỐC.
+ *
+ * ═══ HAI CÂU HỎI KHÁC NHAU, ĐỪNG GỘP ═══
+ *   `giaHopLe`    — "được THU của khách bao nhiêu?"  → chỉ giá bán. `tinhTong` + `checkTotal` dùng.
+ *   `giaDuocNhac` — "được NÓI RA con số nào?"        → giá bán + giá gốc ĐÃ KHAI trong KB.
+ *
+ * ═══ VÌ SAO PHẢI TÁCH (đo 28/09, page Minty Fresh Smile KSA, 47 lượt gọi model) ═══
+ * Khối KB đưa cho model do `rap-prompt.js#xayVanBanSanPham` dựng có nguyên văn:
+ *     «Buy 1: 109 SAR (giá gốc 199, Buy 1 Get 1 free — 2 tubes total, miễn ship)»
+ * Model đọc ĐÚNG, viết ra «109 SAR (original 199 SAR)» — rồi cổng RA chặn cả tin vì
+ * 199 ∉ {109, 159}. **Hệ tự đưa model một con số rồi phạt nó vì đã nói con số đó.**
+ * Giá phải trả: 9/47 lượt (19%) mất trắng — tiền model đã tiêu, khách không nhận được gì.
+ * Con số không hề bịa: `goi_gia.gia_goc` = 199 (bậc 1) và 398 (bậc 2).
+ *
+ * ═══ NỚI Ở ĐÂY KHÔNG NỚI CỬA TIỀN ═══
+ * `checkTotal`/`tinhTong` vẫn gọi `giaHopLe`, nên 199 KHÔNG bao giờ thành `shipping_fee`
+ * mà người giao hàng thu của khách. `test/bh1-gia-va-cua-chot.test.js` ghim bất biến này.
+ */
+export function giaDuocNhac(kb) {
+  const ra = giaHopLe(kb);
+  for (const p of (kb?.products || [])) {
+    for (const t of (Array.isArray(p.tiers) ? p.tiers : [])) {
+      const goc = Number(t.giaGoc ?? t.gia_goc);
+      const ban = Number(t.price ?? t.gia);
+      // CHỈ nhận giá gốc CAO HƠN giá bán. `giaGoc <= gia` là dữ liệu rác (marketer gõ lộn,
+      // hoặc đơn vị tiền lệch) — nới theo nó là mở một cửa thật bằng một ô dữ liệu bẩn.
+      if (Number.isFinite(goc) && goc > 0 && Number.isFinite(ban) && goc > ban) ra.add(goc);
+    }
+  }
+  return ra;
+}
+
+/**
  * Chọn gói khách đang nhắm tới. TRẢ `null` KHI KHÔNG CHẮC — đó là điểm của hàm này.
  *
  * Thứ tự thử, dừng ở bước đầu tiên cho ĐÚNG MỘT kết quả:

@@ -556,7 +556,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
           lyDo: `guard_noi_dung:${cua.v.rule}`,
           // GIỮ CÂU BỊ CHẶN. Không giữ thì không ai phán được cửa bắt ĐÚNG hay bắt NHẦM —
           // đo 21/09: 5 dòng `spent_no_send` chỉ có `llm_ms`/`provider`, câu chữ mất sạch.
-          duLieu: { text_bi_chan: String(tk.reply).slice(0, 200), guard_ly_do: cua.v.reason || "" },
+          duLieu: { text_bi_chan: String(tk.reply).slice(0, 600), guard_ly_do: cua.v.reason || "" },
         });
         await banGiaoViCuaRa(cua.v.rule, KHONG_GOI_MODEL, LANE_TU_KHOA);
         await luuLai({ daGoiModel: false, daGuiText: false });
@@ -626,7 +626,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
           maModel: KHONG_GOI_MODEL,
           lane: fl.lane,
           lyDo: `guard_noi_dung:${cua.v.rule}`,
-          duLieu: { text_bi_chan: String(fl.reply).slice(0, 200), guard_ly_do: cua.v.reason || "" },
+          duLieu: { text_bi_chan: String(fl.reply).slice(0, 600), guard_ly_do: cua.v.reason || "" },
         });
         await banGiaoViCuaRa(cua.v.rule, KHONG_GOI_MODEL, fl.lane);
         await luuLai({ daGoiModel: false, daGuiText: false });
@@ -815,7 +815,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
           dung,
           // Câu model đã viết — ĐÃ TRẢ TIỀN cho nó, phải giữ lại mới soi được cửa bắt
           // đúng hay nhầm. Cắt 200 ký tự như nhánh REPLY.
-          duLieu: { text_bi_chan: guarded0.slice(0, 200), guard_ly_do: cua.v.reason || "" },
+          duLieu: { text_bi_chan: guarded0.slice(0, 600), guard_ly_do: cua.v.reason || "" },
         });
       }
     }

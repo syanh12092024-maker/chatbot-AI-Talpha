@@ -39,6 +39,18 @@ const tepRa = arg("--ra", "");
 // hội thoại khác (page vẫn nhận tin mới hằng ngày) và hai lượt đo không so được với nhau.
 // Nhận chính tệp `--ra` của lần trước; khớp theo `convId` + mốc tin cuối của cụm.
 const tepChi = arg("--chi", "");
+// CHỈ KHÁCH MỚI — hội thoại được TẠO trong N ngày gần nhất, tức người lần đầu nhắn tới page.
+//
+// Dùng `conv.inserted_at` (lúc hội thoại sinh ra) chứ KHÔNG dùng «tin khách đầu tiên nhìn
+// thấy»: Pancake cắt cửa sổ 25 tin mỗi hội thoại, nên tin đầu nhìn thấy có thể không phải
+// tin đầu thật — đo 25/09 thấy MỌI hội thoại đều đúng 25 tin, dấu hiệu rõ là đang bị cắt.
+//
+// Đo 25/09 trên 397 hội thoại: 120 hội thoại tạo trong 3 ngày, nhưng CHỈ 37 có khách nói
+// một câu nào. 83 cái còn lại là chiến dịch Botcake tự mở — «hội thoại mới» của page phần
+// lớn KHÔNG phải khách mới.
+const khachMoiNgay = Number(arg("--khach-moi", "0"));
+const mocKhachMoi = khachMoiNgay > 0
+  ? new Date(Date.now() - khachMoiNgay * 864e5).toISOString().slice(0, 19) : "";
 // Mặc định GIỮ cửa nhường sale thật — nó là hành vi đúng của bản chạy. Cờ này chỉ để
 // ĐO CÂU CHỮ: muốn xem bot ĐỊNH nói gì ở những lượt mà ngoài đời sale đã tiếp quản.
 const khongNhuongSale = process.argv.includes("--khong-nhuong-sale");
@@ -105,7 +117,11 @@ async function tuPancake() {
       + "hoặc page không có hội thoại. Xem màn Kết nối.");
   }
   const ra = [];
-  for (const c of [...theoId.values()].filter((x) => x.from_psid && (x.customers || [])[0]?.id && String(x.updated_at || "") >= mocCat)) {
+  const loc = [...theoId.values()].filter((x) => x.from_psid && (x.customers || [])[0]?.id
+    && String(x.updated_at || "") >= mocCat
+    && (!mocKhachMoi || String(x.inserted_at || "") >= mocKhachMoi));
+  if (mocKhachMoi) console.log(`  khách MỚI (${khachMoiNgay} ngày): ${loc.length}/${theoId.size} hội thoại`);
+  for (const c of loc) {
     ra.push({ c, ds: await pk.pkGetMessages(pageIdFb, c.id, c.customers[0].id) });
   }
   return ra;
@@ -113,9 +129,12 @@ async function tuPancake() {
 
 /** Tệp do `ops/bin/` gom sẵn: `[{conv:{id,from,from_psid,custId,...}, msgs:[{id,from,at,text}]}]` */
 function tuTep(tep) {
-  return JSON.parse(fs.readFileSync(tep, "utf8")).map((k) => ({
+  return JSON.parse(fs.readFileSync(tep, "utf8"))
+    .filter((k) => !mocKhachMoi || String(k.conv.inserted_at || "") >= mocKhachMoi)
+    .map((k) => ({
     c: { id: k.conv.id, from: k.conv.from, from_psid: k.conv.from_psid,
-         customers: [{ id: k.conv.custId }], tags: k.conv.tags, updated_at: k.conv.updated_at },
+         customers: [{ id: k.conv.custId }], tags: k.conv.tags,
+         inserted_at: k.conv.inserted_at, updated_at: k.conv.updated_at },
     ds: k.msgs.map((m) => ({ id: m.id, from: m.from, inserted_at: m.at, original_message: m.text })),
   }));
 }
@@ -151,7 +170,7 @@ const chon = cum
 const { rows: [mdl] } = await pool.query(
   "SELECT nha_cung_cap, ma_model FROM cau_hinh_model WHERE team_id=$1 AND vai_tro='chinh' AND bat LIMIT 1", [trang.team_id]);
 console.log(`GIẢ LẬP MỘT MÌNH · page ${pageIdFb} — ${trang.ten}`);
-console.log(`  lượt khách sẽ chạy: ${chon.length} (cửa sổ ${soGio}h, gom cụm)`
+console.log(`  lượt khách sẽ chạy: ${chon.length} (cửa sổ ${soGio}h, gom cụm${mocKhachMoi ? `, CHỈ khách mới ${khachMoiNgay} ngày` : ""})`
   + (chiGiu ? ` — KHOÁ theo ${tepChi}: ${chiGiu.size} lượt của lần đo trước, khớp ${chon.length}` : ""));
 console.log(`  model             : ${mdl ? `${mdl.nha_cung_cap} · ${mdl.ma_model}` : "(chưa cấu hình)"}`);
 console.log(`  van gửi           : V3_DIEN_TAP=1 · V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)} — KHÔNG gửi cho khách`);
@@ -320,6 +339,7 @@ for (const x of ket) {
         lane: s?.lane || "", lyDo: d?.ly_do || "", trangThai: d?.trang_thai || "",
         treMs: x.treMs, tokVao: s?.token_vao ?? null, tokRa: s?.token_ra ?? null, vnd: t.vnd,
         suaTaiCho: s?.du_lieu?.sua_tai_cho || "", biChan: s?.du_lieu?.text_bi_chan || "",
+        guardLyDo: s?.du_lieu?.guard_ly_do || "",
       },
       that: { ben: benTraLoi, treS: treThat, chu: chuThat },
     });
