@@ -42,6 +42,25 @@
     dau.insertBefore(l, dau.firstChild);
   })();
 
+  // ── CHỮ BẢN 4: IBM Plex Sans + Plex Mono, đủ bộ tiếng Việt (xem E3 trong kieu.css) ──
+  // Riêng một hàm: trang nào đã tự khai <link> kieu.css thì hàm trên trả sớm, chữ vẫn phải nạp.
+  (function napChu() {
+    if (document.querySelector('link[data-ds="chu"]')) return;
+    const dau = document.head || document.documentElement;
+    for (const [rel, href, cross] of [
+      ["preconnect", "https://fonts.googleapis.com", false],
+      ["preconnect", "https://fonts.gstatic.com", true],
+      ["stylesheet", "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500"
+        + "&family=IBM+Plex+Sans:wght@400;500;600&display=swap&subset=vietnamese", false],
+    ]) {
+      const l = document.createElement("link");
+      l.rel = rel; l.href = href;
+      if (cross) l.crossOrigin = "";
+      if (rel === "stylesheet") l.dataset.ds = "chu";
+      dau.appendChild(l);
+    }
+  })();
+
   // ── LỐI BỎ QUA: Tab đầu tiên ở mọi trang là «Tới nội dung» ──────────────────────
   // Không có nó thì người dùng bàn phím phải Tab qua cả thanh bên và thanh trên cùng.
   document.addEventListener("DOMContentLoaded", function catLoiBoQua() {
@@ -80,58 +99,59 @@
   const NGUONG = 900; // dưới ngưỡng này thanh bên thành ngăn kéo
 
   const css = `
+    /* Bản 4: thanh bên TỐI (token --side-* ở kieu.css) — khung cố định tách hẳn vùng làm việc. */
     .dh-ngan{position:fixed;top:0;left:0;bottom:0;width:${RONG}px;z-index:9999;display:flex;
-      flex-direction:column;background:var(--surface, #ffffff);color:var(--text-primary, #101828);
-      border-right:1px solid var(--border-default, #e1e4ea);font-size:14px}
-    .dh-dau{flex:none;height:52px;display:flex;align-items:center;gap:10px;padding:0 16px;
-      border-bottom:1px solid var(--border-subtle, #eaecf0)}
-    .dh-logo{width:26px;height:26px;flex:none;border-radius:6px;display:inline-flex;
-      align-items:center;justify-content:center;background:var(--primary, #1d4ed8);
-      color:var(--primary-foreground, #ffffff)}
-    .dh-ten{font-weight:600;font-size:14px;line-height:1.2}
-    .dh-ten small{display:block;font-weight:400;font-size:12px;color:var(--text-muted, #667085)}
+      flex-direction:column;background:var(--side-bg, #111418);color:var(--side-text, #e4e4e7);
+      border-right:1px solid var(--side-line, #242a31);font-size:13px;color-scheme:dark}
+    .dh-dau{flex:none;height:48px;display:flex;align-items:center;gap:10px;padding:0 16px;
+      border-bottom:1px solid var(--side-line, #242a31)}
+    .dh-logo{width:24px;height:24px;flex:none;border-radius:4px;display:inline-flex;
+      align-items:center;justify-content:center;background:var(--side-logo, #14b8a6);
+      color:var(--side-logo-ink, #042f2e)}
+    .dh-ten{font-weight:600;font-size:13px;line-height:16px}
+    .dh-ten small{display:block;font-weight:400;font-size:11px;line-height:16px;color:var(--side-text-3, #71767e)}
 
     /* DẢI TRẠNG THÁI — trả lời «cái gì đang chạy» (mục C). Số nổi bật là SỐ PAGE ĐANG BẬT;
        tổng page chỉ là mẫu số. Ngày 11/09 người tiếp quản đọc «501 page» thành «đang chạy
        501 page» trong khi thật ra 0 page bật AI. Chấm có HÌNH khác nhau theo nghĩa — mục T. */
-    .dh-dai{flex:none;margin:12px 12px 4px;padding:8px 10px;border-radius:6px;font-size:12px;
-      line-height:1.4;border:1px solid var(--border-default, #e1e4ea);
-      background:var(--surface-subtle, #fafbfc);color:var(--text-muted, #667085)}
-    .dh-dai b{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
-      color:var(--text-primary, #101828)}
+    .dh-dai{flex:none;margin:12px 12px 4px;padding:8px 10px;border-radius:4px;font-size:12px;
+      line-height:16px;border:1px solid var(--side-line, #242a31);
+      background:var(--side-bg-2, #181c21);color:var(--side-text-2, #a3a7ae)}
+    .dh-dai b{display:flex;align-items:center;gap:6px;font-size:13px;line-height:20px;font-weight:600;
+      color:var(--side-text, #e4e4e7)}
     .dh-dai b::before{content:"";width:7px;height:7px;flex:none;border-radius:50%;background:currentColor}
-    .dh-dai[data-tone="success"] b{color:var(--success, #067647)}
-    .dh-dai[data-tone="danger"] b{color:var(--danger, #b42318)}
+    .dh-dai[data-tone="success"] b{color:var(--side-good, #34d399)}
+    .dh-dai[data-tone="danger"] b{color:var(--side-bad, #f87171)}
     .dh-dai[data-tone="danger"] b::before{border-radius:1px}
     .dh-dai[data-tone="neutral"] b::before{background:transparent;box-shadow:inset 0 0 0 1.5px currentColor}
 
     .dh-than{flex:1;overflow-y:auto;padding:8px;overscroll-behavior:contain}
-    .dh-muc{width:100%;height:36px;display:flex;align-items:center;gap:10px;padding:0 10px;
-      border:0;border-radius:6px;background:none;cursor:pointer;text-align:left;
-      font:inherit;font-size:14px;font-weight:500;color:var(--text-secondary, #475467)}
-    .dh-muc:hover{background:var(--surface-hover, #f5f7fa);color:var(--text-primary, #101828)}
-    .dh-muc[data-dang-o="true"]{color:var(--text-primary, #101828)}
-    .dh-mui{margin-left:auto;color:var(--text-disabled, #98a2b3);transition:transform 120ms ease}
+    .dh-muc{width:100%;height:32px;display:flex;align-items:center;gap:10px;padding:0 10px;
+      border:0;border-radius:4px;background:none;cursor:pointer;text-align:left;
+      font:inherit;font-size:13px;font-weight:500;color:var(--side-text-2, #a3a7ae)}
+    .dh-muc:hover{background:var(--side-hover, #1d2228);color:var(--side-text, #e4e4e7)}
+    .dh-muc[data-dang-o="true"]{color:var(--side-text, #e4e4e7)}
+    .dh-mui{margin-left:auto;color:var(--side-text-3, #71767e);transition:transform 120ms ease}
     .dh-muc[aria-expanded="true"] .dh-mui{transform:rotate(90deg)}
     .dh-con{padding:2px 0 8px}
     .dh-con[hidden]{display:none}
-    .dh-con a{display:flex;align-items:center;height:32px;padding:0 10px 0 36px;border-radius:6px;
-      text-decoration:none;font-size:13px;color:var(--text-secondary, #475467);
+    .dh-con a{display:flex;align-items:center;height:30px;padding:0 10px 0 36px;border-radius:4px;
+      text-decoration:none;font-size:13px;color:var(--side-text-2, #a3a7ae);
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .dh-con a:hover{background:var(--surface-hover, #f5f7fa);color:var(--text-primary, #101828)}
-    .dh-con a[aria-current="page"]{background:var(--surface-selected, #eef3ff);
-      color:var(--primary, #1d4ed8);font-weight:500}
+    .dh-con a:hover{background:var(--side-hover, #1d2228);color:var(--side-text, #e4e4e7);text-decoration:none}
+    .dh-con a[aria-current="page"]{background:var(--side-active, #0f766e);
+      color:var(--primary-foreground, #ffffff);font-weight:500}
 
     /* VẠCH «Ít dùng» — ranh giới BÊN TRONG một nhóm. Màn dưới vạch vẫn ở menu: bỏ hẳn
        thì người vào bằng đường dẫn là kẹt. */
     .dh-vach{display:flex;align-items:center;gap:8px;padding:10px 10px 4px 36px;font-size:11px;
-      font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--text-disabled, #98a2b3)}
-    .dh-vach::after{content:"";flex:1;height:1px;background:var(--border-subtle, #eaecf0)}
+      font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--side-text-3, #71767e)}
+    .dh-vach::after{content:"";flex:1;height:1px;background:var(--side-line, #242a31)}
 
 
     /* THANH TRÊN CÙNG — mục F2. Chỉ thứ dùng chung cho cả sản phẩm. */
-    html{scroll-padding-top:68px}  /* cuộn tới một ô (scrollIntoView, #neo) không bị thanh .dh-top 52px che */
-    .dh-top{position:sticky;top:0;z-index:9990;height:52px;display:flex;align-items:center;gap:12px;
+    html{scroll-padding-top:64px}  /* cuộn tới một ô (scrollIntoView, #neo) không bị thanh .dh-top 48px che */
+    .dh-top{position:sticky;top:0;z-index:9990;height:48px;display:flex;align-items:center;gap:12px;
       padding:0 24px;background:var(--surface, #ffffff);border-bottom:1px solid var(--border-default, #e1e4ea)}
     .dh-dd{display:flex;align-items:center;gap:6px;min-width:0;margin:0;padding:0;list-style:none;
       font-size:13px;color:var(--text-muted, #667085)}
@@ -146,7 +166,7 @@
       border-radius:6px;background:none;cursor:pointer;font:inherit;font-size:13px;
       color:var(--text-primary, #101828)}
     .dh-tk-nut:hover{background:var(--surface-muted, #f2f4f7)}
-    .dh-avatar{width:28px;height:28px;flex:none;border-radius:50%;display:inline-flex;
+    .dh-avatar{width:28px;height:28px;flex:none;border-radius:4px;display:inline-flex;
       align-items:center;justify-content:center;font-size:12px;font-weight:600;
       background:var(--surface-muted, #f2f4f7);color:var(--text-secondary, #475467)}
     .dh-tk-ten{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;text-align:left}
