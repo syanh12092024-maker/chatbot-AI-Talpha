@@ -119,10 +119,10 @@ export async function manBaoCao(boiCanh) {
   try {
     don = await _docDon();
   } catch (e) {
-    throw new LoiBaoCao(
-      `Không đọc được đơn hàng từ tiến trình bot: ${e?.message || e}. Màn TỪ CHỐI hiện 0 — `
-      + '«0 đơn» ở màn báo cáo là câu dễ tin nhất và sai nhất.', 'cau_hong', 502,
-    );
+    // Ném, KHÔNG trả 0: «0 đơn» là câu dễ tin nhất và sai nhất. Lời giải thích sống ở ĐÂY
+    // (API cũng phải nói rõ), nên màn không nhắc lại — trước 28/09 hộp lỗi nói ý này ba lần.
+    throw new LoiBaoCao(`Không đọc được đơn hàng từ tiến trình bot: ${e?.message || e}. `
+      + 'Màn để trống thay vì hiện «0 đơn» — con số 0 lúc này sẽ sai.', 'cau_hong', 502);
   }
 
   const page = (don.page || [])

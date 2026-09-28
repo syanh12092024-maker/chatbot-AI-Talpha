@@ -300,7 +300,7 @@ test('L4-M1 · lý do đọc từ MỘT cột `ly_do_day`; mã lạ hiện nguy�
   const keu = [];
   console.warn = (...a) => keu.push(a.join(' '));
   try {
-    assert.equal(lyDoChu({ ly_do_day: 'ly_do_moi_toanh' }), 'ly_do_moi_toanh');
+    assert.equal(lyDoChu({ ly_do_day: 'ly_do_moi_toanh' }), 'Lý do chưa có tên (mã ly_do_moi_toanh)');
   } finally { console.warn = warnCu; }
   assert.equal(keu.length, 1, 'mã lạ phải kêu lên một tiếng');
   assert.notEqual(lyDoChu({ ly_do_day: 'ly_do_moi_toanh' }), LY_DO.khac);

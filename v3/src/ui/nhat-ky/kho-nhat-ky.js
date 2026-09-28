@@ -67,10 +67,37 @@ export function datDanhMuc({ moTa, nhom } = {}) {
 
 export const daNoiDocNhatKy = () => typeof _docNhatKy === 'function';
 
+/**
+ * Bộ tra TÊN cho cột «Ai» và «Đối tượng»: `({ nguoi: id[], team: id[] }) → { nguoi: Map, team: Map }`.
+ *
+ * Vì sao cần: bộ ghi (`audit/index.js`) lưu `tac_nhan` là `nguoi`/`may` TRƠN kèm
+ * `nguoi_dung_id`, không phải `nguoi:<email>` như lược đồ ghi chú. Nên màn in chữ «nguoi» ở
+ * cột Ai, và «team #1» ở cột Đối tượng (audit 28/09). Thiếu bộ tra thì vẫn chạy, rơi về mã.
+ */
+let _traTen = null;
+export function datTraTen(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiManNhatKy('datTraTen cần một hàm');
+  _traTen = fn || null;
+  return _traTen;
+}
+
+/** Tên loại đối tượng bằng tiếng người. Loại chưa có ở đây thì hiện nguyên mã. */
+export const TEN_DOI_TUONG = Object.freeze({
+  team: 'Team', page: 'Page', nguoi_dung: 'Người dùng', thanh_vien_team: 'Thành viên team',
+  vai: 'Vai', ket_noi_pos: 'Kết nối POS', token_pancake: 'Token Pancake', duong_dan: 'Đường dẫn',
+  kich_ban: 'Kịch bản', bo_luat_chung: 'Quy tắc chung', ky_nang: 'Kỹ năng',
+  cau_hinh_model: 'Cấu hình model', mau_0_dong: 'Câu trả lời sẵn', san_pham: 'Sản phẩm',
+  san_pham_goc: 'Sản phẩm gốc', viec_can_xu_ly: 'Việc cần xử lý', don_hang: 'Đơn hàng',
+  hoi_thoai: 'Hội thoại', khach: 'Khách',
+});
+
 /* ─────────────────────────── đọc ─────────────────────────── */
 
-/** `tac_nhan` của người A có dạng `nguoi:<email>` | `may:<job>`. Tách vế đầu. */
-export const lanCua = (d) => (String(d.tac_nhan || '').startsWith('may:') ? LAN.MAY : LAN.NGUOI);
+/**
+ * `tac_nhan` theo lược đồ là `nguoi:<email>` | `may:<job>`, nhưng bộ ghi thật lưu `may` TRƠN —
+ * trước 28/09 mọi dòng máy vì thế rơi vào làn người. Nhận cả hai dạng.
+ */
+export const lanCua = (d) => (/^may(:|$)/.test(String(d.tac_nhan || '')) ? LAN.MAY : LAN.NGUOI);
 
 export async function manNhatKy(boiCanh, { lan = LAN.NGUOI, hanhDong = '', trang = 0 } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
@@ -100,9 +127,22 @@ export async function manNhatKy(boiCanh, { lan = LAN.NGUOI, hanhDong = '', trang
   const dem = { nguoi: 0, may: 0 };
   for (const d of dong) dem[lanCua(d)]++;
 
+  const cat = loc.slice(t * MOI_TRANG, (t + 1) * MOI_TRANG);
+  let ten = { nguoi: new Map(), team: new Map() };
+  if (_traTen) {
+    const ids = (loc2) => [...new Set(loc2.filter(Boolean).map(String))];
+    try {
+      const r = await _traTen({
+        nguoi: ids(cat.map((d) => d.nguoi_dung_id)),
+        team: ids(cat.filter((d) => (d.doi_tuong ?? d.doi_tuong_loai) === 'team').map((d) => d.doi_tuong_id)),
+      });
+      ten = { nguoi: r?.nguoi || new Map(), team: r?.team || new Map() };
+    } catch { /* tra tên hỏng thì hiện mã — nhật ký không được chết vì một cái nhãn */ }
+  }
+
   return {
     teamId: bc.teamId,
-    dong: loc.slice(t * MOI_TRANG, (t + 1) * MOI_TRANG).map(gon),
+    dong: cat.map((d) => gon(d, ten)),
     trang: t,
     soTrang,
     soKhop: loc.length,
@@ -123,8 +163,11 @@ export async function manNhatKy(boiCanh, { lan = LAN.NGUOI, hanhDong = '', trang
   };
 }
 
-function gon(d) {
+function gon(d, ten = { nguoi: new Map(), team: new Map() }) {
   const ma = d.hanh_dong;
+  const loai = d.doi_tuong ?? d.doi_tuong_loai ?? null;
+  const idDt = d.doi_tuong_id == null || d.doi_tuong_id === '' ? null : String(d.doi_tuong_id);
+  const tenTeam = loai === 'team' && idDt ? ten.team.get(idDt) : null;
   return {
     id: String(d.id ?? ''),
     thoiGian: d.xay_ra_luc ?? d.thoi_gian ?? null,
@@ -132,11 +175,14 @@ function gon(d) {
     tacNhan: d.tac_nhan || '',
     // `nguoi:<email>` → `<email>`; `may:<job>` → `<job>`. Hiện nguyên `may:tang-truy-van`
     // thì người đọc phải tự dịch mỗi dòng.
-    ai: String(d.tac_nhan || '').replace(/^(nguoi|may):/, '') || '(không rõ)',
+    ai: String(d.tac_nhan || '').replace(/^(nguoi|may)(:|$)/, '')
+      || (d.nguoi_dung_id != null ? ten.nguoi.get(String(d.nguoi_dung_id)) || `người dùng #${d.nguoi_dung_id}` : '')
+      || (lanCua(d) === LAN.MAY ? '' : '(không rõ)'),
     hanhDong: ma,
     chuHanhDong: _moTa ? _moTa(ma) : ma,
-    doiTuong: d.doi_tuong ?? d.doi_tuong_loai ?? null,
-    doiTuongId: d.doi_tuong_id ?? null,
+    doiTuong: loai ? (tenTeam || TEN_DOI_TUONG[loai] || loai) : null,
+    // Đã ra tên team thì thôi in `#id` — «Tiểu Alpha #1» là nói một thứ hai lần.
+    doiTuongId: tenTeam ? null : idDt,
     ghiChu: d.ghi_chu || '',
     truoc: d.truoc ?? null,
     sau: d.sau ?? null,

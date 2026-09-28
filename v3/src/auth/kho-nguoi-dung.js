@@ -111,6 +111,24 @@ export async function timTheoEmail(email) {
 }
 
 /**
+ * Tra tên cho màn nhật ký: `{ nguoi: id[], team: id[] }` → `{ nguoi: Map<id,email>, team: Map<id,tên> }`.
+ * Hai bảng này nhỏ (vài chục dòng) nên đọc trọn rồi lọc — tầng truy vấn chưa có `IN`.
+ */
+export async function traTenNhatKy({ nguoi = [], team = [] } = {}) {
+  const g = cong();
+  const muonNguoi = new Set(nguoi.map(String));
+  const muonTeam = new Set(team.map(String));
+  const [nd, tm] = await Promise.all([
+    muonNguoi.size ? g.chon('nguoi_dung', {}) : [],
+    muonTeam.size ? g.chon('team', {}) : [],
+  ]);
+  return {
+    nguoi: new Map(nd.filter((r) => muonNguoi.has(String(r.id))).map((r) => [String(r.id), String(r.email || r.ten || r.id)])),
+    team: new Map(tm.filter((r) => muonTeam.has(String(r.id))).map((r) => [String(r.id), String(r.ten || r.slug || r.id)])),
+  };
+}
+
+/**
  * Các team người này thuộc về, kèm vai trong từng team.
  *
  * HAI CHỖ BỊ LOẠI KHỎI DANH SÁCH:

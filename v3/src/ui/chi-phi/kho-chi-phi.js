@@ -107,10 +107,9 @@ export async function manChiPhi(boiCanh) {
     bot = await _docChiPhiBot();
   } catch (e) {
     // 0 đồng là một con số, và nó SAI. Ném.
-    throw new LoiChiPhi(
-      `Không đọc được chi phí từ tiến trình bot: ${e?.message || e}. Màn TỪ CHỐI hiện 0 — `
-      + '«0 đồng» ở màn chi phí là câu dễ tin nhất và sai nhất.', 'cau_hong', 502,
-    );
+    // Lời «vì sao không hiện 0» sống ở đây, màn không nhắc lại (xem kho-bao-cao).
+    throw new LoiChiPhi(`Không đọc được chi phí từ tiến trình bot: ${e?.message || e}. `
+      + 'Màn để trống thay vì hiện «0 đồng» — con số 0 lúc này sẽ sai.', 'cau_hong', 502);
   }
 
   // ── phần của TEAM ──

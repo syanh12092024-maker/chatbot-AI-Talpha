@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { cuaBoiCanh } from '../../auth/boi-canh.js';
+import { teamCuaNguoi } from '../../auth/kho-nguoi-dung.js';
 import { menuCua } from './man-hinh.js';
 import { docTrangThai } from './trang-thai.js';
 
@@ -52,14 +53,22 @@ export function taoRouterDieuHuong() {
     res.sendFile(path.join(THU_MUC, 'dieu-huong.js'), (e) => (e ? next(e) : undefined));
   });
 
-  r.get('/api/dieu-huong', (req, res) => {
+  r.get('/api/dieu-huong', async (req, res) => {
     let bc = null;
     try { bc = cuaBoiCanh(req); } catch { bc = null; }
     if (!bc) return res.status(401).json({ ok: false, ma: 'chua_dang_nhap' });
+    // TÊN team cho góc tài khoản — trước 28/09 góc ấy in «team 1» (mã số) trên mọi màn.
+    // Đọc hỏng thì trả `null` và màn tự lùi về mã: menu không được chết vì một cái nhãn.
+    let tenTeam = null;
+    try {
+      const t = (await teamCuaNguoi(bc.nguoiDungId)).find((x) => String(x.teamId) === String(bc.teamId));
+      tenTeam = t && t.tenTeam !== t.teamId ? t.tenTeam : null;
+    } catch { tenTeam = null; }
     return res.json({
       ok: true,
       tenDangNhap: bc.tenDangNhap,
       teamId: bc.teamId,
+      tenTeam,
       vai: bc.vai,
       nhom: menuCua(bc.vai),
     });

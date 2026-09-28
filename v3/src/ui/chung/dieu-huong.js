@@ -297,11 +297,11 @@
       <div class="dh-tai-khoan">
         <button type="button" class="dh-tk-nut" aria-haspopup="menu" aria-expanded="false" aria-controls="dh-tk">
           <span class="dh-avatar">${chuDau(d.tenDangNhap)}</span>
-          <span class="dh-tk-ten">${esc(d.tenDangNhap || "")}<small>team ${esc(d.teamId || "?")}</small></span>
+          <span class="dh-tk-ten">${esc(d.tenDangNhap || "")}<small>${esc(d.tenTeam || "team " + (d.teamId || "?"))}</small></span>
         </button>
         <div class="dh-tk" id="dh-tk" role="menu" hidden>
           <div class="dh-tk-dau"><b>${esc(d.tenDangNhap || "")}</b>
-            team ${esc(d.teamId || "?")} · vai: ${esc((d.vai || []).join(", ") || "không có")}</div>
+            ${esc(d.tenTeam || "team " + (d.teamId || "?"))} · vai: ${esc((d.vai || []).join(", ") || "không có")}</div>
           <button type="button" class="doi" role="menuitem">${bieuTuong("repeat")}Đổi team</button>
           <button type="button" class="ra" role="menuitem">${bieuTuong("log-out")}Đăng xuất</button>
         </div>

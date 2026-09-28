@@ -179,7 +179,7 @@ export function canhBaoKyNang(kyNang, { soSanPham, soPage } = {}) {
     ra.push({
       ma: 'bat_ma_khong_ai_nhan', muc: 'do',
       chu: `${batMaTrong.length} kỹ năng đang BẬT nhưng KHÔNG page nào nhận `
-        + `(${batMaTrong.map((k) => k.ma).join(', ')}) — nhóm sản phẩm đã khoanh không khớp `
+        + `(${batMaTrong.map((k) => `«${k.ten || k.ma}»`).join(', ')}) — nhóm sản phẩm đã khoanh không khớp `
         + 'page nào. Trông như đang chạy, thực tế không vào prompt của ai.',
     });
   }

@@ -186,7 +186,7 @@ export async function manLop0(boiCanh) {
     },
     trong: mau.length ? null : {
       rong: true, vi: 'chua-nap',
-      noi: 'Bảng `mau_0_dong` CÓ nhưng chưa có mẫu nào — chưa ai nhập.',
+      noi: 'Chỗ lưu mẫu đã có nhưng chưa có mẫu nào — chưa ai nhập.',
       diTiep: `Mỗi câu bắt được ở lớp này là một lượt gọi model không xảy ra, tức ${VND_MOI_TIN} đ `
         + 'tiết kiệm. Bảng rỗng nghĩa là lớp này chưa chặn gì cả — KHÔNG phải là nó chặn không hiệu quả.',
     },

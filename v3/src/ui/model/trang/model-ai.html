@@ -38,7 +38,7 @@
 
   <section class="section table-wrap" aria-labelledby="tieu-khoa">
     <div class="table-toolbar"><h2 id="tieu-khoa">Khoá API của bốn nhà</h2>
-      <span class="table-count">Dán vào được, không đọc ra được</span></div>
+      <span class="table-count">Chưa dán khoá thì không chọn được model của nhà đó · dán vào được, không đọc ra được</span></div>
     <div id="bangKhoa"></div>
   </section>
 
@@ -68,12 +68,42 @@ async function goi(duong, tuyChon) {
   return d;
 }
 
+// GỘP cảnh báo trùng ý (audit 28/09): chưa dán khoá từng ra MỘT nhãn đỏ ở đầu trang, BA hộp
+// đỏ, BA dòng lỗi dưới ô chọn và BỐN nhãn đỏ ở bảng khoá — mười một chỗ đỏ cho một việc.
+// Dữ liệu cảnh báo phía máy chủ giữ nguyên (có bài test khoá); chỉ cách HIỆN là gộp:
+//   · `chua_cau_hinh` đã có nhãn ở đầu trang → không lặp thành hộp.
+//   · `chinh_khong_khoa` + `du_phong_khong_khoa` → một hộp, một nút «Dán khoá».
+const GOP_KHOA = new Set(['chinh_khong_khoa', 'du_phong_khong_khoa']);
 function veBangTin() {
   const kh = Object.entries(LOI).map(([k, m]) => canhBao({ level: 'error', title: k, body: m }));
-  for (const c of (D && D.canhBao) || []) {
+  const ds = (D && D.canhBao) || [];
+  const thieuKhoa = ds.filter((c) => GOP_KHOA.has(c.ma));
+  if (thieuKhoa.length) {
+    const vai = [];
+    if (thieuKhoa.some((c) => c.ma === 'chinh_khong_khoa')) vai.push(`Model chính (${D.dangDung.chinh.ma})`);
+    if (thieuKhoa.some((c) => c.ma === 'du_phong_khong_khoa')) vai.push(`${vai.length ? 'dự' : 'Dự'} phòng (${D.dangDung.duPhong.ma})`);
+    kh.push(canhBao({
+      level: 'error',
+      title: thieuKhoa.length > 1 ? 'Model chính và dự phòng đều chưa có khoá API' : `Chưa có khoá API cho ${vai[0].charAt(0).toLowerCase()}${vai[0].slice(1)}`,
+      body: thieuKhoa.length > 1
+        ? `${vai.join(' và ')} chưa có khoá — hết nhà này bot không có nhà kia đỡ, và có thể đứng im.`
+        : thieuKhoa[0].ma === 'chinh_khong_khoa'
+          ? 'Mọi lượt chat sẽ rơi thẳng sang dự phòng.'
+          : 'Nhà chính hết tiền là bot đứng im, không có nhà nào đỡ.',
+      actionsHtml: SUA ? button('Dán khoá', { size: 'sm', data: { 'toi-khoa': '1' } }) : '',
+    }));
+  }
+  for (const c of ds) {
+    if (GOP_KHOA.has(c.ma) || c.ma === 'chua_cau_hinh') continue;
     kh.push(canhBao({ level: c.muc === 'do' ? 'error' : c.muc === 'vang' ? 'warning' : 'info', body: c.chu }));
   }
   $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
+  const toi = document.querySelector('[data-toi-khoa]');
+  if (toi) toi.addEventListener('click', () => {
+    const o = document.querySelector('[data-khoa]');
+    document.getElementById('tieu-khoa').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (o) o.focus({ preventScroll: true });
+  });
 }
 
 /** Một vai trò model = một hàng cài đặt: nhãn + giải thích bên trái, ô chọn + giá bên phải. */
@@ -90,7 +120,7 @@ function hangVai(khoa, nhan, giaiThich, dangChon) {
         ${chonDuoc.map((m) => `<option value="${esc(m.ma)}" ${m.ma === dangChon.ma ? 'selected' : ''}>${esc(m.ma)} — ${esc(m.tenNha)}${coKhoa(m.nha) ? '' : ' (chưa có khoá)'}</option>`).join('')}
       </select>
       ${thieu
-        ? `<div class="field-error">Nhà ${esc(dangChon.tenNha)} chưa có khoá API — model này không chạy được. Dán khoá ở bảng bên dưới.</div>`
+        ? `<div class="field-error">Chưa có khoá của ${esc(dangChon.tenNha)}.</div>`
         : gia ? `<div class="field-hint">${so1(gia.dTin)} đ/tin · ${so(gia.dDon)} đ/đơn${gia.giaChacChan ? '' : ' · giá suy ngược'}</div>` : ''}
     </div>
   </div>`;
@@ -134,12 +164,13 @@ function veKhoa() {
       ${SUA ? '<th scope="col">Dán khoá mới</th><th scope="col" class="actions"><span class="sr-only">Lưu</span></th>' : ''}
     </tr></thead><tbody>${D.nha.map((n) => {
       const k = D.khoa[n.ma] || {};
+      // Chỉ tô ĐỎ nhà đang được dùng; nhà chưa ai chọn thì thiếu khoá chỉ là «chưa dán».
+      const dangDung = [D.dangDung.chinh, D.dangDung.duPhong, D.dangDung.nen].some((m) => m && m.nha === n.ma);
       return `<tr>
       <td class="manh">${esc(n.ten)}</td>
       <td>${k.daCo
         ? statusBadge(k.tuEnv ? 'feature_on' : 'ready', { label: k.tuEnv ? 'Khoá từ cấu hình máy chủ' : 'Khoá riêng của team' })
-        : statusBadge('blocked', { label: 'Chưa có khoá' })}
-        ${k.daCo ? '' : '<div class="meta">Chưa dán thì không chọn được model của nhà này.</div>'}</td>
+        : statusBadge(dangDung ? 'blocked' : 'unknown', { label: dangDung ? 'Chưa có khoá · đang dùng' : 'Chưa có khoá' })}</td>
       ${SUA ? `<td><label class="sr-only" for="k-${esc(n.ma)}">Khoá API của ${esc(n.ten)}</label>
         <input type="password" class="cell-input" id="k-${esc(n.ma)}" data-khoa="${esc(n.ma)}" placeholder="Dán khoá API…" autocomplete="off" spellcheck="false"></td>
         <td class="actions">${button('Lưu', { size: 'sm', data: { luukhoa: n.ma } })}</td>` : ''}

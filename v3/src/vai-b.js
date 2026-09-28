@@ -17,6 +17,7 @@
 //
 // Người A chỉ cần giao ba thứ và gọi một hàm — xem `v3/docs/hop-dong-b-voi-a.md` mục 8.
 
+import { traTenNhatKy } from './auth/kho-nguoi-dung.js';
 import { taoRouterVanHanh } from './ui/van-hanh/router.js';
 import {
   datCongDanhTinh, datPheuNhatKy as datPheuNhatKyAuth, taoRouterAuth,
@@ -149,7 +150,7 @@ import {
   datChanDangNhap as datChanDangNhapPrompt, datChanVai as datChanVaiPrompt, taoRouterPromptPage,
 } from './ui/prompt-page/index.js';
 import {
-  datDocNhatKy, datDanhMuc,
+  datDocNhatKy, datDanhMuc, datTraTen as datTraTenNhatKy,
   datChanDangNhap as datChanDangNhapNhatKy, datChanVai as datChanVaiNhatKy, taoRouterNhatKy,
 } from './ui/nhat-ky/index.js';
 import {
@@ -367,6 +368,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   // Màn Nhật ký đọc qua chính bộ đọc của L0-M4 — không dựng đường đọc thứ hai.
   datDocNhatKy(docNhatKy);
   datDanhMuc({ moTa: moTaHanhDong, nhom: NHOM_HANH_DONG });
+  datTraTenNhatKy(traTenNhatKy);   // «nguoi» → email, «team #1» → tên team
   daNoi.push('bộ đọc nhật ký + danh mục mã → màn Nhật ký thao tác');
 
   // Màn «AI đề xuất» dùng LẠI bộ đọc và CÙNG cửa ghi của màn Bộ luật — nó chỉ khác ở chỗ

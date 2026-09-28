@@ -88,7 +88,8 @@ test('L0 ①a · bảng CÓ mà rỗng → «chưa ai nhập», KHÁC «không c
   dungL0([]);
   const d = await l0.manLop0(bc());
   assert.equal(d.dem.tongMau, 0);
-  assert.match(d.trong.noi, /CÓ nhưng chưa có mẫu/i);
+  assert.match(d.trong.noi, /có nhưng chưa có mẫu/i);
+  assert.doesNotMatch(d.trong.noi, /mau_0_dong/, 'tên bảng là chữ của máy, không phải của người dùng');
   // Và khác hẳn «lớp này chặn không hiệu quả».
   assert.match(d.trong.diTiep, /chưa chặn gì cả/i);
   assert.match(d.trong.diTiep, /KHÔNG phải/i);

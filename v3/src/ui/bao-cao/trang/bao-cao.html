@@ -165,10 +165,10 @@ async function tai() {
     veBang(d);
   } catch (e) {
     $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được báo cáo',
-      body: 'Màn này TỪ CHỐI hiện 0 khi chưa đọc được — «0 đơn» là câu dễ tin nhất và sai nhất.',
+      body: 'Chưa lấy được số từ tiến trình bot. Nếu lỗi còn lặp lại, gửi dòng chi tiết bên dưới cho người quản trị hệ thống.',
       detail: [e.message] })}</div>`;
     $('#thuoc').innerHTML = '';
-    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa có số liệu', body: 'Kiểm kết nối sang tiến trình bot rồi tải lại trang.' });
+    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa có số liệu', body: 'Tải lại trang sau ít phút.' });
   }
 }
 

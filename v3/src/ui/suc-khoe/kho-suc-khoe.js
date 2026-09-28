@@ -167,7 +167,7 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
   if (!cauHinh.length) {
     ds.push(den({
       ma: 'llm_cau_hinh', ten: 'Model AI', muc: MUC.DO,
-      vi: 'Team chưa cấu hình model nào — bảng `cau_hinh_model` trống. Bot đang chạy bằng bộ '
+      vi: 'Team chưa cấu hình model nào. Bot đang chạy bằng bộ '
         + 'mặc định của hệ, và không ai chọn được model rẻ hơn hay đặt dự phòng.',
       diTiep: { chu: 'Sang màn Model AI & khoá', duong: '/model-ai' },
       so: '0 dòng cấu hình',
@@ -253,10 +253,10 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
     ? den({ ma: 'so_ai', ten: 'Sổ AI', muc: MUC.XANH, vi: `${soAi} dòng.`, so: `${soAi} dòng` })
     : den({
       ma: 'so_ai', ten: 'Sổ AI', muc: MUC.DO,
-      vi: 'Bảng `so_ai` TRỐNG. Đây là nguồn của MỌI con số ở màn Báo cáo, Chi phí AI và Hiệu '
+      vi: 'Sổ AI đang TRỐNG. Đây là nguồn của MỌI con số ở màn Báo cáo, Chi phí AI và Hiệu '
         + 'quả kịch bản — trống thì cả ba màn đó không có gì để tính, và cũng không tra ngược '
         + 'được con số nào.',
-      diTiep: { chu: 'Cần chạy bộ nạp Sổ AI (việc của người A)', duong: null },
+      diTiep: { chu: 'Nhờ người quản trị hệ thống chạy bộ nạp Sổ AI', duong: null },
       so: '0 dòng',
     }));
 

@@ -74,7 +74,8 @@ test('cảnh báo · kỹ năng BẬT mà 0 page nhận là cảnh ĐỎ — tr�
   const c = d.canhBao.find((x) => x.ma === 'bat_ma_khong_ai_nhan');
   assert.ok(c, 'phải kêu');
   assert.equal(c.muc, 'do');
-  assert.match(c.chu, /khuyen_mai/, 'phải nêu tên kỹ năng nào, không nói chung chung');
+  assert.match(c.chu, /«KM»/, 'phải nêu TÊN kỹ năng nào, không nói chung chung');
+  assert.doesNotMatch(c.chu, /khuyen_mai/, 'mã máy không lên màn — audit 28/09');
   assert.match(c.chu, /không vào prompt của ai/i);
 });
 

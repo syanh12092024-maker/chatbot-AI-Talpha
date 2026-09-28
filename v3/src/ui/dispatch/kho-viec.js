@@ -188,10 +188,13 @@ export function lyDoChu(viec) {
   if (Object.prototype.hasOwnProperty.call(LY_DO, tho)) return LY_DO[tho];
   // Chữ tự do thì im lặng cho qua; thứ TRÔNG NHƯ MÃ mà không có trong bảng mới đáng kêu —
   // đó là dấu hiệu bot vừa đẻ một lý do mới mà không ai thêm vào đây.
+  // Mã lạ vẫn HIỆN (không gộp vào `khac`), nhưng mở đầu bằng tiếng người: sale đang vội
+  // mà đọc «ma_la_chua_co_trong_bang» thì không biết đó là lý do hay lỗi (audit 28/09).
   if (DANG_MA.test(tho)) {
     console.warn(`[dieu-phoi] mã lý do chưa có trong bảng: ${tho} — thêm vào LY_DO ở kho-viec.js`);
+    return `Lý do chưa có tên (mã ${tho})`;
   }
-  return tho;                             // hiện nguyên văn
+  return tho;                             // chữ tự do: hiện nguyên văn
 }
 
 /* ─────────────────────────────── đồng hồ đếm ngược ─────────────────────────────── */

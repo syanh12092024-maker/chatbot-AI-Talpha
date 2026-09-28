@@ -109,3 +109,30 @@ test('thiếu bối cảnh thì NÉM', async () => {
   noi([]);
   await assert.rejects(() => nk.manNhatKy(null), /bối cảnh|teamId/i);
 });
+
+/* ── audit 28/09: bộ ghi thật lưu `tac_nhan` TRƠN (`nguoi`/`may`) kèm `nguoi_dung_id` ── */
+
+test('lanCua · nhận cả `may` trơn — trước 28/09 mọi dòng máy rơi vào làn người', () => {
+  assert.equal(nk.lanCua({ tac_nhan: 'may' }), nk.LAN.MAY);
+  assert.equal(nk.lanCua({ tac_nhan: 'nguoi' }), nk.LAN.NGUOI);
+  assert.equal(nk.lanCua({ tac_nhan: 'mayman' }), nk.LAN.NGUOI, 'không bắt nhầm tiền tố');
+});
+
+test('cột Ai và Đối tượng ra TÊN, không ra «nguoi» và «team #1»', async () => {
+  noi([{ ...dong(1, 'nguoi'), nguoi_dung_id: 'u1', doi_tuong: 'team', doi_tuong_id: '1' },
+    { ...dong(2, 'nguoi'), nguoi_dung_id: 'u9', doi_tuong: 'page', doi_tuong_id: 'p1' }]);
+  nk.datTraTen(async ({ nguoi, team }) => ({
+    nguoi: new Map(nguoi.filter((x) => x === 'u1').map((x) => [x, 'an@talpha.vn'])),
+    team: new Map(team.map((x) => [x, 'Tiểu Alpha'])),
+  }));
+  try {
+    const d = await nk.manNhatKy(bcQt());
+    const a = d.dong.find((x) => x.id === 'n1');
+    assert.equal(a.ai, 'an@talpha.vn');
+    assert.equal(a.doiTuong, 'Tiểu Alpha');
+    assert.equal(a.doiTuongId, null, 'đã ra tên thì thôi in #id');
+    const b = d.dong.find((x) => x.id === 'n2');
+    assert.equal(b.ai, 'người dùng #u9', 'tra không ra thì nói rõ là người dùng nào, không in «nguoi»');
+    assert.equal(b.doiTuong, 'Page');
+  } finally { nk.datTraTen(null); }
+});
