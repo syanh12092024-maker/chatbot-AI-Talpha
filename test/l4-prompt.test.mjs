@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { CORE, buildSystem, khoiBoLuat, THAM_QUYEN } from '../src/prompts.js';
+import { CORE, CORE_VI, buildSystem, khoiBoLuat, THAM_QUYEN } from '../src/prompts.js';
 import { classify } from '../src/classifier.js';
 import { toolDefs } from '../src/tools.js';
 
@@ -41,10 +41,32 @@ const NGUYEN_TAC = [
   ['14 · Văn phong phải chủ động bán', ['let me know po', 'mahal po', 'iisipin ko muna', '3 LẦN', 'MỘT GÓC KHÁC', 'walang risk', 'PHẢN ĐỐI BÁN HÀNG']],
 ];
 
-test('① CORE giữ đủ 14 nguyên tắc — không nguyên tắc nào biến mất khi gộp prompt', () => {
+// BH8 (28/09): CORE có HAI BẢN — `CORE_VI` (người đọc, nguồn 14 nguyên tắc) và `CORE`
+// (tiếng Anh, model đọc). Mỗi nguyên tắc phải còn ở CẢ HAI bản: mất ở bản Việt là người
+// duyệt không thấy; mất ở bản Anh là model không nghe.
+const NGUYEN_TAC_EN = [
+  ['1 · Ngôn ngữ & giọng', ['Tagalog', 'VIETNAMESE', 'po"/"opo', '2–3 lines', 'Greet ONLY in the FIRST message', 'religion/politics', 'litrato']],
+  ['2 · Trung thực thông tin', ['ONLY 1 PRODUCT', 'get_price', 'NEVER invent prices', 'scarcity', 'LOCAL CURRENCY', 'Stock status']],
+  ['2 · Ảnh luôn đi kèm chữ', ['send_product_image', 'caption', 'bare photo', 'feedback', 'chứng nhận']],
+  ['3 · Chốt đơn COD đúng quy trình', ['cod_confirmed=true', 'captured=true', 'Order ID']],
+  ['3 · Cấm bịa tổng tiền', ['TOTAL', 'ONE package in the price list', 'multiply/add package prices', '2 sets']],
+  ['4 · Chống spam làm phiền', ['NEVER re-ask what the customer ALREADY gave', 'Najma', 'checklist']],
+  ['5 · Chống đơn trùng', ['ALREADY HAS AN ORDER', 'Facebook Commerce', 'DUPLICATE']],
+  ['7 · Biết chuyển người', ['handoff_human', 'asks for a real person', 'unsure of the information']],
+  ['11 · Không cam kết vượt thẩm quyền', ['delivery window in the KB', 'return/refund/warranty policies outside the KB']],
+  ['12 · Bảo vệ PII', ['Do NOT read back the full phone', "another customer's"]],
+  ['14 · Văn phong phải chủ động bán', ['let me know po', 'mahal po', 'iisipin ko muna', '3 TIMES', 'DIFFERENT ANGLE', 'walang risk', 'SALES OBJECTIONS']],
+];
+
+test('① CORE giữ đủ 14 nguyên tắc — ở CẢ bản người đọc (VI) lẫn bản model đọc (EN)', () => {
   for (const [ten, cums] of NGUYEN_TAC) {
     for (const cum of cums) {
-      assert.ok(CORE.includes(cum), `Nguyên tắc "${ten}" mất mẩu "${cum}" khỏi CORE`);
+      assert.ok(CORE_VI.includes(cum), `Nguyên tắc "${ten}" mất mẩu "${cum}" khỏi CORE_VI`);
+    }
+  }
+  for (const [ten, cums] of NGUYEN_TAC_EN) {
+    for (const cum of cums) {
+      assert.ok(CORE.includes(cum), `Nguyên tắc "${ten}" mất mẩu "${cum}" khỏi CORE (EN)`);
     }
   }
 });
@@ -52,8 +74,10 @@ test('① CORE giữ đủ 14 nguyên tắc — không nguyên tắc nào biến
 test('① CORE tự tuyên bố THẨM QUYỀN — vì nó không còn đứng cuối để thắng bằng recency', () => {
   // HARD_RULES cũ đứng CUỐI nên thắng kịch bản page nhờ vị trí. CORE đứng ĐẦU,
   // mất lợi thế đó → phải nói thẳng bằng chữ, nếu không kịch bản page ghi đè được.
-  assert.match(CORE, /THẨM QUYỀN/);
-  assert.match(CORE, /THẮNG MỌI KHỐI SAU/);
+  assert.match(CORE_VI, /THẨM QUYỀN/);
+  assert.match(CORE_VI, /THẮNG MỌI KHỐI SAU/);
+  assert.match(CORE, /AUTHORITY/);
+  assert.match(CORE, /OVERRIDES ALL LATER BLOCKS/);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -102,7 +126,11 @@ test('② Trần token CORE — canh bằng số KÝ TỰ (đo offline, không c
   // khách đã nhận». Đo: 7.111 → 7.735 ký tự ≈ +209 token (2.382 → 2.591), nằm trong khối
   // CỐ ĐỊNH được cache (Kimi đọc cache $0,16/1M ⇒ +$0,00003/lượt). Đổi lại mỗi tin ra ngắn
   // đi ~80–100 token ở giá $4/1M. BH3 sẽ cắt CORE xuống ≤1.500 token — trần này hạ theo.
-  assert.ok(CORE.length <= 7800, `CORE phình lên ${CORE.length} ký tự (trần 7.800) — đo lại token trước khi nới`);
+  assert.ok(CORE_VI.length <= 7800, `CORE_VI phình lên ${CORE_VI.length} ký tự (trần 7.800) — đo lại token trước khi nới`);
+  // BH8: bản EN là bản model đọc. Tiếng Anh ~4 ký tự/token (tiếng Việt ~1,8 — Kimi đếm thật
+  // 4.331 token cho 7.735 ký tự) nên trần ký tự của nó cao hơn mà token lại thấp hơn nhiều.
+  // Số token thật đo bằng `ops/bin/dem-token-kimi.mjs`, ghi ở nhật ký BH8.
+  assert.ok(CORE.length <= 9000, `CORE (EN) phình lên ${CORE.length} ký tự (trần 9.000) — đo lại token trước khi nới`);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

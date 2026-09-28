@@ -11,7 +11,7 @@
 //    người A mở đường lưu kịch bản ở tầng trên (`kich_ban.page_id` đang NOT NULL).
 export {
   cayKichBan, banCuaPage, luuBanNhap, duaLenLive, lamSach, coNoiDung, uocToken, tangTrong,
-  datTaoTruyVan, datPheuNhatKy, datDungBanMay, datDayLenBot,
+  datTaoTruyVan, datPheuNhatKy, datDungBanMay, datDichBanMay, datDayLenBot,
   daNoiDungBanMay, daNoiDayLenBot,
   BANG, TRUONG, NHAN_TRUONG, TRUONG_VAO_PROMPT, TRANG_THAI, CHUA_PHAN,
   VAI_SUA_DUOC as VAI_SUA_KICH_BAN, VAI_DUYET_DUOC,

@@ -256,6 +256,13 @@ for (const [i, k] of chon.entries()) {
   // `dem.goiModel > 0`, mà lượt ném lỗi KHÔNG tăng bộ đếm đó ⇒ lượt sau bắn ngay lập tức
   // ⇒ 429 dây chuyền: 20/84 lượt hỏng liên tiếp. Ngủ theo LƯỢT THỬ, không theo lượt thành.
   const loiNha = /LoiNhaCungCap|429|rate ?limit/i.test(String(kq?.lyDo || ""));
+  // DỪNG Ở LỖI HẠN MỨC NGÀY (TPD). Đo 28/09: tổ chức Moonshot có trần 1,5 triệu token/NGÀY;
+  // chạm trần thì mọi lượt sau đều hỏng, chạy tiếp chỉ in ra một bảng toàn lỗi và đốt thời
+  // gian. Ghi rõ đã chạy tới đâu rồi dừng — phần đã đo vẫn được in và ghi `--ra` bên dưới.
+  if (/TPD|tokens? per day/i.test(String(kq?.lyDo || "")) || /TPD/i.test(String(goc?.ly_do || ""))) {
+    console.error(`\n⛔ Chạm HẠN MỨC TOKEN NGÀY của nhà cung cấp ở lượt ${i + 1}/${chon.length} — dừng đo.`);
+    break;
+  }
   const chamModel = (kq?.dem?.goiModel || 0) > 0 || loiNha;
   if (i < chon.length - 1 && chamModel) {
     await nghi(Number(arg("--nhip", "7000")) * (loiNha ? 2 : 1));

@@ -81,27 +81,35 @@ cho máy → cả hai bản đều lưu», cấm sửa tay bản máy). Nhưng: 
 ```
 src/prompts.js                          ← đã khai «Đụng bộ não»
 src/tools.js                            ← đã khai «Đụng bộ não» — CHỈ chữ mô tả, không đổi schema/hành vi
-src/context.js                          ← đã khai «Đụng bộ não» — CHỈ buildProfileBlock
+src/context.js                          ← đã khai «Đụng bộ não» — (lượt này KHÔNG đụng, xem «Lệch»)
 db/di-tru/nguon.js                      ← dungBanChoMay
+db/di-tru/bo-luat-va-ky-nang.js         ← seed bo_luat_chung = CORE_VI
 src/chat/rap-prompt.js
 src/chat/dich-ban-may.js                ← MỚI: dịch + máy-kiểm giữ nguyên văn
 v3/src/ui/kich-ban/
-db/migrate/                             ← CHỈ một cặp up/down thêm `kich_ban.bam_nguoi` — xin SỐ ở tổng (bẫy #25)
-db/schema.sql
-ops/bin/dich-ban-may.mjs                ← MỚI: sinh CORE EN từ CORE_VI
+v3/src/vai-b.js                         ← CHỈ mối nối tuỳ chọn `dichBanMay`
+v3/chay-that.js                         ← CHỈ nối `dichBanMay`
+ops/bin/dich-ban-may.mjs                ← MỚI: dịch bản máy của kịch bản LIVE (dev)
 ops/bin/dem-token-kimi.mjs              ← MỚI: đếm token thật từng khối, có ngân sách + dừng khi TPD
-ops/bin/gia-lap-mot-minh.mjs            ← CHỈ thêm: dừng ở lỗi TPD đầu tiên (đo 28/09: hiện 0 dòng xử lý TPD)
+ops/bin/gia-lap-mot-minh.mjs            ← CHỈ thêm: dừng ở lỗi TPD đầu tiên
 test/bh8-hai-ban.test.mjs
 test/l4-prompt.test.mjs                 ← bảng 14 nguyên tắc đối chiếu trên CORE_VI + mẩu EN tương ứng
-test/context.test.mjs                   ← CHỈ các ca đọc chữ khối hồ sơ
-test/bh7-ngu-canh-botcake.test.mjs      ← CHỈ ca K9 (chữ «máy đoán» đổi sang EN)
+test/l2-m3-rap-prompt.test.js           ← CHỈ ca ⑥ (seed = CORE_VI)
+v3/test/b/kich-ban.test.mjs             ← bỏ bản chép tay dungBanChoMay + 2 ca bộ dịch
 ops/bin/nghiem-thu/bh8.sh
 docs/thi-cong/nhat-ky/phieu-bh8.md
 docs/thi-cong/SO-DIEU-HANH-THI-CONG.md
 ```
 
-⛔ Không đụng `closer.js` · `outbound-guard.js` (BH3) · `lead-score.js` (BH4) · chữ marketer
-trong `noi_dung_nguoi`.
+**Lệch so với bản phiếu đầu (thợ ghi, 28/09):**
+- KHÔNG migration `bam_nguoi`: bản người và bản máy luôn được ghi CÙNG một dòng, CÙNG một
+  lần lưu ⇒ không thể lệch nhau; thứ cần biết chỉ là «bản máy đã dịch chưa» — dấu
+  `DAU_BAN_MAY` ở đầu `noi_dung_may` trả lời việc đó, không cần cột mới, không cần deploy
+  lược đồ.
+- CORE EN do thợ dịch TAY, trung thành (không qua `dich-ban-may.mjs`): CORE là luật sống
+  còn, cần người soát từng câu; băm `CORE_VI_BAM` vẫn canh lệch như phiếu dặn.
+- Khối hồ sơ khách CHƯA chuyển tiếng Anh: ~120 token ≈ 3đ/lượt, trong khi màn «Kimi đọc
+  gì» cho người vận hành đọc chính khối này và ~15 ca test đọc chữ của nó. Để phiếu sau.
 
 ## ④ Nghiệm thu — `ops/bin/nghiem-thu/bh8.sh` + đo model
 

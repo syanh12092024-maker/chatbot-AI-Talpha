@@ -15,14 +15,9 @@ const kb = await import('../../src/ui/kich-ban/kho-kich-ban.js');
 
 const GOC_REPO = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
 
-/** Công thức dựng bản máy — chép ĐÚNG `db/di-tru/nguon.js#dungBanChoMay`. */
-const dungMay = (c) => {
-  const d = [];
-  if (c.tone) d.push(`- Giọng điệu / phong cách: ${c.tone}`);
-  if (c.greeting) d.push(`- Câu chào mở đầu (dùng khi khách mới nhắn): "${c.greeting}"`);
-  if (c.salesPrompt) d.push(`- Cách bán / điểm mạnh riêng của sản phẩm:\n${c.salesPrompt}`);
-  return d.join('\n');
-};
+/** Công thức dựng bản máy — IMPORT thẳng `db/di-tru/nguon.js#dungBanChoMay`. Bản chép tay
+ *  trước đây lệch bản thật từ BH7 (câu chào) mà test vẫn xanh — chép tay là song sinh. */
+const { dungBanChoMay: dungMay } = await import('../../../db/di-tru/nguon.js');
 
 function dungKho({ ban = [], pages = null, coDayBot = true, coDungMay = true } = {}) {
   const { taoTruyVan, kho } = dungCongGia({
@@ -313,4 +308,31 @@ test('thiếu bối cảnh thì NÉM', async () => {
   dungKho();
   await assert.rejects(() => kb.cayKichBan(null), /bối cảnh|teamId/i);
   await assert.rejects(() => kb.banCuaPage(null, 'p1'), /bối cảnh|teamId/i);
+});
+
+// ═══ BH8 · bộ DỊCH bản máy là mối nối riêng, chạy SAU hàm dựng ═══════════════════════
+test('luuBanNhap · BH8 · nối bộ dịch → lưu bản máy TIẾNG ANH, bản người giữ nguyên', async () => {
+  const { kho } = dungKho();
+  const goi = [];
+  kb.datDichBanMay(async (vi, bc) => { goi.push({ vi, team: bc.teamId }); return '<!-- ban-may:en v1 -->\nTone: friendly'; });
+  try {
+    const kq = await kb.luuBanNhap(bcMkt(), 'p1', { nguoi: NGUOI });
+    const dong = kho.docThang(kb.BANG)[0];
+    assert.equal(goi.length, 1);
+    assert.equal(goi[0].vi, dungMay(kb.lamSach(NGUOI)), 'bộ dịch nhận ĐÚNG bản khuôn tiếng Việt');
+    assert.equal(goi[0].team, 't1', 'bộ dịch biết team nào trả tiền dịch');
+    assert.equal(dong.noi_dung_may, '<!-- ban-may:en v1 -->\nTone: friendly');
+    assert.deepEqual(dong.noi_dung_nguoi, kb.lamSach(NGUOI), 'chữ marketer KHÔNG đổi');
+    assert.equal(kq.banMayLaTiengAnh, true);
+  } finally { kb.datDichBanMay(null); }
+});
+
+test('luuBanNhap · BH8 · bộ dịch NÉM lỗi → vẫn lưu, bản máy là khuôn tiếng Việt', async () => {
+  const { kho } = dungKho();
+  kb.datDichBanMay(async () => { throw new Error('429'); });
+  try {
+    const kq = await kb.luuBanNhap(bcMkt(), 'p1', { nguoi: NGUOI });
+    assert.equal(kho.docThang(kb.BANG)[0].noi_dung_may, dungMay(kb.lamSach(NGUOI)));
+    assert.equal(kq.banMayLaTiengAnh, false);
+  } finally { kb.datDichBanMay(null); }
 });

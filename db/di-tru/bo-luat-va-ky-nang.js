@@ -17,7 +17,9 @@
 // nhầm ở đây sẽ hỏi size cho cả sản phẩm không có size). Khi cửa POS ghi xong
 // `san_pham_ma` VÀ có báo cáo tỉ lệ hoàn theo SP, người vận hành UPDATE hai cột này
 // (bat_cho_nhom_sp = mảng `san_pham.ma` đúng, bat = true) — KHÔNG cần seed lại.
-import { CORE } from "../../src/prompts.js";
+// BH8: seed bản NGƯỜI ĐỌC (`CORE_VI`). Model đọc `CORE` tiếng Anh dịch từ chính bản này —
+// màn Bộ luật là chỗ người duyệt, nên nó hiện tiếng Việt.
+import { CORE_VI as CORE } from "../../src/prompts.js";
 
 export const MA_KY_NANG_HOI_SIZE = "hoi_size";
 const NOI_DUNG_HOI_SIZE =
@@ -26,7 +28,7 @@ const NOI_DUNG_HOI_SIZE =
   "size là nguyên nhân hoàn hàng lớn nhất của nhóm sản phẩm có size (01-QUYET-DINH.md §6: " +
   "hai SP mẫu hoàn 26,8%/19,2% so với 9,3% của SP không size).";
 
-/** Seed `bo_luat_chung` v1 — team_id=NULL (toàn hệ), nội dung = `CORE` của prompts.js.
+/** Seed `bo_luat_chung` v1 — team_id=NULL (toàn hệ), nội dung = `CORE_VI` của prompts.js (bản tiếng Việt, BH8).
  *  Tầng truy vấn (`themMoi`/`suaTheoId`) KHÔNG ghi được team_id NULL cho bảng này — đúng
  *  chủ đích (truy-van.js: "một team chỉ ghi/sửa dòng của chính nó, không bao giờ chạm
  *  dòng team_id IS NULL"). Bootstrap dùng `pool.query` thẳng, cùng tiền lệ nap.js/

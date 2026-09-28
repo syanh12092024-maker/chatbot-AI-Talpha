@@ -27,6 +27,7 @@
 //   Dựng đủ ba tầng trên dữ liệu rỗng thì ra một cây có đúng một nhánh «(chưa phân loại)» —
 //   trông như màn hình hỏng, và che mất sự thật là dữ liệu chưa có.
 
+import { laBanMayEn } from '../../../../src/chat/dich-ban-may.js';
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
 import { docBotBatThat, botBatCua } from '../chung/bot-bat-that.js';
 
@@ -75,6 +76,7 @@ export class LoiKichBan extends Error {
 let _taoTruyVan = null;
 let _pheuNhatKy = null;
 let _dungBanMay = null;
+let _dichBanMay = null;
 let _dayLenBot = null;
 
 export function datTaoTruyVan(fn) {
@@ -108,6 +110,16 @@ export function datDayLenBot(fn) {
   if (fn != null && typeof fn !== 'function') throw new LoiKichBan('datDayLenBot cần một hàm');
   _dayLenBot = fn || null;
   return _dayLenBot;
+}
+
+/**
+ * BỘ DỊCH bản máy sang tiếng Anh gọn (BH8) — `(banKhuonTiengViet, boiCanh) => Promise<string>`.
+ * Không nối ⇒ bản máy là bản khuôn tiếng Việt như trước BH8.
+ */
+export function datDichBanMay(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiKichBan('datDichBanMay cần một hàm');
+  _dichBanMay = fn || null;
+  return _dichBanMay;
 }
 
 export const daNoiDungBanMay = () => typeof _dungBanMay === 'function';
@@ -311,7 +323,15 @@ export async function luuBanNhap(boiCanh, pageRowId, { nguoi, ghiChu = '' } = {}
   if (!coNoiDung(sach)) {
     throw new LoiKichBan('bản kịch bản trống — không có trường nào có nội dung.', 'trong_rong');
   }
-  const may = String(_dungBanMay(sach) || '');
+  let may = String(_dungBanMay(sach) || '');
+  // BH8: bộ DỊCH là mối nối RIÊNG, chạy SAU hàm dựng — hàm dựng giữ nguyên chữ ký
+  // `(cfg)` vì `dungBanChoMay(cfg, va)` coi tham số thứ hai là hàm lọc chữ (truyền `bc` vào
+  // đó từng làm nó sập — bộ ca kich-ban bắt được). Dịch hỏng thì GIỮ bản khuôn tiếng Việt:
+  // lưu không bao giờ bị chặn vì bộ dịch; `banMayLaTiengAnh` nói cho màn biết đã lưu bản nào.
+  if (_dichBanMay) {
+    try { may = String((await _dichBanMay(may, bc)) || may); }
+    catch (e) { console.warn(`[kịch bản] dịch bản máy lỗi — giữ bản tiếng Việt: ${String(e?.message || e).slice(0, 160)}`); }
+  }
 
   const db = congTruyVan(bc);
   const daCo = await db.chon(BANG, { page_id: String(pageRowId) });
@@ -336,7 +356,7 @@ export async function luuBanNhap(boiCanh, pageRowId, { nguoi, ghiChu = '' } = {}
     ghiChu: ghiChu || `lưu bản nháp kịch bản v${phienBan} cho ${page.ten || page.pageId}`,
   });
 
-  return { id: dong ? String(dong.id) : null, phienBan, trangThai: 'DRAFT', may, uocToken: uocToken(may) };
+  return { id: dong ? String(dong.id) : null, phienBan, trangThai: 'DRAFT', may, uocToken: uocToken(may), banMayLaTiengAnh: laBanMayEn(may) };
 }
 
 /**

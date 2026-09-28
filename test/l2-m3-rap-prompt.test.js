@@ -9,7 +9,7 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { dungSandbox } from "../db/sandbox.js";
-import { CORE, buildSystem } from "../src/prompts.js";
+import { CORE_VI, buildSystem } from "../src/prompts.js";
 import { getKBForPage } from "../src/kb.js";
 
 let sb, teams;
@@ -237,15 +237,15 @@ test("④b fallback cờ config — VẮNG (mặc định) → lùi NGUYÊN VẸ
 });
 
 // ═══ ⑥  Seed mồi ═════════════════════════════════════════════════════════════════════
-test("⑥ seed mồi bo_luat_chung v1 KHỚP NGUYÊN VĂN prompts.js#CORE + ky_nang hỏi size đủ 3 team", async () => {
+test("⑥ seed mồi bo_luat_chung v1 KHỚP NGUYÊN VĂN prompts.js#CORE_VI + ky_nang hỏi size đủ 3 team", async () => {
   const v1 = await sb.pool.query(
     "SELECT noi_dung FROM bo_luat_chung WHERE team_id IS NULL AND phien_ban=1",
   );
   assert.equal(v1.rowCount, 1);
   assert.equal(
     v1.rows[0].noi_dung,
-    CORE,
-    "nội dung v1 phải RÚT (import) từ prompts.js#CORE, không chép tay",
+    CORE_VI,
+    "nội dung v1 phải RÚT (import) từ prompts.js#CORE_VI (bản người đọc, BH8), không chép tay",
   );
   console.log(
     `[⑥ diff mẩu, 200 ký tự đầu] ${v1.rows[0].noi_dung.slice(0, 200)}`,

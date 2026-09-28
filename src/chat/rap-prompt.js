@@ -24,6 +24,7 @@
 // (mặc định) ⇒ dùng NGUYÊN đường `kb.js#getKBForPage` cũ, KHÔNG đụng DB — không gãy 51
 // page hiện hành đang sống bằng kb-overrides.json lúc cây này merge/deploy. Đặt `=1` mới
 // bật đường DB bốn khối. Đây LÀ "cờ config" mà đề bài ②.1 nhắc — không phải per-block.
+import { laBanMayEn } from "./dich-ban-may.js";
 import {
   ctxHeThong,
   layNhieu,
@@ -313,6 +314,10 @@ export async function rapKb(pool, { teamId, pageIdText }) {
 
   return {
     config,
+    // BH8: bản máy TIẾNG ANH của kịch bản — chỉ khi nó mang dấu `DAU_BAN_MAY` (đã dịch VÀ
+    // qua kiểm giữ nguyên văn lúc lưu). Bản máy kiểu cũ (khuôn tiếng Việt) ⇒ '' ⇒
+    // `buildSystem` dựng từ `config` y như trước. `config` vẫn giữ: nơi khác đọc từng trường.
+    kichBanMay: laBanMayEn(kichBan?.noi_dung_may) ? String(kichBan.noi_dung_may) : "",
     text,
     products,
     // CUTOVER 01/09 — khối BỘ LUẬT CHUNG đi thẳng vào `buildSystem` thay hằng `CORE`.

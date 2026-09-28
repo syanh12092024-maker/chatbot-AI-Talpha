@@ -159,7 +159,7 @@ import {
 } from './ui/suc-khoe/index.js';
 import {
   datTaoTruyVan as datTruyVanKichBan, datPheuNhatKy as datPheuNhatKyKichBan,
-  datDungBanMay, datDayLenBot, datBocPancake,
+  datDungBanMay, datDichBanMay, datDayLenBot, datBocPancake,
   datChanDangNhap as datChanDangNhapKichBan, datChanVai as datChanVaiKichBan, taoRouterKichBan,
 } from './ui/kich-ban/index.js';
 
@@ -182,6 +182,8 @@ import {
  *                                                              Thiếu thì màn Bộ luật TỪ CHỐI ghi — ghi bằng
  *                                                              hai lời gọi rời là bỏ mất giao dịch và luật §9.
  * @param {(cfg:object)=>string}    [phuThuoc.dungBanMay]      dựng BẢN CHO MÁY từ bản người
+ * @param {(vi:string,bc:object)=>Promise<string>} [phuThuoc.dichBanMay] BH8: dịch bản máy sang tiếng Anh gọn lúc lưu.
+ *                                                              Thiếu thì bản máy giữ khuôn tiếng Việt như trước.
  *                                                              (người A giao: `db/di-tru/nguon.js#dungBanChoMay`).
  *                                                              Thiếu thì màn soạn kịch bản TỪ CHỐI lưu.
  * @param {(pageId:string,cfg:object)=>Promise} [phuThuoc.dayKichBanLenBot] đưa một bản lên LIVE ở tiến trình bot.
@@ -214,7 +216,7 @@ import {
  * @returns {{daNoi:string[], thieu:string[]}}
  */
 export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa,
-  docKhoi, dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
+  docKhoi, dungBanMay, dichBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan,
   chayNapLai, vanHanh,
@@ -384,6 +386,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
 
   if (typeof dungBanMay === 'function') { datDungBanMay(dungBanMay); daNoi.push('bộ dựng bản-cho-máy → màn soạn kịch bản'); }
   else thieu.push('dungBanMay — màn soạn kịch bản TỪ CHỐI lưu, vì tự dựng bản thứ hai là hứa một prompt khác cái bot nhận');
+  // Tuỳ chọn, không vào `thieu`: thiếu bộ dịch thì bản máy vẫn đúng như trước BH8 (tiếng Việt).
+  if (typeof dichBanMay === 'function') { datDichBanMay(dichBanMay); daNoi.push('bộ dịch bản-cho-máy sang tiếng Anh → màn soạn kịch bản'); }
 
   if (typeof dayKichBanLenBot === 'function') { datDayLenBot(dayKichBanLenBot); daNoi.push('cửa đưa kịch bản lên LIVE → tiến trình bot'); }
   else thieu.push('dayKichBanLenBot — soạn được kịch bản nhưng KHÔNG đưa lên LIVE được; sửa cột mà không gọi sang bot thì bot vẫn nói y như cũ');

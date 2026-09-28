@@ -249,6 +249,19 @@ const bao = dungPhanB(app, {
     core: CORE_PROMPT,
   }),
   dungBanMay: (cfg) => dungBanChoMay(cfg),
+  // BH8: bản khuôn tiếng Việt → DỊCH sang tiếng Anh gọn bằng model của chính team (một lần
+  // lúc lưu). Lỗi/kiểm lệch ⇒ `dichBanMay` tự trả lại bản tiếng Việt như trước.
+  dichBanMay: async (vi, bc) => {
+    const { dichBanMay } = await import(`${GOC}/src/chat/dich-ban-may.js`);
+    const { layModel } = await import(`${GOC}/src/chat/model.js`);
+    const { goiMotLan } = await import(`${GOC}/v3/src/model/goi-mot-lan.js`);
+    // Dịch cả kịch bản quá trần 30s mặc định của `layModel` (đo 28/09) — nới riêng lời gọi dịch.
+    const goiLau = (o) => goiMotLan({ ...o, timeoutMs: 120000 });
+    const goi = async (req) => (await layModel(pool, { teamId: bc?.teamId }, { vaiTro: 'chinh', goi: goiLau })).client.messages.create(req);
+    const kq = await dichBanMay(vi, { goi });
+    if (kq.lyDo) console.warn(`[kịch bản] bản máy giữ tiếng Việt — ${kq.lyDo}`);
+    return kq.text;
+  },
   // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM tiến trình bot, qua đúng cửa v1.
   dayKichBanLenBot: async (pageIdFacebook, cfg) => {
     const { goiAdminV1 } = await import('./src/noi-day/cau-bot-v1.js');

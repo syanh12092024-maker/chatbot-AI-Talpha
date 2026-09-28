@@ -9,10 +9,13 @@ import { config } from './config.js';
 import { vanGuiDangMo } from './core/van-gui.js';
 
 // Định nghĩa tool (function calling) cho closer.
+// Chữ mô tả tool viết TIẾNG ANH (BH8, 28/09): model đọc khối này MỖI lượt và nó nằm SAU
+// điểm cache của Kimi (đo: điểm dùng chung dừng ở cuối system) ⇒ trả giá đầy đủ từng token.
+// Tên loại ảnh ("chứng nhận", "thành phần"…) giữ nguyên — đó là nhãn tool khớp.
 export const toolDefs = [
   {
     name: 'update_customer',
-    description: 'Lưu thông tin mới hoặc sửa thông tin khách khi hồ sơ chưa đúng. Chỉ chép dữ kiện từ lời khách hiện tại. Không gọi nếu hồ sơ đã đúng, không cần gọi trước create_draft_order.',
+    description: 'Save new or corrected customer details when the profile is wrong. Copy only facts from the current customer message. Skip if the profile is already right; not needed before create_draft_order.',
     input_schema: { type: 'object', additionalProperties: false, properties: {
       name: { type: 'string' }, phone: { type: 'string' }, address: { type: 'string' },
       city: { type: 'string' }, tier: { type: 'string' }, qty: { type: 'integer', minimum: 1 },
@@ -20,10 +23,10 @@ export const toolDefs = [
   },
   {
     name: 'get_price',
-    description: 'Lấy giá lẻ và giá combo sản phẩm của page từ Knowledge Base. Page chỉ bán 1 SP nên KHÔNG cần mã — cứ gọi tool, tool tự lấy đúng sản phẩm. TUYỆT ĐỐI không hỏi khách mã/loại sản phẩm.',
+    description: 'Get the product unit and package prices from the Knowledge Base. The page sells 1 product, so no code is needed. Never ask the customer for a product code/type.',
     input_schema: {
       type: 'object',
-      properties: { product_id: { type: 'string', description: 'Bỏ trống — page chỉ có 1 SP, tool tự lấy.' } },
+      properties: { product_id: { type: 'string', description: 'Leave empty — auto-filled.' } },
       required: [],
     },
   },
@@ -32,39 +35,39 @@ export const toolDefs = [
   // nay làm bằng luật ở classifier (`lead_quality`) + M11 của Luồng 2 — 0 token, không gãy.
   {
     name: 'create_draft_order',
-    description: 'Lưu thông tin đơn vào backend để nhân viên duyệt. Thành công chỉ có nghĩa đã nhận thông tin, chưa phải đã tạo đơn POS. CHỈ gọi sau khi khách xác nhận COD và đủ địa chỉ.',
+    description: 'Save the order details for staff review. Success only means the details were received, not that a POS order exists. Call ONLY after the customer confirmed COD and the address is sufficient.',
     input_schema: {
       type: 'object',
       properties: {
         name: { type: 'string' },
         phone: { type: 'string' },
-        address: { type: 'string', description: 'Địa chỉ chi tiết' },
+        address: { type: 'string', description: 'Full address' },
         city: { type: 'string' },
-        product_id: { type: 'string', description: 'Bỏ trống — page chỉ có 1 SP, tool tự điền.' },
-        variant: { type: 'string', description: 'Gói/combo khách chọn (vd "combo 2"), nếu có.' },
+        product_id: { type: 'string', description: 'Leave empty — auto-filled.' },
+        variant: { type: 'string', description: 'Chosen package, e.g. "combo 2".' },
         qty: { type: 'integer' },
-        total_price: { type: 'number', description: 'TỔNG tiền COD khách phải trả theo đúng gói đã chốt (số, nội tệ — vd 99 nghĩa là 99 SAR/AED). LẤY TỪ bảng giá KB, KHÔNG tự bịa.' },
-        cod_confirmed: { type: 'boolean', description: 'Khách đã xác nhận thanh toán khi nhận hàng' },
+        total_price: { type: 'number', description: 'COD total of the chosen package, local currency (99 = 99 SAR/AED). From the KB price list only.' },
+        cod_confirmed: { type: 'boolean', description: 'Customer confirmed paying on delivery' },
       },
       required: ['name', 'phone', 'address', 'city', 'qty', 'cod_confirmed'],
     },
   },
   {
     name: 'send_product_image',
-    description: 'Gửi ẢNH sản phẩm của page cho khách xem. Ảnh được gửi CÙNG LƯỢT với tin chữ của bạn (ảnh trước, chữ ngay sau) — nên gọi tool xong BẮT BUỘC phải viết chữ, không viết thì ảnh cũng không tới khách. Page chỉ bán 1 SP nên KHÔNG cần mã. Mỗi SP có nhiều loại ảnh (Ảnh sản phẩm, Feedback, Chứng nhận, Thành phần, Công dụng...). GỌI NHIỀU LẦN trong hội thoại — mỗi lần tool tự chọn ảnh MỚI chưa gửi cho khách này, nên không sợ trùng. Để trống category = ưu tiên ảnh sản phẩm; truyền category để gửi đúng loại khách cần (vd "feedback" khi khách do dự, "chứng nhận"/"thành phần" khi khách nghi ngờ chất lượng).',
+    description: 'Send a product PHOTO. It goes out in the SAME turn as your text (photo first) — you MUST write text after calling, or the photo is not delivered. No product code needed. Each call picks a NEW photo this customer has not seen. Empty category = main product photo; use "feedback" when the customer hesitates, "chứng nhận"/"thành phần" when they doubt quality.',
     input_schema: {
       type: 'object',
       properties: {
         product_id: { type: 'string', description: 'Bỏ trống — page chỉ có 1 SP, tool tự lấy.' },
-        category: { type: 'string', description: 'Loại ảnh muốn gửi (khớp theo nhãn): vd "feedback", "thành phần", "công dụng". Bỏ trống = ảnh sản phẩm chính.' },
-        caption: { type: 'string', description: 'BẮT BUỘC — lời dẫn NGẮN (1 câu) gửi KÈM ảnh, viết bằng ĐÚNG ngôn ngữ khách. VD: "Here po ang actual photos ng product 😊" / "هذه صور المنتج الحقيقية". TUYỆT ĐỐI không gửi ảnh trơ không lời nào.' },
+        category: { type: 'string', description: 'Photo type label, e.g. "feedback", "thành phần", "công dụng". Empty = main photo.' },
+        caption: { type: 'string', description: 'REQUIRED — one short sentence sent with the photo, in the customer\'s language, e.g. "Here po ang actual photos ng product 😊".' },
       },
       required: ['caption'],
     },
   },
   {
     name: 'handoff_human',
-    description: 'Chuyển hội thoại cho nhân viên thật.',
+    description: 'Hand the conversation to a human staff member.',
     input_schema: {
       type: 'object',
       properties: { reason: { type: 'string' } },

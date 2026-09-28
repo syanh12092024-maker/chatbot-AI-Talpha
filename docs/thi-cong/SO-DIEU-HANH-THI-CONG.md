@@ -249,7 +249,7 @@ file đó. Mọi phiếu BH so lại với sáu số ấy, không so bằng cả
 | BH5 | Soi lỗ hổng kiến thức của page → việc cho marketer              | —         | không                                            | 🎫 |
 | BH6 | Bỏ `get_price` · hai điểm neo cache · đo tiền thật              | BH1·BH3   | `prompts.js` `tools.js`                          | 🎫 |
 | BH7 | Kimi đọc tin Botcake khách đã nhận · tin ngắn 2–3 dòng     | —         | `context.js` `prompts.js`                        | ✅ 28/09 · cổng `bh7.sh` 9/9 · bộ ca 10/10 · đảo-vá 8/10 đỏ · đo model: xem nhật ký |
-| BH8 | HAI BẢN: người đọc tiếng Việt, model đọc tiếng Anh gọn · đích ≤50đ/lượt | BH7 | `prompts.js` `tools.js` `context.js` | 🎫 28/09 · nhận phần «cắt CORE» của BH3 + phần cache của BH6 |
+| BH8 | HAI BẢN: người đọc tiếng Việt, model đọc tiếng Anh gọn · đích ≤50đ/lượt | BH7 | `prompts.js` `tools.js` `context.js` | 🔨 28/09 · CODE xong (cổng `bh8.sh` 12/12 · bộ ca 11/11 · đảo-vá 5/5 đỏ · `npm test` 2.114/0) — ĐO token + model chờ hạn mức Kimi · nhận phần «cắt CORE» của BH3 + phần cache của BH6 |
 | RBH | **GATE SÓNG BÁN** — 6 cổng bh*.sh + `do-duong-ban` 6 số đạt đích + 3 lượt model | BH1..BH6 | TỔNG | ⬜ |
 
 **Đích của gate RBH** (so mốc nền 16/09): tin page được trả lời 31,8% → **≥40%** · hội
@@ -2527,3 +2527,5 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 28/09 · BH7 đo Kimi thật 60 lượt Minty (dev): ký tự p50 313→253 · `**` 62%→14% · token ra 140→89 · 119→104đ/lượt; chưa đạt: «Hello» 52%→59% (kịch bản page dạy ngược, §9 N-BH7)
 - 28/09 · Việc kế (người quyết gật): tìm vì sao cache Kimi hụt ~1.500 token/lượt ở đường thật — khoản lớn nhất của đích 50đ/lượt
 - 28/09 · BH8 → 🎫 — hai bản Việt (người) / Anh gọn (model) cho CORE + kịch bản + tool; cache Kimi đo: điểm dùng chung ở cuối system (6.144), tools sau điểm đó, `cache_control` vô tác dụng · phiếu docs/thi-cong/phieu/PHIEU-BH8.md
+- 28/09 · BH8 → 🔨 — CORE hai bản (CORE_VI người đọc, CORE EN model đọc, băm canh) · kịch bản dịch sang EN lúc lưu qua mối nối `datDichBanMay` + kiểm giữ nguyên văn, lỗi thì giữ bản Việt · tool mô tả EN · Minty dev đã có bản máy EN · commit (xem git log `BH8`) · nhật ký docs/thi-cong/nhat-ky/phieu-bh8.md
+- 28/09 · BH8 CHƯA ĐO: tổ chức Moonshot chạm trần 1,5 triệu token/ngày lần 2 — `dem-token-kimi.mjs` + 3 lượt `gia-lap` (30 lượt) chạy khi hạn mức mở lại

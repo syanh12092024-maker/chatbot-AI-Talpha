@@ -213,8 +213,11 @@ export function dungBanChoMay(cfg, va) {
   const c = lamSach(cfg, va);
   const d = [];
   if (c.tone) d.push(`- Giọng điệu / phong cách: ${c.tone}`);
+  // SONG SINH với `src/prompts.js#buildSystem` — cùng một câu, hai nơi. BH7 (28/09) sửa
+  // bên kia vì «khi khách mới nhắn» đọc được thành «khi khách VỪA nhắn» = mọi lượt; từ BH8
+  // bot đọc bản máy dựng ở ĐÂY nên câu này phải giống từng chữ (test bh8-hai-ban canh).
   if (c.greeting)
-    d.push(`- Câu chào mở đầu (dùng khi khách mới nhắn): "${c.greeting}"`);
+    d.push(`- Câu chào mở đầu — CHỈ dùng ở tin ĐẦU TIÊN của hội thoại (lịch sử chưa có tin nào của page; page/Botcake đã chào hoặc đã gửi nội dung này rồi thì KHÔNG dùng lại): "${c.greeting}"`);
   if (c.salesPrompt)
     d.push(`- Cách bán / điểm mạnh riêng của sản phẩm:\n${c.salesPrompt}`);
   return d.join("\n");
