@@ -1,6 +1,6 @@
 # MỞ VAN MN5 — MỘT NGUỒN CHO SẢN PHẨM · GIÁ · ẢNH · KỊCH BẢN (CR-28-09b)
 
-> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 28/09: «Đưa cùng lượt, chạy từng bước A→E» (UI-HT1–4 đi cùng lượt).** Bước A ✅ · B ✅. Các số «đo
+> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 28/09: «Đưa cùng lượt, chạy từng bước A→E» (UI-HT1–4 đi cùng lượt).** Bước A ✅ · B ✅ · C ✅ · E HOÃN (người quyết cần quyết lại ba khối Tagalog — xem mục 10). Các số «đo
 > 28/09» dưới đây là phép đo CHỈ ĐỌC (SSH đọc, người quyết cho phép).
 > Phiếu CR: `docs/thi-cong/doi-y-do/CR-28-09-mot-nguon-san-pham.md` · sổ §5e.
 
@@ -192,8 +192,18 @@ lùi D thì chúng không còn ở bot, nhưng còn nguyên trong CSDL để đ�
 1. `node --env-file=.env ops/bin/nap-mot-nguon.mjs` (chạy thử) → 77/77 khứ hồi khớp · thiếu dòng page: 1 (`1100561323151723`)
 2. `node --env-file=.env ops/bin/nap-mot-nguon.mjs --ghi` → **ĐÃ GHI: 76 page · 78 sản phẩm · 154 bậc · 536 ảnh**
 
+**Giữa B và C — lượt thử đầu-cuối trên bản dev dựng từ dữ liệu prod** (người quyết yêu cầu): 0 lỗi JS/mạng; kịch bản · tên SP · tên bậc · giá · ảnh (tải/nhãn/xếp/bỏ) · hết hàng đều tới bot và đọc lại đúng; vai marketer lưu kịch bản được. Bắt 2 lỗi, sửa ở `280459f` (nút «Xem đoạn chữ gửi AI» mở sai page; câu hứa sai về màn xem trước). Lộ ra: quy tắc gốc ghi khách là người Philippines làm việc ở Trung Đông (OFW) ⇒ ba khối Tagalog có thể CỐ Ý — bước E hoãn.
+
+**C** (người quyết: «5/ okle»)
+1. `ops/bin/dong-bo-kich-ban.mjs` (`c291a6b`, đẩy + kéo về prod, chỉ thêm script) chạy thử: **74 page có kịch bản · 0 lệch thật** — 2 «lệch» đo trước đó chỉ là câu chào bị cắt ở ký tự 200 giữa một chữ in đậm (bot giữ nửa chữ, v3 giữ «�»). Không ghi gì.
+2. drop-in `/etc/systemd/system/aicloser-v3.service.d/mn5.conf` = `Environment=V3_GHI_KHO_BOT=1` · `daemon-reload` · `restart aicloser-v3`
+3. `day-lai-ban-chep.mjs --page 1117787068081611` (chạy với `V3_GHI_KHO_BOT=1` — script chạy ngoài tiến trình v3, đọc `.env`)
+
 ## 9 · Số đo tại từng mốc
 **A:** ba dịch vụ `active`, mỗi dịch vụ `Started` 1 lần · lỗi mới **0/0/0** (tới +6′) · `/health` `pages:131` sau 14 s (bằng trước) · UI 3102 **200** trong & ngoài · `anh_san_pham` có, 0 dòng · `goi_gia.nhan` có · mã mới đang phục vụ: `POST /api/anh-san-pham/1/link` **401** (có cửa, đòi đăng nhập; không phải 404) · `/uploads/<tệp>` qua 3102 **200** · trang page có «Bot trả lời thế nào» · env từ `/proc` cả ba: `PANCAKE_READONLY=1` `V3_PANCAKE_GUI=0` `V3_POS_GHI=0` — van gửi vẫn đóng, chưa cờ MN5 nào.
+
+**C:** `aicloser-v3` active · Started 1 · lỗi **0** · env `/proc`: `PANCAKE_READONLY=1` `V3_PANCAKE_GUI=0` `V3_GHI_KHO_BOT=1` · HÀNH VI với env của tiến trình: `trangThaiCau({kho:true}).mo = true`, `trangThaiCau().mo = false` («máy này đang CHỈ ĐỌC… không bật tắt bot») ⇒ cờ hẹp đúng · đẩy 1 page: «bot nhận 1 sản phẩm (đã đọc lại khớp)» · `/health` 131 · UI ngoài 200.
+⚠️ Nội dung: 2 page (`1191101314082464`, `1240378795819215`) có câu chào CỤT ở ký tự 200, ký tự cuối hỏng — khách sẽ thấy «�». Việc của marketer: viết lại đuôi câu chào.
 
 **B:** đếm lại từ CSDL: `san_pham nguon='kb'` **78** trên **76** page · bậc **154**, cả 154 có tên bậc (`nhan`) · ảnh **536** (= 543 − 7 ảnh của page thiếu dòng) · `day-lai-ban-chep.mjs` chạy thử: **74/76 khớp**, 2 lệch đúng hai ca đổi id `SP01-2` đã báo · «5 ảnh đổi gốc» là 5 link trycloudflare có chữ `/uploads/` trong đường (link NGOÀI đã chết, không phải tệp máy mình — thước đếm thô, ghi nhận) · `/health` 131 · lỗi 3′ **0** · bot không bị chạm (không lượt đẩy nào).
 
