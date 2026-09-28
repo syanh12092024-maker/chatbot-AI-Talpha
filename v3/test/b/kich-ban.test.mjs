@@ -336,3 +336,36 @@ test('luuBanNhap · BH8 · bộ dịch NÉM lỗi → vẫn lưu, bản máy là
     assert.equal(kq.banMayLaTiengAnh, false);
   } finally { kb.datDichBanMay(null); }
 });
+
+/* ═══════════ LƯU LÀ CHẠY (CR-28-09b · MN6) — §9 «kịch bản người viết áp dụng thẳng» ═══════════ */
+
+test('luuVaChay · MARKETER lưu một bước ⇒ bot nhận bản NGƯỜI, bản thành LIVE, bản cũ ARCHIVED', async () => {
+  const { dayBot, kho } = dungKho();
+  const v1 = await kb.luuVaChay(bcMkt(), 'p1', { nguoi: NGUOI });
+  const v2 = await kb.luuVaChay(bcMkt(), 'p1', { nguoi: { ...NGUOI, tone: 'hai' } });
+  assert.equal(v2.trangThai, 'LIVE');
+  assert.equal(v2.haBan, v1.phienBan, 'phải nói rõ vừa hạ bản nào');
+  assert.equal(dayBot.length, 2);
+  assert.deepEqual(dayBot[1].cfg, kb.lamSach({ ...NGUOI, tone: 'hai' }));
+  const ds = kho.docThang(kb.BANG);
+  assert.equal(ds.filter((b) => b.trang_thai === 'LIVE').length, 1);
+  assert.equal(ds.find((b) => b.id === v1.id).trang_thai, 'ARCHIVED');
+});
+
+test('luuVaChay · bot KHÔNG nhận ⇒ giữ chữ thành bản nháp, báo rõ «CHƯA chạy», cột không LIVE', async () => {
+  const { kho } = dungKho();
+  kb.datDayLenBot(async () => { throw new Error('bot không trả lời'); });
+  await assert.rejects(() => kb.luuVaChay(bcMkt(), 'p1', { nguoi: NGUOI }),
+    (e) => /CHƯA chạy/.test(e.message) && /bản nháp v1/.test(e.message) && e.status >= 500);
+  const ds = kho.docThang(kb.BANG);
+  assert.equal(ds.length, 1, 'chữ người vừa gõ không được mất');
+  assert.equal(ds[0].trang_thai, 'DRAFT');
+});
+
+test('luuVaChay · chưa nối cửa đẩy ⇒ TỪ CHỐI trước khi ghi gì · sale không lưu được', async () => {
+  const { kho } = dungKho({ coDayBot: false });
+  await assert.rejects(() => kb.luuVaChay(bcMkt(), 'p1', { nguoi: NGUOI }), (e) => e.ma === 'chua_noi');
+  assert.equal(kho.docThang(kb.BANG).length, 0);
+  dungKho();
+  await assert.rejects(() => kb.luuVaChay(bcSale(), 'p1', { nguoi: NGUOI }));
+});

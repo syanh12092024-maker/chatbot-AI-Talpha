@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import {
-  cayKichBan, banCuaPage, luuBanNhap, duaLenLive,
+  cayKichBan, banCuaPage, luuBanNhap, duaLenLive, luuVaChay,
   VAI_SUA_DUOC as VAI_SUA, VAI_DUYET_DUOC, LoiKichBan,
 } from './kho-kich-ban.js';
 
@@ -160,6 +160,14 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 
   r.post('/api/kich-ban/page/:id/nhap', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
     const kq = await luuBanNhap(cuaBoiCanh(req), req.params.id, {
+      nguoi: req.body?.nguoi, ghiChu: req.body?.ghiChu,
+    });
+    res.json({ ok: true, ...kq });
+  }));
+
+  // CR-28-09b · MN6: LƯU LÀ CHẠY — vai soạn (quản trị · marketer), đúng §9 đã ký.
+  r.post('/api/kich-ban/page/:id/luu-chay', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    const kq = await luuVaChay(cuaBoiCanh(req), req.params.id, {
       nguoi: req.body?.nguoi, ghiChu: req.body?.ghiChu,
     });
     res.json({ ok: true, ...kq });

@@ -469,7 +469,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   if (docKhoi && typeof docKhoi.boLuat === 'function') {
     datDocKhoi(docKhoi);
     // CÙNG bộ đọc cho trang của một page — hai màn không được ra hai bản kịch bản.
-    datDocKhoiMotPage({ sanPham: docKhoi.sanPham, kichBan: docKhoi.kichBan, sua: docSanPhamSua || null });
+    datDocKhoiMotPage({ sanPham: docKhoi.sanPham, kichBan: docKhoi.kichBan, sua: docSanPhamSua || null, boLuat: docKhoi.boLuat || null });
     daNoi.push('bốn bộ đọc khối prompt → màn Prompt của page + trang một page');
   }
   else thieu.push('docKhoi — màn «Prompt của page» không dựng được bốn khối, và nó nói rõ đó là lỗi cấu hình chứ không phải "page này không có prompt"');

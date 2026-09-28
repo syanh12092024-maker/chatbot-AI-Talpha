@@ -231,5 +231,15 @@ export async function noiDungPage(boiCanh, id) {
       .map((g) => ({ gia: Number(g.price), tienTe: g.tien_te })));
     giaGoCung = timGiaGoCung(kichBan && !kichBan.loi ? kichBan.noi_dung_nguoi : null, bangGia, NHAN_TRUONG);
   }
-  return { chuaNoi: false, sanPham, kichBan, sanPhamSua, giaGoCung };
+  // QUY TẮC CHUNG (CR-28-09b · MN6): khối ĐẦU TIÊN AI nhận, dùng chung mọi page. Màn page chỉ
+  // hiện TÓM TẮT và chỉ đường — sửa ở đây là đổi cả team, nên không đặt ô sửa cạnh kịch bản
+  // riêng của một page. `null` = chưa nối bộ đọc (khác «không có bản nào trong CSDL»).
+  let boLuat = null;
+  if (typeof _docKhoi.boLuat === 'function') {
+    boLuat = await Promise.resolve(_docKhoi.boLuat(bc.teamId))
+      .then((r) => (r ? { coBan: true, phienBan: r.phien_ban, soKyTu: String(r.noi_dung || '').length, suaLuc: r.sua_luc || null }
+        : { coBan: false }))
+      .catch((e) => ({ loi: String(e?.message || e) }));
+  }
+  return { chuaNoi: false, sanPham, kichBan, sanPhamSua, giaGoCung, boLuat };
 }

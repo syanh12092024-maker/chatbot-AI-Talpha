@@ -41,8 +41,33 @@
   </div>
 
   <div id="tab-thiet-lap" role="tabpanel" hidden></div>
-  <div id="tab-san-pham" role="tabpanel" hidden></div>
-  <div id="tab-kich-ban" role="tabpanel" hidden></div>
+
+  <!-- MỘT MÀN CHO «PAGE NÀY TRẢ LỜI THẾ NÀO» (CR-28-09b · MN6). Trước 28/09 kịch bản ở một tab,
+       sản phẩm ở tab khác, quy tắc chung · ảnh · đoạn chữ gửi AI ở ba màn khác — người sửa không
+       biết mình đang đứng ở khối nào của câu trả lời. Các khối xếp ĐÚNG thứ tự AI nhận
+       (`src/prompts.js#buildSystem`: quy tắc chung → hướng dẫn riêng của page → kho kiến thức). -->
+  <div id="tab-tra-loi" role="tabpanel" hidden>
+    <p class="meta duoi-4">Khách nhắn tới → nếu khớp <b>câu trả lời sẵn</b> theo từ khoá thì trả ngay, không
+      gọi AI. Không khớp thì AI đọc ba khối dưới đây, <b>theo đúng thứ tự này</b>, rồi mới trả lời.
+      Sửa khối nào cũng là sửa thẳng thứ bot đang dùng: lưu xong là bot dùng ngay.</p>
+    <div id="o-gia"></div>
+    <section aria-labelledby="k-luat">
+      <h2 id="k-luat">① Quy tắc chung — dùng cho mọi page</h2>
+      <div id="o-luat"><span class="skeleton"></span></div>
+    </section>
+    <section aria-labelledby="k-kich-ban">
+      <h2 id="k-kich-ban">② Kịch bản riêng của page này</h2>
+      <div id="o-kb"><span class="skeleton"></span></div>
+    </section>
+    <section aria-labelledby="k-san-pham">
+      <h2 id="k-san-pham">③ Sản phẩm, giá và ảnh</h2>
+      <div id="o-sp"><span class="skeleton"></span></div>
+    </section>
+    <section aria-labelledby="k-khac">
+      <h2 id="k-khac">Trước và sau AI</h2>
+      <div id="o-khac"></div>
+    </section>
+  </div>
 
   <div id="nguon-so"></div>
   <p><a href="/page-bot">← Về danh sách page</a></p>
@@ -224,10 +249,13 @@ async function doiChuBot(sangMoi) {
 const TAB = [
   ['tinh-trang', 'Tình trạng'],
   ['thiet-lap', 'Thiết lập'],
-  ['san-pham', 'Sản phẩm & giá'],
-  ['kich-ban', 'Kịch bản'],
+  ['tra-loi', 'Bot trả lời thế nào'],
 ];
+// Đường dẫn CŨ vẫn mở đúng chỗ: hai tab cũ nay là hai khối của tab «Bot trả lời thế nào».
+const TAB_CU = { 'san-pham': 'k-san-pham', 'kich-ban': 'k-kich-ban' };
 let dangO = new URLSearchParams(location.search).get('tab') || 'tinh-trang';
+let cuonToi = TAB_CU[dangO] || null;
+if (cuonToi) dangO = 'tra-loi';
 if (!TAB.some(([m]) => m === dangO)) dangO = 'tinh-trang';
 let daDocNoiDung = null;
 
@@ -241,7 +269,7 @@ function veTab() {
     u.searchParams.set('tab', dangO);
     history.replaceState(null, '', u);
     veTab();
-    if (dangO === 'san-pham' || dangO === 'kich-ban') veNoiDung();
+    if (dangO === 'tra-loi') veNoiDung();
   }));
 }
 
@@ -299,9 +327,9 @@ function veThietLap() {
   $('#oBc').addEventListener('change', (e) => luu('botcake', { bat: e.target.checked }, 'lời khai Botcake'));
 }
 
-/* ── TAB «SẢN PHẨM & GIÁ» và «KỊCH BẢN» — CHỈ ĐỌC, cùng bộ đọc với đường ráp prompt ── */
+/* ── TAB «BOT TRẢ LỜI THẾ NÀO» — cùng bộ đọc với đường ráp prompt của bot ─────────── */
 async function veNoiDung() {
-  const oSp = $('#tab-san-pham'); const oKb = $('#tab-kich-ban');
+  const oSp = $('#o-sp'); const oKb = $('#o-kb');
   if (!daDocNoiDung) {
     oSp.innerHTML = oKb.innerHTML = '<div class="panel"><p class="meta">Đang đọc…</p></div>';
     try { daDocNoiDung = await goi(`/api/page/${encodeURIComponent(ID)}/noi-dung`); }
@@ -319,8 +347,36 @@ async function veNoiDung() {
     return;
   }
 
-  await veSanPham(oSp);
+  $('#o-gia').innerHTML = veGiaGoCung();
+  noiNutSangTab($('#o-gia'));
+  veLuat($('#o-luat'));
+  veKhac($('#o-khac'));
   await veKichBan(oKb);
+  await veSanPham(oSp);
+  if (cuonToi) { document.getElementById(cuonToi)?.scrollIntoView({ block: 'start' }); cuonToi = null; }
+}
+
+/** ① Quy tắc chung — CHỈ tóm tắt + chỉ đường: sửa ở đây là đổi cả team, không đặt cạnh kịch bản một page. */
+function veLuat(o) {
+  const b = daDocNoiDung?.boLuat;
+  const than = !b ? 'Máy chủ chưa nối bộ đọc quy tắc chung.'
+    : b.loi ? `Không đọc được: ${b.loi}`
+    : b.coBan ? `Đang dùng bản ${b.phienBan} của team (${b.soKyTu.toLocaleString('vi-VN')} ký tự). Khối này đứng TRƯỚC và THẮNG kịch bản riêng: kịch bản page chỉ đổi giọng, câu chào, cách bán.`
+    : 'Team chưa có bản quy tắc chung trong dữ liệu — bot dùng bộ quy tắc gốc có sẵn trong mã.';
+  o.innerHTML = `<div class="panel"><p>${esc(than)}</p>
+    <p class="meta">Sửa quy tắc chung là đổi cách bot nói ở <b>mọi page</b> của team.</p>
+    <p class="duoi-2">${button('Xem và sửa quy tắc chung', { size: 'sm', href: '/bo-luat' })}</p></div>`;
+}
+
+/** Trước AI (câu trả lời sẵn) và công cụ soi (đoạn chữ thật gửi AI). */
+function veKhac(o) {
+  const pid = encodeURIComponent(D.page.pageId);
+  o.innerHTML = `<div class="panel">
+    <div class="setting-row"><div><b>Câu trả lời sẵn theo từ khoá</b><div class="meta">Chạy TRƯỚC AI, không tốn tiền. Khớp từ khoá thì bot trả ngay câu này.</div></div>
+      <div>${button('Xem câu trả lời sẵn', { size: 'sm', href: '/lop-0' })}</div></div>
+    <div class="setting-row"><div><b>Đoạn chữ thật gửi cho AI</b><div class="meta">Ghép đúng ba khối trên — xem để chắc chắn bot đang đọc đúng thứ bạn vừa sửa.</div></div>
+      <div>${button('Xem đoạn chữ gửi AI', { size: 'sm', href: `/prompt-page?page=${pid}` })}</div></div>
+  </div>`;
 }
 
 /* ── GIÁ GÕ CỨNG TRONG KỊCH BẢN — hiện ở CẢ HAI tab (28/09) ─────────────────────────
@@ -334,7 +390,7 @@ function veGiaGoCung() {
   if (!Array.isArray(ds) || !ds.length) return '';
   const lech = ds.filter((x) => !x.khop);
   const dong = (x) => `<li>${esc(x.gia)} ${esc(x.tienTe)} — ô «${esc(x.nhanO)}»${x.khop ? '' : ' · <b>KHÔNG có trong bảng giá</b>'}</li>`;
-  const nut = button('Sửa ở tab Kịch bản', { size: 'sm', data: { sangtab: 'kich-ban' } });
+  const nut = button('Sửa ở khối Kịch bản', { size: 'sm', data: { sangtab: 'kich-ban' } });
   return `<div class="panel">${lech.length
     ? canhBao({ level: 'error',
         title: `Bot đang báo cho khách ${lech.length} giá KHÔNG có trong bảng giá`,
@@ -347,8 +403,11 @@ function veGiaGoCung() {
 }
 
 function noiNutSangTab(o) {
+  // Hai tab cũ nay là hai khối cùng một tab — «sang tab» thành «cuộn tới khối».
   o.querySelectorAll('[data-sangtab]').forEach((b) => b.addEventListener('click', () => {
-    document.querySelector(`[data-tab="${b.dataset.sangtab}"]`)?.click();
+    const khoi = TAB_CU[b.dataset.sangtab];
+    if (khoi) document.getElementById(khoi)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    else document.querySelector(`[data-tab="${b.dataset.sangtab}"]`)?.click();
   }));
 }
 
@@ -408,7 +467,7 @@ async function veSanPham(o) {
   const thieuBan = cuaBot.filter((x) => !SP.some((y) => String(y.id) === String(x.id)))
     .map((x) => x.ten || x.ma || String(x.id));
 
-  o.innerHTML = veGiaGoCung() + SP.map((x, i) => `
+  o.innerHTML = SP.map((x, i) => `
     <div class="panel" data-sp="${i}">
       <div class="setting-row">
         <div><label for="sp-ten-${i}"><b>Tên</b></label><div class="meta">Bot gọi món bằng tên này${x.ten ? '' : ' — đang TRỐNG, bot không gọi được tên món'} · ${esc(x.ma || '')}</div></div>
@@ -593,10 +652,12 @@ async function luuSanPham(i, o) {
   } catch (e) { baoLoi('Không lưu được sản phẩm', e.message); }
 }
 
-/* ── KỊCH BẢN — SỬA ĐƯỢC, đi đúng hai cửa của màn Kịch bản ──────────────────────────
+/* ── KỊCH BẢN — LƯU LÀ CHẠY (CR-28-09b · MN6) ────────────────────────────────────────
  *
- * Lưu bản nháp và đưa lên chạy là HAI cửa khác nhau, đòi HAI vai khác nhau — đó là luật
- * «đề xuất phải có người duyệt» của dự án. Tab này KHÔNG gộp chúng lại.
+ * `01-QUYET-DINH.md` §9: «Kịch bản do người viết thì áp dụng thẳng, không cần duyệt». Nút lưu
+ * đi cửa `/luu-chay`: dựng bản mới → đẩy sang bot → thành bản đang chạy, trong một bước. Bot
+ * không nhận thì chữ vừa gõ vẫn được giữ thành bản nháp và màn nói rõ «CHƯA chạy».
+ * Luật «đề xuất phải có người duyệt» vẫn nguyên — nó dành cho ĐỀ XUẤT CỦA AI, không phải đây.
  */
 let KB = null;
 
@@ -610,18 +671,17 @@ async function veKichBan(o) {
   }
   const goc = KB.live?.nguoi || (KB.ban || [])[0]?.nguoi || {};
   const truong = KB.truong || [];
-  o.innerHTML = veGiaGoCung().replace(/<p class="duoi-2"><a[^>]*data-sangtab[\s\S]*?<\/p>|<p class="duoi-2"><button[^>]*data-sangtab[\s\S]*?<\/p>/, '') + `<div class="panel">
+  o.innerHTML = `<div class="panel">
     <div><b>${KB.live ? `Đang chạy: bản ${esc(String(KB.live.phienBan ?? KB.live.phien_ban ?? '?'))}` : 'Page này CHƯA có bản nào đang chạy'}</b></div>
     ${truong.map((t) => `
       <div class="setting-row">
         <div><label for="kb-${esc(t)}"><b>${esc((KB.nhanTruong || {})[t] || t)}</b></label></div>
         <div><textarea id="kb-${esc(t)}" rows="3" ${KB.suaDuoc ? '' : 'disabled'}>${esc(goc[t] || '')}</textarea></div>
       </div>`).join('')}
-    ${KB.suaDuoc ? `<div class="duoi-2">${button('Lưu bản nháp', { size: 'sm', variant: 'primary', id: 'nutNhap' })}</div>`
-      : '<p class="meta">Cần vai soạn kịch bản để sửa.</p>'}
-    <p class="meta">Lưu bản nháp KHÔNG đưa lên chạy. Đưa một bản lên chạy là việc của người
-      duyệt, làm ở màn «Kịch bản» — hai việc, hai vai, cố ý tách.</p>
-    <p class="duoi-2">${button('Mở màn Kịch bản', { size: 'sm', href: '/kich-ban' })}</p>
+    ${KB.suaDuoc ? `<div class="duoi-2">${button('Lưu — bot dùng ngay', { size: 'sm', variant: 'primary', id: 'nutNhap' })}</div>`
+      : '<p class="meta">Cần vai Quản trị hoặc Marketer để sửa.</p>'}
+    <p class="meta">Lưu là chạy: bot nói theo bản này ngay khi lưu xong. Mỗi lần lưu là một bản
+      mới; bản cũ giữ lại để quay về ở ${'<a href="/kich-ban">màn Kịch bản</a>'}.</p>
   </div>`;
 
   const nut = o.querySelector('#nutNhap');
@@ -629,12 +689,13 @@ async function veKichBan(o) {
     const nguoi = {};
     for (const t of truong) nguoi[t] = o.querySelector(`#kb-${t}`).value;
     try {
-      await goi(`/api/kich-ban/page/${encodeURIComponent(ID)}/nhap`, {
+      const kq = await goi(`/api/kich-ban/page/${encodeURIComponent(ID)}/luu-chay`, {
         method: 'POST', body: JSON.stringify({ nguoi, ghiChu: 'soạn ở trang của page' }),
       });
-      toast('Đã lưu bản nháp. Đưa lên chạy ở màn Kịch bản.');
-      await veKichBan(o);
-    } catch (e) { baoLoi('Không lưu được bản nháp', e.message); }
+      toast(`Đã lưu v${kq.phienBan} — bot đang chạy bản này.`);
+      daDocNoiDung = null;          // giá gõ cứng trong kịch bản có thể vừa đổi — đọc lại cả tab
+      await veNoiDung();
+    } catch (e) { baoLoi('Bot CHƯA chạy bản này', e.message); await veKichBan(o); }
   });
 }
 
@@ -656,7 +717,7 @@ async function nap() {
   veThieu();
   veTiep();
   veThietLap();
-  if (dangO === 'san-pham' || dangO === 'kich-ban') veNoiDung();
+  if (dangO === 'tra-loi') veNoiDung();
   $('#nguon-so').innerHTML = nguonSo({ dong: [
     { ten: 'Công tắc bot', tu: 'RAM tiến trình bot (cửa kiểm `/readiness`) — nguồn thật' },
     { ten: 'Bản sao đối chiếu', tu: 'cột `page.bot_ai_bat` trong cơ sở dữ liệu v3' },

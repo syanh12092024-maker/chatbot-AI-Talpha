@@ -16,7 +16,7 @@
 <body>
 <header>
   <h1>Kịch bản của page</h1>
-  <span class="sub">Lời bot nói riêng trên từng page. Lưu là bản nháp; chỉ bản đưa lên chạy mới có hiệu lực.</span>
+  <span class="sub">Lời bot nói riêng trên từng page. Lưu là chạy — bot dùng bản vừa lưu ngay; bản cũ giữ lại để quay về.</span>
 </header>
 
 <main>
@@ -155,6 +155,7 @@ function veSoan() {
       <div class="hang">
         ${P.live ? trangThaiBan('LIVE', `v${P.live.phienBan} đang chạy`) : statusBadge('script_missing', { label: 'Chưa có bản nào chạy' })}
         ${statusBadge(P.page.botAiBat ? 'bot_on' : 'bot_off', { label: P.page.botAiBat ? 'Bot đang chạy' : 'Bot tắt' })}
+        ${button('Mở trang page — kịch bản, sản phẩm, giá, ảnh', { size: 'sm', variant: 'ghost', href: `/page/${encodeURIComponent(P.page.id)}?tab=tra-loi` })}
       </div>
     </div>
 
@@ -164,7 +165,7 @@ function veSoan() {
       <section class="panel" aria-labelledby="tieu-soan">
         <div class="section-header"><div>
           <h2 id="tieu-soan">Soạn bản mới</h2>
-          <div class="section-desc">Viết bằng tiếng Việt cho người đọc. Bấm lưu, hệ thống tự dựng bản cho máy và lưu cả hai.${P.live ? ` Ô soạn đang chứa nội dung bản v${P.live.phienBan}.` : ''}</div>
+          <div class="section-desc">Viết bằng tiếng Việt cho người đọc. Bấm lưu, hệ thống tự dựng bản cho máy, lưu cả hai và bot dùng ngay.${P.live ? ` Ô soạn đang chứa nội dung bản v${P.live.phienBan}.` : ''}</div>
         </div>
         ${SUA ? button('Nhập từ file Pancake', { size: 'sm', id: 'nutNhap' }) : ''}</div>
         <div id="ketQuaNhap"></div>
@@ -175,8 +176,8 @@ function veSoan() {
           </div>`).join('')}
         </div>
         <div class="form-actions">
-          ${button('Lưu bản nháp', { variant: 'primary', id: 'nutLuu', disabled: !SUA })}
-          <span class="text-muted">${SUA ? 'Bản nháp chưa có hiệu lực. Bot vẫn nói theo bản đang chạy.' : 'Vai của bạn chỉ xem được, không lưu được.'}</span>
+          ${button('Lưu — bot dùng ngay', { variant: 'primary', id: 'nutLuu', disabled: !SUA })}
+          <span class="text-muted">${SUA ? 'Lưu là chạy: bot nói theo bản này ngay khi lưu xong.' : 'Vai của bạn chỉ xem được, không lưu được.'}</span>
         </div>
         <div id="ketQuaLuu">${veKetQuaLuu()}</div>
       </section>
@@ -197,29 +198,31 @@ function veSoan() {
               ${button('Xem', { size: 'sm', variant: 'ghost', data: { xem: b.id } })}
               ${button('Chép vào ô soạn', { size: 'sm', variant: 'ghost', disabled: !SUA, data: { chep: b.id } })}
               ${b.trangThai === 'LIVE' ? ''
+                : SUA ? button('Chạy lại bản này', { size: 'sm', data: { chaylai: b.id } })
                 : DUYET ? button('Đưa lên chạy', { size: 'sm', data: { live: b.id } })
                         : '<span class="meta" title="Cần vai Người duyệt kịch bản">Cần vai duyệt</span>'}
             </span></td>
           </tr>`).join('')}</tbody></table>`
-          : emptyState({ icon: 'inbox', title: 'Chưa có bản nào', body: 'Soạn ở khung phía trên rồi bấm Lưu bản nháp để tạo bản đầu tiên.' })}
+          : emptyState({ icon: 'inbox', title: 'Chưa có bản nào', body: 'Soạn ở khung phía trên rồi bấm Lưu để tạo bản đầu tiên.' })}
       </section>
     </div>`;
 
   if (SUA) $('#nutLuu').addEventListener('click', luu);
   if (SUA && $('#nutNhap')) $('#nutNhap').addEventListener('click', () => $('#oFile').click());
   document.querySelectorAll('[data-live]').forEach((b) => b.addEventListener('click', () => lenLive(b.dataset.live, b)));
+  document.querySelectorAll('[data-chaylai]').forEach((b) => b.addEventListener('click', () => chayLai(b.dataset.chaylai, b)));
   document.querySelectorAll('[data-chep]').forEach((b) => b.addEventListener('click', () => chep(b.dataset.chep)));
   document.querySelectorAll('[data-xem]').forEach((b) => b.addEventListener('click', () => xemBan(b.dataset.xem)));
 }
 
-// Kết quả lưu ở LẠI trên màn (không toast): nó nói hai điều người ta phải biết — bản nháp
-// CHƯA chạy, và máy sẽ đọc đúng đoạn nào. Bản cũ vẽ đoạn máy rồi gọi `moPage()` vẽ lại cả
+// Kết quả lưu ở LẠI trên màn (không toast): nó nói hai điều người ta phải biết — bản nào
+// ĐANG chạy, và máy sẽ đọc đúng đoạn nào. (CR-28-09b: lưu là chạy, §9 đã ký.) Bản cũ vẽ đoạn máy rồi gọi `moPage()` vẽ lại cả
 // khung, nên đoạn máy biến mất ngay khi vừa hiện.
 function veKetQuaLuu() {
   if (!KQ_LUU) return '';
   return `<div class="tren-4">${canhBao({ level: 'success',
-      title: `Đã lưu bản nháp v${KQ_LUU.phienBan} (≈ ${so(KQ_LUU.uocToken)} token)`,
-      body: 'Chưa có hiệu lực — bot vẫn nói theo bản đang chạy. Đưa lên chạy ở bảng «Các bản» bên dưới.' })}
+      title: `Đã lưu v${KQ_LUU.phienBan} — bot đang chạy bản này (≈ ${so(KQ_LUU.uocToken)} token)`,
+      body: KQ_LUU.haBan ? `Bản v${KQ_LUU.haBan} chuyển sang lưu trữ; muốn quay lại thì bấm «Chạy lại bản này» ở bảng dưới.` : 'Đây là bản đầu tiên chạy cho page này.' })}
     <div class="field tren-3"><span class="field-label">Bản cho máy vừa dựng <span class="meta">· không sửa thẳng được</span></span>
       <pre class="code-block">${esc(KQ_LUU.may) || '(trống)'}</pre></div></div>`;
 }
@@ -228,7 +231,7 @@ const layO = () => Object.fromEntries([...document.querySelectorAll('[data-t]')]
 
 // ── NHẬP TỪ FILE PANCAKE ─────────────────────────────────────────────────────────────
 // Cửa `/api/kich-ban/nhap-pancake` CHỈ BÓC, không ghi: nó trả về một bản nháp, người đọc
-// lại rồi mới bấm «Lưu bản nháp». Giữ đúng nghĩa đó ở đây — không tự lưu hộ.
+// lại rồi mới bấm «Lưu». Giữ đúng nghĩa đó ở đây — không tự lưu hộ.
 // Bộ bóc chỉ dựng được ba trường (giọng điệu · câu chào · cách bán); ba ô «trả lời nhanh»
 // KHÔNG bị đụng tới, vì file Pancake không có thứ tương ứng và ghi đè chúng bằng chuỗi rỗng
 // là xoá công người khác.
@@ -257,7 +260,7 @@ $('#oFile').addEventListener('change', async (e) => {
     const st = n.stats || {};
     $('#ketQuaNhap').innerHTML = `<div class="tren-4">${canhBao({ level: 'success',
       title: `Đã bóc «${f.name}» — điền ${so(daDien)}/3 ô`,
-      body: 'Chưa lưu gì cả. Đọc lại nội dung rồi bấm «Lưu bản nháp» thì mới thành một bản.',
+      body: 'Chưa lưu gì cả. Đọc lại nội dung rồi bấm «Lưu — bot dùng ngay» thì bot mới dùng.',
       detail: [[st.topics != null ? `${so(st.topics)} chủ đề` : '', st.images != null ? `${so(st.images)} ảnh` : '',
                 st.tiers != null ? `${so(st.tiers)} bậc giá` : ''].filter(Boolean).join(' · '),
                'Ảnh và bảng giá trong file KHÔNG vào kịch bản — chúng thuộc dữ liệu sản phẩm, đọc từ POS.'] })}</div>`;
@@ -299,13 +302,34 @@ async function luu() {
   setBusy(nut, true);
   LOI = null; veBangTin();
   try {
-    const kq = await goi(`/api/kich-ban/page/${encodeURIComponent(P.page.id)}/nhap`,
+    const kq = await goi(`/api/kich-ban/page/${encodeURIComponent(P.page.id)}/luu-chay`,
       { method: 'POST', body: JSON.stringify({ nguoi: layO() }) });
     KQ_LUU = kq;
     await moPage(P.page.id);
     await nap();
-  } catch (e) { baoLoi('Không lưu được bản nháp', e.message); }
+  } catch (e) { baoLoi('Chưa chạy được bản này', e.message); await moPage(P.page.id); }
   finally { const n = $('#nutLuu'); if (n) { setBusy(n, false); n.disabled = !SUA; } }
+}
+
+// QUAY LẠI một bản cũ = lưu lại đúng chữ của bản ấy thành bản MỚI rồi chạy — cùng một cửa
+// «lưu là chạy», nên vai soạn làm được mà không cần nới quyền «đưa lên chạy».
+async function chayLai(id, nut) {
+  const b = P.ban.find((x) => x.id === id);
+  const dongY = await confirmDialog({
+    title: `Chạy lại nội dung bản v${b.phienBan}?`,
+    body: P.page.botAiBat ? 'Page này đang bật bot: bot nói theo nội dung này với khách thật ngay khi lưu xong.'
+      : 'Page này đang tắt bot nên chưa ảnh hưởng khách.',
+    confirmLabel: 'Chạy lại',
+  });
+  if (!dongY) return;
+  setBusy(nut, true);
+  LOI = null; veBangTin();
+  try {
+    KQ_LUU = await goi(`/api/kich-ban/page/${encodeURIComponent(P.page.id)}/luu-chay`,
+      { method: 'POST', body: JSON.stringify({ nguoi: b.nguoi, ghiChu: `chạy lại nội dung v${b.phienBan}` }) });
+    await moPage(P.page.id);
+    await nap();
+  } catch (e) { setBusy(nut, false); baoLoi('Chưa chạy lại được', e.message); }
 }
 
 async function lenLive(id, nut) {

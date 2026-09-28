@@ -374,6 +374,45 @@ export async function luuBanNhap(boiCanh, pageRowId, { nguoi, ghiChu = '' } = {}
 export async function duaLenLive(boiCanh, pageRowId, id, { lyDo = '' } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   batBuocVai(bc, ...VAI_DUYET_DUOC);
+  return lenLive(bc, pageRowId, id, { lyDo });
+}
+
+/**
+ * LƯU LÀ CHẠY — một bước (CR-28-09b · MN6, 28/09).
+ *
+ * `01-QUYET-DINH.md` §9 đã ký: *«Kịch bản do người viết thì áp dụng thẳng, không cần duyệt»*.
+ * Code trôi khỏi dòng đó (lưu nháp ở vai soạn → đưa lên chạy ở vai duyệt); người quyết xác
+ * nhận lại 28/09: lưu là chạy. Vai «duyệt kịch bản» còn nguyên cho ĐỀ XUẤT CỦA AI (§9 dòng kế)
+ * và cho lượt đưa lại một bản CŨ lên chạy ở màn Kịch bản.
+ *
+ * Hai bước bên trong vẫn là hai hàm cũ, cùng thứ tự: dựng bản (người + máy) → đẩy sang bot →
+ * đổi cột. Bot không nhận ⇒ bản vừa soạn CÒN NẰM ở dạng nháp (không mất chữ người vừa gõ), và
+ * lỗi nói rõ «CHƯA chạy» — không bao giờ báo đã chạy khi bot vẫn nói bản cũ.
+ */
+export async function luuVaChay(boiCanh, pageRowId, { nguoi, ghiChu = '' } = {}) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  if (!_dayLenBot) {
+    throw new LoiKichBan(
+      'chưa nối cửa đẩy sang tiến trình bot — từ chối lưu: lưu mà bot không đổi là màn hình nói sai.',
+      'chua_noi', 500,
+    );
+  }
+  const nhap = await luuBanNhap(bc, pageRowId, { nguoi, ghiChu });
+  try {
+    const live = await lenLive(bc, pageRowId, nhap.id, { lyDo: ghiChu || 'lưu là chạy' });
+    return { ...nhap, trangThai: 'LIVE', haBan: live.haBan, dongBoBot: live.dongBoBot };
+  } catch (e) {
+    const loi = new LoiKichBan(
+      `đã giữ chữ bạn vừa soạn thành bản nháp v${nhap.phienBan}, nhưng bot CHƯA chạy bản này: `
+      + `${e?.message || e}. Bot vẫn đang nói bản cũ.`,
+      e?.ma || 'chua_chay', e?.status && e.status >= 500 ? e.status : 502,
+    );
+    throw loi;
+  }
+}
+
+async function lenLive(bc, pageRowId, id, { lyDo = '' } = {}) {
   if (!_dayLenBot) {
     throw new LoiKichBan(
       'chưa nối cửa đẩy sang tiến trình bot — từ chối. Sửa cột `trang_thai` mà không gọi sang '

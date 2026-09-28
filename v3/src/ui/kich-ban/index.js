@@ -10,7 +10,7 @@
 //    dòng, nên tầng sản phẩm không có gì để nhóm. Màn nói thẳng điều đó. `PHIEU-B-Y6` xin
 //    người A mở đường lưu kịch bản ở tầng trên (`kich_ban.page_id` đang NOT NULL).
 export {
-  cayKichBan, banCuaPage, luuBanNhap, duaLenLive, lamSach, coNoiDung, uocToken, tangTrong,
+  cayKichBan, banCuaPage, luuBanNhap, duaLenLive, luuVaChay, lamSach, coNoiDung, uocToken, tangTrong,
   datTaoTruyVan, datPheuNhatKy, datDungBanMay, datDichBanMay, datDayLenBot,
   daNoiDungBanMay, daNoiDayLenBot,
   BANG, TRUONG, NHAN_TRUONG, TRUONG_VAO_PROMPT, TRANG_THAI, CHUA_PHAN,
