@@ -145,7 +145,7 @@ Luật Meta đổi trong năm 2026:
 > thật, không mang shop) để tầng sản phẩm và tầng nước có nghĩa.
 > Hồ sơ: `docs/thi-cong/doi-y-do/CR-15-09-ma-san-pham-khong-mang-shop.md`.
 | Kịch bản page | ~1.400 | Marketer phụ trách | Thường xuyên |
-| Dữ liệu sản phẩm | ~1.500 | Đồng bộ từ POS | Tự động |
+| Dữ liệu sản phẩm | ~1.500 | ~~Đồng bộ từ POS~~ POS kéo vào · người sửa trên giao diện — một chỗ ghi (§8, CR-28-09b) | ~~Tự động~~ Mỗi lượt lưu |
 
 **Trước khi thiết kế lại, bộ luật chung chỉ lập trình viên sửa được** — nằm trong `src/prompts.js`, muốn đổi phải sửa mã nguồn rồi deploy. Marketer không nhìn thấy. Mà đó mới là khối quyết định bot tư vấn giỏi hay dở.
 
@@ -185,6 +185,19 @@ Quy giá công bố ra tiền thật theo hồ sơ token đo được:
 
 Sản phẩm và thị trường do team tự thêm qua giao diện, hoặc đồng bộ từ POS của team đó.
 
+**Một nguồn — đổi 28/09/2026, CR-28-09b** (`docs/thi-cong/doi-y-do/CR-28-09-mot-nguon-san-pham.md`).
+Mọi thứ bot dùng để chào bán một page — **sản phẩm, bậc giá, ảnh, kịch bản** — có đúng MỘT chỗ
+ghi là **CSDL v3, sửa qua giao diện v3**. POS là đường KÉO VÀO, không phải chỗ thứ hai. Mỗi lượt
+lưu trên giao diện **hoặc có hiệu lực với bot ngay, hoặc báo lỗi rõ** — không bao giờ «lưu xong»
+mà bot vẫn chạy bản cũ. Google Sheet và `kb-overrides.json` thôi là nơi người sửa: Sheet nạp một
+lượt rồi tắt đồng bộ; `kb-overrides.json` còn đó nhưng **chỉ máy ghi** (bản chép bot v1 đọc, sinh
+từ CSDL mỗi lượt lưu). Mọi thứ quyết định một page trả lời thế nào nằm trên **một màn**: trang
+của page đó.
+
+**Lý do:** đo 28/09 — sửa giá ở giao diện v3 thì bot KHÔNG đổi (bot đọc `kb-overrides.json`); 77
+page có lớp đè nên sửa Sheet cũng KHÔNG đổi; ảnh (543) không có chỗ nào sửa được; và cửa tiền
+lúc tạo đơn so với bảng giá v3 trong khi bot báo giá theo bảng khác.
+
 **Luật cứng:** điều kiện team nằm ở **tầng truy vấn**, tự chèn theo người đang đăng nhập — không phải bộ lọc trên màn hình. Quên một chỗ là team này nhìn thấy khách của team kia.
 
 ---
@@ -195,6 +208,8 @@ Năm vai: **Quản trị · Marketer · Sale · Quản lý · Người duyệt k
 
 - Marketer **chỉ thấy sản phẩm mình phụ trách**
 - Kịch bản do người viết thì **áp dụng thẳng, không cần duyệt**
+  *(28/09, CR-28-09b: code đã trôi khỏi dòng này — bắt «lưu nháp» rồi một vai khác «đưa lên
+  chạy». Người quyết xác nhận lại: **lưu là chạy, một bước**. Lịch sử bản vẫn giữ để lùi.)*
 - Nhưng **đề xuất của AI thì phải có người duyệt** mới áp
 - Nhật ký ghi đầy đủ, **không sửa không xoá**, ghi cả việc máy làm
 
