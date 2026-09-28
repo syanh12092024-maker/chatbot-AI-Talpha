@@ -285,9 +285,9 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
 
 | Mã  | Việc                                                                          | Phụ thuộc          | Làn | Trạng thái |
 | --- | ----------------------------------------------------------------------------- | ------------------ | --- | ---------- |
-| MN1 | Migration 025 `anh_san_pham` + tầng đọc/ghi + hợp đồng lược đồ                 | —                  | 🟨  | ⬜ |
-| MN2 | Nạp một lượt `kb-overrides.json` (77 page) → `san_pham`/`goi_gia`/`anh_san_pham`; tải ảnh link ngoài về; báo page thiếu & link chết | MN1 | 🟥 | ⬜ |
-| MN3 | Lưu sản phẩm · giá · ảnh trên v3 ⇒ đẩy sang bot; đẩy hỏng ⇒ lượt lưu báo lỗi   | MN1                | 🟥  | ⬜ |
+| MN1 | Migration 025 `anh_san_pham` + tầng đọc/ghi + hợp đồng lược đồ                 | —                  | 🟨  | ✅ `b8d6a0f` (+`bien_the` ở `0bd772a`) |
+| MN2 | Nạp một lượt `kb-overrides.json` (77 page) → `san_pham`/`goi_gia`/`anh_san_pham`; báo page thiếu & link chết | MN1 | 🟥 | 🔨 code ✅ `f28df74` · chạy `--ghi` trên prod chờ deploy 025 (mở van) |
+| MN3 | Lưu sản phẩm · giá · ảnh trên v3 ⇒ đẩy sang bot; đẩy hỏng ⇒ lượt lưu báo lỗi   | MN1                | 🟥  | ✅ `0bd772a` (sản phẩm+giá; ảnh đi cùng MN4) |
 | MN4 | UI: sửa ảnh tại tab; «Sản phẩm & kho» + «Ảnh gửi khách» đọc CSDL v3            | MN1 · MN3          | 🟨  | ⬜ |
 | MN6 | Trang page = màn kịch bản đầy đủ, xếp theo thứ tự AI nhận; kịch bản lưu là chạy | MN3 · MN4          | 🟨  | ⬜ |
 | MN7 | Khối dùng chung Chính sách · FAQ · Phản đối vào v3 + đẩy sang bot              | MN3                | 🟨  | ⬜ |
@@ -2571,3 +2571,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 28/09 · BH8 CHƯA ĐO: tổ chức Moonshot chạm trần 1,5 triệu token/ngày lần 2 — `dem-token-kimi.mjs` + 3 lượt `gia-lap` (30 lượt) chạy khi hạn mức mở lại
 - 28/09 · CR-28-09b → 🔨 ÁP — một nguồn cho sản phẩm · giá · ảnh · kịch bản (phương án B: v3 ghi, đẩy sang bot); kịch bản lưu là chạy (§9 đã ký, code trôi) · §5e MN1–MN7 · docs/thi-cong/doi-y-do/CR-28-09-mot-nguon-san-pham.md
 - 28/09 · 📏 Lớp 5 đo PROD: `san_pham`/`goi_gia`/`san_pham_goc` = 0/0/0 · 77/77 page có SP lấy từ `kb-overrides.json`, Sheet 0 · tab dùng chung Sheet là MẪU PHILIPPINES (Tagalog) ghép vào prompt mọi page · cửa tiền tạo đơn đọc `goi_gia` (rỗng) trong khi bot báo giá theo `kb-overrides.json`
+- 28/09 · MN1 → ✅ `b8d6a0f` — bảng `anh_san_pham` + `goi_gia.nhan` + `san_pham.bien_the` (025, chỉ thêm); catalog mang ảnh, không gãy khi 025 chưa áp · thước anh-san-pham 6/6
+- 28/09 · MN3 → ✅ `0bd772a` — lưu sản phẩm đẩy bản chép sang bot TRONG giao dịch, đọc lại xác minh, hỏng ⇒ ROLLBACK · `kb.js#writeOverrides` thôi nuốt lỗi ghi · thước mn3 10/10 · 🧭 bản đầu của thước ghi một page giả vào `kb-overrides.json` cục bộ qua `import` tĩnh bắc cầu — đã gỡ, và `test/_an-toan.mjs` nay chặn `KB_OVERRIDES_FILE`
+- 28/09 · MN2 → 🔨 `f28df74` — `ops/bin/nap-mot-nguon.mjs` chạy thử trên bản sao prod: 77/77 page khứ hồi khớp · 79 SP · 156 bậc · 543 ảnh (43 ảnh máy mình lưu tương đối) · chạy `--ghi` chờ deploy 025
