@@ -2468,3 +2468,11 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   ⚠️ Nợ mới lộ: **`aicloser-v3` KHÔNG tự thoát khi nhận SIGTERM** — lần nào cũng bị systemd ép
   SIGKILL sau 2 phút (04:12, 04:22), và `aicloser` mất ~2 phút mới dừng. Mỗi lượt deploy vì thế
   có ~2 phút giao diện chết. Chưa đụng.
+- 28/09 · **TRẢ NỢ «v3 không tự thoát khi SIGTERM».** Người quyết: «sửa luôn». **Đụng vùng cấm:
+  `src/conv-state.js`** (người quyết cho phép). Gốc: tệp ấy bắt SIGINT/SIGTERM để ghi nốt trạng
+  thái hội thoại nhưng không thoát — mà Node đã có người bắt tín hiệu thì thôi tự thoát ⇒ bot cũ
+  và v3 (cả hai nạp tệp này) treo tới SIGKILL sau 2 phút, và SIGKILL thì chẳng ghi nốt được gì.
+  Nay ghi nốt rồi, nếu không còn ai khác bắt tín hiệu, trả nó về mặc định (thoát); worker có bộ
+  bắt riêng (dừng sau lượt đang chạy) nên vẫn tự quyết. Thước `test/conv-state-tat-may.test.mjs`
+  chạy tiến trình con THẬT, gửi tín hiệu THẬT: ① thoát < 3s và tệp trạng thái có dòng vừa ghi ·
+  ② có bộ bắt khác thì không giành quyền thoát. Đảo vá (đưa code cũ về) ⇒ ① treo, đỏ.

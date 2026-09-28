@@ -212,6 +212,21 @@ export function pruneConvStates() {
 }
 
 // Ghi nốt khi tắt tiến trình — không mất trạng thái của lượt cuối.
-for (const sig of ['SIGINT', 'SIGTERM', 'beforeExit']) {
-  process.on(sig, () => { try { flush(); } catch { /* tắt máy, im lặng */ } });
+//
+// ⚠️ 28/09/2026 (người quyết cho phép sửa vùng này): bản cũ chỉ ghi rồi THÔI. Theo luật của
+//    Node, đã có người bắt SIGTERM thì Node không tự thoát nữa ⇒ mọi tiến trình nạp tệp này
+//    (bot cũ, giao diện v3) treo tới khi systemd ép SIGKILL sau 2 phút — mỗi lượt deploy là
+//    ~2 phút giao diện chết, và SIGKILL thì chẳng ghi nốt được gì.
+//    Nay: ghi nốt, rồi nếu KHÔNG còn ai khác bắt tín hiệu này thì trả nó về hành vi mặc định
+//    (thoát). Có người khác bắt — ví dụ worker dừng sau lượt đang chạy — thì để họ quyết.
+for (const sig of ['SIGINT', 'SIGTERM']) {
+  const khiNhan = () => {
+    try { flush(); } catch { /* tắt máy, im lặng */ }
+    if (process.listenerCount(sig) === 1) {
+      process.removeListener(sig, khiNhan);
+      process.kill(process.pid, sig);
+    }
+  };
+  process.on(sig, khiNhan);
 }
+process.on('beforeExit', () => { try { flush(); } catch { /* tắt máy, im lặng */ } });
