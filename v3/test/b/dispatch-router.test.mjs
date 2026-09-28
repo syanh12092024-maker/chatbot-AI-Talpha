@@ -18,6 +18,7 @@ import { VAI } from '../../src/auth/boi-canh.js';
 import {
   datTaoTruyVan, datChanDangNhap, datChanVai, datPheuNhatKy,
   taoRouterDieuPhoi, VAI_VAO_DUOC, BIEN_MAU_POS, MAU_POS_MAC_DINH,
+  datDocTinPancake, datTraMaKhachSoAi, xoaNhoHoiThoai,
 } from '../../src/ui/dispatch/index.js';
 
 const BAY = Date.parse('2026-08-22T10:00:00.000Z');
@@ -377,4 +378,34 @@ test('L4-M1 HTTP · vé mang vai QUẢN TRỊ vào được bảng điều phố
   const sai = await goi('/api/dieu-phoi/tom-tat', { team: 't1', vai: 'quan' + '_tri' });
   assert.equal(sai.res.status, 403);
   assert.equal(sai.than.ma, 'thieu_vai');
+});
+
+/* ══════════════════ UI-HT1 · bàn hội thoại — đường HTTP (CR-28-09) ══════════════════ */
+
+test('UI-HT1 HTTP · GET /api/ban-hoi-thoai/:id — đọc được, team khác 404, chưa đăng nhập 401, thiếu vai 403', async () => {
+  xoaNhoHoiThoai();
+  const goiPancake = [];
+  datDocTinPancake(async (pageId, convId, custId) => {
+    goiPancake.push(convId);
+    return { ok: true, messages: [{ inserted_at: 'x', from: { id: pageId }, message: 'Xin chào' }] };
+  });
+  datTraMaKhachSoAi((convId) => (convId === '102938_9911' ? 'c-9911' : null));
+  try {
+    const ok = await nhu('/api/ban-hoi-thoai/ht1');
+    assert.equal(ok.res.status, 200);
+    assert.equal(ok.than.maHoiThoai, '102938_9911');
+    assert.equal(ok.than.nguonMa, 'so_ai_bot_cu');
+    assert.equal(ok.than.lichSu[0].laPage, true);
+
+    const khac = await nhu('/api/ban-hoi-thoai/ht2');
+    assert.equal(khac.res.status, 404, 'hội thoại team khác: 404, KHÔNG 403 — xem chi-tiet.js');
+    assert.deepEqual(goiPancake, ['102938_9911'], 'hội thoại team khác không được chạm Pancake');
+
+    assert.equal((await goi('/api/ban-hoi-thoai/ht1')).res.status, 401);
+    assert.equal((await goi('/api/ban-hoi-thoai/ht1', { team: 't1', vai: 'marketer' })).res.status, 403);
+  } finally {
+    datDocTinPancake(null);
+    datTraMaKhachSoAi(null);
+    xoaNhoHoiThoai();
+  }
 });

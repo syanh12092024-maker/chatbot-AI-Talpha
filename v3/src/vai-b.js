@@ -32,6 +32,7 @@ import {
 import {
   datTaoTruyVan as datTruyVanDieuPhoi, datPheuNhatKy as datPheuNhatKyDieuPhoi,
   datChanDangNhap, datChanVai, taoRouterDieuPhoi,
+  datDocTinPancake, datTraMaKhachSoAi, taoTraMaKhachSoAi,
 } from './ui/dispatch/index.js';
 import {
   datTaoTruyVan as datTruyVanTeam, datCongDanhTinh as datDanhTinhTeam,
@@ -209,6 +210,11 @@ import {
  *                                                              thêm/sửa kết nối vẫn phải chạy `npm run di-tru`.
  * @param {(ban:object)=>void}      [phuThuoc.ghiSoAi]          người A giao. Thiếu thì lớp model kêu mỗi 100 lượt.
  * @param {(canh:object)=>void}     [phuThuoc.canhBao]          nơi nhận cảnh báo chuyển dự phòng (Telegram, log…).
+ * @param {(pageId:string,convId:string,custId:string)=>Promise<{ok:boolean,messages?:Array,loi?:string}>} [phuThuoc.docTinPancake]
+ *                                                              UI-HT1: đọc lịch sử một hội thoại trên Pancake (`src/pancake.js#pkDocTin`).
+ *                                                              Thiếu thì bàn hội thoại NÓI «chưa nối», không hiện khung chat giả.
+ * @param {()=>Array<{conv?:string,cust?:string}>} [phuThuoc.docSoAiBotCu] UI-HT1: đọc Sổ AI của bot cũ (`src/ai-log.js#readLog`)
+ *                                                              để tra mã khách Pancake — 92,5% hội thoại chỉ có mã ở đây.
  * @param {(bc:object)=>Promise<object>} [phuThuoc.docNhipMayBot] số đo hàng đợi tin của team
  *                                                              (`src/queue/kho.js#nhipMayBot`). Thiếu thì đèn «Máy
  *                                                              chạy bot» XÁM — nói chưa đo được, KHÔNG nói đang ổn.
@@ -220,7 +226,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan,
   chayNapLai, vanHanh,
-  ghiSoAi, canhBao, docNhipMayBot, docSanPhamSua, express } = {}) {
+  ghiSoAi, canhBao, docNhipMayBot, docSanPhamSua, docTinPancake, docSoAiBotCu, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -313,6 +319,21 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   // MÁY CHẠY BOT — một bộ đọc, hai chỗ hiện (dải trạng thái ở mọi trang + đèn ở màn «Hệ còn
   // sống không»). Đo bằng hàng đợi tin chứ không bằng «tiến trình có `active` không»: ngày
   // 08–10/08/2026 tiến trình `active` suốt hai ngày trong khi không khách nào được trả lời.
+  // UI-HT1 · bàn hội thoại đọc thẳng Pancake (CR-28-09).
+  if (typeof docTinPancake === 'function') {
+    datDocTinPancake(docTinPancake);
+    daNoi.push('đọc hội thoại Pancake → bàn hội thoại (chỉ đọc, không lưu bản sao)');
+  } else {
+    datDocTinPancake(null);
+    thieu.push('docTinPancake — bàn hội thoại không đọc được lịch sử chat; khung chat nói «chưa nối»');
+  }
+  if (typeof docSoAiBotCu === 'function') {
+    datTraMaKhachSoAi(taoTraMaKhachSoAi(docSoAiBotCu));
+    daNoi.push('tra mã khách Pancake ← Sổ AI của bot cũ');
+  } else {
+    datTraMaKhachSoAi(null);
+    thieu.push('docSoAiBotCu — chỉ hội thoại đã qua hàng đợi v3 mới có mã khách Pancake để đọc chat');
+  }
   if (typeof docNhipMayBot === 'function') {
     datDocNhip(docNhipMayBot);
     daNoi.push('nhịp máy chạy bot ← hàng đợi tin (dải trạng thái + đèn Máy chạy bot)');

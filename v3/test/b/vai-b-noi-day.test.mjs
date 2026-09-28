@@ -14,7 +14,7 @@ const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
 async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
-  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai } = {}) {
+  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -41,7 +41,7 @@ async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNo
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
     ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
-    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, express,
+    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -133,6 +133,8 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   // `docNhipMayBot` thiếu thì KHÔNG ai biết máy chạy bot của bot mới còn sống hay đã tắt —
   // và cái đèn ấy phải XÁM chứ không được xanh. Im lặng ở đây là hứa một điều không đo được.
   assert.ok(bao.thieu.some((x) => /docNhipMayBot/.test(x)), 'phải nêu thiếu docNhipMayBot');
+  // UI-HT1: thiếu đường đọc Pancake thì bàn hội thoại phải NÓI «chưa nối», không hiện khung trống.
+  assert.ok(bao.thieu.some((x) => /docTinPancake/.test(x)), 'phải nêu thiếu docTinPancake');
   // `docKetNoiPos` thiếu thì màn cấu hình team KHÔNG được nói «không có kết nối nào» —
   // hai câu đó dẫn người đọc đi hai hướng khác hẳn nhau (đi tìm kết nối bị mất, hay đi
   // sửa cấu hình máy chủ). Nên nó phải nằm trong danh sách `thiếu`, không im lặng.
@@ -173,6 +175,9 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
       choLauNhatGiay: null, dangXuLauNhatGiay: null, xongGanNhatGiay: null,
     }),
     docKetNoiPos: async () => [],
+    // UI-HT1 (CR-28-09): bàn hội thoại đọc Pancake + tra mã khách từ Sổ AI bot cũ.
+    docTinPancake: async () => ({ ok: true, messages: [] }),
+    docSoAiBotCu: () => [],
     ghiKetNoiPos: {
       them: async () => ({}), sua: async () => ({}),
       batTat: async () => ({}), bo: async () => ({}),

@@ -51,6 +51,12 @@ export {
 
 export { chiTietViec } from './chi-tiet.js';   // đoạn chat đã bỏ 23/08 — xem đầu chi-tiet.js
 
+// UI-HT1 (CR-28-09) — bàn hội thoại đọc THẲNG lịch sử Pancake, không lưu bản sao.
+export {
+  docHoiThoai, datDocTinPancake, datTraMaKhachSoAi, datDongHoHoiThoai, daNoiDocTin,
+  xoaNhoHoiThoai, taoTraMaKhachSoAi, NHO_HOI_THOAI_MS,
+} from '../ban-hoi-thoai/doc-hoi-thoai.js';
+
 export {
   lienKetPancake, lienKetPos, lienKetCua, mauPos, daCauHinhPos, convIdCua, tachMaPos,
   MAU_POS_MAC_DINH, BIEN_MAU_POS, BIEN_SHOP_POS, GHI_CHU_POS_CHUA_CAU_HINH,

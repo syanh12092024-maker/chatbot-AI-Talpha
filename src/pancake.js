@@ -212,6 +212,15 @@ export async function pkGetConversations(pageId) {
   const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations?access_token=${t}&page_number=1`);
   return j.conversations || [];
 }
+// Như `pkGetMessages` nhưng KHÔNG nuốt lỗi — cho màn ĐỌC (bàn hội thoại v3, UI-HT1) nói được
+// VÌ SAO không đọc được. Đo 28/09: Pancake trả `{success:false, message:"Không tìm thấy gói
+// cước…"}` hay «Thiếu mã khách hàng», mà `pkGetMessages` biến cả hai thành `[]`. Chỉ GET.
+export async function pkDocTin(pageId, convId, custId) {
+  const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}&customer_id=${custId}`);
+  if (Array.isArray(j?.messages)) return { ok: true, messages: j.messages };
+  const loi = String(j?.message || j?.error || '').trim();
+  return { ok: false, loi: loi || (Object.keys(j || {}).length ? 'Pancake trả lời không có danh sách tin' : 'không có token Pancake nào còn hạn') };
+}
 export async function pkGetMessages(pageId, convId, custId) {
   const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}&customer_id=${custId}`);
   return j.messages || [];

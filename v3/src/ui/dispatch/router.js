@@ -31,6 +31,7 @@ import { coVai, doiChieuTeam, LoiXuyenTeam, VAI } from '../../auth/boi-canh.js';
 import { TRANG_MAC_DINH, muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { hangCho, tomTat, LOAI } from './kho-viec.js';
 import { chiTietViec } from './chi-tiet.js';
+import { docHoiThoai } from '../ban-hoi-thoai/doc-hoi-thoai.js';
 import { nhanViec, dongViec, bangKetQua, LoiDongViec } from './dong-viec.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
@@ -447,6 +448,20 @@ export function taoRouterDieuPhoi({ dongHo = () => Date.now(), gioiHan = 100 } =
         return res.status(404).json({ ok: false, ma: 'khong_thay', thongDiep: 'Không có việc này.' });
       }
       return res.json({ ok: true, bay, ...ct });
+    } catch (e) { return traLoi(res, e); }
+  });
+
+  /* ── UI-HT1 · bàn hội thoại: lịch sử một hội thoại, đọc THẲNG Pancake ──
+   * Cùng ba cái chắn như mọi đường của màn này. Hội thoại team khác ⇒ 404, không 403 (xem
+   * `chi-tiet.js`). Pancake lỗi ⇒ 200 kèm `lichSuLoi` — màn phải NÓI lý do, không coi là lỗi
+   * máy chủ. */
+  r.get('/api/ban-hoi-thoai/:id', ...chan, async (req, res) => {
+    try {
+      const kq = await docHoiThoai(req.boiCanh, req.params.id);
+      if (!kq) {
+        return res.status(404).json({ ok: false, ma: 'khong_thay', thongDiep: 'Không có hội thoại này.' });
+      }
+      return res.json({ ok: true, ...kq });
     } catch (e) { return traLoi(res, e); }
   });
 

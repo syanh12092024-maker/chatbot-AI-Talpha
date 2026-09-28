@@ -23,6 +23,8 @@ const { taoPool } = await import(`${GOC}/db/ket-noi.js`);
 const auth = await import('./src/auth/index.js');
 const { taoTruyVanThat } = await import('./src/noi-day/cong-du-lieu-that.js');
 const { dungPhanB } = await import('./src/vai-b.js');
+// UI-HT1: bộ đọc Sổ AI của bot cũ (đồng bộ) — nạp một lần ở đây vì bộ tra mã gọi nó đồng bộ.
+const _soAi = await import(`${GOC}/src/ai-log.js`).catch((e) => { console.error('[chay-that] không nạp được src/ai-log.js:', e?.message || e); return null; });
 
 const pool = taoPool();
 const taoTruyVan = (bc) => taoTruyVanThat(pool, bc);
@@ -294,6 +296,11 @@ const bao = dungPhanB(app, {
   // Nhịp máy chạy bot: một bộ đọc, hai chỗ hiện (dải trạng thái ở mọi trang + đèn «Máy chạy
   // bot» ở màn Hệ còn sống không). Kẹp `team_id` tường minh — luật 1 của kho hàng đợi.
   docNhipMayBot: (bc) => nhipMayBot(pool, { teamId: bc?.teamId ?? null }),
+  // UI-HT1 · bàn hội thoại: đọc THẲNG Pancake (chỉ GET) + mã khách từ Sổ AI của bot cũ. Nạp
+  // lười — `src/pancake.js` và `src/ai-log.js` chỉ vào đồ thị khi có người mở một hội thoại.
+  docTinPancake: async (pageId, convId, custId) =>
+    (await import(`${GOC}/src/pancake.js`)).pkDocTin(pageId, convId, custId),
+  docSoAiBotCu: () => (_soAi ? _soAi.readLog() : []),   // không nạp được ⇒ màn nói «chưa có mã khách»
   docSanPhamSua,
   canhBao: canhBaoLopModel,
   express,

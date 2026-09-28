@@ -290,6 +290,25 @@ const bao = dungPhanB(app, {
   // xem thử chạy cùng máy với bot thật ⇒ trang demo sẽ hiện tình trạng của 676 page khách.
   // Gieo đủ ba cảnh: một page bị chặn, một page chỉ nhắc, một page CSDL ghi bật mà bot tắt
   // (đúng chỗ lệch đo được thật 25/08).
+  // UI-HT1 · bàn hội thoại — bản GIẢ, bắt buộc truyền (bỏ trống là nối thẳng Pancake THẬT).
+  // Ba cảnh: hội thoại 1 đọc được · hội thoại 3 Pancake báo lỗi gói cước (đúng lỗi đo 28/09) ·
+  // hội thoại 4 không có mã khách (không có trong «Sổ AI» giả bên dưới).
+  docTinPancake: async (pageId, convId) => {
+    if (pageId === '1200082103184799') return { ok: false, loi: 'Không tìm thấy gói cước nào cho người dùng này' };
+    const t = (phut) => new Date(Date.now() - phut * 60000).toISOString();
+    return { ok: true, messages: [
+      { inserted_at: t(22), from: { id: 'k', name: 'Khách' }, message: 'Hi, I ordered the Kreain cream last week' },
+      { inserted_at: t(22), from: { id: pageId, name: 'Page' }, message: 'Hello! Thank you for your order. How can I help you today?' },
+      { inserted_at: t(19), from: { id: 'k', name: 'Khách' }, message: 'The cream is lumpy, not smooth like the photo. I want to exchange it' },
+      { inserted_at: t(19), from: { id: pageId, name: 'Page' }, message: 'I am sorry to hear that. Could you send me a photo so our team can check?' },
+      { inserted_at: t(16), from: { id: 'k', name: 'Khách' }, message: 'This is not acceptable, I paid 129 SAR' },
+    ].map((m) => ({ ...m, _conv: convId })) };
+  },
+  docSoAiBotCu: () => [
+    { conv: '1209280405604866_9001', cust: 'gia-1' },
+    { conv: '1209280405604866_9002', cust: 'gia-2' },
+    { conv: '1200082103184799_9003', cust: 'gia-3' },
+  ],
   docSanSang: async () => ({
     pages: [
       { pageId: '1209280405604866', readiness: 'MISSING_PRODUCT', aiAllowed: false, aiEnabled: false,
