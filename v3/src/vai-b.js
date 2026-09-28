@@ -66,6 +66,7 @@ import {
 import { taoRouterDieuHuong } from './ui/chung/router-dieu-huong.js';
 import { menuCua } from './ui/chung/man-hinh.js';
 import { datDocSanSang as datDocSanSangDai, datDemTeam } from './ui/chung/trang-thai.js';
+import { datDocSanSang as datDocSanSangBotBat } from './ui/chung/bot-bat-that.js';
 import { datDocNhip } from './ui/chung/nhip-may-bot.js';
 import {
   taoRouterMotPage, datChanDangNhap as datChanDangNhapMotPage,
@@ -298,6 +299,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datDocSanSangTrangChu(docCuaKiem);   // CÙNG bộ đọc — hai màn không được ra hai con số
   datDocSanSangPageBot(docCuaKiem);    // cột «Còn thiếu gì» của bảng Page — cùng nguồn nốt
   datDocSanSangDai(docCuaKiem);        // đường lui: đếm toàn hệ khi chưa có bối cảnh team
+  datDocSanSangBotBat(docCuaKiem);     // «bot có bật không» của Quy tắc chung, Người và team, Kịch bản
   // DẢI TRẠNG THÁI ĐẾM THEO TEAM, bằng ĐÚNG phép đếm của màn «Page còn thiếu gì» — không
   // phải một phép đếm thứ hai viết lại. Trước 23/09 dải đếm mọi page cầu trả về (toàn hệ)
   // nên hiện «1/1 page» trong khi team có 4 page, và nó hiện ở MỌI trang.

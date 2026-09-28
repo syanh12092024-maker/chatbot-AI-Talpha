@@ -23,6 +23,7 @@
 // Cổng dữ liệu tiêm từ ngoài (`datTaoTruyVan`), giống ba module kia — không import chéo.
 
 import { batBuocBoiCanh, VAI } from '../../auth/boi-canh.js';
+import { docBotBatThat, botBatCua } from '../chung/bot-bat-that.js';
 
 export const BANG_PAGE = 'page';
 export const BANG_HOI_THOAI = 'hoi_thoai';
@@ -139,14 +140,18 @@ export async function tongQuanTeam(boiCanh) {
   const pages = await db.chon(BANG_PAGE, {});
   const soPage = pages.length;
   // ⚠️ CỘT `page.bot_ai_bat` LÀ BẢN SAO. Nguồn thật của công tắc AI là `ai-enabled.json` +
-  // RAM tiến trình bot; đo 25/08 hai bên lệch 50 (cột nói 50 page bật, bot nói 0). Màn này
-  // cố ý KHÔNG gọi sang tiến trình bot — nó là màn cấu hình team, không phải màn vận hành,
-  // và một lượt gọi HTTP 10–13 giây cho mỗi lần mở màn là cái giá sai chỗ. Nên nó đếm cột
-  // NHƯNG khai rõ đang đứng ở bản sao (`nguonBotBat`), và chỉ sang màn có nguồn thật.
-  const botBat = pages.filter((p) => p.bot_ai_bat === true).length;
-  const nguonBotBat = {
+  // RAM tiến trình bot; đo 25/08 hai bên lệch 50 (cột nói 50 page bật, bot nói 0). Trước
+  // 28/09 màn này cố ý chỉ đếm cột vì một lượt hỏi bot mất 10–13 giây — nó ra «2 page bật»
+  // trong khi dải trạng thái nói 1. Nay cửa kiểm đã có bản nhớ, nên hỏi bot trước; không hỏi
+  // được thì mới đếm cột, và khai rõ đang đứng ở bản sao (`nguonBotBat`).
+  const { theoBot, viSao } = await docBotBatThat();
+  const botBat = pages.filter((p) => botBatCua(p, theoBot)).length;
+  const nguonBotBat = theoBot ? {
+    nguon: 'ai-enabled.json',
+    noi: 'Đếm từ tiến trình bot (cửa kiểm sẵn sàng) — cùng nguồn với dải trạng thái.',
+  } : {
     nguon: 'cot_csdl',
-    noi: 'Đếm từ cột `page.bot_ai_bat` — BẢN SAO của công tắc thật, đã có lần lệch 50 page.',
+    noi: `${viSao} Đếm từ cột \`page.bot_ai_bat\` — BẢN SAO của công tắc thật, đã có lần lệch 50 page.`,
     xemO: 'Số thật ở màn «Cửa kiểm sẵn sàng» và «Page & Bot» (hỏi thẳng tiến trình bot).',
   };
   const coMarketer = pages.filter((p) => String(p.marketer || '').trim() !== '').length;
@@ -165,7 +170,10 @@ export async function tongQuanTeam(boiCanh) {
             nguonBotBat },
     hoiThoai: soHoiThoai,
     model: { soDong: dongModel.length, daCauHinh: dongModel.length > 0 },
+    // `thanhVien` đếm DÒNG cấp quyền (một người hai vai = hai dòng); `soNguoi` đếm NGƯỜI.
+    // Màn Cài đặt team từng in số dòng thành «3 người» cạnh bảng thành viên ghi 2 (audit 28/09).
     thanhVien: thanhVien.length,
+    soNguoi: new Set(thanhVien.map((r) => String(r.nguoi_dung_id))).size,
     // Cảnh báo, không phải số đo: một team ôm page mà không ai phụ trách là chỗ tiền chảy
     // mà không ai nhìn. Để màn hình khỏi phải tự suy ra luật này.
     canhBao: canhBaoTuTongQuan({ soPage, coMarketer, botBat, soDongModel: dongModel.length }),
@@ -205,14 +213,17 @@ export function canhBaoTuTongQuan({ soPage, coMarketer, botBat, soDongModel }) {
     ra.push({
       ma: 'chua_cau_hinh_model',
       muc: 'do',
-      chu: 'Team chưa chọn model AI nào — chưa có model thì bot của team này không trả lời được.',
+      // Đừng nói «bot không trả lời được»: `model/cau-hinh.js` cho team chưa có dòng nào chạy
+      // bằng bộ mặc định. Câu cũ cãi nhau với màn Model AI, Cài đặt team và Sức khoẻ (audit 28/09).
+      chu: 'Team chưa chọn model AI — bot đang chạy bằng bộ mặc định của hệ. Chọn model để '
+        + 'chốt model chính và dự phòng cho team.',
     });
   }
   if (botBat > 0 && soDongModel === 0) {
     ra.push({
       ma: 'bot_bat_ma_khong_model',
       muc: 'do',
-      chu: `${botBat} page đang BẬT bot AI trong khi team chưa cấu hình model.`,
+      chu: `${botBat} page đang BẬT bot AI bằng model mặc định, chưa ai chọn cho team.`,
     });
   }
   return ra;

@@ -16,7 +16,7 @@
 <body>
 <header>
   <h1>Hệ còn sống không</h1>
-  <span class="sub">Chín đèn hạ tầng. Đèn xám là chưa đo được — khác hẳn «đang ổn».</span>
+  <span class="sub">Các đèn hạ tầng. Đèn xám là chưa đo được — khác hẳn «đang ổn».</span>
   <span class="sp"></span>
   <span class="text-muted text-sm" id="nhipNap">Tự nạp lại mỗi phút</span>
 </header>
@@ -26,7 +26,7 @@
   <div id="dem"></div>
 
   <section class="section" aria-labelledby="tieu-den">
-    <div class="section-header"><h2 id="tieu-den">Chín đèn</h2></div>
+    <div class="section-header"><h2 id="tieu-den">Các đèn</h2></div>
     <ul class="item-list" id="luoi"><li class="item"><div><span class="skeleton"></span></div></li></ul>
   </section>
 </main>
@@ -56,7 +56,7 @@ function ve() {
     : m === 'xam' ? 'Không có gì hỏng — nhưng có đèn chưa đo được'
     : 'Mọi đèn đều ổn';
   $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: MUC_CANH[m] || 'info', title: cau,
-    body: m === 'xanh' ? 'Chín đèn hạ tầng đều xanh ở lượt đo gần nhất.'
+    body: m === 'xanh' ? `Cả ${D.den.length} đèn hạ tầng đều xanh ở lượt đo gần nhất.`
       : 'Đèn hỏng xếp lên trước.' })}</div>`;
 
   $('#dem').innerHTML = metricRow([
@@ -70,6 +70,8 @@ function ve() {
   // đỏ xuống dưới màn hình, và người ta cuộn qua đúng thứ cần nhìn.
   const thu = { do: 0, vang: 1, xam: 2, xanh: 3 };
   const ds = [...D.den].sort((a, b) => thu[a.muc] - thu[b.muc]);
+  // Đếm theo đèn THẬT trả về — tiêu đề cứng «Chín đèn» từng đứng trên 11 dòng (audit 28/09).
+  $('#tieu-den').textContent = `${ds.length} đèn`;
 
   // 28/09 rút chữ: đèn XANH chỉ hiện tên, con số và nhãn «Ổn» — câu giải thích của nó
   // lặp lại con số. Đèn đỏ, vàng, xám vẫn giữ câu, vì câu ấy nói vì sao và làm gì.

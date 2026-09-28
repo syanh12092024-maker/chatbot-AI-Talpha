@@ -93,11 +93,11 @@ export async function manCaiDat(boiCanh) {
   /* ① NGƯỜI VÀ VAI */
   ds.push(buoc({
     ma: 'nguoi', ten: 'Có người và vai trong team',
-    vi: tq.thanhVien
-      ? `${tq.thanhVien} người đang ở trong team này.`
+    vi: tq.soNguoi
+      ? `${tq.soNguoi} người đang ở trong team này.`
       : 'Chưa ai ở trong team. Không ai đăng nhập vào được ngoài người đang mở màn này.',
-    xong: tq.thanhVien > 0,
-    so: `${tq.thanhVien} người`,
+    xong: tq.soNguoi > 0,
+    so: `${tq.soNguoi} người`,
     di: '/cau-hinh-team', nutDi: 'Thêm người vào team',
   }));
 

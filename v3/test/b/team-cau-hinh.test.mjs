@@ -145,6 +145,7 @@ test('tongQuanTeam · đếm đúng, và KHÔNG đếm sang team khác', async (
   assert.equal(t.hoiThoai, 2, 'chỉ 2 hội thoại của t1');
   assert.equal(t.model.daCauHinh, false, 'chưa có dòng cau_hinh_model nào');
   assert.equal(t.thanhVien, 2, 'u1 mang hai vai = hai dòng cấp quyền');
+  assert.equal(t.soNguoi, 1, 'hai dòng cấp quyền của CÙNG một người vẫn là 1 người');
 });
 
 test('canhBaoTuTongQuan · bốn cảnh báo, và cảnh nguy nhất phải là ĐỎ', () => {

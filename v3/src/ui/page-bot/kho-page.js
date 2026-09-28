@@ -227,7 +227,10 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
   const { doc, viSao } = await docCuaKiem();
   for (const p of tatCa) {
     const r = doc?.get(String(p.page_id));
-    if (r?.runtime === 'v3') { p.bot_ai_bat = r.aiEnabled; p.runtime = 'v3'; }
+    // Bot thấy page ⇒ công tắc lấy từ bot, BẤT KỂ bản bot nào. Trước 28/09 chỉ page bản mới được
+    // ghi đè, nên page bản cũ hiện «Đang chạy» theo cột bản sao trong khi bot đã tắt (audit 28/09).
+    if (r) p.bot_ai_bat = !!r.aiEnabled;
+    if (r?.runtime === 'v3') p.runtime = 'v3';
     // Mức của cửa kiểm, gắn TRƯỚC khi lọc — hai bộ lọc `con_chan`/`san_sang` đọc nó.
     // Không đọc được cửa kiểm ⇒ `null`, và `null` không lọt vào bộ lọc nào.
     p._mucKiem = doc ? gonCuaKiem(doc.get(String(p.page_id))).muc : null;

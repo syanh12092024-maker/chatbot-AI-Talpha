@@ -54,6 +54,7 @@
 //      Màn hiện bản toàn hệ kèm nhãn «kế thừa, không sửa ở đây», không giấu nó đi.
 
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
+import { docBotBatThat, botBatCua } from '../chung/bot-bat-that.js';
 
 export const BANG = 'bo_luat_chung';
 export const BANG_PAGE = 'page';
@@ -265,6 +266,22 @@ export async function demAnhHuong(boiCanh) {
 
   const db = congTruyVan(bc);
   const pages = await db.chon(BANG_PAGE, {});
+  // Chưa có cửa của A thì hỏi thẳng tiến trình bot (cửa kiểm, có bản nhớ) — trước 28/09 nhánh
+  // này đếm cột và ra «2 page bật bot» trong khi dải trạng thái nói 1.
+  const { theoBot, viSao } = await docBotBatThat();
+  if (theoBot) {
+    const batThat = pages.filter((p) => botBatCua(p, theoBot));
+    const theoCot = pages.filter((p) => p.bot_ai_bat === true).length;
+    return {
+      tongPage: pages.length,
+      dangBatBot: batThat.length,
+      nguon: 'ai-enabled.json',
+      lech: theoCot !== batThat.length
+        ? { co: true, viSao: `Cơ sở dữ liệu ghi ${theoCot} page bật, tiến trình bot nói ${batThat.length}.` }
+        : null,
+      tenVaiPage: batThat.slice(0, 5).map((p) => p.ten || p.page_id || String(p.id)),
+    };
+  }
   const batBot = pages.filter((p) => p.bot_ai_bat === true);
   return {
     tongPage: pages.length,
@@ -272,7 +289,7 @@ export async function demAnhHuong(boiCanh) {
     nguon: 'cot_csdl',
     lech: {
       co: null,
-      viSao: 'Chưa nối `xemAnhHuong` của tầng dữ liệu, nên con số này đếm từ CỘT '
+      viSao: `${viSao} Nên con số này đếm từ CỘT `
         + '`page.bot_ai_bat` — một bản sao đã từng lệch 50 page (B-Y7). Coi nó là ước lượng '
         + 'trên, đừng coi là số page thật sự đang chạy.',
     },

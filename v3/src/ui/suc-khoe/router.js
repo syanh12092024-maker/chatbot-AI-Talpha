@@ -1,7 +1,7 @@
 // ĐƯỜNG HTTP CỦA MÀN «SỨC KHOẺ HỆ THỐNG» (G2-E4).
 //
 // | GET /suc-khoe          | trang                                     |
-// | GET /api/suc-khoe      | chín đèn + mức tổng thể                   |
+// | GET /api/suc-khoe      | các đèn + mức tổng thể                    |
 //
 // MÀN NÀY CHỈ ĐỌC. Không có đường ghi nào — mỗi đèn chỉ đường sang màn sửa của nó.
 

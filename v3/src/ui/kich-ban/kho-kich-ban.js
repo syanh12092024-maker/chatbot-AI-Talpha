@@ -28,6 +28,7 @@
 //   trông như màn hình hỏng, và che mất sự thật là dữ liệu chưa có.
 
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
+import { docBotBatThat, botBatCua } from '../chung/bot-bat-that.js';
 
 export const BANG = 'kich_ban';
 export const BANG_PAGE = 'page';
@@ -147,9 +148,10 @@ export const CHUA_PHAN = '(chưa phân loại)';
 export async function cayKichBan(boiCanh, { tim = '' } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   const db = congTruyVan(bc);
-  const [pages, ban] = await Promise.all([
+  const [pages, ban, { theoBot }] = await Promise.all([
     db.chon(BANG_PAGE, {}, { sapXep: 'ten' }),
     db.chon(BANG, {}),
+    docBotBatThat(),
   ]);
 
   const liveTheoPage = new Map();
@@ -176,7 +178,7 @@ export async function cayKichBan(boiCanh, { tim = '' } = {}) {
       id: String(p.id),
       pageId: String(p.page_id || ''),
       ten: p.ten || '',
-      botAiBat: p.bot_ai_bat === true,
+      botAiBat: botBatCua(p, theoBot),
       coKichBan: !!live,
       phienBanLive: live ? Number(live.phien_ban) : null,
       soBan: soBanTheoPage.get(String(p.id)) || 0,
@@ -249,6 +251,7 @@ export async function banCuaPage(boiCanh, pageRowId) {
   const db = congTruyVan(bc);
   const p = await db.mot(BANG_PAGE, { id: String(pageRowId) });
   if (!p) throw new LoiKichBan(`không có page id=${pageRowId} trong team này.`, 'khong_thay', 404);
+  const { theoBot } = await docBotBatThat();
 
   const ds = (await db.chon(BANG, { page_id: String(pageRowId) }))
     .map((b) => ({
@@ -267,7 +270,7 @@ export async function banCuaPage(boiCanh, pageRowId) {
   const live = ds.find((b) => b.trangThai === 'LIVE') || null;
   return {
     page: { id: String(p.id), pageId: String(p.page_id || ''), ten: p.ten || '',
-      thiTruong: p.thi_truong || '', botAiBat: p.bot_ai_bat === true },
+      thiTruong: p.thi_truong || '', botAiBat: botBatCua(p, theoBot) },
     ban: ds,
     live,
     truong: TRUONG,
