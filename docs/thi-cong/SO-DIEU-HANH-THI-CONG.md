@@ -288,9 +288,9 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
 | MN1 | Migration 025 `anh_san_pham` + tầng đọc/ghi + hợp đồng lược đồ                 | —                  | 🟨  | ✅ `b8d6a0f` (+`bien_the` ở `0bd772a`) |
 | MN2 | Nạp một lượt `kb-overrides.json` (77 page) → `san_pham`/`goi_gia`/`anh_san_pham`; báo page thiếu & link chết | MN1 | 🟥 | 🔨 code ✅ `f28df74` · chạy `--ghi` trên prod chờ deploy 025 (mở van) |
 | MN3 | Lưu sản phẩm · giá · ảnh trên v3 ⇒ đẩy sang bot; đẩy hỏng ⇒ lượt lưu báo lỗi   | MN1                | 🟥  | ✅ `0bd772a` (sản phẩm+giá; ảnh đi cùng MN4) |
-| MN4 | UI: sửa ảnh tại tab; «Sản phẩm & kho» + «Ảnh gửi khách» đọc CSDL v3            | MN1 · MN3          | 🟨  | ⬜ |
-| MN6 | Trang page = màn kịch bản đầy đủ, xếp theo thứ tự AI nhận; kịch bản lưu là chạy | MN3 · MN4          | 🟨  | ⬜ |
-| MN7 | Khối dùng chung Chính sách · FAQ · Phản đối vào v3 + đẩy sang bot              | MN3                | 🟨  | ⬜ |
+| MN4 | UI: sửa ảnh tại tab; «Sản phẩm & kho» + «Ảnh gửi khách» đọc CSDL v3            | MN1 · MN3          | 🟨  | ✅ `9e175ec` |
+| MN6 | Trang page = màn kịch bản đầy đủ, xếp theo thứ tự AI nhận; kịch bản lưu là chạy | MN3 · MN4          | 🟨  | ✅ `b0b1282` |
+| MN7 | Khối dùng chung Chính sách · FAQ · Phản đối — người quyết chọn (b) ĐỂ TRỐNG: bot thôi ghép khi tắt Sheet | MN3 | 🟨 | 🔨 gộp vào MN5 |
 | MN5 | Tắt đồng bộ Sheet trên prod + đo lệch CSDL↔bot định kỳ — **mở van, cần gật**    | MN2·MN3·MN4·MN7    | 🟥  | ⬜ |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
@@ -2586,3 +2586,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 28/09 · UI-HT3 → ✅ — cột bối cảnh (khách+hoàn · đơn đang bàn · kịch bản qua bộ giải 3 tầng · lượt bot) + nhãn tin Bot AI/Tự động/Page theo dữ liệu đối chiếu + tên Messenger; VÁ lỗi UI-HT1 chưa deploy: cổng thật ném với `tin_cho_xu_ly` ⇒ mọi hội thoại 500 — nay đọc bằng SQL kẹp team
   cổng ui-ht3.sh 12/12 · đảo-vá 19/19 · ca Postgres chạy trọn đường qua cổng thật · sửa thước ui-ht1.sh ③ (đỏ oan từ UI-HT2) · npm test 2.175/0
   · commit f2ddaa3 · nhật ký docs/thi-cong/nhat-ky/phieu-UI-HT3.md
+- 28/09 · MN4 → ✅ `9e175ec` — ảnh sửa ngay trong tab sản phẩm (tải byte ≤10 MB · link · nhãn · xếp · bỏ), mỗi thao tác một giao dịch ghi → đẩy bot → nhật ký, hỏng ⇒ ROLLBACK + xoá tệp · ba màn Sản phẩm & kho / Ảnh gửi khách / Đưa lên chạy đọc CSDL · thước mn4 6/6 · ⚠️ một phần MN4 lọt vào `f2ddaa3` (UI-HT3) do phiên kia `git add` cả tệp — HEAD gãy tới `9e175ec`
+- 28/09 · MN6 → ✅ `b0b1282` — trang page: tab «Bot trả lời thế nào» xếp đúng thứ tự AI nhận · kịch bản LƯU LÀ CHẠY (`luuVaChay`, vai soạn, đúng §9) · màn /kich-ban cùng luật + «Chạy lại bản này» · chạy thật trên bản dev riêng: trình duyệt sửa câu chào/giá/ảnh ⇒ bot dev trả đúng bản mới
+- 28/09 · 🧭 **HAI PHIÊN CÙNG CÂY: COMMIT BẰNG PATHSPEC CHƯA ĐỦ, PHẢI THEO HUNK.** `git commit -- <tệp>` đưa cả hunk của phiên kia trong cùng tệp. Tệp dùng chung (`vai-b.js`, `chay-that.js`) ⇒ `git diff <tệp>` tách hunk rồi `git apply --cached`.
