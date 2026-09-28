@@ -2001,6 +2001,9 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   `docs/thi-cong/nhat-ky/ui-gom-4-11-09.md`.
 
 ---
+- 28/09 · CR-28-09 → ✅ áp — §10 thành bàn hội thoại CHỈ ĐỌC (danh sách · chat đọc thẳng Pancake ·
+  bối cảnh khách; trả lời vẫn ở Pancake); đo 5 lớp: 28.953 hội thoại, 0 có mã Pancake ⇒ UI-HT1 dựng mã
+  `<page_id>_<psid>` · commit 26e56d5 3106700 f4bf954 · nhật ký docs/thi-cong/doi-y-do/CR-28-09-ban-hoi-thoai-chi-doc.md
 
 ### 14/09/2026 · dãy S của `test/l0-m2-so-lieu.test.js` CHẬP CHỜN khi có dữ liệu thật
 
