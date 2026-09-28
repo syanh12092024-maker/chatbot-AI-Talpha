@@ -19,6 +19,24 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 28/09/2026 — giao diện v3 thôi nói ngược nhau, đọc được trên điện thoại
+
+Lượt này không đổi một chữ nào bot nói với khách, không đụng bot cũ, không đổi lược đồ.
+Nó sửa 13 lỗi mà lượt soát giao diện (ui-taste) bắt được trên 16 màn.
+
+- **Các màn thôi cãi nhau** (`f6ba07b`): số page đang bật bot giờ cùng một con số ở mọi
+  màn (hỏi thẳng bot, không đếm bản sao trong CSDL); «Người và team» thôi nói «chưa chọn
+  model thì bot không trả lời được» — bot chạy bằng model mặc định; «Cài đặt team» đếm
+  người chứ không đếm dòng cấp vai; «Chín đèn» đếm theo số đèn thật.
+- **Thôi lộ mã máy lên màn** (`08d0c5c`): góc tài khoản hiện tên team; lý do lạ, tên kỹ
+  năng, tên bảng hiện bằng tiếng người; «Ai đã sửa gì» hiện email người làm và tách đúng
+  việc máy khỏi việc người; hộp lỗi Báo cáo/Chi phí nói một lần; Model AI gộp 11 chỗ đỏ
+  thành một hộp có nút «Dán khoá».
+- **Điện thoại** (`7ed6dc6`, `9032a51`): bấm một việc thì cuộn tới «Xem nhanh»; bảng page
+  thành thẻ; nút × rút vai to hơn; hết vệt bóng mép trái; khoảng cách các khu đều lại.
+- **Nhật ký ghi đúng dạng** (`53ac05f`): dòng mới ghi `nguoi:<email>` / `may:<việc>` như
+  lược đồ và mọi bộ ghi khác. Dòng cũ vẫn hiện đúng.
+
 ### 15/09/2026 — bốn chỗ trước nay phải mở `psql` mới sửa được
 
 Lượt này không đổi một chữ nào bot nói với khách. Nó mở bốn cửa mà người vận hành trước
