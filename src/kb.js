@@ -14,7 +14,27 @@ function readOverrides() {
   try { return fs.existsSync(OVERRIDES_FILE) ? JSON.parse(fs.readFileSync(OVERRIDES_FILE, 'utf8')) : {}; }
   catch { return {}; }
 }
-function writeOverrides(o) { try { fs.writeFileSync(OVERRIDES_FILE, JSON.stringify(o, null, 2)); } catch (e) { console.error('[kb] lưu override lỗi', e.message); } }
+function writeOverrides(o) {
+  try { fs.writeFileSync(OVERRIDES_FILE, JSON.stringify(o, null, 2)); } catch (e) { console.error('[kb] lưu override lỗi', e.message); }
+  _ovNho.khoa = null;   // ghi xong thì lượt đọc kế tiếp phải thấy bản mới, không chờ so mtime
+}
+
+// BẢN NHỚ CHỈ-ĐỌC của kb-overrides.json (28/09/2026, người quyết cho phép sửa vùng này).
+// Profile CPU tiến trình bot trên máy chủ: một lượt `/admin/api/readiness` mất 12,4 giây, trong
+// đó ~11,7 giây là `readOverrides()` — đọc + parse lại tệp 510 KB cho TỪNG page không nằm trong
+// RAM (`getPageConfig`), hàng nghìn lần một lượt. Và vì mọi thứ ở đây đồng bộ, CẢ TIẾN TRÌNH
+// BOT ĐỨNG trong lúc ấy (`/health` 0,002s → 16s).
+// Nay chỉ đọc lại khi tệp ĐỔI (mtime + cỡ, một lượt stat). Chỉ dành cho nơi CHỈ ĐỌC: đối tượng
+// trả về dùng chung, KHÔNG được sửa. Nơi sẽ ghi (lưu kịch bản, lưu sản phẩm) vẫn gọi
+// `readOverrides()` để có bản riêng mà sửa.
+const _ovNho = { khoa: null, v: null };
+function readOverridesChiDoc() {
+  let khoa;
+  try { const st = fs.statSync(OVERRIDES_FILE); khoa = `${st.mtimeMs}:${st.size}`; }
+  catch { return {}; }
+  if (khoa !== _ovNho.khoa) { _ovNho.v = readOverrides(); _ovNho.khoa = khoa; }
+  return _ovNho.v;
+}
 
 // Hỗ trợ 2 chế độ:
 //  - ĐA-PAGE: sheet "Sản phẩm theo Page" (cột Page ID) → mỗi page 1 KB riêng.
@@ -222,7 +242,7 @@ function cleanConfig(config) {
 }
 
 export function getPageConfig(pageId) {
-  const c = pageMap.get(String(pageId))?.config || readOverrides()[String(pageId)]?.config || {};
+  const c = pageMap.get(String(pageId))?.config || readOverridesChiDoc()[String(pageId)]?.config || {};
   return cleanConfig(c);
 }
 
@@ -487,7 +507,7 @@ export function restoreVersion(pageId, version, { updatedBy = 'dashboard', valid
 }
 
 export function listScriptPages() {
-  const ids = new Set(Object.keys(readOverrides()));
+  const ids = new Set(Object.keys(readOverridesChiDoc()));
   for (const id of pageMap.keys()) ids.add(String(id));
   try { for (const f of fs.readdirSync(SCRIPT_DIR)) if (f.endsWith('.json')) ids.add(f.slice(0, -5)); }
   catch { /* chưa có thư mục lịch sử */ }

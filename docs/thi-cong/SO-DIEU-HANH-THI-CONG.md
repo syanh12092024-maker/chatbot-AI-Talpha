@@ -2450,3 +2450,13 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   không chạy ⇒ cửa kiểm hỏng NHANH, không bao giờ CHẬM. Thước đo giao diện phải có một lượt
   trên số liệu cỡ máy chủ; đo «màn có vỡ không» mà không đo «màn mở mất bao lâu» là bỏ sót
   đúng thứ người dùng cảm thấy đầu tiên.
+- 28/09 · **GỐC CỦA 10 GIÂY: `kb-overrides.json` BỊ PARSE LẠI CHO TỪNG PAGE.** Người quyết cho
+  phép («deploy rồi sửa luôn readiness») ⇒ **Đụng vùng cấm: `src/kb.js`** (không phải
+  `readiness.js` — gốc nằm ở kb). Đo bằng profile CPU tiến trình bot thật (inspector bật bằng
+  `SIGUSR1`, chỉ nghe 127.0.0.1, đóng khi bot khởi động lại): lượt readiness 12,4s, trong đó
+  `readFileSync` 6,8s + `readOverrides` 3,8s + `readFileUtf8` 1,1s. ⚠️ **Tôi đã loại nhầm thủ phạm
+  này một lần** bằng phép thử trên máy mình (parse 1.200 lần ~0,2s) — phép thử bỏ qua đọc đĩa
+  và CPU máy chủ chậm hơn nhiều. 📌 Đo trên chính máy có triệu chứng trước khi loại một giả
+  thuyết. Vá: `readOverridesChiDoc()` nhớ theo `mtime+cỡ`, chỉ cho nơi CHỈ ĐỌC (`getPageConfig`,
+  `listScriptPages`); nơi ghi vẫn đọc tươi để có bản riêng mà sửa; `writeOverrides` xoá bản
+  nhớ. Thước `test/kb-overrides-bo-nho.test.mjs` 3 ca; đảo vá ⇒ ① đỏ.
