@@ -15,7 +15,7 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 |---|---|
 | Chọn team | Ba thẻ team: Tiểu Alpha · Auus · Pialpha EU. Dữ liệu tách ở tầng dữ liệu |
 | Trang chủ | Marketer vào thấy đúng việc của mình: đề xuất chờ duyệt, sản phẩm hết hàng, page kịch bản mỏng |
-| Bàn hội thoại | Sale vào thẳng đây (CR-28-09). Ba cột: danh sách hội thoại (Cần người · Bot đang xử · Tất cả, đồng hồ 10 phút) · khung chat đọc thẳng Pancake · bối cảnh khách. KHÔNG ô soạn tin — trả lời ở Pancake |
+| Bàn hội thoại | Sale vào thẳng đây (CR-28-09). Ba cột: danh sách hội thoại (Cần người · Bot đang xử · Tất cả, đồng hồ 10 phút; chưa có hồ sơ khách thì hiện tên Messenger) · khung chat đọc thẳng Pancake, tin page gắn nhãn **Bot AI · Tự động · Page** (chỉ theo dữ liệu đối chiếu được — «Page» là sale gõ tay hoặc chưa đối chiếu, không đoán là sale) · bối cảnh: khách + rủi ro hoàn · đơn đang bàn · giai đoạn/người giữ/lý do cuối · kịch bản page đang chạy · lượt bot (v3 và bot cũ). KHÔNG ô soạn tin — trả lời ở Pancake |
 | Chi tiết việc cần xử | Lý do bot dừng + thông tin đơn + đánh dấu đã xử; đoạn chat nằm ở bàn hội thoại, đọc thẳng Pancake |
 
 ## Nhóm 2 · Khách và đơn hàng

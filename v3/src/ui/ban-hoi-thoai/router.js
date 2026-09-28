@@ -3,6 +3,7 @@
 //
 // | GET /ban-hoi-thoai      | trang                                                         |
 // | GET /api/ban-hoi-thoai  | danh sách hội thoại theo lát (Cần người · Bot đang xử · Tất cả) |
+// | GET /api/ban-hoi-thoai/:id/boi-canh | cột bối cảnh (UI-HT3): khách · đơn · kịch bản · lượt bot |
 //
 // Lịch sử MỘT hội thoại (`/api/ban-hoi-thoai/:id`) nằm ở router điều phối (UI-HT1) — cùng ba
 // cái chắn với màn đóng việc mà khung chat của trang này dùng lại.
@@ -17,6 +18,7 @@ import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-
 import { muonTrang, locTiep } from '../chung/http.js';
 import { VAI_VAO_DUOC } from '../dispatch/router.js';
 import { danhSachHoiThoai, LOC } from './kho-ban-hoi-thoai.js';
+import { boiCanhHoiThoai } from './boi-canh-hoi-thoai.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -104,6 +106,14 @@ export function taoRouterBanHoiThoai({ dongHo = () => Date.now() } = {}) {
     const loc = String(req.query?.loc || LOC.NGUOI);
     const tim = String(req.query?.tim || '').slice(0, 64);
     res.json({ ok: true, ...(await danhSachHoiThoai(cuaBoiCanh(req), { loc, tim, bay: Number(dongHo()) })) });
+  }));
+
+  r.get('/api/ban-hoi-thoai/:id/boi-canh', canDangNhap, canVai, boc(async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const kq = await boiCanhHoiThoai(cuaBoiCanh(req), req.params.id);
+    // Team khác và không tồn tại cùng một câu — không để lộ «có hội thoại này ở team khác».
+    if (!kq) return res.status(404).json({ ok: false, ma: 'khong_tim_thay', thongDiep: 'Không có hội thoại này.' });
+    return res.json({ ok: true, ...kq });
   }));
 
   return r;

@@ -105,8 +105,9 @@ const { taoTruyVan, kho } = dungCongGia({
       bot_ai_bat: false, trong_diem: false, botcake_tat: false, mat_dau: true },
   ],
   khach: [
-    { id: '1', team_id: '1', ten: 'Aisha Al Balushi', so_dien_thoai: '+96891234567', ti_le_hoan: 8.5 },
-    { id: '2', team_id: '1', ten: 'Fatima Al Zadjali', so_dien_thoai: '+96899887766', ti_le_hoan: 41.2 },
+    { id: '1', team_id: '1', ten: 'Aisha Al Balushi', so_dien_thoai: '+96891234567', ti_le_hoan: 8.5, tang_hoan: 'tot',
+      dia_chi: 'Al Khuwair, Way 3021', thanh_pho: 'Muscat' },
+    { id: '2', team_id: '1', ten: 'Fatima Al Zadjali', so_dien_thoai: '+96899887766', ti_le_hoan: 41.2, tang_hoan: 'canh_bao' },
     { id: '3', team_id: '1', ten: 'Mariam Al Hinai', so_dien_thoai: '+96897001122', ti_le_hoan: 0 },
     { id: '4', team_id: '1', ten: 'Laila Al Rawahi', so_dien_thoai: '+96895553311', ti_le_hoan: 12.9 },
     { id: '5', team_id: '1', ten: 'Noura Al Kindi', so_dien_thoai: '+96894442200', ti_le_hoan: 5.1 },
@@ -156,17 +157,33 @@ const { taoTruyVan, kho } = dungCongGia({
         + 'Nếu khách hỏi giá thì nói 89 SAR, mua 2 còn 159 SAR (giảm 10%).\\n'
         + 'Giao trong 3 ngày trên toàn Saudi.' },
   ],
+  // UI-HT3: đủ trường cột bối cảnh đọc (giai đoạn · người giữ · lý do cuối · bot nói gì) và
+  // `cham_luc` để hai tab «Bot đang xử» / «Tất cả» có cái mà hiện. Hội thoại 5 CỐ Ý không có hồ
+  // sơ khách — đúng cảnh 29.527/29.563 hội thoại máy chủ: tên chỉ có từ Sổ AI (tên Messenger).
   hoi_thoai: [
-    { id: '1', team_id: '1', page_id: '1', psid: '9001', khach_id: '1' },
-    { id: '2', team_id: '1', page_id: '1', psid: '9002', khach_id: '2' },
-    { id: '3', team_id: '1', page_id: '2', psid: '9003', khach_id: '3' },
-    { id: '4', team_id: '1', page_id: '3', psid: '9004', khach_id: '5' },
+    { id: '1', team_id: '1', page_id: '1', psid: '9001', khach_id: '1', trang_thai: 'HANDOFF', chu_so_huu: 'SALE',
+      ly_do_cuoi: 'Khách khiếu nại chất lượng', ai_noi_gi: 'Could you send me a photo so our team can check?', cham_luc: p(16) },
+    { id: '2', team_id: '1', page_id: '1', psid: '9002', khach_id: '2', trang_thai: 'CLOSING', chu_so_huu: 'SALE', cham_luc: p(40) },
+    { id: '3', team_id: '1', page_id: '2', psid: '9003', khach_id: '3', trang_thai: 'QUALIFY', chu_so_huu: 'SALE', cham_luc: p(90) },
+    { id: '4', team_id: '1', page_id: '3', psid: '9004', khach_id: '5', trang_thai: 'GREET', chu_so_huu: 'SALE', cham_luc: p(200) },
+    { id: '5', team_id: '1', page_id: '1', psid: '9005', khach_id: null, trang_thai: 'SELLING', chu_so_huu: 'AI',
+      ai_noi_gi: 'The 2-pack is 159 SAR with free delivery.', cham_luc: p(8) },
+  ],
+  // Sổ AI v3 cho hội thoại 1 — model + tiền để thấy dòng «Bot v3»; lượt thứ ba CỐ Ý không có
+  // tiền (bộ nạp chưa tính) để thấy chữ «tính trên N lượt».
+  so_ai: [
+    { id: 'sa1', team_id: '1', page_id: '1209280405604866', psid: '9001', loai: 'reply', ma_model: 'claude-haiku-4-5', xay_ra_luc: p(22), tien_vnd: 310 },
+    { id: 'sa2', team_id: '1', page_id: '1209280405604866', psid: '9001', loai: 'reply', ma_model: 'claude-sonnet-5', xay_ra_luc: p(19), tien_vnd: 1240 },
+    { id: 'sa3', team_id: '1', page_id: '1209280405604866', psid: '9001', loai: 'handoff', ma_model: 'khong-goi-model', xay_ra_luc: p(16) },
   ],
   don_hang: [
     { id: '1', team_id: '1', nguon: 'messenger', ma_pos: '77:40219', khach_id: '4',
       tong_tien: 159, trang_thai_pos: 'cho_xac_nhan', trang_thai_he: 'cho_sale' },
     { id: '2', team_id: '1', nguon: 'trang_ban_hang', ma_pos: '77:40233', khach_id: '2',
       tong_tien: 249, trang_thai_pos: 'cho_xac_nhan', trang_thai_he: 'cho_gui_wa' },
+    // UI-HT3: đơn bot chốt TRONG hội thoại 1 — khối «Đơn đang bàn». Không có việc nào trỏ vào nó.
+    { id: '3', team_id: '1', nguon: 'messenger', ma_pos: '77:40310', khach_id: '1', hoi_thoai_id: '1',
+      tong_tien: 129, tien_te: 'SAR', trang_thai_pos: '12', trang_thai_he: 'day_cho_in', tao_luc: p(60 * 24 * 6) },
   ],
   viec_can_xu_ly: [
     { id: '1', team_id: '1', loai: 'hoi_thoai', hoi_thoai_id: '1',
@@ -293,22 +310,40 @@ const bao = dungPhanB(app, {
   // UI-HT1 · bàn hội thoại — bản GIẢ, bắt buộc truyền (bỏ trống là nối thẳng Pancake THẬT).
   // Ba cảnh: hội thoại 1 đọc được · hội thoại 3 Pancake báo lỗi gói cước (đúng lỗi đo 28/09) ·
   // hội thoại 4 không có mã khách (không có trong «Sổ AI» giả bên dưới).
+  // UI-HT3: đủ bốn nguồn tin — khách · tin luồng Botcake (`flow_id`) · tin bot khớp Sổ AI giả bên
+  // dưới · tin mẫu máy (bộ nhận giả `laTinTuDong`) · tin sale gõ tay (không khớp gì ⇒ «Page»).
   docTinPancake: async (pageId, convId) => {
     if (pageId === '1200082103184799') return { ok: false, loi: 'Không tìm thấy gói cước nào cho người dùng này' };
     const t = (phut) => new Date(Date.now() - phut * 60000).toISOString();
     return { ok: true, messages: [
-      { inserted_at: t(22), from: { id: 'k', name: 'Khách' }, message: 'Hi, I ordered the Kreain cream last week' },
-      { inserted_at: t(22), from: { id: pageId, name: 'Page' }, message: 'Hello! Thank you for your order. How can I help you today?' },
+      { inserted_at: t(23), from: { id: 'k', name: 'Khách' }, message: 'Hi, I ordered the Kreain cream last week' },
+      { inserted_at: t(23), from: { id: pageId, name: 'Page', flow_id: 'luong-chao' }, message: 'Welcome to Kreain Nature! Choose an option below.' },
+      { inserted_at: t(22), from: { id: pageId, name: 'Page', uid: 'u-bot' }, message: 'Hello! Thank you for your order. How can I help you today?' },
       { inserted_at: t(19), from: { id: 'k', name: 'Khách' }, message: 'The cream is lumpy, not smooth like the photo. I want to exchange it' },
-      { inserted_at: t(19), from: { id: pageId, name: 'Page' }, message: 'I am sorry to hear that. Could you send me a photo so our team can check?' },
+      { inserted_at: t(19), from: { id: pageId, name: 'Page', uid: 'u-bot' }, message: 'I am sorry to hear that. Could you send me a photo so our team can check?' },
+      { inserted_at: t(17), from: { id: pageId, name: 'Page' }, message: '[Auto] Your order #40310 has been confirmed.' },
       { inserted_at: t(16), from: { id: 'k', name: 'Khách' }, message: 'This is not acceptable, I paid 129 SAR' },
+      { inserted_at: t(12), from: { id: pageId, name: 'Page', uid: 'u-linh' }, message: 'Hi, this is Linh from customer care. I will call you in 5 minutes.' },
     ].map((m) => ({ ...m, _conv: convId })) };
   },
   docSoAiBotCu: () => [
-    { conv: '1209280405604866_9001', cust: 'gia-1' },
-    { conv: '1209280405604866_9002', cust: 'gia-2' },
-    { conv: '1200082103184799_9003', cust: 'gia-3' },
+    { conv: '1209280405604866_9001', cust: 'gia-1', name: 'Aisha B.', type: 'reply', t: Date.now() - 22 * 60000,
+      text: 'Hello! Thank you for your order. How can I help you today?' },
+    { conv: '1209280405604866_9001', cust: 'gia-1', name: 'Aisha B.', type: 'reply', t: Date.now() - 19 * 60000,
+      text: 'I am sorry to hear that. Could you send me a photo so our team can check?' },
+    { conv: '1209280405604866_9002', cust: 'gia-2', name: 'Fatima Z.', type: 'reply', t: Date.now() - 50 * 60000,
+      text: 'Hello! Thank you for your order. How can I help you today?' },
+    { conv: '1200082103184799_9003', cust: 'gia-3', name: 'Mariam H.' },
+    { conv: '1209280405604866_9005', cust: 'gia-5', name: 'Hessa Al Amri', type: 'reply', t: Date.now() - 8 * 60000,
+      text: 'The 2-pack is 159 SAR with free delivery.' },
   ],
+  // UI-HT3: bản GIẢ của ba phụ thuộc cột bối cảnh — bản xem thử không có `tin_cho_xu_ly`/`lan_gui`,
+  // không có bộ giải kịch bản thật, và không đọc tệp mẫu Botcake của máy chủ.
+  docDauVetV3: async () => ({ maKhach: null, gui: [] }),
+  giaiKichBanPage: async (_team, pageRowId) => (String(pageRowId) === '1'
+    ? { ban: { phien_ban: 3, nguoi_sua: 'ngoc', sua_luc: Date.now() - 2 * 86400000 }, tuDau: 'của chính page', viSao: null }
+    : { ban: null, tuDau: 'không có bản nào', viSao: 'Page chưa có kịch bản riêng, và chưa khai thị trường để kế thừa tầng nước.' }),
+  laTinTuDong: (text) => /^\[auto\]/i.test(String(text || '').trim()),
   docSanSang: async () => ({
     pages: [
       { pageId: '1209280405604866', readiness: 'MISSING_PRODUCT', aiAllowed: false, aiEnabled: false,

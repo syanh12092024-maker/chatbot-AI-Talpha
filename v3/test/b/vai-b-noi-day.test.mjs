@@ -14,7 +14,8 @@ const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
 async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
-  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql } = {}) {
+  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
+  docDauVetV3, giaiKichBanPage, laTinTuDong } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -41,7 +42,8 @@ async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNo
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
     ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
-    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql, express,
+    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
+    docDauVetV3, giaiKichBanPage, laTinTuDong, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -135,6 +137,11 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   assert.ok(bao.thieu.some((x) => /docNhipMayBot/.test(x)), 'phải nêu thiếu docNhipMayBot');
   // UI-HT1: thiếu đường đọc Pancake thì bàn hội thoại phải NÓI «chưa nối», không hiện khung trống.
   assert.ok(bao.thieu.some((x) => /docTinPancake/.test(x)), 'phải nêu thiếu docTinPancake');
+  // UI-HT3: thiếu bộ đọc dấu vết v3 bằng SQL thì cổng THẬT ném khi mở hội thoại (hai bảng ngoài
+  // danh sách bảng của tầng truy vấn) — phải nằm trong «thiếu», và câu phải nói hậu quả là 500.
+  assert.ok(bao.thieu.some((x) => /docDauVetV3.*500/.test(x)), 'phải nêu thiếu docDauVetV3 và hậu quả');
+  assert.ok(bao.thieu.some((x) => /giaiKichBanPage/.test(x)), 'phải nêu thiếu giaiKichBanPage');
+  assert.ok(bao.thieu.some((x) => /laTinTuDong/.test(x)), 'phải nêu thiếu laTinTuDong');
   // `docKetNoiPos` thiếu thì màn cấu hình team KHÔNG được nói «không có kết nối nào» —
   // hai câu đó dẫn người đọc đi hai hướng khác hẳn nhau (đi tìm kết nối bị mất, hay đi
   // sửa cấu hình máy chủ). Nên nó phải nằm trong danh sách `thiếu`, không im lặng.
@@ -179,6 +186,10 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
     docTinPancake: async () => ({ ok: true, messages: [] }),
     docSoAiBotCu: () => [],
     docHoiThoaiSql: async () => [],   // UI-HT2: danh sách có LIMIT
+    // UI-HT3: dấu vết v3 bằng SQL · bộ giải kịch bản ba tầng · bộ nhận tin mẫu máy.
+    docDauVetV3: async () => ({ maKhach: null, gui: [] }),
+    giaiKichBanPage: async () => ({ ban: null, viSao: 'giả' }),
+    laTinTuDong: () => false,
     ghiKetNoiPos: {
       them: async () => ({}), sua: async () => ({}),
       batTat: async () => ({}), bo: async () => ({}),
@@ -213,6 +224,10 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   });
   t.after(() => sv2.close());
   assert.deepEqual(bao2.thieu, [], 'nối đủ thì không còn thiếu gì');
+  // «Đã nối» phải là hành vi, không chỉ là một dòng chữ trong báo cáo (UI-HT3).
+  const bht = await import('../../src/ui/ban-hoi-thoai/index.js');
+  assert.equal(bht.daNoiDauVetV3(), true, 'bộ đọc dấu vết v3 thật sự được đặt');
+  assert.equal(bht.daNoiGiaiKichBan(), true, 'bộ giải kịch bản thật sự được đặt');
 });
 
 test('nối dây · màn cấu hình team được mắc vào, và chặn đúng vai', async (t) => {

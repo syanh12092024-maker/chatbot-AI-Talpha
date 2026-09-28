@@ -165,16 +165,21 @@ function baoLoi(chu) {
  *   ② Tầng rủi ro ĐỌC từ cột đã chấm sẵn. Chưa chấm thì hiện «Chưa chấm», KHÔNG hiện
  *      «Mua tốt» — chìa một lời bảo đảm không ai ký là cách mất tiền (án lệ H10, 28/08).
  */
+// Tầng rủi ro đi qua ánh xạ trạng thái tập trung: «chưa chấm» là CHƯA BIẾT, không tô xanh.
+// MỘT chỗ cho mọi trang hiện hồ sơ khách (điều phối · bàn hội thoại).
+function huyHieuHoan(tangHoan) {
+  const t = tangHoan || { chu: 'Chưa chấm', muc: 'mu' };
+  const maTang = { chan: 'blocked', nhac: 'needs_attention', san: 'ready' }[t.muc] || 'unknown';
+  return UI ? UI.statusBadge(maTang, { label: t.chu }) : '<span class="status-badge">' + esc(t.chu) + '</span>';
+}
+
 function veHoSoKhach(h) {
   if (!h) return '';
   if (!h.co) {
     return '<section class="panel"><h2>Hồ sơ khách</h2>'
       + '<div class="text-muted tren-2">' + esc(h.viSao || 'Không có hồ sơ khách') + '</div></section>';
   }
-  // Tầng rủi ro đi qua ánh xạ trạng thái tập trung: «chưa chấm» là CHƯA BIẾT, không tô xanh.
-  const maTang = { chan: 'blocked', nhac: 'needs_attention', san: 'ready' }[h.tangHoan.muc] || 'unknown';
-  const huyHieu = UI ? UI.statusBadge(maTang, { label: h.tangHoan.chu })
-    : '<span class="status-badge">' + esc(h.tangHoan.chu) + '</span>';
+  const huyHieu = huyHieuHoan(h.tangHoan);
   const hang = (nhan, gia) => gia
     ? '<div class="hang"><span class="text-muted text-sm hep-nhan">' + nhan + '</span><span>' + esc(gia) + '</span></div>'
     : '';
@@ -282,6 +287,7 @@ async function gui(nut, duoi, than) {
      *    chạy trang trong trình duyệt. Nay khối ấy đi ra ngoài qua đúng một cửa: chỗ này.
      */
     hoSoKhachHtml(h) { return veHoSoKhach(h); },
+    huyHieuHoan(t) { return huyHieuHoan(t); },
 
     /**
      * Đắp khối vào ô `#o-dong-viec` của trang đang mở.

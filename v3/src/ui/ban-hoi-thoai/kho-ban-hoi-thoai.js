@@ -15,6 +15,8 @@
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 import { congTruyVan, hangCho, tenKhachCua, soDienThoaiCua, tenPageCua } from '../dispatch/kho-viec.js';
+import { convIdCua } from '../dispatch/lien-ket.js';
+import { tenMessengerCua } from './doc-hoi-thoai.js';
 
 export const CUA_SO_NGAY = 7;
 export const TOI_DA_DONG = 100;
@@ -86,6 +88,10 @@ function dongMan(h, { khach, page, viec }) {
   return {
     id: String(h.id),
     tenKhach: tenKhachCua(khach),
+    // UI-HT3: 29.527/29.563 hội thoại máy chủ chưa nối hồ sơ khách (28/09) — không có dòng này
+    // thì gần như cả danh sách là «Khách chưa có tên». Tên Messenger lấy từ Sổ AI bot cũ; màn
+    // hiện nó KHI hồ sơ không có tên, và nói rõ nó là tên Messenger.
+    tenMessenger: tenMessengerCua(convIdCua(h, page)),
     soDienThoai: soDienThoaiCua(khach),
     tenPage: tenPageCua(page),
     giaiDoan: h.trang_thai || null,

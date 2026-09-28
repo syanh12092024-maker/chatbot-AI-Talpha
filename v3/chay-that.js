@@ -25,6 +25,8 @@ const { taoTruyVanThat } = await import('./src/noi-day/cong-du-lieu-that.js');
 const { dungPhanB } = await import('./src/vai-b.js');
 // UI-HT1: bộ đọc Sổ AI của bot cũ (đồng bộ) — nạp một lần ở đây vì bộ tra mã gọi nó đồng bộ.
 const _soAi = await import(`${GOC}/src/ai-log.js`).catch((e) => { console.error('[chay-that] không nạp được src/ai-log.js:', e?.message || e); return null; });
+// UI-HT3: mẫu tin máy (Botcake/RTO) — chỉ đọc `botcake-templates.json`, không mở kết nối nào.
+const _mauMay = await import(`${GOC}/src/bot-registry.js`).catch((e) => { console.error('[chay-that] không nạp được src/bot-registry.js:', e?.message || e); return null; });
 
 const pool = taoPool();
 const taoTruyVan = (bc) => taoTruyVanThat(pool, bc);
@@ -114,19 +116,37 @@ const { HE_SO_TE: HE_SO_TE_SUA } = await import(`${GOC}/src/pos/tao-don.js`);
 async function docSanPhamSua(bc, ids) {
   const ds = (Array.isArray(ids) ? ids : []).map((x) => String(x)).filter(Boolean);
   if (!ds.length) return [];
+  // CR-28-09b · MN4: thêm `nhan` (tên bậc khách đọc), `bien_the` và ẢNH. Đọc hai cột mới qua
+  // `to_jsonb(...)->>` để câu KHÔNG gãy trên CSDL chưa áp 025 (cột vắng ⇒ null ⇒ '').
   const r = await pool.query(
     `SELECT s.id, s.ma, s.ten, s.mo_ta, s.het_hang, s.xmin::text AS version,
+       COALESCE(to_jsonb(s)->>'bien_the', '') AS bien_the,
        COALESCE((SELECT jsonb_agg(jsonb_build_object(
            'so_luong',g.so_luong,'gia',g.gia,'tien_te',g.tien_te,'gia_goc',g.gia_goc,
-           'khuyen_mai',g.khuyen_mai,'phi_ship',g.phi_ship,'mien_ship',g.mien_ship,'bat',g.bat)
+           'khuyen_mai',g.khuyen_mai,'phi_ship',g.phi_ship,'mien_ship',g.mien_ship,'bat',g.bat,
+           'nhan',COALESCE(to_jsonb(g)->>'nhan',''))
            ORDER BY g.so_luong)
          FROM goi_gia g WHERE g.team_id = s.team_id AND g.san_pham_id = s.id), '[]') AS offers
      FROM san_pham s WHERE s.team_id = $1 AND s.id = ANY($2::bigint[]) ORDER BY s.ma`,
     [bc.teamId, ds],
   );
+  const anhTheoSp = new Map();
+  try {
+    const a = await pool.query(
+      `SELECT id, san_pham_id, duong, nhan, thu_tu FROM anh_san_pham
+        WHERE team_id = $1 AND san_pham_id = ANY($2::bigint[]) ORDER BY san_pham_id, thu_tu, id`,
+      [bc.teamId, ds],
+    );
+    for (const x of a.rows) {
+      const k = String(x.san_pham_id);
+      if (!anhTheoSp.has(k)) anhTheoSp.set(k, []);
+      anhTheoSp.get(k).push({ id: String(x.id), duong: x.duong, nhan: x.nhan, thuTu: x.thu_tu });
+    }
+  } catch (e) { if (e?.code !== '42P01') throw e; }   // 025 chưa áp ⇒ chưa có ảnh nào ở v3
   const lon = (v, tt) => (v == null ? null : Number(v) / (HE_SO_TE_SUA[tt] || 1));
   return r.rows.map((x) => ({
     ...x,
+    anh: anhTheoSp.get(String(x.id)) || [],
     offers: (x.offers || []).map((g) => ({
       ...g,
       price: lon(g.gia, g.tien_te),
@@ -182,6 +202,9 @@ async function canhBaoLopModel(canh) {
 }
 
 const app = express();
+// MN4: ảnh sản phẩm xem được trên màn v3 (và là đường công khai cho Facebook tải khi MN5 đổi
+// PUBLIC_URL sang cổng này). Chỉ đọc, không liệt kê thư mục, không phục vụ tệp bắt đầu bằng dấu chấm.
+app.use('/uploads', express.static(path.join(GOC, 'public', 'uploads'), { index: false, dotfiles: 'deny', fallthrough: false, maxAge: '7d' }));
 const bao = dungPhanB(app, {
   taoTruyVan,
   // CR-28-09b · MN3: lưu sản phẩm trên v3 ⇒ đẩy bản chép sang bot v1 rồi đọc lại xác minh.
@@ -189,6 +212,8 @@ const bao = dungPhanB(app, {
     pool,
     daySanPhamLenBot: async (pageIdFacebook, products) =>
       (await import('./src/noi-day/cau-bot-v1.js')).daySanPhamLenBot(pageIdFacebook, products),
+    // MN4: ảnh tải lên nằm CÙNG thư mục bot v1 phục vụ — một kiểu đường `/uploads/<tệp>`.
+    thuMucAnh: path.join(GOC, 'public', 'uploads'),
   },
   docSanSang: docSanSangV3,
   taoTruyVanHeThong: () => taoCongDanhTinh(pool),
@@ -306,6 +331,11 @@ const bao = dungPhanB(app, {
   docTinPancake: async (pageId, convId, custId) =>
     (await import(`${GOC}/src/pancake.js`)).pkDocTin(pageId, convId, custId),
   docSoAiBotCu: () => (_soAi ? _soAi.readLog() : []),   // không nạp được ⇒ màn nói «chưa có mã khách»
+  // UI-HT3: `tin_cho_xu_ly`/`lan_gui` ngoài danh sách bảng của cổng ⇒ BẮT BUỘC đọc bằng SQL kẹp team.
+  docDauVetV3: (await import('./src/ui/ban-hoi-thoai/index.js')).taoDocDauVetV3Sql(pool),
+  giaiKichBanPage: async (teamId, pageRowId) =>
+    (await import(`${GOC}/src/db/kich-ban.js`)).docKichBanChoPage(pool, teamId, pageRowId),
+  laTinTuDong: (text) => (_mauMay ? _mauMay.isAutomationTemplate(text) : false),
   // UI-HT2: danh sách hội thoại có LIMIT — cổng không có LIMIT, kéo cả bảng = 19,6 MB (đo 28/09).
   docHoiThoaiSql: (await import('./src/ui/ban-hoi-thoai/index.js')).taoDocHoiThoaiSql(pool),
   docSanPhamSua,

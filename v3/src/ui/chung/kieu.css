@@ -794,6 +794,14 @@
   .tin[data-ben="khach"] .tin-bong { background: var(--surface); border: 1px solid var(--border-default); border-bottom-left-radius: var(--radius-sm); }
   .tin[data-ben="page"] { align-self: flex-end; align-items: flex-end; }
   .tin[data-ben="page"] .tin-bong { background: var(--primary-subtle); border: 1px solid var(--primary-border); border-bottom-right-radius: var(--radius-sm); }
+  /* Nguồn tin page (UI-HT3): bot AI giữ màu chính · «Page» (sale gõ tay hoặc chưa đối chiếu được)
+     nền trung tính · tin tự động (Botcake/mẫu máy) lùi xuống, viền đứt — đọc lướt bỏ qua được. */
+  .tin-nguon { font-family: var(--font-sans); font-weight: var(--weight-semibold); letter-spacing: 0; }
+  .tin[data-nguon="ai"] .tin-nguon { color: var(--primary); }
+  .tin[data-nguon="page"] .tin-bong { background: var(--neutral-bg); border-color: var(--neutral-border); }
+  .tin[data-nguon="page"] .tin-nguon { color: var(--text-secondary); }
+  .tin[data-nguon="tu_dong"] .tin-bong { background: transparent; border-style: dashed; border-color: var(--border-default);
+                                          color: var(--text-secondary); }
   .chat-chan { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); flex: none;
                padding: var(--space-3) var(--space-5); background: var(--surface); border-top: 1px solid var(--border-default); }
   .chat-chan .text-muted { margin-left: auto; font-size: var(--text-xs); }
@@ -805,6 +813,7 @@
            margin: 0; font-size: var(--text-sm); line-height: var(--lh-sm); }
   .bc-dl dt { color: var(--text-muted); }
   .bc-dl dd { margin: 0; overflow-wrap: anywhere; }
+  .bc-cam { margin: var(--space-2) 0 0; font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--text-muted); }
   .ban-ht .lui, .ban-ht .nut-bc, .ban-ht-bc .dong-bc { display: none; }
   /* ≤1180px: cột bối cảnh thành NGĂN PHỦ mở bằng nút «Khách & đóng việc» — ẩn hẳn là sale trên máy
      tính bảng / điện thoại mất đường nhận và đóng việc (bắt được lúc soát 28/09). */

@@ -1,8 +1,15 @@
-// BÀN HỘI THOẠI (CR-28-09) — UI-HT1 đọc một hội thoại · UI-HT2 danh sách và màn.
+// BÀN HỘI THOẠI (CR-28-09) — UI-HT1 đọc một hội thoại · UI-HT2 danh sách và màn · UI-HT3 bối cảnh.
 export {
   docHoiThoai, datDocTinPancake, datTraMaKhachSoAi, datDongHoHoiThoai, daNoiDocTin,
   xoaNhoHoiThoai, taoTraMaKhachSoAi, NHO_HOI_THOAI_MS,
+  // UI-HT3
+  taoChiMucSoAi, datChiMucSoAi, datLaTinTuDong, tenMessengerCua, luotBotCuCua, chuanChu,
+  datDocDauVetV3, daNoiDauVetV3, taoDocDauVetV3Sql,
 } from './doc-hoi-thoai.js';
+
+export {
+  boiCanhHoiThoai, datGiaiKichBan, daNoiGiaiKichBan, CHU_TRANG_THAI_DON, CHU_TRANG_THAI_POS, KHONG_GOI_MODEL,
+} from './boi-canh-hoi-thoai.js';
 
 export {
   danhSachHoiThoai, datDocHoiThoaiSql, daNoiDocSql, taoDocHoiThoaiSql,

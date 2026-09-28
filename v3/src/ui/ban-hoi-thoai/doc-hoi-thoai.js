@@ -34,6 +34,16 @@ const chuoi = (v) => (v == null ? '' : String(v).trim());
 let _docTin = null;
 /** @type {null | ((convId:string) => string|null)} */
 let _traMaKhachSoAi = null;
+/** @type {null | ((convId:string) => string|null)} */
+let _tenSoAi = null;
+/** @type {null | ((convId:string) => string[])} */
+let _dauCauAi = null;
+/** @type {null | ((text:string) => boolean)} */
+let _laTinTuDong = null;
+/** @type {null | ((convId:string) => {soLuot:number, cuoiLuc:number|null})} */
+let _luotBotCu = null;
+/** @type {null | ((bc:any, bo:{pageFb:string, psid:string}) => Promise<{maKhach:string|null, gui:object[]}>)} */
+let _docDauVet = null;
 let _dongHo = () => Date.now();
 
 /** Tiêm đường đọc tin Pancake (`src/pancake.js#pkDocTin`). Bản xem thử tiêm bản GIẢ. */
@@ -48,6 +58,43 @@ export function datTraMaKhachSoAi(fn) {
   _traMaKhachSoAi = fn || null;
   return _traMaKhachSoAi;
 }
+/**
+ * UI-HT3: tiêm CẢ chỉ mục Sổ AI (`taoChiMucSoAi`) — mã khách, tên Messenger, đầu câu bot đã trả
+ * lời. Một lần đọc sổ cho ba câu hỏi.
+ */
+export function datChiMucSoAi(chiMuc) {
+  _traMaKhachSoAi = chiMuc?.maKhach || null;
+  _tenSoAi = chiMuc?.ten || null;
+  _dauCauAi = chiMuc?.dauCauAi || null;
+  _luotBotCu = chiMuc?.luot || null;
+  return chiMuc || null;
+}
+/**
+ * UI-HT3: tiêm bộ đọc DẤU VẾT v3 của một hội thoại (`taoDocDauVetV3Sql(pool)`): mã khách mới
+ * nhất ở `tin_cho_xu_ly` + các lần bot v3 đã gửi (`lan_gui`).
+ *
+ * BẮT BUỘC trên máy chủ: hai bảng đó KHÔNG nằm trong `BANG_NGHIEP_VU_CHUAN` của tầng truy vấn
+ * (`src/db/truy-van.js`), nên cổng dữ liệu thật NÉM khi đọc chúng — bản UI-HT1 đọc qua cổng
+ * xanh trên cổng giả và sẽ 500 với MỌI hội thoại trên máy chủ (bắt được 28/09, trước deploy).
+ * Không tiêm (bộ ca, bản xem thử) thì đọc qua cổng — chỉ đúng với cổng giả.
+ */
+export function datDocDauVetV3(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiDieuPhoi('datDocDauVetV3 cần một hàm');
+  _docDauVet = fn || null;
+  return _docDauVet;
+}
+export const daNoiDauVetV3 = () => typeof _docDauVet === 'function';
+/** UI-HT3: bộ nhận tin MÁY (Botcake/RTO) — `src/bot-registry.js#isAutomationTemplate`. */
+export function datLaTinTuDong(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiDieuPhoi('datLaTinTuDong cần một hàm');
+  _laTinTuDong = fn || null;
+  return _laTinTuDong;
+}
+/** Tên Messenger của khách theo Sổ AI bot cũ — cho hội thoại CHƯA nối hồ sơ khách (99,9% máy chủ 28/09). */
+export const tenMessengerCua = (convId) => (_tenSoAi && convId ? _tenSoAi(String(convId)) : null);
+/** Số lượt bot CŨ đã trả lời hội thoại này, theo Sổ AI của nó — `null` khi chưa nối sổ. */
+export const luotBotCuCua = (convId) => (_luotBotCu && convId ? _luotBotCu(String(convId)) : null);
+
 /** Đồng hồ cho bản nhớ — tiêm để bộ ca đo được hết hạn mà không phải chờ. */
 export function datDongHoHoiThoai(fn) { _dongHo = typeof fn === 'function' ? fn : () => Date.now(); }
 export const daNoiDocTin = () => typeof _docTin === 'function';
@@ -62,45 +109,158 @@ export function xoaNhoHoiThoai() { _nho.clear(); }
  *
  * @param {() => Array<{conv?:string, cust?:string}>} docSo  thường là `readLog` của `src/ai-log.js`
  */
-export function taoTraMaKhachSoAi(docSo, { nhipMs = 5 * 60_000, dongHo = () => Date.now() } = {}) {
-  let chiMuc = null;
+export function taoTraMaKhachSoAi(docSo, bo = {}) {
+  return taoChiMucSoAi(docSo, bo).maKhach;
+}
+
+/** Chữ so khớp: bỏ thẻ HTML, gộp khoảng trắng, chữ thường. */
+export const chuanChu = (s) => String(s ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+/** Đầu câu dùng để so: Sổ AI chỉ giữ 80 ký tự đầu câu bot trả lời — so 60 cho chừa chỗ gọt HTML. */
+const DAU_CAU = 60;
+/** Ngắn hơn thế thì «ok», «dạ» của sale cũng khớp — không đủ để gọi là tin của bot. */
+const DAU_CAU_TOI_THIEU = 12;
+
+/**
+ * Chỉ mục Sổ AI bot cũ: `conv → { mã khách · tên Messenger · đầu câu bot đã trả lời }`.
+ *
+ * ĐO 28/09 trên 23 hội thoại thật đọc được (nhật ký UI-HT3): trường `from` của Pancake KHÔNG
+ * tách được bot với sale — 29/29 tin page khớp Sổ AI chỉ mang `uid`, và 54 tin KHÔNG khớp cũng
+ * mang đúng `uid`. Nên «tin AI» xác định bằng ĐẦU CÂU khớp bản ghi `reply` của chính Sổ AI
+ * (`text` = 80 ký tự đầu câu trả lời — `src/pancake-poll.js`, lệnh `logAi(…'reply'…)`).
+ */
+export function taoChiMucSoAi(docSo, { nhipMs = 5 * 60_000, dongHo = () => Date.now() } = {}) {
+  let cm = null;
   let luc = -Infinity;
-  return (convId) => {
-    if (!chiMuc || dongHo() - luc > nhipMs) {
-      chiMuc = new Map();
-      for (const r of docSo() || []) {
-        const c = chuoi(r?.conv), k = chuoi(r?.cust);
-        if (c && k) chiMuc.set(c, k);
+  const nap = () => {
+    if (cm && dongHo() - luc <= nhipMs) return cm;
+    cm = { khach: new Map(), ten: new Map(), ai: new Map(), luot: new Map() };
+    for (const r of docSo() || []) {
+      const c = chuoi(r?.conv);
+      if (!c) continue;
+      const k = chuoi(r?.cust);
+      if (k) cm.khach.set(c, k);
+      const t = chuoi(r?.name);
+      if (t) cm.ten.set(c, t);
+      if (r?.type === 'reply') {
+        const l = cm.luot.get(c) || { soLuot: 0, cuoiLuc: null };
+        l.soLuot += 1;
+        if (Number.isFinite(r?.t) && (l.cuoiLuc == null || r.t > l.cuoiLuc)) l.cuoiLuc = r.t;
+        cm.luot.set(c, l);
+        const d = chuanChu(r?.text).slice(0, DAU_CAU);
+        if (d.length >= DAU_CAU_TOI_THIEU) {
+          const ds = cm.ai.get(c) || [];
+          if (ds.length < 400) ds.push(d);
+          cm.ai.set(c, ds);
+        }
       }
-      luc = dongHo();
     }
-    return chiMuc.get(chuoi(convId)) || null;
+    luc = dongHo();
+    return cm;
+  };
+  return {
+    maKhach: (convId) => nap().khach.get(chuoi(convId)) || null,
+    ten: (convId) => nap().ten.get(chuoi(convId)) || null,
+    dauCauAi: (convId) => nap().ai.get(chuoi(convId)) || [],
+    luot: (convId) => nap().luot.get(chuoi(convId)) || { soLuot: 0, cuoiLuc: null },
   };
 }
 
-/** Mã khách Pancake, theo thứ tự nguồn. Trả `{ cust, nguon }` hoặc `null`. */
-async function maKhachCua(db, pageFb, psid, ma) {
+/** Trần số lần gửi v3 đem ra đối chiếu — khung chat chỉ hiện `TOI_DA_TIN` tin gần nhất. */
+const TOI_DA_GUI = 200;
+/**
+ * Lần gửi nào có thể đã tới khách: `da_gui`, và `khong_ro` (gửi rồi mà không chắc — tin có trên
+ * Pancake thì khớp, không có thì không khớp gì). `dang_gui`/`dien_tap` chưa bao giờ rời hệ.
+ */
+const GUI_CO_THE_TOI = ['da_gui', 'khong_ro'];
+
+/**
+ * Bộ đọc dấu vết v3 bằng SQL: ĐÚNG hai câu, `team_id = $1` từ bối cảnh, có LIMIT. Chỉ mục:
+ * `tin_cho_xu_ly_conv (page_id, conv_id)` cho câu đầu, `UNIQUE(team_id,tin_id,buoc)` cho phép nối.
+ */
+export function taoDocDauVetV3Sql(pool) {
+  if (!pool || typeof pool.query !== 'function') throw new LoiDieuPhoi('taoDocDauVetV3Sql cần một pool');
+  return async (boiCanh, { pageFb, psid }) => {
+    const bc = batBuocBoiCanh(boiCanh);
+    const [ma, gui] = await Promise.all([
+      pool.query(
+        `SELECT cust_id FROM tin_cho_xu_ly
+          WHERE team_id = $1 AND page_id = $2 AND psid = $3 AND cust_id <> ''
+          ORDER BY id DESC LIMIT 1`,
+        [bc.teamId, pageFb, psid]),
+      pool.query(
+        `SELECT l.provider_id, l.noi_dung FROM lan_gui l
+           JOIN tin_cho_xu_ly t ON t.id = l.tin_id AND t.team_id = l.team_id
+          WHERE l.team_id = $1 AND t.page_id = $2 AND t.psid = $3
+            AND l.loai = 'guiTin' AND l.trang_thai = ANY($4)
+          ORDER BY l.id DESC LIMIT $5`,
+        [bc.teamId, pageFb, psid, GUI_CO_THE_TOI, TOI_DA_GUI]),
+    ]);
+    return { maKhach: chuoi(ma.rows[0]?.cust_id) || null, gui: gui.rows };
+  };
+}
+
+/** Đường lùi qua cổng (bộ ca, bản xem thử) — CÙNG hợp đồng với `taoDocDauVetV3Sql`. */
+async function dauVetQuaCong(db, { pageFb, psid }) {
   const tin = await db.chon('tin_cho_xu_ly', { page_id: pageFb, psid });
   const coMa = tin.filter((t) => chuoi(t.cust_id));
-  if (coMa.length) {
-    const moiNhat = coMa.reduce((a, b) => (Number(b.id) > Number(a.id) ? b : a));
-    return { cust: chuoi(moiNhat.cust_id), nguon: 'hang_doi_v3' };
-  }
+  const moiNhat = coMa.length ? coMa.reduce((a, b) => (Number(b.id) > Number(a.id) ? b : a)) : null;
+  const gui = (await Promise.all(tin.map((t) => db.chon('lan_gui', { tin_id: t.id })))).flat()
+    .filter((g) => g.loai === 'guiTin' && GUI_CO_THE_TOI.includes(g.trang_thai))
+    .sort((a, b) => Number(b.id) - Number(a.id)).slice(0, TOI_DA_GUI);
+  return { maKhach: moiNhat ? chuoi(moiNhat.cust_id) : null, gui };
+}
+
+/** Mã khách Pancake, theo thứ tự nguồn. Trả `{ cust, nguon }` hoặc `null`. */
+function maKhachCua(dv, ma) {
+  if (dv.maKhach) return { cust: dv.maKhach, nguon: 'hang_doi_v3' };
   const k = _traMaKhachSoAi ? _traMaKhachSoAi(ma) : null;
   return k ? { cust: chuoi(k), nguon: 'so_ai_bot_cu' } : null;
 }
 
+/** Chữ của một lần gửi v3: `noi_dung` = `JSON.stringify(args[2])` (`src/queue/lan-gui.js#bocCuaGuiBen`). */
+const chuLanGui = (v) => chuanChu(typeof v === 'string' ? v : (v?.text ?? v?.message ?? ''));
+
+/**
+ * Dấu nhận TIN BOT của một hội thoại: mã tin Pancake bot v3 đã gửi (`lan_gui.provider_id` — khớp
+ * CHÍNH XÁC) + đầu câu (lần gửi v3 và Sổ AI bot cũ).
+ */
+function dauHieuBot(dv, ma) {
+  const maTin = new Set(dv.gui.map((g) => chuoi(g.provider_id)).filter(Boolean));
+  const dau = [
+    ...dv.gui.map((g) => chuLanGui(g.noi_dung).slice(0, DAU_CAU)),
+    ...(_dauCauAi ? _dauCauAi(ma) : []),
+  ].filter((d) => d.length >= DAU_CAU_TOI_THIEU);
+  return { maTin, dau };
+}
+
+/**
+ * Nguồn của một tin page — CHỈ theo điều đo được:
+ *   ai       — khớp mã tin bot v3, hoặc đầu câu bot đã ghi (v3 · Sổ AI bot cũ)
+ *   tu_dong  — luồng Botcake (`from.flow_id`), hoặc mẫu máy (`isAutomationTemplate`)
+ *   page     — còn lại: sale gõ tay HOẶC bot ngoài dữ liệu đối chiếu. KHÔNG đoán là sale.
+ */
+function nguonTinPage(m, dh) {
+  if (dh.maTin.has(chuoi(m?.id))) return 'ai';
+  const t = chuanChu(m?.original_message || m?.message);
+  if (t && dh.dau.some((d) => t.startsWith(d))) return 'ai';
+  if (chuoi(m?.from?.flow_id)) return 'tu_dong';
+  if (_laTinTuDong && _laTinTuDong(String(m?.original_message || m?.message || ''))) return 'tu_dong';
+  return 'page';
+}
+
 /** Một tin Pancake → dạng màn hình cần. Cùng cách gọt với `van-hanh/router.js`. */
-function gonTin(m, pageFb) {
+function gonTin(m, pageFb, dh) {
+  const laPage = chuoi(m?.from?.id) === pageFb;
   return {
     luc: m?.inserted_at || null,
-    laPage: chuoi(m?.from?.id) === pageFb,
+    laPage,
+    nguon: laPage ? nguonTinPage(m, dh) : 'khach',
     ten: chuoi(m?.from?.name),
     text: String(m?.original_message || m?.message || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
   };
 }
 
-async function docTuPancake(pageFb, ma, cust) {
+async function docTuPancake(pageFb, ma, cust, dh) {
   if (!_docTin) {
     return { lichSu: [], lichSuLoi: 'Máy chủ chưa nối đường đọc Pancake (datDocTinPancake) — mở Pancake để đọc.' };
   }
@@ -110,7 +270,7 @@ async function docTuPancake(pageFb, ma, cust) {
       return { lichSu: [], lichSuLoi: `Pancake không trả tin: ${chuoi(kq?.loi) || 'không rõ lý do'}` };
     }
     const ds = Array.isArray(kq.messages) ? kq.messages : [];
-    return { lichSu: ds.slice(-TOI_DA_TIN).map((m) => gonTin(m, pageFb)), lichSuLoi: null };
+    return { lichSu: ds.slice(-TOI_DA_TIN).map((m) => gonTin(m, pageFb, dh)), lichSuLoi: null };
   } catch (e) {
     return { lichSu: [], lichSuLoi: `Không gọi được Pancake: ${chuoi(e?.message || e).slice(0, 200)}` };
   }
@@ -120,7 +280,8 @@ async function docTuPancake(pageFb, ma, cust) {
  * Lịch sử một hội thoại, đọc thẳng Pancake.
  *
  * @returns {Promise<null | {hoiThoaiId:string, maHoiThoai:string|null, nguonMa:string|null,
- *   lichSu:Array<{luc:string|null, laPage:boolean, ten:string, text:string}>, lichSuLoi:string|null,
+ *   lichSu:Array<{luc:string|null, laPage:boolean, nguon:'khach'|'ai'|'tu_dong'|'page', ten:string, text:string}>,
+ *   lichSuLoi:string|null,
  *   docLuc:number}>}  `null` = không có hội thoại này TRONG TEAM (router trả 404).
  */
 export async function docHoiThoai(boiCanh, hoiThoaiId) {
@@ -146,9 +307,11 @@ export async function docHoiThoai(boiCanh, hoiThoaiId) {
 
   const dang = (async () => {
     const pageFb = chuoi(p.page_id);
-    const mk = await maKhachCua(db, pageFb, chuoi(h.psid), ma);
+    const bo = { pageFb, psid: chuoi(h.psid) };
+    const dv = _docDauVet ? await _docDauVet(bc, bo) : await dauVetQuaCong(db, bo);
+    const mk = maKhachCua(dv, ma);
     const doc = mk
-      ? await docTuPancake(pageFb, ma, mk.cust)
+      ? await docTuPancake(pageFb, ma, mk.cust, dauHieuBot(dv, ma))
       : { lichSu: [], lichSuLoi: 'Chưa có mã khách Pancake cho hội thoại này — hội thoại chưa qua hàng đợi v3 và không có trong Sổ AI của bot cũ. Bấm «Trả lời trên Pancake» để đọc ở đó.' };
     return { ...dau, nguonMa: mk ? mk.nguon : null, ...doc, docLuc: _dongHo() };
   })();

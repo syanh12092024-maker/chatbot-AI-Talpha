@@ -26,7 +26,9 @@ for t in v3/test/b/dispatch-router.test.mjs v3/test/b/dispatch-kho-viec.test.mjs
 done
 
 # ③ bàn hội thoại CHỈ ĐỌC: module không gọi hàm ghi nào của cổng dữ liệu
-n=$(grep -cE "\.(them|sua|xoa|capNhat)\(" v3/src/ui/ban-hoi-thoai/*.js)
+# `cat | grep -c` chứ không `grep -c tệp*`: nhiều tệp thì grep in «tệp:số» và phép so số hỏng —
+# thước này đỏ OAN từ lúc UI-HT2 thêm tệp thứ hai vào thư mục (bắt được 28/09 ở UI-HT3).
+n=$(cat v3/src/ui/ban-hoi-thoai/*.js | grep -cE "\.(them|sua|xoa|capNhat)\(")
 [ "$n" -eq 0 ]; ket "③không-ghi-CSDL" $? "lời gọi ghi trong ban-hoi-thoai/: $n (đòi 0)"
 
 # ④ pkDocTin chỉ GET: khối hàm không có `method:`
