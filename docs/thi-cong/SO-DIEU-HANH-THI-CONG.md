@@ -276,6 +276,23 @@ https://claude.ai/artifact/LJcDVTN8GZPyWEtxZnF2yh
 | UI-HT3 | Cột bối cảnh: khách · hoàn · đơn · giai đoạn · người giữ · kịch bản | UI-HT2  | 🟩  | 🎫 `PHIEU-UI-HT2-4.md` |
 | UI-HT4 | Sửa thước theo §10 mới                                           | UI-HT2    | 🟩  | 🎫 `PHIEU-UI-HT2-4.md` |
 
+## §5e · SÓNG MỘT NGUỒN (MN1–MN7) — CR-28-09b, người quyết gõ «áp b. gộp 1 bước» 28/09
+
+Sản phẩm · giá · ảnh · kịch bản có MỘT chỗ ghi là CSDL v3, sửa trên giao diện; mỗi lượt lưu có
+hiệu lực với bot ngay hoặc báo lỗi. Bot v1 nhận bản chép máy sinh (`kb-overrides.json`, chỉ máy
+ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
+`docs/thi-cong/doi-y-do/CR-28-09-mot-nguon-san-pham.md` (lớp 5 đo trên prod ở mục 5d).
+
+| Mã  | Việc                                                                          | Phụ thuộc          | Làn | Trạng thái |
+| --- | ----------------------------------------------------------------------------- | ------------------ | --- | ---------- |
+| MN1 | Migration 025 `anh_san_pham` + tầng đọc/ghi + hợp đồng lược đồ                 | —                  | 🟨  | ⬜ |
+| MN2 | Nạp một lượt `kb-overrides.json` (77 page) → `san_pham`/`goi_gia`/`anh_san_pham`; tải ảnh link ngoài về; báo page thiếu & link chết | MN1 | 🟥 | ⬜ |
+| MN3 | Lưu sản phẩm · giá · ảnh trên v3 ⇒ đẩy sang bot; đẩy hỏng ⇒ lượt lưu báo lỗi   | MN1                | 🟥  | ⬜ |
+| MN4 | UI: sửa ảnh tại tab; «Sản phẩm & kho» + «Ảnh gửi khách» đọc CSDL v3            | MN1 · MN3          | 🟨  | ⬜ |
+| MN6 | Trang page = màn kịch bản đầy đủ, xếp theo thứ tự AI nhận; kịch bản lưu là chạy | MN3 · MN4          | 🟨  | ⬜ |
+| MN7 | Khối dùng chung Chính sách · FAQ · Phản đối vào v3 + đẩy sang bot              | MN3                | 🟨  | ⬜ |
+| MN5 | Tắt đồng bộ Sheet trên prod + đo lệch CSDL↔bot định kỳ — **mở van, cần gật**    | MN2·MN3·MN4·MN7    | 🟥  | ⬜ |
+
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
 | Mã  | Việc                                                                                 | Chặn gì                                                        | Trạng thái |
@@ -2552,3 +2569,5 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 28/09 · BH8 → 🎫 — hai bản Việt (người) / Anh gọn (model) cho CORE + kịch bản + tool; cache Kimi đo: điểm dùng chung ở cuối system (6.144), tools sau điểm đó, `cache_control` vô tác dụng · phiếu docs/thi-cong/phieu/PHIEU-BH8.md
 - 28/09 · BH8 → 🔨 — CORE hai bản (CORE_VI người đọc, CORE EN model đọc, băm canh) · kịch bản dịch sang EN lúc lưu qua mối nối `datDichBanMay` + kiểm giữ nguyên văn, lỗi thì giữ bản Việt · tool mô tả EN · Minty dev đã có bản máy EN · commit (xem git log `BH8`) · nhật ký docs/thi-cong/nhat-ky/phieu-bh8.md
 - 28/09 · BH8 CHƯA ĐO: tổ chức Moonshot chạm trần 1,5 triệu token/ngày lần 2 — `dem-token-kimi.mjs` + 3 lượt `gia-lap` (30 lượt) chạy khi hạn mức mở lại
+- 28/09 · CR-28-09b → 🔨 ÁP — một nguồn cho sản phẩm · giá · ảnh · kịch bản (phương án B: v3 ghi, đẩy sang bot); kịch bản lưu là chạy (§9 đã ký, code trôi) · §5e MN1–MN7 · docs/thi-cong/doi-y-do/CR-28-09-mot-nguon-san-pham.md
+- 28/09 · 📏 Lớp 5 đo PROD: `san_pham`/`goi_gia`/`san_pham_goc` = 0/0/0 · 77/77 page có SP lấy từ `kb-overrides.json`, Sheet 0 · tab dùng chung Sheet là MẪU PHILIPPINES (Tagalog) ghép vào prompt mọi page · cửa tiền tạo đơn đọc `goi_gia` (rỗng) trong khi bot báo giá theo `kb-overrides.json`

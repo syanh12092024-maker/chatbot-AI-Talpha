@@ -83,7 +83,8 @@ hoà giải hai bên đang cùng sửa.
 | MN2 | Lượt nạp một lần: Sheet + `kb-overrides.json` → `san_pham`/`goi_gia`/`anh_san_pham`; tải ảnh link ngoài về; báo cáo page không khớp & link chết. Chạy thử trên dev, in số trước/sau | 🟥 | MN1 |
 | MN3 | Cửa ghi v3 đẩy sang bot sau mỗi lượt lưu (sản phẩm · giá · ảnh); đẩy hỏng ⇒ lượt lưu báo lỗi. Ca đầu-cuối + đảo-vá | 🟥 | MN1 |
 | MN4 | UI: CRUD ảnh trên tab «Sản phẩm & giá»; «Sản phẩm & kho» + «Ảnh gửi khách» đọc CSDL v3 | 🟨 | MN1 · MN3 |
-| MN5 | Tắt `syncFromSheet` trên prod + phép đo lệch CSDL↔bot định kỳ. **Mở van — cần người gật** | 🟥 | MN2 · MN3 · MN4 |
+| MN7 | Khối dùng chung Chính sách · FAQ · Phản đối: bảng v3 theo team + cửa đẩy sang bot (`kb.js` thêm đường đặt `sharedText`) + hiện chỉ đọc trên màn page, sửa ở màn Quy tắc chung | 🟨 | MN3 |
+| MN5 | Tắt `syncFromSheet` trên prod + phép đo lệch CSDL↔bot định kỳ. **Mở van — cần người gật** | 🟥 | MN2 · MN3 · MN4 · MN7 |
 
 ## 5b · Bổ sung 28/09 — MỘT MÀN cho «page này trả lời thế nào»
 
@@ -123,6 +124,28 @@ AI** (§9 dòng kế). Lịch sử bản giữ nguyên để lùi.
 `src/products/catalog.js#docSanPhamGoiGia`), còn bot báo giá cho khách theo `kb-overrides.json`
 (`src/kb.js`). Hai bảng lệch ⇒ đơn đúng giá bot vừa báo vẫn bị chặn (hoặc ngược lại). Phương án
 B chữa luôn chỗ này: bot nhận bản chép sinh từ chính `goi_gia`.
+
+## 5d · Lớp 5 ĐO TRÊN PROD khi áp (28/09, SSH chỉ đọc — người quyết cho phép)
+
+| Đo | Số | Nghĩa |
+|---|---|---|
+| `san_pham` · `goi_gia` · `san_pham_goc` trên CSDL prod | **0 · 0 · 0** | Bảng v3 TRỐNG. Tab «Sản phẩm & giá» trên prod không có gì để sửa |
+| `page` prod · page nối được mã gốc + shop | 581 · **0** | Không page nào tra ra sản phẩm v3 |
+| Bot v1 biết · có sản phẩm · từ Sheet · từ `kb-overrides.json` | 447 · **77** · **0** · **77** | Sản phẩm bot bán CHỈ đến từ `kb-overrides.json` |
+| 77 page đè có dòng `page` v3 | 76 | 1 page phải dựng dòng `page` trước |
+| Tab thị trường Sheet (UAE…Khác) | 278 dòng, cột sản phẩm rỗng | Sheet chỉ còn là danh bạ page (tên · thị trường · marketer) |
+| Tab dùng chung Sheet: Chính sách 4 · FAQ 3 · Phản đối 4 | **mẫu Philippines (Tagalog)** | Ghép vào prompt MỌI page (`kb.js#buildShared`) — hứa «2–4 ngày», «hoàn tiền 30 ngày», «đổi trả 7 ngày» với khách Trung Đông |
+| `kb-overrides.json` sửa lần cuối | 28/08 | Đứng yên 31 ngày — nạp một lượt đủ |
+
+Hệ quả cho phiếu:
+- **MN2 đơn giản hơn dự kiến:** chỉ một nguồn (`kb-overrides.json`, 77 page) và bảng đích
+  rỗng — không hoà giải. Sản phẩm nạp vào gắn `san_pham.page_id` (đường dự phòng của
+  `catalog.js#docSanPhamGoiGia` khi page chưa có mã gốc), `nguon='kb'`, mã `kb:<page>:<id>`.
+  Khi POS kéo danh mục thật về, gắn mã gốc là việc riêng.
+- **Thêm MN7 — khối dùng chung (Chính sách · FAQ · Phản đối) vào v3.** Không làm thì tắt
+  Sheet (MN5) là mất khối này khỏi prompt; để nguyên thì Sheet vẫn là chỗ thứ hai người sửa
+  được mà bot nghe theo. **Nội dung hiện tại sai thị trường — người quyết chọn: nạp nguyên
+  văn rồi sửa trên màn, hay bỏ trống.**
 
 ## 6 · Đường lùi
 
