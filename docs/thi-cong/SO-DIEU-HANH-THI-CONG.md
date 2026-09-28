@@ -1236,6 +1236,14 @@ trên 4.423 đơn POS 60 ngày — đã ghi §9 để không rơi mất).
   được máy chủ có chung tổ chức với khoá dev không. Nếu chung: một lượt đo 60 lượt
   (~400k token) ăn 1/4 hạn mức ngày của bot thật. Việc: xác định tổ chức của khoá máy chủ;
   nếu chung thì tách khoá đo riêng. `gia-lap-mot-minh.mjs` chưa dừng ở lỗi TPD (BH8 thêm).
+  ↳ **ĐÃ KIỂM 28/09 (đọc máy chủ, không in khoá):** KHÔNG chung. Khoá dev (CSDL dev, vân
+  tay sha256 `de46adbf`) hợp lệ, số dư 7,98 USD. Khoá máy chủ `/opt/aicloser/.env`
+  `KIMI_API_KEY` (vân tay `6dde0846`) **KHÔNG HỢP LỆ ở cả hai cổng**: `api.moonshot.ai` →
+  401 «Incorrect API key provided», `api.moonshot.cn` → «Invalid Authentication». Máy chủ
+  hiện không gọi Kimi: CSDL v3 `cau_hinh_model` **0 dòng**, `so_ai` 0 dòng/7 ngày;
+  `ai-messages.jsonl` của bản cũ ghi lần cuối **28/08**. ⇒ Đo trên dev không đụng bot thật.
+  🔴 Nhưng ngày bật lại AI trên máy chủ, mọi lượt sẽ 401 — **phải thay khoá trước khi mở
+  van AI** (việc người: cấp khoá Moonshot hợp lệ cho máy chủ, nạp vào kho khoá team).
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
