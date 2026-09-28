@@ -448,6 +448,10 @@
                  cursor: pointer; }
   .chip button:hover { background: var(--danger-bg); color: var(--danger); }
   .chip button .icon { width: 12px; height: 12px; }
+  /* Nút × chỉ 20px thì khó bấm (audit 28/09: «Rút vai» ở Người và team). Vùng bấm nở ra
+     bằng một lớp vô hình, dáng nhãn giữ nguyên; màn cảm ứng thì nở hẳn, xem @media dưới. */
+  .chip button { position: relative; }
+  .chip button::after { content: ""; position: absolute; inset: -4px; }
   .chip-list { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 
   /* ─── H7 · HUY HIỆU — gọn, không trang trí ───────────────────────────────────────── */
@@ -1063,6 +1067,10 @@
 
   @media (pointer: coarse) {
     .btn, .nut { min-height: 40px; }
+    .chip { height: 32px; }
+    .chip button { width: 28px; height: 28px; }
+    .chip button::after { inset: -6px; }          /* 40px vùng bấm */
+    .chip-list { gap: var(--space-2); }            /* vùng bấm của hai nhãn kề nhau không chồng */
   }
 
   /* ── Ô «NGUỒN SỐ» (GD4) — lời khai nguồn của luật 8, gập sẵn ở chân màn ─────────────

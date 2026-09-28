@@ -130,6 +130,7 @@
 
 
     /* THANH TRÊN CÙNG — mục F2. Chỉ thứ dùng chung cho cả sản phẩm. */
+    html{scroll-padding-top:68px}  /* cuộn tới một ô (scrollIntoView, #neo) không bị thanh .dh-top 52px che */
     .dh-top{position:sticky;top:0;z-index:9990;height:52px;display:flex;align-items:center;gap:12px;
       padding:0 24px;background:var(--surface, #ffffff);border-bottom:1px solid var(--border-default, #e1e4ea)}
     .dh-dd{display:flex;align-items:center;gap:6px;min-width:0;margin:0;padding:0;list-style:none;

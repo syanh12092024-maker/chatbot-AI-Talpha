@@ -281,10 +281,39 @@ async function moXem(id) {
 
 // Bấm bất cứ đâu trên dòng là mở Ô XEM NHANH bên phải. Bấm đúng cái tên thì để thẻ <a>
 // tự đi sang trang chi tiết — giữ được mở tab mới bằng chuột giữa.
+//
+// KHỔ HẸP (≤1100px, `.cot-ds` còn một cột): ô xem nhanh rơi xuống DƯỚI hai bảng. Trước
+// 28/09 bấm dòng trên điện thoại chỉ làm dòng sáng lên — ô nằm ngoài màn hình, người dùng
+// tưởng bấm hỏng (audit ui-taste). Nay: ô nằm dưới dòng vừa bấm thì cuộn tới ô, và cho
+// một nút quay về đúng dòng đó.
+const oXemNamDuoi = (tr) => $('#o-xem').getBoundingClientRect().top > tr.getBoundingClientRect().bottom;
+const giamChuyenDong = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let dongVuaBam = null;
+
 document.addEventListener('click', (ev) => {
+  if (ev.target.closest('[data-ve-ds]')) {
+    const tr = dongVuaBam && document.querySelector('tr[data-id="' + CSS.escape(dongVuaBam) + '"]');
+    (tr || $('#tieu-ht')).scrollIntoView({ behavior: giamChuyenDong() ? 'auto' : 'smooth', block: 'center' });
+    return;
+  }
   if (ev.target.closest('a')) return;
   const tr = ev.target.closest('tr[data-id]');
-  if (tr) moXem(tr.getAttribute('data-id'));
+  if (!tr) return;
+  dongVuaBam = tr.getAttribute('data-id');
+  const hep = oXemNamDuoi(tr);
+  const cuonToiO = () => $('#o-xem').scrollIntoView({ behavior: giamChuyenDong() ? 'auto' : 'smooth', block: 'start' });
+  moXem(dongVuaBam).then(() => {
+    if (!hep || xemId !== dongVuaBam) return;
+    const panel = $('#o-xem .panel');
+    if (panel && !panel.querySelector('[data-ve-ds]')) {
+      panel.insertAdjacentHTML('afterbegin',
+        '<button type="button" class="btn duoi-2" data-variant="ghost" data-size="sm" data-ve-ds>← Về danh sách</button>');
+    }
+    // Cuộn LẦN HAI sau khi nạp: lúc bấm, ô chỉ có «Đang đọc…» — trang chưa đủ dài để đưa ô
+    // lên đầu màn, lần cuộn đầu dừng lưng chừng.
+    cuonToiO();
+  });
+  if (hep) cuonToiO();
 });
 
 setInterval(nhipDongHo, 1000);

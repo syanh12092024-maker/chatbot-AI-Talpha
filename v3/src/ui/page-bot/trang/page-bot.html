@@ -145,11 +145,14 @@ function veBang(d) {
   const khoaBot = !(SUA && CUA.mo);
   const lyDoKhoaBot = !SUA ? 'Cần vai Quản trị để bật tắt bot' : 'Cửa ghi đang khoá — xem cảnh báo phía trên';
 
-  $('#bang').innerHTML = `<table class="data-table"><thead><tr>
+  // `data-hep="the"`: dưới 720px mỗi page thành một thẻ, ô «Còn thiếu gì» nhảy lên góc phải
+  // (`c-dem`). Trước 28/09 bảng tám cột cuộn ngang trên điện thoại và cột Bot, Còn thiếu gì
+  // — hai thứ người ta mở màn này để xem — nằm ngoài màn hình (audit ui-taste).
+  $('#bang').innerHTML = `<table class="data-table" data-hep="the"><thead><tr>
       <th scope="col">Page</th><th scope="col">Thị trường · ngành hàng</th><th scope="col">Marketer</th>
       <th scope="col">Bot</th><th scope="col">Còn thiếu gì</th>
       <th scope="col">Sản phẩm gốc</th><th scope="col">Trọng điểm</th>
-      <th scope="col">Đã tắt Botcake</th>
+      <th scope="col" title="Đã tắt Botcake cho page này (lời khai, không phải công tắc)"><span aria-hidden="true">Botcake</span><span class="sr-only">Đã tắt Botcake</span></th>
     </tr></thead><tbody>${d.page.map((p) => {
       const khoaBotDong = p.runtime === 'v3' ? !SUA : khoaBot;
       const ten = p.ten || '(chưa có tên)';
@@ -164,7 +167,7 @@ function veBang(d) {
           </div>
         </div>
       </td>
-      <td>
+      <td data-nhan="Thị trường · ngành hàng">
         <label class="sr-only" for="tt-${esc(p.id)}">Thị trường của ${esc(ten)}</label>
         <input type="text" class="cell-input" id="tt-${esc(p.id)}" data-tt="${esc(p.id)}" value="${esc(p.thiTruong)}"
                placeholder="Chưa có" ${SUA ? '' : 'disabled'} autocomplete="off" spellcheck="false">
@@ -172,23 +175,23 @@ function veBang(d) {
         <input type="text" class="cell-input meta" id="nh-${esc(p.id)}" data-nh="${esc(p.id)}" value="${esc(p.nganhHang)}"
                placeholder="Ngành hàng" ${SUA ? '' : 'disabled'} autocomplete="off" spellcheck="false">
       </td>
-      <td class="meta">${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
-      <td>
+      <td class="meta" data-nhan="Marketer">${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
+      <td data-nhan="Bot">
         <label class="switch cell-control" ${khoaBotDong ? `title="${esc(lyDoKhoaBot)}"` : ''}>
           <input type="checkbox" role="switch" data-bot="${esc(p.id)}" aria-label="Bot của ${esc(ten)}"
                  ${p.botAiBat ? 'checked' : ''} ${khoaBotDong ? 'disabled' : ''}>
           <span>${p.botAiBat ? 'Đang chạy' : 'Tắt'}</span>
         </label>
       </td>
-      <td>${veCuaKiem(p.cuaKiem)}</td>
-      <td>${veSanPhamGoc(p)}</td>
-      <td>
+      <td class="c-dem">${veCuaKiem(p.cuaKiem)}</td>
+      <td data-nhan="Sản phẩm gốc">${veSanPhamGoc(p)}</td>
+      <td data-nhan="Trọng điểm">
         <label class="switch" ${SUA ? '' : 'title="Cần vai Quản trị"'}>
           <input type="checkbox" role="switch" data-td="${esc(p.id)}" aria-label="Page trọng điểm: ${esc(ten)}"
                  ${p.trongDiem ? 'checked' : ''} ${SUA ? '' : 'disabled'}>
         </label>
       </td>
-      <td>
+      <td data-nhan="Đã tắt Botcake">
         <label class="switch" title="LỜI KHAI, không phải công tắc: đánh dấu ở đây KHÔNG tắt Botcake. Botcake tắt bằng tay trong giao diện Botcake.">
           <input type="checkbox" role="switch" data-bc="${esc(p.id)}" aria-label="Đã tắt Botcake cho ${esc(ten)}"
                  ${p.botcakeTat ? 'checked' : ''} ${SUA ? '' : 'disabled'}>
@@ -330,8 +333,10 @@ function veSanPhamGoc(p) {
     return '<span class="text-muted" title="Chạy npm run migrate trên máy chủ">chưa áp migration</span>';
   }
   if (!SPG_CHON.length) {
-    return '<span class="text-muted" title="Chạy ops/bin/goi-y-gop-san-pham.mjs rồi soát">'
-      + 'chưa có sản phẩm gốc nào</span>';
+    // Ngắn: câu cũ «chưa có sản phẩm gốc nào» lặp ba dòng trên MỖI hàng và đẩy cột cuối
+    // ra ngoài khung ở 1440px. Câu đủ nằm ở `title`.
+    return '<span class="text-muted" title="Team chưa có sản phẩm gốc nào — chạy ops/bin/goi-y-gop-san-pham.mjs rồi soát">'
+      + 'Chưa có</span>';
   }
   const dangChon = p.sanPhamGocMa || '';
   return `<select class="cell-input" data-spg="${esc(p.id)}" data-truoc="${esc(dangChon)}">
