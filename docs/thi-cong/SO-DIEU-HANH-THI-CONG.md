@@ -2416,3 +2416,8 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   khi đoán chắc cả hai). Tab Sản phẩm/Kịch bản báo vàng khi kịch bản gõ cứng giá còn khớp, đỏ
   khi lệch bậc giá đang bật. ⚠️ Nợ mới: lượt nhường mà model hỏng ⇒ khách không nhận gì (trước
   đây nhận câu sai ngôn ngữ) — cùng gốc với nợ hạn mức Kimi, người quyết để nguyên.
+- 28/09 · **DEPLOY `cc91084`** (867e3f8 → cc91084, không migration, không thư viện mới). Bản sạch
+  của HEAD: 2.065 ca · 0 đỏ. Ba dịch vụ active · lỗi mới 0 · UI 200 · env đọc từ `/proc`:
+  `PANCAKE_READONLY=1`, `V3_PANCAKE_GUI=0`, `V3_PAGE_XU_LY=` rỗng ở cả ba (van gửi vẫn đóng).
+  `/health` **131 page** (lần trước 133): log nói token Meta «Token app CHAT AI 13/7 (BM DN -
+  Live)» **hết hạn từ 11/09** ⇒ chỉ 1/2 token khỏe. Không do bản này; nợ cần người quyết thay token.
