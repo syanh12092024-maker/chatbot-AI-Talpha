@@ -167,7 +167,12 @@ async function main() {
     datKhoTokenDb(() => docTokenSong(pool));
   }
   const motLuotThoi = process.env.V3_WORKER_MOT_LUOT === "1";
-  const choPhep = dsPageChoPhep();
+  // ⚠️ PHẢI `await` VÀ PHẢI TRUYỀN `pool` (sửa 25/09). Từ 024 hàm này bất đồng bộ và có thể
+  // đọc CSDL. Bản trước gọi kiểu cũ `dsPageChoPhep()`: nhận về một Promise ⇒ `.length` là
+  // `undefined` ⇒ dòng log nói «KHÔNG CÓ page nào» trong khi vòng lặp vẫn chạy page — đo được
+  // trên bản dev khi kéo hội thoại Minty. Và TỆ HƠN: bật cầu dao `V3_GIAO_PAGE_TREN_MAN` thì
+  // hàm gọi `pool.query` trên `undefined` ⇒ lỗi không ai bắt ⇒ tiến trình SẬP lúc khởi động.
+  const choPhep = await dsPageChoPhep(pool);
   console.log(
     `[worker-v3] khởi động · nhịp ${NHIP_MS}ms · trần ${TRAN_MOI_LUOT} tin/lượt · ` +
       `nguồn ${nguonDangMo() ? "MỞ" : "ĐÓNG"} · V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)} · ` +

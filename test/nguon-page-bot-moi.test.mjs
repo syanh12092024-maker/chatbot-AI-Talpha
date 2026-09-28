@@ -110,3 +110,35 @@ test('⑧ `pageThuocBotMoi` đọc cùng một luật với `dsPageBotMoi`', asy
   assert.equal(pageThuocBotMoi({ page_id: '444' }, mo), false);
   assert.equal(pageThuocBotMoi(null, mo), false);
 });
+
+test('⑨ mọi lời gọi hàm danh sách page đều `await` VÀ có truyền `pool`', async () => {
+  // Đo được 25/09 khi kéo hội thoại Minty trên bản dev: dòng khởi động của worker vẫn gọi
+  // kiểu cũ `dsPageChoPhep()` — nhận Promise, log nói «KHÔNG CÓ page nào» trong khi vòng
+  // lặp vẫn chạy page. Và nếu cầu dao mở thì `pool.query` trên `undefined` ném lỗi không ai
+  // bắt ⇒ tiến trình SẬP lúc khởi động. Thước này đọc THẲNG mã nguồn để nó không mọc lại.
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  // `fileURLToPath`, KHÔNG `new URL(...).pathname`: thư mục dự án có dấu cách («AI Chatbot»),
+  // và `pathname` giữ nguyên `%20` ⇒ readdir không tìm thấy thư mục.
+  const goc = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const sai = [];
+  const duyet = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const f = path.join(d, e.name);
+      if (e.isDirectory()) { if (e.name !== 'node_modules') duyet(f); continue; }
+      if (!/\.(m?js)$/.test(e.name)) continue;
+      const dong = fs.readFileSync(f, 'utf8').split('\n');
+      dong.forEach((l, i) => {
+        if (/^\s*(\/\/|\*|\/\*)/.test(l)) return;   // dòng chú thích — trích lời gọi cũ để giải thích
+        const m = l.match(/\b(dsPageChoPhep|dsPageBotMoi)\(([^)]*)\)/);
+        if (!m || /function\s|export const|=>\s*dsPageBotMoi/.test(l)) return;
+        if (!/await\s*\(?[^;]*\b(dsPageChoPhep|dsPageBotMoi)\(/.test(l) || !m[2].trim()) {
+          sai.push(`${path.relative(goc, f)}:${i + 1}  ${l.trim()}`);
+        }
+      });
+    }
+  };
+  duyet(path.join(goc, 'src'));
+  assert.deepEqual(sai, [], 'gọi hàm bất đồng bộ mà không await, hoặc thiếu pool');
+});
