@@ -35,6 +35,28 @@ Lệnh đo: `grep -nE "^## (6|7|9|10)…" docs/v3/01-QUYET-DINH.md` · `grep -cE
 `wc -l` từng `v3/src/ui/<màn>/` · `grep -rln "QUAN_LY\|NGUOI_DUYET" v3/src v3/test` (35) · `grep -ln … src/prompts.js`
 (chỉ `boLuatChung`/`kichBanMay` — hai khối GIỮ) · SQL đếm trên `aicloser_v3` prod qua SSH đọc (script xoá sau khi chạy).
 
+### 2b · Chín màn bị gỡ/gộp có giữ cấu hình gì không (đo 28/09 — người quyết hỏi)
+
+Soát từng màn: đường GHI của nó (route + hàm tiêm, không chỉ `db.them`) và BOT ĐANG CHẠY có đọc chỗ đó không.
+Prod: `V3_RAP_PROMPT_BAT` VẮNG ở cả 3 dịch vụ · `V3_PAGE_XU_LY` rỗng (bot v3 chưa xử page nào).
+
+| Màn | Ghi gì | Bot đang chạy có đọc? | Gỡ được thế nào |
+|---|---|---|---|
+| Việc của tôi (`trang-chu`) | — chỉ đọc | — | gỡ hẳn |
+| So hai bản kịch bản (`hieu-qua`) | — chỉ đọc | — | gỡ hẳn |
+| Đưa sản phẩm lên chạy (`len-chay`) | — chỉ đọc cửa kiểm | — | gộp vào «Bật được chưa» của Page |
+| Đoạn chữ gửi cho AI (`prompt-page`) | — chỉ đọc | — | gộp vào «AI đọc gì» của Page |
+| Câu trả lời sẵn (`lop-0-dong`) | `mau_0_dong` — prod **0 dòng** | KHÔNG — chỉ `src/chat/handler-v3.js` đọc, mà v3 chưa xử page nào | gỡ màn; gỡ khỏi đường bot v3 ở LL8 |
+| Kỹ năng (`ky-nang`) | `ky_nang` bật/tắt · nhóm SP — prod **3 dòng, 0 bật** | KHÔNG — chỉ vào prompt khi `V3_RAP_PROMPT_BAT=1` (vắng); không nằm trong bản chép sang bot cũ | gỡ màn; gỡ khối kỹ năng khỏi `rap-prompt.js` ở LL8 |
+| Gợi ý từ AI (`ai-de-xuat`) | đề xuất → duyệt thì áp vào `bo_luat_chung` — prod 1 bản, 0 đề xuất chờ | gián tiếp (qua luật chung) — hôm nay không có gì chờ | gỡ hẳn |
+| Việc đang chờ (`dispatch`) | nhận · đóng việc (`viec_can_xu_ly`) | — (việc của người) | **chỉ gỡ GIAO DIỆN** — Hộp thư dùng chính hai cửa này |
+| Hội thoại và đơn (`van-hanh`) | **6 cửa ghi thật**: đổi nguồn nhận tin của page (poll/webhook) · lưu sản phẩm (màn Trang một page đang gọi CHÍNH cửa này) · lưu/duyệt/từ chối đơn Messenger · chuyển người / trả bot · đối chiếu tin gửi lỗi. Cùng thư mục: `router-anh.js` (ảnh SP · khối chung — bot đọc bản chép, MN4/MN7) | CÓ — sản phẩm, ảnh, khối chung đi sang bot | **chỉ gỡ GIAO DIỆN, GIỮ mọi đường API**; chuyển từng thao tác sang màn mới TRƯỚC khi gỡ trang |
+
+⚠️ **Sửa lời đo của bản đầu hồ sơ này:** mục 2 lớp 4 từng xếp `van-hanh` (1.514 dòng) vào «màn bị gỡ/gộp» — SAI tầm:
+thư mục đó là cửa cấu hình và thao tác thật. Chỉ trang HTML của nó được gỡ; `router.js` + `router-anh.js` ở lại.
+Kết luận: **không màn nào giữ cấu hình mà bot đang chạy đọc và KHÔNG có nhà mới**; hai màn (`van-hanh`, `dispatch`)
+là cửa thao tác thật ⇒ gỡ sau cùng, sau khi Hộp thư · Page · Cài đặt đã nhận đủ thao tác.
+
 ## 3 · Giá phải trả
 
 - **Gỡ ~9 màn đã xây** (câu trả lời sẵn, kỹ năng, gợi ý AI, so A/B, việc của tôi, hội thoại và đơn…) — mã nằm lại
@@ -64,7 +86,7 @@ Lệnh đo: `grep -nE "^## (6|7|9|10)…" docs/v3/01-QUYET-DINH.md` · `grep -cE
 | LL5 | Số liệu một màn (gộp 5, hai phễu tách luồng) | 🟩 | LL1 |
 | LL6 | Cài đặt một màn nhiều tab (gộp 6) + Model một khung (D) | 🟩 | LL1 |
 | LL7 | Vai 5 → 3 (B): quyền, lược đồ gieo, 35 tệp | 🟨 (quyền) | LL1 |
-| LL8 | Gỡ màn thừa + gỡ kỹ năng / câu trả lời sẵn / tầng nước-SP khỏi ĐƯỜNG BOT (C) — không đụng bộ não, không DROP bảng | 🟨 | LL3 |
+| LL8 | Gỡ màn thừa (GIAO DIỆN; giữ API của `van-hanh` · `dispatch`) + gỡ kỹ năng / câu trả lời sẵn / tầng nước-SP khỏi ĐƯỜNG BOT v3 (C) — không đụng bộ não, không DROP bảng. Điều kiện vào: Hộp thư có duyệt đơn · trả bot · đối chiếu tin lỗi; Page/Cài đặt có đổi nguồn nhận tin | 🟨 | LL2 · LL3 · LL6 |
 | LL9 | Thước: menu · quyền · HK10/HK15 · §10 cho Hộp thư mới | 🟩 | LL1–LL8 |
 
 Cỡ: 9 phiếu. Để so: sóng UI-HT (4 phiếu, cùng loại việc) xong trong một ngày làm việc của dây chuyền này.
