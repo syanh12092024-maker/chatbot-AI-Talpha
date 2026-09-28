@@ -24,6 +24,8 @@ import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 import { motPage, cuaKiemMotPage, danhMucGoc, LoiPageBot } from '../page-bot/kho-page.js';
 import { trangThaiCau, trangThaiCauDaoGiao } from '../page-bot/cong-tac.js';
 import { DIEU_KIEN_TAT_CA } from '../san-sang/kho-san-sang.js';
+import { NHAN_TRUONG } from '../kich-ban/kho-kich-ban.js';
+import { timGiaGoCung } from './gia-kich-ban.js';
 
 // `DUONG_TRANG` và `VAI_VAO_DUOC` khai ở `router.js` — đúng nếp của mọi màn khác, và thước
 // ①b («mọi đường trong menu trỏ tới màn có thật») đọc thẳng chữ trong tệp router.
@@ -219,5 +221,15 @@ export async function noiDungPage(boiCanh, id) {
     sanPhamSua = await Promise.resolve(_docKhoi.sua(bc, sanPham.map((x) => x.id)))
       .catch((e) => ({ loi: String(e?.message || e) }));
   }
-  return { chuaNoi: false, sanPham, kichBan, sanPhamSua };
+  // GIÁ GÕ CỨNG TRONG KỊCH BẢN (28/09) — so với bảng giá ĐANG BẬT, đơn vị lớn. Lấy từ bản
+  // sửa được vì nó đã đổi đơn vị bằng đúng hệ số của cửa tiền (`HE_SO_TE`); không có bản ấy
+  // thì `null` = KHÔNG KIỂM ĐƯỢC, khác hẳn «không có giá nào gõ cứng».
+  let giaGoCung = null;
+  if (Array.isArray(sanPhamSua)) {
+    const bangGia = sanPhamSua.flatMap((x) => (x.offers || [])
+      .filter((g) => g.bat !== false)
+      .map((g) => ({ gia: Number(g.price), tienTe: g.tien_te })));
+    giaGoCung = timGiaGoCung(kichBan && !kichBan.loi ? kichBan.noi_dung_nguoi : null, bangGia, NHAN_TRUONG);
+  }
+  return { chuaNoi: false, sanPham, kichBan, sanPhamSua, giaGoCung };
 }

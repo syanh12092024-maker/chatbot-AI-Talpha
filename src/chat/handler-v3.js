@@ -27,6 +27,7 @@ import { config } from "../config.js";
 import { layModel as layModelMacDinh } from "./model.js";
 import { ghiSoAi, LOAI, KHONG_GOI_MODEL } from "./so-ai.js";
 import { aiDuocTraLoi, dungState, ganTuState } from "./trang-thai.js";
+import { ngonNguLech } from "./ngon-ngu.js";
 import { suaHoiThoai, docHoiThoaiTheoPageText } from "./kho.js";
 import { lopTuKhoa, LANE as LANE_TU_KHOA } from "./lop-tu-khoa.js";
 import { rapKb as rapKbMacDinh } from "./rap-prompt.js";
@@ -200,6 +201,8 @@ export const KET_QUA = Object.freeze({
 // và sửa ca L2-M2 cho khớp — một việc CÓ CHỦ ĐÍCH, không phải hệ quả phụ.
 //
 // Tắt hẳn bằng `V3_LAN_CHOT_MODEL=` (rỗng).
+// NGÔN NGỮ (28/09): câu mẫu lệch ngôn ngữ với khách thì NHƯỜNG cho model — cùng cửa nhường
+// với hai luật trên. Lý do và luật đoán ở `ngon-ngu.js` đầu tệp.
 const LAN_CHOT_MAC_DINH = "muon_dat,tpl_howto";
 export function lanChotNhuongModel() {
   const v = docEnvTuyetDoi("V3_LAN_CHOT_MODEL");
@@ -536,6 +539,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     // Lượt chốt ⇒ coi như lớp từ khoá KHÔNG nhận, tin đi tiếp xuống Fast Lane rồi model.
     const tk = (laLanChot(tkTho.rule) || shipNhuongModel(tkTho.rule, text))
       ? { handled: false, rule: tkTho.rule, reply: "", lyDo: `nhuong_model:${tkTho.rule}` }
+      : (tkTho.handled && ngonNguLech(text, tkTho.reply))
+      ? { handled: false, rule: tkTho.rule, reply: "", lyDo: `nhuong_model:ngon_ngu:${tkTho.rule}` }
       : tkTho;
     if (tk.handled && !state.fastLanesUsed.has(`keyword:${tk.rule}`)) {
       const cua = quaCuaRa(tk.reply, {
@@ -597,6 +602,10 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     // khi lượt này thực tế vẫn đi lên model — số liệu tự dối.
     const fl = (laLanChot(flTho.lane) || shipNhuongModel(flTho.lane, text))
       ? { handled: false, lane: flTho.lane, reason: `nhuong_model:${flTho.lane}` }
+      // Câu mẫu KHÁC ngôn ngữ khách ⇒ nhường, để model trả lời bằng đúng ngôn ngữ khách dùng.
+      // Lane IM LẶNG (không có `reply`) không bị đụng tới: không có chữ thì không có gì lệch.
+      : (flTho.handled && flTho.reply && ngonNguLech(text, flTho.reply))
+      ? { handled: false, lane: flTho.lane, reason: `nhuong_model:ngon_ngu:${flTho.lane}` }
       : flTho;
     noteFastLane(fl);
     if (fl.handled) {

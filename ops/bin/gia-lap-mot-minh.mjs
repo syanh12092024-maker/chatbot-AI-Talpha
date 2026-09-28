@@ -56,9 +56,16 @@ const pool = new pg.Pool({ connectionString: env.DATABASE_URL_V3, max: 6 });
 const poolGui = new pg.Pool({ connectionString: env.DATABASE_URL_V3, max: 2 });
 const { rows: [trang] } = await pool.query("SELECT id, team_id, ten FROM page WHERE page_id=$1", [pageIdFb]);
 if (!trang) { console.error(`Không có page ${pageIdFb}.`); process.exit(1); }
+// ĐỌC PANCAKE ĐÚNG NHƯ BOT (sửa 28/09). Bản trước lấy token ĐẦU TIÊN của kho CSDL rồi gọi
+// thẳng. Đo 28/09 trên bản dev: kho còn 1 token sống và token ấy «Không có quyền hạn trên
+// trang này» với Minty KSA ⇒ công cụ thấy 0 lượt khách, trong khi chính worker cùng máy vẫn
+// đọc được page ấy (nó tự chuyển sang token #5). Công cụ đo mà mù chỗ bot không mù thì đo
+// sai. Nay đi qua `pkGetConversations`/`pkGetMessages` của `src/pancake.js`: cùng danh sách
+// token (cấu hình máy + kho CSDL), cùng thứ tự, cùng lối tự chuyển khi dính lỗi quyền.
 const { docTokenSong } = await import("../../src/token-pancake.js");
-const [tok] = await docTokenSong(pool);
-if (!tok) { console.error("Không có token Pancake nào đang bật."); process.exit(1); }
+const pk = await import("../../src/pancake.js");
+pk.datKhoTokenDb(() => docTokenSong(pool));
+await pk.lamMoiTokenDb();
 
 const nghi = (ms) => new Promise((r) => setTimeout(r, ms));
 async function GET(u, nhan = "") {
@@ -89,13 +96,17 @@ function benNao(m) {
 // sách). `limit=` thì cuốn thật — 100 hội thoại duy nhất. Giữ cả khử-trùng theo id làm
 // lưới an toàn, vì đây là hành vi không có trong tài liệu.
 async function tuPancake() {
+  // ⚠️ Danh sách qua cửa của bot trả một trang mặc định (~60 hội thoại), không phải 100 như
+  //    `limit=` trước đây. Đủ cho `--so` tới ~30; cần nhiều hơn thì gom sẵn rồi dùng `--kho`.
   const theoId = new Map();
-  const jc = await GET(`https://pages.fm/api/v1/pages/${pageIdFb}/conversations?access_token=${tok}&limit=${Math.max(60, soLuot * 2)}`, "danh sách");
-  for (const c of (jc.conversations || [])) if (!theoId.has(c.id)) theoId.set(c.id, c);
+  for (const c of await pk.pkGetConversations(pageIdFb)) if (!theoId.has(c.id)) theoId.set(c.id, c);
+  if (!theoId.size) {
+    console.error(`⚠️ Không đọc được hội thoại nào của page ${pageIdFb} — không token nào có quyền, `
+      + "hoặc page không có hội thoại. Xem màn Kết nối.");
+  }
   const ra = [];
   for (const c of [...theoId.values()].filter((x) => x.from_psid && (x.customers || [])[0]?.id && String(x.updated_at || "") >= mocCat)) {
-    const jm = await GET(`https://pages.fm/api/v1/pages/${pageIdFb}/conversations/${c.id}/messages?access_token=${tok}&customer_id=${c.customers[0].id}`, c.from?.name || c.id);
-    ra.push({ c, ds: (jm.messages || []) });
+    ra.push({ c, ds: await pk.pkGetMessages(pageIdFb, c.id, c.customers[0].id) });
   }
   return ra;
 }

@@ -323,6 +323,35 @@ async function veNoiDung() {
   await veKichBan(oKb);
 }
 
+/* ── GIÁ GÕ CỨNG TRONG KỊCH BẢN — hiện ở CẢ HAI tab (28/09) ─────────────────────────
+ *
+ * Câu bot trả lời khi khách hỏi giá có thể là chữ gõ tay trong kịch bản, không lấy từ bảng
+ * giá. Sửa giá ở tab Sản phẩm mà quên câu ấy ⇒ bot báo giá cũ, đơn tính giá mới. Nên cả hai
+ * tab đều phải thấy: người sửa giá ở đâu cũng được nhắc chỗ còn lại.
+ */
+function veGiaGoCung() {
+  const ds = daDocNoiDung?.giaGoCung;
+  if (!Array.isArray(ds) || !ds.length) return '';
+  const lech = ds.filter((x) => !x.khop);
+  const dong = (x) => `<li>${esc(x.gia)} ${esc(x.tienTe)} — ô «${esc(x.nhanO)}»${x.khop ? '' : ' · <b>KHÔNG có trong bảng giá</b>'}</li>`;
+  const nut = button('Sửa ở tab Kịch bản', { size: 'sm', data: { sangtab: 'kich-ban' } });
+  return `<div class="panel">${lech.length
+    ? canhBao({ level: 'error',
+        title: `Bot đang báo cho khách ${lech.length} giá KHÔNG có trong bảng giá`,
+        body: 'Giá này gõ tay trong kịch bản. Khách sẽ nghe giá đó, còn đơn tạo ra tính theo bảng giá.' })
+    : canhBao({ level: 'warning',
+        title: 'Kịch bản đang gõ cứng giá — hôm nay còn khớp bảng giá',
+        body: 'Đổi giá ở tab Sản phẩm thì phải sửa cả câu này, không thì bot vẫn báo giá cũ.' })}
+    <ul role="list">${ds.map(dong).join('')}</ul>
+    <p class="duoi-2">${nut}</p></div>`;
+}
+
+function noiNutSangTab(o) {
+  o.querySelectorAll('[data-sangtab]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelector(`[data-tab="${b.dataset.sangtab}"]`)?.click();
+  }));
+}
+
 /* ── SẢN PHẨM & GIÁ — SỬA ĐƯỢC NGAY TẠI ĐÂY ──────────────────────────────────────────
  *
  * ⚠️ ĐI ĐÚNG CỬA GHI ĐÃ CÓ: `POST /api/van-hanh/products/:id`. Không dựng cửa thứ hai cho
@@ -379,7 +408,7 @@ async function veSanPham(o) {
   const thieuBan = cuaBot.filter((x) => !SP.some((y) => String(y.id) === String(x.id)))
     .map((x) => x.ten || x.ma || String(x.id));
 
-  o.innerHTML = SP.map((x, i) => `
+  o.innerHTML = veGiaGoCung() + SP.map((x, i) => `
     <div class="panel" data-sp="${i}">
       <div class="setting-row">
         <div><label for="sp-ten-${i}"><b>Tên</b></label><div class="meta">${esc(x.ma || '')}</div></div>
@@ -417,6 +446,7 @@ async function veSanPham(o) {
       Sửa ở màn «Hội thoại và đơn».</p></div>`);
   }
   o.querySelectorAll('[data-luusp]').forEach((b) => b.addEventListener('click', () => luuSanPham(Number(b.dataset.luusp), o)));
+  noiNutSangTab(o);
 }
 
 async function luuSanPham(i, o) {
@@ -467,7 +497,7 @@ async function veKichBan(o) {
   }
   const goc = KB.live?.nguoi || (KB.ban || [])[0]?.nguoi || {};
   const truong = KB.truong || [];
-  o.innerHTML = `<div class="panel">
+  o.innerHTML = veGiaGoCung().replace(/<p class="duoi-2"><a[^>]*data-sangtab[\s\S]*?<\/p>|<p class="duoi-2"><button[^>]*data-sangtab[\s\S]*?<\/p>/, '') + `<div class="panel">
     <div><b>${KB.live ? `Đang chạy: bản ${esc(String(KB.live.phienBan ?? KB.live.phien_ban ?? '?'))}` : 'Page này CHƯA có bản nào đang chạy'}</b></div>
     ${truong.map((t) => `
       <div class="setting-row">

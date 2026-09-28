@@ -2411,3 +2411,8 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   (10900/15900), nhưng sửa giá ở tab «Sản phẩm & giá» mới thì bot VẪN báo giá cũ. Tab mới làm
   việc sửa giá dễ hơn, tức làm rủi ro trôi giá LỚN hơn — nợ của chính GD3.
   Kèm: vá lỗi worker gọi `dsPageChoPhep()` không `await` (`c4c2a4b`, chưa deploy).
+- 28/09 · **TRẢ LỜI ĐÚNG NGÔN NGỮ KHÁCH + CẢNH BÁO GIÁ GÕ CỨNG** (phiếu `nhat-ky/phieu-NGON-NGU-
+  GIA-GO-CUNG.md`). Lớp 0 đồng nhường cho model khi câu mẫu lệch ngôn ngữ khách (bảo thủ: chỉ
+  khi đoán chắc cả hai). Tab Sản phẩm/Kịch bản báo vàng khi kịch bản gõ cứng giá còn khớp, đỏ
+  khi lệch bậc giá đang bật. ⚠️ Nợ mới: lượt nhường mà model hỏng ⇒ khách không nhận gì (trước
+  đây nhận câu sai ngôn ngữ) — cùng gốc với nợ hạn mức Kimi, người quyết để nguyên.

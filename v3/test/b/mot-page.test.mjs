@@ -265,3 +265,42 @@ test('⑨b thiếu bộ đọc bản sửa ⇒ `sanPhamSua` null, và tab phải
   assert.equal(d.sanPham.length, 1, 'vẫn phải biết bot đang dùng sản phẩm nào');
   mp.datDocKhoi(null);
 });
+
+/* ═══════════ ⑩ GIÁ GÕ CỨNG TRONG KỊCH BẢN (28/09) ═══════════
+ *
+ * Giả lập Minty KSA: câu trả lời hỏi-giá là «109 SAR · 159 SAR» gõ tay trong kịch bản. GD3
+ * làm việc sửa giá ở tab dễ đi ⇒ sửa bảng giá mà quên câu ấy là bot báo một giá, đơn tính giá khác.
+ */
+
+const khoiMinty = (offers) => ({
+  sanPham: async () => [{ id: '1' }],
+  kichBan: async () => ({ noi_dung_nguoi: { fastLanePrice: 'Buy 1 Get 1 – 109 SAR lamang · Buy 2 Get 2 – 159 SAR' } }),
+  sua: async () => [{ id: '1', version: '1', offers }],
+});
+
+test('⑩ bảng giá đang BẬT khớp câu mẫu ⇒ vẫn liệt kê (để nhắc), và cả hai đều khớp', async () => {
+  dungKho({ sanSang: sanSangGia([]) });
+  mp.datDocKhoi(khoiMinty([{ price: 109, tien_te: 'SAR' }, { price: 159, tien_te: 'SAR' }]));
+  const d = await mp.noiDungPage(bcQt(), 'p1');
+  assert.deepEqual(d.giaGoCung.map((x) => [x.gia, x.khop]), [[109, true], [159, true]]);
+  mp.datDocKhoi(null);
+});
+
+test('⑩b bậc giá ĐANG TẮT không được tính là «có trong bảng giá»', async () => {
+  // Bot không chào bậc tắt; câu mẫu vẫn báo 109 ⇒ đó là giá khách KHÔNG mua được.
+  dungKho({ sanSang: sanSangGia([]) });
+  mp.datDocKhoi(khoiMinty([{ price: 109, tien_te: 'SAR', bat: false }, { price: 159, tien_te: 'SAR' }]));
+  const d = await mp.noiDungPage(bcQt(), 'p1');
+  assert.deepEqual(d.giaGoCung.filter((x) => !x.khop).map((x) => x.gia), [109]);
+  mp.datDocKhoi(null);
+});
+
+test('⑩c không có bản sửa được ⇒ `giaGoCung` null (KHÔNG KIỂM ĐƯỢC), không phải []', async () => {
+  dungKho({ sanSang: sanSangGia([]) });
+  const k = khoiMinty([]);
+  delete k.sua;
+  mp.datDocKhoi(k);
+  const d = await mp.noiDungPage(bcQt(), 'p1');
+  assert.equal(d.giaGoCung, null, '[] sẽ đọc thành «không có giá gõ cứng» — một câu sai');
+  mp.datDocKhoi(null);
+});
