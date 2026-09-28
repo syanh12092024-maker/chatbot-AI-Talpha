@@ -301,6 +301,8 @@ const bao = dungPhanB(app, {
   docTinPancake: async (pageId, convId, custId) =>
     (await import(`${GOC}/src/pancake.js`)).pkDocTin(pageId, convId, custId),
   docSoAiBotCu: () => (_soAi ? _soAi.readLog() : []),   // không nạp được ⇒ màn nói «chưa có mã khách»
+  // UI-HT2: danh sách hội thoại có LIMIT — cổng không có LIMIT, kéo cả bảng = 19,6 MB (đo 28/09).
+  docHoiThoaiSql: (await import('./src/ui/ban-hoi-thoai/index.js')).taoDocHoiThoaiSql(pool),
   docSanPhamSua,
   canhBao: canhBaoLopModel,
   express,

@@ -17,6 +17,7 @@ import { VAI } from '../../auth/boi-canh.js';
 
 import * as vanHanh from '../van-hanh/index.js';
 import * as dispatch from '../dispatch/index.js';
+import * as banHoiThoai from '../ban-hoi-thoai/index.js';
 import * as team from '../team/index.js';
 import * as pageBot from '../page-bot/index.js';
 import * as motPage from '../mot-page/index.js';
@@ -161,6 +162,7 @@ export const MAN = Object.freeze([
 
   // ① HÔM NAY — mở mỗi sáng. Mục DUY NHẤT vai `sale` thấy (01 §10).
   dat(trangChu, 'Việc của tôi', 'hom-nay', 'Lọc theo vai bạn, gấp lên trước'),
+  dat(banHoiThoai, 'Bàn hội thoại', 'hom-nay', 'Hội thoại cần người, đọc chat ngay tại chỗ'),
   dat(dispatch, 'Việc đang chờ', 'hom-nay', 'Khách bot đã giao lại, có đồng hồ đếm ngược'),
   dat(vanHanh, 'Hội thoại và đơn', 'hom-nay', 'Bot nói gì với khách, và đơn chờ duyệt'),
 

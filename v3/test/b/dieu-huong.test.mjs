@@ -53,8 +53,11 @@ test('①c · không đường nào trùng nhau', () => {
 
 const ten = (vai) => mh.menuCua([vai]).flatMap((n) => n.man.map((m) => m.ten));
 
-test('②a · SALE chỉ thấy Bảng điều phối — §9', () => {
-  assert.deepEqual(ten(VAI.SALE), ['Việc đang chờ']);
+test('②a · SALE chỉ thấy màn làm việc của sale — §9 · §10 (CR-28-09)', () => {
+  // CR-28-09: §10 thành bàn hội thoại chỉ đọc. Giai đoạn chuyển tiếp «Việc đang chờ» còn
+  // giữ (đường lùi của CR) — gỡ nó thì sửa đúng dòng này. Điều canh GIỮ NGUYÊN: sale không
+  // thấy màn nào ngoài chỗ làm việc của sale.
+  assert.deepEqual(ten(VAI.SALE), ['Bàn hội thoại', 'Việc đang chờ']);
 });
 
 test('②b · MARKETER không thấy màn hạ tầng', () => {
@@ -173,7 +176,8 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   // GD2 · 25/09: 19 → 17 («Bắt đầu» và «Page còn thiếu gì» ra khỏi menu, cả hai chuyển hướng
   // về danh sách page). GD3 cùng ngày: +1 màn «Cài đặt team» ⇒ 18.
   // 28/09: 18 → 16 — «Sản phẩm & kho» và «Đoạn chữ gửi cho AI» mở TỪ MÀN KHÁC (ca ④g).
-  assert.equal(hienRa, 16, `thanh bên đang vẽ ${hienRa} màn`);
+  // 28/09 · CR-28-09: +1 «Bàn hội thoại» ⇒ 17.
+  assert.equal(hienRa, 17, `thanh bên đang vẽ ${hienRa} màn`);
   assert.equal(an, 10, 'bảy màn chưa dùng được + một màn CẦN ID + hai màn MỞ TỪ MÀN KHÁC phải '
     + 'ẩn khỏi thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
@@ -191,11 +195,11 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   assert.equal(itDung.length, 9, `đang có ${itDung.length} màn ít dùng`);
 });
 
-test('④d · SALE chỉ thấy MỘT mục, và mục đó chỉ có một màn — §10', () => {
+test('④d · SALE chỉ thấy MỘT mục, và mục đó chỉ có màn làm việc của sale — §10 (CR-28-09)', () => {
   const menu = mh.menuCua([VAI.SALE]);
   assert.equal(menu.length, 1, 'sale không được thấy mục nào khác');
   assert.equal(menu[0].ma, 'hom-nay');
-  assert.deepEqual(menu[0].man.map((m) => m.ten), ['Việc đang chờ']);
+  assert.deepEqual(menu[0].man.map((m) => m.ten), ['Bàn hội thoại', 'Việc đang chờ']);
 });
 
 test('④e · `mucCuaDuong` chỉ đúng mục đang đứng — menu phải bung được đúng chỗ', () => {

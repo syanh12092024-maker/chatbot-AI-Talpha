@@ -128,6 +128,10 @@ import {
   datChanDangNhap as datChanDangNhapTrangChu, datChanVai as datChanVaiTrangChu, taoRouterTrangChu,
 } from './ui/trang-chu/index.js';
 import {
+  datChanDangNhap as datChanDangNhapBanHT, datChanVai as datChanVaiBanHT, taoRouterBanHoiThoai,
+  datDocHoiThoaiSql,
+} from './ui/ban-hoi-thoai/index.js';
+import {
   datTaoTruyVan as datTruyVanSanSang, datDocSanSang,
   datChanDangNhap as datChanDangNhapSanSang, datChanVai as datChanVaiSanSang, taoRouterSanSang,
 } from './ui/san-sang/index.js';
@@ -215,6 +219,9 @@ import {
  *                                                              Thiếu thì bàn hội thoại NÓI «chưa nối», không hiện khung chat giả.
  * @param {()=>Array<{conv?:string,cust?:string}>} [phuThuoc.docSoAiBotCu] UI-HT1: đọc Sổ AI của bot cũ (`src/ai-log.js#readLog`)
  *                                                              để tra mã khách Pancake — 92,5% hội thoại chỉ có mã ở đây.
+ * @param {Function} [phuThuoc.docHoiThoaiSql]                UI-HT2: danh sách hội thoại bằng SQL có LIMIT
+ *                                                              (`taoDocHoiThoaiSql(pool)`). Thiếu thì lùi về cổng —
+ *                                                              kéo CẢ bảng `hoi_thoai` mỗi lần bấm tab (19,6 MB đo 28/09).
  * @param {(bc:object)=>Promise<object>} [phuThuoc.docNhipMayBot] số đo hàng đợi tin của team
  *                                                              (`src/queue/kho.js#nhipMayBot`). Thiếu thì đèn «Máy
  *                                                              chạy bot» XÁM — nói chưa đo được, KHÔNG nói đang ổn.
@@ -226,7 +233,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan,
   chayNapLai, vanHanh,
-  ghiSoAi, canhBao, docNhipMayBot, docSanPhamSua, docTinPancake, docSoAiBotCu, express } = {}) {
+  ghiSoAi, canhBao, docNhipMayBot, docSanPhamSua, docTinPancake, docSoAiBotCu, docHoiThoaiSql, express } = {}) {
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('dungPhanB: tham số đầu phải là một ứng dụng Express.');
   }
@@ -333,6 +340,13 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   } else {
     datTraMaKhachSoAi(null);
     thieu.push('docSoAiBotCu — chỉ hội thoại đã qua hàng đợi v3 mới có mã khách Pancake để đọc chat');
+  }
+  if (typeof docHoiThoaiSql === 'function') {
+    datDocHoiThoaiSql(docHoiThoaiSql);
+    daNoi.push('danh sách hội thoại bằng SQL có LIMIT → bàn hội thoại');
+  } else {
+    datDocHoiThoaiSql(null);
+    thieu.push('docHoiThoaiSql — bàn hội thoại lùi về cổng: kéo CẢ bảng hội thoại mỗi lần bấm tab «Bot đang xử» / «Tất cả»');
   }
   if (typeof docNhipMayBot === 'function') {
     datDocNhip(docNhipMayBot);
@@ -536,6 +550,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datChanDangNhapBatDau(batBuocDangNhap);
   datChanVaiBatDau(batBuocVaiHTTP);
   datChanDangNhapTrangChu(batBuocDangNhap);
+  datChanDangNhapBanHT(batBuocDangNhap);
+  datChanVaiBanHT(batBuocVaiHTTP);
   datChanVaiTrangChu(batBuocVaiHTTP);
   datChanDangNhapSanPham(batBuocDangNhap);
   datChanVaiSanPham(batBuocVaiHTTP);
@@ -595,6 +611,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   app.use(taoRouterSanSang());    //   /san-sang · /api/san-sang
   app.use(taoRouterBatDau());     //   /bat-dau · /api/bat-dau
   app.use(taoRouterTrangChu());   //   /trang-chu · /api/trang-chu
+  app.use(taoRouterBanHoiThoai()); //  /ban-hoi-thoai · /api/ban-hoi-thoai (UI-HT2)
   app.use(taoRouterSanPham());    //   /san-pham · /api/san-pham/*
   app.use(taoRouterAnh());        //   /thu-vien-anh · /api/thu-vien-anh
   app.use(taoRouterLenChay());    //   /len-chay · /api/len-chay/*

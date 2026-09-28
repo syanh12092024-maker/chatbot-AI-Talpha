@@ -21,7 +21,7 @@
 // bịa trên bảng việc). Dùng chung cổng team và công thức mã hội thoại của điều phối.
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 import { congTruyVan, LoiDieuPhoi } from '../dispatch/kho-viec.js';
-import { convIdCua } from '../dispatch/lien-ket.js';
+import { convIdCua, lienKetPancake } from '../dispatch/lien-ket.js';
 
 /** Bản nhớ mỗi hội thoại: 20 sale mở cùng một hội thoại không thành 20 lượt gọi Pancake. */
 export const NHO_HOI_THOAI_MS = 60_000;
@@ -132,7 +132,8 @@ export async function docHoiThoai(boiCanh, hoiThoaiId) {
   if (!h) return null;
   const p = h.page_id != null ? await db.mot('page', { id: String(h.page_id) }) : null;
   const ma = convIdCua(h, p);
-  const dau = { hoiThoaiId: id, maHoiThoai: ma };
+  // `pancake`: nút «Trả lời trên Pancake» cho MỌI hội thoại, kể cả khi không có việc mở.
+  const dau = { hoiThoaiId: id, maHoiThoai: ma, pancake: lienKetPancake(p?.page_id, ma) };
   if (!ma) {
     return { ...dau, nguonMa: null, lichSu: [], docLuc: _dongHo(),
       lichSuLoi: 'Hội thoại thiếu page hoặc mã khách Facebook — không dựng được mã hội thoại Pancake.' };

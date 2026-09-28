@@ -62,10 +62,12 @@ test('lưới quét · dò được MỌI màn, không sót màn nào', () => {
   }
 });
 
-test('§9 · SALE chỉ thấy BẢNG ĐIỀU PHỐI, không màn nào khác', () => {
-  // `01-QUYET-DINH.md` §10: «Sale không làm việc trên hệ thống này». Một màn quản trị lỡ cho
-  // sale vào là cho họ nhìn thấy cấu hình, khoá, và nhật ký của cả team.
-  const lot = TEN_MAN.filter((t) => t !== 'dispatch' && MAN[t].vao.includes(VAI.SALE));
+test('§9 · SALE chỉ vào được chỗ làm việc của sale (điều phối · bàn hội thoại), không màn nào khác', () => {
+  // `01-QUYET-DINH.md` §10 (CR-28-09): màn sale là bàn hội thoại CHỈ ĐỌC; bảng điều phối còn
+  // trong giai đoạn chuyển tiếp. Một màn quản trị lỡ cho sale vào là cho họ nhìn thấy cấu
+  // hình, khoá, và nhật ký của cả team.
+  const MAN_SALE = new Set(['dispatch', 'ban-hoi-thoai']);
+  const lot = TEN_MAN.filter((t) => !MAN_SALE.has(t) && MAN[t].vao.includes(VAI.SALE));
   assert.deepEqual(lot, [], `sale lọt vào ${lot.length} màn ngoài bảng điều phối: ${lot.join(', ')}`);
   assert.ok(MAN.dispatch.vao.includes(VAI.SALE), 'và sale PHẢI vào được bảng điều phối');
 });

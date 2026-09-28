@@ -14,7 +14,7 @@ const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
 async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
-  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu } = {}) {
+  dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -41,7 +41,7 @@ async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNo
     taoTruyVan,
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
     ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
-    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, express,
+    dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -178,6 +178,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
     // UI-HT1 (CR-28-09): bàn hội thoại đọc Pancake + tra mã khách từ Sổ AI bot cũ.
     docTinPancake: async () => ({ ok: true, messages: [] }),
     docSoAiBotCu: () => [],
+    docHoiThoaiSql: async () => [],   // UI-HT2: danh sách có LIMIT
     ghiKetNoiPos: {
       them: async () => ({}), sua: async () => ({}),
       batTat: async () => ({}), bo: async () => ({}),

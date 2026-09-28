@@ -750,6 +750,80 @@
   /* Dòng tóm tắt dưới tiêu đề mang tông khi có việc quá hạn — thay cho một hộp báo động. */
   body > header > .sub[data-tone="danger"] { color: var(--danger); font-weight: var(--weight-medium); }
 
+  /* ─── BÀN HỘI THOẠI (UI-HT2 · CR-28-09) — ba cột: danh sách · khung chat · bối cảnh ─────────
+     Màn làm việc chiếm trọn chiều cao dưới đầu trang; mỗi cột tự cuộn. Chỉ đọc: không ô soạn.
+     Khổ hẹp: một cột một lúc (`data-xem` trên khung). */
+  body > main:has(> .ban-ht) { max-width: none; padding: 0; }
+  .ban-ht { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr) minmax(0, 300px);
+            height: calc(100dvh - var(--topbar-height) - 84px); min-height: 480px;
+            border-top: 1px solid var(--border-default); background: var(--surface); }
+  .ban-ht > * { min-height: 0; min-width: 0; }
+  .ban-ht-ds { display: flex; flex-direction: column; border-right: 1px solid var(--border-default); }
+  .ban-ht-ds > .tabs { padding: 0 var(--space-4); flex: none; }
+  .ban-ht-tim { padding: var(--space-3) var(--space-4) var(--space-2); flex: none; }
+  .ban-ht-ghi { padding: 0 var(--space-4) var(--space-2); font-size: var(--text-xs); line-height: var(--lh-xs);
+                color: var(--text-muted); flex: none; }
+  .ban-ht-ds ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; overscroll-behavior: contain; }
+  .ht-dong { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--space-3);
+             padding: 10px var(--space-4); border-bottom: 1px solid var(--border-subtle); cursor: pointer;
+             position: relative; transition: background-color var(--duration-fast) var(--ease); }
+  .ht-dong:hover { background: var(--surface-hover); }
+  .ht-dong[aria-selected="true"] { background: var(--surface-selected); box-shadow: inset var(--stripe) 0 0 var(--primary); }
+  .ht-ten { font-weight: var(--weight-semibold); font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ht-luc { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-align: right; }
+  .ht-luc[data-tone="danger"] { color: var(--danger); font-weight: var(--weight-semibold); }
+  .ht-luc[data-tone="warning"] { color: var(--warning); font-weight: var(--weight-semibold); }
+  .ht-phu { grid-column: 1 / -1; font-size: var(--text-sm); color: var(--text-secondary);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ht-meta { grid-column: 1 / -1; display: flex; gap: var(--space-2); align-items: center; min-width: 0;
+             font-size: var(--text-xs); color: var(--text-muted); }
+  .ht-meta > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .ban-ht-chat { display: flex; flex-direction: column; background: var(--app-bg); }
+  .chat-dau { display: flex; align-items: center; gap: var(--space-3); min-height: 60px; flex: none;
+              padding: var(--space-2) var(--space-5); background: var(--surface); border-bottom: 1px solid var(--border-default); }
+  .chat-dau h2 { font-size: var(--text-md); line-height: var(--lh-md); }
+  .chat-dau .phu { font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--text-muted); }
+  .chat-than { flex: 1; overflow-y: auto; padding: var(--space-5) clamp(var(--space-4), 4vw, var(--space-12));
+               display: flex; flex-direction: column; gap: var(--space-2); overscroll-behavior: contain; }
+  .tin { max-width: min(560px, 80%); display: flex; flex-direction: column; gap: 2px; }
+  .tin-bong { padding: var(--space-2) var(--space-3); border-radius: 12px; font-size: var(--text-md);
+              line-height: var(--lh-md); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .tin-luc { font-family: var(--font-mono); font-size: var(--text-2xs); line-height: var(--lh-2xs); color: var(--text-muted); }
+  .tin[data-ben="khach"] { align-self: flex-start; }
+  .tin[data-ben="khach"] .tin-bong { background: var(--surface); border: 1px solid var(--border-default); border-bottom-left-radius: var(--radius-sm); }
+  .tin[data-ben="page"] { align-self: flex-end; align-items: flex-end; }
+  .tin[data-ben="page"] .tin-bong { background: var(--primary-subtle); border: 1px solid var(--primary-border); border-bottom-right-radius: var(--radius-sm); }
+  .chat-chan { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); flex: none;
+               padding: var(--space-3) var(--space-5); background: var(--surface); border-top: 1px solid var(--border-default); }
+  .chat-chan .text-muted { margin-left: auto; font-size: var(--text-xs); }
+
+  .ban-ht-bc { overflow-y: auto; border-left: 1px solid var(--border-default); overscroll-behavior: contain; }
+  .bc-khoi { padding: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
+  .bc-khoi > h3 { margin-bottom: var(--space-2); }
+  .bc-dl { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--space-1) var(--space-3);
+           margin: 0; font-size: var(--text-sm); line-height: var(--lh-sm); }
+  .bc-dl dt { color: var(--text-muted); }
+  .bc-dl dd { margin: 0; overflow-wrap: anywhere; }
+  .ban-ht .lui, .ban-ht .nut-bc, .ban-ht-bc .dong-bc { display: none; }
+  /* ≤1180px: cột bối cảnh thành NGĂN PHỦ mở bằng nút «Khách & đóng việc» — ẩn hẳn là sale trên máy
+     tính bảng / điện thoại mất đường nhận và đóng việc (bắt được lúc soát 28/09). */
+  @media (max-width: 1180px) {
+    .ban-ht { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); }
+    .ban-ht .nut-bc { display: inline-flex; }
+    .ban-ht-bc { display: none; position: fixed; z-index: 9000; top: var(--topbar-height); right: 0; bottom: 0;
+                 width: min(360px, 100vw); background: var(--surface); box-shadow: var(--shadow-overlay); }
+    .ban-ht[data-bc="mo"] .ban-ht-bc { display: block; }
+    .ban-ht-bc .dong-bc { display: flex; justify-content: flex-end; padding: var(--space-2) var(--space-3) 0; }
+  }
+  @media (max-width: 760px) {
+    .ban-ht { grid-template-columns: minmax(0, 1fr); height: calc(100dvh - var(--topbar-height) - 72px); }
+    .ban-ht[data-xem="chat"] .ban-ht-ds { display: none; }
+    .ban-ht:not([data-xem="chat"]) .ban-ht-chat { display: none; }
+    .ban-ht .lui { display: inline-flex; }
+    .tin { max-width: 88%; }
+  }
+
   /* Bảng có thanh lọc dính liền phía trên — một đối tượng, không hai thẻ rời (mục Z). */
   .table-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
                    min-height: 48px; padding: var(--space-2) var(--space-3);
