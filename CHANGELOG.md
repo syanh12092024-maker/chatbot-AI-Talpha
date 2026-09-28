@@ -19,6 +19,28 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 28/09/2026 — một nguồn cho sản phẩm · giá · ảnh · kịch bản: sửa ở đâu, bot chạy đúng thế (CR-28-09b)
+
+Trước lượt này bot bán theo một tệp mà không màn nào sửa được, còn màn v3 sửa vào một chỗ bot
+không đọc. Nay cơ sở dữ liệu v3 là chỗ ghi DUY NHẤT; mỗi lượt lưu hoặc tới bot ngay, hoặc báo lỗi.
+
+- **Trang của mỗi page có tab «Bot trả lời thế nào»** (`b0b1282`): quy tắc chung → kịch bản riêng
+  → sản phẩm, giá, ảnh, xếp đúng thứ tự AI đọc; kèm câu trả lời sẵn và đoạn chữ thật gửi AI.
+- 🔴 **Kịch bản lưu là chạy** (`b0b1282`): bỏ bước «lưu nháp → người khác đưa lên chạy», đúng quyết
+  định §9 đã ký. Bot không nhận thì màn nói «CHƯA chạy» và giữ chữ vừa gõ.
+- 🔴 **Sửa sản phẩm, tên bậc giá, ảnh ngay trong tab** (`0bd772a`, `9e175ec`): lưu là bot nhận trong
+  cùng lượt, đọc lại để chắc; hỏng thì không lưu. Tên bậc giá khách đọc («Buy 1 Get 1 FREE…»)
+  và nhãn ảnh giữ nguyên văn. Ảnh tải lên, dán link, đổi nhãn, xếp, bỏ.
+- **Ba màn Sản phẩm & kho · Ảnh gửi khách · Đưa lên chạy đọc cơ sở dữ liệu** (`9e175ec`).
+- 🔴 **Sheet chỉ còn là danh bạ page** — cờ `V3_SHEET_CHI_DANH_BA` (`66cbc7c`): bỏ ba khối Chính
+  sách/FAQ/Phản đối mẫu Philippines khỏi prompt mọi page (người quyết chọn để trống).
+- **43 ảnh đang chết sống lại** khi đổi `PUBLIC_URL` sang cổng 3102 và đẩy lại bản chép (`66cbc7c`).
+- Lược đồ **025** chỉ THÊM (`b8d6a0f`): bảng ảnh, tên bậc giá, phân loại. Nạp một lượt 77 page từ
+  `kb-overrides.json`, chứng minh khứ hồi 77/77 trước khi ghi (`f28df74`).
+- Bot cũ thôi báo «đã lưu» khi ghi đĩa hỏng (`0bd772a`).
+
+Quy trình mở van: `docs/thi-cong/nhat-ky/phat-hanh-20260928-mot-nguon.md`.
+
 ### 28/09/2026 — giao diện v3 thôi nói ngược nhau, đọc được trên điện thoại
 
 Lượt này không đổi một chữ nào bot nói với khách, không đụng bot cũ, không đổi lược đồ.
