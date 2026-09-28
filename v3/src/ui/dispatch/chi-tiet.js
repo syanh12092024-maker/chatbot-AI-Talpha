@@ -58,12 +58,19 @@ const motTheoId = (db, bang, id) => (chuoi(id) ? db.mot(bang, { id: chuoi(id) })
  *   hoiThoai:object|null, donHang:object|null,
  *   lienKet:{pancake:string|null,pos:string|null}, lyDoChu:string}>}
  */
-/** Nhãn tầng rủi ro hoàn — chữ người đọc được, và nói rõ khi CHƯA CHẤM. */
+/**
+ * Nhãn tầng rủi ro hoàn — chữ người đọc được, và nói rõ khi CHƯA CHẤM.
+ *
+ * Khoá PHẢI đúng tập mã của lược đồ (CHECK `khach_tang_hoan_hop_le`, migration 005) — ca
+ * `nhan-tang-hoan.test.mjs` đọc thẳng file migration. Trước 28/09 hai khoá là `can_theo_doi`/
+ * `hoan_cao` (không bao giờ có trong CSDL) ⇒ 5.990 khách `rui_ro_cao` + 5.449 `canh_bao` trên
+ * máy chủ hiện MÃ THÔ màu xám — đúng khách hay hoàn nhất lại mất nhãn đỏ.
+ */
 export const CHU_TANG_HOAN = Object.freeze({
   tot: { chu: 'Mua tốt', muc: 'san' },
   binh_thuong: { chu: 'Bình thường', muc: 'san' },
-  can_theo_doi: { chu: 'Cần theo dõi', muc: 'nhac' },
-  hoan_cao: { chu: 'Hay hoàn hàng', muc: 'chan' },
+  canh_bao: { chu: 'Cần theo dõi · hoàn 30–65%', muc: 'nhac' },
+  rui_ro_cao: { chu: 'Hay hoàn hàng · hoàn ≥65%', muc: 'chan' },
   chua_du_don: { chu: 'Chưa đủ đơn để xếp', muc: 'mu' },
 });
 
