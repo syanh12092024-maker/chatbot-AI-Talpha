@@ -656,11 +656,15 @@
      nào cũng dùng được. Ca «L4-M2 · bảng điều phối… ở khổ hẹp thì xếp thẻ» canh nó. */
   @media (max-width: 720px) {
     .data-table[data-hep="the"] thead { display: none; }
-    .data-table[data-hep="the"] tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    /* Cột phải `fit-content(50%)`, không `auto`: `auto` nở theo chữ dài nhất — một lý do không
+       ngắt được («Lý do chưa có tên (mã ma_la_chua_co_trong_bang)») ép cột trái còn ~30px và chữ
+       đè lên nhau (đo 28/09 ở 390px). Ô thẻ cho ngắt giữa chữ khi buộc phải ngắt. */
+    .data-table[data-hep="the"] tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) fit-content(50%);
       gap: 2px var(--space-3); padding: var(--space-3) var(--space-4);
       border-bottom: 1px solid var(--border-subtle); }
     .data-table[data-hep="the"] tbody tr:last-child { border-bottom: 0; }
-    .data-table[data-hep="the"] td { display: block; height: auto; padding: 0; border: 0; }
+    .data-table[data-hep="the"] td { display: block; height: auto; padding: 0; border: 0;
+                                     min-width: 0; overflow-wrap: anywhere; }
     .data-table[data-hep="the"] td[data-nhan]::before { content: attr(data-nhan) ": ";
       color: var(--text-muted); font-size: var(--text-xs); }
     .data-table[data-hep="the"] td.c-dem { grid-column: 2; grid-row: 1; text-align: right; }

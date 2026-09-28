@@ -31,3 +31,9 @@ test('nút × của nhãn · vùng bấm nở ra, màn cảm ứng ≥ 40px', ()
   assert.match(cam, /\.chip button \{ width: 28px; height: 28px; \}/);
   assert.match(cam, /\.chip button::after \{ inset: -6px; \}/);
 });
+
+test('bảng dạng thẻ · cột phải không được nở theo chữ dài (chồng chữ ở 390px, 28/09)', () => {
+  const c = doc('chung/kieu.css');
+  assert.match(c, /\.data-table\[data-hep="the"\] tbody tr \{ display: grid; grid-template-columns: minmax\(0, 1fr\) fit-content\(50%\);/);
+  assert.match(c, /min-width: 0; overflow-wrap: anywhere;/);
+});
