@@ -2398,3 +2398,16 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   lượt deploy hôm nay (kết luận vẫn đúng — unit đặt `PANCAKE_READONLY=1`, `V3_PANCAKE_GUI=0` —
   nhưng đúng nhờ may). Skill `mo-van` bẫy ③ đã ghi sẵn: nghiệm thu env prod bằng
   `/proc/<pid>/environ`. 📌 Có luật rồi mà không đọc lại trước khi đo thì cũng như không có.
+
+- 28/09 · **GIẢ LẬP MINTY KSA TRÊN HỘI THOẠI THẬT** (bản dev, diễn tập, không gửi) — `ops/bin/
+  gia-lap-mot-minh.mjs`, 12 lượt khách thật trong 72 giờ. Lượt đầu bot trả lời **0/12**: công
+  tắc bot mới của chính page đang TẮT (`v3_ai_bat=false`) — đúng luật; bật qua cửa ghi duy nhất
+  của màn mới (chạy được). Lượt hai: **8/12** trả lời, cả 8 bằng lớp 0 đồng (câu mẫu, 0đ,
+  ≤0,4s — Botcake thật mất 5–10s, Public API ~57s); **4/12 hỏng vì Kimi trả HTTP 429: hết hạn
+  mức token trong ngày của tổ chức** (1.507.116/1.500.000). Ba phát hiện chất lượng: ① khách hỏi
+  «How much?» bằng tiếng Anh, bot trả câu mẫu bằng tiếng Tagalog; ② khách đã «Place an order»
+  rồi hỏi «final price», bot lại gửi câu khuyến mãi chung như chưa có gì; ③ **giá 109/159 SAR
+  GÕ CỨNG trong ô `fastLanePrice` của kịch bản** (bản LIVE 6) — hôm nay khớp `goi_gia`
+  (10900/15900), nhưng sửa giá ở tab «Sản phẩm & giá» mới thì bot VẪN báo giá cũ. Tab mới làm
+  việc sửa giá dễ hơn, tức làm rủi ro trôi giá LỚN hơn — nợ của chính GD3.
+  Kèm: vá lỗi worker gọi `dsPageChoPhep()` không `await` (`c4c2a4b`, chưa deploy).
