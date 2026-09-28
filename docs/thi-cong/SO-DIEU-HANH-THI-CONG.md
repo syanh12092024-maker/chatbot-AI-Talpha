@@ -1292,6 +1292,13 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
   thiết kế 14/09, để làm lịch sử); ④ HK10 không đo được `mot-page` (đầu trang động).
   Nhật ký `docs/thi-cong/nhat-ky/phieu-UI-HT4.md`.
 
+  🟠 **N-HT-PROD (28/09, quan sát bàn hội thoại trên máy chủ).** ① Ba lát danh sách TRỐNG trên prod: 0 việc
+  mở, hội thoại chạm gần nhất 24/08 ⇒ cửa sổ 7 ngày rỗng — đề nghị «Tất cả» rơi về 100 hội thoại mới
+  nhất khi cửa sổ rỗng (chờ người quyết); ② ~½ page token máy chủ không đọc được chat («không có quyền
+  hạn trên trang này» 8–9 · «gói cước hết hạn» 3), kho token CSDL 0 token — việc người: cấp token có
+  quyền; ③ 17/30 hội thoại mới nhất không có mã khách ở nguồn nào. Nhật ký
+  `docs/thi-cong/nhat-ky/quan-sat-20260928-ban-hoi-thoai.md`.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2602,3 +2609,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 28/09 · MN5 → ✅ MỞ VAN A–E trên prod — mã `2353f5b` · lược đồ 26 · ba cờ drop-in (`V3_GHI_KHO_BOT` · `PUBLIC_URL` 3102 · `V3_SHEET_CHI_DANH_BA`) · 76/76 page bản chép khớp · 36/36 ảnh máy mình tải được từ ngoài · ba khối chuyển Sheet→v3 giống từng ký tự (984) · danh bạ 447 page 0 lệch · 0 lỗi · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260928-mot-nguon.md
 - 28/09 · MN7 → ✅ `c0b829f` `2353f5b` — người quyết đổi (b)→(a) sau lượt thử đầu-cuối (khách OFW, Tagalog có chủ ý — nhận định «sai thị trường» của tổng là SAI) · chốt tách team: bot có MỘT bộ ba khối ⇒ chỉ team thật đang giữ bot được sửa · nợ §9 N-MN7: team thật thứ hai lên bot ⇒ phải tách ba khối theo page
 - 28/09 · 🧭 **ĐỌC QUY TẮC GỐC CỦA BOT TRƯỚC KHI PHÁN «SAI THỊ TRƯỜNG».** Tổng thấy Tagalog trong prompt page Trung Đông và kết luận nội dung sai; người quyết chọn theo kết luận ấy. `CORE` ghi rõ khách là người Philippines ở Trung Đông. Một dòng `grep` trước khi trình đã tránh được một lượt đổi ý.
+- 28/09 · QUAN SÁT bàn hội thoại trên PROD → ✅ giữ — không deploy thêm (prod `c0b829f` = HEAD; UI-HT1–4 lên cùng lượt MN5): dây nối 6/6, bối cảnh ném 0/30, kịch bản 30/30, nhãn Bot AI 9/9 hội thoại đọc được, van gửi đóng
+  🟠 mở ra là TRỐNG (0 việc mở, bot im từ 24/08) · đọc được chat 4/30 mới nhất và 9/20 có bot — thiếu mã khách 17 · token không quyền/hết gói 11–12
+  · không commit mã · nhật ký docs/thi-cong/nhat-ky/quan-sat-20260928-ban-hoi-thoai.md
