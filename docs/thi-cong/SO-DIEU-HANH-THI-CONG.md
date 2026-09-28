@@ -2430,3 +2430,7 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   mở-từ-màn-khác hiện lại khi nó là cửa cuối của mục. ③ Chữ: Việc của tôi 298→212 · Kết nối
   271→182 · Model 250→217 · Hệ còn sống không 340→~220 (đèn xanh thôi hiện câu lặp con số).
   Không màn nào trên menu quá 250. Bốn màn 502 khi đo trên máy dev là vì bot cũ (3200) không chạy.
+- 28/09 · **DEPLOY `fb12ee5`** (cc91084 → fb12ee5, không migration). Bản sạch HEAD 2.068 ca · 0
+  đỏ. Ba dịch vụ active · lỗi mới 0 · UI 200 · `/health` 131 (như trước, token Meta hết hạn) ·
+  env từ `/proc`: van gửi vẫn đóng ở cả ba. Đo thật trên máy chủ: `POST /api/dang-xuat` qua HTTP
+  trả `Set-Cookie: v3_ve=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0` — **không còn `Secure`**.
