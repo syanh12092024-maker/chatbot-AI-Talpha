@@ -242,6 +242,19 @@ export async function daySanPhamLenBot(pageIdFacebook, products) {
 export { soBanChep } from '../../../src/products/ban-chep-bot.js';
 import { soBanChep } from '../../../src/products/ban-chep-bot.js';
 
+/**
+ * Đẩy ba khối dùng chung (Chính sách · FAQ · Phản đối) sang bot rồi ĐỌC LẠI tệp bot vừa ghi
+ * (CR-28-09b · MN7). Lệch ⇒ ném, nơi gọi huỷ lượt lưu. Cùng đường ghi KHO (`kho: true`).
+ */
+export async function dayKhoiChungLenBot(noiDung) {
+  await goiAdminV1('/kb-chung', { phuongThuc: 'POST', than: noiDung, ghi: true, kho: true });
+  const d = await goi('/kb-chung');
+  if (JSON.stringify(d?.tep || null) !== JSON.stringify(noiDung)) {
+    throw new LoiCauBotHong('Bot nhận ba khối dùng chung nhưng đọc lại thấy lệch.', 502);
+  }
+  return { nguon: d?.nguon || '', dangDung: d?.nguon === 'v3' };
+}
+
 /* ────────────────────────────── công tắc BOT AI (G2-B2) ────────────────────────────── */
 
 /**

@@ -145,7 +145,7 @@ muc "② DANH SÁCH bảng ↔ NEO NGOÀI 19 tên trích từ 02-KE-HOACH-CODE �
 # 28/09 CR-28-09b MN1: +anh_san_pham (migration 025 — ảnh bot gửi khách). ⚠️ Neo này còn THIẾU
 #        lan_gui (016) · token_pancake (019) · nap_bo_qua (023) từ trước lượt này — nợ §9, không
 #        thuộc CR-28-09b; ca S1 của test/l0-m1-luoc-do.test.js đã có đủ ba tên ấy.
-NEO="$(printf '%s\n' anh_san_pham san_pham_goc ket_noi_pos tin_cho_xu_ly khoa_nha ky_nang_lich_su mau_0_dong \
+NEO="$(printf '%s\n' khoi_dung_chung anh_san_pham san_pham_goc ket_noi_pos tin_cho_xu_ly khoa_nha ky_nang_lich_su mau_0_dong \
   team nguoi_dung vai thanh_vien_team cau_hinh_model page san_pham \
   goi_gia khach hoi_thoai so_ai don_hang viec_can_xu_ly hang_cho_tao_don kich_ban \
   bo_luat_chung ky_nang lich_nhac nhat_ky | sort)"

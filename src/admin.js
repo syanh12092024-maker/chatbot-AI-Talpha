@@ -6,7 +6,7 @@ import { config } from './config.js';
 import {
   listTokens, addToken, removeToken, loadPageTokens, pageCount, getPageMeta, getStore,
 } from './pages.js';
-import { getPageList, getPageProductsRaw, updatePageProducts, updatePageConfig, getPageConfig, syncFromSheet } from './kb.js';
+import { getPageList, getPageProductsRaw, updatePageProducts, updatePageConfig, getPageConfig, syncFromSheet, datKhoiChung, khoiChungHienTai } from './kb.js';
 import { getSheetId, getSheetUrl, setSheetId } from './sheets.js';
 import {
   listConversations, getConversation, setHandoff, isAiEnabled, setAiEnabled, listAiEnabled,
@@ -462,6 +462,10 @@ adminRouter.get('/kb/:pageId', (req, res) => {
     config: getPageConfig(req.params.pageId),
   });
 });
+// CR-28-09b · MN7 — ba khối dùng chung (Chính sách · FAQ · Phản đối) do v3 ghi; GET trả cả đoạn chữ
+// đang ghép vào prompt để v3 đọc lại xác minh, và để đo trước/sau lượt tắt Sheet.
+adminRouter.get('/kb-chung', (_req, res) => res.json(khoiChungHienTai()));
+adminRouter.post('/kb-chung', (req, res) => res.json(datKhoiChung(req.body || {})));
 adminRouter.post('/kb/:pageId', (req, res) => {
   const r = updatePageProducts(req.params.pageId, req.body?.products || []);
   res.json(r);

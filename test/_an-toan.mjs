@@ -34,6 +34,7 @@ const NGOI_BUT = {
   // trên v3. Đo cùng ngày: một ca nạp `kb.js` qua `import` tĩnh (bắc cầu, trước khi kịp đặt
   // biến) đã ghi một page giả vào `kb-overrides.json` của repo. Chặn ở đây, không trông ca.
   KB_OVERRIDES_FILE: path.join(TAM, "kb-overrides.json"),
+  KB_CHUNG_FILE: path.join(TAM, "kb-chung.json"),   // MN7 — ba khối dùng chung do v3 ghi
 };
 
 const daDoi = [];

@@ -214,6 +214,9 @@ const bao = dungPhanB(app, {
       (await import('./src/noi-day/cau-bot-v1.js')).daySanPhamLenBot(pageIdFacebook, products),
     // MN4: ảnh tải lên nằm CÙNG thư mục bot v1 phục vụ — một kiểu đường `/uploads/<tệp>`.
     thuMucAnh: path.join(GOC, 'public', 'uploads'),
+    // MN7: ba khối dùng chung (Chính sách · FAQ · Phản đối) → `kb-chung.json` của bot, đọc lại xác minh.
+    dayKhoiChungLenBot: async (noiDung) =>
+      (await import('./src/noi-day/cau-bot-v1.js')).dayKhoiChungLenBot(noiDung),
   },
   // MN4: «Sản phẩm & kho» · «Ảnh gửi khách» · «Đưa lên chạy» đọc CSDL — đúng chỗ người sửa.
   khoSanPham: (await import('./src/noi-day/kho-san-pham-v3.js')).taoKhoSanPhamV3(pool),
@@ -319,6 +322,8 @@ const bao = dungPhanB(app, {
     kyNang: (teamId, _pageRowId, dsMaSp = []) => rap.docKyNang(pool, teamId, dsMaSp),
     kichBan: (teamId, pageRowId) => rap.docKichBanLive(pool, teamId, pageRowId),
     sanPham: (teamId, pageRowId) => rap.docSanPhamGoiGia(pool, teamId, pageRowId),
+    // MN7: Chính sách · FAQ · Phản đối của team — trang page hiện và sửa tại chỗ.
+    khoiChung: async (teamId) => (await import(`${GOC}/src/products/khoi-chung.js`)).docKhoiChung(pool, teamId),
   },
   khoKhoa: {
     coKhoa: (teamId, nha) => coKhoaNha(pool, { teamId, nhaCungCap: nha }),

@@ -63,6 +63,10 @@
       <h2 id="k-san-pham">③ Sản phẩm, giá và ảnh</h2>
       <div id="o-sp"><span class="skeleton"></span></div>
     </section>
+    <section aria-labelledby="k-chung">
+      <h2 id="k-chung">④ Chính sách · FAQ · Xử lý phản đối — dùng chung mọi page</h2>
+      <div id="o-chung"></div>
+    </section>
     <section aria-labelledby="k-khac">
       <h2 id="k-khac">Trước và sau AI</h2>
       <div id="o-khac"></div>
@@ -353,6 +357,7 @@ async function veNoiDung() {
   veKhac($('#o-khac'));
   await veKichBan(oKb);
   await veSanPham(oSp);
+  veKhoiChung($('#o-chung'));
   if (cuonToi) { document.getElementById(cuonToi)?.scrollIntoView({ block: 'start' }); cuonToi = null; }
 }
 
@@ -755,6 +760,68 @@ function tuCo(o) {
   o.querySelectorAll('textarea[data-tu-co]').forEach((t) => t.addEventListener('input', () => {
     t.rows = soDong(t.value);
   }));
+}
+
+/* ── ④ BA KHỐI DÙNG CHUNG (CR-28-09b · MN7) ─────────────────────────────────────────
+ * AI đọc chúng SAU sản phẩm, ở MỌI page. Gập sẵn (thường ít đổi), sửa từng dòng tại chỗ; lưu là
+ * đẩy sang bot trong cùng giao dịch — kèm hộp xác nhận vì đổi ở đây là đổi lời bot ở mọi page. */
+const NHOM_CHUNG = [
+  { k: 'policies', ten: 'Chính sách', cot: [['topic', 'Hạng mục', 'input'], ['content', 'Nội dung (bot nói nguyên ý)', 'textarea']] },
+  { k: 'faqs', ten: 'Câu hỏi thường gặp', cot: [['q', 'Câu hỏi', 'input'], ['a', 'Trả lời', 'textarea']] },
+  { k: 'objections', ten: 'Xử lý phản đối', cot: [['type', 'Loại', 'input'], ['says', 'Khách thường nói', 'input'], ['reply', 'Cách trả lời', 'textarea']] },
+];
+let CHUNG = null;       // bản đang sửa (chưa lưu) — vẽ lại khối không làm mất chữ
+function veKhoiChung(o, moSan = false) {
+  const kc = daDocNoiDung?.khoiChung;
+  if (!kc) { o.innerHTML = '<div class="panel"><p class="meta">Máy chủ chưa nối bộ đọc khối dùng chung.</p></div>'; return; }
+  if (kc.loi) { o.innerHTML = `<div class="panel">${canhBao({ level: 'error', title: 'Không đọc được khối dùng chung', body: kc.loi })}</div>`; return; }
+  if (kc.chuaCo) { o.innerHTML = '<div class="panel"><p class="meta">Máy chủ chưa áp bản cập nhật cơ sở dữ liệu cho khối này.</p></div>'; return; }
+  if (!CHUNG) CHUNG = JSON.parse(JSON.stringify(kc.noiDung));
+  const sua = SUA_SP();
+  const tomTat = NHOM_CHUNG.map((n) => `${(CHUNG[n.k] || []).length} ${n.ten.toLowerCase()}`).join(' · ');
+  const nhom = (n) => `
+    <h3 class="tren-3">${esc(n.ten)}</h3>
+    <div class="cuon-ngang"><table class="data-table"><thead><tr>${n.cot.map((c) => `<th scope="col">${esc(c[1])}</th>`).join('')}${sua ? '<th scope="col"><span class="sr-only">Bỏ</span></th>' : ''}</tr></thead><tbody>
+      ${(CHUNG[n.k] || []).map((dong, j) => `<tr>${n.cot.map(([k, nhan, loai]) => `<td>${loai === 'textarea'
+        ? `<textarea rows="${soDong(dong[k])}" data-tu-co data-chung="${n.k}|${j}|${k}" aria-label="${esc(nhan)}" ${sua ? '' : 'disabled'}>${esc(dong[k] || '')}</textarea>`
+        : `<input type="text" data-chung="${n.k}|${j}|${k}" value="${esc(dong[k] || '')}" aria-label="${esc(nhan)}" ${sua ? '' : 'disabled'}>`}</td>`).join('')}
+        ${sua ? `<td>${button('Bỏ', { size: 'sm', variant: 'ghost', data: { chungbo: `${n.k}|${j}` } })}</td>` : ''}</tr>`).join('')}
+    </tbody></table></div>
+    ${sua ? `<p class="duoi-2">${button('+ Thêm dòng', { size: 'sm', variant: 'ghost', data: { chungthem: n.k } })}</p>` : ''}`;
+  o.innerHTML = `<div class="panel"><details ${moSan ? 'open' : ''}>
+    <summary><b>${esc(tomTat)}</b> <span class="meta">· bản ${esc(String(kc.phienBan || 0))}${kc.nguoiSua ? ` · ${esc(kc.nguoiSua)}` : ''}</span></summary>
+    <p class="meta">AI đọc ba khối này ở <b>mọi page</b>, sau sản phẩm. Viết bằng đúng ngôn ngữ muốn bot nói với khách.</p>
+    ${NHOM_CHUNG.map(nhom).join('')}
+    ${sua ? `<div class="duoi-2">${button('Lưu — đổi mọi page', { size: 'sm', variant: 'primary', id: 'nutChung' })}</div>`
+      : '<p class="meta">Cần vai Quản trị hoặc Marketer để sửa.</p>'}
+  </details></div>`;
+  tuCo(o);
+  o.querySelectorAll('[data-chung]').forEach((e) => e.addEventListener('input', () => {
+    const [k, j, cot] = e.dataset.chung.split('|'); CHUNG[k][Number(j)][cot] = e.value;
+  }));
+  o.querySelectorAll('[data-chungbo]').forEach((b) => b.addEventListener('click', () => {
+    const [k, j] = b.dataset.chungbo.split('|'); CHUNG[k].splice(Number(j), 1); veLaiGiuCuon(async () => veKhoiChung(o, true));
+  }));
+  o.querySelectorAll('[data-chungthem]').forEach((b) => b.addEventListener('click', () => {
+    const n = NHOM_CHUNG.find((x) => x.k === b.dataset.chungthem);
+    (CHUNG[n.k] = CHUNG[n.k] || []).push(Object.fromEntries(n.cot.map(([k]) => [k, ''])));
+    veLaiGiuCuon(async () => veKhoiChung(o, true));
+  }));
+  const nut = o.querySelector('#nutChung');
+  if (nut) nut.addEventListener('click', async () => {
+    const ok = await confirmDialog({ title: 'Lưu ba khối dùng chung?', body: 'Bot sẽ nói theo nội dung này ở MỌI page ngay khi lưu xong.', confirmLabel: 'Lưu — đổi mọi page' });
+    if (!ok) return;
+    setBusy(nut, true);
+    try {
+      const kq = await goi('/api/anh-san-pham/khoi-chung', { method: 'POST', headers: { 'X-V3-Action': '1' },
+        body: JSON.stringify({ noiDung: CHUNG, phienBan: kc.phienBan || 0 }) });
+      if (kq.dongBo && kq.dongBo.ok && kq.dongBo.dangDung === false) {
+        toast(`Đã lưu bản ${kq.phienBan}. Bot CHƯA dùng: máy chủ còn lấy ba khối này từ Google Sheet.`, { level: 'error', duration: 8000 });
+      } else baoDongBo(kq, `Đã lưu bản ${kq.phienBan}`);
+      CHUNG = null;
+      await veLaiGiuCuon(async () => { await docLaiNoiDung(); veKhoiChung(o, true); });
+    } catch (e) { setBusy(nut, false); baoLoi('Không lưu được khối dùng chung', e.message); }
+  });
 }
 
 async function nap() {

@@ -39,6 +39,7 @@ import {
   themAnh, suaNhanAnh, boAnh, xepAnh, LoiAnhSanPham,
 } from "../../../../src/products/anh-san-pham.js";
 import { taoBuocDayBot } from "./router.js";
+import { luuKhoiChung, LoiKhoiChung } from "../../../../src/products/khoi-chung.js";
 
 export const DUOI_THEO_KIEU = Object.freeze({
   "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
@@ -49,7 +50,7 @@ export const VAI_SUA_SAN_PHAM = Object.freeze([VAI.QUAN_TRI, VAI.MARKETER]);
 
 const wrap = (fn) => async (q, s, next) => { try { await fn(q, s); } catch (e) { next(e); } };
 
-export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot = null, thuMucAnh = null } = {}) {
+export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot = null, thuMucAnh = null, dayKhoiChungLenBot = null } = {}) {
   const r = express.Router();
   const dayBot = taoBuocDayBot({ day: daySanPhamLenBot, env });
 
@@ -144,13 +145,40 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
     s.json({ ok: true, ...(await saveProduct(pool, q.boiCanh, q.params.spId, q.body || {}, { sauKhiLuu: dayBot })) });
   }));
 
+  // BA KHỐI DÙNG CHUNG (MN7) — Chính sách · FAQ · Phản đối. Cùng khuôn: lưu → đẩy bot → đọc lại
+  // → nhật ký, MỘT giao dịch; bot không nhận ⇒ ROLLBACK. Đổi ở đây là đổi lời bot ở MỌI page.
+  r.post("/api/anh-san-pham/khoi-chung", wrap(async (q, s) => {
+    if (typeof dayKhoiChungLenBot !== "function") {
+      throw fault("Chưa nối cửa đẩy sang bot — không lưu, vì lưu mà bot không đổi là màn hình nói sai", 503);
+    }
+    const bc = q.boiCanh;
+    const kq = await transaction(pool, async (c) => {
+      const l = await luuKhoiChung(c, bc.teamId, q.body?.noiDung, {
+        phienBanCu: q.body?.phienBan, nguoiSua: bc.tenDangNhap || String(bc.nguoiDungId || ""),
+      });
+      let dongBo;
+      try { dongBo = { ok: true, ...(await dayKhoiChungLenBot(l.sau)) }; }
+      catch (e) {
+        if (e?.ma === "cua_ghi_dong" && env.V3_RAP_PROMPT_BAT === "1") dongBo = { ok: false, ghiChu: String(e.message || e) };
+        else { if (e && !e.status) e.status = 502; throw e; }
+      }
+      await ghiNhatKy(c, {
+        teamId: bc.teamId, nguoiDungId: bc.nguoiDungId, tacNhan: `nguoi:${bc.nguoiDungId}`,
+        doiTuong: "khoi_dung_chung", doiTuongId: String(bc.teamId),
+        hanhDong: "v3_sua_khoi_dung_chung", truoc: l.truoc, sau: l.sau,
+      });
+      return { phienBan: l.phienBan, dongBo };
+    });
+    s.json({ ok: true, ...kq });
+  }));
+
   r.use("/api/anh-san-pham", (e, _q, s, _next) => {
-    const status = e instanceof LoiAnhSanPham ? e.status
+    const status = e instanceof LoiAnhSanPham || e instanceof LoiKhoiChung ? e.status
       : e?.type === "entity.too.large" ? 413 : (e.status || 400);
     s.status(status).json({
       ok: false,
       thongDiep: status === 413 ? "Ảnh quá lớn (tối đa 10 MB)."
-        : e.code && !(e instanceof LoiAnhSanPham) ? "Không thể thực hiện. Dữ liệu có thể đã thay đổi; tải lại và thử lại."
+        : e.code && !(e instanceof LoiAnhSanPham) && !(e instanceof LoiKhoiChung) ? "Không thể thực hiện. Dữ liệu có thể đã thay đổi; tải lại và thử lại."
           : e.message,
     });
   });

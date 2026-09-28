@@ -4,6 +4,7 @@ node_modules/
 
 tokens.json
 kb-overrides.json
+kb-chung.json
 sheet.json
 ai-enabled.json
 cloudflared

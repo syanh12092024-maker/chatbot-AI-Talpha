@@ -3,11 +3,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import xlsx from 'xlsx';
 import { config } from './config.js';
+import { sachKhoiChung } from './products/khoi-chung.js';
 import { fetchTabRows, fetchTabMatrix } from './sheets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Đường dẫn cho phép ĐÈ BẰNG ENV để test chạy trên thư mục tạm, không đụng dữ liệu thật.
 const OVERRIDES_FILE = process.env.KB_OVERRIDES_FILE || path.resolve(__dirname, '..', 'kb-overrides.json'); // sửa từ dashboard
+// CR-28-09b · MN7 — ba khối dùng chung (Chính sách · FAQ · Phản đối) do v3 ghi. Chỉ được ĐỌC khi
+// `V3_SHEET_CHI_DANH_BA=1`; vắng cờ thì bot vẫn lấy ba khối từ Google Sheet như trước.
+const KHOI_CHUNG_FILE = process.env.KB_CHUNG_FILE || path.resolve(__dirname, '..', 'kb-chung.json');
 const SCRIPT_DIR = process.env.SCRIPT_VERSIONS_DIR || path.resolve(__dirname, '..', 'script-versions'); // M02 · lịch sử kịch bản
 
 function readOverrides() {
@@ -63,9 +67,9 @@ function num(v) {
 }
 
 // Parsers dùng chung cho cả Excel lẫn Google Sheet (cùng layout cột).
-function parsePolicies(r) { return r.map((x) => ({ topic: String(x[0]).trim(), content: String(x[1]).trim() })).filter((p) => p.topic); }
-function parseFaqs(r) { return r.map((x) => ({ q: String(x[0]).trim(), a: String(x[2]).trim() })).filter((f) => f.q); }
-function parseObjections(r) { return r.map((x) => ({ type: String(x[0]).trim(), says: String(x[1]).trim(), reply: String(x[2]).trim() })).filter((o) => o.type); }
+export function parsePolicies(r) { return r.map((x) => ({ topic: String(x[0]).trim(), content: String(x[1]).trim() })).filter((p) => p.topic); }
+export function parseFaqs(r) { return r.map((x) => ({ q: String(x[0]).trim(), a: String(x[2]).trim() })).filter((f) => f.q); }
+export function parseObjections(r) { return r.map((x) => ({ type: String(x[0]).trim(), says: String(x[1]).trim(), reply: String(x[2]).trim() })).filter((o) => o.type); }
 function groupsFromRows(rws) {
   const groups = new Map();
   for (const r of rws) {
@@ -91,7 +95,7 @@ export const sheetChiDanhBa = () => process.env.V3_SHEET_CHI_DANH_BA === '1';
 
 function ingest({ groups, policies, faqs, objections }) {
   const chiDanhBa = sheetChiDanhBa();
-  sharedText = chiDanhBa ? '' : buildShared(policies, faqs, objections);
+  sharedText = chiDanhBa ? sharedTuTep() : buildShared(policies, faqs, objections);
   pageMap = new Map();
   for (const [pageId, g] of groups) {
     const products = chiDanhBa ? [] : g.products;
@@ -161,7 +165,7 @@ export function loadKB(kbPath = config.kbPath) {
   // không có file này → không sập, vẫn nạp cấu hình page từ overrides.
   if (!fs.existsSync(kbPath)) {
     console.warn(`[kb] Không có file Excel nền (${kbPath}) — dùng Google Sheet + overrides.`);
-    singleKB = null; pageMap = new Map(); sharedText = '';
+    singleKB = null; pageMap = new Map(); sharedText = sheetChiDanhBa() ? sharedTuTep() : '';
     applyOverrides();
     return { mode: 'no-base', pages: pageMap.size };
   }
@@ -170,7 +174,7 @@ export function loadKB(kbPath = config.kbPath) {
   const policies = parsePolicies(rows(wb, 'Chính sách'));
   const faqs = parseFaqs(rows(wb, 'FAQ'));
   const objections = parseObjections(rows(wb, 'Xử lý phản đối'));
-  sharedText = sheetChiDanhBa() ? '' : buildShared(policies, faqs, objections);
+  sharedText = sheetChiDanhBa() ? sharedTuTep() : buildShared(policies, faqs, objections);
 
   const perPage = rows(wb, 'Sản phẩm theo Page');
   if (perPage.length) {
@@ -356,7 +360,7 @@ function buildProductText(products) {
   return out.join('\n');
 }
 
-function buildShared(policies, faqs, objections) {
+export function buildShared(policies, faqs, objections) {
   const out = [];
   out.push('# CHÍNH SÁCH');
   for (const p of policies) out.push(`- ${p.topic}: ${p.content}`);
@@ -365,6 +369,44 @@ function buildShared(policies, faqs, objections) {
   out.push('\n# XỬ LÝ PHẢN ĐỐI');
   for (const o of objections) out.push(`- ${o.type} (khách: "${o.says}") → ${o.reply}`);
   return out.join('\n');
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MN7 · BA KHỐI DÙNG CHUNG DO v3 GHI (CR-28-09b)
+//
+// Luật một nguồn: Chính sách · FAQ · Phản đối sửa trên màn v3, v3 đẩy sang đây (`POST /kb-chung`).
+// Tệp riêng (`kb-chung.json`), không nhét vào `kb-overrides.json` — tệp ấy khoá theo page id.
+// Hình dạng GIỐNG HỆT thứ `parsePolicies/parseFaqs/parseObjections` trả ra từ Sheet, nên cùng một
+// nội dung dựng ra CÙNG một đoạn chữ từng ký tự (lượt tắt Sheet không đổi một chữ bot nói).
+// ═════════════════════════════════════════════════════════════════════════════
+// `sachKhoiChung` — luật làm sạch DUY NHẤT, dùng chung với v3 (`src/products/khoi-chung.js`).
+export { sachKhoiChung };
+function docTepKhoiChung() {
+  try { return fs.existsSync(KHOI_CHUNG_FILE) ? sachKhoiChung(JSON.parse(fs.readFileSync(KHOI_CHUNG_FILE, 'utf8'))) : null; }
+  catch { return null; }
+}
+/** Đoạn chữ ba khối từ tệp v3. Tệp vắng hoặc cả ba khối rỗng ⇒ '' (không để lại tiêu đề trơ). */
+function sharedTuTep() {
+  const d = docTepKhoiChung();
+  if (!d || (!d.policies.length && !d.faqs.length && !d.objections.length)) return '';
+  return buildShared(d.policies, d.faqs, d.objections);
+}
+/** v3 ghi ba khối. Ghi hỏng thì NÉM (cửa gọi sang huỷ lượt lưu). Cờ bật ⇒ có hiệu lực ngay trong RAM. */
+export function datKhoiChung(d) {
+  const sach = sachKhoiChung(d);
+  const tam = `${KHOI_CHUNG_FILE}.${process.pid}.tam`;
+  fs.writeFileSync(tam, JSON.stringify(sach, null, 2));
+  fs.renameSync(tam, KHOI_CHUNG_FILE);
+  const dangDung = sheetChiDanhBa();
+  if (dangDung) {
+    sharedText = sharedTuTep();
+    for (const cur of pageMap.values()) cur.text = pageText(cur.market, cur.category, cur.products);
+  }
+  return { ok: true, dangDung, ...sach };
+}
+/** Bot đang dùng ba khối từ đâu, và ĐOẠN CHỮ đang ghép vào prompt — để đo trước/sau từng ký tự. */
+export function khoiChungHienTai() {
+  return { nguon: sheetChiDanhBa() ? 'v3' : 'sheet', text: sharedText, tep: docTepKhoiChung() };
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

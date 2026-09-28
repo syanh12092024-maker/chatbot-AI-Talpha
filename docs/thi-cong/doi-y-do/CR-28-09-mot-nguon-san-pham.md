@@ -155,6 +155,14 @@ nguồn nào cho `sharedText` ngoài v3, và màn page hiện dòng «Chính sá
 ⚠️ Đây là ĐỔI LỜI BOT với khách thật (bỏ các lời hứa «2–4 ngày», «hoàn tiền 30 ngày», «đổi
 trả 7 ngày») — xảy ra ở lượt deploy MN5, ghi trong runbook mở van.
 
+## 5f · ĐỔI 28/09 (chiều) — khối dùng chung: **(a) CHÉP sang v3**, không phải (b)
+
+Lượt thử đầu-cuối lộ ra quy tắc gốc của bot ghi khách là **người Philippines làm việc ở Trung
+Đông (OFW)** — ba khối Tagalog có chủ ý, nhận định «sai thị trường» ở mục 5d là SAI. Người quyết
+cho làm tiếp; chọn (a) vì giữ nguyên lời bot đang nói và bao luôn (b) (xoá trống trên màn là (b)).
+MN7 thành: bảng `khoi_dung_chung` (026) · khối ④ trên trang page · bot đọc `kb-chung.json` khi
+`V3_SHEET_CHI_DANH_BA=1` · `ops/bin/nap-khoi-chung.mjs` chứng minh đoạn chữ giống từng ký tự trước khi ghi.
+
 ## 6 · Đường lùi
 
 - MN1–MN4 chỉ THÊM (bảng mới, cửa đẩy mới); lùi = `025 down` + revert commit.

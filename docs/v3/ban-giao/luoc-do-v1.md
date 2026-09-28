@@ -65,6 +65,7 @@ Mọi bảng còn lại có `team_id NOT NULL`; **ngoại lệ duy nhất** là 
 | `page`               | sổ cái page                      | `page_id` (id FB, UNIQUE) · **`bot_ai_bat`** · `botcake_tat` · `trong_diem` · `the_pancake` · `mat_dau` |
 | `san_pham_goc`       | sản phẩm THẬT (CR-15/09)         | **không shop, không page** · UNIQUE (team, `ma_goc`) · khoá của tầng kịch bản «sản phẩm» + `ky_nang`     |
 | `san_pham` `goi_gia` | danh mục                         | **chưa nạp ở L0-M1** — nguồn là POS (L1-M1) · `ma_goc` → `san_pham_goc` (nullable tới khi người soát)   |
+| `khoi_dung_chung`    | Chính sách · FAQ · Phản đối (CR-28-09b) | một dòng mỗi team · jsonb cùng hình dạng bot dựng từ Sheet — xem §13 |
 | `anh_san_pham`       | ảnh bot gửi khách (CR-28-09b)    | theo `san_pham` · nhãn giữ nguyên văn · đường = link công khai hoặc `/uploads/<tệp>` — xem §12              |
 | `khach`              | hồ sơ khách                      | `so_dien_thoai` **NULL được**, UNIQUE trong team khi có giá trị · `ti_le_hoan`                          |
 | `hoi_thoai`          | trạng thái hội thoại             | UNIQUE (page, psid) · `khach_id` **nullable** · `moc_luot_llm` (sổ ngân sách 24h)                       |
@@ -487,3 +488,12 @@ Phân loại bot in «(phân loại: …)» cạnh tên (`kb.js#buildProductText
 `src/products/catalog.js#docSanPhamGoiGia` trả thêm `anh: [{id, duong, nhan, thuTu, nguon}]`
 cho mỗi sản phẩm. Hàm này nằm trên đường chat và cửa tiền tạo đơn, nên CSDL chưa có bảng
 (`42P01`) ⇒ `anh: []`, không ném (ca AS6). ⛔ Bản này chỉ THÊM ⇒ thứ tự deploy nào cũng an toàn.
+
+## 13 · THAY ĐỔI — bản 026 (CR-28-09b · MN7, 28/09/2026)
+
+Bảng `khoi_dung_chung` (UNIQUE `team_id`): `noi_dung jsonb` = `{policies:[{topic,content}],
+faqs:[{q,a}], objections:[{type,says,reply}]}` — ĐÚNG hình dạng `src/kb.js#parsePolicies/…` dựng
+từ Sheet, nên cùng nội dung ⇒ cùng đoạn chữ `buildShared` từng ký tự. `phien_ban` tăng mỗi lượt
+lưu; trước/sau đi vào `nhat_ky`. Bot đọc bản chép `kb-chung.json` (v3 ghi qua `POST /kb-chung`)
+CHỈ khi `V3_SHEET_CHI_DANH_BA=1`. ⚠️ Bot có MỘT bộ ba khối cho mọi page — v3 lưu theo team; hôm
+nay chỉ một team có page trên bot. Nhiều team cùng sửa thì lượt lưu sau đè lượt trước ở bot (nợ §9).

@@ -33,7 +33,9 @@ import { GOC } from "../db/ket-noi.js";
 // neo vào; NEO được sửa cùng commit với migration.
 // 28/09 CR-28-09b (MN1): +anh_san_pham (migration 025) — ảnh sản phẩm có nhà trong v3; trước
 // đó 543 ảnh bot gửi chỉ nằm trong `kb-overrides.json`. NEO sửa cùng commit với migration.
+// 28/09 CR-28-09b (MN7): +khoi_dung_chung (migration 026). NEO sửa cùng commit với migration.
 const NEO_19_BANG = [
+  "khoi_dung_chung",
   "anh_san_pham",
   "nap_bo_qua",
   "lan_gui",

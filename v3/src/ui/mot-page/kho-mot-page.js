@@ -241,5 +241,10 @@ export async function noiDungPage(boiCanh, id) {
         : { coBan: false }))
       .catch((e) => ({ loi: String(e?.message || e) }));
   }
-  return { chuaNoi: false, sanPham, kichBan, sanPhamSua, giaGoCung, boLuat };
+  // BA KHỐI DÙNG CHUNG (MN7): `null` = chưa nối bộ đọc; `{chuaCo:true}` = chưa áp migration 026.
+  let khoiChung = null;
+  if (typeof _docKhoi.khoiChung === 'function') {
+    khoiChung = await Promise.resolve(_docKhoi.khoiChung(bc.teamId)).catch((e) => ({ loi: String(e?.message || e) }));
+  }
+  return { chuaNoi: false, sanPham, kichBan, sanPhamSua, giaGoCung, boLuat, khoiChung };
 }
