@@ -292,4 +292,10 @@ http.createServer(app).listen(CONG, process.env.HOST, () => {
   console.log(`[chay-that] DỮ LIỆU THẬT · cổng ${CONG} · UI vận hành V3`);
   for (const d of bao.daNoi) console.log(`[chay-that] đã nối: ${d}`);
   for (const t of bao.thieu) console.log(`[chay-that] chưa nối: ${t}`);
+  // LÀM NÓNG bản nhớ cửa kiểm (28/09): lượt đọc này mất ~10 giây phía bot. Đọc một lần lúc
+  // khởi động thì người mở màn đầu tiên không phải đứng chờ ở «Đang mở…».
+  import('./src/noi-day/cau-bot-v1.js')
+    .then(({ sanSangToanHe }) => sanSangToanHe())
+    .then((kq) => console.log(`[chay-that] đã làm nóng cửa kiểm: ${kq.pages.length} page`))
+    .catch((e) => console.log(`[chay-that] chưa làm nóng được cửa kiểm: ${e?.message || e}`));
 });

@@ -194,8 +194,10 @@ async function goi(duong, { phuongThuc = 'GET', than = null, ghi = false, hetGio
  * Vẫn đi qua đúng `goi()`: cùng lớp kiểm cửa ghi, cùng lớp dịch lỗi, cùng hết-giờ. Phơi
  * `goi` ra thẳng thì mỗi nơi gọi lại tự đặt tuỳ chọn một kiểu.
  */
-export function goiAdminV1(duong, tuyChon = {}) {
-  return goi(duong, tuyChon);
+export async function goiAdminV1(duong, tuyChon = {}) {
+  const laGhi = String(tuyChon.phuongThuc || 'GET').toUpperCase() !== 'GET';
+  try { return await goi(duong, tuyChon); }
+  finally { if (laGhi) boNhoSanSang(); }   // sửa kịch bản, nạp lại token… đều đổi tình trạng page
 }
 
 /* ────────────────────────────── công tắc BOT AI (G2-B2) ────────────────────────────── */
@@ -205,8 +207,11 @@ export function goiAdminV1(duong, tuyChon = {}) {
  * Trả về trạng thái SAU khi đổi, đọc từ chính tiến trình bot — không đoán theo tham số gửi đi.
  */
 export async function datBotAi(pageIdFacebook, bat) {
-  const d = await goi('/pages/' + encodeURIComponent(String(pageIdFacebook)) + '/ai',
-    { phuongThuc: 'POST', than: { on: !!bat }, ghi: true });
+  let d;
+  try {
+    d = await goi('/pages/' + encodeURIComponent(String(pageIdFacebook)) + '/ai',
+      { phuongThuc: 'POST', than: { on: !!bat }, ghi: true });
+  } finally { boNhoSanSang(); }   // hỏng giữa chừng thì càng không được tin bản nhớ cũ
   return { pageId: String(pageIdFacebook), batSauKhiDoi: !!(d && d.aiEnabled) };
 }
 
@@ -232,7 +237,45 @@ export async function datBotAi(pageIdFacebook, bat) {
  *    chỉ là bản sao, và đã có lần lệch — xem `docs/v3/SO-TAY-VAI-B.md`. Khi hai số khác nhau,
  *    con số ĐÚNG là con số ở đây.
  */
+/*
+ * ⚠️ NHỚ KẾT QUẢ (28/09). Đo lại trên máy chủ: lượt này mất 10–17 giây VÀ LÀM ĐỨNG CẢ TIẾN
+ *    TRÌNH BOT trong lúc chạy (`allReadiness()` là hàm đồng bộ): `/health` bình thường 0,002 giây
+ *    thì lúc ấy chờ 16 giây. Trước đây MỖI lần mở trang page, danh sách page, Cài đặt team…
+ *    và dải trạng thái trên MỖI tab (45 giây một lần) đều gọi nó — người dùng thấy màn đứng ở
+ *    «Đang mở…», và bot phục vụ khách thì đứng theo.
+ *
+ *    Nay: ≤ `TUOI_TUOI` thì trả bản nhớ · ≤ `TUOI_CU` thì trả bản nhớ NGAY và làm mới ngầm ·
+ *    cũ hơn nữa (hoặc chưa có) thì chờ đọc. Cùng lúc chỉ MỘT lượt đọc bay sang bot — mười tab
+ *    mở cùng lúc chung một lượt. Bật/tắt bot và thêm/bỏ token xoá bản nhớ ngay (`boNhoSanSang`).
+ *    Kết quả mang `docLuc` để màn nói được «đo lúc mấy giờ».
+ */
+const TUOI_TUOI = 60_000;
+const TUOI_CU = 10 * 60_000;
+const _nho = { kq: null, luc: 0, dang: null };
+
+function docSanSangMoi() {
+  if (!_nho.dang) {
+    _nho.dang = docSanSangTho()
+      .then((kq) => { _nho.kq = kq; _nho.luc = Date.now(); return kq; })
+      .finally(() => { _nho.dang = null; });
+  }
+  return _nho.dang;
+}
+
+/** Xoá bản nhớ — gọi sau mọi lượt GHI làm đổi tình trạng page. `null` cũng dùng cho bộ ca. */
+export function boNhoSanSang() { _nho.kq = null; _nho.luc = 0; }
+
 export async function sanSangToanHe() {
+  const tuoi = Date.now() - _nho.luc;
+  if (_nho.kq && tuoi <= TUOI_TUOI) return _nho.kq;
+  if (_nho.kq && tuoi <= TUOI_CU) {
+    docSanSangMoi().catch(() => {});   // làm mới ngầm; hỏng thì lượt sau thử lại
+    return _nho.kq;
+  }
+  return docSanSangMoi();
+}
+
+async function docSanSangTho() {
   const d = await goi('/readiness', { hetGio: 25000 });
   const ds = Array.isArray(d && d.pages) ? d.pages : [];
   return {
@@ -240,6 +283,7 @@ export async function sanSangToanHe() {
     // Ba con số này do chính v1 đếm trên TOÀN HỆ. Màn theo team phải tự đếm lại trên phần
     // của mình — giữ lại đây chỉ để đối chiếu khi nghi ngờ.
     toanHe: { chan: d?.blocked ?? null, nhac: d?.warned ?? null, san: d?.ready ?? null, tong: ds.length },
+    docLuc: new Date().toISOString(),
   };
 }
 
@@ -457,9 +501,11 @@ export async function danhSachToken() {
 }
 
 export async function themToken(token) {
-  return goi('/pancake-tokens', { phuongThuc: 'POST', than: { token }, ghi: true, hetGio: 20000 });
+  try { return await goi('/pancake-tokens', { phuongThuc: 'POST', than: { token }, ghi: true, hetGio: 20000 }); }
+  finally { boNhoSanSang(); }
 }
 
 export async function boToken(thuTu) {
-  return goi('/pancake-tokens/' + encodeURIComponent(String(thuTu)), { phuongThuc: 'DELETE', ghi: true });
+  try { return await goi('/pancake-tokens/' + encodeURIComponent(String(thuTu)), { phuongThuc: 'DELETE', ghi: true }); }
+  finally { boNhoSanSang(); }
 }

@@ -2434,3 +2434,19 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   đỏ. Ba dịch vụ active · lỗi mới 0 · UI 200 · `/health` 131 (như trước, token Meta hết hạn) ·
   env từ `/proc`: van gửi vẫn đóng ở cả ba. Đo thật trên máy chủ: `POST /api/dang-xuat` qua HTTP
   trả `Set-Cookie: v3_ve=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0` — **không còn `Secure`**.
+- 28/09 · **TRANG MỘT PAGE ĐỨNG Ở «ĐANG MỞ…» TRÊN MÁY CHỦ** (người quyết chụp màn gửi). Đo trên
+  máy chủ: mọi màn cần tình trạng page (trang page, danh sách page, Cài đặt team, Việc của tôi,
+  Hệ còn sống không, dải trạng thái trên MỌI tab 45 giây một lần) đều gọi
+  `/admin/api/readiness` — **10–17 giây** cho 699 page, và vì `allReadiness()` là hàm ĐỒNG BỘ
+  nên **cả tiến trình bot đứng** trong lúc ấy (`/health` 0,002s → 16s). Chuyện 10–13s đã đo từ
+  25/08; khi đó chữa bằng cách nới hết-giờ lên 25s, không bớt số lượt gọi. Vá phía v3
+  (`cau-bot-v1.js#sanSangToanHe`): nhớ 60 giây · tới 10 phút thì trả bản nhớ và làm mới ngầm ·
+  một lượt bay cho mọi tab · bật/tắt bot, thêm/bỏ token, mọi lượt ghi qua `goiAdminV1` xoá bản
+  nhớ · làm nóng lúc khởi động. Thước `san-sang-bo-nho.test.mjs` 6 ca; đảo vá ⇒ ①②④ đỏ.
+  **Gốc phía bot chưa chữa:** `allReadiness()` (vùng cấm `src/`), chưa rõ 10 giây nằm đâu. Đã
+  loại trừ «parse lại `kb-overrides.json` 510 KB» (đo: ~0,2s cho 1.200 lượt). Cần profile CPU
+  tiến trình bot, và cần người quyết cho phép đụng `src/readiness.js`.
+  🧭 **Lượt «audit toàn bộ màn» không bắt được lỗi này vì nó chạy trên máy dev**: 4 page, bot cũ
+  không chạy ⇒ cửa kiểm hỏng NHANH, không bao giờ CHẬM. Thước đo giao diện phải có một lượt
+  trên số liệu cỡ máy chủ; đo «màn có vỡ không» mà không đo «màn mở mất bao lâu» là bỏ sót
+  đúng thứ người dùng cảm thấy đầu tiên.
