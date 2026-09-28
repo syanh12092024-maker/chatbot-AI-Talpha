@@ -2460,3 +2460,11 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   thuyết. Vá: `readOverridesChiDoc()` nhớ theo `mtime+cỡ`, chỉ cho nơi CHỈ ĐỌC (`getPageConfig`,
   `listScriptPages`); nơi ghi vẫn đọc tươi để có bản riêng mà sửa; `writeOverrides` xoá bản
   nhớ. Thước `test/kb-overrides-bo-nho.test.mjs` 3 ca; đảo vá ⇒ ① đỏ.
+- 28/09 · **DEPLOY `40321bb`** (kèm `35b969e` của phiên song song — xanh trên bản sạch 2.078/0,
+  nay lần đầu CHẠY trên bot cũ vì lượt này khởi động lại nó; van gửi vẫn đóng nên chưa chạm
+  khách). Đo trên máy chủ: `/admin/api/readiness` **12,4s → 0,08s** (3 lượt), vẫn 699 page ·
+  ba dịch vụ active · lỗi mới 0 · `/health` 131 · cổng inspector 9229 đã đóng (bot khởi động
+  lại) · v3 làm nóng cửa kiểm lúc 04:22:22.
+  ⚠️ Nợ mới lộ: **`aicloser-v3` KHÔNG tự thoát khi nhận SIGTERM** — lần nào cũng bị systemd ép
+  SIGKILL sau 2 phút (04:12, 04:22), và `aicloser` mất ~2 phút mới dừng. Mỗi lượt deploy vì thế
+  có ~2 phút giao diện chết. Chưa đụng.
