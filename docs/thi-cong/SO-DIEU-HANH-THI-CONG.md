@@ -262,6 +262,20 @@ file dùng chung nên v3 hưởng nguyên — xem §0a luật 4 bản 16/09.
 **Hậu mãi/RTO hoãn theo lệnh người quyết 16/09** (tỷ lệ hoàn KSA 40,6% vs UAE 20,4%, đo
 trên 4.423 đơn POS 60 ngày — đã ghi §9 để không rơi mất).
 
+## §5d · SÓNG BÀN HỘI THOẠI (UI-HT1–HT4) — CR-28-09, người quyết gõ «áp» 28/09
+
+§10 `01-QUYET-DINH.md` đổi: màn sale thành **bàn hội thoại CHỈ ĐỌC** (danh sách · khung chat đọc
+thẳng Pancake · bối cảnh khách), trả lời vẫn ở Pancake. Phiếu CR:
+`docs/thi-cong/doi-y-do/CR-28-09-ban-hoi-thoai-chi-doc.md`. Bản dựng đã duyệt:
+https://claude.ai/artifact/LJcDVTN8GZPyWEtxZnF2yh
+
+| Mã     | Việc                                                             | Phụ thuộc | Làn | Trạng thái |
+| ------ | ---------------------------------------------------------------- | --------- | --- | ---------- |
+| UI-HT1 | Cửa đọc hội thoại: mã `<page_id>_<psid>` · tra `customer_id` · nhớ 60s | —   | 🟨  | 🎫 phiếu `PHIEU-UI-HT1.md` |
+| UI-HT2 | Màn «Bàn hội thoại» ba cột, không ô soạn tin                      | UI-HT1    | 🟩  | 🎫 `PHIEU-UI-HT2-4.md` |
+| UI-HT3 | Cột bối cảnh: khách · hoàn · đơn · giai đoạn · người giữ · kịch bản | UI-HT2  | 🟩  | 🎫 `PHIEU-UI-HT2-4.md` |
+| UI-HT4 | Sửa thước theo §10 mới                                           | UI-HT2    | 🟩  | 🎫 `PHIEU-UI-HT2-4.md` |
+
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
 | Mã  | Việc                                                                                 | Chặn gì                                                        | Trạng thái |
