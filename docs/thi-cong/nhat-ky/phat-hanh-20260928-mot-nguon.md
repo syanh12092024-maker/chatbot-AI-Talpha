@@ -1,6 +1,6 @@
 # MỞ VAN MN5 — MỘT NGUỒN CHO SẢN PHẨM · GIÁ · ẢNH · KỊCH BẢN (CR-28-09b)
 
-> **TRẠNG THÁI: KẾ HOẠCH — CHỜ NGƯỜI QUYẾT GẬT.** Chưa gõ lệnh nào lên prod. Các số «đo
+> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 28/09: «Đưa cùng lượt, chạy từng bước A→E» (UI-HT1–4 đi cùng lượt).** Bước A ✅. Các số «đo
 > 28/09» dưới đây là phép đo CHỈ ĐỌC (SSH đọc, người quyết cho phép).
 > Phiếu CR: `docs/thi-cong/doi-y-do/CR-28-09-mot-nguon-san-pham.md` · sổ §5e.
 
@@ -182,10 +182,14 @@ Mất dữ liệu khi lùi: **không** — mọi lượt sửa làm TRÊN v3 sau
 lùi D thì chúng không còn ở bot, nhưng còn nguyên trong CSDL để đẩy lại.
 
 ## 8 · Lệnh đã gõ theo thứ tự
-(điền khi chạy)
+**A** (28/09 ~10:34–10:41 CEST)
+1. Sao lưu → `/var/backups/aicloser/truoc-mn5-20260928T083442Z` (56 M: `aicloser_v3.dump` 22 M · `kb-overrides.json` · `sheet.json` · `.env` · `uploads.tar.gz` 34 M · units · commit)
+2. đẩy nhánh `vao-ui-v3-17-09` lên origin → `83b4b8d..4a9e234`
+3. prod `git fetch` + `checkout -f -B vao-ui-v3-17-09 origin/…` → `4a9e234`, 0 tệp sửa tại chỗ, 22 tệp dữ liệu lạ giữ nguyên · `npm ci --omit=dev` (292 gói) · `db/migrate.js` → **áp mới 1 (025) · tổng 25**
+4. `systemctl restart aicloser aicloser-v3 aicloser-worker-v3` (10:35:32 CEST)
 
 ## 9 · Số đo tại từng mốc
-(điền khi chạy)
+**A:** ba dịch vụ `active`, mỗi dịch vụ `Started` 1 lần · lỗi mới **0/0/0** (tới +6′) · `/health` `pages:131` sau 14 s (bằng trước) · UI 3102 **200** trong & ngoài · `anh_san_pham` có, 0 dòng · `goi_gia.nhan` có · mã mới đang phục vụ: `POST /api/anh-san-pham/1/link` **401** (có cửa, đòi đăng nhập; không phải 404) · `/uploads/<tệp>` qua 3102 **200** · trang page có «Bot trả lời thế nào» · env từ `/proc` cả ba: `PANCAKE_READONLY=1` `V3_PANCAKE_GUI=0` `V3_POS_GHI=0` — van gửi vẫn đóng, chưa cờ MN5 nào.
 
 ## 10 · Kết · nợ · ai gật
 - Kết: (giữ / lùi / mở bậc sau)
