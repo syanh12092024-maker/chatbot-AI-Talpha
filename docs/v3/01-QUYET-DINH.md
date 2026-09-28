@@ -202,13 +202,25 @@ Năm vai: **Quản trị · Marketer · Sale · Quản lý · Người duyệt k
 
 ---
 
-## 10 · Màn hình sale — chỉ là bảng điều phối
+## 10 · Màn hình sale — bàn hội thoại CHỈ ĐỌC
 
-Sale **không làm việc trên hệ thống này**. Màn hình chỉ có hai danh sách — hội thoại cần xử và đơn cần xử — mỗi dòng ghi **lý do bot đẩy sang** và đồng hồ đếm ngược 10 phút. Bấm là nhảy thẳng sang Pancake hoặc POS.
+> **Đổi 28/09/2026 — CR-28-09** (`docs/thi-cong/doi-y-do/CR-28-09-ban-hoi-thoai-chi-doc.md`).
+> Bản cũ giữ nguyên bên dưới, gạch ngang.
 
-Thao tác duy nhất làm trên hệ thống: **đánh dấu đã xử và chọn kết quả**.
+Màn hình sale là **bàn hội thoại**: danh sách hội thoại (lọc *Cần người · Bot đang xử · Tất cả*,
+mỗi dòng có lý do bot đẩy sang và đồng hồ đếm ngược 10 phút) · khung chat **đọc thẳng lịch sử
+Pancake** (không chép, không lưu bản sao) · cột bối cảnh khách (thông tin, rủi ro hoàn, đơn, giai
+đoạn và người giữ hội thoại, kịch bản page).
 
-**Lý do:** sale đã quen Pancake. Bắt họ học một nơi làm việc mới thì thường không ai dùng.
+Sale **vẫn trả lời ở Pancake** — trên hệ thống **không có ô soạn tin, không có nút gửi**. Thao tác
+làm trên hệ thống chỉ gồm: **nhận việc · trả lại cho bot · đánh dấu đã xử và chọn kết quả**.
+Bấm «Trả lời trên Pancake» là nhảy thẳng sang Pancake hoặc POS.
+
+**Lý do đổi:** khuôn «hai danh sách» không cho sale thấy bot đã nói gì trước khi đẩy sang người
+— phải mở Pancake mới biết việc gấp tới đâu. Đọc hội thoại tại chỗ rút lượt nhảy qua lại, mà
+vẫn giữ lý do cũ: sale không phải học một nơi TRẢ LỜI mới.
+
+~~**Màn hình sale — chỉ là bảng điều phối.** Sale **không làm việc trên hệ thống này**. Màn hình chỉ có hai danh sách — hội thoại cần xử và đơn cần xử — mỗi dòng ghi **lý do bot đẩy sang** và đồng hồ đếm ngược 10 phút. Bấm là nhảy thẳng sang Pancake hoặc POS. Thao tác duy nhất làm trên hệ thống: **đánh dấu đã xử và chọn kết quả**. **Lý do:** sale đã quen Pancake. Bắt họ học một nơi làm việc mới thì thường không ai dùng.~~
 
 ---
 
