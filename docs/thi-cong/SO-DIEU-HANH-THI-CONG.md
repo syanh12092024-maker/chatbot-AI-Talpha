@@ -2476,3 +2476,8 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   bắt riêng (dừng sau lượt đang chạy) nên vẫn tự quyết. Thước `test/conv-state-tat-may.test.mjs`
   chạy tiến trình con THẬT, gửi tín hiệu THẬT: ① thoát < 3s và tệp trạng thái có dòng vừa ghi ·
   ② có bộ bắt khác thì không giành quyền thoát. Đảo vá (đưa code cũ về) ⇒ ① treo, đỏ.
+- 28/09 · **DEPLOY `6fdd25a`** — lượt dừng cuối của bản cũ vẫn bị SIGKILL sau 2 phút (04:28:47,
+  đúng như báo trước). Sau đó đo bằng bản mới: khởi động lại `aicloser-v3` **0,06s**, `aicloser`
+  **0,07s** (04:29:46: Stopping → Stopped → Started cùng một giây), không còn dòng «timed out».
+  Ba dịch vụ active · `/health` 131 · UI 200 · readiness 0,08s · lỗi mới 0 · env từ `/proc`:
+  `PANCAKE_READONLY=1`, `V3_PANCAKE_GUI=0` ở cả ba (van gửi vẫn đóng).
