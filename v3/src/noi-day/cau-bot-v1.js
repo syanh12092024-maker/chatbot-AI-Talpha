@@ -116,8 +116,7 @@ export function trangThaiCau() {
       + BIEN_KHOA + '` nếu muốn khoá');
   }
   if (env(BIEN_CHAN_DOC) === '1') {
-    thieu.push('máy này đang ở chế độ CHỈ ĐỌC với Pancake — xem được, nhưng không bật tắt bot '
-      + 'và không thêm tài khoản được');
+    thieu.push('máy này đang CHỈ ĐỌC với Pancake: không bật tắt bot, không thêm tài khoản được');
     thieuKyThuat.push('`' + BIEN_CHAN_DOC + '=1` đang bật');
   }
   if (!coTaiKhoan()) {

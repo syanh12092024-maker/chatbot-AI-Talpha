@@ -59,13 +59,12 @@ const tenNguon = (n) => TEN_NGUON[String(n || '')] || String(n || '');
 
 /** Câu hiện thẳng trên đầu màn. Không giấu vào tài liệu. */
 export const LA_TOAN_HE =
-  'Kho tài khoản Pancake dùng chung cho MỌI team. Khác với các màn khác: ở đây bạn sửa thứ của '
-  + 'cả hệ, không phải dữ liệu của riêng team đang mở. Thêm hay bỏ một tài khoản là đổi cho cả ba team.';
+  'Dùng chung cho MỌI team, không phải dữ liệu của riêng team đang mở: thêm hay bỏ một tài '
+  + 'khoản là đổi cho cả ba team.';
 
 /** Thứ tự trong danh sách CHÍNH LÀ thứ tự dự phòng — không phải thứ tự sắp cho đẹp. */
 export const GIAI_THICH_THU_TU =
-  'Thứ tự trên xuống chính là thứ tự dự phòng: tài khoản chính trước, rồi tài khoản phụ, cuối '
-  + 'cùng là tài khoản thêm từ màn này. Tài khoản hết hạn bị bỏ qua tự động.';
+  'Thứ tự trên xuống là thứ tự dự phòng. Tài khoản hết hạn tự bị bỏ qua.';
 
 /* ═══════════════ KHO TOKEN TRONG CSDL (migration 019) ═══════════════════════════════
  *

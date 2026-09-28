@@ -2421,3 +2421,12 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   `PANCAKE_READONLY=1`, `V3_PANCAKE_GUI=0`, `V3_PAGE_XU_LY=` rỗng ở cả ba (van gửi vẫn đóng).
   `/health` **131 page** (lần trước 133): log nói token Meta «Token app CHAT AI 13/7 (BM DN -
   Live)» **hết hạn từ 11/09** ⇒ chỉ 1/2 token khỏe. Không do bản này; nợ cần người quyết thay token.
+- 28/09 · **ĐĂNG NHẬP HTTP + RÚT MENU 18 → 16 + RÚT CHỮ.** ① Người quyết lại «không vào được
+  màn chọn team»: cookie vé nay gắn `Secure` theo `req.secure` (HTTPS thật) thay vì `NODE_ENV`;
+  `V3_COOKIE_SECURE=1` ép khi đứng sau proxy. Trên HTTP vé vẫn đi rõ — HTTPS vẫn là nợ. ② Cờ
+  mới `moTuManKhac` trong `man-hinh.js`: «Sản phẩm & kho» và «Đoạn chữ gửi cho AI» ra khỏi
+  thanh bên, ca ④g đọc code từng lối vào để chắc còn thật. Ca ②b bắt lỗi ở bản đầu: marketer
+  không thấy «Tất cả page» ⇒ ẩn đồng loạt là mất nguyên mục «Page & bot» của họ; nay màn
+  mở-từ-màn-khác hiện lại khi nó là cửa cuối của mục. ③ Chữ: Việc của tôi 298→212 · Kết nối
+  271→182 · Model 250→217 · Hệ còn sống không 340→~220 (đèn xanh thôi hiện câu lặp con số).
+  Không màn nào trên menu quá 250. Bốn màn 502 khi đo trên máy dev là vì bot cũ (3200) không chạy.

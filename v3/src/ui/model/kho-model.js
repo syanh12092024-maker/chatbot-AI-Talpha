@@ -53,7 +53,7 @@ export const TEN_VAI_TRO = Object.freeze({
 export const GIAI_THICH_VAI_TRO = Object.freeze({
   chinh: 'Model trả lời khách. Đây là chỗ tiền chảy.',
   du_phong: 'Chạy khi nhà chính hỏng hoặc hết tiền. BẮT BUỘC khác nhà với model chính.',
-  nen: 'Việc chạy ngầm: phân loại, tóm tắt, mổ hội thoại. Không nói chuyện với khách nên chọn model rẻ được.',
+  nen: 'Phân loại, tóm tắt — không nói với khách, chọn model rẻ được.',
 });
 
 /* ─────────────────────────── đọc ─────────────────────────── */

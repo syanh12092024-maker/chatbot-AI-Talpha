@@ -172,14 +172,17 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   const an = menu.reduce((a, n) => a + n.man.filter((m) => m.an).length, 0);
   // GD2 · 25/09: 19 → 17 («Bắt đầu» và «Page còn thiếu gì» ra khỏi menu, cả hai chuyển hướng
   // về danh sách page). GD3 cùng ngày: +1 màn «Cài đặt team» ⇒ 18.
-  assert.equal(hienRa, 18, `thanh bên đang vẽ ${hienRa} màn`);
-  assert.equal(an, 8, 'bảy màn chưa dùng được + một màn CẦN ID (trang một page) phải ẩn khỏi '
-    + 'thanh bên nhưng còn trong gói');
+  // 28/09: 18 → 16 — «Sản phẩm & kho» và «Đoạn chữ gửi cho AI» mở TỪ MÀN KHÁC (ca ④g).
+  assert.equal(hienRa, 16, `thanh bên đang vẽ ${hienRa} màn`);
+  assert.equal(an, 10, 'bảy màn chưa dùng được + một màn CẦN ID + hai màn MỞ TỪ MÀN KHÁC phải '
+    + 'ẩn khỏi thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
   // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp
   // một con số là ngày nào đó một màn hỏng lặng lẽ đội lốt màn cần id.
   assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 7, 'bảy màn chưa dùng được');
   assert.equal(mh.MAN.filter((m) => m.canId).length, 1, 'đúng một màn cần tham số để mở');
+  assert.deepEqual(mh.MAN.filter((m) => m.moTuManKhac).map((m) => m.ten),
+    ['Sản phẩm & kho', 'Đoạn chữ gửi cho AI'], 'màn mở từ màn khác phải khai ra, không trôi');
   // Chín màn ít dùng dồn vào Cài đặt. Đếm ở đây để nếu có người kéo một màn ít dùng trở
   // lên mục hằng ngày thì bài này đỏ, chứ không trôi lặng lẽ.
   // Bảy màn ít dùng nay tản ra ba mục theo ĐÚNG việc của chúng, không dồn hết vào một
@@ -332,4 +335,32 @@ test('⑥c · header của MỌI trang thôi tự chế link điều hướng', 
   }
   assert.deepEqual(sot, [],
     `header còn link tự chế: ${sot.join(', ')} — chuyển vào sổ đăng ký màn, đừng gắn tay`);
+});
+
+test('④g · màn MỞ TỪ MÀN KHÁC thì lối vào ấy phải CÒN THẬT — không thì màn mất đường vào', () => {
+  // 28/09: rút menu 18 → 16 bằng cách cho hai màn ra khỏi thanh bên. Luật đổi lại: mỗi màn
+  // như vậy khai những màn đang trỏ sang nó, và ca này đọc code của từng màn đó. Ai gỡ lối vào
+  // mà quên đưa màn trở lại menu thì ca đỏ, thay vì màn biến mất khỏi mắt người dùng.
+  const goc = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../src/ui');
+  const ds = mh.MAN.filter((m) => m.moTuManKhac);
+  assert.ok(ds.length > 0);
+  for (const m of ds) {
+    const { thay, loiVao } = m.moTuManKhac;
+    assert.ok(mh.MAN.some((x) => x.duong === thay), `${m.ten}: màn thay «${thay}» không có thật`);
+    assert.ok(Array.isArray(loiVao) && loiVao.length, `${m.ten}: phải khai màn trỏ sang`);
+    for (const tep of loiVao) {
+      const src = readFileSync(path.join(goc, tep), "utf8");
+      assert.ok(new RegExp(`['"\`]${m.duong}[?'"\`]`).test(src),
+        `${tep} không còn trỏ sang ${m.duong} — «${m.ten}» mất đường vào`);
+    }
+  }
+});
+
+test('④h · màn MỞ TỪ MÀN KHÁC vẫn hiện khi nó là cửa DUY NHẤT của vai vào mục', () => {
+  // Marketer không thấy «Tất cả page» ⇒ với họ «Sản phẩm & kho» là cửa duy nhất vào «Page &
+  // bot». Ẩn đồng loạt thì cả mục biến khỏi menu của họ — ca ②b bắt được lần đầu viết.
+  const hien = (vai) => mh.menuCua([vai]).flatMap((n) => n.man.filter((m) => !m.an).map((m) => m.ten));
+  assert.ok(hien(VAI.MARKETER).includes('Sản phẩm & kho'), 'marketer mất lối vào sản phẩm');
+  assert.ok(!hien(VAI.QUAN_TRI).includes('Sản phẩm & kho'), 'quản trị đã có tab ở trang page');
+  assert.ok(!hien(VAI.QUAN_TRI).includes('Đoạn chữ gửi cho AI'));
 });

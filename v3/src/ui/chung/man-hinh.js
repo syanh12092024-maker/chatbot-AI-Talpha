@@ -124,7 +124,7 @@ export const MUC_DU_TRU = Object.freeze(['nhan-cho-khach']);
  * `m` là module `index.js` của màn — đường và vai lấy từ đó.
  * `ten` và `nhom` là thứ DUY NHẤT khai ở đây, vì màn không tự biết mình tên gì trên menu.
  */
-const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false, canId = false) => ({
+const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false, canId = false, moTuManKhac = null) => ({
   duong: m.DUONG_TRANG,
   vai: m.VAI_VAO_DUOC,
   ten, nhom, moTa,
@@ -140,6 +140,15 @@ const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false, canId =
      phải nằm trong gói menu để thanh trên cùng tra ra mục của nó (án lệ GD6 ⑥b).
      KHÁC `thuNghiem`: màn này DÙNG ĐƯỢC và đang được dùng; nó chỉ không đứng riêng được. */
   canId,
+  /* `moTuManKhac` = `{ thay, loiVao }`: màn DÙNG ĐƯỢC, nhưng với người mở được màn `thay` thì
+     việc của nó đã nằm ở đó, và lối vào đúng là từ các tệp `loiVao` (mang sẵn page, việc).
+     Ca ④g của `dieu-huong.test.mjs` đọc từng tệp ấy để chắc lối vào còn thật.
+     KHÔNG ẩn khi nó là màn CUỐI giữ mục của nó trên menu: marketer không thấy «Tất cả page»,
+     nên với họ «Sản phẩm & kho» là cửa duy nhất vào mục «Page & bot» — ẩn đồng loạt là cả mục
+     biến khỏi menu của họ (ca ②b bắt được, 28/09).
+     Đặt 28/09 khi rút menu 18 → 16 (người quyết: «rút menu và chữ cho gọn»). KHÁC `canId`:
+     mở trần vẫn chạy, chỉ là mở trần thì người dùng phải tự chọn lại thứ màn kia đã biết. */
+  moTuManKhac,
   // `itDung` KHÔNG đổi quyền và KHÔNG bỏ màn khỏi menu — màn vẫn nằm trong mục của nó,
   // vẫn bấm tới được, bài ④b vẫn xanh. Nó chỉ nói với thanh bên: xếp xuống dưới một vạch
   // «Ít dùng», và đừng chìa lên thanh tab ngang. Mục «Cài đặt» có 13 màn; để cả 13 ngang
@@ -164,7 +173,11 @@ export const MAN = Object.freeze([
   // để thanh trên cùng tra được «tôi đang ở mục nào» (án lệ GD6 ⑥b). Cờ `canId` nói đúng
   // lý do ẩn: màn DÙNG ĐƯỢC, chỉ là không mở được nếu thiếu tham số.
   dat(motPage, 'Trang một page', 'page-bot', 'Một page: tình trạng, công tắc, việc làm tiếp', false, false, true),
-  dat(sanPham, 'Sản phẩm & kho', 'page-bot', 'Bot đang chào bán gì, còn hàng không', true),
+  // 28/09: RA KHỎI THANH BÊN. Mỗi page nay có tab «Sản phẩm & giá» đọc bằng CÙNG bộ đọc với
+  // bot và sửa được tại chỗ; màn này chỉ còn là bản xem cả team — mở từ việc «hết hàng» của
+  // Việc của tôi và từ danh sách điều kiện của page.
+  dat(sanPham, 'Sản phẩm & kho', 'page-bot', 'Bot đang chào bán gì, còn hàng không', true, false, false,
+    { thay: motPage.DUONG_TRANG, loiVao: ['trang-chu/kho-trang-chu.js', 'san-sang/kho-san-sang.js'] }),
   dat(lenChay, 'Đưa sản phẩm lên chạy', 'page-bot', 'Sáu chặng, mỗi chặng một cửa kiểm', true, true),
 
   // ③ DẠY BOT — sửa cách bot nói.
@@ -172,7 +185,10 @@ export const MAN = Object.freeze([
   dat(boLuat, 'Quy tắc chung mọi page', 'day-bot', 'Sửa là cả team đổi cách nói'),
   dat(lop0, 'Câu trả lời sẵn', 'day-bot', 'Trả theo từ khoá, không tốn tiền'),
   dat(kyNang, 'Kỹ năng theo sản phẩm', 'day-bot', 'Bật theo nhóm sản phẩm'),
-  dat(promptPage, 'Đoạn chữ gửi cho AI', 'day-bot', 'Xem đúng thứ AI đang đọc', true),
+  // 28/09: RA KHỎI THANH BÊN. Là công cụ chẩn đoán của MỘT page; trang một page trỏ sang nó
+  // mang sẵn `?page=`, còn mở từ menu thì phải tự chọn lại page.
+  dat(promptPage, 'Đoạn chữ gửi cho AI', 'day-bot', 'Xem đúng thứ AI đang đọc', true, false, false,
+    { thay: motPage.DUONG_TRANG, loiVao: ['mot-page/kho-mot-page.js'] }),
   dat(thuVienAnh, 'Ảnh gửi khách', 'day-bot', 'Ảnh gắn nhãn theo chủ đề', true, true),
   dat(aiDeXuat, 'Gợi ý từ AI', 'day-bot', 'Phải duyệt mới áp được', true, true),
   dat(hieuQua, 'So hai bản kịch bản', 'day-bot', 'Chưa đủ mẫu thì nói chưa kết luận', true, true),
@@ -215,9 +231,12 @@ export const MAN_THU_NGHIEM = Object.freeze(MAN.filter((m) => m.thuNghiem).map((
 export function menuCua(vai = []) {
   const cua = new Set((Array.isArray(vai) ? vai : [vai]).map(String));
   const duoc = MAN.filter((m) => (m.vai || []).some((v) => cua.has(String(v))))
-    .map((m) => ({ ...m, an: !!m.thuNghiem || !!m.canId }));
+    .map((m) => ({ ...m, an: !!m.thuNghiem || !!m.canId || !!m.moTuManKhac }));
   return NHOM
     .map((n) => ({ ...n, man: duoc.filter((m) => m.nhom === n.ma) }))
+    // Mục chỉ còn màn mở-từ-màn-khác ⇒ hiện chúng lại: đó là cửa duy nhất của vai này vào mục.
+    .map((n) => (n.man.some((m) => !m.an) ? n
+      : { ...n, man: n.man.map((m) => (m.moTuManKhac ? { ...m, an: false } : m)) }))
     // Mục KHÔNG còn màn nào hiện được thì biến mất khỏi thanh bên — một mục bấm vào rồi
     // không thấy gì là một lời mời hụt. Màn ẩn của nó vẫn nằm trong gói để tra vị trí.
     .filter((n) => n.man.some((m) => !m.an));

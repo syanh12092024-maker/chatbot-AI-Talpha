@@ -38,7 +38,7 @@
   <section class="section panel" aria-labelledby="tieu-them">
     <div class="section-header"><div>
       <h2 id="tieu-them">Thêm tài khoản</h2>
-      <div class="section-desc">Dán chuỗi tài khoản lấy từ Pancake. Hệ thử trước khi nhận, không cần khởi động lại — page tự dò lại ở lượt quét kế tiếp.</div>
+      <div class="section-desc">Dán chuỗi tài khoản lấy từ Pancake. Không cần khởi động lại.</div>
     </div></div>
     <div class="field">
       <label class="sr-only" for="oToken">Chuỗi tài khoản Pancake</label>
@@ -93,7 +93,7 @@
   <section class="section panel" aria-labelledby="tieu-nap">
     <div class="section-header"><div>
       <h2 id="tieu-nap">Kéo dữ liệu về</h2>
-      <div class="section-desc">Đọc lại page, hội thoại, kịch bản và kho hàng từ tiến trình bot rồi ghi vào cơ sở dữ liệu. Trước đây việc này chỉ gõ được bằng lệnh trên máy chủ.</div>
+      <div class="section-desc">Đọc lại page, hội thoại, kịch bản và kho hàng từ bot vào cơ sở dữ liệu.</div>
     </div>
       <span id="trangThaiNap"></span></div>
     <div id="ketQuaNap"></div>
@@ -209,7 +209,7 @@ function veKho(d) {
   $('#nutThem').disabled = !QUAN_LY;
   $('#oToken').disabled = !QUAN_LY;
   $('#goiYToken').textContent = QUAN_LY
-    ? 'Hệ gọi thử sang Pancake trước; tài khoản hỏng bị từ chối, kho không đổi.'
+    ? 'Tài khoản hỏng bị từ chối, kho không đổi.'
     : 'Máy chủ v3 chưa nối kho token — xem cảnh báo đầu trang.';
   document.querySelectorAll('[data-bo]').forEach((b) => b.addEventListener('click', () => bo(b.dataset.bo, b)));
 }
@@ -232,8 +232,7 @@ function vePos(d) {
   chu.hidden = !SUA_DUOC_POS;
   // Nói thẳng giới hạn đã biết thay vì để người ta phát hiện bằng một đơn hỏng: cửa này
   // KHÔNG gọi thử sang POS, nên khoá sai chỉ lộ ở lượt tạo đơn đầu tiên.
-  chu.textContent = 'Lưu xong không có nghĩa là khoá đúng: màn không gọi thử, khoá sai chỉ lộ '
-    + 'ở đơn đầu tiên. Ngừng dùng một cửa hàng thì TẮT, đừng bỏ — tắt thì bật lại được.';
+  chu.textContent = 'Màn không gọi thử khoá: khoá sai chỉ lộ ở đơn đầu tiên. Ngừng dùng thì TẮT, đừng bỏ.';
 
   if (d.trong) {
     $('#bangPos').innerHTML = emptyState({ icon: 'inbox', title: String(d.trong.noi || '').replace(/`/g, ''),

@@ -275,13 +275,13 @@ và GD5 đều chờ GD1. GD6 làm cuối.
 
 | Chỉ số | Hôm nay (22/09) | Đích |
 |---|---:|---:|
-| Màn trên menu (quản trị) | ~~26~~ → ~~19~~ → ~~17~~ → **18** (8 màn ẩn) | ≤ 16 — GD2+GD3 đã gộp hết chỗ gộp được; muốn xuống 16 phải bỏ màn, không phải gộp |
+| Màn trên menu (quản trị) | ~~26~~ → ~~19~~ → ~~17~~ → ~~18~~ → **16** (28/09: «Sản phẩm & kho» và «Đoạn chữ gửi cho AI» mở từ màn khác; marketer vẫn thấy «Sản phẩm & kho») | ≤ 16 ✅ |
 | Màn phải ghé để cài một page | ~~7 màn · 11 bước~~ → **1 trang** (`/page/:id`) | 1 luồng ✅ |
 | Việc phải làm ngoài giao diện | ~~3 (+ terminal)~~ → **2** (25/09: giao page nay bấm trên màn, chỉ còn bật cầu dao MỘT LẦN) | ≤ 2, đều có hướng dẫn, không cần terminal |
 | Nút bật bot | ~~5~~ → **1 cửa ghi trên v3** (thước `mot-page` ⑤ canh) | 1 trên v3 ✅ (v1 nay chặn từ ngoài, xem 25/09) |
 | Chỗ tự tính «page thiếu gì» | ~~6~~ → **1 bảng từ vựng** (`DIEU_KIEN_TAT_CA`), hiện ở 2 chỗ | 1 hàm, hiện ở ≤ 2 chỗ ✅ |
 | Màn lỗi JS khi mở | ~~1~~ → **0** (GD0 xong) | 0, `do-giao-dien.mjs` canh |
-| Chữ DIỄN GIẢI trên các màn trong menu | ~~6.790~~ → **4.255** | ≤ 3.400 — đề nghị đổi đích, xem phiếu GD4 §4 |
+| Chữ DIỄN GIẢI trên các màn trong menu | ~~6.790~~ → ~~4.255~~ → **~3.790** (28/09, cả 25 màn) | đích mới theo phiếu GD4 §4: **không màn nào trên menu > 250** ✅ (cao nhất: Hệ còn sống không ~220) |
 | Hộp cảnh báo | 32 | ≤ 1 mỗi màn, chỉ loại có việc phải làm |
 | Màn diễn giải > 300 chữ | 5 | 0 |
 | Mã kỹ thuật lộ trên mặt màn | 71 | 0 (ngoài ô Nguồn số) |

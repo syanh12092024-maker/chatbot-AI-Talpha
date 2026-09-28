@@ -115,9 +115,9 @@ async function tai() {
       $('#ds').innerHTML =
         (nhom.gap.length ? '' : `<div class="duoi-5">${canhBao({ level: 'success', title: 'Không có việc nào gấp',
           body: 'Mọi việc theo vai của bạn đều đã ổn hoặc chưa có dữ liệu để đếm.' })}</div>`)
-        + veNhom('Cần xử lý', 'Việc có người phải làm, xếp theo độ gấp.',
+        + veNhom('Cần xử lý', 'Gấp xếp trước.',
             statusBadge('blocked', { label: `${so(nhom.gap.length)} việc` }), nhom.gap, 'gap')
-        + veNhom('Chưa đọc được số', 'Hiện «—» thay vì 0: số 0 ở đây sẽ là tin mừng giả.',
+        + veNhom('Chưa đọc được số', 'Hiện «—», không phải 0.',
             statusBadge('unknown', { label: `${so(nhom.chua.length)} mục` }), nhom.chua, 'chua')
         + veNhom('Đã ổn', null,
             statusBadge('ready', { label: `${so(nhom.on.length)} mục` }), nhom.on, 'on');
@@ -127,7 +127,7 @@ async function tai() {
     if (d.soAnVaiKhac) {
       ghi.push(`<p>Còn ${so(d.soAnVaiKhac)} việc thuộc vai khác không hiện ở đây. Màn này chỉ hiện việc theo vai của bạn, không phải toàn bộ hệ thống.</p>`);
     }
-    ghi.push('<p>Màn này là danh sách việc. Số đơn và tỉ lệ chốt nằm ở màn <a href="/bao-cao">Đơn và tỉ lệ chốt</a>.</p>');
+    ghi.push('<p>Số đơn xem ở <a href="/bao-cao">Đơn và tỉ lệ chốt</a>.</p>');
     $('#chan').innerHTML = ghi.join('');
   } catch (e) {
     $('#bang-tin').innerHTML = canhBao({ level: 'error', title: 'Không tải được danh sách việc', body: e.message });

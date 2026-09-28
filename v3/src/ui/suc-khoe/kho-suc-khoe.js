@@ -322,7 +322,7 @@ function denHaiBot(pages, nguonBotBat, botBat) {
   if (!daGiao.length) {
     return den({
       ma: 'hai_bot_mot_page', ten: 'Hai bot cùng một page', muc: MUC.XANH,
-      vi: 'Chưa page nào được giao cho bot mới bằng giao diện, nên chưa có chỗ nào để hai bot đụng nhau.',
+      vi: 'Chưa page nào giao cho bot mới.',
       so: '0 page đã giao',
     });
   }
@@ -387,8 +387,7 @@ async function denKhoaModel(bc, cauHinh) {
   const nha = [...new Set(cauHinh.map((c) => c.nha_cung_cap).filter(Boolean))];
   return den({
     ma: 'llm_khoa', ten: 'Khoá API model', muc: MUC.XAM,
-    vi: `Khoá cất riêng và có mã hoá nên màn này cố ý không đọc. Team đang dùng ${nha.length} `
-      + `nhà (${nha.join(', ')}) — mở màn Model AI để xem nhà nào đã có khoá.`,
+    vi: `Khoá được mã hoá nên màn này không đọc. Team dùng ${nha.length} nhà (${nha.join(', ')}).`,
     diTiep: { chu: 'Sang màn Model AI & khoá', duong: '/model-ai' },
   });
 }

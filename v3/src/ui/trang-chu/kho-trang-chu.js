@@ -92,7 +92,7 @@ async function vDeXuatChoDuyet(d) {
     di: '/ai-de-xuat',
     lam: 'Bản do AI đề xuất không áp được cho tới khi có người đọc và duyệt.',
     viRong: VI_RONG.XONG,
-    noiRong: 'Không có đề xuất nào chờ. Bình thường — hàng này chỉ có việc khi ai đó đưa một đề xuất vào.',
+    noiRong: 'Không có đề xuất nào chờ.',
   };
 }
 
@@ -121,7 +121,7 @@ async function vPageChuaCoMarketer(d) {
     gap: so > 0,
     vai: [VAI.QUAN_TRI, VAI.QUAN_LY],
     di: '/page-bot',
-    lam: 'Page không có marketer thì cảnh báo kịch bản mỏng không biết nhắc ai.',
+    lam: 'Không có marketer thì cảnh báo không biết gửi ai.',
     viRong: VI_RONG.XONG,
     noiRong: 'Mọi page đều có người phụ trách.',
     tong: ds.length,
@@ -156,12 +156,10 @@ async function vViecChoNguoi(d) {
     lam: 'Hội thoại bot đã giao lại cho người, có đồng hồ đếm ngược.',
     viRong: chuaNap ? VI_RONG.CHUA_NAP : VI_RONG.XONG,
     noiRong: chuaNap
-      ? `Hàng đợi trống trong khi có ${handoff} hội thoại bot đã giao lại cho người. Hai điều `
-        + 'đó không thể cùng đúng — hàng đợi chưa được nạp, KHÔNG phải hết việc.'
+      ? `Hàng đợi chưa được nạp (có ${handoff} hội thoại đã giao cho người) — KHÔNG phải hết việc.`
       : 'Không việc nào đang chờ người nhận.',
     diTiepRong: chuaNap
-      ? 'Đường chat mới chưa đẩy việc vào hàng đợi. Hội thoại hiện có là bản nhập từ lịch sử, '
-        + 'chưa dòng nào ghi người xử — sale vẫn làm trên Pancake cho tới khi đường mới chạy.'
+      ? 'Sale vẫn làm trên Pancake cho tới khi bot mới chạy.'
       : null,
     doiChung: { handoff, tongViec: tong },
   };

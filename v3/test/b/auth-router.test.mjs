@@ -638,3 +638,24 @@ test('22/09 · đích sau đăng nhập nhận HÀM theo vai, và hàm ném thì
   assert.equal((await hong.json()).diTiep, '/dieu-phoi');
   xoaBoDemThuSai();
 });
+
+test('28/09 · cờ `Secure` theo ĐƯỜNG THẬT: HTTP thì không gắn, dù NODE_ENV=production', async () => {
+  // Máy chủ thật: NODE_ENV=production trên http://<ip>:3102 ⇒ cookie `Secure` bị trình duyệt
+  // vứt ⇒ màn Chọn team rỗng, bật về đăng nhập. Người quyết gặp hai lần.
+  const cu = { env: process.env.NODE_ENV, ep: process.env.V3_COOKIE_SECURE };
+  try {
+    process.env.NODE_ENV = 'production';
+    delete process.env.V3_COOKIE_SECURE;
+    xoaBoDemThuSai();
+    let h = docSetCookie((await dangNhap(EMAIL.an, MK.an)).res);
+    assert.doesNotMatch(h, /Secure/i, 'trên HTTP mà gắn Secure thì trình duyệt không lưu vé');
+
+    process.env.V3_COOKIE_SECURE = '1';   // đứng sau proxy HTTPS không báo được giao thức
+    xoaBoDemThuSai();
+    h = docSetCookie((await dangNhap(EMAIL.an, MK.an)).res);
+    assert.match(h, /Secure/i);
+  } finally {
+    if (cu.env === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = cu.env;
+    if (cu.ep === undefined) delete process.env.V3_COOKIE_SECURE; else process.env.V3_COOKIE_SECURE = cu.ep;
+  }
+});

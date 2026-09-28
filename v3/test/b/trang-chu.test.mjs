@@ -84,7 +84,9 @@ test('②a · `viec_can_xu_ly` rỗng MÀ có hội thoại HANDOFF → «CHƯA 
   const o = oCua(d, 'viec_cho_nguoi');
   assert.equal(o.viRong, tc.VI_RONG.CHUA_NAP,
     'báo «0 việc» ở cảnh này là nói với sale rằng không có gì phải làm');
-  assert.match(o.noiRong, /không thể cùng đúng/i);
+  // 28/09 rút chữ: câu cũ giải thích «hai điều không thể cùng đúng»; ý phải giữ là KHÔNG hết việc.
+  assert.match(o.noiRong, /KHÔNG phải hết việc/);
+  assert.match(o.noiRong, /chưa được nạp/);
   assert.equal(o.doiChung.handoff, 5, 'phải kèm con số đối chứng để kiểm lại được');
 });
 

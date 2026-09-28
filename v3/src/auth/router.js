@@ -94,18 +94,30 @@ const bamGia = () => (_bamGiaP ??= bam(randomBytes(24).toString('hex')));
 
 /* ──────────────────────────────────── cookie ──────────────────────────────────────── */
 
-function thanhPhanCookie(giaTri, hanMs) {
+/**
+ * Cờ `Secure` đi theo ĐƯỜNG THẬT của lượt gọi, không theo `NODE_ENV`.
+ *
+ * ⚠️ 28/09: trước đây `NODE_ENV=production` ⇒ luôn `Secure`. Máy chủ thật chạy
+ *    `http://<ip>:3102` (chưa có HTTPS) ⇒ trình duyệt VỨT cookie vé ⇒ đăng nhập «thành công»
+ *    nhưng màn Chọn team rỗng rồi bật về màn đăng nhập. Người quyết gặp hai lần (25/09, 28/09).
+ *    Trên HTTP, `Secure` không bảo vệ được gì — nó chỉ làm hỏng đăng nhập. Chữa gốc vẫn là
+ *    HTTPS: có HTTPS thì `req.secure` đúng (đứng sau proxy thì bật `trust proxy`) và cờ tự
+ *    có lại. `V3_COOKIE_SECURE=1` ép cờ khi proxy không báo được giao thức.
+ */
+const laHttps = (req) => process.env.V3_COOKIE_SECURE === '1' || !!req?.secure;
+
+function thanhPhanCookie(giaTri, hanMs, anToan) {
   const p = [
     `${TEN_COOKIE}=${encodeURIComponent(giaTri)}`,
     'Path=/', 'HttpOnly', 'SameSite=Lax',
     `Max-Age=${Math.max(0, Math.floor(hanMs / 1000))}`,
   ];
-  if (process.env.NODE_ENV === 'production') p.push('Secure');
+  if (anToan) p.push('Secure');
   return p.join('; ');
 }
 
-const datCookieVe = (res, ve, hanMs) => res.append('Set-Cookie', thanhPhanCookie(ve, hanMs));
-const xoaCookieVe = (res) => res.append('Set-Cookie', thanhPhanCookie('', 0));
+const datCookieVe = (res, ve, hanMs) => res.append('Set-Cookie', thanhPhanCookie(ve, hanMs, laHttps(res.req)));
+const xoaCookieVe = (res) => res.append('Set-Cookie', thanhPhanCookie('', 0, laHttps(res.req)));
 
 /* ──────────────────────────────────── router ──────────────────────────────────────── */
 

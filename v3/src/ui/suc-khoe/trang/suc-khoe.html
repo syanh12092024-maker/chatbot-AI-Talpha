@@ -26,8 +26,7 @@
   <div id="dem"></div>
 
   <section class="section" aria-labelledby="tieu-den">
-    <div class="section-header"><h2 id="tieu-den">Chín đèn</h2>
-      <span class="text-muted text-sm">Hỏng và cần để ý xếp lên trước</span></div>
+    <div class="section-header"><h2 id="tieu-den">Chín đèn</h2></div>
     <ul class="item-list" id="luoi"><li class="item"><div><span class="skeleton"></span></div></li></ul>
   </section>
 </main>
@@ -58,13 +57,13 @@ function ve() {
     : 'Mọi đèn đều ổn';
   $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: MUC_CANH[m] || 'info', title: cau,
     body: m === 'xanh' ? 'Chín đèn hạ tầng đều xanh ở lượt đo gần nhất.'
-      : 'Xem danh sách bên dưới: đèn hỏng và đèn cần để ý xếp lên trước.' })}</div>`;
+      : 'Đèn hỏng xếp lên trước.' })}</div>`;
 
   $('#dem').innerHTML = metricRow([
     { label: 'Đang hỏng', value: D.dem.do, statusHtml: D.dem.do ? statusBadge('blocked', { label: 'Cần sửa ngay' }) : '' },
     { label: 'Cần để ý', value: D.dem.vang, statusHtml: D.dem.vang ? statusBadge('needs_attention') : '' },
-    { label: 'Chưa đo được', value: D.dem.xam, statusHtml: D.dem.xam ? statusBadge('unknown', { label: 'Không phải là ổn' }) : '' },
-    { label: 'Đang ổn', value: D.dem.xanh, statusHtml: D.dem.xanh ? statusBadge('ready', { label: 'Đo được và đạt' }) : '' },
+    { label: 'Chưa đo được', value: D.dem.xam, statusHtml: D.dem.xam ? statusBadge('unknown', { label: 'Chưa rõ' }) : '' },
+    { label: 'Đang ổn', value: D.dem.xanh, statusHtml: D.dem.xanh ? statusBadge('ready', { label: 'Ổn' }) : '' },
   ]);
 
   // Xếp theo mức: đỏ trước, rồi vàng, rồi xám, rồi xanh. Đèn xanh xếp trên là nó đẩy đèn
@@ -72,10 +71,12 @@ function ve() {
   const thu = { do: 0, vang: 1, xam: 2, xanh: 3 };
   const ds = [...D.den].sort((a, b) => thu[a.muc] - thu[b.muc]);
 
+  // 28/09 rút chữ: đèn XANH chỉ hiện tên, con số và nhãn «Ổn» — câu giải thích của nó
+  // lặp lại con số. Đèn đỏ, vàng, xám vẫn giữ câu, vì câu ấy nói vì sao và làm gì.
   $('#luoi').innerHTML = ds.map((d) => `<li class="item">
     <div>
       <div class="item-title">${esc(d.ten)}${d.so ? ` <span class="meta">· ${esc(d.so)}</span>` : ''}</div>
-      <div class="item-desc">${text(d.vi)}</div>
+      ${d.muc === 'xanh' ? '' : `<div class="item-desc">${text(d.vi)}</div>`}
       ${d.diTiep && !d.diTiep.duong ? `<div class="item-detail">Việc cần làm: ${text(d.diTiep.chu)}</div>` : ''}
     </div>
     <div class="item-trail">
