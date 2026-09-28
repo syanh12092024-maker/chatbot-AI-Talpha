@@ -1,6 +1,6 @@
 # MỞ VAN MN5 — MỘT NGUỒN CHO SẢN PHẨM · GIÁ · ẢNH · KỊCH BẢN (CR-28-09b)
 
-> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 28/09: «Đưa cùng lượt, chạy từng bước A→E» (UI-HT1–4 đi cùng lượt).** Bước A ✅. Các số «đo
+> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 28/09: «Đưa cùng lượt, chạy từng bước A→E» (UI-HT1–4 đi cùng lượt).** Bước A ✅ · B ✅. Các số «đo
 > 28/09» dưới đây là phép đo CHỈ ĐỌC (SSH đọc, người quyết cho phép).
 > Phiếu CR: `docs/thi-cong/doi-y-do/CR-28-09-mot-nguon-san-pham.md` · sổ §5e.
 
@@ -188,8 +188,14 @@ lùi D thì chúng không còn ở bot, nhưng còn nguyên trong CSDL để đ�
 3. prod `git fetch` + `checkout -f -B vao-ui-v3-17-09 origin/…` → `4a9e234`, 0 tệp sửa tại chỗ, 22 tệp dữ liệu lạ giữ nguyên · `npm ci --omit=dev` (292 gói) · `db/migrate.js` → **áp mới 1 (025) · tổng 25**
 4. `systemctl restart aicloser aicloser-v3 aicloser-worker-v3` (10:35:32 CEST)
 
+**B** (người quyết gõ «B»)
+1. `node --env-file=.env ops/bin/nap-mot-nguon.mjs` (chạy thử) → 77/77 khứ hồi khớp · thiếu dòng page: 1 (`1100561323151723`)
+2. `node --env-file=.env ops/bin/nap-mot-nguon.mjs --ghi` → **ĐÃ GHI: 76 page · 78 sản phẩm · 154 bậc · 536 ảnh**
+
 ## 9 · Số đo tại từng mốc
 **A:** ba dịch vụ `active`, mỗi dịch vụ `Started` 1 lần · lỗi mới **0/0/0** (tới +6′) · `/health` `pages:131` sau 14 s (bằng trước) · UI 3102 **200** trong & ngoài · `anh_san_pham` có, 0 dòng · `goi_gia.nhan` có · mã mới đang phục vụ: `POST /api/anh-san-pham/1/link` **401** (có cửa, đòi đăng nhập; không phải 404) · `/uploads/<tệp>` qua 3102 **200** · trang page có «Bot trả lời thế nào» · env từ `/proc` cả ba: `PANCAKE_READONLY=1` `V3_PANCAKE_GUI=0` `V3_POS_GHI=0` — van gửi vẫn đóng, chưa cờ MN5 nào.
+
+**B:** đếm lại từ CSDL: `san_pham nguon='kb'` **78** trên **76** page · bậc **154**, cả 154 có tên bậc (`nhan`) · ảnh **536** (= 543 − 7 ảnh của page thiếu dòng) · `day-lai-ban-chep.mjs` chạy thử: **74/76 khớp**, 2 lệch đúng hai ca đổi id `SP01-2` đã báo · «5 ảnh đổi gốc» là 5 link trycloudflare có chữ `/uploads/` trong đường (link NGOÀI đã chết, không phải tệp máy mình — thước đếm thô, ghi nhận) · `/health` 131 · lỗi 3′ **0** · bot không bị chạm (không lượt đẩy nào).
 
 ## 10 · Kết · nợ · ai gật
 - Kết: (giữ / lùi / mở bậc sau)
