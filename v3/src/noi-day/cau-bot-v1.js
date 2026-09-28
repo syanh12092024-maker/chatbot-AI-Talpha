@@ -64,6 +64,17 @@ export const BIEN_KHOA = 'V3_BOT_KHOA';
 export const BIEN_CO_GHI = 'V3_BOT_GHI';
 export const BIEN_CHAN_DOC = 'PANCAKE_READONLY';
 export const BIEN_GOC = 'V3_BOT_V1_GOC';
+/**
+ * CR-28-09b · MN5 — `V3_GHI_KHO_BOT=1`: cho ghi KHO KIẾN THỨC của bot (sản phẩm · kịch bản vào
+ * `kb-overrides.json`) dù `PANCAKE_READONLY=1`. Cờ HẸP, một nghĩa:
+ *   · `PANCAKE_READONLY` là luật số 1 — van GỬI tin của cả hệ; không được gỡ nó chỉ để lưu
+ *     được một bảng giá. Ghi kho là việc NỘI BỘ của bot: không tin nào ra khách vì nó; bot còn
+ *     `PANCAKE_READONLY=1` thì bot vẫn không gửi gì.
+ *   · KHÔNG mở bật/tắt bot, KHÔNG mở thêm token — hai việc ấy vẫn đóng theo `PANCAKE_READONLY`.
+ *   · `V3_BOT_KHOA=1` và `V3_BOT_GHI=0` vẫn THẮNG cờ này: ai đã khoá tay thì vẫn khoá.
+ * Vắng = đóng = hành vi cũ.
+ */
+export const BIEN_GHI_KHO = 'V3_GHI_KHO_BOT';
 
 export class LoiCauBotDong extends Error {
   constructor(lyDo) {
@@ -99,7 +110,7 @@ export const coTaiKhoan = () => !!(env('ADMIN_USER') && env('ADMIN_PASS'));
  * Cửa ghi mở hay đóng, và VÌ SAO đóng — trả về câu người đọc được, không phải một cờ trần.
  * Màn hình hiện thẳng câu này; «không bật được» mà không nói vì sao thì người ta đi hỏi vòng.
  */
-export function trangThaiCau() {
+export function trangThaiCau({ kho = false } = {}) {
   // HAI DANH SÁCH SONG SONG (GD4 · 25/09). `thieu` là câu người vận hành đọc trên màn;
   // `thieuKyThuat` là cùng lý do đó viết bằng tên biến, dành cho người sửa máy chủ — màn đưa
   // nó xuống ô «Nguồn số», còn thông báo lỗi thì mang cả hai (nhật ký cần tên biến).
@@ -115,7 +126,8 @@ export function trangThaiCau() {
     thieuKyThuat.push('`' + BIEN_CO_GHI + '=0` đang đặt — bỏ dòng đó, hoặc dùng `'
       + BIEN_KHOA + '` nếu muốn khoá');
   }
-  if (env(BIEN_CHAN_DOC) === '1') {
+  // Đường ghi KHO (sản phẩm · kịch bản) được miễn riêng lý do này khi có `V3_GHI_KHO_BOT=1`.
+  if (env(BIEN_CHAN_DOC) === '1' && !(kho && env(BIEN_GHI_KHO) === '1')) {
     thieu.push('máy này đang CHỈ ĐỌC với Pancake: không bật tắt bot, không thêm tài khoản được');
     thieuKyThuat.push('`' + BIEN_CHAN_DOC + '=1` đang bật');
   }
@@ -126,8 +138,8 @@ export function trangThaiCau() {
   return { mo: thieu.length === 0, thieu, thieuKyThuat, goc: gocBot() };
 }
 
-function batBuocMo() {
-  const t = trangThaiCau();
+function batBuocMo({ kho = false } = {}) {
+  const t = trangThaiCau({ kho });
   // Thông báo lỗi mang CẢ HAI: câu người đọc và tên biến — nó đi vào nhật ký và vào tay
   // người sửa máy chủ, nơi tên biến là thứ cần nhất.
   if (!t.mo) {
@@ -145,8 +157,8 @@ function tieuDe() {
  * Gọi một đường của `/admin/api`.
  * `ghi` = true thì kiểm cửa trước. Đọc thì chỉ cần tài khoản.
  */
-async function goi(duong, { phuongThuc = 'GET', than = null, ghi = false, hetGio = 8000 } = {}) {
-  if (ghi) batBuocMo();
+async function goi(duong, { phuongThuc = 'GET', than = null, ghi = false, kho = false, hetGio = 8000 } = {}) {
+  if (ghi) batBuocMo({ kho });
   else if (!coTaiKhoan()) {
     throw new LoiCauBotDong('thiếu `ADMIN_USER`/`ADMIN_PASS` — không đọc được trạng thái từ tiến trình bot');
   }
@@ -215,7 +227,7 @@ export async function goiAdminV1(duong, tuyChon = {}) {
  */
 export async function daySanPhamLenBot(pageIdFacebook, products) {
   const id = encodeURIComponent(String(pageIdFacebook));
-  await goiAdminV1(`/kb/${id}`, { phuongThuc: 'POST', than: { products }, ghi: true });
+  await goiAdminV1(`/kb/${id}`, { phuongThuc: 'POST', than: { products }, ghi: true, kho: true });
   const doc = await goi(`/kb/${id}`);
   const that = Array.isArray(doc?.products) ? doc.products : [];
   const lech = soBanChep(products, that);

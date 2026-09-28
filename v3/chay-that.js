@@ -299,7 +299,8 @@ const bao = dungPhanB(app, {
   // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM tiến trình bot, qua đúng cửa v1.
   dayKichBanLenBot: async (pageIdFacebook, cfg) => {
     const { goiAdminV1 } = await import('./src/noi-day/cau-bot-v1.js');
-    return goiAdminV1(`/kb/${encodeURIComponent(pageIdFacebook)}/config`, { phuongThuc: 'POST', than: cfg, ghi: true });
+    // `kho: true` — đường ghi KHO KIẾN THỨC, được `V3_GHI_KHO_BOT=1` mở riêng (CR-28-09b · MN5).
+    return goiAdminV1(`/kb/${encodeURIComponent(pageIdFacebook)}/config`, { phuongThuc: 'POST', than: cfg, ghi: true, kho: true });
   },
   bocPancake: async (b64) => parsePancakeScript(b64),
 

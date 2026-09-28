@@ -81,11 +81,21 @@ function groupsFromRows(rws) {
   }
   return groups;
 }
+// CR-28-09b · MN5 — `V3_SHEET_CHI_DANH_BA=1`: Sheet CHỈ còn là DANH BẠ page (tên · thị trường ·
+// ngành · marketer). Sản phẩm và ba khối dùng chung (Chính sách · FAQ · Phản đối) KHÔNG còn đi
+// từ Sheet vào bot. Luật một nguồn (01-QUYET-DINH §8): sản phẩm có đúng một chỗ ghi là CSDL v3,
+// tới bot qua bản chép `kb-overrides.json`; ba khối dùng chung người quyết chọn ĐỂ TRỐNG (đo
+// 28/09: chúng là mẫu Philippines tiếng Tagalog ghép vào prompt mọi page Trung Đông).
+// Vắng cờ = hành vi cũ, từng byte (luật «vắng = đóng» của `bien-moi-truong-v3.md`).
+export const sheetChiDanhBa = () => process.env.V3_SHEET_CHI_DANH_BA === '1';
+
 function ingest({ groups, policies, faqs, objections }) {
-  sharedText = buildShared(policies, faqs, objections);
+  const chiDanhBa = sheetChiDanhBa();
+  sharedText = chiDanhBa ? '' : buildShared(policies, faqs, objections);
   pageMap = new Map();
   for (const [pageId, g] of groups) {
-    pageMap.set(pageId, { products: g.products, pageName: g.name, market: g.market, category: g.category, marketer: g.marketer, text: pageText(g.market, g.category, g.products) });
+    const products = chiDanhBa ? [] : g.products;
+    pageMap.set(pageId, { products, pageName: g.name, market: g.market, category: g.category, marketer: g.marketer, text: pageText(g.market, g.category, products) });
   }
   applyOverrides();
 }
@@ -160,7 +170,7 @@ export function loadKB(kbPath = config.kbPath) {
   const policies = parsePolicies(rows(wb, 'Chính sách'));
   const faqs = parseFaqs(rows(wb, 'FAQ'));
   const objections = parseObjections(rows(wb, 'Xử lý phản đối'));
-  sharedText = buildShared(policies, faqs, objections);
+  sharedText = sheetChiDanhBa() ? '' : buildShared(policies, faqs, objections);
 
   const perPage = rows(wb, 'Sản phẩm theo Page');
   if (perPage.length) {
