@@ -75,7 +75,7 @@ test('POST 2xx → ghi một dòng viec_tu_dong, kèm ip, đối tượng và th
   const d = dong()[0];
   assert.equal(d.hanh_dong, HANH_DONG.VIEC_TU_DONG, 'nơi gọi chưa đặt hanhDong → mặc định viec_tu_dong');
   assert.equal(d.team_id, 't1');
-  assert.equal(d.tac_nhan, 'nguoi');
+  assert.equal(d.tac_nhan, 'nguoi:an');
   assert.equal(d.nguoi_dung_id, 'u1');
   assert.equal(d.doi_tuong, 'viec_can_xu_ly');
   assert.equal(d.doi_tuong_id, '7');

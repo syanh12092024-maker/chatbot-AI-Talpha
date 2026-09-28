@@ -123,8 +123,20 @@ export function cheNhayCam(gt, _sau = 0, _daGap = new WeakSet()) {
 
 // ---- GHI --------------------------------------------------------------------------
 
-/** Luật 2 — `tac_nhan` suy ra, không nhận từ nơi gọi. */
-const tacNhanCua = (bc) => (bc.nguon === NGUON.MAY ? 'may' : 'nguoi');
+/**
+ * Luật 2 — `tac_nhan` suy ra, không nhận từ nơi gọi.
+ *
+ * Dạng theo lược đồ (`001_nen.up.sql`): `nguoi:<email>` | `may:<tên-việc>` — đúng dạng mọi bộ
+ * ghi khác đang dùng (`may:tang-truy-van`, `may:cua-pos`…). Trước 28/09 file này ghi `nguoi`/
+ * `may` TRƠN, nên màn Nhật ký xếp mọi dòng máy vào làn người và in chữ «nguoi» ở cột Ai.
+ * Tên việc máy suy từ `lyDo` của vé máy («hàng đợi nhắc đơn» → `hang-doi-nhac-don`).
+ */
+const gachNoi = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+const tacNhanCua = (bc) => (bc.nguon === NGUON.MAY
+  ? `may:${gachNoi(bc.lyDo) || 'khong-ro'}`
+  : `nguoi:${bc.tenDangNhap || bc.nguoiDungId || 'khong-ro'}`);
 
 function congTruyVan(bc) {
   if (!_taoTruyVan) {

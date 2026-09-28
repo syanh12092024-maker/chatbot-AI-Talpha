@@ -147,17 +147,19 @@ test('luật 5 · vòng lặp và đối tượng quá sâu không làm treo hà
 
 // ---- LUẬT 2 · tiêu chí 7 ----------------------------------------------------------
 
-test('tiêu chí 7 · bối cảnh máy → tac_nhan "may", nguoi_dung_id null', async () => {
+test('tiêu chí 7 · bối cảnh máy → tac_nhan "may:<việc>", nguoi_dung_id null', async () => {
   const kho = chuanBi();
   const bcMay = boiCanhMay('t1', 'hàng đợi nhắc đơn');
   const luu = await ghiNhatKy(bcMay, { hanhDong: HANH_DONG.VIEC_TU_DONG });
-  assert.equal(luu.tac_nhan, 'may');
+  // Dạng của lược đồ (`nguoi:<email>` | `may:<tên-việc>`), cùng dạng mọi bộ ghi khác. Trước
+  // 28/09 là `may` trơn — màn Nhật ký xếp dòng máy vào làn người.
+  assert.equal(luu.tac_nhan, 'may:hang-doi-nhac-don');
   assert.equal(luu.nguoi_dung_id, null);
   assert.equal(luu.team_id, 't1');
   assert.match(luu.ghi_chu, /hàng đợi nhắc đơn/, 'lý do của vé máy đi vào ghi chú để tra ngược');
 
   const nguoi = await ghiNhatKy(bcA, { hanhDong: HANH_DONG.DANG_NHAP });
-  assert.equal(nguoi.tac_nhan, 'nguoi');
+  assert.equal(nguoi.tac_nhan, 'nguoi:an');
   assert.equal(nguoi.nguoi_dung_id, 'u1');
 });
 
@@ -168,7 +170,7 @@ test('luật 2 · nơi gọi tự đặt tac_nhan thì bị bỏ qua — máy kh
     hanhDong: HANH_DONG.VIEC_TU_DONG, tac_nhan: 'nguoi', nguoi_dung_id: 'u1',
   }));
   const d = dongCua(kho)[0];
-  assert.equal(d.tac_nhan, 'may');
+  assert.match(d.tac_nhan, /^may:/);
   assert.equal(d.nguoi_dung_id, null);
 });
 
