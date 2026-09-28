@@ -70,6 +70,9 @@ export const BANG_NGHIEP_VU_CHUAN = new Set([
   // (`team_id NOT NULL`, không chứa bí mật) nên nó vào đây — không vào thì màn gán «page
   // này bán sản phẩm nào» không đụng được nó bằng đường nào cả.
   "san_pham_goc",
+  // CR-28-09b (migration 025): ảnh bot gửi khách, theo sản phẩm — nhà DUY NHẤT của ảnh từ
+  // luật một nguồn. Bảng nghiệp vụ bình thường (`team_id NOT NULL`, không chứa bí mật).
+  "anh_san_pham",
 ]);
 
 const RE_TEN_HOP_LE = /^[a-z_][a-z0-9_]*$/;

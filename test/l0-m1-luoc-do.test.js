@@ -31,7 +31,10 @@ import { GOC } from "../db/ket-noi.js";
 // 17/09: +lan_gui (migration 016) — mỗi lần bot ĐỊNH gửi một tin ra ngoài là một dòng, kể
 // cả lượt diễn tập (`trang_thai='dien_tap'`, không gọi kênh). Thêm bảng là đổi con số ca S1
 // neo vào; NEO được sửa cùng commit với migration.
+// 28/09 CR-28-09b (MN1): +anh_san_pham (migration 025) — ảnh sản phẩm có nhà trong v3; trước
+// đó 543 ảnh bot gửi chỉ nằm trong `kb-overrides.json`. NEO sửa cùng commit với migration.
 const NEO_19_BANG = [
+  "anh_san_pham",
   "nap_bo_qua",
   "lan_gui",
   "token_pancake",

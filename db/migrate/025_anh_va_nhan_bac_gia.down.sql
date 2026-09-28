@@ -1,0 +1,2 @@
+ALTER TABLE goi_gia DROP COLUMN IF EXISTS nhan;
+DROP TABLE IF EXISTS anh_san_pham;

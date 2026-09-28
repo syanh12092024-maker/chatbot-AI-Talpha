@@ -65,6 +65,7 @@ Mọi bảng còn lại có `team_id NOT NULL`; **ngoại lệ duy nhất** là 
 | `page`               | sổ cái page                      | `page_id` (id FB, UNIQUE) · **`bot_ai_bat`** · `botcake_tat` · `trong_diem` · `the_pancake` · `mat_dau` |
 | `san_pham_goc`       | sản phẩm THẬT (CR-15/09)         | **không shop, không page** · UNIQUE (team, `ma_goc`) · khoá của tầng kịch bản «sản phẩm» + `ky_nang`     |
 | `san_pham` `goi_gia` | danh mục                         | **chưa nạp ở L0-M1** — nguồn là POS (L1-M1) · `ma_goc` → `san_pham_goc` (nullable tới khi người soát)   |
+| `anh_san_pham`       | ảnh bot gửi khách (CR-28-09b)    | theo `san_pham` · nhãn giữ nguyên văn · đường = link công khai hoặc `/uploads/<tệp>` — xem §12              |
 | `khach`              | hồ sơ khách                      | `so_dien_thoai` **NULL được**, UNIQUE trong team khi có giá trị · `ti_le_hoan`                          |
 | `hoi_thoai`          | trạng thái hội thoại             | UNIQUE (page, psid) · `khach_id` **nullable** · `moc_luot_llm` (sổ ngân sách 24h)                       |
 | `so_ai`              | mọi hành động bot                | **CHỈ INSERT** · `ma_model` NOT NULL · `nguon_tep`+`nguon_dong` (neo idempotent)                        |
@@ -451,3 +452,34 @@ phụ thuộc ngược vào `src/orders`. Chọn nhập THẲNG `../orders/loc-t
 ngược) — cùng khuôn `import SÂU có chủ ý` đã ghi ở `cua-pos.js:18`. Giá phải trả:
 `khach.so_dien_thoai` LƯU DẠNG ĐÃ CHUẨN HOÁ (không giữ định dạng gốc của POS) — chi
 tiết + lý do đầy đủ nằm trong comment quyết định ⑤ đầu `src/pos/doc-don.js`.
+
+## 12 · THAY ĐỔI — bản 025 (CR-28-09b · MN1, 28/09/2026)
+
+Luật một nguồn (`01-QUYET-DINH.md` §8): sản phẩm · giá · ảnh · kịch bản có đúng MỘT chỗ ghi
+là CSDL v3. Đo prod 28/09: `san_pham`/`goi_gia` = 0/0, và 543 ảnh bot gửi chỉ nằm trong
+`kb-overrides.json`. Bản 025 cho ảnh và tên bậc giá một chỗ ở trong v3.
+
+### 12.1 · Bảng mới `anh_san_pham` (migration `025_anh_va_nhan_bac_gia`)
+
+| Cột | Luật |
+|---|---|
+| `san_pham_id` | ảnh thuộc SẢN PHẨM, không thuộc page — hai page bán cùng sản phẩm dùng chung bộ ảnh · `ON DELETE CASCADE` |
+| `duong` | CHECK: `https?://…` (không khoảng trắng) hoặc `/uploads/<tệp>` (tên tệp không bắt đầu bằng dấu chấm). Cùng luật với `src/products/anh-san-pham.js#KHUON_DUONG` — ca AS1 canh hai bên khớp · UNIQUE (`san_pham_id`, `duong`) |
+| `nhan` | chữ bot chọn ảnh theo (`send_product_image` lọc bằng `includes`) — **cấm chuẩn hoá** |
+| `thu_tu` | người xếp; thêm mới vào cuối |
+| `nguon` | `nguoi` (tải lên trên giao diện) · `kb` (nạp một lượt từ `kb-overrides.json`, MN2) |
+
+Bảng nghiệp vụ thường (`team_id NOT NULL`) ⇒ có mặt trong `BANG_NGHIEP_VU_CHUAN` của tầng
+truy vấn và NEO của ca S1.
+
+### 12.2 · Cột mới `goi_gia.nhan text NOT NULL DEFAULT ''`
+
+Tên bậc giá KHÁCH ĐỌC («Buy 1 Get 1 FREE (Total 2 Products)»). Bảng giá bot v1 là
+`{label, price}` với nhãn tự do; không có cột này thì chuyển giá sang v3 là đổi lời bot nói.
+Rỗng = chưa đặt tên; nơi đẩy sang bot dựng «Buy <so_luong>» (khớp `kb.js#productTiers`).
+
+### 12.3 · Bộ đọc chung mang ảnh — và KHÔNG gãy khi 025 chưa áp
+
+`src/products/catalog.js#docSanPhamGoiGia` trả thêm `anh: [{id, duong, nhan, thuTu, nguon}]`
+cho mỗi sản phẩm. Hàm này nằm trên đường chat và cửa tiền tạo đơn, nên CSDL chưa có bảng
+(`42P01`) ⇒ `anh: []`, không ném (ca AS6). ⛔ Bản này chỉ THÊM ⇒ thứ tự deploy nào cũng an toàn.
