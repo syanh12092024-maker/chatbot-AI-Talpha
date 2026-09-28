@@ -1285,6 +1285,13 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
   «Page» trên hội thoại thật chưa đo (cần deploy); ⑥ phiếu UI-HT2 còn «mốc bot đẩy sang người» giữa
   khung chat và tìm theo tên. Nhật ký `docs/thi-cong/nhat-ky/phieu-UI-HT3.md`.
 
+  🟢 **N-HT4 (28/09, phiếu UI-HT4 — thước §10).** ① Trang chi tiết việc chưa trỏ về bàn hội thoại
+  cho việc loại hội thoại (còn «Hội thoại đầy đủ nằm ở Pancake»); ② đường lùi `'/dieu-phoi'` ở
+  `v3/chay-that.js` (`app.get('/')`), `ui/chung/http.js#TRANG_MAC_DINH`, `dang-nhap.html`/`chon-team.html`
+  — chỉ chạm khi đích theo vai hỏng; ③ `docs/v3/thiet-ke/HienTrang.dc.html` còn trích §10 cũ (ảnh chụp
+  thiết kế 14/09, để làm lịch sử); ④ HK10 không đo được `mot-page` (đầu trang động).
+  Nhật ký `docs/thi-cong/nhat-ky/phieu-UI-HT4.md`.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2589,3 +2596,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 28/09 · MN4 → ✅ `9e175ec` — ảnh sửa ngay trong tab sản phẩm (tải byte ≤10 MB · link · nhãn · xếp · bỏ), mỗi thao tác một giao dịch ghi → đẩy bot → nhật ký, hỏng ⇒ ROLLBACK + xoá tệp · ba màn Sản phẩm & kho / Ảnh gửi khách / Đưa lên chạy đọc CSDL · thước mn4 6/6 · ⚠️ một phần MN4 lọt vào `f2ddaa3` (UI-HT3) do phiên kia `git add` cả tệp — HEAD gãy tới `9e175ec`
 - 28/09 · MN6 → ✅ `b0b1282` — trang page: tab «Bot trả lời thế nào» xếp đúng thứ tự AI nhận · kịch bản LƯU LÀ CHẠY (`luuVaChay`, vai soạn, đúng §9) · màn /kich-ban cùng luật + «Chạy lại bản này» · chạy thật trên bản dev riêng: trình duyệt sửa câu chào/giá/ảnh ⇒ bot dev trả đúng bản mới
 - 28/09 · 🧭 **HAI PHIÊN CÙNG CÂY: COMMIT BẰNG PATHSPEC CHƯA ĐỦ, PHẢI THEO HUNK.** `git commit -- <tệp>` đưa cả hunk của phiên kia trong cùng tệp. Tệp dùng chung (`vai-b.js`, `chay-that.js`) ⇒ `git diff <tệp>` tách hunk rồi `git apply --cached`.
+- 28/09 · UI-HT4 → ✅ — thước §10 phủ cả module bàn hội thoại (đồ thị import · cửa tiêm · chỉ GET · trang · khối đóng việc · Pancake GET đo hành vi) · HK10 siết (bản cũ để sống «bàn mất <h1>») · sale đăng nhập vào thẳng bàn · spec L4-M1 §7 hợp đồng hiện hành
+  cổng ui-ht4.sh 17/17 (kèm ui-ht1..3) · đảo-vá 16/16 trong worktree riêng · sóng UI-HT1–4 xong, chưa deploy
+  · commit 2e859fe · nhật ký docs/thi-cong/nhat-ky/phieu-UI-HT4.md
