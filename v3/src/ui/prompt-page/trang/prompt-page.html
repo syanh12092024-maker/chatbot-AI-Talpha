@@ -142,7 +142,7 @@ async function napPage() {
   if (!d) return;
   $('#tomTatPage').textContent = (d.soKhop === d.soTong ? `${so(d.soTong)} page` : `${so(d.soKhop)}/${so(d.soTong)} page khớp`)
     + (d.catBot ? ` · còn ${so(d.catBot)} không hiện` : '');
-  const cu = $('#chonPage').value;
+  const cu = $('#chonPage').value || TU_URL;
   $('#chonPage').innerHTML = d.page.length
     ? d.page.map((p) => `<option value="${esc(p.pageId)}">${esc(p.ten || '(chưa có tên)')} — ${esc(p.pageId)}${p.botAiBat ? ' · bot đang chạy' : ''}</option>`).join('')
     : '<option value="">Không page nào khớp</option>';
@@ -173,6 +173,12 @@ $('#oTim').addEventListener('input', (e) => {
   hen = setTimeout(() => { TIM = e.target.value.trim(); napPage(); }, 250);
 });
 
+// MỞ TỪ TRANG CỦA MỘT PAGE (`?page=<id Facebook>`): lọc đúng page ấy rồi chọn sẵn. Trước 28/09
+// màn bỏ qua tham số này — bấm «Xem đoạn chữ gửi AI» ở page A lại hiện prompt của page B đứng
+// đầu danh sách (bắt được ở lượt thử đầu-cuối CR-28-09b). Lọc chứ không chỉ chọn: danh sách
+// bị cắt bớt, page cần xem có thể không nằm trong phần hiện ra.
+const TU_URL = new URLSearchParams(location.search).get('page') || '';
+if (TU_URL) { TIM = TU_URL; $('#oTim').value = TU_URL; }
 napPage().catch((e) => baoLoi('Không tải được danh sách page', e.message));
 </script>
 <script src="/chung/dieu-huong.js"></script>

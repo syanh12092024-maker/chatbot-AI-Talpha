@@ -374,7 +374,7 @@ function veKhac(o) {
   o.innerHTML = `<div class="panel">
     <div class="setting-row"><div><b>Câu trả lời sẵn theo từ khoá</b><div class="meta">Chạy TRƯỚC AI, không tốn tiền. Khớp từ khoá thì bot trả ngay câu này.</div></div>
       <div>${button('Xem câu trả lời sẵn', { size: 'sm', href: '/lop-0' })}</div></div>
-    <div class="setting-row"><div><b>Đoạn chữ thật gửi cho AI</b><div class="meta">Ghép đúng ba khối trên — xem để chắc chắn bot đang đọc đúng thứ bạn vừa sửa.</div></div>
+    <div class="setting-row"><div><b>Đoạn chữ gửi cho AI</b><div class="meta">Xem các khối trên được ghép thành prompt ra sao. Nếu màn đó báo «Bot KHÔNG dùng các khối này» thì máy chủ còn ghép theo cách cũ: kịch bản, sản phẩm, giá, ảnh bạn lưu ở đây VẪN tới bot, chỉ thứ tự và câu chữ quanh chúng khác.</div></div>
       <div>${button('Xem đoạn chữ gửi AI', { size: 'sm', href: `/prompt-page?page=${pid}` })}</div></div>
   </div>`;
 }
