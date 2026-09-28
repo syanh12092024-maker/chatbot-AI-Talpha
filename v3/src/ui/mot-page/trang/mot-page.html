@@ -411,8 +411,12 @@ async function veSanPham(o) {
   o.innerHTML = veGiaGoCung() + SP.map((x, i) => `
     <div class="panel" data-sp="${i}">
       <div class="setting-row">
-        <div><label for="sp-ten-${i}"><b>Tên</b></label><div class="meta">${esc(x.ma || '')}</div></div>
+        <div><label for="sp-ten-${i}"><b>Tên</b></label><div class="meta">Bot gọi món bằng tên này${x.ten ? '' : ' — đang TRỐNG, bot không gọi được tên món'} · ${esc(x.ma || '')}</div></div>
         <div><input id="sp-ten-${i}" type="text" value="${esc(x.ten || '')}" ${D.suaDuoc ? '' : 'disabled'}></div>
+      </div>
+      <div class="setting-row">
+        <div><label for="sp-bt-${i}"><b>Phân loại</b></label><div class="meta">Bot in «(phân loại: …)» cạnh tên.</div></div>
+        <div><input id="sp-bt-${i}" type="text" value="${esc(x.bien_the || '')}" ${D.suaDuoc ? '' : 'disabled'}></div>
       </div>
       <div class="setting-row">
         <div><label for="sp-mt-${i}"><b>Thông tin, cách dùng</b></label></div>
@@ -423,18 +427,21 @@ async function veSanPham(o) {
         <div><label class="switch"><input id="sp-hh-${i}" type="checkbox" role="switch" ${x.het_hang ? 'checked' : ''} ${D.suaDuoc ? '' : 'disabled'}><span>${x.het_hang ? 'Hết' : 'Còn'}</span></label></div>
       </div>
       <table class="data-table"><thead><tr>
-        <th scope="col">Số lượng</th><th scope="col">Giá cả gói</th><th scope="col">Tiền tệ</th><th scope="col">Bật</th>
+        <th scope="col">Tên bậc khách đọc</th><th scope="col">Số lượng</th><th scope="col">Giá cả gói</th><th scope="col">Tiền tệ</th><th scope="col">Bật</th>
       </tr></thead><tbody>
         ${(x.offers || []).map((g, j) => `<tr>
+          <td><input type="text" data-g="${i}-${j}-nhan" value="${esc(g.nhan || '')}" placeholder="Buy ${esc(g.so_luong)}" ${D.suaDuoc ? '' : 'disabled'}></td>
           <td><input type="number" min="1" data-g="${i}-${j}-sl" value="${esc(g.so_luong)}" ${D.suaDuoc ? '' : 'disabled'}></td>
           <td><input type="number" step="0.01" data-g="${i}-${j}-gia" value="${esc(g.price)}" ${D.suaDuoc ? '' : 'disabled'}></td>
           <td><input type="text" data-g="${i}-${j}-tt" value="${esc(g.tien_te)}" ${D.suaDuoc ? '' : 'disabled'}></td>
           <td><input type="checkbox" data-g="${i}-${j}-bat" ${g.bat !== false ? 'checked' : ''} ${D.suaDuoc ? '' : 'disabled'}></td>
         </tr>`).join('')}
       </tbody></table>
-      <p class="meta">Giá gốc, khuyến mãi, phí ship và miễn ship không hiện ở đây — chúng được
-        giữ nguyên khi lưu. Sửa bốn ô đó ở màn «Hội thoại và đơn».</p>
+      <p class="meta">Tên bậc là chữ bot gửi NGUYÊN VĂN cho khách; để trống thì bot nói «Buy &lt;số lượng&gt;».
+        Giá gốc, khuyến mãi, phí ship và miễn ship không hiện ở đây — chúng được giữ nguyên khi
+        lưu, và bot hiện CHƯA nói bốn ô đó với khách (chỉ dùng khi tạo đơn).</p>
       ${D.suaDuoc ? `<div class="duoi-2">${button('Lưu sản phẩm này', { size: 'sm', variant: 'primary', data: { luusp: i } })}</div>` : ''}
+      ${veAnh(x, i)}
     </div>`).join('');
 
   if (thieuBan.length) {
@@ -446,7 +453,111 @@ async function veSanPham(o) {
       Sửa ở màn «Hội thoại và đơn».</p></div>`);
   }
   o.querySelectorAll('[data-luusp]').forEach((b) => b.addEventListener('click', () => luuSanPham(Number(b.dataset.luusp), o)));
+  noiAnh(o);
   noiNutSangTab(o);
+}
+
+/* ── ẢNH BOT GỬI KHÁCH (CR-28-09b · MN4) — sửa ngay tại sản phẩm ────────────────────
+ *
+ * Mỗi thao tác là MỘT lượt ghi có hiệu lực ngay: máy chủ ghi CSDL rồi đẩy sang bot trong
+ * cùng giao dịch — bot không nhận thì thao tác không thành và màn báo lỗi.
+ * Bot chọn ảnh THEO NHÃN (khách hỏi feedback ⇒ ảnh có nhãn chứa «feedback»), nên nhãn là
+ * thứ quan trọng nhất ở đây, không phải trang trí.
+ */
+const NHAN_GOI_Y = ['Ảnh sản phẩm', 'Feedback khách', 'Chứng nhận', 'Thành phần', 'Cách dùng', 'Công dụng'];
+
+function veAnh(x, i) {
+  const ds = Array.isArray(x.anh) ? x.anh : [];
+  const khoa = D.suaDuoc ? '' : 'disabled';
+  const the = ds.map((a, k) => `
+    <figure class="thumb">
+      <img src="${esc(a.duong)}" alt="${esc(a.nhan || 'Ảnh sản phẩm')}" loading="lazy">
+      <figcaption class="thumb-meta">
+        <input type="text" list="nhan-anh" aria-label="Nhãn ảnh ${k + 1}" data-anhnhan="${esc(a.id)}" data-cu="${esc(a.nhan || '')}" value="${esc(a.nhan || '')}" placeholder="(không nhãn)" ${khoa}>
+        ${D.suaDuoc ? `<div class="duoi-2">
+          ${button('↑', { size: 'sm', variant: 'ghost', data: { anhlen: `${i}-${k}` }, disabled: !k })}
+          ${button('↓', { size: 'sm', variant: 'ghost', data: { anhxuong: `${i}-${k}` }, disabled: k >= ds.length - 1 })}
+          ${button('Bỏ', { size: 'sm', variant: 'ghost', data: { anhbo: a.id } })}
+        </div>` : ''}
+      </figcaption>
+    </figure>`).join('');
+  return `<h3 class="duoi-4">Ảnh bot gửi khách (${ds.length})</h3>
+    ${ds.length ? `<div class="thumb-grid">${the}</div>` : '<p class="meta">Chưa có ảnh — bot sẽ tư vấn bằng lời.</p>'}
+    <datalist id="nhan-anh">${NHAN_GOI_Y.map((n) => `<option value="${esc(n)}">`).join('')}</datalist>
+    ${D.suaDuoc ? `<div class="setting-row">
+      <div><b>Thêm ảnh</b><div class="meta">Bot chọn ảnh theo nhãn: «Ảnh sản phẩm» được gửi trước; khách hỏi feedback thì gửi ảnh có nhãn chứa «Feedback».</div></div>
+      <div>
+        <input type="text" list="nhan-anh" id="anh-nhan-${i}" placeholder="Nhãn, ví dụ Ảnh sản phẩm" aria-label="Nhãn ảnh mới">
+        <input type="file" id="anh-tep-${i}" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Chọn tệp ảnh">
+        ${button('Tải ảnh lên', { size: 'sm', data: { anhtai: i } })}
+        <input type="url" id="anh-link-${i}" placeholder="…hoặc dán link ảnh công khai https://" aria-label="Link ảnh">
+        ${button('Thêm link', { size: 'sm', data: { anhlink: i } })}
+      </div>
+    </div>` : ''}`;
+}
+
+/** Gọi cửa ảnh, báo kết quả ĐỒNG BỘ BOT, rồi đọc lại tab. */
+async function thaoTacAnh(duong, tuyChon, xong) {
+  try {
+    const kq = await goi(duong, { ...tuyChon, headers: { 'X-V3-Action': '1', ...(tuyChon.headers || {}) } });
+    baoDongBo(kq, xong);
+    daDocNoiDung = null;
+    await veNoiDung();
+  } catch (e) { baoLoi('Không lưu được ảnh', e.message); }
+}
+
+/** Mọi lượt lưu nói rõ bot đã nhận chưa — «đã lưu» mà bot chưa đổi là điều luật cấm. */
+function baoDongBo(kq, xong) {
+  const d = kq && kq.dongBo;
+  if (d && d.ok === false) {
+    toast(`${xong} vào dữ liệu — máy này đang khoá ghi sang bot: ${d.ghiChu}`, { level: 'error', duration: 8000 });
+    return;
+  }
+  const chuaNoi = d && Array.isArray(d.page) && d.page.some((p) => !p.daDay);
+  toast(chuaNoi ? `${xong}. Có page chưa nối sản phẩm v3 nên bot ở page đó chưa đổi.` : `${xong} — bot đã nhận bản mới.`);
+}
+
+function noiAnh(o) {
+  o.querySelectorAll('[data-anhnhan]').forEach((inp) => inp.addEventListener('change', () => {
+    if (inp.value === inp.dataset.cu) return;
+    thaoTacAnh(`/api/anh-san-pham/anh/${encodeURIComponent(inp.dataset.anhnhan)}`,
+      { method: 'POST', body: JSON.stringify({ nhan: inp.value }) }, 'Đã đổi nhãn ảnh');
+  }));
+  o.querySelectorAll('[data-anhbo]').forEach((b) => b.addEventListener('click', async () => {
+    const ok = await confirmDialog({ title: 'Bỏ ảnh này?', body: 'Bot sẽ thôi gửi ảnh này cho khách ngay khi lưu.', confirmLabel: 'Bỏ ảnh', danger: true });
+    if (ok) thaoTacAnh(`/api/anh-san-pham/anh/${encodeURIComponent(b.dataset.anhbo)}`, { method: 'DELETE' }, 'Đã bỏ ảnh');
+  }));
+  const doi = (i, k, buoc) => {
+    const ds = (SP[i].anh || []).map((a) => a.id);
+    const j = k + buoc;
+    if (j < 0 || j >= ds.length) return;
+    [ds[k], ds[j]] = [ds[j], ds[k]];
+    thaoTacAnh(`/api/anh-san-pham/${encodeURIComponent(SP[i].id)}/thu-tu`,
+      { method: 'POST', body: JSON.stringify({ ids: ds }) }, 'Đã xếp lại ảnh');
+  };
+  o.querySelectorAll('[data-anhlen]').forEach((b) => b.addEventListener('click', () => {
+    const [i, k] = b.dataset.anhlen.split('-').map(Number); doi(i, k, -1);
+  }));
+  o.querySelectorAll('[data-anhxuong]').forEach((b) => b.addEventListener('click', () => {
+    const [i, k] = b.dataset.anhxuong.split('-').map(Number); doi(i, k, 1);
+  }));
+  o.querySelectorAll('[data-anhtai]').forEach((b) => b.addEventListener('click', () => {
+    const i = Number(b.dataset.anhtai);
+    const tep = o.querySelector(`#anh-tep-${i}`).files[0];
+    if (!tep) { baoLoi('Chưa chọn ảnh', 'Chọn một tệp jpg, png, webp hoặc gif.'); return; }
+    if (tep.size > 10 * 1024 * 1024) { baoLoi('Ảnh quá lớn', 'Tối đa 10 MB.'); return; }
+    const nhan = o.querySelector(`#anh-nhan-${i}`).value.trim();
+    thaoTacAnh(`/api/anh-san-pham/${encodeURIComponent(SP[i].id)}/tai-len?nhan=${encodeURIComponent(nhan)}`,
+      { method: 'POST', body: tep, headers: { 'Content-Type': tep.type } }, 'Đã thêm ảnh');
+  }));
+  o.querySelectorAll('[data-anhlink]').forEach((b) => b.addEventListener('click', () => {
+    const i = Number(b.dataset.anhlink);
+    const duong = o.querySelector(`#anh-link-${i}`).value.trim();
+    const nhan = o.querySelector(`#anh-nhan-${i}`).value.trim();
+    if (!duong) { baoLoi('Chưa có link', 'Dán link ảnh công khai bắt đầu bằng https://'); return; }
+    thaoTacAnh(`/api/anh-san-pham/${encodeURIComponent(SP[i].id)}/link`,
+      { method: 'POST', body: JSON.stringify({ duong, nhan }) }, 'Đã thêm ảnh');
+  }));
 }
 
 async function luuSanPham(i, o) {
@@ -457,8 +568,10 @@ async function luuSanPham(i, o) {
     ten: o.querySelector(`#sp-ten-${i}`).value,
     mo_ta: o.querySelector(`#sp-mt-${i}`).value,
     het_hang: o.querySelector(`#sp-hh-${i}`).checked,
+    bien_the: o.querySelector(`#sp-bt-${i}`).value,
     // Bốn ô nâng cao đi kèm NGUYÊN VĂN — tab này không hiện chúng nên không được đổi chúng.
     offers: (x.offers || []).map((g, j) => ({
+      nhan: lay(`${j}-nhan`).value,
       so_luong: Number(lay(`${j}-sl`).value),
       price: Number(lay(`${j}-gia`).value),
       tien_te: lay(`${j}-tt`).value.trim().toUpperCase(),
@@ -470,11 +583,11 @@ async function luuSanPham(i, o) {
     })),
   };
   try {
-    await goi(`/api/van-hanh/products/${encodeURIComponent(x.id)}`, {
+    const kq = await goi(`/api/van-hanh/products/${encodeURIComponent(x.id)}`, {
       method: 'POST', headers: { 'X-V3-Action': '1' },
       body: JSON.stringify(than),
     });
-    toast('Đã lưu sản phẩm.');
+    baoDongBo(kq, 'Đã lưu sản phẩm');
     daDocNoiDung = null;          // đọc lại để lấy `version` mới, không thì lượt lưu sau bị từ chối
     await veNoiDung();
   } catch (e) { baoLoi('Không lưu được sản phẩm', e.message); }

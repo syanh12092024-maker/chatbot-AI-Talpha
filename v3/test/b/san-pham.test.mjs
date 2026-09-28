@@ -86,9 +86,10 @@ test('①c · màn PHẢI khai nó đọc từ đâu, và khai luôn nó KHÔNG 
   dung({ danhSach: async () => [mucDs('111', 1)] });
   const d = await sp.manSanPham(bc());
   assert.ok(d.nguon, 'người ta sẽ hỏi «bảng san_pham rỗng mà sao có số» — phải trả lời sẵn');
-  assert.match(d.nguon.ten, /bot|Sheet/i);
-  // GD4 · 25/09: nói bằng lời người vận hành — «kho sản phẩm của cơ sở dữ liệu» thay cho tên bảng.
-  assert.match(d.nguon.khongPhai, /kho sản phẩm|san_pham/i);
+  // CR-28-09b (28/09): luật một nguồn — màn đọc CHỖ NGƯỜI SỬA (cơ sở dữ liệu), và phải nói rõ
+  // Sheet / tệp cấu hình của bot KHÔNG còn là nơi sửa. Bản trước neo ngược lại (nguồn = bot/Sheet).
+  assert.match(d.nguon.ten, /cơ sở dữ liệu/i);
+  assert.match(d.nguon.khongPhai, /Sheet/i);
   assert.ok(d.nguon.viSao.length > 60);
 });
 

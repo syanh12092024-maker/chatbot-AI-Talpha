@@ -73,7 +73,7 @@ export async function manAnh(boiCanh, { trang = 0 } = {}) {
       teamId: bc.teamId, anh: [], dem: demRong(), chuDe: null,
       trong: {
         rong: true, vi: 'chua-nap',
-        noi: 'Chưa nối cầu sang tiến trình bot nên chưa đọc được ảnh.',
+        noi: 'Máy chủ chưa nối bộ đọc ảnh.',
         diTiep: 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` rồi khởi động lại v3.',
       },
     };
@@ -84,7 +84,7 @@ export async function manAnh(boiCanh, { trang = 0 } = {}) {
     toanHe = await _docDanhSach();
   } catch (e) {
     throw new LoiAnh(
-      `Không đọc được kho ảnh từ tiến trình bot: ${e?.message || e}. Màn TỪ CHỐI đoán — một `
+      `Không đọc được kho ảnh: ${e?.message || e}. Màn TỪ CHỐI đoán — một `
       + 'thư viện rỗng ở đây trông y như «team này chưa có ảnh nào».', 'cau_hong', 502,
     );
   }
@@ -148,7 +148,7 @@ export async function manAnh(boiCanh, { trang = 0 } = {}) {
     trong: that.length ? null : {
       rong: true, vi: 'chua-nap',
       noi: 'Không page nào của team có ảnh sản phẩm.',
-      diTiep: 'Ảnh đi kèm sản phẩm trong Google Sheet của page. Page chưa có sản phẩm thì cũng '
+      diTiep: 'Ảnh thêm ở tab «Sản phẩm & giá» của từng page. Page chưa có sản phẩm thì cũng '
         + 'chưa có ảnh — xem màn Sản phẩm & kho.',
     },
   };
@@ -177,7 +177,7 @@ function chuDeDuoc(anh) {
         + 'được**, dù ảnh thì đã có đủ.',
     diTiep: duoc ? null
       : 'Cần gắn nhãn chủ đề cho ảnh (ví dụ: ảnh mặt trước · ảnh đang dùng · ảnh so sánh · '
-        + 'ảnh giấy chứng nhận). Chỗ gắn nhãn là Google Sheet của page — v3 chưa có cửa ghi '
-        + 'sang đó, nên đây là việc người làm, không phải việc màn này.',
+        + 'ảnh giấy chứng nhận). Gắn nhãn ở tab «Sản phẩm & giá» của từng page — lưu là bot '
+        + 'nhận ngay.',
   };
 }

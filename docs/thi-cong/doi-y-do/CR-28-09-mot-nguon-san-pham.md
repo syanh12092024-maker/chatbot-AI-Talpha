@@ -147,6 +147,14 @@ Hệ quả cho phiếu:
   được mà bot nghe theo. **Nội dung hiện tại sai thị trường — người quyết chọn: nạp nguyên
   văn rồi sửa trên màn, hay bỏ trống.**
 
+## 5e · Trả lời 28/09 — khối dùng chung: **(b) ĐỂ TRỐNG**
+
+Người quyết chọn (b): Chính sách · FAQ · Phản đối (mẫu Philippines) KHÔNG chép sang v3; khi
+tắt đồng bộ Sheet (MN5) bot thôi ghép ba khối này vào prompt. MN7 thu lại còn: bot không còn
+nguồn nào cho `sharedText` ngoài v3, và màn page hiện dòng «Chính sách dùng chung: trống».
+⚠️ Đây là ĐỔI LỜI BOT với khách thật (bỏ các lời hứa «2–4 ngày», «hoàn tiền 30 ngày», «đổi
+trả 7 ngày») — xảy ra ở lượt deploy MN5, ghi trong runbook mở van.
+
 ## 6 · Đường lùi
 
 - MN1–MN4 chỉ THÊM (bảng mới, cửa đẩy mới); lùi = `025 down` + revert commit.

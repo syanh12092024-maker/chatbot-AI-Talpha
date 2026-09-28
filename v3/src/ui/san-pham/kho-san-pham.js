@@ -70,8 +70,8 @@ async function pageCuaTeam(bc) {
 
 const CHUA_NOI = {
   vi: VI_RONG.CHUA_NAP,
-  noi: 'Chưa nối cầu sang tiến trình bot nên chưa đọc được kho sản phẩm.',
-  diTiep: 'Nhờ người quản trị hệ thống nối lại đường sang tiến trình bot rồi khởi động lại dịch vụ.',
+  noi: 'Máy chủ chưa nối bộ đọc kho sản phẩm.',
+  diTiep: 'Nhờ người quản trị hệ thống kiểm cấu hình máy chủ rồi khởi động lại dịch vụ.',
   // Tên biến để riêng cho người sửa máy chủ — màn đưa xuống ô «Nguồn số», không để giữa mặt màn.
   diTiepKyThuat: 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` trong cấu hình máy chủ rồi khởi động lại dịch vụ.',
 };
@@ -92,7 +92,7 @@ export async function manSanPham(boiCanh) {
   } catch (e) {
     // Cầu hỏng ≠ không có sản phẩm. Ném — một danh sách rỗng ở đây trông y hệt «chưa nạp».
     throw new LoiSanPham(
-      `Không đọc được kho sản phẩm từ tiến trình bot: ${e?.message || e}. Màn TỪ CHỐI đoán — `
+      `Không đọc được kho sản phẩm: ${e?.message || e}. Màn TỪ CHỐI đoán — `
       + 'một bảng rỗng ở đây trông y như «team này chưa có sản phẩm nào».',
       'cau_hong', 502,
     );
@@ -122,8 +122,8 @@ export async function manSanPham(boiCanh) {
     tonKho: KHONG_CO_TON_KHO,
     trong: page.length ? null : {
       rong: true, vi: VI_RONG.CHUA_NAP,
-      noi: 'Không page nào của team có sản phẩm trong kho của tiến trình bot.',
-      diTiep: 'Sản phẩm nhập qua Google Sheet của page. Kiểm ở màn Cửa kiểm sẵn sàng — '
+      noi: 'Không page nào của team có sản phẩm.',
+      diTiep: 'Sản phẩm sửa ở tab «Sản phẩm & giá» của từng page, hoặc kéo từ kho hàng ở màn Kết nối. Kiểm ở màn Cửa kiểm sẵn sàng — '
         + 'điều kiện «Chưa có sản phẩm/giá» sẽ liệt kê đúng các page còn thiếu.',
     },
   };
@@ -143,16 +143,16 @@ function dem(page, tongPageTeam) {
 
 /** Màn phải nói nó đọc từ đâu — vì bảng `san_pham` của v3 rỗng và người ta sẽ hỏi. */
 const nguonSo = () => ({
-  ten: 'tiến trình bot v1 (Google Sheet của page)',
-  khongPhai: 'kho sản phẩm của cơ sở dữ liệu',
-  viSao: 'Kho sản phẩm chưa có dòng nào vì chưa ai kéo danh mục từ kho hàng về. Sản phẩm bot đang '
-    + 'dùng để bán nằm trong Sheet, và đó là thứ màn này hiện. Hai chỗ chưa đồng bộ với nhau.',
+  ten: 'kho sản phẩm của cơ sở dữ liệu — chỗ DUY NHẤT sửa được (CR-28-09b)',
+  khongPhai: 'Google Sheet hay tệp cấu hình của bot — hai chỗ đó thôi là nơi sửa',
+  viSao: 'Mỗi lượt lưu ở tab sản phẩm ghi vào đây rồi đẩy ngay sang bot; bot không nhận thì lượt '
+    + 'lưu không thành. Vì vậy thứ màn này hiện là thứ bot đang chào bán.',
 });
 
 const KHONG_CO_TON_KHO = Object.freeze({
   co: false,
   vi: VI_RONG.CHUA_CO_NGUON,
-  noi: 'Dữ liệu Sheet KHÔNG có trường tồn kho — chỉ mã, tên, giá, ảnh.',
+  noi: 'Chưa có số tồn kho — chỉ có cờ «hết hàng» người đánh dấu ở tab sản phẩm.',
   diTiep: 'Yêu cầu là «hết hàng thì tự tắt bot cho sản phẩm đó». Đường đọc từ kho hàng lấy được '
     + 'tồn kho nhưng chưa ai nối vào đây. Chừng nào chưa nối, màn KHÔNG hiện số 0 ở cột tồn kho '
     + '— 0 nghĩa là hết hàng, và đó là điều màn chưa biết.',
@@ -200,7 +200,7 @@ export async function sanPhamCuaMotPage(boiCanh, pageIdFacebook) {
     tonKho: KHONG_CO_TON_KHO,
     trong: sp.length ? null : {
       rong: true, vi: VI_RONG.CHUA_NAP,
-      noi: 'Page này chưa có sản phẩm nào trong Sheet.',
+      noi: 'Page này chưa có sản phẩm nào.',
       diTiep: 'Bot sẽ không chào bán được gì — đây là một trong bảy điều kiện CHẶN ở Cửa kiểm sẵn sàng.',
     },
   };

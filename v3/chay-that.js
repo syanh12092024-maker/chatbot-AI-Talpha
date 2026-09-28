@@ -215,6 +215,8 @@ const bao = dungPhanB(app, {
     // MN4: ảnh tải lên nằm CÙNG thư mục bot v1 phục vụ — một kiểu đường `/uploads/<tệp>`.
     thuMucAnh: path.join(GOC, 'public', 'uploads'),
   },
+  // MN4: «Sản phẩm & kho» · «Ảnh gửi khách» · «Đưa lên chạy» đọc CSDL — đúng chỗ người sửa.
+  khoSanPham: (await import('./src/noi-day/kho-san-pham-v3.js')).taoKhoSanPhamV3(pool),
   docSanSang: docSanSangV3,
   taoTruyVanHeThong: () => taoCongDanhTinh(pool),
   docKetNoiPos: (bc) => lietKeThiTruong(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId || null }),

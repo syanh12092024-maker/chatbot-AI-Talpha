@@ -15,7 +15,7 @@
 <body>
 <header>
   <h1>Sản phẩm &amp; kho</h1>
-  <span class="sub">Thứ bot đang chào bán, đọc từ dữ liệu sản phẩm của tiến trình bot — không gõ tay ở đây.</span>
+  <span class="sub">Thứ bot đang chào bán. Sửa ở tab «Sản phẩm & giá» của từng page — lưu là bot nhận ngay.</span>
 </header>
 
 <main>
@@ -275,7 +275,7 @@ async function tai() {
   } catch (e) {
     $('#dem').innerHTML = '';
     $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được kho sản phẩm', body: e.message })}</div>`;
-    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối sang tiến trình bot rồi tải lại trang.' });
+    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Tải lại trang; vẫn lỗi thì báo người quản trị hệ thống.' });
   }
 }
 

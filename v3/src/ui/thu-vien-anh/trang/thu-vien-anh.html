@@ -112,7 +112,7 @@ function vePhanTrang(t) {
   if (soTrang <= 1) { $('#phanTrang').innerHTML = ''; return; }
   $('#phanTrang').innerHTML = `<div class="pagination surface tren-3">
     <span>Page ${formatNumber(t.hienTai * t.moiTrang + 1)}–${formatNumber(Math.min((t.hienTai + 1) * t.moiTrang, t.tong))} / ${d0(t.tong)}
-      · mỗi lượt đọc ${d0(t.moiTrang)} page, mỗi page là một lời gọi sang tiến trình bot</span>
+      · mỗi lượt đọc ${d0(t.moiTrang)} page, mỗi page là một lượt đọc cơ sở dữ liệu</span>
     <span class="hang">${button('Trước', { size: 'sm', id: 'tr', disabled: t.hienTai <= 0 })}
       ${button('Sau', { size: 'sm', id: 'sa', disabled: t.hienTai >= soTrang - 1 })}</span>
   </div>`;
@@ -134,7 +134,7 @@ async function tai() {
       body: 'Màn này TỪ CHỐI đoán — một thư viện rỗng ở đây trông y như «team này chưa có ảnh nào».',
       detail: [e.message] })}</div>`;
     $('#luoi').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa đọc được ảnh nào',
-      body: 'Kiểm kết nối sang tiến trình bot rồi tải lại trang.' });
+      body: 'Tải lại trang; vẫn lỗi thì báo người quản trị hệ thống.' });
   }
 }
 
