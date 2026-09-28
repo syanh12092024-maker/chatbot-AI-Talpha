@@ -53,11 +53,26 @@ export function chonCuaSo(rows, recent = RECENT_MSGS) {
   const dac = rows.filter((r) => !(r.role === 'user' && laPingKhach(r.text)));
   // Cả cửa sổ toàn ping (khách mới chỉ chào) ⇒ giữ phép cũ. Thà thừa còn hơn trống rỗng:
   // model không có ngữ cảnh nào còn tệ hơn model đọc một câu chào.
-  return (dac.length ? dac : rows).slice(-recent);
+  const nguon = dac.some((r) => !r.kenhKhac) ? dac : rows;
+  // Tin KÊNH KHÁC (Botcake) có trần RIÊNG, không ăn vào `recent`: Botcake phát lại cùng
+  // một bảng giá mỗi 30 phút, để nó đếm chung là sáu slot bị mẫu máy chiếm hết và lời
+  // khách rơi ra ngoài — đúng cái bệnh ngược với cái đang chữa.
+  const out = [];
+  let that = 0, khac = 0;
+  for (let i = nguon.length - 1; i >= 0; i--) {
+    const r = nguon[i];
+    if (r.kenhKhac) { if (khac < MAX_KENH_KHAC) { out.unshift(r); khac += 1; } continue; }
+    if (that >= recent) break;
+    out.unshift(r);
+    that += 1;
+  }
+  return out;
 }
 
 export const RECENT_MSGS = 6;       // số tin nguyên văn giữ lại
 export const MSG_MAX_CHARS = 300;   // cắt mỗi tin (spec §M07)
+export const MAX_KENH_KHAC = 3;     // tin Botcake/RTO KHÁC NHAU tối đa trong cửa sổ (ngoài `recent`)
+export const KENH_KHAC_MAX_CHARS = 240;
 export const HYDRATE_MAX_MSGS = 20; // chỉ dùng ĐÚNG MỘT LẦN lúc dựng hồ sơ lần đầu
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -85,9 +100,9 @@ export function emptyProfile() {
     ordered: false,      // đã gọi create_draft_order thành công
     // ── VIỆC 2 · BOT KHÁC ĐÃ NÓI GÌ ─────────────────────────────────────────
     // Botcake/RTO nói cùng một khách nhưng hệ thống mình KHÔNG ghi nhận → AI chào
-    // lại, báo giá lại, gửi ảnh trùng. `cleanHistory` cố ý VỨT template khỏi ngữ
-    // cảnh (đúng: đưa nguyên văn vào prompt là dạy model bắt chước đúng thứ
-    // HARD_RULES cấm) — nên phải bóc thành DỮ KIỆN trước khi vứt.
+    // lại, báo giá lại, gửi ảnh trùng. `cleanHistory` bóc template thành DỮ KIỆN ở đây,
+    // rồi (từ BH7, 28/09) giữ nó trong cửa sổ dạng ghi chú rút gọn có nhãn «không phải
+    // lời bạn» — cờ thôi thì model biết CÓ báo giá mà không biết khách đã thấy GÌ.
     otherBot: {
       greeted: false,      // đã có bot khác chào
       quotedPrice: false,  // đã có bot khác báo giá
@@ -363,6 +378,21 @@ export function donTuTinKhach(text) {
 /** Khách đã chào tạm biệt / từ chối chưa? */
 export const khachTuChoi = (text) => TU_CHOI.test(String(text || ''));
 
+/** Tin mẫu máy → một dòng ghi chú có nhãn. Bỏ emoji trang trí: chúng tốn token mà không mang tin. */
+export function ghiChuKenhKhac(raw, ten = '') {
+  const chu = String(raw || '')
+    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{1F3FB}-\u{1F3FF}]/gu, ' ')
+    .replace(/\s+/g, ' ').trim();
+  if (!chu) return '';
+  const nhan = String(ten || '').trim() || 'tin tự động';
+  const cat = chu.length > KENH_KHAC_MAX_CHARS ? chu.slice(0, KENH_KHAC_MAX_CHARS).replace(/\s+\S*$/, '') + '…' : chu;
+  return `[${nhan} (page tự động gửi, KHÁCH ĐÃ NHẬN — không phải lời bạn): «${cat}»]`;
+}
+
+/**
+ * @returns {Array<{role:'user'|'assistant', text:string, kenhKhac?:true}>} cũ → mới, đã bỏ rác.
+ *   Dòng `kenhKhac` là tin Botcake/RTO đã rút gọn thành ghi chú — xem nhánh template.
+ */
 export function cleanHistory(msgs = [], pageId, prof = null) {
   const out = [];
   for (const m of msgs) {
@@ -376,9 +406,26 @@ export function cleanHistory(msgs = [], pageId, prof = null) {
       // tin bị nhận là MẪU MÁY; câu quyết định nhất lại thường do SALE THẬT gõ ("Your
       // order has been cancelled."), nên nó rơi khỏi mọi đường bóc. Xem `donKenhKhac`.
       if (prof) { const d = donTuTinPage(raw); if (d) prof.donDaCo = d; }
-      // Template Botcake/RTO — KHÔNG đưa nguyên văn vào prompt (dạy model bắt chước
-      // đúng thứ HARD_RULES cấm), nhưng phải BÓC DỮ KIỆN trước khi bỏ (việc 2).
-      if (isAutomationTemplate(raw)) { absorbOtherBot(raw, hasAttach, prof); continue; }
+      // Template Botcake/RTO — BÓC DỮ KIỆN (việc 2) rồi GIỮ LẠI dạng GHI CHÚ có nhãn.
+      //
+      // Sửa 28/09 (phiếu BH7). Bản trước VỨT HẲN, sợ model bắt chước văn mẫu. Đo trên màn
+      // đối chiếu Minty KSA: page mà Botcake nói phần lớn thì cửa sổ còn 0 dòng — Kimi chỉ
+      // thấy câu khách vừa gõ, nên «how to order» · «u have in saudi??» bị trả bằng cả bài
+      // giới thiệu + bảng giá khách vừa nhận, và «Buy 1 get free» bị hỏi lại «how many
+      // sets?» vì Kimi không thấy gói «Buy 1 Get 1 FREE – 109 SAR» Botcake vừa chào.
+      // Cờ `otherBot` («ĐÃ BÁO GIÁ — đừng lặp») không đủ: model biết CÓ báo giá mà không
+      // biết khách đã THẤY GÌ. Nhãn «không phải lời bạn» là thứ giữ nó khỏi chép giọng mẫu.
+      if (isAutomationTemplate(raw)) {
+        absorbOtherBot(raw, hasAttach, prof);
+        const ghi = ghiChuKenhKhac(raw, m?.from?.admin_name);
+        if (ghi) {
+          // Botcake phát lại CÙNG một mẫu nhiều lần — giữ lần GẦN NHẤT, bỏ lần cũ.
+          const cu = out.findIndex((r) => r.kenhKhac && r.text === ghi);
+          if (cu >= 0) out.splice(cu, 1);
+          out.push({ role: 'assistant', text: ghi, kenhKhac: true });
+        }
+        continue;
+      }
       const t = cleanText(raw, MSG_MAX_CHARS);
       if (t) out.push({ role: 'assistant', text: t });
     } else {
@@ -535,7 +582,9 @@ export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
       // Dòng "Bước còn thiếu: tên, SĐT, địa chỉ…" đọc như một mệnh lệnh đi thu thông tin.
       // Với khách đã có đơn ở kênh khác, nó chính là thứ đẩy model đi chào hàng lại.
       ? 'Bước còn thiếu: KHÔNG phải lượt thu thông tin — khách đang nói về ĐƠN ĐÃ CÓ ở trên.'
-      : `Bước còn thiếu: ${miss.length ? miss.join(', ') : 'đủ thông tin — chốt đơn được'}`);
+      // Suy từ TỪ KHOÁ, không phải từ hiểu câu: «Buy 1 get free» không khớp mẫu gói nên
+      // dòng này từng in «chọn gói» cho một khách vừa chọn gói xong. Nói rõ nó là máy đoán.
+      : `Bước còn thiếu: ${miss.length ? `${miss.join(', ')} (máy đoán theo từ khoá — hội thoại cho thấy khách đã nói rồi thì theo hội thoại, đừng hỏi lại)` : 'đủ thông tin — chốt đơn được'}`);
   if (meta.max) L.push(`Lượt đã dùng: ${meta.used || 0}/${meta.max}${meta.tier ? ` (khách ${meta.tier})` : ''} · Trạng thái: ${meta.state || 'SELLING'}`);
   // ① CÂU AI NÓI GẦN NHẤT — xem khối ghi chú "MẠCH TƯ VẤN" phía trên.
   // Cắt 200 ký tự và ép về một dòng: đây là gợi nhớ, không phải chép lại cả tin.
@@ -590,12 +639,25 @@ export function buildContextMessages({ prof, msgs = [], pageId, meta = {}, recen
   if (!prof.tenFb) { const t = tenFbTu(msgs, pageId); if (t) prof.tenFb = t; }
   const rows = cleanHistory(msgs, pageId, prof); // truyền prof để bóc dữ kiện bot khác (việc 2)
   const dropped = msgs.length - rows.length;
-  // bỏ cụm tin khách đang xử lý ở cuối
-  if (!keepTrailingUser) while (rows.length && rows[rows.length - 1].role === 'user') rows.pop();
+  // bỏ cụm tin khách đang xử lý ở cuối. Ghi chú kênh khác nằm XEN trong cụm (khách hỏi →
+  // Botcake nổ mẫu → khách hỏi tiếp) được NHẤC RA rồi đặt lại sau: cụm bị bỏ phải đúng như
+  // trước khi có ghi chú, không thì câu khách đang xử lý nằm lại cửa sổ VÀ bị handler đẩy
+  // vào lần nữa.
+  if (!keepTrailingUser) {
+    const nhac = [];
+    while (rows.length) {
+      const r = rows[rows.length - 1];
+      if (r.kenhKhac) nhac.unshift(rows.pop());
+      else if (r.role === 'user') rows.pop();
+      else break;
+    }
+    rows.push(...nhac);
+  }
   // ĐẾM TRƯỚC KHI VỨT — cùng khuôn `cleanHistory` bóc dữ kiện bot khác rồi mới bỏ template.
   // Khách giục hai lần trở lên là một dữ kiện bán hàng thật, không phải rác.
   let giuc = 0;
   for (let i = rows.length - 1; i >= 0; i--) {
+    if (rows[i].kenhKhac) continue;
     if (rows[i].role !== 'user') { if (giuc) break; else continue; }
     if (laPingKhach(rows[i].text)) giuc += 1; else break;
   }

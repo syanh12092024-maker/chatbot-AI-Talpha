@@ -77,7 +77,9 @@ test('C6 · bước còn thiếu suy ra từ checklist COD, không hỏi model',
 // ② Dọn rác trước khi nạp (spec §M07)
 // ═══════════════════════════════════════════════════════════════════════════
 
-test('C7 · ⭐ bỏ tin page rỗng + template Botcake, GIỮ NGUYÊN tin khách', () => {
+// Sửa 28/09 (BH7): template KHÔNG còn bị vứt — nó thành GHI CHÚ có nhãn `kenhKhac`, vì
+// vứt hẳn làm cửa sổ trống trên page Botcake nói nhiều. Rác rỗng vẫn bỏ như cũ.
+test('C7 · ⭐ bỏ tin page rỗng; template Botcake thành GHI CHÚ có nhãn; GIỮ NGUYÊN tin khách', () => {
   const rows = cleanHistory([
     fromCust('magkano po?'),
     fromPage('<div></div>'),                                   // rác 13,7%
@@ -87,8 +89,10 @@ test('C7 · ⭐ bỏ tin page rỗng + template Botcake, GIỮ NGUYÊN tin khác
     fromPage('SET 1 po 99 SAR 😊'),                            // tin AI thật → giữ
     fromCust('ok sige'),
   ], PAGE);
-  assert.deepEqual(rows.map((r) => r.role), ['user', 'assistant', 'user']);
-  assert.match(rows[1].text, /SET 1/);
+  assert.deepEqual(rows.map((r) => r.role), ['user', 'assistant', 'assistant', 'assistant', 'user']);
+  assert.deepEqual(rows.map((r) => !!r.kenhKhac), [false, true, true, false, false]);
+  assert.match(rows[1].text, /KHÁCH ĐÃ NHẬN — không phải lời bạn/);
+  assert.match(rows[3].text, /^SET 1/, 'tin AI thật giữ NGUYÊN VĂN, không nhãn');
 });
 
 test('C8 · tin khách chỉ có ảnh KHÔNG bị bỏ — nó vẫn là lượt của khách', () => {

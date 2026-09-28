@@ -28,7 +28,7 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', 'src');
 // ở prompt — ghi rõ ở đây để lần sau không ai tưởng là bị bỏ sót.
 // ─────────────────────────────────────────────────────────────────────────────
 const NGUYEN_TAC = [
-  ['1 · Ngôn ngữ & giọng', ['Tagalog', 'TIẾNG VIỆT', 'po"/"opo', '1-3 câu', 'tôn giáo/chính trị', 'litrato']],
+  ['1 · Ngôn ngữ & giọng', ['Tagalog', 'TIẾNG VIỆT', 'po"/"opo', '2–3 dòng', 'CHỈ chào ở tin ĐẦU', 'tôn giáo/chính trị', 'litrato']],
   ['2 · Trung thực thông tin', ['CHỈ BÁN 1 SP', 'get_price', 'không bịa giá', 'khan hiếm', 'NỘI TỆ', 'Tình trạng hàng']],
   ['2 · Ảnh luôn đi kèm chữ', ['send_product_image', 'caption', 'ảnh trơ', 'feedback', 'chứng nhận']],
   ['3 · Chốt đơn COD đúng quy trình', ['cod_confirmed=true', 'captured=true', 'Order ID']],
@@ -97,7 +97,12 @@ test('② Trần token CORE — canh bằng số KÝ TỰ (đo offline, không c
   //   CORE = 2.256 token / 6.734 ký tự  →  2,985 ký tự mỗi token.
   // Trần 7.200 ký tự ≈ 2.410 token: đủ chỗ sửa văn phong, nhưng ai dán thêm cả khối
   // mới vào CORE là test đỏ và phải đo lại tử tế.
-  assert.ok(CORE.length <= 7200, `CORE phình lên ${CORE.length} ký tự (trần 7.200) — đo lại token trước khi nới`);
+  //
+  // Nới 28/09 (BH7) 7.200 → 7.800: thêm luật «tin ngắn 2–3 dòng» + «đọc tin page tự động
+  // khách đã nhận». Đo: 7.111 → 7.735 ký tự ≈ +209 token (2.382 → 2.591), nằm trong khối
+  // CỐ ĐỊNH được cache (Kimi đọc cache $0,16/1M ⇒ +$0,00003/lượt). Đổi lại mỗi tin ra ngắn
+  // đi ~80–100 token ở giá $4/1M. BH3 sẽ cắt CORE xuống ≤1.500 token — trần này hạ theo.
+  assert.ok(CORE.length <= 7800, `CORE phình lên ${CORE.length} ký tự (trần 7.800) — đo lại token trước khi nới`);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

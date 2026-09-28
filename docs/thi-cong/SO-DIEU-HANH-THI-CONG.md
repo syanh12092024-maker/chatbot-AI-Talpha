@@ -248,6 +248,7 @@ file đó. Mọi phiếu BH so lại với sáu số ấy, không so bằng cả
 | BH4 | Ngân sách lượt theo đường chốt thật (AM 3→5 · NONG 6→8)         | —         | `lead-score.js`                                  | 🎫 |
 | BH5 | Soi lỗ hổng kiến thức của page → việc cho marketer              | —         | không                                            | 🎫 |
 | BH6 | Bỏ `get_price` · hai điểm neo cache · đo tiền thật              | BH1·BH3   | `prompts.js` `tools.js`                          | 🎫 |
+| BH7 | Kimi đọc tin Botcake khách đã nhận · tin ngắn 2–3 dòng     | —         | `context.js` `prompts.js`                        | ✅ 28/09 · cổng `bh7.sh` 9/9 · bộ ca 10/10 · đảo-vá 8/10 đỏ · đo model: xem nhật ký |
 | RBH | **GATE SÓNG BÁN** — 6 cổng bh*.sh + `do-duong-ban` 6 số đạt đích + 3 lượt model | BH1..BH6 | TỔNG | ⬜ |
 
 **Đích của gate RBH** (so mốc nền 16/09): tin page được trả lời 31,8% → **≥40%** · hội
@@ -1216,6 +1217,16 @@ trên 4.423 đơn POS 60 ngày — đã ghi §9 để không rơi mất).
   NGƯỢC với số đo (ép chốt bằng lựa chọn · gửi nhiều ảnh · cấm checklist · tin dài). Không
   ai viết sai — chúng được viết khi chưa có phép đo nào cho «nói khéo». Bài học cho phiếu
   sau: **luật hành vi phải kèm thước ngay từ lúc viết**, nếu không nó sống mãi bằng niềm tin.
+
+  🟠 **N-BH7 (28/09, phiên đối chiếu Minty KSA).** Ba việc lộ ra khi làm BH7, chưa phiếu:
+  ① **Kịch bản page dạy ngược CORE** — Minty KSA (CSDL `kich_ban`) có câu chào 4 dòng ✅
+  và «LUỒNG BÁN 1. chào, nêu 1-2 lợi ích, hỏi mấy set»; khối kịch bản đứng SAU CORE nên
+  model nghe nó hơn. Đo sau BH7: 59% tin AI vẫn mở bằng «Hello». Marketer sửa trên màn
+  Kịch bản — không sửa bằng code. ② **Cache Kimi hụt** — gọi thử liên tiếp 3 khách khác
+  nhau: trúng 7.680/7.761 token cố định; lượt thật (46 lượt, 28/09): trúng TB 6.144, còn
+  2.466 token vào giá đầy đủ/lượt ≈ 61đ/102đ. Phần cố định thật: CORE **4.331 token**
+  (tiếng Việt ~2× tiếng Anh) · kịch bản ~1.560 · KB ~660 · tools ~1.210. ③ Page có
+  `bo_luat_chung` riêng trong CSDL thì CORE bị THAY ⇒ luật tin ngắn của BH7 không tới.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -2495,3 +2506,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   trong `kieu.css` + `dieu-huong.js`) · env từ `/proc`: van gửi vẫn đóng ở cả ba. Chưa đo được:
   hành vi sau đăng nhập trên máy chủ (cần tài khoản). Lùi: `git checkout -f -B vao-ui-v3-17-09
   6fdd25a` + restart hai dịch vụ v3 — không mất dữ liệu.
+- 28/09 · BH7 → ✅ — Kimi thấy tin Botcake (ghi chú có nhãn, trần riêng 3) + CORE tin 2–3 dòng, chỉ chào tin đầu, cấm markdown · commit (xem git log `BH7`) · nhật ký docs/thi-cong/nhat-ky/phieu-bh7.md
+- 28/09 · BH7 đo Kimi thật 60 lượt Minty (dev): ký tự p50 313→253 · `**` 62%→14% · token ra 140→89 · 119→104đ/lượt; chưa đạt: «Hello» 52%→59% (kịch bản page dạy ngược, §9 N-BH7)
+- 28/09 · Việc kế (người quyết gật): tìm vì sao cache Kimi hụt ~1.500 token/lượt ở đường thật — khoản lớn nhất của đích 50đ/lượt

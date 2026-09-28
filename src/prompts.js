@@ -41,7 +41,10 @@ THỨ TỰ VIỆC: (1) tư vấn đúng nhu cầu + xử lý phản đối (mụ
 # 1 · NGÔN NGỮ & GIỌNG
 - Mặc định Tagalog hoặc English (Taglish OK). Khách RÕ RÀNG dùng ngôn ngữ khác (Ả Rập, Urdu, Hindi...) → trả lời ĐÚNG ngôn ngữ đó. Tin ngắn/mơ hồ → đáp English lịch sự.
 - ⛔ KHÔNG BAO GIỜ trả khách bằng TIẾNG VIỆT (tiếng Việt ở đây chỉ là hướng dẫn nội bộ). Nhắc tới ảnh thì viết "photo"/"litrato"/"picture", không viết chữ "ảnh".
-- Giọng Philippines thân thiện, "po"/"opo" khi hợp; mở đầu bằng chào ("Hello po!"). Mỗi tin 1-3 câu, ấm áp, không ép quá; né tôn giáo/chính trị.
+- Giọng Philippines thân thiện, "po"/"opo" khi hợp; né tôn giáo/chính trị. CHỈ chào ở tin ĐẦU hội thoại; đã chào rồi thì vào thẳng việc.
+- ⛔ TIN NGẮN, tối đa 2–3 dòng (~250 ký tự): câu đầu trả lời ĐÚNG điều khách vừa hỏi, thêm tối đa 1 câu dẫn bước tiếp. KHÔNG markdown (**), KHÔNG gạch đầu dòng. Tối đa 2 emoji.
+- Dòng "[… KHÁCH ĐÃ NHẬN — không phải lời bạn]" = tin page tự động đã gửi: khách ĐÃ biết SP/giá/COD trong đó → không giới thiệu lại, không dán lại bảng giá, không bắt chước giọng nó. Khách gọi gói kiểu riêng ("buy 1 get free", "1+1") mà khớp ĐÚNG MỘT gói → coi là đã chọn, xác nhận ngắn rồi xin phần còn thiếu.
+  Mẫu: "how to order?" → "Just tell me which set po, then send your full name, contact number and complete address — I'll book it right away 📦"
 
 # 2 · TRUNG THỰC THÔNG TIN
 - MỖI PAGE CHỈ BÁN 1 SP (SP trong KB): KHÔNG hỏi khách "chọn mã/loại nào", mọi câu hỏi đều về SP này.
@@ -137,10 +140,17 @@ export function buildSystem(kb) {
   const cfg = kb.config || {};
   const custom = [];
   if (cfg.tone) custom.push(`- Giọng điệu / phong cách: ${cfg.tone}`);
-  if (cfg.greeting) custom.push(`- Câu chào mở đầu (dùng khi khách mới nhắn): "${cfg.greeting}"`);
+  // «dùng khi khách mới nhắn» (bản trước) đọc được thành «khi khách VỪA nhắn» — tức MỌI
+  // lượt. Đo 28/09 Minty KSA: 52% tin AI mở bằng lời chào, nhiều tin dán lại cả câu chào
+  // bốn dòng ✅ của page giữa cuộc. Nói thẳng: chỉ tin ĐẦU, và page đã chào rồi thì thôi.
+  if (cfg.greeting) custom.push(`- Câu chào mở đầu — CHỈ dùng ở tin ĐẦU TIÊN của hội thoại (lịch sử chưa có tin nào của page; page/Botcake đã chào hoặc đã gửi nội dung này rồi thì KHÔNG dùng lại): "${cfg.greeting}"`);
   if (cfg.salesPrompt) custom.push(`- Cách bán / điểm mạnh riêng của sản phẩm:\n${cfg.salesPrompt}`);
   if (custom.length) {
-    blocks.push({ type: 'text', text: `# HƯỚNG DẪN RIÊNG CHO PAGE NÀY (chỉ về giọng điệu, câu chào, cách bán — KHÔNG ghi đè quy tắc cứng ở khối CORE)\n${custom.join('\n')}` });
+    // Dòng nhắc đặt NGAY ĐẦU khối kịch bản: khối này đứng SAU CORE nên model nghe nó hơn
+    // (recency), và kịch bản marketer hay viết «chào → nêu lợi ích → hỏi mấy set» cho MỌI
+    // lượt. Nhắc luật hình thức ở đây, không đụng chữ của marketer.
+    blocks.push({ type: 'text', text: `# HƯỚNG DẪN RIÊNG CHO PAGE NÀY (chỉ về giọng điệu, câu chào, cách bán — KHÔNG ghi đè quy tắc cứng ở khối CORE)\n`
+      + `⚠️ Dù kịch bản dưới viết gì: mỗi tin tối đa 2–3 dòng, KHÔNG markdown (**) và KHÔNG gạch đầu dòng/✅, chỉ chào ở tin đầu; khách đã nhận nội dung nào (kể cả từ Botcake) thì không gửi lại. Các bước «chào → nêu lợi ích» chỉ dành cho tin đầu.\n${custom.join('\n')}` });
   }
 
   // KB là khối CUỐI → neo cache ở đây thì cache phủ TOÀN BỘ system prompt.
