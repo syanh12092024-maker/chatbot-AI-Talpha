@@ -180,12 +180,23 @@ export async function handoffConversation(pool, bc, id, { lyDo = "" } = {}) {
     return { owner: "SALE", viecId: viec.rows[0]?.id ?? null, viecMoi: viec.rowCount > 0 };
   });
 }
-export async function saveProduct(pool, bc, id, input) {
+/**
+ * Lưu MỘT sản phẩm + toàn bộ bậc giá.
+ *
+ * CR-28-09b (luật một nguồn): `sauKhiLuu(c, bc, id)` chạy TRONG giao dịch, sau khi đã ghi —
+ * nơi gọi truyền bước đẩy bản chép sang bot v1. Nó ném ⇒ ROLLBACK: lượt lưu KHÔNG thành, và
+ * người dùng nhận lỗi. Không bao giờ có cảnh «đã lưu» mà bot vẫn chạy bản cũ.
+ *
+ * Tên được phép RỖNG (28/09): đo prod 75/79 sản phẩm bot đang bán không có tên — bắt buộc
+ * tên là khoá chết việc sửa giá của chúng. `nhan` (tên bậc khách đọc) và `bien_the` vắng mặt
+ * trong thân yêu cầu ⇒ GIỮ giá trị cũ, không xoá: màn cũ không biết hai trường này.
+ */
+export async function saveProduct(pool, bc, id, input, { sauKhiLuu = null } = {}) {
   idOf(id);
   if (
     typeof input.ten !== "string" ||
-    !input.ten.trim() ||
     input.ten.length > 300 ||
+    (input.bien_the !== undefined && (typeof input.bien_the !== "string" || input.bien_the.length > 200)) ||
     typeof input.mo_ta !== "string" ||
     input.mo_ta.length > 12000 ||
     typeof input.het_hang !== "boolean" ||
@@ -215,6 +226,8 @@ export async function saveProduct(pool, bc, id, input) {
       throw fault(
         "Gói giá phải có số lượng duy nhất, giá dương và tiền tệ được hỗ trợ",
       );
+    if (g.nhan !== undefined && (typeof g.nhan !== "string" || g.nhan.length > 160))
+      throw fault("Tên bậc giá quá dài (tối đa 160 ký tự)");
     quantities.add(g.so_luong);
   }
   return transaction(pool, async (c) => {
@@ -233,20 +246,22 @@ export async function saveProduct(pool, bc, id, input) {
     if (!p) throw fault("Không tìm thấy sản phẩm", 404);
     if (p.version !== input.version)
       throw fault("Sản phẩm đã đổi; tải lại trước khi lưu", 409);
+    const bienThe = input.bien_the === undefined ? p.bien_the ?? "" : input.bien_the.trim();
     await c.query(
-      "UPDATE san_pham SET ten=$3,mo_ta=$4,het_hang=$5,cau_hinh_tay=true,sua_luc=now() WHERE team_id=$1 AND id=$2",
-      [bc.teamId, id, input.ten.trim(), input.mo_ta, input.het_hang],
+      "UPDATE san_pham SET ten=$3,mo_ta=$4,het_hang=$5,bien_the=$6,cau_hinh_tay=true,sua_luc=now() WHERE team_id=$1 AND id=$2",
+      [bc.teamId, id, input.ten.trim(), input.mo_ta, input.het_hang, bienThe],
     );
     // GD5 · 25/09: chụp GÓI GIÁ CŨ trước khi xoá. Nhật ký cũ chỉ ghi tên cột («goi_gia»),
     // nên sau một lượt sửa giá không ai dựng lại được giá cũ là bao nhiêu — mà đây đúng là
     // con số khách trả. Gói giá được XOÁ rồi CHÈN LẠI, nên không chụp trước là mất hẳn.
     const giaCu = (
       await c.query(
-        `SELECT so_luong, gia, tien_te, gia_goc, khuyen_mai, phi_ship, mien_ship, bat
+        `SELECT so_luong, gia, tien_te, gia_goc, khuyen_mai, phi_ship, mien_ship, bat, nhan
            FROM goi_gia WHERE team_id=$1 AND san_pham_id=$2 ORDER BY so_luong`,
         [bc.teamId, id],
       )
     ).rows;
+    const nhanCu = new Map(giaCu.map((g) => [Number(g.so_luong), g.nhan || ""]));
     await c.query("DELETE FROM goi_gia WHERE team_id=$1 AND san_pham_id=$2", [
       bc.teamId,
       id,
@@ -254,8 +269,8 @@ export async function saveProduct(pool, bc, id, input) {
     for (const g of input.offers)
       await c.query(
         `INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te,
-                             gia_goc,khuyen_mai,phi_ship,mien_ship,bat)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+                             gia_goc,khuyen_mai,phi_ship,mien_ship,bat,nhan)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
         [
           bc.teamId,
           id,
@@ -271,11 +286,14 @@ export async function saveProduct(pool, bc, id, input) {
           // chưa khai — chỗ này cấm tiện tay.
           g.mien_ship == null || g.mien_ship === "" ? null : !!g.mien_ship,
           g.bat === false ? false : true,
+          // Tên bậc KHÁCH ĐỌC (025). Vắng ⇒ giữ tên cũ của cùng số lượng — xoá nó là đổi
+          // lời bot nói với khách chỉ vì một màn không biết cột này.
+          g.nhan === undefined ? nhanCu.get(g.so_luong) ?? "" : g.nhan.trim(),
         ],
       );
     const giaMoi = (
       await c.query(
-        `SELECT so_luong, gia, tien_te, gia_goc, khuyen_mai, phi_ship, mien_ship, bat
+        `SELECT so_luong, gia, tien_te, gia_goc, khuyen_mai, phi_ship, mien_ship, bat, nhan
            FROM goi_gia WHERE team_id=$1 AND san_pham_id=$2 ORDER BY so_luong`,
         [bc.teamId, id],
       )
@@ -287,13 +305,15 @@ export async function saveProduct(pool, bc, id, input) {
       doiTuong: "san_pham",
       doiTuongId: String(id),
       hanhDong: "v3_sua_san_pham",
-      truoc: { ten: p.ten, mo_ta: p.mo_ta, het_hang: p.het_hang, goi_gia: giaCu },
+      truoc: { ten: p.ten, mo_ta: p.mo_ta, het_hang: p.het_hang, bien_the: p.bien_the ?? "", goi_gia: giaCu },
       sau: {
-        ten: input.ten.trim(), mo_ta: input.mo_ta, het_hang: input.het_hang,
+        ten: input.ten.trim(), mo_ta: input.mo_ta, het_hang: input.het_hang, bien_the: bienThe,
         goi_gia: giaMoi,
-        cot: ["ten", "mo_ta", "het_hang", "goi_gia"],
+        cot: ["ten", "mo_ta", "het_hang", "bien_the", "goi_gia"],
       },
     });
-    return { saved: true };
+    // Đẩy sang bot TRONG giao dịch — ném là ROLLBACK (xem đầu hàm).
+    const dongBo = sauKhiLuu ? await sauKhiLuu(c, bc, id) : null;
+    return { saved: true, dongBo };
   });
 }

@@ -19,7 +19,11 @@ process.env.SCRIPT_VERSIONS_DIR = path.join(TMP, 'script-versions');
 process.env.PAGES_REGISTRY_FILE = path.join(TMP, 'pages.json');
 process.env.AI_LOG_FILE = path.join(TMP, 'ai-messages.jsonl');
 
-after(() => { try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* thư mục tạm */ } });
+// 28/09 (CR-28-09b): dọn lúc TIẾN TRÌNH thoát, không dùng `after()` cấp cao nhất. Tệp này có
+// `await import` giữa chừng nên `after` gốc chạy XONG trước khi các ca ③④ kịp chạy — thư mục
+// bị xoá sớm, mọi lượt ghi sau đó hỏng. Suốt thời gian ấy ca vẫn XANH vì `kb.js#writeOverrides`
+// nuốt lỗi ghi; bản trung thực (ghi hỏng thì ném) mới làm nó lộ ra.
+process.on('exit', () => { try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* thư mục tạm */ } });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ① L4 biến classify() thành luật thuần → L2 (handler) vẫn gọi được, không lỗi shape

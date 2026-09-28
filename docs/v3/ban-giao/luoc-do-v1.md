@@ -478,6 +478,10 @@ Tên bậc giá KHÁCH ĐỌC («Buy 1 Get 1 FREE (Total 2 Products)»). Bảng 
 `{label, price}` với nhãn tự do; không có cột này thì chuyển giá sang v3 là đổi lời bot nói.
 Rỗng = chưa đặt tên; nơi đẩy sang bot dựng «Buy <so_luong>» (khớp `kb.js#productTiers`).
 
+### 12.2b · Cột mới `san_pham.bien_the text NOT NULL DEFAULT ''`
+
+Phân loại bot in «(phân loại: …)» cạnh tên (`kb.js#buildProductText`). 2/79 sản phẩm có.
+
 ### 12.3 · Bộ đọc chung mang ảnh — và KHÔNG gãy khi 025 chưa áp
 
 `src/products/catalog.js#docSanPhamGoiGia` trả thêm `anh: [{id, duong, nhan, thuTu, nguon}]`

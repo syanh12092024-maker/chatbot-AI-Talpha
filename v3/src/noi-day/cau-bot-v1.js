@@ -200,6 +200,52 @@ export async function goiAdminV1(duong, tuyChon = {}) {
   finally { if (laGhi) boNhoSanSang(); }   // sửa kịch bản, nạp lại token… đều đổi tình trạng page
 }
 
+/* ─────────────────── bản chép sản phẩm sang bot (CR-28-09b · MN3) ─────────────────── */
+
+/**
+ * Đẩy danh sách sản phẩm (hình dạng `src/products/ban-chep-bot.js`) của MỘT page sang bot,
+ * rồi ĐỌC LẠI xem bot đang giữ đúng bản ấy chưa.
+ *
+ * Vì sao đọc lại: bot v1 trả `{ok:true}` từ `updatePageProducts` — trước 28/09 ngay cả khi
+ * ghi đĩa hỏng. Luật một nguồn đòi «lưu xong thì bot chạy đúng thế»; lời hứa của bên kia
+ * không phải bằng chứng, bản bot đọc ra mới là. Lệch ⇒ ném, nơi gọi huỷ lượt lưu.
+ *
+ * So theo đúng thứ bot dùng: id · tên · mô tả · phân loại · tiền tệ · bậc (nhãn, giá) · ảnh
+ * (nhãn, đường). Đường ảnh so bằng ĐUÔI: bot tự ghép gốc công khai vào đường `/uploads/…`.
+ */
+export async function daySanPhamLenBot(pageIdFacebook, products) {
+  const id = encodeURIComponent(String(pageIdFacebook));
+  await goiAdminV1(`/kb/${id}`, { phuongThuc: 'POST', than: { products }, ghi: true });
+  const doc = await goi(`/kb/${id}`);
+  const that = Array.isArray(doc?.products) ? doc.products : [];
+  const lech = soBanChep(products, that);
+  if (lech) {
+    throw new LoiCauBotHong(`Bot nhận bản sản phẩm của page ${pageIdFacebook} nhưng đọc lại thấy lệch: ${lech}`, 502);
+  }
+  return { pageId: String(pageIdFacebook), soSanPham: that.length };
+}
+
+/** Trả chuỗi mô tả chỗ lệch đầu tiên, hoặc '' nếu khớp. Tách ra để thước gọi thẳng. */
+export function soBanChep(gui, that) {
+  if (gui.length !== that.length) return `số sản phẩm ${gui.length} ≠ ${that.length}`;
+  for (let i = 0; i < gui.length; i += 1) {
+    const a = gui[i]; const b = that[i] || {};
+    for (const k of ['id', 'name', 'desc', 'variant', 'currency']) {
+      if (String(a[k] ?? '') !== String(b[k] ?? '')) return `sản phẩm ${a.id}: «${k}» khác`;
+    }
+    const ta = (a.tiers || []).map((t) => `${t.label}=${Number(t.price)}`).join('|');
+    const tb = (b.tiers || []).map((t) => `${t.label}=${Number(t.price)}`).join('|');
+    if (ta !== tb) return `sản phẩm ${a.id}: bậc giá khác`;
+    const ia = a.images || []; const ib = b.images || [];
+    if (ia.length !== ib.length) return `sản phẩm ${a.id}: số ảnh ${ia.length} ≠ ${ib.length}`;
+    for (let j = 0; j < ia.length; j += 1) {
+      if (String(ia[j].label || '') !== String(ib[j].label || '')
+        || !String(ib[j].url || '').endsWith(String(ia[j].url || ''))) return `sản phẩm ${a.id}: ảnh ${j + 1} khác`;
+    }
+  }
+  return '';
+}
+
 /* ────────────────────────────── công tắc BOT AI (G2-B2) ────────────────────────────── */
 
 /**

@@ -30,6 +30,10 @@ const NGOI_BUT = {
   CONV_STATE_FILE: path.join(TAM, "conv-state.json"),
   ORDER_QUEUE_FILE: path.join(TAM, "ai-order-queue.json"),
   AI_LOG_FILE: path.join(TAM, "ai-messages.jsonl"),
+  // 28/09 (CR-28-09b): `kb.js#writeOverrides` nay là đường ghi THẬT của mọi lượt lưu sản phẩm
+  // trên v3. Đo cùng ngày: một ca nạp `kb.js` qua `import` tĩnh (bắc cầu, trước khi kịp đặt
+  // biến) đã ghi một page giả vào `kb-overrides.json` của repo. Chặn ở đây, không trông ca.
+  KB_OVERRIDES_FILE: path.join(TAM, "kb-overrides.json"),
 };
 
 const daDoi = [];

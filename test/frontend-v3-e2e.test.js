@@ -88,9 +88,15 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
       };
     };
     const app = express();
+    // CR-28-09b · MN3: lưu sản phẩm phải ĐẨY sang bot v1 trong cùng giao dịch — không nối cửa
+    // đẩy thì lượt lưu bị từ chối (503). Bot giả ở đây ghi lại mọi bản nó nhận để ca soi.
+    const botNhan = [];
     dungPhanB(app, {
       express,
-      vanHanh: { pool, env, orderDeps: { env, nap } },
+      vanHanh: {
+        pool, env, orderDeps: { env, nap },
+        daySanPhamLenBot: async (pageId, products) => { botNhan.push({ pageId, products }); },
+      },
       taoTruyVan: (bc) => taoTruyVanThat(pool, bc),
       taoTruyVanHeThong: () => taoCongDanhTinh(pool),
       docSanSang: noiVanHanhV3(pool, env, {
@@ -190,7 +196,11 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
           ).status,
           400,
         );
+        const truocKhiLuu = botNhan.length;
         assert.equal((await req(`products/${p.id}`, data)).ok, true);
+        // Luật một nguồn: lưu xong thì bot đã nhận ĐÚNG giá mới (đơn vị lớn), không phải chờ.
+        assert.equal(botNhan.length, truocKhiLuu + 1, "lưu thành phải đẩy đúng một lượt sang bot");
+        assert.deepEqual(botNhan.at(-1).products[0].tiers.map((t) => t.price), [199]);
         // GD5 · 25/09: nhật ký sửa giá phải dựng lại được GIÁ CŨ. Trước lượt này nó chỉ ghi
         // tên cột («goi_gia»), nên sau một lượt sửa không ai biết giá trước là bao nhiêu —
         // mà đó đúng là con số khách trả.

@@ -19,6 +19,7 @@ import { baoCaoDienTap, tomTatDienTap } from "../../../../src/admin-v3/dien-tap.
 import { chiPhiTheoTin, gomChiPhi, GOM_THEO } from "../../../../src/admin-v3/chi-phi-tin.js";
 import { dsBoQua, tomTatBoQua, LY_DO } from "../../../../src/admin-v3/nap-bo-qua.js";
 import { docSanPhamGoiGia } from "../../../../src/products/catalog.js";
+import { daySanPhamSangBot } from "../../../../src/products/ban-chep-bot.js";
 import { duyet, loai } from "../../../../src/orders/hang-cho.js";
 import { HE_SO_TE } from "../../../../src/pos/index.js";
 export const DUONG_TRANG = '/van-hanh-v3';
@@ -31,8 +32,35 @@ const wrap = (fn) => async (q, r, next) => {
     next(e);
   }
 };
-export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {} } = {}) {
+/**
+ * Bước chạy TRONG giao dịch lưu sản phẩm (CR-28-09b · luật một nguồn): đẩy bản chép của mọi
+ * page đang bán sản phẩm sang bot v1. Ném ⇒ `saveProduct` ROLLBACK ⇒ lượt lưu không thành.
+ *
+ *   · chưa nối cửa đẩy ⇒ TỪ CHỐI lưu. Lưu vào CSDL mà bot không đổi là đúng cái lỗi CR này sửa.
+ *   · cửa ghi bị CỜ khoá (`cua_ghi_dong`: máy dev, `PANCAKE_READONLY`) TRONG KHI máy ráp prompt
+ *     từ CSDL (`V3_RAP_PROMPT_BAT=1`) ⇒ cho qua, kèm ghi chú: ở chế độ đó CSDL chính là bản
+ *     bot v3 đọc — cùng lý lẽ `kho-kich-ban.js#daySangBot`.
+ */
+export function taoBuocDayBot({ day, env = process.env } = {}) {
+  return async (c, bc, id) => {
+    if (typeof day !== "function") {
+      throw fault("Chưa nối cửa đẩy sang bot — không lưu, vì lưu mà bot không đổi là màn hình nói sai", 503);
+    }
+    try {
+      return { ok: true, page: await daySanPhamSangBot(c, bc.teamId, id, day) };
+    } catch (e) {
+      if (e?.ma === "cua_ghi_dong" && env.V3_RAP_PROMPT_BAT === "1") {
+        return { ok: false, ghiChu: String(e.message || e) };
+      }
+      if (e && !e.status) e.status = 502;
+      throw e;
+    }
+  };
+}
+
+export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {}, daySanPhamLenBot = null } = {}) {
   const r = express.Router();
+  const sauKhiLuuSanPham = taoBuocDayBot({ day: daySanPhamLenBot, env });
   const read = [batBuocDangNhap(), batBuocVaiHTTP(...VAI_VAO_DUOC)];
   const admin = batBuocVaiHTTP(VAI.QUAN_TRI);
   r.get(DUONG_TRANG, (q, s, next) => {
@@ -151,7 +179,7 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {} } = {
     wrap(async (q, s) =>
       s.json({
         ok: true,
-        ...(await saveProduct(pool, q.boiCanh, q.params.id, q.body)),
+        ...(await saveProduct(pool, q.boiCanh, q.params.id, q.body, { sauKhiLuu: sauKhiLuuSanPham })),
       }),
     ),
   );

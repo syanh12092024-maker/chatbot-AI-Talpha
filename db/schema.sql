@@ -1667,6 +1667,11 @@ COMMENT ON TABLE anh_san_pham IS
 COMMENT ON COLUMN anh_san_pham.nhan IS
   'Nhãn bot chọn theo (send_product_image lọc bằng includes) — giữ nguyên văn, cấm chuẩn hoá.';
 
+-- ─── `san_pham.bien_the` — PHÂN LOẠI bot in ra cạnh tên ──────────────────────────────
+-- Bot v1 in «(phân loại: …)» trong khối sản phẩm (`kb.js#buildProductText`). Đo 28/09: 2/79
+-- sản phẩm có. Không có cột thì chuyển sang v3 là mất chữ ấy khỏi prompt.
+ALTER TABLE san_pham ADD COLUMN bien_the text NOT NULL DEFAULT '';
+
 ALTER TABLE goi_gia ADD COLUMN nhan text NOT NULL DEFAULT '';
 COMMENT ON COLUMN goi_gia.nhan IS
   'Tên bậc giá KHÁCH ĐỌC («Buy 1 Get 1 FREE (Total 2 Products)»). Rỗng = chưa đặt; nơi đẩy sang bot dựng «Buy <so_luong>».';

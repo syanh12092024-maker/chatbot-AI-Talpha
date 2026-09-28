@@ -184,7 +184,12 @@ async function canhBaoLopModel(canh) {
 const app = express();
 const bao = dungPhanB(app, {
   taoTruyVan,
-  vanHanh: { pool },
+  // CR-28-09b · MN3: lưu sản phẩm trên v3 ⇒ đẩy bản chép sang bot v1 rồi đọc lại xác minh.
+  vanHanh: {
+    pool,
+    daySanPhamLenBot: async (pageIdFacebook, products) =>
+      (await import('./src/noi-day/cau-bot-v1.js')).daySanPhamLenBot(pageIdFacebook, products),
+  },
   docSanSang: docSanSangV3,
   taoTruyVanHeThong: () => taoCongDanhTinh(pool),
   docKetNoiPos: (bc) => lietKeThiTruong(pool, { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId || null }),

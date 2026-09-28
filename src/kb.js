@@ -14,8 +14,14 @@ function readOverrides() {
   try { return fs.existsSync(OVERRIDES_FILE) ? JSON.parse(fs.readFileSync(OVERRIDES_FILE, 'utf8')) : {}; }
   catch { return {}; }
 }
+// CR-28-09b (28/09): GHI HỎNG THÌ NÉM, không nuốt. Từ nay v3 đẩy bản chép sang đây sau mỗi
+// lượt lưu và HUỶ lượt lưu nếu bot không nhận — bản cũ nuốt lỗi rồi vẫn trả `{ok:true}`, tức
+// màn v3 báo «đã lưu» trong khi đĩa giữ bản cũ và lần khởi động lại kế tiếp là mất sạch.
+// Ghi ra tệp tạm rồi đổi tên: tệp 510 KB, chết giữa lượt ghi thì không để lại nửa tệp JSON.
 function writeOverrides(o) {
-  try { fs.writeFileSync(OVERRIDES_FILE, JSON.stringify(o, null, 2)); } catch (e) { console.error('[kb] lưu override lỗi', e.message); }
+  const tam = `${OVERRIDES_FILE}.${process.pid}.tam`;
+  fs.writeFileSync(tam, JSON.stringify(o, null, 2));
+  fs.renameSync(tam, OVERRIDES_FILE);
   _ovNho.khoa = null;   // ghi xong thì lượt đọc kế tiếp phải thấy bản mới, không chờ so mtime
 }
 
