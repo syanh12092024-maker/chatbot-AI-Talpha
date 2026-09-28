@@ -121,6 +121,9 @@ async function docSanPhamSua(bc, ids) {
   const r = await pool.query(
     `SELECT s.id, s.ma, s.ten, s.mo_ta, s.het_hang, s.xmin::text AS version,
        COALESCE(to_jsonb(s)->>'bien_the', '') AS bien_the,
+       to_jsonb(s)->>'pos_ma' AS pos_ma,
+       (SELECT jsonb_build_object('ten', p.ten, 'ton_kho', p.ton_kho, 'het_hang', p.het_hang) FROM san_pham p
+         WHERE p.team_id = s.team_id AND p.nguon = 'pos' AND p.ma = to_jsonb(s)->>'pos_ma') AS pos,
        COALESCE((SELECT jsonb_agg(jsonb_build_object(
            'so_luong',g.so_luong,'gia',g.gia,'tien_te',g.tien_te,'gia_goc',g.gia_goc,
            'khuyen_mai',g.khuyen_mai,'phi_ship',g.phi_ship,'mien_ship',g.mien_ship,'bat',g.bat,
@@ -144,8 +147,11 @@ async function docSanPhamSua(bc, ids) {
     }
   } catch (e) { if (e?.code !== '42P01') throw e; }   // 025 chưa áp ⇒ chưa có ảnh nào ở v3
   const lon = (v, tt) => (v == null ? null : Number(v) / (HE_SO_TE_SUA[tt] || 1));
+  const { tenKhachCuaPos } = await import(`${GOC}/src/products/noi-pos.js`);
   return r.rows.map((x) => ({
     ...x,
+    // MN8: tên món POS cho KHÁCH đọc — bỏ số hiệu nội bộ «41 - …» (nút «Dùng tên POS»).
+    pos: x.pos ? { ...x.pos, ten_khach: tenKhachCuaPos(x.pos.ten) } : null,
     anh: anhTheoSp.get(String(x.id)) || [],
     offers: (x.offers || []).map((g) => ({
       ...g,
@@ -246,7 +252,15 @@ const bao = dungPhanB(app, {
   quetPagePancake: async () => { await lamMoiTokenDb(); return quetVaGhiPage(pool); },
   // Kéo danh mục + tồn kho POS cho team đang mở. Cùng `ctx` với bộ đọc kết nối POS — vế
   // `team_id` trong WHERE lấy từ đây, nên bối cảnh sai là kéo nhầm kho của team khác.
-  keoDanhMucPos: (bc) => keoDanhMucTeam(pool, ctxCuaA(bc)),
+  // MN8 (CR-28-09b): sau lượt kéo, sản phẩm page đã nối món POS đổi hết hàng theo tồn kho POS và
+  // ĐẨY bản chép sang bot (một giao dịch mỗi page). Kết quả đi kèm để màn Kết nối nói ra.
+  keoDanhMucPos: async (bc) => {
+    const kq = await keoDanhMucTeam(pool, ctxCuaA(bc));
+    const { dongBoTuPos } = await import(`${GOC}/src/products/noi-pos.js`);
+    const day = async (pid, products) => (await import('./src/noi-day/cau-bot-v1.js')).daySanPhamLenBot(pid, products);
+    kq.dongBoPos = await dongBoTuPos(pool, bc.teamId, day).catch((e) => ({ loi: String(e?.message || e) }));
+    return kq;
+  },
   // Kho sản phẩm GỐC — danh mục do người định nghĩa (014). Tầng A giữ luật dữ liệu; lớp
   // trên chỉ kiểm vai và ghi nhật ký.
   khoSanPhamGoc: {

@@ -40,6 +40,7 @@ import {
 } from "../../../../src/products/anh-san-pham.js";
 import { taoBuocDayBot } from "./router.js";
 import { luuKhoiChung, batBuocGiuKhoiChung, LoiKhoiChung } from "../../../../src/products/khoi-chung.js";
+import { dsMonPos, noiMonPos, LoiNoiPos } from "../../../../src/products/noi-pos.js";
 
 export const DUOI_THEO_KIEU = Object.freeze({
   "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
@@ -145,6 +146,19 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
     s.json({ ok: true, ...(await saveProduct(pool, q.boiCanh, q.params.spId, q.body || {}, { sauKhiLuu: dayBot })) });
   }));
 
+  // NỐI MÓN POS (MN8) — danh sách món cùng shop của page, và nối/gỡ. Nối xong hết hàng theo POS
+  // NGAY ⇒ đẩy bản chép trong cùng giao dịch (khuôn `voiDayBot`).
+  r.get("/api/anh-san-pham/pos/:spId", wrap(async (q, s) => {
+    s.json({ ok: true, ...(await dsMonPos(pool, q.boiCanh.teamId, q.params.spId)) });
+  }));
+  r.post("/api/anh-san-pham/pos/:spId", wrap(async (q, s) => {
+    const kq = await voiDayBot(q.boiCanh, async (c) => {
+      const n = await noiMonPos(c, q.boiCanh.teamId, q.params.spId, q.body?.posMa ?? null);
+      return { sanPhamId: n.sanPhamId, truoc: { pos_ma: n.truoc }, sau: { pos_ma: n.posMa }, ra: n };
+    });
+    s.json({ ok: true, ...kq });
+  }));
+
   // BA KHỐI DÙNG CHUNG (MN7) — Chính sách · FAQ · Phản đối. Cùng khuôn: lưu → đẩy bot → đọc lại
   // → nhật ký, MỘT giao dịch; bot không nhận ⇒ ROLLBACK. Đổi ở đây là đổi lời bot ở MỌI page.
   r.post("/api/anh-san-pham/khoi-chung", wrap(async (q, s) => {
@@ -174,12 +188,12 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
   }));
 
   r.use("/api/anh-san-pham", (e, _q, s, _next) => {
-    const status = e instanceof LoiAnhSanPham || e instanceof LoiKhoiChung ? e.status
+    const status = e instanceof LoiAnhSanPham || e instanceof LoiKhoiChung || e instanceof LoiNoiPos ? e.status
       : e?.type === "entity.too.large" ? 413 : (e.status || 400);
     s.status(status).json({
       ok: false,
       thongDiep: status === 413 ? "Ảnh quá lớn (tối đa 10 MB)."
-        : e.code && !(e instanceof LoiAnhSanPham) && !(e instanceof LoiKhoiChung) ? "Không thể thực hiện. Dữ liệu có thể đã thay đổi; tải lại và thử lại."
+        : e.code && !(e instanceof LoiAnhSanPham) && !(e instanceof LoiKhoiChung) && !(e instanceof LoiNoiPos) ? "Không thể thực hiện. Dữ liệu có thể đã thay đổi; tải lại và thử lại."
           : e.message,
     });
   });

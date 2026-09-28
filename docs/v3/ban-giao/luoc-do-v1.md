@@ -497,3 +497,12 @@ từ Sheet, nên cùng nội dung ⇒ cùng đoạn chữ `buildShared` từng k
 lưu; trước/sau đi vào `nhat_ky`. Bot đọc bản chép `kb-chung.json` (v3 ghi qua `POST /kb-chung`)
 CHỈ khi `V3_SHEET_CHI_DANH_BA=1`. ⚠️ Bot có MỘT bộ ba khối cho mọi page — v3 lưu theo team; hôm
 nay chỉ một team có page trên bot. Nhiều team cùng sửa thì lượt lưu sau đè lượt trước ở bot (nợ §9).
+
+## 14 · THAY ĐỔI — bản 027 (CR-28-09b · MN8, 28/09/2026)
+
+Cột `san_pham.pos_ma text` (NULL = chưa nối): sản phẩm của page (nguon='kb' — giá combo · ảnh ·
+mô tả) trỏ tới MÓN POS (dòng nguon='pos', `ma` = `<shop>:<biến thể>` — tên · tồn kho). Không FK:
+món POS rời danh mục thì dây đứt phải hiện trên màn, không cascade xoá sản phẩm đang bán. Chỉ nối
+được món cùng shop của page (`page.pos_shop_id`). Sau mỗi lượt kéo danh mục, `het_hang` của sản
+phẩm page theo món POS và bản chép được đẩy sang bot (một giao dịch mỗi page —
+`src/products/noi-pos.js#dongBoTuPos`). Tên KHÔNG tự đè — màn đề nghị «Dùng tên POS».

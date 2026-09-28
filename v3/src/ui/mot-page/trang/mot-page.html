@@ -505,7 +505,15 @@ async function veSanPham(o) {
       </div>
       <div class="setting-row">
         <div><label for="sp-hh-${i}"><b>Hết hàng</b></label></div>
-        <div><label class="switch"><input id="sp-hh-${i}" type="checkbox" role="switch" ${x.het_hang ? 'checked' : ''} ${SUA_SP() ? '' : 'disabled'}><span>${x.het_hang ? 'Hết' : 'Còn'}</span></label></div>
+        <div><label class="switch"><input id="sp-hh-${i}" type="checkbox" role="switch" ${x.het_hang ? 'checked' : ''} ${SUA_SP() ? '' : 'disabled'}><span>${x.het_hang ? 'Hết' : 'Còn'}</span></label>
+          ${x.pos_ma ? '<div class="meta">Tự theo tồn kho POS mỗi lần kéo danh mục.</div>' : ''}</div>
+      </div>
+      <div class="setting-row">
+        <div><label for="sp-pos-${i}"><b>Món trong kho POS</b></label><div class="meta">${x.pos_ma
+          ? (x.pos ? `Đã nối · tồn kho POS: ${esc(x.pos.ton_kho ?? '?')}` : '⚠️ Món đã nối không còn trong danh mục POS — chọn lại')
+          : 'Chưa nối — nối để lấy tên và tồn kho từ POS'}</div></div>
+        <div><select id="sp-pos-${i}" data-pos="${i}" ${SUA_SP() ? '' : 'disabled'}><option value="${esc(x.pos_ma || '')}">${esc(x.pos?.ten || (x.pos_ma ? x.pos_ma : '— chưa nối —'))}</option></select>
+          ${SUA_SP() && x.pos?.ten_khach && x.pos.ten_khach !== (x.ten || '') ? `<div class="duoi-2">${button(`Dùng tên POS: «${x.pos.ten_khach}»`, { size: 'sm', variant: 'ghost', data: { tenpos: i } })}</div>` : ''}</div>
       </div>
       <div class="cuon-ngang"><table class="data-table"><thead><tr>
         <th scope="col">Tên bậc khách đọc</th><th scope="col">Số lượng</th><th scope="col">Giá cả gói</th><th scope="col">Tiền tệ</th><th scope="col">Bật</th>
@@ -536,7 +544,34 @@ async function veSanPham(o) {
   }
   o.querySelectorAll('[data-luusp]').forEach((b) => b.addEventListener('click', () => luuSanPham(Number(b.dataset.luusp), o, b)));
   noiAnh(o);
+  noiPos(o);
   noiNutSangTab(o);
+}
+
+/* ── MÓN TRONG KHO POS (CR-28-09b · MN8) ─────────────────────────────────────────────
+ * Nối xong: hết hàng tự theo tồn kho POS (mỗi lượt kéo danh mục). Tên KHÔNG tự đè — nút «Dùng
+ * tên POS» điền vào ô Tên, người bấm Lưu thì bot mới gọi món bằng tên ấy. Danh sách món đọc
+ * muộn (sau khi vẽ) để tab không chờ POS. */
+function noiPos(o) {
+  if (!SUA_SP()) return;
+  o.querySelectorAll('[data-pos]').forEach(async (sel) => {
+    const i = Number(sel.dataset.pos);
+    try {
+      const d = await goi(`/api/anh-san-pham/pos/${encodeURIComponent(SP[i].id)}`, { headers: { 'X-V3-Action': '1' } });
+      const mon = d.mon || [];
+      sel.innerHTML = `<option value="">— chưa nối —</option>` + mon.map((m) => `<option value="${esc(m.ma)}" ${m.ma === d.dangNoi ? 'selected' : ''}>${esc(m.ten || m.ma)} · tồn ${esc(m.tonKho ?? '?')}${m.hetHang ? ' · HẾT' : ''}</option>`).join('')
+        + (d.dangNoi && !mon.some((m) => m.ma === d.dangNoi) ? `<option value="${esc(d.dangNoi)}" selected>(món đã nối không còn trong danh mục)</option>` : '');
+      if (!mon.length && d.lyDo) sel.title = d.lyDo;
+      if (!mon.length && d.lyDo) sel.insertAdjacentHTML('afterend', `<div class="meta">${esc(d.lyDo)}</div>`);
+    } catch (e) { sel.title = e.message; }
+    sel.addEventListener('change', () => thaoTacAnh(`/api/anh-san-pham/pos/${encodeURIComponent(SP[i].id)}`,
+      { method: 'POST', body: JSON.stringify({ posMa: sel.value || null }) }, sel.value ? 'Đã nối món POS' : 'Đã gỡ nối POS', sel));
+  });
+  o.querySelectorAll('[data-tenpos]').forEach((b) => b.addEventListener('click', () => {
+    const i = Number(b.dataset.tenpos);
+    o.querySelector(`#sp-ten-${i}`).value = SP[i].pos.ten_khach;   // đã bỏ số hiệu nội bộ «41 - …»
+    toast('Đã điền tên POS — bấm «Lưu sản phẩm này» để bot dùng tên mới.');
+  }));
 }
 
 /* ── ẢNH BOT GỬI KHÁCH (CR-28-09b · MN4) — sửa ngay tại sản phẩm ────────────────────

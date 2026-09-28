@@ -1,0 +1,1 @@
+ALTER TABLE san_pham DROP COLUMN IF EXISTS pos_ma;
