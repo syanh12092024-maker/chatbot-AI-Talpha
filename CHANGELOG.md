@@ -19,7 +19,7 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
-### 28/09/2026 — một nguồn cho sản phẩm · giá · ảnh · kịch bản: sửa ở đâu, bot chạy đúng thế (CR-28-09b)
+### 28/09/2026 — một nguồn cho sản phẩm · giá · ảnh · kịch bản: sửa ở đâu, bot chạy đúng thế (CR-28-09b) · ĐÃ LÊN PROD `b41261e`
 
 Trước lượt này bot bán theo một tệp mà không màn nào sửa được, còn màn v3 sửa vào một chỗ bot
 không đọc. Nay cơ sở dữ liệu v3 là chỗ ghi DUY NHẤT; mỗi lượt lưu hoặc tới bot ngay, hoặc báo lỗi.
@@ -32,12 +32,19 @@ không đọc. Nay cơ sở dữ liệu v3 là chỗ ghi DUY NHẤT; mỗi lư�
   cùng lượt, đọc lại để chắc; hỏng thì không lưu. Tên bậc giá khách đọc («Buy 1 Get 1 FREE…»)
   và nhãn ảnh giữ nguyên văn. Ảnh tải lên, dán link, đổi nhãn, xếp, bỏ.
 - **Ba màn Sản phẩm & kho · Ảnh gửi khách · Đưa lên chạy đọc cơ sở dữ liệu** (`9e175ec`).
-- 🔴 **Sheet chỉ còn là danh bạ page** — cờ `V3_SHEET_CHI_DANH_BA` (`66cbc7c`): bỏ ba khối Chính
-  sách/FAQ/Phản đối mẫu Philippines khỏi prompt mọi page (người quyết chọn để trống).
+- **Sheet chỉ còn là danh bạ page** — cờ `V3_SHEET_CHI_DANH_BA` (`66cbc7c`): bot thôi lấy sản phẩm và
+  ba khối dùng chung từ Sheet (ba khối nay đọc từ v3, nội dung giữ nguyên).
 - **43 ảnh đang chết sống lại** khi đổi `PUBLIC_URL` sang cổng 3102 và đẩy lại bản chép (`66cbc7c`).
 - Lược đồ **025** chỉ THÊM (`b8d6a0f`): bảng ảnh, tên bậc giá, phân loại. Nạp một lượt 77 page từ
   `kb-overrides.json`, chứng minh khứ hồi 77/77 trước khi ghi (`f28df74`).
 - Bot cũ thôi báo «đã lưu» khi ghi đĩa hỏng (`0bd772a`).
+- **Marketer sửa được sản phẩm, giá, ảnh** trên trang page (`7126689`); năm ô «trả lời nhanh» gập lại;
+  nhãn ảnh chọn từ danh sách; thao tác ảnh/sản phẩm không còn làm mất chữ đang gõ dở ở kịch bản.
+- 🔴 **Chính sách · FAQ · Xử lý phản đối sửa trên trang page** (`c0b829f`, `2353f5b`) — chuyển khỏi
+  Google Sheet, đoạn chữ bot ghép giữ nguyên từng ký tự (984). Chỉ team đang giữ bot được sửa.
+- **Nối sản phẩm với món trong kho POS** (`b41261e`): hết hàng tự theo tồn kho POS mỗi lần kéo danh
+  mục; nút «Dùng tên POS» (bỏ số hiệu nội bộ). Lượt kéo đầu tiên: 69 món Kuwait.
+- Nút «Xem đoạn chữ gửi AI» mở đúng page (`280459f`).
 
 Quy trình mở van: `docs/thi-cong/nhat-ky/phat-hanh-20260928-mot-nguon.md`.
 

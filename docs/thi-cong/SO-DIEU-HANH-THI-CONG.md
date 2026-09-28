@@ -291,6 +291,7 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
 | MN4 | UI: sửa ảnh tại tab; «Sản phẩm & kho» + «Ảnh gửi khách» đọc CSDL v3            | MN1 · MN3          | 🟨  | ✅ `9e175ec` |
 | MN6 | Trang page = màn kịch bản đầy đủ, xếp theo thứ tự AI nhận; kịch bản lưu là chạy | MN3 · MN4          | 🟨  | ✅ `b0b1282` |
 | MN7 | Khối dùng chung Chính sách · FAQ · Phản đối vào v3 — người quyết đổi sang (a) CHÉP (khách là OFW, Tagalog có chủ ý) | MN3 | 🟨 | ✅ `c0b829f` `2353f5b` |
+| MN8 | Nối sản phẩm page ↔ món POS (`pos_ma`, 027): hết hàng theo tồn kho POS, «Dùng tên POS» | MN3 | 🟨 | ✅ `b41261e` · prod: kéo 69 món Kuwait (chưa nối page nào) |
 | MN5 | Deploy + nạp + cờ `V3_GHI_KHO_BOT` + `PUBLIC_URL` 3102 + `V3_SHEET_CHI_DANH_BA` — **mở van** | MN2·MN3·MN4·MN7    | 🟥  | ✅ A–E 28/09 · nhật ký `phat-hanh-20260928-mot-nguon.md` |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
@@ -1298,6 +1299,16 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
   hạn trên trang này» 8–9 · «gói cước hết hạn» 3), kho token CSDL 0 token — việc người: cấp token có
   quyền; ③ 17/30 hội thoại mới nhất không có mã khách ở nguồn nào. Nhật ký
   `docs/thi-cong/nhat-ky/quan-sat-20260928-ban-hoi-thoai.md`.
+
+- 28/09 · **NỢ SAU CR-28-09b (một nguồn)** — đo trên prod, không thuộc phạm vi đã làm:
+  - **N-MN7** bot có MỘT bộ Chính sách/FAQ/Phản đối cho mọi page ⇒ team thật thứ hai lên bot thì phải tách ba khối theo page (cửa lưu đang TỪ CHỐI khi ≥2 team thật — `khoi-chung.js#batBuocGiuKhoiChung`).
+  - **N-MN8a** team Tiểu Alpha chỉ BẬT kết nối POS Kuwait; Saudi · UAE · Qatar · Oman · Bahrain đang TẮT (bản cùng shop của team kỹ thuật thì bật) ⇒ 60+ page không nối được món POS tới khi người bật lại ở màn Kết nối. Không ai ghi nhật ký lượt tắt.
+  - **N-MN8b** tạo đơn tự động chưa dùng `san_pham.pos_ma` — sản phẩm nạp từ bot mang mã `kb:…`, POS không biết mã đó. Đường tiền 🟥, phiếu riêng trước khi mở `V3_POS_GHI`.
+  - **N-MN8c** 75/79 sản phẩm chưa tên — nối món POS rồi bấm «Dùng tên POS», hoặc gõ tay.
+  - **N-KB** 2 câu chào cụt ở ký tự 200 (`1191101314082464`, `1240378795819215`) — khách thấy «�» cuối câu.
+  - **N-PAGE** page `1100561323151723` có sản phẩm trên bot nhưng không có dòng `page` v3 ⇒ không sửa được trên v3.
+  - **N-3102** ảnh bot gửi đi qua `http://169.58.33.8:3102` — không HTTPS, cổng giao diện mở thẳng Internet.
+  - **N-NEO** cổng `l0-m1.sh` neo thiếu `lan_gui` · `token_pancake` · `nap_bo_qua` (từ trước CR).
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -2612,3 +2623,5 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 28/09 · QUAN SÁT bàn hội thoại trên PROD → ✅ giữ — không deploy thêm (prod `c0b829f` = HEAD; UI-HT1–4 lên cùng lượt MN5): dây nối 6/6, bối cảnh ném 0/30, kịch bản 30/30, nhãn Bot AI 9/9 hội thoại đọc được, van gửi đóng
   🟠 mở ra là TRỐNG (0 việc mở, bot im từ 24/08) · đọc được chat 4/30 mới nhất và 9/20 có bot — thiếu mã khách 17 · token không quyền/hết gói 11–12
   · không commit mã · nhật ký docs/thi-cong/nhat-ky/quan-sat-20260928-ban-hoi-thoai.md
+- 28/09 · MN8 → ✅ `b41261e` — nối sản phẩm page ↔ món POS: chỉ cùng shop, hết hàng theo POS (một giao dịch mỗi page khi đồng bộ), «Dùng tên POS» bỏ số hiệu nội bộ · prod: lượt kéo POS ĐẦU TIÊN 69 món Kuwait, 0 món gắn page (không lẫn sản phẩm bot bán) · nợ N-MN8a–c §9
+- 28/09 · ✅ **CR-28-09b ĐÓNG PHẦN LÀM ĐƯỢC TRONG NGÀY** — prod `b41261e` · lược đồ 27 · kiểm cuối: 76/76 page bản chép khớp · kịch bản 0 lệch · ba khối nguồn v3 · 3 dịch vụ active · 0 lỗi 30′ · bot vẫn `PANCAKE_READONLY=1` (chưa khách nào nhận tin — bật bot là việc riêng)
