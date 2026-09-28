@@ -2481,3 +2481,17 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   **0,07s** (04:29:46: Stopping → Stopped → Started cùng một giây), không còn dòng «timed out».
   Ba dịch vụ active · `/health` 131 · UI 200 · readiness 0,08s · lỗi mới 0 · env từ `/proc`:
   `PANCAKE_READONLY=1`, `V3_PANCAKE_GUI=0` ở cả ba (van gửi vẫn đóng).
+- 28/09 · **AUDIT GIAO DIỆN (ui-taste) + DEPLOY `ba9b048`** (6fdd25a → ba9b048; chỉ `v3/` + tài
+  liệu, không migration, không package, không đụng `src/` ⇒ chỉ khởi động lại `aicloser-v3` và
+  `aicloser-worker-v3`, bot cũ để nguyên). Soát 16 màn ở 1440/390px trên bản xem thử → 13 lỗi,
+  sửa hết trong 5 commit `f6ba07b` `08d0c5c` `7ed6dc6` `9032a51` `53ac05f`: năm màn đếm «page
+  bật bot» theo cột bản sao (nay hỏi cửa kiểm qua `ui/chung/bot-bat-that.js`), «Người và team» nói
+  sai về model mặc định, «3 người» đếm dòng vai, mã máy lộ lên màn, Model AI 11 chỗ đỏ, bảng page
+  cuộn ngang trên điện thoại, xem nhanh ngoài màn hình. Lỗi thật lộ ra: `audit/index.js` ghi
+  `tac_nhan` trơn (`nguoi`/`may`) — nay đúng lược đồ `nguoi:<email>` | `may:<việc>`.
+  Cửa vào: bản sạch HEAD **2.093 ca · 0 đỏ** · 14 cổng nghiệm thu đỏ **y hệt trên `b9375da`**
+  (neo bảng, import pancake, ca cũ — không cổng nào đỏ vì lượt này). Máy chủ 03:44:34Z: ba dịch
+  vụ active · lỗi mới 0/0/0 · `/health` 131 (như trước) · UI 200 · bản mới đang phục vụ (dấu vết
+  trong `kieu.css` + `dieu-huong.js`) · env từ `/proc`: van gửi vẫn đóng ở cả ba. Chưa đo được:
+  hành vi sau đăng nhập trên máy chủ (cần tài khoản). Lùi: `git checkout -f -B vao-ui-v3-17-09
+  6fdd25a` + restart hai dịch vụ v3 — không mất dữ liệu.
