@@ -57,6 +57,51 @@ thư mục đó là cửa cấu hình và thao tác thật. Chỉ trang HTML c�
 Kết luận: **không màn nào giữ cấu hình mà bot đang chạy đọc và KHÔNG có nhà mới**; hai màn (`van-hanh`, `dispatch`)
 là cửa thao tác thật ⇒ gỡ sau cùng, sau khi Hộp thư · Page · Cài đặt đã nhận đủ thao tác.
 
+### 2c · Điều chỉnh sau câu hỏi của người quyết (28/09, đo lại)
+
+**Câu trả lời sẵn — GIỮ (bản thảo đầu SAI).** Bắt từ khoá trả lời không qua AI là điều ĐÃ KÝ: §2 (thay Botcake —
+hỏi giá · ngày giao · free ship phủ 10/10; «thật/giả» và «hỏi size» phải nhập TRƯỚC khi tắt Botcake) và §3 (dưới
+10 giây). Lý do «AI chỉ 0,97% doanh thu» của bản thảo chỉ đúng về tiền, bỏ sót độ trễ và vai trò thay Botcake.
+Hôm nay có BA chỗ cùng làm việc này: Fast Lane trong bộ não (`FASTLANE=1` trên prod, chặn ~33,7% tin;
+`FASTLANE_TEMPLATES=0` · `FASTLANE_INTRO=0` tắt từ 11/08 vì trùng Botcake) · kho luật `src/rule-store.js` (qua
+`kb.js`, sửa ở dashboard cũ) · bảng `mau_0_dong` của màn v3 (0 dòng, chỉ `handler-v3` đọc). ⇒ Đề xuất mới: MỘT lớp
+«Trả lời sẵn» sửa được trên giao diện (tab trong Luật chung, phạm vi team → page/sản phẩm), bot đọc đúng một kho.
+Gộp ba kho = việc đụng đường bot ⇒ phiếu riêng, làm SAU cutover hoặc cùng đợt tắt Botcake.
+
+**Kỹ năng — LOẠI khái niệm, GIỮ nội dung.** Tài liệu (§6) sinh ra nó cho đúng một ca: hai sản phẩm có size hoàn
+26,8% và 19,2% (không size 9,3%) mà chưa hỏi size. Prod: 3 dòng, CẢ BA là `hoi_size`, chưa từng bật, không gắn nhóm
+sản phẩm nào. `san_pham_goc.kien_thuc` đã có và bot đọc (`src/products/catalog.js`) ⇒ chép câu «hỏi size» vào kiến
+thức của các sản phẩm có size; bỏ màn và bảng khái niệm kỹ năng.
+
+**Gợi ý từ AI — KHÔNG phải phần soi hội thoại.** Màn hôm nay chỉ là HỘP DUYỆT: không gọi model, không đọc lịch sử
+chat, chỉ nhận đề xuất vào luật chung (0 đề xuất chờ). Việc người quyết mô tả (soi kịch bản + hội thoại → sửa lời bot
+cho đúng và rẻ) CHƯA có; gần nhất là BH5 🎫 (soi lỗ hổng kiến thức page → việc cho marketer), BH6/BH8 (tiền mỗi lượt).
+⇒ Bỏ màn rỗng; dựng đúng tính năng «Gợi ý cải thiện» trong Page SAU (đọc hội thoại bot chuyển người / khách rơi +
+chi phí → đề xuất sửa lời bot · trả lời sẵn · kiến thức SP → marketer duyệt một chạm — giữ luật §9 «đề xuất AI phải
+duyệt»).
+
+**Việc đang chờ — bỏ được, NHƯNG chưa.** Bàn hội thoại đang chạy chỉ nhận việc loại HỘI THOẠI; việc loại ĐƠN không gắn
+hội thoại (nghi trùng đơn, đơn chờ duyệt không có chat) vẫn chỉ ở «Việc đang chờ» (bàn hiện dòng «N đơn không gắn hội
+thoại — xem ở Việc đang chờ»). Bản thảo có tab «Đơn chờ» ⇒ bỏ khi LL2 xong.
+
+**Hội thoại và đơn — Hộp thư CHƯA đủ.** Đối chiếu từng chức năng:
+
+| Chức năng (`van-hanh`) | Bàn hội thoại đang chạy | Bản thảo Hộp thư | Nhà mới |
+|---|---|---|---|
+| Đọc hội thoại | có | có | Hộp thư |
+| Chuyển sang người khi bot đang xử | không | có («Nhận thay bot») | Hộp thư |
+| Trả lại bot | có (qua đóng việc) | có | Hộp thư |
+| Danh sách + chi tiết đơn chờ duyệt | không | có | Hộp thư |
+| Sửa · duyệt → POS · từ chối đơn Messenger | không | có | Hộp thư |
+| Lưu sản phẩm | có (màn Trang một page gọi cửa này) | có | Page |
+| Đối chiếu tin gửi lỗi (`khong_ro`) | không | **không** | Cài đặt › Hệ còn sống — THIẾU trong bản thảo |
+| Tin bị bộ lọc loại (khách im mà không ai biết) | không | **không** | Cài đặt › Hệ còn sống — THIẾU |
+| Chi phí từng tin, tra về đúng câu khách | không | **không** | Số liệu — THIẾU |
+| Diễn tập (chấm bot trên tin thật, không chạm khách) | không | **không** (Thử hỏi bot chỉ là câu tự gõ) | Cài đặt › Hệ còn sống — THIẾU; cần cho cutover |
+| Đổi nguồn nhận tin của page (poll/webhook) | không | **không** | Page › mục kỹ thuật — THIẾU |
+
+⇒ Bản thảo phủ đủ 5 việc của SALE, thiếu nhà cho 5 việc VẬN HÀNH. Phải vẽ thêm trước khi gỡ trang `van-hanh`.
+
 ## 3 · Giá phải trả
 
 - **Gỡ ~9 màn đã xây** (câu trả lời sẵn, kỹ năng, gợi ý AI, so A/B, việc của tôi, hội thoại và đơn…) — mã nằm lại
@@ -88,6 +133,9 @@ là cửa thao tác thật ⇒ gỡ sau cùng, sau khi Hộp thư · Page · Cà
 | LL7 | Vai 5 → 3 (B): quyền, lược đồ gieo, 35 tệp | 🟨 (quyền) | LL1 |
 | LL8 | Gỡ màn thừa (GIAO DIỆN; giữ API của `van-hanh` · `dispatch`) + gỡ kỹ năng / câu trả lời sẵn / tầng nước-SP khỏi ĐƯỜNG BOT v3 (C) — không đụng bộ não, không DROP bảng. Điều kiện vào: Hộp thư có duyệt đơn · trả bot · đối chiếu tin lỗi; Page/Cài đặt có đổi nguồn nhận tin | 🟨 | LL2 · LL3 · LL6 |
 | LL9 | Thước: menu · quyền · HK10/HK15 · §10 cho Hộp thư mới | 🟩 | LL1–LL8 |
+| LL10 | Nhà mới cho 5 việc vận hành của `van-hanh` (Hệ còn sống: đối chiếu tin lỗi · tin bị lọc · diễn tập; Số liệu: chi phí từng tin; Page: nguồn nhận tin) | 🟨 | LL5 · LL6 — TRƯỚC LL8 |
+| LL11 | Kỹ năng → `san_pham_goc.kien_thuc` («hỏi size» cho SP có size), gỡ màn kỹ năng | 🟨 (đổi lời bot) | LL3 |
+| LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`), sửa trên giao diện | 🟥 (đường bot, cạnh bộ não) | cutover / đợt tắt Botcake — phiếu riêng |
 
 Cỡ: 9 phiếu. Để so: sóng UI-HT (4 phiếu, cùng loại việc) xong trong một ngày làm việc của dây chuyền này.
 Phần nặng là A (LL1–LL6); B, C, D mỗi phần một phiếu.
