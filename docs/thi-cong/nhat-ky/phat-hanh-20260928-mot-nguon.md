@@ -1,6 +1,6 @@
 # MỞ VAN MN5 — MỘT NGUỒN CHO SẢN PHẨM · GIÁ · ẢNH · KỊCH BẢN (CR-28-09b)
 
-> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 28/09: «Đưa cùng lượt, chạy từng bước A→E» (UI-HT1–4 đi cùng lượt).** Bước A ✅ · B ✅ · C ✅ · E HOÃN (người quyết cần quyết lại ba khối Tagalog — xem mục 10). Các số «đo
+> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 28/09: «Đưa cùng lượt, chạy từng bước A→E» (UI-HT1–4 đi cùng lượt).** Bước A ✅ · B ✅ · C ✅ · D ✅ · E đang làm theo (a) (người quyết cần quyết lại ba khối Tagalog — xem mục 10). Các số «đo
 > 28/09» dưới đây là phép đo CHỈ ĐỌC (SSH đọc, người quyết cho phép).
 > Phiếu CR: `docs/thi-cong/doi-y-do/CR-28-09-mot-nguon-san-pham.md` · sổ §5e.
 
@@ -199,8 +199,18 @@ lùi D thì chúng không còn ở bot, nhưng còn nguyên trong CSDL để đ�
 2. drop-in `/etc/systemd/system/aicloser-v3.service.d/mn5.conf` = `Environment=V3_GHI_KHO_BOT=1` · `daemon-reload` · `restart aicloser-v3`
 3. `day-lai-ban-chep.mjs --page 1117787068081611` (chạy với `V3_GHI_KHO_BOT=1` — script chạy ngoài tiến trình v3, đọc `.env`)
 
+**Giữa C và D** — người quyết duyệt thêm: marketer sửa sản phẩm/giá/ảnh · gập ô trả lời nhanh · nhãn ảnh chọn từ danh sách (`7126689`).
+
+**D** (người quyết: «ok làm tiếp đi»)
+1. prod `git checkout … origin/vao-ui-v3-17-09` → `7126689` (chỉ đổi giao diện v3 + script, 0 tệp `src/`/`db/`/gói) · `restart aicloser-v3`
+2. drop-in `/etc/systemd/system/aicloser.service.d/mn5-anh.conf` = `Environment=PUBLIC_URL=http://169.58.33.8:3102` · `daemon-reload` · `restart aicloser`
+3. `day-lai-ban-chep.mjs --page 1210276125493286` (page nhiều ảnh `/uploads` nhất: 12) → tải 3 ảnh từ NGOÀI máy chủ: 200 image/jpeg
+4. `day-lai-ban-chep.mjs --tat-ca` → «XONG: 76 page»
+
 ## 9 · Số đo tại từng mốc
 **A:** ba dịch vụ `active`, mỗi dịch vụ `Started` 1 lần · lỗi mới **0/0/0** (tới +6′) · `/health` `pages:131` sau 14 s (bằng trước) · UI 3102 **200** trong & ngoài · `anh_san_pham` có, 0 dòng · `goi_gia.nhan` có · mã mới đang phục vụ: `POST /api/anh-san-pham/1/link` **401** (có cửa, đòi đăng nhập; không phải 404) · `/uploads/<tệp>` qua 3102 **200** · trang page có «Bot trả lời thế nào» · env từ `/proc` cả ba: `PANCAKE_READONLY=1` `V3_PANCAKE_GUI=0` `V3_POS_GHI=0` — van gửi vẫn đóng, chưa cờ MN5 nào.
+
+**D:** D.1 `aicloser-v3` active · Started 1 · lỗi 0 · `V3_GHI_KHO_BOT=1` còn · cửa lưu SP mới 401 (có) · D.2 `aicloser` active · Started 1 · lỗi 0 · `/health` 131 sau 12 s · env `/proc`: `PUBLIC_URL=http://169.58.33.8:3102` `PANCAKE_READONLY=1` · D.4 chạy thử lại **76/76 khớp** · `kb-overrides.json` còn `:3100/uploads/` = **0**, `:3102/uploads/` = **36** link · tải cả 36 từ NGOÀI: **36/36 × 200** · lỗi 10′ **0** · «5 ảnh đổi gốc» còn lại = 5 link trycloudflare chết (link ngoài có chữ `/uploads/`, không phải tệp máy mình).
 
 **C:** `aicloser-v3` active · Started 1 · lỗi **0** · env `/proc`: `PANCAKE_READONLY=1` `V3_PANCAKE_GUI=0` `V3_GHI_KHO_BOT=1` · HÀNH VI với env của tiến trình: `trangThaiCau({kho:true}).mo = true`, `trangThaiCau().mo = false` («máy này đang CHỈ ĐỌC… không bật tắt bot») ⇒ cờ hẹp đúng · đẩy 1 page: «bot nhận 1 sản phẩm (đã đọc lại khớp)» · `/health` 131 · UI ngoài 200.
 ⚠️ Nội dung: 2 page (`1191101314082464`, `1240378795819215`) có câu chào CỤT ở ký tự 200, ký tự cuối hỏng — khách sẽ thấy «�». Việc của marketer: viết lại đuôi câu chào.
