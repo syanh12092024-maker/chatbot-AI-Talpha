@@ -21,7 +21,7 @@
 // Mọi lượt ghi đều ghi `nhat_ky`. Ghi hỏng thì KHÔNG nuốt — thao tác cấp quyền mà không truy
 // ngược được là thao tác không được phép làm.
 
-import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
+import { batBuocBoiCanh, batBuocVai, VAI, VAI_GAN_DUOC } from '../../auth/boi-canh.js';
 import { BANG_THANH_VIEN, BANG_VAI, BANG_NGUOI_DUNG, LoiCauHinhTeam } from './kho-team.js';
 import { bam } from '../../auth/mat-khau.js';
 
@@ -91,6 +91,12 @@ async function traVai(maVai) {
   const dong = await dt.mot(BANG_VAI, { ma: String(maVai) });
   if (!dong) {
     throw new LoiCauHinhTeam(`không có vai mã "${maVai}" trong bảng \`vai\`.`, 'vai_la');
+  }
+  // LL7: chỉ ba vai còn được CẤP. Mã cũ (quản lý · người duyệt kịch bản) CÓ trong bảng `vai` — gõ nhầm (`vai_la`) và
+  // vai đã bỏ (`vai_da_bo`) là hai lỗi khác nhau, nói khác nhau.
+  if (!VAI_GAN_DUOC.includes(String(dong.ma))) {
+    throw new LoiCauHinhTeam(
+      `vai "${maVai}" không còn cấp mới — hệ còn ba vai: Quản trị · Marketer · Sale (01 §9, CR-28-09c).`, 'vai_da_bo');
   }
   return { id: String(dong.id), ma: dong.ma };
 }

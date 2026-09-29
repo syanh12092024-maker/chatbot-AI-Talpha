@@ -77,6 +77,13 @@ export const VAI = Object.freeze({
 });
 const VAI_HOP_LE = new Set(Object.values(VAI));
 
+/**
+ * BA VAI CÒN ĐƯỢC GÁN (LL7 · 29/09 · CR-28-09c, `01-QUYET-DINH.md` §9 mới). «Người duyệt kịch bản» không còn việc
+ * (kịch bản lưu là chạy, CR-28-09b); «Quản lý» gộp vào Quản trị. Hai mã cũ vẫn hợp lệ trong vé — dòng cấp vai cũ
+ * (prod 29/09: 0 dòng) còn đọc được — nhưng KHÔNG cấp mới. Dọn các danh sách quyền còn nhắc hai mã cũ: LL9.
+ */
+export const VAI_GAN_DUOC = Object.freeze([VAI.QUAN_TRI, VAI.MARKETER, VAI.SALE]);
+
 /** Nguồn của vé: người thật đang đăng nhập, hay việc nền do máy chạy. */
 export const NGUON = Object.freeze({ PHIEN: 'phien', MAY: 'may' });
 

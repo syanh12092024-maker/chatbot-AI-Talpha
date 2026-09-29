@@ -22,7 +22,7 @@
 //
 // Cổng dữ liệu tiêm từ ngoài (`datTaoTruyVan`), giống ba module kia — không import chéo.
 
-import { batBuocBoiCanh, VAI } from '../../auth/boi-canh.js';
+import { batBuocBoiCanh, VAI, VAI_GAN_DUOC } from '../../auth/boi-canh.js';
 import { docBotBatThat, botBatCua } from '../chung/bot-bat-that.js';
 
 export const BANG_PAGE = 'page';
@@ -231,7 +231,8 @@ export function canhBaoTuTongQuan({ soPage, coMarketer, botBat, soDongModel }) {
 
 /* ──────────────────────────────────── thành viên và vai ──────────────────────────────────── */
 
-/** Năm vai, lấy từ HẰNG — cấm gõ lại chuỗi mã vai ở bất kỳ đâu (bài học ② giai đoạn 1). */
+/** Tên của MỌI mã vai, lấy từ HẰNG — cấm gõ lại chuỗi mã vai ở bất kỳ đâu (bài học ② giai đoạn 1). Hai mã cũ giữ
+ *  tên để dòng cấp vai cũ (nếu còn) hiện đúng chữ; ô chọn chỉ đưa ba vai còn cấp (LL7). */
 export const TEN_VAI = Object.freeze({
   [VAI.QUAN_TRI]: 'Quản trị',
   [VAI.MARKETER]: 'Marketer',
@@ -244,7 +245,9 @@ export const TEN_VAI = Object.freeze({
 export async function danhSachVai() {
   const dt = congDanhTinh();
   const dong = await dt.chon(BANG_VAI, {}, { sapXep: 'id' });
-  return dong.map((v) => ({ id: String(v.id), ma: v.ma, ten: TEN_VAI[v.ma] || v.ten || v.ma }));
+  // LL7: ô chọn chỉ có ba vai còn cấp — đưa mã cũ ra là mời người bấm rồi nhận lỗi «vai_da_bo».
+  return dong.filter((v) => VAI_GAN_DUOC.includes(v.ma))
+    .map((v) => ({ id: String(v.id), ma: v.ma, ten: TEN_VAI[v.ma] || v.ten || v.ma }));
 }
 
 /**
