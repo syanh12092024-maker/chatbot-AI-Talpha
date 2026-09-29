@@ -1,8 +1,10 @@
-# CR-28-09c · Làm gọn theo bản thảo «4 màn» — HỒ SƠ ĐO, CHƯA ÁP
+# CR-28-09c · Làm lại theo bản thảo «năm đích» — ĐANG ÁP
 
 Người yêu cầu: chủ dự án · 28/09/2026 · sau bản dựng https://claude.ai/artifact/A6D68jyQRuqqu3TBRLrceb
 («Cảm giác giao diện này dễ hiểu và dễ sử dụng hơn. Nếu theo bản thảo này thì CR có lớn không?»).
-Trạng thái: **ĐO XONG · CHỜ «áp»** — không tệp mã / quyết định / thước nào bị sửa.
+Trạng thái: **ĐANG ÁP** — người quyết gõ «áp» (trọn A–D + các luật 2d) 29/09. Đã áp: `01-QUYET-DINH.md` (`056f3ad`) ·
+hợp đồng (`20b9bdb`) · sổ §5f LL1–LL17 + `PHIEU-LL1.md`. Mã · bộ ca · cổng đi theo phiếu; CR đóng ở LL9.
+~~Trạng thái: ĐO XONG · CHỜ «áp» — không tệp mã / quyết định / thước nào bị sửa.~~
 
 Bản thảo gói NĂM thay đổi khác nhau. Luật «một CR sửa đúng một điều» ⇒ tách thành A–E, đo riêng,
 người quyết chọn áp phần nào.
@@ -215,7 +217,7 @@ theo (nước, SĐT) — hôm nay khoá khách là (team, nước, SĐT) (A7-1, 
 
 ## 4 · Đề nghị ghi §9 SỔ NỢ
 
-- Gỡ HẲN bảng `ky_nang` · `mau_0_dong` · cột tầng nước/SP của `kich_ban` — KHÔNG làm trong CR này (lùi lược đồ không
+- Gỡ HẲN bảng `ky_nang` · `mau_0_dong` ~~· cột tầng nước/SP của `kich_ban`~~ (tầng nước/SP GIỮ — mục 2d) — KHÔNG làm trong CR này (lùi lược đồ không
   phải đường lùi, sổ mở-van §5); xét sau một tháng không ai cần.
 - «Thử hỏi bot» cần khoá model sống ⇒ nối vào việc người «thay khoá model máy chủ».
 
@@ -241,7 +243,7 @@ theo (nước, SĐT) — hôm nay khoá khách là (team, nước, SĐT) (A7-1, 
 | LL17 | Đơn dùng chung nhiều team: job kéo đơn định kỳ MỘT lần mỗi shop (hôm nay không job nào chạy) · chống trùng toàn hệ theo `ma_pos` (migration đổi UNIQUE — prod 0 trùng) · team chủ = team HRM của marketer vào ngày đơn · đọc bảng ghép marketer POS ↔ HRM có sẵn `PIALPHA_ALL_Dataset.dim_person_map` (98,6% đơn; chỉ đọc, sửa ở HRM) · ô «chờ gán team» · nguồn WhatsApp = có UTM (thay «không hội thoại»; đơn sale nhập tay không gửi) · khoá khách (nước, SĐT) · chỉ team chủ gửi WhatsApp/ghi ngược POS | 🟥 (đơn · tin gửi khách) | LL15 (HRM nối máy chủ) · TRƯỚC khi bật WhatsApp xác nhận hoặc khi team thứ hai khai shop |
 | LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`), sửa trên giao diện | 🟥 (đường bot, cạnh bộ não) | cutover / đợt tắt Botcake — phiếu riêng |
 
-Cỡ: 9 phiếu. Để so: sóng UI-HT (4 phiếu, cùng loại việc) xong trong một ngày làm việc của dây chuyền này.
+Cỡ: ~~9~~ **17 phiếu** (LL1–LL17, sau khi thêm Sản phẩm · HRM · đơn). Để so: sóng UI-HT (4 phiếu, cùng loại việc) xong trong một ngày làm việc của dây chuyền này.
 Phần nặng là A (LL1–LL6); B, C, D mỗi phần một phiếu.
 
 ## 6 · Đường lùi

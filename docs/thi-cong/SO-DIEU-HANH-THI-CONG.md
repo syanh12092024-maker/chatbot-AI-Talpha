@@ -294,6 +294,34 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
 | MN8 | Nối sản phẩm page ↔ món POS (`pos_ma`, 027): hết hàng theo tồn kho POS, «Dùng tên POS» | MN3 | 🟨 | ✅ `b41261e` · prod: kéo 69 món Kuwait (chưa nối page nào) |
 | MN5 | Deploy + nạp + cờ `V3_GHI_KHO_BOT` + `PUBLIC_URL` 3102 + `V3_SHEET_CHI_DANH_BA` — **mở van** | MN2·MN3·MN4·MN7    | 🟥  | ✅ A–E 28/09 · nhật ký `phat-hanh-20260928-mot-nguon.md` |
 
+## §5f · SÓNG LÀM LẠI (LL1–LL17) — CR-28-09c, người quyết gõ «áp» 29/09
+
+Năm đích thay 26 màn: **Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt**; ba vai; sản phẩm là lõi (1 shop POS =
+1 thị trường, marketer từ HRM); đơn thuộc team của marketer, Ladi nhận bằng UTM. Phiếu CR: `docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`.
+Bản vẽ: https://claude.ai/artifact/A6D68jyQRuqqu3TBRLrceb · hợp đồng màn `docs/v3/03-MAN-HINH.md`.
+**Thứ tự cứng: thêm nhà mới trước, gỡ màn cũ sau cùng (LL8).** Không DROP bảng nào. Page mới đi TRÊN MN6.
+CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / menu cũ là ĐÚNG với mã đang chạy.
+
+| Mã   | Việc                                                                                          | Phụ thuộc              | Làn | Trạng thái |
+| ---- | --------------------------------------------------------------------------------------------- | ---------------------- | --- | ---------- |
+| LL1  | Khung năm đích: menu xếp lại, không đổi đường, sale vào thẳng Hộp thư                          | —                      | 🟩  | 🎫 `PHIEU-LL1.md` |
+| LL7  | Vai 5 → 3 (quyền · lược đồ gieo · 35 tệp)                                                       | LL1                    | 🟨  | ⬜ |
+| LL2  | Hộp thư = bàn hội thoại + nhận thay bot + duyệt/sửa/từ chối đơn Messenger + tab đơn chờ + tìm khách | LL1               | 🟨  | ⬜ |
+| LL3  | Page: danh sách + một page (SP & giá kế thừa · lời bot · ảnh · trả lời sẵn · kỹ thuật · lịch sử · «Bật được chưa») + Luật chung | LL1 · trên MN6 | 🟨 | ⬜ |
+| LL5  | Số liệu một đích (gộp 5 màn, hai luồng tách)                                                   | LL1                    | 🟩  | ⬜ |
+| LL6  | Cài đặt một đích nhiều tab (gộp 6) + Model một khung                                           | LL1                    | 🟩  | ⬜ |
+| LL13 | Đích Sản phẩm: thêm thị trường = 1 món POS · gộp món POS nhiều shop · nối 78 bản sao page       | LL3                    | 🟨  | ⬜ |
+| LL16 | Thị trường = shop POS (ngừng `page.thi_truong` gõ tay, không xoá) · bật + kéo danh mục 6 shop   | LL13                   | 🟨  | ⬜ |
+| LL15 | Người từ HRM (BigQuery, chỉ đọc, mỗi ngày): khớp email · MKT/SALE · sale thành viên 3 team · người nghỉ tự khoá · tên team theo HRM | H11 · LL13 | 🟨 | ⬜ |
+| LL17 | Đơn: job kéo đơn một lần mỗi shop · `UNIQUE (ma_pos)` · team của marketer (bảng ghép HRM) · «chờ gán team» · Ladi = UTM, sale nhập tay không WhatsApp · khách (nước, SĐT) · chỉ team chủ nhắn/ghi ngược | LL15 · TRƯỚC khi bật WhatsApp hoặc team thứ hai khai shop | 🟥 | ⬜ |
+| LL11 | Kỹ năng → kiến thức sản phẩm («hỏi size»), gỡ màn kỹ năng                                       | LL3                    | 🟨  | ⬜ |
+| LL14 | Model: nối dự phòng vào đường chat v3 · ẩn «việc nền» · màn nói đúng                            | LL6                    | 🟨  | ⬜ |
+| LL4  | Thử hỏi bot: model thật qua bộ ráp prompt, không gửi khách, ghi chi phí                         | LL3 · H6 (khoá sống)   | 🟨  | ⬜ |
+| LL10 | Nhà mới cho 5 việc vận hành của `van-hanh` (tin lỗi · tin bị lọc · diễn tập · chi phí từng tin · nguồn nhận tin) | LL5 · LL6 | 🟨 | ⬜ |
+| LL8  | Gỡ màn thừa (GIAO DIỆN; giữ API `van-hanh` · `dispatch`) + gỡ kỹ năng/`mau_0_dong` khỏi đường bot v3 | LL2 · LL3 · LL6 · LL10 | 🟨 | ⬜ |
+| LL9  | Thước: menu · quyền · HK10/HK15 · §10 Hộp thư — ĐÓNG CR                                        | LL1–LL8                | 🟩  | ⬜ |
+| LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`) — cạnh bộ não, khai «Đụng bộ não» | cutover / đợt tắt Botcake | 🟥 | ⬜ |
+
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
 | Mã  | Việc                                                                                 | Chặn gì                                                        | Trạng thái |
@@ -308,6 +336,8 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
 | H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                           | L2-M2                                                          | ⬜         |
 | H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm                                | ⬜         |
 | H10 | **Báo NGƯỜI B đổi màn «Rủi ro hoàn hàng» sang ĐỌC `khach.tang_hoan`**, bỏ phép tính riêng trong `v3/src/ui/rui-ro-hoan/kho-rui-ro.js` | màn đường TIỀN đang nói sai **6,7 lần** | ✅ **XONG 01/09 (P2)** · A đã gỡ nguyên nhân gốc 28/08 — cột `tang_hoan` nay có số trên 89.484/89.484 khách (job `chamTiLeHoan()` đã chạy), nên màn không còn phải tự tính. Chỗ lệch đo được: màn nói **40.064** khách «hoàn cao», luật đã ký nói **5.990** — vì màn thiếu sàn `toi_thieu_don_ket=2` (34.187/40.064 khách chỉ có ĐÚNG MỘT đơn) và tính cả mã 8 (`packing` = bước TIẾN). **A KHÔNG tự sửa: `v3/src/*` là đất B (luật 4 §0a).** Chi tiết §9 28/08 · ✅ **ĐÃ LÀM 01/09** (P2) |
+| H11 | Cấp tài khoản dịch vụ BigQuery **CHỈ ĐỌC** cho máy chủ v3: `levelup-465304.HRM_Core` + `PIALPHA_ALL_Dataset.dim_person_map`; khoá vào kho khoá | LL15 · LL17 (người từ HRM, team của đơn) | ⬜ (29/09, CR-28-09c) |
+| H12 | Token Pancake có quyền trên mọi page đang bán (quan sát 28/09: 11–12/30 hội thoại không đọc được vì token không quyền/hết gói) | Hộp thư đọc chat (LL2) | ⬜ (29/09) |
 
 ## §9 · SỔ NỢ PHÁT SINH (APPEND — thấy gì ngoài phạm vi thì ghi đây, cấm tiện tay sửa)
 
@@ -1309,6 +1339,17 @@ ghi). Kịch bản: **lưu là chạy** (đúng §9 đã ký). Phiếu CR:
   - **N-PAGE** page `1100561323151723` có sản phẩm trên bot nhưng không có dòng `page` v3 ⇒ không sửa được trên v3.
   - **N-3102** ảnh bot gửi đi qua `http://169.58.33.8:3102` — không HTTPS, cổng giao diện mở thẳng Internet.
   - **N-NEO** cổng `l0-m1.sh` neo thiếu `lan_gui` · `token_pancake` · `nap_bo_qua` (từ trước CR).
+
+- 29/09 · **NỢ MỞ RA KHI ÁP CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`):
+  - **N-KEODON** kéo đơn KHÔNG chạy: `src/pos/doc-don.js#docDon` chỉ bộ ca gọi; worker v3 chỉ chạy hàng tin; crontab
+    máy chủ không có lịch kéo đơn. `don_hang` prod 123.629 dòng là MỘT lần nạp 28/08, 100% vẫn `moi_tu_pos`. Ba job
+    dùng đơn (`quet-don-moi` · `lich-nhac` · `chamTiLeHoan`) có mã + ca nhưng không lên lịch ⇒ màn Rủi ro hoàn và hồ sơ
+    khách đứng trên lát 28/08. Nhà: LL17.
+  - **N-SUYNGUON** `suyNguon` xếp «không hội thoại» thành `trang_ban_hang` ⇒ 113 đơn sale nhập tay / 14 ngày sẽ bị nhắn
+    WhatsApp nhầm khi luồng WhatsApp bật. Nhà: LL17 (Ladi = có UTM).
+  - **N-BANGTHUA** bảng `ky_nang` · `mau_0_dong` còn lại sau LL8/LL12 — gỡ hẳn xét sau một tháng không ai cần (lùi lược
+    đồ không phải đường lùi). Tầng kịch bản sản phẩm/nước GIỮ (CR mục 2d), không nằm trong nợ này.
+  - **N-THUHOI** «Thử hỏi bot» (LL4) cần khoá model sống — nối vào H6.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -2625,3 +2666,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   · không commit mã · nhật ký docs/thi-cong/nhat-ky/quan-sat-20260928-ban-hoi-thoai.md
 - 28/09 · MN8 → ✅ `b41261e` — nối sản phẩm page ↔ món POS: chỉ cùng shop, hết hàng theo POS (một giao dịch mỗi page khi đồng bộ), «Dùng tên POS» bỏ số hiệu nội bộ · prod: lượt kéo POS ĐẦU TIÊN 69 món Kuwait, 0 món gắn page (không lẫn sản phẩm bot bán) · nợ N-MN8a–c §9
 - 28/09 · ✅ **CR-28-09b ĐÓNG PHẦN LÀM ĐƯỢC TRONG NGÀY** — prod `b41261e` · lược đồ 27 · kiểm cuối: 76/76 page bản chép khớp · kịch bản 0 lệch · ba khối nguồn v3 · 3 dịch vụ active · 0 lỗi 30′ · bot vẫn `PANCAKE_READONLY=1` (chưa khách nào nhận tin — bật bot là việc riêng)
+- 29/09 · CR-28-09c → 🔨 ÁP — năm đích (Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt), ba vai, sản phẩm là lõi (1 shop POS = 1 thị trường, marketer từ HRM), đơn thuộc team của marketer (bảng ghép HRM phủ 98,6%), Ladi = UTM · §5f LL1–LL17 · `docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`
+  đã áp: 01 §1 §6–§12 (`056f3ad`) · 03-MAN-HINH + lược đồ/máy trạng thái đơn/cửa WhatsApp/3 spec ghi luật mới kèm phiếu (`20b9bdb`) · sổ §5f + H11–H12 + nợ §9 + PHIEU-LL1 (commit này)
+  chưa áp: mã · bộ ca · cổng — đi theo phiếu, bắt đầu LL1; CR đóng ở LL9 · đo lớp 5: 0 bản ghi phải sửa trước LL13/LL17
