@@ -2687,3 +2687,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · LL13 → ✅ — Sản phẩm là lõi: màn Sản phẩm đặt sản phẩm lên đầu (thị trường = shop POS · page đang bán · món), «Xem» mở thị trường theo shop, «Thêm thị trường»/«Gỡ» gắn món POS (một món chỉ thuộc một sản phẩm; nhiều size/shop hợp lệ — NEEDS CLARIFICATION «1 pos id» là mã sản phẩm hay biến thể)
   cổng ll13.sh 7/7 · đảo-vá 10/10 · Postgres thật 7 ca · chụp màn bắt lỗi cũ UI.button (data-boGoc ⇒ nút «Bỏ» sản phẩm gốc chết từ đầu) đã sửa · npm test 2.261 ca 0 đỏ · chưa deploy
   · commit e771443 · nhật ký docs/thi-cong/nhat-ky/phieu-LL13.md
+- 29/09 · LL10 → ✅ — «Hội thoại và đơn» thành Cài đặt › Vận hành (nhà của diễn tập · tin bị lọc · chi phí từng tin · nguồn nhận tin · đối chiếu tin lỗi), màn đọc ?tab= có kiểm vai; Hệ còn sống · Chi phí AI · trang page trỏ thẳng vào đúng tab (lệch CR có chủ ý: không port năm việc sang năm trang)
+  cổng ll10.sh 7/7 · đảo-vá 5/5 đỏ · e2e van-hanh 8/8 · npm test 2.264 ca 0 đỏ (G6 chập chờn lượt đầu — N-CADUNGCHUNG) · chưa deploy
+  · commit 1e5ce30 · nhật ký docs/thi-cong/nhat-ky/phieu-LL10.md
