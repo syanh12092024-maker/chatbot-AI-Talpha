@@ -2729,3 +2729,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · PHÁT HÀNH VE1b + VE4b → ✅ GIỮ — prod `9472153 → c5dbacd`, 0 migration (27), 0 gói, chỉ restart `aicloser-v3` (12:39:14); hai màn thôi hứa «bot dùng ngay» khi prod chưa ghép lời từ dữ liệu
   cửa vào npm test 2.313 ca 0 đỏ (đo riêng, cùng mã) · cổng 35 xanh / 12 nợ cũ trùng tên · mốc +1′/+5′/+15′ lỗi 0
   · commit c5dbacd · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260929-ve1b-ve4b.md
+- 29/09 · VE5 → 🔎 CHỜ DEPLOY — Hộp thư theo bản vẽ 1a: ba tab Cần bạn · Đơn chờ · Bot đang xử; thẻ đơn ở cột giữa (ba nút mở đúng form duyệt cũ, biết van POS); nhận/đóng việc ở thanh cuối; cột phải ba khối
+  ca V1–V5 + L6 Postgres (van đóng ⇒ duyệt chặn, 0 POST POS) · đảo-vá 11/11 (M6 lượt đầu sống ⇒ siết thước) · cổng ve5.sh 11/11 · npm test 2.319 ca 0 đỏ · bò 49 màn 0 lỗi mới
+  · commit 3ceceeb · nhật ký docs/thi-cong/nhat-ky/phieu-VE5.md
