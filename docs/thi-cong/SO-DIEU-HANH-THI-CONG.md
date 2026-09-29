@@ -2669,3 +2669,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · CR-28-09c → 🔨 ÁP — năm đích (Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt), ba vai, sản phẩm là lõi (1 shop POS = 1 thị trường, marketer từ HRM), đơn thuộc team của marketer (bảng ghép HRM phủ 98,6%), Ladi = UTM · §5f LL1–LL17 · `docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`
   đã áp: 01 §1 §6–§12 (`056f3ad`) · 03-MAN-HINH + lược đồ/máy trạng thái đơn/cửa WhatsApp/3 spec ghi luật mới kèm phiếu (`20b9bdb`) · sổ §5f + H11–H12 + nợ §9 + PHIEU-LL1 (commit này)
   chưa áp: mã · bộ ca · cổng — đi theo phiếu, bắt đầu LL1; CR đóng ở LL9 · đo lớp 5: 0 bản ghi phải sửa trước LL13/LL17
+- 29/09 · LL1 → ✅ — khung năm đích Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt: chỉ đổi chỗ ngồi (27/27 đường giữ, tập màn mỗi vai giữ, chỗ đặt chân giữ — sale vào bàn hội thoại); «Sản phẩm & kho» hiện lại làm đầu đích Sản phẩm; thêm hình Lucide package
+  cổng ll1.sh 10/10 · đảo-vá 9/9 đỏ · thước dieu-huong sửa cùng commit · npm test 2.221 ca 0 đỏ · xem thử đọc /api/dieu-huong đúng hai vai · chưa deploy
+  · commit ee6ad06 · nhật ký docs/thi-cong/nhat-ky/phieu-LL1.md
