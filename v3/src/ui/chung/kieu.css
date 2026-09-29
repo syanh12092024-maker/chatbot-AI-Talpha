@@ -829,8 +829,9 @@
      Màn làm việc chiếm trọn chiều cao dưới đầu trang; mỗi cột tự cuộn. Chỉ đọc: không ô soạn.
      Khổ hẹp: một cột một lúc (`data-xem` trên khung). */
   body > main:has(> .ban-ht) { max-width: none; padding: 0; }
-  .ban-ht { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr) minmax(0, 300px);
-            height: calc(100dvh - var(--topbar-height) - 84px); min-height: 480px;
+  /* VE5 · bản vẽ 1a: 360 · co giãn · 340; tiêu đề trang ẩn (`header.an-tieu-de`) nên bàn chiếm trọn chiều cao dưới khung. */
+  .ban-ht { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr) minmax(0, 340px);
+            height: calc(100dvh - var(--topbar-height)); min-height: 480px;
             border-top: 1px solid var(--border-default); background: var(--surface); }
   .ban-ht > * { min-height: 0; min-width: 0; }
   .ban-ht-ds { display: flex; flex-direction: column; border-right: 1px solid var(--border-default); }
@@ -842,6 +843,12 @@
   .ban-ht-ghi { padding: 0 var(--space-4) var(--space-2); font-size: var(--text-xs); line-height: var(--lh-xs);
                 color: var(--text-muted); flex: none; }
   .ban-ht-ds ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; overscroll-behavior: contain; }
+  /* VE5: «Cần bạn» = hội thoại + đơn chờ trong MỘT vùng cuộn; dòng gợi ý đứng cuối cột. */
+  .ban-ht-cuon { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .ban-ht-cuon > ul, .ban-ht-cuon .ban-ht-hang-don { flex: none; overflow: visible; }
+  .ban-ht-goi-y { flex: none; margin: 0; padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border-subtle);
+                  font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--text-muted); }
+  .ban-ht-goi-y .lien-ke { font-size: inherit; }
   .ht-dong { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--space-3);
              padding: 10px var(--space-4); border-bottom: 1px solid var(--border-subtle); cursor: pointer;
              position: relative; transition: background-color var(--duration-fast) var(--ease); }
@@ -880,6 +887,22 @@
   .tin[data-nguon="page"] .tin-nguon { color: var(--text-secondary); }
   .tin[data-nguon="tu_dong"] .tin-bong { background: transparent; border-style: dashed; border-color: var(--border-default);
                                           color: var(--text-secondary); }
+  /* VE5: tin nhắn + thẻ đơn cùng cuộn trong `.chat-than`; thẻ đơn đứng dưới tin cuối (bản vẽ 1a). */
+  .chat-tin { display: flex; flex-direction: column; gap: var(--space-2); }
+  .the-don { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); padding: var(--space-4);
+             background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); }
+  .the-don-dau { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+  .the-don-luoi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+  .the-don-luoi > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+  .the-don .form-actions { margin: 0; }
+  /* Menu mở LÊN từ thanh cuối — khối nhận/đóng việc dùng chung (`dong-viec-ui.js`) đắp vào `.menu-len-than`. */
+  .menu-len { position: relative; }
+  .menu-len > summary { list-style: none; cursor: pointer; }
+  .menu-len > summary::-webkit-details-marker { display: none; }
+  .menu-len-than { position: absolute; left: 0; bottom: calc(100% + var(--space-2)); z-index: 50; width: min(380px, 90vw);
+                   max-height: 70vh; overflow-y: auto; padding: var(--space-4); background: var(--surface);
+                   border: 1px solid var(--border-default); border-radius: var(--radius-lg); box-shadow: var(--shadow-overlay); }
+  .menu-len-than > .panel { margin: 0; padding: 0; border: 0; box-shadow: none; background: transparent; }
   .chat-chan { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); flex: none;
                padding: var(--space-3) var(--space-5); background: var(--surface); border-top: 1px solid var(--border-default); }
   .chat-chan .text-muted { margin-left: auto; font-size: var(--text-xs); }
@@ -893,8 +916,8 @@
   .bc-dl dd { margin: 0; overflow-wrap: anywhere; }
   .bc-cam { margin: var(--space-2) 0 0; font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--text-muted); }
   .ban-ht .lui, .ban-ht .nut-bc, .ban-ht-bc .dong-bc { display: none; }
-  /* ≤1180px: cột bối cảnh thành NGĂN PHỦ mở bằng nút «Khách & đóng việc» — ẩn hẳn là sale trên máy
-     tính bảng / điện thoại mất đường nhận và đóng việc (bắt được lúc soát 28/09). */
+  /* ≤1180px: cột bối cảnh thành NGĂN PHỦ mở bằng nút «Khách». (VE5: nhận/đóng việc đã xuống thanh cuối nên
+     không còn phụ thuộc ngăn này — bài học 28/09 «ẩn hẳn là mất đường đóng việc» vẫn giữ.) */
   @media (max-width: 1180px) {
     .ban-ht { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); }
     .ban-ht .nut-bc { display: inline-flex; }
@@ -904,7 +927,8 @@
     .ban-ht-bc .dong-bc { display: flex; justify-content: flex-end; padding: var(--space-2) var(--space-3) 0; }
   }
   @media (max-width: 760px) {
-    .ban-ht { grid-template-columns: minmax(0, 1fr); height: calc(100dvh - var(--topbar-height) - 72px); }
+    .ban-ht { grid-template-columns: minmax(0, 1fr); height: calc(100dvh - var(--topbar-height)); }
+    .the-don-luoi { grid-template-columns: minmax(0, 1fr); }
     .ban-ht[data-xem="chat"] .ban-ht-ds { display: none; }
     .ban-ht:not([data-xem="chat"]) .ban-ht-chat { display: none; }
     .ban-ht .lui { display: inline-flex; }

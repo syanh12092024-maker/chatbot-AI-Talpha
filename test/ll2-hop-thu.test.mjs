@@ -149,6 +149,21 @@ test('LL2 · Hộp thư: sale duyệt/loại đơn Messenger, nhận thay bot, t
       assert.deepEqual(h.hoiThoai.map((x) => x.id), [String(b.h.id)]);
       assert.equal((await goi(`/api/hop-thu/khach/${k.id}`, undefined, sale2)).status, 404, 'team khác ⇒ 404');
     });
+
+    await t.test('L6 · VE5 · thẻ đơn biết van POS: đóng ⇒ `posGhiMo=false`, duyệt bị chặn, đơn vẫn chờ, 0 lượt POST POS; mở ⇒ true', async () => {
+      const c = await taoDon('buyer-c', { ten: 'Lina', sdt: '+971500000999' });
+      env.V3_POS_GHI = '0';
+      try {
+        const d = await goi(`/api/hop-thu/don/${c.d.id}`);
+        assert.equal(d.posGhiMo, false, 'van đóng mà thẻ đơn không biết ⇒ sale bấm duyệt rồi mới nhận lỗi');
+        const truoc = posPosts;
+        const r = await goi(`/api/hop-thu/don/${c.d.id}/duyet`, { version: d.item.version });
+        assert.notEqual(r.status, 200, 'van đóng mà duyệt vẫn qua');
+        assert.equal(posPosts, truoc, 'van đóng mà vẫn POST sang POS');
+        assert.equal((await one('SELECT trang_thai FROM hang_cho_tao_don WHERE id=$1', [c.d.id])).trang_thai, 'cho_duyet');
+      } finally { env.V3_POS_GHI = '1'; }
+      assert.equal((await goi(`/api/hop-thu/don/${c.d.id}`)).posGhiMo, true);
+    });
   } finally {
     if (server) await new Promise((r) => server.close(r));
     await sb.don();

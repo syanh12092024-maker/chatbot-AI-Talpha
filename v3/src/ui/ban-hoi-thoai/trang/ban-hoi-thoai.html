@@ -10,12 +10,15 @@
      `dong-viec-ui.js` của điều phối — một bản cho mọi trang ghi việc). KHÔNG CSS riêng.
      LL2 · 29/09 (CR-28-09c, §10 bổ sung): thành HỘP THƯ — thêm tab Đơn chờ, duyệt đơn
      Messenger cạnh chat, nhận thay bot; gõ số điện thoại vào ô tìm thì hiện cả hồ sơ khách mọi kênh.
-     Trang VẪN chỉ đọc: mọi lời gọi ghi nằm ở `/hop-thu/hop-thu-ui.js`. -->
+     Trang VẪN chỉ đọc: mọi lời gọi ghi nằm ở `/hop-thu/hop-thu-ui.js`.
+     VE5 · 29/09 (bản vẽ 1a): ba tab «Cần bạn · Đơn chờ · Bot đang xử» (Cần bạn = việc mở + đơn chờ; «Tất cả» thành lối
+     nhỏ dưới danh sách) · thẻ đơn ra CỘT GIỮA dưới tin nhắn · nhận/đóng việc xuống thanh cuối · cột phải ba khối
+     Khách · Bot đã làm gì · Page này bán gì. -->
 <link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <script src="/chung/ui.js"></script>
 </head>
 <body>
-<header>
+<header class="an-tieu-de">
   <h1>Hộp thư</h1>
   <span class="sub" id="tom">đang tải…</span>
 </header>
@@ -24,10 +27,9 @@
   <div class="ban-ht" id="ban">
     <section class="ban-ht-ds" aria-label="Danh sách hội thoại">
       <div class="tabs" role="tablist" aria-label="Lọc hội thoại">
-        <button type="button" class="tab" role="tab" aria-selected="true" data-loc="nguoi">Cần người<span class="count" id="n-nguoi">0</span></button>
-        <button type="button" class="tab" role="tab" aria-selected="false" data-loc="bot">Bot đang xử<span class="count" id="n-bot"></span></button>
-        <button type="button" class="tab" role="tab" aria-selected="false" data-loc="tat">Tất cả<span class="count" id="n-tat"></span></button>
+        <button type="button" class="tab" role="tab" aria-selected="true" data-loc="can">Cần bạn<span class="count" id="n-can">0</span></button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-loc="don">Đơn chờ<span class="count" id="n-don"></span></button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-loc="bot">Bot đang xử<span class="count" id="n-bot"></span></button>
       </div>
       <form class="ban-ht-tim" id="f-tim" role="search">
         <label class="sr-only" for="tim">Tìm theo số điện thoại (mọi kênh) hoặc mã khách</label>
@@ -35,8 +37,13 @@
       </form>
       <div class="ban-ht-ghi" id="ghi-ds"></div>
       <div id="khach-tim"></div>
-      <ul id="ds" role="listbox" aria-label="Hội thoại"></ul>
+      <div class="ban-ht-cuon" id="cuon-ds">
+        <ul id="ds" role="listbox" aria-label="Hội thoại"></ul>
+        <div id="don-can"></div>
+      </div>
       <div id="khac" hidden></div>
+      <p class="ban-ht-goi-y">Gấp nhất lên đầu. Quá 10 phút chưa ai nhận thì đồng hồ đỏ — quản trị thấy ở «Việc đang chờ».
+        <button type="button" class="lien-ke" data-loc="tat">Mọi hội thoại gần đây</button></p>
     </section>
 
     <section class="ban-ht-chat" aria-label="Hội thoại đang mở">
@@ -45,7 +52,7 @@
         <div class="gian"><h2 id="c-ten">Chọn một hội thoại</h2><div class="phu" id="c-phu"></div></div>
         <span class="dong-ho" id="c-dem"></span>
       </div>
-      <div class="chat-than" id="chat" aria-live="polite"></div>
+      <div class="chat-than" id="cuon-chat"><div class="chat-tin" id="chat" aria-live="polite"></div><div id="the-don"></div></div>
       <div class="chat-chan" id="chan"></div>
     </section>
 
@@ -65,7 +72,11 @@ const NGUON_TIN = { ai: 'Bot AI', tu_dong: 'Tự động', page: 'Page' };
 const tenHien = (h) => h.tenKhach || h.tenMessenger || h.soDienThoai || 'Khách chưa có tên';
 const CHU_KY_TAI_MS = 15000;
 
-let LOC = 'nguoi', TIM = '', DS = [], MO = null, lech = 0;
+let LOC = 'can', TIM = '', DS = [], MO = null, lech = 0;
+/* VE5: tab → lát của cửa đọc (không đổi máy chủ). «Cần bạn» = lát `nguoi` (việc mở) + đơn chờ vẽ ngay dưới. */
+const API_LOC = { can: 'nguoi', bot: 'bot', tat: 'tat' };
+let DEM_NGUOI = 0, DEM_DON = 0;
+const veDemCan = () => { $('#n-can').textContent = so(DEM_NGUOI + DEM_DON); };
 /* Tab KHÔNG phải lát hội thoại (LL2): vẽ bằng khối Hộp thư, không gọi `/api/ban-hoi-thoai`. */
 const TAB_KHAC = new Set(['don']);
 const gio = () => Date.now() + lech;
@@ -108,7 +119,7 @@ function dongHt(h) {
                 : `<span class="ht-luc">${lucNgan(h.chamLuc)}</span>`;
   const trangThai = v ? statusBadge(v.trangThai === 'dang_xu' ? 'owner_sale' : 'owner_waiting',
                           { label: v.trangThai === 'dang_xu' ? `${v.tenNguoiNhan || 'Sale'} đang xử` : 'Chờ người' })
-                      : statusBadge(h.nguoiGiu === 'AI' ? 'owner_ai' : 'owner_paused', { label: NGUOI_GIU[h.nguoiGiu] || h.nguoiGiu || '—' });
+                      : statusBadge(h.nguoiGiu === 'AI' ? 'owner_ai' : 'owner_paused', { label: h.nguoiGiu === 'AI' ? 'Bot đang trả lời' : NGUOI_GIU[h.nguoiGiu] || h.nguoiGiu || '—' });
   const phu = v ? v.lyDoChu : (h.aiNoiGi ? 'Bot: ' + h.aiNoiGi : (GIAI_DOAN[h.giaiDoan] || ''));
   return `<li class="ht-dong" role="option" tabindex="0" data-id="${esc(h.id)}" aria-selected="${h.id === MO}">
     <span class="ht-ten">${esc(tenHien(h))}</span>${luc}
@@ -120,7 +131,7 @@ function dongHt(h) {
 function khoiRongDs(d) {
   if (d.tim) return emptyState({ icon: 'search', title: 'Không tìm thấy hội thoại',
     body: 'Tìm theo đúng số điện thoại khách đã để lại, hoặc mã khách (psid) của Messenger.' });
-  if (LOC === 'nguoi') return emptyState({ icon: 'circle-check', title: 'Không có hội thoại nào cần người',
+  if (LOC === 'can') return emptyState({ icon: 'circle-check', title: 'Không có hội thoại nào cần bạn',
     body: 'Hội thoại bot đẩy sang người sẽ hiện ở đây, gấp nhất lên đầu.' });
   return emptyState({ icon: 'inbox', title: `Không có hội thoại nào trong ${d.cuaSoNgay} ngày qua`,
     body: 'Bot chưa trả lời khách nào gần đây. Tìm theo số điện thoại hoặc mã khách để mở hội thoại cũ.' });
@@ -129,15 +140,15 @@ function khoiRongDs(d) {
 async function taiDs() {
   let d;
   try {
-    d = await doc('/api/ban-hoi-thoai?loc=' + encodeURIComponent(LOC) + (TIM ? '&tim=' + encodeURIComponent(TIM) : ''));
+    d = await doc('/api/ban-hoi-thoai?loc=' + encodeURIComponent(API_LOC[LOC] || 'nguoi') + (TIM ? '&tim=' + encodeURIComponent(TIM) : ''));
   } catch (e) {
     $('#ds').innerHTML = `<li>${canhBao({ level: 'warning', title: 'Không tải được danh sách', body: e.message })}</li>`;
     return;
   }
   if (Number.isFinite(d.bay)) lech = d.bay - Date.now();
   DS = d.items || [];
-  $('#n-nguoi').textContent = so(d.demCanNguoi);
-  if (LOC !== 'nguoi' && !d.tim) $('#n-' + LOC).textContent = so(DS.length) + (d.catBot ? '+' : '');
+  DEM_NGUOI = d.demCanNguoi || 0; veDemCan();
+  if (LOC === 'bot' && !d.tim) $('#n-bot').textContent = so(DS.length) + (d.catBot ? '+' : '');
   $('#tom').textContent = d.demCanNguoi
     ? `${so(d.demCanNguoi)} hội thoại cần người · trả lời ở Pancake`
     : 'Không hội thoại nào cần người · trả lời ở Pancake';
@@ -146,6 +157,11 @@ async function taiDs() {
   if (d.catBot) ghi.push(`Chỉ hiện ${so(DS.length)} hội thoại mới nhất.`);
   $('#ghi-ds').innerHTML = ghi.join(' ');
   $('#ds').innerHTML = DS.length ? DS.map(dongHt).join('') : `<li>${khoiRongDs(d)}</li>`;
+  // «Cần bạn» gồm cả đơn chờ (bản vẽ 1a): vẽ khối đơn ngay dưới hội thoại, chỉ khối CÓ đơn.
+  if (LOC === 'can' && !TIM && window.HopThu) {
+    const n = await window.HopThu.veDonCho($('#don-can'), { moHoiThoai: mo, chiCo: true });
+    if (n != null) { DEM_DON = n; $('#n-don').textContent = so(n); veDemCan(); }
+  } else $('#don-can').innerHTML = '';
 }
 
 /* ═══ cột giữa + phải ═══ */
@@ -166,7 +182,7 @@ function veChat(ht, kq) {
     return moc + `<div class="tin" data-ben="${t.laPage ? 'page' : 'khach'}"${nguon ? ` data-nguon="${nguon}"` : ''}><div class="tin-bong">${esc(t.text || '(tin không có chữ — ảnh hoặc tệp)')}</div>`
       + `<span class="tin-luc">${nguon ? `<span class="tin-nguon">${NGUON_TIN[nguon]}</span> · ` : ''}${Number.isFinite(ms) ? new Date(ms).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ''}</span></div>`;
   }).join('');
-  chat.scrollTop = chat.scrollHeight;
+  $('#cuon-chat').scrollTop = $('#cuon-chat').scrollHeight;
 }
 
 const lucDay = (ms) => {
@@ -204,45 +220,64 @@ function veBoiCanh(ht, x) {
   const don = d ? dl(dong('Mã POS', d.maPos || 'Chưa có mã') + dong('Trạng thái', d.trangThai) + dong('Trên POS', d.trangThaiPos)
     + dong('Tổng tiền', tien(d.tongTien, d.tienTe)) + dong('Tạo lúc', lucDay(d.taoLuc))) : '';
 
-  const hoiThoai = dl(dong('Giai đoạn', GIAI_DOAN[h.giaiDoan] || h.giaiDoan) + dong('Người giữ', NGUOI_GIU[h.nguoiGiu] || h.nguoiGiu)
-    + dong('Lý do cuối', h.lyDoCuoi) + dong('Bot nói gần nhất', h.aiNoiGi));
-
-  let bot = '';
+  // VE5 · bản vẽ 1a: «Bot đã làm gì» — giai đoạn · vì sao chuyển sang người · ai đang xử · lượt bot · câu bot nói cuối.
+  let luot = '';
   if (x && !x.loi) {
-    const kb = x.kichBan || {};
     const s = x.soAi || {};
     const cu = x.botCu;
-    bot = dl(dong('Kịch bản', kb.co
-        ? ['bản ' + (kb.phienBan ?? '?'), kb.tuDau, kb.suaLuc ? 'sửa ' + lucDay(kb.suaLuc) + (kb.nguoiSua ? ' bởi ' + kb.nguoiSua : '') : ''].filter(Boolean).join(' · ')
-        : kb.viSao)
-      + dong('Bot v3', s.co
-        ? [so(s.soLuot) + ' lượt trả lời', s.model, s.tienVnd == null ? '' : tien(Math.round(s.tienVnd), 'đ') + (s.soDongCoTien < s.soGoiModel ? ` (${so(s.soDongCoTien)}/${so(s.soGoiModel)} lượt có giá)` : '')].filter(Boolean).join(' · ')
-        : s.viSao)
-      + dong('Bot cũ', cu && cu.soLuot ? so(cu.soLuot) + ' lượt trả lời' + (cu.cuoiLuc ? ' · lần cuối ' + lucDay(cu.cuoiLuc) : '') + ' · theo Sổ AI bot cũ' : ''));
+    luot = s.co
+      ? [so(s.soLuot) + ' lượt trả lời (bot v3)', s.model, s.tienVnd == null ? '' : tien(Math.round(s.tienVnd), 'đ') + (s.soDongCoTien < s.soGoiModel ? ` (${so(s.soDongCoTien)}/${so(s.soGoiModel)} lượt có giá)` : '')].filter(Boolean).join(' · ')
+      : cu && cu.soLuot ? so(cu.soLuot) + ' lượt trả lời' + (cu.cuoiLuc ? ' · lần cuối ' + lucDay(cu.cuoiLuc) : '') + ' · theo Sổ AI bot cũ' : (s.viSao || '');
   }
+  const botLam = dl(dong('Giai đoạn', GIAI_DOAN[h.giaiDoan] || h.giaiDoan) + dong('Người giữ', NGUOI_GIU[h.nguoiGiu] || h.nguoiGiu)
+    + dong('Vì sao chuyển', v ? v.lyDoChu : h.lyDoCuoi) + (v ? dong('Đang xử', v.tenNguoiNhan || 'Chưa ai nhận') : '')
+    + dong('Lượt bot', luot) + dong('Bot nói cuối', h.aiNoiGi));
 
-  const dc = x && x.donChoDuyet;
-  const donCho = dc ? dl(dong('Khách', dc.ten) + dong('Điện thoại', dc.soDienThoai) + dong('Số lượng', dc.soLuong == null ? '' : so(dc.soLuong) + ' gói')
-      + dong('Tổng tiền', tien(dc.tongTien, dc.tienTe)) + dong('Bot chốt', lucDay(dc.taoLuc)))
-    + (dc.soDon > 1 ? cam(`Còn ${so(dc.soDon)} đơn chờ trong hội thoại này — đang mở đơn mới nhất.`) : '')
-    + '<div class="form-actions"><button type="button" class="btn" data-variant="primary" data-size="sm" id="mo-don">Xem · sửa · duyệt</button></div>'
-    + '<div id="o-don"></div>' : '';
+  // «Page này bán gì»: sale không có đường đọc sản phẩm & giá của page (cửa đọc sản phẩm chỉ mở cho quản trị ·
+  // quản lý · marketer) — nói ra, không bịa danh sách; kịch bản thì có.
+  let banGi = '';
+  if (x && !x.loi) {
+    const kb = x.kichBan || {};
+    banGi = dl(dong('Page', h.tenPage) + dong('Kịch bản', kb.co
+        ? ['bản ' + (kb.phienBan ?? '?'), kb.tuDau, kb.suaLuc ? 'sửa ' + lucDay(kb.suaLuc) + (kb.nguoiSua ? ' bởi ' + kb.nguoiSua : '') : ''].filter(Boolean).join(' · ')
+        : kb.viSao))
+      + cam('Sản phẩm & giá của page: vai của bạn chưa có đường đọc ở đây — xem trong đơn chờ duyệt (nếu có) hoặc hỏi quản trị.');
+  }
 
   $('#bc').innerHTML = `
     <div class="dong-bc"><button type="button" class="icon-btn" id="dong-bc" aria-label="Đóng thông tin khách">×</button></div>
     ${khoi('Khách', khach)}
-    ${khoi('Đơn chờ duyệt', donCho)}
+    ${khoi('Bot đã làm gì', botLam)}
+    ${khoi('Page này bán gì', banGi)}
     ${khoi('Đơn đang bàn', don)}
-    ${khoi('Hội thoại', hoiThoai)}
-    ${v ? khoi('Việc cần người', dl(dong('Lý do', v.lyDoChu) + dong('Đang xử', v.tenNguoiNhan || 'Chưa ai nhận'))) + '<div class="bc-khoi" id="o-dong-viec"></div>' : ''}
-    ${khoi('Bot & kịch bản', bot)}
     ${x && x.loi ? khoi('Bối cảnh', cam('Chưa tải được bối cảnh: ' + x.loi)) : ''}`;
   $('#dong-bc').addEventListener('click', () => { delete $('#ban').dataset.bc; });
-  if (dc && window.HopThu) {
-    $('#mo-don').addEventListener('click', () => window.HopThu.moDon(dc.id, $('#o-don'), {
-      sauKhiGhi: async () => { await taiDs(); },
-    }));
-  }
+}
+
+/* VE5 · thanh cuối (bản vẽ 1a): Trả lời trên Pancake · Nhận thay bot · Nhận/đóng việc ▾ — dựng NGAY khi mở hội thoại
+   để khối đóng việc dùng chung (`dong-viec-ui.js`) có `#o-dong-viec` mà đắp vào. */
+function veChan(ht, id) {
+  const v = ht.viec;
+  $('#chan').innerHTML = '<span id="lk-pancake"><span class="btn" data-variant="outline" data-size="sm" aria-disabled="true"><span>Trả lời trên Pancake</span></span></span>'
+    + (ht.nguoiGiu === 'AI' && !v && window.HopThu
+      ? '<button type="button" class="btn" data-variant="outline" data-size="sm" id="nut-nhan">Nhận thay bot</button>' : '')
+    + (v ? `<details class="menu-len"><summary class="btn" data-variant="outline" data-size="sm">${v.trangThai === 'dang_xu' ? 'Đóng việc' : 'Nhận · đóng việc'} ▾</summary>`
+      + '<div class="menu-len-than" id="o-dong-viec"></div></details>' : '')
+    + '<button type="button" class="btn nut-bc" data-variant="outline" data-size="sm" id="nut-bc">Khách</button>'
+    + '<span class="text-muted">Trả lời khách ở Pancake · ở đây nhận, duyệt và đóng</span>';
+  $('#nut-bc').addEventListener('click', () => { $('#ban').dataset.bc = 'mo'; });
+  const nutNhan = $('#nut-nhan');
+  if (nutNhan) nutNhan.addEventListener('click', async () => {
+    nutNhan.disabled = true;
+    try {
+      await window.HopThu.nhanThayBot(id);
+      DS = DS.filter((h) => h.id !== id);
+      await taiDs(); await mo(id);
+    } catch (e) {
+      nutNhan.disabled = false;
+      $('#chat').insertAdjacentHTML('afterbegin', canhBao({ level: 'danger', title: 'Chưa nhận được', body: e.message }));
+    }
+  });
 }
 
 async function mo(id) {
@@ -262,7 +297,8 @@ async function mo(id) {
   const v = ht.viec;
   if (v) { $('#c-dem').dataset.han = v.hanLuc; } else { delete $('#c-dem').dataset.han; $('#c-dem').textContent = ''; }
   $('#chat').innerHTML = '<p class="text-muted">Đang đọc từ Pancake…</p>';
-  $('#chan').innerHTML = '';
+  $('#the-don').innerHTML = '';
+  veChan(ht, id);
   veBoiCanh(ht);
   nhipDongHo();
 
@@ -272,6 +308,13 @@ async function mo(id) {
   Promise.all([doc(duong + '/boi-canh').catch((e) => ({ loi: e.message })), pCt]).then(([x, ct]) => {
     if (MO !== id) return;
     veBoiCanh(ht, x);
+    // VE5: thẻ đơn ở CỘT GIỮA (bản vẽ 1a) — mọi lời gọi ghi vẫn trong `hop-thu-ui.js`.
+    const dc = x && x.donChoDuyet;
+    if (dc && window.HopThu) {
+      const k = x.khach && x.khach.co ? x.khach : null;
+      window.HopThu.theDon(dc, $('#the-don'), { hoan: k ? { tangHoan: k.tangHoan, tiLeHoan: k.tiLeHoan } : null,
+        sauKhiGhi: async () => { await taiDs(); } });
+    }
     if (ct && window.DongViecUI && $('#o-dong-viec')) {
       window.DongViecUI.gan(ct, { sauKhiGhi: async () => { await taiDs(); await mo(id); } });
     }
@@ -283,27 +326,9 @@ async function mo(id) {
   if (MO !== id) return;
   veChat(ht, kq);
   const lk = kq.pancake || (ct && ct.lienKet && ct.lienKet.pancake);
-  $('#chan').innerHTML = (lk
-      ? `<a class="btn" data-variant="primary" data-size="sm" target="_blank" rel="noopener" href="${esc(lk)}"><span>Trả lời trên Pancake</span></a>`
-      : `<span class="btn" data-variant="outline" data-size="sm" aria-disabled="true"><span>Trả lời trên Pancake</span></span>`)
-    + (ht.nguoiGiu === 'AI' && !ht.viec && window.HopThu
-      ? '<button type="button" class="btn" data-variant="outline" data-size="sm" id="nut-nhan">Nhận thay bot</button>' : '')
-    + '<button type="button" class="btn nut-bc" data-variant="outline" data-size="sm" id="nut-bc">'
-    + (ht.viec ? 'Khách & đóng việc' : 'Khách') + '</button>'
-    + '<span class="text-muted">Trả lời ở Pancake · ở đây nhận việc, duyệt đơn, đóng việc</span>';
-  $('#nut-bc').addEventListener('click', () => { $('#ban').dataset.bc = 'mo'; });
-  const nutNhan = $('#nut-nhan');
-  if (nutNhan) nutNhan.addEventListener('click', async () => {
-    nutNhan.disabled = true;
-    try {
-      await window.HopThu.nhanThayBot(id);
-      DS = DS.filter((h) => h.id !== id);
-      await taiDs(); await mo(id);
-    } catch (e) {
-      nutNhan.disabled = false;
-      $('#chat').insertAdjacentHTML('afterbegin', canhBao({ level: 'danger', title: 'Chưa nhận được', body: e.message }));
-    }
-  });
+  if (lk && $('#lk-pancake')) {
+    $('#lk-pancake').innerHTML = `<a class="btn" data-variant="primary" data-size="sm" target="_blank" rel="noopener" href="${esc(lk)}"><span>Trả lời trên Pancake</span></a>`;
+  }
 }
 
 $('#ds').addEventListener('click', (e) => { const li = e.target.closest('.ht-dong'); if (li) mo(li.dataset.id); });
@@ -312,13 +337,14 @@ $('#ds').addEventListener('keydown', (e) => {
 });
 async function taiDonCho() {
   const n = window.HopThu ? await window.HopThu.veDonCho($('#khac'), { moHoiThoai: mo }) : null;
-  if (n != null) $('#n-don').textContent = so(n);
+  if (n != null) { DEM_DON = n; $('#n-don').textContent = so(n); veDemCan(); }
 }
 document.querySelectorAll('[data-loc]').forEach((b) => b.addEventListener('click', () => {
   LOC = b.dataset.loc; TIM = ''; $('#tim').value = '';
-  document.querySelectorAll('[data-loc]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+  // «Mọi hội thoại gần đây» là LỐI, không phải tab — không tab nào sáng khi đứng ở đó.
+  document.querySelectorAll('[role="tab"][data-loc]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
   const khac = TAB_KHAC.has(LOC);
-  $('#ds').hidden = khac; $('#f-tim').hidden = khac; $('#ghi-ds').hidden = khac; $('#khach-tim').hidden = khac; $('#khac').hidden = !khac;
+  $('#cuon-ds').hidden = khac; $('#f-tim').hidden = khac; $('#ghi-ds').hidden = khac; $('#khach-tim').hidden = khac; $('#khac').hidden = !khac;
   $('#khach-tim').innerHTML = '';
   if (LOC === 'don') taiDonCho();
   else taiDs();
@@ -341,11 +367,11 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') delete $('
 $('#chat').innerHTML = emptyState({ icon: 'inbox', title: 'Chọn một hội thoại bên trái',
   body: 'Đọc chat ngay tại đây. Trả lời thì bấm «Trả lời trên Pancake».' });
 setInterval(nhipDongHo, 1000);
-setInterval(() => { if (LOC === 'nguoi' && !TIM) taiDs(); }, CHU_KY_TAI_MS);
+setInterval(() => { if (LOC === 'can' && !TIM) taiDs(); }, CHU_KY_TAI_MS);
 taiDs();
 // `hop-thu-ui.js` nạp SAU đoạn này (cuối <body>) ⇒ đếm Đơn chờ khi mọi script đã chạy.
 document.addEventListener('DOMContentLoaded', () => {
-  if (window.HopThu) window.HopThu.veDonCho(document.createElement('div')).then((n) => { if (n != null) $('#n-don').textContent = so(n); });
+  if (window.HopThu) window.HopThu.veDonCho(document.createElement('div')).then((n) => { if (n != null) { DEM_DON = n; $('#n-don').textContent = so(n); veDemCan(); } });
 });
 </script>
 <script src="/dieu-phoi/dong-viec-ui.js"></script>

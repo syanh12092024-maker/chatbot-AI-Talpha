@@ -5,7 +5,9 @@
 // ô nhập ở đây chỉ là trường của ĐƠN (tên · số · địa chỉ…) và lý do loại đơn.
 //
 // window.HopThu = {
-//   moDon(id, noiVe, { sauKhiGhi })      — đơn chờ duyệt: sửa · lưu · duyệt (tạo đơn POS) · loại
+//   moDon(id, noiVe, { sauKhiGhi, tapTrung }) — đơn chờ duyệt: sửa · lưu · duyệt (tạo đơn POS) · loại
+//   theDon(dc, noiVe, { hoan, sauKhiGhi }) — VE5: THẺ đơn ở cột giữa (bản vẽ 1a): Hàng · Tiền · Giao tới · cảnh báo ·
+//                                          ba nút mở ĐÚNG form `moDon` (luật duyệt không đổi: ô «đã kiểm tra», phiên bản)
 //   nhanThayBot(hoiThoaiId)              — hội thoại bot đang giữ ⇒ sale giữ, đẻ một dòng việc
 //   veDonCho(noiVe, { moHoiThoai })      — tab Đơn chờ; trả về tổng số đơn đang chờ
 //   veKhachTheoSo(noiVe, sdt, { moHoiThoai }) — hồ sơ khách mọi kênh, hiện trên kết quả ô tìm; trả danh sách khách
@@ -56,7 +58,7 @@
   };
   const TRANG_THAI_DON = { cho_duyet: "Chờ duyệt", da_duyet: "Đã duyệt", tu_choi: "Đã loại" };
 
-  async function moDon(id, noi, { sauKhiGhi } = {}) {
+  async function moDon(id, noi, { sauKhiGhi, tapTrung } = {}) {
     noi.innerHTML = '<p class="text-muted">Đang tải đơn…</p>';
     let d;
     try { d = await goi(`/api/hop-thu/don/${enc(id)}`); } catch (e) {
@@ -104,6 +106,9 @@
     $("#hd-sl").addEventListener("input", hienGia);
     hienGia();
     if (!suaDuoc) { f.querySelectorAll("input,select").forEach((x) => { x.disabled = true; }); return; }
+    // VE5: nút trên thẻ đơn mở form rồi đưa con trỏ tới ĐÚNG chỗ (duyệt ⇒ ô «đã kiểm tra»; từ chối ⇒ ô lý do).
+    const dich = { duyet: "#hd-xac", loai: "#hd-lydo", sua: "#hd-ten" }[tapTrung];
+    if (dich && $(dich)) { $(dich).scrollIntoView({ block: "center" }); $(dich).focus(); }
 
     const giaTri = () => ({
       ...Object.fromEntries(TRUONG.map(([k]) => [k, $("#hd-" + k).value])),
@@ -143,6 +148,51 @@
     }));
   }
 
+  /* ═══ THẺ ĐƠN (VE5 · bản vẽ 1a) — tóm tắt đơn bot chốt ở cột giữa, dưới tin nhắn ═══
+     Chỉ ĐỌC ở đây; ba nút mở form `moDon` — MỘT bản luật ghi (lưu · duyệt có ô xác nhận · loại có lý do). */
+  const MUC_CANH = new Set(["chan", "nhac"]);   // tầng hoàn do máy chủ tính — không tự đặt ngưỡng ở trang
+  async function theDon(dc, noi, { hoan = null, sauKhiGhi } = {}) {
+    noi.innerHTML = '<p class="text-muted">Đang tải đơn…</p>';
+    let d;
+    try { d = await goi(`/api/hop-thu/don/${enc(dc.id)}`); } catch (e) {
+      noi.innerHTML = UI.alert({ level: "warning", title: "Không mở được đơn", body: e.message });
+      return;
+    }
+    const o = d.item, du = o.du_lieu_don || {};
+    const choDuyet = o.trang_thai === "cho_duyet";
+    const sp = (d.products || []).find((p) => p.ma === du.san_pham_ma);
+    const trung = ((o.cua_kiem && o.cua_kiem.cong) || {})["3_chong_trung"];
+    const canh = [];
+    if (hoan && hoan.tangHoan && MUC_CANH.has(hoan.tangHoan.muc)) {
+      canh.push(UI.alert({ level: "warning", title: `Khách ${hoan.tangHoan.chu.toLowerCase()}`
+        + (hoan.tiLeHoan == null ? "" : ` — hoàn ${so(hoan.tiLeHoan)}% trên đơn cũ`), body: "Gọi xác nhận trước khi duyệt." }));
+    }
+    if (trung && trung.qua === false) canh.push(UI.alert({ level: "warning", title: "Nghi trùng đơn", body: trung.ly_do || "" }));
+    if (choDuyet && d.posGhiMo === false) {
+      canh.push(UI.alert({ level: "info", title: "Cửa tạo đơn POS đang ĐÓNG trên máy chủ",
+        body: "Duyệt lúc này sẽ không tạo đơn — đơn vẫn ở «Chờ duyệt». Sửa và từ chối vẫn làm được." }));
+    }
+    const o3 = (nhan, gt) => `<div><span class="field-label">${nhan}</span><b>${esc(gt || "—")}</b></div>`;
+    noi.innerHTML = `<section class="the-don" aria-label="Đơn bot chốt">
+      <div class="the-don-dau"><b>Đơn bot chốt · Messenger</b>
+        ${UI.statusBadge(choDuyet ? "needs_attention" : o.trang_thai === "da_duyet" ? "ready" : "blocked", { label: TRANG_THAI_DON[o.trang_thai] || o.trang_thai })}</div>
+      <div class="the-don-luoi">
+        ${o3("Hàng", [du.so_luong ? so(du.so_luong) + " ×" : "", sp ? sp.ten : du.san_pham_ma].filter(Boolean).join(" "))}
+        ${o3("Tiền", tien(Number(dc.tongTien), dc.tienTe))}
+        ${o3("Giao tới", [du.dia_chi, du.thanh_pho].filter(Boolean).join(", "))}
+      </div>
+      ${canh.join("")}
+      ${choDuyet ? `<div class="form-actions">
+        <button type="button" class="btn" data-variant="primary" data-size="sm" data-mo="duyet"${d.posGhiMo === false ? ' disabled title="Cửa tạo đơn POS đang đóng"' : ""}>Duyệt → Chờ in</button>
+        <button type="button" class="btn" data-variant="outline" data-size="sm" data-mo="sua">Sửa đơn</button>
+        <button type="button" class="btn" data-variant="outline" data-size="sm" data-mo="loai">Từ chối</button></div>` : ""}
+      <div data-form></div>
+    </section>`;
+    const form = noi.querySelector("[data-form]");
+    noi.querySelectorAll("[data-mo]").forEach((b) => b.addEventListener("click", () =>
+      moDon(o.id, form, { tapTrung: b.dataset.mo, sauKhiGhi: async () => { if (sauKhiGhi) await sauKhiGhi(); } })));
+  }
+
   /* ═══ NHẬN THAY BOT ═══ */
   async function nhanThayBot(hoiThoaiId) {
     return goi(`/api/hop-thu/hoi-thoai/${enc(hoiThoaiId)}/nhan`, {});
@@ -152,7 +202,8 @@
   const khoi = (tieuDe, dem, than, rong) => `<div class="bc-khoi"><h3 class="nhan-hoa">${tieuDe} · ${so(dem)}</h3>`
     + (than ? `<ul class="item-list" data-bam>${than}</ul>` : `<p class="bc-cam">${esc(rong)}</p>`) + "</div>";
 
-  async function veDonCho(noi, { moHoiThoai } = {}) {
+  // `chiCo` (VE5): vẽ trong tab «Cần bạn» — chỉ các khối CÓ đơn, không in câu «không có…» chen giữa hàng đợi.
+  async function veDonCho(noi, { moHoiThoai, chiCo = false } = {}) {
     noi.innerHTML = '<p class="text-muted">Đang tải đơn chờ…</p>';
     let d;
     try { d = await goi("/api/hop-thu/don-cho"); } catch (e) {
@@ -167,12 +218,23 @@
     const ladi = d.ladi.map((o) => `<li class="item"><div><span class="item-title">${esc(o.maPos || "Đơn #" + o.id)}</span>`
       + `<div class="item-desc">${esc([o.trangThaiChu, o.tenPage, tien(o.tongTien, o.tienTe)].filter(Boolean).join(" · "))}</div></div>`
       + `<span class="item-trail">${esc(lucDay(o.taoLuc))}</span></li>`).join("");
-    noi.innerHTML = khoi("Messenger chờ duyệt", d.dem.messenger, mess, "Không có đơn Messenger nào chờ duyệt.")
-      + khoi("Đơn không gắn hội thoại", d.dem.viecDon, viec, "Không có việc đơn nào đang mở.")
-      + khoi("Ladi chờ xác nhận WhatsApp", d.dem.ladi, ladi,
+    const ve = (tieuDe, dem, than, rong) => (chiCo && !than ? "" : khoi(tieuDe, dem, than, rong));
+    // «Cần bạn» (bản vẽ 1a): đơn Messenger là MỘT HÀNG của hàng đợi như hội thoại — không phải khối riêng.
+    const hangMess = d.messenger.map((o) => `<li class="ht-dong" role="option" tabindex="0" data-ht="${esc(o.hoiThoaiId)}">`
+      + `<span class="ht-ten">${esc(o.ten || "Khách chưa có tên")}</span><span class="ht-luc">${esc(lucDay(o.taoLuc))}</span>`
+      + `<span class="ht-phu">Bot chốt đơn — chờ bạn duyệt</span>`
+      + `<span class="ht-meta">${UI.statusBadge("needs_attention", { label: "Đơn chờ duyệt" })}`
+      + `<span>${esc([o.tenPage, tien(o.tongTien, o.tienTe)].filter(Boolean).join(" · "))}</span></span></li>`).join("");
+    noi.innerHTML = (chiCo ? (hangMess ? `<ul class="ban-ht-hang-don" aria-label="Đơn chờ duyệt">${hangMess}</ul>` : "")
+      : ve("Messenger chờ duyệt", d.dem.messenger, mess, "Không có đơn Messenger nào chờ duyệt."))
+      + ve("Đơn không gắn hội thoại", d.dem.viecDon, viec, "Không có việc đơn nào đang mở.")
+      + ve("Ladi chờ xác nhận WhatsApp", d.dem.ladi, ladi,
         "Chưa có đơn nào — luồng xác nhận WhatsApp chưa chạy (cần nối số WhatsApp và mẫu tin Meta duyệt).")
       + (d.catBot ? '<p class="bc-cam">Chỉ hiện 100 đơn mỗi loại.</p>' : "");
-    noi.querySelectorAll("[data-ht]").forEach((b) => b.addEventListener("click", () => moHoiThoai && moHoiThoai(b.dataset.ht)));
+    noi.querySelectorAll("[data-ht]").forEach((b) => {
+      b.addEventListener("click", () => moHoiThoai && moHoiThoai(b.dataset.ht));
+      if (b.tagName === "LI") b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); b.click(); } });
+    });
     return d.dem.messenger + d.dem.viecDon + d.dem.ladi;
   }
 
@@ -214,5 +276,5 @@
     return d.khach;   // số trong đây đã CHUẨN HOÁ ở máy chủ (`chuanHoaSdt`) — trang dùng lại để tìm hội thoại
   }
 
-  window.HopThu = { moDon, nhanThayBot, veDonCho, veKhachTheoSo };
+  window.HopThu = { moDon, theDon, nhanThayBot, veDonCho, veKhachTheoSo };
 })();

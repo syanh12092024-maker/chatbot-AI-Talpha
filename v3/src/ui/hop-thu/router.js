@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { batBuocDangNhap, batBuocVaiHTTP } from '../../auth/index.js';
 import { VAI_VAO_DUOC as VAI_BAN } from '../dispatch/router.js';
 import { docDonCho, luuDonCho, duyetDonCho, loaiDonCho } from '../van-hanh/don-cho.js';
+import { vanGhiMo } from '../../../../src/pos/index.js';
 import { handoffConversation, fault } from '../../../../src/admin-v3/operations.js';
 import { timKhach, docHoSoKhach } from '../../../../src/orders/doc-ho-so.js';
 import { donCho } from '../ban-hoi-thoai/kho-ban-hoi-thoai.js';
@@ -79,7 +80,10 @@ export function taoRouterHopThu({ pool = null, orderDeps = {} } = {}) {
   // Tab «Đơn chờ» — đọc qua CỔNG kẹp team (không cần pool), cùng đường đọc với bàn hội thoại.
   r.get('/api/hop-thu/don-cho', boc(async (q, s) => s.json({ ok: true, ...(await donCho(q.boiCanh, { bay: Date.now() })) })));
 
-  r.get('/api/hop-thu/don/:id', canPool, boc(async (q, s) => s.json({ ok: true, ...(await docDonCho(pool, q.boiCanh, q.params.id)) })));
+  // VE5 · 29/09: `posGhiMo` — van tạo đơn POS (`V3_POS_GHI`, CÙNG nguồn env mà lượt duyệt đọc: `orderDeps.env` ?? process.env).
+  // Thẻ đơn nói trước «duyệt sẽ không tạo đơn» khi van đóng, thay vì để sale bấm rồi mới nhận lỗi.
+  r.get('/api/hop-thu/don/:id', canPool, boc(async (q, s) => s.json({ ok: true, ...(await docDonCho(pool, q.boiCanh, q.params.id)),
+    posGhiMo: vanGhiMo(orderDeps.env ?? process.env) })));
   r.post('/api/hop-thu/don/:id/luu', canPool, boc(async (q, s) => s.json(await luuDonCho(pool, q.boiCanh, q.params.id, q.body))));
   r.post('/api/hop-thu/don/:id/duyet', canPool, boc(async (q, s) =>
     s.json({ ok: true, result: await duyetDonCho(pool, q.boiCanh, q.params.id, q.body, orderDeps) })));
