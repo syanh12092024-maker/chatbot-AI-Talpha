@@ -66,12 +66,54 @@ không hại khi lùi: HTML của mã cũ gọi tệp KHÔNG mã (`no-cache`) �
 
 ## 8 · Lệnh đã gõ theo thứ tự
 
-(điền khi gõ)
+Giờ prod (CEST), 29/09:
+1. commit giấy `1bb9ba1` (CHANGELOG + tệp này, ngưỡng + đường lùi) · đẩy nhánh → `5bff55e..1bb9ba1`
+2. mốc lùi `/var/backups/aicloser/truoc-ll18-20260929T064514Z/commit.txt` = `5bff55e`
+3. prod `git fetch` + `checkout -f -B vao-ui-v3-17-09 origin/…` → `1bb9ba1` · 0 tệp sửa tại chỗ · 22 tệp dữ liệu lạ giữ
+   nguyên · `db/migrate.js` → **áp mới 0 · tổng 27** · không `npm ci`
+4. `systemctl restart aicloser-v3` lúc **08:45:17** — chỉ dịch vụ này
 
 ## 9 · Số đo tại từng mốc
 
-(điền khi đo)
+**+1′ (08:45:25 → 08:46, prod):** `aicloser-v3` active · `Started` **1** · lỗi mới ba dịch vụ **0**.
+Mã MỚI đang phục vụ: `/api/dieu-huong/cam` **401** (cửa mới — mã cũ 404) · `/chung/khung.js` **200** · `/` chưa đăng
+nhập ⇒ `/dang-nhap` (mã cũ ⇒ `/dieu-phoi`). `/dang-nhap` mang `kieu.css?v=b24e04851a0b` = `phienBan()` trên đĩa ·
+`rel="icon"` 1 · phông `media="print"` 1. `/chung/kieu.css?v=b24e04851a0b` + `Accept-Encoding: gzip` ⇒
+`Cache-Control: public, max-age=31536000, immutable` · `Content-Encoding: gzip` · **26.111 byte** (trước: 103.644 không
+nén); không mã ⇒ `no-cache`. Khung trên mã đã deploy (chạy `veKhung` + `chenKhung` trên `bo-luat.html` thật):
+
+| Vai @ màn | Hàng 1 | Hàng 2 | dấu `data-khung` | lộ đường quản trị |
+|---|---|---|---|---|
+| quản trị @ /bo-luat | Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt | Tất cả page · Luật chung | 1 | — |
+| marketer @ /kich-ban | Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt | Kịch bản của page · Câu trả lời sẵn | 1 | không |
+| sale @ /ban-hoi-thoai | Hộp thư | Hộp thư · Việc đang chờ | 1 | không |
+
+Từ NGOÀI máy chủ (máy dev, cùng mạng người dùng): `kieu.css` nén **0,96 · 1,03 · 1,33 s** (sáng nay không nén 1,9–11,3 s);
+lần bấm menu sau đó không tải lại (cache một năm theo mã). `/` ngoài ⇒ 302 `/dang-nhap`.
+
+**+5′ (08:50:02, prod):** ba dịch vụ active · `Started` 0 · 1 · 0 · lỗi mới **0/0/0** · `/health` 129 · UI 302.
+**+15′ (08:59:33, prod):** ba dịch vụ active · `Started` 0 · 1 · 0 · lỗi mới **0/0/0** · `ActiveEnterTimestamp` hai dịch vụ
+không chạm y nguyên (28/09 11:25:42 · 11:22:22) · `/health` 129 · UI 302.
+
+**Người dùng mở màn ngay sau deploy (29/09 ~08:50–09:05) — bốn ảnh:**
+1. `/chon-team` VỠ BỐ CỤC: khung chèn vào trang tự căn giữa bằng flex ⇒ đứng NGANG cạnh thẻ team, mất mục «Cài đặt».
+   Do LL18. E2E lượt 5 CÓ chụp trang này (`quan-tri-01.png`) mà thợ không mở ảnh; bộ đo không đo bố cục khung. Vá: hai
+   trang `auth/trang` gửi nguyên văn (chỉ nén); e2e thêm phép «khung trải hết bề ngang ở đỉnh» cho MỌI màn (ca K13).
+2. `/san-pham` «không giống artifact» · 4. `/page/:id` «mới thấy thay đổi phần khung, còn chi tiết không giống»:
+   ĐÚNG — LL18 đổi khung + token; NỘI DUNG từng màn vẫn bố cục cũ (sóng LL1–LL13 gom/dời màn, chưa dựng lại theo bản vẽ).
+3. `/van-hanh-v3` tab «Page & trạng thái» · «Sản phẩm & giá» in thô `<div class="manh">…`: KHÔNG do LL18 — `hang()` gán
+   `textContent` cho mọi chuỗi từ `7775e9c` (17/09) trong khi cả tám nơi gọi truyền HTML; nay dễ thấy vì LL10 đưa màn vào
+   Cài đặt. Vá: `innerHTML` (soát 8 lời gọi: mọi dữ liệu động qua `esc()`/số — ca K14); e2e thêm phép dò HTML thô.
+   Kèm: `/favicon.ico` (trang không qua khung hết 404 — ca K15).
 
 ## 10 · Kết · nợ · ai gật
 
 - Người gật: người quyết, 29/09 — «ok».
+
+## 11 · BẢN VÁ `6af76c0` — cùng lượt, người quyết gật «oke» (29/09)
+
+Mở: `fix(ui)` `6af76c0` — hai trang `auth/trang` thôi bị chèn khung · `van-hanh.js#hang()` vẽ HTML (lỗi từ 17/09) ·
+`/favicon.ico`. Cửa vào: bộ ca ll18 **15/15** · đảo-vá **24/24** · `npm test` **2.285 ca · 0 đỏ** · cổng **31 xanh ·
+12 đỏ** (cùng tập); năm cổng đỏ có đọc tệp bản vá chạm (l0-m1 · l1-m2 · l2-m1 · l2-m2 · l2-m3) so TỪNG dòng trượt với
+lượt sáng: **0 dòng khác** · e2e 47 màn: 0 lỗi · 0 khung lệch · 0 HTML thô. Chỉ restart `aicloser-v3`.
+Ngưỡng: như mục 6. Đường lùi: `git checkout -f -B vao-ui-v3-17-09 1bb9ba1 && systemctl restart aicloser-v3`.
