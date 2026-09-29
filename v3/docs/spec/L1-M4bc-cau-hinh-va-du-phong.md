@@ -1,5 +1,9 @@
 # [L1-M4b+c] Cấu hình model theo team, kho khoá mã hoá, dự phòng, phễu Sổ AI
 
+> **Đổi 29/09/2026 — CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`, `01-QUYET-DINH.md` §7). Màn Model thành MỘT khung: chính + dự phòng khác
+> nhà, chỉ hiện thứ đường chạy thật đọc. Đo 29/09: đường chat v3 (`src/chat/model.js#layModel`) chỉ đọc vai «chính»;
+> dự phòng dưới đây CHƯA nối vào đường chat, ô «nền» không ai đọc. Phiếu LL14 nối dự phòng + sửa câu chữ màn.
+
 ## Việc cần làm
 
 Đắp phần còn lại của lớp model lên trên lõi đã có (`L1-M4a`):

@@ -45,6 +45,13 @@ lúc cửa POS tạo dòng. Máy trạng thái tra bảng chuyển **per-nguồn
 nguồn thì máy **TỪ CHỐI nhận** (`LoiThieuNguonDon`) — không đoán, vì đoán sai có đúng hai
 kết cục: bỏ rơi 37,4% BUY NOW, hoặc bom hàng cho người chưa ai nói chuyện (01 §1).
 
+> **Đổi theo CR-28-09c (29/09) — CHƯA vào mã, hiệu lực khi phiếu LL17 xong** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`; `01-QUYET-DINH.md` §1 bổ sung).
+> Nguồn ghi lúc tạo dòng đổi cách SUY: đơn POS có **UTM** ⇒ `trang_ban_hang` (Ladi — nhánh WhatsApp) · có hội thoại ⇒
+> `messenger` · **không hội thoại, không UTM ⇒ sale nhập tay — KHÔNG vào nhánh WhatsApp** (hôm nay `suyNguon` xếp nhóm
+> này vào `trang_ban_hang`: 113 đơn / 14 ngày sẽ nhận tin nhầm). Job quét chỉ nhắn đơn của **team chủ** (team của
+> marketer vào ngày đơn); đơn «chờ gán team» không nhắn. Đo 29/09: `quetDonMoi` · `lich-nhac` · `chamTiLeHoan` chưa
+> được lên lịch ở tiến trình nào — phiếu LL17 dựng job kéo đơn định kỳ trước.
+
 ### BẢNG CHUYỂN — sinh ra từ `BANG_CHUYEN`, cổng ⑤ diff lại từng dòng
 
 <!-- BANG-CHUYEN-MAY -->

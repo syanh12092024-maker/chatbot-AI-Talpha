@@ -1,4 +1,66 @@
-# BA MƯƠI BẢY MÀN HÌNH
+# MÀN HÌNH — NĂM ĐÍCH
+
+> **Đổi 29/09/2026 — CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`, `01-QUYET-DINH.md` §9).
+> Bản vẽ được duyệt: <https://claude.ai/artifact/A6D68jyQRuqqu3TBRLrceb> — bảng 0 là bản đồ phủ màn.
+> Thứ tự chuyển: **thêm nhà mới trước, gỡ màn cũ sau cùng** (phiếu LL8 cuối). Tới khi LL8 xong, màn cũ vẫn mở
+> theo đường cũ; bảng «bản cũ» cuối tệp là hợp đồng của các màn đó.
+
+## Năm đích
+
+| Đích | Ai dùng | Gồm |
+|---|---|---|
+| **Hộp thư** | Sale (thấy cả ba team) | Cần bạn (bàn hội thoại) · Bot đang xử (nhận thay bot) · Đơn chờ (đơn không gắn hội thoại, đơn Ladi chờ xác nhận WhatsApp) · xem/sửa/duyệt/từ chối đơn Messenger cạnh khung chat · Tìm khách (ba kênh theo SĐT). **Không ô soạn tin** — trả lời ở Pancake |
+| **Sản phẩm** | Marketer · Quản trị | Chung (kiến thức · hỏi size · ảnh · kịch bản tầng sản phẩm) · Theo thị trường (1 shop POS = 1 thị trường · đúng một món POS · giá bậc theo tiền tệ · marketer từ HRM · kịch bản tầng nước) · Page đang bán · Lịch sử · Gộp món POS nhiều shop thành một sản phẩm |
+| **Page** | Marketer | Danh sách (thị trường suy từ shop, marketer kế thừa, cột «Còn thiếu», bật bot có trần) · một page: SP & giá (kế thừa, ghi đè có chủ ý) · Lời bot · Ảnh · Trả lời sẵn · Kỹ thuật · Lịch sử · «Bật được chưa» · **Thử hỏi bot** · Luật chung: Luật · Chính sách/FAQ/Phản đối · Trả lời sẵn (một kho) · Đề xuất chờ duyệt |
+| **Số liệu** | Chủ team | Tổng quan (hai luồng tách) · Chi phí AI (page · model · từng tin) · Khách (nguồn · chỗ rơi · rủi ro hoàn bốn tầng) |
+| **Cài đặt** | Quản trị | Bắt đầu · Kết nối (Pancake · POS · WhatsApp · HRM) · Model · Hệ còn sống (đối chiếu tin lỗi · tin bị lọc · diễn tập) · Người và team (người từ HRM; ghép marketer POS chỉ đọc) · Nhật ký |
+
+## Màn cũ đi đâu — không chức năng nào bị bỏ sót
+
+«Gộp» = chức năng giữ, chuyển nhà. «Chuyển nội dung» = khái niệm bỏ, dữ liệu sang chỗ khác. «Để sau» = chưa làm ở sóng này.
+
+| Màn cũ | Mã | Nhà mới | Cách | Phiếu |
+|---|---|---|---|---|
+| Việc của tôi | `trang-chu` | Hộp thư (sale) · Page › cột «Còn thiếu» (marketer) | Gộp | LL2 · LL3 · gỡ LL8 |
+| Bàn hội thoại | `ban-hoi-thoai` | Hộp thư › Cần bạn | Giữ | LL2 |
+| Việc đang chờ · Chi tiết việc | `dispatch` | Hộp thư › Cần bạn + Đơn chờ (giữ API nhận/đóng việc) | Gộp | LL2 · gỡ giao diện LL8 |
+| Hội thoại và đơn | `van-hanh` | Hộp thư › Đơn chờ · Bot đang xử (duyệt/sửa/từ chối đơn, chuyển người, trả bot) | Gộp | LL2 · gỡ giao diện LL8 |
+|   ↳ đổi nguồn nhận tin page | `van-hanh` | Page › tab Kỹ thuật | Gộp | LL10 |
+|   ↳ đối chiếu tin lỗi · tin bị lọc · diễn tập | `van-hanh` | Cài đặt › Hệ còn sống | Gộp | LL10 |
+|   ↳ chi phí từng tin | `van-hanh` | Số liệu › Chi phí | Gộp | LL10 |
+| Tất cả page | `page-bot` | Page › Danh sách (thị trường suy từ shop POS, marketer kế thừa từ Sản phẩm) | Giữ | LL3 · LL16 |
+| Trang một page | `mot-page` | Page › một page | Giữ | LL3 |
+| Sản phẩm & kho | `san-pham` | **Sản phẩm** › Chung · Theo thị trường (1 shop POS, 1 món POS, marketer HRM) · Page đang bán | Giữ | LL13 |
+|   ↳ nối món POS (MN8) | `san-pham` | Sản phẩm › thêm thị trường · Gộp món POS nhiều shop | Gộp | LL13 |
+| Đưa sản phẩm lên chạy | `len-chay` | Page › «Bật được chưa» | Gộp | LL3 · gỡ LL8 |
+| Page còn thiếu gì | `san-sang` | Page › Danh sách, cột «Còn thiếu» | Gộp | LL3 |
+| Kịch bản của page | `kich-ban` | Page › tab Lời bot + Lịch sử | Gộp | LL3 |
+|   ↳ kịch bản tầng sản phẩm · tầng nước | `kich-ban` | Sản phẩm › Chung · Theo thị trường | Giữ | LL13 |
+| Quy tắc chung mọi page | `bo-luat` | Page › Luật chung › Luật | Giữ | LL3 |
+| Câu trả lời sẵn | `lop-0-dong` | Page › Luật chung › Trả lời sẵn (một kho) | Giữ | LL12 |
+| Kỹ năng theo sản phẩm | `ky-nang` | Sản phẩm › Chung › Hỏi size (kiến thức) | Chuyển nội dung | LL11 · gỡ LL8 |
+| Đoạn chữ gửi cho AI | `prompt-page` | Page › «AI đọc gì» | Gộp | LL3 · gỡ LL8 |
+| Ảnh gửi khách | `thu-vien-anh` | Page › tab Ảnh | Gộp | LL3 |
+| Gợi ý từ AI | `ai-de-xuat` | Page › Luật chung › Đề xuất chờ duyệt | Gộp | LL3 · gỡ LL8 |
+|   ↳ soi hội thoại → sửa lời bot, giảm tiền | (chưa có) | Page › tab Gợi ý cải thiện | Để sau | BH5 |
+| So hai bản kịch bản | `hieu-qua` | Page › Lịch sử › So hai bản | Để sau | gỡ LL8 |
+| Đơn và tỉ lệ chốt | `bao-cao` | Số liệu › Tổng quan (hai luồng tách) | Giữ | LL5 |
+| Chi phí AI | `chi-phi` | Số liệu › Chi phí | Giữ | LL5 |
+| Khách vào từ đâu | `nguon-khach` | Số liệu › Khách | Gộp | LL5 |
+| Rủi ro hoàn hàng | `rui-ro-hoan` | Số liệu › Khách + huy hiệu ở Hộp thư | Gộp | LL5 |
+| Khách hàng | `ho-so-khach` | Hộp thư › Tìm khách | Gộp | LL2 |
+| Cài đặt team · Bắt đầu | `cai-dat-team · bat-dau` | Cài đặt › Bắt đầu | Gộp | LL6 |
+| Người và team | `team` | Cài đặt › Người và team (người từ HRM) | Giữ | LL6 · LL15 |
+| Kết nối | `ket-noi` | Cài đặt › Kết nối (Pancake · POS · WhatsApp · HRM) | Giữ | LL6 |
+| Model AI & khoá | `model` | Cài đặt › Model (chính + dự phòng, chỉ hiện thứ đã nối) | Giữ | LL6 · LL14 |
+| Hệ còn sống không | `suc-khoe` | Cài đặt › Hệ còn sống | Giữ | LL6 |
+| Ai đã sửa gì | `nhat-ky` | Cài đặt › Nhật ký | Giữ | LL6 |
+| Đăng nhập · Chọn team | `auth` | giữ nguyên | Giữ | — |
+| Nhắn cho khách (nhóm 3) · Kho ưu đãi · Hậu bán (nhóm 8) | (chưa có) | chưa có màn | Để sau | — |
+
+---
+
+## Bản cũ — 37 màn, 8 nhóm (hiệu lực tới khi LL8 gỡ màn cũ)
 
 > Bản vẽ tương tác: <https://claude.ai/code/artifact/34dbfd0d-50cd-4e95-b07e-6adf202c7632>
 > Dùng menu trang ở thanh công cụ để chuyển giữa 8 nhóm.
@@ -9,7 +71,7 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 
 ---
 
-## Nhóm 1 · Vào hệ thống và điều phối
+### Nhóm 1 · Vào hệ thống và điều phối
 
 | Màn | Việc của nó |
 |---|---|
@@ -18,7 +80,7 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 | Bàn hội thoại | Sale vào thẳng đây (CR-28-09). Ba cột: danh sách hội thoại (Cần người · Bot đang xử · Tất cả, đồng hồ 10 phút; chưa có hồ sơ khách thì hiện tên Messenger) · khung chat đọc thẳng Pancake, tin page gắn nhãn **Bot AI · Tự động · Page** (chỉ theo dữ liệu đối chiếu được — «Page» là sale gõ tay hoặc chưa đối chiếu, không đoán là sale) · bối cảnh: khách + rủi ro hoàn · đơn đang bàn · giai đoạn/người giữ/lý do cuối · kịch bản page đang chạy · lượt bot (v3 và bot cũ). KHÔNG ô soạn tin — trả lời ở Pancake |
 | Chi tiết việc cần xử | Lý do bot dừng + thông tin đơn + đánh dấu đã xử; đoạn chat nằm ở bàn hội thoại, đọc thẳng Pancake |
 
-## Nhóm 2 · Khách và đơn hàng
+### Nhóm 2 · Khách và đơn hàng
 
 | Màn | Việc của nó |
 |---|---|
@@ -29,7 +91,7 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 | Rủi ro hoàn hàng | Bốn tầng chính sách thay vì một ngưỡng cứng |
 | Hàng chờ tạo đơn | Đích của luồng Messenger. Sale duyệt là tạo đơn thẳng ở Chờ in |
 
-## Nhóm 3 · Nhắn tin hàng loạt
+### Nhóm 3 · Nhắn tin hàng loạt
 
 | Màn | Việc của nó |
 |---|---|
@@ -38,7 +100,7 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 | Chiến dịch đã gửi | Danh sách chiến dịch, kho tin đã Meta duyệt, trần tần suất tự bảo vệ |
 | Đuổi theo trong 24 giờ | Bậc thang theo mốc giờ: +2h nhắc nhẹ, +12h freeship, +20h tặng quà |
 
-## Nhóm 4 · Bộ não AI
+### Nhóm 4 · Bộ não AI
 
 | Màn | Việc của nó |
 |---|---|
@@ -47,7 +109,7 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 | Prompt của page | Xem prompt **thật** gửi cho model: bốn khối, số token từng khối, soi mâu thuẫn |
 | AI đề xuất | Đề xuất sửa ở **cả ba tầng**, không chỉ kịch bản |
 
-## Nhóm 5 · Kịch bản và nội dung
+### Nhóm 5 · Kịch bản và nội dung
 
 | Màn | Việc của nó |
 |---|---|
@@ -57,7 +119,7 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 | Lớp trả lời 0 đồng | Các mẫu miễn phí + đối chiếu bộ từ khoá Botcake |
 | Thư viện ảnh | Ảnh gắn nhãn theo chủ đề để bot chọn đúng lúc |
 
-## Nhóm 6 · Page và sản phẩm
+### Nhóm 6 · Page và sản phẩm
 
 | Màn | Việc của nó |
 |---|---|
@@ -66,7 +128,7 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 | Sản phẩm & kho | Đồng bộ từ POS. Hết hàng thì tự tắt bot cho sản phẩm đó |
 | Đưa sản phẩm mới lên chạy | Sáu chặng, mỗi chặng một cửa kiểm. Chặng 2 bắt buộc có động cơ |
 
-## Nhóm 7 · Số liệu và quản trị
+### Nhóm 7 · Số liệu và quản trị
 
 | Màn | Việc của nó |
 |---|---|
@@ -79,7 +141,7 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 | Kết nối & token | Kho token Pancake theo thứ tự failover, khoá Botcake, mẫu tin WhatsApp |
 | Nhật ký thao tác | Ghi cả việc máy làm. Không sửa không xoá |
 
-## Nhóm 8 · Giai đoạn sau
+### Nhóm 8 · Giai đoạn sau
 
 | Màn | Việc của nó |
 |---|---|

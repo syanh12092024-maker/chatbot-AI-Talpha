@@ -79,6 +79,20 @@ Mọi bảng còn lại có `team_id NOT NULL`; **ngoại lệ duy nhất** là 
 | `lich_nhac`          | hàng đợi hẹn giờ                 | `hen_luc` · `lan_thu` 1..5 · `trang_thai` cho/da_gui/da_huy                                             |
 | `nhat_ky`            | ai đổi gì lúc nào                | **CHỈ INSERT** · `tac_nhan` `'nguoi:<email>'` \| `'may:<job>'` · `truoc`/`sau` jsonb                    |
 
+> **Đổi theo CR-28-09c (29/09) — CHƯA vào mã; mỗi dòng có hiệu lực khi phiếu của nó xong** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`).
+> Không DROP bảng hay cột nào (đường lùi = lùi mã, giữ lược đồ). Bảng trên vẫn mô tả mã hiện chạy.
+>
+> | Bảng | Đổi | Phiếu |
+> |---|---|---|
+> | `vai` | 5 → **3 vai** (quan-tri · marketer · sale); `quan-ly` · `duyet-kich-ban` thôi gán, dòng giữ | LL7 |
+> | `don_hang` | chống trùng `UNIQUE (team_id, ma_pos)` → **`UNIQUE (ma_pos)` toàn hệ** (prod 0 trùng) · `team_id` = team HRM của **marketer vào ngày đơn**; chưa ghép ⇒ «chờ gán team» (cách lưu chốt ở phiếu) · `nguon` thêm **sale nhập tay** (không hội thoại, không UTM) | LL17 |
+> | `khach` | UNIQUE trong team → **(nước, SĐT) dùng chung** giữa các team | LL17 |
+> | `ket_noi_pos` | shop là đối tượng CHUNG, kéo đơn **một lần mỗi shop** (hôm nay UNIQUE trong team, 7 shop × 2 team) | LL17 |
+> | `ky_nang` | rời đường bot v3; nội dung «hỏi size» sang kiến thức sản phẩm; bảng giữ | LL8 · LL11 |
+> | `mau_0_dong` | gộp vào lớp **Trả lời sẵn** duy nhất (cùng Fast Lane mẫu + kho luật); bảng giữ | LL12 |
+> | `nguoi_dung` · `thanh_vien_team` | người đến từ HRM (BigQuery `HRM_Core`, khớp email), sale là thành viên cả 3 team; ghép marketer POS ↔ nhân viên ĐỌC từ `PIALPHA_ALL_Dataset.dim_person_map` | LL15 |
+> | `san_pham_goc` · `san_pham` | sản phẩm gốc gom nhiều món POS, mỗi món một thị trường (= một shop); 147 bản sao theo page phải gộp có người xác nhận | LL13 · LL16 |
+
 ## 3 · Hình dạng `viec_can_xu_ly` — điểm bàn giao 3 (A ghi, B đọc)
 
 ```

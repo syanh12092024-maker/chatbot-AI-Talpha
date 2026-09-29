@@ -1,5 +1,9 @@
 # [L0-M3] Đăng nhập, chọn team, hai vai
 
+> **Đổi 29/09/2026 — CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`, `01-QUYET-DINH.md` §8–§9). Đích là **ba vai** (Quản trị · Marketer · Sale),
+> không phải năm; người và vai lấy từ hồ sơ HRM (khớp email công ty), sale là thành viên cả ba team. Phiếu LL7 (vai) ·
+> LL15 (HRM). Phần còn lại của spec này giữ nguyên.
+
 ## Việc cần làm
 
 Viết phần danh tính: đăng nhập bằng tên và mật khẩu, chọn team trong số team người đó

@@ -116,6 +116,11 @@ là SAI LUỒNG, không phải trường hợp biên cần xử lý êm; máy tr
 này để KHÔNG BAO GIỜ đưa đơn messenger vào nhánh chờ-gửi-WA (xem `LoiSaiNhanhNguon` phía
 L3-M1 — lỗi khác tên, tầng khác, cùng ý).
 
+> **Đổi theo CR-28-09c (29/09) — CHƯA vào mã, hiệu lực khi phiếu LL17 xong** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`). Rào giữ nguyên chữ
+> (`nguon === 'trang_ban_hang'`), nhưng `trang_ban_hang` từ nay nghĩa là **đơn Ladi có UTM**; đơn sale nhập tay mang
+> nguồn riêng và bị rào này chặn. Thêm một điều kiện: chỉ **team chủ đơn** (team của marketer) được gửi — shop POS dùng
+> chung nhiều team, một đơn không được nhắn hai lần.
+
 ## 6 · Guard tại cửa (N1) — biến RIÊNG, van CHUNG
 
 ```

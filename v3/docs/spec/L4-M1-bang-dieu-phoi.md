@@ -6,6 +6,10 @@
 > sang, đồng hồ 10 phút, nhảy sang Pancake/POS, và **KHÔNG ô soạn tin, KHÔNG nút gửi**. Điều ĐỔI:
 > «hai danh sách» và «màn nghèo nàn có chủ ý» bên dưới — đọc như lịch sử. Phiếu thi công:
 > UI-HT1..UI-HT4. **Hợp đồng hiện hành của màn sale: §7 cuối tệp.**
+>
+> **Bổ sung 29/09/2026 — CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`, `01-QUYET-DINH.md` §10 bổ sung). Bàn hội thoại thành **Hộp thư**:
+> thêm nhận thay bot · xem/sửa/duyệt/từ chối đơn Messenger cạnh khung chat · tab đơn chờ · tìm khách · lọc «cả ba
+> team». Vẫn KHÔNG ô soạn tin. Phiếu LL2; §7 cập nhật khi LL2 xong.
 
 ## Việc cần làm
 
