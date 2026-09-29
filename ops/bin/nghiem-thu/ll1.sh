@@ -39,7 +39,8 @@ const { VAI } = await import("./v3/src/auth/boi-canh.js");
 const dong = [];
 for (const [k, v] of Object.entries(VAI)) {
   const m = mh.menuCua([v]);
-  dong.push(`${k}:${m.map((n) => n.ma).join(",")}:${m.reduce((a, n) => a + n.man.filter((x) => !x.an).length, 0)}`);
+  // «hiện» = tới được từ menu: thanh bên HOẶC tab cụm (LL3 · 29/09 — màn trong cụm rời thanh bên, lên tab).
+  dong.push(`${k}:${m.map((n) => n.ma).join(",")}:${m.reduce((a, n) => a + n.man.filter((x) => !x.an || x.trongCum).length, 0)}`);
 }
 console.log(dong.join(" "));' 2>/dev/null | tail -1)
 echo "   menu theo vai (vai:đích:số màn hiện): $kq"

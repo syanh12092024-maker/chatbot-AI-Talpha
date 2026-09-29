@@ -274,7 +274,7 @@
                 return (
                   (dauItDung ? '<div class="dh-vach">Ít dùng</div>' : "") +
                   `<a href="${esc(m.duong)}" title="${esc(m.moTa || "")}"` +
-                  `${laDay ? ' aria-current="page"' : ""}>${esc(m.ten)}</a>`
+                  `${laDay || (cho && cho.man.cum && cho.man.cum === m.cum) ? ' aria-current="page"' : ""}>${esc(m.tenMenu || m.ten)}</a>`
                 );
               })
               .join("")}
@@ -306,8 +306,14 @@
     top.className = "dh-top";
     const theH1 = document.querySelector("body > header h1");
     const tenTrang = (theH1 || {}).textContent || "";
+    // CỤM (LL3): màn nằm trong cụm có đầu cụm mang tên ⇒ «Nhóm / Cụm / Màn».
+    const dauCum = cho && cho.man.cum
+      ? (cho.nhom.man || []).find((x) => x.cum === cho.man.cum && x.tenMenu) : null;
+    // Đầu cụm trùng tên cụm («Tất cả page») thì không lặp một tầng giống hệt trong đường dẫn.
+    const tangCum = dauCum && dauCum.tenMenu !== cho.man.ten ? dauCum : null;
     const vungDuong = cho
       ? `<li>${esc(cho.nhom.ten)}</li>` +
+        (tangCum ? `<li><a href="${esc(tangCum.duong)}">${esc(tangCum.tenMenu)}</a></li>` : "") +
         (cho.sau
           ? `<li><a href="${esc(cho.man.duong)}">${esc(cho.man.ten)}</a></li>` +
             `<li aria-current="page">${esc(tenTrang.trim() || "Chi tiết")}</li>`
@@ -330,6 +336,24 @@
         </div>
       </div>`;
     document.body.insertBefore(top, document.body.firstChild);
+
+    // ── THANH TAB CỤM (LL3 · 29/09) ───────────────────────────────────────────────
+    // Màn thuộc một cụm (`man-hinh.js#CUM`) ⇒ các màn cùng cụm vai này mở được hiện thành tab ngay
+    // dưới đầu trang: một việc, một chỗ, nhiều tab — thay vì nhiều dòng menu. Tab là LIÊN KẾT (mỗi
+    // tab một đường, chia sẻ được, F5 không mất chỗ). Dưới hai màn thì không vẽ.
+    if (cho && cho.man.cum && !cho.sau) {
+      const tab = (cho.nhom.man || []).filter((x) => x.cum === cho.man.cum && (!x.an || x.trongCum));
+      const dauTrang = document.querySelector("body > header");
+      if (tab.length >= 2 && dauTrang) {
+        const thanh = document.createElement("nav");
+        thanh.className = "tabs";
+        thanh.dataset.cum = cho.man.cum;
+        thanh.setAttribute("aria-label", "Trong " + ((dauCum && dauCum.tenMenu) || cho.man.ten));
+        thanh.innerHTML = tab.map((x) => `<a class="tab" href="${esc(x.duong)}"` +
+          `${x === cho.man ? ' aria-current="page"' : ""}>${esc(x.nhanCum || x.ten)}</a>`).join("");
+        dauTrang.appendChild(thanh);
+      }
+    }
 
     const nutTk = top.querySelector(".dh-tk-nut");
     const hopTk = top.querySelector(".dh-tk");

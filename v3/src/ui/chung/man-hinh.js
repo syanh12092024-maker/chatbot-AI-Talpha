@@ -152,6 +152,22 @@ const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false, canId =
   itDung,
 });
 
+/**
+ * CỤM — nhiều màn phục vụ MỘT việc hiện thành TAB trong trang, không thành nhiều dòng menu
+ * (phiếu LL3 · 29/09 · CR-28-09c, bản vẽ «Luật chung» và «Số liệu» có thanh tab con).
+ *
+ * Luật: màn ĐẦU TIÊN hiện được của cụm (theo thứ tự `MAN`, theo vai) đứng trên thanh bên, mang TÊN
+ * CỤM; các màn còn lại của cụm rời thanh bên nhưng khung (`dieu-huong.js`) vẽ chúng thành thanh tab
+ * ngay dưới đầu trang. Màn `thuNghiem`/`canId` giữ luật cũ của chúng (không lên thanh bên, không lên
+ * tab). KHÔNG đường nào đổi, KHÔNG màn nào bị xoá — gộp ở tầng điều hướng; gộp nội dung là việc
+ * của từng phiếu sau (LL5 Số liệu · LL6 Cài đặt · LL8 gỡ màn thừa).
+ */
+export const CUM = Object.freeze({
+  'danh-sach-page': { ten: 'Tất cả page' },
+  'luat-chung': { ten: 'Luật chung' },
+});
+const trongCum = (cum, nhan, m) => ({ ...m, cum, nhanCum: nhan });
+
 export const MAN = Object.freeze([
   // ĐƯỜNG DẪN KHÔNG ĐỔI — đổi đường là làm chết mọi liên kết đã lưu. Chỉ đổi CHỖ NGỒI.
   // Đích của từng màn = cột «Nhà mới» của `docs/v3/03-MAN-HINH.md` (LL1, 29/09).
@@ -177,21 +193,22 @@ export const MAN = Object.freeze([
 
   // ③ PAGE — mọi thứ bot nói trên một page, và luật chung cho mọi page.
   // GD2 · 25/09 — «Bắt đầu» và «Page còn thiếu gì» ngoài menu: cả hai chuyển hướng về danh sách.
-  dat(pageBot, 'Tất cả page', 'page', 'Một dòng một page: bot nào, bật hay tắt, còn thiếu gì'),
+  trongCum('danh-sach-page', 'Tất cả page', dat(pageBot, 'Tất cả page', 'page', 'Một dòng một page: bot nào, bật hay tắt, còn thiếu gì')),
   // Trang của MỘT page: mở từ danh sách, không đứng riêng trên menu — nhưng vẫn khai ở đây
   // để thanh trên cùng tra được «tôi đang ở mục nào» (án lệ GD6 ⑥b). Cờ `canId` nói đúng
   // lý do ẩn: màn DÙNG ĐƯỢC, chỉ là không mở được nếu thiếu tham số.
   dat(motPage, 'Trang một page', 'page', 'Một page: tình trạng, công tắc, việc làm tiếp', false, false, true),
-  dat(kichBan, 'Kịch bản của page', 'page', 'Lời bot nói riêng trên từng page'),
-  dat(boLuat, 'Quy tắc chung mọi page', 'page', 'Sửa là cả team đổi cách nói'),
-  dat(lop0, 'Câu trả lời sẵn', 'page', 'Trả theo từ khoá, không tốn tiền'),
+  trongCum('danh-sach-page', 'Kịch bản', dat(kichBan, 'Kịch bản của page', 'page', 'Lời bot nói riêng trên từng page')),
+  // LL3: «Luật chung» = một cụm — luật · trả lời sẵn · đề xuất chờ duyệt (bản vẽ bảng 2d).
+  trongCum('luat-chung', 'Luật', dat(boLuat, 'Quy tắc chung mọi page', 'page', 'Sửa là cả team đổi cách nói')),
+  trongCum('luat-chung', 'Trả lời sẵn', dat(lop0, 'Câu trả lời sẵn', 'page', 'Trả theo từ khoá, không tốn tiền')),
   dat(lenChay, 'Đưa sản phẩm lên chạy', 'page', 'Sáu chặng, mỗi chặng một cửa kiểm', true, true),
   // 28/09: RA KHỎI THANH BÊN. Là công cụ chẩn đoán của MỘT page; trang một page trỏ sang nó
   // mang sẵn `?page=`, còn mở từ menu thì phải tự chọn lại page.
   dat(promptPage, 'Đoạn chữ gửi cho AI', 'page', 'Xem đúng thứ AI đang đọc', true, false, false,
     { thay: motPage.DUONG_TRANG, loiVao: ['mot-page/kho-mot-page.js'] }),
   dat(thuVienAnh, 'Ảnh gửi khách', 'page', 'Ảnh gắn nhãn theo chủ đề', true, true),
-  dat(aiDeXuat, 'Gợi ý từ AI', 'page', 'Phải duyệt mới áp được', true, true),
+  trongCum('luat-chung', 'Đề xuất chờ duyệt', dat(aiDeXuat, 'Gợi ý từ AI', 'page', 'Phải duyệt mới áp được', true, true)),
   dat(hieuQua, 'So hai bản kịch bản', 'page', 'Chưa đủ mẫu thì nói chưa kết luận', true, true),
 
   // ④ SỐ LIỆU — để ĐỌC, không để ra lệnh.
@@ -210,6 +227,10 @@ export const MAN = Object.freeze([
   dat(sucKhoe, 'Hệ còn sống không', 'cai-dat', 'Chín đèn'),
   dat(nhatKy, 'Ai đã sửa gì', 'cai-dat', 'Không sửa được, không xoá được'),
 ]);
+
+/** Màn đầu cụm CHUẨN — màn đầu tiên của mỗi cụm theo thứ tự sổ. */
+const DAU_CUM_CHUAN = new Map();
+for (const m of MAN) if (m.cum && !DAU_CUM_CHUAN.has(m.cum)) DAU_CUM_CHUAN.set(m.cum, m.duong);
 
 /** Màn đã dựng nhưng chưa dùng được — ra khỏi menu, đường dẫn vẫn sống. */
 export const MAN_THU_NGHIEM = Object.freeze(MAN.filter((m) => m.thuNghiem).map((m) => m.duong));
@@ -230,8 +251,20 @@ export const MAN_THU_NGHIEM = Object.freeze(MAN.filter((m) => m.thuNghiem).map((
  */
 export function menuCua(vai = []) {
   const cua = new Set((Array.isArray(vai) ? vai : [vai]).map(String));
-  const duoc = MAN.filter((m) => (m.vai || []).some((v) => cua.has(String(v))))
+  const truocCum = MAN.filter((m) => (m.vai || []).some((v) => cua.has(String(v))))
     .map((m) => ({ ...m, an: !!m.thuNghiem || !!m.canId || !!m.moTuManKhac }));
+  // CỤM (LL3): màn hiện được ĐẦU TIÊN của cụm lên thanh bên mang tên cụm; màn hiện được còn lại
+  // của cụm rời thanh bên (`an`) và mang `trongCum` — khung vẽ chúng thành tab trong trang.
+  const dauCum = new Map();
+  for (const m of truocCum) if (m.cum && !m.an && !dauCum.has(m.cum)) dauCum.set(m.cum, m.duong);
+  const duoc = truocCum.map((m) => {
+    if (!m.cum || m.an) return m;
+    if (m.duong !== dauCum.get(m.cum)) return { ...m, an: true, trongCum: true };
+    // Tên cụm CHỈ cho màn đầu cụm CHUẨN (màn đầu tiên của cụm trong sổ). Vai không vào được màn ấy
+    // (marketer không mở «Tất cả page») thì dòng menu mang đúng tên màn của nó — gắn tên cụm lên một
+    // màn khác là nói dối người bấm.
+    return m.duong === DAU_CUM_CHUAN.get(m.cum) ? { ...m, tenMenu: (CUM[m.cum] || {}).ten || m.ten } : m;
+  });
   return NHOM
     .map((n) => ({ ...n, man: duoc.filter((m) => m.nhom === n.ma) }))
     // Mục chỉ còn màn mở-từ-màn-khác ⇒ hiện chúng lại: đó là cửa duy nhất của vai này vào mục.

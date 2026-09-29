@@ -1,0 +1,91 @@
+// PHIẾU LL3 · CỤM — nhiều màn một việc thành TAB trong trang (CR-28-09c · bản vẽ bảng 2b–2d).
+//
+// Đích Page của bản vẽ có hai chỗ: «Tất cả page» (danh sách + kịch bản các page) và «Luật chung»
+// (luật · trả lời sẵn · đề xuất chờ duyệt). Trước LL3 đó là năm dòng menu ngang hàng. Nay mỗi chỗ là
+// MỘT dòng; các màn còn lại hiện thành tab do khung vẽ. Bốn điều canh: sổ cụm tự nhất quán · không màn
+// nào mất đường vào · tên cụm không bị gắn lên màn khác · khung thật sự vẽ tab (đọc mã khung).
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
+
+process.env.V3_KHOA_VE ||= crypto.randomBytes(32).toString('base64');
+process.env.V3_KHOA_CHU ||= crypto.randomBytes(32).toString('base64');
+const mh = await import('../../src/ui/chung/man-hinh.js');
+const { VAI } = await import('../../src/auth/boi-canh.js');
+const GOC_UI = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../src/ui');
+
+const thanhBen = (v, nhom) => (mh.menuCua([v]).find((n) => n.ma === nhom)?.man || []).filter((m) => !m.an).map((m) => m.tenMenu || m.ten);
+const tabCua = (v, nhom, cum) => (mh.menuCua([v]).find((n) => n.ma === nhom)?.man || [])
+  .filter((m) => m.cum === cum && (!m.an || m.trongCum)).map((m) => m.nhanCum);
+
+test('C1 · sổ cụm tự nhất quán: cụm dùng đều có khai · mỗi cụm ≥2 màn · một cụm chỉ ở một đích', () => {
+  const dung = new Map();
+  for (const m of mh.MAN.filter((x) => x.cum)) {
+    assert.ok(mh.CUM[m.cum], `màn ${m.duong} khai cụm «${m.cum}» không có trong CUM`);
+    assert.ok(m.nhanCum, `màn ${m.duong} trong cụm mà không có nhãn tab`);
+    if (!dung.has(m.cum)) dung.set(m.cum, new Set());
+    dung.get(m.cum).add(m.nhom);
+  }
+  for (const [cum, nhom] of dung) assert.equal(nhom.size, 1, `cụm ${cum} trải ${[...nhom].join(', ')}`);
+  for (const cum of Object.keys(mh.CUM)) {
+    assert.ok(mh.MAN.filter((m) => m.cum === cum).length >= 2, `cụm ${cum} dưới hai màn — không đáng là cụm`);
+  }
+});
+
+test('C2 · Page của quản trị: thanh bên HAI dòng (Tất cả page · Luật chung), phần còn lại là tab', () => {
+  assert.deepEqual(thanhBen(VAI.QUAN_TRI, 'page'), ['Tất cả page', 'Luật chung']);
+  assert.deepEqual(tabCua(VAI.QUAN_TRI, 'page', 'danh-sach-page'), ['Tất cả page', 'Kịch bản']);
+  assert.deepEqual(tabCua(VAI.QUAN_TRI, 'page', 'luat-chung'), ['Luật', 'Trả lời sẵn'],
+    '«Đề xuất chờ duyệt» còn `thuNghiem` (0 đề xuất) nên chưa lên tab — luật cũ của nó giữ nguyên');
+});
+
+test('C3 · tên cụm CHỈ trên đầu cụm chuẩn — marketer (không mở «Tất cả page») thấy đúng tên màn của mình', () => {
+  assert.deepEqual(thanhBen(VAI.MARKETER, 'page'), ['Kịch bản của page', 'Câu trả lời sẵn']);
+  assert.deepEqual(thanhBen(VAI.DUYET_KICH_BAN, 'page'), ['Kịch bản của page', 'Luật chung']);
+});
+
+test('C4 · không màn nào mất đường vào: với MỌI vai, (thanh bên ∪ tab cụm) ⊇ mọi màn vai đó mở được ngoài màn ẩn cũ', () => {
+  for (const v of Object.values(VAI)) {
+    const goi = mh.menuCua([v]).flatMap((n) => n.man);
+    const toi = new Set(goi.filter((m) => !m.an || m.trongCum).map((m) => m.duong));
+    const phaiToi = goi.filter((m) => !m.thuNghiem && !m.canId && !m.moTuManKhac).map((m) => m.duong);
+    assert.deepEqual(phaiToi.filter((d) => !toi.has(d)), [], `vai ${v} mất đường vào`);
+  }
+});
+
+test('C5 · khung vẽ tab cụm dưới đầu trang: đọc mã khung + hệ kiểu', () => {
+  const js = fs.readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
+  assert.match(js, /thanh\.dataset\.cum = cho\.man\.cum/, 'khung không gắn data-cum cho thanh tab');
+  assert.match(js, /x\.trongCum/, 'khung không đọc cờ trongCum — màn trong cụm sẽ không lên tab');
+  assert.match(js, /m\.tenMenu \|\| m\.ten/, 'thanh bên không dùng tên cụm');
+  assert.doesNotThrow(() => new Function(js), 'tệp khung không parse được');
+  const css = fs.readFileSync(path.join(GOC_UI, 'chung/kieu.css'), 'utf8');
+  // Đòi đúng QUY TẮC ĐẶT CHỖ (trải hết lưới đầu trang) — chuỗi `.tabs[data-cum]` còn ở quy tắc màu chữ, đo
+  // chuỗi trần thì gỡ quy tắc đặt chỗ vẫn xanh (đảo-vá M5, 29/09).
+  assert.match(css, /body > header > \.tabs\[data-cum\] \{ grid-column: 1 \/ -1;/, 'hệ kiểu thiếu quy tắc đặt thanh tab cụm');
+  // Mọi màn trong cụm phải có <header> ngay dưới <body> — khung chèn tab vào đó; thiếu thì tab không bao giờ
+  // hiện. Đường → thư mục dò qua hằng `DUONG_TRANG` của từng màn; màn KHÔNG dò ra là ĐỎ (không lặng lẽ bỏ qua).
+  const thuMucCua = new Map();
+  for (const t of fs.readdirSync(GOC_UI)) {
+    const d = path.join(GOC_UI, t);
+    if (!fs.statSync(d).isDirectory()) continue;
+    for (const f of fs.readdirSync(d).filter((x) => x.endsWith('.js'))) {
+      const m = fs.readFileSync(path.join(d, f), 'utf8').match(/DUONG_TRANG = ['"](\/[^'"]*)['"]/);
+      if (m) thuMucCua.set(m[1], t);
+    }
+  }
+  const thieu = []; let daDo = 0;
+  for (const m of mh.MAN.filter((x) => x.cum && !x.canId)) {
+    const t = thuMucCua.get(m.duong);
+    assert.ok(t, `không dò ra thư mục của ${m.duong} — thước đang đo nhầm chỗ`);
+    const html = fs.readdirSync(path.join(GOC_UI, t, 'trang')).filter((f) => f.endsWith('.html'))
+      .map((f) => fs.readFileSync(path.join(GOC_UI, t, 'trang', f), 'utf8')).join('');
+    daDo += 1;
+    if (!/<body[^>]*>\s*<header/.test(html)) thieu.push(m.duong);
+  }
+  assert.equal(daDo, mh.MAN.filter((x) => x.cum && !x.canId).length);
+  assert.deepEqual(thieu, [], 'màn trong cụm không có <header> ngay dưới <body>');
+});

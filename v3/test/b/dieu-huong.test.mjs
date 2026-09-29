@@ -181,9 +181,11 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   // 28/09: 18 → 16 — «Sản phẩm & kho» và «Đoạn chữ gửi cho AI» mở TỪ MÀN KHÁC (ca ④g).
   // 28/09 · CR-28-09: +1 «Bàn hội thoại» ⇒ 17.
   // LL1 · 29/09: +1 «Sản phẩm & kho» (bỏ cờ mở-từ-màn-khác — nó là đầu của đích Sản phẩm) ⇒ 18.
-  assert.equal(hienRa, 18, `thanh bên đang vẽ ${hienRa} màn`);
-  assert.equal(an, 9, 'bảy màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC phải '
-    + 'ẩn khỏi thanh bên nhưng còn trong gói');
+  // LL3 · 29/09: −2 — «Kịch bản của page» và «Câu trả lời sẵn» thành TAB trong cụm (Tất cả page ·
+  // Luật chung); vẫn trong gói, vẫn tới được (ca C2 của `ll3-cum.test.mjs`) ⇒ 16.
+  assert.equal(hienRa, 16, `thanh bên đang vẽ ${hienRa} màn`);
+  assert.equal(an, 11, 'bảy màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + hai màn '
+    + 'TRONG CỤM phải ẩn khỏi thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
   // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp
   // một con số là ngày nào đó một màn hỏng lặng lẽ đội lốt màn cần id.

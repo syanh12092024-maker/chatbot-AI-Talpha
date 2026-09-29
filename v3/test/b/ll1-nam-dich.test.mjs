@@ -49,7 +49,9 @@ const DICH = {
   'cai-dat': ['/cai-dat-team', '/cau-hinh-team', '/ket-noi', '/model-ai', '/suc-khoe', '/nhat-ky'],
 };
 
-const hienCua = (v) => mh.menuCua([v]).flatMap((n) => n.man.filter((m) => !m.an).map((m) => m.duong)).sort();
+// «Tới được từ menu» = trên thanh bên, HOẶC là tab của một cụm (LL3 · 29/09 — màn trong cụm rời thanh bên
+// nhưng khung vẽ nó thành tab ngay dưới đầu trang). Luật LL1 canh là không màn nào MẤT đường vào.
+const hienCua = (v) => mh.menuCua([v]).flatMap((n) => n.man.filter((m) => !m.an || m.trongCum).map((m) => m.duong)).sort();
 
 test('N1 · năm đích đúng thứ tự, đúng tên — mục dự trù giữ nguyên, rỗng thì tự ẩn', () => {
   assert.deepEqual(mh.NHOM.map((n) => n.ma), ['hop-thu', 'san-pham', 'page', 'so-lieu', 'cai-dat', 'nhan-cho-khach']);
