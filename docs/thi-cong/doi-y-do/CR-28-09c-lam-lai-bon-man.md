@@ -144,6 +144,22 @@ PIALPHA_EU — và đổi TÊN HIỂN THỊ team theo HRM (slug giữ nguyên); 
 (POS ghi «Saudi») · «Khác» 31 · trống 420 ⇒ thị trường của page lấy từ shop POS của sản phẩm page bán; cột gõ tay ngừng
 dùng (không xoá — đường lùi).
 
+**Một shop POS dùng cho nhiều team (người quyết hỏi 29/09: GCC và EU cùng đổ đơn vào một shop).** Chiều «1 shop = 1
+thị trường» đúng; chiều ngược (1 shop ở nhiều team) lược đồ CHO PHÉP (UNIQUE chỉ trong một team) và ĐANG xảy ra ở mức
+page: 5 shop có page ở 2 team (tieu-alpha + team kỹ thuật). Đo mã: `src/pos/doc-don.js#docDon` kéo MỌI đơn của một shop
+qua kết nối của team đang kéo và ghi `team_id` = team đang kéo; khoá chống trùng `don_hang` là UNIQUE(team_id, ma_pos).
+⇒ Hai team cùng khai và cùng kéo một shop thì: ① mỗi đơn vào hệ HAI lần; ② đơn trang bán hàng đi luồng xác nhận WhatsApp
+ở CẢ HAI bản — khách nhận 2 tin, hai bản cùng ghi trạng thái ngược lên POS; ③ mỗi team thấy đơn và khách của team kia,
+số liệu gộp đếm đôi. Đo prod 29/09: CHƯA xảy ra (123.629 đơn đều ở tieu-alpha · 0 mã đơn ở 2 team · 0 đơn lệch team với
+page) vì mới một team nghiệp vụ có POS. Tách theo page chỉ phủ một phần: đơn có page = 34.491/115.775 messenger (30%) ·
+1.243/7.854 trang bán hàng (16%) — POS trả `page_id` cho đơn (`doc-don.js:245`) nhưng ánh xạ page theo team.
+Quy tắc đề xuất: shop POS là đối tượng CHUNG (khai một lần, 1 shop = 1 thị trường, nhiều team dùng) · kéo đơn MỘT lần
+mỗi shop · chống trùng toàn hệ theo `ma_pos` (đã là `<shop>:<id>`, duy nhất toàn cầu) · mỗi đơn đúng MỘT team chủ: page
+của đơn → team của page; không có page → ô «chờ gán team» cho quản trị, KHÔNG nhân đôi · chỉ team chủ chạy xác nhận
+WhatsApp và ghi trạng thái ngược · tồn kho dùng chung · rủi ro hoàn tính theo SĐT trên toàn tập đoàn.
+[NEEDS CLARIFICATION: đơn trang bán hàng không có page (84%) — trên POS có trường nào (marketer · nguồn đơn · landing)
+cho biết đơn thuộc team nào? Cần một lượt đọc mẫu đơn POS (chỉ đọc) trước khi viết LL17.]
+
 **Model — màn đang hứa nhiều hơn máy làm.** Đo 29/09 (mã + prod):
 - Prod `cau_hinh_model` (tieu-alpha): chính `kimi-k2.6` · 0,30 · dự phòng `claude-haiku-4.5` · việc nền `deepseek-v4-flash` · 0,10.
 - Bot v3 (`src/chat/handler-v3.js` → `src/chat/model.js#layModel`): đọc ĐÚNG MỘT vai «chính», gửi `temperature` =
@@ -192,6 +208,7 @@ dùng (không xoá — đường lùi).
 | LL15 | HRM từ BigQuery (`HRM_Core.dim_employee`, chỉ đọc, mỗi ngày): tài khoản ↔ hồ sơ theo email · MKT → Marketer, SALE → Sale thành viên cả 3 team · BO/VANDON/CTV không vào · người nghỉ tự khoá · tên team theo HRM · marketer theo sản phẩm × shop POS, page kế thừa | 🟨 (quyền đăng nhập) | tài khoản dịch vụ BQ chỉ đọc `HRM_Core` cho máy chủ · LL13 |
 | LL16 | Thị trường = shop POS: page lấy thị trường từ shop của sản phẩm nó bán · ngừng dùng `page.thi_truong` gõ tay (không xoá) · bật + kéo danh mục 6 shop còn lại | 🟨 (giá theo nước) | LL13 |
 | LL14 | Model: nối dự phòng vào đường chat v3 (`src/chat/model.js`, không phải bộ não) · ẩn «việc nền» tới khi có việc dùng · màn nói đúng đường nào đọc gì | 🟨 | LL6 |
+| LL17 | Shop POS dùng chung nhiều team: kéo đơn một lần mỗi shop · chống trùng toàn hệ theo `ma_pos` (migration đổi UNIQUE — prod 0 trùng, áp an toàn) · một team chủ mỗi đơn theo page · ô «chờ gán team» · chỉ team chủ gửi WhatsApp/ghi ngược POS | 🟥 (đơn · tin gửi khách) | câu hỏi đơn trang bán hàng ở 2d · TRƯỚC khi team thứ hai khai shop đang dùng |
 | LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`), sửa trên giao diện | 🟥 (đường bot, cạnh bộ não) | cutover / đợt tắt Botcake — phiếu riêng |
 
 Cỡ: 9 phiếu. Để so: sóng UI-HT (4 phiếu, cùng loại việc) xong trong một ngày làm việc của dây chuyền này.
