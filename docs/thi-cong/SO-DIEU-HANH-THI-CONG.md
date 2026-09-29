@@ -2678,3 +2678,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · LL3 → ✅ — đích Page: cơ chế CỤM một lần cho mọi đích (màn đầu cụm lên thanh bên mang tên cụm, màn cùng cụm thành tab dưới đầu trang, không đường nào đổi); Page của quản trị năm dòng → hai (Tất cả page · Luật chung)
   cổng ll3.sh 7/7 · đảo-vá 7/7 đỏ (M5 sống lượt đầu → siết thước) · chụp bản xem thử: tab + đường dẫn đúng, 0 lỗi JS · npm test 2.239 ca 0 đỏ · chưa deploy
   · commit cb622a6 · nhật ký docs/thi-cong/nhat-ky/phieu-LL3.md
+- 29/09 · LL5 → ✅ — Số liệu một dòng thanh bên, bốn tab (Tổng quan · Chi phí AI · Nguồn khách · Rủi ro hoàn); hai màn cuối thôi ẩn (prod có dữ liệu) và IN «tính trên đơn tới … · chấm lần cuối …» — số prod là lát 28/08 tới khi có LL17
+  cổng ll5.sh 6/6 · đảo-vá 6/6 (M2 sống lượt đầu → thêm dòng team khác) · Postgres thật R5 · npm test 2.245 ca 0 đỏ · chưa deploy
+  · commit cb932da · nhật ký docs/thi-cong/nhat-ky/phieu-LL5.md
