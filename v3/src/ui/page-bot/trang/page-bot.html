@@ -20,26 +20,32 @@
 <header>
   <h1>Tất cả page</h1>
   <span class="sub">Mỗi dòng một page. Bấm tên page để mở trang của nó: tình trạng, công tắc, việc làm tiếp.</span>
+  <span class="sp"></span>
+  <span><button type="button" class="btn" data-size="sm" id="nutQuet"
+    title="Hỏi Pancake bằng kho token đang có, cập nhật danh mục page"><span>Quét Pancake tìm page mới</span></button></span>
 </header>
+<!-- VE3 · 29/09 (CR-28-09c): theo bản vẽ 2b — viên «Lọc nhanh» có số đếm thay ô chọn; nút Quét lên đầu trang; chọn
+     nhiều page + thao tác hàng loạt (gắn sản phẩm · bật bot tối đa 10, có xác nhận) đi LẦN LƯỢT qua ĐÚNG cửa ghi
+     từng page đã có (mỗi lượt vẫn ghi nhật ký trước/sau) — không mở cửa ghi hàng loạt mới ở máy chủ. -->
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
   <div class="page-note" id="ghi-chu-marketer"></div>
 
+  <div class="hang-vien duoi-4" role="tablist" aria-label="Lọc nhanh" id="thanhLoc"></div>
   <section class="table-wrap" aria-labelledby="tieu-bang">
     <h2 id="tieu-bang" class="sr-only">Danh sách page</h2>
     <div class="table-toolbar">
       <label for="oTim" class="sr-only">Tìm page</label>
-      <input id="oTim" type="search" placeholder="Tìm page, id, thị trường, marketer…" autocomplete="off" spellcheck="false">
-      <label for="oLoc" class="sr-only">Lọc page</label>
-      <select id="oLoc"></select>
+      <input id="oTim" type="search" placeholder="Tên page, mã page Facebook, thị trường, marketer…" autocomplete="off" spellcheck="false">
       <span class="table-count" id="tomTat" aria-live="polite"></span>
-      <button type="button" class="btn" data-variant="primary" data-size="sm" id="nutQuet"
-        title="Hỏi Pancake bằng kho token đang có, cập nhật danh mục page"><span>Quét Pancake</span></button>
     </div>
+    <div class="thanh-chon" id="thanhChon" hidden aria-live="polite"></div>
     <div id="bang"></div>
     <div id="phanTrang"></div>
   </section>
+  <p class="field-hint tren-3">Thị trường hôm nay còn GÕ TAY theo page — suy từ shop POS của sản phẩm page bán ở phiếu LL16. Marketer hôm nay theo
+    page — lấy theo sản phẩm × thị trường từ hồ sơ HRM ở phiếu LL15. Bật bot hàng loạt có trần 10 page một lượt và hộp xác nhận.</p>
 </main>
 
 <script>
@@ -111,13 +117,70 @@ function veBangTin(d, loi) {
     ? `<div class="duoi-4">${dauLoi}${_canhBaoCuoi.join('')}</div>` : '';
 }
 
-// ── BỘ LỌC — một ô chọn thay cho bảy chip: một dòng, vẫn thấy số đếm (mục J) ─────────
+// ── BỘ LỌC — viên «Lọc nhanh» có số đếm (bản vẽ 2b · VE3). Trước VE3 là một ô chọn (mục J: một dòng, vẫn thấy số);
+//    bản vẽ đặt lại viên để lọc là MỘT chạm và thấy mọi số cùng lúc. Vẫn MỘT dòng — cuộn ngang khi hẹp.
 function veThanhLoc(d) {
-  const o = $('#oLoc');
-  o.innerHTML = Object.entries(d.chuLoc).map(([ma, chu]) => {
+  $('#thanhLoc').innerHTML = Object.entries(d.chuLoc).map(([ma, chu]) => {
     const n = ma === 'tat_ca' ? d.soTong : (d.dem[ma] || 0);
-    return `<option value="${esc(ma)}" ${ma === LOC ? 'selected' : ''}>${esc(chu)} (${so(n)})</option>`;
+    return `<button type="button" class="vien" role="tab" data-loc="${esc(ma)}" aria-selected="${ma === LOC}">${esc(chu)} <span class="phu">${so(n)}</span></button>`;
   }).join('');
+  $('#thanhLoc').querySelectorAll('[data-loc]').forEach((b) => b.addEventListener('click', () => { LOC = b.dataset.loc; TRANG = 0; nap(); }));
+}
+
+/* ── CHỌN NHIỀU + THAO TÁC HÀNG LOẠT (VE3 · bản vẽ 2b) ─────────────────────────────────────────────────────────
+ * Đi LẦN LƯỢT qua ĐÚNG cửa ghi từng page (`/api/page-bot/:id/san-pham-goc` · `/bot`) — mỗi lượt vẫn qua cửa kiểm và
+ * nhật ký trước/sau như bấm tay; KHÔNG có cửa ghi hàng loạt ở máy chủ. Bật bot chạm KHÁCH THẬT: trần GIOI_HAN_BAT page
+ * một lượt, hộp xác nhận liệt kê tên, gặp lỗi đầu tiên thì DỪNG và nói page nào đã đổi, page nào chưa. */
+const GIOI_HAN_BAT = 10;
+let CHON = new Set();
+let DONG = [];   // page của trang đang xem (để biết tên + khoá bot từng page)
+function khoaBotCua(p) { return p.runtime === 'v3' ? !SUA : !(SUA && CUA.mo); }
+function veThanhChon() {
+  const o = $('#thanhChon');
+  if (!CHON.size) { o.hidden = true; o.innerHTML = ''; return; }
+  const chon = DONG.filter((p) => CHON.has(p.id));
+  const batDuoc = chon.filter((p) => !p.botAiBat && !khoaBotCua(p));
+  const lyDoBat = !SUA ? 'Cần vai Quản trị để bật bot'
+    : CHON.size > GIOI_HAN_BAT ? `Tối đa ${GIOI_HAN_BAT} page một lượt — bỏ bớt chọn`
+    : !batDuoc.length ? (CUA.mo ? 'Các page đã chọn đều đang bật' : 'Cửa ghi sang bot đang khoá — xem cảnh báo phía trên') : '';
+  o.hidden = false;
+  o.innerHTML = `<b>Đã chọn ${so(CHON.size)} page</b>
+    ${SUA && SPG_AP && SPG_CHON.length ? `<label class="sr-only" for="spgHangLoat">Sản phẩm để gắn</label>
+      <select id="spgHangLoat"><option value="">— chọn sản phẩm —</option>${SPG_CHON.map((g) => `<option value="${esc(g.maGoc)}">${esc(g.ten)}</option>`).join('')}</select>
+      ${button('Gắn vào sản phẩm', { size: 'sm', id: 'nutGanLoat' })}` : ''}
+    ${button(`Bật bot (tối đa ${GIOI_HAN_BAT} · có xác nhận)`, { size: 'sm', variant: 'primary', id: 'nutBatLoat', disabled: !!lyDoBat, title: lyDoBat })}
+    ${button('Bỏ chọn', { size: 'sm', variant: 'ghost', id: 'nutBoChon' })}
+    ${lyDoBat ? `<span class="field-hint">${esc(lyDoBat)}</span>` : ''}`;
+  $('#nutBoChon').onclick = () => { CHON.clear(); document.querySelectorAll('[data-chon]').forEach((c) => { c.checked = false; }); veThanhChon(); };
+  if ($('#nutGanLoat')) $('#nutGanLoat').onclick = ganLoat;
+  if ($('#nutBatLoat')) $('#nutBatLoat').onclick = () => batLoat(batDuoc);
+}
+async function ganLoat() {
+  const maGoc = $('#spgHangLoat').value;
+  if (!maGoc) { baoLoi('Chưa chọn sản phẩm', 'Chọn sản phẩm ở ô bên cạnh rồi bấm «Gắn vào sản phẩm».'); return; }
+  const ds = DONG.filter((p) => CHON.has(p.id));
+  const tenSp = (SPG_CHON.find((g) => g.maGoc === maGoc) || {}).ten || maGoc;
+  if (!(await confirmDialog({ title: `Gắn ${ds.length} page vào «${tenSp}»?`,
+    body: `${ds.map((p) => p.ten || p.pageId).join(' · ')}. Page nhận kịch bản tầng sản phẩm của «${tenSp}».`, confirmLabel: 'Gắn' }))) return;
+  await chayLoat(ds, (p) => goi(`/api/page-bot/${encodeURIComponent(p.id)}/san-pham-goc`, { method: 'POST', body: JSON.stringify({ maGoc }) }), 'gắn sản phẩm');
+}
+async function batLoat(ds) {
+  if (!ds.length || ds.length > GIOI_HAN_BAT) return;
+  if (!(await confirmDialog({ title: `Bật bot cho ${ds.length} page?`,
+    body: `Bot sẽ bắt đầu tự trả lời KHÁCH THẬT của: ${ds.map((p) => p.ten || p.pageId).join(' · ')}.`, confirmLabel: `Bật bot ${ds.length} page` }))) return;
+  await chayLoat(ds, (p) => goi(`/api/page-bot/${encodeURIComponent(p.id)}/bot`, { method: 'POST', body: JSON.stringify({ bat: true }) }), 'bật bot');
+}
+async function chayLoat(ds, lam, viec) {
+  const xong = [];
+  for (const p of ds) {
+    try { await lam(p); xong.push(p.ten || p.pageId); }
+    catch (e) {
+      baoLoi(`Dừng ${viec} ở «${p.ten || p.pageId}»`, `${e.message} — đã xong ${xong.length}/${ds.length}: ${xong.join(' · ') || 'chưa page nào'}. Các page sau chưa đổi.`);
+      CHON.clear(); await nap(); return;
+    }
+  }
+  toast(`Đã ${viec} cho ${xong.length}/${ds.length} page.`);
+  CHON.clear(); await nap();
 }
 
 // ── CỘT «CÒN THIẾU GÌ» — màu do ánh xạ tập trung, trang chỉ nói nghĩa (mục H8) ──────
@@ -148,7 +211,11 @@ function veBang(d) {
   // `data-hep="the"`: dưới 720px mỗi page thành một thẻ, ô «Còn thiếu gì» nhảy lên góc phải
   // (`c-dem`). Trước 28/09 bảng tám cột cuộn ngang trên điện thoại và cột Bot, Còn thiếu gì
   // — hai thứ người ta mở màn này để xem — nằm ngoài màn hình (audit ui-taste).
+  DONG = d.page;
+  // Chỉ giữ dòng CÒN HIỆN: đổi bộ lọc/trang thì thao tác hàng loạt không được chạm page người dùng không nhìn thấy.
+  CHON = new Set([...CHON].filter((id) => d.page.some((p) => p.id === id)));
   $('#bang').innerHTML = `<table class="data-table" data-hep="the"><thead><tr>
+      <th scope="col"><input type="checkbox" id="chonHet" aria-label="Chọn mọi page của trang này"></th>
       <th scope="col">Page</th><th scope="col">Thị trường · ngành hàng</th><th scope="col">Marketer</th>
       <th scope="col">Bot</th><th scope="col">Còn thiếu gì</th>
       <th scope="col">Sản phẩm gốc</th><th scope="col">Trọng điểm</th>
@@ -158,6 +225,7 @@ function veBang(d) {
       const ten = p.ten || '(chưa có tên)';
       return `
     <tr>
+      <td data-nhan="Chọn"><input type="checkbox" data-chon="${esc(p.id)}" aria-label="Chọn ${esc(ten)}" ${CHON.has(p.id) ? 'checked' : ''}></td>
       <td>
         <div class="page-identity">
           <span class="page-avatar" aria-hidden="true">${esc((ten.trim()[0] || '?').toUpperCase())}</span>
@@ -209,6 +277,15 @@ function veBang(d) {
     $('#toi').addEventListener('click', () => { TRANG = TRANG + 1; nap(); });
   }
 
+  document.querySelectorAll('[data-chon]').forEach((el) => el.addEventListener('change', () => {
+    if (el.checked) CHON.add(el.dataset.chon); else CHON.delete(el.dataset.chon); veThanhChon();
+  }));
+  const chonHet = document.querySelector('#chonHet');
+  if (chonHet) chonHet.addEventListener('change', () => {
+    document.querySelectorAll('[data-chon]').forEach((el) => { el.checked = chonHet.checked; if (chonHet.checked) CHON.add(el.dataset.chon); else CHON.delete(el.dataset.chon); });
+    veThanhChon();
+  });
+  veThanhChon();
   document.querySelectorAll('[data-bot]').forEach((el) => el.addEventListener('change', () => gatBot(el)));
   document.querySelectorAll('[data-giao]').forEach((el) => el.addEventListener('click', () => doiChuBot(el)));
   document.querySelectorAll('[data-td]').forEach((el) => el.addEventListener('change', () => gatTrongDiem(el)));
@@ -434,7 +511,6 @@ $('#oTim').addEventListener('input', (e) => {
   clearTimeout(hen);
   hen = setTimeout(() => { TIM = e.target.value.trim(); TRANG = 0; nap(); }, 250);
 });
-$('#oLoc').addEventListener('change', (e) => { LOC = e.target.value; TRANG = 0; nap(); });
 $('#nutQuet').addEventListener('click', quetPancake);
 
 $('#bang').innerHTML = '<div class="empty-state"><span class="skeleton"></span></div>';
