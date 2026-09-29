@@ -117,6 +117,16 @@ tiền tệ · 420/581 page chưa khai thị trường · 74 kịch bản LIVE �
 sao thành sản phẩm gốc: tên không đủ để gộp (75 không tên), mã POS mang shop (khác nhau theo nước) ⇒ cần người xác nhận,
 máy gợi ý theo tên món POS (MN8 «Dùng tên POS»). Đây là chi phí lớp 5 THẬT duy nhất của CR này.
 
+**Ba luật người quyết chốt thêm (29/09):** ① ở Sản phẩm, THÊM THỊ TRƯỜNG = gắn ĐÚNG MỘT mã món POS của shop nước đó;
+② marketer phụ trách chọn theo HỒ SƠ HRM, gán ở mức sản phẩm × thị trường (page kế thừa); ③ mã POS ở các shop khác nhau
+là khác nhau nhưng có thể là CÙNG một sản phẩm ⇒ sản phẩm gốc gom nhiều mã POS, mỗi mã một thị trường.
+Đo prod 29/09: 14 kết nối POS · mới kéo danh mục **1/14 shop** (69 món, Kuwait) · 0/78 bản sao của page đã nối mã POS
+(`san_pham.pos_ma`, MN8 · 027 — dây nối đang ở mức PAGE, chưa có mức sản phẩm gốc) · HRM: **không có gì trong hệ**
+(không bảng, không cột, không tài liệu; `nguoi_dung` chỉ có email · tên; `page.marketer` là chữ tự do, 0/581 có;
+«lấy mục marketer từ POS» ở `04-TIEN-DO.md:636` vẫn «chưa làm»).
+[NEEDS CLARIFICATION: HRM là hệ nào, lấy hồ sơ (mã NV · tên · phòng ban) bằng API hay tệp xuất, và một tài khoản đăng
+nhập ứng với đúng một hồ sơ HRM?]
+
 **Model — màn đang hứa nhiều hơn máy làm.** Đo 29/09 (mã + prod):
 - Prod `cau_hinh_model` (tieu-alpha): chính `kimi-k2.6` · 0,30 · dự phòng `claude-haiku-4.5` · việc nền `deepseek-v4-flash` · 0,10.
 - Bot v3 (`src/chat/handler-v3.js` → `src/chat/model.js#layModel`): đọc ĐÚNG MỘT vai «chính», gửi `temperature` =
@@ -161,7 +171,8 @@ máy gợi ý theo tên món POS (MN8 «Dùng tên POS»). Đây là chi phí l�
 | LL9 | Thước: menu · quyền · HK10/HK15 · §10 cho Hộp thư mới | 🟩 | LL1–LL8 |
 | LL10 | Nhà mới cho 5 việc vận hành của `van-hanh` (Hệ còn sống: đối chiếu tin lỗi · tin bị lọc · diễn tập; Số liệu: chi phí từng tin; Page: nguồn nhận tin) | 🟨 | LL5 · LL6 — TRƯỚC LL8 |
 | LL11 | Kỹ năng → `san_pham_goc.kien_thuc` («hỏi size» cho SP có size), gỡ màn kỹ năng | 🟨 (đổi lời bot) | LL3 |
-| LL13 | Gộp 147 bản sao sản phẩm theo page thành sản phẩm gốc + thị trường (máy gợi ý theo tên món POS, người xác nhận); đích «Sản phẩm» | 🟨 (dữ liệu bot đọc) | LL3 |
+| LL13 | Đích «Sản phẩm»: thêm thị trường = gắn 1 mã POS · gộp món POS nhiều shop thành 1 sản phẩm (máy gợi ý theo tên, người xác nhận) · nối 78 bản sao của page vào sản phẩm × thị trường · kéo danh mục cả 14 shop trước | 🟨 (dữ liệu bot đọc) | LL3 |
+| LL15 | Hồ sơ HRM: nguồn nhân sự → người dùng (mã NV) · marketer theo sản phẩm × thị trường, page kế thừa · báo cáo theo marketer | 🟨 | câu hỏi HRM ở 2d · LL13 |
 | LL14 | Model: nối dự phòng vào đường chat v3 (`src/chat/model.js`, không phải bộ não) · ẩn «việc nền» tới khi có việc dùng · màn nói đúng đường nào đọc gì | 🟨 | LL6 |
 | LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`), sửa trên giao diện | 🟥 (đường bot, cạnh bộ não) | cutover / đợt tắt Botcake — phiếu riêng |
 
