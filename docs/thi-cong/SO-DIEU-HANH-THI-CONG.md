@@ -2717,3 +2717,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · PHÁT HÀNH VE1 + VE2 → ✅ GIỮ — prod `9821306 → f211036`, 0 migration (27), 0 gói, chỉ restart `aicloser-v3` (10:35:22); màn Sản phẩm + trang một page theo bản vẽ
   cửa vào npm test 2.295 ca 0 đỏ · cổng: 12 nợ cũ + ll3/ll5 chập chờn 1/~14 lượt (dò: không tái hiện, nợ N-CONGCHAP) · mốc +1′/+5′/+11′/+15′ lỗi 0 · cửa mới 401, đối chứng 404
   · commit f211036 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260929-ve1-ve2.md
+- 29/09 · VE4 → 🔎 CHỜ DEPLOY — Luật chung theo bản vẽ 2d: bốn tab; màn mới /khoi-chung là MỘT chỗ sửa Chính sách/FAQ/Phản đối (cửa đọc mới cùng rào cửa ghi MN7, khoá khi team không giữ); Đề xuất chờ duyệt thôi thử nghiệm
+  bộ ca K1–K4 (Postgres) + Q1–Q4 · đảo-vá 8/8 (M8 lượt đầu sống ⇒ thêm ca đọc chéo) · cổng ve4.sh 10/10 · npm test 2.309 ca 0 đỏ · bấm thật với bot giả: lưu → bản 5 → bot nhận → nhật ký
+  · commit 083c9de · nhật ký docs/thi-cong/nhat-ky/phieu-VE4.md
