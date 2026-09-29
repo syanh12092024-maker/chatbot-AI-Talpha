@@ -102,6 +102,32 @@ thoại — xem ở Việc đang chờ»). Bản thảo có tab «Đơn chờ» 
 
 ⇒ Bản thảo phủ đủ 5 việc của SALE, thiếu nhà cho 5 việc VẬN HÀNH. Phải vẽ thêm trước khi gỡ trang `van-hanh`.
 
+### 2d · Sản phẩm là lõi + sự thật về màn Model (người quyết hỏi 29/09, đo lại)
+
+**Sản phẩm → thị trường → page.** Người quyết: lõi của câu trả lời là thông tin SẢN PHẨM; một sản phẩm bán ở nhiều
+thị trường và nhiều page. ⇒ «Sản phẩm» thành đích chính thứ 5 (Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt):
+chung (kiến thức, cách tư vấn, hỏi size, ảnh) → theo thị trường (giá bậc theo tiền tệ, ưu đãi, giao, món POS, tồn,
+ngôn ngữ, lời riêng) → page (giọng, câu chào, ghi đè có chủ ý). **Sửa lời bản đầu hồ sơ:** kịch bản tầng SẢN PHẨM và
+tầng NƯỚC (010 · 012 · 014) là đúng động cơ cho mô hình này — GIỮ, không cắt; chỉ đổi cách trình bày (theo sản phẩm,
+không theo «tầng»).
+
+Lớp 5 — dữ liệu hôm nay NGƯỢC mô hình (prod 29/09): `san_pham_goc` **0** · page gắn sản phẩm gốc **0** · `san_pham`
+**147 dòng theo 76 page, 0 dòng có mã gốc, 75 dòng không tên, 3 tên khác nhau** · `goi_gia` 154 bậc / 78 sản phẩm / 6
+tiền tệ · 420/581 page chưa khai thị trường · 74 kịch bản LIVE đều tầng page. ⇒ Muốn sang mô hình sản phẩm phải GỘP bản
+sao thành sản phẩm gốc: tên không đủ để gộp (75 không tên), mã POS mang shop (khác nhau theo nước) ⇒ cần người xác nhận,
+máy gợi ý theo tên món POS (MN8 «Dùng tên POS»). Đây là chi phí lớp 5 THẬT duy nhất của CR này.
+
+**Model — màn đang hứa nhiều hơn máy làm.** Đo 29/09 (mã + prod):
+- Prod `cau_hinh_model` (tieu-alpha): chính `kimi-k2.6` · 0,30 · dự phòng `claude-haiku-4.5` · việc nền `deepseek-v4-flash` · 0,10.
+- Bot v3 (`src/chat/handler-v3.js` → `src/chat/model.js#layModel`): đọc ĐÚNG MỘT vai «chính», gửi `temperature` =
+  độ ngẫu nhiên của dòng đó ⇒ độ ngẫu nhiên CÓ tác dụng ở đường này — nhưng bot v3 chưa xử page nào (`V3_PAGE_XU_LY` rỗng).
+- Bot cũ (`src/closer.js`, đường đã phục vụ khách tới 28/08): model lấy từ `.env` (`MODEL_CLOSER=kimi-k2.6`),
+  `messages.create` KHÔNG có `temperature` ⇒ thanh trượt không tác dụng ở đường này.
+- «Dự phòng»: không đường chat nào tự chuyển sang (layModel chỉ hỏi vai «chính»; lớp `goiModel` có chuyển dự phòng thì
+  đường chat không gọi) ⇒ câu «hỏng một nhà bot vẫn trả lời» hiện CHƯA đúng.
+- «Việc nền»: không ai gọi `layModel(…'nen')`; việc nền bot cũ dùng `MODEL_CLASSIFIER` trong `.env` ⇒ ô cấu hình không ai đọc.
+- Chưa đo: nhà cung cấp có tôn trọng `temperature` không (cần khoá sống; khoá Kimi máy chủ đang 401).
+
 ## 3 · Giá phải trả
 
 - **Gỡ ~9 màn đã xây** (câu trả lời sẵn, kỹ năng, gợi ý AI, so A/B, việc của tôi, hội thoại và đơn…) — mã nằm lại
@@ -135,6 +161,8 @@ thoại — xem ở Việc đang chờ»). Bản thảo có tab «Đơn chờ» 
 | LL9 | Thước: menu · quyền · HK10/HK15 · §10 cho Hộp thư mới | 🟩 | LL1–LL8 |
 | LL10 | Nhà mới cho 5 việc vận hành của `van-hanh` (Hệ còn sống: đối chiếu tin lỗi · tin bị lọc · diễn tập; Số liệu: chi phí từng tin; Page: nguồn nhận tin) | 🟨 | LL5 · LL6 — TRƯỚC LL8 |
 | LL11 | Kỹ năng → `san_pham_goc.kien_thuc` («hỏi size» cho SP có size), gỡ màn kỹ năng | 🟨 (đổi lời bot) | LL3 |
+| LL13 | Gộp 147 bản sao sản phẩm theo page thành sản phẩm gốc + thị trường (máy gợi ý theo tên món POS, người xác nhận); đích «Sản phẩm» | 🟨 (dữ liệu bot đọc) | LL3 |
+| LL14 | Model: nối dự phòng vào đường chat v3 (`src/chat/model.js`, không phải bộ não) · ẩn «việc nền» tới khi có việc dùng · màn nói đúng đường nào đọc gì | 🟨 | LL6 |
 | LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`), sửa trên giao diện | 🟥 (đường bot, cạnh bộ não) | cutover / đợt tắt Botcake — phiếu riêng |
 
 Cỡ: 9 phiếu. Để so: sóng UI-HT (4 phiếu, cùng loại việc) xong trong một ngày làm việc của dây chuyền này.
