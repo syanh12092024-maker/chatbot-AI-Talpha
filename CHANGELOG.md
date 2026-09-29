@@ -19,6 +19,21 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 29/09/2026 — danh sách page và Luật chung theo bản vẽ (VE3 · VE4 · CR-28-09c)
+
+Tiếp lượt VE1+VE2: dựng lại NỘI DUNG hai màn nữa theo bản vẽ. Không đổi chữ bot nói, không đổi lược đồ, không thêm biến,
+không thêm gói.
+
+- **Danh sách page** (`05dcc72`): viên «Lọc nhanh» có số đếm thay ô chọn · nút «Quét» ở đầu trang · chọn nhiều page rồi
+  gắn sản phẩm hoặc 🔴 **bật bot hàng loạt** (tối đa 10 page một lượt, hộp xác nhận liệt kê tên, gặp lỗi đầu tiên thì dừng
+  và nói page nào đã đổi) — đi lần lượt qua ĐÚNG cửa ghi từng page đã có, không cửa ghi hàng loạt mới.
+- **Luật chung** (`083c9de`): bốn tab Luật · Chính sách/FAQ/Phản đối · Trả lời sẵn · Đề xuất chờ duyệt.
+  🔴 **Chính sách · FAQ · Phản đối** có màn riêng — MỘT chỗ sửa ba khối bot trích ở MỌI page (trước ở trang một page);
+  lưu phải xác nhận, gửi kèm phiên bản chống đè, cùng cửa ghi cũ (lưu → đẩy bot → đọc lại → nhật ký). Team không giữ bộ
+  khối của bot thì ô bị khoá và nói lý do. «Đề xuất chờ duyệt» thôi thử nghiệm (chưa có đề xuất thì nói chưa có).
+  Trang một page › Lời bot chỉ còn tóm tắt + lối sang. Menu marketer: dòng hai «Câu trả lời sẵn» → «Chính sách · FAQ ·
+  Phản đối» (màn đầu marketer mở được trong cụm).
+
 ### 29/09/2026 — màn Sản phẩm và trang một page theo bản vẽ (VE1 · VE2 · CR-28-09c)
 
 Người dùng: «Sao mới thấy thay đổi phần khung, còn chi tiết không giống artifact?». Lượt này dựng lại NỘI DUNG hai màn
