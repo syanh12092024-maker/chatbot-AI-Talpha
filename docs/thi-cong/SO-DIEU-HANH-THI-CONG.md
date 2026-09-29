@@ -2681,3 +2681,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · LL5 → ✅ — Số liệu một dòng thanh bên, bốn tab (Tổng quan · Chi phí AI · Nguồn khách · Rủi ro hoàn); hai màn cuối thôi ẩn (prod có dữ liệu) và IN «tính trên đơn tới … · chấm lần cuối …» — số prod là lát 28/08 tới khi có LL17
   cổng ll5.sh 6/6 · đảo-vá 6/6 (M2 sống lượt đầu → thêm dòng team khác) · Postgres thật R5 · npm test 2.245 ca 0 đỏ · chưa deploy
   · commit cb932da · nhật ký docs/thi-cong/nhat-ky/phieu-LL5.md
+- 29/09 · LL6 → ✅ — Cài đặt một dòng, sáu tab (Bắt đầu · Kết nối · Model · Hệ còn sống · Người và team · Nhật ký); màn Model gắn trạng thái THẬT từng vai, đo trên mã (chính dùng · dự phòng chưa nối · nền chưa ai đọc) — ca K2 đỏ khi LL14 nối dự phòng mà quên sửa chữ
+  cổng ll6.sh 7/7 · đảo-vá 6/6 đỏ · ảnh chụp bắt lỗi tab bị đẩy sang phải ở đầu trang có .sp (sửa luôn cho Nguồn khách của LL5) · npm test 2.248 ca 0 đỏ · chưa deploy
+  · commit 4cefa72 · nhật ký docs/thi-cong/nhat-ky/phieu-LL6.md
