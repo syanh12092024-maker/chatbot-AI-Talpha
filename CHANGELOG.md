@@ -19,6 +19,33 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 29/09/2026 — năm đích: Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt (CR-28-09c)
+
+Lượt này không đổi chữ nào bot cũ nói với khách, không đổi lược đồ (vẫn 27 bản), không thêm biến
+môi trường. Van gửi tin và van tạo đơn POS trên prod vẫn đóng (`PANCAKE_READONLY=1`, `V3_POS_GHI=0`).
+
+- **Menu còn năm đích** (`ee6ad06`): Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt, thay cho menu dài
+  cũ. Sale mở ra là vào thẳng Hộp thư.
+- 🔴 **Hộp thư — sale duyệt đơn Messenger ngay cạnh chat** (`1073c44`): tab «Đơn chờ», sửa · duyệt ·
+  loại đơn ở cột bên phải, nút «Nhận thay bot», gõ số điện thoại ra hồ sơ khách mọi kênh. Trước đây
+  chỉ quản trị duyệt được, ở màn khác. Duyệt vẫn đi qua ĐÚNG cửa cũ (cùng một hàm tạo đơn POS,
+  cùng van `V3_POS_GHI`). Quyền mới cho vai sale.
+- **Page: «Tất cả page» + «Luật chung»**, các màn còn lại thành tab dưới đầu trang (`cb622a6`).
+- **Số liệu một dòng tab** (`cb932da`): Báo cáo · Chi phí · Nguồn khách · Rủi ro hoàn. Nguồn khách và
+  Rủi ro hoàn thôi ẩn, và nói rõ số tính tới ngày nào.
+- **Cài đặt một dòng tab** (`4cefa72`, `1e5ce30`): màn Model nói đúng điều máy làm (vai nào có đường
+  dùng thật); «Hội thoại và đơn» thành Cài đặt › Vận hành; Hệ còn sống · Chi phí AI · trang page trỏ
+  thẳng vào đúng việc.
+- **Sản phẩm là lõi** (`e771443`): sản phẩm → thị trường (shop POS) → món → page; gắn/gỡ món POS
+  vào sản phẩm, một món chỉ thuộc một sản phẩm.
+- 🔴 **«Hỏi size» thành ô kiến thức của sản phẩm** (`54f4969`): lần đầu sửa được kiến thức sản phẩm
+  trên màn (quản trị · marketer); phần này vào lời dặn của bot v3 khi bot v3 được bật. Màn Kỹ năng
+  chuyển sang thử nghiệm.
+- 🔴 **Ba vai** (`7e3b946`): Quản trị · Marketer · Sale. «Quản lý» và «Người duyệt kịch bản» thôi cấp
+  mới; dòng cũ vẫn đọc được (prod 29/09: 0 dòng mang hai vai đó).
+
+Quy trình mở van: `docs/thi-cong/nhat-ky/phat-hanh-20260929-nam-dich.md`.
+
 ### 28/09/2026 — một nguồn cho sản phẩm · giá · ảnh · kịch bản: sửa ở đâu, bot chạy đúng thế (CR-28-09b) · ĐÃ LÊN PROD `b41261e`
 
 Trước lượt này bot bán theo một tệp mà không màn nào sửa được, còn màn v3 sửa vào một chỗ bot
