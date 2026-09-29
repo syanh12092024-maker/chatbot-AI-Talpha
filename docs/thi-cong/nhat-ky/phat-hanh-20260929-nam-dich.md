@@ -1,6 +1,6 @@
 # MỞ VAN — NĂM ĐÍCH (sóng LL, CR-28-09c)
 
-> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 29/09: «oke deploy nhé».** Mọi số «đo 29/09» dưới đây là
+> **TRẠNG THÁI: XONG · GIỮ (29/09 07:00 prod) — người quyết gật 29/09: «oke deploy nhé».** Mọi số «đo 29/09» dưới đây là
 > phép đo CHỈ ĐỌC trên prod (SSH đọc) trừ khi ghi rõ là lệnh ghi.
 > Phiếu CR: `docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md` · sổ §5f.
 
@@ -144,12 +144,50 @@ Không `migrate down` (không có migration nào để lùi).
 
 ## 8 · Lệnh đã gõ theo thứ tự
 
-(điền khi gõ)
+Giờ prod (CEST), 29/09:
+1. ~06:43 sao lưu → `/var/backups/aicloser/truoc-ll-20260929T044346Z` (23 M: `aicloser_v3.dump` 23 M —
+   `pg_restore -l` đọc được, 32 mục TABLE DATA · `.env` · `commit.txt` = `b41261e…` · `units.txt`)
+2. commit giấy `5bff55e` (CHANGELOG + nhật ký này, ngưỡng + đường lùi) · đẩy nhánh `vao-ui-v3-17-09` →
+   `90ed13f..5bff55e`
+3. prod `git fetch` + `checkout -f -B vao-ui-v3-17-09 origin/vao-ui-v3-17-09` → `5bff55e` · 0 tệp sửa tại chỗ ·
+   22 tệp dữ liệu lạ giữ nguyên · `db/migrate.js` → **áp mới 0 · tổng 27** · KHÔNG `npm ci` (0 gói đổi)
+4. `systemctl restart aicloser-v3` lúc **06:44:40** — chỉ dịch vụ này (mục 1b)
 
 ## 9 · Số đo tại từng mốc
 
-(điền khi đo)
+**+1′ (06:44:48, prod):** `aicloser-v3` active · `Started` **1** · lỗi mới cả ba dịch vụ **0** · mã MỚI đang
+phục vụ — qua 3102 trong máy: `/api/hop-thu/don-cho` **401** · `/api/san-pham/goc/1/chi-tiet` **401** ·
+`/hop-thu/hop-thu-ui.js` **401** · `/api/dieu-huong` **401**, còn đường đối chứng không tồn tại
+`/api/khong-co-duong-nay` **404** (⇒ 401 là cửa có thật đòi đăng nhập, không phải chặn trùm) · `/` **302** ·
+từ NGOÀI máy chủ: `/` **302** · `/dang-nhap` **200** · `/api/hop-thu/don-cho` **401** · hai dịch vụ không
+chạm giữ nguyên `ActiveEnterTimestamp` (28/09 11:25:42 · 11:22:22) · `/health` `pages:129` (= trước).
+Menu thật theo vai, chạy `menuCua` trên mã đã deploy tại `/opt/aicloser` (đích(số màn tới được)):
+
+| Vai | Menu |
+|---|---|
+| QUAN_TRI | hop-thu(3) san-pham(1) page(4) so-lieu(4) cai-dat(7) |
+| MARKETER | hop-thu(1) san-pham(1) page(2) so-lieu(3) cai-dat(2) |
+| SALE | hop-thu(2) |
+| QUAN_LY *(thôi cấp — prod 0 dòng)* | hop-thu(1) san-pham(1) page(4) so-lieu(4) cai-dat(6) |
+| DUYET_KICH_BAN *(thôi cấp — prod 0 dòng)* | hop-thu(1) page(2) cai-dat(1) |
+
+`VAI_GAN_DUOC` = `quan-tri,marketer,sale`. Đạt ngưỡng: quản trị đủ năm đích, sale chỉ Hộp thư.
+
+**+5′ (06:49:55, prod):** ba dịch vụ active · `Started` từ lúc restart: `aicloser` 0 · `aicloser-v3` 1 ·
+`aicloser-worker-v3` 0 · lỗi mới **0/0/0** · `/health` 129 · UI 302.
+
+**+15′ (07:00:28, prod — lượt SSH đầu 06:59 hết giờ ở bước bắt tay, đường mạng; đo lại ngay):** ba dịch vụ
+active · `Started` 0 · 1 · 0 · lỗi mới **0/0/0** · `ActiveEnterTimestamp` của hai dịch vụ không chạm y nguyên
+(28/09 11:25:42 · 11:22:22) · `/health` 129 · UI 302.
 
 ## 10 · Kết · nợ · ai gật
 
+- Kết: **GIỮ** (prod, 29/09 07:00). Cửa sổ kỹ thuật đóng; mốc +1 ngày là người dùng thật mở màn.
+- Người dùng mở màn ngay sau deploy và báo ba điều — ghi thành việc tiếp theo, KHÔNG phải ngưỡng lùi
+  (không lỗi chặn việc, không mất dữ liệu): **tải chậm** · **bấm menu thì menu biến mất rồi mới hiện
+  lại** · **giao diện không giống bản vẽ** (artifact «AI Closer — làm lại từ đầu»). Đo ngay trong lượt:
+  mạng từ máy người dùng tới prod RTT ~320 ms, tải thật 2–54 KB/s; `kieu.css` 104 KB không nén,
+  `dieu-huong.js` 27 KB, cả ba tệp chung `no-cache`; menu do JS vẽ SAU một lượt hỏi `/api/dieu-huong`.
+  E2E trên sandbox bắt thêm: marketer vào `/` rơi vào `/dieu-phoi` **403**; trang 403 in thô thẻ `<b>`.
+  ⇒ phiếu LL18 (khung vẽ sẵn từ máy chủ + nén + cache theo phiên bản + khung theo bản vẽ).
 - Người gật: người quyết, 29/09 — «oke deploy nhé».

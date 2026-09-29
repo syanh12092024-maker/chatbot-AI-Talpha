@@ -2696,3 +2696,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · LL7 → ✅ — ba vai: Quản lý · Người duyệt kịch bản THÔI CẤP ở cả hai cửa cấp vai (lỗi riêng vai_da_bo, khác vai_la), ô chọn ba vai, dòng cấp cũ vẫn hiện; đúng câu hợp đồng «thôi gán, dòng giữ» — dọn 37 tệp danh sách quyền còn nhắc mã cũ để LL9 (0 người mang trên prod)
   cổng ll7.sh 4/4 · đảo-vá 4/4 đỏ · npm test 2.270 ca 0 đỏ · chưa deploy
   · commit (xem git log LL7) · nhật ký docs/thi-cong/nhat-ky/phieu-LL7.md
+- 29/09 · PHÁT HÀNH sóng LL (LL1 LL2 LL3 LL5 LL6 LL13 LL10 LL11 LL7) → ✅ GIỮ — prod `b41261e → 5bff55e`, 0 migration (27), 0 gói, CHỈ restart `aicloser-v3` (đồ thị import: bot cũ + worker không đổi hành vi); van gửi + van POS vẫn đóng
+  cửa vào npm test 2.266 · 0 đỏ · 12 cổng đỏ = nợ cũ, so từng cổng với `b41261e` ra 0 vì LL · mốc +1′/+5′/+15′ lỗi 0 · đường mới 401, đối chứng 404 · sao lưu truoc-ll-20260929T044346Z
+  · commit 5bff55e · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260929-nam-dich.md
