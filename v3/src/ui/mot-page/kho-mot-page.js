@@ -21,7 +21,8 @@
 //                 hai luật, và luật thứ hai luôn là luật quên cập nhật.
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
-import { motPage, cuaKiemMotPage, danhMucGoc, LoiPageBot } from '../page-bot/kho-page.js';
+import { motPage, cuaKiemMotPage, danhMucGoc, LoiPageBot, congTruyVan as congPage } from '../page-bot/kho-page.js';
+import { docBotBatThat, botBatCua } from '../chung/bot-bat-that.js';
 import { trangThaiCau, trangThaiCauDaoGiao } from '../page-bot/cong-tac.js';
 import { DIEU_KIEN_TAT_CA } from '../san-sang/kho-san-sang.js';
 import { NHAN_TRUONG } from '../kich-ban/kho-kich-ban.js';
@@ -97,6 +98,24 @@ function vaCauDao(dk, cauDao) {
       + 'bot cũ sẽ được tắt trước, và chỉ khi nó xác nhận đã tắt thì page mới đổi chủ.',
     di: null,
     nutDi: null,
+  };
+}
+
+/**
+ * VE2 · 29/09: cột trái của màn một page (bản vẽ 2c) — page của team, gọn, xếp theo tên. Bot bật hỏi TIẾN TRÌNH BOT
+ * (`chung/bot-bat-that.js`, một nguồn cho mọi màn); bot không thấy page ⇒ cột bản sao; không hỏi được ⇒ `nguonBot:
+ * 'ban_sao'` + lý do để màn KHAI — không im lặng đổi nguồn số (án lệ 28/09: năm màn nói hai con số).
+ */
+export async function dsPageGon(boiCanh) {
+  const bc = batBuocBoiCanh(boiCanh);
+  const [ds, { theoBot, viSao }] = await Promise.all([congPage(bc).chon('page', {}), docBotBatThat()]);
+  return {
+    nguonBot: theoBot ? 'bot' : 'ban_sao',
+    viSao: viSao || null,
+    ds: (ds || []).map((p) => ({
+      id: String(p.id), pageId: String(p.page_id || ''), ten: p.ten || '', thiTruong: p.thi_truong || '',
+      sanPhamGocMa: p.san_pham_goc_ma || '', botBat: botBatCua(p, theoBot),
+    })).sort((a, b) => (a.ten || a.pageId).localeCompare(b.ten || b.pageId, 'vi')),
   };
 }
 

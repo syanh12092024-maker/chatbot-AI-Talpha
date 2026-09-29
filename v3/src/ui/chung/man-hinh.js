@@ -209,7 +209,9 @@ export const MAN = Object.freeze([
   // Trang của MỘT page: mở từ danh sách, không đứng riêng trên menu — nhưng vẫn khai ở đây
   // để thanh trên cùng tra được «tôi đang ở mục nào» (án lệ GD6 ⑥b). Cờ `canId` nói đúng
   // lý do ẩn: màn DÙNG ĐƯỢC, chỉ là không mở được nếu thiếu tham số.
-  dat(motPage, 'Trang một page', 'page', 'Một page: tình trạng, công tắc, việc làm tiếp', false, false, true),
+  // VE2 · 29/09: trang một page có NHÀ là cụm «Tất cả page» (bản vẽ 2c: đứng ở một page thì dải «Trong mục» sáng «Các
+  // page»). `nhaCum`, KHÔNG `cum`: nó là màn chi tiết (`canId`), không phải thành viên cụm — không có nhãn tab, không lên tab.
+  { ...dat(motPage, 'Trang một page', 'page', 'Một page: tình trạng, công tắc, việc làm tiếp', false, false, true), nhaCum: 'danh-sach-page' },
   trongCum('danh-sach-page', 'Kịch bản', dat(kichBan, 'Kịch bản của page', 'page', 'Lời bot nói riêng trên từng page')),
   // LL3: «Luật chung» = một cụm — luật · trả lời sẵn · đề xuất chờ duyệt (bản vẽ bảng 2d).
   trongCum('luat-chung', 'Luật', dat(boLuat, 'Quy tắc chung mọi page', 'page', 'Sửa là cả team đổi cách nói')),

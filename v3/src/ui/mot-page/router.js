@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
-import { trangMotPage, noiDungPage, LoiMotPage } from './kho-mot-page.js';
+import { trangMotPage, noiDungPage, dsPageGon, LoiMotPage } from './kho-mot-page.js';
 import { VAI_SUA_SAN_PHAM } from '../van-hanh/router-anh.js';
 
 export const DUONG_TRANG = '/page';
@@ -123,6 +123,10 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   const canDangNhap = chanDangNhapMw();
   const canVai = chanVaiMw();
 
+  // VE2: cột trái — page của team để chọn (cùng quyền với trang một page: marketer vào được, sale không).
+  r.get('/api/page-ds', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await dsPageGon(cuaBoiCanh(req))) });
+  }));
   r.get(`/api/page/:id`, canDangNhap, canVai, boc(async (req, res) => {
     const bc = cuaBoiCanh(req);
     const d = await trangMotPage(bc, req.params.id);

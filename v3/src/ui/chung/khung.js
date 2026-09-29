@@ -67,7 +67,8 @@ export function hangHai(n, cho) {
     muc: hien.map((m) => ({
       duong: m.duong,
       ten: m.tenMenu || m.ten,
-      dangO: !!cho && (cho.man === m || (!!m.cum && cho.man.cum === m.cum)),
+      // `nhaCum` (VE2): màn chi tiết có nhà là một cụm (trang một page ∈ «Tất cả page») ⇒ sáng mục của cụm ấy.
+      dangO: !!cho && (cho.man === m || (!!m.cum && (cho.man.cum === m.cum || cho.man.nhaCum === m.cum))),
     })),
   };
 }

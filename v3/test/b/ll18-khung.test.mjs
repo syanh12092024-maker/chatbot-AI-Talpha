@@ -57,6 +57,9 @@ test('K3 · Sản phẩm một màn ⇒ một hàng; màn chi tiết `/page/42` 
   assert.equal(k.soHang, 1);
   assert.equal(lienKet(k.html, 'Trong mục Sản phẩm'), null);
   assert.deepEqual(lienKet(veKhung(d(VAI.QUAN_TRI), '/page/42').html, 'Chính'), ['Hộp thư', 'Sản phẩm', 'Page*', 'Số liệu', 'Cài đặt']);
+  // VE2: đứng ở MỘT page thì «Trong mục Page» sáng «Tất cả page» (trang một page thuộc cụm, không thành tab).
+  assert.deepEqual(lienKet(veKhung(d(VAI.QUAN_TRI), '/page/42').html, 'Trong mục Page'), ['Tất cả page*', 'Luật chung']);
+  assert.equal(veTabCum(d(VAI.QUAN_TRI), '/page/42'), '', 'màn chi tiết không vẽ tab cụm');
   assert.equal(timChoDung({ nhom: menuCua([VAI.QUAN_TRI]) }, '/khong-co-that'), null, 'đường lạ trả null, không đoán bừa');
 });
 
@@ -324,4 +327,33 @@ test('K15 · /favicon.ico có thật (trang không qua khung vẫn có biểu t�
   assert.equal(r.status, 200);
   assert.match(r.headers.get('content-type'), /image\/svg\+xml/);
   assert.match(await r.text(), /^<svg/);
+});
+
+test('K16 · MỌI liên kết viết cứng trong trang trỏ tới màn CÓ THẬT (e2e 29/09: «Xem câu trả lời sẵn» trỏ /lop-0 ⇒ 404)', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const man = (await import('../../src/ui/chung/man-hinh.js')).MAN.map((m) => m.duong);
+  const DUNG = ['/', '/chon-team', '/dang-nhap', '/san-sang'];
+  const TIEN_TO = ['/page/', '/viec/', '/uploads/', '/api/', '/chung/'];
+  const hop = (d) => {
+    const tho = d.split(/[?#]/)[0];
+    const p = tho.length > 1 ? tho.replace(/\/$/, '') : tho;
+    return man.includes(p) || DUNG.includes(p) || TIEN_TO.some((n) => tho.startsWith(n))
+      || man.some((m) => m !== '/' && p.startsWith(m + '/'));
+  };
+  const GOC_UI = path.resolve(import.meta.dirname, '../../src/ui');
+  const chet = []; let dem = 0;
+  for (const d of fs.readdirSync(GOC_UI)) {
+    const t = path.join(GOC_UI, d, 'trang');
+    if (!fs.existsSync(t)) continue;
+    for (const f of fs.readdirSync(t).filter((x) => /\.(html|js)$/.test(x))) {
+      const s = fs.readFileSync(path.join(t, f), 'utf8');
+      for (const m of s.matchAll(/(?:href=["']|href: ?["'`]|location\.href = ["'])(\/[a-z0-9][a-z0-9\-/]*)/gi)) {
+        dem++;
+        if (!hop(m[1])) chet.push(`${d}/${f}: ${m[1]}`);
+      }
+    }
+  }
+  assert.ok(dem > 50, `chỉ đếm được ${dem} liên kết — thước đang đo nhầm chỗ`);
+  assert.deepEqual(chet, [], 'liên kết trỏ tới màn KHÔNG có thật (404)');
 });
