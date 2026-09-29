@@ -1,6 +1,6 @@
 # MỞ VAN — VE3 (danh sách page) + VE4 (Luật chung) theo bản vẽ (CR-28-09c)
 
-> **TRẠNG THÁI: ĐANG MỞ — người quyết gật 29/09: «deploy»** (trả lời «Đề xuất deploy VE3 + VE4 ngay … Gõ «deploy»»).
+> **TRẠNG THÁI: XONG · GIỮ (29/09 12:04 prod) — người quyết gật 29/09: «deploy»** (trả lời «Đề xuất deploy VE3 + VE4 ngay … Gõ «deploy»»).
 > Phiếu: `phieu-VE3.md` · `phieu-VE4.md`. Lượt trước: `phat-hanh-20260929-ve1-ve2.md` (prod `f211036`).
 
 ## 1 · Mở cái gì
@@ -54,3 +54,28 @@ Mất dữ liệu: không — lượt này không thêm cửa ghi, không migrat
 có ở `f211036`, trang một page cũ vẫn sửa được). 23 tệp KHÔNG theo dõi trên prod (bản sao `.env.bak*`, `kb-overrides.bak*`,
 `wa-auth.*`, 6 tệp `src/`, 2 tệp `v3/src/ui/van-hanh/trang.*`) không trùng tệp nào lượt này đổi (đo 0) ⇒ `checkout -f`
 không chạm.
+
+## 8 · Lệnh đã gõ
+
+Giờ prod (CEST), 29/09:
+1. commit giấy `9472153` · đẩy nhánh `f211036..9472153`
+2. mốc lùi `/var/backups/aicloser/truoc-ve34-20260929T094839Z/commit.txt` = `f211036`
+3. prod `checkout -f -B … origin/vao-ui-v3-17-09` → `9472153` · 0 tệp theo dõi sửa tại chỗ · migrate **áp mới 0 · tổng 27**
+4. `systemctl restart aicloser-v3` lúc **11:49:06** — chỉ dịch vụ này
+
+## 9 · Số đo
+
+**+1′ (11:50:19, prod):** `aicloser-v3` active · `Started` **1** · lỗi mới ba dịch vụ **0** · mã MỚI phục vụ: `/khoi-chung`
+**401** (trước deploy 404) · `/api/page-ds` 401 · đối chứng `/api/khong-co-duong-nay` **404** · trên đĩa: `thanhLoc` 1 ·
+`bang-sua` 1 · lối sang `/khoi-chung` 1 · hai dịch vụ không chạm y nguyên (28/09 11:25:42 · 11:22:22) · `/health` 129.
+
+**+5′ (11:54:33) · +15′ (12:04:40), prod:** ba dịch vụ active · `Started` 0 · 1 · 0 · lỗi mới **0/0/0** ở cả hai mốc ·
+`ActiveEnterTimestamp` hai dịch vụ không chạm y nguyên · `/health` 129 · `/khoi-chung` 401.
+
+## 10 · Kết · nợ · ai gật
+
+- Kết: **GIỮ** (prod, 29/09 12:04). Cửa sổ kỹ thuật đóng; mốc +1 ngày là người quyết mở `/page-bot` (lọc · chọn nhiều) và
+  Luật chung (bốn tab · `/khoi-chung`).
+- Nợ: không mới. Ghi nhận máy dev: Postgres.app có thể từ chối kết nối khi hộp xin phép không ai bấm (65 lượt 16:27–16:35
+  giờ máy dev) ⇒ `npm test` đỏ hàng loạt giả; đọc `postgresql.log` («failed to verify "trust"») trước khi đọc là lỗi mã.
+- Người gật: người quyết, 29/09 — «deploy».

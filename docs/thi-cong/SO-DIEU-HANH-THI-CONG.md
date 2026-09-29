@@ -2720,3 +2720,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · VE4 → 🔎 CHỜ DEPLOY — Luật chung theo bản vẽ 2d: bốn tab; màn mới /khoi-chung là MỘT chỗ sửa Chính sách/FAQ/Phản đối (cửa đọc mới cùng rào cửa ghi MN7, khoá khi team không giữ); Đề xuất chờ duyệt thôi thử nghiệm
   bộ ca K1–K4 (Postgres) + Q1–Q4 · đảo-vá 8/8 (M8 lượt đầu sống ⇒ thêm ca đọc chéo) · cổng ve4.sh 10/10 · npm test 2.309 ca 0 đỏ · bấm thật với bot giả: lưu → bản 5 → bot nhận → nhật ký
   · commit 083c9de · nhật ký docs/thi-cong/nhat-ky/phieu-VE4.md
+- 29/09 · PHÁT HÀNH VE3 + VE4 → ✅ GIỮ — prod `f211036 → 9472153`, 0 migration (27), 0 gói, chỉ restart `aicloser-v3` (11:49:06); danh sách page + Luật chung theo bản vẽ
+  cửa vào npm test 2.309 ca 0 đỏ (lượt đầu 676 đỏ GIẢ do Postgres.app từ chối kết nối — log chứng minh) · cổng 35 xanh / 12 nợ cũ trùng tên · mốc +1′/+5′/+15′ lỗi 0 · `/khoi-chung` 404 → 401
+  · commit 9472153 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260929-ve3-ve4.md
