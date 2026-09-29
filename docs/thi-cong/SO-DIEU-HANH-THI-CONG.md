@@ -2684,3 +2684,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · LL6 → ✅ — Cài đặt một dòng, sáu tab (Bắt đầu · Kết nối · Model · Hệ còn sống · Người và team · Nhật ký); màn Model gắn trạng thái THẬT từng vai, đo trên mã (chính dùng · dự phòng chưa nối · nền chưa ai đọc) — ca K2 đỏ khi LL14 nối dự phòng mà quên sửa chữ
   cổng ll6.sh 7/7 · đảo-vá 6/6 đỏ · ảnh chụp bắt lỗi tab bị đẩy sang phải ở đầu trang có .sp (sửa luôn cho Nguồn khách của LL5) · npm test 2.248 ca 0 đỏ · chưa deploy
   · commit 4cefa72 · nhật ký docs/thi-cong/nhat-ky/phieu-LL6.md
+- 29/09 · LL13 → ✅ — Sản phẩm là lõi: màn Sản phẩm đặt sản phẩm lên đầu (thị trường = shop POS · page đang bán · món), «Xem» mở thị trường theo shop, «Thêm thị trường»/«Gỡ» gắn món POS (một món chỉ thuộc một sản phẩm; nhiều size/shop hợp lệ — NEEDS CLARIFICATION «1 pos id» là mã sản phẩm hay biến thể)
+  cổng ll13.sh 7/7 · đảo-vá 10/10 · Postgres thật 7 ca · chụp màn bắt lỗi cũ UI.button (data-boGoc ⇒ nút «Bỏ» sản phẩm gốc chết từ đầu) đã sửa · npm test 2.261 ca 0 đỏ · chưa deploy
+  · commit e771443 · nhật ký docs/thi-cong/nhat-ky/phieu-LL13.md
