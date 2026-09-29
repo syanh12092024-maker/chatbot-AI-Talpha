@@ -2672,3 +2672,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · LL1 → ✅ — khung năm đích Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt: chỉ đổi chỗ ngồi (27/27 đường giữ, tập màn mỗi vai giữ, chỗ đặt chân giữ — sale vào bàn hội thoại); «Sản phẩm & kho» hiện lại làm đầu đích Sản phẩm; thêm hình Lucide package
   cổng ll1.sh 10/10 · đảo-vá 9/9 đỏ · thước dieu-huong sửa cùng commit · npm test 2.221 ca 0 đỏ · xem thử đọc /api/dieu-huong đúng hai vai · chưa deploy
   · commit ee6ad06 · nhật ký docs/thi-cong/nhat-ky/phieu-LL1.md
+- 29/09 · LL2 → ✅ — Hộp thư: sale sửa/duyệt/loại đơn Messenger cạnh chat (MỘT thân hàm với van-hanh, tách van-hanh/don-cho.js) · nhận thay bot · tab Đơn chờ (Messenger chờ duyệt · việc đơn · Ladi nhánh WhatsApp) · gõ số ⇒ hồ sơ khách mọi kênh; module ghi riêng ui/hop-thu, bàn giữ chỉ-đọc
+  cổng ll2.sh 11/11 · đảo-vá 11/11 đỏ · Postgres thật: hai lượt duyệt ⇒ đúng một đơn POS · chụp màn qua sandbox bắt 2 lỗi (tab tràn, ô tìm so số thô — lỗi từ UI-HT2) đã sửa · npm test 2.234 ca 0 đỏ · chưa deploy
+  · commit 1073c44 · nhật ký docs/thi-cong/nhat-ky/phieu-LL2.md
