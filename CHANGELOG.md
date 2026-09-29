@@ -19,6 +19,25 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 29/09/2026 — khung theo bản vẽ, menu không còn nháy, tải nhanh hơn (LL18 · CR-28-09c)
+
+Người dùng báo ngay sau lượt «năm đích»: tải chậm, bấm menu thì menu biến mất rồi mới hiện lại, giao diện
+không giống bản vẽ. Lượt này không đổi chữ nào bot nói, không đổi lược đồ, không thêm biến, không thêm gói.
+
+- **Menu có ngay khi trang hiện** (`31212d9`): máy chủ vẽ sẵn menu vào trang, thôi chờ trình duyệt hỏi thêm
+  một lượt rồi mới dựng. Trang không còn bị đẩy sang phải khi menu chèn vào.
+- **Giao diện theo bản vẽ**: thanh ngang trên cùng — AI Closer · team · Hộp thư · Sản phẩm · Page · Số liệu ·
+  Cài đặt · trạng thái bot · tài khoản — và dải «Trong mục …» ngay dưới. Bỏ thanh bên tối. Nền kem, màu chính
+  xanh ngọc đậm, góc bo mềm hơn, nhãn trạng thái tròn.
+- **Tải nhanh hơn**: tệp giao diện gửi đi đã nén (tệp kiểu 110 KB → 26 KB, đo `gzip -6`) và trình duyệt giữ lại theo phiên
+  bản — bấm sang màn khác không phải tải lại. Phông chữ không còn chặn lần hiện đầu.
+- **Mở địa chỉ gốc thì về đúng màn của mình** — marketer trước đây gặp trang «không có quyền».
+- **Không còn ngõ cụt «không có quyền»**: trang báo thiếu quyền dẫn về màn đầu của bạn (trước: về bảng điều phối
+  — với marketer lại là một trang không có quyền nữa). Nút/liên kết sang màn bạn không mở được thì hiện mờ, ghi
+  «nhờ quản trị» thay vì bấm vào là lỗi. Trang thiếu quyền của bảng điều phối thôi in thô thẻ `<b>`.
+
+Quy trình mở van: `docs/thi-cong/nhat-ky/phat-hanh-20260929-khung-ban-ve.md`.
+
 ### 29/09/2026 — năm đích: Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt (CR-28-09c)
 
 Lượt này không đổi chữ nào bot cũ nói với khách, không đổi lược đồ (vẫn 27 bản), không thêm biến
