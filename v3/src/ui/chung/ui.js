@@ -122,7 +122,9 @@
     // `data: { live: id }` → `data-live="…"` — trang gắn việc vào nút qua thuộc tính dữ liệu,
     // không phải chèn chuỗi vào HTML hàm này trả về.
     const duLieu = Object.entries(o.data || {})
-      .map(([k, v]) => ` data-${String(k).replace(/[^a-z0-9-]/gi, "")}="${esc(v)}"`).join("");
+      // camelCase → kebab, đúng quy ước `dataset` (LL13 · 29/09): `data: { boGoc }` từng ra `data-boGoc`
+      // — HTML hạ chữ thành `data-bogoc`, bộ chọn `[data-bo-goc]` không bao giờ khớp ⇒ nút «Bỏ» chết câm.
+      .map(([k, v]) => ` data-${String(k).replace(/[A-Z]/g, (c) => "-" + c.toLowerCase()).replace(/[^a-z0-9-]/gi, "")}="${esc(v)}"`).join("");
     const chung = ` class="btn" data-variant="${esc(bien)}" data-size="${esc(co)}"` +
       (o.id ? ` id="${esc(o.id)}"` : "") + (o.title ? ` title="${esc(o.title)}"` : "") + duLieu;
     if (o.href) return `<a${chung} href="${esc(o.href)}">${noiDung}</a>`;

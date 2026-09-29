@@ -26,18 +26,13 @@
     <div id="dem"></div>
   </section>
 
-  <section class="section table-wrap" aria-labelledby="tieuDe">
-    <div class="table-toolbar"><h2 id="tieuDe">Page có sản phẩm</h2>
-      <span class="table-count" id="hSo"></span>
-      <span id="nutVe"></span></div>
-    <div id="bang"><div class="empty-state"><span class="skeleton"></span></div></div>
-  </section>
-
-  <!-- SẢN PHẨM GỐC (bảng 014): danh mục do NGƯỜI định nghĩa, không mang shop, không gắn
+  <!-- LL13 · 29/09 (CR-28-09c, 01 §6 mới): SẢN PHẨM LÀ LÕI — khối này lên ĐẦU màn. Mỗi sản phẩm: thị trường
+       (= shop POS của món đã gắn) · page đang bán · «Thêm thị trường» (gắn một món POS chưa thuộc sản phẩm nào).
+       SẢN PHẨM GỐC (bảng 014): danh mục do NGƯỜI định nghĩa, không mang shop, không gắn
        page. Đây là khoá mà biến thể POS của MỌI thị trường nối vào theo SỐ HIỆU — đặt tên
        một lần, shop mở sau tự khớp. -->
   <section class="section table-wrap" aria-labelledby="tieuGoc">
-    <div class="table-toolbar"><h2 id="tieuGoc">Sản phẩm gốc</h2>
+    <div class="table-toolbar"><h2 id="tieuGoc">Sản phẩm</h2>
       <span class="table-count" id="demGoc"></span></div>
     <div id="giaGoc"></div>
     <div id="choGoc"></div>
@@ -55,6 +50,14 @@
       <div class="field-hint" id="goiYGoc">Mã gốc là khoá của kịch bản — đặt rồi thì KHÔNG sửa được, chỉ tên và số hiệu sửa được.</div>
     </div>
   </section>
+
+  <section class="section table-wrap" aria-labelledby="tieuDe">
+    <div class="table-toolbar"><h2 id="tieuDe">Page có sản phẩm</h2>
+      <span class="table-count" id="hSo"></span>
+      <span id="nutVe"></span></div>
+    <div id="bang"><div class="empty-state"><span class="skeleton"></span></div></div>
+  </section>
+
 </main>
 
 <script>
@@ -211,22 +214,27 @@ function veGoc(d) {
          </button>`).join('')}</div></div>`
     : '';
 
+  // LL13: sản phẩm là LÕI — mỗi dòng nói bán ở mấy thị trường (shop POS) và mấy page; «Xem» mở thị trường ·
+  // món POS · page đang bán, kèm «Thêm thị trường».
   $('#bangGoc').innerHTML = d.goc.length
     ? `<table class="data-table"><thead><tr>
-        <th scope="col" class="num">Số hiệu</th><th scope="col">Mã gốc</th><th scope="col">Tên</th>
-        <th scope="col" class="num">Biến thể đã nối</th>
+        <th scope="col">Sản phẩm</th><th scope="col" class="num">Số hiệu</th>
+        <th scope="col" class="num">Thị trường</th><th scope="col" class="num">Page đang bán</th>
+        <th scope="col" class="num">Món POS</th>
         <th scope="col" class="actions"><span class="sr-only">Thao tác</span></th>
       </tr></thead><tbody>${d.goc.map((g) => `
       <tr>
+        <td>${g.ten ? esc(g.ten) : '<span class="meta">chưa đặt tên</span>'} <span class="meta tabular">${esc(g.maGoc)}</span></td>
         <td class="num">${g.soHieu ? esc(g.soHieu) : '<span class="meta">chưa gán</span>'}</td>
-        <td><span class="tabular">${esc(g.maGoc)}</span></td>
-        <td>${g.ten ? esc(g.ten) : '<span class="meta">chưa đặt tên</span>'}</td>
+        <td class="num">${so(g.soThiTruong ?? 0)}</td>
+        <td class="num">${so(g.soPage ?? 0)}</td>
         <td class="num">${so(g.soBienThe)}</td>
-        <td class="actions">${d.suaDuoc
+        <td class="actions">${button('Xem', { size: 'sm', data: { moGoc: g.id } })}${d.suaDuoc
           ? button('Bỏ', { size: 'sm', variant: 'danger', data: { boGoc: g.id },
               title: g.soBienThe ? 'Còn biến thể đang trỏ tới — sẽ bị từ chối' : 'Bỏ sản phẩm gốc này' })
           : ''}</td>
-      </tr>`).join('')}</tbody></table>`
+      </tr>
+      <tr data-chi-tiet="${esc(g.id)}" hidden><td colspan="6"><div data-ct="${esc(g.id)}"></div></td></tr>`).join('')}</tbody></table>`
     : emptyState({ icon: 'inbox', title: 'Chưa có sản phẩm gốc nào',
         body: 'Biến thể POS chưa nối được vào kịch bản nào cho tới khi có danh mục này.' });
 
@@ -238,6 +246,75 @@ function veGoc(d) {
     $('#gMa').focus();
   }));
   document.querySelectorAll('[data-bo-goc]').forEach((b) => b.addEventListener('click', () => boGoc(b.dataset.boGoc, b)));
+  document.querySelectorAll('[data-mo-goc]').forEach((b) => b.addEventListener('click', () => {
+    const hang = document.querySelector(`[data-chi-tiet="${CSS.escape(b.dataset.moGoc)}"]`);
+    hang.hidden = !hang.hidden;
+    if (!hang.hidden) moGoc(b.dataset.moGoc);
+  }));
+}
+
+/* LL13 · MỘT SẢN PHẨM: thị trường (shop POS) · món · page đang bán · «Thêm thị trường». */
+async function moGoc(id) {
+  const noi = document.querySelector(`[data-ct="${CSS.escape(id)}"]`);
+  noi.innerHTML = '<p class="text-muted">Đang đọc…</p>';
+  let d;
+  try { d = await goi('/api/san-pham/goc/' + encodeURIComponent(id) + '/chi-tiet'); }
+  catch (e) { noi.innerHTML = canhBao({ level: 'warning', title: 'Không đọc được sản phẩm', body: e.message }); return; }
+  const g = d.goc;
+  const tenPage = new Map(g.page.map((p) => [p.id, p]));
+  const thiTruong = g.thiTruong.length
+    ? `<ul class="item-list">${g.thiTruong.map((t) => `<li class="item"><div>
+        <span class="item-title">${esc(t.thiTruong || 'Shop ' + t.shopId)} <span class="meta">shop ${esc(t.shopId)}</span></span>
+        <div class="item-desc">${t.mon.map((m) => `${esc(m.ten || m.posMa)}${m.tonKho == null ? '' : ' · tồn ' + so(m.tonKho)}${m.hetHang ? ' · hết hàng' : ''}`
+          + (d.suaDuoc ? ` ${button('Gỡ', { size: 'sm', variant: 'ghost', data: { goMon: m.posMa } })}` : '')).join('<br>')}</div>
+        <div class="item-desc">${t.page.length ? 'Page bán: ' + t.page.map((pid) => esc((tenPage.get(pid) || {}).ten || pid)).join(' · ') : 'Chưa page nào bán món này'}</div>
+      </div></li>`).join('')}</ul>`
+    : emptyState({ icon: 'inbox', title: 'Chưa gắn thị trường nào', body: 'Gắn một món POS của shop nước đó — mỗi shop là một thị trường.' });
+  const page = g.page.length
+    ? `<ul class="item-list" data-bam>${g.page.map((p) => `<li class="item"><div><a class="lien-ke" href="/page/${esc(p.id)}">${esc(p.ten || p.pageId)}</a>
+        <div class="item-desc">${esc(p.qua.includes('mon_pos') ? 'qua món POS đã nối' : '')}${p.qua.includes('ca_page') ? (p.qua.includes('mon_pos') ? ' · ' : '') + 'gán cả page vào sản phẩm' : ''}</div></div></li>`).join('')}</ul>`
+    : '<p class="text-muted">Chưa page nào bán sản phẩm này.</p>';
+  const nhom = new Map();
+  for (const m of d.monChuaGan) {
+    const k = m.thiTruong || 'Shop ' + m.shopId;
+    if (!nhom.has(k)) nhom.set(k, []);
+    nhom.get(k).push(m);
+  }
+  const them = d.suaDuoc
+    ? (d.monChuaGan.length
+      ? `<div class="hang"><div class="field"><label class="field-label" for="ttMon-${esc(id)}">Thêm thị trường — món POS chưa thuộc sản phẩm nào</label>
+          <select id="ttMon-${esc(id)}">${[...nhom].map(([k, ds]) => `<optgroup label="${esc(k)}">${ds.map((m) =>
+            `<option value="${esc(m.posMa)}">${esc(m.ten || m.posMa)}${m.tonKho == null ? '' : ' · tồn ' + so(m.tonKho)}</option>`).join('')}</optgroup>`).join('')}</select></div>
+          ${button('Gắn', { size: 'sm', variant: 'primary', data: { ganMon: id } })}</div>
+         <div class="field-hint" data-tb-gan></div>`
+      : '<p class="field-hint">Mọi món POS đã kéo về đều thuộc một sản phẩm. Kéo danh mục shop khác ở Cài đặt › Kết nối để có thêm thị trường.</p>')
+    : '';
+  noi.innerHTML = `<div class="section-header"><div><h3>Thị trường · ${so(g.thiTruong.length)}</h3>
+      <div class="section-desc">Mỗi shop POS là một thị trường. Giá theo tiền tệ, tồn kho và món đi theo shop.</div></div></div>
+    ${thiTruong}${them}
+    <div class="section-header"><div><h3>Page đang bán · ${so(g.page.length)}</h3></div></div>${page}`;
+  const tb = noi.querySelector('[data-tb-gan]');
+  noi.querySelectorAll('[data-gan-mon]').forEach((b) => b.addEventListener('click', async () => {
+    b.disabled = true;
+    try {
+      await goiGhi('/api/san-pham/goc/' + encodeURIComponent(id) + '/mon', { method: 'POST',
+        body: JSON.stringify({ posMa: noi.querySelector('select').value }) });
+      await taiGoc(); moLai(id);
+    } catch (e) { if (tb) tb.textContent = e.message; b.disabled = false; }
+  }));
+  noi.querySelectorAll('[data-go-mon]').forEach((b) => b.addEventListener('click', async () => {
+    b.disabled = true;
+    try {
+      await goiGhi('/api/san-pham/goc/' + encodeURIComponent(id) + '/mon/go', { method: 'POST',
+        body: JSON.stringify({ posMa: b.dataset.goMon }) });
+      await taiGoc(); moLai(id);
+    } catch (e) { b.disabled = false; noi.insertAdjacentHTML('afterbegin', canhBao({ level: 'danger', title: 'Chưa gỡ được', body: e.message })); }
+  }));
+}
+/* Sau khi ghi, bảng vẽ lại (đóng mọi chi tiết) — mở lại đúng sản phẩm vừa sửa. */
+function moLai(id) {
+  const hang = document.querySelector(`[data-chi-tiet="${CSS.escape(id)}"]`);
+  if (hang) { hang.hidden = false; moGoc(id); }
 }
 
 async function taiGoc() {

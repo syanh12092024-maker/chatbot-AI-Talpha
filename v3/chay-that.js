@@ -270,6 +270,11 @@ const bao = dungPhanB(app, {
     tao: (bc, t) => spGoc.taoSanPhamGoc(pool, bc.teamId, t),
     sua: (bc, id, t) => spGoc.suaSanPhamGoc(pool, bc.teamId, id, t),
     bo: (bc, id) => spGoc.boSanPhamGoc(pool, bc.teamId, id),
+    // LL13: sản phẩm là lõi — thị trường = shop POS của món đã gắn.
+    chiTiet: (bc, id) => spGoc.chiTietSanPhamGoc(pool, bc.teamId, id),
+    monChuaGan: (bc) => spGoc.monPosChuaGan(pool, bc.teamId),
+    gan: (bc, id, posMa) => spGoc.ganMonPosVaoGoc(pool, bc.teamId, id, posMa),
+    go: (bc, id, posMa) => spGoc.goMonPosKhoiGoc(pool, bc.teamId, id, posMa),
   },
   // Kho tạm: page ở team kỹ thuật, nguồn cho lát «gán page ↔ team».
   docKhoTamPage: (t) => pageChuaPhan(pool, t),

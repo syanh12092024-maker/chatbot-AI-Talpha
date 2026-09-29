@@ -26,7 +26,8 @@ let _pheuNhatKy = null;
 /** Nhận bộ năm hàm của tầng A. Thiếu một là từ chối cả cụm — nửa cửa khó hiểu hơn không cửa. */
 export function datKhoGoc(cua) {
   if (cua == null) { _cua = null; return null; }
-  const thieu = ['ds', 'cho', 'dem', 'tao', 'sua', 'bo'].filter((k) => typeof cua[k] !== 'function');
+  // LL13: + `chiTiet` · `monChuaGan` · `gan` · `go` — sản phẩm là lõi (thị trường = shop POS).
+  const thieu = ['ds', 'cho', 'dem', 'tao', 'sua', 'bo', 'chiTiet', 'monChuaGan', 'gan', 'go'].filter((k) => typeof cua[k] !== 'function');
   if (thieu.length) throw new LoiSanPham(`datKhoGoc thiếu hàm: ${thieu.join(', ')}`, 'noi_day_thieu', 500);
   _cua = cua;
   return _cua;
@@ -112,6 +113,42 @@ export async function boGoc(boiCanh, id) {
     doiTuongId: kq.id,
     truoc: { maGoc: kq.maGoc, ten: kq.ten },
     ghiChu: `bỏ sản phẩm gốc "${kq.maGoc}"`,
+  });
+  return kq;
+}
+
+/* ═══ LL13 · SẢN PHẨM LÀ LÕI (CR-28-09c) — thị trường · món POS · page đang bán ═══ */
+
+/** Một sản phẩm gốc + chỗ chọn món để «Thêm thị trường». Đọc: cùng vai với màn. */
+export async function chiTietGoc(boiCanh, id) {
+  const bc = batBuocBoiCanh(boiCanh);
+  const [goc, monChuaGan] = await Promise.all([cua().chiTiet(bc, id), cua().monChuaGan(bc)]);
+  if (!goc) return null;
+  return { goc, monChuaGan, suaDuoc: bc.vai.some((v) => VAI_SUA_DUOC.includes(v)) };
+}
+
+/** Gắn một món POS vào sản phẩm gốc — thêm thị trường (shop mới) hoặc thêm biến thể. Quản trị, có nhật ký. */
+export async function ganMonPos(boiCanh, id, posMa) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const kq = await cua().gan(bc, id, posMa);
+  await ghi(bc, {
+    hanhDong: HANH_DONG.GAN_MON_POS_GOC, doiTuongLoai: BANG, doiTuongId: String(id),
+    sau: { maGoc: kq.maGoc, posMa: kq.posMa, shopId: kq.shopId },
+    ghiChu: `gắn món POS ${kq.posMa} (shop ${kq.shopId}) vào sản phẩm "${kq.maGoc}"${kq.daCo ? ' — đã gắn từ trước' : ''}`,
+  });
+  return kq;
+}
+
+/** Gỡ một món POS khỏi sản phẩm gốc. Quản trị, có nhật ký. */
+export async function goMonPos(boiCanh, id, posMa) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const kq = await cua().go(bc, id, posMa);
+  await ghi(bc, {
+    hanhDong: HANH_DONG.GO_MON_POS_GOC, doiTuongLoai: BANG, doiTuongId: String(id),
+    truoc: { maGoc: kq.maGoc, posMa: kq.posMa, shopId: kq.shopId },
+    ghiChu: `gỡ món POS ${kq.posMa} (shop ${kq.shopId}) khỏi sản phẩm "${kq.maGoc}"`,
   });
   return kq;
 }

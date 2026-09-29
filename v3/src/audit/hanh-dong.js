@@ -120,6 +120,10 @@ export const HANH_DONG = Object.freeze({
   TAO_SAN_PHAM_GOC: 'tao_san_pham_goc',
   SUA_SAN_PHAM_GOC: 'sua_san_pham_goc',
   BO_SAN_PHAM_GOC: 'bo_san_pham_goc',
+  // LL13 (29/09) — gắn/gỡ món POS của một shop vào sản phẩm gốc = thêm/bớt THỊ TRƯỜNG của sản phẩm (1 shop =
+  // 1 thị trường). Kéo theo page đang bán món đó sang sản phẩm này — phải trả lời được «ai nối, lúc nào».
+  GAN_MON_POS_GOC: 'gan_mon_pos_goc',
+  GO_MON_POS_GOC: 'go_mon_pos_goc',
 });
 
 /** Nhóm để màn hình xếp bộ lọc thành từng cụm, không phải để module này dùng. */
@@ -152,6 +156,7 @@ export const NHOM = Object.freeze({
   lop_0_dong: Object.freeze([HANH_DONG.TAO_MAU_0_DONG, HANH_DONG.SUA_MAU_0_DONG]),
   san_pham: Object.freeze([
     HANH_DONG.TAO_SAN_PHAM_GOC, HANH_DONG.SUA_SAN_PHAM_GOC, HANH_DONG.BO_SAN_PHAM_GOC,
+    HANH_DONG.GAN_MON_POS_GOC, HANH_DONG.GO_MON_POS_GOC,
   ]),
   bo_luat: Object.freeze([HANH_DONG.LUU_BAN_NHAP_BO_LUAT, HANH_DONG.AP_BO_LUAT]),
   ky_nang: Object.freeze([HANH_DONG.BAT_TAT_KY_NANG, HANH_DONG.DAT_NHOM_KY_NANG]),
@@ -264,6 +269,8 @@ const MO_TA = Object.freeze({
   [HANH_DONG.TAO_SAN_PHAM_GOC]: 'Tạo sản phẩm gốc',
   [HANH_DONG.SUA_SAN_PHAM_GOC]: 'Sửa sản phẩm gốc',
   [HANH_DONG.BO_SAN_PHAM_GOC]: 'Bỏ sản phẩm gốc',
+  [HANH_DONG.GAN_MON_POS_GOC]: 'Gắn món POS vào sản phẩm (thêm thị trường)',
+  [HANH_DONG.GO_MON_POS_GOC]: 'Gỡ món POS khỏi sản phẩm',
   [HANH_DONG.THEM_KET_NOI_POS]: 'Thêm kết nối POS',
   [HANH_DONG.SUA_KET_NOI_POS]: 'Sửa kết nối POS',
   [HANH_DONG.BAT_TAT_KET_NOI_POS]: 'Bật/tắt kết nối POS',

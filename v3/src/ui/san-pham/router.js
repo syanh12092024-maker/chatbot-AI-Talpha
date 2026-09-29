@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manSanPham, sanPhamCuaMotPage, VAI_VAO_DUOC, VI_RONG, LoiSanPham } from './kho-san-pham.js';
-import { manSanPhamGoc, taoGoc, suaGoc, boGoc, VAI_SUA_DUOC } from './kho-goc.js';
+import { manSanPhamGoc, taoGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos } from './kho-goc.js';
 
 /**
  * Vai GHI của màn — khai TƯỜNG MINH ở router dù nó chỉ chuyển tiếp từ `kho-goc.js`.
@@ -146,6 +146,19 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 
   r.delete('/api/san-pham/goc/:id', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, goc: await boGoc(cuaBoiCanh(req), req.params.id) });
+  }));
+
+  // LL13 · sản phẩm là lõi: một sản phẩm gốc (thị trường = shop POS · món · page đang bán) và gắn/gỡ món POS.
+  r.get('/api/san-pham/goc/:id/chi-tiet', canDangNhap, canVai, boc(async (req, res) => {
+    const kq = await chiTietGoc(cuaBoiCanh(req), req.params.id);
+    if (!kq) return res.status(404).json({ ok: false, ma: 'khong_co', thongDiep: 'Không có sản phẩm gốc này.' });
+    return res.json({ ok: true, ...kq });
+  }));
+  r.post('/api/san-pham/goc/:id/mon', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await ganMonPos(cuaBoiCanh(req), req.params.id, req.body?.posMa)) });
+  }));
+  r.post('/api/san-pham/goc/:id/mon/go', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await goMonPos(cuaBoiCanh(req), req.params.id, req.body?.posMa)) });
   }));
 
   r.get('/api/san-pham/:id', canDangNhap, canVai, boc(async (req, res) => {

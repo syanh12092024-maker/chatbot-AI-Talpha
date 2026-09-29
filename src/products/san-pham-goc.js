@@ -55,7 +55,14 @@ export async function dsSanPhamGoc(pool, teamId) {
   const r = await pool.query(
     `SELECT g.id, g.ma_goc, g.ten, g.mo_ta, g.so_hieu, g.tao_luc, g.sua_luc,
             (SELECT count(*)::int FROM san_pham s
-              WHERE s.team_id = g.team_id AND s.ma_goc = g.ma_goc) AS so_bien_the
+              WHERE s.team_id = g.team_id AND s.ma_goc = g.ma_goc) AS so_bien_the,
+            -- LL13: thị trường = SHOP của món POS (1 shop = 1 thị trường) · page bán qua món POS hoặc gán cả page.
+            (SELECT count(DISTINCT split_part(s.ma, ':', 1))::int FROM san_pham s
+              WHERE s.team_id = g.team_id AND s.ma_goc = g.ma_goc AND s.nguon = 'pos') AS so_thi_truong,
+            (SELECT count(DISTINCT p.id)::int FROM page p
+              WHERE p.team_id = g.team_id AND (p.san_pham_goc_ma = g.ma_goc OR p.id IN (
+                SELECT b.page_id FROM san_pham b JOIN san_pham m ON m.team_id = b.team_id AND m.ma = b.pos_ma
+                 WHERE b.team_id = g.team_id AND m.ma_goc = g.ma_goc AND m.nguon = 'pos'))) AS so_page
        FROM san_pham_goc g WHERE g.team_id = $1
       ORDER BY (g.so_hieu IS NULL), length(g.so_hieu), g.so_hieu, g.ma_goc`,
     [teamId],
@@ -67,6 +74,8 @@ export async function dsSanPhamGoc(pool, teamId) {
     moTa: d.mo_ta,
     soHieu: d.so_hieu,
     soBienThe: d.so_bien_the,
+    soThiTruong: d.so_thi_truong,
+    soPage: d.so_page,
     taoLuc: new Date(d.tao_luc).getTime(),
     suaLuc: new Date(d.sua_luc).getTime(),
   }));
@@ -226,4 +235,116 @@ export async function demGia(pool, teamId) {
   );
   const d = r.rows[0];
   return { tong: d.tong, coGia: d.co_gia, chuaCoGia: d.tong - d.co_gia, nhapTay: d.tay };
+}
+
+/* ═══ LL13 · SẢN PHẨM LÀ LÕI — thị trường · món POS · page đang bán (CR-28-09c, 01 §6 mới) ═══════════════
+ * Mỗi SHOP POS là MỘT thị trường (01 §8 mới: 1 shop = 1 thị trường). Món POS (`san_pham.nguon='pos'`, mã
+ * `<shop>:<biến thể>`) thuộc một sản phẩm gốc qua `ma_goc` — một shop có thể có NHIỀU biến thể (size) của
+ * cùng sản phẩm, nên luật khoá là «một món chỉ thuộc MỘT gốc», không phải «một shop một biến thể».
+ * Page bán sản phẩm qua bản sao của page trỏ tới món POS (`san_pham.pos_ma`, MN8) HOẶC gán cả page vào gốc
+ * (`page.san_pham_goc_ma`, 015) — màn gộp cả hai và nói page đến bằng đường nào.
+ */
+const shopCua = (ma) => String(ma || "").split(":")[0] || null;
+
+/** Một sản phẩm gốc: thị trường (theo shop) · món POS · page đang bán. `null` = không có trong team. */
+export async function chiTietSanPhamGoc(pool, teamId, id) {
+  const g = (await pool.query(
+    "SELECT id, ma_goc, ten, mo_ta, so_hieu FROM san_pham_goc WHERE team_id = $1 AND id = $2",
+    [teamId, id],
+  )).rows[0];
+  if (!g) return null;
+  const mon = (await pool.query(
+    `SELECT s.ma, s.ten, s.ton_kho, s.het_hang, k.market
+       FROM san_pham s
+       LEFT JOIN ket_noi_pos k ON k.team_id = s.team_id AND k.shop_id = split_part(s.ma, ':', 1)
+      WHERE s.team_id = $1 AND s.nguon = 'pos' AND s.ma_goc = $2
+      ORDER BY k.market NULLS LAST, s.ma`,
+    [teamId, g.ma_goc],
+  )).rows;
+  const ban = (await pool.query(
+    `SELECT p.id, p.page_id, p.ten, 'mon_pos' AS qua, s.pos_ma
+       FROM san_pham s JOIN page p ON p.id = s.page_id AND p.team_id = s.team_id
+      WHERE s.team_id = $1 AND s.nguon <> 'pos' AND s.pos_ma = ANY($2::text[])
+     UNION ALL
+     SELECT p.id, p.page_id, p.ten, 'ca_page' AS qua, NULL AS pos_ma
+       FROM page p WHERE p.team_id = $1 AND p.san_pham_goc_ma = $3`,
+    [teamId, mon.map((m) => m.ma), g.ma_goc],
+  )).rows;
+  const theoShop = new Map();
+  for (const m of mon) {
+    const shop = shopCua(m.ma);
+    if (!theoShop.has(shop)) theoShop.set(shop, { shopId: shop, thiTruong: m.market || null, mon: [], page: [] });
+    theoShop.get(shop).mon.push({ posMa: m.ma, ten: m.ten, tonKho: m.ton_kho, hetHang: !!m.het_hang });
+  }
+  const trangPage = new Map();
+  for (const b of ban) {
+    const key = String(b.id);
+    if (!trangPage.has(key)) trangPage.set(key, { id: key, pageId: String(b.page_id), ten: b.ten || "", qua: new Set(), shop: new Set() });
+    const x = trangPage.get(key);
+    x.qua.add(b.qua);
+    if (b.pos_ma) { x.shop.add(shopCua(b.pos_ma)); theoShop.get(shopCua(b.pos_ma))?.page.push(key); }
+  }
+  return {
+    id: String(g.id), maGoc: g.ma_goc, ten: g.ten, moTa: g.mo_ta, soHieu: g.so_hieu,
+    thiTruong: [...theoShop.values()].map((t) => ({ ...t, page: [...new Set(t.page)] })),
+    page: [...trangPage.values()].map((p) => ({ ...p, qua: [...p.qua], shop: [...p.shop] })),
+  };
+}
+
+/** Món POS CHƯA thuộc gốc nào (chỗ chọn khi «Thêm thị trường»), gom theo shop. */
+export async function monPosChuaGan(pool, teamId) {
+  const r = await pool.query(
+    `SELECT s.ma, s.ten, s.ton_kho, k.market
+       FROM san_pham s
+       LEFT JOIN ket_noi_pos k ON k.team_id = s.team_id AND k.shop_id = split_part(s.ma, ':', 1)
+      WHERE s.team_id = $1 AND s.nguon = 'pos' AND s.ma_goc IS NULL
+      ORDER BY k.market NULLS LAST, s.ten, s.ma`,
+    [teamId],
+  );
+  return r.rows.map((m) => ({ posMa: m.ma, ten: m.ten, tonKho: m.ton_kho, shopId: shopCua(m.ma), thiTruong: m.market || null }));
+}
+
+/**
+ * GẮN một món POS vào sản phẩm gốc («Thêm thị trường» — hoặc thêm biến thể ở thị trường đã có).
+ * Từ chối: gốc không có · món không có/không phải món POS · món ĐÃ thuộc gốc khác (gỡ ở gốc kia trước —
+ * đổi chỗ lặng lẽ là kéo cả page đang bán món đó sang sản phẩm khác mà không ai hay).
+ */
+export async function ganMonPosVaoGoc(pool, teamId, id, posMa) {
+  const ma = gon(posMa);
+  if (!ma || !ma.includes(":")) throw new LoiSanPhamGoc("mã món POS phải có dạng <shop>:<biến thể>", "ma_pos_la");
+  const khach = await pool.connect();
+  try {
+    await khach.query("BEGIN");
+    const g = (await khach.query("SELECT ma_goc FROM san_pham_goc WHERE team_id = $1 AND id = $2", [teamId, id])).rows[0];
+    if (!g) throw new LoiSanPhamGoc("không có sản phẩm gốc này", "khong_co", 404);
+    const m = (await khach.query(
+      "SELECT id, ma_goc, nguon FROM san_pham WHERE team_id = $1 AND ma = $2 FOR UPDATE", [teamId, ma],
+    )).rows[0];
+    if (!m || m.nguon !== "pos") throw new LoiSanPhamGoc("không có món POS này trong danh mục đã kéo", "khong_co_mon", 404);
+    if (m.ma_goc && m.ma_goc !== g.ma_goc) {
+      throw new LoiSanPhamGoc(`món này đang thuộc sản phẩm «${m.ma_goc}» — gỡ ở đó trước`, "mon_thuoc_goc_khac", 409);
+    }
+    await khach.query("UPDATE san_pham SET ma_goc = $3, sua_luc = now() WHERE team_id = $1 AND id = $2", [teamId, m.id, g.ma_goc]);
+    await khach.query("COMMIT");
+    return { maGoc: g.ma_goc, posMa: ma, shopId: shopCua(ma), daCo: m.ma_goc === g.ma_goc };
+  } catch (e) {
+    await khach.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    khach.release();
+  }
+}
+
+/** GỠ một món POS khỏi sản phẩm gốc. Món không thuộc gốc này ⇒ 404 (không gỡ nhầm món của gốc khác). */
+export async function goMonPosKhoiGoc(pool, teamId, id, posMa) {
+  const ma = gon(posMa);
+  const r = await pool.query(
+    `UPDATE san_pham s SET ma_goc = NULL, sua_luc = now()
+       FROM san_pham_goc g
+      WHERE s.team_id = $1 AND g.team_id = $1 AND g.id = $2 AND s.ma = $3 AND s.nguon = 'pos' AND s.ma_goc = g.ma_goc
+      RETURNING g.ma_goc`,
+    [teamId, id, ma],
+  );
+  if (!r.rowCount) throw new LoiSanPhamGoc("món này không thuộc sản phẩm gốc này", "khong_thuoc", 404);
+  return { maGoc: r.rows[0].ma_goc, posMa: ma, shopId: shopCua(ma) };
 }
