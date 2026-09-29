@@ -134,9 +134,15 @@ Phân bố: có email 116/118, không trùng ⇒ khớp tài khoản theo email 
 (PIALPHA_GCC 6 · PIALPHA_EU 5 · PIALPHA_AUUS 2 · PIALPHA_SALE_ONLINE 7 · …; 18 trống), không trùng 3 team của hệ.
 Máy chủ v3 chưa có quyền đọc BigQuery (chỉ máy dev có tài khoản dịch vụ gcloud) ⇒ việc người: cấp một tài khoản dịch vụ
 CHỈ ĐỌC `HRM_Core` cho máy chủ, khoá vào kho khoá.
-[NEEDS CLARIFICATION: team HRM nào thuộc team nào của hệ — đoán theo tên: Tiểu Alpha ↔ PIALPHA_GCC, Auus ↔ PIALPHA_AUUS,
-Pialpha EU ↔ PIALPHA_EU; sale nằm ở PIALPHA_SALE_ONLINE/OFFLINE dùng chung hay chia theo team? Và BO/VANDON/CTV có được
-vào hệ không?]
+Người quyết chốt (29/09): ① ghép team đúng như đoán — Tiểu Alpha ↔ PIALPHA_GCC · Auus ↔ PIALPHA_AUUS · Pialpha EU ↔
+PIALPHA_EU — và đổi TÊN HIỂN THỊ team theo HRM (slug giữ nguyên); sale (PIALPHA_SALE_ONLINE/OFFLINE) DÙNG CHUNG cả 3 team
+⇒ tài khoản sale là thành viên cả 3 team, Hộp thư có lọc «cả 3 team»; ② BO · VANDON · CTV KHÔNG vào hệ; ③ **1 shop POS
+= 1 thị trường** ⇒ thị trường suy từ shop, không gõ tay.
+Đo prod 29/09 cho ③: lược đồ ĐÃ khoá luật này (`ket_noi_pos.market` · UNIQUE(team, market) · UNIQUE(team, shop_id), 002).
+14 kết nối = 7 shop × 2 team (`tieu-alpha` + team kỹ thuật): Saudi · UAE · Kuwait · Qatar · Oman · Bahrain · Taiwan; ở
+`tieu-alpha` CHỈ Kuwait bật. Auus · Pialpha EU: 0 kết nối POS. `page.thi_truong` gõ tay KHÔNG khớp tên POS: «KSA» 40 page
+(POS ghi «Saudi») · «Khác» 31 · trống 420 ⇒ thị trường của page lấy từ shop POS của sản phẩm page bán; cột gõ tay ngừng
+dùng (không xoá — đường lùi).
 
 **Model — màn đang hứa nhiều hơn máy làm.** Đo 29/09 (mã + prod):
 - Prod `cau_hinh_model` (tieu-alpha): chính `kimi-k2.6` · 0,30 · dự phòng `claude-haiku-4.5` · việc nền `deepseek-v4-flash` · 0,10.
@@ -183,7 +189,8 @@ vào hệ không?]
 | LL10 | Nhà mới cho 5 việc vận hành của `van-hanh` (Hệ còn sống: đối chiếu tin lỗi · tin bị lọc · diễn tập; Số liệu: chi phí từng tin; Page: nguồn nhận tin) | 🟨 | LL5 · LL6 — TRƯỚC LL8 |
 | LL11 | Kỹ năng → `san_pham_goc.kien_thuc` («hỏi size» cho SP có size), gỡ màn kỹ năng | 🟨 (đổi lời bot) | LL3 |
 | LL13 | Đích «Sản phẩm»: thêm thị trường = gắn 1 mã POS · gộp món POS nhiều shop thành 1 sản phẩm (máy gợi ý theo tên, người xác nhận) · nối 78 bản sao của page vào sản phẩm × thị trường · kéo danh mục cả 14 shop trước | 🟨 (dữ liệu bot đọc) | LL3 |
-| LL15 | HRM từ BigQuery (`HRM_Core.dim_employee`, chỉ đọc, mỗi ngày): tài khoản ↔ hồ sơ theo email · vai mặc định theo `comp_profile` · người nghỉ tự khoá · ghép team HRM ↔ team hệ · marketer theo sản phẩm × thị trường, page kế thừa | 🟨 (quyền đăng nhập) | tài khoản dịch vụ BQ cho máy chủ · câu hỏi ghép team ở 2d · LL13 |
+| LL15 | HRM từ BigQuery (`HRM_Core.dim_employee`, chỉ đọc, mỗi ngày): tài khoản ↔ hồ sơ theo email · MKT → Marketer, SALE → Sale thành viên cả 3 team · BO/VANDON/CTV không vào · người nghỉ tự khoá · tên team theo HRM · marketer theo sản phẩm × shop POS, page kế thừa | 🟨 (quyền đăng nhập) | tài khoản dịch vụ BQ chỉ đọc `HRM_Core` cho máy chủ · LL13 |
+| LL16 | Thị trường = shop POS: page lấy thị trường từ shop của sản phẩm nó bán · ngừng dùng `page.thi_truong` gõ tay (không xoá) · bật + kéo danh mục 6 shop còn lại | 🟨 (giá theo nước) | LL13 |
 | LL14 | Model: nối dự phòng vào đường chat v3 (`src/chat/model.js`, không phải bộ não) · ẩn «việc nền» tới khi có việc dùng · màn nói đúng đường nào đọc gì | 🟨 | LL6 |
 | LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`), sửa trên giao diện | 🟥 (đường bot, cạnh bộ não) | cutover / đợt tắt Botcake — phiếu riêng |
 
