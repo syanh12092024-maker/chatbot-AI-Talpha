@@ -309,8 +309,8 @@
     // CỤM (LL3): màn nằm trong cụm có đầu cụm mang tên ⇒ «Nhóm / Cụm / Màn».
     const dauCum = cho && cho.man.cum
       ? (cho.nhom.man || []).find((x) => x.cum === cho.man.cum && x.tenMenu) : null;
-    // Đầu cụm trùng tên cụm («Tất cả page») thì không lặp một tầng giống hệt trong đường dẫn.
-    const tangCum = dauCum && dauCum.tenMenu !== cho.man.ten ? dauCum : null;
+    // Tên cụm trùng tên màn («Tất cả page») hoặc trùng tên đích («Số liệu») thì không lặp một tầng giống hệt.
+    const tangCum = dauCum && dauCum.tenMenu !== cho.man.ten && dauCum.tenMenu !== cho.nhom.ten ? dauCum : null;
     const vungDuong = cho
       ? `<li>${esc(cho.nhom.ten)}</li>` +
         (tangCum ? `<li><a href="${esc(tangCum.duong)}">${esc(tangCum.tenMenu)}</a></li>` : "") +

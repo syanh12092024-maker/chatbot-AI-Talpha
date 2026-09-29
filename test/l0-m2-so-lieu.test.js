@@ -398,6 +398,25 @@ test("R3 · khách CHƯA được chấm đếm RIÊNG, không gộp vào tầng
   assert.equal(r.theoTang.reduce((a, t) => a + t.soKhach, 0), 1, "chỉ người ĐÃ chấm vào tầng");
 });
 
+test("R5 · LL5: khai TUỔI con số — lần chấm cuối và đơn mới nhất của CHÍNH team (án lệ #9)", async () => {
+  const { phanBoRuiRoHoan } = await import("../src/db/so-lieu.js");
+  await q("DELETE FROM khach WHERE team_id = $1", [tA]);
+  await themKhach(tA, "971500000301", "tot", 3, 0);
+  await q("UPDATE khach SET cham_hoan_luc = '2026-08-28T03:00:00Z' WHERE team_id = $1", [tA]);
+  // Team KHÁC chấm muộn hơn — không được lọt vào tuổi của team A.
+  // (Dọn ở `finally`: ca «team chưa có khách» của bộ này cần team B rỗng khách.)
+  await themKhach(tB, "971500000399", "tot", 3, 0);
+  try {
+    await q("UPDATE khach SET cham_hoan_luc = '2026-09-20T00:00:00Z' WHERE team_id = $1 AND so_dien_thoai = '971500000399'", [tB]);
+    const r = await phanBoRuiRoHoan(sb.pool, ctx);
+    assert.equal(r.tuoi.chamLuc, Date.parse("2026-08-28T03:00:00Z"), "lần chấm cuối phải là max(cham_hoan_luc) của team");
+    const donTeam = (await q("SELECT max(tao_luc) m FROM don_hang WHERE team_id = $1", [tA])).rows[0].m;
+    assert.equal(r.tuoi.donMoiNhat, donTeam ? new Date(donTeam).getTime() : null, "đơn mới nhất lấy ĐÚNG team, không lẫn team khác");
+  } finally {
+    await q("DELETE FROM khach WHERE team_id = $1 AND so_dien_thoai = '971500000399'", [tB]);
+  }
+});
+
 test("R4 · team chưa có khách nào → số 0 kèm VÌ SAO, và vai sale bị chặn", async () => {
   const { phanBoRuiRoHoan } = await import("../src/db/so-lieu.js");
   const r = await phanBoRuiRoHoan(sb.pool, ctxTrong);

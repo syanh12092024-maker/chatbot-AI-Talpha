@@ -16,6 +16,7 @@
 <header>
   <h1>Rủi ro hoàn hàng</h1>
   <span class="sub">Phân bố bốn tầng theo lằn ranh đề xuất — chưa phải chính sách, và chưa chặn ai.</span>
+  <span class="sub" id="tuoi"></span>
 </header>
 
 <main>
@@ -132,6 +133,11 @@ async function tai() {
   try {
     const d = await goi('/api/rui-ro-hoan');
     if (!d) return;
+    // LL5: số này tính tới đâu — đơn mới nhất và lần chấm cuối (án lệ #9: tuổi phép đo ≠ tuổi sự việc).
+    const ngay = (ms) => (Number.isFinite(ms) && ms ? new Date(ms).toLocaleDateString('vi-VN') : null);
+    const t = d.tuoi || {};
+    $('#tuoi').textContent = [ngay(t.donMoiNhat) && `Tính trên đơn tới ${ngay(t.donMoiNhat)}`,
+      ngay(t.chamLuc) ? `chấm lần cuối ${ngay(t.chamLuc)}` : (d.dem && d.dem.soDaCham ? '' : 'chưa chấm lần nào')].filter(Boolean).join(' · ');
     veBangTin(d);
     if (!d.theoTang || !d.dem.soDaCham) {
       $('#bangTang').innerHTML = emptyState({ icon: 'triangle-alert',

@@ -106,8 +106,14 @@ export async function manNguon(boiCanh) {
     try { pheu = await _docPheu(); } catch (e) { loiPheu = String(e?.message || e); }
   } else loiPheu = 'Chưa nối cầu sang tiến trình bot.';
 
+  // LL5 · 29/09: đơn MỚI NHẤT trong hệ — nói số này tính tới đâu (prod 29/09: lát nạp 28/08, chưa có job kéo đơn).
+  const donMoiNhat = don.reduce((m, d) => {
+    const t = d.tao_luc == null ? NaN : Number(d.tao_luc instanceof Date ? d.tao_luc.getTime() : d.tao_luc);
+    return Number.isFinite(t) && t > m ? t : m;
+  }, 0) || null;
   return {
     teamId: bc.teamId,
+    donMoiNhat,
     khoang: KHOANG,
     chamTran: chamTran
       ? { co: true, tran: TRAN_DOC,

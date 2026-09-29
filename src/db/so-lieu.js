@@ -429,6 +429,13 @@ export async function phanBoRuiRoHoan(pool, ctx, { toiThieuDonKet = 2 } = {}) {
         GROUP BY 1, 2`,
       [ctx.teamId],
     );
+    // LL5 · 29/09: TUỔI của con số (án lệ #9 — tuổi phép đo ≠ tuổi sự việc). Hai mốc khác nhau: job chấm
+    // chạy lúc nào, và đơn mới nhất nó được chấm trên là ngày nào. Prod 29/09: cả hai là lát nạp 28/08.
+    const tuoi = (await khach.query(
+      `SELECT (SELECT max(cham_hoan_luc) FROM khach WHERE team_id = $1) AS cham_luc,
+              (SELECT max(tao_luc) FROM don_hang WHERE team_id = $1)     AS don_moi`,
+      [ctx.teamId],
+    )).rows[0] || {};
     const tong = r.rows.reduce((a, x) => a + x.so_khach, 0);
     const gom = (loc) => r.rows.filter(loc).reduce(
       (a, x) => ({
@@ -454,6 +461,10 @@ export async function phanBoRuiRoHoan(pool, ctx, { toiThieuDonKet = 2 } = {}) {
         })),
       })),
       nhomSoDon: NHOM,
+      tuoi: {
+        chamLuc: tuoi.cham_luc ? new Date(tuoi.cham_luc).getTime() : null,
+        donMoiNhat: tuoi.don_moi ? new Date(tuoi.don_moi).getTime() : null,
+      },
       luat: {
         maHoan: [4, 5, 6, 7],
         khongCo8: "8 = packing, một bước TIẾN — KHÔNG tính là hoàn",

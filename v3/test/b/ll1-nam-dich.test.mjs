@@ -88,11 +88,12 @@ test('N5 · mỗi vai thấy đúng tập màn như trước — trừ «Sản p
   // (cờ `moTuManKhac`, 28/09) vì mỗi page đã có tab sản phẩm. Nay Sản phẩm là một ĐÍCH — giữ
   // cờ ấy thì đích Sản phẩm của quản trị chỉ còn «Kỹ năng theo sản phẩm», tức bấm vào đích
   // lõi mà không thấy sản phẩm nào.
-  const sp = mh.MAN.find((m) => m.duong === '/san-pham');
+  // Mỗi màn THÊM VÀO tập tới-được phải khai tên phiếu đã thêm nó — không thêm lặng lẽ.
+  const THEM_CO_CHU_Y = { '/san-pham': 'LL1', '/nguon-khach': 'LL5 (có dữ liệu)', '/rui-ro-hoan': 'LL5 (có dữ liệu)' };
   for (const [ten, truoc] of Object.entries(HIEN_TRUOC)) {
     const v = VAI[ten];
     const mongDoi = new Set(truoc);
-    if (sp.vai.includes(v)) mongDoi.add('/san-pham');
+    for (const d of Object.keys(THEM_CO_CHU_Y)) if (mh.MAN.find((m) => m.duong === d).vai.includes(v)) mongDoi.add(d);
     assert.deepEqual(hienCua(v), [...mongDoi].sort(), `vai ${ten}`);
   }
 });

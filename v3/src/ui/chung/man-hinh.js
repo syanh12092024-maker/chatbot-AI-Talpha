@@ -165,6 +165,8 @@ const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false, canId =
 export const CUM = Object.freeze({
   'danh-sach-page': { ten: 'Tất cả page' },
   'luat-chung': { ten: 'Luật chung' },
+  // LL5 · 29/09: Số liệu = MỘT dòng thanh bên, bốn tab (bản vẽ bảng 3a–3c: Tổng quan · Chi phí AI · Khách).
+  'so-lieu': { ten: 'Số liệu' },
 });
 const trongCum = (cum, nhan, m) => ({ ...m, cum, nhanCum: nhan });
 
@@ -212,10 +214,13 @@ export const MAN = Object.freeze([
   dat(hieuQua, 'So hai bản kịch bản', 'page', 'Chưa đủ mẫu thì nói chưa kết luận', true, true),
 
   // ④ SỐ LIỆU — để ĐỌC, không để ra lệnh.
-  dat(baoCao, 'Đơn và tỉ lệ chốt', 'so-lieu', 'Tách hai luồng, không gộp một tổng'),
-  dat(chiPhi, 'Chi phí AI', 'so-lieu', 'Tiền model theo page'),
-  dat(nguonKhach, 'Khách vào từ đâu', 'so-lieu', 'Hai luồng đơn và chỗ khách rơi', true, true),
-  dat(ruiRo, 'Rủi ro hoàn hàng', 'so-lieu', 'Bốn tầng, đọc cột đã chấm sẵn', true, true),
+  // LL5 · 29/09: «Khách vào từ đâu» và «Rủi ro hoàn hàng» thôi `thuNghiem` — prod có dữ liệu cho cả hai
+  // (`don_hang` 123.629 đơn · `khach.tang_hoan` 89.484 khách), cờ ẩn đặt hồi máy dev còn trống. Lưu ý đúng
+  // của hai màn: số là lát nạp 28/08, chưa có job kéo đơn định kỳ (nợ N-KEODON · phiếu LL17).
+  trongCum('so-lieu', 'Tổng quan', dat(baoCao, 'Đơn và tỉ lệ chốt', 'so-lieu', 'Tách hai luồng, không gộp một tổng')),
+  trongCum('so-lieu', 'Chi phí AI', dat(chiPhi, 'Chi phí AI', 'so-lieu', 'Tiền model theo page')),
+  trongCum('so-lieu', 'Nguồn khách', dat(nguonKhach, 'Khách vào từ đâu', 'so-lieu', 'Hai luồng đơn và chỗ khách rơi', true)),
+  trongCum('so-lieu', 'Rủi ro hoàn', dat(ruiRo, 'Rủi ro hoàn hàng', 'so-lieu', 'Bốn tầng, đọc cột đã chấm sẵn', true)),
 
   // ⑤ CÀI ĐẶT — vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
   // GD3 · 25/09: màn ĐẦU TIÊN của mục Cài đặt — người mới mở nó để biết còn thiếu việc gì,

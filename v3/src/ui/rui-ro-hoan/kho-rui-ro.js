@@ -143,6 +143,8 @@ export async function manRuiRo(boiCanh) {
 
 /** Dựng màn từ phân bố ĐÃ GOM của người A — tầng này không đụng một dòng `khach` nào. */
 function dungTuPhanBo(bc, r) {
+  // LL5: tuổi con số — tầng A trả sẵn (`phanBoRuiRoHoan#tuoi`).
+  const tuoi = { chamLuc: r?.tuoi?.chamLuc ?? null, donMoiNhat: r?.tuoi?.donMoiNhat ?? null };
   const theoTang = TANG.map((t) => {
     const x = (r?.theoTang || []).find((y) => y.tang === t.ma) || {};
     return {
@@ -167,6 +169,7 @@ function dungTuPhanBo(bc, r) {
   };
   return {
     teamId: bc.teamId,
+    tuoi,
     dem: {
       soKhachDoc: daCham + chuaCham,
       soDaCham: daCham,
@@ -258,8 +261,15 @@ function dungTuCot(bc, khach, luiVi) {
 
   const tangLa = (ma) => theoTang.find((t) => t.ma === ma) || { soKhach: 0 };
 
+  // LL5: tuổi — đường lùi chỉ có dòng khách: ngày chấm mới nhất; ngày đơn không đọc ở đường này.
+  const chamMax = khach.reduce((m, k) => {
+    const t = k.cham_hoan_luc == null ? NaN : Number(k.cham_hoan_luc instanceof Date ? k.cham_hoan_luc.getTime() : Date.parse(k.cham_hoan_luc) || k.cham_hoan_luc);
+    return Number.isFinite(t) && t > m ? t : m;
+  }, 0);
+  const tuoi = { chamLuc: chamMax || null, donMoiNhat: null };
   return {
     teamId: bc.teamId,
+    tuoi,
     dem: {
       soKhachDoc: khach.length,
       soDaCham: daCham.length,

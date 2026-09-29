@@ -19,6 +19,7 @@
 <header>
   <h1>Khách vào từ đâu</h1>
   <span class="sub">Hai luồng bán chạy song song và chỉ gặp nhau ở POS.</span>
+  <span class="sub" id="tuoi"></span>
   <span class="sp"></span>
   <span id="khoang"></span>
 </header>
@@ -124,6 +125,8 @@ async function tai() {
   try {
     const d = await goi('/api/nguon-khach');
     if (!d) return;
+    // LL5: số này tính tới đâu — đơn mới nhất trong hệ (án lệ #9: tuổi phép đo ≠ tuổi sự việc).
+    $('#tuoi').textContent = d.donMoiNhat ? `Tính trên đơn tới ${new Date(d.donMoiNhat).toLocaleDateString('vi-VN')}` : '';
     if (d.khoang) {
       $('#khoang').innerHTML = `<span class="badge" title="${esc(d.khoang.noi || '')}">Khoảng đo: ${esc(d.khoang.chu)}</span>`;
     }

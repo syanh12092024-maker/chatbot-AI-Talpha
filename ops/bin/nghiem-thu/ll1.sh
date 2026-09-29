@@ -44,9 +44,10 @@ for (const [k, v] of Object.entries(VAI)) {
 }
 console.log(dong.join(" "));' 2>/dev/null | tail -1)
 echo "   menu theo vai (vai:đích:số màn hiện): $kq"
-echo "$kq" | grep -q "QUAN_TRI:hop-thu,san-pham,page,so-lieu,cai-dat:18" \
+# 18 của LL1 + 2 của LL5 (Nguồn khách · Rủi ro hoàn thôi ẩn — có dữ liệu). DANH SÁCH do ca N5 canh, mỗi màn thêm khai phiếu.
+echo "$kq" | grep -q "QUAN_TRI:hop-thu,san-pham,page,so-lieu,cai-dat:20" \
   && echo "$kq" | grep -q "SALE:hop-thu:2"
-ket "⑤menu-thật-theo-vai" $? "quản trị năm đích 18 màn · sale chỉ Hộp thư 2 màn"
+ket "⑤menu-thật-theo-vai" $? "quản trị năm đích 20 màn tới được (18 LL1 + 2 LL5) · sale chỉ Hộp thư 2 màn"
 
 # ⑥ hợp đồng: bảng đích có trong 03, kế hoạch giao diện trỏ LL1
 a=$(grep -c "^## Màn cũ đi đâu" docs/v3/03-MAN-HINH.md)

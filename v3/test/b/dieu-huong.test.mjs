@@ -183,13 +183,16 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   // LL1 · 29/09: +1 «Sản phẩm & kho» (bỏ cờ mở-từ-màn-khác — nó là đầu của đích Sản phẩm) ⇒ 18.
   // LL3 · 29/09: −2 — «Kịch bản của page» và «Câu trả lời sẵn» thành TAB trong cụm (Tất cả page ·
   // Luật chung); vẫn trong gói, vẫn tới được (ca C2 của `ll3-cum.test.mjs`) ⇒ 16.
-  assert.equal(hienRa, 16, `thanh bên đang vẽ ${hienRa} màn`);
-  assert.equal(an, 11, 'bảy màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + hai màn '
+  // LL5 · 29/09: Số liệu thành MỘT cụm (4 tab) và hai màn Nguồn khách · Rủi ro hoàn thôi `thuNghiem` ⇒
+  // thanh bên 16 → 15 (Chi phí AI rời thanh bên, lên tab); ẩn 11 → 12 (5 chưa dùng được + 1 cần id + 1 mở
+  // từ màn khác + 5 trong cụm).
+  assert.equal(hienRa, 15, `thanh bên đang vẽ ${hienRa} màn`);
+  assert.equal(an, 12, 'năm màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + năm màn '
     + 'TRONG CỤM phải ẩn khỏi thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
   // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp
   // một con số là ngày nào đó một màn hỏng lặng lẽ đội lốt màn cần id.
-  assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 7, 'bảy màn chưa dùng được');
+  assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 5, 'năm màn chưa dùng được (LL5: Nguồn khách · Rủi ro hoàn có dữ liệu)');
   assert.equal(mh.MAN.filter((m) => m.canId).length, 1, 'đúng một màn cần tham số để mở');
   assert.deepEqual(mh.MAN.filter((m) => m.moTuManKhac).map((m) => m.ten),
     ['Đoạn chữ gửi cho AI'], 'màn mở từ màn khác phải khai ra, không trôi (LL1: «Sản phẩm & kho» thôi)');
