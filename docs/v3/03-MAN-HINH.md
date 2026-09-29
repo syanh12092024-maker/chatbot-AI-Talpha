@@ -13,7 +13,7 @@
 | **Sản phẩm** | Marketer · Quản trị | Chung (kiến thức · hỏi size · ảnh · kịch bản tầng sản phẩm) · Theo thị trường (1 shop POS = 1 thị trường · đúng một món POS · giá bậc theo tiền tệ · marketer từ HRM · kịch bản tầng nước) · Page đang bán · Lịch sử · Gộp món POS nhiều shop thành một sản phẩm |
 | **Page** | Marketer | Danh sách (thị trường suy từ shop, marketer kế thừa, cột «Còn thiếu», bật bot có trần) · một page: SP & giá (kế thừa, ghi đè có chủ ý) · Lời bot · Ảnh · Trả lời sẵn · Kỹ thuật · Lịch sử · «Bật được chưa» · **Thử hỏi bot** · Luật chung: Luật · Chính sách/FAQ/Phản đối · Trả lời sẵn (một kho) · Đề xuất chờ duyệt. Đã làm ở LL3: thanh bên hai dòng (cụm «Tất cả page» — tab Kịch bản; cụm «Luật chung» — tab Luật · Trả lời sẵn); Chính sách/FAQ/Phản đối vẫn ở khối ④ trang một page |
 | **Số liệu** | Chủ team | Tổng quan (hai luồng tách) · Chi phí AI (page · model · từng tin) · Khách (nguồn · chỗ rơi · rủi ro hoàn bốn tầng). Đã làm ở LL5: một dòng thanh bên, bốn tab Tổng quan · Chi phí AI · Nguồn khách · Rủi ro hoàn; hai màn sau thôi ẩn và in «tính trên đơn tới ngày…» (prod: lát 28/08 tới khi có LL17) |
-| **Cài đặt** | Quản trị | Bắt đầu · Kết nối (Pancake · POS · WhatsApp · HRM) · Model · Hệ còn sống (đối chiếu tin lỗi · tin bị lọc · diễn tập) · Người và team (người từ HRM; ghép marketer POS chỉ đọc) · Nhật ký |
+| **Cài đặt** | Quản trị | Bắt đầu · Kết nối (Pancake · POS · WhatsApp · HRM) · Model · Hệ còn sống (đối chiếu tin lỗi · tin bị lọc · diễn tập) · Người và team (người từ HRM; ghép marketer POS chỉ đọc) · Nhật ký. Đã làm ở LL6: một dòng thanh bên, sáu tab theo thứ tự này; màn Model gắn trạng thái THẬT từng vai (chính «Đang dùng» · dự phòng «Chưa nối» · nền «Chưa việc nào dùng») |
 
 ## Màn cũ đi đâu — không chức năng nào bị bỏ sót
 

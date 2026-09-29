@@ -312,8 +312,10 @@
   body > header a { color: var(--text-link); font-size: var(--text-sm); font-weight: var(--weight-medium); }
   /* LL3 · thanh tab CỤM — khung (`dieu-huong.js`) chèn vào cuối đầu trang; nằm ĐÈ lên vạch dưới đầu
      trang để tab đang mở gạch chân đúng vạch ấy (bản vẽ «Số liệu», «Luật chung»). */
-  body > header > .tabs[data-cum] { grid-column: 1 / -1; margin: var(--space-3) 0 calc(-1 * var(--space-3) - 1px);
-                                     border-bottom: 0; }
+  /* Đặt lại cả ba thứ quy tắc «sau `.sp` là phần phải» áp lên (grid-row · justify-self · gap): đầu trang có `.sp`
+     (màn Model) thì thanh tab bị đẩy lên góc phải, đè huy hiệu — ảnh chụp LL6, 29/09. */
+  body > header > .tabs[data-cum] { grid-column: 1 / -1; grid-row: auto; justify-self: stretch; gap: var(--space-5);
+                                     margin: var(--space-3) 0 calc(-1 * var(--space-3) - 1px); border-bottom: 0; }
   body > header > .tabs[data-cum] a.tab { color: var(--text-muted); font-size: var(--text-sm); }
   body > header > .tabs[data-cum] a.tab[aria-current="page"] { color: var(--text-primary); }
 

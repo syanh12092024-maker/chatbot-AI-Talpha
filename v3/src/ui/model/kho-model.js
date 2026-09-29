@@ -52,8 +52,24 @@ export const TEN_VAI_TRO = Object.freeze({
 
 export const GIAI_THICH_VAI_TRO = Object.freeze({
   chinh: 'Model trả lời khách. Đây là chỗ tiền chảy.',
-  du_phong: 'Chạy khi nhà chính hỏng hoặc hết tiền. BẮT BUỘC khác nhà với model chính.',
-  nen: 'Phân loại, tóm tắt — không nói với khách, chọn model rẻ được.',
+  // LL6 · 29/09: bản cũ viết «Chạy khi nhà chính hỏng…» ở thì hiện tại — máy chưa làm điều đó (xem dưới).
+  du_phong: 'Dành cho lúc nhà chính hỏng hoặc hết tiền. BẮT BUỘC khác nhà với model chính.',
+  nen: 'Dành cho phân loại, tóm tắt — không nói với khách, chọn model rẻ được.',
+});
+
+/**
+ * ĐƯỜNG DÙNG THẬT của từng vai — màn nói ĐIỀU MÁY LÀM, không hứa theo tên vai (LL6 · CR-28-09c §7).
+ *
+ * Đo mã 29/09: đường trả lời khách v3 gọi `src/chat/model.js#layModel` với `vaiTro: 'chinh'` DUY NHẤT
+ * (`handler-v3.js`); `admin-v3/operations.js` gọi mặc định (chính). Không nơi nào đọc `du_phong`/`nen`;
+ * lớp chuyển dự phòng `v3/src/model/du-phong.js#goiCoDuPhong` không nằm trên đường chat (nợ §9
+ * N-DUPHONGCHATTHAT). Ca `ll6-cai-dat.test.mjs` K2 đo lại các câu này trên MÃ — nối dự phòng (LL14) mà
+ * không sửa bảng này là đỏ.
+ */
+export const DUONG_DUNG_VAI_TRO = Object.freeze({
+  chinh: { dung: true, chu: 'Đang dùng', noi: 'Bot v3 đọc ô này mỗi lượt trả lời. Bot cũ lấy model từ tệp cấu hình của máy chủ.' },
+  du_phong: { dung: false, chu: 'Chưa nối', noi: 'Đã lưu, nhưng đường trả lời khách CHƯA tự chuyển sang khi model chính hỏng.' },
+  nen: { dung: false, chu: 'Chưa việc nào dùng', noi: 'Đang lưu, nhưng chưa việc nào đọc ô này.' },
 });
 
 /* ─────────────────────────── đọc ─────────────────────────── */
@@ -89,6 +105,7 @@ export async function manModel(boiCanh) {
     canhBao: tt.canhBao,
     tenVaiTro: TEN_VAI_TRO,
     giaiThichVaiTro: GIAI_THICH_VAI_TRO,
+    duongDung: DUONG_DUNG_VAI_TRO,
   };
 }
 

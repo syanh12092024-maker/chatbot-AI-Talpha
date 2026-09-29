@@ -186,8 +186,10 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   // LL5 · 29/09: Số liệu thành MỘT cụm (4 tab) và hai màn Nguồn khách · Rủi ro hoàn thôi `thuNghiem` ⇒
   // thanh bên 16 → 15 (Chi phí AI rời thanh bên, lên tab); ẩn 11 → 12 (5 chưa dùng được + 1 cần id + 1 mở
   // từ màn khác + 5 trong cụm).
-  assert.equal(hienRa, 15, `thanh bên đang vẽ ${hienRa} màn`);
-  assert.equal(an, 12, 'năm màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + năm màn '
+  // LL6 · 29/09: Cài đặt thành MỘT cụm (6 tab) ⇒ thanh bên 15 → 10; ẩn 12 → 17 (5 chưa dùng được + 1 cần id
+  // + 1 mở từ màn khác + 10 trong cụm).
+  assert.equal(hienRa, 10, `thanh bên đang vẽ ${hienRa} màn`);
+  assert.equal(an, 17, 'năm màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + mười màn '
     + 'TRONG CỤM phải ẩn khỏi thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
   // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp

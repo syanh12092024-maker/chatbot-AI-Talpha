@@ -167,6 +167,8 @@ export const CUM = Object.freeze({
   'luat-chung': { ten: 'Luật chung' },
   // LL5 · 29/09: Số liệu = MỘT dòng thanh bên, bốn tab (bản vẽ bảng 3a–3c: Tổng quan · Chi phí AI · Khách).
   'so-lieu': { ten: 'Số liệu' },
+  // LL6 · 29/09: Cài đặt = MỘT dòng, sáu tab theo thứ tự bản vẽ (bảng 4).
+  'cai-dat': { ten: 'Cài đặt' },
 });
 const trongCum = (cum, nhan, m) => ({ ...m, cum, nhanCum: nhan });
 
@@ -225,12 +227,13 @@ export const MAN = Object.freeze([
   // ⑤ CÀI ĐẶT — vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
   // GD3 · 25/09: màn ĐẦU TIÊN của mục Cài đặt — người mới mở nó để biết còn thiếu việc gì,
   // thay vì tự dò 12 bước trên 7 màn.
-  dat(caiDatTeam, 'Cài đặt team', 'cai-dat', 'Năm việc làm một lần, và việc nào còn thiếu'),
-  dat(team, 'Người và team', 'cai-dat', 'Thành viên, vai, gán page'),
-  dat(ketNoi, 'Kết nối', 'cai-dat', 'Tài khoản Pancake và kho hàng'),
-  dat(model, 'Model AI & khoá', 'cai-dat', 'Nhà model, khoá, bảng giá'),
-  dat(sucKhoe, 'Hệ còn sống không', 'cai-dat', 'Chín đèn'),
-  dat(nhatKy, 'Ai đã sửa gì', 'cai-dat', 'Không sửa được, không xoá được'),
+  // LL6 · 29/09: thứ tự theo bản vẽ — Bắt đầu · Kết nối · Model · Hệ còn sống · Người và team · Nhật ký.
+  trongCum('cai-dat', 'Bắt đầu', dat(caiDatTeam, 'Cài đặt team', 'cai-dat', 'Năm việc làm một lần, và việc nào còn thiếu')),
+  trongCum('cai-dat', 'Kết nối', dat(ketNoi, 'Kết nối', 'cai-dat', 'Tài khoản Pancake và kho hàng')),
+  trongCum('cai-dat', 'Model', dat(model, 'Model AI & khoá', 'cai-dat', 'Nhà model, khoá, bảng giá')),
+  trongCum('cai-dat', 'Hệ còn sống', dat(sucKhoe, 'Hệ còn sống không', 'cai-dat', 'Chín đèn')),
+  trongCum('cai-dat', 'Người và team', dat(team, 'Người và team', 'cai-dat', 'Thành viên, vai, gán page')),
+  trongCum('cai-dat', 'Nhật ký', dat(nhatKy, 'Ai đã sửa gì', 'cai-dat', 'Không sửa được, không xoá được')),
 ]);
 
 /** Màn đầu cụm CHUẨN — màn đầu tiên của mỗi cụm theo thứ tự sổ. */

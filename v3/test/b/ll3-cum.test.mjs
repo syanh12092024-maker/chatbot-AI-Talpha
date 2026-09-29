@@ -65,7 +65,8 @@ test('C5 · khung vẽ tab cụm dưới đầu trang: đọc mã khung + hệ k
   const css = fs.readFileSync(path.join(GOC_UI, 'chung/kieu.css'), 'utf8');
   // Đòi đúng QUY TẮC ĐẶT CHỖ (trải hết lưới đầu trang) — chuỗi `.tabs[data-cum]` còn ở quy tắc màu chữ, đo
   // chuỗi trần thì gỡ quy tắc đặt chỗ vẫn xanh (đảo-vá M5, 29/09).
-  assert.match(css, /body > header > \.tabs\[data-cum\] \{ grid-column: 1 \/ -1;/, 'hệ kiểu thiếu quy tắc đặt thanh tab cụm');
+  assert.match(css, /body > header > \.tabs\[data-cum\] \{ grid-column: 1 \/ -1; grid-row: auto; justify-self: stretch;/,
+    'hệ kiểu thiếu quy tắc đặt thanh tab cụm (kể cả đặt lại grid-row/justify-self — đầu trang có `.sp` thì tab bị đẩy sang phải)');
   // Mọi màn trong cụm phải có <header> ngay dưới <body> — khung chèn tab vào đó; thiếu thì tab không bao giờ
   // hiện. Đường → thư mục dò qua hằng `DUONG_TRANG` của từng màn; màn KHÔNG dò ra là ĐỎ (không lặng lẽ bỏ qua).
   const thuMucCua = new Map();

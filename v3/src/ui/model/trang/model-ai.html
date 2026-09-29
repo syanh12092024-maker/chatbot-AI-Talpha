@@ -107,13 +107,16 @@ function veBangTin() {
 }
 
 /** Một vai trò model = một hàng cài đặt: nhãn + giải thích bên trái, ô chọn + giá bên phải. */
-function hangVai(khoa, nhan, giaiThich, dangChon) {
+function hangVai(khoa, nhan, giaiThich, dangChon, duongDung) {
   const coKhoa = (nha) => !!(D.khoa[nha] && D.khoa[nha].daCo);
   const chonDuoc = D.bangGia.filter((m) => coKhoa(m.nha) || m.ma === dangChon.ma); // đang chọn thì luôn hiện, dù mất khoá
   const gia = D.bangGia.find((m) => m.ma === dangChon.ma);
   const thieu = !coKhoa(dangChon.nha);
+  // LL6: trạng thái THẬT của vai (máy có đọc ô này không) — không hứa theo tên vai.
+  const huyHieu = duongDung ? ' ' + statusBadge(duongDung.dung ? 'ready' : 'needs_attention', { label: duongDung.chu }) : '';
+  const ghiChu = duongDung ? `<div class="setting-desc">${esc(duongDung.noi)}</div>` : '';
   return `<div class="setting-row">
-    <div><div class="setting-name">${esc(nhan)}</div><div class="setting-desc">${esc(giaiThich)}</div></div>
+    <div><div class="setting-name">${esc(nhan)}${huyHieu}</div><div class="setting-desc">${esc(giaiThich)}</div>${ghiChu}</div>
     <div class="setting-control">
       <label class="sr-only" for="vai-${esc(khoa)}">${esc(nhan)}</label>
       <select id="vai-${esc(khoa)}" data-vai="${esc(khoa)}" ${SUA ? '' : 'disabled'} ${thieu ? 'aria-invalid="true"' : ''}>
@@ -134,10 +137,10 @@ function veCauHinh() {
   $('#nutLuu').disabled = !SUA;
 
   $('#baVai').innerHTML =
-    hangVai('chinh', D.tenVaiTro.chinh, D.giaiThichVaiTro.chinh, D.dangDung.chinh)
-    + hangVai('duPhong', D.tenVaiTro.du_phong, D.giaiThichVaiTro.du_phong, D.dangDung.duPhong)
-    + hangVai('nen', D.tenVaiTro.nen, D.giaiThichVaiTro.nen, D.dangDung.nen)
-    + hangNgauNhien('nn', 'Độ ngẫu nhiên — model chính', '0 = trả lời ổn định, giống nhau mỗi lần. 1 = nói đa dạng hơn nhưng khó lường.', D.doNgauNhien)
+    hangVai('chinh', D.tenVaiTro.chinh, D.giaiThichVaiTro.chinh, D.dangDung.chinh, (D.duongDung || {}).chinh)
+    + hangVai('duPhong', D.tenVaiTro.du_phong, D.giaiThichVaiTro.du_phong, D.dangDung.duPhong, (D.duongDung || {}).du_phong)
+    + hangVai('nen', D.tenVaiTro.nen, D.giaiThichVaiTro.nen, D.dangDung.nen, (D.duongDung || {}).nen)
+    + hangNgauNhien('nn', 'Độ ngẫu nhiên — model chính', '0 = trả lời ổn định, giống nhau mỗi lần. 1 = nói đa dạng hơn nhưng khó lường. Bot v3 gửi số này; bot cũ không gửi.', D.doNgauNhien)
     + hangNgauNhien('nnn', 'Độ ngẫu nhiên — việc nền', 'Nên để thấp để kết quả lặp lại được.', D.doNgauNhienNen);
 
   for (const id of ['nn', 'nnn']) {
