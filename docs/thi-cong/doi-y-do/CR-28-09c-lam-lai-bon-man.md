@@ -165,12 +165,19 @@ page) vì mới một team nghiệp vụ có POS. Tách theo page chỉ phủ m�
 - **19 tài khoản marketer**; một marketer đổ đơn vào nhiều shop (vd một tài khoản: Saudi · UAE · Kuwait · Qatar). Marketer
   khớp được đều là **PIALPHA_EU** và đang đổ vào Saudi · UAE · Qatar · Kuwait ⇒ «shop dùng chung nhiều team» là CÓ THẬT hôm
   nay, dù trong hệ Pialpha EU chưa khai kết nối POS nào.
-- Khớp tự động với HRM: theo email 372 đơn · theo tên (bỏ dấu, trùng khít) 1.120 đơn ⇒ **4/19 tài khoản · 1.492 đơn (25%)**.
-  Lý do: POS dùng gmail/hotmail cá nhân và tên Facebook, HRM giữ email công ty. ⇒ cần bảng ghép **tài khoản POS ↔ hồ sơ
-  HRM** làm tay MỘT lần (15 tài khoản), máy gợi ý theo email/tên. Marketer đổi team: tính theo team vào NGÀY đơn
-  (`HRM_Core.fact_employee_team_history`, 106 dòng).
+- ~~Khớp tự động theo email/tên: 4/19 tài khoản · 25% đơn ⇒ ghép tay 15 tài khoản~~ — SAI HƯỚNG (người quyết sửa 29/09):
+  **bảng ghép đã có ở HRM, lưu trên BigQuery** `levelup-465304.PIALPHA_ALL_Dataset.dim_person_map` (TABLE; bản ở
+  `PIALPHA_GCC/EU/AUUS_Dataset` là VIEW `SELECT *` của nó) — `person_id` = id marketer trên POS (UUID) → `emp_code` →
+  `HRM_Core.dim_employee.team_code`; `map_status` confirmed · needs_hcns · unmapped · da_nghi; cập nhật tới 28/09.
+  Đo cùng tập 14 ngày (6.019 đơn): **17/19 tài khoản confirmed · 5.933 đơn (98,6%)** — Pialpha GCC 3.557 · EU 2.250 ·
+  AUUS 126. Còn lại «chờ gán team»: 82 đơn không marketer · 3 đơn marketer `needs_hcns` · 1 đơn marketer chưa có trong
+  bảng. Theo shop: Saudi GCC 2.712/EU 1.281 · UAE EU 842/GCC 567 · Kuwait GCC 202/EU 23 · Qatar EU 104/GCC 6 ·
+  Taiwan AUUS 126/GCC 24 · Oman GCC 43 · Bahrain GCC 3 (+ chờ gán mỗi shop 6–36) ⇒ 5/7 shop đang dùng chung ≥2 team.
+  Hệ ĐỌC bảng này, không dựng ô ghép tay riêng (hai nguồn sẽ lệch). Marketer đổi team: tính theo ngày đơn
+  (`HRM_Core.fact_employee_team_history`, 106 dòng; 2/17 marketer đã đổi team 1 lần).
 - UTM (`p_utm_*`) có trên **2.019 đơn — 0 đơn trong số đó có `conversation_id`** ⇒ luật 2 khớp dữ liệu. Đơn không hội thoại
-  mà cũng không UTM: 113 — luật cũ (`suyNguon`: thiếu hội thoại ⇒ trang bán hàng) sẽ gửi WhatsApp nhầm cho nhóm này.
+  mà cũng không UTM: 113 — **người quyết 29/09: đó là đơn sale nhập tay, KHÔNG xác nhận WhatsApp**. Luật cũ (`suyNguon`:
+  thiếu hội thoại ⇒ trang bán hàng) sẽ gửi nhầm cho nhóm này ⇒ nguồn đơn thành BA: messenger · Ladi (UTM) · sale nhập tay.
   Bahrain · Oman · Taiwan: 0 đơn UTM trong 14 ngày.
 
 **Kéo đơn hôm nay không chạy** (đo mã + prod 29/09): `docDon` chỉ có bộ ca gọi; worker v3 chỉ chạy hàng tin; crontab
@@ -228,10 +235,10 @@ theo (nước, SĐT) — hôm nay khoá khách là (team, nước, SĐT) (A7-1, 
 | LL10 | Nhà mới cho 5 việc vận hành của `van-hanh` (Hệ còn sống: đối chiếu tin lỗi · tin bị lọc · diễn tập; Số liệu: chi phí từng tin; Page: nguồn nhận tin) | 🟨 | LL5 · LL6 — TRƯỚC LL8 |
 | LL11 | Kỹ năng → `san_pham_goc.kien_thuc` («hỏi size» cho SP có size), gỡ màn kỹ năng | 🟨 (đổi lời bot) | LL3 |
 | LL13 | Đích «Sản phẩm»: thêm thị trường = gắn 1 mã POS · gộp món POS nhiều shop thành 1 sản phẩm (máy gợi ý theo tên, người xác nhận) · nối 78 bản sao của page vào sản phẩm × thị trường · kéo danh mục cả 14 shop trước | 🟨 (dữ liệu bot đọc) | LL3 |
-| LL15 | HRM từ BigQuery (`HRM_Core.dim_employee`, chỉ đọc, mỗi ngày): tài khoản ↔ hồ sơ theo email · MKT → Marketer, SALE → Sale thành viên cả 3 team · BO/VANDON/CTV không vào · người nghỉ tự khoá · tên team theo HRM · marketer theo sản phẩm × shop POS, page kế thừa | 🟨 (quyền đăng nhập) | tài khoản dịch vụ BQ chỉ đọc `HRM_Core` cho máy chủ · LL13 |
+| LL15 | HRM từ BigQuery (`HRM_Core.dim_employee`, chỉ đọc, mỗi ngày): tài khoản ↔ hồ sơ theo email · MKT → Marketer, SALE → Sale thành viên cả 3 team · BO/VANDON/CTV không vào · người nghỉ tự khoá · tên team theo HRM · marketer theo sản phẩm × shop POS, page kế thừa | 🟨 (quyền đăng nhập) | tài khoản dịch vụ BQ chỉ đọc `HRM_Core` + `PIALPHA_ALL_Dataset.dim_person_map` cho máy chủ · LL13 |
 | LL16 | Thị trường = shop POS: page lấy thị trường từ shop của sản phẩm nó bán · ngừng dùng `page.thi_truong` gõ tay (không xoá) · bật + kéo danh mục 6 shop còn lại | 🟨 (giá theo nước) | LL13 |
 | LL14 | Model: nối dự phòng vào đường chat v3 (`src/chat/model.js`, không phải bộ não) · ẩn «việc nền» tới khi có việc dùng · màn nói đúng đường nào đọc gì | 🟨 | LL6 |
-| LL17 | Đơn dùng chung nhiều team: job kéo đơn định kỳ MỘT lần mỗi shop (hôm nay không job nào chạy) · chống trùng toàn hệ theo `ma_pos` (migration đổi UNIQUE — prod 0 trùng) · team chủ = team HRM của marketer vào ngày đơn · bảng ghép tài khoản marketer POS ↔ hồ sơ HRM (19 tài khoản, máy tự khớp 4) · ô «chờ gán team» · nguồn WhatsApp = có UTM (thay «không hội thoại») · khoá khách (nước, SĐT) · chỉ team chủ gửi WhatsApp/ghi ngược POS | 🟥 (đơn · tin gửi khách) | LL15 (HRM nối máy chủ) · TRƯỚC khi bật WhatsApp xác nhận hoặc khi team thứ hai khai shop |
+| LL17 | Đơn dùng chung nhiều team: job kéo đơn định kỳ MỘT lần mỗi shop (hôm nay không job nào chạy) · chống trùng toàn hệ theo `ma_pos` (migration đổi UNIQUE — prod 0 trùng) · team chủ = team HRM của marketer vào ngày đơn · đọc bảng ghép marketer POS ↔ HRM có sẵn `PIALPHA_ALL_Dataset.dim_person_map` (98,6% đơn; chỉ đọc, sửa ở HRM) · ô «chờ gán team» · nguồn WhatsApp = có UTM (thay «không hội thoại»; đơn sale nhập tay không gửi) · khoá khách (nước, SĐT) · chỉ team chủ gửi WhatsApp/ghi ngược POS | 🟥 (đơn · tin gửi khách) | LL15 (HRM nối máy chủ) · TRƯỚC khi bật WhatsApp xác nhận hoặc khi team thứ hai khai shop |
 | LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`), sửa trên giao diện | 🟥 (đường bot, cạnh bộ não) | cutover / đợt tắt Botcake — phiếu riêng |
 
 Cỡ: 9 phiếu. Để so: sóng UI-HT (4 phiếu, cùng loại việc) xong trong một ngày làm việc của dây chuyền này.
