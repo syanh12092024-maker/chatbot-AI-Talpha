@@ -1,6 +1,6 @@
 # MỞ VAN — VE1b + VE4b: màn thôi hứa «bot dùng ngay» (CR-28-09c)
 
-> **TRẠNG THÁI: ĐANG MỞ — người quyết gật 29/09: «oke»** (trả lời «Deploy bản sửa này lên prod ngay … Gõ «deploy» là mình làm»).
+> **TRẠNG THÁI: XONG · GIỮ (29/09 12:53 prod) — người quyết gật 29/09: «oke»** (trả lời «Deploy bản sửa này lên prod ngay … Gõ «deploy» là mình làm»).
 > Phiếu: `phieu-VE1b-VE4b.md`. Lượt trước: `phat-hanh-20260929-ve3-ve4.md` (prod `9472153`).
 
 ## 1 · Mở cái gì
@@ -42,3 +42,24 @@ Bậc ② — prod, đường nội bộ. Hai màn đổi CÂU CHỮ cho ngườ
 cd /opt/aicloser && git checkout -f -B vao-ui-v3-17-09 9472153 && systemctl restart aicloser-v3    # < 1 phút
 ```
 Mất dữ liệu: không — lượt này chỉ đổi câu chữ và thêm một trường đọc.
+
+## 8 · Lệnh đã gõ
+
+Giờ prod (CEST), 29/09:
+1. commit giấy `c5dbacd` · đẩy nhánh `9472153..c5dbacd`
+2. mốc lùi `/var/backups/aicloser/truoc-ve1b4b-20260929T103912Z/commit.txt` = `9472153`
+3. prod `checkout -f -B … origin/vao-ui-v3-17-09` → `c5dbacd` · 0 tệp theo dõi sửa tại chỗ · migrate **áp mới 0 · tổng 27**
+4. `systemctl restart aicloser-v3` lúc **12:39:14** — chỉ dịch vụ này
+
+## 9 · Số đo
+
+**+1′ (12:40:25) · +5′ (12:43:30) · +15′ (12:53:36), prod:** ba dịch vụ active · `Started` 0 · 1 · 0 ở cả ba mốc · lỗi mới
+**0/0/0** · `ActiveEnterTimestamp` hai dịch vụ không chạm y nguyên (28/09 11:25:42 · 11:22:22) · `/health` 129 · `/api/bo-luat`
+401 · `/api/san-pham` 401 · đối chứng 404 · trên đĩa: `hieu-luc` 1 · `veBotDocKt` 2 · `botGhepTuDuLieu` 1.
+
+## 10 · Kết · nợ · ai gật
+
+- Kết: **GIỮ** (prod, 29/09 12:53). Mốc +1 ngày: người quyết mở Sản phẩm › Chung và Luật chung › Luật — thấy cảnh báo
+  «Bot CHƯA đọc…» (đúng với prod: `V3_RAP_PROMPT_BAT` vắng).
+- Nợ: không mới.
+- Người gật: người quyết, 29/09 — «oke».

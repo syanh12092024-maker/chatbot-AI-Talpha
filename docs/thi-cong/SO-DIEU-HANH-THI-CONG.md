@@ -2726,3 +2726,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · VE1b + VE4b → 🔎 CHỜ DEPLOY — màn Sản phẩm (tab Chung) và Luật thôi hứa «bot dùng ngay / có hiệu lực ngay» khi prod chưa bật ghép lời từ dữ liệu (`V3_RAP_PROMPT_BAT` vắng — đo /proc)
   một nguồn `botGhepTuDuLieu()` (true·false·null) · câu «bot chạy không có quy tắc cứng» sai mọi chế độ (`prompts.js#khoiBoLuat` lùi CORE) đã sửa cả thước · đảo-vá 6/6 + 8/8 · npm test 2.313 ca 0 đỏ
   · commit b0b32b2 4b64551 · nhật ký docs/thi-cong/nhat-ky/phieu-VE1b-VE4b.md
+- 29/09 · PHÁT HÀNH VE1b + VE4b → ✅ GIỮ — prod `9472153 → c5dbacd`, 0 migration (27), 0 gói, chỉ restart `aicloser-v3` (12:39:14); hai màn thôi hứa «bot dùng ngay» khi prod chưa ghép lời từ dữ liệu
+  cửa vào npm test 2.313 ca 0 đỏ (đo riêng, cùng mã) · cổng 35 xanh / 12 nợ cũ trùng tên · mốc +1′/+5′/+15′ lỗi 0
+  · commit c5dbacd · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260929-ve1b-ve4b.md
