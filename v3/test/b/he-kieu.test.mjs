@@ -430,6 +430,8 @@ test("HK15 · màn ĐÃ DI TRÚ không mọc lại CSS riêng — và danh sách
     "van-hanh/van-hanh.html",
     // 28/09 · UI-HT2 (CR-28-09): bàn hội thoại — ba cột, mọi kiểu ở `kieu.css`.
     "ban-hoi-thoai/ban-hoi-thoai.html",
+    // 29/09 · VE4: Luật chung › «Chính sách · FAQ · Phản đối» — màn mới sinh ra đã ở hệ kiểu.
+    "khoi-chung/khoi-chung.html",
   ];
   const UI = path.join(GOC, "v3/src/ui");
   const loi = [];

@@ -39,8 +39,8 @@ test('K1 · quản trị ở /bo-luat: năm đích đúng thứ tự bản vẽ,
   // Tab CỤM «Luật chung» vào đầu trang (tầng 3) — không lặp hàng 2.
   const tab = veTabCum(d(VAI.QUAN_TRI), '/bo-luat');
   assert.match(tab, /data-cum="luat-chung"/);
-  // «Đề xuất chờ duyệt» khai `an` và KHÔNG `trongCum` (man-hinh.js) — từ LL3 nó không phải tab của cụm.
-  assert.deepEqual([...tab.matchAll(/>([^<]+)<\/a>/g)].map((x) => x[1]), ['Luật', 'Trả lời sẵn']);
+  // VE4 · 29/09 (bản vẽ 2d): bốn tab — «Chính sách · FAQ · Phản đối» mới, «Đề xuất chờ duyệt» thôi thử nghiệm.
+  assert.deepEqual([...tab.matchAll(/>([^<]+)<\/a>/g)].map((x) => x[1]), ['Luật', 'Chính sách · FAQ · Phản đối', 'Trả lời sẵn', 'Đề xuất chờ duyệt']);
 });
 
 test('K2 · Số liệu và Cài đặt là MỘT cụm ⇒ hàng 2 chính là các tab của cụm, KHÔNG vẽ lại trong trang', () => {

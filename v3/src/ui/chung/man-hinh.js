@@ -30,6 +30,7 @@ import * as promptPage from '../prompt-page/index.js';
 import * as kichBan from '../kich-ban/index.js';
 import * as aiDeXuat from '../ai-de-xuat/index.js';
 import * as lop0 from '../lop-0-dong/index.js';
+import * as khoiChung from '../khoi-chung/index.js';
 import * as thuVienAnh from '../thu-vien-anh/index.js';
 import * as sanPham from '../san-pham/index.js';
 import * as lenChay from '../len-chay/index.js';
@@ -215,6 +216,8 @@ export const MAN = Object.freeze([
   trongCum('danh-sach-page', 'Kịch bản', dat(kichBan, 'Kịch bản của page', 'page', 'Lời bot nói riêng trên từng page')),
   // LL3: «Luật chung» = một cụm — luật · trả lời sẵn · đề xuất chờ duyệt (bản vẽ bảng 2d).
   trongCum('luat-chung', 'Luật', dat(boLuat, 'Quy tắc chung mọi page', 'page', 'Sửa là cả team đổi cách nói')),
+  // VE4 · 29/09: bản vẽ 2d — Luật · Chính sách/FAQ/Phản đối · Trả lời sẵn · Đề xuất chờ duyệt (đúng thứ tự tab).
+  trongCum('luat-chung', 'Chính sách · FAQ · Phản đối', dat(khoiChung, 'Chính sách · FAQ · Phản đối', 'page', 'Ba khối bot trích khi khách hỏi đúng chủ đề — mọi page')),
   trongCum('luat-chung', 'Trả lời sẵn', dat(lop0, 'Câu trả lời sẵn', 'page', 'Trả theo từ khoá, không tốn tiền')),
   dat(lenChay, 'Đưa sản phẩm lên chạy', 'page', 'Sáu chặng, mỗi chặng một cửa kiểm', true, true),
   // 28/09: RA KHỎI THANH BÊN. Là công cụ chẩn đoán của MỘT page; trang một page trỏ sang nó
@@ -222,7 +225,8 @@ export const MAN = Object.freeze([
   dat(promptPage, 'Đoạn chữ gửi cho AI', 'page', 'Xem đúng thứ AI đang đọc', true, false, false,
     { thay: motPage.DUONG_TRANG, loiVao: ['mot-page/kho-mot-page.js'] }),
   dat(thuVienAnh, 'Ảnh gửi khách', 'page', 'Ảnh gắn nhãn theo chủ đề', true, true),
-  trongCum('luat-chung', 'Đề xuất chờ duyệt', dat(aiDeXuat, 'Gợi ý từ AI', 'page', 'Phải duyệt mới áp được', true, true)),
+  // VE4 · 29/09: thôi «thử nghiệm» — bản vẽ 2d cho nó thành tab «Đề xuất chờ duyệt» (rỗng thì nói rỗng, đề xuất tới khi có BH5).
+  trongCum('luat-chung', 'Đề xuất chờ duyệt', dat(aiDeXuat, 'Gợi ý từ AI', 'page', 'Phải duyệt mới áp được', true)),
   dat(hieuQua, 'So hai bản kịch bản', 'page', 'Chưa đủ mẫu thì nói chưa kết luận', true, true),
 
   // ④ SỐ LIỆU — để ĐỌC, không để ra lệnh.

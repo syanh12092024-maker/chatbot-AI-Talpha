@@ -95,7 +95,8 @@ test('P4 · trang (VE2 · bản vẽ 2c): ba cột, bảy tab — và ĐỦ vi�
     ['bật/tắt bot', /\/api\/page-bot\/\$\{encodeURIComponent\(ID\)\}\/bot`/], ['giao bot', /\/api\/page-bot\/\$\{encodeURIComponent\(ID\)\}\/giao`/],
     ['thiết lập', /\/api\/page-bot\/\$\{encodeURIComponent\(ID\)\}\/\$\{duong\}`/], ['nội dung', /\/api\/page\/\$\{encodeURIComponent\(ID\)\}\/noi-dung`/],
     ['kịch bản lưu-là-chạy', /goi\(`\/api\/kich-ban\/page\/\$\{encodeURIComponent\(ID\)\}\/luu-chay`, \{/], ['lưu sản phẩm', /\/api\/anh-san-pham\/san-pham\//], ['ảnh', /\/api\/anh-san-pham\/anh\//],
-    ['nối món POS', /\/api\/anh-san-pham\/pos\//], ['khối chung', /\/api\/anh-san-pham\/khoi-chung/],
+    // VE4: khối chung SỬA ở Luật chung › «Chính sách · FAQ · Phản đối» — trang một page chỉ còn tóm tắt + lối đi.
+    ['nối món POS', /\/api\/anh-san-pham\/pos\//], ['khối chung (lối sang Luật chung)', /href="\/khoi-chung"/],
     ['nguồn nhận tin (LL10)', /\/van-hanh-v3\?tab=pages/], ['giá gõ cứng', /function veGiaGoCung/],
   ]) assert.match(html, re, `mất việc «${viec}» khi dựng lại màn`);
   // Chỗ chưa có đường nói RÕ chưa có — không vẽ ô thử giả.

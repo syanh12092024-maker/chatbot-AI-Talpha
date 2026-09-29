@@ -68,6 +68,7 @@ import {
 } from './ui/bo-luat/index.js';
 import { taoRouterDieuHuong } from './ui/chung/router-dieu-huong.js';
 import { lopKhung } from './ui/chung/khung-may-chu.js';
+import { taoRouterKhoiChung } from './ui/khoi-chung/index.js';
 import { teamCuaNguoi } from './auth/kho-nguoi-dung.js';
 import { menuCua } from './ui/chung/man-hinh.js';
 import { datDocSanSang as datDocSanSangDai, datDemTeam } from './ui/chung/trang-thai.js';
@@ -643,6 +644,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   app.use(taoRouterDieuHuong());  //   /chung/dieu-huong.js · /api/dieu-huong (menu chung)
   app.use(taoRouterVanHanh(vanHanh));
   app.use(taoRouterAnhSanPham(vanHanh || {})); //  /api/anh-san-pham/* — ảnh sản phẩm, đẩy sang bot (CR-28-09b · MN4)
+  app.use(taoRouterKhoiChung());  //   /khoi-chung — tab «Chính sách · FAQ · Phản đối» của Luật chung (VE4; đọc/ghi qua /api/anh-san-pham/khoi-chung)
   app.use(taoRouterDieuPhoi());   //   /dieu-phoi · /viec/:id · /api/dieu-phoi/*
   app.use(taoRouterCauHinhTeam()); //  /cau-hinh-team · /api/team/*
   app.use(taoRouterPageBot());    //   /page-bot · /api/page-bot/*

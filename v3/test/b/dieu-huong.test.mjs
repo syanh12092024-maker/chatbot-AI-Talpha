@@ -190,13 +190,16 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   // + 1 mở từ màn khác + 10 trong cụm).
   // LL10 · 29/09: «Hội thoại và đơn» thành «Vận hành», rời Hộp thư sang tab của cụm Cài đặt ⇒ 10 → 9; ẩn 17 → 18.
   // LL11 · 29/09: «Kỹ năng theo sản phẩm» ra khỏi menu (khái niệm bỏ, nội dung sang kiến thức sản phẩm) ⇒ 9 → 8; ẩn 18 → 19.
+  // VE4 · 29/09: cụm Luật chung theo bản vẽ 2d — +1 màn «Chính sách · FAQ · Phản đối» (tab) và «Gợi ý từ AI» thôi
+  // `thuNghiem`, thành tab «Đề xuất chờ duyệt» ⇒ thanh bên giữ 8; ẩn 19 → 20 (5 chưa dùng được + 1 cần id + 1 mở từ màn
+  // khác + 13 trong cụm).
   assert.equal(hienRa, 8, `thanh bên đang vẽ ${hienRa} màn`);
-  assert.equal(an, 19, 'sáu màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + mười một màn '
+  assert.equal(an, 20, 'năm màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + mười ba màn '
     + 'TRONG CỤM phải ẩn khỏi thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
   // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp
   // một con số là ngày nào đó một màn hỏng lặng lẽ đội lốt màn cần id.
-  assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 6, 'sáu màn ẩn (LL5: Nguồn khách · Rủi ro hoàn có dữ liệu; LL11: + Kỹ năng)');
+  assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 5, 'năm màn ẩn (LL5: Nguồn khách · Rủi ro hoàn có dữ liệu; LL11: + Kỹ năng; VE4: − Gợi ý từ AI)');
   assert.equal(mh.MAN.filter((m) => m.canId).length, 1, 'đúng một màn cần tham số để mở');
   assert.deepEqual(mh.MAN.filter((m) => m.moTuManKhac).map((m) => m.ten),
     ['Đoạn chữ gửi cho AI'], 'màn mở từ màn khác phải khai ra, không trôi (LL1: «Sản phẩm & kho» thôi)');

@@ -39,7 +39,7 @@ import {
   themAnh, suaNhanAnh, boAnh, xepAnh, LoiAnhSanPham,
 } from "../../../../src/products/anh-san-pham.js";
 import { taoBuocDayBot } from "./router.js";
-import { luuKhoiChung, batBuocGiuKhoiChung, LoiKhoiChung } from "../../../../src/products/khoi-chung.js";
+import { luuKhoiChung, docKhoiChung, batBuocGiuKhoiChung, LoiKhoiChung } from "../../../../src/products/khoi-chung.js";
 import { dsMonPos, noiMonPos, LoiNoiPos } from "../../../../src/products/noi-pos.js";
 
 export const DUOI_THEO_KIEU = Object.freeze({
@@ -157,6 +157,18 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
       return { sanPhamId: n.sanPhamId, truoc: { pos_ma: n.truoc }, sau: { pos_ma: n.posMa }, ra: n };
     });
     s.json({ ok: true, ...kq });
+  }));
+
+  // VE4 · 29/09: cửa ĐỌC ba khối của team — tab «Chính sách · FAQ · Phản đối» của Luật chung (bản vẽ 2d). Đặt CÙNG router
+  // với cửa ghi để hưởng CÙNG rào ở trên. `giu`: team này có đang giữ bộ khối của bot không — màn khoá ô sửa và nói lý do
+  // TRƯỚC khi người ta gõ, thay vì để bấm lưu rồi mới nhận 403/409.
+  r.get("/api/anh-san-pham/khoi-chung", wrap(async (q, s) => {
+    const bc = q.boiCanh;
+    const kc = await docKhoiChung(pool, bc.teamId);
+    let giu = { ok: true, viSao: null };
+    try { await batBuocGiuKhoiChung(pool, bc.teamId); }
+    catch (e) { if (e instanceof LoiKhoiChung) giu = { ok: false, viSao: e.message }; else throw e; }
+    s.json({ ok: true, ...kc, giu });
   }));
 
   // BA KHỐI DÙNG CHUNG (MN7) — Chính sách · FAQ · Phản đối. Cùng khuôn: lưu → đẩy bot → đọc lại

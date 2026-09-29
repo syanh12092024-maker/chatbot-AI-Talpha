@@ -25,6 +25,9 @@ const DUONG_TRUOC = ['/ai-de-xuat', '/ban-hoi-thoai', '/bao-cao', '/bo-luat', '/
   '/chi-phi', '/dieu-phoi', '/hieu-qua', '/ho-so-khach', '/ket-noi', '/kich-ban', '/ky-nang', '/len-chay',
   '/lop-0-dong', '/model-ai', '/nguon-khach', '/nhat-ky', '/page', '/page-bot', '/prompt-page', '/rui-ro-hoan',
   '/san-pham', '/suc-khoe', '/thu-vien-anh', '/trang-chu', '/van-hanh-v3'];
+// Đường THÊM sau LL1 — mỗi đường khai phiếu đã thêm nó (thêm lặng lẽ là thước này đỏ).
+const DUONG_THEM = { '/khoi-chung': 'VE4 · 29/09 (tab «Chính sách · FAQ · Phản đối» của Luật chung — trình sửa chuyển từ trang một page)' };
+const DUONG_NAY = [...DUONG_TRUOC, ...Object.keys(DUONG_THEM)].sort();
 const HIEN_TRUOC = {
   QUAN_TRI: ['/ban-hoi-thoai', '/bao-cao', '/bo-luat', '/cai-dat-team', '/cau-hinh-team', '/chi-phi', '/dieu-phoi',
     '/ket-noi', '/kich-ban', '/ky-nang', '/lop-0-dong', '/model-ai', '/nhat-ky', '/page-bot', '/suc-khoe',
@@ -44,7 +47,7 @@ const DICH = {
   // LL10 · 29/09: `/van-hanh-v3` («Vận hành») sang Cài đặt — duyệt đơn của sale đã ở Hộp thư (LL2).
   'hop-thu': ['/trang-chu', '/ban-hoi-thoai', '/dieu-phoi', '/ho-so-khach'],
   'san-pham': ['/san-pham', '/ky-nang'],
-  page: ['/page-bot', '/page', '/kich-ban', '/bo-luat', '/lop-0-dong', '/len-chay', '/prompt-page',
+  page: ['/page-bot', '/page', '/kich-ban', '/bo-luat', '/khoi-chung', '/lop-0-dong', '/len-chay', '/prompt-page',
     '/thu-vien-anh', '/ai-de-xuat', '/hieu-qua'],
   'so-lieu': ['/bao-cao', '/chi-phi', '/nguon-khach', '/rui-ro-hoan'],
   'cai-dat': ['/cai-dat-team', '/cau-hinh-team', '/ket-noi', '/model-ai', '/suc-khoe', '/van-hanh-v3', '/nhat-ky'],
@@ -67,8 +70,8 @@ test('N2 · biểu tượng của mọi đích CÓ THẬT trong bộ `ui.js` —
   assert.deepEqual(thieu, [], `biểu tượng không có trong bộ: ${thieu.join(', ')}`);
 });
 
-test('N3 · KHÔNG đường nào đổi hay mất — so DANH SÁCH với bản chụp trước LL1', () => {
-  assert.deepEqual(mh.MAN.map((m) => m.duong).sort(), DUONG_TRUOC);
+test('N3 · KHÔNG đường nào đổi hay mất — so DANH SÁCH với bản chụp trước LL1 (+ đường thêm có khai phiếu)', () => {
+  assert.deepEqual(mh.MAN.map((m) => m.duong).sort(), DUONG_NAY);
 });
 
 test('N4 · mỗi màn ngồi đúng đích của `03-MAN-HINH.md`', () => {
@@ -81,7 +84,7 @@ test('N4 · mỗi màn ngồi đúng đích của `03-MAN-HINH.md`', () => {
     }
   }
   assert.deepEqual(lech, []);
-  assert.deepEqual(Object.values(DICH).flat().sort(), DUONG_TRUOC, 'bảng đích phải phủ ĐỦ mọi đường');
+  assert.deepEqual(Object.values(DICH).flat().sort(), DUONG_NAY, 'bảng đích phải phủ ĐỦ mọi đường');
 });
 
 test('N5 · mỗi vai thấy đúng tập màn như trước — trừ «Sản phẩm & kho» hiện lại ở đích Sản phẩm', () => {
@@ -90,7 +93,8 @@ test('N5 · mỗi vai thấy đúng tập màn như trước — trừ «Sản p
   // cờ ấy thì đích Sản phẩm của quản trị chỉ còn «Kỹ năng theo sản phẩm», tức bấm vào đích
   // lõi mà không thấy sản phẩm nào.
   // Mỗi màn THÊM VÀO tập tới-được phải khai tên phiếu đã thêm nó — không thêm lặng lẽ.
-  const THEM_CO_CHU_Y = { '/san-pham': 'LL1', '/nguon-khach': 'LL5 (có dữ liệu)', '/rui-ro-hoan': 'LL5 (có dữ liệu)' };
+  const THEM_CO_CHU_Y = { '/san-pham': 'LL1', '/nguon-khach': 'LL5 (có dữ liệu)', '/rui-ro-hoan': 'LL5 (có dữ liệu)',
+    '/khoi-chung': 'VE4 (tab Chính sách · FAQ · Phản đối)', '/ai-de-xuat': 'VE4 (thôi thử nghiệm — tab «Đề xuất chờ duyệt», bản vẽ 2d)' };
   const BO_CO_CHU_Y = { '/ky-nang': 'LL11 (khái niệm kỹ năng bỏ — «hỏi size» sang kiến thức sản phẩm)' };
   for (const [ten, truoc] of Object.entries(HIEN_TRUOC)) {
     const v = VAI[ten];

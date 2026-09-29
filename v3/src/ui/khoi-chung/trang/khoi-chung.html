@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chính sách · FAQ · Phản đối — AI Closer</title>
+<!-- VE4 · 29/09 (CR-28-09c): tab «Chính sách · FAQ · Phản đối» của Luật chung (bản vẽ 2d). Trình sửa chuyển từ trang một
+     page (MN7) — một khối CẢ TEAM không nên sửa ở trang của MỘT page. Đọc/ghi qua đúng cửa `/api/anh-san-pham/khoi-chung`
+     (ghi: lưu → đẩy bot → đọc lại → nhật ký, một giao dịch; phiên bản chống đè). KHÔNG CSS riêng (HK15). -->
+<link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
+<script src="/chung/ui.js"></script>
+</head>
+<body>
+<header>
+  <h1>Chính sách · FAQ · Phản đối</h1>
+  <span class="sub">Ba khối bot trích khi khách hỏi đúng chủ đề — dùng chung MỌI page của team. Lưu là bot dùng ngay; mỗi lần lưu là một bản.</span>
+</header>
+
+<main>
+  <div id="bang-tin" aria-live="polite"></div>
+  <p class="field-hint duoi-4">Viết bằng đúng ngôn ngữ muốn bot nói với khách. Nội dung chép nguyên từ Sheet cũ (MN7), giống từng ký tự — gồm cả
+    câu tiếng Tagalog cho khách OFW, có chủ ý.</p>
+  <div id="khoi"><div class="empty-state"><span class="skeleton"></span></div></div>
+</main>
+
+<script>
+const { esc, button, setBusy, alert: canhBao, toast, confirmDialog } = window.UI;
+const $ = (s) => document.querySelector(s);
+const DUONG = '/api/anh-san-pham/khoi-chung';
+
+async function goi(tuyChon = {}) {
+  const r = await fetch(DUONG, { credentials: 'same-origin', ...tuyChon,
+    headers: { 'Content-Type': 'application/json', 'X-V3-Action': '1', ...(tuyChon.headers || {}) } });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
+  let d = null;
+  try { d = await r.json(); } catch { /* null */ }
+  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
+  return d;
+}
+
+const NHOM = [
+  { k: 'policies', ten: 'Chính sách', cot: [['topic', 'Hạng mục', 'input'], ['content', 'Nội dung (bot nói nguyên ý)', 'textarea']] },
+  { k: 'faqs', ten: 'Câu hỏi thường gặp', cot: [['q', 'Câu hỏi', 'input'], ['a', 'Trả lời', 'textarea']] },
+  { k: 'objections', ten: 'Xử lý phản đối', cot: [['type', 'Loại', 'input'], ['says', 'Khách thường nói', 'input'], ['reply', 'Cách trả lời', 'textarea']] },
+];
+let KC = null;     // bản đọc về (phiên bản, người sửa, giữ)
+let SUA = null;    // bản đang sửa (chưa lưu) — vẽ lại không làm mất chữ
+
+const soDong = (v) => Math.min(12, Math.max(2, String(v || '').split('\n').reduce((n, d) => n + Math.max(1, Math.ceil(d.length / 70)), 0)));
+
+function ve() {
+  const duoc = !!(KC && KC.giu && KC.giu.ok) && !KC.chuaCo;
+  const bang = (n) => `
+    <section class="section table-wrap" aria-labelledby="t-${n.k}">
+      <div class="table-toolbar"><h2 id="t-${n.k}">${esc(n.ten)}</h2><span class="table-count">${(SUA[n.k] || []).length} dòng</span></div>
+      <table class="data-table bang-sua"><thead><tr>${n.cot.map((c) => `<th scope="col">${esc(c[1])}</th>`).join('')}${duoc ? '<th scope="col" class="actions"><span class="sr-only">Bỏ</span></th>' : ''}</tr></thead><tbody>
+        ${(SUA[n.k] || []).map((dong, j) => `<tr>${n.cot.map(([k, nhan, loai]) => `<td>${loai === 'textarea'
+          ? `<textarea rows="${soDong(dong[k])}" data-o="${n.k}|${j}|${k}" aria-label="${esc(nhan)}" ${duoc ? '' : 'disabled'}>${esc(dong[k] || '')}</textarea>`
+          : `<input type="text" data-o="${n.k}|${j}|${k}" value="${esc(dong[k] || '')}" aria-label="${esc(nhan)}" ${duoc ? '' : 'disabled'}>`}</td>`).join('')}
+          ${duoc ? `<td class="actions">${button('Bỏ', { size: 'sm', variant: 'ghost', data: { bo: `${n.k}|${j}` } })}</td>` : ''}</tr>`).join('')
+          || `<tr><td colspan="${n.cot.length + 1}" class="text-muted">Chưa có dòng nào — bot không nói gì về «${esc(n.ten.toLowerCase())}».</td></tr>`}
+      </tbody></table>
+      ${duoc ? `<p class="duoi-2">${button('+ Thêm dòng', { size: 'sm', variant: 'ghost', data: { them: n.k } })}</p>` : ''}
+    </section>`;
+  $('#khoi').innerHTML = `
+    ${KC.chuaCo ? canhBao({ level: 'warning', title: 'Máy chủ chưa áp bản cập nhật cơ sở dữ liệu cho khối này', body: 'Chưa sửa được ở đây.' }) : ''}
+    ${KC.giu && !KC.giu.ok ? canhBao({ level: 'warning', title: 'Team này không sửa được bộ khối của bot', body: KC.giu.viSao || '' }) : ''}
+    <p class="meta duoi-4">Bản ${esc(String(KC.phienBan || 0))}${KC.nguoiSua ? ` · sửa bởi ${esc(KC.nguoiSua)}` : ''}${KC.suaLuc ? ` · ${esc(new Date(KC.suaLuc).toLocaleString('vi-VN'))}` : ''}</p>
+    ${NHOM.map(bang).join('')}
+    ${duoc ? `<div class="form-actions">${button('Lưu — mọi page dùng ngay', { variant: 'primary', size: 'sm', id: 'nutLuu' })}</div>` : ''}`;
+  $('#khoi').querySelectorAll('[data-o]').forEach((e) => e.addEventListener('input', () => {
+    const [k, j, cot] = e.dataset.o.split('|'); SUA[k][Number(j)][cot] = e.value;
+    if (e.tagName === 'TEXTAREA') e.rows = soDong(e.value);
+  }));
+  $('#khoi').querySelectorAll('[data-bo]').forEach((b) => b.addEventListener('click', () => {
+    const [k, j] = b.dataset.bo.split('|'); SUA[k].splice(Number(j), 1); ve();
+  }));
+  $('#khoi').querySelectorAll('[data-them]').forEach((b) => b.addEventListener('click', () => {
+    const n = NHOM.find((x) => x.k === b.dataset.them);
+    (SUA[n.k] = SUA[n.k] || []).push(Object.fromEntries(n.cot.map(([k]) => [k, '']))); ve();
+  }));
+  const nut = $('#nutLuu');
+  if (nut) nut.addEventListener('click', luu);
+}
+
+async function luu() {
+  const nut = $('#nutLuu');
+  const ok = await confirmDialog({ title: 'Lưu ba khối dùng chung?', body: 'Bot sẽ nói theo nội dung này ở MỌI page ngay khi lưu xong.', confirmLabel: 'Lưu — đổi mọi page' });
+  if (!ok) return;
+  setBusy(nut, true);
+  try {
+    const kq = await goi({ method: 'POST', body: JSON.stringify({ noiDung: SUA, phienBan: KC.phienBan || 0 }) });
+    if (kq.dongBo && kq.dongBo.ok === false) toast(`Đã lưu bản ${kq.phienBan} vào dữ liệu — máy này đang khoá ghi sang bot: ${kq.dongBo.ghiChu}`, { level: 'error', duration: 8000 });
+    else if (kq.dongBo && kq.dongBo.dangDung === false) toast(`Đã lưu bản ${kq.phienBan}. Bot CHƯA dùng: máy chủ còn lấy ba khối này từ Google Sheet.`, { level: 'error', duration: 8000 });
+    else toast(`Đã lưu bản ${kq.phienBan} — bot đã nhận.`);
+    await nap();
+  } catch (e) {
+    // LỖI ⇒ giữ nguyên chữ đang gõ để sửa rồi lưu lại (409 = có người vừa lưu bản khác).
+    setBusy(nut, false);
+    $('#bang-tin').innerHTML = `<div class="duoi-4">${canhBao({ level: 'error', title: 'Chưa lưu được', body: e.message })}</div>`;
+  }
+}
+
+async function nap() {
+  try {
+    KC = await goi();
+    if (!KC) return;
+    SUA = JSON.parse(JSON.stringify(KC.noiDung || {}));
+    $('#bang-tin').innerHTML = '';
+    ve();
+  } catch (e) {
+    $('#khoi').innerHTML = canhBao({ level: 'error', title: 'Không đọc được ba khối dùng chung', body: e.message });
+  }
+}
+nap();
+</script>
+<script src="/chung/dieu-huong.js"></script>
+</body>
+</html>

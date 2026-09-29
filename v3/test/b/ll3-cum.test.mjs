@@ -38,12 +38,14 @@ test('C1 · sổ cụm tự nhất quán: cụm dùng đều có khai · mỗi c
 test('C2 · Page của quản trị: thanh bên HAI dòng (Tất cả page · Luật chung), phần còn lại là tab', () => {
   assert.deepEqual(thanhBen(VAI.QUAN_TRI, 'page'), ['Tất cả page', 'Luật chung']);
   assert.deepEqual(tabCua(VAI.QUAN_TRI, 'page', 'danh-sach-page'), ['Tất cả page', 'Kịch bản']);
-  assert.deepEqual(tabCua(VAI.QUAN_TRI, 'page', 'luat-chung'), ['Luật', 'Trả lời sẵn'],
-    '«Đề xuất chờ duyệt» còn `thuNghiem` (0 đề xuất) nên chưa lên tab — luật cũ của nó giữ nguyên');
+  // VE4 · 29/09 (bản vẽ 2d): bốn tab — «Chính sách · FAQ · Phản đối» mới, «Đề xuất chờ duyệt» thôi `thuNghiem`.
+  assert.deepEqual(tabCua(VAI.QUAN_TRI, 'page', 'luat-chung'), ['Luật', 'Chính sách · FAQ · Phản đối', 'Trả lời sẵn', 'Đề xuất chờ duyệt']);
 });
 
 test('C3 · tên cụm CHỈ trên đầu cụm chuẩn — marketer (không mở «Tất cả page») thấy đúng tên màn của mình', () => {
-  assert.deepEqual(thanhBen(VAI.MARKETER, 'page'), ['Kịch bản của page', 'Câu trả lời sẵn']);
+  // VE4: màn hiện được ĐẦU TIÊN của cụm Luật chung với marketer nay là «Chính sách · FAQ · Phản đối» (đứng trước «Trả
+  // lời sẵn» theo bản vẽ) — marketer không mở «Luật» nên dòng mang tên màn của nó, không mang tên cụm.
+  assert.deepEqual(thanhBen(VAI.MARKETER, 'page'), ['Kịch bản của page', 'Chính sách · FAQ · Phản đối']);
   assert.deepEqual(thanhBen(VAI.DUYET_KICH_BAN, 'page'), ['Kịch bản của page', 'Luật chung']);
 });
 

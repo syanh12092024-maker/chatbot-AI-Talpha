@@ -20,7 +20,8 @@ const mh = await import("./v3/src/ui/chung/man-hinh.js"); const { VAI } = await 
 const p = (v) => (mh.menuCua([v]).find((n) => n.ma === "page")?.man || []).filter((m) => !m.an).map((m) => m.tenMenu || m.ten).join("+");
 console.log(`QUAN_TRI=${p(VAI.QUAN_TRI)} MARKETER=${p(VAI.MARKETER)}`);' 2>/dev/null | tail -1)
 echo "   đích Page trên thanh bên: $kq"
-echo "$kq" | grep -q "QUAN_TRI=Tất cả page+Luật chung MARKETER=Kịch bản của page+Câu trả lời sẵn"
+# VE4 · 29/09: màn đầu marketer vào được trong cụm Luật chung nay là «Chính sách · FAQ · Phản đối» (bản vẽ 2d, đứng trước «Trả lời sẵn»).
+echo "$kq" | grep -q "QUAN_TRI=Tất cả page+Luật chung MARKETER=Kịch bản của page+Chính sách · FAQ · Phản đối"
 ket "④menu-thật" $? "quản trị hai dòng mang tên cụm · marketer đúng tên màn"
 for g in ll1 ll2; do bash "ops/bin/nghiem-thu/$g.sh" >/dev/null 2>&1; ket "⑤cổng-trước" $? "$g.sh"; done
 echo "== ĐỎ $do / XANH $xanh"
