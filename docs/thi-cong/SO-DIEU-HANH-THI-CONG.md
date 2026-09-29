@@ -2699,3 +2699,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · PHÁT HÀNH sóng LL (LL1 LL2 LL3 LL5 LL6 LL13 LL10 LL11 LL7) → ✅ GIỮ — prod `b41261e → 5bff55e`, 0 migration (27), 0 gói, CHỈ restart `aicloser-v3` (đồ thị import: bot cũ + worker không đổi hành vi); van gửi + van POS vẫn đóng
   cửa vào npm test 2.266 · 0 đỏ · 12 cổng đỏ = nợ cũ, so từng cổng với `b41261e` ra 0 vì LL · mốc +1′/+5′/+15′ lỗi 0 · đường mới 401, đối chứng 404 · sao lưu truoc-ll-20260929T044346Z
   · commit 5bff55e · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260929-nam-dich.md
+- 29/09 · LL18 → ✅ — khung theo bản vẽ (thanh ngang năm đích + «Trong mục X»), MÁY CHỦ vẽ sẵn vào HTML (menu có trong lần vẽ đầu), tệp chung cache theo mã băm chung, gzip, `/` theo vai, 403 thôi ngõ cụt, liên kết sang màn không mở được thì tắt — sinh từ lời người dùng sau deploy sóng LL
+  bộ ca ll18 12/12 · đảo-vá 20/20 đỏ · cổng ll18.sh 9/9 · npm test 2.282 ca 0 đỏ · e2e 47 màn 3 vai: vẽ đầu ~750→~420 ms, 0 lần 403 · chưa deploy
+  · commit 31212d9 · nhật ký docs/thi-cong/nhat-ky/phieu-LL18.md
