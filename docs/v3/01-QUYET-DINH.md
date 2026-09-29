@@ -48,6 +48,19 @@ Page đang bật AI: **51** trên 315 page có trong dữ liệu.
 
 **Số liệu:** 37,4% khách bấm BUY NOW rồi **không** bấm gửi WhatsApp. Đây là lỗ lớn nhất bot sinh ra để bịt.
 
+> **Bổ sung 29/09/2026 — CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`, mục 2d). Hai luồng trên giữ nguyên; thêm luật nhận diện và luật sở hữu.
+
+- **Ba nguồn đơn, không phải hai:** Messenger (có hội thoại) · **Ladi** (khách chốt trên trang bán hàng — nhận bằng
+  **UTM** trên đơn POS) · **sale nhập tay** (không hội thoại, không UTM). Chỉ đơn Ladi đi luồng xác nhận WhatsApp;
+  đơn sale nhập tay **không** nhắn. Đo 14 ngày / 7 shop: 2.019 đơn có UTM, 0 đơn trong số đó có hội thoại; 113 đơn
+  không hội thoại mà cũng không UTM — đó là đơn sale nhập tay.
+- **Đơn thuộc team của MARKETER đem đơn về**, theo team của người đó **vào ngày đơn** (hồ sơ HRM). Bảng ghép tài khoản
+  marketer trên POS ↔ nhân viên là của HRM (`PIALPHA_ALL_Dataset.dim_person_map` trên BigQuery) — hệ chỉ đọc. Đơn
+  không có marketer hoặc marketer chưa ghép vào ô **«chờ gán team»**.
+- **Một shop POS dùng chung nhiều team** (đo 14 ngày: 5/7 shop có đơn của ≥2 team). Đơn kéo về **một lần mỗi shop**,
+  mỗi đơn đúng **một** bản — không bao giờ nhân đôi theo team. Chỉ team chủ đơn nhắn WhatsApp và ghi trạng thái lên POS.
+  Tồn kho, lịch sử hoàn và hồ sơ khách dùng chung theo (nước, số điện thoại).
+
 ---
 
 ## 2 · Botcake — thay thế, không điều phối
@@ -133,10 +146,21 @@ Luật Meta đổi trong năm 2026:
 
 ## 6 · Prompt có bốn khối, không phải một
 
+> **Đổi 29/09/2026 — CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`). Dòng cũ giữ bên dưới, gạch ngang.
+>
+> **Sản phẩm là lõi của câu trả lời.** Một sản phẩm bán ở nhiều thị trường, mỗi thị trường nhiều page:
+> **sản phẩm chung** (kiến thức, cách tư vấn, hỏi size, ảnh) → **theo thị trường** (đúng MỘT món POS của shop nước đó,
+> giá bậc theo tiền tệ, ưu đãi, giao, lời riêng) → **page** (giọng, câu chào, ghi đè có chủ ý). Kịch bản tầng sản phẩm
+> và tầng nước giữ nguyên — chỉ trình bày theo sản phẩm thay vì theo «tầng». Mã POS mỗi shop khác nhau nhưng có thể là
+> CÙNG một sản phẩm ⇒ sản phẩm gốc gom nhiều mã POS, mỗi mã một thị trường.
+>
+> **Kỹ năng thôi là một khái niệm riêng.** Nó sinh ra cho đúng một ca (hỏi size) — câu đó chuyển vào kiến thức của
+> các sản phẩm có size. **Câu trả lời sẵn giữ** (đã ký ở §2–§3), gom về MỘT lớp sửa được trên giao diện thay vì ba chỗ.
+
 | Khối | Token | Ai sửa | Nhịp đổi |
 |---|---:|---|---|
 | Bộ luật chung | 2.256 | Quản trị · dùng chung 51 page | Hiếm |
-| Kỹ năng | ~180/kỹ năng | Marketer · bật theo sản phẩm | Thỉnh thoảng |
+| ~~Kỹ năng~~ | ~~~180/kỹ năng~~ | ~~Marketer · bật theo sản phẩm~~ → kiến thức sản phẩm (CR-28-09c) | ~~Thỉnh thoảng~~ |
 
 > **CR-15/09 · không đổi quyết định nào ở trên, chỉ làm cho nó chạy được.** «Bật theo sản
 > phẩm» và ba tầng kịch bản (migration 010) vốn đã ký, nhưng mã sản phẩm mang theo mã shop
@@ -149,7 +173,7 @@ Luật Meta đổi trong năm 2026:
 
 **Trước khi thiết kế lại, bộ luật chung chỉ lập trình viên sửa được** — nằm trong `src/prompts.js`, muốn đổi phải sửa mã nguồn rồi deploy. Marketer không nhìn thấy. Mà đó mới là khối quyết định bot tư vấn giỏi hay dở.
 
-**Tầng kỹ năng là mới hoàn toàn** — khối tư vấn dùng lại được, bật cho đúng sản phẩm cần. Nó lộ ra ngay một chuyện: hai sản phẩm có size đang hoàn **26,8%** và **19,2%**, trong khi sản phẩm không size hoàn 9,3% — và cả hai đều chưa bật kỹ năng hỏi size.
+~~**Tầng kỹ năng là mới hoàn toàn** — khối tư vấn dùng lại được, bật cho đúng sản phẩm cần.~~ *(CR-28-09c: bỏ khái niệm, giữ nội dung.)* Số đo vẫn đúng và vẫn là lý do: hai sản phẩm có size đang hoàn **26,8%** và **19,2%**, trong khi sản phẩm không size hoàn 9,3% — câu hỏi size phải nằm trong kiến thức của hai sản phẩm đó.
 
 **Hệ quả cho code:** tách bốn khối ngay từ giai đoạn 1, kể cả khi chưa làm giao diện.
 
@@ -157,7 +181,12 @@ Luật Meta đổi trong năm 2026:
 
 ## 7 · Model AI — mỗi team chọn riêng
 
-Bốn nhà: Claude · OpenAI · DeepSeek · Kimi. Mỗi team nhập khoá riêng và chọn model riêng.
+> **Đổi 29/09/2026 — CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`). Mỗi team **một model chính + một dự phòng KHÁC NHÀ**, trên một khung.
+> Màn chỉ hiện thứ đường chạy thật đọc: đo 29/09 chỉ vai «chính» có đường dùng; dự phòng chưa nối vào đường chat
+> (phiếu LL14) — tới khi nối, màn nói rõ «chưa tự chuyển»; ô «việc nền» ẩn tới khi có việc đầu tiên dùng nó.
+
+~~Bốn nhà: Claude · OpenAI · DeepSeek · Kimi. Mỗi team nhập khoá riêng và chọn model riêng.~~ Vẫn chọn trong bốn nhà
+Claude · OpenAI · DeepSeek · Kimi, khoá riêng từng team.
 
 Quy giá công bố ra tiền thật theo hồ sơ token đo được:
 
@@ -181,9 +210,19 @@ Quy giá công bố ra tiền thật theo hồ sơ token đo được:
 
 ## 8 · Ba team
 
-**Tiểu Alpha · Auus · Pialpha EU.** Mỗi team có bộ sản phẩm, thị trường, sale, marketer riêng, và **kết nối POS riêng**.
+> **Đổi 29/09/2026 — CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`, mục 2d). Dòng cũ giữ bên dưới, gạch ngang.
 
-Sản phẩm và thị trường do team tự thêm qua giao diện, hoặc đồng bộ từ POS của team đó.
+**Pialpha GCC · Pialpha AUUS · Pialpha EU** — tên hiển thị theo HRM (mã nội bộ giữ nguyên; Pialpha GCC là Tiểu Alpha cũ).
+- **Người lấy từ HRM** (BigQuery `HRM_Core`): một tài khoản = đúng một hồ sơ, khớp theo email công ty. MKT → Marketer;
+  SALE → Sale, **dùng chung cả ba team**; BO · VANDON · CTV không vào hệ; người nghỉ tự khoá.
+- **1 shop POS = 1 thị trường.** Thị trường của sản phẩm và page suy từ shop, không gõ tay. Shop dùng chung được nhiều
+  team (§1 bổ sung).
+- **Thêm thị trường cho sản phẩm = gắn đúng một món POS của shop nước đó**; marketer phụ trách chọn từ hồ sơ HRM, gán ở
+  mức sản phẩm × thị trường, page kế thừa.
+
+~~**Tiểu Alpha · Auus · Pialpha EU.** Mỗi team có bộ sản phẩm, thị trường, sale, marketer riêng, và **kết nối POS riêng**.~~
+
+~~Sản phẩm và thị trường do team tự thêm qua giao diện, hoặc đồng bộ từ POS của team đó.~~
 
 **Một nguồn — đổi 28/09/2026, CR-28-09b** (`docs/thi-cong/doi-y-do/CR-28-09-mot-nguon-san-pham.md`).
 Mọi thứ bot dùng để chào bán một page — **sản phẩm, bậc giá, ảnh, kịch bản** — có đúng MỘT chỗ
@@ -204,7 +243,12 @@ lúc tạo đơn so với bảng giá v3 trong khi bot báo giá theo bảng kh�
 
 ## 9 · Vai và quyền
 
-Năm vai: **Quản trị · Marketer · Sale · Quản lý · Người duyệt kịch bản**.
+> **Đổi 29/09/2026 — CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`). Ba vai: **Quản trị · Marketer · Sale**. «Người duyệt kịch bản» không
+> còn việc (kịch bản lưu là chạy, CR-28-09b); «Quản lý» gộp vào Quản trị. Đo prod 28/09: 0 người mang hai vai bị bỏ.
+> Giao diện theo vai, **năm đích**: Hộp thư (sale) · Sản phẩm · Page (marketer) · Số liệu (chủ team) · Cài đặt
+> (quản trị) — hợp đồng màn ở `03-MAN-HINH.md`.
+
+~~Năm vai: **Quản trị · Marketer · Sale · Quản lý · Người duyệt kịch bản**.~~
 
 - Marketer **chỉ thấy sản phẩm mình phụ trách**
 - Kịch bản do người viết thì **áp dụng thẳng, không cần duyệt**
@@ -213,7 +257,9 @@ Năm vai: **Quản trị · Marketer · Sale · Quản lý · Người duyệt k
 - Nhưng **đề xuất của AI thì phải có người duyệt** mới áp
 - Nhật ký ghi đầy đủ, **không sửa không xoá**, ghi cả việc máy làm
 
-**Vấn đề đang có:** 314 trên 315 page **chưa gán marketer**. Báo cáo cắt theo marketer sẽ trống cho tới khi gán xong.
+~~**Vấn đề đang có:** 314 trên 315 page **chưa gán marketer**. Báo cáo cắt theo marketer sẽ trống cho tới khi gán xong.~~
+*(CR-28-09c: marketer không gán theo page nữa — gán ở sản phẩm × thị trường từ hồ sơ HRM, page kế thừa; đơn thuộc
+marketer theo bảng ghép của HRM, phủ 98,6% đơn đo 29/09.)*
 
 ---
 
@@ -227,9 +273,15 @@ mỗi dòng có lý do bot đẩy sang và đồng hồ đếm ngược 10 phút
 Pancake** (không chép, không lưu bản sao) · cột bối cảnh khách (thông tin, rủi ro hoàn, đơn, giai
 đoạn và người giữ hội thoại, kịch bản page).
 
-Sale **vẫn trả lời ở Pancake** — trên hệ thống **không có ô soạn tin, không có nút gửi**. Thao tác
-làm trên hệ thống chỉ gồm: **nhận việc · trả lại cho bot · đánh dấu đã xử và chọn kết quả**.
+Sale **vẫn trả lời ở Pancake** — trên hệ thống **không có ô soạn tin, không có nút gửi**. ~~Thao tác
+làm trên hệ thống chỉ gồm: **nhận việc · trả lại cho bot · đánh dấu đã xử và chọn kết quả**.~~
 Bấm «Trả lời trên Pancake» là nhảy thẳng sang Pancake hoặc POS.
+
+> **Bổ sung 29/09/2026 — CR-28-09c** (`docs/thi-cong/doi-y-do/CR-28-09c-lam-lai-bon-man.md`). Bàn hội thoại thành **Hộp thư** — nhà duy nhất của sale.
+> Thao tác trên hệ thống: **nhận việc · nhận thay bot · trả lại cho bot · đánh dấu đã xử và chọn kết quả ·
+> xem / sửa / duyệt / từ chối đơn Messenger ngay cạnh khung chat** (duyệt là tạo đơn trên POS — đường tiền, giữ đủ cửa
+> kiểm của hàng chờ tạo đơn, `ban-giao/may-trang-thai-don-v1.md`). Thêm tab **đơn chờ** (đơn không gắn hội thoại, đơn Ladi chờ xác nhận WhatsApp) và **tìm khách** gộp ba
+> kênh theo số điện thoại. Sale dùng chung ba team ⇒ Hộp thư lọc được «cả ba team». Vẫn **không** soạn tin.
 
 **Lý do đổi:** khuôn «hai danh sách» không cho sale thấy bot đã nói gì trước khi đẩy sang người
 — phải mở Pancake mới biết việc gấp tới đâu. Đọc hội thoại tại chỗ rút lượt nhảy qua lại, mà
@@ -251,6 +303,8 @@ vẫn giữ lý do cũ: sale không phải học một nơi TRẢ LỜI mới.
 | Langfuse quản lý prompt | Mạnh nhưng thừa cho quy mô này, và thêm một hệ thống nữa phải nuôi |
 | Chặn cứng khách hoàn cao ở một ngưỡng | Đề xuất chia bốn tầng thay vì một ngưỡng — 144 khách hoàn 30–65% đang bị gộp nhầm vào nhóm bình thường. **Chờ chốt** |
 | Kho ưu đãi và Hậu bán mua lại | Đã thiết kế xong, **để lại giai đoạn sau** theo yêu cầu |
+| Gán team cho đơn theo page của đơn | Page chỉ có trên 16% đơn trang bán hàng — thay bằng team của marketer (CR-28-09c) |
+| Ô ghép tài khoản marketer POS ↔ nhân viên trong hệ | HRM đã có bảng ghép; hai nơi ghép sẽ lệch nhau (CR-28-09c) |
 
 ---
 
@@ -261,7 +315,7 @@ vẫn giữ lý do cũ: sale không phải học một nơi TRẢ LỜI mới.
 | **Độ ngẫu nhiên chưa đặt** | Bot chạy mặc định nhà cung cấp — mỗi lượt trả lời một kiểu, khó bám kịch bản và khó A/B cho chuẩn. Sửa nửa ngày, nằm trong L1 |
 | **Sản phẩm mới chưa có đơn thì không tạo được đơn** | Hàm lấy thông tin sản phẩm suy ngược từ 25 đơn gần nhất. Hiện chưa lộ vì tính năng tạo đơn tự động đang tắt. L1 sửa bằng cách đọc thẳng danh mục từ POS |
 | **`paano mag order` không bắt được** | Lớp 0 đồng bắt `how to order` nhưng không bắt cách viết tách chữ phổ biến của tiếng Philippines. Sửa vài phút, phải xong trước khi tắt Botcake |
-| **314 page chưa gán marketer** | Báo cáo theo marketer trống |
+| ~~**314 page chưa gán marketer**~~ | ~~Báo cáo theo marketer trống~~ — CR-28-09c: marketer theo sản phẩm × thị trường (HRM), đơn theo bảng ghép HRM |
 | **Tên sản phẩm trống trong dữ liệu** | Chỉ có bảng giá và ảnh. Phải lấy tên và mã từ POS |
 | **Chưa có phần trả lời bình luận** | Là điều kiện để tắt Botcake trên diện rộng |
 
