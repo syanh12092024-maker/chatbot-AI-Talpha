@@ -138,7 +138,7 @@ function veSanPham() {
   $('#phai').querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { TAB = b.dataset.tab; giu(CHON, TAB); veSanPham(); }; });
   $('#thanTab').setAttribute('aria-labelledby', 'tab-' + TAB);
   const hd = [];
-  if (TAB === 'chung' && CT.suaKienThuc) hd.push(button('Lưu — mọi page dùng ngay', { variant: 'primary', size: 'sm', id: 'nutLuuKt' }));
+  if (TAB === 'chung' && CT.suaKienThuc) hd.push(button(CT.botDocKienThuc === true ? 'Lưu — mọi page dùng ngay' : 'Lưu', { variant: 'primary', size: 'sm', id: 'nutLuuKt' }));
   if (CT.suaDuoc) hd.push(button('Bỏ sản phẩm', { variant: 'danger', size: 'sm', id: 'nutBo',
     title: g.thiTruong.length ? 'Còn món POS đang trỏ tới — sẽ bị từ chối' : 'Bỏ sản phẩm gốc này' }));
   $('#hanhDong').innerHTML = hd.join('');
@@ -156,7 +156,7 @@ function veChung() {
     + `<textarea id="kt-${k}" data-kt="${k}" rows="${k === 'cong_dung' || k === 'them' ? 3 : 2}" maxlength="2000" ${CT.suaKienThuc ? '' : 'disabled'}`
     + `${k === 'hoi_size' ? ' placeholder="Ví dụ: trước khi chốt PHẢI hỏi số đo rồi gợi ý size. Hỏi đúng một lần, gộp vào câu tư vấn."' : ''}>`
     + `${esc(kt[k] || '')}</textarea></div>`;
-  $('#thanTab').innerHTML = `<section class="chia-phu">
+  $('#thanTab').innerHTML = `${veBotDocKt()}<section class="chia-phu">
       <div class="form-stack">
         ${KT.filter(([k]) => k !== 'hoi_size').slice(0, 4).map(([k, n]) => o(k, n)).join('')}
         <div class="khoi-nhan" data-tone="warning">${o('hoi_size', 'Hỏi size trước khi chốt')}
@@ -170,13 +170,24 @@ function veChung() {
       </aside>
     </section>`;
 }
+/* VE1b · 29/09: kiến thức ở đây chỉ tới bot khi máy chủ ghép lời từ dữ liệu v3. Nói đúng trạng thái đo được — không hứa. */
+function veBotDocKt() {
+  if (CT.botDocKienThuc === true) return '';
+  return `<div class="duoi-4">${canhBao(CT.botDocKienThuc === false
+    ? { level: 'warning', title: 'Bot CHƯA đọc phần kiến thức này',
+      body: 'Máy chủ chưa bật cách ghép lời mới, nên bot đang trả lời khách vẫn lấy lời về sản phẩm từ bảng «Bản sao theo page» (giá · mô tả · ảnh của từng page). Lưu ở đây vẫn giữ lại, và sẽ được dùng khi bật cách ghép lời mới.' }
+    : { level: 'warning', title: 'Chưa biết bot có đọc phần này không',
+      body: 'Máy chủ chưa nối phép đo cách ghép lời. Đừng coi lưu ở đây là bot đã nói theo.' })}</div>`;
+}
 async function luuKienThuc() {
   const nut = $('#nutLuuKt'); nut.disabled = true;
   const kienThuc = Object.fromEntries([...document.querySelectorAll('[data-kt]')].map((o) => [o.dataset.kt, o.value]));
   try {
     await goiGhi('/api/san-pham/goc/' + encodeURIComponent(CHON) + '/kien-thuc', { method: 'POST', body: JSON.stringify({ kienThuc }) });
     CT.goc.kienThuc = kienThuc;
-    $('#tbSp').innerHTML = canhBao({ level: 'success', title: 'Đã lưu', body: 'Lượt chat kế tiếp của mọi page bán sản phẩm này đọc bản mới.' });
+    $('#tbSp').innerHTML = canhBao(CT.botDocKienThuc === true
+      ? { level: 'success', title: 'Đã lưu', body: 'Lượt chat kế tiếp của mọi page bán sản phẩm này đọc bản mới.' }
+      : { level: 'info', title: 'Đã lưu vào dữ liệu', body: 'Bot CHƯA đọc phần này — lời bot về sản phẩm hôm nay vẫn theo «Bản sao theo page».' });
   } catch (e) { $('#tbSp').innerHTML = canhBao({ level: 'error', title: 'Chưa lưu được', body: e.message }); }
   finally { nut.disabled = false; }
 }
@@ -402,7 +413,7 @@ function veThem() {
   const d = GOC || { cho: [] };
   $('#phai').innerHTML = `
     <div class="chi-tiet-dau"><div><h2 class="tieu-de-lon">Thêm sản phẩm</h2>
-      <div class="dong-phu">Mã gốc là khoá của kịch bản — đặt rồi thì KHÔNG sửa được, chỉ tên và số hiệu sửa được.</div></div></div>
+      <div class="dong-phu">Gom các món POS mang cùng số hiệu ở mọi shop thành MỘT sản phẩm của team — mỗi shop là một thị trường, page bán sản phẩm này gắn vào đây. Mã gốc là khoá của kịch bản — đặt rồi thì KHÔNG sửa được, chỉ tên và số hiệu sửa được.</div></div></div>
     ${d.suaDuoc ? `<div class="form-stack" id="khungTaoGoc">
       <div class="hang">
         <div class="field"><label class="field-label" for="gSo">Số hiệu</label>

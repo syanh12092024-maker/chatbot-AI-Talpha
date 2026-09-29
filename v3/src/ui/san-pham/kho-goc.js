@@ -11,6 +11,7 @@
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
 import { HANH_DONG, moTa as moTaHanhDong } from '../../audit/hanh-dong.js';
 import { LoiSanPham } from './kho-san-pham.js';
+import { botGhepTuDuLieu } from '../prompt-page/kho-prompt.js';
 
 /**
  * CHỈ `quan-tri`. Đặt tên sản phẩm là đổi thứ bot gọi trước mặt khách, và mã gốc là khoá
@@ -153,8 +154,10 @@ export async function chiTietGoc(boiCanh, id) {
   const bc = batBuocBoiCanh(boiCanh);
   const [goc, monChuaGan] = await Promise.all([cua().chiTiet(bc, id), cua().monChuaGan(bc)]);
   if (!goc) return null;
+  // `botDocKienThuc`: kiến thức ở tab Chung chỉ tới bot khi máy chủ ghép lời từ dữ liệu v3 (`V3_RAP_PROMPT_BAT`).
+  // Vắng ⇒ bot vẫn ráp từ kho cũ theo page — màn phải nói ra, không hứa «mọi page dùng ngay» (VE1b).
   return { goc, monChuaGan, suaDuoc: bc.vai.some((v) => VAI_SUA_DUOC.includes(v)),
-    suaKienThuc: bc.vai.some((v) => VAI_SUA_KIEN_THUC.includes(v)) };
+    suaKienThuc: bc.vai.some((v) => VAI_SUA_KIEN_THUC.includes(v)), botDocKienThuc: botGhepTuDuLieu() };
 }
 
 /** Gắn một món POS vào sản phẩm gốc — thêm thị trường (shop mới) hoặc thêm biến thể. Quản trị, có nhật ký. */

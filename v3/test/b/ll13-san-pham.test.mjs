@@ -115,3 +115,22 @@ test('U6 · VE1 · lịch sử một sản phẩm: đọc nhật ký ĐÚNG đ�
   assert.ok(duong.indexOf('GET /api/san-pham/goc/:id/lich-su') >= 0 && duong.indexOf('GET /api/san-pham/goc/:id/lich-su') < duong.indexOf('GET /api/san-pham/:id'),
     'đường lịch sử phải đứng TRƯỚC /api/san-pham/:id');
 });
+
+test('U7 · VE1b · tab Chung nói ĐÚNG bot có đọc kiến thức không — theo công tắc thật, không hứa «mọi page dùng ngay»', async (t) => {
+  const { datDocHieuLuc } = await import('../../src/ui/prompt-page/kho-prompt.js');
+  t.after(() => datDocHieuLuc(null));
+  goc.datKhoGoc(CUA());
+  datDocHieuLuc(null);
+  assert.equal((await goc.chiTietGoc(bc(VAI.MARKETER), 'g1')).botDocKienThuc, null, 'chưa nối phép đo ⇒ CHƯA BIẾT, không đoán');
+  datDocHieuLuc(() => ({ coBat: false }));
+  assert.equal((await goc.chiTietGoc(bc(VAI.MARKETER), 'g1')).botDocKienThuc, false);
+  datDocHieuLuc(() => ({ coBat: true }));
+  assert.equal((await goc.chiTietGoc(bc(VAI.MARKETER), 'g1')).botDocKienThuc, true);
+  const html = fs.readFileSync(new URL('../../src/ui/san-pham/trang/san-pham.html', import.meta.url), 'utf8');
+  // Mọi câu hứa «bot dùng ngay» phải đứng SAU phép thử `=== true` — gõ cứng là màn nói dối khi prod còn ghép lời bản cũ.
+  assert.match(html, /button\(CT\.botDocKienThuc === true \? 'Lưu — mọi page dùng ngay' : 'Lưu'/);
+  assert.match(html, /canhBao\(CT\.botDocKienThuc === true\s*\? \{ level: 'success', title: 'Đã lưu', body: 'Lượt chat kế tiếp/);
+  assert.equal((html.match(/mọi page dùng ngay/g) || []).length, 1, 'câu «mọi page dùng ngay» chỉ được xuất hiện ở nhánh đã bật');
+  assert.match(html, /function veBotDocKt\(\) \{\n  if \(CT\.botDocKienThuc === true\) return '';/);
+  assert.match(html, /\$\{veBotDocKt\(\)\}<section class="chia-phu">/, 'cảnh báo phải được vẽ ở tab Chung');
+});

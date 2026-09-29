@@ -228,6 +228,14 @@ export async function promptCua(boiCanh, pageIdFacebook) {
   };
 }
 
+/**
+ * Bot có ĐANG ghép lời từ dữ liệu v3 không — `true` · `false` · `null` (chưa nối phép đo). Một nguồn cho mọi màn
+ * có nút «lưu là bot dùng ngay» (VE1b · 29/09: màn Sản phẩm từng hứa vậy trong khi prod còn ghép lời bản cũ).
+ */
+export function botGhepTuDuLieu() {
+  return docHieuLuc().khai.coBat;
+}
+
 /** Đọc hiệu lực; chưa nối cửa thì nói CHƯA BIẾT, không đoán là «đang bật». */
 function docHieuLuc() {
   if (!_docHieuLuc) {
