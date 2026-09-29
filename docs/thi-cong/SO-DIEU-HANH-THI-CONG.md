@@ -2723,3 +2723,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · PHÁT HÀNH VE3 + VE4 → ✅ GIỮ — prod `f211036 → 9472153`, 0 migration (27), 0 gói, chỉ restart `aicloser-v3` (11:49:06); danh sách page + Luật chung theo bản vẽ
   cửa vào npm test 2.309 ca 0 đỏ (lượt đầu 676 đỏ GIẢ do Postgres.app từ chối kết nối — log chứng minh) · cổng 35 xanh / 12 nợ cũ trùng tên · mốc +1′/+5′/+15′ lỗi 0 · `/khoi-chung` 404 → 401
   · commit 9472153 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260929-ve3-ve4.md
+- 29/09 · VE1b + VE4b → 🔎 CHỜ DEPLOY — màn Sản phẩm (tab Chung) và Luật thôi hứa «bot dùng ngay / có hiệu lực ngay» khi prod chưa bật ghép lời từ dữ liệu (`V3_RAP_PROMPT_BAT` vắng — đo /proc)
+  một nguồn `botGhepTuDuLieu()` (true·false·null) · câu «bot chạy không có quy tắc cứng» sai mọi chế độ (`prompts.js#khoiBoLuat` lùi CORE) đã sửa cả thước · đảo-vá 6/6 + 8/8 · npm test 2.313 ca 0 đỏ
+  · commit b0b32b2 4b64551 · nhật ký docs/thi-cong/nhat-ky/phieu-VE1b-VE4b.md
