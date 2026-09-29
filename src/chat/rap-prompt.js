@@ -202,6 +202,8 @@ const NHAN_KIEN_THUC = Object.freeze([
   ["cong_dung", "Công dụng"],
   ["hop_voi", "Hợp với"],
   ["cach_dung", "Cách dùng"],
+  // LL11 · 29/09 (CR-28-09c): nhà mới của kỹ năng «hỏi size» — câu thuộc về SẢN PHẨM, không phải một tầng riêng.
+  ["hoi_size", "Hỏi size trước khi chốt"],
   ["thanh_phan", "Thành phần"],
   ["canh_bao", "Lưu ý / cảnh báo"],
   ["them", "Thông tin thêm"],

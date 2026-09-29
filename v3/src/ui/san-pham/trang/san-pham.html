@@ -289,10 +289,33 @@ async function moGoc(id) {
          <div class="field-hint" data-tb-gan></div>`
       : '<p class="field-hint">Mọi món POS đã kéo về đều thuộc một sản phẩm. Kéo danh mục shop khác ở Cài đặt › Kết nối để có thêm thị trường.</p>')
     : '';
-  noi.innerHTML = `<div class="section-header"><div><h3>Thị trường · ${so(g.thiTruong.length)}</h3>
+  // LL11: CHUNG — kiến thức sản phẩm (bot đọc, mọi thị trường thừa hưởng). Nhà mới của kỹ năng «hỏi size».
+  const KT = [['cong_dung', 'Công dụng'], ['hop_voi', 'Hợp với'], ['cach_dung', 'Cách dùng'],
+    ['hoi_size', 'Hỏi size trước khi chốt'], ['thanh_phan', 'Thành phần'], ['canh_bao', 'Lưu ý / cảnh báo'], ['them', 'Thông tin thêm']];
+  const kt = g.kienThuc || {};
+  const chung = `<div class="section-header"><div><h3>Chung — kiến thức bot đọc</h3>
+      <div class="section-desc">Viết một lần cho sản phẩm; mọi thị trường và page bán nó thừa hưởng. Ô để trống thì bot không nói.</div></div></div>
+    <div class="form-stack" data-kien-thuc>${KT.map(([k, nhan]) => `<div class="field"><label class="field-label" for="kt-${esc(id)}-${k}">${nhan}</label>`
+      + `<textarea id="kt-${esc(id)}-${k}" data-kt="${k}" rows="2" maxlength="2000" ${d.suaKienThuc ? '' : 'disabled'}`
+      + `${k === 'hoi_size' ? ' placeholder="Ví dụ: hỏi size (S/M/L) hoặc chiều cao, cân nặng trước khi chốt — sản phẩm có size hoàn cao gấp ba vì sai size."' : ''}>`
+      + `${esc(kt[k] || '')}</textarea></div>`).join('')}
+      ${d.suaKienThuc ? `<div class="form-actions">${button('Lưu kiến thức', { size: 'sm', variant: 'primary', data: { luuKt: id } })}<span class="text-muted" data-tb-kt></span></div>` : ''}
+    </div>`;
+  noi.innerHTML = chung + `<div class="section-header"><div><h3>Thị trường · ${so(g.thiTruong.length)}</h3>
       <div class="section-desc">Mỗi shop POS là một thị trường. Giá theo tiền tệ, tồn kho và món đi theo shop.</div></div></div>
     ${thiTruong}${them}
     <div class="section-header"><div><h3>Page đang bán · ${so(g.page.length)}</h3></div></div>${page}`;
+  const nutKt = noi.querySelector('[data-luu-kt]');
+  if (nutKt) nutKt.addEventListener('click', async () => {
+    nutKt.disabled = true;
+    const tbKt = noi.querySelector('[data-tb-kt]');
+    const kienThuc = Object.fromEntries([...noi.querySelectorAll('[data-kt]')].map((o) => [o.dataset.kt, o.value]));
+    try {
+      await goiGhi('/api/san-pham/goc/' + encodeURIComponent(id) + '/kien-thuc', { method: 'POST', body: JSON.stringify({ kienThuc }) });
+      tbKt.textContent = 'Đã lưu — lượt chat kế tiếp đọc bản này.';
+    } catch (e) { tbKt.textContent = e.message; }
+    finally { nutKt.disabled = false; }
+  });
   const tb = noi.querySelector('[data-tb-gan]');
   noi.querySelectorAll('[data-gan-mon]').forEach((b) => b.addEventListener('click', async () => {
     b.disabled = true;

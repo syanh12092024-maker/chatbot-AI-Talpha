@@ -27,7 +27,8 @@ let _pheuNhatKy = null;
 export function datKhoGoc(cua) {
   if (cua == null) { _cua = null; return null; }
   // LL13: + `chiTiet` · `monChuaGan` · `gan` · `go` — sản phẩm là lõi (thị trường = shop POS).
-  const thieu = ['ds', 'cho', 'dem', 'tao', 'sua', 'bo', 'chiTiet', 'monChuaGan', 'gan', 'go'].filter((k) => typeof cua[k] !== 'function');
+  // LL11: + `kienThuc` — sửa kiến thức sản phẩm (nhà mới của kỹ năng).
+  const thieu = ['ds', 'cho', 'dem', 'tao', 'sua', 'bo', 'chiTiet', 'monChuaGan', 'gan', 'go', 'kienThuc'].filter((k) => typeof cua[k] !== 'function');
   if (thieu.length) throw new LoiSanPham(`datKhoGoc thiếu hàm: ${thieu.join(', ')}`, 'noi_day_thieu', 500);
   _cua = cua;
   return _cua;
@@ -124,7 +125,8 @@ export async function chiTietGoc(boiCanh, id) {
   const bc = batBuocBoiCanh(boiCanh);
   const [goc, monChuaGan] = await Promise.all([cua().chiTiet(bc, id), cua().monChuaGan(bc)]);
   if (!goc) return null;
-  return { goc, monChuaGan, suaDuoc: bc.vai.some((v) => VAI_SUA_DUOC.includes(v)) };
+  return { goc, monChuaGan, suaDuoc: bc.vai.some((v) => VAI_SUA_DUOC.includes(v)),
+    suaKienThuc: bc.vai.some((v) => VAI_SUA_KIEN_THUC.includes(v)) };
 }
 
 /** Gắn một món POS vào sản phẩm gốc — thêm thị trường (shop mới) hoặc thêm biến thể. Quản trị, có nhật ký. */
@@ -149,6 +151,27 @@ export async function goMonPos(boiCanh, id, posMa) {
     hanhDong: HANH_DONG.GO_MON_POS_GOC, doiTuongLoai: BANG, doiTuongId: String(id),
     truoc: { maGoc: kq.maGoc, posMa: kq.posMa, shopId: kq.shopId },
     ghiChu: `gỡ món POS ${kq.posMa} (shop ${kq.shopId}) khỏi sản phẩm "${kq.maGoc}"`,
+  });
+  return kq;
+}
+
+/* ═══ LL11 · KIẾN THỨC SẢN PHẨM — nhà mới của kỹ năng ═══ */
+
+/**
+ * Ai SỬA kiến thức: quản trị + MARKETER. Khác `VAI_SUA_DUOC` (tên · mã gốc — quản trị): kiến thức là lời tư vấn
+ * marketer viết cho sản phẩm mình phụ trách (01 §6 · §9 «kịch bản do người viết áp dụng thẳng»), đúng chỗ màn
+ * kỹ năng cũ cho marketer bật.
+ */
+export const VAI_SUA_KIEN_THUC = Object.freeze([VAI.QUAN_TRI, VAI.MARKETER]);
+
+export async function suaKienThucGoc(boiCanh, id, kienThuc) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_KIEN_THUC);
+  const kq = await cua().kienThuc(bc, id, kienThuc);
+  await ghi(bc, {
+    hanhDong: HANH_DONG.SUA_KIEN_THUC_SAN_PHAM, doiTuongLoai: BANG, doiTuongId: String(id),
+    truoc: kq.truoc || {}, sau: kq.kienThuc,
+    ghiChu: `sửa kiến thức sản phẩm "${kq.maGoc}" (${Object.keys(kq.kienThuc || {}).join(', ') || 'để trống'})`,
   });
   return kq;
 }

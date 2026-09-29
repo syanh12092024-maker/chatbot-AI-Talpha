@@ -40,7 +40,7 @@
 |   ↳ kịch bản tầng sản phẩm · tầng nước | `kich-ban` | Sản phẩm › Chung · Theo thị trường | Giữ | LL13 |
 | Quy tắc chung mọi page | `bo-luat` | Page › Luật chung › Luật | Giữ | LL3 |
 | Câu trả lời sẵn | `lop-0-dong` | Page › Luật chung › Trả lời sẵn (một kho) | Giữ | LL12 |
-| Kỹ năng theo sản phẩm | `ky-nang` | Sản phẩm › Chung › Hỏi size (kiến thức) | Chuyển nội dung | LL11 · gỡ LL8 |
+| Kỹ năng theo sản phẩm | `ky-nang` | Sản phẩm › «Chung — kiến thức bot đọc» › ô «Hỏi size trước khi chốt» (LL11 ✓; màn ra khỏi menu) | Chuyển nội dung | LL11 ✓ · gỡ giao diện LL8 |
 | Đoạn chữ gửi cho AI | `prompt-page` | Page › «AI đọc gì» | Gộp | LL3 · gỡ LL8 |
 | Ảnh gửi khách | `thu-vien-anh` | Page › tab Ảnh | Gộp | LL3 |
 | Gợi ý từ AI | `ai-de-xuat` | Page › Luật chung › Đề xuất chờ duyệt | Gộp | LL3 · gỡ LL8 |

@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manSanPham, sanPhamCuaMotPage, VAI_VAO_DUOC, VI_RONG, LoiSanPham } from './kho-san-pham.js';
-import { manSanPhamGoc, taoGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos } from './kho-goc.js';
+import { manSanPhamGoc, taoGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos, suaKienThucGoc } from './kho-goc.js';
 
 /**
  * Vai GHI của màn — khai TƯỜNG MINH ở router dù nó chỉ chuyển tiếp từ `kho-goc.js`.
@@ -156,6 +156,10 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   }));
   r.post('/api/san-pham/goc/:id/mon', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, ...(await ganMonPos(cuaBoiCanh(req), req.params.id, req.body?.posMa)) });
+  }));
+  // LL11: kiến thức sản phẩm (công dụng · cách dùng · hỏi size…) — bộ ráp prompt đọc khối này.
+  r.post('/api/san-pham/goc/:id/kien-thuc', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await suaKienThucGoc(cuaBoiCanh(req), req.params.id, req.body?.kienThuc)) });
   }));
   r.post('/api/san-pham/goc/:id/mon/go', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, ...(await goMonPos(cuaBoiCanh(req), req.params.id, req.body?.posMa)) });

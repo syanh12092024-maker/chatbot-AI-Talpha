@@ -18,6 +18,7 @@ const CUA = () => ({
   monChuaGan: async () => [{ posMa: '111:z', ten: 'X', shopId: '111', thiTruong: 'Saudi' }],
   gan: async (_b, id, posMa) => ({ maGoc: 'fitgum', posMa, shopId: posMa.split(':')[0], daCo: false }),
   go: async (_b, id, posMa) => ({ maGoc: 'fitgum', posMa, shopId: posMa.split(':')[0] }),
+  kienThuc: async (_b, id, kt) => ({ id, maGoc: 'fitgum', kienThuc: kt, truoc: {} }),
 });
 
 test('U1 · kho gốc đòi ĐỦ mười hàm — thiếu hàm của LL13 là từ chối cả cụm, không nửa cửa', () => {

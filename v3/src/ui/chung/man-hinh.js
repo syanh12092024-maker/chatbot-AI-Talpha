@@ -191,8 +191,9 @@ export const MAN = Object.freeze([
   // mở được trang một page, vì mỗi page đã có tab sản phẩm. Nay Sản phẩm là một ĐÍCH — giữ cờ
   // thì bấm vào đích lõi mà chỉ thấy «Kỹ năng theo sản phẩm» (ca N5/N6).
   dat(sanPham, 'Sản phẩm & kho', 'san-pham', 'Bot đang chào bán gì, còn hàng không'),
-  // Khái niệm kỹ năng bỏ ở LL11 — nội dung «hỏi size» sang kiến thức sản phẩm. Tới đó ngồi đây.
-  dat(kyNang, 'Kỹ năng theo sản phẩm', 'san-pham', 'Bật theo nhóm sản phẩm'),
+  // LL11 · 29/09: khái niệm kỹ năng BỎ — «hỏi size» nay là một ô trong kiến thức sản phẩm (khối «Chung» ở màn
+  // Sản phẩm). Màn ra khỏi menu (`thuNghiem`), đường còn sống tới LL8 gỡ giao diện. Prod: 3 kỹ năng, 0 bật.
+  dat(kyNang, 'Kỹ năng theo sản phẩm', 'san-pham', 'Bật theo nhóm sản phẩm', true, true),
 
   // ③ PAGE — mọi thứ bot nói trên một page, và luật chung cho mọi page.
   // GD2 · 25/09 — «Bắt đầu» và «Page còn thiếu gì» ngoài menu: cả hai chuyển hướng về danh sách.

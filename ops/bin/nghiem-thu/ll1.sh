@@ -44,10 +44,12 @@ for (const [k, v] of Object.entries(VAI)) {
 }
 console.log(dong.join(" "));' 2>/dev/null | tail -1)
 echo "   menu theo vai (vai:đích:số màn hiện): $kq"
-# 18 của LL1 + 2 của LL5 (Nguồn khách · Rủi ro hoàn thôi ẩn — có dữ liệu). DANH SÁCH do ca N5 canh, mỗi màn thêm khai phiếu.
-echo "$kq" | grep -q "QUAN_TRI:hop-thu,san-pham,page,so-lieu,cai-dat:20" \
+# Canh TÍNH CHẤT, không neo số: số màn tới được đổi theo từng phiếu (LL5 +2 · LL11 −1 …) và DANH SÁCH đó đã do ca
+# N5 của bộ ca LL1 canh (bảng THEM_CO_CHU_Y · BO_CO_CHU_Y — mỗi màn thêm/bỏ khai phiếu). Neo số ở đây là thước mà
+# cách sửa duy nhất là «nâng con số» — không canh gì (lời của audit-ghi.test.mjs).
+echo "$kq" | grep -qE "QUAN_TRI:hop-thu,san-pham,page,so-lieu,cai-dat:[0-9]+" \
   && echo "$kq" | grep -q "SALE:hop-thu:2"
-ket "⑤menu-thật-theo-vai" $? "quản trị năm đích 20 màn tới được (18 LL1 + 2 LL5) · sale chỉ Hộp thư 2 màn"
+ket "⑤menu-thật-theo-vai" $? "quản trị đủ năm đích · sale chỉ Hộp thư 2 màn (danh sách màn: ca N5)"
 
 # ⑥ hợp đồng: bảng đích có trong 03, kế hoạch giao diện trỏ LL1
 a=$(grep -c "^## Màn cũ đi đâu" docs/v3/03-MAN-HINH.md)

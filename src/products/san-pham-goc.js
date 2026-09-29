@@ -249,7 +249,7 @@ const shopCua = (ma) => String(ma || "").split(":")[0] || null;
 /** Một sản phẩm gốc: thị trường (theo shop) · món POS · page đang bán. `null` = không có trong team. */
 export async function chiTietSanPhamGoc(pool, teamId, id) {
   const g = (await pool.query(
-    "SELECT id, ma_goc, ten, mo_ta, so_hieu FROM san_pham_goc WHERE team_id = $1 AND id = $2",
+    "SELECT id, ma_goc, ten, mo_ta, so_hieu, kien_thuc FROM san_pham_goc WHERE team_id = $1 AND id = $2",
     [teamId, id],
   )).rows[0];
   if (!g) return null;
@@ -286,6 +286,7 @@ export async function chiTietSanPhamGoc(pool, teamId, id) {
   }
   return {
     id: String(g.id), maGoc: g.ma_goc, ten: g.ten, moTa: g.mo_ta, soHieu: g.so_hieu,
+    kienThuc: g.kien_thuc && typeof g.kien_thuc === 'object' ? g.kien_thuc : {},
     thiTruong: [...theoShop.values()].map((t) => ({ ...t, page: [...new Set(t.page)] })),
     page: [...trangPage.values()].map((p) => ({ ...p, qua: [...p.qua], shop: [...p.shop] })),
   };
@@ -347,4 +348,37 @@ export async function goMonPosKhoiGoc(pool, teamId, id, posMa) {
   );
   if (!r.rowCount) throw new LoiSanPhamGoc("món này không thuộc sản phẩm gốc này", "khong_thuoc", 404);
   return { maGoc: r.rows[0].ma_goc, posMa: ma, shopId: shopCua(ma) };
+}
+
+/* ═══ LL11 · KIẾN THỨC SẢN PHẨM (021) — nhà mới của «kỹ năng» (CR-28-09c) ══════════════════════════════════
+ * Khái niệm kỹ năng sinh ra cho đúng MỘT ca (hỏi size: sản phẩm có size hoàn 26,8% / 19,2%, không size 9,3% —
+ * 01 §6). Câu đó thuộc về SẢN PHẨM, nên nó sống ở `san_pham_goc.kien_thuc` cùng công dụng · cách dùng…: mở thị
+ * trường mới thì biến thể mới tự thừa hưởng. Trước LL11 cột này có người ĐỌC (bộ ráp prompt v3) mà không có
+ * đường GHI nào.
+ */
+export const KHOA_KIEN_THUC = Object.freeze(['cong_dung', 'hop_voi', 'cach_dung', 'hoi_size', 'thanh_phan', 'canh_bao', 'them']);
+export const TRAN_KIEN_THUC = 2000;
+
+/** Thay TRỌN khối kiến thức (khoá lạ ⇒ từ chối, không lặng lẽ bỏ; ô rỗng ⇒ không lưu khoá đó). */
+export async function suaKienThucGoc(pool, teamId, id, kienThuc = {}) {
+  if (!kienThuc || typeof kienThuc !== 'object' || Array.isArray(kienThuc)) {
+    throw new LoiSanPhamGoc('kiến thức phải là một bảng khoá → chữ', 'kien_thuc_la');
+  }
+  const la = Object.keys(kienThuc).filter((k) => !KHOA_KIEN_THUC.includes(k));
+  if (la.length) throw new LoiSanPhamGoc(`khoá kiến thức lạ: ${la.join(', ')}`, 'khoa_la');
+  const sach = {};
+  for (const k of KHOA_KIEN_THUC) {
+    const v = gon(kienThuc[k]);
+    if (!v) continue;
+    if (v.length > TRAN_KIEN_THUC) throw new LoiSanPhamGoc(`«${k}» dài quá ${TRAN_KIEN_THUC} ký tự`, 'kien_thuc_dai');
+    sach[k] = v;
+  }
+  const r = await pool.query(
+    `UPDATE san_pham_goc SET kien_thuc = $3::jsonb, sua_luc = now()
+      WHERE team_id = $1 AND id = $2
+      RETURNING id, ma_goc, kien_thuc, (SELECT kien_thuc FROM san_pham_goc WHERE team_id = $1 AND id = $2) AS cu`,
+    [teamId, id, JSON.stringify(sach)],
+  );
+  if (!r.rowCount) throw new LoiSanPhamGoc('không có sản phẩm gốc này', 'khong_co', 404);
+  return { id: String(r.rows[0].id), maGoc: r.rows[0].ma_goc, kienThuc: r.rows[0].kien_thuc, truoc: r.rows[0].cu };
 }

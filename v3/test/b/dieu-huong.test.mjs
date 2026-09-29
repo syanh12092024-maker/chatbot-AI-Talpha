@@ -189,13 +189,14 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   // LL6 · 29/09: Cài đặt thành MỘT cụm (6 tab) ⇒ thanh bên 15 → 10; ẩn 12 → 17 (5 chưa dùng được + 1 cần id
   // + 1 mở từ màn khác + 10 trong cụm).
   // LL10 · 29/09: «Hội thoại và đơn» thành «Vận hành», rời Hộp thư sang tab của cụm Cài đặt ⇒ 10 → 9; ẩn 17 → 18.
-  assert.equal(hienRa, 9, `thanh bên đang vẽ ${hienRa} màn`);
-  assert.equal(an, 18, 'năm màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + mười một màn '
+  // LL11 · 29/09: «Kỹ năng theo sản phẩm» ra khỏi menu (khái niệm bỏ, nội dung sang kiến thức sản phẩm) ⇒ 9 → 8; ẩn 18 → 19.
+  assert.equal(hienRa, 8, `thanh bên đang vẽ ${hienRa} màn`);
+  assert.equal(an, 19, 'sáu màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + mười một màn '
     + 'TRONG CỤM phải ẩn khỏi thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
   // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp
   // một con số là ngày nào đó một màn hỏng lặng lẽ đội lốt màn cần id.
-  assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 5, 'năm màn chưa dùng được (LL5: Nguồn khách · Rủi ro hoàn có dữ liệu)');
+  assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 6, 'sáu màn ẩn (LL5: Nguồn khách · Rủi ro hoàn có dữ liệu; LL11: + Kỹ năng)');
   assert.equal(mh.MAN.filter((m) => m.canId).length, 1, 'đúng một màn cần tham số để mở');
   assert.deepEqual(mh.MAN.filter((m) => m.moTuManKhac).map((m) => m.ten),
     ['Đoạn chữ gửi cho AI'], 'màn mở từ màn khác phải khai ra, không trôi (LL1: «Sản phẩm & kho» thôi)');
@@ -204,7 +205,7 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   // Bảy màn ít dùng nay tản ra ba mục theo ĐÚNG việc của chúng, không dồn hết vào một
   // chỗ nữa. Đếm ở đây để ai kéo một màn ít dùng lên mục hằng ngày thì ca này đỏ.
   const itDung = mh.MAN.filter((m) => m.itDung);
-  assert.equal(itDung.length, 8, `đang có ${itDung.length} màn ít dùng (LL1: «Sản phẩm & kho» thôi ít dùng)`);
+  assert.equal(itDung.length, 9, `đang có ${itDung.length} màn ít dùng (LL1: «Sản phẩm & kho» thôi ít dùng; LL11: + Kỹ năng)`);
 });
 
 test('④d · SALE chỉ thấy MỘT mục, và mục đó chỉ có màn làm việc của sale — §10 (CR-28-09)', () => {
@@ -258,8 +259,9 @@ test('④f · trong MỖI mục, màn ít dùng đứng SAU hết — vạch «�
   // LL1 · 29/09: 9 → 8. «Sản phẩm & kho» thôi ít dùng — nó là đầu của đích Sản phẩm.
   // «Khách hàng» sang Hộp thư (tìm khách là việc của sale), nên đứng đầu theo thứ tự sổ.
   const itDung = mh.MAN.filter((m) => m.itDung).map((m) => m.ten);
+  // LL11 · 29/09: + «Kỹ năng theo sản phẩm» (khái niệm bỏ, màn ẩn tới LL8).
   assert.deepEqual(itDung, [
-    'Khách hàng',
+    'Khách hàng', 'Kỹ năng theo sản phẩm',
     'Đưa sản phẩm lên chạy', 'Đoạn chữ gửi cho AI', 'Ảnh gửi khách', 'Gợi ý từ AI', 'So hai bản kịch bản',
     'Khách vào từ đâu', 'Rủi ro hoàn hàng',
   ]);

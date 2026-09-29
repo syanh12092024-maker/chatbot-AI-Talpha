@@ -91,10 +91,13 @@ test('N5 · mỗi vai thấy đúng tập màn như trước — trừ «Sản p
   // lõi mà không thấy sản phẩm nào.
   // Mỗi màn THÊM VÀO tập tới-được phải khai tên phiếu đã thêm nó — không thêm lặng lẽ.
   const THEM_CO_CHU_Y = { '/san-pham': 'LL1', '/nguon-khach': 'LL5 (có dữ liệu)', '/rui-ro-hoan': 'LL5 (có dữ liệu)' };
+  const BO_CO_CHU_Y = { '/ky-nang': 'LL11 (khái niệm kỹ năng bỏ — «hỏi size» sang kiến thức sản phẩm)' };
   for (const [ten, truoc] of Object.entries(HIEN_TRUOC)) {
     const v = VAI[ten];
     const mongDoi = new Set(truoc);
     for (const d of Object.keys(THEM_CO_CHU_Y)) if (mh.MAN.find((m) => m.duong === d).vai.includes(v)) mongDoi.add(d);
+    // …và mỗi màn RỜI tập tới-được cũng phải khai phiếu (đối xứng — bỏ lặng lẽ là mất đường vào không ai hay).
+    for (const d of Object.keys(BO_CO_CHU_Y)) mongDoi.delete(d);
     assert.deepEqual(hienCua(v), [...mongDoi].sort(), `vai ${ten}`);
   }
 });

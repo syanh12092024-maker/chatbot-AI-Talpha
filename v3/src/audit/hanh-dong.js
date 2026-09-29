@@ -124,6 +124,9 @@ export const HANH_DONG = Object.freeze({
   // 1 thị trường). Kéo theo page đang bán món đó sang sản phẩm này — phải trả lời được «ai nối, lúc nào».
   GAN_MON_POS_GOC: 'gan_mon_pos_goc',
   GO_MON_POS_GOC: 'go_mon_pos_goc',
+  // LL11 (29/09) — sửa kiến thức sản phẩm (công dụng · cách dùng · hỏi size…): bộ ráp prompt ĐỌC khối này, tức đổi
+  // cách bot tư vấn cho mọi page bán sản phẩm — cùng họ với BAT_TAT_KY_NANG mà nó thay chỗ.
+  SUA_KIEN_THUC_SAN_PHAM: 'sua_kien_thuc_san_pham',
 });
 
 /** Nhóm để màn hình xếp bộ lọc thành từng cụm, không phải để module này dùng. */
@@ -156,7 +159,7 @@ export const NHOM = Object.freeze({
   lop_0_dong: Object.freeze([HANH_DONG.TAO_MAU_0_DONG, HANH_DONG.SUA_MAU_0_DONG]),
   san_pham: Object.freeze([
     HANH_DONG.TAO_SAN_PHAM_GOC, HANH_DONG.SUA_SAN_PHAM_GOC, HANH_DONG.BO_SAN_PHAM_GOC,
-    HANH_DONG.GAN_MON_POS_GOC, HANH_DONG.GO_MON_POS_GOC,
+    HANH_DONG.GAN_MON_POS_GOC, HANH_DONG.GO_MON_POS_GOC, HANH_DONG.SUA_KIEN_THUC_SAN_PHAM,
   ]),
   bo_luat: Object.freeze([HANH_DONG.LUU_BAN_NHAP_BO_LUAT, HANH_DONG.AP_BO_LUAT]),
   ky_nang: Object.freeze([HANH_DONG.BAT_TAT_KY_NANG, HANH_DONG.DAT_NHOM_KY_NANG]),
@@ -211,6 +214,8 @@ export const nhomBatBuoc = Object.freeze(new Set([
   HANH_DONG.BAT_TAT_KY_NANG,
   // Đưa kịch bản lên LIVE là đổi cách bot nói với khách của page đó, có hiệu lực ≤60 giây.
   HANH_DONG.DUA_KICH_BAN_LEN_LIVE,
+  // LL11: kiến thức sản phẩm thay chỗ kỹ năng — cùng lý do với BAT_TAT_KY_NANG ở trên.
+  HANH_DONG.SUA_KIEN_THUC_SAN_PHAM,
 ]));
 
 /** Ghi hỏng mã này thì phải ném lỗi chứ không được nuốt. */
@@ -271,6 +276,7 @@ const MO_TA = Object.freeze({
   [HANH_DONG.BO_SAN_PHAM_GOC]: 'Bỏ sản phẩm gốc',
   [HANH_DONG.GAN_MON_POS_GOC]: 'Gắn món POS vào sản phẩm (thêm thị trường)',
   [HANH_DONG.GO_MON_POS_GOC]: 'Gỡ món POS khỏi sản phẩm',
+  [HANH_DONG.SUA_KIEN_THUC_SAN_PHAM]: 'Sửa kiến thức sản phẩm (bot đọc)',
   [HANH_DONG.THEM_KET_NOI_POS]: 'Thêm kết nối POS',
   [HANH_DONG.SUA_KET_NOI_POS]: 'Sửa kết nối POS',
   [HANH_DONG.BAT_TAT_KET_NOI_POS]: 'Bật/tắt kết nối POS',
