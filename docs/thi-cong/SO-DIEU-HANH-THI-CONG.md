@@ -2702,3 +2702,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · LL18 → ✅ — khung theo bản vẽ (thanh ngang năm đích + «Trong mục X»), MÁY CHỦ vẽ sẵn vào HTML (menu có trong lần vẽ đầu), tệp chung cache theo mã băm chung, gzip, `/` theo vai, 403 thôi ngõ cụt, liên kết sang màn không mở được thì tắt — sinh từ lời người dùng sau deploy sóng LL
   bộ ca ll18 12/12 · đảo-vá 20/20 đỏ · cổng ll18.sh 9/9 · npm test 2.282 ca 0 đỏ · e2e 47 màn 3 vai: vẽ đầu ~750→~420 ms, 0 lần 403 · chưa deploy
   · commit 31212d9 · nhật ký docs/thi-cong/nhat-ky/phieu-LL18.md
+- 29/09 · VE1 → ✅ — màn Sản phẩm dựng lại theo bản vẽ 2a (hai cột · bốn tầng · Chung / Theo thị trường / Page / Lịch sử), đủ bảy việc cũ, giá theo thị trường gom từ bản sao page (lệch giá nói ra), lịch sử từ nhật ký; chỗ chưa có nguồn nói rõ
+  ca VE1 5/5 Postgres thật · U4 U6 · đảo-vá 10/10 · npm test 2.291 ca 0 đỏ · cổng ve1.sh 6/6 · e2e 47 màn 0 lỗi · ảnh 11 trạng thái (ghi thật) · chưa deploy
+  · commit 86d7aa6 · nhật ký docs/thi-cong/nhat-ky/phieu-VE1.md
