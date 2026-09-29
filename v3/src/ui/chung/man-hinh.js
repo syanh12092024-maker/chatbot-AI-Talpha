@@ -75,27 +75,22 @@ import * as nhatKy from '../nhat-ky/index.js';
  * KHÔNG màn nào bị xoá: 24 màn vẫn còn đủ 24 đường, chỉ đổi chỗ đứng trên menu.
  */
 export const NHOM = Object.freeze([
-  // ═══ BẢN GD6 · 25/09/2026 — mục đặt theo NHỊP MỞ MÁY, không theo tầng dữ liệu ═════════
-  // Lượt 14/09 đặt tên mục theo bản đặc tả (Tổng quan · Vận hành · AI Bot · Phân tích ·
-  // Quản trị). Đo lại 22/09 thì người dùng vẫn than y như cũ, vì bệnh không nằm ở tên mục:
-  // cùng một việc («cho một page chạy được») vẫn rải ở ba mục khác nhau, và sáu màn chưa có
-  // dữ liệu vẫn đứng ngang hàng với màn mở hằng ngày.
+  // ═══ LL1 · 29/09/2026 — NĂM ĐÍCH (CR-28-09c, `docs/v3/03-MAN-HINH.md`) ═══════════════════
+  // Bản GD6 (25/09) xếp theo nhịp mở máy — Hôm nay · Page & bot · Dạy bot · Số liệu · Cài đặt —
+  // nhưng cùng một việc vẫn rải nhiều mục: sản phẩm ở «Page & bot», kịch bản tầng sản phẩm ở
+  // «Dạy bot», khách hàng ở «Số liệu». Người quyết duyệt bản vẽ năm đích 28–29/09: Sản phẩm
+  // thành đích riêng vì nó là lõi câu trả lời (01 §6 mới), Page gom mọi thứ bot nói trên một
+  // page, Hộp thư là nhà duy nhất của sale.
   //
-  // Nay mục trả lời đúng câu người dùng mang tới, theo nhịp họ mở máy:
-  //   mỗi sáng        → `hom-nay`
-  //   khi thêm/sửa page → `page-bot`
-  //   khi sửa cách bot nói → `day-bot`
-  //   cuối kỳ         → `so-lieu`
-  //   hôm cài đặt, hôm có sự cố → `cai-dat`
-  //
-  // ⚠️ KHÔNG màn nào bị xoá và KHÔNG đường nào đổi. Bảy màn chưa dùng được (chưa có dữ liệu,
-  //    hoặc chưa có cửa ghi) mang cờ `thuNghiem` — ra khỏi menu, đường dẫn vẫn mở được.
-  { ma: 'hom-nay', ten: 'Hôm nay', bieuTuong: 'inbox',
-    mo: 'Việc cần người làm hôm nay: khách đang chờ, đơn chờ duyệt' },
-  { ma: 'page-bot', ten: 'Page & bot', bieuTuong: 'bot',
-    mo: 'Thêm hoặc sửa một page, và bật bot cho nó' },
-  { ma: 'day-bot', ten: 'Dạy bot', bieuTuong: 'pencil',
-    mo: 'Sửa cách bot nói: kịch bản, quy tắc, câu trả lời sẵn' },
+  // ⚠️ LL1 CHỈ ĐỔI CHỖ NGỒI. KHÔNG màn nào bị xoá, KHÔNG đường nào đổi (ca N3 của
+  //    `ll1-nam-dich.test.mjs` so danh sách với bản chụp). Màn cũ gộp vào nhà mới ở LL2–LL6,
+  //    gỡ ở LL8.
+  { ma: 'hop-thu', ten: 'Hộp thư', bieuTuong: 'inbox',
+    mo: 'Khách đang chờ người, đơn chờ duyệt — trả lời vẫn ở Pancake' },
+  { ma: 'san-pham', ten: 'Sản phẩm', bieuTuong: 'package',
+    mo: 'Bán gì, ở thị trường nào, giá bao nhiêu — bot trả lời theo đây' },
+  { ma: 'page', ten: 'Page', bieuTuong: 'bot',
+    mo: 'Từng page: bot nói gì, bật hay tắt, và luật chung cho mọi page' },
   { ma: 'so-lieu', ten: 'Số liệu', bieuTuong: 'chart-no-axes-column',
     mo: 'Ra bao nhiêu đơn, tốn bao nhiêu tiền' },
   { ma: 'cai-dat', ten: 'Cài đặt', bieuTuong: 'settings',
@@ -144,9 +139,9 @@ const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false, canId =
   /* `moTuManKhac` = `{ thay, loiVao }`: màn DÙNG ĐƯỢC, nhưng với người mở được màn `thay` thì
      việc của nó đã nằm ở đó, và lối vào đúng là từ các tệp `loiVao` (mang sẵn page, việc).
      Ca ④g của `dieu-huong.test.mjs` đọc từng tệp ấy để chắc lối vào còn thật.
-     KHÔNG ẩn khi nó là màn CUỐI giữ mục của nó trên menu: marketer không thấy «Tất cả page»,
-     nên với họ «Sản phẩm & kho» là cửa duy nhất vào mục «Page & bot» — ẩn đồng loạt là cả mục
-     biến khỏi menu của họ (ca ②b bắt được, 28/09).
+     KHÔNG ẩn khi nó là màn CUỐI giữ mục của nó trên menu: án lệ 28/09 (trước LL1) — marketer
+     không thấy «Tất cả page», nên với họ «Sản phẩm & kho» từng là cửa duy nhất vào mục
+     «Page & bot»; ẩn đồng loạt là cả mục biến khỏi menu của họ (ca ②b bắt được).
      Đặt 28/09 khi rút menu 18 → 16 (người quyết: «rút menu và chữ cho gọn»). KHÁC `canId`:
      mở trần vẫn chạy, chỉ là mở trần thì người dùng phải tự chọn lại thứ màn kia đã biết. */
   moTuManKhac,
@@ -159,48 +154,49 @@ const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false, canId =
 
 export const MAN = Object.freeze([
   // ĐƯỜNG DẪN KHÔNG ĐỔI — đổi đường là làm chết mọi liên kết đã lưu. Chỉ đổi CHỖ NGỒI.
+  // Đích của từng màn = cột «Nhà mới» của `docs/v3/03-MAN-HINH.md` (LL1, 29/09).
 
-  // ① HÔM NAY — mở mỗi sáng. Mục DUY NHẤT vai `sale` thấy (01 §10).
-  dat(trangChu, 'Việc của tôi', 'hom-nay', 'Lọc theo vai bạn, gấp lên trước'),
-  dat(banHoiThoai, 'Bàn hội thoại', 'hom-nay', 'Hội thoại cần người, đọc chat ngay tại chỗ'),
-  dat(dispatch, 'Việc đang chờ', 'hom-nay', 'Khách bot đã giao lại, có đồng hồ đếm ngược'),
-  dat(vanHanh, 'Hội thoại và đơn', 'hom-nay', 'Bot nói gì với khách, và đơn chờ duyệt'),
+  // ① HỘP THƯ — nhà của sale (01 §10). Vai `sale` chỉ thấy đích này, và đặt chân ở màn đầu
+  // tiên nó vào được (`vai-b.js#duongSauKhiVao`) — thứ tự dưới đây là thứ tự đặt chân.
+  dat(trangChu, 'Việc của tôi', 'hop-thu', 'Lọc theo vai bạn, gấp lên trước'),
+  dat(banHoiThoai, 'Bàn hội thoại', 'hop-thu', 'Hội thoại cần người, đọc chat ngay tại chỗ'),
+  dat(dispatch, 'Việc đang chờ', 'hop-thu', 'Khách bot đã giao lại, có đồng hồ đếm ngược'),
+  dat(vanHanh, 'Hội thoại và đơn', 'hop-thu', 'Bot nói gì với khách, và đơn chờ duyệt'),
+  // Tìm khách theo số điện thoại là việc của Hộp thư (03-MAN-HINH), không phải của Số liệu.
+  dat(hoSoKhach, 'Khách hàng', 'hop-thu', 'Gộp ba kênh theo số điện thoại', true, true),
 
-  // ② PAGE & BOT — thêm hoặc sửa một page rồi bật. «Bắt đầu» đứng đầu: lối cho người mới.
-  // GD2 · 25/09 — «Bắt đầu» và «Page còn thiếu gì» RA KHỎI MENU: cả hai nay chuyển hướng về
-  // danh sách page. Không xoá đường dẫn, chỉ thôi quảng cáo chúng như hai màn riêng, vì ba
-  // dòng menu cho một câu hỏi là đúng thứ khiến người ta ghé 7 màn để cài một page.
-  dat(pageBot, 'Tất cả page', 'page-bot', 'Một dòng một page: bot nào, bật hay tắt, còn thiếu gì'),
+  // ② SẢN PHẨM — lõi của câu trả lời (01 §6 mới): chung → theo thị trường → page.
+  // LL1 · 29/09: «Sản phẩm & kho» BỎ cờ `moTuManKhac` và `itDung`. Cờ ấy (28/09) giấu nó với ai
+  // mở được trang một page, vì mỗi page đã có tab sản phẩm. Nay Sản phẩm là một ĐÍCH — giữ cờ
+  // thì bấm vào đích lõi mà chỉ thấy «Kỹ năng theo sản phẩm» (ca N5/N6).
+  dat(sanPham, 'Sản phẩm & kho', 'san-pham', 'Bot đang chào bán gì, còn hàng không'),
+  // Khái niệm kỹ năng bỏ ở LL11 — nội dung «hỏi size» sang kiến thức sản phẩm. Tới đó ngồi đây.
+  dat(kyNang, 'Kỹ năng theo sản phẩm', 'san-pham', 'Bật theo nhóm sản phẩm'),
+
+  // ③ PAGE — mọi thứ bot nói trên một page, và luật chung cho mọi page.
+  // GD2 · 25/09 — «Bắt đầu» và «Page còn thiếu gì» ngoài menu: cả hai chuyển hướng về danh sách.
+  dat(pageBot, 'Tất cả page', 'page', 'Một dòng một page: bot nào, bật hay tắt, còn thiếu gì'),
   // Trang của MỘT page: mở từ danh sách, không đứng riêng trên menu — nhưng vẫn khai ở đây
   // để thanh trên cùng tra được «tôi đang ở mục nào» (án lệ GD6 ⑥b). Cờ `canId` nói đúng
   // lý do ẩn: màn DÙNG ĐƯỢC, chỉ là không mở được nếu thiếu tham số.
-  dat(motPage, 'Trang một page', 'page-bot', 'Một page: tình trạng, công tắc, việc làm tiếp', false, false, true),
-  // 28/09: RA KHỎI THANH BÊN. Mỗi page nay có tab «Sản phẩm & giá» đọc bằng CÙNG bộ đọc với
-  // bot và sửa được tại chỗ; màn này chỉ còn là bản xem cả team — mở từ việc «hết hàng» của
-  // Việc của tôi và từ danh sách điều kiện của page.
-  dat(sanPham, 'Sản phẩm & kho', 'page-bot', 'Bot đang chào bán gì, còn hàng không', true, false, false,
-    { thay: motPage.DUONG_TRANG, loiVao: ['trang-chu/kho-trang-chu.js', 'san-sang/kho-san-sang.js'] }),
-  dat(lenChay, 'Đưa sản phẩm lên chạy', 'page-bot', 'Sáu chặng, mỗi chặng một cửa kiểm', true, true),
-
-  // ③ DẠY BOT — sửa cách bot nói.
-  dat(kichBan, 'Kịch bản của page', 'day-bot', 'Lời bot nói riêng trên từng page'),
-  dat(boLuat, 'Quy tắc chung mọi page', 'day-bot', 'Sửa là cả team đổi cách nói'),
-  dat(lop0, 'Câu trả lời sẵn', 'day-bot', 'Trả theo từ khoá, không tốn tiền'),
-  dat(kyNang, 'Kỹ năng theo sản phẩm', 'day-bot', 'Bật theo nhóm sản phẩm'),
+  dat(motPage, 'Trang một page', 'page', 'Một page: tình trạng, công tắc, việc làm tiếp', false, false, true),
+  dat(kichBan, 'Kịch bản của page', 'page', 'Lời bot nói riêng trên từng page'),
+  dat(boLuat, 'Quy tắc chung mọi page', 'page', 'Sửa là cả team đổi cách nói'),
+  dat(lop0, 'Câu trả lời sẵn', 'page', 'Trả theo từ khoá, không tốn tiền'),
+  dat(lenChay, 'Đưa sản phẩm lên chạy', 'page', 'Sáu chặng, mỗi chặng một cửa kiểm', true, true),
   // 28/09: RA KHỎI THANH BÊN. Là công cụ chẩn đoán của MỘT page; trang một page trỏ sang nó
   // mang sẵn `?page=`, còn mở từ menu thì phải tự chọn lại page.
-  dat(promptPage, 'Đoạn chữ gửi cho AI', 'day-bot', 'Xem đúng thứ AI đang đọc', true, false, false,
+  dat(promptPage, 'Đoạn chữ gửi cho AI', 'page', 'Xem đúng thứ AI đang đọc', true, false, false,
     { thay: motPage.DUONG_TRANG, loiVao: ['mot-page/kho-mot-page.js'] }),
-  dat(thuVienAnh, 'Ảnh gửi khách', 'day-bot', 'Ảnh gắn nhãn theo chủ đề', true, true),
-  dat(aiDeXuat, 'Gợi ý từ AI', 'day-bot', 'Phải duyệt mới áp được', true, true),
-  dat(hieuQua, 'So hai bản kịch bản', 'day-bot', 'Chưa đủ mẫu thì nói chưa kết luận', true, true),
+  dat(thuVienAnh, 'Ảnh gửi khách', 'page', 'Ảnh gắn nhãn theo chủ đề', true, true),
+  dat(aiDeXuat, 'Gợi ý từ AI', 'page', 'Phải duyệt mới áp được', true, true),
+  dat(hieuQua, 'So hai bản kịch bản', 'page', 'Chưa đủ mẫu thì nói chưa kết luận', true, true),
 
   // ④ SỐ LIỆU — để ĐỌC, không để ra lệnh.
   dat(baoCao, 'Đơn và tỉ lệ chốt', 'so-lieu', 'Tách hai luồng, không gộp một tổng'),
   dat(chiPhi, 'Chi phí AI', 'so-lieu', 'Tiền model theo page'),
   dat(nguonKhach, 'Khách vào từ đâu', 'so-lieu', 'Hai luồng đơn và chỗ khách rơi', true, true),
   dat(ruiRo, 'Rủi ro hoàn hàng', 'so-lieu', 'Bốn tầng, đọc cột đã chấm sẵn', true, true),
-  dat(hoSoKhach, 'Khách hàng', 'so-lieu', 'Gộp ba kênh theo số điện thoại', true, true),
 
   // ⑤ CÀI ĐẶT — vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
   // GD3 · 25/09: màn ĐẦU TIÊN của mục Cài đặt — người mới mở nó để biết còn thiếu việc gì,

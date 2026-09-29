@@ -168,17 +168,21 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   //   Hôm nay · Page & bot · Dạy bot · Số liệu · Cài đặt   (+ dự trù «Nhắn cho khách»)
   // Và bảy màn chưa dùng được mang cờ `thuNghiem`: KHÔNG vẽ ra thanh bên, nhưng vẫn nằm
   // trong gói menu (cờ `an`) để thanh trên cùng tra được vị trí khi mở bằng đường dẫn.
-  assert.deepEqual(menu.map((n) => n.ma), ['hom-nay', 'page-bot', 'day-bot', 'so-lieu', 'cai-dat'],
-    'thứ tự mục theo nhịp mở máy: việc hôm nay trước, cài đặt sau cùng');
-  assert.equal(menu[0].man[0].ten, 'Việc của tôi', 'Hôm nay mở bằng việc của chính người xem');
+  // ═══ ĐỔI LL1 · 29/09/2026 — NĂM ĐÍCH (CR-28-09c) ════════════════════════════════════
+  //   Hộp thư · Sản phẩm · Page · Số liệu · Cài đặt   (+ dự trù «Nhắn cho khách»)
+  // Bản chụp trước/sau và đích của từng đường: `ll1-nam-dich.test.mjs`.
+  assert.deepEqual(menu.map((n) => n.ma), ['hop-thu', 'san-pham', 'page', 'so-lieu', 'cai-dat'],
+    'năm đích: Hộp thư trước, Cài đặt sau cùng');
+  assert.equal(menu[0].man[0].ten, 'Việc của tôi', 'Hộp thư của quản trị mở bằng việc của chính người xem');
   const hienRa = menu.reduce((a, n) => a + n.man.filter((m) => !m.an).length, 0);
   const an = menu.reduce((a, n) => a + n.man.filter((m) => m.an).length, 0);
   // GD2 · 25/09: 19 → 17 («Bắt đầu» và «Page còn thiếu gì» ra khỏi menu, cả hai chuyển hướng
   // về danh sách page). GD3 cùng ngày: +1 màn «Cài đặt team» ⇒ 18.
   // 28/09: 18 → 16 — «Sản phẩm & kho» và «Đoạn chữ gửi cho AI» mở TỪ MÀN KHÁC (ca ④g).
   // 28/09 · CR-28-09: +1 «Bàn hội thoại» ⇒ 17.
-  assert.equal(hienRa, 17, `thanh bên đang vẽ ${hienRa} màn`);
-  assert.equal(an, 10, 'bảy màn chưa dùng được + một màn CẦN ID + hai màn MỞ TỪ MÀN KHÁC phải '
+  // LL1 · 29/09: +1 «Sản phẩm & kho» (bỏ cờ mở-từ-màn-khác — nó là đầu của đích Sản phẩm) ⇒ 18.
+  assert.equal(hienRa, 18, `thanh bên đang vẽ ${hienRa} màn`);
+  assert.equal(an, 9, 'bảy màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC phải '
     + 'ẩn khỏi thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
   // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp
@@ -186,28 +190,29 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 7, 'bảy màn chưa dùng được');
   assert.equal(mh.MAN.filter((m) => m.canId).length, 1, 'đúng một màn cần tham số để mở');
   assert.deepEqual(mh.MAN.filter((m) => m.moTuManKhac).map((m) => m.ten),
-    ['Sản phẩm & kho', 'Đoạn chữ gửi cho AI'], 'màn mở từ màn khác phải khai ra, không trôi');
+    ['Đoạn chữ gửi cho AI'], 'màn mở từ màn khác phải khai ra, không trôi (LL1: «Sản phẩm & kho» thôi)');
   // Chín màn ít dùng dồn vào Cài đặt. Đếm ở đây để nếu có người kéo một màn ít dùng trở
   // lên mục hằng ngày thì bài này đỏ, chứ không trôi lặng lẽ.
   // Bảy màn ít dùng nay tản ra ba mục theo ĐÚNG việc của chúng, không dồn hết vào một
   // chỗ nữa. Đếm ở đây để ai kéo một màn ít dùng lên mục hằng ngày thì ca này đỏ.
   const itDung = mh.MAN.filter((m) => m.itDung);
-  assert.equal(itDung.length, 9, `đang có ${itDung.length} màn ít dùng`);
+  assert.equal(itDung.length, 8, `đang có ${itDung.length} màn ít dùng (LL1: «Sản phẩm & kho» thôi ít dùng)`);
 });
 
 test('④d · SALE chỉ thấy MỘT mục, và mục đó chỉ có màn làm việc của sale — §10 (CR-28-09)', () => {
   const menu = mh.menuCua([VAI.SALE]);
   assert.equal(menu.length, 1, 'sale không được thấy mục nào khác');
-  assert.equal(menu[0].ma, 'hom-nay');
+  assert.equal(menu[0].ma, 'hop-thu');
   assert.deepEqual(menu[0].man.map((m) => m.ten), ['Bàn hội thoại', 'Việc đang chờ']);
 });
 
 test('④e · `mucCuaDuong` chỉ đúng mục đang đứng — menu phải bung được đúng chỗ', () => {
-  assert.equal(mh.mucCuaDuong('/bo-luat'), 'day-bot');
-  assert.equal(mh.mucCuaDuong('/dieu-phoi'), 'hom-nay');
+  assert.equal(mh.mucCuaDuong('/bo-luat'), 'page');
+  assert.equal(mh.mucCuaDuong('/dieu-phoi'), 'hop-thu');
   assert.equal(mh.mucCuaDuong('/nhat-ky'), 'cai-dat');
-  assert.equal(mh.mucCuaDuong('/hieu-qua'), 'day-bot', 'màn ẩn vẫn phải tra ra mục của nó');
-  assert.equal(mh.mucCuaDuong('/dieu-phoi/'), 'hom-nay', 'gạch chéo cuối không được làm lệch');
+  assert.equal(mh.mucCuaDuong('/hieu-qua'), 'page', 'màn ẩn vẫn phải tra ra mục của nó');
+  assert.equal(mh.mucCuaDuong('/dieu-phoi/'), 'hop-thu', 'gạch chéo cuối không được làm lệch');
+  assert.equal(mh.mucCuaDuong('/page/123'), 'page', '`/page` không được nhường cho `/page-bot` hay ngược lại');
   assert.equal(mh.mucCuaDuong('/khong-co-that'), null, 'đường lạ trả null, không đoán bừa');
 });
 
@@ -242,11 +247,13 @@ test('④f · trong MỖI mục, màn ít dùng đứng SAU hết — vạch «�
   // Kỹ năng theo sản phẩm. Một màn thêm vào: không có.
   // GD6 · 25/09: 7 → 9. Hai màn thêm vào «ít dùng» vì chúng chỉ mở khi cần tra cứu:
   // «Khách hàng» và «Khách vào từ đâu». Thứ tự theo đúng thứ tự trong sổ đăng ký.
+  // LL1 · 29/09: 9 → 8. «Sản phẩm & kho» thôi ít dùng — nó là đầu của đích Sản phẩm.
+  // «Khách hàng» sang Hộp thư (tìm khách là việc của sale), nên đứng đầu theo thứ tự sổ.
   const itDung = mh.MAN.filter((m) => m.itDung).map((m) => m.ten);
   assert.deepEqual(itDung, [
-    'Sản phẩm & kho', 'Đưa sản phẩm lên chạy',
-    'Đoạn chữ gửi cho AI', 'Ảnh gửi khách', 'Gợi ý từ AI', 'So hai bản kịch bản',
-    'Khách vào từ đâu', 'Rủi ro hoàn hàng', 'Khách hàng',
+    'Khách hàng',
+    'Đưa sản phẩm lên chạy', 'Đoạn chữ gửi cho AI', 'Ảnh gửi khách', 'Gợi ý từ AI', 'So hai bản kịch bản',
+    'Khách vào từ đâu', 'Rủi ro hoàn hàng',
   ]);
 });
 
@@ -318,7 +325,7 @@ test('⑥b · đường dẫn vị trí tìm ra ĐÚNG nhóm cho mọi màn — 
   }
   const chiTiet = timChoDung(d, '/dieu-phoi/viec/123');
   assert.ok(chiTiet, 'màn chi tiết phải tìm ra màn cha');
-  assert.equal(chiTiet.nhom.ma, 'hom-nay');
+  assert.equal(chiTiet.nhom.ma, 'hop-thu');
   assert.equal(chiTiet.man.duong, '/dieu-phoi');
   assert.equal(timChoDung(d, '/khong-co-that'), null, 'đường lạ trả null, không đoán bừa');
 });
@@ -361,10 +368,12 @@ test('④g · màn MỞ TỪ MÀN KHÁC thì lối vào ấy phải CÒN THẬT 
 });
 
 test('④h · màn MỞ TỪ MÀN KHÁC vẫn hiện khi nó là cửa DUY NHẤT của vai vào mục', () => {
-  // Marketer không thấy «Tất cả page» ⇒ với họ «Sản phẩm & kho» là cửa duy nhất vào «Page &
-  // bot». Ẩn đồng loạt thì cả mục biến khỏi menu của họ — ca ②b bắt được lần đầu viết.
+  // Án lệ 28/09: marketer không thấy «Tất cả page» ⇒ với họ «Sản phẩm & kho» là cửa duy nhất
+  // vào «Page & bot». Ẩn đồng loạt thì cả mục biến khỏi menu của họ — ca ②b bắt được lần đầu viết.
+  // LL1 · 29/09: «Sản phẩm & kho» thành đầu của đích Sản phẩm — HIỆN với mọi vai vào được nó
+  // (ca N5/N6 của `ll1-nam-dich.test.mjs`). Luật «cửa duy nhất» vẫn sống cho màn còn cờ.
   const hien = (vai) => mh.menuCua([vai]).flatMap((n) => n.man.filter((m) => !m.an).map((m) => m.ten));
   assert.ok(hien(VAI.MARKETER).includes('Sản phẩm & kho'), 'marketer mất lối vào sản phẩm');
-  assert.ok(!hien(VAI.QUAN_TRI).includes('Sản phẩm & kho'), 'quản trị đã có tab ở trang page');
+  assert.ok(hien(VAI.QUAN_TRI).includes('Sản phẩm & kho'), 'đích Sản phẩm của quản trị phải mở ra sản phẩm');
   assert.ok(!hien(VAI.QUAN_TRI).includes('Đoạn chữ gửi cho AI'));
 });

@@ -184,6 +184,10 @@ Sắp lại menu không đụng tới cả bốn gốc này, nên sau mỗi lầ
 
 ### 4a. Menu đích (làm ở GD6, sau khi các luồng đã xong)
 
+> **Đổi 29/09/2026 — phiếu LL1 (CR-28-09c).** Menu nay là **năm đích: Hộp thư · Sản phẩm · Page · Số liệu ·
+> Cài đặt**. Đích của từng màn: bảng «Màn cũ đi đâu» của `docs/v3/03-MAN-HINH.md`; nguồn trong mã:
+> `v3/src/ui/chung/man-hinh.js`. Bảng dưới là bản GD6 — giữ để tra lịch sử.
+
 | Mục | Màn | Ghi chú |
 |---|---|---|
 | **Hôm nay** | Việc của tôi · Hội thoại · Đơn chờ duyệt | Mở mỗi sáng. Vai sale thấy Hội thoại và Đơn |
