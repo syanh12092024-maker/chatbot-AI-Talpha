@@ -53,14 +53,35 @@ test('U3 · router: ba đường LL13 đứng TRƯỚC `/api/san-pham/:id` (đ�
   }
 });
 
-test('U4 · trang: khối «Sản phẩm» đứng TRƯỚC bảng theo page; mở chi tiết + gắn/gỡ gọi đúng đường', () => {
+test('U4 · trang (VE1 · theo bản vẽ 2a): hai cột, bốn tầng, bốn tab — và ĐỦ bảy việc của màn cũ còn đường gọi', () => {
+  // LL13 neo «khối Sản phẩm đứng trước bảng theo page». VE1 (29/09) dựng lại theo bản vẽ: danh sách sản phẩm bên trái,
+  // một sản phẩm bên phải; bảng theo page thành «Bản sao theo page» mở từ ô lưu ý. Thước sửa theo luật mới (án lệ #27).
   const html = fs.readFileSync(new URL('../../src/ui/san-pham/trang/san-pham.html', import.meta.url), 'utf8');
-  assert.ok(html.indexOf('id="tieuGoc">Sản phẩm</h2>') > 0 && html.indexOf('id="tieuGoc"') < html.indexOf('id="tieuDe"'),
-    'sản phẩm là lõi — khối sản phẩm phải đứng trên bảng «Page có sản phẩm»');
-  assert.match(html, /'\/chi-tiet'\)/);
-  assert.match(html, /'\/mon', \{ method: 'POST'/);
-  assert.match(html, /'\/mon\/go', \{ method: 'POST'/);
-  assert.match(html, /<th scope="col" class="num">Thị trường<\/th>/);
+  assert.match(html, /<header class="an-tieu-de">\s*<h1>Sản phẩm &amp; kho<\/h1>/, 'tên màn một nguồn (HK10) — đầu trang chỉ cho trình đọc màn hình');
+  assert.match(html, /<main class="chia-hai">/);
+  assert.match(html, /<section class="chia-hai-trai" aria-label="Sản phẩm">/);
+  assert.match(html, /<ul class="ds-chon" id="dsGoc"/);
+  assert.match(html, /aria-label="Bot ghép lời từ bốn tầng"/);
+  assert.equal((html.match(/<span class="buoc">[①②③④]/g) || []).length, 4, 'bốn tầng');
+  const tab = html.match(/const TABS = (\[[^\n]*\]);/);
+  assert.ok(tab, 'không thấy danh sách tab');
+  assert.deepEqual(JSON.parse(tab[1].replace(/'/g, '"')).map((x) => x[1]), ['Chung', 'Theo thị trường', 'Page đang bán', 'Lịch sử']);
+  // Bảy việc của màn cũ — mỗi việc một đường gọi / một dấu còn nguyên:
+  for (const [viec, re] of [
+    ['chi tiết', /'\/chi-tiet'\)/], ['gắn món', /'\/mon', \{ method: 'POST'/], ['gỡ món', /'\/mon\/go', \{ method: 'POST'/],
+    ['kiến thức', /'\/kien-thuc', \{ method: 'POST'/], ['lịch sử (mới)', /'\/lich-su'\)/],
+    ['tạo sản phẩm', /goiGhi\('\/api\/san-pham\/goc', \{ method: 'POST'/], ['bỏ sản phẩm', /\{ method: 'DELETE' \}/],
+    ['số hiệu chờ đặt tên', /data-cho=/], ['bản sao theo page', /goi\('\/api\/san-pham\/' \+ encodeURIComponent\(id\)\)/],
+    ['số liệu', /metricRow\(\[/], ['cảnh báo thiếu bậc giá', /chưa có bậc giá nào/],
+    ['thiếu tên không bịa', /màn này không bịa tên thay/], ['tồn kho để trống', /Tồn kho', value: '—'/],
+  ]) assert.match(html, re, `mất việc «${viec}» khi dựng lại màn`);
+  // Chỗ chưa có nguồn nói RÕ chưa có — không bịa (marketer từ HRM · ảnh chung · kịch bản tầng nước).
+  assert.match(html, /Chưa có nguồn — hồ sơ HRM nối ở phiếu LL15/);
+  assert.match(html, /Ảnh chung của sản phẩm chưa có chỗ lưu/);
+  // Ảnh chụp VE1 29/09: cột phải cao cố định + nội dung dài ⇒ flex co dải bốn tầng và hàng tab (có overflow) về 0 —
+  // chúng BIẾN MẤT ở tab Chung. Luật «con của cột phải không co» phải còn trong hệ kiểu.
+  const css = fs.readFileSync(new URL('../../src/ui/chung/kieu.css', import.meta.url), 'utf8');
+  assert.match(css, /\.chia-hai-phai > \* \{ flex-shrink: 0; \}/, 'thiếu luật không-co ⇒ dải bốn tầng + tab biến mất khi form dài');
 });
 
 test('U5 · UI.button đổi khoá `data` camelCase ⇒ kebab (`moGoc` ⇒ `data-mo-goc`) — nút gắn bằng `[data-mo-goc]` mới bấm được', () => {
@@ -70,4 +91,27 @@ test('U5 · UI.button đổi khoá `data` camelCase ⇒ kebab (`moGoc` ⇒ `data
   assert.match(html, / data-mo-goc="7"/);
   assert.match(html, / data-live="x"/, 'khoá chữ thường giữ nguyên');
   assert.match(html, / data-go-mon="1:a"/, 'khoá đã kebab giữ nguyên');
+});
+
+test('U6 · VE1 · lịch sử một sản phẩm: đọc nhật ký ĐÚNG đối tượng, nhãn người đọc được; chưa nối ⇒ 500 nói rõ, không giả «chưa ai sửa»', async () => {
+  goc.datDocNhatKyGoc(null);
+  await assert.rejects(() => goc.lichSuGoc(bc(VAI.MARKETER), 'g1'), (e) => e.ma === 'chua_noi' && e.status === 500);
+  let hoi = null;
+  goc.datDocNhatKyGoc(async (_b, bo) => {
+    hoi = bo;
+    return { dong: [
+      { xay_ra_luc: '2026-09-29T08:00:00Z', tac_nhan: 'nguoi:an@talpha.vn', hanh_dong: HANH_DONG.SUA_KIEN_THUC_SAN_PHAM, ghi_chu: 'hoi_size' },
+      { xay_ra_luc: '2026-09-28T08:00:00Z', tac_nhan: 'may:keo-danh-muc', hanh_dong: HANH_DONG.GAN_MON_POS_GOC, ghi_chu: '111:a' },
+    ], tong: 2 };
+  });
+  const ds = await goc.lichSuGoc(bc(VAI.MARKETER), 'g1');
+  assert.deepEqual(hoi, { doiTuongLoai: 'san_pham_goc', doiTuongId: 'g1', gioiHan: 50 });
+  assert.deepEqual(ds.map((x) => [x.ai, x.moTa]), [
+    ['an@talpha.vn', 'Sửa kiến thức sản phẩm (bot đọc)'],
+    ['máy · keo-danh-muc', 'Gắn món POS vào sản phẩm (thêm thị trường)'],
+  ]);
+  const { taoRouterSanPham } = await import('../../src/ui/san-pham/router.js');
+  const duong = taoRouterSanPham().stack.filter((l) => l.route).map((l) => `${Object.keys(l.route.methods)[0].toUpperCase()} ${l.route.path}`);
+  assert.ok(duong.indexOf('GET /api/san-pham/goc/:id/lich-su') >= 0 && duong.indexOf('GET /api/san-pham/goc/:id/lich-su') < duong.indexOf('GET /api/san-pham/:id'),
+    'đường lịch sử phải đứng TRƯỚC /api/san-pham/:id');
 });

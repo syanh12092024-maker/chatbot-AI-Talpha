@@ -1384,6 +1384,121 @@
                     border-top: 1px solid var(--border-subtle); }
   .nguon-so code { font-family: var(--font-mono); font-size: 11px; }
 
+  /* ══════════════════ VE · BỐ CỤC THEO BẢN VẼ (artifact «AI Closer — làm lại từ đầu») ══════════════════
+     Thành phần dùng chung cho các màn dựng lại theo bản vẽ (VE1 Sản phẩm trước, Hộp thư · Page sau). Màn đã di
+     trú CẤM `<style>` và `style=` (HK15) — mọi hình dạng của bản vẽ phải là một lớp ở đây, đặt tên theo NGHĨA. */
+
+  /* Đầu trang CHỈ cho trình đọc màn hình: màn hai cột có tên màn ở dải trên; tiêu đề lớn là tên của thứ đang mở.
+     Giữ <h1> tên màn (HK10: tên màn một nguồn) mà không vẽ một dải thừa. */
+  body > header.an-tieu-de { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+                              overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+
+  /* HAI CỘT danh sách–chi tiết: cột trái 320px trắng, cột phải cuộn riêng; cao đúng phần dưới khung. */
+  body > main.chia-hai { max-width: none; margin: 0; padding: 0; display: grid;
+                          grid-template-columns: 320px minmax(0, 1fr);
+                          height: calc(100dvh - var(--topbar-height)); min-height: 480px; }
+  .chia-hai-trai { display: flex; flex-direction: column; min-height: 0; background: var(--surface);
+                   border-right: 1px solid var(--border-default); }
+  .chia-hai-dau { display: flex; flex-direction: column; gap: 10px; padding: var(--space-4);
+                  border-bottom: 1px solid var(--border-subtle); }
+  .chia-hai-dau .hang-giua { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .chia-hai-phai { min-height: 0; overflow-y: auto; padding: var(--space-5) var(--space-8) var(--space-12);
+                   display: flex; flex-direction: column; gap: 14px; }
+  /* Con của cột phải KHÔNG co: cột cao cố định, nội dung dài thì flex co mọi con lại — khối có `overflow` (dải bốn
+     tầng, hàng tab) co được tới 0 và biến mất (ảnh chụp VE1 · 29/09, tab Chung). Cột tự cuộn thay vì co. */
+  .chia-hai-phai > * { flex-shrink: 0; }
+
+  /* Danh sách để CHỌN (một dòng = một nút): tên + tóm tắt; dòng đang mở tô nền màu chính nhạt. */
+  .ds-chon { list-style: none; margin: 0; padding: 0; overflow-y: auto; }
+  .ds-chon > li { border-bottom: 1px solid var(--border-subtle); }
+  .ds-chon button { display: block; width: 100%; padding: 12px var(--space-4); border: 0; text-align: left;
+                    background: var(--surface); color: inherit; font: inherit; cursor: pointer; }
+  .ds-chon button:hover { background: var(--surface-hover); }
+  .ds-chon button[aria-current="true"] { background: var(--surface-selected); }
+  .ds-chon .ten { display: block; font-weight: var(--weight-medium); }
+  .ds-chon .tom { display: block; font-size: var(--text-xs); line-height: 18px; color: var(--text-secondary); }
+
+  /* Ô lưu ý nền cam — dữ liệu chưa theo mô hình, việc phải làm. Nút đậm bên trong là lối đi làm việc ấy. */
+  .o-luu-y { padding: 10px 12px; border-radius: 10px; background: var(--warning-bg); color: var(--warning);
+             font-size: var(--text-xs); line-height: 18px; }
+  .o-luu-y b { font-weight: var(--weight-semibold); }
+  .o-luu-y .nut-dam { display: inline-flex; align-items: center; margin: 6px 6px 0 0; height: 28px; padding: 0 10px;
+                      border: 0; border-radius: 7px; background: var(--text-primary); color: var(--text-inverse);
+                      font: inherit; font-size: var(--text-xs); text-decoration: none; cursor: pointer; }
+  .o-luu-y .nut-dam:hover { text-decoration: none; background: var(--text-secondary); }
+
+  /* Đầu phần chi tiết: tên (cỡ tiêu đề trang) + dòng phụ, hành động bên phải. */
+  .chi-tiet-dau { display: flex; align-items: flex-start; gap: var(--space-4); }
+  .chi-tiet-dau > :first-child { flex: 1; min-width: 0; }
+  .chi-tiet-dau .hanh-dong { display: flex; gap: var(--space-2); align-items: center; }
+  .tieu-de-lon { font-size: 22px; line-height: 28px; }
+  .dong-phu { margin-top: var(--space-1); font-size: var(--text-sm); color: var(--text-secondary); }
+
+  /* BOT ĐỌC THEO THỨ TỰ — dải bốn bậc; bậc do màn này sửa thì tô nền màu chính nhạt. */
+  .thu-tu-doc { display: flex; overflow: hidden; background: var(--surface); border: 1px solid var(--border-default);
+                border-radius: var(--radius-lg); font-size: var(--text-xs); }
+  .thu-tu-doc > div { flex: 1; padding: 10px 14px; border-right: 1px solid var(--border-subtle); }
+  .thu-tu-doc > div:last-child { border-right: 0; }
+  .thu-tu-doc .buoc { color: var(--text-muted); }
+  .thu-tu-doc b { display: block; font-weight: var(--weight-medium); }
+  .thu-tu-doc > [data-dang] { background: var(--primary-subtle); }
+  .thu-tu-doc > [data-dang] .buoc { color: var(--primary-hover); }
+
+  /* Hai cột phụ trong phần chi tiết: nội dung chính + cột 260px (ảnh, ghi chú). */
+  .chia-phu { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: var(--space-4); align-items: start; }
+  /* Khối có nhãn tô nền theo nghĩa — ô «Hỏi size trước khi chốt» của bản vẽ. */
+  .khoi-nhan { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 10px; }
+  .khoi-nhan[data-tone="warning"] { background: var(--warning-bg); color: var(--warning); }
+  .khoi-nhan[data-tone="warning"] textarea { border-color: var(--warning-border); background: var(--surface); }
+  .khoi-nhan .field-label { color: inherit; }
+  /* Chỗ trống có chủ ý — nói RÕ chưa có gì và vì sao, viền đứt. */
+  .o-trong { padding: var(--space-4); border: 1px dashed var(--border-strong); border-radius: var(--radius-md);
+             font-size: var(--text-xs); line-height: 18px; color: var(--text-muted); }
+
+  /* VIÊN CHỌN — thị trường, bộ lọc nhanh. Đang chọn = viên đậm; «thêm» = viền đứt màu chính. */
+  .hang-vien { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  button.vien { height: 32px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-full);
+                background: var(--surface); color: var(--text-primary); font: inherit; font-size: var(--text-sm); cursor: pointer; }
+  button.vien:hover { background: var(--surface-hover); }
+  button.vien[aria-pressed="true"] { background: var(--text-primary); border-color: var(--text-primary); color: var(--text-inverse); }
+  button.vien[data-kieu="them"] { border-style: dashed; border-color: var(--primary); background: transparent; color: var(--primary-hover); }
+  button.vien .phu { font-family: var(--font-mono); font-size: var(--text-xs); opacity: .8; }
+
+  /* THẺ KHOÁ–GIÁ TRỊ: một thị trường (shop · món · tồn · marketer) + bảng giá bên dưới, cột phải phụ. */
+  .the-kv { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-6);
+            padding: var(--space-4) var(--space-5); background: var(--surface);
+            border: 1px solid var(--border-default); border-radius: var(--radius-lg); }
+  .luoi-kv { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px 12px; align-items: start;
+             font-size: var(--text-sm); }
+  .luoi-kv > .nhan { color: var(--text-muted); }
+  .luoi-kv code { font-family: var(--font-mono); font-size: var(--text-xs); }
+
+  /* KHUNG THÊM ba bước (① chọn nhóm · ② chọn món · ③ xác nhận), viền màu chính. */
+  .khung-them { display: grid; grid-template-columns: 200px minmax(0, 1fr) 240px; gap: var(--space-4);
+                padding: var(--space-4) var(--space-5); background: var(--surface);
+                border: 1px solid var(--primary); border-radius: var(--radius-lg); }
+  .khung-them > div { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .khung-them .buoc-ten { font-weight: var(--weight-semibold); }
+  .ds-mon { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto;
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
+  .ds-mon > li + li { border-top: 1px solid var(--border-subtle); }
+  .ds-mon button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0;
+                   background: var(--surface); color: inherit; font: inherit; font-size: var(--text-sm);
+                   text-align: left; cursor: pointer; }
+  .ds-mon button:hover { background: var(--surface-hover); }
+  .ds-mon button[aria-pressed="true"] { background: var(--surface-selected); }
+  .ds-mon code { font-family: var(--font-mono); font-size: var(--text-xs); }
+  .ds-mon .ten { flex: 1; }
+
+  @media (max-width: 899px) {
+    body > main.chia-hai { grid-template-columns: minmax(0, 1fr); height: auto; }
+    .chia-hai-trai { max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--border-default); }
+    .chia-hai-phai { padding: var(--space-4); }
+    .chia-phu, .the-kv, .khung-them { grid-template-columns: minmax(0, 1fr); }
+    .thu-tu-doc { flex-direction: column; }
+    .thu-tu-doc > div { border-right: 0; border-bottom: 1px solid var(--border-subtle); }
+  }
+
   /* Mục U: tôn trọng người tắt chuyển động. */
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }

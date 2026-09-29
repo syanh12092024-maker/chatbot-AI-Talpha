@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manSanPham, sanPhamCuaMotPage, VAI_VAO_DUOC, VI_RONG, LoiSanPham } from './kho-san-pham.js';
-import { manSanPhamGoc, taoGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos, suaKienThucGoc } from './kho-goc.js';
+import { manSanPhamGoc, taoGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos, suaKienThucGoc, lichSuGoc } from './kho-goc.js';
 
 /**
  * Vai GHI của màn — khai TƯỜNG MINH ở router dù nó chỉ chuyển tiếp từ `kho-goc.js`.
@@ -153,6 +153,10 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
     const kq = await chiTietGoc(cuaBoiCanh(req), req.params.id);
     if (!kq) return res.status(404).json({ ok: false, ma: 'khong_co', thongDiep: 'Không có sản phẩm gốc này.' });
     return res.json({ ok: true, ...kq });
+  }));
+  // VE1: lịch sử một sản phẩm (tab «Lịch sử» của bản vẽ 2a) — đọc nhật ký đúng đối tượng.
+  r.get('/api/san-pham/goc/:id/lich-su', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, dong: await lichSuGoc(cuaBoiCanh(req), req.params.id) });
   }));
   r.post('/api/san-pham/goc/:id/mon', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, ...(await ganMonPos(cuaBoiCanh(req), req.params.id, req.body?.posMa)) });

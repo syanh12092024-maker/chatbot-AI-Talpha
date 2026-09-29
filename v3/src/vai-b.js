@@ -124,7 +124,7 @@ import {
 import {
   datTaoTruyVan as datTruyVanSanPham, datDocKhoSanPham,
   datChanDangNhap as datChanDangNhapSanPham, datChanVai as datChanVaiSanPham, taoRouterSanPham,
-  datKhoGoc, datPheuNhatKyGoc,
+  datKhoGoc, datPheuNhatKyGoc, datDocNhatKyGoc,
 } from './ui/san-pham/index.js';
 import {
   datTaoTruyVan as datTruyVanTrangChu, datDocSanSang as datDocSanSangTrangChu,
@@ -528,6 +528,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   // danh mục lại đếm ra một đống «số hiệu chưa có sản phẩm gốc» mà không ai đóng được.
   if (khoSanPhamGoc && typeof khoSanPhamGoc.ds === 'function') {
     datKhoGoc(khoSanPhamGoc);
+    // VE1: tab «Lịch sử» của một sản phẩm đọc nhật ký qua đúng cổng đọc (kẹp team ở cổng).
+    datDocNhatKyGoc(docNhatKy);
     daNoi.push('kho sản phẩm gốc → màn Sản phẩm & kho (xem · tạo · sửa · bỏ)');
   }
   else thieu.push('khoSanPhamGoc — không tạo được sản phẩm gốc bằng giao diện; danh mục ấy chỉ vào hệ được bằng SQL tay trên máy chủ');

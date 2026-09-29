@@ -270,11 +270,27 @@ export async function chiTietSanPhamGoc(pool, teamId, id) {
        FROM page p WHERE p.team_id = $1 AND p.san_pham_goc_ma = $3`,
     [teamId, mon.map((m) => m.ma), g.ma_goc],
   )).rows;
+  // VE1 · 29/09: «Giá ở <thị trường>» (bản vẽ 2a). Mô hình hôm nay giữ giá ở BẢN SAO của từng page (`goi_gia` của
+  // `san_pham` nguon<>'pos'), nối về món qua `pos_ma` — gom bậc giá của các bản sao đã nối món của shop, đếm page dùng
+  // mỗi bậc. KHÔNG dựng một bảng giá thị trường bịa: cùng số lượng mà khác giá ở hai page ⇒ HAI dòng + `lechGia`.
+  const bac = (await pool.query(
+    `SELECT s.pos_ma, s.page_id, g.so_luong, g.gia::float8 AS gia, g.tien_te, g.nhan
+       FROM san_pham s JOIN goi_gia g ON g.san_pham_id = s.id AND g.team_id = s.team_id
+      WHERE s.team_id = $1 AND s.nguon <> 'pos' AND s.pos_ma = ANY($2::text[])`,
+    [teamId, mon.map((m) => m.ma)],
+  )).rows;
   const theoShop = new Map();
   for (const m of mon) {
     const shop = shopCua(m.ma);
-    if (!theoShop.has(shop)) theoShop.set(shop, { shopId: shop, thiTruong: m.market || null, mon: [], page: [] });
+    if (!theoShop.has(shop)) theoShop.set(shop, { shopId: shop, thiTruong: m.market || null, mon: [], page: [], gia: new Map() });
     theoShop.get(shop).mon.push({ posMa: m.ma, ten: m.ten, tonKho: m.ton_kho, hetHang: !!m.het_hang });
+  }
+  for (const r of bac) {
+    const t = theoShop.get(shopCua(r.pos_ma));
+    if (!t) continue;
+    const k = `${r.so_luong}|${r.gia}|${r.tien_te}|${r.nhan || ''}`;
+    if (!t.gia.has(k)) t.gia.set(k, { soLuong: r.so_luong, gia: r.gia, tienTe: r.tien_te, nhan: r.nhan || '', page: new Set() });
+    t.gia.get(k).page.add(String(r.page_id));
   }
   const trangPage = new Map();
   for (const b of ban) {
@@ -287,7 +303,14 @@ export async function chiTietSanPhamGoc(pool, teamId, id) {
   return {
     id: String(g.id), maGoc: g.ma_goc, ten: g.ten, moTa: g.mo_ta, soHieu: g.so_hieu,
     kienThuc: g.kien_thuc && typeof g.kien_thuc === 'object' ? g.kien_thuc : {},
-    thiTruong: [...theoShop.values()].map((t) => ({ ...t, page: [...new Set(t.page)] })),
+    thiTruong: [...theoShop.values()].map((t) => {
+      const gia = [...t.gia.values()]
+        .map((x) => ({ soLuong: x.soLuong, gia: x.gia, tienTe: x.tienTe, nhan: x.nhan, soPage: x.page.size }))
+        .sort((a, b) => a.soLuong - b.soLuong || a.gia - b.gia);
+      const moiSo = new Map();
+      for (const x of gia) moiSo.set(`${x.soLuong}|${x.tienTe}`, (moiSo.get(`${x.soLuong}|${x.tienTe}`) || 0) + 1);
+      return { ...t, page: [...new Set(t.page)], gia, lechGia: [...moiSo.values()].some((n) => n > 1) };
+    }),
     page: [...trangPage.values()].map((p) => ({ ...p, qua: [...p.qua], shop: [...p.shop] })),
   };
 }

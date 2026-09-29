@@ -9,7 +9,7 @@
 // Tầng A (`src/products/san-pham-goc.js`) giữ luật dữ liệu — mã gốc cấm dấu ":", số hiệu
 // 1–4 chữ số, và không cho bỏ một sản phẩm gốc còn chỗ trỏ tới.
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
-import { HANH_DONG } from '../../audit/hanh-dong.js';
+import { HANH_DONG, moTa as moTaHanhDong } from '../../audit/hanh-dong.js';
 import { LoiSanPham } from './kho-san-pham.js';
 
 /**
@@ -39,6 +39,34 @@ export function datPheuNhatKyGoc(fn) {
   if (fn != null && typeof fn !== 'function') throw new LoiSanPham('datPheuNhatKyGoc cần một hàm');
   _pheuNhatKy = fn || null;
   return _pheuNhatKy;
+}
+
+/**
+ * VE1 · 29/09: tab «Lịch sử» của một sản phẩm (bản vẽ 2a). Đường ĐỌC nhật ký tiêm vào như phễu ghi — tầng giao diện
+ * không import `audit/index.js` (luật nối dây ở `vai-b.js`).
+ */
+let _docNhatKy = null;
+export function datDocNhatKyGoc(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiSanPham('datDocNhatKyGoc cần một hàm');
+  _docNhatKy = fn || null;
+  return _docNhatKy;
+}
+
+/** Nhật ký của MỘT sản phẩm gốc, mới nhất trước. Chưa nối ⇒ ném 500: trả rỗng trông y hệt «chưa ai sửa gì». */
+export async function lichSuGoc(boiCanh, id) {
+  const bc = batBuocBoiCanh(boiCanh);
+  if (!_docNhatKy) {
+    throw new LoiSanPham('máy chủ chưa nối đường đọc nhật ký — KHÔNG phải «chưa ai sửa gì».', 'chua_noi', 500);
+  }
+  const { dong } = await _docNhatKy(bc, { doiTuongLoai: BANG, doiTuongId: String(id), gioiHan: 50 });
+  return (dong || []).map((r) => {
+    const tn = String(r.tac_nhan || '');
+    return {
+      luc: r.xay_ra_luc,
+      ai: tn.startsWith('nguoi:') ? tn.slice(6) : tn.startsWith('may:') ? 'máy · ' + tn.slice(4) : tn,
+      hanhDong: r.hanh_dong, moTa: moTaHanhDong(r.hanh_dong), ghiChu: r.ghi_chu || '',
+    };
+  });
 }
 
 function cua() {
