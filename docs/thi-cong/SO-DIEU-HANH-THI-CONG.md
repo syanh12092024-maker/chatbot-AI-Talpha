@@ -2693,3 +2693,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · LL11 → ✅ — kỹ năng bỏ: «hỏi size» thành ô trong kiến thức sản phẩm (khối «Chung» màn Sản phẩm; quản trị + marketer sửa, nhật ký bắt buộc); đường ghi ĐẦU TIÊN của san_pham_goc.kien_thuc (021 chỉ có người đọc); bộ ráp prompt v3 đọc nhãn mới; màn Kỹ năng ra khỏi menu
   cổng ll11.sh 8/8 · đảo-vá 7/7 đỏ · Postgres thật · cổng ll1 ⑤ thôi neo số màn (N5 canh danh sách + BO_CO_CHU_Y) · npm test 2.267 ca 0 đỏ · chưa deploy
   · commit 54f4969 · nhật ký docs/thi-cong/nhat-ky/phieu-LL11.md
+- 29/09 · LL7 → ✅ — ba vai: Quản lý · Người duyệt kịch bản THÔI CẤP ở cả hai cửa cấp vai (lỗi riêng vai_da_bo, khác vai_la), ô chọn ba vai, dòng cấp cũ vẫn hiện; đúng câu hợp đồng «thôi gán, dòng giữ» — dọn 37 tệp danh sách quyền còn nhắc mã cũ để LL9 (0 người mang trên prod)
+  cổng ll7.sh 4/4 · đảo-vá 4/4 đỏ · npm test 2.270 ca 0 đỏ · chưa deploy
+  · commit (xem git log LL7) · nhật ký docs/thi-cong/nhat-ky/phieu-LL7.md
