@@ -361,8 +361,10 @@ export async function danhSachBan(boiCanh) {
     trong: ban.length ? null : {
       rong: true,
       vi: 'chua_cai_dat',
-      noi: 'Chưa có bộ luật chung nào — cả bản của team lẫn bản toàn hệ đều trống. Bot đang '
-        + 'chạy mà không có khối quy tắc cứng nào trong prompt.',
+      // VE4b · 29/09: câu cũ «Bot đang chạy mà không có khối quy tắc cứng nào trong prompt» SAI — bảng trống thì
+      // `src/prompts.js#khoiBoLuat` dùng hằng `CORE` (fail-safe). Có bản hợp lệ (mang «THẨM QUYỀN») thì bản đó THAY `CORE`.
+      noi: 'Chưa có bộ luật chung nào — cả bản của team lẫn bản toàn hệ đều trống. Bot dùng khối '
+        + 'quy tắc gốc cố định có sẵn trong mã cho tới khi có bản được áp.',
       diTiep: { chu: 'Soạn bản đầu tiên', duong: '#soan' },
     },
   };

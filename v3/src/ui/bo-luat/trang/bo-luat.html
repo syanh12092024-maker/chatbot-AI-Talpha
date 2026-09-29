@@ -16,10 +16,11 @@
 <body>
 <header>
   <h1>Quy tắc chung mọi page</h1>
-  <span class="sub">Luật mọi page trong team cùng dùng. Áp một bản là cả team đổi cách nói với khách.</span>
+  <span class="sub">Luật mọi page trong team cùng dùng. Áp một bản là bản đó thành bản đang dùng của cả team.</span>
 </header>
 
 <main>
+  <div id="hieu-luc"></div>
   <div id="bang-tin" aria-live="polite"></div>
   <div class="page-note" id="ghi-chu-ke-thua"></div>
   <div class="page-note" id="ghi-chu-ban"></div>
@@ -128,8 +129,12 @@ function veBangTin() {
   const kh = [];
   if (LOI) kh.push(canhBao({ level: 'error', title: LOI.title, body: LOI.body }));
   if (D && !D.dangAp) {
-    kh.push(canhBao({ level: 'error', title: 'Không có bản nào đang áp',
-      body: 'Bot đang trả lời khách mà không có quy tắc chung nào. Áp một bản ở bảng phiên bản.' }));
+    // VE4b: chỉ là sự cố khi bot ĐANG đọc bảng này; khối quy tắc gốc cố định thì luôn có.
+    kh.push(botDoc()
+      ? canhBao({ level: 'error', title: 'Không có bản nào đang áp',
+        body: 'Bot đang trả lời khách chỉ với khối quy tắc gốc cố định — chưa có quy tắc chung của team. Áp một bản ở bảng phiên bản.' })
+      : canhBao({ level: 'info', title: 'Chưa có bản nào đang áp',
+        body: 'Bot hôm nay chưa đọc bảng này (xem trên), nên khách chưa bị ảnh hưởng. Áp một bản ở bảng phiên bản để sẵn cho lúc bật.' }));
   }
   if (D) {
     // CHỈ đếm bản của team — bản toàn hệ mang trạng thái 'ke_thua', không phải chờ duyệt.
@@ -142,7 +147,7 @@ function veBangTin() {
     const cho = D.ban.filter((b) => b.trangThai === 'cho_duyet').length;
     // Bản nháp chưa áp KHÔNG đòi ai làm gì — nói ở chú thích của bảng phiên bản là đủ.
     $('#ghi-chu-ban').innerHTML = cho
-      ? `<div>${so(cho)} bản nháp chưa áp — chưa ảnh hưởng gì tới bot. Mở «So sánh» rồi bấm áp thì mới có hiệu lực.</div>`
+      ? `<div>${so(cho)} bản nháp chưa áp — chưa ảnh hưởng gì tới bot. Mở «So sánh» rồi bấm áp thì mới ${botDoc() ? 'có hiệu lực' : 'thành bản đang dùng'}.</div>`
       : '';
     // Kế thừa bản dùng chung là TÌNH TRẠNG, không phải việc phải làm — nói ở chú thích.
     $('#ghi-chu-ke-thua').innerHTML = D.keThua
@@ -215,11 +220,23 @@ async function xemSoSanh(id, nut) {
   finally { setBusy(nut, false); }
 }
 
+/* VE4b · 29/09: quy tắc chung chỉ tới bot khi máy chủ ghép lời từ dữ liệu v3. true · false · null (chưa nối phép đo). */
+const botDoc = () => D && D.botDocLuat === true;
+function veHieuLuc() {
+  $('#hieu-luc').innerHTML = botDoc() ? '' : `<div class="duoi-4">${canhBao(D.botDocLuat === false
+    ? { level: 'warning', title: 'Bot CHƯA đọc quy tắc chung',
+      body: 'Máy chủ chưa bật cách ghép lời mới, nên bot đang trả lời khách vẫn dùng khối quy tắc gốc cố định — áp bản ở đây chưa đổi lời bot. Bản áp vẫn được giữ, và sẽ được dùng khi bật cách ghép lời mới.' }
+    : { level: 'warning', title: 'Chưa biết bot có đọc quy tắc chung không',
+      body: 'Máy chủ chưa nối phép đo cách ghép lời. Đừng coi áp ở đây là bot đã đổi cách nói.' })}</div>`;
+}
+
 async function ap(b, lui) {
   const a = D.anhHuong;
   const dongY = await confirmDialog({
     title: `${lui ? 'Lùi về' : 'Áp'} bản v${b.phienBan}?`,
-    body: `${so(a.tongPage)} page sẽ đổi cách nói với khách, trong đó ${so(a.dangBatBot)} page đang bật bot và đang nói chuyện với khách thật. Có hiệu lực ngay ở lượt chat kế tiếp.`,
+    body: botDoc()
+      ? `${so(a.tongPage)} page sẽ đổi cách nói với khách, trong đó ${so(a.dangBatBot)} page đang bật bot và đang nói chuyện với khách thật. Có hiệu lực ngay ở lượt chat kế tiếp.`
+      : `Bản v${b.phienBan} thành bản đang dùng của ${so(a.tongPage)} page. Bot trả lời khách CHƯA đọc quy tắc chung (máy chủ chưa bật cách ghép lời mới) — lời bot chưa đổi cho tới khi bật.`,
     confirmLabel: lui ? 'Lùi về bản này' : 'Áp bản này',
     danger: true,
   });
@@ -229,7 +246,9 @@ async function ap(b, lui) {
   try {
     const kq = await goi('/api/bo-luat/' + encodeURIComponent(b.id) + '/ap', { method: 'POST', body: JSON.stringify({}) });
     $('#ngan').close();
-    toast(`Đã ${kq.laLui ? 'lùi về' : 'áp'} bản v${kq.phienBan}. ${so(kq.anhHuong.tongPage)} page dùng bản này từ lượt chat kế tiếp.`);
+    toast(botDoc()
+      ? `Đã ${kq.laLui ? 'lùi về' : 'áp'} bản v${kq.phienBan}. ${so(kq.anhHuong.tongPage)} page dùng bản này từ lượt chat kế tiếp.`
+      : `Đã ${kq.laLui ? 'lùi về' : 'áp'} bản v${kq.phienBan} — thành bản đang dùng. Bot chưa đọc quy tắc chung nên lời bot chưa đổi.`);
     await nap();
   } catch (e) { $('#ngan').close(); baoLoi('Không áp được bản này', e.message); }
   finally { setBusy(nut, false); }
@@ -300,7 +319,7 @@ async function nap() {
     $('#oNoiDung').disabled = !SUA;
     $('#nutChep').disabled = !SUA;
     $('#ghiChuSoan').textContent = SUA ? '' : 'Vai của bạn chỉ xem được — không soạn và không áp được.';
-    veAnhHuong(); veBangTin(); veBang(); demChu();
+    veHieuLuc(); veAnhHuong(); veBangTin(); veBang(); demChu();
   } catch (e) {
     baoLoi('Không tải được bộ quy tắc', e.message);
     $('#bangBan').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' });

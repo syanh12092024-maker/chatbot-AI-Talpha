@@ -39,3 +39,51 @@ test('Q4 · MỘT chỗ sửa: trang một page thôi có trình sửa khối ch
   assert.doesNotMatch(h, /\/api\/anh-san-pham\/khoi-chung/, 'trang một page còn đường ghi khối chung — hai chỗ sửa một khối');
   assert.match(h, /<a href="\/khoi-chung">Sửa ở Luật chung › Chính sách · FAQ · Phản đối →<\/a>/);
 });
+
+test('Q5 · VE4b · cửa /api/bo-luat nói bot có đọc quy tắc chung không — theo công tắc thật (bật · tắt · chưa nối)', async (t) => {
+  const http = await import('node:http');
+  const express = (await import('express')).default;
+  const { dungPhanB } = await import('../../src/vai-b.js');
+  const { bam } = await import('../../src/auth/mat-khau.js');
+  const { dungCongGia } = await import('../../testkit/db-gia.js');
+  const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
+  const { datDocHieuLuc } = await import('../../src/ui/prompt-page/kho-prompt.js');
+  const { taoTruyVan } = dungCongGia({
+    nguoi_dung: [{ id: 'u1', email: 'qt@t.vn', mat_khau_hash: await bam('matkhau1'), ten: 'Chủ', hoat_dong: true }],
+    team: [{ id: 't1', slug: 'tieu-alpha', ten: 'Tiểu Alpha', la_ky_thuat: false }],
+    vai: [{ id: 'v1', ma: 'quan-tri', ten: 'Quản trị' }],
+    thanh_vien_team: [{ id: 'tv1', nguoi_dung_id: 'u1', team_id: 't1', vai_id: 'v1' }],
+    page: [], bo_luat_chung: [],
+  });
+  const app = express();
+  dungPhanB(app, { taoTruyVan, taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')), express });
+  const sv = http.createServer(app); await new Promise((r) => sv.listen(0, r));
+  t.after(() => { sv.close(); datDocHieuLuc(null); });
+  const goc = `http://127.0.0.1:${sv.address().port}`;
+  const ck = (await fetch(`${goc}/api/dang-nhap`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'qt@t.vn', matKhau: 'matkhau1' }) })).headers.get('set-cookie').split(';')[0];
+  const doc = async () => { const r = await fetch(`${goc}/api/bo-luat`, { headers: { cookie: ck } }); assert.equal(r.status, 200); return (await r.json()).botDocLuat; };
+  datDocHieuLuc(null); assert.equal(await doc(), null, 'chưa nối phép đo ⇒ CHƯA BIẾT, không đoán');
+  datDocHieuLuc(() => ({ coBat: false })); assert.equal(await doc(), false);
+  datDocHieuLuc(() => ({ coBat: true })); assert.equal(await doc(), true);
+});
+
+test('Q6 · VE4b · trang Luật: mọi câu hứa «có hiệu lực ngay / đổi cách nói» chỉ ở nhánh bot ĐÃ đọc; tắt ⇒ cảnh báo', () => {
+  const h = fs.readFileSync(new URL('../../src/ui/bo-luat/trang/bo-luat.html', import.meta.url), 'utf8');
+  assert.match(h, /const botDoc = \(\) => D && D\.botDocLuat === true;/);
+  assert.match(h, /body: botDoc\(\)\n\s+\? `\$\{so\(a\.tongPage\)\} page sẽ đổi cách nói với khách/, 'hộp xác nhận Áp phải hỏi công tắc');
+  assert.match(h, /toast\(botDoc\(\)\n\s+\? `Đã/, 'câu báo sau khi áp phải hỏi công tắc');
+  assert.equal((h.match(/Có hiệu lực ngay/g) || []).length, 1, '«Có hiệu lực ngay» chỉ được ở nhánh đã bật');
+  assert.equal((h.match(/từ lượt chat kế tiếp/g) || []).length, 1);
+  assert.doesNotMatch(h, /Áp một bản là cả team đổi cách nói/, 'câu phụ đầu trang còn hứa gõ cứng');
+  assert.match(h, /\$\('#hieu-luc'\)\.innerHTML = botDoc\(\) \? '' :/);
+  assert.match(h, /D = d; SUA = !!d\.suaDuoc;[\s\S]{0,300}veHieuLuc\(\);/, 'cảnh báo phải được vẽ khi nạp');
+});
+
+test('Q7 · VE4b · không còn câu «không có khối quy tắc cứng nào» (hằng CORE luôn đứng đầu); báo «không bản nào áp» theo công tắc', () => {
+  // Bỏ dòng chú thích — chú thích được phép trích câu cũ để kể vì sao nó sai.
+  const kho = fs.readFileSync(new URL('../../src/ui/bo-luat/kho-bo-luat.js', import.meta.url), 'utf8').replace(/^\s*\/\/.*$/gm, '');
+  const h = fs.readFileSync(new URL('../../src/ui/bo-luat/trang/bo-luat.html', import.meta.url), 'utf8');
+  assert.doesNotMatch(kho + h, /không có khối quy tắc cứng nào|mà không có quy tắc chung nào/);
+  assert.match(h, /kh\.push\(botDoc\(\)\n\s+\? canhBao\(\{ level: 'error', title: 'Không có bản nào đang áp'/);
+});

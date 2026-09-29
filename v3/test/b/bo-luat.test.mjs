@@ -290,12 +290,13 @@ test('kế thừa · team CHƯA có bản riêng thì nói rõ đang kế thừa
   assert.equal(d.trong, null, 'CÓ bản để dùng thì không phải trạng thái rỗng');
 });
 
-test('rỗng thật · không bản nào thì nói bot đang chạy KHÔNG có quy tắc cứng nào', async () => {
+test('rỗng thật · không bản nào thì nói bot dùng khối quy tắc gốc cố định (VE4b: câu cũ «KHÔNG có quy tắc cứng nào» sai — `prompts.js#khoiBoLuat` lùi về CORE)', async () => {
   dungKho([]);
   const d = await bl.danhSachBan(bcQt());
   assert.ok(d.trong);
   assert.equal(d.trong.vi, 'chua_cai_dat');
-  assert.match(d.trong.noi, /không có khối quy tắc cứng/i);
+  assert.match(d.trong.noi, /khối quy tắc gốc cố định/);
+  assert.doesNotMatch(d.trong.noi, /không có khối quy tắc cứng/i, 'bảng trống thì prompt lùi về CORE — không được nói bot chạy trần');
   assert.ok(d.trong.diTiep);
 });
 

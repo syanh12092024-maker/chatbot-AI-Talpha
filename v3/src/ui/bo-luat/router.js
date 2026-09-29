@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
+import { botGhepTuDuLieu } from '../prompt-page/kho-prompt.js';
 import {
   manBoLuat, soVoiDangAp, luuBanNhap, apPhienBan, duyetBan, VAI_SUA_DUOC, LoiBoLuat,
 } from './kho-bo-luat.js';
@@ -150,7 +151,9 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 
   r.get('/api/bo-luat', canDangNhap, canVai, boc(async (req, res) => {
     const bc = cuaBoiCanh(req);
-    res.json({ ok: true, ...(await manBoLuat(bc)), suaDuoc: coVai(bc, ...VAI_SUA_DUOC) });
+    // VE4b · 29/09: bot cũ (đang phục vụ khách) KHÔNG đọc bảng này — chỉ đường ghép lời mới (`V3_RAP_PROMPT_BAT`) đọc.
+    // Màn nói theo công tắc đo được, không hứa «có hiệu lực ngay».
+    res.json({ ok: true, ...(await manBoLuat(bc)), suaDuoc: coVai(bc, ...VAI_SUA_DUOC), botDocLuat: botGhepTuDuLieu() });
   }));
 
   r.get('/api/bo-luat/:id/so-sanh', canDangNhap, canVai, boc(async (req, res) => {
