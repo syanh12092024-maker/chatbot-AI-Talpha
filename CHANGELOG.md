@@ -19,6 +19,17 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 29/09/2026 — màn thôi hứa «bot dùng ngay» khi bot chưa đọc (VE1b · VE4b · CR-28-09c)
+
+Đo prod: bot đang trả lời khách còn ghép lời bản cũ (`V3_RAP_PROMPT_BAT` vắng) — KHÔNG đọc kiến thức sản phẩm (tab
+Chung) và quy tắc chung. Hai màn từng nói ngược lại. Không đổi lời bot, không đổi lược đồ, không thêm biến.
+
+- **Sản phẩm › Chung** (`b0b32b2`): nút chỉ còn «Lưu» + cảnh báo «Bot CHƯA đọc phần kiến thức này»; câu báo sau lưu nói
+  đúng. «Thêm sản phẩm» có một câu nói nó để làm gì.
+- **Luật chung › Luật** (`4b64551`): cảnh báo đầu trang; hộp xác nhận «Áp» và câu báo sau áp thôi hứa «có hiệu lực ngay»;
+  bảng trống thôi báo đỏ «bot chạy không có quy tắc cứng» (sai — bot luôn có khối quy tắc gốc cố định).
+- Mọi câu theo MỘT công tắc đo được: bật cách ghép lời mới là màn tự nói «dùng ngay», không phải sửa lại.
+
 ### 29/09/2026 — danh sách page và Luật chung theo bản vẽ (VE3 · VE4 · CR-28-09c)
 
 Tiếp lượt VE1+VE2: dựng lại NỘI DUNG hai màn nữa theo bản vẽ. Không đổi chữ bot nói, không đổi lược đồ, không thêm biến,
