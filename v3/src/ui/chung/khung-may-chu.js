@@ -47,7 +47,7 @@ export function phienBan() {
 const PHONG_CHU = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500'
   + '&family=IBM+Plex+Sans:wght@400;500;600&display=swap&subset=vietnamese';
 // Biểu tượng tab: chữ AC trên ô teal như bản vẽ. Nội tuyến ⇒ thôi 404 `/favicon.ico` ở mọi lần mở đầu.
-const BIEU_TUONG = "data:image/svg+xml," + encodeURIComponent(
+export const BIEU_TUONG = "data:image/svg+xml," + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#0B6E75"/>'
   + '<text x="16" y="21" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">AC</text></svg>');
 
@@ -141,7 +141,10 @@ export function lopKhung({ tenTeamCua = null } = {}) {
       if (!tuyet || !laTrangUi(tuyet) || !KIEU[duoi]) return guiTepGoc.call(this, p, tuy, fn);
       (async () => {
         let chu = docTep(tuyet).chu;
-        if (duoi === '.html') {
+        // Hai trang của phần ĐĂNG NHẬP (`auth/trang`: đăng nhập · chọn team) KHÔNG thuộc app: tự dựng bố cục căn giữa
+        // bằng flex, tự khai bảng màu, không nạp `kieu.css`. Chèn khung vào đó là khung đứng NGANG cạnh thẻ team và mất
+        // mục cuối (ảnh prod người dùng gửi 29/09, sau deploy LL18). Chúng chỉ được nén — như trước LL18.
+        if (duoi === '.html' && !tuyet.startsWith(GOC_AUTH + path.sep)) {
           let khung = null; let tabCum = '';
           const bc = req.boiCanh;
           if (bc && bc.teamId) {

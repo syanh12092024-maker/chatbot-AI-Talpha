@@ -16,7 +16,7 @@ import { cuaBoiCanh, VAI } from '../../auth/boi-canh.js';
 import { teamCuaNguoi } from '../../auth/kho-nguoi-dung.js';
 import { menuCua, CHUYEN_HUONG } from './man-hinh.js';
 import { docTrangThai } from './trang-thai.js';
-import { phienBan } from './khung-may-chu.js';
+import { phienBan, BIEU_TUONG } from './khung-may-chu.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 
@@ -43,6 +43,13 @@ export function taoRouterDieuHuong() {
   r.get('/chung/dieu-huong.js', guiChung('dieu-huong.js', 'application/javascript'));
   // Markup khung — máy chủ dùng để vẽ sẵn, trình duyệt nạp làm đường lùi (ES module, hàm thuần).
   r.get('/chung/khung.js', guiChung('khung.js', 'application/javascript'));
+  // Biểu tượng tab cho trang KHÔNG đi qua khung (đăng nhập · chọn team · trang «cần vai»): trình duyệt tự hỏi
+  // `/favicon.ico` — trước đây 404 ở mỗi lần mở đầu (e2e 29/09).
+  r.get('/favicon.ico', (_req, res) => {
+    res.type('image/svg+xml');
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(Buffer.from(decodeURIComponent(BIEU_TUONG.slice(BIEU_TUONG.indexOf(',') + 1))));
+  });
 
   r.get('/api/dieu-huong', async (req, res) => {
     let bc = null;

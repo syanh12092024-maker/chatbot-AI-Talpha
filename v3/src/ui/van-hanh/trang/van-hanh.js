@@ -92,12 +92,18 @@ function select(parent, label, values, value) {
   return s;
 }
 
-/** Một hàng của bảng danh sách: cột nội dung + cột thao tác. */
+/**
+ * Một hàng của bảng danh sách: cột nội dung + cột thao tác.
+ * Mỗi cột là một CHUỖI HTML đã thoát ký tự. Từ 17/09 (`7775e9c`) nhánh chuỗi gán `textContent` trong khi CẢ TÁM nơi gọi
+ * truyền HTML ⇒ mọi tab của màn này in thô `<div class="manh">…` (ảnh prod người dùng gửi 29/09 — tab Page & trạng thái,
+ * Sản phẩm & giá). Soát 29/09: mọi dữ liệu động trong tám lời gọi đi qua `esc()` hoặc là số (`formatNumber`/`Math.round`)
+ * — ca `ll18-khung` K14 canh điều đó cùng với cách vẽ này.
+ */
 function hang(bang, cot) {
   const tr = el("tr", undefined, bang);
   for (const c of cot.slice(0, -1)) {
     const td = el("td", undefined, tr);
-    if (typeof c === "string") td.textContent = c; else td.innerHTML = c;
+    td.innerHTML = String(c ?? "");
   }
   const td = el("td", undefined, tr);
   td.className = "actions";

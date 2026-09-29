@@ -271,3 +271,57 @@ test('K12 · trang «cần vai …» không còn là ngõ cụt: lối về là 
   const cuoi = await fetch(`${goc}${dich}`, { headers: { cookie: ck, accept: 'text/html' } });
   assert.equal(cuoi.status, 200, `lối về dẫn tới ${dich} — phải là màn marketer mở được`);
 });
+
+test('K13 · trang ĐĂNG NHẬP · CHỌN TEAM không bị chèn khung hay hệ kiểu — chúng tự dựng bố cục căn giữa (ảnh prod 29/09)', async (t) => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { goc, sv, vao } = await dungThu();
+  t.after(() => sv.close());
+  const ck = await vao('qt@talpha.vn');
+  for (const [duong, tep] of [['/chon-team', 'chon-team.html'], ['/dang-nhap', 'dang-nhap.html']]) {
+    const r = await layTho(`${goc}${duong}`, { cookie: ck, 'accept-encoding': 'gzip' });
+    assert.equal(r.status, 200, duong);
+    assert.ok(!r.than.includes('data-khung'), `${duong}: khung chèn vào trang căn giữa bằng flex ⇒ đứng ngang cạnh nội dung`);
+    const goc0 = fs.readFileSync(path.resolve(import.meta.dirname, '../../src/auth/trang', tep), 'utf8');
+    assert.equal(r.than, goc0, `${duong}: phải gửi NGUYÊN VĂN tệp như trước LL18 (chỉ nén)`);
+  }
+});
+
+test('K14 · màn Vận hành vẽ ô bảng bằng HTML — và mọi dữ liệu động trong ô đã thoát ký tự (ảnh prod 29/09: in thô <div>)', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const s = fs.readFileSync(path.resolve(import.meta.dirname, '../../src/ui/van-hanh/trang/van-hanh.js'), 'utf8');
+  const than = s.match(/function hang\(bang, cot\) \{[\s\S]*?\n\}/)[0];
+  assert.match(than, /td\.innerHTML = String\(c \?\? ""\)/, 'ô bảng phải vẽ HTML — tám nơi gọi đều truyền HTML');
+  assert.doesNotMatch(than, /textContent = c/, 'nhánh textContent in thô <div class="manh"> ra màn');
+  // Mọi nội suy trong các lời gọi `hang(than, [...])` phải đi qua hàm thoát ký tự / định dạng số — không lỗ chèn HTML.
+  let i = 0; const nghi = []; let n = 0;
+  while ((i = s.indexOf('hang(than, [', i)) >= 0) {
+    let d = 0; let j = s.indexOf('[', i);
+    for (let k = j; k < s.length; k++) { if (s[k] === '[') d++; else if (s[k] === ']') { d--; if (!d) { j = k; break; } } }
+    n++;
+    for (const m of s.slice(i, j + 1).matchAll(/\$\{([^}]*)\}/g)) {
+      const e = m[1].trim();
+      if (/^(esc|formatNumber|gio)\(/.test(e) || /^(keoDai|phu|tre)$/.test(e) || /^Math\.round\(/.test(e)) continue;
+      if (/^[\w.]+ \?(!= null \?)? ` · /.test(e) || /^item\.tokenVao != null \?/.test(e)) continue; // nhánh bọc esc/formatNumber bên trong
+      nghi.push(e.slice(0, 60));
+    }
+    i = j;
+  }
+  assert.ok(n >= 8, `chỉ thấy ${n} lời gọi hang — thước đang đo nhầm chỗ`);
+  assert.deepEqual(nghi, [], 'nội suy chưa thoát ký tự trong ô bảng');
+  for (const tenBien of ['keoDai', 'phu']) {
+    const dinh = s.match(new RegExp(`const ${tenBien} = ([\\s\\S]*?);\n`));
+    assert.ok(dinh && !/\$\{(?!Math\.round|esc\(|formatNumber\(|x\.thiTruong \?)/.test(dinh[1]), `${tenBien} phải chỉ ghép số hoặc chữ đã thoát`);
+  }
+  assert.match(s, /const tre = item\.treLuotMs == null \? null : Math\.round\(item\.treLuotMs \/ 100\) \/ 10;/, 'tre phải là SỐ');
+});
+
+test('K15 · /favicon.ico có thật (trang không qua khung vẫn có biểu tượng, thôi 404)', async (t) => {
+  const { goc, sv } = await dungThu();
+  t.after(() => sv.close());
+  const r = await fetch(`${goc}/favicon.ico`);
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get('content-type'), /image\/svg\+xml/);
+  assert.match(await r.text(), /^<svg/);
+});
