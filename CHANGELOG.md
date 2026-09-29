@@ -19,6 +19,24 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 29/09/2026 — màn Sản phẩm và trang một page theo bản vẽ (VE1 · VE2 · CR-28-09c)
+
+Người dùng: «Sao mới thấy thay đổi phần khung, còn chi tiết không giống artifact?». Lượt này dựng lại NỘI DUNG hai màn
+theo bản vẽ. Không đổi chữ bot nói, không đổi lược đồ, không thêm biến, không thêm gói.
+
+- **Sản phẩm** (`86d7aa6`): danh sách sản phẩm của team bên trái (tìm · «+ Thêm»); một sản phẩm bên phải với dải bốn
+  tầng bot ghép lời và bốn tab — Chung (kiến thức, «hỏi size») · Theo thị trường (mỗi shop POS một thị trường: món, tồn,
+  «Giá ở …» gom từ bậc giá các page đang bán, lệch giá giữa page được nói ra; «Thêm thị trường» ba bước) · Page đang bán
+  · Lịch sử (ai sửa gì, từ nhật ký). Bảng bản sao theo page, số hiệu chờ đặt tên, tạo/bỏ sản phẩm vẫn còn.
+- **Trang một page** (`bada2f4`): ba cột — danh sách page của team (bot bật lấy từ tiến trình bot) · một page với công
+  tắc ở đầu, «Bật được chưa» và bảy tab (Sản phẩm & giá · Lời bot · Ảnh · Trả lời sẵn · Kỹ thuật · Gợi ý cải thiện ·
+  Lịch sử) · cột «Thử hỏi bot» và «AI đang đọc gì». Mọi nút sửa/lưu cũ giữ nguyên, chỉ đổi chỗ đứng; đường dẫn `?tab=` cũ
+  vẫn mở đúng chỗ.
+- Nút «Xem câu trả lời sẵn» ở trang page thôi dẫn tới trang không có (404).
+- Chỗ CHƯA có nguồn nói rõ «chưa có», không bịa: marketer theo thị trường (chờ HRM), ảnh chung của sản phẩm, thử hỏi bot.
+
+Quy trình mở van: `docs/thi-cong/nhat-ky/phat-hanh-20260929-ve1-ve2.md`.
+
 ### 29/09/2026 — khung theo bản vẽ, menu không còn nháy, tải nhanh hơn (LL18 · CR-28-09c)
 
 Người dùng báo ngay sau lượt «năm đích»: tải chậm, bấm menu thì menu biến mất rồi mới hiện lại, giao diện

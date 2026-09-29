@@ -2708,3 +2708,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · VE2 → ✅ — trang một page dựng lại theo bản vẽ 2c: ba cột (page của team từ /api/page-ds · một page với Bật được chưa + bảy tab · Thử hỏi bot nói rõ chưa có đường), mọi cửa ghi cũ giữ nguyên; khung sáng «Tất cả page» (nhaCum); sửa liên kết chết /lop-0 + ca quét mọi liên kết viết cứng
   bộ ca VE2 4/4 · K3 K16 · đảo-vá 8/8 · npm test 2.295 ca 0 đỏ · cổng ve2.sh 8/8 · e2e 48 màn · ảnh 7 tab + 390/1200 px · chưa deploy
   · commit bada2f4 · nhật ký docs/thi-cong/nhat-ky/phieu-VE2.md
+- 29/09 · NỢ N-CONGCHAP (§9, đề nghị) — `phat-hanh.sh` chạy cổng với `>/dev/null`: cổng đỏ chập chờn (ll3/ll5 lượt phát hành VE1+VE2, 1/~14 lượt, không tái hiện) không để lại dòng nào để chẩn đoán
+  đề nghị: ghi output mỗi cổng ra tệp tạm, in đường dẫn + các dòng 🔴 khi rc≠0; thêm chạy lại MỘT lần cổng đỏ để phân biệt chập chờn với đỏ thật (in cả hai)
+  · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260929-ve1-ve2.md §3
