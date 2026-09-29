@@ -2705,3 +2705,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · VE1 → ✅ — màn Sản phẩm dựng lại theo bản vẽ 2a (hai cột · bốn tầng · Chung / Theo thị trường / Page / Lịch sử), đủ bảy việc cũ, giá theo thị trường gom từ bản sao page (lệch giá nói ra), lịch sử từ nhật ký; chỗ chưa có nguồn nói rõ
   ca VE1 5/5 Postgres thật · U4 U6 · đảo-vá 10/10 · npm test 2.291 ca 0 đỏ · cổng ve1.sh 6/6 · e2e 47 màn 0 lỗi · ảnh 11 trạng thái (ghi thật) · chưa deploy
   · commit 86d7aa6 · nhật ký docs/thi-cong/nhat-ky/phieu-VE1.md
+- 29/09 · VE2 → ✅ — trang một page dựng lại theo bản vẽ 2c: ba cột (page của team từ /api/page-ds · một page với Bật được chưa + bảy tab · Thử hỏi bot nói rõ chưa có đường), mọi cửa ghi cũ giữ nguyên; khung sáng «Tất cả page» (nhaCum); sửa liên kết chết /lop-0 + ca quét mọi liên kết viết cứng
+  bộ ca VE2 4/4 · K3 K16 · đảo-vá 8/8 · npm test 2.295 ca 0 đỏ · cổng ve2.sh 8/8 · e2e 48 màn · ảnh 7 tab + 390/1200 px · chưa deploy
+  · commit bada2f4 · nhật ký docs/thi-cong/nhat-ky/phieu-VE2.md
