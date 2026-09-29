@@ -124,8 +124,19 @@ là khác nhau nhưng có thể là CÙNG một sản phẩm ⇒ sản phẩm g�
 (`san_pham.pos_ma`, MN8 · 027 — dây nối đang ở mức PAGE, chưa có mức sản phẩm gốc) · HRM: **không có gì trong hệ**
 (không bảng, không cột, không tài liệu; `nguoi_dung` chỉ có email · tên; `page.marketer` là chữ tự do, 0/581 có;
 «lấy mục marketer từ POS» ở `04-TIEN-DO.md:636` vẫn «chưa làm»).
-[NEEDS CLARIFICATION: HRM là hệ nào, lấy hồ sơ (mã NV · tên · phòng ban) bằng API hay tệp xuất, và một tài khoản đăng
-nhập ứng với đúng một hồ sơ HRM?]
+Người quyết trả lời (29/09): HRM là hệ quản lý nhân sự, dữ liệu ở **BigQuery**; một tài khoản đăng nhập = đúng một hồ sơ.
+Đo 29/09 (chỉ cấu trúc + số gộp, không đọc tên ai): `levelup-465304.HRM_Core` có `dim_employee` (118 dòng · khoá
+`emp_code` · `email_cong_ty` · `comp_profile` MKT|SALE|BO|VANDON|CTV · `status` active|thuviec|nghi · `team_code` ·
+`team_market` · `manager_emp_code` · `revenue_keys`) và `fact_employee_team_history` (106 dòng · team theo khoảng ngày).
+Phân bố: có email 116/118, không trùng ⇒ khớp tài khoản theo email được · MKT 60 · SALE 22 · BO 21 · VANDON 10 · CTV 5 ·
+đang làm 69 · thử việc 19 · nghỉ 30 · `team_market` trống 93/118 ⇒ HRM KHÔNG cho thị trường của marketer (gán ở hệ) ·
+`revenue_keys` trống 118/118 ⇒ chưa quy được doanh thu về marketer từ HRM · `team_code` là đơn vị tổ chức cả tập đoàn
+(PIALPHA_GCC 6 · PIALPHA_EU 5 · PIALPHA_AUUS 2 · PIALPHA_SALE_ONLINE 7 · …; 18 trống), không trùng 3 team của hệ.
+Máy chủ v3 chưa có quyền đọc BigQuery (chỉ máy dev có tài khoản dịch vụ gcloud) ⇒ việc người: cấp một tài khoản dịch vụ
+CHỈ ĐỌC `HRM_Core` cho máy chủ, khoá vào kho khoá.
+[NEEDS CLARIFICATION: team HRM nào thuộc team nào của hệ — đoán theo tên: Tiểu Alpha ↔ PIALPHA_GCC, Auus ↔ PIALPHA_AUUS,
+Pialpha EU ↔ PIALPHA_EU; sale nằm ở PIALPHA_SALE_ONLINE/OFFLINE dùng chung hay chia theo team? Và BO/VANDON/CTV có được
+vào hệ không?]
 
 **Model — màn đang hứa nhiều hơn máy làm.** Đo 29/09 (mã + prod):
 - Prod `cau_hinh_model` (tieu-alpha): chính `kimi-k2.6` · 0,30 · dự phòng `claude-haiku-4.5` · việc nền `deepseek-v4-flash` · 0,10.
@@ -172,7 +183,7 @@ nhập ứng với đúng một hồ sơ HRM?]
 | LL10 | Nhà mới cho 5 việc vận hành của `van-hanh` (Hệ còn sống: đối chiếu tin lỗi · tin bị lọc · diễn tập; Số liệu: chi phí từng tin; Page: nguồn nhận tin) | 🟨 | LL5 · LL6 — TRƯỚC LL8 |
 | LL11 | Kỹ năng → `san_pham_goc.kien_thuc` («hỏi size» cho SP có size), gỡ màn kỹ năng | 🟨 (đổi lời bot) | LL3 |
 | LL13 | Đích «Sản phẩm»: thêm thị trường = gắn 1 mã POS · gộp món POS nhiều shop thành 1 sản phẩm (máy gợi ý theo tên, người xác nhận) · nối 78 bản sao của page vào sản phẩm × thị trường · kéo danh mục cả 14 shop trước | 🟨 (dữ liệu bot đọc) | LL3 |
-| LL15 | Hồ sơ HRM: nguồn nhân sự → người dùng (mã NV) · marketer theo sản phẩm × thị trường, page kế thừa · báo cáo theo marketer | 🟨 | câu hỏi HRM ở 2d · LL13 |
+| LL15 | HRM từ BigQuery (`HRM_Core.dim_employee`, chỉ đọc, mỗi ngày): tài khoản ↔ hồ sơ theo email · vai mặc định theo `comp_profile` · người nghỉ tự khoá · ghép team HRM ↔ team hệ · marketer theo sản phẩm × thị trường, page kế thừa | 🟨 (quyền đăng nhập) | tài khoản dịch vụ BQ cho máy chủ · câu hỏi ghép team ở 2d · LL13 |
 | LL14 | Model: nối dự phòng vào đường chat v3 (`src/chat/model.js`, không phải bộ não) · ẩn «việc nền» tới khi có việc dùng · màn nói đúng đường nào đọc gì | 🟨 | LL6 |
 | LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`), sửa trên giao diện | 🟥 (đường bot, cạnh bộ não) | cutover / đợt tắt Botcake — phiếu riêng |
 
