@@ -2,7 +2,7 @@
 // Pancake · bối cảnh khách. CHỈ ĐỌC: không ô soạn tin, không nút gửi (`01-QUYET-DINH.md` §10).
 //
 // | GET /ban-hoi-thoai      | trang                                                         |
-// | GET /api/ban-hoi-thoai  | danh sách hội thoại theo lát (Cần người · Bot đang xử · Tất cả) |
+// | GET /api/ban-hoi-thoai  | danh sách hội thoại theo lát (Cần người · Bot đang xử · Tất cả); `?ht=` một hội thoại |
 // | GET /api/ban-hoi-thoai/:id/boi-canh | cột bối cảnh (UI-HT3): khách · đơn · kịch bản · lượt bot |
 //
 // Lịch sử MỘT hội thoại (`/api/ban-hoi-thoai/:id`) nằm ở router điều phối (UI-HT1) — cùng ba
@@ -105,7 +105,8 @@ export function taoRouterBanHoiThoai({ dongHo = () => Date.now() } = {}) {
     res.set('Cache-Control', 'no-store');
     const loc = String(req.query?.loc || LOC.NGUOI);
     const tim = String(req.query?.tim || '').slice(0, 64);
-    res.json({ ok: true, ...(await danhSachHoiThoai(cuaBoiCanh(req), { loc, tim, bay: Number(dongHo()) })) });
+    const ht = String(req.query?.ht || '').slice(0, 40);   // LL2: mở thẳng một hội thoại
+    res.json({ ok: true, ...(await danhSachHoiThoai(cuaBoiCanh(req), { loc, tim, ht, bay: Number(dongHo()) })) });
   }));
 
   r.get('/api/ban-hoi-thoai/:id/boi-canh', canDangNhap, canVai, boc(async (req, res) => {

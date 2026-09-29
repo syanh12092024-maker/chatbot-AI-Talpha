@@ -124,7 +124,7 @@ test('HTTP · /api/ban-hoi-thoai: 401 chưa đăng nhập · 403 marketer · 200
     const tr = await fetch(goc + '/ban-hoi-thoai', { headers: { 'x-vai': VAI.SALE, accept: 'text/html' } });
     assert.equal(tr.status, 200);
     const than = await tr.text();
-    assert.match(than, /<h1>Bàn hội thoại<\/h1>/);
+    assert.match(than, /<h1>Hộp thư<\/h1>/); // LL2: đổi tên theo đích Hộp thư
     assert.ok(!/<textarea/.test(than), '§10: bàn hội thoại KHÔNG có ô soạn tin');
     assert.ok(!/pkSendReply|\/send|gửi tin/i.test(than.replace(/<!--[\s\S]*?-->/g, '')), '§10: không đường gửi');
   } finally { await new Promise((r) => sv.close(r)); }

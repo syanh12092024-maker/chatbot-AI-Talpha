@@ -132,6 +132,7 @@ import {
   datChanDangNhap as datChanDangNhapBanHT, datChanVai as datChanVaiBanHT, taoRouterBanHoiThoai,
   datDocHoiThoaiSql, datChiMucSoAi, taoChiMucSoAi, datLaTinTuDong, datDocDauVetV3, datGiaiKichBan,
 } from './ui/ban-hoi-thoai/index.js';
+import { taoRouterHopThu } from './ui/hop-thu/index.js';
 import {
   datTaoTruyVan as datTruyVanSanSang, datDocSanSang,
   datChanDangNhap as datChanDangNhapSanSang, datChanVai as datChanVaiSanSang, taoRouterSanSang,
@@ -646,6 +647,9 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   app.use(taoRouterBatDau());     //   /bat-dau · /api/bat-dau
   app.use(taoRouterTrangChu());   //   /trang-chu · /api/trang-chu
   app.use(taoRouterBanHoiThoai()); //  /ban-hoi-thoai · /api/ban-hoi-thoai (UI-HT2)
+  // LL2 · Hộp thư: thao tác ghi của sale (nhận thay bot · sửa/duyệt/loại đơn Messenger · tìm khách).
+  // Cùng `pool` + `orderDeps` của van-hanh — đơn chờ duyệt đi MỘT thân hàm (`van-hanh/don-cho.js`).
+  app.use(taoRouterHopThu({ pool: vanHanh?.pool || null, orderDeps: vanHanh?.orderDeps || {} }));
   app.use(taoRouterSanPham());    //   /san-pham · /api/san-pham/*
   app.use(taoRouterAnh());        //   /thu-vien-anh · /api/thu-vien-anh
   app.use(taoRouterLenChay());    //   /len-chay · /api/len-chay/*

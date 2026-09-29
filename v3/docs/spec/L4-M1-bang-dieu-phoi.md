@@ -261,3 +261,29 @@ Luật — mỗi luật một thước trong BỘ CA (không chỉ trong cổng)
 8. **Sale vào thẳng bàn** sau đăng nhập — `vai-b-noi-day` (đích `diTiep`). Tên đầu trang khớp menu,
    và bàn nằm trong số màn HK10 thật sự đo — `he-kieu` HK10.
 
+### 7b · HỘP THƯ — bổ sung LL2 (29/09 · CR-28-09c · `01-QUYET-DINH.md` §10 bổ sung)
+
+Bàn hội thoại thành **Hộp thư** (tên menu + đầu trang; đường giữ `/ban-hoi-thoai`). Module đọc ở trên
+KHÔNG đổi luật 1: mọi thao tác ghi mới nằm ở module riêng `ui/hop-thu`, cùng vai (sale · quản trị).
+
+| Đường | Việc | Module |
+|---|---|---|
+| `GET /api/ban-hoi-thoai?ht=<id>` | đúng MỘT hội thoại (mở từ Đơn chờ / tìm khách) | `kho-ban-hoi-thoai.js` |
+| `GET /api/hop-thu/don-cho` | tab Đơn chờ: Messenger chờ duyệt · việc đơn không hội thoại · Ladi ở nhánh WhatsApp | `hop-thu/router.js` → `kho-ban-hoi-thoai.js#donCho` |
+| `GET /api/hop-thu/don/:id` · `POST …/luu` · `…/duyet` · `…/loai` | đơn Messenger chờ duyệt: sửa · duyệt (tạo đơn POS) · loại | `van-hanh/don-cho.js` — MỘT thân hàm với `/api/van-hanh/orders/*` |
+| `POST /api/hop-thu/hoi-thoai/:id/nhan` | nhận thay bot: hội thoại sang sale + một dòng việc (chỉ CSDL) | `src/admin-v3/operations.js#handoffConversation` |
+| `GET /api/hop-thu/tim-khach?sdt=` · `GET /api/hop-thu/khach/:id` | hồ sơ khách mọi kênh theo số (chuẩn hoá ở máy chủ) | `src/orders/doc-ho-so.js` |
+
+9. **Ghi qua đúng bốn việc**, không việc nào là gửi tin: đồ thị import của `ui/hop-thu` không chạm
+   `src/pancake.js` · hàng gửi · kênh · bộ não; đường = danh sách đã khai; rào ghi JSON + `X-V3-Action`;
+   script `hop-thu-ui.js` không ô soạn, mọi lời gọi tới `/api/hop-thu/`, ô nhập chỉ là trường của đơn. —
+   `hop-thu.test.mjs` H1–H4.
+10. **Duyệt đơn trên Postgres thật**: sale duyệt ⇒ đúng MỘT đơn POS dù bấm hai lần; lưu sai phiên bản ⇒
+    409; tổng tiền lấy từ gói giá; marketer 403; team khác 404; nhận thay bot không đẻ việc thứ hai. —
+    `test/ll2-hop-thu.test.mjs` L1–L5.
+11. **Cột bối cảnh** thêm «Đơn chờ duyệt» = đơn `cho_duyet` MỚI NHẤT của hội thoại; đơn đã loại không
+    tính. Tab «Đơn chờ» chỉ lấy Ladi ĐANG ở nhánh WhatsApp (không lấy đơn mới về từ POS). —
+    `hop-thu.test.mjs` H5–H7.
+12. **Chưa làm ở LL2**: lọc «cả ba team» cho sale dùng chung — cần tầng truy vấn nhận nhiều team, đi
+    cùng LL15 (sale là thành viên cả ba team). Tới đó sale đổi team bằng «Đổi team».
+

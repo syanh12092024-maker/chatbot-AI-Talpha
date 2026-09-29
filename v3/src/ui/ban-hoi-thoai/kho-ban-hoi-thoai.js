@@ -17,6 +17,7 @@ import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 import { congTruyVan, hangCho, tenKhachCua, soDienThoaiCua, tenPageCua } from '../dispatch/kho-viec.js';
 import { convIdCua } from '../dispatch/lien-ket.js';
 import { tenMessengerCua } from './doc-hoi-thoai.js';
+import { CHU_TRANG_THAI_DON } from './boi-canh-hoi-thoai.js';
 
 export const CUA_SO_NGAY = 7;
 export const TOI_DA_DONG = 100;
@@ -110,10 +111,11 @@ function dongMan(h, { khach, page, viec }) {
  * Danh sách cho cột trái của bàn hội thoại.
  *
  * @param {{loc?:string, tim?:string, bay?:number}} bo
- * @returns {Promise<{loc:string, tim:string|null, items:object[], demCanNguoi:number,
- *   donKhongHoiThoai:number, cuaSoNgay:number, nguonDs:'viec_mo'|'sql'|'cong', catBot:boolean, bay:number}>}
+ * `ht` (LL2) = mã MỘT hội thoại: trả đúng dòng đó (hoặc rỗng), bỏ qua `loc`/`tim`.
+ * @returns {Promise<{loc:string, tim:string|null, ht:string|null, items:object[], demCanNguoi:number,
+ *   donKhongHoiThoai:number, cuaSoNgay:number, nguonDs:'viec_mo'|'sql'|'cong'|'mot', catBot:boolean, bay:number}>}
  */
-export async function danhSachHoiThoai(boiCanh, { loc = LOC.NGUOI, tim = '', bay = Date.now() } = {}) {
+export async function danhSachHoiThoai(boiCanh, { loc = LOC.NGUOI, tim = '', ht = '', bay = Date.now() } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   if (!LOC_HOP_LE.has(loc)) throw new LoiBanHoiThoai(`lát lạ: ${loc}`, 'loc_la', 400);
   const t = chuoi(tim).replace(/\s+/g, '') || null;
@@ -126,7 +128,13 @@ export async function danhSachHoiThoai(boiCanh, { loc = LOC.NGUOI, tim = '', bay
   const donKhongHoiThoai = viecMo.filter((v) => v.hoi_thoai_id == null).length;
 
   let hts; let nguonDs;
-  if (!t && loc === LOC.NGUOI) {
+  const mot = chuoi(ht);
+  if (mot) {
+    // LL2 · mở THẲNG một hội thoại theo mã (từ tab Đơn chờ, từ Tìm khách) — qua cổng, nên team
+    // khác hay không có đều ra danh sách rỗng, không lộ «có hội thoại này ở team khác».
+    hts = /^[A-Za-z0-9_-]{1,40}$/.test(mot) ? [await db.mot('hoi_thoai', { id: mot })].filter(Boolean) : [];
+    nguonDs = 'mot';
+  } else if (!t && loc === LOC.NGUOI) {
     hts = (await Promise.all([...viecTheoHt.keys()].map((id) => db.mot('hoi_thoai', { id })))).filter(Boolean);
     nguonDs = 'viec_mo';
   } else {
@@ -143,6 +151,67 @@ export async function danhSachHoiThoai(boiCanh, { loc = LOC.NGUOI, tim = '', bay
   })));
   if (nguonDs === 'viec_mo') items.sort((a, b) => a.viec.hanLuc - b.viec.hanLuc);
 
-  return { loc, tim: t, items, demCanNguoi: viecTheoHt.size, donKhongHoiThoai,
+  return { loc, tim: t, ht: mot || null, items, demCanNguoi: viecTheoHt.size, donKhongHoiThoai,
     cuaSoNgay: CUA_SO_NGAY, nguonDs, catBot: items.length >= TOI_DA_DONG, bay };
+}
+
+/* ═══ LL2 · ĐƠN CHỜ (tab của Hộp thư) ═══════════════════════════════════════════════════════
+ * Ba loại đơn đang chờ NGƯỜI, đọc qua cổng (kẹp team):
+ *   · Messenger chờ duyệt — `hang_cho_tao_don` còn `cho_duyet` (bot đã chốt, sale duyệt là tạo
+ *     đơn POS, 01 §1). Mỗi đơn gắn MỘT hội thoại ⇒ bấm là mở hội thoại, duyệt ở cột bên.
+ *   · Việc loại ĐƠN không gắn hội thoại — nghi trùng, đơn chờ không có chat (`hangCho`).
+ *   · Đơn Ladi đang ở luồng xác nhận WhatsApp (`don_hang` nguồn `trang_ban_hang`, ba trạng thái
+ *     của nhánh WhatsApp). Máy chủ 29/09: 0 — luồng WhatsApp chưa chạy (việc người H1); màn NÓI
+ *     điều đó thay vì để trống câm.
+ */
+export const TRANG_THAI_LADI_CHO = Object.freeze(['cho_gui_wa', 'da_gui_wa', 'gui_wa_loi']);
+export const TOI_DA_DON_CHO = 100;
+
+const ms = (v) => (v == null ? null : Number(v instanceof Date ? v.getTime() : v));
+
+export async function donCho(boiCanh, { bay = Date.now() } = {}) {
+  const bc = batBuocBoiCanh(boiCanh);
+  const db = congTruyVan(bc);
+  const [hang, viecMo, ladiTat] = await Promise.all([
+    db.chon('hang_cho_tao_don', { trang_thai: 'cho_duyet' }),
+    hangCho(bc, { bay, gioiHan: 500 }),
+    db.chon('don_hang', { nguon: 'trang_ban_hang', trang_thai_he: [...TRANG_THAI_LADI_CHO] }),
+  ]);
+  const pages = new Map((await db.chon('page', {})).map((p) => [String(p.id), p]));
+
+  // Cũ nhất trước — đơn chờ lâu nhất là đơn khách dễ bỏ nhất.
+  const moi = [...hang].sort((a, b) => (ms(a.tao_luc) || 0) - (ms(b.tao_luc) || 0)).slice(0, TOI_DA_DON_CHO);
+  const idHt = [...new Set(moi.map((o) => String(o.hoi_thoai_id)))];
+  const hts = new Map((idHt.length ? await db.chon('hoi_thoai', { id: idHt }) : []).map((h) => [String(h.id), h]));
+  const messenger = moi.map((o) => {
+    const h = hts.get(String(o.hoi_thoai_id)) || null;
+    const d = o.du_lieu_don || {};
+    return {
+      id: String(o.id), hoiThoaiId: String(o.hoi_thoai_id),
+      ten: chuoi(d.ten) || null, soDienThoai: chuoi(d.sdt) || null,
+      soLuong: Number.isFinite(Number(d.so_luong)) ? Number(d.so_luong) : null,
+      tongTien: Number.isFinite(Number(d.tong_tien)) ? Number(d.tong_tien) : null, tienTe: d.tien_te || null,
+      tenPage: tenPageCua(h ? pages.get(String(h.page_id)) : null), taoLuc: ms(o.tao_luc),
+    };
+  });
+
+  const viecDon = viecMo.filter((v) => v.hoi_thoai_id == null).map((v) => ({
+    id: String(v.id), donHangId: v.don_hang_id == null ? null : String(v.don_hang_id),
+    lyDoChu: v.lyDoChu, hanLuc: Number(v.han_luc), trangThai: v.trangThai, tenNguoiNhan: v.tenNguoiNhan || null,
+  }));
+
+  const ladi = [...ladiTat].sort((a, b) => (ms(b.tao_luc) || 0) - (ms(a.tao_luc) || 0))
+    .slice(0, TOI_DA_DON_CHO).map((d) => ({
+      id: String(d.id), maPos: d.ma_pos || null, trangThai: d.trang_thai_he,
+      trangThaiChu: CHU_TRANG_THAI_DON[d.trang_thai_he] || d.trang_thai_he,
+      tongTien: d.tong_tien == null ? null : Number(d.tong_tien), tienTe: d.tien_te || null,
+      tenPage: tenPageCua(d.page_id == null ? null : pages.get(String(d.page_id))), taoLuc: ms(d.tao_luc),
+    }));
+
+  return {
+    messenger, viecDon, ladi,
+    dem: { messenger: hang.length, viecDon: viecDon.length, ladi: ladiTat.length },
+    catBot: hang.length > TOI_DA_DON_CHO || ladiTat.length > TOI_DA_DON_CHO,
+    bay,
+  };
 }

@@ -8,8 +8,6 @@ import {
   handoffConversation,
   idOf,
   fault,
-  transaction,
-  audit,
 } from "../../../../src/admin-v3/operations.js";
 import {
   resumeConversation,
@@ -18,9 +16,8 @@ import {
 import { baoCaoDienTap, tomTatDienTap } from "../../../../src/admin-v3/dien-tap.js";
 import { chiPhiTheoTin, gomChiPhi, GOM_THEO } from "../../../../src/admin-v3/chi-phi-tin.js";
 import { dsBoQua, tomTatBoQua, LY_DO } from "../../../../src/admin-v3/nap-bo-qua.js";
-import { docSanPhamGoiGia } from "../../../../src/products/catalog.js";
 import { daySanPhamSangBot } from "../../../../src/products/ban-chep-bot.js";
-import { duyet, loai } from "../../../../src/orders/hang-cho.js";
+import { docDonCho, luuDonCho, duyetDonCho, loaiDonCho } from "./don-cho.js";
 import { HE_SO_TE } from "../../../../src/pos/index.js";
 export const DUONG_TRANG = '/van-hanh-v3';
 export const VAI_VAO_DUOC = [VAI.QUAN_TRI, VAI.QUAN_LY];
@@ -198,138 +195,26 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {}, dayS
       }),
     ),
   );
+  // Bốn cửa đơn chờ duyệt: thân hàm ở `don-cho.js` — MỘT bản cho cả van-hanh và Hộp thư (LL2).
   r.get(
     "/api/van-hanh/orders/:id",
-    wrap(async (q, s) => {
-      const o = (
-        await rows(
-          q,
-          `SELECT o.*,o.xmin::text AS version,p.id AS page_row_id,p.san_pham_goc_ma,p.pos_shop_id
-      FROM hang_cho_tao_don o JOIN hoi_thoai h ON h.id=o.hoi_thoai_id AND h.team_id=o.team_id
-      JOIN page p ON p.id=h.page_id WHERE o.team_id=$1 AND o.id=$2`,
-          [idOf(q.params.id)],
-        )
-      )[0];
-      if (!o) throw fault("Không tìm thấy đơn", 404);
-      s.json({
-        ok: true,
-        item: o,
-        currencyFactors: HE_SO_TE,
-        products: await docSanPhamGoiGia(
-          pool,
-          q.boiCanh.teamId,
-          o.page_row_id,
-          o,
-        ),
-      });
-    }),
+    wrap(async (q, s) => s.json({ ok: true, ...(await docDonCho(pool, q.boiCanh, q.params.id)) })),
   );
   r.post(
     "/api/van-hanh/orders/:id/save",
-    wrap(async (q, s) => {
-      const bc = q.boiCanh,
-        id = idOf(q.params.id),
-        b = q.body;
-      if (
-        ![
-          "ten",
-          "sdt",
-          "dia_chi",
-          "thanh_pho",
-          "kho_hang",
-          "san_pham_ma",
-        ].every((k) => typeof b[k] === "string" && b[k].length <= 1000) ||
-        !Number.isInteger(b.so_luong) ||
-        b.so_luong < 1 ||
-        !b.version
-      )
-        throw fault("Dữ liệu đơn không hợp lệ");
-      await transaction(pool, async (c) => {
-        const o = (
-          await c.query(
-            `SELECT o.*,o.xmin::text AS version,p.id AS page_row_id,p.san_pham_goc_ma,p.pos_shop_id
-        FROM hang_cho_tao_don o JOIN hoi_thoai h ON h.id=o.hoi_thoai_id JOIN page p ON p.id=h.page_id
-        WHERE o.team_id=$1 AND o.id=$2 FOR UPDATE OF o`,
-            [bc.teamId, id],
-          )
-        ).rows[0];
-        if (!o) throw fault("Không tìm thấy đơn", 404);
-        if (o.trang_thai !== "cho_duyet" || o.version !== b.version)
-          throw fault("Đơn đã đổi hoặc đã xử lý; tải lại", 409);
-        const products = await docSanPhamGoiGia(c, bc.teamId, o.page_row_id, o);
-        const product = products.find(
-          (p) => p.ma === b.san_pham_ma && !p.het_hang,
-        );
-        const offer = product?.goiGia.find((g) => g.so_luong === b.so_luong);
-        if (!offer)
-          throw fault("Không có gói giá hợp lệ cho sản phẩm / số lượng này");
-        const d = { ...o.du_lieu_don };
-        for (const k of [
-          "ten",
-          "sdt",
-          "dia_chi",
-          "thanh_pho",
-          "kho_hang",
-          "san_pham_ma",
-          "so_luong",
-        ])
-          d[k] = b[k];
-        d.tong_tien = Number(offer.gia);
-        d.tien_te = offer.tien_te;
-        delete d.tong_tien_lon;
-        await c.query(
-          "UPDATE hang_cho_tao_don SET du_lieu_don=$3,cua_kiem='{}' WHERE team_id=$1 AND id=$2",
-          [bc.teamId, id, JSON.stringify(d)],
-        );
-        await audit(c, bc, "hang_cho_tao_don", id, "v3_sua_don", [
-          "du_lieu_don",
-        ]);
-      });
-      s.json({ ok: true });
-    }),
+    wrap(async (q, s) => s.json(await luuDonCho(pool, q.boiCanh, q.params.id, q.body))),
   );
   r.post(
     "/api/van-hanh/orders/:id/approve",
-    wrap(async (q, s) => {
-      const bc = q.boiCanh;
-      if (typeof q.body.version !== "string")
-        throw fault("Tải lại đơn trước khi duyệt");
-      const result = await duyet(
-        pool,
-        { teamId: bc.teamId, nguoiDungId: bc.nguoiDungId },
-        {
-          hangChoId: idOf(q.params.id),
-          nguoiDuyetId: bc.nguoiDungId,
-          expectedVersion: q.body.version,
-        },
-        orderDeps,
-      );
-      s.json({ ok: true, result });
-    }),
+    wrap(async (q, s) =>
+      s.json({ ok: true, result: await duyetDonCho(pool, q.boiCanh, q.params.id, q.body, orderDeps) }),
+    ),
   );
   r.post(
     "/api/van-hanh/orders/:id/reject",
-    wrap(async (q, s) => {
-      const bc = q.boiCanh;
-      if (
-        typeof q.body.reason !== "string" ||
-        q.body.reason.trim().length < 5 ||
-        q.body.reason.length > 300
-      )
-        throw fault("Lý do cần 5–300 ký tự");
-      s.json({
-        ok: true,
-        result: await loai(
-          pool,
-          { teamId: bc.teamId },
-          {
-            hangChoId: idOf(q.params.id),
-            nguoiDuyetId: bc.nguoiDungId,
-            lyDo: q.body.reason,
-          },
-        ),
-      });
-    }),
+    wrap(async (q, s) =>
+      s.json({ ok: true, result: await loaiDonCho(pool, q.boiCanh, q.params.id, q.body) }),
+    ),
   );
   r.get(
     "/api/van-hanh/conversations",

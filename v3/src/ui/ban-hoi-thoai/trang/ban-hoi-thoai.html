@@ -3,17 +3,20 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Bàn hội thoại — AI Closer</title>
+<title>Hộp thư — AI Closer</title>
 <!-- BÀN HỘI THOẠI (UI-HT2 · CR-28-09, `01-QUYET-DINH.md` §10). Ba cột: danh sách hội thoại ·
      khung chat đọc THẲNG Pancake · bối cảnh khách. CHỈ ĐỌC — không ô soạn tin, không nút gửi:
      sale trả lời ở Pancake; ở đây chỉ nhận việc, trả lại bot, đánh dấu đã xử (khối dùng chung
-     `dong-viec-ui.js` của điều phối — một bản cho mọi trang ghi việc). KHÔNG CSS riêng. -->
+     `dong-viec-ui.js` của điều phối — một bản cho mọi trang ghi việc). KHÔNG CSS riêng.
+     LL2 · 29/09 (CR-28-09c, §10 bổ sung): thành HỘP THƯ — thêm tab Đơn chờ, duyệt đơn
+     Messenger cạnh chat, nhận thay bot; gõ số điện thoại vào ô tìm thì hiện cả hồ sơ khách mọi kênh.
+     Trang VẪN chỉ đọc: mọi lời gọi ghi nằm ở `/hop-thu/hop-thu-ui.js`. -->
 <link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <script src="/chung/ui.js"></script>
 </head>
 <body>
 <header>
-  <h1>Bàn hội thoại</h1>
+  <h1>Hộp thư</h1>
   <span class="sub" id="tom">đang tải…</span>
 </header>
 
@@ -24,13 +27,16 @@
         <button type="button" class="tab" role="tab" aria-selected="true" data-loc="nguoi">Cần người<span class="count" id="n-nguoi">0</span></button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-loc="bot">Bot đang xử<span class="count" id="n-bot"></span></button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-loc="tat">Tất cả<span class="count" id="n-tat"></span></button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-loc="don">Đơn chờ<span class="count" id="n-don"></span></button>
       </div>
       <form class="ban-ht-tim" id="f-tim" role="search">
-        <label class="sr-only" for="tim">Tìm theo số điện thoại hoặc mã khách</label>
-        <input type="search" id="tim" placeholder="Số điện thoại hoặc mã khách (psid)…" autocomplete="off" spellcheck="false">
+        <label class="sr-only" for="tim">Tìm theo số điện thoại (mọi kênh) hoặc mã khách</label>
+        <input type="search" id="tim" placeholder="Số điện thoại (mọi kênh) hoặc mã khách…" autocomplete="off" spellcheck="false">
       </form>
       <div class="ban-ht-ghi" id="ghi-ds"></div>
+      <div id="khach-tim"></div>
       <ul id="ds" role="listbox" aria-label="Hội thoại"></ul>
+      <div id="khac" hidden></div>
     </section>
 
     <section class="ban-ht-chat" aria-label="Hội thoại đang mở">
@@ -60,6 +66,8 @@ const tenHien = (h) => h.tenKhach || h.tenMessenger || h.soDienThoai || 'Khách 
 const CHU_KY_TAI_MS = 15000;
 
 let LOC = 'nguoi', TIM = '', DS = [], MO = null, lech = 0;
+/* Tab KHÔNG phải lát hội thoại (LL2): vẽ bằng khối Hộp thư, không gọi `/api/ban-hoi-thoai`. */
+const TAB_KHAC = new Set(['don']);
 const gio = () => Date.now() + lech;
 
 /* Đồng hồ — cùng cách đọc với bảng điều phối: quá hạn hiện «+3:20», sắp hết (≤5 phút) màu cam. */
@@ -134,7 +142,7 @@ async function taiDs() {
     ? `${so(d.demCanNguoi)} hội thoại cần người · trả lời ở Pancake`
     : 'Không hội thoại nào cần người · trả lời ở Pancake';
   const ghi = [];
-  if (d.donKhongHoiThoai) ghi.push(`${so(d.donKhongHoiThoai)} đơn không gắn hội thoại — xem ở <a href="/dieu-phoi">Việc đang chờ</a>.`);
+  if (d.donKhongHoiThoai) ghi.push(`${so(d.donKhongHoiThoai)} đơn không gắn hội thoại — xem ở tab «Đơn chờ».`);
   if (d.catBot) ghi.push(`Chỉ hiện ${so(DS.length)} hội thoại mới nhất.`);
   $('#ghi-ds').innerHTML = ghi.join(' ');
   $('#ds').innerHTML = DS.length ? DS.map(dongHt).join('') : `<li>${khoiRongDs(d)}</li>`;
@@ -213,21 +221,40 @@ function veBoiCanh(ht, x) {
       + dong('Bot cũ', cu && cu.soLuot ? so(cu.soLuot) + ' lượt trả lời' + (cu.cuoiLuc ? ' · lần cuối ' + lucDay(cu.cuoiLuc) : '') + ' · theo Sổ AI bot cũ' : ''));
   }
 
+  const dc = x && x.donChoDuyet;
+  const donCho = dc ? dl(dong('Khách', dc.ten) + dong('Điện thoại', dc.soDienThoai) + dong('Số lượng', dc.soLuong == null ? '' : so(dc.soLuong) + ' gói')
+      + dong('Tổng tiền', tien(dc.tongTien, dc.tienTe)) + dong('Bot chốt', lucDay(dc.taoLuc)))
+    + (dc.soDon > 1 ? cam(`Còn ${so(dc.soDon)} đơn chờ trong hội thoại này — đang mở đơn mới nhất.`) : '')
+    + '<div class="form-actions"><button type="button" class="btn" data-variant="primary" data-size="sm" id="mo-don">Xem · sửa · duyệt</button></div>'
+    + '<div id="o-don"></div>' : '';
+
   $('#bc').innerHTML = `
     <div class="dong-bc"><button type="button" class="icon-btn" id="dong-bc" aria-label="Đóng thông tin khách">×</button></div>
     ${khoi('Khách', khach)}
+    ${khoi('Đơn chờ duyệt', donCho)}
     ${khoi('Đơn đang bàn', don)}
     ${khoi('Hội thoại', hoiThoai)}
     ${v ? khoi('Việc cần người', dl(dong('Lý do', v.lyDoChu) + dong('Đang xử', v.tenNguoiNhan || 'Chưa ai nhận'))) + '<div class="bc-khoi" id="o-dong-viec"></div>' : ''}
     ${khoi('Bot & kịch bản', bot)}
     ${x && x.loi ? khoi('Bối cảnh', cam('Chưa tải được bối cảnh: ' + x.loi)) : ''}`;
   $('#dong-bc').addEventListener('click', () => { delete $('#ban').dataset.bc; });
+  if (dc && window.HopThu) {
+    $('#mo-don').addEventListener('click', () => window.HopThu.moDon(dc.id, $('#o-don'), {
+      sauKhiGhi: async () => { await taiDs(); },
+    }));
+  }
 }
 
 async function mo(id) {
   MO = id;
-  const ht = DS.find((h) => h.id === id);
-  if (!ht) return;
+  let ht = DS.find((h) => h.id === id);
+  if (!ht) {
+    // LL2: mở từ tab Đơn chờ / Tìm khách — đọc đúng MỘT dòng, cùng đường đọc của danh sách.
+    const d = await doc('/api/ban-hoi-thoai?ht=' + encodeURIComponent(id)).catch(() => null);
+    ht = d && d.items && d.items[0];
+    if (!ht || MO !== id) return;
+    DS = [ht, ...DS];
+  }
   document.querySelectorAll('.ht-dong').forEach((li) => li.setAttribute('aria-selected', String(li.dataset.id === id)));
   $('#ban').dataset.xem = 'chat';
   $('#c-ten').textContent = tenHien(ht);
@@ -259,22 +286,55 @@ async function mo(id) {
   $('#chan').innerHTML = (lk
       ? `<a class="btn" data-variant="primary" data-size="sm" target="_blank" rel="noopener" href="${esc(lk)}"><span>Trả lời trên Pancake</span></a>`
       : `<span class="btn" data-variant="outline" data-size="sm" aria-disabled="true"><span>Trả lời trên Pancake</span></span>`)
+    + (ht.nguoiGiu === 'AI' && !ht.viec && window.HopThu
+      ? '<button type="button" class="btn" data-variant="outline" data-size="sm" id="nut-nhan">Nhận thay bot</button>' : '')
     + '<button type="button" class="btn nut-bc" data-variant="outline" data-size="sm" id="nut-bc">'
     + (ht.viec ? 'Khách & đóng việc' : 'Khách') + '</button>'
-    + '<span class="text-muted">Trả lời ở Pancake · ở đây chỉ nhận và đóng việc</span>';
+    + '<span class="text-muted">Trả lời ở Pancake · ở đây nhận việc, duyệt đơn, đóng việc</span>';
   $('#nut-bc').addEventListener('click', () => { $('#ban').dataset.bc = 'mo'; });
+  const nutNhan = $('#nut-nhan');
+  if (nutNhan) nutNhan.addEventListener('click', async () => {
+    nutNhan.disabled = true;
+    try {
+      await window.HopThu.nhanThayBot(id);
+      DS = DS.filter((h) => h.id !== id);
+      await taiDs(); await mo(id);
+    } catch (e) {
+      nutNhan.disabled = false;
+      $('#chat').insertAdjacentHTML('afterbegin', canhBao({ level: 'danger', title: 'Chưa nhận được', body: e.message }));
+    }
+  });
 }
 
 $('#ds').addEventListener('click', (e) => { const li = e.target.closest('.ht-dong'); if (li) mo(li.dataset.id); });
 $('#ds').addEventListener('keydown', (e) => {
   const li = e.target.closest('.ht-dong'); if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); mo(li.dataset.id); }
 });
+async function taiDonCho() {
+  const n = window.HopThu ? await window.HopThu.veDonCho($('#khac'), { moHoiThoai: mo }) : null;
+  if (n != null) $('#n-don').textContent = so(n);
+}
 document.querySelectorAll('[data-loc]').forEach((b) => b.addEventListener('click', () => {
   LOC = b.dataset.loc; TIM = ''; $('#tim').value = '';
   document.querySelectorAll('[data-loc]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
-  taiDs();
+  const khac = TAB_KHAC.has(LOC);
+  $('#ds').hidden = khac; $('#f-tim').hidden = khac; $('#ghi-ds').hidden = khac; $('#khach-tim').hidden = khac; $('#khac').hidden = !khac;
+  $('#khach-tim').innerHTML = '';
+  if (LOC === 'don') taiDonCho();
+  else taiDs();
 }));
-$('#f-tim').addEventListener('submit', (e) => { e.preventDefault(); TIM = $('#tim').value.trim(); taiDs(); });
+$('#f-tim').addEventListener('submit', async (e) => {
+  e.preventDefault(); TIM = $('#tim').value.trim();
+  $('#khach-tim').innerHTML = '';
+  await taiDs();
+  // Số điện thoại (≥6 chữ số) ⇒ kèm hồ sơ khách mọi kênh — đơn Ladi không có hội thoại vẫn thấy.
+  if (!window.HopThu || (TIM.match(/\d/g) || []).length < 6) return;
+  const kh = await window.HopThu.veKhachTheoSo($('#khach-tim'), TIM, { moHoiThoai: mo });
+  // Ô tìm hội thoại so số ĐÃ chuẩn hoá; người gõ «0501…» hay «+966 50…». Máy chủ vừa chuẩn hoá hộ
+  // (luật cắt mã nước chỉ có MỘT bản, ở `loc-trung.js`) ⇒ tìm lại bằng đúng số đó.
+  const so = kh && kh[0] && kh[0].soDienThoai;
+  if (!DS.length && so && so !== TIM) { TIM = so; await taiDs(); }
+});
 $('#lui').addEventListener('click', () => { $('#ban').dataset.xem = 'ds'; delete $('#ban').dataset.bc; });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') delete $('#ban').dataset.bc; });
 
@@ -283,8 +343,13 @@ $('#chat').innerHTML = emptyState({ icon: 'inbox', title: 'Chọn một hội th
 setInterval(nhipDongHo, 1000);
 setInterval(() => { if (LOC === 'nguoi' && !TIM) taiDs(); }, CHU_KY_TAI_MS);
 taiDs();
+// `hop-thu-ui.js` nạp SAU đoạn này (cuối <body>) ⇒ đếm Đơn chờ khi mọi script đã chạy.
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.HopThu) window.HopThu.veDonCho(document.createElement('div')).then((n) => { if (n != null) $('#n-don').textContent = so(n); });
+});
 </script>
 <script src="/dieu-phoi/dong-viec-ui.js"></script>
+<script src="/hop-thu/hop-thu-ui.js"></script>
 <script src="/chung/dieu-huong.js"></script>
 </body>
 </html>

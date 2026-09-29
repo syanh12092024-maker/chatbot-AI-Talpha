@@ -128,7 +128,10 @@ test('T4 · trang bàn hội thoại: không textarea/contenteditable · ô nh�
   const form = than.match(/<form\b[^>]*>/gi) || [];
   assert.deepEqual(form.map((f) => /role="search"/.test(f)), [true], 'form duy nhất phải là form TÌM');
   const script = [...than.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)].map((m) => m[1]).sort();
-  assert.deepEqual(script, ['/chung/dieu-huong.js', '/chung/ui.js', '/dieu-phoi/dong-viec-ui.js'],
+  // LL2 · 29/09 (§10 bổ sung, CR-28-09c): thêm `/hop-thu/hop-thu-ui.js` — khối GHI của Hộp thư (nhận thay
+  // bot · sửa/duyệt/loại đơn · tìm khách). Thước riêng của nó: `hop-thu.test.mjs` H1–H4 (không ô soạn,
+  // không đường gửi tin, POST đúng bốn việc). Trang này vẫn không tự gọi phương thức ghi nào.
+  assert.deepEqual(script, ['/chung/dieu-huong.js', '/chung/ui.js', '/dieu-phoi/dong-viec-ui.js', '/hop-thu/hop-thu-ui.js'],
     'script ngoài mới trên bàn hội thoại — soát xem có đường gửi không');
   assert.ok(!/\bmethod\s*:/.test(than), 'script trang tự gọi phương thức khác GET');
   const api = [...than.matchAll(/['"`](\/api\/[^'"`?$]*)/g)].map((m) => m[1]);

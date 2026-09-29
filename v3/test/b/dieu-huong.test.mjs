@@ -57,7 +57,7 @@ test('②a · SALE chỉ thấy màn làm việc của sale — §9 · §10 (CR-
   // CR-28-09: §10 thành bàn hội thoại chỉ đọc. Giai đoạn chuyển tiếp «Việc đang chờ» còn
   // giữ (đường lùi của CR) — gỡ nó thì sửa đúng dòng này. Điều canh GIỮ NGUYÊN: sale không
   // thấy màn nào ngoài chỗ làm việc của sale.
-  assert.deepEqual(ten(VAI.SALE), ['Bàn hội thoại', 'Việc đang chờ']);
+  assert.deepEqual(ten(VAI.SALE), ['Hộp thư', 'Việc đang chờ']);
 });
 
 test('②b · MARKETER không thấy màn hạ tầng', () => {
@@ -203,7 +203,7 @@ test('④d · SALE chỉ thấy MỘT mục, và mục đó chỉ có màn làm 
   const menu = mh.menuCua([VAI.SALE]);
   assert.equal(menu.length, 1, 'sale không được thấy mục nào khác');
   assert.equal(menu[0].ma, 'hop-thu');
-  assert.deepEqual(menu[0].man.map((m) => m.ten), ['Bàn hội thoại', 'Việc đang chờ']);
+  assert.deepEqual(menu[0].man.map((m) => m.ten), ['Hộp thư', 'Việc đang chờ']);
 });
 
 test('④e · `mucCuaDuong` chỉ đúng mục đang đứng — menu phải bung được đúng chỗ', () => {

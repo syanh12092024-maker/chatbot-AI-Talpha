@@ -9,11 +9,13 @@ export {
 
 export {
   boiCanhHoiThoai, datGiaiKichBan, daNoiGiaiKichBan, CHU_TRANG_THAI_DON, CHU_TRANG_THAI_POS, KHONG_GOI_MODEL,
+  donChoDuyetCua, // LL2
 } from './boi-canh-hoi-thoai.js';
 
 export {
   danhSachHoiThoai, datDocHoiThoaiSql, daNoiDocSql, taoDocHoiThoaiSql,
   LOC, CUA_SO_NGAY, TOI_DA_DONG, LoiBanHoiThoai,
+  donCho, TRANG_THAI_LADI_CHO, TOI_DA_DON_CHO, // LL2 · tab Đơn chờ của Hộp thư
 } from './kho-ban-hoi-thoai.js';
 
 export {

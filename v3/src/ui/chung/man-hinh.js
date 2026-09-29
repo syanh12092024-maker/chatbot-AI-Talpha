@@ -159,7 +159,9 @@ export const MAN = Object.freeze([
   // ① HỘP THƯ — nhà của sale (01 §10). Vai `sale` chỉ thấy đích này, và đặt chân ở màn đầu
   // tiên nó vào được (`vai-b.js#duongSauKhiVao`) — thứ tự dưới đây là thứ tự đặt chân.
   dat(trangChu, 'Việc của tôi', 'hop-thu', 'Lọc theo vai bạn, gấp lên trước'),
-  dat(banHoiThoai, 'Bàn hội thoại', 'hop-thu', 'Hội thoại cần người, đọc chat ngay tại chỗ'),
+  // LL2 · 29/09: bàn hội thoại thành HỘP THƯ (tab Đơn chờ · Tìm khách, duyệt đơn cạnh chat) — đổi TÊN,
+  // đường giữ nguyên `/ban-hoi-thoai` (liên kết cũ, chỗ đặt chân của sale).
+  dat(banHoiThoai, 'Hộp thư', 'hop-thu', 'Hội thoại cần người, đơn chờ duyệt, tìm khách'),
   dat(dispatch, 'Việc đang chờ', 'hop-thu', 'Khách bot đã giao lại, có đồng hồ đếm ngược'),
   dat(vanHanh, 'Hội thoại và đơn', 'hop-thu', 'Bot nói gì với khách, và đơn chờ duyệt'),
   // Tìm khách theo số điện thoại là việc của Hộp thư (03-MAN-HINH), không phải của Số liệu.

@@ -144,6 +144,24 @@ function soAiCua(dong) {
 }
 
 /**
+ * LL2 · đơn chờ duyệt của hội thoại — đơn MỚI NHẤT còn `cho_duyet` (bot chốt lại thì hàng chờ có
+ * thể có hơn một; sale duyệt đơn mới nhất, `soDon` nói còn bao nhiêu). Chỉ đọc; sửa/duyệt ở
+ * `/api/hop-thu/don/:id/*` (module `hop-thu`).
+ */
+export function donChoDuyetCua(ds) {
+  const ds2 = (Array.isArray(ds) ? ds : []).filter((o) => o.trang_thai === 'cho_duyet');
+  if (!ds2.length) return null;
+  const o = ds2.sort((a, b) => (soHoacNull(b.tao_luc) || 0) - (soHoacNull(a.tao_luc) || 0))[0];
+  const d = o.du_lieu_don || {};
+  return {
+    id: String(o.id), soDon: ds2.length,
+    ten: chuoi(d.ten) || null, soDienThoai: chuoi(d.sdt) || null, diaChi: chuoi(d.dia_chi) || null,
+    sanPhamMa: chuoi(d.san_pham_ma) || null, soLuong: soHoacNull(d.so_luong),
+    tongTien: soHoacNull(d.tong_tien), tienTe: d.tien_te || null, taoLuc: soHoacNull(o.tao_luc),
+  };
+}
+
+/**
  * Bối cảnh một hội thoại cho cột phải.
  *
  * @returns {Promise<null | object>}  `null` = không có hội thoại này TRONG TEAM (router 404).
@@ -160,11 +178,13 @@ export async function boiCanhHoiThoai(boiCanh, hoiThoaiId) {
   const pageFb = chuoi(p?.page_id);
   const psid = chuoi(h.psid);
   const ma = convIdCua(h, p);
-  const [khach, donHt, soAi, kichBan] = await Promise.all([
+  const [khach, donHt, soAi, kichBan, donChoHt] = await Promise.all([
     h.khach_id != null ? db.mot('khach', { id: String(h.khach_id) }) : null,
     db.chon('don_hang', { hoi_thoai_id: id }),
     pageFb && psid ? db.chon('so_ai', { page_id: pageFb, psid }) : [],
     kichBanCua(bc, p),
+    // LL2: đơn bot đã chốt, đang CHỜ SALE DUYỆT trong hội thoại này (Hộp thư duyệt ngay cạnh chat).
+    db.chon('hang_cho_tao_don', { hoi_thoai_id: id, trang_thai: 'cho_duyet' }),
   ]);
   const donKhach = khach ? await db.chon('don_hang', { khach_id: String(khach.id) }, { sapXep: 'tao_luc' }) : [];
 
@@ -180,6 +200,7 @@ export async function boiCanhHoiThoai(boiCanh, hoiThoaiId) {
     // `{hoi_thoai_id}` để `hoSoCua` nói đúng lý do «hội thoại chưa nối hồ sơ khách».
     khach: hoSoCua(khach, donKhach, { hoi_thoai_id: id }),
     donDangBan: donDangBanCua(donHt),
+    donChoDuyet: donChoDuyetCua(donChoHt),
     kichBan,
     soAi: soAiCua(soAi),
     botCu: luotBotCuCua(ma),

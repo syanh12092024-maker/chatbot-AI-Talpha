@@ -759,7 +759,10 @@
             border-top: 1px solid var(--border-default); background: var(--surface); }
   .ban-ht > * { min-height: 0; min-width: 0; }
   .ban-ht-ds { display: flex; flex-direction: column; border-right: 1px solid var(--border-default); }
-  .ban-ht-ds > .tabs { padding: 0 var(--space-4); flex: none; }
+  /* LL2: bốn tab (thêm «Đơn chờ») trong cột 340px — khoảng cách hẹp hơn tab mặc định để vừa một hàng. */
+  .ban-ht-ds > .tabs { padding: 0 var(--space-3); flex: none; gap: var(--space-4); }
+  .ban-ht-ds > #khac, .ban-ht-ds > #khach-tim { overflow-y: auto; flex: none; max-height: 100%; }
+  .ban-ht-ds > #khac { flex: 1; }
   .ban-ht-tim { padding: var(--space-3) var(--space-4) var(--space-2); flex: none; }
   .ban-ht-ghi { padding: 0 var(--space-4) var(--space-2); font-size: var(--text-xs); line-height: var(--lh-xs);
                 color: var(--text-muted); flex: none; }
@@ -910,6 +913,10 @@
   .lien-ke { color: var(--text-primary); }
   .lien-ke::after { content: ""; position: absolute; inset: 0; }
   .lien-ke:hover { text-decoration: none; }
+  /* LL2 · hàng bấm được mà việc là MỞ trong trang (không đổi địa chỉ) thì tiêu đề là <button>: bỏ vỏ
+     nút, giữ chữ như liên kết — cùng lớp phủ cả hàng, cùng vòng tập trung của nút. */
+  button.lien-ke { background: none; border: 0; padding: 0; margin: 0; font: inherit; text-align: left;
+                   cursor: pointer; font-weight: var(--weight-medium); }
 
   /* Một dòng mờ cho những thứ ĐÃ ỔN — không phải việc, không đáng một khu. */
   .dong-on { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-4);

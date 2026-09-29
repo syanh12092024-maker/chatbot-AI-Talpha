@@ -62,11 +62,13 @@ test('lưới quét · dò được MỌI màn, không sót màn nào', () => {
   }
 });
 
-test('§9 · SALE chỉ vào được chỗ làm việc của sale (điều phối · bàn hội thoại), không màn nào khác', () => {
+test('§9 · SALE chỉ vào được chỗ làm việc của sale (điều phối · bàn hội thoại · Hộp thư), không màn nào khác', () => {
   // `01-QUYET-DINH.md` §10 (CR-28-09): màn sale là bàn hội thoại CHỈ ĐỌC; bảng điều phối còn
   // trong giai đoạn chuyển tiếp. Một màn quản trị lỡ cho sale vào là cho họ nhìn thấy cấu
   // hình, khoá, và nhật ký của cả team.
-  const MAN_SALE = new Set(['dispatch', 'ban-hoi-thoai']);
+  // LL2 · 29/09 (CR-28-09c, §10 bổ sung): + `hop-thu` — khối ghi của Hộp thư (nhận thay bot · duyệt đơn
+  // Messenger · tìm khách). Thước riêng không-gửi-tin: `hop-thu.test.mjs` H1–H4.
+  const MAN_SALE = new Set(['dispatch', 'ban-hoi-thoai', 'hop-thu']);
   const lot = TEN_MAN.filter((t) => !MAN_SALE.has(t) && MAN[t].vao.includes(VAI.SALE));
   assert.deepEqual(lot, [], `sale lọt vào ${lot.length} màn ngoài bảng điều phối: ${lot.join(', ')}`);
   assert.ok(MAN.dispatch.vao.includes(VAI.SALE), 'và sale PHẢI vào được bảng điều phối');

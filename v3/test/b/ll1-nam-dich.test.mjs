@@ -111,5 +111,5 @@ test('N7 · mỗi vai đặt chân đúng chỗ cũ sau đăng nhập — sale v
   }
   const sale = mh.menuCua([VAI.SALE]);
   assert.deepEqual(sale.map((n) => n.ma), ['hop-thu']);
-  assert.deepEqual(sale[0].man.filter((m) => !m.an).map((m) => m.ten), ['Bàn hội thoại', 'Việc đang chờ']);
+  assert.deepEqual(sale[0].man.filter((m) => !m.an).map((m) => m.ten), ['Hộp thư', 'Việc đang chờ']);
 });
