@@ -41,12 +41,13 @@ const DAU_TRUOC = { QUAN_TRI: '/trang-chu', MARKETER: '/trang-chu', SALE: '/ban-
 
 // ── Đích mới của từng đường — đúng cột «Nhà mới» của `03-MAN-HINH.md` ───────────────────
 const DICH = {
-  'hop-thu': ['/trang-chu', '/ban-hoi-thoai', '/dieu-phoi', '/van-hanh-v3', '/ho-so-khach'],
+  // LL10 · 29/09: `/van-hanh-v3` («Vận hành») sang Cài đặt — duyệt đơn của sale đã ở Hộp thư (LL2).
+  'hop-thu': ['/trang-chu', '/ban-hoi-thoai', '/dieu-phoi', '/ho-so-khach'],
   'san-pham': ['/san-pham', '/ky-nang'],
   page: ['/page-bot', '/page', '/kich-ban', '/bo-luat', '/lop-0-dong', '/len-chay', '/prompt-page',
     '/thu-vien-anh', '/ai-de-xuat', '/hieu-qua'],
   'so-lieu': ['/bao-cao', '/chi-phi', '/nguon-khach', '/rui-ro-hoan'],
-  'cai-dat': ['/cai-dat-team', '/cau-hinh-team', '/ket-noi', '/model-ai', '/suc-khoe', '/nhat-ky'],
+  'cai-dat': ['/cai-dat-team', '/cau-hinh-team', '/ket-noi', '/model-ai', '/suc-khoe', '/van-hanh-v3', '/nhat-ky'],
 };
 
 // «Tới được từ menu» = trên thanh bên, HOẶC là tab của một cụm (LL3 · 29/09 — màn trong cụm rời thanh bên

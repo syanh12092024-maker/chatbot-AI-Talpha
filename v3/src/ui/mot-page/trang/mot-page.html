@@ -310,6 +310,10 @@ function veThietLap() {
         <div><label for="oBc"><b>Đã tắt Botcake</b></label><div class="meta">LỜI KHAI, không phải công tắc: đánh dấu ở đây KHÔNG tắt Botcake.</div></div>
         <div><label class="switch"><input id="oBc" type="checkbox" role="switch" ${t.botcakeTat ? 'checked' : ''} ${khoa}><span>${t.botcakeTat ? 'Đã tắt' : 'Chưa'}</span></label></div>
       </div>
+      <div class="setting-row">
+        <div><b>Nguồn nhận tin</b><div class="meta">Hỏi vòng hay webhook — đổi ở màn Vận hành (LL10).</div></div>
+        <div><a id="nguonNhanTin" href="/van-hanh-v3?tab=pages">Mở nguồn nhận tin →</a></div>
+      </div>
       ${D.suaDuoc ? '' : '<p class="meta">Cần vai Quản trị để sửa.</p>'}
     </div>`;
 

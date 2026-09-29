@@ -750,13 +750,19 @@ setInterval(async () => {
 try {
   const me = await (await fetch("/api/toi")).json();
   admin = (me.boiCanh?.vai || me.toi?.vai || me.vai || []).includes("quan-tri");
+  // LL10 · 29/09: `?tab=` — các nhà mới (Hệ còn sống · Chi phí AI · trang một page) trỏ THẲNG vào đúng việc.
+  // Tab lạ, hoặc tab vai này không mở được, thì về mặc định (không đoán, không lỗi).
+  const muon = new URLSearchParams(location.search).get("tab");
+  if (muon && names[muon] && (admin || !["pages", "products"].includes(muon))) tab = muon;
   for (const [key, name] of Object.entries(names)) {
     if (!admin && ["pages", "products"].includes(key)) continue;
-    button($("#tabs"), name, async () => {
+    const nut = button($("#tabs"), name, async () => {
       tab = key;
       offset = 0;
+      document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-pressed", String(b === nut)));
       await load();
     });
+    nut.setAttribute("aria-pressed", String(key === tab));
   }
   await load();
 } catch (e) {

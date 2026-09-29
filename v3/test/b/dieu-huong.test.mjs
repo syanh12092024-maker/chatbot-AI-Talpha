@@ -188,8 +188,9 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   // từ màn khác + 5 trong cụm).
   // LL6 · 29/09: Cài đặt thành MỘT cụm (6 tab) ⇒ thanh bên 15 → 10; ẩn 12 → 17 (5 chưa dùng được + 1 cần id
   // + 1 mở từ màn khác + 10 trong cụm).
-  assert.equal(hienRa, 10, `thanh bên đang vẽ ${hienRa} màn`);
-  assert.equal(an, 17, 'năm màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + mười màn '
+  // LL10 · 29/09: «Hội thoại và đơn» thành «Vận hành», rời Hộp thư sang tab của cụm Cài đặt ⇒ 10 → 9; ẩn 17 → 18.
+  assert.equal(hienRa, 9, `thanh bên đang vẽ ${hienRa} màn`);
+  assert.equal(an, 18, 'năm màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + mười một màn '
     + 'TRONG CỤM phải ẩn khỏi thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
   // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp

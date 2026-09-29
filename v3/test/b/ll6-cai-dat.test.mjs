@@ -18,7 +18,8 @@ test('K1 · Cài đặt của quản trị: MỘT dòng thanh bên, sáu tab the
   const n = mh.menuCua([VAI.QUAN_TRI]).find((x) => x.ma === 'cai-dat');
   assert.deepEqual(n.man.filter((m) => !m.an).map((m) => m.tenMenu || m.ten), ['Cài đặt']);
   assert.deepEqual(n.man.filter((m) => m.cum === 'cai-dat' && (!m.an || m.trongCum)).map((m) => m.nhanCum),
-    ['Bắt đầu', 'Kết nối', 'Model', 'Hệ còn sống', 'Người và team', 'Nhật ký']);
+    // LL10 · 29/09: + «Vận hành» sau «Hệ còn sống» — nhà của việc vận hành (diễn tập · tin bị lọc · chi phí từng tin …).
+    ['Bắt đầu', 'Kết nối', 'Model', 'Hệ còn sống', 'Vận hành', 'Người và team', 'Nhật ký']);
 });
 
 test('K2 · bảng «đường dùng thật» của màn Model KHỚP mã đường chat — nối dự phòng (LL14) mà không sửa bảng là đỏ', () => {

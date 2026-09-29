@@ -183,7 +183,6 @@ export const MAN = Object.freeze([
   // đường giữ nguyên `/ban-hoi-thoai` (liên kết cũ, chỗ đặt chân của sale).
   dat(banHoiThoai, 'Hộp thư', 'hop-thu', 'Hội thoại cần người, đơn chờ duyệt, tìm khách'),
   dat(dispatch, 'Việc đang chờ', 'hop-thu', 'Khách bot đã giao lại, có đồng hồ đếm ngược'),
-  dat(vanHanh, 'Hội thoại và đơn', 'hop-thu', 'Bot nói gì với khách, và đơn chờ duyệt'),
   // Tìm khách theo số điện thoại là việc của Hộp thư (03-MAN-HINH), không phải của Số liệu.
   dat(hoSoKhach, 'Khách hàng', 'hop-thu', 'Gộp ba kênh theo số điện thoại', true, true),
 
@@ -232,6 +231,9 @@ export const MAN = Object.freeze([
   trongCum('cai-dat', 'Kết nối', dat(ketNoi, 'Kết nối', 'cai-dat', 'Tài khoản Pancake và kho hàng')),
   trongCum('cai-dat', 'Model', dat(model, 'Model AI & khoá', 'cai-dat', 'Nhà model, khoá, bảng giá')),
   trongCum('cai-dat', 'Hệ còn sống', dat(sucKhoe, 'Hệ còn sống không', 'cai-dat', 'Chín đèn')),
+  // LL10 · 29/09: «Hội thoại và đơn» thành «Vận hành» — nhà của năm việc vận hành (diễn tập · tin bị lọc ·
+  // chi phí từng tin · nguồn nhận tin · đối chiếu tin lỗi). Duyệt đơn của sale đã sang Hộp thư (LL2).
+  trongCum('cai-dat', 'Vận hành', dat(vanHanh, 'Vận hành', 'cai-dat', 'Diễn tập, tin bị lọc, chi phí từng tin, nguồn nhận tin')),
   trongCum('cai-dat', 'Người và team', dat(team, 'Người và team', 'cai-dat', 'Thành viên, vai, gán page')),
   trongCum('cai-dat', 'Nhật ký', dat(nhatKy, 'Ai đã sửa gì', 'cai-dat', 'Không sửa được, không xoá được')),
 ]);

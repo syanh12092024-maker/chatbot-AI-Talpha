@@ -26,10 +26,10 @@
 | Việc của tôi | `trang-chu` | Hộp thư (sale) · Page › cột «Còn thiếu» (marketer) | Gộp | LL2 · LL3 · gỡ LL8 |
 | Bàn hội thoại | `ban-hoi-thoai` | Hộp thư › Cần bạn | Giữ | LL2 |
 | Việc đang chờ · Chi tiết việc | `dispatch` | Hộp thư › Cần bạn + Đơn chờ (giữ API nhận/đóng việc) | Gộp | LL2 · gỡ giao diện LL8 |
-| Hội thoại và đơn | `van-hanh` | Hộp thư › Đơn chờ · Bot đang xử (duyệt/sửa/từ chối đơn, chuyển người, trả bot) | Gộp | LL2 · gỡ giao diện LL8 |
-|   ↳ đổi nguồn nhận tin page | `van-hanh` | Page › tab Kỹ thuật | Gộp | LL10 |
-|   ↳ đối chiếu tin lỗi · tin bị lọc · diễn tập | `van-hanh` | Cài đặt › Hệ còn sống | Gộp | LL10 |
-|   ↳ chi phí từng tin | `van-hanh` | Số liệu › Chi phí | Gộp | LL10 |
+| Hội thoại và đơn | `van-hanh` | Duyệt/sửa/từ chối đơn · nhận thay bot → Hộp thư (LL2). Màn còn lại = **Cài đặt › Vận hành** (LL10) | Gộp | LL2 · LL10 |
+|   ↳ đổi nguồn nhận tin page | `van-hanh` | Cài đặt › Vận hành (tab Page & trạng thái); trang một page › Thiết lập trỏ thẳng tới | Gộp | LL10 ✓ |
+|   ↳ đối chiếu tin lỗi · tin bị lọc · diễn tập | `van-hanh` | Cài đặt › Vận hành (ba tab); Hệ còn sống trỏ thẳng tới | Gộp | LL10 ✓ |
+|   ↳ chi phí từng tin | `van-hanh` | Cài đặt › Vận hành (tab Chi phí theo tin); Số liệu › Chi phí AI trỏ thẳng tới | Gộp | LL10 ✓ |
 | Tất cả page | `page-bot` | Page › Danh sách (thị trường suy từ shop POS, marketer kế thừa từ Sản phẩm) | Giữ | LL3 · LL16 |
 | Trang một page | `mot-page` | Page › một page | Giữ | LL3 |
 | Sản phẩm & kho | `san-pham` | **Sản phẩm** › Chung · Theo thị trường (1 shop POS, 1 món POS, marketer HRM) · Page đang bán | Giữ | LL13 |
