@@ -2711,3 +2711,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · NỢ N-CONGCHAP (§9, đề nghị) — `phat-hanh.sh` chạy cổng với `>/dev/null`: cổng đỏ chập chờn (ll3/ll5 lượt phát hành VE1+VE2, 1/~14 lượt, không tái hiện) không để lại dòng nào để chẩn đoán
   đề nghị: ghi output mỗi cổng ra tệp tạm, in đường dẫn + các dòng 🔴 khi rc≠0; thêm chạy lại MỘT lần cổng đỏ để phân biệt chập chờn với đỏ thật (in cả hai)
   · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260929-ve1-ve2.md §3
+- 29/09 · VE3 → ✅ — danh sách page theo bản vẽ 2b: viên Lọc nhanh có số, nút Quét ở đầu trang, chọn nhiều + hàng loạt (gắn sản phẩm · bật bot ≤10 có xác nhận, tuần tự, dừng ở lỗi) qua đúng cửa ghi từng page — không cửa ghi hàng loạt ở máy chủ
+  bộ ca VE3 4/4 · đảo-vá 7/7 (M2 sống lượt đầu — siết thước) · npm test 2.300 ca 0 đỏ · cổng ve3.sh 7/7 · e2e 47 màn · bấm thật gắn 2 page · chưa deploy
+  · commit 05dcc72 · nhật ký docs/thi-cong/nhat-ky/phieu-VE3.md
