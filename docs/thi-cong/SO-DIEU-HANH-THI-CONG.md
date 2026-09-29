@@ -2690,3 +2690,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · LL10 → ✅ — «Hội thoại và đơn» thành Cài đặt › Vận hành (nhà của diễn tập · tin bị lọc · chi phí từng tin · nguồn nhận tin · đối chiếu tin lỗi), màn đọc ?tab= có kiểm vai; Hệ còn sống · Chi phí AI · trang page trỏ thẳng vào đúng tab (lệch CR có chủ ý: không port năm việc sang năm trang)
   cổng ll10.sh 7/7 · đảo-vá 5/5 đỏ · e2e van-hanh 8/8 · npm test 2.264 ca 0 đỏ (G6 chập chờn lượt đầu — N-CADUNGCHUNG) · chưa deploy
   · commit 1e5ce30 · nhật ký docs/thi-cong/nhat-ky/phieu-LL10.md
+- 29/09 · LL11 → ✅ — kỹ năng bỏ: «hỏi size» thành ô trong kiến thức sản phẩm (khối «Chung» màn Sản phẩm; quản trị + marketer sửa, nhật ký bắt buộc); đường ghi ĐẦU TIÊN của san_pham_goc.kien_thuc (021 chỉ có người đọc); bộ ráp prompt v3 đọc nhãn mới; màn Kỹ năng ra khỏi menu
+  cổng ll11.sh 8/8 · đảo-vá 7/7 đỏ · Postgres thật · cổng ll1 ⑤ thôi neo số màn (N5 canh danh sách + BO_CO_CHU_Y) · npm test 2.267 ca 0 đỏ · chưa deploy
+  · commit 54f4969 · nhật ký docs/thi-cong/nhat-ky/phieu-LL11.md
