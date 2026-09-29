@@ -15,6 +15,12 @@
 | **Số liệu** | Chủ team | Tổng quan (hai luồng tách) · Chi phí AI (page · model · từng tin) · Khách (nguồn · chỗ rơi · rủi ro hoàn bốn tầng). Đã làm ở LL5: một dòng thanh bên, bốn tab Tổng quan · Chi phí AI · Nguồn khách · Rủi ro hoàn; hai màn sau thôi ẩn và in «tính trên đơn tới ngày…» (prod: lát 28/08 tới khi có LL17) |
 | **Cài đặt** | Quản trị | Bắt đầu · Kết nối (Pancake · POS · WhatsApp · HRM) · Model · Hệ còn sống (đối chiếu tin lỗi · tin bị lọc · diễn tập) · Người và team (người từ HRM; ghép marketer POS chỉ đọc) · Nhật ký. Đã làm ở LL6: một dòng thanh bên, sáu tab theo thứ tự này; màn Model gắn trạng thái THẬT từng vai (chính «Đang dùng» · dự phòng «Chưa nối» · nền «Chưa việc nào dùng») |
 
+**Khung** (LL18 · 29/09, theo bản vẽ «AI Closer — làm lại từ đầu»): thanh NGANG trên cùng — logo · team · năm đích ·
+dải trạng thái bot · tài khoản — và dải «Trong mục X» ngay dưới cho mục con của đích (Hộp thư: Việc của tôi · Hộp thư ·
+Việc đang chờ; Page: Tất cả page · Luật chung; Số liệu và Cài đặt: các tab của cụm). Thay thanh bên tối — mọi chữ «thanh
+bên» ở bảng trên đọc là «dải Trong mục». MÁY CHỦ vẽ khung vào HTML (không chờ JS), tệp chung cache theo mã phiên bản,
+nén gzip. Liên kết trong trang tới màn vai đó không mở được thì tắt kèm lời «nhờ quản trị»; `/` đưa mỗi vai về màn đầu của mình.
+
 ## Màn cũ đi đâu — không chức năng nào bị bỏ sót
 
 **Cụm** (LL3, `man-hinh.js#CUM`): nhiều màn một việc = MỘT dòng thanh bên + tab ngay dưới đầu trang (khung vẽ). Màn đầu cụm mang tên cụm; vai không mở được màn đầu cụm thấy đúng tên màn của mình.

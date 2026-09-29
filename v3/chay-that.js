@@ -371,7 +371,7 @@ const bao = dungPhanB(app, {
   canhBao: canhBaoLopModel,
   express,
 });
-app.get('/', (_q, r) => r.redirect('/dieu-phoi'));
+// `/` đổi hướng theo vai ở `vai-b.js` (LL18) — không đặt đích cứng ở đây.
 
 const CONG = Number(process.env.CHAYTHAT_CONG || 3102);
 http.createServer(app).listen(CONG, process.env.HOST, () => {

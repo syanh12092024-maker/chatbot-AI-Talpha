@@ -257,7 +257,7 @@ function trangThieuVai(bc) {
 </style></head><body>
 <div class="hop">
   <h1>Tài khoản này không có quyền vào bảng điều phối</h1>
-  <p>Bảng điều phối chỉ mở cho vai <b>${escHtml(VAI_VAO_DUOC.join('</b> và <b>'))}</b>.${ten ? ` Bạn đang đăng nhập bằng <b>${ten}</b>.` : ''}
+  <p>Bảng điều phối chỉ mở cho vai <b>${VAI_VAO_DUOC.map(escHtml).join('</b> và <b>')}</b>.${ten ? ` Bạn đang đăng nhập bằng <b>${ten}</b>.` : ''}
      Nhờ quản trị cấp vai, hoặc đăng xuất để đổi tài khoản.</p>
   <button id="ra">Đăng xuất</button>
 </div>

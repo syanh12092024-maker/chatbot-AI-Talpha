@@ -241,9 +241,10 @@ theo (nước, SĐT) — hôm nay khoá khách là (team, nước, SĐT) (A7-1, 
 | LL16 | Thị trường = shop POS: page lấy thị trường từ shop của sản phẩm nó bán · ngừng dùng `page.thi_truong` gõ tay (không xoá) · bật + kéo danh mục 6 shop còn lại | 🟨 (giá theo nước) | LL13 |
 | LL14 | Model: nối dự phòng vào đường chat v3 (`src/chat/model.js`, không phải bộ não) · ẩn «việc nền» tới khi có việc dùng · màn nói đúng đường nào đọc gì | 🟨 | LL6 |
 | LL17 | Đơn dùng chung nhiều team: job kéo đơn định kỳ MỘT lần mỗi shop (hôm nay không job nào chạy) · chống trùng toàn hệ theo `ma_pos` (migration đổi UNIQUE — prod 0 trùng) · team chủ = team HRM của marketer vào ngày đơn · đọc bảng ghép marketer POS ↔ HRM có sẵn `PIALPHA_ALL_Dataset.dim_person_map` (98,6% đơn; chỉ đọc, sửa ở HRM) · ô «chờ gán team» · nguồn WhatsApp = có UTM (thay «không hội thoại»; đơn sale nhập tay không gửi) · khoá khách (nước, SĐT) · chỉ team chủ gửi WhatsApp/ghi ngược POS | 🟥 (đơn · tin gửi khách) | LL15 (HRM nối máy chủ) · TRƯỚC khi bật WhatsApp xác nhận hoặc khi team thứ hai khai shop |
+| LL18 | Khung theo bản vẽ (thanh ngang năm đích + «Trong mục X») do MÁY CHỦ vẽ sẵn · tệp chung cache theo mã phiên bản · gzip · `/` theo vai · trang «cần vai» thôi ngõ cụt · liên kết sang màn không mở được thì tắt. Thêm 29/09 sau deploy sóng LL: người dùng báo chậm, menu nhảy, lệch bản vẽ | 🟩 (giao diện, không đường tiền) | sau LL1–LL13 |
 | LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`), sửa trên giao diện | 🟥 (đường bot, cạnh bộ não) | cutover / đợt tắt Botcake — phiếu riêng |
 
-Cỡ: ~~9~~ **17 phiếu** (LL1–LL17, sau khi thêm Sản phẩm · HRM · đơn). Để so: sóng UI-HT (4 phiếu, cùng loại việc) xong trong một ngày làm việc của dây chuyền này.
+Cỡ: ~~9~~ ~~17~~ **18 phiếu** (LL1–LL17, sau khi thêm Sản phẩm · HRM · đơn; LL18 thêm 29/09 sau deploy). Để so: sóng UI-HT (4 phiếu, cùng loại việc) xong trong một ngày làm việc của dây chuyền này.
 Phần nặng là A (LL1–LL6); B, C, D mỗi phần một phiếu.
 
 ## 6 · Đường lùi

@@ -172,6 +172,14 @@ export const CUM = Object.freeze({
 });
 const trongCum = (cum, nhan, m) => ({ ...m, cum, nhanCum: nhan });
 
+/**
+ * ĐƯỜNG CHỈ CÒN CHUYỂN HƯỚNG — quyền đi theo ĐÍCH, không theo màn cũ (LL18 · e2e 29/09). `/san-sang` gộp vào danh
+ * sách page từ GD2 (25/09): nó chuyển sang `/page-bot?loc=con_chan`. Quyền của nó vẫn khai theo màn cũ (có marketer,
+ * vì «Bắt đầu» dùng chung danh sách vai ấy) ⇒ marketer bấm «Page bot KHÔNG bật được» ở Việc của tôi là tới đích 403.
+ * Cửa kiểm liên kết (`router-dieu-huong.js`) đọc bảng này.
+ */
+export const CHUYEN_HUONG = Object.freeze({ '/san-sang': '/page-bot' });
+
 export const MAN = Object.freeze([
   // ĐƯỜNG DẪN KHÔNG ĐỔI — đổi đường là làm chết mọi liên kết đã lưu. Chỉ đổi CHỖ NGỒI.
   // Đích của từng màn = cột «Nhà mới» của `docs/v3/03-MAN-HINH.md` (LL1, 29/09).

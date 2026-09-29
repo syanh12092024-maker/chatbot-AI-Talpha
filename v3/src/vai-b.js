@@ -67,6 +67,8 @@ import {
   datCuaBoLuat, manBoLuat,
 } from './ui/bo-luat/index.js';
 import { taoRouterDieuHuong } from './ui/chung/router-dieu-huong.js';
+import { lopKhung } from './ui/chung/khung-may-chu.js';
+import { teamCuaNguoi } from './auth/kho-nguoi-dung.js';
 import { menuCua } from './ui/chung/man-hinh.js';
 import { datDocSanSang as datDocSanSangDai, datDemTeam } from './ui/chung/trang-thai.js';
 import { datDocSanSang as datDocSanSangBotBat } from './ui/chung/bot-bat-that.js';
@@ -618,13 +620,23 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   // ── ⑤ Mắc vào Express, ĐÚNG THỨ TỰ ──
   if (express && typeof express.json === 'function') app.use(express.json());
   app.use(lopBoiCanh());          // ① đọc cookie vé → req.boiCanh. PHẢI đứng trước router auth.
+  // KHUNG VẼ Ở MÁY CHỦ (LL18): mọi trang HTML của UI đi qua `res.sendFile` được chèn sẵn thanh trên cùng
+  // + tab cụm, tệp chung mang mã phiên bản, thân chữ ≥ 1 KB được nén. Cần `req.boiCanh` ⇒ đứng SAU ①.
+  app.use(lopKhung({
+    tenTeamCua: async (nguoiDungId, teamId) => {
+      const t = (await teamCuaNguoi(nguoiDungId)).find((x) => String(x.teamId) === String(teamId));
+      return t && t.tenTeam !== t.teamId ? t.tenTeam : null;
+    },
+  }));
   // MÀN ĐẦU TIÊN SAU KHI ĐĂNG NHẬP = màn đầu tiên trên menu CỦA CHÍNH VAI ẤY.
   // Trước 22/09 chỗ này để mặc định `/dieu-phoi` cho mọi vai, mà màn đó chỉ mở cho vai sale
   // và quản trị: vai quản lý và marketer đăng nhập xong là gặp ngay một màn bị từ chối. Lấy
   // thẳng từ `menuCua` thì đích đi theo quyền, và thêm/bớt màn về sau không làm nó lệch lại.
-  app.use(taoRouterAuth({
-    duongSauKhiVao: (vai) => menuCua(vai)?.[0]?.man?.[0]?.duong || '/dieu-phoi',
-  }));                            //   /dang-nhap · /api/dang-nhap · /api/chon-team · /api/toi
+  const dichCuaVai = (vai) => menuCua(vai)?.[0]?.man?.[0]?.duong || '/dieu-phoi';
+  app.use(taoRouterAuth({ duongSauKhiVao: dichCuaVai })); // /dang-nhap · /api/dang-nhap · /api/chon-team · /api/toi
+  // GỐC `/` cũng theo vai (LL18 · e2e 29/09): `chay-that.js`/`xem-thu.js` từng đổi hướng CỨNG `/` → `/dieu-phoi`,
+  // nên marketer gõ địa chỉ gốc là gặp 403 dù đăng nhập đã đi đúng đích từ 22/09. Chưa đăng nhập ⇒ trang đăng nhập.
+  app.get('/', (req, res) => res.redirect(302, req.boiCanh ? dichCuaVai(req.boiCanh.vai) : '/dang-nhap'));
   app.use(chanTeamTrenUrl());     //   ?team_id=<team khác> → 403 + ghi nhật ký
   app.use(taoRouterDieuHuong());  //   /chung/dieu-huong.js · /api/dieu-huong (menu chung)
   app.use(taoRouterVanHanh(vanHanh));

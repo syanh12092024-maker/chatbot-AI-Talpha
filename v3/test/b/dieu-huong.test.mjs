@@ -301,29 +301,24 @@ test('⑤c · `dieu-huong.js` PHẢI PARSE ĐƯỢC — một dấu huyền ngư
 });
 
 /* ═══════════ ⑥ THANH TRÊN CÙNG — và header thôi tự chế link ═══════════ */
-// ĐỔI 14/09/2026 (mục F2 của bản đặc tả): BỎ thanh tab. Nó liệt kê đúng các màn mà thanh bên
-// đã hiện — hai nơi điều hướng cho cùng một việc. Thay bằng thanh trên cùng 52px: trái là
-// đường dẫn vị trí «Nhóm / Màn», phải là menu tài khoản. Không nút riêng của từng màn.
+// ĐỔI 14/09/2026 (mục F2): bỏ thanh tab trùng thanh bên. ĐỔI 29/09 (LL18, theo bản vẽ «AI Closer — làm lại từ
+// đầu»): bỏ luôn THANH BÊN — năm đích nằm NGANG trên cùng, mục con ở dải «Trong mục X» ngay dưới. Markup ở
+// `chung/khung.js` (hàm thuần), MÁY CHỦ vẽ sẵn vào HTML; bộ ca hành vi ở `ll18-khung.test.mjs`.
 
-test('⑥a · khung có thanh trên cùng với đường dẫn vị trí, và KHÔNG còn thanh tab trùng lặp', () => {
+test('⑥a · khung là thanh NGANG: năm đích có nhãn «Chính», mục con «Trong mục …», KHÔNG còn thanh bên', async () => {
+  const k = await import('../../src/ui/chung/khung.js');
+  const v = k.veKhung({ nhom: mh.menuCua([VAI.QUAN_TRI]), vai: [VAI.QUAN_TRI] }, '/bao-cao');
+  assert.match(v.html, /<nav class="kh-dich" aria-label="Chính">/, 'thiếu hàng năm đích có nhãn cho trình đọc màn hình');
+  assert.match(v.html, /<nav class="kh-hai" aria-label="Trong mục Số liệu">/, 'thiếu dải mục con của đích đang đứng');
+  assert.match(v.html, /aria-current="page">Số liệu</, 'đích đang đứng phải đánh dấu aria-current');
   const js = readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
-  assert.match(js, /class="dh-top"|className = "dh-top"/, 'thiếu thanh trên cùng');
-  assert.match(js, /aria-label="Vị trí"/, 'đường dẫn vị trí phải có nhãn cho trình đọc màn hình');
-  assert.match(js, /aria-current="page"/, 'mục đang đứng phải đánh dấu aria-current');
-  assert.doesNotMatch(js, /dungThanhTab|class="dh-tab"/,
-    'thanh tab đã bỏ — nó lặp đúng thứ thanh bên hiện (mục F2)');
-  // Tối đa HAI tầng (mục F1): nhóm → màn. Nhóm là nút bung, màn là liên kết.
-  assert.match(js, /aria-expanded/, 'nút nhóm phải báo trạng thái bung cho trình đọc màn hình');
+  assert.doesNotMatch(js + v.html, /dh-ngan|dh-muc|paddingLeft/, 'thanh bên đã bỏ (LL18) — không được mọc lại');
 });
 
-test('⑥b · đường dẫn vị trí tìm ra ĐÚNG nhóm cho mọi màn — kể cả màn chi tiết', async () => {
-  // Chạy chính hàm tìm chỗ đứng của khung trên dữ liệu thật của sổ màn: mọi đường trong
-  // menu phải ra đúng nhóm của nó, và một đường CON (màn chi tiết) phải ra nhóm của màn cha.
-  const js = readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
-  const than = js.match(/function timChoDung\(d, nay\) \{[\s\S]*?\n  \}\n/);
-  assert.ok(than, 'không tìm thấy hàm timChoDung trong khung');
-  const timChoDung = new Function(`${than[0]}; return timChoDung;`)();
-
+test('⑥b · khung tìm ra ĐÚNG đích cho mọi màn — kể cả màn chi tiết', async () => {
+  // Chạy chính hàm tìm chỗ đứng (`khung.js#timChoDung`, LL18 chuyển từ `dieu-huong.js`) trên dữ liệu thật
+  // của sổ màn: mọi đường trong menu phải ra đúng nhóm của nó, và một đường CON phải ra nhóm của màn cha.
+  const { timChoDung } = await import('../../src/ui/chung/khung.js');
   const d = { nhom: mh.menuCua([VAI.QUAN_TRI]) };
   for (const n of d.nhom) {
     for (const m of n.man) {

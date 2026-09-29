@@ -25,6 +25,12 @@
      · huy hiệu trạng thái: thẻ vuông 2px có viền mảnh, giữ dấu HÌNH theo nghĩa
      · mật độ: nút và ô nhập 32 · đầu bảng 32 · dòng bảng 36 (cảm ứng vẫn ≥ 40)
      · thanh bên TỐI, mục đang mở tô màu chính; màu chính xanh ngọc #0F766E
+   Bản 5 (29/09 · LL18): theo BẢN VẼ «AI Closer — làm lại từ đầu» (artifact A6D68jyQ…) mà người quyết đã
+     xem — người dùng báo giao diện chạy «không giống bản artifact». Đổi:
+     · khung: thanh NGANG trên cùng (năm đích) + dải «Trong mục X», thay thanh bên tối 240px;
+       khung do MÁY CHỦ vẽ sẵn vào HTML (`khung-may-chu.js`), CSS khung nằm ngay trong tệp này
+     · nền kem ấm #F6F5F1 · vạch #E4E1D8 · chữ #1B1D1F / #4A5057 / #666C73 · màu chính #0B6E75
+     · bo góc: ô nhập, nút 8 · thẻ 12 · huy hiệu tròn hẳn
 
    ═══ BA TẦNG TÊN TOKEN — một tầng giá trị, hai tầng bí danh ════════════════════
    ① TÊN NGỮ NGHĨA (--text-primary, --surface, --success-bg …) là TÊN GỐC, mang giá trị.
@@ -57,74 +63,59 @@
    ════════════════════════════════════════════════════════════════════════════════════ */
 @layer ds-dau {
   :root {
-    /* Hệ sáng cho vùng làm việc; thanh bên tối tự khai `color-scheme` riêng (xem --side-*).
-       Chế độ tối toàn màn CHƯA làm (mục E2) — mọi màu dưới đây là tên NGHĨA. */
+    /* Hệ sáng. Chế độ tối toàn màn CHƯA làm (mục E2) — mọi màu dưới đây là tên NGHĨA. */
     color-scheme: light;
 
-    /* ─── E1 · NỀN — xám kẽm, hơi lạnh. Thứ bậc dựng bằng NỀN và VẠCH, không bằng bóng. ── */
-    --app-bg:           #f4f4f5;
+    /* ─── E1 · NỀN — kem ấm (bản 5, theo bản vẽ). Thứ bậc dựng bằng NỀN và VẠCH, không bằng bóng. ── */
+    --app-bg:           #f6f5f1;
     --surface:          #ffffff;
-    --surface-subtle:   #fafafa;
-    --surface-muted:    #f4f4f5;
-    --surface-hover:    #f5f6f6;
-    --surface-selected: #e8f4f1;
-    --surface-disabled: #f4f4f5;
+    --surface-subtle:   #faf9f6;
+    --surface-muted:    #f3f1ec;
+    --surface-hover:    #f3f1ec;
+    --surface-selected: #e5f0f0;
+    --surface-disabled: #f3f1ec;
 
-    /* ─── E1 · CHỮ — `--text-muted` #5f6069 trên trắng 6,3:1; trên nền màn 5,8:1. ────── */
-    --text-primary:   #18181b;
-    --text-secondary: #3f3f46;
-    --text-muted:     #5f6069;
-    --text-disabled:  #a1a1aa;
+    /* ─── E1 · CHỮ — `--text-muted` #666c73 trên trắng 5,3:1; trên nền màn 4,9:1 (≥ 4,5 AA). ── */
+    --text-primary:   #1b1d1f;
+    --text-secondary: #4a5057;
+    --text-muted:     #666c73;
+    --text-disabled:  #a3a6aa;
     --text-inverse:   #ffffff;
-    --text-link:      #0f766e;
+    --text-link:      #0b6e75;
 
     /* ─── E1 · VẠCH — ba độ. Bảng và danh sách chỉ dùng vạch NGANG mảnh. ─────────────── */
-    --border-subtle:  #ececee;
-    --border-default: #e1e1e5;
-    --border-strong:  #cacad0;
-    --border-focus:   #0f766e;
-    --focus-ring:     rgba(15, 118, 110, .25);
+    --border-subtle:  #eeebe4;
+    --border-default: #e4e1d8;
+    --border-strong:  #d5d1c7;
+    --border-focus:   #0b6e75;
+    --focus-ring:     rgba(11, 110, 117, .25);
 
     /* ─── E1 · HÀNH ĐỘNG — xanh ngọc vận hành, MỘT họ màu ─────────────────────────────
        Nguồn: ui-ux-pro-max, bảng màu «Productivity Tool». Gốc #0D9488 chỉ 3,74:1 trên chữ
        trắng nên hạ về #0F766E (5,47:1). Dùng cho: nút chính · liên kết · mục đang đứng ·
        quầng lấy nét. Không để trang trí. */
-    --primary:            #0f766e;
-    --primary-hover:      #115e59;
-    --primary-active:     #134e4a;
+    --primary:            #0b6e75;   /* bản 5: màu chính của bản vẽ — 6,0:1 dưới chữ trắng */
+    --primary-hover:      #0a5a60;
+    --primary-active:     #084a4f;
     --primary-foreground: #ffffff;
-    --primary-subtle:     #e8f4f1;
-    --primary-border:     #99d5cb;
+    --primary-subtle:     #e5f0f0;
+    --primary-border:     #9ccbce;
 
     /* ─── E1 · TRẠNG THÁI — năm nghĩa cố định. Chữ · nền · viền. ──────────────────────
        Tương phản chữ trên nền nhạt của chính nó (đo): success 6,1 · warning 5,3 ·
        danger 6,0 · info 5,6. Không bao giờ chỉ dùng MÀU: huy hiệu luôn có CHỮ và dấu HÌNH. */
-    --success: #15803d;  --success-bg: #edf8f0;  --success-border: #a7dcb7;
-    --warning: #b45309;  --warning-bg: #fdf6e9;  --warning-border: #f1cf8f;
-    --danger:  #b91c1c;  --danger-bg:  #fdf1f1;  --danger-border:  #f3b9b9;
+    --success: #1f6a34;  --success-bg: #e8f4ec;  --success-border: #a9d4b5;
+    --warning: #8a3e05;  --warning-bg: #fcf1e3;  --warning-border: #f1d3a8;
+    --danger:  #b42318;  --danger-bg:  #fcebea;  --danger-border:  #f4c1bc;
     --info:    #1d5fc0;  --info-bg:    #eef4fc;  --info-border:    #b7cff2;
-    --neutral: #52525b;  --neutral-bg: #f4f4f5;  --neutral-border: #d9d9de;
-
-    /* ─── E1b · THANH BÊN TỐI — khung cố định, tách hẳn vùng làm việc ──────────────── */
-    --side-bg:        #111418;
-    --side-bg-2:      #181c21;
-    --side-hover:     #1d2228;
-    --side-line:      #242a31;
-    --side-text:      #e4e4e7;
-    --side-text-2:    #a3a7ae;
-    --side-text-3:    #71767e;
-    --side-active:    #0f766e;
-    --side-good:      #34d399;
-    --side-bad:       #f87171;
-    --side-logo:      #14b8a6;
-    --side-logo-ink:  #042f2e;
+    --neutral: #4a5057;  --neutral-bg: #eef0f1;  --neutral-border: #d5d8db;
 
     /* ─── E3 · CHỮ — IBM Plex Sans + IBM Plex Mono (đủ bộ tiếng Việt) ────────────────
        Bản 1–3 dùng chữ hệ điều hành để khỏi một lượt tải. Bản 4 đổi, có chủ đích: Plex
        vẽ cho màn làm việc dày chữ, và Plex Mono cho MỌI con số so sánh (đồng hồ đếm ngược,
        tiền, đếm) thẳng cột. Tải từ Google Fonts (mạng phân phối toàn cầu, trình duyệt giữ
        sau lần đầu, `display=swap`) — mạng chậm thì giây đầu hiện bằng chữ hệ thống bên dưới.
-       Tệp chữ do `dieu-huong.js` chèn (<link>), KHÔNG `@import` ở đây: mọi dòng trong tệp này
+       Tệp chữ do máy chủ chèn vào <head> (`khung-may-chu.js`, KHÔNG chặn lần vẽ đầu), KHÔNG `@import` ở đây: mọi dòng trong tệp này
        phải nằm trong @layer (phép canh HK1). */
     --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
                  "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
@@ -156,8 +147,8 @@
     --space-5: 20px;  --space-6: 24px;  --space-8: 32px;  --space-10: 40px;
     --space-12: 48px; --space-16: 64px;
 
-    /* ─── E5 · BO GÓC — gần vuông. Huy hiệu 2 · nút, ô nhập, thẻ 4 · hộp thoại 6. ──── */
-    --radius-xs: 2px;  --radius-sm: 3px;  --radius-md: 4px;  --radius-lg: 4px;  --radius-xl: 6px;
+    /* ─── E5 · BO GÓC — bản 5 theo bản vẽ: ô nhỏ 6 · nút, ô nhập 8 · thẻ, hộp thoại 12. ──── */
+    --radius-xs: 2px;  --radius-sm: 6px;  --radius-md: 8px;  --radius-lg: 12px;  --radius-xl: 12px;
     --radius-full: 999px;
 
     /* ─── E6 · BÓNG — CHỈ cho lớp nổi lên trên trang (menu, hộp thoại, ngăn kéo). ───── */
@@ -174,9 +165,11 @@
     --control-lg: 36px;
     --row-height: 36px;
     --header-height: 32px;
-    --topbar-height: 48px;
-    --sidebar-width: 232px;
-    --content-max: 1360px;
+    /* Chiều cao KHUNG trên cùng — một hàng 56 · hai hàng 56 + 44. Máy chủ đặt `body[data-khung]`
+       theo số hàng (`body[data-khung-hang]` — KHÔNG dùng `data-khung`: đó là dấu của khối khung, trùng thì `[data-khung] a`
+       khớp MỌI liên kết trong trang — e2e 29/09); màn cao-trọn-màn (Hộp thư) trừ đúng số này. */
+    --topbar-height: 56px;
+    --content-max: 1440px;   /* bản 5: bằng khung bản vẽ — nội dung cách mép 32px, thẳng hàng thanh trên */
 
     /* ─── U · CHUYỂN ĐỘNG — 120–180ms, chỉ cho đổi trạng thái ───────────────────────── */
     --duration-fast: 120ms;
@@ -205,9 +198,6 @@
     --bong-1: none;            --bong-2: var(--shadow-overlay);
     --chu-he: var(--font-sans); --chu-so: var(--font-mono);
     --nhanh: var(--duration-fast) var(--ease);
-    /* Bản 4: thanh bên TỐI trở lại — các token «trên nền tối» trỏ về bộ --side-*. */
-    --toi: var(--side-bg);
-    --tren-toi: var(--side-text); --tren-toi-2: var(--side-text-2); --tren-toi-nhan: var(--side-logo);
 
     /* ════════════════════════════════════════════════════════════════════════════════
        ③ CẦU DI TRÚ — ĐÃ GỠ ngày 14/09/2026.
@@ -244,6 +234,88 @@
     background: var(--app-bg);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  /* ════ KHUNG — thanh NGANG trên cùng (LL18 · bản vẽ «AI Closer — làm lại từ đầu») ════════════
+     Markup: `chung/khung.js` (một nguồn — máy chủ vẽ sẵn, trình duyệt chỉ dùng làm đường lùi).
+     Hàng 1 (56px): logo · team · NĂM ĐÍCH · dải trạng thái bot · tài khoản.
+     Hàng 2 (44px): «Trong mục X» — mục con của đích đang đứng; không có thì không vẽ.
+     Dính trên cùng khi cuộn. CSS nằm CÙNG tệp với token ⇒ khung và màu của nó không thể lệch bản. */
+  body[data-khung-hang="2"] { --topbar-height: 100px; }
+  html { scroll-padding-top: 72px; }
+  html:has(body[data-khung-hang="2"]) { scroll-padding-top: 116px; }
+  .kh { position: sticky; top: 0; z-index: 9990; background: var(--surface); }
+  .kh-tren { height: 56px; display: flex; align-items: center; gap: var(--space-6); padding: 0 var(--space-5);
+             background: var(--surface); border-bottom: 1px solid var(--border-default); }
+  .kh-logo { flex: none; display: flex; align-items: center; gap: 10px; color: var(--text-primary);
+             font-weight: var(--weight-semibold); text-decoration: none; }
+  .kh-logo:hover { text-decoration: none; }
+  .kh-logo-o { width: 28px; height: 28px; border-radius: 7px; display: inline-flex; align-items: center;
+               justify-content: center; background: var(--primary); color: var(--primary-foreground);
+               font-size: var(--text-xs); font-weight: var(--weight-semibold); }
+  .kh-team { flex: none; height: 28px; display: inline-flex; align-items: center; margin-left: calc(-1 * var(--space-3));
+             padding: 0 10px; border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+             color: var(--text-secondary); font-size: var(--text-sm); text-decoration: none; white-space: nowrap; }
+  .kh-team:hover { background: var(--surface-hover); text-decoration: none; }
+  .kh-dich, .kh-hai { display: flex; align-items: stretch; gap: var(--space-1); min-width: 0;
+                      overflow-x: auto; scrollbar-width: none; }
+  .kh-dich::-webkit-scrollbar, .kh-hai::-webkit-scrollbar { display: none; }
+  .kh-dich { height: 56px; }
+  .kh-dich a, .kh-hai a { display: flex; align-items: center; padding: 0 var(--space-3); white-space: nowrap;
+                          color: var(--text-secondary); text-decoration: none; }
+  .kh-dich a:hover, .kh-hai a:hover { color: var(--text-primary); text-decoration: none; }
+  .kh-dich a[aria-current="page"] { color: var(--text-primary); font-weight: var(--weight-semibold);
+                                    box-shadow: inset 0 -2px 0 var(--primary); }
+  .kh-hai { height: 44px; padding: 0 var(--space-5); background: var(--surface);
+            border-bottom: 1px solid var(--border-default); font-size: var(--text-sm); }
+  .kh-hai a { padding: 0 10px; }
+  .kh-hai a[aria-current="page"] { color: var(--text-primary); font-weight: var(--weight-semibold);
+                                   box-shadow: inset 0 -2px 0 var(--text-primary); }
+  .kh-khoang { flex: 1; }
+  /* Dải trạng thái bot — viên nhỏ; câu đầy đủ nằm ở `title`. Chấm có HÌNH theo nghĩa (mục T). */
+  .kh-bot { flex: none; display: inline-flex; align-items: center; height: 26px; padding: 0 10px;
+            border-radius: var(--radius-full); font-size: var(--text-xs); white-space: nowrap;
+            background: var(--neutral-bg); color: var(--text-muted); }
+  .kh-bot b { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--weight-medium); }
+  .kh-bot b::before { content: ""; width: 7px; height: 7px; flex: none; border-radius: 50%; background: currentColor; }
+  .kh-bot[data-tone="success"] { background: var(--success-bg); color: var(--success); }
+  .kh-bot[data-tone="danger"]  { background: var(--danger-bg);  color: var(--danger); }
+  .kh-bot[data-tone="danger"] b::before { border-radius: 1px; }
+  .kh-bot[data-tone="neutral"] b::before { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
+  .kh-tk { position: relative; flex: none; }
+  .kh-tk-nut { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px 0 4px; border: 0;
+               border-radius: var(--radius-md); background: none; cursor: pointer; font: inherit;
+               font-size: var(--text-sm); color: var(--text-secondary); }
+  .kh-tk-nut:hover { background: var(--surface-hover); }
+  .kh-avatar { width: 30px; height: 30px; flex: none; border-radius: 50%; display: inline-flex; align-items: center;
+               justify-content: center; background: var(--neutral-bg); color: var(--text-primary);
+               font-weight: var(--weight-semibold); }
+  .kh-tk-hop { position: absolute; right: 0; top: calc(100% + 8px); width: 260px; padding: 6px; z-index: 10000;
+               background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+               box-shadow: var(--shadow-popover); }
+  .kh-tk-dau { padding: 8px 10px 10px; margin-bottom: 4px; font-size: var(--text-xs); line-height: 1.45;
+               color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
+  .kh-tk-dau b { display: block; font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--text-primary); }
+  .kh-tk-hop button { width: 100%; height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 10px;
+                      border: 0; border-radius: var(--radius-sm); background: none; cursor: pointer; text-align: left;
+                      font: inherit; font-size: var(--text-sm); color: var(--text-primary); }
+  .kh-tk-hop button:hover { background: var(--surface-hover); }
+  .kh-tk-hop button.ra { color: var(--danger); }
+  .kh-tk-hop button.ra:hover { background: var(--danger-bg); }
+  .kh-tk-hop button svg { width: 16px; height: 16px; flex: none; }
+  /* Liên kết sang màn vai này không mở được — `dieu-huong.js` gỡ `href` và gắn lớp này (LL18). Vẫn ĐỌC được
+     (người dùng biết có việc đó, nhờ ai), nhưng không bấm được thành trang 403. */
+  a.lien-cam, a.lien-cam:hover { color: var(--text-disabled); cursor: not-allowed; text-decoration: none; }
+  a.btn.lien-cam { opacity: .55; }
+
+  /* Màn hẹp: năm đích cuộn ngang được; bỏ chữ phụ để đích có chỗ. Không ngăn kéo — một tầng ít hơn. */
+  @media (max-width: 899px) {
+    .kh-tren { gap: var(--space-3); padding: 0 var(--space-3); }
+    .kh-logo-chu, .kh-team, .kh-tk-ten { display: none; }
+    .kh-dich a { padding: 0 var(--space-2); }
+    .kh-hai { padding: 0 var(--space-2); }
+    .kh-bot { padding: 0 8px; }
+    .kh-bot b { font-size: 0; gap: 0; }
   }
 
   h1, h2, h3, h4 { margin: 0; font-weight: var(--weight-semibold); text-wrap: balance;
@@ -294,7 +366,7 @@
        tràn viền chiếm ~92px. Vạch mảnh dưới tách đầu trang khỏi phần làm việc. */
     max-width: var(--content-max);
     margin: 0 auto;
-    padding: var(--space-5) var(--space-6) var(--space-3);
+    padding: var(--space-5) var(--space-8) var(--space-3);
     background: transparent;
     border-bottom: 1px solid var(--border-default);
     color: var(--text-primary);
@@ -310,7 +382,7 @@
                             font-size: var(--text-xs); color: var(--text-muted);
                             font-variant-numeric: tabular-nums; }
   body > header a { color: var(--text-link); font-size: var(--text-sm); font-weight: var(--weight-medium); }
-  /* LL3 · thanh tab CỤM — khung (`dieu-huong.js`) chèn vào cuối đầu trang; nằm ĐÈ lên vạch dưới đầu
+  /* LL3 · thanh tab CỤM — máy chủ chèn vào cuối đầu trang (LL18: `khung-may-chu.js`, trước là `dieu-huong.js`); nằm ĐÈ lên vạch dưới đầu
      trang để tab đang mở gạch chân đúng vạch ấy (bản vẽ «Số liệu», «Luật chung»). */
   /* Đặt lại cả ba thứ quy tắc «sau `.sp` là phần phải» áp lên (grid-row · justify-self · gap): đầu trang có `.sp`
      (màn Model) thì thanh tab bị đẩy lên góc phải, đè huy hiệu — ảnh chụp LL6, 29/09. */
@@ -320,13 +392,9 @@
   body > header > .tabs[data-cum] a.tab[aria-current="page"] { color: var(--text-primary); }
 
   body > main {
-    padding: var(--space-5) var(--space-6) var(--space-16);
+    padding: var(--space-5) var(--space-8) var(--space-16);
     max-width: var(--content-max);
     margin: 0 auto;
-  }
-  @media (min-width: 1600px) {
-    body > header { padding-inline: var(--space-8); }
-    body > main { padding-inline: var(--space-8); }
   }
   /* Màn hẹp. Trước đây 22 màn tự viết dòng này trong @media riêng, mỗi màn một ngưỡng
      (700 · 720px) và một số đo — nay là một chỗ. */
@@ -516,11 +584,10 @@
      miền → nghĩa (`data-tone`) nằm ở MỘT chỗ trong `ui.js`. Dấu chấm có HÌNH khác nhau
      theo nghĩa (tròn · thoi · vuông · rỗng) — mục T: màu không là tín hiệu duy nhất.
      Đo 14/09: 25 màn tự vẽ trạng thái bằng lớp đặt theo MÀU (`pill r/o/g/m`). */
-  /* Bản 4: THẺ VUÔNG góc 2px, viền mảnh cùng tông — đọc như nhãn trên bảng điều khiển, không
-     như viên thuốc. Dấu HÌNH theo nghĩa giữ nguyên. */
+  /* Bản 5 (theo bản vẽ): tròn hẳn, cao 22px. Dấu HÌNH theo nghĩa giữ nguyên — màu không là tín hiệu duy nhất. */
   .status-badge {
     display: inline-flex; align-items: center; gap: 6px;
-    height: 20px; padding: 0 6px 0 6px; border-radius: var(--radius-xs);
+    height: 22px; padding: 0 8px; border-radius: var(--radius-full);
     font-size: var(--text-xs); font-weight: var(--weight-medium); line-height: 1; white-space: nowrap;
     background: var(--neutral-bg); color: var(--neutral); border: 1px solid var(--neutral-border);
   }

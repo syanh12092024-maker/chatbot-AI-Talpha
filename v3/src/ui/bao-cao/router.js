@@ -97,7 +97,7 @@ color:#101828;font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Arial,sans
 h1{font-size:16px;margin:0 0 8px}p{margin:0 0 14px;color:#475467;line-height:1.55}
 a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 <div class="h"><h1>Không đủ quyền xem báo cáo</h1><p>${escHtml(cau)}</p>
-<p><a href="/dieu-phoi">← Về bảng điều phối</a></p></div>`);
+<p><a href="/">← Về màn đầu của bạn</a></p></div>`);
       }
       return res.status(403).json({ ok: false, ma: 'thieu_vai', thongDiep: cau });
     }

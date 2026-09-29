@@ -5,11 +5,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 
 const GOC = path.resolve(import.meta.dirname, "../../..");
 const DUONG = path.join(GOC, "v3/src/ui/chung/kieu.css");
 const css = fs.readFileSync(DUONG, "utf8");
+// LL18: bốn tệp khung đi cùng MỘT mã phiên bản (`khung-may-chu.js#TEP_CHUNG`).
+const TEP_KHUNG = ["kieu.css", "ui.js", "dieu-huong.js", "khung.js"];
 
 // Bỏ chú thích trước khi đo — chú thích có nhắc mã màu (#e8f7ee…) để giải thích lịch sử,
 // đó là TƯ LIỆU chứ không phải kiểu. Đo cả chú thích là tự làm thước kêu oan.
@@ -229,38 +232,31 @@ test("HK8 · CẦU DI TRÚ đã gỡ — và không màn nào được dùng l�
   assert.deepEqual(tuKhai, [], `màn TỰ KHAI lại token — hệ kiểu không tới được: ${tuKhai.join(", ")}`);
 });
 
-test("HK9 · hệ kiểu và thanh điều hướng KHÔNG được cache dài — lệch bản là tàng hình", () => {
+test("HK9 · hệ kiểu và khung KHÔNG thể lệch bản — cache dài CHỈ bằng một mã băm chung của cả bốn tệp", async () => {
   // ═══ ĐO 14/09/2026, qua ảnh chụp của chủ dự án ═══════════════════════════════════
-  // Bản đầu gửi `kieu.css` với `Cache-Control: public, max-age=3600` («tệp này đổi rất
-  // thưa»). Trình duyệt giữ bản CSS CŨ — chưa có token cầu `--side` và token `--tren-toi*`
-  // — trong khi lấy `dieu-huong.js` MỚI, đã gọi các token ấy. `var()` không giải được thì
-  // rơi về màu mặc định, và kết quả trên ảnh:
-  //     · thanh bên: chữ TỐI trên nền TỐI, hai nút «Đổi team» «Đăng xuất» chìm hẳn
-  //     · tiêu đề màn: chữ TRẮNG trên nền TRẮNG
-  // Tám phép canh khác đều xanh. Không phép nào đo được chuyện hai tệp đi LỆCH BẢN nhau,
-  // vì trên đĩa chúng khớp — chúng chỉ lệch trong bộ đệm của trình duyệt.
+  // Bản đầu gửi `kieu.css` với `Cache-Control: public, max-age=3600`. Trình duyệt giữ bản CSS CŨ — chưa có
+  // token cầu `--side` — trong khi lấy `dieu-huong.js` MỚI, đã gọi token ấy ⇒ chữ tối trên nền tối, tiêu đề
+  // trắng trên nền trắng. Từ đó ba tệp khung đi `no-cache`.
+  // ═══ LL18 · 29/09 ════════════════════════════════════════════════════════════════
+  // `no-cache` có giá: RTT ~320 ms tới prod, mỗi lần bấm menu hỏi lại từng tệp. Nay trang HTML gọi các tệp
+  // bằng `?v=<mã>` — MỘT mã băm từ nội dung cả BỐN tệp — nên đổi một tệp là đổi URL của cả bốn: lệch bản
+  // KHÔNG THỂ xảy ra, và chỉ khi đó mới được cache dài. Không mã / mã cũ ⇒ `no-cache` như trước.
+  // Hành vi HTTP đo ở `ll18-khung.test.mjs` K10; ca này canh HAI điều kiện để lời hứa ấy đúng.
+  const kmc = await import("../../src/ui/chung/khung-may-chu.js");
+  // ① Mã phiên bản băm từ ĐỦ bốn tệp, theo NỘI DUNG (không theo ngày giờ).
+  assert.deepEqual([...kmc.TEP_CHUNG].sort(), ["dieu-huong.js", "khung.js", "kieu.css", "ui.js"]);
+  const h = crypto.createHash("sha1");
+  for (const t of kmc.TEP_CHUNG) h.update(fs.readFileSync(path.join(GOC, "v3/src/ui/chung", t)));
+  assert.equal(kmc.phienBan(), h.digest("hex").slice(0, 12), "mã phiên bản phải là băm nội dung của đủ bốn tệp");
+  // ② Router chỉ cho cache dài khi `v` ĐÚNG mã hiện hành; mọi nhánh khác `no-cache`.
   const rt = fs.readFileSync(path.join(GOC, "v3/src/ui/chung/router-dieu-huong.js"), "utf8");
-
-  for (const tep of ["kieu.css", "dieu-huong.js"]) {
-    const i = rt.indexOf(`'/chung/${tep}'`);
-    assert.ok(i > 0, `router phải phục vụ /chung/${tep}`);
-    const khoi = rt.slice(i, rt.indexOf("});", i));
-    assert.ok(!/max-age\s*=\s*[1-9]/.test(khoi),
-      `/chung/${tep} KHÔNG được cache dài — hai tệp gọi token của nhau, lệch bản là tàng hình`);
-    assert.match(khoi, /no-cache/, `/chung/${tep} phải gửi Cache-Control: no-cache`);
-  }
-
-  // Lưới đỡ: thanh điều hướng là thứ DUY NHẤT không bao giờ được tàng hình — mất nó là
-  // mất lối đi tới mọi màn khác. Mọi lời gọi token chữ-trên-nền-tối phải có giá trị dự phòng.
-  // ⚠️ SIẾT LẠI 14/09 (khung bản 3): bản đầu chỉ soi token chữ-trên-nền-tối. Khung mới
-  //    là thanh SÁNG, không còn dùng token ấy — nên phép cũ XANH VÌ KHÔNG CÒN GÌ ĐỂ ĐO,
-  //    đúng cảnh «màn trống vẫn đạt». Nay soi MỌI lời gọi token trong khung.
+  for (const tep of TEP_KHUNG) assert.match(rt, new RegExp(`'/chung/${tep.replace(".", "\\.")}', guiChung\\(`), `/chung/${tep} phải đi qua guiChung`);
+  assert.match(rt, /req\.query\.v && String\(req\.query\.v\) === phienBan\(\)\s*\?\s*'public, max-age=31536000, immutable' : 'no-cache'/,
+    "cache dài chỉ khi đúng mã; còn lại no-cache");
+  // ③ CSS của khung nằm TRONG tệp token — khung và màu của nó về cùng một lượt, không có chỗ lệch.
+  assert.match(css, /\.kh-dich a\[aria-current="page"\]/, "CSS khung phải nằm trong kieu.css");
   const nav = fs.readFileSync(path.join(GOC, "v3/src/ui/chung/dieu-huong.js"), "utf8");
-  const tatCa = nav.match(/var\(--[a-z0-9-]+[^)]*\)/g) || [];
-  assert.ok(tatCa.length > 20, `khung chỉ có ${tatCa.length} lời gọi token — thước đang đo nhầm chỗ`);
-  const khongDuPhong = tatCa.filter((v) => !v.includes(","));
-  assert.deepEqual(khongDuPhong, [],
-    `khung còn ${khongDuPhong.length} lời gọi token KHÔNG có dự phòng — hệ kiểu chưa về là tàng hình`);
+  assert.doesNotMatch(nav, /<style|\.textContent = css|const css = `/, "dieu-huong.js không được mang CSS riêng nữa");
 });
 
 test("HK10 · tên trên đầu trang KHỚP tên trong menu — «tôi đang ở đâu?»", () => {
@@ -378,9 +374,8 @@ test("HK14 · biểu tượng có MỘT nguồn, và ba tệp khung đi cùng b�
   assert.match(ui, /ISC/, "phải ghi giấy phép của bộ biểu tượng");
 
   const rt = fs.readFileSync(path.join(GOC, "v3/src/ui/chung/router-dieu-huong.js"), "utf8");
-  const i = rt.indexOf("'/chung/ui.js'");
-  assert.ok(i > 0, "router phải phục vụ /chung/ui.js");
-  assert.match(rt.slice(i, rt.indexOf("});", i)), /no-cache/, "/chung/ui.js phải no-cache — khung gọi nó");
+  // LL18: ui.js đi CÙNG luật cache với ba tệp khung còn lại (một mã phiên bản chung — xem HK9).
+  assert.match(rt, /'\/chung\/ui\.js', guiChung\(/, "router phải phục vụ /chung/ui.js cùng luật với khung");
 
   // Mọi màn nhúng khung phải nạp ui.js ĐỒNG BỘ trong <head> — `defer` chạy SAU khung.
   const UI_DIR = path.join(GOC, "v3/src/ui");

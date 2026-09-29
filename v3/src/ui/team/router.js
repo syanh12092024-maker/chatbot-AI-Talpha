@@ -168,7 +168,7 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 <div class="h"><h1>Màn này cần vai Quản trị hoặc Quản lý</h1>
 <p>Tài khoản <b>${escHtml(bc.tenDangNhap || '')}</b> đang có vai:
 ${escHtml((bc.vai || []).join(', ') || 'không có vai nào')}.</p>
-<p><a href="/dieu-phoi">← Về bảng điều phối</a></p></div>`);
+<p><a href="/">← Về màn đầu của bạn</a></p></div>`);
       }
       // 403 KÈM LÝ DO, không 403 câm — commit 4524294 dặn thẳng: «vai chưa mở thì trả 403
       // kèm lý do, không 403 câm». Mã lỗi trần không nói được cần vai nào, nên người nhận

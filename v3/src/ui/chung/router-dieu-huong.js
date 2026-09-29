@@ -1,6 +1,7 @@
 // ĐƯỜNG PHỤC VỤ MENU ĐIỀU HƯỚNG DÙNG CHUNG.
 //
 // | GET /chung/dieu-huong.js | mã kịch bản mọi trang nhúng   |
+// | GET /chung/khung.js      | markup khung (máy chủ + đường lùi trình duyệt) |
 // | GET /api/dieu-huong      | menu ĐÃ LỌC theo vai người xem |
 //
 // ⚠️ LỌC Ở MÁY CHỦ, KHÔNG ẨN BẰNG CSS. Menu gửi xuống chỉ chứa màn người này vào được. Ẩn
@@ -11,47 +12,37 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { cuaBoiCanh } from '../../auth/boi-canh.js';
+import { cuaBoiCanh, VAI } from '../../auth/boi-canh.js';
 import { teamCuaNguoi } from '../../auth/kho-nguoi-dung.js';
-import { menuCua } from './man-hinh.js';
+import { menuCua, CHUYEN_HUONG } from './man-hinh.js';
 import { docTrangThai } from './trang-thai.js';
+import { phienBan } from './khung-may-chu.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 
 export function taoRouterDieuHuong() {
   const r = express.Router();
 
-  // HỆ KIỂU — một nguồn cho màu/khoảng/cỡ chữ/thành phần của cả 25 màn. Xem `kieu.css`.
+  // BỐN TỆP KHUNG — kieu.css · ui.js · dieu-huong.js · khung.js — đi CÙNG bản.
   //
-  // ⚠️ `no-cache`, KHÔNG phải `max-age`. Bản đầu cho cache 1 giờ với lý do «tệp này đổi
-  //    rất thưa» — sai, và sai đúng lúc tệp đổi nhiều nhất. Đo 14/09/2026 qua ảnh chụp của
-  //    chủ dự án: trình duyệt giữ `kieu.css` CŨ (chưa có token cầu `--side` và token
-  //    `--tren-toi*`) trong khi lấy `dieu-huong.js` MỚI (đã gọi các token ấy). JS mới đòi
-  //    token mà CSS cũ không có ⇒ `var()` không giải được ⇒ chữ trên nền tối rơi về màu
-  //    mặc định: thanh bên chữ tối trên nền tối, tiêu đề trắng trên nền trắng.
-  //    Hai tệp này PHẢI đi cùng nhau. `no-cache` = trình duyệt hỏi lại mỗi lần tải, máy
-  //    chủ trả 304 nếu tệp không đổi (ETag có sẵn) — tốn một yêu cầu rỗng, đổi lại không
-  //    bao giờ lệch nhau. Với một màn vận hành, đúng quan trọng hơn tiết kiệm một 304.
-  r.get('/chung/kieu.css', (_req, res, next) => {
-    res.type('text/css');
-    res.set('Cache-Control', 'no-cache');
-    res.sendFile(path.join(THU_MUC, 'kieu.css'), (e) => (e ? next(e) : undefined));
-  });
-
-  // HÀM DỰNG THÀNH PHẦN — window.UI. Khung ứng dụng lấy biểu tượng từ đây, nên ba tệp
-  // (kieu.css · ui.js · dieu-huong.js) PHẢI đi cùng bản: cùng `no-cache`.
-  r.get('/chung/ui.js', (_req, res, next) => {
-    res.type('application/javascript');
-    res.set('Cache-Control', 'no-cache');
-    res.sendFile(path.join(THU_MUC, 'ui.js'), (e) => (e ? next(e) : undefined));
-  });
-
-  r.get('/chung/dieu-huong.js', (_req, res, next) => {
-    res.type('application/javascript');
-    // Cùng lý do với `kieu.css` ở trên: hai tệp này gọi token của nhau, lệch bản là hỏng.
-    res.set('Cache-Control', 'no-cache');
-    res.sendFile(path.join(THU_MUC, 'dieu-huong.js'), (e) => (e ? next(e) : undefined));
-  });
+  // ⚠️ Vì sao không cache dài bằng TÊN tệp: đo 14/09/2026 qua ảnh chụp của chủ dự án, trình duyệt giữ
+  //    `kieu.css` CŨ (chưa có token cầu `--side`) trong khi lấy `dieu-huong.js` MỚI (đã gọi token ấy) ⇒
+  //    `var()` không giải được ⇒ chữ tối trên nền tối. Nên từ đó cả ba tệp đi `no-cache`.
+  // LL18 · 29/09: `no-cache` có giá. Đo từ máy người dùng tới prod (RTT ~320 ms, 2–54 KB/s): mỗi lần bấm menu
+  //    trình duyệt hỏi lại từng tệp. Nay trang HTML (đi qua `khung-may-chu.js`) gọi các tệp này bằng
+  //    `?v=<mã>` — MỘT mã băm từ nội dung cả BỐN tệp ⇒ đổi một tệp là đổi URL của cả bốn, không thể lệch bản.
+  //    Đúng mã ⇒ cache một năm (`immutable`). Không mã hoặc mã cũ ⇒ `no-cache` y như trước.
+  const guiChung = (tep, kieu) => (req, res, next) => {
+    res.type(kieu);
+    res.set('Cache-Control', req.query.v && String(req.query.v) === phienBan()
+      ? 'public, max-age=31536000, immutable' : 'no-cache');
+    res.sendFile(path.join(THU_MUC, tep), (e) => (e ? next(e) : undefined));
+  };
+  r.get('/chung/kieu.css', guiChung('kieu.css', 'text/css'));
+  r.get('/chung/ui.js', guiChung('ui.js', 'application/javascript'));
+  r.get('/chung/dieu-huong.js', guiChung('dieu-huong.js', 'application/javascript'));
+  // Markup khung — máy chủ dùng để vẽ sẵn, trình duyệt nạp làm đường lùi (ES module, hàm thuần).
+  r.get('/chung/khung.js', guiChung('khung.js', 'application/javascript'));
 
   r.get('/api/dieu-huong', async (req, res) => {
     let bc = null;
@@ -72,6 +63,24 @@ export function taoRouterDieuHuong() {
       vai: bc.vai,
       nhom: menuCua(bc.vai),
     });
+  });
+
+  // LIÊN KẾT TRONG TRANG MÀ VAI NÀY KHÔNG MỞ ĐƯỢC (LL18 · e2e 29/09). Menu đã lọc ở máy chủ, nhưng thân trang
+  // còn liên kết sang màn khác: «Cài đặt team» có nút «Mở màn Model AI», «Hệ còn sống» · «Chi phí AI» trỏ sang
+  // «Vận hành» — marketer bấm là gặp 403. Trang gửi lên CÁC ĐƯỜNG NÓ ĐANG HIỆN, máy chủ trả lại đường nào là màn
+  // có thật mà vai này không vào được. Chỉ trả lời về đường trình duyệt ĐÃ CÓ ⇒ không lộ thêm tên màn nào (giữ
+  // luật «lọc ở máy chủ» ở đầu tệp). Đường không phải màn (`/chon-team`, `/viec/1`…) không bao giờ bị chặn.
+  const khop = (ds, d) => ds.some((m) => d === m.duong || (m.duong !== '/' && d.startsWith(m.duong + '/')));
+  r.get('/api/dieu-huong/cam', (req, res) => {
+    let bc = null;
+    try { bc = cuaBoiCanh(req); } catch { bc = null; }
+    if (!bc) return res.status(401).json({ ok: false, ma: 'chua_dang_nhap' });
+    const hoi = [].concat(req.query.d || []).map(String).filter((d) => /^\/[^?#]{0,200}$/.test(d)).slice(0, 80);
+    const mo = menuCua(bc.vai).flatMap((n) => n.man);
+    const tatCa = menuCua(Object.values(VAI)).flatMap((n) => n.man);
+    // Đường chỉ còn chuyển hướng (`CHUYEN_HUONG`) ⇒ xét theo ĐÍCH cho cả hai câu hỏi «là màn?» và «mở được?».
+    const dich = (d) => CHUYEN_HUONG[d] || d;
+    return res.json({ ok: true, cam: hoi.filter((d) => khop(tatCa, dich(d)) && !khop(mo, dich(d))) });
   });
 
   // Cửa RIÊNG cho dải trạng thái. Tách khỏi `/api/dieu-huong` vì bộ đọc gọi sang tiến

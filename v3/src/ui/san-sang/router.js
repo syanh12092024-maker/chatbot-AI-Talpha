@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manSanSang, VAI_VAO_DUOC, DIEU_KIEN, LoiSanSang } from './kho-san-sang.js';
+import { VAI_VAO_DUOC as VAI_PAGE_BOT } from '../page-bot/router.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -82,7 +83,13 @@ export function taoRouterSanSang() {
   // GD2 · 25/09: «Page còn thiếu gì» GỘP vào danh sách page — bộ lọc «Còn điều kiện chặn»
   // trả lời đúng câu hỏi ấy, và bấm tên page là sang trang của page xem từng điều kiện kèm
   // nút đi sửa. Đường cũ KHÔNG bị xoá, nó chuyển hướng sang danh sách ĐÃ LỌC SẴN.
-  r.get(DUONG_TRANG, (_req, res) => res.redirect('/page-bot?loc=con_chan'));
+  // LL18 · 29/09: chuyển hướng THEO VAI — ai không mở được danh sách page (marketer) thì về màn đầu của mình
+  // (`/` theo vai) thay vì tới một trang 403.
+  r.get(DUONG_TRANG, (req, res) => {
+    let bc = null;
+    try { bc = cuaBoiCanh(req); } catch { bc = null; }
+    res.redirect(bc && coVai(bc, ...VAI_PAGE_BOT) ? '/page-bot?loc=con_chan' : '/');
+  });
 
 
   r.get(DUONG_TRANG, (req, res, next) => {
@@ -104,7 +111,7 @@ color:#101828;font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Arial,sans
 h1{font-size:16px;margin:0 0 8px}p{margin:0 0 14px;color:#475467;line-height:1.55}
 a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 <div class="h"><h1>Không đủ quyền xem cửa kiểm</h1><p>${escHtml(cau)}</p>
-<p><a href="/dieu-phoi">← Về bảng điều phối</a></p></div>`);
+<p><a href="/">← Về màn đầu của bạn</a></p></div>`);
       }
       return res.status(403).json({ ok: false, ma: 'thieu_vai', thongDiep: cau });
     }

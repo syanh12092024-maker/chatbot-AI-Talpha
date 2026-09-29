@@ -56,11 +56,18 @@ test('C4 · không màn nào mất đường vào: với MỌI vai, (thanh bên 
   }
 });
 
-test('C5 · khung vẽ tab cụm dưới đầu trang: đọc mã khung + hệ kiểu', () => {
+test('C5 · khung vẽ tab cụm dưới đầu trang: chạy mã khung (LL18: `khung.js`, máy chủ vẽ sẵn) + hệ kiểu', async () => {
+  // LL18 · 29/09: markup khung chuyển từ `dieu-huong.js` (JS dựng sau một lượt hỏi) sang `khung.js` (hàm thuần,
+  // máy chủ vẽ sẵn vào HTML). Ca này nay CHẠY hàm thay vì soi chuỗi mã: cụm có `data-cum`, đọc cờ `trongCum`,
+  // và đầu cụm mang tên cụm ở hàng «Trong mục».
+  const k = await import('../../src/ui/chung/khung.js');
+  const d = { nhom: mh.menuCua([VAI.QUAN_TRI]) };
+  const tab = k.veTabCum(d, '/lop-0-dong');
+  assert.match(tab, /<nav class="tabs" data-cum="luat-chung"/, 'khung không gắn data-cum cho thanh tab');
+  assert.match(tab, /href="\/lop-0-dong" aria-current="page">Trả lời sẵn</, 'màn trongCum phải lên tab và được đánh dấu');
+  assert.match(k.veKhung(d, '/kich-ban').html, /aria-label="Trong mục Page"><a href="\/page-bot" aria-current="page">Tất cả page</,
+    'hàng «Trong mục» không dùng tên cụm cho đầu cụm');
   const js = fs.readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
-  assert.match(js, /thanh\.dataset\.cum = cho\.man\.cum/, 'khung không gắn data-cum cho thanh tab');
-  assert.match(js, /x\.trongCum/, 'khung không đọc cờ trongCum — màn trong cụm sẽ không lên tab');
-  assert.match(js, /m\.tenMenu \|\| m\.ten/, 'thanh bên không dùng tên cụm');
   assert.doesNotThrow(() => new Function(js), 'tệp khung không parse được');
   const css = fs.readFileSync(path.join(GOC_UI, 'chung/kieu.css'), 'utf8');
   // Đòi đúng QUY TẮC ĐẶT CHỖ (trải hết lưới đầu trang) — chuỗi `.tabs[data-cum]` còn ở quy tắc màu chữ, đo

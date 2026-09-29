@@ -397,7 +397,7 @@ const bao = dungPhanB(app, {
        { id: '3', market: 'Kuwait', shopId: '92', bat: false }]
     : []),
 });
-app.get('/', (_q, r) => r.redirect('/dieu-phoi'));
+// `/` đổi hướng theo vai ở `vai-b.js` (LL18) — không đặt đích cứng ở đây.
 
 const CONG = Number(process.env.XEMTHU_CONG || 3101);
 http.createServer(app).listen(CONG, () => {
