@@ -1,6 +1,6 @@
 # MỞ VAN — VE1 (Sản phẩm) + VE2 (trang một page) theo bản vẽ (CR-28-09c)
 
-> **TRẠNG THÁI: ĐANG CHẠY — người quyết gật 29/09: «deploy»** (trả lời «Deploy VE1 + VE2 cùng một lượt?»).
+> **TRẠNG THÁI: XONG · GIỮ (29/09 10:50 prod) — người quyết gật 29/09: «deploy»** (trả lời «Deploy VE1 + VE2 cùng một lượt?»).
 > Phiếu: `phieu-VE1.md` · `phieu-VE2.md`. Lượt trước: `phat-hanh-20260929-khung-ban-ve.md` (prod `9821306`).
 
 ## 1 · Mở cái gì
@@ -48,12 +48,25 @@ Mất dữ liệu: không — lượt này không thêm cửa ghi; mọi lượt
 
 ## 8 · Lệnh đã gõ
 
-(điền khi gõ)
+Giờ prod (CEST), 29/09:
+1. commit giấy `f211036` · đẩy nhánh `9821306..f211036`
+2. mốc lùi `/var/backups/aicloser/truoc-ve-20260929T083519Z/commit.txt` = `9821306`
+3. prod `checkout -f -B … origin/vao-ui-v3-17-09` → `f211036` · 0 tệp sửa tại chỗ · migrate **áp mới 0 · tổng 27**
+4. `systemctl restart aicloser-v3` lúc **10:35:22** — chỉ dịch vụ này
 
 ## 9 · Số đo
 
-(điền khi đo)
+**+1′ (10:35:30, prod):** `aicloser-v3` active · `Started` **1** · lỗi mới ba dịch vụ **0** · mã MỚI phục vụ: `/api/page-ds`
+**401** · `/api/san-pham/goc/1/lich-su` **401** · đối chứng `/api/khong-co-duong-nay` **404** · trên đĩa: `san-pham.html`
+`chia-hai` 1 · `mot-page.html` `chia-ba` 1 · liên kết `/lop-0-dong` 1 · hai dịch vụ không chạm y nguyên (28/09 11:25:42 ·
+11:22:22) · `/health` 129. Ghi chú thước: `/san-pham` chưa đăng nhập qua `curl` ra **401** chứ không 302 — hành vi CŨ của
+mọi màn (`muonTrang(req)` chỉ chuyển hướng khi `Accept: text/html`; `/bo-luat` cũng 401); ngưỡng «302» ở mục 6 ghi nhầm.
+
+**+5′ (10:40:21) · +11′ (10:46:32, đo tay) · +15′ (10:50:10), prod:** ba dịch vụ active · `Started` 0 · 1 · 0 · lỗi mới
+**0/0/0** ở cả ba mốc · `ActiveEnterTimestamp` hai dịch vụ không chạm y nguyên · `/health` 129.
 
 ## 10 · Kết · nợ · ai gật
 
+- Kết: **GIỮ** (prod, 29/09 10:50). Cửa sổ kỹ thuật đóng; mốc +1 ngày là người quyết mở `/san-pham` và `/page/<id>`.
+- Nợ: N-CONGCHAP (§10 sổ) — `phat-hanh.sh` vứt output cổng đỏ.
 - Người gật: người quyết, 29/09 — «deploy».
