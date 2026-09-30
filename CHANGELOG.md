@@ -19,6 +19,26 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 01/10/2026 — Cài đặt nói đúng thứ bot dùng: Model · Người và team · Nhật ký (VE7c · VE7d · VE7e · CR-28-09c)
+
+Không đổi chữ bot nói, không đổi model bot gọi. 0 migration · 0 biến · 0 gói · 0 tệp bộ não — một tệp đường chat
+(`src/chat/model.js`) tách phần «chọn model + khoá» ra hàm riêng để màn đọc chung luật; hành vi bot y nguyên.
+
+- **Model AI nói đúng bot đang gọi gì** (`4dd6b93`): thẻ «Trả lời khách» đọc cùng luật với bot. Team chưa lưu cấu hình thấy
+  «Bot đang gọi kimi-k2.6 — model của máy chủ, khoá KIMI_API_KEY, không gửi độ ngẫu nhiên» thay vì «chưa có khoá» / «đang chạy
+  bộ mặc định» / «rơi thẳng sang dự phòng» (cả ba sai trên 3/4 team, đo prod 30/09). Nhãn khoá mỗi thẻ theo đúng luật của đường
+  dùng nó; «Việc nền» ẩn tới khi có việc nối vào; đầu trang đếm page bot mới đang xử.
+- 🔴 **«Thay khoá và thử một lượt»** (`4dd6b93`): dán khoá (nếu có) rồi gọi ĐÚNG model + khoá đó một lần (16 token, vài đồng);
+  lỗi nhà model hiện câu đọc được («Khoá bị từ chối (401)» · «Tài khoản hết tiền (402)» · «giới hạn lượt gọi (429)»), không đá
+  ra trang đăng nhập; chặn bấm dồn 10 giây; ghi nhật ký. ⚠️ Dán khoá cho team chưa lưu cấu hình là tạo cấu hình riêng — bot của
+  team chuyển sang dùng lựa chọn trên màn (gửi độ ngẫu nhiên 0,3); thẻ nói trước điều này.
+- **Người và team theo bản vẽ** (`e258e14`): ba thẻ vai Quản trị · Marketer · Sale — «mở được» đo từ chính thanh điều hướng;
+  marketer «phụ trách: chưa có nguồn» (quyết định «marketer chỉ thấy sản phẩm mình phụ trách» CHƯA làm — màn nói thẳng, đếm page
+  có tên marketer); «Marketer trên POS ↔ hồ sơ HRM» «chưa nối vào máy chủ»; bảng người thêm Hồ sơ HRM + Phụ trách; nút «Chuyển
+  page sang team khác» mở khung chuyển. Bỏ hàng chỉ số và tab POS (POS ở Kết nối). Câu «bot chạy bằng bộ mặc định» rời Bắt đầu.
+- **Nhật ký đọc được** (`61863a1`): mỗi dòng một câu — lúc · ai · việc · đối tượng bằng TÊN (sản phẩm, page, kỹ năng, người
+  dùng; đã xoá thì tên chụp lúc xảy ra); dòng máy nói việc gì («máy · cửa POS»); mã việc nền ra chữ tiếng Việt; giờ «01/10 05:09».
+
 ### 30/09/2026 — Sản phẩm khép kín: gộp món POS theo SKU · giá theo thị trường · marketer · gắn page (VE8a · VE8b · CR-28-09c)
 
 Theo lời người quyết 30/09 («Sao phải chuyển sang 1 màn riêng?» · «gộp SP theo SKU → gán MKT → map page → khép kín»).
