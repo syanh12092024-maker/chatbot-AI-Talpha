@@ -194,15 +194,19 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   // VE4 · 29/09: cụm Luật chung theo bản vẽ 2d — +1 màn «Chính sách · FAQ · Phản đối» (tab) và «Gợi ý từ AI» thôi
   // `thuNghiem`, thành tab «Đề xuất chờ duyệt» ⇒ thanh bên giữ 8; ẩn 19 → 20 (5 chưa dùng được + 1 cần id + 1 mở từ màn
   // khác + 13 trong cụm).
+  // VE2b · 30/09: «Kịch bản của page» RỜI sổ màn (gộp vào trang một page; `/kich-ban` ở `CHUYEN_HUONG`) ⇒ ẩn 20 → 19.
+  // Trang một page thôi `canId`: thành viên cụm «Tất cả page» mở từ đầu cụm (`moTuDauCum`) — vẫn ẩn với quản trị.
   assert.equal(hienRa, 8, `thanh bên đang vẽ ${hienRa} màn`);
-  assert.equal(an, 20, 'năm màn chưa dùng được + một màn CẦN ID + một màn MỞ TỪ MÀN KHÁC + mười ba màn '
-    + 'TRONG CỤM phải ẩn khỏi thanh bên nhưng còn trong gói');
+  assert.equal(an, 19, 'màn chưa dùng được + màn MỞ TỪ MÀN KHÁC + màn TRONG CỤM (kể cả «Các page» mở từ đầu cụm) phải '
+    + 'ẩn khỏi thanh bên nhưng còn trong gói');
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
   // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp
   // một con số là ngày nào đó một màn hỏng lặng lẽ đội lốt màn cần id.
   // VE5b: «Khách hàng» thôi thử nghiệm, thành «Tìm khách» mở từ Hộp thư ⇒ thử nghiệm 5 → 4, mở-từ-màn-khác 1 → 2, ẩn giữ 20.
   assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 4, 'bốn màn ẩn (LL5: Nguồn khách · Rủi ro hoàn có dữ liệu; LL11: + Kỹ năng; VE4: − Gợi ý từ AI; VE5b: − Khách hàng)');
-  assert.equal(mh.MAN.filter((m) => m.canId).length, 1, 'đúng một màn cần tham số để mở');
+  // VE2b: màn duy nhất từng cần tham số (trang một page) nay mở trần được ⇒ 1 → 0; cờ `moTuDauCum` đếm riêng.
+  assert.equal(mh.MAN.filter((m) => m.canId).length, 0, 'không còn màn nào cần tham số để mở');
+  assert.deepEqual(mh.MAN.filter((m) => m.moTuDauCum).map((m) => m.duong), ['/page'], 'màn mở từ đầu cụm phải khai ra');
   assert.deepEqual(mh.MAN.filter((m) => m.moTuManKhac).map((m) => m.ten),
     ['Tìm khách', 'Đoạn chữ gửi cho AI', 'Rủi ro hoàn hàng'], 'màn mở từ màn khác phải khai ra, không trôi (LL1: «Sản phẩm & kho» thôi; VE5b: + Tìm khách; VE6c: + Rủi ro hoàn — rời thanh tab Số liệu)');
   // Chín màn ít dùng dồn vào Cài đặt. Đếm ở đây để nếu có người kéo một màn ít dùng trở

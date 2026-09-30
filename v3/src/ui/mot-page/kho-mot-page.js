@@ -21,8 +21,8 @@
 //                 hai luật, và luật thứ hai luôn là luật quên cập nhật.
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
-import { motPage, cuaKiemMotPage, danhMucGoc, LoiPageBot, congTruyVan as congPage } from '../page-bot/kho-page.js';
-import { docBotBatThat, botBatCua } from '../chung/bot-bat-that.js';
+import { motPage, cuaKiemMotPage, danhMucGoc, LoiPageBot, congTruyVan as congPage,
+  LOC, CHU_LOC, kiemLoc, ganTrangThaiPage, hopLoc, hopTim, demTheoLoc } from '../page-bot/kho-page.js';
 import { trangThaiCau, trangThaiCauDaoGiao } from '../page-bot/cong-tac.js';
 import { DIEU_KIEN_TAT_CA } from '../san-sang/kho-san-sang.js';
 import { NHAN_TRUONG } from '../kich-ban/kho-kich-ban.js';
@@ -103,18 +103,29 @@ function vaCauDao(dk, cauDao) {
 
 /**
  * VE2 · 29/09: cột trái của màn một page (bản vẽ 2c) — page của team, gọn, xếp theo tên. Bot bật hỏi TIẾN TRÌNH BOT
- * (`chung/bot-bat-that.js`, một nguồn cho mọi màn); bot không thấy page ⇒ cột bản sao; không hỏi được ⇒ `nguonBot:
- * 'ban_sao'` + lý do để màn KHAI — không im lặng đổi nguồn số (án lệ 28/09: năm màn nói hai con số).
+ * qua cửa kiểm của «Tất cả page» (`ganTrangThaiPage`; `vai-b.js` nối nó và `chung/bot-bat-that.js` vào CÙNG một bộ
+ * đọc); bot không thấy page ⇒ cột bản sao; không hỏi được ⇒ `nguonBot: 'ban_sao'` + lý do để màn KHAI — không im
+ * lặng đổi nguồn số (án lệ 28/09: năm màn nói hai con số).
  */
-export async function dsPageGon(boiCanh) {
+export async function dsPageGon(boiCanh, { loc = LOC.TAT_CA, tim = '' } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
-  const [ds, { theoBot, viSao }] = await Promise.all([congPage(bc).chon('page', {}), docBotBatThat()]);
+  kiemLoc(loc);
+  // VE2b · 30/09: lọc bằng ĐÚNG phép gắn + bộ lọc + ô tìm của «Tất cả page» (người quyết: «vào màn page sẽ có bộ lọc
+  // như page-bot») — cột này mở cho cả marketer, còn cửa danh sách kia thì không, nên dùng chung HÀM chứ không gọi cửa.
+  const tatCa = (await congPage(bc).chon('page', {})) || [];
+  const { doc, viSao, loiBotViSao } = await ganTrangThaiPage(bc, tatCa);
+  const khop = tatCa.filter((p) => hopLoc(p, loc) && hopTim(p, tim));
   return {
-    nguonBot: theoBot ? 'bot' : 'ban_sao',
+    nguonBot: doc ? 'bot' : 'ban_sao',
     viSao: viSao || null,
-    ds: (ds || []).map((p) => ({
+    loiBotViSao,
+    loc,
+    chuLoc: CHU_LOC,
+    dem: demTheoLoc(tatCa),
+    soTong: tatCa.length,
+    ds: khop.map((p) => ({
       id: String(p.id), pageId: String(p.page_id || ''), ten: p.ten || '', thiTruong: p.thi_truong || '',
-      sanPhamGocMa: p.san_pham_goc_ma || '', botBat: botBatCua(p, theoBot),
+      sanPhamGocMa: p.san_pham_goc_ma || '', botBat: p.bot_ai_bat === true, coLoiBot: p._coLoiBot,
     })).sort((a, b) => (a.ten || a.pageId).localeCompare(b.ten || b.pageId, 'vi')),
   };
 }

@@ -20,6 +20,7 @@ import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { trangMotPage, noiDungPage, dsPageGon, LoiMotPage } from './kho-mot-page.js';
 import { VAI_SUA_SAN_PHAM } from '../van-hanh/router-anh.js';
+import { VAI_VAO_DUOC as VAI_PAGE_BOT } from '../page-bot/router.js';
 
 export const DUONG_TRANG = '/page';
 /** Cùng ba vai với màn «Page còn thiếu gì» — xem tình trạng page là việc chung. */
@@ -92,40 +93,31 @@ export function taoRouterMotPage() {
   // `/page` trần KHÔNG phải một màn — nó là tiền tố của trang chi tiết. Đưa người ta về
   // danh sách thay vì trả 404: ai gõ thiếu id, hay bấm một liên kết cũ, vẫn tới được chỗ có
   // câu trả lời. (Và nhờ đường này mà mục menu `/page` không phải một nút chết.)
-  r.get(DUONG_TRANG, (_req, res) => res.redirect('/page-bot'));
-
-  r.get(`${DUONG_TRANG}/:id`, (req, res, next) => {
+  // VE2b · 30/09: `/page` TRẦN theo vai. Ai mở được «Tất cả page» ⇒ về đó, GIỮ bộ lọc/ô tìm (lối vào của họ là danh
+  // sách). Marketer thì KHÔNG mở được danh sách — trước VE2b họ vào mục Page qua màn Kịch bản (đã gộp), nay `/page` trần
+  // là màn page với cột trái có danh sách + bộ lọc, phần giữa mời chọn một page.
+  r.get(DUONG_TRANG, (req, res, next) => {
     let bc = null;
     try { bc = cuaBoiCanh(req); } catch { bc = null; }
-    if (!bc) {
-      if (muonTrang(req)) return res.redirect(`/dang-nhap?tiep=${encodeURIComponent(locTiep(req.originalUrl || DUONG_TRANG))}`);
-      return res.status(401).json({ ok: false, ma: 'chua_dang_nhap' });
+    if (bc && coVai(bc, ...VAI_PAGE_BOT)) {
+      const q = req.originalUrl.indexOf('?');
+      return res.redirect(`/page-bot${q >= 0 ? req.originalUrl.slice(q) : ''}`);
     }
-    if (!coVai(bc, ...VAI_VAO_DUOC)) {
-      const cau = `Trang của một page cần một trong các vai: ${VAI_VAO_DUOC.join(', ')}. `
-        + `Vai hiện có: ${(bc.vai || []).join(', ') || 'không có vai nào'}.`;
-      if (muonTrang(req)) {
-        return res.status(403).send(`<!doctype html><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Không có quyền</title>
-<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f7f9;
-color:#101828;font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Arial,sans-serif;font-size:13.5px}
-.h{max-width:430px;padding:28px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(16,24,40,.1)}
-h1{font-size:16px;margin:0 0 8px}p{margin:0 0 14px;color:#475467;line-height:1.55}
-a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
-<div class="h"><h1>Không đủ quyền xem trang page</h1><p>${escHtml(cau)}</p>
-<p><a href="/page-bot">← Về danh sách page</a></p></div>`);
-      }
-      return res.status(403).json({ ok: false, ma: 'thieu_vai', thongDiep: cau });
-    }
-    return res.sendFile(TRANG('mot-page.html'), (e) => (e ? next(e) : undefined));
+    return moTrang(req, res, next);
   });
+
+  r.get(`${DUONG_TRANG}/:id`, moTrang);
 
   const canDangNhap = chanDangNhapMw();
   const canVai = chanVaiMw();
 
   // VE2: cột trái — page của team để chọn (cùng quyền với trang một page: marketer vào được, sale không).
+  // VE2b · 30/09: `?loc=&tim=` — cùng bộ lọc + ô tìm của «Tất cả page». `moDanhSach`: vai này mở được danh sách kia
+  // không — màn chỉ đặt lối «← Tất cả page» khi đi được (máy chủ quyết, không để trang tự đoán rồi ăn 403).
   r.get('/api/page-ds', canDangNhap, canVai, boc(async (req, res) => {
-    res.json({ ok: true, ...(await dsPageGon(cuaBoiCanh(req))) });
+    const bc = cuaBoiCanh(req);
+    const d = await dsPageGon(bc, { loc: String(req.query.loc || 'tat_ca'), tim: String(req.query.tim || '') });
+    res.json({ ok: true, ...d, moDanhSach: coVai(bc, ...VAI_PAGE_BOT) });
   }));
   r.get(`/api/page/:id`, canDangNhap, canVai, boc(async (req, res) => {
     const bc = cuaBoiCanh(req);
@@ -154,6 +146,34 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   }));
 
   return r;
+}
+
+
+/** Phục vụ trang một page (trần hoặc có id): chưa đăng nhập ⇒ đăng nhập; thiếu vai ⇒ 403 nói rõ vai cần. */
+function moTrang(req, res, next) {
+  let bc = null;
+  try { bc = cuaBoiCanh(req); } catch { bc = null; }
+  if (!bc) {
+    if (muonTrang(req)) return res.redirect(`/dang-nhap?tiep=${encodeURIComponent(locTiep(req.originalUrl || DUONG_TRANG))}`);
+    return res.status(401).json({ ok: false, ma: 'chua_dang_nhap' });
+  }
+  if (!coVai(bc, ...VAI_VAO_DUOC)) {
+    const cau = `Trang của một page cần một trong các vai: ${VAI_VAO_DUOC.join(', ')}. `
+      + `Vai hiện có: ${(bc.vai || []).join(', ') || 'không có vai nào'}.`;
+    if (muonTrang(req)) {
+      return res.status(403).send(`<!doctype html><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Không có quyền</title>
+<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f7f9;
+color:#101828;font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Arial,sans-serif;font-size:13.5px}
+.h{max-width:430px;padding:28px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(16,24,40,.1)}
+h1{font-size:16px;margin:0 0 8px}p{margin:0 0 14px;color:#475467;line-height:1.55}
+a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
+<div class="h"><h1>Không đủ quyền xem trang page</h1><p>${escHtml(cau)}</p>
+<p><a href="/page-bot">← Về danh sách page</a></p></div>`);
+    }
+    return res.status(403).json({ ok: false, ma: 'thieu_vai', thongDiep: cau });
+  }
+  return res.sendFile(TRANG('mot-page.html'), (e) => (e ? next(e) : undefined));
 }
 
 export { LoiMotPage };

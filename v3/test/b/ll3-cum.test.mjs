@@ -37,7 +37,9 @@ test('C1 · sổ cụm tự nhất quán: cụm dùng đều có khai · mỗi c
 
 test('C2 · Page của quản trị: thanh bên HAI dòng (Tất cả page · Luật chung), phần còn lại là tab', () => {
   assert.deepEqual(thanhBen(VAI.QUAN_TRI, 'page'), ['Tất cả page', 'Luật chung']);
-  assert.deepEqual(tabCua(VAI.QUAN_TRI, 'page', 'danh-sach-page'), ['Tất cả page', 'Kịch bản']);
+  // VE2b · 30/09 (người quyết: «vào danh sách page luôn … K còn màn kichban nữa»): Kịch bản gộp vào trang một page;
+  // «Các page» là thành viên mở TỪ ĐẦU CỤM (bấm tên page) — không lên tab ⇒ cụm còn MỘT tab, khung không vẽ thanh tab.
+  assert.deepEqual(tabCua(VAI.QUAN_TRI, 'page', 'danh-sach-page'), ['Tất cả page']);
   // VE4 · 29/09 (bản vẽ 2d): bốn tab — «Chính sách · FAQ · Phản đối» mới, «Đề xuất chờ duyệt» thôi `thuNghiem`.
   assert.deepEqual(tabCua(VAI.QUAN_TRI, 'page', 'luat-chung'), ['Luật', 'Chính sách · FAQ · Phản đối', 'Trả lời sẵn', 'Đề xuất chờ duyệt']);
 });
@@ -45,15 +47,19 @@ test('C2 · Page của quản trị: thanh bên HAI dòng (Tất cả page · Lu
 test('C3 · tên cụm CHỈ trên đầu cụm chuẩn — marketer (không mở «Tất cả page») thấy đúng tên màn của mình', () => {
   // VE4: màn hiện được ĐẦU TIÊN của cụm Luật chung với marketer nay là «Chính sách · FAQ · Phản đối» (đứng trước «Trả
   // lời sẵn» theo bản vẽ) — marketer không mở «Luật» nên dòng mang tên màn của nó, không mang tên cụm.
-  assert.deepEqual(thanhBen(VAI.MARKETER, 'page'), ['Kịch bản của page', 'Chính sách · FAQ · Phản đối']);
-  assert.deepEqual(thanhBen(VAI.DUYET_KICH_BAN, 'page'), ['Kịch bản của page', 'Luật chung']);
+  // VE2b: marketer vào mục Page bằng trang một page («Các page», `/page` trần) thay cho màn Kịch bản đã gộp; «Người duyệt
+  // kịch bản» (LL7 thôi cấp, prod 30/09: 0 người) không mở được trang page ⇒ mục Page của họ còn Luật chung.
+  assert.deepEqual(thanhBen(VAI.MARKETER, 'page'), ['Các page', 'Chính sách · FAQ · Phản đối']);
+  assert.deepEqual(thanhBen(VAI.DUYET_KICH_BAN, 'page'), ['Luật chung']);
 });
 
 test('C4 · không màn nào mất đường vào: với MỌI vai, (thanh bên ∪ tab cụm) ⊇ mọi màn vai đó mở được ngoài màn ẩn cũ', () => {
   for (const v of Object.values(VAI)) {
     const goi = mh.menuCua([v]).flatMap((n) => n.man);
     const toi = new Set(goi.filter((m) => !m.an || m.trongCum).map((m) => m.duong));
-    const phaiToi = goi.filter((m) => !m.thuNghiem && !m.canId && !m.moTuManKhac).map((m) => m.duong);
+    // `moTuDauCum` (VE2b): tới bằng một dòng ở ĐẦU CỤM — hợp lệ khi đầu cụm hiện với vai này; không thì nó phải tự hiện.
+    const quaDau = (m) => m.moTuDauCum && goi.some((x) => x.cum === m.cum && !x.an);
+    const phaiToi = goi.filter((m) => !m.thuNghiem && !m.canId && !m.moTuManKhac && !quaDau(m)).map((m) => m.duong);
     assert.deepEqual(phaiToi.filter((d) => !toi.has(d)), [], `vai ${v} mất đường vào`);
   }
 });
@@ -67,7 +73,8 @@ test('C5 · khung vẽ tab cụm dưới đầu trang: chạy mã khung (LL18: `
   const tab = k.veTabCum(d, '/lop-0-dong');
   assert.match(tab, /<nav class="tabs" data-cum="luat-chung"/, 'khung không gắn data-cum cho thanh tab');
   assert.match(tab, /href="\/lop-0-dong" aria-current="page">Trả lời sẵn</, 'màn trongCum phải lên tab và được đánh dấu');
-  assert.match(k.veKhung(d, '/kich-ban').html, /aria-label="Trong mục Page"><a href="\/page-bot" aria-current="page">Tất cả page</,
+  // VE2b: `/kich-ban` thôi là màn (chuyển hướng) — đo ở trang một page, thành viên cụm «Tất cả page».
+  assert.match(k.veKhung(d, '/page/p1').html, /aria-label="Trong mục Page"><a href="\/page-bot" aria-current="page">Tất cả page</,
     'hàng «Trong mục» không dùng tên cụm cho đầu cụm');
   const js = fs.readFileSync(path.join(GOC_UI, 'chung/dieu-huong.js'), 'utf8');
   assert.doesNotThrow(() => new Function(js), 'tệp khung không parse được');

@@ -24,12 +24,20 @@
       <a class="the-lien" href="/bo-luat"><b>Luật chung · trả lời sẵn</b><span class="tom" id="tomLuat">Áp cho mọi page của team</span></a>
       <div class="hang-giua"><b>Page</b><span class="meta" id="demPage"></span></div>
       <label class="field"><span class="sr-only">Tìm page</span><input type="search" id="timPage" placeholder="Tìm page…" autocomplete="off"></label>
+      <!-- VE2b · 30/09: CÙNG bộ lọc của «Tất cả page» (cùng hàm ở máy chủ, cùng số) — một dòng vì cột hẹp. -->
+      <label class="field"><span class="sr-only">Lọc page</span><select id="locPage"></select></label>
     </div>
     <ul class="ds-chon" id="dsPage" aria-label="Danh sách page"><li><span class="skeleton"></span></li></ul>
   </nav>
 
   <section class="chia-hai-phai" aria-labelledby="tenPage">
+    <!-- VE2b · 30/09 (người quyết: «có phần trở lại»): về «Tất cả page» ĐÚNG bộ lọc · ô tìm · trang đã đứng. Chỉ hiện khi
+         vai mở được danh sách đó (máy chủ nói, `moDanhSach`). -->
+    <a class="lien-ve" id="veDs" href="/page-bot" hidden>← Tất cả page</a>
     <div id="bang-tin" aria-live="polite"></div>
+    <!-- `/page` trần (marketer vào mục Page): chưa chọn page nào. -->
+    <div id="chuaChon" hidden></div>
+    <div id="chiTiet" class="chi-tiet-khoi">
     <div class="chi-tiet-dau">
       <div><h2 class="tieu-de-lon" id="tenPage">Đang mở…</h2><div class="dong-phu" id="dongPhu"></div></div>
       <div class="hanh-dong" id="congTac"></div>
@@ -60,6 +68,7 @@
     <div id="tab-ls" role="tabpanel" hidden><div id="o-ls"></div></div>
 
     <div id="nguon-so"></div>
+    </div>
   </section>
 
   <aside class="cot-thu" aria-label="Thử hỏi bot">
@@ -70,14 +79,41 @@
     <div id="o-luat"></div>
     <div id="khoi-tiep" role="list"></div>
   </aside>
+  <!-- VE2b: ô chọn tệp «Nhập từ file Pancake» nằm NGOÀI vùng vẽ lại — `#o-kb` bị `innerHTML` mỗi lần đọc lại kịch bản,
+       ô nằm trong đó thì lượt vẽ lại giữa lúc đang chọn tệp vứt mất nó (án lệ của màn Kịch bản cũ). -->
+  <input type="file" id="oFilePancake" accept=".xlsx,.xls" hidden>
 </main>
 
 <script>
 const { esc, statusBadge, button, setBusy, alert: canhBao, emptyState, toast, confirmDialog, nguonSo } = window.UI;
 const $ = (s) => document.querySelector(s);
 
-// Id của page lấy từ chính đường dẫn — trang này luôn mở bằng /page/<id>.
+// Id của page lấy từ chính đường dẫn: `/page/<id>`. VE2b · 30/09: `/page` TRẦN cũng mở được (marketer vào mục Page) —
+// khi đó ID rỗng: cột trái có danh sách, phần giữa mời chọn một page.
 const ID = decodeURIComponent((location.pathname.split('/').filter(Boolean)[1] || ''));
+
+// VE2b · 30/09: bộ lọc · ô tìm · trang của «Tất cả page» đi theo đường dẫn (bấm tên page ở đó mang sang) — cột trái lọc
+// y như thế, và «← Tất cả page» trả về đúng chỗ. Đổi lọc/tìm ở đây thì số trang cũ của danh sách hết nghĩa ⇒ bỏ.
+const QS = new URLSearchParams(location.search);
+let LOC = QS.get('loc') || 'tat_ca';
+let TIM = QS.get('tim') || '';
+let TRANG_DS = QS.get('trang') || '';
+function thamSo(them = {}) {
+  const u = new URLSearchParams();
+  if (LOC && LOC !== 'tat_ca') u.set('loc', LOC);
+  if (TIM) u.set('tim', TIM);
+  if (TRANG_DS) u.set('trang', TRANG_DS);
+  for (const [k, v] of Object.entries(them)) if (v) u.set(k, v);
+  const chuoi = u.toString();
+  return chuoi ? '?' + chuoi : '';
+}
+function ghiUrlLoc() {
+  const u = new URL(location.href);
+  for (const [k, v] of [['loc', LOC !== 'tat_ca' ? LOC : ''], ['tim', TIM], ['trang', TRANG_DS]]) {
+    if (v) u.searchParams.set(k, v); else u.searchParams.delete(k);
+  }
+  history.replaceState(null, '', u);
+}
 
 let D = null;
 
@@ -189,13 +225,16 @@ function veThieu() {
         ${d.la ? statusBadge('unknown', { label: 'Chưa có trong bảng từ' }) : ''}</div>
       <div>${esc(d.ten)}${d.chiTiet ? ' — ' + esc(d.chiTiet) : ''}</div>
       ${d.lam ? `<div class="meta">${esc(d.lam)}</div>` : ''}
-      ${d.di ? `<div class="duoi-2">${button(d.nutDi || 'Đi sửa', { size: 'sm', href: d.di })}</div>` : ''}
+      ${d.di ? `<div class="duoi-2">${TAB_CUA_DI[d.di]
+        ? button(d.nutDi || 'Đi sửa', { size: 'sm', data: { sangtab: TAB_CUA_DI[d.di] } })
+        : button(d.nutDi || 'Đi sửa', { size: 'sm', href: d.di })}</div>` : ''}
     </li>`;
 
   const ds = [...t.chan, ...t.nhac];
   if (ds.length) {
     o.innerHTML += `<ul role="list" class="danh-sach-moc">${ds.map(mot).join('')}</ul>`;
   }
+  noiNutSangTab(o);
 }
 
 function veTiep() {
@@ -254,6 +293,9 @@ const TAB = [
 ];
 // Đường dẫn CŨ vẫn mở đúng chỗ (liên kết cũ ở màn khác, dấu trang của người dùng).
 const TAB_CU = { 'tinh-trang': 'sp', 'thiet-lap': 'kt', 'tra-loi': 'loi', 'san-pham': 'sp', 'kich-ban': 'loi' };
+// VE2b · 30/09: cửa kiểm chỉ việc «soạn / bổ sung / xem lại kịch bản» sang màn Kịch bản — màn ấy đã gộp vào tab «Lời bot»
+// của CHÍNH trang này ⇒ nút sang tab, không rời trang (và không vòng qua đường chuyển hướng về danh sách).
+const TAB_CUA_DI = Object.freeze({ '/kich-ban': 'loi' });
 let dangO = new URLSearchParams(location.search).get('tab') || 'sp';
 if (TAB_CU[dangO]) dangO = TAB_CU[dangO];
 if (!TAB.some(([m]) => m === dangO)) dangO = 'sp';
@@ -269,6 +311,7 @@ function veTab() {
     u.searchParams.set('tab', dangO);
     history.replaceState(null, '', u);
     veTab();
+    veDsPage();   // liên kết cột trái mang tab đang đứng — đi qua từng page mà không phải chọn lại tab
     if (dangO === 'ls') veLichSu();
   }));
 }
@@ -398,7 +441,7 @@ function veGiaGoCung() {
   if (!Array.isArray(ds) || !ds.length) return '';
   const lech = ds.filter((x) => !x.khop);
   const dong = (x) => `<li>${esc(x.gia)} ${esc(x.tienTe)} — ô «${esc(x.nhanO)}»${x.khop ? '' : ' · <b>KHÔNG có trong bảng giá</b>'}</li>`;
-  const nut = button('Sửa ở khối Kịch bản', { size: 'sm', data: { sangtab: 'kich-ban' } });
+  const nut = button('Sửa ở tab «Lời bot»', { size: 'sm', data: { sangtab: 'kich-ban' } });
   return `<div class="panel">${lech.length
     ? canhBao({ level: 'error',
         title: `Bot đang báo cho khách ${lech.length} giá KHÔNG có trong bảng giá`,
@@ -756,13 +799,19 @@ async function veKichBan(o) {
       <p class="meta">Bot bắn nguyên văn câu này khi khách hỏi đúng chủ đề (giá, ship, cách đặt…), không gọi AI. Để trống là AI tự trả lời.</p>
       ${nhanh.map(o1).join('')}
     </details>` : ''}
-    ${KB.suaDuoc ? `<div class="duoi-2">${button('Lưu — bot dùng ngay', { size: 'sm', variant: 'primary', id: 'nutNhap' })}</div>`
+    ${KB.suaDuoc ? `<div class="duoi-2 hang">${button('Lưu — bot dùng ngay', { size: 'sm', variant: 'primary', id: 'nutNhap' })}
+        ${button('Nhập từ file Pancake', { size: 'sm', id: 'nutNhapPancake' })}</div>
+      <div id="kqNhapPancake"></div>`
       : '<p class="meta">Cần vai Quản trị hoặc Marketer để sửa.</p>'}
     <p class="meta">Lưu là chạy: bot nói theo bản này ngay khi lưu xong. Mỗi lần lưu là một bản
-      mới; bản cũ giữ lại để quay về ở ${'<a href="/kich-ban">màn Kịch bản</a>'}.</p>
+      mới; bản cũ giữ lại — xem, chép lại hoặc chạy lại ở ${button('tab «Lịch sử»', { size: 'sm', variant: 'ghost', data: { sangtab: 'ls' } })}.</p>
   </div>`;
 
   tuCo(o);
+  noiNutSangTab(o);
+  // VE2b: nút mở hộp chọn tệp; tệp chọn xong đi qua `#oFilePancake` (nằm ngoài vùng vẽ lại, nghe MỘT lần ở cuối trang).
+  const nutPancake = o.querySelector('#nutNhapPancake');
+  if (nutPancake) nutPancake.addEventListener('click', () => $('#oFilePancake').click());
   const nut = o.querySelector('#nutNhap');
   if (nut) nut.addEventListener('click', async () => {
     const nguoi = {};
@@ -818,20 +867,110 @@ function veTabAnh(o) {
   noiAnh(o);
 }
 
-/* ── VE2 · TAB «LỊCH SỬ» — các bản kịch bản của page (đang chạy · nháp · cũ). Quay về bản cũ ở màn Kịch bản. ── */
+/* ── VE2 · TAB «LỊCH SỬ» — các bản kịch bản của page (đang chạy · nháp · cũ).
+ * VE2b · 30/09: nhận nốt việc của màn Kịch bản (đã gộp): XEM nội dung từng bản ngay tại chỗ · CHÉP vào ô soạn (sang tab
+ * Lời bot, không ghi gì) · CHẠY LẠI một bản cũ = lưu chữ của nó thành bản MỚI qua ĐÚNG cửa «lưu là chạy» (vai soạn, có
+ * hỏi — chạm khách thật khi page đang bật bot). «Đưa lên chạy» của vai duyệt KHÔNG ở đây: vai ấy (LL7 thôi cấp) không mở
+ * được trang page, còn quản trị/marketer đã có «Chạy lại». ── */
 async function veLichSu() {
   const o = $('#o-ls');
   if (!KB) { try { KB = await goi(`/api/kich-ban/page/${encodeURIComponent(ID)}`); } catch (e) {
     o.innerHTML = canhBao({ level: 'error', title: 'Không đọc được lịch sử kịch bản', body: e.message }); return; } }
   const ds = KB.ban || [];
-  o.innerHTML = ds.length
-    ? `<ul class="item-list">${ds.map((b) => `<li class="item"><div>
-        <span class="item-title">Bản ${esc(String(b.phienBan))} ${b.trangThai === 'LIVE' ? statusBadge('ready', { label: 'Đang chạy' }) : statusBadge('unknown', { label: b.trangThai === 'DRAFT' ? 'Nháp' : 'Cũ' })}</span>
-        <div class="item-desc">${b.suaLuc ? esc(new Date(b.suaLuc).toLocaleString('vi-VN')) : ''}${b.nguoiSua ? ' · ' + esc(b.nguoiSua) : ''}${b.ghiChu ? ' · ' + esc(b.ghiChu) : ''}</div>
-      </div></li>`).join('')}</ul>
-      <p class="field-hint">Quay về một bản cũ ở <a href="/kich-ban">màn Kịch bản</a>. So hai bản (đủ mẫu mới kết luận) — để sau.</p>`
-    : '<div class="o-trong">Page này chưa có bản kịch bản nào — bot chạy bằng luật chung + dữ liệu sản phẩm.</div>';
+  if (!ds.length) {
+    o.innerHTML = '<div class="o-trong">Page này chưa có bản kịch bản nào — bot chạy bằng luật chung + dữ liệu sản phẩm.</div>';
+    return;
+  }
+  const sua = !!KB.suaDuoc;
+  const nhan = KB.nhanTruong || {};
+  const noiDung = (b) => (KB.truong || []).filter((k) => b.nguoi && b.nguoi[k])
+    .map((k) => `<div class="tren-2"><b>${esc(nhan[k] || k)}</b><div class="be-chu">${esc(b.nguoi[k])}</div></div>`).join('')
+    || '<p class="meta">(trống)</p>';
+  o.innerHTML = `<ul class="item-list">${ds.map((b) => `<li class="item"><div>
+      <span class="item-title">Bản ${esc(String(b.phienBan))} ${b.trangThai === 'LIVE' ? statusBadge('ready', { label: 'Đang chạy' }) : statusBadge('unknown', { label: b.trangThai === 'DRAFT' ? 'Nháp' : 'Cũ' })}</span>
+      <div class="item-desc">${b.suaLuc ? esc(new Date(b.suaLuc).toLocaleString('vi-VN')) : ''}${b.nguoiSua ? ' · ' + esc(b.nguoiSua) : ''}${b.ghiChu ? ' · ' + esc(b.ghiChu) : ''}</div>
+      <details class="tren-2"><summary>Xem nội dung</summary>${noiDung(b)}</details>
+      ${sua ? `<div class="hang tren-2">${button('Chép vào ô soạn', { size: 'sm', variant: 'ghost', data: { chep: b.id } })}
+        ${b.trangThai === 'LIVE' ? '' : button('Chạy lại bản này', { size: 'sm', data: { chaylai: b.id } })}</div>` : ''}
+    </div></li>`).join('')}</ul>
+    <p class="field-hint">${sua ? '«Chạy lại» lưu chữ của bản cũ thành một bản MỚI rồi bot dùng ngay — cùng cửa với «Lưu — bot dùng ngay».'
+      : 'Vai của bạn chỉ xem được các bản.'} So hai bản (đủ mẫu mới kết luận) — để sau.</p>`;
+  o.querySelectorAll('[data-chep]').forEach((n) => n.addEventListener('click', () => chepBan(n.dataset.chep)));
+  o.querySelectorAll('[data-chaylai]').forEach((n) => n.addEventListener('click', () => chayLaiBan(n.dataset.chaylai, n)));
 }
+
+/** Chép chữ của một bản vào ô soạn (tab Lời bot). KHÔNG ghi gì — người ta sửa rồi tự bấm lưu. */
+function chepBan(id) {
+  const b = (KB && KB.ban || []).find((x) => x.id === id);
+  if (!b) return;
+  document.querySelector('[data-tab="loi"]')?.click();
+  for (const [k, v] of Object.entries(b.nguoi || {})) {
+    const o = $(`#kb-${k}`);
+    if (o) { o.value = v || ''; o.rows = soDong(v); }
+  }
+  toast(`Đã chép bản ${b.phienBan} vào ô soạn — sửa rồi bấm «Lưu — bot dùng ngay» để tạo bản mới.`);
+}
+
+/** Chạy lại một bản cũ = lưu đúng chữ của nó thành bản MỚI qua cửa «lưu là chạy» (vai soạn làm được, không nới quyền). */
+async function chayLaiBan(id, nut) {
+  const b = (KB && KB.ban || []).find((x) => x.id === id);
+  if (!b) return;
+  const dongY = await confirmDialog({
+    title: `Chạy lại nội dung bản ${b.phienBan}?`,
+    body: KB.page && KB.page.botAiBat ? 'Page này đang bật bot: bot nói theo nội dung này với khách thật ngay khi lưu xong.'
+      : 'Page này đang tắt bot nên chưa ảnh hưởng khách.',
+    confirmLabel: 'Chạy lại',
+  });
+  if (!dongY) return;
+  setBusy(nut, true);
+  try {
+    const kq = await goi(`/api/kich-ban/page/${encodeURIComponent(ID)}/luu-chay`, {
+      method: 'POST', body: JSON.stringify({ nguoi: b.nguoi, ghiChu: `chạy lại nội dung v${b.phienBan}` }),
+    });
+    toast(`Đã chạy lại nội dung bản ${b.phienBan} thành bản ${kq.phienBan} — bot đang chạy bản này.`);
+    await veLaiGiuCuon(async () => { await docLaiNoiDung(); await veKichBan($('#o-kb')); });
+    await veLichSu();
+  } catch (e) {
+    setBusy(nut, false);
+    baoLoi('Bot CHƯA chạy lại bản này', e.message);
+  }
+}
+
+/* ── VE2b · NHẬP TỪ FILE PANCAKE (việc của màn Kịch bản cũ) — cửa `/api/kich-ban/nhap-pancake` CHỈ BÓC, không ghi:
+ * điền ba ô (giọng điệu · câu chào · cách bán) rồi nói rõ CHƯA LƯU; năm ô «trả lời nhanh» không đụng (file không có thứ
+ * tương ứng — ghi đè bằng chuỗi rỗng là xoá công người khác). ── */
+$('#oFilePancake').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';                       // chọn lại cùng một tệp vẫn nổ sự kiện
+  if (!f || !KB) return;
+  const nut = $('#nutNhapPancake');
+  if (nut) setBusy(nut, true);
+  try {
+    const b64 = await new Promise((xong, hong) => {
+      const r = new FileReader();
+      r.onload = () => xong(String(r.result).replace(/^data:.*?;base64,/, ''));
+      r.onerror = () => hong(new Error('Không đọc được tệp trên máy bạn.'));
+      r.readAsDataURL(f);
+    });
+    const kq = await goi('/api/kich-ban/nhap-pancake', { method: 'POST', body: JSON.stringify({ dataBase64: b64 }) });
+    const n = kq.nhap || {};
+    let daDien = 0;
+    for (const k of ['tone', 'greeting', 'salesPrompt']) {
+      const o = $(`#kb-${k}`);
+      if (o && n[k]) { o.value = n[k]; o.rows = soDong(n[k]); daDien += 1; }
+    }
+    const st = n.stats || {};
+    const kqO = $('#kqNhapPancake');
+    if (kqO) kqO.innerHTML = canhBao({ level: 'success',
+      title: `Đã bóc «${f.name}» — điền ${daDien}/3 ô`,
+      body: 'Chưa lưu gì cả. Đọc lại nội dung rồi bấm «Lưu — bot dùng ngay» thì bot mới dùng.',
+      detail: [[st.topics != null ? `${st.topics} chủ đề` : '', st.images != null ? `${st.images} ảnh` : '',
+                st.tiers != null ? `${st.tiers} bậc giá` : ''].filter(Boolean).join(' · '),
+               'Ảnh và bảng giá trong file KHÔNG vào lời bot — chúng thuộc tab «Sản phẩm & giá».'] });
+  } catch (err) {
+    baoLoi('Không bóc được file kịch bản', err.message);
+  } finally { if (nut) setBusy(nut, false); }
+});
 
 /* ── VE2 · «AI ĐANG ĐỌC GÌ» (cột phải) — đếm KÝ TỰ từ đúng bộ đọc của bot, không đoán token. ── */
 function veAiDoc() {
@@ -849,25 +988,55 @@ function veAiDoc() {
     <p class="duoi-2">${button('Xem nguyên văn đoạn chữ gửi AI', { size: 'sm', href: `/prompt-page?page=${pid}` })}</p>`;
 }
 
-/* ── VE2 · CỘT TRÁI — page của team (`/api/page-ds`: bot bật hỏi TIẾN TRÌNH BOT; không hỏi được thì khai). ── */
+/* ── VE2 · CỘT TRÁI — page của team (`/api/page-ds`: bot bật hỏi TIẾN TRÌNH BOT; không hỏi được thì khai). ──
+ * VE2b · 30/09: lọc + tìm ở MÁY CHỦ bằng đúng hàm của «Tất cả page» (cùng mã lọc, cùng số đếm trên ô chọn); liên kết mang
+ * lọc · tìm · trang · tab đang đứng; «← Tất cả page» chỉ hiện khi vai mở được danh sách ấy. */
 let DS_PAGE = null;
+const soDem = (n) => (n == null ? '—' : Number(n).toLocaleString('vi-VN'));
 function veDsPage() {
   if (!DS_PAGE) return;
-  const q = $('#timPage').value.trim().toLowerCase();
-  const ds = DS_PAGE.ds.filter((p) => !q || [p.ten, p.pageId, p.thiTruong].some((x) => String(x || '').toLowerCase().includes(q)));
-  $('#demPage').textContent = `${DS_PAGE.ds.length}${DS_PAGE.nguonBot === 'ban_sao' ? ' · trạng thái bot theo bản sao' : ''}`;
-  if (DS_PAGE.nguonBot === 'ban_sao') $('#demPage').title = DS_PAGE.viSao || '';
-  $('#dsPage').innerHTML = ds.length ? ds.slice(0, 300).map((p) => `<li><a href="/page/${esc(p.id)}"${p.id === String((D && D.page && D.page.id) || ID) ? ' aria-current="true"' : ''}>
+  const d = DS_PAGE;
+  $('#locPage').innerHTML = Object.entries(d.chuLoc || {}).map(([ma, chu]) =>
+    `<option value="${esc(ma)}"${ma === LOC ? ' selected' : ''}>${esc(chu)} · ${soDem((d.dem || {})[ma])}</option>`).join('');
+  $('#locPage').value = LOC;
+  const dangLoc = LOC !== 'tat_ca' || !!TIM;
+  $('#demPage').textContent = `${dangLoc ? `${soDem(d.ds.length)}/` : ''}${soDem(d.soTong)}`
+    + (d.nguonBot === 'ban_sao' ? ' · trạng thái bot theo bản sao' : '');
+  if (d.nguonBot === 'ban_sao') $('#demPage').title = d.viSao || '';
+  const ve = $('#veDs');
+  ve.hidden = !d.moDanhSach;
+  ve.setAttribute('href', `/page-bot${thamSo()}`);
+  const tab = dangO !== 'sp' ? dangO : '';
+  const dangMo = String((D && D.page && D.page.id) || ID);
+  $('#dsPage').innerHTML = d.ds.length ? d.ds.slice(0, 300).map((p) => `<li><a href="/page/${esc(p.id)}${esc(thamSo({ tab }))}"${p.id === dangMo ? ' aria-current="true"' : ''}>
       <span class="ten"><span class="cham" data-tone="${p.botBat ? 'success' : 'neutral'}" aria-hidden="true"></span>${esc(p.ten || p.pageId)}</span>
-      <span class="tom">${p.botBat ? 'bot bật' : 'bot tắt'}${p.thiTruong ? ' · ' + esc(p.thiTruong) : ''}${p.sanPhamGocMa ? ' · ' + esc(p.sanPhamGocMa) : ''}</span></a></li>`).join('')
-      + (ds.length > 300 ? `<li class="o-trong">Còn ${ds.length - 300} page — gõ để tìm.</li>` : '')
-    : '<li class="o-trong">Không page nào khớp.</li>';
+      <span class="tom">${p.botBat ? 'bot bật' : 'bot tắt'}${p.thiTruong ? ' · ' + esc(p.thiTruong) : ''}${p.sanPhamGocMa ? ' · ' + esc(p.sanPhamGocMa) : ''}${p.coLoiBot === false ? ' · chưa có lời bot' : ''}</span></a></li>`).join('')
+      + (d.ds.length > 300 ? `<li class="o-trong">Còn ${d.ds.length - 300} page — gõ để tìm.</li>` : '')
+    : `<li class="o-trong">Không page nào khớp${LOC === 'chua_loi_bot' && d.loiBotViSao ? ` — ${esc(d.loiBotViSao)}` : ''}.</li>`;
 }
 async function napDsPage() {
-  try { DS_PAGE = await goi('/api/page-ds'); veDsPage(); }
+  try { DS_PAGE = await goi(`/api/page-ds?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}`); veDsPage(); }
   catch (e) { $('#dsPage').innerHTML = `<li class="o-trong">Không đọc được danh sách page: ${esc(e.message)}</li>`; }
 }
-$('#timPage').addEventListener('input', veDsPage);
+$('#timPage').value = TIM;
+let henTim = null;
+$('#timPage').addEventListener('input', () => {
+  clearTimeout(henTim);
+  henTim = setTimeout(() => { TIM = $('#timPage').value.trim(); TRANG_DS = ''; ghiUrlLoc(); napDsPage(); }, 250);
+});
+$('#locPage').addEventListener('change', () => { LOC = $('#locPage').value || 'tat_ca'; TRANG_DS = ''; ghiUrlLoc(); napDsPage(); });
+
+/* ── VE2b · `/page` TRẦN — chưa chọn page: cột trái làm việc, phần giữa mời chọn. ── */
+function veChuaChon() {
+  $('#chiTiet').hidden = true;
+  const o = $('#chuaChon');
+  o.hidden = false;
+  o.innerHTML = emptyState({ icon: 'search', title: 'Chọn một page ở cột trái',
+    body: 'Lọc hoặc tìm ở cột trái rồi bấm tên page: bật được chưa, sản phẩm & giá, lời bot, lịch sử của page đó.' });
+  $('#tieu').textContent = 'Các page';
+  $('#o-ai-doc').innerHTML = '<div class="o-trong">Chọn một page để xem AI đọc gì trên page đó.</div>';
+  document.title = 'Các page — AI Closer';
+}
 
 async function nap() {
   try {
@@ -899,7 +1068,7 @@ async function nap() {
   ] });
 }
 
-nap();
+if (ID) nap(); else veChuaChon();
 napDsPage();
 </script>
 <script src="/chung/dieu-huong.js"></script>

@@ -27,7 +27,6 @@ import * as model from '../model/index.js';
 import * as boLuat from '../bo-luat/index.js';
 import * as kyNang from '../ky-nang/index.js';
 import * as promptPage from '../prompt-page/index.js';
-import * as kichBan from '../kich-ban/index.js';
 import * as aiDeXuat from '../ai-de-xuat/index.js';
 import * as lop0 from '../lop-0-dong/index.js';
 import * as khoiChung from '../khoi-chung/index.js';
@@ -132,10 +131,11 @@ const dat = (m, ten, nhom, moTa = '', itDung = false, thuNghiem = false, canId =
      mở ra rồi đi ra tay không — đó là cách nhanh nhất dạy người ta đừng tin menu.
      KHÁC `itDung`: `itDung` là màn DÙNG ĐƯỢC nhưng thưa, vẫn ở trong menu, chỉ xếp sau vạch. */
   thuNghiem,
-  /* `canId` = màn CẦN THAM SỐ để mở (trang của MỘT page: `/page/:id`). Nó không có dòng trên
-     thanh bên — một dòng menu dẫn tới `/page` trần thì không nói được page nào — nhưng vẫn
-     phải nằm trong gói menu để thanh trên cùng tra ra mục của nó (án lệ GD6 ⑥b).
-     KHÁC `thuNghiem`: màn này DÙNG ĐƯỢC và đang được dùng; nó chỉ không đứng riêng được. */
+  /* `canId` = màn CẦN THAM SỐ để mở. Nó không có dòng trên thanh bên — một dòng menu dẫn tới
+     đường trần thì không nói được mở cái gì — nhưng vẫn phải nằm trong gói menu để thanh trên
+     cùng tra ra mục của nó (án lệ GD6 ⑥b). KHÁC `thuNghiem`: màn này DÙNG ĐƯỢC; nó chỉ không
+     đứng riêng được. (Màn duy nhất từng mang cờ — trang một page — thôi mang từ VE2b · 30/09:
+     `/page` trần nay mở được, xem `moTuDauCum`.) */
   canId,
   /* `moTuManKhac` = `{ thay, loiVao }`: màn DÙNG ĐƯỢC, nhưng với người mở được màn `thay` thì
      việc của nó đã nằm ở đó, và lối vào đúng là từ các tệp `loiVao` (mang sẵn page, việc).
@@ -179,7 +179,10 @@ const trongCum = (cum, nhan, m) => ({ ...m, cum, nhanCum: nhan });
  * vì «Bắt đầu» dùng chung danh sách vai ấy) ⇒ marketer bấm «Page bot KHÔNG bật được» ở Việc của tôi là tới đích 403.
  * Cửa kiểm liên kết (`router-dieu-huong.js`) đọc bảng này.
  */
-export const CHUYEN_HUONG = Object.freeze({ '/san-sang': '/page-bot' });
+// VE2b · 30/09: `/kich-ban` gộp vào trang một page (tab «Lời bot» + «Lịch sử») — chuyển theo vai ở `kich-ban/router.js`
+// (có page ⇒ `/page/:id?tab=loi`; trần ⇒ danh sách lọc «chưa có lời bot riêng»). Đích khai ở đây là trang page: ai đi
+// được thì đi được liên kết cũ.
+export const CHUYEN_HUONG = Object.freeze({ '/san-sang': '/page-bot', '/kich-ban': '/page' });
 
 export const MAN = Object.freeze([
   // ĐƯỜNG DẪN KHÔNG ĐỔI — đổi đường là làm chết mọi liên kết đã lưu. Chỉ đổi CHỖ NGỒI.
@@ -210,13 +213,13 @@ export const MAN = Object.freeze([
   // ③ PAGE — mọi thứ bot nói trên một page, và luật chung cho mọi page.
   // GD2 · 25/09 — «Bắt đầu» và «Page còn thiếu gì» ngoài menu: cả hai chuyển hướng về danh sách.
   trongCum('danh-sach-page', 'Tất cả page', dat(pageBot, 'Tất cả page', 'page', 'Một dòng một page: bot nào, bật hay tắt, còn thiếu gì')),
-  // Trang của MỘT page: mở từ danh sách, không đứng riêng trên menu — nhưng vẫn khai ở đây
-  // để thanh trên cùng tra được «tôi đang ở mục nào» (án lệ GD6 ⑥b). Cờ `canId` nói đúng
-  // lý do ẩn: màn DÙNG ĐƯỢC, chỉ là không mở được nếu thiếu tham số.
-  // VE2 · 29/09: trang một page có NHÀ là cụm «Tất cả page» (bản vẽ 2c: đứng ở một page thì dải «Trong mục» sáng «Các
-  // page»). `nhaCum`, KHÔNG `cum`: nó là màn chi tiết (`canId`), không phải thành viên cụm — không có nhãn tab, không lên tab.
-  { ...dat(motPage, 'Trang một page', 'page', 'Một page: tình trạng, công tắc, việc làm tiếp', false, false, true), nhaCum: 'danh-sach-page' },
-  trongCum('danh-sach-page', 'Kịch bản', dat(kichBan, 'Kịch bản của page', 'page', 'Lời bot nói riêng trên từng page')),
+  // Trang của MỘT page (bản vẽ 2c). VE2b · 30/09 (người quyết: «vào danh sách page luôn. ấn vào chi tiết chuyển sang id
+  // tương ứng. có phần trở lại. K còn màn kichban nữa»): thành viên cụm «Tất cả page» mở TỪ ĐẦU CỤM (`moTuDauCum`) —
+  // người mở được danh sách tới nó bằng cách bấm tên page, nên nó KHÔNG lên tab (cụm còn một tab ⇒ không vẽ thanh tab);
+  // marketer không mở được danh sách ⇒ nó là đầu cụm CỦA HỌ, đứng trên thanh bên tên «Các page» (`/page` trần: danh
+  // sách + bộ lọc ở cột trái). Trước VE2b: `canId` + `nhaCum`, và marketer vào mục Page qua màn Kịch bản (nay gộp vào
+  // tab «Lời bot» + «Lịch sử», đường cũ ở `CHUYEN_HUONG`).
+  { ...trongCum('danh-sach-page', 'Các page', dat(motPage, 'Các page', 'page', 'Một page: bật được chưa, sản phẩm, lời bot, lịch sử')), moTuDauCum: true },
   // LL3: «Luật chung» = một cụm — luật · trả lời sẵn · đề xuất chờ duyệt (bản vẽ bảng 2d).
   trongCum('luat-chung', 'Luật', dat(boLuat, 'Quy tắc chung mọi page', 'page', 'Sửa là cả team đổi cách nói')),
   // VE4 · 29/09: bản vẽ 2d — Luật · Chính sách/FAQ/Phản đối · Trả lời sẵn · Đề xuất chờ duyệt (đúng thứ tự tab).
@@ -291,7 +294,8 @@ export function menuCua(vai = []) {
   for (const m of truocCum) if (m.cum && !m.an && !dauCum.has(m.cum)) dauCum.set(m.cum, m.duong);
   const duoc = truocCum.map((m) => {
     if (!m.cum || m.an) return m;
-    if (m.duong !== dauCum.get(m.cum)) return { ...m, an: true, trongCum: true };
+    // `moTuDauCum` (VE2b): tới từ một dòng ở đầu cụm — không lên tab; chỉ đứng thanh bên khi vai không mở được đầu cụm.
+    if (m.duong !== dauCum.get(m.cum)) return { ...m, an: true, trongCum: !m.moTuDauCum };
     // Tên cụm CHỈ cho màn đầu cụm CHUẨN (màn đầu tiên của cụm trong sổ). Vai không vào được màn ấy
     // (marketer không mở «Tất cả page») thì dòng menu mang đúng tên màn của nó — gắn tên cụm lên một
     // màn khác là nói dối người bấm.

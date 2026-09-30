@@ -11,12 +11,15 @@ const html = fs.readFileSync(new URL('../../src/ui/page-bot/trang/page-bot.html'
 const js = html.slice(html.indexOf('<script>\nconst { esc,') + 8, html.lastIndexOf('</script>\n<script src="/chung/dieu-huong.js">'));
 const than = (ten) => (js.match(new RegExp(`(?:async )?function ${ten}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`)) || [''])[0];
 
-test('D1 · viên «Lọc nhanh» có số đếm (tablist) thay ô chọn; nút Quét ở đầu trang', () => {
+test('D1 · viên «Lọc nhanh» có số đếm (tablist) thay ô chọn; nút Quét ở hàng ô tìm (VE2b)', () => {
   assert.match(html, /<div class="hang-vien duoi-4" role="tablist" aria-label="Lọc nhanh" id="thanhLoc">/);
   assert.doesNotMatch(html, /id="oLoc"/, 'ô chọn bộ lọc cũ còn sót');
   assert.match(than('veThanhLoc'), /role="tab" data-loc="\$\{esc\(ma\)\}" aria-selected="\$\{ma === LOC\}"/);
-  assert.match(than('veThanhLoc'), /<span class="phu">\$\{so\(n\)\}<\/span>/, 'viên phải mang số đếm');
-  assert.match(html, /<span class="sp"><\/span>\s*<span><button[^>]*id="nutQuet"/, 'nút Quét phải nằm ở đầu trang (phần phải của PageHeader)');
+  // VE2b: số `null` (không đo được — bảng kịch bản đọc hỏng) hiện «—», không «0».
+  assert.match(than('veThanhLoc'), /<span class="phu">\$\{n == null \? '—' : so\(n\)\}<\/span>/, 'viên phải mang số đếm');
+  // VE2b · 30/09 (người quyết khoanh đỏ cả khối đầu trang: «vào danh sách page luôn»): đầu trang ẩn, nút Quét xuống hàng ô
+  // tìm — vẫn cạnh bộ lọc, vẫn là đường duy nhất đưa page mới vào hệ.
+  assert.match(html, /<div class="table-toolbar">[\s\S]*?id="nutQuet"[\s\S]*?<\/div>/, 'nút Quét phải nằm ở hàng ô tìm');
 });
 
 test('D2 · bật bot hàng loạt: trần 10 + hộp xác nhận liệt kê tên + đi qua ĐÚNG cửa `/bot` từng page', () => {

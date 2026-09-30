@@ -86,6 +86,9 @@ export const LOC = Object.freeze({
   // mà người dùng không mất cách hỏi «page nào còn chặn».
   CON_CHAN: 'con_chan',
   SAN_SANG: 'san_sang',
+  // VE2b · 30/09: màn Kịch bản gộp vào trang một page — con số nó từng báo («N/M page chưa có kịch bản riêng») sống
+  // tiếp thành bộ lọc này. «Lời bot riêng» = có bản kịch bản ĐANG CHẠY (LIVE); bản nháp không tính.
+  CHUA_LOI_BOT: 'chua_loi_bot',
 });
 const LOC_HOP_LE = new Set(Object.values(LOC));
 
@@ -99,13 +102,16 @@ export const CHU_LOC = Object.freeze({
   [LOC.MAT_DAU]: 'Mất dấu',
   [LOC.CON_CHAN]: 'Còn điều kiện chặn',
   [LOC.SAN_SANG]: 'Đủ điều kiện',
+  [LOC.CHUA_LOI_BOT]: 'Chưa có lời bot riêng',
 });
 
 const co = (v) => v === true;
 const chuoiCo = (v) => String(v == null ? '' : v).trim() !== '';
 
-function hopLoc(p, loc) {
+export function hopLoc(p, loc) {
   switch (loc) {
+    // `_coLoiBot` do `ganTrangThaiPage` gắn. Bảng kịch bản đọc hỏng ⇒ `null` ⇒ không lọt: chưa đo được ≠ chưa có.
+    case LOC.CHUA_LOI_BOT: return p._coLoiBot === false;
     // `p._mucKiem` do `danhSachPage` gắn từ cửa kiểm. CHƯA ĐỌC ĐƯỢC (null) thì KHÔNG lọt vào
     // cả hai bộ lọc: một page chưa đo được không phải «còn chặn», cũng không phải «đủ điều
     // kiện» — nhét nó vào bên nào cũng là một lời khai mình không đo được.
@@ -121,7 +127,7 @@ function hopLoc(p, loc) {
   }
 }
 
-function hopTim(p, tim) {
+export function hopTim(p, tim) {
   if (!tim) return true;
   const t = String(tim).toLowerCase();
   return [p.ten, p.page_id, p.thi_truong, p.nganh_hang, p.marketer]
@@ -216,15 +222,23 @@ export const TEN_NGAN = Object.freeze({
  * `cot = $n`, không có `LIKE`, không có `LIMIT` (xem `noi-day/cong-du-lieu-that.js`). Một mẻ
  * đọc trọn `page` của team — hôm nay 514 dòng cho `tieu-alpha`. Chịu được; nợ đã ghi.
  */
-export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang = 0 } = {}) {
-  const bc = batBuocBoiCanh(boiCanh);
+/** Bộ lọc lạ ⇒ 400 nói rõ các mã có — cùng một câu cho «Tất cả page» và cột trái trang một page (VE2b). */
+export function kiemLoc(loc) {
   if (!LOC_HOP_LE.has(loc)) {
     throw new LoiPageBot(`bộ lọc lạ: "${loc}" (có: ${[...LOC_HOP_LE].join(', ')})`, 'loc_la');
   }
-  const db = congTruyVan(bc);
-  const tatCa = await db.chon(BANG, {}, { sapXep: 'ten' });
+}
 
-  const { doc, viSao } = await docCuaKiem();
+/**
+ * GẮN TRẠNG THÁI mà các bộ lọc đọc — MỘT chỗ cho «Tất cả page» và cột trái trang một page (VE2b · 30/09: hai màn
+ * cùng một bộ lọc thì phải cùng một phép gắn; hai phép là hai con số cho cùng một câu hỏi). Sửa tại chỗ từng dòng:
+ * `bot_ai_bat`/`runtime` theo bot · `_mucKiem` (cửa kiểm) · `_coLoiBot` (có kịch bản ĐANG CHẠY không).
+ *
+ * @returns {Promise<{doc: Map|null, viSao: string|null, loiBotViSao: string|null}>}
+ */
+export async function ganTrangThaiPage(boiCanh, tatCa) {
+  const bc = batBuocBoiCanh(boiCanh);
+  const [{ doc, viSao }, loiBot] = await Promise.all([docCuaKiem(), docLoiBotDangChay(bc)]);
   for (const p of tatCa) {
     const r = doc?.get(String(p.page_id));
     // Bot thấy page ⇒ công tắc lấy từ bot, BẤT KỂ bản bot nào. Trước 28/09 chỉ page bản mới được
@@ -234,7 +248,33 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
     // Mức của cửa kiểm, gắn TRƯỚC khi lọc — hai bộ lọc `con_chan`/`san_sang` đọc nó.
     // Không đọc được cửa kiểm ⇒ `null`, và `null` không lọt vào bộ lọc nào.
     p._mucKiem = doc ? gonCuaKiem(doc.get(String(p.page_id))).muc : null;
+    p._coLoiBot = loiBot.dsPage ? loiBot.dsPage.has(String(p.id)) : null;
   }
+  return { doc, viSao, loiBotViSao: loiBot.viSao };
+}
+
+/**
+ * Page nào có kịch bản ĐANG CHẠY — một mẻ cho cả team. Đọc hỏng thì trả lý do, KHÔNG ném: danh sách page vẫn phải
+ * hiện, chỉ bộ lọc «chưa có lời bot riêng» là không đo được (và nói ra). Bản tầng nước / tầng sản phẩm có `page_id`
+ * NULL (ràng buộc `kich_ban_khoa_dung_cap`) nên không bao giờ tính là lời bot RIÊNG của một page — đúng cách màn Kịch
+ * bản cũ đếm (`cayKichBan`: theo `page_id` của bản LIVE).
+ */
+async function docLoiBotDangChay(bc) {
+  try {
+    const ds = await congTruyVan(bc).chon('kich_ban', { trang_thai: 'LIVE' });
+    return { dsPage: new Set(ds.map((b) => String(b.page_id))), viSao: null };
+  } catch (e) {
+    return { dsPage: null, viSao: `Chưa đọc được kịch bản của các page: ${e?.message || e}` };
+  }
+}
+
+export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang = 0 } = {}) {
+  const bc = batBuocBoiCanh(boiCanh);
+  kiemLoc(loc);
+  const db = congTruyVan(bc);
+  const tatCa = await db.chon(BANG, {}, { sapXep: 'ten' });
+
+  const { doc, viSao, loiBotViSao } = await ganTrangThaiPage(bc, tatCa);
   const daLoc = tatCa.filter((p) => hopLoc(p, loc) && hopTim(p, tim));
   const soTrang = Math.max(1, Math.ceil(daLoc.length / MOI_TRANG));
   const t = Math.min(Math.max(0, Number(trang) || 0), soTrang - 1);
@@ -269,6 +309,7 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
     sanPhamGocApDuoc: coBangGoc,
     cuaKiemDocDuoc: !!doc,
     cuaKiemViSao: viSao,
+    loiBotViSao,
     trang: t,
     soTrang,
     soKhop: daLoc.length,
@@ -336,6 +377,8 @@ export function gonPage(p) {
 export function demTheoLoc(tatCa) {
   const d = {};
   for (const m of Object.values(LOC)) d[m] = tatCa.filter((p) => hopLoc(p, m)).length;
+  // Bảng kịch bản đọc hỏng ⇒ «chưa có lời bot riêng» KHÔNG ĐO ĐƯỢC: `null`, không phải 0 (0 là lời khai «mọi page đều có»).
+  if (tatCa.length && tatCa.every((p) => p._coLoiBot === null)) d[LOC.CHUA_LOI_BOT] = null;
   return d;
 }
 

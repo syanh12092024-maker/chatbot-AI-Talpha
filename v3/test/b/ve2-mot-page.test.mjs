@@ -15,7 +15,9 @@ const { dungPhanB } = await import('../../src/vai-b.js');
 const { bam } = await import('../../src/auth/mat-khau.js');
 const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
-const { datDocSanSang } = await import('../../src/ui/chung/bot-bat-that.js');
+// VE2b · 30/09: cột trái đọc trạng thái bot qua bộ gắn của «Tất cả page» (`page-bot/kho-page.js#ganTrangThaiPage`) — cùng
+// bộ lọc hai màn. `vai-b.js` nối bộ đọc ấy và `chung/bot-bat-that.js` vào CÙNG một hàm; ca tiêm vào đúng bộ mã đang đọc.
+const { datDocSanSang } = await import('../../src/ui/page-bot/kho-page.js');
 
 async function dungThu() {
   const mk = await bam('matkhau1');
@@ -85,7 +87,7 @@ test('P4 · trang (VE2 · bản vẽ 2c): ba cột, bảy tab — và ĐỦ vi�
   assert.match(html, /<main class="chia-ba">/);
   assert.match(html, /<nav class="chia-hai-trai" aria-label="Page">/);
   assert.match(html, /<aside class="cot-thu" aria-label="Thử hỏi bot">/);
-  assert.match(html, /'\/api\/page-ds'/);
+  assert.match(html, /`\/api\/page-ds\?loc=\$\{encodeURIComponent\(LOC\)\}&tim=/, 'VE2b: cột trái gọi kèm bộ lọc + ô tìm');
   const tab = html.match(/const TAB = (\[[\s\S]*?\]);/);
   assert.ok(tab, 'không thấy danh sách tab');
   assert.deepEqual([...tab[1].matchAll(/\['[a-z-]+', '([^']+)'\]/g)].map((x) => x[1]),

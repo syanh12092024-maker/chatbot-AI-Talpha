@@ -65,7 +65,8 @@ async function tai() {
     if (!k.dsBan.length) {
       $('#ketQua').innerHTML = emptyState({ icon: 'inbox', title: 'Chưa có gì để so',
         body: `${d.trong ? d.trong.noi : ''} ${d.trong && d.trong.diTiep ? d.trong.diTiep : ''}`.trim(),
-        actionsHtml: button('Mở Kịch bản của page', { href: '/kich-ban', size: 'sm' }) });
+        // VE2b · 30/09: màn Kịch bản gộp vào trang một page — `/kich-ban` chuyển theo vai tới page chưa có lời bot riêng.
+        actionsHtml: button('Soạn lời bot cho page', { href: '/kich-ban', size: 'sm' }) });
       return;
     }
 

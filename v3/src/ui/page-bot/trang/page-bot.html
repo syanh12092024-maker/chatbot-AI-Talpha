@@ -17,20 +17,18 @@
 <script src="/chung/ui.js"></script>
 </head>
 <body>
-<header>
+<header class="an-tieu-de">
   <h1>Tất cả page</h1>
-  <span class="sub">Mỗi dòng một page. Bấm tên page để mở trang của nó: tình trạng, công tắc, việc làm tiếp.</span>
-  <span class="sp"></span>
-  <span><button type="button" class="btn" data-size="sm" id="nutQuet"
-    title="Hỏi Pancake bằng kho token đang có, cập nhật danh mục page"><span>Quét Pancake tìm page mới</span></button></span>
 </header>
+<!-- VE2b · 30/09 (người quyết, ảnh khoanh đỏ: «màn tất cả page bỏ phần khoanh đỏ này … vào danh sách page luôn»): đầu
+     trang ẨN — tên giữ cho trình đọc màn hình và luật HK10 (tên đầu trang = tên menu); thanh tab «Tất cả page | Kịch bản»
+     tự mất vì Kịch bản gộp vào trang một page (cụm còn một tab). Nút Quét xuống hàng ô tìm. -->
 <!-- VE3 · 29/09 (CR-28-09c): theo bản vẽ 2b — viên «Lọc nhanh» có số đếm thay ô chọn; nút Quét lên đầu trang; chọn
      nhiều page + thao tác hàng loạt (gắn sản phẩm · bật bot tối đa 10, có xác nhận) đi LẦN LƯỢT qua ĐÚNG cửa ghi
      từng page đã có (mỗi lượt vẫn ghi nhật ký trước/sau) — không mở cửa ghi hàng loạt mới ở máy chủ. -->
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
-  <div class="page-note" id="ghi-chu-marketer"></div>
 
   <div class="hang-vien duoi-4" role="tablist" aria-label="Lọc nhanh" id="thanhLoc"></div>
   <section class="table-wrap" aria-labelledby="tieu-bang">
@@ -38,7 +36,11 @@
     <div class="table-toolbar">
       <label for="oTim" class="sr-only">Tìm page</label>
       <input id="oTim" type="search" placeholder="Tên page, mã page Facebook, thị trường, marketer…" autocomplete="off" spellcheck="false">
+      <!-- VE2b: công tắc bot khoá ⇒ MỘT dòng nhỏ ở đây (lý do đủ trong title), thay hộp cảnh báo chiếm đầu trang. -->
+      <span class="field-hint" id="khoaBot" hidden></span>
       <span class="table-count" id="tomTat" aria-live="polite"></span>
+      <button type="button" class="btn" data-size="sm" id="nutQuet"
+        title="Hỏi Pancake bằng kho token đang có, cập nhật danh mục page"><span>Quét Pancake tìm page mới</span></button>
     </div>
     <div class="thanh-chon" id="thanhChon" hidden aria-live="polite"></div>
     <div id="bang"></div>
@@ -69,6 +71,31 @@ function ghiUrl() {
   history.replaceState(null, '', u);
 }
 
+// VE2b · 30/09: bấm tên page mang theo bộ lọc · ô tìm · trang — trang một page lọc cột trái y như thế và lối «← Tất cả
+// page» trả về ĐÚNG chỗ này (người quyết: «ấn vào chi tiết chuyển sang id tương ứng. có phần trở lại»).
+function thamSoDanhSach() {
+  const u = new URLSearchParams();
+  if (LOC && LOC !== 'tat_ca') u.set('loc', LOC);
+  if (TIM) u.set('tim', TIM);
+  if (TRANG) u.set('trang', String(TRANG));
+  const chuoi = u.toString();
+  return chuoi ? '?' + chuoi : '';
+}
+
+// Vì sao công tắc bot khoá — MỘT câu cho cả dòng nhỏ ở hàng tìm lẫn title trên từng công tắc (VE2b: thay hộp cảnh báo).
+function lyDoKhoa() {
+  if (!SUA) return 'Cần vai Quản trị để bật tắt bot.';
+  return 'Chưa bật tắt bot được từ màn này: máy chủ này chưa được phép ghi sang tiến trình bot, vì công tắc chạm khách thật. '
+    + 'Nhờ người quản trị hệ thống mở cửa ghi.' + ((CUA.thieu || []).length ? ` (${CUA.thieu.join(' · ')})` : '');
+}
+function veKhoaBot() {
+  const o = $('#khoaBot');
+  if (SUA && CUA.mo) { o.hidden = true; o.textContent = ''; return; }
+  o.hidden = false;
+  o.textContent = SUA ? 'Công tắc bot đang khoá' : 'Chỉ quản trị bật tắt bot';
+  o.title = lyDoKhoa();
+}
+
 // Lỗi thao tác: băng tin, KHÔNG toast — mục H10: toast không dùng cho lỗi phức tạp.
 function baoLoi(title, body) {
   $('#bang-tin').dataset.loi = '1';
@@ -89,19 +116,13 @@ let _canhBaoCuoi = [];
 function veBangTin(d, loi) {
   if (d) {
     const kh = [];
-    if (!CUA.mo) {
-      kh.push(canhBao({
-        level: 'warning',
-        title: 'Chưa bật tắt bot được từ màn này',
-        body: 'Máy chủ này chưa được phép ghi sang tiến trình bot, vì công tắc chạm khách thật. '
-          + 'Nhờ người quản trị hệ thống mở cửa ghi.',
-        detail: CUA.thieu || [],
-      }));
-    }
-    if (d.dem && d.dem.thieu_marketer > 0) {
-      $('#ghi-chu-marketer').innerHTML = `<div>${so(d.dem.thieu_marketer)}/${so(d.soTong)} page `
-        + 'chưa có người phụ trách — báo cáo cắt theo marketer sẽ trống với những page đó. '
-        + 'Cột này nhận giá trị từ lượt «Kéo dữ liệu về», màn này không sửa.</div>';
+    // VE2b · 30/09: cửa ghi sang bot đóng KHÔNG còn là hộp cảnh báo ở đầu trang (người quyết khoanh đỏ) — nó là một dòng
+    // nhỏ ở hàng ô tìm + title trên từng công tắc khoá (`veKhoaBot`). Dòng đếm page thiếu người phụ trách cũng bỏ: số đó
+    // đã ở viên «Chưa có marketer». Cảnh báo dưới đây là lỗi ĐO THẬT (không đọc được) — giữ, chỉ hiện khi xảy ra.
+    veKhoaBot();
+    if (d.loiBotViSao) {
+      kh.push(canhBao({ level: 'warning', title: 'Chưa đọc được kịch bản của các page',
+        body: `Viên «Chưa có lời bot riêng» đang KHÔNG ĐO ĐƯỢC — không có nghĩa là page nào cũng có. ${d.loiBotViSao}` }));
     }
     if (d.cuaKiemDocDuoc === false) {
       kh.push(canhBao({
@@ -121,8 +142,9 @@ function veBangTin(d, loi) {
 //    bản vẽ đặt lại viên để lọc là MỘT chạm và thấy mọi số cùng lúc. Vẫn MỘT dòng — cuộn ngang khi hẹp.
 function veThanhLoc(d) {
   $('#thanhLoc').innerHTML = Object.entries(d.chuLoc).map(([ma, chu]) => {
-    const n = ma === 'tat_ca' ? d.soTong : (d.dem[ma] || 0);
-    return `<button type="button" class="vien" role="tab" data-loc="${esc(ma)}" aria-selected="${ma === LOC}">${esc(chu)} <span class="phu">${so(n)}</span></button>`;
+    const n = ma === 'tat_ca' ? d.soTong : d.dem[ma];
+    // `null` = KHÔNG ĐO ĐƯỢC (VE2b: bảng kịch bản đọc hỏng) — «—», không «0» (0 là lời khai «không page nào»).
+    return `<button type="button" class="vien" role="tab" data-loc="${esc(ma)}" aria-selected="${ma === LOC}">${esc(chu)} <span class="phu">${n == null ? '—' : so(n)}</span></button>`;
   }).join('');
   $('#thanhLoc').querySelectorAll('[data-loc]').forEach((b) => b.addEventListener('click', () => { LOC = b.dataset.loc; TRANG = 0; nap(); }));
 }
@@ -142,7 +164,7 @@ function veThanhChon() {
   const batDuoc = chon.filter((p) => !p.botAiBat && !khoaBotCua(p));
   const lyDoBat = !SUA ? 'Cần vai Quản trị để bật bot'
     : CHON.size > GIOI_HAN_BAT ? `Tối đa ${GIOI_HAN_BAT} page một lượt — bỏ bớt chọn`
-    : !batDuoc.length ? (CUA.mo ? 'Các page đã chọn đều đang bật' : 'Cửa ghi sang bot đang khoá — xem cảnh báo phía trên') : '';
+    : !batDuoc.length ? (CUA.mo ? 'Các page đã chọn đều đang bật' : lyDoKhoa()) : '';
   o.hidden = false;
   o.innerHTML = `<b>Đã chọn ${so(CHON.size)} page</b>
     ${SUA && SPG_AP && SPG_CHON.length ? `<label class="sr-only" for="spgHangLoat">Sản phẩm để gắn</label>
@@ -206,7 +228,7 @@ function veBang(d) {
   if (d.trong) { $('#bang').innerHTML = veTrong(d.trong); $('#phanTrang').innerHTML = ''; return; }
 
   const khoaBot = !(SUA && CUA.mo);
-  const lyDoKhoaBot = !SUA ? 'Cần vai Quản trị để bật tắt bot' : 'Cửa ghi đang khoá — xem cảnh báo phía trên';
+  const lyDoKhoaBot = lyDoKhoa();
 
   // `data-hep="the"`: dưới 720px mỗi page thành một thẻ, ô «Còn thiếu gì» nhảy lên góc phải
   // (`c-dem`). Trước 28/09 bảng tám cột cuộn ngang trên điện thoại và cột Bot, Còn thiếu gì
@@ -230,7 +252,7 @@ function veBang(d) {
         <div class="page-identity">
           <span class="page-avatar" aria-hidden="true">${esc((ten.trim()[0] || '?').toUpperCase())}</span>
           <div class="page-identity-text">
-            <div class="page-identity-name ten"><a href="/page/${esc(p.id)}">${esc(ten)}</a></div>
+            <div class="page-identity-name ten"><a href="/page/${esc(p.id)}${esc(thamSoDanhSach())}">${esc(ten)}</a></div>
             <div class="page-identity-sub">${esc(p.pageId)} · ${veChuBot(p)}${p.matDau ? ' · ' + statusBadge('order_error', { label: 'Mất dấu' }) : ''}</div>
           </div>
         </div>

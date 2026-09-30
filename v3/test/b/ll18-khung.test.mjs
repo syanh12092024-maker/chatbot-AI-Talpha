@@ -333,8 +333,11 @@ test('K15 · /favicon.ico có thật (trang không qua khung vẫn có biểu t�
 test('K16 · MỌI liên kết viết cứng trong trang trỏ tới màn CÓ THẬT (e2e 29/09: «Xem câu trả lời sẵn» trỏ /lop-0 ⇒ 404)', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
-  const man = (await import('../../src/ui/chung/man-hinh.js')).MAN.map((m) => m.duong);
-  const DUNG = ['/', '/chon-team', '/dang-nhap', '/san-sang'];
+  const mh = await import('../../src/ui/chung/man-hinh.js');
+  const man = mh.MAN.map((m) => m.duong);
+  // Đường chỉ-còn-chuyển-hướng khai ở `CHUYEN_HUONG` là đường CÓ THẬT (VE2b · 30/09: `/kich-ban` vào bảng đó; trước đây
+  // thước gõ tay `/san-sang` — gõ tay là mỗi lần gộp màn phải nhớ sửa thước).
+  const DUNG = ['/', '/chon-team', '/dang-nhap', ...Object.keys(mh.CHUYEN_HUONG)];
   const TIEN_TO = ['/page/', '/viec/', '/uploads/', '/api/', '/chung/'];
   const hop = (d) => {
     const tho = d.split(/[?#]/)[0];

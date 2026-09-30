@@ -27,7 +27,10 @@ const DUONG_TRUOC = ['/ai-de-xuat', '/ban-hoi-thoai', '/bao-cao', '/bo-luat', '/
   '/san-pham', '/suc-khoe', '/thu-vien-anh', '/trang-chu', '/van-hanh-v3'];
 // Đường THÊM sau LL1 — mỗi đường khai phiếu đã thêm nó (thêm lặng lẽ là thước này đỏ).
 const DUONG_THEM = { '/khoi-chung': 'VE4 · 29/09 (tab «Chính sách · FAQ · Phản đối» của Luật chung — trình sửa chuyển từ trang một page)' };
-const DUONG_NAY = [...DUONG_TRUOC, ...Object.keys(DUONG_THEM)].sort();
+// Đường RỜI SỔ màn sau LL1 — mỗi đường khai phiếu và nơi nó còn sống (rời lặng lẽ là thước này đỏ). Đường KHÔNG chết:
+// nó nằm ở `CHUYEN_HUONG` (quyền theo đích) — ca N3b canh.
+const DUONG_BO = { '/kich-ban': 'VE2b · 30/09 (gộp vào trang một page: tab «Lời bot» + «Lịch sử»; `/kich-ban` chuyển hướng theo vai)' };
+const DUONG_NAY = [...DUONG_TRUOC, ...Object.keys(DUONG_THEM)].filter((d) => !(d in DUONG_BO)).sort();
 const HIEN_TRUOC = {
   QUAN_TRI: ['/ban-hoi-thoai', '/bao-cao', '/bo-luat', '/cai-dat-team', '/cau-hinh-team', '/chi-phi', '/dieu-phoi',
     '/ket-noi', '/kich-ban', '/ky-nang', '/lop-0-dong', '/model-ai', '/nhat-ky', '/page-bot', '/suc-khoe',
@@ -47,7 +50,7 @@ const DICH = {
   // LL10 · 29/09: `/van-hanh-v3` («Vận hành») sang Cài đặt — duyệt đơn của sale đã ở Hộp thư (LL2).
   'hop-thu': ['/trang-chu', '/ban-hoi-thoai', '/dieu-phoi', '/ho-so-khach'],
   'san-pham': ['/san-pham', '/ky-nang'],
-  page: ['/page-bot', '/page', '/kich-ban', '/bo-luat', '/khoi-chung', '/lop-0-dong', '/len-chay', '/prompt-page',
+  page: ['/page-bot', '/page', '/bo-luat', '/khoi-chung', '/lop-0-dong', '/len-chay', '/prompt-page',
     '/thu-vien-anh', '/ai-de-xuat', '/hieu-qua'],
   'so-lieu': ['/bao-cao', '/chi-phi', '/nguon-khach', '/rui-ro-hoan'],
   'cai-dat': ['/cai-dat-team', '/cau-hinh-team', '/ket-noi', '/model-ai', '/suc-khoe', '/van-hanh-v3', '/nhat-ky'],
@@ -70,8 +73,12 @@ test('N2 · biểu tượng của mọi đích CÓ THẬT trong bộ `ui.js` —
   assert.deepEqual(thieu, [], `biểu tượng không có trong bộ: ${thieu.join(', ')}`);
 });
 
-test('N3 · KHÔNG đường nào đổi hay mất — so DANH SÁCH với bản chụp trước LL1 (+ đường thêm có khai phiếu)', () => {
+test('N3 · KHÔNG đường nào đổi hay mất — so DANH SÁCH với bản chụp trước LL1 (+ đường thêm / rời sổ có khai phiếu)', () => {
   assert.deepEqual(mh.MAN.map((m) => m.duong).sort(), DUONG_NAY);
+});
+
+test('N3b · đường rời sổ màn vẫn SỐNG ở bảng chuyển hướng (liên kết cũ, dấu trang của người dùng không chết)', () => {
+  for (const d of Object.keys(DUONG_BO)) assert.ok(mh.CHUYEN_HUONG[d], `${d} rời sổ màn mà không khai ở CHUYEN_HUONG`);
 });
 
 test('N4 · mỗi màn ngồi đúng đích của `03-MAN-HINH.md`', () => {
@@ -96,13 +103,17 @@ test('N5 · mỗi vai thấy đúng tập màn như trước — trừ «Sản p
   const THEM_CO_CHU_Y = { '/san-pham': 'LL1', '/nguon-khach': 'LL5 (có dữ liệu)', '/rui-ro-hoan': 'LL5 (có dữ liệu)',
     '/khoi-chung': 'VE4 (tab Chính sách · FAQ · Phản đối)', '/ai-de-xuat': 'VE4 (thôi thử nghiệm — tab «Đề xuất chờ duyệt», bản vẽ 2d)' };
   const BO_CO_CHU_Y = { '/ky-nang': 'LL11 (khái niệm kỹ năng bỏ — «hỏi size» sang kiến thức sản phẩm)',
-    '/rui-ro-hoan': 'VE6c (rời thanh tab Số liệu — bốn tầng ở tab Khách + Tổng quan, màn đủ mở bằng «Xem đủ →»; ca ④g canh lối vào)' };
+    '/rui-ro-hoan': 'VE6c (rời thanh tab Số liệu — bốn tầng ở tab Khách + Tổng quan, màn đủ mở bằng «Xem đủ →»; ca ④g canh lối vào)',
+    '/kich-ban': 'VE2b (gộp vào trang một page — tab «Lời bot» + «Lịch sử»; đường cũ chuyển hướng theo vai)' };
+  // Thêm CHỈ cho một vai — khai theo vai, cùng lý do như trên.
+  const THEM_THEO_VAI = { MARKETER: { '/page': 'VE2b (không mở được «Tất cả page» ⇒ trang một page là lối vào mục Page của họ, «Các page»)' } };
   for (const [ten, truoc] of Object.entries(HIEN_TRUOC)) {
     const v = VAI[ten];
     const mongDoi = new Set(truoc);
     for (const d of Object.keys(THEM_CO_CHU_Y)) if (mh.MAN.find((m) => m.duong === d).vai.includes(v)) mongDoi.add(d);
     // …và mỗi màn RỜI tập tới-được cũng phải khai phiếu (đối xứng — bỏ lặng lẽ là mất đường vào không ai hay).
     for (const d of Object.keys(BO_CO_CHU_Y)) mongDoi.delete(d);
+    for (const d of Object.keys(THEM_THEO_VAI[ten] || {})) mongDoi.add(d);
     assert.deepEqual(hienCua(v), [...mongDoi].sort(), `vai ${ten}`);
   }
 });

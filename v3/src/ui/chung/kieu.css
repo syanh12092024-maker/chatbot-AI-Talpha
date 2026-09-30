@@ -1458,6 +1458,14 @@
      tầng, hàng tab) co được tới 0 và biến mất (ảnh chụp VE1 · 29/09, tab Chung). Cột tự cuộn thay vì co. */
   .chia-hai-phai > * { flex-shrink: 0; }
   .chia-hai-phai > :empty { display: none; }   /* ô báo tin chưa có gì thì không chiếm một khoảng gap */
+  /* VE2b · 30/09: phần «một page» gói trong `#chiTiet` để `/page` trần giấu được một lần — `display: contents` giữ các khối
+     con là con flex của cột (cùng khoảng cách, cùng luật không co) như trước khi có lớp gói. */
+  .chi-tiet-khoi { display: contents; }
+  .chi-tiet-khoi > * { flex-shrink: 0; }
+  .chi-tiet-khoi > :empty { display: none; }
+  /* Lối «← Tất cả page» (VE2b): chữ phụ ở đầu cột, không tranh chỗ với tên page. */
+  .chia-hai-phai > a.lien-ve { align-self: flex-start; font-size: var(--text-sm); color: var(--text-secondary); }
+  .chia-hai-phai > a.lien-ve:hover { color: var(--primary); text-decoration: none; }
 
   /* Danh sách để CHỌN (một dòng = một nút): tên + tóm tắt; dòng đang mở tô nền màu chính nhạt. */
   .ds-chon { list-style: none; margin: 0; padding: 0; overflow-y: auto; }

@@ -11,18 +11,15 @@
 // `01-QUYET-DINH.md` §9: kịch bản người viết áp thẳng, nhưng đây là cửa duyệt của team.
 
 import express from 'express';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
-import { muonTrang, locTiep, escHtml } from '../chung/http.js';
+import { muonTrang, locTiep } from '../chung/http.js';
+import { VAI_VAO_DUOC as VAI_MOT_PAGE } from '../mot-page/router.js';
+import { VAI_VAO_DUOC as VAI_PAGE_BOT } from '../page-bot/router.js';
 import {
   cayKichBan, banCuaPage, luuBanNhap, duaLenLive, luuVaChay,
   VAI_SUA_DUOC as VAI_SUA, VAI_DUYET_DUOC, LoiKichBan,
 } from './kho-kich-ban.js';
-
-const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
-const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
 
 export const VAI_VAO_DUOC = Object.freeze([VAI.QUAN_TRI, VAI.MARKETER, VAI.QUAN_LY, VAI.DUYET_KICH_BAN]);
 export const VAI_SUA_DUOC = VAI_SUA;
@@ -108,30 +105,22 @@ const boc = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((e) => tra
 export function taoRouterKichBan() {
   const r = express.Router();
 
-  r.get(DUONG_TRANG, (req, res, next) => {
+  // VE2b · 30/09 (người quyết: «K còn màn kichban nữa vì cài vào page rồi»): màn Kịch bản GỘP vào trang một page — soạn
+  // ở tab «Lời bot», các bản ở tab «Lịch sử» (bản vẽ BanDo: kich-ban → «Page › tab Lời bot + Lịch sử»). Đường cũ KHÔNG
+  // chết: nó chuyển THEO VAI (tiền lệ `/san-sang`) — có page ⇒ tab Lời bot của page đó; trần ⇒ danh sách lọc sẵn
+  // «chưa có lời bot riêng» (con số màn này từng báo); vai không mở được trang page ⇒ màn đầu của mình, không 403.
+  // Các cửa `/api/kich-ban/*` bên dưới GIỮ NGUYÊN — hai tab kia đọc/ghi qua đúng chúng.
+  r.get(DUONG_TRANG, (req, res) => {
     let bc = null;
     try { bc = cuaBoiCanh(req); } catch { bc = null; }
     if (!bc) {
       if (muonTrang(req)) return res.redirect(`/dang-nhap?tiep=${encodeURIComponent(locTiep(req.originalUrl || DUONG_TRANG))}`);
       return res.status(401).json({ ok: false, ma: 'chua_dang_nhap' });
     }
-    if (!coVai(bc, ...VAI_VAO_DUOC)) {
-      const cau = `Màn Kịch bản cần một trong các vai: ${VAI_VAO_DUOC.join(', ')}. `
-        + `Vai hiện có: ${(bc.vai || []).join(', ') || 'không có vai nào'}.`;
-      if (muonTrang(req)) {
-        return res.status(403).send(`<!doctype html><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Không có quyền</title>
-<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f7f9;
-color:#101828;font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,Arial,sans-serif;font-size:13.5px}
-.h{max-width:430px;padding:28px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(16,24,40,.1)}
-h1{font-size:16px;margin:0 0 8px}p{margin:0 0 14px;color:#475467;line-height:1.55}
-a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
-<div class="h"><h1>Không đủ quyền</h1><p>${escHtml(cau)}</p>
-<p><a href="/">← Về màn đầu của bạn</a></p></div>`);
-      }
-      return res.status(403).json({ ok: false, ma: 'thieu_vai', thongDiep: cau });
-    }
-    return res.sendFile(TRANG('kich-ban.html'), (e) => (e ? next(e) : undefined));
+    const page = String(req.query.page || '').trim();
+    if (!coVai(bc, ...VAI_MOT_PAGE)) return res.redirect('/');
+    if (page) return res.redirect(`/page/${encodeURIComponent(page)}?tab=loi`);
+    return res.redirect(coVai(bc, ...VAI_PAGE_BOT) ? '/page-bot?loc=chua_loi_bot' : '/page?loc=chua_loi_bot');
   });
 
   const canDangNhap = chanDangNhapMw();
