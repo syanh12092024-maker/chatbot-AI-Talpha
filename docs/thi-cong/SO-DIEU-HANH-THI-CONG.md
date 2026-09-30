@@ -1371,6 +1371,10 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
   - **N-L1M1-SONG** cổng `l1-m1.sh` ④ đọc đơn THẬT «Chờ in» shop POS Taiwan; POS hết đơn trạng thái đó (30/09 ~07:10 CEST: 0) ⇒ cổng
     TRƯỢT dù mã đúng. Sửa: POS trả 0 ⇒ HOÃN, không TRƯỢT.
 
+- 30/09 · **NỢ SAU VE7b** (`docs/thi-cong/nhat-ky/phieu-VE7b.md` §7):
+  - **N-KHONGQUYEN-DO** cột «Không quyền» của bảng token (Kết nối) chưa đo — cần một lượt dò Pancake CHỈ ĐỌC theo từng page của mỗi
+    token, đếm page trả «không có quyền hạn trên trang này». Màn đang nói «chưa đo».
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2785,3 +2789,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · VE7a → 🔎 CHỜ DEPLOY — Cài đặt theo bản vẽ 4: thứ tự Bắt đầu · Hệ còn sống · Kết nối · Model · Người và team · Nhật ký; «Hệ còn sống» nhận khối «Việc vận hành» (tin cần đối chiếu · tin bị lọc 24 giờ · diễn tập, số thật theo vai); Vận hành rời thanh tab
   cửa đọc mới /api/van-hanh/tom-tat · ca Postgres T1–T2 + chạy thật C1–C4 · đảo-vá 10/10 · cổng ve7a.sh 10/10 · npm test 2.375 ca 0 đỏ · ĐỦ cổng: 12 nợ cũ + l1-m1 (POS Taiwan 0 đơn «Chờ in», nợ N-L1M1-SONG)
   · commit 1c1ab28 · nhật ký docs/thi-cong/nhat-ky/phieu-VE7a.md
+- 30/09 · VE7b → 🔎 CHỜ DEPLOY — Kết nối theo bản vẽ 4: năm phần Pancake · POS · WhatsApp · HRM · Kéo dữ liệu; POS kèm tiền tệ + số món suy từ danh mục đã kéo; WhatsApp đọc VAN THẬT của cửa gửi (prod: vắng V3_WA_GUI ⇒ «Chưa nối»); «Không quyền» · HRM nói «chưa đo / chưa nối», không số tay
+  cửa đọc mới /api/ket-noi/whatsapp · DOM giả dùng chung testkit/dom-gia.js (textContent sống theo cây) · ca K1–K8 · đảo-vá 17/17 · cổng ve7b.sh 9/9 · npm test 2.383 ca 0 đỏ · ĐỦ cổng: 12 nợ cũ + l1-m1 · nợ N-KHONGQUYEN-DO
+  · commit 1c66710 · nhật ký docs/thi-cong/nhat-ky/phieu-VE7b.md
