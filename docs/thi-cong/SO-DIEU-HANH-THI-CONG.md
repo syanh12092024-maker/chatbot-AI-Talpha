@@ -2732,3 +2732,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 29/09 · VE5 → 🔎 CHỜ DEPLOY — Hộp thư theo bản vẽ 1a: ba tab Cần bạn · Đơn chờ · Bot đang xử; thẻ đơn ở cột giữa (ba nút mở đúng form duyệt cũ, biết van POS); nhận/đóng việc ở thanh cuối; cột phải ba khối
   ca V1–V5 + L6 Postgres (van đóng ⇒ duyệt chặn, 0 POST POS) · đảo-vá 11/11 (M6 lượt đầu sống ⇒ siết thước) · cổng ve5.sh 11/11 · npm test 2.319 ca 0 đỏ · bò 49 màn 0 lỗi mới
   · commit 3ceceeb · nhật ký docs/thi-cong/nhat-ky/phieu-VE5.md
+- 30/09 · VE5b → 🔎 CHỜ DEPLOY — Hộp thư › Tìm khách theo bản vẽ 1b (`/ho-so-khach`): hồ sơ gộp kênh theo số + mọi đơn cả hai luồng; 🔴 trang mở thêm cho sale (§10 bổ sung), cửa danh sách cũ giữ quản trị · quản lý; việc cũ giữ nguyên
+  ca B1–B5 (B1 quyền qua app thật) · thước dieu-huong/phan-quyen sửa có căn cứ · đảo-vá 11/11 · cổng ve5b.sh 7/7 · npm test 2.324 ca 0 đỏ · bò 51 màn 0 lỗi mới · cột Hàng: prod 0/123.629 đơn có món ⇒ nói thật
+  · commit f9ecbe2 · nhật ký docs/thi-cong/nhat-ky/phieu-VE5b.md
