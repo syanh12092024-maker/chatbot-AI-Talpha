@@ -2738,3 +2738,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · PHÁT HÀNH VE5 + VE5b → ✅ GIỮ — prod `c5dbacd → 91a98e7`, 0 migration (27), 0 gói, chỉ restart `aicloser-v3` (03:23:11); Hộp thư + Tìm khách theo bản vẽ, 🔴 Tìm khách mở thêm cho sale
   cửa vào npm test 2.324 ca 0 đỏ (đo riêng) · cổng 37 xanh / 12 nợ cũ trùng tên · mốc +1′/+5′/+15′ lỗi 0 · `/api/ho-so-khach/cua` 404 → 401 · đồ thị import đo lại đúng (lượt đầu zsh không tách chữ)
   · commit 91a98e7 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260930-ve5.md
+- 30/09 · VE-VA1 → 🔎 CHỜ DEPLOY — ba lỗi «tên chưa khai» sống trên prod: Số liệu › Tổng quan không hiện số từ 25/09 (ô lỗi đổ oan cho bot) · tạo người dùng báo «nap is not defined» từ 15/09 · chuyển page giữa team không gửi được từ 17/09
+  tìm bằng quét no-undef 35 script trang (ESLint cài tạm, không thêm gói) · ca chạy thật R1 R2 T1 T2 (mã cũ đỏ đúng câu lỗi) · đảo-vá 4/4 · cổng va1.sh 7/7 · npm test 2.328 ca 0 đỏ · nợ mới N-NOUNDEF (lưới thường trực cần ESLint devDependency)
+  · commit 557fbd9 · nhật ký docs/thi-cong/nhat-ky/phieu-VE-VA1.md
