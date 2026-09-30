@@ -373,6 +373,9 @@ function veGanPage(d) {
 }
 
 async function chuyen() {
+  // VE-VA1 · 30/09: `tuKhoTam` từng chỉ khai trong `veGanPage()` ⇒ từ 17/09 (c7eabe1b) nút chuyển ném «tuKhoTam is not defined»
+  // TRƯỚC khi gửi. Tính lại từ ĐÚNG nguồn `veGanPage` dùng (nguồn đang xem). Ca: `va1-ten-chua-khai.test.mjs` T2.
+  const tuKhoTam = NGUON_PAGE === 'chua-phan';
   const ds = [...document.querySelectorAll('#dsPage input:checked')].map((c) => c.value);
   if (!ds.length) return;
   const oTeam = $('#teamDich');
@@ -420,7 +423,9 @@ async function napGanPage() {
   if (d) veGanPage(d);
 }
 
-(async function nap() {
+// VE-VA1 · 30/09: hàm KHAI TÊN rồi mới gọi — bản cũ là hàm tự chạy `(async function nap(){…})()`, tên `nap` không lộ ra ngoài
+// ⇒ từ 15/09 (53289117) «Tạo người dùng» xong gọi `await nap()` là ném lỗi, danh sách không tải lại. Ca: T1.
+async function nap() {
   // Nạp từng khối riêng: một khối hỏng thì ba khối kia vẫn hiện. Gộp `Promise.all` rồi để
   // một lỗi làm trắng cả trang là đúng thứ màn này sinh ra để chống.
   const khoi = [['tổng quan', napTongQuan, null], ['thành viên', napThanhVien, '#khoiThanhVien'],
@@ -431,7 +436,8 @@ async function napGanPage() {
       if (cho) $(cho).innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Xem cảnh báo đầu trang.' });
     }
   }
-})();
+}
+nap();
 </script>
 <script src="/chung/dieu-huong.js"></script>
 </body>

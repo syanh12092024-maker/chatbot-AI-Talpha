@@ -135,6 +135,9 @@ async function tai() {
   try {
     const d = await goi('/api/bao-cao');
     if (!d) return;
+    // VE6 · 30/09: `T` = ba thước máy chủ khai (`d.thuoc`). Từ 25/09 (89c847b) dòng dưới dùng `T` mà không khai ⇒ MỌI lượt
+    // tải thành công rơi vào ô lỗi «Chưa lấy được số từ tiến trình bot». Ca chạy thật: `ve6-bao-cao-chay.test.mjs` R1.
+    const T = d.thuoc;
 
     $('#bang-tin').innerHTML = '';
     $('#nguon-so').innerHTML = nguonSo({
