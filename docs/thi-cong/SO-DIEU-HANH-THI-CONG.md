@@ -1357,6 +1357,16 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
   - **N-VE2B-444** `kho-kich-ban.js#banCuaPage` câu `trong.noi` gõ cứng «444/514 page» (prod 30/09: 507/581) — xoá câu hoặc tính số.
   - **N-VE2B-DEM** viên «Còn điều kiện chặn» / «Đủ điều kiện» đếm 0 khi cửa kiểm đọc hỏng (viên «Chưa có lời bot riêng» đã null/«—»).
 
+- 30/09 · **NỢ THẤY KHI GHÉP PAGE ↔ THỊ TRƯỜNG ↔ SẢN PHẨM ↔ MARKETER** (người quyết 30/09: «match page, sản phẩm, marketer và thị
+  trường … giúp mình được k»; bảng duyệt: artifact «Bảng ghép page», đơn POS 90 ngày ở BigQuery, CHƯA ghi gì vào v3):
+  - **N-SOHIEU-CUOI** `src/pos/ten-goc.js#tachSoHieu` chỉ đọc số hiệu ĐẦU tên; POS có món ghi số ở CUỐI tên («Tummiva Gel - 176» ·
+    «Necklace box - 008» · «NESLEMY dentures - 105») ⇒ dựng danh mục gốc (VE8/LL13) những món này rơi vào «không số hiệu».
+  - **N-BQ-TENHANG** BigQuery `fact_order_items_dedup` trống `product_name` ở 42,6% dòng 90 ngày (và `shop_name` trống toàn bộ) —
+    tra `dim_variation_product` theo `variation_id` thì đủ (21.816/21.821). Báo cáo nào đọc thẳng `product_name` đang đếm thiếu.
+  - **N-SPTEST** 68 page chỉ có đơn ghi món «SP TEST» trong 90 ngày (321 đơn) — không suy được page bán gì; hỏi đội vận hành.
+  - **N-PAGE-NGOAI** 82 page có đơn 90 ngày nhưng KHÔNG có dòng `page` trong v3 — quét Pancake / gán team trước khi ghép.
+  - **N-DANHMUC-GOC** `san_pham_goc` prod = 0 dòng ⇒ chưa gắn page ↔ sản phẩm được; nhóm «chắc» cần 64 số hiệu. Nhà: VE8.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2765,3 +2775,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · VE2b → 🔎 CHỜ DEPLOY — Page gộp nốt theo lời người quyết: màn Kịch bản vào trang một page (Lời bot + nhập file Pancake · Lịch sử xem/chép/chạy lại; `/kich-ban` chuyển theo vai) · cột trái lọc bằng ĐÚNG bộ lọc «Tất cả page» (+ «Chưa có lời bot riêng») · «Tất cả page» vào thẳng danh sách, bấm page mang lọc, «← Tất cả page» về đúng chỗ · marketer vào mục Page bằng «Các page»
   ca chạy thật 17/17 (máy chủ thật + script thật hai màn trong vm) · thước ll3/ll1/dieu-huong/ll18/ve2/ve3 sửa có căn cứ · đảo-vá 20/20 · cổng ve2b.sh 14/14 · npm test 2.368 ca 0 đỏ · bò e2e 0 lỗi mới · nợ N-VE2B-LUAT/444/DEM (§9)
   · commit 4455431 · nhật ký docs/thi-cong/nhat-ky/phieu-VE2b.md
+- 30/09 · PHÁT HÀNH VE2b → ✅ GIỮ — prod `f7e620c → 7bb52b4`, 0 migration (27), restart CHỈ `aicloser-v3` (06:42:41); Page gộp nốt: danh sách vào thẳng · bấm page mang lọc, «← Tất cả page» · Kịch bản vào tab Lời bot + Lịch sử (`/kich-ban` chuyển theo vai) · marketer vào bằng «Các page»
+  cửa vào lượt 1 lộ một thước sót (`ll3.sh` ④ ⇒ 13 đỏ dây chuyền, sửa `11047f5`) · lượt 2: 42 xanh / 12 đỏ = đúng nợ cũ · npm test 2.368 ca 0 đỏ · mốc +1′/+5′/+15′ lỗi 0 · `/page` 302→401 · dấu mã mới 0→1 ×4
+  · commit 7bb52b4 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260930-ve2b.md
