@@ -1351,6 +1351,12 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
     đồ không phải đường lùi). Tầng kịch bản sản phẩm/nước GIỮ (CR mục 2d), không nằm trong nợ này.
   - **N-THUHOI** «Thử hỏi bot» (LL4) cần khoá model sống — nối vào H6.
 
+- 30/09 · **NỢ SAU VE2b** (`docs/thi-cong/nhat-ky/phieu-VE2b.md` §7):
+  - **N-VE2B-LUAT** thẻ «Luật chung · trả lời sẵn» đầu cột trái trang page trỏ `/bo-luat` — marketer không mở được (403); có từ VE2,
+    VE2b mở `/page` cho marketer nên nay thấy được. Sửa: trỏ theo vai (marketer ⇒ `/khoi-chung`).
+  - **N-VE2B-444** `kho-kich-ban.js#banCuaPage` câu `trong.noi` gõ cứng «444/514 page» (prod 30/09: 507/581) — xoá câu hoặc tính số.
+  - **N-VE2B-DEM** viên «Còn điều kiện chặn» / «Đủ điều kiện» đếm 0 khi cửa kiểm đọc hỏng (viên «Chưa có lời bot riêng» đã null/«—»).
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2756,3 +2762,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · PHÁT HÀNH VE6 (a·b·c) → ✅ GIỮ — prod `47968b8 → f7e620c`, 0 migration (27), restart CHỈ `aicloser-v3` (05:16:23) — `so-lieu.js` bot cũ cũng import nhưng chỉ THÊM một hàm chỉ v3 gọi; ba màn Số liệu theo bản vẽ 3a/3b/3c
   cửa vào npm test 2.350 ca 0 đỏ · cổng 41 xanh / 12 đỏ = đúng 12 nợ cũ (ve6a/6b/6c xanh, `ll3` xanh) · mốc +1′/+5′/+15′ lỗi 0 · hai dịch vụ không chạm y nguyên · dấu mã mới 0→1 ×4
   · commit f7e620c · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260930-ve6.md
+- 30/09 · VE2b → 🔎 CHỜ DEPLOY — Page gộp nốt theo lời người quyết: màn Kịch bản vào trang một page (Lời bot + nhập file Pancake · Lịch sử xem/chép/chạy lại; `/kich-ban` chuyển theo vai) · cột trái lọc bằng ĐÚNG bộ lọc «Tất cả page» (+ «Chưa có lời bot riêng») · «Tất cả page» vào thẳng danh sách, bấm page mang lọc, «← Tất cả page» về đúng chỗ · marketer vào mục Page bằng «Các page»
+  ca chạy thật 17/17 (máy chủ thật + script thật hai màn trong vm) · thước ll3/ll1/dieu-huong/ll18/ve2/ve3 sửa có căn cứ · đảo-vá 20/20 · cổng ve2b.sh 14/14 · npm test 2.368 ca 0 đỏ · bò e2e 0 lỗi mới · nợ N-VE2B-LUAT/444/DEM (§9)
+  · commit 4455431 · nhật ký docs/thi-cong/nhat-ky/phieu-VE2b.md
