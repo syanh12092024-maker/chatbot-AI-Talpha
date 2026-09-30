@@ -19,6 +19,16 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 30/09/2026 — vá ba lỗi «tên chưa khai» sống trên prod (VE-VA1)
+
+Không đổi lời bot, không đổi lược đồ, không thêm biến, không thêm gói. Chỉ hai tệp trang.
+
+- **Số liệu › Tổng quan** (`557fbd9`): từ 25/09 màn chưa hiện số lần nào — lượt tải thành công nào cũng rơi vào ô lỗi «Chưa lấy
+  được số từ tiến trình bot» (đổ oan cho bot). Nay hiện ba thước như thiết kế.
+- 🔴 **Cài đặt › Người và team** (`557fbd9`): tạo người dùng xong hết báo «nap is not defined», danh sách tải lại (từ 15/09 người
+  dùng vẫn được tạo nhưng màn báo lỗi). Nút **«Chuyển page đã chọn» / «Kéo page đã chọn về» gửi được** — từ 17/09 nút ném lỗi trước
+  khi gửi, chưa lượt chuyển page nào qua được màn.
+
 ### 30/09/2026 — Hộp thư và Tìm khách theo bản vẽ (VE5 · VE5b · CR-28-09c)
 
 Dựng lại NỘI DUNG Hộp thư (1a) và Tìm khách (1b). Không đổi chữ bot nói, không đổi lược đồ, không thêm biến, không thêm gói.
