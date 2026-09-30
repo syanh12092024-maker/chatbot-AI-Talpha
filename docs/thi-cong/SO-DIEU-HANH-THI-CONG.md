@@ -2753,3 +2753,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · VE6c → 🔎 CHỜ DEPLOY — Số liệu › Khách theo bản vẽ 3c: hội thoại CỦA TEAM theo giai đoạn × người giữ (hàm gom mới, CSDL v3) · rủi ro hoàn theo vai · rơi ở đâu; cụm Số liệu còn ba tab, Rủi ro hoàn mở bằng «Xem đủ →»
   ca Postgres H1–H3 + chạy thật K1–K5 · thước ll5/ll18/dieu-huong/ll1 sửa có căn cứ · đảo-vá 10/10 (M6 lượt đầu sống ⇒ K5) · cổng ve6c.sh 11/11 · npm test 2.350 ca 0 đỏ · bò 51 màn 0 lỗi mới
   · commit 0405e8b · nhật ký docs/thi-cong/nhat-ky/phieu-VE6c.md
+- 30/09 · PHÁT HÀNH VE6 (a·b·c) → ✅ GIỮ — prod `47968b8 → f7e620c`, 0 migration (27), restart CHỈ `aicloser-v3` (05:16:23) — `so-lieu.js` bot cũ cũng import nhưng chỉ THÊM một hàm chỉ v3 gọi; ba màn Số liệu theo bản vẽ 3a/3b/3c
+  cửa vào npm test 2.350 ca 0 đỏ · cổng 41 xanh / 12 đỏ = đúng 12 nợ cũ (ve6a/6b/6c xanh, `ll3` xanh) · mốc +1′/+5′/+15′ lỗi 0 · hai dịch vụ không chạm y nguyên · dấu mã mới 0→1 ×4
+  · commit f7e620c · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260930-ve6.md

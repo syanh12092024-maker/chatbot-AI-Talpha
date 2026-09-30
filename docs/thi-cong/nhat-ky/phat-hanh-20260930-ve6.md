@@ -1,6 +1,6 @@
 # MỞ VAN — VE6 (a · b · c): ba màn Số liệu theo bản vẽ (CR-28-09c)
 
-> **TRẠNG THÁI: ĐANG MỞ — người quyết gật 30/09: «ok xong thì deploy luôn»** (trả lời «đề xuất deploy cả ba màn Số liệu một lượt …
+> **TRẠNG THÁI: XONG · GIỮ (30/09 05:32 prod) — người quyết gật 30/09: «ok xong thì deploy luôn»** (trả lời «đề xuất deploy cả ba màn Số liệu một lượt …
 > Gõ «deploy» là mình làm sau khi kiểm xong»). Phiếu: `phieu-VE6a.md` · `phieu-VE6b.md` · `phieu-VE6c.md`.
 > Lượt trước: `phat-hanh-20260930-va1.md` (prod `47968b8`).
 
@@ -49,3 +49,30 @@ Bậc ② — prod, đường nội bộ. Ba màn Số liệu đổi cho quản 
 cd /opt/aicloser && git checkout -f -B vao-ui-v3-17-09 47968b8 && systemctl restart aicloser-v3    # < 1 phút
 ```
 Mất dữ liệu: không — 0 cửa ghi mới, 0 migration. Lùi xong `so-lieu.js` trên đĩa về bản cũ; bot cũ/worker vẫn chạy bản đã nạp (cùng hành vi).
+
+## 8 · Lệnh đã gõ
+
+Giờ prod (CEST), 30/09:
+1. đo lại ⑦ lúc 05:15:53 — y nguyên lần đo 05:00:36 (`47968b8` · 0 sửa tại chỗ · lỗi 1 giờ 0/0/0 · `/health` 129)
+2. commit giấy `f7e620c` · đẩy nhánh `47968b8..f7e620c`
+3. mốc lùi `/var/backups/aicloser/truoc-ve6-20260930T031613Z/commit.txt` = `47968b8`
+4. prod `checkout -f -B … origin/vao-ui-v3-17-09` → `f7e620c` · 0 tệp theo dõi sửa tại chỗ · migrate **áp mới 0 · tổng 27**
+5. `systemctl restart aicloser-v3` lúc **05:16:23** — chỉ dịch vụ này
+
+## 9 · Số đo
+
+**+1′ (05:17:54) · +5′ (05:22:02) · +15′ (05:32:08), prod:** ba dịch vụ active · `Started` 0 · 1 · 0 ở cả ba mốc · lỗi mới
+**0/0/0** · `ActiveEnterTimestamp` hai dịch vụ không chạm y nguyên (`aicloser` 28/09 11:25:42 · worker 28/09 11:22:22) · `/health` 129 ·
+`/api/bao-cao` · `/api/chi-phi` · `/api/nguon-khach` · `/nguon-khach` 401 · đối chứng 404 · trên đĩa: `veChiSo` · `taiTungTin` · `vePhanBo` ·
+`phanBoHoiThoai` đều **0 → 1**.
+
+Đo thêm (chỉ đọc, 05:2x, phục vụ phiếu kế VE2b): thành viên team **3, cả 3 quản trị** — 0 marketer · 0 quản lý · 0 duyệt kịch bản;
+`kich_ban` 75 bản · **74/581** page có bản đang chạy.
+
+## 10 · Kết · nợ · ai gật
+
+- Kết: **GIỮ** (prod, 30/09 05:32). Mốc +1 ngày: người quyết mở ba màn Số liệu — Tổng quan (bốn ô, hai phễu, bảng theo page) ·
+  Chi phí AI (token mỗi lượt + trúng cache, tab Từng tin) · Khách (hội thoại của team theo giai đoạn × người giữ).
+- Nợ: không phát sinh mới. `ll3` xanh lần này (N-CONGCHAP vẫn chờ lần đỏ kế để đọc output). Bot cũ và worker sẽ nạp `so-lieu.js`
+  mới ở lần restart kế của chúng — chỉ thêm một hàm không ai gọi.
+- Người gật: người quyết, 30/09 — «ok xong thì deploy luôn».
