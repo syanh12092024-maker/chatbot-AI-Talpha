@@ -19,6 +19,20 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 30/09/2026 — Hộp thư và Tìm khách theo bản vẽ (VE5 · VE5b · CR-28-09c)
+
+Dựng lại NỘI DUNG Hộp thư (1a) và Tìm khách (1b). Không đổi chữ bot nói, không đổi lược đồ, không thêm biến, không thêm gói.
+
+- **Hộp thư** (`3ceceeb`): ba tab «Cần bạn · Đơn chờ · Bot đang xử» — «Cần bạn» gồm cả đơn chờ duyệt (một hàng như hội thoại);
+  «Tất cả» thành lối «Mọi hội thoại gần đây». 🔴 **Thẻ đơn ra cột giữa**, dưới tin nhắn: Hàng · Tiền · Giao tới · cảnh báo hoàn ·
+  nghi trùng; ba nút Duyệt → Chờ in · Sửa đơn · Từ chối mở ĐÚNG form duyệt cũ (luật duyệt không đổi: ô «đã kiểm tra», lưu trước,
+  phiên bản). Van tạo đơn POS đóng (như prod) ⇒ thẻ nói trước và khoá nút duyệt. Nhận/đóng việc xuống thanh cuối (menu mở
+  lên) — trên máy tính bảng không còn khuất trong ngăn phủ. Cột phải: Khách · Bot đã làm gì · Page này bán gì.
+- **Tìm khách** (`f9ecbe2`, đường giữ `/ho-so-khach`): tra theo số ⇒ hồ sơ gộp kênh (Messenger · Trang bán hàng (Ladi) ·
+  WhatsApp «chưa nối») + mọi đơn cả hai luồng; mở thẳng hội thoại trong Hộp thư. 🔴 **Quyền: trang mở thêm cho sale** (§10 bổ
+  sung — Hộp thư gồm tìm khách); cửa danh sách cũ (cả bảng khách) GIỮ quản trị · quản lý; ô tìm trống ⇒ tổng quan cũ cho quản
+  trị · quản lý. Không vai nào mất việc. Cột «Hàng» nói thật: dữ liệu đơn chưa lưu món.
+
 ### 29/09/2026 — màn thôi hứa «bot dùng ngay» khi bot chưa đọc (VE1b · VE4b · CR-28-09c)
 
 Đo prod: bot đang trả lời khách còn ghép lời bản cũ (`V3_RAP_PROMPT_BAT` vắng) — KHÔNG đọc kiến thức sản phẩm (tab
