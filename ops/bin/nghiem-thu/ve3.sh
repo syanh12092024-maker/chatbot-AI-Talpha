@@ -14,6 +14,6 @@ out=$(chay v3/test/b/ve3-page-ds.test.mjs); p=$(so "$out" pass); f=$(so "$out" f
 for t in v3/test/b/giao-dien-kho-hep.test.mjs v3/test/b/page-bot-thuoc-tinh.test.mjs v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs v3/test/b/ll18-khung.test.mjs; do
   o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "②thước" $? "$t fail=$ff"
 done
-bash ops/bin/nghiem-thu/ve2.sh >/dev/null 2>&1; ket "③cổng-trước" $? "ve2.sh (kèm ve1 · ll18)"
+_o=$(bash ops/bin/nghiem-thu/ve2.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "③cổng-trước" $_r "ve2.sh (kèm ve1 · ll18)"
 echo "== ĐỎ $do / XANH $xanh"
 [ "$do" -eq 0 ]

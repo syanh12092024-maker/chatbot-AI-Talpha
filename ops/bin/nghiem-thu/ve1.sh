@@ -19,6 +19,6 @@ out=$(chay v3/test/b/ll13-san-pham.test.mjs); p=$(so "$out" pass); f=$(so "$out"
 for t in v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs test/ll13-san-pham-goc.test.mjs; do
   o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
 done
-bash ops/bin/nghiem-thu/ll18.sh >/dev/null 2>&1; ket "④cổng-trước" $? "ll18.sh"
+_o=$(bash ops/bin/nghiem-thu/ll18.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "④cổng-trước" $_r "ll18.sh"
 echo "== ĐỎ $do / XANH $xanh"
 [ "$do" -eq 0 ]

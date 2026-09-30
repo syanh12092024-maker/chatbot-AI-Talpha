@@ -22,6 +22,6 @@ done
 # Không còn trang nào trỏ thẳng sang màn Kịch bản đã gộp — trừ đường chuyển hướng khai ở bảng (liên kết cũ vẫn chạy).
 n=$(grep -rnE "href=[\"']/kich-ban[\"'?]|href: ?[\"'\`]/kich-ban" v3/src/ui --include=*.html | grep -v "hieu-qua/trang/hieu-qua.html" | wc -l | tr -d ' ')
 [ "$n" -eq 0 ]; ket "④lối-cũ" $? "trang trỏ /kich-ban ngoài màn thử nghiệm So hai bản = $n (đòi 0)"
-bash ops/bin/nghiem-thu/ve6c.sh >/dev/null 2>&1; ket "⑤cổng-trước" $? "ve6c.sh (kèm ve6b · ve6a · va1)"
+_o=$(bash ops/bin/nghiem-thu/ve6c.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "⑤cổng-trước" $_r "ve6c.sh (kèm ve6b · ve6a · va1)"
 echo "== ĐỎ $do / XANH $xanh"
 [ "$do" -eq 0 ]

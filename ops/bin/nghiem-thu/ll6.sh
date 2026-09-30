@@ -11,6 +11,6 @@ so() { echo "$1" | grep -oE "^ℹ $2 [0-9]+" | grep -oE '[0-9]+'; }
 out=$(chay v3/test/b/ll6-cai-dat.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
 [ "$f" -eq 0 ] && [ "$p" -ge 3 ]; ket "①bộ-ca-LL6" $? "pass=$p fail=$f (đòi ≥3: sáu tab · bảng đường dùng khớp mã · trang vẽ trạng thái)"
 for t in dieu-huong ll1-nam-dich ll3-cum ll5-so-lieu he-kieu; do o=$(chay v3/test/b/$t.test.mjs); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "②thước" $? "$t fail=$ff"; done
-bash ops/bin/nghiem-thu/ll5.sh >/dev/null 2>&1; ket "③cổng-trước" $? "ll5.sh (kèm ll3 · ll2 · ll1 · UI-HT)"
+_o=$(bash ops/bin/nghiem-thu/ll5.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "③cổng-trước" $_r "ll5.sh (kèm ll3 · ll2 · ll1 · UI-HT)"
 echo "== ĐỎ $do / XANH $xanh"
 [ "$do" -eq 0 ]

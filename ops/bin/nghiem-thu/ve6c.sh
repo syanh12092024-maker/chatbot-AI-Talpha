@@ -17,6 +17,6 @@ for t in v3/test/b/nguon-khach.test.mjs v3/test/b/rui-ro-hoan.test.mjs v3/test/b
          v3/test/b/ll1-nam-dich.test.mjs v3/test/b/dieu-huong.test.mjs v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs; do
   o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
 done
-bash ops/bin/nghiem-thu/ve6b.sh >/dev/null 2>&1; ket "④cổng-trước" $? "ve6b.sh (kèm ve6a · va1)"
+_o=$(bash ops/bin/nghiem-thu/ve6b.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "④cổng-trước" $_r "ve6b.sh (kèm ve6a · va1)"
 echo "== ĐỎ $do / XANH $xanh"
 [ "$do" -eq 0 ]
