@@ -1367,6 +1367,10 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
   - **N-PAGE-NGOAI** 82 page có đơn 90 ngày nhưng KHÔNG có dòng `page` trong v3 — quét Pancake / gán team trước khi ghép.
   - **N-DANHMUC-GOC** `san_pham_goc` prod = 0 dòng ⇒ chưa gắn page ↔ sản phẩm được; nhóm «chắc» cần 64 số hiệu. Nhà: VE8.
 
+- 30/09 · **NỢ SAU VE7a** (`docs/thi-cong/nhat-ky/phieu-VE7a.md` §7):
+  - **N-L1M1-SONG** cổng `l1-m1.sh` ④ đọc đơn THẬT «Chờ in» shop POS Taiwan; POS hết đơn trạng thái đó (30/09 ~07:10 CEST: 0) ⇒ cổng
+    TRƯỢT dù mã đúng. Sửa: POS trả 0 ⇒ HOÃN, không TRƯỢT.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2778,3 +2782,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · PHÁT HÀNH VE2b → ✅ GIỮ — prod `f7e620c → 7bb52b4`, 0 migration (27), restart CHỈ `aicloser-v3` (06:42:41); Page gộp nốt: danh sách vào thẳng · bấm page mang lọc, «← Tất cả page» · Kịch bản vào tab Lời bot + Lịch sử (`/kich-ban` chuyển theo vai) · marketer vào bằng «Các page»
   cửa vào lượt 1 lộ một thước sót (`ll3.sh` ④ ⇒ 13 đỏ dây chuyền, sửa `11047f5`) · lượt 2: 42 xanh / 12 đỏ = đúng nợ cũ · npm test 2.368 ca 0 đỏ · mốc +1′/+5′/+15′ lỗi 0 · `/page` 302→401 · dấu mã mới 0→1 ×4
   · commit 7bb52b4 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260930-ve2b.md
+- 30/09 · VE7a → 🔎 CHỜ DEPLOY — Cài đặt theo bản vẽ 4: thứ tự Bắt đầu · Hệ còn sống · Kết nối · Model · Người và team · Nhật ký; «Hệ còn sống» nhận khối «Việc vận hành» (tin cần đối chiếu · tin bị lọc 24 giờ · diễn tập, số thật theo vai); Vận hành rời thanh tab
+  cửa đọc mới /api/van-hanh/tom-tat · ca Postgres T1–T2 + chạy thật C1–C4 · đảo-vá 10/10 · cổng ve7a.sh 10/10 · npm test 2.375 ca 0 đỏ · ĐỦ cổng: 12 nợ cũ + l1-m1 (POS Taiwan 0 đơn «Chờ in», nợ N-L1M1-SONG)
+  · commit 1c1ab28 · nhật ký docs/thi-cong/nhat-ky/phieu-VE7a.md
