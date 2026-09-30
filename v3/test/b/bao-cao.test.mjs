@@ -83,8 +83,15 @@ test('①c · TRANG xếp ba thước theo chiều DỌC — xếp ngang là m�
   const html = readFileSync(TRANG, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
   assert.match(html, /id="thuoc"[^>]*class="item-list"|class="item-list"[^>]*id="thuoc"/,
     'ba thước phải nằm trong danh sách một cột `.item-list`');
-  assert.ok(!/metric-row/.test(html),
-    'ba thước xếp thành cột ngang cạnh nhau trông y như ba phần của một tổng');
+  // VE6a · 30/09 (bản vẽ 3a): thước cũ cấm chữ `metric-row` trên CẢ TRANG — rộng hơn luật (chú thích trên: «KHÔNG được dùng
+  // `.metric-row` … cho CHÚNG»). Bản vẽ thêm một hàng bốn ô số KHÁC (chi phí/đơn · tin/đơn · đơn theo luồng · BUY NOW) ⇒ thước đo
+  // ĐÚNG phạm vi luật: ba thước không nằm trong hàng ngang nào, và hàng ô số không mang nhãn của ba thước.
+  assert.ok(!/id="thuoc"[^>]*metric-row|metric-row[^>]*id="thuoc"/.test(html), 'ba thước bị đặt vào hàng chỉ số ngang');
+  const hangSo = (html.match(/function veChiSo\(\) \{[\s\S]*?\n\}/) || [''])[0];
+  assert.ok(hangSo, 'không thấy hàng ô số của bản vẽ — thước đang đo nhầm chỗ');
+  for (const k of ['POS_QUY_CHO_AI', 'BOT_TU_TAO', 'HOI_THOAI_CO_DON', 'posQuyChoAi', 'botTuTao', 'hoiThoaiCoDon']) {
+    assert.ok(!hangSo.includes(k), `hàng ô số ngang mang thước «${k}» — ba thước xếp ngang trông y như ba phần của một tổng`);
+  }
 
   const kieu = readFileSync(new URL('../../src/ui/chung/kieu.css', import.meta.url), 'utf8');
   const m = kieu.match(/\.item-list\s*\{([^}]*)\}/);

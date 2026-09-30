@@ -54,9 +54,13 @@ async function chayTrang(tra) {
     statusBadge: (_m, x = {}) => `<b>${x.label || ''}</b>`, button: (t) => `<button>${t}</button>`,
     alert: (x) => `<div class="alert">${x.title} · ${x.body || ''} · ${(x.detail || []).join(' ')}</div>`,
     emptyState: (x) => `<div class="empty">${x.title}</div>`, nguonSo: () => '<div class="nguon"></div>',
+    metricRow: (ds) => `<div class="metric-row">${ds.map((m) => `${m.label}: ${m.value}`).join(' | ')}</div>`,
   };
+  // Theo ĐƯỜNG: `/api/bao-cao` trả payload của ca; cửa phụ (VE6a: chi phí · nguồn khách · điều hướng) trả lỗi — khối phụ phải tự nói
+  // lỗi của nó, không kéo sập khối chính.
   const ctx = vm.createContext({ window: { UI }, document, location: { pathname: '/bao-cao', href: '' }, console,
-    fetch: async () => ({ status: 200, ok: true, json: async () => tra }) });
+    fetch: async (u) => (String(u) === '/api/bao-cao' ? { status: 200, ok: true, json: async () => tra }
+      : { status: 503, ok: false, json: async () => ({ ok: false, thongDiep: 'cửa phụ không có trong ca' }) }) });
   vm.runInContext(SCRIPT, ctx);
   await new Promise((r) => setTimeout(r, 30));
   return o;

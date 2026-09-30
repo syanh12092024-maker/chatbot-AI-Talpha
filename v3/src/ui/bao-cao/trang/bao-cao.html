@@ -24,12 +24,19 @@
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
+  <!-- VE6a · 30/09 (bản vẽ 3a): KHÔNG vẽ chip «Hôm nay · 7 ngày · 30 ngày» và bộ lọc page/marketer — chưa cửa đọc nào nhận ngày
+       hay bộ lọc; chip không làm gì là nói dối. Mỗi số tự ghi khoảng đo của nó. -->
+  <p class="field-hint duoi-4">Mỗi số ghi khoảng đo của nó — các cửa đọc chưa nhận ngày, nên chưa chọn được «hôm nay · 7 ngày · 30 ngày».</p>
+
+  <section aria-label="Chỉ số chính" class="duoi-5"><div id="chiSo"><span class="skeleton"></span></div></section>
 
   <section class="section" aria-labelledby="tieu-mess">
     <div class="section-header"><div>
       <h2 id="tieu-mess">Luồng Messenger</h2>
-      <div class="section-desc">Khách nhắn trước, bot trả lời, rồi mới thành đơn.</div>
+      <div class="section-desc">Quảng cáo → inbox → bot chốt → sale duyệt → Chờ in. Khách nhắn trước, bot trả lời, rồi mới thành đơn.</div>
     </div></div>
+    <ol class="pheu" id="pheuMess" aria-label="Các chặng luồng Messenger"></ol>
+    <h3 class="nhan-hoa tren-5 duoi-2">Ba thước đơn Messenger — đo ba thứ khác nhau, KHÔNG cộng</h3>
     <ul class="item-list" id="thuoc"><li class="item"><div><span class="skeleton"></span></div></li></ul>
     <div id="canh" class="tren-3"></div>
   </section>
@@ -37,9 +44,10 @@
   <section class="section" aria-labelledby="tieu-tbh">
     <div class="section-header"><div>
       <h2 id="tieu-tbh">Luồng trang bán hàng</h2>
-      <div class="section-desc">Đơn có trước, rồi mới hỏi khách — thước khác hẳn luồng Messenger.</div>
+      <div class="section-desc">Quảng cáo → form → đơn vào POS ngay → bot xác nhận WhatsApp → Chờ in. Đơn có trước, rồi mới hỏi khách — thước khác hẳn luồng Messenger.</div>
     </div></div>
-    <div id="tbh"></div>
+    <ol class="pheu" id="pheuTrang" aria-label="Các chặng luồng trang bán hàng"></ol>
+    <div id="tbh" class="tren-4"></div>
   </section>
 
   <section class="section table-wrap" aria-labelledby="tieu-page">
@@ -47,13 +55,21 @@
       <span class="table-count" id="hSo"></span></div>
     <div id="bang"></div>
   </section>
+
+  <section class="section" aria-labelledby="tieu-hoan" id="khoiRuiRo" hidden>
+    <div class="section-header"><div>
+      <h2 id="tieu-hoan">Khách theo rủi ro hoàn</h2>
+      <div class="section-desc">Sale thấy tầng này ngay lúc duyệt đơn.</div>
+    </div></div>
+    <div id="ruiRo"></div>
+  </section>
   <section class="section" aria-label="Nguồn của các con số">
     <div id="nguon-so"></div>
   </section>
 </main>
 
 <script>
-const { esc, text, statusBadge, button, alert: canhBao, emptyState, nguonSo, formatNumber } = window.UI;
+const { esc, text, statusBadge, button, alert: canhBao, emptyState, nguonSo, metricRow, formatNumber } = window.UI;
 const $ = (s) => document.querySelector(s);
 const d0 = (n) => (n == null ? '—' : formatNumber(n));
 
@@ -90,25 +106,57 @@ function veCanh(m) {
   $('#canh').innerHTML = kh.join('');
 }
 
-function veBang(d) {
-  const ds = d.messenger ? d.messenger.page.filter((p) => p.posQuyChoAi > 0 || p.hoiThoaiCoDon > 0) : [];
-  $('#hSo').textContent = `${formatNumber(ds.length)} page có đơn · xếp theo đơn POS quy cho AI`;
+/* VE6a · bản vẽ 3a: bảng theo page ghép «AI / đơn» của màn Chi phí (cùng cửa `/api/chi-phi`) — xếp đắt nhất lên đầu khi đo được.
+   «Chốt» và «Hoàn» theo page: CHƯA CÓ NGUỒN (không cửa nào tính theo page) — cột giữ để đúng bản vẽ, ô nói «—», chú thích nói vì sao. */
+function veBang(d, cp) {
+  const theoPage = new Map();
+  for (const p of (d.messenger ? d.messenger.page : [])) {
+    if (p.posQuyChoAi > 0 || p.hoiThoaiCoDon > 0) theoPage.set(String(p.pageId), { ...p });
+  }
+  const coCp = !!(cp && Array.isArray(cp.page));
+  if (coCp) {
+    for (const x of cp.page) {
+      if (!(x.soLuot > 0)) continue;
+      const k = String(x.pageId);
+      theoPage.set(k, { pageId: k, ten: x.ten, marketer: x.marketer, posQuyChoAi: null, hoiThoaiCoDon: null, ...(theoPage.get(k) || {}),
+        vndMoiDon: x.vndMoiDon, soLuotAi: x.soLuot, dotTien: x.dotTienKhongRaDon });
+    }
+  }
+  const ds = [...theoPage.values()].sort(coCp
+    ? (a, b) => (b.vndMoiDon ?? -1) - (a.vndMoiDon ?? -1) || (b.posQuyChoAi ?? 0) - (a.posQuyChoAi ?? 0)
+    : (a, b) => (b.posQuyChoAi ?? 0) - (a.posQuyChoAi ?? 0));
+  $('#hSo').textContent = `${formatNumber(ds.length)} page · ` + (coCp ? 'xếp theo chi phí AI mỗi đơn, đắt nhất lên đầu' : 'xếp theo đơn POS quy cho AI');
   if (!ds.length) {
     $('#bang').innerHTML = emptyState({ icon: 'inbox', title: d.trong ? d.trong.noi : 'Chưa page nào có đơn',
       body: d.trong && d.trong.diTiep ? d.trong.diTiep : '' });
     return;
   }
+  const chuaCo = '<span class="text-muted" title="Chưa có nguồn theo page">—</span>';
   $('#bang').innerHTML = `<table class="data-table"><thead><tr>
-      <th scope="col">Page</th><th scope="col" class="num">Đơn POS quy cho AI</th>
-      <th scope="col" class="num">Hội thoại có đơn</th><th scope="col">Marketer</th>
+      <th scope="col">Page</th><th scope="col">Marketer</th><th scope="col" class="num">Đơn POS quy cho AI</th>
+      <th scope="col" class="num">Hội thoại có đơn</th><th scope="col" class="num">Chốt</th>
+      <th scope="col" class="num">AI / đơn</th><th scope="col" class="num">Hoàn</th>
     </tr></thead><tbody>${ds.map((p) => `
     <tr>
-      <td><div class="page-identity-name">${esc(p.ten)}</div>
+      <td><div class="page-identity-name">${esc(p.ten || p.pageId)}</div>
         <div class="page-identity-sub">${esc(p.pageId)}${p.soCu ? ' · <span class="meta">số lần quét trước</span>' : ''}</div></td>
+      <td>${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
       <td class="num manh">${d0(p.posQuyChoAi)}</td>
       <td class="num">${d0(p.hoiThoaiCoDon)}</td>
-      <td>${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
-    </tr>`).join('')}</tbody></table>`;
+      <td class="num">${chuaCo}</td>
+      <td class="num">${!coCp ? chuaCo : p.vndMoiDon == null ? (p.dotTien ? statusBadge('needs_attention', { label: 'Tốn tiền, 0 đơn' }) : chuaCo) : d0(p.vndMoiDon) + ' đ'}</td>
+      <td class="num">${chuaCo}</td>
+    </tr>`).join('')}</tbody></table>
+    <p class="field-hint tren-3">«Chốt» và «Hoàn» theo page: chưa có nguồn — chưa cửa đọc nào tính hai số này theo page.${coCp ? ` «AI / đơn»: ${esc(cp.khoang ? cp.khoang.chu : '')}, sổ của tiến trình bot.` : ' «AI / đơn»: chưa đọc được sổ chi phí.'}</p>`;
+}
+
+/* VE6a · phễu (bản vẽ 3a): mỗi chặng MỘT số khi có nguồn, «chưa có nguồn» khi không. KHÔNG tính tỉ lệ rơi giữa chặng — các số đến từ
+   nguồn và khoảng đo khác nhau (luật ②a của màn Nguồn khách). */
+function vePheu(noi, buoc) {
+  $(noi).innerHTML = buoc.map((b) => `<li class="pheu-buoc"${b.v == null ? ' data-muted' : ''}>
+    <span class="pheu-ten">${esc(b.ten)}</span>
+    <span class="pheu-so">${b.v == null ? '—' : esc(typeof b.v === 'number' ? formatNumber(b.v) : b.v)}</span>
+    <span class="pheu-ghi">${esc(b.ghi || (b.v == null ? 'chưa có nguồn' : ''))}</span></li>`).join('');
 }
 
 function veTrangBanHang(t) {
@@ -138,6 +186,9 @@ async function tai() {
     // VE6 · 30/09: `T` = ba thước máy chủ khai (`d.thuoc`). Từ 25/09 (89c847b) dòng dưới dùng `T` mà không khai ⇒ MỌI lượt
     // tải thành công rơi vào ô lỗi «Chưa lấy được số từ tiến trình bot». Ca chạy thật: `ve6-bao-cao-chay.test.mjs` R1.
     const T = d.thuoc;
+    // VE6a: nhớ payload + vẽ phễu NGAY — cả khi luồng Messenger chưa đo được (nhánh thoát sớm dưới), luồng trang vẫn có số.
+    BAO_CAO = d;
+    vePheuMess(d);
 
     $('#bang-tin').innerHTML = '';
     $('#nguon-so').innerHTML = nguonSo({
@@ -165,7 +216,8 @@ async function tai() {
     }
     veThuoc(d.messenger, d.thuoc);
     veCanh(d.messenger);
-    veBang(d);
+    veBang(d, null);
+    veChiSo();
   } catch (e) {
     $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được báo cáo',
       body: 'Chưa lấy được số từ tiến trình bot. Nếu lỗi còn lặp lại, gửi dòng chi tiết bên dưới cho người quản trị hệ thống.',
@@ -175,7 +227,78 @@ async function tai() {
   }
 }
 
-tai();
+/* ═══ VE6a · khối phụ (bản vẽ 3a): mỗi khối đọc CỬA RIÊNG và tự nói lỗi — một khối hỏng không làm trắng màn ═══ */
+let BAO_CAO = null, CHI_PHI = null, NGUON = null;
+async function thu(u) { try { return await goi(u); } catch (e) { return { loi: e.message }; } }
+
+function vePheuMess(d) {
+  const m = d.messenger || {};
+  vePheu('#pheuMess', [
+    { ten: 'Hội thoại mới', v: null }, { ten: 'Bot tư vấn', v: null },
+    { ten: 'Bot chốt đơn', v: m.botTuTao ?? null, ghi: m.botTuTao == null ? 'chưa đọc được sổ đếm' : 'sổ đếm của bot' },
+    { ten: 'Sale duyệt', v: null }, { ten: 'Giao thành công', v: null },
+  ]);
+  const t = d.trangBanHang || {};
+  const cr = NGUON && !NGUON.loi ? NGUON.choRoi : null;
+  vePheu('#pheuTrang', [
+    { ten: 'Bấm BUY NOW', v: t.coNguon ? t.soDon : null, ghi: t.coNguon ? (d.haiLuong && d.haiLuong.co && d.haiLuong.khoang ? khoangChu(d.haiLuong.khoang) : 'đơn nguồn trang bán hàng') : '' },
+    { ten: 'Gửi WhatsApp', v: cr && cr.doDuoc ? cr.soDonTrang - cr.soKhongGui : null, ghi: cr && !cr.doDuoc ? 'luồng gửi WhatsApp chưa chạy' : '' },
+    { ten: 'Khách xác nhận', v: null }, { ten: 'Sang Chờ in', v: null }, { ten: 'Sale gọi lại cứu được', v: null },
+  ]);
+}
+
+/** Nhãn khoảng của cửa hai luồng. Cửa trả `{tu, den}`; `den: null` = khoảng MỞ «tới nay» (`so-lieu.js#khoang`: chặn trên bằng chính
+    đồng hồ CSDL) — bản nháp đầu đòi đủ hai đầu nên in «trong khoảng đo» cho dữ liệu thật. */
+function khoangChu(k) {
+  if (typeof k === 'string') return k;
+  if (k && k.tu) return `${new Date(k.tu).toLocaleDateString('vi-VN')} – ${k.den ? new Date(k.den).toLocaleDateString('vi-VN') : 'nay'}`;
+  return k && k.chu ? k.chu : 'trong khoảng đo';
+}
+
+/* Bốn ô số (bản vẽ 3a). KHÔNG chứa ba thước của luồng Messenger — ba thước đứng DỌC ở `#thuoc` (luật ①c). */
+function veChiSo() {
+  const t = CHI_PHI && !CHI_PHI.loi ? CHI_PHI.tong : null;
+  const k = CHI_PHI && !CHI_PHI.loi && CHI_PHI.khoang ? CHI_PHI.khoang.chu : '';
+  const hl = BAO_CAO && BAO_CAO.haiLuong && BAO_CAO.haiLuong.co ? BAO_CAO.haiLuong : null;
+  const cr = NGUON && !NGUON.loi ? NGUON.choRoi : null;
+  $('#chiSo').innerHTML = metricRow([
+    { label: 'Chi phí AI mỗi đơn', value: t && t.vndMoiDon != null ? `${formatNumber(t.vndMoiDon)} đ` : '—',
+      hint: t ? `${k} · sổ bot cũ · % doanh thu: chưa có nguồn` : (CHI_PHI && CHI_PHI.loi ? 'chưa đọc được sổ chi phí' : 'đang đọc…') },
+    { label: 'Tin AI để ra một đơn', value: t && t.tinMoiDon != null ? t.tinMoiDon : '—',
+      hint: t ? `${t.vndMoiTin != null ? formatNumber(t.vndMoiTin) + ' đ mỗi tin · ' : ''}${formatNumber(t.soLuot)} tin → ${formatNumber(t.soDon)} đơn` : '' },
+    { label: 'Đơn theo luồng — không gộp', value: hl ? `${formatNumber(hl.messenger.soDon)} · ${formatNumber(hl.trangBanHang.soDon)}` : '—',
+      hint: hl ? `Messenger · trang bán hàng · ${khoangChu(hl.khoang)}` : 'chưa nối cửa hai luồng' },
+    { label: 'BUY NOW mà không gửi WhatsApp', value: cr && cr.doDuoc && cr.tiLe != null ? `${(cr.tiLe * 100).toFixed(1).replace('.', ',')}%` : '—',
+      hint: cr && !cr.doDuoc ? 'chưa đo được · 37,4% là số cũ trong tài liệu — luồng WhatsApp chưa chạy' : (cr ? `${formatNumber(cr.soKhongGui)}/${formatNumber(cr.soDonTrang)} đơn` : '') },
+  ]);
+}
+
+async function taiPhu() {
+  [CHI_PHI, NGUON] = await Promise.all([thu('/api/chi-phi'), thu('/api/nguon-khach')]);
+  veChiSo();
+  if (BAO_CAO) { vePheuMess(BAO_CAO); veBang(BAO_CAO, CHI_PHI && !CHI_PHI.loi ? CHI_PHI : null); }
+}
+
+/* Rủi ro hoàn: cửa `/api/rui-ro-hoan` chỉ quản trị · quản lý. Hỏi menu (tính từ CÙNG hằng vai của màn Rủi ro hoàn) trước — vai
+   không vào được thì KHÔNG gọi rồi ăn 403, cũng không vẽ khối. */
+const TANG_HIEN = [['rui_ro_cao', 'Hay hoàn · ≥65%', 'blocked'], ['canh_bao', 'Cần theo dõi · 30–65%', 'needs_attention'],
+  ['tot_binh_thuong', 'Mua tốt · bình thường', 'ready'], ['chua_du_don', 'Chưa đủ đơn để xếp', 'unknown']];
+async function taiRuiRo() {
+  const dh = await thu('/api/dieu-huong');
+  const duoc = !dh.loi && (dh.nhom || []).some((n) => (n.man || []).some((m) => m.duong === '/rui-ro-hoan'));
+  if (!duoc) return;
+  $('#khoiRuiRo').hidden = false;
+  const r = await thu('/api/rui-ro-hoan');
+  if (r.loi) { $('#ruiRo').innerHTML = canhBao({ level: 'warning', title: 'Chưa đọc được rủi ro hoàn', body: r.loi }); return; }
+  const soCua = (ma) => (r.theoTang || []).filter((t) => (ma === 'tot_binh_thuong' ? ['tot', 'binh_thuong'] : [ma]).includes(t.ma))
+    .reduce((a, t) => a + (t.soKhach || 0), 0);
+  $('#ruiRo').innerHTML = `<ol class="pheu" data-kieu="o">${TANG_HIEN.map(([ma, ten, mau]) => `<li class="pheu-buoc">
+      <span class="pheu-ten">${statusBadge(mau, { label: ten })}</span><span class="pheu-so">${formatNumber(soCua(ma))}</span></li>`).join('')}</ol>
+    <p class="field-hint tren-3">Tầng chấm từ các đơn đã kết của từng khách${r.tuoi && r.tuoi.chamLuc ? ' — chấm lúc ' + esc(new Date(r.tuoi.chamLuc).toLocaleString('vi-VN', { hour12: false })) : ''}. <a class="lien-ke" href="/rui-ro-hoan">Xem đủ →</a></p>`;
+}
+
+tai().then(taiPhu);
+taiRuiRo();
 </script>
 <script src="/chung/dieu-huong.js"></script>
 </body>

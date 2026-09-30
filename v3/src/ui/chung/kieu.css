@@ -1422,6 +1422,17 @@
   body > main.chia-hai { max-width: none; margin: 0; padding: 0; display: grid;
                           grid-template-columns: 320px minmax(0, 1fr);
                           height: calc(100dvh - var(--topbar-height)); min-height: 480px; }
+  /* VE6a · PHỄU (bản vẽ 3a): các chặng của một luồng, mỗi chặng MỘT số hoặc «chưa có nguồn». Không tỉ lệ rơi giữa chặng (số khác
+     nguồn, khác khoảng). `data-kieu="o"`: cùng lưới nhưng không mũi tên (bốn tầng rủi ro hoàn). */
+  .pheu { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-2); }
+  .pheu-buoc { position: relative; display: flex; flex-direction: column; gap: 2px; padding: var(--space-3) var(--space-4);
+               background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); min-width: 0; }
+  .pheu:not([data-kieu="o"]) .pheu-buoc + .pheu-buoc::before { content: "→"; position: absolute; left: calc(-1 * var(--space-2) - 2px);
+               top: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: var(--text-xs); }
+  .pheu-ten { font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--text-secondary); }
+  .pheu-so { font-family: var(--font-mono); font-size: var(--text-lg); font-weight: var(--weight-semibold); }
+  .pheu-buoc[data-muted] .pheu-so { color: var(--text-muted); }
+  .pheu-ghi { font-size: var(--text-2xs); line-height: var(--lh-2xs); color: var(--text-muted); overflow-wrap: anywhere; }
   /* VE5b · bản vẽ 1b «Tìm khách»: cột trái 400px (ô tìm + kết quả rộng hơn danh sách sản phẩm). */
   body > main.chia-hai[data-trai="rong"] { grid-template-columns: 400px minmax(0, 1fr); }
   /* Đầu hồ sơ khách + ba thẻ kênh (Messenger · trang bán hàng · WhatsApp) — bản vẽ 1b. */
