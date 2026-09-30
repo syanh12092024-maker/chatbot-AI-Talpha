@@ -14,7 +14,7 @@ so() { echo "$1" | grep -oE "^ℹ $2 [0-9]+" | grep -oE '[0-9]+'; }
 out=$(chay v3/test/b/ve2-mot-page.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
 [ "$f" -eq 0 ] && [ "$p" -ge 4 ]; ket "①bộ-ca-VE2" $? "pass=$p fail=$f (đòi ≥4)"
 for t in v3/test/b/ll18-khung.test.mjs v3/test/b/ll3-cum.test.mjs v3/test/b/dieu-huong.test.mjs v3/test/b/he-kieu.test.mjs v3/test/b/ll10-van-hanh.test.mjs v3/test/b/trang-parse-duoc.test.mjs; do
-  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "②③thước" $? "$t fail=$ff"
+  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "②③thước" $? "$t fail=$ff"
 done
 _o=$(bash ops/bin/nghiem-thu/ve1.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "④cổng-trước" $_r "ve1.sh"
 echo "== ĐỎ $do / XANH $xanh"

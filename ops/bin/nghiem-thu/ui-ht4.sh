@@ -28,7 +28,7 @@ n=$(grep -c "diTiep, '/ban-hoi-thoai'" v3/test/b/vai-b-noi-day.test.mjs)
 
 for tt in v3/test/b/dispatch-router.test.mjs v3/test/b/dispatch-chi-tiet.test.mjs v3/test/b/dispatch-dong-viec.test.mjs \
           v3/test/b/dispatch-kho-viec.test.mjs v3/test/b/dieu-huong.test.mjs v3/test/b/phan-quyen-nam-vai.test.mjs; do
-  o=$(chay "$tt"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "④thước-điều-phối" $? "$tt fail=$ff"
+  o=$(chay "$tt"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "④thước-điều-phối" $? "$tt fail=$ff"
 done
 
 # ⑤ hợp đồng: spec có §7 hiện hành; tài liệu còn chép luật cũ đều trỏ CR

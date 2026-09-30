@@ -14,7 +14,7 @@ out=$(chay v3/test/b/va1-ten-chua-khai.test.mjs); p=$(so "$out" pass); f=$(so "$
 [ "$f" -eq 0 ] && [ "$p" -ge 4 ]; ket "①chạy-thật" $? "pass=$p fail=$f (đòi ≥4: Tổng quan hiện số · đối chứng lỗi · tạo người xong nạp lại · chuyển page gửi được)"
 for t in v3/test/b/bao-cao.test.mjs v3/test/b/team-cau-hinh.test.mjs v3/test/b/team-tao-nguoi-dung.test.mjs \
          v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs; do
-  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "②thước" $? "$t fail=$ff"
+  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "②thước" $? "$t fail=$ff"
 done
 if [ -n "${ESLINT_BIN:-}" ]; then node ops/bin/quet-ten-chua-khai.mjs >/dev/null 2>&1; ket "③quét-no-undef" $? "35 script trang"
 else echo "⏸ ③quét-no-undef HOÃN — chưa đặt ESLINT_BIN (xem ops/bin/quet-ten-chua-khai.mjs); KHÔNG tính là đạt"; fi

@@ -13,7 +13,7 @@ out=$(chay test/ll13-san-pham-goc.test.mjs); p=$(so "$out" pass); f=$(so "$out" 
 [ "$f" -eq 0 ] && [ "$p" -ge 8 ]; ket "①Postgres-thật" $? "pass=$p fail=$f (đòi ≥8: hai thị trường · page hai đường · một món một sản phẩm · từ chối · chưa gán · gỡ · kẹp team)"
 out=$(chay v3/test/b/ll13-san-pham.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
 [ "$f" -eq 0 ] && [ "$p" -ge 5 ]; ket "②tầng-giao-diện" $? "pass=$p fail=$f (đòi ≥5)"
-for t in test/san-pham-goc.test.mjs v3/test/b/audit-ghi.test.mjs v3/test/b/vai-b-noi-day.test.mjs v3/test/b/he-kieu.test.mjs; do o=$(chay $t); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③④thước" $? "$t fail=$ff"; done
+for t in test/san-pham-goc.test.mjs v3/test/b/audit-ghi.test.mjs v3/test/b/vai-b-noi-day.test.mjs v3/test/b/he-kieu.test.mjs; do o=$(chay $t); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "③④thước" $? "$t fail=$ff"; done
 _o=$(bash ops/bin/nghiem-thu/ll6.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "⑤cổng-trước" $_r "ll6.sh (kèm ll5 · ll3 · ll2 · ll1 · UI-HT)"
 echo "== ĐỎ $do / XANH $xanh"
 [ "$do" -eq 0 ]

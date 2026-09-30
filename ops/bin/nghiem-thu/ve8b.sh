@@ -18,7 +18,7 @@ out=$(chay v3/test/b/ve8b-man.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail
 for t in v3/test/b/ll13-san-pham.test.mjs v3/test/b/ll10-van-hanh.test.mjs v3/test/b/ll18-khung.test.mjs test/frontend-v3-e2e.test.js \
          test/ll13-san-pham-goc.test.mjs test/l1-m1-doc-pos.test.js test/keo-danh-muc.test.mjs test/va-r2-tien-tao-don.test.js \
          test/ve1-san-pham.test.mjs test/san-pham-goc.test.mjs v3/test/b/phan-quyen-nam-vai.test.mjs v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs; do
-  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
+  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
 done
 _o=$(bash ops/bin/nghiem-thu/ve8a.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "④cổng-trước" $_r "ve8a.sh (kèm ve7b · ve7a · ve2b · ve6c · ve6b · ve6a · va1)"
 echo "== ĐỎ $do / XANH $xanh"

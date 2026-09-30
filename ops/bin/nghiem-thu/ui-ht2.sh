@@ -29,7 +29,7 @@ b=$(grep -c "\[bc.teamId," v3/src/ui/ban-hoi-thoai/kho-ban-hoi-thoai.js)
 
 # ⑤ các thước đổi theo §10 mới vẫn xanh (menu sale · quyền năm vai · hệ kiểu)
 for tt in v3/test/b/dieu-huong.test.mjs v3/test/b/phan-quyen-nam-vai.test.mjs v3/test/b/he-kieu.test.mjs v3/test/b/vai-b-noi-day.test.mjs; do
-  o=$(chay "$tt"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "⑤thước" $? "$tt fail=$ff"
+  o=$(chay "$tt"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "⑤thước" $? "$tt fail=$ff"
 done
 
 echo "== ĐỎ $do / XANH $xanh"

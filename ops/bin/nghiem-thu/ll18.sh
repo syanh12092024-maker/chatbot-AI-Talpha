@@ -16,7 +16,7 @@ out=$(chay v3/test/b/ll18-khung.test.mjs); p=$(so "$out" pass); f=$(so "$out" fa
 [ "$f" -eq 0 ] && [ "$p" -ge 12 ]; ket "①bộ-ca-LL18" $? "pass=$p fail=$f (đòi ≥12: khung theo vai · chèn HTML · cache theo mã · gzip · / theo vai · 403 · liên kết cấm)"
 
 for t in v3/test/b/he-kieu.test.mjs v3/test/b/dieu-huong.test.mjs v3/test/b/ll3-cum.test.mjs v3/test/b/vai-b-noi-day.test.mjs; do
-  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "②thước" $? "$t fail=$ff"
+  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "②thước" $? "$t fail=$ff"
 done
 
 kq=$(node --input-type=module -e '

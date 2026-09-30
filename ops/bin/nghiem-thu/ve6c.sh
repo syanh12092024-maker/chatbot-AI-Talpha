@@ -15,7 +15,7 @@ out=$(chay v3/test/b/ve6c-khach.test.mjs); p=$(so "$out" pass); f=$(so "$out" fa
 [ "$f" -eq 0 ] && [ "$p" -ge 5 ]; ket "②chạy-thật-VE6c" $? "pass=$p fail=$f (đòi ≥5: phân bố · lùi toàn hệ · rủi ro theo vai · rơi ở đâu · lối theo menu)"
 for t in v3/test/b/nguon-khach.test.mjs v3/test/b/rui-ro-hoan.test.mjs v3/test/b/ll5-so-lieu.test.mjs v3/test/b/ll18-khung.test.mjs \
          v3/test/b/ll1-nam-dich.test.mjs v3/test/b/dieu-huong.test.mjs v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs; do
-  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
+  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
 done
 _o=$(bash ops/bin/nghiem-thu/ve6b.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "④cổng-trước" $_r "ve6b.sh (kèm ve6a · va1)"
 echo "== ĐỎ $do / XANH $xanh"

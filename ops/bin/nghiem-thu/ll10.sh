@@ -11,7 +11,7 @@ so() { echo "$1" | grep -oE "^ℹ $2 [0-9]+" | grep -oE '[0-9]+'; }
 out=$(chay v3/test/b/ll10-van-hanh.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
 [ "$f" -eq 0 ] && [ "$p" -ge 3 ]; ket "①bộ-ca-LL10" $? "pass=$p fail=$f (đòi ≥3: chỗ ngồi · ?tab= kiểm vai · liên kết trỏ tab có thật)"
 out=$(chay test/frontend-v3-e2e.test.js); f=$(so "$out" fail); f=${f:-1}; [ "$f" -eq 0 ]; ket "②e2e-van-hanh" $? "frontend-v3-e2e fail=$f"
-for t in dieu-huong ll1-nam-dich ll6-cai-dat he-kieu; do o=$(chay v3/test/b/$t.test.mjs); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"; done
+for t in dieu-huong ll1-nam-dich ll6-cai-dat he-kieu; do o=$(chay v3/test/b/$t.test.mjs); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"; done
 _o=$(bash ops/bin/nghiem-thu/ll13.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "④cổng-trước" $_r "ll13.sh (kèm ll6 → các cổng trước)"
 echo "== ĐỎ $do / XANH $xanh"
 [ "$do" -eq 0 ]

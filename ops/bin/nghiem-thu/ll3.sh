@@ -12,8 +12,8 @@ so() { echo "$1" | grep -oE "^ℹ $2 [0-9]+" | grep -oE '[0-9]+'; }
 
 out=$(chay v3/test/b/ll3-cum.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
 [ "$f" -eq 0 ] && [ "$p" -ge 5 ]; ket "①bộ-ca-cụm" $? "pass=$p fail=$f (đòi ≥5: sổ cụm · Page hai dòng · tên cụm · tới được · khung)"
-for t in dieu-huong ll1-nam-dich; do o=$(chay v3/test/b/$t.test.mjs); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "②thước-menu" $? "$t fail=$ff"; done
-o=$(chay v3/test/b/he-kieu.test.mjs); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③HK10" $? "he-kieu fail=$ff"
+for t in dieu-huong ll1-nam-dich; do o=$(chay v3/test/b/$t.test.mjs); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "②thước-menu" $? "$t fail=$ff"; done
+o=$(chay v3/test/b/he-kieu.test.mjs); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "③HK10" $? "he-kieu fail=$ff"
 kq=$(node --input-type=module -e '
 process.env.V3_KHOA_VE ||= Buffer.alloc(32, 1).toString("base64");
 const mh = await import("./v3/src/ui/chung/man-hinh.js"); const { VAI } = await import("./v3/src/auth/boi-canh.js");

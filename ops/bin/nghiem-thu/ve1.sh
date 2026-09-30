@@ -17,7 +17,7 @@ out=$(chay test/ve1-san-pham.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail)
 out=$(chay v3/test/b/ll13-san-pham.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
 [ "$f" -eq 0 ] && [ "$p" -ge 6 ]; ket "②giao-diện-VE1" $? "pass=$p fail=$f (đòi ≥6: U4 trang theo bản vẽ · U6 lịch sử)"
 for t in v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs test/ll13-san-pham-goc.test.mjs; do
-  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
+  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
 done
 _o=$(bash ops/bin/nghiem-thu/ll18.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "④cổng-trước" $_r "ll18.sh"
 echo "== ĐỎ $do / XANH $xanh"

@@ -16,7 +16,7 @@ out=$(chay v3/test/b/ve4-luat-chung.test.mjs); p=$(so "$out" pass); f=$(so "$out
 [ "$f" -eq 0 ] && [ "$p" -ge 4 ]; ket "②bộ-ca-VE4" $? "pass=$p fail=$f (đòi ≥4: bốn tab · cùng vai · lưu chờ xác nhận + phiên bản · một chỗ sửa)"
 for t in v3/test/b/dieu-huong.test.mjs v3/test/b/ll3-cum.test.mjs v3/test/b/ll1-nam-dich.test.mjs v3/test/b/phan-quyen-nam-vai.test.mjs \
          v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs v3/test/b/ve2-mot-page.test.mjs; do
-  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
+  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
 done
 _o=$(bash ops/bin/nghiem-thu/ve3.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "④cổng-trước" $_r "ve3.sh (kèm ve2 · ve1 · ll18)"
 echo "== ĐỎ $do / XANH $xanh"

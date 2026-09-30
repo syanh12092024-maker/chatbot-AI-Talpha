@@ -11,6 +11,6 @@ chay() { node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimen
 so() { echo "$1" | grep -oE "^ℹ $2 [0-9]+" | grep -oE '[0-9]+'; }
 out=$(chay v3/test/b/ll7-ba-vai.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
 [ "$f" -eq 0 ] && [ "$p" -ge 3 ]; ket "①bộ-ca-LL7" $? "pass=$p fail=$f (đòi ≥3)"
-for t in v3/test/b/team-cau-hinh.test.mjs v3/test/b/phan-quyen-nam-vai.test.mjs test/frontend-v3-e2e.test.js; do o=$(chay $t); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "②thước" $? "$t fail=$ff"; done
+for t in v3/test/b/team-cau-hinh.test.mjs v3/test/b/phan-quyen-nam-vai.test.mjs test/frontend-v3-e2e.test.js; do o=$(chay $t); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "②thước" $? "$t fail=$ff"; done
 echo "== ĐỎ $do / XANH $xanh"
 [ "$do" -eq 0 ]

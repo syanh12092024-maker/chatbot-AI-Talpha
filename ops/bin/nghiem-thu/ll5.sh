@@ -12,7 +12,7 @@ out=$(chay v3/test/b/ll5-so-lieu.test.mjs); p=$(so "$out" pass); f=$(so "$out" f
 [ "$f" -eq 0 ] && [ "$p" -ge 5 ]; ket "①bộ-ca-LL5" $? "pass=$p fail=$f (đòi ≥5: một dòng · tab theo vai · tuổi hai tầng đọc · trang in tuổi)"
 out=$(chay test/l0-m2-so-lieu.test.js); f=$(so "$out" fail); f=${f:-1}; r=$(echo "$out" | grep -c "^✔ R5 · LL5")
 [ "$f" -eq 0 ] && [ "$r" -eq 1 ]; ket "②tuổi-Postgres-thật" $? "l0-m2-so-lieu fail=$f · R5 xanh=$r (đòi 0 · 1)"
-for t in dieu-huong ll1-nam-dich ll3-cum; do o=$(chay v3/test/b/$t.test.mjs); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước-menu" $? "$t fail=$ff"; done
+for t in dieu-huong ll1-nam-dich ll3-cum; do o=$(chay v3/test/b/$t.test.mjs); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "③thước-menu" $? "$t fail=$ff"; done
 _o=$(bash ops/bin/nghiem-thu/ll3.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "④cổng-trước" $_r "ll3.sh (kèm ll1 · ll2 · UI-HT)"
 echo "== ĐỎ $do / XANH $xanh"
 [ "$do" -eq 0 ]

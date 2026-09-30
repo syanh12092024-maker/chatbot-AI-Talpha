@@ -40,7 +40,7 @@ n=$(sed 's/<!--.*-->//' v3/src/ui/ban-hoi-thoai/trang/ban-hoi-thoai.html | grep 
 # ⑥ thước cũ của bàn hội thoại + nối dây + hệ kiểu vẫn xanh
 for tt in v3/test/b/ban-hoi-thoai-doc.test.mjs v3/test/b/ban-hoi-thoai-ds.test.mjs v3/test/b/vai-b-noi-day.test.mjs \
           v3/test/b/he-kieu.test.mjs v3/test/b/nhan-tang-hoan.test.mjs test/ui-ht2-sql.test.js; do
-  o=$(chay "$tt"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "⑥thước" $? "$tt fail=$ff"
+  o=$(chay "$tt"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "⑥thước" $? "$tt fail=$ff"
 done
 
 echo "== ĐỎ $do / XANH $xanh"

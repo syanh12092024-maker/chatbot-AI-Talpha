@@ -17,7 +17,7 @@ out=$(chay v3/test/b/ve2b-page-gop.test.mjs); p=$(so "$out" pass); f=$(so "$out"
 for t in v3/test/b/ve2-mot-page.test.mjs v3/test/b/mot-page.test.mjs v3/test/b/ve3-page-ds.test.mjs v3/test/b/kich-ban.test.mjs \
          v3/test/b/ll3-cum.test.mjs v3/test/b/ll1-nam-dich.test.mjs v3/test/b/ll18-khung.test.mjs v3/test/b/dieu-huong.test.mjs \
          v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs v3/test/b/phan-quyen-nam-vai.test.mjs; do
-  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
+  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
 done
 # Không còn trang nào trỏ thẳng sang màn Kịch bản đã gộp — trừ đường chuyển hướng khai ở bảng (liên kết cũ vẫn chạy).
 n=$(grep -rnE "href=[\"']/kich-ban[\"'?]|href: ?[\"'\`]/kich-ban" v3/src/ui --include=*.html | grep -v "hieu-qua/trang/hieu-qua.html" | wc -l | tr -d ' ')

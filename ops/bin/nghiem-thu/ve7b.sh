@@ -17,7 +17,7 @@ out=$(chay v3/test/b/ve7b-ket-noi.test.mjs); p=$(so "$out" pass); f=$(so "$out" 
 # ③ thước liền kề — kèm bộ ca cửa WhatsApp (L1-M3): phiếu thêm export `cuaGuiWaDangMo` vào `src/channels/whatsapp/index.js`
 for t in v3/test/b/ve2b-page-gop.test.mjs v3/test/b/vai-b-noi-day.test.mjs v3/test/b/ll6-cai-dat.test.mjs \
          v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs test/l1-m3-cua.test.js; do
-  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
+  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -ne 0 ] && echo "$o" | grep -E "^✖ " | sort -u | head -3 | sed 's/^/   ↳ /'; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
 done
 _o=$(bash ops/bin/nghiem-thu/ve7a.sh 2>&1); _r=$?; [ "$_r" -ne 0 ] && echo "$_o" | grep -E "🔴|↳" | sed 's/^/   ↳ /'; ket "④cổng-trước" $_r "ve7a.sh (kèm ve2b · ve6c · ve6b · ve6a · va1)"
 echo "== ĐỎ $do / XANH $xanh"
