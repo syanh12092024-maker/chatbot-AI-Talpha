@@ -100,6 +100,9 @@ khối con vẫn là con flex của cột) · `a.lien-ve` (lối «← Tất c�
 - `ll18-khung` K16 (đường chỉ-còn-chuyển-hướng đọc từ `CHUYEN_HUONG` thay vì gõ tay `/san-sang`).
 - `ve2-mot-page` P1/P2 (tiêm bộ đọc mà mã đang đọc) · P4 (cột trái gọi kèm lọc + tìm).
 - `ve3-page-ds` D1 (nút Quét ở hàng ô tìm; viên hiện «—» khi không đo được).
+- `ops/bin/nghiem-thu/ll3.sh` ④ (menu thật: marketer «Các page» thay «Kịch bản của page») — **sót ở lượt phiếu**, lộ ra ở lượt cửa
+  vào deploy (một cổng gốc, 12 cổng đỏ dây chuyền qua «cổng trước»). Bài học: đổi điều hướng thì chạy ĐỦ `phat-hanh.sh`, không chỉ
+  cổng của phiếu + bộ ca — cổng cũ có thước riêng không nằm trong bộ ca.
 
 ## 6 · Kiểm (máy dev, 30/09)
 

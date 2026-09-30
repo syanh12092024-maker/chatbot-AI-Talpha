@@ -21,7 +21,8 @@ const p = (v) => (mh.menuCua([v]).find((n) => n.ma === "page")?.man || []).filte
 console.log(`QUAN_TRI=${p(VAI.QUAN_TRI)} MARKETER=${p(VAI.MARKETER)}`);' 2>/dev/null | tail -1)
 echo "   đích Page trên thanh bên: $kq"
 # VE4 · 29/09: màn đầu marketer vào được trong cụm Luật chung nay là «Chính sách · FAQ · Phản đối» (bản vẽ 2d, đứng trước «Trả lời sẵn»).
-echo "$kq" | grep -q "QUAN_TRI=Tất cả page+Luật chung MARKETER=Kịch bản của page+Chính sách · FAQ · Phản đối"
+# VE2b · 30/09: màn Kịch bản gộp vào trang một page (`/kich-ban` chuyển hướng) ⇒ marketer vào mục Page bằng «Các page» (`/page`).
+echo "$kq" | grep -q "QUAN_TRI=Tất cả page+Luật chung MARKETER=Các page+Chính sách · FAQ · Phản đối"
 ket "④menu-thật" $? "quản trị hai dòng mang tên cụm · marketer đúng tên màn"
 for g in ll1 ll2; do bash "ops/bin/nghiem-thu/$g.sh" >/dev/null 2>&1; ket "⑤cổng-trước" $? "$g.sh"; done
 echo "== ĐỎ $do / XANH $xanh"
