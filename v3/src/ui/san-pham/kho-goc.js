@@ -29,7 +29,9 @@ export function datKhoGoc(cua) {
   if (cua == null) { _cua = null; return null; }
   // LL13: + `chiTiet` · `monChuaGan` · `gan` · `go` — sản phẩm là lõi (thị trường = shop POS).
   // LL11: + `kienThuc` — sửa kiến thức sản phẩm (nhà mới của kỹ năng).
-  const thieu = ['ds', 'cho', 'dem', 'tao', 'sua', 'bo', 'chiTiet', 'monChuaGan', 'gan', 'go', 'kienThuc'].filter((k) => typeof cua[k] !== 'function');
+  // VE8a: + `goiYGop` · `gop` — gộp món POS thành sản phẩm (bản vẽ 2a′).
+  const thieu = ['ds', 'cho', 'dem', 'tao', 'sua', 'bo', 'chiTiet', 'monChuaGan', 'gan', 'go', 'kienThuc', 'goiYGop', 'gop']
+    .filter((k) => typeof cua[k] !== 'function');
   if (thieu.length) throw new LoiSanPham(`datKhoGoc thiếu hàm: ${thieu.join(', ')}`, 'noi_day_thieu', 500);
   _cua = cua;
   return _cua;
@@ -182,6 +184,30 @@ export async function goMonPos(boiCanh, id, posMa) {
     hanhDong: HANH_DONG.GO_MON_POS_GOC, doiTuongLoai: BANG, doiTuongId: String(id),
     truoc: { maGoc: kq.maGoc, posMa: kq.posMa, shopId: kq.shopId },
     ghiChu: `gỡ món POS ${kq.posMa} (shop ${kq.shopId}) khỏi sản phẩm "${kq.maGoc}"`,
+  });
+  return kq;
+}
+
+/* ═══ VE8a · GỘP MÓN POS THÀNH SẢN PHẨM (bản vẽ 2a′) — máy gợi ý nhóm, NGƯỜI xác nhận ═══ */
+
+/** Gợi ý gộp + số đầu màn. Đọc: mọi vai của màn; `suaDuoc` nói màn có vẽ ô chọn/nút không. */
+export async function goiYGop(boiCanh) {
+  const bc = batBuocBoiCanh(boiCanh);
+  const kq = await cua().goiYGop(bc);
+  return { ...kq, suaDuoc: bc.vai.some((v) => VAI_SUA_DUOC.includes(v)) };
+}
+
+/** Gộp: MỘT sản phẩm gốc + gắn các món đã chọn (một giao dịch ở tầng A). Quản trị; MỘT dòng nhật ký kể đủ món. */
+export async function gopMonThanhGoc(boiCanh, than) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const kq = await cua().gop(bc, than);
+  const ds = kq.posMa || [];
+  await ghi(bc, {
+    hanhDong: HANH_DONG.TAO_SAN_PHAM_GOC, doiTuongLoai: BANG, doiTuongId: kq.id,
+    sau: { maGoc: kq.maGoc, ten: kq.ten, soHieu: kq.soHieu, posMa: ds },
+    ghiChu: `gộp ${ds.length} món POS thành sản phẩm gốc "${kq.maGoc}"${kq.soHieu ? ` (số hiệu ${kq.soHieu})` : ''}: `
+      + `${ds.slice(0, 12).join(', ')}${ds.length > 12 ? '…' : ''}`,
   });
   return kq;
 }

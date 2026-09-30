@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# CỔNG NGHIỆM THU PHIẾU VE8a — «Gộp món POS thành sản phẩm» NGAY TRONG màn Sản phẩm (bản vẽ 2a′): máy gợi ý nhóm (cùng số
+# hiệu mọi shop · số hiệu đã là sản phẩm ⇒ «nối» · không số thì cùng tên · không tên đứng riêng), người xác nhận; gộp = MỘT
+# giao dịch tạo sản phẩm + gắn đúng món đã chọn, từ chối thì không để lại gì; chỉ quản trị, một dòng nhật ký kể đủ món.
+# Chạy: ops/bin/nghiem-thu/ve8a.sh        (rc=0 là đạt)
+# Tầm đo: lưới HỒI QUY do chính thợ viết — tầng A trên Postgres THẬT (sandbox riêng, tự dọn) + màn CHẠY THẬT (vm + DOM giả).
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)" || exit 2
+do=0; xanh=0
+ket() { if [ "$2" -eq 0 ]; then xanh=$((xanh+1)); echo "✅ $1 ${3:-}"; else do=$((do+1)); echo "🔴 $1 ${3:-}"; fi; }
+chay() { node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimental-test-module-mocks --test "$1" 2>&1; }
+so() { echo "$1" | grep -oE "^ℹ $2 [0-9]+" | grep -oE '[0-9]+'; }
+out=$(chay test/ve8a-gop-mon.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
+[ "$f" -eq 0 ] && [ "$p" -ge 4 ]; ket "①gợi-ý+gộp(Postgres)" $? "pass=$p fail=$f (đòi ≥4: nhóm đúng luật · gắn đúng món chọn · từ chối không để lại gì · kẹp team)"
+out=$(chay v3/test/b/ve8a-gop.test.mjs); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
+[ "$f" -eq 0 ] && [ "$p" -ge 7 ]; ket "②chạy-thật-VE8a" $? "pass=$p fail=$f (đòi ≥7: khung gộp · gộp đúng món · nối · marketer chỉ xem · lối vào · vai+nhật ký · đường router)"
+for t in v3/test/b/ll13-san-pham.test.mjs test/ll13-san-pham-goc.test.mjs test/ll11-kien-thuc.test.mjs v3/test/b/vai-b-noi-day.test.mjs \
+         v3/test/b/phan-quyen-nam-vai.test.mjs v3/test/b/he-kieu.test.mjs v3/test/b/trang-parse-duoc.test.mjs \
+         v3/test/b/ve2b-page-gop.test.mjs v3/test/b/ve7b-ket-noi.test.mjs; do
+  o=$(chay "$t"); ff=$(so "$o" fail); ff=${ff:-1}; [ "$ff" -eq 0 ]; ket "③thước" $? "$t fail=$ff"
+done
+bash ops/bin/nghiem-thu/ve7b.sh >/dev/null 2>&1; ket "④cổng-trước" $? "ve7b.sh (kèm ve7a · ve2b · ve6c · ve6b · ve6a · va1)"
+echo "== ĐỎ $do / XANH $xanh"
+[ "$do" -eq 0 ]

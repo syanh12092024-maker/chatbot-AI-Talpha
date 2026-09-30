@@ -14,7 +14,8 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manSanPham, sanPhamCuaMotPage, VAI_VAO_DUOC, VI_RONG, LoiSanPham } from './kho-san-pham.js';
-import { manSanPhamGoc, taoGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos, suaKienThucGoc, lichSuGoc } from './kho-goc.js';
+import { manSanPhamGoc, taoGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos, suaKienThucGoc, lichSuGoc,
+  goiYGop, gopMonThanhGoc } from './kho-goc.js';
 
 /**
  * Vai GHI của màn — khai TƯỜNG MINH ở router dù nó chỉ chuyển tiếp từ `kho-goc.js`.
@@ -167,6 +168,17 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   }));
   r.post('/api/san-pham/goc/:id/mon/go', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, ...(await goMonPos(cuaBoiCanh(req), req.params.id, req.body?.posMa)) });
+  }));
+
+  // VE8a · gộp món POS thành sản phẩm (bản vẽ 2a′) — đứng TRƯỚC `/api/san-pham/:id` như mọi đường con khác.
+  r.get('/api/san-pham/gop', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await goiYGop(cuaBoiCanh(req))) });
+  }));
+  r.post('/api/san-pham/gop', canDangNhap, canVai, boc(async (req, res) => {
+    const kq = await gopMonThanhGoc(cuaBoiCanh(req), {
+      maGoc: req.body?.maGoc, ten: req.body?.ten, soHieu: req.body?.soHieu, posMa: req.body?.posMa,
+    });
+    res.json({ ok: true, goc: kq });
   }));
 
   r.get('/api/san-pham/:id', canDangNhap, canVai, boc(async (req, res) => {

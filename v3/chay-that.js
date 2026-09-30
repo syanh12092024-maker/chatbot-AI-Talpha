@@ -277,6 +277,9 @@ const bao = dungPhanB(app, {
     go: (bc, id, posMa) => spGoc.goMonPosKhoiGoc(pool, bc.teamId, id, posMa),
     // LL11: kiến thức sản phẩm — nhà mới của kỹ năng.
     kienThuc: (bc, id, t) => spGoc.suaKienThucGoc(pool, bc.teamId, id, t),
+    // VE8a: gộp món POS thành sản phẩm — gợi ý (đọc) + gộp (một giao dịch).
+    goiYGop: (bc) => spGoc.goiYGopMonPos(pool, bc.teamId),
+    gop: (bc, t) => spGoc.gopMonThanhGoc(pool, bc.teamId, t),
   },
   // Kho tạm: page ở team kỹ thuật, nguồn cho lát «gán page ↔ team».
   docKhoTamPage: (t) => pageChuaPhan(pool, t),

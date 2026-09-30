@@ -13,7 +13,7 @@
 // sản phẩm gốc rác, và đặt tên một sản phẩm là quyết định của người. File này giữ nguyên
 // luật đó — máy KHÔNG tạo. Việc của nó là dọn bàn: `soHieuChuaCoGoc()` gom đúng những số
 // hiệu POS đang chờ người đặt tên, kèm các tên đã thấy ở từng shop để người chọn.
-import { tachSoHieu } from "../pos/ten-goc.js";
+import { tachSoHieu, chuanHoaTen, maGocDeXuat, gopTheoSoHieu } from "../pos/ten-goc.js";
 
 export class LoiSanPhamGoc extends Error {
   constructor(thongDiep, ma = "san_pham_goc", status = 400) {
@@ -127,16 +127,19 @@ export async function taoSanPhamGoc(pool, teamId, { maGoc, ten, moTa, soHieu } =
     );
     return { ...doiRa(r.rows[0]), soBienThe: 0 };
   } catch (e) {
-    if (e?.code === "23505") {
-      throw new LoiSanPhamGoc(
-        so && /so_hieu/.test(e.constraint || "")
-          ? `số hiệu ${so} đã thuộc một sản phẩm gốc khác của team này`
-          : `mã gốc "${ma}" đã có trong team này`,
-        "trung", 409,
-      );
-    }
-    throw e;
+    throw loiTrung(e, so, ma);
   }
+}
+
+/** 23505 của `san_pham_goc` ⇒ lỗi người đọc được (mã trùng hay số hiệu trùng); lỗi khác trả nguyên. */
+function loiTrung(e, so, ma) {
+  if (e?.code !== "23505") return e;
+  return new LoiSanPhamGoc(
+    so && /so_hieu/.test(e.constraint || "")
+      ? `số hiệu ${so} đã thuộc một sản phẩm gốc khác của team này`
+      : `mã gốc "${ma}" đã có trong team này`,
+    "trung", 409,
+  );
 }
 
 /**
@@ -404,4 +407,130 @@ export async function suaKienThucGoc(pool, teamId, id, kienThuc = {}) {
   );
   if (!r.rowCount) throw new LoiSanPhamGoc('không có sản phẩm gốc này', 'khong_co', 404);
   return { id: String(r.rows[0].id), maGoc: r.rows[0].ma_goc, kienThuc: r.rows[0].kien_thuc, truoc: r.rows[0].cu };
+}
+
+/* ═══ VE8a · GỘP MÓN POS THÀNH SẢN PHẨM (bản vẽ 2a′ · CR-28-09c) ═══════════════════════════════════════════
+ * Mỗi shop POS đặt mã riêng cho món — cùng một sản phẩm bán ở ba nước là ba mã. MÁY GỢI Ý nhóm, NGƯỜI xác nhận
+ * (luật đầu tệp: máy không tự tạo sản phẩm gốc):
+ *   · cùng SỐ HIỆU — khoá gộp chắc (`gopTheoSoHieu` của `src/pos/ten-goc.js`, MỘT luật với script gợi ý cũ);
+ *   · số hiệu ĐÃ là một sản phẩm ⇒ nhóm «nối vào sản phẩm có sẵn» (lượt kéo sau cũng tự nối — đây là nối NGAY);
+ *   · món KHÔNG số hiệu: cùng tên (chuẩn hoá bằng `chuanHoaTen`) mới đứng chung một nhóm; không tên ⇒ đứng một mình.
+ * Gộp nhầm là bot báo giá của nước này cho khách nước khác — nên không có đường «gộp tất cả».
+ */
+const loaiNhom = { noi: 0, moi: 1 };
+
+/** Gợi ý gộp + năm con số đầu màn. Chỉ ĐỌC; món đã thuộc sản phẩm không vào gợi ý. */
+export async function goiYGopMonPos(pool, teamId) {
+  const [mon, goc, kn, tong, banSao] = await Promise.all([
+    pool.query(
+      `SELECT s.ma, s.ten, s.ton_kho, k.market
+         FROM san_pham s
+         LEFT JOIN ket_noi_pos k ON k.team_id = s.team_id AND k.shop_id = split_part(s.ma, ':', 1)
+        WHERE s.team_id = $1 AND s.nguon = 'pos' AND s.ma_goc IS NULL
+        ORDER BY s.ma`,
+      [teamId],
+    ),
+    pool.query("SELECT id, ma_goc, ten, so_hieu FROM san_pham_goc WHERE team_id = $1", [teamId]),
+    pool.query("SELECT shop_id, bat FROM ket_noi_pos WHERE team_id = $1", [teamId]),
+    pool.query(
+      `SELECT count(*)::int AS mon, count(DISTINCT split_part(ma, ':', 1))::int AS shop
+         FROM san_pham WHERE team_id = $1 AND nguon = 'pos'`,
+      [teamId],
+    ),
+    pool.query(
+      `SELECT count(*)::int AS tong, count(*) FILTER (WHERE pos_ma IS NULL)::int AS chua_noi
+         FROM san_pham WHERE team_id = $1 AND nguon <> 'pos' AND page_id IS NOT NULL`,
+      [teamId],
+    ),
+  ]);
+  const gocTheoSo = new Map(goc.rows.filter((g) => g.so_hieu != null).map((g) => [String(g.so_hieu), g]));
+  const ra = (m) => ({ posMa: m.ma, tenPos: m.ten || "", shopId: shopCua(m.ma), thiTruong: m.market || null, tonKho: m.ton_kho });
+  const { nhom: theoSo, khongSo } = gopTheoSoHieu(mon.rows.map((m) => ({ ma: m.ma, ten: m.ten || "", cho: shopCua(m.ma), dong: m })));
+
+  const nhom = theoSo.map((n) => {
+    const ds = n.thanhVien.map((t) => ra(t.dong));
+    const g = gocTheoSo.get(n.soHieu);
+    if (g) {
+      return { khoa: `goc:${g.id}`, loai: "noi", soHieu: n.soHieu, gocId: String(g.id), maGoc: g.ma_goc, ten: g.ten || "",
+        soShop: n.soShop, tenLech: n.tenLech, mon: ds,
+        lyDo: `Số hiệu ${n.soHieu} đã là sản phẩm «${g.ten || g.ma_goc}» — ${ds.length} món chưa nối` };
+    }
+    return { khoa: `so:${n.soHieu}`, loai: "moi", soHieu: n.soHieu, ten: n.ten, maGocDeXuat: n.maGocDeXuat,
+      soShop: n.soShop, tenLech: n.tenLech, mon: ds,
+      lyDo: n.soShop > 1 ? `Cùng số hiệu ${n.soHieu} ở ${n.soShop} shop` : `Số hiệu ${n.soHieu} · ${ds.length} món · một shop` };
+  });
+  const theoTen = new Map();
+  for (const t of khongSo) {
+    const k = chuanHoaTen(t.ten);
+    const khoa = k ? `ten:${k}` : `mon:${t.ma}`;   // không tên ⇒ không gom với ai
+    if (!theoTen.has(khoa)) theoTen.set(khoa, { ten: t.ten, ds: [] });
+    theoTen.get(khoa).ds.push(ra(t.dong));
+  }
+  for (const [khoa, { ten, ds }] of theoTen) {
+    const soShop = new Set(ds.map((x) => x.shopId)).size;
+    nhom.push({ khoa, loai: "moi", soHieu: null, ten, maGocDeXuat: maGocDeXuat(ten), soShop, tenLech: [], mon: ds,
+      lyDo: soShop > 1 ? `Cùng tên ở ${soShop} shop · không có số hiệu — xem kỹ trước khi gộp` : "Không có số hiệu — gộp thì lượt kéo sau KHÔNG tự nối shop mới" });
+  }
+  nhom.sort((a, b) => loaiNhom[a.loai] - loaiNhom[b.loai] || b.soShop - a.soShop
+    || (a.soHieu == null) - (b.soHieu == null) || Number(a.soHieu) - Number(b.soHieu) || String(a.ten).localeCompare(String(b.ten)));
+  return {
+    dem: {
+      shopTong: kn.rows.length, shopBat: kn.rows.filter((k) => k.bat).length, shopDaKeo: tong.rows[0].shop,
+      monPos: tong.rows[0].mon, monChuaGan: mon.rows.length, soGoc: goc.rows.length,
+      banSao: banSao.rows[0].tong, banSaoChuaNoi: banSao.rows[0].chua_noi,
+    },
+    nhom,
+  };
+}
+
+/**
+ * GỘP: tạo MỘT sản phẩm gốc và gắn các món đã chọn — MỘT giao dịch, được cả hoặc không gì. Từ chối (không để lại
+ * gì): chưa chọn món · món không có / không phải món POS · món đã thuộc sản phẩm khác · mã gốc hoặc số hiệu trùng.
+ */
+export async function gopMonThanhGoc(pool, teamId, { maGoc, ten, soHieu, posMa } = {}) {
+  const ma = batBuocMaGoc(maGoc);
+  const so = batBuocSoHieu(soHieu);
+  const ds = [...new Set((Array.isArray(posMa) ? posMa : []).map(gon).filter(Boolean))];
+  if (!ds.length) throw new LoiSanPhamGoc("chưa chọn món POS nào để gộp", "thieu_mon");
+  if (ds.length > 200) throw new LoiSanPhamGoc("một lượt gộp tối đa 200 món", "nhieu_mon");
+  const la = ds.find((m) => !m.includes(":"));
+  if (la) throw new LoiSanPhamGoc(`mã món POS phải có dạng <shop>:<biến thể> — «${la}» thì không`, "ma_pos_la");
+  const khach = await pool.connect();
+  try {
+    await khach.query("BEGIN");
+    const mon = (await khach.query(
+      "SELECT id, ma, ma_goc, nguon FROM san_pham WHERE team_id = $1 AND ma = ANY($2::text[]) FOR UPDATE",
+      [teamId, ds],
+    )).rows;
+    const co = new Map(mon.map((m) => [m.ma, m]));
+    const thieu = ds.filter((m) => co.get(m)?.nguon !== "pos");
+    if (thieu.length) {
+      throw new LoiSanPhamGoc(`không có món POS này trong danh mục đã kéo: ${thieu.slice(0, 5).join(", ")}`, "khong_co_mon", 404);
+    }
+    const daThuoc = mon.find((m) => m.ma_goc);
+    if (daThuoc) {
+      throw new LoiSanPhamGoc(`món ${daThuoc.ma} đang thuộc sản phẩm «${daThuoc.ma_goc}» — gỡ ở đó trước`, "mon_thuoc_goc_khac", 409);
+    }
+    let g;
+    try {
+      g = (await khach.query(
+        `INSERT INTO san_pham_goc (team_id, ma_goc, ten, mo_ta, so_hieu)
+         VALUES ($1,$2,$3,'',$4) RETURNING id, ma_goc, ten, mo_ta, so_hieu, tao_luc, sua_luc`,
+        [teamId, ma, gon(ten), so],
+      )).rows[0];
+    } catch (e) {
+      throw loiTrung(e, so, ma);
+    }
+    await khach.query(
+      "UPDATE san_pham SET ma_goc = $3, sua_luc = now() WHERE team_id = $1 AND ma = ANY($2::text[]) AND nguon = 'pos' AND ma_goc IS NULL",
+      [teamId, ds, ma],
+    );
+    await khach.query("COMMIT");
+    return { ...doiRa(g), soBienThe: ds.length, posMa: ds };
+  } catch (e) {
+    await khach.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    khach.release();
+  }
 }

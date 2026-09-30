@@ -33,7 +33,12 @@ export function taoDom(than) {
     hauDue() { return this.con.flatMap((c) => [c, ...c.hauDue()]); }
     addEventListener(t, f) { (this.nghe[t] ||= []).push(f); }
     set onclick(f) { this.nghe.click = [f]; }
-    async phat(t, e = {}) { for (const f of this.nghe[t] || []) await f({ target: this, currentTarget: this, preventDefault() {}, ...e }); }
+    // Sự kiện NỔI BỌT từ phần tử bấm lên các tổ tiên (như trình duyệt) — handler ủy quyền trên khung cha mới bắt được.
+    async phat(t, e = {}) {
+      let dung = false;
+      const su = { target: this, preventDefault() {}, stopPropagation() { dung = true; }, ...e };
+      for (let p = this; p && !dung; p = p.cha) for (const f of p.nghe[t] || []) await f({ ...su, currentTarget: p });
+    }
     click() { return this.phat('click'); }
     setAttribute(k, v) { this.attrs[k] = String(v); if (k === 'id') this.id = String(v); if (k.startsWith('data-')) this.dataset[camel(k.slice(5))] = String(v); }
     getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; }

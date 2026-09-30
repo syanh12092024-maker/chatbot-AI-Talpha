@@ -69,10 +69,11 @@ async function goiGhi(duong, tuyChon) {
   return j;
 }
 const tenGoc = (g) => g.ten || g.maGoc;
-const giu = (id, tab) => {   // F5 / chia sẻ đường không mất chỗ đang đứng
+const giu = (id, tab, xem) => {   // F5 / chia sẻ đường không mất chỗ đang đứng
   const u = new URL(location.href);
   if (id) u.searchParams.set('sp', id); else u.searchParams.delete('sp');
   if (tab && tab !== 'chung') u.searchParams.set('tab', tab); else u.searchParams.delete('tab');
+  if (xem) u.searchParams.set('xem', xem); else u.searchParams.delete('xem');
   history.replaceState(null, '', u);
 };
 
@@ -97,11 +98,11 @@ function veTrai() {
   const coBanSao = (dem.tongSanPham || 0) > 0;
   $('#oDuLieu').innerHTML = (coBanSao || GOC.cho.length) ? `<div class="o-luu-y">
       ${coBanSao ? `<b>Dữ liệu hôm nay còn nằm theo page.</b> ${so(dem.tongSanPham)} sản phẩm bot đang bán nằm theo ${so(dem.coSanPham)}/${so(dem.tongPage)} page · ${so(GOC.goc.length)} sản phẩm gốc${g.chuaCoGia ? ` · ${so(g.chuaCoGia)}/${so(g.tong)} món chưa có bậc giá` : ''}.` : ''}
-      <br><button type="button" class="nut-dam" id="moBanSao">Bản sao theo page →</button>${GOC.cho.length
-        ? `<button type="button" class="nut-dam" id="moCho">${so(GOC.cho.length)} số hiệu chờ đặt tên →</button>` : ''}
+      <br>${GOC.cho.length || GOC.khongCoSoHieu
+        ? `<button type="button" class="nut-dam" id="moGop">Gộp món POS thành sản phẩm →</button>` : ''}<button type="button" class="nut-dam" id="moBanSao">Bản sao theo page →</button>
     </div>` : '';
   if ($('#moBanSao')) $('#moBanSao').onclick = () => veBanSao();
-  if ($('#moCho')) $('#moCho').onclick = () => veThem();
+  if ($('#moGop')) $('#moGop').onclick = () => veGop();
 }
 
 /* ── PHẢI · MỘT SẢN PHẨM ──────────────────────────────────────────────────────────── */
@@ -325,6 +326,115 @@ async function veLichSu() {
   } catch (e) { $('#thanTab').innerHTML = canhBao({ level: 'warning', title: 'Không đọc được lịch sử', body: e.message }); }
 }
 
+/* ── PHẢI · GỘP MÓN POS THÀNH SẢN PHẨM (bản vẽ 2a′ · VE8a) ───────────────────────────────
+ * Máy GỢI Ý nhóm (cùng số hiệu · cùng tên khi không có số), NGƯỜI xác nhận: bỏ chọn món không thuộc nhóm, sửa tên và
+ * mã gốc, rồi gộp — một giao dịch tạo sản phẩm + gắn món. Nhóm có số hiệu đã là sản phẩm ⇒ «nối vào» sản phẩm đó.
+ */
+let GOP = null;          // /api/san-pham/gop
+const GOP_XONG = {};     // khoá nhóm → { id, ten } sản phẩm vừa gộp / nối trong lượt này
+async function veGop() {
+  CHON = null; veTrai(); giu(null, null, 'gop');
+  $('#phai').innerHTML = '<div class="empty-state"><span class="skeleton"></span></div>';
+  try { GOP = await goi('/api/san-pham/gop'); }
+  catch (e) { $('#phai').innerHTML = canhBao({ level: 'warning', title: 'Không đọc được gợi ý gộp', body: e.message }); return; }
+  if (!GOP) return;
+  const d = GOP.dem;
+  $('#phai').innerHTML = `
+    <div class="chi-tiet-dau"><div><h2 class="tieu-de-lon">Gộp món POS thành sản phẩm</h2>
+      <div class="dong-phu">Mỗi shop POS đặt mã riêng cho món của nó, nên cùng một sản phẩm bán ở ba nước là ba mã. Gộp về một sản phẩm thì kiến thức và cách tư vấn viết một lần; giá, tồn kho và marketer vẫn theo từng thị trường.</div></div></div>
+    <div id="demGop"></div>
+    ${d.shopDaKeo < d.shopTong ? `<div class="duoi-4">${canhBao({ level: 'info', title: `Mới kéo danh mục ${so(d.shopDaKeo)}/${so(d.shopTong)} shop`,
+      body: 'Món của shop chưa kéo chưa có ở đây. Gộp bây giờ vẫn được: lượt kéo sau tự nối món cùng số hiệu của shop mới vào đúng sản phẩm. Bật và kéo ở Cài đặt › Kết nối.' })}</div>` : ''}
+    ${GOP.suaDuoc ? '' : `<div class="duoi-4">${canhBao({ level: 'info', title: 'Chỉ quản trị gộp', body: 'Đặt tên sản phẩm là đổi thứ bot gọi trước mặt khách — vai của bạn xem được gợi ý.' })}</div>`}
+    <div class="section-header"><div><h3>Gợi ý: có thể là cùng một sản phẩm</h3>
+      <div class="section-desc">Máy chỉ GỢI Ý (cùng số hiệu, hoặc cùng tên khi món không có số); người xác nhận. Không gộp tự động — gộp nhầm là bot báo giá của nước này cho khách nước khác.</div></div></div>
+    <label class="field duoi-4"><span class="sr-only">Lọc gợi ý</span><input type="search" id="timGop" placeholder="Lọc theo tên, số hiệu, mã món…" autocomplete="off"></label>
+    <div id="dsGop"></div>`;
+  $('#demGop').innerHTML = metricRow([
+    { label: 'Shop POS = thị trường', value: so(d.shopTong), statusHtml: statusBadge(d.shopBat ? 'feature_on' : 'feature_off', { label: `${so(d.shopBat)} đang bật` }) },
+    { label: 'Shop đã kéo danh mục', value: `${so(d.shopDaKeo)}/${so(d.shopTong)}`, statusHtml: `<span class="meta">${so(d.monPos)} món</span>` },
+    { label: 'Món chưa thuộc sản phẩm', value: so(d.monChuaGan) },
+    { label: 'Sản phẩm gốc', value: so(d.soGoc) },
+  ]);
+  $('#timGop').oninput = veDsGop;
+  $('#dsGop').onclick = (ev) => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    if (b.dataset.gop) gopNhom(b.dataset.gop, b);
+    else if (b.dataset.noi) noiNhom(b.dataset.noi, b);
+    else if (b.dataset.moGoc) moSanPham(b.dataset.moGoc);
+  };
+  veDsGop();
+}
+function veDsGop() {
+  const q = ($('#timGop') ? $('#timGop').value : '').trim().toLowerCase();
+  const ds = GOP.nhom.filter((n) => !q || [n.ten, n.soHieu, n.maGoc, ...n.mon.flatMap((m) => [m.posMa, m.tenPos])]
+    .some((x) => String(x || '').toLowerCase().includes(q)));
+  $('#dsGop').innerHTML = ds.length ? ds.map(veNhom).join('')
+    : emptyState({ icon: 'inbox', title: GOP.nhom.length ? 'Không nhóm nào khớp' : 'Không còn món POS nào chưa thuộc sản phẩm',
+        body: GOP.nhom.length ? '' : 'Mọi món đã kéo về đều thuộc một sản phẩm. Kéo danh mục shop khác ở Cài đặt › Kết nối.' });
+}
+function veNhom(n, i) {
+  const xong = GOP_XONG[n.khoa];
+  const sua = GOP.suaDuoc && !xong;
+  const id = 'g' + i + '-' + String(n.khoa).replace(/[^a-z0-9]/gi, '');
+  return `<section class="section panel duoi-4" data-nhom="${esc(n.khoa)}" aria-labelledby="${id}">
+    <div class="section-header"><div>
+      <h3 id="${id}">${n.ten ? esc(n.ten) : '<span class="text-muted">chưa có tên trên POS</span>'}</h3>
+      <div class="section-desc">${esc(n.lyDo)}${n.tenLech && n.tenLech.length ? ` · tên lệch giữa các shop: ${n.tenLech.map(esc).join(' / ')} — người xem` : ''}</div>
+    </div>${xong ? statusBadge('ready', { label: n.loai === 'noi' ? 'Đã nối' : 'Đã gộp' }) : ''}</div>
+    <div class="table-wrap"><table class="data-table"><thead><tr>
+      ${sua ? '<th scope="col"><span class="sr-only">Chọn</span></th>' : ''}<th scope="col">Thị trường</th><th scope="col">Mã món POS</th>
+      <th scope="col">Tên trên POS</th><th scope="col" class="num">Tồn</th></tr></thead><tbody>${n.mon.map((m) => `
+      <tr>${sua ? `<td><input type="checkbox" data-chon="${esc(m.posMa)}" checked aria-label="Chọn món ${esc(m.posMa)}"></td>` : ''}
+        <td>${m.thiTruong ? esc(m.thiTruong) : `<span class="text-muted">shop ${esc(m.shopId)} · chưa khai ở Kết nối</span>`}</td>
+        <td><code>${esc(m.posMa)}</code></td>
+        <td>${m.tenPos ? esc(m.tenPos) : '<span class="text-muted">chưa có tên</span>'}</td>
+        <td class="num">${m.tonKho == null ? '<span class="text-muted">—</span>' : so(m.tonKho)}</td></tr>`).join('')}</tbody></table></div>
+    ${!sua ? '' : n.loai === 'noi'
+      ? `<div class="form-actions">${button(`Nối món đã chọn vào «${n.ten || n.maGoc}»`, { variant: 'primary', size: 'sm', data: { noi: n.khoa } })}</div>`
+      : `<div class="hang tren-3">
+          <div class="field"><label class="field-label" for="${id}-ten">Tên sản phẩm</label>
+            <input id="${id}-ten" data-ten value="${esc(n.ten || '')}" autocomplete="off"></div>
+          <div class="field"><label class="field-label" for="${id}-ma">Mã gốc</label>
+            <input id="${id}-ma" data-ma value="${esc(n.maGocDeXuat || '')}" autocomplete="off" spellcheck="false"></div>
+          ${button('Gộp thành 1 sản phẩm', { variant: 'primary', size: 'sm', data: { gop: n.khoa } })}
+        </div>
+        <div class="field-hint">${n.soHieu ? `Số hiệu ${esc(n.soHieu)} đi theo sản phẩm — shop mới kéo về mang số này tự nối vào.` : 'Không có số hiệu — shop khác phải gắn tay ở tab «Theo thị trường».'} Mã gốc là khoá của kịch bản: đặt rồi không sửa được.</div>`}
+    ${xong ? `<div class="form-actions">${button('Mở ở Sản phẩm →', { size: 'sm', data: { moGoc: xong.id } })}</div>` : ''}
+    <div class="field-hint" data-tb aria-live="polite"></div>
+  </section>`;
+}
+const theNhom = (khoa) => $('#dsGop').querySelector(`[data-nhom="${khoa}"]`);
+const monChon = (the) => [...the.querySelectorAll('[data-chon]')].filter((c) => c.checked).map((c) => c.dataset.chon);
+async function gopNhom(khoa, nut) {
+  const n = GOP.nhom.find((x) => x.khoa === khoa);
+  const the = theNhom(khoa);
+  const posMa = monChon(the);
+  if (!posMa.length) { the.querySelector('[data-tb]').textContent = 'Chọn ít nhất một món.'; return; }
+  nut.disabled = true;
+  try {
+    const kq = await goiGhi('/api/san-pham/gop', { method: 'POST', body: JSON.stringify({
+      maGoc: the.querySelector('[data-ma]').value.trim(), ten: the.querySelector('[data-ten]').value.trim(), soHieu: n.soHieu, posMa }) });
+    GOP_XONG[khoa] = { id: String(kq.goc.id), ten: kq.goc.ten || kq.goc.maGoc };
+    await taiGoc(); veDsGop();
+  } catch (e) { nut.disabled = false; the.querySelector('[data-tb]').textContent = e.message; }
+}
+async function noiNhom(khoa, nut) {
+  const n = GOP.nhom.find((x) => x.khoa === khoa);
+  const the = theNhom(khoa);
+  const posMa = monChon(the);
+  if (!posMa.length) { the.querySelector('[data-tb]').textContent = 'Chọn ít nhất một món.'; return; }
+  nut.disabled = true;
+  try {
+    for (const m of posMa) {
+      await goiGhi('/api/san-pham/goc/' + encodeURIComponent(n.gocId) + '/mon', { method: 'POST', body: JSON.stringify({ posMa: m }) });
+    }
+    GOP_XONG[khoa] = { id: n.gocId, ten: n.ten || n.maGoc };
+    await taiGoc(); veDsGop();
+  } catch (e) { nut.disabled = false; the.querySelector('[data-tb]').textContent = e.message; }
+}
+
 /* ── PHẢI · BẢN SAO THEO PAGE (thứ bot đang bán hôm nay) ─────────────────────────────── */
 function veBanSao() {
   CHON = null; veTrai(); giu(null);
@@ -465,6 +575,7 @@ async function taiGoc() {
 }
 function moDau() {
   const u = new URL(location.href);
+  if (u.searchParams.get('xem') === 'gop') return veGop();
   const sp = u.searchParams.get('sp');
   if (GOC && sp && GOC.goc.some((g) => g.id === sp)) return moSanPham(sp, u.searchParams.get('tab') || 'chung');
   if (GOC && GOC.goc.length) return moSanPham(GOC.goc[0].id);
