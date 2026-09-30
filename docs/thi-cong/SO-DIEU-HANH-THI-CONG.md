@@ -1375,6 +1375,16 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
   - **N-KHONGQUYEN-DO** cột «Không quyền» của bảng token (Kết nối) chưa đo — cần một lượt dò Pancake CHỈ ĐỌC theo từng page của mỗi
     token, đếm page trả «không có quyền hạn trên trang này». Màn đang nói «chưa đo».
 
+- 30/09 · **NỢ SAU VE8a · VE8b** (`phieu-VE8a.md` §7 · `phieu-VE8b.md` §7):
+  - **N-THUOC-CHAP-CHON** `v3/test/b/ll18-khung.test.mjs` đỏ 1 ca đúng MỘT lần mỗi lượt ĐỦ cổng khi chạy lồng sâu (lượt 85b2afb:
+    qua ve4; lượt 97de3dd: qua ve5b), xanh ở mọi chỗ khác cùng lượt + 6 lượt song song. Cổng lồng nay in dòng đỏ con (`8f4dc43`) và
+    vòng thước in tên ca (`✖`) — lượt tới chỉ đích danh ca ⇒ sửa ca đó (nghi dựng máy chủ/đăng nhập dưới tải).
+  - **N-SKU-KEO-LAI** sau deploy: bấm «Kéo danh mục và giá từ POS» (Cài đặt › Kết nối) để 69 món Kuwait có SKU (khung gộp tạm
+    theo số đầu tên, 68/69 có số).
+  - **N-TIEN-TE-MAC-DINH** bậc giá đầu của thị trường chưa có giá: ô tiền tệ để trống, người gõ — chưa có nguồn «shop → tiền tệ».
+  - **N-MK-GOI-Y-DON** gợi ý marketer cho sản phẩm × thị trường và page từ đơn POS (đo 30/09: 98–100% đơn có marketer, 99–100% dòng
+    hàng có SKU, 57–88% đơn có page) — người quyết «để sau».
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2792,3 +2802,9 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · VE7b → 🔎 CHỜ DEPLOY — Kết nối theo bản vẽ 4: năm phần Pancake · POS · WhatsApp · HRM · Kéo dữ liệu; POS kèm tiền tệ + số món suy từ danh mục đã kéo; WhatsApp đọc VAN THẬT của cửa gửi (prod: vắng V3_WA_GUI ⇒ «Chưa nối»); «Không quyền» · HRM nói «chưa đo / chưa nối», không số tay
   cửa đọc mới /api/ket-noi/whatsapp · DOM giả dùng chung testkit/dom-gia.js (textContent sống theo cây) · ca K1–K8 · đảo-vá 17/17 · cổng ve7b.sh 9/9 · npm test 2.383 ca 0 đỏ · ĐỦ cổng: 12 nợ cũ + l1-m1 · nợ N-KHONGQUYEN-DO
   · commit 1c66710 · nhật ký docs/thi-cong/nhat-ky/phieu-VE7b.md
+- 30/09 · VE8a → 🔎 CHỜ DEPLOY — gộp món POS thành sản phẩm THEO SKU ngay trong màn Sản phẩm (máy gợi ý nhóm, người xác nhận; gộp = một giao dịch tạo sản phẩm + gắn món); lượt kéo danh mục lưu SKU + tự nối món shop mới; migration 028 (sku · marketer)
+  đo POS prod: SKU = product.display_id phủ 100%, trùng số đầu tên 371/373, 72/269 SKU không phải số · Postgres 6/6 (G4 = lượt kéo thật) · chạy thật 7/7 · đảo-vá 22/22 · cổng ve8a.sh 18/18 · npm test 2.396 ca 0 đỏ · nợ N-THUOC-CHAP-CHON · N-SKU-KEO-LAI
+  · commit eafbcd7 · 85b2afb · nhật ký docs/thi-cong/nhat-ky/phieu-VE8a.md
+- 30/09 · VE8b → 🔎 CHỜ DEPLOY — vòng khép kín trong màn Sản phẩm: giá theo thị trường sửa tại chỗ (chỉ-giá `gia_tay`: POS không đè giá, hết hàng vẫn theo POS) · marketer của sản phẩm kéo page theo · gắn/gỡ page (sản phẩm · shop · thị trường · marketer); Vận hành bỏ tab «Sản phẩm & giá»
+  Postgres B1–B6 7/7 (đo bằng catalog.js thật) · chạy thật 8/8 · đảo-vá 21/21 trên bản sau vá · cổng ve8b.sh 16/16 · npm test 2.411 ca 0 đỏ · ĐỦ cổng 44 xanh / 14 đỏ = 12 nợ cũ + l1-m1 + ve5b (chập chờn ll18-khung) · nợ N-TIEN-TE-MAC-DINH · N-MK-GOI-Y-DON
+  · commit 97de3dd · nhật ký docs/thi-cong/nhat-ky/phieu-VE8b.md

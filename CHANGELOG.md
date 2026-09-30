@@ -19,6 +19,38 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 30/09/2026 — Sản phẩm khép kín: gộp món POS theo SKU · giá theo thị trường · marketer · gắn page (VE8a · VE8b · CR-28-09c)
+
+Theo lời người quyết 30/09 («Sao phải chuyển sang 1 màn riêng?» · «gộp SP theo SKU → gán MKT → map page → khép kín»).
+Không đổi chữ bot nói. **Migration 028** (CHỈ THÊM cột: SKU của món + sản phẩm, marketer của sản phẩm, cờ «giá do người đặt»).
+0 biến · 0 gói · 0 tệp bộ não.
+
+- **Gộp món POS thành sản phẩm** (`eafbcd7` · `85b2afb`): ngay trong màn Sản phẩm («Gộp món POS thành sản phẩm →»). Máy gợi ý
+  nhóm theo **SKU** (mã sản phẩm POS, chung giữa các shop — đo prod: có ở 100% món, trùng số đầu tên 371/373), người bỏ chọn món
+  lạ, sửa tên/mã gốc, gán marketer rồi bấm gộp — một lượt tạo sản phẩm + gắn món. Lượt «Kéo danh mục» lưu SKU và **tự nối** món
+  của shop mới cùng SKU vào đúng sản phẩm.
+- 🔴 **Giá theo thị trường sửa ngay trong sản phẩm** (`97de3dd`): tab «Theo thị trường» — bậc giá (tên bậc · số lượng · giá ·
+  tiền tệ · giá gốc · khuyến mãi · phí ship · miễn ship · bật) của CHÍNH món POS shop đó; bot báo giá và máy tính tiền đơn từ
+  cùng bảng này cho mọi page gắn vào sản phẩm ở thị trường đó. Lưu chỉ thay giá: lượt kéo POS không đè giá người đặt, nhưng tên
+  và **hết hàng vẫn theo POS** (đường sửa cũ khoá cả hết hàng). Tab «Sản phẩm & giá» ở Vận hành **bỏ** — một nơi nhập giá.
+- **Marketer của sản phẩm** (`97de3dd`): tab Chung — đổi marketer là mọi page đang bán sản phẩm đổi theo (chuyển giao khi
+  marketer nghỉ).
+- 🔴 **Gắn / gỡ page từ sản phẩm** (`97de3dd`): «+ Gắn page» — chọn page + thị trường; page nhận thị trường, shop POS và
+  marketer của sản phẩm (ba thứ trước nay chỉ bộ di trú ghi được). Thị trường chưa có giá thì màn cảnh báo. «Gỡ» khi page chết.
+- Cổng nghiệm thu lồng nhau in lại dòng đỏ của cổng con khi trượt (`8f4dc43`).
+
+### 30/09/2026 — Cài đặt theo bản vẽ 4: thứ tự cụm · «Hệ còn sống» có việc vận hành · Kết nối năm phần (VE7a · VE7b · CR-28-09c)
+
+Không đổi chữ bot nói, không migration, không biến, không gói.
+
+- **Cài đặt** (`1c1ab28`): thứ tự Bắt đầu · Hệ còn sống · Kết nối · Model · Người và team · Nhật ký; «Vận hành» rời thanh tab,
+  mở từ nút của từng việc.
+- **Hệ còn sống không** (`1c1ab28`): khối «Việc vận hành» — tin cần đối chiếu (kèm số tin gửi không rõ kết quả) · tin bị lọc
+  24 giờ (kèm số đáng ngờ) · diễn tập; mỗi việc một nút sang đúng tab. Chỉ quản trị · quản lý thấy.
+- **Kết nối** (`1c66710`): năm phần Pancake · POS · WhatsApp · HRM · Kéo dữ liệu. POS mỗi shop kèm tiền tệ + số món (suy từ danh
+  mục đã kéo; chưa kéo nói «chưa kéo danh mục»); WhatsApp đọc **van thật** của cửa gửi (prod: «Chưa nối»); HRM «Chưa nối vào máy
+  chủ» kèm nguồn sẽ đọc; «Kéo dữ liệu» gom bốn việc (thêm kho POS · kéo danh mục · quét Pancake · nạp lại) một chỗ.
+
 ### 30/09/2026 — Page gộp nốt: Kịch bản vào trang một page, danh sách vào thẳng (VE2b · CR-28-09c)
 
 Theo lời người quyết 30/09 (hai ảnh). Không đổi chữ bot nói, không đổi lược đồ, không thêm biến, không thêm gói, không mở cửa ghi mới.
