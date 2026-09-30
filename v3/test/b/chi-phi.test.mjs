@@ -181,3 +181,12 @@ test('⑤c · sổ `so_ai` hỏng KHÔNG làm hỏng cả màn', async () => {
   assert.equal(d.soAi.docDuoc, false);
   assert.match(d.soAi.noi, /CSDL sập/);
 });
+
+test('⑥ · VE6b · token TOÀN HỆ đi ra màn (bản vẽ 3b «Token mỗi lượt · Trúng cache»); cầu không trả ⇒ `null`, không 0', async () => {
+  dung();
+  const r = await cp.manChiPhi(bc());
+  assert.deepEqual([r.toanHe.soLuotDoThat, r.toanHe.tokenVao, r.toanHe.tokenRa, r.toanHe.tokenDocLai], [650, 1e6, 1e5, 1e6]);
+  dung({ bot: botCo([pg('111')], { tokenVao: undefined, tokenRa: undefined, tokenDocLai: undefined, soLuotDoThat: undefined }) });
+  const r2 = await cp.manChiPhi(bc());
+  assert.deepEqual([r2.toanHe.soLuotDoThat, r2.toanHe.tokenVao, r2.toanHe.tokenRa, r2.toanHe.tokenDocLai], [null, null, null, null]);
+});

@@ -50,7 +50,7 @@ async function chayTrang(tra) {
   const o = {};
   const document = { querySelector: (s) => (o[s] ||= { innerHTML: '', textContent: '', dataset: {}, hidden: false }) };
   const UI = {
-    esc: (s) => String(s ?? ''), text: (s) => String(s ?? ''), formatNumber: (n) => String(n),
+    esc: (s) => String(s ?? ''), text: (s) => String(s ?? ''), formatNumber: (n) => String(n), formatVnd: (n) => `${n} đ`,
     statusBadge: (_m, x = {}) => `<b>${x.label || ''}</b>`, button: (t) => `<button>${t}</button>`,
     alert: (x) => `<div class="alert">${x.title} · ${x.body || ''} · ${(x.detail || []).join(' ')}</div>`,
     emptyState: (x) => `<div class="empty">${x.title}</div>`, nguonSo: () => '<div class="nguon"></div>',

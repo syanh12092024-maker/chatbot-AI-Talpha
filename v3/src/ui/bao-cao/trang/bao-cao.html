@@ -69,7 +69,7 @@
 </main>
 
 <script>
-const { esc, text, statusBadge, button, alert: canhBao, emptyState, nguonSo, metricRow, formatNumber } = window.UI;
+const { esc, text, statusBadge, button, alert: canhBao, emptyState, nguonSo, metricRow, formatNumber, formatVnd } = window.UI;
 const $ = (s) => document.querySelector(s);
 const d0 = (n) => (n == null ? '—' : formatNumber(n));
 
@@ -144,7 +144,7 @@ function veBang(d, cp) {
       <td class="num manh">${d0(p.posQuyChoAi)}</td>
       <td class="num">${d0(p.hoiThoaiCoDon)}</td>
       <td class="num">${chuaCo}</td>
-      <td class="num">${!coCp ? chuaCo : p.vndMoiDon == null ? (p.dotTien ? statusBadge('needs_attention', { label: 'Tốn tiền, 0 đơn' }) : chuaCo) : d0(p.vndMoiDon) + ' đ'}</td>
+      <td class="num">${!coCp ? chuaCo : p.vndMoiDon == null ? (p.dotTien ? statusBadge('needs_attention', { label: 'Tốn tiền, 0 đơn' }) : chuaCo) : formatVnd(p.vndMoiDon)}</td>
       <td class="num">${chuaCo}</td>
     </tr>`).join('')}</tbody></table>
     <p class="field-hint tren-3">«Chốt» và «Hoàn» theo page: chưa có nguồn — chưa cửa đọc nào tính hai số này theo page.${coCp ? ` «AI / đơn»: ${esc(cp.khoang ? cp.khoang.chu : '')}, sổ của tiến trình bot.` : ' «AI / đơn»: chưa đọc được sổ chi phí.'}</p>`;
@@ -262,10 +262,10 @@ function veChiSo() {
   const hl = BAO_CAO && BAO_CAO.haiLuong && BAO_CAO.haiLuong.co ? BAO_CAO.haiLuong : null;
   const cr = NGUON && !NGUON.loi ? NGUON.choRoi : null;
   $('#chiSo').innerHTML = metricRow([
-    { label: 'Chi phí AI mỗi đơn', value: t && t.vndMoiDon != null ? `${formatNumber(t.vndMoiDon)} đ` : '—',
+    { label: 'Chi phí AI mỗi đơn', value: t && t.vndMoiDon != null ? formatVnd(t.vndMoiDon) : '—',
       hint: t ? `${k} · sổ bot cũ · % doanh thu: chưa có nguồn` : (CHI_PHI && CHI_PHI.loi ? 'chưa đọc được sổ chi phí' : 'đang đọc…') },
     { label: 'Tin AI để ra một đơn', value: t && t.tinMoiDon != null ? t.tinMoiDon : '—',
-      hint: t ? `${t.vndMoiTin != null ? formatNumber(t.vndMoiTin) + ' đ mỗi tin · ' : ''}${formatNumber(t.soLuot)} tin → ${formatNumber(t.soDon)} đơn` : '' },
+      hint: t ? `${t.vndMoiTin != null ? formatVnd(t.vndMoiTin) + ' mỗi tin · ' : ''}${formatNumber(t.soLuot)} tin → ${formatNumber(t.soDon)} đơn` : '' },
     { label: 'Đơn theo luồng — không gộp', value: hl ? `${formatNumber(hl.messenger.soDon)} · ${formatNumber(hl.trangBanHang.soDon)}` : '—',
       hint: hl ? `Messenger · trang bán hàng · ${khoangChu(hl.khoang)}` : 'chưa nối cửa hai luồng' },
     { label: 'BUY NOW mà không gửi WhatsApp', value: cr && cr.doDuoc && cr.tiLe != null ? `${(cr.tiLe * 100).toFixed(1).replace('.', ',')}%` : '—',

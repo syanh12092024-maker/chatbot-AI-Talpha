@@ -52,7 +52,7 @@ async function chay(cua) {
   const document = { querySelector: (s) => (o[s] ||= { innerHTML: '', textContent: '', dataset: {}, hidden: false }) };
   const goi = [];
   const UI = {
-    esc: (s) => String(s ?? ''), text: (s) => String(s ?? ''), formatNumber: (n) => String(n), button: (t) => `<button>${t}</button>`,
+    esc: (s) => String(s ?? ''), text: (s) => String(s ?? ''), formatNumber: (n) => String(n), formatVnd: (n) => `${n} đ`, button: (t) => `<button>${t}</button>`,
     statusBadge: (_m, x = {}) => `<b>${x.label || ''}</b>`, alert: (x) => `<div class="alert">${x.title || ''} · ${x.body || ''}</div>`,
     emptyState: (x) => `<div class="empty">${x.title}</div>`, nguonSo: () => '<div class="nguon"></div>',
     metricRow: (ds) => `<div class="metric-row">${ds.map((m) => `[${m.label}: ${m.value} | ${m.hint || ''}]`).join('')}</div>`,

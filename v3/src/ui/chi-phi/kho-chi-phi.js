@@ -179,6 +179,10 @@ export async function manChiPhi(boiCanh) {
     toanHe: {
       tienVnd: bot.tienVnd, soLuot: bot.soLuotTraLoi, soDon: bot.soDon,
       vndMoiTin: bot.vndMoiTin, vndMoiDon: bot.vndMoiDon, tinMoiDon: bot.tinMoiDon,
+      // VE6b · 30/09 (bản vẽ 3b «Token mỗi lượt · Trúng cache»): cầu đã trả sẵn tổng token TOÀN HỆ — bản trước bỏ rơi. Chỉ TOÀN HỆ:
+      // dòng page của cầu không tách token đọc lại cache. `null` = cầu không trả, KHÔNG phải 0.
+      soLuotDoThat: bot.soLuotDoThat ?? null, tokenVao: bot.tokenVao ?? null, tokenRa: bot.tokenRa ?? null,
+      tokenDocLai: bot.tokenDocLai ?? null,
     },
     page,
     dotTien: {

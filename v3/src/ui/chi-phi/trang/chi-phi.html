@@ -7,7 +7,9 @@
 <!-- Dựng trên hệ kiểu (mục M10: chi phí). KHÔNG CSS riêng — trước lượt này là 48 dòng. Sáu thẻ
      số rời → một hàng bốn chỉ số (mục M1: 4 là trần), số phụ đi vào dòng gợi ý dưới số chính.
      Bốn dải màu đầu trang (xanh · vàng · đỏ · xanh viền trái) → cảnh báo theo mức của hệ, và
-     khoảng đo lên đầu trang cạnh tiêu đề: màn số liệu nào cũng phải nói nó đo trên khoảng nào. -->
+     khoảng đo lên đầu trang cạnh tiêu đề: màn số liệu nào cũng phải nói nó đo trên khoảng nào.
+     VE6b · 30/09 (bản vẽ 3b): bốn ô Mỗi đơn · Mỗi tin · Token mỗi lượt · Trúng cache (hai ô sau TOÀN HỆ — cầu không tách token
+     đọc lại theo page) và ba tab Từng tin · Theo page · Theo model. Tổng tiền · lượt · đơn của team xuống thanh của tab Theo page. -->
 <link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
@@ -27,14 +29,29 @@
   <section class="section" aria-label="Tổng chi phí">
     <div id="dem"><div class="metric-row"><div class="metric"><span class="skeleton"></span></div></div></div>
     <div class="page-note tren-3" id="nguon"></div>
-    <!-- LL10 · 29/09: chi phí từng tin (tra tiền về đúng câu khách) — ở màn Vận hành. -->
-    <p class="page-note" id="chi-phi-tung-tin"><a href="/van-hanh-v3?tab=chi-phi-tin">Chi phí từng tin — tra tiền về đúng câu khách →</a></p>
   </section>
 
-  <section class="section table-wrap" aria-labelledby="tieu-bang">
+  <div class="tabs" role="tablist" aria-label="Chi phí theo" id="thanhTab">
+    <button type="button" class="tab" role="tab" id="t-tin" aria-controls="tab-tin" aria-selected="false" data-tab="tin" hidden>Từng tin</button>
+    <button type="button" class="tab" role="tab" id="t-page" aria-controls="tab-page" aria-selected="true" data-tab="page">Theo page</button>
+    <button type="button" class="tab" role="tab" id="t-model" aria-controls="tab-model" aria-selected="false" data-tab="model">Theo model</button>
+  </div>
+
+  <section class="section table-wrap" role="tabpanel" id="tab-tin" aria-labelledby="t-tin" hidden>
+    <div class="table-toolbar"><h2>Từng tin</h2><span class="table-count" id="hTin"></span></div>
+    <div id="bangTin"><span class="skeleton"></span></div>
+    <!-- LL10 · 29/09: bản đủ (lọc page · khách · khoảng, gom theo khách/page/thị trường) ở màn Vận hành. -->
+    <p class="page-note tren-3" id="chi-phi-tung-tin"><a href="/van-hanh-v3?tab=chi-phi-tin">Lọc theo page · khách · khoảng, gom theo khách / page / thị trường — ở Vận hành →</a></p>
+  </section>
+
+  <section class="section table-wrap" role="tabpanel" id="tab-page" aria-labelledby="t-page">
     <div class="table-toolbar"><h2 id="tieu-bang">Chi phí theo page</h2>
       <span class="table-count" id="hSo"></span></div>
     <div id="bang"></div>
+  </section>
+
+  <section class="section" role="tabpanel" id="tab-model" aria-labelledby="t-model" hidden>
+    <div id="theoModel"></div>
   </section>
 </main>
 
@@ -76,14 +93,22 @@ function veBangTin(d) {
 
 function veDem(d) {
   const t = d.tong;
+  // VE6b · bản vẽ 3b. «Token mỗi lượt» và «Trúng cache» tính trên TỔNG TOÀN HỆ của cầu (dòng page không tách token đọc lại cache) —
+  // nhãn nói «toàn hệ». Trúng cache = đọc lại ÷ (vào + đọc lại): đúng định nghĩa cho ra 73,3% từ hồ sơ đo thật 3.053 · 8.390 của bản vẽ.
+  const h = d.toanHe || {};
+  const moiLuot = (x) => (h.soLuotDoThat > 0 && x != null ? Math.round(x / h.soLuotDoThat) : null);
+  const [vao, docLai, ra] = [moiLuot(h.tokenVao), moiLuot(h.tokenDocLai), moiLuot(h.tokenRa)];
+  const mau = (h.tokenVao ?? 0) + (h.tokenDocLai ?? 0);
+  const trung = h.tokenVao != null && h.tokenDocLai != null && mau > 0 ? h.tokenDocLai / mau : null;
   $('#dem').innerHTML = metricRow([
-    { label: 'Tổng tiền model của team', value: dong(t.tienVnd), hint: `${d0(t.soLuot)} lượt trả lời` },
-    { label: 'Mỗi tin trả lời', value: dong(t.vndMoiTin),
-      hint: t.tiLeDoThat != null ? `${t.tiLeDoThat}% lượt có token đo thật` : 'Chưa có lượt nào đo thật' },
     { label: 'Mỗi đơn ra được', value: dong(t.vndMoiDon),
       hint: t.tinMoiDon != null ? `${String(t.tinMoiDon).replace('.', ',')} tin cho một đơn` : '' },
-    { label: 'Đơn', value: d0(t.soDon),
-      statusHtml: t.soDon === 0 ? statusBadge('blocked', { label: 'Chưa ra đơn nào' }) : '' },
+    { label: 'Mỗi tin trả lời', value: dong(t.vndMoiTin),
+      hint: (t.tiLeDoThat != null ? `${t.tiLeDoThat}% lượt có token đo thật` : 'Chưa có lượt nào đo thật') + ` · đích phiếu BH8: ≤ ${formatVnd(50)}` },
+    { label: 'Token mỗi lượt · toàn hệ', value: vao == null ? '—' : `${d0(vao)} · ${d0(docLai)} · ${d0(ra)}`,
+      hint: 'vào · đọc lại cache · ra — trên lượt đo thật' },
+    { label: 'Trúng cache · toàn hệ', value: trung == null ? '—' : `${(trung * 100).toFixed(1).replace('.', ',')}%`,
+      hint: 'đọc lại ÷ (vào + đọc lại)' },
   ]);
   // Lời khai nguồn (luật 8) xuống ô gập — mặt màn giữ đúng con số và câu người dùng cần.
   $('#nguon').innerHTML = nguonSo({
@@ -98,7 +123,10 @@ function veDem(d) {
 
 function veBang(d) {
   const ds = d.page.filter((p) => p.soLuot > 0);
-  $('#hSo').textContent = `${formatNumber(ds.length)} page có tiêu · nhiều tiền nhất lên trước`;
+  // VE6b: tổng tiền · lượt · đơn của TEAM (bốn ô trên nay theo bản vẽ) — không mất số nào của bản cũ.
+  $('#hSo').innerHTML = `${esc(formatNumber(ds.length))} page có tiêu · nhiều tiền nhất lên trước · tổng ${esc(dong(d.tong.tienVnd))} · `
+    + `${esc(d0(d.tong.soLuot))} lượt · ${esc(d0(d.tong.soDon))} đơn`
+    + (d.tong.soDon === 0 ? ` ${statusBadge('blocked', { label: 'Chưa ra đơn nào' })}` : '');
   if (!ds.length) {
     $('#bang').innerHTML = emptyState({ icon: 'inbox', title: d.trong ? d.trong.noi : 'Chưa có lượt gọi model nào',
       body: d.trong && d.trong.diTiep ? d.trong.diTiep : '' });
@@ -121,7 +149,71 @@ function veBang(d) {
         : p.tiLeDoThat >= 80 ? `${p.tiLeDoThat}%`
         : `<span class="badge" data-variant="warning" title="Dưới 80% lượt có token đo thật — phần còn lại là ước lượng">${p.tiLeDoThat}% · ước</span>`}</td>
       <td>${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
+    </tr>`).join('')}</tbody></table>
+    <p class="field-hint tren-3">«Chặn bằng trả lời sẵn» theo page (bản vẽ): chưa có nguồn — mẫu trả lời sẵn chưa ghi page.</p>`;
+}
+
+/* ═══ VE6b · tab Theo model (bản vẽ 3b) — nói đúng cái đang có, không bịa bảng ═══ */
+function veTheoModel(d) {
+  $('#theoModel').innerHTML = `<div class="panel">
+    <div class="feature-row" data-state="on"><div><div class="feature-name">Nhà model đang tính tiền</div>
+      <div class="feature-desc">${d.nhaCungCap ? esc(d.nhaCungCap) : 'Cầu không nói tên nhà model.'} — toàn bộ tiền ở màn này đo tại tiến trình bot.</div></div>
+      ${statusBadge(d.nhaCungCap ? 'ready' : 'unknown', { label: d.nhaCungCap ? 'Đang dùng' : 'Chưa rõ' })}</div>
+    <div class="feature-row" data-state="off"><div><div class="feature-name">Lượt và tiền theo từng model</div>
+      <div class="feature-desc">Chưa có nguồn — sổ tiền của tiến trình bot không tách theo model; sổ v3 có cột model nhưng chưa có đường gom.</div></div>
+      ${statusBadge('unknown', { label: 'Chưa có nguồn' })}</div>
+    <div class="feature-row" data-state="off"><div><div class="feature-name">Dự phòng khác nhà</div>
+      <div class="feature-desc">Chưa chạy trên đường chat — chưa lượt nào chuyển sang model dự phòng, nên chưa có tiền để đếm.</div></div>
+      ${statusBadge('unknown', { label: 'Chưa chạy' })}</div>
+  </div>${CUA.model ? '<p class="page-note tren-3"><a href="/model-ai">Cấu hình model chính · dự phòng · bảng giá →</a></p>' : ''}`;
+}
+
+/* ═══ VE6b · tab Từng tin — sổ `so_ai` của v3 qua cửa của Vận hành (quản trị · quản lý). Máy chủ trả 100 lượt MỚI NHẤT;
+   màn xếp ĐẮT NHẤT lên đầu TRONG 100 lượt ấy và nói rõ vậy. Sổ rỗng ⇒ nói vì sao, không hiện như «không tốn đồng nào». ═══ */
+async function taiTungTin() {
+  let d;
+  try { d = await goi('/api/van-hanh/chi-phi-tin'); } catch (e) {
+    $('#bangTin').innerHTML = canhBao({ level: 'warning', title: 'Chưa đọc được chi phí từng tin', body: e.message }); return;
+  }
+  const ds = [...(d && d.items) || []].sort((a, b) => (b.vnd ?? -1) - (a.vnd ?? -1));
+  $('#hTin').textContent = ds.length ? `${formatNumber(ds.length)} lượt mới nhất · xếp đắt nhất lên đầu` : '';
+  if (!ds.length) {
+    $('#bangTin').innerHTML = emptyState({ icon: 'inbox', title: 'Sổ chi phí của v3 chưa ghi lượt nào',
+      body: 'Lượt được ghi ở đây khi bot v3 trả lời khách. Tiền của bot đang chạy nằm ở bốn ô trên và tab Theo page.' });
+    return;
+  }
+  $('#bangTin').innerHTML = `<table class="data-table"><thead><tr><th scope="col">Lúc</th><th scope="col">Page</th>
+      <th scope="col">Khách nhắn</th><th scope="col">Model</th><th scope="col" class="num">Token vào / ra</th>
+      <th scope="col" class="num">Tiền</th><th scope="col">Hội thoại</th></tr></thead><tbody>${ds.map((x) => `<tr>
+      <td class="mono">${esc(x.luc ? new Date(x.luc).toLocaleString('vi-VN', { hour12: false }) : '—')}</td>
+      <td>${esc(x.pageTen || x.pageId || '')}</td>
+      <td>${x.tinKhach ? esc(x.tinKhach.slice(0, 80)) : '<span class="text-muted" title="Lượt này không nối được về tin khách">—</span>'}</td>
+      <td class="mono">${esc(x.maModel || '—')}</td>
+      <td class="num">${d0(x.token && x.token.vao)} / ${d0(x.token && x.token.ra)}${x.doThat ? '' : ' <span class="meta">ước</span>'}</td>
+      <td class="num manh">${dong(x.vnd)}</td>
+      <td>${x.psid ? `<a class="lien-ke" href="/ho-so-khach?q=${encodeURIComponent(x.psid)}">Tìm hội thoại →</a>` : '—'}</td>
     </tr>`).join('')}</tbody></table>`;
+}
+
+/* Tab + vai: «Từng tin» chỉ hiện khi vai vào được màn Vận hành (cửa của nó CÙNG hằng vai) — hỏi menu, không gọi rồi ăn 403. */
+let CUA = { tin: false, model: false };
+function moTab(ma) {
+  document.querySelectorAll('#thanhTab [data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === ma)));
+  for (const k of ['tin', 'page', 'model']) $('#tab-' + k).hidden = k !== ma;
+  const u = new URL(location.href); if (ma === 'page') u.searchParams.delete('tab'); else u.searchParams.set('tab', ma);
+  history.replaceState(null, '', u);
+}
+async function napCua() {
+  try {
+    const d = await goi('/api/dieu-huong');
+    const co = (duong) => (d.nhom || []).some((n) => (n.man || []).some((m) => m.duong === duong));
+    CUA = { tin: co('/van-hanh-v3'), model: co('/model-ai') };
+  } catch { CUA = { tin: false, model: false }; }
+  $('#t-tin').hidden = !CUA.tin;
+  document.querySelectorAll('#thanhTab [data-tab]').forEach((b) => b.addEventListener('click', () => moTab(b.dataset.tab)));
+  const muon = new URLSearchParams(location.search).get('tab');
+  moTab(muon === 'model' || (muon === 'tin' && CUA.tin) ? muon : 'page');
+  if (CUA.tin) taiTungTin();
 }
 
 async function tai() {
@@ -138,7 +230,7 @@ async function tai() {
         body: 'Màn này không hiện 0 khi chưa đọc được — 0 đồng ở đây sẽ là con số sai.' });
       return;
     }
-    veBangTin(d); veDem(d); veBang(d);
+    veBangTin(d); veDem(d); veBang(d); veTheoModel(d);
   } catch (e) {
     $('#dem').innerHTML = '';
     $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được chi phí',
@@ -149,7 +241,7 @@ async function tai() {
   }
 }
 
-tai();
+napCua().then(tai);
 </script>
 <script src="/chung/dieu-huong.js"></script>
 </body>
