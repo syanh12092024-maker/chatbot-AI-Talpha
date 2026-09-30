@@ -19,6 +19,19 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 30/09/2026 — ba màn Số liệu theo bản vẽ (VE6a · VE6b · VE6c · CR-28-09c)
+
+Dựng lại NỘI DUNG Tổng quan (3a) · Chi phí AI (3b) · Khách (3c). Không đổi chữ bot nói, không đổi lược đồ, không thêm biến, không thêm
+gói. Thêm MỘT hàm ĐỌC ở tầng dữ liệu (gom hội thoại theo team). Ô nào chưa có nguồn thì màn nói «chưa có nguồn», không bịa số.
+
+- **Tổng quan** (`1ecb8f9`): bốn ô số (chi phí AI/đơn · tin AI/đơn · đơn hai luồng KHÔNG gộp · BUY NOW: chưa đo được, 37,4% là số cũ) ·
+  hai phễu (chặng thiếu nguồn nói ra, không tỉ lệ rơi) · ba thước đơn Messenger giữ đứng dọc · bảng theo page ghép chi phí AI/đơn, xếp
+  đắt nhất lên đầu, nêu page tốn tiền 0 đơn · rủi ro hoàn bốn tầng cho quản trị · quản lý.
+- **Chi phí AI** (`aecd410`): bốn ô mỗi đơn · mỗi tin (đích BH8 ≤ 50 ₫) · token mỗi lượt · trúng cache (toàn hệ) · ba tab Từng tin (quản
+  trị · quản lý) · Theo page (+ tổng của team) · Theo model (nói đúng cái đang có).
+- **Khách** (`0405e8b`): tab mới thay «Nguồn khách» + «Rủi ro hoàn» — hội thoại CỦA TEAM theo giai đoạn × người giữ (từ CSDL v3, kèm
+  tuổi dữ liệu) · rủi ro hoàn bốn tầng + «Tra một khách» · khách rơi ở đâu. Màn Rủi ro hoàn đủ vẫn mở bằng «Xem đủ →».
+
 ### 30/09/2026 — vá ba lỗi «tên chưa khai» sống trên prod (VE-VA1)
 
 Không đổi lời bot, không đổi lược đồ, không thêm biến, không thêm gói. Chỉ hai tệp trang.
