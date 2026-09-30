@@ -19,7 +19,7 @@
 //    `is_sell_negative_variation = true`). Cột `san_pham.ton_kho` là `int` nên giữ được
 //    số âm — KHÔNG kẹp về 0: kẹp là xoá mất tín hiệu «đã bán quá tồn».
 import { layNhieu, themMoi } from "../db/index.js";
-import { tachSoHieu } from "./ten-goc.js";
+import { tachSoHieu, chuanSku } from "./ten-goc.js";
 import { xacDinhTeam, suaTheoIdPos } from "./kho.js";
 import { layKetNoi } from "./ket-noi.js";
 import { guiDocBienThe } from "./api.js";
@@ -121,6 +121,9 @@ export async function docDanhMuc(
       // nó của shop nào — bảng không có cột shop.
       const ma = `${ketNoi.shopId}:${v.id}`;
       const ten = tenBienThe(v);
+      // VE8 · 028: SKU = «mã sản phẩm» POS, chung giữa các shop (người quyết 30/09) — ghi NGUYÊN VĂN, so bằng `chuanSku`.
+      const skuPos = String(v.product?.display_id ?? "").trim() || null;
+      const khoaSku = chuanSku(skuPos);
 
       // ── CR-15/09 · TỰ NỐI `ma_goc` THEO SỐ HIỆU ──────────────────────────────────
       // Đội vận hành gõ số hiệu vào đầu tên POS (`125 - Fitgum Acai Berry`), và đo 15/09
@@ -136,7 +139,13 @@ export async function docDanhMuc(
       // ⛔ KHÔNG ghi đè `ma_goc` đã có. Người soát (CR3) thắng máy.
       const { soHieu } = tachSoHieu(ten);
       let maGoc = null;
-      if (soHieu) {
+      // VE8 · 028: nối theo SKU TRƯỚC (phủ 100% — số đầu tên chỉ ~70%); không gốc nào mang SKU ⇒ lùi về số hiệu (CR-15/09).
+      const gocSku = khoaSku
+        ? await layNhieu(pool, ctx, "san_pham_goc", { dieuKien: { team_id: team.teamId, sku: khoaSku } })
+        : [];
+      if (gocSku.length) {
+        maGoc = gocSku[0].ma_goc; kq.noiMaGoc++;
+      } else if (soHieu) {
         const goc = await layNhieu(pool, ctx, "san_pham_goc", {
           dieuKien: { team_id: team.teamId, so_hieu: soHieu },
         });
@@ -168,6 +177,7 @@ export async function docDanhMuc(
           het_hang: tonKho != null && tonKho <= 0,
           nguon: "pos",
           ma_goc: maGoc, // null = chưa có sản phẩm gốc cho số hiệu này (người gán ở CR3)
+          sku: skuPos,
         });
         spId = moi.id;
         kq.them++;
@@ -188,7 +198,8 @@ export async function docDanhMuc(
         //
         // ⛔ Vẫn KHÔNG ghi đè `ma_goc` đã có — người soát thắng máy. Chỉ điền chỗ NULL.
         const thieuGoc = maGoc != null && cu.ma_goc == null;
-        if (!doiTen && !doiTon && !thieuPage && !thieuGoc) {
+        const doiSku = skuPos != null && cu.sku !== skuPos;   // VE8 · 028: món kéo trước khi có cột nhận SKU ở lượt này
+        if (!doiTen && !doiTon && !thieuPage && !thieuGoc && !doiSku) {
           kq.giuNguyen++;
         } else {
           await suaTheoIdPos(pool, ctx, {
@@ -200,6 +211,7 @@ export async function docDanhMuc(
               ton_kho: tonKho,
               ...(thieuPage ? { page_id: pageId } : {}),
               ...(thieuGoc ? { ma_goc: maGoc } : {}),
+              ...(doiSku ? { sku: skuPos } : {}),
               sua_luc: new Date(),
             },
             hanhDong: "pos_doc_danh_muc_refresh",

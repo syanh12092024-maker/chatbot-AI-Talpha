@@ -129,8 +129,8 @@ export async function suaGoc(boiCanh, id, than) {
     hanhDong: HANH_DONG.SUA_SAN_PHAM_GOC,
     doiTuongLoai: BANG,
     doiTuongId: kq.id,
-    sau: { maGoc: kq.maGoc, ten: kq.ten, soHieu: kq.soHieu },
-    ghiChu: `sửa sản phẩm gốc "${kq.maGoc}"`,
+    sau: { maGoc: kq.maGoc, ten: kq.ten, soHieu: kq.soHieu, sku: kq.sku, marketer: kq.marketer },
+    ghiChu: `sửa sản phẩm gốc "${kq.maGoc}" (${Object.keys(than || {}).join(', ') || 'không đổi gì'})`,
   });
   return kq;
 }
@@ -205,8 +205,9 @@ export async function gopMonThanhGoc(boiCanh, than) {
   const ds = kq.posMa || [];
   await ghi(bc, {
     hanhDong: HANH_DONG.TAO_SAN_PHAM_GOC, doiTuongLoai: BANG, doiTuongId: kq.id,
-    sau: { maGoc: kq.maGoc, ten: kq.ten, soHieu: kq.soHieu, posMa: ds },
-    ghiChu: `gộp ${ds.length} món POS thành sản phẩm gốc "${kq.maGoc}"${kq.soHieu ? ` (số hiệu ${kq.soHieu})` : ''}: `
+    sau: { maGoc: kq.maGoc, ten: kq.ten, sku: kq.sku, marketer: kq.marketer, posMa: ds },
+    ghiChu: `gộp ${ds.length} món POS thành sản phẩm gốc "${kq.maGoc}"${kq.sku ? ` (SKU ${kq.sku})` : ''}`
+      + `${kq.marketer ? ` · marketer ${kq.marketer}` : ''}: `
       + `${ds.slice(0, 12).join(', ')}${ds.length > 12 ? '…' : ''}`,
   });
   return kq;

@@ -48,6 +48,17 @@ export function chuanHoaTen(ten) {
 }
 
 /**
+ * SKU → KHOÁ SO SÁNH (VE8 · migration 028). SKU = «mã sản phẩm» của POS (`product.display_id`), CHUNG cho mọi shop bán
+ * cùng một sản phẩm (người quyết 30/09; đo prod 30/09: có ở 100% biến thể, trùng số đầu tên 371/373). Số ⇒ bỏ 0 đứng
+ * đầu (`010` = `10`, cùng luật `tachSoHieu`); chữ ⇒ gộp khoảng trắng + về thường. Rỗng ⇒ null: không có khoá thì không gộp.
+ */
+export function chuanSku(sku) {
+  const s = String(sku ?? "").trim().replace(/\s+/g, " ");
+  if (!s) return null;
+  return /^[0-9]+$/.test(s) ? String(Number(s)) : s.toLowerCase();
+}
+
+/**
  * Mã gốc ĐỀ XUẤT từ một tên POS — slug đọc được, để người sửa lại nếu muốn.
  * `125 - Fitgum Acai Berry` → `fitgum-acai-berry`
  *

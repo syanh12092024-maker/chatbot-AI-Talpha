@@ -19,14 +19,14 @@ const goc = await import('../../src/ui/san-pham/kho-goc.js');
 const { HANH_DONG } = await import('../../src/audit/hanh-dong.js');
 const { moTrang } = await import('../../testkit/dom-gia.js');
 
-const MON = (posMa, thiTruong, tenPos, tonKho = 3) => ({ posMa, tenPos, shopId: posMa.split(':')[0], thiTruong, tonKho });
+const MON = (posMa, thiTruong, tenPos, sku, tonKho = 3) => ({ posMa, tenPos, sku, shopId: posMa.split(':')[0], thiTruong, tonKho });
 const NHOM = () => [
-  { khoa: 'goc:9', loai: 'noi', soHieu: '200', gocId: '9', maGoc: 'kreain', ten: 'Kreain', soShop: 2, tenLech: [],
-    mon: [MON('111:e', 'Saudi', '200 - Kreain'), MON('222:e', 'Kuwait', '200 - Kreain')], lyDo: 'Số hiệu 200 đã là sản phẩm «Kreain» — 2 món chưa nối' },
-  { khoa: 'so:125', loai: 'moi', soHieu: '125', ten: 'Fitgum Acai Berry', maGocDeXuat: 'fitgum-acai-berry', soShop: 2,
-    tenLech: ['Fitgum Acai Berry', 'Fitgum Acai Berry L'],
-    mon: [MON('111:a', 'Saudi', '125 - Fitgum Acai Berry'), MON('222:b', 'Kuwait', '125 - Fitgum Acai Berry'), MON('222:c', 'Kuwait', '125 - Fitgum Acai Berry L')],
-    lyDo: 'Cùng số hiệu 125 ở 2 shop' },
+  { khoa: 'goc:9', loai: 'noi', sku: '200', gocId: '9', maGoc: 'kreain', ten: 'Kreain', soShop: 2, tenLech: [], canh: [],
+    mon: [MON('111:e', 'Saudi', '200 - Kreain', '200'), MON('222:e', 'Kuwait', '200 - Kreain', '200')], lyDo: 'SKU 200 đã là sản phẩm «Kreain» — 2 món chưa nối' },
+  { khoa: 'sku:125', loai: 'moi', sku: '125', ten: 'Fitgum Acai Berry', maGocDeXuat: 'fitgum-acai-berry', soShop: 2,
+    tenLech: ['Fitgum Acai Berry', 'Fitgum Acai Berry L'], canh: ['1 món chưa có SKU (kéo lại danh mục để lấy) — tạm theo số đầu tên'],
+    mon: [MON('111:a', 'Saudi', '125 - Fitgum Acai Berry', '125'), MON('222:b', 'Kuwait', '125 - Fitgum Acai Berry', '125'), MON('222:c', 'Kuwait', '125 - Fitgum Acai Berry L', null)],
+    lyDo: 'Cùng SKU 125 ở 2 shop' },
 ];
 function khoGia() {
   const goiGop = []; const goiGan = [];
@@ -39,8 +39,8 @@ function khoGia() {
       chiTiet: async (_b, id) => (id === '77' ? { id: '77', maGoc: 'fitgum-acai-berry', ten: 'Fitgum Acai Berry', soHieu: '125', kienThuc: {}, thiTruong: [], page: [] } : null),
       monChuaGan: async () => [], go: ham, kienThuc: ham,
       gan: async (_b, id, posMa) => { goiGan.push([String(id), posMa]); return { maGoc: 'kreain', posMa, shopId: posMa.split(':')[0], daCo: false }; },
-      goiYGop: async () => ({ dem: { shopTong: 7, shopBat: 1, shopDaKeo: 2, monPos: 5, monChuaGan: 5, soGoc: 1, banSao: 0, banSaoChuaNoi: 0 }, nhom: NHOM() }),
-      gop: async (_b, than) => { goiGop.push(than); return { id: '77', maGoc: than.maGoc, ten: than.ten, soHieu: than.soHieu, posMa: than.posMa, soBienThe: than.posMa.length }; },
+      goiYGop: async () => ({ dem: { shopTong: 7, shopBat: 1, shopDaKeo: 2, monPos: 5, monChuaGan: 5, monChuaSku: 1, soGoc: 1, banSao: 0, banSaoChuaNoi: 0 }, nhom: NHOM() }),
+      gop: async (_b, than) => { goiGop.push(than); return { id: '77', maGoc: than.maGoc, ten: than.ten, sku: than.sku, marketer: than.marketer || '', posMa: than.posMa, soBienThe: than.posMa.length }; },
     },
   };
 }
@@ -76,23 +76,27 @@ test('G1 · quản trị mở «Gộp món POS» ngay trong màn Sản phẩm: b
   assert.match(so, /Shop đã kéo danh mục\s*2\/7/);
   assert.match(so, /Món chưa thuộc sản phẩm\s*5/);
   assert.match(m.$('#phai').textContent, /Mới kéo danh mục 2\/7 shop/);
-  assert.deepEqual(m.$('#dsGop').querySelectorAll('[data-nhom]').map((x) => x.dataset.nhom), ['goc:9', 'so:125']);
-  const n125 = theNhom(m, 'so:125').textContent.replace(/\s+/g, ' ');
-  assert.match(n125, /Cùng số hiệu 125 ở 2 shop · tên lệch giữa các shop: Fitgum Acai Berry \/ Fitgum Acai Berry L — người xem/);
-  assert.match(n125, /Kuwait 222:b 125 - Fitgum Acai Berry 3/);
+  assert.match(m.$('#phai').textContent, /1 món chưa có SKU/);
+  assert.deepEqual(m.$('#dsGop').querySelectorAll('[data-nhom]').map((x) => x.dataset.nhom), ['goc:9', 'sku:125']);
+  const n125 = theNhom(m, 'sku:125').textContent.replace(/\s+/g, ' ');
+  assert.match(n125, /Cùng SKU 125 ở 2 shop · tên lệch giữa các shop: Fitgum Acai Berry \/ Fitgum Acai Berry L — người xem/);
+  assert.match(n125, /1 món chưa có SKU/);
+  assert.match(n125, /Kuwait 222:b 125 125 - Fitgum Acai Berry 3/);
+  assert.match(n125, /Kuwait 222:c chưa có 125 - Fitgum Acai Berry L/);
 });
 
-test('G2 · gộp: bỏ chọn món lạ + sửa tên ⇒ MỘT lượt POST đúng món/tên/mã/số hiệu; xong ⇒ «Đã gộp» + mở sản phẩm vừa tạo', async (t) => {
+test('G2 · gộp: bỏ chọn món lạ + sửa tên + gán marketer ⇒ MỘT lượt POST đúng món/tên/mã/SKU/marketer; xong ⇒ «Đã gộp» + mở sản phẩm', async (t) => {
   const d = await dungThu();
   t.after(() => d.sv.close());
   const m = await moTrang('san-pham/trang/san-pham.html', { goc: d.goc, cookie: d.qt, duong: '/san-pham?xem=gop' });
-  const the = theNhom(m, 'so:125');
+  const the = theNhom(m, 'sku:125');
   the.querySelectorAll('[data-chon]').find((c) => c.dataset.chon === '222:c').checked = false;
   the.querySelector('[data-ten]').value = 'Fitgum Acai Berry 60 viên';
+  the.querySelector('[data-mk]').value = 'Ngọc';
   await the.querySelector('[data-gop]').click();
   await m.cho();
-  assert.deepEqual(d.k.goiGop, [{ maGoc: 'fitgum-acai-berry', ten: 'Fitgum Acai Berry 60 viên', soHieu: '125', posMa: ['111:a', '222:b'] }]);
-  const sau = theNhom(m, 'so:125');
+  assert.deepEqual(d.k.goiGop, [{ maGoc: 'fitgum-acai-berry', ten: 'Fitgum Acai Berry 60 viên', sku: '125', marketer: 'Ngọc', posMa: ['111:a', '222:b'] }]);
+  const sau = theNhom(m, 'sku:125');
   assert.match(sau.textContent, /Đã gộp/);
   assert.equal(sau.querySelector('[data-gop]'), null, 'gộp xong thì hết nút gộp');
   await sau.querySelector('[data-mo-goc]').click();
@@ -101,7 +105,7 @@ test('G2 · gộp: bỏ chọn món lạ + sửa tên ⇒ MỘT lượt POST đ�
   assert.match(m.$('#phai').textContent, /Fitgum Acai Berry/);
 });
 
-test('G3 · nhóm «số hiệu đã là sản phẩm» ⇒ NỐI từng món đã chọn vào đúng sản phẩm đó (không tạo sản phẩm mới)', async (t) => {
+test('G3 · nhóm «SKU đã là sản phẩm» ⇒ NỐI từng món đã chọn vào đúng sản phẩm đó (không tạo sản phẩm mới)', async (t) => {
   const d = await dungThu();
   t.after(() => d.sv.close());
   const m = await moTrang('san-pham/trang/san-pham.html', { goc: d.goc, cookie: d.qt, duong: '/san-pham?xem=gop' });
@@ -146,10 +150,10 @@ test('G6 · tầng giao diện: gộp chỉ quản trị; MỘT dòng nhật ký
   const bc = (vai) => taoBoiCanh({ nguoiDungId: 'u1', tenDangNhap: 'an', teamId: 't1', vai: [vai] });
   await assert.rejects(() => goc.gopMonThanhGoc(bc(VAI.MARKETER), { maGoc: 'x', posMa: ['111:a'] }), (e) => e.name === 'LoiThieuVai');
   assert.equal(nk.length, 0);
-  await goc.gopMonThanhGoc(bc(VAI.QUAN_TRI), { maGoc: 'fitgum', ten: 'Fitgum', soHieu: '125', posMa: ['111:a', '222:b'] });
+  await goc.gopMonThanhGoc(bc(VAI.QUAN_TRI), { maGoc: 'fitgum', ten: 'Fitgum', sku: '125', marketer: 'Ngọc', posMa: ['111:a', '222:b'] });
   assert.equal(nk.length, 1);
   assert.equal(nk[0].hanhDong, HANH_DONG.TAO_SAN_PHAM_GOC);
-  assert.match(nk[0].ghiChu, /gộp 2 món POS thành sản phẩm gốc "fitgum" \(số hiệu 125\): 111:a, 222:b/);
+  assert.match(nk[0].ghiChu, /gộp 2 món POS thành sản phẩm gốc "fitgum" \(SKU 125\) · marketer Ngọc: 111:a, 222:b/);
   const r = await goc.goiYGop(bc(VAI.MARKETER));
   assert.equal(r.suaDuoc, false);
   assert.equal((await goc.goiYGop(bc(VAI.QUAN_TRI))).suaDuoc, true);

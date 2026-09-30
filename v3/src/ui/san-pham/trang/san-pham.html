@@ -344,11 +344,13 @@ async function veGop() {
       <div class="dong-phu">Mỗi shop POS đặt mã riêng cho món của nó, nên cùng một sản phẩm bán ở ba nước là ba mã. Gộp về một sản phẩm thì kiến thức và cách tư vấn viết một lần; giá, tồn kho và marketer vẫn theo từng thị trường.</div></div></div>
     <div id="demGop"></div>
     ${d.shopDaKeo < d.shopTong ? `<div class="duoi-4">${canhBao({ level: 'info', title: `Mới kéo danh mục ${so(d.shopDaKeo)}/${so(d.shopTong)} shop`,
-      body: 'Món của shop chưa kéo chưa có ở đây. Gộp bây giờ vẫn được: lượt kéo sau tự nối món cùng số hiệu của shop mới vào đúng sản phẩm. Bật và kéo ở Cài đặt › Kết nối.' })}</div>` : ''}
+      body: 'Món của shop chưa kéo chưa có ở đây. Gộp bây giờ vẫn được: lượt kéo sau tự nối món cùng SKU của shop mới vào đúng sản phẩm. Bật và kéo ở Cài đặt › Kết nối.' })}</div>` : ''}
+    ${d.monChuaSku ? `<div class="duoi-4">${canhBao({ level: 'warning', title: `${so(d.monChuaSku)} món chưa có SKU`,
+      body: 'Món kéo về trước khi hệ lưu SKU. Tạm gộp theo số đầu tên (đo 30/09: trùng SKU 371/373); kéo lại danh mục ở Cài đặt › Kết nối để lấy SKU thật.' })}</div>` : ''}
     ${GOP.suaDuoc ? '' : `<div class="duoi-4">${canhBao({ level: 'info', title: 'Chỉ quản trị gộp', body: 'Đặt tên sản phẩm là đổi thứ bot gọi trước mặt khách — vai của bạn xem được gợi ý.' })}</div>`}
     <div class="section-header"><div><h3>Gợi ý: có thể là cùng một sản phẩm</h3>
-      <div class="section-desc">Máy chỉ GỢI Ý (cùng số hiệu, hoặc cùng tên khi món không có số); người xác nhận. Không gộp tự động — gộp nhầm là bot báo giá của nước này cho khách nước khác.</div></div></div>
-    <label class="field duoi-4"><span class="sr-only">Lọc gợi ý</span><input type="search" id="timGop" placeholder="Lọc theo tên, số hiệu, mã món…" autocomplete="off"></label>
+      <div class="section-desc">Máy chỉ GỢI Ý (cùng SKU — mã sản phẩm POS, chung giữa các shop — hoặc cùng tên khi món không có SKU); người xác nhận. Không gộp tự động — gộp nhầm là bot báo giá của nước này cho khách nước khác.</div></div></div>
+    <label class="field duoi-4"><span class="sr-only">Lọc gợi ý</span><input type="search" id="timGop" placeholder="Lọc theo tên, SKU, mã món…" autocomplete="off"></label>
     <div id="dsGop"></div>`;
   $('#demGop').innerHTML = metricRow([
     { label: 'Shop POS = thị trường', value: so(d.shopTong), statusHtml: statusBadge(d.shopBat ? 'feature_on' : 'feature_off', { label: `${so(d.shopBat)} đang bật` }) },
@@ -368,7 +370,7 @@ async function veGop() {
 }
 function veDsGop() {
   const q = ($('#timGop') ? $('#timGop').value : '').trim().toLowerCase();
-  const ds = GOP.nhom.filter((n) => !q || [n.ten, n.soHieu, n.maGoc, ...n.mon.flatMap((m) => [m.posMa, m.tenPos])]
+  const ds = GOP.nhom.filter((n) => !q || [n.ten, n.sku, n.maGoc, ...n.mon.flatMap((m) => [m.posMa, m.tenPos, m.sku])]
     .some((x) => String(x || '').toLowerCase().includes(q)));
   $('#dsGop').innerHTML = ds.length ? ds.map(veNhom).join('')
     : emptyState({ icon: 'inbox', title: GOP.nhom.length ? 'Không nhóm nào khớp' : 'Không còn món POS nào chưa thuộc sản phẩm',
@@ -382,13 +384,15 @@ function veNhom(n, i) {
     <div class="section-header"><div>
       <h3 id="${id}">${n.ten ? esc(n.ten) : '<span class="text-muted">chưa có tên trên POS</span>'}</h3>
       <div class="section-desc">${esc(n.lyDo)}${n.tenLech && n.tenLech.length ? ` · tên lệch giữa các shop: ${n.tenLech.map(esc).join(' / ')} — người xem` : ''}</div>
+      ${(n.canh || []).map((c) => `<div class="field-hint">${esc(c)}</div>`).join('')}
     </div>${xong ? statusBadge('ready', { label: n.loai === 'noi' ? 'Đã nối' : 'Đã gộp' }) : ''}</div>
     <div class="table-wrap"><table class="data-table"><thead><tr>
       ${sua ? '<th scope="col"><span class="sr-only">Chọn</span></th>' : ''}<th scope="col">Thị trường</th><th scope="col">Mã món POS</th>
-      <th scope="col">Tên trên POS</th><th scope="col" class="num">Tồn</th></tr></thead><tbody>${n.mon.map((m) => `
+      <th scope="col">SKU</th><th scope="col">Tên trên POS</th><th scope="col" class="num">Tồn</th></tr></thead><tbody>${n.mon.map((m) => `
       <tr>${sua ? `<td><input type="checkbox" data-chon="${esc(m.posMa)}" checked aria-label="Chọn món ${esc(m.posMa)}"></td>` : ''}
         <td>${m.thiTruong ? esc(m.thiTruong) : `<span class="text-muted">shop ${esc(m.shopId)} · chưa khai ở Kết nối</span>`}</td>
         <td><code>${esc(m.posMa)}</code></td>
+        <td>${m.sku ? `<code>${esc(m.sku)}</code>` : '<span class="text-muted">chưa có</span>'}</td>
         <td>${m.tenPos ? esc(m.tenPos) : '<span class="text-muted">chưa có tên</span>'}</td>
         <td class="num">${m.tonKho == null ? '<span class="text-muted">—</span>' : so(m.tonKho)}</td></tr>`).join('')}</tbody></table></div>
     ${!sua ? '' : n.loai === 'noi'
@@ -398,9 +402,11 @@ function veNhom(n, i) {
             <input id="${id}-ten" data-ten value="${esc(n.ten || '')}" autocomplete="off"></div>
           <div class="field"><label class="field-label" for="${id}-ma">Mã gốc</label>
             <input id="${id}-ma" data-ma value="${esc(n.maGocDeXuat || '')}" autocomplete="off" spellcheck="false"></div>
+          <div class="field"><label class="field-label" for="${id}-mk">Marketer</label>
+            <input id="${id}-mk" data-mk value="" autocomplete="off" placeholder="để trống = gán sau"></div>
           ${button('Gộp thành 1 sản phẩm', { variant: 'primary', size: 'sm', data: { gop: n.khoa } })}
         </div>
-        <div class="field-hint">${n.soHieu ? `Số hiệu ${esc(n.soHieu)} đi theo sản phẩm — shop mới kéo về mang số này tự nối vào.` : 'Không có số hiệu — shop khác phải gắn tay ở tab «Theo thị trường».'} Mã gốc là khoá của kịch bản: đặt rồi không sửa được.</div>`}
+        <div class="field-hint">${n.sku ? `SKU ${esc(n.skuHien || n.sku)} đi theo sản phẩm — shop mới kéo về mang SKU này tự nối vào.` : 'Không có SKU — shop khác phải gắn tay ở tab «Theo thị trường».'} Mã gốc là khoá của kịch bản: đặt rồi không sửa được.</div>`}
     ${xong ? `<div class="form-actions">${button('Mở ở Sản phẩm →', { size: 'sm', data: { moGoc: xong.id } })}</div>` : ''}
     <div class="field-hint" data-tb aria-live="polite"></div>
   </section>`;
@@ -415,7 +421,8 @@ async function gopNhom(khoa, nut) {
   nut.disabled = true;
   try {
     const kq = await goiGhi('/api/san-pham/gop', { method: 'POST', body: JSON.stringify({
-      maGoc: the.querySelector('[data-ma]').value.trim(), ten: the.querySelector('[data-ten]').value.trim(), soHieu: n.soHieu, posMa }) });
+      maGoc: the.querySelector('[data-ma]').value.trim(), ten: the.querySelector('[data-ten]').value.trim(), sku: n.sku,
+      marketer: the.querySelector('[data-mk]').value.trim(), posMa }) });
     GOP_XONG[khoa] = { id: String(kq.goc.id), ten: kq.goc.ten || kq.goc.maGoc };
     await taiGoc(); veDsGop();
   } catch (e) { nut.disabled = false; the.querySelector('[data-tb]').textContent = e.message; }

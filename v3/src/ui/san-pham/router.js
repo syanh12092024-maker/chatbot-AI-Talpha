@@ -141,7 +141,7 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 
   r.post('/api/san-pham/goc/:id', canDangNhap, canVai, boc(async (req, res) => {
     const than = {};
-    for (const k of ['ten', 'moTa', 'soHieu']) if (req.body?.[k] !== undefined) than[k] = req.body[k];
+    for (const k of ['ten', 'moTa', 'soHieu', 'sku', 'marketer']) if (req.body?.[k] !== undefined) than[k] = req.body[k];
     res.json({ ok: true, goc: await suaGoc(cuaBoiCanh(req), req.params.id, than) });
   }));
 
@@ -176,7 +176,7 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   }));
   r.post('/api/san-pham/gop', canDangNhap, canVai, boc(async (req, res) => {
     const kq = await gopMonThanhGoc(cuaBoiCanh(req), {
-      maGoc: req.body?.maGoc, ten: req.body?.ten, soHieu: req.body?.soHieu, posMa: req.body?.posMa,
+      maGoc: req.body?.maGoc, ten: req.body?.ten, sku: req.body?.sku, marketer: req.body?.marketer, posMa: req.body?.posMa,
     });
     res.json({ ok: true, goc: kq });
   }));
