@@ -4,10 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Người và team — AI Closer</title>
-<!-- Dựng trên hệ kiểu (mục M12: cài đặt chia nhóm, thao tác nguy hiểm tách riêng và hỏi lại).
-     KHÔNG CSS riêng — trước lượt này là 81 dòng. Bốn khối xếp dọc một trang dài → hàng chỉ số
-     + ba tab (Thành viên · Kết nối POS · Chuyển page). Chuyển page là đổi CHỦ dữ liệu, nên nó
-     ở tab riêng, có thanh chọn hàng loạt và hộp xác nhận nói hệ quả. -->
+<!-- VE7d · 01/10 — theo BẢN VẼ 4 › Người và team: ba nút đầu trang (Lấy người từ HRM · Tạo người dùng · Chuyển page) ·
+     ba thẻ vai (mở được gì — đo bằng CHÍNH hàm dựng thanh điều hướng) · Marketer trên POS ↔ hồ sơ HRM (chưa nối: nói thẳng,
+     không số đo tay) · bảng người (Người · Hồ sơ HRM · Vai · Phụ trách). Bỏ hàng chỉ số + tab «Kết nối POS» (POS ở Cài đặt ›
+     Kết nối từ VE7b). Chuyển page là đổi CHỦ dữ liệu ⇒ khung riêng, có chọn hàng loạt và hộp xác nhận nói hệ quả. -->
 <link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
@@ -16,10 +16,17 @@
 <body>
 <header>
   <h1>Người và team</h1>
-  <span class="sub">Ai trong team mang vai gì, shop POS nào nối vào, và page nào thuộc team này.</span>
+  <span class="sub">Ai trong team mang vai gì, mỗi vai mở được gì — và page nào thuộc team này.</span>
 </header>
 
 <main>
+  <div class="hang duoi-5" id="hanhDong">
+    <button type="button" class="btn" data-variant="outline" data-size="md" id="nutHrm" disabled aria-describedby="viSaoHrm"><span>Lấy người từ HRM (BigQuery)</span></button>
+    <button type="button" class="btn" data-variant="primary" data-size="md" id="nutTaoNguoi" hidden><span>Tạo người dùng</span></button>
+    <button type="button" class="btn" data-variant="outline" data-size="md" id="nutMoChuyen"><span>Chuyển page sang team khác</span></button>
+    <span class="text-muted text-sm" id="viSaoHrm">Lấy người từ HRM: chưa nối HRM vào máy chủ.</span>
+  </div>
+
   <div id="bang-tin" aria-live="polite"></div>
 
   <dialog class="dialog" data-size="md" id="hopNguoi" aria-labelledby="hopNguoi-tieu">
@@ -55,48 +62,40 @@
     </div>
   </dialog>
 
-  <section class="section" aria-label="Tổng quan team">
-    <div id="soDo"><div class="metric-row"><div class="metric"><span class="skeleton"></span></div></div></div>
+  <section class="section" aria-labelledby="tieu-vai">
+    <h2 id="tieu-vai" class="sr-only">Ba vai trong team</h2>
+    <div class="luoi-ba-vai" id="baVai"><span class="skeleton"></span></div>
+  </section>
+
+  <section class="section panel" aria-labelledby="tieu-hrm">
+    <div class="section-header"><div><h2 id="tieu-hrm">Marketer trên POS ↔ hồ sơ HRM</h2>
+      <div class="section-desc">chỉ đọc · sửa ở HRM</div></div><span id="nhanHrm"></span></div>
+    <div id="noiDungHrm"><span class="skeleton"></span></div>
   </section>
 
   <section class="section">
-    <div class="tabs duoi-4" role="tablist" aria-label="Phần cấu hình">
-      <button type="button" class="tab" role="tab" id="tab-tv" aria-controls="p-tv" data-tab="tv">Thành viên</button>
-      <button type="button" class="tab" role="tab" id="tab-pos" aria-controls="p-pos" data-tab="pos">Kết nối POS</button>
-      <button type="button" class="tab" role="tab" id="tab-gan" aria-controls="p-gan" data-tab="gan">Gán page ↔ team</button>
-    </div>
-
-    <div role="tabpanel" id="p-tv" aria-labelledby="tab-tv">
-      <div class="table-wrap">
-        <div class="table-toolbar"><h2>Thành viên và vai</h2><span class="table-count" id="demTv"></span></div>
-        <div id="khoiThanhVien"><div class="empty-state"><span class="skeleton"></span></div></div>
-        <div class="table-footer" id="themThanhVien" hidden>
-          <label for="chonNguoi" class="sr-only">Chọn người</label>
-          <select id="chonNguoi"></select>
-          <label for="chonVai" class="sr-only">Chọn vai</label>
-          <select id="chonVai"></select>
-          <button type="button" class="btn" data-variant="primary" data-size="md" id="nutThem"><span>Cấp vai</span></button>
-          <button type="button" class="btn" data-variant="ghost" data-size="md" id="nutTaoNguoi"><span>Tạo người dùng mới</span></button>
-          <span class="text-muted">Một người mang được nhiều vai trong cùng một team.</span>
-        </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><h2 id="tieu-nguoi">Người trong team</h2><span class="table-count" id="demTv"></span></div>
+      <div id="khoiThanhVien"><div class="empty-state"><span class="skeleton"></span></div></div>
+      <div class="table-footer" id="themThanhVien" hidden>
+        <label for="chonNguoi" class="sr-only">Chọn người</label>
+        <select id="chonNguoi"></select>
+        <label for="chonVai" class="sr-only">Chọn vai</label>
+        <select id="chonVai"></select>
+        <button type="button" class="btn" data-variant="primary" data-size="md" id="nutThem"><span>Cấp vai</span></button>
+        <span class="text-muted">Một người mang được nhiều vai trong cùng một team.</span>
       </div>
-    </div>
-
-    <div role="tabpanel" id="p-pos" aria-labelledby="tab-pos" hidden>
-      <div class="table-wrap">
-        <div class="table-toolbar"><h2>Kết nối POS</h2><span class="table-count">Khoá API không bao giờ hiện ở đây</span></div>
-        <div id="khoiKetNoi"><div class="empty-state"><span class="skeleton"></span></div></div>
-      </div>
-    </div>
-
-    <div role="tabpanel" id="p-gan" aria-labelledby="tab-gan" hidden>
-      <div id="khoiGanPage"><div class="empty-state"><span class="skeleton"></span></div></div>
     </div>
   </section>
+
+  <details class="section" id="khungChuyen">
+    <summary><b>Chuyển page sang team khác</b> <span class="text-muted">· đổi chủ dữ liệu: hội thoại, kịch bản, sản phẩm đi theo page</span></summary>
+    <div id="khoiGanPage" class="tren-4"><div class="empty-state"><span class="skeleton"></span></div></div>
+  </details>
 </main>
 
 <script>
-const { esc, text, icon, statusBadge, button, setBusy, alert: canhBao, emptyState, metricRow, toast,
+const { esc, text, icon, statusBadge, button, setBusy, alert: canhBao, emptyState, toast,
         confirmDialog, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
 
@@ -109,57 +108,68 @@ async function goi(duong, tuyChon) {
   return d;
 }
 
-// ── BĂNG TIN — cảnh báo của team + lỗi của từng khối, khối nào hỏng nói khối đó ────────
-let CANH = [], LOI = {};
+// ── BĂNG TIN — lỗi của từng khối, khối nào hỏng nói khối đó ────────────────────────────
+let LOI = {};
 function veBangTin() {
   const kh = Object.entries(LOI).map(([k, m]) => canhBao({ level: 'error', title: `Khối «${k}» không tải được`, body: m }));
-  const diTiep = {
-    thieu_marketer: button('Gán marketer', { href: '/page-bot', size: 'sm' }),
-    chua_cau_hinh_model: button('Chọn model', { href: '/model-ai', size: 'sm' }),
-    bot_bat_ma_khong_model: button('Chọn model', { href: '/model-ai', size: 'sm' }),
-  };
-  for (const c of CANH) {
-    kh.push(canhBao({ level: c.muc === 'do' ? 'error' : 'warning', body: c.chu, actionsHtml: diTiep[c.ma] || '' }));
-  }
   $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
 }
 function baoLoi(khoi, m) { LOI[khoi] = m; veBangTin(); }
 function xoaLoi(khoi) { delete LOI[khoi]; veBangTin(); }
 
-// ── TAB — nhớ trong URL (#thanh-vien…) để F5 không nhảy về tab đầu ───────────────────
-const TEN_TAB = { tv: 'thanh-vien', pos: 'ket-noi-pos', gan: 'chuyen-page' };
-function moTab(ma) {
-  document.querySelectorAll('[data-tab]').forEach((b) => {
-    const dung = b.dataset.tab === ma;
-    b.setAttribute('aria-selected', String(dung));
-    b.tabIndex = dung ? 0 : -1;
-    $('#' + b.getAttribute('aria-controls')).hidden = !dung;
-  });
-  history.replaceState(null, '', '#' + TEN_TAB[ma]);
-}
-document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => moTab(b.dataset.tab)));
-moTab(Object.keys(TEN_TAB).find((k) => '#' + TEN_TAB[k] === location.hash) || 'tv');
-
-/* ─── tổng quan ─── */
-function veTongQuan(t) {
-  const p = t.page;
-  $('#soDo').innerHTML = metricRow([
-    { label: 'Page thuộc team', value: p.tong, hint: `${so(p.trongDiem)} trọng điểm · ${so(t.hoiThoai)} hội thoại` },
-    { label: 'Đang bật bot', value: p.botBat,
-      hint: p.nguonBotBat && p.nguonBotBat.nguon === 'cot_csdl' ? 'Đếm từ bản sao trong CSDL — số thật ở màn Công tắc từng page' : '' },
-    { label: 'Chưa có marketer', value: p.thieuMarketer,
-      statusHtml: p.thieuMarketer ? statusBadge(p.coMarketer === 0 ? 'blocked' : 'needs_attention', { label: `${so(p.thieuMarketer)}/${so(p.tong)} page` }) : '' },
-    { label: 'Model AI', value: t.model.daCauHinh ? `${so(t.model.soDong)} dòng` : '—',
-      statusHtml: t.model.daCauHinh ? statusBadge('ready', { label: 'Đã cấu hình' }) : statusBadge('blocked', { label: 'Chưa cấu hình' }) },
-  ]);
-  CANH = t.canhBao || [];
-  veBangTin();
+/* ─── ba thẻ vai — «mở được» đo bằng hàm dựng thanh điều hướng (máy chủ), không gõ tay ─── */
+function veBaVai(bv) {
+  const pm = bv.pageMarketer || {};
+  const soPageMk = pm.co == null ? `chưa đo (${pm.viSao || 'không rõ vì sao'})` : `${so(pm.co)}/${so(pm.tong)}`;
+  $('#baVai').innerHTML = bv.vai.map((v) => `
+    <section class="panel" data-the-vai="${esc(v.ma)}" aria-labelledby="vai-${esc(v.ma)}">
+      <div class="section-header"><h3 id="vai-${esc(v.ma)}">${esc(v.ten)}</h3><span class="meta tabular">${so(v.soNguoi)} người</span></div>
+      <div class="field-hint" data-mo-duoc>Mở được: ${v.moDuoc.length ? esc(v.moDuoc.map((n) => `${n.ten} (${n.man.length})`).join(' · ')) : 'không mục nào'}</div>
+      <details class="tren-2"><summary class="text-sm">Xem ${so(v.moDuoc.reduce((t, n) => t + n.man.length, 0))} màn</summary>
+        <ul class="tren-2">${v.moDuoc.map((n) => `<li><b>${esc(n.ten)}</b>: ${esc(n.man.join(', '))}</li>`).join('')}</ul></details>
+      <div class="tren-2">Phụ trách: <b>${esc(v.phuTrach.chu)}</b></div>
+      ${v.phuTrach.coNguon ? '' : `<div class="field-hint tren-2" data-khoang-ho>Chưa lọc theo người phụ trách: ${esc(v.phuTrach.viSao)}. `
+        + `Quyết định §9 «marketer chỉ thấy sản phẩm mình phụ trách» CHƯA làm. Page có tên marketer: ${esc(soPageMk)}.</div>`}
+    </section>`).join('');
 }
 
-/* ─── thành viên ─── */
-let VAI_HIEN = [], TV = [];
+/* ─── Marketer trên POS ↔ hồ sơ HRM — chưa nối thì nói chưa nối, không số đo tay ─── */
+function veHrm(h) {
+  $('#nhanHrm').innerHTML = `<span class="status-badge" data-tone="neutral">${esc(h.chu)}</span>`;
+  $('#noiDungHrm').innerHTML = h.noi ? '' : `
+    <div class="luoi-kv">
+      <span class="nhan">Khi nối</span><span>Bảng ghép của HRM (BigQuery <code>PIALPHA_ALL_Dataset.dim_person_map</code>: mã marketer POS → mã
+        nhân viên) + hồ sơ <code>HRM_Core.dim_employee</code>. Đơn thuộc team của marketer vào ngày đơn; đơn không có marketer, hoặc
+        marketer chưa ghép, vào ô «chờ gán team».</span>
+      <span class="nhan">Hôm nay</span><span>Máy chủ chưa đọc được BigQuery — chờ ${esc(h.cho)}. Bảng tài khoản POS ↔ hồ sơ ↔ team hiện ở đây
+        khi nối xong.</span>
+      <span class="nhan">Thiếu ai</span><span>Bổ sung ở HRM — hệ không có ô ghép tay riêng để khỏi hai nguồn lệch nhau.</span>
+    </div>
+    <div class="tren-3"><a href="/ket-noi#tieu-hrm">Xem kết nối HRM ở Cài đặt › Kết nối</a></div>`;
+}
+
+/* ─── người trong team ─── */
+let VAI_HIEN = [], TV = [], PHU = {}, HRM_NOI = false;
+function phuTrachCua(n) {
+  // Mã vai KHÔNG gõ lại ở đây (bài học ② giai đoạn 1): máy chủ đánh cờ `tatCa` cho vai phủ mọi vai khác.
+  const ds = n.vai.map((v) => PHU[v.ma]).filter(Boolean);
+  const tatCa = ds.find((p) => p.tatCa);
+  if (tatCa) return esc(tatCa.chu);
+  const chu = ds
+    .map((p) => (p.coNguon ? esc(p.chu) : `<span class="text-muted" title="${esc(p.viSao || '')}">${esc(p.chu)}</span>`));
+  return chu.length ? chu.join(' · ') : '<span class="text-muted">—</span>';
+}
 function veThanhVien(d) {
   VAI_HIEN = d.vai || []; TV = d.thanhVien || [];
+  const bv = d.baVai || null;
+  PHU = {}; if (bv) for (const v of bv.vai) PHU[v.ma] = v.phuTrach;
+  HRM_NOI = !!(bv && bv.hrm && bv.hrm.noi);
+  if (bv) { veBaVai(bv); veHrm(bv.hrm); }
+  else {
+    $('#baVai').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa đo được ba vai', body: 'Máy chủ không trả phần vai — xem cảnh báo đầu trang.' });
+    $('#noiDungHrm').innerHTML = '';
+  }
+  $('#viSaoHrm').textContent = bv && bv.hrm && !bv.hrm.noi ? `Lấy người từ HRM: chưa nối HRM vào máy chủ (chờ ${bv.hrm.cho}).` : '';
   $('#demTv').textContent = d.suaDuoc ? `${so(TV.length)} người` : `${so(TV.length)} người · vai của bạn chỉ xem được`;
 
   if (d.trong) {
@@ -167,13 +177,15 @@ function veThanhVien(d) {
       actionsHtml: d.trong.diTiep && d.trong.diTiep.duong ? button(d.trong.diTiep.chu, { href: d.trong.diTiep.duong, size: 'sm' }) : '' });
   } else {
     $('#khoiThanhVien').innerHTML = `<table class="data-table"><thead><tr>
-        <th scope="col">Người</th><th scope="col">Vai trong team</th><th scope="col">Tài khoản</th>
+        <th scope="col">Người</th><th scope="col">Hồ sơ HRM</th><th scope="col">Vai trong team</th><th scope="col">Phụ trách</th><th scope="col">Tài khoản</th>
       </tr></thead><tbody>${TV.map((n) => `
-      <tr>
+      <tr data-nguoi="${esc(n.nguoiDungId)}">
         <td><div class="manh">${esc(n.ten || n.email)}</div>${n.ten ? `<div class="meta">${esc(n.email)}</div>` : ''}</td>
+        <td class="meta">${HRM_NOI ? '—' : 'chưa nối'}</td>
         <td><div class="chip-list">${n.vai.length ? n.vai.map((v) => `<span class="chip">${esc(v.ten)}${d.suaDuoc
           ? `<button type="button" data-rut="${esc(n.nguoiDungId)}" data-vai="${esc(v.ma)}" aria-label="Rút vai ${esc(v.ten)} của ${esc(n.email)}" title="Rút vai ${esc(v.ten)}">${icon('x')}</button>` : ''}</span>`).join('')
           : '<span class="text-muted">Không có vai</span>'}</div></td>
+        <td>${phuTrachCua(n)}</td>
         <td>${statusBadge(n.hoatDong ? 'feature_on' : 'blocked', { label: n.hoatDong ? 'Hoạt động' : 'Đã khoá' })}</td>
       </tr>`).join('')}</tbody></table>`;
   }
@@ -244,10 +256,10 @@ async function rut(nguoiDungId, maVai) {
   if (!dongY) return;
   try {
     await goi('/api/team/thanh-vien', { method: 'DELETE', body: JSON.stringify({ nguoiDungId, maVai }) });
-    xoaLoi('thành viên');
+    xoaLoi('người trong team');
     toast(`Đã rút vai «${ten}» của ${nguoi}.`);
-    await napThanhVien(); await napTongQuan();
-  } catch (e) { baoLoi('thành viên', e.message); }
+    await napThanhVien();
+  } catch (e) { baoLoi('người trong team', e.message); }
 }
 
 $('#nutThem').addEventListener('click', async () => {
@@ -258,30 +270,23 @@ $('#nutThem').addEventListener('click', async () => {
   setBusy(nut, true);
   try {
     const kq = await goi('/api/team/thanh-vien', { method: 'POST', body: JSON.stringify({ nguoiDungId, maVai }) });
-    xoaLoi('thành viên');
+    xoaLoi('người trong team');
     toast(kq.daCo ? 'Người này đã có sẵn vai đó — không thêm gì.' : 'Đã cấp vai.');
-    await napThanhVien(); await napTongQuan();
-  } catch (e) { baoLoi('thành viên', e.message); }
+    await napThanhVien();
+  } catch (e) { baoLoi('người trong team', e.message); }
   finally { setBusy(nut, false); }
 });
 
-/* ─── kết nối POS ─── */
-function veKetNoi(d) {
-  if (d.trong) {
-    $('#khoiKetNoi').innerHTML = emptyState({ icon: 'inbox', title: d.trong.noi,
-      actionsHtml: d.trong.diTiep && d.trong.diTiep.duong ? button(d.trong.diTiep.chu, { href: d.trong.diTiep.duong, size: 'sm' }) : '' });
-    return;
-  }
-  $('#khoiKetNoi').innerHTML = `<table class="data-table"><thead><tr>
-      <th scope="col">Thị trường</th><th scope="col">Shop POS</th><th scope="col">Trạng thái</th>
-    </tr></thead><tbody>${d.pos.map((k) => `
-    <tr><td class="manh">${esc(k.market)}</td>
-      <td><span class="tabular">${esc(k.shopId)}</span></td>
-      <td>${statusBadge(k.bat ? 'feature_on' : 'feature_off', { label: k.bat ? 'Đang bật' : 'Đã tắt' })}</td>
-    </tr>`).join('')}</tbody></table>`;
+/* ─── chuyển page ↔ team — nút đầu trang mở khung; `#chuyen-page` trên đường dẫn mở sẵn (F5 giữ chỗ) ─── */
+function moKhungChuyen() {
+  const k = $('#khungChuyen');
+  k.open = true;
+  history.replaceState(null, '', '#chuyen-page');
+  k.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+$('#nutMoChuyen').addEventListener('click', moKhungChuyen);
+if (location.hash === '#chuyen-page') $('#khungChuyen').open = true;
 
-/* ─── chuyển page ↔ team ─── */
 let TIM_PAGE = '', G = null;
 /* NGUỒN PAGE: team đang mở, hay kho «chưa phân». Kho ấy là nơi page quét từ Pancake rơi
    vào, mà lược đồ cấm gán thành viên vào team kỹ thuật — không có lối này thì page nằm đó
@@ -396,7 +401,6 @@ async function chuyen() {
     xoaLoi('chuyển page');
     await napGanPage();
     veKetQuaChuyen(kq, tenTeam);
-    await napTongQuan();
   } catch (e) { baoLoi('chuyển page', e.message); setBusy(nut, false); }
 }
 
@@ -415,9 +419,7 @@ function veKetQuaChuyen(kq, tenTeam) {
 }
 
 /* ─── nạp ─── */
-async function napTongQuan() { const d = await goi('/api/team/tong-quan'); if (d) veTongQuan(d.tongQuan); }
 async function napThanhVien() { const d = await goi('/api/team/thanh-vien'); if (d) veThanhVien(d); }
-async function napKetNoi() { const d = await goi('/api/team/ket-noi'); if (d) veKetNoi(d); }
 async function napGanPage() {
   const d = await goi(`/api/team/gan-page?tim=${encodeURIComponent(TIM_PAGE)}&nguon=${encodeURIComponent(NGUON_PAGE)}`);
   if (d) veGanPage(d);
@@ -426,10 +428,9 @@ async function napGanPage() {
 // VE-VA1 · 30/09: hàm KHAI TÊN rồi mới gọi — bản cũ là hàm tự chạy `(async function nap(){…})()`, tên `nap` không lộ ra ngoài
 // ⇒ từ 15/09 (53289117) «Tạo người dùng» xong gọi `await nap()` là ném lỗi, danh sách không tải lại. Ca: T1.
 async function nap() {
-  // Nạp từng khối riêng: một khối hỏng thì ba khối kia vẫn hiện. Gộp `Promise.all` rồi để
+  // Nạp từng khối riêng: một khối hỏng thì khối kia vẫn hiện. Gộp `Promise.all` rồi để
   // một lỗi làm trắng cả trang là đúng thứ màn này sinh ra để chống.
-  const khoi = [['tổng quan', napTongQuan, null], ['thành viên', napThanhVien, '#khoiThanhVien'],
-                ['kết nối POS', napKetNoi, '#khoiKetNoi'], ['chuyển page', napGanPage, '#khoiGanPage']];
+  const khoi = [['người trong team', napThanhVien, '#khoiThanhVien'], ['chuyển page', napGanPage, '#khoiGanPage']];
   for (const [ten, fn, cho] of khoi) {
     try { await fn(); } catch (e) {
       baoLoi(ten, e.message);

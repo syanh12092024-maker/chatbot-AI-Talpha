@@ -118,11 +118,13 @@ export async function manCaiDat(boiCanh) {
   /* ④ MODEL AI */
   ds.push(buoc({
     ma: 'model', ten: 'Chọn model AI và dán khoá',
+    // VE7d · 01/10: nói theo ĐƯỜNG BOT (`src/chat/model.js#chonModel`) — chưa có dòng ⇒ model máy chủ, không «bộ mặc định»;
+    // dự phòng CHƯA nối vào đường trả lời (LL14) ⇒ đừng hứa «có dự phòng thì nhà chính hết tiền bot vẫn chạy».
     vi: tq.model.daCauHinh
-      ? `${tq.model.soDong} dòng cấu hình model. Thiếu vai trò «dự phòng» thì nhà chính hết `
-        + 'tiền là bot đứng im — xem màn Model AI.'
-      : 'Chưa cấu hình model nào. Bot đang chạy bằng bộ mặc định của hệ, và không ai chọn '
-        + 'được model rẻ hơn hay đặt dự phòng.',
+      ? `${tq.model.soDong} dòng cấu hình model — bot mới dùng model chính của team. Dự phòng chưa nối vào `
+        + 'đường trả lời: nhà chính hết tiền là bot đứng im — xem màn Model AI.'
+      : 'Team chưa lưu cấu hình model riêng — bot mới dùng model của máy chủ (MODEL_CLOSER). Chọn model ở màn '
+        + 'Model AI để chốt model cho team.',
     xong: tq.model.daCauHinh,
     so: `${tq.model.soDong} dòng`,
     di: '/model-ai', nutDi: 'Mở màn Model AI',

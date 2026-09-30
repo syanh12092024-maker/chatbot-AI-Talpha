@@ -75,10 +75,12 @@ test('tongQuanTeam · không hỏi được bot ⇒ đếm cột và KHAI là b�
 });
 
 test('canhBaoTuTongQuan · chưa chọn model KHÔNG được nói «bot không trả lời được»', () => {
-  // `model/cau-hinh.js` cho team chưa có dòng nào chạy bằng bộ mặc định — câu cũ cãi nhau
-  // với màn Model AI, Cài đặt team và Sức khoẻ.
+  // Câu cũ cãi nhau với màn Model AI, Cài đặt team và Sức khoẻ. VE7d · 01/10: và cũng KHÔNG «bộ mặc định» — đó là bộ của lớp
+  // v3 (`model/cau-hinh.js#MAC_DINH`); bot mới với team chưa có dòng nào đi ĐƯỜNG MÁY CHỦ (`src/chat/model.js#chonModel`:
+  // model `MODEL_CLOSER`, khoá chung của máy chủ) — đo VE7c 30/09. Thước cũ đòi chữ «mặc định» = neo vào câu sai.
   const c = kt.canhBaoTuTongQuan({ soPage: 2, coMarketer: 2, botBat: 1, soDongModel: 0 });
   const chu = c.map((x) => x.chu).join(' ');
   assert.doesNotMatch(chu, /không trả lời được/);
-  assert.match(chu, /mặc định/);
+  assert.doesNotMatch(chu, /bộ mặc định|model mặc định/);
+  assert.match(chu, /model của máy chủ \(MODEL_CLOSER\)/);
 });

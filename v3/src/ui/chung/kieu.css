@@ -1546,6 +1546,10 @@
   /* VE7c · màn Model AI: ba thẻ theo vai cạnh nhau, tự xuống dòng khi hẹp. */
   .luoi-the-model { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); align-items: start; }
   .luoi-the-model > .section { margin: 0; }   /* tên bảng dài liền mạch (VE7b · HRM) không đẩy tràn 390 px */
+  /* VE7d · Người và team — ba thẻ vai cạnh nhau, tự xuống hàng ở màn hẹp. */
+  .luoi-ba-vai { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); align-items: stretch; }
+  .luoi-ba-vai h3 { font-size: var(--text-md); line-height: var(--lh-md); font-weight: var(--weight-semibold); }
+  .luoi-ba-vai > .panel { margin: 0; }   /* `.panel + .panel` đẩy thẻ 2–3 xuống lệch thẻ đầu trong lưới */
 
   /* KHUNG THÊM ba bước (① chọn nhóm · ② chọn món · ③ xác nhận), viền màu chính. */
   .khung-them { display: grid; grid-template-columns: 200px minmax(0, 1fr) 240px; gap: var(--space-4);

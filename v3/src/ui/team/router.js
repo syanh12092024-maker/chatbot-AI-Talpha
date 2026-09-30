@@ -39,6 +39,7 @@ import {
   danhSachTeamDich, pageDeChuyen, chuyenNhieuPage, daNoiChuyenPage,
   TOI_DA_MOT_ME, LoiChuyenPage,
 } from './gan-page.js';
+import { baVaiCua } from './ba-vai.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -201,6 +202,8 @@ ${escHtml((bc.vai || []).join(', ') || 'không có vai nào')}.</p>
       nguoiChonDuoc: chuaVao,
       vai,
       suaDuoc: coVai(bc, ...VAI_GHI_DUOC),
+      // VE7d: ba thẻ vai («mở được» đo bằng `menuCua`) · phụ trách theo vai · page có tên marketer · HRM chưa nối.
+      baVai: await baVaiCua(bc, { nguoi: ds.nguoi }),
     });
   }));
 

@@ -8,6 +8,10 @@
 //   ③ Kết nối POS         · đọc      · chạy được ngay, KHÔNG bao giờ hiện khoá
 //   ④ Gán page ↔ team     · GHI      · **MỞ 25/08** — người A giao `chuyenPageSangTeam`
 //
+// VE7d · 01/10 (bản vẽ 4): màn KHÔNG còn vẽ ① và ③ — ① `tongQuanTeam` vẫn phục vụ màn «Bắt đầu»; ③ `/api/team/ket-noi` không
+// còn màn nào gọi (POS ở Cài đặt › Kết nối từ VE7b) — gỡ ở LL8 cùng các màn thừa (nợ N-TEAM-KETNOI-THUA). Ba thẻ vai +
+// HRM ở `ba-vai.js`, đi kèm `/api/team/thanh-vien`.
+//
 // Nối vào ứng dụng: đừng nối tay, gọi `dungPhanB()` ở `v3/src/vai-b.js`.
 
 export {
@@ -39,6 +43,9 @@ export {
   daNoiDanhTinhGhi, daNoiPheuNhatKyTeam,
   HANH_DONG_THEM, HANH_DONG_BOT, LoiRutQuanTriCuoi,
 } from './thanh-vien.js';
+
+// VE7d · 01/10: ba thẻ vai + phụ trách + HRM (nói thứ máy làm — `ba-vai.js`).
+export { baVaiCua, PHU_TRACH, HRM } from './ba-vai.js';
 
 export {
   taoRouterCauHinhTeam, datChanDangNhap, datChanVai, daNoiChanTeam,

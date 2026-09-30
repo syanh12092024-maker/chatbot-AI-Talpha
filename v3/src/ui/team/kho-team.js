@@ -213,17 +213,18 @@ export function canhBaoTuTongQuan({ soPage, coMarketer, botBat, soDongModel }) {
     ra.push({
       ma: 'chua_cau_hinh_model',
       muc: 'do',
-      // Đừng nói «bot không trả lời được»: `model/cau-hinh.js` cho team chưa có dòng nào chạy
-      // bằng bộ mặc định. Câu cũ cãi nhau với màn Model AI, Cài đặt team và Sức khoẻ (audit 28/09).
-      chu: 'Team chưa chọn model AI — bot đang chạy bằng bộ mặc định của hệ. Chọn model để '
-        + 'chốt model chính và dự phòng cho team.',
+      // Đừng nói «bot không trả lời được» (audit 28/09) — và cũng đừng nói «bộ mặc định» (VE7c/VE7d · 01/10): team chưa có
+      // dòng nào thì bot mới đi ĐƯỜNG MÁY CHỦ (`src/chat/model.js#chonModel`: model `MODEL_CLOSER`, khoá chung của máy chủ),
+      // không phải bộ mặc định của lớp v3 (`model/cau-hinh.js#MAC_DINH`).
+      chu: 'Team chưa lưu cấu hình model riêng — bot mới dùng model của máy chủ (MODEL_CLOSER). Chọn model ở màn '
+        + 'Model AI để chốt model cho team.',
     });
   }
   if (botBat > 0 && soDongModel === 0) {
     ra.push({
       ma: 'bot_bat_ma_khong_model',
       muc: 'do',
-      chu: `${botBat} page đang BẬT bot AI bằng model mặc định, chưa ai chọn cho team.`,
+      chu: `${botBat} page đang BẬT bot AI bằng model của máy chủ (MODEL_CLOSER) — team chưa chọn model riêng.`,
     });
   }
   return ra;
