@@ -1,6 +1,6 @@
 # MỞ VAN — VE5 (Hộp thư) + VE5b (Tìm khách) theo bản vẽ (CR-28-09c)
 
-> **TRẠNG THÁI: ĐANG MỞ — người quyết gật 30/09: «ok xong thì deploy luôn»** (trả lời báo «xong thì xin gật để deploy VE5 +
+> **TRẠNG THÁI: XONG · GIỮ (30/09 03:37 prod) — người quyết gật 30/09: «ok xong thì deploy luôn»** (trả lời báo «xong thì xin gật để deploy VE5 +
 > VE5b cùng một lượt», đã nói trước điểm quyền: Tìm khách mở thêm cho sale). Phiếu: `phieu-VE5.md` · `phieu-VE5b.md`.
 > Lượt trước: `phat-hanh-20260929-ve1b-ve4b.md` (prod `c5dbacd`).
 
@@ -49,3 +49,29 @@ cd /opt/aicloser && git checkout -f -B vao-ui-v3-17-09 c5dbacd && systemctl rest
 ```
 Mất dữ liệu: không — 0 cửa ghi mới; đơn duyệt/sửa/loại vẫn qua cửa cũ (có ở `c5dbacd`). Lùi thì sale mất «Tìm khách» (trang về
 vai quản trị · quản lý như cũ).
+
+## 8 · Lệnh đã gõ
+
+Giờ prod (CEST), 30/09:
+1. đo đồ thị import — lượt đầu SAI: `for v in …; do node do-thi.mjs $v $D` trong zsh KHÔNG tách chữ `$D` ⇒ cả danh sách thành MỘT
+   đối số ⇒ «chạm 0 tệp» ở cả ba điểm vào, kể cả `v3/chay-that.js` (vô lý) ⇒ đo lại bằng `xargs … < tệp`: server 0 · worker 0 ·
+   chay-that 3. (Hai lượt trước dùng `$(echo $D)` / `eval` — có tách chữ, số đúng.)
+2. commit giấy `91a98e7` · đẩy nhánh `c5dbacd..91a98e7`
+3. mốc lùi `/var/backups/aicloser/truoc-ve5-20260930T012257Z/commit.txt` = `c5dbacd`
+4. prod `checkout -f -B … origin/vao-ui-v3-17-09` → `91a98e7` · 0 tệp theo dõi sửa tại chỗ · migrate **áp mới 0 · tổng 27**
+5. `systemctl restart aicloser-v3` lúc **03:23:11** — chỉ dịch vụ này
+
+## 9 · Số đo
+
+**+1′ (03:24:23) · +5′ (03:27:32) · +15′ (03:37:38), prod:** ba dịch vụ active · `Started` 0 · 1 · 0 ở cả ba mốc · lỗi mới
+**0/0/0** · `ActiveEnterTimestamp` hai dịch vụ không chạm y nguyên (28/09 11:25:42 · 11:22:22) · `/health` 129 · mã MỚI phục vụ:
+`/api/ho-so-khach/cua` **401** (trước deploy **404**) · đối chứng 404 · `/api/hop-thu/don/1` 401 · `/ho-so-khach` 401 · trên đĩa:
+`data-loc="can"` 1 · `ban-ht-tim-cu` 1 · `theDon` 1 · `napCua` 1.
+
+## 10 · Kết · nợ · ai gật
+
+- Kết: **GIỮ** (prod, 30/09 03:37). Mốc +1 ngày: sale dùng Hộp thư mới + Tìm khách (người quyết).
+- Nợ phát sinh: không. Bắt được trong lượt (ngoài phạm vi VE5): **màn Số liệu › Tổng quan hỏng trên prod từ 25/09** (`bao-cao.html`
+  dùng `T` không khai trong `tai()` ⇒ lượt tải thành công nào cũng rơi vào ô lỗi «Chưa lấy được số từ tiến trình bot») — sửa ở
+  VE6a, không vá lẻ trong lượt này.
+- Người gật: người quyết, 30/09 — «ok xong thì deploy luôn».

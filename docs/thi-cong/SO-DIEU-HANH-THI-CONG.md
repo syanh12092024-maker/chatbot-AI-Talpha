@@ -2735,3 +2735,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · VE5b → 🔎 CHỜ DEPLOY — Hộp thư › Tìm khách theo bản vẽ 1b (`/ho-so-khach`): hồ sơ gộp kênh theo số + mọi đơn cả hai luồng; 🔴 trang mở thêm cho sale (§10 bổ sung), cửa danh sách cũ giữ quản trị · quản lý; việc cũ giữ nguyên
   ca B1–B5 (B1 quyền qua app thật) · thước dieu-huong/phan-quyen sửa có căn cứ · đảo-vá 11/11 · cổng ve5b.sh 7/7 · npm test 2.324 ca 0 đỏ · bò 51 màn 0 lỗi mới · cột Hàng: prod 0/123.629 đơn có món ⇒ nói thật
   · commit f9ecbe2 · nhật ký docs/thi-cong/nhat-ky/phieu-VE5b.md
+- 30/09 · PHÁT HÀNH VE5 + VE5b → ✅ GIỮ — prod `c5dbacd → 91a98e7`, 0 migration (27), 0 gói, chỉ restart `aicloser-v3` (03:23:11); Hộp thư + Tìm khách theo bản vẽ, 🔴 Tìm khách mở thêm cho sale
+  cửa vào npm test 2.324 ca 0 đỏ (đo riêng) · cổng 37 xanh / 12 nợ cũ trùng tên · mốc +1′/+5′/+15′ lỗi 0 · `/api/ho-so-khach/cua` 404 → 401 · đồ thị import đo lại đúng (lượt đầu zsh không tách chữ)
+  · commit 91a98e7 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260930-ve5.md
