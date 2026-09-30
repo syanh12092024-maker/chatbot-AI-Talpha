@@ -55,6 +55,7 @@ import {
   datGhiKetNoiPos,
   datKhoTokenV3,
   datKeoDanhMuc,
+  datTaoTruyVan as datTruyVanKetNoi,
   datChanDangNhap as datChanDangNhapKetNoi, datChanVai as datChanVaiKetNoi,
   taoRouterKetNoi,
 } from './ui/ket-noi/index.js';
@@ -280,6 +281,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datTruyVanKyNang(taoTruyVan);
   datTruyVanPrompt(taoTruyVan);
   datTruyVanKichBan(taoTruyVan);
+  datTruyVanKetNoi(taoTruyVan);   // VE7b: số món + tiền tệ theo shop ở màn Kết nối
   datTruyVanSanSang(taoTruyVan);
   // Cửa kiểm đọc thẳng từ tiến trình bot — `src/readiness.js` là cái CHẶN việc bật AI ở v1,
   // nên nó cũng phải là cái v3 hiện ra. Tính lại ở v3 là dựng cái thang thứ hai.

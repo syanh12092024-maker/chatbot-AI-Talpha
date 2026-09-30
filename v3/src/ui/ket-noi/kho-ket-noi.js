@@ -30,6 +30,8 @@ import {
   danhSachToken, trangThaiCau, coTaiKhoan, gocBot, goiAdminV1,
   LoiCauBotDong, LoiCauBotHong,
 } from '../../noi-day/cau-bot-v1.js';
+import { cuaGuiWaDangMo } from '../../../../src/channels/whatsapp/index.js';
+import { BANG_MAU_TIN } from '../../../../src/channels/whatsapp/mau-tin.js';
 
 export class LoiKetNoi extends Error {
   constructor(thongDiep, ma = 'ket_noi', status = 400) {
@@ -147,6 +149,46 @@ export async function keoDanhMucPos(boiCanh) {
 /* ─── cổng tiêm cho kết nối POS (đọc theo team — thứ DUY NHẤT của màn này có team) ─── */
 
 let _docKetNoiPos = null;
+
+/* VE7b · 30/09: cổng truy vấn theo team — CHỈ để suy «mỗi shop có bao nhiêu món, bán bằng tiền gì» từ danh mục đã kéo
+ * (`san_pham.ma` = `<shop>:<id>` · `goi_gia.tien_te`). Thiếu cổng ⇒ số món KHÔNG ĐO ĐƯỢC (null + lý do), không phải 0. */
+let _taoTruyVan = null;
+export function datTaoTruyVan(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiKetNoi('datTaoTruyVan cần một hàm');
+  _taoTruyVan = fn || null;
+  return _taoTruyVan;
+}
+
+/** Số món + tiền tệ theo shop, từ danh mục đã kéo của TEAM (`src/pos/doc-danh-muc.js` ghi `ma = <shopId>:<id biến thể>`;
+ *  món `kb:` nạp từ bot không mang mã shop nào nên không rơi vào shop nào). Đọc hỏng ⇒ chưa đo, bảng POS vẫn hiện. */
+async function monTheoShop(bc) {
+  if (!_taoTruyVan) return { theoShop: null, viSao: 'chưa nối cổng truy vấn — không đếm được món theo shop' };
+  let sp; let gia;
+  try {
+    const db = _taoTruyVan(bc);
+    [sp, gia] = await Promise.all([db.chon('san_pham', {}), db.chon('goi_gia', {})]);
+  } catch (e) {
+    return { theoShop: null, viSao: `không đọc được danh mục (${String(e?.message || e).slice(0, 160)})` };
+  }
+  const teCua = new Map();
+  for (const g of gia) {
+    if (!g.tien_te) continue;
+    const m = teCua.get(String(g.san_pham_id)) || new Map();
+    m.set(g.tien_te, (m.get(g.tien_te) || 0) + 1);
+    teCua.set(String(g.san_pham_id), m);
+  }
+  const theoShop = new Map();
+  for (const p of sp) {
+    const i = String(p.ma || '').indexOf(':');
+    if (i <= 0) continue;
+    const shop = String(p.ma).slice(0, i);
+    const o = theoShop.get(shop) || { soMon: 0, te: new Map() };
+    o.soMon += 1;
+    for (const [te, n] of teCua.get(String(p.id)) || []) o.te.set(te, (o.te.get(te) || 0) + n);
+    theoShop.set(shop, o);
+  }
+  return { theoShop, viSao: null };
+}
 
 /* ═══════════════════ CỬA GHI KẾT NỐI POS (15/09) ═══════════════════════════════════
  *
@@ -393,6 +435,21 @@ function tuEnvSapXep() {
   return tokenTuEnv();
 }
 
+/**
+ * VE7b · 30/09 — WhatsApp: van THẬT của cửa gửi (`src/channels/whatsapp#cuaGuiWaDangMo`: `V3_WA_GUI==='1'` và
+ * `PANCAKE_READONLY!=='1'`) + số mẫu Meta đã duyệt trong `BANG_MAU_TIN` (deny-by-default: rỗng ⇒ cửa từ chối mọi lượt gửi).
+ * «Số WhatsApp đã nối vào Pancake» (điểm kiểm H1) máy chủ không đo được — trả null + vì sao, không đoán. Chỉ đọc, không gọi ra ngoài.
+ */
+export function trangThaiWhatsApp(bang = BANG_MAU_TIN) {
+  return {
+    vanMo: cuaGuiWaDangMo(),
+    van: { V3_WA_GUI: process.env.V3_WA_GUI ?? null, PANCAKE_READONLY: process.env.PANCAKE_READONLY ?? null },
+    soMauDaDuyet: Object.values(bang || {}).filter((m) => m?.da_duyet === true).length,
+    soNoiPancake: null,
+    soNoiViSao: 'máy chủ không đo được — nối số WhatsApp vào Pancake là điểm kiểm H1 (việc người)',
+  };
+}
+
 /** Kết nối POS của TEAM ĐANG MỞ — phần duy nhất của màn này có lớp team. */
 export async function ketNoiPosCua(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
@@ -406,17 +463,24 @@ export async function ketNoiPosCua(boiCanh) {
       },
     };
   }
-  const pos = await _docKetNoiPos(bc);
+  const [ds, mon] = await Promise.all([_docKetNoiPos(bc), monTheoShop(bc)]);
+  // VE7b: mỗi shop kèm số món + tiền tệ suy từ danh mục đã kéo — tiền tệ lấy loại gặp NHIỀU nhất trên bậc giá của món shop đó.
+  const pos = ds.map((k) => {
+    const o = mon.theoShop ? mon.theoShop.get(String(k.shopId)) : null;
+    const te = o ? [...o.te.entries()].sort((a, b) => b[1] - a[1])[0] : null;
+    return { ...k, soMon: mon.theoShop ? (o ? o.soMon : 0) : null, tienTe: te ? te[0] : null };
+  });
   // `suaDuoc` để màn ẨN nút thay vì cho bấm rồi ăn 500 — cùng án lệ với `lop-0-dong`.
   const suaDuoc = daNoiGhiKetNoiPos();
   return {
     pos,
+    monViSao: mon.viSao,
     suaDuoc,
     trong: pos.length ? null : {
       rong: true, vi: 'chua_cai_dat',
       noi: 'Team này chưa có kết nối POS nào — chưa có thì không tạo được đơn cho thị trường nào.',
       diTiep: suaDuoc
-        ? { chu: 'Thêm một kết nối ngay dưới đây', duong: null }
+        ? { chu: 'Bấm «Thêm kho POS» ở phần «Kéo dữ liệu» cuối trang', duong: null }
         : { chu: 'Nạp từ pancake-shops.json bằng `npm run di-tru`', duong: null },
     },
   };

@@ -11,7 +11,6 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
-import vm from 'node:vm';
 import express from 'express';
 
 process.env.V3_KHOA_VE ||= crypto.randomBytes(32).toString('base64');
@@ -26,6 +25,7 @@ const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { boiCanhMay, VAI } = await import('../../src/auth/boi-canh.js');
 const mh = await import('../../src/ui/chung/man-hinh.js');
 const khung = await import('../../src/ui/chung/khung.js');
+const { giaiMa, moTrang } = await import('../../testkit/dom-gia.js');
 
 const DOC = (p) => fs.readFileSync(new URL(`../../src/ui/${p}`, import.meta.url), 'utf8');
 
@@ -195,132 +195,6 @@ test('N2 · marketer (không mở được «Tất cả page») vào mục Page 
 });
 
 /* ── ④ SCRIPT THẬT CỦA HAI MÀN, trong vm, gọi máy chủ thật ──────────────────────────────────────────────────────── */
-// DOM giả vừa đủ: phần tử dựng từ chuỗi HTML (tĩnh của trang + mọi innerHTML) để bấm được NÚT THẬT mà script vẽ ra.
-const RONG = new Set(['input', 'br', 'img', 'meta', 'link', 'hr', 'source', 'wbr']);
-const giaiMa = (s) => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
-const chuTron = (h) => giaiMa(String(h).replace(/<[^>]*>/g, ''));
-const camel = (k) => k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-function taoDom(than) {
-  const song = new Set();
-  class PT {
-    constructor(tag, attrs, cha) {
-      Object.assign(this, { tagName: tag.toUpperCase(), attrs, cha, con: [], nghe: {}, _html: '', textContent: '', dataset: {} });
-      for (const [k, v] of Object.entries(attrs)) if (k.startsWith('data-')) this.dataset[camel(k.slice(5))] = giaiMa(v);
-      this.id = attrs.id || '';
-      this.value = attrs.value != null ? giaiMa(attrs.value) : '';
-      this.checked = 'checked' in attrs; this.disabled = 'disabled' in attrs; this.hidden = 'hidden' in attrs;
-      this.title = giaiMa(attrs.title || ''); this.href = giaiMa(attrs.href || '');
-      song.add(this);
-    }
-    get innerHTML() { return this._html; }
-    set innerHTML(h) {
-      for (const c of this.hauDue()) song.delete(c);
-      this.con = []; this._html = String(h); this.textContent = chuTron(this._html);
-      phanTich(this._html, this);
-    }
-    hauDue() { return this.con.flatMap((c) => [c, ...c.hauDue()]); }
-    addEventListener(t, f) { (this.nghe[t] ||= []).push(f); }
-    set onclick(f) { this.nghe.click = [f]; }
-    async phat(t, e = {}) { for (const f of this.nghe[t] || []) await f({ target: this, currentTarget: this, preventDefault() {}, ...e }); }
-    click() { return this.phat('click'); }
-    setAttribute(k, v) { this.attrs[k] = String(v); if (k === 'id') this.id = String(v); if (k.startsWith('data-')) this.dataset[camel(k.slice(5))] = String(v); }
-    getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; }
-    removeAttribute(k) { delete this.attrs[k]; }
-    appendChild(c) { c.cha = this; this.con.push(c); return c; }
-    querySelectorAll(s) { return this.hauDue().filter((p) => song.has(p) && khop(p, s)); }
-    querySelector(s) { return this.querySelectorAll(s)[0] || null; }
-    closest(s) { for (let p = this; p; p = p.cha) if (khop(p, s)) return p; return null; }
-    insertAdjacentHTML(_v, h) { this.innerHTML = h + this._html; }
-    scrollIntoView() {} focus() {} showModal() { this.open = true; } close() { this.open = false; }
-  }
-  // Bộ chọn: `tag#id.lop[thuoc="gt"]`, nhiều bộ cách bằng dấu phẩy, và quan hệ HẬU DUỆ bằng dấu cách (`#dsPage a`).
-  function khopMot(p, x) {
-    const m = x.match(/^([a-z0-9]*)(?:#([\w-]+))?(?:\.([\w-]+))?(?:\[([\w-]+)(?:="([^"]*)")?\])?$/i);
-    if (!m) throw new Error(`DOM giả chưa hiểu bộ chọn «${x}»`);
-    const [, tag, id, lop, thuoc, gt] = m;
-    if (tag && p.tagName !== tag.toUpperCase()) return false;
-    if (id && p.id !== id) return false;
-    if (lop && !String(p.attrs.class || '').split(/\s+/).includes(lop)) return false;
-    if (thuoc && !(thuoc in p.attrs)) return false;
-    if (thuoc && gt != null && giaiMa(p.attrs[thuoc]) !== gt) return false;
-    return true;
-  }
-  function khop(p, s) {
-    return s.split(',').some((x) => {
-      const bac = x.trim().split(/\s+/);
-      if (!khopMot(p, bac[bac.length - 1])) return false;
-      let i = bac.length - 2;
-      for (let a = p.cha; a && i >= 0; a = a.cha) if (khopMot(a, bac[i])) i -= 1;
-      return i < 0;
-    });
-  }
-  function phanTich(html, goc) {
-    const re = /<(\/?)([a-zA-Z][\w-]*)((?:\s+[^\s=>"']+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>"']+))?)*)\s*(\/?)>/g;
-    const ngan = [{ pt: goc, dau: 0 }];
-    let m;
-    while ((m = re.exec(html))) {
-      const [toan, dong, tag, chuoi, tuDong] = m;
-      const t = tag.toLowerCase();
-      if (dong) {
-        for (let i = ngan.length - 1; i > 0; i--) {
-          if (ngan[i].pt.tagName !== t.toUpperCase()) continue;
-          const { pt, dau } = ngan[i];
-          pt._html = html.slice(dau, m.index); pt.textContent = chuTron(pt._html);
-          if (t === 'textarea') pt.value = giaiMa(pt._html);
-          ngan.length = i; break;
-        }
-        continue;
-      }
-      const attrs = {};
-      for (const a of chuoi.matchAll(/([^\s=>"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>"']+)))?/g)) attrs[a[1].toLowerCase()] = a[2] ?? a[3] ?? a[4] ?? '';
-      const cha = ngan[ngan.length - 1].pt;
-      const pt = new PT(t, attrs, cha);
-      cha.con.push(pt);
-      if (!RONG.has(t) && !tuDong) ngan.push({ pt, dau: m.index + toan.length });
-    }
-    for (const s of goc.hauDue().filter((x) => x.tagName === 'SELECT')) {
-      const op = s.hauDue().filter((x) => x.tagName === 'OPTION');
-      s.value = giaiMa((op.find((o) => 'selected' in o.attrs) || op[0] || { attrs: {} }).attrs.value ?? '');
-    }
-  }
-  const body = new PT('body', {}, null);
-  body.innerHTML = than.replace(/<!--[\s\S]*?-->/g, '').replace(/<script[\s\S]*?<\/script>/g, '');
-  return { body, document: { body, title: '', querySelector: (s) => body.querySelector(s), querySelectorAll: (s) => body.querySelectorAll(s),
-    createElement: (t) => new PT(t, {}, null) } };
-}
-
-const UI_JS = DOC('chung/ui.js');
-/** Chạy script THẬT của một trang: `duong` = đường trình duyệt đang mở; fetch đi sang máy chủ thật với cookie của vai. */
-async function moTrang(tep, { goc, cookie, duong, xacNhan = true, tep: tepChon = null }) {
-  const html = DOC(tep);
-  const than = html.slice(html.indexOf('<body>') + 6, html.lastIndexOf('</body>'));
-  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((x) => x[1]).find((x) => x.includes('window.UI'));
-  const { document } = taoDom(than);
-  const u = new URL(duong, 'http://may.local');
-  const location = { pathname: u.pathname, search: u.search, get href() { return `http://may.local${this.pathname}${this.search}`; }, set href(v) { this.di = v; } };
-  const goi = [];
-  const hoi = [];
-  const loa = [];
-  const ctx = vm.createContext({
-    document, location, console, URL, URLSearchParams, setTimeout, clearTimeout, Promise, JSON, Date, Math, Number, String, Object, Array,
-    history: { replaceState(_a, _b, x) { const n = new URL(String(x), 'http://may.local'); location.pathname = n.pathname; location.search = n.search; } },
-    FileReader: class { readAsDataURL(f) { setTimeout(() => { this.result = `data:application/octet-stream;base64,${Buffer.from(f.noiDung).toString('base64')}`; this.onload(); }, 0); } },
-    fetch: async (duongGoi, o = {}) => {
-      const { credentials: _c, ...con } = o;
-      goi.push({ duong: String(duongGoi), phuongThuc: o.method || 'GET', than: o.body ? JSON.parse(o.body) : null });
-      return fetch(goc + duongGoi, { ...con, headers: { ...(o.headers || {}), cookie } });
-    },
-  });
-  ctx.window = ctx;
-  vm.runInContext(UI_JS, ctx);
-  const that = ctx.window.UI;
-  ctx.window.UI = { ...that, toast: (x) => { loa.push(String(x)); }, confirmDialog: async (x) => { hoi.push(x); return xacNhan; } };
-  vm.runInContext(script, ctx);
-  const cho = async () => { for (let i = 0; i < 30; i++) await new Promise((r) => setTimeout(r, 15)); };
-  await cho();
-  return { document, $: (s) => document.querySelector(s), goi, hoi, loa, location, cho, ctx, tepChon };
-}
-
 test('M1 · `/page` trần (marketer): cột trái có page + ô LỌC có số của «Tất cả page»; giữa mời chọn page; không gọi cửa của một page', async (t) => {
   const { goc, sv, vao } = await dungThu();
   t.after(() => sv.close());

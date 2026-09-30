@@ -58,6 +58,8 @@ export {
 function cuaDangMo() {
   return process.env.V3_WA_GUI === "1" && process.env.PANCAKE_READONLY !== "1";
 }
+// VE7b · 30/09: màn Kết nối ĐỌC đúng hàm này — một nguồn cho «cửa gửi WhatsApp đang mở không», không chép luật sang tầng B.
+export { cuaDangMo as cuaGuiWaDangMo };
 
 function kiemGuardGuiGhi(tenThaoTac) {
   if (!cuaDangMo()) {

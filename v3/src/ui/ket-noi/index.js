@@ -20,6 +20,7 @@ export {
   datGhiKetNoiPos, daNoiGhiKetNoiPos,
   datKhoTokenV3, daNoiKhoTokenV3, tokenTuEnv,
   datKeoDanhMuc, daNoiKeoDanhMuc, keoDanhMucPos,
+  datTaoTruyVan, trangThaiWhatsApp,
 } from './kho-ket-noi.js';
 
 export {

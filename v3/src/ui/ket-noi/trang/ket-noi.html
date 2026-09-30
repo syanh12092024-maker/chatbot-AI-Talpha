@@ -17,18 +17,22 @@
 <header>
   <!-- ⚠️ Tên này PHẢI khớp tên trong menu (`chung/man-hinh.js`) — ca HK10 canh cặp đó. -->
   <h1>Kết nối</h1>
-  <span class="sub">Tài khoản Pancake và kho hàng mà bot dùng để đọc tin, trả lời khách và đẩy đơn.</span>
+  <span class="sub">Pancake · POS · WhatsApp · HRM — nơi bot và hệ đọc dữ liệu. Kéo dữ liệu ở cuối trang.</span>
 </header>
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
 
+  <!-- VE7b · 30/09 (bản vẽ 4): năm phần theo thứ tự bản vẽ — Pancake · POS · WhatsApp · HRM · Kéo dữ liệu. Chỗ chưa có nguồn nói
+       thẳng (cột «Không quyền» chưa đo · WhatsApp chưa nối · HRM chưa nối vào máy chủ) — không chép số đo tay lên màn. -->
   <section class="section table-wrap" aria-labelledby="tieu-token">
-    <div class="table-toolbar"><h2 id="tieu-token">Tài khoản Pancake</h2>
+    <div class="table-toolbar"><h2 id="tieu-token">Pancake · đọc tin, gửi tin</h2>
       <span class="table-count" id="demToken"></span></div>
     <div class="table-note" id="ghi-chu-kho"></div>
     <div id="bangToken"><div class="empty-state"><span class="skeleton"></span></div></div>
     <div class="table-note" id="giaiThich" hidden></div>
+    <div class="table-note">«Không quyền»: chưa đo — cần một lượt dò Pancake theo từng page của mỗi token (đếm page trả «không có quyền hạn
+      trên trang này»). «Page đang dùng» là số page tiến trình bot đang giao cho token đó.</div>
   </section>
 
   <section class="section" aria-label="Nguồn của các con số">
@@ -37,7 +41,7 @@
 
   <section class="section panel" aria-labelledby="tieu-them">
     <div class="section-header"><div>
-      <h2 id="tieu-them">Thêm tài khoản</h2>
+      <h2 id="tieu-them">Thêm token</h2>
       <div class="section-desc">Dán chuỗi tài khoản lấy từ Pancake. Không cần khởi động lại.</div>
     </div></div>
     <div class="field">
@@ -51,16 +55,39 @@
   </section>
 
   <section class="section table-wrap" aria-labelledby="tieu-pos">
-    <div class="table-toolbar"><h2 id="tieu-pos">Kho hàng của team đang mở</h2>
-      <span class="table-count">Khoá API không bao giờ hiện ở đây</span>
-      <button type="button" class="btn" data-size="sm" id="nutKeoDanhMuc" hidden
-        title="Đọc danh mục + tồn kho của mọi kết nối đang bật, ghi vào bảng sản phẩm của v3">
-        <span>Kéo danh mục sản phẩm</span></button>
-      <button type="button" class="btn" data-variant="primary" data-size="sm" id="nutThemPos" hidden>
-        <span>Thêm kết nối</span></button></div>
+    <div class="table-toolbar"><h2 id="tieu-pos">POS · mỗi shop = một thị trường</h2>
+      <span class="table-count">Khoá API không bao giờ hiện ở đây</span></div>
     <div id="bangPos"><div class="empty-state"><span class="skeleton"></span></div></div>
-    <div id="ketQuaDanhMuc"></div>
     <div class="table-note" id="ghiChuPos" hidden></div>
+    <div class="table-note" id="ghiChuMon" hidden></div>
+    <div class="table-note">Tiền tệ và số món suy từ danh mục đã kéo về (mã món POS mang mã shop). Người quyết chốt 29/09 (CR-28-09c): một
+      shop POS là một thị trường — thị trường của page hôm nay còn gõ tay, suy từ shop là phiếu LL16.</div>
+  </section>
+
+  <section class="section panel" aria-labelledby="tieu-wa">
+    <div class="section-header"><div>
+      <h2 id="tieu-wa">WhatsApp · xác nhận đơn chốt qua Ladi</h2>
+      <div class="section-desc">Gửi qua Pancake · mẫu tin phải được Meta duyệt trước khi gửi.</div>
+    </div><span id="waNhan"></span></div>
+    <div class="luoi-kv" id="waTrangThai"><span class="nhan">Van gửi</span><span class="meta">đang đọc…</span></div>
+    <p class="table-note">Khung gửi đã có (phiếu L1-M3) và đứng sau van gửi — vắng biến là đóng. Khi mở: chỉ đơn chốt trên trang bán hàng (Ladi, có UTM)
+      vào luồng; đơn chốt trong chat Messenger và đơn sale nhập tay không gửi.</p>
+  </section>
+
+  <section class="section panel" aria-labelledby="tieu-hrm">
+    <div class="section-header"><div>
+      <h2 id="tieu-hrm">HRM · hồ sơ nhân sự</h2>
+      <div class="section-desc">Người dùng, vai và marketer lấy từ hồ sơ nhân sự — một nguồn, không ô ghép tay riêng.</div>
+    </div><span class="status-badge" data-tone="neutral">Chưa nối vào máy chủ</span></div>
+    <div class="luoi-kv">
+      <span class="nhan">Vì sao chưa nối</span><span>Máy chủ chưa có quyền đọc BigQuery — cần một tài khoản dịch vụ CHỈ ĐỌC (việc người).</span>
+      <span class="nhan">Nguồn hồ sơ</span><span><code>HRM_Core.dim_employee</code> · BigQuery <code>levelup-465304</code></span>
+      <span class="nhan">Marketer trên POS</span><span>bảng ghép <code>PIALPHA_ALL_Dataset.dim_person_map</code>: mã marketer POS → mã nhân viên</span>
+      <span class="nhan">Vai khi nối</span><span>MKT → Marketer · SALE → Sale (Hộp thư cả ba team) · BO · VANDON · CTV không vào hệ</span>
+      <span class="nhan">Team</span><span>PIALPHA_GCC → Pialpha GCC (tên cũ Tiểu Alpha) · PIALPHA_AUUS → Auus · PIALPHA_EU → Pialpha EU ·
+        PIALPHA_SALE_ONLINE / _OFFLINE → sale dùng chung cả ba team</span>
+    </div>
+    <p class="table-note">Người quyết chốt 29/09 (CR-28-09c). Số hồ sơ, tỉ lệ ghép… chỉ hiện khi máy chủ đọc được nguồn — không chép số đo tay lên đây.</p>
   </section>
 
   <dialog class="dialog" data-size="md" id="hopPos" aria-labelledby="hopPos-tieu">
@@ -92,15 +119,22 @@
 
   <section class="section panel" aria-labelledby="tieu-nap">
     <div class="section-header"><div>
-      <h2 id="tieu-nap">Kéo dữ liệu về</h2>
-      <div class="section-desc">Đọc lại page, hội thoại, kịch bản và kho hàng từ bot vào cơ sở dữ liệu.</div>
-    </div>
-      <span id="trangThaiNap"></span></div>
-    <div id="ketQuaNap"></div>
+      <h2 id="tieu-nap">Kéo dữ liệu</h2>
+      <div class="section-desc">Bốn việc làm lúc cài đặt, hoặc khi Pancake / POS có thay đổi.</div>
+    </div></div>
     <div class="form-actions">
-      <button type="button" class="btn" data-variant="primary" data-size="md" id="nutNap"><span>Kéo dữ liệu về</span></button>
-      <span class="text-muted" id="ghiChuNap"></span>
+      <button type="button" class="btn" data-size="md" id="nutThemPos" hidden><span>Thêm kho POS</span></button>
+      <button type="button" class="btn" data-size="md" id="nutKeoDanhMuc" hidden
+        title="Đọc danh mục + tồn kho của mọi kết nối đang bật, ghi vào bảng sản phẩm của v3"><span>Kéo danh mục và giá từ POS</span></button>
+      <button type="button" class="btn" data-size="md" id="nutQuetPancake"
+        title="Hỏi Pancake bằng kho token đang có, cập nhật danh mục page (cùng cửa với «Tất cả page»)"><span>Quét Pancake tìm page mới</span></button>
+      <button type="button" class="btn" data-variant="primary" data-size="md" id="nutNap"><span>Kéo lại dữ liệu cũ (nạp lại)</span></button>
+      <span id="trangThaiNap"></span>
     </div>
+    <div id="ketQuaDanhMuc"></div>
+    <div id="ketQuaQuet"></div>
+    <div id="ketQuaNap"></div>
+    <p class="text-muted" id="ghiChuNap"></p>
   </section>
 </main>
 
@@ -160,6 +194,10 @@ function veNguonSo(d) {
     { ten: 'Hạn còn lại', tu: 'đọc từ chính tài khoản (phần hạn trong JWT), không phải một cột người nhập' },
     { ten: 'Page đang dùng', tu: 'hỏi tiến trình bot qua `/admin/api`; bot im thì cột này trống chứ không phải bằng 0' },
     { ten: 'Kết nối kho hàng', tu: 'bảng `ket_noi_pos` của team đang mở. Khoá API không bao giờ đọc ngược ra được' },
+    { ten: 'Không quyền', tu: 'chưa đo — cần một lượt dò Pancake theo từng page của mỗi token; màn không đoán' },
+    { ten: 'Tiền tệ · Món', tu: 'bảng `san_pham` của team đang mở (mã `<shop>:<id>` do lượt kéo danh mục ghi) + `goi_gia.tien_te`. Món nạp từ bot (`kb:`) không thuộc shop nào nên không đếm' },
+    { ten: 'WhatsApp', tu: 'van của cửa gửi `src/channels/whatsapp` (`V3_WA_GUI` + `PANCAKE_READONLY`, đọc lúc mở màn) + bảng mẫu đã duyệt `mau-tin.js`. Số WhatsApp nối vào Pancake: không đo được (điểm kiểm H1)' },
+    { ten: 'HRM', tu: 'chưa có đường đọc trên máy chủ (thiếu tài khoản dịch vụ BigQuery chỉ đọc — H11) — phần này chỉ nói đang thiếu gì, không có số' },
   ];
   if (d.botImKyThuat) dong.push({ ten: 'Vì sao chưa hỏi được bot', tu: d.botImKyThuat });
   $('#nguon-so').innerHTML = nguonSo({
@@ -188,7 +226,7 @@ function veKho(d) {
     $('#demToken').textContent = `${so(d.token.length)} token`;
     $('#bangToken').innerHTML = d.token.length ? `<table class="data-table"><thead><tr>
         <th scope="col" class="num">Thứ tự</th><th scope="col">Tài khoản</th><th scope="col">Nguồn</th>
-        <th scope="col">Hạn</th><th scope="col" class="num">Page đang dùng</th>
+        <th scope="col">Hạn</th><th scope="col" class="num">Page đang dùng</th><th scope="col" class="num">Không quyền</th>
         <th scope="col" class="actions"><span class="sr-only">Thao tác</span></th>
       </tr></thead><tbody>${d.token.map((t, i) => `
       <tr>
@@ -198,6 +236,7 @@ function veKho(d) {
         <td>${statusBadge(MA_SUC_KHOE[t.sucKhoe.muc] || 'token_unknown', { label: hoaDau(t.sucKhoe.chu) })}
           <div class="meta tabular">${esc(ngay(t.het))}</div></td>
         <td class="num">${so(t.soPageDangDung)}</td>
+        <td class="num meta">chưa đo</td>
         <td class="actions">${t.boDuoc
           ? button('Bỏ', { size: 'sm', variant: 'danger', disabled: !QUAN_LY, data: { bo: t.id },
               title: QUAN_LY ? 'Bỏ tài khoản này khỏi kho' : 'Máy chủ chưa nối kho tài khoản' })
@@ -217,7 +256,15 @@ function veKho(d) {
 /* ── KẾT NỐI POS ──────────────────────────────────────────────────────────────────────
  * `suaDuoc` = máy chủ có nối cửa ghi hay không. Không nối thì ẨN nút, chứ không cho bấm
  * rồi trả 500 — người dùng không có cách nào biết đó là lỗi cấu hình của máy chủ.
+ * VE7b: mỗi shop kèm tiền tệ + số món SUY TỪ danh mục đã kéo (`soMon` null = không đo được,
+ * khác 0 = chưa có món nào mang mã shop này). Hai nút thêm/kéo sống ở phần «Kéo dữ liệu».
  */
+const oMon = (k) => (k.soMon == null
+  ? '<span class="meta">chưa đo</span>'
+  : (k.soMon === 0
+    ? '<span class="meta" title="Không món nào mang mã shop này trong bảng sản phẩm — kéo danh mục khi kết nối đang bật">chưa kéo danh mục</span>'
+    : `${so(k.soMon)} món`));
+
 let POS = [];
 let SUA_DUOC_POS = false;
 
@@ -233,6 +280,8 @@ function vePos(d) {
   // Nói thẳng giới hạn đã biết thay vì để người ta phát hiện bằng một đơn hỏng: cửa này
   // KHÔNG gọi thử sang POS, nên khoá sai chỉ lộ ở lượt tạo đơn đầu tiên.
   chu.textContent = 'Màn không gọi thử khoá: khoá sai chỉ lộ ở đơn đầu tiên. Ngừng dùng thì TẮT, đừng bỏ.';
+  $('#ghiChuMon').hidden = !d.monViSao;
+  $('#ghiChuMon').textContent = d.monViSao ? `Số món: chưa đo — ${d.monViSao}.` : '';
 
   if (d.trong) {
     $('#bangPos').innerHTML = emptyState({ icon: 'inbox', title: String(d.trong.noi || '').replace(/`/g, ''),
@@ -240,12 +289,15 @@ function vePos(d) {
     return;
   }
   $('#bangPos').innerHTML = `<table class="data-table"><thead><tr>
-      <th scope="col">Thị trường</th><th scope="col">Cửa hàng</th><th scope="col">Trạng thái</th>
+      <th scope="col">Thị trường</th><th scope="col">Tiền tệ</th><th scope="col">Shop</th><th scope="col">Trạng thái</th>
+      <th scope="col" class="num">Món</th>
       ${SUA_DUOC_POS ? '<th scope="col">Việc</th>' : ''}
     </tr></thead><tbody>${POS.map((k) => `
     <tr><td class="manh">${esc(k.market)}</td>
+      <td class="tabular">${esc(k.tienTe || '—')}</td>
       <td class="tabular">${esc(k.shopId)}</td>
       <td>${statusBadge(k.bat ? 'feature_on' : 'feature_off', { label: k.bat ? 'Đang bật' : 'Đã tắt' })}</td>
+      <td class="num">${oMon(k)}</td>
       ${SUA_DUOC_POS ? `<td class="row-actions">
         <button type="button" class="btn" data-variant="ghost" data-size="sm" data-sua-pos="${esc(k.id)}"><span>Sửa</span></button>
         <button type="button" class="btn" data-variant="ghost" data-size="sm" data-bat-pos="${esc(k.id)}"><span>${k.bat ? 'Tắt' : 'Bật'}</span></button>
@@ -313,6 +365,48 @@ async function keoDanhMuc() {
   } finally { setBusy(nut, false); }
 }
 
+/* ── WHATSAPP — van THẬT của cửa gửi, không phải chữ tĩnh ───────────────────────────────
+ * Van đóng ⇒ «Chưa nối». Van mở mà chưa mẫu nào được Meta duyệt ⇒ cửa vẫn từ chối mọi lượt gửi — nói đúng thế,
+ * không khoe «đang chạy». Số WhatsApp đã nối vào Pancake máy chủ không đo được ⇒ «chưa đo» + vì sao.
+ */
+function veWa(d) {
+  $('#waNhan').innerHTML = d.vanMo
+    ? (d.soMauDaDuyet ? statusBadge('feature_on', { label: 'Van mở' }) : statusBadge('blocked', { label: 'Van mở · chưa mẫu nào duyệt' }))
+    : '<span class="status-badge" data-tone="neutral">Chưa nối</span>';
+  const bien = (v) => (v == null ? 'vắng' : `= ${v}`);
+  $('#waTrangThai').innerHTML = `
+    <span class="nhan">Van gửi</span><span>${d.vanMo ? 'mở' : 'đóng'}
+      <span class="meta">(V3_WA_GUI ${esc(bien(d.van.V3_WA_GUI))} · PANCAKE_READONLY ${esc(bien(d.van.PANCAKE_READONLY))})</span></span>
+    <span class="nhan">Mẫu tin Meta đã duyệt</span><span>${so(d.soMauDaDuyet)}${d.soMauDaDuyet ? '' : ' — chưa mẫu nào, cửa từ chối mọi lượt gửi'}</span>
+    <span class="nhan">Số WhatsApp nối vào Pancake</span><span class="meta">chưa đo — ${esc(d.soNoiViSao || '')}</span>`;
+}
+
+/* ── QUÉT PANCAKE → danh mục page ─────────────────────────────────────────────────────
+ * ĐÚNG cửa của nút «Quét Pancake» ở «Tất cả page» (`/api/page-bot/quet`) — một việc, một cửa.
+ * Lượt quét chỉ THÊM page và cập nhật TÊN, không xoá, không đụng công tắc ⇒ không hỏi xác nhận
+ * (cùng lý do bên đó). Hai cảnh «không thấy page» nói hai câu khác nhau — án lệ 17/09.
+ */
+async function quetPancake() {
+  const nut = $('#nutQuetPancake');
+  setBusy(nut, true);
+  $('#ketQuaQuet').innerHTML = '';
+  try {
+    const kq = await goi('/api/page-bot/quet', { method: 'POST', body: JSON.stringify({}) });
+    if (!kq) return;
+    delete LOI['Không quét được Pancake']; veBangTin();
+    $('#ketQuaQuet').innerHTML = `<div class="duoi-4">${kq.rong
+      ? canhBao({ level: 'warning', title: 'Quét xong nhưng không thấy page nào',
+          body: kq.soToken === 0
+            ? 'Tiến trình này KHÔNG thấy token Pancake nào. Thêm token ở phần «Pancake» phía trên; nếu ở đó đã có token thì đây là lỗi nối dây của máy chủ — xem log khởi động dịch vụ v3.'
+            : `Có ${so(kq.soToken)} token nhưng không token nào trả về page — token hết hạn hoặc mất quyền trên mọi page đều ra kết quả này. Danh mục page giữ nguyên.` })
+      : canhBao({ level: 'success', title: 'Đã quét Pancake',
+          body: `${so(kq.nguon)} page · ${so(kq.them)} mới · ${so(kq.capNhat)} cập nhật`
+            + (kq.khongThay ? ` · ${so(kq.khongThay)} page trong danh mục không thấy ở lượt này` : '') })}</div>`;
+  } catch (e) { LOI['Không quét được Pancake'] = e.message; veBangTin(); }
+  finally { setBusy(nut, false); }
+}
+
+$('#nutQuetPancake').addEventListener('click', quetPancake);
 $('#nutKeoDanhMuc').addEventListener('click', keoDanhMuc);
 $('#nutThemPos').addEventListener('click', () => moPos(null));
 $('#p-huy').addEventListener('click', () => $('#hopPos').close());
@@ -430,7 +524,7 @@ $('#nutThem').addEventListener('click', async () => {
   finally { setBusy(nut, false); nut.disabled = !QUAN_LY; }
 });
 
-/* ── KÉO DỮ LIỆU VỀ ───────────────────────────────────────────────────────────────────
+/* ── KÉO LẠI DỮ LIỆU CŨ (nạp lại) ─────────────────────────────────────────────────────
  * Lượt nạp chạy NỀN ở máy chủ; trang chỉ bấm rồi hỏi lại trạng thái mỗi 2 giây. Không giữ
  * kết nối chờ — nạp 18.790 hội thoại không phải việc của một yêu cầu web.
  */
@@ -442,7 +536,7 @@ function veNap(t) {
 
   if (!t.noiDuoc) {
     $('#trangThaiNap').innerHTML = statusBadge('feature_unavailable', { label: 'Chưa khả dụng' });
-    $('#ghiChuNap').textContent = 'Máy chủ chưa nối bộ nạp dữ liệu — đây là lỗi cấu hình, không phải «không có gì để nạp».';
+    $('#ghiChuNap').textContent = 'Nạp lại: máy chủ chưa nối bộ nạp dữ liệu — đây là lỗi cấu hình, không phải «không có gì để nạp».';
     nut.disabled = true;
     return;
   }
@@ -453,9 +547,9 @@ function veNap(t) {
     : (t.loi ? statusBadge('blocked', { label: 'Lượt gần nhất hỏng' })
              : (t.xongLuc ? statusBadge('ready', { label: 'Xong' }) : ''));
   $('#ghiChuNap').textContent = t.dangChay
-    ? `Bắt đầu lúc ${gio(t.batDau)}${t.nguoiChay ? ` · ${t.nguoiChay} bấm` : ''}. Trang tự hỏi lại mỗi 2 giây.`
-    : (t.xongLuc ? `Lượt gần nhất: ${gio(t.xongLuc)}${t.nguoiChay ? ` · ${t.nguoiChay}` : ''}.`
-                 : 'Chưa chạy lần nào kể từ lúc khởi động dịch vụ.');
+    ? `Nạp lại: bắt đầu lúc ${gio(t.batDau)}${t.nguoiChay ? ` · ${t.nguoiChay} bấm` : ''}. Trang tự hỏi lại mỗi 2 giây.`
+    : (t.xongLuc ? `Nạp lại — lượt gần nhất: ${gio(t.xongLuc)}${t.nguoiChay ? ` · ${t.nguoiChay}` : ''}.`
+                 : 'Nạp lại: chưa chạy lần nào kể từ lúc khởi động dịch vụ.');
 
   if (t.loi) {
     $('#ketQuaNap').innerHTML = `<div class="duoi-4">${canhBao({ level: 'error', title: 'Lượt kéo dữ liệu hỏng giữa chừng',
@@ -499,7 +593,7 @@ $('#nutNap').addEventListener('click', async () => {
     body: 'Đọc lại page, hội thoại, kịch bản và kết nối POS rồi ghi đè phần ĐỌC của nền v3. '
       + 'Công tắc bot, marketer và trọng điểm do người đặt KHÔNG bị đụng tới. '
       + 'Lượt nạp chạy nền, có thể mất vài phút với hàng chục nghìn hội thoại.',
-    confirmLabel: 'Kéo dữ liệu về',
+    confirmLabel: 'Kéo lại dữ liệu',
   });
   if (!dongY) return;
   setBusy($('#nutNap'), true);
@@ -517,15 +611,16 @@ $('#nutNap').addEventListener('click', async () => {
 
 async function nap() {
   hoiNap();
-  // Nạp từng khối riêng — kho token hỏng thì bảng POS vẫn hiện.
-  for (const [ten, duong, ve, cho] of [['Không tải được kho token', '/api/ket-noi/kho-token', veKho, '#bangToken'],
-                                       ['Không tải được kết nối POS', '/api/ket-noi/pos', vePos, '#bangPos']]) {
+  // Nạp từng khối riêng, SONG SONG (ba cửa độc lập) — kho token hỏng thì bảng POS vẫn hiện.
+  await Promise.all([['Không tải được kho token', '/api/ket-noi/kho-token', veKho, '#bangToken'],
+                     ['Không tải được kết nối POS', '/api/ket-noi/pos', vePos, '#bangPos'],
+                     ['Không tải được trạng thái WhatsApp', '/api/ket-noi/whatsapp', veWa, '#waTrangThai']].map(async ([ten, duong, ve, cho]) => {
     try { const d = await goi(duong); if (d) { delete LOI[ten]; ve(d); } }
     catch (e) {
       LOI[ten] = e.message; veBangTin();
       $(cho).innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Xem cảnh báo đầu trang.' });
     }
-  }
+  }));
 }
 nap();
 </script>
