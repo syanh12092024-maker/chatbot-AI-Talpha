@@ -1385,6 +1385,14 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
   - **N-MK-GOI-Y-DON** gợi ý marketer cho sản phẩm × thị trường và page từ đơn POS (đo 30/09: 98–100% đơn có marketer, 99–100% dòng
     hàng có SKU, 57–88% đơn có page) — người quyết «để sau».
 
+- 30/09 · **NỢ SAU VE7c** (`docs/thi-cong/nhat-ky/phieu-VE7c.md` §7):
+  - **N-KHOA-HAI-TEN** bot đọc `KIMI_API_KEY`/`ANTHROPIC_API_KEY`, lớp v3 (dự phòng khi nối) đọc `V3_KHOA_<NHÀ>` — prod 30/09 chỉ
+    đặt bộ thứ nhất. Nối dự phòng (LL14) phải chọn một bộ (hoặc đặt `V3_KHOA_*`), kẻo dự phòng nối xong vẫn «chưa có khoá».
+  - **N-DAN-KHOA-DOI-DUONG** dán khoá ở màn Model ghi đủ ba dòng cấu hình (`ghiCauHinh`, có sẵn) ⇒ team đang đi model máy chủ
+    chuyển sang cấu hình riêng (client v3, gửi độ ngẫu nhiên 0,3). Màn nói trước; tách «lưu khoá» khỏi «lưu cấu hình» là CR riêng.
+  - **N-CANHBAO-LOP-MODEL** `canhBaoCauHinh` (lớp v3) còn câu «đang chạy bằng bộ mặc định» · «rơi thẳng sang dự phòng» · «không
+    chọn được model» — màn Model (nơi duy nhất đọc, grep 30/09) đã ẩn/thay; sửa câu nguồn khi lớp v3 vào đường chat.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2811,3 +2819,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · MỞ VAN lô VE7a · VE7b · VE8a · VE8b → ✅ GIỮ — prod `7bb52b4 → ecce575`, migration 028 (áp mới 1 · tổng 28, bốn cột), chỉ restart aicloser-v3 lúc 11:40:31 CEST
   cửa vào 44 xanh / 14 đỏ = 12 nợ cũ + l1-m1 + ve5b chập chờn (ll18-khung, đường báo lồng chỉ ra) · npm test 2.411 ca 0 đỏ · mốc +1′/+5′/+15′ lỗi 0/0/0 · Started 1 · dấu mã 5/5 · /health 131 · việc sau: bấm «Kéo danh mục và giá từ POS» (SKU)
   · commit ecce575 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260930-ve7-ve8.md
+- 30/09 · VE7c → 🔎 CHỜ DEPLOY — Cài đặt › Model theo bản vẽ 4 «Màn chỉ hiện thứ bot THẬT SỰ dùng»: thẻ Trả lời khách đọc ĐƯỜNG CHỌN CỦA BOT (`src/chat/model.js#chonModel` tách từ `layModel`, hành vi bot y nguyên) — hết «chưa có khoá»/«bộ mặc định» giả trên 3/4 team prod · «Thay khoá và thử một lượt» (goiMotLan một lần, lỗi nhà model về HTTP 200, chặn bấm dồn, nhật ký thu_model) · page bot mới đếm theo luật worker
+  đo prod 30/09: 3/4 team chưa có dòng cấu hình ⇒ bot gọi MODEL_CLOSER bằng KIMI_API_KEY, prod không đặt V3_KHOA_* · chạy thật 9/9 · đảo-vá 35/35 · cổng ve7c.sh 17/17 · npm test 2.420 ca 0 đỏ · ĐỦ cổng 46 xanh / 13 đỏ = 12 nợ cũ + l1-m1 (l2-m2 đo lại trên HEAD: ✘ y hệt) · nợ N-KHOA-HAI-TEN · N-DAN-KHOA-DOI-DUONG · N-CANHBAO-LOP-MODEL
+  · commit 4dd6b93 · nhật ký docs/thi-cong/nhat-ky/phieu-VE7c.md
