@@ -2744,3 +2744,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · PHÁT HÀNH VE-VA1 → ✅ GIỮ — prod `91a98e7 → 47968b8`, 0 migration (27), chỉ hai tệp trang, restart `aicloser-v3` (04:07:11); Số liệu › Tổng quan hiện số · tạo người dùng hết báo lỗi · chuyển page gửi được
   cửa vào npm test 2.328 ca 0 đỏ · cổng 37 xanh / 13 đỏ = 12 nợ cũ + `ll3` chập chờn (chạy riêng 3/3 · ll2 24/24 · cả loạt lại 38/12 nợ cũ) · mốc +1′/+5′/+15′ lỗi 0 · dấu mã mới 0→1 · 0→1 · 1→2 · `phat-hanh.sh` nay giữ output mọi cổng
   · commit 47968b8 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260930-va1.md
+- 30/09 · VE6a → 🔎 CHỜ DEPLOY — Số liệu › Tổng quan theo bản vẽ 3a: bốn ô số · hai phễu (không tỉ lệ rơi, chặng thiếu nguồn nói ra) · ba thước giữ dọc · bảng theo page ghép AI/đơn · rủi ro hoàn theo vai
+  ca chạy thật V1–V6 · thước bao-cao ①c đo đúng phạm vi luật · đảo-vá 11/11 · cổng ve6a.sh 8/8 · npm test 2.334 ca 0 đỏ · bò 51 màn 0 lỗi mới (2 request 502 thêm = cùng cầu bot cũ trong sandbox)
+  · commit 1ecb8f9 · nhật ký docs/thi-cong/nhat-ky/phieu-VE6a.md
