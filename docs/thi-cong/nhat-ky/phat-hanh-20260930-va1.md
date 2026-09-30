@@ -1,6 +1,6 @@
 # MỞ VAN — VE-VA1: vá ba lỗi «tên chưa khai» (Số liệu › Tổng quan · Người và team)
 
-> **TRẠNG THÁI: ĐANG MỞ — người quyết gật 30/09: «ok deploy đi»** (trả lời «Deploy VE-VA1 ngay không? … Gõ «deploy»»).
+> **TRẠNG THÁI: XONG · GIỮ (30/09 04:21 prod) — người quyết gật 30/09: «ok deploy đi»** (trả lời «Deploy VE-VA1 ngay không? … Gõ «deploy»»).
 > Phiếu: `phieu-VE-VA1.md`. Lượt trước: `phat-hanh-20260930-ve5.md` (prod `91a98e7`).
 
 ## 1 · Mở cái gì
@@ -43,3 +43,30 @@ Bậc ② — prod, đường nội bộ. Người dùng thấy: Tổng quan hi�
 cd /opt/aicloser && git checkout -f -B vao-ui-v3-17-09 91a98e7 && systemctl restart aicloser-v3    # < 1 phút
 ```
 Mất dữ liệu: không — lùi là về lại ba lỗi cũ (không đường ghi mới nào sinh ra ở lượt này).
+
+## 8 · Lệnh đã gõ
+
+Giờ prod (CEST), 30/09:
+1. commit giấy `47968b8` · đẩy nhánh `91a98e7..47968b8`
+2. mốc lùi `/var/backups/aicloser/truoc-va1-20260930T020709Z/commit.txt` = `91a98e7`
+3. prod `checkout -f -B … origin/vao-ui-v3-17-09` → `47968b8` · 0 tệp theo dõi sửa tại chỗ · migrate **áp mới 0 · tổng 27**
+4. `systemctl restart aicloser-v3` lúc **04:07:11** — chỉ dịch vụ này
+
+## 9 · Số đo
+
+**+1′ (04:08:25) · +5′ (04:11:30) · +15′ (04:21:35), prod:** ba dịch vụ active · `Started` 0 · 1 · 0 ở cả ba mốc · lỗi mới
+**0/0/0** · `ActiveEnterTimestamp` hai dịch vụ không chạm y nguyên · `/health` 129 · `/api/bao-cao` · `/api/team/gan-page` · `/bao-cao`
+401 · đối chứng 404 · trên đĩa: `T` khai **0 → 1** · `nap` khai **0 → 1** · `tuKhoTam` khai **1 → 2**.
+
+**Dò `ll3.sh` đỏ trong loạt (N-CONGCHAP, lần 2):** `ll3.sh` chạy riêng 3/3 xanh · bốn tệp ca của `ll2.sh` (ca Postgres «hai lượt duyệt
+cùng lúc ⇒ đúng MỘT đơn POS» nằm ở đây) chạy tuần tự **6 vòng × 4 = 24/24 xanh** · Postgres không từ chối lượt nào · chạy lại CẢ LOẠT
+với output được giữ (bản sửa `phat-hanh.sh`, commit riêng): **38 xanh · 12 đỏ = đúng 12 nợ cũ, `ll3` xanh**. Kết: tần suất ~1/5 loạt,
+KHÔNG tái hiện được lúc chạy riêng; chưa chẩn đoán được nguyên nhân — lần đỏ sau sẽ còn output. Không dính mã VA1 (hai tệp trang).
+
+## 10 · Kết · nợ · ai gật
+
+- Kết: **GIỮ** (prod, 30/09 04:21). Mốc +1 ngày: người quyết mở Số liệu › Tổng quan (phải thấy ba thước, không còn ô lỗi); tạo người
+  dùng / chuyển page khi cần.
+- Nợ: N-CONGCHAP — nửa đầu đã trả (`phat-hanh.sh` giữ output mọi cổng); nửa sau (chẩn đoán `ll3` chập chờn) chờ lần đỏ kế tiếp.
+  N-NOUNDEF (từ phiếu VA1): lưới `no-undef` thường trực cần ESLint devDependency — xin người quyết.
+- Người gật: người quyết, 30/09 — «ok deploy đi».

@@ -2741,3 +2741,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · VE-VA1 → 🔎 CHỜ DEPLOY — ba lỗi «tên chưa khai» sống trên prod: Số liệu › Tổng quan không hiện số từ 25/09 (ô lỗi đổ oan cho bot) · tạo người dùng báo «nap is not defined» từ 15/09 · chuyển page giữa team không gửi được từ 17/09
   tìm bằng quét no-undef 35 script trang (ESLint cài tạm, không thêm gói) · ca chạy thật R1 R2 T1 T2 (mã cũ đỏ đúng câu lỗi) · đảo-vá 4/4 · cổng va1.sh 7/7 · npm test 2.328 ca 0 đỏ · nợ mới N-NOUNDEF (lưới thường trực cần ESLint devDependency)
   · commit 557fbd9 · nhật ký docs/thi-cong/nhat-ky/phieu-VE-VA1.md
+- 30/09 · PHÁT HÀNH VE-VA1 → ✅ GIỮ — prod `91a98e7 → 47968b8`, 0 migration (27), chỉ hai tệp trang, restart `aicloser-v3` (04:07:11); Số liệu › Tổng quan hiện số · tạo người dùng hết báo lỗi · chuyển page gửi được
+  cửa vào npm test 2.328 ca 0 đỏ · cổng 37 xanh / 13 đỏ = 12 nợ cũ + `ll3` chập chờn (chạy riêng 3/3 · ll2 24/24 · cả loạt lại 38/12 nợ cũ) · mốc +1′/+5′/+15′ lỗi 0 · dấu mã mới 0→1 · 0→1 · 1→2 · `phat-hanh.sh` nay giữ output mọi cổng
+  · commit 47968b8 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260930-va1.md
