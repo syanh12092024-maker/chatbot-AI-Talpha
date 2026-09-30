@@ -2747,3 +2747,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · VE6a → 🔎 CHỜ DEPLOY — Số liệu › Tổng quan theo bản vẽ 3a: bốn ô số · hai phễu (không tỉ lệ rơi, chặng thiếu nguồn nói ra) · ba thước giữ dọc · bảng theo page ghép AI/đơn · rủi ro hoàn theo vai
   ca chạy thật V1–V6 · thước bao-cao ①c đo đúng phạm vi luật · đảo-vá 11/11 · cổng ve6a.sh 8/8 · npm test 2.334 ca 0 đỏ · bò 51 màn 0 lỗi mới (2 request 502 thêm = cùng cầu bot cũ trong sandbox)
   · commit 1ecb8f9 · nhật ký docs/thi-cong/nhat-ky/phieu-VE6a.md
+- 30/09 · VE6b → 🔎 CHỜ DEPLOY — Số liệu › Chi phí AI theo bản vẽ 3b: bốn ô (token mỗi lượt + trúng cache TOÀN HỆ, định nghĩa khớp số bản vẽ 73,3%) · tab Từng tin theo vai · Theo page (+ tổng team) · Theo model nói đúng cái đang có
+  máy chủ trả thêm token toàn hệ (vắng ⇒ null) · ca chạy thật C1–C6 + ⑥ · đảo-vá 10/10 · cổng ve6b.sh 6/6 · npm test 2.341 ca 0 đỏ · bò 51 màn 0 lỗi mới
+  · commit aecd410 · nhật ký docs/thi-cong/nhat-ky/phieu-VE6b.md
