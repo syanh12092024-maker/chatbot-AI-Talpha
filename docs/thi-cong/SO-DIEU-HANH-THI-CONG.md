@@ -2750,3 +2750,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · VE6b → 🔎 CHỜ DEPLOY — Số liệu › Chi phí AI theo bản vẽ 3b: bốn ô (token mỗi lượt + trúng cache TOÀN HỆ, định nghĩa khớp số bản vẽ 73,3%) · tab Từng tin theo vai · Theo page (+ tổng team) · Theo model nói đúng cái đang có
   máy chủ trả thêm token toàn hệ (vắng ⇒ null) · ca chạy thật C1–C6 + ⑥ · đảo-vá 10/10 · cổng ve6b.sh 6/6 · npm test 2.341 ca 0 đỏ · bò 51 màn 0 lỗi mới
   · commit aecd410 · nhật ký docs/thi-cong/nhat-ky/phieu-VE6b.md
+- 30/09 · VE6c → 🔎 CHỜ DEPLOY — Số liệu › Khách theo bản vẽ 3c: hội thoại CỦA TEAM theo giai đoạn × người giữ (hàm gom mới, CSDL v3) · rủi ro hoàn theo vai · rơi ở đâu; cụm Số liệu còn ba tab, Rủi ro hoàn mở bằng «Xem đủ →»
+  ca Postgres H1–H3 + chạy thật K1–K5 · thước ll5/ll18/dieu-huong/ll1 sửa có căn cứ · đảo-vá 10/10 (M6 lượt đầu sống ⇒ K5) · cổng ve6c.sh 11/11 · npm test 2.350 ca 0 đỏ · bò 51 màn 0 lỗi mới
+  · commit 0405e8b · nhật ký docs/thi-cong/nhat-ky/phieu-VE6c.md
