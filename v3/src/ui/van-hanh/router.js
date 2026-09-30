@@ -16,6 +16,7 @@ import {
 import { baoCaoDienTap, tomTatDienTap } from "../../../../src/admin-v3/dien-tap.js";
 import { chiPhiTheoTin, gomChiPhi, GOM_THEO } from "../../../../src/admin-v3/chi-phi-tin.js";
 import { dsBoQua, tomTatBoQua, LY_DO } from "../../../../src/admin-v3/nap-bo-qua.js";
+import { tomTatViecVanHanh } from "./tom-tat.js";
 import { daySanPhamSangBot } from "../../../../src/products/ban-chep-bot.js";
 import { docDonCho, luuDonCho, duyetDonCho, loaiDonCho } from "./don-cho.js";
 import { HE_SO_TE } from "../../../../src/pos/index.js";
@@ -88,6 +89,11 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {}, dayS
     (await pool.query(sql, [q.boiCanh.teamId, ...args])).rows;
   const offset = (q) =>
     Math.min(100000, Math.max(0, Number.parseInt(q.query.offset, 10) || 0));
+  // VE7a · 30/09: ba con số «Việc vận hành» cho khối ở Hệ còn sống (bản vẽ 4) — chỉ ĐỌC, cùng vai với cả màn này.
+  r.get(
+    "/api/van-hanh/tom-tat",
+    wrap(async (q, s) => s.json({ ok: true, ...(await tomTatViecVanHanh(pool, q.boiCanh, env)) })),
+  );
   // DIỄN TẬP — chấm bot mà không cho nó chạm khách. Chỉ ĐỌC, nên không đòi `X-V3-Action`.
   r.get(
     "/api/van-hanh/dien-tap",

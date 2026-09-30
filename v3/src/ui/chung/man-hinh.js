@@ -252,13 +252,17 @@ export const MAN = Object.freeze([
   // GD3 · 25/09: màn ĐẦU TIÊN của mục Cài đặt — người mới mở nó để biết còn thiếu việc gì,
   // thay vì tự dò 12 bước trên 7 màn.
   // LL6 · 29/09: thứ tự theo bản vẽ — Bắt đầu · Kết nối · Model · Hệ còn sống · Người và team · Nhật ký.
+  // VE7a · 30/09: bản vẽ 4 đặt «Hệ còn sống không» ngay sau Bắt đầu, và nó nhận «Việc vận hành» — Vận hành thôi là tab.
   trongCum('cai-dat', 'Bắt đầu', dat(caiDatTeam, 'Cài đặt team', 'cai-dat', 'Năm việc làm một lần, và việc nào còn thiếu')),
+  trongCum('cai-dat', 'Hệ còn sống', dat(sucKhoe, 'Hệ còn sống không', 'cai-dat', 'Các đèn hạ tầng + việc vận hành')),
   trongCum('cai-dat', 'Kết nối', dat(ketNoi, 'Kết nối', 'cai-dat', 'Tài khoản Pancake và kho hàng')),
   trongCum('cai-dat', 'Model', dat(model, 'Model AI & khoá', 'cai-dat', 'Nhà model, khoá, bảng giá')),
-  trongCum('cai-dat', 'Hệ còn sống', dat(sucKhoe, 'Hệ còn sống không', 'cai-dat', 'Chín đèn')),
   // LL10 · 29/09: «Hội thoại và đơn» thành «Vận hành» — nhà của năm việc vận hành (diễn tập · tin bị lọc ·
   // chi phí từng tin · nguồn nhận tin · đối chiếu tin lỗi). Duyệt đơn của sale đã sang Hộp thư (LL2).
-  trongCum('cai-dat', 'Vận hành', dat(vanHanh, 'Vận hành', 'cai-dat', 'Diễn tập, tin bị lọc, chi phí từng tin, nguồn nhận tin')),
+  // VE7a · 30/09: rời thanh tab — ba việc hằng ngày (đối chiếu · tin bị lọc · diễn tập) có số và lối sang ở khối «Việc vận hành»
+  // của Hệ còn sống (`moTuManKhac`); màn đủ mở từ đó (mang sẵn tab). `nhaCum` giữ dòng hai của Cài đặt khi đứng ở màn này.
+  { ...dat(vanHanh, 'Vận hành', 'cai-dat', 'Diễn tập, tin bị lọc, chi phí từng tin, nguồn nhận tin', false, false, false,
+    { thay: sucKhoe.DUONG_TRANG, loiVao: ['suc-khoe/trang/suc-khoe.html'] }), nhaCum: 'cai-dat' },
   trongCum('cai-dat', 'Người và team', dat(team, 'Người và team', 'cai-dat', 'Thành viên, vai, gán page')),
   trongCum('cai-dat', 'Nhật ký', dat(nhatKy, 'Ai đã sửa gì', 'cai-dat', 'Không sửa được, không xoá được')),
 ]);

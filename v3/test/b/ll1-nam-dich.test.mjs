@@ -104,6 +104,7 @@ test('N5 · mỗi vai thấy đúng tập màn như trước — trừ «Sản p
     '/khoi-chung': 'VE4 (tab Chính sách · FAQ · Phản đối)', '/ai-de-xuat': 'VE4 (thôi thử nghiệm — tab «Đề xuất chờ duyệt», bản vẽ 2d)' };
   const BO_CO_CHU_Y = { '/ky-nang': 'LL11 (khái niệm kỹ năng bỏ — «hỏi size» sang kiến thức sản phẩm)',
     '/rui-ro-hoan': 'VE6c (rời thanh tab Số liệu — bốn tầng ở tab Khách + Tổng quan, màn đủ mở bằng «Xem đủ →»; ca ④g canh lối vào)',
+    '/van-hanh-v3': 'VE7a (rời thanh tab Cài đặt — ba việc có số + lối sang ở khối «Việc vận hành» của Hệ còn sống; ca ④g canh lối vào)',
     '/kich-ban': 'VE2b (gộp vào trang một page — tab «Lời bot» + «Lịch sử»; đường cũ chuyển hướng theo vai)' };
   // Thêm CHỈ cho một vai — khai theo vai, cùng lý do như trên.
   const THEM_THEO_VAI = { MARKETER: { '/page': 'VE2b (không mở được «Tất cả page» ⇒ trang một page là lối vào mục Page của họ, «Các page»)' } };

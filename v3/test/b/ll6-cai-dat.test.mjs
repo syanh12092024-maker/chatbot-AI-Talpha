@@ -19,7 +19,8 @@ test('K1 · Cài đặt của quản trị: MỘT dòng thanh bên, sáu tab the
   assert.deepEqual(n.man.filter((m) => !m.an).map((m) => m.tenMenu || m.ten), ['Cài đặt']);
   assert.deepEqual(n.man.filter((m) => m.cum === 'cai-dat' && (!m.an || m.trongCum)).map((m) => m.nhanCum),
     // LL10 · 29/09: + «Vận hành» sau «Hệ còn sống» — nhà của việc vận hành (diễn tập · tin bị lọc · chi phí từng tin …).
-    ['Bắt đầu', 'Kết nối', 'Model', 'Hệ còn sống', 'Vận hành', 'Người và team', 'Nhật ký']);
+    // VE7a · 30/09 (bản vẽ 4): «Hệ còn sống» lên ngay sau Bắt đầu và nhận «Việc vận hành»; Vận hành rời thanh tab (mở từ đó).
+    ['Bắt đầu', 'Hệ còn sống', 'Kết nối', 'Model', 'Người và team', 'Nhật ký']);
 });
 
 test('K2 · bảng «đường dùng thật» của màn Model KHỚP mã đường chat — nối dự phòng (LL14) mà không sửa bảng là đỏ', () => {

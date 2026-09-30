@@ -23,17 +23,15 @@
 
 <main>
   <div id="bang-tin" aria-live="polite"></div>
-  <!-- LL10 · 29/09: ba việc vận hành có nhà ở đây — trỏ thẳng vào đúng tab của màn Vận hành. -->
-  <p class="page-note" id="viec-van-hanh">Việc vận hành:
-    <a href="/van-hanh-v3?tab=conversations">Tin gửi lỗi — đối chiếu</a> ·
-    <a href="/van-hanh-v3?tab=bo-qua">Tin bị lọc</a> ·
-    <a href="/van-hanh-v3?tab=dien-tap">Diễn tập (không gửi)</a></p>
   <div id="dem"></div>
 
   <section class="section" aria-labelledby="tieu-den">
     <div class="section-header"><h2 id="tieu-den">Các đèn</h2></div>
     <ul class="item-list" id="luoi"><li class="item"><div><span class="skeleton"></span></div></li></ul>
   </section>
+  <!-- VE7a · 30/09 (bản vẽ 4): «Việc vận hành» — ba việc của màn Vận hành (đã rời thanh tab Cài đặt) với SỐ THẬT và lối sang đúng
+       tab (`/van-hanh-v3?tab=…`). Chỉ vai mở được Vận hành thấy khối (hỏi menu trước — không gọi cửa rồi ăn 403). -->
+  <section class="section" id="viec-van-hanh" aria-labelledby="tieu-vh" hidden></section>
 </main>
 
 <script>
@@ -104,8 +102,40 @@ async function nap() {
       body: 'Chưa đo được đèn nào. Đây là «chưa biết», không phải «mọi thứ đều ổn».', detail: [e.message] })}</div>`;
   }
 }
+/* ── VE7a · VIỆC VẬN HÀNH (bản vẽ 4) ─────────────────────────────────────────────────────────────────────────────
+ * Số từ `/api/van-hanh/tom-tat` (một hàm, một lượt). Không có việc ⇒ nói «không có», không giấu khối; cửa hỏng ⇒ nói không đọc
+ * được, không vẽ số 0 (0 là lời khai «không có việc»). */
+let MENU = null;
+async function taiViecVanHanh() {
+  if (!MENU) { try { MENU = await goi('/api/dieu-huong'); } catch { return; } }
+  const co = (d) => ((MENU && MENU.nhom) || []).some((n) => (n.man || []).some((m) => m.duong === d));
+  if (!co('/van-hanh-v3')) return;
+  const o = $('#viec-van-hanh');
+  o.hidden = false;
+  const dau = '<div class="section-header"><h2 id="tieu-vh">Việc vận hành</h2><span class="text-muted text-sm">ba việc của màn Vận hành</span></div>';
+  let d = null;
+  try { d = await goi('/api/van-hanh/tom-tat'); }
+  catch (e) { o.innerHTML = dau + canhBao({ level: 'warning', title: 'Chưa đọc được việc vận hành', body: e.message }); return; }
+  if (!d) return;
+  const viec = (ten, n, sau, vi, chuNut, lk) => `<li class="item"><div>
+      <div class="item-title">${esc(ten)} · <b class="so-lon">${so(n)}</b>${sau}</div>
+      <div class="item-desc">${vi}</div></div>
+    <div class="item-trail">${button(chuNut, { href: lk, size: 'sm' })}</div></li>`;
+  const l = d.tinLoi; const b = d.boQua24h; const t = d.dienTap;
+  o.innerHTML = dau + `<ul class="item-list">
+    ${viec('Tin cần đối chiếu', l.tong, '', !l.tong ? 'Không tin nào chờ đối chiếu.'
+      : `${so(l.khongRo)} tin gửi không rõ kết quả — bot gửi mà Pancake không trả lời chắc chắn. Tin lỗi hoặc bị chặn: đối chiếu từng tin — đã tới khách, hay giao cho người gửi lại.`,
+      'Đối chiếu', '/van-hanh-v3?tab=conversations')}
+    ${viec('Tin bị bộ lọc loại', b.tong, ' / 24 giờ', `${so(b.dangNgo)} đáng ngờ. Năm cửa lọc bỏ tin mỗi vòng — một cửa bắt oan là khách im lặng mà không ai biết.`,
+      'Xem theo cửa', '/van-hanh-v3?tab=bo-qua')}
+    ${viec('Diễn tập', t.soLuot, ' lượt', `Diễn tập ${t.dangBat ? 'đang bật' : 'đang tắt'}: bot chạy trên tin thật nhưng KHÔNG gửi — chấm câu trả lời trước khi mở cho khách.`,
+      'Xem lượt diễn tập', '/van-hanh-v3?tab=dien-tap')}
+  </ul>`;
+}
+
 nap();
-setInterval(nap, 60000);   // tự nạp lại mỗi phút — đây là màn người ta để mở
+taiViecVanHanh();
+setInterval(() => { nap(); taiViecVanHanh(); }, 60000);   // tự nạp lại mỗi phút — đây là màn người ta để mở
 </script>
 <script src="/chung/dieu-huong.js"></script>
 </body>

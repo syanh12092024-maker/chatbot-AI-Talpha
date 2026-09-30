@@ -996,6 +996,8 @@
                font-family: var(--font-mono); font-weight: var(--weight-medium); font-variant-numeric: tabular-nums; }
   .item-lead[data-muted] { color: var(--text-disabled); }
   .item-title { font-weight: var(--weight-medium); overflow-wrap: anywhere; }
+  /* VE7a: con số trong tiêu đề một việc («Tin cần đối chiếu · 3») — đậm, chữ số thẳng cột. */
+  .so-lon { font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; }
   .item-title .meta { font-weight: var(--weight-regular); color: var(--text-muted); font-size: var(--text-sm); }
   .item-desc { font-size: var(--text-sm); line-height: var(--lh-sm); color: var(--text-muted); margin-top: 2px; overflow-wrap: anywhere; }
   .item-detail { font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--space-2);

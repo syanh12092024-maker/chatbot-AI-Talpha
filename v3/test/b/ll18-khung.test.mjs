@@ -50,7 +50,8 @@ test('K2 · Số liệu và Cài đặt là MỘT cụm ⇒ hàng 2 chính là c
   assert.equal(veTabCum(d(VAI.QUAN_TRI), '/chi-phi'), '', 'tab cụm đã ở hàng 2 — vẽ thêm trong trang là hai nơi cho một việc');
   const c = veKhung(d(VAI.QUAN_TRI), '/model-ai');
   assert.deepEqual(lienKet(c.html, 'Trong mục Cài đặt'),
-    ['Bắt đầu', 'Kết nối', 'Model*', 'Hệ còn sống', 'Vận hành', 'Người và team', 'Nhật ký']);
+    // VE7a · 30/09 (bản vẽ 4): Hệ còn sống lên thứ hai, Vận hành rời thanh tab (lối vào ở khối «Việc vận hành» của Hệ còn sống).
+    ['Bắt đầu', 'Hệ còn sống', 'Kết nối', 'Model*', 'Người và team', 'Nhật ký']);
 });
 
 test('K3 · Sản phẩm một màn ⇒ một hàng; màn chi tiết `/page/42` vẫn ra đúng đích Page', () => {

@@ -15,7 +15,9 @@ const TAB = [...JS.match(/const names = \{([\s\S]*?)\};/)[1].matchAll(/"?([a-z-]
 
 test('V1 · màn Vận hành ở cụm Cài đặt, tên khớp đầu trang; không còn ở Hộp thư', () => {
   const m = mh.MAN.find((x) => x.duong === '/van-hanh-v3');
-  assert.equal(m.nhom, 'cai-dat'); assert.equal(m.cum, 'cai-dat'); assert.equal(m.ten, 'Vận hành');
+  // VE7a · 30/09 (bản vẽ 4): thôi là tab của cụm — nhà vẫn là Cài đặt (`nhaCum`), lối vào là khối «Việc vận hành» của Hệ còn sống.
+  assert.equal(m.nhom, 'cai-dat'); assert.equal(m.nhaCum, 'cai-dat'); assert.equal(m.ten, 'Vận hành');
+  assert.equal(m.moTuManKhac.thay, '/suc-khoe');
   assert.match(doc('van-hanh/trang/van-hanh.html'), /<h1>Vận hành<\/h1>/);
   const hopThu = mh.menuCua([VAI.QUAN_TRI]).find((n) => n.ma === 'hop-thu').man.map((x) => x.duong);
   assert.ok(!hopThu.includes('/van-hanh-v3'));
