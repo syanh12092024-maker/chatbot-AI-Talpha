@@ -19,6 +19,21 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 30/09/2026 — Page gộp nốt: Kịch bản vào trang một page, danh sách vào thẳng (VE2b · CR-28-09c)
+
+Theo lời người quyết 30/09 (hai ảnh). Không đổi chữ bot nói, không đổi lược đồ, không thêm biến, không thêm gói, không mở cửa ghi mới.
+
+- **Tất cả page** (`4455431`): vào thẳng danh sách — bỏ tiêu đề, thanh tab «Tất cả page | Kịch bản», hộp «Chưa bật tắt bot được» (nay
+  là một dòng «Công tắc bot đang khoá» ở hàng ô tìm, lý do khi rê chuột) và dòng «N page chưa có người phụ trách»; nút Quét xuống hàng
+  ô tìm; nút lọc mới «Chưa có lời bot riêng»; bấm tên page mang bộ lọc sang.
+- **Trang một page** (`4455431`): «← Tất cả page» về đúng bộ lọc · ô tìm · trang; cột trái có ô lọc cùng bộ lọc, cùng số với danh
+  sách; tab Lời bot có «Nhập từ file Pancake» (chỉ điền ô, không tự lưu); 🔴 tab Lịch sử xem được nội dung từng bản, chép vào ô soạn,
+  «Chạy lại bản này» (hỏi trước; đi qua đúng cửa «lưu là chạy» đã có, cùng vai như màn Kịch bản cũ — đổi lời bot nói với khách).
+- **Màn Kịch bản gộp hẳn** (`4455431`): `/kich-ban` chuyển theo vai — có page ⇒ tab Lời bot của page đó; không ⇒ danh sách lọc sẵn
+  «Chưa có lời bot riêng».
+- **Marketer** (`4455431`): mục Page mở bằng «Các page» — danh sách + bộ lọc ở cột trái (thấy mọi page của team: chưa có nguồn page ↔
+  người). Không nới quyền: bảng «Tất cả page» vẫn chỉ quản trị · quản lý.
+
 ### 30/09/2026 — ba màn Số liệu theo bản vẽ (VE6a · VE6b · VE6c · CR-28-09c)
 
 Dựng lại NỘI DUNG Tổng quan (3a) · Chi phí AI (3b) · Khách (3c). Không đổi chữ bot nói, không đổi lược đồ, không thêm biến, không thêm
