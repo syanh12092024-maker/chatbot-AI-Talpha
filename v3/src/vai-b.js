@@ -162,7 +162,7 @@ import {
   datChanDangNhap as datChanDangNhapPrompt, datChanVai as datChanVaiPrompt, taoRouterPromptPage,
 } from './ui/prompt-page/index.js';
 import {
-  datDocNhatKy, datDanhMuc, datTraTen as datTraTenNhatKy,
+  datDocNhatKy, datDanhMuc, datTraTen as datTraTenNhatKy, datTaoTruyVan as datTruyVanManNhatKy,
   datChanDangNhap as datChanDangNhapNhatKy, datChanVai as datChanVaiNhatKy, taoRouterNhatKy,
 } from './ui/nhat-ky/index.js';
 import {
@@ -449,6 +449,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datDocNhatKy(docNhatKy);
   datDanhMuc({ moTa: moTaHanhDong, nhom: NHOM_HANH_DONG });
   datTraTenNhatKy(traTenNhatKy);   // «nguoi» → email, «team #1» → tên team
+  datTruyVanManNhatKy(taoTruyVan);   // VE7e: «Page #12» → tên page / sản phẩm / kỹ năng (bảng của team)
   daNoi.push('bộ đọc nhật ký + danh mục mã → màn Nhật ký thao tác');
 
   // Màn «AI đề xuất» dùng LẠI bộ đọc và CÙNG cửa ghi của màn Bộ luật — nó chỉ khác ở chỗ

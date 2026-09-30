@@ -289,6 +289,17 @@ const MO_TA = Object.freeze({
   [HANH_DONG.BAT_TAT_BOTCAKE]: 'Đánh dấu page đã tắt Botcake',
   [HANH_DONG.TAO_NGUOI_DUNG]: 'Tạo người dùng mới',
   [HANH_DONG.GAN_SAN_PHAM_GOC]: 'Gán sản phẩm gốc cho page',
+  // VE7e · 01/10: mã tầng A GHI THẲNG vào `nhat_ky` (không qua `ghiNhatKy` của v3, nên KHÔNG phải mã hợp lệ để v3 ghi) —
+  // có ở đây chỉ để màn Nhật ký ra chữ thay vì mã trần. Nghĩa đọc từ nơi ghi: `src/db/truy-van.js#ghiNhatKyHeThong`
+  // (doc/them/sua qua ctxHeThong) · `src/pos/doc-danh-muc.js` · `src/chat/ho-so-khach.js` · `src/chat/kho.js` ·
+  // `v3/src/ui/van-hanh/router-anh.js`.
+  doc: 'Đọc bảng (việc nền)',
+  them: 'Thêm dòng (việc nền)',
+  sua: 'Sửa dòng (việc nền)',
+  pos_doc_danh_muc_refresh: 'Cập nhật món từ lượt kéo POS',
+  noi_ho_so_khach: 'Nối hồ sơ khách',
+  chat_mo_hoi_thoai: 'Bot mở hội thoại mới',
+  v3_sua_khoi_dung_chung: 'Sửa Chính sách · FAQ · Phản đối',
 });
 
 /** Chữ tiếng Việt cho màn hình. Mã lạ → trả lại chính mã, kèm một tiếng kêu ở console. */

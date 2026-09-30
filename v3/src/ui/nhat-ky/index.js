@@ -7,6 +7,7 @@
 // cho page nào» bị chôn. Đây là chữa TRIỆU CHỨNG; thuốc thật là `PHIEU-B-Y5`.
 export {
   manNhatKy, canhBaoNhatKy, lanCua, datDocNhatKy, datDanhMuc, daNoiDocNhatKy, datTraTen, TEN_DOI_TUONG,
+  datTaoTruyVan, BANG_TEN, TEN_VIEC_MAY,
   LAN, CHU_LAN, MOI_TRANG, LoiManNhatKy,
 } from './kho-nhat-ky.js';
 

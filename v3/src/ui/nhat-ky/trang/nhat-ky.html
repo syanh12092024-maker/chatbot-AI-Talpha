@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ai đã sửa gì — AI Closer</title>
+<title>Nhật ký — AI Closer</title>
 <!-- Dựng trên hệ kiểu (mục M11: nhật ký đọc như lịch sử hoạt động — ai · làm gì · lên cái gì ·
      lúc nào). KHÔNG CSS riêng — trước lượt này là 96 dòng, nhiều nhất trong 25 màn. Dòng nhật
      ký là một BẢNG có cột, không phải một chuỗi chữ tràn dòng; trạng thái trước/sau (có sẵn
@@ -15,8 +15,8 @@
 </head>
 <body>
 <header>
-  <h1>Ai đã sửa gì</h1>
-  <span class="sub">Mọi thao tác của người và máy trên team này. Nhật ký chỉ thêm — không sửa được, không xoá được.</span>
+  <h1>Nhật ký</h1>
+  <span class="sub">Ghi cả việc người làm lẫn việc máy làm. Không ai sửa hay xoá được.</span>
 </header>
 
 <main>
@@ -69,7 +69,15 @@ async function goi(duong, tuyChon) {
   return d;
 }
 
-const gio = (t) => (t ? new Date(Number(t) || t).toLocaleString('vi-VN') : '—');
+// VE7e (bản vẽ 4): «28/09 15:04» — ngày/tháng giờ:phút; khác năm nay thì thêm năm. Giờ theo máy người xem.
+const gio = (t) => {
+  if (!t) return '—';
+  const d = new Date(Number(t) || t);
+  if (Number.isNaN(d.getTime())) return '—';
+  const h = (n) => String(n).padStart(2, '0');
+  const nam = d.getFullYear() === new Date().getFullYear() ? '' : `/${d.getFullYear()}`;
+  return `${h(d.getDate())}/${h(d.getMonth() + 1)}${nam} ${h(d.getHours())}:${h(d.getMinutes())}`;
+};
 
 function veBangTin(loi) {
   const kh = [];
@@ -109,17 +117,16 @@ function veDs() {
     return;
   }
 
+  // VE7e · 01/10 (bản vẽ 4): mỗi dòng một CÂU — «lúc · ai · việc · đối tượng bằng TÊN», ghi chú ngay dưới.
   $('#ds').innerHTML = `<table class="data-table"><thead><tr>
-      <th scope="col">Lúc</th><th scope="col">Ai</th><th scope="col">Hành động</th>
-      <th scope="col">Đối tượng</th><th scope="col">Ghi chú</th>
+      <th scope="col">Lúc</th><th scope="col">Ai</th><th scope="col">Việc</th>
       <th scope="col" class="actions"><span class="sr-only">Chi tiết</span></th>
     </tr></thead><tbody>${D.dong.map((d, i) => `
-    <tr>
+    <tr data-dong-nk="${esc(d.id)}">
       <td class="meta tabular">${esc(gio(d.thoiGian))}</td>
-      <td>${d.lan === 'may' ? `<span class="badge">Máy</span> <span class="meta">${esc(String(d.ai || '').replace(/^may:/, ''))}</span>` : esc(d.ai)}</td>
-      <td class="manh">${esc(d.chuHanhDong)}</td>
-      <td>${d.doiTuong ? `${esc(d.doiTuong)}${d.doiTuongId ? ` <span class="meta">#${esc(d.doiTuongId)}</span>` : ''}` : '<span class="text-muted">—</span>'}</td>
-      <td class="meta"><span class="cat-2">${esc(d.ghiChu || '')}</span></td>
+      <td>${d.lan === 'may' ? `<span class="badge">máy</span>${d.viecMay ? ` <span class="meta">${esc(d.viecMay)}</span>` : ''}` : esc(d.ai)}</td>
+      <td><span class="manh">${esc(d.chuHanhDong)}</span>${doiTuongCua(d)}
+        ${d.ghiChu ? `<div class="meta"><span class="cat-2">${esc(d.ghiChu)}</span></div>` : ''}</td>
       <td class="actions">${(d.truoc || d.sau) ? button('Xem', { size: 'sm', variant: 'outline', data: { dong: i } }) : ''}</td>
     </tr>`).join('')}</tbody></table>`;
   document.querySelectorAll('[data-dong]').forEach((b) => b.addEventListener('click', () => xem(D.dong[+b.dataset.dong])));
@@ -135,14 +142,21 @@ function veDs() {
   }
 }
 
+/** « · Page · Kreain UAE» — tên khi tra được (bảng sống hoặc ảnh chụp trong dòng), không thì « · Page #12». */
+function doiTuongCua(d) {
+  if (!d.doiTuong) return '';
+  return ` <span class="text-muted">·</span> ${esc(d.doiTuong)}${d.tenDoiTuong ? ` <span class="text-muted">·</span> ${esc(d.tenDoiTuong)}`
+    : d.doiTuongId ? ` <span class="meta">#${esc(d.doiTuongId)}</span>` : ''}`;
+}
+
 // ── NGĂN KÉO — trạng thái TRƯỚC và SAU của thao tác ─────────────────────────────────
 function xem(d) {
   const khoi = (nhan, v) => `<div class="field"><span class="field-label">${nhan}</span>
     ${v == null ? '<span class="text-muted text-sm">(không có)</span>' : `<pre class="code-block">${esc(JSON.stringify(v, null, 2))}</pre>`}</div>`;
   $('#ngan-tieu').textContent = d.chuHanhDong;
-  $('#ngan-phu').textContent = `${d.lan === 'may' ? 'Máy' : d.ai} · ${gio(d.thoiGian)}`;
+  $('#ngan-phu').textContent = `${d.lan === 'may' ? `máy${d.viecMay ? ' · ' + d.viecMay : ''}` : d.ai} · ${gio(d.thoiGian)}`;
   $('#ngan-than').innerHTML = `<div class="form-stack">
-    ${d.doiTuong ? `<div class="field"><span class="field-label">Đối tượng</span><span>${esc(d.doiTuong)}${d.doiTuongId ? ' #' + esc(d.doiTuongId) : ''}</span></div>` : ''}
+    ${d.doiTuong ? `<div class="field"><span class="field-label">Đối tượng</span><span>${esc(d.doiTuong)}${d.tenDoiTuong ? ' · ' + esc(d.tenDoiTuong) : ''}${d.doiTuongId ? ' #' + esc(d.doiTuongId) : ''}</span></div>` : ''}
     ${d.ghiChu ? `<div class="field"><span class="field-label">Ghi chú</span><span class="be-chu">${esc(d.ghiChu)}</span></div>` : ''}
     ${khoi('Trước', d.truoc)}${khoi('Sau', d.sau)}
     <div class="field"><span class="field-label">Mã hành động</span><code>${esc(d.hanhDong)}</code></div>

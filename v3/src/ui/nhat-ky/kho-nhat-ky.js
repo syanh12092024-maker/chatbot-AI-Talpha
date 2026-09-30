@@ -89,6 +89,62 @@ export const TEN_DOI_TUONG = Object.freeze({
   cau_hinh_model: 'Cấu hình model', mau_0_dong: 'Câu trả lời sẵn', san_pham: 'Sản phẩm',
   san_pham_goc: 'Sản phẩm gốc', viec_can_xu_ly: 'Việc cần xử lý', don_hang: 'Đơn hàng',
   hoi_thoai: 'Hội thoại', khach: 'Khách',
+  // VE7e · 01/10: hai loại đo thấy trên prod mà chưa có nhãn (hiện nguyên mã `anh_san_pham` trên màn).
+  anh_san_pham: 'Ảnh sản phẩm', khoi_dung_chung: 'Chính sách · FAQ · Phản đối',
+});
+
+/* ═══ VE7e · 01/10 (bản vẽ 4 › Nhật ký) — mỗi dòng một CÂU đọc được: «lúc · ai · việc · đối tượng bằng TÊN» ═══════════
+ * Tên đối tượng lấy theo thứ tự, KHÔNG đoán: ① bảng sống của team — một lượt đọc mỗi bảng cho cả trang · ② không còn (đã xoá)
+ * thì tên CHÍNH DÒNG NHẬT KÝ chụp lúc xảy ra (`sau.ten` / `truoc.ten`) · ③ không có thì «Loại #id» như cũ.
+ * Đo prod 01/10: `anh_san_pham` trỏ `san_pham.id` 4/4 · `ky_nang` 2/2 · `san_pham_goc` 2/6 (4 dòng là sản phẩm đã xoá). */
+let _taoTruyVan = null;
+export function datTaoTruyVan(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiManNhatKy('datTaoTruyVan cần một hàm');
+  _taoTruyVan = fn || null;
+  return _taoTruyVan;
+}
+/** Loại đối tượng → bảng có cột `ten` (chỉ bảng tầng truy vấn cho đọc — `ket_noi_pos` có hàm riêng nên dùng ảnh chụp). */
+export const BANG_TEN = Object.freeze({
+  page: 'page', san_pham: 'san_pham', anh_san_pham: 'san_pham', san_pham_goc: 'san_pham_goc', ky_nang: 'ky_nang',
+});
+async function tenDoiTuongCua(bc, dong) {
+  const ra = new Map();   // `${loai}|${id}` → tên
+  if (!_taoTruyVan) return ra;
+  const theoBang = new Map();
+  for (const d of dong) {
+    const loai = d.doi_tuong ?? d.doi_tuong_loai;
+    const bang = BANG_TEN[loai];
+    if (!bang || d.doi_tuong_id == null || d.doi_tuong_id === '') continue;
+    if (!theoBang.has(bang)) theoBang.set(bang, new Set());
+    theoBang.get(bang).add(String(d.doi_tuong_id));
+  }
+  for (const [bang, ids] of theoBang) {
+    try {
+      const rows = (await _taoTruyVan(bc).chon(bang, { id: [...ids] })) || [];
+      for (const r of rows) {
+        const ten = String(r.ten || '').trim();
+        if (!ten) continue;
+        for (const [loai, b] of Object.entries(BANG_TEN)) if (b === bang) ra.set(`${loai}|${r.id}`, ten);
+      }
+    } catch { /* tra tên hỏng thì rơi về ảnh chụp trong dòng / #id — nhật ký không được chết vì một cái nhãn */ }
+  }
+  return ra;
+}
+function tenTrongDong(d) {
+  for (let o of [d.sau, d.truoc]) {
+    if (typeof o === 'string') { try { o = JSON.parse(o); } catch { o = null; } }
+    const v = o && typeof o === 'object' ? o.ten : null;
+    if (typeof v === 'string' && v.trim()) return v.trim().slice(0, 80);
+  }
+  return null;
+}
+/** Tên việc của MÁY (`tac_nhan` = `may:<việc>`) — chỉ những việc đọc mã thấy rõ; việc lạ hiện nguyên mã, không đoán nghĩa. */
+export const TEN_VIEC_MAY = Object.freeze({
+  'tang-truy-van': 'tầng dữ liệu',
+  'cua-pos': 'cửa POS', 'cua-pos-tao-don': 'tạo đơn POS', 'cua-pos-ghi-nguoc': 'ghi ngược lên POS',
+  'hang-cho-tao-don': 'hàng chờ tạo đơn', 'cua-whatsapp-gui': 'gửi WhatsApp',
+  'l2-nap': 'bot nhận tin', 'l2-chat': 'bot trả lời', 'l2-worker': 'hàng đợi tin',
+  'cham-ti-le-hoan': 'chấm tỉ lệ hoàn', 'di-tru': 'di trú dữ liệu',
 });
 
 /* ─────────────────────────── đọc ─────────────────────────── */
@@ -133,16 +189,20 @@ export async function manNhatKy(boiCanh, { lan = LAN.NGUOI, hanhDong = '', trang
     const ids = (loc2) => [...new Set(loc2.filter(Boolean).map(String))];
     try {
       const r = await _traTen({
-        nguoi: ids(cat.map((d) => d.nguoi_dung_id)),
+        // VE7e: người dùng làm ĐỐI TƯỢNG («Tạo người dùng mới · Người dùng · binh@…») tra cùng một lượt với người làm.
+        nguoi: ids([...cat.map((d) => d.nguoi_dung_id),
+          ...cat.filter((d) => (d.doi_tuong ?? d.doi_tuong_loai) === 'nguoi_dung').map((d) => d.doi_tuong_id)]),
         team: ids(cat.filter((d) => (d.doi_tuong ?? d.doi_tuong_loai) === 'team').map((d) => d.doi_tuong_id)),
       });
       ten = { nguoi: r?.nguoi || new Map(), team: r?.team || new Map() };
     } catch { /* tra tên hỏng thì hiện mã — nhật ký không được chết vì một cái nhãn */ }
   }
 
+  const tenDt = await tenDoiTuongCua(bc, cat);
+
   return {
     teamId: bc.teamId,
-    dong: cat.map((d) => gon(d, ten)),
+    dong: cat.map((d) => gon(d, ten, tenDt)),
     trang: t,
     soTrang,
     soKhop: loc.length,
@@ -163,11 +223,15 @@ export async function manNhatKy(boiCanh, { lan = LAN.NGUOI, hanhDong = '', trang
   };
 }
 
-function gon(d, ten = { nguoi: new Map(), team: new Map() }) {
+function gon(d, ten = { nguoi: new Map(), team: new Map() }, tenDt = new Map()) {
   const ma = d.hanh_dong;
   const loai = d.doi_tuong ?? d.doi_tuong_loai ?? null;
   const idDt = d.doi_tuong_id == null || d.doi_tuong_id === '' ? null : String(d.doi_tuong_id);
   const tenTeam = loai === 'team' && idDt ? ten.team.get(idDt) : null;
+  // VE7e: tên đối tượng (không phải team) — bảng sống, rồi ảnh chụp trong dòng; không có thì giữ #id.
+  const tenNguoiDt = loai === 'nguoi_dung' && idDt ? ten.nguoi.get(idDt) : null;
+  const tenDoiTuong = !tenTeam && loai ? (tenNguoiDt || tenDt.get(`${loai}|${idDt}`) || tenTrongDong(d)) : null;
+  const viec = lanCua(d) === LAN.MAY ? String(d.tac_nhan || '').replace(/^may:?/, '') : '';
   return {
     id: String(d.id ?? ''),
     thoiGian: d.xay_ra_luc ?? d.thoi_gian ?? null,
@@ -181,8 +245,11 @@ function gon(d, ten = { nguoi: new Map(), team: new Map() }) {
     hanhDong: ma,
     chuHanhDong: _moTa ? _moTa(ma) : ma,
     doiTuong: loai ? (tenTeam || TEN_DOI_TUONG[loai] || loai) : null,
-    // Đã ra tên team thì thôi in `#id` — «Tiểu Alpha #1» là nói một thứ hai lần.
-    doiTuongId: tenTeam ? null : idDt,
+    tenDoiTuong: tenDoiTuong || null,
+    // Đã ra tên (team hay đối tượng khác) thì thôi in `#id` — «Tiểu Alpha #1» là nói một thứ hai lần.
+    doiTuongId: tenTeam || tenDoiTuong ? null : idDt,
+    // Dòng MÁY: việc gì (nhãn khi đọc mã thấy rõ, không thì nguyên mã) — «máy · cửa POS» thay vì huy hiệu trơn.
+    viecMay: viec ? (TEN_VIEC_MAY[viec] || viec) : null,
     ghiChu: d.ghi_chu || '',
     truoc: d.truoc ?? null,
     sau: d.sau ?? null,

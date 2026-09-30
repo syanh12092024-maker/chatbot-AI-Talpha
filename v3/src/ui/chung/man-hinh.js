@@ -264,7 +264,8 @@ export const MAN = Object.freeze([
   { ...dat(vanHanh, 'Vận hành', 'cai-dat', 'Diễn tập, tin bị lọc, chi phí từng tin, nguồn nhận tin', false, false, false,
     { thay: sucKhoe.DUONG_TRANG, loiVao: ['suc-khoe/trang/suc-khoe.html'] }), nhaCum: 'cai-dat' },
   trongCum('cai-dat', 'Người và team', dat(team, 'Người và team', 'cai-dat', 'Thành viên, vai, gán page')),
-  trongCum('cai-dat', 'Nhật ký', dat(nhatKy, 'Ai đã sửa gì', 'cai-dat', 'Không sửa được, không xoá được')),
+  // VE7e · 01/10: tên màn theo bản vẽ 4 («Nhật ký») — HK10 buộc <h1> trùng tên này.
+  trongCum('cai-dat', 'Nhật ký', dat(nhatKy, 'Nhật ký', 'cai-dat', 'Việc người lẫn việc máy — không sửa, không xoá được')),
 ]);
 
 /** Màn đầu cụm CHUẨN — màn đầu tiên của mỗi cụm theo thứ tự sổ. */
