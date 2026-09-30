@@ -85,13 +85,19 @@ try { await p.query("SELECT 1"); } finally { await p.end(); }
   hoan "không nối được Postgres — cổng cần CSDL, chưa đo được"
 else
   CONG_DO=0; CONG_XANH=0
+  # N-CONGCHAP (30/09): GIỮ output của MỌI cổng. Bản cũ vứt vào /dev/null ⇒ hai lần `ll3.sh` đỏ trong cả loạt (29/09 · 30/09)
+  # rồi chạy riêng lại xanh, không lần nào còn dấu vết để chẩn đoán. Cổng đỏ in kèm đường tới output của nó.
+  NHAT_KY_CONG="${NHAT_KY_CONG:-${TMPDIR:-/tmp}/phat-hanh-cong-$(date +%Y%m%dT%H%M%S)}"
+  mkdir -p "$NHAT_KY_CONG"
   for f in ops/bin/nghiem-thu/*.sh; do
     case "$f" in */_*.sh) continue;; esac   # `_*.sh` là tệp trợ giúp, không phải cổng
-    bash "$f" >/dev/null 2>&1
+    ra="$NHAT_KY_CONG/$(basename "$f" .sh).txt"
+    bash "$f" >"$ra" 2>&1
     rc=$?                                   # rc đo TÁCH DÒNG — luật của gate
     if [ $rc -eq 0 ]; then CONG_XANH=$((CONG_XANH+1))
-    else CONG_DO=$((CONG_DO+1)); printf '   🔴 %-42s rc=%s\n' "$(basename "$f")" "$rc"; fi
+    else CONG_DO=$((CONG_DO+1)); printf '   🔴 %-42s rc=%s  → %s\n' "$(basename "$f")" "$rc" "$ra"; fi
   done
+  so "output từng cổng" "$NHAT_KY_CONG"
   so "cổng xanh" "$CONG_XANH"; so "cổng đỏ" "$CONG_DO"
   [ "$CONG_DO" -eq 0 ] && dat "toàn bộ cổng rc=0" || truot "$CONG_DO cổng đỏ — hỏi «đỏ vì mã hay vì THƯỚC»"
 fi
