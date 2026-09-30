@@ -42,6 +42,7 @@ export const HAN_DEM_MS = 5000;
 export const HANH_DONG = Object.freeze({
   DOI_MODEL: 'doi_model',
   DOI_KHOA: 'doi_khoa',
+  THU_MODEL: 'thu_model',   // VE7c: «Thử một lượt» ở màn Model
   CHUYEN_DU_PHONG: 'chuyen_du_phong',
   LOP_MODEL_HONG: 'lop_model_hong',
   CHAN_XUYEN_TEAM: 'chan_xuyen_team',

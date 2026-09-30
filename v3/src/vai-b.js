@@ -61,6 +61,7 @@ import {
 } from './ui/ket-noi/index.js';
 import {
   datChanDangNhap as datChanDangNhapModel, datChanVai as datChanVaiModel, taoRouterModel,
+  datTaoTruyVanMan as datTruyVanManModel, datDuongBot as datDuongBotModel,
 } from './ui/model/index.js';
 import {
   datTaoTruyVan as datTruyVanBoLuat, datPheuNhatKy as datPheuNhatKyBoLuat,
@@ -243,7 +244,7 @@ import {
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa,
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, duongBot,
   docKhoi, dungBanMay, dichBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan, docPhanBoHoiThoai,
@@ -282,6 +283,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datTruyVanPrompt(taoTruyVan);
   datTruyVanKichBan(taoTruyVan);
   datTruyVanKetNoi(taoTruyVan);   // VE7b: số món + tiền tệ theo shop ở màn Kết nối
+  datTruyVanManModel(taoTruyVan);  // VE7c: màn Model đếm page bot mới đang xử (cùng luật worker)
   datTruyVanSanSang(taoTruyVan);
   // Cửa kiểm đọc thẳng từ tiến trình bot — `src/readiness.js` là cái CHẶN việc bật AI ở v1,
   // nên nó cũng phải là cái v3 hiện ra. Tính lại ở v3 là dựng cái thang thứ hai.
@@ -493,6 +495,14 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
 
   if (khoKhoa && typeof khoKhoa.docKhoa === 'function') { datKhoKhoa(khoKhoa); daNoi.push('kho khoá theo nhà → lớp model · màn Model AI'); }
   else thieu.push('khoKhoa — lớp model CHỈ đọc được khoá từ biến môi trường; khoá riêng của team trong bảng `khoa_nha` không tới được, và màn Model AI không dán khoá được');
+  // VE7c: màn Model AI hiện + thử vai «trả lời khách» bằng ĐƯỜNG CHỌN CỦA BOT (`src/chat/model.js#chonModel`), không bằng lớp v3.
+  if (duongBot && typeof duongBot.chon === 'function' && typeof duongBot.khoa === 'function') {
+    datDuongBotModel(duongBot);
+    daNoi.push('đường chọn model của bot → màn Model AI (hiện + thử đúng model/khoá bot gọi)');
+  } else {
+    datDuongBotModel(null);
+    thieu.push('duongBot — màn Model AI không đo được bot đang gọi model/khoá nào: thẻ «Trả lời khách» nói «chưa đo» và nút thử vai đó không gọi');
+  }
 
   if (typeof docKhoTamPage === 'function') {
     datDocKhoTam(docKhoTamPage);

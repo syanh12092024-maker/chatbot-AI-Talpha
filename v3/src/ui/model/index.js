@@ -12,7 +12,7 @@
 // Nối vào ứng dụng bằng `dungPhanB()`.
 
 export {
-  manModel, luuCauHinh, bangGia,
+  manModel, luuCauHinh, bangGia, thuModel, datGoiThu, datTaoTruyVanMan, datDuongBot, THU,
   TEN_NHA, TEN_VAI_TRO, GIAI_THICH_VAI_TRO, TIN_MOI_DON, DUONG_DUNG_VAI_TRO,
   LoiCauHinh,
 } from './kho-model.js';

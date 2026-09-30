@@ -367,6 +367,12 @@ const bao = dungPhanB(app, {
     ghiKhoa: async (teamId, nha, khoaApi) =>
       ghiKhoaNha(pool, { teamSlug: await slugCua(teamId), nhaCungCap: nha, khoaApi }),
   },
+  // VE7c: màn Model AI đọc ĐÚNG đường chọn model + khoá của bot (`src/chat/model.js` — chính hàm `layModel` của handler-v3
+  // gọi), không phải luật song song của lớp v3. Nạp lười, cùng tệp + cùng pool với `dichBanMay` (BH8) ngay trên.
+  duongBot: {
+    chon: async (bc) => (await import(`${GOC}/src/chat/model.js`)).chonModel(pool, { teamId: bc.teamId }, { vaiTro: 'chinh' }),
+    khoa: async (bc, nha) => (await import(`${GOC}/src/chat/model.js`)).khoaCuaBot(pool, { teamId: bc.teamId, nhaCungCap: nha }),
+  },
   // Nhịp máy chạy bot: một bộ đọc, hai chỗ hiện (dải trạng thái ở mọi trang + đèn «Máy chạy
   // bot» ở màn Hệ còn sống không). Kẹp `team_id` tường minh — luật 1 của kho hàng đợi.
   docNhipMayBot: (bc) => nhipMayBot(pool, { teamId: bc?.teamId ?? null }),

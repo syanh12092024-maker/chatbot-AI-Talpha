@@ -155,32 +155,37 @@ trước khi cutover:
 
 ## 6 · Chỗ cắm MODEL (DI) — hợp đồng cho L1-M4 của người B
 
+> **Sửa 30/09 (VE7c) — đo lại trên mã, bản cũ của mục này đã trôi ở hai chỗ:** (a) «có dòng mà nhà khác
+> `config.aiProvider` ⇒ ném» — nay có dòng thì gọi được MỌI nhà có khoá riêng của team, qua `goiMotLan`;
+> (b) «`closer.js` KHÔNG đọc `ctx.model`» — nay có: `src/closer.js:17` `const selected = ctx.model || {…}`,
+> và `src/chat/handler-v3.js:778` truyền `model` vào `chayCloser`.
+
 ```ts
-layModel(pool, ctx: { teamId }, { vaiTro?: 'chinh'|'du_phong'|'nen' })
-  → { client, maModel, nguon: 'cau_hinh_model' | 'config' }
+layModel(pool, ctx: { teamId }, { vaiTro?, env?, goi? })
+  → { client, maModel, nhaCungCap, nguon: 'cau_hinh_model' | 'config', extras }
+chonModel(pool, ctx, { vaiTro?, env? })              // PHẦN QUYẾT ĐỊNH của layModel — không dựng client,
+  → { nguon, maModel, nhaCungCap, khoa,              // không gọi nhà model, không chạm llm-health
+      nguonKhoa: 'team' | 'may_chu' | null, bienMayChu, doNgauNhien }
+khoaCuaBot(pool, { teamId, nhaCungCap }, env)        // luật khoá của bot, một chỗ
+  → { khoa, nguonKhoa, bienMayChu }
 ```
 
-Bản mặc định của L2-M1 làm ĐÚNG BA việc, không hơn (lớp model đa-nhà/dự-phòng/độ-ngẫu-nhiên
-là L1-M4):
+`layModel` = `chonModel` + dựng client — MỘT luật, dùng chung cho bot và màn «Model AI» (VE7c, ca
+`v3/test/b/ve7c-model.test.mjs` C9 đo `chonModel` ≡ `layModel` trên mọi nhánh):
 
 1. `SELECT` `cau_hinh_model` theo `(team_id, vai_tro, bat)`.
-2. **Không có dòng** ⇒ `{ client: anthropic (llm.js), maModel: config.modelCloser,
-nguon:'config' }`. `maModel` lấy từ **config THẬT đang chạy**, ⛔ cấm hằng gõ tay —
-   hằng tay làm `so_ai.ma_model` khai một model trong khi hệ gọi một model khác, và mọi
-   phép so «model nào rẻ hơn» sau này chạy trên số bịa.
-3. **Có dòng** nhưng `nha_cung_cap` khác `config.aiProvider`, hoặc có `khoa_api_ma` riêng
-   ⇒ ném **`LoiChuaCoLopModel`** (fail-CLOSED). L2-M1 không dựng nổi client cho nhà khác;
-   im lặng gọi nhà A bằng mã model của nhà B là hoá đơn sai + một lượt 400 mà khách chỉ
-   thấy bot câm.
+2. **Không có dòng** ⇒ `nguon:'config'`: `client` = `anthropic` của `llm.js`, `maModel` = `config.modelCloser`
+   (`MODEL_CLOSER`), khoá = khoá client cũ dựng bằng (`KIMI_API_KEY` khi `AI_PROVIDER=kimi`, không thì
+   `ANTHROPIC_API_KEY`), **KHÔNG gửi độ ngẫu nhiên**. `maModel` lấy từ **config THẬT đang chạy**, ⛔ cấm hằng
+   gõ tay — hằng tay làm `so_ai.ma_model` khai một model trong khi hệ gọi một model khác.
+3. **Có dòng** ⇒ model phải có trong `v3/src/model/bang-model.js` và đúng nhà (không thì `LoiChuaCoLopModel`,
+   `lyDo` `model_la` / `lech_nha` — fail-CLOSED). Khoá theo `khoaCuaBot`: khoá riêng của team (`khoa_nha`)
+   THẮNG; chưa có thì CHỈ nhà trùng `AI_PROVIDER` mượn khoá máy chủ; không có ⇒ `LoiChuaCoLopModel`
+   `lyDo:'thieu_khoa'`. Gọi qua `goiMotLan` với `temperature = do_ngau_nhien ?? 0.3`, trần 30 giây.
 
-⚠️ **ĐỌC KỸ TRƯỚC KHI TIN**: `client` trả về là **đúng object `anthropic` của
-`src/llm.js`** — cùng object mà `src/closer.js` và `src/classifier.js` tự import thẳng.
-`closer.js` là file CẤM SỬA và nó **hardcode** `import { anthropic } from './llm.js'`, nên
-nó **KHÔNG đọc** `ctx.model` mà handler v3 truyền xuống. Nghĩa là hôm nay chỗ cắm này có
-hiệu lực thật với **`maModel`** (đi thẳng vào `so_ai.ma_model` — kế toán chi phí đúng), còn
-**`client`** mới chỉ là mặt hợp đồng. B ở L1-M4 muốn ĐỔI ĐƯỢC model thật phải thay cả
-đường closer đọc client (viết closer v3, hoặc thay `llm.js` ở tầng module). Đừng đọc file
-này thành «model đã cắm xong».
+⚠️ Khoá env của hai lớp KHÁC TÊN: bot đọc `KIMI_API_KEY`/`ANTHROPIC_API_KEY` (bước 2–3), lớp v3
+(`v3/src/model/cau-hinh.js#docCauHinh`, dùng cho dự phòng khi nối) đọc `V3_KHOA_<NHÀ>`. Prod 30/09 chỉ đặt bộ
+thứ nhất. Màn «Model AI» nói theo đúng lớp của từng vai — đừng gộp hai luật thành một câu.
 
 Đo lại chỗ cắm còn sống hay không: `ops/bin/nghiem-thu/l2-m1.sh` phép ⑧ + ca `N3b`
 (tiêm `deps.layModel` hai lần với hai mã khác nhau → `so_ai.ma_model` in ra

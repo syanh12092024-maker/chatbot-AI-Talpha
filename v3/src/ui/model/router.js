@@ -4,6 +4,7 @@
 // | GET  /api/model/cau-hinh  | cấu hình hiện tại + bảng giá + cảnh báo                    |
 // | POST /api/model/cau-hinh  | lưu model / độ ngẫu nhiên           (chỉ `quan-tri`)      |
 // | POST /api/model/khoa      | dán khoá API của một nhà            (chỉ `quan-tri`)      |
+// | POST /api/model/thu       | thử MỘT lượt model + khoá của một vai (chỉ `quan-tri`)    |
 //
 // ⛔ KHÔNG CÓ ĐƯỜNG NÀO ĐỌC KHOÁ RA. `tomTatCauHinh` chỉ trả `{ daCo, tuEnv }`, và ở đây
 //    không thêm đường nào khác. Khoá vào được, không ra được — đó là toàn bộ ý đồ.
@@ -18,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
-import { manModel, luuCauHinh, LoiCauHinh } from './kho-model.js';
+import { manModel, luuCauHinh, thuModel, LoiCauHinh } from './kho-model.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -165,6 +166,11 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
     const kq = await luuCauHinh(cuaBoiCanh(req), { khoa: { [nha]: v } });
     // Trả về trạng thái mới, KHÔNG trả lại khoá vừa nhận.
     res.json({ ok: true, nha, ...kq });
+  }));
+
+  // VE7c: «Thử một lượt» — gọi ĐÚNG model + khoá của một vai một lần. Kết quả (dùng được / bị từ chối…) ở `ket`, HTTP 200.
+  r.post('/api/model/thu', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    res.json({ ok: true, ket: await thuModel(cuaBoiCanh(req), { vai: req.body?.vai }) });
   }));
 
   return r;

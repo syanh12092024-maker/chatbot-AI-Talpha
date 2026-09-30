@@ -29,6 +29,8 @@ export const HANH_DONG = Object.freeze({
   // model
   DOI_MODEL: 'doi_model',
   DOI_KHOA: 'doi_khoa',
+  // VE7c (30/09) — «Thử một lượt» ở màn Model: MỘT lời gọi tốn tiền tới nhà model; dấu vết ai thử, khoá dùng được hay không.
+  THU_MODEL: 'thu_model',
   CHUYEN_DU_PHONG: 'chuyen_du_phong',
   LOP_MODEL_HONG: 'lop_model_hong',
   // 25/09 (GD5 · K8): phễu cảnh báo của lớp model đổ về đâu đó ĐO ĐƯỢC. Trước hôm nay phễu
@@ -137,7 +139,7 @@ export const NHOM = Object.freeze({
   an_ninh: Object.freeze([HANH_DONG.CHAN_XUYEN_TEAM, HANH_DONG.THIEU_VAI]),
   model: Object.freeze([
     HANH_DONG.DOI_MODEL, HANH_DONG.DOI_KHOA, HANH_DONG.CHUYEN_DU_PHONG, HANH_DONG.LOP_MODEL_HONG,
-    HANH_DONG.CANH_BAO_MODEL,
+    HANH_DONG.CANH_BAO_MODEL, HANH_DONG.THU_MODEL,
   ]),
   dieu_phoi: Object.freeze([HANH_DONG.NHAN_VIEC, HANH_DONG.DONG_VIEC, HANH_DONG.MO_LAI_VIEC]),
   may_lam: Object.freeze([HANH_DONG.VIEC_TU_DONG]),
@@ -242,6 +244,7 @@ const MO_TA = Object.freeze({
   [HANH_DONG.THIEU_VAI]: 'Chặn vì không đủ vai',
   [HANH_DONG.DOI_MODEL]: 'Đổi cấu hình model',
   [HANH_DONG.DOI_KHOA]: 'Đổi khoá API',
+  [HANH_DONG.THU_MODEL]: 'Thử model một lượt',
   [HANH_DONG.CHUYEN_DU_PHONG]: 'Chuyển sang model dự phòng',
   [HANH_DONG.LOP_MODEL_HONG]: 'Lớp model gặp lỗi',
   [HANH_DONG.CANH_BAO_MODEL]: 'Báo động từ lớp model',

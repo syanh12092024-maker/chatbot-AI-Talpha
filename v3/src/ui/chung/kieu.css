@@ -1542,7 +1542,10 @@
   .luoi-kv { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px 12px; align-items: start;
              font-size: var(--text-sm); }
   .luoi-kv > .nhan { color: var(--text-muted); }
-  .luoi-kv code { font-family: var(--font-mono); font-size: var(--text-xs); overflow-wrap: anywhere; }   /* tên bảng dài liền mạch (VE7b · HRM) không đẩy tràn 390 px */
+  .luoi-kv code { font-family: var(--font-mono); font-size: var(--text-xs); overflow-wrap: anywhere; }
+  /* VE7c · màn Model AI: ba thẻ theo vai cạnh nhau, tự xuống dòng khi hẹp. */
+  .luoi-the-model { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); align-items: start; }
+  .luoi-the-model > .section { margin: 0; }   /* tên bảng dài liền mạch (VE7b · HRM) không đẩy tràn 390 px */
 
   /* KHUNG THÊM ba bước (① chọn nhóm · ② chọn món · ③ xác nhận), viền màu chính. */
   .khung-them { display: grid; grid-template-columns: 200px minmax(0, 1fr) 240px; gap: var(--space-4);
