@@ -35,6 +35,7 @@
         <label class="sr-only" for="tim">Tìm theo số điện thoại (mọi kênh) hoặc mã khách</label>
         <input type="search" id="tim" placeholder="Số điện thoại (mọi kênh) hoặc mã khách…" autocomplete="off" spellcheck="false">
       </form>
+      <a class="lien-ke ban-ht-tim-cu" href="/ho-so-khach">Tìm khách cũ — xem đủ các kênh →</a>
       <div class="ban-ht-ghi" id="ghi-ds"></div>
       <div id="khach-tim"></div>
       <div class="ban-ht-cuon" id="cuon-ds">
@@ -369,6 +370,8 @@ $('#chat').innerHTML = emptyState({ icon: 'inbox', title: 'Chọn một hội th
 setInterval(nhipDongHo, 1000);
 setInterval(() => { if (LOC === 'can' && !TIM) taiDs(); }, CHU_KY_TAI_MS);
 taiDs();
+// VE5b: «Tìm khách» (và liên kết đã lưu) mở thẳng MỘT hội thoại bằng `?ht=` — cùng đường đọc `?ht=` của danh sách.
+{ const ht0 = new URLSearchParams(location.search).get('ht'); if (ht0) mo(ht0); }
 // `hop-thu-ui.js` nạp SAU đoạn này (cuối <body>) ⇒ đếm Đơn chờ khi mọi script đã chạy.
 document.addEventListener('DOMContentLoaded', () => {
   if (window.HopThu) window.HopThu.veDonCho(document.createElement('div')).then((n) => { if (n != null) { DEM_DON = n; $('#n-don').textContent = so(n); veDemCan(); } });

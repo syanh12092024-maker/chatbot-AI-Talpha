@@ -849,6 +849,7 @@
   .ban-ht-goi-y { flex: none; margin: 0; padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border-subtle);
                   font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--text-muted); }
   .ban-ht-goi-y .lien-ke { font-size: inherit; }
+  .ban-ht-tim-cu { flex: none; padding: 0 var(--space-4) var(--space-2); font-size: var(--text-xs); }
   .ht-dong { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--space-3);
              padding: 10px var(--space-4); border-bottom: 1px solid var(--border-subtle); cursor: pointer;
              position: relative; transition: background-color var(--duration-fast) var(--ease); }
@@ -1421,6 +1422,15 @@
   body > main.chia-hai { max-width: none; margin: 0; padding: 0; display: grid;
                           grid-template-columns: 320px minmax(0, 1fr);
                           height: calc(100dvh - var(--topbar-height)); min-height: 480px; }
+  /* VE5b · bản vẽ 1b «Tìm khách»: cột trái 400px (ô tìm + kết quả rộng hơn danh sách sản phẩm). */
+  body > main.chia-hai[data-trai="rong"] { grid-template-columns: 400px minmax(0, 1fr); }
+  /* Đầu hồ sơ khách + ba thẻ kênh (Messenger · trang bán hàng · WhatsApp) — bản vẽ 1b. */
+  .kh-dau { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+  .luoi-kenh { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+  .the-kenh { display: flex; flex-direction: column; gap: 6px; padding: 14px var(--space-4); background: var(--surface);
+              border: 1px solid var(--border-default); border-radius: var(--radius-lg); min-width: 0; }
+  .the-kenh-dau { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+  .the-kenh p { margin: 0; font-size: var(--text-sm); overflow-wrap: anywhere; }
   .chia-hai-trai { display: flex; flex-direction: column; min-height: 0; background: var(--surface);
                    border-right: 1px solid var(--border-default); }
   .chia-hai-dau { display: flex; flex-direction: column; gap: 10px; padding: var(--space-4);
@@ -1562,6 +1572,9 @@
     body > main.chia-ba > .chia-hai-trai { grid-row: auto; max-height: 40vh; }
     .bat-duoc .danh-sach-moc { grid-template-columns: minmax(0, 1fr); }
     body > main.chia-hai { grid-template-columns: minmax(0, 1fr); height: auto; }
+    body > main.chia-hai[data-trai="rong"] { grid-template-columns: minmax(0, 1fr); }   /* thắng độ ưu tiên của biến thể 400px */
+    .luoi-kenh { grid-template-columns: minmax(0, 1fr); }
+    .kh-dau { flex-direction: column; }
     .chia-hai-trai { max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--border-default); }
     .chia-hai-phai { padding: var(--space-4); }
     .chia-phu, .the-kv, .khung-them { grid-template-columns: minmax(0, 1fr); }

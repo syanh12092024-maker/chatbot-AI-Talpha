@@ -193,7 +193,10 @@ export const MAN = Object.freeze([
   dat(banHoiThoai, 'Hộp thư', 'hop-thu', 'Hội thoại cần người, đơn chờ duyệt, tìm khách'),
   dat(dispatch, 'Việc đang chờ', 'hop-thu', 'Khách bot đã giao lại, có đồng hồ đếm ngược'),
   // Tìm khách theo số điện thoại là việc của Hộp thư (03-MAN-HINH), không phải của Số liệu.
-  dat(hoSoKhach, 'Khách hàng', 'hop-thu', 'Gộp ba kênh theo số điện thoại', true, true),
+  // VE5b · 29/09 (bản vẽ 1b · bản đồ phủ màn «Khách hàng → Hộp thư › Tìm khách · Gộp»): thôi thử nghiệm, đổi TÊN, đường
+  // giữ `/ho-so-khach`; sale vào được. Lối vào đúng là từ Hộp thư (dưới ô tìm) ⇒ `moTuManKhac`.
+  dat(hoSoKhach, 'Tìm khách', 'hop-thu', 'Một khách = một số điện thoại, gộp các kênh đang chạy', false, false, false,
+    { thay: banHoiThoai.DUONG_TRANG, loiVao: ['ban-hoi-thoai/trang/ban-hoi-thoai.html'] }),
 
   // ② SẢN PHẨM — lõi của câu trả lời (01 §6 mới): chung → theo thị trường → page.
   // LL1 · 29/09: «Sản phẩm & kho» BỎ cờ `moTuManKhac` và `itDung`. Cờ ấy (28/09) giấu nó với ai

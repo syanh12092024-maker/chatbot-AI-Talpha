@@ -3,151 +3,245 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Khách hàng — AI Closer</title>
-<!-- Dựng trên hệ kiểu. KHÔNG CSS riêng — trước lượt này là 47 dòng. Bốn dải cảnh báo cùng
-     một sắc vàng → cảnh báo theo mức của hệ; ba «kênh» vẽ bằng emoji ✅/⛔ → hàng tính năng
-     có huy hiệu trạng thái (mục N: kênh chưa nối KHÔNG được trông như đang chạy). -->
+<title>Tìm khách — AI Closer</title>
+<!-- VE5b · 29/09 (CR-28-09c · bản vẽ 1b · bản đồ phủ màn: «Khách hàng → Hộp thư › Tìm khách · Gộp»).
+     Một khách = một số điện thoại, gộp các kênh ĐANG CHẠY (Messenger · trang bán hàng); WhatsApp chưa nối — nói ra.
+     CHỈ ĐỌC. Tra theo số + hồ sơ: cửa đọc của Hộp thư (`/api/hop-thu/tim-khach` · `/api/hop-thu/khach/:id`, sale ·
+     quản trị). Tra theo tên: cửa cũ `/api/ho-so-khach` (quản trị · quản lý). Vai nào không có cửa thì màn NÓI, không đoán.
+     Mã đơn POS: chưa có đường tra. KHÔNG CSS riêng (HK15). -->
 <link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
-<!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
-     lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
 <script src="/chung/ui.js"></script>
 </head>
 <body>
-<header>
-  <h1>Khách hàng</h1>
-  <span class="sub">Gộp theo số điện thoại — một người mua nhiều lần chỉ là một dòng.</span>
+<header class="an-tieu-de">
+  <h1>Tìm khách</h1>
+  <span class="sub">Một khách = một số điện thoại, gộp các kênh đang chạy.</span>
 </header>
 
-<main>
-  <div id="bang-tin" aria-live="polite"></div>
-
-  <section class="section table-wrap" aria-labelledby="tieu-khach">
-    <div class="table-toolbar">
-      <h2 id="tieu-khach" class="sr-only">Khách</h2>
-      <label for="tim" class="sr-only">Tìm khách</label>
-      <input type="search" id="tim" placeholder="Số điện thoại hoặc tên khách…" autocomplete="off">
-      <span class="table-count" id="hSo"></span>
+<main class="chia-hai" data-trai="rong">
+  <section class="chia-hai-trai" aria-label="Tìm khách">
+    <div class="chia-hai-dau">
+      <a class="lien-ke" href="/ban-hoi-thoai">← Về hàng đợi</a>
+      <b>Tìm khách</b>
+      <form role="search" id="f-tim">
+        <label class="field"><span class="sr-only">Số điện thoại, mã khách Messenger hoặc tên</span>
+          <input type="search" id="tim" placeholder="Số điện thoại · mã khách Messenger · tên…" autocomplete="off" spellcheck="false"></label>
+      </form>
+      <span class="field-hint">Theo số điện thoại · mã khách Messenger · tên. Một khách = một số điện thoại, gộp đủ các kênh đang chạy.</span>
     </div>
-    <div id="bang"><div class="empty-state"><span class="skeleton"></span></div></div>
-    <div id="phanTrang"></div>
+    <div id="bao"></div>
+    <ul class="ds-chon" id="kq" aria-label="Kết quả"></ul>
   </section>
 
-  <section class="section" aria-labelledby="tieu-kenh">
-    <div class="section-header"><div>
-      <h2 id="tieu-kenh">Ba kênh dữ liệu khách</h2>
-      <div class="section-desc">Kênh nào gộp được về một người, kênh nào chưa nối.</div>
-    </div></div>
-    <div class="panel" id="kenh"></div>
-  </section>
+  <section class="chia-hai-phai" id="phai" aria-live="polite"></section>
 </main>
 
 <script>
-const { esc, text, statusBadge, button, alert: canhBao, emptyState, formatNumber } = window.UI;
+const { esc, text, statusBadge, button, alert: canhBao, emptyState, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
-const d0 = (n) => (n == null ? '—' : formatNumber(n));
+/* Tầng hoàn do máy chủ tính — cùng huy hiệu sale thấy lúc duyệt đơn (`dong-viec-ui.js#huyHieuHoan`). */
+const MUC_HOAN = { chan: 'blocked', nhac: 'needs_attention', san: 'ready' };
+const huyHieu = (t) => statusBadge(MUC_HOAN[t && t.muc] || 'unknown', { label: (t && t.chu) || 'Chưa chấm' });
+const hai = (n) => String(n).padStart(2, '0');
+const lucDay = (v) => {
+  const ms = typeof v === 'number' ? v : Date.parse(v);
+  if (!Number.isFinite(ms)) return '';
+  const d = new Date(ms);
+  return `${hai(d.getDate())}/${hai(d.getMonth() + 1)} ${hai(d.getHours())}:${hai(d.getMinutes())}`;
+};
+const tien = (n, te) => (Number.isFinite(n) ? so(n) + (te ? ' ' + te : '') : '—');
+const baoRong = () => { $('#phai').innerHTML = emptyState({ icon: 'search', title: 'Gõ số điện thoại của khách',
+  body: 'Màn gộp mọi kênh đang chạy của MỘT khách: hội thoại Messenger · đơn trang bán hàng · mọi đơn cả hai luồng.' }); };
 
-let trang = 0, tim = '', hen = null;
-
-async function goi(u) {
-  const r = await fetch(u, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname); return null; }
-  const j = await r.json().catch(() => null);
-  if (!r.ok || !j || j.ok === false) throw new Error((j && j.thongDiep) || 'Máy chủ trả ' + r.status + '.');
-  return j;
+/** GET một cửa đọc. 401 ⇒ đăng nhập lại. Trả {status, d} để màn nói ĐÚNG khi vai không có cửa (403). */
+async function doc(duong) {
+  const r = await fetch(duong, { headers: { accept: 'application/json' }, credentials: 'same-origin' });
+  if (r.status === 401) { location.href = '/dang-nhap?tiep=' + encodeURIComponent(location.pathname + location.search); return { status: 401, d: null }; }
+  let d = null;
+  try { d = await r.json(); } catch { d = null; }
+  return { status: r.status, d };
 }
 
-function veKenh(ds) {
-  $('#kenh').innerHTML = ds.map((k) => `
-    <div class="feature-row" data-state="${k.noiDuoc ? 'on' : 'off'}">
-      <div>
-        <div class="feature-name">${esc(k.ten)} <span class="meta">· khoá gộp: ${text(String(k.khoa))}</span></div>
-        <div class="feature-desc">${text(k.noi)}</div>
-        ${k.diTiep ? `<div class="feature-reason">${text(k.diTiep)}</div>` : ''}
-      </div>
-      ${statusBadge(k.noiDuoc ? 'feature_on' : 'feature_unavailable', { label: k.noiDuoc ? `Nối được · ${d0(k.so)}` : 'Chưa nối' })}
-    </div>`).join('');
+let KQ = [], CHON = null;
+/* Vai này dùng được cửa nào — máy chủ trả lời (`/api/ho-so-khach/cua`), trang không đoán rồi ăn 403. */
+let CUA = { hoSo: false, danhSach: false };
+async function napCua() { const { status, d } = await doc('/api/ho-so-khach/cua'); if (status === 200 && d) CUA = d; }
+
+function veKq(ds, cheDo) {
+  KQ = ds;
+  $('#kq').innerHTML = ds.map((k, i) => cheDo === 'ho-so'
+    ? `<li><button type="button" data-i="${i}" aria-current="${k.id === CHON}"><span class="ten">${esc(k.ten || 'Khách chưa có tên')}</span>`
+      + `<span class="tom">${esc([k.soDienThoai, k.thiTruong, (k.soDon ?? 0) + ' đơn', (k.soHoiThoai ?? 0) + ' hội thoại'].filter(Boolean).join(' · '))}</span>`
+      + `<span class="tom">${huyHieu(k.tangHoan)}</span></button></li>`
+    : `<li><button type="button" data-so="${esc(k.so)}"><span class="ten">${esc(k.ten || 'Khách chưa có tên')}</span>`
+      + `<span class="tom">${esc([k.so, k.thiTruong, (k.soDon ?? 0) + ' đơn', k.tiLeHoan == null ? '' : 'hoàn ' + so(k.tiLeHoan) + '%'].filter(Boolean).join(' · '))}</span></button></li>`).join('');
+  $('#kq').querySelectorAll('[data-i]').forEach((b) => b.addEventListener('click', () => moHoSo(KQ[Number(b.dataset.i)].id)));
+  // Kết quả theo TÊN (cửa cũ) chỉ có số — bấm là tra lại theo số để ra hồ sơ gộp kênh.
+  $('#kq').querySelectorAll('[data-so]').forEach((b) => b.addEventListener('click', () => { $('#tim').value = b.dataset.so; tim(); }));
 }
 
-function veBangTin(d) {
-  const k = d.dem;
-  const kh = [];
-  if (k.soBiTach) {
-    kh.push(canhBao({ level: 'info', title: `${d0(k.soBiTach)} người đang nằm ở nhiều dòng khách khác nhau`,
-      body: 'Màn này đã gộp theo số điện thoại. Không gộp thì cùng một người hiện nhiều lần với nhiều lịch sử mua khác nhau.' }));
-  }
-  if (k.soKhongCoSo) {
-    kh.push(canhBao({ level: 'warning', title: `${d0(k.soKhongCoSo)} dòng khách không có số điện thoại`,
-      body: 'Không gộp được nên không nằm trong bảng dưới — đây là khách có thật, chỉ là chưa đủ khoá để gộp.' }));
-  }
-  if (k.donKhongQuyDuoc) {
-    kh.push(canhBao({ level: 'warning', title: `${d0(k.donKhongQuyDuoc)} đơn chưa nối được về khách nào`,
-      body: 'Những đơn đó không được tính vào số đơn và tiền của bất kỳ khách nào trong bảng.' }));
-  }
-  if (k.chamTran) {
-    kh.push(canhBao({ level: 'warning', title: 'Đã đọc tới trần',
-      body: 'Bảng dưới là MỘT PHẦN, không phải toàn bộ. Dùng ô tìm để thu hẹp.' }));
-  }
-  $('#bang-tin').innerHTML = kh.length ? `<div class="duoi-5">${kh.join('')}</div>` : '';
-}
+async function tim() {
+  const q = $('#tim').value.trim();
+  CHON = null; $('#bao').innerHTML = ''; veKq([], 'ho-so');
+  const u = new URL(location.href);
+  if (q) u.searchParams.set('q', q); else u.searchParams.delete('q');
+  history.replaceState(null, '', u);
+  if (!q) { await tongQuan(0); return; }
+  const bao = (muc, tieuDe, than) => { $('#bao').innerHTML = `<div class="chia-hai-dau">${canhBao({ level: muc, title: tieuDe, body: than })}</div>`; };
+  $('#phai').innerHTML = '<p class="text-muted">Đang tìm…</p>';
 
-function veBang(d) {
-  $('#hSo').textContent = `${d0(d.trang.tong)} người · ${d0(d.dem.soDongKhach)} dòng khách`;
-  if (!d.khach.length) {
-    $('#bang').innerHTML = emptyState({ icon: tim ? 'search' : 'inbox',
-      title: tim ? 'Không khách nào khớp' : (d.trong ? d.trong.noi : 'Chưa có khách nào'),
-      body: tim ? 'Xoá chữ trong ô tìm để xem lại tất cả.' : (d.trong && d.trong.diTiep ? d.trong.diTiep : '') });
-    $('#phanTrang').innerHTML = '';
+  if (/^\d+:\d+$/.test(q)) {
+    baoRong();
+    bao('info', 'Chưa tra được theo mã đơn POS', 'Chưa có đường tra khách từ mã đơn POS — gõ số điện thoại của khách.');
     return;
   }
-  $('#bang').innerHTML = `<table class="data-table"><thead><tr>
-      <th scope="col">Số điện thoại</th><th scope="col">Tên</th><th scope="col" class="num">Đơn</th>
-      <th scope="col">Hoàn</th><th scope="col" class="num">Tiền</th><th scope="col">Luồng</th>
-    </tr></thead><tbody>${d.khach.map((x) => `
-    <tr>
-      <td><span class="manh tabular">${esc(x.so)}</span>
-        ${x.soDongGop > 1 ? ` <span class="badge" title="Cùng một số điện thoại, nhiều dòng trong bảng khách">Gộp ${d0(x.soDongGop)} dòng</span>` : ''}</td>
-      <td>${x.ten ? esc(x.ten) : '<span class="text-muted">—</span>'}
-        ${x.thiTruong ? `<div class="meta">${esc(x.thiTruong)}</div>` : ''}</td>
-      <td class="num manh">${d0(x.soDon)}</td>
-      <td>${x.soDonHoan
-        ? statusBadge('needs_attention', { label: `${d0(x.soDonHoan)} đơn${x.tiLeHoan != null ? ` · ${x.tiLeHoan}%` : ''}` })
-        : '<span class="text-muted">0</span>'}</td>
-      <td class="num">${x.soDonCoTien ? d0(x.tongTien) : '<span class="text-muted">—</span>'}
-        ${!x.tienDayDu && x.soDon ? `<div class="meta">${d0(x.soDonCoTien)}/${d0(x.soDon)} đơn có tiền</div>` : ''}</td>
-      <td class="meta">${x.luong.map(esc).join(', ') || '—'}</td>
-    </tr>`).join('')}</tbody></table>`;
-}
-
-function vePhanTrang(t) {
-  const soTrang = Math.ceil(t.tong / t.moiTrang);
-  if (soTrang <= 1) { $('#phanTrang').innerHTML = ''; return; }
-  $('#phanTrang').innerHTML = `<div class="pagination">
-    <span>${formatNumber(t.hienTai * t.moiTrang + 1)}–${formatNumber(Math.min((t.hienTai + 1) * t.moiTrang, t.tong))} / ${d0(t.tong)} người</span>
-    <span class="hang">${button('Trước', { size: 'sm', id: 'tr', disabled: t.hienTai <= 0 })}
-      ${button('Sau', { size: 'sm', id: 'sa', disabled: t.hienTai >= soTrang - 1 })}</span>
-  </div>`;
-  const a = $('#tr'), b = $('#sa');
-  if (a) a.onclick = () => { trang -= 1; tai(); };
-  if (b) b.onclick = () => { trang += 1; tai(); };
-}
-
-async function tai() {
-  try {
-    const d = await goi(`/api/ho-so-khach?trang=${trang}&tim=${encodeURIComponent(tim)}`);
-    if (!d) return;
-    veBangTin(d); veKenh(d.kenh || []); veBang(d); vePhanTrang(d.trang);
-  } catch (e) {
-    $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được danh sách khách', body: e.message })}</div>`;
-    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không tải được', body: 'Kiểm kết nối rồi tải lại trang.' });
+  const soChuSo = (q.match(/\d/g) || []).length;
+  if (soChuSo >= 6 && !CUA.hoSo) {
+    // Quản lý: không có cửa hồ sơ của Hộp thư — tra danh sách qua cửa cũ, nói rõ phần thiếu.
+    const c = CUA.danhSach ? await doc('/api/ho-so-khach?tim=' + encodeURIComponent(q)) : { status: 403, d: null };
+    baoRong();
+    if (c.status === 200 && (c.d.khach || []).length) {
+      veKq(c.d.khach, 'tong');
+      bao('info', 'Hồ sơ chi tiết mở cho vai Sale và Quản trị', 'Vai của bạn thấy danh sách khớp số, không mở được hồ sơ gộp kênh.');
+    } else if (c.status === 200) {
+      // Cửa cũ so ĐÚNG dãy số đã lưu (vd 501234567) — không bỏ số 0 đầu / mã nước hộ. Nói ra, không để danh sách trống câm.
+      bao('info', 'Không khách nào khớp số này', 'Danh sách so đúng dãy số đã lưu — thử bỏ số 0 đầu hoặc mã nước (vd 501234567).');
+    } else bao('warning', 'Vai của bạn chưa có đường tra khách', 'Hỏi quản trị nếu cần.');
+    return;
   }
+  if (soChuSo >= 6) {
+    // Số điện thoại (hoặc mã khách Messenger): hồ sơ gộp kênh + hội thoại khớp mã.
+    const [k, ht] = await Promise.all([
+      doc('/api/hop-thu/tim-khach?sdt=' + encodeURIComponent(q)),
+      doc('/api/ban-hoi-thoai?loc=tat&tim=' + encodeURIComponent(q)),
+    ]);
+    const hoiThoai = ht.status === 200 && ht.d && Array.isArray(ht.d.items) ? ht.d.items : [];
+    if (k.status === 200) {
+      veKq(k.d.khach || [], 'ho-so');
+      if (k.d.khach && k.d.khach.length) { moHoSo(k.d.khach[0].id); return; }
+      baoRong();
+      bao('info', 'Không có hồ sơ khách với số này',
+        hoiThoai.length ? `Có ${so(hoiThoai.length)} hội thoại khớp — mở trong Hộp thư bên dưới.` : 'Kiểm lại số, hoặc khách chưa từng để lại số.');
+      if (hoiThoai.length) $('#phai').innerHTML = veHoiThoaiKhop(hoiThoai);
+      return;
+    }
+    baoRong();
+    bao('warning', 'Chưa tìm được', (k.d && k.d.thongDiep) || ('Máy chủ trả ' + k.status));
+    return;
+  }
+  // Chữ ⇒ tìm theo TÊN — chỉ cửa cũ làm được, và cửa ấy thuộc quản trị · quản lý.
+  baoRong();
+  if (!CUA.danhSach) {
+    bao('info', 'Tìm theo tên chưa mở cho vai của bạn', 'Gõ số điện thoại (hoặc mã khách Messenger) của khách.');
+    return;
+  }
+  const c = await doc('/api/ho-so-khach?tim=' + encodeURIComponent(q));
+  if (c.status === 200) {
+    veKq(c.d.khach || [], 'tong');
+    if (!(c.d.khach || []).length) bao('info', 'Không khách nào khớp tên này', 'Thử số điện thoại.');
+    return;
+  }
+  bao('warning', 'Chưa tìm được', (c.d && c.d.thongDiep) || ('Máy chủ trả ' + c.status));
 }
 
-$('#tim').addEventListener('input', (e) => {
-  clearTimeout(hen);
-  hen = setTimeout(() => { tim = e.target.value.trim(); trang = 0; tai(); }, 250);
-});
+function veHoiThoaiKhop(ds) {
+  return `<section class="section table-wrap"><div class="table-toolbar"><h2>Hội thoại khớp</h2><span class="table-count">${so(ds.length)}</span></div>`
+    + `<ul class="item-list">${ds.map((h) => `<li class="item"><div><a class="lien-ke" href="/ban-hoi-thoai?ht=${encodeURIComponent(h.id)}">`
+      + `${esc(h.tenKhach || h.tenMessenger || h.soDienThoai || 'Khách chưa có tên')}</a><div class="item-desc">${esc(h.tenPage || '')}</div></div>`
+      + `<span class="item-trail">${esc(lucDay(h.chamLuc))}</span></li>`).join('')}</ul></section>`;
+}
 
-tai();
+async function moHoSo(id) {
+  CHON = id;
+  $('#kq').querySelectorAll('[data-i]').forEach((b) => b.setAttribute('aria-current', String(KQ[Number(b.dataset.i)].id === id)));
+  $('#phai').innerHTML = '<p class="text-muted">Đang mở hồ sơ…</p>';
+  const { status, d } = await doc('/api/hop-thu/khach/' + encodeURIComponent(id));
+  if (CHON !== id) return;
+  if (status !== 200 || !d) {
+    $('#phai').innerHTML = canhBao({ level: 'warning', title: 'Không mở được hồ sơ', body: (d && d.thongDiep) || ('Máy chủ trả ' + status) });
+    return;
+  }
+  const k = d.khach, r = d.ruiRoHoan || {};
+  const ht = [...(d.hoiThoai || [])].sort((a, b) => Date.parse(b.chamLuc || 0) - Date.parse(a.chamLuc || 0));
+  const don = [...(d.donHang || [])].sort((a, b) => Date.parse(b.taoLuc || 0) - Date.parse(a.taoLuc || 0));
+  const donTrang = don.filter((x) => x.nguon === 'trang_ban_hang');
+  const wa = (d.kenh && d.kenh.chuaNoi || []).find((x) => x.ma === 'whatsapp');
+  const the = (ten, luc, moTa, hanhDong) => `<div class="the-kenh"><div class="the-kenh-dau"><b>${esc(ten)}</b><span class="meta">${esc(luc || '—')}</span></div>`
+    + `<p class="text-secondary">${esc(moTa)}</p>${hanhDong || ''}</div>`;
+  $('#phai').innerHTML = `
+    <div class="kh-dau"><div><h2 class="tieu-de-lon">${esc(k.ten || 'Khách chưa có tên')}</h2>
+      <div class="dong-phu">${esc([k.soDienThoai, k.thiTruong, k.thanhPho].filter(Boolean).join(' · '))}</div></div>
+      <div>${huyHieu(k.tangHoan)}${k.tiLeHoan == null ? '' : ` <span class="meta">hoàn ${esc(so(k.tiLeHoan))}%</span>`}</div></div>
+    <section class="luoi-kenh" aria-label="Kênh của khách">
+      ${the('Messenger', ht.length ? lucDay(ht[0].chamLuc) : '',
+        ht.length ? `${so(ht.length)} hội thoại · ${[...new Set(ht.map((h) => h.pageTen).filter(Boolean))].join(', ')}` : 'Chưa nối hội thoại nào với khách này.',
+        ht.length ? `<a class="lien-ke" href="/ban-hoi-thoai?ht=${encodeURIComponent(ht[0].id)}">Mở trong Hộp thư →</a>` : '')}
+      ${the('Trang bán hàng (Ladi)', donTrang.length ? lucDay(donTrang[0].taoLuc) : '',
+        donTrang.length ? `${so(donTrang.length)} đơn · gần nhất ${donTrang[0].maPos || 'chưa có mã POS'}` : 'Chưa có đơn từ trang bán hàng.', '')}
+      ${the('WhatsApp', '', wa ? 'Chưa nối — kênh này chưa nằm trong phép gộp.' : 'Chưa có tin.', '')}
+    </section>
+    <section class="section table-wrap" aria-labelledby="t-don">
+      <div class="table-toolbar"><h2 id="t-don">Mọi đơn của khách · cả hai luồng · mới nhất trước</h2><span class="table-count">${so(don.length)} đơn</span></div>
+      ${don.length ? `<table class="data-table"><thead><tr><th scope="col">Mã POS</th><th scope="col">Luồng</th><th scope="col">Hàng</th>`
+        + `<th scope="col" class="num">Tiền</th><th scope="col">Trạng thái</th></tr></thead><tbody>`
+        + don.map((x) => `<tr><td class="mono">${esc(x.maPos || '—')}</td><td>${esc(x.nguonChu || x.nguon || '')}</td><td class="text-muted">—</td>`
+          + `<td class="num">${esc(tien(x.tongTien, x.tienTe))}</td><td>${esc(x.trangThaiChu || x.trangThaiHe || '')}${x.trangThaiPos ? ` <span class="meta">· POS: ${esc(x.trangThaiPos)}</span>` : ''}</td></tr>`).join('')
+        + `</tbody></table><p class="field-hint">Cột «Hàng»: dữ liệu đơn chưa lưu món — xem chi tiết trên POS.</p>`
+        : '<p class="text-muted">Chưa có đơn nào.</p>'}
+    </section>
+    <p class="field-hint">Rủi ro hoàn tính từ các đơn đã kết (giao hoặc hoàn) của CHÍNH hồ sơ này — cùng huy hiệu sale thấy lúc duyệt đơn.
+      ${r.chamLuc ? 'Chấm lúc ' + esc(lucDay(r.chamLuc)) + '.' : esc(r.viSaoChuaCham || '')}</p>
+    ${d.kenh && d.kenh.khai ? `<p class="field-hint">${esc(d.kenh.khai.charAt(0).toUpperCase() + d.kenh.khai.slice(1))}.</p>` : ''}`;
+}
+
+/* TỔNG QUAN (giữ việc của màn «Khách hàng» cũ — quản trị · quản lý): ô tìm trống thì hiện mọi khách gộp theo số, có
+   phân trang, kèm các câu báo dữ liệu và trạng thái ba kênh. Câu chữ chép nguyên bản cũ. Vai không có cửa cũ (sale) ⇒ mời gõ số. */
+const d0 = (n) => (n == null ? '—' : so(n));
+async function tongQuan(trang) {
+  if (!CUA.danhSach) { baoRong(); return; }
+  const { status, d } = await doc(`/api/ho-so-khach?trang=${trang}`);
+  if (status !== 200 || !d) { baoRong(); return; }
+  const k = d.dem, kh = [];
+  if (k.soBiTach) kh.push(canhBao({ level: 'info', title: `${d0(k.soBiTach)} người đang nằm ở nhiều dòng khách khác nhau`,
+    body: 'Màn này đã gộp theo số điện thoại. Không gộp thì cùng một người hiện nhiều lần với nhiều lịch sử mua khác nhau.' }));
+  if (k.soKhongCoSo) kh.push(canhBao({ level: 'warning', title: `${d0(k.soKhongCoSo)} dòng khách không có số điện thoại`,
+    body: 'Không gộp được nên không nằm trong bảng dưới — đây là khách có thật, chỉ là chưa đủ khoá để gộp.' }));
+  if (k.donKhongQuyDuoc) kh.push(canhBao({ level: 'warning', title: `${d0(k.donKhongQuyDuoc)} đơn chưa nối được về khách nào`,
+    body: 'Những đơn đó không được tính vào số đơn và tiền của bất kỳ khách nào trong bảng.' }));
+  if (k.chamTran) kh.push(canhBao({ level: 'warning', title: 'Đã đọc tới trần', body: 'Bảng dưới là MỘT PHẦN, không phải toàn bộ. Dùng ô tìm để thu hẹp.' }));
+  const t = d.trang, soTrang = Math.ceil(t.tong / t.moiTrang);
+  const bang = d.khach.length ? `<table class="data-table"><thead><tr>
+      <th scope="col">Số điện thoại</th><th scope="col">Tên</th><th scope="col" class="num">Đơn</th>
+      <th scope="col">Hoàn</th><th scope="col" class="num">Tiền</th><th scope="col">Luồng</th></tr></thead><tbody>${d.khach.map((x) => `
+      <tr><td><button type="button" class="lien-ke manh tabular" data-so="${esc(x.so)}">${esc(x.so)}</button>
+        ${x.soDongGop > 1 ? ` <span class="badge" title="Cùng một số điện thoại, nhiều dòng trong bảng khách">Gộp ${d0(x.soDongGop)} dòng</span>` : ''}</td>
+      <td>${x.ten ? esc(x.ten) : '<span class="text-muted">—</span>'}${x.thiTruong ? `<div class="meta">${esc(x.thiTruong)}</div>` : ''}</td>
+      <td class="num manh">${d0(x.soDon)}</td>
+      <td>${x.soDonHoan ? statusBadge('needs_attention', { label: `${d0(x.soDonHoan)} đơn${x.tiLeHoan != null ? ` · ${x.tiLeHoan}%` : ''}` }) : '<span class="text-muted">0</span>'}</td>
+      <td class="num">${x.soDonCoTien ? d0(x.tongTien) : '<span class="text-muted">—</span>'}${!x.tienDayDu && x.soDon ? `<div class="meta">${d0(x.soDonCoTien)}/${d0(x.soDon)} đơn có tiền</div>` : ''}</td>
+      <td class="meta">${x.luong.map(esc).join(', ') || '—'}</td></tr>`).join('')}</tbody></table>`
+    : emptyState({ icon: 'inbox', title: d.trong ? d.trong.noi : 'Chưa có khách nào', body: d.trong && d.trong.diTiep ? d.trong.diTiep : '' });
+  $('#phai').innerHTML = (kh.length ? `<div>${kh.join('')}</div>` : '') + `
+    <section class="section table-wrap" aria-labelledby="t-tong"><div class="table-toolbar"><h2 id="t-tong">Mọi khách của team</h2>
+      <span class="table-count">${d0(t.tong)} người · ${d0(k.soDongKhach)} dòng khách</span></div>${bang}
+      ${soTrang > 1 ? `<div class="pagination"><span>${so(t.hienTai * t.moiTrang + 1)}–${so(Math.min((t.hienTai + 1) * t.moiTrang, t.tong))} / ${d0(t.tong)} người</span>
+        <span class="hang">${button('Trước', { size: 'sm', id: 'tr', disabled: t.hienTai <= 0 })} ${button('Sau', { size: 'sm', id: 'sa', disabled: t.hienTai >= soTrang - 1 })}</span></div>` : ''}
+    </section>
+    <section class="section" aria-labelledby="t-kenh"><div class="section-header"><div><h2 id="t-kenh">Ba kênh dữ liệu khách</h2>
+      <div class="section-desc">Kênh nào gộp được về một người, kênh nào chưa nối.</div></div></div>
+      <div class="panel">${(d.kenh || []).map((x) => `<div class="feature-row" data-state="${x.noiDuoc ? 'on' : 'off'}"><div>
+        <div class="feature-name">${esc(x.ten)} <span class="meta">· khoá gộp: ${text(String(x.khoa))}</span></div>
+        <div class="feature-desc">${text(x.noi)}</div>${x.diTiep ? `<div class="feature-reason">${text(x.diTiep)}</div>` : ''}</div>
+        ${statusBadge(x.noiDuoc ? 'feature_on' : 'feature_unavailable', { label: x.noiDuoc ? `Nối được · ${d0(x.so)}` : 'Chưa nối' })}</div>`).join('')}</div>
+    </section>`;
+  $('#phai').querySelectorAll('[data-so]').forEach((b) => b.addEventListener('click', () => { $('#tim').value = b.dataset.so; tim(); }));
+  if ($('#tr')) $('#tr').onclick = () => tongQuan(trang - 1);
+  if ($('#sa')) $('#sa').onclick = () => tongQuan(trang + 1);
+}
+
+$('#f-tim').addEventListener('submit', (e) => { e.preventDefault(); tim(); });
+const q0 = new URLSearchParams(location.search).get('q');
+napCua().then(() => { if (q0) { $('#tim').value = q0; tim(); } else tongQuan(0); });
 </script>
 <script src="/chung/dieu-huong.js"></script>
 </body>

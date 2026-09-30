@@ -68,7 +68,8 @@ test('§9 · SALE chỉ vào được chỗ làm việc của sale (điều ph�
   // hình, khoá, và nhật ký của cả team.
   // LL2 · 29/09 (CR-28-09c, §10 bổ sung): + `hop-thu` — khối ghi của Hộp thư (nhận thay bot · duyệt đơn
   // Messenger · tìm khách). Thước riêng không-gửi-tin: `hop-thu.test.mjs` H1–H4.
-  const MAN_SALE = new Set(['dispatch', 'ban-hoi-thoai', 'hop-thu']);
+  // VE5b · 29/09: + «Tìm khách» (`/ho-so-khach`) — §10 bổ sung (CR-28-09c) ghi Hộp thư của sale gồm «tìm khách gộp ba kênh»; bản đồ phủ màn: «Khách hàng → Hộp thư › Tìm khách». Màn ẩn khỏi thanh bên (vào từ Hộp thư) nhưng nằm trong gói. CHỈ ĐỌC; cửa đọc cũ `/api/ho-so-khach` GIỮ vai cũ (quản trị · quản lý) — ca `ve5b-tim-khach`.
+  const MAN_SALE = new Set(['dispatch', 'ban-hoi-thoai', 'hop-thu', 'ho-so-khach']);
   const lot = TEN_MAN.filter((t) => !MAN_SALE.has(t) && MAN[t].vao.includes(VAI.SALE));
   assert.deepEqual(lot, [], `sale lọt vào ${lot.length} màn ngoài bảng điều phối: ${lot.join(', ')}`);
   assert.ok(MAN.dispatch.vao.includes(VAI.SALE), 'và sale PHẢI vào được bảng điều phối');

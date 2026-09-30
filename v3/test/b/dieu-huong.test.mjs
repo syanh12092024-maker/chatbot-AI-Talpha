@@ -57,7 +57,8 @@ test('②a · SALE chỉ thấy màn làm việc của sale — §9 · §10 (CR-
   // CR-28-09: §10 thành bàn hội thoại chỉ đọc. Giai đoạn chuyển tiếp «Việc đang chờ» còn
   // giữ (đường lùi của CR) — gỡ nó thì sửa đúng dòng này. Điều canh GIỮ NGUYÊN: sale không
   // thấy màn nào ngoài chỗ làm việc của sale.
-  assert.deepEqual(ten(VAI.SALE), ['Hộp thư', 'Việc đang chờ']);
+  // VE5b · 29/09: + «Tìm khách» (`/ho-so-khach`) — §10 bổ sung (CR-28-09c) ghi Hộp thư của sale gồm «tìm khách gộp ba kênh»; bản đồ phủ màn: «Khách hàng → Hộp thư › Tìm khách». Màn ẩn khỏi thanh bên (vào từ Hộp thư) nhưng nằm trong gói.
+  assert.deepEqual(ten(VAI.SALE), ['Hộp thư', 'Việc đang chờ', 'Tìm khách']);
 });
 
 test('②b · MARKETER không thấy màn hạ tầng', () => {
@@ -199,23 +200,26 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   // Hai lý do ẩn KHÁC NHAU, và phải đếm tách: `thuNghiem` = chưa dùng được (bảy màn),
   // `canId` = dùng được nhưng không mở được nếu thiếu tham số (trang một page, GD2). Gộp
   // một con số là ngày nào đó một màn hỏng lặng lẽ đội lốt màn cần id.
-  assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 5, 'năm màn ẩn (LL5: Nguồn khách · Rủi ro hoàn có dữ liệu; LL11: + Kỹ năng; VE4: − Gợi ý từ AI)');
+  // VE5b: «Khách hàng» thôi thử nghiệm, thành «Tìm khách» mở từ Hộp thư ⇒ thử nghiệm 5 → 4, mở-từ-màn-khác 1 → 2, ẩn giữ 20.
+  assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 4, 'bốn màn ẩn (LL5: Nguồn khách · Rủi ro hoàn có dữ liệu; LL11: + Kỹ năng; VE4: − Gợi ý từ AI; VE5b: − Khách hàng)');
   assert.equal(mh.MAN.filter((m) => m.canId).length, 1, 'đúng một màn cần tham số để mở');
   assert.deepEqual(mh.MAN.filter((m) => m.moTuManKhac).map((m) => m.ten),
-    ['Đoạn chữ gửi cho AI'], 'màn mở từ màn khác phải khai ra, không trôi (LL1: «Sản phẩm & kho» thôi)');
+    ['Tìm khách', 'Đoạn chữ gửi cho AI'], 'màn mở từ màn khác phải khai ra, không trôi (LL1: «Sản phẩm & kho» thôi; VE5b: + Tìm khách)');
   // Chín màn ít dùng dồn vào Cài đặt. Đếm ở đây để nếu có người kéo một màn ít dùng trở
   // lên mục hằng ngày thì bài này đỏ, chứ không trôi lặng lẽ.
   // Bảy màn ít dùng nay tản ra ba mục theo ĐÚNG việc của chúng, không dồn hết vào một
   // chỗ nữa. Đếm ở đây để ai kéo một màn ít dùng lên mục hằng ngày thì ca này đỏ.
   const itDung = mh.MAN.filter((m) => m.itDung);
-  assert.equal(itDung.length, 9, `đang có ${itDung.length} màn ít dùng (LL1: «Sản phẩm & kho» thôi ít dùng; LL11: + Kỹ năng)`);
+  assert.equal(itDung.length, 8, `đang có ${itDung.length} màn ít dùng (LL1: «Sản phẩm & kho» thôi ít dùng; LL11: + Kỹ năng; VE5b: − Khách hàng)`);
 });
 
 test('④d · SALE chỉ thấy MỘT mục, và mục đó chỉ có màn làm việc của sale — §10 (CR-28-09)', () => {
   const menu = mh.menuCua([VAI.SALE]);
   assert.equal(menu.length, 1, 'sale không được thấy mục nào khác');
   assert.equal(menu[0].ma, 'hop-thu');
-  assert.deepEqual(menu[0].man.map((m) => m.ten), ['Hộp thư', 'Việc đang chờ']);
+  // VE5b · 29/09: + «Tìm khách» (`/ho-so-khach`) — §10 bổ sung (CR-28-09c) ghi Hộp thư của sale gồm «tìm khách gộp ba kênh»; bản đồ phủ màn: «Khách hàng → Hộp thư › Tìm khách». Màn ẩn khỏi thanh bên (vào từ Hộp thư) nhưng nằm trong gói.
+  assert.deepEqual(menu[0].man.map((m) => m.ten), ['Hộp thư', 'Việc đang chờ', 'Tìm khách']);
+  assert.deepEqual(menu[0].man.filter((m) => !m.an).map((m) => m.ten), ['Hộp thư', 'Việc đang chờ'], 'thanh bên của sale KHÔNG thêm dòng');
 });
 
 test('④e · `mucCuaDuong` chỉ đúng mục đang đứng — menu phải bung được đúng chỗ', () => {
@@ -263,8 +267,9 @@ test('④f · trong MỖI mục, màn ít dùng đứng SAU hết — vạch «�
   // «Khách hàng» sang Hộp thư (tìm khách là việc của sale), nên đứng đầu theo thứ tự sổ.
   const itDung = mh.MAN.filter((m) => m.itDung).map((m) => m.ten);
   // LL11 · 29/09: + «Kỹ năng theo sản phẩm» (khái niệm bỏ, màn ẩn tới LL8).
+  // VE5b · 29/09: − «Khách hàng» (thành «Tìm khách» của Hộp thư, mở từ Hộp thư — không còn là màn ít dùng).
   assert.deepEqual(itDung, [
-    'Khách hàng', 'Kỹ năng theo sản phẩm',
+    'Kỹ năng theo sản phẩm',
     'Đưa sản phẩm lên chạy', 'Đoạn chữ gửi cho AI', 'Ảnh gửi khách', 'Gợi ý từ AI', 'So hai bản kịch bản',
     'Khách vào từ đâu', 'Rủi ro hoàn hàng',
   ]);
