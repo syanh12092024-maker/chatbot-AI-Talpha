@@ -1,6 +1,6 @@
 # MỞ VAN — VE7a · VE7b · VE8a · VE8b: Cài đặt theo bản vẽ 4 + Sản phẩm khép kín (SKU · giá theo thị trường · marketer · gắn page) (CR-28-09c)
 
-> **TRẠNG THÁI: ĐANG MỞ** — người quyết gật 30/09: «deploy». Phiếu: `phieu-VE7a.md` · `phieu-VE7b.md` · `phieu-VE8a.md` · `phieu-VE8b.md`. Lượt trước:
+> **TRẠNG THÁI: XONG · GIỮ (30/09 11:56 prod)** — người quyết gật 30/09: «deploy». Phiếu: `phieu-VE7a.md` · `phieu-VE7b.md` · `phieu-VE8a.md` · `phieu-VE8b.md`. Lượt trước:
 > `phat-hanh-20260930-ve2b.md` (prod `7bb52b4`).
 
 ## 1 · Mở cái gì
@@ -51,3 +51,31 @@ cd /opt/aicloser && git checkout -f -B vao-ui-v3-17-09 7bb52b4 && systemctl rest
 ```
 Lùi CODE, GIỮ SCHEMA (không `migrate down` trên CSDL thật): 028 chỉ thêm cột NULL/DEFAULT — code `7bb52b4` không đọc chúng.
 Mất dữ liệu: không.
+
+## 8 · Lệnh đã gõ
+
+Giờ prod (CEST), 30/09:
+1. cửa vào (16:17 giờ máy dev, `97de3dd`): 44 xanh / 14 đỏ — đỏ mới duy nhất `ve5b` truy bằng đường báo lồng tới `ll18-khung` chập chờn
+   (không do lô) ⇒ thêm in tên ca `24791fe` · giấy `73a5c14` · hồ sơ này `ecce575`
+2. đẩy nhánh `7bb52b4..ecce575` (12 commit)
+3. mốc lùi `/var/backups/aicloser/truoc-ve7-ve8-20260930T094013Z/commit.txt` = `7bb52b4`
+4. prod `checkout -f -B vao-ui-v3-17-09 origin/vao-ui-v3-17-09` → `ecce575` · 0 tệp theo dõi sửa tại chỗ (trước và sau)
+5. **lược đồ TRƯỚC**: `node --env-file=.env db/migrate.js` → `ÁP 028_sku_marketer_san_pham` · **áp mới 1 · tổng 28** · bốn cột có mặt:
+   `san_pham.gia_tay · san_pham.sku · san_pham_goc.marketer · san_pham_goc.sku`
+6. `systemctl restart aicloser-v3` lúc **11:40:31** — chỉ dịch vụ này
+
+## 9 · Số đo từng mốc
+
+| Mốc | Giờ | Kết quả |
+|---|---|---|
+| +1′ | 11:41:55 | ba dịch vụ active · `aicloser-v3` Started 1 · lỗi 0/0/0 · hai dịch vụ kia `ActiveEnterTimestamp` y nguyên (28/09 11:25:42 · 11:22:22) · `/health` 131 · `/san-pham` `/ket-noi` `/suc-khoe` 401 (curl không `Accept: text/html` ⇒ JSON 401, đúng) · `/api/san-pham/gop` `/api/ket-noi/whatsapp` `/api/van-hanh/tom-tat` 401 · đối chứng 404 · dấu mã mới 5/5 |
+| +5′ | 11:46:03 | ba dịch vụ active · Started 1 · lỗi 0/0/0 · hai dịch vụ kia y nguyên · `/health` 131 · cửa 401/404 y hệt +1′ · dấu mã 5/5 |
+| +15′ | 11:56:11 | ba dịch vụ active · Started 1 · lỗi 0/0/0 · hai dịch vụ kia y nguyên · `/health` 131 · cửa 401/404 y hệt +1′ · dấu mã 5/5 — đóng cửa sổ quan sát |
+
+## 10 · Kết
+
+**GIỮ.** Ba mốc sạch: `aicloser-v3` khởi động đúng 1 lần, 0 lỗi ở cả ba dịch vụ, hai dịch vụ không restart y nguyên từ 28/09, `/health` 131 không đổi, bốn cửa mới trả 401 đúng mã (chưa đăng nhập), dấu mã mới 5/5 trên đĩa. Migration 028 áp sạch trước restart. Nợ §9 giữ nguyên: N-THUOC-CHAP-CHON · N-SKU-KEO-LAI · N-TIEN-TE-MAC-DINH · N-MK-GOI-Y-DON · N-L1M1-SONG.
+
+Việc sau deploy (người): Cài đặt › Kết nối › **«Kéo danh mục và giá từ POS»** (Kuwait — shop duy nhất đang bật) để 69 món có SKU
+(N-SKU-KEO-LAI) ⇒ Sản phẩm › «Gộp món POS thành sản phẩm» ⇒ mỗi sản phẩm: marketer (tab Chung) · giá Kuwait (tab «Theo thị trường»,
+tiền tệ KWD) · «+ Gắn page». Shop khác đang tắt ⇒ sản phẩm chỉ có thị trường Kuwait tới khi bật + kéo shop đó.

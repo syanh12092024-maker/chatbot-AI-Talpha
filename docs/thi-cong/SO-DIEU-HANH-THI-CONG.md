@@ -2808,3 +2808,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · VE8b → 🔎 CHỜ DEPLOY — vòng khép kín trong màn Sản phẩm: giá theo thị trường sửa tại chỗ (chỉ-giá `gia_tay`: POS không đè giá, hết hàng vẫn theo POS) · marketer của sản phẩm kéo page theo · gắn/gỡ page (sản phẩm · shop · thị trường · marketer); Vận hành bỏ tab «Sản phẩm & giá»
   Postgres B1–B6 7/7 (đo bằng catalog.js thật) · chạy thật 8/8 · đảo-vá 21/21 trên bản sau vá · cổng ve8b.sh 16/16 · npm test 2.411 ca 0 đỏ · ĐỦ cổng 44 xanh / 14 đỏ = 12 nợ cũ + l1-m1 + ve5b (chập chờn ll18-khung) · nợ N-TIEN-TE-MAC-DINH · N-MK-GOI-Y-DON
   · commit 97de3dd · nhật ký docs/thi-cong/nhat-ky/phieu-VE8b.md
+- 30/09 · MỞ VAN lô VE7a · VE7b · VE8a · VE8b → ✅ GIỮ — prod `7bb52b4 → ecce575`, migration 028 (áp mới 1 · tổng 28, bốn cột), chỉ restart aicloser-v3 lúc 11:40:31 CEST
+  cửa vào 44 xanh / 14 đỏ = 12 nợ cũ + l1-m1 + ve5b chập chờn (ll18-khung, đường báo lồng chỉ ra) · npm test 2.411 ca 0 đỏ · mốc +1′/+5′/+15′ lỗi 0/0/0 · Started 1 · dấu mã 5/5 · /health 131 · việc sau: bấm «Kéo danh mục và giá từ POS» (SKU)
+  · commit ecce575 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20260930-ve7-ve8.md
