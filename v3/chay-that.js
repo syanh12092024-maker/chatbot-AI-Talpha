@@ -280,6 +280,17 @@ const bao = dungPhanB(app, {
     // VE8a: gộp món POS thành sản phẩm — gợi ý (đọc) + gộp (một giao dịch).
     goiYGop: (bc) => spGoc.goiYGopMonPos(pool, bc.teamId),
     gop: (bc, t) => spGoc.gopMonThanhGoc(pool, bc.teamId, t),
+    // VE8b: giá theo thị trường = bậc giá của CHÍNH món POS (chỉ giá — tên/hết hàng vẫn theo POS), đẩy bản chép sang bot
+    // trong giao dịch (cùng bước Vận hành dùng); gắn/gỡ page ghi sản phẩm · shop · thị trường · marketer.
+    luuGia: async (bc, id, posMa, t) => {
+      const m = await spGoc.monCuaGoc(pool, bc.teamId, id, posMa);
+      const { saveProduct } = await import(`${GOC}/src/admin-v3/operations.js`);
+      const { taoBuocDayBot } = await import('./src/ui/van-hanh/router.js');
+      const day = async (pid, products) => (await import('./src/noi-day/cau-bot-v1.js')).daySanPhamLenBot(pid, products);
+      return saveProduct(pool, bc, m.id, { offers: t.offers, version: t.version }, { chiGia: true, sauKhiLuu: taoBuocDayBot({ day }) });
+    },
+    ganPage: (bc, id, t) => spGoc.ganPageVaoGoc(pool, bc.teamId, id, t),
+    goPage: (bc, id, pageId) => spGoc.goPageKhoiGoc(pool, bc.teamId, id, pageId),
   },
   // Kho tạm: page ở team kỹ thuật, nguồn cho lát «gán page ↔ team».
   docKhoTamPage: (t) => pageChuaPhan(pool, t),

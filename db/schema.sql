@@ -1752,3 +1752,8 @@ COMMENT ON COLUMN san_pham_goc.sku IS 'SKU chuẩn hoá (src/pos/ten-goc.js#chua
 
 ALTER TABLE san_pham_goc ADD COLUMN marketer text NOT NULL DEFAULT '';
 COMMENT ON COLUMN san_pham_goc.marketer IS 'Marketer phụ trách sản phẩm, mọi thị trường (người quyết 30/09). Page gán vào sản phẩm theo marketer này.';
+
+-- VE8b: GIÁ do NGƯỜI đặt ở màn Sản phẩm — lượt kéo danh mục KHÔNG ghi đè bậc giá, nhưng tên + hết hàng VẪN theo POS.
+-- Khác `cau_hinh_tay` (màn sửa đủ món ở Vận hành): cờ đó khoá cả tên lẫn hết hàng ⇒ bot có thể chào món POS đã hết.
+ALTER TABLE san_pham ADD COLUMN gia_tay boolean NOT NULL DEFAULT false;
+COMMENT ON COLUMN san_pham.gia_tay IS 'Bậc giá do người đặt (màn Sản phẩm › Theo thị trường) — lượt kéo POS không ghi đè giá; tên/hết hàng vẫn theo POS.';

@@ -30,7 +30,9 @@ export function datKhoGoc(cua) {
   // LL13: + `chiTiet` · `monChuaGan` · `gan` · `go` — sản phẩm là lõi (thị trường = shop POS).
   // LL11: + `kienThuc` — sửa kiến thức sản phẩm (nhà mới của kỹ năng).
   // VE8a: + `goiYGop` · `gop` — gộp món POS thành sản phẩm (bản vẽ 2a′).
-  const thieu = ['ds', 'cho', 'dem', 'tao', 'sua', 'bo', 'chiTiet', 'monChuaGan', 'gan', 'go', 'kienThuc', 'goiYGop', 'gop']
+  // VE8b: + `luuGia` · `ganPage` · `goPage` — giá theo thị trường + gắn page ngay trong màn.
+  const thieu = ['ds', 'cho', 'dem', 'tao', 'sua', 'bo', 'chiTiet', 'monChuaGan', 'gan', 'go', 'kienThuc', 'goiYGop', 'gop',
+    'luuGia', 'ganPage', 'goPage']
     .filter((k) => typeof cua[k] !== 'function');
   if (thieu.length) throw new LoiSanPham(`datKhoGoc thiếu hàm: ${thieu.join(', ')}`, 'noi_day_thieu', 500);
   _cua = cua;
@@ -130,7 +132,8 @@ export async function suaGoc(boiCanh, id, than) {
     doiTuongLoai: BANG,
     doiTuongId: kq.id,
     sau: { maGoc: kq.maGoc, ten: kq.ten, soHieu: kq.soHieu, sku: kq.sku, marketer: kq.marketer },
-    ghiChu: `sửa sản phẩm gốc "${kq.maGoc}" (${Object.keys(than || {}).join(', ') || 'không đổi gì'})`,
+    ghiChu: `sửa sản phẩm gốc "${kq.maGoc}" (${Object.keys(than || {}).join(', ') || 'không đổi gì'})`
+      + `${kq.soPageTheoMarketer ? ` · ${kq.soPageTheoMarketer} page đổi marketer theo` : ''}`,
   });
   return kq;
 }
@@ -210,6 +213,50 @@ export async function gopMonThanhGoc(boiCanh, than) {
       + `${kq.marketer ? ` · marketer ${kq.marketer}` : ''}: `
       + `${ds.slice(0, 12).join(', ')}${ds.length > 12 ? '…' : ''}`,
   });
+  return kq;
+}
+
+/* ═══ VE8b · GIÁ THEO THỊ TRƯỜNG + GẮN PAGE — quản trị ═══ */
+
+/**
+ * Lưu bậc giá của MỘT món POS trong sản phẩm (giá của thị trường đó). `saveProduct` (chế độ chỉ-giá) tự ghi nhật ký giá
+ * cũ → mới và đẩy bản chép sang bot TRONG giao dịch — không ghi lần hai ở đây. Lỗi của nó chỉ mang `status` (không `ma`)
+ * ⇒ bọc lại để router trả đúng mã (409 «đã đổi, tải lại» không được thành 500).
+ */
+export async function luuGiaMon(boiCanh, id, than = {}) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  try {
+    return await cua().luuGia(bc, id, than.posMa, { version: than.version, offers: than.offers });
+  } catch (e) {
+    if (e && typeof e.status === 'number' && !e.ma) throw new LoiSanPham(e.message, 'luu_gia', e.status);
+    throw e;
+  }
+}
+
+const chuPage = (kq) => kq.ten || kq.pageFb || kq.pageId;
+
+/** Gắn page vào sản phẩm ở một thị trường. Quản trị; nhật ký ở CẢ page lẫn sản phẩm (hai màn lịch sử đều thấy). */
+export async function ganPageSanPham(boiCanh, id, than = {}) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const kq = await cua().ganPage(bc, id, { pageId: than.pageId, shopId: than.shopId });
+  const chu = `gắn page «${chuPage(kq)}» vào sản phẩm "${kq.maGoc}" · ${kq.thiTruong || 'shop ' + kq.shopId}`
+    + `${kq.marketer ? ` · marketer ${kq.marketer}` : ''}${kq.soBacGia ? '' : ' — thị trường này CHƯA có bậc giá'}`;
+  const sau = { sanPhamGocMa: kq.maGoc, posShopId: kq.shopId, thiTruong: kq.thiTruong, marketer: kq.marketer };
+  await ghi(bc, { hanhDong: HANH_DONG.GAN_SAN_PHAM_GOC, doiTuongLoai: 'page', doiTuongId: kq.pageId, truoc: kq.truoc, sau, ghiChu: chu });
+  await ghi(bc, { hanhDong: HANH_DONG.GAN_SAN_PHAM_GOC, doiTuongLoai: BANG, doiTuongId: String(id), sau: { pageId: kq.pageId, ...sau }, ghiChu: chu });
+  return kq;
+}
+
+/** Gỡ page khỏi sản phẩm (page chết / thôi bán). Quản trị; nhật ký ở page lẫn sản phẩm. */
+export async function goPageSanPham(boiCanh, id, pageId) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const kq = await cua().goPage(bc, id, pageId);
+  const chu = `gỡ page «${chuPage(kq)}» khỏi sản phẩm "${kq.maGoc}"`;
+  await ghi(bc, { hanhDong: HANH_DONG.GAN_SAN_PHAM_GOC, doiTuongLoai: 'page', doiTuongId: kq.pageId, truoc: { sanPhamGocMa: kq.maGoc }, sau: { sanPhamGocMa: null }, ghiChu: chu });
+  await ghi(bc, { hanhDong: HANH_DONG.GAN_SAN_PHAM_GOC, doiTuongLoai: BANG, doiTuongId: String(id), truoc: { pageId: kq.pageId }, ghiChu: chu });
   return kq;
 }
 

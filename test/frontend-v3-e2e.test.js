@@ -663,22 +663,8 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
           );
           assert.equal(posPosts, 2);
           await click("Đóng");
-          await click("Sản phẩm & giá");
-          await click("Chỉnh sản phẩm và giá");
-          await pageBrowser.waitForSelector("dialog[open] textarea");
-          await pageBrowser.evaluate(() => {
-            document.querySelector("dialog textarea").value =
-              "Mô tả đã cập nhật từ trình duyệt";
-          });
-          await click("Lưu sản phẩm");
-          await pageBrowser.waitForFunction(
-            () => !document.querySelector("dialog").open,
-          );
-          assert.equal(
-            (await one("SELECT mo_ta FROM san_pham WHERE id=$1", [product.id]))
-              .mo_ta,
-            "Mô tả đã cập nhật từ trình duyệt",
-          );
+          // VE8b · 30/09: tab «Sản phẩm & giá» rời Vận hành — giá sửa ở màn Sản phẩm › Theo thị trường (một nơi nhập giá),
+          // đo ở `v3/test/b/ve8b-man.test.mjs` + `test/ve8b-gia-page.test.mjs`. Cửa API `/api/van-hanh/products` vẫn đo ở trên.
           await click("Page & trạng thái");
           await click("Bật AI");
           await pageBrowser.waitForFunction(() =>

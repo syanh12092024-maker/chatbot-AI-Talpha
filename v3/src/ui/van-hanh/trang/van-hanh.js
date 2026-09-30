@@ -94,9 +94,9 @@ function select(parent, label, values, value) {
 
 /**
  * Một hàng của bảng danh sách: cột nội dung + cột thao tác.
- * Mỗi cột là một CHUỖI HTML đã thoát ký tự. Từ 17/09 (`7775e9c`) nhánh chuỗi gán `textContent` trong khi CẢ TÁM nơi gọi
- * truyền HTML ⇒ mọi tab của màn này in thô `<div class="manh">…` (ảnh prod người dùng gửi 29/09 — tab Page & trạng thái,
- * Sản phẩm & giá). Soát 29/09: mọi dữ liệu động trong tám lời gọi đi qua `esc()` hoặc là số (`formatNumber`/`Math.round`)
+ * Mỗi cột là một CHUỖI HTML đã thoát ký tự. Từ 17/09 (`7775e9c`) nhánh chuỗi gán `textContent` trong khi MỌI nơi gọi (tám
+ * lúc đó; bảy từ VE8b 30/09 — tab Sản phẩm & giá rời màn) truyền HTML ⇒ mọi tab của màn này in thô `<div class="manh">…`
+ * (ảnh prod người dùng gửi 29/09). Soát 29/09: mọi dữ liệu động trong các lời gọi đi qua `esc()` hoặc là số (`formatNumber`/`Math.round`)
  * — ca `ll18-khung` K14 canh điều đó cùng với cách vẽ này.
  */
 function hang(bang, cot) {
@@ -117,7 +117,6 @@ let tab = "dien-tap",
 const names = {
   "dien-tap": "Diễn tập (không gửi)",
   pages: "Page & trạng thái",
-  products: "Sản phẩm & giá",
   orders: "Đơn chờ duyệt",
   conversations: "Hội thoại",
   "chi-phi-tin": "Chi phí theo tin",
@@ -268,7 +267,6 @@ async function load() {
   const cotDau = {
     "dien-tap": ["Khách nói", "Bot ĐỊNH trả lời", "Độ trễ", ""],
     pages: ["Page", "Trạng thái", "Nguồn tin", ""],
-    products: ["Sản phẩm", "Mã POS", "Sản phẩm gốc", ""],
     orders: ["Đơn", "Page", "Trạng thái", ""],
     conversations: ["Hội thoại", "Chủ sở hữu", "Trạng thái", ""],
     "bo-qua": ["Hội thoại", "Vì sao KHÔNG trả lời", "Kéo dài", ""],
@@ -304,17 +302,6 @@ async function load() {
     if (tab === "bo-qua") { veBoQua(than, item); continue; }
     if (tab === "chi-phi-tin") { veChiPhiTin(than, item); continue; }
     if (tab === "pages") renderPage(than, item);
-    if (tab === "products") {
-      const o = hang(than, [
-        `<div class="manh">${esc(item.ten || item.ma)}</div>`,
-        `<code>${esc(item.ma)}</code>`,
-        item.ma_goc
-          ? `<code>${esc(item.ma_goc)}</code>`
-          : '<span class="meta">chưa gán sản phẩm gốc</span>',
-        "",
-      ]);
-      button(o, "Chỉnh sản phẩm và giá", () => product(item), { variant: "primary" });
-    }
     if (tab === "orders") {
       const o = hang(than, [
         `<div class="manh">#${esc(item.id)}</div><div class="meta">${esc(item.du_lieu_don.ten || "Thiếu tên")} · ${esc(String(item.du_lieu_don.so_luong || "?"))} sản phẩm</div>`,
@@ -405,83 +392,7 @@ function renderPage(than, p) {
   nut.dataset.size = "sm";
 }
 
-function product(p) {
-  const c = modal(`Sản phẩm: ${p.ma}`);
-  el(
-    "p",
-    "Áp dụng cho các Page dùng cùng sản phẩm trong shop này. Giá nhập theo đơn vị tiền hiển thị cho khách.",
-    c,
-  );
-  if (p.kien_thuc && Object.keys(p.kien_thuc).length) {
-    const v = el("div", undefined, c);
-    v.className = "panel";
-    v.innerHTML = '<div class="manh">Kiến thức sản phẩm (từ sản phẩm gốc)</div>'
-      + Object.entries(p.kien_thuc).filter(([, x]) => String(x ?? "").trim())
-        .map(([k, x]) => `<div class="meta">${esc(k)}: ${esc(Array.isArray(x) ? x.join("; ") : String(x))}</div>`).join("");
-  }
-  const name = field(c, "Tên", p.ten),
-    desc = field(
-      c,
-      "Thông tin / công dụng / cách dùng / cảnh báo",
-      p.mo_ta,
-      "textarea",
-    ),
-    stock = field(c, "Hết hàng", p.het_hang, "checkbox");
-  const table = el("table", undefined, c);
-  table.className = "data-table";
-  const head = el("tr", undefined, el("thead", undefined, table));
-  ["Số lượng", "Giá cả gói", "Tiền tệ", "Giá gốc", "Khuyến mãi", "Phí ship", "Miễn ship", "Bật", ""].forEach((x) => {
-    const th = el("th", x, head);
-    th.scope = "col";
-    if (!x) th.className = "actions";
-  });
-  const offers = [];
-  function add(g = { so_luong: 1, price: 0, tien_te: "SAR" }) {
-    const tr = el("tr", undefined, table),
-      q = field(el("td", undefined, tr), "", g.so_luong, "number"),
-      price = field(el("td", undefined, tr), "", g.price, "number"),
-      currency = field(el("td", undefined, tr), "", g.tien_te),
-      // Ưu đãi (021): trước đây ba thứ này chỉ sống trong CHỮ của kịch bản, nên bot hứa
-      // một đằng mà cửa tiền tính một nẻo.
-      giaGoc = field(el("td", undefined, tr), "", g.gia_goc ?? "", "number"),
-      km = field(el("td", undefined, tr), "", g.khuyen_mai ?? ""),
-      ship = field(el("td", undefined, tr), "", g.phi_ship ?? "", "number"),
-      // BA TRẠNG THÁI, nên là `select` chứ không phải checkbox: checkbox không diễn đạt
-      // được «chưa khai», mà đó chính là trạng thái phải giữ được.
-      mienShip = select(el("td", undefined, tr), "",
-        [["", "chưa khai"], ["1", "miễn ship"], ["0", "KHÔNG miễn"]],
-        g.mien_ship == null ? "" : (g.mien_ship ? "1" : "0")),
-      bat = field(el("td", undefined, tr), "", g.bat !== false, "checkbox");
-    const entry = { tr, q, price, currency, giaGoc, km, ship, mienShip, bat };
-    offers.push(entry);
-    button(el("td", undefined, tr), "Bỏ gói", () => {
-      tr.remove();
-      offers.splice(offers.indexOf(entry), 1);
-    });
-  }
-  p.offers.forEach(add);
-  button(c, "Thêm gói giá", () => add());
-  button(c, "Lưu sản phẩm", async () => {
-    await api(`products/${p.id}`, {
-      version: p.version,
-      ten: name.value,
-      mo_ta: desc.value,
-      het_hang: stock.checked,
-      offers: offers.map((g) => ({
-        so_luong: Number(g.q.value),
-        price: Number(g.price.value),
-        tien_te: g.currency.value.trim().toUpperCase(),
-        gia_goc: g.giaGoc.value === "" ? null : Number(g.giaGoc.value),
-        khuyen_mai: g.km.value,
-        phi_ship: g.ship.value === "" ? null : Number(g.ship.value),
-        mien_ship: g.mienShip.value === "" ? null : g.mienShip.value === "1",
-        bat: g.bat.checked,
-      })),
-    });
-    $("#detail").close();
-    await load();
-  });
-}
+// VE8b · 30/09: bộ sửa sản phẩm + giá rời sang màn Sản phẩm (giá theo thị trường · chỉ-giá) — một nơi nhập giá.
 async function order(id) {
   const d = await api(`orders/${id}`),
     o = d.item,

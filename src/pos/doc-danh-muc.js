@@ -226,7 +226,7 @@ export async function docDanhMuc(
       // `tien_te`. Cửa tạo đơn (`tao-don.js`) dùng con số này TRỰC TIẾP, KHÔNG nhân
       // `HE_SO_TE` lần nữa — nhân ở đây rồi lại nhân bên kia = thu ×100/×1000.
       const gia = Number(v.retail_price ?? 0);
-      if (gia > 0 && !daCo[0]?.cau_hinh_tay) {
+      if (gia > 0 && !daCo[0]?.cau_hinh_tay && !daCo[0]?.gia_tay) {   // VE8b: `gia_tay` = giá người đặt ở màn Sản phẩm
         if (!tienTe) {
           kq.giaKhongBietTe.push({ ma, gia });
           continue;

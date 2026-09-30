@@ -218,6 +218,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
       tao: async () => ({}), sua: async () => ({}), bo: async () => ({}),
       chiTiet: async () => null, monChuaGan: async () => [], gan: async () => ({}), go: async () => ({}), kienThuc: async () => ({}),
       goiYGop: async () => ({ dem: {}, nhom: [] }), gop: async () => ({}),
+      luuGia: async () => ({}), ganPage: async () => ({}), goPage: async () => ({}),
     },
     khoKhoa: { coKhoa: async () => false, docKhoa: async () => null, ghiKhoa: async () => 1 },
     docKhoi: {

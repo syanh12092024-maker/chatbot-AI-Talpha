@@ -14,6 +14,7 @@
 // luật đó — máy KHÔNG tạo. Việc của nó là dọn bàn: `soHieuChuaCoGoc()` gom đúng những số
 // hiệu POS đang chờ người đặt tên, kèm các tên đã thấy ở từng shop để người chọn.
 import { tachSoHieu, chuanHoaTen, maGocDeXuat, chuanSku } from "../pos/ten-goc.js";
+import { HE_SO_TE } from "../pos/index.js";
 
 export class LoiSanPhamGoc extends Error {
   constructor(thongDiep, ma = "san_pham_goc", status = 400) {
@@ -159,17 +160,36 @@ export async function suaSanPhamGoc(pool, teamId, id, { ten, moTa, soHieu, sku, 
   if (sku !== undefined) { tham.push(chuanSku(sku)); dat.push(`sku = $${tham.length}`); }
   if (marketer !== undefined) { tham.push(gon(marketer).slice(0, 120)); dat.push(`marketer = $${tham.length}`); }
   if (!dat.length) throw new LoiSanPhamGoc("không có gì để sửa", "rong");
-  try {
-    const r = await pool.query(
-      `UPDATE san_pham_goc SET ${dat.join(", ")}, sua_luc = now()
+  const cau = `UPDATE san_pham_goc SET ${dat.join(", ")}, sua_luc = now()
         WHERE team_id = $1 AND id = $2
-        RETURNING id, ma_goc, ten, mo_ta, so_hieu, sku, marketer, tao_luc, sua_luc`,
-      tham,
-    );
-    if (!r.rowCount) throw new LoiSanPhamGoc(`không có sản phẩm gốc #${id} trong team này`, "khong_thay", 404);
-    return doiRa(r.rows[0]);
+        RETURNING id, ma_goc, ten, mo_ta, so_hieu, sku, marketer, tao_luc, sua_luc`;
+  const khongCo = () => new LoiSanPhamGoc(`không có sản phẩm gốc #${id} trong team này`, "khong_thay", 404);
+  const trung = (e) => loiTrung(e, soHieu === undefined ? null : batBuocSoHieu(soHieu), "", sku === undefined ? null : chuanSku(sku));
+  // Không đổi marketer ⇒ một câu, không cần giao dịch (cùng đường cũ).
+  if (marketer === undefined) {
+    let r;
+    try { r = await pool.query(cau, tham); } catch (e) { throw trung(e); }
+    if (!r.rowCount) throw khongCo();
+    return { ...doiRa(r.rows[0]), soPageTheoMarketer: 0 };
+  }
+  const khach = await pool.connect();
+  try {
+    await khach.query("BEGIN");
+    const r = await khach.query(cau, tham);
+    if (!r.rowCount) throw khongCo();
+    // VE8b · «1 page chỉ của 1 marketer … marketer nghỉ ⇒ chuyển page và sản phẩm cho mkt khác» (người quyết 30/09):
+    // đổi marketer của sản phẩm ⇒ MỌI page đang bán nó đổi theo, cùng giao dịch.
+    const soPageTheo = (await khach.query(
+      "UPDATE page SET marketer = $3, sua_luc = now() WHERE team_id = $1 AND san_pham_goc_ma = $2 AND marketer IS DISTINCT FROM $3",
+      [teamId, r.rows[0].ma_goc, r.rows[0].marketer],
+    )).rowCount;
+    await khach.query("COMMIT");
+    return { ...doiRa(r.rows[0]), soPageTheoMarketer: soPageTheo };
   } catch (e) {
-    throw loiTrung(e, soHieu === undefined ? null : batBuocSoHieu(soHieu), "", sku === undefined ? null : chuanSku(sku));
+    await khach.query("ROLLBACK").catch(() => {});
+    throw trung(e);
+  } finally {
+    khach.release();
   }
 }
 
@@ -261,7 +281,7 @@ export async function chiTietSanPhamGoc(pool, teamId, id) {
   )).rows[0];
   if (!g) return null;
   const mon = (await pool.query(
-    `SELECT s.ma, s.ten, s.ton_kho, s.het_hang, k.market
+    `SELECT s.id, s.xmin::text AS version, s.ma, s.ten, s.ton_kho, s.het_hang, s.gia_tay, k.market
        FROM san_pham s
        LEFT JOIN ket_noi_pos k ON k.team_id = s.team_id AND k.shop_id = split_part(s.ma, ':', 1)
       WHERE s.team_id = $1 AND s.nguon = 'pos' AND s.ma_goc = $2
@@ -269,11 +289,11 @@ export async function chiTietSanPhamGoc(pool, teamId, id) {
     [teamId, g.ma_goc],
   )).rows;
   const ban = (await pool.query(
-    `SELECT p.id, p.page_id, p.ten, 'mon_pos' AS qua, s.pos_ma
+    `SELECT p.id, p.page_id, p.ten, 'mon_pos' AS qua, s.pos_ma, NULL::text AS shop_page
        FROM san_pham s JOIN page p ON p.id = s.page_id AND p.team_id = s.team_id
       WHERE s.team_id = $1 AND s.nguon <> 'pos' AND s.pos_ma = ANY($2::text[])
      UNION ALL
-     SELECT p.id, p.page_id, p.ten, 'ca_page' AS qua, NULL AS pos_ma
+     SELECT p.id, p.page_id, p.ten, 'ca_page' AS qua, NULL AS pos_ma, p.pos_shop_id AS shop_page
        FROM page p WHERE p.team_id = $1 AND p.san_pham_goc_ma = $3`,
     [teamId, mon.map((m) => m.ma), g.ma_goc],
   )).rows;
@@ -287,10 +307,13 @@ export async function chiTietSanPhamGoc(pool, teamId, id) {
     [teamId, mon.map((m) => m.ma)],
   )).rows;
   const theoShop = new Map();
+  // VE8b: giá CỦA CHÍNH món (goi_gia món POS) — thứ `catalog.js` đọc cho page gán vào sản phẩm; sửa được ở màn này.
+  const giaTheoMon = await giaCuaMon(pool, teamId, mon.map((m) => m.id));
   for (const m of mon) {
     const shop = shopCua(m.ma);
     if (!theoShop.has(shop)) theoShop.set(shop, { shopId: shop, thiTruong: m.market || null, mon: [], page: [], gia: new Map() });
-    theoShop.get(shop).mon.push({ posMa: m.ma, ten: m.ten, tonKho: m.ton_kho, hetHang: !!m.het_hang });
+    theoShop.get(shop).mon.push({ id: String(m.id), version: m.version, posMa: m.ma, ten: m.ten, tonKho: m.ton_kho,
+      hetHang: !!m.het_hang, giaTay: !!m.gia_tay, goiGia: giaTheoMon.get(String(m.id)) || [] });
   }
   for (const r of bac) {
     const t = theoShop.get(shopCua(r.pos_ma));
@@ -306,6 +329,8 @@ export async function chiTietSanPhamGoc(pool, teamId, id) {
     const x = trangPage.get(key);
     x.qua.add(b.qua);
     if (b.pos_ma) { x.shop.add(shopCua(b.pos_ma)); theoShop.get(shopCua(b.pos_ma))?.page.push(key); }
+    // VE8b: page gắn cả vào sản phẩm bán ở shop CỦA page (`pos_shop_id`) — hiện dưới đúng thị trường đó.
+    else if (b.shop_page) { x.shop.add(String(b.shop_page)); theoShop.get(String(b.shop_page))?.page.push(key); }
   }
   return {
     id: String(g.id), maGoc: g.ma_goc, ten: g.ten, moTa: g.mo_ta, soHieu: g.so_hieu, sku: g.sku ?? null, marketer: g.marketer ?? "",
@@ -316,7 +341,8 @@ export async function chiTietSanPhamGoc(pool, teamId, id) {
         .sort((a, b) => a.soLuong - b.soLuong || a.gia - b.gia);
       const moiSo = new Map();
       for (const x of gia) moiSo.set(`${x.soLuong}|${x.tienTe}`, (moiSo.get(`${x.soLuong}|${x.tienTe}`) || 0) + 1);
-      return { ...t, page: [...new Set(t.page)], gia, lechGia: [...moiSo.values()].some((n) => n > 1) };
+      return { ...t, page: [...new Set(t.page)], gia, lechGia: [...moiSo.values()].some((n) => n > 1),
+        coGia: t.mon.some((m) => m.goiGia.some((g) => g.bat)) };
     }),
     page: [...trangPage.values()].map((p) => ({ ...p, qua: [...p.qua], shop: [...p.shop] })),
   };
@@ -566,4 +592,104 @@ export async function gopMonThanhGoc(pool, teamId, { maGoc, ten, sku, marketer, 
   } finally {
     khach.release();
   }
+}
+
+/* ═══ VE8b · GIÁ THEO THỊ TRƯỜNG + GẮN PAGE — ngay trong màn Sản phẩm (người quyết 30/09) ═════════════════════════
+ * «giá theo thị trường tức theo từng pos id, crud được ở đây … page cũng có thể gắn được ở đây» · «1 page chỉ của 1
+ * marketer và bán 1 sản phẩm tại 1 thời điểm» · page die ⇒ gắn sản phẩm sang page mới.
+ *   · GIÁ của một thị trường = `goi_gia` của CHÍNH món POS shop đó — đúng thứ `catalog.js#docSanPhamGoiGia` đọc cho page đã
+ *     gán vào sản phẩm (bot báo giá và cửa tiền cùng một nguồn). Ghi qua `saveProduct` chế độ chỉ-giá (nối dây ở máy chủ).
+ *   · GẮN PAGE ghi MỘT lần bốn cột: sản phẩm · shop POS · thị trường (tên ở Kết nối) · marketer của sản phẩm. Thiếu
+ *     `pos_shop_id` thì `catalog.js` trả page 0 sản phẩm — nên shop bắt buộc, và phải là thị trường sản phẩm có bán.
+ */
+async function giaCuaMon(pool, teamId, ids) {
+  const ra = new Map();
+  if (!ids.length) return ra;
+  const r = await pool.query(
+    `SELECT san_pham_id, so_luong, gia::float8 AS gia, tien_te, gia_goc::float8 AS gia_goc, khuyen_mai,
+            phi_ship::float8 AS phi_ship, mien_ship, bat, nhan
+       FROM goi_gia WHERE team_id = $1 AND san_pham_id = ANY($2::bigint[]) ORDER BY so_luong`,
+    [teamId, ids.map(String)],
+  );
+  for (const g of r.rows) {
+    const hs = HE_SO_TE[g.tien_te] || 1;   // ô nhập ở đơn vị LỚN — cùng quy ước với `saveProduct`
+    const k = String(g.san_pham_id);
+    if (!ra.has(k)) ra.set(k, []);
+    ra.get(k).push({ soLuong: g.so_luong, gia: g.gia / hs, tienTe: g.tien_te, giaGoc: g.gia_goc == null ? null : g.gia_goc / hs,
+      khuyenMai: g.khuyen_mai || "", phiShip: g.phi_ship == null ? null : g.phi_ship / hs, mienShip: g.mien_ship,
+      bat: g.bat !== false, nhan: g.nhan || "" });
+  }
+  return ra;
+}
+
+/** Món POS `posMa` có thuộc sản phẩm `id` không — cửa trước lượt lưu giá (không sửa giá món của sản phẩm khác). */
+export async function monCuaGoc(pool, teamId, id, posMa) {
+  const r = await pool.query(
+    `SELECT s.id FROM san_pham s JOIN san_pham_goc g ON g.team_id = s.team_id AND g.ma_goc = s.ma_goc
+      WHERE s.team_id = $1 AND g.id = $2 AND s.ma = $3 AND s.nguon = 'pos'`,
+    [teamId, String(id), gon(posMa)],
+  );
+  if (!r.rowCount) throw new LoiSanPhamGoc("món này không thuộc sản phẩm này", "khong_thuoc", 404);
+  return { id: String(r.rows[0].id) };
+}
+
+/** GẮN page vào sản phẩm ở một thị trường: ghi sản phẩm · shop · thị trường · marketer — một giao dịch. */
+export async function ganPageVaoGoc(pool, teamId, id, { pageId, shopId } = {}) {
+  const shop = gon(shopId);
+  if (!shop) throw new LoiSanPhamGoc("chọn thị trường (shop POS) cho page", "thieu_shop");
+  const khach = await pool.connect();
+  try {
+    await khach.query("BEGIN");
+    const g = (await khach.query("SELECT ma_goc, marketer FROM san_pham_goc WHERE team_id = $1 AND id = $2", [teamId, String(id)])).rows[0];
+    if (!g) throw new LoiSanPhamGoc("không có sản phẩm gốc này", "khong_co", 404);
+    const ban = (await khach.query(
+      "SELECT count(*)::int AS n FROM san_pham WHERE team_id = $1 AND nguon = 'pos' AND ma_goc = $2 AND split_part(ma, ':', 1) = $3",
+      [teamId, g.ma_goc, shop],
+    )).rows[0].n;
+    if (!ban) {
+      throw new LoiSanPhamGoc(`sản phẩm chưa bán ở shop ${shop} — thêm thị trường trước (tab «Theo thị trường»)`, "shop_ngoai_san_pham", 409);
+    }
+    const p = (await khach.query(
+      "SELECT id, page_id, ten, san_pham_goc_ma, pos_shop_id, thi_truong, marketer FROM page WHERE team_id = $1 AND id = $2 FOR UPDATE",
+      [teamId, String(pageId ?? "")],
+    )).rows[0];
+    if (!p) throw new LoiSanPhamGoc("không có page này trong team", "khong_co_page", 404);
+    const tt = (await khach.query("SELECT market FROM ket_noi_pos WHERE team_id = $1 AND shop_id = $2 LIMIT 1", [teamId, shop])).rows[0]?.market ?? null;
+    const mk = g.marketer || p.marketer || "";
+    await khach.query(
+      `UPDATE page SET san_pham_goc_ma = $3, pos_shop_id = $4, thi_truong = COALESCE($5, thi_truong), marketer = $6, sua_luc = now()
+        WHERE team_id = $1 AND id = $2`,
+      [teamId, p.id, g.ma_goc, shop, tt, mk],
+    );
+    const bac = (await khach.query(
+      `SELECT count(*)::int AS n FROM goi_gia gg JOIN san_pham s ON s.id = gg.san_pham_id AND s.team_id = gg.team_id
+        WHERE s.team_id = $1 AND s.nguon = 'pos' AND s.ma_goc = $2 AND split_part(s.ma, ':', 1) = $3 AND gg.bat IS NOT FALSE`,
+      [teamId, g.ma_goc, shop],
+    )).rows[0].n;
+    await khach.query("COMMIT");
+    return {
+      pageId: String(p.id), pageFb: p.page_id, ten: p.ten || "", maGoc: g.ma_goc, shopId: shop, thiTruong: tt ?? p.thi_truong,
+      marketer: mk, soBacGia: bac,
+      truoc: { sanPhamGocMa: p.san_pham_goc_ma, posShopId: p.pos_shop_id, thiTruong: p.thi_truong, marketer: p.marketer },
+    };
+  } catch (e) {
+    await khach.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    khach.release();
+  }
+}
+
+/** GỠ page khỏi sản phẩm (page chết / thôi bán). Giữ shop · thị trường · marketer của page — chỉ bỏ sản phẩm. */
+export async function goPageKhoiGoc(pool, teamId, id, pageId) {
+  const r = await pool.query(
+    `UPDATE page p SET san_pham_goc_ma = NULL, sua_luc = now()
+       FROM san_pham_goc g
+      WHERE p.team_id = $1 AND g.team_id = $1 AND g.id = $2 AND p.id = $3 AND p.san_pham_goc_ma = g.ma_goc
+      RETURNING p.id, p.page_id, p.ten, g.ma_goc`,
+    [teamId, String(id), String(pageId ?? "")],
+  );
+  if (!r.rowCount) throw new LoiSanPhamGoc("page này không bán sản phẩm này", "khong_thuoc", 404);
+  const d = r.rows[0];
+  return { pageId: String(d.id), pageFb: d.page_id, ten: d.ten || "", maGoc: d.ma_goc };
 }

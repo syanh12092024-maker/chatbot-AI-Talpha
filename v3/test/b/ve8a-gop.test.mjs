@@ -40,6 +40,7 @@ function khoGia() {
       monChuaGan: async () => [], go: ham, kienThuc: ham,
       gan: async (_b, id, posMa) => { goiGan.push([String(id), posMa]); return { maGoc: 'kreain', posMa, shopId: posMa.split(':')[0], daCo: false }; },
       goiYGop: async () => ({ dem: { shopTong: 7, shopBat: 1, shopDaKeo: 2, monPos: 5, monChuaGan: 5, monChuaSku: 1, soGoc: 1, banSao: 0, banSaoChuaNoi: 0 }, nhom: NHOM() }),
+      luuGia: ham, ganPage: ham, goPage: ham,
       gop: async (_b, than) => { goiGop.push(than); return { id: '77', maGoc: than.maGoc, ten: than.ten, sku: than.sku, marketer: than.marketer || '', posMa: than.posMa, soBienThe: than.posMa.length }; },
     },
   };

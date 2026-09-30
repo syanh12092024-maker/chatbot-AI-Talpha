@@ -43,7 +43,7 @@ test('KT3 · tầng giao diện: marketer SỬA được kiến thức, sale kh�
   const { HANH_DONG, laBatBuoc } = await import('../v3/src/audit/hanh-dong.js');
   const bc = (vai) => taoBoiCanh({ nguoiDungId: 'u1', tenDangNhap: 'an', teamId: 't1', vai: [vai] });
   const ham = async () => ({});
-  goc.datKhoGoc({ ds: ham, cho: ham, dem: ham, tao: ham, sua: ham, bo: ham, chiTiet: ham, monChuaGan: ham, gan: ham, go: ham, goiYGop: ham, gop: ham,
+  goc.datKhoGoc({ ds: ham, cho: ham, dem: ham, tao: ham, sua: ham, bo: ham, chiTiet: ham, monChuaGan: ham, gan: ham, go: ham, goiYGop: ham, gop: ham, luuGia: ham, ganPage: ham, goPage: ham,
     kienThuc: async (_b, id, kt) => ({ id, maGoc: 'ao', kienThuc: kt, truoc: {} }) });
   const nk = []; goc.datPheuNhatKyGoc(async (_b, g) => { nk.push(g); });
   await assert.rejects(() => goc.suaKienThucGoc(bc(VAI.SALE), 'g1', { hoi_size: 'x' }), (e) => e.name === 'LoiThieuVai');

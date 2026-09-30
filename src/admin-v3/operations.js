@@ -191,15 +191,20 @@ export async function handoffConversation(pool, bc, id, { lyDo = "" } = {}) {
  * tên là khoá chết việc sửa giá của chúng. `nhan` (tên bậc khách đọc) và `bien_the` vắng mặt
  * trong thân yêu cầu ⇒ GIỮ giá trị cũ, không xoá: màn cũ không biết hai trường này.
  */
-export async function saveProduct(pool, bc, id, input, { sauKhiLuu = null } = {}) {
+/**
+ * `chiGia` (VE8b · màn Sản phẩm › Theo thị trường): CHỈ thay bậc giá — không đụng tên/mô tả/hết hàng, và đặt `gia_tay`
+ * thay vì `cau_hinh_tay`: lượt kéo POS thôi ghi đè GIÁ nhưng vẫn cập nhật tên + hết hàng (bot không chào món đã hết).
+ */
+export async function saveProduct(pool, bc, id, input, { sauKhiLuu = null, chiGia = false } = {}) {
   idOf(id);
   if (
-    typeof input.ten !== "string" ||
-    input.ten.length > 300 ||
-    (input.bien_the !== undefined && (typeof input.bien_the !== "string" || input.bien_the.length > 200)) ||
-    typeof input.mo_ta !== "string" ||
-    input.mo_ta.length > 12000 ||
-    typeof input.het_hang !== "boolean" ||
+    (!chiGia && (
+      typeof input.ten !== "string" ||
+      input.ten.length > 300 ||
+      (input.bien_the !== undefined && (typeof input.bien_the !== "string" || input.bien_the.length > 200)) ||
+      typeof input.mo_ta !== "string" ||
+      input.mo_ta.length > 12000 ||
+      typeof input.het_hang !== "boolean")) ||
     !Array.isArray(input.offers) ||
     input.offers.length > 30 ||
     !input.version
@@ -246,11 +251,15 @@ export async function saveProduct(pool, bc, id, input, { sauKhiLuu = null } = {}
     if (!p) throw fault("Không tìm thấy sản phẩm", 404);
     if (p.version !== input.version)
       throw fault("Sản phẩm đã đổi; tải lại trước khi lưu", 409);
-    const bienThe = input.bien_the === undefined ? p.bien_the ?? "" : input.bien_the.trim();
-    await c.query(
-      "UPDATE san_pham SET ten=$3,mo_ta=$4,het_hang=$5,bien_the=$6,cau_hinh_tay=true,sua_luc=now() WHERE team_id=$1 AND id=$2",
-      [bc.teamId, id, input.ten.trim(), input.mo_ta, input.het_hang, bienThe],
-    );
+    const bienThe = chiGia || input.bien_the === undefined ? p.bien_the ?? "" : input.bien_the.trim();
+    if (chiGia) {
+      await c.query("UPDATE san_pham SET gia_tay=true,sua_luc=now() WHERE team_id=$1 AND id=$2", [bc.teamId, id]);
+    } else {
+      await c.query(
+        "UPDATE san_pham SET ten=$3,mo_ta=$4,het_hang=$5,bien_the=$6,cau_hinh_tay=true,sua_luc=now() WHERE team_id=$1 AND id=$2",
+        [bc.teamId, id, input.ten.trim(), input.mo_ta, input.het_hang, bienThe],
+      );
+    }
     // GD5 · 25/09: chụp GÓI GIÁ CŨ trước khi xoá. Nhật ký cũ chỉ ghi tên cột («goi_gia»),
     // nên sau một lượt sửa giá không ai dựng lại được giá cũ là bao nhiêu — mà đây đúng là
     // con số khách trả. Gói giá được XOÁ rồi CHÈN LẠI, nên không chụp trước là mất hẳn.
@@ -305,8 +314,8 @@ export async function saveProduct(pool, bc, id, input, { sauKhiLuu = null } = {}
       doiTuong: "san_pham",
       doiTuongId: String(id),
       hanhDong: "v3_sua_san_pham",
-      truoc: { ten: p.ten, mo_ta: p.mo_ta, het_hang: p.het_hang, bien_the: p.bien_the ?? "", goi_gia: giaCu },
-      sau: {
+      truoc: chiGia ? { goi_gia: giaCu } : { ten: p.ten, mo_ta: p.mo_ta, het_hang: p.het_hang, bien_the: p.bien_the ?? "", goi_gia: giaCu },
+      sau: chiGia ? { goi_gia: giaMoi, cot: ["goi_gia"] } : {
         ten: input.ten.trim(), mo_ta: input.mo_ta, het_hang: input.het_hang, bien_the: bienThe,
         goi_gia: giaMoi,
         cot: ["ten", "mo_ta", "het_hang", "bien_the", "goi_gia"],

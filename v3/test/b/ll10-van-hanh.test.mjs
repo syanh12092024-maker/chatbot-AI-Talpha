@@ -24,7 +24,8 @@ test('V1 · màn Vận hành ở cụm Cài đặt, tên khớp đầu trang; kh
 });
 
 test('V2 · `?tab=` được đọc, kiểm hợp lệ và kiểm vai (tab của quản trị không mở cho vai khác)', () => {
-  assert.ok(TAB.length >= 7, `chỉ đọc được ${TAB.length} tab — thước đo nhầm chỗ`);
+  // VE8b · 30/09: tab «Sản phẩm & giá» rời Vận hành (giá sửa ở màn Sản phẩm › Theo thị trường) ⇒ còn 6 tab.
+  assert.ok(TAB.length >= 6, `chỉ đọc được ${TAB.length} tab — thước đo nhầm chỗ`);
   assert.match(JS, /new URLSearchParams\(location\.search\)\.get\("tab"\)/);
   assert.match(JS, /if \(muon && names\[muon\] && \(admin \|\| !\["pages", "products"\]\.includes\(muon\)\)\) tab = muon;/);
 });

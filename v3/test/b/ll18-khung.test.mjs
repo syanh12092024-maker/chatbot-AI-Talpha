@@ -297,7 +297,7 @@ test('K14 · màn Vận hành vẽ ô bảng bằng HTML — và mọi dữ li�
   const path = await import('node:path');
   const s = fs.readFileSync(path.resolve(import.meta.dirname, '../../src/ui/van-hanh/trang/van-hanh.js'), 'utf8');
   const than = s.match(/function hang\(bang, cot\) \{[\s\S]*?\n\}/)[0];
-  assert.match(than, /td\.innerHTML = String\(c \?\? ""\)/, 'ô bảng phải vẽ HTML — tám nơi gọi đều truyền HTML');
+  assert.match(than, /td\.innerHTML = String\(c \?\? ""\)/, 'ô bảng phải vẽ HTML — mọi nơi gọi đều truyền HTML');
   assert.doesNotMatch(than, /textContent = c/, 'nhánh textContent in thô <div class="manh"> ra màn');
   // Mọi nội suy trong các lời gọi `hang(than, [...])` phải đi qua hàm thoát ký tự / định dạng số — không lỗ chèn HTML.
   let i = 0; const nghi = []; let n = 0;
@@ -313,7 +313,8 @@ test('K14 · màn Vận hành vẽ ô bảng bằng HTML — và mọi dữ li�
     }
     i = j;
   }
-  assert.ok(n >= 8, `chỉ thấy ${n} lời gọi hang — thước đang đo nhầm chỗ`);
+  // VE8b · 30/09: nhánh vẽ tab «Sản phẩm & giá» rời Vận hành (giá sửa ở màn Sản phẩm) ⇒ còn 7 lời gọi `hang`.
+  assert.ok(n >= 7, `chỉ thấy ${n} lời gọi hang — thước đang đo nhầm chỗ`);
   assert.deepEqual(nghi, [], 'nội suy chưa thoát ký tự trong ô bảng');
   for (const tenBien of ['keoDai', 'phu']) {
     const dinh = s.match(new RegExp(`const ${tenBien} = ([\\s\\S]*?);\n`));

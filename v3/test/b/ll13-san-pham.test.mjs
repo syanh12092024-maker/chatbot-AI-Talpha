@@ -20,6 +20,7 @@ const CUA = () => ({
   go: async (_b, id, posMa) => ({ maGoc: 'fitgum', posMa, shopId: posMa.split(':')[0] }),
   kienThuc: async (_b, id, kt) => ({ id, maGoc: 'fitgum', kienThuc: kt, truoc: {} }),
   goiYGop: async () => ({ dem: {}, nhom: [] }), gop: async () => ({}),   // VE8a: kho đòi thêm hai hàm gộp
+  luuGia: async () => ({}), ganPage: async () => ({}), goPage: async () => ({}),   // VE8b
 });
 
 test('U1 · kho gốc đòi ĐỦ mười hàm — thiếu hàm của LL13 là từ chối cả cụm, không nửa cửa', () => {
@@ -76,8 +77,9 @@ test('U4 · trang (VE1 · theo bản vẽ 2a): hai cột, bốn tầng, bốn ta
     ['số liệu', /metricRow\(\[/], ['cảnh báo thiếu bậc giá', /chưa có bậc giá nào/],
     ['thiếu tên không bịa', /màn này không bịa tên thay/], ['tồn kho để trống', /Tồn kho', value: '—'/],
   ]) assert.match(html, re, `mất việc «${viec}» khi dựng lại màn`);
-  // Chỗ chưa có nguồn nói RÕ chưa có — không bịa (marketer từ HRM · ảnh chung · kịch bản tầng nước).
-  assert.match(html, /Chưa có nguồn — hồ sơ HRM nối ở phiếu LL15/);
+  // Chỗ chưa có nguồn nói RÕ chưa có — không bịa (ảnh chung · kịch bản tầng nước). VE8b · 30/09: marketer ĐÃ có nguồn — gán ở
+  // sản phẩm (người quyết: «từ sản phẩm kéo về gán marketer») — nên thước canh câu «chưa gán» thay cho «chưa có nguồn — HRM».
+  assert.match(html, /chưa gán — đặt ở tab Chung/);
   assert.match(html, /Ảnh chung của sản phẩm chưa có chỗ lưu/);
   // Ảnh chụp VE1 29/09: cột phải cao cố định + nội dung dài ⇒ flex co dải bốn tầng và hàng tab (có overflow) về 0 —
   // chúng BIẾN MẤT ở tab Chung. Luật «con của cột phải không co» phải còn trong hệ kiểu.

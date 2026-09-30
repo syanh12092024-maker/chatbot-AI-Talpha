@@ -123,7 +123,8 @@ function veSanPham() {
   $('#phai').innerHTML = `
     <div class="chi-tiet-dau">
       <div><h2 class="tieu-de-lon">${g.ten ? esc(g.ten) : `<span class="text-muted">chưa đặt tên</span>`}</h2>
-        <div class="dong-phu">Mã gốc <code>${esc(g.maGoc)}</code>${g.soHieu ? ` · số hiệu ${esc(g.soHieu)}` : ''} · ${so(g.thiTruong.length)} thị trường · ${so(g.page.length)} page</div></div>
+        <div class="dong-phu">Mã gốc <code>${esc(g.maGoc)}</code>${g.sku ? ` · SKU ${esc(g.sku)}` : (g.soHieu ? ` · số hiệu ${esc(g.soHieu)}` : '')}`
+          + `${g.marketer ? ` · marketer ${esc(g.marketer)}` : ' · <span class="text-muted">chưa gán marketer</span>'} · ${so(g.thiTruong.length)} thị trường · ${so(g.page.length)} page</div></div>
       <div class="hanh-dong" id="hanhDong"></div>
     </div>
     <div class="thu-tu-doc" aria-label="Bot ghép lời từ bốn tầng">
@@ -157,7 +158,7 @@ function veChung() {
     + `<textarea id="kt-${k}" data-kt="${k}" rows="${k === 'cong_dung' || k === 'them' ? 3 : 2}" maxlength="2000" ${CT.suaKienThuc ? '' : 'disabled'}`
     + `${k === 'hoi_size' ? ' placeholder="Ví dụ: trước khi chốt PHẢI hỏi số đo rồi gợi ý size. Hỏi đúng một lần, gộp vào câu tư vấn."' : ''}>`
     + `${esc(kt[k] || '')}</textarea></div>`;
-  $('#thanTab').innerHTML = `${veBotDocKt()}<section class="chia-phu">
+  $('#thanTab').innerHTML = `${veMarketerSp()}${veBotDocKt()}<section class="chia-phu">
       <div class="form-stack">
         ${KT.filter(([k]) => k !== 'hoi_size').slice(0, 4).map(([k, n]) => o(k, n)).join('')}
         <div class="khoi-nhan" data-tone="warning">${o('hoi_size', 'Hỏi size trước khi chốt')}
@@ -170,7 +171,28 @@ function veChung() {
         <div class="o-trong">Ảnh đang đặt theo TỪNG page (tab «Sản phẩm &amp; giá» của page). Ảnh chung của sản phẩm chưa có chỗ lưu — bản vẽ để ở đây.</div>
       </aside>
     </section>`;
+  if ($('#nutLuuMk')) $('#nutLuuMk').onclick = luuMarketer;
 }
+/* VE8b · marketer phụ trách — MỘT cho mọi thị trường (người quyết 30/09); đổi ở đây thì mọi page đang bán sản phẩm đổi theo. */
+function veMarketerSp() {
+  return `<div class="hang duoi-4">
+    <div class="field"><label class="field-label" for="spMk">Marketer phụ trách</label>
+      <input id="spMk" value="${esc(CT.goc.marketer || '')}" autocomplete="off" placeholder="chưa gán"${CT.suaDuoc ? '' : ' disabled'}></div>
+    ${CT.suaDuoc ? button('Lưu marketer', { size: 'sm', id: 'nutLuuMk' }) : ''}
+    <span class="field-hint" id="tbMk" aria-live="polite">Một marketer cho mọi thị trường của sản phẩm — đổi ở đây thì mọi page đang bán sản phẩm này đổi theo.</span>
+  </div>`;
+}
+async function luuMarketer() {
+  const nut = $('#nutLuuMk'); nut.disabled = true;
+  const mk = $('#spMk').value.trim();
+  try {
+    const kq = await goiGhi('/api/san-pham/goc/' + encodeURIComponent(CHON), { method: 'POST', body: JSON.stringify({ marketer: mk }) });
+    CT.goc.marketer = mk;
+    $('#tbMk').textContent = `Đã lưu marketer «${mk || 'trống'}» · ${so((kq.goc && kq.goc.soPageTheoMarketer) || 0)} page đổi theo.`;
+  } catch (e) { $('#tbMk').textContent = e.message; }
+  finally { nut.disabled = false; }
+}
+
 /* VE1b · 29/09: kiến thức ở đây chỉ tới bot khi máy chủ ghép lời từ dữ liệu v3. Nói đúng trạng thái đo được — không hứa. */
 function veBotDocKt() {
   if (CT.botDocKienThuc === true) return '';
@@ -213,9 +235,18 @@ function veThiTruong() {
   if ($('#moThem')) $('#moThem').onclick = () => { THEM = THEM ? null : { shop: null, mon: null }; veThiTruong(); };
   if (THEM) veKhungThem();
   $('#thanTab').querySelectorAll('[data-go-mon]').forEach((b) => { b.onclick = () => goMon(b.dataset.goMon, b); });
+  // VE8b: nút của bảng giá — ủy quyền, vì thêm/bỏ bậc vẽ lại dòng.
+  $('#thanTab').onclick = (ev) => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    if (b.dataset.themBac) themBac(b.dataset.themBac);
+    else if (b.dataset.boBac) boBac(b);
+    else if (b.dataset.luuGia) luuGia(b.dataset.luuGia, b);
+  };
 }
 function veMotThiTruong(t) {
   const tenPage = new Map(CT.goc.page.map((p) => [p.id, p]));
+  // Giá riêng theo bản sao cũ của page (page CHƯA gắn vào sản phẩm vẫn bán theo bản sao) — chỉ đọc, dưới bảng giá thị trường.
   const giaHtml = t.gia.length
     ? `<table class="data-table"><thead><tr><th scope="col">Bậc</th><th scope="col" class="num">Số lượng</th>
         <th scope="col" class="num">Giá</th><th scope="col" class="num">Dùng ở</th></tr></thead><tbody>${t.gia.map((b) => `
@@ -223,7 +254,7 @@ function veMotThiTruong(t) {
           <td class="num manh">${so(b.gia)} ${esc(b.tienTe)}</td><td class="num">${so(b.soPage)} page</td></tr>`).join('')}</tbody></table>
        ${t.lechGia ? canhBao({ level: 'warning', title: 'Cùng số lượng mà khác giá giữa các page',
           body: 'Bot báo giá theo page khách đang nhắn. Muốn một giá cho cả thị trường thì sửa ở tab «Sản phẩm & giá» của từng page.' }) : ''}`
-    : `<div class="o-trong">Chưa page nào bán món của shop này có bậc giá. Giá đặt ở tab «Sản phẩm &amp; giá» của page — hôm nay giá nằm theo page, chưa theo thị trường.</div>`;
+    : '';
   return `<section class="the-kv" aria-label="Thị trường ${esc(tenTT(t))}">
     <div class="form-stack">
       <div class="luoi-kv">
@@ -231,11 +262,8 @@ function veMotThiTruong(t) {
         <span class="nhan">Món POS</span><span>${t.mon.map((m) => `<div><code>${esc(m.posMa)}</code> ${m.ten ? esc(m.ten) : '<span class="text-muted">chưa có tên</span>'}`
           + ` · ${m.tonKho == null ? '<span class="text-muted">tồn chưa có nguồn</span>' : 'tồn ' + so(m.tonKho)}${m.hetHang ? ' · ' + statusBadge('blocked', { label: 'Hết hàng' }) : ''}`
           + `${CT.suaDuoc ? ' ' + button('Gỡ', { size: 'sm', variant: 'ghost', data: { goMon: m.posMa }, title: 'Gỡ món khỏi sản phẩm (page đang bán món này mất đường về sản phẩm)' }) : ''}</div>`).join('')}</span>
-        <span class="nhan">Marketer</span><span class="text-muted">Chưa có nguồn — hồ sơ HRM nối ở phiếu LL15</span>
+        <span class="nhan">Marketer</span><span>${CT.goc.marketer ? esc(CT.goc.marketer) : '<span class="text-muted">chưa gán — đặt ở tab Chung</span>'}</span>
       </div>
-      <div class="section-header"><div><h3>Giá ở ${esc(tenTT(t))}</h3>
-        <div class="section-desc">Gom từ bậc giá của các page bán món này — bot báo giá và máy tính tiền đơn theo page.</div></div></div>
-      ${giaHtml}
     </div>
     <aside class="form-stack">
       <div class="luoi-kv"><span class="nhan">Page bán ở đây</span><span>${so(t.page.length)}</span></div>
@@ -243,6 +271,13 @@ function veMotThiTruong(t) {
         : '<div class="o-trong">Chưa page nào bán món của shop này.</div>'}
       <div class="o-trong">Lời bot riêng cho thị trường (kịch bản tầng nước) hôm nay xem trong màn Kịch bản của từng page — chưa sửa theo sản phẩm ở đây được.</div>
     </aside>
+  </section>
+  <section class="tren-4" aria-label="Giá ở ${esc(tenTT(t))}">
+    <div class="section-header"><div><h3>Giá ở ${esc(tenTT(t))}</h3>
+      <div class="section-desc">Bot báo giá và máy tính tiền đơn từ CHÍNH bảng này cho mọi page gắn vào sản phẩm ở ${esc(tenTT(t))}. Lưu = chỉ giá — tên và hết hàng vẫn theo POS.</div></div></div>
+    ${giaMonHtml(t)}
+    ${giaHtml ? `<div class="section-header tren-4"><div><h3>Giá riêng của page (bản sao cũ)</h3>
+      <div class="section-desc">Page CHƯA gắn vào sản phẩm vẫn bán theo bản sao của chính nó — gắn page ở tab «Page đang bán» để dùng giá ở trên.</div></div></div>${giaHtml}` : ''}
   </section>`;
 }
 function veKhungThem() {
@@ -301,14 +336,26 @@ async function goMon(posMa, nut) {
 function vePage() {
   const g = CT.goc;
   const tenShop = new Map(g.thiTruong.map((t) => [t.shopId, tenTT(t)]));
-  $('#thanTab').innerHTML = g.page.length
-    ? `<div class="table-wrap"><table class="data-table"><thead><tr><th scope="col">Page</th><th scope="col">Thị trường</th><th scope="col">Nối qua</th></tr></thead><tbody>${g.page.map((p) => `
+  const goDuoc = (p) => CT.suaDuoc && p.qua.includes('ca_page');
+  $('#thanTab').innerHTML = (CT.suaDuoc ? `<div class="form-actions duoi-4">${button('+ Gắn page', { size: 'sm', id: 'moGan' })}`
+      + `<span class="field-hint">Một page bán MỘT sản phẩm ở MỘT thị trường — gắn là page nhận giá của thị trường đó và marketer của sản phẩm.</span></div>` : '')
+    + '<div id="khungGan"></div>' + (g.page.length
+    ? `<div class="table-wrap"><table class="data-table"><thead><tr><th scope="col">Page</th><th scope="col">Thị trường</th><th scope="col">Nối qua</th>`
+      + `${CT.suaDuoc ? '<th scope="col" class="actions"><span class="sr-only">Gỡ</span></th>' : ''}</tr></thead><tbody>${g.page.map((p) => `
         <tr><td><a href="/page/${esc(p.id)}">${esc(p.ten || p.pageId)}</a><div class="meta">${esc(p.pageId)}</div></td>
           <td>${p.shop.length ? p.shop.map((s) => esc(tenShop.get(s) || 'shop ' + s)).join(' · ') : '<span class="text-muted">—</span>'}</td>
-          <td>${[p.qua.includes('mon_pos') ? 'món POS đã nối' : '', p.qua.includes('ca_page') ? 'gán cả page vào sản phẩm' : ''].filter(Boolean).join(' · ')}</td></tr>`).join('')}</tbody></table></div>
+          <td>${[p.qua.includes('mon_pos') ? 'món POS đã nối' : '', p.qua.includes('ca_page') ? 'gán cả page vào sản phẩm' : ''].filter(Boolean).join(' · ')}</td>
+          ${CT.suaDuoc ? `<td class="actions">${goDuoc(p) ? button('Gỡ', { size: 'sm', variant: 'ghost', data: { goPage: p.id }, title: 'Gỡ page khỏi sản phẩm (page chết / thôi bán) — giữ thị trường và marketer của page' }) : ''}</td>` : ''}</tr>`).join('')}</tbody></table></div>
        <p class="field-hint">Một page bán MỘT sản phẩm ở MỘT thị trường. Sửa kiến thức ở tab Chung là mọi page trên đọc bản mới.</p>`
     : emptyState({ icon: 'inbox', title: 'Chưa page nào bán sản phẩm này',
-        body: 'Page tới được sản phẩm khi bản sao sản phẩm của page nối vào một món POS của sản phẩm (tab «Sản phẩm & giá» của page).' });
+        body: CT.suaDuoc ? 'Bấm «+ Gắn page»: chọn page và thị trường — page nhận giá của sản phẩm ở thị trường đó và marketer của sản phẩm.'
+          : 'Quản trị gắn page vào sản phẩm ở đây.' }));
+  if ($('#moGan')) $('#moGan').onclick = () => {
+    GAN = GAN ? null : { tim: '', ds: [], pageId: null, shopId: g.thiTruong.length === 1 ? g.thiTruong[0].shopId : null };
+    if (GAN) { veKhungGan(); timPageGan(); } else $('#khungGan').innerHTML = '';
+  };
+  $('#thanTab').querySelectorAll('[data-go-page]').forEach((b) => { b.onclick = () => goPage(b.dataset.goPage, b); });
+  if (GAN) veKhungGan();
 }
 
 /* LỊCH SỬ — nhật ký của đúng sản phẩm này, mới nhất trước. */
@@ -324,6 +371,151 @@ async function veLichSu() {
         </div></li>`).join('')}</ul>`
       : emptyState({ icon: 'inbox', title: 'Chưa có thay đổi nào được ghi', body: 'Tạo · gắn/gỡ món · sửa kiến thức đều để lại một dòng ở đây.' });
   } catch (e) { $('#thanTab').innerHTML = canhBao({ level: 'warning', title: 'Không đọc được lịch sử', body: e.message }); }
+}
+
+/* ── VE8b · GIÁ Ở MỘT THỊ TRƯỜNG — sửa ngay tại đây (người quyết 30/09) ─────────────────────────────────────────
+ * Bậc giá của CHÍNH món POS shop này: bot báo giá và cửa tiền đọc CÙNG bảng này cho mọi page gắn vào sản phẩm ở thị
+ * trường này. Lưu = chỉ giá (tên + hết hàng vẫn theo POS), đẩy bản chép sang bot trong cùng lượt. Bảng soạn đọc lại từ ô
+ * nhập mỗi lần thêm/bỏ bậc — không giữ bản sao thứ hai của giá trong bộ nhớ.
+ */
+const chuoi = (v) => (v == null ? '' : String(v));
+function dongBac(g, sua) {
+  const dis = sua ? '' : ' disabled';
+  const o = (k, v, kieu, nhan, lop) => `<td${lop ? ` class="${lop}"` : ''}><input class="cell-input" data-k="${k}" type="${kieu}"`
+    + ` value="${esc(chuoi(v))}"${kieu === 'number' ? ' step="any" min="0"' : ''}${dis} aria-label="${nhan}"></td>`;
+  const ms = chuoi(g.mienShip === true ? '1' : g.mienShip === false ? '0' : g.mienShip);
+  return `<tr data-dong-bac>
+    ${o('nhan', g.nhan, 'text', 'Tên bậc')}${o('soLuong', g.soLuong, 'number', 'Số lượng', 'num')}${o('gia', g.gia, 'number', 'Giá', 'num')}
+    ${o('tienTe', g.tienTe, 'text', 'Tiền tệ')}${o('giaGoc', g.giaGoc, 'number', 'Giá gốc', 'num')}${o('khuyenMai', g.khuyenMai, 'text', 'Khuyến mãi')}
+    ${o('phiShip', g.phiShip, 'number', 'Phí ship', 'num')}
+    <td><select data-k="mienShip" aria-label="Miễn ship"${dis}><option value=""${ms === '' ? ' selected' : ''}>chưa khai</option>`
+    + `<option value="1"${ms === '1' ? ' selected' : ''}>miễn</option><option value="0"${ms === '0' ? ' selected' : ''}>không miễn</option></select></td>
+    <td><input type="checkbox" data-k="bat" aria-label="Bật"${g.bat !== false ? ' checked' : ''}${dis}></td>
+    ${sua ? `<td class="actions">${button('Bỏ', { size: 'sm', variant: 'ghost', data: { boBac: '1' } })}</td>` : ''}
+  </tr>`;
+}
+function docBac(khung) {
+  return [...khung.querySelectorAll('[data-dong-bac]')].map((tr) => {
+    const v = (k) => tr.querySelector(`[data-k="${k}"]`);
+    return { nhan: v('nhan').value, soLuong: v('soLuong').value, gia: v('gia').value, tienTe: v('tienTe').value, giaGoc: v('giaGoc').value,
+      khuyenMai: v('khuyenMai').value, phiShip: v('phiShip').value, mienShip: v('mienShip').value, bat: v('bat').checked };
+  });
+}
+function veBangGia(khung, ds) {
+  khung.querySelector('[data-bac]').innerHTML = ds.map((g) => dongBac(g, CT.suaDuoc)).join('');
+  const trong = khung.querySelector('[data-chua-gia]');
+  if (trong) trong.hidden = ds.length > 0;
+}
+function giaMonHtml(t) {
+  return t.mon.map((m) => `<div class="duoi-4" data-gia-mon="${esc(m.posMa)}">
+    ${t.mon.length > 1 ? `<div class="manh duoi-2">${m.ten ? esc(m.ten) : `<code>${esc(m.posMa)}</code>`}</div>` : ''}
+    <div class="table-wrap"><table class="data-table"><thead><tr>
+      <th scope="col">Tên bậc</th><th scope="col" class="num">Số lượng</th><th scope="col" class="num">Giá</th><th scope="col">Tiền tệ</th>
+      <th scope="col" class="num">Giá gốc</th><th scope="col">Khuyến mãi</th><th scope="col" class="num">Phí ship</th><th scope="col">Miễn ship</th>
+      <th scope="col">Bật</th>${CT.suaDuoc ? '<th scope="col" class="actions"><span class="sr-only">Bỏ bậc</span></th>' : ''}
+    </tr></thead><tbody data-bac>${m.goiGia.map((g) => dongBac(g, CT.suaDuoc)).join('')}</tbody></table></div>
+    <div class="o-trong" data-chua-gia${m.goiGia.length ? ' hidden' : ''}>Chưa có bậc giá — page gắn vào sản phẩm ở thị trường này chưa báo giá được.</div>
+    ${CT.suaDuoc ? `<div class="form-actions">${button('+ Thêm bậc', { size: 'sm', data: { themBac: m.posMa } })}`
+      + `${button('Lưu giá', { variant: 'primary', size: 'sm', data: { luuGia: m.posMa } })}<span class="field-hint" data-tb-gia aria-live="polite"></span></div>` : ''}
+  </div>`).join('');
+}
+const khungGia = (posMa) => [...$('#thanTab').querySelectorAll('[data-gia-mon]')].find((x) => x.dataset.giaMon === posMa);
+function themBac(posMa) {
+  const khung = khungGia(posMa);
+  const ds = docBac(khung);
+  const cuoi = ds[ds.length - 1];
+  // Bậc mới chỉ mang tiền tệ + số lượng kế tiếp; ship/ưu đãi để «chưa khai» — chép từ bậc trước là đoán hộ người vận hành.
+  ds.push({ nhan: '', soLuong: cuoi ? Number(cuoi.soLuong || 0) + 1 : 1, gia: '', tienTe: cuoi ? cuoi.tienTe : '', giaGoc: '', khuyenMai: '',
+    phiShip: '', mienShip: '', bat: true });
+  veBangGia(khung, ds);
+}
+function boBac(nut) {
+  const khung = nut.closest('[data-gia-mon]');
+  const tr = nut.closest('[data-dong-bac]');
+  const dong = [...khung.querySelectorAll('[data-dong-bac]')];
+  const ds = docBac(khung).filter((_, i) => dong[i] !== tr);
+  veBangGia(khung, ds);
+}
+async function luuGia(posMa, nut) {
+  const khung = khungGia(posMa);
+  const t = CT.goc.thiTruong.find((x) => x.mon.some((m) => m.posMa === posMa));
+  const m = t.mon.find((x) => x.posMa === posMa);
+  const so = (v) => (String(v).trim() === '' ? null : Number(v));
+  const offers = docBac(khung).map((g) => ({
+    so_luong: Number(g.soLuong), price: Number(g.gia), tien_te: String(g.tienTe || '').trim().toUpperCase(),
+    gia_goc: so(g.giaGoc), khuyen_mai: g.khuyenMai, phi_ship: so(g.phiShip),
+    mien_ship: g.mienShip === '' ? null : g.mienShip === '1', bat: !!g.bat, nhan: g.nhan,
+  }));
+  nut.disabled = true;
+  try {
+    const kq = await goiGhi('/api/san-pham/goc/' + encodeURIComponent(CHON) + '/gia', { method: 'POST',
+      body: JSON.stringify({ posMa, version: m.version, offers }) });
+    const soPage = kq && kq.dongBo && Array.isArray(kq.dongBo.page) ? kq.dongBo.page.length : 0;
+    const shop = t.shopId;
+    await moSanPham(CHON, 'thi-truong'); TT = shop; veThiTruong();
+    const k2 = khungGia(posMa);
+    if (k2) k2.querySelector('[data-tb-gia]').textContent = `Đã lưu ${offers.length} bậc giá · đẩy bản chép sang ${soPage} page.`;
+  } catch (e) { nut.disabled = false; khung.querySelector('[data-tb-gia]').textContent = e.message; }
+}
+
+/* ── VE8b · GẮN PAGE VÀO SẢN PHẨM — chọn page + thị trường; page nhận marketer của sản phẩm ───────────────────── */
+let GAN = null;   // { tim, ds, pageId, shopId }
+function veKhungGan() {
+  const g = CT.goc;
+  const tt = g.thiTruong.find((x) => x.shopId === GAN.shopId);
+  $('#khungGan').innerHTML = `<section class="khung-them" aria-label="Gắn page vào sản phẩm">
+    <div><span class="buoc-ten">① Page</span>
+      <label class="field"><span class="sr-only">Tìm page</span><input type="search" id="timPageGan" placeholder="Tìm theo tên hoặc mã page…" value="${esc(GAN.tim || '')}" autocomplete="off"></label>
+      <ul class="ds-mon">${(GAN.ds || []).map((p) => `<li><button type="button" data-chon-page="${esc(p.id)}" aria-pressed="${p.id === GAN.pageId}">`
+        + `<span class="ten">${esc(p.ten || p.pageId)}</span><span class="field-hint">${esc(p.thiTruong || 'chưa có thị trường')}`
+        + `${p.sanPhamGocMa ? ` · đang bán «${esc(p.sanPhamGocMa)}»` : ''}</span></button></li>`).join('') || '<li class="o-trong">Gõ để tìm page của team.</li>'}</ul>
+    </div>
+    <div><span class="buoc-ten">② Thị trường (shop POS của sản phẩm)</span>
+      ${g.thiTruong.length ? g.thiTruong.map((x) => `<button type="button" class="vien" data-chon-shop="${esc(x.shopId)}" aria-pressed="${x.shopId === GAN.shopId}">`
+        + `${esc(tenTT(x))}${x.coGia ? '' : ' <span class="phu">chưa có giá</span>'}</button>`).join('')
+        : '<div class="o-trong">Sản phẩm chưa có thị trường nào — thêm ở tab «Theo thị trường».</div>'}
+    </div>
+    <div><span class="buoc-ten">③ Marketer</span>
+      <div class="field-hint">${g.marketer ? `Page nhận marketer của sản phẩm: <b>${esc(g.marketer)}</b>.` : 'Sản phẩm chưa có marketer — page giữ marketer đang có. Đặt ở tab Chung.'}</div>
+      ${tt && !tt.coGia ? `<div class="field-hint">Thị trường này CHƯA có bậc giá — page gắn vào sẽ chưa báo giá được cho tới khi đặt giá.</div>` : ''}
+      <div class="form-actions">${button('Gắn page', { variant: 'primary', size: 'sm', id: 'nutGanPage', disabled: !(GAN.pageId && GAN.shopId) })}${button('Huỷ', { size: 'sm', id: 'nutHuyGan' })}</div>
+      <div class="field-hint" id="tbGanPage" aria-live="polite"></div>
+    </div>
+  </section>`;
+  const tim = $('#timPageGan');
+  tim.oninput = () => { GAN.tim = tim.value; clearTimeout(GAN.hen); GAN.hen = setTimeout(timPageGan, 250); };
+  $('#khungGan').querySelectorAll('[data-chon-page]').forEach((b) => { b.onclick = () => { GAN.pageId = b.dataset.chonPage; veKhungGan(); }; });
+  $('#khungGan').querySelectorAll('[data-chon-shop]').forEach((b) => { b.onclick = () => { GAN.shopId = b.dataset.chonShop; veKhungGan(); }; });
+  $('#nutHuyGan').onclick = () => { GAN = null; vePage(); };
+  $('#nutGanPage').onclick = ganPage;
+}
+async function timPageGan() {
+  try {
+    const d = await goi('/api/page-ds?tim=' + encodeURIComponent(GAN.tim || ''));
+    if (!GAN || !d) return;
+    GAN.ds = (d.ds || []).slice(0, 30);
+    veKhungGan();
+    const t = $('#timPageGan'); if (t) { t.focus(); }
+  } catch (e) { $('#tbGanPage').textContent = e.message; }
+}
+async function ganPage() {
+  const nut = $('#nutGanPage'); nut.disabled = true;
+  try {
+    const kq = await goiGhi('/api/san-pham/goc/' + encodeURIComponent(CHON) + '/page', { method: 'POST',
+      body: JSON.stringify({ pageId: GAN.pageId, shopId: GAN.shopId }) });
+    GAN = null;
+    await taiGoc(); await moSanPham(CHON, 'page');
+    $('#tbSp').innerHTML = canhBao({ level: kq.page.soBacGia ? 'success' : 'warning', title: `Đã gắn «${kq.page.ten || kq.page.pageFb}»`,
+      body: `${kq.page.thiTruong || 'shop ' + kq.page.shopId}${kq.page.marketer ? ' · marketer ' + kq.page.marketer : ''}`
+        + (kq.page.soBacGia ? '' : ' — thị trường này CHƯA có bậc giá: đặt ở tab «Theo thị trường».') });
+  } catch (e) { nut.disabled = false; $('#tbGanPage').textContent = e.message; }
+}
+async function goPage(pageId, nut) {
+  nut.disabled = true;
+  try {
+    await goiGhi('/api/san-pham/goc/' + encodeURIComponent(CHON) + '/page/go', { method: 'POST', body: JSON.stringify({ pageId }) });
+    await taiGoc(); await moSanPham(CHON, 'page');
+  } catch (e) { nut.disabled = false; $('#tbSp').innerHTML = canhBao({ level: 'error', title: 'Chưa gỡ được', body: e.message }); }
 }
 
 /* ── PHẢI · GỘP MÓN POS THÀNH SẢN PHẨM (bản vẽ 2a′ · VE8a) ───────────────────────────────
@@ -454,9 +646,9 @@ function veBanSao() {
     <div id="dem"></div>
     ${g.tong ? canhBao({ level: g.chuaCoGia ? 'warning' : 'info',
         title: g.chuaCoGia ? `${so(g.chuaCoGia)}/${so(g.tong)} sản phẩm chưa có bậc giá nào` : `Cả ${so(g.tong)} sản phẩm đều đã có bậc giá`,
-        body: g.chuaCoGia ? 'Kho hàng gửi về tên và tồn, không gửi giá — giá thật nằm trong từng đơn. Nhập giá tay ở màn Vận hành; lượt kéo danh mục sau không ghi đè giá đã nhập tay.'
+        body: g.chuaCoGia ? 'Kho hàng gửi về tên và tồn, không gửi giá. Gộp món POS thành sản phẩm rồi đặt giá ở tab «Theo thị trường» của sản phẩm — lượt kéo danh mục sau không ghi đè giá đã đặt.'
           : `${so(g.nhapTay)} sản phẩm đang ở chế độ nhập tay, không bị lượt kéo danh mục ghi đè.` })
-        + '<p><a href="/van-hanh-v3?tab=products">Mở Vận hành › Sản phẩm &amp; giá để nhập giá và sửa tên →</a></p>' : ''}
+        + '<p><button type="button" class="nut-dam" id="sangGop">Gộp món POS thành sản phẩm →</button></p>' : ''}
     <div class="page-note" id="ghi-chu-ton"></div>
     <div id="bang"></div>`;
   $('#dem').innerHTML = metricRow([
@@ -468,6 +660,7 @@ function veBanSao() {
     { label: 'Tồn kho', value: '—', statusHtml: statusBadge('unknown', { label: 'Chưa có nguồn' }) },
   ]);
   $('#ghi-chu-ton').innerHTML = (d.tonKho && !d.tonKho.co) ? `<div>Cột tồn kho để trống chứ không hiện 0. ${esc(d.tonKho.noi)}</div>` : '';
+  if ($('#sangGop')) $('#sangGop').onclick = () => veGop();
   veBang(d);
 }
 function veBang(d) {
