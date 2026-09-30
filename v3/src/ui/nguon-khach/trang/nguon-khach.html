@@ -28,28 +28,46 @@
   <div id="bang-tin" aria-live="polite"></div>
   <div class="page-note" id="ghi-chu-anh-chup"></div>
 
-  <section class="section" aria-labelledby="tieu-luong">
-    <div class="section-header"><div>
-      <h2 id="tieu-luong">Hai luồng chạy song song</h2>
-      <div class="section-desc" id="dich"></div>
-    </div></div>
-    <ul class="item-list" id="luong"><li class="item"><div><span class="skeleton"></span></div></li></ul>
-  </section>
-
-  <section class="section" aria-labelledby="tieu-roi">
-    <div class="section-header"><div>
-      <h2 id="tieu-roi">Chỗ rơi</h2>
-      <div class="section-desc">Đơn từ trang bán hàng không được gửi WhatsApp — số cũ trong tài liệu: 37,4%.</div>
-    </div></div>
-    <div id="choRoi"></div>
-  </section>
-
+  <!-- VE6c · 30/09 (bản vẽ 3c, tab «Khách»): phân bố hội thoại theo TEAM · rủi ro hoàn (theo vai) · hai khối «rơi ở đâu» · hai luồng. -->
   <section class="section" aria-labelledby="tieu-pheu">
     <div class="section-header"><div>
       <h2 id="tieu-pheu">Hội thoại đang đứng ở đâu</h2>
       <div class="section-desc" id="hPheu">Ảnh chụp chỗ đứng hiện tại, không phải số đếm trong một khoảng ngày.</div>
     </div></div>
     <div id="pheu"></div>
+  </section>
+
+  <section class="section" aria-labelledby="tieu-hoan" id="khoiRuiRo" hidden>
+    <div class="section-header"><div>
+      <h2 id="tieu-hoan">Rủi ro hoàn — bốn tầng</h2>
+      <div class="section-desc">Cùng tỉ lệ nhưng khác số đơn: 1/2 hoàn và 20/40 hoàn không nói cùng một điều — tầng chỉ xếp khi đủ đơn.</div>
+    </div></div>
+    <div id="ruiRo"></div>
+  </section>
+
+  <section class="section" aria-labelledby="tieu-rmess">
+    <div class="section-header"><div>
+      <h2 id="tieu-rmess">Khách vào từ Messenger — rơi ở đâu</h2>
+      <div class="section-desc">Chưa đếm được theo lượt đi qua — phân bố trên là ảnh chụp chỗ đứng, không phải dòng chảy.</div>
+    </div></div>
+    <ol class="pheu" id="roiMess" aria-label="Các chặng luồng Messenger"></ol>
+  </section>
+
+  <section class="section" aria-labelledby="tieu-roi">
+    <div class="section-header"><div>
+      <h2 id="tieu-roi">Khách vào từ trang bán hàng — rơi ở đâu</h2>
+      <div class="section-desc">Đơn từ trang bán hàng không được gửi WhatsApp — số cũ trong tài liệu: 37,4%.</div>
+    </div></div>
+    <ol class="pheu duoi-4" id="roiTrang" aria-label="Các chặng luồng trang bán hàng"></ol>
+    <div id="choRoi"></div>
+  </section>
+
+  <section class="section" aria-labelledby="tieu-luong">
+    <div class="section-header"><div>
+      <h2 id="tieu-luong">Hai luồng chạy song song</h2>
+      <div class="section-desc" id="dich"></div>
+    </div></div>
+    <ul class="item-list" id="luong"><li class="item"><div><span class="skeleton"></span></div></li></ul>
   </section>
 </main>
 
@@ -97,6 +115,61 @@ function veChoRoi(c) {
     detail: c.lyDo && c.lyDo.length ? [`Lý do: ${c.lyDo.join(' · ')}`] : [] });
 }
 
+/* VE6c · bản vẽ 3c: phân bố CỦA TEAM (CSDL v3) theo giai đoạn × người giữ, tô theo người giữ. Chưa có ⇒ lùi về khối TOÀN HỆ của
+   tiến trình bot (bên dưới) và nói vì sao. Không tỉ lệ rơi giữa hai dòng — ảnh chụp chỗ đứng. */
+function vePhanBo(pb, p) {
+  if (!pb || !pb.docDuoc) {
+    vePheu(p);
+    if (pb && pb.noi) $('#pheu').insertAdjacentHTML('afterbegin', `<p class="field-hint duoi-3">${esc(pb.noi)} Đang hiện số toàn hệ của tiến trình bot.</p>`);
+    return;
+  }
+  const tuoi = pb.tuoi && pb.tuoi.chamMoiNhat ? new Date(pb.tuoi.chamMoiNhat).toLocaleDateString('vi-VN') : null;
+  $('#hPheu').textContent = `${d0(pb.tong)} hội thoại của team${tuoi ? ` · dữ liệu tới ${tuoi}` : ''} · ảnh chụp chỗ đứng hiện tại`;
+  if (!pb.cap.length) { $('#pheu').innerHTML = emptyState({ icon: 'inbox', title: 'Team chưa có hội thoại nào' }); return; }
+  const max = Math.max(...pb.cap.map((c) => c.so), 1);
+  const dau = pb.cap[0];
+  const tiLeDau = pb.tong ? Math.round((dau.so / pb.tong) * 100) : 0;
+  $('#pheu').innerHTML = `<div class="panel"><div class="bar-list">${pb.cap.map((c) => `<div class="bar-row" data-chu="${esc(c.chu)}">
+      <span class="bar-name">${esc(c.ten)}</span>
+      <progress max="${max}" value="${c.so}" aria-label="${esc(c.ten)}: ${d0(c.so)} hội thoại"></progress>
+      <span class="bar-value">${d0(c.so)}</span></div>`).join('')}</div>
+    ${tiLeDau >= 50 ? `<div class="page-note">${tiLeDau}% đang ở «${esc(dau.ten)}».</div>` : ''}</div>`;
+  // Câu «ảnh chụp, không phải tỉ lệ rơi» đã đứng ở đầu trang (`#ghi-chu-anh-chup`, từ `khoang.canhBao`) — không nhắc lần hai.
+}
+
+/* Hai khối «rơi ở đâu» (bản vẽ 3c) — chặng có nguồn mang số, chặng không có nói «chưa có nguồn»; KHÔNG tỉ lệ rơi (luật ②a). */
+function veRoi(d) {
+  const o = (ten, v, ghi) => `<li class="pheu-buoc"${v == null ? ' data-muted' : ''}><span class="pheu-ten">${esc(ten)}</span>
+    <span class="pheu-so">${v == null ? '—' : esc(formatNumber(v))}</span><span class="pheu-ghi">${esc(ghi || (v == null ? 'chưa có nguồn' : ''))}</span></li>`;
+  $('#roiMess').innerHTML = o('Nhắn inbox', null) + o('Bot tư vấn', null) + o('Bot chốt', null, 'xem sổ đếm ở Tổng quan') + o('Sale duyệt', null);
+  const trang = (d.luong || []).find((l) => l.ma === 'trang_ban_hang');
+  const cr = d.choRoi || {};
+  $('#roiTrang').innerHTML = o('Bấm BUY NOW', trang ? trang.soDon : null, trang ? 'đơn từ trang bán hàng' : '')
+    + o('Gửi WhatsApp', cr.doDuoc ? cr.soDonTrang - cr.soKhongGui : null, cr.doDuoc ? '' : 'luồng gửi WhatsApp chưa chạy · 37,4% là số cũ')
+    + o('Xác nhận', null) + o('Chờ in', null);
+}
+
+/* Rủi ro hoàn — cửa chỉ quản trị · quản lý: hỏi menu (CÙNG hằng vai của màn Rủi ro hoàn) trước, không gọi rồi ăn 403.
+   «Tra một khách cụ thể» chỉ hiện khi vai mở được màn Tìm khách. */
+const TANG_HIEN = [['rui_ro_cao', 'Hay hoàn · ≥65%', 'blocked'], ['canh_bao', 'Cần theo dõi · 30–65%', 'needs_attention'],
+  ['tot_binh_thuong', 'Mua tốt · bình thường', 'ready'], ['chua_du_don', 'Chưa đủ đơn để xếp', 'unknown']];
+async function taiRuiRo() {
+  let dh = null;
+  try { dh = await goi('/api/dieu-huong'); } catch { dh = null; }
+  const co = (duong) => !!dh && (dh.nhom || []).some((n) => (n.man || []).some((m) => m.duong === duong));
+  if (!co('/rui-ro-hoan')) return;
+  $('#khoiRuiRo').hidden = false;
+  let r;
+  try { r = await goi('/api/rui-ro-hoan'); } catch (e) {
+    $('#ruiRo').innerHTML = canhBao({ level: 'warning', title: 'Chưa đọc được rủi ro hoàn', body: e.message }); return;
+  }
+  const soCua = (ma) => (r.theoTang || []).filter((t) => (ma === 'tot_binh_thuong' ? ['tot', 'binh_thuong'] : [ma]).includes(t.ma))
+    .reduce((a, t) => a + (t.soKhach || 0), 0);
+  $('#ruiRo').innerHTML = `<ol class="pheu" data-kieu="o">${TANG_HIEN.map(([ma, ten, mau]) => `<li class="pheu-buoc">
+      <span class="pheu-ten">${statusBadge(mau, { label: ten })}</span><span class="pheu-so">${formatNumber(soCua(ma))}</span></li>`).join('')}</ol>
+    <p class="field-hint tren-3">${r.tuoi && r.tuoi.chamLuc ? 'Chấm lúc ' + esc(new Date(r.tuoi.chamLuc).toLocaleString('vi-VN', { hour12: false })) + ' · ' : ''}<a class="lien-ke" href="/rui-ro-hoan">Xem đủ →</a>${co('/ho-so-khach') ? ' · <a class="lien-ke" href="/ho-so-khach">Tra một khách cụ thể →</a>' : ''}</p>`;
+}
+
 function vePheu(p) {
   if (!p.docDuoc) {
     $('#pheu').innerHTML = `<div class="panel"><div class="feature-row" data-state="off">
@@ -142,7 +215,8 @@ async function tai() {
       + (d.donKhac ? ` · ${d0(d.donKhac.so)} đơn mang nguồn khác: ${d.donKhac.nguon.map(esc).join(', ')}` : '');
     veLuong(d.luong);
     veChoRoi(d.choRoi);
-    vePheu(d.pheu);
+    vePhanBo(d.phanBo, d.pheu);
+    veRoi(d);
   } catch (e) {
     $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được nguồn khách', body: e.message })}</div>`;
     $('#luong').innerHTML = '';
@@ -151,6 +225,7 @@ async function tai() {
 }
 
 tai();
+taiRuiRo();
 </script>
 <script src="/chung/dieu-huong.js"></script>
 </body>

@@ -93,7 +93,7 @@ import {
   datChanDangNhap as datChanDangNhapLop0, datChanVai as datChanVaiLop0, taoRouterLop0,
 } from './ui/lop-0-dong/index.js';
 import {
-  datTaoTruyVan as datTruyVanNguon, datDocPheu,
+  datTaoTruyVan as datTruyVanNguon, datDocPheu, datDocPhanBoHoiThoai,
   datChanDangNhap as datChanDangNhapNguon, datChanVai as datChanVaiNguon, taoRouterNguon,
 } from './ui/nguon-khach/index.js';
 import {
@@ -245,7 +245,7 @@ import {
 export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa,
   docKhoi, dungBanMay, dichBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
-  docPhanBoHoan,
+  docPhanBoHoan, docPhanBoHoiThoai,
   chayNapLai, vanHanh,
   ghiSoAi, canhBao, docNhipMayBot, docSanPhamSua, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
   docDauVetV3, giaiKichBanPage, laTinTuDong, express } = {}) {
@@ -307,6 +307,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datTruyVanLop0(taoTruyVan);
   datTruyVanNguon(taoTruyVan);
   datDocPheu(typeof docPheu === 'function' ? docPheu : pheuHoiThoai);
+  // VE6c: phân bố hội thoại THEO TEAM (CSDL v3). Không nối ⇒ tab Khách lùi về khối toàn hệ của tiến trình bot và NÓI vì sao.
+  datDocPhanBoHoiThoai(typeof docPhanBoHoiThoai === 'function' ? docPhanBoHoiThoai : null);
   datTruyVanKhach(taoTruyVan);
   datTruyVanRuiRo(taoTruyVan);
   // Phân bố rủi ro hoàn gom SẴN trong CSDL (phiếu B-Y8). Không nối thì màn lùi về đọc cột

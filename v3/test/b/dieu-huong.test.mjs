@@ -204,7 +204,7 @@ test('④c · vai QUẢN TRỊ thấy 5 mục nhưng KHÔNG rơi màn nào — g
   assert.equal(mh.MAN.filter((m) => m.thuNghiem).length, 4, 'bốn màn ẩn (LL5: Nguồn khách · Rủi ro hoàn có dữ liệu; LL11: + Kỹ năng; VE4: − Gợi ý từ AI; VE5b: − Khách hàng)');
   assert.equal(mh.MAN.filter((m) => m.canId).length, 1, 'đúng một màn cần tham số để mở');
   assert.deepEqual(mh.MAN.filter((m) => m.moTuManKhac).map((m) => m.ten),
-    ['Tìm khách', 'Đoạn chữ gửi cho AI'], 'màn mở từ màn khác phải khai ra, không trôi (LL1: «Sản phẩm & kho» thôi; VE5b: + Tìm khách)');
+    ['Tìm khách', 'Đoạn chữ gửi cho AI', 'Rủi ro hoàn hàng'], 'màn mở từ màn khác phải khai ra, không trôi (LL1: «Sản phẩm & kho» thôi; VE5b: + Tìm khách; VE6c: + Rủi ro hoàn — rời thanh tab Số liệu)');
   // Chín màn ít dùng dồn vào Cài đặt. Đếm ở đây để nếu có người kéo một màn ít dùng trở
   // lên mục hằng ngày thì bài này đỏ, chứ không trôi lặng lẽ.
   // Bảy màn ít dùng nay tản ra ba mục theo ĐÚNG việc của chúng, không dồn hết vào một

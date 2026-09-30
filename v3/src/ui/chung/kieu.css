@@ -1068,6 +1068,11 @@
   .bar-row progress::-webkit-progress-bar { background: var(--surface-muted); border-radius: var(--radius-full); }
   .bar-row progress::-webkit-progress-value { background: var(--primary); border-radius: var(--radius-full); }
   .bar-row progress::-moz-progress-bar { background: var(--primary); border-radius: var(--radius-full); }
+  /* VE6c · bản vẽ 3c: thanh tô theo NGƯỜI GIỮ hội thoại — Botcake xám · bot AI màu chính · sale cam (khớp nhãn người giữ ở Hộp thư). */
+  .bar-row[data-chu="BOTCAKE"] progress::-webkit-progress-value { background: var(--neutral-border); }
+  .bar-row[data-chu="BOTCAKE"] progress::-moz-progress-bar { background: var(--neutral-border); }
+  .bar-row[data-chu="SALE"] progress::-webkit-progress-value { background: var(--warning); }
+  .bar-row[data-chu="SALE"] progress::-moz-progress-bar { background: var(--warning); }
   @media (max-width: 720px) { .bar-row { grid-template-columns: minmax(0, 1fr) auto; }
                               .bar-row progress { grid-column: 1 / -1; } }
 

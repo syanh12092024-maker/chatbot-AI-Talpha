@@ -95,7 +95,8 @@ test('N5 · mỗi vai thấy đúng tập màn như trước — trừ «Sản p
   // Mỗi màn THÊM VÀO tập tới-được phải khai tên phiếu đã thêm nó — không thêm lặng lẽ.
   const THEM_CO_CHU_Y = { '/san-pham': 'LL1', '/nguon-khach': 'LL5 (có dữ liệu)', '/rui-ro-hoan': 'LL5 (có dữ liệu)',
     '/khoi-chung': 'VE4 (tab Chính sách · FAQ · Phản đối)', '/ai-de-xuat': 'VE4 (thôi thử nghiệm — tab «Đề xuất chờ duyệt», bản vẽ 2d)' };
-  const BO_CO_CHU_Y = { '/ky-nang': 'LL11 (khái niệm kỹ năng bỏ — «hỏi size» sang kiến thức sản phẩm)' };
+  const BO_CO_CHU_Y = { '/ky-nang': 'LL11 (khái niệm kỹ năng bỏ — «hỏi size» sang kiến thức sản phẩm)',
+    '/rui-ro-hoan': 'VE6c (rời thanh tab Số liệu — bốn tầng ở tab Khách + Tổng quan, màn đủ mở bằng «Xem đủ →»; ca ④g canh lối vào)' };
   for (const [ten, truoc] of Object.entries(HIEN_TRUOC)) {
     const v = VAI[ten];
     const mongDoi = new Set(truoc);

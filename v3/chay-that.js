@@ -299,6 +299,7 @@ const bao = dungPhanB(app, {
   docHaiLuong: (bc) => soLieu.baoCaoHaiLuong(pool, ctxCuaA(bc)),
   // Phân bố tầng × số đơn đã kết — gom bằng một câu GROUP BY thay vì kéo `khach` về màn.
   docPhanBoHoan: (bc) => soLieu.phanBoRuiRoHoan(pool, ctxCuaA(bc)),
+  docPhanBoHoiThoai: (bc) => soLieu.phanBoHoiThoai(pool, ctxCuaA(bc)),   // VE6c · tab Khách (bản vẽ 3c)
   // Hiệu lực THẬT của prompt cho màn «Prompt của page»: cờ ráp-4-khối và hằng `CORE` của
   // `src/prompts.js` (chỉ ĐỌC — file cấm sửa). Thiếu hai thứ này thì màn khoe một prompt
   // mà bot chưa chắc đang gửi.

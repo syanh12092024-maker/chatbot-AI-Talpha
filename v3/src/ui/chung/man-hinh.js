@@ -238,8 +238,12 @@ export const MAN = Object.freeze([
   // của hai màn: số là lát nạp 28/08, chưa có job kéo đơn định kỳ (nợ N-KEODON · phiếu LL17).
   trongCum('so-lieu', 'Tổng quan', dat(baoCao, 'Đơn và tỉ lệ chốt', 'so-lieu', 'Tách hai luồng, không gộp một tổng')),
   trongCum('so-lieu', 'Chi phí AI', dat(chiPhi, 'Chi phí AI', 'so-lieu', 'Tiền model theo page')),
-  trongCum('so-lieu', 'Nguồn khách', dat(nguonKhach, 'Khách vào từ đâu', 'so-lieu', 'Hai luồng đơn và chỗ khách rơi', true)),
-  trongCum('so-lieu', 'Rủi ro hoàn', dat(ruiRo, 'Rủi ro hoàn hàng', 'so-lieu', 'Bốn tầng, đọc cột đã chấm sẵn', true)),
+  // VE6c · 30/09 (bản vẽ 3c + bản đồ phủ màn «Khách vào từ đâu → Số liệu › Khách · Gộp», «Rủi ro hoàn → Số liệu › Khách + huy
+  // hiệu ở Hộp thư · Gộp»): cụm còn BA tab. «Rủi ro hoàn hàng» rời thanh tab — bốn tầng đã nằm trong tab Khách + Tổng quan, màn đủ mở
+  // bằng «Xem đủ →» ở hai nơi đó (`moTuManKhac`); `nhaCum` giữ dòng hai của Số liệu khi đứng ở màn đó.
+  trongCum('so-lieu', 'Khách', dat(nguonKhach, 'Khách vào từ đâu', 'so-lieu', 'Hội thoại đứng ở đâu, rủi ro hoàn, khách rơi ở đâu', true)),
+  { ...dat(ruiRo, 'Rủi ro hoàn hàng', 'so-lieu', 'Bốn tầng, đọc cột đã chấm sẵn', true, false, false,
+    { thay: nguonKhach.DUONG_TRANG, loiVao: ['nguon-khach/trang/nguon-khach.html', 'bao-cao/trang/bao-cao.html'] }), nhaCum: 'so-lieu' },
 
   // ⑤ CÀI ĐẶT — vào đúng hai lần: hôm cài đặt, và hôm có sự cố.
   // GD3 · 25/09: màn ĐẦU TIÊN của mục Cài đặt — người mới mở nó để biết còn thiếu việc gì,

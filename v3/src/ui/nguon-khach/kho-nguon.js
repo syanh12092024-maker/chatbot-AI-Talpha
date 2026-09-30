@@ -69,6 +69,27 @@ export function datTaoTruyVan(fn) {
   _taoTruyVan = fn || null; return _taoTruyVan;
 }
 export function datDocPheu(fn) { _docPheu = fn || null; return _docPheu; }
+
+/* VE6c · 30/09 (bản vẽ 3c): phân bố hội thoại CỦA TEAM theo giai đoạn × người giữ — đọc CSDL v3 (`so-lieu.js#phanBoHoiThoai`).
+   Nhãn theo ĐÚNG chữ sale thấy ở Hộp thư (`ban-hoi-thoai.html#GIAI_DOAN`) và bản vẽ — không dùng `BAC` (chữ của khối toàn hệ cũ). */
+let _docPhanBoHT = null;
+export function datDocPhanBoHoiThoai(fn) { _docPhanBoHT = fn || null; return _docPhanBoHT; }
+export const CHU_BAC_HT = Object.freeze({ GREET: 'Chào', QUALIFY: 'Tìm hiểu nhu cầu', SELLING: 'Tư vấn', CLOSING: 'Chốt đơn',
+  HANDOFF: 'Chờ người', POST_SALE: 'Sau bán', COLD: 'Nguội' });
+export const CHU_NGUOI_GIU = Object.freeze({ BOTCAKE: 'Botcake giữ', AI: 'bot AI', SALE: 'sale' });
+async function phanBoCuaTeam(bc) {
+  if (!_docPhanBoHT) return { docDuoc: false, noi: 'Chưa nối phép gom hội thoại theo team.' };
+  try {
+    const r = await _docPhanBoHT(bc);
+    return {
+      docDuoc: true, laTheoTeam: true, tong: r.tong, tuoi: r.tuoi || null,
+      cap: (r.theoCap || []).map((x) => ({ bac: x.bac, chu: x.chu, so: x.so,
+        ten: `${CHU_BAC_HT[x.bac] || x.bac} · ${CHU_NGUOI_GIU[x.chu] || x.chu}` })),
+    };
+  } catch (e) {
+    return { docDuoc: false, noi: `Chưa gom được hội thoại theo team: ${String(e?.message || e)}` };
+  }
+}
 export const daNoiNguon = () => typeof _taoTruyVan === 'function';
 
 function truyVan(bc) {
@@ -132,6 +153,7 @@ export async function manNguon(boiCanh) {
     gapNhauO: 'Cả hai luồng cùng đổ vào POS, và chỉ gặp nhau ở đó. Trước điểm đó chúng đo '
       + 'bằng hai thước khác nhau — xem màn Báo cáo.',
     pheu: pheuMessenger(pheu, loiPheu),
+    phanBo: await phanBoCuaTeam(bc),
     choRoi: choRoiWhatsApp(trang),
     trong: don.length ? null : {
       rong: true, vi: 'chua-nap',

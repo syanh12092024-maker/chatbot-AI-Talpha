@@ -4,7 +4,7 @@
 // KHÔNG tính tỉ lệ rơi giữa hai bậc. Chỗ rơi 37,4% là số đo CŨ — chưa đo lại được.
 
 export {
-  manNguon, datTaoTruyVan, datDocPheu, daNoiNguon,
+  manNguon, datTaoTruyVan, datDocPheu, datDocPhanBoHoiThoai, CHU_BAC_HT, CHU_NGUOI_GIU, daNoiNguon,
   BAC, NGUON_DON, BANG_DON, LoiNguon,
 } from './kho-nguon.js';
 

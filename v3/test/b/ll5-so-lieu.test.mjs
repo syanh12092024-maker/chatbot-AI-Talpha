@@ -18,12 +18,14 @@ test('S1 · Số liệu của quản trị: MỘT dòng thanh bên, bốn tab th
   const n = soLieu(VAI.QUAN_TRI);
   assert.deepEqual(n.man.filter((m) => !m.an).map((m) => m.tenMenu || m.ten), ['Số liệu']);
   assert.deepEqual(n.man.filter((m) => m.cum === 'so-lieu' && (!m.an || m.trongCum)).map((m) => m.nhanCum),
-    ['Tổng quan', 'Chi phí AI', 'Nguồn khách', 'Rủi ro hoàn']);
+    // VE6c · 30/09 (bản vẽ 3c + bản đồ phủ màn «Nguồn khách · Rủi ro hoàn → Số liệu › Khách · Gộp»): cụm còn BA tab; Rủi ro hoàn mở bằng «Xem đủ →» ở tab Khách và Tổng quan.
+    ['Tổng quan', 'Chi phí AI', 'Khách']);
 });
 
 test('S2 · marketer không có quyền Rủi ro hoàn ⇒ không có tab đó (không tab nào dẫn tới 403)', () => {
   const tab = soLieu(VAI.MARKETER).man.filter((m) => m.cum === 'so-lieu' && (!m.an || m.trongCum)).map((m) => m.nhanCum);
-  assert.deepEqual(tab, ['Tổng quan', 'Chi phí AI', 'Nguồn khách']);
+  // VE6c · 30/09 (bản vẽ 3c + bản đồ phủ màn «Nguồn khách · Rủi ro hoàn → Số liệu › Khách · Gộp»): cụm còn BA tab; Rủi ro hoàn mở bằng «Xem đủ →» ở tab Khách và Tổng quan.
+  assert.deepEqual(tab, ['Tổng quan', 'Chi phí AI', 'Khách']);
 });
 
 const bc = taoBoiCanh({ nguoiDungId: 'u1', tenDangNhap: 'an', teamId: 't1', vai: [VAI.QUAN_TRI] });

@@ -411,6 +411,36 @@ async function boiCanhRong(khach, teamId, soDong, bang, { tu, den }) {
  * và phải ra HAI kết luận khác nhau. Một danh sách xếp theo tỉ lệ gộp họ lại, tức tái tạo
  * đúng cái ngưỡng cứng mà bốn tầng sinh ra để thay.
  */
+/**
+ * VE6c · 30/09 (bản vẽ 3c «Hội thoại đang đứng ở đâu»): hội thoại CỦA TEAM theo cặp giai đoạn × người giữ — MỘT câu GROUP BY trên
+ * `hoi_thoai` (`trang_thai` · `chu_so_huu`). ẢNH CHỤP chỗ đứng hiện tại, KHÔNG phải dòng chảy: hội thoại thành đơn thì rời bậc
+ * «đang bán» ⇒ nơi gọi KHÔNG được tính tỉ lệ rơi giữa hai dòng. Tuổi (án lệ #9): lần chạm cuối của hội thoại mới nhất — v3 chưa có
+ * job đồng bộ hội thoại liên tục, nên số có thể là lát cũ; nơi gọi phải in tuổi cạnh số.
+ */
+export async function phanBoHoiThoai(pool, ctx) {
+  const khach = await pool.connect();
+  try {
+    await batBuocVai(khach, ctx, VAI_XEM_SO_LIEU, "xem phân bố hội thoại");
+    const r = await khach.query(
+      `SELECT coalesce(trang_thai, '(trong)') AS bac, coalesce(chu_so_huu, '(trong)') AS chu, count(*)::int AS so
+         FROM hoi_thoai
+        WHERE team_id = $1
+        GROUP BY 1, 2
+        ORDER BY 3 DESC, 1, 2`,
+      [ctx.teamId],
+    );
+    const t = (await khach.query("SELECT max(cham_luc) AS moi FROM hoi_thoai WHERE team_id = $1", [ctx.teamId])).rows[0] || {};
+    return {
+      tong: r.rows.reduce((a, x) => a + x.so, 0),
+      theoCap: r.rows.map((x) => ({ bac: x.bac, chu: x.chu, so: x.so })),
+      tuoi: { chamMoiNhat: t.moi ? new Date(t.moi).getTime() : null },
+      nguon: "hoi_thoai GROUP BY trang_thai × chu_so_huu — của team",
+    };
+  } finally {
+    khach.release();
+  }
+}
+
 export async function phanBoRuiRoHoan(pool, ctx, { toiThieuDonKet = 2 } = {}) {
   const khach = await pool.connect();
   try {

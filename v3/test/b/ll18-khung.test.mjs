@@ -45,7 +45,8 @@ test('K1 · quản trị ở /bo-luat: năm đích đúng thứ tự bản vẽ,
 
 test('K2 · Số liệu và Cài đặt là MỘT cụm ⇒ hàng 2 chính là các tab của cụm, KHÔNG vẽ lại trong trang', () => {
   const s = veKhung(d(VAI.QUAN_TRI), '/chi-phi');
-  assert.deepEqual(lienKet(s.html, 'Trong mục Số liệu'), ['Tổng quan', 'Chi phí AI*', 'Nguồn khách', 'Rủi ro hoàn']);
+  // VE6c · 30/09 (bản vẽ 3c + bản đồ phủ màn «Nguồn khách · Rủi ro hoàn → Số liệu › Khách · Gộp»): cụm còn BA tab; Rủi ro hoàn mở bằng «Xem đủ →» ở tab Khách và Tổng quan.
+  assert.deepEqual(lienKet(s.html, 'Trong mục Số liệu'), ['Tổng quan', 'Chi phí AI*', 'Khách']);
   assert.equal(veTabCum(d(VAI.QUAN_TRI), '/chi-phi'), '', 'tab cụm đã ở hàng 2 — vẽ thêm trong trang là hai nơi cho một việc');
   const c = veKhung(d(VAI.QUAN_TRI), '/model-ai');
   assert.deepEqual(lienKet(c.html, 'Trong mục Cài đặt'),
