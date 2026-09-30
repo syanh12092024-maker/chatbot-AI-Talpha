@@ -1393,6 +1393,12 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
   - **N-CANHBAO-LOP-MODEL** `canhBaoCauHinh` (lớp v3) còn câu «đang chạy bằng bộ mặc định» · «rơi thẳng sang dự phòng» · «không
     chọn được model» — màn Model (nơi duy nhất đọc, grep 30/09) đã ẩn/thay; sửa câu nguồn khi lớp v3 vào đường chat.
 
+- 01/10 · **NỢ SAU VE7d** (`docs/thi-cong/nhat-ky/phieu-VE7d.md` §7):
+  - **N-MK-CHI-THAY-SP-MINH** `01-QUYET-DINH.md` §9 «marketer chỉ thấy sản phẩm mình phụ trách» chưa làm và CHƯA phiếu nào ôm —
+    cần LL15 (mã nhân viên ↔ tài khoản POS ↔ marketer của sản phẩm) rồi lọc theo người ở Sản phẩm/Page. Màn Người và team nói thẳng.
+  - **N-TEAM-KETNOI-THUA** `/api/team/ket-noi` + `ketNoiCua` + `datDocKetNoiPos` của module team không còn màn nào gọi (POS ở Cài
+    đặt › Kết nối) — gỡ ở LL8 cùng ca canh (`team-cau-hinh` ×3, năm dòng `datDocKetNoiPos(null)`).
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2822,3 +2828,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 30/09 · VE7c → 🔎 CHỜ DEPLOY — Cài đặt › Model theo bản vẽ 4 «Màn chỉ hiện thứ bot THẬT SỰ dùng»: thẻ Trả lời khách đọc ĐƯỜNG CHỌN CỦA BOT (`src/chat/model.js#chonModel` tách từ `layModel`, hành vi bot y nguyên) — hết «chưa có khoá»/«bộ mặc định» giả trên 3/4 team prod · «Thay khoá và thử một lượt» (goiMotLan một lần, lỗi nhà model về HTTP 200, chặn bấm dồn, nhật ký thu_model) · page bot mới đếm theo luật worker
   đo prod 30/09: 3/4 team chưa có dòng cấu hình ⇒ bot gọi MODEL_CLOSER bằng KIMI_API_KEY, prod không đặt V3_KHOA_* · chạy thật 9/9 · đảo-vá 35/35 · cổng ve7c.sh 17/17 · npm test 2.420 ca 0 đỏ · ĐỦ cổng 46 xanh / 13 đỏ = 12 nợ cũ + l1-m1 (l2-m2 đo lại trên HEAD: ✘ y hệt) · nợ N-KHOA-HAI-TEN · N-DAN-KHOA-DOI-DUONG · N-CANHBAO-LOP-MODEL
   · commit 4dd6b93 · nhật ký docs/thi-cong/nhat-ky/phieu-VE7c.md
+- 01/10 · VE7d → 🔎 CHỜ DEPLOY — Cài đặt › Người và team theo bản vẽ 4: ba nút đầu trang (HRM tắt + nói vì sao) · ba thẻ vai «mở được» đo bằng `menuCua` · phụ trách theo sự thật (marketer «Chưa có nguồn», §9 chưa làm, page có tên marketer là số đo) · HRM «Chưa nối vào máy chủ» không số đo tay · bỏ hàng chỉ số + tab POS · câu «bộ mặc định» rời cảnh báo team + bước Model của Bắt đầu
+  đo prod 01/10: page.marketer trống 582/582, 1 người dùng, HRM chờ H11 + LL15 · chạy thật 8/8 · đảo-vá 18/18 · cổng ve7d.sh 15/15 · npm test 2.428 ca 0 đỏ · ĐỦ cổng 48 xanh / 12 đỏ = 12 nợ cũ · nợ N-MK-CHI-THAY-SP-MINH · N-TEAM-KETNOI-THUA
+  · commit e258e14 · nhật ký docs/thi-cong/nhat-ky/phieu-VE7d.md
