@@ -1,6 +1,6 @@
 # MỞ VAN — VE7c · VE7d · VE7e: Cài đặt nói đúng thứ bot dùng (Model · Người và team · Nhật ký) (CR-28-09c)
 
-> **TRẠNG THÁI: CHỜ GẬT** — soạn 01/10. Phiếu: `phieu-VE7c.md` · `phieu-VE7d.md` · `phieu-VE7e.md`. Lượt trước:
+> **TRẠNG THÁI: ✅ GIỮ** — gật «deploy» 01/10 · restart `aicloser-v3` 03:58:16 CEST · mốc +1′/+5′/+15′ sạch. Soạn 01/10. Phiếu: `phieu-VE7c.md` · `phieu-VE7d.md` · `phieu-VE7e.md`. Lượt trước:
 > `phat-hanh-20260930-ve7-ve8.md` (prod `ecce575`, GIỮ).
 
 ## 1 · Mở cái gì
@@ -51,3 +51,30 @@ cd /opt/aicloser && git checkout -f -B vao-ui-v3-17-09 ecce575 && systemctl rest
 ```
 Lùi CODE; không có lược đồ để lùi. Mất dữ liệu: không (dòng `thu_model` trong nhật ký — nếu đã bấm thử — ở lại, bảng chỉ thêm).
 Worker không restart ở lượt này nên không có gì để lùi ở worker.
+
+## 8 · Lệnh đã gõ
+
+Người quyết gật «deploy» 01/10. Giờ prod (CEST):
+1. cửa vào (máy dev, trên `61863a1`): 49 xanh / 12 đỏ = 12 nợ cũ · `npm test` 2.434 ca 0 đỏ · hồ sơ + CHANGELOG `d226f81`
+2. đẩy nhánh `ecce575..d226f81` (8 commit)
+3. mốc lùi `/var/backups/aicloser/truoc-ve7cde-20261001T015814Z/commit.txt` = `ecce575`
+4. prod `checkout -f -B vao-ui-v3-17-09 origin/vao-ui-v3-17-09` → `d226f81` · 0 tệp theo dõi sửa tại chỗ (trước và sau)
+5. `node --env-file=.env db/migrate.js` → **áp mới 0 · tổng 28** (lô không có migration — chạy để xác nhận)
+6. `systemctl restart aicloser-v3` lúc **03:58:16** — chỉ dịch vụ này
+
+## 9 · Số đo từng mốc
+
+| Mốc | Giờ | Kết quả |
+|---|---|---|
+| +1′ | 03:59:44 | ba dịch vụ active · `aicloser-v3` Started 1 · lỗi 0/0/0 · hai dịch vụ kia `ActiveEnterTimestamp` y nguyên (28/09 11:25:42 · 11:22:22) · `/health` 131 · `/model-ai` `/cau-hinh-team` `/nhat-ky` + `/api/model/cau-hinh` `/api/team/thanh-vien` `/api/nhat-ky` 401 (chưa đăng nhập) · `POST /api/model/thu` 401 · đối chứng 404 · dấu mã mới 6/6 · nhật ký khởi động: 0 dòng «chưa nối: duongBot», 1 dòng «đường chọn model của bot → màn Model AI» (nối thật — phép không rỗng: có 2 dòng «chưa nối: ghiSoAi» từ trước) |
+| +5′ | 04:03:52 | y như +1′ — Started 1 · lỗi 0/0/0 · hai dịch vụ kia y nguyên · `/health` 131 · đường đúng mã |
+| +15′ | 04:13:57 | y như +1′ — Started 1 · lỗi 0/0/0 · hai dịch vụ kia y nguyên · `/health` 131 · đường đúng mã · dấu mã 6/6 |
+
+## 10 · Kết
+
+**GIỮ.** Ba mốc sạch, không vòng restart, không lỗi mới, hai dịch vụ không restart vẫn nguyên. Nợ phát sinh của lô (đã ở §9 sổ):
+N-KHOA-HAI-TEN · N-DAN-KHOA-DOI-DUONG · N-CANHBAO-LOP-MODEL (VE7c) · N-MK-CHI-THAY-SP-MINH · N-TEAM-KETNOI-THUA (VE7d).
+
+Việc sau deploy (người): Cài đặt › Model — đọc dòng «Bot đang gọi …» của team đang mở; bấm «Thay khoá và thử một lượt» với ô
+khoá TRỐNG một lần (16 token) để biết khoá của bot còn dùng được. Câu lỗi (401/402/429) là chuyện khoá/tài khoản, không phải lỗi
+deploy. Người quyết gật «deploy» 01/10.

@@ -2834,3 +2834,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 01/10 · VE7e → 🔎 CHỜ DEPLOY — Cài đặt › Nhật ký theo bản vẽ 4: «Nhật ký · Ghi cả việc người làm lẫn việc máy làm. Không ai sửa hay xoá được.» · mỗi dòng một câu lúc · ai · việc · đối tượng bằng TÊN (bảng sống của team → tên chụp trong dòng → «Loại #id», không đoán) · dòng máy «máy · <việc>» · chữ cho 7 mã tầng A (không thành mã v3 được ghi) · giờ «01/10 05:09»
   đo prod 01/10: 472/500 dòng mới nhất là máy (giữ mặc định làn người), tên theo id ảnh sản phẩm 4/4 · kỹ năng 2/2 · sản phẩm gốc 2/6 · chạy thật 6/6 (ba múi giờ) · đảo-vá 17/17 · cổng ve7e.sh 10/10 · npm test 2.434 ca 0 đỏ · ĐỦ cổng 49 xanh / 12 đỏ = 12 nợ cũ · không nợ mới
   · commit 61863a1 · nhật ký docs/thi-cong/nhat-ky/phieu-VE7e.md
+- 01/10 · MỞ VAN lô VE7c · VE7d · VE7e → ✅ GIỮ — prod `ecce575 → d226f81`, 0 migration (áp mới 0 · tổng 28), chỉ restart aicloser-v3 lúc 03:58:16 CEST
+  cửa vào 49 xanh / 12 đỏ = 12 nợ cũ · npm test 2.434 ca 0 đỏ · mốc +1′/+5′/+15′ lỗi 0/0/0 · Started 1 · dấu mã 6/6 · /health 131 · nhật ký khởi động nói «đường chọn model của bot → màn Model AI» (đã nối) · việc sau: bấm «Thay khoá và thử một lượt» (ô khoá trống) một lần
+  · commit d226f81 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261001-ve7cde.md
