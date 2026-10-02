@@ -23,7 +23,7 @@
 // Cổng dữ liệu tiêm từ ngoài (`datTaoTruyVan`), giống ba module kia — không import chéo.
 
 import { batBuocBoiCanh, VAI, VAI_GAN_DUOC } from '../../auth/boi-canh.js';
-import { docBotBatThat, botBatCua } from '../chung/bot-bat-that.js';
+import { botBatCua, NGUON_BOT_BAT } from '../chung/bot-bat-that.js';
 
 export const BANG_PAGE = 'page';
 export const BANG_HOI_THOAI = 'hoi_thoai';
@@ -139,21 +139,9 @@ export async function tongQuanTeam(boiCanh) {
 
   const pages = await db.chon(BANG_PAGE, {});
   const soPage = pages.length;
-  // ⚠️ CỘT `page.bot_ai_bat` LÀ BẢN SAO. Nguồn thật của công tắc AI là `ai-enabled.json` +
-  // RAM tiến trình bot; đo 25/08 hai bên lệch 50 (cột nói 50 page bật, bot nói 0). Trước
-  // 28/09 màn này cố ý chỉ đếm cột vì một lượt hỏi bot mất 10–13 giây — nó ra «2 page bật»
-  // trong khi dải trạng thái nói 1. Nay cửa kiểm đã có bản nhớ, nên hỏi bot trước; không hỏi
-  // được thì mới đếm cột, và khai rõ đang đứng ở bản sao (`nguonBotBat`).
-  const { theoBot, viSao } = await docBotBatThat();
-  const botBat = pages.filter((p) => botBatCua(p, theoBot)).length;
-  const nguonBotBat = theoBot ? {
-    nguon: 'ai-enabled.json',
-    noi: 'Đếm từ tiến trình bot (cửa kiểm sẵn sàng) — cùng nguồn với dải trạng thái.',
-  } : {
-    nguon: 'cot_csdl',
-    noi: `${viSao} Đếm từ cột \`page.bot_ai_bat\` — BẢN SAO của công tắc thật, đã có lần lệch 50 page.`,
-    xemO: 'Số thật ở màn «Cửa kiểm sẵn sàng» và «Page & Bot» (hỏi thẳng tiến trình bot).',
-  };
+  // MỘT NGUỒN (CR-02-10): cột `page.bot_ai_bat` — chính cột máy trả lời đọc.
+  const botBat = pages.filter((p) => botBatCua(p)).length;
+  const nguonBotBat = { ...NGUON_BOT_BAT };
   const coMarketer = pages.filter((p) => String(p.marketer || '').trim() !== '').length;
   const trongDiem = pages.filter((p) => p.trong_diem === true).length;
 

@@ -13,7 +13,7 @@ const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { taoBoiCanh, VAI } = await import('../../src/auth/boi-canh.js');
 const kp = await import('../../src/ui/page-bot/kho-page.js');
 const ct = await import('../../src/ui/page-bot/cong-tac.js');
-const cau = await import('../../src/noi-day/cau-bot-v1.js');
+const cau = await import('../../src/noi-day/loi-bot.js');
 
 const GOC_REPO = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
 const NAP_JS = path.join(GOC_REPO, 'db/di-tru/nap.js');

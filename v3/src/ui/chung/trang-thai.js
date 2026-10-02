@@ -93,7 +93,7 @@ async function docSoPage({ bayGio = Date.now(), boiCanh = null } = {}) {
 
   if (!_docSanSang) {
     return { docDuoc: false, aiBat: null, tong: null,
-      viSao: 'Chưa nối cầu sang tiến trình bot — xem màn Sức khoẻ hệ thống.' };
+      viSao: 'Chưa nối bộ đọc lõi bot — xem màn Sức khoẻ hệ thống.' };
   }
 
   let kq;
@@ -112,7 +112,7 @@ async function docSoPage({ bayGio = Date.now(), boiCanh = null } = {}) {
   } catch (e) {
     // Hỏng thì NÓI HỎNG, không trả 0. Xem ghi chú trên.
     return { docDuoc: false, aiBat: null, tong: null, theoTeam: false,
-      viSao: `Cầu sang tiến trình bot lỗi: ${e?.message || e}` };
+      viSao: `Lõi bot lỗi khi đọc cửa kiểm: ${e?.message || e}` };
   }
 
   _nho.set(khoa, { luc: bayGio, kq });

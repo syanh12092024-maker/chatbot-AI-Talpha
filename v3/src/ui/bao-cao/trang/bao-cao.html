@@ -147,7 +147,7 @@ function veBang(d, cp) {
       <td class="num">${!coCp ? chuaCo : p.vndMoiDon == null ? (p.dotTien ? statusBadge('needs_attention', { label: 'Tốn tiền, 0 đơn' }) : chuaCo) : formatVnd(p.vndMoiDon)}</td>
       <td class="num">${chuaCo}</td>
     </tr>`).join('')}</tbody></table>
-    <p class="field-hint tren-3">«Chốt» và «Hoàn» theo page: chưa có nguồn — chưa cửa đọc nào tính hai số này theo page.${coCp ? ` «AI / đơn»: ${esc(cp.khoang ? cp.khoang.chu : '')}, sổ của tiến trình bot.` : ' «AI / đơn»: chưa đọc được sổ chi phí.'}</p>`;
+    <p class="field-hint tren-3">«Chốt» và «Hoàn» theo page: chưa có nguồn — chưa cửa đọc nào tính hai số này theo page.${coCp ? ` «AI / đơn»: ${esc(cp.khoang ? cp.khoang.chu : '')}, Sổ AI cũ (ghi tới 28/08).` : ' «AI / đơn»: chưa đọc được sổ chi phí.'}</p>`;
 }
 
 /* VE6a · phễu (bản vẽ 3a): mỗi chặng MỘT số khi có nguồn, «chưa có nguồn» khi không. KHÔNG tính tỉ lệ rơi giữa chặng — các số đến từ
@@ -220,7 +220,7 @@ async function tai() {
     veChiSo();
   } catch (e) {
     $('#bang-tin').innerHTML = `<div class="duoi-5">${canhBao({ level: 'error', title: 'Không đọc được báo cáo',
-      body: 'Chưa lấy được số từ tiến trình bot. Nếu lỗi còn lặp lại, gửi dòng chi tiết bên dưới cho người quản trị hệ thống.',
+      body: 'Chưa lấy được số từ lõi bot. Nếu lỗi còn lặp lại, gửi dòng chi tiết bên dưới cho người quản trị hệ thống.',
       detail: [e.message] })}</div>`;
     $('#thuoc').innerHTML = '';
     $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa có số liệu', body: 'Tải lại trang sau ít phút.' });
@@ -263,7 +263,7 @@ function veChiSo() {
   const cr = NGUON && !NGUON.loi ? NGUON.choRoi : null;
   $('#chiSo').innerHTML = metricRow([
     { label: 'Chi phí AI mỗi đơn', value: t && t.vndMoiDon != null ? formatVnd(t.vndMoiDon) : '—',
-      hint: t ? `${k} · sổ bot cũ · % doanh thu: chưa có nguồn` : (CHI_PHI && CHI_PHI.loi ? 'chưa đọc được sổ chi phí' : 'đang đọc…') },
+      hint: t ? `${k} · Sổ AI cũ (tới 28/08) · % doanh thu: chưa có nguồn` : (CHI_PHI && CHI_PHI.loi ? 'chưa đọc được sổ chi phí' : 'đang đọc…') },
     { label: 'Tin AI để ra một đơn', value: t && t.tinMoiDon != null ? t.tinMoiDon : '—',
       hint: t ? `${t.vndMoiTin != null ? formatVnd(t.vndMoiTin) + ' mỗi tin · ' : ''}${formatNumber(t.soLuot)} tin → ${formatNumber(t.soDon)} đơn` : '' },
     { label: 'Đơn theo luồng — không gộp', value: hl ? `${formatNumber(hl.messenger.soDon)} · ${formatNumber(hl.trangBanHang.soDon)}` : '—',

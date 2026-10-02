@@ -47,13 +47,12 @@ if (action === 'new') {
   url.pathname = '/' + name;
   const password = crypto.randomBytes(12).toString('base64url');
   const env = {
-    NODE_ENV:'development', HOST:'127.0.0.1', PORT:'3200', CHAYTHAT_CONG:'3202',
+    NODE_ENV:'development', HOST:'127.0.0.1', CHAYTHAT_CONG:'3202',
     DATABASE_URL_V3:url.toString(), V3_KHOA_VE:crypto.randomBytes(32).toString('hex'),
     V3_KHOA_MA_HOA:crypto.randomBytes(32).toString('hex'),
-    ADMIN_USER:'local-admin', ADMIN_PASS:crypto.randomBytes(24).toString('hex'),
     DEV_CONFIG_ONLY:'1', META_WEBHOOK_OFF:'1', PANCAKE_READONLY:'1', V3_PANCAKE_GUI:'0',
-    V3_POS_GHI:'0', V3_WA_GUI:'0', V3_LEGACY_POLL_OFF:'1',
-    V3_RAP_PROMPT_BAT:'1', V3_BOT_V1_GOC:'http://127.0.0.1:3200',
+    V3_POS_GHI:'0', V3_WA_GUI:'0',
+    V3_RAP_PROMPT_BAT:'1',
     KB_PATH:path.join(dir,'empty-knowledge.xlsx'),
   };
   fs.writeFileSync(path.join(dir,'.env'),Object.entries(env).map(([k,v])=>k+'='+JSON.stringify(v)).join('\n')+'\n',{mode:0o600});
@@ -72,10 +71,11 @@ if (action === 'new') {
   // DỪNG THEO CỔNG, KHÔNG THEO TÊN TIẾN TRÌNH.
   //
   // `pkill -f "local-dev.mjs start"` chỉ giết tiến trình CHA; hai tiến trình con có dòng
-  // lệnh `node --env-file=.env src/server.js` và `v3/chay-that.js` — không mang tên bản dev
+  // lệnh `node --env-file=.env v3/chay-that.js` — không mang tên bản dev
   // nào cả, nên chúng sống sót và giữ cổng. Lượt khởi động kế tiếp chết vì EADDRINUSE, rồi
   // cổng vẫn trả 200 từ mã CŨ: nhìn như «đã restart» mà bản vá không vào. Đã vấp ba lần
   // trong một buổi chiều (17/09) nên cửa dừng phải nhắm đúng thứ giữ cổng.
+  // 3200 = cổng bot v1 cũ (gỡ 02/10) — vẫn quét để dọn tiến trình sót của bản dev tạo trước MB4.
   const congs = [3200, Number(process.env.CHAYTHAT_CONG) || 3202];
   const dangGiu = (cong) => {
     try {
@@ -88,7 +88,7 @@ if (action === 'new') {
   for (const cong of congs) {
     for (const pid of dangGiu(cong)) { try { process.kill(pid, 'SIGTERM'); da++; } catch { /* đã chết */ } }
   }
-  // ESCALATE. `src/server.js` không có bộ bắt SIGTERM nào đóng `app.listen`, nên nó SỐNG
+  // ESCALATE. Bot v1 (`src/server.js`, gỡ 02/10) không có bộ bắt SIGTERM nào đóng `app.listen`, nên nó SỐNG
   // SÓT qua SIGTERM và tiếp tục giữ cổng 3200 — đo 17/09: lệnh dừng in «đã dừng» mà tiến
   // trình cũ vẫn chạy, lượt start kế tiếp chết vì EADDRINUSE rồi cổng vẫn trả 200 từ mã CŨ.
   // Một lệnh dừng mà không dừng thật thì tệ hơn không có lệnh dừng.
@@ -105,7 +105,7 @@ if (action === 'new') {
   // NẠP TOKEN PANCAKE VÀO BẢN DEV MÀ KHÔNG ĐỤNG VAN.
   //
   // Nút «Thêm token» trên màn Kết nối đi qua cửa ghi của v3, mà cửa đó đóng khi
-  // `PANCAKE_READONLY=1` (xem `trangThaiCau()` trong `v3/src/noi-day/cau-bot-v1.js`). Đóng là
+  // `PANCAKE_READONLY=1` (xem `trangThaiCau()` trong `v3/src/noi-day/loi-bot.js`). Đóng là
   // ĐÚNG: máy này chạy song song VPS, mở van ra là khách nhận tin đúp. Nhưng ĐỌC thì không
   // cần cửa — nên token vào bằng `.env`, và mọi đường gửi vẫn bị chặn nguyên.
   //
@@ -140,7 +140,8 @@ if (action === 'new') {
   const clean = { PATH:process.env.PATH, HOME:process.env.HOME, TMPDIR:process.env.TMPDIR };
   // Keep this command running; Ctrl-C stops both processes. No worker in configure mode.
   const children = [];
-  for (const [name,entry] of [['backend','src/server.js'],['ui','v3/chay-that.js']]) {
+  // CR-02-10 · MB4: bot v1 («backend», `src/server.js`) đã gỡ — bản dev chỉ còn giao diện v3.
+  for (const [name,entry] of [['ui','v3/chay-that.js']]) {
     const fd = fs.openSync(path.join(state.dir,name+'.log'),'a',0o600);
     const child = spawn(process.execPath,['--env-file=.env',entry],{cwd:state.dir,env:clean,stdio:['ignore',fd,fd]});
     children.push(child); fs.closeSync(fd);

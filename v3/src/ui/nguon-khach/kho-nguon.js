@@ -102,7 +102,7 @@ function truyVan(bc) {
  *
  * Phễu hội thoại đọc từ `/admin/api/ops/conv-state`: mỗi hội thoại đang đứng ở đúng một
  * bậc LÚC NÀY. Nó không nói có bao nhiêu người đã đi qua bậc đó rồi rời đi. Chú thích
- * trong `noi-day/cau-bot-v1.js#pheuHoiThoai` ghi thẳng: «nơi gọi phải nói rõ điều đó» —
+ * trong `noi-day/loi-bot.js#pheuHoiThoai` ghi thẳng: «nơi gọi phải nói rõ điều đó» —
  * đây là nơi gọi, nên đây nói.
  */
 export const KHOANG = Object.freeze({
@@ -125,7 +125,7 @@ export async function manNguon(boiCanh) {
   let pheu = null; let loiPheu = null;
   if (_docPheu) {
     try { pheu = await _docPheu(); } catch (e) { loiPheu = String(e?.message || e); }
-  } else loiPheu = 'Chưa nối cầu sang tiến trình bot.';
+  } else loiPheu = 'Chưa nối bộ đọc lõi bot.';
 
   // LL5 · 29/09: đơn MỚI NHẤT trong hệ — nói số này tính tới đâu (prod 29/09: lát nạp 28/08, chưa có job kéo đơn).
   const donMoiNhat = don.reduce((m, d) => {

@@ -132,7 +132,7 @@ test('C1 · HÌNH PROD: team chưa lưu cấu hình ⇒ màn nói bot gọi mode
   const suThat = chu(m.$('#suThat'));
   assert.match(suThat, /Màn chỉ hiện thứ bot THẬT SỰ dùng\./);
   assert.match(suThat, /đang xử 1\/3 page của team/, 'đếm theo cột bot_ai_bat (luật worker) — cột giao_bot_moi cũ KHÔNG tính');
-  assert.match(suThat, /Bot cũ .*KHÔNG gửi độ ngẫu nhiên/);
+  assert.doesNotMatch(suThat, /Bot cũ|bot mới/i, 'CR-02-10: một bản — màn không còn nói về hai bot');
   // bot THẬT: model máy chủ + KIMI_API_KEY + không gửi độ ngẫu nhiên — không phải «bộ mặc định» của lớp v3
   assert.match(chu(m.$('[data-bot-dung]')), /^Bot đang gọi kimi-k2\.6 — model của MÁY CHỦ \(MODEL_CLOSER\), khoá chung của máy chủ \(KIMI_API_KEY\), KHÔNG gửi độ ngẫu nhiên\. Team chưa lưu cấu hình riêng/);
   assert.match(chu(m.$('#dauPhai')), /Chưa lưu cấu hình riêng — bot dùng model của máy chủ/);
@@ -317,7 +317,7 @@ test('C8 · bot KHÔNG gọi được (model chính nhà Claude, không khoá te
   const m = await moMan(o);
   const bt = chu(m.$('#bang-tin'));
   assert.match(bt, /Bot không gọi được model trả lời khách/);
-  assert.match(bt, /claude-haiku-4\.5 \(Anthropic Claude\) chưa có khoá — mọi lượt trả lời khách của bot mới sẽ hỏng\./);
+  assert.match(bt, /claude-haiku-4\.5 \(Anthropic Claude\) chưa có khoá — mọi lượt trả lời khách của bot sẽ hỏng\./);
   assert.match(chu(m.$('[data-bot-dung]')), /^Bot KHÔNG gọi được: claude-haiku-4\.5 chưa có khoá\./);
   assert.equal(chu(m.$('[data-tt-khoa="chinh"]')), '(chưa có khoá — bot sẽ KHÔNG gọi được)');
   await m.$('[data-thu="chinh"]').click();

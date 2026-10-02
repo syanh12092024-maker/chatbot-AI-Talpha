@@ -155,7 +155,7 @@ test('duaLenLive · chưa nối cửa đẩy sang bot thì TỪ CHỐI, không s
 
 /* ═══════════ cửa sang bot: HỎNG ≠ BỊ CỜ KHOÁ ═══════════ */
 
-/** Dựng kho có cửa đẩy NÉM đúng lỗi «cửa ghi đóng» của `noi-day/cau-bot-v1.js`. */
+/** Dựng kho có cửa đẩy NÉM đúng lỗi «cửa ghi đóng» của `noi-day/loi-bot.js`. */
 function khoCuaDong() {
   const r = dungKho();
   kb.datDayLenBot(async () => {

@@ -16,7 +16,7 @@
 <body>
 <header>
   <h1>Bắt đầu</h1>
-  <span class="sub">Làm cho đủ điều kiện của một page, rồi bật bot. Page chạy bot cũ và bot mới có hai bộ điều kiện khác nhau.</span>
+  <span class="sub">Làm cho đủ điều kiện của một page, rồi bật bot. Page đang bật bot hiện điều kiện chạy (van gửi · cách ghép lời · sản phẩm có giá · model); page đang tắt hiện điều kiện nội dung.</span>
 </header>
 
 <main>
@@ -113,7 +113,7 @@ function mucKiem(ma, bi, laNhac) {
 function chanTrangKiem(p) {
   if (p.botKhongThay) {
     return canhBao({ level: 'info', title: 'Bot không thấy page này',
-      body: 'Page có trong v3 nhưng tiến trình bot không nhận ra nó — đây là «chưa biết», không phải «sẵn sàng». Kiểm token ở màn Kết nối trước.',
+      body: 'Page có trong v3 nhưng lõi bot không nhận ra nó — đây là «chưa biết», không phải «sẵn sàng». Kiểm token ở màn Kết nối trước.',
       actionsHtml: button('Mở kết nối', { href: '/ket-noi', size: 'sm' }) });
   }
   if (p.dangChay) {
@@ -148,14 +148,14 @@ function veChiTiet() {
         <span class="page-avatar" aria-hidden="true">${esc((p.ten || '?').trim()[0] || '?').toUpperCase()}</span>
         <div class="page-identity-text">
           <h2 class="page-identity-name">${esc(p.ten)}</h2>
-          <div class="page-identity-sub">Mã page ${esc(p.pageId)} · ${p.banBot === 'moi' ? 'chạy bằng bot mới' : 'chạy bằng bot cũ'}${p.marketer ? ' · marketer ' + esc(p.marketer) : ''}</div>
+          <div class="page-identity-sub">Mã page ${esc(p.pageId)} · ${p.banBot === 'moi' ? 'đang bật bot' : 'đang tắt bot'}${p.marketer ? ' · marketer ' + esc(p.marketer) : ''}</div>
         </div>
       </div>
       ${trangThaiPage(p)}
     </div>
 
     ${p.lechBanSao ? `<div class="duoi-4">${canhBao({ level: 'warning', title: 'Hai nguồn đang nói khác nhau',
-      body: 'Tiến trình bot và bản sao trong v3 không khớp về việc page này có bật hay không. Số đúng là của tiến trình bot.' })}</div>` : ''}
+      body: 'Cột công tắc và cửa kiểm không khớp về việc page này có bật hay không. Cột page.bot_ai_bat là công tắc thật.' })}</div>` : ''}
 
     ${readiness({
       // Danh sách của CHÍNH page này: page bản cũ và page bản mới không cùng một bộ điều kiện.

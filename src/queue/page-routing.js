@@ -36,9 +36,3 @@ export async function dsPageBotTraLoi(pool) {
 export function lyDoRong() {
   return 'Chưa page nào bật bot (cột `page.bot_ai_bat`) — bật ở màn «Công tắc từng page».';
 }
-
-// ── CHỈ CÒN CHO TỆP v1 (`pancake-poll.js` · `scheduler-followup.js`) ─────────────────────
-// Để `aicloser.service` vẫn khởi động được nếu phải LÙI MB3. Bot v1 không biết cột CSDL, và
-// trên máy chủ nó chạy với `V3_LEGACY_POLL_OFF=1` + `ai-enabled.json` rỗng nên không trả lời
-// page nào. Gỡ cùng các tệp đó ở MB4.
-export function pageThuocV3() { return false; }

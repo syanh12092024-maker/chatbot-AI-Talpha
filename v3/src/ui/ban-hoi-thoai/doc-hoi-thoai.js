@@ -312,7 +312,7 @@ export async function docHoiThoai(boiCanh, hoiThoaiId) {
     const mk = maKhachCua(dv, ma);
     const doc = mk
       ? await docTuPancake(pageFb, ma, mk.cust, dauHieuBot(dv, ma))
-      : { lichSu: [], lichSuLoi: 'Chưa có mã khách Pancake cho hội thoại này — hội thoại chưa qua hàng đợi v3 và không có trong Sổ AI của bot cũ. Bấm «Trả lời trên Pancake» để đọc ở đó.' };
+      : { lichSu: [], lichSuLoi: 'Chưa có mã khách Pancake cho hội thoại này — hội thoại chưa qua hàng đợi v3 và không có trong Sổ AI cũ (ghi tới 28/08). Bấm «Trả lời trên Pancake» để đọc ở đó.' };
     return { ...dau, nguonMa: mk ? mk.nguon : null, ...doc, docLuc: _dongHo() };
   })();
   _nho.set(ma, { dang });

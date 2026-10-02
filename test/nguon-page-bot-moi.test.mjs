@@ -6,7 +6,8 @@
 // (cột), biến cũ KHÔNG còn tác dụng, và mọi lời gọi danh sách đều `await` kèm `pool`.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dsPageBotTraLoi, botDangTraLoi, lyDoRong, pageThuocV3 } from '../src/queue/page-routing.js';
+import * as routing from '../src/queue/page-routing.js';
+const { dsPageBotTraLoi, botDangTraLoi, lyDoRong } = routing;
 
 /** Pool giả: ghi lại câu hỏi để ca soi đúng cột. */
 function poolGia(pageIds) {
@@ -54,11 +55,10 @@ test('④ câu «vì sao rỗng» chỉ đúng chỗ bật — cột và màn C�
   assert.doesNotMatch(lyDoRong(), /V3_PAGE_XU_LY/);
 });
 
-test('⑤ hàm còn lại cho tệp v1 (lùi MB3) KHÔNG nhận page nào — không đọc biến môi trường', () => {
-  const cu = process.env.V3_PAGE_XU_LY;
-  process.env.V3_PAGE_XU_LY = '111';
-  try { assert.equal(pageThuocV3('111'), false); }
-  finally { if (cu === undefined) delete process.env.V3_PAGE_XU_LY; else process.env.V3_PAGE_XU_LY = cu; }
+test('⑤ không còn hàm nào của thời hai bot (CR-02-10 · MB4)', () => {
+  for (const ten of ['pageThuocV3', 'dsPageV3', 'pageThuocBotMoi', 'dsPageBotMoi', 'giaoTrenManDangMo']) {
+    assert.equal(routing[ten], undefined, `${ten} phải gỡ`);
+  }
 });
 
 test('⑨ mọi lời gọi hàm danh sách page đều `await` VÀ có truyền `pool`', async () => {

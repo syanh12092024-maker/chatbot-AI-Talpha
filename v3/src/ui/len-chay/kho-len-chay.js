@@ -121,14 +121,14 @@ export async function changCuaPage(boiCanh, pageIdFacebook) {
     try {
       const toanHe = await _docSanSang();
       sanSang = (toanHe.pages || []).find((p) => String(p.pageId) === id) || null;
-      if (!sanSang) loiSanSang = 'Tiến trình bot không thấy page này.';
+      if (!sanSang) loiSanSang = 'Lõi bot không thấy page này (chưa có token phủ, hoặc chưa quét về).';
     } catch (e) { loiSanSang = String(e?.message || e); }
-  } else loiSanSang = 'Chưa nối cầu sang tiến trình bot.';
+  } else loiSanSang = 'Chưa nối bộ đọc lõi bot.';
 
   let kb = null; let loiKb = null;
   if (_docMotPage) {
     try { kb = await _docMotPage(id); } catch (e) { loiKb = String(e?.message || e); }
-  } else loiKb = 'Chưa nối cầu sang tiến trình bot.';
+  } else loiKb = 'Chưa nối bộ đọc lõi bot.';
 
   const chang = [
     c1ThuLieu(soHoiThoai),
@@ -220,7 +220,7 @@ function c4NapVaoMay(kb, loi) {
   if (!kb) {
     return {
       so: 4, ten: 'Nạp vào máy', trangThai: CHANG.KHONG_BIET, soDo: null, donVi: 'ô',
-      noi: `Chưa đọc được cấu hình từ tiến trình bot: ${loi || 'không rõ'}.`,
+      noi: `Chưa đọc được cấu hình từ lõi bot: ${loi || 'không rõ'}.`,
       di: '/kich-ban', lam: 'Số 0 ở đây sẽ là kết luận sai — màn để trống thay vì đoán.',
     };
   }

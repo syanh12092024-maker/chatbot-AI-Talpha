@@ -25,7 +25,7 @@ test('① Chi phí khai «toàn thời gian», kèm cảnh báo mốc 06/08', ()
 
 test('② Nguồn khách khai «ảnh chụp lúc này», và cấm đọc thành tỉ lệ rơi', () => {
   assert.equal(nguon.KHOANG.chu, 'ảnh chụp lúc này');
-  // Chú thích trong `noi-day/cau-bot-v1.js#pheuHoiThoai` ghi «nơi gọi phải nói rõ điều đó».
+  // Chú thích trong `noi-day/loi-bot.js#pheuHoiThoai` ghi «nơi gọi phải nói rõ điều đó».
   assert.match(nguon.KHOANG.canhBao, /tỉ lệ rơi/);
 });
 

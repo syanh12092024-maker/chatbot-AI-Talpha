@@ -72,7 +72,7 @@ test('①b · hai sổ lệch → NÓI RA, kèm CẢ HAI con số', async () => 
   assert.equal(d.soAi.coLech, true, 'lệch mà im là màn nói dối');
   assert.match(d.soAi.noi, /0 lượt/, 'phải nêu con số của sổ v3');
   assert.match(d.soAi.noi, /300 lượt/, 'phải nêu cả con số của bot');
-  assert.match(d.soAi.noi, /TIẾN TRÌNH BOT/, 'phải nói RÕ màn đang theo bên nào');
+  assert.match(d.soAi.noi, /SỔ AI CŨ/, 'phải nói RÕ màn đang theo bên nào');
   assert.ok(d.soAi.viSao, 'phải nói vì sao sổ v3 rỗng');
 });
 

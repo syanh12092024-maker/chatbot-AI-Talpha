@@ -8,7 +8,7 @@ process.env.V3_KHOA_CHU ||= crypto.randomBytes(32).toString('base64');
 
 const { taoBoiCanh, VAI } = await import('../../src/auth/boi-canh.js');
 const kn = await import('../../src/ui/ket-noi/kho-ket-noi.js');
-const cau = await import('../../src/noi-day/cau-bot-v1.js');
+const cau = await import('../../src/noi-day/loi-bot.js');
 const rt = await import('../../src/ui/ket-noi/router.js');
 
 const NGAY = 86400000;

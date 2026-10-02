@@ -6,13 +6,11 @@ export function checkConfig(env, version = process.versions.node) {
   const errors = [];
   const [major, minor] = version.split(".").map(Number);
   if (major < 20 || (major === 20 && minor < 12))
-    errors.push("Cần Node >=20.12 để cả ba tiến trình đọc cùng file .env");
+    errors.push("Cần Node >=20.12 để cả hai tiến trình đọc cùng file .env");
   for (const k of [
     "DATABASE_URL_V3",
     "V3_KHOA_VE",
     "V3_KHOA_MA_HOA",
-    "ADMIN_USER",
-    "ADMIN_PASS",
     ...(env.META_WEBHOOK_OFF === "1" ? [] : ["APP_SECRET", "VERIFY_TOKEN"]),
   ])
     if (!env[k]?.trim()) errors.push(`Thiếu ${k}`);
@@ -46,25 +44,15 @@ export function checkConfig(env, version = process.versions.node) {
     ]
   )
     errors.push("Thiếu API key của provider mặc định để server khởi động");
-  const port = Number(env.PORT || 3100),
-    uiPort = Number(env.CHAYTHAT_CONG || 3102);
-  if (
-    ![port, uiPort].every(
-      (p) => Number.isInteger(p) && p >= 1024 && p <= 65535,
-    ) ||
-    port === uiPort
-  )
-    errors.push("PORT và CHAYTHAT_CONG phải khác nhau, từ 1024–65535");
+  // CR-02-10 · MB4: cổng bot v1 (PORT, 3100) đã gỡ — chỉ còn cổng giao diện v3.
+  const uiPort = Number(env.CHAYTHAT_CONG || 3102);
+  if (!(Number.isInteger(uiPort) && uiPort >= 1024 && uiPort <= 65535))
+    errors.push("CHAYTHAT_CONG phải từ 1024–65535");
   if (env.NODE_OPTIONS?.includes("--env-file"))
     errors.push(
       "Bỏ --env-file khỏi NODE_OPTIONS; systemd đã truyền ở ExecStart",
     );
-  return {
-    errors,
-    port,
-    uiPort,
-    allowlist: (env.V3_PAGE_XU_LY || "").split(/[,\s]+/).filter(Boolean),
-  };
+  return { errors, uiPort };
 }
 export async function inspectDatabase(env, root) {
   const { default: pg } = await import("pg");
@@ -101,25 +89,20 @@ export async function inspectDatabase(env, root) {
         new Error("Database mới hơn code: " + unknown.join(", ")),
         { safe: true },
       );
-    const pages = (env.V3_PAGE_XU_LY || "").split(/[,\s]+/).filter(Boolean);
+    // CR-02-10 · MB2: page bot trả lời là cột `page.bot_ai_bat` — không còn danh sách page trong .env.
     const pageTable = (
       await pool.query(
         "SELECT to_regclass('public.page') IS NOT NULL AS present",
       )
     ).rows[0].present;
-    const found = pageTable
-      ? (
-          await pool.query(
-            "SELECT page_id FROM page WHERE page_id=ANY($1::text[])",
-            [pages],
-          )
-        ).rows.map((r) => r.page_id)
-      : [];
+    const botBat = pageTable
+      ? Number((await pool.query("SELECT count(*) AS n FROM page WHERE bot_ai_bat")).rows[0].n)
+      : 0;
     return {
       ...info,
       applied: applied.length,
       pending: available.filter((m) => !applied.includes(m)),
-      missingPages: pages.filter((p) => !found.includes(p)),
+      pagesBotBat: botBat,
     };
   } finally {
     await pool.end();
@@ -132,8 +115,7 @@ export async function main() {
     JSON.stringify(
       {
         node: process.versions.node,
-        ports: [report.port, report.uiPort],
-        configuredPages: report.allowlist.length,
+        uiPort: report.uiPort,
         errors: report.errors,
       },
       null,

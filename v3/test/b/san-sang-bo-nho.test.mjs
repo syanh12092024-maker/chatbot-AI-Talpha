@@ -7,7 +7,7 @@
 import test, { beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 
-const cau = await import('../../src/noi-day/cau-bot-v1.js');
+const cau = await import('../../src/noi-day/loi-bot.js');
 
 // Cửa ghi mở CHỈ trong tệp này (lõi là giả, không có gì ra ngoài) — `.env` của máy này đặt
 // `PANCAKE_READONLY=1`, để nguyên thì `datBotAi` ném trước khi tới chỗ cần kiểm.

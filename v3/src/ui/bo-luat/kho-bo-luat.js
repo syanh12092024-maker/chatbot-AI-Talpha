@@ -54,7 +54,7 @@
 //      Màn hiện bản toàn hệ kèm nhãn «kế thừa, không sửa ở đây», không giấu nó đi.
 
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
-import { docBotBatThat, botBatCua } from '../chung/bot-bat-that.js';
+import { botBatCua, NGUON_BOT_BAT } from '../chung/bot-bat-that.js';
 
 export const BANG = 'bo_luat_chung';
 export const BANG_PAGE = 'page';
@@ -242,13 +242,8 @@ export function tomTatSoSanh(cu, moi) {
 /**
  * ② trong ba thứ bắt buộc: **bao nhiêu page bị ảnh hưởng**, hỏi TRƯỚC khi cho bấm áp.
  *
- * ⚠️ HỎI NGUỒN THẬT, KHÔNG HỎI CỘT. Bản trước đếm `page.bot_ai_bat === true`. Đo 25/08 trên
- *    máy chủ: cột nói 50, `ai-enabled.json` nói 0 — cột chỉ là BẢN SAO và đã cũ từ 24/08.
- *    `db/migrate/001_nen.up.sql` khai thẳng: «NGUỒN DUY NHẤT của cờ này là `ai-enabled.json`
- *    … Cấm suy ra từ bất kỳ trường nào khác». → `PHIEU-B-Y7`, người A đã giao `xemAnhHuongBoLuat`.
- *
- * Không có cửa của A thì VẪN trả số, nhưng khai rõ `nguon: 'cot_csdl'` kèm cảnh báo — im lặng
- * rơi về cột chính là cái đã sai.
+ * MỘT NGUỒN (CR-02-10): «page đang bật bot» = cột `page.bot_ai_bat`. Tới 02/10 cột này là bản sao
+ * của `ai-enabled.json` (bot v1) nên màn hỏi nguồn khác trước; v1 nghỉ hưu, bản sao không còn.
  */
 export async function demAnhHuong(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
@@ -266,33 +261,13 @@ export async function demAnhHuong(boiCanh) {
 
   const db = congTruyVan(bc);
   const pages = await db.chon(BANG_PAGE, {});
-  // Chưa có cửa của A thì hỏi thẳng tiến trình bot (cửa kiểm, có bản nhớ) — trước 28/09 nhánh
-  // này đếm cột và ra «2 page bật bot» trong khi dải trạng thái nói 1.
-  const { theoBot, viSao } = await docBotBatThat();
-  if (theoBot) {
-    const batThat = pages.filter((p) => botBatCua(p, theoBot));
-    const theoCot = pages.filter((p) => p.bot_ai_bat === true).length;
-    return {
-      tongPage: pages.length,
-      dangBatBot: batThat.length,
-      nguon: 'ai-enabled.json',
-      lech: theoCot !== batThat.length
-        ? { co: true, viSao: `Cơ sở dữ liệu ghi ${theoCot} page bật, tiến trình bot nói ${batThat.length}.` }
-        : null,
-      tenVaiPage: batThat.slice(0, 5).map((p) => p.ten || p.page_id || String(p.id)),
-    };
-  }
-  const batBot = pages.filter((p) => p.bot_ai_bat === true);
+  // MỘT NGUỒN (CR-02-10): cột `page.bot_ai_bat` — chính cột máy trả lời đọc.
+  const batBot = pages.filter((p) => botBatCua(p));
   return {
     tongPage: pages.length,
     dangBatBot: batBot.length,
-    nguon: 'cot_csdl',
-    lech: {
-      co: null,
-      viSao: `${viSao} Nên con số này đếm từ CỘT `
-        + '`page.bot_ai_bat` — một bản sao đã từng lệch 50 page (B-Y7). Coi nó là ước lượng '
-        + 'trên, đừng coi là số page thật sự đang chạy.',
-    },
+    nguon: NGUON_BOT_BAT.nguon,
+    lech: null,
     tenVaiPage: batBot.slice(0, 5).map((p) => p.ten || p.page_id || String(p.id)),
   };
 }

@@ -36,16 +36,7 @@ export function statsBetween(fromMs, toMs) {
   return { byPage, replies, leads, orders };
 }
 
-// Tên page lấy từ chính server đang chạy (đã có sẵn danh sách Pancake + KB).
-export async function fetchPageNames(port = process.env.PORT || 3100) {
-  const u = process.env.ADMIN_USER, p = process.env.ADMIN_PASS;
-  const headers = u && p ? { Authorization: 'Basic ' + Buffer.from(`${u}:${p}`).toString('base64') } : {};
-  try {
-    const res = await fetch(`http://localhost:${port}/admin/api/pages`, { headers });
-    const list = await res.json();
-    return new Map((Array.isArray(list) ? list : []).map((x) => [String(x.id), x.name || String(x.id)]));
-  } catch { return new Map(); }
-}
+// `fetchPageNames` (gọi HTTP `/admin/api/pages` của bot v1) đã gỡ cùng v1 — CR-02-10 · MB4.
 
 const rate = (o, l) => (l > 0 ? Math.round((o / l) * 100) : 0);
 

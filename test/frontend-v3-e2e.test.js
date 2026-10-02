@@ -49,7 +49,7 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
       );
     }
     const page = await one(
-      "INSERT INTO page(team_id,page_id,ten,pos_shop_id,v3_ai_bat) VALUES($1,'e2e-page','Page thử UI','9995001',false) RETURNING *",
+      "INSERT INTO page(team_id,page_id,ten,pos_shop_id,bot_ai_bat) VALUES($1,'e2e-page','Page thử UI','9995001',false) RETURNING *",
       [team],
     );
     const ma = "9995001:3e272c3b-ea70-4d10-981e-e9049090322b";
@@ -66,7 +66,6 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
       [team, maHoa("fake-pos-key")],
     );
     const env = {
-      V3_PAGE_XU_LY: "e2e-page",
       V3_PANCAKE_GUI: "1",
       V3_RAP_PROMPT_BAT: "1",
       ANTHROPIC_API_KEY: "fake-only",
@@ -236,8 +235,8 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
         });
         assert.equal(r.status, 200, await r.text());
         assert.equal(
-          (await one("SELECT v3_ai_bat FROM page WHERE id=$1", [page.id]))
-            .v3_ai_bat,
+          (await one("SELECT bot_ai_bat FROM page WHERE id=$1", [page.id]))
+            .bot_ai_bat,
           false,
         );
         await docDanhMuc(

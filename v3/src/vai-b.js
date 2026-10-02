@@ -49,7 +49,7 @@ import {
   datQuetPage,
 } from './ui/page-bot/index.js';
 import { khoToken } from './ui/ket-noi/index.js';
-import { trangThaiCau as trangThaiCauBot } from './noi-day/cau-bot-v1.js';
+import { trangThaiCau as trangThaiCauBot } from './noi-day/loi-bot.js';
 import {
   datDocKetNoiPos as datDocKetNoiPosKN, datPheuNhatKy as datPheuNhatKyKetNoi, datChayNapLai, datDocHrm as datDocHrmKetNoi,
   datGhiKetNoiPos,
@@ -74,7 +74,6 @@ import { taoRouterKhoiChung } from './ui/khoi-chung/index.js';
 import { teamCuaNguoi } from './auth/kho-nguoi-dung.js';
 import { menuCua } from './ui/chung/man-hinh.js';
 import { datDocSanSang as datDocSanSangDai, datDemTeam } from './ui/chung/trang-thai.js';
-import { datDocSanSang as datDocSanSangBotBat } from './ui/chung/bot-bat-that.js';
 import { datDocNhip } from './ui/chung/nhip-may-bot.js';
 import {
   taoRouterMotPage, datChanDangNhap as datChanDangNhapMotPage,
@@ -85,7 +84,7 @@ import {
   datDocKhoToken as datDocKhoTokenCaiDat, datDocKetNoiPos as datDocKetNoiPosCaiDat,
   datChanDangNhap as datChanDangNhapCaiDat, datChanVai as datChanVaiCaiDat,
 } from './ui/cai-dat-team/index.js';
-import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/cau-bot-v1.js';
+import { sanSangToanHe, danhSachPageKemSanPham, sanPhamCuaPage, chiPhiToanHe, donHangToanHe, pheuHoiThoai } from './noi-day/loi-bot.js';
 import {
   datTaoTruyVan as datTruyVanHieuQua, datDocHieuQua,
   datChanDangNhap as datChanDangNhapHieuQua, datChanVai as datChanVaiHieuQua, taoRouterHieuQua,
@@ -283,7 +282,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datTruyVanPrompt(taoTruyVan);
   datTruyVanKichBan(taoTruyVan);
   datTruyVanKetNoi(taoTruyVan);   // VE7b: số món + tiền tệ theo shop ở màn Kết nối
-  datTruyVanManModel(taoTruyVan);  // VE7c: màn Model đếm page bot mới đang xử (cùng luật worker)
+  datTruyVanManModel(taoTruyVan);  // VE7c: màn Model đếm page bot đang xử (cùng luật worker — cột bot_ai_bat)
   datTruyVanSanSang(taoTruyVan);
   // Cửa kiểm đọc thẳng từ tiến trình bot — `src/readiness.js` là cái CHẶN việc bật AI ở v1,
   // nên nó cũng phải là cái v3 hiện ra. Tính lại ở v3 là dựng cái thang thứ hai.
@@ -336,7 +335,6 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   datDocSanSangTrangChu(docCuaKiem);   // CÙNG bộ đọc — hai màn không được ra hai con số
   datDocSanSangPageBot(docCuaKiem);    // cột «Còn thiếu gì» của bảng Page — cùng nguồn nốt
   datDocSanSangDai(docCuaKiem);        // đường lui: đếm toàn hệ khi chưa có bối cảnh team
-  datDocSanSangBotBat(docCuaKiem);     // «bot có bật không» của Quy tắc chung, Người và team, Kịch bản
   // DẢI TRẠNG THÁI ĐẾM THEO TEAM, bằng ĐÚNG phép đếm của màn «Page còn thiếu gì» — không
   // phải một phép đếm thứ hai viết lại. Trước 23/09 dải đếm mọi page cầu trả về (toàn hệ)
   // nên hiện «1/1 page» trong khi team có 4 page, và nó hiện ở MỌI trang.
@@ -358,7 +356,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   if (typeof docSoAiBotCu === 'function') {
     // UI-HT3: MỘT chỉ mục cho ba câu hỏi — mã khách Pancake · tên Messenger · câu nào là của bot.
     datChiMucSoAi(taoChiMucSoAi(docSoAiBotCu));
-    daNoi.push('Sổ AI của bot cũ → mã khách Pancake · tên Messenger · nhãn «Bot AI» trong khung chat');
+    daNoi.push('Sổ AI cũ (tới 28/08) → mã khách Pancake · tên Messenger · nhãn «Bot AI» trong khung chat');
   } else {
     datChiMucSoAi(null);
     thieu.push('docSoAiBotCu — chỉ hội thoại đã qua hàng đợi v3 mới có mã khách Pancake để đọc chat');
@@ -396,7 +394,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
     daNoi.push('nhịp máy chạy bot ← hàng đợi tin (dải trạng thái + đèn Máy chạy bot)');
   } else {
     datDocNhip(null);
-    thieu.push('docNhipMayBot — không biết máy chạy bot của bot mới còn sống hay đã tắt; đèn «Máy chạy bot» đành để XÁM');
+    thieu.push('docNhipMayBot — không biết máy chạy bot còn sống hay đã tắt; đèn «Máy chạy bot» đành để XÁM');
   }
   if (typeof docSanSang === 'function') daNoi.push('bộ đọc cửa kiểm GIẢ → màn Cửa kiểm sẵn sàng');
   datTruyVanSucKhoe(taoTruyVan);
@@ -468,7 +466,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   // Tuỳ chọn, không vào `thieu`: thiếu bộ dịch thì bản máy vẫn đúng như trước BH8 (tiếng Việt).
   if (typeof dichBanMay === 'function') { datDichBanMay(dichBanMay); daNoi.push('bộ dịch bản-cho-máy sang tiếng Anh → màn soạn kịch bản'); }
 
-  if (typeof dayKichBanLenBot === 'function') { datDayLenBot(dayKichBanLenBot); daNoi.push('cửa đưa kịch bản lên LIVE → tiến trình bot'); }
+  if (typeof dayKichBanLenBot === 'function') { datDayLenBot(dayKichBanLenBot); daNoi.push('cửa đưa kịch bản lên LIVE → kho kiến thức của bot'); }
   else thieu.push('dayKichBanLenBot — soạn được kịch bản nhưng KHÔNG đưa lên LIVE được; sửa cột mà không gọi sang bot thì bot vẫn nói y như cũ');
 
   if (typeof bocPancake === 'function') { datBocPancake(bocPancake); daNoi.push('bộ bóc file kịch bản Pancake'); }
@@ -559,7 +557,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   // để người ta tưởng hệ thống chưa có token nào.
   if (khoTokenV3 && typeof khoTokenV3.ds === 'function') {
     datKhoTokenV3(khoTokenV3);
-    daNoi.push('kho token Pancake (CSDL) → màn kết nối & token (xem · thêm · bỏ, không qua tiến trình bot)');
+    daNoi.push('kho token Pancake (CSDL) → màn kết nối & token (xem · thêm · bỏ)');
   }
   else thieu.push('khoTokenV3 — màn Kết nối không xem và không thêm được token; kho token chỉ còn đường sửa tay `.env` trên máy chủ');
 
@@ -589,7 +587,7 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
     datQuetPage(quetPagePancake);
     daNoi.push('quét Pancake → bảng page (màn Page & bot có nút kéo danh mục page về)');
   }
-  else thieu.push('quetPagePancake — page chỉ vào hệ được bằng bộ di trú đọc `pages.json` của tiến trình bot v1');
+  else thieu.push('quetPagePancake — page chỉ vào hệ được bằng bộ di trú đọc `pages.json`');
 
   // ── ④ Chắn đăng nhập và chắn vai cho bảng điều phối ──
   // Truyền HÀM DỰNG, không phải cái chắn đã dựng. Bảng điều phối nhận được cả hai kiểu,

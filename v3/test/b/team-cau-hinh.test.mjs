@@ -458,14 +458,14 @@ test('lát 4 · danh sách page để chọn có lọc, và nói rõ khi bị c�
   assert.equal(cat.catBot, 1, 'phải nói còn bao nhiêu page không hiện, không im lặng cắt');
 });
 
-test('nguồn công tắc bot · khai rõ cột là BẢN SAO, chỉ sang màn có nguồn thật', async () => {
-  // Cột `page.bot_ai_bat` đã lệch 50 vs 0 một lần. Màn này đếm cột (cố ý, để khỏi gọi HTTP
-  // 10–13 giây mỗi lượt mở) nhưng KHÔNG được im lặng — im lặng là cách con số sai sống lâu.
+test('nguồn công tắc bot · đếm cột `bot_ai_bat` và KHAI đó là công tắc duy nhất (CR-02-10)', async () => {
+  // Tới 02/10 cột này là bản sao của `ai-enabled.json` (bot v1). Một bản: cột LÀ công tắc — màn vẫn
+  // phải khai nguồn số, nhưng không còn «bản sao» để cảnh báo.
   dungKho();
   const t = await kt.tongQuanTeam(bcQt());
   assert.equal(t.page.nguonBotBat.nguon, 'cot_csdl');
-  assert.match(t.page.nguonBotBat.noi, /BẢN SAO/);
-  assert.match(t.page.nguonBotBat.xemO, /Cửa kiểm sẵn sàng|Page & Bot/);
+  assert.match(t.page.nguonBotBat.noi, /công tắc duy nhất/);
+  assert.doesNotMatch(t.page.nguonBotBat.noi, /BẢN SAO/);
 });
 
 /* ═══════════ KHO TẠM: page ở team kỹ thuật phải kéo về được ═══════════════════════════

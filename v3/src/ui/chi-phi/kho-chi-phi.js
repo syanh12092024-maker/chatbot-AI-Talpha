@@ -108,7 +108,7 @@ export async function manChiPhi(boiCanh) {
   } catch (e) {
     // 0 đồng là một con số, và nó SAI. Ném.
     // Lời «vì sao không hiện 0» sống ở đây, màn không nhắc lại (xem kho-bao-cao).
-    throw new LoiChiPhi(`Không đọc được chi phí từ tiến trình bot: ${e?.message || e}. `
+    throw new LoiChiPhi(`Không đọc được chi phí từ Sổ AI cũ: ${e?.message || e}. `
       + 'Màn để trống thay vì hiện «0 đồng» — con số 0 lúc này sẽ sai.', 'cau_hong', 502);
   }
 
@@ -193,7 +193,7 @@ export async function manChiPhi(boiCanh) {
     soAi: lechSoAi(soAi, tongLuot, tongTien),
     trong: page.length ? null : {
       rong: true, vi: tongLuot === 0 ? 'xong' : 'chua-nap',
-      noi: 'Không page nào của team có lượt gọi model nào trong sổ của tiến trình bot.',
+      noi: 'Không page nào của team có lượt gọi model nào trong Sổ AI cũ.',
       diTiep: 'Bot chưa chạy trên page nào của team này — xem Cửa kiểm sẵn sàng.',
     },
   };
@@ -216,10 +216,10 @@ function lechSoAi(soAi, luotBot, tienBot) {
     coLech: lech,
     canhBao: soAi.canhBao || null,
     noi: !lech
-      ? 'Sổ tiền của cơ sở dữ liệu khớp với số đo của tiến trình bot.'
+      ? 'Sổ tiền của cơ sở dữ liệu khớp với Sổ AI cũ.'
       : `Sổ tiền của cơ sở dữ liệu ghi **${soAi.soLuot} lượt / ${soAi.tienVnd.toLocaleString('vi-VN')} đ**, `
-        + `còn tiến trình bot đo được **${luotBot} lượt / ${tienBot.toLocaleString('vi-VN')} đ**. `
-        + 'Con số trên màn lấy theo TIẾN TRÌNH BOT — đó là nơi tiền thật sự bị tiêu.',
+        + `còn Sổ AI cũ ghi **${luotBot} lượt / ${tienBot.toLocaleString('vi-VN')} đ**. `
+        + 'Con số trên màn lấy theo SỔ AI CŨ.',
     viSao: soAi.viSaoRong
       || (lech ? 'Đường chat mới chưa ghi vào sổ tiền dài hạn. Sổ còn trống, không phải vì '
         + 'không ai tiêu tiền.' : null),

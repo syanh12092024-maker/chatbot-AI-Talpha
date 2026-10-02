@@ -387,11 +387,10 @@ test('B-Y7 · có cửa `xemAnhHuong` thì DÙNG nó, không đếm cột', asyn
   assert.ok(kho, 'kho vẫn dựng được');
 });
 
-test('B-Y7 · KHÔNG có cửa thì vẫn trả số, nhưng KHAI RÕ là đếm từ cột', async () => {
+test('MỘT NGUỒN (CR-02-10) · KHÔNG có cửa thì đếm cột `bot_ai_bat` — công tắc duy nhất, không còn «lệch bản sao»', async () => {
   dungKho();
   bl.datCuaBoLuat({ taoBan: async () => ({}), ap: async () => ({}), duyet: async () => ({}) });
   const a = await bl.demAnhHuong(bcQt());
-  assert.equal(a.nguon, 'cot_csdl', 'im lặng rơi về cột chính là cái đã sai');
-  assert.ok(a.lech && a.lech.viSao.length > 60, 'phải nói rõ con số này là ước lượng trên');
-  assert.match(a.lech.viSao, /bản sao|B-Y7/i);
+  assert.equal(a.nguon, 'cot_csdl');
+  assert.equal(a.lech, null, 'một nguồn thì không có lệch để báo');
 });

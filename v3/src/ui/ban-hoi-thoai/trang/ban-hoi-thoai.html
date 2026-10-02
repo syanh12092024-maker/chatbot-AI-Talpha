@@ -228,7 +228,7 @@ function veBoiCanh(ht, x) {
     const cu = x.botCu;
     luot = s.co
       ? [so(s.soLuot) + ' lượt trả lời (bot v3)', s.model, s.tienVnd == null ? '' : tien(Math.round(s.tienVnd), 'đ') + (s.soDongCoTien < s.soGoiModel ? ` (${so(s.soDongCoTien)}/${so(s.soGoiModel)} lượt có giá)` : '')].filter(Boolean).join(' · ')
-      : cu && cu.soLuot ? so(cu.soLuot) + ' lượt trả lời' + (cu.cuoiLuc ? ' · lần cuối ' + lucDay(cu.cuoiLuc) : '') + ' · theo Sổ AI bot cũ' : (s.viSao || '');
+      : cu && cu.soLuot ? so(cu.soLuot) + ' lượt trả lời' + (cu.cuoiLuc ? ' · lần cuối ' + lucDay(cu.cuoiLuc) : '') + ' · theo Sổ AI cũ (ghi tới 28/08)' : (s.viSao || '');
   }
   const botLam = dl(dong('Giai đoạn', GIAI_DOAN[h.giaiDoan] || h.giaiDoan) + dong('Người giữ', NGUOI_GIU[h.nguoiGiu] || h.nguoiGiu)
     + dong('Vì sao chuyển', v ? v.lyDoChu : h.lyDoCuoi) + (v ? dong('Đang xử', v.tenNguoiNhan || 'Chưa ai nhận') : '')

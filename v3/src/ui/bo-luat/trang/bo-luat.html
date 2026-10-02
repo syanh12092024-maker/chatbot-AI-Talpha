@@ -112,13 +112,13 @@ function veAnhHuong() {
   $('#nguonSo').innerHTML = (lech ? canhBao({
     level: 'warning',
     title: 'Số page đang bật bot lệch với cơ sở dữ liệu',
-    body: 'Số đúng là số của tiến trình bot. Mở màn Công tắc từng page để xem page nào lệch.',
+    body: 'Cột page.bot_ai_bat là công tắc thật. Mở màn Công tắc từng page để soát.',
   }) : '') + nguonSo({
     dong: [
       { ten: 'Số page dùng bộ quy tắc này', tu: 'đếm page của team đang mở' },
       { ten: 'Số page đang bật bot', tu: that
-        ? `đọc thẳng từ tiến trình bot (${a.nguon})`
-        : 'đếm từ một BẢN SAO trong cơ sở dữ liệu, không phải từ tiến trình bot — đã có lần lệch 50 page' },
+        ? `đọc từ cửa của bộ luật (${a.nguon})`
+        : 'đếm từ cột `page.bot_ai_bat` — công tắc duy nhất, chính cột máy trả lời đọc' },
       { ten: 'Cỡ bộ quy tắc', tu: 'ước theo số ký tự, không phải số đo của nhà model' },
     ],
     chuY: a.lech && a.lech.viSao ? a.lech.viSao : null,

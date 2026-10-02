@@ -64,8 +64,8 @@ export const DIEU_KIEN = Object.freeze({
   MISSING_PRODUCT: {
     chan: true, nhan: 'Sản phẩm và giá', ten: 'Chưa có sản phẩm nào kèm giá bán',
     di: '/san-pham', nutDi: 'Xem sản phẩm của page',
-    lam: 'Page chạy bot cũ lấy sản phẩm và giá từ Google Sheet của page. Điền sản phẩm vào Sheet, '
-      + 'rồi mở màn «Sản phẩm & kho» để xem bot đã đọc được chưa.',
+    lam: 'Bot lấy sản phẩm và giá từ màn Sản phẩm (lưu là chạy). Thêm sản phẩm kèm bậc giá cho page ở đó, '
+      + 'rồi mở lại màn này để xem bot đã đọc được chưa.',
   },
   MISSING_SCRIPT: {
     chan: true, nhan: 'Kịch bản bán hàng', ten: 'Thiếu kịch bản bán',
@@ -238,7 +238,7 @@ export async function manSanSang(boiCanh) {
     // Cầu hỏng ≠ mọi page sẵn sàng. Ném ra, đừng trả danh sách rỗng: một danh sách rỗng
     // trông y hệt «không page nào có vấn đề», và đó là kết luận ngược hẳn sự thật.
     throw new LoiSanSang(
-      `Không đọc được cửa kiểm từ tiến trình bot: ${e?.message || e}. Màn TỪ CHỐI đoán — `
+      `Không đọc được cửa kiểm từ lõi bot: ${e?.message || e}. Màn TỪ CHỐI đoán — `
       + 'một bảng rỗng ở đây trông y như «mọi page đều ổn».',
       'cau_hong', 502,
     );
@@ -342,9 +342,9 @@ function lech(page) {
     viDu: [...chiCsdl, ...chiBot].slice(0, 8).map((p) => ({
       pageId: p.pageId, ten: p.ten, csdl: p.botTheoCsdl, bot: p.botTheoBot,
     })),
-    noi: `${chiCsdl.length} page CSDL ghi là đang bật AI nhưng tiến trình bot không chạy, `
-      + `${chiBot.length} page ngược lại. Con số ĐÚNG là con số của tiến trình bot — cột `
-      + '`page.bot_ai_bat` chỉ là bản sao và đang cũ.',
+    noi: `${chiCsdl.length} page cột công tắc ghi bật nhưng cửa kiểm không thấy bot chạy, `
+      + `${chiBot.length} page ngược lại. Cột \`page.bot_ai_bat\` là công tắc thật — `
+      + 'mở màn Công tắc từng page để soát.',
   };
 }
 

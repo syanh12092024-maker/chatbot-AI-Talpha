@@ -72,7 +72,7 @@ function veBangTin() {
       level: 'error',
       title: 'Bot không gọi được model trả lời khách',
       body: !b ? `Model chính (${D.dangDung.chinh.ma}) chưa có khoá.`
-        : b.lyDo === 'thieu_khoa' ? `${D.dangDung.chinh.ma} (${D.dangDung.chinh.tenNha}) chưa có khoá — mọi lượt trả lời khách của bot mới sẽ hỏng.`
+        : b.lyDo === 'thieu_khoa' ? `${D.dangDung.chinh.ma} (${D.dangDung.chinh.tenNha}) chưa có khoá — mọi lượt trả lời khách của bot sẽ hỏng.`
           : `${b.loi}.`,
       actionsHtml: SUA ? button('Dán khoá', { size: 'sm', data: { 'toi-khoa': '1' } }) : '',
     }));
@@ -97,12 +97,12 @@ function veBangTin() {
 function veSuThat() {
   const b = D.botMoi || {};
   const botMoi = b.soPage == null
-    ? `Bot mới đọc đúng cấu hình ở đây — số page nó đang xử: chưa đo (${b.viSao || 'không rõ vì sao'}).`
+    ? `Bot đọc đúng cấu hình ở đây — số page nó đang xử: chưa đo (${b.viSao || 'không rõ vì sao'}).`
     : b.soPage
-      ? `Bot mới đọc đúng cấu hình ở đây và đang xử ${so(b.soPage)}/${so(b.tong)} page của team.`
-      : `Bot mới đọc đúng cấu hình ở đây nhưng CHƯA xử page nào (0/${so(b.tong)} page của team).`;
-  $('#suThat').innerHTML = `<b>Màn chỉ hiện thứ bot THẬT SỰ dùng.</b> ${esc(botMoi)} Bot cũ (phục vụ khi bật lại) lấy model từ tệp`
-    + ' cấu hình máy chủ và KHÔNG gửi độ ngẫu nhiên. «Dự phòng» và «việc nền» chưa nối vào đường trả lời nào.';
+      ? `Bot đọc đúng cấu hình ở đây và đang xử ${so(b.soPage)}/${so(b.tong)} page của team.`
+      : `Bot đọc đúng cấu hình ở đây nhưng CHƯA xử page nào (0/${so(b.tong)} page của team).`;
+  $('#suThat').innerHTML = `<b>Màn chỉ hiện thứ bot THẬT SỰ dùng.</b> ${esc(botMoi)}`
+    + ' «Dự phòng» và «việc nền» chưa nối vào đường trả lời nào.';
 }
 
 /* ── BA THẺ THEO VAI ─────────────────────────────────────────────────────────────────── */
@@ -165,7 +165,7 @@ function veThe(vai, dangChon, duongDung) {
         <span class="meta" data-tt-khoa="${vai}">(${esc(k.chu)})</span></label>
         <input type="password" id="khoa-${vai}" data-khoa-vai="${vai}" data-khoa-nha="${esc(dangChon.nha)}" autocomplete="off" spellcheck="false"
           placeholder="${k.co ? 'Để trống = giữ khoá đang có' : 'Dán khoá API…'}" ${SUA ? '' : 'disabled'}></div>
-      ${vai === 'chinh' ? thanhNgauNhien('nn', 'Độ ngẫu nhiên', 'Gửi kèm MỖI lượt gọi của bot mới — bot cũ không gửi. 0 = ổn định, giống nhau mỗi lần; 1 = đa dạng nhưng khó lường.', D.doNgauNhien) : ''}
+      ${vai === 'chinh' ? thanhNgauNhien('nn', 'Độ ngẫu nhiên', 'Gửi kèm MỖI lượt gọi của bot. 0 = ổn định, giống nhau mỗi lần; 1 = đa dạng nhưng khó lường.', D.doNgauNhien) : ''}
       ${vai === 'nen' ? thanhNgauNhien('nnn', 'Độ ngẫu nhiên — việc nền', 'Nên để thấp để kết quả lặp lại được.', D.doNgauNhienNen) : ''}
       ${duongDung && !(bot && D.botDung) ? `<div class="field-hint">${esc(duongDung.noi)}</div>` : ''}
     </div>
@@ -271,7 +271,7 @@ $('#nutLuu').addEventListener('click', async () => {
   try {
     await goi('/api/model/cau-hinh', { method: 'POST', body: JSON.stringify(than) });
     delete LOI['Không lưu được cấu hình'];
-    toast('Đã lưu. Lượt chat kế tiếp của bot mới đi model mới.');
+    toast('Đã lưu. Lượt chat kế tiếp của bot đi model mới.');
     await nap();
   } catch (e) { LOI['Không lưu được cấu hình'] = e.message; veBangTin(); }
   finally { setBusy(nut, false); nut.disabled = !SUA; }

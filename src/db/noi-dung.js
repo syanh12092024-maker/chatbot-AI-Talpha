@@ -21,7 +21,6 @@
 import { LoiThieuBoiCanhTeam, LoiXuyenTeam } from "./loi.js";
 import { ghiNhatKy } from "./nhat-ky.js";
 import { GOC } from "../../db/ket-noi.js";
-import { docAiEnabled } from "../../db/di-tru/nguon.js";
 
 export const HANH_DONG = Object.freeze({
   TAO_BAN: "tao_ban_bo_luat",
@@ -138,72 +137,25 @@ const tacNhanCua = (ctx) => `nguoi:${ctx.nguoiDungId}`;
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /**
- * «Page nào ĐANG BẬT BOT» — hỏi NGUỒN THẬT, không hỏi cột.
+ * «Page nào ĐANG BẬT BOT» — con số cho phép bấm áp một bộ luật (bao nhiêu page đổi cách nói ngay).
  *
- * ⚠️ B-Y7, đo 25/08 trên máy chủ: `page.bot_ai_bat` nói **50**, còn `ai-enabled.json` (và
- * RAM tiến trình bot, khớp nhau) nói **0**. Ai đó tắt 50 page qua dashboard v1 ngày 24/08
- * và CSDL v3 không hề biết. Chính `db/migrate/001_nen.up.sql` đã khai: «NGUỒN DUY NHẤT của
- * cờ này là `ai-enabled.json`… Cấm suy ra từ bất kỳ trường nào khác». Cột chỉ là BẢN SAO.
- *
- * Nên hàm này đọc FILE, đối chiếu với cột, và trả CẢ HAI + chỗ lệch. Đọc mù cột là con số
- * «bao nhiêu page bị ảnh hưởng» sai 50 — mà đó đúng là con số cho phép bấm áp.
- *
- * @param {string} goc thư mục gốc chứa `ai-enabled.json`. Tham số để BÀI TEST chạm được
- *        nhánh LỆCH thật; đường chạy thật để mặc định.
+ * Lịch sử: B-Y7 (25/08) đo cột nói 50 trong khi `ai-enabled.json` của bot v1 nói 0, nên hàm này từng
+ * đọc tệp làm nguồn thật. CR-02-10 (02/10): v1 nghỉ hưu, cột `page.bot_ai_bat` là công tắc duy nhất.
+ * Tham số `goc` giữ cho chữ ký cũ của nơi gọi, không còn dùng.
  */
-async function demPageBatBot(khach, teamId, goc = GOC) {
+async function demPageBatBot(khach, teamId, _goc = GOC) {
+  // MỘT NGUỒN (CR-02-10): cột `page.bot_ai_bat` là công tắc duy nhất — chính cột máy trả lời đọc.
+  // Tới 02/10 hàm này coi `ai-enabled.json` (bot v1) là nguồn thật và cột là bản sao; tệp đó nay
+  // đứng im và rỗng, đọc nó là báo «0 page bật» trong khi bot đang trả lời.
   const r = await khach.query(
     `SELECT page_id, bot_ai_bat FROM page WHERE team_id = $1`,
     [teamId],
   );
-  const theoCot = r.rows.filter((x) => x.bot_ai_bat).map((x) => x.page_id);
-
-  let batThat = null;
-  let loiNguon = null;
-  try {
-    batThat = new Set(docAiEnabled(goc));
-  } catch (e) {
-    // Mù thì phải NÓI RA, không được lặng lẽ rơi về cột — rơi về cột chính là cái đang sai.
-    loiNguon = e?.message ?? String(e);
-  }
-  if (!batThat) {
-    return {
-      soPage: r.rowCount,
-      soPageDangBatBot: theoCot.length,
-      nguon: "cot_csdl",
-      lech: {
-        co: null,
-        viSao:
-          `KHÔNG đọc được \`ai-enabled.json\` (${loiNguon}) — con số dưới đây lấy từ CỘT, ` +
-          `mà cột là BẢN SAO và đã từng lệch 50 (B-Y7). Đừng coi nó là số thật.`,
-      },
-    };
-  }
-
-  const cuaTeam = r.rows.map((x) => x.page_id);
-  const batThatTrongTeam = cuaTeam.filter((id) => batThat.has(String(id)));
-  const chiCot = theoCot.filter((id) => !batThat.has(String(id)));
-  const chiBot = batThatTrongTeam.filter(
-    (id) => !theoCot.includes(id),
-  );
   return {
     soPage: r.rowCount,
-    // ⬇️ Con số THẬT — của tiến trình bot, không phải của cột.
-    soPageDangBatBot: batThatTrongTeam.length,
-    theoCotCsdl: theoCot.length,
-    nguon: "ai-enabled.json",
-    lech: {
-      co: chiCot.length + chiBot.length > 0,
-      soLech: chiCot.length + chiBot.length,
-      chiCotBat: chiCot.slice(0, 10),
-      chiBotBat: chiBot.slice(0, 10),
-      viSao:
-        chiCot.length + chiBot.length === 0
-          ? null
-          : `CỘT \`page.bot_ai_bat\` LỆCH nguồn thật: cột nói ${theoCot.length} page bật, ` +
-            `\`ai-enabled.json\` nói ${batThatTrongTeam.length}. Con số ở trên lấy theo NGUỒN ` +
-            `THẬT. Cột là bản sao và chưa ai đồng bộ ngược (B-Y7, nợ §9).`,
-    },
+    soPageDangBatBot: r.rows.filter((x) => x.bot_ai_bat === true).length,
+    nguon: "cot_csdl",
+    lech: null,
   };
 }
 

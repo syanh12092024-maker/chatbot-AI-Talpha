@@ -70,7 +70,7 @@ test('K1 · phân bố hội thoại CỦA TEAM: nhãn chữ Hộp thư, tô the
 
 test('K2 · phép gom theo team HỎNG ⇒ lùi về khối TOÀN HỆ của tiến trình bot và nói vì sao (không trắng, không 0)', async () => {
   const { o } = await chay(await DU('qt', { phanBo: 'hong' }));
-  assert.match(o['#pheu'].innerHTML, /Chưa gom được hội thoại theo team: CSDL bận[\s\S]*Đang hiện số toàn hệ của tiến trình bot/);
+  assert.match(o['#pheu'].innerHTML, /Chưa gom được hội thoại theo team: CSDL bận[\s\S]*Đang hiện số toàn hệ của sổ hội thoại cũ/);
   assert.match(o['#hPheu'].textContent, /toàn hệ, không cắt theo team/);
 });
 

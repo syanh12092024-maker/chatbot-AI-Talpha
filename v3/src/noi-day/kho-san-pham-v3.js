@@ -5,7 +5,7 @@
 // (Sheet + `kb-overrides.json`), còn tab sửa ghi vào CSDL — người sửa ảnh ở tab rồi mở màn
 // «Ảnh gửi khách» sẽ thấy bản cũ. Nay cả hai đọc CSDL, và bản bot giữ là bản chép sinh từ đây.
 //
-// CÙNG HÌNH DẠNG với `cau-bot-v1.js#danhSachPageKemSanPham` / `#sanPhamCuaPage`, để ba màn
+// CÙNG HÌNH DẠNG với `loi-bot.js#danhSachPageKemSanPham` / `#sanPhamCuaPage`, để ba màn
 // không phải đổi một dòng. Page → sản phẩm theo ĐÚNG luật của bộ đọc chung
 // (`src/products/catalog.js#docSanPhamGoiGia`): mã gốc + shop nếu page khai, không thì `page_id`.
 import { docSanPhamGoiGia } from '../../../src/products/catalog.js';

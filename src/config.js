@@ -56,7 +56,7 @@ export const config = {
   // Model mặc định theo nhà cung cấp (MODEL_CLOSER/MODEL_CLASSIFIER trong .env vẫn đè được).
   modelCloser: pickModel(process.env.MODEL_CLOSER),
   modelClassifier: pickModel(process.env.MODEL_CLASSIFIER),
-  port: Number(process.env.PORT || 3100),
+  // `port` (cổng 3100 của bot v1) đã gỡ — CR-02-10 · MB4. Giao diện v3 dùng `CHAYTHAT_CONG` (3102).
   pancake: {
     apiKey: process.env.PANCAKE_API_KEY || '',
     shopId: process.env.PANCAKE_SHOP_ID || '',
@@ -65,19 +65,10 @@ export const config = {
   // Token PHỤ (failover đa tài khoản): mỗi tài khoản Pancake nắm quyền 1 nhóm page khác nhau.
   // Page nào token chính dính lỗi quyền/gói (105/121) → bot tự thử lần lượt token phụ.
   pancakeTokensExtra: (process.env.PANCAKE_TOKENS_EXTRA || '').split(',').map((s) => s.trim()).filter(Boolean),
-  pancakePollMs: Number(process.env.PANCAKE_POLL_MS || 6000), // chu kỳ hỏi tin mới
-  // Đăng nhập dashboard (Basic Auth) — BẮT BUỘC đặt khi chạy trên IP công khai (VPS).
-  adminUser: process.env.ADMIN_USER || '',
-  adminPass: process.env.ADMIN_PASS || '',
+  // CR-02-10 · MB4: gỡ `pancakePollMs` · `adminUser/adminPass` · `respectAssignee` · `markUnread` — chỉ bot
+  // v1 đọc. Nhịp nạp của v3 là `V3_WORKER_NHIP_MS`; `PK_MARK_UNREAD` do `src/queue/lan-gui.js` đọc thẳng.
   // Tự tạo đơn thật trong Pancake khi AI chốt. MẶC ĐỊNH TẮT — bật bằng AUTO_CREATE_ORDER=1 trong .env.
   autoCreateOrder: process.env.AUTO_CREATE_ORDER === '1',
-  // Né hội thoại đã gán cho nhân viên. MẶC ĐỊNH TẮT vì Pancake TỰ ĐỘNG gán hội thoại cho NV
-  // → bật sẽ làm AI im gần hết. Bật bằng RESPECT_ASSIGNEE=1 nếu sale thực sự chat tay.
-  respectAssignee: process.env.RESPECT_ASSIGNEE === '1',
-  // ĐÁNH DẤU CHƯA ĐỌC sau mỗi tin AI gửi (cơ chế Botcake — sale yêu cầu 07/08/2026): hội thoại
-  // AI đang chăm KHÔNG trôi khỏi hàng chờ, sale check được AI chat đúng chưa. MẶC ĐỊNH BẬT.
-  // Tắt bằng PK_MARK_UNREAD=0 nếu sale ngợp chấm đỏ.
-  markUnread: process.env.PK_MARK_UNREAD !== '0',
   // TỰ GẮN THẺ Pancake khi AI hành động (tên thẻ phải TỒN TẠI trên page; trống = tắt).
   pkTags: {
     ai: process.env.PK_TAG_AI ?? 'AI Chăm',             // AI đang trực tiếp nhắn với khách
@@ -121,15 +112,13 @@ export function assertConfig() {
   const missing = [];
   if (process.env.NODE_ENV === 'production') {
     if (process.env.META_WEBHOOK_OFF !== '1' && !config.appSecret) missing.push('APP_SECRET');
-    if (!config.adminUser) missing.push('ADMIN_USER');
-    if (!config.adminPass) missing.push('ADMIN_PASS');
+    // CR-02-10 · MB4: ADMIN_USER/ADMIN_PASS là Basic auth của màn /admin của bot v1 — đã gỡ cùng v1.
   }
   const configureLocal = process.env.NODE_ENV === 'development'
     && process.env.DEV_CONFIG_ONLY === '1'
     && process.env.PANCAKE_READONLY === '1'
     && process.env.V3_PANCAKE_GUI === '0'
-    && process.env.V3_POS_GHI === '0'
-    && process.env.V3_LEGACY_POLL_OFF === '1';
+    && process.env.V3_POS_GHI === '0';
   if (!configureLocal && config.aiProvider === 'kimi') {
     if (!config.kimi.apiKey) missing.push('KIMI_API_KEY');
   } else if (!configureLocal && !config.anthropicApiKey) {

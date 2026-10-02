@@ -23,7 +23,7 @@ const { sanPhamChoBot, dungSanPhamChoBot, idChoBot, dayPageSangBot, pageBanSanPh
   await import("../src/products/ban-chep-bot.js");
 const { saveProduct } = await import("../src/admin-v3/operations.js");
 const { taoBuocDayBot } = await import("../v3/src/ui/van-hanh/router.js");
-const { soBanChep } = await import("../v3/src/noi-day/cau-bot-v1.js");
+const { soBanChep } = await import("../v3/src/noi-day/loi-bot.js");
 assert.equal(kb.getPageProductsRaw("khong-co").length, 0);
 
 const spMau = (o = {}) => ({

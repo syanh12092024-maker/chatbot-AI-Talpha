@@ -167,12 +167,12 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
   /* ② KHOÁ MODEL — đo được hay không tuỳ kho khoá có nối chưa */
   ds.push(await denKhoaModel(bc, cauHinh));
 
-  /* ③ TIẾN TRÌNH BOT */
+  /* ③ LÕI BOT — cửa ghi vào kho kiến thức / công tắc (khoá tay) */
   ds.push(denCauBot());
 
-  /* ③b MÁY CHẠY BOT — thứ thật sự trả lời khách của bot mới.
-     Đèn ③ nói về CỬA GHI sang tiến trình bot cũ; đèn này nói về máy xử tin của bot mới.
-     Hai thứ khác nhau, và trước 25/09 không đèn nào canh cái thứ hai. */
+  /* ③b MÁY CHẠY BOT — thứ thật sự trả lời khách (worker v3).
+     Đèn ③ nói về CỬA GHI vào lõi bot; đèn này nói về máy xử tin. Hai thứ khác nhau, và trước
+     25/09 không đèn nào canh cái thứ hai. */
   ds.push(denMayChayBot(await docNhipMayBot({ boiCanh: bc })));
 
   /* ④ TOKEN PANCAKE */
@@ -255,11 +255,8 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
       so: `${dangMo.length} đang chờ`,
     }));
 
-  /* ⑪ HAI BOT CÙNG MỘT PAGE — cái hố mà việc «giao page bằng giao diện» mở ra.
-     Bot cũ KHÔNG đọc cột `giao_bot_moi`; thứ khiến nó buông một page là công tắc AI của
-     chính nó. Cửa giao đã tắt công tắc ấy và đọc lại xác nhận — nhưng giao diện cũ ở cổng
-     3100 vẫn bật lại được, bằng một mật khẩu dùng chung và không ghi ai bấm. Đèn này là
-     lưới cuối: bật lại ở đó thì ở đây đỏ. */
+  /* ⑪ HAI BOT CÙNG MỘT PAGE — CR-02-10: phía mình chỉ còn một bot; cảnh này chỉ còn với bot
+     ai_sale của team khác, mà hệ không đọc được nó phủ page nào ⇒ đèn xám khi đã có page bật. */
   ds.push(denHaiBot(pages, nguonBotBat, botBat));
 
   const dem = { xanh: 0, vang: 0, do: 0, xam: 0 };
@@ -338,18 +335,18 @@ async function denKhoaModel(bc, cauHinh) {
 function denCauBot() {
   if (!_trangThaiCauBot) {
     return den({
-      ma: 'tien_trinh_bot', ten: 'Tiến trình bot', muc: MUC.XAM,
-      vi: 'Chưa đo được: máy chủ chưa nối đường sang tiến trình bot.',
+      ma: 'tien_trinh_bot', ten: 'Lõi bot', muc: MUC.XAM,
+      vi: 'Chưa đo được: chưa nối bộ đọc lõi bot.',
       diTiep: { chu: 'Báo người quản trị hệ thống — đây là lỗi dựng ứng dụng', duong: null },
     });
   }
   const t = _trangThaiCauBot();
   return t.mo
-    ? den({ ma: 'tien_trinh_bot', ten: 'Tiến trình bot', muc: MUC.XANH,
-      vi: `Cửa ghi sang tiến trình bot đang MỞ (${t.goc}).`, so: 'mở' })
+    ? den({ ma: 'tien_trinh_bot', ten: 'Lõi bot', muc: MUC.XANH,
+      vi: `Cửa ghi vào lõi bot đang MỞ (${t.goc}).`, so: 'mở' })
     : den({
-      ma: 'tien_trinh_bot', ten: 'Tiến trình bot', muc: MUC.VANG,
-      vi: `Cửa ghi sang tiến trình bot đang ĐÓNG: ${t.thieu.join(' · ')}.`,
+      ma: 'tien_trinh_bot', ten: 'Lõi bot', muc: MUC.VANG,
+      vi: `Cửa ghi vào lõi bot đang ĐÓNG: ${t.thieu.join(' · ')}.`,
       diTiep: { chu: 'Nhờ người quản trị hệ thống mở rồi khởi động lại dịch vụ', duong: null },
       so: 'đóng',
     });

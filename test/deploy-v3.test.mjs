@@ -11,8 +11,6 @@ const good = {
   DATABASE_URL_V3: "postgresql://user:private-password@127.0.0.1/database",
   V3_KHOA_VE: "s".repeat(32),
   V3_KHOA_MA_HOA: "c".repeat(64),
-  ADMIN_USER: "admin",
-  ADMIN_PASS: "test-secret",
   APP_SECRET: "meta-secret",
   VERIFY_TOKEN: "verify",
   ANTHROPIC_API_KEY: "llm-secret",
@@ -24,7 +22,6 @@ test("Deploy preflight validates config without returning secrets", () => {
     "DATABASE_URL_V3",
     "V3_KHOA_VE",
     "V3_KHOA_MA_HOA",
-    "ADMIN_PASS",
   ]) {
     const result = checkConfig({ ...good, [key]: "" });
     assert.ok(result.errors.some((e) => e.includes(key)));
@@ -33,7 +30,9 @@ test("Deploy preflight validates config without returning secrets", () => {
   assert.deepEqual(checkConfig({ ...good, META_WEBHOOK_OFF: "1", APP_SECRET: "", VERIFY_TOKEN: "" }).errors, []);
   assert.ok(checkConfig({ ...good, META_WEBHOOK_OFF: "0", APP_SECRET: "" }).errors.some(e => e.includes("APP_SECRET")));
   assert.ok(checkConfig(good, "18.20.0").errors.length);
-  assert.ok(checkConfig({ ...good, PORT: "3102" }).errors.length);
+  // CR-02-10 · MB4: chỉ còn cổng giao diện v3 (cổng bot v1 đã gỡ).
+  assert.ok(checkConfig({ ...good, CHAYTHAT_CONG: "80" }).errors.length);
+  assert.ok(!("port" in checkConfig(good)), "không còn trả cổng bot v1");
   assert.ok(checkConfig({ ...good, V3_KHOA_MA_HOA: "bad" }).errors.length);
   assert.ok(
     checkConfig({ ...good, NODE_OPTIONS: "--env-file=.env" }).errors.length,
@@ -57,7 +56,7 @@ if [[ "$name" == systemctl && "$1" == show ]]; then echo "$DEPLOY_TEST_EXISTING"
 if [[ "$DEPLOY_TEST_FAIL" == migrate && "$*" == *db/migrate.js* ]]; then exit 1; fi
 if [[ "$DEPLOY_TEST_FAIL" == backup && "$*" == *deploy/backup.mjs* ]]; then exit 1; fi
 if [[ "$DEPLOY_TEST_FAIL" == preflight && "$*" == *deploy/preflight.mjs* ]]; then exit 1; fi
-if [[ "$name" == node && "$*" == *console.log* ]]; then echo '3100 3102'; fi
+if [[ "$name" == node && "$*" == *console.log* ]]; then echo '3102'; fi
 exit 0
 `;
   for (const cmd of [
@@ -120,7 +119,7 @@ test("Deploy rejects missing prerequisites before touching running services", ()
     f.clean();
   }
 });
-test("Deploy backs up before migrating and installs three units with shared env and closed writes", () => {
+test("Deploy backs up before migrating and installs TWO v3 units (v1 gỡ — CR-02-10) with shared env and closed writes", () => {
   const f = fixture();
   try {
     const r = f.run("--apply");
@@ -128,20 +127,15 @@ test("Deploy backs up before migrating and installs three units with shared env 
     const log = f.logs();
     assert.ok(log.indexOf("deploy/backup.mjs") < log.indexOf("db/migrate.js"));
     assert.ok(log.indexOf("db/migrate.js") < log.indexOf("systemctl restart"));
-    assert.equal(fs.readdirSync(f.units).length, 3);
+    assert.deepEqual(fs.readdirSync(f.units).sort(), ["aicloser-v3.service", "aicloser-worker-v3.service"]);
     for (const file of fs.readdirSync(f.units)) {
       const s = fs.readFileSync(path.join(f.units, file), "utf8");
       assert.ok(s.includes(`--env-file=${f.app}/.env`));
       assert.ok(s.includes("Environment=PANCAKE_READONLY=1"));
       assert.ok(s.includes("Environment=V3_POS_GHI=0"));
-      assert.ok(s.includes("Environment=V3_PAGE_XU_LY="));
+      assert.ok(!s.includes("V3_PAGE_XU_LY"), "danh sách page trong env đã gỡ — công tắc là cột bot_ai_bat");
       assert.ok(s.includes("TimeoutStopSec=120"));
     }
-    assert.ok(
-      fs
-        .readFileSync(path.join(f.units, "aicloser.service"), "utf8")
-        .includes("V3_LEGACY_POLL_OFF=1"),
-    );
     assert.ok(!/git reset|git pull|git fetch/.test(log));
   } finally {
     f.clean();

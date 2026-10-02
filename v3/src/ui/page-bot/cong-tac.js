@@ -21,7 +21,7 @@
 
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
 import { BANG, LoiPageBot, motPage, congTruyVan, cuaKiemMotPage, gonCuaKiem } from './kho-page.js';
-import { trangThaiCau, trangThaiCongTac, boNhoSanSang, LoiCauBotDong } from '../../noi-day/cau-bot-v1.js';
+import { trangThaiCau, trangThaiCongTac, boNhoSanSang, LoiCauBotDong } from '../../noi-day/loi-bot.js';
 
 export const HANH_DONG_BOT = 'bat_tat_bot_ai';
 export const HANH_DONG_MARKETER = 'gan_marketer';

@@ -164,7 +164,7 @@ function veThieu() {
     // Cảnh này người dùng SỬA ĐƯỢC — đừng đẩy họ đi hỏi người quản trị hệ thống.
     o.innerHTML = '<div class="panel">' + canhBao({
       level: 'warning',
-      title: 'Tiến trình bot không thấy page này',
+      title: 'Lõi bot không thấy page này',
       body: 'Page có trong cơ sở dữ liệu nhưng bot chưa biết nó — thường là chưa quét Pancake '
         + 'về, hoặc chưa có tài khoản Pancake nào phủ page này. Chưa thấy KHÔNG có nghĩa là '
         + 'page không thiếu gì.',
@@ -1015,9 +1015,7 @@ async function nap() {
   veDsPage();
   veNoiDung();
   $('#nguon-so').innerHTML = nguonSo({ dong: [
-    { ten: 'Công tắc bot', tu: 'RAM tiến trình bot (cửa kiểm `/readiness`) — nguồn thật' },
-    { ten: 'Bản sao đối chiếu', tu: 'cột `page.bot_ai_bat` trong cơ sở dữ liệu v3' },
-    { ten: 'Bot phụ trách', tu: 'cột `page.giao_bot_moi` khi cầu dao mở, ngược lại là danh sách trong cấu hình máy chủ' },
+    { ten: 'Công tắc bot', tu: 'cột `page.bot_ai_bat` — công tắc duy nhất, máy trả lời đọc thẳng cột này' },
   ] });
 }
 

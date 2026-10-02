@@ -6,8 +6,6 @@ import { bocCuaGuiBen, daBatDauGui } from '../src/queue/lan-gui.js';
 import { moPhienRut, xepTin } from '../src/queue/kho.js';
 import { chayMotVong } from '../src/queue/worker.js';
 import { napTuPoll } from '../src/queue/nap.js';
-import { pageThuocV3 } from '../src/queue/page-routing.js';
-import { collectCandidates } from '../src/scheduler-followup.js';
 
 let sb, team, page;
 before(async () => {
@@ -61,8 +59,6 @@ test('retry đồng thời cùng mid chỉ lưu một tin và một hội thoạ
 });
 
 test('một Page chỉ nhận nguồn đã chọn; poll không gọi API trên Page webhook', async () => {
-  // CR-02-10 · MB2: hàm cũ của bot v1 không còn nhận page nào — v3 đọc cột `bot_ai_bat`.
-  assert.equal(pageThuocV3('webhook-test'), false);
   const env = process.env.V3_NAP_DEV;
   process.env.V3_NAP_DEV = '1';
   try {
@@ -219,18 +215,6 @@ test('worker không rút backlog của Page ngoài allowlist', async () => {
   await xepTin(sb.pool, { teamId: team, pageId: 'outside', psid: 'outside', convId: 'outside', msgId: 'outside', noiDung: 'hello' });
   assert.equal(await moPhienRut(sb.pool, { khoaWorker: 'restricted', pageIds: [] }), null);
   assert.equal(await moPhienRut(sb.pool, { khoaWorker: 'restricted', pageIds: ['webhook-test'] }), null);
-});
-
-test('follow-up legacy bỏ qua Page đã chuyển V3 trước khi đọc hội thoại', async () => {
-  const old = process.env.V3_PAGE_XU_LY;
-  process.env.V3_PAGE_XU_LY = 'webhook-test';
-  try {
-    const r = await collectCandidates({ pages: ['webhook-test'], rows: [], registry: {},
-      readinessRows: [{ pageId: 'webhook-test', aiEnabled: true, aiAllowed: true, readiness: 'READY' }],
-      getConversations: async () => { assert.fail('legacy không được xử lý Page V3'); },
-    });
-    assert.deepEqual(r.candidates, []);
-  } finally { if (old === undefined) delete process.env.V3_PAGE_XU_LY; else process.env.V3_PAGE_XU_LY = old; }
 });
 
 test('Webhook burst đã xếp hàng: gom ba tin, một lượt xử lý, giữ đủ raw events', async () => {

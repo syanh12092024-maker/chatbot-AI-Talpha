@@ -1,15 +1,12 @@
-// CẦU SANG LÕI BOT — cho các màn Page & Bot · Kết nối & token · Sẵn sàng · Số liệu · Kịch bản.
+// LÕI BOT — cửa DUY NHẤT các màn v3 đọc/ghi lõi bot: kho kiến thức (sản phẩm · kịch bản · khối chung),
+// cửa kiểm sẵn sàng, kho token Pancake, và số liệu lịch sử của bot cũ. Màn dùng: Page & Bot · Kết nối &
+// token · Sẵn sàng · Số liệu · Kịch bản · Sản phẩm.
 //
-// ─── CR-02-10 · MB1 (02/10): KHÔNG CÒN LÀ CÂY CẦU HTTP ─────────────────────────────────
-//
-// Trước 02/10 mỗi hàm ở đây gọi `/admin/api` của tiến trình bot v1 (`src/server.js`, cổng
-// 3100), vì công tắc AI, kho kiến thức (`kb-overrides.json` + RAM) và kho token sống trong RAM
-// của tiến trình đó. v1 nay nghỉ hưu (01-QUYET-DINH §14): cùng những hàm thư viện mà handler
-// v1 từng gọi (`src/kb.js` · `src/readiness.js` · `src/pancake.js` · `src/store.js` ·
-// `src/core/so-lieu-bot-cu.js`) chạy NGAY TRONG tiến trình v3, sau `src/core/khoi-dong-loi.js`.
-//
-// Tên hàm và HÌNH DẠNG dữ liệu trả về GIỮ NGUYÊN — các màn đang gọi không phải sửa. Tên tệp
-// còn mang «v1» tới MB4 (đổi tên cùng lượt gỡ chữ «bot cũ» trên màn).
+// ─── LỊCH SỬ (CR-02-10) ─────────────────────────────────────────────────────────────────
+// Tới 02/10 tệp này tên `cau-bot-v1.js` và mỗi hàm gọi HTTP `/admin/api` của tiến trình bot v1
+// (`src/server.js`, cổng 3100). MB1 đổi ruột sang gọi thẳng thư viện (`src/kb.js` · `src/readiness.js` ·
+// `src/pancake.js` · `src/core/so-lieu-bot-cu.js`) trong chính tiến trình v3, sau
+// `src/core/khoi-dong-loi.js`; MB4 gỡ tiến trình v1 và đổi tên tệp. Tên hàm + hình dạng trả về giữ nguyên.
 //
 // Bộ ca tiêm lõi giả bằng `datLoiBot({...})` thay vì giả `fetch` như trước.
 //
@@ -73,7 +70,7 @@ let _macDinh = null;
 
 /**
  * Tiêm lõi (bộ ca). `null` = về lõi thật. Tiêm thì CHỈ dùng bản tiêm — không nạp thư viện thật,
- * vì nạp `src/store.js`/`page-registry.js` là đọc tệp dữ liệu của máy đang chạy bộ ca.
+ * vì nạp `src/page-registry.js`/`stats.js` là đọc tệp dữ liệu của máy đang chạy bộ ca.
  */
 export function datLoiBot(loi) { _tiem = loi || null; boNhoSanSang(); }
 
@@ -81,11 +78,10 @@ async function loi() {
   if (_tiem) return _tiem;
   if (!_macDinh) {
     _macDinh = (async () => {
-      const [kb, readiness, pancake, store, soLieu] = await Promise.all([
+      const [kb, readiness, pancake, soLieu] = await Promise.all([
         import('../../../src/kb.js'),
         import('../../../src/readiness.js'),
         import('../../../src/pancake.js'),
-        import('../../../src/store.js'),
         import('../../../src/core/so-lieu-bot-cu.js'),
       ]);
       return {
@@ -102,7 +98,6 @@ async function loi() {
         addPancakeToken: pancake.addPancakeToken,
         removePancakeToken: pancake.removePancakeToken,
         lamMoiTokenDb: pancake.lamMoiTokenDb,
-        isAiEnabled: store.isAiEnabled,
         chiPhiToken: soLieu.chiPhiToken,
         donHangAi: soLieu.donHangAi,
         pheuHoiThoaiTho: soLieu.pheuHoiThoaiTho,
@@ -445,7 +440,8 @@ export async function danhSachPageKemSanPham() {
         id, name: p.name || kb.name || '', products: kb.products || 0,
         hasKb: (kb.products || 0) > 0 || !!(cfg.greeting || cfg.tone || cfg.salesPrompt),
         market: kb.market || '', category: kb.category || '', marketer: kb.marketer || '',
-        aiEnabled: !!L.isAiEnabled(id),
+        // Bản dự phòng (bản xem thử) không đọc CSDL; màn thật dùng `kho-san-pham-v3.js` — đọc cột `bot_ai_bat`.
+        aiEnabled: false,
       };
     }).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   });

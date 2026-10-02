@@ -10,7 +10,7 @@ Bộ triển khai chạy checkout đã được kiểm tra. Không tự `git pul
 - `aicloser` không chạy; systemd ghi `Result=timeout`, bị SIGKILL (9). Không kết luận đây là lỗi thiếu RAM: còn khoảng 3.8 GB bộ nhớ khả dụng và 80 GB đĩa trống.
 - Worker V3 chưa chạy; database mới áp đến 014. Bản mới cần 015–017.
 - Đã có database URL, khóa phiên đăng nhập, khóa mã hóa, tài khoản quản trị và API key provider mặc định.
-- Không có APP_SECRET; không cần cho Pancake polling/POS khi đặt META_WEBHOOK_OFF=1. Chưa chọn `V3_PAGE_XU_LY`; chưa bật các cờ gửi V3.
+- Không có APP_SECRET; không cần cho Pancake polling/POS khi đặt META_WEBHOOK_OFF=1. Chưa bật các cờ gửi V3.
 - Lượt này chỉ đọc VPS; chưa chép bản code mới, chưa migrate, chưa restart dịch vụ.
 
 ## Deploy đã thực hiện ngày 17/09/2026
@@ -45,10 +45,10 @@ Unit được tạo: `aicloser` (server), `aicloser-v3` (UI), `aicloser-worker-v
 
 ## Mở một Page thử chat
 
-Sau khi UI đã có đủ sản phẩm/giá, model và mapping Page/shop, chỉnh trong `.env`:
+Sau khi UI đã có đủ sản phẩm/giá, model và mapping Page/shop, chỉnh trong `.env` rồi BẬT bot cho đúng page
+đó ở màn «Công tắc từng page» (CR-02-10: công tắc là cột `page.bot_ai_bat`, không còn danh sách page trong `.env`):
 
 ```dotenv
-V3_PAGE_XU_LY=<một Page ID đã chọn>
 V3_RAP_PROMPT_BAT=1
 V3_PANCAKE_GUI=1
 PANCAKE_READONLY=0

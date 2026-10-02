@@ -97,7 +97,7 @@ test('C4 · tab Từng tin theo VAI: quản trị thấy, xếp ĐẮT NHẤT l�
 test('C5 · tab Theo model nói đúng cái đang có: nhà model · theo model «chưa có nguồn» · dự phòng «chưa chạy»; lối cấu hình theo vai', async () => {
   const qt = await chay(await DU('qt'));
   const m = qt.o['#theoModel'].innerHTML;
-  assert.match(m, /kimi — toàn bộ tiền ở màn này đo tại tiến trình bot/);
+  assert.match(m, /kimi — toàn bộ tiền ở màn này lấy từ Sổ AI cũ/);
   assert.match(m, /Lượt và tiền theo từng model[\s\S]*Chưa có nguồn/);
   assert.match(m, /Dự phòng khác nhà[\s\S]*Chưa chạy/);
   assert.match(m, /href="\/model-ai"/);

@@ -1,7 +1,7 @@
 import { dsPageBotTraLoi } from "../../../src/queue/page-routing.js";
 import { setPage, pageStatus } from "../../../src/admin-v3/operations.js";
 import { datCongTacV3 } from "../ui/page-bot/cong-tac.js";
-import { sanSangToanHe } from "./cau-bot-v1.js";
+import { sanSangToanHe } from "./loi-bot.js";
 
 /* ═══ CÂU CHỮ CỦA BẢN MỚI → MÃ ĐIỀU KIỆN (GD1 · 23/09/2026) ═════════════════════════════
  *

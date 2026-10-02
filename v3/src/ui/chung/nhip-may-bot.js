@@ -53,7 +53,7 @@ export function xetNhip(nhip, viSaoKhongDo = '') {
     return {
       muc: MUC.XAM,
       nhan: 'Chưa đo được máy chạy bot',
-      cau: viSaoKhongDo || 'Chưa đo được máy chạy bot của bot mới.',
+      cau: viSaoKhongDo || 'Chưa đo được máy chạy bot.',
       so: null,
       viec: 'Báo người quản trị hệ thống — đây là lỗi dựng ứng dụng, không phải lỗi dữ liệu.',
     };
@@ -110,7 +110,7 @@ export function xetNhip(nhip, viSaoKhongDo = '') {
     return {
       muc: MUC.XAM,
       nhan: 'Chưa đo được máy chạy bot',
-      cau: 'Chưa đo được: chưa có tin nào của khách đi qua máy chạy bot của bot mới, nên chưa có '
+      cau: 'Chưa đo được: chưa có tin nào của khách đi qua máy chạy bot, nên chưa có '
         + 'dấu vết nào để đo.',
       so: 'chưa có lượt nào',
       viec: null,

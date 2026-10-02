@@ -7,7 +7,7 @@ import test, { before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 // CR-02-10 · MB1: lõi bot chạy TRONG tiến trình — tiêm lõi giả ghi lại mọi lượt ghi.
 let nhan = []; let kho = {};
-const cau = await import('../v3/src/noi-day/cau-bot-v1.js');
+const cau = await import('../v3/src/noi-day/loi-bot.js');
 before(() => cau.datLoiBot({
   updatePageProducts: (id, products) => { nhan.push(`kho:${id}`); kho[id] = products; return { ok: true }; },
   getPageProductsRaw: (id) => kho[id] || [],

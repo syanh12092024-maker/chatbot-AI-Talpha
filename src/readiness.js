@@ -12,23 +12,16 @@
 import { getPageConfig, getPageList, getPageProductsRaw, getScriptDoc, approxTokens, hasScript } from './kb.js';
 import { getPageRecord, getRegistry } from './page-registry.js';
 import { pancakePages } from './pancake.js';
-import { isAiEnabled, setAiEnabled } from './store.js';
 import { getStats } from './stats.js';
-import { sendToGroup } from './wa.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cấu hình
 // ─────────────────────────────────────────────────────────────────────────────
+// CR-02-10 · MB4: bản tin WhatsApp theo marketer · quét tức thì · TỰ TẮT AI đã gỡ cùng tiến trình bot v1
+// (chỉ `admin-scripts.js` của v1 khởi động chúng; phiên WhatsApp đã đăng xuất từ 29/09).
 export const readinessConfig = {
-  digestAt: /^\d{1,2}:\d{2}$/.test(process.env.READINESS_DIGEST_AT || '') ? process.env.READINESS_DIGEST_AT : '09:00',
-  alertWa: process.env.READINESS_ALERT_WA || '',        // jid nhận cảnh báo TỨC THÌ
   staleDays: Number(process.env.SCRIPT_STALE_DAYS || 30),
   thinTokens: Number(process.env.SCRIPT_THIN_TOKENS || 500), // salesPrompt mỏng hơn mức này → nhắc
-  // TỰ TẮT AI khi page đang chạy rơi xuống trạng thái chặn. MẶC ĐỊNH TẮT, và đây là
-  // chủ ý: bật lên nghĩa là trao cho module này quyền tắt bot trên page đang ra đơn.
-  // Chỉ bật sau khi đã xem bản tin vài ngày và tin rằng nó không báo động giả.
-  autoDisable: process.env.READINESS_AUTO_DISABLE === '1',
-  sweepMs: Number(process.env.READINESS_SWEEP_MS || 15 * 60 * 1000),
 };
 
 // Thang trạng thái. `blocks` = AI KHÔNG được bật.
@@ -102,7 +95,9 @@ export function computeReadiness(pageId, opts = {}) {
   return {
     pageId: id, readiness, aiAllowed: blockers.length === 0,
     blockers, warnings, missing,
-    aiEnabled: isAiEnabled(id),
+    // CR-02-10: công tắc thật là cột `page.bot_ai_bat` (CSDL) — hàm đồng bộ này không đọc CSDL. Page ĐANG
+    // bật có dòng của chính bot (`v3/src/noi-day/van-hanh-v3.js`) đè lên dòng này; còn lại là tắt.
+    aiEnabled: false,
     tokens: cfg.salesPrompt ? approxTokens(cfg.salesPrompt) : 0,
   };
 }
@@ -152,122 +147,4 @@ export function canEnableAI(pageId) {
     ok: false, readiness: r.readiness, blockers: r.blockers,
     reason: r.blockers.map((b) => `${b.code}: ${b.detail}`).join(' · '),
   };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Bản tin — GỘP THEO MARKETER
-// ─────────────────────────────────────────────────────────────────────────────
-
-const LINK = () => `${(process.env.PUBLIC_URL || '').replace(/\/$/, '')}/admin/api/scripts/ui`;
-
-export function buildDigest(rows = allReadiness()) {
-  const byMarketer = new Map();
-  for (const r of rows) {
-    if (!r.blockers.length && !r.warnings.length) continue;
-    const who = r.marketer || '(chưa phân công)';
-    if (!byMarketer.has(who)) byMarketer.set(who, { marketer: who, blocked: [], warned: [] });
-    const g = byMarketer.get(who);
-    if (r.blockers.length) g.blocked.push(r); else g.warned.push(r);
-  }
-
-  return [...byMarketer.values()].map((g) => {
-    const lines = [];
-    if (g.blocked.length) {
-      lines.push(`🔴 ${g.blocked.length} page CHƯA CHẠY ĐƯỢC BOT (phụ trách: ${g.marketer})`, '');
-      g.blocked.forEach((r, i) => lines.push(`${i + 1}. ${r.name} — ${r.blockers.map((b) => b.detail).join('; ')}`));
-      lines.push('');
-    }
-    if (g.warned.length) {
-      // Danh sách nhắc CỐ Ý viết một dòng gọn: 37 page thiếu `tone` mà xuống dòng từng
-      // page thì phần đỏ ở trên bị đẩy khuất — đúng cái bẫy spec cảnh báo.
-      const byCode = new Map();
-      for (const r of g.warned) for (const w of r.warnings) {
-        if (!byCode.has(w.code)) byCode.set(w.code, []);
-        byCode.get(w.code).push(r.name);
-      }
-      for (const [code, names] of byCode) {
-        lines.push(`⚠️ ${names.length} page ${LADDER[code]?.label || code}`);
-        lines.push(`   ${names.slice(0, 8).join(' · ')}${names.length > 8 ? ` … +${names.length - 8} page` : ''}`);
-      }
-      lines.push('');
-    }
-    lines.push(`👉 Bổ sung tại: ${LINK()}`);
-    if (g.blocked.length) lines.push('Bot sẽ chạy được ngay sau khi kịch bản được xuất bản.');
-    return { marketer: g.marketer, blocked: g.blocked.length, warned: g.warned.length, text: lines.join('\n') };
-  }).sort((a, b) => b.blocked - a.blocked);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Gửi bản tin + quét tức thì
-// ─────────────────────────────────────────────────────────────────────────────
-
-let lastDigestDay = '';
-const today = () => new Date().toISOString().slice(0, 10);
-
-export async function sendDigest({ force = false } = {}) {
-  if (!force && lastDigestDay === today()) return { ok: false, skipped: 'đã gửi hôm nay' };
-  const groups = buildDigest();
-  if (!groups.length) { lastDigestDay = today(); return { ok: true, sent: 0, note: 'không page nào cần nhắc' }; }
-  let sent = 0; const errors = [];
-  for (const g of groups) {
-    const r = await sendToGroup(g.text);
-    if (r.ok) sent++; else errors.push(`${g.marketer}: ${r.error}`);
-  }
-  lastDigestDay = today();
-  return { ok: errors.length === 0, sent, groups: groups.length, errors };
-}
-
-// Trạng thái lượt quét trước — để chỉ báo TỨC THÌ khi có page RƠI XUỐNG, không phải
-// nhắc lại mọi page đang hỏng ở mỗi 15 phút.
-let prevBlocked = new Set();
-
-export async function sweep() {
-  const rows = allReadiness();
-  const nowBlocked = new Set(rows.filter((r) => !r.aiAllowed).map((r) => r.pageId));
-  const fell = rows.filter((r) => !r.aiAllowed && r.aiEnabled && !prevBlocked.has(r.pageId));
-
-  for (const r of fell) {
-    const why = r.blockers.map((b) => `${b.code}: ${b.detail}`).join(' · ');
-    console.error(`[readiness] 🔴 page ĐANG CHẠY rơi xuống trạng thái chặn — ${r.name} (${r.pageId}): ${why}`);
-    if (readinessConfig.autoDisable) { setAiEnabled(r.pageId, false); console.error(`[readiness] → đã TẮT AI page ${r.pageId}`); }
-    if (readinessConfig.alertWa) {
-      const act = readinessConfig.autoDisable ? 'AI đã được TẮT tự động.' : 'AI vẫn đang bật — cần người xử lý.';
-      await sendToGroup(`🔴 ${r.name} vừa rơi xuống trạng thái CHẶN\n${why}\n${act}\n👉 ${LINK()}`, readinessConfig.alertWa).catch(() => {});
-    }
-  }
-
-  prevBlocked = nowBlocked;
-  return { pages: rows.length, blocked: nowBlocked.size, fell: fell.length };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Hẹn giờ
-// ─────────────────────────────────────────────────────────────────────────────
-let sweepTimer = null;
-let digestTimer = null;
-
-export function startReadiness() {
-  if (sweepTimer || process.env.READINESS === '0') return;
-
-  sweepTimer = setInterval(() => { sweep().catch((e) => console.error('[readiness] quét lỗi:', e.message)); }, readinessConfig.sweepMs);
-  sweepTimer.unref?.();
-
-  // Kiểm mỗi phút xem đã tới giờ bản tin chưa. Đơn giản hơn cron và tự đúng khi máy
-  // ngủ dậy trễ (`lastDigestDay` chặn gửi trùng trong ngày).
-  const [hh, mm] = readinessConfig.digestAt.split(':').map(Number);
-  digestTimer = setInterval(() => {
-    const d = new Date();
-    if (d.getHours() === hh && d.getMinutes() === mm) {
-      sendDigest().then((r) => { if (r.sent) console.log(`[readiness] bản tin ${readinessConfig.digestAt}: gửi ${r.sent}/${r.groups} nhóm marketer`); })
-        .catch((e) => console.error('[readiness] gửi bản tin lỗi:', e.message));
-    }
-  }, 60000);
-  digestTimer.unref?.();
-
-  console.log(`[readiness] bản tin ${readinessConfig.digestAt}/ngày · quét mỗi ${Math.round(readinessConfig.sweepMs / 60000)} phút · tự tắt AI: ${readinessConfig.autoDisable ? 'BẬT' : 'tắt'}`);
-}
-
-export function stopReadiness() {
-  if (sweepTimer) { clearInterval(sweepTimer); sweepTimer = null; }
-  if (digestTimer) { clearInterval(digestTimer); digestTimer = null; }
 }

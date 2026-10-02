@@ -15,19 +15,20 @@ for bin in npm pg_dump pg_restore systemctl flock curl; do command -v "$bin" >/d
 "$NODE_BIN" --env-file=.env deploy/preflight.mjs
 # Existing drop-ins may override ExecStart or re-open sending after this script
 # writes a closed-mode unit. Require them to be reviewed instead of ignoring them.
-for service in aicloser aicloser-v3 aicloser-worker-v3; do
+for service in aicloser-v3 aicloser-worker-v3; do
   overrides="$(systemctl show "$service" -p DropInPaths --value)"
   [[ -z "$overrides" ]] || { echo "Cần hợp nhất systemd drop-in của $service trước khi deploy: $overrides"; exit 1; }
 done
 if [[ "$DEPLOY_MODE" == pilot ]]; then
   "$NODE_BIN" --env-file=.env --input-type=module -e '
-    const pages=(process.env.V3_PAGE_XU_LY||"").split(/[,\s]+/).filter(Boolean);
-    if(pages.length!==1 || process.env.V3_PANCAKE_GUI!=="1" || process.env.PANCAKE_READONLY==="1" || process.env.V3_RAP_PROMPT_BAT!=="1") {
-      console.error("Pilot cần đúng 1 Page, V3_PANCAKE_GUI=1, V3_RAP_PROMPT_BAT=1 và PANCAKE_READONLY khác 1");process.exit(1);
+    // CR-02-10 · MB2: page bot trả lời là cột page.bot_ai_bat (bật ở màn Công tắc từng page), không còn
+    // danh sách page trong .env — pilot chỉ đòi van gửi + cách ghép lời mới đã mở.
+    if(process.env.V3_PANCAKE_GUI!=="1" || process.env.PANCAKE_READONLY==="1" || process.env.V3_RAP_PROMPT_BAT!=="1") {
+      console.error("Pilot cần V3_PANCAKE_GUI=1, V3_RAP_PROMPT_BAT=1 và PANCAKE_READONLY khác 1");process.exit(1);
     }'
 fi
 if [[ "$MODE" == --check ]]; then
-  echo "Preflight đạt. Kế hoạch: backup → dừng dịch vụ → npm ci → migrate → 3 services ($DEPLOY_MODE) → smoke test."
+  echo "Preflight đạt. Kế hoạch: backup → dừng dịch vụ → npm ci → migrate → 2 services ($DEPLOY_MODE) → smoke test."
   exit 0
 fi
 [[ "$(id -u)" == 0 ]] || { echo '--apply cần quyền root để quản lý systemd'; exit 1; }
@@ -41,7 +42,7 @@ BACKUP_DIR="${BACKUP_DIR:-/var/backups/aicloser/$(date -u +%Y%m%dT%H%M%SZ)}"
 umask 077
 mkdir -p "$BACKUP_DIR/units"
 cp .env "$BACKUP_DIR/env"
-SERVICES=(aicloser aicloser-v3 aicloser-worker-v3)
+SERVICES=(aicloser-v3 aicloser-worker-v3)
 EXISTING=()
 for service in "${SERVICES[@]}"; do
   if [[ "$(systemctl show "$service" -p LoadState --value)" != not-found ]]; then EXISTING+=("$service"); fi
@@ -93,26 +94,20 @@ UNIT
     cat >>"$UNIT_DIR/$service.service" <<'UNIT'
 Environment=PANCAKE_READONLY=1
 Environment=V3_PANCAKE_GUI=0
-Environment=V3_PAGE_XU_LY=
 UNIT
   fi
-  # The server's old poller must stay closed during a V3-only pilot. V3 receives its
-  # messages through the worker or webhook, not through the legacy poller.
-  if [[ "$service" == aicloser ]]; then echo 'Environment=V3_LEGACY_POLL_OFF=1' >>"$UNIT_DIR/$service.service"; fi
   printf '\n[Install]\nWantedBy=multi-user.target\n' >>"$UNIT_DIR/$service.service"
   chmod 644 "$UNIT_DIR/$service.service"
 }
-write_unit aicloser src/server.js
+# CR-02-10 · MB4: bot v1 (`aicloser`, src/server.js) đã gỡ — chỉ còn hai dịch vụ v3.
 write_unit aicloser-v3 v3/chay-that.js
 write_unit aicloser-worker-v3 src/queue/chay-worker.js
 systemctl daemon-reload
 systemctl enable "${SERVICES[@]}"
 systemctl restart "${SERVICES[@]}"
-PORTS="$("$NODE_BIN" --env-file=.env --input-type=module -e 'console.log(`${process.env.PORT||3100} ${process.env.CHAYTHAT_CONG||3102}`)')"
-read -r SERVER_PORT UI_PORT <<<"$PORTS"
+UI_PORT="$("$NODE_BIN" --env-file=.env --input-type=module -e 'console.log(process.env.CHAYTHAT_CONG||3102)')"
 for attempt in {1..20}; do
-  if systemctl is-active --quiet aicloser && systemctl is-active --quiet aicloser-v3 && systemctl is-active --quiet aicloser-worker-v3 &&
-    curl -fsS --max-time 2 "http://127.0.0.1:$SERVER_PORT/health" >/dev/null &&
+  if systemctl is-active --quiet aicloser-v3 && systemctl is-active --quiet aicloser-worker-v3 &&
     curl -fsS --max-time 2 "http://127.0.0.1:$UI_PORT/dang-nhap" >/dev/null; then
     echo "Deploy đạt ($DEPLOY_MODE). Backup: $BACKUP_DIR. UI: /van-hanh-v3 (HTTPS hoặc SSH tunnel)."
     exit 0

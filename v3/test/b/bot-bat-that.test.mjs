@@ -1,8 +1,8 @@
-// «BOT CÓ BẬT KHÔNG» — MỘT NGUỒN CHO MỌI MÀN (audit 28/09).
+// «BOT CÓ BẬT KHÔNG» — MỘT NGUỒN CHO MỌI MÀN.
 //
-// Cùng một team, dải trạng thái nói 1 page đang bật (hỏi tiến trình bot) mà «Người và team»
-// nói 2 (đếm cột `page.bot_ai_bat`, là bản sao). Ca này khoá: có cửa kiểm thì đếm theo bot,
-// bot không thấy page thì giữ cột, không hỏi được thì khai là đang đứng ở bản sao.
+// Audit 28/09: cùng một team, dải trạng thái nói 1 page bật (hỏi tiến trình bot v1) mà «Người và team»
+// nói 2 (đếm cột). CR-02-10 (02/10) đóng tận gốc: v1 nghỉ hưu, cột `page.bot_ai_bat` là công tắc DUY
+// NHẤT — mọi màn đếm cột, không còn «hỏi bot trước, cột là bản sao».
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -15,7 +15,7 @@ const { taoBoiCanh, VAI } = await import('../../src/auth/boi-canh.js');
 const bb = await import('../../src/ui/chung/bot-bat-that.js');
 const kt = await import('../../src/ui/team/kho-team.js');
 
-// Cột nói CẢ HAI page bật; bot nói chỉ page 111 bật, page 333 bot không thấy.
+// Ba page đều bật ở cột — cột là công tắc duy nhất.
 function dungKho() {
   const { taoTruyVan } = dungCongGia({
     page: [
@@ -34,44 +34,22 @@ function dungKho() {
   kt.datDocKetNoiPos(null);
 }
 const bcQt = () => taoBoiCanh({ nguoiDungId: 'u1', tenDangNhap: 'an@talpha.vn', teamId: 't1', vai: [VAI.QUAN_TRI] });
-const cuaKiem = async () => ({ pages: [
-  { pageId: '111', aiEnabled: true },
-  { pageId: '222', aiEnabled: false },   // cột ghi bật, bot đã tắt — đúng cảnh lệch 25/08
-] });
 
-test('botBatCua · bot thấy page thì theo bot; bot không thấy thì giữ cột', () => {
-  const theoBot = new Map([['111', true], ['222', false]]);
-  assert.equal(bb.botBatCua({ page_id: '222', bot_ai_bat: true }, theoBot), false);
-  assert.equal(bb.botBatCua({ page_id: '333', bot_ai_bat: true }, theoBot), true);
-  assert.equal(bb.botBatCua({ page_id: '222', bot_ai_bat: true }, null), true);
+test('botBatCua · MỘT NGUỒN: chỉ cột `bot_ai_bat` quyết; thiếu cột ⇒ tắt', () => {
+  assert.equal(bb.botBatCua({ page_id: '111', bot_ai_bat: true }), true);
+  assert.equal(bb.botBatCua({ page_id: '222', bot_ai_bat: false }), false);
+  assert.equal(bb.botBatCua({ page_id: '333' }), false);
+  assert.equal(bb.botBatCua(null), false);
+  assert.equal(typeof bb.docBotBatThat, 'undefined', 'không còn đường «hỏi nguồn thật» thứ hai');
 });
 
-test('docBotBatThat · chưa nối hoặc bot lỗi ⇒ theoBot null KÈM lý do, không ném', async () => {
-  bb.datDocSanSang(null);
-  const a = await bb.docBotBatThat();
-  assert.equal(a.theoBot, null); assert.match(a.viSao, /Chưa nối/);
-  bb.datDocSanSang(async () => { throw new Error('fetch failed'); });
-  const b = await bb.docBotBatThat();
-  assert.equal(b.theoBot, null); assert.match(b.viSao, /fetch failed/);
-});
-
-test('tongQuanTeam · có cửa kiểm thì đếm theo BOT, không theo cột bản sao', async () => {
+test('tongQuanTeam · đếm theo cột và KHAI đó là công tắc duy nhất', async () => {
   dungKho();
-  bb.datDocSanSang(cuaKiem);
-  const t = await kt.tongQuanTeam(bcQt());
-  assert.equal(t.page.botBat, 2, '111 (bot bật) + 333 (bot không thấy ⇒ cột) — 222 bot đã tắt');
-  assert.equal(t.page.nguonBotBat.nguon, 'ai-enabled.json');
-  assert.equal(t.soNguoi, 1, 'một người hai vai vẫn là một người');
-});
-
-test('tongQuanTeam · không hỏi được bot ⇒ đếm cột và KHAI là bản sao', async () => {
-  dungKho();
-  bb.datDocSanSang(async () => { throw new Error('fetch failed'); });
   const t = await kt.tongQuanTeam(bcQt());
   assert.equal(t.page.botBat, 3);
-  assert.equal(t.page.nguonBotBat.nguon, 'cot_csdl');
-  assert.match(t.page.nguonBotBat.noi, /fetch failed/);
-  bb.datDocSanSang(null);
+  assert.equal(t.page.nguonBotBat.nguon, bb.NGUON_BOT_BAT.nguon);
+  assert.match(t.page.nguonBotBat.noi, /công tắc duy nhất/);
+  assert.equal(t.soNguoi, 1, 'một người hai vai vẫn là một người');
 });
 
 test('canhBaoTuTongQuan · chưa chọn model KHÔNG được nói «bot không trả lời được»', () => {

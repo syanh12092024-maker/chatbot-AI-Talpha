@@ -198,7 +198,7 @@ test('④b · lệch giữa CSDL và bot phải được NÊU RA, kèm ví dụ'
   assert.equal(d.lech.soChiCsdl, 1);
   assert.equal(d.lech.soChiBot, 0);
   assert.ok(d.lech.viDu.length >= 1, 'phải kèm ví dụ để đi soát được');
-  assert.match(d.lech.noi, /bản sao/i, 'phải nói rõ con số nào mới đúng');
+  assert.match(d.lech.noi, /công tắc thật/i, 'phải nói rõ con số nào mới đúng');
 });
 
 test('④c · KHÔNG lệch thì không bịa ra cảnh báo', async () => {

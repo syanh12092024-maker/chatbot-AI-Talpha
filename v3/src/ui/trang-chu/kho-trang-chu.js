@@ -159,7 +159,7 @@ async function vViecChoNguoi(d) {
       ? `Hàng đợi chưa được nạp (có ${handoff} hội thoại đã giao cho người) — KHÔNG phải hết việc.`
       : 'Không việc nào đang chờ người nhận.',
     diTiepRong: chuaNap
-      ? 'Sale vẫn làm trên Pancake cho tới khi bot mới chạy.'
+      ? 'Sale vẫn làm trên Pancake cho tới khi bot được bật cho page.'
       : null,
     doiChung: { handoff, tongViec: tong },
   };
@@ -239,7 +239,7 @@ async function vTuCuaKiem(d, bc) {
     toanHe = await _docSanSang();
   } catch (e) {
     // KHÔNG để 0 lọt ra: «0 page bị chặn» là tin mừng, và đây không phải tin mừng.
-    const noi = `Không đọc được cửa kiểm từ tiến trình bot: ${e?.message || e}`;
+    const noi = `Không đọc được cửa kiểm từ lõi bot: ${e?.message || e}`;
     chan.noiRong = noi; mong.noiRong = noi;
     chan.diTiepRong = 'Số 0 ở đây sẽ là tin mừng giả — nên màn để trống thay vì đoán.';
     mong.diTiepRong = chan.diTiepRong;

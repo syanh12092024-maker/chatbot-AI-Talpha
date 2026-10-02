@@ -71,7 +71,7 @@ const soLieu = await import(`${GOC}/src/db/so-lieu.js`);
 // CHỈ ĐỌC hằng `CORE` — `src/prompts.js` là file cấm sửa, nhưng nó tự export CORE cho các
 // bộ nghiệm thu (`test/l4-prompt.test.mjs`), và màn Prompt của page cần đúng khối đó.
 const { CORE: CORE_PROMPT } = await import(`${GOC}/src/prompts.js`);
-const { datBotAi: _unused } = await import('./src/noi-day/cau-bot-v1.js');
+const { datBotAi: _unused } = await import('./src/noi-day/loi-bot.js');
 const _slug = new Map();
 async function slugCua(teamId) {
   if (_slug.has(String(teamId))) return _slug.get(String(teamId));
@@ -267,12 +267,12 @@ const bao = dungPhanB(app, {
   vanHanh: {
     pool,
     daySanPhamLenBot: async (pageIdFacebook, products) =>
-      (await import('./src/noi-day/cau-bot-v1.js')).daySanPhamLenBot(pageIdFacebook, products),
+      (await import('./src/noi-day/loi-bot.js')).daySanPhamLenBot(pageIdFacebook, products),
     // MN4: ảnh tải lên nằm CÙNG thư mục bot v1 phục vụ — một kiểu đường `/uploads/<tệp>`.
     thuMucAnh: path.join(GOC, 'public', 'uploads'),
     // MN7: ba khối dùng chung (Chính sách · FAQ · Phản đối) → `kb-chung.json` của bot, đọc lại xác minh.
     dayKhoiChungLenBot: async (noiDung) =>
-      (await import('./src/noi-day/cau-bot-v1.js')).dayKhoiChungLenBot(noiDung),
+      (await import('./src/noi-day/loi-bot.js')).dayKhoiChungLenBot(noiDung),
   },
   // MN4: «Sản phẩm & kho» · «Ảnh gửi khách» · «Đưa lên chạy» đọc CSDL — đúng chỗ người sửa.
   khoSanPham: (await import('./src/noi-day/kho-san-pham-v3.js')).taoKhoSanPhamV3(pool),
@@ -307,7 +307,7 @@ const bao = dungPhanB(app, {
   keoDanhMucPos: async (bc) => {
     const kq = await keoDanhMucTeam(pool, ctxCuaA(bc));
     const { dongBoTuPos } = await import(`${GOC}/src/products/noi-pos.js`);
-    const day = async (pid, products) => (await import('./src/noi-day/cau-bot-v1.js')).daySanPhamLenBot(pid, products);
+    const day = async (pid, products) => (await import('./src/noi-day/loi-bot.js')).daySanPhamLenBot(pid, products);
     kq.dongBoPos = await dongBoTuPos(pool, bc.teamId, day).catch((e) => ({ loi: String(e?.message || e) }));
     return kq;
   },
@@ -336,7 +336,7 @@ const bao = dungPhanB(app, {
       const m = await spGoc.monCuaGoc(pool, bc.teamId, id, posMa);
       const { saveProduct } = await import(`${GOC}/src/admin-v3/operations.js`);
       const { taoBuocDayBot } = await import('./src/ui/van-hanh/router.js');
-      const day = async (pid, products) => (await import('./src/noi-day/cau-bot-v1.js')).daySanPhamLenBot(pid, products);
+      const day = async (pid, products) => (await import('./src/noi-day/loi-bot.js')).daySanPhamLenBot(pid, products);
       return saveProduct(pool, bc, m.id, { offers: t.offers, version: t.version }, { chiGia: true, sauKhiLuu: taoBuocDayBot({ day }) });
     },
     ganPage: (bc, id, t) => spGoc.ganPageVaoGoc(pool, bc.teamId, id, t),
@@ -388,7 +388,7 @@ const bao = dungPhanB(app, {
   // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM lõi trong tiến trình này (CR-02-10 · MB1);
   // worker đọc lại tệp khi nó đổi. Đường ghi KHO, được `V3_GHI_KHO_BOT=1` mở riêng (CR-28-09b · MN5).
   dayKichBanLenBot: async (pageIdFacebook, cfg) =>
-    (await import('./src/noi-day/cau-bot-v1.js')).dayKichBanLenBot(pageIdFacebook, cfg),
+    (await import('./src/noi-day/loi-bot.js')).dayKichBanLenBot(pageIdFacebook, cfg),
   bocPancake: async (b64) => parsePancakeScript(b64),
 
   // «Kéo dữ liệu về» — đúng lượt `npm run di-tru`, gọi từ trong tiến trình màn hình.
@@ -449,7 +449,7 @@ http.createServer(app).listen(CONG, process.env.HOST, () => {
   for (const t of bao.thieu) console.log(`[chay-that] chưa nối: ${t}`);
   // LÀM NÓNG bản nhớ cửa kiểm (28/09): lượt đọc này mất ~10 giây phía bot. Đọc một lần lúc
   // khởi động thì người mở màn đầu tiên không phải đứng chờ ở «Đang mở…».
-  import('./src/noi-day/cau-bot-v1.js')
+  import('./src/noi-day/loi-bot.js')
     .then(({ sanSangToanHe }) => sanSangToanHe())
     .then((kq) => console.log(`[chay-that] đã làm nóng cửa kiểm: ${kq.pages.length} page`))
     .catch((e) => console.log(`[chay-that] chưa làm nóng được cửa kiểm: ${e?.message || e}`));

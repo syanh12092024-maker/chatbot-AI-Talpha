@@ -41,7 +41,7 @@ after(() => {
 
 const { khoiDongLoi } = await import('../src/core/khoi-dong-loi.js');
 const kb = await import('../src/kb.js');
-const cau = await import('../v3/src/noi-day/cau-bot-v1.js');
+const cau = await import('../v3/src/noi-day/loi-bot.js');
 
 test('① worker sau khoiDongLoi() thấy sản phẩm của page — không còn noData vì chưa nạp KB', async () => {
   await khoiDongLoi({ nhan: 'bộ ca', dongBoSheet: false, log: () => {} });
@@ -97,7 +97,7 @@ test('④ đường ghi kho chạy trong tiến trình: lưu xong, đọc lại 
 });
 
 test('⑤ mã nguồn: cầu không còn HTTP, khởi động hai tiến trình v3 đều gọi khoiDongLoi', () => {
-  const c = fs.readFileSync(path.join(GOC, 'v3/src/noi-day/cau-bot-v1.js'), 'utf8');
+  const c = fs.readFileSync(path.join(GOC, 'v3/src/noi-day/loi-bot.js'), 'utf8');
   assert.doesNotMatch(c, /fetch\(/, 'cầu còn gọi fetch');
   assert.doesNotMatch(c, /\bgoi\(\s*['`]\//, 'cầu còn gọi một đường HTTP kiểu goi(\'/…\')');
   for (const tep of ['v3/chay-that.js', 'src/queue/chay-worker.js']) {

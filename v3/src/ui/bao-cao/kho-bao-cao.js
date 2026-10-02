@@ -7,7 +7,7 @@
 // Màn này giữ nguyên tắc ấy, và phải áp nó thêm MỘT LẦN NỮA ở chỗ A chưa gặp:
 //
 // ═══ BA CON SỐ ĐƠN, BA CÂU HỎI ═══════════════════════════════════════════════════════
-// Truy 26/08 tận nơi tính (xem `noi-day/cau-bot-v1.js#donHangToanHe`):
+// Truy 26/08 tận nơi tính (xem `noi-day/loi-bot.js#donHangToanHe`):
 //   · **269** — bot TỰ TAY tạo đơn qua lời gọi công cụ, khử trùng theo khách, toàn thời gian
 //   · **907** — đơn THẬT ở POS Pancake quy cho hội thoại có AI, 60 ngày, đã bỏ đơn huỷ
 //   · **893** — số HỘI THOẠI có đơn ở POS, cùng phép quét
@@ -38,7 +38,7 @@ export const THUOC = Object.freeze({
     ma: 'bot_tu_tao', ten: 'Bot tự tay chốt',
     doGi: 'Đơn do CHÍNH BOT tạo bằng lời gọi công cụ, mỗi khách đếm một lần.',
     khoang: 'toàn thời gian',
-    nguon: 'sổ đếm của tiến trình bot — cộng một lần mỗi khi chính bot tạo đơn',
+    nguon: 'sổ đếm cũ (`stats.json`, ghi tới 28/08) — cộng một lần mỗi khi chính bot tạo đơn',
   },
   POS_QUY_CHO_AI: {
     ma: 'pos_quy_cho_ai', ten: 'Đơn thật ở POS quy cho AI',
@@ -108,8 +108,8 @@ export async function manBaoCao(boiCanh) {
       teamId: bc.teamId, messenger: null, trangBanHang: await luongTrangBanHang(bc), thuoc: THUOC,
       trong: {
         rong: true, vi: 'chua-nap',
-        noi: 'Chưa nối cầu sang tiến trình bot nên chưa đọc được đơn hàng.',
-        diTiep: 'Nhờ người quản trị hệ thống nối lại đường sang tiến trình bot rồi khởi động lại '
+        noi: 'Chưa nối bộ đọc lõi bot nên chưa đọc được đơn hàng.',
+        diTiep: 'Nhờ người quản trị hệ thống xem dịch vụ v3 rồi khởi động lại '
           + 'dịch vụ. Sổ đơn của cơ sở dữ liệu KHÔNG dùng thay được — nó chưa có dòng nào.',
       },
     };
@@ -121,7 +121,7 @@ export async function manBaoCao(boiCanh) {
   } catch (e) {
     // Ném, KHÔNG trả 0: «0 đơn» là câu dễ tin nhất và sai nhất. Lời giải thích sống ở ĐÂY
     // (API cũng phải nói rõ), nên màn không nhắc lại — trước 28/09 hộp lỗi nói ý này ba lần.
-    throw new LoiBaoCao(`Không đọc được đơn hàng từ tiến trình bot: ${e?.message || e}. `
+    throw new LoiBaoCao(`Không đọc được đơn hàng từ lõi bot: ${e?.message || e}. `
       + 'Màn để trống thay vì hiện «0 đơn» — con số 0 lúc này sẽ sai.', 'cau_hong', 502);
   }
 

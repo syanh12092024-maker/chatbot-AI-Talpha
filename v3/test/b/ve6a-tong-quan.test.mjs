@@ -71,7 +71,7 @@ const DU = async (vai = 'qt') => ({ '/api/bao-cao': await baoCaoThat(), '/api/ch
 test('V1 · bốn ô số của bản vẽ: chi phí/đơn · tin/đơn · đơn theo luồng KHÔNG gộp · BUY NOW «chưa đo được» + 37,4% là SỐ CŨ', async () => {
   const { o } = await chay(await DU());
   const h = o['#chiSo'].innerHTML;
-  assert.match(h, /\[Chi phí AI mỗi đơn: 6696 đ \| toàn thời gian · sổ bot cũ · % doanh thu: chưa có nguồn\]/);
+  assert.match(h, /\[Chi phí AI mỗi đơn: 6696 đ \| toàn thời gian · Sổ AI cũ \(tới 28\/08\) · % doanh thu: chưa có nguồn\]/);
   assert.match(h, /\[Tin AI để ra một đơn: 52\.7 \| 127 đ mỗi tin · 13010 tin → 247 đơn\]/);
   assert.match(h, /\[Đơn theo luồng — không gộp: 12 · 34 \| Messenger · trang bán hàng · /, 'hai luồng phải ĐỨNG RIÊNG, không một tổng');
   assert.doesNotMatch(h, /46/, 'hai luồng bị cộng (12 + 34)');

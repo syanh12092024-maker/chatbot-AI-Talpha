@@ -70,7 +70,7 @@ export const GIAI_THICH_VAI_TRO = Object.freeze({
  * không sửa bảng này là đỏ.
  */
 export const DUONG_DUNG_VAI_TRO = Object.freeze({
-  chinh: { dung: true, chu: 'Đang dùng', noi: 'Bot v3 đọc ô này mỗi lượt trả lời. Bot cũ lấy model từ tệp cấu hình của máy chủ.' },
+  chinh: { dung: true, chu: 'Đang dùng', noi: 'Bot đọc ô này mỗi lượt trả lời.' },
   du_phong: { dung: false, chu: 'Chưa nối', noi: 'Đã lưu, nhưng đường trả lời khách CHƯA tự chuyển sang khi model chính hỏng.' },
   nen: { dung: false, chu: 'Chưa việc nào dùng', noi: 'Đang lưu, nhưng chưa việc nào đọc ô này.' },
 });
@@ -139,7 +139,7 @@ export function datTaoTruyVanMan(fn) {
 }
 
 async function botMoiXuLy(bc) {
-  if (!_taoTruyVanMan) return { soPage: null, viSao: 'chưa nối cổng truy vấn — không đếm được page bot mới xử' };
+  if (!_taoTruyVanMan) return { soPage: null, viSao: 'chưa nối cổng truy vấn — không đếm được page bot đang xử' };
   try {
     const ds = (await _taoTruyVanMan(bc).chon('page', {})) || [];
     return { soPage: ds.filter((p) => botDangTraLoi(p)).length, tong: ds.length, viSao: null };

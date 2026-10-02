@@ -29,7 +29,7 @@
 
 import { laBanMayEn } from '../../../../src/chat/dich-ban-may.js';
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
-import { docBotBatThat, botBatCua } from '../chung/bot-bat-that.js';
+import { botBatCua } from '../chung/bot-bat-that.js';
 
 export const BANG = 'kich_ban';
 export const BANG_PAGE = 'page';
@@ -160,10 +160,9 @@ export const CHUA_PHAN = '(chưa phân loại)';
 export async function cayKichBan(boiCanh, { tim = '' } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   const db = congTruyVan(bc);
-  const [pages, ban, { theoBot }] = await Promise.all([
+  const [pages, ban] = await Promise.all([
     db.chon(BANG_PAGE, {}, { sapXep: 'ten' }),
     db.chon(BANG, {}),
-    docBotBatThat(),
   ]);
 
   const liveTheoPage = new Map();
@@ -190,7 +189,7 @@ export async function cayKichBan(boiCanh, { tim = '' } = {}) {
       id: String(p.id),
       pageId: String(p.page_id || ''),
       ten: p.ten || '',
-      botAiBat: botBatCua(p, theoBot),
+      botAiBat: botBatCua(p),
       coKichBan: !!live,
       phienBanLive: live ? Number(live.phien_ban) : null,
       soBan: soBanTheoPage.get(String(p.id)) || 0,
@@ -263,7 +262,6 @@ export async function banCuaPage(boiCanh, pageRowId) {
   const db = congTruyVan(bc);
   const p = await db.mot(BANG_PAGE, { id: String(pageRowId) });
   if (!p) throw new LoiKichBan(`không có page id=${pageRowId} trong team này.`, 'khong_thay', 404);
-  const { theoBot } = await docBotBatThat();
 
   const ds = (await db.chon(BANG, { page_id: String(pageRowId) }))
     .map((b) => ({
@@ -282,7 +280,7 @@ export async function banCuaPage(boiCanh, pageRowId) {
   const live = ds.find((b) => b.trangThai === 'LIVE') || null;
   return {
     page: { id: String(p.id), pageId: String(p.page_id || ''), ten: p.ten || '',
-      thiTruong: p.thi_truong || '', botAiBat: botBatCua(p, theoBot) },
+      thiTruong: p.thi_truong || '', botAiBat: botBatCua(p) },
     ban: ds,
     live,
     truong: TRUONG,
@@ -394,7 +392,7 @@ export async function luuVaChay(boiCanh, pageRowId, { nguoi, ghiChu = '' } = {})
   batBuocVai(bc, ...VAI_SUA_DUOC);
   if (!_dayLenBot) {
     throw new LoiKichBan(
-      'chưa nối cửa đẩy sang tiến trình bot — từ chối lưu: lưu mà bot không đổi là màn hình nói sai.',
+      'chưa nối cửa ghi kho kiến thức của bot — từ chối lưu: lưu mà bot không đổi là màn hình nói sai.',
       'chua_noi', 500,
     );
   }
@@ -415,8 +413,8 @@ export async function luuVaChay(boiCanh, pageRowId, { nguoi, ghiChu = '' } = {})
 async function lenLive(bc, pageRowId, id, { lyDo = '' } = {}) {
   if (!_dayLenBot) {
     throw new LoiKichBan(
-      'chưa nối cửa đẩy sang tiến trình bot — từ chối. Sửa cột `trang_thai` mà không gọi sang '
-      + 'bot thì bot vẫn nói y như cũ, và màn hình báo LIVE là nói dối.',
+      'chưa nối cửa ghi kho kiến thức của bot — từ chối. Sửa cột `trang_thai` mà không ghi vào '
+      + 'kho của bot thì bot vẫn nói y như cũ, và màn hình báo LIVE là nói dối.',
       'chua_noi', 500,
     );
   }

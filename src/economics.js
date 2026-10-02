@@ -48,7 +48,7 @@ function dimValue(dim, r) {
 
 // ---- KHOẢNG THỜI GIAN -------------------------------------------------------------
 // Nhận cả 2 kiểu: {from,to} = 'YYYY-MM-DD' theo NGÀY UTC (giống tokenStats/recount/
-// /admin/api/token-cost — phải giống thì mới đối chiếu được), hoặc {fromMs,toMs} mốc ms
+// `src/core/so-lieu-bot-cu.js#chiPhiToken` — phải giống thì mới đối chiếu được), hoặc {fromMs,toMs} mốc ms
 // (báo cáo tuần cắt theo giờ VN nên cần mốc ms).
 function inRange(r, { from, to, fromMs, toMs }) {
   if (fromMs != null && r.t < fromMs) return false;
@@ -79,7 +79,7 @@ export const usdOf = (b, P) =>
 const r2 = (x, n = 4) => (x == null ? null : +x.toFixed(n));
 const pct = (a, b) => (b > 0 ? +((a / b) * 100).toFixed(1) : null);
 
-// Chỉ số dẫn xuất — CÔNG THỨC PHẢI GIỐNG HỆT admin.js /token-cost, nếu không thì
+// Chỉ số dẫn xuất — CÔNG THỨC PHẢI GIỐNG HỆT `so-lieu-bot-cu.js#chiPhiToken`, nếu không thì
 // nghiệm thu "sai lệch <1%" chỉ là so hai cách tính khác nhau rồi tự khen nhau.
 //   đơn giá 1 tin = usd / số tin CÓ SỐ ĐO (không chia trên tổng tin — token chỉ ghi
 //   từ 06/08/2026, chia trên tổng tin sẽ ra đơn giá rẻ giả tạo).
@@ -311,7 +311,7 @@ const slim = (r) => ({
 /**
  * ĐỐI CHIẾU: economics() có khớp với hai bộ đếm sẵn có trên cùng Sổ AI không
  * (`recount()` cho lượt/khách/đơn · `tokenStats()` cho token & tiền — chính là nguồn của
- * /admin/api/token-cost). Lệch >1% là số của M20 sai, không phải "cách tính khác".
+ * `so-lieu-bot-cu.js#chiPhiToken`). Lệch >1% là số của M20 sai, không phải "cách tính khác".
  */
 export function verify({ from, to, prices, tolerancePct = 1 } = {}) {
   const P = prices || config.aiPrices;
@@ -331,7 +331,7 @@ export function verify({ from, to, prices, tolerancePct = 1 } = {}) {
     { name: 'tout', econ: e.totals.tout, ref: ts.tout, refFrom: 'tokenStats()' },
     { name: 'cread', econ: e.totals.cread, ref: ts.cread, refFrom: 'tokenStats()' },
     { name: 'calls', econ: e.totals.calls, ref: ts.calls, refFrom: 'tokenStats()' },
-    { name: 'vnd', econ: e.totals.vnd, ref: tsVnd, refFrom: '/admin/api/token-cost' },
+    { name: 'vnd', econ: e.totals.vnd, ref: tsVnd, refFrom: 'tokenStats() × giá' },
   ].map((c) => ({ ...c, diffPct: rel(c.econ, c.ref), ok: rel(c.econ, c.ref) <= tolerancePct }));
 
   // SỔ RỖNG KHÔNG PHẢI LÀ "KHỚP". Cả hai vế cùng bằng 0 thì mọi phép so đều lệch 0% và

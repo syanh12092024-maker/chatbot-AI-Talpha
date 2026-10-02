@@ -12,7 +12,7 @@ import { config } from "../../src/config.js";
 import { getSheetId, fetchTabRows } from "../../src/sheets.js";
 import { parsePolicies, parseFaqs, parseObjections, buildShared, loadKB } from "../../src/kb.js";
 import { sachKhoiChung, luuKhoiChung, teamGiuKhoiChung } from "../../src/products/khoi-chung.js";
-import { dayKhoiChungLenBot, khoiChungCuaBot } from "../../v3/src/noi-day/cau-bot-v1.js";
+import { dayKhoiChungLenBot, khoiChungCuaBot } from "../../v3/src/noi-day/loi-bot.js";
 loadKB(); // CR-02-10 · MB1: lõi bot chạy trong tiến trình script — nạp KB trước khi đọc
 
 const GHI = process.argv.includes("--ghi");

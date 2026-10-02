@@ -29,7 +29,7 @@ import { HANH_DONG } from '../../audit/hanh-dong.js';
 import {
   danhSachToken, trangThaiCau, gocBot, napLaiKhoToken,
   LoiCauBotDong, LoiCauBotHong,
-} from '../../noi-day/cau-bot-v1.js';
+} from '../../noi-day/loi-bot.js';
 import { cuaGuiWaDangMo } from '../../../../src/channels/whatsapp/index.js';
 import { BANG_MAU_TIN } from '../../../../src/channels/whatsapp/mau-tin.js';
 
@@ -361,7 +361,7 @@ export async function khoToken() {
     }
     for (const t of cu) {
       if (t.nguon === 'dashboard' && !ds.some((x) => x.duoi === t.duoi)) {
-        ds.push({ ...t, id: null, boDuoc: false, nguon: 'kho cũ của tiến trình bot' });
+        ds.push({ ...t, id: null, boDuoc: false, nguon: 'kho cũ pancake-tokens.json' });
       }
     }
   } catch (e) {
@@ -565,7 +565,7 @@ export async function batDauNapLai(boiCanh) {
 
   await ghiNhatKy(bc, {
     hanhDong: HANH_DONG.NAP_LAI_DU_LIEU,
-    ghiChu: 'bắt đầu kéo dữ liệu từ tiến trình bot về nền v3',
+    ghiChu: 'bắt đầu nạp lại dữ liệu từ tệp trên máy chủ về nền v3',
   });
 
   // CHẠY NỀN: không `await`. Lỗi được giữ lại để màn đọc, không ném ra ngoài tiến trình.

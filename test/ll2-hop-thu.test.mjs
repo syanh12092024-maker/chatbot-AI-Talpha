@@ -34,7 +34,7 @@ test('LL2 · Hộp thư: sale duyệt/loại đơn Messenger, nhận thay bot, t
       await pool.query('INSERT INTO thanh_vien_team(team_id,nguoi_dung_id,vai_id) SELECT $1,$2,id FROM vai WHERE ma=$3', [teamId, u.id, vai]);
     }
     const page = await one(
-      "INSERT INTO page(team_id,page_id,ten,pos_shop_id,v3_ai_bat) VALUES($1,'ll2-page','Page LL2','9995002',false) RETURNING *", [team]);
+      "INSERT INTO page(team_id,page_id,ten,pos_shop_id,bot_ai_bat) VALUES($1,'ll2-page','Page LL2','9995002',false) RETURNING *", [team]);
     const ma = '9995002:4f1c0a52-7b1e-4a53-9b2f-0c1d2e3f4a5b';
     const sp = await one("INSERT INTO san_pham(team_id,page_id,ma,ten,mo_ta) VALUES($1,$2,$3,'Sản phẩm LL2','') RETURNING *", [team, page.id, ma]);
     await pool.query("INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te) VALUES($1,$2,2,19900,'AED'),($1,$2,3,27900,'AED')", [team, sp.id]);

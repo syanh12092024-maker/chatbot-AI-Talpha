@@ -17,7 +17,7 @@
 <body>
 <header>
   <h1>Page còn thiếu gì</h1>
-  <span class="sub">Điều kiện để bot chạy được trên một page. Bậc chặn thì bot không bật được; bậc nhắc thì bật vẫn được. Page chạy bot cũ và page chạy bot mới có hai bộ điều kiện khác nhau.</span>
+  <span class="sub">Điều kiện để bot chạy được trên một page. Bậc chặn thì bot không bật được; bậc nhắc thì bật vẫn được. Page đang bật bot hiện điều kiện chạy (van gửi · cách ghép lời · sản phẩm có giá · model); page đang tắt hiện điều kiện nội dung (token · thẻ · sản phẩm · kịch bản).</span>
 </header>
 
 <main>
@@ -96,7 +96,7 @@ function veLoc() {
 function veO(x) {
   const dk = (DL.dieuKien && DL.dieuKien[x.ma]) || null;
   const nhan = (dk ? dk.ten : x.ma) + (x.la ? ' (mã lạ)' : '');
-  const lam = dk ? dk.lam : 'Mã này tiến trình bot vừa thêm, màn chưa biết cách chỉ chỗ sửa.';
+  const lam = dk ? dk.lam : 'Mã này lõi bot vừa thêm, màn chưa biết cách chỉ chỗ sửa.';
   const hh = statusBadge(x.chan ? 'blocked' : 'needs_attention', { label: nhan });
   if (dk && dk.di) return `<a href="${esc(dk.di)}" title="${esc(lam)}">${hh}</a>`;
   return `<span title="${esc(lam)}">${hh}</span>`;
@@ -127,10 +127,10 @@ function veBang() {
       <th scope="col">Nhắc</th><th scope="col">Marketer</th>
     </tr></thead><tbody>${ds.map((p) => `
     <tr>
-      <td><div class="page-identity-name">${esc(p.ten)}</div><div class="page-identity-sub">${esc(p.pageId)} · ${p.banBot === 'moi' ? 'bot mới' : 'bot cũ'}</div></td>
+      <td><div class="page-identity-name">${esc(p.ten)}</div><div class="page-identity-sub">${esc(p.pageId)} · ${p.banBot === 'moi' ? 'đang bật bot' : 'đang tắt bot'}</div></td>
       <td>${p.botKhongThay ? statusBadge('not_seen') : statusBadge(p.botTheoBot ? 'bot_on' : 'bot_off')}
         ${p.botTheoCsdl !== p.botTheoBot && !p.botKhongThay
-          ? `<div class="meta" title="Cột trong cơ sở dữ liệu là bản sao — con số đúng là của tiến trình bot">CSDL ghi ${p.botTheoCsdl ? 'bật' : 'tắt'}</div>` : ''}</td>
+          ? `<div class="meta" title="Cột page.bot_ai_bat — công tắc bot, chính cột máy trả lời đọc">CSDL ghi ${p.botTheoCsdl ? 'bật' : 'tắt'}</div>` : ''}</td>
       <td>${p.botKhongThay ? statusBadge('unknown', { label: 'Chưa biết' })
             : (p.chan.length ? `<div class="chip-list">${p.chan.map(veO).join('')}</div>` : '<span class="text-muted">Không vướng gì</span>')}
         ${p.chan.length ? `<div class="meta">${esc(p.chan.map((x) => x.chiTiet).filter(Boolean).join(' · '))}</div>` : ''}</td>
@@ -169,8 +169,8 @@ function veDieuKien(dk) {
   $('#dsDk').innerHTML = `<table class="data-table"><thead><tr>
       <th scope="col">Điều kiện</th><th scope="col">Mức</th><th scope="col">Phải làm gì</th>
       <th scope="col" class="actions"><span class="sr-only">Chỗ sửa</span></th>
-    </tr></thead><tbody>${nhomHang('Page chạy bot cũ', cu.length)}${cu.map(hang).join('')}`
-    + `${moi.length ? nhomHang('Page chạy bot mới', moi.length) + moi.map(hang).join('') : ''}</tbody></table>`;
+    </tr></thead><tbody>${nhomHang('Page đang tắt bot — điều kiện nội dung', cu.length)}${cu.map(hang).join('')}`
+    + `${moi.length ? nhomHang('Page đang bật bot — điều kiện chạy', moi.length) + moi.map(hang).join('') : ''}</tbody></table>`;
 }
 
 /* Ô «Nguồn số» — luật 8 của sổ vẫn nguyên, chỉ đổi CHỖ ĐỨNG: người vận hành không phải đọc
@@ -183,12 +183,12 @@ function veNguonSo(d) {
   $('#nguon-so').innerHTML = nguonSo({
     dong: [
       { ten: 'Page của team', tu: 'bảng page của team đang mở — không gồm page team khác và page chưa phân team' },
-      { ten: 'Bot có đang chạy', tu: 'hỏi thẳng tiến trình bot, không đọc cột bản sao trong cơ sở dữ liệu' },
-      { ten: 'Điều kiện của page bot cũ', tu: 'cửa kiểm của tiến trình bot (`src/readiness.js`), đọc qua cầu HTTP' },
-      { ten: 'Điều kiện của page bot mới', tu: 'phép kiểm cấu hình của đường v3 (`pageStatus`) — mới kiểm cấu hình, chưa hỏi máy chạy bot còn sống' },
+      { ten: 'Bot có đang chạy', tu: 'cột `page.bot_ai_bat` — công tắc duy nhất, chính cột máy trả lời đọc' },
+      { ten: 'Điều kiện của page đang tắt', tu: 'cửa kiểm nội dung (`src/readiness.js`) chạy trong tiến trình v3' },
+      { ten: 'Điều kiện của page đang bật', tu: 'phép kiểm của chính bot (`pageStatus`) — kiểm cấu hình, chưa hỏi máy chạy bot còn sống' },
       { ten: 'Mã máy của từng điều kiện', tu: ma },
     ],
-    chuY: 'Cầu sang tiến trình bot hỏng thì màn TỪ CHỐI đoán: nó nói hỏng chứ không hiện một bảng rỗng.',
+    chuY: 'Lõi bot lỗi thì màn TỪ CHỐI đoán: nó nói hỏng chứ không hiện một bảng rỗng.',
   });
 }
 
@@ -202,7 +202,7 @@ async function tai() {
 
     const kh = [];
     if (d.lech) {
-      kh.push(canhBao({ level: 'warning', title: 'Cơ sở dữ liệu v3 và tiến trình bot đang nói khác nhau',
+      kh.push(canhBao({ level: 'warning', title: 'Cột công tắc và cửa kiểm đang nói khác nhau',
         body: d.lech.noi,
         detail: d.lech.viDu.map((v) => `${v.ten} (${v.pageId}) — CSDL: ${v.csdl ? 'bật' : 'tắt'} · bot: ${v.bot ? 'bật' : 'tắt'}`) }));
     }
@@ -219,7 +219,7 @@ async function tai() {
       body: 'Màn này TỪ CHỐI hiện bảng rỗng — một bảng rỗng ở đây trông y như «mọi page đều ổn».',
       detail: [e.message] })}</div>`;
     $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không đọc được cửa kiểm',
-      body: 'Kiểm kết nối sang tiến trình bot rồi tải lại trang.' });
+      body: 'Nhờ người quản trị hệ thống xem dịch vụ v3, rồi tải lại trang.' });
   }
 }
 

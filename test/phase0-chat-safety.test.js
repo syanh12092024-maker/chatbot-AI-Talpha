@@ -94,11 +94,13 @@ test('snapshot AI cũ không ghi đè quyền SALE trong câu UPDATE', async () 
 
 test('production thiếu secret/auth không khởi động và không chấp nhận webhook không ký', () => {
   const env = process.env.NODE_ENV;
-  const old = { appSecret: config.appSecret, adminUser: config.adminUser, adminPass: config.adminPass };
+  const old = { appSecret: config.appSecret };
   try {
     process.env.NODE_ENV = 'production';
-    Object.assign(config, { appSecret: '', adminUser: '', adminPass: '' });
-    assert.throws(assertConfig, /APP_SECRET.*ADMIN_USER.*ADMIN_PASS/);
+    Object.assign(config, { appSecret: '' });
+    // CR-02-10 · MB4: ADMIN_USER/ADMIN_PASS (Basic auth màn /admin của v1) không còn bắt buộc.
+    assert.throws(assertConfig, /APP_SECRET/);
+    assert.doesNotThrow(() => { try { assertConfig(); } catch (e) { if (/ADMIN_USER|ADMIN_PASS/.test(e.message)) throw e; } });
     assert.equal(verifySignature(Buffer.from('{}'), undefined), false);
   } finally {
     Object.assign(config, old);

@@ -167,9 +167,9 @@ test("N5 · áp bản người viết → đổi bản đang chạy, và TRẢ V
   );
   assert.equal(Number((await banDangAp()).phien_ban), 2);
   assert.equal(kq.anhHuong.soPage, 3);
-  // ⚠️ SỬA 25/08 (B-Y7): `soPageDangBatBot` KHÔNG còn lấy từ cột `page.bot_ai_bat` nữa —
-  // cột đó là BẢN SAO và đã lệch 50 trên máy chủ thật. Nay lấy từ `ai-enabled.json`.
-  assert.equal(kq.anhHuong.nguon, "ai-enabled.json");
+  // CR-02-10 (02/10): cột `page.bot_ai_bat` là công tắc DUY NHẤT (từ 25/08 tới 02/10 hàm này đọc
+  // `ai-enabled.json` của bot v1 vì cột khi ấy là bản sao — B-Y7).
+  assert.equal(kq.anhHuong.nguon, "cot_csdl");
   // CON SỐ CHÍNH XÁC, không phải `typeof === 'number'`. Bản cũ chỉ đo được kiểu dữ liệu vì
   // nó đọc tệp ở gốc repo nên không biết trước sẽ thấy gì — tức phép đo yếu đi vì hạ tầng,
   // không phải vì đề bài. Nguồn tự dựng trả lại con số cho nó.
@@ -257,76 +257,32 @@ test("N11 · xemAnhHuongBoLuat tách «tổng page» khỏi «page đang bật b
     `   [N11] ${ah.soPage} page · ${ah.soPageDangBatBot} bật (nguồn: ${ah.nguon}) · cột nói ${ah.theoCotCsdl}`,
   );
   assert.equal(ah.soPage, 3);
-  assert.equal(ah.nguon, "ai-enabled.json", "phải hỏi NGUỒN THẬT, không hỏi cột");
-  // Và TÁCH được hai con số ra thật: 3 page tổng, 2 đang bật bot. Đây là điều tên ca hứa —
-  // bản cũ dừng ở `nguon` nên cái «tách» chưa ca nào đo.
+  assert.equal(ah.nguon, "cot_csdl", "cột `bot_ai_bat` là công tắc duy nhất (CR-02-10)");
+  // Và TÁCH được hai con số ra thật: 3 page tổng, 2 đang bật bot.
   assert.equal(ah.soPageDangBatBot, 2);
-  assert.equal(ah.theoCotCsdl, 2);
-  assert.equal(ah.lech.co, false, "nguồn dựng KHỚP cột — không được báo lệch vô cớ");
+  assert.equal(ah.lech, null, "một nguồn thì không có lệch để báo");
 });
 
-// ══ B-Y7 — CỘT LỆCH KHỎI SỰ THẬT, VÀ ĐÓ LÀ CON SỐ CHO PHÉP BẤM ÁP ═══════════════════
-// Ca ⑤ của phiếu dặn thẳng: phải chạm nhánh cột và bot KHÁC nhau. «Dựng fixture cho cả hai
-// bằng nhau rồi coi là xong» chính là cảnh bài test cũ đã XANH trong khi thực tế lệch 50
-// page suốt từ 24/08.
-test("N18 · cột nói BẬT mà nguồn thật nói TẮT → lấy số THẬT, và BÁO chỗ lệch", async () => {
+// ══ MỘT NGUỒN (CR-02-10) — CỘT LÀ CÔNG TẮC, TỆP CỦA BOT v1 KHÔNG CÒN LÀ NGUỒN ══════════════
+// B-Y7 (25/08) từng bắt cột lệch 50 so với `ai-enabled.json` nên hàm đọc tệp làm số thật. v1 nghỉ hưu
+// 02/10: tệp đứng im và RỖNG trên máy chủ — đọc nó là báo «0 page bật» trong khi bot đang trả lời.
+// Ca này dựng tệp NÓI KHÁC cột và đòi số theo CỘT (đảo-vá: khôi phục đọc tệp ⇒ đỏ).
+test("N18 · tệp ai-enabled.json nói khác cũng KHÔNG được đọc — số page bật theo CỘT", async () => {
   const fs = await import("node:fs");
   const os = await import("node:os");
   const path = await import("node:path");
-  const tam = fs.mkdtempSync(path.join(os.tmpdir(), "y7-"));
+  const tam = fs.mkdtempSync(path.join(os.tmpdir(), "mot-nguon-"));
   try {
-    // Nguồn thật: KHÔNG page nào bật — trong khi CSDL có 2 page `bot_ai_bat = true`.
-    fs.writeFileSync(path.join(tam, "ai-enabled.json"), "[]");
-    const ah = await xemAnhHuongBoLuat(sb.pool, ctxSoan, { goc: tam });
-    console.log(
-      `   [N18] thật=${ah.soPageDangBatBot} · cột=${ah.theoCotCsdl} · lệch=${ah.lech.soLech}`,
-    );
-    assert.equal(ah.soPageDangBatBot, 0, "phải theo NGUỒN THẬT");
-    assert.equal(ah.theoCotCsdl, 2, "và vẫn khai cột nói gì, để đối chiếu");
-    assert.equal(ah.lech.co, true);
-    assert.equal(ah.lech.soLech, 2);
-    assert.match(ah.lech.viSao, /LỆCH nguồn thật/);
-    assert.ok(ah.lech.chiCotBat.includes("fb-size"), "phải chỉ ra ĐÚNG page nào lệch");
-
-    // …và chiều ngược lại: bot bật một page mà cột nói tắt.
     fs.writeFileSync(path.join(tam, "ai-enabled.json"), JSON.stringify(["fb-tat"]));
-    const ah2 = await xemAnhHuongBoLuat(sb.pool, ctxSoan, { goc: tam });
-    console.log(`   [N18] chiều ngược: chiBotBat=${JSON.stringify(ah2.lech.chiBotBat)}`);
-    assert.equal(ah2.soPageDangBatBot, 1);
-    assert.deepEqual(ah2.lech.chiBotBat, ["fb-tat"]);
-  } finally {
-    fs.rmSync(tam, { recursive: true, force: true });
-  }
-});
-
-test("N19 · KHỚP nhau thì lech.co = false, không báo động vô cớ", async () => {
-  const fs = await import("node:fs");
-  const os = await import("node:os");
-  const path = await import("node:path");
-  const tam = fs.mkdtempSync(path.join(os.tmpdir(), "y7ok-"));
-  try {
-    fs.writeFileSync(
-      path.join(tam, "ai-enabled.json"),
-      JSON.stringify(["fb-size", "fb-nosize"]),
-    );
     const ah = await xemAnhHuongBoLuat(sb.pool, ctxSoan, { goc: tam });
-    console.log(`   [N19] khớp → lech.co=${ah.lech.co}`);
-    assert.equal(ah.lech.co, false);
-    assert.equal(ah.lech.viSao, null);
-    assert.equal(ah.soPageDangBatBot, 2);
+    assert.equal(ah.soPageDangBatBot, 2, "cột nói fb-size + fb-nosize bật — tệp cũ không được thắng");
+    assert.equal(ah.nguon, "cot_csdl");
+    assert.equal(ah.lech, null);
+    const mu = await xemAnhHuongBoLuat(sb.pool, ctxSoan, { goc: "/khong/co/thu/muc/nay" });
+    assert.equal(mu.soPageDangBatBot, 2, "thiếu tệp cũ không đổi gì — tệp không còn là nguồn");
   } finally {
     fs.rmSync(tam, { recursive: true, force: true });
   }
-});
-
-test("N20 · KHÔNG đọc được nguồn thật → nói ra, KHÔNG lặng lẽ rơi về cột", async () => {
-  // Rơi về cột chính là cái đang sai. Mù thì phải nói (bài học 3 + án lệ #7).
-  const ah = await xemAnhHuongBoLuat(sb.pool, ctxSoan, { goc: "/khong/co/thu/muc/nay" });
-  console.log(`   [N20] nguon=${ah.nguon} · viSao="${ah.lech.viSao?.slice(0, 56)}…"`);
-  assert.equal(ah.nguon, "cot_csdl");
-  assert.equal(ah.lech.co, null, "null = CHƯA BIẾT, khác hẳn false = đã kiểm và khớp");
-  assert.match(ah.lech.viSao, /KHÔNG đọc được/);
-  assert.match(ah.lech.viSao, /Đừng coi nó là số thật/);
 });
 
 // ══ KỸ NĂNG ═════════════════════════════════════════════════════════════════════════

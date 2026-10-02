@@ -8,7 +8,7 @@
 //
 // | Cột | Ai là NGUỒN THẬT | Ghi từ màn này thì sao |
 // |---|---|---|
-// | `bot_ai_bat` | `ai-enabled.json` + RAM tiến trình bot | **KHÔNG ghi vào CSDL.** Đi qua `noi-day/cau-bot-v1.js`; cột trong CSDL chỉ là bản sao |
+// | `bot_ai_bat` | `ai-enabled.json` + RAM tiến trình bot | **KHÔNG ghi vào CSDL.** Đi qua `noi-day/loi-bot.js`; cột trong CSDL chỉ là bản sao |
 // | `marketer`   | CSDL v3. **`PHIEU-B-Y4` xong 25/08** — di trú nay `CASE WHEN page.marketer <> '' THEN page.marketer ELSE EXCLUDED.marketer END` | ghi được, **và di trú không xoá nữa**: nguồn điền vào chỗ trống, không bao giờ xoá chỗ đã có |
 // | `trong_diem` | CSDL v3, và CHỈ CSDL v3 | ghi thẳng, an toàn — cột này không nằm trong câu `ON CONFLICT DO UPDATE` của di trú |
 //
@@ -156,13 +156,13 @@ export const daNoiCuaKiem = () => typeof _docSanSang === 'function';
 /** Đọc cửa kiểm một lần cho cả mẻ. Hỏng thì trả lý do, không ném — bảng page vẫn phải hiện. */
 async function docCuaKiem() {
   if (!_docSanSang) {
-    return { doc: null, viSao: 'Chưa nối cầu sang tiến trình bot — xem màn Sức khoẻ hệ thống.' };
+    return { doc: null, viSao: 'Chưa nối bộ đọc lõi bot — xem màn Sức khoẻ hệ thống.' };
   }
   try {
     const kq = await _docSanSang();
     return { doc: new Map((kq?.pages || []).map((x) => [String(x.pageId), x])), viSao: null };
   } catch (e) {
-    return { doc: null, viSao: `Cầu sang tiến trình bot lỗi: ${e?.message || e}` };
+    return { doc: null, viSao: `Lõi bot lỗi khi đọc cửa kiểm: ${e?.message || e}` };
   }
 }
 
@@ -365,7 +365,6 @@ export function gonPage(p) {
     botAiBat: co(p.bot_ai_bat),
     // 024 — page này đã GIAO cho bot mới chưa. Khác `botAiBat` (bot CŨ đang bật hay tắt) và
     // khác `v3_ai_bat` (trong số page đã giao, bot mới có đang bật không).
-    giaoBotMoi: co(p.giao_bot_moi),
     botcakeTat: co(p.botcake_tat),
     trongDiem: co(p.trong_diem),
     sanPhamGocMa: p.san_pham_goc_ma || null,   // 015 — page khai nó bán gì

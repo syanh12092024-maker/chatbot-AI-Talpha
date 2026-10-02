@@ -57,7 +57,7 @@ test('QP2 · câu upsert KHÔNG đụng cột nào của người đặt', async
   const cau = NGUON.slice(NGUON.indexOf('INSERT INTO page (team_id'), NGUON.indexOf('RETURNING (xmax'));
   for (const cot of [
     'marketer', 'thi_truong', 'nganh_hang', 'trong_diem', 'botcake_tat',
-    'bot_ai_bat', 'v3_ai_bat', 'pos_shop_id', 'san_pham_goc_ma', 'nguon_tin',
+    'bot_ai_bat', 'pos_shop_id', 'san_pham_goc_ma', 'nguon_tin',
   ]) {
     assert.ok(!cau.includes(cot), `câu quét KHÔNG được nhắc cột "${cot}" — đó là công của người hoặc công tắc chạm khách`);
   }

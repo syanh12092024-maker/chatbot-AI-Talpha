@@ -14,7 +14,7 @@
 import { taoPool } from "../../db/ket-noi.js";
 import { dayPageSangBot, dungSanPhamChoBot, soBanChep } from "../../src/products/ban-chep-bot.js";
 import { docSanPhamGoiGia } from "../../src/products/catalog.js";
-import { daySanPhamLenBot } from "../../v3/src/noi-day/cau-bot-v1.js";
+import { daySanPhamLenBot } from "../../v3/src/noi-day/loi-bot.js";
 // CR-02-10 · MB1: lõi bot chạy TRONG tiến trình — nạp KB của chính script này, ghi tệp chung; tiến
 // trình v3 và worker đọc lại tệp khi nó đổi.
 import { loadKB, getPageProductsRaw } from "../../src/kb.js";

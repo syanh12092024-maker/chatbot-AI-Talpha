@@ -32,7 +32,7 @@
     <div id="bangToken"><div class="empty-state"><span class="skeleton"></span></div></div>
     <div class="table-note" id="giaiThich" hidden></div>
     <div class="table-note">«Không quyền»: chưa đo — cần một lượt dò Pancake theo từng page của mỗi token (đếm page trả «không có quyền hạn
-      trên trang này»). «Page đang dùng» là số page tiến trình bot đang giao cho token đó.</div>
+      trên trang này»). «Page đang dùng» là số page lõi bot đang giao cho token đó.</div>
   </section>
 
   <section class="section" aria-label="Nguồn của các con số">
@@ -167,7 +167,7 @@ async function goi(duong, tuyChon) {
 }
 
 /* GD4 · 24/09: đầu màn chỉ giữ hộp cảnh báo CÓ VIỆC PHẢI LÀM. Hai câu «kho dùng chung cho mọi
-   team» và «chưa hỏi được tiến trình bot» không đòi ai làm gì — chúng là ghi chú của bảng, nên
+   team» và «chưa đọc được lõi bot» không đòi ai làm gì — chúng là ghi chú của bảng, nên
    xuống làm ghi chú của bảng. Trước lượt này màn mở ra là ba hộp cảnh báo liền nhau, và người
    đọc học được cách bỏ qua cả ba. */
 function veBangTin() {
@@ -195,7 +195,7 @@ function veNguonSo(d) {
   const dong = [
     { ten: 'Tài khoản Pancake', tu: 'bảng `token_pancake` của cơ sở dữ liệu, cộng các tài khoản khai trong `.env` của máy chủ — tài nguyên cấp máy chủ, không theo team' },
     { ten: 'Hạn còn lại', tu: 'đọc từ chính tài khoản (phần hạn trong JWT), không phải một cột người nhập' },
-    { ten: 'Page đang dùng', tu: 'hỏi tiến trình bot qua `/admin/api`; bot im thì cột này trống chứ không phải bằng 0' },
+    { ten: 'Page đang dùng', tu: 'đọc từ lõi bot trong tiến trình v3; lõi lỗi thì cột này trống chứ không phải bằng 0' },
     { ten: 'Kết nối kho hàng', tu: 'bảng `ket_noi_pos` của team đang mở. Khoá API không bao giờ đọc ngược ra được' },
     { ten: 'Không quyền', tu: 'chưa đo — cần một lượt dò Pancake theo từng page của mỗi token; màn không đoán' },
     { ten: 'Tiền tệ · Món', tu: 'bảng `san_pham` của team đang mở (mã `<shop>:<id>` do lượt kéo danh mục ghi) + `goi_gia.tien_te`. Món nạp từ bot (`kb:`) không thuộc shop nào nên không đếm' },
@@ -243,7 +243,7 @@ function veKho(d) {
         <td class="actions">${t.boDuoc
           ? button('Bỏ', { size: 'sm', variant: 'danger', disabled: !QUAN_LY, data: { bo: t.id },
               title: QUAN_LY ? 'Bỏ tài khoản này khỏi kho' : 'Máy chủ chưa nối kho tài khoản' })
-          : '<span class="meta" title="Token nằm trong cấu hình máy chủ (.env) hoặc kho cũ của tiến trình bot">Sửa ở cấu hình máy chủ</span>'}</td>
+          : '<span class="meta" title="Token nằm trong cấu hình máy chủ (.env) hoặc kho cũ pancake-tokens.json">Sửa ở cấu hình máy chủ</span>'}</td>
       </tr>`).join('')}</tbody></table>`
       : emptyState({ icon: 'triangle-alert', title: 'Không có tài khoản Pancake nào', body: 'Bot không đọc và không gửi được tin nào. Thêm một tài khoản ở khung bên dưới.' });
   }
@@ -567,7 +567,7 @@ function veNap(t) {
     // khoe một dãy số 0 trông như dữ liệu vừa bốc hơi.
     $('#ketQuaNap').innerHTML = vang.length >= 5
       ? `<div class="duoi-4">${canhBao({ level: 'info', title: 'Không có gì để kéo trên máy này',
-          body: 'Nút này kéo dữ liệu từ các tệp của tiến trình bot v1. Máy này không có tệp nào trong số đó — '
+          body: 'Nút này nạp lại dữ liệu từ các tệp trên máy chủ (pages.json · conv-state.json · kb-overrides.json · script-versions). Máy này không có tệp nào trong số đó — '
             + 'bình thường với máy chỉ chạy v3 hoặc bản dev sạch. Không có gì hỏng, và không có gì thay đổi.',
           detail: vang })}</div>`
       : `<div class="duoi-4">${canhBao({ level: 'success', title: 'Đã kéo xong',
@@ -592,7 +592,7 @@ async function hoiNap() {
 
 $('#nutNap').addEventListener('click', async () => {
   const dongY = await confirmDialog({
-    title: 'Kéo dữ liệu từ tiến trình bot về?',
+    title: 'Nạp lại dữ liệu từ tệp trên máy chủ?',
     body: 'Đọc lại page, hội thoại, kịch bản và kết nối POS rồi ghi đè phần ĐỌC của nền v3. '
       + 'Công tắc bot, marketer và trọng điểm do người đặt KHÔNG bị đụng tới. '
       + 'Lượt nạp chạy nền, có thể mất vài phút với hàng chục nghìn hội thoại.',

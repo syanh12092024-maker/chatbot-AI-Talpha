@@ -6,7 +6,6 @@ import {
   nguonCoSan,
   nguonVang,
   docPages,
-  docAiEnabled,
   docConvState,
   docKichBan,
   pageLac,
@@ -42,8 +41,8 @@ const gio = (v) => (v ? new Date(typeof v === "number" ? v : String(v)) : null);
 //     `marketer = EXCLUDED.marketer` KHÔNG phải «đồng bộ từ nguồn», nó là
 //     `SET marketer = ''` cho mọi page, mỗi lượt di trú. Nay dùng CASE: nguồn điền vào
 //     chỗ trống, không bao giờ xoá chỗ đã có (PHIEU-B-Y4).
-//   · `bot_ai_bat` KHÔNG nằm trong pages.json — `napCongTacAi()` đặt riêng từ
-//     `ai-enabled.json`, nên câu dưới CỐ Ý không đụng (đụng là mỗi lượt tắt sạch công tắc).
+//   · `bot_ai_bat` là công tắc DUY NHẤT (CR-02-10), chỉ màn Công tắc từng page ghi — câu dưới CỐ Ý
+//     không đụng (đụng là mỗi lượt tắt sạch công tắc).
 //   · `trong_diem`, `botcake_tat` không nằm trong câu này. GIỮ NGUYÊN như vậy.
 //   · `team_id` chỉ ở vế INSERT, không ở vế UPDATE — nên page CŨ không bị kéo về team
 //     kỹ thuật, nhưng page MỚI thì vẫn rơi vào đó (đã ghi §9, ngoài phạm vi phiếu này).
@@ -106,28 +105,8 @@ export async function napPage(pool, goc) {
 }
 
 // ── công tắc AI ────────────────────────────────────────────────────────────
-// NGUỒN DUY NHẤT: ai-enabled.json. Bật đúng tập đó, TẮT mọi page ngoài tập —
-// hai vế trong một lượt, nếu không thì page bị gỡ khỏi danh sách sẽ bật mãi mãi.
-// Page trong danh sách mà không có dòng `page` (page lạc) được TRẢ RA để liệt kê,
-// KHÔNG nuốt im: `UPDATE … WHERE page_id=$1` chạm 0 dòng là công tắc mất câm.
-export async function napCongTacAi(pool, goc) {
-  const bat = docAiEnabled(goc);
-  const r = await pool.query(
-    `UPDATE page SET bot_ai_bat = (page_id = ANY($1::text[])), sua_luc = now()
-     WHERE bot_ai_bat <> (page_id = ANY($1::text[]))`,
-    [bat],
-  );
-  const coTrongBang = await pool.query(
-    "SELECT page_id FROM page WHERE page_id = ANY($1::text[])",
-    [bat],
-  );
-  const co = new Set(coTrongBang.rows.map((x) => x.page_id));
-  return {
-    nguon: bat.length,
-    doiTrangThai: r.rowCount,
-    khongCoDongPage: bat.filter((id) => !co.has(id)),
-  };
-}
+// `napCongTacAi` (chép `ai-enabled.json` → `page.bot_ai_bat`, cả hai chiều) đã gỡ — CR-02-10: cột
+// `page.bot_ai_bat` là công tắc DUY NHẤT, bật/tắt ở màn Công tắc từng page; lượt di trú không chạm nó.
 
 // ── hội thoại ──────────────────────────────────────────────────────────────
 // Khoá tự nhiên: (page_id, psid). Hội thoại của page LẠC bị bỏ qua và trả ra để
@@ -248,7 +227,7 @@ export async function diTruTatCa(pool, goc) {
   const page = co.pages ? await napPage(pool, goc) : null;
   // CR-02-10 · MB2: KHÔNG chép công tắc từ `ai-enabled.json` nữa. Cột `page.bot_ai_bat` nay là công
   // tắc DUY NHẤT (worker đọc thẳng); tệp của bot v1 đứng im và rỗng — chép nó (cả hai chiều) là TẮT
-  // mọi page vừa bật ở màn Công tắc. `napCongTacAi` còn lại cho bộ ca cũ, gỡ ở MB4.
+  // mọi page vừa bật ở màn Công tắc.
   const congTac = null;
   const hoiThoai = co.convState ? await napHoiThoai(pool, goc) : null;
   // Kịch bản đọc CẢ HAI nguồn (`kb-overrides.json` + `script-versions/`); có một là chạy.

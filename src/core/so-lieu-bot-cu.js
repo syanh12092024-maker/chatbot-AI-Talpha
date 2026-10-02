@@ -13,7 +13,6 @@ import { config } from '../config.js';
 import { pancakePages } from '../pancake.js';
 import { tokenStats, aiConvsByPageInRange } from '../ai-log.js';
 import { getStats } from '../stats.js';
-import { listAiEnabled } from '../store.js';
 import { ordersEnabled, aiOrderStats } from '../pancake-orders.js';
 import { getAiConvSet } from '../ai-convs.js';
 import { convStateStats, S } from '../conv-state.js';
@@ -83,7 +82,8 @@ export async function donHangAi({ from, to } = {}) {
 
   const scan = (async () => {
     const st = getStats();
-    const ids = [...new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)])];
+    // CR-02-10 · MB4: `ai-enabled.json` (công tắc v1) đã gỡ — tập page lấy từ sổ số liệu của bot cũ.
+    const ids = [...new Set(Object.keys(st.byPage))];
     const prev = hit?.data?.pages || {};
     const failed = [];
     const convByPage = (from || to) ? aiConvsByPageInRange({ from, to }) : null;

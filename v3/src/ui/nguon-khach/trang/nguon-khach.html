@@ -116,11 +116,11 @@ function veChoRoi(c) {
 }
 
 /* VE6c · bản vẽ 3c: phân bố CỦA TEAM (CSDL v3) theo giai đoạn × người giữ, tô theo người giữ. Chưa có ⇒ lùi về khối TOÀN HỆ của
-   tiến trình bot (bên dưới) và nói vì sao. Không tỉ lệ rơi giữa hai dòng — ảnh chụp chỗ đứng. */
+   sổ hội thoại cũ (bên dưới) và nói vì sao. Không tỉ lệ rơi giữa hai dòng — ảnh chụp chỗ đứng. */
 function vePhanBo(pb, p) {
   if (!pb || !pb.docDuoc) {
     vePheu(p);
-    if (pb && pb.noi) $('#pheu').insertAdjacentHTML('afterbegin', `<p class="field-hint duoi-3">${esc(pb.noi)} Đang hiện số toàn hệ của tiến trình bot.</p>`);
+    if (pb && pb.noi) $('#pheu').insertAdjacentHTML('afterbegin', `<p class="field-hint duoi-3">${esc(pb.noi)} Đang hiện số toàn hệ của sổ hội thoại cũ (conv-state, đứng im từ 16/09).</p>`);
     return;
   }
   const tuoi = pb.tuoi && pb.tuoi.chamMoiNhat ? new Date(pb.tuoi.chamMoiNhat).toLocaleDateString('vi-VN') : null;

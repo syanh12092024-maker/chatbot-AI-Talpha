@@ -14,7 +14,6 @@ import path from 'node:path';
 // Key giả PHẢI đặt trước khi nạp module (kho key đọc env lúc import).
 process.env.BOTCAKE_TOKENS = '1194048433791745:key-gia-cho-test';
 
-const bc = await import('../src/botcake.js');
 const rs = await import('../src/rule-store.js');
 const { fastLane, fastLaneStats, noteFastLane } = await import('../src/fast-lane.js');
 
@@ -73,96 +72,6 @@ function stubFetch({ fail = false } = {}) {
 }
 const restoreFetch = () => { globalThis.fetch = realFetch; };
 
-test('A1 · botcake.js KHÔNG export bất kỳ hàm GHI nào (kể cả send_flow)', async () => {
-  const src = fs.readFileSync(new URL('../src/botcake.js', import.meta.url), 'utf8');
-  // Không có method ghi trong lời gọi fetch
-  assert.equal(/method:\s*['"](POST|PUT|PATCH|DELETE)/i.test(src), false, 'botcake.js có lời gọi ghi');
-  assert.equal(/send_flow/.test(src.replace(/^.*send_flow.*$/gm, (l) => (l.trim().startsWith('//') ? '' : l))), false,
-    'botcake.js gọi send_flow ngoài phần ghi chú');
-  // Không export hàm nào có tên gợi ý ghi
-  for (const name of Object.keys(bc)) {
-    assert.equal(/^(set|update|create|delete|remove|post|put|patch|send|activate|deactivate|toggle|enable|disable)/.test(name), false,
-      `export "${name}" nghe như một hàm GHI — API Botcake là chỉ đọc`);
-  }
-});
-
-test('A2 · đọc đúng 6 keyword + 11 flow, auth bằng header access-token', async () => {
-  bc.reloadBotcakeKeys(process.env.BOTCAKE_TOKENS);
-  stubFetch(); calls.length = 0;
-  try {
-    const m = await bc.getKeywordMap(PAGE);
-    assert.equal(m.hasKey, true);
-    assert.equal(m.rules.length, 6);
-    assert.equal(m.flows.length, 11);
-    assert.equal(m.rules.filter((r) => r.isActivated).length, 5);
-    assert.equal(m.blind, 0, '6 luật của page nháp đều bóc được từ khoá');
-    for (const c of calls) {
-      assert.equal(c.method, 'GET', 'chỉ được gọi GET');
-      assert.ok(c.headers['access-token'], 'thiếu header access-token');
-      assert.equal(/access_token=/.test(c.url), false, 'key lọt vào query string — Botcake trả 400 và key bị ghi vào log server');
-    }
-  } finally { restoreFetch(); bc.clearBotcakeCache(); }
-});
-
-test('A3 · bóc từ khoá từ tên flow — kể cả tên xấu, và trả rỗng khi tên bị đổi', () => {
-  assert.deepEqual(bc.keywordsFromFlowName('Có chứa how much,  Magkano,  price'), ['how much', 'Magkano', 'price']);
-  // "not faded" lặp hai lần trong dữ liệu thật → chỉ giữ một
-  assert.deepEqual(bc.keywordsFromFlowName('Có chứa a,  not faded, not faded,  b'), ['a', 'not faded', 'b']);
-  // 5/11 flow của page nháp không theo mẫu → VÙNG MÙ, không được đoán bừa
-  assert.deepEqual(bc.keywordsFromFlowName('LẦN 1'), []);
-  assert.deepEqual(bc.keywordsFromFlowName('Private Replies #1'), []);
-  assert.deepEqual(bc.keywordsFromFlowName(''), []);
-});
-
-test('A4 · page KHÔNG có key → rỗng ÊM, không ném, không gọi mạng', async () => {
-  bc.reloadBotcakeKeys(process.env.BOTCAKE_TOKENS);
-  stubFetch(); calls.length = 0;
-  try {
-    const m = await bc.getKeywordMap('999999999999');
-    assert.deepEqual(m, { pageId: '999999999999', hasKey: false, read: false, rules: [], flows: [], blind: 0, activeBlind: 0 });
-    assert.deepEqual(await bc.getKeywords('999999999999'), []);
-    assert.deepEqual(await bc.getFlows('999999999999'), []);
-    assert.equal(calls.length, 0, 'page không có key mà vẫn gọi mạng');
-  } finally { restoreFetch(); bc.clearBotcakeCache(); }
-});
-
-test('A5 · Botcake sập/mạng hỏng → rỗng êm, luồng chat không bị chặn', async () => {
-  bc.reloadBotcakeKeys(process.env.BOTCAKE_TOKENS);
-  stubFetch({ fail: true });
-  try {
-    const m = await bc.getKeywordMap(PAGE);
-    assert.equal(m.rules.length, 0);
-    assert.equal(m.read, false, '"đọc lỗi" phải phân biệt được với "đọc được, không có luật nào"');
-    // Và cửa bỏ chờ phải lệch về phía CHỜ khi không đọc được
-    assert.equal(await bc.willBotcakeAnswer(PAGE, 'magkano po'), true);
-  } finally { restoreFetch(); bc.clearBotcakeCache(); }
-});
-
-test('A6 · BỎ CHỜ có chọn lọc — chỉ bỏ khi CHẮC CHẮN không luật nào khớp', async () => {
-  bc.reloadBotcakeKeys(process.env.BOTCAKE_TOKENS);
-  stubFetch();
-  try {
-    assert.equal(await bc.willBotcakeAnswer(PAGE, 'how much po?'), true, 'khớp "how much" → phải chờ');
-    assert.equal(await bc.willBotcakeAnswer(PAGE, 'pawnable ba ito'), true, 'khớp "pawnable" → phải chờ');
-    assert.equal(await bc.willBotcakeAnswer(PAGE, 'ano pong color meron kayo'), false, 'không khớp luật nào → bỏ chờ được');
-    // Luật ĐANG TẮT không được kéo về phía chờ ("Size" thuộc flow is_activated=false)
-    assert.equal(await bc.willBotcakeAnswer(PAGE, 'what size po'), false, 'luật đã TẮT mà vẫn bắt chờ');
-    // Page không có key = KHÔNG BIẾT → chờ, không được bỏ
-    assert.equal(await bc.willBotcakeAnswer('999999999999', 'ano pong color'), true);
-    // Ảnh/sticker (tin rỗng) → không suy được gì → chờ
-    assert.equal(await bc.willBotcakeAnswer(PAGE, '   '), true);
-  } finally { restoreFetch(); bc.clearBotcakeCache(); }
-});
-
-test('A7 · có luật BẬT mà mù từ khoá → không dám bỏ chờ', () => {
-  const map = { hasKey: true, read: true, rules: [{ isActivated: true, readable: false, keywords: [] }, { isActivated: true, readable: true, keywords: ['price'] }] };
-  assert.equal(bc.matchesBotcakeMap(map, 'ano pong color'), true, 'còn vùng mù mà đã dám kết luận');
-  const clean = { hasKey: true, read: true, rules: [{ isActivated: true, readable: true, keywords: ['price'] }] };
-  assert.equal(bc.matchesBotcakeMap(clean, 'ano pong color'), false);
-  // Đọc lỗi → KHÔNG BAO GIỜ được kết luận "bỏ chờ"
-  assert.equal(bc.matchesBotcakeMap({ hasKey: true, read: false, rules: [] }, 'ano pong color'), true);
-});
-
 // LUẬT ĐÃ ĐỔI (chốt 25/09, người quyết xác nhận «cố ý»): Fast Lane KHÔNG còn câu hứa
 // cứng trong mã. `priceTail` bỏ dòng «FREE delivery, COD», và lane `ship` bỏ hẳn câu mặc
 // định — nay lấy từ `kb.config.fastLaneShip` của từng page, không có thì KHÔNG đáp.
@@ -173,70 +82,6 @@ test('A7 · có luật BẬT mà mù từ khoá → không dám bỏ chờ', () 
 //   · page ĐÃ cấu hình    → cả ba TRÙNG như cũ
 // Hai ca dưới đây neo đúng hai đầu đó. Ca cũ neo «3 TRÙNG» như một hằng số nên đỏ ngay khi
 // luật đổi, mà không nói được vì sao.
-test('A8 · page CHƯA cấu hình kịch bản → chỉ câu hỏi GIÁ là trùng, giao hàng thành BỔ SUNG', async () => {
-  bc.reloadBotcakeKeys(process.env.BOTCAKE_TOKENS);
-  rs.setRules([]); // báo cáo phải đo Fast Lane THUẦN, không lẫn dòng kịch bản của test khác
-  stubFetch();
-  try {
-    const r = await bc.compareWithFastLane(PAGE, KB, fastLane);
-    assert.equal(r.total, 6);
-    assert.equal(r.activated, 5);
-    assert.equal(r.off, 1, 'luật "Size" đang TẮT');
-    assert.equal(r.duplicate, 1, 'page chưa cấu hình ⇒ Fast Lane chỉ đáp được câu hỏi giá');
-    assert.equal(r.complement, 4,
-      'giao hàng · free delivery · pawnable · "chưa có tiền" — bốn chỗ Fast Lane KHÔNG phủ');
-    assert.equal(r.blind, 0);
-
-    const dup = r.items.filter((i) => i.verdict === 'TRÙNG' && i.isActivated).map((i) => i.keywords[0]);
-    assert.deepEqual(dup, ['how much']);
-    // Không có route/hàm nào tự tắt — báo cáo chỉ đề xuất
-    // Luật mới đẻ thêm một loại đề xuất: page chưa điền kịch bản thì Fast Lane có mẫu mà
-    // không đáp được, và báo cáo nói «ĐIỀN KB TRƯỚC» thay vì khuyên giữ Botcake. Đây là
-    // đề xuất ĐÚNG cho cảnh đó — thiếu nó trong phép kiểm thì ca đỏ mà không nói được gì.
-    for (const i of r.items) assert.match(String(i.suggestion), /TẮT|GIỮ|Mở Botcake|ĐIỀN KB/);
-  } finally { restoreFetch(); bc.clearBotcakeCache(); }
-});
-
-test('A8b · page ĐÃ cấu hình kịch bản → giao hàng & free delivery TRÙNG trở lại', async () => {
-  // ĐẦU KIA của cùng một luật. Fast Lane phủ được gì là do KỊCH BẢN PAGE quyết, không do
-  // mã — cùng bộ luật Botcake, chỉ khác page đã điền `fastLaneShip`. Thiếu ca này thì luật
-  // mới chỉ được neo một nửa, và không ai thấy điền kịch bản đổi được cái gì.
-  bc.reloadBotcakeKeys(process.env.BOTCAKE_TOKENS);
-  rs.setRules([]);
-  stubFetch();
-  try {
-    const KB_DA_CAU_HINH = { ...KB, config: {
-      fastLaneShip: 'Giao 2-5 ngày làm việc, FREE delivery. COD — xem hàng rồi mới trả tiền.',
-    } };
-    const r = await bc.compareWithFastLane(PAGE, KB_DA_CAU_HINH, fastLane);
-    assert.equal(r.total, 6);
-    assert.equal(r.duplicate, 3,
-      'điền kịch bản xong thì giá · số ngày giao · free delivery đều đã có mẫu Fast Lane');
-    const dup = r.items.filter((i) => i.verdict === 'TRÙNG' && i.isActivated).map((i) => i.keywords[0]);
-    assert.deepEqual(dup.sort(), ['How many days', 'Free delivery', 'how much'].sort());
-  } finally { restoreFetch(); bc.clearBotcakeCache(); }
-});
-
-test('A9 · liệt kê key KHÔNG lộ key', () => {
-  bc.reloadBotcakeKeys('111:sieu-bi-mat-abcdef,222:khac-bi-mat-uvwxyz');
-  const list = bc.listBotcakePages();
-  assert.equal(list.length, 2);
-  for (const p of list) {
-    assert.deepEqual(Object.keys(p).sort(), ['pageId', 'tail']);
-    assert.equal(p.tail.length, 6);
-    assert.equal(/sieu-bi-mat|khac-bi-mat/.test(JSON.stringify(p)), false, 'key lọt ra ngoài');
-  }
-  bc.reloadBotcakeKeys(process.env.BOTCAKE_TOKENS);
-});
-
-test('A10 · BOTCAKE_TOKENS sai định dạng → bỏ qua êm, không sập', () => {
-  assert.equal(bc.reloadBotcakeKeys('khong-co-dau-hai-cham'), 0);
-  assert.equal(bc.reloadBotcakeKeys('abc:key'), 0, 'pageId không phải số → bỏ');
-  assert.equal(bc.reloadBotcakeKeys('111:a,,222:b, ,333:c'), 3);
-  assert.equal(bc.reloadBotcakeKeys(''), 0);
-  // Gọi không tham số = nạp lại từ .env (mặc định của hàm), không phải "xoá sạch"
-  assert.equal(bc.reloadBotcakeKeys(), 1);
-});
 
 // ═════════════════════════════════════════════════════════════════════════════
 // PHẦN B · VALIDATOR 6 NHÓM CẤM (§2)
