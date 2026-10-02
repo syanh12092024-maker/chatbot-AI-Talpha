@@ -43,11 +43,19 @@ test('KT3 · tầng giao diện: marketer SỬA được kiến thức, sale kh�
   const { HANH_DONG, laBatBuoc } = await import('../v3/src/audit/hanh-dong.js');
   const bc = (vai) => taoBoiCanh({ nguoiDungId: 'u1', tenDangNhap: 'an', teamId: 't1', vai: [vai] });
   const ham = async () => ({});
-  goc.datKhoGoc({ ds: ham, cho: ham, dem: ham, tao: ham, sua: ham, bo: ham, chiTiet: ham, monChuaGan: ham, gan: ham, go: ham, goiYGop: ham, gop: ham, luuGia: ham, ganPage: ham, goPage: ham,
+  // LL15d · 02/10: marketer chỉ sửa kiến thức sản phẩm gán đúng mã NV mình — «u1» mang NV1, g1 gán NV1, g2 gán người khác.
+  const { dungCongGia } = await import('../v3/testkit/db-gia.js');
+  const { boiCanhMay } = await import('../v3/src/auth/boi-canh.js');
+  const { datCongDanhTinh } = await import('../v3/src/auth/kho-nguoi-dung.js');
+  const { taoTruyVan } = dungCongGia({ nguoi_dung: [{ id: 'u1', email: 'an@x.vn', ten: 'An', hoat_dong: true, ma_nv: 'NV1' }] });
+  datCongDanhTinh(() => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')));
+  const chiTiet = async (_b, id) => ({ id, maGoc: id, marketerMaNv: id === 'g1' ? 'NV1' : 'NV2', thiTruong: [], page: [] });
+  goc.datKhoGoc({ ds: ham, cho: ham, dem: ham, tao: ham, sua: ham, bo: ham, chiTiet, monChuaGan: ham, gan: ham, go: ham, goiYGop: ham, gop: ham, luuGia: ham, ganPage: ham, goPage: ham,
     kienThuc: async (_b, id, kt) => ({ id, maGoc: 'ao', kienThuc: kt, truoc: {} }) });
   const nk = []; goc.datPheuNhatKyGoc(async (_b, g) => { nk.push(g); });
   await assert.rejects(() => goc.suaKienThucGoc(bc(VAI.SALE), 'g1', { hoi_size: 'x' }), (e) => e.name === 'LoiThieuVai');
   await goc.suaKienThucGoc(bc(VAI.MARKETER), 'g1', { hoi_size: 'x' });
+  await assert.rejects(() => goc.suaKienThucGoc(bc(VAI.MARKETER), 'g2', { hoi_size: 'x' }), (e) => e.ma === 'khong_phu_trach' && e.status === 403);
   assert.deepEqual(nk.map((x) => x.hanhDong), [HANH_DONG.SUA_KIEN_THUC_SAN_PHAM]);
   assert.equal(laBatBuoc(HANH_DONG.SUA_KIEN_THUC_SAN_PHAM), true, 'đổi lời tư vấn của bot — nhật ký bắt buộc như BAT_TAT_KY_NANG');
 });

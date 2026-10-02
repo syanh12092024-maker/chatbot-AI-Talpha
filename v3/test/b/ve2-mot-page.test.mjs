@@ -24,7 +24,7 @@ async function dungThu() {
   const { taoTruyVan } = dungCongGia({
     nguoi_dung: [
       { id: 'u1', email: 'qt@talpha.vn', mat_khau_hash: mk, ten: 'Chủ', hoat_dong: true },
-      { id: 'u2', email: 'mkt@talpha.vn', mat_khau_hash: mk, ten: 'Ngọc', hoat_dong: true },
+      { id: 'u2', email: 'mkt@talpha.vn', mat_khau_hash: mk, ten: 'Ngọc', hoat_dong: true, ma_nv: 'NV5' },
       { id: 'u3', email: 'sale@talpha.vn', mat_khau_hash: mk, ten: 'Linh', hoat_dong: true },
     ],
     team: [{ id: 't1', slug: 'tieu-alpha', ten: 'Tiểu Alpha', la_ky_thuat: false }, { id: 't2', slug: 'auus', ten: 'Auus', la_ky_thuat: false }],
@@ -39,6 +39,8 @@ async function dungThu() {
       { id: 'p2', team_id: 't1', page_id: 'fb-2', ten: 'Aloe KSA', thi_truong: '', san_pham_goc_ma: null, bot_ai_bat: true },
       { id: 'p3', team_id: 't2', page_id: 'fb-3', ten: 'Page team khác', thi_truong: 'EU', bot_ai_bat: true },
     ],
+    // LL15d: marketer Ngọc (NV5) phụ trách «kreain» ⇒ chỉ thấy page kế thừa sản phẩm ấy.
+    san_pham_goc: [{ id: 'g1', team_id: 't1', ma_goc: 'kreain', ten: 'Kreain', marketer: 'Ngọc', marketer_ma_nv: 'NV5' }],
   });
   const app = express();
   dungPhanB(app, { taoTruyVan, taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')), express });
@@ -57,12 +59,16 @@ test('P1 · /api/page-ds: page của team, xếp theo tên; bot bật lấy từ
   const { goc, sv, vao } = await dungThu();
   t.after(() => { sv.close(); datDocSanSang(null); });
   datDocSanSang(async () => ({ pages: [{ pageId: 'fb-1', aiEnabled: true }] }));
-  const r = await fetch(`${goc}/api/page-ds`, { headers: { cookie: await vao('mkt@talpha.vn') } });
-  assert.equal(r.status, 200, 'marketer mở được trang một page thì phải thấy được danh sách để chọn');
+  const r = await fetch(`${goc}/api/page-ds`, { headers: { cookie: await vao('qt@talpha.vn') } });
+  assert.equal(r.status, 200);
   const d = await r.json();
   assert.equal(d.nguonBot, 'bot');
   assert.deepEqual(d.ds.map((p) => [p.ten, p.thiTruong, p.botBat]), [['Aloe KSA', '', true], ['Zahra Oman', 'Oman', true]]);
   assert.ok(!d.ds.some((p) => p.ten === 'Page team khác'), 'page team khác lọt vào');
+  // LL15d · 02/10 (01 §9 «marketer chỉ thấy sản phẩm mình phụ trách», page kế thừa): marketer mở được danh sách, nhưng chỉ page
+  // bán sản phẩm của mình — «Aloe KSA» chưa gắn sản phẩm nên không hiện.
+  const mk = await (await fetch(`${goc}/api/page-ds`, { headers: { cookie: await vao('mkt@talpha.vn') } })).json();
+  assert.deepEqual([mk.ds.map((p) => p.ten), mk.phamVi.chiCuaToi], [['Zahra Oman'], true]);
 });
 
 test('P2 · không hỏi được tiến trình bot ⇒ KHAI đang đứng ở bản sao, không im lặng đổi nguồn', async (t) => {

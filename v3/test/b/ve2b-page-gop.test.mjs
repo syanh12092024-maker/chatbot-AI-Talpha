@@ -40,14 +40,18 @@ const CUA_KIEM = { pages: [
 async function dungThu({ hongKichBan = false } = {}) {
   const mk = await bam('matkhau1');
   const { kho, taoTruyVan: goc } = dungCongGia({
-    nguoi_dung: ['qt', 'mkt', 'sale', 'ql', 'dkb'].map((x, i) => ({ id: `u${i + 1}`, email: `${x}@talpha.vn`, mat_khau_hash: mk, ten: x, hoat_dong: true })),
+    // LL15d · 02/10 (01 §9): marketer chỉ thấy page kế thừa sản phẩm mình phụ trách ⇒ «mkt» mang mã NV5 và phụ trách sản phẩm của
+    // cả ba page team t1 — các ca dưới đo quyền vào cột page + bộ lọc, không đo phạm vi (phạm vi: `ll15d-marketer-man`).
+    nguoi_dung: ['qt', 'mkt', 'sale', 'ql', 'dkb'].map((x, i) => ({ id: `u${i + 1}`, email: `${x}@talpha.vn`, mat_khau_hash: mk, ten: x, hoat_dong: true,
+      ma_nv: x === 'mkt' ? 'NV5' : null })),
+    san_pham_goc: ['sp-1', 'sp-2', 'sp-4'].map((ma, i) => ({ id: `g${i + 1}`, team_id: 't1', ma_goc: ma, ten: ma, marketer: 'mkt', marketer_ma_nv: 'NV5' })),
     team: [{ id: 't1', slug: 'tieu-alpha', ten: 'Tiểu Alpha', la_ky_thuat: false }, { id: 't2', slug: 'auus', ten: 'Auus', la_ky_thuat: false }],
     vai: [{ id: 'v1', ma: 'quan-tri' }, { id: 'v2', ma: 'marketer' }, { id: 'v3', ma: 'sale' }, { id: 'v4', ma: 'quan-ly' }, { id: 'v5', ma: 'duyet-kich-ban' }],
     thanh_vien_team: ['v1', 'v2', 'v3', 'v4', 'v5'].map((v, i) => ({ id: `tv${i + 1}`, nguoi_dung_id: `u${i + 1}`, team_id: 't1', vai_id: v })),
     page: [
-      { id: 'p1', team_id: 't1', page_id: 'fb-1', ten: 'Zahra Oman', thi_truong: 'Oman', marketer: 'lan', bot_ai_bat: false, trong_diem: true },
-      { id: 'p2', team_id: 't1', page_id: 'fb-2', ten: 'Aloe KSA', thi_truong: '', nganh_hang: 'my-pham', bot_ai_bat: true },
-      { id: 'p4', team_id: 't1', page_id: 'fb-4', ten: 'Beta UAE', thi_truong: 'UAE', bot_ai_bat: false, mat_dau: true },
+      { id: 'p1', team_id: 't1', page_id: 'fb-1', ten: 'Zahra Oman', thi_truong: 'Oman', marketer: 'lan', bot_ai_bat: false, trong_diem: true, san_pham_goc_ma: 'sp-1' },
+      { id: 'p2', team_id: 't1', page_id: 'fb-2', ten: 'Aloe KSA', thi_truong: '', nganh_hang: 'my-pham', bot_ai_bat: true, san_pham_goc_ma: 'sp-2' },
+      { id: 'p4', team_id: 't1', page_id: 'fb-4', ten: 'Beta UAE', thi_truong: 'UAE', bot_ai_bat: false, mat_dau: true, san_pham_goc_ma: 'sp-4' },
       { id: 'p3', team_id: 't2', page_id: 'fb-3', ten: 'Page team khác', thi_truong: 'EU', bot_ai_bat: true },
     ],
     kich_ban: [

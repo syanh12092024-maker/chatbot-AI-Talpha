@@ -54,7 +54,7 @@ function batBuocSoHieu(so) {
 /** Danh sách sản phẩm gốc của team, kèm ĐẾM biến thể POS đã nối vào từng cái. */
 export async function dsSanPhamGoc(pool, teamId) {
   const r = await pool.query(
-    `SELECT g.id, g.ma_goc, g.ten, g.mo_ta, g.so_hieu, g.sku, g.marketer, g.tao_luc, g.sua_luc,
+    `SELECT g.id, g.ma_goc, g.ten, g.mo_ta, g.so_hieu, g.sku, g.marketer, g.marketer_ma_nv, g.tao_luc, g.sua_luc,
             (SELECT count(*)::int FROM san_pham s
               WHERE s.team_id = g.team_id AND s.ma_goc = g.ma_goc) AS so_bien_the,
             -- LL13: thị trường = SHOP của món POS (1 shop = 1 thị trường) · page bán qua món POS hoặc gán cả page.
@@ -76,6 +76,7 @@ export async function dsSanPhamGoc(pool, teamId) {
     soHieu: d.so_hieu,
     sku: d.sku ?? null,
     marketer: d.marketer ?? "",
+    marketerMaNv: d.marketer_ma_nv ?? null,   // LL15d (031): mã NV HRM của marketer được chọn — khoá lọc «chỉ thấy sản phẩm mình»
     soBienThe: d.so_bien_the,
     soThiTruong: d.so_thi_truong,
     soPage: d.so_page,
@@ -151,7 +152,7 @@ function loiTrung(e, so, ma, sku = null) {
  * `san_pham.ma_goc`, `kich_ban.san_pham_goc_ma` và `page.san_pham_goc_ma` đang trỏ tới —
  * đổi nó bằng một câu UPDATE là bỏ rơi mọi chỗ trỏ, im lặng.
  */
-export async function suaSanPhamGoc(pool, teamId, id, { ten, moTa, soHieu, sku, marketer } = {}) {
+export async function suaSanPhamGoc(pool, teamId, id, { ten, moTa, soHieu, sku, marketer, marketerMaNv } = {}) {
   const dat = [];
   const tham = [teamId, String(id)];
   if (ten !== undefined) { tham.push(gon(ten)); dat.push(`ten = $${tham.length}`); }
@@ -159,10 +160,14 @@ export async function suaSanPhamGoc(pool, teamId, id, { ten, moTa, soHieu, sku, 
   if (soHieu !== undefined) { tham.push(batBuocSoHieu(soHieu)); dat.push(`so_hieu = $${tham.length}`); }
   if (sku !== undefined) { tham.push(chuanSku(sku)); dat.push(`sku = $${tham.length}`); }
   if (marketer !== undefined) { tham.push(gon(marketer).slice(0, 120)); dat.push(`marketer = $${tham.length}`); }
+  // LL15d: mã NV đi CÙNG tên (tầng màn tra tên từ tài khoản HRM). Gõ tay tên mà không mã ⇒ xoá mã cũ — tên và mã không lệch nhau.
+  if (marketerMaNv !== undefined || marketer !== undefined) {
+    tham.push(marketerMaNv === undefined ? null : (gon(marketerMaNv) || null)); dat.push(`marketer_ma_nv = $${tham.length}`);
+  }
   if (!dat.length) throw new LoiSanPhamGoc("không có gì để sửa", "rong");
   const cau = `UPDATE san_pham_goc SET ${dat.join(", ")}, sua_luc = now()
         WHERE team_id = $1 AND id = $2
-        RETURNING id, ma_goc, ten, mo_ta, so_hieu, sku, marketer, tao_luc, sua_luc`;
+        RETURNING id, ma_goc, ten, mo_ta, so_hieu, sku, marketer, marketer_ma_nv, tao_luc, sua_luc`;
   const khongCo = () => new LoiSanPhamGoc(`không có sản phẩm gốc #${id} trong team này`, "khong_thay", 404);
   const trung = (e) => loiTrung(e, soHieu === undefined ? null : batBuocSoHieu(soHieu), "", sku === undefined ? null : chuanSku(sku));
   // Không đổi marketer ⇒ một câu, không cần giao dịch (cùng đường cũ).
@@ -234,6 +239,7 @@ function doiRa(d) {
     soHieu: d.so_hieu,
     sku: d.sku ?? null,
     marketer: d.marketer ?? "",
+    marketerMaNv: d.marketer_ma_nv ?? null,
     taoLuc: new Date(d.tao_luc).getTime(),
     suaLuc: new Date(d.sua_luc).getTime(),
   };
@@ -276,7 +282,7 @@ const shopCua = (ma) => String(ma || "").split(":")[0] || null;
 /** Một sản phẩm gốc: thị trường (theo shop) · món POS · page đang bán. `null` = không có trong team. */
 export async function chiTietSanPhamGoc(pool, teamId, id) {
   const g = (await pool.query(
-    "SELECT id, ma_goc, ten, mo_ta, so_hieu, sku, marketer, kien_thuc FROM san_pham_goc WHERE team_id = $1 AND id = $2",
+    "SELECT id, ma_goc, ten, mo_ta, so_hieu, sku, marketer, marketer_ma_nv, kien_thuc FROM san_pham_goc WHERE team_id = $1 AND id = $2",
     [teamId, id],
   )).rows[0];
   if (!g) return null;
@@ -334,6 +340,7 @@ export async function chiTietSanPhamGoc(pool, teamId, id) {
   }
   return {
     id: String(g.id), maGoc: g.ma_goc, ten: g.ten, moTa: g.mo_ta, soHieu: g.so_hieu, sku: g.sku ?? null, marketer: g.marketer ?? "",
+    marketerMaNv: g.marketer_ma_nv ?? null,
     kienThuc: g.kien_thuc && typeof g.kien_thuc === 'object' ? g.kien_thuc : {},
     thiTruong: [...theoShop.values()].map((t) => {
       const gia = [...t.gia.values()]
@@ -544,7 +551,7 @@ export async function goiYGopMonPos(pool, teamId) {
  * Từ chối (không để lại gì): chưa chọn món · món không có / không phải món POS · món đã thuộc sản phẩm khác · mã gốc
  * hoặc SKU trùng.
  */
-export async function gopMonThanhGoc(pool, teamId, { maGoc, ten, sku, marketer, posMa } = {}) {
+export async function gopMonThanhGoc(pool, teamId, { maGoc, ten, sku, marketer, marketerMaNv, posMa } = {}) {
   const ma = batBuocMaGoc(maGoc);
   const khoa = chuanSku(sku);
   const so = khoa && /^[0-9]{1,4}$/.test(khoa) ? khoa : null;
@@ -573,9 +580,9 @@ export async function gopMonThanhGoc(pool, teamId, { maGoc, ten, sku, marketer, 
     let g;
     try {
       g = (await khach.query(
-        `INSERT INTO san_pham_goc (team_id, ma_goc, ten, mo_ta, so_hieu, sku, marketer)
-         VALUES ($1,$2,$3,'',$4,$5,$6) RETURNING id, ma_goc, ten, mo_ta, so_hieu, sku, marketer, tao_luc, sua_luc`,
-        [teamId, ma, gon(ten), so, khoa, mk],
+        `INSERT INTO san_pham_goc (team_id, ma_goc, ten, mo_ta, so_hieu, sku, marketer, marketer_ma_nv)
+         VALUES ($1,$2,$3,'',$4,$5,$6,$7) RETURNING id, ma_goc, ten, mo_ta, so_hieu, sku, marketer, marketer_ma_nv, tao_luc, sua_luc`,
+        [teamId, ma, gon(ten), so, khoa, mk, gon(marketerMaNv) || null],
       )).rows[0];
     } catch (e) {
       throw loiTrung(e, so, ma, khoa);

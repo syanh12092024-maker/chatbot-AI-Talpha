@@ -964,6 +964,8 @@ function veDsPage() {
       <span class="tom">${p.botBat ? 'bot bật' : 'bot tắt'}${p.thiTruong ? ' · ' + esc(p.thiTruong) : ''}${p.sanPhamGocMa ? ' · ' + esc(p.sanPhamGocMa) : ''}${p.coLoiBot === false ? ' · chưa có lời bot' : ''}</span></a></li>`).join('')
       + (d.ds.length > 300 ? `<li class="o-trong">Còn ${d.ds.length - 300} page — gõ để tìm.</li>` : '')
     : `<li class="o-trong">Không page nào khớp${LOC === 'chua_loi_bot' && d.loiBotViSao ? ` — ${esc(d.loiBotViSao)}` : ''}.</li>`;
+  // LL15d: marketer chỉ thấy page kế thừa sản phẩm mình phụ trách — nói ra, để danh sách ngắn không trông như «team ít page».
+  if (d.phamVi && d.phamVi.chiCuaToi) $('#dsPage').insertAdjacentHTML('afterbegin', `<li class="o-trong" data-pham-vi>${esc(d.phamVi.cau)}</li>`);
 }
 async function napDsPage() {
   try { DS_PAGE = await goi(`/api/page-ds?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}`); veDsPage(); }

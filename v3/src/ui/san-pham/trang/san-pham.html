@@ -30,6 +30,7 @@
         <input type="search" id="tim" placeholder="Tìm sản phẩm…" autocomplete="off"></label>
       <div id="oDuLieu"></div>
     </div>
+    <div id="phamViSp"></div>
     <ul class="ds-chon" id="dsGoc" aria-label="Danh sách sản phẩm"><li><span class="skeleton"></span></li></ul>
   </section>
 
@@ -89,7 +90,13 @@ function veTrai() {
         <span class="ten">${g.ten ? esc(g.ten) : `<span class="text-muted">${esc(g.maGoc)} · chưa đặt tên</span>`}</span>
         <span class="tom">${so(g.soThiTruong ?? 0)} thị trường · ${so(g.soPage ?? 0)} page · ${so(g.soBienThe)} món POS</span>
       </button></li>`).join('')
-    : `<li class="o-trong">${GOC.goc.length ? 'Không sản phẩm nào khớp.' : 'Team chưa có sản phẩm gốc nào.'}</li>`;
+    : `<li class="o-trong">${GOC.goc.length ? 'Không sản phẩm nào khớp.' : GOC.phamVi && GOC.phamVi.chiCuaToi
+      ? 'Bạn chưa phụ trách sản phẩm nào.' : 'Team chưa có sản phẩm gốc nào.'}</li>`;
+  // LL15d: marketer chỉ thấy sản phẩm mình phụ trách — nói phần còn lại ở đâu, không để danh sách ngắn trông như «team ít hàng».
+  const pv = GOC.phamVi || {};
+  $('#phamViSp').innerHTML = !pv.chiCuaToi ? '' : !pv.coMaNv
+    ? `<p class="field-hint" data-pham-vi>Tài khoản của bạn chưa gắn hồ sơ HRM (không có mã nhân viên) nên chưa phụ trách sản phẩm nào — nhờ quản trị kiểm ở Người và team.</p>`
+    : `<p class="field-hint" data-pham-vi>Chỉ hiện ${so(pv.soCuaToi)}/${so(pv.soTeam)} sản phẩm bạn phụ trách · ${so(pv.soChuaGan)} sản phẩm của team chưa gán marketer — quản trị gán ở tab Chung.</p>`;
   $('#dsGoc').querySelectorAll('[data-goc]').forEach((b) => { b.onclick = () => moSanPham(b.dataset.goc); });
 
   // Ô LƯU Ý (bản vẽ): dữ liệu hôm nay còn nằm theo page, chưa theo sản phẩm — nói bằng SỐ, chỉ lối đi làm.
@@ -171,26 +178,54 @@ function veChung() {
         <div class="o-trong">Ảnh đang đặt theo TỪNG page (tab «Sản phẩm &amp; giá» của page). Ảnh chung của sản phẩm chưa có chỗ lưu — bản vẽ để ở đây.</div>
       </aside>
     </section>`;
-  if ($('#nutLuuMk')) $('#nutLuuMk').onclick = luuMarketer;
+  if ($('#nutLuuMk')) $('#nutLuuMk').onclick = () => luuMarketer();
+  if ($('#nutGoiYMk')) $('#nutGoiYMk').onclick = () => luuMarketer(CT.goiYMarketer.goiY.maNv);
 }
-/* VE8b · marketer phụ trách — MỘT cho mọi thị trường (người quyết 30/09); đổi ở đây thì mọi page đang bán sản phẩm đổi theo. */
+/* VE8b · marketer phụ trách — MỘT cho mọi thị trường (người quyết 30/09); đổi ở đây thì mọi page đang bán sản phẩm đổi theo.
+   LL15d · 02/10: CHỌN từ hồ sơ HRM (tài khoản marketer có mã NV của team — CR-28-09c), không gõ tay; máy GỢI Ý từ đơn POS 60 ngày,
+   người bấm mới gán. Marketer chỉ thấy sản phẩm gán đúng mã NV của mình (01 §9). */
+const pct = (x) => Math.round(x * 100);
+function veGoiYMk() {
+  const gy = CT.goiYMarketer;
+  if (!gy) return '';
+  if (!gy.noi) return `<span class="field-hint" data-goi-y-mk>Gợi ý từ đơn POS: chưa có — ${esc(gy.viSao || '')}.</span>`;
+  const g = gy.goiY;
+  if (!g) return `<span class="field-hint" data-goi-y-mk>Gợi ý từ đơn POS ${so(gy.soNgay)} ngày: chưa có đơn nào của các món trong sản phẩm này.</span>`;
+  if (!g.chonDuoc) {
+    return `<span class="field-hint" data-goi-y-mk>Đơn ${so(gy.soNgay)} ngày: nhiều nhất là ${g.maNv ? `mã NV ${esc(g.maNv)}` : 'marketer chưa ghép hồ sơ HRM'} `
+      + `(${pct(g.tiLe)}% · ${so(g.soDon)}/${so(g.tong)} đơn) — người này không phải marketer của team trên hệ, không gợi ý được.</span>`;
+  }
+  return `<span class="field-hint" data-goi-y-mk>Gợi ý từ đơn POS ${so(gy.soNgay)} ngày: <b>${esc(g.ten)}</b> — ${pct(g.tiLe)}% đơn (${so(g.soDon)}/${so(g.tong)}).</span>`
+    + (CT.suaDuoc && CT.goc.marketerMaNv !== g.maNv ? ' ' + button('Dùng gợi ý', { size: 'sm', id: 'nutGoiYMk' }) : '');
+}
 function veMarketerSp() {
+  const g = CT.goc;
+  const ds = CT.marketerChon || [];
+  const coTrongDs = ds.some((m) => m.maNv === g.marketerMaNv);
+  const tuyChon = [`<option value="">— chưa gán —</option>`]
+    .concat(!g.marketerMaNv && g.marketer ? [`<option value="" selected>${esc(g.marketer)} (gõ tay, chưa nối HRM — chọn lại)</option>`] : [])
+    .concat(g.marketerMaNv && !coTrongDs ? [`<option value="${esc(g.marketerMaNv)}" selected>${esc(g.marketer || g.marketerMaNv)} (không còn là marketer của team)</option>`] : [])
+    .concat(ds.map((m) => `<option value="${esc(m.maNv)}"${m.maNv === g.marketerMaNv ? ' selected' : ''}>${esc(m.ten)} · ${esc(m.maNv)}</option>`));
   return `<div class="hang duoi-4">
     <div class="field"><label class="field-label" for="spMk">Marketer phụ trách</label>
-      <input id="spMk" value="${esc(CT.goc.marketer || '')}" autocomplete="off" placeholder="chưa gán"${CT.suaDuoc ? '' : ' disabled'}></div>
+      ${CT.suaDuoc ? `<select id="spMk">${tuyChon.join('')}</select>`
+        : `<div id="spMk">${g.marketer ? esc(g.marketer) : '<span class="text-muted">chưa gán</span>'}</div>`}</div>
     ${CT.suaDuoc ? button('Lưu marketer', { size: 'sm', id: 'nutLuuMk' }) : ''}
-    <span class="field-hint" id="tbMk" aria-live="polite">Một marketer cho mọi thị trường của sản phẩm — đổi ở đây thì mọi page đang bán sản phẩm này đổi theo.</span>
+    ${veGoiYMk()}
+    <span class="field-hint" id="tbMk" aria-live="polite">Chọn từ hồ sơ HRM — một marketer cho mọi thị trường; mọi page đang bán sản phẩm đổi theo.
+      Marketer chỉ thấy sản phẩm gán cho mình.${CT.suaDuoc && !ds.length ? ' Team chưa có tài khoản marketer nào gắn hồ sơ HRM (Người và team › Lấy người từ HRM).' : ''}</span>
   </div>`;
 }
-async function luuMarketer() {
+async function luuMarketer(maNv) {
   const nut = $('#nutLuuMk'); nut.disabled = true;
-  const mk = $('#spMk').value.trim();
+  const mk = typeof maNv === 'string' ? maNv : $('#spMk').value;
   try {
-    const kq = await goiGhi('/api/san-pham/goc/' + encodeURIComponent(CHON), { method: 'POST', body: JSON.stringify({ marketer: mk }) });
-    CT.goc.marketer = mk;
-    $('#tbMk').textContent = `Đã lưu marketer «${mk || 'trống'}» · ${so((kq.goc && kq.goc.soPageTheoMarketer) || 0)} page đổi theo.`;
-  } catch (e) { $('#tbMk').textContent = e.message; }
-  finally { nut.disabled = false; }
+    const kq = await goiGhi('/api/san-pham/goc/' + encodeURIComponent(CHON), { method: 'POST', body: JSON.stringify({ marketerMaNv: mk }) });
+    CT.goc.marketer = (kq.goc && kq.goc.marketer) || ''; CT.goc.marketerMaNv = (kq.goc && kq.goc.marketerMaNv) || null;
+    const tb = `Đã lưu marketer «${CT.goc.marketer || 'trống'}» · ${so((kq.goc && kq.goc.soPageTheoMarketer) || 0)} page đổi theo.`;
+    veSanPham();
+    $('#tbMk').textContent = tb;
+  } catch (e) { $('#tbMk').textContent = e.message; nut.disabled = false; }
 }
 
 /* VE1b · 29/09: kiến thức ở đây chỉ tới bot khi máy chủ ghép lời từ dữ liệu v3. Nói đúng trạng thái đo được — không hứa. */
@@ -595,7 +630,8 @@ function veNhom(n, i) {
           <div class="field"><label class="field-label" for="${id}-ma">Mã gốc</label>
             <input id="${id}-ma" data-ma value="${esc(n.maGocDeXuat || '')}" autocomplete="off" spellcheck="false"></div>
           <div class="field"><label class="field-label" for="${id}-mk">Marketer</label>
-            <input id="${id}-mk" data-mk value="" autocomplete="off" placeholder="để trống = gán sau"></div>
+            <select id="${id}-mk" data-mk><option value="">— gán sau —</option>${(GOP.marketerChon || []).map((m) =>
+              `<option value="${esc(m.maNv)}">${esc(m.ten)} · ${esc(m.maNv)}</option>`).join('')}</select></div>
           ${button('Gộp thành 1 sản phẩm', { variant: 'primary', size: 'sm', data: { gop: n.khoa } })}
         </div>
         <div class="field-hint">${n.sku ? `SKU ${esc(n.skuHien || n.sku)} đi theo sản phẩm — shop mới kéo về mang SKU này tự nối vào.` : 'Không có SKU — shop khác phải gắn tay ở tab «Theo thị trường».'} Mã gốc là khoá của kịch bản: đặt rồi không sửa được.</div>`}
@@ -614,7 +650,7 @@ async function gopNhom(khoa, nut) {
   try {
     const kq = await goiGhi('/api/san-pham/gop', { method: 'POST', body: JSON.stringify({
       maGoc: the.querySelector('[data-ma]').value.trim(), ten: the.querySelector('[data-ten]').value.trim(), sku: n.sku,
-      marketer: the.querySelector('[data-mk]').value.trim(), posMa }) });
+      marketerMaNv: the.querySelector('[data-mk]').value, posMa }) });
     GOP_XONG[khoa] = { id: String(kq.goc.id), ten: kq.goc.ten || kq.goc.maGoc };
     await taiGoc(); veDsGop();
   } catch (e) { nut.disabled = false; the.querySelector('[data-tb]').textContent = e.message; }

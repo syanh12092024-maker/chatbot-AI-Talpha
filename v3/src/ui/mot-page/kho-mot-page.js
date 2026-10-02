@@ -25,6 +25,7 @@ import { motPage, cuaKiemMotPage, danhMucGoc, LoiPageBot, congTruyVan as congPag
   LOC, CHU_LOC, kiemLoc, ganTrangThaiPage, hopLoc, hopTim, demTheoLoc } from '../page-bot/kho-page.js';
 import { trangThaiCongTac } from '../page-bot/cong-tac.js';
 import { DIEU_KIEN_TAT_CA } from '../san-sang/kho-san-sang.js';
+import { phamViMarketer, maGocCuaPhamVi, cauPhamVi } from '../chung/pham-vi-marketer.js';
 import { NHAN_TRUONG } from '../kich-ban/kho-kich-ban.js';
 import { timGiaGoCung } from './gia-kich-ban.js';
 
@@ -94,10 +95,14 @@ export async function dsPageGon(boiCanh, { loc = LOC.TAT_CA, tim = '' } = {}) {
   kiemLoc(loc);
   // VE2b · 30/09: lọc bằng ĐÚNG phép gắn + bộ lọc + ô tìm của «Tất cả page» (người quyết: «vào màn page sẽ có bộ lọc
   // như page-bot») — cột này mở cho cả marketer, còn cửa danh sách kia thì không, nên dùng chung HÀM chứ không gọi cửa.
-  const tatCa = (await congPage(bc).chon('page', {})) || [];
+  // LL15d: marketer chỉ thấy page KẾ THỪA sản phẩm mình phụ trách (`page.san_pham_goc_ma` ∈ sản phẩm gán mã NV của mình).
+  const pv = await phamViMarketer(bc);
+  const maGoc = pv ? await maGocCuaPhamVi(congPage(bc), pv) : null;
+  const tatCa = ((await congPage(bc).chon('page', {})) || []).filter((p) => !maGoc || maGoc.has(String(p.san_pham_goc_ma || '')));
   const { doc, viSao, loiBotViSao } = await ganTrangThaiPage(bc, tatCa);
   const khop = tatCa.filter((p) => hopLoc(p, loc) && hopTim(p, tim));
   return {
+    phamVi: pv ? { chiCuaToi: true, cau: cauPhamVi(pv) } : { chiCuaToi: false },
     nguonBot: doc ? 'bot' : 'ban_sao',
     viSao: viSao || null,
     loiBotViSao,
@@ -118,10 +123,19 @@ export async function dsPageGon(boiCanh, { loc = LOC.TAT_CA, tim = '' } = {}) {
  * @returns {Promise<object|null>} `null` khi page không thuộc team đang mở — nơi gọi trả
  *   **404**, không phải 403: 403 là lời xác nhận «dòng này có thật ở team khác».
  */
+/** LL15d: page ngoài phạm vi marketer ⇒ 403 nói vì sao (page CÓ trong team — giấu bằng 404 là nói sai). */
+async function chanPageNgoaiPhamVi(bc, p) {
+  const pv = await phamViMarketer(bc);
+  if (!pv) return;
+  if ((await maGocCuaPhamVi(congPage(bc), pv)).has(String(p.sanPhamGocMa || ''))) return;
+  throw new LoiPageBot(pv.maNv ? 'page này không bán sản phẩm bạn phụ trách' : cauPhamVi(pv), 'khong_phu_trach', 403);
+}
+
 export async function trangMotPage(boiCanh, id) {
   const bc = batBuocBoiCanh(boiCanh);
   const p = await motPage(bc, id);
   if (!p) return null;
+  await chanPageNgoaiPhamVi(bc, p);
 
   // CR-02-10 · MB2: một công tắc (`page.bot_ai_bat`); cửa chỉ còn khoá tay của người vận hành.
   const cuaBot = trangThaiCongTac();
@@ -209,6 +223,7 @@ export async function noiDungPage(boiCanh, id) {
   const bc = batBuocBoiCanh(boiCanh);
   const p = await motPage(bc, id);
   if (!p) return null;
+  await chanPageNgoaiPhamVi(bc, p);
   if (!_docKhoi) {
     // Chưa nối ≠ page không có gì. Nói ra, và nói rõ đó là lỗi dựng ứng dụng.
     return { chuaNoi: true, viSao: 'Máy chủ chưa nối bộ đọc sản phẩm và kịch bản của page.' };

@@ -21,7 +21,8 @@ const { HANH_DONG } = await import('../../src/audit/hanh-dong.js');
 const { moTrang } = await import('../../testkit/dom-gia.js');
 
 const CHI_TIET = () => ({
-  id: '77', maGoc: 'fitgum', ten: 'Fitgum Acai Berry', soHieu: '125', sku: '125', marketer: 'Lan', kienThuc: {},
+  // LL15d · 02/10: marketer gắn mã NV HRM (NV8 = tài khoản «Lan») — marketer chỉ thấy sản phẩm gán đúng mã mình.
+  id: '77', maGoc: 'fitgum', ten: 'Fitgum Acai Berry', soHieu: '125', sku: '125', marketer: 'Lan', marketerMaNv: 'NV8', kienThuc: {},
   thiTruong: [
     { shopId: '111', thiTruong: 'Saudi', coGia: true, lechGia: false, gia: [], page: ['p1'],
       mon: [{ id: '5', version: '901', posMa: '111:a', ten: '125 - Fitgum Acai Berry', tonKho: 40, hetHang: false, giaTay: true,
@@ -38,7 +39,7 @@ function khoGia({ loiGia = null } = {}) {
   return {
     goi,
     cua: {
-      ds: async () => [{ id: '77', maGoc: 'fitgum', ten: 'Fitgum Acai Berry', soHieu: '125', sku: '125', marketer: 'Lan', soBienThe: 2, soThiTruong: 2, soPage: 1 }],
+      ds: async () => [{ id: '77', maGoc: 'fitgum', ten: 'Fitgum Acai Berry', soHieu: '125', sku: '125', marketer: 'Lan', marketerMaNv: 'NV8', soBienThe: 2, soThiTruong: 2, soPage: 1 }],
       cho: async () => ({ cho: [], khongCoSoHieu: 0 }), dem: async () => ({ tong: 2, coGia: 1, chuaCoGia: 1, nhapTay: 0 }),
       tao: ham, bo: ham, monChuaGan: async () => [], gan: ham, go: ham, kienThuc: ham, goiYGop: async () => ({ dem: {}, nhom: [] }), gop: ham,
       sua: async (_b, id, than) => { goi.sua.push([id, than]); return { id, maGoc: 'fitgum', ten: 'Fitgum Acai Berry', ...than, soPageTheoMarketer: 1 }; },
@@ -55,10 +56,14 @@ function khoGia({ loiGia = null } = {}) {
 async function dungThu(opt) {
   const mk = await bam('matkhau1');
   const { taoTruyVan } = dungCongGia({
-    nguoi_dung: ['qt', 'mkt'].map((x, i) => ({ id: `u${i + 1}`, email: `${x}@talpha.vn`, mat_khau_hash: mk, ten: x, hoat_dong: true })),
+    // LL15d: marketer CHỌN từ hồ sơ HRM ⇒ hai tài khoản marketer mang mã NV (Lan · Minh); quản trị tạo tay, không mã.
+    nguoi_dung: [{ id: 'u1', email: 'qt@talpha.vn', mat_khau_hash: mk, ten: 'qt', hoat_dong: true, ma_nv: null },
+      { id: 'u2', email: 'mkt@talpha.vn', mat_khau_hash: mk, ten: 'Lan', hoat_dong: true, ma_nv: 'NV8' },
+      { id: 'u3', email: 'minh@talpha.vn', mat_khau_hash: mk, ten: 'Minh', hoat_dong: true, ma_nv: 'NV9' }],
     team: [{ id: 't1', slug: 'tieu-alpha', ten: 'Tiểu Alpha', la_ky_thuat: false }],
     vai: [{ id: 'v1', ma: 'quan-tri' }, { id: 'v2', ma: 'marketer' }],
-    thanh_vien_team: [{ id: 'tv1', nguoi_dung_id: 'u1', team_id: 't1', vai_id: 'v1' }, { id: 'tv2', nguoi_dung_id: 'u2', team_id: 't1', vai_id: 'v2' }],
+    thanh_vien_team: [{ id: 'tv1', nguoi_dung_id: 'u1', team_id: 't1', vai_id: 'v1' }, { id: 'tv2', nguoi_dung_id: 'u2', team_id: 't1', vai_id: 'v2' },
+      { id: 'tv3', nguoi_dung_id: 'u3', team_id: 't1', vai_id: 'v2' }],
     page: [
       { id: 'p1', team_id: 't1', page_id: 'fb-1', ten: 'Fitgum KSA', thi_truong: 'Saudi', san_pham_goc_ma: 'fitgum', bot_ai_bat: false },
       { id: 'p9', team_id: 't1', page_id: 'fb-9', ten: 'Fitgum Kuwait', thi_truong: '', bot_ai_bat: false },
@@ -114,15 +119,16 @@ test('S2 · thị trường chưa có giá nói thẳng; marketer của sản ph
   assert.match(khung(m, '222:b').textContent, /Chưa có bậc giá — page gắn vào sản phẩm ở thị trường này chưa báo giá được/);
 });
 
-test('S3 · marketer của sản phẩm sửa ở tab Chung ⇒ POST {marketer}; màn nói page đổi theo', async (t) => {
+// LL15d · 02/10: ô marketer là ô CHỌN từ hồ sơ HRM (CR-28-09c), không gõ tay — gửi mã NV, máy chủ tra tên từ tài khoản.
+test('S3 · marketer của sản phẩm CHỌN ở tab Chung từ hồ sơ HRM ⇒ POST {marketerMaNv}; tên lấy từ tài khoản; màn nói page đổi theo', async (t) => {
   const d = await dungThu();
   t.after(() => d.sv.close());
   const m = await moTrang('san-pham/trang/san-pham.html', { goc: d.goc, cookie: d.qt, duong: '/san-pham?sp=77' });
-  assert.equal(m.$('#spMk').value, 'Lan');
-  m.$('#spMk').value = 'Minh';
+  assert.equal(m.$('#spMk').value, 'NV8');
+  m.$('#spMk').value = 'NV9';
   await m.$('#nutLuuMk').click();
   await m.cho();
-  assert.deepEqual(d.k.goi.sua, [['77', { marketer: 'Minh' }]]);
+  assert.deepEqual(d.k.goi.sua, [['77', { marketer: 'Minh', marketerMaNv: 'NV9' }]]);
   assert.match(m.$('#tbMk').textContent, /Đã lưu marketer «Minh» · 1 page đổi theo/);
 });
 

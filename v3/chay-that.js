@@ -250,9 +250,18 @@ const dongBoHrm = await (async () => {
   return { ...db, tuDongMoiGio: 24 };
 })();
 
+// LL15d · 02/10: gợi ý marketer phụ trách từ đơn POS 60 ngày — cùng khoá BigQuery, CHỈ ĐỌC, đệm một ngày. Vắng `V3_BQ_KHOA` = đóng.
+const docGoiYMarketer = await (async () => {
+  if (!process.env.V3_BQ_KHOA) return undefined;
+  const { taoDocGoiYMarketer } = await import(`${GOC}/src/hrm/goi-y-marketer.js`);
+  const { taoKhachBigQuery } = await import(`${GOC}/src/hrm/bigquery.js`);
+  return taoDocGoiYMarketer({ taoKhach: () => taoKhachBigQuery({ tepKhoa: process.env.V3_BQ_KHOA }) });
+})();
+
 const bao = dungPhanB(app, {
   docHrm,
   dongBoHrm,
+  docGoiYMarketer,
   taoTruyVan,
   // CR-28-09b · MN3: lưu sản phẩm trên v3 ⇒ đẩy bản chép sang bot v1 rồi đọc lại xác minh.
   vanHanh: {

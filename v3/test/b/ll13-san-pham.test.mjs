@@ -11,10 +11,19 @@ const { taoBoiCanh, VAI } = await import('../../src/auth/boi-canh.js');
 const { HANH_DONG } = await import('../../src/audit/hanh-dong.js');
 
 const bc = (vai) => taoBoiCanh({ nguoiDungId: 'u1', tenDangNhap: 'an', teamId: 't1', vai: [vai] });
+// LL15d · 02/10 (01 §9 «marketer chỉ thấy sản phẩm mình phụ trách»): «u1» mang mã NV1 (cổng danh tính giả) và sản phẩm g1 gán NV1 —
+// không vậy thì vai marketer của các ca dưới không còn đọc được g1 (luật mới, không phải hỏng).
+{
+  const { dungCongGia } = await import('../../testkit/db-gia.js');
+  const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
+  const { datCongDanhTinh } = await import('../../src/auth/kho-nguoi-dung.js');
+  const { taoTruyVan } = dungCongGia({ nguoi_dung: [{ id: 'u1', email: 'an@x.vn', ten: 'An', hoat_dong: true, ma_nv: 'NV1' }] });
+  datCongDanhTinh(() => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')));
+}
 const CUA = () => ({
   ds: async () => [], cho: async () => ({ cho: [], khongCoSoHieu: 0 }), dem: async () => ({}),
   tao: async () => ({}), sua: async () => ({}), bo: async () => ({}),
-  chiTiet: async (_b, id) => (id === 'g1' ? { id: 'g1', maGoc: 'fitgum', thiTruong: [], page: [] } : null),
+  chiTiet: async (_b, id) => (id === 'g1' ? { id: 'g1', maGoc: 'fitgum', marketerMaNv: 'NV1', thiTruong: [], page: [] } : null),
   monChuaGan: async () => [{ posMa: '111:z', ten: 'X', shopId: '111', thiTruong: 'Saudi' }],
   gan: async (_b, id, posMa) => ({ maGoc: 'fitgum', posMa, shopId: posMa.split(':')[0], daCo: false }),
   go: async (_b, id, posMa) => ({ maGoc: 'fitgum', posMa, shopId: posMa.split(':')[0] }),

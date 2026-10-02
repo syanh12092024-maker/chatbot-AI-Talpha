@@ -49,7 +49,9 @@ function khoGia() {
 async function dungThu() {
   const mk = await bam('matkhau1');
   const { kho, taoTruyVan } = dungCongGia({
-    nguoi_dung: ['qt', 'mkt'].map((x, i) => ({ id: `u${i + 1}`, email: `${x}@talpha.vn`, mat_khau_hash: mk, ten: x, hoat_dong: true })),
+    // LL15d: marketer chọn từ hồ sơ HRM ⇒ tài khoản marketer mang mã NV (Ngọc · NV5).
+    nguoi_dung: [{ id: 'u1', email: 'qt@talpha.vn', mat_khau_hash: mk, ten: 'qt', hoat_dong: true, ma_nv: null },
+      { id: 'u2', email: 'mkt@talpha.vn', mat_khau_hash: mk, ten: 'Ngọc', hoat_dong: true, ma_nv: 'NV5' }],
     team: [{ id: 't1', slug: 'tieu-alpha', ten: 'Tiểu Alpha', la_ky_thuat: false }],
     vai: [{ id: 'v1', ma: 'quan-tri' }, { id: 'v2', ma: 'marketer' }],
     thanh_vien_team: [{ id: 'tv1', nguoi_dung_id: 'u1', team_id: 't1', vai_id: 'v1' }, { id: 'tv2', nguoi_dung_id: 'u2', team_id: 't1', vai_id: 'v2' }],
@@ -93,10 +95,12 @@ test('G2 · gộp: bỏ chọn món lạ + sửa tên + gán marketer ⇒ MỘT 
   const the = theNhom(m, 'sku:125');
   the.querySelectorAll('[data-chon]').find((c) => c.dataset.chon === '222:c').checked = false;
   the.querySelector('[data-ten]').value = 'Fitgum Acai Berry 60 viên';
-  the.querySelector('[data-mk]').value = 'Ngọc';
+  // LL15d: ô marketer là ô CHỌN tài khoản marketer có mã NV — gửi mã, máy chủ tra tên.
+  assert.deepEqual(the.querySelector('[data-mk]').querySelectorAll('option').map((o) => o.textContent.trim()), ['— gán sau —', 'Ngọc · NV5']);
+  the.querySelector('[data-mk]').value = 'NV5';
   await the.querySelector('[data-gop]').click();
   await m.cho();
-  assert.deepEqual(d.k.goiGop, [{ maGoc: 'fitgum-acai-berry', ten: 'Fitgum Acai Berry 60 viên', sku: '125', marketer: 'Ngọc', posMa: ['111:a', '222:b'] }]);
+  assert.deepEqual(d.k.goiGop, [{ maGoc: 'fitgum-acai-berry', ten: 'Fitgum Acai Berry 60 viên', sku: '125', marketer: 'Ngọc', marketerMaNv: 'NV5', posMa: ['111:a', '222:b'] }]);
   const sau = theNhom(m, 'sku:125');
   assert.match(sau.textContent, /Đã gộp/);
   assert.equal(sau.querySelector('[data-gop]'), null, 'gộp xong thì hết nút gộp');

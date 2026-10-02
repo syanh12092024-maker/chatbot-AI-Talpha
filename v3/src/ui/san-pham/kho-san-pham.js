@@ -23,6 +23,7 @@
 // Màn hiện cột tồn kho là «chưa có nguồn», không hiện 0 — 0 nghĩa là hết hàng.
 
 import { batBuocBoiCanh, VAI } from '../../auth/boi-canh.js';
+import { phamViMarketer, maGocCuaPhamVi, cauPhamVi } from '../chung/pham-vi-marketer.js';
 
 export const BANG_PAGE = 'page';
 export const VAI_VAO_DUOC = Object.freeze([VAI.QUAN_TRI, VAI.QUAN_LY, VAI.MARKETER]);
@@ -62,10 +63,11 @@ function truyVan(bc) {
   return _taoTruyVan(bc);
 }
 
-/** Page của team — dùng để giao với danh sách toàn hệ của cầu. */
-async function pageCuaTeam(bc) {
+/** Page của team — dùng để giao với danh sách toàn hệ của cầu. LL15d: marketer chỉ page kế thừa sản phẩm mình phụ trách. */
+async function pageCuaTeam(bc, pv = null) {
   const ds = await truyVan(bc).chon(BANG_PAGE, {}, { sapXep: 'ten' });
-  return new Map(ds.map((p) => [String(p.page_id), p]));
+  const maGoc = pv ? await maGocCuaPhamVi(truyVan(bc), pv) : null;
+  return new Map(ds.filter((p) => !maGoc || maGoc.has(String(p.san_pham_goc_ma || ''))).map((p) => [String(p.page_id), p]));
 }
 
 const CHUA_NOI = {
@@ -80,7 +82,8 @@ const CHUA_NOI = {
 
 export async function manSanPham(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
-  const cuaTeam = await pageCuaTeam(bc);
+  const pv = await phamViMarketer(bc);
+  const cuaTeam = await pageCuaTeam(bc, pv);
 
   if (!_docDanhSach) {
     return { teamId: bc.teamId, page: [], dem: demRong(), nguon: null, trong: { rong: true, ...CHUA_NOI } };
@@ -117,6 +120,7 @@ export async function manSanPham(boiCanh) {
   return {
     teamId: bc.teamId,
     page,
+    phamVi: pv ? { chiCuaToi: true, cau: cauPhamVi(pv) } : { chiCuaToi: false },
     dem: dem(page, cuaTeam.size),
     nguon: nguonSo(),
     tonKho: KHONG_CO_TON_KHO,
@@ -162,8 +166,12 @@ const KHONG_CO_TON_KHO = Object.freeze({
 
 export async function sanPhamCuaMotPage(boiCanh, pageIdFacebook) {
   const bc = batBuocBoiCanh(boiCanh);
-  const cuaTeam = await pageCuaTeam(bc);
+  const pv = await phamViMarketer(bc);
+  const cuaTeam = await pageCuaTeam(bc, pv);
   const id = String(pageIdFacebook);
+  if (pv && !cuaTeam.has(id) && (await pageCuaTeam(bc)).has(id)) {
+    throw new LoiSanPham('page này không bán sản phẩm bạn phụ trách', 'khong_phu_trach', 403);
+  }
 
   // Page của team khác → 404, KHÔNG phải 403: 403 xác nhận page đó có thật ở team khác.
   if (!cuaTeam.has(id)) throw new LoiSanPham(`Không có page ${id} trong team này.`, 'khong_thay', 404);

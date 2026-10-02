@@ -15,7 +15,7 @@ const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
 async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
   dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
-  docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, dongBoHrm } = {}) {
+  docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, dongBoHrm, docGoiYMarketer } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -43,7 +43,7 @@ async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNo
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
     ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
     dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
-    docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, dongBoHrm, express,
+    docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, dongBoHrm, docGoiYMarketer, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -168,6 +168,8 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   assert.ok(bao.thieu.some((x) => /docHrm/.test(x)), 'phải nêu thiếu docHrm');
   // LL15b: thiếu bộ đồng bộ HRM thì nút «Lấy người từ HRM» mờ — tài khoản + vai theo HRM không tạo/rút/khoá được.
   assert.ok(bao.thieu.some((x) => /dongBoHrm/.test(x)), 'phải nêu thiếu dongBoHrm');
+  // LL15d: thiếu bộ đọc đơn POS thì màn Sản phẩm không gợi ý được marketer — vẫn chọn tay được, nhưng phải nói ra.
+  assert.ok(bao.thieu.some((x) => /docGoiYMarketer/.test(x)), 'phải nêu thiếu docGoiYMarketer');
   // `khoTokenV3` thiếu thì màn Kết nối mất cả kho token — và đường còn lại là sửa tay
   // `.env` trên máy chủ, đúng thứ đường không ai truy ngược được.
   assert.ok(bao.thieu.some((x) => /khoTokenV3/.test(x)), 'phải nêu thiếu khoTokenV3');
@@ -233,6 +235,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
     duongBot: { chon: async () => ({ nguon: 'config' }), khoa: async () => ({ nguonKhoa: null }) },
     docHrm: async () => ({ luc: 0, nhanVien: [], ghep: [] }),
     dongBoHrm: { keHoach: async () => ({}), apDung: async () => ({}), lanCuoi: () => null, datMatKhauDau: async () => ({ ok: false }) },
+    docGoiYMarketer: async () => ({ luc: 0, dong: [] }),
     docKhoi: {
       boLuat: async () => null, kyNang: async () => [],
       kichBan: async () => null, sanPham: async () => [],

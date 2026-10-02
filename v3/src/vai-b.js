@@ -127,7 +127,7 @@ import {
 import {
   datTaoTruyVan as datTruyVanSanPham, datDocKhoSanPham,
   datChanDangNhap as datChanDangNhapSanPham, datChanVai as datChanVaiSanPham, taoRouterSanPham,
-  datKhoGoc, datPheuNhatKyGoc, datDocNhatKyGoc,
+  datKhoGoc, datPheuNhatKyGoc, datDocNhatKyGoc, datDocGoiYMarketer,
 } from './ui/san-pham/index.js';
 import {
   datTaoTruyVan as datTruyVanTrangChu, datDocSanSang as datDocSanSangTrangChu,
@@ -244,7 +244,7 @@ import {
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, duongBot, docHrm, dongBoHrm,
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, duongBot, docHrm, dongBoHrm, docGoiYMarketer,
   docKhoi, dungBanMay, dichBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan, docPhanBoHoiThoai,
@@ -511,6 +511,14 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   } else {
     datDongBoHrm(null);
     thieu.push('dongBoHrm — nút «Lấy người từ HRM» mờ: tài khoản + vai theo HRM không tạo/rút/khoá được (cần V3_BQ_KHOA)');
+  }
+  // LL15d · 02/10: gợi ý marketer phụ trách từ đơn POS 60 ngày (BigQuery, chỉ đọc, đệm một ngày) — màn Sản phẩm › Chung.
+  if (typeof docGoiYMarketer === 'function') {
+    datDocGoiYMarketer(docGoiYMarketer);
+    daNoi.push('gợi ý marketer từ đơn POS 60 ngày (BigQuery, chỉ đọc) → màn Sản phẩm › Chung');
+  } else {
+    datDocGoiYMarketer(null);
+    thieu.push('docGoiYMarketer — màn Sản phẩm không gợi ý được marketer phụ trách từ đơn POS (cần V3_BQ_KHOA); vẫn chọn tay từ hồ sơ HRM được');
   }
   // VE7c: màn Model AI hiện + thử vai «trả lời khách» bằng ĐƯỜNG CHỌN CỦA BOT (`src/chat/model.js#chonModel`), không bằng lớp v3.
   if (duongBot && typeof duongBot.chon === 'function' && typeof duongBot.khoa === 'function') {

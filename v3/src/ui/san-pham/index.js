@@ -15,5 +15,5 @@ export {
 
 export {
   datKhoGoc, daNoiKhoGoc, datPheuNhatKyGoc, datDocNhatKyGoc, lichSuGoc, manSanPhamGoc, taoGoc, suaGoc, boGoc,
-  VAI_SUA_DUOC,
+  VAI_SUA_DUOC, datDocGoiYMarketer,
 } from './kho-goc.js';

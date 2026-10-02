@@ -12,6 +12,9 @@ import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
 import { HANH_DONG, moTa as moTaHanhDong } from '../../audit/hanh-dong.js';
 import { LoiSanPham } from './kho-san-pham.js';
 import { botGhepTuDuLieu } from '../prompt-page/kho-prompt.js';
+import { marketerCuaTeam } from '../../auth/kho-nguoi-dung.js';
+import { phamViMarketer } from '../chung/pham-vi-marketer.js';
+import { goiYChoSanPham, SO_NGAY } from '../../../../src/hrm/goi-y-marketer.js';
 
 /**
  * CHỈ `quan-tri`. Đặt tên sản phẩm là đổi thứ bot gọi trước mặt khách, và mã gốc là khoá
@@ -63,6 +66,8 @@ export async function lichSuGoc(boiCanh, id) {
   if (!_docNhatKy) {
     throw new LoiSanPham('máy chủ chưa nối đường đọc nhật ký — KHÔNG phải «chưa ai sửa gì».', 'chua_noi', 500);
   }
+  const pv = await phamViMarketer(bc);
+  if (pv) chanNgoaiPhamVi(pv, await cua().chiTiet(bc, id));   // LL15d: lịch sử cũng chỉ của sản phẩm mình phụ trách
   const { dong } = await _docNhatKy(bc, { doiTuongLoai: BANG, doiTuongId: String(id), gioiHan: 50 });
   return (dong || []).map((r) => {
     const tn = String(r.tac_nhan || '');
@@ -92,12 +97,53 @@ async function ghi(bc, banGhi) {
   return _pheuNhatKy(bc, banGhi);
 }
 
+/* ═══ LL15d · 02/10 — MARKETER CHỈ THẤY SẢN PHẨM MÌNH PHỤ TRÁCH (01 §9) ═══
+ * Phụ trách = `san_pham_goc.marketer_ma_nv` (031) — NGƯỜI chọn từ hồ sơ HRM (CR-28-09c), máy chỉ gợi ý từ đơn POS. Marketer (không
+ * mang quản trị/quản lý) chỉ thấy + chỉ mở + chỉ sửa kiến thức của sản phẩm gán đúng mã NV của mình; sản phẩm chưa gán KHÔNG hiện
+ * (màn nói có bao nhiêu và nhờ quản trị gán). Tài khoản marketer không mã NV (tạo tay) ⇒ không thấy sản phẩm nào, màn nói vì sao. */
+const cuaToi = (pv, g) => !pv || (!!pv.maNv && g && g.marketerMaNv === pv.maNv);
+function chanNgoaiPhamVi(pv, g) {
+  if (cuaToi(pv, g)) return;
+  throw new LoiSanPham(pv.maNv ? 'sản phẩm này không do bạn phụ trách — quản trị gán marketer ở tab Chung của sản phẩm'
+    : 'tài khoản của bạn chưa gắn hồ sơ HRM (không có mã nhân viên) nên chưa phụ trách sản phẩm nào', 'khong_phu_trach', 403);
+}
+
+// Bộ đọc gợi ý từ đơn POS (`src/hrm/goi-y-marketer.js#taoDocGoiYMarketer`) — tiêm từ `chay-that.js`; vắng ⇒ màn nói «chưa nối».
+let _docGoiY = null;
+export function datDocGoiYMarketer(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiSanPham('datDocGoiYMarketer cần một hàm');
+  _docGoiY = fn || null;
+  return _docGoiY;
+}
+async function goiYCua(goc, chonDuoc) {
+  if (!_docGoiY) return { noi: false, viSao: 'máy chủ chưa nối đọc đơn POS từ BigQuery (V3_BQ_KHOA)' };
+  try {
+    const du = await _docGoiY();
+    const posMa = (goc.thiTruong || []).flatMap((t) => (t.mon || []).map((m) => m.posMa));
+    return { noi: true, soNgay: SO_NGAY, docLuc: du.luc, goiY: goiYChoSanPham(du, posMa, chonDuoc) };
+  } catch (e) {
+    return { noi: false, viSao: `đọc đơn POS hỏng (${String(e?.message || e).slice(0, 120)})` };
+  }
+}
+/** Marketer `maNv` có phải marketer chọn được của team không ⇒ trả { marketer: tên, marketerMaNv } cho tầng A; '' ⇒ bỏ gán. */
+async function marketerTheoMa(bc, maNv) {
+  const v = String(maNv ?? '').trim();
+  if (!v) return { marketer: '', marketerMaNv: null };
+  const nguoi = (await marketerCuaTeam(bc.teamId)).find((c) => c.maNv === v);
+  if (!nguoi) throw new LoiSanPham(`mã ${v} không phải marketer (có hồ sơ HRM) của team này`, 'marketer_la', 400);
+  return { marketer: nguoi.ten, marketerMaNv: nguoi.maNv };
+}
+
 /** Màn đọc: danh sách + những số hiệu POS đang chờ người đặt tên. */
 export async function manSanPhamGoc(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
-  const [ds, cho, gia] = await Promise.all([cua().ds(bc), cua().cho(bc), cua().dem(bc)]);
+  const [ds, cho, gia, pv] = await Promise.all([cua().ds(bc), cua().cho(bc), cua().dem(bc), phamViMarketer(bc)]);
+  const goc = ds.filter((g) => cuaToi(pv, g));
   return {
-    goc: ds,
+    goc,
+    // LL15d: marketer chỉ thấy sản phẩm mình phụ trách — kèm số để màn nói phần còn lại ở đâu.
+    phamVi: pv ? { chiCuaToi: true, coMaNv: !!pv.maNv, soCuaToi: goc.length, soTeam: ds.length,
+      soChuaGan: ds.filter((g) => !g.marketerMaNv).length } : { chiCuaToi: false },
     // Giá KHÔNG về theo lượt kéo danh mục (POS trả `retail_price = 0`), nên màn phải nói
     // thẳng còn bao nhiêu món chưa có giá — im lặng ở đây là để bot cầm một kho hàng mà
     // không biết bán bao nhiêu.
@@ -126,12 +172,17 @@ export async function taoGoc(boiCanh, than) {
 export async function suaGoc(boiCanh, id, than) {
   const bc = batBuocBoiCanh(boiCanh);
   batBuocVai(bc, ...VAI_SUA_DUOC);
+  // LL15d: chọn marketer theo MÃ NV (hồ sơ HRM) — tên lấy từ tài khoản, page kế thừa tên như trước.
+  if (than && than.marketerMaNv !== undefined) {
+    const { marketerMaNv, ...con } = than;
+    than = { ...con, ...(await marketerTheoMa(bc, marketerMaNv)) };
+  }
   const kq = await cua().sua(bc, id, than);
   await ghi(bc, {
     hanhDong: HANH_DONG.SUA_SAN_PHAM_GOC,
     doiTuongLoai: BANG,
     doiTuongId: kq.id,
-    sau: { maGoc: kq.maGoc, ten: kq.ten, soHieu: kq.soHieu, sku: kq.sku, marketer: kq.marketer },
+    sau: { maGoc: kq.maGoc, ten: kq.ten, soHieu: kq.soHieu, sku: kq.sku, marketer: kq.marketer, marketerMaNv: kq.marketerMaNv ?? null },
     ghiChu: `sửa sản phẩm gốc "${kq.maGoc}" (${Object.keys(than || {}).join(', ') || 'không đổi gì'})`
       + `${kq.soPageTheoMarketer ? ` · ${kq.soPageTheoMarketer} page đổi marketer theo` : ''}`,
   });
@@ -157,12 +208,17 @@ export async function boGoc(boiCanh, id) {
 /** Một sản phẩm gốc + chỗ chọn món để «Thêm thị trường». Đọc: cùng vai với màn. */
 export async function chiTietGoc(boiCanh, id) {
   const bc = batBuocBoiCanh(boiCanh);
-  const [goc, monChuaGan] = await Promise.all([cua().chiTiet(bc, id), cua().monChuaGan(bc)]);
+  const [goc, monChuaGan, pv] = await Promise.all([cua().chiTiet(bc, id), cua().monChuaGan(bc), phamViMarketer(bc)]);
   if (!goc) return null;
+  chanNgoaiPhamVi(pv, goc);   // LL15d: mở thẳng đường dẫn sản phẩm của người khác ⇒ 403, không lộ chi tiết
+  const suaDuoc = bc.vai.some((v) => VAI_SUA_DUOC.includes(v));
+  // LL15d: ô chọn marketer (tài khoản marketer có mã NV của team) + gợi ý từ đơn POS — chỉ cho người gán được.
+  const marketerChon = suaDuoc ? await marketerCuaTeam(bc.teamId) : [];
   // `botDocKienThuc`: kiến thức ở tab Chung chỉ tới bot khi máy chủ ghép lời từ dữ liệu v3 (`V3_RAP_PROMPT_BAT`).
   // Vắng ⇒ bot vẫn ráp từ kho cũ theo page — màn phải nói ra, không hứa «mọi page dùng ngay» (VE1b).
-  return { goc, monChuaGan, suaDuoc: bc.vai.some((v) => VAI_SUA_DUOC.includes(v)),
-    suaKienThuc: bc.vai.some((v) => VAI_SUA_KIEN_THUC.includes(v)), botDocKienThuc: botGhepTuDuLieu() };
+  return { goc, monChuaGan, suaDuoc,
+    suaKienThuc: bc.vai.some((v) => VAI_SUA_KIEN_THUC.includes(v)), botDocKienThuc: botGhepTuDuLieu(),
+    marketerChon, goiYMarketer: suaDuoc ? await goiYCua(goc, marketerChon) : null };
 }
 
 /** Gắn một món POS vào sản phẩm gốc — thêm thị trường (shop mới) hoặc thêm biến thể. Quản trị, có nhật ký. */
@@ -197,13 +253,18 @@ export async function goMonPos(boiCanh, id, posMa) {
 export async function goiYGop(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
   const kq = await cua().goiYGop(bc);
-  return { ...kq, suaDuoc: bc.vai.some((v) => VAI_SUA_DUOC.includes(v)) };
+  const suaDuoc = bc.vai.some((v) => VAI_SUA_DUOC.includes(v));
+  return { ...kq, suaDuoc, marketerChon: suaDuoc ? await marketerCuaTeam(bc.teamId) : [] };
 }
 
 /** Gộp: MỘT sản phẩm gốc + gắn các món đã chọn (một giao dịch ở tầng A). Quản trị; MỘT dòng nhật ký kể đủ món. */
 export async function gopMonThanhGoc(boiCanh, than) {
   const bc = batBuocBoiCanh(boiCanh);
   batBuocVai(bc, ...VAI_SUA_DUOC);
+  if (than && than.marketerMaNv !== undefined) {
+    const { marketerMaNv, ...con } = than;
+    than = { ...con, ...(await marketerTheoMa(bc, marketerMaNv)) };
+  }
   const kq = await cua().gop(bc, than);
   const ds = kq.posMa || [];
   await ghi(bc, {
@@ -272,6 +333,8 @@ export const VAI_SUA_KIEN_THUC = Object.freeze([VAI.QUAN_TRI, VAI.MARKETER]);
 export async function suaKienThucGoc(boiCanh, id, kienThuc) {
   const bc = batBuocBoiCanh(boiCanh);
   batBuocVai(bc, ...VAI_SUA_KIEN_THUC);
+  const pv = await phamViMarketer(bc);
+  if (pv) chanNgoaiPhamVi(pv, await cua().chiTiet(bc, id));   // LL15d: marketer chỉ sửa kiến thức sản phẩm mình phụ trách
   const kq = await cua().kienThuc(bc, id, kienThuc);
   await ghi(bc, {
     hanhDong: HANH_DONG.SUA_KIEN_THUC_SAN_PHAM, doiTuongLoai: BANG, doiTuongId: String(id),

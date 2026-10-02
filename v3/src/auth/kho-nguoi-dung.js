@@ -203,3 +203,36 @@ export async function vaiTrongTeam(nguoiDungId, teamId) {
   const o = ds.find((x) => x.teamId === t);
   return o ? [...o.vai] : [];
 }
+
+/**
+ * LL15d · 02/10 — MÃ NHÂN VIÊN HRM của một tài khoản (`nguoi_dung.ma_nv`, migration 029). `null` = tài khoản tạo tay (không gắn
+ * hồ sơ HRM) hoặc lược đồ chưa có cột. Khoá lọc «marketer chỉ thấy sản phẩm mình phụ trách» (01 §9).
+ * @returns {Promise<string|null>}
+ */
+export async function maNvCua(nguoiDungId) {
+  const id = String(nguoiDungId ?? '').trim();
+  if (!id) return null;
+  const nd = await cong().mot('nguoi_dung', { id });
+  const ma = nd && nd.ma_nv != null ? String(nd.ma_nv).trim() : '';
+  return ma || null;
+}
+
+/**
+ * LL15d — marketer CHỌN ĐƯỢC cho sản phẩm của một team: tài khoản mang vai `marketer` ở team ấy, CÒN hoạt động, CÓ mã NV HRM
+ * (quyết định CR-28-09c: «marketer phụ trách chọn từ hồ sơ HRM»). Tài khoản tạo tay không mã ⇒ không lên danh sách.
+ * @returns {Promise<Array<{maNv:string, ten:string, email:string}>>}
+ */
+export async function marketerCuaTeam(teamId) {
+  const t = String(teamId ?? '').trim();
+  if (!t) return [];
+  const db = cong();
+  const vaiMk = (await db.chon('vai')).find((v) => String(v.ma) === 'marketer');
+  if (!vaiMk) return [];
+  const id = [...new Set((await db.chon('thanh_vien_team', { team_id: t, vai_id: String(vaiMk.id) }))
+    .filter((r) => String(r.team_id) === t).map((r) => String(r.nguoi_dung_id)))];
+  if (!id.length) return [];
+  return (await db.chon('nguoi_dung', { id }))
+    .filter((n) => !biTat(n) && n.ma_nv != null && String(n.ma_nv).trim())
+    .map((n) => ({ maNv: String(n.ma_nv).trim(), ten: String(n.ten || n.email || n.ma_nv), email: String(n.email || '') }))
+    .sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+}
