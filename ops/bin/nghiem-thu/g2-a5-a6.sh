@@ -9,7 +9,7 @@
 set -uo pipefail
 GOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "${GOC}" || exit 2
-DB="aicloser_v3_nt_a5a6"; LOI=0; PHEP=0
+DB="aicloser_v3_nt_a5a6_p$$"; LOI=0; PHEP=0
 muc()   { printf '\n── %s\n' "$1"; }
 so()    { printf '   %-58s %s\n' "$1" "$2"; }
 dat()   { PHEP=$((PHEP + 1)); printf '   ✔ %s\n' "$1"; }

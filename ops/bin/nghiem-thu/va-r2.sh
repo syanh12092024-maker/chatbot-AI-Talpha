@@ -108,7 +108,7 @@ bang "bộ ca VA-R2 (8 ca: R2-1..R2-8)" "$(dem_ca test/va-r2-tien-tao-don.test.j
 #  · Thước cũ gõ cứng "007" nên từ ngày 008 lên là đỏ oan. Nay đo tên bản mới nhất
 #    ĐỘNG từ db/migrate/ (án lệ: thước neo số tuyệt đối sẽ trôi).
 muc "⑦ migration — trạng thái · lùi-về-ranh (down 1 bản) · up lại · schema sinh khớp (SANDBOX)"
-SB_DB="aicloser_v3_nt_var2"
+SB_DB="aicloser_v3_nt_var2_p$$"
 SB_URL="$(node --input-type=module -e '
 const { chuoiNoi } = await import("./db/ket-noi.js");
 const u = new URL(chuoiNoi()); u.pathname = "/" + process.argv[1]; console.log(u.toString());

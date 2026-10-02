@@ -22,7 +22,7 @@ set -uo pipefail
 GOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "${GOC}" || exit 2
 
-DB="aicloser_v3_nt_l1m1"
+DB="aicloser_v3_nt_l1m1_p$$"
 CHO="Taiwan"     # shop THẬT nhỏ nhất (344 đơn · 28 biến thể) — đo nhanh, chạm ít
 LOI=0
 PHEP=0

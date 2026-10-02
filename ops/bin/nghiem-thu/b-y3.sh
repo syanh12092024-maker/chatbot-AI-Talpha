@@ -16,7 +16,7 @@ set -uo pipefail
 GOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "${GOC}" || exit 2
 
-DB="aicloser_v3_nt_by3"
+DB="aicloser_v3_nt_by3_p$$"
 LOI=0
 PHEP=0
 
