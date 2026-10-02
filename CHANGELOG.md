@@ -19,6 +19,16 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 02/10/2026 — HRM lên màn, chỉ đọc: hồ sơ nhân sự + marketer POS theo team (LL15a · CR-28-09c)
+
+Không đổi chữ bot nói. 0 migration · 0 gói · 0 tệp bộ não · **1 biến mới `V3_BQ_KHOA`** (đường tới khoá BigQuery trên máy chủ).
+
+- **Cài đặt › Người và team** (`8036529`): cột «Hồ sơ HRM» — mã nhân viên · đang làm / thử việc / đã nghỉ · team, khớp theo email
+  công ty; bảng «Marketer trên POS ↔ hồ sơ HRM» của đúng team đang mở (đang làm + chờ gán team; người đã nghỉ và team không vào
+  hệ chỉ đếm). Tạo tài khoản từ HRM vẫn chưa làm — nút ghi rõ.
+- **Cài đặt › Kết nối › HRM** (`8036529`): số đọc từ nguồn (hồ sơ · bảng ghép · tài khoản marketer) + nút «Đọc lại HRM».
+  Máy chủ chỉ ĐỌC BigQuery (token phạm vi chỉ đọc); đọc hỏng thì màn nói lý do, không chết.
+
 ### 01/10/2026 — Cài đặt nói đúng thứ bot dùng: Model · Người và team · Nhật ký (VE7c · VE7d · VE7e · CR-28-09c)
 
 Không đổi chữ bot nói, không đổi model bot gọi. 0 migration · 0 biến · 0 gói · 0 tệp bộ não — một tệp đường chat
