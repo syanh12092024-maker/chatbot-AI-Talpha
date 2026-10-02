@@ -19,6 +19,24 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 02/10/2026 — 🔴 MỘT BẢN: v1 nghỉ hưu, một công tắc «bot trả lời page này» (MB1 + MB2 · CR-02-10)
+
+Không đổi chữ bot nói (0 tệp bộ não). **0 migration** · 0 gói · biến GỠ: `V3_PAGE_XU_LY`, `V3_GIAO_PAGE_TREN_MAN`,
+`V3_BOT_V1_GOC` (đặt trên máy chủ không còn tác dụng). Van gửi (`PANCAKE_READONLY` · `V3_PANCAKE_GUI`) KHÔNG đổi — lượt này
+không page nào được bật và không tin nào ra khách.
+
+- 🔴 **Công tắc bot** (`e2b10dd`): bật/tắt bot cho một page nay là MỘT cột (`page.bot_ai_bat`) — đúng cột máy trả lời đọc.
+  Bật phải qua cổng sẵn sàng của chính bot (van gửi · cách ghép lời · sản phẩm + giá · model); tắt thì luôn được, kể cả
+  lúc máy chủ chỉ-đọc. Gỡ nút «Giao sang bot mới / Trả về bot cũ», gỡ chữ «bot phụ trách: bot cũ/bot mới» và ô «hai nguồn
+  công tắc lệch nhau». Lượt «Kéo dữ liệu về» thôi chép công tắc từ tệp của bot cũ (trước đây nó sẽ TẮT mọi page vừa bật).
+- **Màn Sức khoẻ** (`e2b10dd`): đèn «Hai bot cùng một page» nay nói về bot `ai_sale` của team khác — xám (chưa đo được)
+  khi đã có page bật, vì hệ không đọc được ai_sale phủ page nào.
+- **Màn Page & bot · Sản phẩm · Kết nối · Sẵn sàng · Số liệu** (`47f2add`): không còn hỏi sang tiến trình bot cũ (cổng
+  3100); mọi số đọc ngay trong tiến trình v3. Thiếu `ADMIN_USER/ADMIN_PASS` không còn làm màn trống.
+- 🔴 **Máy trả lời** (`47f2add`): worker nay tự nạp sản phẩm, giá và kịch bản lúc khởi động và đọc lại khi màn lưu
+  (≤15 giây). Trước đây worker KHÔNG nạp — bật page nào cũng chỉ ra «chưa có sản phẩm» rồi bàn giao.
+- Cửa nhận tin Meta (`/webhook`) và trang chính sách (`/privacy`) chuyển sang tiến trình v3 (cổng 3102).
+
 ### 02/10/2026 — 🔴 Người và vai theo HRM: tạo tài khoản · cấp/rút vai · khoá người nghỉ · tên team (LL15b · CR-28-09c)
 
 Không đổi chữ bot nói. **1 migration (029 — chỉ thêm hai cột)** · 0 gói · 0 tệp bộ não · 1 biến mới `V3_HRM_TU_DONG` (lượt này
