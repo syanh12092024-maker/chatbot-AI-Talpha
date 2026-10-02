@@ -4,12 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Sản phẩm &amp; kho — AI Closer</title>
-<!-- VE1 · 29/09 (CR-28-09c): dựng lại theo BẢN VẼ «AI Closer — làm lại từ đầu», bảng 2a — hai cột: danh sách sản
-     phẩm của team bên trái, một sản phẩm bên phải (bốn tầng bot ghép · Chung · Theo thị trường · Page đang bán ·
-     Lịch sử). KHÔNG CSS riêng (HK15): mọi hình dạng là lớp của hệ kiểu (`kieu.css` mục «VE · BỐ CỤC THEO BẢN VẼ»).
-     Giữ đủ bảy việc của màn cũ: số liệu · cảnh báo giá · số hiệu chờ đặt tên · danh sách + bỏ · tạo · chi tiết
-     (kiến thức · thị trường · gắn/gỡ món · page) · bản sao theo page (ảnh · bậc giá · thiếu tên). Hai luật của màn
-     giữ nguyên: tồn kho ĐỂ TRỐNG chứ không hiện 0 (chưa có nguồn), sản phẩm thiếu tên KHÔNG được bịa tên thay. -->
+<!-- VE1 · hai cột: sản phẩm của team bên trái, chi tiết hoặc việc chuyển page bên phải.
+     GSP2 (CR-02-10b): bản sao trở thành danh sách việc chuyển tạm. Gắn page không xác nhận
+     giá; phải đối soát từng bản sao cho đúng gốc × shop. Dùng hệ kiểu chung, không CSS riêng. -->
 <link rel="stylesheet" href="/chung/kieu.css" data-ds="v3">
 <!-- Hàm dựng thành phần (window.UI). ĐỒNG BỘ, KHÔNG `defer`: khung ứng dụng ở cuối trang
      lấy biểu tượng từ đây — `defer` chạy SAU script cuối trang, khung sẽ mất biểu tượng. -->
@@ -44,7 +41,11 @@
 const { esc, icon, statusBadge, button, alert: canhBao, emptyState, metricRow, formatNumber: so } = window.UI;
 const $ = (s) => document.querySelector(s);
 
-let DL = null;       // /api/san-pham — bản sao theo page (nguồn bot đang bán)
+let DL = null;       // danh sách bản sao lưu trữ
+let CHUYEN = null;   // /api/san-pham/chuyen — quyết định chuyển của người
+let LOI_CHUYEN = '';
+let LOC_CHUYEN = '';
+const CHON_CHUYEN = {}; // lựa chọn + bước đã thành công, giữ khi bước gắn thất bại
 let GOC = null;      // /api/san-pham/goc — danh mục sản phẩm của team
 let CHON = null;     // id sản phẩm đang mở
 let TAB = 'chung';
@@ -99,15 +100,12 @@ function veTrai() {
     : `<p class="field-hint" data-pham-vi>Chỉ hiện ${so(pv.soCuaToi)}/${so(pv.soTeam)} sản phẩm bạn phụ trách · ${so(pv.soChuaGan)} sản phẩm của team chưa gán marketer — quản trị gán ở tab Chung.</p>`;
   $('#dsGoc').querySelectorAll('[data-goc]').forEach((b) => { b.onclick = () => moSanPham(b.dataset.goc); });
 
-  // Ô LƯU Ý (bản vẽ): dữ liệu hôm nay còn nằm theo page, chưa theo sản phẩm — nói bằng SỐ, chỉ lối đi làm.
-  const dem = (DL && DL.dem) || {};
-  const g = GOC.gia || {};
-  const coBanSao = (dem.tongSanPham || 0) > 0;
-  $('#oDuLieu').innerHTML = (coBanSao || GOC.cho.length) ? `<div class="o-luu-y">
-      ${coBanSao ? `<b>Dữ liệu hôm nay còn nằm theo page.</b> ${so(dem.tongSanPham)} sản phẩm bot đang bán nằm theo ${so(dem.coSanPham)}/${so(dem.tongPage)} page · ${so(GOC.goc.length)} sản phẩm gốc${g.chuaCoGia ? ` · ${so(g.chuaCoGia)}/${so(g.tong)} món chưa có bậc giá` : ''}.` : ''}
-      <br>${GOC.suaDuoc
-        ? `<button type="button" class="nut-dam" id="moGop">Gộp món POS thành sản phẩm →</button>` : ''}<button type="button" class="nut-dam" id="moBanSao">Bản sao theo page →</button>
-    </div>` : '';
+  const con = CHUYEN && CHUYEN.dem.chuaXong;
+  $('#oDuLieu').innerHTML = !GOC.suaDuoc ? '' : LOI_CHUYEN
+    ? `<div class="o-luu-y">Chưa đọc được việc chuyển: ${esc(LOI_CHUYEN)} <button type="button" class="nut-dam" id="moBanSao">Thử lại →</button></div>`
+    : con ? `<div class="o-luu-y"><b>${so(con)} page chưa chuyển xong</b> sang sản phẩm.
+      <br><button type="button" class="nut-dam" id="moBanSao">Chuyển page sang sản phẩm →</button>
+      <button type="button" class="nut-dam" id="moGop">Gộp món POS thành sản phẩm →</button></div>` : '';
   if ($('#moBanSao')) $('#moBanSao').onclick = () => veBanSao();
   if ($('#moGop')) $('#moGop').onclick = () => veGop();
 }
@@ -670,87 +668,138 @@ async function noiNhom(khoa, nut) {
   } catch (e) { nut.disabled = false; the.querySelector('[data-tb]').textContent = e.message; }
 }
 
-/* ── PHẢI · BẢN SAO THEO PAGE (thứ bot đang bán hôm nay) ─────────────────────────────── */
-function veBanSao() {
-  CHON = null; veTrai(); giu(null);
-  const d = DL;
-  if (!d) { $('#phai').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa đọc được bản sao theo page' }); return; }
-  const g = (GOC && GOC.gia) || { tong: 0 };
-  $('#phai').innerHTML = `
-    <div class="chi-tiet-dau"><div><h2 class="tieu-de-lon" id="tieuDe">Bản sao sản phẩm theo page</h2>
-      <div class="dong-phu" id="hSo"></div></div><div class="hanh-dong" id="nutVe"></div></div>
-    <div id="dem"></div>
-    ${g.tong ? canhBao({ level: g.chuaCoGia ? 'warning' : 'info',
-        title: g.chuaCoGia ? `${so(g.chuaCoGia)}/${so(g.tong)} sản phẩm chưa có bậc giá nào` : `Cả ${so(g.tong)} sản phẩm đều đã có bậc giá`,
-        body: g.chuaCoGia ? 'Kho hàng gửi về tên và tồn, không gửi giá. Gộp món POS thành sản phẩm rồi đặt giá ở tab «Theo thị trường» của sản phẩm — lượt kéo danh mục sau không ghi đè giá đã đặt.'
-          : `${so(g.nhapTay)} sản phẩm đang ở chế độ nhập tay, không bị lượt kéo danh mục ghi đè.` })
-        + '<p><button type="button" class="nut-dam" id="sangGop">Gộp món POS thành sản phẩm →</button></p>' : ''}
-    <div class="page-note" id="ghi-chu-ton"></div>
-    <div id="bang"></div>`;
-  $('#dem').innerHTML = metricRow([
-    { label: 'Sản phẩm bot đang bán', value: so(d.dem.tongSanPham) },
-    { label: 'Page có sản phẩm', value: `${so(d.dem.coSanPham)}/${so(d.dem.tongPage)}` },
-    { label: 'Page không có sản phẩm', value: so(d.dem.khongCoSanPham),
-      statusHtml: d.dem.khongCoSanPham ? statusBadge('blocked', { label: 'Bot không chào bán được gì' }) : '' },
-    // Tồn kho ĐỂ TRỐNG, không hiện 0 — 0 ở đây đọc ra là «hết hàng», một kết luận sai.
-    { label: 'Tồn kho', value: '—', statusHtml: statusBadge('unknown', { label: 'Chưa có nguồn' }) },
-  ]);
-  $('#ghi-chu-ton').innerHTML = (d.tonKho && !d.tonKho.co) ? `<div>Cột tồn kho để trống chứ không hiện 0. ${esc(d.tonKho.noi)}</div>` : '';
-  if ($('#sangGop')) $('#sangGop').onclick = () => veGop();
-  veBang(d);
+/* ── PHẢI · CHUYỂN PAGE SANG SẢN PHẨM (tạm, GSP2) ─────────────────────────────── */
+async function taiChuyen() {
+  if (!GOC || !GOC.suaDuoc) { CHUYEN = null; return; }
+  try { CHUYEN = await goi('/api/san-pham/chuyen'); LOI_CHUYEN = ''; }
+  catch (e) { CHUYEN = null; LOI_CHUYEN = e.message; }
 }
-function veBang(d) {
-  $('#nutVe').innerHTML = '';
-  $('#tieuDe').textContent = 'Bản sao sản phẩm theo page';
-  const ds = d.page.filter((p) => p.soSanPham > 0);
-  $('#hSo').textContent = `${so(ds.length)}/${so(d.dem.tongPage)} page · bấm một dòng để xem sản phẩm${d.nguon ? ' · nguồn: ' + d.nguon.ten : ''}`;
-  if (!ds.length) {
-    $('#bang').innerHTML = emptyState({ icon: 'inbox', title: d.trong ? d.trong.noi : 'Chưa page nào có sản phẩm',
-      body: d.trong && d.trong.diTiep ? d.trong.diTiep : '', actionsHtml: button('Xem Page còn thiếu gì', { href: '/san-sang', size: 'sm' }) });
-    return;
+async function veBanSao() {
+  CHON = null; giu(null);
+  const u = new URL(location.href); u.searchParams.set('xem', 'chuyen');
+  history.replaceState(null, '', u.pathname + u.search);
+  await taiChuyen(); veTrai(); veChuyen();
+}
+const tenTrangThaiChuyen = { chua_gan: 'Chưa gắn', cho_doi_soat: 'Chờ đối soát', bo_qua: 'Không chuyển' };
+function luaChonChuyen(v) {
+  if (!CHON_CHUYEN[v.pageId]) {
+    const n = v.goiY[0];
+    CHON_CHUYEN[v.pageId] = { shopId: v.shop && v.shop.id || '', goiY: n ? n.posMa : '', gocId: '' };
   }
-  $('#bang').innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr>
-      <th scope="col">Page</th><th scope="col" class="num">Sản phẩm</th><th scope="col">Tồn kho</th>
-      <th scope="col">Bot</th><th scope="col">Thị trường</th><th scope="col">Marketer</th>
-    </tr></thead><tbody>${ds.map((p) => `
-    <tr data-clickable data-id="${esc(p.pageId)}">
-      <td><div class="page-identity-name">${esc(p.ten)}</div><div class="page-identity-sub">${esc(p.pageId)}</div></td>
-      <td class="num manh">${so(p.soSanPham)}</td>
-      <td>${statusBadge('unknown', { label: 'Chưa có nguồn' })}</td>
-      <td>${statusBadge(p.botBat ? 'bot_on' : 'bot_off')}</td>
-      <td class="meta">${esc(p.thiTruong) || '—'}</td>
-      <td>${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
-    </tr>`).join('')}</tbody></table></div>`;
-  $('#bang').querySelectorAll('[data-id]').forEach((n) => { n.onclick = () => moPage(n.dataset.id); });
+  return CHON_CHUYEN[v.pageId];
 }
-async function moPage(id) {
-  $('#bang').innerHTML = '<div class="empty-state"><span class="skeleton"></span></div>';
+function gocChuyen(v, c) {
+  if (c.daTao) return c.daTao;
+  if (c.gocId) return CHUYEN.gocCuaTeam.find((g) => g.id === c.gocId);
+  const n = v.goiY.find((g) => g.posMa === c.goiY);
+  return n && (n.goc || n.gocTheoSku);
+}
+function veChuyen() {
+  if (!CHUYEN) {
+    $('#phai').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa đọc được việc chuyển page',
+      body: LOI_CHUYEN || 'Chỉ quản trị chuyển page sang sản phẩm.', actionsHtml: button('Thử lại', { id: 'thuChuyen' }) });
+    $('#thuChuyen').onclick = () => veBanSao(); return;
+  }
+  const d = CHUYEN.dem;
+  const ds = CHUYEN.viec.filter((v) => !LOC_CHUYEN || v.trangThai === LOC_CHUYEN);
+  $('#phai').innerHTML = `<h2 class="tieu-de-lon">Chuyển page sang sản phẩm</h2>
+    <p class="field-hint">Gắn page trước, sau đó đối soát giá và ảnh. Gắn vào món đã có giá vẫn cần đối soát bản sao của page.</p>
+    ${metricRow([{ label: 'Chưa gắn', value: so(d.chuaGan) }, { label: 'Chờ đối soát', value: so(d.choDoiSoat) },
+      { label: 'Không chuyển', value: so(d.boQua) }, { label: 'Tổng chưa xong', value: so(d.chuaXong) }])}
+    <label class="field"><span>Trạng thái</span><select id="locChuyen" name="trangThai">
+      <option value="">Tất cả</option>${Object.entries(tenTrangThaiChuyen).map(([k, ten]) =>
+        `<option value="${k}"${LOC_CHUYEN === k ? ' selected' : ''}>${ten}</option>`).join('')}</select></label>
+    <div id="dsChuyen">${ds.length ? ds.map(theChuyen).join('') : emptyState({ icon: 'check', title: 'Không còn page trong danh sách này' })}</div>`;
+  $('#locChuyen').onchange = () => {
+    LOC_CHUYEN = $('#locChuyen').value;
+    const u = new URL(location.href); if (LOC_CHUYEN) u.searchParams.set('trangThai', LOC_CHUYEN); else u.searchParams.delete('trangThai');
+    history.replaceState(null, '', u.pathname + u.search); veChuyen();
+  };
+  $('#dsChuyen').querySelectorAll('[data-chuyen]').forEach((the) => {
+    const id = the.dataset.chuyen;
+    const v = CHUYEN.viec.find((x) => x.pageId === id); const c = luaChonChuyen(v);
+    if (c.dangGui) the.querySelectorAll('input, select, button').forEach((x) => { x.disabled = true; });
+    const shop = the.querySelector('[data-shop]');
+    if (shop) shop.onchange = () => { c.shopId = shop.value; };
+    const goiY = the.querySelector('[data-goiy]');
+    if (goiY) goiY.onchange = () => { c.goiY = goiY.value; c.gocId = ''; veChuyen(); };
+    const goc = the.querySelector('[data-goc-tay]');
+    if (goc) goc.onchange = () => { c.gocId = goc.value; c.goiY = ''; veChuyen(); };
+    const gan = the.querySelector('[data-gan]'); if (gan) gan.onclick = () => ganChuyen(v, the, gan);
+    const bo = the.querySelector('[data-boqua]'); if (bo) bo.onclick = () => quyetChuyen(v, the, bo, false);
+    const huy = the.querySelector('[data-huy]'); if (huy) huy.onclick = () => quyetChuyen(v, the, huy, true);
+    const gop = the.querySelector('[data-gop]'); if (gop) gop.onclick = () => veGop();
+  });
+}
+function theChuyen(v) {
+  const c = luaChonChuyen(v); const g = gocChuyen(v, c);
+  const n = v.goiY.find((x) => x.posMa === c.goiY);
+  const moi = !g && n && n.loai === 'moi';
+  const tb = c.tb || '';
+  return `<article class="o-luu-y duoi-4" data-chuyen="${esc(v.pageId)}">
+    <h3>${esc(v.ten || v.pageFb)}</h3><p class="field-hint">${esc(v.pageFb)} · ${esc(tenTrangThaiChuyen[v.trangThai])}</p>
+    <p>Shop: ${v.shop ? esc(v.shop.market || v.shop.id) : 'Chưa có shop'}</p>
+    <div>${v.banSao.map((b) => `<div class="hang-giua duoi-4">
+      ${b.anhDau ? `<img src="${esc(b.anhDau)}" alt="Ảnh bản sao của ${esc(v.ten || v.pageFb)}" width="64" height="64" loading="lazy">` : ''}
+      <span>${esc(b.ten || 'Bản sao chưa có tên')} ${esc(b.bienThe || '')} · ${so(b.soAnh)} ảnh<br>
+      ${b.bac.map((x) => `${so(x.soLuong)}: ${so(x.gia)} ${esc(x.tienTe)}${x.bat === false ? ' (tắt)' : ''}${x.khuyenMai ? ' · ' + esc(x.khuyenMai) : ''}${x.phiShip != null ? ' · ship ' + so(x.phiShip) : ''}${x.mienShip ? ' · miễn ship' : ''}`).join(' / ') || 'Chưa có bậc giá'}</span></div>`).join('')}</div>
+    ${v.trangThai === 'cho_doi_soat' ? `<p>Đã gắn «${esc(v.goc && (v.goc.ten || v.goc.maGoc) || '')}» · chờ đối soát giá + ảnh (GSP3).</p>`
+      : v.trangThai === 'bo_qua' ? `<p>${esc(v.boQua && v.boQua.lyDo || '')}</p><button type="button" class="nut" data-huy>Bỏ quyết định</button>`
+      : `<label class="field"><span>Shop POS của page</span><select name="shop" data-shop>
+        <option value="">— chọn shop —</option>${CHUYEN.shopCuaTeam.map((s) => `<option value="${esc(s.id)}"${c.shopId === s.id ? ' selected' : ''}>${esc(s.market || s.id)}</option>`).join('')}</select></label>
+      ${v.goiY.length && !c.daTao ? `<label class="field"><span>Gợi ý theo tên page</span><select name="goiY" data-goiy>
+        <option value="">— chọn sản phẩm bên dưới —</option>${v.goiY.map((x) => `<option value="${esc(x.posMa)}"${c.goiY === x.posMa ? ' selected' : ''}>${esc(x.tenMon)} · ${esc(x.posMa)} · ${so(Math.round(x.diem * 100))}%</option>`).join('')}</select></label>` : ''}
+      ${!c.daTao ? `<label class="field"><span>Hoặc chọn sản phẩm của team</span><select name="goc" data-goc-tay>
+        <option value="">— chọn sản phẩm —</option>${CHUYEN.gocCuaTeam.map((x) => `<option value="${esc(x.id)}"${c.gocId === x.id ? ' selected' : ''}>${esc(x.ten || x.maGoc)}</option>`).join('')}</select></label>` : ''}
+      ${moi ? `<label class="field"><span>Tên sản phẩm mới</span><input name="ten" data-ten value="${esc(n.tenMon.replace(/^\d+\s*[-–.]\s*/, ''))}" autocomplete="off"></label>
+        <label class="field"><span>Mã gốc (khóa kịch bản, đặt rồi không sửa)</span><input name="maGoc" data-ma autocomplete="off" spellcheck="false" value="${esc(n.tenMon.toLowerCase().replace(/^\d+\s*[-–.]\s*/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''))}"></label>` : ''}
+      <p data-marketer>Marketer page: ${esc(v.marketerPage || 'Chưa gán')}${g && g.marketer && g.marketer !== v.marketerPage ? ' → ' + esc(g.marketer) : ''}</p>
+      <button type="button" class="nut" data-gan>${c.daTao ? 'Gắn lại vào «' + esc(g.ten || g.maGoc) + '»' : c.gocId || n && n.loai === 'goc' ? 'Gắn vào «' + esc(g && (g.ten || g.maGoc) || '') + '»' : n && n.loai === 'noi' ? 'Nối món vào «' + esc(g && (g.ten || g.maGoc) || '') + '» rồi gắn' : moi ? 'Gộp SKU ' + esc(n.sku || '') + ' thành sản phẩm rồi gắn' : 'Gắn page'}</button>
+      <button type="button" class="nut-dam" data-gop>Gộp món POS →</button>
+      <label class="field"><span>Lý do không chuyển</span><input name="lyDo" data-lydo maxlength="500" autocomplete="off" placeholder="Page thôi bán…"></label>
+      <button type="button" class="nut-dam" data-boqua>Không chuyển</button>`}
+    <p data-tb role="status" aria-live="polite">${esc(tb)}</p></article>`;
+}
+async function ganChuyen(v, the, nut) {
+  const c = luaChonChuyen(v); if (c.dangGui) return;
+  c.dangGui = true; nut.disabled = true;
+  the.querySelectorAll('input, select, button').forEach((x) => { x.disabled = true; });
+  let g = gocChuyen(v, c);
+  const n = v.goiY.find((x) => x.posMa === c.goiY);
   try {
-    const d = await goi('/api/san-pham/' + encodeURIComponent(id));
-    if (!d) return;
-    $('#tieuDe').textContent = d.tenPage;
-    $('#hSo').textContent = `${so(d.dem.tong)} sản phẩm · ${so(d.dem.tongAnh)} ảnh${d.dem.tienTe.length ? ' · ' + d.dem.tienTe.join(', ') : ''}`;
-    $('#nutVe').innerHTML = button('Về danh sách page', { size: 'sm', id: 've' });
-    $('#ve').onclick = () => veBanSao();
-    if (!d.sanPham.length) { $('#bang').innerHTML = emptyState({ icon: 'inbox', title: d.trong.noi, body: d.trong.diTiep }); return; }
-    // Sản phẩm THIẾU TÊN: nói ra, và KHÔNG bịa tên thay — bịa một cái tên là làm lỗ này biến
-    // mất khỏi màn trong khi khách vẫn thấy nguyên.
-    const canh = d.dem.thieuTen
-      ? `<div class="duoi-4">${canhBao({ level: 'warning', title: `${so(d.dem.thieuTen)}/${so(d.dem.tong)} sản phẩm không có tên`,
-          body: 'Bot chào bán được ảnh và giá, nhưng không gọi được tên món hàng. Tên phải lấy từ POS — màn này không bịa tên thay.' })}</div>` : '';
-    $('#bang').innerHTML = `<div class="an-toan tren-4">${canh}<div class="thumb-grid">${d.sanPham.map((s) => `
-      <figure class="thumb">
-        ${s.anh.length ? `<img src="${esc(s.anh[0].duong)}" alt="${esc(s.goiLa)}" loading="lazy">`
-          : `<div class="thumb-empty" role="img" aria-label="Chưa có ảnh">${icon('inbox')}</div>`}
-        <figcaption class="thumb-meta">
-          <div class="thumb-name">${s.thieuTen ? `<span class="text-muted">${esc(s.goiLa)}</span>` : esc(s.goiLa)}</div>
-          <div class="thumb-sub">mã ${esc(s.ma)}${s.bienThe ? ' · ' + esc(s.bienThe) : ''} · ${so(s.soAnh)} ảnh</div>
-          <div class="thumb-sub">${s.bacGia.map((g) => `${esc(g.nhan)}: ${so(g.gia)} ${esc(s.tienTe)}`).join(' · ') || 'Chưa có bậc giá'}</div>
-        </figcaption>
-      </figure>`).join('')}</div></div>`;
+    if (!c.shopId) throw new Error('Chọn shop POS của page trước khi gắn.');
+    if (!c.daTao && !c.gocId && n && n.loai === 'noi') {
+      await goiGhi('/api/san-pham/goc/' + encodeURIComponent(g.id) + '/mon', { method: 'POST', body: JSON.stringify({ posMa: n.posMa }) });
+      c.daTao = g; c.tb = 'Món đã nối vào sản phẩm, chưa gắn page.';
+    } else if (!c.daTao && !c.gocId && n && n.loai === 'moi') {
+      const ds = await goi('/api/san-pham/gop');
+      const nhom = ds.nhom.find((x) => x.mon.some((m) => m.posMa === n.posMa));
+      if (!nhom) throw new Error('Gợi ý đã thay đổi; mở Gộp món POS để kiểm tra lại.');
+      const kq = await goiGhi('/api/san-pham/gop', { method: 'POST', body: JSON.stringify({
+        ten: the.querySelector('[data-ten]').value.trim(), maGoc: the.querySelector('[data-ma]').value.trim(),
+        sku: nhom.sku, posMa: nhom.mon.map((m) => m.posMa) }) });
+      c.daTao = kq.goc; g = c.daTao; c.tb = 'Sản phẩm đã tạo, chưa gắn page.';
+    }
+    if (!g) throw new Error('Chọn sản phẩm hoặc một gợi ý phù hợp.');
+    await goiGhi('/api/san-pham/goc/' + encodeURIComponent(g.id) + '/page', { method: 'POST',
+      body: JSON.stringify({ pageId: v.pageId, shopId: c.shopId }) });
+    delete CHON_CHUYEN[v.pageId]; await taiChuyen(); await taiGoc(); veChuyen();
   } catch (e) {
-    $('#bang').innerHTML = emptyState({ icon: 'circle-alert', title: 'Không đọc được sản phẩm của page này', body: e.message });
+    c.tb = (c.daTao ? c.tb + ' ' : '') + e.message;
+    c.dangGui = false;
+    veChuyen();
   }
+}
+async function quyetChuyen(v, the, nut, huy) {
+  const c = luaChonChuyen(v); if (c.dangGui) return;
+  const lyDo = huy ? '' : the.querySelector('[data-lydo]').value.trim();
+  if (!huy && !lyDo) { the.querySelector('[data-tb]').textContent = 'Cho biết lý do không chuyển.'; the.querySelector('[data-lydo]').focus(); return; }
+  c.dangGui = true; nut.disabled = true;
+  try {
+    await goiGhi('/api/san-pham/chuyen/' + encodeURIComponent(v.pageId) + (huy ? '/huy-bo-qua' : '/bo-qua'),
+      { method: 'POST', body: JSON.stringify({ lyDo }) });
+    delete CHON_CHUYEN[v.pageId]; await taiChuyen(); veTrai(); veChuyen();
+  } catch (e) { c.dangGui = false; nut.disabled = false; the.querySelector('[data-tb]').textContent = e.message; }
 }
 
 async function boGoc(id, nut) {
@@ -761,16 +810,17 @@ async function boGoc(id, nut) {
 
 /* ── NẠP ─────────────────────────────────────────────────────────────────────────────── */
 async function taiGoc() {
-  try { GOC = await goi('/api/san-pham/goc'); veTrai(); }
+  try { GOC = await goi('/api/san-pham/goc'); await taiChuyen(); veTrai(); }
   catch (e) { $('#dsGoc').innerHTML = `<li class="o-trong">Không đọc được danh mục sản phẩm gốc: ${esc(e.message)}</li>`; }
 }
 function moDau() {
   const u = new URL(location.href);
   if (u.searchParams.get('xem') === 'gop') return veGop();
+  if (u.searchParams.get('xem') === 'chuyen') { LOC_CHUYEN = u.searchParams.get('trangThai') || ''; return veBanSao(); }
   const sp = u.searchParams.get('sp');
   if (GOC && sp && GOC.goc.some((g) => g.id === sp)) return moSanPham(sp, u.searchParams.get('tab') || 'chung');
   if (GOC && GOC.goc.length) return moSanPham(GOC.goc[0].id);
-  if (DL) return veBanSao();
+  if (GOC && GOC.suaDuoc && CHUYEN && CHUYEN.viec.length) return veBanSao();
   $('#phai').innerHTML = emptyState({ icon: 'inbox', title: 'Chưa có sản phẩm gốc nào', body: 'Bấm «+ Thêm» ở cột trái để gộp món POS thành sản phẩm.' });
 }
 (async () => {
@@ -778,6 +828,7 @@ function moDau() {
   DL = a.status === 'fulfilled' ? a.value : null;
   GOC = b.status === 'fulfilled' ? b.value : null;
   if (!GOC) $('#dsGoc').innerHTML = `<li class="o-trong">Không đọc được danh mục sản phẩm gốc: ${esc(b.reason && b.reason.message || '')}</li>`;
+  await taiChuyen();
   veTrai();
   moDau();
 })();

@@ -426,35 +426,26 @@ test("N1a′ · câu hỏi của dân số a lọt qua CẢ HAI lớp 0đ (lopTu
   });
   assert.ok(!fl.handled, `Fast Lane đã trả lời ở làn '${fl.lane}' — model không được gọi`);
 
-  // ── chiều ngược lại: câu CŨ có thật sự bị làn 0đ nuốt không ───────────────────
-  // ⚠️ VẾ NÀY PHỤ THUỘC CẤU HÌNH, và đó là bài học đắt của lượt 14/09/2026.
-  // `npm test` chạy với `--env-file-if-exists=.env`. Máy CÓ `.env` (dev/VPS) và máy KHÔNG
-  // (CI) chạy HAI cấu hình khác nhau:
-  //   · CI, không .env  → `FASTLANE_TEMPLATES` vắng ⇒ mặc định BẬT ⇒ câu hỏi ship rơi vào
-  //     làn `tpl_ship`. Đây là cảnh làm N1a đỏ suốt trên CI.
-  //   · máy dev, .env SẢN XUẤT → `FASTLANE_TEMPLATES=0` (tắt 11/08 vì trùng từ khoá
-  //     Botcake, chủ dự án quyết) ⇒ làn template KHÔNG chạy ⇒ cùng câu ấy leo lên model.
-  // Nên khẳng định thẳng `lane === "tpl_ship"` là ĐỎ OAN ở máy dev. Ca này đo theo ĐÚNG
-  // cấu hình đang chạy, và IN RA nó — hai lượt chạy ra hai kết quả khác nhau mà không nói
-  // mình chạy cấu hình nào thì người đọc không biết vừa đo cái gì.
-  const lanTemplateBat = fastLaneConfig.templates;
+  // Câu nhiều ý phải lên model, kể cả khi template đang bật.
   const cu = fastLane({
     text: "do you deliver to Abu Dhabi and how long does shipping take",
-    kb: KB,
-    aiTurns: 0,
-    lastAiText: "",
-    idleMs: 0,
-    usedLanes: new Set(),
-    pageId: PAGE,
+    kb: KB, aiTurns: 0, lastAiText: "", idleMs: 0,
+    usedLanes: new Set(), pageId: PAGE,
   });
-  console.log(
-    `   [N1a′] FASTLANE_TEMPLATES=${lanTemplateBat ? "bật" : "TẮT"} → câu hỏi ship ` +
-      `${cu.handled ? `do làn '${cu.lane}' trả lời` : "leo lên model"}`,
-  );
-  if (lanTemplateBat) {
-    assert.equal(cu.lane, "tpl_ship", "làn template ĐANG BẬT thì câu hỏi ship phải do nó trả lời, KHÔNG tốn token");
+  assert.ok(!cu.handled, "câu nhiều ý phải qua rào template để tới model");
+
+  // Đo nhánh template bằng câu đơn ý và câu trả lời đã cấu hình.
+  const ship = fastLane({
+    text: "do you deliver to Abu Dhabi",
+    kb: { ...KB, config: { ...KB.config, fastLaneShip: "We deliver to Abu Dhabi." } },
+    aiTurns: 0, lastAiText: "", idleMs: 0,
+    usedLanes: new Set(), pageId: PAGE,
+  });
+  if (fastLaneConfig.templates) {
+    assert.equal(ship.lane, "tpl_ship");
+    assert.ok(ship.handled);
   } else {
-    assert.ok(!cu.handled, "làn template ĐANG TẮT thì không làn 0đ nào được nhận câu hỏi ship");
+    assert.ok(!ship.handled, "template tắt thì câu ship phải tới model");
   }
 });
 

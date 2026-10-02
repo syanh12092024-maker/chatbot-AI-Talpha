@@ -134,10 +134,10 @@ async function marketerTheoMa(bc, maNv) {
   return { marketer: nguoi.ten, marketerMaNv: nguoi.maNv };
 }
 
-/** Màn đọc: danh sách + những số hiệu POS đang chờ người đặt tên. */
+/** Màn đọc: danh sách sản phẩm gốc (+ phạm vi marketer · số giá). */
 export async function manSanPhamGoc(boiCanh) {
   const bc = batBuocBoiCanh(boiCanh);
-  const [ds, cho, gia, pv] = await Promise.all([cua().ds(bc), cua().cho(bc), cua().dem(bc), phamViMarketer(bc)]);
+  const [ds, gia, pv] = await Promise.all([cua().ds(bc), cua().dem(bc), phamViMarketer(bc)]);
   const goc = ds.filter((g) => cuaToi(pv, g));
   return {
     goc,
@@ -148,9 +148,7 @@ export async function manSanPhamGoc(boiCanh) {
     // thẳng còn bao nhiêu món chưa có giá — im lặng ở đây là để bot cầm một kho hàng mà
     // không biết bán bao nhiêu.
     gia,
-    // Việc đang chờ NGƯỜI. Đây là con số mà mỗi lượt «Kéo danh mục» in ra rồi bỏ đó.
-    cho: cho.cho,
-    khongCoSoHieu: cho.khongCoSoHieu,
+    // GSP2: `cho` / `khongCoSoHieu` ĐÃ GỠ (thợ GSP1 để lại) — sản phẩm gốc chỉ sinh từ gộp món POS theo SKU, hết «số hiệu chờ đặt tên».
     suaDuoc: bc.vai.some((v) => VAI_SUA_DUOC.includes(v)),
   };
 }
@@ -320,6 +318,47 @@ export async function goPageSanPham(boiCanh, id, pageId) {
   const chu = `gỡ page «${chuPage(kq)}» khỏi sản phẩm "${kq.maGoc}"`;
   await ghi(bc, { hanhDong: HANH_DONG.GAN_SAN_PHAM_GOC, doiTuongLoai: 'page', doiTuongId: kq.pageId, truoc: { sanPhamGocMa: kq.maGoc }, sau: { sanPhamGocMa: null }, ghiChu: chu });
   await ghi(bc, { hanhDong: HANH_DONG.GAN_SAN_PHAM_GOC, doiTuongLoai: BANG, doiTuongId: String(id), truoc: { pageId: kq.pageId }, ghiChu: chu });
+  return kq;
+}
+
+/* ═══ GSP2 · DANH SÁCH VIỆC CHUYỂN (TẠM, gỡ ở GSP5) — page đang đọc bản sao → gắn vào sản phẩm gốc ═══
+ * Ba hàm của tầng A (`src/products/chuyen-ban-sao.js`) là hàm TUỲ CHỌN của `datKhoGoc` — KHÔNG thêm vào danh sách bắt buộc
+ * (thêm là 5 tệp ca fake ll13 · ve8a · ve8b · ll15d · vai-b-noi-day đỏ). Chưa nối ⇒ 500 `chua_noi` nói rõ, không trả rỗng.
+ * Vai: quản trị (`VAI_SUA_DUOC`). Marketer ⇒ 403: page chưa gắn nằm ngoài phạm vi marketer (LL15d). */
+function hamChuyen(ten) {
+  const f = cua()[ten];
+  if (typeof f !== 'function') throw new LoiSanPham(`máy chủ chưa nối «${ten}» của danh sách việc chuyển`, 'chua_noi', 500);
+  return f;
+}
+
+export async function viecChuyen(boiCanh) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const { viec, dem, shopCuaTeam, gocCuaTeam } = await hamChuyen('dsChuyen')(bc);
+  return { dem, viec, shopCuaTeam, gocCuaTeam };
+}
+
+export async function boQuaChuyenPage(boiCanh, pageId, lyDo) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const kq = await hamChuyen('boQuaChuyen')(bc, pageId, lyDo);
+  await ghi(bc, {
+    hanhDong: HANH_DONG.BO_QUA_CHUYEN_PAGE, doiTuongLoai: 'page', doiTuongId: kq.pageId,
+    sau: { doiSoat: 'bo_qua', lyDo: kq.lyDo, soBanSao: kq.soBanSao },
+    ghiChu: `không chuyển page «${chuPage(kq)}» sang sản phẩm — ${kq.lyDo}`,
+  });
+  return kq;
+}
+
+export async function huyBoQuaChuyenPage(boiCanh, pageId) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const kq = await hamChuyen('huyBoQuaChuyen')(bc, pageId);
+  await ghi(bc, {
+    hanhDong: HANH_DONG.HUY_BO_QUA_CHUYEN_PAGE, doiTuongLoai: 'page', doiTuongId: kq.pageId,
+    truoc: { doiSoat: 'bo_qua' }, sau: { doiSoat: null },
+    ghiChu: `bỏ quyết định «không chuyển» của page «${chuPage(kq)}»`,
+  });
   return kq;
 }
 

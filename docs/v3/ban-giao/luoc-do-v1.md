@@ -64,7 +64,7 @@ Mọi bảng còn lại có `team_id NOT NULL`; **ngoại lệ duy nhất** là 
 | `khoa_nha` (008)     | khoá API — MỘT bản mỗi (team × nhà) | `UNIQUE (team_id, nha_cung_cap)` · **`khoa_api_ma` MÃ HOÁ** · ngoài `BANG_NGHIEP_VU_CHUAN` |
 | `page`               | sổ cái page                      | `page_id` (id FB, UNIQUE) · **`bot_ai_bat`** · `botcake_tat` · `trong_diem` · `the_pancake` · `mat_dau` |
 | `san_pham_goc`       | sản phẩm THẬT (CR-15/09)         | **không shop, không page** · UNIQUE (team, `ma_goc`) · khoá của tầng kịch bản «sản phẩm» + `ky_nang`     |
-| `san_pham` `goi_gia` | danh mục                         | **chưa nạp ở L0-M1** — nguồn là POS (L1-M1) · `ma_goc` → `san_pham_goc` (nullable tới khi người soát)   |
+| `san_pham` `goi_gia` | danh mục                         | **chưa nạp ở L0-M1** — nguồn là POS (L1-M1) · `ma_goc` → `san_pham_goc` (nullable tới khi người soát) · **032 (GSP2):** `san_pham.doi_soat` ∈ chep/giu_gia_mon/bo_qua + `doi_soat_luc` + `doi_soat_goc` + `doi_soat_shop` (chỉ bản sao `nguon<>'pos'`; NULL = chưa quyết; quyết chỉ hiệu lực với đúng gốc × shop lúc quyết) |
 | `khoi_dung_chung`    | Chính sách · FAQ · Phản đối (CR-28-09b) | một dòng mỗi team · jsonb cùng hình dạng bot dựng từ Sheet — xem §13 |
 | `anh_san_pham`       | ảnh bot gửi khách (CR-28-09b)    | theo `san_pham` · nhãn giữ nguyên văn · đường = link công khai hoặc `/uploads/<tệp>` — xem §12              |
 | `khach`              | hồ sơ khách                      | `so_dien_thoai` **NULL được**, UNIQUE trong team khi có giá trị · `ti_le_hoan`                          |

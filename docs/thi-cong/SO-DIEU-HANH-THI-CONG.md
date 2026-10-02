@@ -1,5 +1,7 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
+> **Nhịp tiếp tục 02/10 — GSP2/GSP1b:** đã hoàn tất code local và kiểm thử trên PostgreSQL tạm; 2342 đạt, 0 lỗi, 4 bỏ qua vì dữ liệu lịch sử. Chưa deploy hoặc đổi dữ liệu thật. Tiếp theo là nghiệm thu GSP3/GSP3b và H-GSP; chưa cắt đường bản sao ở GSP4. Nhật ký: `nhat-ky/phieu-gsp2.md` · `nhat-ky/phieu-gsp1b.md`.
+
 > 💓 **NHỊP TIM TỔNG (16/09 — MỞ SÓNG BÁN HÀNG):** audit toàn hệ xong + quét **719 hội thoại
 > thật**. Người quyết gật hai việc: **①** nới §0a luật 4 — năm file bộ não SỬA ĐƯỢC (khai
 > «Đụng bộ não» trong phiếu, cổng `_chan1.sh` ⑤ canh); **②** mở **§5c SÓNG BH1–BH6**, 6 phiếu
@@ -359,8 +361,8 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
 | Mã   | Việc                                                                                          | Phụ thuộc           | Làn | Trạng thái |
 | ---- | --------------------------------------------------------------------------------------------- | ------------------- | --- | ---------- |
 | GSP1 | Màn Sản phẩm: «+ Thêm» mở «Gộp món POS»; bỏ lối tạo gốc theo số hiệu + danh sách số hiệu; đóng `POST /api/san-pham/goc` | —      | 🟨  |✅ 02/10 · `a0626be` · chặng 1 7/8 (④ = commit tổng) · chặng 2 ba mũ ĐẠT · chưa deploy |
-| GSP1b | Gộp món POS: SKU BẮT BUỘC — máy chủ suy SKU từ món (bỏ tin thân), món chưa SKU ⇒ 409 `mon_chua_sku`, SKU khác nhau / lệch thân ⇒ 409 (người quyết 02/10, trả nợ N-GSP-GOP-SKU) | GSP1 · song song GSP2 (khác tệp) | 🟨 | ⬜ |
-| GSP2 | «Bản sao theo page» đổi TẠM thành danh sách việc chuyển: gợi ý món POS khớp tên page · gắn / nối món rồi gắn / gộp SKU rồi gắn / «không chuyển» · trạng thái theo page × bản sao (migration 032 `san_pham.doi_soat` + gốc × shop của quyết định — vị từ `daQuyet` dùng chung với GSP3) · bộ đếm toàn hệ theo team | GSP1 (cùng tệp màn) | 🟨 | ⏸ thợ DỪNG giữa chừng 02/10 (hết hạn mức) — phần dở CHƯA commit trong cây; lần sau: xem `git status`, respawn thợ mới nhận lại phiếu |
+| GSP1b | Gộp món POS: SKU BẮT BUỘC — máy chủ suy SKU từ món (bỏ tin thân), món chưa SKU ⇒ 409 `mon_chua_sku`, SKU khác nhau / lệch thân ⇒ 409 (người quyết 02/10, trả nợ N-GSP-GOP-SKU) | GSP1 · song song GSP2 (khác tệp) | 🟨 | 🔎 02/10 · code/tests đạt trên PostgreSQL tạm · chưa deploy · nhật ký `phieu-gsp1b.md` |
+| GSP2 | «Bản sao theo page» đổi TẠM thành danh sách việc chuyển: gợi ý món POS khớp tên page · gắn / nối món rồi gắn / gộp SKU rồi gắn / «không chuyển» · trạng thái theo page × bản sao (migration 032 `san_pham.doi_soat` + gốc × shop của quyết định — vị từ `daQuyet` dùng chung với GSP3) · bộ đếm toàn hệ theo team | GSP1 (cùng tệp màn) | 🟨 | 🔎 02/10 · đã tiếp tục phần dở; code/tests đạt · chưa deploy · nhật ký `phieu-gsp2.md` |
 | H-GSP | Người: shop cho 11 page chưa có shop · xác nhận gắn 74 page · chọn giá khi lệch · 2 page có 2 bản sao | GSP2 lên prod | — | ⬜ |
 | GSP3 | Đối soát giá + ảnh theo GỐC × SHOP: lệch giữa page ⇒ 409, người chọn · chép đủ cột bậc · ảnh `nguon='kb'` khử trùng · luôn đẩy bản chép · dùng lại cửa lưu giá VE8b | GSP2 (cùng tệp màn) | 🟥 |⬜ review (a) 2 vòng |
 | GSP3b | Trang page: bộ đọc `chay-that.js:408` truyền `trang` · cửa lưu SP/ảnh từ trang page từ chối bản sao của page đã gắn (409) · câu chữ «sửa ở đây là sửa mọi page cùng gốc × shop» | GSP3 · cùng đợt deploy GSP1–GSP3 | 🟥 |⬜ review (a) 2 vòng |
@@ -3035,3 +3037,10 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · GSP1 → ✅ (tổng nghiệm thu) — chặng 1 trên cây gộp `fd05a0c`+: 7/8 (④ đỏ do commit tổng sửa CR, đất điều hành) · `gsp1.sh` rc=0 · cổng cũ ll13 · ve1 · ve8a · ve8b · ll15d xanh khi máy rảnh (đỏ lúc chạy chồng = hộp cát trùng tên, đã chữa `8aed3fc`)
   chặng 2 (một agent, ba mũ): Phá ĐẠT (POST/PUT mọi biến thể `/goc` ⇒ 404, số dòng không đổi; cửa sửa `/goc/:id` nguyên) · Code ĐẠT · Nghiệp vụ (b) ĐẠT · nợ N-GSP-GOP-SKU (chờ người quyết) · N-GSP1-CHU-CU · N-GSP1-DAO-VA-CAY-CHUNG
   · commit a0626be · 905e546 · verdict scratchpad review-b-gsp1.yaml
+
+- 02/10 · GSP2 → 🔎 CODE/TEST ĐẠT trên DB tạm — tiếp tục phần Claude dừng: màn việc chuyển + gắn/nối/gộp/không chuyển + retry gắn; migration 032 và schema đồng bộ; 7 đột biến bị bắt · chưa deploy
+  · bộ đầy đủ 2342 đạt / 0 lỗi / 4 bỏ qua; cổng gsp2 23/23 (kèm hai bộ LL15d riêng); phép đo mọi team chỉ đọc
+  · commit xem git log GSP2/GSP1b · nhật ký docs/thi-cong/nhat-ky/phieu-gsp2.md
+- 02/10 · GSP1b → 🔎 CODE/TEST ĐẠT trên DB tạm — SKU suy từ mọi món POS đã khóa; thiếu/khác/lệch ⇒ 409, không ghi; HTTP thật kiểm vai và mã lỗi; trả nợ N-GSP-GOP-SKU trong code local · chưa deploy
+  · cổng gsp1b 23/23 (kèm VE8a và hai bộ LL15d riêng); đảo-vá luật tin SKU thân đỏ đúng chỗ
+  · commit xem git log GSP2/GSP1b · nhật ký docs/thi-cong/nhat-ky/phieu-gsp1b.md

@@ -125,8 +125,8 @@ test('G5 · trang CHẠY THẬT: bấm «+ Thêm» ⇒ khung «Gộp món POS th
   // `cho` rỗng (không còn số hiệu mồ côi) mà vẫn có bản sao theo page ⇒ ô lưu ý hiện; nút Gộp không đòi số hiệu.
   const ds = await o.api(await o.ve('qt@x.vn'))('/api/san-pham/goc');
   assert.ok(ds.j.suaDuoc);
-  assert.deepEqual(ds.j.cho, [], 'tiền đề: không còn số hiệu mồ côi');
-  assert.ok(m.$('#moGop'), 'quản trị: ô lưu ý phải có nút Gộp dù `cho` rỗng');
+  assert.equal('cho' in ds.j, false, 'GSP2 bỏ danh sách số hiệu khỏi hợp đồng');
+  assert.ok(m.$('#nutThem'), 'quản trị vẫn gộp qua + Thêm, không phụ thuộc số hiệu');
   const mk = await moTrang('san-pham/trang/san-pham.html', { goc: o.goc0, cookie: await o.ve('mk@x.vn'), duong: '/san-pham' });
   assert.equal(mk.$('#nutThem'), null, 'marketer không thấy «+ Thêm»');
   assert.equal(mk.$('#moGop'), null, 'marketer không thấy nút Gộp');

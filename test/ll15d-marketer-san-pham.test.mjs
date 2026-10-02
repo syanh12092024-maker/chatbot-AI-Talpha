@@ -14,7 +14,7 @@ async function dung(t) {
   const ins = async (q, a) => (await pool.query(q, a)).rows[0];
   const a = await ins("INSERT INTO san_pham_goc (team_id, ma_goc, ten) VALUES ($1, 'sp-a', 'SP A') RETURNING id", [teamId]);
   await pool.query("INSERT INTO page (team_id, page_id, ten, san_pham_goc_ma, marketer) VALUES ($1, 'fb1', 'P1', 'sp-a', 'cũ'), ($1, 'fb2', 'P2', NULL, '')", [teamId]);
-  await pool.query("INSERT INTO san_pham (team_id, ma, ten, nguon) VALUES ($1, 'shop1:v1', 'Món 1', 'pos'), ($1, 'shop1:v2', 'Món 2', 'pos')", [teamId]);
+  await pool.query("INSERT INTO san_pham (team_id, ma, ten, nguon, sku) VALUES ($1, 'shop1:v1', 'Món 1', 'pos', '101'), ($1, 'shop1:v2', 'Món 2', 'pos', '101')", [teamId]);
   return { pool, teamId, idA: String(a.id) };
 }
 

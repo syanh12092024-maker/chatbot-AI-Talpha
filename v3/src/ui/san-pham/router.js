@@ -15,7 +15,7 @@ import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manSanPham, sanPhamCuaMotPage, VAI_VAO_DUOC, VI_RONG, LoiSanPham } from './kho-san-pham.js';
 import { manSanPhamGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos, suaKienThucGoc, lichSuGoc,
-  goiYGop, gopMonThanhGoc, luuGiaMon, ganPageSanPham, goPageSanPham } from './kho-goc.js';
+  goiYGop, gopMonThanhGoc, luuGiaMon, ganPageSanPham, goPageSanPham, viecChuyen, boQuaChuyenPage, huyBoQuaChuyenPage } from './kho-goc.js';
 
 /**
  * Vai GHI của màn — khai TƯỜNG MINH ở router dù nó chỉ chuyển tiếp từ `kho-goc.js`.
@@ -187,6 +187,18 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
       posMa: req.body?.posMa,
     });
     res.json({ ok: true, goc: kq });
+  }));
+
+  // GSP2 (TẠM, gỡ ở GSP5) · danh sách việc chuyển: page đang đọc bản sao → gắn vào sản phẩm gốc (CR-02-10b). Quản trị; marketer ⇒ 403.
+  // PHẢI đứng TRƯỚC `/api/san-pham/:id` — đứng sau thì `chuyen` bị bắt làm `:id` và trả «không có page đó».
+  r.get('/api/san-pham/chuyen', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await viecChuyen(cuaBoiCanh(req))) });
+  }));
+  r.post('/api/san-pham/chuyen/:pageId/bo-qua', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, page: await boQuaChuyenPage(cuaBoiCanh(req), req.params.pageId, req.body?.lyDo) });
+  }));
+  r.post('/api/san-pham/chuyen/:pageId/huy-bo-qua', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, page: await huyBoQuaChuyenPage(cuaBoiCanh(req), req.params.pageId) });
   }));
 
   r.get('/api/san-pham/:id', canDangNhap, canVai, boc(async (req, res) => {

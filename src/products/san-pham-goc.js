@@ -553,8 +553,6 @@ export async function goiYGopMonPos(pool, teamId) {
  */
 export async function gopMonThanhGoc(pool, teamId, { maGoc, ten, sku, marketer, marketerMaNv, posMa } = {}) {
   const ma = batBuocMaGoc(maGoc);
-  const khoa = chuanSku(sku);
-  const so = khoa && /^[0-9]{1,4}$/.test(khoa) ? khoa : null;
   const mk = gon(marketer).slice(0, 120);
   const ds = [...new Set((Array.isArray(posMa) ? posMa : []).map(gon).filter(Boolean))];
   if (!ds.length) throw new LoiSanPhamGoc("chưa chọn món POS nào để gộp", "thieu_mon");
@@ -565,7 +563,7 @@ export async function gopMonThanhGoc(pool, teamId, { maGoc, ten, sku, marketer, 
   try {
     await khach.query("BEGIN");
     const mon = (await khach.query(
-      "SELECT id, ma, ma_goc, nguon FROM san_pham WHERE team_id = $1 AND ma = ANY($2::text[]) FOR UPDATE",
+      "SELECT id, ma, ma_goc, nguon, sku FROM san_pham WHERE team_id = $1 AND ma = ANY($2::text[]) FOR UPDATE",
       [teamId, ds],
     )).rows;
     const co = new Map(mon.map((m) => [m.ma, m]));
@@ -577,6 +575,19 @@ export async function gopMonThanhGoc(pool, teamId, { maGoc, ten, sku, marketer, 
     if (daThuoc) {
       throw new LoiSanPhamGoc(`món ${daThuoc.ma} đang thuộc sản phẩm «${daThuoc.ma_goc}» — gỡ ở đó trước`, "mon_thuoc_goc_khac", 409);
     }
+    const khongSku = mon.filter((m) => !chuanSku(m.sku));
+    if (khongSku.length) {
+      throw new LoiSanPhamGoc(`món chưa có SKU: ${khongSku.map((m) => m.ma).join(', ')} — kéo lại danh mục ở Cài đặt › Kết nối để lấy SKU thật, rồi gộp`, 'mon_chua_sku', 409);
+    }
+    const cacSku = new Set(mon.map((m) => chuanSku(m.sku)));
+    if (cacSku.size !== 1) {
+      throw new LoiSanPhamGoc(`các món có SKU khác nhau: ${mon.map((m) => `${m.ma}: ${m.sku}`).join(', ')}`, 'sku_khac_nhau', 409);
+    }
+    const khoa = [...cacSku][0];
+    if (sku !== undefined && chuanSku(sku) !== khoa) {
+      throw new LoiSanPhamGoc(`SKU gửi lên lệch SKU thật của món (${khoa}) — đọc lại gợi ý rồi gộp`, 'sku_lech', 409);
+    }
+    const so = /^[0-9]{1,4}$/.test(khoa) ? khoa : null;
     let g;
     try {
       g = (await khach.query(

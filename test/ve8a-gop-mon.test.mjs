@@ -102,12 +102,13 @@ test('VE8a · gợi ý gộp + gộp món POS thành sản phẩm theo SKU, trê
     });
 
     await t.test('G3 · từ chối thì KHÔNG để lại gì: món thuộc sản phẩm khác · mã trùng · SKU trùng · món team khác · không phải món POS · chưa chọn', async () => {
+      await mon(tA, '111:dup', '200 - Món chưa gộp trùng SKU', '200');
       const soGoc = async () => (await q('SELECT count(*)::int n FROM san_pham_goc WHERE team_id=$1', [tA])).rows[0].n;
       const truoc = await soGoc();
       const ca = [
         [{ maGoc: 'moi-1', ten: 'X', posMa: ['111:d', '111:k'] }, 'mon_thuoc_goc_khac', 409, null],
         [{ maGoc: 'kreain', ten: 'X', posMa: ['111:d'] }, 'trung', 409, /mã gốc "kreain"/],
-        [{ maGoc: 'moi-2', ten: 'X', sku: '0200', posMa: ['111:d'] }, 'trung', 409, /SKU 200 đã là một sản phẩm gốc khác/],
+        [{ maGoc: 'moi-2', ten: 'X', sku: '0200', posMa: ['111:dup'] }, 'trung', 409, /SKU 200 đã là một sản phẩm gốc khác/],
         [{ maGoc: 'moi-3', ten: 'X', posMa: ['111:x'] }, 'khong_co_mon', 404, null],
         [{ maGoc: 'moi-4', ten: 'X', posMa: ['kb:1'] }, 'khong_co_mon', 404, null],
         [{ maGoc: 'moi-5', ten: 'X', posMa: [] }, 'thieu_mon', 400, null],

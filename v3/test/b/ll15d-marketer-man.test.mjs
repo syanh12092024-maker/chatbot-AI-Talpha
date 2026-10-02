@@ -45,7 +45,7 @@ async function dung(t) {
     goc[k] = String((await one('INSERT INTO san_pham_goc (team_id, ma_goc, ten, marketer, marketer_ma_nv) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [teamId, ma, `SP ${k.toUpperCase()}`, ten, maNv])).id);
   }
-  await pool.query("INSERT INTO san_pham (team_id, ma, ten, nguon, ma_goc) VALUES ($1, 'shop1:v1', 'Món A', 'pos', 'sp-a'), ($1, 'shop1:v9', 'Món rời', 'pos', NULL)", [teamId]);
+  await pool.query("INSERT INTO san_pham (team_id, ma, ten, nguon, ma_goc, sku) VALUES ($1, 'shop1:v1', 'Món A', 'pos', 'sp-a', '1'), ($1, 'shop1:v9', 'Món rời', 'pos', NULL, '999')", [teamId]);
   const page = {};
   for (const [k, fb, ma] of [['p1', 'fb1', 'sp-a'], ['p2', 'fb2', 'sp-b'], ['p3', 'fb3', null], ['p4', 'fb4', 'sp-c']]) {
     page[k] = String((await one('INSERT INTO page (team_id, page_id, ten, san_pham_goc_ma) VALUES ($1, $2, $3, $4) RETURNING id', [teamId, fb, `Page ${k}`, ma])).id);

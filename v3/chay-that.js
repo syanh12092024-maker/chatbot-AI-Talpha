@@ -105,6 +105,7 @@ datKhoTokenDb(() => khoToken.docTokenSong(pool));
 await (await import(`${GOC}/src/core/khoi-dong-loi.js`)).khoiDongLoi({ nhan: 'chay-that', quetSoDangKy: true });
 const { keoDanhMucTeam } = await import(`${GOC}/src/pos/keo-danh-muc.js`);
 const spGoc = await import(`${GOC}/src/products/san-pham-goc.js`);
+const chuyenBanSao = await import(`${GOC}/src/products/chuyen-ban-sao.js`);   // GSP2 · danh sách việc chuyển
 // BẢN SỬA ĐƯỢC của sản phẩm, lấy THEO ID (GD3 · 25/09).
 //
 // ⚠️ VÌ SAO KHÔNG DÙNG `/api/van-hanh/products`: cửa ấy cắt **50 dòng mỗi trang** và BỎ các
@@ -351,6 +352,10 @@ const bao = dungPhanB(app, {
     },
     ganPage: (bc, id, t) => spGoc.ganPageVaoGoc(pool, bc.teamId, id, t),
     goPage: (bc, id, pageId) => spGoc.goPageKhoiGoc(pool, bc.teamId, id, pageId),
+    // GSP2: danh sách việc chuyển (TẠM, gỡ ở GSP5) — hàm TUỲ CHỌN của `datKhoGoc`, KHÔNG thuộc danh sách bắt buộc.
+    dsChuyen: (bc) => chuyenBanSao.dsViecChuyen(pool, bc.teamId),
+    boQuaChuyen: (bc, pageId, lyDo) => chuyenBanSao.boQuaPage(pool, bc.teamId, pageId, lyDo),
+    huyBoQuaChuyen: (bc, pageId) => chuyenBanSao.huyBoQua(pool, bc.teamId, pageId),
   },
   // Kho tạm: page ở team kỹ thuật, nguồn cho lát «gán page ↔ team».
   docKhoTamPage: (t) => pageChuaPhan(pool, t),

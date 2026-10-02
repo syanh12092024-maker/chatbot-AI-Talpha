@@ -83,9 +83,9 @@ test('U4 · trang (VE1 · theo bản vẽ 2a): hai cột, bốn tầng, bốn ta
     ['kiến thức', /'\/kien-thuc', \{ method: 'POST'/], ['lịch sử (mới)', /'\/lich-su'\)/],
     ['«+ Thêm» = gộp món POS (GSP1: hết lối tạo theo số hiệu)', /id: 'nutThem' \}\) : '';\s*\n\s*if \(\$\('#nutThem'\)\) \$\('#nutThem'\)\.onclick = \(\) => veGop\(\)/],
     ['bỏ sản phẩm', /\{ method: 'DELETE' \}/],
-    ['bản sao theo page', /goi\('\/api\/san-pham\/' \+ encodeURIComponent\(id\)\)/],
-    ['số liệu', /metricRow\(\[/], ['cảnh báo thiếu bậc giá', /chưa có bậc giá nào/],
-    ['thiếu tên không bịa', /màn này không bịa tên thay/], ['tồn kho để trống', /Tồn kho', value: '—'/],
+    ['việc chuyển page (GSP2)', /goi\('\/api\/san-pham\/chuyen'\)/],
+    ['số liệu', /metricRow\(\[/], ['giá bản sao thiếu', /Chưa có bậc giá/],
+    ['thiếu tên không bịa', /Bản sao chưa có tên/], ['chờ đối soát không suy từ giá', /Gắn vào món đã có giá vẫn cần đối soát bản sao/],
   ]) assert.match(html, re, `mất việc «${viec}» khi dựng lại màn`);
   // Chỗ chưa có nguồn nói RÕ chưa có — không bịa (ảnh chung · kịch bản tầng nước). VE8b · 30/09: marketer ĐÃ có nguồn — gán ở
   // sản phẩm (người quyết: «từ sản phẩm kéo về gán marketer») — nên thước canh câu «chưa gán» thay cho «chưa có nguồn — HRM».
