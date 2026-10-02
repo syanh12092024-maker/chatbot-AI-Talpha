@@ -344,6 +344,26 @@ và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt 
 | MB3 | **Mở van**: deploy MB1+MB2 · `systemctl disable --now aicloser` · restart hai tiến trình v3 · mốc +1′/+5′/+15′ | MB2 · người gật ✅ 02/10 | 🟥  | ✅ 02/10 07:23 · `94d7cd5` · +1′/+5′/+15′ lỗi 0 · GIỮ · `phat-hanh-20261002-mot-ban.md` |
 | MB4 | Gỡ 28 tệp `src/` chỉ-v1 (GIỮ `wa.js` — pancake-tool mượn) + 7 trang `public/` + 8 script `package.json`; dời bộ ca; lưu trữ JSON không ai đọc; đổi chữ «bot cũ» 29 tệp màn; cổng `mb.sh`; migration 030 gỡ cột thừa; ĐÓNG CR | MB3 · người quyết bỏ chờ 3 ngày («làm MB4 luôn đi» 02/10) | 🟨  | ✅ 02/10 09:03 · `bd6459a` · migration 030 · +1′/+5′/+15′ lỗi 0 · GIỮ · `phat-hanh-20261002-mb4.md` · **CR-02-10 ĐÓNG** |
 
+## §5h · PAGE PHẢI GẮN SẢN PHẨM (GSP1–GSP5) — CR-02-10b, người quyết gõ «áp trọn, bỏ giá riêng theo page» 02/10
+
+Bot chỉ chào bán ở page đã gắn **một sản phẩm gốc × một shop POS**; page chưa gắn ⇒ không sản phẩm,
+không trả lời, không bật được. Không giá riêng theo page. Gốc chỉ sinh từ gộp món POS theo SKU.
+Phiếu CR: `docs/thi-cong/doi-y-do/CR-02-10b-page-phai-gan-san-pham.md` (lớp 5 đo prod ở mục 5d:
+0/514 page gắn gốc · 76 page đọc bản sao · 0/78 bản sao nối món POS · 0/491 món POS có giá).
+**Thứ tự cứng: gắn (GSP2) → chép giá + ảnh (GSP3) → bỏ đường cũ (GSP4) → dọn màn (GSP5).** Áp GSP4
+trước GSP3 là 76 page mất cả giá lẫn ảnh. Không xoá dòng nào. LL13 «nối 78 bản sao page» đổi đích
+thành GSP2. **GSP4 không phát** khi bộ đếm «page còn đọc bản sao» > 0, trừ khi người quyết nói
+tường minh chấp nhận phần còn lại thôi chat. GSP4 chạm `handler-v3.js` + nhiều bộ ca (MB4 đã xong 02/10 — không còn va; cầu `cau-bot-v1.js` nay là `loi-bot.js`).
+
+| Mã   | Việc                                                                                          | Phụ thuộc           | Làn | Trạng thái |
+| ---- | --------------------------------------------------------------------------------------------- | ------------------- | --- | ---------- |
+| GSP1 | Màn Sản phẩm: «+ Thêm» mở «Gộp món POS»; bỏ lối tạo gốc theo số hiệu + danh sách số hiệu; đóng `POST /api/san-pham/goc` | —      | 🟨  | ⬜ |
+| GSP2 | «Bản sao theo page» đổi TẠM thành danh sách việc chuyển: page · shop · giá + ảnh bản sao · gợi ý món POS khớp tên page · gắn vào gốc có sẵn hoặc gộp SKU rồi gắn · bộ đếm «x page còn đọc bản sao» | GSP1 (cùng tệp màn) | 🟨 | ⬜ |
+| H-GSP | Người: shop cho 11 page chưa có shop · xác nhận gắn 74 page · chọn giá khi lệch · 2 page có 2 bản sao | GSP2 lên prod | — | ⬜ |
+| GSP3 | Chép giá + ảnh bản sao → món POS, trong tiến trình v3 (dùng lại cửa lưu giá VE8b + bước đẩy bản chép); chỉ món chưa có giá; lệch/nhiều món/tiền tệ sai ⇒ người chọn | GSP2 (cùng tệp màn) | 🟥 | ⬜ |
+| GSP4 | Một đường: bỏ nhánh `page_id` ở `catalog.js` · `kho-san-pham-v3.js` · `ban-chep-bot.js` · «Page đang bán» · `doc-danh-muc.js` RF-15; chốt ở `handler-v3.js` trước KB; 35 ca đổi fixture + 4 ca luật mới; deploy theo `mo-van` | GSP3 trên prod · bộ đếm = 0 | 🟥 | ⬜ |
+| GSP5 | Dọn: bỏ màn «Bản sao theo page» + ô lưu ý + `GET /api/san-pham`; tab «SP & giá» trang page nói giá sửa ở Sản phẩm › Theo thị trường; `03-MAN-HINH.md`; ĐÓNG CR | GSP4                | 🟨  | ⬜ |
+
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
 | Mã  | Việc                                                                                 | Chặn gì                                                        | Trạng thái |
@@ -1463,6 +1483,18 @@ và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt 
   - **N-VBND-CHAP-CHON** ca `vai-b-noi-day` đỏ 2 lần trong cửa vào 05/10 (đăng nhập → đổi team), không tái hiện (cổng chạy lại 10/10 ·
     311 vòng 0 đỏ). Nghi: tệp dữ liệu dùng chung (symlink sang cây chính, `ai-messages.jsonl` bị ghi giữa lượt) khi phiên khác chạy
     cùng lúc. Gốc chưa rõ.
+- 02/10 · **NỢ CỦA CR-02-10b** (`docs/thi-cong/doi-y-do/CR-02-10b-page-phai-gan-san-pham.md` §4):
+  - **N-GSP-XOA-BAN-SAO** 78 dòng `san_pham nguon='kb'` + 154 bậc giá + 536 ảnh giữ làm lưu trữ sau GSP4; xoá + bỏ cột
+    `san_pham.page_id` là phiếu sau, khi đủ 30 ngày không ai đọc. Neo: migration 015 «bỏ cột là phiếu khác, sau này».
+  - **N-GSP-DIAMOND** gốc «Diamond Halo set» prod không SKU, không marketer (tạo 29/09 qua lối số hiệu) — gắn SKU tay qua
+    `POST /api/san-pham/goc/:id` hay gộp lại qua màn Gộp.
+  - **N-GSP-TEAM-KT** 2 page của team kỹ thuật có bản sao, shop của team đó chưa kéo danh mục — chuyển team hay bỏ.
+  - **N-GSP-KB-OVERRIDES** page không gắn gốc thì bản chép cũ trong `kb-overrides.json` đứng nguyên (ca BC10, cố ý). Chốt ở
+    handler (GSP4) chặn rồi nên không ra khách, nhưng tệp còn dữ liệu chết.
+  - **N-GSP-GHI-DE-PAGE** người quyết chọn BỎ giá riêng theo page (02/10) — nếu sau này cần lại thì là thiết kế riêng.
+  - Nợ cũ đổi số phận theo CR này: **N-MN8b** (tạo đơn chưa dùng `pos_ma`) trả bởi GSP4 — đơn từ page gắn gốc mang mã món POS
+    thật · **N-MN8c** (75/79 SP chưa tên) mất ý nghĩa · **N-DANHMUC-GOC** thành việc của GSP2 · **RF-15** (gán `san_pham.page_id`
+    khi shop có 1 page) bỏ ở GSP4.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -2982,3 +3014,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 05/10 · MỞ VAN LL17b · LL15e · LL17d → ✅ GIỮ — prod `b4e7b6d → 60ab7ed`, 0 migration, chỉ restart aicloser-v3 lúc 04:11:58 CEST; mốc +0′/+6′/+15′ lỗi 0 · cat_phien 0 (khoá 0/23); đọc thật 30 ngày GCC 6.870 · EU 4.868 · AUUS 606 đơn, ba luồng tách
   cửa vào 60 xanh / 13 đỏ = 12 nợ cũ + ll15e chập chờn (vai-b-noi-day; chạy lại 10/10 · 311 vòng 0 đỏ — nợ N-VBND-CHAP-CHON) · l1-m1 nay xanh · LL17c người quyết chọn «để nguyên»
   · commit 60ab7ed · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261005-ll17b-ll15e-ll17d.md
+- 02/10 · CR-02-10b → 🔨 ÁP — page phải gắn một sản phẩm gốc × một shop POS thì bot mới chat; bỏ giá riêng theo page; gốc chỉ sinh từ gộp SKU; «bản sao theo page» thôi là nguồn (giữ lưu trữ) · §5h GSP1–GSP5 + H-GSP
+  đo prod chỉ đọc: 0/514 page gắn gốc · 76 page đọc bản sao (0 bật) · 0/78 bản sao nối món POS · 0/491 món POS có giá · 536 ảnh ở bản sao · prod chat qua `kb-overrides.json` (`V3_RAP_PROMPT_BAT` vắng) ⇒ phải chốt ở handler · đảo thử bỏ nhánh `page_id`: 35 ca neo luật cũ · 01 §6 §8 + `luoc-do-v1.md` đã sửa · 5 nợ §9 N-GSP-*
+  · commit 2344ba4 · bb52c9b · phiếu docs/thi-cong/doi-y-do/CR-02-10b-page-phai-gan-san-pham.md
