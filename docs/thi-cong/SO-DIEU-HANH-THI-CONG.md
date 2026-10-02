@@ -1406,6 +1406,13 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
   - **LL15b** tạo tài khoản từ HRM (khớp email · MKT/SALE · sale ba team · người nghỉ tự khoá · tên team theo HRM) — ghi bảng
     quyền, gật riêng. H11 (khoá BigQuery cho máy chủ) coi như xong 02/10 — khoá đã ở máy chủ, đọc được 118 · 324.
 
+- 02/10 · **NỢ SAU LL15b** (`docs/thi-cong/nhat-ky/phieu-LL15b.md` §7):
+  - **N-HRM-RUT-GAP** vai do HRM cấp chỉ rút qua HRM (rút tay ⇒ 409 `vai_cua_hrm`); tắt `V3_BQ_KHOA` thì dòng HRM đứng yên.
+  - **N-MK-HANG-LOAT** tài khoản HRM tạo ra phải được quản trị đặt mật khẩu ĐẦU từng người, theo từng team (lượt đầu prod: 21
+    người) — chưa có thư mời / người dùng tự đặt / đặt hàng loạt.
+  - **N-KHOA-PHIEN** khoá tài khoản (người nghỉ) không cắt phiên đang mở — vé mang vai tới khi hết hạn.
+  - **N-HRM-LANCUOI-NHO** «lần cuối» của lượt đồng bộ giữ trong bộ nhớ tiến trình — restart thì mất (nhật ký vẫn có dòng).
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2850,3 +2857,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · MỞ VAN LL15a → ✅ GIỮ — prod `d226f81 → 679d583`, 0 migration, biến mới `V3_BQ_KHOA=/etc/aicloser/bq-levelup.json` (.env sao lưu trước), chỉ restart aicloser-v3 lúc 04:04:01 CEST
   cửa vào 50 xanh / 12 đỏ = 12 nợ cũ · npm test 2.446 ca 0 đỏ · mốc +1′/+5′/+15′ lỗi 0/0/0 · Started 1 · nhật ký khởi động «bộ đọc HRM» đã nối · đọc thật từ prod 118 hồ sơ · 324 ghép · GCC 19 / AUUS 9 / EU 20 marketer đang làm
   · commit 679d583 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-ll15a.md
+- 02/10 · LL15b → 🔎 CHỜ DEPLOY — người + vai THEO HRM: tạo tài khoản (chưa mật khẩu) · MKT → Marketer ở team mình, SALE → Sale cả ba team · nghỉ ⇒ rút vai HRM + khoá · làm lại ⇒ mở khoá · tên team theo HRM; màn «Lấy người từ HRM» xem kế hoạch rồi áp đúng vân tay (Quản trị mọi team) · vai HRM không rút tay · «Đặt mật khẩu» đầu · tự động 24 giờ khi `V3_HRM_TU_DONG=1` (vượt rào ⇒ hoãn) · migration 029 (chỉ thêm cột)
+  đo 02/10: chạy thử kế hoạch trên dữ liệu prod CHỈ ĐỌC — tạo 21 · cấp 41 · đổi tên 2 team · 0 rút/khoá · qua rào; ca 15/15 (M8 đầu-cuối: áp ⇒ đặt mật khẩu ⇒ đăng nhập 200) · đảo-vá 33/33 · cổng ll15b.sh 15/15 · npm test 2.461 ca 0 đỏ · nợ N-HRM-RUT-GAP · N-MK-HANG-LOAT · N-KHOA-PHIEN · N-HRM-LANCUOI-NHO
+  · commit 3500986 · nhật ký docs/thi-cong/nhat-ky/phieu-LL15b.md
