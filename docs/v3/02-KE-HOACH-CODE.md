@@ -12,7 +12,9 @@
 
 **3. Lớp team vào từ dòng code đầu tiên.** Gắn sau là phải sờ lại mọi bảng, mọi truy vấn, mọi màn hình.
 
-**4. Chạy song song, không chuyển đứt.** Bản mới lên 3 page thử trước, hai bên cùng chạy, so số.
+**4. ~~Chạy song song, không chuyển đứt.~~ Bản mới lên 3 page thử trước, hai bên cùng chạy, so số.**
+→ **CR-02-10:** v1 đã nghỉ hưu (thôi trả lời khách từ 28/08) — phía mình chỉ còn MỘT bản v3. «Song song
+từng page, so số» nay là với bot `ai_sale` của pancake-tool (team khác), không phải với v1.
 
 **5. Mỗi luồng phải nghiệm thu được bằng số.** Không đạt thì chưa qua luồng sau.
 

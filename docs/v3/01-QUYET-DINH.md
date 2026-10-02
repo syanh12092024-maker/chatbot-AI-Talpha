@@ -229,8 +229,8 @@ Mọi thứ bot dùng để chào bán một page — **sản phẩm, bậc giá
 ghi là **CSDL v3, sửa qua giao diện v3**. POS là đường KÉO VÀO, không phải chỗ thứ hai. Mỗi lượt
 lưu trên giao diện **hoặc có hiệu lực với bot ngay, hoặc báo lỗi rõ** — không bao giờ «lưu xong»
 mà bot vẫn chạy bản cũ. Google Sheet và `kb-overrides.json` thôi là nơi người sửa: Sheet nạp một
-lượt rồi tắt đồng bộ; `kb-overrides.json` còn đó nhưng **chỉ máy ghi** (bản chép bot v1 đọc, sinh
-từ CSDL mỗi lượt lưu). Mọi thứ quyết định một page trả lời thế nào nằm trên **một màn**: trang
+lượt rồi tắt đồng bộ; `kb-overrides.json` còn đó nhưng **chỉ máy ghi** (bản chép bộ não chat đọc,
+sinh từ CSDL mỗi lượt lưu — ~~bot v1 đọc~~, CR-02-10: nay chính tiến trình v3 ghi, không qua v1). Mọi thứ quyết định một page trả lời thế nào nằm trên **một màn**: trang
 của page đó.
 
 **Lý do:** đo 28/09 — sửa giá ở giao diện v3 thì bot KHÔNG đổi (bot đọc `kb-overrides.json`); 77
@@ -331,3 +331,22 @@ vẫn giữ lý do cũ: sale không phải học một nơi TRẢ LỜI mới.
 | 4 | Marketing Message có bật cho Trung Đông không | Nhánh nhắn hàng loạt Messenger phải đổi sang quảng cáo trả tiền |
 
 Cả bốn làm trong tuần đầu, mỗi cái một ngày.
+
+---
+
+## 14 · Một bản — v1 nghỉ hưu
+
+**Đổi 02/10/2026, CR-02-10** (`docs/thi-cong/doi-y-do/CR-02-10-mot-ban-v3.md`).
+~~Chạy song song v1 và v3, chuyển dần từng page~~ (02-KE-HOACH nguyên tắc 4). Phía mình nay chỉ
+có **MỘT bản**: tiến trình `aicloser-v3` (giao diện + API) và `aicloser-worker-v3` (trả lời
+khách). Tiến trình bot v1 (`aicloser.service`, `src/server.js`, màn `/admin` cổng 3100, công tắc
+`ai-enabled.json`) tắt hẳn; mọi việc v3 từng mượn của nó chạy ngay trong tiến trình v3. «Page này
+do bot của mình trả lời» có đúng **một công tắc** trong CSDL.
+
+**Lý do:** đo 02/10 — v1 thôi trả lời khách từ 28/08 (`ai-enabled.json` rỗng, Sổ AI đứng im), poll
+của nó đã tắt bằng cờ; giữ nó chỉ còn là nguồn nhập nhằng: hai màn quản trị, sáu chỗ cùng nói «ai
+trả lời page này», chữ «bot cũ / bot mới» trên màn.
+
+**Không đổi:** cách bot nói (năm file bộ não giữ nguyên hành vi) · van gửi khách · bot `ai_sale`
+của pancake-tool (team khác — page nào chuyển sang v3 thì người quyết báo bên đó tắt page đó trước).
+Song song từ nay là **với ai_sale, theo từng page**, không phải với v1.
