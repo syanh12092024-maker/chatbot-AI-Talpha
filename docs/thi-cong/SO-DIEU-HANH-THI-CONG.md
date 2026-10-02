@@ -358,7 +358,7 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
 
 | Mã   | Việc                                                                                          | Phụ thuộc           | Làn | Trạng thái |
 | ---- | --------------------------------------------------------------------------------------------- | ------------------- | --- | ---------- |
-| GSP1 | Màn Sản phẩm: «+ Thêm» mở «Gộp món POS»; bỏ lối tạo gốc theo số hiệu + danh sách số hiệu; đóng `POST /api/san-pham/goc` | —      | 🟨  | ⬜ |
+| GSP1 | Màn Sản phẩm: «+ Thêm» mở «Gộp món POS»; bỏ lối tạo gốc theo số hiệu + danh sách số hiệu; đóng `POST /api/san-pham/goc` | —      | 🟨  |🔨 phát 02/10 · `PHIEU-GSP1.md` · review (a) ĐẠT |
 | GSP2 | «Bản sao theo page» đổi TẠM thành danh sách việc chuyển: gợi ý món POS khớp tên page · gắn / nối món rồi gắn / gộp SKU rồi gắn / «không chuyển» · trạng thái theo page × bản sao (migration 032 `san_pham.doi_soat`) · bộ đếm toàn hệ theo team | GSP1 (cùng tệp màn) | 🟨 | ⬜ |
 | H-GSP | Người: shop cho 11 page chưa có shop · xác nhận gắn 74 page · chọn giá khi lệch · 2 page có 2 bản sao | GSP2 lên prod | — | ⬜ |
 | GSP3 | Đối soát giá + ảnh theo GỐC × SHOP: lệch giữa page ⇒ 409, người chọn · chép đủ cột bậc · ảnh `nguon='kb'` khử trùng · luôn đẩy bản chép · dùng lại cửa lưu giá VE8b | GSP2 (cùng tệp màn) | 🟥 | ⬜ |
