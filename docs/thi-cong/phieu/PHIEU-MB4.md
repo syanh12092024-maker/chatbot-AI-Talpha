@@ -8,14 +8,14 @@
 
 ## ① Vì sao
 
-Sau MB3 tiến trình `aicloser` (v1) đã tắt trên prod nhưng MÃ của nó vẫn nằm trong cây: 29 tệp `src/` + 7 trang
+Sau MB3 tiến trình `aicloser` (v1) đã tắt trên prod nhưng MÃ của nó vẫn nằm trong cây: 28 tệp `src/` + 7 trang
 `public/` + 8 script `package.json` + chữ «bot cũ / tiến trình bot» trên màn. Người đọc mã vẫn thấy hai bot;
 `npm start` vẫn chạy `src/server.js`; một số đường của v3 vẫn đọc tệp/cột chỉ v1 ghi.
 
 ## ② Làm gì
 
 1. **Gỡ tệp** (git rm): `server` `admin` `admin-{economics,experiments,ops,orders,rules,scripts}` `handler` `pancake-poll`
-   `store` `wa` `wa-login` `web` `botcake` `experiment` `followup` `miner` `template-learner` `scheduler-{followup,miner}`
+   `store` `wa-login` `web` `botcake` `experiment` `followup` `miner` `template-learner` `scheduler-{followup,miner}`
    `health` `import-script` `local-chat` `report-cli` `subscribe-pages` `approve-templates` `fix-{dup-products,tier-labels}`
    (`src/*.js`) · `public/{admin,economics,index,ops,orders,rules,scripts}.html` · 4 tệp ca chỉ-v1.
 2. **Đổi tên cầu** `v3/src/noi-day/cau-bot-v1.js` → `loi-bot.js` (giữ tên hàm + hình dạng; tiêm `datLoiBot` cho ca).
@@ -34,7 +34,13 @@ Sau MB3 tiến trình `aicloser` (v1) đã tắt trên prod nhưng MÃ của nó
 8. **Tài liệu sống:** `README.md` (kiến trúc + bảng 14 nguyên tắc trỏ đúng tệp v3; nguyên tắc 9 nói thật phần v3 còn thiếu) ·
    `.env.example` · `docs/local-dev.md` · `deploy/README.md` · skill `chatbot` (SKILL + 5 tham chiếu) · biển cảnh báo đầu
    `docs/TONG-QUAN-HE-THONG.md` (ảnh chụp v1) · `bien-moi-truong-v3.md` (dòng `PUBLIC_URL`).
-9. **Cổng mới** `ops/bin/nghiem-thu/mb.sh` — 16 phép, sáu chỗ trôi về được (xem đầu tệp).
+9. **Cổng mới** `ops/bin/nghiem-thu/mb.sh` — 18 phép, bảy chỗ trôi về được (xem đầu tệp).
+10. **GIỮ `src/wa.js`** (khôi phục sau khi đo prod 02/10): pancake-tool (team khác) có `src/gui-canh-bao.js` — tệp KHÔNG nằm trong
+    repo, đặt thẳng trên prod — `import './wa.js'`; ba timer của họ chạy nó: `canh-bao-tien` (5′, nhắn trước khi AI Sale hết
+    tiền) · `care-don-wa` (30′) · `gio-lam-sale` (2′). Họ còn import `@whiskeysockets/baileys` · `pino` · `qrcode` ·
+    `qrcode-terminal` từ `/opt/aicloser/node_modules` (`gio-lam-wa.service` đang chạy, `/root/wa_ghep/ghep.mjs`) và dùng
+    `/opt/aicloser/wa-auth/`. Gỡ `wa.js` như bản đầu của phiếu là làm chết cảnh báo hết tiền của team khác. Cổng `mb.sh` ⑦ canh
+    (đảo-vá: bỏ `wa.js` ⇒ 17/18).
 
 ## ③ Không làm
 
@@ -43,7 +49,7 @@ vào CSDL (`N-MB-SO-AI-CU`) · không dựng lại follow-up/miner trong v3 (`N-
 
 ## ④ Nghiệm thu
 
-- `bash ops/bin/nghiem-thu/mb.sh` → **16/16**.
+- `bash ops/bin/nghiem-thu/mb.sh` → **18/18**.
 - `l0-m2-noi-dung` N18 (một nguồn đếm): đảo-vá — trả `demPageBatBot` về đọc `ai-enabled.json` ⇒ **đỏ**.
 - `npm test` không thêm ca đỏ.
 
@@ -55,16 +61,17 @@ chưa từng gửi được; tệp đã gỡ ở ②1) · `PUBLIC_URL` `:3100` �
 `:3102/uploads` = 200 — từ MB3 ảnh sản phẩm không tải được; 0 page bật nên chưa khách nào chịu) · chuyển tệp không còn mã
 nào đọc vào `/opt/aicloser/luu-tru/v1/`: `ai-enabled.bak-truoc-v2.json` `ai-created-orders.json` `health-state.json`
 `miner-reports.jsonl` `miner-state.json` `page-product-cache.json` `template-candidates.json` `template-learn-reports.jsonl`
-`kb-overrides.bak-*.json` (3) `wa-auth/`. Giữ tại chỗ: mọi tệp còn mã đọc (`ai-messages.jsonl` `stats.json` `conv-state.json`
+`kb-overrides.bak-*.json` (3). **KHÔNG đụng `wa-auth/`** (pancake-tool dùng — xem ②10). Giữ tại chỗ: mọi tệp còn mã đọc (`ai-messages.jsonl` `stats.json` `conv-state.json`
 `ai-convs.json` `kb-overrides.json` `kb-chung.json` `pages.json` `page-shop-cache.json` `pancake-shops.json`
 `pancake-page-tokens.json` `botcake-templates.json` `ai-order-queue.json` `sheet.json` `tokens.json`) + `ai-enabled.json`
 (bộ di trú còn dò page lạc, 2 byte).
 
 ## ⑥ Báo cáo (02/10)
 
-- 40 tệp gỡ · 1 đổi tên · 92 tệp sửa · `+498 / −12 201` dòng (trước tài liệu).
-- `mb.sh` 16/16 · `npm test` **2306 ca · 2302 xanh · 0 đỏ · 4 bỏ qua** (giảm so với MB2 vì gỡ ca chỉ-v1: 4 tệp + ca v1 trong
+- 39 tệp gỡ · 1 đổi tên · 92 tệp sửa · `+498 / −12 201` dòng (trước tài liệu).
+- `mb.sh` 18/18 · `npm test` **2306 ca · 2302 xanh · 0 đỏ · 4 bỏ qua** (giảm so với MB2 vì gỡ ca chỉ-v1: 4 tệp + ca v1 trong
   `import-offers` `l6-van-hanh` `l7-miner-order` `l8-botcake-rules` `phase0-webhook-delivery` `script-studio`).
 - Phát hiện khi gỡ (ghi §9): v3 **chưa có** ngắt cả page 30′ khi kênh lỗi liên tiếp (nguyên tắc 9 — v1 có) ⇒
   `N-MB-NGAT-PAGE`; hai bộ điều kiện sẵn sàng (`readiness.js` cho page tắt · `pageStatus` cho page bật) ⇒
-  `N-MB-HAI-BO-DIEU-KIEN`; logic «lệch» chết ở `kho-san-sang` · `bat-dau` · `chi-phi` và gói `baileys` thừa ⇒ `N-MB-DON-SAU`.
+  `N-MB-HAI-BO-DIEU-KIEN`; logic «lệch» chết ở `kho-san-sang` · `bat-dau` · `chi-phi` ⇒ `N-MB-DON-SAU`; pancake-tool mượn `src/wa.js` + `node_modules` +
+  `wa-auth/` của cây này ⇒ `N-MB-CHUNG-PANCAKE-TOOL`.

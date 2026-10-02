@@ -6,13 +6,15 @@
 # nào phải hỏi một tiến trình thứ ba để biết hay đổi điều bot đang làm; «page này bot trả lời» có
 # đúng MỘT công tắc — cột `page.bot_ai_bat`.
 #
-# Sáu chỗ trôi về được, mỗi chỗ một phép:
+# Bảy chỗ trôi về được, mỗi chỗ một phép:
 #   ① tệp của bot v1 mọc lại (`src/server.js`, `src/pancake-poll.js`, màn `/admin`…) hoặc có mã import lại;
 #   ② có mã gọi HTTP sang `/admin/api` hay cổng 3100;
 #   ③ một nguồn công tắc thứ hai mọc lại (`ai-enabled.json` · `V3_PAGE_XU_LY` · `giao_bot_moi` · `v3_ai_bat`);
 #   ④ hai tiến trình v3 không còn tự khởi động lõi (worker sẽ lại không nạp KB);
 #   ⑤ chữ «bot cũ / bot mới / tiến trình bot» trở lại trên màn (chuỗi người dùng thấy);
-#   ⑥ bộ ca MB1 · MB2 + thước bảng khai biến.
+#   ⑥ bộ ca MB1 · MB2 + thước bảng khai biến;
+#   ⑦ gỡ nhầm thứ pancake-tool (team khác) đang mượn của cây này — `src/wa.js` + bốn gói npm
+#      (đo 02/10 trên prod: ba timer của họ chạy `src/gui-canh-bao.js` → `import './wa.js'`).
 #
 # CỔNG KHÔNG CẦN CSDL cho ①–⑤ (đọc mã nguồn); ⑥ chạy bộ ca nên cần Postgres như `npm test`.
 # Đảo-vá đã làm ở bộ ca (mb1: bỏ `loadKB()` ⇒ đỏ · mb2: khôi phục `napCongTacAi` ⇒ đỏ).
@@ -42,7 +44,7 @@ printf 'cây: %s · %s\n' "${GOC}" "$(git rev-parse --short HEAD 2>/dev/null)"
 muc "① Tệp của bot v1 không mọc lại"
 CON=""
 for t in src/server.js src/admin.js src/admin-ops.js src/admin-scripts.js src/pancake-poll.js src/handler.js \
-         src/store.js src/wa.js src/scheduler-followup.js src/scheduler-miner.js src/miner.js \
+         src/store.js src/scheduler-followup.js src/scheduler-miner.js src/miner.js \
          public/admin.html public/ops.html public/scripts.html; do
   [ -e "$t" ] && CON="${CON} $t"
 done
@@ -82,6 +84,11 @@ if node --env-file-if-exists=.env --import ./test/_an-toan.mjs --test test/mb1-l
 else
   truot "bộ ca đỏ — xem /tmp/mb-test.txt"
 fi
+
+muc "⑦ Không gỡ nhầm thứ pancake-tool đang mượn (team khác)"
+bang "src/wa.js còn trên cây (gui-canh-bao.js của họ import)" "$( [ -f src/wa.js ] && echo 1 || echo 0)" "1"
+bang "gói họ import từ node_modules của mình còn khai" \
+  "$(node -e 'const d=require("./package.json").dependencies||{};console.log(["@whiskeysockets/baileys","dotenv","qrcode","qrcode-terminal"].filter(k=>d[k]).length)')" "4"
 
 printf '\n═══ %s/%s phép đạt ═══\n' "$((PHEP - LOI))" "${PHEP}"
 [ "${LOI}" -eq 0 ] || exit 1

@@ -342,7 +342,7 @@ và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt 
 | MB1 | Dời việc v3 mượn của v1 vào tiến trình v3: ruột `cau-bot-v1.js` từ HTTP → gọi hàm (giữ tên + hình dạng); `/webhook` · `/uploads` · nạp KB/token/registry sang `chay-that.js`; kiểm kê nút `/admin` v3 chưa có | —                   | 🟨  | ✅ `47f2add` · ca mb1 5/5 · worker nay nạp KB |
 | MB2 | MỘT công tắc: một cột CSDL là nguồn của worker; bỏ `ai-enabled.json` · `bot_ai_bat` · `V3_GIAO_PAGE_TREN_MAN` · `V3_LEGACY_POLL_OFF`; `giaoPage` bỏ bước «tắt bot cũ»; `bien-moi-truong-v3.md` cùng commit | MB1                 | 🟥  | ✅ `e2b10dd` · ca mb2 4/4 · thước 4 cổng `94d7cd5` |
 | MB3 | **Mở van**: deploy MB1+MB2 · `systemctl disable --now aicloser` · restart hai tiến trình v3 · mốc +1′/+5′/+15′ | MB2 · người gật ✅ 02/10 | 🟥  | ✅ 02/10 07:23 · `94d7cd5` · +1′/+5′/+15′ lỗi 0 · GIỮ · `phat-hanh-20261002-mot-ban.md` |
-| MB4 | Gỡ 29 tệp `src/` chỉ-v1 + 7 trang `public/` + 8 script `package.json`; dời bộ ca; lưu trữ JSON không ai đọc; đổi chữ «bot cũ» 29 tệp màn; cổng `mb.sh`; migration 030 gỡ cột thừa; ĐÓNG CR | MB3 · người quyết bỏ chờ 3 ngày («làm MB4 luôn đi» 02/10) | 🟨  | 🔎 mã xong · `mb.sh` 16/16 · `npm test` 2306/0 đỏ · chờ mở van · `PHIEU-MB4.md` |
+| MB4 | Gỡ 28 tệp `src/` chỉ-v1 (GIỮ `wa.js` — pancake-tool mượn) + 7 trang `public/` + 8 script `package.json`; dời bộ ca; lưu trữ JSON không ai đọc; đổi chữ «bot cũ» 29 tệp màn; cổng `mb.sh`; migration 030 gỡ cột thừa; ĐÓNG CR | MB3 · người quyết bỏ chờ 3 ngày («làm MB4 luôn đi» 02/10) | 🟨  | 🔎 mã xong · `mb.sh` 18/18 · `npm test` 2306/0 đỏ · chờ mở van · `PHIEU-MB4.md` |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
@@ -1936,7 +1936,12 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   dùng cho page đang tắt) và `admin-v3/operations.js#pageStatus` (cổng bật thật, cho page đang bật). Màn Sẵn sàng có thể nói
   «đủ» trong khi cổng bật nói «thiếu». Gộp về `pageStatus`.
 - 02/10 · **N-MB-DON-SAU** (CR-02-10 · MB4) — logic «lệch tệp/cột» đã chết (nguồn nay chỉ còn cột) còn nằm ở `kho-san-sang` ·
-  `bat-dau` · `chi-phi`; gói `@whiskeysockets/baileys` thừa (WhatsApp v1); `readiness.js#canEnableAI` không còn mã prod gọi.
+  `bat-dau` · `chi-phi`; `readiness.js#canEnableAI` không còn mã prod gọi.
+- 02/10 · **N-MB-CHUNG-PANCAKE-TOOL** (CR-02-10 · MB4) — pancake-tool (team khác) MƯỢN cây này trên prod: `src/gui-canh-bao.js`
+  (tệp của họ, không trong repo) `import './wa.js'` — ba timer `canh-bao-tien` 5′ (cảnh báo AI Sale sắp hết tiền) · `care-don-wa`
+  30′ · `gio-lam-sale` 2′; `gio-lam-wa.service` + `/root/wa_ghep/ghep.mjs` import `baileys` · `pino` · `qrcode` · `qrcode-terminal`
+  từ `/opt/aicloser/node_modules`; phiên WhatsApp `/opt/aicloser/wa-auth/`. Mọi lượt `npm ci`/đổi gói/gỡ `wa.js` phải báo team đó;
+  cổng `mb.sh` ⑦ canh. Lâu dài: họ có `node_modules` + phiên riêng — người quyết bàn với team đó.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 - 26/08 · A7-3 → ✅ xong — `timKhach`/`docHoSoKhach` ở `src/orders/doc-ho-so.js`; KHÔNG dựng phép gộp thứ hai (gộp đã ở tầng ghi), KHÔNG khai đã gộp WhatsApp, tỉ lệ hoàn chỉ ĐỌC kèm ngày chấm · commit ac41ab9 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md

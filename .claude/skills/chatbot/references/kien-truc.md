@@ -51,6 +51,7 @@ Pancake API ──GET mỗi 6s──▶ src/queue/nap.js        CHỈ page có p
 | `src/kb.js` | KB từ Google Sheet + `kb-overrides.json` |
 | `src/core/so-lieu-bot-cu.js` | ĐỌC Sổ AI cũ (`ai-messages.jsonl`, v1 ghi tới 28/08) cho chi phí/đơn lịch sử |
 | `v3/src/noi-day/loi-bot.js` | Cầu giữa giao diện và lõi bot trong CÙNG tiến trình (trước MB4 tên `cau-bot-v1.js`) |
+| `src/wa.js` | **GIỮ — pancake-tool (team khác) dùng chung**: `src/gui-canh-bao.js` của họ trên prod import nó; họ cũng import `baileys`/`pino`/`qrcode*` từ `node_modules` của mình và dùng `wa-auth/`. Mã của mình không gọi nó |
 | `db/migrate/*.sql` · `db/schema.sql` | Lược đồ Postgres; `node db/migrate.js schema` sinh lại `schema.sql` (không sửa tay) |
 
 ## Dữ liệu
@@ -60,7 +61,8 @@ Pancake API ──GET mỗi 6s──▶ src/queue/nap.js        CHỈ page có p
 - **File JSON còn được ĐỌC** (gitignore, chỉ có trên VPS): `ai-messages.jsonl` (Sổ AI cũ) · `stats.json` ·
   `conv-state.json` · `ai-convs.json` · `kb-overrides.json` · `kb-chung.json` · `pages.json` ·
   `page-shop-cache.json` · `pancake-shops.json` · `botcake-templates.json`.
-  Các file khác của v1 (`ai-enabled.json` …) đã lưu trữ ở `/opt/aicloser/luu-tru/v1/` khi MB4 lên prod.
+  Các file khác của v1 (`miner-*` `template-*` …) đã lưu trữ ở `/opt/aicloser/luu-tru/v1/` khi MB4 lên prod.
+  ⛔ `wa-auth/` là phiên WhatsApp pancake-tool đang dùng — không chuyển, không xoá.
 
 ## Núm chỉnh `.env`
 
