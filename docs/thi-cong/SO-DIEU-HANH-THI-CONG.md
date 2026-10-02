@@ -1452,6 +1452,8 @@ và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt 
     số SAI, không phải «chưa đo» (đo 02/10). ⇒ LL17b.
   - **N-CONG-HOP-CAT-TRUNG-TEN** hai phiên chạy ca/cổng cùng lúc xoá CSDL hộp cát của nhau ⇒ cổng đỏ chập chờn — ĐÃ CHỮA `8aed3fc`
     (hậu tố tiến trình + dọn mồ côi).
+- 02/10 · **NỢ SAU LL17b** (`docs/thi-cong/nhat-ky/phieu-LL17b.md` §7): N-DON-THEO-LUONG-0 + N-DON-POS-THEO-PAGE đóng (chờ mở van);
+  **N-SO-LIEU-CON-ANH-CHUP** thu hẹp còn ba thước Messenger · chi phí AI/đơn · rủi ro hoàn (⇒ LL17c) · phễu Messenger.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -2959,3 +2961,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · MỞ VAN LL17a → ✅ GIỮ — prod `bd6459a → b4e7b6d`, 0 migration, chỉ restart aicloser-v3 lúc 10:32:49 CEST; mốc +1′/+6′/+15′ lỗi 0; đọc thật 30 ngày GCC 6.909 · AUUS 631 · EU 4.971 đơn
   cửa vào 51 xanh / 16 đỏ = 12 nợ cũ + l1-m1 dữ liệu sống + ll5/ll10/ll18 chập chờn (chạy lại xanh; gốc: hai phiên đụng CSDL hộp cát — chữa 8aed3fc) · phát hiện «đơn theo luồng» 0/0 trên prod ⇒ LL17b
   · commit b4e7b6d · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-ll17a.md
+- 02/10 · LL17b → ✅ — Số liệu đọc đơn từ BigQuery: ô «Đơn theo luồng» · luồng trang bán hàng · BUY NOW · «Chốt · Hoàn» theo page (Tổng quan) + «Hai luồng» (tab Khách); luồng suy đúng luật `suyNguon` trong BigQuery; số chụp cũ hơn khoảng đo ⇒ «chưa biết», không 0 · 0
+  đo dev chỉ đếm: 60 ngày messenger 14.094 · trang bán hàng 9.777 · không suy được 1; 30 ngày 7.927/12.699 đơn mang page_id, 167/203 page khớp; ca 12/12 · đảo-vá 17/17 · cổng ll17b.sh 10/10 · npm test 2.331/0 đỏ
+  · commit 33cd8aa · nhật ký docs/thi-cong/nhat-ky/phieu-LL17b.md
