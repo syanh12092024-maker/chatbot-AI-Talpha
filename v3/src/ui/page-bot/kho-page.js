@@ -204,7 +204,6 @@ export const TEN_NGAN = Object.freeze({
   READY: 'Đủ điều kiện',
   // Điều kiện của page chạy bằng BẢN MỚI. Thiếu mấy dòng này thì ô bảng hiện nguyên mã máy
   // («BOTMOI_THIEU_GIA») — đúng cái lỗi «mã lạ» mà lượt GD1 đang dọn.
-  BOTMOI_NGOAI_DANH_SACH: 'Chưa được bật ở máy chủ',
   BOTMOI_CHUA_MO_GUI: 'Cửa gửi tin đang đóng',
   BOTMOI_CHUA_RAP_LOI: 'Chưa bật cách ghép lời',
   BOTMOI_THIEU_SAN_PHAM: 'Chưa có sản phẩm',

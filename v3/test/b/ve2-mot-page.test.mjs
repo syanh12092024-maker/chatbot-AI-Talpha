@@ -94,7 +94,8 @@ test('P4 · trang (VE2 · bản vẽ 2c): ba cột, bảy tab — và ĐỦ vi�
     ['Sản phẩm & giá', 'Lời bot', 'Ảnh', 'Trả lời sẵn', 'Kỹ thuật', 'Gợi ý cải thiện', 'Lịch sử']);
   // Việc của màn cũ — mỗi việc một cửa ghi/đọc còn nguyên:
   for (const [viec, re] of [
-    ['bật/tắt bot', /\/api\/page-bot\/\$\{encodeURIComponent\(ID\)\}\/bot`/], ['giao bot', /\/api\/page-bot\/\$\{encodeURIComponent\(ID\)\}\/giao`/],
+    // CR-02-10 · MB2: «giao bot» đã gỡ cùng khái niệm bot cũ/bot mới — một bản, một công tắc.
+    ['bật/tắt bot', /\/api\/page-bot\/\$\{encodeURIComponent\(ID\)\}\/bot`/],
     ['thiết lập', /\/api\/page-bot\/\$\{encodeURIComponent\(ID\)\}\/\$\{duong\}`/], ['nội dung', /\/api\/page\/\$\{encodeURIComponent\(ID\)\}\/noi-dung`/],
     ['kịch bản lưu-là-chạy', /goi\(`\/api\/kich-ban\/page\/\$\{encodeURIComponent\(ID\)\}\/luu-chay`, \{/], ['lưu sản phẩm', /\/api\/anh-san-pham\/san-pham\//], ['ảnh', /\/api\/anh-san-pham\/anh\//],
     // VE4: khối chung SỬA ở Luật chung › «Chính sách · FAQ · Phản đối» — trang một page chỉ còn tóm tắt + lối đi.

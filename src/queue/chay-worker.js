@@ -26,7 +26,7 @@
 // `chan_guard` mà không một byte nào ra khách. In ra số đếm để thấy nó đang đứng ở đâu.
 import { napTuPoll, nguonDangMo, lyDoNguonDong } from "./nap.js";
 import { chayToiKhiHet } from "./worker.js";
-import { dsPageBotMoi, giaoTrenManDangMo, lyDoRong } from "./page-routing.js";
+import { dsPageBotTraLoi, lyDoRong } from "./page-routing.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { taoPool } from "../../db/ket-noi.js";
@@ -68,16 +68,13 @@ export async function dsPageDeNap(pool, { gioiHan = 500 } = {}) {
  * gõ nhầm một id không tạo ra một page ma (án lệ #22 «danh sách gõ tay là lỗ hẹn giờ»).
  */
 /**
- * Danh sách page worker được phép nạp và xử.
- *
- * ⚠️ NAY LÀ HÀM BẤT ĐỒNG BỘ (024 · 25/09): nguồn có thể là CSDL chứ không chỉ biến môi
- * trường. Chỗ quyết định nằm ở `page-routing.js` — đừng đọc `V3_PAGE_XU_LY` thẳng ở đây,
- * hai nơi đọc là hai luật.
+ * Danh sách page worker được phép nạp và xử — MỘT BẢN (CR-02-10 · MB2): đúng những page có
+ * `page.bot_ai_bat = true`. Chỗ quyết định nằm ở `page-routing.js`; hai nơi đọc là hai luật.
  */
-export const dsPageChoPhep = (pool, env = process.env) => dsPageBotMoi(pool, env);
+export const dsPageChoPhep = (pool) => dsPageBotTraLoi(pool);
 
-export function lyDoChuaChoPageNao(env = process.env) {
-  return lyDoRong(env);
+export function lyDoChuaChoPageNao() {
+  return lyDoRong();
 }
 
 /**
@@ -101,10 +98,10 @@ export async function motLuot(pool, deps = {}) {
     const trongBang = deps.dsPage
       ? await deps.dsPage(pool)
       : await dsPageDeNap(pool);
-    // GIAO của hai danh sách: bảng `page` nói page nào CÓ THẬT, biến môi trường nói page nào
-    // ĐƯỢC PHÉP ở bậc phơi này. Thiếu một trong hai thì page ấy không được nạp.
+    // GIAO của hai danh sách: bảng `page` nói page nào CÓ THẬT và nạp được, cột `bot_ai_bat`
+    // nói page nào bot ĐANG TRẢ LỜI. Thiếu một trong hai thì page ấy không được nạp.
     ket.nap.choPhep = choPhep.length;
-    ket.nap.nguonChoPhep = giaoTrenManDangMo() ? 'csdl' : 'bien_moi_truong';
+    ket.nap.nguonChoPhep = 'csdl';
     const pages = trongBang.filter((p) => choPhep.includes(p));
     ket.nap.page = pages.length;
     if (!choPhep.length) ket.nap.lyDo = lyDoChuaChoPageNao();
@@ -173,13 +170,13 @@ async function main() {
   // ⚠️ PHẢI `await` VÀ PHẢI TRUYỀN `pool` (sửa 25/09). Từ 024 hàm này bất đồng bộ và có thể
   // đọc CSDL. Bản trước gọi kiểu cũ `dsPageChoPhep()`: nhận về một Promise ⇒ `.length` là
   // `undefined` ⇒ dòng log nói «KHÔNG CÓ page nào» trong khi vòng lặp vẫn chạy page — đo được
-  // trên bản dev khi kéo hội thoại Minty. Và TỆ HƠN: bật cầu dao `V3_GIAO_PAGE_TREN_MAN` thì
-  // hàm gọi `pool.query` trên `undefined` ⇒ lỗi không ai bắt ⇒ tiến trình SẬP lúc khởi động.
+  // trên bản dev khi kéo hội thoại Minty. Và TỆ HƠN: nguồn là CSDL (nay luôn là cột
+  // `page.bot_ai_bat`) ⇒ thiếu `pool` là `pool.query` trên `undefined` ⇒ tiến trình SẬP lúc khởi động.
   const choPhep = await dsPageChoPhep(pool);
   console.log(
     `[worker-v3] khởi động · nhịp ${NHIP_MS}ms · trần ${TRAN_MOI_LUOT} tin/lượt · ` +
       `nguồn ${nguonDangMo() ? "MỞ" : "ĐÓNG"} · V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)} · ` +
-      `page được phép: ${choPhep.length ? choPhep.join(",") : "KHÔNG CÓ (vắng V3_PAGE_XU_LY = đóng)"}`,
+      `page được phép: ${choPhep.length ? choPhep.join(",") : "KHÔNG CÓ (chưa page nào bật bot — cột page.bot_ai_bat)"}`,
   );
   let dung = false;
   for (const tin of ["SIGINT", "SIGTERM"]) {

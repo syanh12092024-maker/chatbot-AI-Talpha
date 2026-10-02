@@ -110,7 +110,7 @@ function inBaoCao(kq) {
     `page          nguồn pages.json = ${kq.page.nguon}   →  bảng page = ${d.page}`,
   );
   console.log(
-    `công tắc AI   nguồn ai-enabled.json = ${kq.congTac.nguon}   →  page.bot_ai_bat = ${d.pageBatAi}`,
+    `công tắc AI   KHÔNG chép (CR-02-10: page.bot_ai_bat là công tắc duy nhất) — đang bật: ${d.pageBatAi}`,
   );
   console.log(
     `hội thoại     nguồn conv-state.json = ${kq.hoiThoai.nguon}   →  bảng hoi_thoai = ${d.hoiThoai}`,
@@ -184,12 +184,7 @@ function inBaoCao(kq) {
   );
   for (const p of kq.pageLac)
     console.log(`   · ${p.pageId}  ← ${p.nguon.join(" · ")}`);
-  console.log(
-    `công tắc AI trỏ page không có dòng page: ${kq.congTac.khongCoDongPage.length}` +
-      (kq.congTac.khongCoDongPage.length
-        ? ` → ${kq.congTac.khongCoDongPage.join(", ")}`
-        : ""),
-  );
+
   console.log(
     `hội thoại bỏ vì page lạc: ${kq.hoiThoai.boQuaPageLac.length}` +
       `  · khoá conv-state sai khuôn: ${kq.hoiThoai.khoaLa.length}`,

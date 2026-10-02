@@ -22,9 +22,8 @@ import { cuaBoiCanh, coVai, VAI, LoiChuaDangNhap, LoiThieuVai } from '../../auth
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { danhSachPage, LOC, CHU_LOC, MOI_TRANG, LoiPageBot } from './kho-page.js';
 import {
-  datCongTacBot, ganMarketer, datTrongDiem, trangThaiCau,
+  datCongTacBot, ganMarketer, datTrongDiem, trangThaiCau, trangThaiCongTac,
   datThiTruong, datNganhHang, datBotcakeTat, ganSanPhamGoc, quetPageTuPancake,
-  giaoPage, trangThaiCauDaoGiao,
   VAI_SUA_DUOC, CANH_BAO_MARKETER, PHIEU_MARKETER,
 } from './cong-tac.js';
 
@@ -156,10 +155,9 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
       moiTrang: MOI_TRANG,
       chuLoc: CHU_LOC,
       suaDuoc: coVai(bc, ...VAI_SUA_DUOC),
-      cuaBot: trangThaiCau(),
+      cuaBot: trangThaiCongTac(),   // CR-02-10 · MB2: chỉ khoá tay; van gửi do cổng sẵn sàng chặn
       // Cầu dao «giao page bằng giao diện». Đóng thì màn hiện lời giải thích thay cho nút —
       // một cái nút bấm vào là 409 tệ hơn không có nút.
-      cauDaoGiao: trangThaiCauDaoGiao(),
       canhBaoMarketer: CANH_BAO_MARKETER,
       phieuMarketer: PHIEU_MARKETER,
     });
@@ -202,13 +200,7 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
     res.json({ ok: true, ...kq });
   }));
 
-  // ĐỔI CHỦ page. Cùng lớp chắn với các đường ghi khác; cửa còn hai chốt riêng bên trong
-  // (`cong-tac.js#giaoPage`): cầu dao `V3_GIAO_PAGE_TREN_MAN`, và bắt buộc bot cũ xác nhận
-  // đã tắt TRƯỚC khi ghi cờ.
-  r.post('/api/page-bot/:id/giao', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
-    const kq = await giaoPage(cuaBoiCanh(req), req.params.id, laBat(req.body?.giao));
-    res.json({ ok: true, ...kq });
-  }));
+  // `POST /api/page-bot/:id/giao` («đổi chủ page») đã gỡ 02/10 — CR-02-10 · MB2: một bản, một công tắc.
 
   r.post('/api/page-bot/:id/san-pham-goc', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
     const kq = await ganSanPhamGoc(cuaBoiCanh(req), req.params.id, req.body?.maGoc);

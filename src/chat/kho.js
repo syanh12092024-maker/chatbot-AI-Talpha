@@ -154,7 +154,7 @@ export async function docHoiThoaiTheoPageText(
   { teamId, pageIdText, psid },
 ) {
   const r = await pool.query(
-    `SELECT h.*, h.xmin::text AS phien_ban, p.nguon_tin, p.v3_ai_bat FROM hoi_thoai h
+    `SELECT h.*, h.xmin::text AS phien_ban, p.nguon_tin, p.bot_ai_bat FROM hoi_thoai h
        JOIN page p ON p.id = h.page_id
       WHERE h.team_id = $1 AND p.page_id = $2 AND h.psid = $3
       LIMIT 1`,

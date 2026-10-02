@@ -17,7 +17,7 @@ test('E2E: configuration → signed webhook → two advice turns → handoff →
   const savedEnv = { ...process.env };
   const oldSecret = config.appSecret;
   Object.assign(process.env, {
-    V3_RAP_PROMPT_BAT: '1', V3_PAGE_XU_LY: 'e2e-journey',
+    V3_RAP_PROMPT_BAT: '1',
     V3_KHOA_MA_HOA: 'a'.repeat(64), PK_MARK_UNREAD: '0',
     PANCAKE_READONLY: '1', V3_DIEN_TAP: '0',
   });
@@ -34,7 +34,8 @@ test('E2E: configuration → signed webhook → two advice turns → handoff →
   const { pool } = sb;
   const one = async (sql, args = []) => (await pool.query(sql, args)).rows[0];
   const team = (await one("SELECT id FROM team WHERE slug='tieu-alpha'")).id;
-  const page = (await one(`INSERT INTO page(team_id,page_id,ten,nguon_tin,v3_ai_bat)
+  // CR-02-10 · MB2: công tắc DUY NHẤT là `bot_ai_bat` — không còn danh sách page trong env.
+  const page = (await one(`INSERT INTO page(team_id,page_id,ten,nguon_tin,bot_ai_bat)
     VALUES($1,'e2e-journey','E2E only','webhook',true) RETURNING id`, [team])).id;
   const product = (await one(`INSERT INTO san_pham(team_id,page_id,ma,ten,mo_ta)
     VALUES($1,$2,'TEST:WATCH','Adjustable watch','Fits wrists from 14 to 20 cm. COD available.') RETURNING id`, [team, page])).id;

@@ -1,6 +1,6 @@
 // Application services shared by the V3 operator UI. All identifiers are team scoped.
 import { ghiNhatKy } from "../db/index.js";
-import { pageThuocBotMoi, lyDoChuaThuocBotMoi } from "../queue/page-routing.js";
+import { botDangTraLoi } from "../queue/page-routing.js";
 import { docSanPhamGoiGia } from "../products/catalog.js";
 import { layModel } from "../chat/model.js";
 import { HE_SO_TE } from "../pos/index.js";
@@ -43,11 +43,8 @@ export async function pageStatus(pool, p, env = process.env) {
   // cái đang đúng, và mở đúng cái van mà phép đo dựng ra để giữ đóng.
   const luuY = [];
   const dienTap = env.V3_DIEN_TAP === "1";
-  // 024: nguồn của «page này thuộc bot nào» đổi theo cầu dao `V3_GIAO_PAGE_TREN_MAN`, và
-  // câu chỉ đường phải đổi theo — bảo người ta đi sửa cấu hình máy chủ trong khi việc ấy
-  // đã bấm được trên màn là đẩy họ đi một vòng vô ích.
-  const thuocBotMoi = pageThuocBotMoi(p, env);
-  if (!thuocBotMoi) blockers.push(lyDoChuaThuocBotMoi(env));
+  // MỘT BẢN (CR-02-10 · MB2): mọi page là của MỘT bot — không còn điều kiện «đã giao cho bot
+  // mới chưa». Bật/tắt là cột `bot_ai_bat`, và chính hàm này là cổng trước khi bật.
   if (env.V3_PANCAKE_GUI !== "1" || env.PANCAKE_READONLY === "1") {
     if (dienTap) luuY.push("Chế độ DIỄN TẬP: bot xử lý và ghi sổ, KHÔNG gửi cho khách — đúng cấu hình, không phải thiếu");
     else blockers.push("Máy chủ chưa mở gửi tin");
@@ -71,8 +68,8 @@ export async function pageStatus(pool, p, env = process.env) {
   }
   return {
     ...p,
-    runtime: thuocBotMoi ? "v3" : "legacy",
-    enabled: thuocBotMoi && p.v3_ai_bat !== false,
+    runtime: "v3",
+    enabled: botDangTraLoi(p),
     blockers,
     luuY,
     dienTap,
@@ -102,11 +99,10 @@ export async function setPage(pool, bc, id, input, env = process.env) {
       )
     ).rows[0];
     if (!p) throw fault("Không tìm thấy Page", 404);
-    if (!pageThuocBotMoi(p, env)) throw fault(`${lyDoChuaThuocBotMoi(env)}.`, 409);
     if (input.version && input.version !== p.version)
       throw fault("Cấu hình đã đổi; tải lại trước khi lưu", 409);
     if (input.source && input.source !== p.nguon_tin) {
-      if (p.v3_ai_bat !== false)
+      if (botDangTraLoi(p))
         throw fault("Tắt AI trước khi đổi nguồn nhận tin", 409);
       const pending = await c.query(
         "SELECT 1 FROM tin_cho_xu_ly WHERE team_id=$1 AND page_id=$2 AND trang_thai IN ('cho','dang_xu','loi','chan_guard') LIMIT 1",
@@ -124,7 +120,7 @@ export async function setPage(pool, bc, id, input, env = process.env) {
       if (!status.ready) throw fault(status.blockers.join("; "), 409);
     }
     const r = await c.query(
-      `UPDATE page SET v3_ai_bat=COALESCE($3,v3_ai_bat),nguon_tin=COALESCE($4,nguon_tin)
+      `UPDATE page SET bot_ai_bat=COALESCE($3,bot_ai_bat),nguon_tin=COALESCE($4,nguon_tin),sua_luc=now()
       WHERE team_id=$1 AND id=$2 RETURNING *,xmin::text AS version`,
       [bc.teamId, id, input.enabled ?? null, input.source ?? null],
     );

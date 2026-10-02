@@ -13,7 +13,7 @@ let sb, team, page;
 before(async () => {
   sb = await dungSandbox('webhookdelivery');
   team = (await sb.pool.query("SELECT id FROM team WHERE slug='tieu-alpha'")).rows[0].id;
-  page = (await sb.pool.query("INSERT INTO page(team_id,page_id,ten,nguon_tin) VALUES($1,'webhook-test','Test','webhook') RETURNING id", [team])).rows[0].id;
+  page = (await sb.pool.query("INSERT INTO page(team_id,page_id,ten,nguon_tin,bot_ai_bat) VALUES($1,'webhook-test','Test','webhook',true) RETURNING id", [team])).rows[0].id;
 });
 after(async () => { await sb?.don(); });
 const body = (id, text = 'Hello', psid = 'customer') => ({ object: 'page', entry: [{ id: 'webhook-test', messaging: [{ sender: { id: psid }, message: { mid: id, text } }] }] });
@@ -61,7 +61,8 @@ test('retry đồng thời cùng mid chỉ lưu một tin và một hội thoạ
 });
 
 test('một Page chỉ nhận nguồn đã chọn; poll không gọi API trên Page webhook', async () => {
-  assert.equal(pageThuocV3('webhook-test', { V3_PAGE_XU_LY: 'other, webhook-test' }), true);
+  // CR-02-10 · MB2: hàm cũ của bot v1 không còn nhận page nào — v3 đọc cột `bot_ai_bat`.
+  assert.equal(pageThuocV3('webhook-test'), false);
   const env = process.env.V3_NAP_DEV;
   process.env.V3_NAP_DEV = '1';
   try {
@@ -252,4 +253,14 @@ test('Webhook burst đã xếp hàng: gom ba tin, một lượt xử lý, giữ 
   assert.equal(rows.length, 3);
   assert.ok(rows.every(x => x.trang_thai === 'xong'));
   assert.equal(rows[0].noi_dung, 'mình lấy 2');
+});
+
+test('MỘT CÔNG TẮC (CR-02-10): webhook mặc định nhận tin đúng khi page BẬT bot — không cần biến môi trường', async () => {
+  await sb.pool.query("INSERT INTO page(team_id,page_id,ten,nguon_tin,bot_ai_bat) VALUES($1,'webhook-tat','Tắt','webhook',false)", [team]);
+  const than = { object: 'page', entry: [{ id: 'webhook-tat', messaging: [{ sender: { id: 'k-tat' }, message: { mid: 'tat-1', text: 'hi' } }] }] };
+  assert.equal((await nhanWebhook(sb.pool, than)).boQua, 1, 'page TẮT bot thì webhook bỏ qua');
+  await sb.pool.query("UPDATE page SET bot_ai_bat=true WHERE page_id='webhook-tat'");
+  assert.equal((await nhanWebhook(sb.pool, than)).them, 1, 'bật cột là nhận — không cần V3_PAGE_XU_LY');
+  const thanLa = { object: 'page', entry: [{ id: 'khong-co-page', messaging: [{ sender: { id: 'x' }, message: { mid: 'la-1', text: 'hi' } }] }] };
+  assert.equal((await nhanWebhook(sb.pool, thanLa)).boQua, 1, 'page không có trong CSDL thì bỏ qua, không 503');
 });

@@ -23,7 +23,7 @@
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 import { motPage, cuaKiemMotPage, danhMucGoc, LoiPageBot, congTruyVan as congPage,
   LOC, CHU_LOC, kiemLoc, ganTrangThaiPage, hopLoc, hopTim, demTheoLoc } from '../page-bot/kho-page.js';
-import { trangThaiCau, trangThaiCauDaoGiao } from '../page-bot/cong-tac.js';
+import { trangThaiCongTac } from '../page-bot/cong-tac.js';
 import { DIEU_KIEN_TAT_CA } from '../san-sang/kho-san-sang.js';
 import { NHAN_TRUONG } from '../kich-ban/kho-kich-ban.js';
 import { timGiaGoCung } from './gia-kich-ban.js';
@@ -82,24 +82,6 @@ function doDieuKien(b, laChan) {
   };
 }
 
-/**
- * Câu «đi sửa ở đâu» của điều kiện «chưa nằm trong danh sách bản mới» ĐỔI THEO CẦU DAO.
- *
- * Bảng từ vựng viết câu ấy hồi việc giao page còn phải SSH vào máy chủ. Từ 024, khi cầu dao
- * `V3_GIAO_PAGE_TREN_MAN` mở thì việc ấy là một cái nút ngay trên màn này. Để nguyên câu cũ
- * là bảo người ta đi nhờ người quản trị hệ thống một việc họ tự bấm được — án lệ #27: sửa
- * luật thì phải sửa cả chỗ khai luật.
- */
-function vaCauDao(dk, cauDao) {
-  if (dk.ma !== 'BOTMOI_NGOAI_DANH_SACH' || !cauDao.mo) return dk;
-  return {
-    ...dk,
-    lam: 'Page này chưa được giao cho bot mới. Bấm «Giao sang bot mới» ở ngay khối trên — '
-      + 'bot cũ sẽ được tắt trước, và chỉ khi nó xác nhận đã tắt thì page mới đổi chủ.',
-    di: null,
-    nutDi: null,
-  };
-}
 
 /**
  * VE2 · 29/09: cột trái của màn một page (bản vẽ 2c) — page của team, gọn, xếp theo tên. Bot bật hỏi TIẾN TRÌNH BOT
@@ -141,8 +123,8 @@ export async function trangMotPage(boiCanh, id) {
   const p = await motPage(bc, id);
   if (!p) return null;
 
-  const cauDao = trangThaiCauDaoGiao();
-  const cuaBot = trangThaiCau();
+  // CR-02-10 · MB2: một công tắc (`page.bot_ai_bat`); cửa chỉ còn khoá tay của người vận hành.
+  const cuaBot = trangThaiCongTac();
 
   let doc = null;
   let viSaoKhongDoc = null;
@@ -151,7 +133,7 @@ export async function trangMotPage(boiCanh, id) {
     doc = r.doc;
     viSaoKhongDoc = r.viSao;
   } catch (e) {
-    viSaoKhongDoc = `Cầu sang tiến trình bot lỗi: ${e?.message || e}`;
+    viSaoKhongDoc = `Lõi bot lỗi khi đọc cửa kiểm: ${e?.message || e}`;
   }
 
   // ⚠️ BA CẢNH, KHÔNG PHẢI HAI (sửa 25/09 sau lượt thử A→Z):
@@ -163,8 +145,8 @@ export async function trangMotPage(boiCanh, id) {
   //    họ tự sửa được. Đo được ở lượt thử A→Z: page vừa tạo rơi vào ②, màn nói như ①.
   const botKhongThay = !doc && !viSaoKhongDoc;
   const chuaDoDuoc = !doc && !!viSaoKhongDoc;
-  const chan = (doc?.blockers || []).map((b) => vaCauDao(doDieuKien(b, true), cauDao));
-  const nhac = (doc?.warnings || []).map((b) => vaCauDao(doDieuKien(b, false), cauDao));
+  const chan = (doc?.blockers || []).map((b) => doDieuKien(b, true));
+  const nhac = (doc?.warnings || []).map((b) => doDieuKien(b, false));
 
   return {
     page: {
@@ -177,18 +159,10 @@ export async function trangMotPage(boiCanh, id) {
       sanPhamGocMa: p.sanPhamGocMa,
       matDau: p.matDau,
     },
-    // BOT NÀO PHỤ TRÁCH — và đổi được ngay tại đây khi cầu dao mở.
-    chuBot: {
-      la: doc?.runtime === 'v3' || p.giaoBotMoi ? 'moi' : 'cu',
-      giaoBotMoi: p.giaoBotMoi,
-      cauDao,
-    },
-    // HAI CON SỐ, GIỮ CẢ HAI. `theoBot` là sự thật (RAM tiến trình bot), `theoCsdl` là cột
-    // bản sao — đã có lần lệch 50. Gộp một là mất khả năng phát hiện lệch.
+    // CÔNG TẮC DUY NHẤT (CR-02-10 · MB2): cột `bot_ai_bat` LÀ sự thật — worker đọc thẳng nó. Trước
+    // 02/10 màn giữ hai con số (RAM tiến trình bot v1 ↔ cột bản sao) vì từng lệch 50; nay chỉ một.
     bot: {
-      theoBot: doc ? !!doc.aiEnabled : null,
-      theoCsdl: p.botAiBat,
-      lech: doc ? !!doc.aiEnabled !== p.botAiBat : null,
+      bat: p.botAiBat === true,
       batDuoc: doc ? !!doc.aiAllowed : null,
       trangThai: doc?.readiness || null,
     },

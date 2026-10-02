@@ -31,9 +31,7 @@ beforeEach(() => {
       if (hong) throw new Error('lõi hỏng');
       return [{ pageId: '1', aiAllowed: true, warnings: [], readiness: 'READY', aiEnabled: soLuotDoc > 1 }];
     },
-    canEnableAI: () => ({ ok: true }),
-    setAiEnabled: () => {},
-    isAiEnabled: () => true,
+    lamMoiTokenDb: async () => 1,
     updatePageConfig: () => ({ ok: true }),
   });
 });
@@ -50,11 +48,11 @@ test('② mười tab mở CÙNG LÚC ⇒ chung một lượt đọc', async () 
   assert.ok(kq.every((x) => x === kq[0]));
 });
 
-test('③ bật/tắt bot xong ⇒ lượt đọc kế tiếp hỏi lại lõi, KHÔNG trả bản nhớ cũ', async () => {
+test('③ nạp lại kho token xong ⇒ lượt đọc kế tiếp hỏi lại lõi, KHÔNG trả bản nhớ cũ', async () => {
   await cau.sanSangToanHe();
-  await cau.datBotAi('1', true);
+  await cau.napLaiKhoToken();
   await cau.sanSangToanHe();
-  assert.equal(soLuotDoc, 2, 'vừa gạt công tắc mà màn vẫn hiện trạng thái cũ là màn nói dối');
+  assert.equal(soLuotDoc, 2, 'token đổi thì tình trạng page đổi — màn vẫn hiện bản cũ là màn nói dối');
 });
 
 test('④ lượt GHI (đưa kịch bản lên) cũng xoá bản nhớ; lượt ĐỌC thì không', async () => {

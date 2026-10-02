@@ -113,7 +113,7 @@ app.listen(config.port, process.env.HOST, () => {
   console.log(`[server] Đang chạy tại http://localhost:${config.port}  (webhook: /webhook)`);
 });
 
-// Poll legacy bỏ qua các Page đã chuyển sang V3_PAGE_XU_LY.
+// Poll legacy — CR-02-10: tiến trình này nghỉ hưu ở MB3; trên máy chủ cờ dưới luôn bật.
 if (process.env.V3_LEGACY_POLL_OFF !== '1') {
   startPancakePolling();
   // Legacy background jobs stay off during a dedicated V3 deployment.

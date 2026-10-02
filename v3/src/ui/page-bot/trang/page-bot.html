@@ -61,7 +61,7 @@ const qs = new URLSearchParams(location.search);
 let TRANG = Math.max(0, Number(qs.get('trang')) || 0);
 let LOC = qs.get('loc') || 'tat_ca';
 let TIM = qs.get('tim') || '';
-let SUA = false, CUA = { mo: false, thieu: [] }, CAU_DAO = { mo: false };
+let SUA = false, CUA = { mo: false, thieu: [] };
 
 function ghiUrl() {
   const u = new URL(location.href);
@@ -85,8 +85,8 @@ function thamSoDanhSach() {
 // Vì sao công tắc bot khoá — MỘT câu cho cả dòng nhỏ ở hàng tìm lẫn title trên từng công tắc (VE2b: thay hộp cảnh báo).
 function lyDoKhoa() {
   if (!SUA) return 'Cần vai Quản trị để bật tắt bot.';
-  return 'Chưa bật tắt bot được từ màn này: máy chủ này chưa được phép ghi sang tiến trình bot, vì công tắc chạm khách thật. '
-    + 'Nhờ người quản trị hệ thống mở cửa ghi.' + ((CUA.thieu || []).length ? ` (${CUA.thieu.join(' · ')})` : '');
+  return 'Công tắc bot đang bị khoá tay trên máy chủ này (lúc sự cố hoặc máy demo). '
+    + 'Nhờ người quản trị hệ thống mở khoá.' + ((CUA.thieu || []).length ? ` (${CUA.thieu.join(' · ')})` : '');
 }
 function veKhoaBot() {
   const o = $('#khoaBot');
@@ -156,7 +156,8 @@ function veThanhLoc(d) {
 const GIOI_HAN_BAT = 10;
 let CHON = new Set();
 let DONG = [];   // page của trang đang xem (để biết tên + khoá bot từng page)
-function khoaBotCua(p) { return p.runtime === 'v3' ? !SUA : !(SUA && CUA.mo); }
+// CR-02-10 · MB2: MỘT công tắc cho mọi page — chỉ khoá khi không có quyền sửa hoặc máy bị khoá tay.
+function khoaBotCua(_p) { return !(SUA && CUA.mo); }
 function veThanhChon() {
   const o = $('#thanhChon');
   if (!CHON.size) { o.hidden = true; o.innerHTML = ''; return; }
@@ -243,7 +244,7 @@ function veBang(d) {
       <th scope="col">Sản phẩm gốc</th><th scope="col">Trọng điểm</th>
       <th scope="col" title="Đã tắt Botcake cho page này (lời khai, không phải công tắc)"><span aria-hidden="true">Botcake</span><span class="sr-only">Đã tắt Botcake</span></th>
     </tr></thead><tbody>${d.page.map((p) => {
-      const khoaBotDong = p.runtime === 'v3' ? !SUA : khoaBot;
+      const khoaBotDong = khoaBot;
       const ten = p.ten || '(chưa có tên)';
       return `
     <tr>
@@ -253,7 +254,7 @@ function veBang(d) {
           <span class="page-avatar" aria-hidden="true">${esc((ten.trim()[0] || '?').toUpperCase())}</span>
           <div class="page-identity-text">
             <div class="page-identity-name ten"><a href="/page/${esc(p.id)}${esc(thamSoDanhSach())}">${esc(ten)}</a></div>
-            <div class="page-identity-sub">${esc(p.pageId)} · ${veChuBot(p)}${p.matDau ? ' · ' + statusBadge('order_error', { label: 'Mất dấu' }) : ''}</div>
+            <div class="page-identity-sub">${esc(p.pageId)}${p.matDau ? ' · ' + statusBadge('order_error', { label: 'Mất dấu' }) : ''}</div>
           </div>
         </div>
       </td>
@@ -309,7 +310,6 @@ function veBang(d) {
   });
   veThanhChon();
   document.querySelectorAll('[data-bot]').forEach((el) => el.addEventListener('change', () => gatBot(el)));
-  document.querySelectorAll('[data-giao]').forEach((el) => el.addEventListener('click', () => doiChuBot(el)));
   document.querySelectorAll('[data-td]').forEach((el) => el.addEventListener('change', () => gatTrongDiem(el)));
   document.querySelectorAll('[data-bc]').forEach((el) => el.addEventListener('change', () => gatBotcake(el)));
   document.querySelectorAll('[data-spg]').forEach((el) => el.addEventListener('change', () => luuSanPhamGoc(el)));
@@ -324,41 +324,7 @@ function veBang(d) {
   }
 }
 
-// ── CHỦ SỞ HỮU PAGE: bot cũ hay bot mới, và đổi được ngay tại chỗ nói ra điều đó ──────
-//
-// Cầu dao đóng ⇒ chỉ là chữ. Bày một cái nút mà bấm vào trả 409 còn tệ hơn không có nút:
-// người ta bấm, bị từ chối, rồi không biết đi đâu.
-function veChuBot(p) {
-  const chu = p.runtime === 'v3' ? 'bot mới' : 'bot cũ';
-  if (!CAU_DAO.mo || !SUA) return esc(chu);
-  const sang = p.runtime === 'v3' ? 'cu' : 'moi';
-  return `${esc(chu)} ${button(sang === 'moi' ? 'Giao sang bot mới' : 'Trả về bot cũ',
-    { size: 'sm', variant: 'ghost', data: { giao: p.id, sang } })}`;
-}
-
-// ── GHI · ĐỔI CHỦ page. Hỏi lại bằng đúng cái giá phải trả, không bằng chữ «bạn có chắc» ──
-async function doiChuBot(el) {
-  const sangMoi = el.dataset.sang === 'moi';
-  const ten = el.closest('tr').querySelector('.ten').textContent.trim();
-  const dongY = await confirmDialog({
-    title: sangMoi ? `Giao «${ten}» sang bot mới?` : `Trả «${ten}» về bot cũ?`,
-    body: sangMoi
-      ? 'Bot cũ sẽ được TẮT cho page này trước, và chỉ khi nó xác nhận đã tắt thì page mới '
-        + 'đổi chủ. Sau đó chưa con bot nào trả lời page này cho tới khi bạn bấm Bật.'
-      : 'Bot mới buông page này. Bot cũ vẫn đang TẮT — bấm Bật nếu muốn nó trả lời lại.',
-    confirmLabel: sangMoi ? 'Giao sang bot mới' : 'Trả về bot cũ',
-    danger: true,
-  });
-  if (!dongY) return;
-  el.disabled = true;
-  try {
-    const kq = await goi(`/api/page-bot/${encodeURIComponent(el.dataset.giao)}/giao`,
-      { method: 'POST', body: JSON.stringify({ giao: sangMoi }) });
-    toast(kq.buocTiep || 'Đã đổi chủ page.');
-    await nap();
-  } catch (e) { baoLoi('Không đổi chủ được page này', e.message); }
-  finally { el.disabled = false; }
-}
+// «Chủ page: bot cũ / bot mới» và nút «Giao sang bot mới» đã gỡ 02/10 — CR-02-10 · MB2: một bản, một công tắc.
 
 // ── GHI · bật tắt bot — chạm KHÁCH THẬT, nên hỏi lại có tiêu đề và hệ quả (mục L) ─────
 async function gatBot(el) {
@@ -508,14 +474,14 @@ async function quetPancake() {
 async function napNhe() {
   const d = await goi(`/api/page-bot/danh-sach?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}&trang=${TRANG}`);
   if (!d) return;
-  CUA = d.cuaBot; CAU_DAO = d.cauDaoGiao || { mo: false }; veBangTin(d); veThanhLoc(d);
+  CUA = d.cuaBot; veBangTin(d); veThanhLoc(d);
 }
 
 async function nap() {
   try {
     const d = await goi(`/api/page-bot/danh-sach?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}&trang=${TRANG}`);
     if (!d) return;
-    SUA = d.suaDuoc; CUA = d.cuaBot; CAU_DAO = d.cauDaoGiao || { mo: false }; TRANG = d.trang;
+    SUA = d.suaDuoc; CUA = d.cuaBot; TRANG = d.trang;
     SPG_CHON = d.sanPhamGocChonDuoc || [];
     SPG_AP = d.sanPhamGocApDuoc !== false;
     ghiUrl();

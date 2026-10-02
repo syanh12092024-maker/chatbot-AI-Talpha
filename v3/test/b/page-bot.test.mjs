@@ -1,4 +1,4 @@
-// MÀN «PAGE & BOT» (G2-B2) — ba cột ba chủ sở hữu, và cây cầu sang tiến trình bot.
+// MÀN «PAGE & BOT» (G2-B2) — ba cột ba chủ sở hữu, và MỘT công tắc bot (CR-02-10 · MB2).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -18,6 +18,7 @@ const cau = await import('../../src/noi-day/cau-bot-v1.js');
 const GOC_REPO = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
 const NAP_JS = path.join(GOC_REPO, 'db/di-tru/nap.js');
 
+let _kho = null;   // kho giả của lượt dựng gần nhất — cổng công tắc giả ghi cột vào đây
 function dungKho(themPage = null, { sanSang } = {}) {
   const page = themPage || [
     { id: 'p1', team_id: 't1', page_id: '111', ten: 'Alpha KSA', thi_truong: 'Saudi',
@@ -37,6 +38,7 @@ function dungKho(themPage = null, { sanSang } = {}) {
     page,
   });
   const nhatKy = [];
+  _kho = kho;
   kp.datTaoTruyVan(taoTruyVan);
   // Cửa kiểm sẵn sàng: đặt LẠI mỗi lượt dựng — không đặt lại là ca sau thừa hưởng bộ đọc
   // của ca trước, và khi đó ca đỏ chỉ ra sai chỗ.
@@ -52,23 +54,27 @@ const bcQuanLy = () => taoBoiCanh({
   nguoiDungId: 'u2', tenDangNhap: 'ql@talpha.vn', teamId: 't1', vai: [VAI.QUAN_LY],
 });
 
-/** Bật cửa ghi vào lõi bot cho một đoạn test, rồi trả lại nguyên trạng.
- *  CR-02-10 · MB1: lõi chạy TRONG tiến trình — tiêm lõi giả ghi lại mọi lượt gạt công tắc. */
-async function voiCuaMo(fn, { batBot = true } = {}) {
+/** Nối cổng công tắc GIẢ (đóng vai `src/admin-v3/operations.js#setPage`: cổng sẵn sàng + ghi cột
+ *  `bot_ai_bat`) cho một đoạn test, rồi trả lại nguyên trạng. CR-02-10 · MB2: công tắc không còn đi
+ *  qua tiến trình bot v1. `tuChoi` = câu cổng sẵn sàng ném khi BẬT (page còn chặn, van gửi đóng…). */
+async function voiCuaMo(fn, { tuChoi = null } = {}) {
   const cu = { ghi: process.env.V3_BOT_GHI, ro: process.env.PANCAKE_READONLY };
   const goi = [];
-  cau.datLoiBot({
-    canEnableAI: () => ({ ok: true }),
-    setAiEnabled: (pageId, on) => { goi.push({ pageId: String(pageId), on }); },
-    isAiEnabled: () => batBot,
+  ct.datCongTacV3(async (bc, id, bat) => {
+    const dong = _kho.bang.get('page').find((x) => x.id === String(id) && x.team_id === bc.teamId);
+    if (!dong) return null;
+    goi.push({ id: String(id), on: !!bat });
+    if (bat && tuChoi) throw Object.assign(new Error(tuChoi), { status: 409, ma: 'v3_cau_hinh' });
+    const truoc = dong.bot_ai_bat === true;
+    dong.bot_ai_bat = !!bat;
+    return { id: String(id), pageId: dong.page_id, botAiBat: !!bat, doi: truoc !== !!bat };
   });
-  // KHÔNG đặt `V3_BOT_GHI` nữa: cửa ghi nay MỞ mặc định. Đặt nó ở đây sẽ che mất chuyện
-  // mặc định có thật sự mở hay không.
+  // KHÔNG đặt `V3_BOT_GHI`: cửa MỞ mặc định — đặt nó ở đây sẽ che mất chuyện mặc định có mở thật không.
   delete process.env.V3_BOT_GHI;
   delete process.env.V3_BOT_KHOA;
   delete process.env.PANCAKE_READONLY;
   try { return await fn(goi); } finally {
-    cau.datLoiBot(null);
+    ct.datCongTacV3(null);
     for (const [k, v] of [['V3_BOT_GHI', cu.ghi], ['PANCAKE_READONLY', cu.ro]]) {
       if (v === undefined) delete process.env[k]; else process.env[k] = v;
     }
@@ -196,7 +202,7 @@ test('danhSachPage · cắt trang, và trang vượt biên bị kẹp về trang
   assert.equal(t9.page.length, 20);
 });
 
-/* ═══════════ công tắc BOT AI — đi qua cầu, KHÔNG ghi thẳng cột ═══════════ */
+/* ═══════════ công tắc BOT AI — MỘT đường: cổng sẵn sàng của bot → cột `bot_ai_bat` ═══════════ */
 
 // ═══ CỬA GHI: MỞ MẶC ĐỊNH, KHOÁ ĐƯỢC ═══════════════════════════════════════════════
 //
@@ -209,7 +215,7 @@ test('cửa ghi MỞ mặc định khi không khai cờ nào', async () => {
   await voiCuaMo(async () => {
     const kq = await ct.datCongTacBot(bcQt(), 'p1', false);
     assert.equal(kq.id, 'p1', 'không cờ nào mà vẫn từ chối là quay lại chốt thứ tám');
-  }, { batBot: false });
+  });
 });
 
 test('`V3_BOT_KHOA=1` khoá lại được', async () => {
@@ -240,16 +246,15 @@ test('cờ cũ `V3_BOT_GHI=0` vẫn được tôn trọng', async () => {
   });
 });
 
-test('`PANCAKE_READONLY=1` vẫn khoá — máy dev không chạm bot thật', async () => {
+test('`PANCAKE_READONLY=1` KHÔNG khoá việc TẮT — van gửi do cổng sẵn sàng của bot giữ khi BẬT', async () => {
+  // CR-02-10 · MB2: tầng này chỉ còn khoá TAY. Máy dev/máy chủ chỉ-đọc vẫn tắt được bot (lúc sự cố
+  // cần nhất); BẬT thì `pageStatus` chặn «Máy chủ chưa mở gửi tin» — ca riêng ở dưới.
   dungKho();
   await voiCuaMo(async () => {
     process.env.PANCAKE_READONLY = '1';
     try {
-      await assert.rejects(() => ct.datCongTacBot(bcQt(), 'p1', false), (e) => {
-        assert.equal(e.ma, 'cua_ghi_dong');
-        assert.match(e.message, /PANCAKE_READONLY/);
-        return true;
-      });
+      const kq = await ct.datCongTacBot(bcQt(), 'p1', false);
+      assert.equal(kq.botAiBat, false);
     } finally { delete process.env.PANCAKE_READONLY; }
   });
 });
@@ -290,7 +295,7 @@ test('trần · TẮT bot KHÔNG BAO GIỜ bị chặn, kể cả khi đã chạ
   await voiCuaMo(async () => {
     const kq = await ct.datCongTacBot(bcQt(), 'h0', false);
     assert.equal(kq.botAiBat, false, 'tắt phải luôn đi được');
-  }, { batBot: false });
+  });
 });
 
 test('trần · gạt lại page ĐANG BẬT không tốn lượt', async () => {
@@ -304,32 +309,41 @@ test('trần · gạt lại page ĐANG BẬT không tốn lượt', async () => 
   });
 });
 
-test('công tắc bot · gọi SANG TIẾN TRÌNH BOT bằng id Facebook, không phải id CSDL', async () => {
+test('công tắc bot · đi qua cổng của bot rồi GHI CỘT `bot_ai_bat` — cột là sự thật, có nhật ký', async () => {
   const { kho, nhatKy } = dungKho();
   await voiCuaMo(async (goi) => {
     const kq = await ct.datCongTacBot(bcQt(), 'p2', true);
-    assert.equal(goi.length, 1, 'phải gọi đúng một lần sang bot');
-    // Đây là chỗ dễ sai nhất: `p2` là khoá chính CSDL, `222` là id Facebook mà bot hiểu.
-    assert.deepEqual(goi[0], { pageId: '222', on: true });
+    assert.deepEqual(goi, [{ id: 'p2', on: true }], 'đúng một lượt qua cổng, bằng id CSDL');
     assert.equal(kq.botAiBat, true);
+    assert.equal(kq.pageId, '222');
   });
-
-  // Cột trong CSDL được chép lại theo kết quả THẬT bot trả về — cột là bản sao, không phải nguồn.
-  assert.equal(kho.docThang('page').find((p) => p.id === 'p2').bot_ai_bat, true);
+  assert.equal(kho.docThang('page').find((p) => p.id === 'p2').bot_ai_bat, true, 'worker đọc đúng cột này');
   assert.equal(nhatKy.at(-1).ban.hanhDong, ct.HANH_DONG_BOT);
   assert.deepEqual(nhatKy.at(-1).ban.truoc, { bot_ai_bat: false });
   assert.deepEqual(nhatKy.at(-1).ban.sau, { bot_ai_bat: true });
 });
 
-test('công tắc bot · bot trả kết quả KHÁC yêu cầu thì tin BOT, không tin tham số', async () => {
-  // Nếu bot vì cớ gì đó không bật được, cột phải nói đúng sự thật của bot. Ghi theo tham số
-  // gửi đi là cách màn hình bắt đầu nói dối một cách có hệ thống.
-  const { kho } = dungKho();
+test('công tắc bot · cổng sẵn sàng TỪ CHỐI bật ⇒ ném nguyên lý do, cột giữ nguyên, không tốn trần', async () => {
+  const { kho, nhatKy } = dungKho();
+  ct.xoaDemBat();
+  const con = ct.conBatDuoc();
+  const soNk = nhatKy.length;
   await voiCuaMo(async () => {
-    const kq = await ct.datCongTacBot(bcQt(), 'p2', true);
-    assert.equal(kq.botAiBat, false, 'bot bảo vẫn tắt → kết quả phải là tắt');
-  }, { batBot: false });
+    await assert.rejects(() => ct.datCongTacBot(bcQt(), 'p2', true), (e) => {
+      assert.match(e.message, /Máy chủ chưa mở gửi tin/);
+      return true;
+    });
+  }, { tuChoi: 'Máy chủ chưa mở gửi tin' });
   assert.equal(kho.docThang('page').find((p) => p.id === 'p2').bot_ai_bat, false);
+  assert.equal(ct.conBatDuoc(), con, 'bật hỏng không tốn lượt trần');
+  assert.equal(nhatKy.length, soNk, 'không có gì đổi thì không ghi nhật ký «đã bật»');
+});
+
+test('công tắc bot · MỘT đường: không còn «giao page» (CR-02-10)', async () => {
+  assert.equal(typeof ct.giaoPage, 'undefined', 'cửa «giao page sang bot mới» phải gỡ');
+  assert.equal(typeof ct.trangThaiCauDaoGiao, 'undefined');
+  const router = readFileSync(path.join(GOC_REPO, 'v3/src/ui/page-bot/router.js'), 'utf8');
+  assert.doesNotMatch(router, /r\.post\('\/api\/page-bot\/:id\/giao'/, 'đường POST /giao phải gỡ');
 });
 
 test('công tắc bot · page của team khác → 404, KHÔNG phải 403', async () => {
@@ -465,132 +479,4 @@ test('cầu bot · vì sao đóng phải nói được bằng tiếng người, 
   }
 });
 
-
-/* ═══════════ GIAO PAGE SANG BOT MỚI (024 · 25/09) ═══════════
- *
- * Việc này ĐỔI CHỦ một page giữa hai con bot. Sai một bước là khách nhận hai câu trả lời
- * cho một câu hỏi — nên mỗi chốt dưới đây có một ca canh riêng.
- */
-
-const sanSangGia = (pages) => async () => ({ pages });
-const PAGE_SAN = [{ pageId: '111', blockers: [], warnings: [] }];
-
-/** Mở cầu dao cho một đoạn ca rồi trả lại nguyên trạng. */
-async function voiCauDao(fn) {
-  const cu = process.env.V3_GIAO_PAGE_TREN_MAN;
-  process.env.V3_GIAO_PAGE_TREN_MAN = '1';
-  try { return await fn(); } finally {
-    if (cu === undefined) delete process.env.V3_GIAO_PAGE_TREN_MAN;
-    else process.env.V3_GIAO_PAGE_TREN_MAN = cu;
-  }
-}
-
-test('giao page · CẦU DAO ĐÓNG thì từ chối, và nói rõ phải nhờ ai', async () => {
-  dungKho(null, { sanSang: sanSangGia(PAGE_SAN) });
-  delete process.env.V3_GIAO_PAGE_TREN_MAN;
-  await assert.rejects(() => ct.giaoPage(bcQt(), 'p1', true), (e) => {
-    assert.equal(e.ma, 'cau_dao_dong');
-    assert.match(e.message, /người quản trị hệ thống/);
-    return true;
-  });
-});
-
-test('giao page · TẮT BOT CŨ TRƯỚC, rồi mới ghi cờ — đúng thứ tự, có nhật ký', async () => {
-  const { kho, nhatKy } = dungKho(null, { sanSang: sanSangGia(PAGE_SAN) });
-  await voiCauDao(() => voiCuaMo(async (goi) => {
-    const kq = await ct.giaoPage(bcQt(), 'p1', true);
-    assert.equal(kq.giaoBotMoi, true);
-    assert.equal(kq.botAiBat, false, 'bot cũ phải đã TẮT sau lượt giao');
-
-    // ① Có gọi sang bot cũ, và gọi để TẮT
-    const goiAi = goi.filter((g) => g.pageId === '111');
-    assert.equal(goiAi.length, 1, 'phải gọi ĐÚNG một lần sang bot cũ');
-    assert.equal(goiAi[0].on, false, 'phải là lệnh TẮT');
-
-    // ② Cột ghi đúng cả hai
-    const p = kho.docThang('page').find((x) => x.id === 'p1');
-    assert.equal(p.giao_bot_moi, true);
-    assert.equal(p.bot_ai_bat, false, 'cột bot cũ phải chép lại sự thật vừa đọc từ bot');
-
-    // ③ Nhật ký mang trước/sau — không có dòng này thì không ai dựng lại được «page này
-    //    chạy bot nào từ bao giờ».
-    const dong = nhatKy.at(-1).ban;
-    assert.equal(dong.hanhDong, 'giao_page_bot_moi');
-    assert.deepEqual(dong.truoc, { giao_bot_moi: false, bot_ai_bat: true });
-    assert.deepEqual(dong.sau, { giao_bot_moi: true, bot_ai_bat: false });
-
-    // ④ Và màn phải được bảo rằng CHƯA con nào đang trả lời page này.
-    assert.match(kq.buocTiep, /vẫn đang TẮT/);
-  }, { batBot: false }));
-});
-
-test('giao page · BOT CŨ BÁO VẪN BẬT ⇒ DỪNG, tuyệt đối không ghi cờ', async () => {
-  // Đây là ca giữ cho hai con bot không cùng trả lời một khách. Bỏ nó là bỏ toàn bộ lý do
-  // của thứ tự bốn bước.
-  const { kho } = dungKho(null, { sanSang: sanSangGia(PAGE_SAN) });
-  await voiCauDao(() => voiCuaMo(async () => {
-    await assert.rejects(() => ct.giaoPage(bcQt(), 'p1', true), (e) => {
-      assert.equal(e.ma, 'bot_cu_chua_buong');
-      assert.match(e.message, /hai con bot cùng trả lời/);
-      return true;
-    });
-    const p = kho.docThang('page').find((x) => x.id === 'p1');
-    assert.notEqual(p.giao_bot_moi, true, 'bot cũ chưa buông mà đã ghi cờ là mở đường xung đột');
-  }, { batBot: true }));   // bot trả lời «vẫn đang bật»
-});
-
-test('giao page · page CÒN CHẶN thì không giao, và không gọi sang bot', async () => {
-  dungKho(null, { sanSang: sanSangGia([{ pageId: '111', blockers: [{ code: 'MISSING_KB' }] }]) });
-  await voiCauDao(() => voiCuaMo(async (goi) => {
-    await assert.rejects(() => ct.giaoPage(bcQt(), 'p1', true), (e) => {
-      assert.equal(e.ma, 'con_chan');
-      return true;
-    });
-    assert.equal(goi.length, 0, 'chặn rồi thì đừng đụng vào bot cũ');
-  }));
-});
-
-test('giao page · CHƯA ĐỌC ĐƯỢC cửa kiểm ⇒ từ chối, không đoán bừa', async () => {
-  // Chưa đọc được KHÁC «page này không thiếu gì». Giao trong lúc mù là giao cho một con bot
-  // mình không biết đã sẵn sàng chưa.
-  dungKho(null, { sanSang: null });
-  await voiCauDao(() => voiCuaMo(async () => {
-    await assert.rejects(() => ct.giaoPage(bcQt(), 'p1', true), (e) => {
-      assert.equal(e.ma, 'chua_doc_duoc_cua_kiem');
-      return true;
-    });
-  }));
-});
-
-test('giao page · TRẢ VỀ BOT CŨ: bỏ cờ, và KHÔNG tự bật bot cũ hộ ai', async () => {
-  const { kho } = dungKho([
-    { id: 'p1', team_id: 't1', page_id: '111', ten: 'Alpha', bot_ai_bat: false,
-      giao_bot_moi: true, v3_ai_bat: true, trong_diem: false, mat_dau: false },
-  ], { sanSang: sanSangGia(PAGE_SAN) });
-  await voiCauDao(() => voiCuaMo(async (goi) => {
-    const kq = await ct.giaoPage(bcQt(), 'p1', false);
-    assert.equal(kq.giaoBotMoi, false);
-    const p = kho.docThang('page').find((x) => x.id === 'p1');
-    assert.equal(p.giao_bot_moi, false);
-    assert.equal(p.v3_ai_bat, false, 'bot mới phải tắt theo — page không còn của nó');
-    assert.equal(goi.length, 0, 'bật bot cho khách thật là quyết định riêng, có nút riêng và có trần');
-    assert.match(kq.buocTiep, /Bật bot/);
-  }));
-});
-
-test('giao page · vai quản lý KHÔNG giao được', async () => {
-  dungKho(null, { sanSang: sanSangGia(PAGE_SAN) });
-  await voiCauDao(async () => {
-    await assert.rejects(() => ct.giaoPage(bcQuanLy(), 'p1', true), /vai|quyền/i);
-  });
-});
-
-test('giao page · page của team khác ⇒ 404, không phải 403', async () => {
-  dungKho(null, { sanSang: sanSangGia(PAGE_SAN) });
-  await voiCauDao(async () => {
-    await assert.rejects(() => ct.giaoPage(bcQt(), 'p9', true), (e) => {
-      assert.equal(e.status, 404, '403 là xác nhận dòng đó có thật ở team khác');
-      return true;
-    });
-  });
-});
+/* Mục «GIAO PAGE SANG BOT MỚI» (024 · 25/09) đã gỡ 02/10 — CR-02-10 · MB2: một bản, một công tắc. */

@@ -368,14 +368,15 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     );
   }
 
-  if (hoiThoai.v3_ai_bat === false || !aiDuocTraLoi(hoiThoai) || (tin.nguon && hoiThoai.nguon_tin !== tin.nguon)) {
+  // MỘT BẢN (CR-02-10 · MB2): công tắc duy nhất là `page.bot_ai_bat` — tắt giữa chừng thì tin đang xếp dừng.
+  if (hoiThoai.bot_ai_bat !== true || !aiDuocTraLoi(hoiThoai) || (tin.nguon && hoiThoai.nguon_tin !== tin.nguon)) {
     return { ketQua: KET_QUA.CHAN_GUARD, lyDo: "hoi_thoai_khong_thuoc_ai", dem };
   }
   const assertCanAct = async () => {
     const moi = await docHoiThoaiTheoPageText(pool, {
       teamId, pageIdText: tin.page_id, psid: tin.psid,
     });
-    if (moi?.v3_ai_bat === false || moi?.phien_ban !== hoiThoai.phien_ban || !aiDuocTraLoi(moi) || (tin.nguon && moi.nguon_tin !== tin.nguon)) {
+    if (moi?.bot_ai_bat !== true || moi?.phien_ban !== hoiThoai.phien_ban || !aiDuocTraLoi(moi) || (tin.nguon && moi.nguon_tin !== tin.nguon)) {
       const e = new Error("Hội thoại đã chuyển khỏi AI");
       e.name = "LoiQuyenHoiThoai";
       throw e;

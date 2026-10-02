@@ -1,4 +1,4 @@
-import { pageThuocBotMoi, dsPageBotMoi } from "../../../src/queue/page-routing.js";
+import { dsPageBotTraLoi } from "../../../src/queue/page-routing.js";
 import { setPage, pageStatus } from "../../../src/admin-v3/operations.js";
 import { datCongTacV3 } from "../ui/page-bot/cong-tac.js";
 import { sanSangToanHe } from "./cau-bot-v1.js";
@@ -17,11 +17,7 @@ import { sanSangToanHe } from "./cau-bot-v1.js";
  *    `src/admin-v3/operations.js` và đỏ ngay khi bên kia thêm một câu chưa khai ở đây.
  */
 const MA_CUA_CAU = Object.freeze({
-  "Page chưa được đưa vào danh sách worker V3": "BOTMOI_NGOAI_DANH_SACH",
-  // 024: cùng một điều kiện, hai câu — vì chỗ đi sửa đổi theo cầu dao
-  // `V3_GIAO_PAGE_TREN_MAN`. Cùng mã, vì với người đọc nó vẫn là «page chưa thuộc bot mới».
-  "Page chưa được giao cho bot mới — bấm «Giao sang bot mới» ở màn Công tắc từng page":
-    "BOTMOI_NGOAI_DANH_SACH",
+  // CR-02-10 · MB2: hai câu «page chưa thuộc bot mới» đã gỡ — một bản, không còn «giao».
   "Máy chủ chưa mở gửi tin": "BOTMOI_CHUA_MO_GUI",
   "Máy chủ chưa bật cấu hình prompt V3": "BOTMOI_CHUA_RAP_LOI",
   "Thiếu sản phẩm đúng Page / shop": "BOTMOI_THIEU_SAN_PHAM",
@@ -50,14 +46,14 @@ export function noiVanHanhV3(
         id,
       ])
     ).rows[0];
-    if (!p || !pageThuocBotMoi(p, env)) return null;
+    if (!p) return null;
     try {
       const row = await setPage(pool, bc, id, { enabled: bat }, env);
       return {
         id: String(id),
         pageId: p.page_id,
-        botAiBat: row.v3_ai_bat,
-        doi: row.v3_ai_bat !== p.v3_ai_bat,
+        botAiBat: row.bot_ai_bat === true,
+        doi: (row.bot_ai_bat === true) !== (p.bot_ai_bat === true),
       };
     } catch (e) {
       e.ma = "v3_cau_hinh";
@@ -71,8 +67,9 @@ export function noiVanHanhV3(
     } catch {
       /* Missing legacy bridge must not hide V3 pages. */
     }
-    // Nguồn của «page nào thuộc bot mới» đổi theo cầu dao (024) — hỏi ĐÚNG MỘT chỗ.
-    const dsMoi = await dsPageBotMoi(pool, env);
+    // Page bot ĐANG TRẢ LỜI (cột `bot_ai_bat`) dùng cổng của chính bot (`pageStatus`); page đang
+    // tắt giữ dòng của bảng sẵn sàng chung. Hỏi ĐÚNG MỘT chỗ (`page-routing.js`).
+    const dsMoi = await dsPageBotTraLoi(pool);
     const pages = (
       await pool.query("SELECT * FROM page WHERE page_id=ANY($1::text[])", [dsMoi])
     ).rows;

@@ -246,7 +246,10 @@ export async function diTruTatCa(pool, goc) {
   const co = nguonCoSan(goc);
   const boQua = nguonVang(goc);
   const page = co.pages ? await napPage(pool, goc) : null;
-  const congTac = co.aiEnabled ? await napCongTacAi(pool, goc) : null;
+  // CR-02-10 · MB2: KHÔNG chép công tắc từ `ai-enabled.json` nữa. Cột `page.bot_ai_bat` nay là công
+  // tắc DUY NHẤT (worker đọc thẳng); tệp của bot v1 đứng im và rỗng — chép nó (cả hai chiều) là TẮT
+  // mọi page vừa bật ở màn Công tắc. `napCongTacAi` còn lại cho bộ ca cũ, gỡ ở MB4.
+  const congTac = null;
   const hoiThoai = co.convState ? await napHoiThoai(pool, goc) : null;
   // Kịch bản đọc CẢ HAI nguồn (`kb-overrides.json` + `script-versions/`); có một là chạy.
   const kichBan = (co.kbOverrides || co.scriptVersions) ? await napKichBan(pool, goc) : null;

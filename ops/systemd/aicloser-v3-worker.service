@@ -1,12 +1,12 @@
 # WORKER v3 — vòng NẠP rồi XỬ. CHƯA CÀI trên VPS: đây là bản mẫu để lượt mở van sau dùng.
 #
 # ⚠️ ĐỌC TRƯỚC KHI CÀI (skill `mo-van`, bậc phơi):
-#   · `V3_PAGE_XU_LY` là van bậc phơi. VẮNG = worker quay nhưng KHÔNG nạp page nào.
-#     Đặt ĐÚNG id page đang thử; bậc ⑥ «toàn bộ» mới liệt kê hết.
+#   · Page worker nạp = đúng những page có cột `page.bot_ai_bat = true` (CR-02-10 · MB2: một
+#     công tắc, bật ở màn «Công tắc từng page»). Không còn danh sách page trong cấu hình máy chủ.
 #   · `V3_PANCAKE_GUI` là van GỬI. Vắng = worker nạp và dừng ở `chan_guard`: 0 token, 0 HTTP
 #     ghi, KHÔNG một byte nào tới khách. Bậc ② (đường đọc) chạy ở trạng thái này.
-#   · Mở van GỬI cho một page thì page ấy PHẢI được tắt ở bot v1 trước, nếu không khách nhận
-#     tin từ hai tiến trình.
+#   · Bật một page đang do bot `ai_sale` (pancake-tool, team khác) trả lời thì PHẢI nhờ bên đó
+#     tắt page trước, nếu không khách nhận tin từ hai bot.
 #   · Tin bị chốt `chan_guard` KHÔNG tự thử lại (luật N6): mở van rồi phải UPDATE tay về `cho`.
 #
 # Cài:  cp ops/systemd/aicloser-v3-worker.service /etc/systemd/system/
@@ -14,7 +14,7 @@
 # Lùi:  systemctl stop aicloser-v3-worker   (bot v1 không bị đụng — hai tiến trình tách hẳn)
 
 [Unit]
-Description=AI Closer v3 — worker nap/xu (BAC PHOI theo V3_PAGE_XU_LY)
+Description=AI Closer v3 — worker nap/xu (page bat = cot page.bot_ai_bat)
 After=network-online.target postgresql.service
 Wants=network-online.target
 
@@ -22,23 +22,20 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=/opt/aicloser
 EnvironmentFile=/opt/aicloser/.env
-# Van bậc phơi đặt Ở ĐÂY, không đặt trong .env chung: đổi bậc phơi là sửa một dòng của
-# chính dịch vụ này rồi restart, không đụng tới ba dịch vụ kia.
-Environment=V3_PAGE_XU_LY=
 
 # ⛔ VAN GỬI — ĐÓNG CỨNG Ở ĐÂY, và đây KHÔNG phải thừa.
 #
 # `EnvironmentFile` ngay trên nạp `/opt/aicloser/.env`, mà bảng khai biến nói VPS có
-# `V3_PANCAKE_GUI=1` (cửa gửi Messenger của v3). Không có dòng dưới thì cài unit này với một
-# id trong `V3_PAGE_XU_LY` là NHẢY THẲNG sang gửi tin cho khách thật — bỏ qua bậc ②, và bỏ
-# qua luôn cơ hội xem luồng chạy đúng chưa.
+# `V3_PANCAKE_GUI=1` (cửa gửi Messenger của v3). Không có dòng dưới thì cài unit này khi đã có
+# page bật bot là NHẢY THẲNG sang gửi tin cho khách thật — bỏ qua bậc ②, và bỏ qua luôn cơ hội
+# xem luồng chạy đúng chưa.
 #
 # Dòng rỗng này ĐÈ biến của EnvironmentFile (systemd: directive sau thắng). Ở trạng thái này
 # worker nạp và xử trọn vòng rồi dừng ở `chan_guard`: 0 token, 0 HTTP ghi, không một byte nào
 # tới khách — nhưng `so_ai` và `viec_can_xu_ly` BẮT ĐẦU CÓ DÒNG, tức ba màn đang mù sáng lên.
 #
-# Sang bậc ③ (gửi thật) thì XOÁ dòng này, và trước đó phải TẮT bot v1 cho đúng page ấy —
-# nếu không khách nhận tin từ hai tiến trình. Xoá dòng, đừng sửa thành `=0`.
+# Sang bậc ③ (gửi thật) thì XOÁ dòng này, và trước đó phải chắc page ấy không còn bot nào khác
+# trả lời (ai_sale của team khác). Xoá dòng, đừng sửa thành `=0`.
 Environment=V3_PANCAKE_GUI=
 ExecStart=/usr/bin/node src/queue/chay-worker.js
 Restart=on-failure

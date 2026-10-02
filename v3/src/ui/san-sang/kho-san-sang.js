@@ -123,12 +123,7 @@ export const MA_DIEU_KIEN = Object.freeze(Object.keys(DIEU_KIEN).filter((m) => m
  *    người dùng gặp một ô đỏ không tên.
  */
 export const DIEU_KIEN_V3 = Object.freeze({
-  BOTMOI_NGOAI_DANH_SACH: {
-    chan: true, nhan: 'Page được phép chạy bản mới', ten: 'Chưa nằm trong danh sách bản mới',
-    di: null, nutDi: null,
-    lam: 'Danh sách này nằm ở cấu hình máy chủ, màn chưa sửa được. Nhờ người quản trị hệ thống '
-      + 'thêm page rồi khởi động lại dịch vụ.',
-  },
+  // BOTMOI_NGOAI_DANH_SACH («chưa nằm trong danh sách bản mới») đã gỡ 02/10 — CR-02-10 · MB2: một bản.
   BOTMOI_CHUA_MO_GUI: {
     chan: true, nhan: 'Cửa gửi tin cho khách', ten: 'Máy chủ chưa mở cửa gửi tin',
     di: null, nutDi: null,

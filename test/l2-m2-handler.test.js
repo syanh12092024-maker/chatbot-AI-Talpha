@@ -37,7 +37,7 @@ before(async () => {
   const t = await sb.pool.query("SELECT id FROM team WHERE slug='tieu-alpha'");
   teamId = t.rows[0].id;
   const p = await sb.pool.query(
-    "INSERT INTO page (team_id, page_id, ten) VALUES ($1,$2,'Ca L2-M2') RETURNING id",
+    "INSERT INTO page (bot_ai_bat, team_id, page_id, ten) VALUES (true, $1,$2,'Ca L2-M2') RETURNING id",
     [teamId, PAGE],
   );
   pageRowId = p.rows[0].id;

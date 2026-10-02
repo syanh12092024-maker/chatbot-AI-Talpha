@@ -29,7 +29,7 @@ import {
 import { MA_NHA } from '../../model/nha/index.js';
 import { docCauHinh, ghiNhatKyModel, HANH_DONG as HD_MODEL } from '../../model/cau-hinh.js';
 import { goiMotLan } from '../../model/goi-mot-lan.js';
-import { pageThuocBotMoi } from '../../../../src/queue/page-routing.js';
+import { botDangTraLoi } from '../../../../src/queue/page-routing.js';
 
 /** Nhãn người đọc cho bốn nhà. Sổ nhà (`model/nha/index.js`) chỉ giữ bản cài, không giữ nhãn. */
 export const TEN_NHA = Object.freeze({
@@ -126,7 +126,7 @@ export async function manModel(boiCanh) {
  *   định» và đọc khoá env tên khác (`V3_KHOA_<NHÀ>`, prod không đặt) ⇒ màn cũ báo «chưa có khoá» cho một bot đang chạy.
  * ② Vai «dự phòng» chưa nối vào đường trả lời nào (`DUONG_DUNG_VAI_TRO`); lớp sẽ dùng nó khi nối là lớp v3 ⇒ thử theo
  *   `docCauHinh` (khoá team → `V3_KHOA_<NHÀ>`).
- * ③ Số page bot mới đang xử: đếm bằng CÙNG luật worker (`src/queue/page-routing.js#pageThuocBotMoi`).
+ * ③ Số page bot đang xử: đếm bằng CÙNG luật worker (`src/queue/page-routing.js#botDangTraLoi` — cột `bot_ai_bat`).
  * «Thử một lượt» gọi `goiMotLan` MỘT lần (không qua lớp dự phòng, không qua client có đếm sức khoẻ): thử khoá nào đo khoá
  * đó, và một lượt thử hỏng không làm đèn sức khoẻ của bot đỏ theo. Kết quả gần nhất giữ trong bộ nhớ tiến trình theo team
  * + vai: khởi động lại là «chưa thử», nói thẳng.
@@ -142,7 +142,7 @@ async function botMoiXuLy(bc) {
   if (!_taoTruyVanMan) return { soPage: null, viSao: 'chưa nối cổng truy vấn — không đếm được page bot mới xử' };
   try {
     const ds = (await _taoTruyVanMan(bc).chon('page', {})) || [];
-    return { soPage: ds.filter((p) => pageThuocBotMoi(p)).length, tong: ds.length, viSao: null };
+    return { soPage: ds.filter((p) => botDangTraLoi(p)).length, tong: ds.length, viSao: null };
   } catch (e) {
     return { soPage: null, viSao: `không đọc được bảng page (${String(e?.message || e).slice(0, 120)})` };
   }

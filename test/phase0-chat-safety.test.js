@@ -16,7 +16,7 @@ let sequence = 0;
 before(async () => {
   sb = await dungSandbox('phase0safety');
   team = (await sb.pool.query("SELECT id FROM team WHERE slug='tieu-alpha'")).rows[0].id;
-  page = (await sb.pool.query("INSERT INTO page(team_id,page_id,ten,pos_shop_id) VALUES($1,'phase0','Test','shop1') RETURNING id", [team])).rows[0].id;
+  page = (await sb.pool.query("INSERT INTO page(bot_ai_bat, team_id,page_id,ten,pos_shop_id) VALUES(true, $1,'phase0','Test','shop1') RETURNING id", [team])).rows[0].id;
 });
 after(async () => { await sb?.don(); });
 

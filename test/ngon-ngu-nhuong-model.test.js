@@ -32,7 +32,7 @@ before(async () => {
   sb = await dungSandbox("ngonngu");
   teamId = (await sb.pool.query("SELECT id FROM team WHERE slug='tieu-alpha'")).rows[0].id;
   pageRowId = (await sb.pool.query(
-    "INSERT INTO page (team_id, page_id, ten) VALUES ($1,$2,'Ca ngôn ngữ') RETURNING id", [teamId, PAGE])).rows[0].id;
+    "INSERT INTO page (bot_ai_bat, team_id, page_id, ten) VALUES (true, $1,$2,'Ca ngôn ngữ') RETURNING id", [teamId, PAGE])).rows[0].id;
 });
 after(async () => { if (sb) await sb.don(); });
 

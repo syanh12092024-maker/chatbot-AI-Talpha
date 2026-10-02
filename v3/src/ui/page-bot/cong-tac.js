@@ -1,30 +1,27 @@
-// BA THAO TÁC GHI CỦA MÀN «PAGE & BOT» — và ba đường đi khác nhau, cố ý.
+// BA THAO TÁC GHI CỦA MÀN «PAGE & BOT».
 //
-//   ① bật/tắt BOT AI  → KHÔNG chạm CSDL. Đi qua `noi-day/cau-bot-v1.js` sang tiến trình bot.
+//   ① bật/tắt BOT AI  → cột `page.bot_ai_bat` — CÔNG TẮC DUY NHẤT (CR-02-10 · MB2). Đi qua cổng
+//                        sẵn sàng của chính bot (`src/admin-v3/operations.js#setPage` → `pageStatus`,
+//                        nối vào đây bằng `datCongTacV3`), có trần bật hàng loạt và nhật ký.
 //   ② gán marketer    → CSDL v3. Bền — `PHIEU-B-Y4` đã chặn di trú xoá cột này.
 //                        ⚠️ 15/09: ô nhập ĐÃ BỎ khỏi màn theo lệnh người quyết. Cột,
 //                        cửa API và ca test vẫn còn; giá trị nay tới từ `pages.json`
 //                        qua lượt di trú, và `src/readiness.js` vẫn cắt bản tin theo nó.
 //   ③ cờ trọng điểm   → CSDL v3, an toàn (cột không nằm trong câu ghi đè của di trú).
 //
-// ─── VÌ SAO ① KHÔNG GHI XUỐNG CỘT `bot_ai_bat` ─────────────────────────────────────────
-// Vì cột đó là BẢN SAO. Nguồn thật là `ai-enabled.json` + `Set` trong RAM tiến trình bot.
-// Ghi vào cột thì:
-//   · bot KHÔNG đổi hành vi — khách vẫn được (hoặc không được) bot trả lời y như cũ;
-//   · lượt `npm run di-tru` kế tiếp chép đè lại từ file, xoá sạch dấu vết.
-// Tức là một nút bấm báo thành công và không làm gì. Đúng họ lỗi với `suaTheoId` bỏ rơi
-// `team_id`. Nên ở đây: gọi sang bot, rồi ĐỌC LẠI trạng thái bot trả về, và **đồng bộ cột
-// trong CSDL theo kết quả thật** — cột chỉ chép lại sự thật, không bao giờ là sự thật.
+// ─── VÌ SAO ① NAY GHI THẲNG CỘT (đổi 02/10) ───────────────────────────────────────────
+// Trước 02/10 cột `bot_ai_bat` là BẢN SAO của `ai-enabled.json` trong RAM tiến trình bot v1, và
+// lượt di trú chép đè nó cả hai chiều — nên nút phải gọi sang v1 rồi chép lại kết quả. v1 nay
+// nghỉ hưu (01-QUYET-DINH §14), lượt di trú thôi chép công tắc (`db/di-tru/nap.js`), và worker
+// đọc THẲNG cột này (`src/queue/page-routing.js`). Cột là sự thật.
 //
-// ─── LỚP TEAM: v3 GIỮ QUYỀN, v1 GIỮ CÔNG TẮC ───────────────────────────────────────────
-// `/admin/api/pages/:id/ai` của v1 không biết team. Nên MỌI thao tác ở đây phải tra page qua
-// cổng có điều kiện team TRƯỚC, và page không thuộc team thì trả `null` để router ra **404**
-// — không phải 403. 403 là xác nhận «dòng này có thật ở team khác».
+// ─── LỚP TEAM ───────────────────────────────────────────────────────────────────────────
+// MỌI thao tác ở đây tra page qua cổng có điều kiện team TRƯỚC; page không thuộc team thì trả
+// `null` để router ra **404** — không phải 403. 403 là xác nhận «dòng này có thật ở team khác».
 
 import { batBuocBoiCanh, batBuocVai, VAI } from '../../auth/boi-canh.js';
 import { BANG, LoiPageBot, motPage, congTruyVan, cuaKiemMotPage, gonCuaKiem } from './kho-page.js';
-import { datBotAi, trangThaiCau } from '../../noi-day/cau-bot-v1.js';
-import { giaoTrenManDangMo, BIEN_GIAO_TREN_MAN } from '../../../../src/queue/page-routing.js';
+import { trangThaiCau, trangThaiCongTac, boNhoSanSang, LoiCauBotDong } from '../../noi-day/cau-bot-v1.js';
 
 export const HANH_DONG_BOT = 'bat_tat_bot_ai';
 export const HANH_DONG_MARKETER = 'gan_marketer';
@@ -34,7 +31,6 @@ export const HANH_DONG_NGANH_HANG = 'dat_nganh_hang';
 export const HANH_DONG_BOTCAKE = 'bat_tat_botcake';
 export const HANH_DONG_SP_GOC = 'gan_san_pham_goc';
 export const HANH_DONG_QUET = 'quet_page_pancake';
-export const HANH_DONG_GIAO = 'giao_page_bot_moi';
 
 /** Vai được sửa. `quan-ly` xem được màn nhưng không gạt được công tắc. */
 export const VAI_SUA_DUOC = Object.freeze([VAI.QUAN_TRI]);
@@ -146,31 +142,34 @@ export async function datCongTacBot(boiCanh, id, bat) {
     throw new LoiPageBot(`page id=${id} không có id Facebook — không gạt được công tắc.`, 'thieu_page_id');
   }
 
-  if (_congTacV3) {
-    const v3 = await _congTacV3(bc, id, bat);
-    if (v3) return v3;
+  // Khoá tay của người vận hành thắng mọi thứ (máy demo, lúc sự cố).
+  const khoa = trangThaiCongTac();
+  if (!khoa.mo) throw new LoiCauBotDong(`Công tắc bot đang bị khoá: ${khoa.thieu.join(' · ')} (${khoa.thieuKyThuat.join(' · ')})`);
+  // Không truy ngược được thì KHÔNG gạt — kiểm phễu nhật ký TRƯỚC khi cột đổi, không phải sau.
+  if (!_pheuNhatKy) {
+    throw new LoiPageBot('chưa nối phễu nhật ký — từ chối gạt công tắc vì không truy ngược được', 'chua_noi', 500);
   }
-  const truoc = p.botAiBat;
-  const kq = await datBotAi(p.pageId, bat);        // ném LoiCauBotDong nếu cửa ghi bị khoá
-
-  // Chỉ tính vào trần khi bot THẬT SỰ vừa được bật — gạt lại một page đang bật không tốn
-  // lượt, và một lượt gọi hỏng cũng không tốn.
-  if (kq.batSauKhiDoi && !truoc) _datBat.push(Date.now());
-
-  // Chép sự thật vừa đọc được từ bot vào cột. Cột là BẢN SAO, không phải nguồn.
-  const db = congTruyVan(bc);
-  await db.sua(BANG, { id: String(id) }, { bot_ai_bat: kq.batSauKhiDoi, sua_luc: new Date().toISOString() });
+  // MỘT ĐƯỜNG: cổng sẵn sàng của bot + ghi cột, trong một giao dịch có nhật ký (`setPage`).
+  if (!_congTacV3) {
+    throw new LoiPageBot('Máy chủ chưa nối cửa công tắc bot (`datCongTacV3`) — lỗi dựng tiến trình.', 'chua_noi', 503);
+  }
+  const truoc = p.botAiBat === true;
+  let kq;
+  try { kq = await _congTacV3(bc, id, !!bat); } finally { boNhoSanSang(); }   // công tắc đổi ⇒ cửa kiểm đọc lại
+  if (!kq) throw new LoiPageBot(`Không thấy page id=${id}.`, 'khong_thay', 404);
+  // Chỉ tính vào trần khi bot THẬT SỰ vừa được bật — gạt lại page đang bật không tốn lượt.
+  if (kq.botAiBat && !truoc) _datBat.push(Date.now());
 
   await ghi(bc, {
     hanhDong: HANH_DONG_BOT,
     doiTuongLoai: BANG,
     doiTuongId: String(id),
     truoc: { bot_ai_bat: truoc },
-    sau: { bot_ai_bat: kq.batSauKhiDoi },
-    ghiChu: `${kq.batSauKhiDoi ? 'BẬT' : 'TẮT'} bot AI cho page ${p.ten || p.pageId} (${p.pageId})`,
+    sau: { bot_ai_bat: kq.botAiBat },
+    ghiChu: `${kq.botAiBat ? 'BẬT' : 'TẮT'} bot AI cho page ${p.ten || p.pageId} (${p.pageId})`,
   });
 
-  return { id: String(id), pageId: p.pageId, botAiBat: kq.batSauKhiDoi, doi: truoc !== kq.batSauKhiDoi };
+  return { id: String(id), pageId: p.pageId, botAiBat: kq.botAiBat, doi: truoc !== kq.botAiBat };
 }
 
 /* ────────────────────────── ② gán marketer ────────────────────────── */
@@ -226,7 +225,7 @@ export async function datTrongDiem(boiCanh, id, bat) {
 }
 
 /** Trạng thái cửa ghi sang tiến trình bot — màn hình hiện để biết vì sao công tắc mờ. */
-export { trangThaiCau };
+export { trangThaiCau, trangThaiCongTac };
 
 /* ─────────────── ④⑤ thị trường · ngành hàng ─────────────── */
 
@@ -410,121 +409,4 @@ export async function quetPageTuPancake(boiCanh) {
   return kq;
 }
 
-
-/* ────────────────────── ④ GIAO PAGE SANG BOT MỚI (024 · 25/09) ──────────────────────
- *
- * ═══ VIỆC NÀY KHÁC HẲN «BẬT/TẮT BOT» ═════════════════════════════════════════════════
- * Bật/tắt (①) là bảo con bot ĐANG PHỤ TRÁCH page nói hay im. Giao page là **đổi chủ**:
- * bot cũ buông, bot mới nhặt. Trước 25/09 việc ấy chỉ làm được bằng cách SSH vào máy chủ,
- * sửa `V3_PAGE_XU_LY`, khởi động lại — tức không ai làm được từ giao diện.
- *
- * ═══ THỨ TỰ LÀ TOÀN BỘ SỰ AN TOÀN ════════════════════════════════════════════════════
- *   ① TẮT bot cũ cho page
- *   ② ĐỌC LẠI TỪ CHÍNH BOT CŨ để xác nhận nó đã tắt thật (`datBotAi` trả trạng thái SAU
- *      khi đổi, đọc từ tiến trình bot — không đoán theo tham số vừa gửi)
- *   ③ chưa xác nhận được ⇒ DỪNG, KHÔNG ghi cờ
- *   ④ ghi cờ `giao_bot_moi` — bot mới nhặt page từ vòng kế tiếp
- *
- * Đảo thứ tự (ghi cờ trước) là mở đúng cái cảnh phải tránh: hai con bot cùng trả lời một
- * khách. Làm đúng thứ tự thì chỗ hỏng xấu nhất là vài giây KHÔNG AI trả lời — hướng hỏng
- * an toàn, và màn nói ra ngay.
- *
- * ⚠️ VÌ SAO BƯỚC ② KHÔNG BỎ ĐƯỢC: bot cũ KHÔNG đọc cột `giao_bot_moi`, nó chỉ biết
- *    `V3_PAGE_XU_LY` (file máy chủ, cần khởi động lại). Thứ duy nhất khiến nó buông một page
- *    giao bằng giao diện là công tắc AI của chính nó — đo tận nơi: `pancake-poll.js:262` và
- *    `scheduler-followup.js:115` đều chỉ chạy trên page ĐANG BẬT AI.
- *
- * ═══ KHÔNG TỰ BẬT BOT MỚI, VÀ KHÔNG TỰ BẬT LẠI BOT CŨ ════════════════════════════════
- * Giao xong, bot mới vẫn TẮT cho tới khi người ta bấm bật (cột `v3_ai_bat`). Trả về bot cũ
- * cũng vậy. Một nút một nghĩa: nút này đổi CHỦ, không bật máy. Trạng thái «đã giao mà chưa
- * bật» = không ai trả lời page ấy — hợp lệ, và màn phải nói thẳng ra.
- */
-
-/** Page chưa đủ điều kiện chạy bot mới thì KHÔNG giao. Không giao một page cho con bot
- *  chưa biết nói gì về nó. */
-async function batBuocSanSang(p) {
-  const { doc, viSao } = await cuaKiemMotPage(p.pageId);
-  if (viSao) {
-    throw new LoiPageBot(
-      `Chưa đọc được tình trạng page từ tiến trình bot (${viSao}) — không giao khi chưa biết `
-      + 'page này đã đủ điều kiện chưa.', 'chua_doc_duoc_cua_kiem', 503,
-    );
-  }
-  const g = gonCuaKiem(doc);
-  if (g.muc === 'chan') {
-    throw new LoiPageBot(
-      `Page còn thiếu điều kiện: ${g.ten}. Sửa ở màn «Page còn thiếu gì» rồi giao — giao bây `
-      + 'giờ là đưa khách cho một con bot chưa trả lời được page này.', 'con_chan', 409,
-    );
-  }
-}
-
-/**
- * Giao page cho bot mới (`giao = true`) hoặc trả về bot cũ (`giao = false`).
- */
-export async function giaoPage(boiCanh, id, giao) {
-  const bc = batBuocBoiCanh(boiCanh);
-  batBuocVai(bc, ...VAI_SUA_DUOC);
-  if (!giaoTrenManDangMo()) {
-    throw new LoiPageBot(
-      'Cầu dao «giao page bằng giao diện» đang đóng, nên việc này vẫn phải nhờ người quản trị '
-      + 'hệ thống. Nhờ họ bật một lần rồi từ đó bấm được trên màn.',
-      'cau_dao_dong', 409,
-    );
-  }
-  const p = await traTrongTeam(bc, id);
-  if (!p.pageId) {
-    throw new LoiPageBot(`page id=${id} không có id Facebook — không giao được.`, 'thieu_page_id');
-  }
-  const muon = !!giao;
-  if (muon === p.giaoBotMoi) {
-    return { id: String(id), pageId: p.pageId, giaoBotMoi: p.giaoBotMoi, doi: false };
-  }
-
-  const db = congTruyVan(bc);
-  const luc = new Date().toISOString();
-  let botCuBat = p.botAiBat;
-
-  if (muon) {
-    await batBuocSanSang(p);
-    const kq = await datBotAi(p.pageId, false);     // ① tắt bot cũ · ném nếu cửa ghi khoá
-    if (kq.batSauKhiDoi !== false) {                // ② đọc lại · ③ chưa buông thì dừng
-      throw new LoiPageBot(
-        'Bot cũ báo vẫn ĐANG BẬT cho page này sau khi đã gửi lệnh tắt — dừng lại, không giao. '
-        + 'Giao lúc này là để hai con bot cùng trả lời một khách. Thử lại, hoặc nhờ người quản '
-        + 'trị hệ thống xem tiến trình bot cũ.',
-        'bot_cu_chua_buong', 409,
-      );
-    }
-    botCuBat = false;
-    await db.sua(BANG, { id: String(id) }, { bot_ai_bat: false, giao_bot_moi: true, sua_luc: luc });
-  } else {
-    // Trả về bot cũ: bỏ cờ để bot mới buông. KHÔNG tự bật lại bot cũ — bật bot cho khách
-    // thật là một quyết định riêng, có trần và có nút riêng của nó.
-    await db.sua(BANG, { id: String(id) }, { giao_bot_moi: false, v3_ai_bat: false, sua_luc: luc });
-  }
-
-  await ghi(bc, {
-    hanhDong: HANH_DONG_GIAO,
-    doiTuongLoai: BANG,
-    doiTuongId: String(id),
-    truoc: { giao_bot_moi: p.giaoBotMoi, bot_ai_bat: p.botAiBat },
-    sau: { giao_bot_moi: muon, bot_ai_bat: botCuBat },
-    ghiChu: muon
-      ? `GIAO page ${p.ten || p.pageId} (${p.pageId}) sang bot mới; đã tắt bot cũ và đọc lại xác nhận`
-      : `TRẢ page ${p.ten || p.pageId} (${p.pageId}) về bot cũ; bot cũ vẫn đang TẮT, bật riêng nếu cần`,
-  });
-
-  return {
-    id: String(id), pageId: p.pageId, giaoBotMoi: muon, doi: true, botAiBat: botCuBat,
-    // Câu này hiện thẳng trên màn: sau khi đổi chủ thì CHƯA con nào đang trả lời page.
-    buocTiep: muon
-      ? 'Đã giao. Bot mới vẫn đang TẮT cho page này — bấm «Bật bot» khi muốn nó bắt đầu trả lời khách.'
-      : 'Đã trả về bot cũ. Bot cũ vẫn đang TẮT cho page này — bấm «Bật bot» nếu muốn nó trả lời lại.',
-  };
-}
-
-/** Cầu dao đang mở hay đóng, cho màn hiện nút hay hiện lời giải thích. */
-export function trangThaiCauDaoGiao() {
-  return { mo: giaoTrenManDangMo(), bien: BIEN_GIAO_TREN_MAN };
-}
+/* ④ «GIAO PAGE SANG BOT MỚI» (024 · 25/09) đã gỡ 02/10 — CR-02-10 · MB2: một bản, không còn chủ thứ hai. */

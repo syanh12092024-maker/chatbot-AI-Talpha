@@ -237,10 +237,5 @@ export function viecNgoaiHe(env = process.env) {
       dangMo: bat('V3_RAP_PROMPT_BAT'),
       vi: 'Chưa bật thì bot dùng bản ghép lời cũ, không đọc kịch bản và quy tắc từ cơ sở dữ liệu.',
     },
-    {
-      ma: 'giao-page', ten: 'Cho giao page bằng giao diện',
-      dangMo: bat('V3_GIAO_PAGE_TREN_MAN'),
-      vi: 'Chưa bật thì việc đưa một page từ bot cũ sang bot mới vẫn phải sửa cấu hình máy chủ.',
-    },
   ];
 }

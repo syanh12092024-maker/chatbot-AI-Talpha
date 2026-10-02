@@ -23,7 +23,6 @@ export {
   HANH_DONG_BOT, HANH_DONG_MARKETER, HANH_DONG_TRONG_DIEM,
   VAI_SUA_DUOC, DAI_MARKETER, CANH_BAO_MARKETER, PHIEU_MARKETER,
   datQuetPage, daNoiQuetPage, quetPageTuPancake,
-  giaoPage, trangThaiCauDaoGiao, HANH_DONG_GIAO,
 } from './cong-tac.js';
 
 export {

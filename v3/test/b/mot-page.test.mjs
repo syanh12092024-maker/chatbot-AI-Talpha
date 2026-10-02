@@ -101,38 +101,17 @@ test('③b mã LẠ không bị nuốt — hiện ra kèm nhãn «chưa có tron
   assert.match(d.tinhTrang.chan[0].chiTiet, /chi tiết bên bot/);
 });
 
-test('③c CẦU DAO MỞ thì câu «đi sửa» của điều kiện giao page đổi theo (án lệ #27)', async () => {
-  // Bảng từ vựng viết câu ấy hồi việc giao page còn phải SSH. Từ 024 nó là một cái nút ngay
-  // trên màn — để nguyên câu cũ là đẩy người ta đi nhờ một việc họ tự bấm được.
-  dungKho({ sanSang: sanSangGia([
-    { pageId: '111', blockers: [{ code: 'BOTMOI_NGOAI_DANH_SACH' }] },
-  ]) });
-  const cu = process.env.V3_GIAO_PAGE_TREN_MAN;
-  try {
-    delete process.env.V3_GIAO_PAGE_TREN_MAN;
-    const dong = await mp.trangMotPage(bcQt(), 'p1');
-    assert.match(dong.tinhTrang.chan[0].lam, /người quản trị hệ thống/);
+/* ═══════════ ④ MỘT công tắc — cột LÀ sự thật (CR-02-10 · MB2) ═══════════ */
 
-    process.env.V3_GIAO_PAGE_TREN_MAN = '1';
-    const mo = await mp.trangMotPage(bcQt(), 'p1');
-    assert.match(mo.tinhTrang.chan[0].lam, /Giao sang bot mới/);
-    assert.equal(mo.tinhTrang.chan[0].di, null, 'không còn chỗ nào để «đi sửa» — nút ở ngay trên màn');
-  } finally {
-    if (cu === undefined) delete process.env.V3_GIAO_PAGE_TREN_MAN;
-    else process.env.V3_GIAO_PAGE_TREN_MAN = cu;
-  }
-});
-
-/* ═══════════ ④ hai nguồn công tắc, giữ cả hai ═══════════ */
-
-test('④ hai nguồn công tắc lệch nhau thì NÓI RA, không chọn một cái', async () => {
-  // Cột `page.bot_ai_bat` đã có lần lệch 50 so với nguồn thật. Gộp một con số là mất luôn
-  // khả năng phát hiện lệch.
+test('④ khối bot đọc ĐÚNG cột worker đọc — không còn «bot cũ / bot mới», không còn hai nguồn', async () => {
+  // Trước 02/10 màn giữ hai con số (RAM tiến trình bot v1 ↔ cột bản sao) vì từng lệch 50. Nay
+  // `bot_ai_bat` là công tắc duy nhất; dòng cửa kiểm nói khác (vd. `aiEnabled:false` từ bảng chung)
+  // KHÔNG được thắng cột.
   dungKho({ sanSang: sanSangGia([{ pageId: '111', aiEnabled: false, blockers: [] }]) });
   const d = await mp.trangMotPage(bcQt(), 'p1');
-  assert.equal(d.bot.theoBot, false, 'nguồn thật: tiến trình bot');
-  assert.equal(d.bot.theoCsdl, true, 'bản sao trong CSDL');
-  assert.equal(d.bot.lech, true);
+  assert.equal(d.bot.bat, true, 'cột bot_ai_bat = true ⇒ đang trả lời');
+  assert.equal('theoBot' in d.bot || 'lech' in d.bot, false, 'không còn trường của thời hai nguồn');
+  assert.equal('chuBot' in d, false, 'không còn khối «bot nào phụ trách»');
 });
 
 /* ═══════════ ⑤ TIÊU CHÍ CỦA PHIẾU: đúng MỘT cửa ghi bật bot ═══════════ */

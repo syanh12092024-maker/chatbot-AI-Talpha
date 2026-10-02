@@ -78,7 +78,7 @@ async function dungTin(psid, noiDung) {
   seq += 1;
   const pid = `96000000000${seq}`;
   const p = await sb.pool.query(
-    "INSERT INTO page (team_id,page_id,ten) VALUES ($1,$2,'var1') RETURNING id",
+    "INSERT INTO page (bot_ai_bat, team_id,page_id,ten) VALUES (true, $1,$2,'var1') RETURNING id",
     [teamId, pid],
   );
   await sb.pool.query(

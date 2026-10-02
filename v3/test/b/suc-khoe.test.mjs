@@ -188,40 +188,23 @@ test('thiếu bối cảnh thì NÉM', async () => {
   await assert.rejects(() => sk.bangDen(null), /bối cảnh|teamId/i);
 });
 
-/* ═══════ CÔNG TẮC BOT: đọc NGUỒN THẬT, không đếm cột bản sao ═══════ */
-// Cột `page.bot_ai_bat` đã lệch một lần đo được: CSDL v3 ghi 50 page bật, `ai-enabled.json`
-// là [] (0 page). Hai đèn ⑤⑥ dựng trên cột đó, nên phải hỏi tiến trình bot trước.
+/* ═══════ CÔNG TẮC BOT (CR-02-10 · MB2): cột `bot_ai_bat` LÀ sự thật ═══════
+ * Trước 02/10 cột là bản sao của `ai-enabled.json` (từng lệch 50), nên màn hỏi tiến trình bot v1
+ * trước. v1 nghỉ hưu; worker đọc thẳng cột — không còn nguồn thứ hai để hỏi hay so lệch. */
 
-test('nguồn công tắc · nối cửa kiểm → đếm theo `aiEnabled` của bot, và NÓI ra độ lệch', async () => {
+test('nguồn công tắc · đếm từ cột — cửa kiểm nói khác cũng KHÔNG thắng cột', async () => {
   dungKho({}, {
-    // Cột nói p1 bật; bot nói p1 TẮT, p2 BẬT — hai bên lệch cả hai page.
     sanSang: async () => ({ pages: [
       { pageId: '111', aiEnabled: false },
       { pageId: '222', aiEnabled: true },
     ] }),
   });
   const d = await sk.bangDen(bcQt());
-  assert.equal(d.nguonBotBat.nguon, 'ai-enabled.json');
-  assert.equal(d.nguonBotBat.lech.theoCot, 1);
-  assert.equal(d.nguonBotBat.lech.theoBot, 1);
-  assert.equal(d.nguonBotBat.lech.soLech, 2, 'phải ĐẾM được có bao nhiêu page lệch');
+  assert.equal(d.nguonBotBat.nguon, 'cot_csdl');
+  assert.match(d.nguonBotBat.noi, /công tắc duy nhất/);
+  assert.equal(d.nguonBotBat.lech, null, 'một nguồn thì không có lệch để đo');
   const den = d.den.find((x) => /bot/i.test(x.ten) || /bật bot/i.test(x.vi || ''));
   assert.ok(den, 'vẫn phải có đèn công tắc bot');
-});
-
-test('nguồn công tắc · CHƯA nối cửa → đếm cột nhưng khai rõ đó là BẢN SAO', async () => {
-  dungKho();
-  const d = await sk.bangDen(bcQt());
-  assert.equal(d.nguonBotBat.nguon, 'cot_csdl');
-  assert.match(d.nguonBotBat.noi, /BẢN SAO/);
-  assert.equal(d.nguonBotBat.lech, null);
-});
-
-test('nguồn công tắc · cửa NÉM → lùi về cột, nói nguyên văn lỗi, không im', async () => {
-  dungKho({}, { sanSang: async () => { throw new Error('bot không trả lời'); } });
-  const d = await sk.bangDen(bcQt());
-  assert.equal(d.nguonBotBat.nguon, 'cot_csdl');
-  assert.match(d.nguonBotBat.noi, /bot không trả lời/);
 });
 
 /* ═══════════ ĐÈN «MÁY CHẠY BOT» — đo bằng hàng đợi tin (GD5 · 25/09) ═══════════
@@ -291,70 +274,28 @@ test('máy chạy bot · bộ đọc NÉM → XÁM kèm lý do, không nuốt th
 });
 
 
-/* ═══════════ ĐÈN «HAI BOT CÙNG MỘT PAGE» (024 · 25/09) ═══════════
+/* ═══════════ ĐÈN «HAI BOT CÙNG MỘT PAGE» (CR-02-10 · MB2) ═══════════
  *
- * Giao page bằng giao diện mở ra một cái hố: bot cũ KHÔNG đọc cột `giao_bot_moi`, và giao
- * diện cũ ở cổng 3100 vẫn bật lại bot cho một page bằng một mật khẩu dùng chung. Đèn này là
- * lưới cuối — bật lại ở đó thì ở đây phải đỏ.
+ * Phía mình chỉ còn MỘT bot, nên cảnh hai bot chỉ còn xảy ra với `ai_sale` của pancake-tool (team
+ * khác) — hệ này không đọc được nó phủ page nào. Đèn KHÔNG được xanh khi đã có page bật: xanh là
+ * hứa một điều không đo.
  */
 
-async function voiCauDao(fn) {
-  const cu = process.env.V3_GIAO_PAGE_TREN_MAN;
-  process.env.V3_GIAO_PAGE_TREN_MAN = '1';
-  try { return await fn(); } finally {
-    if (cu === undefined) delete process.env.V3_GIAO_PAGE_TREN_MAN;
-    else process.env.V3_GIAO_PAGE_TREN_MAN = cu;
-  }
-}
-
-const PAGE_GIAO = [
-  { id: 'p1', team_id: 't1', page_id: '111', ten: 'Alpha', bot_ai_bat: true, marketer: 'Ngọc', giao_bot_moi: true },
-  { id: 'p2', team_id: 't1', page_id: '222', ten: 'Beta', bot_ai_bat: false, marketer: 'Ngọc', giao_bot_moi: false },
+const PAGE_BAT = [
+  { id: 'p1', team_id: 't1', page_id: '111', ten: 'Alpha', bot_ai_bat: true, marketer: 'Ngọc' },
+  { id: 'p2', team_id: 't1', page_id: '222', ten: 'Beta', bot_ai_bat: false, marketer: 'Ngọc' },
 ];
 
-test('hai bot · cầu dao ĐÓNG ⇒ xanh, vì chủ sở hữu lấy từ cấu hình máy chủ', async () => {
-  dungKho();
-  delete process.env.V3_GIAO_PAGE_TREN_MAN;
+test('hai bot · CHƯA page nào bật ⇒ XANH — không page nào có thể bị hai bot trả lời', async () => {
+  dungKho({ page: PAGE_BAT.map((p) => ({ ...p, bot_ai_bat: false })) });
   const d = lay(await sk.bangDen(bcQt()), 'hai_bot_mot_page');
   assert.equal(d.muc, sk.MUC.XANH);
 });
 
-test('hai bot · page đã giao mà BOT CŨ VẪN BẬT ⇒ ĐỎ, gọi tên page', async () => {
-  dungKho({ page: PAGE_GIAO }, {
-    sanSang: async () => ({ pages: [
-      { pageId: '111', aiEnabled: true },      // bot cũ vẫn đang bật cho page ĐÃ GIAO
-      { pageId: '222', aiEnabled: false },
-    ] }),
-  });
-  await voiCauDao(async () => {
-    const d = lay(await sk.bangDen(bcQt()), 'hai_bot_mot_page');
-    assert.equal(d.muc, sk.MUC.DO);
-    assert.match(d.vi, /Alpha/, 'phải gọi tên page để người ta biết đi tắt cái nào');
-    assert.match(d.vi, /HAI câu trả lời/);
-    assert.ok(d.diTiep?.duong, 'đèn đỏ phải chỉ đường đi sửa');
-  });
-});
-
-test('hai bot · bot cũ đã buông đủ ⇒ XANH', async () => {
-  dungKho({ page: PAGE_GIAO }, {
-    sanSang: async () => ({ pages: [
-      { pageId: '111', aiEnabled: false },
-      { pageId: '222', aiEnabled: false },
-    ] }),
-  });
-  await voiCauDao(async () => {
-    const d = lay(await sk.bangDen(bcQt()), 'hai_bot_mot_page');
-    assert.equal(d.muc, sk.MUC.XANH);
-  });
-});
-
-test('hai bot · KHÔNG hỏi được bot cũ ⇒ XÁM, không suy từ cột bản sao', async () => {
-  // Cột `page.bot_ai_bat` đã có lần lệch 50 so với nguồn thật. Kết luận «không sao» từ một
-  // bản sao là đúng kiểu sai mà cả màn này dựng ra để tránh.
-  dungKho({ page: PAGE_GIAO });          // không nối cửa kiểm
-  await voiCauDao(async () => {
-    const d = lay(await sk.bangDen(bcQt()), 'hai_bot_mot_page');
-    assert.equal(d.muc, sk.MUC.XAM);
-    assert.match(d.vi, /bản sao/);
-  });
+test('hai bot · CÓ page bật ⇒ XÁM, nói thẳng ai_sale của team khác là thứ chưa đo được', async () => {
+  dungKho({ page: PAGE_BAT });
+  const d = lay(await sk.bangDen(bcQt()), 'hai_bot_mot_page');
+  assert.equal(d.muc, sk.MUC.XAM);
+  assert.match(d.vi, /ai_sale/);
+  assert.match(d.vi, /hai câu trả lời/);
 });

@@ -26,7 +26,7 @@ after(async () => {
  *  khác qua cùng psid — mỗi test tự cô lập hội thoại của mình). */
 async function taoHoiThoai(psid, { trongDiem = true } = {}) {
   const p = await sb.pool.query(
-    "INSERT INTO page (team_id, page_id, ten, trong_diem) VALUES ($1,$2,'Ca L2-M3',$3) RETURNING id",
+    "INSERT INTO page (bot_ai_bat, team_id, page_id, ten, trong_diem) VALUES (true, $1,$2,'Ca L2-M3',$3) RETURNING id",
     [teamId, `${PAGE}-${psid}`, trongDiem],
   );
   await sb.pool.query(

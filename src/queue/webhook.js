@@ -1,6 +1,5 @@
 import { baoDamHoiThoai } from '../chat/kho.js';
 import { xepTin } from './kho.js';
-import { pageThuocV3 } from './page-routing.js';
 import { verifySignature } from '../messenger.js';
 
 export class LoiWebhook extends Error {
@@ -31,17 +30,23 @@ export function docSuKien(body) {
   return events;
 }
 
-export async function nhanWebhook(pool, body, { choPhep = pageThuocV3 } = {}) {
+// MỘT BẢN (CR-02-10 · MB2): page nhận tin khi và chỉ khi `page.bot_ai_bat = true` — đọc ngay trong
+// câu khoá dòng bên dưới. `choPhep` chỉ còn là cửa tiêm cho bộ ca.
+export async function nhanWebhook(pool, body, { choPhep = null } = {}) {
   const events = docSuKien(body);
   const client = await pool.connect();
   let them = 0, trung = 0, boQua = 0;
   try {
     await client.query('BEGIN');
     for (const ev of events) {
-      if (!choPhep(ev.pageId)) { boQua++; continue; }
-      // Khóa cấu hình tới COMMIT: không đổi nguồn giữa chừng.
-      const p = (await client.query('SELECT id,team_id,nguon_tin FROM page WHERE page_id=$1 FOR SHARE', [ev.pageId])).rows[0];
-      if (!p) throw new LoiWebhook(503, 'Page V3 chưa được cấu hình');
+      if (choPhep && !choPhep(ev.pageId)) { boQua++; continue; }
+      // Khóa cấu hình tới COMMIT: không đổi nguồn/công tắc giữa chừng.
+      const p = (await client.query('SELECT id,team_id,nguon_tin,bot_ai_bat FROM page WHERE page_id=$1 FOR SHARE', [ev.pageId])).rows[0];
+      if (!p) {
+        if (choPhep) throw new LoiWebhook(503, 'Page chưa được cấu hình');
+        boQua++; continue;
+      }
+      if (!choPhep && p.bot_ai_bat !== true) { boQua++; continue; }
       if (p.nguon_tin !== 'webhook') { boQua++; continue; }
       await baoDamHoiThoai(client, { teamId: p.team_id, pageRowId: p.id, psid: ev.psid });
       const result = await xepTin(client, {

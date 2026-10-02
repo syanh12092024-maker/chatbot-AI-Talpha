@@ -30,13 +30,13 @@ test('GK1 · VẮNG cờ + PANCAKE_READONLY=1 ⇒ đường ghi kho ĐÓNG như 
   assert.deepEqual(nhan, []);
 });
 
-test('GK2 · BẬT cờ ⇒ ghi kho được và ĐỌC LẠI khớp; bật/tắt bot VẪN đóng', async () => {
+test('GK2 · BẬT cờ ⇒ ghi kho được và ĐỌC LẠI khớp; cửa ghi chung (token) VẪN đóng', async () => {
   process.env.V3_GHI_KHO_BOT = '1';
   assert.equal(cau.trangThaiCau({ kho: true }).mo, true);
   assert.equal(cau.trangThaiCau().mo, false, 'cửa ghi chung (bật/tắt bot, token) không đổi');
   const kq = await cau.daySanPhamLenBot('111', SP);
   assert.equal(kq.soSanPham, 1);
-  await assert.rejects(() => cau.datBotAi('111', true), (e) => e.ma === 'cua_ghi_dong');
+  // CR-02-10 · MB2: công tắc bot không còn đi qua cầu (`datBotAi` đã gỡ) — cửa chung vẫn đóng là đủ.
   assert.deepEqual(nhan, ['kho:111'], 'đúng MỘT lượt ghi, và đó là lượt ghi kho');
 });
 

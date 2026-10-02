@@ -54,37 +54,45 @@ after(async () => {
   if (sb) await sb.don();
 });
 
+// CR-02-10 · MB2: công tắc DUY NHẤT là cột `page.bot_ai_bat` — ca bật đúng page mình cần.
+async function batBot(ids) {
+  await q("UPDATE page SET bot_ai_bat = (page_id = ANY($1::text[]))", [ids]);
+}
+
 test("P7-1 · đọc danh sách page TỪ BẢNG, không gõ tay (án lệ #22)", async () => {
   const ds = await dsPageDeNap(pool);
   assert.deepEqual(ds.sort(), ["970000000001", "970000000002"]);
 });
 
-test("P7-1b · VẮNG `V3_PAGE_XU_LY` ⇒ KHÔNG nạp page nào, và nói lý do (vắng = đóng)", async () => {
-  // Bảng `page` có 502 dòng trên máy chủ thật. Bật worker mà không có van bậc phơi là mở
-  // thẳng bậc ⑥ trong khi bot v1 vẫn trả lời 51 page — khách nhận tin từ hai tiến trình.
+test("P7-1b · CHƯA page nào bật bot ⇒ KHÔNG nạp page nào, và nói lý do", async () => {
+  // Bảng `page` có 582 dòng trên máy chủ thật. Worker chỉ nạp page có `bot_ai_bat = true`;
+  // không page nào bật thì không hỏi Pancake một lượt nào.
+  await batBot([]);
   let goiCua = 0;
   const ket = await voiEnv(
     // Nguồn MỞ (khuôn harness như P7-3) để phép đo này soi ĐÚNG van bậc phơi, không soi nhầm
     // van nguồn: hai van đóng vì hai lý do khác nhau và phải đọc ra hai câu khác nhau.
-    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_PAGE_XU_LY: undefined },
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1" },
     () =>
       motLuot(pool, {
         depsNap: { docHoiThoai: async () => ((goiCua += 1), []) },
       }),
   );
-  assert.equal(ket.nap.mo, true, "van NGUỒN phải mở thì phép đo này mới nói về van bậc phơi");
-  assert.equal(ket.nap.page, 0, "vắng van mà vẫn nạp page là mở sai bậc phơi");
+  assert.equal(ket.nap.mo, true, "van NGUỒN phải mở thì phép đo này mới nói về công tắc");
+  assert.equal(ket.nap.page, 0, "không page nào bật mà vẫn nạp là sai công tắc");
   assert.equal(goiCua, 0, "không page nào được phép thì KHÔNG hỏi Pancake một lượt nào");
-  assert.match(ket.nap.lyDo, /V3_PAGE_XU_LY/);
+  assert.match(ket.nap.lyDo, /bot_ai_bat/);
 });
 
-test("P7-1c · van CHỈ THU HẸP: id ngoài bảng `page` bị bỏ qua, không đẻ page ma", async () => {
+test("P7-1c · chỉ page BẬT bot mới được nạp — page tắt bị bỏ qua", async () => {
+  await batBot(["970000000001"]);
   const ket = await voiEnv(
-    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_PAGE_XU_LY: "970000000001, 999999999999" },
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1" },
     () => motLuot(pool, { depsNap: { docHoiThoai: async () => [] } }),
   );
-  assert.equal(ket.nap.choPhep, 2, "hai id được khai");
-  assert.equal(ket.nap.page, 1, "chỉ id CÓ TRONG BẢNG mới được nạp");
+  assert.equal(ket.nap.choPhep, 1, "một page bật");
+  assert.equal(ket.nap.page, 1, "chỉ page BẬT mới được nạp");
+  assert.equal(ket.nap.nguonChoPhep, "csdl");
 });
 
 test("P7-2 · van NGUỒN đóng (máy READONLY) ⇒ KHÔNG gọi cửa Pancake một lượt nào, và NÓI lý do", async () => {
@@ -111,8 +119,9 @@ test("P7-2 · van NGUỒN đóng (máy READONLY) ⇒ KHÔNG gọi cửa Pancake 
 });
 
 test("P7-3 · van nguồn MỞ (harness) ⇒ nạp theo TỪNG page và cộng đúng số", async () => {
+  await batBot(["970000000001", "970000000002"]);
   const ket = await voiEnv(
-    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_PAGE_XU_LY: "970000000001,970000000002" }, () =>
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1" }, () =>
     motLuot(pool, {
       depsNap: {
         // Ca này đo van bậc phơi + phép cộng theo page, KHÔNG đo cửa chờ-khách-gõ-xong
@@ -150,9 +159,10 @@ test("P7-3 · van nguồn MỞ (harness) ⇒ nạp theo TỪNG page và cộng �
 });
 
 test("P7-4 · MỘT page hỏng KHÔNG dừng cả vòng, nhưng phải ĐẾM ra", async () => {
+  await batBot(["970000000001", "970000000002"]);
   let lan = 0;
   const ket = await voiEnv(
-    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_PAGE_XU_LY: "970000000001,970000000002" }, () =>
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1" }, () =>
     motLuot(pool, {
       depsNap: {
         docHoiThoai: async () => {

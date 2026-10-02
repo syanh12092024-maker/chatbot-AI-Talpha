@@ -22,8 +22,7 @@ process.env.V3_BOT_KHOA = '1';   // cầu sang tiến trình bot đóng chắc c
 // V3_KHOA_<NHÀ> nào. Khoá Anthropic có mặt mà bot KHÔNG được mượn (claude ≠ AI_PROVIDER) — ca C5/C8/C9 canh đúng chỗ đó.
 const KHOA_ANT_MAY_CHU = 'sk-ant-ANTHROPIC_API_KEY-khong-duoc-muon';
 Object.assign(process.env, { AI_PROVIDER: 'kimi', MODEL_CLOSER: 'kimi-k2.6', KIMI_API_KEY: KHOA_MAY_CHU, ANTHROPIC_API_KEY: KHOA_ANT_MAY_CHU });
-for (const n of ['V3_KHOA_KIMI', 'V3_KHOA_CLAUDE', 'V3_KHOA_OPENAI', 'V3_KHOA_DEEPSEEK', 'V3_GIAO_PAGE_TREN_MAN', 'KIMI_BASE_URL']) delete process.env[n];
-process.env.V3_PAGE_XU_LY = '111';   // cấu hình máy chủ giao đúng MỘT page cho bot mới
+for (const n of ['V3_KHOA_KIMI', 'V3_KHOA_CLAUDE', 'V3_KHOA_OPENAI', 'V3_KHOA_DEEPSEEK', 'KIMI_BASE_URL']) delete process.env[n];
 
 const { dungPhanB } = await import('../../src/vai-b.js');
 const { bam } = await import('../../src/auth/mat-khau.js');
@@ -83,9 +82,9 @@ async function dungThu({ vai = 'quan-tri', noiDuongBot = true } = {}) {
     nguoi_dung: [{ id: 'u1', email: 'qt@talpha.vn', mat_khau_hash: mk, ten: 'Chủ', hoat_dong: true }],
     vai: [{ id: 'v1', ma: vai, ten: vai }],
     thanh_vien_team: [{ id: 'tv1', nguoi_dung_id: 'u1', team_id: 't1', vai_id: 'v1' }],
-    // `222` đánh dấu giao bot mới trong CSDL — chỉ tính khi cầu dao V3_GIAO_PAGE_TREN_MAN mở (luật worker).
+    // CR-02-10 · MB2: bot xử đúng page có `bot_ai_bat = true` (luật worker) — `111` bật; cột cũ `giao_bot_moi` KHÔNG tính.
     page: [
-      { id: 'p1', team_id: 't1', page_id: '111', ten: 'Page A' },
+      { id: 'p1', team_id: 't1', page_id: '111', ten: 'Page A', bot_ai_bat: true },
       { id: 'p2', team_id: 't1', page_id: '222', ten: 'Page B', giao_bot_moi: true },
       { id: 'p3', team_id: 't1', page_id: '333', ten: 'Page C' },
     ],
@@ -132,7 +131,7 @@ test('C1 · HÌNH PROD: team chưa lưu cấu hình ⇒ màn nói bot gọi mode
   assert.deepEqual(m.document.querySelectorAll('[data-the]').map((x) => x.dataset.the), ['chinh', 'duPhong']);
   const suThat = chu(m.$('#suThat'));
   assert.match(suThat, /Màn chỉ hiện thứ bot THẬT SỰ dùng\./);
-  assert.match(suThat, /đang xử 1\/3 page của team/, 'cầu dao giao-trên-màn đóng ⇒ chỉ page trong V3_PAGE_XU_LY, cột CSDL KHÔNG tính');
+  assert.match(suThat, /đang xử 1\/3 page của team/, 'đếm theo cột bot_ai_bat (luật worker) — cột giao_bot_moi cũ KHÔNG tính');
   assert.match(suThat, /Bot cũ .*KHÔNG gửi độ ngẫu nhiên/);
   // bot THẬT: model máy chủ + KIMI_API_KEY + không gửi độ ngẫu nhiên — không phải «bộ mặc định» của lớp v3
   assert.match(chu(m.$('[data-bot-dung]')), /^Bot đang gọi kimi-k2\.6 — model của MÁY CHỦ \(MODEL_CLOSER\), khoá chung của máy chủ \(KIMI_API_KEY\), KHÔNG gửi độ ngẫu nhiên\. Team chưa lưu cấu hình riêng/);
@@ -153,9 +152,8 @@ test('C1 · HÌNH PROD: team chưa lưu cấu hình ⇒ màn nói bot gọi mode
   // máy chủ không trả khoá ra màn
   const d = await (await fetch(`${o.goc}/api/model/cau-hinh`, { headers: { Accept: 'application/json', cookie: o.cookie } })).text();
   assert.ok(!d.includes(KHOA_MAY_CHU), 'khoá máy chủ lọt ra màn');
-  // cùng luật worker: mở cầu dao ⇒ HỢP với cột CSDL; chưa nối cổng ⇒ «chưa đo», không phải 0
-  datEnv(t, { V3_GIAO_PAGE_TREN_MAN: '1' });
-  assert.deepEqual((await km.manModel(bcQt())).botMoi, { soPage: 2, tong: 3, viSao: null });
+  // cùng luật worker (cột bot_ai_bat); chưa nối cổng ⇒ «chưa đo», không phải 0
+  assert.deepEqual((await km.manModel(bcQt())).botMoi, { soPage: 1, tong: 3, viSao: null });
   const cu = km.datTaoTruyVanMan(null);
   t.after(() => km.datTaoTruyVanMan(cu));
   const mu = (await km.manModel(bcQt())).botMoi;

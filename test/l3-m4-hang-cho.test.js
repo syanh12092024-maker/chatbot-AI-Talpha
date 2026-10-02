@@ -107,8 +107,8 @@ before(async () => {
   TEAM = (await mot("SELECT id FROM team WHERE slug='tieu-alpha'")).id;
   pageText = "555000111222";
   const p = await mot(
-    `INSERT INTO page (team_id, page_id, ten, thi_truong, pos_shop_id)
-     VALUES ($1,$2,'Page L3M4','KhongKhopMarket',$3) RETURNING *`,
+    `INSERT INTO page (bot_ai_bat, team_id, page_id, ten, thi_truong, pos_shop_id)
+     VALUES (true, $1,$2,'Page L3M4','KhongKhopMarket',$3) RETURNING *`,
     [TEAM, pageText, SHOP],
   );
   pageId = p.id;

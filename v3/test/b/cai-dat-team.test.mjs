@@ -93,20 +93,20 @@ test('④b bộ đọc token NÉM ⇒ vẫn là chưa đo được, không thàn
   assert.match(b.vi, /kho token hỏng/);
 });
 
-test('⑤ ba cái van của máy chủ KHÔNG trộn vào năm việc', async () => {
+test('⑤ hai cái van của máy chủ KHÔNG trộn vào năm việc', async () => {
   // Trộn vào là bày ra một ô tích mà người dùng không có cách nào tích được — cách nhanh
   // nhất dạy người ta bỏ qua cả danh sách.
   dungKho({}, { khoToken: async () => ({ token: [] }) });
   const d = await cd.manCaiDat(bcQt());
   assert.equal(d.buoc.length, 5, 'đúng năm việc làm được trên màn');
-  assert.equal(d.ngoaiHe.length, 3);
+  assert.equal(d.ngoaiHe.length, 2, 'CR-02-10 · MB2: van «giao page bằng giao diện» đã gỡ cùng khái niệm giao');
   for (const v of d.ngoaiHe) assert.ok(v.ten && v.vi && 'dangMo' in v);
 });
 
-test('⑤b ba cái van đọc ĐÚNG biến môi trường đang đặt', async () => {
+test('⑤b hai cái van đọc ĐÚNG biến môi trường đang đặt', async () => {
   const v = cd.viecNgoaiHe({ V3_PANCAKE_GUI: '1', PANCAKE_READONLY: '1', V3_RAP_PROMPT_BAT: '1' });
   const guiTin = v.find((x) => x.ma === 'gui-tin');
   assert.equal(guiTin.dangMo, false, 'READONLY thắng cờ gửi — hai điều kiện, thiếu một là đóng');
   assert.equal(v.find((x) => x.ma === 'rap-loi').dangMo, true);
-  assert.equal(v.find((x) => x.ma === 'giao-page').dangMo, false);
+  assert.equal(v.find((x) => x.ma === 'giao-page'), undefined, 'van giao page đã gỡ (CR-02-10)');
 });

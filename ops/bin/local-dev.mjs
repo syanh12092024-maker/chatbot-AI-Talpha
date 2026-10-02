@@ -52,7 +52,7 @@ if (action === 'new') {
     V3_KHOA_MA_HOA:crypto.randomBytes(32).toString('hex'),
     ADMIN_USER:'local-admin', ADMIN_PASS:crypto.randomBytes(24).toString('hex'),
     DEV_CONFIG_ONLY:'1', META_WEBHOOK_OFF:'1', PANCAKE_READONLY:'1', V3_PANCAKE_GUI:'0',
-    V3_POS_GHI:'0', V3_WA_GUI:'0', V3_LEGACY_POLL_OFF:'1', V3_PAGE_XU_LY:'',
+    V3_POS_GHI:'0', V3_WA_GUI:'0', V3_LEGACY_POLL_OFF:'1',
     V3_RAP_PROMPT_BAT:'1', V3_BOT_V1_GOC:'http://127.0.0.1:3200',
     KB_PATH:path.join(dir,'empty-knowledge.xlsx'),
   };

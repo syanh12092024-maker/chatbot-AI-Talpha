@@ -329,8 +329,8 @@ test('P1 · «Tất cả page» vào thẳng danh sách: không khối đầu tr
   const khoa = m.$('#khoaBot');
   assert.equal(khoa.hidden, false);
   assert.match(khoa.textContent, /Công tắc bot đang khoá/);
-  assert.match(khoa.title, /chưa được phép ghi sang tiến trình bot/);
-  assert.match(m.$('#bang').querySelector('[data-bot]').closest('label').title, /chưa được phép ghi sang tiến trình bot/, 'công tắc khoá phải tự nói lý do');
+  assert.match(khoa.title, /khoá tay/);
+  assert.match(m.$('#bang').querySelector('[data-bot]').closest('label').title, /khoá tay/, 'công tắc khoá phải tự nói lý do');
 });
 
 test('P2 · lỗi THẬT vẫn hiện ở đầu danh sách; viên «Chưa có lời bot riêng» có số; không đo được thì «—» chứ không «0»', async (t) => {

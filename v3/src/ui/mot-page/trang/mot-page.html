@@ -134,55 +134,25 @@ function baoLoi(tieuDe, than) {
 }
 
 /* ── KHỐI «BOT CÓ TRẢ LỜI KHÔNG» ────────────────────────────────────────────────────
-   Ba câu, theo đúng thứ tự người ta hỏi: page thuộc con bot nào · con bot ấy đang bật hay
-   tắt · nếu hai nguồn nói khác nhau thì nói ra chứ đừng chọn một cái. */
+   CR-02-10 · MB2: MỘT công tắc (`page.bot_ai_bat`) — không còn «bot cũ / bot mới», không còn hai
+   nguồn để so lệch. Đèn đọc đúng cột worker đọc. */
 function veBot() {
-  const { chuBot, bot, page } = D;
-  const laMoi = chuBot.la === 'moi';
+  const { bot } = D;
   const o = $('#khoi-bot');
-
-  const doiChu = (chuBot.cauDao.mo && D.suaDuoc)
-    ? button(laMoi ? 'Trả về bot cũ' : 'Giao sang bot mới',
-        { size: 'sm', variant: 'outline', data: { giao: laMoi ? 'cu' : 'moi' } })
-    : '';
-
-  // Đèn công tắc đọc NGUỒN THẬT (tiến trình bot). Chưa đọc được thì nói chưa đọc được —
-  // một ô trống trông y hệt «đang tắt», mà hai câu ấy khác hẳn nhau.
-  const dangBat = bot.theoBot === null ? null : bot.theoBot;
-  const huy = dangBat === null
-    ? statusBadge('unknown', { label: 'Chưa đọc được' })
-    : dangBat ? statusBadge('ready', { label: 'Đang trả lời khách' })
-              : statusBadge('blocked', { label: 'Đang tắt' });
-
-  const nutBat = D.suaDuoc && dangBat !== null
+  const dangBat = !!bot.bat;
+  const huy = dangBat ? statusBadge('ready', { label: 'Đang trả lời khách' })
+                      : statusBadge('blocked', { label: 'Đang tắt' });
+  const nutBat = (D.suaDuoc && D.cuaBot.mo)
     ? button(dangBat ? 'Tắt bot cho page này' : 'Bật bot cho page này',
         { size: 'sm', variant: dangBat ? 'outline' : 'primary', data: { bat: dangBat ? '0' : '1' } })
     : '';
-
-  const lech = bot.lech
-    ? `<p class="meta">Hai nguồn đang nói khác nhau: tiến trình bot bảo
-       <b>${bot.theoBot ? 'đang bật' : 'đang tắt'}</b>, còn bản sao trong cơ sở dữ liệu ghi
-       <b>${bot.theoCsdl ? 'đang bật' : 'đang tắt'}</b>. Con số đúng là con số của tiến trình bot.</p>`
-    : '';
-
-  // VE2: công tắc đứng ở ĐẦU trang (bản vẽ 2c) — thứ người ta hỏi đầu tiên; bot phụ trách + giao bot ở tab Kỹ thuật.
   $('#congTac').innerHTML = `${huy} ${nutBat}`;
-  o.innerHTML = `
-    <div class="panel">
-      <div class="setting-row">
-        <div><b>Bot phụ trách</b></div>
-        <div>${laMoi ? 'bot mới' : 'bot cũ'} ${doiChu}</div>
-      </div>
-      ${lech}
-      ${!D.cuaBot.mo ? `<p class="meta">Cửa ghi sang tiến trình bot đang đóng, nên nút bật/tắt và giao bot
-        không bấm được: ${esc((D.cuaBot.thieu || []).join(' · '))}.</p>` : ''}
-    </div>
-`;
-
+  o.innerHTML = !D.cuaBot.mo
+    ? `<div class="panel"><p class="meta">Công tắc bot đang bị khoá tay trên máy chủ này:
+       ${esc((D.cuaBot.thieu || []).join(' · '))}.</p></div>`
+    : '';
   const nb = $('#congTac').querySelector('[data-bat]');
   if (nb) nb.addEventListener('click', () => gatBot(nb.dataset.bat === '1'));
-  const ng = o.querySelector('[data-giao]');
-  if (ng) ng.addEventListener('click', () => doiChuBot(ng.dataset.giao === 'moi'));
 }
 
 /* ── KHỐI «CÒN THIẾU GÌ» ───────────────────────────────────────────────────────────── */
@@ -259,25 +229,6 @@ async function gatBot(bat) {
     toast(`Đã ${kq.botAiBat ? 'bật' : 'tắt'} bot cho «${D.page.ten}».`);
     await nap();
   } catch (e) { baoLoi('Không đổi được trạng thái bot', e.message); }
-}
-
-async function doiChuBot(sangMoi) {
-  const dongY = await confirmDialog({
-    title: sangMoi ? `Giao «${D.page.ten}» sang bot mới?` : `Trả «${D.page.ten}» về bot cũ?`,
-    body: sangMoi
-      ? 'Bot cũ sẽ được TẮT cho page này trước, và chỉ khi nó xác nhận đã tắt thì page mới '
-        + 'đổi chủ. Sau đó chưa con bot nào trả lời page này cho tới khi bạn bấm Bật.'
-      : 'Bot mới buông page này. Bot cũ vẫn đang TẮT — bấm Bật nếu muốn nó trả lời lại.',
-    confirmLabel: sangMoi ? 'Giao sang bot mới' : 'Trả về bot cũ',
-    danger: true,
-  });
-  if (!dongY) return;
-  try {
-    const kq = await goi(`/api/page-bot/${encodeURIComponent(ID)}/giao`,
-      { method: 'POST', body: JSON.stringify({ giao: sangMoi }) });
-    toast(kq.buocTiep || 'Đã đổi chủ page.');
-    await nap();
-  } catch (e) { baoLoi('Không đổi chủ được page này', e.message); }
 }
 
 /* ── TAB ─────────────────────────────────────────────────────────────────────────────

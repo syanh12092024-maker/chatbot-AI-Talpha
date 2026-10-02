@@ -9,10 +9,16 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// Chạy lẻ (cổng nghiệm thu gọi `node --test <tệp>` không qua `_an-toan.mjs`) thì tự trỏ ngòi bút ra
+// thư mục tạm TRƯỚC khi nạp `kb.js` — không bao giờ ghi vào `kb-overrides.json` của repo.
+if (!process.env.KB_OVERRIDES_FILE) {
+  process.env.KB_OVERRIDES_FILE = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mb1-')), 'kb-overrides.json');
+}
 const TEP = process.env.KB_OVERRIDES_FILE;
 const PID = '990000000000001';
 const sp = (gia) => [{ id: 'SP1', name: 'Vòng thử', desc: '', variant: '', currency: 'KWD', tiers: [{ label: 'Buy 1', price: gia }], images: [] }];

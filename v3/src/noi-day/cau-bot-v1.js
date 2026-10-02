@@ -90,7 +90,6 @@ async function loi() {
       ]);
       return {
         allReadiness: readiness.allReadiness,
-        canEnableAI: readiness.canEnableAI,
         getPageList: kb.getPageList,
         getPageConfig: kb.getPageConfig,
         getPageProductsRaw: kb.getPageProductsRaw,
@@ -104,7 +103,6 @@ async function loi() {
         removePancakeToken: pancake.removePancakeToken,
         lamMoiTokenDb: pancake.lamMoiTokenDb,
         isAiEnabled: store.isAiEnabled,
-        setAiEnabled: store.setAiEnabled,
         chiPhiToken: soLieu.chiPhiToken,
         donHangAi: soLieu.donHangAi,
         pheuHoiThoaiTho: soLieu.pheuHoiThoaiTho,
@@ -224,23 +222,24 @@ export async function khoiChungCuaBot() {
 /* ────────────────────────────── công tắc BOT AI (G2-B2) ────────────────────────────── */
 
 /**
- * Bật/tắt bot AI cho MỘT page, bằng id Facebook (`page.page_id`, không phải `page.id`).
- * Trả về trạng thái SAU khi đổi, đọc lại từ lõi — không đoán theo tham số gửi đi.
+ * CR-02-10 · MB2: công tắc bot là cột `page.bot_ai_bat`, gạt qua cổng sẵn sàng của chính bot
+ * (`src/admin-v3/operations.js#setPage`) — KHÔNG đi qua tệp này nữa (`datBotAi` của v1 đã gỡ).
+ * Ở đây chỉ còn KHOÁ TAY của người vận hành: `V3_BOT_KHOA=1` hoặc cờ cũ `V3_BOT_GHI=0`. Van gửi
+ * (`PANCAKE_READONLY` · `V3_PANCAKE_GUI`) không nằm ở đây — `pageStatus` đã chặn BẬT khi van đóng
+ * (trừ chế độ diễn tập), còn TẮT thì van nào cũng phải cho.
  */
-export async function datBotAi(pageIdFacebook, bat) {
-  batBuocMo();
-  const id = String(pageIdFacebook);
-  try {
-    return await lam('đổi công tắc bot', (L) => {
-      // CỔNG BẬT AI (cũ: `admin-scripts.js` chặn trước `/pages/:id/ai`). TẮT thì luôn được.
-      if (bat) {
-        const g = L.canEnableAI(id);
-        if (!g.ok) throw new LoiCauBotHong(`Chưa bật được AI cho page ${id} — ${g.readiness}: ${g.reason || ''}`, 409);
-      }
-      L.setAiEnabled(id, !!bat);
-      return { pageId: id, batSauKhiDoi: !!L.isAiEnabled(id) };
-    });
-  } finally { boNhoSanSang(); }   // hỏng giữa chừng thì càng không được tin bản nhớ cũ
+export function trangThaiCongTac() {
+  const thieu = [];
+  const thieuKyThuat = [];
+  if (env(BIEN_KHOA) === '1') {
+    thieu.push('máy này đang bị khoá, không cho gạt công tắc bot');
+    thieuKyThuat.push('`' + BIEN_KHOA + '=1` đang bật');
+  }
+  if (env(BIEN_CO_GHI) === '0') {
+    thieu.push('có người đã khoá công tắc bằng cấu hình cũ, và cấu hình đó vẫn được tôn trọng');
+    thieuKyThuat.push('`' + BIEN_CO_GHI + '=0` đang đặt');
+  }
+  return { mo: thieu.length === 0, thieu, thieuKyThuat, goc: gocBot() };
 }
 
 /* ──────────────────────────── cửa kiểm sẵn sàng (G2-F5) ──────────────────────────── */

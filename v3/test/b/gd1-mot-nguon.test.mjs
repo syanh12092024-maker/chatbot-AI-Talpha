@@ -30,7 +30,6 @@ const dai = await import('../../src/ui/chung/trang-thai.js');
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const NGUON_V3 = path.join(GOC, 'src/admin-v3/operations.js');
-const { lyDoChuaThuocBotMoi } = await import('../../../src/queue/page-routing.js');
 const CAU_NOI = path.join(GOC, 'v3/src/noi-day/van-hanh-v3.js');
 
 /* ═════════════ ① BẢNG DỊCH PHẢI PHỦ HẾT CÂU CỦA BÊN KIA ═════════════ */
@@ -46,11 +45,8 @@ const CAU_NOI = path.join(GOC, 'v3/src/noi-day/van-hanh-v3.js');
 function docCauChan() {
   const src = readFileSync(NGUON_V3, 'utf8');
   const ra = [...src.matchAll(/blockers\.push\(\s*"([^"]+)"\s*\)/g)].map((m) => m[1]);
-  return [...new Set([
-    ...ra,
-    lyDoChuaThuocBotMoi({}),
-    lyDoChuaThuocBotMoi({ V3_GIAO_PAGE_TREN_MAN: '1' }),
-  ])];
+  // CR-02-10 · MB2: điều kiện «page chưa thuộc bot mới» đã gỡ (một bản) — chỉ còn câu bóc từ nguồn.
+  return [...new Set(ra)];
 }
 
 /** Bóc bảng dịch câu → mã ở cầu nối. */
