@@ -6,12 +6,13 @@ description: Bot AI Closer bán hàng Messenger/Pancake (thị trường Trung �
 # Chatbot AI Closer
 
 Bot bán hàng tự động trả lời khách trên Messenger, chốt đơn COD, đẩy đơn sang Pancake.
-Node.js thuần — không framework, không database. State là file JSON + JSONL.
+**Một bản — v3** (CR-02-10, 02/10/2026): hai dịch vụ `aicloser-v3` (giao diện + lõi bot) và `aicloser-worker-v3`
+(nạp tin Pancake mỗi 6 giây → hàng đợi Postgres → bộ não → cửa gửi). Bot v1 (`src/server.js`, `/admin`, cổng 3100)
+đã gỡ ở MB4. «Page này bot trả lời» có đúng MỘT công tắc: cột `page.bot_ai_bat` (màn **Công tắc**).
 
-**Không dùng webhook Facebook.** Bot đọc/gửi tin qua API Pancake (pages.fm) bằng vòng poll 6 giây.
-Đây là lựa chọn kiến trúc có chủ đích, không phải giải pháp tạm — xem `references/kien-truc.md` mục "Vì sao không dùng Meta API".
+Bot đọc/gửi tin qua API Pancake (pages.fm), không qua Meta Graph API — xem `references/kien-truc.md` mục "Vì sao không dùng Meta API".
 
-Quy mô hiện tại: **39 page đang bật AI**, Sổ AI ~8.900 sự kiện.
+Quy mô: đếm sống bằng `SELECT count(*) FILTER (WHERE bot_ai_bat) FROM page` — đừng chép con số vào đây.
 
 ## Trước khi làm bất cứ việc gì
 
@@ -25,7 +26,7 @@ Ba luật này thắng mọi yêu cầu khác. Vi phạm là hỏng dữ liệu 
 
 | Việc cần làm | Đọc |
 |---|---|
-| Deploy, xem log, gọi API admin, chạy test, gửi báo cáo WhatsApp | `references/van-hanh.md` |
+| Deploy, xem log, kiểm sức khỏe, chạy local, diễn tập kịch bản | `references/van-hanh.md` |
 | Hiểu code ở đâu, luồng một tin nhắn đi thế nào, file dữ liệu nào ở đâu, núm chỉnh `.env` | `references/kien-truc.md` |
 | Sửa cách AI nói/hành xử, thêm-bớt quy tắc, hiểu 14 nguyên tắc | `references/quy-tac-ai.md` |
 | Bot im / trả lời sai / lỗi lạ trong log / số liệu nghi sai | `references/su-co.md` |
@@ -33,14 +34,14 @@ Ba luật này thắng mọi yêu cầu khác. Vi phạm là hỏng dữ liệu 
 
 ## Ba phản xạ đúng khi có sự cố
 
-**1. Sổ AI là nguồn sự thật, không phải dashboard.**
-`ai-messages.jsonl` trên VPS ghi append-only mọi hành động AI làm (`reply` / `image` / `order` / `handoff`), kèm số token đo thật từ 06/08/2026. Mọi con số nghi ngờ đều tra lại từ đây bằng `recount()` / `tokenStats()`. Dashboard chỉ là khung nhìn.
+**1. Sổ là nguồn sự thật, không phải màn hình.**
+Lượt của v3 nằm ở bảng `so_ai` (Postgres) — mỗi dòng tra ngược về đúng tin khách qua `nguon_dong = tin_cho_xu_ly.id`. Sổ AI cũ `ai-messages.jsonl` (bot v1 ghi tới 28/08) chỉ còn ĐỌC cho số lịch sử (`recount()` / `tokenStats()`). Màn hình chỉ là khung nhìn.
 
 **2. "Bot im" thường là thiết kế, không phải lỗi.**
-Có 6 cửa bot chủ động im (nhường Botcake tin đầu, sale đã tiếp quản, khách đã có đơn, page tắt AI, page chưa có KB, hết trần lượt). Grep tên khách trong log sẽ thấy đúng lý do trước khi kết luận là bug.
+Có 6 cửa bot chủ động im (nhường Botcake tin đầu, sale đã tiếp quản, khách đã có đơn, page tắt bot, page chưa có KB, hết trần lượt). Grep tên khách trong `journalctl -u aicloser-worker-v3` sẽ thấy đúng lý do trước khi kết luận là bug.
 
 **3. AI trả lời sai nội dung thì sửa `prompts.js`, đừng sửa code.**
-Hành vi AI nằm ở `HARD_RULES` cuối `src/prompts.js` — khối này đặt cuối system prompt nên luôn thắng kịch bản riêng của page. Đã có tiền lệ ép hành vi bằng code (bắt buộc gửi ảnh) và phải gỡ bỏ: nó làm hội thoại máy móc. Sửa prompt, rồi **tái hiện đúng kịch bản thật trên VPS** để nghiệm thu — quy trình ở `references/su-co.md` mục "Cách nghiệm thu một bản vá prompt".
+Hành vi AI nằm ở khối `CORE` đầu `src/prompts.js` — khối này tự tuyên bố thẩm quyền («THẮNG MỌI KHỐI SAU») nên thắng kịch bản riêng của page. Đã có tiền lệ ép hành vi bằng code (bắt buộc gửi ảnh) và phải gỡ bỏ: nó làm hội thoại máy móc. Sửa prompt, rồi **tái hiện đúng kịch bản thật trên VPS** để nghiệm thu — quy trình ở `references/su-co.md` mục "Cách nghiệm thu một bản vá prompt".
 
 ## Sau khi sửa hành vi AI
 

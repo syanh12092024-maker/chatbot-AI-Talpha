@@ -34,7 +34,7 @@ Sửa xong: restart service, rồi **nghiệm thu bằng cách tái hiện kịc
 
 Phản hồi của sale: *"AI cứ thả cho khách mông lung"*. Đo trên VPS thì có **hai** nguyên nhân, và nguyên nhân nặng hơn nằm ở `classifier.js` chứ không phải prompt:
 
-1. **Bộ phân loại gọi phản đối giá là `complaint`.** Nhãn `complaint` là cửa bàn giao ở `handler.js` — dán nhãn này là AI ngừng bán **trước khi** LLM kịp chạy, khách chỉ nhận câu giữ chân. Prompt sửa kiểu gì cũng vô hiệu. Đo A/B 8 câu: bản cũ sai 5/6 câu phản đối ("ang mahal" → complaint, "effective ba talaga" → spam). Đã khoanh hẹp định nghĩa `complaint` = khách **đã mua** mà có vấn đề, hoặc chửi bới/tố lừa đảo. Bản mới đúng 8/8.
+1. **Bộ phân loại gọi phản đối giá là `complaint`.** Nhãn `complaint` là cửa bàn giao ở `src/chat/handler-v3.js` — dán nhãn này là AI ngừng bán **trước khi** LLM kịp chạy, khách chỉ nhận câu giữ chân. Prompt sửa kiểu gì cũng vô hiệu. Đo A/B 8 câu: bản cũ sai 5/6 câu phản đối ("ang mahal" → complaint, "effective ba talaga" → spam). Đã khoanh hẹp định nghĩa `complaint` = khách **đã mua** mà có vấn đề, hoặc chửi bới/tố lừa đảo. Bản mới đúng 8/8.
 2. **`BASE_SYSTEM` dạy AI buông khi khách do dự** — dòng "đã vài lượt mà khách do dự → handoff_human" đã gỡ, thay bằng ladder 3 bước ở `HARD_RULES`.
 3. **Tin `<div></div>` bị coi là khiếu nại.** Khách gửi sticker/ảnh không kèm chữ thì Pancake trả đúng chuỗi `<div></div>`. Nó không rỗng nên lọt qua mọi cửa canh, tới thẳng bộ phân loại và bị gán `complaint`. Đo 07/08/2026: **50/562 tin của khách (8,9%)** là chuỗi này. `cleanText` nay bóc thẻ HTML (danh sách thẻ đã biết, không dùng `/<[^>]*>/g` kẻo nuốt luôn `"giá <100> AED"`) để hai cửa canh sẵn có làm đúng việc: classifier trả `question`, handler thay bằng `(khách gửi ảnh/sticker)`. A/B 3 lượt: bản cũ 1 bàn giao + 1 im + 1 trả lời; bản mới 3/3 trả lời tử tế.
 
@@ -54,11 +54,11 @@ Xuất xứ: vụ khách Priscela Amon, chi tiết ở `su-co.md`.
 
 | Cửa | Vì sao |
 |---|---|
-| Page tắt AI (`ai-enabled.json`) | Chủ đích |
+| Page tắt bot (cột `page.bot_ai_bat`) | Chủ đích |
 | Tin **đầu tiên** của khách | Nhường Botcake chào |
 | Tin cuối là của page | Chưa tới lượt AI |
 | Hội thoại có thẻ trạng thái đơn | Sale/hệ thống đang xử lý |
-| Sale đã được gán (khi bật `RESPECT_ASSIGNEE`) | Người thật đã tiếp quản |
+| Sale đã nhắn trong hội thoại (`src/chat/human.js#nhanDienSale`) | Người thật đã tiếp quản |
 | Spam điểm ≥ 0.8 | Lọc rác |
 
 Cửa thứ 7 khác bản chất: page **chưa có KB** → AI không im mà **bàn giao** cho sale (`kind: no_kb`).

@@ -25,7 +25,7 @@ page thì VẪN đi qua van cũ — nó chạm khách thật.
 
 `npm run local:token <JWT>` kiểm token (JWT ba phần, chưa hết hạn, gọi thử `GET /pages`) rồi ghi `PANCAKE_TOKEN` vào `.env` của bản dev, quyền 600. Khởi động lại để bot nạp.
 
-Không dùng nút «Thêm token» trên màn Kết nối được: đường đó đi qua cửa ghi sang tiến trình bot, mà cửa đóng khi `PANCAKE_READONLY=1` (`v3/src/noi-day/cau-bot-v1.js#trangThaiCau`). Cửa đóng là đúng — máy này chạy song song VPS, mở ra là khách nhận tin đúp. Đường `.env` chỉ mở phần ĐỌC: token vào được, mọi lượt gửi vẫn bị van chặn.
+Không dùng nút «Thêm token» trên màn Kết nối được: đường đó đi qua cửa ghi sang tiến trình bot, mà cửa đóng khi `PANCAKE_READONLY=1` (`v3/src/noi-day/loi-bot.js#trangThaiCau`). Cửa đóng là đúng — máy này chạy song song VPS, mở ra là khách nhận tin đúp. Đường `.env` chỉ mở phần ĐỌC: token vào được, mọi lượt gửi vẫn bị van chặn.
 
 Cũng đừng đặt `PANCAKE_READONLY=0` cho tiện: `assertConfig` (`src/config.js`) chỉ miễn yêu cầu khoá AI khi cờ này bằng `1` — bỏ đi là backend dev không boot vì thiếu `ANTHROPIC_API_KEY`.
 
@@ -42,12 +42,11 @@ Spec chính thức: `https://developer.pancake.biz/openapi/openapi.yaml` (tải 
 
 Bot đọc tin thật, gọi model, soạn xong câu trả lời rồi **ghi vào sổ và dừng** — không một lượt gọi mạng nào tới Pancake. Đọc kết quả ở `/van-hanh-v3` → tab **«Diễn tập (không gửi)»**: khách nói gì · bot ĐỊNH trả lời gì · độ trễ · model · token.
 
-Bốn biến phải cùng có trong `.env` của bản dev, rồi chạy worker:
+Ba biến phải cùng có trong `.env` của bản dev, và CHỈ page đang đo được bật bot ở màn **Công tắc** của bản dev (cột `page.bot_ai_bat` — worker chỉ nạp page bật; từ CR-02-10 không còn `V3_PAGE_XU_LY`), rồi chạy worker:
 
 ```
 V3_DIEN_TAP=1            # ghi sổ rồi dừng, KHÔNG gửi — thắng mọi cờ khác
 V3_NAP_DEV=1             # cho phép nạp tin thật trên máy READONLY (chỉ khi CSDL là localhost)
-V3_PAGE_XU_LY=<page_id>  # CHỈ page đang đo; vắng = không nạp page nào
 PANCAKE_READONLY=1       # giữ nguyên
 npm run worker-v3
 ```

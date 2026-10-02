@@ -1,100 +1,62 @@
 # Vận hành
 
+> **Một bản — v3** (CR-02-10). Bot v1 (dịch vụ `aicloser`, `src/server.js`, màn `/admin`, cổng 3100) đã gỡ
+> ở MB4 — mọi lệnh `systemctl … aicloser` / `localhost:3100` cũ trong lịch sử là của bản đó.
+
 ## Hạ tầng
 
-- **VPS production**: `root@169.58.33.8` · thư mục `/opt/aicloser` · systemd service `aicloser` · log `/var/log/aicloser.log`. SSH key đã cài sẵn trên máy local.
-  Log **không có timestamp** — cần mốc thời gian thì dùng `journalctl -u aicloser --since "1 hour ago"`.
-- **Dashboard**: `http://169.58.33.8:3100/admin` — Basic Auth, user/pass ở `/opt/aicloser/.env`.
-- **GitHub**: `syanh12092024-maker/chatbot-AI-Talpha`, nhánh `main`.
-- **Local**: repo này. `.env.vps` là bản sao cấu hình VPS để đối chiếu.
+- **VPS production**: `root@169.58.33.8` · thư mục `/opt/aicloser` · nhánh `vao-ui-v3-17-09`.
+  SSH bằng khoá riêng: `ssh -i ~/.ssh/aicloser root@169.58.33.8` (khoá mặc định bị từ chối).
+- **Hai dịch vụ systemd**, cùng nạp `/opt/aicloser/.env`:
+  - `aicloser-v3` — `v3/chay-that.js`: giao diện quản trị (cổng `CHAYTHAT_CONG`, mặc định 3102) · `/webhook` · lõi bot.
+  - `aicloser-worker-v3` — `src/queue/chay-worker.js`: nạp tin Pancake mỗi 6 giây → hàng đợi → bộ não → cửa gửi.
+- **Log**: chỉ ở journal — `journalctl -u aicloser-v3 -u aicloser-worker-v3 --since "15 min ago"`.
+- **Giao diện**: qua SSH tunnel `ssh -i ~/.ssh/aicloser -L 3102:127.0.0.1:3102 root@169.58.33.8` rồi mở
+  `http://127.0.0.1:3102/dang-nhap`.
+- **CSDL**: Postgres, chuỗi nối `DATABASE_URL_V3` trong `/opt/aicloser/.env` (không có trong `/proc/<pid>/environ`).
 
 ## Deploy
 
-```bash
-git add -A && git commit -m "..." && git push origin HEAD:main
-ssh root@169.58.33.8 'cd /opt/aicloser && git pull -q && systemctl restart aicloser && sleep 8 && systemctl is-active aicloser'
-```
-
-Sửa **chỉ** `public/*.html` thì không cần restart — server `sendFile` đọc lại mỗi request, chỉ cần Ctrl+Shift+R ở trình duyệt.
-
-Sau restart nên xác nhận nhà cung cấp AI nạp đúng:
+Mọi lần đưa thay đổi ra khách đi theo skill **`mo-van`** (cửa vào `ops/bin/phat-hanh.sh`, hồ sơ + ngưỡng +
+đường lùi viết TRƯỚC, quan sát +1′/+5′/+15′). Khung lệnh trên VPS:
 
 ```bash
-ssh root@169.58.33.8 'tac /var/log/aicloser.log | grep -m1 "\[llm\]"'
+cd /opt/aicloser && git fetch -q && git checkout -f -B vao-ui-v3-17-09 origin/vao-ui-v3-17-09
+node --env-file=.env db/migrate.js          # migration LÊN TRƯỚC, code mới chạy SAU
+systemctl restart aicloser-v3 aicloser-worker-v3
 ```
+
+Commit bằng pathspec (cấm gom cả cây). Push và restart prod là hai điểm DỪNG chờ người quyết.
 
 ## Kiểm tra sức khỏe
 
 ```bash
-ssh root@169.58.33.8 'systemctl is-active aicloser && curl -s localhost:3100/health'
-ssh root@169.58.33.8 'tail -80 /var/log/aicloser.log'
+ssh -i ~/.ssh/aicloser root@169.58.33.8 'systemctl is-active aicloser-v3 aicloser-worker-v3; \
+  curl -s -o /dev/null -w "%{http_code}\n" localhost:3102/dang-nhap'
+ssh -i ~/.ssh/aicloser root@169.58.33.8 'journalctl -u aicloser-worker-v3 --since "10 min ago" | tail -40'
 ```
 
-Gọi API admin trên VPS (tự nạp user/pass từ `.env`):
-
-```bash
-ssh root@169.58.33.8 'source <(grep -E "^#?ADMIN_" /opt/aicloser/.env | sed "s/^#//"); curl -su "$ADMIN_USER:$ADMIN_PASS" localhost:3100/admin/api/overview'
-```
-
-Các endpoint hay dùng: `/admin/api/overview` · `/admin/api/needsale` · `/admin/api/orders` (chậm ~35s lần đầu, sau đó cache) · `/admin/api/token-cost?from=&to=` · `/admin/api/recount`.
+Màn **Sức khỏe** (`/suc-khoe`) có đèn «Lõi bot» + nhịp worker. Page nào bot đang trả lời: màn **Công tắc**
+(cột `page.bot_ai_bat` — công tắc DUY NHẤT; worker chỉ nạp page bật).
 
 ## Chạy local
 
 ```bash
-npm start
+npm run local:start       # bản dev sạch, http://127.0.0.1:3202/dang-nhap — xem docs/local-dev.md
 ```
 
-Dashboard `http://localhost:3100/admin` (local không cần đăng nhập). Nhắc lại: `.env` local **bắt buộc** `PANCAKE_READONLY=1`.
+Nhắc lại: `.env` local **bắt buộc** `PANCAKE_READONLY=1`.
 
-## Báo cáo WhatsApp
+## Chạy thử một kịch bản hội thoại
 
-Cron trên VPS chạy 8:00 và 17:00 giờ VN (`CRON_TZ=Asia/Ho_Chi_Minh`).
+Cách v3: **diễn tập** — bot đọc tin thật, gọi model, soạn câu trả lời rồi ghi sổ và DỪNG, không một lượt
+gọi mạng nào tới Pancake (`V3_DIEN_TAP=1`). Cách bật và đọc kết quả: `docs/local-dev.md` mục «Diễn tập».
+Bộ ca hành vi: `test/l4-prompt.test.mjs` (14 nguyên tắc) + kịch bản ở màn **Kịch bản**.
 
-```bash
-npm run report -- morning              # XEM TRƯỚC, không gửi
-npm run report -- morning --send
-npm run wa:login -- --phone 84xxxxxxxxx   # đăng nhập lại khi phiên rớt (mã ghép 8 ký tự)
-ssh root@169.58.33.8 'tail -20 /var/log/aicloser-report.log'
-```
-
-`afternoon` tính từ 00:00 hôm nay tới giờ chạy. Số liệu cắt mốc theo **giờ VN** trong `report.js` (Sổ AI vốn tính ngày theo UTC).
-
-Thư mục `wa-auth/` chính là mật khẩu phiên WhatsApp — mất là phải ghép lại từ đầu.
-
-## Chạy thử một kịch bản hội thoại (test trên VPS)
-
-Đây là cách duy nhất nghiệm thu hành vi AI cho chắc, vì local thiếu KB thật (`kb.js` lấy từ Google Sheet + `kb-overrides.json` chỉ có trên VPS — local sẽ báo `page_no_kb` và bàn giao ngay, không phản ánh thực tế).
-
-```bash
-# 1. Viết script vào scratchpad, import từ /opt/aicloser/src/
-cat > /tmp/t.mjs <<'EOF'
-const D='/opt/aicloser/src/';
-const { handleIncoming } = await import(D+'handler.js');
-const { resetState } = await import(D+'store.js');
-const { loadKB, syncFromSheet } = await import(D+'kb.js');
-const { getSheetId } = await import(D+'sheets.js');
-loadKB(); if (getSheetId()) await syncFromSheet(getSheetId());
-const PAGE='<pageId đang bật AI>';
-const hist=[ {from:{id:'C'},original_message:'...'}, {from:{id:PAGE},original_message:'...'} ];
-for (let i=1;i<=3;i++){                       // chạy ≥3 lần: LLM không tất định
-  const psid='TEST_'+i; resetState(psid);
-  const r = await handleIncoming({ psid, text:'<tin khách>', pageId:PAGE, history:hist });
-  console.log(i, (r.reply||'(im)').replace(/\n/g,' ').slice(0,180));
-}
-EOF
-# 2. Chép lên VPS và chạy
-scp -q /tmp/t.mjs root@169.58.33.8:/tmp/t.mjs
-ssh root@169.58.33.8 'cd /opt/aicloser && node /tmp/t.mjs 2>&1 | grep -vE "^\[kb\]|^\[llm\]|^\[hist\]"; rm -f /tmp/t.mjs'
-```
-
-Lưu ý khi viết script test:
-- `history` dùng đúng dạng Pancake: `{from:{id}, original_message}`. `from.id === pageId` nghĩa là tin của page.
-- Chạy ít nhất 3 lượt và đánh giá **cả 3**. Một lần đúng không chứng minh bản vá có tác dụng.
-- `resetState(psid)` mỗi lượt, và dùng psid giả (`TEST_*`) để không đụng khách thật.
-- Script test **có ghi vào Sổ AI** — chấp nhận được, nhưng đừng chạy hàng loạt.
+Chạy ít nhất 3 lượt và đánh giá **cả 3** — LLM không tất định, một lần đúng không chứng minh bản vá có tác dụng.
 
 ## Bẫy shell hay vấp
 
 - Lệnh ssh nhiều dòng: dùng heredoc `ssh root@... 'bash -s' <<'EOF'` thay vì nhồi quote lồng nhau.
-- `pkill -f <chuỗi>` trên VPS: chính chuỗi lệnh ssh cũng khớp và tự giết phiên. Viết `[w]a-login` thay vì `wa-login`, hoặc dùng `systemd-run`.
-- Đồng bộ file dữ liệu về local để xem: `scp root@169.58.33.8:/opt/aicloser/<file> .`
+- `pkill -f <chuỗi>` trên VPS: chính chuỗi lệnh ssh cũng khớp và tự giết phiên. Viết `[c]hay-worker` thay vì `chay-worker`, hoặc dùng `systemctl`.
+- Đồng bộ file dữ liệu về local để xem: `scp -i ~/.ssh/aicloser root@169.58.33.8:/opt/aicloser/<file> .`

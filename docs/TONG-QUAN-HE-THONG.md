@@ -1,5 +1,11 @@
 # AI MESSENGER CLOSER — TÀI LIỆU HỆ THỐNG TOÀN DIỆN
 
+> ⚠️ **ẢNH CHỤP LỊCH SỬ CỦA BOT v1 — KHÔNG CÒN MÔ TẢ HỆ ĐANG CHẠY.** Từ 02/10/2026 (CR-02-10) phía mình chỉ
+> còn MỘT bản (v3): bot v1 (`src/server.js`, `pancake-poll.js`, `handler.js`, màn `/admin`, cổng 3100,
+> `ai-enabled.json`) tắt trên prod ở MB3 và gỡ khỏi mã ở MB4. Giữ file này để tra vì sao một quyết định
+> từng như thế. Hệ hiện tại: `README.md` (kiến trúc + 14 nguyên tắc) · `.claude/skills/chatbot/references/kien-truc.md`
+> · `docs/v3/01-QUYET-DINH.md` · `docs/v3/ban-giao/bien-moi-truong-v3.md`.
+
 > Bản dựng lại từ mã nguồn thực tế ngày **22/08/2026** (nhánh `main`, commit `d939920`).
 > Phạm vi: nghiệp vụ · luồng chat · tầng vật lý · đầu kết nối · phân quyền.
 >

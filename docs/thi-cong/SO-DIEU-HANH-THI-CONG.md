@@ -342,7 +342,7 @@ và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt 
 | MB1 | Dời việc v3 mượn của v1 vào tiến trình v3: ruột `cau-bot-v1.js` từ HTTP → gọi hàm (giữ tên + hình dạng); `/webhook` · `/uploads` · nạp KB/token/registry sang `chay-that.js`; kiểm kê nút `/admin` v3 chưa có | —                   | 🟨  | ✅ `47f2add` · ca mb1 5/5 · worker nay nạp KB |
 | MB2 | MỘT công tắc: một cột CSDL là nguồn của worker; bỏ `ai-enabled.json` · `bot_ai_bat` · `V3_GIAO_PAGE_TREN_MAN` · `V3_LEGACY_POLL_OFF`; `giaoPage` bỏ bước «tắt bot cũ»; `bien-moi-truong-v3.md` cùng commit | MB1                 | 🟥  | ✅ `e2b10dd` · ca mb2 4/4 · thước 4 cổng `94d7cd5` |
 | MB3 | **Mở van**: deploy MB1+MB2 · `systemctl disable --now aicloser` · restart hai tiến trình v3 · mốc +1′/+5′/+15′ | MB2 · người gật ✅ 02/10 | 🟥  | ✅ 02/10 07:23 · `94d7cd5` · +1′/+5′/+15′ lỗi 0 · GIỮ · `phat-hanh-20261002-mot-ban.md` |
-| MB4 | Gỡ 24 file chỉ-v1 + 8 mồ côi + 7 trang `public/` + script `package.json`; dời bộ ca; lưu trữ JSON đứng im; đổi chữ «bot cũ» 39 tệp màn; cổng `mb.sh`; migration gỡ cột thừa; ĐÓNG CR | MB3 ổn ≥ 3 ngày     | 🟨  | ⬜ sớm nhất 05/10 |
+| MB4 | Gỡ 29 tệp `src/` chỉ-v1 + 7 trang `public/` + 8 script `package.json`; dời bộ ca; lưu trữ JSON không ai đọc; đổi chữ «bot cũ» 29 tệp màn; cổng `mb.sh`; migration 030 gỡ cột thừa; ĐÓNG CR | MB3 · người quyết bỏ chờ 3 ngày («làm MB4 luôn đi» 02/10) | 🟨  | 🔎 mã xong · `mb.sh` 16/16 · `npm test` 2306/0 đỏ · chờ mở van · `PHIEU-MB4.md` |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
@@ -1920,10 +1920,23 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
 
 - 02/10 · **N-MB-LICH-NEN** (CR-02-10) — follow-up L5 · miner đêm · template-learner chỉ chạy trong
   `src/server.js` (đã tắt bằng `V3_LEGACY_POLL_OFF=1`). Tắt v1 là mất hẳn: dựng trong v3 hay bỏ — người quyết, neo MB4.
+  **MB4 (02/10):** mã đã gỡ khỏi cây (`followup` `miner` `template-learner` `scheduler-*`) — chúng không chạy từ trước MB3
+  nên không mất gì đang có. Còn mở: dựng lại trong v3 hay bỏ hẳn — người quyết; cần thì lấy mã từ tag `truoc-mot-ban`.
 - 02/10 · **N-MB-SO-AI-CU** (CR-02-10) — bàn hội thoại v3 còn đọc `ai-messages.jsonl` (Sổ AI bot cũ,
   15,5 MB, đứng im từ 28/08) làm «mã khách» (`docSoAiBotCu`). Nạp một lượt vào CSDL hay đọc từ lưu trữ — neo MB1/MB4.
 - 02/10 · **N-MB-PAGE-TOKEN-FB** (CR-02-10) — `loadPageTokens` (token page Facebook, 10′/lần trong
   `src/server.js`) còn ai cần khi kênh là Pancake? Đo ở MB1 trước khi bỏ.
+  **MB4 (02/10):** không tiến trình nào gọi `loadPageTokens` nữa (chỉ còn script `npm run pages`). `tools.js#sendImageWithRetry`
+  vẫn nhập `messenger.js#sendImage` (Graph API, cần token đó) nhưng handler-v3 gửi ảnh qua cửa Pancake (`handler-v3.js:468`)
+  ⇒ đường Graph là mã chết. Còn lại: dọn `pages.js`/`messenger.js#sendImage` — `tools.js` là file não, phải khai «Đụng bộ não».
+- 02/10 · **N-MB-NGAT-PAGE** (CR-02-10 · MB4) — nguyên tắc 9 README «biết dừng khi kênh lỗi»: v1 ngắt CẢ PAGE 30′ sau 2 lần gửi
+  lỗi liên tiếp (Meta #2022) + cảnh báo đỏ trên màn. v3 chỉ lùi THEO TIN (`worker.js#TRAN_THU` = 3; tin lỗi chặn hội thoại phía
+  sau) — page bị Meta chặn thì mỗi khách mới vẫn tốn một vòng thử. README nay nói thật phần thiếu. Neo: trước khi bật page thứ 2.
+- 02/10 · **N-MB-HAI-BO-DIEU-KIEN** (CR-02-10 · MB4) — «page sẵn sàng chưa» còn HAI bộ điều kiện: `src/readiness.js` (luật cũ,
+  dùng cho page đang tắt) và `admin-v3/operations.js#pageStatus` (cổng bật thật, cho page đang bật). Màn Sẵn sàng có thể nói
+  «đủ» trong khi cổng bật nói «thiếu». Gộp về `pageStatus`.
+- 02/10 · **N-MB-DON-SAU** (CR-02-10 · MB4) — logic «lệch tệp/cột» đã chết (nguồn nay chỉ còn cột) còn nằm ở `kho-san-sang` ·
+  `bat-dau` · `chi-phi`; gói `@whiskeysockets/baileys` thừa (WhatsApp v1); `readiness.js#canEnableAI` không còn mã prod gọi.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 - 26/08 · A7-3 → ✅ xong — `timKhach`/`docHoSoKhach` ở `src/orders/doc-ho-so.js`; KHÔNG dựng phép gộp thứ hai (gộp đã ở tầng ghi), KHÔNG khai đã gộp WhatsApp, tỉ lệ hoàn chỉ ĐỌC kèm ngày chấm · commit ac41ab9 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md

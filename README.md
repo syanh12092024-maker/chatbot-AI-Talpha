@@ -1,26 +1,36 @@
 # AI Messenger Closer
 
-> **Đang thiết kế lại — bản v3.** Người mới nhận việc đọc [`docs/v3/00-BAT-DAU-TU-DAY.md`](docs/v3/00-BAT-DAU-TU-DAY.md) trước.
-> File này mô tả **bản đang chạy** và 14 nguyên tắc AI chat với khách — vẫn còn hiệu lực, v3 kế thừa nguyên.
+> **Một bản duy nhất — v3** (từ 02/10/2026, CR-02-10). Bot v1 (`src/server.js`, màn `/admin`, cổng 3100)
+> đã tắt trên prod ở MB3 và gỡ khỏi mã ở MB4. Người mới nhận việc đọc
+> [`docs/v3/00-BAT-DAU-TU-DAY.md`](docs/v3/00-BAT-DAU-TU-DAY.md) trước.
 
-
-Bot AI đứng tuyến đầu trên Facebook Messenger: phân loại tin (bằng LUẬT, 0 token) → tư vấn & chốt đơn bằng ngôn ngữ của khách (có tool use) → lọc đơn COD chống bom hàng → tạo đơn vào Pancake. Giữ Pancake làm nơi đóng đơn.
+Bot AI đứng tuyến đầu trên Facebook Messenger (đọc/gửi qua Pancake): phân loại tin (bằng LUẬT, 0 token) → tư vấn & chốt đơn bằng ngôn ngữ của khách (có tool use) → bàn giao cho sale khi cần. Giữ Pancake làm nơi đóng đơn.
 
 ## Kiến trúc
 
 ```
-FB Messenger ──webhook──> Express (server.js)
-                              │
-                 classify (BỘ LUẬT — regex, KHÔNG gọi LLM)
-                              │       spam → im · complaint → chuyển người
-                              │       (ngôn ngữ lạ: AI TỰ trả lời, không chuyển)
-                              │
-                 closer (1 lần gọi model) + tool use + KB(cache)
-                   tools: get_price · create_draft_order
-                          send_product_image · handoff_human
-                              │
-                 Pancake (tạo đơn)   +   store (state theo PSID)
+Pancake (pages.fm) ──nạp mỗi 6s──▶ aicloser-worker-v3   (src/queue/chay-worker.js)
+                                     │  gộp cụm tin, đợi khách gõ xong
+                                     ▼
+                     Postgres `tin_cho_xu_ly`   FIFO theo khách · thử lại ≤3 lần/tin
+                                     ▼
+                     src/chat/handler-v3.js     cửa im lặng · ngân sách lượt · bàn giao
+                       classify (BỘ LUẬT) → closer + tool use + KB → outbound-guard
+                       tools: get_price · create_draft_order · send_product_image · handoff_human
+                                     ▼
+                     cửa gửi Messenger (van gửi)  +  sổ `so_ai` (Postgres)
+
+aicloser-v3   (v3/chay-that.js)  giao diện quản trị · /webhook · lõi bot
 ```
+
+Hai tiến trình cùng tự khởi động **lõi bot** (`src/core/khoi-dong-loi.js`: nạp KB, đồng bộ Google
+Sheet 5 phút, làm mới danh sách page 10 phút) — không tiến trình nào phải hỏi một tiến trình thứ ba.
+
+- **Một công tắc:** «page này bot trả lời» = cột `page.bot_ai_bat`, bật/tắt ở màn **Công tắc**.
+  Worker chỉ nạp page đang bật.
+- **Van gửi:** vắng `V3_PANCAKE_GUI` hoặc `PANCAKE_READONLY=1` ⇒ không một tin nào ra khách
+  (vắng biến = đóng). Bảng biến: [`docs/v3/ban-giao/bien-moi-truong-v3.md`](docs/v3/ban-giao/bien-moi-truong-v3.md).
+- **Sổ AI cũ** `ai-messages.jsonl` (bot v1 ghi tới 28/08) chỉ còn được ĐỌC cho số liệu lịch sử.
 
 **Mỗi tin của khách = ĐÚNG 1 lần gọi model** (trước 11/08/2026 là 2,28 — 1 classifier + 1 closer).
 `classify()` nay là bộ luật thuần trong `src/classifier.js`: 0 token, tất định, và không bao giờ
@@ -28,42 +38,21 @@ gãy khi API lỗi (đợt 08/08/2026 API trả 429 làm classifier LLM fallback
 diện khiếu nại). Độ tinh tế đã mất được bù bằng tool `handoff_human` — closer tự nhận ra khiếu
 nại thật. Nghiệm thu bộ luật: `test/l4-prompt.test.mjs`.
 
-KB đọc từ file Excel `../KB_AI_Chatbot_Mau.xlsx` (team điền sản phẩm/giá/chính sách/FAQ/phản đối).
-
-## Cài đặt
+## Chạy
 
 ```bash
-cd messenger-closer
 npm install
-cp .env.example .env      # rồi điền ANTHROPIC_API_KEY (và Messenger token khi đấu nối thật)
+cp .env.example .env      # máy dev BẮT BUỘC giữ PANCAKE_READONLY=1 — thiếu là khách nhận tin đúp
+npm run local:start       # bản dev sạch (CSDL riêng, không worker) — xem docs/local-dev.md
+npm test                  # cần Postgres ở localhost:5432
 ```
 
-## Test ngay trong terminal (chỉ cần ANTHROPIC_API_KEY)
-
-```bash
-npm run chat
-```
-
-Gõ tin như khách (tiếng Ả Rập/Anh/Việt) để xem AI tư vấn, gỡ chê giá, xin địa chỉ + xác nhận COD rồi "tạo đơn". Không cần Facebook.
-
-## Chạy server webhook
-
-```bash
-npm start          # hoặc: npm run dev (tự reload)
-```
-
-Sau đó cấu hình trên Meta App → Messenger → Webhooks:
-- Callback URL: `https://<domain-công-khai>/webhook` (dùng ngrok khi dev: `ngrok http 3000`)
-- Verify Token: trùng `VERIFY_TOKEN` trong `.env`
-- Subscribe các field: `messages`, `messaging_postbacks`
-- Cấp `PAGE_ACCESS_TOKEN` của page pilot vào `.env`
-
-Cập nhật KB xong gọi `POST /reload-kb` để nạp lại không cần restart.
+Production (VPS): hai dịch vụ systemd `aicloser-v3` + `aicloser-worker-v3` — cài và vận hành theo
+[`deploy/README.md`](deploy/README.md); mỗi lần đưa thay đổi ra khách theo skill `mo-van`.
 
 ## Việc cần làm khi lên thật (TODO)
 
 - `src/pancake.js`: thay STUB bằng API tạo đơn Pancake thật.
-- `src/store.js`: chuyển state sang Redis/DB để bền & scale.
 - Cửa sổ 24h của Messenger: tin `RESPONSE` chỉ gửi được trong 24h kể từ tin cuối của khách. Để follow-up khách đi lạnh (quan trọng với COD), xin quyền **Human Agent** và gửi bằng `messaging_type: MESSAGE_TAG`, tag `HUMAN_AGENT` (được 7 ngày). Sửa trong `src/messenger.js`.
 - BigQuery logging (lead_journey + RTO) để đo Order→Delivered.
 - `APP_SECRET`: bật để xác thực chữ ký webhook (bắt buộc khi production).
@@ -81,14 +70,14 @@ Cập nhật KB xong gọi `POST /reload-kb` để nạp lại không cần rest
 > | 3 | Chốt đơn COD đúng quy trình · cấm bịa tổng tiền | `CORE §5` + `CORE §6` |
 > | 4 | Chống spam làm phiền khách | `CORE §4` |
 > | 5 | Chống đơn trùng | `CORE §5` |
-> | 6 | Biết im lặng | CODE — `fast-lane.js`, `handler.js` |
+> | 6 | Biết im lặng | CODE — `fast-lane.js`, `chat/handler-v3.js` |
 > | 7 | Biết chuyển người | `CORE §10` + tool `handoff_human` |
 > | 8 | Cầu chì an toàn | CODE — `config.js`, `ai-log.js` |
-> | 9 | Biết dừng khi kênh lỗi | CODE — `pancake-poll.js` |
-> | 10 | Đọc lịch sử trước khi trả lời | CODE — `handler.js → hydrateHistory` |
+> | 9 | Biết dừng khi kênh lỗi | CODE — `queue/worker.js` (⚠️ một phần — xem nguyên tắc 9) |
+> | 10 | Đọc lịch sử trước khi trả lời | CODE — `queue/nap.js` + `chat/history.js` |
 > | 11 | Không cam kết vượt thẩm quyền | `CORE §7` |
 > | 12 | Bảo vệ PII | `CORE §8` |
-> | 13 | Kết thúc là phải bàn giao | CODE — `handler.js → toSaleQueue` |
+> | 13 | Kết thúc là phải bàn giao | CODE — `chat/handler-v3.js → vaoHangCho` |
 > | 14 | Văn phong phải chủ động bán | `CORE §9` |
 >
 > ⚠️ `CORE` đứng ĐẦU system prompt, không còn đứng cuối như `HARD_RULES` cũ — nên nó **tự
@@ -103,8 +92,8 @@ Cập nhật KB xong gọi `POST /reload-kb` để nạp lại không cần rest
 6. **Biết im lặng** — page tắt AI / chưa có KB / tin đầu (nhường Botcake chào) / tin cuối là của page / spam ≥0.8 / sale đã tiếp quản → AI không nói.
 7. **Biết chuyển người** (`handoff_human`) — khiếu nại, đơn giá trị cao, khách đòi gặp người, AI không chắc → chuyển kèm lý do, hiện ở hàng chờ "Cần sale xử lý" + ghi chú vào Pancake. (Ngôn ngữ lạ KHÔNG còn chuyển người — AI tự trả lời bằng ngôn ngữ của khách. **Khách do dự / từ chối cũng KHÔNG còn là lý do chuyển người** — sửa 07/08/2026 theo phản hồi sale: đó là lúc phải bán, xem nguyên tắc 14.)
 8. **Cầu chì an toàn — chống spam khách** — tối đa **4 lượt AI/khách trong 24h** (`MAX_AI_TURNS`, hạ từ 5 xuống 4 ngày 06/08/2026 để tiết kiệm token), đếm BỀN từ Sổ AI nên restart server không "reset chui" thêm lượt; khách nhắn dồn nhiều tin liên tiếp → AI **đợi khách gõ xong ~20s** (`REPLY_DEBOUNCE_MS`) rồi trả lời **1 lần cho cả cụm**, không đáp riêng từng tin; `maxToolIterations` (5) vòng tool/lượt; xử lý **song song tối đa 4 khách** cùng lúc (`CONV_CONCURRENCY`) để giờ cao điểm không dồn đuôi; **trần `max_tokens` = 400 mỗi tin** (hạ từ 1024 ngày 11/08/2026 — tin trung bình 182 token, chỉ 6,3% vượt 300; trần thấp buộc model viết ngắn đúng quy tắc "1-3 câu"). Phân loại tin KHÔNG còn cửa gãy "classifier lỗi → fallback an toàn": nó là bộ luật regex, 0 token, không gọi mạng. (`config.js`, `closer.js`, `classifier.js`, `ai-log.js → recentReplyCount`, `pancake-poll.js`)
-9. **Biết dừng khi kênh đang lỗi (backoff)** — page gửi tin thất bại 2 lần LIÊN TIẾP (vd Meta chặn #2022) → tạm ngừng gửi trên page đó 30 phút rồi tự thử lại; cảnh báo đỏ hiện trên dashboard (pill ⚠ trên topbar + banner ở Tổng quan) để sale biết khách đang không được trả lời. Gửi OK là reset đếm. (`pancake-poll.js → noteSendResult/sendHealth`)
-10. **Đọc lịch sử trước khi trả lời** — nếu bộ nhớ phiên trống (server mới restart / khách quay lại sau nhiều ngày), AI nạp 20 tin gần nhất của ĐÚNG hội thoại đó từ Pancake (2 chiều, gồm cả Botcake/sale tay) rồi mới soạn tin — không chào lại từ đầu, không hỏi lại thông tin cũ, biết khách đã đặt đơn. (`handler.js → hydrateHistory`)
+9. **Biết dừng khi kênh đang lỗi (backoff)** — page gửi tin thất bại 2 lần LIÊN TIẾP (vd Meta chặn #2022) → tạm ngừng gửi trên page đó 30 phút rồi tự thử lại; cảnh báo đỏ hiện trên dashboard (pill ⚠ trên topbar + banner ở Tổng quan) để sale biết khách đang không được trả lời. Gửi OK là reset đếm. ⚠️ **Đó là hành vi của bot v1** (`pancake-poll.js`, gỡ ở MB4). v3 hiện chỉ lùi **theo từng tin**: tin lỗi thử lại tối đa 3 lần (`src/queue/worker.js → TRAN_THU`), tin sau của cùng khách chờ tin trước — **chưa** có ngắt cả page 30 phút và cảnh báo đỏ trên màn (nợ N-MB-NGAT-PAGE).
+10. **Đọc lịch sử trước khi trả lời** — nếu bộ nhớ phiên trống (server mới restart / khách quay lại sau nhiều ngày), AI nạp 20 tin gần nhất của ĐÚNG hội thoại đó từ Pancake (2 chiều, gồm cả Botcake/sale tay) rồi mới soạn tin — không chào lại từ đầu, không hỏi lại thông tin cũ, biết khách đã đặt đơn. (`src/queue/nap.js` đọc tin Pancake · `src/chat/history.js → historyBeforeMessage`)
 11. **Không cam kết vượt thẩm quyền** — không hứa giờ/ngày giao cụ thể, không tự chế chính sách đổi trả/hoàn tiền/bảo hành ngoài KB; ngoài phạm vi → "nhân viên sẽ xác nhận chi tiết này với anh/chị". (`prompts.js → CORE`)
 12. **Bảo vệ thông tin khách (PII)** — không đọc lại đầy đủ SĐT/địa chỉ trong tin nhắn trừ 1 lần lúc tóm tắt xác nhận đơn; tuyệt đối không nhắc thông tin/đơn hàng của khách khác trong hội thoại. (`prompts.js → CORE`)
 13. **Kết thúc là phải bàn giao** — MỌI điểm AI dừng phục vụ đều đổ về hàng chờ "Cần sale xử lý" kèm LÝ DO + link mở chat + tên khách, không khách nào rơi vào khoảng trống "AI im mà người chưa biết". Các điểm dừng: ① AI chốt đơn xong (`order`), ② AI chủ động chuyển người (`handoff_human`), ③ khách khiếu nại, ④ AI hết lượt (`maxAiTurnsBeforeHandoff`), ⑤ page chưa có KB, ⑥ lỗi kỹ thuật lặp ≥3 lần trên 1 hội thoại (đẩy tối đa 1 lần/24h, kèm thẻ 'AI back Sale'). **Bàn giao là IM LẶNG — MỌI cửa, kể cả khiếu nại và hậu bán** (sửa 11/08/2026): AI không gửi câu giữ chân nào nữa ("team member will assist you shortly", "we're checking your order…"), nó dừng nói hẳn và để sale tự xử. Pancake chỉ cho hội thoại trôi khỏi hàng chờ **khi bot gửi tin**, nên không gửi gì tức là tin khách nằm nguyên đó chưa đọc — sale vẫn thấy, và không bị câu máy đánh lừa là "đã có người trả lời rồi". 12 chuỗi giữ chân cũ (3 của `handler.js` + 9 của M13) được giữ trong `our-messages.js` để M05 nhận ra tin cũ của chính mình, nhưng không nơi nào phát ra nữa. **Mỗi lần bàn giao đều để lại 3 dấu vết trong Pancake** (sửa 07/08/2026 — trước đó chỉ ①② mới có ghi chú): thẻ `AI back Sale` trên hội thoại + **ghi chú vào hồ sơ khách nêu rõ lý do AI dừng** + dòng trong hàng chờ dashboard. Sale trực Pancake mở chat ra là biết chuyện gì đã xảy ra, không phải đoán. (`handler.js → toSaleQueue`, `tools.js`)

@@ -6,7 +6,7 @@
 Grep tên khách trong log — sẽ thấy đúng lý do (`đơn đang xử lý (thẻ -X)`, `tin đầu → nhường Botcake`, `đã gán nhân viên`, handoff). 6 lý do im là thiết kế (`quy-tac-ai.md`). Chỉ kết luận là bug khi không khớp cửa nào.
 
 ### Bot im CẢ PAGE
-Kiểm theo thứ tự: page tắt AI (`ai-enabled.json`)? → đang backoff (`/admin/api/overview` → `sendErrors`)? → Meta #2022 trong log?
+Kiểm theo thứ tự: page tắt bot (cột `page.bot_ai_bat`, màn **Công tắc**)? → van gửi đóng (`V3_PANCAKE_GUI` vắng / `PANCAKE_READONLY=1`)? → tin kẹt ở hàng đợi (`tin_cho_xu_ly.trang_thai = 'loi'` — tin lỗi chặn cả hội thoại phía sau)? → Meta #2022 trong `journalctl -u aicloser-worker-v3`?
 
 ### Bot đứng TOÀN BỘ
 Grep `credit balance is too low` (Anthropic) hoặc `insufficient balance` / `exceeded_current_quota_error` (Kimi 429) → tài khoản nhà cung cấp AI hết tiền. Bot **không tự failover** nhà cung cấp. Xử lý: nạp tiền (không cần restart — 429 là lỗi thoáng qua, có tiền là những tin MỚI tự chạy lại), hoặc đổi `AI_PROVIDER` trong `.env` rồi restart nếu tài khoản kia còn credit — **kiểm tra bằng 1 call thử trước khi đổi**.
@@ -97,7 +97,7 @@ Chính chuỗi lệnh ssh khớp pattern. Dùng `[w]a-login` hoặc `systemd-run
 Sửa prompt mà không nghiệm thu thì không biết có tác dụng hay không — LLM không tất định.
 
 1. **Dựng lại kịch bản thật** từ Sổ AI + lịch sử Pancake: đúng `pageId`, đúng thứ tự tin, đúng câu chữ của khách.
-2. **Chạy trên VPS**, không chạy local (local thiếu KB thật → rơi vào `page_no_kb` và bàn giao ngay, kết quả vô nghĩa). Script mẫu ở `van-hanh.md`.
+2. **Chạy bằng diễn tập** (`V3_DIEN_TAP=1` — đọc tin thật, gọi model, ghi sổ rồi DỪNG, không gửi), trên dữ liệu có KB thật; local trống KB sẽ rơi vào `page_no_kb` và bàn giao ngay, kết quả vô nghĩa. Cách bật ở `van-hanh.md` mục «Chạy thử một kịch bản hội thoại».
 3. **Chạy ≥3 lần** và đánh giá cả 3.
 4. **Đặt tiêu chí máy kiểm được**, không đọc cảm tính. Ví dụ vụ Priscela: `bad = /298|12\s*pcs/i`, `ok = /set\s*1|set\s*2|which/i`.
 5. Đạt rồi mới commit + deploy, và ghi kết quả nghiệm thu vào commit message.
@@ -112,4 +112,4 @@ Sửa prompt mà không nghiệm thu thì không biết có tác dụng hay khô
 - Kháng cáo Meta #2022 cho 6 page ở mục trên.
 - Gia hạn cả loạt token Pancake cuối tháng 10/2026.
 - Kênh Meta chờ Advanced Access (nhánh `meta-channel`).
-- Phiên WhatsApp báo cáo chưa đăng nhập lại.
+- ~~Phiên WhatsApp báo cáo chưa đăng nhập lại.~~ Báo cáo WhatsApp của bot v1 (`report-cli.js` + cron 8h/17h) gỡ ở MB4 — 115/115 lượt cron đều lỗi `WA_GROUP_JID`, chưa từng gửi được. Cần báo cáo định kỳ thì làm lại trên v3.

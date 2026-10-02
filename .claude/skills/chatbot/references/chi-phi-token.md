@@ -2,13 +2,13 @@
 
 ## Trả lời câu "page nào đốt token nhiều nhất, bao nhiêu tiền"
 
-```bash
-ssh root@169.58.33.8 'source <(grep -E "^#?ADMIN_" /opt/aicloser/.env | sed "s/^#//"); curl -su "$ADMIN_USER:$ADMIN_PASS" "localhost:3100/admin/api/token-cost?from=2026-08-06&to=2026-08-07"'
-```
+Hai nguồn, đừng cộng lẫn:
 
-Trả về: `provider`, `prices`, tổng `tin/tout/cread/calls`, `usd`, `vnd`, và mảng `pages[]` **đã xếp theo chi phí giảm dần**. Dashboard có thẻ "Chi phí AI (đo)" và cột "Chi phí AI" theo page (tooltip hiện số token).
-
-Bỏ `from`/`to` thì tính toàn bộ lịch sử.
+- **Lượt của v3** — bảng `so_ai` (Postgres). Màn **Vận hành → Chi phí theo tin** (`src/admin-v3/chi-phi-tin.js`):
+  khách nói gì · bot đáp gì · lượt đó tốn bao nhiêu; tiền tính bằng `economics.js#usdOf` + `config.aiPrices`.
+- **Sổ AI cũ** `ai-messages.jsonl` (bot v1 ghi tới 28/08) — màn **Chi phí** (`/chi-phi`), mục «Sổ AI cũ»; hàm
+  `src/core/so-lieu-bot-cu.js#chiPhiToken({ from, to })` trả `provider`, `prices`, tổng `tin/tout/cread/calls`,
+  `usd`, `vnd` và `pages[]` xếp theo chi phí giảm dần. Bỏ `from`/`to` thì tính toàn bộ lịch sử.
 
 ## Số ở đâu ra
 

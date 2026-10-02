@@ -1,73 +1,80 @@
 # Kiến trúc
 
+> **Một bản — v3** (CR-02-10). Bot v1 (`server.js` · `pancake-poll.js` · `handler.js` · `store.js` ·
+> `admin.js` · `public/admin.html`) đã gỡ ở MB4. Ý đồ gốc: `docs/v3/01-QUYET-DINH.md` (§14 = luật một bản).
+
+## Hai tiến trình
+
+| Dịch vụ | File | Làm gì |
+|---|---|---|
+| `aicloser-v3` | `v3/chay-that.js` | Giao diện quản trị (`v3/src/ui/*`, cổng 3102) · `/webhook` (prod tắt bằng `META_WEBHOOK_OFF=1`) · lõi bot |
+| `aicloser-worker-v3` | `src/queue/chay-worker.js` | Vòng NẠP rồi XỬ LÝ, nhịp `V3_WORKER_NHIP_MS` (6 giây) |
+
+Cả hai tự khởi động **lõi bot** — `src/core/khoi-dong-loi.js#khoiDongLoi`: nạp KB, đồng bộ Google Sheet
+5 phút, làm mới danh sách page Pancake 10 phút, nạp lại bản chép khi đổi. Không tiến trình nào gọi HTTP
+sang tiến trình khác để biết hay đổi điều bot đang làm.
+
 ## Luồng một tin nhắn
 
 ```
-Pancake API ──poll 6s──▶ pancake-poll.js
-                          │  gộp cụm tin, đợi khách gõ xong 20s
-                          │  tối đa 4 hội thoại song song
-                          ▼
-                        handler.js          nạp 20 tin lịch sử thật từ Pancake
-                          │                 kiểm trần lượt (đọc Sổ AI)
-                          │                 các cửa im lặng & cửa bàn giao
-                          ▼
-                        classifier.js  ──▶  phân loại ý định + lọc spam
-                          │
-                          ▼
-                        text.js             dọn nửa emoji / lượt rỗng  ← LỚP CHẶN CUỐI
-                          │
-                          ▼
-                        closer.js + prompts.js  ──▶  LLM (Kimi hoặc Claude)
-                          │                          tools: get_price,
-                          │                          send_product_image,
-                          │                          create_draft_order,
-                          │                          handoff_human
-                          ▼
-                        pancake.js gửi tin  +  ai-log.js ghi Sổ AI
+Pancake API ──GET mỗi 6s──▶ src/queue/nap.js        CHỈ page có page.bot_ai_bat = true
+                              │  gom cụm tin khách, đợi khách gõ xong, nhận diện sale đã nhắn
+                              ▼
+                  Postgres tin_cho_xu_ly (src/queue/kho.js)   khoá team+page+khách · FIFO
+                              ▼
+                  src/queue/worker.js         rút tin · thử lại tối đa 3 lần (TRAN_THU)
+                              ▼
+                  src/chat/handler-v3.js      quyền hội thoại · ngân sách lượt 24h · cửa im lặng
+                              │  lop-tu-khoa.js → fast-lane.js → classifier.js (LUẬT, 0 token)
+                              │  rap-prompt.js (4 khối từ CSDL) → closer.js + prompts.js → LLM
+                              │     tools: get_price · send_product_image · create_draft_order · handoff_human
+                              │  outbound-guard.js        ← lớp chặn cuối trước khi gửi
+                              ▼
+                  src/channels/messenger (van V3_PANCAKE_GUI)  +  so_ai  +  hàng chờ sale (orders/hang-cho.js)
 ```
 
-## Bản đồ code (`src/`)
+## Bản đồ code
 
 | File | Vai trò |
 |---|---|
-| `server.js` | Express: `/admin`, `/health`, khởi động mọi thứ |
-| `pancake-poll.js` | **Trái tim.** Vòng poll 6s. Chứa: debounce 20s, gộp cụm tin, semaphore 4 khách (`CONV_CONCURRENCY`), backoff 2 lỗi → ngừng page 30 phút (`sendHealth()`), nhường Botcake tin đầu, im khi hội thoại có thẻ đơn |
-| `handler.js` | Cổng xử lý 1 tin: `hydrateHistory` (nạp lịch sử Pancake vào state), `recentReplyCount` (trần lượt bền), `toSaleQueue` (bàn giao — kind: complaint/max_turns/no_kb) |
-| `text.js` | **Lớp chặn cuối trước khi gọi LLM.** Dọn surrogate lẻ (nửa emoji) + lượt rỗng. Hai thứ này khiến API trả 400 `invalid_request_error` — lỗi "không tự hồi phục", bot **không** retry và khách ngồi im vĩnh viễn. `sanitizeMessages` không bao giờ xóa message (giữ cặp tool_use/tool_result) |
-| `closer.js` | Vòng gọi LLM + tool. Đo token vào `state.lastUsage`. Không bao giờ trả `'...'` — xin model viết lại, cùng lắm thì im |
-| `prompts.js` | System prompt. `HARD_RULES` đặt **cuối** khối prompt nên luôn thắng kịch bản riêng của page |
-| `classifier.js` | Phân loại ý định + spam. Gắn `__usage` (non-enumerable) để đếm token |
-| `llm.js` | Chọn nhà cung cấp. `aiExtras` — Kimi **bắt buộc** `thinking: {type:'disabled'}` |
-| `tools.js` | 4 tool. `create_draft_order` bắt buộc `total_price`. `send_product_image` bắt buộc `caption` (caption bám theo tấm **gửi thành công** đầu tiên) |
-| `ai-log.js` | **Sổ AI** `ai-messages.jsonl`, append-only, nguồn sự thật. Hàm: `logAi` `needSale` `recentConversations` `custProfile` `recentReplyCount` `tokenStats` `recount` |
-| `pancake.js` | API pages.fm: danh sách page (`categorized.activated`), đọc/gửi tin, ghi chú. Failover đa token ở `pkFetchPage` |
-| `pancake-orders.js` | POS API (`pos.pages.fm`, dùng `api_key` riêng mỗi shop, **không** dùng JWT): đơn thật, `createPancakeOrder`, `ordersForConv`. `fetchJsonRetry` timeout 20s + 1 lần thử lại |
-| `kb.js` | KB từ Google Sheet (đồng bộ 5 phút) + `kb-overrides.json` (dashboard sửa, ưu tiên đè) |
-| `store.js` | State RAM theo psid + `ai-enabled.json` |
-| `admin.js` | Toàn bộ `/admin/api/*` |
-| `public/admin.html` | Dashboard 1 file (CSS+JS inline), hash-router 4 màn: needsale / stats / msgs / tokens |
+| `src/queue/page-routing.js` | `dsPageBotTraLoi` — đọc `WHERE bot_ai_bat = true`. Công tắc DUY NHẤT |
+| `src/queue/nap.js` · `kho.js` · `worker.js` · `lan-gui.js` | Nạp tin → hàng đợi → xử lý → ghi lượt gửi (đánh dấu chưa đọc theo `PK_MARK_UNREAD`) |
+| `src/chat/handler-v3.js` | Cổng xử lý 1 tin. Van gửi + cổng HTTP ghi (chặn mọi POST ra pages.fm khi van đóng) |
+| `src/text.js` | Dọn surrogate lẻ (nửa emoji) + lượt rỗng — hai thứ khiến API trả 400 `invalid_request_error` không tự hồi phục |
+| `src/closer.js` | Vòng gọi LLM + tool. Không bao giờ trả `'...'` — xin model viết lại, cùng lắm thì im |
+| `src/prompts.js` | Khối `CORE` đứng ĐẦU system prompt, tự tuyên bố thẩm quyền («THẮNG MỌI KHỐI SAU») |
+| `src/classifier.js` | Bộ luật thuần (regex), 0 token, tất định |
+| `src/llm.js` | Chọn nhà cung cấp. Kimi **bắt buộc** `thinking: {type:'disabled'}` |
+| `src/tools.js` | 4 tool. `create_draft_order` bắt buộc `total_price`; `send_product_image` bắt buộc `caption` |
+| `src/pancake.js` | API pages.fm: danh sách page, đọc/gửi tin. Token từ bảng `token_pancake` + `.env`, failover đa token |
+| `src/pancake-orders.js` | POS API (`pos.pages.fm`, `api_key` riêng mỗi shop) |
+| `src/kb.js` | KB từ Google Sheet + `kb-overrides.json` |
+| `src/core/so-lieu-bot-cu.js` | ĐỌC Sổ AI cũ (`ai-messages.jsonl`, v1 ghi tới 28/08) cho chi phí/đơn lịch sử |
+| `v3/src/noi-day/loi-bot.js` | Cầu giữa giao diện và lõi bot trong CÙNG tiến trình (trước MB4 tên `cau-bot-v1.js`) |
+| `db/migrate/*.sql` · `db/schema.sql` | Lược đồ Postgres; `node db/migrate.js schema` sinh lại `schema.sql` (không sửa tay) |
 
-## Dữ liệu (gitignore — nguồn thật chỉ có trên VPS)
+## Dữ liệu
 
-`.env` · `ai-messages.jsonl` (Sổ AI) · `stats.json` · `ai-enabled.json` · `kb-overrides.json` · `ai-convs.json` · `pancake-shops.json` (shop POS + api_key) · `page-product-cache.json` · `ai-created-orders.json` · `tokens.json` · `sheet.json` · `public/uploads/`
-
-Hệ quả: `git reset --hard` trên VPS an toàn với dữ liệu, nhưng **giết code sửa tay chưa commit** — luôn `git status` trước.
+- **Postgres** (`DATABASE_URL_V3`) — nguồn thật: `page` (cột `bot_ai_bat`), `hoi_thoai`, `tin_cho_xu_ly`,
+  `lan_gui`, `so_ai`, `token_pancake`, kịch bản/bộ luật/sản phẩm theo team.
+- **File JSON còn được ĐỌC** (gitignore, chỉ có trên VPS): `ai-messages.jsonl` (Sổ AI cũ) · `stats.json` ·
+  `conv-state.json` · `ai-convs.json` · `kb-overrides.json` · `kb-chung.json` · `pages.json` ·
+  `page-shop-cache.json` · `pancake-shops.json` · `botcake-templates.json`.
+  Các file khác của v1 (`ai-enabled.json` …) đã lưu trữ ở `/opt/aicloser/luu-tru/v1/` khi MB4 lên prod.
 
 ## Núm chỉnh `.env`
 
+Bảng đầy đủ và trạng thái từng biến trên VPS: `docs/v3/ban-giao/bien-moi-truong-v3.md` (vắng = đóng).
+
 | Biến | Ý nghĩa |
 |---|---|
-| `AI_PROVIDER` | `anthropic` \| `kimi`. Kimi = endpoint Moonshot tương thích Anthropic SDK (chỉ đổi `baseURL`), cần `KIMI_API_KEY` **bản quốc tế**. Model mặc định tự đổi theo nhà cung cấp; model lệch nhà cung cấp bị bỏ qua kèm cảnh báo `[config]`. Bot **không tự failover** giữa hai nhà cung cấp |
-| `MAX_AI_TURNS` | Trần lượt AI/khách/24h. **4** (hạ từ 5 ngày 06/08/2026 để tiết kiệm token) |
-| `REPLY_DEBOUNCE_MS` | 20000 — đợi khách gõ xong rồi trả 1 lần cho cả cụm |
-| `CONV_CONCURRENCY` | 4 hội thoại song song |
-| `PANCAKE_POLL_MS` | 6000 |
-| `AUTO_CREATE_ORDER` | **0** — chủ dự án TẮT 07/08/2026. AI vẫn chốt lời + gắn thẻ `AI Chốt` + ghi chú đủ thông tin khách vào Pancake + ghi Sổ AI, nhưng KHÔNG tạo đơn thật — nhân viên tạo tay từ ghi chú. Số "đơn AI chốt" trên dashboard không đổi (đếm từ Sổ AI) |
-| `PANCAKE_READONLY` | **Chỉ local.** Bật = không gửi tin |
-| `RESPECT_ASSIGNEE` | Mặc định tắt |
-| `PK_MARK_UNREAD` | Mặc định **bật** (07/08/2026): sau mỗi tin AI gửi, gọi `POST .../unread` (public_api/v1, cần `page_access_token` riêng từng page — bot tự sinh, lưu `pancake-page-tokens.json`) để hội thoại KHÔNG trôi khỏi hàng chờ sale. Tắt: `PK_MARK_UNREAD=0`. Sinh page token làm token cũ của page (nếu từng tạo tay) hết hiệu lực |
-| `PANCAKE_TOKENS_EXTRA` | Token phụ, cách nhau dấu phẩy. Danh sách page = **gộp** mọi token; page lỗi quyền/gói (103/105/121) tự chuyển token kế. **Thứ tự trong `.env` = thứ tự failover** — token chính phải là token phủ nhiều page bật AI nhất |
-| `AI_PRICE_IN` / `AI_PRICE_CACHE` / `AI_PRICE_OUT` / `AI_USD_VND` | Đè đơn giá token, xem `chi-phi-token.md` |
+| `V3_PANCAKE_GUI` · `PANCAKE_READONLY` | Van gửi. Vắng `V3_PANCAKE_GUI` hoặc `PANCAKE_READONLY=1` ⇒ không tin nào ra khách. Máy dev luôn `PANCAKE_READONLY=1` |
+| `AI_PROVIDER` | `anthropic` \| `kimi`. Bot **không tự failover** giữa hai nhà cung cấp |
+| `MAX_AI_TURNS` | Trần lượt AI/khách/24h (mặc định 4) |
+| `AUTO_CREATE_ORDER` | **0** — AI chốt lời + gắn thẻ + ghi chú, nhân viên tạo đơn tay |
+| `PK_MARK_UNREAD` | Mặc định bật: sau mỗi tin gửi, đánh dấu hội thoại chưa đọc để không trôi khỏi hàng chờ sale |
+| `PANCAKE_TOKENS_EXTRA` | Token phụ; page lỗi quyền/gói (103/105/121) tự chuyển token kế |
+| `V3_WORKER_NHIP_MS` | Nhịp worker khi hàng đợi rỗng (6000) |
 
 ## Vì sao không dùng Meta Graph API
 
