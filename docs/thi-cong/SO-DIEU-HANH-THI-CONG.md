@@ -1498,6 +1498,8 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
     thật · **N-MN8c** (75/79 SP chưa tên) mất ý nghĩa · **N-DANHMUC-GOC** thành việc của GSP2 · **RF-15** (gán `san_pham.page_id`
     khi shop có 1 page) bỏ ở GSP4.
 
+- 02/10 · GSP1 (thợ) — **N-GSP-TAOGOC** `v3/src/ui/san-pham/kho-goc.js#taoGoc` hết cửa HTTP gọi (router bỏ `POST /api/san-pham/goc`) nhưng `v3/src/ui/san-pham/index.js:17` còn re-export ⇒ không gỡ được trong pathspec GSP1 (index.js ngoài ③; gỡ riêng kho-goc thì boot chết). Gỡ `taoGoc` + dòng export ở một phiếu có `index.js`. Cùng lúc: `GET /api/san-pham/goc` còn trả `cho`/`khongCoSoHieu` (không màn nào cần ngoài điều kiện ô lưu ý `san-pham.html:105`) — GSP2 đổi ô lưu ý thành bộ đếm thì gỡ luôn hai trường + chỗ đọc.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3019,3 +3021,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · CR-02-10b → 🔨 ÁP — page phải gắn một sản phẩm gốc × một shop POS thì bot mới chat; bỏ giá riêng theo page; gốc chỉ sinh từ gộp SKU; «bản sao theo page» thôi là nguồn (giữ lưu trữ) · §5h GSP1–GSP5 + H-GSP
   đo prod chỉ đọc: 0/514 page gắn gốc · 76 page đọc bản sao (0 bật) · 0/78 bản sao nối món POS · 0/491 món POS có giá · 536 ảnh ở bản sao · prod chat qua `kb-overrides.json` (`V3_RAP_PROMPT_BAT` vắng) ⇒ phải chốt ở handler · đảo thử bỏ nhánh `page_id`: 35 ca neo luật cũ · 01 §6 §8 + `luoc-do-v1.md` đã sửa · 5 nợ §9 N-GSP-*
   · commit 2344ba4 · bb52c9b · phiếu docs/thi-cong/doi-y-do/CR-02-10b-page-phai-gan-san-pham.md
+- 02/10 · GSP1 → ✅ (chờ tổng nghiệm thu) — «+ Thêm» = Gộp món POS theo SKU; gỡ `POST /api/san-pham/goc` (404) + lối tạo gốc theo số hiệu; cửa sửa `/goc/:id` · gộp `/gop` · phạm vi marketer LL15d giữ nguyên · nợ N-GSP-TAOGOC (§9)
+  npm test 2306→2311 ca, 0 đỏ (dev) · gsp1.sh 14/14 · đảo-vá 2/2 (khôi phục route ⇒ G1 đỏ; khôi phục veThem ⇒ G4 đỏ) · ll13/ve1/ve8a/ve8b/ll15d rc=0 · LL15d riêng 4/4 + 5/5 · `_chan1` ④ đỏ duy nhất do commit 400906b của tổng (CR-02-10b)
+  · commit c4d3baa · nhật ký docs/thi-cong/nhat-ky/phieu-gsp1.md
