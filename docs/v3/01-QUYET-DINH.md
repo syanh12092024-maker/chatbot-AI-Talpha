@@ -244,7 +244,8 @@ Bot chỉ chào bán ở page đã gắn **một sản phẩm gốc và một sh
 KB), không bật được — ở mọi đường đọc: chat (cả hai nguồn KB), cửa tiền, bản chép, cổng bật, màn.
 **Không có giá riêng theo page:** giá thuộc món POS × shop, mọi page cùng gốc × shop chung một bảng
 giá, sửa ở Sản phẩm › Theo thị trường. Sản phẩm gốc chỉ sinh từ **gộp món POS theo SKU**; lối tạo
-theo số hiệu bỏ. «Bản sao theo page» (78 dòng nạp từ `kb-overrides.json`) thôi là nguồn — giữ làm
+theo số hiệu bỏ. **SKU bắt buộc** (người quyết 02/10): máy chủ tự suy SKU từ chính món, không tin dữ liệu gửi
+lên; món chưa có SKU thì không gộp được — kéo lại danh mục POS để lấy SKU. «Bản sao theo page» (78 dòng nạp từ `kb-overrides.json`) thôi là nguồn — giữ làm
 lưu trữ, không đọc.
 
 **Lý do:** người quyết chốt 02/10 *«page bắt buộc gắn sản phẩm thì mới chat được»* và *«bỏ giá

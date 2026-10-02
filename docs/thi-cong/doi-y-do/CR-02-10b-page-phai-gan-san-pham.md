@@ -145,6 +145,10 @@ theo chỉ định của reviewer: 032 thêm `doi_soat_goc` + `doi_soat_shop`, v
 đảo-vá. GSP3b thêm cửa `POST /api/anh-san-pham/pos/:spId`. **Lệch quy trình, khai ra:** luật tổng là «còn CHẶN sau
 vòng 2 ⇒ dừng, báo người quyết»; ở đây tổng áp bản sửa reviewer kê sẵn thay vì dừng, và báo người quyết cùng lượt.
 
+**Bổ sung 02/10 — SKU bắt buộc (GSP1b).** Review chặng 2 GSP1 (R1): cửa gộp lấy SKU từ thân yêu cầu ⇒ vẫn tạo được gốc
+không SKU hoặc SKU lệch món. Tổng hỏi, người quyết chọn **«Bắt buộc SKU»**: máy chủ suy SKU từ món, món chưa SKU ⇒ 409.
+Phiếu GSP1b (🟨, chỉ `gopMonThanhGoc` + ca), chạy song song GSP2 (khác tệp). Prod 491/491 món có SKU ⇒ không chặn món nào.
+
 ## 5d · Lớp 5 ĐO TRÊN PROD (02/10, SSH chỉ đọc, `BEGIN READ ONLY` … `ROLLBACK`)
 
 Script `node --env-file=.env -` đọc từ stdin, không tệp nào đặt lên máy chủ.
