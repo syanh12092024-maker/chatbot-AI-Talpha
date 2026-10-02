@@ -78,12 +78,31 @@ Mốc lùi: `/var/backups/aicloser/truoc-mb4-<giờ>/` — `database.dump` (`dep
 
 ## 8 · Lệnh đã gõ
 
-_(điền khi mở)_
+Giờ prod (CEST). Phiên LL15 xác nhận KHÔNG push / KHÔNG đụng prod trong lượt này.
+1. Máy dev: cửa vào (mục 3) · commit `357795a` `6d4186f` `2a02656` `27e407a` `bd6459a` · tag `truoc-mot-ban` → `76326fd`.
+2. Đẩy `76326fd..bd6459a` (fast-forward) + tag.
+3. Mốc lùi `/var/backups/aicloser/truoc-mb4-20261002T070317Z/` — `database.dump` 23 MB · `commit.txt` = `5e81796` · `env.bak` (600) ·
+   `crontab.bak` · `aicloser.service` + `aicloser.service.d/`.
+4. `git fetch` + `checkout -f -B vao-ui-v3-17-09 origin/vao-ui-v3-17-09` → `bd6459a` · 0 tệp theo dõi sửa tại chỗ · `src/wa.js` có.
+5. `node --env-file=.env db/migrate.js` → «ÁP 030_mot_cong_tac · áp mới 1 · tổng 31» · cột `page` còn `bot_ai_bat`, hai cột cũ đã gỡ.
+6. `sed` một dòng `PUBLIC_URL` `:3100` → `:3102` — tên biến y nguyên (78 dòng) · đổi đúng 1 dòng · `V3_BQ_KHOA` + `V3_HRM_TU_DONG` còn.
+7. `systemctl restart aicloser-v3 aicloser-worker-v3` lúc **09:03:39**.
+8. Gỡ `/etc/systemd/system/aicloser.service` (+ `.d` rỗng) · `daemon-reload` → `systemctl cat aicloser` không còn.
+9. Crontab 20 → 18 dòng: gỡ 2 dòng `src/report-cli.js`; 5 dòng pancake-tool y nguyên.
+10. `luu-tru/v1/` ← 11 tệp (mục 1); `wa-auth/` tại chỗ.
+11. Kiểm riêng đường của pancake-tool, KHÔNG gửi gì: `import('/opt/aicloser/src/wa.js')` → `sendToGroup: function` · `dotenv/config` nạp được.
 
 ## 9 · Số đo từng mốc
 
-_(điền khi mở)_
+| Mốc | Giờ | Kết quả |
+|---|---|---|
+| +1′ | 09:04:01 | hai dịch vụ v3 active · Started 1/1 · lỗi 0/0 · lõi «[lõi] chay-that: KB no-base/77» + «[lõi] worker-v3: KB no-base/77» · `/privacy` 200 · `/dang-nhap` 200 · `/page-bot` 401 · unit `aicloser` không còn · `:3100` không nghe · cron `report-cli` 0 · page bật bot **0/582** · `lan_gui` 60′ **0** · ảnh từ NGOÀI qua `PUBLIC_URL` mới `:3102/uploads` **200 `image/jpeg`** · pancake-tool: ba timer `success`, `gio-lam-wa` active, «Cannot find module» 0 · `import('src/wa.js')` → `sendToGroup: function` |
+| +5′ | 09:09:38 | y như +1′ — Started 1/1 · lỗi 0/0 · ba timer pancake-tool đã chạy lại SAU restart (`canh-bao-tien` 09:06:41 · `care-don-wa` 09:08:03 · `gio-lam-sale`) đều `success` · lỗi module 0 · HRM tự động `{taoTaiKhoan:0,…,doiTenTeam:0}` (không HOÃN/HỎNG) |
+| +15′ | 09:19:06 | y như +5′ — Started 1/1 · lỗi 0/0 · `canh-bao-tien` 09:16:41 `success` · page bật bot 0/582 · `lan_gui` 0 · cảnh báo journal 3 dòng = «chưa nối: ghiSoAi» (có từ trước MB, MB3 đã ghi) |
 
 ## 10 · Kết
 
-_(điền khi mở)_
+**GIỮ.** Ba mốc sạch, không vòng restart, không lỗi mới; cây prod nay là MỘT bản (`bd6459a`): không còn mã, unit, cron hay cổng nào của
+bot v1; migration 030 gỡ hai cột thừa; ảnh sản phẩm tải được từ ngoài qua cổng 3102. Ba lịch cảnh báo của pancake-tool chạy y như trước
+(nhờ GIỮ `src/wa.js` — bản đầu của MB4 sẽ làm chúng chết). Không tin nào ra khách. CR-02-10 ĐÓNG. Việc kế: bật page Kuwait Luxe Charm
+khi đủ điều kiện (người quyết báo team ai_sale tắt page đó trước) — trước page thứ 2 nên trả `N-MB-NGAT-PAGE`.

@@ -1,6 +1,6 @@
 # CR-02-10 · MỘT BẢN — BỎ THẾ SONG SONG v1/v3
 
-> Trạng thái: **ÁP trọn** (người quyết gõ «áp, nới luật hay gì cũng được — quy về 1 mối», 02/10). Nới §0a luật 4 cho 57 file phẳng: ĐÃ GẬT. MB3 (tắt v1 trên prod): ĐÃ GẬT, làm theo `mo-van`.
+> Trạng thái: **ĐÓNG 02/10 09:19 CEST** — MB1–MB4 ✅ (MB4 lên prod `bd6459a`, GIỮ; nhật ký `docs/thi-cong/nhat-ky/phat-hanh-20261002-mb4.md`). Áp trọn theo «áp, nới luật hay gì cũng được — quy về 1 mối» (02/10); MB4 bỏ chờ 3 ngày theo «làm MB4 luôn đi». Lệch so với bảng dưới: `src/wa.js` GIỮ (pancake-tool import trên prod — `N-MB-CHUNG-PANCAKE-TOOL`).
 > Yêu cầu: người quyết, 02/10/2026 — *«Mình cần phần bên mình không bị nhập nhằng v1 và v3 nữa.
 > Chuyển sang 1 bản hiện tại thôi. Cái nào update thì update luôn.»* Kèm: *«ai_sale đang chạy thì
 > để nguyên vì của team khác.»*

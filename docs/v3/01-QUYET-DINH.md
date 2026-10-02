@@ -350,3 +350,6 @@ trả lời page này», chữ «bot cũ / bot mới» trên màn.
 **Không đổi:** cách bot nói (năm file bộ não giữ nguyên hành vi) · van gửi khách · bot `ai_sale`
 của pancake-tool (team khác — page nào chuyển sang v3 thì người quyết báo bên đó tắt page đó trước).
 Song song từ nay là **với ai_sale, theo từng page**, không phải với v1.
+
+**Đã thi hành 02/10/2026** (MB1–MB4, CR ĐÓNG): prod chỉ còn `aicloser-v3` + `aicloser-worker-v3`; mã, unit và cron của
+bot v1 đã gỡ (tag mốc `truoc-mot-ban`). Ngoại lệ có chủ đích: `src/wa.js` ở lại vì pancake-tool (team khác) dùng chung trên máy chủ.

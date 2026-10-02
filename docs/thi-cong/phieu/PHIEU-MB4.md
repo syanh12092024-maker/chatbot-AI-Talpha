@@ -72,6 +72,8 @@ nào đọc vào `/opt/aicloser/luu-tru/v1/`: `ai-enabled.bak-truoc-v2.json` `ai
 
 ## ⑥ Báo cáo (02/10)
 
+- **Lên prod 09:03:39 CEST — GIỮ** (`bd6459a`; +1′/+5′/+15′ lỗi 0; pancake-tool nguyên vẹn) · nhật ký `docs/thi-cong/nhat-ky/phat-hanh-20261002-mb4.md`.
+
 - 39 tệp gỡ · 1 đổi tên · 92 tệp sửa · `+498 / −12 201` dòng (trước tài liệu).
 - `mb.sh` 18/18 · `npm test` **2306 ca · 2302 xanh · 0 đỏ · 4 bỏ qua** (giảm so với MB2 vì gỡ ca chỉ-v1: 4 tệp + ca v1 trong
   `import-offers` `l6-van-hanh` `l7-miner-order` `l8-botcake-rules` `phase0-webhook-delivery` `script-studio`).
