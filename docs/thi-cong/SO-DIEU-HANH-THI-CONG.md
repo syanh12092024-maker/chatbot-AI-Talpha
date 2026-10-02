@@ -59,6 +59,13 @@ hàng, 12 module). Người B (phần rìa: auth, audit, model, màn sale) làm 
    bằng cờ `.env`, không đổi hành vi 51 page giữa chừng.
    Các file phẳng `src/` CÒN LẠI (57 file) giữ nguyên luật cấm cũ.
 
+   ⚠️ **SỬA 02/10 — CR-02-10, người quyết gõ «áp, nới luật hay gì cũng được — quy về 1 mối».**
+   Lý do của luật («đang phục vụ 51 page khách thật») hết đúng: v1 thôi trả lời khách từ 28/08
+   (`ai-enabled.json` rỗng, `V3_LEGACY_POLL_OFF=1`). **Luật mới:** 31 file phẳng DÙNG CHUNG với v3
+   (`kb` `pancake` `config` `ai-log` `pages` `stats`…) sửa được như code v3 thường; 24 file
+   CHỈ-v1 (`server` `admin*` `pancake-poll` `handler` `store` `readiness` `page-registry`…) được
+   dời hàm còn dùng vào v3 rồi GỠ (phiếu MB4). **Năm file bộ não giữ nguyên ba rào 16/09.**
+
 **Nguồn sự thật đọc theo thứ tự:** `docs/v3/01-QUYET-DINH.md` (ý đồ — thắng mọi thứ khi
 mâu thuẫn) → `docs/v3/02-KE-HOACH-CODE.md` (kế hoạch + 18 bảng + nghiệm thu) →
 `docs/v3/05-PHAN-VIEC.md` (ranh giới file) → `docs/TONG-QUAN-HE-THONG.md` (bản đang chạy).
@@ -322,6 +329,21 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
 | LL9  | Thước: menu · quyền · HK10/HK15 · §10 Hộp thư — ĐÓNG CR                                        | LL1–LL8                | 🟩  | ⬜ |
 | LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`) — cạnh bộ não, khai «Đụng bộ não» | cutover / đợt tắt Botcake | 🟥 | ⬜ |
 
+## §5g · MỘT BẢN (MB1–MB4) — CR-02-10, người quyết gõ «áp» 02/10
+
+v1 nghỉ hưu: phía mình chỉ còn `aicloser-v3` + `aicloser-worker-v3`. Mọi việc v3 mượn của tiến
+trình bot v1 (cầu HTTP `v3/src/noi-day/cau-bot-v1.js`) chạy ngay trong tiến trình v3; một công tắc
+«page này bot mình trả lời» trong CSDL; `aicloser.service` tắt. Phiếu CR:
+`docs/thi-cong/doi-y-do/CR-02-10-mot-ban-v3.md`. **Không đụng** `pancake-tool`/`ai_sale` (team khác)
+và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt sau (MB3), gỡ cuối cùng (MB4).**
+
+| Mã  | Việc                                                                                          | Phụ thuộc           | Làn | Trạng thái |
+| --- | --------------------------------------------------------------------------------------------- | ------------------- | --- | ---------- |
+| MB1 | Dời việc v3 mượn của v1 vào tiến trình v3: ruột `cau-bot-v1.js` từ HTTP → gọi hàm (giữ tên + hình dạng); `/webhook` · `/uploads` · nạp KB/token/registry sang `chay-that.js`; kiểm kê nút `/admin` v3 chưa có | —                   | 🟨  | ⬜ |
+| MB2 | MỘT công tắc: một cột CSDL là nguồn của worker; bỏ `ai-enabled.json` · `bot_ai_bat` · `V3_GIAO_PAGE_TREN_MAN` · `V3_LEGACY_POLL_OFF`; `giaoPage` bỏ bước «tắt bot cũ»; `bien-moi-truong-v3.md` cùng commit | MB1                 | 🟥  | ⬜ |
+| MB3 | **Mở van**: deploy MB1+MB2 · `systemctl disable --now aicloser` · restart hai tiến trình v3 · mốc +1′/+5′/+15′ | MB2 · người gật ✅ 02/10 | 🟥  | ⬜ |
+| MB4 | Gỡ 24 file chỉ-v1 + 8 mồ côi + 7 trang `public/` + script `package.json`; dời bộ ca; lưu trữ JSON đứng im; đổi chữ «bot cũ» 39 tệp màn; cổng `mb.sh`; migration gỡ cột thừa; ĐÓNG CR | MB3 ổn ≥ 3 ngày     | 🟨  | ⬜ |
+
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
 | Mã  | Việc                                                                                 | Chặn gì                                                        | Trạng thái |
@@ -334,7 +356,7 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
 | H6  | Mở tài khoản + lấy khoá 4 nhà model, nạp tiền chạy A/B                               | L2 (A/B model)                                                 | 🔴 **GẤP — bot ĐANG CHẾT vì việc này.** Kimi *suspended, insufficient balance* · Anthropic *credit too low*. Bot im từ 23/08 22h UTC. Lớp dự phòng không cứu được: dự phòng cần nhà thứ hai **còn tiền** |
 | H7  | Chốt mapping page/sản phẩm/thị trường ↔ 3 team                                       | di trú gán team thật · **VÀ mọi màn hình v3**                  | 🔴 **CHẶN TOÀN BỘ MÀN HÌNH v3.** Di trú 24/08: **514/514 page + 28.953/28.953 hội thoại đều ở `chua-phan`**. Team nghiệp vụ có 0 page → bảng điều phối rỗng vĩnh viễn. Không có màn hình nào để gán (nhóm 6 = giai đoạn 2) → phải gán bằng SQL |
 | H8  | Chọn 3 page thử + 3 page đối chứng cùng ngành cùng mức ads                           | L2-M2                                                          | ⬜         |
-| H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm                                | ⬜         |
+| H9  | Bộ biến v3 cutover VPS — bảng khai duy nhất `docs/v3/ban-giao/bien-moi-truong-v3.md` | cutover — thiếu là cửa đóng câm                                | ↪ **gộp vào MB2** (CR-02-10): MB2 gỡ biến thừa và sửa bảng khai cùng commit với code |
 | H10 | **Báo NGƯỜI B đổi màn «Rủi ro hoàn hàng» sang ĐỌC `khach.tang_hoan`**, bỏ phép tính riêng trong `v3/src/ui/rui-ro-hoan/kho-rui-ro.js` | màn đường TIỀN đang nói sai **6,7 lần** | ✅ **XONG 01/09 (P2)** · A đã gỡ nguyên nhân gốc 28/08 — cột `tang_hoan` nay có số trên 89.484/89.484 khách (job `chamTiLeHoan()` đã chạy), nên màn không còn phải tự tính. Chỗ lệch đo được: màn nói **40.064** khách «hoàn cao», luật đã ký nói **5.990** — vì màn thiếu sàn `toi_thieu_don_ket=2` (34.187/40.064 khách chỉ có ĐÚNG MỘT đơn) và tính cả mã 8 (`packing` = bước TIẾN). **A KHÔNG tự sửa: `v3/src/*` là đất B (luật 4 §0a).** Chi tiết §9 28/08 · ✅ **ĐÃ LÀM 01/09** (P2) |
 | H11 | Cấp tài khoản dịch vụ BigQuery **CHỈ ĐỌC** cho máy chủ v3: `levelup-465304.HRM_Core` + `PIALPHA_ALL_Dataset.dim_person_map`; khoá vào kho khoá | LL15 · LL17 (người từ HRM, team của đơn) | ⬜ (29/09, CR-28-09c) |
 | H12 | Token Pancake có quyền trên mọi page đang bán (quan sát 28/09: 11–12/30 hội thoại không đọc được vì token không quyền/hết gói) | Hộp thư đọc chat (LL2) | ⬜ (29/09) |
@@ -1885,6 +1907,13 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   (Đối chứng: `l2-m3.sh` ② và `test/l2-m3-rap-prompt.test.js` ② cũng đụng
   `bo_luat_chung` nhưng đo theo ĐỊNH DANH dòng — `idDong.size===1` — không phải tổng
   số, KHÔNG cùng họ bug này, không cần vá.)
+
+- 02/10 · **N-MB-LICH-NEN** (CR-02-10) — follow-up L5 · miner đêm · template-learner chỉ chạy trong
+  `src/server.js` (đã tắt bằng `V3_LEGACY_POLL_OFF=1`). Tắt v1 là mất hẳn: dựng trong v3 hay bỏ — người quyết, neo MB4.
+- 02/10 · **N-MB-SO-AI-CU** (CR-02-10) — bàn hội thoại v3 còn đọc `ai-messages.jsonl` (Sổ AI bot cũ,
+  15,5 MB, đứng im từ 28/08) làm «mã khách» (`docSoAiBotCu`). Nạp một lượt vào CSDL hay đọc từ lưu trữ — neo MB1/MB4.
+- 02/10 · **N-MB-PAGE-TOKEN-FB** (CR-02-10) — `loadPageTokens` (token page Facebook, 10′/lần trong
+  `src/server.js`) còn ai cần khi kênh là Pancake? Đo ở MB1 trước khi bỏ.
 
 ## §10 · NHẬT KÝ (APPEND — khuôn 3 dòng, luật 15)
 - 26/08 · A7-3 → ✅ xong — `timKhach`/`docHoSoKhach` ở `src/orders/doc-ho-so.js`; KHÔNG dựng phép gộp thứ hai (gộp đã ở tầng ghi), KHÔNG khai đã gộp WhatsApp, tỉ lệ hoàn chỉ ĐỌC kèm ngày chấm · commit ac41ab9 · nhật ký docs/thi-cong/nhat-ky/phieu-a7-3.md
