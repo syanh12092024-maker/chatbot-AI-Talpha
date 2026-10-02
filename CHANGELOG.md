@@ -19,6 +19,22 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 02/10/2026 — 🔴 Người và vai theo HRM: tạo tài khoản · cấp/rút vai · khoá người nghỉ · tên team (LL15b · CR-28-09c)
+
+Không đổi chữ bot nói. **1 migration (029 — chỉ thêm hai cột)** · 0 gói · 0 tệp bộ não · 1 biến mới `V3_HRM_TU_DONG` (lượt này
+CHƯA bật — đồng bộ chỉ chạy khi Quản trị bấm).
+
+- 🔴 **Cài đặt › Người và team** (`3500986`): nút «Lấy người từ HRM (BigQuery)» mở được cho Quản trị — hiện KẾ HOẠCH trước khi làm
+  gì: tạo tài khoản (Marketer/Sale đang làm của các team Pialpha, có email), cấp vai (MKT → Marketer ở team mình, SALE → Sale ở cả
+  ba team), rút vai + khoá người đã nghỉ, mở khoá người làm lại, đổi tên team theo HRM, và chỗ HRM với hệ lệch nhau. «Áp dụng»
+  chỉ dành cho người là Quản trị của mọi team, áp đúng bản đã xem. Tài khoản và vai tạo tay không bị đụng; không khoá Quản trị
+  duy nhất của một team.
+- 🔴 Vai do HRM cấp mang chữ «HRM», không rút tay được (đổi ở HRM). Tài khoản tạo từ HRM chưa có mật khẩu: «Chưa đặt mật khẩu» +
+  nút «Đặt mật khẩu» (chỉ lần đầu). Khoá chặn lần đăng nhập sau, không cắt phiên đang mở.
+- Lượt TỰ ĐỘNG mỗi 24 giờ khi bật `V3_HRM_TU_DONG=1` (lượt này chưa bật): HRM đọc rỗng · rút > 30% vai HRM · khoá > 5 người ⇒ hoãn,
+  ghi nhật ký, chờ người. Màn Nhật ký có chữ cho mười việc mới (tạo tài khoản từ HRM · HRM cấp/rút vai · khoá/mở khoá · đổi tên
+  team · đồng bộ · hoãn · đặt mật khẩu đầu).
+
 ### 02/10/2026 — HRM lên màn, chỉ đọc: hồ sơ nhân sự + marketer POS theo team (LL15a · CR-28-09c)
 
 Không đổi chữ bot nói. 0 migration · 0 gói · 0 tệp bộ não · **1 biến mới `V3_BQ_KHOA`** (đường tới khoá BigQuery trên máy chủ).
