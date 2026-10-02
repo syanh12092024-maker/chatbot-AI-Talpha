@@ -1435,6 +1435,16 @@ và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt 
   - **N-KHOA-PHIEN** khoá tài khoản (người nghỉ) không cắt phiên đang mở — vé mang vai tới khi hết hạn.
   - **N-HRM-LANCUOI-NHO** «lần cuối» của lượt đồng bộ giữ trong bộ nhớ tiến trình — restart thì mất (nhật ký vẫn có dòng).
 
+- 02/10 · **NỢ SAU LL15c · LL15d** (`docs/thi-cong/nhat-ky/phieu-LL15c.md` · `phieu-LL15d.md` §7):
+  - **N-GOOGLE-DANG-NHAP** đăng nhập Google — người quyết chọn «hoãn»: cần tên miền + HTTPS cho v3 (Google không nhận IP trần) và
+    OAuth Client ID loại Web (việc người).
+  - **N-MK-LOC-PAGE-CON** các màn con của Page (kịch bản · ảnh · prompt · lên chạy · hiệu quả) chưa lọc theo phạm vi marketer.
+  - **N-MK-GAN-HANG-LOAT** chưa có «gán marketer theo gợi ý cho mọi sản phẩm chưa gán» — gán từng sản phẩm.
+  - **N-DANH-MUC-RONG** prod: 1 sản phẩm gốc; 37/353 món có đơn 60 ngày nằm trong danh mục v3 — lọc + gợi ý chỉ có tác dụng khi kéo
+    danh mục POS + gộp món (việc người «để sau»).
+  - **N-L1M1-DON-CHO-IN** cổng `l1-m1.sh` bước ④ đọc đơn «Chờ in» (12) của shop THẬT Taiwan — 0 đơn lúc đo (POS sống, trạng thái
+    khác có đơn) ⇒ cổng đỏ vì dữ liệu sống; đổi sang chọn trạng thái có đơn, hoặc 0 đơn ⇒ HOÃN chứ không TRƯỢT.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2901,3 +2911,12 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · MỞ VAN MB3 (một bản) → ✅ GIỮ — prod `24abe05 → 94d7cd5`, 0 migration · 0 đổi `.env`; restart aicloser-v3 + worker lúc 07:23:43 CEST; `systemctl disable --now aicloser` (v1 TẮT HẲN, unit giữ để lùi)
   cửa vào 53 xanh / 13 đỏ = 12 nợ cũ + l1-m1 (dữ liệu POS) · mốc +1′/+5′/+15′ lỗi 0 · Started 1/1 · cửa kiểm 699 page trong v3 · page bật 0/582 · gửi 0 · `/webhook` 404 đúng (`META_WEBHOOK_OFF=1`) · lùi: checkout 24abe05 + restart 2 dịch vụ + `enable --now aicloser`
   · commit (hồ sơ MB3) · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-mot-ban.md
+- 02/10 · LL15c → ✅ (mở van cùng LL15d) — team tự nhận diện: màn chọn team CHỈ cho quản trị nhiều team; sale nhiều team vào thẳng team dùng lần trước (gợi ý cookie kiểm lại bằng team thật) + menu đổi team nhỏ ở chip; một team ⇒ chip chỉ là chữ; Google hoãn (người quyết chọn)
+  ca 6/6 (dieu-huong.js thật) · đảo-vá 18/18 · cổng ll15c.sh 10/10 · thước vai-b-noi-day BẪY ① đổi theo luật mới · nợ N-GOOGLE-DANG-NHAP
+  · commit 9e7d06c · nhật ký docs/thi-cong/nhat-ky/phieu-LL15c.md
+- 02/10 · LL15d → ✅ (mở van cùng LL15c) — marketer CHỈ THẤY sản phẩm mình phụ trách + page kế thừa (01 §9) · marketer CHỌN từ hồ sơ HRM (CR-28-09c) · gợi ý từ đơn POS 60 ngày (BigQuery chỉ đọc) · migration 031 (san_pham_goc.marketer_ma_nv)
+  đo prod chỉ đọc: page_marketer 1 dòng (không dùng được) · marketer của đơn là JSON (0 khớp thẳng; JSON_VALUE ⇒ 30/31 ra mã NV, 11/11 marketer đang làm có đơn) · danh mục v3 1 sản phẩm gốc · ca 9/9 · đảo-vá 27/27 · cổng ll15d.sh 21/21 · 6 thước neo luật cũ đổi theo luật mới
+  · commit e68227a · nhật ký docs/thi-cong/nhat-ky/phieu-LL15d.md
+- 02/10 · MỞ VAN LL15c + LL15d → ✅ GIỮ — prod `94d7cd5 → 5e81796` (sau MB3 của CR-02-10, chờ phiên ấy đóng cửa sổ), migration 031 áp mới 1 · tổng 30, 0 biến, chỉ restart aicloser-v3 lúc 08:00:15 CEST
+  cửa vào 51 xanh / 14 đỏ = 12 nợ cũ + ve7e chập chờn (chạy lại 10/10) + l1-m1 dữ liệu sống · npm test 2.466 đạt 0 đỏ · mốc +1′/+6′/+15′ lỗi 0 · worker y nguyên · gợi ý đọc thật 547 dòng / 13 mã NV · lượt HRM tự động ra 0
+  · commit 5e81796 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-ll15cd.md
