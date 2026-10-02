@@ -19,6 +19,17 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 02/10/2026 — 🔴 Marketer chỉ thấy sản phẩm mình phụ trách · chọn marketer từ HRM · sale vào thẳng team (LL15c · LL15d · CR-28-09c)
+
+Không đổi chữ bot nói. **1 migration (031 — chỉ thêm cột `san_pham_goc.marketer_ma_nv`)** · 0 gói · 0 tệp bộ não · 0 biến mới.
+
+- 🔴 **Đăng nhập** (`9e7d06c`): màn chọn team chỉ còn cho Quản trị thuộc nhiều team. Người khác thuộc nhiều team (sale — thành viên
+  cả ba team) vào thẳng team dùng lần trước (lần đầu: team đầu theo tên); đổi team bằng menu nhỏ ở chip tên team trên thanh trên.
+  Thuộc một team ⇒ chip chỉ là chữ. Đăng nhập Google: hoãn (cần tên miền + HTTPS).
+- 🔴 **Sản phẩm** (`e68227a`): marketer phụ trách CHỌN từ tài khoản marketer có hồ sơ HRM (tab Chung + hộp gộp món), kèm gợi ý «ai bán
+  nhiều nhất» từ đơn POS 60 ngày + nút «Dùng gợi ý». **Marketer chỉ thấy sản phẩm mình phụ trách** — và page bán sản phẩm ấy (cột
+  page, trang page, bản sao theo page); mở sản phẩm/page của người khác ⇒ báo «không do bạn phụ trách». Quản trị thấy cả team.
+
 ### 02/10/2026 — 🔴 MỘT BẢN: v1 nghỉ hưu, một công tắc «bot trả lời page này» (MB1 + MB2 · CR-02-10)
 
 Không đổi chữ bot nói (0 tệp bộ não). **0 migration** · 0 gói · biến GỠ: `V3_PAGE_XU_LY`, `V3_GIAO_PAGE_TREN_MAN`,
