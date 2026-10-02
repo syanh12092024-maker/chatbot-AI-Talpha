@@ -150,7 +150,8 @@ Luật Meta đổi trong năm 2026:
 >
 > **Sản phẩm là lõi của câu trả lời.** Một sản phẩm bán ở nhiều thị trường, mỗi thị trường nhiều page:
 > **sản phẩm chung** (kiến thức, cách tư vấn, hỏi size, ảnh) → **theo thị trường** (đúng MỘT món POS của shop nước đó,
-> giá bậc theo tiền tệ, ưu đãi, giao, lời riêng) → **page** (giọng, câu chào, ghi đè có chủ ý). Kịch bản tầng sản phẩm
+> giá bậc theo tiền tệ, ưu đãi, giao, lời riêng) → **page** (giọng, câu chào, ~~ghi đè có chủ ý~~ ghi đè LỜI có chủ ý —
+> page KHÔNG ghi đè sản phẩm hay giá, đổi 02/10 CR-02-10b, xem §8 «Page phải gắn sản phẩm»). Kịch bản tầng sản phẩm
 > và tầng nước giữ nguyên — chỉ trình bày theo sản phẩm thay vì theo «tầng». Mã POS mỗi shop khác nhau nhưng có thể là
 > CÙNG một sản phẩm ⇒ sản phẩm gốc gom nhiều mã POS, mỗi mã một thị trường.
 >
@@ -236,6 +237,20 @@ của page đó.
 **Lý do:** đo 28/09 — sửa giá ở giao diện v3 thì bot KHÔNG đổi (bot đọc `kb-overrides.json`); 77
 page có lớp đè nên sửa Sheet cũng KHÔNG đổi; ảnh (543) không có chỗ nào sửa được; và cửa tiền
 lúc tạo đơn so với bảng giá v3 trong khi bot báo giá theo bảng khác.
+
+**Page phải gắn sản phẩm — đổi 02/10/2026, CR-02-10b** (`docs/thi-cong/doi-y-do/CR-02-10b-page-phai-gan-san-pham.md`).
+Bot chỉ chào bán ở page đã gắn **một sản phẩm gốc và một shop POS**, và chỉ chào món POS của gốc
+đó ở shop đó. Page chưa gắn ⇒ không sản phẩm, **không trả lời** (bàn giao sale như page thiếu
+KB), không bật được — ở mọi đường đọc: chat (cả hai nguồn KB), cửa tiền, bản chép, cổng bật, màn.
+**Không có giá riêng theo page:** giá thuộc món POS × shop, mọi page cùng gốc × shop chung một bảng
+giá, sửa ở Sản phẩm › Theo thị trường. Sản phẩm gốc chỉ sinh từ **gộp món POS theo SKU**; lối tạo
+theo số hiệu bỏ. «Bản sao theo page» (78 dòng nạp từ `kb-overrides.json`) thôi là nguồn — giữ làm
+lưu trữ, không đọc.
+
+**Lý do:** người quyết chốt 02/10 *«page bắt buộc gắn sản phẩm thì mới chat được»* và *«bỏ giá
+riêng theo page»*. Đo prod 02/10: 0/514 page đã gắn gốc, cả 76 page có hàng đọc bản sao — giá và
+ảnh nằm ở bản sao riêng từng page trong khi màn Sản phẩm sửa giá ở món POS × thị trường, tức vẫn
+hai chỗ ghi cho cùng một sự thật.
 
 **Luật cứng:** điều kiện team nằm ở **tầng truy vấn**, tự chèn theo người đang đăng nhập — không phải bộ lọc trên màn hình. Quên một chỗ là team này nhìn thấy khách của team kia.
 
