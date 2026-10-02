@@ -244,27 +244,35 @@ bang "KHÔNG có đường tới 7 (removed = xoá đơn)" "${B7}" "LoiChuyenNgo
 bang "hai cặp nghiệp vụ CHO QUA thật (0→12 · 12→0)" "${B012}/${B120}" "CHO-QUA/CHO-QUA"
 
 # ═══ ④ ĐỌC ĐƠN THẬT — nguồn + HAI cột trạng thái tách nhau ═══════════════════
-muc "④ docDon trên shop THẬT ${CHO}, một trạng thái (12 = wait_print / Chờ in)"
+# N-L1M1-DON-CHO-IN (02/10): POS SỐNG — có lúc shop không còn đơn nào ở 12 ⇒ cổng TRƯỢT vì dữ liệu chứ không vì mã. Thử 12 → 1 → 3 tới
+# trạng thái POS báo CÓ đơn (`tongPos`): đọc 0 mà POS báo có ⇒ TRƯỢT (lỗi đọc thật) · cả ba POS báo 0 ⇒ HOÃN, không TRƯỢT.
+muc "④ docDon trên shop THẬT ${CHO}, một trạng thái (12 = Chờ in; POS 0 đơn thì 1 = Đã xác nhận, rồi 3 = Đã giao)"
 KQ4="$(nodex '
 const { voiPool } = await import("./db/ket-noi.js");
 const { ctxHeThong } = await import("./src/db/index.js");
 const { docDon } = await import("./src/pos/index.js");
 await voiPool(async (pool) => {
   const t = (await pool.query("SELECT id FROM team WHERE slug=$1",["chua-phan"])).rows[0].id;
-  const k = await docDon(pool, ctxHeThong(), { shop: process.argv[1], trangThai: 12, teamId: t, soTrangToiDa: 1 });
+  let k, tt;
+  for (tt of [12, 1, 3]) {
+    k = await docDon(pool, ctxHeThong(), { shop: process.argv[1], trangThai: tt, teamId: t, soTrangToiDa: 1 });
+    if (k.tongPos > 0) break;
+  }
   const r = await pool.query("SELECT ma_pos FROM don_hang WHERE ma_pos <> $1 ORDER BY id LIMIT 2", ["seed:1"]);
-  console.log(`${k.docDuoc}|${k.them}|${r.rows.map(x=>x.ma_pos).join(" ")}|${k.theoNguon.messenger}/${k.theoNguon.trang_ban_hang}|${k.khongSuyDuocNguon.length}`);
+  console.log(`${k.docDuoc}|${k.them}|${r.rows.map(x=>x.ma_pos).join(" ")}|${k.theoNguon.messenger}/${k.theoNguon.trang_ban_hang}|${k.khongSuyDuocNguon.length}|${tt}|${k.tongPos}`);
 });' "${CHO}")"
 if [ "${KQ4}" = "LOI-NODE" ]; then
   hoan "④ docDon KHÔNG chạy được ở đây (mạng/POS) — NHÁNH-VPS"
 else
-  IFS='|' read -r D_DOC D_THEM D_MA D_NGUON D_KHONG <<< "${KQ4}"
+  IFS='|' read -r D_DOC D_THEM D_MA D_NGUON D_KHONG D_TT D_TONG <<< "${KQ4}"
+  so "trạng thái đã đọc / POS báo bao nhiêu đơn ở trạng thái đó" "${D_TT} / ${D_TONG}"
   so "đơn đọc được từ POS / ghi vào don_hang" "${D_DOC} / ${D_THEM}"
   so "2 mã đơn đầu (ma_pos = <shop>:<id đơn>)" "${D_MA}"
   so "phân bố nguồn messenger/trang_ban_hang" "${D_NGUON}"
   so "đơn KHÔNG suy được nguồn (liệt kê, cấm đoán)" "${D_KHONG}"
-  if [ "${D_DOC}" -gt 0 ] 2>/dev/null; then dat "đọc được đơn thật (= ${D_DOC})"
-  else truot "đọc được 0 đơn"; fi
+  if [ "${D_DOC}" -gt 0 ] 2>/dev/null; then dat "đọc được đơn thật (= ${D_DOC}, trạng thái ${D_TT})"
+  elif [ "${D_TONG}" = "0" ]; then hoan "④ POS báo 0 đơn ở cả 12 · 1 · 3 lúc đo — dữ liệu sống, không phải lỗi đọc"
+  else truot "POS báo ${D_TONG} đơn ở trạng thái ${D_TT} mà đọc được 0"; fi
   KHAC="$(psqlx "SELECT count(*) FROM don_hang WHERE trang_thai_he <> trang_thai_pos")"
   TONG_DON="$(psqlx "SELECT count(*) FROM don_hang")"
   so "don_hang có trang_thai_he KHÁC trang_thai_pos / tổng" "${KHAC} / ${TONG_DON}"
