@@ -47,6 +47,9 @@ export {
 // VE7d · 01/10: ba thẻ vai + phụ trách + HRM (nói thứ máy làm — `ba-vai.js`).
 export { baVaiCua, PHU_TRACH, HRM, datDocHrm } from './ba-vai.js';
 
+// LL15b · 02/10: người + vai theo HRM (luật ở `src/hrm/dong-bo.js`; tầng màn ở `dong-bo-hrm.js`).
+export { datDongBoHrm, daNoiDongBoHrm, trangThaiDongBo, keHoachDongBo, apDungDongBo, datMatKhauDauCho } from './dong-bo-hrm.js';
+
 export {
   taoRouterCauHinhTeam, datChanDangNhap, datChanVai, daNoiChanTeam,
   VAI_VAO_DUOC, VAI_GHI_DUOC, DUONG_TRANG,

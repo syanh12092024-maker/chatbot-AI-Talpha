@@ -9,6 +9,9 @@
 // | GET    /api/team/ket-noi         | kết nối POS (KHÔNG bao giờ trả khoá)               |
 // | GET    /api/team/gan-page        | trạng thái + team đích + page chọn được            |
 // | POST   /api/team/gan-page        | chuyển một mẻ page sang team khác  (chỉ `quan-tri`)|
+// | GET    /api/team/hrm/ke-hoach    | LL15b: kế hoạch đồng bộ người theo HRM (chỉ `quan-tri`)          |
+// | POST   /api/team/hrm/ap-dung     | LL15b: áp đúng kế hoạch đã xem (`vanTay`) (quản trị MỌI team)     |
+// | POST   /api/team/nguoi-dung/:id/mat-khau-dau | LL15b: mật khẩu ĐẦU cho tài khoản HRM tạo (chỉ `quan-tri`) |
 //
 // CỬA GHI: `POST`/`DELETE /api/team/thanh-vien` chạm `thanh_vien_team`, và từ 15/09 thêm
 // `POST /api/team/nguoi-dung` chạm `nguoi_dung` + `thanh_vien_team` trong một lượt. Router
@@ -40,6 +43,7 @@ import {
   TOI_DA_MOT_ME, LoiChuyenPage,
 } from './gan-page.js';
 import { baVaiCua } from './ba-vai.js';
+import { trangThaiDongBo, keHoachDongBo, apDungDongBo, datMatKhauDauCho } from './dong-bo-hrm.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -204,7 +208,23 @@ ${escHtml((bc.vai || []).join(', ') || 'không có vai nào')}.</p>
       suaDuoc: coVai(bc, ...VAI_GHI_DUOC),
       // VE7d: ba thẻ vai («mở được» đo bằng `menuCua`) · phụ trách theo vai · page có tên marketer · HRM chưa nối.
       baVai: await baVaiCua(bc, { nguoi: ds.nguoi }),
+      // LL15b: đồng bộ người theo HRM — nối chưa · lượt tự động bật chưa · lần cuối chạy ra sao.
+      dongBoHrm: trangThaiDongBo(),
     });
+  }));
+
+  // LL15b · 02/10: người + vai theo HRM. Xem chỉ ĐỌC (vẫn sau `chanGhiMw`: kế hoạch liệt kê email người cả công ty).
+  r.get('/api/team/hrm/ke-hoach', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    res.json({ ok: true, ...(await keHoachDongBo(cuaBoiCanh(req), { lamMoi: req.query.lamMoi === '1' })) });
+  }));
+
+  r.post('/api/team/hrm/ap-dung', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    res.json({ ok: true, ...(await apDungDongBo(cuaBoiCanh(req), { vanTay: (req.body || {}).vanTay })) });
+  }));
+
+  r.post('/api/team/nguoi-dung/:id/mat-khau-dau', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {
+    // Mật khẩu KHÔNG đi ngược ra: trả đúng email của tài khoản vừa đặt.
+    res.json({ ok: true, ...(await datMatKhauDauCho(cuaBoiCanh(req), { nguoiDungId: req.params.id, matKhau: (req.body || {}).matKhau })) });
   }));
 
   r.post('/api/team/nguoi-dung', canDangNhap, canVai, chanGhiMw, boc(async (req, res) => {

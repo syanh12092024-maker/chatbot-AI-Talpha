@@ -300,6 +300,17 @@ const MO_TA = Object.freeze({
   noi_ho_so_khach: 'Nối hồ sơ khách',
   chat_mo_hoi_thoai: 'Bot mở hội thoại mới',
   v3_sua_khoi_dung_chung: 'Sửa Chính sách · FAQ · Phản đối',
+  // LL15b · 02/10: đồng bộ người theo HRM — tầng A `src/hrm/dong-bo.js` ghi thẳng (`HANH_DONG_DONG_BO` + hai mã dưới cùng).
+  hrm_tao_tai_khoan: 'Tạo tài khoản từ HRM',
+  hrm_gan_ma_nv: 'Gắn tài khoản với hồ sơ HRM',
+  hrm_cap_vai: 'HRM: cấp vai',
+  hrm_rut_vai: 'HRM: rút vai',
+  hrm_khoa_tai_khoan: 'HRM: khoá tài khoản người đã nghỉ',
+  hrm_mo_khoa_tai_khoan: 'HRM: mở khoá người làm lại',
+  hrm_doi_ten_team: 'Đổi tên team theo HRM',
+  hrm_dong_bo: 'Đồng bộ người theo HRM',
+  hrm_dong_bo_hoan: 'Đồng bộ HRM hoãn — chờ người xem',
+  dat_mat_khau_dau: 'Đặt mật khẩu đầu tiên',
 });
 
 /** Chữ tiếng Việt cho màn hình. Mã lạ → trả lại chính mã, kèm một tiếng kêu ở console. */

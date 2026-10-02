@@ -145,6 +145,7 @@ export const TEN_VIEC_MAY = Object.freeze({
   'hang-cho-tao-don': 'hàng chờ tạo đơn', 'cua-whatsapp-gui': 'gửi WhatsApp',
   'l2-nap': 'bot nhận tin', 'l2-chat': 'bot trả lời', 'l2-worker': 'hàng đợi tin',
   'cham-ti-le-hoan': 'chấm tỉ lệ hoàn', 'di-tru': 'di trú dữ liệu',
+  'dong-bo-hrm': 'đồng bộ người theo HRM',
 });
 
 /* ─────────────────────────── đọc ─────────────────────────── */

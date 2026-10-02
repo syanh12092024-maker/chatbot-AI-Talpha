@@ -15,7 +15,7 @@ const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
 async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
   dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
-  docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm } = {}) {
+  docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, dongBoHrm } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -43,7 +43,7 @@ async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNo
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
     ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
     dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
-    docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, express,
+    docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, dongBoHrm, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -164,6 +164,8 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   assert.ok(bao.thieu.some((x) => /duongBot/.test(x)), 'phải nêu thiếu duongBot');
   // LL15a: thiếu bộ đọc HRM thì hai màn nói «chưa nối vào máy chủ» — và danh sách thiếu phải nói ra.
   assert.ok(bao.thieu.some((x) => /docHrm/.test(x)), 'phải nêu thiếu docHrm');
+  // LL15b: thiếu bộ đồng bộ HRM thì nút «Lấy người từ HRM» mờ — tài khoản + vai theo HRM không tạo/rút/khoá được.
+  assert.ok(bao.thieu.some((x) => /dongBoHrm/.test(x)), 'phải nêu thiếu dongBoHrm');
   // `khoTokenV3` thiếu thì màn Kết nối mất cả kho token — và đường còn lại là sửa tay
   // `.env` trên máy chủ, đúng thứ đường không ai truy ngược được.
   assert.ok(bao.thieu.some((x) => /khoTokenV3/.test(x)), 'phải nêu thiếu khoTokenV3');
@@ -228,6 +230,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
     khoKhoa: { coKhoa: async () => false, docKhoa: async () => null, ghiKhoa: async () => 1 },
     duongBot: { chon: async () => ({ nguon: 'config' }), khoa: async () => ({ nguonKhoa: null }) },
     docHrm: async () => ({ luc: 0, nhanVien: [], ghep: [] }),
+    dongBoHrm: { keHoach: async () => ({}), apDung: async () => ({}), lanCuoi: () => null, datMatKhauDau: async () => ({ ok: false }) },
     docKhoi: {
       boLuat: async () => null, kyNang: async () => [],
       kichBan: async () => null, sanPham: async () => [],
@@ -245,6 +248,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   const bht = await import('../../src/ui/ban-hoi-thoai/index.js');
   assert.equal(bht.daNoiDauVetV3(), true, 'bộ đọc dấu vết v3 thật sự được đặt');
   assert.equal(bht.daNoiGiaiKichBan(), true, 'bộ giải kịch bản thật sự được đặt');
+  assert.equal((await import('../../src/ui/team/index.js')).daNoiDongBoHrm(), true, 'bộ đồng bộ HRM thật sự được đặt');
 });
 
 test('nối dây · màn cấu hình team được mắc vào, và chặn đúng vai', async (t) => {

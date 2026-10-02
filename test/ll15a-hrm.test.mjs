@@ -100,7 +100,8 @@ test('Q5 · bộ đọc HRM: đệm một ngày · «đọc lại» bỏ đệm 
   await assert.rejects(hong(), (e) => e.ma === 'khoa_hong');
   assert.ok((await hong()).nhanVien.length, 'lần sau phải thử dựng khách lại');
   // câu đọc CHỈ chọn cột cần — không kéo lương/cấp bậc/quản lý
-  assert.doesNotMatch(SQL_NHAN_VIEN.split(' FROM ')[0], /\blevel\b|comp_profile|manager|revenue/);
+  // `comp_profile` (LL15b) là loại vai MKT/SALE/BO/VANDON/CTV — được; cấp bậc/quản lý/doanh thu thì không
+  assert.doesNotMatch(SQL_NHAN_VIEN.split(' FROM ')[0], /\blevel\b|manager|revenue/);
 });
 
 test('Q6 · tóm tắt + xếp tài khoản marketer: team trên hệ · chờ gán · đã nghỉ · ngoài hệ (vận đơn, ban giám đốc)', () => {

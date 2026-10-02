@@ -24,8 +24,9 @@ export const CHU_GHEP = Object.freeze({
   confirmed: 'đã xác nhận', needs_hcns: 'HCNS chưa xác nhận', unmapped: 'chưa có trong bảng ghép', da_nghi: 'đã nghỉ',
 });
 
-// Chỉ cột cần — không kéo lương/cấp bậc/quản lý về máy chủ chat.
-export const SQL_NHAN_VIEN = `SELECT emp_code, ho_ten, chuc_vu, status, email_cong_ty, team_code FROM ${BANG_NHAN_VIEN}`;
+// Chỉ cột cần — không kéo cấp bậc/quản lý/doanh thu về máy chủ chat. `comp_profile` (LL15b) là LOẠI VAI — đo 02/10: đúng năm giá
+// trị MKT · SALE · BO · VANDON · CTV — quyết định 29/09 lấy nó làm vai mặc định (MKT → Marketer, SALE → Sale).
+export const SQL_NHAN_VIEN = `SELECT emp_code, ho_ten, chuc_vu, comp_profile, status, email_cong_ty, team_code FROM ${BANG_NHAN_VIEN}`;
 export const SQL_GHEP_POS = `SELECT person_id, person_name, emp_code, map_status, source_role, id_type, updated_at FROM ${BANG_GHEP_POS}`;
 
 /**

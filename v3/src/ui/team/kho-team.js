@@ -294,11 +294,15 @@ export async function thanhVienCua(boiCanh) {
         email: n.email || '(không tra được)',
         ten: n.ten || '',
         hoatDong: n.hoat_dong !== false,
+        // LL15b: tài khoản gắn hồ sơ HRM (`ma_nv`) · đã có mật khẩu chưa (tài khoản HRM tạo ra thì chưa) — KHÔNG bao giờ trả băm.
+        maNv: n.ma_nv || null,
+        coMatKhau: n.mat_khau_hash != null,
         vai: [],
       });
     }
     const ma = tenVai.get(String(d.vai_id));
-    if (ma) gop.get(nid).vai.push({ ma, ten: TEN_VAI[ma] || ma, capId: String(d.id), vaiId: String(d.vai_id) });
+    // `nguon`: 'hrm' = lượt đồng bộ HRM cấp (rút ở HRM, không rút tay) · 'tay' = người cấp. Trước migration 029 cột chưa có ⇒ 'tay'.
+    if (ma) gop.get(nid).vai.push({ ma, ten: TEN_VAI[ma] || ma, capId: String(d.id), vaiId: String(d.vai_id), nguon: d.nguon || 'tay' });
   }
 
   const nguoiRa = [...gop.values()].sort((a, b) => (a.email > b.email ? 1 : a.email < b.email ? -1 : 0));

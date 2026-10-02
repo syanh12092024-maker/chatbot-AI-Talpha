@@ -170,13 +170,17 @@ export async function botThanhVien(boiCanh, { nguoiDungId, maVai } = {}) {
   const vai = await traVai(maVai);                    // rào ③
   const dt = cong();
 
+  // RÀO ④ (LL15b · 02/10) — vai do lượt đồng bộ HRM cấp thì đổi ở HRM: rút tay ở đây thì lượt sau cấp lại, hai nguồn giằng nhau.
+  const dongNay = await dt.mot(BANG_THANH_VIEN, { team_id: bc.teamId, nguoi_dung_id: String(nguoiDungId), vai_id: vai.id });
+  if (dongNay && dongNay.nguon === 'hrm') {
+    throw new LoiCauHinhTeam(`vai ${vai.ma} của ${nguoi.email} do HRM cấp — đổi team/vai (hoặc báo nghỉ) ở HRM, lượt đồng bộ sau tự rút`,
+      'vai_cua_hrm', 409);
+  }
+
   // RÀO ② — đếm TRƯỚC khi xoá. Đếm sau thì đã muộn.
   if (vai.ma === VAI.QUAN_TRI) {
     const { so } = await demQuanTri(bc.teamId);
-    const dangCo = await dt.mot(BANG_THANH_VIEN, {
-      team_id: bc.teamId, nguoi_dung_id: String(nguoiDungId), vai_id: vai.id,
-    });
-    if (dangCo && so <= 1) throw new LoiRutQuanTriCuoi();
+    if (dongNay && so <= 1) throw new LoiRutQuanTriCuoi();
   }
 
   const soXoa = await dt.xoa(BANG_THANH_VIEN, {

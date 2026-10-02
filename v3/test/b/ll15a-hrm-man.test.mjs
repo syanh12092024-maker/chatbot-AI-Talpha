@@ -77,8 +77,9 @@ test('H1 · Người và team ĐÃ NỐI: hồ sơ HRM theo email (không phân 
   const hang = (id) => m.$(`tr[data-nguoi="${id}"]`).querySelectorAll('td').map(chu);
   assert.equal(hang('u1')[1], 'NV001 · đang làm · Pialpha GCC');
   assert.equal(hang('u2')[1], 'không có trong HRM');
-  assert.equal(chu(m.$('#viSaoHrm')), `Tạo tài khoản từ HRM: chưa làm (LL15b) — bảng dưới đọc HRM lúc ${gio(LUC)}.`);
-  assert.equal(m.$('#nutHrm').disabled, true, 'tạo tài khoản từ HRM chưa làm — nút vẫn tắt');
+  // LL15b · 02/10: ca này nối HRM nhưng KHÔNG nối bộ đồng bộ ⇒ nút tắt + nói vậy (phía đã nối: `ll15b-dong-bo-man` M1–M8).
+  assert.equal(chu(m.$('#viSaoHrm')), `Đồng bộ người theo HRM: máy chủ chưa nối — bảng dưới đọc HRM lúc ${gio(LUC)}.`);
+  assert.equal(m.$('#nutHrm').disabled, true, 'chưa nối bộ đồng bộ — nút tắt');
 });
 
 test('H2 · bảng marketer theo ĐÚNG team đang mở: Auus ⇒ 0 của team + chờ gán; Pialpha EU ⇒ mk.lan', async (t) => {

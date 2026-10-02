@@ -220,9 +220,23 @@ const docHrm = await (async () => {
   const { taoKhachBigQuery } = await import(`${GOC}/src/hrm/bigquery.js`);
   return taoDocHrm({ taoKhach: () => taoKhachBigQuery({ tepKhoa: process.env.V3_BQ_KHOA }) });
 })();
+// LL15b · 02/10: người + vai theo HRM (`src/hrm/dong-bo.js`) — tạo tài khoản (chưa mật khẩu) · Marketer/Sale theo team HRM · nghỉ
+// thì rút vai HRM + khoá · tên team theo HRM. Màn: xem kế hoạch rồi bấm áp. Lượt TỰ ĐỘNG chỉ khi `V3_HRM_TU_DONG=1` (vắng = đóng):
+// lượt đầu 5 phút sau khi chạy, rồi mỗi 24 giờ; vượt rào (`kiemAnToan`) thì KHÔNG áp — ghi nhật ký «hoãn», chờ người xem.
+const dongBoHrm = await (async () => {
+  if (!docHrm) return undefined;
+  const { taoDongBoHrm } = await import(`${GOC}/src/hrm/dong-bo.js`);
+  const db = taoDongBoHrm({ pool, docHrm });
+  if (process.env.V3_HRM_TU_DONG !== '1') return db;
+  const chay = () => db.tuDong().then((k) => console.log(`[chay-that] đồng bộ HRM tự động: ${k.loi ? `HỎNG — ${k.loi}`
+    : k.hoan ? `HOÃN — ${k.hoan.join(' · ')}` : JSON.stringify(k.ra)}`));
+  setTimeout(() => { chay(); setInterval(chay, 24 * 3600_000).unref(); }, 5 * 60_000).unref();
+  return { ...db, tuDongMoiGio: 24 };
+})();
 
 const bao = dungPhanB(app, {
   docHrm,
+  dongBoHrm,
   taoTruyVan,
   // CR-28-09b · MN3: lưu sản phẩm trên v3 ⇒ đẩy bản chép sang bot v1 rồi đọc lại xác minh.
   vanHanh: {

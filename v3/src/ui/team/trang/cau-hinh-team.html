@@ -62,6 +62,39 @@
     </div>
   </dialog>
 
+  <!-- LL15b · 02/10: người + vai theo HRM — xem kế hoạch rồi mới áp; áp đúng bản đã xem (vân tay), máy chủ lập lại và so. -->
+  <dialog class="dialog" data-size="lg" id="hopHrm" aria-labelledby="hopHrm-tieu">
+    <div class="dialog-header"><h2 id="hopHrm-tieu">Lấy người từ HRM</h2></div>
+    <div class="dialog-body">
+      <div id="hrmKeHoach" aria-live="polite"><span class="skeleton"></span></div>
+      <div class="field-error tren-3" id="hrm-loi" role="alert" hidden></div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn" data-variant="ghost" data-size="md" id="hrm-huy"><span>Đóng</span></button>
+      <button type="button" class="btn" data-variant="primary" data-size="md" id="hrm-ap" disabled><span>Áp dụng</span></button>
+    </div>
+  </dialog>
+
+  <dialog class="dialog" data-size="sm" id="hopMk" aria-labelledby="hopMk-tieu">
+    <div class="dialog-header"><h2 id="hopMk-tieu">Đặt mật khẩu đầu tiên</h2></div>
+    <div class="dialog-body">
+      <div class="form-stack">
+        <p id="mk-ai"></p>
+        <div class="field">
+          <label class="field-label" for="mk-moi">Mật khẩu</label>
+          <input id="mk-moi" type="password" autocomplete="new-password" placeholder="ít nhất 8 ký tự">
+          <div class="field-hint">Tài khoản tạo từ HRM chưa có mật khẩu nên chưa đăng nhập được. Đặt MỘT lần — v3 chưa có đường
+            đặt lại. Gửi cho người dùng qua kênh riêng.</div>
+        </div>
+        <div class="field-error" id="mk-loi" role="alert" hidden></div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn" data-variant="ghost" data-size="md" id="mk-huy"><span>Huỷ</span></button>
+      <button type="button" class="btn" data-variant="primary" data-size="md" id="mk-luu"><span>Đặt mật khẩu</span></button>
+    </div>
+  </dialog>
+
   <section class="section" aria-labelledby="tieu-vai">
     <h2 id="tieu-vai" class="sr-only">Ba vai trong team</h2>
     <div class="luoi-ba-vai" id="baVai"><span class="skeleton"></span></div>
@@ -170,6 +203,7 @@ function veHrm(h, mp) {
 
 /* ─── người trong team ─── */
 let VAI_HIEN = [], TV = [], PHU = {}, HRM_NOI = false, HO_SO = {};
+const tenVai = (ma) => (VAI_HIEN.find((v) => v.ma === ma) || {}).ten || ma;
 function phuTrachCua(n) {
   // Mã vai KHÔNG gõ lại ở đây (bài học ② giai đoạn 1): máy chủ đánh cờ `tatCa` cho vai phủ mọi vai khác.
   const ds = n.vai.map((v) => PHU[v.ma]).filter(Boolean);
@@ -190,9 +224,9 @@ function veThanhVien(d) {
     $('#baVai').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa đo được ba vai', body: 'Máy chủ không trả phần vai — xem cảnh báo đầu trang.' });
     $('#noiDungHrm').innerHTML = '';
   }
-  $('#viSaoHrm').textContent = !bv || !bv.hrm ? ''
-    : bv.hrm.noi ? `Tạo tài khoản từ HRM: chưa làm (LL15b) — bảng dưới đọc HRM lúc ${gio(bv.hrm.luc)}.`
-      : `Lấy người từ HRM: ${bv.hrm.chu.charAt(0).toLowerCase()}${bv.hrm.chu.slice(1)} — ${bv.hrm.viSao}.`;
+  const dbh = d.dongBoHrm || { noi: false };
+  $('#nutHrm').disabled = !(d.suaDuoc && dbh.noi && bv && bv.hrm && bv.hrm.noi);
+  $('#viSaoHrm').textContent = cauHrm(bv, dbh, d.suaDuoc);
   $('#demTv').textContent = d.suaDuoc ? `${so(TV.length)} người` : `${so(TV.length)} người · vai của bạn chỉ xem được`;
 
   if (d.trong) {
@@ -205,11 +239,16 @@ function veThanhVien(d) {
       <tr data-nguoi="${esc(n.nguoiDungId)}">
         <td><div class="manh">${esc(n.ten || n.email)}</div>${n.ten ? `<div class="meta">${esc(n.email)}</div>` : ''}</td>
         <td class="meta">${!HRM_NOI ? 'chưa nối' : HO_SO[n.nguoiDungId] ? esc(`${HO_SO[n.nguoiDungId].maNv} · ${HO_SO[n.nguoiDungId].trangThai || ''} · ${HO_SO[n.nguoiDungId].team || ''}`) : 'không có trong HRM'}</td>
-        <td><div class="chip-list">${n.vai.length ? n.vai.map((v) => `<span class="chip">${esc(v.ten)}${d.suaDuoc
+        <td><div class="chip-list">${n.vai.length ? n.vai.map((v) => v.nguon === 'hrm'
+          // Vai do HRM cấp: không có nút rút — đổi ở HRM, lượt đồng bộ sau tự rút (máy chủ cũng từ chối rút tay: `vai_cua_hrm`).
+          ? `<span class="chip" data-nguon="hrm" title="Do HRM cấp — đổi team/vai ở HRM">${esc(v.ten)} <span class="meta">HRM</span></span>`
+          : `<span class="chip">${esc(v.ten)}${d.suaDuoc
           ? `<button type="button" data-rut="${esc(n.nguoiDungId)}" data-vai="${esc(v.ma)}" aria-label="Rút vai ${esc(v.ten)} của ${esc(n.email)}" title="Rút vai ${esc(v.ten)}">${icon('x')}</button>` : ''}</span>`).join('')
           : '<span class="text-muted">Không có vai</span>'}</div></td>
         <td>${phuTrachCua(n)}</td>
-        <td>${statusBadge(n.hoatDong ? 'feature_on' : 'blocked', { label: n.hoatDong ? 'Hoạt động' : 'Đã khoá' })}</td>
+        <td>${statusBadge(n.hoatDong ? 'feature_on' : 'blocked', { label: n.hoatDong ? 'Hoạt động' : 'Đã khoá' })}${n.coMatKhau === false
+          ? ` <span class="status-badge" data-tone="warning" data-chua-mk>Chưa đặt mật khẩu</span>${d.suaDuoc
+            ? ` <button type="button" class="btn" data-variant="ghost" data-size="sm" data-dat-mk="${esc(n.nguoiDungId)}"><span>Đặt mật khẩu</span></button>` : ''}` : ''}</td>
       </tr>`).join('')}</tbody></table>`;
   }
 
@@ -224,7 +263,104 @@ function veThanhVien(d) {
     $('#nutThem').disabled = !chon.length;
   }
   document.querySelectorAll('[data-rut]').forEach((b) => b.addEventListener('click', () => rut(b.dataset.rut, b.dataset.vai)));
+  document.querySelectorAll('[data-dat-mk]').forEach((b) => b.addEventListener('click', () => moDatMk(b.dataset.datMk)));
 }
+
+/* ─── NGƯỜI THEO HRM (LL15b) — câu cạnh nút · kế hoạch · áp · mật khẩu đầu ─── */
+function cauLanCuoi(l) {
+  if (!l) return 'chưa chạy lượt nào từ lúc máy chủ khởi động';
+  const cach = l.cach === 'tay' ? 'bấm tay' : 'tự động';
+  if (l.loi) return `${gio(l.luc)} (${cach}) HỎNG — ${l.loi}`;
+  if (l.hoan) return `${gio(l.luc)} (${cach}) HOÃN, chờ người xem — ${l.hoan.join(' · ')}`;
+  const r = l.ra || {};
+  return `${gio(l.luc)} (${cach}): tạo ${so(r.taoTaiKhoan || 0)} tài khoản · cấp ${so(r.capVai || 0)} vai · rút ${so(r.rutVai || 0)} · khoá ${so(r.khoa || 0)}`;
+}
+function cauHrm(bv, dbh, suaDuoc) {
+  if (!bv || !bv.hrm) return '';
+  if (!bv.hrm.noi) return `Lấy người từ HRM: ${bv.hrm.chu.charAt(0).toLowerCase()}${bv.hrm.chu.slice(1)} — ${bv.hrm.viSao}.`;
+  if (!dbh.noi) return `Đồng bộ người theo HRM: máy chủ chưa nối — bảng dưới đọc HRM lúc ${gio(bv.hrm.luc)}.`;
+  const nhip = dbh.tuDong ? `tự động mỗi ${so(dbh.moiGio)} giờ` : 'chỉ khi Quản trị bấm (lượt tự động chưa bật)';
+  return `Người theo HRM: ${nhip} · lần cuối: ${cauLanCuoi(dbh.lanCuoi)}${suaDuoc ? '' : ' · chỉ Quản trị lấy người từ HRM'}.`;
+}
+
+let KE_HRM = null;
+function loiHrm(chu) { const o = $('#hrm-loi'); o.hidden = !chu; o.textContent = chu || ''; }
+const NHOM_KE = [
+  ['taoTaiKhoan', 'Tạo tài khoản', (x) => `${x.email} · ${x.ten} · ${x.maNv}`],
+  ['ganMaNv', 'Gắn tài khoản có sẵn với hồ sơ HRM', (x) => `${x.email} → ${x.maNv}`],
+  ['capVai', 'Cấp vai', (x) => `${x.email} · ${tenVai(x.vai)} · ${x.team}`],
+  ['rutVai', 'Rút vai do HRM cấp', (x) => `${x.email} · ${tenVai(x.vai)} · ${x.team} — ${x.lyDo}`],
+  ['khoa', 'Khoá tài khoản (HRM: đã nghỉ)', (x) => `${x.email} · ${x.maNv}`],
+  ['moKhoa', 'Mở khoá (HRM: làm lại)', (x) => `${x.email} · ${x.maNv}`],
+  ['doiTenTeam', 'Đổi tên team theo HRM', (x) => `«${x.tu}» → «${x.sang}»`],
+];
+function veKeHoachHrm(k) {
+  KE_HRM = k;
+  const p = k.keHoach;
+  const co = NHOM_KE.filter(([m]) => p[m].length);
+  $('#hrmKeHoach').innerHTML = `
+    <p class="text-sm" data-tom-tat-ke>Đọc HRM lúc ${esc(gio(k.docLuc))} · <b>${so(p.dem.nhanVienVaoHe)}</b> người vào hệ (Marketer/Sale đang làm
+      của các team Pialpha) · bỏ qua ${so(p.dem.boQuaNgoaiHe)} hồ sơ ngoài hệ, ${so(p.dem.boQuaThieuEmail)} hồ sơ thiếu email.</p>
+    ${co.length ? `<div class="tren-3" id="dsNhomKe">${co.map(([m, ten, dong]) => `
+      <details data-nhom="${esc(m)}"><summary><b>${esc(ten)}</b>: <span class="tabular">${so(p[m].length)}</span></summary>
+        <ul class="tren-2 text-sm">${p[m].map((x) => `<li>${esc(dong(x))}</li>`).join('')}</ul></details>`).join('')}</div>`
+      : '<p class="tren-3" data-khop-roi><b>Hệ đã khớp HRM</b> — không có gì để áp.</p>'}
+    ${p.canhBao.length ? `<div class="tren-3">${canhBao({ level: 'warning', title: `${so(p.canhBao.length)} chỗ HRM và hệ lệch — không tự sửa`,
+      detail: p.canhBao.map((c) => c.chu) })}</div>` : ''}
+    ${k.anToan ? '' : `<div class="tren-3">${canhBao({ level: 'warning', title: 'Lượt tự động sẽ KHÔNG tự áp kế hoạch này',
+      body: 'Kế hoạch vượt rào an toàn — xem kỹ rồi tự bấm «Áp dụng» nếu đúng.', detail: k.lyDo })}</div>`}
+    <p class="field-hint tren-3">Tài khoản mới chưa có mật khẩu — đặt ở cột «Tài khoản» của bảng người. Khoá chặn lần đăng nhập SAU,
+      phiên đang mở giữ tới khi hết vé. Vai do HRM cấp không rút tay: đổi ở HRM. Vai cấp tay không bao giờ bị lượt này rút.</p>
+    ${k.apDuoc ? '' : `<p class="field-hint tren-2" data-vi-sao-khong-ap>Không áp được: ${esc(k.viSaoKhongAp || '')}.</p>`}`;
+  $('#hrm-ap').disabled = !co.length || !k.apDuoc;
+}
+async function moKeHoachHrm() {
+  KE_HRM = null; loiHrm('');
+  $('#hrmKeHoach').innerHTML = '<span class="skeleton"></span>';
+  $('#hrm-ap').disabled = true;
+  if (!$('#hopHrm').open) $('#hopHrm').showModal();
+  try { const k = await goi('/api/team/hrm/ke-hoach?lamMoi=1'); if (k) veKeHoachHrm(k); }
+  catch (e) { $('#hrmKeHoach').innerHTML = ''; loiHrm(`Không lập được kế hoạch: ${e.message}`); }
+}
+$('#nutHrm').addEventListener('click', moKeHoachHrm);
+$('#hrm-huy').addEventListener('click', () => $('#hopHrm').close());
+$('#hrm-ap').addEventListener('click', async () => {
+  if (!KE_HRM) return;
+  const nut = $('#hrm-ap');
+  setBusy(nut, true);
+  try {
+    const kq = await goi('/api/team/hrm/ap-dung', { method: 'POST', body: JSON.stringify({ vanTay: KE_HRM.keHoach.vanTay }) });
+    const r = kq.ra || {};
+    $('#hopHrm').close();
+    toast(`Đã áp theo HRM: tạo ${so(r.taoTaiKhoan || 0)} tài khoản · cấp ${so(r.capVai || 0)} vai · rút ${so(r.rutVai || 0)} · khoá ${so(r.khoa || 0)} · mở khoá ${so(r.moKhoa || 0)} · đổi tên ${so(r.doiTenTeam || 0)} team.`);
+    await nap();
+  } catch (e) { loiHrm(e.message); }
+  finally { setBusy(nut, false); }
+});
+
+let MK_CHO = null;
+function loiMk(chu) { const o = $('#mk-loi'); o.hidden = !chu; o.textContent = chu || ''; }
+function moDatMk(nguoiDungId) {
+  MK_CHO = nguoiDungId;
+  const n = TV.find((x) => x.nguoiDungId === nguoiDungId) || {};
+  $('#mk-ai').textContent = `Tài khoản: ${n.email || nguoiDungId}`;
+  $('#mk-moi').value = ''; loiMk('');
+  $('#hopMk').showModal();
+}
+$('#mk-huy').addEventListener('click', () => $('#hopMk').close());
+$('#mk-luu').addEventListener('click', async () => {
+  const matKhau = $('#mk-moi').value;
+  if (matKhau.length < 8) return loiMk('Mật khẩu phải từ 8 ký tự.');
+  const nut = $('#mk-luu');
+  setBusy(nut, true);
+  try {
+    const kq = await goi(`/api/team/nguoi-dung/${encodeURIComponent(MK_CHO)}/mat-khau-dau`, { method: 'POST', body: JSON.stringify({ matKhau }) });
+    $('#hopMk').close(); $('#mk-moi').value = '';
+    toast(`Đã đặt mật khẩu cho ${kq.email}. Gửi cho họ qua kênh riêng.`);
+    await napThanhVien();
+  } catch (e) { loiMk(e.message); }
+  finally { setBusy(nut, false); }
+});
 
 // ── TẠO NGƯỜI DÙNG ────────────────────────────────────────────────────────────────
 // Nửa còn thiếu của chính màn này: trước 15/09 cấp vai được, nhưng chỉ cho người ĐÃ tồn tại,
