@@ -26,9 +26,10 @@ không có sản phẩm, không trả lời khách (bàn giao sale, đúng khuô
 1. Người quyết chốt 02/10.
 2. «Một nguồn» (CR-28-09b) còn hở: giá + ảnh của page nằm ở bản sao riêng từng page, trong khi
    màn Sản phẩm sửa giá ở món POS × thị trường (VE8b) — vẫn là hai chỗ ghi cho cùng một sự thật.
-3. Gốc tạo theo số hiệu không mang SKU, không marketer ⇒ món của shop kéo về sau không tự nối
-   (lượt kéo nối SKU trước, `src/pos/doc-danh-muc.js:142-155`). Prod có đúng một ca như thế:
-   «Diamond Halo set», tạo 29/09, `sku` NULL (bảng 12).
+3. Gốc tạo theo số hiệu không mang SKU, không marketer ⇒ không bao giờ được nối theo SKU; lượt kéo chỉ
+   lùi về số đầu tên (`src/pos/doc-danh-muc.js:142-153`), phủ ~70% món (18,9% tên biến thể không có số
+   hiệu). Prod có đúng một ca như thế: «Diamond Halo set», tạo 29/09, `sku` NULL (bảng 12).
+   *(Sửa 02/10 theo review (a) G1-N1 — bản đầu viết «không tự nối», sai.)*
 4. Bản sao mang mã `kb:<page>:SP01`, POS không biết mã đó (§9 N-MN8b); page gắn gốc thì sản phẩm
    là món POS thật `<shop>:<biến thể>`.
 
@@ -66,7 +67,7 @@ Lệnh đã chạy: `grep -n -i "kế thừa|san_pham_goc_ma|bản sao|một ngu
 | 4 Máy | `src/products/ban-chep-bot.js:68-70` `pageBanSanPham` · `src/products/san-pham-goc.js:296-300` «Page đang bán» đường `mon_pos` · `src/pos/doc-danh-muc.js:73-87,166-189` RF-15 gán/backfill `page_id` | Bỏ ba nhánh đọc/ghi theo `page_id` | Thợ | S |
 | 4 Máy · ⚠️ | **Chat trên prod KHÔNG đi qua `catalog.js`.** `V3_RAP_PROMPT_BAT` vắng (đo 02/10: `.env`, unit, `/proc` của `aicloser-v3`) ⇒ `rapKb` lui về `kb.js` đọc `kb-overrides.json` (77 page có products, sửa lần cuối 30/09). Và `dayPageSangBot` gặp page rỗng thì KHÔNG đẩy (ca BC10, cố ý — đẩy rỗng là xoá thứ bot đang bán) ⇒ bản chép cũ đứng nguyên | Bỏ nhánh ở `catalog.js` **không đủ**. Chặn ở `src/chat/handler-v3.js` (ngoài bộ não): đọc `page` TRƯỚC KB, chưa gắn gốc + shop ⇒ bàn giao `page_chua_gan_san_pham` + nhật ký, không gọi model — phủ cả hai nguồn KB | Thợ | M |
 | 4 Máy | `v3/src/ui/san-pham/trang/san-pham.html` — `veThem` (756-800) · `veBanSao`/`veBang`/`moPage` (673-754) · ô lưu ý (102-113) · router `POST /api/san-pham/goc` (`router.js:134`, tạo gốc không SKU) · `GET /api/san-pham` (`:122`, chỉ màn này gọi — `san-pham.html:822`) | GSP1 bỏ lối số hiệu + đóng `POST /goc`; GSP5 bỏ màn bản sao + `GET /api/san-pham`. Cửa sửa gốc `POST /goc/:id` giữ | Thợ | M |
-| 4 Máy | Trang một page, tab «SP & giá» (`mot-page.html:444+`) — hôm nay sửa đúng thứ bot đọc = bản sao của page | Sau CR thứ bot đọc = món POS của shop ⇒ sửa ở một page là sửa MỌI page cùng gốc × shop. Câu chữ phải nói vậy, hoặc chuyển hẳn sang Sản phẩm › Theo thị trường | Thợ | S–M |
+| 4 Máy | Trang một page, tab «SP & giá» (`mot-page.html:444+`) + màn Prompt — đọc qua `docKhoi.sanPham` = `v3/chay-that.js:408` `rap.docSanPhamGoiGia(pool, teamId, pageRowId)` **KHÔNG truyền `trang`** ⇒ luôn nhánh `page_id` (bản sao), kể cả page đã gắn — **bộ đọc bản đầu CR bỏ sót** (review (a) G2-N1). Sửa ở trang page lúc đó đẩy món POS chưa giá lên bot | GSP3b: truyền `trang` (page đã gắn ⇒ đọc món POS như bot) + cửa lưu sản phẩm/ảnh từ trang page TỪ CHỐI dòng `nguon='kb'` của page đã gắn (409, chỉ sang Sản phẩm › Theo thị trường). Sau CR sửa ở page = sửa MỌI page cùng gốc × shop — câu chữ nói vậy | Thợ | S–M |
 | 4 Bộ ca | **Đảo thử 02/10** — worktree tạm, bỏ nhánh `page_id` ở `catalog.js` + `kho-san-pham-v3.js` + `ban-chep-bot.js`, chạy 39 tệp ca chạm đường đọc: bản gốc **410/411** (1 đỏ sẵn: `l2-m3-rap-prompt` lỗi runner «Unable to deserialize cloned data», không do luật) → bản đảo **375/411** ⇒ **35 ca neo luật cũ** — đều dựng fixture bằng bản sao theo page: đường tiền (D1–D3 · D5 · D8 duyệt · B2 hàng chờ · R2-3/6/7/8 · Legacy→duyệt) · chat (① · ④a rap-prompt) · bản chép + ảnh (BC6–BC10 · AR1–AR7 · NK4–NK5 · AS5–AS6) · đầu-cuối (V3 UI e2e · LL2 Hộp thư) | Chuyển fixture sang page gắn gốc + shop — **không xoá ca**. Thêm 4 ca luật mới: (i) page chưa gắn + có bản sao ⇒ chat bàn giao, model 0 lượt — chạy cả nhánh `kb.js`; (ii) cổng bật chặn; (iii) `cua2Tien` đóng; (iv) gắn gốc + shop ⇒ đủ. Đảo-vá: trả nhánh `page_id` / bỏ chốt handler ⇒ (i)–(iii) đỏ | Thợ | M–L |
 | 4 Cổng | `ops/bin/nghiem-thu/*.sh` | Đo: **0 cổng** neo đường `page_id` / màn bản sao / lối số hiệu. Cổng mới `gsp1.sh` … `gsp5.sh` | Thợ | S |
 | 4 Biến | `V3_*` | Không thêm, không đổi | — | — |
@@ -118,13 +119,24 @@ ngoài năm file.
 | Mã | Việc | Làn | Thứ tự · phụ thuộc |
 |---|---|---|---|
 | GSP1 | Màn Sản phẩm: «+ Thêm» mở «Gộp món POS»; bỏ khung tạo gốc theo số hiệu + danh sách 185 số hiệu; đóng `POST /api/san-pham/goc` (tạo gốc không SKU). Cửa sửa gốc `POST /goc/:id` giữ | 🟨 | 1 — độc lập; chặn sớm gốc không SKU |
-| GSP2 | Gắn 76 page vào gốc: màn «Bản sao theo page» đổi TẠM thành **danh sách việc chuyển** (mỗi dòng: page · shop · giá + ảnh bản sao · gợi ý món POS/SKU của shop khớp tên page) — người xác nhận: gắn vào gốc có sẵn, hoặc gộp SKU thành gốc rồi gắn, trong cùng màn · ô lưu ý trái thành bộ đếm «x page còn đọc bản sao» · cửa ghi gắn page dùng lại cửa đã có (`san-pham-goc.js:660`, nhật ký `truoc/sau`) | 🟨 | 2 — sau GSP1 (cùng tệp màn) |
+| GSP2 | Gắn 76 page vào gốc: màn «Bản sao theo page» đổi TẠM thành **danh sách việc chuyển** (page · shop · giá + ảnh bản sao · gợi ý món POS khớp tên page: gốc có sẵn / SKU đã là gốc nhưng món shop này chưa nối / SKU chưa gốc) — người xác nhận: gắn · nối món rồi gắn · gộp SKU rồi gắn · **«không chuyển»** (có nhật ký). **Trạng thái theo PAGE × BẢN SAO, không theo giá món** (review (a) G2-C1): migration 032 thêm cột `san_pham.doi_soat` (NULL · `chep` · `giu_gia_mon` · `bo_qua`) — page `xong` chỉ khi MỌI bản sao của nó có quyết định. Bộ đếm «page chưa chuyển xong» đếm TOÀN HỆ theo từng team | 🟨 | 2 — sau GSP1 (cùng tệp màn) |
 | H-GSP | Người: shop cho 11 page chưa có shop · xác nhận gợi ý · chọn giá khi lệch · 2 page có 2 bản sao | — | song song GSP2 |
-| GSP3 | Chép giá + ảnh, CHẠY TRONG tiến trình v3 (nút trên danh sách việc chuyển — không script rời trên prod, vì bản chép `kb-overrides.json` do chính tiến trình ghi): page đã gắn ⇒ bậc giá bản sao → món POS (`gia_tay=true`, CHỈ khi món chưa có giá; tiền tệ phải khớp shop; gốc có >1 món ở shop hoặc giá lệch giữa các page ⇒ dừng, hiện ra cho người chọn) + ảnh → món POS (khử trùng `duong`) · đẩy bản chép · nhật ký ghi id đã ghi để lùi | 🟥 | 3 — sau GSP2 (cùng tệp màn) |
-| GSP4 | Một đường: bỏ nhánh `page_id` ở `catalog.js` · `kho-san-pham-v3.js` · `ban-chep-bot.js` · `san-pham-goc.js` «Page đang bán» · `doc-danh-muc.js` RF-15; chốt ở `handler-v3.js` trước KB; 35 ca chuyển fixture + 4 ca luật mới + đảo-vá + cổng `gsp4.sh`; deploy theo `mo-van` | 🟥 | 4 — khi bộ đếm = 0, hoặc người quyết chấp nhận phần còn lại thôi chat |
+| GSP3 | **Đối soát giá + ảnh theo đơn vị GỐC × SHOP** (review (a) G3-C1), chạy TRONG tiến trình v3: gom mọi bản sao của các page đã gắn cùng gốc × shop (+ giá món đang có); bảng bậc khác nhau GIỮA các page hoặc với món ⇒ 409 `lech_gia_giua_page` kèm bảng từng page + marketer — người chọn một bảng (hoặc giữ giá món); bậc chép ĐỦ mọi cột (kể cả bậc tắt, ưu đãi, ship); ảnh gom về món, khử trùng `duong`, ghi `nguon='kb'`; LUÔN đẩy bản chép một lần cuối lượt (kể cả khi giá giống hệt); dùng lại cửa lưu giá VE8b; ghi `doi_soat` cho mọi bản sao của đơn vị | 🟥 | 3 — sau GSP2 (cùng tệp màn) |
+| GSP3b | Trang page: bộ đọc `chay-that.js:408` truyền `trang` (page đã gắn ⇒ món POS, như bot) · cửa lưu sản phẩm/ảnh từ trang page từ chối dòng `nguon='kb'` của page đã gắn (409 + lối sang Sản phẩm › Theo thị trường) · câu chữ tab «SP & giá»: sửa ở đây là sửa mọi page cùng gốc × shop | 🟥 | 3b — sau GSP3, cùng đợt deploy với GSP1–GSP3 |
+| GSP4 | Một đường: bỏ nhánh `page_id` ở `catalog.js` · `kho-san-pham-v3.js` · `ban-chep-bot.js` · `san-pham-goc.js` «Page đang bán» · `doc-danh-muc.js` RF-15; chốt ở `handler-v3.js` trước KB; 35 ca chuyển fixture + 4 ca luật mới + đảo-vá + cổng `gsp4.sh`; deploy theo `mo-van` | 🟥 | 4 — khi bộ đếm TOÀN HỆ (mọi team; `bo_qua` tính là đã quyết) = 0, hoặc người quyết chấp nhận phần còn lại thôi chat |
 | GSP5 | Dọn: bỏ màn «Bản sao theo page» + ô lưu ý + `GET /api/san-pham`; tab «SP & giá» trang page nói giá sửa ở Sản phẩm › Theo thị trường; `03-MAN-HINH.md` · `luoc-do-v1.md` | 🟨 | 5 — sau GSP4 |
 
 Áp theo thứ tự §④ của quy trình: `01-QUYET-DINH.md` → `ban-giao` → sổ + phiếu → code → ca → cổng → màn.
+
+## 5e · Sửa sau review nghiệp vụ điểm (a) — 02/10
+
+Review (`review-nghiep-vu`, ba phiếu GSP1–GSP3): GSP1 ĐẠT; GSP2 + GSP3 SỬA-PHIẾU vì cùng một CHẶN — trạng
+thái «xong» tính theo GIÁ CỦA MÓN nên (a) hai page cùng gốc × shop giá khác nhau: chép page đầu xong thì page
+sau tự thành «xong», giá page đầu thắng ngầm và bị đẩy sang bot của page sau; (b) page gắn vào món đã có giá
+rời danh sách mà chưa ai so giá; (c) bộ đếm về 0 sớm ⇒ GSP4 đủ điều kiện sai. Sửa: trạng thái theo page ×
+bản sao (cột `doi_soat`, migration 032 chỉ thêm), đối soát theo đơn vị gốc × shop, người chọn khi lệch.
+Thêm GSP3b cho bộ đọc trang page CR bỏ sót (`chay-that.js:408`). Cấm chạy `ops/bin/day-lai-ban-chep.mjs
+--tat-ca` từ lúc GSP2 lên prod tới lúc GSP3b lên prod (nó đẩy món POS chưa giá cho page đã gắn).
 
 ## 5d · Lớp 5 ĐO TRÊN PROD (02/10, SSH chỉ đọc, `BEGIN READ ONLY` … `ROLLBACK`)
 
