@@ -326,6 +326,7 @@ const bao = dungPhanB(app, {
     ds: (bc) => spGoc.dsSanPhamGoc(pool, bc.teamId),
     cho: (bc) => spGoc.soHieuChuaCoGoc(pool, bc.teamId),
     dem: (bc) => spGoc.demGia(pool, bc.teamId),
+    // GSP1: `tao` GIỮ — nằm trong danh sách hàm BẮT BUỘC của `datKhoGoc`; thiếu là boot ném `noi_day_thieu`. Không còn cửa HTTP nào gọi.
     tao: (bc, t) => spGoc.taoSanPhamGoc(pool, bc.teamId, t),
     sua: (bc, id, t) => spGoc.suaSanPhamGoc(pool, bc.teamId, id, t),
     bo: (bc, id) => spGoc.boSanPhamGoc(pool, bc.teamId, id),

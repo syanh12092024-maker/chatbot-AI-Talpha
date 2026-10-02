@@ -82,7 +82,7 @@ const giu = (id, tab, xem) => {   // F5 / chia sẻ đường không mất chỗ
 function veTrai() {
   if (!GOC) return;
   $('#choNutThem').innerHTML = GOC.suaDuoc ? button('+ Thêm', { size: 'sm', id: 'nutThem' }) : '';
-  if ($('#nutThem')) $('#nutThem').onclick = () => veThem();
+  if ($('#nutThem')) $('#nutThem').onclick = () => veGop();   // GSP1: sản phẩm gốc chỉ sinh từ gộp món POS theo SKU
   const q = $('#tim').value.trim().toLowerCase();
   const ds = GOC.goc.filter((g) => !q || [g.ten, g.maGoc, g.soHieu].some((x) => String(x || '').toLowerCase().includes(q)));
   $('#dsGoc').innerHTML = ds.length
@@ -105,7 +105,7 @@ function veTrai() {
   const coBanSao = (dem.tongSanPham || 0) > 0;
   $('#oDuLieu').innerHTML = (coBanSao || GOC.cho.length) ? `<div class="o-luu-y">
       ${coBanSao ? `<b>Dữ liệu hôm nay còn nằm theo page.</b> ${so(dem.tongSanPham)} sản phẩm bot đang bán nằm theo ${so(dem.coSanPham)}/${so(dem.tongPage)} page · ${so(GOC.goc.length)} sản phẩm gốc${g.chuaCoGia ? ` · ${so(g.chuaCoGia)}/${so(g.tong)} món chưa có bậc giá` : ''}.` : ''}
-      <br>${GOC.cho.length || GOC.khongCoSoHieu
+      <br>${GOC.suaDuoc
         ? `<button type="button" class="nut-dam" id="moGop">Gộp món POS thành sản phẩm →</button>` : ''}<button type="button" class="nut-dam" id="moBanSao">Bản sao theo page →</button>
     </div>` : '';
   if ($('#moBanSao')) $('#moBanSao').onclick = () => veBanSao();
@@ -753,51 +753,6 @@ async function moPage(id) {
   }
 }
 
-/* ── PHẢI · THÊM SẢN PHẨM + số hiệu POS chờ đặt tên ──────────────────────────────────── */
-function veThem() {
-  CHON = null; veTrai(); giu(null);
-  const d = GOC || { cho: [] };
-  $('#phai').innerHTML = `
-    <div class="chi-tiet-dau"><div><h2 class="tieu-de-lon">Thêm sản phẩm</h2>
-      <div class="dong-phu">Gom các món POS mang cùng số hiệu ở mọi shop thành MỘT sản phẩm của team — mỗi shop là một thị trường, page bán sản phẩm này gắn vào đây. Mã gốc là khoá của kịch bản — đặt rồi thì KHÔNG sửa được, chỉ tên và số hiệu sửa được.</div></div></div>
-    ${d.suaDuoc ? `<div class="form-stack" id="khungTaoGoc">
-      <div class="hang">
-        <div class="field"><label class="field-label" for="gSo">Số hiệu</label>
-          <input id="gSo" inputmode="numeric" autocomplete="off" placeholder="125" size="6"></div>
-        <div class="field"><label class="field-label" for="gMa">Mã gốc</label>
-          <input id="gMa" autocomplete="off" spellcheck="false" placeholder="fitgum-acai-berry"></div>
-        <div class="field"><label class="field-label" for="gTen">Tên</label>
-          <input id="gTen" autocomplete="off" placeholder="Fitgum Acai Berry"></div>
-        <button type="button" class="btn" data-variant="primary" data-size="sm" id="nutTaoGoc"><span>Tạo</span></button>
-      </div>
-      <div class="field-hint" id="goiYGoc">Lượt «Kéo danh mục» kế tiếp tự nối các biến thể POS mang số hiệu này.</div>
-    </div>` : canhBao({ level: 'info', title: 'Chỉ quản trị thêm sản phẩm', body: 'Đặt tên sản phẩm là đổi thứ bot gọi trước mặt khách.' })}
-    ${d.cho.length ? `<div class="section-header"><div><h3>${so(d.cho.length)} số hiệu chưa có sản phẩm gốc</h3>
-         <div class="section-desc">Bấm một số để điền sẵn rồi đặt mã gốc.${d.khongCoSoHieu ? ` ${so(d.khongCoSoHieu)} biến thể không có số hiệu ở đầu tên — phải gõ số vào tên bên kho hàng.` : ''}</div></div></div>
-       <div class="chip-list" role="list" aria-label="Số hiệu chờ đặt tên">${d.cho.map((c) => `
-         <button type="button" role="listitem" class="btn" data-size="sm" data-cho="${esc(c.soHieu)}" title="${esc((c.ten || []).join(' · ') || 'chưa có tên')}">
-           ${esc(c.soHieu)} — ${esc((c.ten || [])[0] || 'chưa có tên')}${c.soBienThe > 1 ? ` (${so(c.soBienThe)} biến thể)` : ''}</button>`).join('')}</div>` : ''}`;
-  document.querySelectorAll('[data-cho]').forEach((b) => b.addEventListener('click', () => {
-    const c = d.cho.find((x) => x.soHieu === b.dataset.cho) || {};
-    if (!$('#gSo')) return;
-    $('#gSo').value = c.soHieu || '';
-    $('#gTen').value = (c.ten || [])[0] || '';
-    $('#gMa').value = ((c.ten || [])[0] || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    $('#gMa').focus();
-  }));
-  if ($('#nutTaoGoc')) $('#nutTaoGoc').addEventListener('click', taoGoc);
-}
-async function taoGoc() {
-  const nut = $('#nutTaoGoc'); nut.disabled = true;
-  try {
-    const kq = await goiGhi('/api/san-pham/goc', { method: 'POST', body: JSON.stringify({
-      soHieu: $('#gSo').value.trim(), maGoc: $('#gMa').value.trim(), ten: $('#gTen').value.trim(),
-    }) });
-    await taiGoc();
-    const moi = kq && (kq.goc || kq.item || kq);
-    if (moi && moi.id) moSanPham(String(moi.id)); else veThem();
-  } catch (e) { $('#goiYGoc').textContent = e.message; nut.disabled = false; }
-}
 async function boGoc(id, nut) {
   nut.disabled = true;
   try { await goiGhi('/api/san-pham/goc/' + encodeURIComponent(id), { method: 'DELETE' }); CHON = null; await taiGoc(); moDau(); }
@@ -816,7 +771,7 @@ function moDau() {
   if (GOC && sp && GOC.goc.some((g) => g.id === sp)) return moSanPham(sp, u.searchParams.get('tab') || 'chung');
   if (GOC && GOC.goc.length) return moSanPham(GOC.goc[0].id);
   if (DL) return veBanSao();
-  $('#phai').innerHTML = emptyState({ icon: 'inbox', title: 'Chưa có sản phẩm gốc nào', body: 'Bấm «+ Thêm» ở cột trái.' });
+  $('#phai').innerHTML = emptyState({ icon: 'inbox', title: 'Chưa có sản phẩm gốc nào', body: 'Bấm «+ Thêm» ở cột trái để gộp món POS thành sản phẩm.' });
 }
 (async () => {
   const [a, b] = await Promise.allSettled([goi('/api/san-pham'), goi('/api/san-pham/goc')]);

@@ -155,6 +155,8 @@ export async function manSanPhamGoc(boiCanh) {
   };
 }
 
+// GSP1 (02/10): KHÔNG còn cửa HTTP nào gọi hàm này (router bỏ `POST /api/san-pham/goc` — gốc chỉ sinh từ gộp món POS theo SKU).
+// Còn nằm lại vì `ui/san-pham/index.js` (ngoài phạm vi phiếu) vẫn re-export — gỡ ở phiếu có index.js (nợ §9 N-GSP-TAOGOC).
 export async function taoGoc(boiCanh, than) {
   const bc = batBuocBoiCanh(boiCanh);
   batBuocVai(bc, ...VAI_SUA_DUOC);

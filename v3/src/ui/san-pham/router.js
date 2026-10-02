@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manSanPham, sanPhamCuaMotPage, VAI_VAO_DUOC, VI_RONG, LoiSanPham } from './kho-san-pham.js';
-import { manSanPhamGoc, taoGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos, suaKienThucGoc, lichSuGoc,
+import { manSanPhamGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos, suaKienThucGoc, lichSuGoc,
   goiYGop, gopMonThanhGoc, luuGiaMon, ganPageSanPham, goPageSanPham } from './kho-goc.js';
 
 /**
@@ -131,14 +131,8 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
     res.json({ ok: true, ...(await manSanPhamGoc(cuaBoiCanh(req))) });
   }));
 
-  r.post('/api/san-pham/goc', canDangNhap, canVai, boc(async (req, res) => {
-    const kq = await taoGoc(cuaBoiCanh(req), {
-      maGoc: req.body?.maGoc, ten: req.body?.ten,
-      moTa: req.body?.moTa, soHieu: req.body?.soHieu,
-    });
-    res.json({ ok: true, goc: kq });
-  }));
-
+  // GSP1 (02/10): KHÔNG có `POST /api/san-pham/goc` — sản phẩm gốc chỉ sinh từ gộp món POS theo SKU
+  // (`POST /api/san-pham/gop`, CR-02-10b). Cửa sửa `POST /goc/:id` bên dưới còn nguyên (gắn SKU · marketer cho gốc có sẵn).
   r.post('/api/san-pham/goc/:id', canDangNhap, canVai, boc(async (req, res) => {
     const than = {};
     for (const k of ['ten', 'moTa', 'soHieu', 'sku', 'marketer', 'marketerMaNv']) if (req.body?.[k] !== undefined) than[k] = req.body[k];

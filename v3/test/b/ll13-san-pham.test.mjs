@@ -81,8 +81,9 @@ test('U4 · trang (VE1 · theo bản vẽ 2a): hai cột, bốn tầng, bốn ta
   for (const [viec, re] of [
     ['chi tiết', /'\/chi-tiet'\)/], ['gắn món', /'\/mon', \{ method: 'POST'/], ['gỡ món', /'\/mon\/go', \{ method: 'POST'/],
     ['kiến thức', /'\/kien-thuc', \{ method: 'POST'/], ['lịch sử (mới)', /'\/lich-su'\)/],
-    ['tạo sản phẩm', /goiGhi\('\/api\/san-pham\/goc', \{ method: 'POST'/], ['bỏ sản phẩm', /\{ method: 'DELETE' \}/],
-    ['số hiệu chờ đặt tên', /data-cho=/], ['bản sao theo page', /goi\('\/api\/san-pham\/' \+ encodeURIComponent\(id\)\)/],
+    ['«+ Thêm» = gộp món POS (GSP1: hết lối tạo theo số hiệu)', /id: 'nutThem' \}\) : '';\s*\n\s*if \(\$\('#nutThem'\)\) \$\('#nutThem'\)\.onclick = \(\) => veGop\(\)/],
+    ['bỏ sản phẩm', /\{ method: 'DELETE' \}/],
+    ['bản sao theo page', /goi\('\/api\/san-pham\/' \+ encodeURIComponent\(id\)\)/],
     ['số liệu', /metricRow\(\[/], ['cảnh báo thiếu bậc giá', /chưa có bậc giá nào/],
     ['thiếu tên không bịa', /màn này không bịa tên thay/], ['tồn kho để trống', /Tồn kho', value: '—'/],
   ]) assert.match(html, re, `mất việc «${viec}» khi dựng lại màn`);
