@@ -74,6 +74,8 @@ Dựng: page A gắn G × S1 (món `S1:x` có 2 bậc), A còn bản sao `kb:A:S
 8. Cổng xanh (rc tách dòng): `gsp1.sh` · `gsp2.sh` · `gsp3.sh` · `ve2.sh` · `ve2b.sh` · `ve8b.sh` · `va-r2.sh`. `npm test` không
    thêm ca đỏ so với mốc base.
 
+**Luật cổng (bài học GSP1, 02/10):** (a) đảo-vá KHÔNG được sửa tệp trong cây làm việc chung — đột biến trên BẢN SAO tạm (thư mục tạm / `git worktree` tạm / tiêm phụ thuộc giả), để hai lượt cổng chạy chồng không làm hỏng cây của nhau (GSP1: chạy chồng để lại `router.js` mang route giả); (b) cổng bash dựng hộp cát riêng thì đặt `DB="aicloser_v3_nt_<mã>_p$$"` — thước `test/hop-cat-ten.test.mjs` T4 quét mọi cổng (phiên LL15, `8aed3fc`).
+
 ## ⑤ Test chạm nhánh nào
 
 `test/gsp3b-*.test.mjs` (helper chốt trên Postgres thử: bản sao page gắn / chưa gắn / món POS) · `v3/test/b/gsp3b-*.test.mjs`

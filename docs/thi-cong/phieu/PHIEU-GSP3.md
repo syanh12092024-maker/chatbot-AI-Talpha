@@ -123,6 +123,8 @@ thứ nó nhận.
 12. Cổng xanh (rc tách dòng): `gsp1.sh` · `gsp2.sh` · `ve8b.sh` · `va-r2.sh` · `l3-m4.sh`. `npm test` không thêm ca đỏ so với
     mốc base.
 
+**Luật cổng (bài học GSP1, 02/10):** (a) đảo-vá KHÔNG được sửa tệp trong cây làm việc chung — đột biến trên BẢN SAO tạm (thư mục tạm / `git worktree` tạm / tiêm phụ thuộc giả), để hai lượt cổng chạy chồng không làm hỏng cây của nhau (GSP1: chạy chồng để lại `router.js` mang route giả); (b) cổng bash dựng hộp cát riêng thì đặt `DB="aicloser_v3_nt_<mã>_p$$"` — thước `test/hop-cat-ten.test.mjs` T4 quét mọi cổng (phiên LL15, `8aed3fc`).
+
 ## ⑤ Test chạm nhánh nào
 
 `test/gsp3-*.test.mjs` (tầng A trên Postgres thử: mọi nhánh 409, ghi, lặp, hỏng-đẩy, gỡ-ảnh-hỏng, cửa tiền đọc lại, so trọn

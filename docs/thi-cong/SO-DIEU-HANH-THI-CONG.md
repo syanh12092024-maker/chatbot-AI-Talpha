@@ -1497,6 +1497,9 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
   - Nợ cũ đổi số phận theo CR này: **N-MN8b** (tạo đơn chưa dùng `pos_ma`) trả bởi GSP4 — đơn từ page gắn gốc mang mã món POS
     thật · **N-MN8c** (75/79 SP chưa tên) mất ý nghĩa · **N-DANHMUC-GOC** thành việc của GSP2 · **RF-15** (gán `san_pham.page_id`
     khi shop có 1 page) bỏ ở GSP4.
+  - **N-GSP1-DAO-VA-CAY-CHUNG** `ops/bin/nghiem-thu/gsp1.sh` đảo-vá bằng cách sửa thẳng `router.js` + `san-pham.html` trong cây chung
+    (trap khôi phục) ⇒ hai lượt chạy chồng (tổng + thợ, 02/10) làm hỏng bản khôi phục của nhau, để lại route giả. Chuyển đột biến
+    sang bản sao tạm. Từ GSP2 trở đi phiếu ghi luật này ở mục ④.
 
 - 02/10 · GSP1 (thợ) — **N-GSP-TAOGOC** `v3/src/ui/san-pham/kho-goc.js#taoGoc` hết cửa HTTP gọi (router bỏ `POST /api/san-pham/goc`) nhưng `v3/src/ui/san-pham/index.js:17` còn re-export ⇒ không gỡ được trong pathspec GSP1 (index.js ngoài ③; gỡ riêng kho-goc thì boot chết). Gỡ `taoGoc` + dòng export ở một phiếu có `index.js`. Cùng lúc: `GET /api/san-pham/goc` còn trả `cho`/`khongCoSoHieu` (không màn nào cần ngoài điều kiện ô lưu ý `san-pham.html:105`) — GSP2 đổi ô lưu ý thành bộ đếm thì gỡ luôn hai trường + chỗ đọc.
 

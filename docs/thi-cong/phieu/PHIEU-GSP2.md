@@ -83,6 +83,7 @@ nhật ký ở page + sản phẩm) → `src/products/san-pham-goc.js#ganPageVao
    soát giá + ảnh (GSP3)», không nút ghi. Dòng `bo_qua` hiện lý do + «Bỏ quyết định».
 6. **Ô lưu ý trái** = bộ đếm: «**x page chưa chuyển xong** sang sản phẩm» + nút mở danh sách; `chuaXong = 0` ⇒ không
    hiện. Bỏ câu «Dữ liệu hôm nay còn nằm theo page…» và số `DL.dem`.
+   Gỡ luôn `cho` / `khongCoSoHieu` khỏi `GET /api/san-pham/goc` và chỗ đọc chúng (thợ GSP1 để lại, nhật ký `phieu-gsp1.md` mục ②.5).
 7. **Không đẩy bản chép** sau gắn / nối / gộp: page vừa gắn đọc món POS có thể chưa giá; đẩy lúc này là xoá giá khỏi bản
    bot đang giữ. (Các đường KHÁC còn đẩy được cho page đã gắn — trang page sửa bản sao, `day-lai-ban-chep --tat-ca` —
    do GSP3b khoá và sổ §5h cấm; phiếu này KHÔNG xử lý, chỉ không thêm đường mới.)
@@ -151,6 +152,8 @@ S1, bản sao `doi_soat='chep'`) · P1 + P2 (cùng gắn G3 × S1, bản sao gi�
     `v3/test/b/ll15d-marketer-man.test.mjs` · cổng `ops/bin/nghiem-thu/ll15d.sh`.
 13. Cổng cũ cùng màn xanh (rc tách dòng): `ll13.sh` · `ve1.sh` · `ve8a.sh` · `ve8b.sh` · `gsp1.sh`. `npm test` không thêm ca
     đỏ so với mốc base.
+
+**Luật cổng (bài học GSP1, 02/10):** (a) đảo-vá KHÔNG được sửa tệp trong cây làm việc chung — đột biến trên BẢN SAO tạm (thư mục tạm / `git worktree` tạm / tiêm phụ thuộc giả), để hai lượt cổng chạy chồng không làm hỏng cây của nhau (GSP1: chạy chồng để lại `router.js` mang route giả); (b) cổng bash dựng hộp cát riêng thì đặt `DB="aicloser_v3_nt_<mã>_p$$"` — thước `test/hop-cat-ten.test.mjs` T4 quét mọi cổng (phiên LL15, `8aed3fc`).
 
 ## ⑤ Test chạm nhánh nào
 
