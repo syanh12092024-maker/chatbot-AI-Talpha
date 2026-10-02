@@ -359,10 +359,10 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
 | Mã   | Việc                                                                                          | Phụ thuộc           | Làn | Trạng thái |
 | ---- | --------------------------------------------------------------------------------------------- | ------------------- | --- | ---------- |
 | GSP1 | Màn Sản phẩm: «+ Thêm» mở «Gộp món POS»; bỏ lối tạo gốc theo số hiệu + danh sách số hiệu; đóng `POST /api/san-pham/goc` | —      | 🟨  |🔨 phát 02/10 · `PHIEU-GSP1.md` · review (a) ĐẠT |
-| GSP2 | «Bản sao theo page» đổi TẠM thành danh sách việc chuyển: gợi ý món POS khớp tên page · gắn / nối món rồi gắn / gộp SKU rồi gắn / «không chuyển» · trạng thái theo page × bản sao (migration 032 `san_pham.doi_soat`) · bộ đếm toàn hệ theo team | GSP1 (cùng tệp màn) | 🟨 | ⬜ |
+| GSP2 | «Bản sao theo page» đổi TẠM thành danh sách việc chuyển: gợi ý món POS khớp tên page · gắn / nối món rồi gắn / gộp SKU rồi gắn / «không chuyển» · trạng thái theo page × bản sao (migration 032 `san_pham.doi_soat` + gốc × shop của quyết định — vị từ `daQuyet` dùng chung với GSP3) · bộ đếm toàn hệ theo team | GSP1 (cùng tệp màn) | 🟨 | ⬜ review (a) 2 vòng |
 | H-GSP | Người: shop cho 11 page chưa có shop · xác nhận gắn 74 page · chọn giá khi lệch · 2 page có 2 bản sao | GSP2 lên prod | — | ⬜ |
-| GSP3 | Đối soát giá + ảnh theo GỐC × SHOP: lệch giữa page ⇒ 409, người chọn · chép đủ cột bậc · ảnh `nguon='kb'` khử trùng · luôn đẩy bản chép · dùng lại cửa lưu giá VE8b | GSP2 (cùng tệp màn) | 🟥 | ⬜ |
-| GSP3b | Trang page: bộ đọc `chay-that.js:408` truyền `trang` · cửa lưu SP/ảnh từ trang page từ chối bản sao của page đã gắn (409) · câu chữ «sửa ở đây là sửa mọi page cùng gốc × shop» | GSP3 · cùng đợt deploy GSP1–GSP3 | 🟥 | ⬜ |
+| GSP3 | Đối soát giá + ảnh theo GỐC × SHOP: lệch giữa page ⇒ 409, người chọn · chép đủ cột bậc · ảnh `nguon='kb'` khử trùng · luôn đẩy bản chép · dùng lại cửa lưu giá VE8b | GSP2 (cùng tệp màn) | 🟥 |⬜ review (a) 2 vòng |
+| GSP3b | Trang page: bộ đọc `chay-that.js:408` truyền `trang` · cửa lưu SP/ảnh từ trang page từ chối bản sao của page đã gắn (409) · câu chữ «sửa ở đây là sửa mọi page cùng gốc × shop» | GSP3 · cùng đợt deploy GSP1–GSP3 | 🟥 |⬜ review (a) 2 vòng |
 | GSP4 | Một đường: bỏ nhánh `page_id` ở `catalog.js` · `kho-san-pham-v3.js` · `ban-chep-bot.js` · «Page đang bán» · `doc-danh-muc.js` RF-15; chốt ở `handler-v3.js` trước KB; 35 ca đổi fixture + 4 ca luật mới; deploy theo `mo-van` | GSP3 trên prod · bộ đếm = 0 | 🟥 | ⬜ |
 | GSP5 | Dọn: bỏ màn «Bản sao theo page» + ô lưu ý + `GET /api/san-pham`; tab «SP & giá» trang page nói giá sửa ở Sản phẩm › Theo thị trường; `03-MAN-HINH.md`; ĐÓNG CR | GSP4                | 🟨  | ⬜ |
 

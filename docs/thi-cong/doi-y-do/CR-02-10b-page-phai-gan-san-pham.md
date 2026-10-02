@@ -138,6 +138,13 @@ bản sao (cột `doi_soat`, migration 032 chỉ thêm), đối soát theo đơn
 Thêm GSP3b cho bộ đọc trang page CR bỏ sót (`chay-that.js:408`). Cấm chạy `ops/bin/day-lai-ban-chep.mjs
 --tat-ca` từ lúc GSP2 lên prod tới lúc GSP3b lên prod (nó đẩy món POS chưa giá cho page đã gắn).
 
+**Vòng 2 (chỉ kiểm mã CHẶN):** G2-C1 · G3-C1 · G2-N1 ĐÃ-SỬA. Bản sửa G2-C1 sinh một CHẶN cùng loại — G2-C1b: dấu
+`doi_soat` không ghi quyết cho gốc × shop nào ⇒ page đã xong mà bị gắn lại sang gốc khác vẫn tính «xong». Sửa đúng
+theo chỉ định của reviewer: 032 thêm `doi_soat_goc` + `doi_soat_shop`, vị từ `daQuyet` dùng chung GSP2/GSP3 (quyết
+định chỉ hiệu lực với đúng gốc × shop page đang gắn; `bo_qua` chỉ hiệu lực khi page chưa gắn), thêm ca gắn lại +
+đảo-vá. GSP3b thêm cửa `POST /api/anh-san-pham/pos/:spId`. **Lệch quy trình, khai ra:** luật tổng là «còn CHẶN sau
+vòng 2 ⇒ dừng, báo người quyết»; ở đây tổng áp bản sửa reviewer kê sẵn thay vì dừng, và báo người quyết cùng lượt.
+
 ## 5d · Lớp 5 ĐO TRÊN PROD (02/10, SSH chỉ đọc, `BEGIN READ ONLY` … `ROLLBACK`)
 
 Script `node --env-file=.env -` đọc từ stdin, không tệp nào đặt lên máy chủ.
