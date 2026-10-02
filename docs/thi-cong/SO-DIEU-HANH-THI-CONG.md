@@ -1399,6 +1399,13 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
   - **N-TEAM-KETNOI-THUA** `/api/team/ket-noi` + `ketNoiCua` + `datDocKetNoiPos` của module team không còn màn nào gọi (POS ở Cài
     đặt › Kết nối) — gỡ ở LL8 cùng ca canh (`team-cau-hinh` ×3, năm dòng `datDocKetNoiPos(null)`).
 
+- 02/10 · **NỢ SAU LL15a** (`docs/thi-cong/nhat-ky/phieu-LL15a.md` §7):
+  - **N-BQ-KHOA-RONG** khoá BigQuery trên máy chủ (`/etc/aicloser/bq-levelup.json`) là SA dashboard `cmo-bigquery-prod-202604`
+    (quyền chưa đo, có thể ghi) — mã chỉ xin token đọc, nhưng tệp mang đủ quyền SA. Tạo SA riêng CHỈ ĐỌC (Data Viewer trên
+    `HRM_Core` + `PIALPHA_ALL_Dataset`, Job User) rồi thay tệp. Người quyết chọn chép khoá đang có 02/10.
+  - **LL15b** tạo tài khoản từ HRM (khớp email · MKT/SALE · sale ba team · người nghỉ tự khoá · tên team theo HRM) — ghi bảng
+    quyền, gật riêng. H11 (khoá BigQuery cho máy chủ) coi như xong 02/10 — khoá đã ở máy chủ, đọc được 118 · 324.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2837,3 +2844,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 01/10 · MỞ VAN lô VE7c · VE7d · VE7e → ✅ GIỮ — prod `ecce575 → d226f81`, 0 migration (áp mới 0 · tổng 28), chỉ restart aicloser-v3 lúc 03:58:16 CEST
   cửa vào 49 xanh / 12 đỏ = 12 nợ cũ · npm test 2.434 ca 0 đỏ · mốc +1′/+5′/+15′ lỗi 0/0/0 · Started 1 · dấu mã 6/6 · /health 131 · nhật ký khởi động nói «đường chọn model của bot → màn Model AI» (đã nối) · việc sau: bấm «Thay khoá và thử một lượt» (ô khoá trống) một lần
   · commit d226f81 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261001-ve7cde.md
+- 02/10 · LL15a → 🔎 CHỜ DEPLOY — HRM từ BigQuery lên màn, CHỈ ĐỌC: khoá levelup chép lên máy chủ (`/etc/aicloser/bq-levelup.json`, người quyết chọn) · khách REST token phạm vi bigquery.readonly · Người và team: cột Hồ sơ HRM + marketer POS của đúng team · Kết nối › HRM số đọc từ nguồn + «Đọc lại» · biến `V3_BQ_KHOA` (vắng = đóng)
+  đo 02/10: prod chỉ có khoá talpha/auus (403 hai bảng HRM); đọc thử từ prod bằng khoá mới 118 · 324 · đầu-cuối thật GCC 19 marketer đang làm + 7 đã nghỉ / 63 · ca 12/12 · đảo-vá 19/19 · cổng ll15a.sh 15/15 · npm test 2.446 ca 0 đỏ · ĐỦ cổng 50 xanh / 12 đỏ = 12 nợ cũ · nợ N-BQ-KHOA-RONG · LL15b
+  · commit 8036529 · nhật ký docs/thi-cong/nhat-ky/phieu-LL15a.md
