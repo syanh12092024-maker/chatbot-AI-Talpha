@@ -15,7 +15,7 @@ const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
 async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
   dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
-  docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot } = {}) {
+  docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -43,7 +43,7 @@ async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNo
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
     ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
     dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
-    docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, express,
+    docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -162,6 +162,8 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   // VE7c: thiếu đường chọn model của bot thì màn Model AI không biết bot đang gọi model/khoá nào — phải nói «chưa đo»,
   // không được đoán bằng luật của lớp v3 (hai luật lệch nhau thật trên prod, đo 30/09).
   assert.ok(bao.thieu.some((x) => /duongBot/.test(x)), 'phải nêu thiếu duongBot');
+  // LL15a: thiếu bộ đọc HRM thì hai màn nói «chưa nối vào máy chủ» — và danh sách thiếu phải nói ra.
+  assert.ok(bao.thieu.some((x) => /docHrm/.test(x)), 'phải nêu thiếu docHrm');
   // `khoTokenV3` thiếu thì màn Kết nối mất cả kho token — và đường còn lại là sửa tay
   // `.env` trên máy chủ, đúng thứ đường không ai truy ngược được.
   assert.ok(bao.thieu.some((x) => /khoTokenV3/.test(x)), 'phải nêu thiếu khoTokenV3');
@@ -225,6 +227,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
     },
     khoKhoa: { coKhoa: async () => false, docKhoa: async () => null, ghiKhoa: async () => 1 },
     duongBot: { chon: async () => ({ nguon: 'config' }), khoa: async () => ({ nguonKhoa: null }) },
+    docHrm: async () => ({ luc: 0, nhanVien: [], ghep: [] }),
     docKhoi: {
       boLuat: async () => null, kyNang: async () => [],
       kichBan: async () => null, sanPham: async () => [],

@@ -133,23 +133,43 @@ function veBaVai(bv) {
     </section>`).join('');
 }
 
-/* ─── Marketer trên POS ↔ hồ sơ HRM — chưa nối thì nói chưa nối, không số đo tay ─── */
-function veHrm(h) {
-  $('#nhanHrm').innerHTML = `<span class="status-badge" data-tone="neutral">${esc(h.chu)}</span>`;
-  $('#noiDungHrm').innerHTML = h.noi ? '' : `
+/* ─── Marketer trên POS ↔ hồ sơ HRM — đọc từ BigQuery (LL15a); chưa nối / đọc hỏng thì nói đúng vì sao, không số đo tay ─── */
+const gio = (t) => { const d = new Date(Number(t)); const h = (n) => String(n).padStart(2, '0');
+  return Number.isNaN(d.getTime()) ? '—' : `${h(d.getDate())}/${h(d.getMonth() + 1)} ${h(d.getHours())}:${h(d.getMinutes())}`; };
+function veHrm(h, mp) {
+  $('#nhanHrm').innerHTML = h.noi ? statusBadge('ready', { label: h.chu }) : `<span class="status-badge" data-tone="neutral">${esc(h.chu)}</span>`;
+  if (!h.noi) {
+    $('#noiDungHrm').innerHTML = `
     <div class="luoi-kv">
+      <span class="nhan">Vì sao</span><span>${esc(h.viSao || '')}</span>
       <span class="nhan">Khi nối</span><span>Bảng ghép của HRM (BigQuery <code>PIALPHA_ALL_Dataset.dim_person_map</code>: mã marketer POS → mã
         nhân viên) + hồ sơ <code>HRM_Core.dim_employee</code>. Đơn thuộc team của marketer vào ngày đơn; đơn không có marketer, hoặc
         marketer chưa ghép, vào ô «chờ gán team».</span>
-      <span class="nhan">Hôm nay</span><span>Máy chủ chưa đọc được BigQuery — chờ ${esc(h.cho)}. Bảng tài khoản POS ↔ hồ sơ ↔ team hiện ở đây
-        khi nối xong.</span>
       <span class="nhan">Thiếu ai</span><span>Bổ sung ở HRM — hệ không có ô ghép tay riêng để khỏi hai nguồn lệch nhau.</span>
     </div>
     <div class="tren-3"><a href="/ket-noi#tieu-hrm">Xem kết nối HRM ở Cài đặt › Kết nối</a></div>`;
+    return;
+  }
+  const dem = (mp && mp.dem) || {};
+  const dong = (mp && mp.dong) || [];
+  $('#noiDungHrm').innerHTML = `
+    <p class="text-sm" data-tom-tat-hrm>Đọc HRM lúc ${esc(gio(h.luc))} · team này: <b>${so(dem.cuaTeam || 0)}</b> tài khoản marketer trên POS đang làm,
+      ${so(dem.nghiCuaTeam || 0)} của người đã nghỉ · cả công ty: ${so(dem.tong || 0)} tài khoản marketer, ${so(dem.choGan || 0)} chờ gán team,
+      ${so(dem.ngoaiHe || 0)} thuộc team không vào hệ.</p>
+    ${dong.length ? `<div class="table-wrap tren-3"><table class="data-table"><thead><tr>
+        <th scope="col">Tài khoản trên POS</th><th scope="col">Hồ sơ HRM</th><th scope="col">Ghép</th><th scope="col">Team</th>
+      </tr></thead><tbody id="dsMarketerPos">${dong.map((d) => `
+      <tr><td><span class="manh">${esc(d.taiKhoan)}</span>${d.loaiId ? ` <span class="meta">${esc(d.loaiId)}</span>` : ''}</td>
+        <td>${d.maNv ? `${esc(d.maNv)}${d.hoTen ? ` · ${esc(d.hoTen)}` : ''}${d.trangThaiNv ? ` <span class="meta">${esc(d.trangThaiNv)}</span>` : ''}` : '<span class="text-muted">—</span>'}</td>
+        <td>${esc(d.ghep)}</td>
+        <td>${d.choGan ? '<span class="text-muted">chờ gán team</span>' : esc(d.tenTeam || '')}</td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="text-muted text-sm tren-3">Chưa có tài khoản marketer nào của team này trong bảng ghép.</p>'}
+    <p class="table-note">Số đơn 14 ngày và shop của từng tài khoản: chưa đo — cần kéo đơn POS (để sau). Thiếu ai thì bổ sung ở HRM —
+      hệ không có ô ghép tay riêng để khỏi hai nguồn lệch nhau. <a href="/ket-noi#tieu-hrm">Kết nối HRM</a></p>`;
 }
 
 /* ─── người trong team ─── */
-let VAI_HIEN = [], TV = [], PHU = {}, HRM_NOI = false;
+let VAI_HIEN = [], TV = [], PHU = {}, HRM_NOI = false, HO_SO = {};
 function phuTrachCua(n) {
   // Mã vai KHÔNG gõ lại ở đây (bài học ② giai đoạn 1): máy chủ đánh cờ `tatCa` cho vai phủ mọi vai khác.
   const ds = n.vai.map((v) => PHU[v.ma]).filter(Boolean);
@@ -164,12 +184,15 @@ function veThanhVien(d) {
   const bv = d.baVai || null;
   PHU = {}; if (bv) for (const v of bv.vai) PHU[v.ma] = v.phuTrach;
   HRM_NOI = !!(bv && bv.hrm && bv.hrm.noi);
-  if (bv) { veBaVai(bv); veHrm(bv.hrm); }
+  HO_SO = (bv && bv.hoSoHrm) || {};
+  if (bv) { veBaVai(bv); veHrm(bv.hrm, bv.marketerPos); }
   else {
     $('#baVai').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa đo được ba vai', body: 'Máy chủ không trả phần vai — xem cảnh báo đầu trang.' });
     $('#noiDungHrm').innerHTML = '';
   }
-  $('#viSaoHrm').textContent = bv && bv.hrm && !bv.hrm.noi ? `Lấy người từ HRM: chưa nối HRM vào máy chủ (chờ ${bv.hrm.cho}).` : '';
+  $('#viSaoHrm').textContent = !bv || !bv.hrm ? ''
+    : bv.hrm.noi ? `Tạo tài khoản từ HRM: chưa làm (LL15b) — bảng dưới đọc HRM lúc ${gio(bv.hrm.luc)}.`
+      : `Lấy người từ HRM: ${bv.hrm.chu.charAt(0).toLowerCase()}${bv.hrm.chu.slice(1)} — ${bv.hrm.viSao}.`;
   $('#demTv').textContent = d.suaDuoc ? `${so(TV.length)} người` : `${so(TV.length)} người · vai của bạn chỉ xem được`;
 
   if (d.trong) {
@@ -181,7 +204,7 @@ function veThanhVien(d) {
       </tr></thead><tbody>${TV.map((n) => `
       <tr data-nguoi="${esc(n.nguoiDungId)}">
         <td><div class="manh">${esc(n.ten || n.email)}</div>${n.ten ? `<div class="meta">${esc(n.email)}</div>` : ''}</td>
-        <td class="meta">${HRM_NOI ? '—' : 'chưa nối'}</td>
+        <td class="meta">${!HRM_NOI ? 'chưa nối' : HO_SO[n.nguoiDungId] ? esc(`${HO_SO[n.nguoiDungId].maNv} · ${HO_SO[n.nguoiDungId].trangThai || ''} · ${HO_SO[n.nguoiDungId].team || ''}`) : 'không có trong HRM'}</td>
         <td><div class="chip-list">${n.vai.length ? n.vai.map((v) => `<span class="chip">${esc(v.ten)}${d.suaDuoc
           ? `<button type="button" data-rut="${esc(n.nguoiDungId)}" data-vai="${esc(v.ma)}" aria-label="Rút vai ${esc(v.ten)} của ${esc(n.email)}" title="Rút vai ${esc(v.ten)}">${icon('x')}</button>` : ''}</span>`).join('')
           : '<span class="text-muted">Không có vai</span>'}</div></td>

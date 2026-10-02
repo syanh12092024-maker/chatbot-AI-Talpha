@@ -599,3 +599,22 @@ export async function batDauNapLai(boiCanh) {
 }
 
 export { trangThaiCau, gocBot };
+
+/* ═══ LL15a · 02/10 — HRM: đọc BigQuery `levelup-465304` (chỉ đọc, đệm một ngày) ═══════════════════════════════════════
+ * Bộ đọc `src/hrm/hrm.js#taoDocHrm` tiêm từ `chay-that.js` khi có `V3_BQ_KHOA`. Vắng ⇒ «Chưa nối vào máy chủ» + vì sao.
+ * Đọc hỏng ⇒ «Đọc HRM hỏng» + lý do (mã + lý do của Google — không mang khoá). Số hiện trên màn là số ĐỌC từ nguồn. */
+let _docHrmKn = null;
+export function datDocHrm(fn) {
+  if (fn != null && typeof fn !== 'function') throw new LoiKetNoi('datDocHrm cần một hàm');
+  _docHrmKn = fn || null;
+  return _docHrmKn;
+}
+export async function trangThaiHrm({ lamMoi = false } = {}) {
+  const { tomTatHrm } = await import('../../../../src/hrm/hrm.js');
+  if (!_docHrmKn) return { noi: false, chu: 'Chưa nối vào máy chủ', viSao: 'máy chủ chưa khai V3_BQ_KHOA (đường tới tệp khoá BigQuery)' };
+  try {
+    return { noi: true, chu: 'Đã nối · chỉ đọc', viSao: null, ...tomTatHrm(await _docHrmKn({ lamMoi })) };
+  } catch (e) {
+    return { noi: false, chu: 'Đọc HRM hỏng', viSao: String(e?.message || e).slice(0, 160) };
+  }
+}

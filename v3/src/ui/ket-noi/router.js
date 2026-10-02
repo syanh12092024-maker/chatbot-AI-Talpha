@@ -30,7 +30,7 @@ import {
   khoToken, ketNoiPosCua, trangThaiCau, LA_TOAN_HE, GIAI_THICH_THU_TU, LoiKetNoi,
   batBuocKhoTokenV3, thuTokenSong, epBotNapLai, keoDanhMucPos,
   batDauNapLai, trangThaiNapLai,
-  themPos, suaPos, batTatPos, boPos, trangThaiWhatsApp,
+  themPos, suaPos, batTatPos, boPos, trangThaiWhatsApp, trangThaiHrm,
 } from './kho-ket-noi.js';
 import { HANH_DONG } from '../../audit/hanh-dong.js';
 
@@ -189,6 +189,14 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   // VE7b · 30/09: WhatsApp — van thật của cửa gửi + số mẫu Meta đã duyệt. Chỉ đọc, không gọi ra ngoài.
   r.get('/api/ket-noi/whatsapp', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, ...trangThaiWhatsApp() });
+  }));
+
+  // LL15a · 02/10: HRM — đọc BigQuery (chỉ đọc, đệm một ngày). «Đọc lại» bỏ đệm: HCNS vừa bổ sung ai thì thấy ngay.
+  r.get('/api/ket-noi/hrm', canDangNhap, canVai, boc(async (_req, res) => {
+    res.json({ ok: true, ...(await trangThaiHrm()) });
+  }));
+  r.post('/api/ket-noi/hrm/doc-lai', canDangNhap, canVai, boc(async (_req, res) => {
+    res.json({ ok: true, ...(await trangThaiHrm({ lamMoi: true })) });
   }));
 
   // ── SỬA KẾT NỐI POS ───────────────────────────────────────────────────────────────

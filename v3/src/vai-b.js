@@ -39,7 +39,7 @@ import {
   datTaoTruyVan as datTruyVanTeam, datCongDanhTinh as datDanhTinhTeam,
   datCongDanhTinhGhi as datDanhTinhTeamGhi, datPheuNhatKy as datPheuNhatKyTeam,
   datDocKetNoiPos, datChanDangNhap as datChanDangNhapTeam, datChanVai as datChanVaiTeam,
-  taoRouterCauHinhTeam, datChuyenPage, datDocKhoTam,
+  taoRouterCauHinhTeam, datChuyenPage, datDocKhoTam, datDocHrm as datDocHrmTeam,
 } from './ui/team/index.js';
 import {
   datTaoTruyVan as datTruyVanPageBot, datPheuNhatKy as datPheuNhatKyPageBot,
@@ -51,7 +51,7 @@ import {
 import { khoToken } from './ui/ket-noi/index.js';
 import { trangThaiCau as trangThaiCauBot } from './noi-day/cau-bot-v1.js';
 import {
-  datDocKetNoiPos as datDocKetNoiPosKN, datPheuNhatKy as datPheuNhatKyKetNoi, datChayNapLai,
+  datDocKetNoiPos as datDocKetNoiPosKN, datPheuNhatKy as datPheuNhatKyKetNoi, datChayNapLai, datDocHrm as datDocHrmKetNoi,
   datGhiKetNoiPos,
   datKhoTokenV3,
   datKeoDanhMuc,
@@ -244,7 +244,7 @@ import {
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, duongBot,
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, duongBot, docHrm,
   docKhoi, dungBanMay, dichBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan, docPhanBoHoiThoai,
@@ -496,6 +496,14 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
 
   if (khoKhoa && typeof khoKhoa.docKhoa === 'function') { datKhoKhoa(khoKhoa); daNoi.push('kho khoá theo nhà → lớp model · màn Model AI'); }
   else thieu.push('khoKhoa — lớp model CHỈ đọc được khoá từ biến môi trường; khoá riêng của team trong bảng `khoa_nha` không tới được, và màn Model AI không dán khoá được');
+  // LL15a · 02/10: HRM từ BigQuery (chỉ đọc, đệm một ngày) — MỘT bộ đọc cho màn Người và team + màn Kết nối.
+  if (typeof docHrm === 'function') {
+    datDocHrmTeam(docHrm); datDocHrmKetNoi(docHrm);
+    daNoi.push('bộ đọc HRM (BigQuery, chỉ đọc) → màn Người và team · màn Kết nối');
+  } else {
+    datDocHrmTeam(null); datDocHrmKetNoi(null);
+    thieu.push('docHrm — màn Người và team + Kết nối nói «HRM chưa nối vào máy chủ» (thiếu V3_BQ_KHOA): không hồ sơ, không bảng ghép marketer POS');
+  }
   // VE7c: màn Model AI hiện + thử vai «trả lời khách» bằng ĐƯỜNG CHỌN CỦA BOT (`src/chat/model.js#chonModel`), không bằng lớp v3.
   if (duongBot && typeof duongBot.chon === 'function' && typeof duongBot.khoa === 'function') {
     datDuongBotModel(duongBot);

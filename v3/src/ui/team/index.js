@@ -45,7 +45,7 @@ export {
 } from './thanh-vien.js';
 
 // VE7d · 01/10: ba thẻ vai + phụ trách + HRM (nói thứ máy làm — `ba-vai.js`).
-export { baVaiCua, PHU_TRACH, HRM } from './ba-vai.js';
+export { baVaiCua, PHU_TRACH, HRM, datDocHrm } from './ba-vai.js';
 
 export {
   taoRouterCauHinhTeam, datChanDangNhap, datChanVai, daNoiChanTeam,

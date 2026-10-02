@@ -70,7 +70,8 @@ test('N1 · bố cục theo bản vẽ 4: ba nút đầu trang (HRM tắt + nói
   t.after(() => o.sv.close());
   const m = await moMan(o);
   assert.equal(m.$('#nutHrm').disabled, true, 'nút HRM bấm được trong khi máy chủ chưa đọc được BigQuery');
-  assert.match(chu(m.$('#viSaoHrm')), /^Lấy người từ HRM: chưa nối HRM vào máy chủ \(chờ việc người H11 .*LL15\)\.$/);
+  // LL15a · 02/10: khoá BigQuery đã có — lý do «chưa nối» giờ là máy chủ chưa khai đường tới tệp khoá (không còn «chờ H11»)
+  assert.match(chu(m.$('#viSaoHrm')), /^Lấy người từ HRM: chưa nối vào máy chủ — máy chủ chưa khai V3_BQ_KHOA \(đường tới tệp khoá BigQuery\)\.$/);
   assert.equal(m.$('#nutTaoNguoi').hidden, false);
   assert.ok(m.$('#nutMoChuyen'), 'thiếu nút «Chuyển page sang team khác»');
   assert.deepEqual(m.document.querySelectorAll('[data-the-vai]').map((x) => x.dataset.theVai), ['quan-tri', 'marketer', 'sale']);

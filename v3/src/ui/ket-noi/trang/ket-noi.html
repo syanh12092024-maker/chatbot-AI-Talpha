@@ -78,15 +78,18 @@
     <div class="section-header"><div>
       <h2 id="tieu-hrm">HRM · hồ sơ nhân sự</h2>
       <div class="section-desc">Người dùng, vai và marketer lấy từ hồ sơ nhân sự — một nguồn, không ô ghép tay riêng.</div>
-    </div><span class="status-badge" data-tone="neutral">Chưa nối vào máy chủ</span></div>
-    <div class="luoi-kv">
-      <span class="nhan">Vì sao chưa nối</span><span>Máy chủ chưa có quyền đọc BigQuery — cần một tài khoản dịch vụ CHỈ ĐỌC (việc người).</span>
+    </div><span id="hrmNhan"><span class="skeleton"></span></span></div>
+    <!-- LL15a · 02/10: trạng thái + số đọc từ máy chủ (`/api/ket-noi/hrm`) — không chép số đo tay lên đây. -->
+    <div class="luoi-kv" id="hrmTrangThai"><span class="skeleton"></span></div>
+    <div class="luoi-kv tren-3">
       <span class="nhan">Nguồn hồ sơ</span><span><code>HRM_Core.dim_employee</code> · BigQuery <code>levelup-465304</code></span>
       <span class="nhan">Marketer trên POS</span><span>bảng ghép <code>PIALPHA_ALL_Dataset.dim_person_map</code>: mã marketer POS → mã nhân viên</span>
       <span class="nhan">Vai khi nối</span><span>MKT → Marketer · SALE → Sale (Hộp thư cả ba team) · BO · VANDON · CTV không vào hệ</span>
       <span class="nhan">Team</span><span>PIALPHA_GCC → Pialpha GCC (tên cũ Tiểu Alpha) · PIALPHA_AUUS → Auus · PIALPHA_EU → Pialpha EU ·
         PIALPHA_SALE_ONLINE / _OFFLINE → sale dùng chung cả ba team</span>
     </div>
+    <div class="hang tren-3"><button type="button" class="btn" data-variant="outline" data-size="sm" id="nutDocLaiHrm"><span>Đọc lại HRM</span></button>
+      <span class="text-muted text-sm">Đọc chỉ-đọc, đệm một ngày; HCNS vừa bổ sung ai thì bấm để thấy ngay. Tạo tài khoản từ HRM: chưa làm (LL15b).</span></div>
     <p class="table-note">Người quyết chốt 29/09 (CR-28-09c). Số hồ sơ, tỉ lệ ghép… chỉ hiện khi máy chủ đọc được nguồn — không chép số đo tay lên đây.</p>
   </section>
 
@@ -609,12 +612,33 @@ $('#nutNap').addEventListener('click', async () => {
   }
 });
 
+/* ─── HRM (LL15a) — trạng thái đọc BigQuery từ máy chủ ─── */
+function gioHrm(t) { const d = new Date(Number(t)); const h = (n) => String(n).padStart(2, '0');
+  return Number.isNaN(d.getTime()) ? '—' : `${h(d.getDate())}/${h(d.getMonth() + 1)} ${h(d.getHours())}:${h(d.getMinutes())}`; }
+function veHrmKn(d) {
+  $('#hrmNhan').innerHTML = d.noi ? statusBadge('ready', { label: d.chu }) : `<span class="status-badge" data-tone="neutral">${esc(d.chu)}</span>`;
+  $('#hrmTrangThai').innerHTML = d.noi
+    ? `<span class="nhan">Đã đọc</span><span>lúc ${esc(gioHrm(d.luc))} · <b>${so(d.soHoSo)}</b> hồ sơ cả công ty, ${so(d.soHoSoPialpha)} thuộc team Pialpha
+        (${so(d.soHoSoPialphaDangLam)} đang làm / thử việc)</span>
+       <span class="nhan">Bảng ghép</span><span><b>${so(d.soGhep)}</b> tài khoản POS · ${so(d.soGhepXacNhan)} đã xác nhận · ${so(d.soGhepChuaGhep)} chưa ghép ·
+        ${so(d.soTaiKhoanMarketer)} tài khoản marketer</span>`
+    : `<span class="nhan">Vì sao</span><span>${esc(d.viSao || '')}</span>`;
+}
+$('#nutDocLaiHrm').addEventListener('click', async () => {
+  const nut = $('#nutDocLaiHrm');
+  setBusy(nut, true);
+  try { const d = await goi('/api/ket-noi/hrm/doc-lai', { method: 'POST', body: '{}' }); if (d) { delete LOI['Không đọc được HRM']; veHrmKn(d); } }
+  catch (e) { LOI['Không đọc được HRM'] = e.message; veBangTin(); }
+  finally { setBusy(nut, false); }
+});
+
 async function nap() {
   hoiNap();
   // Nạp từng khối riêng, SONG SONG (ba cửa độc lập) — kho token hỏng thì bảng POS vẫn hiện.
   await Promise.all([['Không tải được kho token', '/api/ket-noi/kho-token', veKho, '#bangToken'],
                      ['Không tải được kết nối POS', '/api/ket-noi/pos', vePos, '#bangPos'],
-                     ['Không tải được trạng thái WhatsApp', '/api/ket-noi/whatsapp', veWa, '#waTrangThai']].map(async ([ten, duong, ve, cho]) => {
+                     ['Không tải được trạng thái WhatsApp', '/api/ket-noi/whatsapp', veWa, '#waTrangThai'],
+                     ['Không tải được trạng thái HRM', '/api/ket-noi/hrm', veHrmKn, '#hrmTrangThai']].map(async ([ten, duong, ve, cho]) => {
     try { const d = await goi(duong); if (d) { delete LOI[ten]; ve(d); } }
     catch (e) {
       LOI[ten] = e.message; veBangTin();

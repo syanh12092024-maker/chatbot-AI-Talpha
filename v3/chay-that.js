@@ -211,7 +211,18 @@ const app = express();
 // MN4: ảnh sản phẩm xem được trên màn v3 (và là đường công khai cho Facebook tải khi MN5 đổi
 // PUBLIC_URL sang cổng này). Chỉ đọc, không liệt kê thư mục, không phục vụ tệp bắt đầu bằng dấu chấm.
 app.use('/uploads', express.static(path.join(GOC, 'public', 'uploads'), { index: false, dotfiles: 'deny', fallthrough: false, maxAge: '7d' }));
+// LL15a · 02/10: HRM từ BigQuery `levelup-465304` — CHỈ ĐỌC (token phạm vi bigquery.readonly), đệm một ngày. Vắng `V3_BQ_KHOA`
+// (đường tới tệp khoá) = ĐÓNG: màn nói «HRM chưa nối vào máy chủ». Khách BigQuery dựng LÚC GỌI ĐẦU — tệp khoá hỏng thì màn nói
+// «Đọc HRM hỏng», tiến trình không chết lúc khởi động.
+const docHrm = await (async () => {
+  if (!process.env.V3_BQ_KHOA) return undefined;
+  const { taoDocHrm } = await import(`${GOC}/src/hrm/hrm.js`);
+  const { taoKhachBigQuery } = await import(`${GOC}/src/hrm/bigquery.js`);
+  return taoDocHrm({ taoKhach: () => taoKhachBigQuery({ tepKhoa: process.env.V3_BQ_KHOA }) });
+})();
+
 const bao = dungPhanB(app, {
+  docHrm,
   taoTruyVan,
   // CR-28-09b · MN3: lưu sản phẩm trên v3 ⇒ đẩy bản chép sang bot v1 rồi đọc lại xác minh.
   vanHanh: {
