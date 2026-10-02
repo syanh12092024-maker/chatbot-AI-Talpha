@@ -358,7 +358,7 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
 
 | Mã   | Việc                                                                                          | Phụ thuộc           | Làn | Trạng thái |
 | ---- | --------------------------------------------------------------------------------------------- | ------------------- | --- | ---------- |
-| GSP1 | Màn Sản phẩm: «+ Thêm» mở «Gộp món POS»; bỏ lối tạo gốc theo số hiệu + danh sách số hiệu; đóng `POST /api/san-pham/goc` | —      | 🟨  |🔨 phát 02/10 · `PHIEU-GSP1.md` · review (a) ĐẠT |
+| GSP1 | Màn Sản phẩm: «+ Thêm» mở «Gộp món POS»; bỏ lối tạo gốc theo số hiệu + danh sách số hiệu; đóng `POST /api/san-pham/goc` | —      | 🟨  |✅ 02/10 · `a0626be` · chặng 1 7/8 (④ = commit tổng) · chặng 2 ba mũ ĐẠT · chưa deploy |
 | GSP2 | «Bản sao theo page» đổi TẠM thành danh sách việc chuyển: gợi ý món POS khớp tên page · gắn / nối món rồi gắn / gộp SKU rồi gắn / «không chuyển» · trạng thái theo page × bản sao (migration 032 `san_pham.doi_soat` + gốc × shop của quyết định — vị từ `daQuyet` dùng chung với GSP3) · bộ đếm toàn hệ theo team | GSP1 (cùng tệp màn) | 🟨 | ⬜ review (a) 2 vòng |
 | H-GSP | Người: shop cho 11 page chưa có shop · xác nhận gắn 74 page · chọn giá khi lệch · 2 page có 2 bản sao | GSP2 lên prod | — | ⬜ |
 | GSP3 | Đối soát giá + ảnh theo GỐC × SHOP: lệch giữa page ⇒ 409, người chọn · chép đủ cột bậc · ảnh `nguon='kb'` khử trùng · luôn đẩy bản chép · dùng lại cửa lưu giá VE8b | GSP2 (cùng tệp màn) | 🟥 |⬜ review (a) 2 vòng |
@@ -1500,6 +1500,10 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
   - **N-GSP1-DAO-VA-CAY-CHUNG** `ops/bin/nghiem-thu/gsp1.sh` đảo-vá bằng cách sửa thẳng `router.js` + `san-pham.html` trong cây chung
     (trap khôi phục) ⇒ hai lượt chạy chồng (tổng + thợ, 02/10) làm hỏng bản khôi phục của nhau, để lại route giả. Chuyển đột biến
     sang bản sao tạm. Từ GSP2 trở đi phiếu ghi luật này ở mục ④.
+  - **N-GSP-GOP-SKU** (review chặng 2 GSP1, R1) cửa gộp `POST /api/san-pham/gop` vẫn tạo được gốc KHÔNG SKU (thân không gửi `sku`) hoặc
+    SKU LỆCH món (gửi `sku:'ZZZ'` cho món SKU 900) — máy chủ lấy SKU từ THÂN, không suy từ món (`src/products/san-pham-goc.js:554-556`).
+    Luật VE8a cũ, CR-02-10b giữ nguyên ⇒ **chờ người quyết: SKU bắt buộc hay chỉ ưu tiên?** Prod hôm nay 491/491 món có SKU.
+  - **N-GSP1-CHU-CU** câu chữ còn trỏ lối đã bỏ: `03-MAN-HINH.md:13` · `v3/src/ui/san-sang/kho-san-sang.js:67` · câu trống màn Sản phẩm.
 
 - 02/10 · GSP1 (thợ) — **N-GSP-TAOGOC** `v3/src/ui/san-pham/kho-goc.js#taoGoc` hết cửa HTTP gọi (router bỏ `POST /api/san-pham/goc`) nhưng `v3/src/ui/san-pham/index.js:17` còn re-export ⇒ không gỡ được trong pathspec GSP1 (index.js ngoài ③; gỡ riêng kho-goc thì boot chết). Gỡ `taoGoc` + dòng export ở một phiếu có `index.js`. Cùng lúc: `GET /api/san-pham/goc` còn trả `cho`/`khongCoSoHieu` (không màn nào cần ngoài điều kiện ô lưu ý `san-pham.html:105`) — GSP2 đổi ô lưu ý thành bộ đếm thì gỡ luôn hai trường + chỗ đọc.
 
@@ -3027,3 +3031,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · GSP1 → ✅ (chờ tổng nghiệm thu) — «+ Thêm» = Gộp món POS theo SKU; gỡ `POST /api/san-pham/goc` (404) + lối tạo gốc theo số hiệu; cửa sửa `/goc/:id` · gộp `/gop` · phạm vi marketer LL15d giữ nguyên · nợ N-GSP-TAOGOC (§9)
   npm test 2306→2311 ca, 0 đỏ (dev) · gsp1.sh 14/14 · đảo-vá 2/2 (khôi phục route ⇒ G1 đỏ; khôi phục veThem ⇒ G4 đỏ) · ll13/ve1/ve8a/ve8b/ll15d rc=0 · LL15d riêng 4/4 + 5/5 · `_chan1` ④ đỏ duy nhất do commit 400906b của tổng (CR-02-10b)
   · commit a0626be · nhật ký docs/thi-cong/nhat-ky/phieu-gsp1.md
+- 02/10 · GSP1 → ✅ (tổng nghiệm thu) — chặng 1 trên cây gộp `fd05a0c`+: 7/8 (④ đỏ do commit tổng sửa CR, đất điều hành) · `gsp1.sh` rc=0 · cổng cũ ll13 · ve1 · ve8a · ve8b · ll15d xanh khi máy rảnh (đỏ lúc chạy chồng = hộp cát trùng tên, đã chữa `8aed3fc`)
+  chặng 2 (một agent, ba mũ): Phá ĐẠT (POST/PUT mọi biến thể `/goc` ⇒ 404, số dòng không đổi; cửa sửa `/goc/:id` nguyên) · Code ĐẠT · Nghiệp vụ (b) ĐẠT · nợ N-GSP-GOP-SKU (chờ người quyết) · N-GSP1-CHU-CU · N-GSP1-DAO-VA-CAY-CHUNG
+  · commit a0626be · 905e546 · verdict scratchpad review-b-gsp1.yaml
