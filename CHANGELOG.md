@@ -19,6 +19,15 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 02/10/2026 — Số liệu có số đơn THẬT của team theo marketer, đọc từ BigQuery (LL17a · CR-28-09c)
+
+Không đổi chữ bot nói. 0 migration · 0 gói · 0 tệp bộ não · 0 biến mới (dùng lại `V3_BQ_KHOA`).
+
+- **Số liệu › Tổng quan** (`f5efc99`): khối mới «Đơn POS của team — theo marketer» — 7 · 30 ngày: đơn · giao thành công · hoàn · huỷ ·
+  đang xử lý · tỉ lệ giao thành công · COD đã giao theo từng tiền tệ; bảng theo marketer (marketer chỉ thấy dòng của mình); số đơn chờ
+  gán team cả công ty. Số đọc từ BigQuery (đồng bộ hằng ngày), chỉ đọc, không chép dữ liệu khách. Các khối khác của màn vẫn là số chụp
+  ngày 28/08 (ghi rõ trên màn).
+
 ### 02/10/2026 — 🔴 MỘT BẢN, bước cuối: gỡ bot v1 khỏi mã · ảnh sản phẩm tải lại được · màn thôi nói «bot cũ / bot mới» (MB4 · CR-02-10)
 
 Không đổi chữ bot nói (0 tệp bộ não). **1 migration (030 — GỠ hai cột `page.giao_bot_moi` · `page.v3_ai_bat`, đo 02/10 toàn
