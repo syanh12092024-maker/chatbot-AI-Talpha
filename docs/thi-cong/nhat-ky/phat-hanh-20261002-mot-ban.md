@@ -54,6 +54,26 @@ còn trong `.env`, MB2 giữ cờ này tới MB4 đúng cho đường lùi này)
 
 ## 8 · Lệnh đã gõ
 
+Giờ prod (CEST). Phiên LL15 (cùng người quyết) xác nhận KHÔNG deploy/restart trong lúc làm MB3.
+1. Cửa vào (máy dev): `npm test` 2.451 đạt 0 đỏ · 53 xanh / 13 đỏ (mục 3) · CHANGELOG `74462a6` · thước 4 cổng + hồ sơ `94d7cd5`.
+2. Đẩy `24abe05..94d7cd5` (8 commit — 6 MB + 2 giấy LL15b của phiên khác).
+3. Mốc lùi `/var/backups/aicloser/truoc-mot-ban-20261002T052340Z/` — `commit.txt` = `24abe05` · `env.bak` (600).
+4. `git fetch` + `checkout -f -B vao-ui-v3-17-09 origin/vao-ui-v3-17-09` → `94d7cd5` · 0 tệp theo dõi sửa tại chỗ.
+5. KHÔNG migration (0) · KHÔNG đổi `.env` · KHÔNG gói mới (`git diff 24abe05..HEAD -- package*.json db/migrate` rỗng).
+6. `systemctl restart aicloser-v3 aicloser-worker-v3` lúc **07:23:43**.
+7. `systemctl disable --now aicloser` lúc **07:23:43** → `inactive / disabled` (unit giữ trên đĩa để lùi).
+
 ## 9 · Số đo từng mốc
 
+| Mốc | Giờ | Kết quả |
+|---|---|---|
+| +1′ | 07:25:16 | hai dịch vụ v3 active · Started 1/1 · lỗi 0/0 · `aicloser` inactive/disabled · `:3100` không nghe · lõi trong tiến trình: «[lõi] chay-that: KB no-base/77 · Sheet đồng bộ 5′ · sổ đăng ký page quét» + «đã làm nóng cửa kiểm: 699 page»; worker «[lõi] worker-v3: KB no-base/77 · Sheet đồng bộ 5′» + «page được phép: KHÔNG CÓ (chưa page nào bật bot — cột page.bot_ai_bat)» · `/privacy` 200 · `/page-bot` 401 (chưa đăng nhập) · đối chứng 404 · `/webhook` 404 = ĐÚNG (`.env` dòng 75 `META_WEBHOOK_OFF=1`, y hành vi v1) · page bật bot **0/582** · `lan_gui` 30′ **0** · «chưa nối: ghiSoAi» có từ lần khởi động 06:48 (không do MB) |
+| +5′ | 07:29:44 | y như +1′ — Started 1/1 · lỗi 0/0 · `aicloser` inactive/disabled · `:3100` không nghe · `/privacy` 200 · `/page-bot` 401 · Sheet đã đồng bộ lượt 2 (nhịp 5′ chạy trong v3) · sổ đăng ký page 2 dòng · page bật bot 0/582 · `lan_gui` 60′ 0 |
+| +15′ | 07:39:19 | y như +1′ — Started 1/1 · lỗi 0/0 · `aicloser` inactive/disabled · `:3100` không nghe · Sheet đồng bộ lượt 4 · sổ đăng ký page 4 dòng · page bật bot 0/582 · `lan_gui` 60′ 0 |
+
 ## 10 · Kết
+
+**GIỮ.** Ba mốc sạch, không vòng restart, không lỗi mới; v3 tự đứng khi v1 tắt — lõi (KB · Sheet danh bạ · page Pancake · sổ đăng ký ·
+cửa kiểm 699 page) chạy trong tiến trình v3, worker nạp KB 77 page và đọc đúng công tắc `bot_ai_bat` (0 page). Không tin nào ra khách.
+Phía mình nay chỉ còn hai dịch vụ: `aicloser-v3` (3102) + `aicloser-worker-v3`. Việc kế: MB4 (gỡ mã v1 + lưu trữ JSON + đổi chữ «bot cũ»
+trên màn) sau ≥ 3 ngày ổn — sớm nhất 05/10. Phiên LL15 được báo đóng cửa sổ lúc ~07:40 để mở van LL15c/LL15d.

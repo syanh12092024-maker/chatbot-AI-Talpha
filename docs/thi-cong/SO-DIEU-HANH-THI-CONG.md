@@ -339,10 +339,10 @@ và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt 
 
 | Mã  | Việc                                                                                          | Phụ thuộc           | Làn | Trạng thái |
 | --- | --------------------------------------------------------------------------------------------- | ------------------- | --- | ---------- |
-| MB1 | Dời việc v3 mượn của v1 vào tiến trình v3: ruột `cau-bot-v1.js` từ HTTP → gọi hàm (giữ tên + hình dạng); `/webhook` · `/uploads` · nạp KB/token/registry sang `chay-that.js`; kiểm kê nút `/admin` v3 chưa có | —                   | 🟨  | ⬜ |
-| MB2 | MỘT công tắc: một cột CSDL là nguồn của worker; bỏ `ai-enabled.json` · `bot_ai_bat` · `V3_GIAO_PAGE_TREN_MAN` · `V3_LEGACY_POLL_OFF`; `giaoPage` bỏ bước «tắt bot cũ»; `bien-moi-truong-v3.md` cùng commit | MB1                 | 🟥  | ⬜ |
-| MB3 | **Mở van**: deploy MB1+MB2 · `systemctl disable --now aicloser` · restart hai tiến trình v3 · mốc +1′/+5′/+15′ | MB2 · người gật ✅ 02/10 | 🟥  | ⬜ |
-| MB4 | Gỡ 24 file chỉ-v1 + 8 mồ côi + 7 trang `public/` + script `package.json`; dời bộ ca; lưu trữ JSON đứng im; đổi chữ «bot cũ» 39 tệp màn; cổng `mb.sh`; migration gỡ cột thừa; ĐÓNG CR | MB3 ổn ≥ 3 ngày     | 🟨  | ⬜ |
+| MB1 | Dời việc v3 mượn của v1 vào tiến trình v3: ruột `cau-bot-v1.js` từ HTTP → gọi hàm (giữ tên + hình dạng); `/webhook` · `/uploads` · nạp KB/token/registry sang `chay-that.js`; kiểm kê nút `/admin` v3 chưa có | —                   | 🟨  | ✅ `47f2add` · ca mb1 5/5 · worker nay nạp KB |
+| MB2 | MỘT công tắc: một cột CSDL là nguồn của worker; bỏ `ai-enabled.json` · `bot_ai_bat` · `V3_GIAO_PAGE_TREN_MAN` · `V3_LEGACY_POLL_OFF`; `giaoPage` bỏ bước «tắt bot cũ»; `bien-moi-truong-v3.md` cùng commit | MB1                 | 🟥  | ✅ `e2b10dd` · ca mb2 4/4 · thước 4 cổng `94d7cd5` |
+| MB3 | **Mở van**: deploy MB1+MB2 · `systemctl disable --now aicloser` · restart hai tiến trình v3 · mốc +1′/+5′/+15′ | MB2 · người gật ✅ 02/10 | 🟥  | ✅ 02/10 07:23 · `94d7cd5` · +1′/+5′/+15′ lỗi 0 · GIỮ · `phat-hanh-20261002-mot-ban.md` |
+| MB4 | Gỡ 24 file chỉ-v1 + 8 mồ côi + 7 trang `public/` + script `package.json`; dời bộ ca; lưu trữ JSON đứng im; đổi chữ «bot cũ» 39 tệp màn; cổng `mb.sh`; migration gỡ cột thừa; ĐÓNG CR | MB3 ổn ≥ 3 ngày     | 🟨  | ⬜ sớm nhất 05/10 |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
@@ -2895,3 +2895,9 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · MỞ VAN LL15b (bước 2 · tự động) → ✅ GIỮ — `V3_HRM_TU_DONG=1` thêm đúng 1 dòng `.env`, chỉ restart aicloser-v3 lúc 06:48:05 CEST; trước đó Quản trị đã áp tay lượt đầu ở màn (23 tài khoản · 41 vai HRM)
   mốc +1′/+6′/+15′ lỗi 0/0/0 · Started 1 · lượt tự động đầu 06:53 ra toàn 0 (hệ đã khớp HRM) · bảng quyền y nguyên 23 · 45 · đường lùi: xoá dòng biến + restart
   · commit (hồ sơ bước 2) · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-ll15b.md §11
+- 02/10 · CR-02-10 MỘT BẢN · MB1 + MB2 → ✅ — lõi bot chạy trong tiến trình v3 (cầu `cau-bot-v1` hết HTTP; worker nay NẠP KB — trước đó mọi page sẽ `noData`); MỘT công tắc `page.bot_ai_bat` (gỡ `V3_PAGE_XU_LY` · cầu dao giao page · `giaoPage`/`POST /giao` · «bot cũ/bot mới» ở 2 màn · di trú thôi chép `ai-enabled.json`)
+  npm test 2.455 · 2.451 đạt · 0 đỏ · ca mới mb1 5/5 + mb2 4/4 (đảo-vá đỏ đúng chỗ) · thước: 8 bộ ca bỏ giả fetch, 11 ca handler + 4 cổng dựng page bật công tắc, gỡ ~16 ca của khái niệm đã bỏ · nợ N-MB-LICH-NEN · N-MB-SO-AI-CU · N-MB-PAGE-TOKEN-FB
+  · commit 47f2add · e2b10dd · 94d7cd5 · phiếu docs/thi-cong/phieu/PHIEU-MB1.md · PHIEU-MB2.md
+- 02/10 · MỞ VAN MB3 (một bản) → ✅ GIỮ — prod `24abe05 → 94d7cd5`, 0 migration · 0 đổi `.env`; restart aicloser-v3 + worker lúc 07:23:43 CEST; `systemctl disable --now aicloser` (v1 TẮT HẲN, unit giữ để lùi)
+  cửa vào 53 xanh / 13 đỏ = 12 nợ cũ + l1-m1 (dữ liệu POS) · mốc +1′/+5′/+15′ lỗi 0 · Started 1/1 · cửa kiểm 699 page trong v3 · page bật 0/582 · gửi 0 · `/webhook` 404 đúng (`META_WEBHOOK_OFF=1`) · lùi: checkout 24abe05 + restart 2 dịch vụ + `enable --now aicloser`
+  · commit (hồ sơ MB3) · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-mot-ban.md
