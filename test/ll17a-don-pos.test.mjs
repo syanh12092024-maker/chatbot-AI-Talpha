@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { taoKhachBigQuery, LoiBigQuery } from '../src/hrm/bigquery.js';
-import { SQL_DON_POS, SQL_DON_POS_MOC, SO_NGAY_DOC, NHOM_TRANG_THAI, taoDocDonPos, tongHopTeam, tiLeGiao, luiNgay } from '../src/hrm/don-pos.js';
+import { SQL_DON_POS, SQL_DON_POS_MOC, SQL_DON_POS_PAGE, SO_NGAY_DOC, NHOM_TRANG_THAI, taoDocDonPos, tongHopTeam, tiLeGiao, luiNgay } from '../src/hrm/don-pos.js';
 
 const NV = (emp_code, team_code, ho_ten, status = 'active') => ({ emp_code, team_code, ho_ten, status, comp_profile: 'MKT' });
 const HRM = { nhanVien: [NV('NV1', 'PIALPHA_GCC', 'An'), NV('NV2', 'PIALPHA_GCC', 'Bình', 'nghi'), NV('NV3', 'PIALPHA_EU', 'Chi'),
@@ -37,7 +37,7 @@ test('P1 · câu đọc đúng luật đo 02/10: marketer JSON · tiền ở `co
   assert.match(SQL_DON_POS, /ANY_VALUE\(currency_divisor\) AS chia FROM .*dim_shop_project GROUP BY shop_id/, 'một shop một dòng — không nhân đôi đơn');
   assert.match(SQL_DON_POS, /BETWEEN DATE_SUB\(CURRENT_DATE\(\), INTERVAL 59 DAY\) AND CURRENT_DATE\(\)/, '60 ngày, loại ngày tương lai');
   assert.match(SQL_DON_POS_MOC, /COUNTIF\(SAFE_CAST\(inserted_date AS DATE\) > CURRENT_DATE\(\)\) AS tuong_lai/);
-  for (const s of [SQL_DON_POS, SQL_DON_POS_MOC]) assert.doesNotMatch(s, /\b(INSERT|UPDATE|DELETE|MERGE|CREATE|DROP)\b/i);
+  for (const s of [SQL_DON_POS, SQL_DON_POS_MOC, SQL_DON_POS_PAGE]) assert.doesNotMatch(s, /\b(INSERT|UPDATE|DELETE|MERGE|CREATE|DROP)\b/i);
   assert.deepEqual(Object.keys(NHOM_TRANG_THAI).sort(), ['CHO_HANG', 'DANG_GIAO', 'DA_DAT_HANG', 'DA_XAC_NHAN', 'DON_HOAN', 'DON_THO', 'GIAO_THANH_CONG', 'HUY']);
 });
 
@@ -61,24 +61,26 @@ test('P3 · marketer chỉ thấy dòng CỦA MÌNH (team vẫn là tổng) · k
   assert.deepEqual(tongHopTeam(DU, HRM, { slug: 'tieu-alpha', chiMaNv: null }).marketer, []);
 });
 
-test('P4 · bộ đọc: hai câu (số + mốc) · đệm 1 giờ · «làm mới» · hai lời gọi cùng lúc = một lượt · lỗi không đệm · đổi kiểu số', async () => {
+test('P4 · bộ đọc: ba câu (số + mốc + theo page — LL17b) · đệm 1 giờ · «làm mới» · hai lời gọi cùng lúc = một lượt · lỗi không đệm · đổi kiểu số', async () => {
   let goi = 0; let hong = true; let gio = 0;
   const doc = taoDocDonPos({ dongHo: () => gio, taoKhach: () => ({ truyVan: async (sql) => {
     goi++; await new Promise((r) => setTimeout(r, 3));
     if (hong) throw new Error('mạng');
+    if (sql === SQL_DON_POS_PAGE) return [{ page_id: '101', status_category: 'HUY', so_don: '2' }, { page_id: null, status_category: 'HUY', so_don: '1' }];
     return sql === SQL_DON_POS_MOC ? [{ hom_nay: '2026-10-02', dong_bo: '2026-10-02T07:30:04', tuong_lai: '1' }]
-      : [{ ngay: '2026-10-02', shop_id: 's1', currency: 'SAR', chia: '100', emp_code: 'NV1', status_category: 'GIAO_THANH_CONG', so_don: '3', cod: 30000 }];
+      : [{ ngay: '2026-10-02', shop_id: 's1', currency: 'SAR', chia: '100', emp_code: 'NV1', status_category: 'GIAO_THANH_CONG', luong: 'messenger', so_don: '3', cod: 30000 }];
   } }) });
   await assert.rejects(doc(), /mạng/);
   hong = false;
   const [a, b] = await Promise.all([doc(), doc()]);
   assert.equal(a, b);
-  assert.equal(goi, 4, 'hai câu × (lượt lỗi + một lượt cho hai lời gọi cùng lúc)');
+  assert.equal(goi, 6, 'ba câu × (lượt lỗi + một lượt cho hai lời gọi cùng lúc)');
   assert.deepEqual([a.homNay, a.dongBo, a.tuongLai], ['2026-10-02', '2026-10-02T07:30:04', 1]);
-  assert.deepEqual(a.dong, [{ ngay: '2026-10-02', shop: 's1', tienTe: 'SAR', chia: 100, maNv: 'NV1', trangThai: 'GIAO_THANH_CONG', soDon: 3, cod: 30000 }]);
-  gio = 3599 * 1000; await doc(); assert.equal(goi, 4, 'trong hạn đệm');
-  await doc({ lamMoi: true }); assert.equal(goi, 6);
-  gio += 3601 * 1000; await doc(); assert.equal(goi, 8);
+  assert.deepEqual(a.dong, [{ ngay: '2026-10-02', shop: 's1', tienTe: 'SAR', chia: 100, maNv: 'NV1', trangThai: 'GIAO_THANH_CONG', luong: 'messenger', soDon: 3, cod: 30000 }]);
+  assert.deepEqual(a.theoPage, [{ page: '101', trangThai: 'HUY', soDon: 2 }, { page: null, trangThai: 'HUY', soDon: 1 }]);
+  gio = 3599 * 1000; await doc(); assert.equal(goi, 6, 'trong hạn đệm');
+  await doc({ lamMoi: true }); assert.equal(goi, 9);
+  gio += 3601 * 1000; await doc(); assert.equal(goi, 12);
 });
 
 test('P5 · khách BigQuery TỪ CHỐI kết quả nhiều trang (`pageToken`) — không trả nửa số', async () => {

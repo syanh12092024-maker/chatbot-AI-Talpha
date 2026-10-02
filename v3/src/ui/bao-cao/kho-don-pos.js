@@ -5,7 +5,8 @@
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 import { teamTheoId } from '../../auth/kho-nguoi-dung.js';
 import { phamViMarketer } from '../chung/pham-vi-marketer.js';
-import { tongHopTeam, SO_NGAY_DOC } from '../../../../src/hrm/don-pos.js';
+import { tongHopTeam, theoPageTeam, SO_NGAY_DOC, SO_NGAY_PAGE } from '../../../../src/hrm/don-pos.js';
+import { pageCuaTeamBaoCao } from './kho-bao-cao.js';
 
 let _docDonPos = null;
 let _docHrm = null;
@@ -33,8 +34,15 @@ export async function manDonPos(boiCanh, { khoang = [7, 30] } = {}) {
     return { noi: false, hong: true, viSao: `đọc BigQuery hỏng (${String(e?.message || e).slice(0, 160)})`, nguon: NGUON };
   }
   const so = tongHopTeam(du, hrm, { slug: t ? t.slug : '', chiMaNv: pv ? (pv.maNv || null) : undefined, khoang });
+  // LL17b: bảng Theo page — page của team (theo `page_id` Facebook của đơn), 30 ngày; kèm tên để thêm hàng cho page chỉ có đơn.
+  let theoPage = null;
+  try {
+    const ds = await pageCuaTeamBaoCao(bc);
+    const so30 = theoPageTeam(du, ds.map((p) => p.pageId));
+    theoPage = ds.filter((p) => so30[p.pageId]).map((p) => ({ pageId: p.pageId, ten: p.ten, ...so30[p.pageId] }));
+  } catch { theoPage = null; }   // không đọc được page của team ⇒ cột Chốt · Hoàn nói «chưa có nguồn», khối chính vẫn hiện
   return {
-    noi: true, nguon: NGUON, soNgayDoc: SO_NGAY_DOC, docLuc: du.luc, dongBo: du.dongBo, tuongLai: du.tuongLai,
-    tenTeam: t ? t.ten : '', chiCuaToi: !!pv, ...so,
+    noi: true, nguon: NGUON, soNgayDoc: SO_NGAY_DOC, soNgayPage: SO_NGAY_PAGE, docLuc: du.luc, dongBo: du.dongBo, tuongLai: du.tuongLai,
+    tenTeam: t ? t.ten : '', chiCuaToi: !!pv, ...so, theoPage,
   };
 }

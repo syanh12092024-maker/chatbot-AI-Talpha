@@ -197,6 +197,8 @@ async function docHaiLuongCuaA(bc) {
   }
   try {
     const r = await _docHaiLuong(bc);
+    // LL17b: bảng đơn là ảnh chụp cũ hơn khoảng đo ⇒ KHÔNG trả 0 · 0 (số sai trông như số đúng) — nói chưa biết + vì sao.
+    if (r?.boiCanh?.anhChupCu) return { co: false, vi: 'anh-chup-cu', noi: r.boiCanh.viSaoRong, khoang: r.khoang || null };
     const khoi = (x, ten) => ({
       coNguon: true,
       soDon: x?.soDon ?? 0,
@@ -218,6 +220,12 @@ async function docHaiLuongCuaA(bc) {
       noi: `Cửa \`baoCaoHaiLuong\` của người A ném: ${e?.message || e}. Số hai luồng dưới đây `
         + 'đếm tại màn — KHÔNG phải số của cửa đó.' };
   }
+}
+
+/** LL17b · 02/10: page_id Facebook của team đang mở — khối «Đơn POS» (BigQuery) lọc bảng theo page đúng team. */
+export async function pageCuaTeamBaoCao(boiCanh) {
+  const bc = batBuocBoiCanh(boiCanh);
+  return (await truyVan(bc).chon(BANG_PAGE, {}, { sapXep: 'ten' })).map((p) => ({ pageId: String(p.page_id), ten: p.ten || '' }));
 }
 
 /**

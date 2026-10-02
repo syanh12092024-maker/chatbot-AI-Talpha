@@ -120,6 +120,9 @@ function veBang(d, cp) {
   for (const p of (d.messenger ? d.messenger.page : [])) {
     if (p.posQuyChoAi > 0 || p.hoiThoaiCoDon > 0) theoPage.set(String(p.pageId), { ...p });
   }
+  // LL17b · 02/10: «Chốt · Hoàn» theo page từ BigQuery (30 ngày, `page_id` của đơn) — page chỉ có đơn mà chưa có số bot cũng thành hàng.
+  const pos = DON_POS && DON_POS.noi && Array.isArray(DON_POS.theoPage) ? new Map(DON_POS.theoPage.map((x) => [String(x.pageId), x])) : null;
+  if (pos) for (const [k, x] of pos) if (!theoPage.has(k)) theoPage.set(k, { pageId: k, ten: x.ten, posQuyChoAi: null, hoiThoaiCoDon: null });
   const coCp = !!(cp && Array.isArray(cp.page));
   if (coCp) {
     for (const x of cp.page) {
@@ -129,9 +132,10 @@ function veBang(d, cp) {
         vndMoiDon: x.vndMoiDon, soLuotAi: x.soLuot, dotTien: x.dotTienKhongRaDon });
     }
   }
+  const chot = (k) => { const x = pos && pos.get(String(k)); return x ? x.don - x.huy : null; };
   const ds = [...theoPage.values()].sort(coCp
-    ? (a, b) => (b.vndMoiDon ?? -1) - (a.vndMoiDon ?? -1) || (b.posQuyChoAi ?? 0) - (a.posQuyChoAi ?? 0)
-    : (a, b) => (b.posQuyChoAi ?? 0) - (a.posQuyChoAi ?? 0));
+    ? (a, b) => (b.vndMoiDon ?? -1) - (a.vndMoiDon ?? -1) || (b.posQuyChoAi ?? 0) - (a.posQuyChoAi ?? 0) || (chot(b.pageId) ?? 0) - (chot(a.pageId) ?? 0)
+    : (a, b) => (b.posQuyChoAi ?? 0) - (a.posQuyChoAi ?? 0) || (chot(b.pageId) ?? 0) - (chot(a.pageId) ?? 0));
   $('#hSo').textContent = `${formatNumber(ds.length)} page · ` + (coCp ? 'xếp theo chi phí AI mỗi đơn, đắt nhất lên đầu' : 'xếp theo đơn POS quy cho AI');
   if (!ds.length) {
     $('#bang').innerHTML = emptyState({ icon: 'inbox', title: d.trong ? d.trong.noi : 'Chưa page nào có đơn',
@@ -150,11 +154,14 @@ function veBang(d, cp) {
       <td>${p.marketer ? esc(p.marketer) : '<span class="text-muted">Chưa gán</span>'}</td>
       <td class="num manh">${d0(p.posQuyChoAi)}</td>
       <td class="num">${d0(p.hoiThoaiCoDon)}</td>
-      <td class="num">${chuaCo}</td>
+      <td class="num" data-chot>${pos ? (pos.has(String(p.pageId)) ? d0(chot(p.pageId)) : '0') : chuaCo}</td>
       <td class="num">${!coCp ? chuaCo : p.vndMoiDon == null ? (p.dotTien ? statusBadge('needs_attention', { label: 'Tốn tiền, 0 đơn' }) : chuaCo) : formatVnd(p.vndMoiDon)}</td>
-      <td class="num">${chuaCo}</td>
+      <td class="num" data-hoan>${(() => { const x = pos && pos.get(String(p.pageId)); if (!pos) return chuaCo; if (!x || !(x.thanhCong + x.hoan)) return '—';
+        return `<span title="${x.hoan} hoàn / ${x.thanhCong + x.hoan} đơn đã kết thúc">${(x.hoan / (x.thanhCong + x.hoan) * 100).toFixed(1).replace('.', ',')}%</span>`; })()}</td>
     </tr>`).join('')}</tbody></table>
-    <p class="field-hint tren-3">«Chốt» và «Hoàn» theo page: chưa có nguồn — chưa cửa đọc nào tính hai số này theo page.${coCp ? ` «AI / đơn»: ${esc(cp.khoang ? cp.khoang.chu : '')}, Sổ AI cũ (ghi tới 28/08).` : ' «AI / đơn»: chưa đọc được sổ chi phí.'}</p>`;
+    <p class="field-hint tren-3" data-chot-hoan>${pos
+      ? `«Chốt» = đơn ${DON_POS.soNgayPage} ngày của page (mọi nguồn, trừ huỷ) · «Hoàn» = hoàn ÷ đơn đã kết thúc giao — BigQuery, tới ngày ${esc(DON_POS.homNay)}; khoảng KHÁC hai cột bot bên trái.`
+      : '«Chốt» và «Hoàn» theo page: chưa có nguồn — chưa nối đọc đơn POS từ BigQuery.'}${coCp ? ` «AI / đơn»: ${esc(cp.khoang ? cp.khoang.chu : '')}, Sổ AI cũ (ghi tới 28/08).` : ' «AI / đơn»: chưa đọc được sổ chi phí.'}</p>`;
 }
 
 /* VE6a · phễu (bản vẽ 3a): mỗi chặng MỘT số khi có nguồn, «chưa có nguồn» khi không. KHÔNG tính tỉ lệ rơi giữa chặng — các số đến từ
@@ -167,6 +174,18 @@ function vePheu(noi, buoc) {
 }
 
 function veTrangBanHang(t) {
+  // LL17b: có đơn POS từ BigQuery ⇒ luồng trang bán hàng đếm TỪ ĐÓ (đúng luật suy nguồn của bộ nạp) — số chụp 28/08 thôi dùng.
+  if (DON_POS && DON_POS.noi && DON_POS.luong) {
+    const x = DON_POS.luong.trang_ban_hang; const [n, l] = [DON_POS.khoang[0], DON_POS.khoang[DON_POS.khoang.length - 1]];
+    $('#tbh').innerHTML = `<ul class="item-list" data-tbh-bq><li class="item">
+        <div class="item-lead">${d0(x[n].don)}</div>
+        <div><div class="item-title">Đơn từ trang bán hàng — ${n} ngày</div>
+          <div class="item-desc">${l} ngày: ${d0(x[l].don)} đơn · giao thành công ${d0(x[l].thanhCong)} · hoàn ${d0(x[l].hoan)} · huỷ ${d0(x[l].huy)} · tỉ lệ giao ${tiLe(x[l])}</div>
+          <div class="item-detail">BigQuery, tới ngày ${esc(DON_POS.homNay)} · đơn của team (team của marketer) không có hội thoại Messenger — luật suy nguồn của bộ nạp đơn</div></div>
+        <div class="item-trail"></div>
+      </li></ul>`;
+    return;
+  }
   if (t.coNguon) {
     $('#tbh').innerHTML = `<ul class="item-list"><li class="item">
         <div class="item-lead">${d0(t.soDon)}</div>
@@ -235,7 +254,7 @@ async function tai() {
 }
 
 /* ═══ VE6a · khối phụ (bản vẽ 3a): mỗi khối đọc CỬA RIÊNG và tự nói lỗi — một khối hỏng không làm trắng màn ═══ */
-let BAO_CAO = null, CHI_PHI = null, NGUON = null;
+let BAO_CAO = null, CHI_PHI = null, NGUON = null, DON_POS = null;
 async function thu(u) { try { return await goi(u); } catch (e) { return { loi: e.message }; } }
 
 function vePheuMess(d) {
@@ -248,7 +267,9 @@ function vePheuMess(d) {
   const t = d.trangBanHang || {};
   const cr = NGUON && !NGUON.loi ? NGUON.choRoi : null;
   vePheu('#pheuTrang', [
-    { ten: 'Bấm BUY NOW', v: t.coNguon ? t.soDon : null, ghi: t.coNguon ? (d.haiLuong && d.haiLuong.co && d.haiLuong.khoang ? khoangChu(d.haiLuong.khoang) : 'đơn nguồn trang bán hàng') : '' },
+    DON_POS && DON_POS.noi && DON_POS.luong
+      ? { ten: 'Bấm BUY NOW', v: DON_POS.luong.trang_ban_hang[DON_POS.khoang[0]].don, ghi: `${DON_POS.khoang[0]} ngày · BigQuery` }
+      : { ten: 'Bấm BUY NOW', v: t.coNguon ? t.soDon : null, ghi: t.coNguon ? (d.haiLuong && d.haiLuong.co && d.haiLuong.khoang ? khoangChu(d.haiLuong.khoang) : 'đơn nguồn trang bán hàng') : '' },
     { ten: 'Gửi WhatsApp', v: cr && cr.doDuoc ? cr.soDonTrang - cr.soKhongGui : null, ghi: cr && !cr.doDuoc ? 'luồng gửi WhatsApp chưa chạy' : '' },
     { ten: 'Khách xác nhận', v: null }, { ten: 'Sang Chờ in', v: null }, { ten: 'Sale gọi lại cứu được', v: null },
   ]);
@@ -273,8 +294,14 @@ function veChiSo() {
       hint: t ? `${k} · Sổ AI cũ (tới 28/08) · % doanh thu: chưa có nguồn` : (CHI_PHI && CHI_PHI.loi ? 'chưa đọc được sổ chi phí' : 'đang đọc…') },
     { label: 'Tin AI để ra một đơn', value: t && t.tinMoiDon != null ? t.tinMoiDon : '—',
       hint: t ? `${t.vndMoiTin != null ? formatVnd(t.vndMoiTin) + ' mỗi tin · ' : ''}${formatNumber(t.soLuot)} tin → ${formatNumber(t.soDon)} đơn` : '' },
-    { label: 'Đơn theo luồng — không gộp', value: hl ? `${formatNumber(hl.messenger.soDon)} · ${formatNumber(hl.trangBanHang.soDon)}` : '—',
-      hint: hl ? `Messenger · trang bán hàng · ${khoangChu(hl.khoang)}` : 'chưa nối cửa hai luồng' },
+    // LL17b: ưu tiên BigQuery (đơn của team, đúng luật suy nguồn); không có thì số chụp — và số chụp cũ hơn khoảng đo thì «—» kèm vì sao,
+    // KHÔNG «0 · 0» (prod 02/10 in 0 · 0 vì don_hang chỉ có tới 28/08).
+    DON_POS && DON_POS.noi && DON_POS.luong
+      ? { label: 'Đơn theo luồng — không gộp', value: `${formatNumber(DON_POS.luong.messenger[DON_POS.khoang[0]].don)} · ${formatNumber(DON_POS.luong.trang_ban_hang[DON_POS.khoang[0]].don)}`,
+          hint: `Messenger · trang bán hàng · ${DON_POS.khoang[0]} ngày tới ${DON_POS.homNay} · BigQuery` }
+      : { label: 'Đơn theo luồng — không gộp', value: hl ? `${formatNumber(hl.messenger.soDon)} · ${formatNumber(hl.trangBanHang.soDon)}` : '—',
+          hint: hl ? `Messenger · trang bán hàng · ${khoangChu(hl.khoang)}` : (BAO_CAO && BAO_CAO.haiLuong && BAO_CAO.haiLuong.vi === 'anh-chup-cu'
+            ? 'chưa biết — bảng đơn là ảnh chụp cũ hơn khoảng đo' : 'chưa nối cửa hai luồng') },
     { label: 'BUY NOW mà không gửi WhatsApp', value: cr && cr.doDuoc && cr.tiLe != null ? `${(cr.tiLe * 100).toFixed(1).replace('.', ',')}%` : '—',
       hint: cr && !cr.doDuoc ? 'chưa đo được · 37,4% là số cũ trong tài liệu — luồng WhatsApp chưa chạy' : (cr ? `${formatNumber(cr.soKhongGui)}/${formatNumber(cr.soDonTrang)} đơn` : '') },
   ]);
@@ -345,7 +372,11 @@ function veDonPos(d) {
 async function taiDonPos() {
   const d = await thu('/api/bao-cao/don-pos');
   if (d.loi) { $('#donPos').innerHTML = canhBao({ level: 'error', title: 'Khối «Đơn POS của team» không tải được', body: d.loi }); return; }
+  DON_POS = d;
   veDonPos(d);
+  // LL17b: ô «Đơn theo luồng», luồng trang bán hàng và cột «Chốt · Hoàn» của bảng Theo page đọc CÙNG số này.
+  veChiSo();
+  if (BAO_CAO) { vePheuMess(BAO_CAO); veTrangBanHang(BAO_CAO.trangBanHang || {}); if (BAO_CAO.messenger) veBang(BAO_CAO, CHI_PHI && !CHI_PHI.loi ? CHI_PHI : null); }
 }
 
 tai().then(taiPhu);

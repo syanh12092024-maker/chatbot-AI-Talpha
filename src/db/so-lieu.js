@@ -97,7 +97,7 @@ export async function baoCaoHaiLuong(pool, ctx, tuyChon = {}) {
         "01-QUYET-DINH §1 — hai luồng đo bằng HAI THƯỚC khác nhau (trang bán hàng có đơn " +
         "trước rồi mới hỏi; Messenger thì chốt trong hội thoại). Cộng lại là trả lời sai " +
         "mọi câu hỏi sau đó.",
-      boiCanh: await boiCanhRong(khach, ctx.teamId, tong, "don_hang", { tu, den }),
+      boiCanh: await boiCanhRong(khach, ctx.teamId, tong, "don_hang", { tu, den }, { cotLuc: "tao_luc" }),
       nguon: "don_hang WHERE team_id=? AND tao_luc IN [tu, den) GROUP BY nguon",
     };
   } finally {
@@ -359,8 +359,21 @@ export async function sucKhoeHeThong(pool, ctx, { phutIm = 30 } = {}) {
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /** Vì sao khoảng đo này rỗng? Ba lý do khác hẳn nhau, và cách sửa cũng khác hẳn nhau. */
-async function boiCanhRong(khach, teamId, soDong, bang, { tu, den }) {
+async function boiCanhRong(khach, teamId, soDong, bang, { tu, den }, { cotLuc = null } = {}) {
   if (soDong > 0) return { coDuLieu: true, viSaoRong: null };
+  // LL17b · 02/10: dòng mới nhất của team cũ hơn đầu khoảng đo (prod: `don_hang` nạp một lần 28/08, cửa sổ 7 ngày từ 25/09) ⇒ «0» là
+  // CHƯA BIẾT, không phải «không có đơn». Màn trước đó in 0 · 0 (đo prod 02/10). Giả định: team có page mà cả khoảng không một đơn
+  // nào là bảng chưa được nạp tới — không phân biệt được với «team thật sự 0 đơn» khi bảng còn nạp. `bang`/`cotLuc` là hằng nội bộ.
+  if (cotLuc && tu) {
+    const m = (await khach.query(`SELECT max(${cotLuc}) AS m FROM ${bang} WHERE team_id = $1`, [teamId])).rows[0].m;
+    if (m && new Date(m) < tu) {
+      return {
+        coDuLieu: false, anhChupCu: true, moiNhat: new Date(m),
+        viSaoRong: `dòng mới nhất của team trong bảng \`${bang}\` là ngày ${new Date(m).toISOString().slice(0, 10)} — trước đầu khoảng đo `
+          + `(${tu.toISOString().slice(0, 10)}): bảng chưa được nạp tới khoảng này, nên số của khoảng là CHƯA BIẾT, không phải 0.`,
+      };
+    }
+  }
   const p = await khach.query(
     "SELECT count(*)::int c FROM page WHERE team_id = $1", [teamId],
   );

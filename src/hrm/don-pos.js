@@ -12,20 +12,36 @@
 //   · `status_category`: GIAO_THANH_CONG · DON_HOAN · HUY · DANG_GIAO · CHO_HANG · DA_XAC_NHAN · DA_DAT_HANG · DON_THO · UNKNOWN;
 //   · 1 đơn mang ngày TƯƠNG LAI (01/11/2026) — loại khỏi số, đếm riêng để màn nói ra.
 // Không cộng tiền khác tệ: COD trả THEO TỪNG TIỀN TỆ (nguyên tắc màn Báo cáo — không cộng thứ đo bằng thước khác nhau).
+//
+// LL17b · 02/10 — HAI LUỒNG theo ĐÚNG luật của bộ nạp `don_hang` (`src/pos/doc-don.js#suyNguon`): `conversation_id` của đơn
+// (trong `payload_json`) đúng khuôn `<page>_<psid>` ⇒ messenger · trống ⇒ trang bán hàng · sai khuôn ⇒ KHÔNG SUY ĐƯỢC (đếm riêng, cấm
+// đoán). Đo 02/10, 30 ngày: messenger 7.997 · trang bán hàng 5.230 · sai khuôn 0. Thêm một câu THEO PAGE (30 ngày, `page_id` của đơn)
+// cho cột «Chốt · Hoàn» của bảng Theo page.
 import { TEAM_HRM } from './hrm.js';
 
 export const SO_NGAY_DOC = 60;
 const BANG = '`levelup-465304`.PIALPHA_ALL_Dataset';
+/** Luồng của đơn — đúng luật `suyNguon` (khuôn `<page_id>_<psid>`). */
+const LUONG = `CASE WHEN IFNULL(JSON_VALUE(payload_json, '$.conversation_id'), '') = '' THEN 'trang_ban_hang'
+                 WHEN REGEXP_CONTAINS(JSON_VALUE(payload_json, '$.conversation_id'), r'^[0-9]+_[0-9]+$') THEN 'messenger'
+                 ELSE 'khong_suy_duoc' END`;
+export const LUONG_DON = Object.freeze(['messenger', 'trang_ban_hang', 'khong_suy_duoc']);
 export const SQL_DON_POS = `WITH m AS (
     SELECT person_id, ANY_VALUE(emp_code) AS emp_code FROM ${BANG}.dim_person_map WHERE emp_code IS NOT NULL GROUP BY person_id),
   p AS (SELECT shop_id, ANY_VALUE(currency) AS currency, ANY_VALUE(currency_divisor) AS chia FROM ${BANG}.dim_shop_project GROUP BY shop_id),
-  o AS (SELECT SAFE_CAST(inserted_date AS DATE) AS ngay, shop_id, JSON_VALUE(marketer, '$.id') AS mk, status_category, cod
+  o AS (SELECT SAFE_CAST(inserted_date AS DATE) AS ngay, shop_id, JSON_VALUE(marketer, '$.id') AS mk, status_category, cod,
+               ${LUONG} AS luong
           FROM ${BANG}.vw_sale_order_team
          WHERE SAFE_CAST(inserted_date AS DATE) BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL ${SO_NGAY_DOC - 1} DAY) AND CURRENT_DATE())
-  SELECT CAST(o.ngay AS STRING) AS ngay, o.shop_id, p.currency, p.chia, m.emp_code, o.status_category,
+  SELECT CAST(o.ngay AS STRING) AS ngay, o.shop_id, p.currency, p.chia, m.emp_code, o.status_category, o.luong,
          COUNT(*) AS so_don, SUM(IFNULL(o.cod, 0)) AS cod
     FROM o LEFT JOIN m ON m.person_id = o.mk LEFT JOIN p ON p.shop_id = o.shop_id
-   GROUP BY 1, 2, 3, 4, 5, 6`;
+   GROUP BY 1, 2, 3, 4, 5, 6, 7`;
+export const SO_NGAY_PAGE = 30;
+export const SQL_DON_POS_PAGE = `SELECT NULLIF(page_id, '') AS page_id, status_category, COUNT(*) AS so_don
+    FROM ${BANG}.vw_sale_order_team
+   WHERE SAFE_CAST(inserted_date AS DATE) BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL ${SO_NGAY_PAGE - 1} DAY) AND CURRENT_DATE()
+   GROUP BY 1, 2`;
 export const SQL_DON_POS_MOC = `SELECT CAST(CURRENT_DATE() AS STRING) AS hom_nay, CAST(MAX(sync_time) AS STRING) AS dong_bo,
     COUNTIF(SAFE_CAST(inserted_date AS DATE) > CURRENT_DATE()) AS tuong_lai
   FROM ${BANG}.vw_sale_order_team`;
@@ -36,7 +52,8 @@ export const NHOM_TRANG_THAI = Object.freeze({
   DANG_GIAO: 'dangXuLy', CHO_HANG: 'dangXuLy', DA_XAC_NHAN: 'dangXuLy', DA_DAT_HANG: 'dangXuLy', DON_THO: 'dangXuLy',
 });
 
-/** Bộ đọc: `{ luc, homNay, dongBo, tuongLai, dong: [{ ngay, shop, tienTe, chia, maNv, trangThai, soDon, cod }] }` — đệm `hanMs`. */
+/** Bộ đọc: `{ luc, homNay, dongBo, tuongLai, dong: [{ ngay, shop, tienTe, chia, maNv, trangThai, luong, soDon, cod }],
+ *  theoPage: [{ page, trangThai, soDon }] }` (LL17b thêm `luong` + `theoPage`) — đệm `hanMs`. */
 export function taoDocDonPos({ taoKhach, hanMs = 3600 * 1000, dongHo = () => Date.now() } = {}) {
   if (typeof taoKhach !== 'function') throw new Error('taoDocDonPos cần `taoKhach` là hàm');
   let khach = null;
@@ -47,11 +64,12 @@ export function taoDocDonPos({ taoKhach, hanMs = 3600 * 1000, dongHo = () => Dat
     if (dangDoc) return dangDoc;
     dangDoc = (async () => {
       khach ||= taoKhach();
-      const [rows, [moc]] = await Promise.all([khach.truyVan(SQL_DON_POS), khach.truyVan(SQL_DON_POS_MOC)]);
+      const [rows, [moc], page] = await Promise.all([khach.truyVan(SQL_DON_POS), khach.truyVan(SQL_DON_POS_MOC), khach.truyVan(SQL_DON_POS_PAGE)]);
       dem = {
         luc: dongHo(), homNay: moc.hom_nay, dongBo: moc.dong_bo || null, tuongLai: Number(moc.tuong_lai) || 0,
         dong: rows.map((r) => ({ ngay: r.ngay, shop: r.shop_id, tienTe: r.currency || null, chia: Number(r.chia) || 1, maNv: r.emp_code || null,
-          trangThai: r.status_category || null, soDon: Number(r.so_don) || 0, cod: Number(r.cod) || 0 })),
+          trangThai: r.status_category || null, luong: r.luong || 'khong_suy_duoc', soDon: Number(r.so_don) || 0, cod: Number(r.cod) || 0 })),
+        theoPage: page.map((r) => ({ page: r.page_id || null, trangThai: r.status_category || null, soDon: Number(r.so_don) || 0 })),
       };
       return dem;
     })().finally(() => { dangDoc = null; });
@@ -86,6 +104,7 @@ export function tongHopTeam(du, hrm, { slug, chiMaNv = undefined, khoang = [7, 3
   const tu = Object.fromEntries(khoang.map((k) => [k, luiNgay(du.homNay, k - 1)]));
   const moi = () => Object.fromEntries(khoang.map((k) => [k, demRong()]));
   const team = moi(); const choGan = moi(); const ngoaiHe = moi();
+  const luong = Object.fromEntries(LUONG_DON.map((l) => [l, moi()]));   // LL17b: đơn của TEAM tách theo luồng (không gộp)
   const theoMk = new Map();
   for (const r of (du && du.dong) || []) {
     const vao = khoang.filter((k) => r.ngay >= tu[k] && r.ngay <= du.homNay);
@@ -107,14 +126,30 @@ export function tongHopTeam(du, hrm, { slug, chiMaNv = undefined, khoang = [7, 3
     for (const k of vao) {
       if (dich) cong(dich[k], r);
       if (mk) cong(mk[k], r);
+      if (dich === team) cong(luong[r.luong in luong ? r.luong : 'khong_suy_duoc'][k], r);
     }
   }
   const lon = khoang[khoang.length - 1];
   return {
-    homNay: du.homNay, khoang, team, choGan, ngoaiHe,
+    homNay: du.homNay, khoang, team, choGan, ngoaiHe, luong,
     marketer: [...theoMk.values()].sort((a, b) => b.k[lon].don - a.k[lon].don || a.ten.localeCompare(b.ten, 'vi')),
   };
 }
 
 /** Tỉ lệ giao thành công trên đơn ĐÃ KẾT THÚC giao (thành công + hoàn); chưa có đơn kết thúc ⇒ null (không phải 0). */
 export const tiLeGiao = (d) => (d.thanhCong + d.hoan ? d.thanhCong / (d.thanhCong + d.hoan) : null);
+
+/**
+ * LL17b — số 30 ngày THEO PAGE (`page_id` Facebook của đơn) cho các page của team: `{ [pageId]: { don, thanhCong, hoan, huy, dangXuLy, khac } }`.
+ * Đơn không mang `page_id` (trang bán hàng / tạo tay) không vào bảng này.
+ * @param {Iterable<string>} pageIds  page_id Facebook của team đang mở
+ */
+export function theoPageTeam(du, pageIds) {
+  const cua = new Set([...pageIds].map(String));
+  const ra = {};
+  for (const r of (du && du.theoPage) || []) {
+    if (!r.page || !cua.has(String(r.page))) continue;
+    cong(ra[r.page] ||= demRong(), r);
+  }
+  return ra;
+}

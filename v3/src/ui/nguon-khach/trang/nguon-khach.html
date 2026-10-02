@@ -84,7 +84,28 @@ async function goi(u) {
   return j;
 }
 
+/* LL17b · 02/10: hai luồng + bước BUY NOW đọc ĐƠN POS từ BigQuery (cùng cửa khối «Đơn POS của team» ở Tổng quan: đơn của team theo
+   marketer, luồng suy theo luật của bộ nạp đơn) — số chụp 28/08 chỉ còn là đường lùi khi chưa nối / không đọc được. */
+let NK = null, DON_POS = null;
+const tiLeGiao = (x) => (x.thanhCong + x.hoan ? `${(x.thanhCong / (x.thanhCong + x.hoan) * 100).toFixed(1).replace('.', ',')}%` : '—');
+const codChu = (c) => { const ds = Object.entries(c || {}).sort((a, b) => b[1] - a[1]);
+  return ds.length ? ds.map(([tt, v]) => `${formatNumber(Math.round(v))} ${esc(tt)}`).join(' · ') : '—'; };
+function veLuongBQ() {
+  const l = DON_POS.khoang[DON_POS.khoang.length - 1];
+  const hang = [['messenger', 'Messenger', 'Đơn có hội thoại Messenger (bot hoặc sale chốt trong hội thoại)'],
+    ['trang_ban_hang', 'Trang bán hàng', 'Đơn không có hội thoại — khách đặt qua form / BUY NOW'],
+    ['khong_suy_duoc', 'Không suy được nguồn', 'Mã hội thoại sai khuôn — không đoán luồng']]
+    .filter(([ma]) => ma !== 'khong_suy_duoc' || DON_POS.luong.khong_suy_duoc[l].don > 0);
+  $('#dich').textContent = (NK && NK.gapNhauO) || '';   // «đơn mang nguồn khác» là số của ảnh chụp — không ghép vào số BigQuery
+  $('#luong').innerHTML = hang.map(([ma, ten, moTa]) => { const x = DON_POS.luong[ma][l]; return `<li class="item" data-luong-bq="${ma}">
+    <div class="item-lead">${d0(x.don)}</div>
+    <div><div class="item-title">${esc(ten)}</div><div class="item-desc">${esc(moTa)}</div>
+      <div class="item-detail">${l} ngày tới ${esc(DON_POS.homNay)} · giao thành công ${d0(x.thanhCong)} · hoàn ${d0(x.hoan)} · huỷ ${d0(x.huy)} · tỉ lệ giao ${tiLeGiao(x)} · COD đã giao ${codChu(x.codThanhCong)}</div></div>
+    <div class="item-trail"></div></li>`; }).join('')
+    + `<li class="item"><div class="item-desc" data-nguon-bq>Đơn POS từ BigQuery — đơn của team (team của marketer), không gộp hai luồng; tiền theo từng tiền tệ, không cộng.</div></li>`;
+}
 function veLuong(ds) {
+  if (DON_POS && DON_POS.noi && DON_POS.luong) return veLuongBQ();
   $('#luong').innerHTML = ds.map((l) => `<li class="item">
     <div class="item-lead"${l.coDuLieu ? '' : ' data-muted'}>${d0(l.soDon)}</div>
     <div>
@@ -144,7 +165,9 @@ function veRoi(d) {
   $('#roiMess').innerHTML = o('Nhắn inbox', null) + o('Bot tư vấn', null) + o('Bot chốt', null, 'xem sổ đếm ở Tổng quan') + o('Sale duyệt', null);
   const trang = (d.luong || []).find((l) => l.ma === 'trang_ban_hang');
   const cr = d.choRoi || {};
-  $('#roiTrang').innerHTML = o('Bấm BUY NOW', trang ? trang.soDon : null, trang ? 'đơn từ trang bán hàng' : '')
+  const bq = DON_POS && DON_POS.noi && DON_POS.luong ? DON_POS.khoang[DON_POS.khoang.length - 1] : null;
+  $('#roiTrang').innerHTML = (bq ? o('Bấm BUY NOW', DON_POS.luong.trang_ban_hang[bq].don, `${bq} ngày · BigQuery`)
+    : o('Bấm BUY NOW', trang ? trang.soDon : null, trang ? 'đơn từ trang bán hàng (số chụp)' : ''))
     + o('Gửi WhatsApp', cr.doDuoc ? cr.soDonTrang - cr.soKhongGui : null, cr.doDuoc ? '' : 'luồng gửi WhatsApp chưa chạy · 37,4% là số cũ')
     + o('Xác nhận', null) + o('Chờ in', null);
 }
@@ -198,6 +221,7 @@ async function tai() {
   try {
     const d = await goi('/api/nguon-khach');
     if (!d) return;
+    NK = d;
     // LL5: số này tính tới đâu — đơn mới nhất trong hệ (án lệ #9: tuổi phép đo ≠ tuổi sự việc).
     $('#tuoi').textContent = d.donMoiNhat ? `Tính trên đơn tới ${new Date(d.donMoiNhat).toLocaleDateString('vi-VN')}` : '';
     if (d.khoang) {
@@ -224,8 +248,14 @@ async function tai() {
   }
 }
 
+async function taiDonPos() {
+  try { DON_POS = await goi('/api/bao-cao/don-pos'); } catch { DON_POS = null; }   // vai không mở được Số liệu / chưa nối ⇒ giữ số chụp
+  if (NK && DON_POS && DON_POS.noi) { veLuong(NK.luong); veRoi(NK); }
+}
+
 tai();
 taiRuiRo();
+taiDonPos();
 </script>
 <script src="/chung/dieu-huong.js"></script>
 </body>
