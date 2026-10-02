@@ -3020,7 +3020,7 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   · commit 60ab7ed · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261005-ll17b-ll15e-ll17d.md
 - 02/10 · CR-02-10b → 🔨 ÁP — page phải gắn một sản phẩm gốc × một shop POS thì bot mới chat; bỏ giá riêng theo page; gốc chỉ sinh từ gộp SKU; «bản sao theo page» thôi là nguồn (giữ lưu trữ) · §5h GSP1–GSP5 + H-GSP
   đo prod chỉ đọc: 0/514 page gắn gốc · 76 page đọc bản sao (0 bật) · 0/78 bản sao nối món POS · 0/491 món POS có giá · 536 ảnh ở bản sao · prod chat qua `kb-overrides.json` (`V3_RAP_PROMPT_BAT` vắng) ⇒ phải chốt ở handler · đảo thử bỏ nhánh `page_id`: 35 ca neo luật cũ · 01 §6 §8 + `luoc-do-v1.md` đã sửa · 5 nợ §9 N-GSP-*
-  · commit ed49438 · fcca397 · phiếu docs/thi-cong/doi-y-do/CR-02-10b-page-phai-gan-san-pham.md
+  · commit d01aa39 · 47e961c · phiếu docs/thi-cong/doi-y-do/CR-02-10b-page-phai-gan-san-pham.md
 - 02/10 · GSP1 → ✅ (chờ tổng nghiệm thu) — «+ Thêm» = Gộp món POS theo SKU; gỡ `POST /api/san-pham/goc` (404) + lối tạo gốc theo số hiệu; cửa sửa `/goc/:id` · gộp `/gop` · phạm vi marketer LL15d giữ nguyên · nợ N-GSP-TAOGOC (§9)
   npm test 2306→2311 ca, 0 đỏ (dev) · gsp1.sh 14/14 · đảo-vá 2/2 (khôi phục route ⇒ G1 đỏ; khôi phục veThem ⇒ G4 đỏ) · ll13/ve1/ve8a/ve8b/ll15d rc=0 · LL15d riêng 4/4 + 5/5 · `_chan1` ④ đỏ duy nhất do commit 400906b của tổng (CR-02-10b)
-  · commit 07b1b71 · nhật ký docs/thi-cong/nhat-ky/phieu-gsp1.md
+  · commit a0626be · nhật ký docs/thi-cong/nhat-ky/phieu-gsp1.md

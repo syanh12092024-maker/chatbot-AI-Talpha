@@ -1,6 +1,6 @@
 # Nhật ký thợ — GSP1 · Sản phẩm gốc chỉ sinh từ gộp món POS theo SKU
 
-Base `068c580` · commit code `07b1b71` · làn 🟨 · không đụng bộ não · môi trường đo: máy dev macOS, Postgres hộp cát `talpha-pg:5433` (không đo prod, không đo `aicloser_v3` dev). `.env` giữ `PANCAKE_READONLY=1` (đã kiểm, không sửa).
+Base `068c580` · commit code `a0626be` · làn 🟨 · không đụng bộ não · môi trường đo: máy dev macOS, Postgres hộp cát `talpha-pg:5433` (không đo prod, không đo `aicloser_v3` dev). `.env` giữ `PANCAKE_READONLY=1` (đã kiểm, không sửa).
 
 ## ⑦ Đã tra chưa
 Phiếu đã dán sẵn đầu ra `grep` §9 (N-SOHIEU-CUOI · N-DANHMUC-GOC · N-GSP-DIAMOND). Không có `ops/bin/tra_no.py`. Quan hệ «mới», không trùng nợ; không có marker câu-hỏi-chờ-tổng nào (đếm = 0).
@@ -31,7 +31,7 @@ Phiếu đã dán sẵn đầu ra `grep` §9 (N-SOHIEU-CUOI · N-DANHMUC-GOC · 
 - Đảo-vá (mỗi lượt một tiến trình mới, tệp khôi phục bằng trap, không để `.gsp1bak`): khôi phục route `POST /goc` ⇒ G1 đỏ (fail=1); thêm lại `function veThem` ⇒ G4 đỏ (fail=1); sau khôi phục xanh lại fail=0. Chưa đo (thành thật): đột biến chỉ khôi phục `taoGoc` phía trang mà không có `veThem` — G4 có mẫu `async function taoGoc` nhưng chưa có đảo-vá riêng cho mẫu đó.
 - Bộ canh phạm vi LL15d chạy RIÊNG: `test/ll15d-marketer-san-pham.test.mjs` 4/4 · `v3/test/b/ll15d-marketer-man.test.mjs` 5/5 · `ll15d.sh` rc=0 (nằm trong ⑥ của gsp1.sh).
 
-## Kết quả `_chan1.sh gsp1` (sau commit code 07b1b71)
+## Kết quả `_chan1.sh gsp1` (sau commit code a0626be)
 ```
 ✅ ①phiếu-tồn-tại · ✅ ②có-Base base=068c580
 🔴 ④pathspec-⊆-③ NGOÀI PHẠM VI: docs/thi-cong/doi-y-do/CR-02-10b-page-phai-gan-san-pham.md
@@ -45,4 +45,5 @@ Phép ④ đỏ DUY NHẤT do commit `400906b` của TỔNG (sửa CR-02-10b + p
 N-GSP-TAOGOC (trên) · trường `cho`/`khongCoSoHieu` của `GET /api/san-pham/goc` thành chết khi GSP2 đổi ô lưu ý (nhắc GSP2).
 
 
-> Tổng 02/10: rebase lên origin `b4e7b6d` (LL17a) — hash đổi: `c4d3baa`→`07b1b71`, `f767800`→`079fd80`; base phiếu `068c580`→`5302573` (cùng commit, sau rebase).
+> Tổng 02/10: rebase lên origin `b4e7b6d` (LL17a) — hash đổi: `c4d3baa`→`a0626be`, `f767800`→`905e546`; base phiếu `068c580`→`638d501` (cùng commit, sau rebase).
+> Tổng 02/10 (lượt 2): rebase lên origin `fd05a0c` (hộp cát theo tiến trình) — code `a0626be`, nhật ký `905e546`, base `638d501`.
