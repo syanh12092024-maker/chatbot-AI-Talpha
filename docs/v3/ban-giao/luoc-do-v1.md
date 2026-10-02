@@ -91,7 +91,7 @@ Mọi bảng còn lại có `team_id NOT NULL`; **ngoại lệ duy nhất** là 
 > | `ky_nang` | rời đường bot v3; nội dung «hỏi size» sang kiến thức sản phẩm; bảng giữ | LL8 · LL11 |
 > | `mau_0_dong` | gộp vào lớp **Trả lời sẵn** duy nhất (cùng Fast Lane mẫu + kho luật); bảng giữ | LL12 |
 > | `nguoi_dung` · `thanh_vien_team` | người đến từ HRM (BigQuery `HRM_Core`, khớp email), sale là thành viên cả 3 team; ghép marketer POS ↔ nhân viên ĐỌC từ `PIALPHA_ALL_Dataset.dim_person_map` | LL15 |
-> | `san_pham_goc` · `san_pham` | sản phẩm gốc gom nhiều món POS, mỗi món một thị trường (= một shop); 147 bản sao theo page phải gộp có người xác nhận | LL13 · LL16 |
+> | `san_pham_goc` · `san_pham` | sản phẩm gốc gom nhiều món POS, mỗi món một thị trường (= một shop); ~~147 bản sao theo page phải gộp có người xác nhận~~ **CR-02-10b:** page bán sản phẩm CHỈ qua `page.san_pham_goc_ma` + `page.pos_shop_id` (gắn có người xác nhận); 78 bản sao theo page (`nguon='kb'`, đo prod 02/10) thôi là nguồn — giá + ảnh chép sang món POS rồi giữ làm lưu trữ; `san_pham.page_id` không còn ai đọc từ GSP4 (bỏ cột là phiếu sau) | LL13 · LL16 · GSP2–GSP4 |
 
 ## 3 · Hình dạng `viec_can_xu_ly` — điểm bàn giao 3 (A ghi, B đọc)
 
