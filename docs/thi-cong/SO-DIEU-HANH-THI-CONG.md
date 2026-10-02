@@ -2892,3 +2892,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · MỞ VAN LL15b (bước 1) → ✅ GIỮ — prod `679d583 → 24abe05`, migration 029 (chỉ thêm `ma_nv` · `nguon`) áp mới 1 · tổng 29, KHÔNG đặt `V3_HRM_TU_DONG`, chỉ restart aicloser-v3 lúc 05:19:44 CEST; mốc lùi có sao lưu ba bảng quyền
   cửa vào 51 xanh / 12 đỏ = 12 nợ cũ (lượt đủ) · npm test 2.457 đạt 0 đỏ · mốc +1′/+5′/+15′ lỗi 0/0/0 · Started 1 · bộ đồng bộ nối, lượt tự động 0 · bảng quyền y nguyên 2 · 4 · kế hoạch thật tạo 21 · cấp 41 · đổi tên 2 · 0 rút/khoá · việc sau: Quản trị bấm «Lấy người từ HRM» → «Áp dụng» → đặt mật khẩu; bước 2 `V3_HRM_TU_DONG=1` gật riêng
   · commit 24abe05 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-ll15b.md
+- 02/10 · MỞ VAN LL15b (bước 2 · tự động) → ✅ GIỮ — `V3_HRM_TU_DONG=1` thêm đúng 1 dòng `.env`, chỉ restart aicloser-v3 lúc 06:48:05 CEST; trước đó Quản trị đã áp tay lượt đầu ở màn (23 tài khoản · 41 vai HRM)
+  mốc +1′/+6′/+15′ lỗi 0/0/0 · Started 1 · lượt tự động đầu 06:53 ra toàn 0 (hệ đã khớp HRM) · bảng quyền y nguyên 23 · 45 · đường lùi: xoá dòng biến + restart
+  · commit (hồ sơ bước 2) · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-ll15b.md §11

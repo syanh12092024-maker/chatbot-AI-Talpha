@@ -83,3 +83,22 @@ Việc sau deploy (người, Quản trị của cả ba team): Cài đặt › N
 (21 tài khoản · 41 vai · tên team «Tiểu Alpha» → «Pialpha GCC», «Auus» → «Pialpha AUUS») → «Đặt mật khẩu» cho từng người (theo
 từng team). **Bước 2** (gật riêng): đặt `V3_HRM_TU_DONG=1` + restart `aicloser-v3` ⇒ tự đồng bộ mỗi 24 giờ. Người quyết gật
 «deploy» 02/10.
+
+## 11 · BƯỚC 2 — bật đồng bộ tự động (`V3_HRM_TU_DONG=1`)
+
+Người quyết 02/10: «… bật tự động nhé». Trước khi bật, đo prod (06:46 CEST): Quản trị ĐÃ áp tay lượt đầu ở màn — `nguoi_dung` 23 ·
+`thanh_vien_team` 45 (tay 4 · hrm 41) · nhật ký `hrm_*` 65 · prod `24abe05` · `.env` chưa có biến.
+
+Lệnh: mốc lùi `/var/backups/aicloser/truoc-ll15b-tudong-20261002T044804Z/` (`env.bak` 600 + `commit.txt`) · thêm ĐÚNG một dòng
+`V3_HRM_TU_DONG=1` (`.env` 77 → 78 dòng) · `systemctl restart aicloser-v3` lúc **06:48:05 CEST** — chỉ dịch vụ này.
+Đường lùi: `sed -i '/^V3_HRM_TU_DONG=/d' /opt/aicloser/.env && systemctl restart aicloser-v3` (vắng = chỉ khi bấm).
+
+| Mốc | Giờ | Kết quả |
+|---|---|---|
+| +1′ | 06:49:07 | ba dịch vụ active · Started 1 · lỗi 0/0/0 · khởi động: «… · tự động mỗi 24 giờ» 1 · `envTuDong` 1 · kế hoạch thật RỖNG (hệ đã khớp HRM) · bảng quyền 23 · 45 |
+| +6′ (sau lượt đầu) | 06:54:53 | lượt tự động đầu (5′ sau khởi động) đã chạy: `đồng bộ HRM tự động: {taoTaiKhoan 0 · ganMaNv 0 · capVai 0 · rutVai 0 · khoa 0 · moKhoa 0 · doiTenTeam 0}` · lỗi 0/0/0 · bảng quyền y nguyên 23 · 45 · `hrm_*` 65 |
+| +15′ | 07:05 | y như trên — Started 1 · lỗi 0/0/0 · hai dịch vụ kia y nguyên |
+
+**Kết bước 2: GIỮ.** Từ giờ mỗi 24 giờ (và 5 phút sau mỗi lần `aicloser-v3` khởi động) máy tự đối chiếu HRM; vượt rào thì hoãn,
+ghi nhật ký `hrm_dong_bo_hoan`, câu cạnh nút «Lấy người từ HRM» nói lý do. Lưu ý: phiên MB (CR-02-10) sắp restart `aicloser-v3`
+khi mở van MB3 ⇒ thêm một lượt tự động 5 phút sau đó (kế hoạch rỗng thì không ghi gì).
