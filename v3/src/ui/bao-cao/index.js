@@ -8,6 +8,9 @@ export {
   THUOC, BANG_PAGE, LoiBaoCao,
 } from './kho-bao-cao.js';
 
+// LL17a · 02/10: đơn POS của team theo marketer — số tổng hợp từ BigQuery (`kho-don-pos.js`).
+export { manDonPos, datDocDonPos, datDocHrmSoLieu, daNoiDonPos } from './kho-don-pos.js';
+
 export {
   taoRouterBaoCao, datChanDangNhap, datChanVai, daNoiChanBaoCao,
   VAI_VAO_DUOC, DUONG_TRANG,

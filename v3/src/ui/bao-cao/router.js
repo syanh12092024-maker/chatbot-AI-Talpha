@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-canh.js';
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manBaoCao, VAI_VAO_DUOC, THUOC, LoiBaoCao } from './kho-bao-cao.js';
+import { manDonPos } from './kho-don-pos.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 const TRANG = (ten) => path.join(THU_MUC, 'trang', ten);
@@ -109,6 +110,11 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
 
   r.get('/api/bao-cao', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, ...(await manBaoCao(cuaBoiCanh(req))) });
+  }));
+
+  // LL17a · 02/10: đơn POS của team theo marketer — số tổng hợp từ BigQuery, đọc RIÊNG (khối này hỏng thì khối khác vẫn hiện).
+  r.get('/api/bao-cao/don-pos', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await manDonPos(cuaBoiCanh(req))) });
   }));
 
   return r;

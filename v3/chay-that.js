@@ -258,10 +258,19 @@ const docGoiYMarketer = await (async () => {
   return taoDocGoiYMarketer({ taoKhach: () => taoKhachBigQuery({ tepKhoa: process.env.V3_BQ_KHOA }) });
 })();
 
+// LL17a · 02/10: đơn POS của team theo marketer (Số liệu › Tổng quan) — cùng khoá BigQuery, CHỈ ĐỌC, đệm 1 giờ. Vắng biến = đóng.
+const docDonPos = await (async () => {
+  if (!process.env.V3_BQ_KHOA) return undefined;
+  const { taoDocDonPos } = await import(`${GOC}/src/hrm/don-pos.js`);
+  const { taoKhachBigQuery } = await import(`${GOC}/src/hrm/bigquery.js`);
+  return taoDocDonPos({ taoKhach: () => taoKhachBigQuery({ tepKhoa: process.env.V3_BQ_KHOA, timeoutMs: 60000 }) });
+})();
+
 const bao = dungPhanB(app, {
   docHrm,
   dongBoHrm,
   docGoiYMarketer,
+  docDonPos,
   taoTruyVan,
   // CR-28-09b · MN3: lưu sản phẩm trên v3 ⇒ đẩy bản chép sang bot v1 rồi đọc lại xác minh.
   vanHanh: {

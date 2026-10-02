@@ -236,3 +236,14 @@ export async function marketerCuaTeam(teamId) {
     .map((n) => ({ maNv: String(n.ma_nv).trim(), ten: String(n.ten || n.email || n.ma_nv), email: String(n.email || '') }))
     .sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
 }
+
+/**
+ * LL17a · 02/10 — một team theo id (`{ id, slug, ten, laKyThuat }` | null) qua cổng danh tính. Màn Số liệu cần SLUG của team đang mở
+ * để khớp team HRM của marketer (`src/hrm/hrm.js#TEAM_HRM`) — vé chỉ mang `teamId`.
+ */
+export async function teamTheoId(teamId) {
+  const id = String(teamId ?? '').trim();
+  if (!id) return null;
+  const t = await cong().mot('team', { id });
+  return t ? { id: String(t.id), slug: String(t.slug || ''), ten: String(t.ten || ''), laKyThuat: co(t.la_ky_thuat) } : null;
+}

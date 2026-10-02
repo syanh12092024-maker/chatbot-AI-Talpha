@@ -107,7 +107,7 @@ import {
 } from './ui/rui-ro-hoan/index.js';
 import {
   datTaoTruyVan as datTruyVanBaoCao, datDocDon, datDocChiPhi as datDocChiPhiChoBaoCao,
-  datDocHaiLuong,
+  datDocHaiLuong, datDocDonPos, datDocHrmSoLieu,
   datChanDangNhap as datChanDangNhapBaoCao, datChanVai as datChanVaiBaoCao, taoRouterBaoCao,
 } from './ui/bao-cao/index.js';
 import {
@@ -243,7 +243,7 @@ import {
  * @param {express}                 [phuThuoc.express]          để tự gắn `express.json()` nếu app chưa có.
  * @returns {{daNoi:string[], thieu:string[]}}
  */
-export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, duongBot, docHrm, dongBoHrm, docGoiYMarketer,
+export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, duongBot, docHrm, dongBoHrm, docGoiYMarketer, docDonPos,
   docKhoi, dungBanMay, dichBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docSanSang, khoSanPham,
   docChiPhi, docSoAiV3, docDonHang, docHaiLuong, docPheu, docHieuQua, docHieuLucPrompt,
   docPhanBoHoan, docPhanBoHoiThoai,
@@ -517,6 +517,15 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   } else {
     datDocGoiYMarketer(null);
     thieu.push('docGoiYMarketer — màn Sản phẩm không gợi ý được marketer phụ trách từ đơn POS (cần V3_BQ_KHOA); vẫn chọn tay từ hồ sơ HRM được');
+  }
+  // LL17a · 02/10: Số liệu › Tổng quan — đơn POS của team theo marketer (BigQuery, chỉ đọc, đệm 1 giờ) + HRM (chung bộ đọc với màn
+  // Người và team) để biết marketer thuộc team nào.
+  if (typeof docDonPos === 'function' && typeof docHrm === 'function') {
+    datDocDonPos(docDonPos); datDocHrmSoLieu(docHrm);
+    daNoi.push('đơn POS theo team & marketer (BigQuery, chỉ đọc) → Số liệu › Tổng quan');
+  } else {
+    datDocDonPos(null); datDocHrmSoLieu(null);
+    thieu.push('docDonPos — Số liệu › Tổng quan không có khối «Đơn POS của team» (cần V3_BQ_KHOA): số đơn chỉ còn ảnh chụp don_hang 28/08');
   }
   // VE7c: màn Model AI hiện + thử vai «trả lời khách» bằng ĐƯỜNG CHỌN CỦA BOT (`src/chat/model.js#chonModel`), không bằng lớp v3.
   if (duongBot && typeof duongBot.chon === 'function' && typeof duongBot.khoa === 'function') {

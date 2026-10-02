@@ -30,6 +30,13 @@
 
   <section aria-label="Chỉ số chính" class="duoi-5"><div id="chiSo"><span class="skeleton"></span></div></section>
 
+  <!-- LL17a · 02/10: đơn POS của team theo marketer — số TỔNG HỢP từ BigQuery (đồng bộ hằng ngày, chỉ đọc). Thước KHÁC ba thước
+       Messenger bên dưới (đơn mọi nguồn của team, không chỉ đơn có bot) — không cộng với chúng. -->
+  <section class="section table-wrap" aria-labelledby="tieu-don-pos">
+    <div class="table-toolbar"><h2 id="tieu-don-pos">Đơn POS của team — theo marketer</h2><span class="table-count" id="hDonPos"></span></div>
+    <div id="donPos"><span class="skeleton"></span></div>
+  </section>
+
   <section class="section" aria-labelledby="tieu-mess">
     <div class="section-header"><div>
       <h2 id="tieu-mess">Luồng Messenger</h2>
@@ -297,8 +304,53 @@ async function taiRuiRo() {
     <p class="field-hint tren-3">Tầng chấm từ các đơn đã kết của từng khách${r.tuoi && r.tuoi.chamLuc ? ' — chấm lúc ' + esc(new Date(r.tuoi.chamLuc).toLocaleString('vi-VN', { hour12: false })) : ''}. <a class="lien-ke" href="/rui-ro-hoan">Xem đủ →</a></p>`;
 }
 
+/* ── LL17a · ĐƠN POS CỦA TEAM (BigQuery) — mọi nguồn đơn của team, KHÔNG phải đơn có bot; tiền theo từng tiền tệ, không cộng ── */
+const tiLe = (x) => (x.thanhCong + x.hoan ? `${(x.thanhCong / (x.thanhCong + x.hoan) * 100).toFixed(1).replace('.', ',')}%` : '—');
+const codChu = (c) => { const ds = Object.entries(c || {}).sort((a, b) => b[1] - a[1]);
+  return ds.length ? ds.map(([tt, v]) => `${formatNumber(Math.round(v))} ${esc(tt)}`).join(' · ') : '—'; };
+function veDonPos(d) {
+  if (!d.noi) {
+    $('#hDonPos').textContent = '';
+    $('#donPos').innerHTML = canhBao({ level: d.hong ? 'error' : 'warning', title: d.hong ? 'Đọc đơn POS từ BigQuery hỏng' : 'Chưa có số đơn POS từ BigQuery',
+      body: `${d.viSao || ''}. Số đơn ở các khối dưới là ảnh chụp bảng đơn của hệ (nạp 28/08).` });
+    return;
+  }
+  $('#hDonPos').textContent = `đồng bộ ${d.dongBo ? d.dongBo.slice(0, 16).replace('T', ' ') : '—'} · tới ngày ${d.homNay}`;
+  const dongTeam = d.khoang.map((k) => { const x = d.team[k]; return `<tr data-khoang="${k}">
+      <th scope="row">${k} ngày</th><td class="num">${d0(x.don)}</td><td class="num">${d0(x.thanhCong)}</td><td class="num">${d0(x.hoan)}</td>
+      <td class="num">${d0(x.huy)}</td><td class="num">${d0(x.dangXuLy)}</td><td class="num">${tiLe(x)}</td><td>${codChu(x.codThanhCong)}</td></tr>`; }).join('');
+  const lon = d.khoang[d.khoang.length - 1];
+  const dongMk = d.marketer.map((m) => { const x = m.k[lon]; return `<tr data-mk="${esc(m.maNv)}">
+      <td><span class="manh">${esc(m.ten)}</span> <span class="meta">${esc(m.maNv)}${m.daNghi ? ' · đã nghỉ' : ''}</span></td>
+      <td class="num">${d0(m.k[d.khoang[0]].don)}</td><td class="num">${d0(x.don)}</td><td class="num">${d0(x.thanhCong)}</td><td class="num">${d0(x.hoan)}</td>
+      <td class="num">${tiLe(x)}</td><td>${codChu(x.codThanhCong)}</td></tr>`; }).join('');
+  $('#donPos').innerHTML = `
+    <table class="data-table" aria-label="Đơn của team ${esc(d.tenTeam)}"><thead><tr><th scope="col">Team ${esc(d.tenTeam)}</th><th scope="col" class="num">Đơn</th>
+      <th scope="col" class="num">Giao thành công</th><th scope="col" class="num">Hoàn</th><th scope="col" class="num">Huỷ</th><th scope="col" class="num">Đang xử lý</th>
+      <th scope="col" class="num">Tỉ lệ giao thành công</th><th scope="col">COD đã giao</th></tr></thead><tbody id="dsDonTeam">${dongTeam}</tbody></table>
+    ${d.marketer.length ? `<table class="data-table tren-4" aria-label="Theo marketer"><thead><tr><th scope="col">Marketer</th>
+      <th scope="col" class="num">Đơn ${d.khoang[0]} ngày</th><th scope="col" class="num">Đơn ${lon} ngày</th><th scope="col" class="num">Giao thành công</th>
+      <th scope="col" class="num">Hoàn</th><th scope="col" class="num">Tỉ lệ giao thành công</th><th scope="col">COD đã giao (${lon} ngày)</th></tr></thead>
+      <tbody id="dsDonMk">${dongMk}</tbody></table>`
+      : `<p class="text-muted text-sm tren-3" data-khong-mk>${d.chiCuaToi ? 'Chưa có đơn nào mang mã của bạn trong ' + lon + ' ngày.' : 'Chưa có đơn nào của marketer team này trong ' + lon + ' ngày.'}</p>`}
+    <p class="table-note" data-ngoai-team>Cả công ty, ${lon} ngày: ${d0(d.choGan[lon].don)} đơn chưa ghép marketer (chờ gán team) · ${d0(d.ngoaiHe[lon].don)} đơn của marketer
+      thuộc team không vào hệ${d.tuongLai ? ` · ${d0(d.tuongLai)} đơn mang ngày tương lai bị loại` : ''}.${d.chiCuaToi ? ' Bạn là marketer: bảng chỉ hiện dòng của bạn; hàng team là tổng cả team.' : ''}</p>
+    <p class="table-note" data-tre-hoan>Tỉ lệ giao thành công = giao thành công ÷ (giao thành công + hoàn) — chỉ tính đơn đã kết thúc giao. Hoàn về
+      SAU nhiều ngày: ở khoảng ngắn phần lớn đơn còn «đang xử lý» (${d.khoang[0]} ngày: ${d0(d.team[d.khoang[0]].dangXuLy)}/${d0(d.team[d.khoang[0]].don)} đơn),
+      nên tỉ lệ của khoảng ngắn còn đẹp hơn thật — đọc khoảng ${lon} ngày.</p>
+    <p class="table-note">Thước này KHÁC ba
+      thước Messenger bên dưới: đây là MỌI đơn của team, không chỉ đơn có bot — không cộng với chúng.</p>
+    ${nguonSo({ dong: [{ ten: 'Nguồn', tu: d.nguon.ten }, { ten: 'Team của đơn', tu: d.nguon.team }, { ten: 'Tiền', tu: d.nguon.tien }] })}`;
+}
+async function taiDonPos() {
+  const d = await thu('/api/bao-cao/don-pos');
+  if (d.loi) { $('#donPos').innerHTML = canhBao({ level: 'error', title: 'Khối «Đơn POS của team» không tải được', body: d.loi }); return; }
+  veDonPos(d);
+}
+
 tai().then(taiPhu);
 taiRuiRo();
+taiDonPos();
 </script>
 <script src="/chung/dieu-huong.js"></script>
 </body>

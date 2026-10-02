@@ -15,7 +15,7 @@ const { boiCanhMay } = await import('../../src/auth/boi-canh.js');
 
 async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
   dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
-  docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, dongBoHrm, docGoiYMarketer } = {}) {
+  docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, dongBoHrm, docGoiYMarketer, docDonPos } = {}) {
   const mk = await bam('matkhau1');
   const BAY = Date.now();
   const { taoTruyVan, kho } = dungCongGia({
@@ -43,7 +43,7 @@ async function dungThu({ ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNo
     taoTruyVanHeThong: () => taoTruyVan(boiCanhMay('_he_thong', 'đọc bảng dùng chung')),
     ghiSoAi, canhBao, docNhipMayBot, docKetNoiPos, ghiKetNoiPos, khoTokenV3, quetPagePancake, keoDanhMucPos, khoSanPhamGoc, chuyenPage, docKhoTamPage, khoKhoa, docKhoi,
     dungBanMay, dayKichBanLenBot, bocPancake, cuaBoLuat, docHieuLucPrompt, chayNapLai, docTinPancake, docSoAiBotCu, docHoiThoaiSql,
-    docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, dongBoHrm, docGoiYMarketer, express,
+    docDauVetV3, giaiKichBanPage, laTinTuDong, duongBot, docHrm, dongBoHrm, docGoiYMarketer, docDonPos, express,
   });
   const sv = http.createServer(app);
   await new Promise((r) => sv.listen(0, r));
@@ -170,6 +170,8 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
   assert.ok(bao.thieu.some((x) => /dongBoHrm/.test(x)), 'phải nêu thiếu dongBoHrm');
   // LL15d: thiếu bộ đọc đơn POS thì màn Sản phẩm không gợi ý được marketer — vẫn chọn tay được, nhưng phải nói ra.
   assert.ok(bao.thieu.some((x) => /docGoiYMarketer/.test(x)), 'phải nêu thiếu docGoiYMarketer');
+  // LL17a: thiếu bộ đọc đơn POS thì Số liệu › Tổng quan chỉ còn ảnh chụp don_hang 28/08 — phải nói ra.
+  assert.ok(bao.thieu.some((x) => /docDonPos/.test(x)), 'phải nêu thiếu docDonPos');
   // `khoTokenV3` thiếu thì màn Kết nối mất cả kho token — và đường còn lại là sửa tay
   // `.env` trên máy chủ, đúng thứ đường không ai truy ngược được.
   assert.ok(bao.thieu.some((x) => /khoTokenV3/.test(x)), 'phải nêu thiếu khoTokenV3');
@@ -236,6 +238,7 @@ test('nối dây · thiếu phễu Sổ AI, phễu cảnh báo và bộ đọc k
     docHrm: async () => ({ luc: 0, nhanVien: [], ghep: [] }),
     dongBoHrm: { keHoach: async () => ({}), apDung: async () => ({}), lanCuoi: () => null, datMatKhauDau: async () => ({ ok: false }) },
     docGoiYMarketer: async () => ({ luc: 0, dong: [] }),
+    docDonPos: async () => ({ luc: 0, homNay: '2026-10-02', dongBo: null, tuongLai: 0, dong: [] }),
     docKhoi: {
       boLuat: async () => null, kyNang: async () => [],
       kichBan: async () => null, sanPham: async () => [],

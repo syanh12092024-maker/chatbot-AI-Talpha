@@ -17,7 +17,7 @@ export class LoiBigQuery extends Error {
   constructor(ma, thongDiep, status = null) {
     super(thongDiep);
     this.name = 'LoiBigQuery';
-    this.ma = ma;           // 'thieu_khoa' | 'khoa_hong' | 'token' | 'truy_van' | 'cham' | 'mang'
+    this.ma = ma;           // 'thieu_khoa' | 'khoa_hong' | 'token' | 'truy_van' | 'cham' | 'cat_trang' | 'mang'
     this.status = status;   // HTTP của Google (khi có)
   }
 }
@@ -97,6 +97,12 @@ export function taoKhachBigQuery({ tepKhoa, fetchFn = fetch, dongHo = () => Date
       throw new LoiBigQuery('truy_van', `BigQuery từ chối câu đọc (${lyDo})`, r.status);
     }
     if (j.jobComplete === false) throw new LoiBigQuery('cham', `BigQuery chưa trả kết quả sau ${timeoutMs / 1000} giây`);
+    // LL17a · 02/10: kết quả dài hơn MỘT trang (`pageToken`) ⇒ từ chối, KHÔNG trả nửa số. Lớp này cố ý chỉ có một cửa `jobs.query`
+    // (không gọi trang sau) — câu đọc phải tự gộp cho vừa. Trả nửa số là số sai trông như số đúng (án lệ #35: «đọc bao nhiêu» lặng
+    // lẽ quyết câu trả lời).
+    if (j.pageToken) {
+      throw new LoiBigQuery('cat_trang', `BigQuery trả ${j.totalRows ?? '?'} dòng mà một trang chỉ ${(j.rows || []).length} — câu đọc phải gộp thêm`);
+    }
     return (j.rows || []).map((row) => dongThanhDoiTuong(j.schema, row));
   }
 
