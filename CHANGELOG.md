@@ -19,6 +19,27 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 02/10/2026 — 🔴 MỘT BẢN, bước cuối: gỡ bot v1 khỏi mã · ảnh sản phẩm tải lại được · màn thôi nói «bot cũ / bot mới» (MB4 · CR-02-10)
+
+Không đổi chữ bot nói (0 tệp bộ não). **1 migration (030 — GỠ hai cột `page.giao_bot_moi` · `page.v3_ai_bat`, đo 02/10 toàn
+0/false trên 582 page; có `down`)** · 0 gói · biến ĐỔI: `PUBLIC_URL` `:3100` → `:3102`. Van gửi KHÔNG đổi — lượt này không page
+nào được bật và không tin nào ra khách.
+
+- 🔴 **Ảnh sản phẩm gửi khách** (cấu hình máy chủ): địa chỉ ảnh trỏ cổng của bot cũ (3100) — cổng này đóng từ MB3 nên Facebook
+  không tải được ảnh nào (đo 02/10: ngoài vào `:3100/uploads` = không kết nối, `:3102/uploads` = 200). Nay trỏ 3102. Chưa khách
+  nào chịu (0 page bật), nhưng thiếu bước này thì page đầu tiên bật sẽ gửi ảnh hỏng.
+- **Màn Bộ luật** (`357795a`): «số page bị ảnh hưởng» đếm theo công tắc thật (`page.bot_ai_bat`) — trước đó đếm theo tệp của bot
+  cũ nên có thể lệch với điều bot đang làm. Màn Team · Kịch bản cùng một nguồn.
+- **Chữ trên màn** (`357795a`): «tiến trình bot» → «lõi bot»; nhóm «bot cũ / bot mới» → «đang tắt / đang bật bot»; số chi phí và
+  đơn của bot cũ ghi rõ «Sổ AI cũ (ghi tới 28/08)».
+- **Máy chủ** (`357795a`): chỉ còn hai dịch vụ `aicloser-v3` + `aicloser-worker-v3`; dịch vụ `aicloser` (bot v1) gỡ hẳn; hai lịch
+  báo cáo WhatsApp 8h/17h của bot cũ gỡ (115/115 lượt chạy đều lỗi «chưa đặt nhóm» — chưa từng gửi được tin nào). `npm start`
+  nay chạy giao diện v3.
+- **Giữ nguyên cho pancake-tool** (`2a02656`): `src/wa.js`, các gói WhatsApp trong `node_modules` và phiên `wa-auth/` — ba lịch
+  cảnh báo của team đó (có cảnh báo AI Sale sắp hết tiền) đang dùng chung.
+- Tài liệu (`6d4186f`): README, skill `chatbot`, `.env.example`, `docs/local-dev.md` nói về MỘT bản; `docs/TONG-QUAN-HE-THONG.md`
+  gắn biển «ảnh chụp bot v1».
+
 ### 02/10/2026 — 🔴 Marketer chỉ thấy sản phẩm mình phụ trách · chọn marketer từ HRM · sale vào thẳng team (LL15c · LL15d · CR-28-09c)
 
 Không đổi chữ bot nói. **1 migration (031 — chỉ thêm cột `san_pham_goc.marketer_ma_nv`)** · 0 gói · 0 tệp bộ não · 0 biến mới.

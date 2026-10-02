@@ -1,5 +1,10 @@
 # 📘 HƯỚNG DẪN SỬ DỤNG AI CLOSER — CHO SALE & MARKETING
 
+> ⚠️ **VIẾT CHO MÀN `/admin` CỦA BOT v1 (11/08/2026) — màn đó đã gỡ ngày 02/10/2026 (CR-02-10 · MB4).** Hệ hiện tại là v3:
+> đăng nhập ở cổng 3102 (`/dang-nhap`), các màn Trang chủ · Bàn hội thoại · Công tắc · Sản phẩm · Kịch bản… Phần nghiệp vụ dưới
+> đây (khi nào bot bàn giao, sale làm gì với hội thoại) phần lớn còn đúng; phần «bấm vào đâu» thì KHÔNG. Viết lại cho v3: nợ
+> `N-MB-HUONG-DAN` (sổ điều hành §9).
+
 > Bot AI trực Messenger 24/7: tư vấn khách (Tagalog/English/Ả Rập...), gỡ phản đối, thu thông tin COD, tự tạo đơn vào Pancake POS, và **bàn giao cho người** đúng lúc. Tài liệu này hướng dẫn cách làm việc CÙNG bot.
 
 **Truy cập dashboard:** `http://169.58.33.8:3100/admin` — đăng nhập bằng tài khoản được cấp.

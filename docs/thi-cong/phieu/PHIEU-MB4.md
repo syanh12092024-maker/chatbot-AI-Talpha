@@ -52,6 +52,10 @@ vào CSDL (`N-MB-SO-AI-CU`) · không dựng lại follow-up/miner trong v3 (`N-
 - `bash ops/bin/nghiem-thu/mb.sh` → **18/18**.
 - `l0-m2-noi-dung` N18 (một nguồn đếm): đảo-vá — trả `demPageBatBot` về đọc `ai-enabled.json` ⇒ **đỏ**.
 - `npm test` không thêm ca đỏ.
+- **Sửa thước** (`doi-y-do` bẫy 1): cổng `g2-a4` ③ đòi con số «đang bật bot» ĐẾN TỪ `ai-enabled.json` và ③b (B-Y7) đòi
+  «cột lệch tệp thì BÁO» — luật trước CR. Cửa vào MB4 lộ ra: `g2-a4` 11/16 (gốc LL15 16/16). Viết lại theo luật một nguồn: ③ đòi
+  `cot_csdl`; ③b dựng một page tạm bật bot, cho tệp nói RỖNG rồi VẮNG — con số phải bằng số page cột bật, không còn khối «lệch».
+  Nay 16/16; đảo-vá (cho `demPageBatBot` đọc lại tệp khi có) ⇒ 12/16.
 
 ## ⑤ Lên prod (theo `mo-van`, cùng lượt)
 
@@ -73,5 +77,5 @@ nào đọc vào `/opt/aicloser/luu-tru/v1/`: `ai-enabled.bak-truoc-v2.json` `ai
   `import-offers` `l6-van-hanh` `l7-miner-order` `l8-botcake-rules` `phase0-webhook-delivery` `script-studio`).
 - Phát hiện khi gỡ (ghi §9): v3 **chưa có** ngắt cả page 30′ khi kênh lỗi liên tiếp (nguyên tắc 9 — v1 có) ⇒
   `N-MB-NGAT-PAGE`; hai bộ điều kiện sẵn sàng (`readiness.js` cho page tắt · `pageStatus` cho page bật) ⇒
-  `N-MB-HAI-BO-DIEU-KIEN`; logic «lệch» chết ở `kho-san-sang` · `bat-dau` · `chi-phi` ⇒ `N-MB-DON-SAU`; pancake-tool mượn `src/wa.js` + `node_modules` +
+  `N-MB-HAI-BO-DIEU-KIEN`; hướng dẫn sale/MKT viết cho màn v1 ⇒ `N-MB-HUONG-DAN`; `g2-a4` ⑤ gật «0 ca» ⇒ `N-MB-THUOC-0-CA`; logic «lệch» chết ở `kho-san-sang` · `bat-dau` · `chi-phi` ⇒ `N-MB-DON-SAU`; pancake-tool mượn `src/wa.js` + `node_modules` +
   `wa-auth/` của cây này ⇒ `N-MB-CHUNG-PANCAKE-TOOL`.

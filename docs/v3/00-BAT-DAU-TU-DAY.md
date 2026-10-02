@@ -89,17 +89,13 @@ Danh sách màn hình dạng chữ nằm ở [`03-MAN-HINH.md`](03-MAN-HINH.md).
 ## Chạy thử ở máy mình
 
 ```bash
-cd messenger-closer
 npm install
-cp .env.example .env      # rồi điền giá trị thật — xin ở BAN-GIAO-DEV.md mục 5
-npm start                 # dashboard: http://localhost:3100/admin
+cp .env.example .env      # rồi điền giá trị thật — xin ở BAN-GIAO-DEV.md mục 5; GIỮ PANCAKE_READONLY=1
+npm run local:start       # bản dev sạch: http://127.0.0.1:3202/dang-nhap — xem docs/local-dev.md
 ```
 
-Thử AI ngay trong terminal, không cần Facebook:
-
-```bash
-npm run chat
-```
+Thử AI mà không gửi cho khách: chế độ **diễn tập** (`V3_DIEN_TAP=1` — đọc tin thật, gọi model, ghi sổ rồi dừng),
+cách bật ở `docs/local-dev.md` mục «Diễn tập». (Bot v1 với `npm run chat` và màn `:3100/admin` đã gỡ ở MB4, 02/10.)
 
 Chạy bộ kiểm thử:
 

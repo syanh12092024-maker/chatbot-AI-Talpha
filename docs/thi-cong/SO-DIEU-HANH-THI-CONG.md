@@ -1937,6 +1937,10 @@ status_history jsonb`, CHỈ LƯU — chưa hàm nào đọc. BẰNG CHỨNG TR�
   «đủ» trong khi cổng bật nói «thiếu». Gộp về `pageStatus`.
 - 02/10 · **N-MB-DON-SAU** (CR-02-10 · MB4) — logic «lệch tệp/cột» đã chết (nguồn nay chỉ còn cột) còn nằm ở `kho-san-sang` ·
   `bat-dau` · `chi-phi`; `readiness.js#canEnableAI` không còn mã prod gọi.
+- 02/10 · **N-MB-HUONG-DAN** (CR-02-10 · MB4) — `docs/HUONG-DAN-SALE-MKT.md` (hướng dẫn cho sale/marketing) viết cho màn `/admin`
+  của bot v1 — đã gắn biển; viết lại theo màn v3 trước khi đưa page thật đầu tiên cho sale dùng.
+- 02/10 · **N-MB-THUOC-0-CA** (thấy ở MB4, có từ trước) — cổng `g2-a4` ⑤ in «`test/l0-m2-noi-dung.test.js`: 0 ca, 0 đỏ» rồi gật
+  ✔ (bản gốc LL15 y hệt) — phép xanh mà không đo ca nào. Sửa cách cổng đếm ca, đổi «0 ca» thành ⏸.
 - 02/10 · **N-MB-CHUNG-PANCAKE-TOOL** (CR-02-10 · MB4) — pancake-tool (team khác) MƯỢN cây này trên prod: `src/gui-canh-bao.js`
   (tệp của họ, không trong repo) `import './wa.js'` — ba timer `canh-bao-tien` 5′ (cảnh báo AI Sale sắp hết tiền) · `care-don-wa`
   30′ · `gio-lam-sale` 2′; `gio-lam-wa.service` + `/root/wa_ghep/ghep.mjs` import `baileys` · `pino` · `qrcode` · `qrcode-terminal`
