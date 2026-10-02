@@ -2847,3 +2847,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · LL15a → 🔎 CHỜ DEPLOY — HRM từ BigQuery lên màn, CHỈ ĐỌC: khoá levelup chép lên máy chủ (`/etc/aicloser/bq-levelup.json`, người quyết chọn) · khách REST token phạm vi bigquery.readonly · Người và team: cột Hồ sơ HRM + marketer POS của đúng team · Kết nối › HRM số đọc từ nguồn + «Đọc lại» · biến `V3_BQ_KHOA` (vắng = đóng)
   đo 02/10: prod chỉ có khoá talpha/auus (403 hai bảng HRM); đọc thử từ prod bằng khoá mới 118 · 324 · đầu-cuối thật GCC 19 marketer đang làm + 7 đã nghỉ / 63 · ca 12/12 · đảo-vá 19/19 · cổng ll15a.sh 15/15 · npm test 2.446 ca 0 đỏ · ĐỦ cổng 50 xanh / 12 đỏ = 12 nợ cũ · nợ N-BQ-KHOA-RONG · LL15b
   · commit 8036529 · nhật ký docs/thi-cong/nhat-ky/phieu-LL15a.md
+- 02/10 · MỞ VAN LL15a → ✅ GIỮ — prod `d226f81 → 679d583`, 0 migration, biến mới `V3_BQ_KHOA=/etc/aicloser/bq-levelup.json` (.env sao lưu trước), chỉ restart aicloser-v3 lúc 04:04:01 CEST
+  cửa vào 50 xanh / 12 đỏ = 12 nợ cũ · npm test 2.446 ca 0 đỏ · mốc +1′/+5′/+15′ lỗi 0/0/0 · Started 1 · nhật ký khởi động «bộ đọc HRM» đã nối · đọc thật từ prod 118 hồ sơ · 324 ghép · GCC 19 / AUUS 9 / EU 20 marketer đang làm
+  · commit 679d583 · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-ll15a.md
