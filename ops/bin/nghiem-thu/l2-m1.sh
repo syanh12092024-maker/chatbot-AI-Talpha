@@ -95,7 +95,7 @@ const lan1 = await len(pool, { im: true });
 const lan2 = await len(pool, { im: true });
 // gieo dữ liệu THẬT rồi mới diễn tập down (án lệ: down phải chạy trên DB đã seed)
 const t = (await pool.query("SELECT id FROM team WHERE slug=$1", ["tieu-alpha"])).rows[0].id;
-const p = (await pool.query("INSERT INTO page (team_id,page_id,ten) VALUES ($1,$2,$3) RETURNING id",[t,"800000000000001","cổng L2-M1"])).rows[0].id;
+const p = (await pool.query("INSERT INTO page (bot_ai_bat, team_id,page_id,ten) VALUES (true, $1,$2,$3) RETURNING id",[t,"800000000000001","cổng L2-M1"])).rows[0].id;
 await pool.query("INSERT INTO hoi_thoai (team_id,page_id,psid,trang_thai,chu_so_huu) VALUES ($1,$2,$3,$4,$5)",[t,p,"psid-cong","QUALIFY","AI"]);
 await pool.query("INSERT INTO tin_cho_xu_ly (team_id,page_id,psid,conv_id,msg_id,noi_dung) VALUES ($1,$2,$3,$4,$5,$6)",[t,"800000000000001","psid-cong","conv-cong","m0","seed"]);
 // gỡ LÙI cho tới khi 003 rời _migrations (cây có phiên song song — đừng neo "003 là mới nhất")

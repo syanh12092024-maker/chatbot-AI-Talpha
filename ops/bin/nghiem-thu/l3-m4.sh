@@ -130,7 +130,7 @@ async function nen(pool) {
   const team = (await pool.query("SELECT id FROM team WHERE slug = $1", ["tieu-alpha"])).rows[0].id;
   const pageText = "556000" + Math.floor(Math.random() * 1e6);
   const page = (await pool.query(
-    "INSERT INTO page (team_id, page_id, ten, thi_truong, pos_shop_id) VALUES ($1,$2,$3,$4,$5) RETURNING *",
+    "INSERT INTO page (bot_ai_bat, team_id, page_id, ten, thi_truong, pos_shop_id) VALUES (true, $1,$2,$3,$4,$5) RETURNING *",
     [team, pageText, "Page gate", "NhanKhongKhop", SHOP])).rows[0];
   await pool.query(
     "INSERT INTO ket_noi_pos (team_id, market, shop_id, api_key_ma) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING",

@@ -107,7 +107,7 @@ import { xepTin, docTinTheoId } from "./src/queue/kho.js";
 import { xuLyMotTin } from "./src/chat/handler-v3.js";
 const pool = taoPool();
 const t = (await pool.query("SELECT id FROM team WHERE slug=$1",["tieu-alpha"])).rows[0].id;
-const p = (await pool.query("INSERT INTO page (team_id,page_id,ten) VALUES ($1,$2,$3) RETURNING id",[t,"800000000000010","cổng L2-M2 p1"])).rows[0].id;
+const p = (await pool.query("INSERT INTO page (bot_ai_bat, team_id,page_id,ten) VALUES (true, $1,$2,$3) RETURNING id",[t,"800000000000010","cổng L2-M2 p1"])).rows[0].id;
 await pool.query("INSERT INTO hoi_thoai (team_id,page_id,psid,trang_thai,chu_so_huu) VALUES ($1,$2,$3,$4,$5)",[t,p,"psid-l2m2-1","QUALIFY","AI"]);
 const kb = { config: {
   fastLaneAuth: "Oo po, 100% original — may seal + warranty card. 😊",
@@ -168,7 +168,7 @@ import { xepTin, docTinTheoId } from "./src/queue/kho.js";
 import { xuLyMotTin } from "./src/chat/handler-v3.js";
 const pool = taoPool();
 const t = (await pool.query("SELECT id FROM team WHERE slug=$1",["tieu-alpha"])).rows[0].id;
-const p = (await pool.query("INSERT INTO page (team_id,page_id,ten) VALUES ($1,$2,$3) RETURNING id",[t,"800000000000030","cổng L2-M2 p3"])).rows[0].id;
+const p = (await pool.query("INSERT INTO page (bot_ai_bat, team_id,page_id,ten) VALUES (true, $1,$2,$3) RETURNING id",[t,"800000000000030","cổng L2-M2 p3"])).rows[0].id;
 await pool.query("INSERT INTO hoi_thoai (team_id,page_id,psid,trang_thai,chu_so_huu) VALUES ($1,$2,$3,$4,$5)",[t,p,"psid-l2m2-3","QUALIFY","AI"]);
 const kbRong = { config: {} };
 let demChayCloser = 0, demGuiTin = 0;
@@ -211,7 +211,7 @@ import { xepTin, docTinTheoId } from "./src/queue/kho.js";
 import { xuLyMotTin } from "./src/chat/handler-v3.js";
 const pool = taoPool();
 const t = (await pool.query("SELECT id FROM team WHERE slug=$1",["tieu-alpha"])).rows[0].id;
-const p = (await pool.query("INSERT INTO page (team_id,page_id,ten) VALUES ($1,$2,$3) RETURNING id",[t,"800000000000050","cổng L2-M2 p5"])).rows[0].id;
+const p = (await pool.query("INSERT INTO page (bot_ai_bat, team_id,page_id,ten) VALUES (true, $1,$2,$3) RETURNING id",[t,"800000000000050","cổng L2-M2 p5"])).rows[0].id;
 await pool.query("INSERT INTO hoi_thoai (team_id,page_id,psid,trang_thai,chu_so_huu) VALUES ($1,$2,$3,$4,$5)",[t,p,"psid-l2m2-5","QUALIFY","AI"]);
 const kb = { config: { fastLaneAuth: "A", fastLaneSize: "S", fastLaneHowto: "H" } };
 const deps = {
