@@ -125,7 +125,7 @@ test('③b · chưa nối cầu → cũng để `null` và chỉ đúng biến c
   // GD4 · 25/09: câu trên màn nói bằng lời người vận hành; tên biến phải đặt nay ở trường
   // riêng (màn đưa xuống ô «Nguồn số»). Vẫn phải NÓI RA, chỉ đổi chỗ đứng.
   assert.match(o.diTiepRong, /người quản trị hệ thống/i);
-  assert.match(o.diTiepRongKyThuat, /V3_BOT_V1_GOC|ADMIN_USER/);
+  assert.match(o.diTiepRongKyThuat, /dungPhanB|aicloser-v3/, 'CR-02-10: chỉ đúng chỗ nối lõi, không còn biến «gọi sang v1»');
 });
 
 test('③c · cầu chạy được thì hai ô đếm ĐÚNG và chỉ trên page của team', async () => {

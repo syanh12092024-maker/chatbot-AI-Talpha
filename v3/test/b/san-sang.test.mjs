@@ -177,7 +177,7 @@ test('③b · chưa nối cầu → màn rỗng nói RÕ là «chưa cài đặt
   const d = await ss.manSanSang(bc());
   assert.equal(d.trong.vi, 'chua-cai-dat', 'rỗng vì chưa cài đặt, không phải vì đã xong');
   assert.ok(d.trong.diTiep && d.trong.diTiep.length > 40, 'phải chỉ ĐƯỜNG ĐI TIẾP, không chỉ báo lỗi');
-  assert.match(d.trong.diTiep, /V3_BOT_V1_GOC|ADMIN_USER/, 'chỉ đường phải nêu đúng biến cần đặt');
+  assert.match(d.trong.diTiep, /dungPhanB|aicloser-v3/, 'CR-02-10: chỉ đường phải nêu đúng chỗ nối lõi');
 });
 
 /* ═════════════ ④ HAI CON SỐ BOT — CHỖ ĐÃ LỆCH THẬT ═════════════ */

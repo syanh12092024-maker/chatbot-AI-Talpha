@@ -16,12 +16,12 @@ import { pancakePages, pancakePageCount, pkGetMessages, pkSendReply, pkAddNote, 
 import { parsePancakeScript } from './import-script.js';
 import { recordOutbound } from './store.js';
 import { getStats } from './stats.js';
-import { recount, needSale, recentConversations, custProfile, tokenStats, aiConvsByPageInRange } from './ai-log.js';
+import { recount, needSale, recentConversations, custProfile } from './ai-log.js';
 import { cleanText } from './handler.js';
-import { ordersEnabled, aiOrderStats, ordersForConv } from './pancake-orders.js';
-import { getAiConvSet } from './ai-convs.js';
+import { ordersEnabled, ordersForConv } from './pancake-orders.js';
 import { sendHealth } from './pancake-poll.js';
 import { anthropic, aiExtras } from './llm.js';
+import { chiPhiToken, donHangAi } from './core/so-lieu-bot-cu.js';
 
 export const adminRouter = express.Router();
 adminRouter.use((await import('./admin-scripts.js')).scriptsRouter); // L3 · M01-M03 Script Studio (1 dòng mount, xem docs/v2/08-SONG-SONG.md §3) — phải đứng TRƯỚC /pages/:id/ai để chặn bật AI page chưa sẵn sàng
@@ -88,40 +88,8 @@ adminRouter.get('/stats', (req, res) => {
 
 // ---- CHI PHÍ TOKEN theo page — số ĐO từ Sổ AI (ghi từ 06/08/2026), quy tiền theo config.aiPrices ----
 adminRouter.get('/token-cost', (req, res) => {
-  const rgx = /^\d{4}-\d{2}-\d{2}$/;
-  const from = rgx.test(req.query.from || '') ? req.query.from : undefined;
-  const to = rgx.test(req.query.to || '') ? req.query.to : undefined;
-  const st = tokenStats({ from, to });
-  const P = config.aiPrices;
-  const pk = pancakePages();
-  const usd = (b) => (b.tin * P.in + b.cread * P.cache + b.tout * P.out) / 1e6;
-  // ĐƠN GIÁ THẬT — chia trên số tin CÓ SỐ ĐO, không chia trên tổng tin.
-  // Token chỉ được ghi từ 06/08/2026, nên khoảng ngày rộng có nhiều tin không đo được;
-  // lấy usd/replies sẽ ra đơn giá rẻ giả tạo. usd/measured mới là tiền thật của 1 tin.
-  // 1 đơn tốn bao nhiêu = đơn giá 1 tin × số tin trung bình để ra 1 đơn (cùng khoảng ngày).
-  const unit = (b) => {
-    const perReply = b.measured > 0 ? usd(b) / b.measured : null;
-    const perOrder = perReply != null && b.orders > 0 ? perReply * (b.replies / b.orders) : null;
-    return {
-      usdPerReply: perReply == null ? null : +perReply.toFixed(6),
-      vndPerReply: perReply == null ? null : Math.round(perReply * P.usdVnd),
-      usdPerOrder: perOrder == null ? null : +perOrder.toFixed(4),
-      vndPerOrder: perOrder == null ? null : Math.round(perOrder * P.usdVnd),
-      repliesPerOrder: b.orders > 0 ? +(b.replies / b.orders).toFixed(1) : null,
-    };
-  };
-  const pages = Object.entries(st.byPage)
-    .map(([id, b]) => ({ id, name: pk.get(String(id))?.name || id, ...b, usd: +usd(b).toFixed(4), ...unit(b) }))
-    .sort((a, b) => b.usd - a.usd);
-  res.json({
-    provider: config.aiProvider, prices: P,
-    replies: st.replies, measured: st.measured, // measured < replies = có tin trước khi bật đo
-    orders: st.orders, // đơn AI chốt TRONG CÙNG khoảng ngày (nguồn Sổ AI, không phải POS)
-    tin: st.tin, tout: st.tout, cread: st.cread, calls: st.calls,
-    usd: +usd(st).toFixed(4), vnd: Math.round(usd(st) * P.usdVnd),
-    ...unit(st),
-    pages,
-  });
+  // CR-02-10 · MB1: một định nghĩa ở `src/core/so-lieu-bot-cu.js`, v3 gọi thẳng cùng hàm.
+  res.json(chiPhiToken({ from: req.query.from, to: req.query.to }));
 });
 
 // ---- Sổ AI: thống kê lại CHÍNH XÁC từ audit log (ai-messages.jsonl) ----
@@ -155,81 +123,11 @@ adminRouter.get('/need-sale', (req, res) => {
 });
 
 // ---- ĐƠN TỪ KHÁCH AI: khớp đơn Pancake với hội thoại AI đã tư vấn → tỉ lệ chốt thật ----
-const _ordCache = new Map();
-// ĐƠN TỪ KHÁCH AI — số này TỪNG NHẢY LOẠN giữa các lần xem (đo được: 162 rồi 248 trong
-// cùng một khoảng ngày). Ba nguyên nhân, đã xử lý cả ba:
-//   ① POS timeout → aiOrderStats bỏ dở vòng quét và trả số THIẾU (page thành 0 đơn).
-//      Nay lỗi được ném lên, page đó GIỮ NGUYÊN số của lần quét trước thay vì tụt về 0.
-//   ② Quét tuần tự 40 page mất tới 215s, lâu hơn cả TTL cache 60s → cứ mở dashboard là
-//      quét lại từ đầu, không lần nào xong. Nay quét song song + cache 5 phút.
-//   ③ Hai request cùng lúc cùng quét chồng nhau. Nay có khoá _ordInflight.
-//   ④ (11/08/2026) Tử số và mẫu số KHÁC TẬP: đơn lọc theo ngày, nhưng tập hội thoại AI
-//      lấy từ ai-convs.json là TOÀN THỜI GIAN → khách AI tư vấn tuần trước mà sale chốt tay
-//      hôm nay vẫn tính vào "đơn hôm nay", trong khi không nằm trong "khách hôm nay".
-//      Nay khung có ngày thì dựng tập hội thoại từ Sổ AI theo ĐÚNG khoảng ngày đó.
-const ORD_TTL = 5 * 60e3;
-const ORD_CONC = 5;
-const _ordInflight = new Map(); // cacheKey -> Promise (chống quét chồng)
-
-async function runPool(items, limit, fn) {
-  const out = new Array(items.length);
-  let i = 0;
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); }
-  }));
-  return out;
-}
-
+// (Bốn bài học cũ của phép quét nay nằm cạnh định nghĩa ở `src/core/so-lieu-bot-cu.js`.)
 adminRouter.get('/orders', async (req, res) => {
-  if (!ordersEnabled()) return res.json({ enabled: false, pages: {} });
-  const rgx = /^\d{4}-\d{2}-\d{2}$/;
-  const from = rgx.test(req.query.from || '') ? req.query.from : undefined;
-  const to = rgx.test(req.query.to || '') ? req.query.to : undefined;
-  const cacheKey = `${from || ''}|${to || ''}`;
-  const hit = _ordCache.get(cacheKey);
-  if (hit && Date.now() - hit.t < ORD_TTL) return res.json(hit.data);
-  // Đang có lượt quét chạy → chờ chính nó, đừng mở thêm lượt nữa.
-  if (_ordInflight.has(cacheKey)) {
-    try { return res.json(await _ordInflight.get(cacheKey)); }
-    catch (e) { return res.status(500).json({ enabled: true, error: e.message }); }
-  }
-
-  const scan = (async () => {
-    const st = getStats();
-    const ids = [...new Set([...listAiEnabled().map(String), ...Object.keys(st.byPage)])];
-    const prev = hit?.data?.pages || {};
-    const failed = [];
-    // Khung "Tất cả" (không from/to) giữ nguyên tập toàn thời gian: trường `conv` chỉ được
-    // ghi vào Sổ AI từ 29/07/2026, dựng lại từ sổ sẽ mất các hội thoại cũ hơn mốc đó.
-    const convByPage = (from || to) ? aiConvsByPageInRange({ from, to }) : null;
-    const convSetOf = (id) => (convByPage ? (convByPage.get(String(id)) || new Set()) : getAiConvSet(id));
-    const results = await runPool(ids, ORD_CONC, async (id) => {
-      try {
-        const r = await aiOrderStats(id, convSetOf(id), { from, to });
-        return [id, { aiOrders: r.customers, aiOrderCount: r.orders }];
-      } catch (e) {
-        failed.push(id);
-        console.warn(`[orders] page ${id} quét lỗi, giữ số lần trước: ${e.message}`);
-        return [id, prev[id] || { aiOrders: 0, aiOrderCount: 0, stale: true }];
-      }
-    });
-    const pages = Object.fromEntries(results);
-    let totalAiOrders = 0;
-    for (const v of Object.values(pages)) totalAiOrders += v.aiOrders || 0;
-    const data = {
-      enabled: true, aiOrders: totalAiOrders, pages,
-      scannedAt: Date.now(),
-      partial: failed.length > 0, failedPages: failed.length,
-    };
-    // Lượt quét thiếu dữ liệu thì cache ngắn hơn để sớm quét lại cho đủ.
-    _ordCache.set(cacheKey, { t: failed.length ? Date.now() - ORD_TTL + 60e3 : Date.now(), data });
-    return data;
-  })();
-
-  _ordInflight.set(cacheKey, scan);
-  try { res.json(await scan); }
+  // CR-02-10 · MB1: một định nghĩa ở `src/core/so-lieu-bot-cu.js`, v3 gọi thẳng cùng hàm.
+  try { res.json(await donHangAi({ from: req.query.from, to: req.query.to })); }
   catch (e) { res.status(500).json({ enabled: true, error: e.message }); }
-  finally { _ordInflight.delete(cacheKey); }
 });
 
 // ---- Pages ----

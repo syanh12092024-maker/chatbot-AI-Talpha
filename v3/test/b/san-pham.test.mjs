@@ -178,7 +178,7 @@ test('⑤b · chưa nối cầu → nói RÕ là chưa cài đặt, kèm biến 
   assert.equal(d.trong.vi, sp.VI_RONG.CHUA_NAP);
   // Câu trên màn cho người vận hành; tên biến phải đặt ở trường riêng cho người sửa máy chủ.
   assert.match(d.trong.diTiep, /người quản trị hệ thống/i);
-  assert.match(d.trong.diTiepKyThuat, /V3_BOT_V1_GOC|ADMIN_USER/);
+  assert.match(d.trong.diTiepKyThuat, /dungPhanB|aicloser-v3/, 'CR-02-10: chỉ đúng chỗ nối lõi, không còn biến «gọi sang v1»');
 });
 
 test('⑤c · team không page nào có sản phẩm → chỉ sang Cửa kiểm, không bỏ lửng', async () => {

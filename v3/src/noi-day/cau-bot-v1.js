@@ -1,78 +1,42 @@
-// CÂY CẦU SANG TIẾN TRÌNH BOT v1 — cho hai màn G2-B2 (Page & Bot) và G2-B4 (Kết nối & token).
+// CẦU SANG LÕI BOT — cho các màn Page & Bot · Kết nối & token · Sẵn sàng · Số liệu · Kịch bản.
 //
-// ─── VÌ SAO PHẢI CÓ CÂY CẦU, KHÔNG GHI THẲNG XUỐNG CSDL ────────────────────────────────
+// ─── CR-02-10 · MB1 (02/10): KHÔNG CÒN LÀ CÂY CẦU HTTP ─────────────────────────────────
 //
-// Hai thứ mà hai màn đó điều khiển KHÔNG nằm trong cơ sở dữ liệu v3:
+// Trước 02/10 mỗi hàm ở đây gọi `/admin/api` của tiến trình bot v1 (`src/server.js`, cổng
+// 3100), vì công tắc AI, kho kiến thức (`kb-overrides.json` + RAM) và kho token sống trong RAM
+// của tiến trình đó. v1 nay nghỉ hưu (01-QUYET-DINH §14): cùng những hàm thư viện mà handler
+// v1 từng gọi (`src/kb.js` · `src/readiness.js` · `src/pancake.js` · `src/store.js` ·
+// `src/core/so-lieu-bot-cu.js`) chạy NGAY TRONG tiến trình v3, sau `src/core/khoi-dong-loi.js`.
 //
-//   ① CÔNG TẮC BOT AI. Nguồn thật là `ai-enabled.json` + một `Set` trong RAM của tiến trình
-//      bot (`src/store.js`). Cột `page.bot_ai_bat` của v3 chỉ là BẢN SAO, và
-//      `db/di-tru/nap.js#napCongTacAi` chép lại nó từ file mỗi lượt di trú — **cả hai chiều**
-//      («bật đúng tập đó, TẮT mọi page ngoài tập»). Ghi thẳng vào cột ⇒ bot KHÔNG đổi hành
-//      vi, rồi lượt di trú kế tiếp xoá luôn dấu vết. Màn hình báo «đã bật» mà không có gì
-//      xảy ra — đúng họ lỗi im lặng của `suaTheoId` bỏ rơi `team_id` (xem `PHIEU-B-Y3`).
+// Tên hàm và HÌNH DẠNG dữ liệu trả về GIỮ NGUYÊN — các màn đang gọi không phải sửa. Tên tệp
+// còn mang «v1» tới MB4 (đổi tên cùng lượt gỡ chữ «bot cũ» trên màn).
 //
-//   ② KHO TOKEN PANCAKE. Nguồn thật là `.env` + `pancake-tokens.json`, nạp vào biến
-//      `_fileToks` trong RAM của tiến trình bot (`src/pancake.js`). v3 chạy ở TIẾN TRÌNH
-//      KHÁC (`aicloser-v3`, cổng 3102). Ghi file từ đây thì bot vẫn dùng bản trong RAM cũ
-//      cho tới khi khởi động lại — mà tiêu chí nghiệm thu sóng 0 đòi đúng điều ngược lại:
-//      «thêm token mới → page nhận được trong một lượt quét, KHÔNG restart».
+// Bộ ca tiêm lõi giả bằng `datLoiBot({...})` thay vì giả `fetch` như trước.
 //
-// ⇒ Cửa đúng là HTTP `/admin/api` của chính tiến trình bot. Nó đã có sẵn, đã chạy thật, và
-//    nó là nơi DUY NHẤT vừa đổi được RAM vừa lưu được file trong cùng một lượt.
-//
-// **KHÔNG sửa một dòng nào của `src/`.** File này chỉ gọi HTTP.
-//
-// ─── PHÂN VAI: v3 giữ QUYỀN, v1 giữ CÔNG TẮC ───────────────────────────────────────────
-// `/admin/api/pages/:id/ai` của v1 KHÔNG biết team là gì — ai gọi được là bật/tắt được mọi
-// page. Nên lớp v3 phải kiểm team và ghi nhật ký TRƯỚC khi gọi qua đây; cây cầu này cố ý
-// KHÔNG tự kiểm quyền, để không có hai bản luật phân quyền ở hai chỗ.
-//
-// ─── CỬA GHI MẶC ĐỊNH ĐÓNG ──────────────────────────────────────────────────────────────
-// Cùng quy ước với `V3_PANCAKE_GUI` / `V3_WA_GUI` / `V3_POS_GHI` của người A: hai điều kiện,
-// thiếu một là đóng. Đây là đường chạm KHÁCH THẬT — bật bot cho một page là bot bắt đầu tự
-// trả lời người thật — nên mặc định phải là KHÔNG.
-//
-//   V3_BOT_GHI === '1'   VÀ   PANCAKE_READONLY !== '1'
-//
-// ĐỌC thì không cần cờ: xem danh sách token và trạng thái công tắc không đổi gì cả, mà biết
-// trạng thái lại đúng là thứ giúp người ta quyết định. Màn hình hiện đủ, và nói rõ cửa ghi
-// đang đóng — thay vì hiện một màn trống rồi để người ta đoán.
+// ─── PHÂN VAI: v3 giữ QUYỀN ─────────────────────────────────────────────────────────────
+// Hàm ở đây KHÔNG tự kiểm vai/team — lớp màn kiểm và ghi nhật ký TRƯỚC khi gọi, để không có
+// hai bản luật phân quyền ở hai chỗ. Phần lớn số liệu trả về là TOÀN HỆ: nơi gọi phải lọc lại
+// theo page của team mình.
 
 /**
  * ═══ CỬA GHI: MỞ MẶC ĐỊNH, CÓ KHOÁ TUỲ CHỌN ═══════════════════════════════════════
  *
- * Bản trước ĐÓNG mặc định, phải đặt `V3_BOT_GHI=1` mới ghi được. Sai, và sai theo cách
- * phản tác dụng — chủ dự án hỏi thẳng «tại sao chỗ này phức tạp thế».
- *
- * Đường bật bot của v3 ĐÃ CÓ BẢY CHỐT trước cái cờ này:
- *   đăng nhập · vai ở router · vai ở cửa ghi · vai ở tầng dưới (chỉ `quan-tri`) ·
- *   cửa kiểm sẵn sàng của v1 từ chối page bị chặn · ghi nhật ký ai bấm · hộp xác nhận
- *
- * Cờ này là chốt thứ TÁM, và là chốt duy nhất đòi SSH vào máy chủ. Hậu quả đo được:
- * người ta bỏ v3 và quay về dashboard cũ ở cổng 3100 — nơi `POST /pages/:id/ai` chỉ có
- * MỘT mật khẩu dùng chung, **không biết ai bấm, không ghi nhật ký, không xác nhận**.
- *
- * Tức chốt an toàn của tôi làm đường CÓ dấu vết khó đi, đẩy người dùng sang đường KHÔNG
- * có dấu vết. Bảo vệ mà đẩy người ta sang cửa sau thì không phải bảo vệ.
- *
- * Nay: mở mặc định, và thay bằng hai thứ đặt đúng chỗ rủi ro thật sự nằm —
- *   · `V3_BOT_KHOA=1`  khoá lại cho ai cần (máy dev, bản demo, lúc sự cố)
- *   · trần bật hàng loạt (`TRAN_BAT_MOT_DOT`) — xem `cong-tac.js`
+ * Đường bật bot của v3 có BẢY CHỐT trước cờ này: đăng nhập · vai ở router · vai ở cửa ghi ·
+ * vai ở tầng dưới (chỉ `quan-tri`) · cửa kiểm sẵn sàng từ chối page bị chặn · nhật ký ai bấm ·
+ * hộp xác nhận. Cờ ở đây chỉ để khoá lại cho ai cần (máy dev, bản demo, lúc sự cố):
+ *   · `V3_BOT_KHOA=1`  khoá
+ *   · `V3_BOT_GHI=0`   cờ cũ — ai đã đặt vẫn được tôn trọng
+ *   · `PANCAKE_READONLY=1` — van gửi của cả hệ: không bật/tắt bot, không thêm token; riêng
+ *     đường ghi KHO (sản phẩm · kịch bản) được mở bởi `V3_GHI_KHO_BOT=1`.
  */
 export const BIEN_KHOA = 'V3_BOT_KHOA';
 /** Giữ tên cũ để ai đã đặt `V3_BOT_GHI=0` vẫn được tôn trọng. */
 export const BIEN_CO_GHI = 'V3_BOT_GHI';
 export const BIEN_CHAN_DOC = 'PANCAKE_READONLY';
-export const BIEN_GOC = 'V3_BOT_V1_GOC';
 /**
  * CR-28-09b · MN5 — `V3_GHI_KHO_BOT=1`: cho ghi KHO KIẾN THỨC của bot (sản phẩm · kịch bản vào
- * `kb-overrides.json`) dù `PANCAKE_READONLY=1`. Cờ HẸP, một nghĩa:
- *   · `PANCAKE_READONLY` là luật số 1 — van GỬI tin của cả hệ; không được gỡ nó chỉ để lưu
- *     được một bảng giá. Ghi kho là việc NỘI BỘ của bot: không tin nào ra khách vì nó; bot còn
- *     `PANCAKE_READONLY=1` thì bot vẫn không gửi gì.
- *   · KHÔNG mở bật/tắt bot, KHÔNG mở thêm token — hai việc ấy vẫn đóng theo `PANCAKE_READONLY`.
- *   · `V3_BOT_KHOA=1` và `V3_BOT_GHI=0` vẫn THẮNG cờ này: ai đã khoá tay thì vẫn khoá.
- * Vắng = đóng = hành vi cũ.
+ * `kb-overrides.json`) dù `PANCAKE_READONLY=1`. Ghi kho là việc NỘI BỘ: không tin nào ra khách vì
+ * nó. KHÔNG mở bật/tắt bot, KHÔNG mở thêm token. `V3_BOT_KHOA=1` / `V3_BOT_GHI=0` vẫn THẮNG.
  */
 export const BIEN_GHI_KHO = 'V3_GHI_KHO_BOT';
 
@@ -96,120 +60,99 @@ export class LoiCauBotHong extends Error {
 
 const env = (t) => process.env[t] || '';
 
-/** Gốc của tiến trình bot v1. Mặc định cùng máy, cổng `PORT` của bot. */
-export function gocBot() {
-  if (env(BIEN_GOC)) return env(BIEN_GOC).replace(/\/+$/, '');
-  const cong = env('PORT') || '3100';
-  return `http://127.0.0.1:${cong}`;
+/** Lõi chạy ở đâu — màn «Nguồn số» hiện câu này. Không còn địa chỉ HTTP nào. */
+export function gocBot() { return 'trong tiến trình v3'; }
+
+/** Giữ cho nơi gọi cũ: không còn tài khoản nào phải có — lõi nằm ngay trong tiến trình. */
+export const coTaiKhoan = () => true;
+
+/* ─────────────────────────── LÕI: hàm thư viện trong tiến trình ─────────────────────────── */
+
+let _tiem = null;
+let _macDinh = null;
+
+/**
+ * Tiêm lõi (bộ ca). `null` = về lõi thật. Tiêm thì CHỈ dùng bản tiêm — không nạp thư viện thật,
+ * vì nạp `src/store.js`/`page-registry.js` là đọc tệp dữ liệu của máy đang chạy bộ ca.
+ */
+export function datLoiBot(loi) { _tiem = loi || null; boNhoSanSang(); }
+
+async function loi() {
+  if (_tiem) return _tiem;
+  if (!_macDinh) {
+    _macDinh = (async () => {
+      const [kb, readiness, pancake, store, soLieu] = await Promise.all([
+        import('../../../src/kb.js'),
+        import('../../../src/readiness.js'),
+        import('../../../src/pancake.js'),
+        import('../../../src/store.js'),
+        import('../../../src/core/so-lieu-bot-cu.js'),
+      ]);
+      return {
+        allReadiness: readiness.allReadiness,
+        canEnableAI: readiness.canEnableAI,
+        getPageList: kb.getPageList,
+        getPageConfig: kb.getPageConfig,
+        getPageProductsRaw: kb.getPageProductsRaw,
+        updatePageProducts: kb.updatePageProducts,
+        updatePageConfig: kb.updatePageConfig,
+        datKhoiChung: kb.datKhoiChung,
+        khoiChungHienTai: kb.khoiChungHienTai,
+        pancakePages: pancake.pancakePages,
+        listPancakeTokens: pancake.listPancakeTokens,
+        addPancakeToken: pancake.addPancakeToken,
+        removePancakeToken: pancake.removePancakeToken,
+        lamMoiTokenDb: pancake.lamMoiTokenDb,
+        isAiEnabled: store.isAiEnabled,
+        setAiEnabled: store.setAiEnabled,
+        chiPhiToken: soLieu.chiPhiToken,
+        donHangAi: soLieu.donHangAi,
+        pheuHoiThoaiTho: soLieu.pheuHoiThoaiTho,
+      };
+    })();
+  }
+  return _macDinh;
 }
 
-/** Có đủ tài khoản gọi `/admin/api` không (Basic auth của `src/server.js`). */
-export const coTaiKhoan = () => !!(env('ADMIN_USER') && env('ADMIN_PASS'));
+/** Chạy một việc của lõi; lỗi thư viện thành `LoiCauBotHong` có tên việc — màn nói được hỏng ở đâu. */
+async function lam(viec, fn) {
+  const L = await loi();
+  try { return await fn(L); }
+  catch (e) {
+    if (e instanceof LoiCauBotHong || e instanceof LoiCauBotDong) throw e;
+    throw new LoiCauBotHong(`Lõi bot hỏng khi ${viec}: ${(e && e.message) || e}`, 500);
+  }
+}
 
 /**
  * Cửa ghi mở hay đóng, và VÌ SAO đóng — trả về câu người đọc được, không phải một cờ trần.
- * Màn hình hiện thẳng câu này; «không bật được» mà không nói vì sao thì người ta đi hỏi vòng.
+ * HAI DANH SÁCH SONG SONG (GD4 · 25/09): `thieu` cho người vận hành, `thieuKyThuat` bằng tên biến.
  */
 export function trangThaiCau({ kho = false } = {}) {
-  // HAI DANH SÁCH SONG SONG (GD4 · 25/09). `thieu` là câu người vận hành đọc trên màn;
-  // `thieuKyThuat` là cùng lý do đó viết bằng tên biến, dành cho người sửa máy chủ — màn đưa
-  // nó xuống ô «Nguồn số», còn thông báo lỗi thì mang cả hai (nhật ký cần tên biến).
   const thieu = [];
   const thieuKyThuat = [];
   if (env(BIEN_KHOA) === '1') {
-    thieu.push('máy này đang bị khoá, không cho ghi sang tiến trình bot');
+    thieu.push('máy này đang bị khoá, không cho ghi vào lõi bot');
     thieuKyThuat.push('`' + BIEN_KHOA + '=1` đang bật');
   }
-  // Ai đã cố ý tắt bằng cờ cũ thì vẫn tắt. Cờ cũ KHÔNG còn là điều kiện để MỞ.
   if (env(BIEN_CO_GHI) === '0') {
     thieu.push('có người đã tắt đường ghi bằng cấu hình cũ, và cấu hình đó vẫn được tôn trọng');
     thieuKyThuat.push('`' + BIEN_CO_GHI + '=0` đang đặt — bỏ dòng đó, hoặc dùng `'
       + BIEN_KHOA + '` nếu muốn khoá');
   }
-  // Đường ghi KHO (sản phẩm · kịch bản) được miễn riêng lý do này khi có `V3_GHI_KHO_BOT=1`.
   if (env(BIEN_CHAN_DOC) === '1' && !(kho && env(BIEN_GHI_KHO) === '1')) {
     thieu.push('máy này đang CHỈ ĐỌC với Pancake: không bật tắt bot, không thêm tài khoản được');
     thieuKyThuat.push('`' + BIEN_CHAN_DOC + '=1` đang bật');
-  }
-  if (!coTaiKhoan()) {
-    thieu.push('máy chủ chưa có tài khoản quản trị để gọi sang tiến trình bot');
-    thieuKyThuat.push('thiếu `ADMIN_USER`/`ADMIN_PASS` — không gọi được `/admin/api`');
   }
   return { mo: thieu.length === 0, thieu, thieuKyThuat, goc: gocBot() };
 }
 
 function batBuocMo({ kho = false } = {}) {
   const t = trangThaiCau({ kho });
-  // Thông báo lỗi mang CẢ HAI: câu người đọc và tên biến — nó đi vào nhật ký và vào tay
-  // người sửa máy chủ, nơi tên biến là thứ cần nhất.
   if (!t.mo) {
-    throw new LoiCauBotDong('Cửa ghi sang tiến trình bot đang ĐÓNG: ' + t.thieu.join(' · ')
+    throw new LoiCauBotDong('Cửa ghi vào lõi bot đang ĐÓNG: ' + t.thieu.join(' · ')
       + (t.thieuKyThuat.length ? ` (${t.thieuKyThuat.join(' · ')})` : ''));
   }
-}
-
-function tieuDe() {
-  const co = Buffer.from(env('ADMIN_USER') + ':' + env('ADMIN_PASS')).toString('base64');
-  return { Authorization: 'Basic ' + co, 'Content-Type': 'application/json', Accept: 'application/json' };
-}
-
-/**
- * Gọi một đường của `/admin/api`.
- * `ghi` = true thì kiểm cửa trước. Đọc thì chỉ cần tài khoản.
- */
-async function goi(duong, { phuongThuc = 'GET', than = null, ghi = false, kho = false, hetGio = 8000 } = {}) {
-  if (ghi) batBuocMo({ kho });
-  else if (!coTaiKhoan()) {
-    throw new LoiCauBotDong('thiếu `ADMIN_USER`/`ADMIN_PASS` — không đọc được trạng thái từ tiến trình bot');
-  }
-  const bo = AbortSignal.timeout ? AbortSignal.timeout(hetGio) : undefined;
-  let res;
-  try {
-    res = await fetch(gocBot() + '/admin/api' + duong, {
-      method: phuongThuc,
-      headers: tieuDe(),
-      body: than == null ? undefined : JSON.stringify(than),
-      signal: bo,
-    });
-  } catch (e) {
-    // HẾT GIỜ ≠ BOT CHẾT. Phân biệt hai cảnh, vì lời khuyên đi kèm khác hẳn nhau:
-    //   · hết giờ  → bot vẫn chạy, chỉ đang làm việc lâu (ví dụ `/orders` quét POS từng
-    //                page khi cache nguội, có thể mất vài phút). Bảo người ta đi kiểm
-    //                «bot có chạy không» là đẩy họ đi tìm một lỗi không có.
-    //   · không nối được → bot thật sự không trả lời.
-    const tenLoi = String((e && (e.name || e.message)) || '');
-    if (/AbortError|TimeoutError|aborted|timeout/i.test(tenLoi)) {
-      throw new LoiCauBotHong(
-        `Tiến trình bot chưa trả lời trong ${Math.round(hetGio / 1000)} giây cho \`${duong}\` — `
-        + 'bot VẪN ĐANG CHẠY, chỉ là lượt này lâu. Thử lại sau ít phút.', 504,
-      );
-    }
-    throw new LoiCauBotHong('Không gọi được tiến trình bot ở ' + gocBot()
-      + ' — bot có đang chạy không? (' + (e && e.message ? e.message : e) + ')');
-  }
-  if (res.status === 401) {
-    throw new LoiCauBotHong('Tiến trình bot từ chối đăng nhập — `ADMIN_USER`/`ADMIN_PASS` sai.', 502);
-  }
-  let d = null;
-  try { d = await res.json(); } catch { d = null; }
-  if (!res.ok) {
-    throw new LoiCauBotHong('Tiến trình bot trả ' + res.status + ': '
-      + ((d && (d.error || d.thongDiep)) || 'không rõ lý do'), 502);
-  }
-  return d;
-}
-
-/**
- * Cửa gọi CHUNG sang `/admin/api` — cho những màn cần một đường không nằm trong danh sách
- * hàm sẵn có ở dưới (ví dụ `POST /kb/:pageId/config` của màn soạn kịch bản).
- *
- * Vẫn đi qua đúng `goi()`: cùng lớp kiểm cửa ghi, cùng lớp dịch lỗi, cùng hết-giờ. Phơi
- * `goi` ra thẳng thì mỗi nơi gọi lại tự đặt tuỳ chọn một kiểu.
- */
-export async function goiAdminV1(duong, tuyChon = {}) {
-  const laGhi = String(tuyChon.phuongThuc || 'GET').toUpperCase() !== 'GET';
-  try { return await goi(duong, tuyChon); }
-  finally { if (laGhi) boNhoSanSang(); }   // sửa kịch bản, nạp lại token… đều đổi tình trạng page
 }
 
 /* ─────────────────── bản chép sản phẩm sang bot (CR-28-09b · MN3) ─────────────────── */
@@ -226,15 +169,30 @@ export async function goiAdminV1(duong, tuyChon = {}) {
  * (nhãn, đường). Đường ảnh so bằng ĐUÔI: bot tự ghép gốc công khai vào đường `/uploads/…`.
  */
 export async function daySanPhamLenBot(pageIdFacebook, products) {
-  const id = encodeURIComponent(String(pageIdFacebook));
-  await goiAdminV1(`/kb/${id}`, { phuongThuc: 'POST', than: { products }, ghi: true, kho: true });
-  const doc = await goi(`/kb/${id}`);
-  const that = Array.isArray(doc?.products) ? doc.products : [];
-  const lech = soBanChep(products, that);
-  if (lech) {
-    throw new LoiCauBotHong(`Bot nhận bản sản phẩm của page ${pageIdFacebook} nhưng đọc lại thấy lệch: ${lech}`, 502);
-  }
-  return { pageId: String(pageIdFacebook), soSanPham: that.length };
+  batBuocMo({ kho: true });
+  const id = String(pageIdFacebook);
+  try {
+    return await lam('đẩy sản phẩm', (L) => {
+      L.updatePageProducts(id, products);
+      const that = L.getPageProductsRaw(id) || [];
+      const lech = soBanChep(products, that);
+      if (lech) throw new LoiCauBotHong(`Bot nhận bản sản phẩm của page ${id} nhưng đọc lại thấy lệch: ${lech}`, 502);
+      return { pageId: id, soSanPham: that.length };
+    });
+  } finally { boNhoSanSang(); }   // sản phẩm đổi ⇒ tình trạng sẵn sàng đổi
+}
+
+/** Đưa kịch bản lên LIVE: ba ô cấu hình của page vào `kb-overrides.json` + RAM (cũ: POST `/kb/:id/config`). */
+export async function dayKichBanLenBot(pageIdFacebook, cauHinh) {
+  batBuocMo({ kho: true });
+  try { return await lam('đưa kịch bản lên', (L) => L.updatePageConfig(String(pageIdFacebook), cauHinh || {}, 'v3')); }
+  finally { boNhoSanSang(); }
+}
+
+/** Nạp lại kho token CSDL của tiến trình này NGAY (cũ: POST `/pancake-tokens/nap-lai`). Không phải cửa ghi. */
+export async function napLaiKhoToken() {
+  try { return { ok: true, soToken: await lam('nạp lại kho token', (L) => L.lamMoiTokenDb()) }; }
+  finally { boNhoSanSang(); }
 }
 
 // Phép so nằm ở `src/products/ban-chep-bot.js` — lượt nạp MN2 dùng CÙNG phép so để chứng minh
@@ -247,62 +205,57 @@ import { soBanChep } from '../../../src/products/ban-chep-bot.js';
  * (CR-28-09b · MN7). Lệch ⇒ ném, nơi gọi huỷ lượt lưu. Cùng đường ghi KHO (`kho: true`).
  */
 export async function dayKhoiChungLenBot(noiDung) {
-  await goiAdminV1('/kb-chung', { phuongThuc: 'POST', than: noiDung, ghi: true, kho: true });
-  const d = await goi('/kb-chung');
-  if (JSON.stringify(d?.tep || null) !== JSON.stringify(noiDung)) {
-    throw new LoiCauBotHong('Bot nhận ba khối dùng chung nhưng đọc lại thấy lệch.', 502);
-  }
-  return { nguon: d?.nguon || '', dangDung: d?.nguon === 'v3' };
+  batBuocMo({ kho: true });
+  return lam('đẩy khối dùng chung', (L) => {
+    L.datKhoiChung(noiDung);
+    const d = L.khoiChungHienTai() || {};
+    if (JSON.stringify(d.tep || null) !== JSON.stringify(noiDung)) {
+      throw new LoiCauBotHong('Bot nhận ba khối dùng chung nhưng đọc lại thấy lệch.', 502);
+    }
+    return { nguon: d.nguon || '', dangDung: d.nguon === 'v3' };
+  });
+}
+
+/** Ba khối dùng chung bot đang giữ (cũ: GET `/kb-chung`) — cho script đối chiếu. */
+export async function khoiChungCuaBot() {
+  return lam('đọc khối dùng chung', (L) => L.khoiChungHienTai());
 }
 
 /* ────────────────────────────── công tắc BOT AI (G2-B2) ────────────────────────────── */
 
 /**
  * Bật/tắt bot AI cho MỘT page, bằng id Facebook (`page.page_id`, không phải `page.id`).
- * Trả về trạng thái SAU khi đổi, đọc từ chính tiến trình bot — không đoán theo tham số gửi đi.
+ * Trả về trạng thái SAU khi đổi, đọc lại từ lõi — không đoán theo tham số gửi đi.
  */
 export async function datBotAi(pageIdFacebook, bat) {
-  let d;
+  batBuocMo();
+  const id = String(pageIdFacebook);
   try {
-    d = await goi('/pages/' + encodeURIComponent(String(pageIdFacebook)) + '/ai',
-      { phuongThuc: 'POST', than: { on: !!bat }, ghi: true });
+    return await lam('đổi công tắc bot', (L) => {
+      // CỔNG BẬT AI (cũ: `admin-scripts.js` chặn trước `/pages/:id/ai`). TẮT thì luôn được.
+      if (bat) {
+        const g = L.canEnableAI(id);
+        if (!g.ok) throw new LoiCauBotHong(`Chưa bật được AI cho page ${id} — ${g.readiness}: ${g.reason || ''}`, 409);
+      }
+      L.setAiEnabled(id, !!bat);
+      return { pageId: id, batSauKhiDoi: !!L.isAiEnabled(id) };
+    });
   } finally { boNhoSanSang(); }   // hỏng giữa chừng thì càng không được tin bản nhớ cũ
-  return { pageId: String(pageIdFacebook), batSauKhiDoi: !!(d && d.aiEnabled) };
 }
 
 /* ──────────────────────────── cửa kiểm sẵn sàng (G2-F5) ──────────────────────────── */
 
 /**
- * Sáu điều kiện sẵn sàng của MỌI page mà tiến trình bot nhìn thấy.
+ * Sáu điều kiện sẵn sàng của MỌI page lõi nhìn thấy (`src/readiness.js#allReadiness`).
  *
- * ⚠️ TRẢ VỀ TOÀN HỆ, KHÔNG THEO TEAM — v1 không biết team là gì. Nơi gọi **bắt buộc** phải
- *    lọc lại theo danh sách page của team mình trước khi trả ra trình duyệt. Ai quên bước đó
- *    là để team này đọc được tình trạng page của team kia.
+ * ⚠️ TRẢ VỀ TOÀN HỆ, KHÔNG THEO TEAM — nơi gọi **bắt buộc** lọc lại theo page của team mình.
  *
- * ⚠️ HẾT-GIỜ RIÊNG 25 GIÂY, không dùng 8 giây mặc định. Đo trên máy chủ 25/08: đường này mất
- *    **10,6 – 13,2 giây** và trả về 300 KB cho 676 page — `allReadiness()` đọc sổ đăng ký, số
- *    liệu và kho phiên bản kịch bản cho TỪNG page. Để 8 giây thì màn luôn báo «bot có đang
- *    chạy không?» trong khi bot vẫn khoẻ, và người ta đi tìm một lỗi không có.
- *
- *    Chỉ nới cho đường NÀY. Đường gạt công tắc vẫn 8 giây — ở đó chờ lâu nghĩa là bot treo
- *    thật, và biết sớm quan trọng hơn.
- *
- * ⚠️ `aiEnabled` ở đây đọc từ **RAM của tiến trình bot** (`store.js#isAiEnabled`), tức là
- *    SỰ THẬT về việc bot có đang trả lời page đó không. Cột `page.bot_ai_bat` trong CSDL v3
- *    chỉ là bản sao, và đã có lần lệch — xem `docs/v3/SO-TAY-VAI-B.md`. Khi hai số khác nhau,
- *    con số ĐÚNG là con số ở đây.
- */
-/*
- * ⚠️ NHỚ KẾT QUẢ (28/09). Đo lại trên máy chủ: lượt này mất 10–17 giây VÀ LÀM ĐỨNG CẢ TIẾN
- *    TRÌNH BOT trong lúc chạy (`allReadiness()` là hàm đồng bộ): `/health` bình thường 0,002 giây
- *    thì lúc ấy chờ 16 giây. Trước đây MỖI lần mở trang page, danh sách page, Cài đặt team…
- *    và dải trạng thái trên MỖI tab (45 giây một lần) đều gọi nó — người dùng thấy màn đứng ở
- *    «Đang mở…», và bot phục vụ khách thì đứng theo.
- *
- *    Nay: ≤ `TUOI_TUOI` thì trả bản nhớ · ≤ `TUOI_CU` thì trả bản nhớ NGAY và làm mới ngầm ·
- *    cũ hơn nữa (hoặc chưa có) thì chờ đọc. Cùng lúc chỉ MỘT lượt đọc bay sang bot — mười tab
- *    mở cùng lúc chung một lượt. Bật/tắt bot và thêm/bỏ token xoá bản nhớ ngay (`boNhoSanSang`).
- *    Kết quả mang `docLuc` để màn nói được «đo lúc mấy giờ».
+ * ⚠️ NHỚ KẾT QUẢ (28/09). Hồi chạy trong tiến trình bot v1, lượt này mất 10–17 giây và làm đứng
+ *    cả tiến trình (`allReadiness()` đồng bộ). Thủ phạm là `kb.js#readOverrides()` đọc lại tệp
+ *    510 KB cho từng page — đã vá cùng ngày. Đo lại 02/10 trên dữ liệu thật: **33 ms lượt đầu,
+ *    ~7 ms các lượt sau** cho 581 page. Bản nhớ vẫn giữ: rẻ, và mười tab mở cùng lúc chung một lượt.
+ *    ≤ `TUOI_TUOI` trả bản nhớ · ≤ `TUOI_CU` trả bản nhớ NGAY và làm mới ngầm · cũ hơn thì chờ đọc.
+ *    Bật/tắt bot và thêm/bỏ token xoá bản nhớ ngay (`boNhoSanSang`). Kết quả mang `docLuc`.
  */
 const TUOI_TUOI = 60_000;
 const TUOI_CU = 10 * 60_000;
@@ -331,13 +284,16 @@ export async function sanSangToanHe() {
 }
 
 async function docSanSangTho() {
-  const d = await goi('/readiness', { hetGio: 25000 });
-  const ds = Array.isArray(d && d.pages) ? d.pages : [];
+  const ds = await lam('tính bảng sẵn sàng', (L) => L.allReadiness() || []);
   return {
     pages: ds,
-    // Ba con số này do chính v1 đếm trên TOÀN HỆ. Màn theo team phải tự đếm lại trên phần
-    // của mình — giữ lại đây chỉ để đối chiếu khi nghi ngờ.
-    toanHe: { chan: d?.blocked ?? null, nhac: d?.warned ?? null, san: d?.ready ?? null, tong: ds.length },
+    // Ba con số TOÀN HỆ, cùng phép đếm handler `/readiness` cũ. Màn theo team tự đếm lại phần mình.
+    toanHe: {
+      chan: ds.filter((r) => !r.aiAllowed).length,
+      nhac: ds.filter((r) => r.aiAllowed && (r.warnings || []).length).length,
+      san: ds.filter((r) => r.readiness === 'READY').length,
+      tong: ds.length,
+    },
     docLuc: new Date().toISOString(),
   };
 }
@@ -345,7 +301,8 @@ async function docSanSangTho() {
 /* ─────────────────────────── phễu hội thoại (G2-G4) ─────────────────────────── */
 
 /**
- * Phân bố hội thoại theo BẬC PHỄU và theo CHỦ SỞ HỮU, từ `/admin/api/ops/conv-state`.
+ * Phân bố hội thoại theo BẬC PHỄU và theo CHỦ SỞ HỮU, từ `conv-state.json` của bot cũ
+ * (`src/core/so-lieu-bot-cu.js#pheuHoiThoaiTho` — đứng im từ 16/09).
  *
  * Đo 28/08: 29.557 hội thoại — GREET 20.702 · QUALIFY 5.190 · SELLING 680 · CLOSING 23 ·
  * POST_SALE 1.978 · HANDOFF 984. Chủ sở hữu: BOTCAKE 20.702 · AI 5.876 · SALE 2.979.
@@ -355,7 +312,7 @@ async function docSanSangTho() {
  *    gọi là «tỉ lệ rơi» là đọc sai bản chất — nơi gọi phải nói rõ điều đó.
  */
 export async function pheuHoiThoai() {
-  const d = await goi('/ops/conv-state', { hetGio: 20000 });
+  const d = await lam('đọc phễu hội thoại', (L) => L.pheuHoiThoaiTho());
   const chung = (d && d.overall) || {};
   return {
     tong: Number(chung.total || 0),
@@ -391,11 +348,9 @@ export async function pheuHoiThoai() {
  * kèm nhãn, và để màn nói rõ từng cái đo gì.
  */
 export async function donHangToanHe() {
-  // ⚠️ HẾT-GIỜ 60 GIÂY. `/orders` CHỜ QUÉT XONG khi cache nguội — nó hỏi POS Pancake cho
-  //    từng page, tới 12 trang × 100 đơn mỗi page. Có cache thì trả trong ~12 ms; nguội thì
-  //    có thể mất vài phút. 60 giây là chỗ dừng: đủ cho phần lớn lượt quét, và không bắt
-  //    người dùng ngồi nhìn màn trắng lâu hơn thế. Quá thì màn báo «bot vẫn chạy, thử lại».
-  const d = await goi('/orders', { hetGio: 60000 });
+  // Khi đệm nguội, phép quét hỏi POS Pancake từng page (tới 12 trang × 100 đơn) — có thể mất vài
+  // phút; đệm 5 phút và khoá chống quét chồng nằm ở `src/core/so-lieu-bot-cu.js#donHangAi`.
+  const d = await lam('quét đơn AI ở POS', (L) => L.donHangAi({}));
   const trang = (d && d.pages) || {};
   const page = Object.entries(trang).map(([pageId, v]) => ({
     pageId: String(pageId),
@@ -418,7 +373,7 @@ export async function donHangToanHe() {
 /* ─────────────────────────── chi phí AI (G2-G2) ─────────────────────────── */
 
 /**
- * Chi phí token THẬT mà tiến trình bot đã đo — tiền, số lượt, và bảng theo từng page.
+ * Chi phí token THẬT mà bot cũ đã đo (Sổ AI, đứng im từ 28/08) — tiền, số lượt, bảng theo page.
  *
  * ⚠️ ĐÂY LÀ SỐ ĐO ĐƯỢC, KHÔNG PHẢI SỐ SUY. `measured` cho biết bao nhiêu lượt có số token
  *    thật từ nhà cung cấp; phần còn lại là ước. Trả nguyên cả hai ra để màn nói được câu
@@ -431,7 +386,7 @@ export async function donHangToanHe() {
  *    đừng hiện 0 của v3 như thể không ai tiêu đồng nào.
  */
 export async function chiPhiToanHe() {
-  const d = await goi('/token-cost', { hetGio: 25000 });
+  const d = await lam('tính chi phí token', (L) => L.chiPhiToken({}));
   const so = (v) => (v == null ? null : Number(v));
   const dsPage = Array.isArray(d && d.pages) ? d.pages : [];
   return {
@@ -470,7 +425,7 @@ export async function chiPhiToanHe() {
 /**
  * Danh sách page kèm SỐ sản phẩm — một lời gọi cho toàn hệ.
  *
- * ⚠️ Nguồn sản phẩm là Google Sheet mà tiến trình bot đọc, **không phải bảng `san_pham`**
+ * ⚠️ Nguồn là KB của lõi (`kb-overrides.json` do v3 ghi + Sheet danh bạ), **không phải bảng `san_pham`**
  *    của CSDL v3. Bảng đó có 0 dòng (đo 25/08) vì chưa ai chạy nạp từ POS. Đọc bảng rồi
  *    kết luận «chưa có sản phẩm» là đúng cái lỗi đã mắc với cột `page.bot_ai_bat`: nhìn
  *    bản sao rỗng rồi tin, trong khi nguồn thật có 71 sản phẩm trên 69 page.
@@ -478,8 +433,23 @@ export async function chiPhiToanHe() {
  * ⚠️ TOÀN HỆ, KHÔNG THEO TEAM — nơi gọi phải lọc lại theo page của team mình.
  */
 export async function danhSachPageKemSanPham() {
-  const d = await goi('/pages', { hetGio: 20000 });
-  const ds = Array.isArray(d) ? d : (d && Array.isArray(d.pages) ? d.pages : []);
+  // Cùng phép dựng handler `/pages` cũ: danh sách từ PANCAKE; chưa nạp được Pancake thì lui về KB.
+  const ds = await lam('dựng danh sách page', (L) => {
+    const kbById = new Map((L.getPageList() || []).map((p) => [String(p.id), p]));
+    const pk = L.pancakePages();
+    const nguon = pk && pk.size ? [...pk.values()] : [...kbById.values()];
+    return nguon.map((p) => {
+      const id = String(p.id);
+      const kb = kbById.get(id) || {};
+      const cfg = L.getPageConfig(id) || {};
+      return {
+        id, name: p.name || kb.name || '', products: kb.products || 0,
+        hasKb: (kb.products || 0) > 0 || !!(cfg.greeting || cfg.tone || cfg.salesPrompt),
+        market: kb.market || '', category: kb.category || '', marketer: kb.marketer || '',
+        aiEnabled: !!L.isAiEnabled(id),
+      };
+    }).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  });
   return ds.map((p) => ({
     pageId: String(p.id),
     ten: p.name || '',
@@ -501,7 +471,12 @@ export async function danhSachPageKemSanPham() {
  *    bot đang bán một món nó không gọi được tên.
  */
 export async function sanPhamCuaPage(pageIdFacebook) {
-  const d = await goi('/kb/' + encodeURIComponent(String(pageIdFacebook)), { hetGio: 15000 });
+  const id = String(pageIdFacebook);
+  const d = await lam('đọc sản phẩm của page', (L) => ({
+    pageName: L.pancakePages()?.get(id)?.name || (L.getPageList() || []).find((p) => String(p.id) === id)?.name || '',
+    products: L.getPageProductsRaw(id),
+    config: L.getPageConfig(id),
+  }));
   const ds = Array.isArray(d && d.products) ? d.products : [];
   const cfg = (d && d.config) || {};
   return {
@@ -542,7 +517,7 @@ export async function sanPhamCuaPage(pageIdFacebook) {
  * v1 chỉ trả về **tám ký tự cuối** của mỗi token, không trả token đầy đủ — giữ nguyên như vậy.
  */
 export async function danhSachToken() {
-  const ds = await goi('/pancake-tokens');
+  const ds = await lam('đọc kho token', (L) => L.listPancakeTokens());
   return (Array.isArray(ds) ? ds : []).map((t, i) => ({
     thuTu: i,
     ten: t.name,
@@ -556,11 +531,23 @@ export async function danhSachToken() {
 }
 
 export async function themToken(token) {
-  try { return await goi('/pancake-tokens', { phuongThuc: 'POST', than: { token }, ghi: true, hetGio: 20000 }); }
-  finally { boNhoSanSang(); }
+  batBuocMo();
+  try {
+    return await lam('thêm token', async (L) => {
+      const r = await L.addPancakeToken(token);
+      if (!r || !r.ok) throw new LoiCauBotHong((r && r.error) || 'không thêm được token', 400);
+      return r;
+    });
+  } finally { boNhoSanSang(); }
 }
 
 export async function boToken(thuTu) {
-  try { return await goi('/pancake-tokens/' + encodeURIComponent(String(thuTu)), { phuongThuc: 'DELETE', ghi: true }); }
-  finally { boNhoSanSang(); }
+  batBuocMo();
+  try {
+    return await lam('bỏ token', (L) => {
+      const r = L.removePancakeToken(thuTu);
+      if (!r || !r.ok) throw new LoiCauBotHong((r && r.error) || 'không bỏ được token', 400);
+      return r;
+    });
+  } finally { boNhoSanSang(); }
 }

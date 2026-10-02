@@ -140,7 +140,7 @@ test('⑤b · chưa nối cầu → nói rõ chưa cài đặt, kèm biến cầ
   dung({});
   const d = await tv.manAnh(bc());
   assert.equal(d.trong.vi, 'chua-nap');
-  assert.match(d.trong.diTiep, /V3_BOT_V1_GOC|ADMIN_USER/);
+  assert.match(d.trong.diTiep, /dungPhanB|aicloser-v3/, 'CR-02-10: chỉ đúng chỗ nối lõi, không còn biến «gọi sang v1»');
 });
 
 /* ═══════════ ⑥ ĐỌC THEO TRANG ═══════════ */

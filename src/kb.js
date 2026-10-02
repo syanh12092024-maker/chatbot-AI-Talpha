@@ -46,6 +46,20 @@ function readOverridesChiDoc() {
   return _ovNho.v;
 }
 
+// CR-02-10 · MB1 — MỘT tiến trình (màn v3) ghi tệp, tiến trình KHÁC (worker) trả lời khách. Bản
+// trong RAM của worker phải theo tệp: một lượt `stat`, chỉ áp lại lớp đè khi tệp ĐỔI. Trước 02/10
+// việc này không cần vì cả ghi lẫn đọc đều nằm trong tiến trình bot v1.
+const _apDung = { khoa: null };
+export function napLaiBanChepNeuDoi() {
+  let khoa;
+  try { const st = fs.statSync(OVERRIDES_FILE); khoa = `${st.mtimeMs}:${st.size}`; }
+  catch { return false; }
+  if (khoa === _apDung.khoa) return false;
+  _apDung.khoa = khoa;
+  applyOverrides();
+  return true;
+}
+
 // Hỗ trợ 2 chế độ:
 //  - ĐA-PAGE: sheet "Sản phẩm theo Page" (cột Page ID) → mỗi page 1 KB riêng.
 //  - 1 KB CHUNG: sheet "Sản phẩm & Giá" (file cũ) → mọi page dùng chung.

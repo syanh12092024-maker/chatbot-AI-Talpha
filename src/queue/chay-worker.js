@@ -166,6 +166,9 @@ async function main() {
     const { datKhoTokenDb } = await import("../pancake.js");
     datKhoTokenDb(() => docTokenSong(pool));
   }
+  // CR-02-10 · MB1: worker LÀ bot. Trước 02/10 không chỗ nào ngoài `src/server.js` (v1) gọi
+  // `loadKB()`, nên ở đây `kb.js#getKBForPage` chạy trên `pageMap` rỗng ⇒ mọi page `noData`.
+  await (await import("../core/khoi-dong-loi.js")).khoiDongLoi({ nhan: "worker-v3" });
   const motLuotThoi = process.env.V3_WORKER_MOT_LUOT === "1";
   // ⚠️ PHẢI `await` VÀ PHẢI TRUYỀN `pool` (sửa 25/09). Từ 024 hàm này bất đồng bộ và có thể
   // đọc CSDL. Bản trước gọi kiểu cũ `dsPageChoPhep()`: nhận về một Promise ⇒ `.length` là

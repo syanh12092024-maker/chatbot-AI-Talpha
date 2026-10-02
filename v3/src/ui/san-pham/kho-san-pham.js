@@ -73,7 +73,7 @@ const CHUA_NOI = {
   noi: 'Máy chủ chưa nối bộ đọc kho sản phẩm.',
   diTiep: 'Nhờ người quản trị hệ thống kiểm cấu hình máy chủ rồi khởi động lại dịch vụ.',
   // Tên biến để riêng cho người sửa máy chủ — màn đưa xuống ô «Nguồn số», không để giữa mặt màn.
-  diTiepKyThuat: 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` trong cấu hình máy chủ rồi khởi động lại dịch vụ.',
+  diTiepKyThuat: 'Bộ đọc lõi bot chưa được nối khi dựng tiến trình (`v3/src/vai-b.js#dungPhanB`) — xem log dịch vụ `aicloser-v3` rồi khởi động lại.',
 };
 
 /* ─────────────────────────── màn chính ─────────────────────────── */

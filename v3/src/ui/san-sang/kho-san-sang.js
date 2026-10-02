@@ -230,9 +230,8 @@ export async function manSanSang(boiCanh) {
       teamId: bc.teamId, page: [], dem: demRong(), lech: null, dieuKien: DIEU_KIEN_TAT_CA,
       trong: {
         rong: true, vi: 'chua-cai-dat',
-        noi: 'Chưa nối cầu sang tiến trình bot, nên chưa đọc được sáu điều kiện của page nào.',
-        diTiep: 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` trong `.env` rồi khởi động lại v3. '
-          + 'Xem trạng thái cầu ở màn Sức khoẻ hệ thống.',
+        noi: 'Chưa nối bộ đọc lõi bot, nên chưa đọc được sáu điều kiện của page nào.',
+        diTiep: 'Bộ đọc lõi bot chưa được nối khi dựng tiến trình (`v3/src/vai-b.js#dungPhanB`) — xem log dịch vụ `aicloser-v3` rồi khởi động lại.',
       },
     };
   }

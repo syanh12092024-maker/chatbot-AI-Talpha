@@ -14,7 +14,11 @@
 import { taoPool } from "../../db/ket-noi.js";
 import { dayPageSangBot, dungSanPhamChoBot, soBanChep } from "../../src/products/ban-chep-bot.js";
 import { docSanPhamGoiGia } from "../../src/products/catalog.js";
-import { daySanPhamLenBot, goiAdminV1 } from "../../v3/src/noi-day/cau-bot-v1.js";
+import { daySanPhamLenBot } from "../../v3/src/noi-day/cau-bot-v1.js";
+// CR-02-10 · MB1: lõi bot chạy TRONG tiến trình — nạp KB của chính script này, ghi tệp chung; tiến
+// trình v3 và worker đọc lại tệp khi nó đổi.
+import { loadKB, getPageProductsRaw } from "../../src/kb.js";
+loadKB();
 
 const thamSo = (ten) => { const i = process.argv.indexOf(ten); return i > 0 ? process.argv[i + 1] : null; };
 const MOT = thamSo("--page");
@@ -37,7 +41,7 @@ try {
   let khop = 0; let doiGoc = 0; const lech = [];
   for (const trang of ds) {
     const banChep = dungSanPhamChoBot(await docSanPhamGoiGia(pool, trang.team_id, trang.id, trang));
-    const bot = (await goiAdminV1(`/kb/${encodeURIComponent(trang.page_id)}`))?.products || [];
+    const bot = getPageProductsRaw(trang.page_id) || [];
     const l = soBanChep(banChep, bot);
     if (l) lech.push(`${trang.page_id}: ${l}`); else khop += 1;
     // Ảnh tương đối mà bot đang cất dưới một gốc KHÁC gốc hiện hành ⇒ lượt đẩy sẽ đổi gốc.

@@ -100,6 +100,9 @@ const { quetVaGhiPage } = await import(`${GOC}/src/quet-page.js`);
 // Nối ở đây là điều kiện để nút «Quét Pancake» hoạt động.
 const { datKhoTokenDb, lamMoiTokenDb } = await import(`${GOC}/src/pancake.js`);
 datKhoTokenDb(() => khoToken.docTokenSong(pool));
+// CR-02-10 · MB1: lõi bot (KB · Sheet danh bạ · page Pancake · sổ đăng ký page) chạy TRONG tiến
+// trình này — trước 02/10 nó chỉ chạy trong tiến trình bot v1 và màn đọc qua `/admin/api`.
+await (await import(`${GOC}/src/core/khoi-dong-loi.js`)).khoiDongLoi({ nhan: 'chay-that', quetSoDangKy: true });
 const { keoDanhMucTeam } = await import(`${GOC}/src/pos/keo-danh-muc.js`);
 const spGoc = await import(`${GOC}/src/products/san-pham-goc.js`);
 // BẢN SỬA ĐƯỢC của sản phẩm, lấy THEO ID (GD3 · 25/09).
@@ -208,6 +211,19 @@ async function canhBaoLopModel(canh) {
 }
 
 const app = express();
+// CR-02-10 · MB1 — cửa Meta dời từ `src/server.js`: GET xác minh + POST nhận tin (chỉ ACK sau
+// khi đã lưu, xử bằng worker). `rawBody` cho phép kiểm chữ ký nên bộ đọc JSON đứng RIÊNG ở đây.
+{
+  const { config: cauHinhBot } = await import(`${GOC}/src/config.js`);
+  const { taoWebhookHandler } = await import(`${GOC}/src/queue/webhook.js`);
+  app.use('/webhook', (_req, res, next) => (process.env.META_WEBHOOK_OFF === '1' ? res.sendStatus(404) : next()));
+  app.get('/webhook', (req, res) => (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === cauHinhBot.verifyToken
+    ? res.status(200).send(req.query['hub.challenge']) : res.sendStatus(403)));
+  app.post('/webhook', express.json({ limit: '12mb', verify: (req, _res, buf) => { req.rawBody = buf; } }),
+    taoWebhookHandler({ layPool: () => pool }));
+  // Trang chính sách quyền riêng tư (Meta đòi để go-live).
+  app.get('/privacy', (_req, res) => res.sendFile(path.join(GOC, 'docs', 'index.html')));
+}
 // MN4: ảnh sản phẩm xem được trên màn v3 (và là đường công khai cho Facebook tải khi MN5 đổi
 // PUBLIC_URL sang cổng này). Chỉ đọc, không liệt kê thư mục, không phục vụ tệp bắt đầu bằng dấu chấm.
 app.use('/uploads', express.static(path.join(GOC, 'public', 'uploads'), { index: false, dotfiles: 'deny', fallthrough: false, maxAge: '7d' }));
@@ -360,12 +376,10 @@ const bao = dungPhanB(app, {
     if (kq.lyDo) console.warn(`[kịch bản] bản máy giữ tiếng Việt — ${kq.lyDo}`);
     return kq.text;
   },
-  // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM tiến trình bot, qua đúng cửa v1.
-  dayKichBanLenBot: async (pageIdFacebook, cfg) => {
-    const { goiAdminV1 } = await import('./src/noi-day/cau-bot-v1.js');
-    // `kho: true` — đường ghi KHO KIẾN THỨC, được `V3_GHI_KHO_BOT=1` mở riêng (CR-28-09b · MN5).
-    return goiAdminV1(`/kb/${encodeURIComponent(pageIdFacebook)}/config`, { phuongThuc: 'POST', than: cfg, ghi: true, kho: true });
-  },
+  // Đưa lên LIVE = ghi vào `kb-overrides.json` + RAM lõi trong tiến trình này (CR-02-10 · MB1);
+  // worker đọc lại tệp khi nó đổi. Đường ghi KHO, được `V3_GHI_KHO_BOT=1` mở riêng (CR-28-09b · MN5).
+  dayKichBanLenBot: async (pageIdFacebook, cfg) =>
+    (await import('./src/noi-day/cau-bot-v1.js')).dayKichBanLenBot(pageIdFacebook, cfg),
   bocPancake: async (b64) => parsePancakeScript(b64),
 
   // «Kéo dữ liệu về» — đúng lượt `npm run di-tru`, gọi từ trong tiến trình màn hình.

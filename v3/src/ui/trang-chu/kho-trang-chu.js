@@ -223,12 +223,12 @@ async function vTuCuaKiem(d, bc) {
     'Bot vẫn chạy nhưng trả lời chung chung: thiếu giọng điệu hoặc phần cách bán quá ngắn.');
 
   if (!_docSanSang) {
-    const noi = 'Chưa nối cầu sang tiến trình bot nên chưa đọc được cửa kiểm.';
+    const noi = 'Chưa nối bộ đọc lõi bot nên chưa đọc được cửa kiểm.';
     chan.noiRong = noi; mong.noiRong = noi;
     // HAI CÂU (GD4 · 25/09): câu trên màn nói bằng lời người vận hành; tên biến phải đặt thì
     // để riêng cho người sửa máy chủ — màn đưa nó xuống ô «Nguồn số», không để giữa mặt màn.
-    chan.diTiepRong = 'Nhờ người quản trị hệ thống nối lại đường sang tiến trình bot rồi khởi động lại dịch vụ.';
-    chan.diTiepRongKyThuat = 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` trong cấu hình máy chủ rồi khởi động lại dịch vụ.';
+    chan.diTiepRong = 'Nhờ người quản trị hệ thống kiểm dịch vụ v3 rồi khởi động lại.';
+    chan.diTiepRongKyThuat = 'Bộ đọc lõi bot chưa được nối khi dựng tiến trình (`v3/src/vai-b.js#dungPhanB`) — xem log dịch vụ `aicloser-v3` rồi khởi động lại.';
     mong.diTiepRong = chan.diTiepRong;
     mong.diTiepRongKyThuat = chan.diTiepRongKyThuat;
     return [chan, mong];

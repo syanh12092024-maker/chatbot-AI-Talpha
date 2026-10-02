@@ -10,9 +10,10 @@
 import { taoPool } from "../../db/ket-noi.js";
 import { config } from "../../src/config.js";
 import { getSheetId, fetchTabRows } from "../../src/sheets.js";
-import { parsePolicies, parseFaqs, parseObjections, buildShared } from "../../src/kb.js";
+import { parsePolicies, parseFaqs, parseObjections, buildShared, loadKB } from "../../src/kb.js";
 import { sachKhoiChung, luuKhoiChung, teamGiuKhoiChung } from "../../src/products/khoi-chung.js";
-import { dayKhoiChungLenBot, goiAdminV1 } from "../../v3/src/noi-day/cau-bot-v1.js";
+import { dayKhoiChungLenBot, khoiChungCuaBot } from "../../v3/src/noi-day/cau-bot-v1.js";
+loadKB(); // CR-02-10 · MB1: lõi bot chạy trong tiến trình script — nạp KB trước khi đọc
 
 const GHI = process.argv.includes("--ghi");
 const t = config.sheetTabs;
@@ -22,7 +23,7 @@ const tuSheet = sachKhoiChung({ policies: parsePolicies(pol), faqs: parseFaqs(fq
 const chu = buildShared(tuSheet.policies, tuSheet.faqs, tuSheet.objections);
 console.log(`Sheet: ${tuSheet.policies.length} chính sách · ${tuSheet.faqs.length} FAQ · ${tuSheet.objections.length} phản đối · ${chu.length} ký tự`);
 
-const bot = await goiAdminV1("/kb-chung").catch((e) => ({ loi: e.message }));
+const bot = await khoiChungCuaBot().catch((e) => ({ loi: e.message }));
 if (bot.loi) { console.error(`Không đọc được bot: ${bot.loi}`); process.exit(1); }
 const khop = bot.text === chu;
 console.log(`Bot đang dùng nguồn «${bot.nguon}» · đoạn chữ dựng từ bản sẽ nạp ${khop ? "GIỐNG từng ký tự" : "KHÁC"} đoạn bot đang ghép (${String(bot.text || "").length} ký tự)`);

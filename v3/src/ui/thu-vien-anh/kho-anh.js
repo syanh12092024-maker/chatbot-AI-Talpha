@@ -74,7 +74,7 @@ export async function manAnh(boiCanh, { trang = 0 } = {}) {
       trong: {
         rong: true, vi: 'chua-nap',
         noi: 'Máy chủ chưa nối bộ đọc ảnh.',
-        diTiep: 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` rồi khởi động lại v3.',
+        diTiep: 'Bộ đọc lõi bot chưa được nối khi dựng tiến trình (`v3/src/vai-b.js#dungPhanB`) — xem log dịch vụ `aicloser-v3` rồi khởi động lại.',
       },
     };
   }

@@ -52,31 +52,24 @@ const bcQuanLy = () => taoBoiCanh({
   nguoiDungId: 'u2', tenDangNhap: 'ql@talpha.vn', teamId: 't1', vai: [VAI.QUAN_LY],
 });
 
-/** Bật cửa ghi sang bot cho một đoạn test, rồi trả lại nguyên trạng. */
+/** Bật cửa ghi vào lõi bot cho một đoạn test, rồi trả lại nguyên trạng.
+ *  CR-02-10 · MB1: lõi chạy TRONG tiến trình — tiêm lõi giả ghi lại mọi lượt gạt công tắc. */
 async function voiCuaMo(fn, { batBot = true } = {}) {
-  const cu = {
-    ghi: process.env.V3_BOT_GHI, ro: process.env.PANCAKE_READONLY,
-    u: process.env.ADMIN_USER, p: process.env.ADMIN_PASS, goc: process.env.V3_BOT_V1_GOC,
-  };
+  const cu = { ghi: process.env.V3_BOT_GHI, ro: process.env.PANCAKE_READONLY };
   const goi = [];
-  const fetchCu = globalThis.fetch;
-  globalThis.fetch = async (url, opt) => {
-    goi.push({ url: String(url), opt });
-    return new Response(JSON.stringify({ ok: true, aiEnabled: batBot }), {
-      status: 200, headers: { 'Content-Type': 'application/json' },
-    });
-  };
+  cau.datLoiBot({
+    canEnableAI: () => ({ ok: true }),
+    setAiEnabled: (pageId, on) => { goi.push({ pageId: String(pageId), on }); },
+    isAiEnabled: () => batBot,
+  });
   // KHÔNG đặt `V3_BOT_GHI` nữa: cửa ghi nay MỞ mặc định. Đặt nó ở đây sẽ che mất chuyện
   // mặc định có thật sự mở hay không.
   delete process.env.V3_BOT_GHI;
   delete process.env.V3_BOT_KHOA;
   delete process.env.PANCAKE_READONLY;
-  process.env.ADMIN_USER = 'u'; process.env.ADMIN_PASS = 'p';
-  process.env.V3_BOT_V1_GOC = 'http://bot.thu';
   try { return await fn(goi); } finally {
-    globalThis.fetch = fetchCu;
-    for (const [k, v] of [['V3_BOT_GHI', cu.ghi], ['PANCAKE_READONLY', cu.ro],
-      ['ADMIN_USER', cu.u], ['ADMIN_PASS', cu.p], ['V3_BOT_V1_GOC', cu.goc]]) {
+    cau.datLoiBot(null);
+    for (const [k, v] of [['V3_BOT_GHI', cu.ghi], ['PANCAKE_READONLY', cu.ro]]) {
       if (v === undefined) delete process.env[k]; else process.env[k] = v;
     }
   }
@@ -317,8 +310,7 @@ test('công tắc bot · gọi SANG TIẾN TRÌNH BOT bằng id Facebook, không
     const kq = await ct.datCongTacBot(bcQt(), 'p2', true);
     assert.equal(goi.length, 1, 'phải gọi đúng một lần sang bot');
     // Đây là chỗ dễ sai nhất: `p2` là khoá chính CSDL, `222` là id Facebook mà bot hiểu.
-    assert.match(goi[0].url, /\/admin\/api\/pages\/222\/ai$/);
-    assert.equal(JSON.parse(goi[0].opt.body).on, true);
+    assert.deepEqual(goi[0], { pageId: '222', on: true });
     assert.equal(kq.botAiBat, true);
   });
 
@@ -441,8 +433,9 @@ test('cầu bot · MẶC ĐỊNH MỞ, nhưng ba thứ vẫn khoá được', as
     assert.ok(t.thieuKyThuat.some((x) => /PANCAKE_READONLY/.test(x)));
     assert.ok(t.thieu.some((x) => /CHỈ ĐỌC/.test(x)), 'và câu trên màn phải nói được bằng lời thường');
 
+    // CR-02-10 · MB1: lõi nằm TRONG tiến trình — không còn tài khoản nào phải có để «gọi sang».
     don(); delete process.env.ADMIN_USER; delete process.env.ADMIN_PASS;
-    assert.equal(cau.trangThaiCau().mo, false, 'không có tài khoản thì gọi sang bot cũng không được');
+    assert.equal(cau.trangThaiCau().mo, true, 'thiếu ADMIN_USER/PASS không còn là lý do đóng cửa ghi');
   } finally {
     for (const [k, v] of [['V3_BOT_GHI', cu.g], ['V3_BOT_KHOA', cu.k],
       ['PANCAKE_READONLY', cu.r], ['ADMIN_USER', cu.u], ['ADMIN_PASS', cu.p]]) {
@@ -510,9 +503,9 @@ test('giao page · TẮT BOT CŨ TRƯỚC, rồi mới ghi cờ — đúng thứ
     assert.equal(kq.botAiBat, false, 'bot cũ phải đã TẮT sau lượt giao');
 
     // ① Có gọi sang bot cũ, và gọi để TẮT
-    const goiAi = goi.filter((g) => /\/pages\/111\/ai$/.test(g.url));
+    const goiAi = goi.filter((g) => g.pageId === '111');
     assert.equal(goiAi.length, 1, 'phải gọi ĐÚNG một lần sang bot cũ');
-    assert.deepEqual(JSON.parse(goiAi[0].opt.body), { on: false }, 'phải là lệnh TẮT');
+    assert.equal(goiAi[0].on, false, 'phải là lệnh TẮT');
 
     // ② Cột ghi đúng cả hai
     const p = kho.docThang('page').find((x) => x.id === 'p1');

@@ -95,8 +95,8 @@ export async function manChiPhi(boiCanh) {
       teamId: bc.teamId, khoang: KHOANG, nguon: NGUON.KHONG_DOC_DUOC, tong: null, page: [], soAi: null,
       trong: {
         rong: true, vi: 'chua-nap',
-        noi: 'Chưa nối cầu sang tiến trình bot nên chưa đọc được chi phí.',
-        diTiep: 'Đặt `V3_BOT_V1_GOC`, `ADMIN_USER`, `ADMIN_PASS` rồi khởi động lại v3. '
+        noi: 'Chưa nối bộ đọc lõi bot nên chưa đọc được chi phí.',
+        diTiep: 'Bộ đọc lõi bot chưa được nối khi dựng tiến trình (`v3/src/vai-b.js#dungPhanB`) — xem log dịch vụ `aicloser-v3` rồi khởi động lại. '
           + 'Sổ tiền của cơ sở dữ liệu KHÔNG dùng thay được — nó chưa có dòng nào.',
       },
     };

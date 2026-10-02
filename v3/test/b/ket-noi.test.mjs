@@ -8,6 +8,7 @@ process.env.V3_KHOA_CHU ||= crypto.randomBytes(32).toString('base64');
 
 const { taoBoiCanh, VAI } = await import('../../src/auth/boi-canh.js');
 const kn = await import('../../src/ui/ket-noi/kho-ket-noi.js');
+const cau = await import('../../src/noi-day/cau-bot-v1.js');
 const rt = await import('../../src/ui/ket-noi/router.js');
 
 const NGAY = 86400000;
@@ -19,20 +20,12 @@ const bcQt = () => taoBoiCanh({
 
 /** Giả lập tiến trình bot v1 trả về danh sách token. */
 async function voiBot(ds, fn, { hong = null } = {}) {
-  const cu = { u: process.env.ADMIN_USER, p: process.env.ADMIN_PASS, g: process.env.V3_BOT_V1_GOC };
-  const fetchCu = globalThis.fetch;
-  process.env.ADMIN_USER = 'u'; process.env.ADMIN_PASS = 'p';
-  process.env.V3_BOT_V1_GOC = 'http://bot.thu';
-  globalThis.fetch = async () => {
-    if (hong) throw new Error(hong);
-    return new Response(JSON.stringify(ds), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  };
-  try { return await fn(); } finally {
-    globalThis.fetch = fetchCu;
-    for (const [k, v] of [['ADMIN_USER', cu.u], ['ADMIN_PASS', cu.p], ['V3_BOT_V1_GOC', cu.g]]) {
-      if (v === undefined) delete process.env[k]; else process.env[k] = v;
-    }
-  }
+  // CR-02-10 · MB1: lõi bot chạy TRONG tiến trình — tiêm lõi giả thay cho giả `fetch`.
+  cau.datLoiBot({
+    listPancakeTokens: () => { if (hong) throw new Error(hong); return ds; },
+    lamMoiTokenDb: async () => ds.length,
+  });
+  try { return await fn(); } finally { cau.datLoiBot(null); }
 }
 
 /**
@@ -224,7 +217,7 @@ test('khoToken · thứ tự dự phòng: `.env` trước, CSDL sau', async () =
   kn.datKhoTokenV3(null);
 });
 
-test('khoToken · bot KHÔNG chạy: màn VẪN đủ dùng, chỉ khai rõ thiếu phần phủ page', async () => {
+test('khoToken · lõi bot HỎNG: màn VẪN đủ dùng, chỉ khai rõ thiếu phần phủ page', async () => {
   // Trước 17/09 đây là màn trống. Cả kho token nằm trong tiến trình bot nên bot chết là
   // mất màn — đúng lúc người ta cần nó nhất.
   khoGia([{ ten: 'Trong CSDL' }]);
@@ -233,24 +226,25 @@ test('khoToken · bot KHÔNG chạy: màn VẪN đủ dùng, chỉ khai rõ thi�
       const d = await kn.khoToken();
       assert.equal(d.token.length, 1);
       assert.equal(d.trong, null, 'có token thì KHÔNG hiện màn rỗng');
-      assert.match(String(d.botIm), /ECONNREFUSED|bot/i);
+      assert.match(String(d.botIm), /lõi bot/i);
+      assert.match(String(d.botImKyThuat), /ECONNREFUSED/);
     }, { hong: 'ECONNREFUSED' });
   });
   kn.datKhoTokenV3(null);
 });
 
-test('khoToken · thiếu ADMIN_USER/PASS không còn là lý do trống màn', async () => {
+test('khoToken · thiếu ADMIN_USER/PASS KHÔNG còn làm thiếu gì — lõi nằm trong tiến trình (CR-02-10)', async () => {
   khoGia([{ ten: 'Trong CSDL' }]);
   const cu = { u: process.env.ADMIN_USER, p: process.env.ADMIN_PASS };
   delete process.env.ADMIN_USER; delete process.env.ADMIN_PASS;
   try {
     await voiEnvToken({}, async () => {
-      const d = await kn.khoToken();
-      assert.equal(d.token.length, 1);
-      // GD4 · 24/09: mặt màn nói bằng lời người vận hành, nguyên nhân bằng tên biến dời sang
-      // trường riêng (màn đưa xuống ô «Nguồn số»). Vẫn phải NÓI RA, chỉ đổi chỗ đứng.
-      assert.match(String(d.botIm), /tài khoản quản trị/i, 'câu trên màn phải đọc hiểu được');
-      assert.match(String(d.botImKyThuat), /ADMIN_USER/, 'người sửa máy chủ vẫn cần tên biến');
+      await voiBot([tok(0, { tail: 'zzzz', pagesRouted: 3 })], async () => {
+        const d = await kn.khoToken();
+        assert.equal(d.token.length, 1);
+        assert.equal(d.botIm, null, 'không còn tài khoản nào phải có để đọc lõi');
+        assert.equal(d.botImKyThuat, null);
+      });
     });
   } finally {
     if (cu.u === undefined) delete process.env.ADMIN_USER; else process.env.ADMIN_USER = cu.u;

@@ -25,8 +25,7 @@
 | `V3_KHOA_VE`        | Khoá 32 byte (base64) KÝ VÉ ĐĂNG NHẬP (`v3/src/auth/ve.js`). **Thiếu = `v3/chay-that.js` TỪ CHỐI CHẠY** (`exit 1`, dòng 18) — không phải cửa đóng câm mà là dịch vụ không lên | đã đặt (đo 15/09)                            | **BẮT BUỘC, khoá RIÊNG** — dùng lại khoá dev = ai có khoá dev ký được vé prod | L0-M3(B) |
 | `V3_COOKIE_SECURE`  | Ép cờ `Secure` cho cookie vé đăng nhập (`v3/src/auth/router.js#laHttps`). Vắng ⇒ cờ đi theo `req.secure` (HTTPS thật mới gắn). Từ 28/09 KHÔNG còn theo `NODE_ENV`: trên `http://<ip>:3102` cờ ấy làm trình duyệt vứt vé ⇒ màn Chọn team bật về đăng nhập | vắng | vắng khi chưa có HTTPS; `1` nếu đứng sau proxy HTTPS mà chưa bật `trust proxy` | 28/09 |
 | `V3_KHOA_CHU`       | Khoá chủ 32 byte (base64) bọc khoá API model trong bảng `khoa_nha` (`v3/src/model/kho-khoa.js`). Thiếu ⇒ NÉM ngay lần gọi đầu, không tự sinh khoá tạm | **VẮNG trên máy này (đo 15/09)** — mọi lượt đọc khoá model sẽ ném | **BẮT BUỘC, khoá RIÊNG** khi dùng lớp model v3 | L1-M4(B) |
-| `V3_BOT_V1_GOC`     | Gốc HTTP của tiến trình bot v1 để v3 gọi `/admin/api`. Vắng ⇒ tự suy `http://127.0.0.1:${PORT||3100}` | vắng = 127.0.0.1:3100                        | vắng là ĐÚNG khi v3 và bot cùng máy                            | G2-B4 |
-| `V3_BOT_KHOA`       | `=1` KHOÁ cửa ghi sang tiến trình bot v1 (thêm/bỏ token · gạt công tắc bot). ⚠️ **NGOẠI LỆ CÓ CHỦ Ý của luật 1 dưới** — cửa này MỞ mặc định; lý do đầy đủ ở `v3/src/noi-day/cau-bot-v1.js` §CỬA GHI | nên đặt `1` trên máy demo; máy này đã đóng sẵn bằng `PANCAKE_READONLY=1` | KHÔNG đặt (để mở) — trừ lúc sự cố cần khoá gấp | G2-B4 |
+| `V3_BOT_KHOA`       | `=1` KHOÁ cửa ghi vào lõi bot (thêm/bỏ token · gạt công tắc bot · ghi kho kiến thức). ⚠️ **NGOẠI LỆ CÓ CHỦ Ý của luật 1 dưới** — cửa này MỞ mặc định; lý do đầy đủ ở `v3/src/noi-day/cau-bot-v1.js` §CỬA GHI | nên đặt `1` trên máy demo; máy này đã đóng sẵn bằng `PANCAKE_READONLY=1` | KHÔNG đặt (để mở) — trừ lúc sự cố cần khoá gấp | G2-B4 |
 | `V3_BOT_GHI`        | Cờ CŨ của cùng cửa trên. `=0` vẫn được tôn trọng (ai đã cố ý tắt thì vẫn tắt); `=1` KHÔNG còn là điều kiện để MỞ | không đặt                                    | không đặt                                                      | G2-B4 |
 | `V3_POS_MAU_DON`    | Mẫu URL mở một đơn trên POS, dạng `https://pos.pages.fm/shops/{shop}/orders/{don}`. Vắng ⇒ nút «Mở POS» hiện MỜ kèm chú «chưa cấu hình đường POS», không dẫn tới 404 | vắng = nút mờ                                | đặt để sale bấm thẳng sang POS                                 | L4-M1 |
 | `V3_POS_SHOP_ID`    | Shop id chèn vào `{shop}` của mẫu trên                                                                                          | vắng = nút mờ                                | đặt cùng lượt với `V3_POS_MAU_DON`                             | L4-M1 |
@@ -48,9 +47,10 @@
 
 Biến kế thừa từ bản đang chạy (không thuộc bảng này nhưng liên quan cửa):
 `PANCAKE_READONLY=1` — luật 1 §0a: máy cá nhân LUÔN có, VPS không đặt.
-`ADMIN_USER` / `ADMIN_PASS` — Basic auth của `/admin/api` tiến trình bot v1. **Thiếu là cửa
-ghi sang bot ĐÓNG CÂM**: nút «Thêm token» và công tắc bot trả 409 «thiếu ADMIN_USER/ADMIN_PASS».
-Hai dịch vụ v3 phải thấy được hai biến này (chúng nằm trong `/opt/aicloser/.env`).
+~~`ADMIN_USER` / `ADMIN_PASS` — Basic auth của `/admin/api` tiến trình bot v1~~ — **CR-02-10 · MB1:**
+v3 không còn gọi sang v1; lõi bot (công tắc, kho kiến thức, kho token, cửa kiểm sẵn sàng) chạy
+TRONG tiến trình v3 (`src/core/khoi-dong-loi.js`). Hai biến chỉ còn bảo vệ màn `/admin` cũ cho
+tới khi `aicloser.service` tắt (MB3). Biến «gốc HTTP sang v1» đã gỡ khỏi bảng (không code nào đọc).
 `DATABASE_URL_V3` — thiếu là `chay-that.js` từ chối chạy, cùng chỗ với `V3_KHOA_VE`.
 
 Ba luật khi thêm biến:

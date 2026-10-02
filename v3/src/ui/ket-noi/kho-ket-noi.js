@@ -27,7 +27,7 @@ import { docJwt } from '../../../../src/token-pancake.js';
 import { ghiNhatKy } from '../../audit/index.js';
 import { HANH_DONG } from '../../audit/hanh-dong.js';
 import {
-  danhSachToken, trangThaiCau, coTaiKhoan, gocBot, goiAdminV1,
+  danhSachToken, trangThaiCau, gocBot, napLaiKhoToken,
   LoiCauBotDong, LoiCauBotHong,
 } from '../../noi-day/cau-bot-v1.js';
 import { cuaGuiWaDangMo } from '../../../../src/channels/whatsapp/index.js';
@@ -345,35 +345,29 @@ export async function khoToken() {
   }));
   const ds = [...tuEnvSapXep(), ...tuDb];
 
-  // ③ Kho cũ của tiến trình bot (`pancake-tokens.json`) + «token này đang phủ mấy page».
-  //    KHÔNG bắt buộc: bot tắt thì màn vẫn đủ dùng, chỉ thiếu phần trang trí — đó chính là
-  //    điều khiến màn này sống độc lập được với tiến trình v1.
+  // ③ Kho cũ (`pancake-tokens.json`) + «token này đang phủ mấy page» — đọc từ lõi bot TRONG
+  //    tiến trình (CR-02-10 · MB1). KHÔNG bắt buộc: lõi hỏng thì màn vẫn đủ dùng, chỉ thiếu cột phụ.
   // HAI TRƯỜNG, CỐ Ý (GD4 · 24/09): `botIm` là câu cho người vận hành đọc trên màn;
-  // `botImKyThuat` là nguyên nhân bằng tên biến, dành cho người đi sửa máy chủ — màn dồn nó
-  // xuống ô «Nguồn số». Gộp một trường thì hoặc mặt màn đầy chữ máy, hoặc người sửa mất manh mối.
+  // `botImKyThuat` là nguyên nhân kỹ thuật, dành cho người đi sửa máy chủ — màn dồn nó xuống ô
+  // «Nguồn số». Gộp một trường thì hoặc mặt màn đầy chữ máy, hoặc người sửa mất manh mối.
   let botIm = null;
   let botImKyThuat = null;
-  if (coTaiKhoan()) {
-    try {
-      const cu = await danhSachToken();
-      const theoDuoi = new Map(cu.map((t) => [t.duoi, t]));
-      for (const t of ds) {
-        const g = theoDuoi.get(t.duoi);
-        if (g) t.soPageDangDung = g.soPageDangDung;
-      }
-      for (const t of cu) {
-        if (t.nguon === 'dashboard' && !ds.some((x) => x.duoi === t.duoi)) {
-          ds.push({ ...t, id: null, boDuoc: false, nguon: 'kho cũ của tiến trình bot' });
-        }
-      }
-    } catch (e) {
-      if (!(e instanceof LoiCauBotDong || e instanceof LoiCauBotHong)) throw e;
-      botIm = 'chưa hỏi được tiến trình bot, nên thiếu cột «page đang dùng»';
-      botImKyThuat = e.message;
+  try {
+    const cu = await danhSachToken();
+    const theoDuoi = new Map(cu.map((t) => [t.duoi, t]));
+    for (const t of ds) {
+      const g = theoDuoi.get(t.duoi);
+      if (g) t.soPageDangDung = g.soPageDangDung;
     }
-  } else {
-    botIm = 'máy chủ chưa có tài khoản quản trị để hỏi tiến trình bot';
-    botImKyThuat = 'thiếu `ADMIN_USER`/`ADMIN_PASS` trong cấu hình máy chủ';
+    for (const t of cu) {
+      if (t.nguon === 'dashboard' && !ds.some((x) => x.duoi === t.duoi)) {
+        ds.push({ ...t, id: null, boDuoc: false, nguon: 'kho cũ của tiến trình bot' });
+      }
+    }
+  } catch (e) {
+    if (!(e instanceof LoiCauBotDong || e instanceof LoiCauBotHong)) throw e;
+    botIm = 'chưa đọc được lõi bot, nên thiếu cột «page đang dùng»';
+    botImKyThuat = e.message;
   }
 
   return {
@@ -415,17 +409,17 @@ export async function thuTokenSong(token, { hetGio = 12000, fetchFn = fetch } = 
 }
 
 /**
- * Ép tiến trình bot nạp lại kho token NGAY. Best-effort có chủ ý: bot tự nạp lại theo nhịp
- * (`datKhoTokenDb`), nên gọi hụt chỉ làm token có hiệu lực chậm vài phút — KHÔNG được biến
- * một lượt thêm token thành công thành một lỗi đỏ trên màn.
+ * Nạp lại kho token CSDL của tiến trình này NGAY (CR-02-10: lõi nằm trong tiến trình v3, không
+ * còn tiến trình bot v1 để «ép»). Best-effort có chủ ý: worker tự nạp lại theo nhịp
+ * (`datKhoTokenDb`, 5′), nên hụt chỉ làm token có hiệu lực chậm vài phút — KHÔNG được biến một
+ * lượt thêm token thành công thành một lỗi đỏ trên màn.
  */
 export async function epBotNapLai() {
-  if (!coTaiKhoan()) return { ok: false, vi: 'thiếu ADMIN_USER/ADMIN_PASS' };
   try {
-    await goiAdminV1('/pancake-tokens/nap-lai', { phuongThuc: 'POST', ghi: false, hetGio: 5000 });
+    await napLaiKhoToken();
     return { ok: true };
   } catch (e) {
-    console.warn('[ket-noi] không ép được tiến trình bot nạp lại kho token:', e.message);
+    console.warn('[ket-noi] không nạp lại được kho token:', e.message);
     return { ok: false, vi: e.message };
   }
 }
