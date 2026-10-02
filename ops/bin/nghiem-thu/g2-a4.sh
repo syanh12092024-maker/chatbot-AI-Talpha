@@ -139,24 +139,18 @@ IFS='|' read -r A4_TAO A4_TUDUYET A4_AI A4_AH A4_L1 A4_L2 A4_NK <<< "${KQ3}"
 bang "tạo bản mới → bản đang áp" "${A4_TAO}" "KHONG-DOI"
 bang "người soạn tự duyệt bản mình" "${A4_TUDUYET}" "LoiXuyenTeam"
 bang "áp bản AI chưa duyệt" "${A4_AI}" "bi-chan"
-# ⚠️ SỬA 25/08 (B-Y7): trước đây phép này khẳng định một CON SỐ lấy từ cột `bot_ai_bat`.
-# Cột đó là BẢN SAO và đã lệch 50 trên máy chủ thật. Nay canh NGUỒN của con số, không canh
-# giá trị: giá trị đúng bao nhiêu là tuỳ `ai-enabled.json`, nhưng nó PHẢI đến từ đó.
-# Phép này hỏi «con số ĐẾN TỪ ĐÂU», nên nó chỉ trả lời được khi nguồn THẬT có mặt. Thiếu
-# `ai-enabled.json` thì `demPageBatBot` khai thẳng `cot_csdl` + lý do — đó là hành vi ĐÚNG
-# (nó từ chối lặng lẽ rơi về cột), nhưng phép thì KHÔNG ĐO ĐƯỢC. Đo 14/09 trên CI: cổng khai
-# ✘, tức đọc hành vi đúng thành lỗi. Cùng bệnh với N5/N11 của `test/l0-m2-noi-dung.test.js`.
-THIEU_AIE="$(thieu_tep ai-enabled.json)"
-if [ -n "${THIEU_AIE}" ]; then
-  so "nguồn của con số «đang bật bot»" "${A4_AH}"
-  khong_do "nguồn của con số «đang bật bot»: ${THIEU_AIE}"
-else
-  bang "nguồn của con số «đang bật bot»" "${A4_AH}" "ai-enabled.json"
-fi
+# ⚠️ SỬA 02/10 (CR-02-10 · MB4 — đổi luật, sửa thước). 25/08 (B-Y7) phép này đòi con số «đang bật bot»
+# ĐẾN TỪ `ai-enabled.json` vì khi đó cột `bot_ai_bat` là BẢN SAO của tệp và đã lệch 50 trên máy thật.
+# CR-02-10 đảo chiều: cột `page.bot_ai_bat` là công tắc DUY NHẤT (chính cột worker đọc), tệp của bot v1
+# không còn là nguồn. Thước cũ đòi `ai-enabled.json` ⇒ đỏ trên luật mới — thước đỏ trông y hệt code đỏ.
+bang "nguồn của con số «đang bật bot»" "${A4_AH}" "cot_csdl"
 bang "lượt áp tiến / lượt áp lùi" "${A4_L1}/${A4_L2}" "tien/lui"
 bang "số dòng nhật ký ap_bo_luat" "${A4_NK}" "2"
 
-muc "③b B-Y7 — cột lệch nguồn thật thì phải BÁO, không nuốt"
+muc "③b MỘT nguồn (CR-02-10) — tệp của bot v1 KHÔNG đổi được con số «đang bật bot»"
+# Thay B-Y7 («cột lệch tệp thì phải BÁO»): một nguồn thì không còn gì để lệch. Phép mới canh chiều
+# ngược lại — tệp `ai-enabled.json` nói khác (rỗng) hay vắng hẳn, con số vẫn đúng bằng số page cột bật.
+# Dựng một page TẠM bật bot để con số khác 0 (0 = 0 thì phép gật mà không đo gì), gỡ ngay sau đó.
 KQ3B="$(nodex '
 const { voiPool } = await import("./db/ket-noi.js");
 const M = await import("./src/db/index.js");
@@ -169,24 +163,30 @@ await voiPool(async (p) => {
     "SELECT tv.nguoi_dung_id n FROM thanh_vien_team tv JOIN vai v ON v.id=tv.vai_id WHERE tv.team_id=$1 AND v.ma=$2 LIMIT 1",
     [t,"quan-tri"])).rows[0].n;
   const ctx = { teamId: t, nguoiDungId: u };
-  const tam = fs.mkdtempSync(path.join(os.tmpdir(), "nt-y7-"));
+  const fb = "nt-g2a4-mot-nguon-" + process.pid;
+  await p.query("INSERT INTO page (team_id,page_id,ten,bot_ai_bat) VALUES ($1,$2,$3,true)", [t, fb, "page tạm g2-a4"]);
+  const tam = fs.mkdtempSync(path.join(os.tmpdir(), "nt-mot-nguon-"));
   try {
+    const cot = (await p.query("SELECT count(*) FILTER (WHERE bot_ai_bat)::int n FROM page WHERE team_id=$1", [t])).rows[0].n;
     fs.writeFileSync(path.join(tam, "ai-enabled.json"), "[]");
     const a = await M.xemAnhHuongBoLuat(p, ctx, { goc: tam });
     const b = await M.xemAnhHuongBoLuat(p, ctx, { goc: "/khong/co" });
     console.log([
-      a.lech.co === true ? "co-bao" : "NUOT",
-      a.soPageDangBatBot,
-      b.lech.co === null ? "chua-biet" : "DOAN-BUA",
-      b.nguon,
+      cot >= 1 && a.soPageDangBatBot === cot ? "theo-cot" : `LECH:${a.soPageDangBatBot}/${cot}`,
+      b.soPageDangBatBot === cot ? "theo-cot" : `LECH:${b.soPageDangBatBot}/${cot}`,
+      a.nguon,
+      a.lech === null && b.lech === null ? "khong-co" : "CON-KHOI-LECH",
     ].join("|"));
-  } finally { fs.rmSync(tam, { recursive: true, force: true }); }
+  } finally {
+    fs.rmSync(tam, { recursive: true, force: true });
+    await p.query("DELETE FROM page WHERE page_id=$1", [fb]);
+  }
 });')"
 IFS='|' read -r Y7_1 Y7_2 Y7_3 Y7_4 <<< "${KQ3B}"
-bang "cột bật mà nguồn thật tắt → có BÁO lệch" "${Y7_1}" "co-bao"
-bang "và con số lấy theo NGUỒN THẬT" "${Y7_2}" "0"
-bang "không đọc được nguồn → lech.co = CHƯA BIẾT" "${Y7_3}" "chua-biet"
-bang "…và khai rõ đang lấy từ cột" "${Y7_4}" "cot_csdl"
+bang "tệp nói RỖNG mà cột bật ≥1 → con số theo CỘT" "${Y7_1}" "theo-cot"
+bang "tệp VẮNG → con số vẫn theo CỘT" "${Y7_2}" "theo-cot"
+bang "khai nguồn" "${Y7_3}" "cot_csdl"
+bang "không còn khối «lệch» (một nguồn thì không có gì để lệch)" "${Y7_4}" "khong-co"
 
 muc "④ phép ĐẾM ảnh hưởng khớp BỘ ĐỌC PROMPT thật — trên CSDL THẬT, chỉ đọc"
 # Câu «bao nhiêu page bị chạm» chỉ đúng nếu nó dùng ĐÚNG luật bộ ráp prompt dùng lúc chạy.
