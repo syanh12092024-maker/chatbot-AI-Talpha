@@ -6,7 +6,8 @@
 //
 // | GET  /dang-nhap     | trang đăng nhập                                              |
 // | POST /api/dang-nhap | mật khẩu đúng + đúng MỘT team → phát vé luôn                  |
-// |                     | mật khẩu đúng + NHIỀU team  → vé TẠM + danh sách team         |
+// |                     | NHIỀU team, KHÔNG quản trị → vé đủ quyền cho team MẶC ĐỊNH (LL15c) |
+// |                     | NHIỀU team, CÓ quản trị    → vé TẠM + danh sách team         |
 // | GET  /chon-team     | trang chọn team                                               |
 // | POST /api/chon-team | vé tạm (hoặc vé cũ) + { teamId } → vé đủ quyền cho team đó     |
 // | POST /api/dang-xuat | xoá cookie                                                    |
@@ -24,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { bam, kiem } from './mat-khau.js';
 import { phatVe, phatVeTam, TEN_COOKIE, HAN_VE_MS, HAN_VE_TAM_MS } from './ve.js';
 import { timTheoEmail, teamCuaNguoi, vaiTrongTeam } from './kho-nguoi-dung.js';
-import { ghiNhatKyAuth, layIp } from './lop-express.js';
+import { ghiNhatKyAuth, layIp, docCookie } from './lop-express.js';
 import { taoBoiCanh, NGUON } from './boi-canh.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
@@ -119,6 +120,20 @@ function thanhPhanCookie(giaTri, hanMs, anToan) {
 const datCookieVe = (res, ve, hanMs) => res.append('Set-Cookie', thanhPhanCookie(ve, hanMs, laHttps(res.req)));
 const xoaCookieVe = (res) => res.append('Set-Cookie', thanhPhanCookie('', 0, laHttps(res.req)));
 
+/**
+ * TEAM MẶC ĐỊNH (LL15c · 02/10 — người quyết: «tự nhận diện theo team, không có màn chọn team, chọn team chỉ dành cho quản trị»;
+ * sale thuộc cả ba team ⇒ «team mặc định + nút đổi nhỏ»). Cookie `v3_team_cuoi` chỉ là GỢI Ý team dùng lần trước — không mang
+ * quyền gì: luôn kiểm lại bằng danh sách team THẬT của người (`teamCuaNguoi`, đã loại team kỹ thuật); lệch thì lấy team đầu.
+ */
+export const TEN_COOKIE_TEAM_CUOI = 'v3_team_cuoi';
+const HAN_TEAM_CUOI_MS = 180 * 24 * 60 * 60 * 1000;
+const datCookieTeamCuoi = (res, teamId) => res.append('Set-Cookie', [`${TEN_COOKIE_TEAM_CUOI}=${encodeURIComponent(String(teamId))}`,
+  'Path=/', 'HttpOnly', 'SameSite=Lax', `Max-Age=${HAN_TEAM_CUOI_MS / 1000}`, ...(laHttps(res.req) ? ['Secure'] : [])].join('; '));
+export function teamMacDinh(dsTeam, goiY) {
+  return dsTeam.find((t) => String(t.teamId) === String(goiY ?? '')) || dsTeam[0];
+}
+const laQuanTriO = (dsTeam) => dsTeam.some((t) => (t.vai || []).includes('quan-tri'));
+
 /* ──────────────────────────────────── router ──────────────────────────────────────── */
 
 /**
@@ -204,8 +219,9 @@ export function taoRouterAuth({ duongSauKhiVao = '/dieu-phoi', duongChonTeam = '
 
       // ⚠️ `tenDangNhap` GIỮ NGUYÊN TÊN TRƯỜNG (hợp đồng với người A, `boi-canh.js` cấm đụng)
       //    nhưng GIÁ TRỊ nay là EMAIL — lược đồ thật không còn cột tên đăng nhập.
-      // NHIỀU team → CHƯA phát vé đủ quyền. Chỉ vé tạm, chưa mang teamId, chưa đọc được gì.
-      if (dsTeam.length > 1) {
+      // NHIỀU team + có vai QUẢN TRỊ → CHƯA phát vé đủ quyền. Chỉ vé tạm, chưa mang teamId, chưa đọc được gì.
+      // (LL15c: chọn team chỉ còn dành cho quản trị — người khác vào thẳng team mặc định, đổi bằng menu nhỏ trên thanh trên.)
+      if (dsTeam.length > 1 && laQuanTriO(dsTeam)) {
         datCookieVe(res, phatVeTam({ nguoiDungId: nd.id, tenDangNhap: nd.email }), HAN_VE_TAM_MS);
         return res.json({
           ok: true, canChonTeam: true, diTiep: duongChonTeam,
@@ -214,14 +230,18 @@ export function taoRouterAuth({ duongSauKhiVao = '/dieu-phoi', duongChonTeam = '
         });
       }
 
-      const t = dsTeam[0];
+      const motTeam = dsTeam.length === 1;
+      const t = motTeam ? dsTeam[0] : teamMacDinh(dsTeam, docCookie(req, TEN_COOKIE_TEAM_CUOI));
       const bc = boiCanhCua(nd, t, req);
+      // Vé TRƯỚC, gợi ý team SAU — nơi đọc `set-cookie` lấy cookie đầu là lấy vé.
       datCookieVe(res, phatVe({ nguoiDungId: nd.id, tenDangNhap: nd.email, teamId: t.teamId, vai: t.vai }), HAN_VE_MS);
+      if (!motTeam) datCookieTeamCuoi(res, t.teamId);
       await ghiNhatKyAuth(bc, {
         hanhDong: 'dang_nhap',
         doiTuongLoai: 'nguoi_dung', doiTuongId: nd.id,
-        sau: { email: nd.email, team_id: t.teamId, vai: t.vai, mot_team: true },
-        ghiChu: 'đăng nhập, chỉ thuộc một team nên vào thẳng',
+        sau: { email: nd.email, team_id: t.teamId, vai: t.vai, ...(motTeam ? { mot_team: true } : { team_mac_dinh: true, so_team: dsTeam.length }) },
+        ghiChu: motTeam ? 'đăng nhập, chỉ thuộc một team nên vào thẳng'
+          : `đăng nhập, ${dsTeam.length} team, không quản trị ⇒ vào thẳng team mặc định (đổi bằng menu trên thanh trên)`,
       });
       return res.json({
         ok: true, canChonTeam: false, diTiep: dichCua(t.vai),
@@ -269,6 +289,7 @@ export function taoRouterAuth({ duongSauKhiVao = '/dieu-phoi', duongChonTeam = '
       const bc = boiCanhCua({ id: nguoiDungId, email: tenDangNhap }, t, req);
 
       datCookieVe(res, phatVe({ nguoiDungId, tenDangNhap, teamId, vai }), HAN_VE_MS);
+      datCookieTeamCuoi(res, teamId);   // LL15c: lần đăng nhập sau vào thẳng team này (nếu không phải quản trị)
       await ghiNhatKyAuth(bc, {
         hanhDong: bcCu ? 'doi_team' : 'dang_nhap',
         doiTuongLoai: 'team', doiTuongId: teamId,

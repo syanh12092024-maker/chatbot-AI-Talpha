@@ -17,6 +17,7 @@ import { teamCuaNguoi } from '../../auth/kho-nguoi-dung.js';
 import { menuCua, CHUYEN_HUONG } from './man-hinh.js';
 import { docTrangThai } from './trang-thai.js';
 import { phienBan, BIEU_TUONG } from './khung-may-chu.js';
+import { doiTeamCua } from './khung.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
 
@@ -58,15 +59,19 @@ export function taoRouterDieuHuong() {
     // TÊN team cho góc tài khoản — trước 28/09 góc ấy in «team 1» (mã số) trên mọi màn.
     // Đọc hỏng thì trả `null` và màn tự lùi về mã: menu không được chết vì một cái nhãn.
     let tenTeam = null;
+    let doiTeam = { cach: null, khac: [] };   // LL15c: cách đổi team (`khung.js#doiTeamCua`) — đọc hỏng thì chip chỉ là chữ
     try {
-      const t = (await teamCuaNguoi(bc.nguoiDungId)).find((x) => String(x.teamId) === String(bc.teamId));
+      const ds = await teamCuaNguoi(bc.nguoiDungId);
+      const t = ds.find((x) => String(x.teamId) === String(bc.teamId));
       tenTeam = t && t.tenTeam !== t.teamId ? t.tenTeam : null;
+      doiTeam = doiTeamCua(ds, bc.teamId);
     } catch { tenTeam = null; }
     return res.json({
       ok: true,
       tenDangNhap: bc.tenDangNhap,
       teamId: bc.teamId,
       tenTeam,
+      doiTeam,
       vai: bc.vai,
       nhom: menuCua(bc.vai),
     });

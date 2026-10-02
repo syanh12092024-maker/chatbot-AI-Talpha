@@ -656,12 +656,8 @@ export function dungPhanB(app, { taoTruyVan, taoTruyVanHeThong, docKetNoiPos, gh
   app.use(lopBoiCanh());          // ① đọc cookie vé → req.boiCanh. PHẢI đứng trước router auth.
   // KHUNG VẼ Ở MÁY CHỦ (LL18): mọi trang HTML của UI đi qua `res.sendFile` được chèn sẵn thanh trên cùng
   // + tab cụm, tệp chung mang mã phiên bản, thân chữ ≥ 1 KB được nén. Cần `req.boiCanh` ⇒ đứng SAU ①.
-  app.use(lopKhung({
-    tenTeamCua: async (nguoiDungId, teamId) => {
-      const t = (await teamCuaNguoi(nguoiDungId)).find((x) => String(x.teamId) === String(teamId));
-      return t && t.tenTeam !== t.teamId ? t.tenTeam : null;
-    },
-  }));
+  // LL15c: một lần đọc team của người ⇒ tên team + cách đổi team (chip chỉ chữ · menu nhỏ · màn chọn team của quản trị).
+  app.use(lopKhung({ dsTeamCua: (nguoiDungId) => teamCuaNguoi(nguoiDungId) }));
   // MÀN ĐẦU TIÊN SAU KHI ĐĂNG NHẬP = màn đầu tiên trên menu CỦA CHÍNH VAI ẤY.
   // Trước 22/09 chỗ này để mặc định `/dieu-phoi` cho mọi vai, mà màn đó chỉ mở cho vai sale
   // và quản trị: vai quản lý và marketer đăng nhập xong là gặp ngay một màn bị từ chối. Lấy

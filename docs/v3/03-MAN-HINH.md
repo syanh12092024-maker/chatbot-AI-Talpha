@@ -64,7 +64,7 @@ nén gzip. Liên kết trong trang tới màn vai đó không mở được thì
 | Model AI & khoá | `model` | Cài đặt › Model (chính + dự phòng, chỉ hiện thứ đã nối) | Giữ | LL6 · LL14 · VE7c |
 | Hệ còn sống không | `suc-khoe` | Cài đặt › Hệ còn sống | Giữ | LL6 |
 | Nhật ký (tên cũ «Ai đã sửa gì») | `nhat-ky` | Cài đặt › Nhật ký | Giữ | LL6 · VE7e |
-| Đăng nhập · Chọn team | `auth` | giữ nguyên | Giữ | — |
+| Đăng nhập · Chọn team | `auth` | LL15c (02/10): màn chọn team CHỈ cho quản trị nhiều team; người khác vào thẳng team mặc định (team dùng lần trước, chưa có thì team đầu theo tên), đổi bằng menu nhỏ ở chip team trên thanh trên; một team ⇒ chip chỉ là chữ | Giữ | LL15c |
 | Nhắn cho khách (nhóm 3) · Kho ưu đãi · Hậu bán (nhóm 8) | (chưa có) | chưa có màn | Để sau | — |
 
 ---
@@ -84,7 +84,7 @@ trong mockup lấy từ production thật; tên khách là tên đặt mới.
 
 | Màn | Việc của nó |
 |---|---|
-| Chọn team | Ba thẻ team: Tiểu Alpha · Auus · Pialpha EU. Dữ liệu tách ở tầng dữ liệu |
+| Chọn team | Ba thẻ team: Tiểu Alpha · Auus · Pialpha EU. Dữ liệu tách ở tầng dữ liệu. **LL15c (02/10):** chỉ QUẢN TRỊ thuộc nhiều team đi qua màn này; sale (thành viên cả ba team theo HRM) vào thẳng team mặc định và đổi bằng menu nhỏ «Đổi sang team» ở chip tên team (cũng mở từ «Đổi team» trong menu tài khoản) |
 | Trang chủ | Marketer vào thấy đúng việc của mình: đề xuất chờ duyệt, sản phẩm hết hàng, page kịch bản mỏng |
 | Bàn hội thoại | Sale vào thẳng đây (CR-28-09). Ba cột: danh sách hội thoại (Cần người · Bot đang xử · Tất cả, đồng hồ 10 phút; chưa có hồ sơ khách thì hiện tên Messenger) · khung chat đọc thẳng Pancake, tin page gắn nhãn **Bot AI · Tự động · Page** (chỉ theo dữ liệu đối chiếu được — «Page» là sale gõ tay hoặc chưa đối chiếu, không đoán là sale) · bối cảnh: khách + rủi ro hoàn · đơn đang bàn · giai đoạn/người giữ/lý do cuối · kịch bản page đang chạy · lượt bot (v3 và bot cũ). KHÔNG ô soạn tin — trả lời ở Pancake |
 | Chi tiết việc cần xử | Lý do bot dừng + thông tin đơn + đánh dấu đã xử; đoạn chat nằm ở bàn hội thoại, đọc thẳng Pancake |

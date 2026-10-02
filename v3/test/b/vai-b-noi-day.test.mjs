@@ -84,12 +84,14 @@ test('nối dây · BẪY ①: người thuộc hai team vào được tới b�
   assert.equal(dn.status, 200);
   const ck = dn.headers.get('set-cookie').split(';')[0];
   const j = await dn.json();
-  assert.equal(j.canChonTeam, true, 'thuộc hai team thì phải hỏi chọn team');
+  // LL15c · 02/10 (người quyết: «không có màn chọn team, chọn team chỉ dành cho quản trị»): sale hai team vào THẲNG team
+  // mặc định — vé đủ quyền; đổi team bằng cửa đổi team (menu nhỏ trên thanh trên). Vé tạm của quản trị: `auth-router` tiêu chí 5.
+  assert.equal(j.canChonTeam, false, 'sale hai team vào thẳng team mặc định, không màn chọn team');
 
-  // Đây là chỗ vỡ nếu lopBoiCanh() đặt SAU router auth: /api/toi trả 401 và màn chọn
-  // team bị đá ngược về đăng nhập, không một dòng lỗi nào.
+  // Đây là chỗ vỡ nếu lopBoiCanh() đặt SAU router auth: /api/toi trả 401 và người dùng bị đá
+  // ngược về đăng nhập, không một dòng lỗi nào.
   const toi = await fetch(`${goc}/api/toi`, { headers: { cookie: ck } });
-  assert.equal(toi.status, 200, '/api/toi phải đọc được vé tạm');
+  assert.equal(toi.status, 200, '/api/toi phải đọc được vé');
   assert.equal((await toi.json()).dsTeam.length, 2);
 
   const ct = await fetch(`${goc}/api/chon-team`, {

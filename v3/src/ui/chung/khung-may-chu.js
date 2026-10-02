@@ -17,7 +17,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
-import { veKhung, veTabCum } from './khung.js';
+import { veKhung, veTabCum, doiTeamCua } from './khung.js';
 import { menuCua } from './man-hinh.js';
 
 const THU_MUC = path.dirname(fileURLToPath(import.meta.url));
@@ -97,19 +97,28 @@ const KIEU = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=u
 
 /**
  * Lớp Express. Mắc SAU `lopBoiCanh()` (cần `req.boiCanh`) và TRƯỚC mọi router màn.
- * @param {{ tenTeamCua?: (nguoiDungId:string, teamId:string) => Promise<string|null> }} [o]
+ * @param {{ tenTeamCua?: (nguoiDungId:string, teamId:string) => Promise<string|null>,
+ *           dsTeamCua?: (nguoiDungId:string) => Promise<Array<{teamId:string, tenTeam:string, vai:string[]}>> }} [o]
+ *   `dsTeamCua` (LL15c) cho cả tên team lẫn cách đổi team (`khung.js#doiTeamCua`); chỉ có `tenTeamCua` thì như trước LL15c.
  */
-export function lopKhung({ tenTeamCua = null } = {}) {
-  const boNhoTeam = new Map(); // nguoiDungId:teamId → { ten, luc } — tên team đổi rất thưa; 60 s là đủ tươi
-  async function tenTeam(bc) {
-    if (typeof tenTeamCua !== 'function') return null;
+export function lopKhung({ tenTeamCua = null, dsTeamCua = null } = {}) {
+  const boNhoTeam = new Map(); // nguoiDungId:teamId → { ten, doiTeam, luc } — team đổi rất thưa; 60 s là đủ tươi
+  async function teamCua(bc) {
     const k = `${bc.nguoiDungId}:${bc.teamId}`;
     const c = boNhoTeam.get(k);
-    if (c && Date.now() - c.luc < 60_000) return c.ten;
-    let ten = null;
-    try { ten = await tenTeamCua(bc.nguoiDungId, bc.teamId); } catch { ten = null; }
-    boNhoTeam.set(k, { ten, luc: Date.now() });
-    return ten;
+    if (c && Date.now() - c.luc < 60_000) return c;
+    let ten = null; let doiTeam;
+    try {
+      if (typeof dsTeamCua === 'function') {
+        const ds = await dsTeamCua(bc.nguoiDungId);
+        const t = ds.find((x) => String(x.teamId) === String(bc.teamId));
+        ten = t && t.tenTeam !== t.teamId ? t.tenTeam : null;
+        doiTeam = doiTeamCua(ds, bc.teamId);
+      } else if (typeof tenTeamCua === 'function') ten = await tenTeamCua(bc.nguoiDungId, bc.teamId);
+    } catch { ten = null; doiTeam = { cach: null, khac: [] }; }
+    const o = { ten, doiTeam, luc: Date.now() };
+    boNhoTeam.set(k, o);
+    return o;
   }
 
   return function lopKhungExpress(req, res, next) {
@@ -151,7 +160,8 @@ export function lopKhung({ tenTeamCua = null } = {}) {
             try {
               // `originalUrl`, không `path`: trong router mắc ở tiền tố, `req.path` đã bị cắt mất tiền tố.
               const nay = new URL(req.originalUrl || req.url, 'http://x').pathname.replace(/\/$/, '') || '/';
-              const d = { tenDangNhap: bc.tenDangNhap, teamId: bc.teamId, tenTeam: await tenTeam(bc), vai: bc.vai, nhom: menuCua(bc.vai) };
+              const tt = await teamCua(bc);
+              const d = { tenDangNhap: bc.tenDangNhap, teamId: bc.teamId, tenTeam: tt.ten, doiTeam: tt.doiTeam, vai: bc.vai, nhom: menuCua(bc.vai) };
               khung = veKhung(d, nay);
               tabCum = veTabCum(d, nay);
             } catch { khung = null; tabCum = ''; }

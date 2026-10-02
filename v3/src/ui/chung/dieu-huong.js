@@ -70,8 +70,41 @@
     return "";
   }
 
+  // ── MENU ĐỔI TEAM NHỎ (LL15c · 02/10) — người nhiều team mà không phải quản trị: chip team mở menu ngay tại chỗ,
+  // bấm một team ⇒ `POST /api/chon-team` (cửa đổi team có sẵn) ⇒ về màn đầu của vai. Quản trị vẫn sang màn chọn team.
+  // Trả hàm mở menu (cho mục «Đổi team» của menu tài khoản), hoặc null khi khung không có menu này.
+  function noiMenuTeam(khung) {
+    const nut = khung.querySelector("button.kh-team");
+    const hop = khung.querySelector(".kh-team-hop");
+    if (!nut || !hop) return null;
+    const dong = () => { hop.hidden = true; nut.setAttribute("aria-expanded", "false"); };
+    const mo = () => { hop.hidden = false; nut.setAttribute("aria-expanded", "true"); (hop.querySelector("button") || {}).focus?.(); };
+    nut.onclick = (e) => { if (e && e.stopPropagation) e.stopPropagation(); if (hop.hidden) mo(); else dong(); };
+    document.addEventListener("click", (e) => { if (!hop.hidden && !hop.contains(e.target) && e.target !== nut) dong(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !hop.hidden) { dong(); nut.focus(); } });
+    for (const b of hop.querySelectorAll("button[data-team-id]")) {
+      b.onclick = async () => {
+        b.disabled = true;
+        try {
+          const r = await fetch("/api/chon-team", { method: "POST", credentials: "same-origin",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ teamId: b.dataset.teamId }) });
+          const j = await r.json().catch(() => null);
+          if (!r.ok || !j || !j.ok) throw new Error((j && j.thongDiep) || "máy chủ trả " + r.status);
+          location.href = j.diTiep || "/";
+        } catch (e) {
+          b.disabled = false;
+          let loi = hop.querySelector(".kh-team-loi");
+          if (!loi) { hop.insertAdjacentHTML("beforeend", '<div class="kh-team-loi" role="alert"></div>'); loi = hop.querySelector(".kh-team-loi"); }
+          if (loi) loi.textContent = "Không đổi được team: " + ((e && e.message) || e);
+        }
+      };
+    }
+    return mo;
+  }
+
   // ── GẮN HÀNH VI vào khung đã có trong trang ──────────────────────────────────────
   function noi(khung) {
+    const moMenuTeam = noiMenuTeam(khung);
     const nutTk = khung.querySelector(".kh-tk-nut");
     const hopTk = khung.querySelector(".kh-tk-hop");
     if (nutTk && hopTk) {
@@ -94,8 +127,12 @@
         if (e.key === "Escape" && !hopTk.hidden) { dongTk(); nutTk.focus(); }
       });
 
-      // Đổi team: về đúng màn chọn team của `auth/router.js`, không tự dựng màn thứ hai.
-      if (doi) doi.onclick = () => { location.href = "/chon-team"; };
+      // Đổi team: QUẢN TRỊ về đúng màn chọn team của `auth/router.js` (không tự dựng màn thứ hai); người nhiều team khác
+      // (LL15c) mở menu đổi team nhỏ của chip.
+      if (doi) doi.onclick = (e) => {
+        if (doi.getAttribute("data-mo-team") != null && moMenuTeam) { if (e && e.stopPropagation) e.stopPropagation(); dongTk(); moMenuTeam(); return; }
+        location.href = "/chon-team";
+      };
 
       // Đăng xuất: cửa là POST (xoá cookie ở máy chủ), nên không thể là một thẻ <a>.
       // Hỏng thì vẫn đưa người ta về trang đăng nhập — kẹt lại trong hệ tệ hơn.

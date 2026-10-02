@@ -25,6 +25,24 @@ export const TEN_VAI = Object.freeze({
 });
 
 /**
+ * CÁCH ĐỔI TEAM (LL15c · 02/10 — người quyết: «tự nhận diện theo team, không có màn chọn team, chọn team chỉ dành cho quản
+ * trị»; sale thuộc cả ba team ⇒ «team mặc định + nút đổi nhỏ»):
+ *   · một team                     ⇒ `cach: null`   — chip chỉ là chữ, không đổi gì;
+ *   · nhiều team, có vai quản trị  ⇒ `cach: 'man'`  — chip + menu tài khoản dẫn sang màn chọn team (`/chon-team`);
+ *   · nhiều team, KHÔNG quản trị   ⇒ `cach: 'menu'` — chip mở menu nhỏ ngay tại chỗ, liệt kê team KHÁC để đổi.
+ * Máy chủ (`/api/dieu-huong`, vẽ sẵn ở `khung-may-chu.js`) và đường lùi trình duyệt dùng chung hàm này.
+ * @param {Array<{teamId:string, tenTeam:string, vai?:string[]}>} dsTeam  team của người (đã lọc team kỹ thuật)
+ */
+export function doiTeamCua(dsTeam, teamId) {
+  const ds = (dsTeam || []).map((t) => ({ teamId: String(t.teamId), tenTeam: String(t.tenTeam ?? t.teamId), vai: t.vai || [] }));
+  if (ds.length < 2) return { cach: null, khac: [] };
+  return {
+    cach: ds.some((t) => t.vai.includes("quan-tri")) ? "man" : "menu",
+    khac: ds.filter((t) => t.teamId !== String(teamId)).map(({ teamId: id, tenTeam }) => ({ teamId: id, tenTeam })),
+  };
+}
+
+/**
  * Màn đang đứng: khớp đúng đường, hoặc là màn CON của một màn trong menu (`/dieu-phoi/viec/123` là chi tiết
  * của «Việc đang chờ», `/page/42` là chi tiết của page). Đường lạ ⇒ null, không đoán bừa.
  */
@@ -86,6 +104,8 @@ export function veKhung(d, nay) {
   const hai = hangHai(cho && cho.nhom, cho);
   const coHai = hai.muc.length >= 2;
   const tenTeam = d.tenTeam || (d.teamId != null ? "team " + d.teamId : "");
+  // `doiTeam` vắng (nơi gọi cũ) ⇒ giữ hành vi trước LL15c: chip + «Đổi team» dẫn sang màn chọn team.
+  const cachDoi = d.doiTeam ? d.doiTeam.cach : "man";
   const vai = (d.vai || []).map((v) => TEN_VAI[v] || v).join(", ");
   const chuDau = esc((String(d.tenDangNhap || "?").trim()[0] || "?").toUpperCase());
   const dauTien = nhom.length ? duongDich(nhom[0]) : "/";
@@ -105,7 +125,7 @@ export function veKhung(d, nay) {
     `<div class="kh" data-khung data-so-hang="${coHai ? 2 : 1}">` +
     `<header class="kh-tren">` +
     `<a class="kh-logo" href="${esc(dauTien)}"><span class="kh-logo-o" aria-hidden="true">AC</span><span class="kh-logo-chu">AI Closer</span></a>` +
-    (tenTeam ? `<a class="kh-team" href="/chon-team" title="Đổi team">${esc(tenTeam)}<span aria-hidden="true"> ▾</span></a>` : "") +
+    veChipTeam(tenTeam, cachDoi, d.doiTeam) +
     `<nav class="kh-dich" aria-label="Chính">${dich}</nav>` +
     `<span class="kh-khoang"></span>` +
     `<span class="kh-bot" id="dh-dai" data-tone="neutral" aria-live="polite" title="Bao nhiêu page đang bật bot"><b>Bot: đang đọc…</b></span>` +
@@ -115,13 +135,28 @@ export function veKhung(d, nay) {
     `<span class="kh-tk-ten">${esc(d.tenDangNhap || "")}${vai ? ` · ${esc(vai)}` : ""}</span></button>` +
     `<div class="kh-tk-hop" id="kh-tk-hop" role="menu" hidden>` +
     `<div class="kh-tk-dau"><b>${esc(d.tenDangNhap || "")}</b>${esc(tenTeam)}${vai ? ` · vai: ${esc(vai)}` : ""}</div>` +
-    `<button type="button" class="doi" role="menuitem" data-di="/chon-team">Đổi team</button>` +
+    (cachDoi === "man" ? `<button type="button" class="doi" role="menuitem" data-di="/chon-team">Đổi team</button>`
+      : cachDoi === "menu" ? `<button type="button" class="doi" role="menuitem" data-mo-team>Đổi team</button>` : "") +
     `<button type="button" class="ra" role="menuitem">Đăng xuất</button>` +
     `</div></div>` +
     `</header>` +
     hang2 +
     `</div>`;
   return { html, soHang: coHai ? 2 : 1, cho };
+}
+
+/** Chip tên team trên thanh trên — ba kiểu theo `doiTeamCua`. */
+function veChipTeam(tenTeam, cach, doiTeam) {
+  if (!tenTeam) return "";
+  if (cach === "man") return `<a class="kh-team" href="/chon-team" title="Đổi team">${esc(tenTeam)}<span aria-hidden="true"> ▾</span></a>`;
+  if (cach !== "menu") return `<span class="kh-team" data-mot-team>${esc(tenTeam)}</span>`;
+  return `<div class="kh-team-o">` +
+    `<button type="button" class="kh-team" aria-haspopup="menu" aria-expanded="false" aria-controls="kh-team-hop" title="Đổi team">` +
+    `${esc(tenTeam)}<span aria-hidden="true"> ▾</span></button>` +
+    `<div class="kh-team-hop" id="kh-team-hop" role="menu" hidden>` +
+    `<div class="kh-tk-dau">Đổi sang team</div>` +
+    ((doiTeam && doiTeam.khac) || []).map((t) => `<button type="button" role="menuitem" data-team-id="${esc(t.teamId)}">${esc(t.tenTeam)}</button>`).join("") +
+    `</div></div>`;
 }
 
 /**
