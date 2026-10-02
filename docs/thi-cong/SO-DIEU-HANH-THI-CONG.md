@@ -1445,6 +1445,14 @@ và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt 
   - **N-L1M1-DON-CHO-IN** cổng `l1-m1.sh` bước ④ đọc đơn «Chờ in» (12) của shop THẬT Taiwan — 0 đơn lúc đo (POS sống, trạng thái
     khác có đơn) ⇒ cổng đỏ vì dữ liệu sống; đổi sang chọn trạng thái có đơn, hoặc 0 đơn ⇒ HOÃN chứ không TRƯỢT.
 
+- 02/10 · **NỢ SAU LL17a** (`docs/thi-cong/nhat-ky/phieu-LL17a.md` §7 · hồ sơ mở van §10):
+  - **N-DON-TEAM-THEO-NGAY** team của đơn = team HRM HIỆN TẠI của marketer, chưa theo ngày đơn (`HRM_Core.fact_employee_team_history`).
+  - **N-SO-LIEU-CON-ANH-CHUP** ba thước Messenger · phễu · bảng theo page · chi phí AI/đơn · rủi ro hoàn vẫn đọc `don_hang` chụp 28/08.
+  - **N-DON-THEO-LUONG-0** ô «đơn theo luồng» + khối «Luồng trang bán hàng» trả 0/0 trên prod (cửa sổ 7 ngày trên số chụp 28/08) —
+    số SAI, không phải «chưa đo» (đo 02/10). ⇒ LL17b.
+  - **N-CONG-HOP-CAT-TRUNG-TEN** hai phiên chạy ca/cổng cùng lúc xoá CSDL hộp cát của nhau ⇒ cổng đỏ chập chờn — ĐÃ CHỮA `8aed3fc`
+    (hậu tố tiến trình + dọn mồ côi).
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -2945,3 +2953,9 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · MB4 → ✅ GIỮ — gỡ bot v1 khỏi cây (28 tệp src/ + 7 trang public/ + 8 script; GIỮ src/wa.js vì pancake-tool import) · cầu cau-bot-v1 → loi-bot · một nguồn đếm page bật bot · migration 030 gỡ giao_bot_moi/v3_ai_bat · prod `5e81796 → bd6459a`, restart hai dịch vụ v3 lúc 09:03:39 CEST · gỡ unit aicloser + 2 dòng cron report-cli · PUBLIC_URL :3100 → :3102 · 11 tệp → luu-tru/v1 · CR-02-10 ĐÓNG
   cửa vào 51 xanh / 15 đỏ = 12 nợ cũ đúng tên + l1-m1 dữ liệu sống + g2-a4 thước neo luật cũ (sửa, 16/16, đảo-vá 12/16) + ve8b chập chờn (chạy lại 16/16) · npm test 2.302 đạt 0 đỏ · mb.sh 18/18 · mốc +1′/+5′/+15′ lỗi 0 · ảnh ngoài vào :3102 200 · ba timer pancake-tool success, lỗi module 0 · HRM tự động 0
   · commit 357795a · 2a02656 · 27e407a · bd6459a · phiếu docs/thi-cong/phieu/PHIEU-MB4.md · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-mb4.md
+- 02/10 · LL17a → ✅ — Số liệu › Tổng quan «Đơn POS của team — theo marketer» từ BigQuery (số tổng hợp, chỉ đọc, không chép dữ liệu khách): 7/30 ngày đơn · giao · hoàn · huỷ · đang xử lý · tỉ lệ giao · COD theo từng tiền tệ; marketer chỉ thấy dòng mình; khách BigQuery chặn kết quả nhiều trang
+  đo prod chỉ đọc: don_hang = ảnh chụp 28/08 (123.629 dòng, mọi dòng GCC); BigQuery 14.675 đơn sau 28/08; tiền ở cod (total_price = 0); ca 9/9 · đảo-vá 24/24 · cổng ll17a.sh 14/14
+  · commit f5efc99 · nhật ký docs/thi-cong/nhat-ky/phieu-LL17a.md
+- 02/10 · MỞ VAN LL17a → ✅ GIỮ — prod `bd6459a → b4e7b6d`, 0 migration, chỉ restart aicloser-v3 lúc 10:32:49 CEST; mốc +1′/+6′/+15′ lỗi 0; đọc thật 30 ngày GCC 6.909 · AUUS 631 · EU 4.971 đơn
+  cửa vào 51 xanh / 16 đỏ = 12 nợ cũ + l1-m1 dữ liệu sống + ll5/ll10/ll18 chập chờn (chạy lại xanh; gốc: hai phiên đụng CSDL hộp cát — chữa 8aed3fc) · phát hiện «đơn theo luồng» 0/0 trên prod ⇒ LL17b
+  · commit b4e7b6d · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261002-ll17a.md

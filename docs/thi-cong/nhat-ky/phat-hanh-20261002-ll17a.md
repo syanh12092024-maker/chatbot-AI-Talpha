@@ -1,6 +1,6 @@
 # MỞ VAN — LL17a: Số liệu › Tổng quan đọc đơn POS của team theo marketer từ BigQuery (CR-28-09c)
 
-> **TRẠNG THÁI: ĐANG MỞ** — người quyết gật «xong thì deploy luôn» 02/10. Phiếu: `phieu-LL17a.md`. Lượt trước: MB4 của phiên CR-02-10
+> **TRẠNG THÁI: ✅ GIỮ** — người quyết gật «xong thì deploy luôn» 02/10 · 0 migration · restart `aicloser-v3` 10:32:49 CEST · mốc +1′/+6′/+15′ sạch. Phiếu: `phieu-LL17a.md`. Lượt trước: MB4 của phiên CR-02-10
 > (prod `bd6459a`). Phiên CR-02-10b (GSP) xác nhận không deploy trong lúc này.
 
 ## 1 · Mở cái gì
@@ -41,3 +41,25 @@ Bậc ② — prod, màn nội bộ (Số liệu: quản trị · quản lý · 
 
 Lùi mã: `cd /opt/aicloser && git checkout -f -B vao-ui-v3-17-09 bd6459a && systemctl restart aicloser-v3` (< 1 phút) — không lược đồ, không
 dữ liệu. Tắt riêng khối: không có cờ riêng (dùng chung `V3_BQ_KHOA` với HRM) — lùi mã là đường.
+
+## 8 · Lệnh đã gõ
+
+1. cửa vào (worktree `so-lieu-bq`, dữ liệu gitignore symlink sang cây chính): 51 xanh / 16 đỏ — xem §3 · `npm test` 2.311 đạt 0 đỏ
+2. hồ sơ + CHANGELOG + nhật ký `b4e7b6d` · đẩy `bb335d0..b4e7b6d` (chỉ commit của phiên này; ~7 commit chưa đẩy của phiên CR-02-10b để
+   phiên ấy tự rebase)
+3. mốc lùi `/var/backups/aicloser/truoc-ll17a-20261002T083246Z/` — `commit.txt` = `bd6459a` · `env.bak` (600)
+4. prod `checkout -f -B vao-ui-v3-17-09 origin/vao-ui-v3-17-09` → `b4e7b6d` · 0 tệp sửa tại chỗ · migration áp mới 0 · tổng 31
+5. `systemctl restart aicloser-v3` lúc **10:32:49** — chỉ dịch vụ này
+
+## 9 · Số đo từng mốc
+
+| Mốc | Giờ | Kết quả |
+|---|---|---|
+| +1′ | 10:33:54 | `aicloser-v3` Started 1 · lỗi 0 · worker Started 0 (`ActiveEnterTimestamp` y nguyên 09:03:39) · `/api/bao-cao/don-pos` `/api/bao-cao` 401 · `/bao-cao` 302 (về đăng nhập) · đối chứng 404 · khởi động: «đơn POS theo team & marketer» 1 · «chưa nối: docDonPos» 0 · lõi bot trong v3 1 · `HEAD` `b4e7b6d` · **đọc thật từ prod: 1,9 giây · 4.850 dòng gộp · đồng bộ 08:30 UTC · 30 ngày GCC 6.909 đơn / 6 marketer · AUUS 631 / 2 · EU 4.971 / 5 · chờ gán 174** |
+| +6′ | 10:39:03 | y như +1′ — lỗi 0 · lượt đồng bộ HRM tự động ra toàn 0 |
+| +15′ | 10:48:09 | y như +1′ — Started 1 · lỗi 0 · worker y nguyên |
+
+## 10 · Kết
+
+**GIỮ.** Ba mốc sạch; khối đọc BigQuery thật từ prod. Phát hiện trong lúc mở van (đo prod, chỉ đọc): ô «đơn theo luồng» của Tổng quan
+đang trả **0 / 0** cho 7 ngày (đọc `don_hang` chụp 28/08 với cửa sổ 7 ngày mặc định) — số SAI chứ không phải «chưa đo» ⇒ phiếu LL17b.
