@@ -258,7 +258,7 @@ file đó. Mọi phiếu BH so lại với sáu số ấy, không so bằng cả
 | BH5 | Soi lỗ hổng kiến thức của page → việc cho marketer              | —         | không                                            | 🎫 |
 | BH6 | Bỏ `get_price` · hai điểm neo cache · đo tiền thật              | BH1·BH3   | `prompts.js` `tools.js`                          | 🎫 |
 | BH7 | Kimi đọc tin Botcake khách đã nhận · tin ngắn 2–3 dòng     | —         | `context.js` `prompts.js`                        | ✅ 28/09 · cổng `bh7.sh` 9/9 · bộ ca 10/10 · đảo-vá 8/10 đỏ · đo model: xem nhật ký |
-| BH8 | HAI BẢN: người đọc tiếng Việt, model đọc tiếng Anh gọn · đích ≤50đ/lượt | BH7 | `prompts.js` `tools.js` `context.js` | 🔨 28/09 · CODE xong (cổng `bh8.sh` 12/12 · bộ ca 11/11 · đảo-vá 5/5 đỏ · `npm test` 2.114/0) — ĐO token + model chờ hạn mức Kimi · nhận phần «cắt CORE» của BH3 + phần cache của BH6 |
+| BH8 | HAI BẢN: người đọc tiếng Việt, model đọc tiếng Anh gọn · đích ≤50đ/lượt | BH7 | `prompts.js` `tools.js` `context.js` | 🔨 28/09 · CODE xong (cổng `bh8.sh` 12/12), chưa đóng (dọn bảng 05/10) |
 | RBH | **GATE SÓNG BÁN** — 6 cổng bh*.sh + `do-duong-ban` 6 số đạt đích + 3 lượt model | BH1..BH6 | TỔNG | ⬜ |
 
 **Đích của gate RBH** (so mốc nền 16/09): tin page được trả lời 31,8% → **≥40%** · hội
@@ -280,10 +280,10 @@ https://claude.ai/artifact/LJcDVTN8GZPyWEtxZnF2yh
 
 | Mã     | Việc                                                             | Phụ thuộc | Làn | Trạng thái |
 | ------ | ---------------------------------------------------------------- | --------- | --- | ---------- |
-| UI-HT1 | Cửa đọc hội thoại: mã `<page_id>_<psid>` · tra `customer_id` · nhớ 60s | —   | 🟨  | 🎫 phiếu `PHIEU-UI-HT1.md` |
-| UI-HT2 | Màn «Bàn hội thoại» ba cột, không ô soạn tin                      | UI-HT1    | 🟩  | 🎫 `PHIEU-UI-HT2-4.md` |
-| UI-HT3 | Cột bối cảnh: khách · hoàn · đơn · giai đoạn · người giữ · kịch bản | UI-HT2  | 🟩  | 🎫 `PHIEU-UI-HT2-4.md` |
-| UI-HT4 | Sửa thước theo §10 mới                                           | UI-HT2    | 🟩  | 🎫 `PHIEU-UI-HT2-4.md` |
+| UI-HT1 | Cửa đọc hội thoại: mã `<page_id>_<psid>` · tra `customer_id` · nhớ 60s | —   | 🟨  | ✅ 28/09 (dọn bảng 05/10 theo §10) |
+| UI-HT2 | Màn «Bàn hội thoại» ba cột, không ô soạn tin                      | UI-HT1    | 🟩  | ✅ 28/09 (dọn bảng 05/10 theo §10) |
+| UI-HT3 | Cột bối cảnh: khách · hoàn · đơn · giai đoạn · người giữ · kịch bản | UI-HT2  | 🟩  | ✅ 28/09 (dọn bảng 05/10 theo §10) |
+| UI-HT4 | Sửa thước theo §10 mới                                           | UI-HT2    | 🟩  | ✅ 28/09 (dọn bảng 05/10 theo §10) |
 
 ## §5e · SÓNG MỘT NGUỒN (MN1–MN7) — CR-28-09b, người quyết gõ «áp b. gộp 1 bước» 28/09
 
@@ -313,20 +313,20 @@ CR đóng khi LL9 (thước) xong — trước đó bộ ca còn neo năm vai / 
 
 | Mã   | Việc                                                                                          | Phụ thuộc              | Làn | Trạng thái |
 | ---- | --------------------------------------------------------------------------------------------- | ---------------------- | --- | ---------- |
-| LL1  | Khung năm đích: menu xếp lại, không đổi đường, sale vào thẳng Hộp thư                          | —                      | 🟩  | 🎫 `PHIEU-LL1.md` |
-| LL7  | Vai 5 → 3 (quyền · lược đồ gieo · 35 tệp)                                                       | LL1                    | 🟨  | ⬜ |
-| LL2  | Hộp thư = bàn hội thoại + nhận thay bot + duyệt/sửa/từ chối đơn Messenger + tab đơn chờ + tìm khách | LL1               | 🟨  | ⬜ |
-| LL3  | Page: danh sách + một page (SP & giá kế thừa · lời bot · ảnh · trả lời sẵn · kỹ thuật · lịch sử · «Bật được chưa») + Luật chung | LL1 · trên MN6 | 🟨 | ⬜ |
-| LL5  | Số liệu một đích (gộp 5 màn, hai luồng tách)                                                   | LL1                    | 🟩  | ⬜ |
-| LL6  | Cài đặt một đích nhiều tab (gộp 6) + Model một khung                                           | LL1                    | 🟩  | ⬜ |
-| LL13 | Đích Sản phẩm: thêm thị trường = 1 món POS · gộp món POS nhiều shop · nối 78 bản sao page       | LL3                    | 🟨  | ⬜ |
-| LL16 | Thị trường = shop POS (ngừng `page.thi_truong` gõ tay, không xoá) · bật + kéo danh mục 6 shop   | LL13                   | 🟨  | ⬜ |
-| LL15 | Người từ HRM (BigQuery, chỉ đọc, mỗi ngày): khớp email · MKT/SALE · sale thành viên 3 team · người nghỉ tự khoá · tên team theo HRM | H11 · LL13 | 🟨 | ⬜ |
-| LL17 | Đơn: job kéo đơn một lần mỗi shop · `UNIQUE (ma_pos)` · team của marketer (bảng ghép HRM) · «chờ gán team» · Ladi = UTM, sale nhập tay không WhatsApp · khách (nước, SĐT) · chỉ team chủ nhắn/ghi ngược | LL15 · TRƯỚC khi bật WhatsApp hoặc team thứ hai khai shop | 🟥 | ⬜ |
-| LL11 | Kỹ năng → kiến thức sản phẩm («hỏi size»), gỡ màn kỹ năng                                       | LL3                    | 🟨  | ⬜ |
+| LL1  | Khung năm đích: menu xếp lại, không đổi đường, sale vào thẳng Hộp thư                          | —                      | 🟩  | ✅ 29/09 · sóng LL GIỮ `5bff55e` (dọn bảng 05/10) |
+| LL7  | Vai 5 → 3 (quyền · lược đồ gieo · 35 tệp)                                                       | LL1                    | 🟨  | ✅ 29/09 · sóng LL GIỮ `5bff55e` (dọn bảng 05/10) |
+| LL2  | Hộp thư = bàn hội thoại + nhận thay bot + duyệt/sửa/từ chối đơn Messenger + tab đơn chờ + tìm khách | LL1               | 🟨  | ✅ 29/09 · sóng LL GIỮ `5bff55e` (dọn bảng 05/10) |
+| LL3  | Page: danh sách + một page (SP & giá kế thừa · lời bot · ảnh · trả lời sẵn · kỹ thuật · lịch sử · «Bật được chưa») + Luật chung | LL1 · trên MN6 | 🟨 | ✅ 29/09 · sóng LL GIỮ `5bff55e` (dọn bảng 05/10) |
+| LL5  | Số liệu một đích (gộp 5 màn, hai luồng tách)                                                   | LL1                    | 🟩  | ✅ 29/09 · sóng LL GIỮ `5bff55e` (dọn bảng 05/10) |
+| LL6  | Cài đặt một đích nhiều tab (gộp 6) + Model một khung                                           | LL1                    | 🟩  | ✅ 29/09 · sóng LL GIỮ `5bff55e` (dọn bảng 05/10) |
+| LL13 | Đích Sản phẩm: thêm thị trường = 1 món POS · gộp món POS nhiều shop · nối 78 bản sao page       | LL3                    | 🟨  | ✅ 29/09 · sóng LL GIỮ `5bff55e` (dọn bảng 05/10) |
+| LL16 | Thị trường = shop POS (ngừng `page.thi_truong` gõ tay, không xoá) · bật + kéo danh mục 6 shop   | LL13                   | 🟨  | 🟡 kéo danh mục: GCC 7 shop, EU 7, AUUS 3 (H7/H13 05/10); CÒN «ngừng `page.thi_truong` gõ tay» (dọn bảng 05/10) |
+| LL15 | Người từ HRM (BigQuery, chỉ đọc, mỗi ngày): khớp email · MKT/SALE · sale thành viên 3 team · người nghỉ tự khoá · tên team theo HRM | H11 · LL13 | 🟨 | ✅ qua LL15a · b · c · d · e (02–05/10, đều GIỮ trên prod) (dọn bảng 05/10) |
+| LL17 | Đơn: job kéo đơn một lần mỗi shop · `UNIQUE (ma_pos)` · team của marketer (bảng ghép HRM) · «chờ gán team» · Ladi = UTM, sale nhập tay không WhatsApp · khách (nước, SĐT) · chỉ team chủ nhắn/ghi ngược | LL15 · TRƯỚC khi bật WhatsApp hoặc team thứ hai khai shop | 🟥 | 🟡 LL17a · b · d ✅ (đọc BigQuery, GIỮ) · LL17c «để nguyên»; CÒN phần chính: job kéo đơn một lần mỗi shop · `UNIQUE (ma_pos)` · «chờ gán team» · Ladi = UTM (dọn bảng 05/10) |
+| LL11 | Kỹ năng → kiến thức sản phẩm («hỏi size»), gỡ màn kỹ năng                                       | LL3                    | 🟨  | ✅ 29/09 · sóng LL GIỮ `5bff55e` (dọn bảng 05/10) |
 | LL14 | Model: nối dự phòng vào đường chat v3 · ẩn «việc nền» · màn nói đúng                            | LL6                    | 🟨  | ⬜ |
 | LL4  | Thử hỏi bot: model thật qua bộ ráp prompt, không gửi khách, ghi chi phí                         | LL3 · H6 (khoá sống)   | 🟨  | ⬜ |
-| LL10 | Nhà mới cho 5 việc vận hành của `van-hanh` (tin lỗi · tin bị lọc · diễn tập · chi phí từng tin · nguồn nhận tin) | LL5 · LL6 | 🟨 | ⬜ |
+| LL10 | Nhà mới cho 5 việc vận hành của `van-hanh` (tin lỗi · tin bị lọc · diễn tập · chi phí từng tin · nguồn nhận tin) | LL5 · LL6 | 🟨 | ✅ 29/09 · sóng LL GIỮ `5bff55e` (dọn bảng 05/10) |
 | LL8  | Gỡ màn thừa (GIAO DIỆN; giữ API `van-hanh` · `dispatch`) + gỡ kỹ năng/`mau_0_dong` khỏi đường bot v3 | LL2 · LL3 · LL6 · LL10 | 🟨 | ⬜ |
 | LL9  | Thước: menu · quyền · HK10/HK15 · §10 Hộp thư — ĐÓNG CR                                        | LL1–LL8                | 🟩  | ⬜ |
 | LL12 | Trả lời sẵn MỘT lớp (gộp Fast Lane mẫu · kho luật · `mau_0_dong`) — cạnh bộ não, khai «Đụng bộ não» | cutover / đợt tắt Botcake | 🟥 | ⬜ |
