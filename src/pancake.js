@@ -88,8 +88,7 @@ export async function addPancakeToken(token) {
   if (existing.includes(t)) return { ok: false, error: `Token này đã có trong hệ thống (${d.name})` };
   // Test sống: token phải đọc được danh sách page
   try {
-    const res = await fetch(`${PK_BASE}/pages?access_token=${t}`);
-    const j = await res.json();
+    const j = await goiPancake(`${PK_BASE}/pages?access_token=${t}`, undefined, hanDocMs());
     const n = (j.categorized?.activated || []).length;
     if (!j.categorized) return { ok: false, error: 'Pancake từ chối token (đăng nhập lại lấy token mới?)' };
     _fileToks.push(t); saveFileToks();
@@ -108,6 +107,97 @@ export function removePancakeToken(i) {
   return { ok: true, name: d.name };
 }
 
+// ===== HẠN CHỜ MỖI LƯỢT GỌI PANCAKE (phiếu GL3) =====
+// Trước GL3 không `fetch` nào ở file này có `signal` ⇒ hạn thật là mặc định của undici (~300 s), NHÂN số
+// token khi xoay. Poll chạy tuần tự từng page (`src/queue/chay-worker.js`) nên một request treo kéo cả
+// vòng; lượt gửi nằm trong giao dịch đang mở (`src/queue/kho.js`) nên giữ luôn một kết nối pool.
+// Hạn phủ CẢ lúc chờ header LẪN lúc đọc thân (`res.json()`) — thân treo sau khi header về cũng là treo.
+// Đọc env TƯƠI mỗi lượt (bộ ca đổi biến giữa các ca trong cùng tiến trình — cùng khuôn `core/van-gui.js`).
+const HAN_DOC_MAC_DINH_MS = 15_000;   // GET/HEAD/OPTIONS qua pkFetchPage + bốn fetch trần
+const HAN_GUI_MAC_DINH_MS = 30_000;   // POST/PUT/PATCH/DELETE qua pkFetchPage
+const HAN_TRAN_MS = 120_000;
+const _hanDaCanhBao = new Set();
+// Biến gõ sai ('0', âm, chữ, > 120 000) ⇒ về MẶC ĐỊNH + cảnh báo MỘT lần. KHÔNG hiểu '0' là «huỷ ngay»:
+// một biến gõ nhầm không được làm bot câm với mọi khách.
+function docHanMs(ten, macDinh) {
+  const tho = process.env[ten];
+  if (tho == null || String(tho).trim() === '') return macDinh;
+  const s = String(tho).trim();
+  const n = /^\d+$/.test(s) ? Number(s) : NaN;
+  if (n >= 1 && n <= HAN_TRAN_MS) return n;
+  if (!_hanDaCanhBao.has(`${ten}=${s}`)) {
+    _hanDaCanhBao.add(`${ten}=${s}`);
+    console.warn(`[pancake] ${ten}=${JSON.stringify(tho)} ngoài khoảng 1..${HAN_TRAN_MS} ms → dùng mặc định ${macDinh} ms`);
+  }
+  return macDinh;
+}
+const hanDocMs = () => docHanMs('V3_PANCAKE_HAN_DOC_MS', HAN_DOC_MAC_DINH_MS);
+const hanGuiMs = () => docHanMs('V3_PANCAKE_HAN_GUI_MS', HAN_GUI_MAC_DINH_MS);
+const laMethodDoc = (m) => ['GET', 'HEAD', 'OPTIONS'].includes(String(m || 'GET').toUpperCase());
+
+// PHA của lỗi mạng — cho GL4 đếm đúng loại. 'ket_noi' = chưa một byte nào của request rời máy (DNS hỏng,
+// cổng đóng, không tới được máy chủ, quá hạn BẮT TAY của undici). Mọi thứ khác — đứt giữa chừng, quá hạn
+// chờ phản hồi, lỗi lạ — là 'sau_gui': có thể gói đã tới Pancake. Không nhận ra ⇒ 'sau_gui' (chiều an toàn).
+const MA_LOI_KET_NOI = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'EAI_NONAME', 'EHOSTUNREACH',
+  'ENETUNREACH', 'EHOSTDOWN', 'ENETDOWN', 'UND_ERR_CONNECT_TIMEOUT']);
+function cacMaLoi(e) {
+  const ma = [];
+  for (let x = e, n = 0; x && n < 5; x = x.cause, n++) if (x.code) ma.push(String(x.code));
+  return ma;
+}
+// `LoiCuaGuiDong` = cổng HTTP ghi của `chat/handler-v3.js` chặn TRƯỚC khi gọi fetch thật (van đóng) ⇒ chưa rời máy.
+const laBiCongChan = (e) => e?.name === 'LoiCuaGuiDong';
+const phaCuaLoi = (e) => (laBiCongChan(e) || cacMaLoi(e).some((m) => MA_LOI_KET_NOI.has(m)) ? 'ket_noi' : 'sau_gui');
+function thongDiepLoi(e) {
+  const m = String(e?.message || e || 'lỗi mạng');
+  const ma = cacMaLoi(e).find((x) => !m.includes(x));
+  return ma ? `${m} (${ma})` : m;
+}
+
+const THAN_HONG = Symbol('than-khong-phai-json');
+/**
+ * MỘT lượt gọi Pancake có hạn. Trả JSON của thân. NÉM khi lỗi mạng; khi quá hạn (`e.quaHan === true`, cả lúc
+ * chờ header lẫn lúc đọc thân); khi thân không phải JSON (`e.thanHong === true` — vd 502/504 HTML của cổng:
+ * với lượt GHI là «có thể đã tới khách», mỗi nơi gọi tự quyết như bản cũ của nó). Huỷ bằng `signal` để undici
+ * đóng socket thật; còn `Promise.race` với lời huỷ để hạn vẫn đúng cả khi `fetch` (bẫy test, polyfill) lờ
+ * `signal` đi. Thông điệp lỗi KHÔNG chứa URL có token.
+ */
+async function goiPancake(url, init, hanMs) {
+  const ac = new AbortController();
+  let quaHan = false;
+  const choHuy = new Promise((_, tuChoi) => {
+    ac.signal.addEventListener('abort', () => tuChoi(ac.signal.reason), { once: true });
+  });
+  choHuy.catch(() => {});   // nhánh kia thắng thì lời huỷ không được thành unhandledRejection
+  const hen = setTimeout(() => {
+    quaHan = true;
+    let duong = '?';
+    try { duong = new URL(url).pathname; } catch { /* để '?' */ }
+    const e = new Error(`quá hạn ${hanMs} ms chờ Pancake (${String(init?.method || 'GET').toUpperCase()} ${duong})`);
+    e.name = 'LoiQuaHanPancake';
+    e.quaHan = true;
+    ac.abort(e);
+  }, hanMs);
+  try {
+    const res = await Promise.race([fetch(url, { ...init, signal: ac.signal }), choHuy]);
+    const than = res.json();   // `res` không có `.json` ⇒ ném ngay ⇒ nơi gọi coi là lỗi mạng (như bản cũ)
+    const j = await Promise.race([Promise.resolve(than).then((v) => v, () => THAN_HONG), choHuy]);
+    if (j === THAN_HONG) {
+      if (quaHan) throw ac.signal.reason;
+      const e = new Error(`Pancake trả thân không phải JSON (HTTP ${res?.status ?? '?'})`);
+      e.name = 'LoiThanPancake';
+      e.thanHong = true;
+      throw e;
+    }
+    return j;
+  } catch (e) {
+    if (quaHan) throw ac.signal.reason;   // mọi lỗi sau khi hết hạn là QUÁ HẠN, kể cả AbortError của undici
+    throw e;
+  } finally {
+    clearTimeout(hen);
+  }
+}
+
 // ===== ĐA-TOKEN FAILOVER =====
 // Mỗi tài khoản Pancake chỉ có quyền trên 1 nhóm page. Bot nhớ token nào dùng được cho
 // page nào (_pageTokIdx); dính lỗi hết phiên (103) / quyền (105) / gói cước (121) → tự thử token kế tiếp.
@@ -117,18 +207,37 @@ function permErr(j) {
   const codes = [j?.error_code, ...(Array.isArray(j?.errors) ? j.errors.map((e) => e?.error_code) : [])];
   return codes.some((c) => PERM_ERRS.has(Number(c)));
 }
+// Dấu lỗi mạng mang lên kết quả của hàm GHI: `khongRo` («KHÔNG RÕ đã tới khách chưa») · `phaLoi` · `quaHan`.
+// `lan-gui.js#bocCuaGuiBen` đã chuyển mọi `ok !== true` thành `lan_gui='khong_ro'` + LoiCanDoiChieuGui (không
+// gửi lại, người đối chiếu) — dấu này không đổi hành vi đó, chỉ cho lớp trên (GL4) biết lỗi thuộc loại nào.
+const dauLoiMang = (j) => ({
+  ...(j?.khongRo ? { khongRo: true } : {}),
+  ...(j?.phaLoi ? { phaLoi: j.phaLoi } : {}),
+  ...(j?.quaHan ? { quaHan: true } : {}),
+});
 async function pkFetchPage(pageId, buildUrl, init) {
   const toks = allToks();
   if (!toks.length) return {};
+  const doc = laMethodDoc(init?.method);
+  const hanMs = doc ? hanDocMs() : hanGuiMs();
   const start = _pageTokIdx.get(String(pageId)) ?? 0;
   let last = {};
   for (let k = 0; k < toks.length; k++) {
     const i = (start + k) % toks.length;
     let j = {};
     try {
-      const res = await fetch(buildUrl(toks[i]), init);
-      j = await res.json().catch(() => ({}));
-    } catch (e) { j = { error_code: -1, message: e.message }; last = j; continue; } // lỗi mạng → thử token khác cũng vô ích nhưng không sập
+      j = await goiPancake(buildUrl(toks[i]), init, hanMs);
+    } catch (e) {
+      const loi = { error_code: -1, message: thongDiepLoi(e), phaLoi: phaCuaLoi(e), ...(e?.quaHan ? { quaHan: true } : {}) };
+      // ⛔ GHI (POST/PUT/PATCH/DELETE): lỗi mạng / quá hạn / thân không phải JSON ⇒ TRẢ NGAY, KHÔNG xoay
+      // token. Gói có thể đã tới Pancake mà mất phản hồi — gửi lại bằng token khác là khách nhận HAI tin, và
+      // sổ `lan_gui` không chặn được vì cả hai lần nằm trong cùng một bước gửi. Lỗi pha kết nối cũng không
+      // xoay (giữ an toàn, chỉ ghi đúng loại). Chỉ xoay khi Pancake TRẢ LỜI RÕ là lỗi quyền (permErr).
+      // Cổng HTTP ghi chặn (van đóng) thì CHẮC CHẮN chưa gửi ⇒ không mang dấu «không rõ».
+      if (!doc) return laBiCongChan(e) ? loi : { ...loi, khongRo: true };
+      if (e?.thanHong) j = {}; // ĐỌC: thân không phải JSON ⇒ `{}` như bản cũ (không xoay)
+      else { last = loi; continue; } // ĐỌC: lỗi mạng / quá hạn → thử token kế (đọc lại không hại ai)
+    }
     if (!permErr(j)) {
       if (i !== start) console.log(`[token] page ${pageId} → chuyển sang token #${i + 1}`);
       _pageTokIdx.set(String(pageId), i);
@@ -163,8 +272,7 @@ async function getPageAccessToken(pageId) {
   }
   for (const t of allToks()) {
     try {
-      const r = await fetch(`${PK_BASE}/pages/${pageId}/generate_page_access_token?access_token=${t}`, { method: 'POST' });
-      const j = await r.json().catch(() => ({}));
+      const j = await goiPancake(`${PK_BASE}/pages/${pageId}/generate_page_access_token?access_token=${t}`, { method: 'POST' }, hanDocMs());
       const tok = j.page_access_token || j.data?.page_access_token || j.data?.token;
       if (j.success !== false && tok) {
         _pageToks[k] = tok;
@@ -182,8 +290,8 @@ export async function pkMarkUnread(pageId, convId) {
   const tok = await getPageAccessToken(pageId);
   if (!tok) return { ok: false, error: 'không sinh được page_access_token (không token nào là admin page)' };
   try {
-    const r = await fetch(`${PK_PUB}/pages/${pageId}/conversations/${convId}/unread?page_access_token=${tok}`, { method: 'POST', headers: { Accept: 'application/json' } });
-    const j = await r.json().catch(() => ({}));
+    // POST nhưng không gửi gì cho khách; một lượt, lỗi mạng / quá hạn ⇒ trả lỗi, KHÔNG thử lại (GL3).
+    const j = await goiPancake(`${PK_PUB}/pages/${pageId}/conversations/${convId}/unread?page_access_token=${tok}`, { method: 'POST', headers: { Accept: 'application/json' } }, hanDocMs());
     return j.success ? { ok: true } : { ok: false, error: JSON.stringify(j).slice(0, 120) };
   } catch (e) { return { ok: false, error: e.message }; }
 }
@@ -199,8 +307,7 @@ export async function refreshPancakePages() {
   const m = new Map();
   for (const t of toks) {
     try {
-      const res = await fetch(`${PK_BASE}/pages?access_token=${t}`);
-      const j = await res.json();
+      const j = await goiPancake(`${PK_BASE}/pages?access_token=${t}`, undefined, hanDocMs());
       for (const p of (j.categorized?.activated || [])) if (!m.has(String(p.id))) m.set(String(p.id), { id: String(p.id), name: p.name || '' });
     } catch (e) { console.warn('[pancake] nạp page lỗi (1 token):', e.message); }
   }
@@ -232,7 +339,7 @@ export async function pkToggleTag(pageId, convId, tagId, on = true) {
     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `tag_id=${encodeURIComponent(tagId)}&value=${on ? 1 : 0}`,
   });
-  return j.success ? { ok: true, tags: j.data } : { ok: false, error: JSON.stringify(j).slice(0, 120) };
+  return j.success ? { ok: true, tags: j.data } : { ok: false, error: JSON.stringify(j).slice(0, 120), ...dauLoiMang(j) };
 }
 // Bảng thẻ của page (từ /settings) — map TÊN (không phân biệt hoa thường) → tag_id, cache 10 phút.
 const _tagCache = new Map(); // pageId -> { t, map }
@@ -267,7 +374,7 @@ export async function pkSendReply(pageId, convId, custId, text) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'reply_inbox', message: text, customer_id: custId }),
   });
-  return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 120) };
+  return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 120), ...dauLoiMang(j) };
 }
 
 // Gửi ẢNH qua Pancake (cùng endpoint reply_inbox, dùng content_url = link ảnh CÔNG KHAI).
@@ -279,7 +386,7 @@ export async function pkSendImage(pageId, convId, custId, url, caption = '') {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'reply_inbox', message: caption || '', content_url: url, customer_id: custId }),
   });
-  return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 140) };
+  return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 140), ...dauLoiMang(j) };
 }
 
 // Ghi GHI CHÚ vào hồ sơ khách trong Pancake (sale mở chat là thấy ở panel "Ghi chú").
@@ -291,7 +398,13 @@ export async function pkAddNote(pageId, custId, message) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
     });
-    return j.success === false ? { ok: false, error: j.message || 'lỗi' } : { ok: true };
+    // Lỗi mạng / quá hạn KHÔNG được thành `ok:true` (trước GL3 `{error_code:-1}` không có `success:false`
+    // nên lọt thành công — sale tưởng đã có ghi chú bàn giao). Thân RỖNG (`{}` — không còn token nào, hoặc
+    // Pancake trả `{}`) cũng không phải bằng chứng đã ghi.
+    const rong = !j || typeof j !== 'object' || !Object.keys(j).length;
+    return j?.success === false || j?.khongRo || rong
+      ? { ok: false, error: j?.message || (rong ? 'Pancake không trả gì (hết token còn hạn?)' : 'lỗi'), ...dauLoiMang(j) }
+      : { ok: true };
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
