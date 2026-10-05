@@ -1549,6 +1549,12 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
     gộp vào việc doc của GSP5.
   - **N-VAI-B-NOI-DAY-CHAP-CHON** `v3/test/b/vai-b-noi-day.test.mjs` đỏ 1 lần khi chạy sâu trong chuỗi cổng (`_chan1 gsp3` → `gsp1` → `ve8b`
     → `ve8a` → `ve7b`), chạy riêng 5/5 xanh — cùng ca «cookie null» nhật ký GSP2 đã ghi. Cổng con đỏ ngẫu nhiên ⇒ cổng cha đỏ giả.
+- 05/10 · GSP3 vòng 2 (thợ) — một nợ, ngoài hai mã CHẶN được giao:
+  - **N-GSP3-DAU-TOCTOU** (/code-review vòng 2 · CR2) dấu đơn vị (F1) so ở lúc POST đọc đơn vị; từ đó tới câu UPDATE đánh dấu (cỡ ms:
+    gom ảnh · `saveProduct` tự commit · đẩy bản chép) không có khoá / giao dịch chung (`operations.js` cấm sửa ở GSP3). Trong cửa sổ đó:
+    page gắn thêm KHÔNG bị đánh dấu (còn `cho_doi_soat`, không thua ngầm) nhưng bot của nó nhận giá món mới ngay — như mọi lượt lưu giá
+    VE8b; bảng bản sao bị sửa trong cửa sổ đó vẫn bị đánh theo bảng đã đọc. GSP3b khoá cửa sửa bản sao ⇒ còn phần gắn page. Sửa gốc: khoá
+    dòng `san_pham_goc` của đơn vị (`FOR UPDATE`) suốt lượt — cần cửa lưu giá nhận giao dịch ngoài.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -3104,3 +3110,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 05/10 · GSP3 → 🔨 vòng 2 — chặng 2 đối kháng (phan-bien-refute, 10 kịch bản chạy thật trên hộp cát): TRẢ VỀ 1 CHẶN F1 — POST đối soát chỉ gửi `chon` trỏ bản sao, không ràng với thứ người chọn đã thấy ⇒ page gắn thêm / bảng bị sửa trong lúc khung mở thì thua NGẦM hoặc giá chưa ai thấy được chép
   tổng nâng F4 lên CHẶN: kiểm tiền tệ cả bản sao THUA ⇒ page 1158273677377854 (KWD + «AED») kẹt vĩnh viễn sau GSP3b · không phá được: đơn vị/bậc tắt, hai quản trị cùng bấm, lượt dở chạy lại, gỡ ảnh, CTE bỏ gốc, lưới 032, quyền · NEN F2 F3 F5 F7 + F6 ⇒ §9
   · verdict scratchpad refute-gsp3.verdict.yaml · vòng 2 nhận refute-gsp3-vong2.verdict.yaml
+- 05/10 · GSP3 → 🔎 vòng 2 xong, chờ tổng nghiệm thu — F1: POST bắt buộc mang `dauDonVi` của GET (băm món×bảng thô · page · bản sao chưa quyết×bảng), đơn vị đổi ⇒ 409 `don_vi_da_doi` kèm đơn vị mới, 0 ghi · F4: tiền tệ chỉ chặn bảng SẼ GHI, bản sao thua sai tệ ⇒ `giu_gia_mon` · đính chính lời khai «version của saveProduct»
+  `_chan1 gsp3` 8/8 (`gsp3.sh` 43/43) · 29/29 đột biến (thêm 11) · ca V2-K0..K4 · K6 · K6b · K6c + 4 ca màn · npm test 2372→2384 / 0 đỏ / 4 skip · /code-review high 10: CR1 CR3 CR4 CR5 CR7 CR8 CR9 sửa, CR2 → nợ N-GSP3-DAU-TOCTOU
+  · commit 5afd582 · nhật ký docs/thi-cong/nhat-ky/phieu-gsp3.md («Vòng 2»)
