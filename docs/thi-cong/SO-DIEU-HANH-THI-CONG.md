@@ -371,6 +371,17 @@ món chưa giá cho page đã gắn mà chưa đối soát). Sửa sau review (a
 | GSP4 | Một đường: bỏ nhánh `page_id` ở `catalog.js` · `kho-san-pham-v3.js` · `ban-chep-bot.js` · «Page đang bán» · `doc-danh-muc.js` RF-15; chốt ở `handler-v3.js` trước KB; 35 ca đổi fixture + 4 ca luật mới; deploy theo `mo-van` | GSP3 trên prod · bộ đếm = 0 | 🟥 | ⬜ |
 | GSP5 | Dọn: bỏ màn «Bản sao theo page» + ô lưu ý + `GET /api/san-pham`; tab «SP & giá» trang page nói giá sửa ở Sản phẩm › Theo thị trường; `03-MAN-HINH.md`; ĐÓNG CR | GSP4                | 🟨  | ⬜ |
 
+## §5i · TIỀN TỆ NGOÀI GCC + GIÁ TỪ ĐƠN POS (TT1 · GP1) — người quyết «làm trọn vẹn» 05/10
+
+Người quyết: «Theo giá như đơn trên POS chứ cần gì quy đổi?» — hệ KHÔNG quy đổi giữa các tệ; thiếu là ĐƠN VỊ LẺ (POS lưu đơn vị nhỏ;
+TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` = `cod` (giá món = 0); COD đơn một món theo số lượng ổn định
+(269/504 bộ ≥80%). Hồ sơ đo: `docs/thi-cong/nhat-ky/h7-chuyen-team-20261005.md`.
+
+| Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
+| --- | --- | --- | --- | --- |
+| TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | ⬜ |
+| GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | ⬜ |
+
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
 | Mã  | Việc                                                                                 | Chặn gì                                                        | Trạng thái |
