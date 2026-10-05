@@ -84,7 +84,11 @@ test('GSP3 · đối soát giá + ảnh theo đơn vị gốc × shop, trên Pos
     });
     datPheuNhatKyGoc(async (_bc, ban) => { nhatKy.push(ban); });
     t.after(() => { datKhoGoc(null); datPheuNhatKyGoc(null); });
-    const doiSoat = (x, bc = bcQt) => doiSoatQuaKho(bc, x);
+    // Như màn: ĐỌC đơn vị (GET — lấy dấu) ngay trước khi GHI (POST). Ca đo «thiếu dấu» / «dấu cũ» truyền `dauDonVi` TƯỜNG MINH.
+    const doiSoat = async (x, bc = bcQt) => doiSoatQuaKho(bc, Object.hasOwn(x, 'dauDonVi') ? x
+      : { ...x, dauDonVi: (await donViDoiSoat(pool, T, x.gocId, x.shopId)).dauDonVi });
+    const loiCua = async (fn) => { try { await fn(); } catch (e) { return e; } return assert.fail('chờ 409 mà lượt ghi lại THÀNH'); };
+    const cuaMo = async (pageId, gia, sl = 1) => (await cua2Tien(pool, { teamId: T, pageId, duLieu: chuanHoaHoSo({ total_price: gia, qty: sl, currency: 'SAR' }) })).qua;
 
     // ── Dựng: gốc G có đúng 1 món S1:x (chưa giá); P1, P2 cùng gắn G × S1. ──
     await mon('111:x', '101 - Gold Ring X', '101');
@@ -367,6 +371,166 @@ test('GSP3 · đối soát giá + ảnh theo đơn vị gốc × shop, trên Pos
       await doiSoat({ gocId: M.id, shopId: '111', cap });
       assert.deepEqual(await bangTho(await monId('111:m2')), await bangTho(b2));
       assert.ok([(await dau(b1)).doi_soat, (await dau(b2)).doi_soat].every(Boolean), 'chạy lại ⇒ cả đơn vị đã quyết');
+    });
+
+    /* ── VÒNG 2 (đối kháng GSP3) · F1: lựa chọn ràng với thứ người ĐÃ THẤY (dấu đơn vị GET → POST) ── */
+    await t.test('V2-K0 · POST thiếu dấu đơn vị ⇒ 409 thieu_dau_don_vi kèm đơn vị, 0 ghi, 0 đẩy (không có đường «không dấu»); có dấu ⇒ thành', async () => {
+      await mon('111:k0', '810 - Kilo Zero', '810');
+      const K0 = await gop('kilozero', '810', ['111:k0']);
+      const KP = await trang('fbK0', 'Kilo Zero P');
+      await ganPageVaoGoc(pool, T, K0.id, { pageId: KP, shopId: '111' });
+      const b = await banSao(KP, 'kb:fbK0:SP01', [{ sl: 1, gia: 5000 }], ['/uploads/k0.png']);
+      const truoc = await demGhi(); const n = dayGoi.length;
+      for (const dauDonVi of [undefined, '']) {
+        const e = await loiCua(() => doiSoat({ gocId: K0.id, shopId: '111', dauDonVi }));
+        assert.deepEqual([e.ma, e.status], ['thieu_dau_don_vi', 409]);
+        assert.ok(e.duLieu.donVi.banSao.some((x) => x.id === b) && e.duLieu.donVi.dauDonVi, '409 mang đơn vị + dấu để màn vẽ lại');
+      }
+      assert.deepEqual(await demGhi(), truoc);
+      assert.equal(dayGoi.length, n);
+      const kq = await doiSoat({ gocId: K0.id, shopId: '111' });   // cùng thân, có dấu vừa đọc ⇒ CHO-QUA thật
+      assert.equal(kq.daXong, false);
+      assert.equal((await dau(b)).doi_soat, 'chep');
+    });
+
+    await t.test('V2-K1 · page gắn thêm giữa lúc mở khung và lúc bấm ⇒ 409 don_vi_da_doi kèm đơn vị MỚI, 0 ghi; chọn lại trên đơn vị mới ⇒ thành', async () => {
+      await mon('111:a1', '820 - Alpha', '820');
+      const A = await gop('alpha', '820', ['111:a1']);
+      const A1 = await trang('fbA1', 'Alpha 1'); const A2 = await trang('fbA2', 'Alpha 2'); const A3 = await trang('fbA3', 'Alpha 3');
+      for (const p of [A1, A2]) await ganPageVaoGoc(pool, T, A.id, { pageId: p, shopId: '111' });
+      const a1 = await banSao(A1, 'kb:fbA1:SP01', [{ sl: 1, gia: 19900 }]);
+      await banSao(A2, 'kb:fbA2:SP01', [{ sl: 1, gia: 24900 }]);
+      const a3 = await banSao(A3, 'kb:fbA3:SP01', [{ sl: 1, gia: 9900 }]);   // bảng 99 — người mở khung CHƯA thấy
+      const xem = await donViDoiSoat(pool, T, A.id, '111');
+      assert.deepEqual(xem.bangKhacNhau.map((x) => x.bac.map((y) => y.gia)), [[199], [249]]);
+      await ganPageVaoGoc(pool, T, A.id, { pageId: A3, shopId: '111' });   // quản trị khác gắn A3 cùng gốc × shop
+      const aId = await monId('111:a1');
+      const truoc = await demGhi(); const n = dayGoi.length; const nl = luuGiaGoi.length;
+      const e = await loiCua(() => doiSoat({ gocId: A.id, shopId: '111', chon: { '111:a1': { banSaoId: a1 } }, dauDonVi: xem.dauDonVi }));
+      assert.deepEqual([e.ma, e.status], ['don_vi_da_doi', 409]);
+      assert.deepEqual(e.duLieu.donVi.banSao.find((x) => x.id === a3)?.bac.map((x) => x.gia), [99], 'đơn vị mới mang bảng page vừa gắn');
+      assert.notEqual(e.duLieu.donVi.dauDonVi, xem.dauDonVi);
+      assert.deepEqual(await demGhi(), truoc, '0 goi_gia · 0 ảnh · 0 dấu');
+      assert.deepEqual([dayGoi.length, luuGiaGoi.length], [n, nl], '0 đẩy · 0 lượt lưu giá');
+      assert.equal((await dsViecChuyen(pool, T)).viec.find((v) => v.pageId === A3)?.trangThai, 'cho_doi_soat', 'A3 KHÔNG thua ngầm');
+      assert.equal(await cuaMo(A3, 199), false, 'cửa tiền A3 vẫn đóng — không giá nào lên món');
+      // Người đã THẤY bảng 99 (màn vẽ lại bằng đơn vị mới) mà vẫn chọn A1 ⇒ thành; A3 thua CÓ chủ ý.
+      const kq = await doiSoat({ gocId: A.id, shopId: '111', chon: { '111:a1': { banSaoId: a1 } }, dauDonVi: e.duLieu.donVi.dauDonVi });
+      assert.deepEqual(kq.pageSangXong.map((p) => p.pageId), [A1, A2, A3]);
+      assert.deepEqual(await bangTho(aId), await bangTho(a1));
+      assert.equal((await dau(a3)).doi_soat, 'giu_gia_mon');
+    });
+
+    await t.test('V2-K2 · bảng của bản sao ĐƯỢC CHỌN bị sửa giữa lúc mở khung và lúc bấm ⇒ 409 don_vi_da_doi, 0 ghi — giá chưa ai thấy không lên món', async () => {
+      await mon('111:b1', '830 - Beta', '830');
+      const B = await gop('beta', '830', ['111:b1']);
+      const B1 = await trang('fbB1', 'Beta 1'); const B2 = await trang('fbB2', 'Beta 2');
+      for (const p of [B1, B2]) await ganPageVaoGoc(pool, T, B.id, { pageId: p, shopId: '111' });
+      const b1 = await banSao(B1, 'kb:fbB1:SP01', [{ sl: 1, gia: 19900 }]);
+      await banSao(B2, 'kb:fbB2:SP01', [{ sl: 1, gia: 24900 }]);
+      const xem = await donViDoiSoat(pool, T, B.id, '111');   // người thấy B1 = 199
+      // Sửa qua cửa lưu sản phẩm CŨ của trang page (GSP3b mới khoá): 199 → 19 (gõ thiếu số).
+      const v = await mot('SELECT xmin::text AS v, ten, mo_ta, het_hang FROM san_pham WHERE id=$1', [b1]);
+      await saveProduct(pool, bcQt, b1, { ten: v.ten || 'Beta', mo_ta: v.mo_ta || '', het_hang: !!v.het_hang, version: v.v,
+        offers: [{ so_luong: 1, price: 19, tien_te: 'SAR' }] }, { sauKhiLuu: null });
+      const truoc = await demGhi(); const n = dayGoi.length;
+      const e = await loiCua(() => doiSoat({ gocId: B.id, shopId: '111', chon: { '111:b1': { banSaoId: b1 } }, dauDonVi: xem.dauDonVi }));
+      assert.deepEqual([e.ma, e.status], ['don_vi_da_doi', 409]);
+      assert.deepEqual(e.duLieu.donVi.banSao.find((x) => x.id === b1).bac.map((x) => x.gia), [19], 'màn vẽ lại thấy 19');
+      assert.deepEqual(await demGhi(), truoc);
+      assert.equal(dayGoi.length, n);
+      assert.deepEqual(await bangTho(await monId('111:b1')), []);
+      assert.equal(await cuaMo(B2, 19), false, 'cửa tiền B2 không mở ở 19');
+    });
+
+    await t.test('V2-K3 · giá món đổi (lưu ở «Theo thị trường») giữa lúc mở khung và lúc bấm «giữ giá món» ⇒ 409 don_vi_da_doi, 0 ghi', async () => {
+      await mon('111:c1', '840 - Gamma', '840');
+      const C = await gop('gamma', '840', ['111:c1']);
+      const cId = await monId('111:c1');
+      await q("INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te) VALUES($1,$2,1,24900,'SAR')", [T, cId]);
+      const C1 = await trang('fbC1', 'Gamma 1');
+      await ganPageVaoGoc(pool, T, C.id, { pageId: C1, shopId: '111' });
+      const c1 = await banSao(C1, 'kb:fbC1:SP01', [{ sl: 1, gia: 19900 }]);
+      const xem = await donViDoiSoat(pool, T, C.id, '111');   // người thấy giá món 249
+      const v = (await mot('SELECT xmin::text AS v FROM san_pham WHERE id=$1', [cId])).v;
+      await saveProduct(pool, bcQt, cId, { offers: [{ so_luong: 1, price: 149, tien_te: 'SAR' }], version: v }, { chiGia: true, sauKhiLuu: null });
+      const truoc = await demGhi(); const n = dayGoi.length;
+      const e = await loiCua(() => doiSoat({ gocId: C.id, shopId: '111', chon: { '111:c1': 'giu_gia_mon' }, dauDonVi: xem.dauDonVi }));
+      assert.deepEqual([e.ma, e.status], ['don_vi_da_doi', 409]);
+      assert.deepEqual(await demGhi(), truoc);
+      assert.equal(dayGoi.length, n);
+      assert.equal((await dau(c1)).doi_soat, null);
+    });
+
+    await t.test('V2-K4 · gắn thêm một page CHƯA có bản sao giữa lúc mở khung và lúc bấm ⇒ 409 don_vi_da_doi (danh sách «page sẽ đổi giá» đã khác), 0 ghi', async () => {
+      await mon('111:d4', '870 - Delta', '870');
+      const D4 = await gop('delta', '870', ['111:d4']);
+      const DP1 = await trang('fbD41', 'Delta 1'); const DP2 = await trang('fbD42', 'Delta 2');
+      await ganPageVaoGoc(pool, T, D4.id, { pageId: DP1, shopId: '111' });
+      const d1 = await banSao(DP1, 'kb:fbD41:SP01', [{ sl: 1, gia: 7700 }]);
+      const xem = await donViDoiSoat(pool, T, D4.id, '111');
+      await ganPageVaoGoc(pool, T, D4.id, { pageId: DP2, shopId: '111' });   // DP2 không bản sao: tập bản sao KHÔNG đổi, chỉ tập page đổi
+      const truoc = await demGhi(); const n = dayGoi.length;
+      const e = await loiCua(() => doiSoat({ gocId: D4.id, shopId: '111', dauDonVi: xem.dauDonVi }));
+      assert.deepEqual([e.ma, e.status], ['don_vi_da_doi', 409]);
+      assert.deepEqual(e.duLieu.donVi.pageDonVi.map((p) => p.pageId), [DP1, DP2], 'đơn vị mới kể page vừa gắn trong «page sẽ đổi giá»');
+      assert.deepEqual(await demGhi(), truoc);
+      assert.equal(dayGoi.length, n);
+      assert.equal((await dau(d1)).doi_soat, null);
+    });
+
+    /* ── VÒNG 2 · F4: tiền tệ chỉ chặn bảng SẼ GHI; bản sao THUA mang tệ sai không chặn đơn vị ── */
+    await mon('111:f1', '850 - Fox', '850');
+    const FX = await gop('fox', '850', ['111:f1']);
+    const FP1 = await trang('fbF1', 'Fox 1'); const FP2 = await trang('fbF2', 'Fox 2');
+    for (const p of [FP1, FP2]) await ganPageVaoGoc(pool, T, FX.id, { pageId: p, shopId: '111' });
+    const f1 = await banSao(FP1, 'kb:fbF1:SP01', [{ sl: 1, gia: 19900 }]);
+    const f2 = await banSao(FP2, 'kb:fbF2:SP01', [{ sl: 1, gia: 19900, te: 'AED' }], ['/uploads/f2.png']);   // nhãn tệ sai (prod: KWD + «AED»)
+    const fId = await monId('111:f1');
+
+    await t.test('V2-K6c · bảng THẮNG mang tệ sai (chọn bảng «AED» trên shop Saudi) ⇒ 409 lech_tien_te nêu page, 0 ghi, 0 đẩy', async () => {
+      const truoc = await demGhi(); const n = dayGoi.length;
+      const e = await loiCua(() => doiSoat({ gocId: FX.id, shopId: '111', chon: { '111:f1': { banSaoId: f2 } } }));
+      assert.deepEqual([e.ma, e.status], ['lech_tien_te', 409]);
+      assert.deepEqual(e.duLieu.bac.map((x) => [x.pageId, x.tienTe]), [[FP2, 'AED']]);
+      assert.match(e.message, /Fox 2/);
+      assert.deepEqual(await demGhi(), truoc);
+      assert.equal(dayGoi.length, n);
+    });
+
+    await t.test('V2-K6 · bản sao THUA mang tệ sai không chặn: chưa chọn ⇒ 409 lech_gia_giua_page nêu RÕ bảng sai; chọn bảng SAR ⇒ thành, bản sao «AED» giu_gia_mon', async () => {
+      const xem = await donViDoiSoat(pool, T, FX.id, '111');
+      assert.deepEqual(xem.banSao.filter((b) => [f1, f2].includes(b.id)).map((b) => [b.id, b.tienTeSai]), [[f1, false], [f2, true]]);
+      const truoc = await demGhi();
+      const e = await loiCua(() => doiSoat({ gocId: FX.id, shopId: '111' }));
+      assert.equal(e.ma, 'lech_gia_giua_page');
+      assert.deepEqual(e.duLieu.lech[0].bang.map((x) => [x.banSao.map((b) => b.pageId).join(), x.tienTeSai]), [[FP1, false], [FP2, true]]);
+      assert.match(e.message, /tiền tệ khác SAR, không chọn được: page Fox 2/);
+      assert.deepEqual(await demGhi(), truoc);
+      const kq = await doiSoat({ gocId: FX.id, shopId: '111', chon: { '111:f1': { banSaoId: f1 } } });
+      assert.equal(kq.daXong, false);
+      assert.deepEqual(await bangTho(fId), await bangTho(f1), 'món nhận bảng SAR');
+      assert.deepEqual([(await dau(f1)).doi_soat, (await dau(f2)).doi_soat], ['chep', 'giu_gia_mon']);
+      assert.deepEqual((await anhCua(fId)).map((a) => a.duong), ['/uploads/f2.png'], 'ảnh của bản sao thua vẫn gom');
+      assert.ok((await dsViecChuyen(pool, T)).viec.every((v) => v.pageId !== FP2), 'Fox 2 rời «chờ đối soát» — không kẹt');
+    });
+
+    await t.test('V2-K6b · đúng kịch bản phản biện: món 199 SAR ≡ bảng page 1, page 2 «AED» ⇒ «giữ giá món» thành, không ghi giá, đẩy 1 lần/page', async () => {
+      await mon('111:g6', '860 - Golf Six', '860');
+      const G6 = await gop('golfsix', '860', ['111:g6']);
+      const gId = await monId('111:g6');
+      await q("INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te) VALUES($1,$2,1,19900,'SAR')", [T, gId]);
+      const GP1 = await trang('fbG61', 'Golf Six 1'); const GP2 = await trang('fbG62', 'Golf Six 2');
+      for (const p of [GP1, GP2]) await ganPageVaoGoc(pool, T, G6.id, { pageId: p, shopId: '111' });
+      const g1 = await banSao(GP1, 'kb:fbG61:SP01', [{ sl: 1, gia: 19900 }]);
+      const g2 = await banSao(GP2, 'kb:fbG62:SP01', [{ sl: 1, gia: 19900, te: 'AED' }]);
+      const bangMon = await bangTho(gId); const nl = luuGiaGoi.length; const d0 = dayGoi.length;
+      const kq = await doiSoat({ gocId: G6.id, shopId: '111', chon: { '111:g6': 'giu_gia_mon' } });
+      assert.equal(kq.mon[0].ghiGia, false);
+      assert.equal(luuGiaGoi.length, nl, 'không gọi cửa lưu giá');
+      assert.deepEqual(await bangTho(gId), bangMon);
+      assert.deepEqual(dayGoi.slice(d0).map((x) => x.pid).sort(), ['fbG61', 'fbG62']);
+      assert.deepEqual([(await dau(g1)).doi_soat, (await dau(g2)).doi_soat], ['giu_gia_mon', 'giu_gia_mon']);
     });
 
     await t.test('④9 · CSDL chưa áp 032 ⇒ chua_ap_032, 0 ghi; bỏ gốc / gắn page vẫn thành như cũ', async () => {

@@ -8,6 +8,7 @@
 //
 // Lưới migration: CSDL chưa áp 032 ⇒ coi mọi bản sao là «chưa quyết» (KHÔNG ném); chỉ ghi `boQuaPage`/`huyBoQua` mới từ chối
 // (409 `chua_migrate`) — im lặng nuốt một lượt ghi còn tệ hơn.
+import { createHash } from "node:crypto";
 import { tachSoHieu, chuanHoaTen, chuanSku } from "../pos/ten-goc.js";
 import { LoiSanPhamGoc } from "./san-pham-goc.js";
 import { themAnh, boAnh } from "./anh-san-pham.js";
@@ -281,6 +282,8 @@ export async function huyBoQua(pool, teamId, pageId) {
  *     `offers` ở đơn vị LỚN; số trả lên màn cũng đơn vị lớn (`bacDonViLon`). KHÔNG lấy `bac` của `dsViecChuyen` làm nguồn
  *     (nó đã là đơn vị lớn — quy đổi hai lần ⇒ giá ÷100).
  *   · Bản sao giữ NGUYÊN: chỉ thêm `doi_soat*` (không sửa bậc/ảnh/tên, không chạm `sua_luc`, không đặt `pos_ma`).
+ *   · (đối kháng vòng 2) Lựa chọn ràng với thứ người ĐÃ THẤY: POST mang `dauDonVi` của GET, đơn vị đổi giữa hai lượt ⇒ 409
+ *     `don_vi_da_doi` (F1). Tiền tệ chỉ chặn bảng SẼ GHI; bản sao thua mang tệ sai vẫn đối soát được (F4).
  */
 
 // Thị trường (`ket_noi_pos.market`) → tiền tệ. Hằng RIÊNG của đối soát: ngoài bảng ⇒ `thi_truong_la`, dừng, không đoán.
@@ -294,6 +297,27 @@ export const COT_BAC_CHEP = Object.freeze(["so_luong", "gia", "tien_te", "gia_go
 
 const loi409 = (thongDiep, ma, duLieu) => Object.assign(new LoiSanPhamGoc(thongDiep, ma, 409), { duLieu });
 const kyBang = (bac) => bac.map((x) => x.ky).join("\n");   // bậc đã xếp theo so_luong (UNIQUE trong một sản phẩm)
+// Bảng có bậc mang tiền tệ ≠ tiền tệ thị trường (so CHÍNH XÁC — `saveProduct` cũng tra HE_SO_TE đúng chữ). Thị trường lạ ⇒ không phán.
+const bacSaiTe = (bac, tienTe) => tienTe != null && bac.some((x) => x.dong.tien_te !== tienTe);
+
+/**
+ * DẤU ĐƠN VỊ (đối kháng GSP3 vòng 2 · F1): băm thứ người chọn ĐÃ THẤY ở khung (GET) để cửa ghi (POST) từ chối khi đơn vị đổi giữa
+ * hai lượt — page gắn thêm / gỡ ra (kể cả page chưa có bản sao: nó nằm trong danh sách «page sẽ đổi giá»), tập bản sao chưa quyết
+ * đổi, bảng một bản sao đổi, giá món đổi. Không có dấu thì
+ * `chon` chỉ trỏ banSaoId: bảng của page mới gắn THUA NGẦM, hoặc một bảng chưa ai thấy được chép lên món (đúng loại G3-C1).
+ * Băm trên giá trị GỐC trong CSDL (`ky` = trọn hàng goi_gia dạng jsonb text, không qua quy đổi). Cố ý KHÔNG gồm: `xmin` của món
+ * (đồng bộ danh mục POS upsert dòng món — `src/pos/doc-danh-muc.js` — ⇒ 409 giả mỗi lượt đồng bộ) và ảnh (không đổi tiền; ảnh của
+ * lượt lùi được theo `nguon='kb'`), `market` (đổi thị trường thì kiểm tiền tệ / `thi_truong_la` đã chặn mọi lượt ghi sai tệ).
+ */
+function dauCuaDonVi(dv) {
+  const tho = JSON.stringify({
+    v: 1, goc: String(dv.goc.id), shop: dv.shop,
+    mon: dv.mon.map((m) => [m.ma, kyBang(m.bac)]),
+    page: dv.pages.map((p) => String(p.id)),
+    banSao: dv.banSao.filter((b) => !b.daQuyet).map((b) => [b.id, b.pageId, kyBang(b.bac)]),
+  });
+  return createHash("sha256").update(tho).digest("hex").slice(0, 32);
+}
 const bacRa = (bac) => bacDonViLon(bac.map(({ dong: d }) => ({
   soLuong: d.so_luong, gia: d.gia, tienTe: d.tien_te, giaGoc: d.gia_goc ?? null, khuyenMai: d.khuyen_mai ?? "",
   phiShip: d.phi_ship ?? null, mienShip: d.mien_ship ?? null, bat: d.bat !== false, nhan: d.nhan ?? "",
@@ -402,10 +426,16 @@ const pageRa = (dv) => (p) => ({
  * `bangKhacNhau` = các bảng KHÁC NHAU giữa bản sao CHƯA quyết (có bậc) và giá món đang có; `bang` ở bản sao/món trỏ vào nó.
  * `pageChuaGanCungMon` = page `chua_gan` có gợi ý số 1 trỏ món của đơn vị (cùng bộ chấm của danh sách việc chuyển) — báo trước,
  * không chặn. CSDL chưa áp 032 ⇒ đọc được (`co032:false`, mọi bản sao «chưa quyết»), chỉ cửa GHI từ chối.
+ * `dauDonVi` = dấu của đúng đơn vị vừa đọc (`dauCuaDonVi`) — màn gửi lại nguyên trong POST. `banSao[].tienTeSai` = có bậc
+ * mang tiền tệ ≠ thị trường: bảng đó không chọn làm bảng thắng được (F4) — bản sao vẫn đối soát được khi nó THUA.
  */
 export async function donViDoiSoat(pool, teamId, gocId, shopId) {
   const co032 = await coCot032(pool);
   const dv = await docDonViTho(pool, teamId, gocId, shopId, co032);
+  return dungDonViRa(pool, teamId, dv, co032);
+}
+
+async function dungDonViRa(pool, teamId, dv, co032) {
   const nhom = new Map();
   const them = (bac, f) => {
     if (!bac.length) return;
@@ -420,12 +450,13 @@ export async function donViDoiSoat(pool, teamId, gocId, shopId) {
   const { viec } = await dsViecChuyen(pool, teamId);
   return {
     co032,
+    dauDonVi: dauCuaDonVi(dv),
     goc: { id: String(dv.goc.id), maGoc: dv.goc.ma_goc, ten: dv.goc.ten || "", marketer: dv.goc.marketer || "" },
     shop: { id: dv.shop, market: dv.market, tienTe: dv.tienTe },
     mon: dv.mon.map((m) => ({ posMa: m.ma, id: m.id, ten: m.ten, bac: bacRa(m.bac), anh: m.anh.map(anhRa),
       bang: m.bac.length ? thuTu.get(kyBang(m.bac)) : null })),
     banSao: dv.banSao.map((b) => ({ ...banSaoRa(b), ten: b.ten, bac: bacRa(b.bac), anh: b.anh.map(anhRa), doiSoat: b.doiSoat,
-      daQuyet: b.daQuyet, bang: !b.daQuyet && b.bac.length ? thuTu.get(kyBang(b.bac)) : null })),
+      daQuyet: b.daQuyet, bang: !b.daQuyet && b.bac.length ? thuTu.get(kyBang(b.bac)) : null, tienTeSai: bacSaiTe(b.bac, dv.tienTe) })),
     pageDonVi: dv.pages.map(pageRa(dv)),
     pageChuaGanCungMon: viec.filter((v) => v.trangThai === "chua_gan" && v.goiY[0] && monCua.has(v.goiY[0].posMa))
       .map((v) => ({ pageId: v.pageId, ten: v.ten || v.pageFb })),
@@ -435,12 +466,14 @@ export async function donViDoiSoat(pool, teamId, gocId, shopId) {
 }
 
 /**
- * CỬA GHI đối soát một đơn vị gốc × shop. `than = { gocId, shopId, cap?: [{banSaoId, posMa}], chon?: {<posMa>: {banSaoId} | 'giu_gia_mon'} }`.
+ * CỬA GHI đối soát một đơn vị gốc × shop. `than = { gocId, shopId, dauDonVi, cap?: [{banSaoId, posMa}], chon?: {<posMa>: {banSaoId} | 'giu_gia_mon'} }`.
+ * `dauDonVi` BẮT BUỘC = dấu `donViDoiSoat` trả cho khung người đang xem; thiếu ⇒ 409 `thieu_dau_don_vi`, lệch ⇒ 409 `don_vi_da_doi`
+ * (cả hai kèm `donVi` mới để màn vẽ lại, 0 ghi, 0 đẩy) — không có đường «không dấu».
  * `deps.luuGia(posMa, {offers, version})` = cửa lưu giá có sẵn (khoSanPhamGoc.luuGia → saveProduct chỉ-giá, đẩy bản chép TRONG
  * giao dịch, đẩy hỏng ⇒ không lưu); `deps.dayMon(monId)` = cùng bước đẩy đó nhưng không ghi giá (nhánh bảng thắng = bảng món).
  * Thứ tự: KIỂM HẾT (sai một điều ⇒ 409, không ghi gì) → mỗi món: ảnh → giá/đẩy → (hỏng ⇒ gỡ ảnh vừa thêm) → ĐÁNH DẤU một câu.
  */
-export async function doiSoatDonVi(pool, teamId, { gocId, shopId, cap, chon } = {}, { luuGia, dayMon } = {}) {
+export async function doiSoatDonVi(pool, teamId, { gocId, shopId, cap, chon, dauDonVi } = {}, { luuGia, dayMon } = {}) {
   if (typeof luuGia !== "function" || typeof dayMon !== "function") {
     throw new LoiSanPhamGoc("máy chủ chưa nối cửa lưu giá / đẩy bản chép cho đối soát", "chua_noi", 500);
   }
@@ -451,6 +484,17 @@ export async function doiSoatDonVi(pool, teamId, { gocId, shopId, cap, chon } = 
   const donVi = { gocId: String(dv.goc.id), maGoc: dv.goc.ma_goc, tenGoc: dv.goc.ten || "", shopId: dv.shop, market: dv.market };
   const chuaQuyet = dv.banSao.filter((b) => !b.daQuyet);
   if (!chuaQuyet.length) return { ...donVi, daXong: true };
+
+  // ⓪ DẤU ĐƠN VỊ (F1): tính lại TRONG lượt, trên CHÍNH dữ liệu kế hoạch ghi dưới đây dùng. Đơn vị người chọn đã thấy ≠ đơn vị lúc bấm
+  // ⇒ dừng trước mọi kiểm khác (chúng đang chạy trên một đơn vị người chưa thấy), trả đơn vị mới để màn vẽ lại cho người chọn lại.
+  const thieuDau = typeof dauDonVi !== "string" || !dauDonVi;
+  if (thieuDau || dauDonVi !== dauCuaDonVi(dv)) {
+    throw loi409(thieuDau
+      ? "thân không mang dấu đơn vị đã xem — mở khung đối soát (đọc đơn vị) rồi chọn; chưa ghi gì"
+      : `đơn vị «${dv.goc.ma_goc}» · shop ${dv.shop} đã đổi trong lúc khung mở (page gắn/gỡ, bảng bản sao hoặc giá món đổi) — `
+        + "xem lại các bảng rồi chọn lại; chưa ghi gì", thieuDau ? "thieu_dau_don_vi" : "don_vi_da_doi",
+    { donVi: await dungDonViRa(pool, teamId, dv, true) });
+  }
 
   // ① Cặp bản sao → món. Gốc có đúng 1 món ⇒ mọi bản sao vào món đó; >1 món ⇒ `cap` phải phủ MỌI bản sao chưa quyết.
   const monTheoMa = new Map(dv.mon.map((m) => [m.ma, m]));
@@ -476,13 +520,11 @@ export async function doiSoatDonVi(pool, teamId, { gocId, shopId, cap, chon } = 
     throw loi409(`thị trường «${dv.market ?? "chưa khai"}» của shop ${dv.shop} không có trong bảng tiền tệ đối soát — dừng, không đoán`,
       "thi_truong_la", { market: dv.market, biet: Object.keys(TIEN_TE_THI_TRUONG) });
   }
-  // ③ Mọi bậc của bản sao chưa quyết mang đúng tiền tệ thị trường (so CHÍNH XÁC — `saveProduct` cũng tra HE_SO_TE đúng chữ).
-  const lechTe = chuaQuyet.flatMap((b) => b.bac.filter((x) => x.dong.tien_te !== dv.tienTe)
-    .map((x) => ({ ...banSaoRa(b), soLuong: x.dong.so_luong, tienTe: x.dong.tien_te })));
-  if (lechTe.length) {
-    throw loi409(`bậc giá mang tiền tệ khác ${dv.tienTe} (thị trường ${dv.market}) — sửa bản sao trước, không quy đổi đoán`,
-      "lech_tien_te", { tienTeThiTruong: dv.tienTe, bac: lechTe });
-  }
+  // ③ Tiền tệ (F4 · đối kháng vòng 2): kiểm CHỈ trên bảng SẼ GHI lên món (bảng thắng ≠ giá món — ngay sau khi chọn được bảng thắng
+  // ở ④) và nêu ra trên các bảng ĐỀ XUẤT khi chưa chọn (409 `lech_gia_giua_page` đánh `tienTeSai` từng bảng). Bản sao THUA mang tệ
+  // sai KHÔNG chặn đơn vị: bảng nó không lên món, không ra bot, không vào cửa tiền ⇒ đánh `giu_gia_mon` như mọi bản sao thua.
+  const teSai = (bac) => bacSaiTe(bac, dv.tienTe);
+  const lechTe = [];
   // ④ Bảng của từng món đích: bảng các bản sao cặp vào (bản sao KHÔNG có bậc không đề xuất giá) ∪ bảng món đang có.
   const keHoach = []; const lech = []; const chonSai = []; const khongGiaMon = []; const khongGia = []; const cotLa = [];
   for (const m of dv.mon) {
@@ -510,6 +552,12 @@ export async function doiSoatDonVi(pool, teamId, { gocId, shopId, cap, chon } = 
     else if (nhom.size > 1) { lech.push({ m, nhom, kyMon }); continue; }
     else { const [n] = nhom.values(); thang = { ky: n.ky, bac: n.bac, banSao: n.banSao[0] || null }; }
     const ghiGia = thang.ky !== kyMon;
+    if (ghiGia && teSai(thang.bac)) {   // bảng SẼ GHI mang tệ sai ⇒ chặn món này (mọi bản sao mang đúng bảng đó được nêu tên)
+      for (const b of nhom.get(thang.ky)?.banSao || []) {
+        for (const x of b.bac) if (x.dong.tien_te !== dv.tienTe) lechTe.push({ ...banSaoRa(b), posMa: m.ma, soLuong: x.dong.so_luong, tienTe: x.dong.tien_te });
+      }
+      continue;
+    }
     if (ghiGia) {
       for (const x of thang.bac) for (const [k, v] of Object.entries(x.dong)) if (!COT_BAC_CHEP.includes(k) && v != null) cotLa.push(`${m.ma}:${k}`);
     }
@@ -528,11 +576,21 @@ export async function doiSoatDonVi(pool, teamId, { gocId, shopId, cap, chon } = 
     throw loi409(`món ${khongGiaMon.join(", ")} chưa có giá — không «giữ giá món» được; chọn bảng của một page`, "khong_co_gia_mon",
       { posMa: khongGiaMon });
   }
+  if (lechTe.length) {
+    throw loi409(`bảng sẽ ghi lên món mang tiền tệ khác ${dv.tienTe} (thị trường ${dv.market}): page `
+      + `${[...new Set(lechTe.map((x) => x.tenPage))].join(", ")} — chọn bảng khác hoặc «giữ giá món»; không quy đổi đoán`,
+    "lech_tien_te", { tienTeThiTruong: dv.tienTe, bac: lechTe });
+  }
   if (lech.length) {
+    // Bảng đề xuất mang tệ sai (≠ giá món — chọn nó là GHI) được NÊU RÕ để màn cho người chọn bảng đúng / giữ giá món.
+    const saiTe = lech.flatMap(({ nhom, kyMon }) => [...nhom.values()].filter((n) => n.ky !== kyMon && teSai(n.bac))
+      .flatMap((n) => n.banSao.map((b) => banSaoRa(b).tenPage)));
     throw loi409(`bảng giá khác nhau giữa các page (hoặc với giá món đang có) ở ${lech.map((x) => x.m.ma).join(", ")} — chọn MỘT bảng; `
-      + `lựa chọn đổi giá bot ở ${pageDonVi.length} page`, "lech_gia_giua_page", {
+      + `lựa chọn đổi giá bot ở ${pageDonVi.length} page`
+      + (saiTe.length ? ` · bảng mang tiền tệ khác ${dv.tienTe}, không chọn được: page ${saiTe.join(", ")}` : ""), "lech_gia_giua_page", {
+      tienTeThiTruong: dv.tienTe,
       lech: lech.map(({ m, nhom, kyMon }) => ({ posMa: m.ma, tenMon: m.ten, bang: [...nhom.values()].map((n) => ({
-        bac: bacRa(n.bac), laGiaMon: n.ky === kyMon, banSao: n.banSao.map(banSaoRa) })) })),
+        bac: bacRa(n.bac), laGiaMon: n.ky === kyMon, tienTeSai: n.ky !== kyMon && teSai(n.bac), banSao: n.banSao.map(banSaoRa) })) })),
       pageDoiGia: pageDonVi,
     });
   }

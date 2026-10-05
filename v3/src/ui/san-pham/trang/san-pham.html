@@ -869,12 +869,20 @@ function veDoiSoat() {
     ...(m.bac.length ? [m.bac] : [])])]));
   const RONG = new Set();
   const khacCua = (posMa) => khacMon.get(posMa) || RONG;
-  // Kết cục từng món: 'doi' (bảng thắng ≠ giá món ⇒ đổi giá) · 'giu' (giữ / trùng giá món) · 'chua_chon' (lệch, chưa chọn) · null.
+  // Bảng mang tiền tệ ≠ thị trường (máy chủ đánh `tienTeSai`) không làm bảng thắng được — trừ khi nó chính là giá món (chọn = không ghi).
+  const saiTe = (x) => !x.laGiaMon && x.banSao.some((b) => b.tienTeSai);
+  // Lựa chọn còn trỏ vào bảng sai tệ (vd. sau một lượt tải lại) thì gửi đi chắc chắn 409 ⇒ bỏ, select về «— chọn một bảng —».
+  for (const m of du.mon) {
+    const c = d.chon[m.posMa];
+    if (c && c !== 'giu_gia_mon' && bangCuaMon(du, m).some((x) => saiTe(x) && x.banSao.some((b) => 'bs:' + b.id === c))) delete d.chon[m.posMa];
+  }
+  // Kết cục từng món: 'doi' (bảng thắng ≠ giá món ⇒ đổi giá) · 'giu' (giữ / trùng giá món) · 'chua_chon' (lệch, chưa chọn) ·
+  // 'sai_te' (bảng duy nhất sẽ ghi mang tệ sai — máy chủ chắc chắn 409, nút tắt) · null.
   const ketCuc = new Map(du.mon.map((m) => {
     if (!capDu) return [m.posMa, 'chua_chon'];
     const ds = bangCuaMon(du, m);
     if (!ds.length) return [m.posMa, null];
-    if (ds.length === 1) return [m.posMa, ds[0].laGiaMon ? 'giu' : 'doi'];
+    if (ds.length === 1) return [m.posMa, ds[0].laGiaMon ? 'giu' : saiTe(ds[0]) ? 'sai_te' : 'doi'];
     const c = d.chon[m.posMa];
     if (!c) return [m.posMa, 'chua_chon'];
     if (c === 'giu_gia_mon') return [m.posMa, 'giu'];
@@ -883,8 +891,8 @@ function veDoiSoat() {
   }));
   const kc = [...ketCuc.values()];
   const soMonLech = capDu ? du.mon.filter((m) => bangCuaMon(du, m).length > 1).length : 0;
-  const tbLoi = d.loi ? canhBao({ level: d.loi.ma === 'lech_gia_giua_page' || d.loi.ma === 'can_chon_mon' ? 'warning' : 'error',
-    title: 'Chưa đối soát', body: d.loi.thongDiep }) : '';
+  const tbLoi = d.loi ? canhBao({ level: ['lech_gia_giua_page', 'can_chon_mon', 'don_vi_da_doi'].includes(d.loi.ma) ? 'warning' : 'error',
+    title: d.loi.ma === 'don_vi_da_doi' ? 'Đơn vị đã đổi trong lúc bạn xem — xem lại rồi chọn lại' : 'Chưa đối soát', body: d.loi.thongDiep }) : '';
   $('#phai').innerHTML = `<h2 class="tieu-de-lon">Đối soát giá + ảnh — «${esc(g)}» · «${esc(tt)}»</h2>
     <button type="button" class="nut-dam" data-ve-chuyen>← Danh sách chuyển</button>
     <p class="field-hint">Một lượt cho MỌI page gắn «${esc(g)}» ở ${esc(tt)}: các page này dùng chung một bảng giá. Bảng khác nhau thì chọn một.</p>
@@ -908,10 +916,11 @@ function veDoiSoat() {
     <div id="chonBangDoiSoat">${!capDu ? '<p>Chọn món cho từng bản sao trước.</p>' : du.mon.map((m) => {
       const ds = bangCuaMon(du, m);
       if (!ds.length) return cho.some((b) => capCua(du, b) === m.posMa) ? `<p>${esc(m.posMa)}: chưa có bảng giá nào — nhập giá ở «Theo thị trường» trước.</p>` : '';
-      if (ds.length === 1) return `<p>${esc(m.posMa)}: một bảng duy nhất (${esc(tenBang(ds[0].bang))}) — ${ds[0].laGiaMon ? 'trùng giá món đang có: giữ giá, không đổi giá' : 'chép lên món'}.</p>`;
+      if (ds.length === 1) return `<p>${esc(m.posMa)}: một bảng duy nhất (${esc(tenBang(ds[0].bang))}) — ${ds[0].laGiaMon ? 'trùng giá món đang có: giữ giá, không đổi giá'
+        : saiTe(ds[0]) ? `mang tiền tệ khác ${esc(du.shop.tienTe || '')}: sửa bản sao trước, không quy đổi đoán` : 'chép lên món'}.</p>`;
       return `<label class="field"><span>Bảng giá cho ${esc(m.ten || m.posMa)}</span><select name="chon" data-chon="${esc(m.posMa)}">
         <option value="">— chọn một bảng —</option>${ds.map((x) => x.banSao.length
-          ? `<option value="bs:${esc(x.banSao[0].id)}"${d.chon[m.posMa] === 'bs:' + x.banSao[0].id ? ' selected' : ''}>${esc(tenBang(x.bang))} — page ${esc(x.banSao.map((b) => b.tenPage).join(', '))}${x.laGiaMon ? ' (= giá món)' : ''}</option>`
+          ? `<option value="bs:${esc(x.banSao[0].id)}"${d.chon[m.posMa] === 'bs:' + x.banSao[0].id ? ' selected' : ''}${saiTe(x) ? ' disabled' : ''}>${esc(tenBang(x.bang))} — page ${esc(x.banSao.map((b) => b.tenPage).join(', '))}${x.laGiaMon ? ' (= giá món)' : ''}${saiTe(x) ? ` — sai tiền tệ (khác ${esc(du.shop.tienTe || '')}), không chọn được` : ''}</option>`
           : `<option value="giu_gia_mon"${d.chon[m.posMa] === 'giu_gia_mon' ? ' selected' : ''}>${esc(tenBang(x.bang))} — giữ giá món đang có</option>`).join('')}</select></label>`;
     }).join('')}</div>
     <h3>Ảnh gom về món</h3>
@@ -920,11 +929,12 @@ function veDoiSoat() {
       for (const b of cho) if (capCua(du, b) === m.posMa) for (const a of b.anh) if (!co.has(a.duong)) { co.add(a.duong); moi += 1; }
       return `<li>${esc(m.ten || m.posMa)}: ${so(m.anh.length)} ảnh đang có + ${so(moi)} ảnh mới (bỏ trùng đường)</li>`;
     }).join('')}</ul>
-    <h3 id="tieuDePageDoiGia">${kc.includes('doi') ? `Page sẽ đổi giá theo lựa chọn (${so(du.pageDonVi.length)})`
+    <h3 id="tieuDePageDoiGia">${kc.includes('sai_te') ? `Chưa đối soát được — bảng sẽ ghi mang tiền tệ khác ${esc(du.shop.tienTe || '')}: sửa bản sao trước (${so(du.pageDonVi.length)} page dùng giá món)`
+      : kc.includes('doi') ? `Page sẽ đổi giá theo lựa chọn (${so(du.pageDonVi.length)})`
       : kc.includes('chua_chon') ? `Page sẽ đổi giá nếu chọn bảng khác giá món (${so(du.pageDonVi.length)})`
       : `Không page nào đổi giá — giá món giữ nguyên (${so(du.pageDonVi.length)} page dùng giá này)`}</h3>
     <ul id="pageDoiGiaDoiSoat">${du.pageDonVi.map((p) => `<li>${esc(p.ten)}${p.marketer ? ' · ' + esc(p.marketer) : ''} · ${p.trangThai === 'xong' ? 'đã xong' : 'chờ đối soát'}</li>`).join('')}</ul>
-    <button type="button" class="nut" data-luu-doisoat${d.dangGui || !du.co032 ? ' disabled' : ''}>Đối soát «${esc(g)}» · «${esc(tt)}»</button>
+    <button type="button" class="nut" data-luu-doisoat${d.dangGui || !du.co032 || kc.includes('sai_te') ? ' disabled' : ''}>Đối soát «${esc(g)}» · «${esc(tt)}»</button>
     <p data-tb-doisoat role="status" aria-live="polite">${esc(d.tb)}</p>`;
   $('[data-ve-chuyen]').onclick = () => { DOISOAT = null; veBanSao(); };
   document.querySelectorAll('[data-cap]').forEach((s) => { s.onchange = () => { d.cap[s.dataset.cap] = s.value; d.loi = null; veDoiSoat(); }; });
@@ -934,7 +944,8 @@ function veDoiSoat() {
 async function luuDoiSoat() {
   const d = DOISOAT; if (!d || d.dangGui || !d.du) return;
   const du = d.du;
-  const than = { gocId: d.gocId, shopId: d.shopId };
+  // `dauDonVi`: dấu của ĐÚNG đơn vị đang vẽ — máy chủ so lại, đơn vị đã đổi ⇒ 409 `don_vi_da_doi` kèm đơn vị mới.
+  const than = { gocId: d.gocId, shopId: d.shopId, dauDonVi: du.dauDonVi };
   if (du.mon.length > 1) than.cap = du.banSao.filter((b) => !b.daQuyet && d.cap[b.id]).map((b) => ({ banSaoId: b.id, posMa: d.cap[b.id] }));
   const chon = {};
   for (const [posMa, v] of Object.entries(d.chon)) if (v) chon[posMa] = v === 'giu_gia_mon' ? 'giu_gia_mon' : { banSaoId: v.slice(3) };
@@ -948,7 +959,15 @@ async function luuDoiSoat() {
   if (!r.ok || !j || j.ok === false) {
     d.loi = { ma: j && j.ma || '', thongDiep: (j && j.thongDiep) || (r.loiMang ? 'Mất kết nối máy chủ.' : 'Máy chủ trả ' + r.status + '.') };
     d.tb = '';
-    await taiDoiSoat(); veDoiSoat(); return;
+    const doi = d.loi.ma === 'don_vi_da_doi' || d.loi.ma === 'thieu_dau_don_vi';
+    if (doi && j.duLieu && j.duLieu.donVi) d.du = j.duLieu.donVi; else await taiDoiSoat();
+    // Đơn vị vẽ lại KHÁC đơn vị lúc bấm (máy chủ báo, hoặc tải lại sau một lỗi khác — 502 đẩy hỏng, 409 version… — thấy dấu mới) ⇒ lựa
+    // chọn cũ làm trên đơn vị người chưa thấy hết: XOÁ và báo «đơn vị đã đổi». Giữ nó là để lượt bấm sau mang dấu MỚI + chọn CŨ lọt chốt.
+    if (doi || (d.du && d.du.dauDonVi !== du.dauDonVi)) {
+      d.chon = {};
+      if (!doi) d.loi = { ma: 'don_vi_da_doi', thongDiep: d.loi.thongDiep + ' — đơn vị cũng đã đổi trong lúc đó: xem lại các bảng rồi chọn lại.' };
+    }
+    veDoiSoat(); return;
   }
   const xong = j.daXong ? 'Đơn vị này đã đối soát xong từ trước.'
     : `Đã đối soát «${j.tenGoc || j.maGoc}»: ${(j.pageSangXong || []).length} page sang xong`

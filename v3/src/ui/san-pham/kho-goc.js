@@ -377,7 +377,8 @@ const chuBang = (m) => (m.bangThang.laGiaMon ? 'giữ giá món' : `bảng page 
 export async function doiSoatDonVi(boiCanh, than = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   batBuocVai(bc, ...VAI_SUA_DUOC);
-  const vao = { gocId: than.gocId, shopId: than.shopId, cap: than.cap, chon: than.chon };
+  // `dauDonVi`: dấu đơn vị khung đã đọc (GET) — tầng A tính lại trong lượt, thiếu/lệch ⇒ 409 kèm đơn vị mới (đối kháng vòng 2 F1).
+  const vao = { gocId: than.gocId, shopId: than.shopId, cap: than.cap, chon: than.chon, dauDonVi: than.dauDonVi };
   let kq;
   try {
     kq = await hamChuyen('doiSoat')(bc, vao);

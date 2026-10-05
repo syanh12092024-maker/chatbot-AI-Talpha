@@ -202,7 +202,7 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   }));
   r.post('/api/san-pham/chuyen/doi-soat', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, ...(await doiSoatDonVi(cuaBoiCanh(req), {
-      gocId: req.body?.gocId, shopId: req.body?.shopId, cap: req.body?.cap, chon: req.body?.chon,
+      gocId: req.body?.gocId, shopId: req.body?.shopId, cap: req.body?.cap, chon: req.body?.chon, dauDonVi: req.body?.dauDonVi,
     })) });
   }));
   r.post('/api/san-pham/chuyen/:pageId/bo-qua', canDangNhap, canVai, boc(async (req, res) => {
