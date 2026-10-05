@@ -1506,6 +1506,9 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
   - **N-GSP-GOP-SKU** (review chặng 2 GSP1, R1) cửa gộp `POST /api/san-pham/gop` vẫn tạo được gốc KHÔNG SKU (thân không gửi `sku`) hoặc
     SKU LỆCH món (gửi `sku:'ZZZ'` cho món SKU 900) — máy chủ lấy SKU từ THÂN, không suy từ món (`src/products/san-pham-goc.js:554-556`).
     Luật VE8a cũ ⇒ người quyết chọn **«Bắt buộc SKU»** (02/10) ⇒ phiếu GSP1b. Prod hôm nay 491/491 món có SKU.
+  - **N-GSP-CONG-RG-ENV** cổng `gsp2.sh` · `gsp1b.sh` gọi `rg` (máy dev chỉ có `rg` là HÀM zsh — bash không thấy ⇒ cổng đỏ giả) và
+    chép repo sang thư mục tạm KHÔNG kèm `.env` ⇒ đòi `DATABASE_URL_V3` đặt sẵn trong môi trường. Đổi `rg` → `grep -E`, nạp `.env`
+    như các cổng cũ (`--env-file-if-exists`). Tổng 05/10 chạy được bằng `rg` thay thế trên PATH + biến từ `.env`.
   - **N-GSP1-CHU-CU** câu chữ còn trỏ lối đã bỏ: `03-MAN-HINH.md:13` · `v3/src/ui/san-sang/kho-san-sang.js:67` · câu trống màn Sản phẩm.
 
 - 02/10 · GSP1 (thợ) — **N-GSP-TAOGOC** `v3/src/ui/san-pham/kho-goc.js#taoGoc` hết cửa HTTP gọi (router bỏ `POST /api/san-pham/goc`) nhưng `v3/src/ui/san-pham/index.js:17` còn re-export ⇒ không gỡ được trong pathspec GSP1 (index.js ngoài ③; gỡ riêng kho-goc thì boot chết). Gỡ `taoGoc` + dòng export ở một phiếu có `index.js`. Cùng lúc: `GET /api/san-pham/goc` còn trả `cho`/`khongCoSoHieu` (không màn nào cần ngoài điều kiện ô lưu ý `san-pham.html:105`) — GSP2 đổi ô lưu ý thành bộ đếm thì gỡ luôn hai trường + chỗ đọc.
@@ -3044,3 +3047,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · GSP1b → 🔎 CODE/TEST ĐẠT trên DB tạm — SKU suy từ mọi món POS đã khóa; thiếu/khác/lệch ⇒ 409, không ghi; HTTP thật kiểm vai và mã lỗi; trả nợ N-GSP-GOP-SKU trong code local · chưa deploy
   · cổng gsp1b 23/23 (kèm VE8a và hai bộ LL15d riêng); đảo-vá luật tin SKU thân đỏ đúng chỗ
   · commit xem git log GSP2/GSP1b · nhật ký docs/thi-cong/nhat-ky/phieu-gsp1b.md
+- 05/10 · GSP2 + GSP1b → 🔎 chặng 1 (tổng đo) — commit `0af9d3b` do phiên khác làm nốt sau khi thợ GSP2 dừng giữa chừng 02/10; `_chan1.sh`: ④ đỏ (một commit gộp hai phiếu + doc tổng) · ⑦ đỏ GIẢ (`rg` + `.env`, nợ N-GSP-CONG-RG-ENV)
+  chạy lại đúng môi trường: `gsp2.sh` 23/23 + 7 đột biến bị bắt · `gsp1b.sh` 23/23 + đột biến «tin SKU thân» bị bắt · `npm test` 2346 / 2342 đạt / 0 đỏ / 4 bỏ qua · chặng 2 đang chạy
+  · commit 0af9d3b · nhật ký docs/thi-cong/nhat-ky/phieu-gsp2.md · phieu-gsp1b.md
