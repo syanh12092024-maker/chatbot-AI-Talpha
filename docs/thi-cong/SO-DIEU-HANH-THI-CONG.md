@@ -1631,6 +1631,19 @@ canh: GL1 + GL2 + GL3 + H-GL. Trước page thứ hai: GL4 + GL6. HTTPS (GL5) SA
     Khuôn `transaction()` đổi ⇒ lượt lưu 500 (đóng khi nghi, không ghi; ca D9–D12 · D18 · K1–K3 đỏ). Gốc rễ: `saveProduct` nhận bước «trước
     khi khoá» (`truocKhiKhoa(c)`) hoặc client của nơi gọi — phiếu có `operations.js` thì gỡ pool bọc. Cùng gốc với N-GSP3-DAU-TOCTOU (cửa lưu
     giá cần nhận giao dịch ngoài).
+- 06/10 · GL3 (thợ) — năm nợ quanh `src/pancake.js`, ngoài hợp đồng phiếu (② giữ xoay token khi ĐỌC + giữ `_pageTokIdx`); chi tiết +
+  kịch bản: `docs/thi-cong/nhat-ky/phieu-gl3.md` mục Nợ:
+  - **N-GL3-DOC-NHAN-TOKEN** (/code-review GL3 #4 #5) hạn tính theo TỪNG token: ĐỌC quá hạn ⇒ xoay ⇒ một page treo chặn vòng poll tuần tự tới
+    N_token × 15 s (prod ~8 token ⇒ ~120 s); token đúng chân chậm >15 s một nhịp ⇒ `_pageTokIdx` có thể ghim page sang token kế nếu token đó
+    trả lỗi không thuộc 103/105/121. Vá: ngân sách tổng cho cả vòng xoay, hoặc không xoay khi lỗi là quá hạn — cùng nhóm «poll song song» (⑥ GL3).
+  - **N-GL3-THE-RONG-10P** (/code-review GL3 #6, có từ trước GL3) `pkTagId` cache bảng thẻ RỖNG 10′ khi đọc `/settings` lỗi (nay gồm quá hạn
+    15 s) ⇒ 10′ `V3_NAP_THE_CHAN` fail-open (bot trả lời hội thoại đã giao sale) + `pkTagByName` «page không có thẻ» (bàn giao hỏng). Chỉ cache khi đọc được.
+  - **N-GL3-SINH-TOKEN-XOAY** (/code-review GL3 #7) `getPageAccessToken` (POST `generate_page_access_token`, sinh mới = giết token của
+    pancake-tool cho page đó) vẫn xoay token khi lỗi mạng/quá hạn 15 s — phiếu chỉ đòi gắn hạn. Khoá `AICLOSER_SINH_TOKEN` đang đóng.
+  - **N-GL3-AN-TOAN-TOKEN-FILE** `test/_an-toan.mjs` không đổi hướng `pancake-tokens.json` / `pancake-page-tokens.json` (đường ghi theo
+    vị trí MODULE, không theo env) ⇒ ca nào thêm token thành công / sinh page token sẽ ghi vào gốc repo. GL3 né bằng bản sao tạm của module.
+  - **N-GL3-ANH-THU-LAI** `src/tools.js#sendImageWithRetry` (tệp não) thử lại `pkSendImage` với MỌI `ok:false` — nay kết quả có `khongRo`
+    mà vẫn bị gửi lại. Hiện mã chết (`flushPendingImages` không còn nơi gọi, handler-v3 gửi ảnh qua cửa); dựng lại thì phải tôn trọng `khongRo`.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -3228,3 +3241,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 06/10 · GL1 → ✅ (tổng nghiệm thu) — preflight thôi đọc `db.missingPages`; exit 1 chỉ khi lỗi cấu hình · CSDL không đọc được · `--ready` còn migration chưa áp · 4 ca chạy CLI THẬT trên hộp cát (không node giả)
   `_chan1.sh gl1` 8/8 · `gl1.sh` 7/7 · đảo-vá đỏ đúng · npm test thợ 2467 / 0 đỏ · gạch N-PREFLIGHT-MISSINGPAGES · làn 🟩 ⇒ không chặng 2
   · commit 75665af · 9936dd7 · nhật ký docs/thi-cong/nhat-ky/phieu-gl1.md
+- 06/10 · GL3 → 🔎 chờ nghiệm thu — `src/pancake.js`: mọi lượt gọi Pancake có hạn (đọc 15 s · gửi 30 s, `V3_PANCAKE_HAN_DOC_MS`/`_GUI_MS`, sai ⇒ mặc định + cảnh báo 1 lần; phủ cả đọc thân); GHI lỗi mạng/quá hạn/thân hỏng ⇒ trả ngay `khongRo`+`phaLoi`, KHÔNG xoay token (hết đường tin đúp bằng token khác); bốn fetch trần 15 s; `pkAddNote` lỗi ⇒ thất bại
+  `gl3.sh` ĐỎ 0/XANH 25 (22 ca GL3 · 13 đảo-vá đỏ đúng · 4 bộ ca cũ xanh) · npm test 2463→2485 pass / 0 đỏ · /code-review 10 phát hiện: sửa #1 #2 #3 #8 #9 · #4–#7 vào nợ · #10 ngoài pathspec — tổng 5 nợ §9 N-GL3-* · `_chan1` ⑤ đỏ cho src/pancake.js = rào cũ (GL7)
+  · commit 908c439 · nhật ký docs/thi-cong/nhat-ky/phieu-gl3.md
