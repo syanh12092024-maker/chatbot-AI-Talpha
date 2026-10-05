@@ -125,7 +125,10 @@ async function goi(duong, tuyChon = {}) {
   });
   let d = null;
   try { d = await r.json(); } catch { /* null */ }
-  if (!r.ok || !d || d.ok === false) throw new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.'));
+  if (!r.ok || !d || d.ok === false) {
+    // `ma` + `duLieu` đi theo lỗi (GSP3b: 409 `ban_sao_da_chuyen` ⇒ màn đọc lại và khoá tab, không chỉ in một dòng chữ).
+    throw Object.assign(new Error((d && d.thongDiep) || ('Máy chủ trả ' + r.status + '.')), { ma: d && d.ma, duLieu: d && d.duLieu });
+  }
   return d;
 }
 
@@ -411,7 +414,7 @@ function noiNutSangTab(o) {
   }));
 }
 
-/* ── SẢN PHẨM & GIÁ — SỬA ĐƯỢC NGAY TẠI ĐÂY ──────────────────────────────────────────
+/* ── SẢN PHẨM & GIÁ — SỬA ĐƯỢC NGAY TẠI ĐÂY (page CHƯA gắn sản phẩm gốc; page đã gắn: chỉ xem — GSP3b, xem `CHI_XEM`) ────
  *
  * ⚠️ ĐI ĐÚNG CỬA GHI ĐÃ CÓ: `POST /api/van-hanh/products/:id`. Không dựng cửa thứ hai cho
  *    đường TIỀN — cửa ấy đã có kiểm phiên bản (chống hai người sửa đè nhau) và nhật ký ghi
@@ -423,8 +426,24 @@ function noiNutSangTab(o) {
  *    Dựng bản thứ hai của một bảng tám cột trên đường tiền là chỗ dễ trôi khỏi nhau nhất.
  */
 let SP = [];
-/** Sản phẩm · giá · ảnh: quản trị + marketer (người quyết 28/09). Máy chủ cũ chưa trả cờ ⇒ theo `suaDuoc`. */
-const SUA_SP = () => (D && typeof D.spSuaDuoc === 'boolean' ? D.spSuaDuoc : !!(D && D.suaDuoc));
+/* GSP3b (CR-02-10b 5e · G2-N1): page ĐÃ GẮN sản phẩm gốc ⇒ tab «SP & giá» + «Ảnh» CHỈ XEM. Máy chủ nói (`noi-dung` → `chuyen`,
+ * cùng điều kiện bộ đọc của bot bỏ bản sao); giá + ảnh của page đó là của món POS × shop — sửa ở Sản phẩm › Theo thị trường, nơi
+ * sửa một lần cho MỌI page cùng sản phẩm ở thị trường. Các cửa lưu cũng từ chối bản sao của page ấy (409 `ban_sao_da_chuyen`). */
+const CHI_XEM = () => !!(daDocNoiDung && daDocNoiDung.chuyen);
+function veChuyen() {
+  const c = daDocNoiDung && daDocNoiDung.chuyen;
+  if (!c) return '';
+  return `<div class="panel" data-chuyen>${canhBao({ level: 'info', title: 'Chỉ xem — giá và ảnh của page này sửa ở màn Sản phẩm', body: c.cau })}
+    <p class="duoi-2">${button(c.tenGoc ? `Sửa ở Sản phẩm › ${c.tenGoc} › Theo thị trường →` : 'Mở màn Sản phẩm →',
+      { size: 'sm', variant: 'primary', href: c.duongSua, data: { sangsua: '1' } })}</p></div>`;
+}
+/** Lượt lưu bị từ chối vì page vừa được gắn sản phẩm (tab mở từ trước đó): đọc lại ⇒ tab thành chỉ xem + câu chỉ chỗ sửa. */
+async function khoaNeuDaChuyen(e) {
+  if (!e || e.ma !== 'ban_sao_da_chuyen') return;
+  await veLaiGiuCuon(async () => { await docLaiNoiDung(); await veSanPham($('#o-sp')); veTabAnh($('#o-anh')); });
+}
+/** Sản phẩm · giá · ảnh: quản trị + marketer (người quyết 28/09). Máy chủ cũ chưa trả cờ ⇒ theo `suaDuoc`. Page đã gắn ⇒ không ai sửa ở đây. */
+const SUA_SP = () => !CHI_XEM() && (D && typeof D.spSuaDuoc === 'boolean' ? D.spSuaDuoc : !!(D && D.suaDuoc));
 
 /* ── VẼ LẠI TỪNG KHỐI, KHÔNG CẢ TAB (28/09 · lượt thử đầu-cuối) ───────────────────────
  * Bản trước sau mỗi thao tác ảnh/sản phẩm gọi `veNoiDung()` — vẽ lại CẢ khối kịch bản, nên chữ
@@ -466,8 +485,14 @@ async function veSanPham(o) {
   // BỐN CÂU KHÁC NHAU, ĐỪNG GỘP. «Bot không có sản phẩm nào» và «có nhưng màn này chưa sửa
   // được» dẫn người đọc đi hai hướng ngược nhau — và câu đầu, nói khi thật ra có, là một
   // lời khai SAI. Đo được trong lượt thử A→Z 25/09: page thử có sản phẩm mà tab nói không.
+  if (!cuaBot.length && CHI_XEM()) {
+    // Page đã gắn mà bot không có gì để bán (chưa chọn shop / gốc chưa có món ở shop): CÂU ĐÚNG nằm trong `veChuyen` — câu «chưa khai
+    // sản phẩm gốc, sửa ở Thiết lập» dưới đây là SAI với page này (review GSP3b).
+    o.innerHTML = `${veChuyen()}<div class="panel"><p class="meta">Bot không có sản phẩm nào để chào bán ở page này.</p></div>`;
+    return;
+  }
   if (!cuaBot.length) {
-    o.innerHTML = `<div class="panel">${emptyState({ icon: 'inbox',
+    o.innerHTML = `${veChuyen()}<div class="panel">${emptyState({ icon: 'inbox',
       title: 'Bot không có sản phẩm nào để chào bán ở page này',
       body: 'Page chưa khai sản phẩm gốc, hoặc kho hàng chưa kéo danh mục về. Cả hai sửa được '
         + 'ở tab «Thiết lập» và màn «Kết nối».' })}
@@ -475,7 +500,7 @@ async function veSanPham(o) {
     return;
   }
   if (!SP.length) {
-    o.innerHTML = `<div class="panel">${canhBao({ level: 'warning',
+    o.innerHTML = `${veChuyen()}<div class="panel">${canhBao({ level: 'warning',
       title: `Bot đang dùng ${cuaBot.length} sản phẩm cho page này, nhưng màn chưa sửa được`,
       body: 'Máy chủ chưa nối bộ đọc bản sửa được. Xem tạm ở màn «Hội thoại và đơn».' })}
       <ul role="list">${cuaBot.map((x) => `<li>${esc(x.ten || x.ma || String(x.id))}</li>`).join('')}</ul></div>`;
@@ -484,7 +509,7 @@ async function veSanPham(o) {
   const thieuBan = cuaBot.filter((x) => !SP.some((y) => String(y.id) === String(x.id)))
     .map((x) => x.ten || x.ma || String(x.id));
 
-  o.innerHTML = SP.map((x, i) => `
+  o.innerHTML = veChuyen() + SP.map((x, i) => `
     <div class="panel" data-sp="${i}">
       <div class="setting-row">
         <div><label for="sp-ten-${i}"><b>Tên</b></label><div class="meta">Bot gọi món bằng tên này${x.ten ? '' : ' — đang TRỐNG, bot không gọi được tên món'} · ${esc(x.ma || '')}</div></div>
@@ -503,13 +528,13 @@ async function veSanPham(o) {
         <div><label class="switch"><input id="sp-hh-${i}" type="checkbox" role="switch" ${x.het_hang ? 'checked' : ''} ${SUA_SP() ? '' : 'disabled'}><span>${x.het_hang ? 'Hết' : 'Còn'}</span></label>
           ${x.pos_ma ? '<div class="meta">Tự theo tồn kho POS mỗi lần kéo danh mục.</div>' : ''}</div>
       </div>
-      <div class="setting-row">
+      ${CHI_XEM() ? `<p class="meta">Món POS ${esc(x.ma || '')}${x.het_hang ? ' · đang hết hàng' : ''}.</p>` : `<div class="setting-row">
         <div><label for="sp-pos-${i}"><b>Món trong kho POS</b></label><div class="meta">${x.pos_ma
           ? (x.pos ? `Đã nối · tồn kho POS: ${esc(x.pos.ton_kho ?? '?')}` : '⚠️ Món đã nối không còn trong danh mục POS — chọn lại')
           : 'Chưa nối — nối để lấy tên và tồn kho từ POS'}</div></div>
         <div><select id="sp-pos-${i}" data-pos="${i}" ${SUA_SP() ? '' : 'disabled'}><option value="${esc(x.pos_ma || '')}">${esc(x.pos?.ten || (x.pos_ma ? x.pos_ma : '— chưa nối —'))}</option></select>
           ${SUA_SP() && x.pos?.ten_khach && x.pos.ten_khach !== (x.ten || '') ? `<div class="duoi-2">${button(`Dùng tên POS: «${x.pos.ten_khach}»`, { size: 'sm', variant: 'ghost', data: { tenpos: i } })}</div>` : ''}</div>
-      </div>
+      </div>`}
       <div class="cuon-ngang"><table class="data-table"><thead><tr>
         <th scope="col">Tên bậc khách đọc</th><th scope="col">Số lượng</th><th scope="col">Giá cả gói</th><th scope="col">Tiền tệ</th><th scope="col">Bật</th>
       </tr></thead><tbody>
@@ -525,7 +550,7 @@ async function veSanPham(o) {
         Giá gốc, khuyến mãi, phí ship và miễn ship không hiện ở đây — chúng được giữ nguyên khi
         lưu, và bot hiện CHƯA nói bốn ô đó với khách (chỉ dùng khi tạo đơn).</p>
       ${SUA_SP() ? `<div class="duoi-2">${button('Lưu sản phẩm này', { size: 'sm', variant: 'primary', data: { luusp: i } })}</div>`
-        : '<p class="meta">Cần vai Quản trị hoặc Marketer để sửa sản phẩm, giá, ảnh.</p>'}
+        : CHI_XEM() ? '' : '<p class="meta">Cần vai Quản trị hoặc Marketer để sửa sản phẩm, giá, ảnh.</p>'}
       <p class="meta">Ảnh của sản phẩm này: tab «Ảnh» (${(Array.isArray(x.anh) ? x.anh.length : 0)} ảnh).</p>
     </div>`).join('');
 
@@ -620,7 +645,7 @@ async function thaoTacAnh(duong, tuyChon, xong, nut) {
     const kq = await goi(duong, { ...tuyChon, headers: { 'X-V3-Action': '1', ...(tuyChon.headers || {}) } });
     baoDongBo(kq, xong);
     await veLaiGiuCuon(async () => { await docLaiNoiDung(); await veSanPham($('#o-sp')); veTabAnh($('#o-anh')); });
-  } catch (e) { setBusy(nut, false); baoLoi('Không lưu được ảnh', e.message); }
+  } catch (e) { setBusy(nut, false); baoLoi('Không lưu được ảnh', e.message); await khoaNeuDaChuyen(e); }
 }
 
 /** Mọi lượt lưu nói rõ bot đã nhận chưa — «đã lưu» mà bot chưa đổi là điều luật cấm. */
@@ -710,7 +735,7 @@ async function luuSanPham(i, o, nut) {
     baoDongBo(kq, 'Đã lưu sản phẩm');
     // Đọc lại để lấy `version` mới (không thì lượt lưu sau bị từ chối) — chỉ vẽ lại khối sản phẩm.
     await veLaiGiuCuon(async () => { await docLaiNoiDung(); await veSanPham($('#o-sp')); veTabAnh($('#o-anh')); });
-  } catch (e) { setBusy(nut, false); baoLoi('Không lưu được sản phẩm', e.message); }
+  } catch (e) { setBusy(nut, false); baoLoi('Không lưu được sản phẩm', e.message); await khoaNeuDaChuyen(e); }
 }
 
 /* ── KỊCH BẢN — LƯU LÀ CHẠY (CR-28-09b · MN6) ────────────────────────────────────────
@@ -813,8 +838,8 @@ function veKhoiChung(o) {
 /* ── VE2 · TAB «ẢNH» — ảnh bot gửi khách của từng sản phẩm; CÙNG hàm vẽ và cửa ghi của MN4 (`veAnh` · `noiAnh`). ── */
 function veTabAnh(o) {
   if (!o) return;
-  if (!SP.length) { o.innerHTML = '<div class="o-trong">Page chưa có sản phẩm sửa được — ảnh gắn theo sản phẩm (tab «Sản phẩm & giá»).</div>'; return; }
-  o.innerHTML = SP.map((x, i) => `<div class="panel"><h3>${esc(x.ten || x.ma || 'Sản phẩm ' + (i + 1))}</h3>${veAnh(x, i)}</div>`).join('');
+  if (!SP.length) { o.innerHTML = veChuyen() + '<div class="o-trong">Page chưa có sản phẩm sửa được — ảnh gắn theo sản phẩm (tab «Sản phẩm & giá»).</div>'; return; }
+  o.innerHTML = veChuyen() + SP.map((x, i) => `<div class="panel"><h3>${esc(x.ten || x.ma || 'Sản phẩm ' + (i + 1))}</h3>${veAnh(x, i)}</div>`).join('');
   noiAnh(o);
 }
 

@@ -28,6 +28,7 @@ import { DIEU_KIEN_TAT_CA } from '../san-sang/kho-san-sang.js';
 import { phamViMarketer, maGocCuaPhamVi, cauPhamVi } from '../chung/pham-vi-marketer.js';
 import { NHAN_TRUONG } from '../kich-ban/kho-kich-ban.js';
 import { timGiaGoCung } from './gia-kich-ban.js';
+import { cauDaChuyen } from '../../../../src/products/chuyen-ban-sao.js';
 
 // `DUONG_TRANG` và `VAI_VAO_DUOC` khai ở `router.js` — đúng nếp của mọi màn khác, và thước
 // ①b («mọi đường trong menu trỏ tới màn có thật») đọc thẳng chữ trong tệp router.
@@ -218,7 +219,30 @@ export { LoiPageBot };
  *
  * Tách khỏi `trangMotPage` vì chúng nặng hơn hẳn: chỉ đọc khi người ta mở đúng tab ấy.
  * CHỈ ĐỌC — sửa vẫn ở màn chuyên của nó, và màn này nói thẳng điều đó.
+ *
+ * GSP3b (CR-02-10b 5e · G2-N1): `chuyen` ≠ null ⟺ page đã gắn sản phẩm gốc (`page.san_pham_goc_ma` có chữ — đúng điều kiện
+ * `catalog.js` bỏ nhánh bản sao). Khi đó `sanPham` là món POS của gốc ở shop (bộ đọc nhận `trang`), tab «SP & giá» + «Ảnh» CHỈ
+ * XEM và nói chỗ sửa (`chuyen.cau` + `chuyen.duongSua`, cùng câu với 409 `ban_sao_da_chuyen` của các cửa lưu).
  */
+/**
+ * GSP3b: page đã gắn sản phẩm chưa — dòng page THÔ (cần `pos_shop_id`, `gonPage` không mang) + tên/id gốc cho câu «sửa ở Sản phẩm ›
+ * G › Theo thị trường». Đọc HỎNG ⇒ KHOÁ (chỉ xem) và nói vì sao, không đoán «chưa gắn»: cửa lưu vẫn tự chốt, nhưng màn mở ô sửa cho
+ * một bản sao có thể đã hết hiệu lực là hứa một việc máy chủ sẽ từ chối.
+ */
+async function docChuyen(bc, id) {
+  try {
+    const tho = await congPage(bc).mot('page', { id: String(id) });
+    if (!tho?.san_pham_goc_ma) return null;
+    const g = await congPage(bc).mot('san_pham_goc', { ma_goc: tho.san_pham_goc_ma }).catch(() => null);
+    return cauDaChuyen({ maGoc: tho.san_pham_goc_ma, tenGoc: g?.ten, gocId: g?.id, shopId: tho.pos_shop_id, thiTruong: tho.thi_truong });
+  } catch (e) {
+    const loi = String(e?.message || e);
+    return { loi, tenGoc: '', duongSua: '/san-pham',
+      cau: `Không đọc được page này đã gắn sản phẩm hay chưa (${loi}) — tab tạm CHỈ XEM, tải lại trang để thử lại. `
+        + 'Page đã gắn sản phẩm thì giá + ảnh sửa ở Sản phẩm › Theo thị trường.' };
+  }
+}
+
 export async function noiDungPage(boiCanh, id) {
   const bc = batBuocBoiCanh(boiCanh);
   const p = await motPage(bc, id);
@@ -228,9 +252,10 @@ export async function noiDungPage(boiCanh, id) {
     // Chưa nối ≠ page không có gì. Nói ra, và nói rõ đó là lỗi dựng ứng dụng.
     return { chuaNoi: true, viSao: 'Máy chủ chưa nối bộ đọc sản phẩm và kịch bản của page.' };
   }
-  const [sanPham, kichBan] = await Promise.all([
+  const [sanPham, kichBan, chuyen] = await Promise.all([
     Promise.resolve(_docKhoi.sanPham(bc.teamId, p.id)).catch((e) => ({ loi: String(e?.message || e) })),
     Promise.resolve(_docKhoi.kichBan(bc.teamId, p.id)).catch((e) => ({ loi: String(e?.message || e) })),
+    docChuyen(bc, p.id),
   ]);
   // BẢN SỬA ĐƯỢC lấy THEO ĐÚNG những sản phẩm bộ đọc của bot vừa trả về — một luật cho câu
   // «page này bán gì», và bản sửa chỉ đi lấy thêm `version` cùng đủ bậc giá (kể cả bậc TẮT:
@@ -265,5 +290,5 @@ export async function noiDungPage(boiCanh, id) {
   if (typeof _docKhoi.khoiChung === 'function') {
     khoiChung = await Promise.resolve(_docKhoi.khoiChung(bc.teamId)).catch((e) => ({ loi: String(e?.message || e) }));
   }
-  return { chuaNoi: false, sanPham, kichBan, sanPhamSua, giaGoCung, boLuat, khoiChung };
+  return { chuaNoi: false, sanPham, kichBan, sanPhamSua, giaGoCung, boLuat, khoiChung, chuyen };
 }

@@ -20,6 +20,8 @@ import { tomTatViecVanHanh } from "./tom-tat.js";
 import { daySanPhamSangBot } from "../../../../src/products/ban-chep-bot.js";
 import { docDonCho, luuDonCho, duyetDonCho, loaiDonCho } from "./don-cho.js";
 import { HE_SO_TE } from "../../../../src/pos/index.js";
+import { chanBanSaoDaChuyen } from "../../../../src/products/chuyen-ban-sao.js";
+import { LoiSanPhamGoc } from "../../../../src/products/san-pham-goc.js";
 export const DUONG_TRANG = '/van-hanh-v3';
 export const VAI_VAO_DUOC = [VAI.QUAN_TRI, VAI.QUAN_LY];
 export const VAI_SUA_DUOC = [VAI.QUAN_TRI];
@@ -44,6 +46,10 @@ export function taoBuocDayBot({ day, env = process.env } = {}) {
     if (typeof day !== "function") {
       throw fault("Chưa nối cửa đẩy sang bot — không lưu, vì lưu mà bot không đổi là màn hình nói sai", 503);
     }
+    // GSP3b · CỬA RA (CR-02-10b 5e): bản sao của page ĐÃ GẮN sản phẩm ⇒ 409 `ban_sao_da_chuyen` ⇒ giao dịch ghi ROLLBACK, 0 lời gọi đẩy.
+    // Mọi cửa ghi đẩy bản chép đều qua bước này (lưu sản phẩm · ảnh · nối món — cả cửa mai thêm); chốt đầu từng cửa chỉ là lưới sớm.
+    // Khoá dòng page trong giao dịch (FOR SHARE) ⇒ không lọt lượt gắn chạy chồng. Món POS đi qua như cũ (GSP3 · VE8b).
+    await chanBanSaoDaChuyen(c, bc.teamId, id);
     try {
       return { ok: true, page: await daySanPhamSangBot(c, bc.teamId, id, day) };
     } catch (e) {
@@ -176,15 +182,15 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {}, dayS
       });
     }),
   );
+  // GSP3b (CR-02-10b 5e): bản sao của page ĐÃ GẮN sản phẩm ⇒ 409 `ban_sao_da_chuyen` TRƯỚC khi ghi (0 dòng đổi, 0 lời gọi đẩy, đúng mã
+  // trước mọi kiểm thân); page được gắn sau chốt này thì cửa ra `taoBuocDayBot` chặn trong giao dịch ⇒ ROLLBACK.
   r.post(
     "/api/van-hanh/products/:id",
     admin,
-    wrap(async (q, s) =>
-      s.json({
-        ok: true,
-        ...(await saveProduct(pool, q.boiCanh, q.params.id, q.body, { sauKhiLuu: sauKhiLuuSanPham })),
-      }),
-    ),
+    wrap(async (q, s) => {
+      await chanBanSaoDaChuyen(pool, q.boiCanh.teamId, q.params.id);
+      s.json({ ok: true, ...(await saveProduct(pool, q.boiCanh, q.params.id, q.body, { sauKhiLuu: sauKhiLuuSanPham })) });
+    }),
   );
   r.get(
     "/api/van-hanh/orders",
@@ -380,6 +386,8 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {}, dayS
       .status(e.status || (["55P03", "40P01"].includes(e.code) ? 409 : 400))
       .json({
         ok: false,
+        // GSP3b: lỗi tầng sản phẩm (409 `ban_sao_da_chuyen`) mang MÃ + lối sang cho màn.
+        ...(e instanceof LoiSanPhamGoc ? { ma: e.ma, ...(e.duLieu ? { duLieu: e.duLieu } : {}) } : {}),
         thongDiep: e.code
           ? "Không thể thực hiện. Dữ liệu có thể đã thay đổi; tải lại và thử lại."
           : e.message,

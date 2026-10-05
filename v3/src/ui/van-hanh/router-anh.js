@@ -9,6 +9,12 @@
 // | POST   /api/anh-san-pham/:spId/thu-tu        | { ids: [...] } — đúng tập ảnh hiện có      |
 // | POST   /api/anh-san-pham/san-pham/:spId      | lưu tên · mô tả · phân loại · hết hàng · bậc giá |
 //
+// ─── GSP3b · BẢN SAO CỦA PAGE ĐÃ GẮN SẢN PHẨM = CHỈ XEM (CR-02-10b 5e · G2-N1) ──────────────────────────
+// Mọi cửa GHI ở đây (lưu sản phẩm · năm cửa ảnh · nối món POS) gọi `chanBanSaoDaChuyen` TRƯỚC khi ghi (lưới sớm, đúng mã trước mọi
+// kiểm thân): bản sao (`nguon <> 'pos'`) của page đã gắn gốc ⇒ 409 `ban_sao_da_chuyen` (+ lối sang Sản phẩm › Theo thị trường), 0 dòng
+// đổi, 0 lời gọi đẩy. Cửa ra chung `taoBuocDayBot` chốt lần nữa trong giao dịch (khoá dòng page). Id dạng lạ («0<id>») ⇒ 400.
+// Món POS và bản sao của page CHƯA gắn đi qua như cũ.
+//
 // ─── AI SỬA ĐƯỢC: QUẢN TRỊ + MARKETER (người quyết 28/09) ─────────────────────────────
 // Marketer là người viết kịch bản và dựng page — người quyết chốt họ sửa được cả sản phẩm, giá,
 // ảnh ngay trên trang page. Cửa lưu của màn «Hội thoại và đơn» (`/api/van-hanh/products/:id`)
@@ -41,6 +47,8 @@ import {
 import { taoBuocDayBot } from "./router.js";
 import { luuKhoiChung, docKhoiChung, batBuocGiuKhoiChung, LoiKhoiChung } from "../../../../src/products/khoi-chung.js";
 import { dsMonPos, noiMonPos, LoiNoiPos } from "../../../../src/products/noi-pos.js";
+import { chanBanSaoDaChuyen, idSo } from "../../../../src/products/chuyen-ban-sao.js";
+import { LoiSanPhamGoc } from "../../../../src/products/san-pham-goc.js";
 
 export const DUOI_THEO_KIEU = Object.freeze({
   "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
@@ -77,6 +85,11 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
     });
     return { ...ra, dongBo };
   });
+  // GSP3b: cửa theo id ẢNH tra sản phẩm từ dòng ảnh trước khi chốt (ảnh không có ⇒ null ⇒ cửa phía sau nói 404 như cũ; id dạng lạ ⇒ 400).
+  const spCuaAnh = async (c, teamId, id) => {
+    const a = idSo(id, "mã ảnh");
+    return a ? (await c.query("SELECT san_pham_id FROM anh_san_pham WHERE team_id=$1 AND id=$2", [teamId, a])).rows[0]?.san_pham_id ?? null : null;
+  };
 
   r.post(
     "/api/anh-san-pham/:spId/tai-len",
@@ -96,6 +109,7 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
       fs.writeFileSync(duongTep, q.body);
       try {
         const kq = await voiDayBot(q.boiCanh, async (c) => {
+          await chanBanSaoDaChuyen(c, q.boiCanh.teamId, spId);   // GSP3b — trước khi ghi (tệp vừa ghi bị xoá ở catch)
           const a = await themAnh(c, q.boiCanh.teamId, spId, { duong: `/uploads/${tep}`, nhan: q.query.nhan });
           return { sanPhamId: a.sanPhamId, sau: a, ra: { anh: a } };
         });
@@ -109,6 +123,7 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
 
   r.post("/api/anh-san-pham/:spId/link", wrap(async (q, s) => {
     const kq = await voiDayBot(q.boiCanh, async (c) => {
+      await chanBanSaoDaChuyen(c, q.boiCanh.teamId, q.params.spId);   // GSP3b
       const a = await themAnh(c, q.boiCanh.teamId, q.params.spId, { duong: q.body?.duong, nhan: q.body?.nhan });
       return { sanPhamId: a.sanPhamId, sau: a, ra: { anh: a } };
     });
@@ -118,6 +133,7 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
   r.post("/api/anh-san-pham/anh/:id", wrap(async (q, s) => {
     const kq = await voiDayBot(q.boiCanh, async (c) => {
       const cu = (await c.query("SELECT nhan FROM anh_san_pham WHERE team_id=$1 AND id=$2", [q.boiCanh.teamId, q.params.id])).rows[0];
+      await chanBanSaoDaChuyen(c, q.boiCanh.teamId, await spCuaAnh(c, q.boiCanh.teamId, q.params.id));   // GSP3b
       const a = await suaNhanAnh(c, q.boiCanh.teamId, q.params.id, { nhan: q.body?.nhan });
       return { sanPhamId: a.sanPhamId, truoc: cu || null, sau: a, ra: { anh: a } };
     });
@@ -126,6 +142,7 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
 
   r.delete("/api/anh-san-pham/anh/:id", wrap(async (q, s) => {
     const kq = await voiDayBot(q.boiCanh, async (c) => {
+      await chanBanSaoDaChuyen(c, q.boiCanh.teamId, await spCuaAnh(c, q.boiCanh.teamId, q.params.id));   // GSP3b
       const a = await boAnh(c, q.boiCanh.teamId, q.params.id);
       return { sanPhamId: a.sanPhamId, truoc: a, ra: { daBo: a.id } };
     });
@@ -134,6 +151,7 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
 
   r.post("/api/anh-san-pham/:spId/thu-tu", wrap(async (q, s) => {
     const kq = await voiDayBot(q.boiCanh, async (c) => {
+      await chanBanSaoDaChuyen(c, q.boiCanh.teamId, q.params.spId);   // GSP3b
       const ds = await xepAnh(c, q.boiCanh.teamId, q.params.spId, q.body?.ids);
       return { sanPhamId: String(q.params.spId), sau: { thuTu: ds.map((a) => a.id) }, ra: { anh: ds } };
     });
@@ -142,7 +160,10 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
 
   // Lưu MỘT sản phẩm từ trang page — chính `saveProduct` (kiểm phiên bản · nhật ký giá trước/sau)
   // + bước đẩy bot trong cùng giao dịch. Nhật ký ghi đúng người (quản trị hay marketer).
+  // GSP3b: chốt TRƯỚC `saveProduct` (0 dòng đổi, 0 lời gọi đẩy, đúng mã trước mọi kiểm thân); page được gắn sau chốt này thì cửa ra
+  // `taoBuocDayBot` (= `dayBot`) chặn trong giao dịch ⇒ ROLLBACK, không đẩy món POS của gốc thay cho bản sao vừa lưu.
   r.post("/api/anh-san-pham/san-pham/:spId", wrap(async (q, s) => {
+    await chanBanSaoDaChuyen(pool, q.boiCanh.teamId, q.params.spId);
     s.json({ ok: true, ...(await saveProduct(pool, q.boiCanh, q.params.spId, q.body || {}, { sauKhiLuu: dayBot })) });
   }));
 
@@ -153,6 +174,7 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
   }));
   r.post("/api/anh-san-pham/pos/:spId", wrap(async (q, s) => {
     const kq = await voiDayBot(q.boiCanh, async (c) => {
+      await chanBanSaoDaChuyen(c, q.boiCanh.teamId, q.params.spId);   // GSP3b — nối món cũng đẩy bản sao theo cùng chuỗi
       const n = await noiMonPos(c, q.boiCanh.teamId, q.params.spId, q.body?.posMa ?? null);
       return { sanPhamId: n.sanPhamId, truoc: { pos_ma: n.truoc }, sau: { pos_ma: n.posMa }, ra: n };
     });
@@ -200,6 +222,10 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
   }));
 
   r.use("/api/anh-san-pham", (e, _q, s, _next) => {
+    // GSP3b: 409 `ban_sao_da_chuyen` mang MÃ + lối sang (`duLieu.duongSua`) để màn nói đúng chỗ sửa.
+    if (e instanceof LoiSanPhamGoc) {
+      return s.status(e.status || 400).json({ ok: false, ma: e.ma, thongDiep: e.message, ...(e.duLieu ? { duLieu: e.duLieu } : {}) });
+    }
     const status = e instanceof LoiAnhSanPham || e instanceof LoiKhoiChung || e instanceof LoiNoiPos ? e.status
       : e?.type === "entity.too.large" ? 413 : (e.status || 400);
     s.status(status).json({

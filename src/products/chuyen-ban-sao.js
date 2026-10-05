@@ -13,6 +13,7 @@ import { tachSoHieu, chuanHoaTen, chuanSku } from "../pos/ten-goc.js";
 import { LoiSanPhamGoc } from "./san-pham-goc.js";
 import { themAnh, boAnh } from "./anh-san-pham.js";
 import { HE_SO_TE } from "../pos/tao-don.js";
+import { docSanPhamGoiGia } from "./catalog.js";   // GSP3b — bộ đọc CHUNG của bot (rap-prompt.js re-export chính hàm này)
 
 // goi_gia lưu đơn vị NHỎ (×HE_SO_TE — nap-tu-kb.js); màn và người đối soát đọc đơn vị LỚN (99 SAR). Quy đổi MỘT chỗ, ở đây —
 // màn không tự chia (cùng quy ước `giaCuaMon` ở san-pham-goc.js).
@@ -676,4 +677,85 @@ export async function doiSoatDonVi(pool, teamId, { gocId, shopId, cap, chon, dau
     pageDoiGia: ra.some((x) => x.ghiGia) ? pageDonVi.map(({ pageId, pageFb, ten }) => ({ pageId, pageFb, ten })) : [],
     danhDau: { chep, giuGiaMon: chuaQuyet.map((b) => b.id).filter((id) => !chep.includes(id)) },
   };
+}
+
+/* ═══ GSP3b · TRANG PAGE ĐỌC ĐÚNG THỨ BOT ĐỌC + KHOÁ SỬA BẢN SAO CỦA PAGE ĐÃ GẮN (CR-02-10b mục 2 lớp 4 · 5e · review (a) G2-N1) ═══
+ * «Page đã chuyển» = `page.san_pham_goc_ma` có chữ — ĐÚNG điều kiện `catalog.js#docSanPhamGoiGia` bỏ nhánh `page_id`
+ * (`const maGoc = trang.san_pham_goc_ma; … maGoc ? { ma_goc } : { page_id }` — chuỗi rỗng = chưa gắn, như ở đó). Từ lúc ấy bot,
+ * cửa tiền, cổng bật KHÔNG còn đọc bản sao của page: sửa bản sao là sửa thứ không ai đọc, còn bước đẩy (`daySanPhamSangBot` →
+ * `pageBanSanPham` theo `page_id` → `dayPageSangBot`) lại đọc MÓN POS và đẩy nó (có thể chưa giá) — màn báo «đã lưu», bot mất giá.
+ * Page gắn gốc mà chưa có shop: catalog trả [] (bot không bán gì) — vẫn «đã chuyển» (bản sao vẫn không ai đọc).
+ * Dòng `nguon='pos'` (kể cả món RF-15 mang `page_id`) và bản sao của page CHƯA gắn KHÔNG bị chốt này chạm.
+ */
+
+/**
+ * BỘ ĐỌC sản phẩm của trang một page + màn Prompt (`docKhoi.sanPham` ở `v3/chay-that.js`): đọc dòng `page` rồi gọi bộ đọc
+ * CHUNG với `trang` — page đã gắn gốc + shop ⇒ món POS của gốc ở shop (đúng thứ `catalog.js` trả cho bot · cửa tiền · cổng bật);
+ * page chưa gắn ⇒ nhánh `page_id` (bản sao) như trước, tới GSP4. Page không thuộc team ⇒ [] (nơi gọi đã trả 404 trước đó).
+ */
+export async function docSanPhamTrangPage(db, teamId, pageRowId) {
+  const id = String(pageRowId ?? "");
+  if (!/^[1-9]\d*$/.test(id)) return [];
+  const trang = (await db.query("SELECT * FROM page WHERE team_id = $1 AND id = $2", [teamId, id])).rows[0];
+  if (!trang) return [];
+  return docSanPhamGoiGia(db, teamId, trang.id, trang);
+}
+
+/**
+ * CÂU + LỐI SANG cho page đã chuyển — MỘT bản cho cả 409 của chốt và dòng «chỉ xem» của trang page (hàm THUẦN).
+ * Thị trường đọc `page.thi_truong` (cửa gắn `ganPageVaoGoc` ghi nó = thị trường của shop); vắng ⇒ nói số shop.
+ */
+export function cauDaChuyen({ maGoc, tenGoc, gocId, shopId, thiTruong } = {}) {
+  const ten = gon(tenGoc) || gon(maGoc);
+  const shop = gon(shopId);
+  const tt = gon(thiTruong);
+  const sp = gon(gocId) || null;
+  const duongSua = sp ? `/san-pham?sp=${encodeURIComponent(sp)}&tab=${shop ? "thi-truong" : "page"}` : "/san-pham";
+  const cau = shop
+    ? `Page này bán «${ten}» ở ${tt ? `«${tt}» (shop ${shop})` : `shop ${shop}`}. Giá + ảnh sửa ở Sản phẩm › «${ten}» › Theo thị trường — `
+      + "sửa ở đó là sửa cho MỌI page cùng sản phẩm ở thị trường này."
+    : `Page này gắn «${ten}» nhưng chưa chọn shop POS — bot chưa có sản phẩm nào để bán ở page này. Gắn page vào một thị trường ở `
+      + `Sản phẩm › «${ten}» › Page đang bán; giá + ảnh sửa ở tab Theo thị trường.`;
+  return { maGoc: gon(maGoc), tenGoc: ten, gocId: sp, shopId: shop || null, thiTruong: tt || null, duongSua, cau };
+}
+
+/**
+ * Id số CHUẨN (`/^[1-9]\d*$/`) hoặc `null` khi vắng (null · undefined · ''). Dạng khác ⇒ 400 `ma_khong_hop_le` — KHÔNG cho qua: Postgres
+ * ép «012» · «+12» · « 12» về đúng số 12, nên chốt mà bỏ qua dạng lạ thì cửa phía sau vẫn ghi vào đúng dòng bị khoá (/code-review CR1).
+ */
+export function idSo(x, ten = "mã") {
+  if (x == null || x === "") return null;
+  const s = String(x);
+  if (!/^[1-9]\d*$/.test(s)) throw new LoiSanPhamGoc(`${ten} «${s.slice(0, 40)}» không hợp lệ`, "ma_khong_hop_le", 400);
+  return s;
+}
+
+/**
+ * CHỐT MÁY CHỦ của mọi cửa lưu sản phẩm/ảnh mở từ trang page: dòng `san_pham` `nguon <> 'pos'` mà page của nó (`san_pham.page_id`)
+ * đã chuyển ⇒ 409 `ban_sao_da_chuyen` (kèm tên gốc + lối sang). Hai chỗ gọi: đầu mỗi cửa TRƯỚC khi ghi (lưới sớm — trả đúng mã trước mọi
+ * kiểm khác) và CỬA RA chung `taoBuocDayBot` (v3/src/ui/van-hanh/router.js) ngay trước lời gọi đẩy, trong giao dịch ghi.
+ * Trong giao dịch, câu đọc KHOÁ dòng page (`FOR SHARE`) ⇒ tuần tự với lượt gắn (`ganPageVaoGoc` khoá `FOR UPDATE`): gắn đang dở thì chốt
+ * chờ rồi thấy page đã gắn; chốt qua rồi thì lượt gắn chờ giao dịch lưu xong (/code-review CR2).
+ * Vắng id / không có dòng / dòng `nguon='pos'` / page chưa gắn ⇒ `null`, đi qua như cũ. Id dạng lạ ⇒ 400 (`idSo`).
+ */
+export async function chanBanSaoDaChuyen(db, teamId, sanPhamId) {
+  const id = idSo(sanPhamId, "mã sản phẩm");
+  if (!id) return null;
+  const r = (await db.query(
+    `SELECT s.id, p.id AS page_row, p.page_id AS page_fb, p.ten AS page_ten, p.san_pham_goc_ma, p.pos_shop_id, p.thi_truong,
+            g.id AS goc_id, g.ten AS goc_ten
+       FROM san_pham s
+       JOIN page p ON p.team_id = s.team_id AND p.id = s.page_id
+       LEFT JOIN san_pham_goc g ON g.team_id = p.team_id AND g.ma_goc = p.san_pham_goc_ma
+      WHERE s.team_id = $1 AND s.id = $2 AND s.nguon <> 'pos'
+        FOR SHARE OF p`,
+    [teamId, id],
+  )).rows[0];
+  if (!r || !r.san_pham_goc_ma) return null;
+  const c = cauDaChuyen({ maGoc: r.san_pham_goc_ma, tenGoc: r.goc_ten, gocId: r.goc_id, shopId: r.pos_shop_id, thiTruong: r.thi_truong });
+  throw loi409(
+    `bản sao này thuộc page «${r.page_ten || r.page_fb}» — page đã chuyển sang sản phẩm, bot không còn đọc bản sao. ${c.cau} Chưa ghi gì.`,
+    "ban_sao_da_chuyen",
+    { ...c, sanPhamId: String(r.id), pageId: String(r.page_row), pageFb: r.page_fb },
+  );
 }

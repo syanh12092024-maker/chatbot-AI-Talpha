@@ -431,7 +431,9 @@ const bao = dungPhanB(app, {
     // `san_pham` cho khối sản phẩm rồi, đọc lại là tốn thêm một dòng `nhat_ky` mỗi lượt xem.
     kyNang: (teamId, _pageRowId, dsMaSp = []) => rap.docKyNang(pool, teamId, dsMaSp),
     kichBan: (teamId, pageRowId) => rap.docKichBanLive(pool, teamId, pageRowId),
-    sanPham: (teamId, pageRowId) => rap.docSanPhamGoiGia(pool, teamId, pageRowId),
+    // GSP3b (CR-02-10b 5e · G2-N1): đọc dòng `page` rồi gọi bộ đọc CHUNG (`catalog.js#docSanPhamGoiGia` — chính hàm `rap` re-export)
+    // KÈM `trang` ⇒ page đã gắn gốc + shop đọc món POS như bot · cửa tiền · cổng bật; trước đây thiếu `trang` ⇒ luôn bản sao.
+    sanPham: (teamId, pageRowId) => chuyenBanSao.docSanPhamTrangPage(pool, teamId, pageRowId),
     // MN7: Chính sách · FAQ · Phản đối của team — trang page hiện và sửa tại chỗ.
     khoiChung: async (teamId) => (await import(`${GOC}/src/products/khoi-chung.js`)).docKhoiChung(pool, teamId),
   },
