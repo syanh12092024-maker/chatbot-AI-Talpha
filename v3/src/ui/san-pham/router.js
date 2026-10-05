@@ -15,7 +15,8 @@ import { cuaBoiCanh, coVai, LoiChuaDangNhap, LoiThieuVai } from '../../auth/boi-
 import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manSanPham, sanPhamCuaMotPage, VAI_VAO_DUOC, VI_RONG, LoiSanPham } from './kho-san-pham.js';
 import { manSanPhamGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos, suaKienThucGoc, lichSuGoc,
-  goiYGop, gopMonThanhGoc, luuGiaMon, ganPageSanPham, goPageSanPham, viecChuyen, boQuaChuyenPage, huyBoQuaChuyenPage } from './kho-goc.js';
+  goiYGop, gopMonThanhGoc, luuGiaMon, ganPageSanPham, goPageSanPham, viecChuyen, boQuaChuyenPage, huyBoQuaChuyenPage,
+  xemDoiSoat, doiSoatDonVi } from './kho-goc.js';
 
 /**
  * Vai GHI của màn — khai TƯỜNG MINH ở router dù nó chỉ chuyển tiếp từ `kho-goc.js`.
@@ -79,7 +80,8 @@ function traLoi(res, e) {
   if (e instanceof LoiChuaDangNhap) return res.status(401).json({ ok: false, ma: 'chua_dang_nhap' });
   if (e instanceof LoiThieuVai) return res.status(403).json({ ok: false, ma: 'thieu_vai', thongDiep: e.message });
   if (e && typeof e.status === 'number' && e.ma) {
-    return res.status(e.status).json({ ok: false, ma: e.ma, thongDiep: e.message });
+    // GSP3: 409 của đối soát mang DỮ LIỆU để màn hiện cho người chọn (bảng từng page, page sẽ đổi giá…) — chuyển nguyên `duLieu`.
+    return res.status(e.status).json({ ok: false, ma: e.ma, thongDiep: e.message, ...(e.duLieu ? { duLieu: e.duLieu } : {}) });
   }
   console.error('[san-pham] lỗi chưa phân loại:', e?.stack || e?.message || e);
   return res.status(500).json({ ok: false, ma: 'loi_may_chu', thongDiep: 'Lỗi máy chủ. Xem log.' });
@@ -193,6 +195,15 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   // PHẢI đứng TRƯỚC `/api/san-pham/:id` — đứng sau thì `chuyen` bị bắt làm `:id` và trả «không có page đó».
   r.get('/api/san-pham/chuyen', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, ...(await viecChuyen(cuaBoiCanh(req))) });
+  }));
+  // GSP3 · đối soát giá + ảnh theo đơn vị GỐC × SHOP (không theo page — review (a) G3-C1). Quản trị. Đứng TRƯỚC `/api/san-pham/:id`.
+  r.get('/api/san-pham/chuyen/doi-soat', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await xemDoiSoat(cuaBoiCanh(req), req.query?.gocId, req.query?.shopId)) });
+  }));
+  r.post('/api/san-pham/chuyen/doi-soat', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await doiSoatDonVi(cuaBoiCanh(req), {
+      gocId: req.body?.gocId, shopId: req.body?.shopId, cap: req.body?.cap, chon: req.body?.chon,
+    })) });
   }));
   r.post('/api/san-pham/chuyen/:pageId/bo-qua', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, page: await boQuaChuyenPage(cuaBoiCanh(req), req.params.pageId, req.body?.lyDo) });

@@ -226,7 +226,25 @@ export async function boSanPhamGoc(pool, teamId, id) {
       "dang_duoc_tro_toi", 409,
     );
   }
-  await pool.query("DELETE FROM san_pham_goc WHERE team_id = $1 AND id = $2", [teamId, String(id)]);
+  // GSP3 (review chặng 2 GSP2 F1): dấu đối soát khoá theo `ma_goc` CHỮ — bỏ gốc rồi gộp lại CÙNG mã thì dấu `chep`/`giu_gia_mon` cũ
+  // sống lại và page gắn vào gốc mới tính «xong» mà chưa ai so giá. Xoá gốc + dọn dấu của mã đó trong MỘT câu (CTE ghi — một giao
+  // dịch). CSDL chưa áp 032 ⇒ xoá như cũ, không dọn, không ném (hàm này đang chạy trên prod); câu kiểm cột cùng khuôn
+  // `chuyen-ban-sao.js#coCot032`.
+  const co032 = (await pool.query(
+    `SELECT count(*)::int AS n FROM information_schema.columns
+      WHERE table_schema = current_schema() AND table_name = 'san_pham'
+        AND column_name IN ('doi_soat', 'doi_soat_luc', 'doi_soat_goc', 'doi_soat_shop')`,
+  )).rows[0]?.n === 4;
+  if (co032) {
+    await pool.query(
+      `WITH bo AS (DELETE FROM san_pham_goc WHERE team_id = $1 AND id = $2 RETURNING ma_goc)
+       UPDATE san_pham SET doi_soat = NULL, doi_soat_luc = NULL, doi_soat_goc = NULL, doi_soat_shop = NULL
+        WHERE team_id = $1 AND nguon <> 'pos' AND doi_soat_goc IN (SELECT ma_goc FROM bo)`,
+      [teamId, String(id)],
+    );
+  } else {
+    await pool.query("DELETE FROM san_pham_goc WHERE team_id = $1 AND id = $2", [teamId, String(id)]);
+  }
   return { id: String(id), maGoc: ma, ten: cu.rows[0].ten };
 }
 
@@ -679,6 +697,21 @@ export async function ganPageVaoGoc(pool, teamId, id, { pageId, shopId } = {}) {
         WHERE team_id = $1 AND id = $2`,
       [teamId, p.id, g.ma_goc, shop, tt, mk],
     );
+    // GSP3 (review chặng 2 GSP2 F2): «không chuyển» (`bo_qua`) chỉ là quyết định cho page CHƯA gắn. Gắn ⇒ xoá dấu đó cùng giao
+    // dịch — không thì gắn → gỡ làm `bo_qua` sống lại và page rời bộ đếm mà không ai quyết lại. CSDL chưa áp 032 ⇒ bỏ qua bước
+    // dọn, gắn như cũ (câu kiểm cột cùng khuôn `chuyen-ban-sao.js#coCot032`).
+    const co032 = (await khach.query(
+      `SELECT count(*)::int AS n FROM information_schema.columns
+        WHERE table_schema = current_schema() AND table_name = 'san_pham'
+          AND column_name IN ('doi_soat', 'doi_soat_luc', 'doi_soat_goc', 'doi_soat_shop')`,
+    )).rows[0]?.n === 4;
+    if (co032) {
+      await khach.query(
+        `UPDATE san_pham SET doi_soat = NULL, doi_soat_luc = NULL, doi_soat_goc = NULL, doi_soat_shop = NULL
+          WHERE team_id = $1 AND page_id = $2 AND nguon <> 'pos' AND doi_soat = 'bo_qua'`,
+        [teamId, p.id],
+      );
+    }
     const bac = (await khach.query(
       `SELECT count(*)::int AS n FROM goi_gia gg JOIN san_pham s ON s.id = gg.san_pham_id AND s.team_id = gg.team_id
         WHERE s.team_id = $1 AND s.nguon = 'pos' AND s.ma_goc = $2 AND split_part(s.ma, ':', 1) = $3 AND gg.bat IS NOT FALSE`,

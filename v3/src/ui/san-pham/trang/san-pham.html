@@ -46,6 +46,7 @@ let CHUYEN = null;   // /api/san-pham/chuyen — quyết định chuyển của 
 let LOI_CHUYEN = '';
 let LOC_CHUYEN = '';
 const CHON_CHUYEN = {}; // lựa chọn + bước đã thành công, giữ khi bước gắn thất bại
+let DOISOAT = null;     // GSP3 · khung đối soát một đơn vị gốc × shop: { gocId, shopId, du, cap, chon, tb, loi, dangGui }
 let GOC = null;      // /api/san-pham/goc — danh mục sản phẩm của team
 let CHON = null;     // id sản phẩm đang mở
 let TAB = 'chung';
@@ -729,6 +730,7 @@ function veChuyen() {
     const bo = the.querySelector('[data-boqua]'); if (bo) bo.onclick = () => quyetChuyen(v, the, bo, false);
     const huy = the.querySelector('[data-huy]'); if (huy) huy.onclick = () => quyetChuyen(v, the, huy, true);
     const gop = the.querySelector('[data-gop]'); if (gop) gop.onclick = () => veGop();
+    const ds = the.querySelector('[data-doisoat]'); if (ds) ds.onclick = () => moDoiSoat(v);
   });
 }
 function theChuyen(v) {
@@ -743,7 +745,8 @@ function theChuyen(v) {
       ${b.anhDau ? `<img src="${esc(b.anhDau)}" alt="Ảnh bản sao của ${esc(v.ten || v.pageFb)}" width="64" height="64" loading="lazy">` : ''}
       <span>${esc(b.ten || 'Bản sao chưa có tên')} ${esc(b.bienThe || '')} · ${so(b.soAnh)} ảnh<br>
       ${b.bac.map((x) => `${so(x.soLuong)}: ${so(x.gia)} ${esc(x.tienTe)}${x.bat === false ? ' (tắt)' : ''}${x.khuyenMai ? ' · ' + esc(x.khuyenMai) : ''}${x.phiShip != null ? ' · ship ' + so(x.phiShip) : ''}${x.mienShip ? ' · miễn ship' : ''}`).join(' / ') || 'Chưa có bậc giá'}</span></div>`).join('')}</div>
-    ${v.trangThai === 'cho_doi_soat' ? `<p>Đã gắn «${esc(v.goc && (v.goc.ten || v.goc.maGoc) || '')}» · chờ đối soát giá + ảnh (GSP3).</p>`
+    ${v.trangThai === 'cho_doi_soat' ? `<p>Đã gắn «${esc(v.goc && (v.goc.ten || v.goc.maGoc) || '')}» · chờ đối soát giá + ảnh.</p>
+      ${v.goc && v.shop ? `<button type="button" class="nut" data-doisoat>Đối soát giá + ảnh cho «${esc(v.goc.ten || v.goc.maGoc)}» · «${esc(v.shop.market || v.shop.id)}»</button>` : ''}`
       : v.trangThai === 'bo_qua' ? `<p>${esc(v.boQua && v.boQua.lyDo || '')}</p><button type="button" class="nut" data-huy>Bỏ quyết định</button>`
       : `<label class="field"><span>Shop POS của page</span><select name="shop" data-shop>
         <option value="">— chọn shop —</option>${CHUYEN.shopCuaTeam.map((s) => `<option value="${esc(s.id)}"${c.shopId === s.id ? ' selected' : ''}>${esc(s.market || s.id)}</option>`).join('')}</select></label>
@@ -800,6 +803,160 @@ async function quyetChuyen(v, the, nut, huy) {
       { method: 'POST', body: JSON.stringify({ lyDo }) });
     delete CHON_CHUYEN[v.pageId]; await taiChuyen(); veTrai(); veChuyen();
   } catch (e) { c.dangGui = false; nut.disabled = false; the.querySelector('[data-tb]').textContent = e.message; }
+}
+
+/* ── PHẢI · ĐỐI SOÁT GIÁ + ẢNH THEO ĐƠN VỊ GỐC × SHOP (GSP3) ──────────────────────────
+ * Một lượt cho MỌI page gắn cùng sản phẩm ở cùng shop — chúng dùng chung MỘT bảng giá (món POS). Bảng khác nhau ⇒ người chọn
+ * một bảng (hoặc giữ giá món) và thấy trước danh sách page sẽ đổi giá. Số giá ở đơn vị LỚN — máy chủ đã quy đổi, màn không chia. */
+async function moDoiSoat(v) {
+  DOISOAT = { gocId: v.goc.id, shopId: v.shop.id, du: null, cap: {}, chon: {}, tb: '', loi: null, dangGui: false };
+  await taiDoiSoat(); veDoiSoat();
+}
+async function taiDoiSoat() {
+  const d = DOISOAT;
+  try {
+    d.du = await goi('/api/san-pham/chuyen/doi-soat?gocId=' + encodeURIComponent(d.gocId) + '&shopId=' + encodeURIComponent(d.shopId));
+    d.tb = d.tb || '';
+  } catch (e) { d.du = null; d.tb = e.message; }
+}
+const CHU_BANG = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const tenBang = (i) => 'Bảng ' + (CHU_BANG[i] || String(i + 1));
+const oBac = (x) => [so(x.soLuong), so(x.gia) + ' ' + x.tienTe, x.giaGoc != null ? so(x.giaGoc) : '—', x.khuyenMai || '—',
+  x.phiShip != null ? so(x.phiShip) : '—', x.mienShip == null ? '—' : x.mienShip ? 'Miễn' : 'Không', x.bat ? 'Bật' : 'Tắt', x.nhan || '—'];
+function bangBacHtml(bac, khac) {
+  if (!bac.length) return '<p class="field-hint">Chưa có bậc giá.</p>';
+  return `<div class="table-wrap"><table class="data-table"><thead><tr><th scope="col" class="num">SL</th><th scope="col" class="num">Giá</th>
+    <th scope="col" class="num">Giá gốc</th><th scope="col">Khuyến mãi</th><th scope="col" class="num">Ship</th><th scope="col">Miễn ship</th>
+    <th scope="col">Bậc</th><th scope="col">Nhãn</th></tr></thead><tbody>${bac.map((x) => {
+      const o = oBac(x);
+      return '<tr>' + o.map((c, i) => `<td${i < 3 || i === 4 ? ' class="num"' : ''}>${khac.has(x.soLuong + '|' + i) ? `<mark data-khac>${esc(c)}</mark>` : esc(c)}</td>`).join('') + '</tr>';
+    }).join('')}</tbody></table></div>`;
+}
+// Ô KHÁC: cùng số lượng, cùng cột mà giá trị khác giữa các bảng đang so (bản sao chưa quyết + giá món) — hoặc bậc chỉ một bảng có.
+function oKhac(dsBac) {
+  const theo = new Map();
+  dsBac.forEach((bac, b) => bac.forEach((x) => oBac(x).forEach((c, i) => {
+    const k = x.soLuong + '|' + i; if (!theo.has(k)) theo.set(k, new Map()); theo.get(k).set(b, c);
+  })));
+  const khac = new Set();
+  for (const [k, m] of theo) if (new Set(m.values()).size > 1 || m.size < dsBac.length) khac.add(k);
+  return khac;
+}
+function capCua(du, b) { return du.mon.length === 1 ? du.mon[0].posMa : DOISOAT.cap[b.id] || ''; }
+// Các bảng KHÁC NHAU mà một món sẽ nhận (bản sao cặp vào nó có bậc ∪ giá món) — cùng luật máy chủ dùng để báo lệch.
+function bangCuaMon(du, m) {
+  const ds = new Map();
+  for (const b of du.banSao) if (!b.daQuyet && b.bang != null && capCua(du, b) === m.posMa) {
+    if (!ds.has(b.bang)) ds.set(b.bang, { bang: b.bang, banSao: [], laGiaMon: false });
+    ds.get(b.bang).banSao.push(b);
+  }
+  if (m.bang != null) { if (!ds.has(m.bang)) ds.set(m.bang, { bang: m.bang, banSao: [], laGiaMon: true }); else ds.get(m.bang).laGiaMon = true; }
+  return [...ds.values()];
+}
+function veDoiSoat() {
+  const d = DOISOAT; const du = d.du;
+  if (!du) {
+    $('#phai').innerHTML = emptyState({ icon: 'circle-alert', title: 'Chưa đọc được đơn vị đối soát', body: d.tb,
+      actionsHtml: button('← Danh sách chuyển', { id: 'veChuyenLai' }) });
+    $('#veChuyenLai').onclick = () => { DOISOAT = null; veBanSao(); }; return;
+  }
+  const g = du.goc.ten || du.goc.maGoc; const tt = du.shop.market || du.shop.id;
+  const cho = du.banSao.filter((b) => !b.daQuyet);
+  const nhieuMon = du.mon.length > 1;
+  const capDu = cho.every((b) => capCua(du, b));
+  // So bảng THEO MÓN ĐÍCH (cùng luật máy chủ): bản sao cặp vào món ∪ giá món. Hai món khác nhau giá khác nhau không phải «lệch».
+  const khacMon = new Map(du.mon.map((m) => [m.posMa, oKhac([...cho.filter((b) => capCua(du, b) === m.posMa).map((b) => b.bac),
+    ...(m.bac.length ? [m.bac] : [])])]));
+  const RONG = new Set();
+  const khacCua = (posMa) => khacMon.get(posMa) || RONG;
+  // Kết cục từng món: 'doi' (bảng thắng ≠ giá món ⇒ đổi giá) · 'giu' (giữ / trùng giá món) · 'chua_chon' (lệch, chưa chọn) · null.
+  const ketCuc = new Map(du.mon.map((m) => {
+    if (!capDu) return [m.posMa, 'chua_chon'];
+    const ds = bangCuaMon(du, m);
+    if (!ds.length) return [m.posMa, null];
+    if (ds.length === 1) return [m.posMa, ds[0].laGiaMon ? 'giu' : 'doi'];
+    const c = d.chon[m.posMa];
+    if (!c) return [m.posMa, 'chua_chon'];
+    if (c === 'giu_gia_mon') return [m.posMa, 'giu'];
+    const b = du.banSao.find((x) => 'bs:' + x.id === c);
+    return [m.posMa, b && b.bang === m.bang ? 'giu' : 'doi'];
+  }));
+  const kc = [...ketCuc.values()];
+  const soMonLech = capDu ? du.mon.filter((m) => bangCuaMon(du, m).length > 1).length : 0;
+  const tbLoi = d.loi ? canhBao({ level: d.loi.ma === 'lech_gia_giua_page' || d.loi.ma === 'can_chon_mon' ? 'warning' : 'error',
+    title: 'Chưa đối soát', body: d.loi.thongDiep }) : '';
+  $('#phai').innerHTML = `<h2 class="tieu-de-lon">Đối soát giá + ảnh — «${esc(g)}» · «${esc(tt)}»</h2>
+    <button type="button" class="nut-dam" data-ve-chuyen>← Danh sách chuyển</button>
+    <p class="field-hint">Một lượt cho MỌI page gắn «${esc(g)}» ở ${esc(tt)}: các page này dùng chung một bảng giá. Bảng khác nhau thì chọn một.</p>
+    ${du.co032 ? '' : canhBao({ level: 'error', title: 'Máy chủ chưa sẵn sàng ghi đối soát', body: 'Cơ sở dữ liệu chưa cập nhật cột đối soát — chỉ xem được, chưa lưu được.' })}
+    ${du.pageChuaGanCungMon.length ? canhBao({ level: 'warning', title: `${so(du.pageChuaGanCungMon.length)} page chưa gắn có gợi ý món của sản phẩm này`,
+      body: du.pageChuaGanCungMon.map((p) => p.ten).join(', ') + ' — gắn trước thì đối soát chung một lượt (không bắt buộc).' }) : ''}
+    ${tbLoi}
+    <h3>Giá món đang có</h3>
+    <div id="dsMonDoiSoat">${du.mon.map((m) => `<div class="duoi-4" data-mon="${esc(m.posMa)}"><b>${esc(m.ten || m.posMa)}</b> · ${esc(m.posMa)} · ${so(m.anh.length)} ảnh
+      ${m.bang != null ? statusBadge('x', { label: tenBang(m.bang) }) : ''}${bangBacHtml(m.bac, khacCua(m.posMa))}</div>`).join('')}</div>
+    <h3>Bản sao chờ đối soát (${so(cho.length)})${soMonLech ? ' ' + statusBadge('x', { label: 'lệch giá ở ' + so(soMonLech) + ' món' }) : ''}</h3>
+    <div id="dsBanSaoDoiSoat">${cho.map((b) => `<article class="o-luu-y duoi-4" data-ban-sao="${esc(b.id)}">
+      <h4>${esc(b.tenPage)} ${b.bang != null ? statusBadge('x', { label: tenBang(b.bang) }) : ''}</h4>
+      <p class="field-hint">Marketer page: ${esc(b.marketerPage || 'Chưa gán')} · ${so(b.anh.length)} ảnh</p>
+      ${b.anh.slice(0, 4).map((a) => `<img src="${esc(a.duong)}" alt="Ảnh bản sao ${esc(b.tenPage)}" width="48" height="48" loading="lazy">`).join('')}
+      ${bangBacHtml(b.bac, khacCua(capCua(du, b)))}
+      ${nhieuMon ? `<label class="field"><span>Món nhận bản sao này</span><select name="cap" data-cap="${esc(b.id)}">
+        <option value="">— chọn món —</option>${du.mon.map((m) => `<option value="${esc(m.posMa)}"${d.cap[b.id] === m.posMa ? ' selected' : ''}>${esc(m.ten || m.posMa)} · ${esc(m.posMa)}</option>`).join('')}</select></label>` : ''}
+    </article>`).join('') || '<p>Không còn bản sao chờ đối soát.</p>'}</div>
+    <h3>Chọn bảng giá</h3>
+    <div id="chonBangDoiSoat">${!capDu ? '<p>Chọn món cho từng bản sao trước.</p>' : du.mon.map((m) => {
+      const ds = bangCuaMon(du, m);
+      if (!ds.length) return cho.some((b) => capCua(du, b) === m.posMa) ? `<p>${esc(m.posMa)}: chưa có bảng giá nào — nhập giá ở «Theo thị trường» trước.</p>` : '';
+      if (ds.length === 1) return `<p>${esc(m.posMa)}: một bảng duy nhất (${esc(tenBang(ds[0].bang))}) — ${ds[0].laGiaMon ? 'trùng giá món đang có: giữ giá, không đổi giá' : 'chép lên món'}.</p>`;
+      return `<label class="field"><span>Bảng giá cho ${esc(m.ten || m.posMa)}</span><select name="chon" data-chon="${esc(m.posMa)}">
+        <option value="">— chọn một bảng —</option>${ds.map((x) => x.banSao.length
+          ? `<option value="bs:${esc(x.banSao[0].id)}"${d.chon[m.posMa] === 'bs:' + x.banSao[0].id ? ' selected' : ''}>${esc(tenBang(x.bang))} — page ${esc(x.banSao.map((b) => b.tenPage).join(', '))}${x.laGiaMon ? ' (= giá món)' : ''}</option>`
+          : `<option value="giu_gia_mon"${d.chon[m.posMa] === 'giu_gia_mon' ? ' selected' : ''}>${esc(tenBang(x.bang))} — giữ giá món đang có</option>`).join('')}</select></label>`;
+    }).join('')}</div>
+    <h3>Ảnh gom về món</h3>
+    <ul id="anhGomDoiSoat">${du.mon.map((m) => {
+      const co = new Set(m.anh.map((a) => a.duong)); let moi = 0;
+      for (const b of cho) if (capCua(du, b) === m.posMa) for (const a of b.anh) if (!co.has(a.duong)) { co.add(a.duong); moi += 1; }
+      return `<li>${esc(m.ten || m.posMa)}: ${so(m.anh.length)} ảnh đang có + ${so(moi)} ảnh mới (bỏ trùng đường)</li>`;
+    }).join('')}</ul>
+    <h3 id="tieuDePageDoiGia">${kc.includes('doi') ? `Page sẽ đổi giá theo lựa chọn (${so(du.pageDonVi.length)})`
+      : kc.includes('chua_chon') ? `Page sẽ đổi giá nếu chọn bảng khác giá món (${so(du.pageDonVi.length)})`
+      : `Không page nào đổi giá — giá món giữ nguyên (${so(du.pageDonVi.length)} page dùng giá này)`}</h3>
+    <ul id="pageDoiGiaDoiSoat">${du.pageDonVi.map((p) => `<li>${esc(p.ten)}${p.marketer ? ' · ' + esc(p.marketer) : ''} · ${p.trangThai === 'xong' ? 'đã xong' : 'chờ đối soát'}</li>`).join('')}</ul>
+    <button type="button" class="nut" data-luu-doisoat${d.dangGui || !du.co032 ? ' disabled' : ''}>Đối soát «${esc(g)}» · «${esc(tt)}»</button>
+    <p data-tb-doisoat role="status" aria-live="polite">${esc(d.tb)}</p>`;
+  $('[data-ve-chuyen]').onclick = () => { DOISOAT = null; veBanSao(); };
+  document.querySelectorAll('[data-cap]').forEach((s) => { s.onchange = () => { d.cap[s.dataset.cap] = s.value; d.loi = null; veDoiSoat(); }; });
+  document.querySelectorAll('[data-chon]').forEach((s) => { s.onchange = () => { d.chon[s.dataset.chon] = s.value; d.loi = null; veDoiSoat(); }; });
+  $('[data-luu-doisoat]').onclick = () => luuDoiSoat();
+}
+async function luuDoiSoat() {
+  const d = DOISOAT; if (!d || d.dangGui || !d.du) return;
+  const du = d.du;
+  const than = { gocId: d.gocId, shopId: d.shopId };
+  if (du.mon.length > 1) than.cap = du.banSao.filter((b) => !b.daQuyet && d.cap[b.id]).map((b) => ({ banSaoId: b.id, posMa: d.cap[b.id] }));
+  const chon = {};
+  for (const [posMa, v] of Object.entries(d.chon)) if (v) chon[posMa] = v === 'giu_gia_mon' ? 'giu_gia_mon' : { banSaoId: v.slice(3) };
+  if (Object.keys(chon).length) than.chon = chon;
+  d.dangGui = true; d.loi = null; d.tb = 'Đang đối soát…'; veDoiSoat();
+  // Không dùng `goiGhi`: 409 mang dữ liệu cho người chọn (bảng từng page, page sẽ đổi giá) — phải đọc được thân lỗi.
+  const r = await fetch('/api/san-pham/chuyen/doi-soat', { method: 'POST', credentials: 'same-origin',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(than) }).catch((e) => ({ ok: false, loiMang: e }));
+  const j = r.loiMang ? null : await r.json().catch(() => null);
+  d.dangGui = false;
+  if (!r.ok || !j || j.ok === false) {
+    d.loi = { ma: j && j.ma || '', thongDiep: (j && j.thongDiep) || (r.loiMang ? 'Mất kết nối máy chủ.' : 'Máy chủ trả ' + r.status + '.') };
+    d.tb = '';
+    await taiDoiSoat(); veDoiSoat(); return;
+  }
+  const xong = j.daXong ? 'Đơn vị này đã đối soát xong từ trước.'
+    : `Đã đối soát «${j.tenGoc || j.maGoc}»: ${(j.pageSangXong || []).length} page sang xong`
+      + `${(j.pageDoiGia || []).length ? ' · ' + j.pageDoiGia.length + ' page đổi giá' : ' · không đổi giá'}`
+      + ` · ${(j.mon || []).reduce((n, m) => n + (m.anhThem || 0), 0)} ảnh thêm.`;
+  DOISOAT = null;
+  await taiChuyen(); await taiGoc(); veChuyen();
+  $('#phai').insertAdjacentHTML('afterbegin', canhBao({ level: 'success', title: 'Đã đối soát', body: xong }));
 }
 
 async function boGoc(id, nut) {

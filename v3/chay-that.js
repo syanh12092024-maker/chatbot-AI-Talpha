@@ -267,6 +267,16 @@ const docDonPos = await (async () => {
   return taoDocDonPos({ taoKhach: () => taoKhachBigQuery({ tepKhoa: process.env.V3_BQ_KHOA, timeoutMs: 60000 }) });
 })();
 
+// VE8b · cửa lưu giá DUY NHẤT của màn Sản phẩm (giá theo thị trường = bậc giá của chính món POS, chỉ giá): kiểm món thuộc gốc,
+// `saveProduct` chế độ chỉ-giá + đẩy bản chép sang bot TRONG giao dịch (đẩy hỏng ⇒ không lưu). GSP3 (đối soát) gọi lại đúng hàm này.
+const dayBanChep = async (pid, products) => (await import('./src/noi-day/loi-bot.js')).daySanPhamLenBot(pid, products);
+const luuGiaMonGoc = async (bc, id, posMa, t) => {
+  const m = await spGoc.monCuaGoc(pool, bc.teamId, id, posMa);
+  const { saveProduct } = await import(`${GOC}/src/admin-v3/operations.js`);
+  const { taoBuocDayBot } = await import('./src/ui/van-hanh/router.js');
+  return saveProduct(pool, bc, m.id, { offers: t.offers, version: t.version }, { chiGia: true, sauKhiLuu: taoBuocDayBot({ day: dayBanChep }) });
+};
+
 const bao = dungPhanB(app, {
   docHrm,
   dongBoHrm,
@@ -343,19 +353,20 @@ const bao = dungPhanB(app, {
     gop: (bc, t) => spGoc.gopMonThanhGoc(pool, bc.teamId, t),
     // VE8b: giá theo thị trường = bậc giá của CHÍNH món POS (chỉ giá — tên/hết hàng vẫn theo POS), đẩy bản chép sang bot
     // trong giao dịch (cùng bước Vận hành dùng); gắn/gỡ page ghi sản phẩm · shop · thị trường · marketer.
-    luuGia: async (bc, id, posMa, t) => {
-      const m = await spGoc.monCuaGoc(pool, bc.teamId, id, posMa);
-      const { saveProduct } = await import(`${GOC}/src/admin-v3/operations.js`);
-      const { taoBuocDayBot } = await import('./src/ui/van-hanh/router.js');
-      const day = async (pid, products) => (await import('./src/noi-day/loi-bot.js')).daySanPhamLenBot(pid, products);
-      return saveProduct(pool, bc, m.id, { offers: t.offers, version: t.version }, { chiGia: true, sauKhiLuu: taoBuocDayBot({ day }) });
-    },
+    luuGia: luuGiaMonGoc,
     ganPage: (bc, id, t) => spGoc.ganPageVaoGoc(pool, bc.teamId, id, t),
     goPage: (bc, id, pageId) => spGoc.goPageKhoiGoc(pool, bc.teamId, id, pageId),
     // GSP2: danh sách việc chuyển (TẠM, gỡ ở GSP5) — hàm TUỲ CHỌN của `datKhoGoc`, KHÔNG thuộc danh sách bắt buộc.
     dsChuyen: (bc) => chuyenBanSao.dsViecChuyen(pool, bc.teamId),
     boQuaChuyen: (bc, pageId, lyDo) => chuyenBanSao.boQuaPage(pool, bc.teamId, pageId, lyDo),
     huyBoQuaChuyen: (bc, pageId) => chuyenBanSao.huyBoQua(pool, bc.teamId, pageId),
+    // GSP3: đối soát giá + ảnh theo đơn vị gốc × shop — hàm TUỲ CHỌN. Ghi giá qua ĐÚNG cửa lưu giá VE8b ở trên (`luuGiaMonGoc`,
+    // cấm đường ghi giá thứ hai); nhánh bảng thắng = bảng món vẫn đẩy bản chép một lần bằng CÙNG bước đẩy (`taoBuocDayBot`).
+    donViDoiSoat: (bc, gocId, shopId) => chuyenBanSao.donViDoiSoat(pool, bc.teamId, gocId, shopId),
+    doiSoat: (bc, t) => chuyenBanSao.doiSoatDonVi(pool, bc.teamId, t, {
+      luuGia: (posMa, x) => luuGiaMonGoc(bc, t.gocId, posMa, x),
+      dayMon: async (monId) => (await import('./src/ui/van-hanh/router.js')).taoBuocDayBot({ day: dayBanChep })(pool, bc, monId),
+    }),
   },
   // Kho tạm: page ở team kỹ thuật, nguồn cho lát «gán page ↔ team».
   docKhoTamPage: (t) => pageChuaPhan(pool, t),

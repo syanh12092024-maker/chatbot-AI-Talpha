@@ -110,6 +110,9 @@ export const HANH_DONG = Object.freeze({
   // Đổi trạng thái bộ đếm GSP4 chờ về 0 ⇒ phải truy ngược được ai quyết, lý do gì.
   BO_QUA_CHUYEN_PAGE: 'bo_qua_chuyen_page',
   HUY_BO_QUA_CHUYEN_PAGE: 'huy_bo_qua_chuyen_page',
+  // GSP3 (05/10): đối soát giá + ảnh của bản sao theo đơn vị gốc × shop — chép một bảng giá lên món POS (đổi giá bot + cửa tiền ở
+  // MỌI page cùng gốc × shop) và gom ảnh. Phải trả lời được: bảng của page nào thắng, bảng cũ là gì, page nào đổi giá, ai chọn.
+  DOI_SOAT_BAN_SAO: 'doi_soat_ban_sao',
 
   // Quét Pancake bằng kho token rồi upsert bảng `page` (17/09). Đây là đường DUY NHẤT đưa
   // page vào hệ mà không cần tệp `pages.json` của tiến trình bot v1 — nên nó cũng là chỗ
@@ -166,7 +169,7 @@ export const NHOM = Object.freeze({
   san_pham: Object.freeze([
     HANH_DONG.TAO_SAN_PHAM_GOC, HANH_DONG.SUA_SAN_PHAM_GOC, HANH_DONG.BO_SAN_PHAM_GOC,
     HANH_DONG.GAN_MON_POS_GOC, HANH_DONG.GO_MON_POS_GOC, HANH_DONG.SUA_KIEN_THUC_SAN_PHAM,
-    HANH_DONG.BO_QUA_CHUYEN_PAGE, HANH_DONG.HUY_BO_QUA_CHUYEN_PAGE,
+    HANH_DONG.BO_QUA_CHUYEN_PAGE, HANH_DONG.HUY_BO_QUA_CHUYEN_PAGE, HANH_DONG.DOI_SOAT_BAN_SAO,
   ]),
   bo_luat: Object.freeze([HANH_DONG.LUU_BAN_NHAP_BO_LUAT, HANH_DONG.AP_BO_LUAT]),
   ky_nang: Object.freeze([HANH_DONG.BAT_TAT_KY_NANG, HANH_DONG.DAT_NHOM_KY_NANG]),
@@ -296,6 +299,7 @@ const MO_TA = Object.freeze({
   [HANH_DONG.GAN_SAN_PHAM_GOC]: 'Gán sản phẩm gốc cho page',
   [HANH_DONG.BO_QUA_CHUYEN_PAGE]: 'Không chuyển page sang sản phẩm gốc',
   [HANH_DONG.HUY_BO_QUA_CHUYEN_PAGE]: 'Bỏ quyết định không chuyển page',
+  [HANH_DONG.DOI_SOAT_BAN_SAO]: 'Đối soát giá + ảnh bản sao sang món POS',
   // VE7e · 01/10: mã tầng A GHI THẲNG vào `nhat_ky` (không qua `ghiNhatKy` của v3, nên KHÔNG phải mã hợp lệ để v3 ghi) —
   // có ở đây chỉ để màn Nhật ký ra chữ thay vì mã trần. Nghĩa đọc từ nơi ghi: `src/db/truy-van.js#ghiNhatKyHeThong`
   // (doc/them/sua qua ctxHeThong) · `src/pos/doc-danh-muc.js` · `src/chat/ho-so-khach.js` · `src/chat/kho.js` ·

@@ -362,6 +362,56 @@ export async function huyBoQuaChuyenPage(boiCanh, pageId) {
   return kq;
 }
 
+/* ═══ GSP3 · ĐỐI SOÁT GIÁ + ẢNH THEO ĐƠN VỊ GỐC × SHOP (CR-02-10b 5e) ═══
+ * Hai hàm TUỲ CHỌN của `datKhoGoc` (`donViDoiSoat` · `doiSoat`) — như ba hàm GSP2, KHÔNG vào danh sách bắt buộc. Quản trị.
+ * Tầng A ghi giá qua cửa lưu giá có sẵn (saveProduct chỉ-giá tự ghi nhật ký `v3_sua_san_pham` truoc/sau); ở đây ghi THÊM một dòng
+ * `doi_soat_ban_sao` ở sản phẩm + MỖI page của đơn vị: món đích · bảng thắng (page nào / giá món) · bảng cũ · page đổi giá · số ảnh. */
+export async function xemDoiSoat(boiCanh, gocId, shopId) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  return hamChuyen('donViDoiSoat')(bc, gocId, shopId);
+}
+
+const chuBang = (m) => (m.bangThang.laGiaMon ? 'giữ giá món' : `bảng page «${m.bangThang.tenPage}»`);
+
+export async function doiSoatDonVi(boiCanh, than = {}) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  const vao = { gocId: than.gocId, shopId: than.shopId, cap: than.cap, chon: than.chon };
+  let kq;
+  try {
+    kq = await hamChuyen('doiSoat')(bc, vao);
+  } catch (e) {
+    const du = e?.duLieu;
+    if (du?.nuaVoi || du?.daXongMon?.length) {
+      // Không im: (a) NỬA VỜI — đẩy hỏng và gỡ ảnh cũng hỏng, ảnh của lượt còn trên món; (b) DỞ — gốc nhiều món, món trước đã đổi
+      // giá + đẩy bot rồi món sau hỏng (đơn vị chưa đánh dấu). Ghi nhật ký rồi mới ném.
+      const xong = (du.daXongMon || []).map((m) => `${m.posMa} ← ${chuBang(m)}`).join('; ');
+      const chu = du.nuaVoi ? `đối soát NỬA VỜI — ${e.message}${xong ? ` · đã ghi trước đó: ${xong}` : ''}`
+        : `đối soát DỞ — đã ghi ${xong}; hỏng ở ${du.posMaHong}: ${e.message} — chưa đánh dấu, chạy lại sẽ đi tiếp`;
+      console.error(`[san-pham] ${chu}`);
+      try {
+        await ghi(bc, { hanhDong: HANH_DONG.DOI_SOAT_BAN_SAO, doiTuongLoai: BANG, doiTuongId: String(vao.gocId ?? ''),
+          sau: { ...du, shopId: vao.shopId ?? null }, ghiChu: chu });
+      } catch (le) { console.error('[san-pham] ghi nhật ký đối soát dở/nửa vời hỏng:', le?.message || le); }
+    }
+    // Lỗi của saveProduct / bước đẩy chỉ mang `status` (không `ma`) ⇒ bọc để router trả đúng mã (409 «đã đổi», 502 đẩy hỏng).
+    if (e && typeof e.status === 'number' && !e.ma) throw Object.assign(new LoiSanPham(e.message, 'luu_gia', e.status), { duLieu: e.duLieu });
+    throw e;
+  }
+  if (kq.daXong) return kq;
+  const doi = kq.pageDoiGia.map((p) => p.ten).join(', ');
+  const chu = `đối soát «${kq.tenGoc || kq.maGoc}» · ${kq.market || 'shop ' + kq.shopId}: `
+    + kq.mon.map((m) => `${m.posMa} ← ${chuBang(m)}${m.ghiGia ? '' : ' (không đổi giá)'} · +${m.anhThem} ảnh`).join('; ')
+    + (kq.pageDoiGia.length ? ` · ${kq.pageDoiGia.length} page đổi giá: ${doi}` : ' · không page nào đổi giá');
+  const sau = { maGoc: kq.maGoc, shopId: kq.shopId, mon: kq.mon, pageDoiGia: kq.pageDoiGia, danhDau: kq.danhDau };
+  await ghi(bc, { hanhDong: HANH_DONG.DOI_SOAT_BAN_SAO, doiTuongLoai: BANG, doiTuongId: kq.gocId, sau, ghiChu: chu });
+  for (const p of kq.pageDonVi) {
+    await ghi(bc, { hanhDong: HANH_DONG.DOI_SOAT_BAN_SAO, doiTuongLoai: 'page', doiTuongId: p.pageId, sau, ghiChu: chu });
+  }
+  return kq;
+}
+
 /* ═══ LL11 · KIẾN THỨC SẢN PHẨM — nhà mới của kỹ năng ═══ */
 
 /**
