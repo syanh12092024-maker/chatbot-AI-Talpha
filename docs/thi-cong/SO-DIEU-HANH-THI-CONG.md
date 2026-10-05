@@ -1509,6 +1509,9 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
   - **N-GSP-CONG-RG-ENV** cổng `gsp2.sh` · `gsp1b.sh` gọi `rg` (máy dev chỉ có `rg` là HÀM zsh — bash không thấy ⇒ cổng đỏ giả) và
     chép repo sang thư mục tạm KHÔNG kèm `.env` ⇒ đòi `DATABASE_URL_V3` đặt sẵn trong môi trường. Đổi `rg` → `grep -E`, nạp `.env`
     như các cổng cũ (`--env-file-if-exists`). Tổng 05/10 chạy được bằng `rg` thay thế trên PATH + biến từ `.env`.
+  - **N-PREFLIGHT-MISSINGPAGES** (báo cáo go-live 02/10, tổng xác nhận 05/10) `deploy/preflight.mjs:134` đọc `db.missingPages.length`
+    mà `inspectDatabase()` (`:101-106`) đã bỏ trường đó từ MB4 `357795a` ⇒ TypeError ⇒ exit 1 ⇒ `deploy/setup.sh:15,68` luôn dừng.
+    Bộ ca gọi thẳng hàm nên vẫn xanh. KHÔNG chặn đường mở van đang dùng (checkout + migrate + restart). Ngoài CR-02-10b.
   - **N-GSP1-CHU-CU** câu chữ còn trỏ lối đã bỏ: `03-MAN-HINH.md:13` · `v3/src/ui/san-sang/kho-san-sang.js:67` · câu trống màn Sản phẩm.
 
 - 02/10 · GSP1 (thợ) — **N-GSP-TAOGOC** `v3/src/ui/san-pham/kho-goc.js#taoGoc` hết cửa HTTP gọi (router bỏ `POST /api/san-pham/goc`) nhưng `v3/src/ui/san-pham/index.js:17` còn re-export ⇒ không gỡ được trong pathspec GSP1 (index.js ngoài ③; gỡ riêng kho-goc thì boot chết). Gỡ `taoGoc` + dòng export ở một phiếu có `index.js`. Cùng lúc: `GET /api/san-pham/goc` còn trả `cho`/`khongCoSoHieu` (không màn nào cần ngoài điều kiện ô lưu ý `san-pham.html:105`) — GSP2 đổi ô lưu ý thành bộ đếm thì gỡ luôn hai trường + chỗ đọc.
