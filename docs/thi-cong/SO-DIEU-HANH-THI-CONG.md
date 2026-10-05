@@ -1529,6 +1529,20 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
   - **N-GSP1-CHU-CU** câu chữ còn trỏ lối đã bỏ: `03-MAN-HINH.md:13` · `v3/src/ui/san-sang/kho-san-sang.js:67` · câu trống màn Sản phẩm.
 
 - 02/10 · GSP1 (thợ) — **N-GSP-TAOGOC** `v3/src/ui/san-pham/kho-goc.js#taoGoc` hết cửa HTTP gọi (router bỏ `POST /api/san-pham/goc`) nhưng `v3/src/ui/san-pham/index.js:17` còn re-export ⇒ không gỡ được trong pathspec GSP1 (index.js ngoài ③; gỡ riêng kho-goc thì boot chết). Gỡ `taoGoc` + dòng export ở một phiếu có `index.js`. Cùng lúc: `GET /api/san-pham/goc` còn trả `cho`/`khongCoSoHieu` (không màn nào cần ngoài điều kiện ô lưu ý `san-pham.html:105`) — GSP2 đổi ô lưu ý thành bộ đếm thì gỡ luôn hai trường + chỗ đọc.
+- 05/10 · GSP3 (thợ) — bốn nợ, ngoài pathspec phiếu:
+  - **N-GSP3-DOI-MON** (/code-review R4) dấu đối soát hiệu lực theo CHỮ gốc × shop ⇒ gỡ món x khỏi gốc G rồi gắn món y (cùng G, cùng
+    shop — `goMonPosKhoiGoc` không chặn khi còn page gắn) thì dấu `chep` cũ vẫn hiệu lực cho món mới chưa giá ⇒ page tính «xong», bộ
+    đếm GSP4 thấp hơn thật. Cửa tiền vẫn ĐÓNG (món mới chưa giá ⇒ unknown). Sửa: dọn dấu khi tập món của gốc × shop đổi (gắn/gỡ món)
+    hoặc khoá dấu theo món. `daQuyet` cấm viết lại + GSP3 chỉ được sửa 2 hàm ⇒ phiếu sau. **Đóng TRƯỚC GSP4.**
+  - **N-GSP3-CONG-CU-DO** `va-r2.sh` (1 đỏ: thước neo «8 ca», bộ ca nay 11) + `l3-m4.sh` (27/55 đỏ) ĐỎ SẴN ở base — đối chứng worktree
+    `244c199` / `b0b82d7`: danh sách dòng đỏ (chuẩn hoá id) giống hệt trước/sau GSP3. Cùng họ «8/25 cổng đỏ» 01/09. `gsp3.sh` ⑥ tự
+    đối chứng cùng thước (đỏ mới ⇒ đỏ). Phiếu sau: neo DELTA / hộp cát.
+  - **N-GSP3-DOT-COT032** câu kiểm đủ 4 cột 032 chép 3 nơi (`chuyen-ban-sao.js#coCot032` + `boSanPhamGoc` + `ganPageVaoGoc`) vì pathspec
+    GSP3 chỉ cho sửa 2 hàm và import ngược là vòng import — gom một chỗ ở phiếu chạm `san-pham-goc.js`.
+  - **N-GSP3-DOC-MAN** khung «Đối soát giá + ảnh» (màn Sản phẩm › chuyển page) chưa vào `03-MAN-HINH.md` (③ GSP3 không có tệp doc) —
+    gộp vào việc doc của GSP5.
+  - **N-VAI-B-NOI-DAY-CHAP-CHON** `v3/test/b/vai-b-noi-day.test.mjs` đỏ 1 lần khi chạy sâu trong chuỗi cổng (`_chan1 gsp3` → `gsp1` → `ve8b`
+    → `ve8a` → `ve7b`), chạy riêng 5/5 xanh — cùng ca «cookie null» nhật ký GSP2 đã ghi. Cổng con đỏ ngẫu nhiên ⇒ cổng cha đỏ giả.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -3075,3 +3089,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   · nhật ký docs/thi-cong/nhat-ky/phieu-gsp2.md (mục «Vòng 2»)
 - 05/10 · GSP2 → ✅ (tổng nghiệm thu vòng 2) — C1 ĐÃ-SỬA: quy đổi `HE_SO_TE` một chỗ ở tầng A (`bacDonViLon`), màn in thẳng đơn vị lớn · `gsp2.sh` 24/24 + 8 đột biến (thêm `don_vi`) · npm test thợ 2347/2343/0 đỏ · GSP3 → 🔨 phát
   · commit 3c524b7 · b0b82d7 · nhật ký docs/thi-cong/nhat-ky/phieu-gsp2.md «Vòng 2»
+- 05/10 · GSP3 → 🔎 chờ tổng nghiệm thu — đối soát giá + ảnh theo đơn vị GỐC × SHOP: lệch giữa page ⇒ 409 người chọn, chép trọn hàng qua `luuGia`/saveProduct (bậc tắt · ship), ảnh khử trùng, LUÔN đẩy, hỏng ⇒ gỡ ảnh, đánh dấu cả đơn vị; dọn dấu F1/F2; màn khung đơn vị
+  `gsp3.sh` rc=0 32/32 · 18 đột biến bắt (bản sao tạm) · 25 ca mới · npm test 2347→2372 / 0 đỏ / 4 skip · /code-review high 10 phát hiện: R1 R3 R6 R7 sửa, R4 → nợ N-GSP3-DOI-MON (đóng trước GSP4) · va-r2 + l3-m4 ĐỎ SẴN ở base (nợ N-GSP3-CONG-CU-DO)
+  · commit 176c823 · nhật ký docs/thi-cong/nhat-ky/phieu-gsp3.md
