@@ -20,3 +20,16 @@ Sau: tests 2467 · pass 2463 · fail 0 (cây chung có thay đổi dở của TT
 
 ## _chan1.sh gl1 (trước khi commit nhật ký)
 Tất cả ✅ trừ ⑧a (nhật ký chưa có lúc chạy) — chạy lại sau commit, kết quả dán ở dưới.
+
+### Sau commit 75665af
+```
+✅ ①phiếu-tồn-tại docs/thi-cong/phieu/PHIEU-GL1.md
+✅ ②có-Base base=1fb61de
+✅ ④pathspec-⊆-③  
+✅ ⑤vùng-cấm-src-phẳng 
+✅ ⑥hết-marker đếm=0
+✅ ⑦script-nghiệm-thu ops/bin/nghiem-thu/gl1.sh rc=0 (log /tmp/chan1-ns-30876.log, đuôi:)
+✅ ⑧a-nhật-ký docs/thi-cong/nhat-ky/phieu-gl1.md
+✅ ⑧b-§10-sổ 
+== ĐỎ 0 / XANH 8
+```
