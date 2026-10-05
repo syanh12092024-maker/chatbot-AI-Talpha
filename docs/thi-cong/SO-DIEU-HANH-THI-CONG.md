@@ -1555,6 +1555,21 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
     page gắn thêm KHÔNG bị đánh dấu (còn `cho_doi_soat`, không thua ngầm) nhưng bot của nó nhận giá món mới ngay — như mọi lượt lưu giá
     VE8b; bảng bản sao bị sửa trong cửa sổ đó vẫn bị đánh theo bảng đã đọc. GSP3b khoá cửa sửa bản sao ⇒ còn phần gắn page. Sửa gốc: khoá
     dòng `san_pham_goc` của đơn vị (`FOR UPDATE`) suốt lượt — cần cửa lưu giá nhận giao dịch ngoài.
+- 05/10 · GSP3b (thợ) — bốn nợ, ngoài pathspec phiếu:
+  - **N-GSP3B-MON-POS-CUA-DAY** phiếu ② 4 KHÔNG áp (có màn gọi): hai cửa lưu ĐẦY ĐỦ (`POST /api/anh-san-pham/san-pham/:id` · `POST
+    /api/van-hanh/products/:id`) vẫn nhận MÓN POS — lưu đầy đủ ghi đè tên/mô tả món của POS — vì trang page còn gửi vào cửa đó id lấy từ nhánh
+    `page_id` của bộ đọc, nhánh này trả cả món POS RF-15 (N-GSP2-F3; ca D10). Page đã gắn nay chỉ xem nên không màn nào gửi món POS của gốc
+    vào đó, nhưng gọi API thẳng thì được. Chặn `mon_pos_sua_o_san_pham` ở GSP4 (bỏ nhánh `page_id` + RF-15); `gsp3b.sh` ③b đỏ khi tiền đề hết.
+  - **N-GSP3B-LOI-SANG-SHOP** (/code-review CR4) lối sang `/san-pham?sp=<id>&tab=thi-truong` không mang shop — `san-pham.html#moSanPham` mở
+    thị trường ĐẦU TIÊN ⇒ gốc bán nhiều shop thì người sửa tự chọn đúng viên (câu đã nêu thị trường + số shop). Sửa ở phiếu chạm
+    `san-pham.html`: đọc `&shop=` để chọn sẵn viên, rồi `cauDaChuyen` thêm tham số.
+  - **N-GSP3B-CONG-DOI-CHUNG** (/code-review CR3) `gsp3.sh` ⑥ đối chứng base: cổng con chết giữa chừng không in dòng đỏ bị tính «ĐỎ SẴN … 0
+    dòng mới» ⇒ xanh giả; và cổng con TREO thì `gsp3.sh` treo theo (không trần thời gian, `trap … INT TERM` không exit). `gsp3b.sh` đã vá cả
+    ba (`1382ef1`) — chép sang `gsp3.sh`.
+  - **N-VAI-B-NOI-DAY-CHAP-CHON (thêm hai án)** trong lượt cổng gsp3b: `ve2b-page-gop.test.mjs` đỏ 16/17 ở tầng sâu `gsp3 → ve8b → … → ve2b`
+    (cùng chuỗi chạy trực tiếp cùng lượt xanh; chạy riêng 7/7 lượt 17/17) · `gsp3.sh` chạy riêng TREO ở `ll15a → ve7d-nguoi-team.test.mjs`
+    (0% CPU 26′, cổng HTTP còn mở sau một ca đỏ; chạy riêng 8/8). Gốc chung nghi: ca chạy trang trong vm chờ cố định ~450ms (`dom-gia.js#cho`)
+    + máy chủ không đóng khi ca đỏ ⇒ dưới tải cao ca đỏ giả rồi treo. Sửa ở thước chung (`v3/testkit/dom-gia.js`, `t.after(sv.close)`).
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -3116,3 +3131,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 05/10 · GSP3 → ✅ (tổng verify vòng 2) — F1 ĐÃ-SỬA: `dauDonVi` bắt buộc, thiếu ⇒ 409 `thieu_dau_don_vi`, lệch ⇒ 409 `don_vi_da_doi` (ca V2-K0…K4 xanh, 4 đột biến nhắm chốt dấu) · F4 ĐÃ-SỬA: tiền tệ chỉ kiểm bảng thắng, bản sao thua sai tệ ⇒ `giu_gia_mon` (V2-K6/K6b/K6c xanh) · bộ ca GSP3 37/37 · npm test thợ 2384 / 0 đỏ
   còn cửa sổ mili-giây giữa đọc và đánh dấu (N-GSP3-DAU-TOCTOU, do `saveProduct` tự commit) · GSP3b → 🔨 phát
   · commit 5afd582 · aa43268 · nhật ký docs/thi-cong/nhat-ky/phieu-gsp3.md «Vòng 2»
+- 05/10 · GSP3B → 🔎 chờ tổng nghiệm thu — trang page + màn Prompt đọc bộ đọc của bot KÈM `trang` (page đã gắn ⇒ món POS); bản sao của page đã gắn bị chốt ở đầu 7 cửa lưu SP/ảnh/nối món + cửa ra `taoBuocDayBot` (409 `ban_sao_da_chuyen`, khoá dòng page, id «0<id>» ⇒ 400); tab SP & giá + Ảnh chỉ xem + nút sang Sản phẩm › Theo thị trường; ② 4 KHÔNG áp (trang page còn gửi món POS RF-15 vào cửa đầy đủ — nợ N-GSP3B-MON-POS-CUA-DAY)
+  `gsp3b.sh` 41/42, 23/23 đột biến đỏ đúng tập ca · đỏ duy nhất ⑥gsp3 = chập chờn (VE2b 16/17 sâu trong chuỗi; chính chuỗi đó chạy trực tiếp xanh, `gsp3.sh` riêng ①–⑤ xanh, ⑥ treo ở ve7d — chạy riêng 8/8; `l3-m4` 0 đỏ mới) · 32 ca mới · npm test 2384→2416 / 0 đỏ / 4 skip · /code-review high 10: CR1 CR2 CR3 CR5 CR6 CR7 CR8 sửa, CR4 → nợ
+  · commit 3a84d76 · 1382ef1 · nhật ký docs/thi-cong/nhat-ky/phieu-gsp3b.md
