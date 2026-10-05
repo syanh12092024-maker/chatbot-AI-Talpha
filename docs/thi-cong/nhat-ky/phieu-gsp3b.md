@@ -209,4 +209,66 @@ N-GSP3B-MON-POS-CUA-DAY · N-GSP3B-LOI-SANG-SHOP · N-GSP3B-CONG-DOI-CHUNG.
 
 ## `_chan1.sh gsp3b`
 
-(đang chạy — kết quả dán ở đây ngay khi xong)
+Chạy sau commit `e9f3fe1` (05/10 15:09:51 → 15:34:21, máy dev, cây chung, không lượt đo nào khác chạy chồng):
+
+```
+Mon Oct  5 15:09:51 +07 2026
+✅ ①phiếu-tồn-tại docs/thi-cong/phieu/PHIEU-GSP3B.md
+✅ ②có-Base base=aa43268
+— file đổi (14):
+    docs/thi-cong/SO-DIEU-HANH-THI-CONG.md
+    docs/thi-cong/nhat-ky/phieu-gsp3b.md
+    docs/thi-cong/phieu/PHIEU-GSP3B.md
+    docs/v3/03-MAN-HINH.md
+    ops/bin/nghiem-thu/gsp3b.sh
+    src/products/chuyen-ban-sao.js
+    test/gsp3b-chot-ban-sao.test.mjs
+    v3/chay-that.js
+    v3/src/ui/mot-page/kho-mot-page.js
+    v3/src/ui/mot-page/trang/mot-page.html
+    v3/src/ui/van-hanh/router-anh.js
+    v3/src/ui/van-hanh/router.js
+    v3/test/b/gsp3b-cua-luu.test.mjs
+    v3/test/b/gsp3b-trang-page.test.mjs
+✅ ④pathspec-⊆-③  
+✅ ⑤vùng-cấm-src-phẳng 
+✅ ⑥hết-marker đếm=0
+✅ ⑦script-nghiệm-thu ops/bin/nghiem-thu/gsp3b.sh rc=0 (log /tmp/chan1-ns-14830.log, đuôi:)
+    ✅ ⑥cổng-cũ-ve2b rc=0
+    ✅ ⑥cổng-cũ-ve8b rc=0
+    ✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở aa43268: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
+       ⑦npm-test: HOÃN (đặt CHAY_NPM_TEST=1 khi không lượt đo nào khác đang chạy — luật 6) — không tính vào ĐỎ/XANH
+    == ĐỎ 0 / XANH 42
+✅ ⑧a-nhật-ký docs/thi-cong/nhat-ky/phieu-gsp3b.md
+✅ ⑧b-§10-sổ 
+== ĐỎ 0 / XANH 8
+rc=0
+Mon Oct  5 15:34:21 +07 2026
+```
+
+Log ⑦ (`/tmp/chan1-ns-14830.log`) — các phép trừ đột biến (đột biến: 23 ✅ · 0 🔴):
+
+```
+✅ ①bộ-ca-gsp3b pass=32 fail=0 (sàn ≥32)
+✅ ②phép-④-có-ca-xanh 30/30
+✅ ③nối-dây-chay-that dòng nối mới=1 (đòi 1) · lời gọi thiếu trang=0 (đòi 0)
+✅ ③b-tiền-đề-②4-còn-màn-gọi-cửa-đầy-đủ số màn=1 (mot-page.html: id từ bộ đọc page_id, gồm món POS RF-15)
+✅ ③c-không-sửa-tệp-cấm so với aa43268
+✅ ③d-chuyen-ban-sao-chỉ-thêm dòng cũ bị sửa/xoá=0 (đòi 0)
+✅ ④0-lượt-chứng-bản-sao-tạm-xanh pass=32 fail=0
+✅ ④z-khôi-phục-bản-sao-xanh-lại fail=0
+✅ ④cây-chung-không-dính-đột-biến băm 5 tệp bị đột biến trong cây chung trước = sau · 0 tệp .goc lạc
+✅ ⑤LL15d-phạm-vi test/ll15d-marketer-san-pham.test.mjs pass=4 fail=0
+✅ ⑤LL15d-phạm-vi v3/test/b/ll15d-marketer-man.test.mjs pass=5 fail=0
+✅ ⑥cổng-cũ-ll15d rc=0
+✅ ⑥cổng-cũ-gsp1 rc=0
+✅ ⑥cổng-cũ-gsp2 rc=0
+✅ ⑥cổng-cũ-gsp3 rc=0
+✅ ⑥cổng-cũ-ve2 rc=0
+✅ ⑥cổng-cũ-ve2b rc=0
+✅ ⑥cổng-cũ-ve8b rc=0
+✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở aa43268: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
+== ĐỎ 0 / XANH 42
+```
+
+Lượt này `⑥gsp3` XANH (lượt thợ trước 41/42 đỏ đúng ở đó) — thêm một bằng chứng đỏ kia là chập chờn, không do GSP3b.
