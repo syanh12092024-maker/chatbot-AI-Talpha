@@ -391,8 +391,8 @@ canh: GL1 + GL2 + GL3 + H-GL. Trước page thứ hai: GL4 + GL6. HTTPS (GL5) SA
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
 | GL1 | `deploy/preflight.mjs` thôi luôn exit 1 + ca chạy CLI thật | — | 🟩 | ✅ 06/10 · `75665af` · `_chan1` 8/8 · `gl1.sh` 7/7 · chưa deploy |
-| GL2 | Trần số page bật TOÀN HỆ (biến mới; vắng = 0; vượt ⇒ worker dừng hẳn + đèn đỏ); cổng `setPage` có khoá | GL1 · sau TT1 (cùng `operations.js`) | 🟨 | ⬜ |
-| GL3 | Hạn chờ request Pancake (đọc 15 s · gửi 30 s); POST lỗi mạng / quá hạn KHÔNG xoay token (đang có nguy cơ tin đúp) | — | 🟥 | ⬜ |
+| GL2 | Trần số page bật TOÀN HỆ (biến mới; vắng = 0; vượt ⇒ worker dừng hẳn + đèn đỏ); cổng `setPage` có khoá | GL1 · sau TT1 (cùng `operations.js`) | 🟨 | ⬜ review (a) SỬA-PHIẾU → đã sửa (C1 hàm riêng cho worker · C2 đèn đếm toàn hệ) · phát sau TT1 |
+| GL3 | Hạn chờ request Pancake (đọc 15 s · gửi 30 s); POST lỗi mạng / quá hạn KHÔNG xoay token (đang có nguy cơ tin đúp) | — | 🟥 | 🔨 phát 06/10 · review (a) ĐẠT + 5 NÊN đã vào phiếu |
 | GL4 | Ngắt cả page khi 2 lần gửi lỗi liên tiếp → 30′, tự mở; tin tồn giữ ở chờ; lưu nguyên nhân lỗi; đèn đỏ | GL3 | 🟥 | ⬜ |
 | GL5 | HTTPS (trust proxy · đóng 3102 · `PUBLIC_URL` https · nginx) — SAU pilot | tên miền | 🟨 | ⬜ |
 | GL6 | Nhịp tim worker · độ trễ + tỉ lệ lỗi · bộ dò đẩy cảnh báo Telegram | GL4 · bot + chat id | 🟨 | ⬜ |

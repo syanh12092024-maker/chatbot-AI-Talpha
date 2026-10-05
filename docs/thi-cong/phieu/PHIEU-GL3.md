@@ -1,6 +1,6 @@
 # PHIẾU GL3 — Hạn chờ cho mọi lượt gọi Pancake + gửi lỗi mạng KHÔNG gửi lại bằng token khác
 
-**Base:** `ĐẶT-LÚC-PHÁT` · **Làn:** 🟥 (đường GỬI tin cho khách — nguy cơ tin đúp)
+**Base:** `195d9c9` · **Làn:** 🟥 (đường GỬI tin cho khách — nguy cơ tin đúp)
 **Nguồn:** báo cáo `docs/golive-audit-2026-10-02.md` mục «Timeout và ngắt page» · nghiên cứu go-live 05/10 (sổ §10 «ĐIỀU KIỆN GO-LIVE (GL)») ·
 người quyết 05/10 «triển khai»; hạn mặc định tổng đề nghị (người quyết không bác): đọc 15 s · gửi 30 s · sổ §5j
 **Đụng bộ não:** không. (`src/pancake.js` là file phẳng DÙNG CHUNG — sổ §0a sau CR-02-10: «sửa được như code v3 thường»; chỉ năm file bộ não
@@ -35,6 +35,11 @@ nhận hai tin. Sổ `lan_gui` không chặn được vì cả hai lần nằm t
 4. Bốn `fetch` trần (`:91` `:166` `:185` `:202`) gắn hạn: 15 s (đọc / đánh dấu) — `:185` pkMarkUnread là POST nhưng không gửi gì cho khách:
    lỗi mạng ⇒ trả lỗi, không thử lại.
 5. Không đổi URL, thân, thứ tự token, cách nhớ token theo page (`_pageTokIdx`).
+6. **Sửa sau review (a) 06/10 (5 NÊN):** (a) biến hạn ngoài khoảng hợp lệ (`'0'`, âm, không phải số, > 120 000) ⇒ về MẶC ĐỊNH + cảnh báo một lần,
+   KHÔNG huỷ request ngay (bot câm); (b) hạn phủ CẢ lúc đọc thân phản hồi (`res.json()`), không chỉ lúc nhận header; (c) phân biệt lỗi PHA KẾT NỐI
+   (chưa gửi được byte nào — vd `ECONNREFUSED`, `ENOTFOUND`) với lỗi SAU khi đã gửi (đứt / quá hạn chờ phản hồi): trả trong kết quả một trường
+   (vd `phaLoi: 'ket_noi' | 'sau_gui'`) cho GL4 đếm đúng; POST lỗi pha kết nối vẫn KHÔNG xoay token (giữ an toàn), chỉ ghi đúng loại;
+   (d) `pkAddNote` (ghi chú cho sale) lỗi mạng / quá hạn ⇒ trả thất bại (không `ok:true`) — nằm trong `src/pancake.js`.
 
 ## ③ File được đụng
 
@@ -47,13 +52,17 @@ ops/bin/nghiem-thu/gl3.sh
 
 ## ④ Nghiệm thu (viết trước — `ops/bin/nghiem-thu/gl3.sh`, rc=0 khi đạt; KHÔNG gọi mạng thật — `fetch` giả; `grep -E` không `rg`; đảo-vá trên BẢN SAO tạm)
 
+0. Mọi ca dựng **≥ 2 token** (để thấy có / không xoay). Biến hạn `'0'` · `'abc'` ⇒ dùng mặc định (đo bằng hạn rút ngắn hợp lệ).
 1. `fetch` giả TREO mãi với GET ⇒ `pkFetchPage` trả lỗi sau ≈ hạn đọc (đo thời gian, dùng hạn rút ngắn qua biến cho ca chạy nhanh) và thử token kế.
 2. `fetch` giả TREO với POST gửi chữ ⇒ trả lỗi «không rõ» sau ≈ hạn gửi, **fetch được gọi ĐÚNG 1 lần** (không token thứ hai).
 3. `fetch` giả NÉM lỗi mạng với POST ⇒ trả lỗi ngay, fetch gọi đúng 1 lần.
 4. POST nhận `error_code: 105` (lỗi quyền) ở token 1 ⇒ thử token 2 ⇒ thành (hành vi xoay token khi Pancake từ chối rõ GIỮ NGUYÊN).
 5. GET lỗi mạng ở token 1 ⇒ thử token 2 (giữ nguyên).
 6. Bốn fetch trần: treo ⇒ trả lỗi sau ≈ hạn.
-7. Đầu-cuối với worker giả: gửi treo ⇒ tin vào `lan_gui='khong_ro'` (đường đối chiếu), KHÔNG có lần gửi thứ hai.
+7. Đầu-cuối với worker giả: gửi treo ⇒ tin vào `lan_gui='khong_ro'` (đường đối chiếu), KHÔNG có lần gửi thứ hai. ⚠️ Máy dev có `PANCAKE_READONLY=1`
+   trong `.env` ⇒ van ghi chặn POST TRƯỚC khi tới fetch giả ⇒ ca xanh giả: ca phải mở van trong phạm vi ca (biến môi trường của tiến trình ca, KHÔNG
+   sửa `.env`) và khẳng định fetch giả THẬT SỰ được gọi đúng 1 lần.
+7b. Thân phản hồi treo sau khi header về ⇒ quá hạn đúng. 7c. Lỗi pha kết nối ⇒ `phaLoi:'ket_noi'`; đứt sau gửi ⇒ `'sau_gui'`. 7d. `pkAddNote` lỗi mạng ⇒ thất bại.
 8. Đảo-vá: bỏ `signal` ⇒ phép 1/2 đỏ (quá thời gian ca); trả lại `continue` cho POST lỗi mạng ⇒ phép 2/3 đỏ (fetch gọi 2 lần).
 9. Bộ ca cũ chạm gửi xanh: `test/l1-m2-cua.test.js` · `test/va-r1-van-gui.test.js` · `test/l2-m1-nhac-truong.test.js` · `test/phase0-webhook-delivery.test.js`.
    `npm test` không thêm ca đỏ.

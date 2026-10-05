@@ -24,10 +24,16 @@ restart về 0. `deploy/setup.sh:22-29` chế độ pilot chỉ kiểm ba cờ; 
    `count(*) FROM page WHERE bot_ai_bat` **KHÔNG kẹp team**; `số đang bật (không tính page này nếu nó đã bật) + 1 > trần` ⇒ từ chối 409 với câu
    có số đo («đang bật x/y page — trần `V3_TRAN_PAGE_BAT`=y»). Tắt (`enabled:false`) KHÔNG bị trần chặn. Trần RAM 5/10′ của `cong-tac.js` giữ nguyên
    (hãm tốc độ, khác việc).
-3. **Worker** — `dsPageBotTraLoi`: số page bật > trần ⇒ trả `[]` (KHÔNG trả lời page nào — fail-closed, người quyết «vượt = dừng hẳn») và ghi
-   cảnh báo có số đo (log + một dòng `nhat_ky` không quá một lần mỗi N phút để không ngập). Số ≤ trần ⇒ như cũ.
-4. **Đèn** màn Sức khoẻ (`v3/src/ui/suc-khoe/kho-suc-khoe.js` đèn «số page bật bot»): đỏ khi số bật > trần, nói rõ «worker đang DỪNG vì vượt trần»;
-   xám/xanh như cũ khi trong trần; hiện giá trị trần đọc được (vắng ⇒ «0 — chưa đặt»).
+3. **Worker** — ⚠️ sửa sau review (a) 06/10 CHẶN C1: `dsPageBotTraLoi` CÒN được `v3/src/noi-day/van-hanh-v3.js:72` dùng dựng `docSanSangV3` cho 6
+   màn (`kho-page.js:245` ghi đè `bot_ai_bat`) ⇒ KHÔNG đổi hàm đó. Thêm HÀM RIÊNG cho worker (vd `dsPageBotTraLoiCoTran`) gọi ở
+   `src/queue/chay-worker.js`; màn vẫn thấy ĐÚNG page đang bật khi vượt trần (để người tắt bớt). Hàm worker: số page bật > trần ⇒ trả `[]`
+   (TUYỆT ĐỐI không `null` — `pageIds=null` nghĩa là MỌI page) (KHÔNG trả lời page nào — fail-closed, người quyết «vượt = dừng hẳn») và ghi
+   cảnh báo có số đo — log KHÔNG quá một lần mỗi 5 phút (worker lặp ~12 lần/giây — không được ngập), nói ĐÚNG lý do «vượt trần», không «lỗi máy».
+   `nhat_ky.team_id` bắt buộc mà sự kiện này toàn hệ ⇒ KHÔNG ghi `nhat_ky` (đèn + log là đủ). Số ≤ trần ⇒ như cũ.
+4. **Đèn** màn Sức khoẻ (`v3/src/ui/suc-khoe/kho-suc-khoe.js` đèn «số page bật bot») — ⚠️ CHẶN C2: đèn hiện đếm qua cổng truy vấn KẸP TEAM, trần là
+   TOÀN HỆ ⇒ đèn PHẢI đọc CÙNG hàm/đếm toàn hệ với worker (hai page ở hai team ⇒ đèn đỏ ở cả hai team); đỏ khi số bật > trần, nói rõ «worker đang DỪNG vì vượt trần»;
+   xám/xanh như cũ khi trong trần; hiện giá trị trần đọc được (vắng ⇒ «0 — chưa đặt»). Đèn «Máy chạy bot» KHÔNG được đỏ «máy đứng» vì vượt trần
+   (dẫn người đi restart vô ích) — nói «dừng vì vượt trần».
 5. **Deploy** — `deploy/preflight.mjs`: in `tranPageBat`; chế độ `--ready` + số page bật > trần ⇒ exit 1. `deploy/setup.sh` chế độ pilot: đòi
    `V3_TRAN_PAGE_BAT=1` (khác ⇒ dừng với câu rõ).
 
@@ -36,6 +42,9 @@ restart về 0. `deploy/setup.sh:22-29` chế độ pilot chỉ kiểm ba cờ; 
 ```
 src/admin-v3/operations.js
 src/queue/page-routing.js
+src/queue/chay-worker.js
+test/va-p7-chay-worker.test.mjs
+test/mb2-mot-cong-tac.test.mjs
 v3/src/ui/suc-khoe/kho-suc-khoe.js
 deploy/preflight.mjs
 deploy/setup.sh
@@ -52,11 +61,13 @@ công tắc) sẽ cần trần ≥ số page chúng bật — đặt biến tron
 1. `tranPageBat`: vắng · `''` · `'abc'` · `'-1'` ⇒ 0; `'1'` ⇒ 1; `'3'` ⇒ 3.
 2. Trần 1: bật page A ⇒ thành; bật page B (team KHÁC) ⇒ 409 có số đo, B vẫn tắt; tắt A ⇒ thành; bật B ⇒ thành. Vắng biến: bật A ⇒ 409.
 3. Hai lượt bật A, B SONG SONG với trần 1 ⇒ đúng một thành (khoá tư vấn).
-4. Worker: CSDL có 2 page bật (dựng thẳng, vượt trần 1) ⇒ `dsPageBotTraLoi` trả `[]` + một dòng cảnh báo; 1 page bật ⇒ trả đúng page đó.
-5. Đèn Sức khoẻ đỏ khi vượt, có câu «DỪNG vì vượt trần».
+4. Worker: CSDL có 2 page bật (dựng thẳng, vượt trần 1) ⇒ hàm worker trả `[]` + một dòng cảnh báo; đo CẢ VÒNG `motLuot` (không gọi model, không
+   nạp tin); 1 page bật ⇒ trả đúng page đó. Đồng thời `dsPageBotTraLoi` (màn) VẪN trả 2 page; màn /page-bot thấy 2 page bật.
+4b. Gọi worker 100 lần khi vượt trần ⇒ log cảnh báo ≤ 1 dòng (trong 5 phút).
+5. Đèn Sức khoẻ: 2 page bật ở HAI team, trần 1 ⇒ đèn ĐỎ ở cả hai team, câu «DỪNG vì vượt trần»; đèn «Máy chạy bot» không đỏ «máy đứng».
 6. `preflight --ready` với 2 page bật, trần 1 ⇒ exit 1; trần 2 ⇒ exit 0. `setup.sh` pilot thiếu `V3_TRAN_PAGE_BAT=1` ⇒ dừng.
 7. Đảo-vá: đếm kẹp team ⇒ phép 2 (B team khác) đỏ; bỏ khoá tư vấn ⇒ phép 3 đỏ; worker bỏ chặn ⇒ phép 4 đỏ; vắng = 1 ⇒ phép 1/2 đỏ.
-8. Cổng cũ xanh (rc tách dòng): `mb.sh` · `ll3.sh` (chuỗi con chập chờn đã biết — đỏ lạ chạy riêng) · `gl1.sh`. `npm test` không thêm ca đỏ.
+8. Cổng cũ xanh (rc tách dòng): `mb.sh` (⚠️ `mb.sh:65` đếm grep phải đúng 1 — tên hàm mới đừng làm lệch phép đếm) · `ll3.sh` (chuỗi con chập chờn đã biết — đỏ lạ chạy riêng) · `gl1.sh`. `npm test` không thêm ca đỏ.
 
 ## ⑤ Test chạm nhánh nào
 
