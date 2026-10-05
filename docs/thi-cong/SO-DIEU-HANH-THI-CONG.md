@@ -1458,6 +1458,11 @@ và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt 
   LL17d · **N-L1M1-DON-CHO-IN** đóng (`f3e409d`, cổng ④ thử 12 → 1 → 3; POS 0 đơn ⇒ HOÃN) — cả ba chờ mở van. **N-MK-LOC-PAGE-CON**
   DỜI tới sau GSP3b (phiếu GSP3b sửa `v3/src/ui/mot-page` — cùng vùng; làm trước là đụng tệp phiên khác).
   - **N-DANG-XUAT-KHONG-CAT-VE** (LL15e §7) đăng xuất chỉ xoá cookie — vé bị chép ra ngoài sống tới hạn; cắt được cần bảng phiên.
+  - **LL17c** (rủi ro hoàn từ BigQuery) — người quyết 05/10 chọn «để nguyên»: giữ số chấm 28/08 (màn đã in tuổi), chờ LL17 đầy đủ;
+    không đổi luật «một nguồn» (H10 01/09).
+  - **N-VBND-CHAP-CHON** ca `vai-b-noi-day` đỏ 2 lần trong cửa vào 05/10 (đăng nhập → đổi team), không tái hiện (cổng chạy lại 10/10 ·
+    311 vòng 0 đỏ). Nghi: tệp dữ liệu dùng chung (symlink sang cây chính, `ai-messages.jsonl` bị ghi giữa lượt) khi phiên khác chạy
+    cùng lúc. Gốc chưa rõ.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 

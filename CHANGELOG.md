@@ -19,6 +19,21 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 05/10/2026 — 🔴 Khoá tài khoản là cắt phiên ngay · Số liệu đọc số đơn thật từ BigQuery · đơn tính theo team vào ngày đặt (LL15e · LL17b · LL17d)
+
+Không đổi chữ bot nói. 0 migration · 0 gói · 0 tệp bộ não · 0 biến mới (dùng lại `V3_BQ_KHOA`).
+
+- 🔴 **Đăng nhập** (`2877564`): tài khoản bị khoá (đồng bộ HRM khoá người nghỉ, hoặc quản trị khoá tay) thôi dùng được phiên đang mở —
+  chậm nhất 30 giây sau khi khoá, mọi màn chuyển về trang đăng nhập. Rút một vai thì phiên mất ngay vai đó. Trước đây phiên cũ sống
+  tới 8 tiếng, và người đã bị khoá còn đổi team được để lấy phiên mới.
+- **Số liệu › Tổng quan** (`33cd8aa`): ô «Đơn theo luồng — không gộp», khối Luồng trang bán hàng và bước «Bấm BUY NOW» đếm đơn của team
+  từ BigQuery (trước đó in «0 · 0» vì bảng đơn của hệ chỉ có tới 28/08). Bảng Theo page có cột «Chốt» (đơn 30 ngày trừ huỷ) và «Hoàn»
+  (hoàn trên đơn đã giao xong). Chưa nối BigQuery thì màn ghi «chưa biết», không in 0.
+- **Số liệu › Khách** (`33cd8aa`): khối «Hai luồng chạy song song» và «Bấm BUY NOW» cùng số BigQuery (30 ngày).
+- **Đơn của marketer đổi team** (`6c24be4`): đơn tính cho team người đó ĐANG Ở VÀO NGÀY ĐƠN (lịch sử team HRM), không phải team hiện
+  tại. Đơn mà HRM chưa có lịch sử phủ ngày đơn tính theo team hiện tại và màn nói ra số đó.
+- Rủi ro hoàn vẫn là số chấm ngày 28/08 (người quyết 05/10: để nguyên tới khi chép đơn đầy đủ).
+
 ### 02/10/2026 — Số liệu có số đơn THẬT của team theo marketer, đọc từ BigQuery (LL17a · CR-28-09c)
 
 Không đổi chữ bot nói. 0 migration · 0 gói · 0 tệp bộ não · 0 biến mới (dùng lại `V3_BQ_KHOA`).
