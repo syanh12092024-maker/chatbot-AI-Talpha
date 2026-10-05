@@ -1,7 +1,7 @@
 # MỞ VAN — CR-02-10b đợt GSP (GSP1 · GSP1b · GSP2 · GSP3 · GSP3b) · 05/10/2026
 
-> **TRẠNG THÁI: ⏸ CHỜ NGƯỜI QUYẾT GẬT** (push + deploy). Lời «2 ik đồng ý» chuyển qua phiên ai-chatbot-c7 (02/10) KHÔNG
-> được dùng làm giấy mở van — hỏi lại trực tiếp ở phiên này.
+> **TRẠNG THÁI: ✅ GIỮ** — người quyết gật trực tiếp ở phiên này 05/10 («Gật — push + deploy»). Prod `60ab7ed → 8dc9bcd` · migration 032
+> áp mới 1 (tổng 32) · CHỈ restart `aicloser-v3` 16:17:24 CEST · mốc +1′/+5′/+15′ lỗi 0 · worker y nguyên.
 
 ## 1 · Mở cái gì
 
@@ -53,18 +53,28 @@ liệu: đợt này không xoá dòng nào; dấu `doi_soat` (nếu người đ�
 5. Prod: `systemctl restart aicloser-v3` — chỉ dịch vụ này.
 6. Mốc +1′ / +5′ / +15′.
 
-## 7 · Số đo tại từng mốc
+## 7 · Số đo tại từng mốc (prod, giờ CEST)
 
-(điền khi mở)
+Lệnh đã gõ: push `a3f96b4..8dc9bcd` · prod `checkout -f -B vao-ui-v3-17-09 origin/vao-ui-v3-17-09` → `8dc9bcd`, 0 tệp sửa tại chỗ ·
+`node --env-file=.env db/migrate.js` → **ÁP 032_doi_soat_ban_sao · áp mới 1 · tổng 32** · `systemctl restart aicloser-v3` lúc 16:17:24.
+
+| Mốc | Giờ | Số đo |
+|---|---|---|
+| trước | 16:16:42 | HEAD `60ab7ed` · 0 tệp sửa tại chỗ · v3 + worker active · `/dang-nhap` 200 · Started 30′ qua 0 · worker ActiveEnter 02/10 09:03:39 |
+| +1′ | 16:18:30 | active active · Started 1 · lỗi 0 · `/dang-nhap` 200 · `/api/san-pham/chuyen` `/goc` `/api/san-pham` 401 (chưa đăng nhập) · worker y nguyên |
+| +5′ | 16:22:41 | active active · Started 1 · lỗi mới 0 · `/dang-nhap` 200 · worker y nguyên |
+| +15′ | 16:32:21 | active active · Started 1 · lỗi mới 0 · worker y nguyên · 4 cột `doi_soat*` có · `dsViecChuyen` CHỈ ĐỌC (mã mới, CSDL prod): team GCC `chuaGan 74 · chuaXong 74`, gợi ý 51/74 page · team kỹ thuật `chuaGan 2`, gợi ý 0/2 ⇒ tổng chưa xong **76** = đo CR 5d |
 
 ## 8 · Kết
 
-(điền khi đóng cửa sổ: GIỮ / LÙI)
+**GIỮ.** Không lùi. Việc tiếp theo là việc NGƯỜI (H-GSP): gắn 76 page (51 có gợi ý sẵn), chọn shop cho page chưa có shop, đối soát
+giá + ảnh theo gốc × shop. GSP4 chỉ phát khi bộ đếm toàn hệ = 0 và các nợ điều kiện GSP4 đã đóng (sổ §5h).
 
 ## 9 · Nợ phát sinh → §9 sổ
 
-(điền khi đóng)
+- **N-GSP-PG-CLIENT-DONG-THOI** `dsViecChuyen` bắn nhiều câu song song trên MỘT kết nối — app dùng `pg.Pool` nên ổn; truyền một
+  `pg.Client` (giao dịch) thì pg báo DeprecationWarning «client.query() when the client is already executing» (thấy khi đo +15′).
 
 ## 10 · Ai gật, lúc mấy giờ
 
-(chờ)
+Người quyết, trực tiếp ở phiên này, 05/10/2026 ~16:15 CEST (câu hỏi «Push nhánh và deploy đợt GSP…» → «Gật — push + deploy»).

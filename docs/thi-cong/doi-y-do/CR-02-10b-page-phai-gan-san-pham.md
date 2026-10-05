@@ -8,6 +8,9 @@
 > về hai màn «Thêm sản phẩm» và «Bản sao theo page»: *«2 màn này k dùng làm gì cả cho version mới?
 > Nếu cần thì migrate theo ver mới thôi nhỉ? Ở SP thấy cái gộp món pos thành sp là đúng br»*.
 
+> **Lên prod 05/10:** GSP1 · GSP1b · GSP2 · GSP3 · GSP3b (`8dc9bcd`, migration 032, kết GIỮ — `nhat-ky/phat-hanh-20261005-gsp.md`).
+> Còn: H-GSP (việc người) → GSP4 (khi bộ đếm toàn hệ = 0 + nợ điều kiện đóng) → GSP5 (gỡ màn tạm, ĐÓNG CR).
+
 ## 1 · Câu đổi
 
 **Từ** page có sản phẩm qua HAI đường (`src/products/catalog.js:7-13`):
