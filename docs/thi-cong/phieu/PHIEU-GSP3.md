@@ -1,6 +1,6 @@
 # PHIẾU GSP3 — Đối soát giá + ảnh của bản sao theo đơn vị GỐC × SHOP
 
-**Base:** `ĐẶT-LÚC-PHÁT` · **Làn:** 🟥 (ghi `goi_gia` — bảng cửa tiền `cua2Tien` / duyệt đơn đọc; ghi bản chép bot đọc)
+**Base:** `b0b82d7` · **Làn:** 🟥 (ghi `goi_gia` — bảng cửa tiền `cua2Tien` / duyệt đơn đọc; ghi bản chép bot đọc)
 **Nguồn:** CR-02-10b mục 3 «Rủi ro mới 2 · 3» · mục 5 dòng GSP3 · **mục 5e (sửa sau review (a))** · mục 6 · `01-QUYET-DINH.md` §8 «Page phải gắn sản phẩm» (không giá riêng theo page — mọi page cùng gốc × shop chung MỘT bảng giá) · sổ §5h
 **Đụng bộ não:** không.
 **Skill thợ nạp:** `tho-thi-cong` · `viet-thuoc`; xong thì `/code-review` (đường tiền).
@@ -73,6 +73,9 @@ Ghi ảnh: `src/products/anh-san-pham.js#themAnh(pool, teamId, spId, {duong, nha
 8. **Đơn vị giá (bài học chặng 2 GSP2, CHẶN C1):** `goi_gia` lưu đơn vị NHỎ (× `HE_SO_TE`). Mọi số giá / giá gốc / phí ship mà
    `donViDoiSoat` trả lên màn là đơn vị LỚN, quy đổi ở TẦNG A một chỗ (như `giaCuaMon`, `san-pham-goc.js:633`); so «bảng» thì so
    trên giá trị gốc trong CSDL (không so sau quy đổi số thực). Ca khẳng định: bản sao 99 SAR ⇒ màn và JSON ra 99.
+   ⚠️ Từ GSP2 vòng 2 (`3c524b7`), `bac` của `GET /api/san-pham/chuyen` / `dsViecChuyen` ĐÃ là đơn vị lớn (`bacDonViLon`) — KHÔNG
+   lấy nó làm nguồn để chép giá hay so bảng (quy đổi hai lần ⇒ giá ÷100). Đọc thẳng `goi_gia` (đơn vị nhỏ), chỉ quy đổi khi dựng
+   `offers` cho `saveProduct` và khi trả lên màn.
 9. **Dọn dấu sống lại (review chặng 2 GSP2 F1 · F2 — phải đóng trước GSP4):** trong `src/products/san-pham-goc.js`:
    - `boSanPhamGoc` (bỏ gốc) ⇒ cùng giao dịch đặt `doi_soat`/`doi_soat_luc`/`doi_soat_goc`/`doi_soat_shop` = NULL cho mọi bản sao
      có `doi_soat_goc` = mã gốc bị bỏ (F1: bỏ gốc rồi gộp lại cùng mã ⇒ dấu `chep` cũ sống lại);
