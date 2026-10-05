@@ -1562,10 +1562,14 @@ món chưa giá cho page đã gắn mà chưa đối soát). Sửa sau review (a
     VE8b; bảng bản sao bị sửa trong cửa sổ đó vẫn bị đánh theo bảng đã đọc. GSP3b khoá cửa sửa bản sao ⇒ còn phần gắn page. Sửa gốc: khoá
     dòng `san_pham_goc` của đơn vị (`FOR UPDATE`) suốt lượt — cần cửa lưu giá nhận giao dịch ngoài.
 - 05/10 · GSP3b (thợ) — bốn nợ, ngoài pathspec phiếu:
-  - **N-GSP3B-MON-POS-CUA-DAY** phiếu ② 4 KHÔNG áp (có màn gọi): hai cửa lưu ĐẦY ĐỦ (`POST /api/anh-san-pham/san-pham/:id` · `POST
-    /api/van-hanh/products/:id`) vẫn nhận MÓN POS — lưu đầy đủ ghi đè tên/mô tả món của POS — vì trang page còn gửi vào cửa đó id lấy từ nhánh
-    `page_id` của bộ đọc, nhánh này trả cả món POS RF-15 (N-GSP2-F3; ca D10). Page đã gắn nay chỉ xem nên không màn nào gửi món POS của gốc
-    vào đó, nhưng gọi API thẳng thì được. Chặn `mon_pos_sua_o_san_pham` ở GSP4 (bỏ nhánh `page_id` + RF-15); `gsp3b.sh` ③b đỏ khi tiền đề hết.
+  - **N-GSP3B-MON-POS-CUA-DAY** (sửa chữ 05/10 · GSP3b vòng 2 — phần lớn ĐÃ CHẶN, `c5475a5`) hai cửa lưu ĐẦY ĐỦ (`POST
+    /api/anh-san-pham/san-pham/:id` · `POST /api/van-hanh/products/:id`) nay từ chối món POS ⇒ 409 `mon_pos_sua_o_san_pham` (marketer lẫn quản
+    trị, chốt cả ở đầu giao dịch, 0 đổi 0 đẩy) khi `page_id` NULL · page của nó đã gắn · món đã gộp gốc mà page đã gắn gốc đó bán ở đúng shop
+    (ca H10 H11 D15–D19) — hết lỗ marketer đổi giá đường tiền / đè tên / bật `cau_hinh_tay` (đối kháng F1). CÒN LẠI: (a) món RF-15
+    (`page_id` trỏ page CHƯA gắn) mà không page đã gắn nào đọc vẫn lưu ĐẦY ĐỦ được qua trang page (ca D10) — đè tên/mô tả POS + `cau_hinh_tay`
+    (POS thôi cập nhật hết hàng) cho món đó, giá chỉ tới bot của chính page đó; (b) nhánh «page đã gắn khác bán» đọc page khác KHÔNG khoá —
+    lượt gắn page khác (hoặc gộp món vào gốc) chạy chồng đúng mili-giây với lượt lưu thì lọt. Đóng ở GSP4 (bỏ nhánh `page_id` + RF-15);
+    `gsp3b.sh` ③b đỏ khi tiền đề (màn còn gửi món RF-15 vào cửa đầy đủ) hết.
   - **N-GSP3B-LOI-SANG-SHOP** (/code-review CR4) lối sang `/san-pham?sp=<id>&tab=thi-truong` không mang shop — `san-pham.html#moSanPham` mở
     thị trường ĐẦU TIÊN ⇒ gốc bán nhiều shop thì người sửa tự chọn đúng viên (câu đã nêu thị trường + số shop). Sửa ở phiếu chạm
     `san-pham.html`: đọc `&shop=` để chọn sẵn viên, rồi `cauDaChuyen` thêm tham số.
@@ -1576,6 +1580,17 @@ món chưa giá cho page đã gắn mà chưa đối soát). Sửa sau review (a
     (cùng chuỗi chạy trực tiếp cùng lượt xanh; chạy riêng 7/7 lượt 17/17) · `gsp3.sh` chạy riêng TREO ở `ll15a → ve7d-nguoi-team.test.mjs`
     (0% CPU 26′, cổng HTTP còn mở sau một ca đỏ; chạy riêng 8/8). Gốc chung nghi: ca chạy trang trong vm chờ cố định ~450ms (`dom-gia.js#cho`)
     + máy chủ không đóng khi ca đỏ ⇒ dưới tải cao ca đỏ giả rồi treo. Sửa ở thước chung (`v3/testkit/dom-gia.js`, `t.after(sv.close)`).
+- 05/10 · GSP3b vòng 2 (thợ) — hai nợ, ngoài pathspec / ngoài hai mã CHẶN:
+  - **N-GSP3B-ANH-MON-POS** (/code-review vòng 2 #2) năm cửa ảnh (`/api/anh-san-pham/:spId/tai-len` · `/link` · `/anh/:id` POST/DELETE ·
+    `/:spId/thu-tu`) + cửa nối món nhận MÓN POS của gốc (`page_id` NULL) từ marketer: chốt bản sao lọc `nguon <> 'pos'`. Đo 05/10 (kịch bản
+    tạm, hộp cát): marketer `POST /api/anh-san-pham/<id 111:x>/link` ⇒ 200, 1 ảnh vào món, đẩy bản chép mọi page gắn gold × 111 — ảnh bot gửi
+    cho mọi page đổi ngoài màn Sản phẩm (màn đó không có cửa ảnh — đối kháng F3). Phiếu GSP3b ② 5 cấm đụng cửa ảnh món POS ⇒ phiếu sau quyết
+    ai sửa ảnh món của gốc ở đâu rồi chặn cùng vị từ `chanMonPosCuaDayDu`.
+  - **N-GSP3B-HOOK-SAVEPRODUCT** (/code-review vòng 2 #3) thứ tự khoá page → `san_pham` của hai cửa lưu ĐẦY ĐỦ đi qua pool bọc
+    `poolChotDauGiaoDich` (v3/src/ui/van-hanh/router.js) soi câu đầu của kết nối (`BEGIN …`/`START TRANSACTION`) vì `operations.js` cấm sửa.
+    Khuôn `transaction()` đổi ⇒ lượt lưu 500 (đóng khi nghi, không ghi; ca D9–D12 · D18 · K1–K3 đỏ). Gốc rễ: `saveProduct` nhận bước «trước
+    khi khoá» (`truocKhiKhoa(c)`) hoặc client của nơi gọi — phiếu có `operations.js` thì gỡ pool bọc. Cùng gốc với N-GSP3-DAU-TOCTOU (cửa lưu
+    giá cần nhận giao dịch ngoài).
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -3146,3 +3161,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 05/10 · GSP3b → 🔨 vòng 2 — chặng 2 đối kháng ĐẠT (0 CHẶN; id lạ 9 dạng × 5 cửa giữ vững · bộ đọc màn ≡ bot ở 4 trạng thái page · không khe chạy chồng · đường cũ không vỡ) — tổng nâng hai NÊN lên CHẶN trước phát hành:
   F1 marketer lưu ĐẦY ĐỦ món POS qua cửa trang page ⇒ 200, đổi giá mọi page gốc × shop + đè tên + `cau_hinh_tay` (POS thôi cập nhật hết hàng) trong khi màn Sản phẩm 403 · F2 khoá chết 40P01 do thứ tự khoá ngược (lưu bản sao vs gắn page / «Không chuyển») · F5 sửa sổ (gỡ cấm day-lai khi bộ đếm = 0) · F3 F4 F6 ⇒ §9
   · verdict scratchpad refute-gsp3b.verdict.yaml · vòng 2 nhận refute-gsp3b-vong2.verdict.yaml
+- 05/10 · GSP3B → 🔎 vòng 2 xong, chờ tổng nghiệm thu — F1: hai cửa lưu ĐẦY ĐỦ từ chối món POS (`page_id` NULL · page đã gắn · đã gộp gốc mà page đã gắn bán — nhánh thứ ba do /code-review, LỆCH chữ verdict «RF-15 vẫn qua» cho món RF-15 đã gộp) ⇒ 409 `mon_pos_sua_o_san_pham`, marketer lẫn quản trị, 0 đổi 0 đẩy; RF-15 chưa gộp vẫn qua (D10) · F2: chốt ở ĐẦU giao dịch `saveProduct` (pool bọc, không sửa operations.js) ⇒ page → san_pham, lượt gắn / «Không chuyển» chờ rồi thành; cửa ra NOWAIT ⇒ đường thứ tự ngược 409 «thử lại», không 40P01
+  `_chan1 gsp3b` 8/8 (`gsp3b.sh` 55/55, ⑥ cả 8 cổng cũ xanh, va-r2 đỏ sẵn) · 36/36 đột biến (13 mới, `f2_dao_thu_tu_khong_belt` đỏ đúng chữ 40P01) · ca mới H10 H11 D15–D19 K1–K5 · npm test 2416→2429 / 0 đỏ / 4 skip · kịch bản đối kháng R3 R4 R4b nguyên văn xanh · /code-review high 8: #1 #3 #4 #5 #7 #8 sửa, #2 → nợ N-GSP3B-ANH-MON-POS, #6 không sửa · nợ mới N-GSP3B-HOOK-SAVEPRODUCT · sửa chữ N-GSP3B-MON-POS-CUA-DAY
+  · commit c5475a5 · nhật ký docs/thi-cong/nhat-ky/phieu-gsp3b.md «Vòng 2»
