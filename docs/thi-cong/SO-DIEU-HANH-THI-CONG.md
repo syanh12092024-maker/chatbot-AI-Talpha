@@ -390,7 +390,7 @@ canh: GL1 + GL2 + GL3 + H-GL. Trước page thứ hai: GL4 + GL6. HTTPS (GL5) SA
 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
-| GL1 | `deploy/preflight.mjs` thôi luôn exit 1 + ca chạy CLI thật | — | 🟩 |🔨 phát 05/10 |
+| GL1 | `deploy/preflight.mjs` thôi luôn exit 1 + ca chạy CLI thật | — | 🟩 | ✅ 06/10 · `75665af` · `_chan1` 8/8 · `gl1.sh` 7/7 · chưa deploy |
 | GL2 | Trần số page bật TOÀN HỆ (biến mới; vắng = 0; vượt ⇒ worker dừng hẳn + đèn đỏ); cổng `setPage` có khoá | GL1 · sau TT1 (cùng `operations.js`) | 🟨 | ⬜ |
 | GL3 | Hạn chờ request Pancake (đọc 15 s · gửi 30 s); POST lỗi mạng / quá hạn KHÔNG xoay token (đang có nguy cơ tin đúp) | — | 🟥 | ⬜ |
 | GL4 | Ngắt cả page khi 2 lần gửi lỗi liên tiếp → 30′, tự mở; tin tồn giữ ở chờ; lưu nguyên nhân lỗi; đèn đỏ | GL3 | 🟥 | ⬜ |
@@ -1540,7 +1540,7 @@ canh: GL1 + GL2 + GL3 + H-GL. Trước page thứ hai: GL4 + GL6. HTTPS (GL5) SA
   - **N-GSP-CONG-RG-ENV** cổng `gsp2.sh` · `gsp1b.sh` gọi `rg` (máy dev chỉ có `rg` là HÀM zsh — bash không thấy ⇒ cổng đỏ giả) và
     chép repo sang thư mục tạm KHÔNG kèm `.env` ⇒ đòi `DATABASE_URL_V3` đặt sẵn trong môi trường. Đổi `rg` → `grep -E`, nạp `.env`
     như các cổng cũ (`--env-file-if-exists`). Tổng 05/10 chạy được bằng `rg` thay thế trên PATH + biến từ `.env`.
-  - **N-PREFLIGHT-MISSINGPAGES** (báo cáo go-live 02/10, tổng xác nhận 05/10) `deploy/preflight.mjs:134` đọc `db.missingPages.length`
+  - ~~**N-PREFLIGHT-MISSINGPAGES**~~ **ĐÃ TRẢ bởi GL1 `75665af` (06/10)** (báo cáo go-live 02/10, tổng xác nhận 05/10) `deploy/preflight.mjs:134` đọc `db.missingPages.length`
     mà `inspectDatabase()` (`:101-106`) đã bỏ trường đó từ MB4 `357795a` ⇒ TypeError ⇒ exit 1 ⇒ `deploy/setup.sh:15,68` luôn dừng.
     Bộ ca gọi thẳng hàm nên vẫn xanh. KHÔNG chặn đường mở van đang dùng (checkout + migrate + restart). Ngoài CR-02-10b.
   - **N-GSP2-F1 · F2 → GIAO GSP3** (review chặng 2 GSP2): F1 dấu quyết định khoá theo `ma_goc` CHỮ — bỏ gốc rồi gộp lại cùng mã ⇒ dấu
@@ -3225,3 +3225,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 05/10 · GL1 → ✅ chờ nghiệm thu — preflight bỏ vế db.missingPages (TypeError ⇒ exit 1 mọi lượt) · 4 ca CLI thật xanh + đảo-vá (khôi phục ⇒ (a) đỏ; bỏ --ready ⇒ (b) đỏ) · gl1.sh ĐỎ 0/XANH 7 · npm test 2463 pass/0 fail
   trả nợ N-PREFLIGHT-MISSINGPAGES (chưa gạch ở §9 — tổng gạch) · không đụng setup.sh
   commit (xem git log, mã «GL1») · nhật ký docs/thi-cong/nhat-ky/phieu-gl1.md
+- 06/10 · GL1 → ✅ (tổng nghiệm thu) — preflight thôi đọc `db.missingPages`; exit 1 chỉ khi lỗi cấu hình · CSDL không đọc được · `--ready` còn migration chưa áp · 4 ca chạy CLI THẬT trên hộp cát (không node giả)
+  `_chan1.sh gl1` 8/8 · `gl1.sh` 7/7 · đảo-vá đỏ đúng · npm test thợ 2467 / 0 đỏ · gạch N-PREFLIGHT-MISSINGPAGES · làn 🟩 ⇒ không chặng 2
+  · commit 75665af · 9936dd7 · nhật ký docs/thi-cong/nhat-ky/phieu-gl1.md
