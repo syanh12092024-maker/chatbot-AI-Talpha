@@ -383,6 +383,22 @@ TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` 
 | TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | 🔨 phát 05/10 · review (a) ĐẠT |
 | GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | ⬜ review (a) SỬA-PHIẾU → đã sửa (G1 giá gần đây) |
 
+## §5j · ĐIỀU KIỆN GO-LIVE (GL1–GL8) — người quyết «triển khai» 05/10
+
+Nghiên cứu (agent chỉ đọc) + quyết định người quyết 05/10 ghi ở §10 05/10 «ĐIỀU KIỆN GO-LIVE (GL)». Tối thiểu cho pilot 1 page có người ngồi
+canh: GL1 + GL2 + GL3 + H-GL. Trước page thứ hai: GL4 + GL6. HTTPS (GL5) SAU pilot. Trước khi bật page EU/AUUS: N-GUARD-TIEN-TE-MOI.
+
+| Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
+| --- | --- | --- | --- | --- |
+| GL1 | `deploy/preflight.mjs` thôi luôn exit 1 + ca chạy CLI thật | — | 🟩 |🔨 phát 05/10 |
+| GL2 | Trần số page bật TOÀN HỆ (biến mới; vắng = 0; vượt ⇒ worker dừng hẳn + đèn đỏ); cổng `setPage` có khoá | GL1 · sau TT1 (cùng `operations.js`) | 🟨 | ⬜ |
+| GL3 | Hạn chờ request Pancake (đọc 15 s · gửi 30 s); POST lỗi mạng / quá hạn KHÔNG xoay token (đang có nguy cơ tin đúp) | — | 🟥 | ⬜ |
+| GL4 | Ngắt cả page khi 2 lần gửi lỗi liên tiếp → 30′, tự mở; tin tồn giữ ở chờ; lưu nguyên nhân lỗi; đèn đỏ | GL3 | 🟥 | ⬜ |
+| GL5 | HTTPS (trust proxy · đóng 3102 · `PUBLIC_URL` https · nginx) — SAU pilot | tên miền | 🟨 | ⬜ |
+| GL6 | Nhịp tim worker · độ trễ + tỉ lệ lỗi · bộ dò đẩy cảnh báo Telegram | GL4 · bot + chat id | 🟨 | ⬜ |
+| GL7 | Đồng bộ tài liệu + rào cũ (`deploy/README.md` · `README.md:95` · unit mẫu cũ · hook `canh-file-cam.sh` · phép ⑤ `_chan1.sh`) | GL1–GL5 | 🟩 | ⬜ |
+| H-GL | Người: chọn page pilot · tắt ai_sale + Botcake trên page đó · người trực · tạo Telegram bot + chat id | — | — | ⬜ |
+
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
 | Mã  | Việc                                                                                 | Chặn gì                                                        | Trạng thái |
