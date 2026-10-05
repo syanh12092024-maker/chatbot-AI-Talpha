@@ -1454,6 +1454,10 @@ và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt 
     (hậu tố tiến trình + dọn mồ côi).
 - 02/10 · **NỢ SAU LL17b** (`docs/thi-cong/nhat-ky/phieu-LL17b.md` §7): N-DON-THEO-LUONG-0 + N-DON-POS-THEO-PAGE đóng (chờ mở van);
   **N-SO-LIEU-CON-ANH-CHUP** thu hẹp còn ba thước Messenger · chi phí AI/đơn · rủi ro hoàn (⇒ LL17c) · phễu Messenger.
+- 05/10 · **NỢ ĐÓNG / DỜI** (`nhat-ky/phieu-LL15e.md` · `phieu-LL17d.md`): **N-KHOA-PHIEN** đóng ở LL15e · **N-DON-TEAM-THEO-NGAY** đóng ở
+  LL17d · **N-L1M1-DON-CHO-IN** đóng (`f3e409d`, cổng ④ thử 12 → 1 → 3; POS 0 đơn ⇒ HOÃN) — cả ba chờ mở van. **N-MK-LOC-PAGE-CON**
+  DỜI tới sau GSP3b (phiếu GSP3b sửa `v3/src/ui/mot-page` — cùng vùng; làm trước là đụng tệp phiên khác).
+  - **N-DANG-XUAT-KHONG-CAT-VE** (LL15e §7) đăng xuất chỉ xoá cookie — vé bị chép ra ngoài sống tới hạn; cắt được cần bảng phiên.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -2964,3 +2968,9 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 02/10 · LL17b → ✅ — Số liệu đọc đơn từ BigQuery: ô «Đơn theo luồng» · luồng trang bán hàng · BUY NOW · «Chốt · Hoàn» theo page (Tổng quan) + «Hai luồng» (tab Khách); luồng suy đúng luật `suyNguon` trong BigQuery; số chụp cũ hơn khoảng đo ⇒ «chưa biết», không 0 · 0
   đo dev chỉ đếm: 60 ngày messenger 14.094 · trang bán hàng 9.777 · không suy được 1; 30 ngày 7.927/12.699 đơn mang page_id, 167/203 page khớp; ca 12/12 · đảo-vá 17/17 · cổng ll17b.sh 10/10 · npm test 2.331/0 đỏ
   · commit 33cd8aa · nhật ký docs/thi-cong/nhat-ky/phieu-LL17b.md
+- 05/10 · LL15e → ✅ — khoá tài khoản / rút vai CẮT phiên đang mở: lớp đọc vé hỏi lại CSDL (đệm 30 giây), bối cảnh mang vai còn lại; bịt cả lỗ người bị khoá đổi team bằng vé cũ để lấy vé mới 8 tiếng; CSDL hỏng ⇒ 500
+  ca K1–K7 7/7 (dungPhanB thật + Postgres hộp cát với đúng câu khoá của đồng bộ HRM) · đảo-vá 9/9 · cổng ll15e.sh 10/10 · npm test 2.338/0 đỏ
+  · commit 2877564 · nhật ký docs/thi-cong/nhat-ky/phieu-LL15e.md
+- 05/10 · LL17d → ✅ — đơn POS thuộc team của marketer VÀO NGÀY ĐƠN (lịch sử team HRM, suy trong BigQuery); thiếu lịch sử ⇒ team hiện tại + màn nói ra
+  đo dev chỉ đếm: 628 đơn (1 marketer GCC → EU, 07/08–31/08) về đúng GCC · 3 đơn theo team hiện tại · 2,2 giây một trang; khoá prod đọc được bảng lịch sử (SSH chỉ đọc); đảo-vá 9/9 · cổng ll17d.sh 4/4 · npm test 2.342/0 đỏ
+  · commit 6c24be4 · nhật ký docs/thi-cong/nhat-ky/phieu-LL17d.md
