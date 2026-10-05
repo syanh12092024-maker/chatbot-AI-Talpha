@@ -16,7 +16,7 @@ cp package.json "$gsp_tmp/"
 ln -s "$gsp_root/node_modules" "$gsp_tmp/node_modules"
 gsp_file="$gsp_tmp/src/products/chuyen-ban-sao.js"
 cp "$gsp_file" "$gsp_tmp/original.js"
-for mutation in goc shop bo_qua; do
+for mutation in goc shop bo_qua don_vi; do
   cp "$gsp_tmp/original.js" "$gsp_file"
   python3 - "$gsp_file" "$mutation" <<'PY'
 import sys
@@ -26,6 +26,7 @@ old, new = {
  'goc': ('banSao.doiSoatGoc === goc', 'true'),
  'shop': ('String(banSao.doiSoatShop) === String(shop)', 'true'),
  'bo_qua': ('if (d === "bo_qua") return goc == null;', 'if (d === "bo_qua") return true;'),
+ 'don_vi': ('Number(v) / (HE_SO_TE[String(te || "").toUpperCase()] || 1)', 'Number(v)'),
 }[sys.argv[2]]
 assert s.count(old) == 1, old
 p.write_text(s.replace(old, new))
@@ -33,7 +34,7 @@ PY
   if (cd "$gsp_tmp" && node --import ./test/_an-toan.mjs --experimental-test-module-mocks --test test/gsp2-chuyen-ban-sao.test.mjs > "$gsp_tmp/$mutation.log" 2>&1); then
     echo "Đột biến $mutation còn sống: test chưa bắt được"; exit 1
   fi
-  if ! rg -q '^✖ GSP2 · quyết định' "$gsp_tmp/$mutation.log"; then
+  if ! rg -q '^✖ GSP2 · (quyết định|PostgreSQL)' "$gsp_tmp/$mutation.log"; then
     cat "$gsp_tmp/$mutation.log"; exit 1
   fi
   echo "Đã bắt đột biến $mutation trên bản sao tạm"

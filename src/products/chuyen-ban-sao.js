@@ -10,6 +10,14 @@
 // (409 `chua_migrate`) — im lặng nuốt một lượt ghi còn tệ hơn.
 import { tachSoHieu, chuanHoaTen, chuanSku } from "../pos/ten-goc.js";
 import { LoiSanPhamGoc } from "./san-pham-goc.js";
+import { HE_SO_TE } from "../pos/tao-don.js";
+
+// goi_gia lưu đơn vị NHỎ (×HE_SO_TE — nap-tu-kb.js); màn và người đối soát đọc đơn vị LỚN (99 SAR). Quy đổi MỘT chỗ, ở đây —
+// màn không tự chia (cùng quy ước `giaCuaMon` ở san-pham-goc.js).
+const lonTheoTe = (v, te) => (v == null ? v : Number(v) / (HE_SO_TE[String(te || "").toUpperCase()] || 1));
+export const bacDonViLon = (bac) => (bac || []).map((t) => ({
+  ...t, gia: lonTheoTe(t.gia, t.tienTe), giaGoc: lonTheoTe(t.giaGoc, t.tienTe), phiShip: lonTheoTe(t.phiShip, t.tienTe),
+}));
 
 const gon = (s) => String(s ?? "").trim();
 export const DOI_SOAT_GIA_TRI = Object.freeze(["chep", "giu_gia_mon", "bo_qua"]);
@@ -130,7 +138,7 @@ export async function dsViecChuyen(pool, teamId) {
       });
     }
     theoPage.get(k).banSao.push({
-      id: String(r.id), ten: r.ten || "", bienThe: r.bien_the || "", bac: r.bac || [], soAnh: r.so_anh, anhDau: r.anh_dau || null,
+      id: String(r.id), ten: r.ten || "", bienThe: r.bien_the || "", bac: bacDonViLon(r.bac), soAnh: r.so_anh, anhDau: r.anh_dau || null,
       doiSoat: r.doi_soat ?? null, doiSoatGoc: r.doi_soat_goc ?? null, doiSoatShop: r.doi_soat_shop ?? null,
     });
   }

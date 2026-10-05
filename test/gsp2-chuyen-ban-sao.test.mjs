@@ -68,6 +68,14 @@ test('GSP2 · PostgreSQL: trạng thái theo từng bản sao, team, gắn lại
   assert.equal(find(initial, 'W').goiY[0].loai, 'noi');
   assert.deepEqual(find(initial, 'C').goiY, []);
   for (const fb of ['D', 'P1', 'P2']) assert.equal(find(initial, fb).trangThai, 'cho_doi_soat');
+  await t.test('đơn vị giá: bản sao nạp như nap-tu-kb (9900/2500) ⇒ bộ đọc trả đơn vị LỚN 99 / 25', async () => {
+    await q("INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te,gia_goc,phi_ship) SELECT $1,id,1,9900,'SAR',12900,2500 FROM san_pham WHERE team_id=$1 AND ma='kb:A'", [team]);
+    const bac = find(await read(), 'A').banSao[0].bac[0];
+    assert.equal(bac.gia, 99);
+    assert.equal(bac.giaGoc, 129);
+    assert.equal(bac.phiShip, 25);
+    await q("DELETE FROM goi_gia WHERE team_id=$1 AND san_pham_id IN (SELECT id FROM san_pham WHERE team_id=$1 AND ma='kb:A')", [team]);
+  });
   await t.test('hai bản sao chỉ xong khi cả hai có quyết định', async () => {
     await q("INSERT INTO san_pham(team_id,page_id,ma,nguon) VALUES($1,$2,'kb:E2','kb')", [team, ids.E]);
     assert.equal(find(await read(), 'E').trangThai, 'cho_doi_soat');
