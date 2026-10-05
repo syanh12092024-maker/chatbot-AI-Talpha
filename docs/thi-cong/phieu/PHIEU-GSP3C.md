@@ -1,6 +1,6 @@
 # PHIẾU GSP3c — Đóng hai lỗ làm bộ đếm «page chưa chuyển xong» về 0 sớm (điều kiện trước GSP4)
 
-**Base:** `ĐẶT-LÚC-PHÁT` · **Làn:** 🟥 (ghi dấu đối soát + đường đẩy bản chép bot đọc; bộ đếm này là cổng phát GSP4 — cắt đường đọc giá)
+**Base:** `ĐẶT-LÚC-PHÁT` (phát SAU TT1 — cùng chạm `src/products/chuyen-ban-sao.js`/`san-pham-goc.js` vùng lân cận) · **Làn:** 🟥 (ghi dấu đối soát + đường đẩy bản chép bot đọc; bộ đếm này là cổng phát GSP4 — cắt đường đọc giá)
 **Nguồn:** sổ §5h «Trước khi phát GSP4 phải đóng» · nợ **N-GSP3-DOI-MON** (+ F6 đối kháng GSP3) · **N-GSP3B-NEN F4** (đối kháng GSP3b) ·
 CR-02-10b mục 5e · người quyết 05/10 «triển khai» thứ tự TT1 → GP1 → H-GSP → GSP4 → go-live
 **Đụng bộ não:** không.
@@ -31,17 +31,32 @@ bước dọn, không ném — hai hàm này chạy trên prod).
 2. **Kéo danh mục không đụng bản sao của page đã gắn:** `dongBoTuPos` chỉ chọn bản sao mà page của nó `san_pham_goc_ma IS NULL` (page chưa
    gắn — đường cũ còn sống tới GSP4). Page đã gắn: không ghi `het_hang` vào bản sao (bản sao là LƯU TRỮ), không gọi `dayPageSangBot` từ
    đường này. Hết hàng của món POS (page đã gắn đọc món POS qua gốc × shop) vẫn đi theo lượt kéo như hiện có — không đổi.
-3. Không đổi `daQuyet`, không đổi hành vi nào khác của ba hàm.
+3. **Sửa sau review (a) 05/10 — CHẶN C1:** «Kéo danh mục» (`src/pos/doc-danh-muc.js:141-147` chọn gốc theo SKU/số hiệu; `:200` `thieuGoc`;
+   `:213` ghi `ma_goc`) TỰ đưa món vào gốc cho món MỚI và món đang `ma_goc` NULL — KHÔNG qua `ganMonPosVaoGoc` nên không bỏ dấu ⇒ bộ đếm vẫn về
+   0 sớm (gỡ S1:x, gắn S1:y, đối soát lại ⇒ E xong; lượt kéo sau đưa S1:x giá cũ về lại G, E vẫn «xong»). ⇒ MỘT hàm bỏ dấu DÙNG CHUNG
+   (vd `boDauDoiSoatGocShop(db, teamId, maGoc, shop)` đặt ở `src/products/san-pham-goc.js`), gọi ở BA chỗ: `ganMonPosVaoGoc` ·
+   `goMonPosKhoiGoc` · nhánh `doc-danh-muc.js` khi một món ĐỔI `ma_goc` (thêm mới mang gốc, hoặc NULL → gốc). Câu bỏ dấu kẹp `team_id`
+   (review N3). Gắn lại món VỐN đã thuộc đúng gốc đó (không đổi gì) ⇒ KHÔNG bỏ dấu (review N3).
+4. **`dongBoTuPos` lọc page «đã gắn» đúng cùng luật `catalog.js`** — chuỗi rỗng `''` của `san_pham_goc_ma` cũng là CHƯA gắn (review N4).
+5. **Sửa giá** món ở Theo thị trường / GP1 điền giá KHÔNG bỏ dấu (giá thuộc món × shop — một bảng; đối soát đã quyết chọn bảng) — ghi câu này
+   vào chú thích hàm bỏ dấu (review N5).
+6. **Quét lùi một lần** dấu đã cũ: hàm thuần `demDauCu(db)` (chỉ đọc) đếm bản sao `doi_soat IN ('chep','giu_gia_mon')` mà gốc × shop của dấu
+   hiện có món POS đổi sau `doi_soat_luc` (`san_pham.sua_luc` của món thuộc gốc × shop > `doi_soat_luc`) — GSP3 đã lên prod và H-GSP đang mở
+   (review N1). Tổng chạy đo trên prod trước GSP4; khác 0 ⇒ bỏ dấu các dòng đó (một câu, có nhật ký) theo gật của người quyết.
+7. Không đổi `daQuyet`, không đổi hành vi nào khác của các hàm.
 
 ## ③ File được đụng
 
 ```
 src/products/san-pham-goc.js
 src/products/noi-pos.js
+src/pos/doc-danh-muc.js
+v3/src/ui/san-pham/kho-goc.js
 test/gsp3c-*.test.mjs
 ops/bin/nghiem-thu/gsp3c.sh
 ```
-`san-pham-goc.js`: CHỈ `ganMonPosVaoGoc` + `goMonPosKhoiGoc` (+ hàm phụ nhỏ cạnh chúng). KHÔNG sửa `chuyen-ban-sao.js` (phiếu TT1/GP1 đang
+`san-pham-goc.js`: CHỈ `ganMonPosVaoGoc` + `goMonPosKhoiGoc` + hàm bỏ dấu dùng chung + `demDauCu`. `doc-danh-muc.js`: CHỈ gọi hàm bỏ dấu ở
+nhánh món đổi `ma_goc`. `kho-goc.js`: CHỈ thêm «số bản sao bị bỏ dấu» vào câu nhật ký gắn/gỡ món (review N2). KHÔNG sửa `chuyen-ban-sao.js` (phiếu TT1/GP1 đang
 giữ tệp đó) — cần đổi ⇒ dừng, báo tổng.
 
 ## ④ Nghiệm thu (viết trước — `ops/bin/nghiem-thu/gsp3c.sh`, rc=0 khi đạt; đảo-vá trên BẢN SAO tạm; `grep -E` không `rg`; nạp `.env` nếu thiếu `DATABASE_URL_V3`; hộp cát riêng `DB="aicloser_v3_nt_gsp3c_p$$"`)
@@ -54,8 +69,13 @@ Dựng (Postgres hộp cát): gốc G có món `S1:x` (có giá) ở shop S1; pa
 4. Dấu `bo_qua` của page chưa gắn KHÔNG bị đụng bởi gắn/gỡ món.
 5. `dongBoTuPos` sau khi `S1:x` đổi `het_hang`: bản sao của Z đổi `het_hang` + `day` gọi cho Z (đường cũ giữ nguyên); bản sao của Y KHÔNG đổi,
    `day` KHÔNG gọi cho Y.
-6. CSDL chưa áp 032 ⇒ gắn/gỡ món vẫn thành như cũ, không ném.
-7. Đảo-vá: bỏ bước dọn dấu ở `goMonPosKhoiGoc` ⇒ phép 1 đỏ; ở `ganMonPosVaoGoc` ⇒ phép 2 đỏ; bỏ lọc page đã gắn ở `dongBoTuPos` ⇒ phép 5 đỏ.
+1b. «Kéo danh mục» (giả POS) đưa món `S1:x` (đang NULL) về lại G ⇒ dấu của E về NULL, E `cho_doi_soat`. Món mới mang SKU của G kéo về ⇒ như vậy.
+2b. Gắn lại món VỐN đã thuộc G ⇒ dấu của E giữ nguyên. Dấu của team khác cùng mã gốc ⇒ không bị đụng.
+5b. Page có `san_pham_goc_ma = ''` (chuỗi rỗng) ⇒ `dongBoTuPos` coi là CHƯA gắn (đường cũ).
+5c. `demDauCu` trên fixture: một dấu `chep` trước khi món của gốc × shop đổi ⇒ đếm 1; dấu sau ⇒ 0; không ghi gì.
+6. CSDL chưa áp 032 ⇒ gắn/gỡ món + kéo danh mục vẫn thành như cũ, không ném.
+7. Đảo-vá: bỏ bước dọn dấu ở `goMonPosKhoiGoc` ⇒ phép 1 đỏ; ở `ganMonPosVaoGoc` ⇒ phép 2 đỏ; ở `doc-danh-muc.js` ⇒ phép 1b đỏ; bỏ kẹp `team_id`
+   ⇒ 2b đỏ; bỏ lọc page đã gắn ở `dongBoTuPos` ⇒ phép 5 đỏ.
 8. Cổng cũ xanh (rc tách dòng): `gsp2.sh` · `gsp3.sh` · `gsp3b.sh` · `ve8a.sh` · `ll13.sh` (cổng `ll13` có chuỗi con chập chờn đã biết —
    đỏ lạ thì chạy riêng, ghi rõ). `npm test` không thêm ca đỏ.
 
