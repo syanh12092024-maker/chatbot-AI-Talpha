@@ -3070,3 +3070,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 05/10 · GSP1b → ✅ · GSP2 → 🔨 vòng 2 — chặng 2 (một agent ba mũ, `0af9d3b`): GSP1b Phá · Code · Nghiệp vụ ĐẠT; GSP2 TRẢ VỀ một CHẶN C1 — `dsViecChuyen` trả giá bản sao ở đơn vị NHỎ POS, màn in thẳng ⇒ 99 SAR hiện 9.900 (người đối soát gõ theo ⇒ bot báo ×100)
   phá không làm bộ đếm về 0 sớm qua cửa thật (anh em · gắn lại · bo_qua rồi gắn · 2 bản sao · team khác); hai lỗ hiếm F1/F2 giao GSP3; F3 neo GSP4 · hai thay đổi ngoài pathspec (N1a′ · schema.sql) CHẤP NHẬN · nợ N-GSP2-* · N-GSP1B-GN · N-N1A-THUOC
   · verdict scratchpad review-b-gsp2-gsp1b.yaml
+- 05/10 · GSP2 → 🔨 vòng 2 xong, chờ phá lại — vá C1: `dsViecChuyen` chia `HE_SO_TE` ở tầng A cho gia/giaGoc/phiShip (99 SAR ⇒ 99, ship 25), màn không tự quy đổi · ca đơn vị + đột biến `don_vi` (đo bản sau vá) · gsp2.sh rc=0 24/24, 8 đột biến bắt, npm test 2343/2347 0 fail
+  · commit 3c524b7 · _chan1 7/8 xanh (đỏ ④ = tệp ngoài ③ của vòng 1 đã chấp nhận) · GSP3 nhận `bac` ở đơn vị LỚN, đừng quy đổi lần hai
+  · nhật ký docs/thi-cong/nhat-ky/phieu-gsp2.md (mục «Vòng 2»)
