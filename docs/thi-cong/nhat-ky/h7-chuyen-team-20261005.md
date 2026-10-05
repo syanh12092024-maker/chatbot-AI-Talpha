@@ -351,3 +351,37 @@ Phủ SKU (dòng món đơn 60 ngày): GCC 199 SKU · 15.711/15.724 · EU 89 SKU
 | LUCKY | Lucky Nanbu Coins | Taiwan | 1 |  |
 | DRAGON BLOOD CREAM | Dragon Blood Cream | Taiwan | 1 |  |
 | GINSENG SERUM | Ginseng Serum | Taiwan | 1 |  |
+
+## Khoá 5 shop riêng + gộp SKU theo team (người quyết gửi khoá và yêu cầu «gộp SKU thành SP gốc giúp mình» 05/10)
+
+**Kết nối shop riêng** (khoá đi qua stdin vào script trên prod — KHÔNG ghi vào repo / log / tệp; nhật ký 349774–349778):
+
+| Team | Kết nối | Kéo danh mục |
+|---|---|---|
+| EU | Europe `407949295` (kết nối 20) · Romania `1635942497` (21) · Slovakia `407995349` (22) | +80 món (45 · 32 · 3) ⇒ 501 |
+| AUUS | USA `100197417` (23) · Australia `1328333296` (24) | +144 món (102 · 42) ⇒ 188 |
+
+F3 (món POS mang `page_id`) = 0 sau kéo.
+
+**Gộp SKU** — người quyết yêu cầu gộp thay (luật VE8a «máy gợi ý, người xác nhận»: người quyết là người xác nhận, phạm vi do người quyết
+đặt). Phạm vi: SKU team đó BÁN trong 60 ngày (BigQuery), nhóm của `goiYGopMonPos` (máy chủ suy SKU từ món — GSP1b), gộp bằng
+`gopMonThanhGoc`, mã gốc = đề xuất của máy (trùng ⇒ thêm đuôi SKU), tên = tên đại diện của nhóm; bỏ SKU thử «sp test» và nhóm không SKU;
+KHÔNG gán marketer. Chạy khô 0 lỗi → ghi thật 0 lỗi; mỗi gốc một dòng nhật ký `tao_san_pham_goc` đứng tên minhngoc.
+
+| Team | SKU team bán | Gốc mới | Sản phẩm gốc sau | Món POS thuộc gốc |
+|---|---|---|---|---|
+| GCC | 127 | 123 (đổi mã vì trùng 2) | 125 | 292 / 491 |
+| EU | 61 | 60 | 60 | 132 / 501 |
+| AUUS | 44 | 42 (đổi mã vì trùng 3) | 42 | 66 / 188 |
+
+Danh sách «Chuyển page sang sản phẩm» sau gộp (chỉ đọc): GCC chưa xong 67 — gợi ý «Gắn vào gốc có sẵn» 46 · gộp SKU 1 · không gợi ý 20 ·
+EU 9 — gắn 4 · gộp 1 · không 4 · AUUS 0. Tổng chưa xong vẫn 76.
+
+**Nợ phát sinh:**
+- **N-TIEN-TE-NGOAI-GCC** `HE_SO_TE` (`src/pos/tao-don.js:130`) thiếu EUR · RON · AUD · TWD · JPY và `TIEN_TE_THI_TRUONG`
+  (`src/products/chuyen-ban-sao.js:292`) chỉ có 6 nước GCC ⇒ chưa đặt giá / đối soát được cho món ở Europe · Romania · Slovakia ·
+  Australia · Taiwan (USA: có USD ở hệ số nhưng thiếu ở bảng thị trường). Cần phiếu đường tiền 🟥.
+- **N-MK-GAN-HANG-LOAT** (đã có) — 225 gốc mới chưa có marketer; marketer chỉ thấy sản phẩm mình phụ trách (LL15d) ⇒ marketer chưa thấy
+  gốc nào tới khi gán. Gợi ý «ai bán nhiều nhất» của LL15d dùng được để gán.
+- Tên thị trường của 5 kết nối mới do tổng đặt (Europe · Romania · Slovakia · USA · Australia) — đổi được ở Cài đặt › Kết nối? (market
+  KHÔNG sửa được theo luật ③ của `suaKetNoi`; muốn đổi thì bỏ kết nối rồi thêm lại).
