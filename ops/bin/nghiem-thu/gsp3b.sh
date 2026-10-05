@@ -63,7 +63,7 @@ n_xoa=$(git diff "$BASE" -- src/products/chuyen-ban-sao.js | grep -cE '^-[^-]')
 TAM=$(mktemp -d "${TMPDIR:-/tmp}/gsp3b-dao-va.XXXXXX")
 SHIM=$(mktemp -d "${TMPDIR:-/tmp}/gsp3b-shim.XXXXXX")
 don() { [ "${GIU_TAM:-}" = 1 ] && echo "   (giữ $TAM)" || rm -rf "$TAM"; rm -rf "$SHIM"; }
-trap don EXIT INT TERM
+trap don EXIT; trap 'exit 130' INT TERM   # TERM/INT phải DỪNG cổng (trap không exit ⇒ vòng lặp chạy tiếp — gặp 05/10)
 cp -R src v3 test db package.json "$TAM/"; ln -s "$GOC/node_modules" "$TAM/node_modules"
 DS_TEP_DOT='src/products/chuyen-ban-sao.js v3/src/ui/van-hanh/router-anh.js v3/src/ui/van-hanh/router.js v3/src/ui/mot-page/kho-mot-page.js v3/src/ui/mot-page/trang/mot-page.html'
 for f in $DS_TEP_DOT; do cp "$TAM/$f" "$TAM/$f.goc"; done
@@ -169,20 +169,37 @@ PATH_CON="$PATH"; command -v rg >/dev/null 2>&1 || { PATH_CON="$SHIM:$PATH"; ech
 # Cổng con ĐỎ ⇒ ĐỐI CHỨNG cùng thước: chạy CHÍNH cổng đó trên worktree tạm ở $BASE, so DANH SÁCH dòng đỏ (chuẩn hoá số id/pid).
 # Giống hệt ⇒ đỏ SẴN có từ trước phiếu (nợ §9), 0 dòng đỏ mới ⇒ đạt; khác một dòng ⇒ đỏ.
 chuan_do() { grep -E "✘|🔴" | sed -E 's/[0-9]{4,}//g; s/p[0-9]+//g' | sort; }
+# TRẦN THỜI GIAN mỗi cổng con (máy dev không có `timeout`): chuỗi cổng cũ lồng nhau từng TREO vô hạn (05/10: ll15a → ve7d-nguoi-team, 0% CPU,
+# cổng HTTP còn mở sau một ca đỏ). Quá trần ⇒ giết CẢ nhóm tiến trình (set -m tách nhóm) ⇒ ĐỎ «TREO», không treo cả cổng cha.
+TRAN_CON="${TRAN_CON:-2700}"
+chay_con() {   # chay_con <tệp cổng> — in log của cổng con; rc=124 khi quá TRAN_CON giây
+  local tep=$1 out; out=$(mktemp)
+  set -m; PATH="$PATH_CON" bash "$tep" > "$out" 2>&1 & local pid=$!; set +m
+  local t=0
+  while kill -0 "$pid" 2>/dev/null; do
+    sleep 5; t=$((t+5))
+    if [ "$t" -ge "$TRAN_CON" ]; then kill -KILL -- "-$pid" 2>/dev/null; wait "$pid" 2>/dev/null; cat "$out"; rm -f "$out"; return 124; fi
+  done
+  wait "$pid"; local rc=$?; cat "$out"; rm -f "$out"; return "$rc"
+}
 WT_BASE=""
 don_wt() { [ -n "$WT_BASE" ] && git worktree remove --force "$WT_BASE" >/dev/null 2>&1; rm -rf "$(dirname "${WT_BASE:-/nonexistent/x}")" 2>/dev/null; }
-trap 'don; don_wt' EXIT INT TERM
+trap 'don; don_wt' EXIT
 for g in ll15d gsp1 gsp2 gsp3 ve2 ve2b ve8b va-r2; do
-  _o=$(PATH="$PATH_CON" bash "ops/bin/nghiem-thu/$g.sh" 2>&1)
+  _o=$(chay_con "ops/bin/nghiem-thu/$g.sh")
   _r=$?
   if [ "$_r" -eq 0 ]; then ket "⑥cổng-cũ-$g" 0 "rc=0"; continue; fi
+  if [ "$_r" -eq 124 ]; then
+    echo "$_o" | grep -E "✘|🔴" | tail -3 | sed 's/^/   ↳ /'
+    ket "⑥cổng-cũ-$g" 1 "TREO quá ${TRAN_CON}s — giết cả nhóm; chạy riêng cổng đó để phân biệt chập chờn (N-VAI-B-NOI-DAY-CHAP-CHON)"; continue
+  fi
   if [ -z "$WT_BASE" ]; then
     WT_BASE="$(mktemp -d "${TMPDIR:-/tmp}/gsp3b-base.XXXXXX")/wt"
     git worktree add -q --detach "$WT_BASE" "$BASE" >/dev/null 2>&1 && ln -s "$GOC/node_modules" "$WT_BASE/node_modules" \
       && { [ ! -f "$GOC/.env" ] || ln -s "$GOC/.env" "$WT_BASE/.env"; }
   fi
   _moi=$(echo "$_o" | chuan_do)
-  _cu=$( (cd "$WT_BASE" 2>/dev/null && PATH="$PATH_CON" bash "ops/bin/nghiem-thu/$g.sh" 2>&1) | chuan_do)
+  _cu=$( (cd "$WT_BASE" 2>/dev/null && chay_con "ops/bin/nghiem-thu/$g.sh") | chuan_do)
   _them=$(comm -13 <(echo "$_cu") <(echo "$_moi") | grep -c .)
   # rc≠0 mà KHÔNG in dòng đỏ nào (chết giữa chừng · lỗi nạp · exit 2) ⇒ ĐỎ: so danh sách rỗng với nợ cũ là xanh giả (/code-review CR3)
   if [ -z "$_moi" ]; then
