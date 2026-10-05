@@ -22,6 +22,7 @@ export {
   guiTaoDon,
   moCoiTruocPost,
   doiSangDonViNho,
+  quyDonViNho,
   tachMaBienThe,
   MA_CHO_IN,
   GHI_CHU_DON,

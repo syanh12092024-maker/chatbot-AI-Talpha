@@ -288,8 +288,13 @@ export async function huyBoQua(pool, teamId, pageId) {
  */
 
 // Thị trường (`ket_noi_pos.market`) → tiền tệ. Hằng RIÊNG của đối soát: ngoài bảng ⇒ `thi_truong_la`, dừng, không đoán.
-// Taiwan cố ý vắng: `HE_SO_TE` (tao-don.js) không có TWD nên `saveProduct` sẽ từ chối bậc của nó.
-export const TIEN_TE_THI_TRUONG = Object.freeze({ Saudi: "SAR", UAE: "AED", Kuwait: "KWD", Qatar: "QAR", Oman: "OMR", Bahrain: "BHD" });
+// TT1 (05/10): thêm đúng tên thị trường của các kết nối EU/AUUS trên prod (H7/H13 — `docs/thi-cong/nhat-ky/h7-chuyen-team-20261005.md`:
+// Europe 20 · Romania 21 · Slovakia 22 · USA 23 · Australia 24 · Taiwan 19). Mỗi tệ ở đây PHẢI có trong `HE_SO_TE` (tao-don.js) —
+// không thì `saveProduct` từ chối bậc của nó (ca `test/tt1-tien-te-ngoai-gcc.test.mjs` T0b đối chiếu). Japan cố ý vắng: chưa có kết nối.
+export const TIEN_TE_THI_TRUONG = Object.freeze({
+  Saudi: "SAR", UAE: "AED", Kuwait: "KWD", Qatar: "QAR", Oman: "OMR", Bahrain: "BHD",
+  Europe: "EUR", Romania: "RON", Slovakia: "EUR", USA: "USD", Australia: "AUD", Taiwan: "TWD",
+});
 
 // Chín cột bậc giá `saveProduct` ghi được (`src/admin-v3/operations.js` INSERT goi_gia — ca A0 đối chiếu với lược đồ thật). Phép
 // SO dùng trọn hàng nên cột mới của `goi_gia` tự vào phép so; phép CHÉP chỉ chép được chín cột này ⇒ bảng thắng mang cột lạ có

@@ -37,7 +37,7 @@ import { ghiNhatKy, LoiThieuBoiCanhTeam } from "../db/index.js";
 import { kiemTrung } from "./loc-trung.js";
 import { MA_HOAN } from "./ti-le-hoan.js";
 import { donMessengerDaTao } from "./may-trang-thai.js";
-import { taoDon as taoDonPos, layKetNoi, HE_SO_TE } from "../pos/index.js";
+import { taoDon as taoDonPos, layKetNoi, quyDonViNho } from "../pos/index.js";
 // ⛔ import SÂU có chủ ý, cùng án lệ `src/orders/cua-pos.js:18`: `src/pos/index.js`
 //    (cửa VÀO duy nhất) export `docDon` — bản QUÉT-VÀ-GHI-DB cả shop — chứ không export
 //    hàm GET một trang đơn trần. Nguồn (b) cần đúng lượt GET đó và KHÔNG được ghi gì.
@@ -149,8 +149,11 @@ export function quyTongTienNho(duLieu = {}) {
   const d = { ...duLieu };
   const lon = Number(d.tong_tien_lon);
   if (d.tong_tien != null || !Number.isFinite(lon)) return d;
-  const he = HE_SO_TE[chu(d.tien_te).toUpperCase()];
-  if (he) d.tong_tien = Math.round(lon * he);
+  // TT1 (05/10): một luật với cửa lưu giá — `quyDonViNho`. Tệ lạ HOẶC tổng không chia hết đơn
+  // vị nhỏ (990,5 TWD — TWD/JPY không xu; 49,999 EUR) ⇒ `tong_tien` giữ null ⇒ cửa ① báo
+  // thiếu, KHÔNG `Math.round` ngầm thành một gói giá có thật.
+  const nho = quyDonViNho(lon, chu(d.tien_te));
+  if (nho != null) d.tong_tien = nho;
   return d;
 }
 

@@ -74,17 +74,23 @@ test("H3 · neo tuyệt đối: 10,9 KWD ⇔ cod 1090 (đơn thật, page Health
   assert.equal(doiSangDonViNho(18, "BHD"), 1800);
 });
 
-test("H4 · POS lưu CÙNG một hệ số cho mọi tệ — tệ mới thêm vào cũng phải ×100", () => {
+test("H4 · POS lưu ×100 cho mọi tệ NGOẠI TRỪ đúng tập không-xu {TWD, JPY} = 1 — tệ mới thêm vào cũng phải ×100", () => {
   // Bài học của lỗi này: người thêm tệ theo CHUẨN ISO sẽ lại viết 1000 cho tệ 3 số lẻ.
   // Ca này chặn đúng lượt đó. Đếm TỪ NGUỒN, không gõ cứng danh sách tệ (án lệ #22).
-  const khac = Object.entries(HE_SO_TE).filter(([, he]) => he !== 100);
+  // TT1 (05/10): tập KHÔNG XU đo từ BigQuery `dim_shop_project.currency_divisor` («TWD không xu,
+  // divisor 1»; «JPY không xu, divisor 1») + đơn COD TWD thật dạng 990/1290. Đây là tập ĐÓNG —
+  // thêm tệ không-xu thứ ba phải đo lại nguồn rồi sửa cả khối chú thích trên HE_SO_TE.
+  const KHONG_XU = { TWD: 1, JPY: 1 };
+  const khac = Object.entries(HE_SO_TE).filter(([te, he]) => he !== (KHONG_XU[te] ?? 100));
   assert.deepEqual(
     khac,
     [],
-    `POS lưu ×100 cho mọi tệ (đo 16/09, 6 thị trường). Tệ khai khác: ${JSON.stringify(khac)}`
+    `POS lưu ×100 cho mọi tệ trừ TWD/JPY ×1 (đo 16/09 + 05/10). Tệ khai khác: ${JSON.stringify(khac)}`
     + " — nếu POS thật sự đổi hành vi thì đo lại rồi sửa cả khối chú thích trên HE_SO_TE,"
     + " đừng chỉ nới ca này.",
   );
+  // Neo tuyệt đối tệ không xu: 990 TWD ⇔ cod 990 (KHÔNG 99000).
+  assert.equal(doiSangDonViNho(990, "TWD"), 990);
 });
 
 test("H5 · tệ KHÔNG có trong bảng ⇒ null, không rơi về ×100 im lặng", () => {

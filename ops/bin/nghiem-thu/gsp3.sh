@@ -41,9 +41,13 @@ for tag in 'A0 ·' 'A9b ·' '④1 ·' '④2 ·' '④3a ·' '④3 ·' '④4 ·' '
 done
 [ "$thay" -eq "$doi" ]; ket "②phép-④-có-ca-xanh" $? "$thay/$doi${thieu:+ · thiếu:$thieu}"
 
-# ③ ba tệp phiếu cấm sửa (cửa lưu giá · kho ảnh · bản chép) đứng nguyên so với base
-git diff --quiet "$BASE" -- src/admin-v3/operations.js src/products/anh-san-pham.js src/products/ban-chep-bot.js
-ket "③không-sửa-operations/anh/ban-chep" $? "so với $BASE"
+# ③ ba tệp phiếu cấm sửa (cửa lưu giá · kho ảnh · bản chép) đứng nguyên TRONG KHOẢNG COMMIT CỦA GSP3 ($BASE..$CUOI_GSP3 — commit cuối
+#    vòng 2). TT1 05/10 (tổng duyệt): bản cũ so $BASE với CÂY HIỆN TẠI ⇒ phiếu về sau ĐƯỢC PHÉP sửa các tệp này (TT1 sửa operations.js —
+#    quy đơn vị saveProduct) cũng làm phép đỏ oan. Ý đồ giữ nguyên: «GSP3 không đụng ba tệp đó». Giá phải trả (/code-review TT1 #8): phép
+#    nay là sự thật LỊCH SỬ, không tự đỏ nữa — GSP3 mở vòng 3 thì PHẢI dời CUOI_GSP3 tới commit cuối vòng đó.
+CUOI_GSP3=0f2c4bf
+git diff --quiet "$BASE" "$CUOI_GSP3" -- src/admin-v3/operations.js src/products/anh-san-pham.js src/products/ban-chep-bot.js
+ket "③không-sửa-operations/anh/ban-chep" $? "trong $BASE..$CUOI_GSP3"
 
 # ④ đảo-vá trên BẢN SAO TẠM: lượt CHỨNG (bản gốc trong bản sao phải xanh) rồi từng đột biến phải làm ĐÚNG ca đỏ
 TAM=$(mktemp -d "${TMPDIR:-/tmp}/gsp3-dao-va.XXXXXX")
@@ -69,7 +73,7 @@ bo_go_anh_khi_hong|src/products/chuyen-ban-sao.js|A|④8 ·
 dau_theo_page_bam|src/products/chuyen-ban-sao.js|A|④2 ·
 bo_chia_don_vi|src/products/chuyen-ban-sao.js|A|A9b ·
 bo_kiem_tien_te|src/products/chuyen-ban-sao.js|A|④7 ·
-doan_taiwan|src/products/chuyen-ban-sao.js|A|④7 ·
+doan_japan|src/products/chuyen-ban-sao.js|A|④7 ·
 bo_luoi_032|src/products/chuyen-ban-sao.js|A|④9 · CSDL
 bo_don_dau_bo_goc|src/products/san-pham-goc.js|A|④9c F1 ·
 bo_don_bo_qua_khi_gan|src/products/san-pham-goc.js|A|④9c F2 ·
@@ -110,7 +114,8 @@ else:
       'dau_theo_page_bam': ('[teamId, chuaQuyet.map((b) => b.id), chep, dv.goc.ma_goc, dv.shop]', '[teamId, chep, chep, dv.goc.ma_goc, dv.shop]'),
       'bo_chia_don_vi': ('Number(v) / (HE_SO_TE[String(te || "").toUpperCase()] || 1)', 'Number(v)'),
       'bo_kiem_tien_te': ('const teSai = (bac) => bacSaiTe(bac, dv.tienTe);', 'const teSai = () => false;'),
-      'doan_taiwan': ('Bahrain: "BHD" })', 'Bahrain: "BHD", Taiwan: "TWD" })'),
+      # TT1 (05/10): Taiwan đã vào bảng (TWD) ⇒ ví dụ «thị trường lạ» của ④7 là Japan (chưa kết nối) — đoán Japan thì ④7 phải đỏ.
+      'doan_japan': ('Australia: "AUD", Taiwan: "TWD",\n});', 'Australia: "AUD", Taiwan: "TWD", Japan: "JPY",\n});'),
       'bo_luoi_032': ('if (!(await coCot032(pool))) {\n    throw new LoiSanPhamGoc("CSDL chưa áp migration 032 — đối soát', 'if (false) {\n    throw new LoiSanPhamGoc("CSDL chưa áp migration 032 — đối soát'),
       'bo_don_dau_bo_goc': ('doi_soat_goc IN (SELECT ma_goc FROM bo)', 'false AND doi_soat_goc IN (SELECT ma_goc FROM bo)'),
       'bo_don_bo_qua_khi_gan': ("AND page_id = $2 AND nguon <> 'pos' AND doi_soat = 'bo_qua'", "AND page_id = $2 AND nguon <> 'pos' AND false"),

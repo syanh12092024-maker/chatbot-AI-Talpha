@@ -59,12 +59,16 @@ n_man=$(grep -rlE 'anh-san-pham/san-pham/|/api/van-hanh/products/' v3/src/ui --i
 [ "$n_man" -ge 1 ]; ket "③b-tiền-đề-ngoại-lệ-RF-15-còn-màn-gọi-cửa-đầy-đủ" $? "số màn=$n_man (mot-page.html: id từ bộ đọc page_id, gồm món POS RF-15)"
 
 # ③c tệp phiếu không được đụng (② 5: cửa lưu giá chỉ-giá · bộ đọc chung · bản chép · kho ảnh · nối POS · màn Prompt) + GSP2/GSP3 trong
-#     chuyen-ban-sao.js CHỈ THÊM (0 dòng cũ bị sửa/xoá)
-git diff --quiet "$BASE" -- src/admin-v3/operations.js src/products/catalog.js src/products/ban-chep-bot.js src/products/anh-san-pham.js \
+#     chuyen-ban-sao.js CHỈ THÊM (0 dòng cũ bị sửa/xoá) — đo TRONG KHOẢNG COMMIT CỦA GSP3b ($BASE..$CUOI_GSP3B — commit cuối vòng 2).
+#     TT1 05/10 (tổng duyệt): bản cũ so $BASE với CÂY HIỆN TẠI ⇒ phiếu về sau ĐƯỢC PHÉP sửa các tệp này (TT1: operations.js +
+#     dòng `TIEN_TE_THI_TRUONG` của chuyen-ban-sao.js; GSP3c: san-pham-goc.js + noi-pos.js) làm phép đỏ oan. Ý đồ giữ nguyên. Giá phải
+#     trả (/code-review TT1 #8): phép nay là sự thật LỊCH SỬ — GSP3b mở vòng 3 thì PHẢI dời CUOI_GSP3B tới commit cuối vòng đó.
+CUOI_GSP3B=d688a3d
+git diff --quiet "$BASE" "$CUOI_GSP3B" -- src/admin-v3/operations.js src/products/catalog.js src/products/ban-chep-bot.js src/products/anh-san-pham.js \
   src/products/noi-pos.js src/products/san-pham-goc.js v3/src/ui/prompt-page/kho-prompt.js
-ket "③c-không-sửa-tệp-cấm" $? "so với $BASE"
-n_xoa=$(git diff "$BASE" -- src/products/chuyen-ban-sao.js | grep -cE '^-[^-]')
-[ "$n_xoa" -eq 0 ]; ket "③d-chuyen-ban-sao-chỉ-thêm" $? "dòng cũ bị sửa/xoá=$n_xoa (đòi 0)"
+ket "③c-không-sửa-tệp-cấm" $? "trong $BASE..$CUOI_GSP3B"
+n_xoa=$(git diff "$BASE" "$CUOI_GSP3B" -- src/products/chuyen-ban-sao.js | grep -cE '^-[^-]')
+[ "$n_xoa" -eq 0 ]; ket "③d-chuyen-ban-sao-chỉ-thêm" $? "dòng cũ bị sửa/xoá=$n_xoa (đòi 0) trong $BASE..$CUOI_GSP3B"
 
 # ④ đảo-vá trên BẢN SAO TẠM: lượt CHỨNG (bản gốc trong bản sao phải xanh) rồi từng đột biến phải làm ĐÚNG tập ca đỏ
 TAM=$(mktemp -d "${TMPDIR:-/tmp}/gsp3b-dao-va.XXXXXX")

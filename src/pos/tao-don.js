@@ -126,6 +126,16 @@ export class LoiDonDaTao extends Error {
  *   · `src/admin.js:369` `CCY_DIV` — đường HIỂN THỊ; nó CHIA 1000 nên dashboard đang hiện
  *     tiền Kuwait·Oman·Bahrain NHỎ ĐI 10 LẦN.
  * Cả hai đã ghi §9 sổ. Đừng "đồng bộ" bảng này về khớp chúng — chúng sai, bảng này đúng.
+ *
+ * ═══ 05/10/2026 · TT1 — NĂM TỆ NGOÀI GCC (shop EU/AUUS nối sau H7/H13) ═══════════════════
+ * **Hệ số là theo CÁCH POS LƯU, không theo ISO** (ISO cho TWD 2 số lẻ, KWD 3 — cả hai đều
+ * KHÔNG phải cách POS lưu). Nguồn: BigQuery `levelup-465304.PIALPHA_ALL_Dataset.dim_shop_project
+ * .currency_divisor` (đo 05/10): EUR 100 · RON 100 · AUD 100 · USD 100 · TWD 1 · JPY 1 — ghi
+ * chú bảng: «TWD không xu, divisor 1»; «JPY không xu, divisor 1». Đối chiếu đơn COD thật 60
+ * ngày (05/10): TWD dạng `990`/`1290`, EUR/RON dạng `xx00` (AUD/JPY kiểm bằng đơn cũ hơn).
+ * Hệ KHÔNG quy đổi giữa các tệ: giá EUR vẫn là EUR — bảng này chỉ nói đơn vị LẺ của từng tệ.
+ * Với hệ 1, giá có phần lẻ (990,5 TWD) KHÔNG quy được ⇒ `quyDonViNho` trả `null` (từ chối,
+ * không làm tròn ngầm). Tệ chưa có ở đây (GBP…) vẫn bị từ chối như cũ.
  */
 export const HE_SO_TE = Object.freeze({
   AED: 100,
@@ -136,7 +146,36 @@ export const HE_SO_TE = Object.freeze({
   KWD: 100,
   OMR: 100,
   BHD: 100,
+  // TT1 · ngoài GCC — nguồn `dim_shop_project.currency_divisor` (khối chú thích trên).
+  EUR: 100,
+  RON: 100,
+  AUD: 100,
+  // Hai tệ KHÔNG XU trên POS: 990 TWD lưu `990` (không phải 99000). ISO nói TWD 2 số lẻ — POS không theo.
+  TWD: 1,
+  JPY: 1,
 });
+
+/**
+ * MỘT LUẬT quy đơn vị LỚN → NHỎ cho mọi cửa nhận giá do người/bot nêu (lưu giá `saveProduct`,
+ * tổng bot chốt `quyTongTienNho`, `doiSangDonViNho`). Trả số NGUYÊN đơn vị nhỏ, hoặc `null` khi:
+ *   · tệ không có trong `HE_SO_TE` (tra đúng khoá RIÊNG của bảng — `toString`… không lọt);
+ *   · không phải số hữu hạn;
+ *   · số × hệ số KHÔNG ra số nguyên (49,999 EUR; 990,5 TWD) — POS không lưu được phần lẻ đó,
+ *     làm tròn ngầm là đổi tiền khách trả mà không ai thấy (TT1).
+ * Sai số dấu phẩy động (18,9 × 100 = 1889,9999…) nằm trong dung sai nên vẫn quy được. Dung sai CO THEO độ lớn
+ * (`max(1e-6, |nhỏ| × 8ε)`): dung sai tuyệt đối 1e-6 từ chối nhầm số lớn có xu (601.184.614,43 × 100 = 60118461442,99999 —
+ * /code-review TT1 #7, đo: 823/10.000 giá 9 chữ số bị từ chối), còn 8ε tương đối vẫn << 0,5 nên 990,5 TWD vẫn bị từ chối.
+ * KHÔNG kiểm dấu/âm — nơi gọi tự kiểm (mỗi cửa có luật «giá dương» riêng).
+ */
+export function quyDonViNho(soLon, tienTe) {
+  const te = String(tienTe || "").toUpperCase();
+  if (!Object.hasOwn(HE_SO_TE, te)) return null;
+  const n = Number(soLon);
+  if (soLon === null || soLon === "" || !Number.isFinite(n)) return null;
+  const nho = n * HE_SO_TE[te];
+  const tron = Math.round(nho);
+  return Math.abs(nho - tron) > Math.max(1e-6, Math.abs(nho) * 8 * Number.EPSILON) ? null : tron;
+}
 
 /**
  * Quy MỘT SỐ TIỀN Ở ĐƠN VỊ LỚN (major, ví dụ 15,00 AED) SANG ĐƠN VỊ NHỎ (minor, 1500).
@@ -146,13 +185,14 @@ export const HE_SO_TE = Object.freeze({
  *    (thu 1.500 AED thay vì 15,00). Hàm này chỉ để quy khi NGUỒN khai đơn vị lớn; giữ
  *    export + known-answer (test `l3-m4-duyet` P3) cho tương thích. Luồng tiền dùng
  *    `phiVanChuyenMinor` bên dưới.
+ * TT1 (05/10): quy qua `quyDonViNho` — tệ lạ HOẶC số không chia hết đơn vị nhỏ (990,5 TWD)
+ *    ⇒ `null` (nơi gọi — `src/orders/legacy.js` — đọc `!(total > 0)` là từ chối), không còn
+ *    `Math.round` ngầm.
  */
 export function doiSangDonViNho(tong, tienTe) {
   const n = Number(tong);
   if (!Number.isFinite(n) || n <= 0) return 0;
-  const he = HE_SO_TE[String(tienTe || "").toUpperCase()];
-  if (!he) return null;
-  return Math.round(n * he);
+  return quyDonViNho(n, tienTe);
 }
 
 /**

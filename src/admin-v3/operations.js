@@ -3,7 +3,7 @@ import { ghiNhatKy } from "../db/index.js";
 import { botDangTraLoi } from "../queue/page-routing.js";
 import { docSanPhamGoiGia } from "../products/catalog.js";
 import { layModel } from "../chat/model.js";
-import { HE_SO_TE } from "../pos/index.js";
+import { HE_SO_TE, quyDonViNho } from "../pos/index.js";
 
 export const fault = (message, status = 400) =>
   Object.assign(new Error(message), { status });
@@ -207,26 +207,38 @@ export async function saveProduct(pool, bc, id, input, { sauKhiLuu = null, chiGi
   )
     throw fault("Tên, mô tả hoặc gói giá không hợp lệ");
   const quantities = new Set();
+  // TT1 (05/10): quy đơn vị qua MỘT luật `quyDonViNho` (tao-don.js) — giá, giá gốc, phí ship. Số không chia hết đơn vị nhỏ
+  // của tệ ⇒ TỪ CHỐI rõ, không làm tròn ngầm: hệ 1 (TWD/JPY không xu) ⇒ 990,5 TWD bị từ chối; hệ 100 ⇒ 49,999 EUR bị từ chối.
+  // Trước TT1 `gia_goc`/`phi_ship` qua `Math.round` ngầm (49,999 ⇒ 5000; với hệ 1 thì 990,5 ⇒ 991) — nay cùng luật với `gia`.
+  // Lời từ chối chỉ in SỐ đã ép kiểu (không vọng lại chuỗi thô người gửi) và mã tệ đã qua bảng.
+  const loiLe = (v, te, o) => fault(!Number.isFinite(Number(v)) ? `${o} không phải số`
+    : HE_SO_TE[te] === 1
+      ? `${o} ${Number(v)} ${te} có phần lẻ — POS không có xu cho ${te} (lưu theo đơn vị 1 ${te}); nhập số nguyên`
+      : `${o} ${Number(v)} ${te} lẻ quá đơn vị nhỏ POS (1/${HE_SO_TE[te]} ${te}); nhập tối đa ${String(HE_SO_TE[te]).length - 1} chữ số thập phân`);
+  const quy = [];   // số ĐÃ quy (đơn vị nhỏ) của từng bậc — INSERT dùng lại, không quy lần hai (/code-review TT1 #9)
   for (const g of input.offers) {
     if (
       !Number.isInteger(g.so_luong) ||
       g.so_luong < 1 ||
       g.so_luong > 10000 ||
       quantities.has(g.so_luong) ||
-      !HE_SO_TE[g.tien_te] ||
+      !Object.hasOwn(HE_SO_TE, g.tien_te) ||
       typeof g.price !== "number" ||
       !Number.isFinite(g.price) ||
       g.price <= 0 ||
-      Math.round(g.price * HE_SO_TE[g.tien_te]) < 1 ||
-      Math.abs(
-        g.price * HE_SO_TE[g.tien_te] -
-          Math.round(g.price * HE_SO_TE[g.tien_te]),
-      ) > 0.000001 ||
       g.price > 1e9
     )
       throw fault(
         "Gói giá phải có số lượng duy nhất, giá dương và tiền tệ được hỗ trợ",
       );
+    const nho = { gia: quyDonViNho(g.price, g.tien_te), gia_goc: null, phi_ship: null };
+    if (nho.gia == null || nho.gia < 1) throw loiLe(g.price, g.tien_te, "Giá");
+    for (const [k, o] of [["gia_goc", "Giá gốc"], ["phi_ship", "Phí ship"]]) {
+      if (g[k] == null || g[k] === "") continue;
+      nho[k] = quyDonViNho(g[k], g.tien_te);
+      if (nho[k] == null) throw loiLe(g[k], g.tien_te, o);
+    }
+    quy.push(nho);
     if (g.nhan !== undefined && (typeof g.nhan !== "string" || g.nhan.length > 160))
       throw fault("Tên bậc giá quá dài (tối đa 160 ký tự)");
     quantities.add(g.so_luong);
@@ -271,7 +283,7 @@ export async function saveProduct(pool, bc, id, input, { sauKhiLuu = null, chiGi
       bc.teamId,
       id,
     ]);
-    for (const g of input.offers)
+    for (const [i, g] of input.offers.entries())
       await c.query(
         `INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te,
                              gia_goc,khuyen_mai,phi_ship,mien_ship,bat,nhan)
@@ -280,12 +292,12 @@ export async function saveProduct(pool, bc, id, input, { sauKhiLuu = null, chiGi
           bc.teamId,
           id,
           g.so_luong,
-          Math.round(g.price * HE_SO_TE[g.tien_te]),
+          quy[i].gia,
           g.tien_te,
-          // Ưu đãi (021). Cùng đơn vị NHỎ với `gia` — nhân hệ số tệ đúng một lần, ở đây.
-          g.gia_goc == null || g.gia_goc === "" ? null : Math.round(Number(g.gia_goc) * HE_SO_TE[g.tien_te]),
+          // Ưu đãi (021). Cùng đơn vị NHỎ với `gia` — quy hệ số tệ đúng một lần, ở vòng kiểm trên (TT1 `quyDonViNho`).
+          quy[i].gia_goc,
           String(g.khuyen_mai ?? "").slice(0, 300),
-          g.phi_ship == null || g.phi_ship === "" ? null : Math.round(Number(g.phi_ship) * HE_SO_TE[g.tien_te]),
+          quy[i].phi_ship,
           // `mien_ship` giữ ba trạng thái: chưa khai (null) · miễn (true) · KHÔNG miễn
           // (false). Quy null thành false ở đây là thay người vận hành hứa một điều họ
           // chưa khai — chỗ này cấm tiện tay.

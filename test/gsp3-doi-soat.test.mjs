@@ -27,7 +27,7 @@ test('GSP3 · đối soát giá + ảnh theo đơn vị gốc × shop, trên Pos
     const KHAC = String((await mot("SELECT id FROM team WHERE slug='auus'")).id);
     const u = String((await mot("INSERT INTO nguoi_dung(email,ten) VALUES('qt@gsp3.test','QT') RETURNING id")).id);
     const bcQt = { teamId: T, nguoiDungId: u, vai: ['quan-tri'] };
-    for (const [m, shop] of [['Saudi', '111'], ['Taiwan', '777']]) {
+    for (const [m, shop] of [['Saudi', '111'], ['Japan', '777']]) {   // TT1: Taiwan đã có tệ (TWD) ⇒ thị trường lạ mẫu là Japan (chưa kết nối)
       await q('INSERT INTO ket_noi_pos(team_id,market,shop_id,api_key_ma,bat) VALUES($1,$2,$3,$4,true)', [T, m, shop, maHoa('k')]);
     }
     const mon = (ma, ten, sku) => q("INSERT INTO san_pham(team_id,ma,ten,sku,ton_kho,nguon) VALUES($1,$2,$3,$4,5,'pos')", [T, ma, ten, sku]);
@@ -242,7 +242,7 @@ test('GSP3 · đối soát giá + ảnh theo đơn vị gốc × shop, trên Pos
       assert.deepEqual([(await dau(b1)).doi_soat, (await dau(b2)).doi_soat], ['chep', 'chep']);
     });
 
-    await t.test('④7 · bậc AED trên shop Saudi ⇒ lech_tien_te; shop Taiwan ⇒ thi_truong_la; 0 ghi', async () => {
+    await t.test('④7 · bậc AED trên shop Saudi ⇒ lech_tien_te; shop Japan ⇒ thi_truong_la; 0 ghi', async () => {
       await mon('111:l', '404 - Lamp', '404');
       const L = await gop('lamp', '404', ['111:l']);
       const R2 = await trang('fbR', 'Lamp R');
@@ -255,7 +255,7 @@ test('GSP3 · đối soát giá + ảnh theo đơn vị gốc × shop, trên Pos
       await banSao(TP, 'kb:fbTW:SP01', [{ sl: 1, gia: 9900 }]);
       const truoc = await demGhi(); const n = dayGoi.length;
       await assert.rejects(() => doiSoat({ gocId: L.id, shopId: '111' }), (e) => e.ma === 'lech_tien_te' && e.duLieu.bac[0].tienTe === 'AED');
-      await assert.rejects(() => doiSoat({ gocId: TW.id, shopId: '777' }), (e) => e.ma === 'thi_truong_la' && e.duLieu.market === 'Taiwan');
+      await assert.rejects(() => doiSoat({ gocId: TW.id, shopId: '777' }), (e) => e.ma === 'thi_truong_la' && e.duLieu.market === 'Japan');
       assert.deepEqual(await demGhi(), truoc);
       assert.equal(dayGoi.length, n);
     });
