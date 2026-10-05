@@ -247,3 +247,23 @@ export async function teamTheoId(teamId) {
   const t = await cong().mot('team', { id });
   return t ? { id: String(t.id), slug: String(t.slug || ''), ten: String(t.ten || ''), laKyThuat: co(t.la_ky_thuat) } : null;
 }
+
+/**
+ * N-KHOA-PHIEN · 05/10 — vé còn dùng được không. Vé là chuỗi ký, sống 8 tiếng, KHÔNG có bảng phiên: khoá tài khoản (đồng bộ HRM, màn
+ * Thành viên) hay rút vai thì vé đã phát vẫn mang vai cũ tới khi hết hạn. Hàm này hỏi lại CSDL:
+ *   · không còn dòng `nguoi_dung` / `hoat_dong = false` ⇒ `null` (cắt phiên — cả vé tạm, để khỏi đổi team lấy vé mới);
+ *   · vé tạm còn mở ⇒ `[]`;
+ *   · vé đủ quyền ⇒ vai TRÊN VÉ còn giữ trong team của vé (giao với vai hiện tại); không còn vai nào ⇒ `null`.
+ * Vai MỚI cấp không tự vào vé — chỉ có sau lần đăng nhập / đổi team kế (chiều an toàn: thu hẹp ngay, nới rộng thì chờ).
+ * @returns {Promise<string[]|null>}
+ */
+export async function vaiConLaiCuaVe({ nguoiDungId, teamId = null, vai = [], tam = false } = {}) {
+  const id = String(nguoiDungId ?? '').trim();
+  if (!id) return null;
+  const nd = await cong().mot('nguoi_dung', { id });
+  if (!nd || biTat(nd)) return null;
+  if (tam) return [];
+  const hienTai = await vaiTrongTeam(id, teamId);
+  const con = (Array.isArray(vai) ? vai : []).map(String).filter((v) => hienTai.includes(v));
+  return con.length ? con : null;
+}

@@ -13,6 +13,7 @@ import {
   LoiXuyenTeam, LoiChuaDangNhap,
 } from './boi-canh.js';
 import { docVe, TEN_COOKIE } from './ve.js';
+import { daNoiCongDanhTinh, vaiConLaiCuaVe } from './kho-nguoi-dung.js';
 
 /* ─────────────────────────── phễu nhật ký (tiêm từ ngoài) ─────────────────────────── */
 
@@ -75,6 +76,14 @@ export function layIp(req) {
 /* ─────────────────────────────────── middleware ──────────────────────────────────── */
 
 /**
+ * N-KHOA-PHIEN · 05/10 — đệm phép kiểm «vé còn dùng được không» (`vaiConLaiCuaVe`): mỗi người × team × bộ vai trên vé hỏi CSDL tối
+ * đa một lần mỗi `HAN_KIEM_PHIEN_MS`. Khoá tài khoản / rút vai có hiệu lực trong vòng chừng ấy — không cần nơi ghi nào báo lại (khoá
+ * đến từ đồng bộ HRM, màn Thành viên, hay SQL tay đều như nhau).
+ */
+export const HAN_KIEM_PHIEN_MS = 30 * 1000;
+const TRAN_DEM_PHIEN = 5000;
+
+/**
  * Đọc cookie vé → `req.boiCanh`. IM LẶNG khi chưa đăng nhập / vé hỏng / vé hết hạn —
  * việc trả 401 là của `batBuocDangNhap`, không phải của lớp này (còn trang đăng nhập và
  * trang tĩnh vẫn phải đi qua được).
@@ -82,8 +91,30 @@ export function layIp(req) {
  * Vé TẠM (chưa chọn team) KHÔNG dựng bối cảnh, chỉ gắn `req.veTam`. Chưa chọn team thì
  * chưa được đọc dữ liệu của team nào — đó là cả lý do vé tạm tồn tại.
  */
-export function lopBoiCanh() {
-  return function lopBoiCanhMw(req, _res, next) {
+export function lopBoiCanh({ hanKiemMs = HAN_KIEM_PHIEN_MS, bayGio = Date.now } = {}) {
+  const dem = new Map();   // `${nguoiDungId}|${teamId}|${vai}` → { vai: string[]|null, luc }
+
+  // Vé ký đúng chưa đủ: tài khoản còn mở và còn vai không? Cổng danh tính chưa nối (ca thử dựng router lẻ) ⇒ giữ vai trên vé.
+  async function vaiHieuLuc(than) {
+    if (!daNoiCongDanhTinh()) return than.tam ? [] : than.vai;
+    const khoa = `${than.nguoiDungId}|${than.teamId ?? ''}|${[...than.vai].sort().join(',')}`;
+    const cu = dem.get(khoa);
+    if (cu && bayGio() - cu.luc < hanKiemMs) return cu.vai;
+    const vai = await vaiConLaiCuaVe(than);
+    if (dem.size >= TRAN_DEM_PHIEN) dem.clear();
+    dem.set(khoa, { vai, luc: bayGio() });
+    if (!vai && !(cu && cu.vai === null)) {
+      void ghiNhatKyAuth(null, {
+        hanhDong: 'cat_phien',
+        doiTuongLoai: 'nguoi_dung', doiTuongId: than.nguoiDungId,
+        sau: { team_id: than.teamId ?? null, vai_tren_ve: [...than.vai], tam: !!than.tam, ip: layIp(than.req) },
+        ghiChu: 'vé còn hạn nhưng tài khoản đã khoá hoặc không còn vai trong team của vé — coi như chưa đăng nhập',
+      });
+    }
+    return vai;
+  }
+
+  return async function lopBoiCanhMw(req, _res, next) {
     req.veTam = null;
     const ve = docCookie(req, TEN_COOKIE);
     if (!ve) return next();
@@ -94,6 +125,13 @@ export function lopBoiCanh() {
       if (e instanceof LoiChuaDangNhap) return next();  // vé hỏng/hết hạn → coi như chưa đăng nhập
       return next(e);                                    // thiếu V3_KHOA_VE → lỗi cấu hình, phải kêu
     }
+    let vai;
+    try {
+      vai = await vaiHieuLuc({ ...than, req });
+    } catch (e) {
+      return next(e);   // CSDL hỏng giữa chừng ⇒ lỗi máy chủ thật, KHÔNG giả «chưa đăng nhập», cũng KHÔNG tin vé mù
+    }
+    if (!vai) return next();                          // tài khoản khoá / hết vai ⇒ coi như chưa đăng nhập (vé tạm cũng vậy)
     if (than.tam) { req.veTam = than; return next(); }
     try {
       req.boiCanh = taoBoiCanh({
@@ -102,7 +140,7 @@ export function lopBoiCanh() {
         //    đụng) nhưng GIÁ TRỊ là EMAIL — lược đồ thật không có cột tên đăng nhập.
         tenDangNhap: than.tenDangNhap,
         teamId: than.teamId,
-        vai: than.vai,
+        vai,                                           // vai CÒN LẠI — rút một vai thì vé mất đúng vai đó
         capLuc: than.capLuc,
         nguon: NGUON.PHIEN,
         ip: layIp(req),

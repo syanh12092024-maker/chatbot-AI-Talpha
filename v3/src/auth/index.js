@@ -34,11 +34,11 @@ export {
 
 export {
   datCongDanhTinh, daNoiCongDanhTinh, BANG_DANH_TINH,
-  timTheoEmail, teamCuaNguoi, vaiTrongTeam,
+  timTheoEmail, teamCuaNguoi, vaiTrongTeam, vaiConLaiCuaVe,
 } from './kho-nguoi-dung.js';
 
 export {
-  lopBoiCanh, batBuocDangNhap, batBuocVaiHTTP, chanTeamTrenUrl,
+  lopBoiCanh, HAN_KIEM_PHIEN_MS, batBuocDangNhap, batBuocVaiHTTP, chanTeamTrenUrl,
   datPheuNhatKy, daNoiPheuNhatKy, ghiNhatKyAuth, docCookie, layIp,
 } from './lop-express.js';
 

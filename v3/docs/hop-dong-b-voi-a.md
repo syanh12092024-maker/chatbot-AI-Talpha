@@ -287,6 +287,13 @@ là đổi lược đồ của A. Vé ký tự chứng thực đủ cho giai đo
 đăng xuất là xoá cookie. Đổi vai hoặc khoá tài khoản mà cần cắt vé đang sống ngay lập tức
 thì **giai đoạn 2 thêm bảng phiên**; đã ghi vào sổ tay vai B mục "Chỗ tự quyết".
 
+**LL15e (05/10) — khoá / rút vai cắt vé mà KHÔNG cần bảng phiên:** từ khi đồng bộ HRM tự khoá người nghỉ (LL15b), «vé sống tới hết
+hạn» thành lỗ thật. Lớp đọc vé (`lop-express.js#lopBoiCanh`) hỏi lại bốn bảng danh tính qua `kho-nguoi-dung.js#vaiConLaiCuaVe`,
+đệm **30 giây** mỗi người × team × bộ vai: `hoat_dong = false` hoặc mất dòng `nguoi_dung` ⇒ coi như chưa đăng nhập (cả vé tạm —
+khỏi đổi team lấy vé mới) · vai bị rút ⇒ bối cảnh chỉ mang vai còn lại · không còn vai nào trong team của vé ⇒ chưa đăng nhập ·
+vai MỚI cấp chỉ có sau lần đăng nhập / đổi team kế · CSDL hỏng lúc kiểm ⇒ 500. Đăng xuất vẫn chỉ là xoá cookie (vé bị chép ra
+ngoài sống tới hạn) — phần đó vẫn cần bảng phiên nếu muốn cắt.
+
 ---
 
 ## 7 · Đổi model không cần khởi động lại
