@@ -357,7 +357,8 @@ trước GSP3 là 76 page mất cả giá lẫn ảnh. Không xoá dòng nào. L
 thành GSP2. **GSP4 không phát** khi bộ đếm «page chưa chuyển xong» TOÀN HỆ (mọi team; `bo_qua` tính là đã quyết) > 0, trừ khi
 người quyết nói tường minh chấp nhận phần còn lại thôi chat. **Trước khi phát GSP4 phải đóng:** N-GSP3-DOI-MON (gỡ món rồi gắn món khác cùng gốc ⇒ dấu `chep` cũ còn tính) · đo N-GSP2-F3
 (món POS mang `page_id`). **Cấm** `ops/bin/day-lai-ban-chep.mjs --tat-ca` từ lúc
-GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GSP4 chạm `handler-v3.js` + nhiều bộ ca (MB4 đã xong 02/10 — không còn va; cầu `cau-bot-v1.js` nay là `loi-bot.js`).
+GSP2 lên prod tới khi bộ đếm «chưa chuyển xong» = 0 (sửa 05/10 theo đối kháng GSP3b F5: GSP3b không đụng đường đó — script vẫn đẩy
+món chưa giá cho page đã gắn mà chưa đối soát). Sửa sau review (a): CR mục 5e. GSP4 chạm `handler-v3.js` + nhiều bộ ca (MB4 đã xong 02/10 — không còn va; cầu `cau-bot-v1.js` nay là `loi-bot.js`).
 
 | Mã   | Việc                                                                                          | Phụ thuộc           | Làn | Trạng thái |
 | ---- | --------------------------------------------------------------------------------------------- | ------------------- | --- | ---------- |
@@ -366,7 +367,7 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
 | GSP2 | «Bản sao theo page» đổi TẠM thành danh sách việc chuyển: gợi ý món POS khớp tên page · gắn / nối món rồi gắn / gộp SKU rồi gắn / «không chuyển» · trạng thái theo page × bản sao (migration 032 `san_pham.doi_soat` + gốc × shop của quyết định — vị từ `daQuyet` dùng chung với GSP3) · bộ đếm toàn hệ theo team | GSP1 (cùng tệp màn) | 🟨 | ✅ 05/10 · `0af9d3b` + vòng 2 `3c524b7` (C1 đơn vị giá) · `gsp2.sh` 24/24 + 8 đột biến · chưa deploy |
 | H-GSP | Người: shop cho 11 page chưa có shop · xác nhận gắn 74 page · chọn giá khi lệch · 2 page có 2 bản sao | GSP2 lên prod | — | ⬜ |
 | GSP3 | Đối soát giá + ảnh theo GỐC × SHOP: lệch giữa page ⇒ 409, người chọn · chép đủ cột bậc · ảnh `nguon='kb'` khử trùng · luôn đẩy bản chép · dùng lại cửa lưu giá VE8b | GSP2 (cùng tệp màn) | 🟥 | ✅ 05/10 · `176c823` + vòng 2 `5afd582` (F1 dấu đơn vị · F4 tiền tệ bảng thắng) · ca 37/37 · `gsp3.sh` 43/43, 29 đột biến · đối kháng 1 vòng + verify · chưa deploy |
-| GSP3b | Trang page: bộ đọc `chay-that.js:408` truyền `trang` · cửa lưu SP/ảnh từ trang page từ chối bản sao của page đã gắn (409) · câu chữ «sửa ở đây là sửa mọi page cùng gốc × shop» | GSP3 · cùng đợt deploy GSP1–GSP3 | 🟥 | 🔎 05/10 · `3a84d76` `1382ef1` · chặng 1 7/8 (đỏ = chập chờn chuỗi con: `ll3` riêng 7/7 ×2, `gsp1.sh` riêng 14/14) · `gsp3b.sh` 41/42 + 23 đột biến · chặng 2 ĐỐI KHÁNG đang chạy |
+| GSP3b | Trang page: bộ đọc `chay-that.js:408` truyền `trang` · cửa lưu SP/ảnh từ trang page từ chối bản sao của page đã gắn (409) · câu chữ «sửa ở đây là sửa mọi page cùng gốc × shop» | GSP3 · cùng đợt deploy GSP1–GSP3 | 🟥 | 🔨 VÒNG 2 05/10 — đối kháng ĐẠT (0 CHẶN) nhưng tổng nâng F1 (marketer lưu đầy đủ món POS ⇒ đổi giá mọi page + bật cau_hinh_tay) + F2 (khoá chết do chính phiếu) lên CHẶN |
 | GSP4 | Một đường: bỏ nhánh `page_id` ở `catalog.js` · `kho-san-pham-v3.js` · `ban-chep-bot.js` · «Page đang bán» · `doc-danh-muc.js` RF-15; chốt ở `handler-v3.js` trước KB; 35 ca đổi fixture + 4 ca luật mới; deploy theo `mo-van` | GSP3 trên prod · bộ đếm = 0 | 🟥 | ⬜ |
 | GSP5 | Dọn: bỏ màn «Bản sao theo page» + ô lưu ý + `GET /api/san-pham`; tab «SP & giá» trang page nói giá sửa ở Sản phẩm › Theo thị trường; `03-MAN-HINH.md`; ĐÓNG CR | GSP4                | 🟨  | ⬜ |
 
@@ -1532,6 +1533,11 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
     lượt đã lùi (K3; bù được bằng đẩy lại trạng thái CSDL sau khi gỡ ảnh) · F5 `bangCu` trong nhật ký khai «đúng khuôn offers» nhưng
     đưa thẳng vào cửa lưu giá ra 400 — lời khai đường lùi sai · F7 gốc một món gom ảnh của MỌI bản sao trong page, không lối loại.
     **F6 mở rộng N-GSP3-DOI-MON:** thêm một món ĐÃ CÓ GIÁ vào gốc sau đối soát ⇒ cửa tiền MỞ ở giá món đó (K8) — không phải «vẫn ĐÓNG».
+  - **N-GSP3B-NEN** (đối kháng GSP3b, verdict scratchpad `refute-gsp3b.verdict.yaml`): F3 câu chỉ đường «Giá + ảnh sửa ở Sản phẩm ›
+    Theo thị trường» hứa sai — màn Sản phẩm không có chỗ sửa ảnh, marketer bấm sang thì giá cũng chỉ xem (lỗi do phiếu ② Ra 2 đặt) ·
+    F4 «Kéo danh mục» (`dongBoTuPos`) ghi hết hàng vào bản sao của page ĐÃ GẮN không qua chốt rồi đẩy món chưa giá sang bot (vô hại khi
+    page chưa đối soát vì cổng bật đòi giá; phải đóng trước GSP4) · F6 câu «bot chưa có sản phẩm» sai cho tới GSP4 vì prod chat đọc
+    `kb-overrides.json` (0 page bật ⇒ chưa hại).
   - **N-GSP1-CHU-CU** câu chữ còn trỏ lối đã bỏ: `03-MAN-HINH.md:13` · `v3/src/ui/san-sang/kho-san-sang.js:67` · câu trống màn Sản phẩm.
 
 - 02/10 · GSP1 (thợ) — **N-GSP-TAOGOC** `v3/src/ui/san-pham/kho-goc.js#taoGoc` hết cửa HTTP gọi (router bỏ `POST /api/san-pham/goc`) nhưng `v3/src/ui/san-pham/index.js:17` còn re-export ⇒ không gỡ được trong pathspec GSP1 (index.js ngoài ③; gỡ riêng kho-goc thì boot chết). Gỡ `taoGoc` + dòng export ở một phiếu có `index.js`. Cùng lúc: `GET /api/san-pham/goc` còn trả `cho`/`khongCoSoHieu` (không màn nào cần ngoài điều kiện ô lưu ý `san-pham.html:105`) — GSP2 đổi ô lưu ý thành bộ đếm thì gỡ luôn hai trường + chỗ đọc.
@@ -3137,3 +3143,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 05/10 · GSP3b → 🔎 chặng 1 (tổng đo) — `_chan1.sh gsp3b` 7/8: đỏ duy nhất ⑦ do `gsp3b.sh` ⑥cổng-cũ-gsp1 (chuỗi gsp1 → ve1 → ll18 → ll3 đỏ «mới so với base») · chạy riêng: `ll3.sh` 7/7 hai lượt, `gsp1.sh` 14/14, cây sạch ⇒ CHẬP CHỜN chuỗi con dài, không hồi quy (cùng loại N-VAI-B-NOI-DAY-CHAP-CHON)
   đồ thị import từ `src/queue/chay-worker.js` (96 tệp) KHÔNG chạm tệp nào của đợt GSP ⇒ phát hành chỉ restart `aicloser-v3` · prod chỉ đọc 05/10: 031 mới nhất, 0 cột doi_soat, F3 = 0, page gắn 1 / bật 0
   · commit 3a84d76 · 1382ef1 · nhật ký docs/thi-cong/nhat-ky/phieu-gsp3b.md
+- 05/10 · GSP3b → 🔨 vòng 2 — chặng 2 đối kháng ĐẠT (0 CHẶN; id lạ 9 dạng × 5 cửa giữ vững · bộ đọc màn ≡ bot ở 4 trạng thái page · không khe chạy chồng · đường cũ không vỡ) — tổng nâng hai NÊN lên CHẶN trước phát hành:
+  F1 marketer lưu ĐẦY ĐỦ món POS qua cửa trang page ⇒ 200, đổi giá mọi page gốc × shop + đè tên + `cau_hinh_tay` (POS thôi cập nhật hết hàng) trong khi màn Sản phẩm 403 · F2 khoá chết 40P01 do thứ tự khoá ngược (lưu bản sao vs gắn page / «Không chuyển») · F5 sửa sổ (gỡ cấm day-lai khi bộ đếm = 0) · F3 F4 F6 ⇒ §9
+  · verdict scratchpad refute-gsp3b.verdict.yaml · vòng 2 nhận refute-gsp3b-vong2.verdict.yaml
