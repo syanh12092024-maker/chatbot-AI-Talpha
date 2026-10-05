@@ -57,8 +57,15 @@ v3/src/ui/san-pham/trang/san-pham.html
 v3/src/ui/hop-thu/trang/hop-thu-ui.js
 v3/src/ui/van-hanh/trang/van-hanh.js
 test/tt1-*.test.mjs
+test/he-so-te-doi-chieu-don-that.test.js
+test/gsp3-doi-soat.test.mjs
+ops/bin/nghiem-thu/gsp3.sh
 ops/bin/nghiem-thu/tt1.sh
 ```
+**Nới 05/10 (thợ xin, tổng duyệt — thước neo luật cũ):** `test/he-so-te-doi-chieu-don-that.test.js` ca H4 («mọi tệ = 100») đổi thành «mọi tệ
+×100 NGOẠI TRỪ đúng tập không-xu đo từ `dim_shop_project` {TWD, JPY} = 1» + neo 990 TWD ⇔ 990 (giữ ý đồ chặn tệ theo ISO ×1000);
+`test/gsp3-doi-soat.test.mjs` ca ④7 + `ops/bin/nghiem-thu/gsp3.sh` đảo-vá `doan_taiwan` đổi ví dụ «thị trường lạ» từ Taiwan sang Japan (chưa
+kết nối) — chỉ đổi ví dụ, giữ khẳng định. Không sửa gì khác trong ba tệp này.
 Chỉ sửa ở tệp nào soát ra lỗi thật với hệ 1 / tệ mới — mỗi chỗ sửa ghi lý do vào nhật ký. `src/admin-v3/operations.js` được phép ở
 phiếu này CHỈ cho phần quy đổi đơn vị (`saveProduct` đang kiểm `HE_SO_TE[g.tien_te]`).
 
