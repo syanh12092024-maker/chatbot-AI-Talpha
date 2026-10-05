@@ -70,7 +70,16 @@ Ghi ảnh: `src/products/anh-san-pham.js#themAnh(pool, teamId, spId, {duong, nha
    (`saveProduct` xoá-rồi-chèn ⇒ id mất nghĩa): giá lùi theo «bảng cũ» (`saveProduct` đã chụp `truoc` trong giao dịch); ảnh
    lùi theo dấu `nguon='kb'` trên món; trạng thái lùi bằng đặt `doi_soat` về NULL.
 7. **Bản sao giữ NGUYÊN** — chỉ thêm `doi_soat`/`doi_soat_luc`; không sửa bậc, ảnh, tên, không xoá dòng `nguon='kb'`.
-8. **Màn**: dòng `cho_doi_soat` (GSP2) có nút **«Đối soát giá + ảnh cho «G» · «shop»»** mở khung đơn vị: bảng từng page cạnh
+8. **Đơn vị giá (bài học chặng 2 GSP2, CHẶN C1):** `goi_gia` lưu đơn vị NHỎ (× `HE_SO_TE`). Mọi số giá / giá gốc / phí ship mà
+   `donViDoiSoat` trả lên màn là đơn vị LỚN, quy đổi ở TẦNG A một chỗ (như `giaCuaMon`, `san-pham-goc.js:633`); so «bảng» thì so
+   trên giá trị gốc trong CSDL (không so sau quy đổi số thực). Ca khẳng định: bản sao 99 SAR ⇒ màn và JSON ra 99.
+9. **Dọn dấu sống lại (review chặng 2 GSP2 F1 · F2 — phải đóng trước GSP4):** trong `src/products/san-pham-goc.js`:
+   - `boSanPhamGoc` (bỏ gốc) ⇒ cùng giao dịch đặt `doi_soat`/`doi_soat_luc`/`doi_soat_goc`/`doi_soat_shop` = NULL cho mọi bản sao
+     có `doi_soat_goc` = mã gốc bị bỏ (F1: bỏ gốc rồi gộp lại cùng mã ⇒ dấu `chep` cũ sống lại);
+   - `ganPageVaoGoc` (gắn page) ⇒ cùng giao dịch đặt NULL các cột dấu cho bản sao của page đang `doi_soat='bo_qua'` (F2: `bo_qua`
+     sống lại sau gắn → gỡ). Không đổi chữ ký, không đổi hành vi nào khác của hai hàm. Lưới 032: CSDL chưa áp ⇒ bỏ qua bước dọn,
+     không ném (hai hàm này đang chạy trên prod).
+10. **Màn**: dòng `cho_doi_soat` (GSP2) có nút **«Đối soát giá + ảnh cho «G» · «shop»»** mở khung đơn vị: bảng từng page cạnh
    nhau (khác nhau tô ra), giá món đang có, ảnh gom, cảnh báo `pageChuaGanCungMon`; >1 món ⇒ chọn cặp bản sao → món;
    lệch ⇒ chọn một bảng (hoặc giữ giá món) và thấy danh sách page sẽ đổi giá trước khi bấm. Xong ⇒ mọi page của đơn vị sang
    `xong`, bộ đếm giảm đúng số page đó.
@@ -83,6 +92,7 @@ Ghi ảnh: `src/products/anh-san-pham.js#themAnh(pool, teamId, spId, {duong, nha
 
 ```
 src/products/chuyen-ban-sao.js
+src/products/san-pham-goc.js
 v3/src/audit/hanh-dong.js
 v3/chay-that.js
 v3/src/ui/san-pham/kho-goc.js
@@ -92,7 +102,7 @@ test/gsp3-*.test.mjs
 v3/test/b/gsp3-*.test.mjs
 ops/bin/nghiem-thu/gsp3.sh
 ```
-`hanh-dong.js`: hành động mới thêm ở CẢ BA chỗ (bảng `HANH_DONG` · nhóm `san_pham` · câu mô tả). KHÔNG sửa
+`san-pham-goc.js`: CHỈ `boSanPhamGoc` + `ganPageVaoGoc` (mục ② 9). `hanh-dong.js`: hành động mới thêm ở CẢ BA chỗ (bảng `HANH_DONG` · nhóm `san_pham` · câu mô tả). KHÔNG sửa
 `src/admin-v3/operations.js`, `src/products/anh-san-pham.js`, `src/products/ban-chep-bot.js` — cần đổi gì ở đó ⇒ dừng, báo tổng.
 
 ## ④ Nghiệm thu (viết trước — thợ đóng gói `ops/bin/nghiem-thu/gsp3.sh`, rc=0 khi đạt)
@@ -115,9 +125,13 @@ thứ nó nhận.
 7. Bậc AED trên shop Saudi ⇒ 409 `lech_tien_te`, 0 ghi. Shop Taiwan ⇒ 409 `thi_truong_la`, 0 ghi.
 8. `day` ném ⇒ 0 `goi_gia` đổi VÀ 0 `anh_san_pham` mới của lượt, `doi_soat` NULL (không nửa vời).
 9. CSDL chưa áp 032 ⇒ 409 `chua_ap_032`, 0 ghi. Marketer ⇒ 403. Team khác ⇒ 404.
+9b. Đơn vị: bản sao 99 SAR / ship 25 ⇒ `GET doi-soat` trả 99 / 25 (không 9900 / 2500).
+9c. F1: page E `chep` với G × S1 → gỡ E → bỏ G → gộp lại gốc mới cùng mã `G` (món khác) → gắn E ⇒ E `cho_doi_soat` (KHÔNG `xong`).
+    F2: page X `bo_qua` → gắn ⇒ `cho_doi_soat` → gỡ ⇒ `chua_gan` (KHÔNG về `bo_qua`). Cả hai qua CỬA THẬT (`ganPageVaoGoc` ·
+    `goPageKhoiGoc` · `boSanPhamGoc`), không UPDATE tay. CSDL chưa áp 032 ⇒ bỏ gốc / gắn page vẫn thành như cũ.
 10. Đảo-vá: (i) bỏ kiểm lệch giữa page ⇒ phép 1 đỏ; (ii) chép 4 cột thay vì trọn hàng ⇒ phép 2/3 đỏ (bậc tắt thành bật); (iii) bỏ
     đẩy ở nhánh giá giống hệt ⇒ phép 5 đỏ; (iv) bỏ gỡ ảnh khi đẩy hỏng ⇒ phép 8 đỏ; (v) đánh dấu theo page bấm thay vì cả đơn
-    vị ⇒ phép 2 đỏ (P2 còn NULL).
+    vị ⇒ phép 2 đỏ (P2 còn NULL); (vi) bỏ phép chia đơn vị ⇒ 9b đỏ; (vii) bỏ dọn dấu ở `boSanPhamGoc` / `ganPageVaoGoc` ⇒ 9c đỏ.
 11. Bộ ca canh phạm vi LL15d xanh, chạy RIÊNG và ghi số vào nhật ký: `test/ll15d-marketer-san-pham.test.mjs` ·
     `v3/test/b/ll15d-marketer-man.test.mjs` · cổng `ops/bin/nghiem-thu/ll15d.sh`.
 12. Cổng xanh (rc tách dòng): `gsp1.sh` · `gsp2.sh` · `ve8b.sh` · `va-r2.sh` · `l3-m4.sh`. `npm test` không thêm ca đỏ so với
