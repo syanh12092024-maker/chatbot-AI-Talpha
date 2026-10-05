@@ -1,6 +1,6 @@
 # PHIẾU GSP1 — Sản phẩm gốc chỉ sinh từ gộp món POS theo SKU
 
-**Base:** `638d501` · **Làn:** 🟨 (đóng một cửa ghi API + màn; không chạm tiền, không chạm bot)
+**Base:** `0a80e0b` · **Làn:** 🟨 (đóng một cửa ghi API + màn; không chạm tiền, không chạm bot)
 **Nguồn:** CR-02-10b (`docs/thi-cong/doi-y-do/CR-02-10b-page-phai-gan-san-pham.md` mục 1 · 5) · `01-QUYET-DINH.md` §8 «Page phải gắn sản phẩm» · sổ §5h
 **Đụng bộ não:** không.
 **Skill thợ nạp (sau khi đọc phiếu):** `tho-thi-cong` · `viet-thuoc`.

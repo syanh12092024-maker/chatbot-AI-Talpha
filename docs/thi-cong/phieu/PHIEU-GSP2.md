@@ -1,6 +1,6 @@
 # PHIẾU GSP2 — Danh sách việc chuyển: gắn page đang đọc bản sao vào sản phẩm gốc
 
-**Base:** `915b527` · **Làn:** 🟨 (ghi `page.san_pham_goc_ma` + tạo/nối gốc qua cửa đã có + migration 032 CHỈ THÊM một cột không đường tiền nào đọc; KHÔNG ghi giá. Gắn xong mà món POS chưa có giá ⇒ cửa tiền của page ĐÓNG — hỏng về phía an toàn)
+**Base:** `3baacb2` · **Làn:** 🟨 (ghi `page.san_pham_goc_ma` + tạo/nối gốc qua cửa đã có + migration 032 CHỈ THÊM một cột không đường tiền nào đọc; KHÔNG ghi giá. Gắn xong mà món POS chưa có giá ⇒ cửa tiền của page ĐÓNG — hỏng về phía an toàn)
 **Nguồn:** CR-02-10b mục 3 «Mất đi 3» · mục 5 dòng GSP2 · mục 5d (đo prod) · **mục 5e (sửa sau review (a))** · `01-QUYET-DINH.md` §8 «Page phải gắn sản phẩm» · sổ §5h
 **Đụng bộ não:** không.
 **Skill thợ nạp:** `tho-thi-cong` · `viet-thuoc` · `web-design-guidelines` (màn).

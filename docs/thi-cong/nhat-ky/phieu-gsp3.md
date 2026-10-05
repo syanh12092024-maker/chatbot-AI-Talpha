@@ -1,6 +1,6 @@
 # GSP3 — Đối soát giá + ảnh của bản sao theo đơn vị GỐC × SHOP · 05/10/2026
 
-Base `b0b82d7` · commit code `176c823` · làn 🟥 (ghi `goi_gia` mà `cua2Tien` đọc) · thợ một phiên · skill `tho-thi-cong` + `viet-thuoc`,
+Base `4b5d189` · commit code `e5e5f48` · làn 🟥 (ghi `goi_gia` mà `cua2Tien` đọc) · thợ một phiên · skill `tho-thi-cong` + `viet-thuoc`,
 xong chạy `/code-review` (high). Không push, không deploy, không SSH; `.env` máy này giữ `PANCAKE_READONLY=1` (đếm: 1 dòng).
 
 ## Đã làm (theo mục ② của phiếu)
@@ -131,8 +131,8 @@ xong chạy `/code-review` (high). Không push, không deploy, không SSH; `.env
   - ⑤ LL15d chạy riêng: 4/4 + 5/5.
   - ⑥ cổng cũ: `gsp1` 0 · `gsp2` 0 · `ve8b` 0 · `ll15d` 0. `va-r2` rc=1 và `l3-m4` rc=1 là **ĐỎ SẴN**: đối chứng cùng thước trên worktree
     tạm ở base cho danh sách dòng đỏ giống hệt (12 và 33 dòng), 0 dòng đỏ mới. Cổng tự đối chứng; đo tay thêm một lần trên worktree
-    `244c199` cũng giống hệt. Ghi nợ N-GSP3-CONG-CU-DO.
-- `npm test`: base `244c199` **2347 · 2343 pass · 0 fail · 4 skip** → sau GSP3 **2372 · 2368 pass · 0 fail · 4 skip** (+25 ca, 0 đỏ mới).
+    `7a9978b` cũng giống hệt. Ghi nợ N-GSP3-CONG-CU-DO.
+- `npm test`: base `7a9978b` **2347 · 2343 pass · 0 fail · 4 skip** → sau GSP3 **2372 · 2368 pass · 0 fail · 4 skip** (+25 ca, 0 đỏ mới).
 - `git diff --check` sạch. Commit pathspec 10 tệp, đều trong ③.
 
 ## `/code-review` (high) — 10 phát hiện, kiểm từng claim trước khi sửa
@@ -167,7 +167,7 @@ bản sao · kb-overrides · TWD) giữ nguyên.
 
 ## `_chan1.sh gsp3`
 
-Lượt 1 (05/10, sau commit `176c823`): **ĐỎ 1 / XANH 7** — ⑦ `gsp3.sh` rc=1, đỏ duy nhất ⑥`gsp1` «4 dòng đỏ MỚI», gốc ở tầng thứ tư
+Lượt 1 (05/10, sau commit `e5e5f48`): **ĐỎ 1 / XANH 7** — ⑦ `gsp3.sh` rc=1, đỏ duy nhất ⑥`gsp1` «4 dòng đỏ MỚI», gốc ở tầng thứ tư
 của chuỗi cổng con (`gsp1 → ve8b → ve8a → ve7b`): `🔴 ③thước v3/test/b/vai-b-noi-day.test.mjs fail=1`. Kiểm chứng ngay:
 chạy riêng tệp đó **5 lần ⇒ 5/5 xanh (pass 5 fail 0)** · `gsp1.sh` chạy riêng **rc=0, 14/14**. Đây là ca chập chờn «cookie null» ở
 `vai-b-noi-day` mà nhật ký GSP2 đã ghi (chưa rõ nguyên nhân); không do GSP3. Ghi nợ N-VAI-B-NOI-DAY-CHAP-CHON.
@@ -176,7 +176,7 @@ Lượt 2 (chạy lại, không sửa gì):
 
 ```
 ✅ ①phiếu-tồn-tại docs/thi-cong/phieu/PHIEU-GSP3.md
-✅ ②có-Base base=b0b82d7
+✅ ②có-Base base=4b5d189
 — file đổi (12):
     docs/thi-cong/SO-DIEU-HANH-THI-CONG.md
     docs/thi-cong/phieu/PHIEU-GSP3.md
@@ -195,8 +195,8 @@ Lượt 2 (chạy lại, không sửa gì):
 ✅ ⑥hết-marker đếm=0
 ✅ ⑦script-nghiệm-thu ops/bin/nghiem-thu/gsp3.sh rc=0 (log /tmp/chan1-ns-54715.log, đuôi:)
     ✅ ⑥cổng-cũ-ve8b rc=0
-    ✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở b0b82d7: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3)
-    ✅ ⑥cổng-cũ-l3-m4 rc=1 — ĐỎ SẴN ở b0b82d7: 33 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3)
+    ✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở 4b5d189: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3)
+    ✅ ⑥cổng-cũ-l3-m4 rc=1 — ĐỎ SẴN ở 4b5d189: 33 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3)
     ✅ ⑥cổng-cũ-ll15d rc=0
     == ĐỎ 0 / XANH 32
 ✅ ⑧a-nhật-ký docs/thi-cong/nhat-ky/phieu-gsp3.md
@@ -208,8 +208,8 @@ rc=0
 ## Vòng 2 — vá hai CHẶN của đối kháng (F1 · F4) · 05/10/2026
 
 Đầu vào: verdict `refute-gsp3-vong2.verdict.yaml` (chỉ CHẶN: F1 của reviewer + F4 tổng nâng) · kịch bản repro reviewer
-`refute-gsp3.test.mjs` (K1, K2, K6 — chỉ đọc để dựng ca, KHÔNG đưa vào repo) · diff vòng 1 `176c823`. Không đụng F2/F3/F5/F6/F7 (đã có nợ
-N-GSP3-NEN). Commit code vòng 2 **`5afd582`**, pathspec 7 tệp, đều trong ③ (`chay-that.js` · `san-pham-goc.js` · `hanh-dong.js` không cần
+`refute-gsp3.test.mjs` (K1, K2, K6 — chỉ đọc để dựng ca, KHÔNG đưa vào repo) · diff vòng 1 `e5e5f48`. Không đụng F2/F3/F5/F6/F7 (đã có nợ
+N-GSP3-NEN). Commit code vòng 2 **`0f2c4bf`**, pathspec 7 tệp, đều trong ③ (`chay-that.js` · `san-pham-goc.js` · `hanh-dong.js` không cần
 đổi: `doiSoat` của `chay-that.js` chuyển nguyên thân `t` xuống tầng A).
 
 **Đính chính lời khai SAI ở mục «Nhánh test KHÔNG chạm» của vòng 1** («Hai quản trị bấm cùng một đơn vị một lúc: dựa vào `version` của
@@ -217,14 +217,14 @@ N-GSP3-NEN). Commit code vòng 2 **`5afd582`**, pathspec 7 tệp, đều trong �
 khi đơn vị đổi giữa lúc mở khung và lúc bấm, máy chủ vẫn nhận `chon` cũ (F1). Vòng 2 vá bằng dấu đơn vị (dưới). Riêng hai lượt POST cùng
 lúc trên CÙNG một đơn vị: đó là phép đo K7 của phản biện («không phá được»), không phải ca của thợ.
 
-### Đo lại trước khi sửa (máy dev · hộp cát Postgres 127.0.0.1:5432 · HEAD `c17db8f`)
+### Đo lại trước khi sửa (máy dev · hộp cát Postgres 127.0.0.1:5432 · HEAD `fcc3312`)
 
 Kịch bản reviewer chạy trên code vòng 1 — cả ba lỗi dựng lại được:
 - K1: người thấy 2 bảng `[[199],[249]]`, rồi page P3 (bảng 99) được gắn. POST `chon P1` ⇒ **THÀNH**: món = 19900, P3 bị đánh
   `giu_gia_mon`, `pageSangXong` gồm P1, P2, P3, bot P3 nhận 199, cửa tiền P3 ở 199 MỞ / ở 99 ĐÓNG.
 - K2: P1 bị sửa 199→19 sau khi người đã xem. POST `chon P1` ⇒ **THÀNH**: món = 1900 (19 SAR), bot P2 nhận «19», cửa tiền P2 ở 19 MỞ.
 - K6: cả ba lựa chọn (vắng / `giu_gia_mon` / `{P1}`) ⇒ `lech_tien_te`; P2 kẹt `cho_doi_soat`.
-- `npm test` mốc trước (HEAD `c17db8f`): **2372 ca · 2368 đạt · 0 đỏ · 4 bỏ qua**.
+- `npm test` mốc trước (HEAD `fcc3312`): **2372 ca · 2368 đạt · 0 đỏ · 4 bỏ qua**.
 
 ### Đã sửa
 
@@ -294,7 +294,7 @@ Kịch bản reviewer chạy trên code vòng 1 — cả ba lỗi dựng lại �
 - Bộ ca: `test/gsp3-doi-soat.test.mjs` **28/28** (+8: V2-K0 · K1 · K2 · K3 · K4 · K6c · K6 · K6b) và `v3/test/b/gsp3-doi-soat-man.test.mjs`
   **9/9** (+4: đơn vị đổi · bảng sai tệ · bảng DUY NHẤT sai tệ · lỗi KHÁC + đơn vị đổi).
 - `ops/bin/nghiem-thu/gsp3.sh`, lượt 2, sau khi vá review: **ĐỎ 1 / XANH 42**.
-  - ① pass=37 fail=0 (sàn nâng 25 → 37) · ② 35/35 phép có ca xanh · ③ ba tệp cấm sửa nguyên so với `b0b82d7`.
+  - ① pass=37 fail=0 (sàn nâng 25 → 37) · ② 35/35 phép có ca xanh · ③ ba tệp cấm sửa nguyên so với `4b5d189`.
   - ④ lượt chứng 37/0. **29/29 đột biến bắt đúng ca**; 11 đột biến mới:
     - F1: `bo_so_dau` ⇒ V2-K1 + V2-K2 CÙNG đỏ · `duong_khong_dau` ⇒ V2-K0 · `dau_bo_bang_mon` ⇒ V2-K3 · `dau_bo_page` ⇒ V2-K4 ·
       `router_bo_dau` ⇒ cửa thật.
@@ -313,7 +313,7 @@ Kịch bản reviewer chạy trên code vòng 1 — cả ba lỗi dựng lại �
   - phần `goc` / `shop` của dấu (muối nhận diện; mọi lệch thật đã đi qua `mon` / `page` / `banSao`);
   - cửa sổ ms trong một lượt POST (nợ CR2);
   - nhánh màn «bỏ lựa chọn trỏ bảng sai tệ» chỉ có assert, không có đột biến.
-- `npm test`: mốc trước **2372 · 2368 · 0 · 4** (`c17db8f`) → sau **2384 ca · 2380 đạt · 0 đỏ · 4 bỏ qua** (+12 = 8 A + 4 B, 0 đỏ mới).
+- `npm test`: mốc trước **2372 · 2368 · 0 · 4** (`fcc3312`) → sau **2384 ca · 2380 đạt · 0 đỏ · 4 bỏ qua** (+12 = 8 A + 4 B, 0 đỏ mới).
   Trước lượt sạch có hai lượt bị nhiễu, cả hai ở tệp GSP3 không chạm:
   - lượt 1: 1 đỏ «Unable to deserialize cloned data» (lỗi IPC của test runner) ở `test/l2-m3-rap-prompt.test.js`; tệp đó chạy riêng
     3 × 6/6;
@@ -328,11 +328,11 @@ Kịch bản reviewer chạy trên code vòng 1 — cả ba lỗi dựng lại �
 
 N-GSP3-DAU-TOCTOU (CR2).
 
-### `_chan1.sh gsp3` (vòng 2, HEAD `5afd582`)
+### `_chan1.sh gsp3` (vòng 2, HEAD `0f2c4bf`)
 
 ```
 ✅ ①phiếu-tồn-tại docs/thi-cong/phieu/PHIEU-GSP3.md
-✅ ②có-Base base=b0b82d7
+✅ ②có-Base base=4b5d189
 — file đổi (13):
     docs/thi-cong/SO-DIEU-HANH-THI-CONG.md
     docs/thi-cong/nhat-ky/phieu-gsp3.md
@@ -352,8 +352,8 @@ N-GSP3-DAU-TOCTOU (CR2).
 ✅ ⑥hết-marker đếm=0
 ✅ ⑦script-nghiệm-thu ops/bin/nghiem-thu/gsp3.sh rc=0 (log /tmp/chan1-ns-61829.log, đuôi:)
     ✅ ⑥cổng-cũ-ve8b rc=0
-    ✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở b0b82d7: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3)
-    ✅ ⑥cổng-cũ-l3-m4 rc=1 — ĐỎ SẴN ở b0b82d7: 33 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3)
+    ✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở 4b5d189: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3)
+    ✅ ⑥cổng-cũ-l3-m4 rc=1 — ĐỎ SẴN ở 4b5d189: 33 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3)
     ✅ ⑥cổng-cũ-ll15d rc=0
     == ĐỎ 0 / XANH 43
 ✅ ⑧a-nhật-ký docs/thi-cong/nhat-ky/phieu-gsp3.md

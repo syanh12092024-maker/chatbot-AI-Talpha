@@ -1,6 +1,6 @@
 # PHIẾU GSP3b — Trang page đọc đúng thứ bot đọc; khoá sửa bản sao của page đã gắn
 
-**Base:** `aa43268` · **Làn:** 🟥 (đụng cửa lưu sản phẩm + ảnh — `saveProduct` ghi `goi_gia`, đẩy bản chép bot đọc)
+**Base:** `307c79b` · **Làn:** 🟥 (đụng cửa lưu sản phẩm + ảnh — `saveProduct` ghi `goi_gia`, đẩy bản chép bot đọc)
 **Nguồn:** CR-02-10b mục 2 lớp 4 (dòng trang một page — bộ đọc bản đầu CR bỏ sót) · **mục 5e** · mục 5 dòng GSP3b · `01-QUYET-DINH.md` §8 «Page phải gắn sản phẩm» («Mọi thứ quyết định một page trả lời thế nào nằm trên một màn» + không giá riêng theo page) · sổ §5h
 **Đụng bộ não:** không.
 **Skill thợ nạp:** `tho-thi-cong` · `viet-thuoc`; xong thì `/code-review` (đường tiền).

@@ -1,6 +1,6 @@
 # GSP3b — Trang page đọc đúng thứ bot đọc; khoá sửa bản sao của page đã gắn · 05/10/2026
 
-Base `aa43268` (HEAD lúc nhận `6c2f8ef`, chỉ thêm docs điều hành) · commit code `3a84d76` + cổng `1382ef1` · làn 🟥 (cửa lưu sản phẩm + ảnh, `saveProduct`
+Base `307c79b` (HEAD lúc nhận `bf4f439`, chỉ thêm docs điều hành) · commit code `1956b1e` + cổng `bcc86ab` · làn 🟥 (cửa lưu sản phẩm + ảnh, `saveProduct`
 ghi `goi_gia`, đẩy bản chép bot đọc) · thợ một phiên · skill `tho-thi-cong` + `viet-thuoc`, xong chạy `/code-review` (high).
 Không push, không deploy, không SSH; `.env` giữ `PANCAKE_READONLY=1` (đếm: 1 dòng). Không đụng bộ não.
 
@@ -113,7 +113,7 @@ ném được có chọn lọc cho lượt đọc thứ hai mà không ném luô
 - Ca cũ gần nhất chạy riêng (trang page · màn Prompt · ảnh · vận hành · GSP3 · khối chung · bản chép): `ve2-mot-page` `ve2b-page-gop`
   `mot-page` `prompt-page` `mn4-anh-router` `l6-van-hanh` `ll10-van-hanh` `gsp3-doi-soat` `ve4-luat-chung` `mn3-ban-chep-bot`: **122/122**.
 - `npm test` (luật 6, không chạy chồng — `ps` đếm 0 lượt `node --test` trước mỗi lần):
-  - mốc TRƯỚC (HEAD `6c2f8ef`, cây sạch): **2384 ca · 2380 đạt · 0 đỏ · 4 bỏ qua** (23,6s)
+  - mốc TRƯỚC (HEAD `bf4f439`, cây sạch): **2384 ca · 2380 đạt · 0 đỏ · 4 bỏ qua** (23,6s)
   - sau lượt đầu: 2409 · 2405 · 0 · 4
   - SAU vá /code-review: **2416 ca · 2412 đạt · 0 đỏ · 4 bỏ qua** (+32 ca, 0 đỏ mới)
 
@@ -124,7 +124,7 @@ ném được có chọn lọc cho lượt đọc thứ hai mà không ném luô
 ✅ ②phép-④-có-ca-xanh 30/30
 ✅ ③nối-dây-chay-that dòng nối mới=1 (đòi 1) · lời gọi thiếu trang=0 (đòi 0)
 ✅ ③b-tiền-đề-②4-còn-màn-gọi-cửa-đầy-đủ số màn=1 (mot-page.html: id từ bộ đọc page_id, gồm món POS RF-15)
-✅ ③c-không-sửa-tệp-cấm so với aa43268
+✅ ③c-không-sửa-tệp-cấm so với 307c79b
 ✅ ③d-chuyen-ban-sao-chỉ-thêm dòng cũ bị sửa/xoá=0 (đòi 0)
 ✅ ④0-lượt-chứng-bản-sao-tạm-xanh pass=32 fail=0
 ✅ ④đảo-vá × 23 — mỗi đột biến đỏ ĐÚNG tập ca (bảng dưới)
@@ -135,11 +135,11 @@ ném được có chọn lọc cho lượt đọc thứ hai mà không ném luô
 ✅ ⑥cổng-cũ-ll15d rc=0
 ✅ ⑥cổng-cũ-gsp1 rc=0
 ✅ ⑥cổng-cũ-gsp2 rc=0
-🔴 ⑥cổng-cũ-gsp3 rc=1 · 6 dòng đỏ MỚI so với aa43268   ← ①②VE2b pass=16 fail=1, tầng sâu gsp3 → ve8b → ve8a → ve7b → ve7a → ve2b
+🔴 ⑥cổng-cũ-gsp3 rc=1 · 6 dòng đỏ MỚI so với 307c79b   ← ①②VE2b pass=16 fail=1, tầng sâu gsp3 → ve8b → ve8a → ve7b → ve7a → ve2b
 ✅ ⑥cổng-cũ-ve2 rc=0
 ✅ ⑥cổng-cũ-ve2b rc=0
 ✅ ⑥cổng-cũ-ve8b rc=0
-✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở aa43268: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
+✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở 307c79b: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
    ⑦npm-test: HOÃN (CHAY_NPM_TEST=1) — số ở mục Bộ ca
 == ĐỎ 1 / XANH 41
 ```
@@ -151,9 +151,9 @@ ném được có chọn lọc cho lượt đọc thứ hai mà không ném luô
   `gsp1 → ll15d → ll15c → ll15b → ll15a → v3/test/b/ve7d-nguoi-team.test.mjs` (0% CPU ~26′, cổng HTTP :50077 còn mở — một ca đỏ không đóng
   máy chủ); giết cả nhóm. `ve7d-nguoi-team.test.mjs` chạy riêng **8/8**. Cùng hiện tượng tổng gặp ở GSP3 chặng 1 («treo ở chuỗi cổng cũ»).
 - Sáu cổng con của `gsp3.sh` ⑥ đo riêng: `gsp1` ✅ `gsp2` ✅ `ve8b` ✅ `ll15d` ✅ (cùng lượt cổng gsp3b) · `va-r2` ĐỎ SẴN (12 dòng = base) ·
-  `l3-m4` chạy riêng ở HEAD và ở worktree tạm `aa43268`: **55 phép · 27 ĐỎ · 3 HOÃN cả hai, 33 dòng đỏ = 33, 0 dòng mới** (nợ N-GSP3-CONG-CU-DO).
+  `l3-m4` chạy riêng ở HEAD và ở worktree tạm `307c79b`: **55 phép · 27 ĐỎ · 3 HOÃN cả hai, 33 dòng đỏ = 33, 0 dòng mới** (nợ N-GSP3-CONG-CU-DO).
 - Vì cổng con lồng nhau treo được vô hạn, `gsp3b.sh` ⑥ thêm TRẦN mỗi cổng con (`TRAN_CON`, mặc định 2700s; quá ⇒ giết cả nhóm, ĐỎ «TREO»)
-  — commit `1382ef1`, thử: trần 5s ⇒ `🔴 ⑥cổng-cũ-ve2 TREO`, 0 tiến trình sót; trần mặc định ⇒ `✅ ⑥cổng-cũ-ve2 rc=0`.
+  — commit `bcc86ab`, thử: trần 5s ⇒ `🔴 ⑥cổng-cũ-ve2 TREO`, 0 tiến trình sót; trần mặc định ⇒ `✅ ⑥cổng-cũ-ve2 rc=0`.
 
 ### Đảo-vá — 23 đột biến, mỗi cái đỏ ĐÚNG tập ca (bản sao tạm, mỗi lượt một tiến trình node)
 
@@ -193,7 +193,7 @@ cùng một dòng chốt) ⇒ «không áp được»; nay cắt theo vị trí.
 | CR9 | `/noi-dung` đọc page 3 lần | đúng; chữ ký `docKhoi.sanPham(teamId, pageRowId)` cố định bởi `vai-b.js`/`kho-prompt.js` (ngoài ③) | đọc trạng thái gắn song song với hai khối; không đổi chữ ký |
 | CR10 | chốt đầu cửa thừa khi đã có chốt trong giao dịch; regex lặp | một nửa: chốt đầu cửa giữ (phiếu + thứ tự mã — ca D1/D2 «thân sai»); regex gom về `idSo` | — |
 
-Đảo-vá đo bản SAU vá review (lượt cổng thứ hai): 23/23 đột biến làm đỏ ĐÚNG tập ca đã khai. (Thân commit `3a84d76` ghi «25 đột biến» — SAI, đúng là 23; không sửa lịch sử, đính chính ở đây.)
+Đảo-vá đo bản SAU vá review (lượt cổng thứ hai): 23/23 đột biến làm đỏ ĐÚNG tập ca đã khai. (Thân commit `1956b1e` ghi «25 đột biến» — SAI, đúng là 23; không sửa lịch sử, đính chính ở đây.)
 
 ## Đột biến KHÔNG đỏ (kết quả của đảo-vá)
 
@@ -209,12 +209,12 @@ N-GSP3B-MON-POS-CUA-DAY · N-GSP3B-LOI-SANG-SHOP · N-GSP3B-CONG-DOI-CHUNG.
 
 ## `_chan1.sh gsp3b`
 
-Chạy sau commit `e9f3fe1` (05/10 15:09:51 → 15:34:21, máy dev, cây chung, không lượt đo nào khác chạy chồng):
+Chạy sau commit `e8d5206` (05/10 15:09:51 → 15:34:21, máy dev, cây chung, không lượt đo nào khác chạy chồng):
 
 ```
 Mon Oct  5 15:09:51 +07 2026
 ✅ ①phiếu-tồn-tại docs/thi-cong/phieu/PHIEU-GSP3B.md
-✅ ②có-Base base=aa43268
+✅ ②có-Base base=307c79b
 — file đổi (14):
     docs/thi-cong/SO-DIEU-HANH-THI-CONG.md
     docs/thi-cong/nhat-ky/phieu-gsp3b.md
@@ -236,7 +236,7 @@ Mon Oct  5 15:09:51 +07 2026
 ✅ ⑦script-nghiệm-thu ops/bin/nghiem-thu/gsp3b.sh rc=0 (log /tmp/chan1-ns-14830.log, đuôi:)
     ✅ ⑥cổng-cũ-ve2b rc=0
     ✅ ⑥cổng-cũ-ve8b rc=0
-    ✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở aa43268: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
+    ✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở 307c79b: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
        ⑦npm-test: HOÃN (đặt CHAY_NPM_TEST=1 khi không lượt đo nào khác đang chạy — luật 6) — không tính vào ĐỎ/XANH
     == ĐỎ 0 / XANH 42
 ✅ ⑧a-nhật-ký docs/thi-cong/nhat-ky/phieu-gsp3b.md
@@ -253,7 +253,7 @@ Log ⑦ (`/tmp/chan1-ns-14830.log`) — các phép trừ đột biến (đột b
 ✅ ②phép-④-có-ca-xanh 30/30
 ✅ ③nối-dây-chay-that dòng nối mới=1 (đòi 1) · lời gọi thiếu trang=0 (đòi 0)
 ✅ ③b-tiền-đề-②4-còn-màn-gọi-cửa-đầy-đủ số màn=1 (mot-page.html: id từ bộ đọc page_id, gồm món POS RF-15)
-✅ ③c-không-sửa-tệp-cấm so với aa43268
+✅ ③c-không-sửa-tệp-cấm so với 307c79b
 ✅ ③d-chuyen-ban-sao-chỉ-thêm dòng cũ bị sửa/xoá=0 (đòi 0)
 ✅ ④0-lượt-chứng-bản-sao-tạm-xanh pass=32 fail=0
 ✅ ④z-khôi-phục-bản-sao-xanh-lại fail=0
@@ -267,7 +267,7 @@ Log ⑦ (`/tmp/chan1-ns-14830.log`) — các phép trừ đột biến (đột b
 ✅ ⑥cổng-cũ-ve2 rc=0
 ✅ ⑥cổng-cũ-ve2b rc=0
 ✅ ⑥cổng-cũ-ve8b rc=0
-✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở aa43268: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
+✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở 307c79b: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
 == ĐỎ 0 / XANH 42
 ```
 
@@ -277,8 +277,8 @@ Lượt này `⑥gsp3` XANH (lượt thợ trước 41/42 đỏ đúng ở đó)
 
 ## Vòng 2 — 05/10/2026 (F1 + F2: đối kháng chặng 2 ĐẠT, tổng nâng hai NÊN lên CHẶN)
 
-Nhận: phiếu (Base `aa43268`, ③ giữ nguyên) · verdict `refute-gsp3b-vong2.verdict.yaml` (F1, F2) · diff vòng 1 `aa43268..6e82d88` · nhật ký này.
-HEAD lúc nhận `d17c90c`; mã không đổi từ vòng 1 (`git diff --stat 1382ef1..HEAD -- . ':!docs'` rỗng). Commit mã vòng 2 **`c5475a5`**.
+Nhận: phiếu (Base `307c79b`, ③ giữ nguyên) · verdict `refute-gsp3b-vong2.verdict.yaml` (F1, F2) · diff vòng 1 `307c79b..7fc455c` · nhật ký này.
+HEAD lúc nhận `133eaa3`; mã không đổi từ vòng 1 (`git diff --stat bcc86ab..HEAD -- . ':!docs'` rỗng). Commit mã vòng 2 **`d688a3d`**.
 Không push, không deploy, không SSH; `.env` giữ `PANCAKE_READONLY=1` (đếm: 1 dòng). Không đụng `src/admin-v3/operations.js` (cổng ③c canh).
 
 ### Kiểm chứng claim TRƯỚC khi sửa (luật 14) — kịch bản của reviewer chạy trên HEAD, máy dev, hộp cát Postgres 127.0.0.1:5432
@@ -416,13 +416,13 @@ Sửa chữ **N-GSP3B-MON-POS-CUA-DAY** (phần đã chặn vòng 2 + phần cò
 
 ### `_chan1.sh gsp3b` (vòng 2)
 
-Chạy sau commit mã `c5475a5` (05/10 17:04:40 → 17:29:02, máy dev, cây chung, hộp cát Postgres 127.0.0.1:5432, PATH có shim `rg` của
+Chạy sau commit mã `d688a3d` (05/10 17:04:40 → 17:29:02, máy dev, cây chung, hộp cát Postgres 127.0.0.1:5432, PATH có shim `rg` của
 scratchpad — nợ N-GSP-CONG-RG-ENV; không lượt đo nào khác chạy chồng):
 
 ```
 Mon Oct  5 17:04:40 +07 2026
 ✅ ①phiếu-tồn-tại docs/thi-cong/phieu/PHIEU-GSP3B.md
-✅ ②có-Base base=aa43268
+✅ ②có-Base base=307c79b
 — file đổi (15):
     docs/thi-cong/SO-DIEU-HANH-THI-CONG.md
     docs/thi-cong/nhat-ky/phieu-gsp3b.md
@@ -445,7 +445,7 @@ Mon Oct  5 17:04:40 +07 2026
 ✅ ⑦script-nghiệm-thu ops/bin/nghiem-thu/gsp3b.sh rc=0 (log /tmp/chan1-ns-21230.log, đuôi:)
     ✅ ⑥cổng-cũ-ve2b rc=0
     ✅ ⑥cổng-cũ-ve8b rc=0
-    ✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở aa43268: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
+    ✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở 307c79b: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
        ⑦npm-test: HOÃN (đặt CHAY_NPM_TEST=1 khi không lượt đo nào khác đang chạy — luật 6) — không tính vào ĐỎ/XANH
     == ĐỎ 0 / XANH 55
 ✅ ⑧a-nhật-ký docs/thi-cong/nhat-ky/phieu-gsp3b.md
@@ -462,7 +462,7 @@ Log ⑦ (`/tmp/chan1-ns-21230.log`) — các phép trừ đột biến (đột b
 ✅ ②phép-④-có-ca-xanh 42/42
 ✅ ③nối-dây-chay-that dòng nối mới=1 (đòi 1) · lời gọi thiếu trang=0 (đòi 0)
 ✅ ③b-tiền-đề-ngoại-lệ-RF-15-còn-màn-gọi-cửa-đầy-đủ số màn=1 (mot-page.html: id từ bộ đọc page_id, gồm món POS RF-15)
-✅ ③c-không-sửa-tệp-cấm so với aa43268
+✅ ③c-không-sửa-tệp-cấm so với 307c79b
 ✅ ③d-chuyen-ban-sao-chỉ-thêm dòng cũ bị sửa/xoá=0 (đòi 0)
 ✅ ④0-lượt-chứng-bản-sao-tạm-xanh pass=45 fail=0
 ✅ ④z-khôi-phục-bản-sao-xanh-lại fail=0
@@ -476,7 +476,7 @@ Log ⑦ (`/tmp/chan1-ns-21230.log`) — các phép trừ đột biến (đột b
 ✅ ⑥cổng-cũ-ve2 rc=0
 ✅ ⑥cổng-cũ-ve2b rc=0
 ✅ ⑥cổng-cũ-ve8b rc=0
-✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở aa43268: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
+✅ ⑥cổng-cũ-va-r2 rc=1 — ĐỎ SẴN ở 307c79b: 12 dòng đỏ giống hệt base, 0 dòng đỏ mới (nợ §9, không do GSP3b)
    ⑦npm-test: HOÃN (đặt CHAY_NPM_TEST=1 khi không lượt đo nào khác đang chạy — luật 6) — không tính vào ĐỎ/XANH
 == ĐỎ 0 / XANH 55
 ```

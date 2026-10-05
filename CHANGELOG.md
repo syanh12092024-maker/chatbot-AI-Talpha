@@ -19,6 +19,29 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 05/10/2026 — 🔴 Page bán sản phẩm qua sản phẩm gốc: danh sách chuyển page · đối soát giá + ảnh · sản phẩm gốc chỉ sinh từ gộp SKU · trang page chỉ xem giá (CR-02-10b · GSP1 · GSP1b · GSP2 · GSP3 · GSP3b)
+
+Không đổi chữ bot nói. Không bật page nào. **Migration 032** (chỉ thêm 4 cột `san_pham.doi_soat*`) · 0 gói · 0 tệp bộ não · 0 biến mới.
+Chỉ restart `aicloser-v3` (worker không nạp tệp nào của đợt này — đo bằng đồ thị import).
+
+- **Sản phẩm › + Thêm** (GSP1 `2210ed3`): mở thẳng màn «Gộp món POS thành sản phẩm». Bỏ màn tạo sản phẩm gốc theo số hiệu và danh
+  sách 185 số hiệu; cửa tạo gốc cũ trả 404.
+- **Gộp món POS — SKU bắt buộc** (GSP1b `bb3cf5e`): máy chủ tự lấy SKU từ chính món, không tin số màn gửi lên. Món chưa có SKU không gộp
+  được (câu hướng dẫn kéo lại danh mục POS); món khác SKU hoặc SKU gửi lệch món ⇒ từ chối, không ghi gì.
+- **Sản phẩm › Chuyển page sang sản phẩm** (GSP2 `bb3cf5e` `0a17180`): màn «Bản sao theo page» thành danh sách việc chuyển TẠM — mỗi page
+  đang đọc bản sao cũ: shop, giá + ảnh của bản sao (đơn vị lớn), gợi ý món POS khớp tên page. Gắn vào sản phẩm có sẵn · nối món rồi gắn ·
+  gộp SKU rồi gắn · «Không chuyển» (có lý do, có nhật ký, bỏ quyết định được). Ô cam bên trái = bộ đếm «x page chưa chuyển xong». Gắn
+  page KHÔNG đẩy gì sang bot.
+- 🔴 **Đối soát giá + ảnh theo sản phẩm × thị trường** (GSP3 `e5e5f48` `0f2c4bf`): một lượt xử lý cả một sản phẩm gốc ở một shop — gom
+  mọi page đã gắn. Bảng giá giữa các page lệch nhau ⇒ dừng, hiện từng bảng + marketer từng page + danh sách page sẽ đổi giá để NGƯỜI
+  chọn (hoặc giữ giá món). Bậc giá chép đủ cột (kể cả bậc tắt, ưu đãi, ship) qua đúng cửa lưu giá của màn Sản phẩm; ảnh gom về món,
+  bỏ trùng. Đơn vị đổi trong lúc khung đang mở ⇒ bắt chọn lại. Bản sao cũ giữ nguyên làm lưu trữ.
+- 🔴 **Trang một page** (GSP3b `1956b1e` + vòng 2 `d688a3d`): page đã gắn sản phẩm thấy đúng thứ bot đọc (món POS của sản phẩm ở thị trường đó);
+  tab «SP & giá» + ảnh chỉ xem, sửa ở Sản phẩm › Theo thị trường. Mọi cửa lưu sản phẩm / ảnh / nối món từ chối bản sao của page đã gắn;
+  lưu đầy đủ món POS qua cửa trang page bị từ chối (giá món chỉ sửa ở màn Sản phẩm). Page chưa gắn: như cũ.
+- Chưa đổi: page chưa gắn vẫn đọc bản sao cũ (đường cũ cắt ở GSP4, sau khi bộ đếm về 0). Bot trên prod vẫn đọc bản chép
+  `kb-overrides.json`.
+
 ### 05/10/2026 — 🔴 Khoá tài khoản là cắt phiên ngay · Số liệu đọc số đơn thật từ BigQuery · đơn tính theo team vào ngày đặt (LL15e · LL17b · LL17d)
 
 Không đổi chữ bot nói. 0 migration · 0 gói · 0 tệp bộ não · 0 biến mới (dùng lại `V3_BQ_KHOA`).

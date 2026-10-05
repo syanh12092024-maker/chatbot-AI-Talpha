@@ -1,6 +1,6 @@
 # PHIẾU GSP1b — Gộp món POS: SKU bắt buộc, máy chủ tự suy SKU từ món
 
-**Base:** `0f237d9` · **Làn:** 🟨 (đổi luật của cửa tạo sản phẩm gốc — dữ liệu bot đọc; không chạm tiền)
+**Base:** `448893c` · **Làn:** 🟨 (đổi luật của cửa tạo sản phẩm gốc — dữ liệu bot đọc; không chạm tiền)
 **Nguồn:** người quyết 02/10 trả lời câu hỏi của tổng: **«Bắt buộc SKU»** (máy chủ tự lấy SKU từ món, không tin dữ liệu gửi lên; món không SKU thì không gộp được) · review chặng 2 GSP1 finding R1 (nợ N-GSP-GOP-SKU) · `01-QUYET-DINH.md` §8 «Page phải gắn sản phẩm» · CR-02-10b mục 5e · sổ §5h
 **Đụng bộ não:** không.
 **Skill thợ nạp:** `tho-thi-cong` · `viet-thuoc`.
