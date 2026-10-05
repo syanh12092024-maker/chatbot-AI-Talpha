@@ -361,8 +361,8 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
 | Mã   | Việc                                                                                          | Phụ thuộc           | Làn | Trạng thái |
 | ---- | --------------------------------------------------------------------------------------------- | ------------------- | --- | ---------- |
 | GSP1 | Màn Sản phẩm: «+ Thêm» mở «Gộp món POS»; bỏ lối tạo gốc theo số hiệu + danh sách số hiệu; đóng `POST /api/san-pham/goc` | —      | 🟨  |✅ 02/10 · `a0626be` · chặng 1 7/8 (④ = commit tổng) · chặng 2 ba mũ ĐẠT · chưa deploy |
-| GSP1b | Gộp món POS: SKU BẮT BUỘC — máy chủ suy SKU từ món (bỏ tin thân), món chưa SKU ⇒ 409 `mon_chua_sku`, SKU khác nhau / lệch thân ⇒ 409 (người quyết 02/10, trả nợ N-GSP-GOP-SKU) | GSP1 · song song GSP2 (khác tệp) | 🟨 | 🔎 02/10 · code/tests đạt trên PostgreSQL tạm · chưa deploy · nhật ký `phieu-gsp1b.md` |
-| GSP2 | «Bản sao theo page» đổi TẠM thành danh sách việc chuyển: gợi ý món POS khớp tên page · gắn / nối món rồi gắn / gộp SKU rồi gắn / «không chuyển» · trạng thái theo page × bản sao (migration 032 `san_pham.doi_soat` + gốc × shop của quyết định — vị từ `daQuyet` dùng chung với GSP3) · bộ đếm toàn hệ theo team | GSP1 (cùng tệp màn) | 🟨 | 🔎 02/10 · đã tiếp tục phần dở; code/tests đạt · chưa deploy · nhật ký `phieu-gsp2.md` |
+| GSP1b | Gộp món POS: SKU BẮT BUỘC — máy chủ suy SKU từ món (bỏ tin thân), món chưa SKU ⇒ 409 `mon_chua_sku`, SKU khác nhau / lệch thân ⇒ 409 (người quyết 02/10, trả nợ N-GSP-GOP-SKU) | GSP1 · song song GSP2 (khác tệp) | 🟨 | ✅ 05/10 · `0af9d3b` (phiên khác làm, tổng nghiệm thu) · `gsp1b.sh` 23/23 + đột biến · chặng 2 ba mũ ĐẠT · chưa deploy |
+| GSP2 | «Bản sao theo page» đổi TẠM thành danh sách việc chuyển: gợi ý món POS khớp tên page · gắn / nối món rồi gắn / gộp SKU rồi gắn / «không chuyển» · trạng thái theo page × bản sao (migration 032 `san_pham.doi_soat` + gốc × shop của quyết định — vị từ `daQuyet` dùng chung với GSP3) · bộ đếm toàn hệ theo team | GSP1 (cùng tệp màn) | 🟨 | 🔨 VÒNG 2 05/10 — chặng 2 TRẢ VỀ: CHẶN C1 giá bản sao hiện đơn vị NHỎ (×100) trên màn đối soát · F1/F2 giao GSP3 · F3 neo GSP4 |
 | H-GSP | Người: shop cho 11 page chưa có shop · xác nhận gắn 74 page · chọn giá khi lệch · 2 page có 2 bản sao | GSP2 lên prod | — | ⬜ |
 | GSP3 | Đối soát giá + ảnh theo GỐC × SHOP: lệch giữa page ⇒ 409, người chọn · chép đủ cột bậc · ảnh `nguon='kb'` khử trùng · luôn đẩy bản chép · dùng lại cửa lưu giá VE8b | GSP2 (cùng tệp màn) | 🟥 |⬜ review (a) 2 vòng |
 | GSP3b | Trang page: bộ đọc `chay-that.js:408` truyền `trang` · cửa lưu SP/ảnh từ trang page từ chối bản sao của page đã gắn (409) · câu chữ «sửa ở đây là sửa mọi page cùng gốc × shop» | GSP3 · cùng đợt deploy GSP1–GSP3 | 🟥 |⬜ review (a) 2 vòng |
@@ -1512,6 +1512,20 @@ GSP2 lên prod tới lúc GSP3b lên prod. Sửa sau review (a): CR mục 5e. GS
   - **N-PREFLIGHT-MISSINGPAGES** (báo cáo go-live 02/10, tổng xác nhận 05/10) `deploy/preflight.mjs:134` đọc `db.missingPages.length`
     mà `inspectDatabase()` (`:101-106`) đã bỏ trường đó từ MB4 `357795a` ⇒ TypeError ⇒ exit 1 ⇒ `deploy/setup.sh:15,68` luôn dừng.
     Bộ ca gọi thẳng hàm nên vẫn xanh. KHÔNG chặn đường mở van đang dùng (checkout + migrate + restart). Ngoài CR-02-10b.
+  - **N-GSP2-F1 · F2 → GIAO GSP3** (review chặng 2 GSP2): F1 dấu quyết định khoá theo `ma_goc` CHỮ — bỏ gốc rồi gộp lại cùng mã ⇒ dấu
+    `chep` cũ sống lại, page tính «xong»; F2 `bo_qua` sống lại sau gắn → gỡ. Hôm nay 0 dòng `chep` ⇒ GSP3 (cửa ghi dấu) dọn dấu khi bỏ gốc
+    + xoá `bo_qua` khi page được gắn. Phải đóng TRƯỚC GSP4 (cả hai làm bộ đếm về 0 sớm).
+  - **N-GSP2-F3 → ĐIỀU KIỆN GSP4** RF-15 gán `san_pham.page_id` cho MÓN POS khi shop có đúng 1 page, `catalog.js:10` nhánh `page_id` không lọc
+    `nguon` ⇒ page chưa gắn có thể đọc món POS qua `page_id` mà bộ đếm `chuaXong` (chỉ thấy `nguon<>'pos'`) không báo. Trước khi phát GSP4:
+    đo prod `SELECT count(*) FROM san_pham WHERE nguon='pos' AND page_id IS NOT NULL` (02/10: 0/491) — khác 0 ⇒ đưa vào bộ đếm.
+  - **N-GSP2-NEN** C2 màn còn tải `GET /api/san-pham` thừa mỗi lần mở · C3 gắn xong đọc danh sách hai lượt · C4 câu báo lỗi gắn cộng dồn ·
+    N1 bộ đếm = 0 ⇒ mất lối vào danh sách (không «Bỏ quyết định» được) · N2 dòng gắn không báo món đích chưa giá (cửa tiền page sẽ ĐÓNG) ·
+    F4 ca 6b gắn lại bằng UPDATE tay thay vì cửa gắn. Dọn ở GSP5 (gỡ màn) hoặc khi chạm lại.
+  - **N-GSP1B-GN** G1 cửa «Thêm thị trường» `POST /goc/:id/mon` không kiểm SKU ⇒ nối được món SKU lệch gốc (luật «SKU bắt buộc» chưa phủ
+    cửa nối) · G2 cửa sửa gốc nhận `sku:''` ⇒ gốc thành không SKU · G3 `chuanSku` ép Number ⇒ SKU số > 2^53 va nhau · G4
+    `ops/bin/goi-y-gop-san-pham.mjs --sql` vẫn in INSERT gốc theo số hiệu.
+  - **N-N1A-THUOC** ca N1a′ (`test/l2-m1-nhac-truong.test.js`) đỏ ngầm từ 25/09 (`fe12262`) khi bật `FASTLANE_TEMPLATES` — dev/prod để 0 nên
+    không ai thấy; đã sửa kỳ vọng trong `0af9d3b` (review chấp nhận: không che hồi quy). Nợ: mất dòng in cấu hình, lẽ ra commit riêng.
   - **N-GSP1-CHU-CU** câu chữ còn trỏ lối đã bỏ: `03-MAN-HINH.md:13` · `v3/src/ui/san-sang/kho-san-sang.js:67` · câu trống màn Sản phẩm.
 
 - 02/10 · GSP1 (thợ) — **N-GSP-TAOGOC** `v3/src/ui/san-pham/kho-goc.js#taoGoc` hết cửa HTTP gọi (router bỏ `POST /api/san-pham/goc`) nhưng `v3/src/ui/san-pham/index.js:17` còn re-export ⇒ không gỡ được trong pathspec GSP1 (index.js ngoài ③; gỡ riêng kho-goc thì boot chết). Gỡ `taoGoc` + dòng export ở một phiếu có `index.js`. Cùng lúc: `GET /api/san-pham/goc` còn trả `cho`/`khongCoSoHieu` (không màn nào cần ngoài điều kiện ô lưu ý `san-pham.html:105`) — GSP2 đổi ô lưu ý thành bộ đếm thì gỡ luôn hai trường + chỗ đọc.
@@ -3053,3 +3067,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 05/10 · GSP2 + GSP1b → 🔎 chặng 1 (tổng đo) — commit `0af9d3b` do phiên khác làm nốt sau khi thợ GSP2 dừng giữa chừng 02/10; `_chan1.sh`: ④ đỏ (một commit gộp hai phiếu + doc tổng) · ⑦ đỏ GIẢ (`rg` + `.env`, nợ N-GSP-CONG-RG-ENV)
   chạy lại đúng môi trường: `gsp2.sh` 23/23 + 7 đột biến bị bắt · `gsp1b.sh` 23/23 + đột biến «tin SKU thân» bị bắt · `npm test` 2346 / 2342 đạt / 0 đỏ / 4 bỏ qua · chặng 2 đang chạy
   · commit 0af9d3b · nhật ký docs/thi-cong/nhat-ky/phieu-gsp2.md · phieu-gsp1b.md
+- 05/10 · GSP1b → ✅ · GSP2 → 🔨 vòng 2 — chặng 2 (một agent ba mũ, `0af9d3b`): GSP1b Phá · Code · Nghiệp vụ ĐẠT; GSP2 TRẢ VỀ một CHẶN C1 — `dsViecChuyen` trả giá bản sao ở đơn vị NHỎ POS, màn in thẳng ⇒ 99 SAR hiện 9.900 (người đối soát gõ theo ⇒ bot báo ×100)
+  phá không làm bộ đếm về 0 sớm qua cửa thật (anh em · gắn lại · bo_qua rồi gắn · 2 bản sao · team khác); hai lỗ hiếm F1/F2 giao GSP3; F3 neo GSP4 · hai thay đổi ngoài pathspec (N1a′ · schema.sql) CHẤP NHẬN · nợ N-GSP2-* · N-GSP1B-GN · N-N1A-THUOC
+  · verdict scratchpad review-b-gsp2-gsp1b.yaml
