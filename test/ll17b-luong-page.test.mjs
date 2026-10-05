@@ -13,7 +13,7 @@ const D = (ngay, maNv, trangThai, soDon, luong) => ({ ngay, shop: 's1', tienTe: 
 test('Q1 · câu đọc: luồng theo `conversation_id` — rỗng ⇒ trang bán hàng · khuôn <page>_<psid> ⇒ messenger · khác ⇒ không suy được', () => {
   assert.match(SQL_DON_POS, /IFNULL\(JSON_VALUE\(payload_json, '\$\.conversation_id'\), ''\) = '' THEN 'trang_ban_hang'/);
   assert.match(SQL_DON_POS, /ELSE 'khong_suy_duoc' END AS luong/);
-  assert.match(SQL_DON_POS, /GROUP BY 1, 2, 3, 4, 5, 6, 7$/, 'luồng là một chiều gộp — thiếu thì BigQuery từ chối câu');
+  assert.match(SQL_DON_POS, /o\.status_category, o\.luong,[\s\S]*GROUP BY 1, 2, 3, 4, 5, 6, 7, 8$/, 'luồng là một chiều gộp — thiếu thì BigQuery từ chối câu');
   assert.deepEqual(LUONG_DON, ['messenger', 'trang_ban_hang', 'khong_suy_duoc']);
   // Cùng LUẬT với bộ nạp đơn: khuôn của câu BigQuery chạy bằng JS phải phán y hệt `suyNguon` trên mọi mẫu.
   const re = new RegExp(SQL_DON_POS.match(/REGEXP_CONTAINS\(JSON_VALUE\(payload_json, '\$\.conversation_id'\), r'([^']+)'\)/)[1]);

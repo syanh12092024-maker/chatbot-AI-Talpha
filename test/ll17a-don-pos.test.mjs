@@ -68,7 +68,7 @@ test('P4 · bộ đọc: ba câu (số + mốc + theo page — LL17b) · đệm 
     if (hong) throw new Error('mạng');
     if (sql === SQL_DON_POS_PAGE) return [{ page_id: '101', status_category: 'HUY', so_don: '2' }, { page_id: null, status_category: 'HUY', so_don: '1' }];
     return sql === SQL_DON_POS_MOC ? [{ hom_nay: '2026-10-02', dong_bo: '2026-10-02T07:30:04', tuong_lai: '1' }]
-      : [{ ngay: '2026-10-02', shop_id: 's1', currency: 'SAR', chia: '100', emp_code: 'NV1', status_category: 'GIAO_THANH_CONG', luong: 'messenger', so_don: '3', cod: 30000 }];
+      : [{ ngay: '2026-10-02', shop_id: 's1', currency: 'SAR', chia: '100', emp_code: 'NV1', team_ngay: 'PIALPHA_GCC', status_category: 'GIAO_THANH_CONG', luong: 'messenger', so_don: '3', cod: 30000 }];
   } }) });
   await assert.rejects(doc(), /mạng/);
   hong = false;
@@ -76,7 +76,7 @@ test('P4 · bộ đọc: ba câu (số + mốc + theo page — LL17b) · đệm 
   assert.equal(a, b);
   assert.equal(goi, 6, 'ba câu × (lượt lỗi + một lượt cho hai lời gọi cùng lúc)');
   assert.deepEqual([a.homNay, a.dongBo, a.tuongLai], ['2026-10-02', '2026-10-02T07:30:04', 1]);
-  assert.deepEqual(a.dong, [{ ngay: '2026-10-02', shop: 's1', tienTe: 'SAR', chia: 100, maNv: 'NV1', trangThai: 'GIAO_THANH_CONG', luong: 'messenger', soDon: 3, cod: 30000 }]);
+  assert.deepEqual(a.dong, [{ ngay: '2026-10-02', shop: 's1', tienTe: 'SAR', chia: 100, maNv: 'NV1', teamNgay: 'PIALPHA_GCC', trangThai: 'GIAO_THANH_CONG', luong: 'messenger', soDon: 3, cod: 30000 }]);
   assert.deepEqual(a.theoPage, [{ page: '101', trangThai: 'HUY', soDon: 2 }, { page: null, trangThai: 'HUY', soDon: 1 }]);
   gio = 3599 * 1000; await doc(); assert.equal(goi, 6, 'trong hạn đệm');
   await doc({ lamMoi: true }); assert.equal(goi, 9);

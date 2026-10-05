@@ -361,7 +361,8 @@ function veDonPos(d) {
       <tbody id="dsDonMk">${dongMk}</tbody></table>`
       : `<p class="text-muted text-sm tren-3" data-khong-mk>${d.chiCuaToi ? 'Chưa có đơn nào mang mã của bạn trong ' + lon + ' ngày.' : 'Chưa có đơn nào của marketer team này trong ' + lon + ' ngày.'}</p>`}
     <p class="table-note" data-ngoai-team>Cả công ty, ${lon} ngày: ${d0(d.choGan[lon].don)} đơn chưa ghép marketer (chờ gán team) · ${d0(d.ngoaiHe[lon].don)} đơn của marketer
-      thuộc team không vào hệ${d.tuongLai ? ` · ${d0(d.tuongLai)} đơn mang ngày tương lai bị loại` : ''}.${d.chiCuaToi ? ' Bạn là marketer: bảng chỉ hiện dòng của bạn; hàng team là tổng cả team.' : ''}</p>
+      thuộc team không vào hệ${d.tuongLai ? ` · ${d0(d.tuongLai)} đơn mang ngày tương lai bị loại` : ''}${d.theoHienTai && d.theoHienTai[lon].don
+        ? ` · <span data-theo-hien-tai>${d0(d.theoHienTai[lon].don)} đơn tính theo team HIỆN TẠI của marketer (HRM chưa có lịch sử team phủ ngày đơn)</span>` : ''}.${d.chiCuaToi ? ' Bạn là marketer: bảng chỉ hiện dòng của bạn; hàng team là tổng cả team.' : ''}</p>
     <p class="table-note" data-tre-hoan>Tỉ lệ giao thành công = giao thành công ÷ (giao thành công + hoàn) — chỉ tính đơn đã kết thúc giao. Hoàn về
       SAU nhiều ngày: ở khoảng ngắn phần lớn đơn còn «đang xử lý» (${d.khoang[0]} ngày: ${d0(d.team[d.khoang[0]].dangXuLy)}/${d0(d.team[d.khoang[0]].don)} đơn),
       nên tỉ lệ của khoảng ngắn còn đẹp hơn thật — đọc khoảng ${lon} ngày.</p>

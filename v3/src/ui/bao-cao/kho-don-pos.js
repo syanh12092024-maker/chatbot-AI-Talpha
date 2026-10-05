@@ -16,7 +16,7 @@ export const daNoiDonPos = () => !!(_docDonPos && _docHrm);
 
 const NGUON = Object.freeze({
   ten: 'BigQuery `levelup-465304` · PIALPHA_ALL_Dataset.vw_sale_order_team (đơn POS mọi shop Pialpha, đồng bộ hằng ngày) — CHỈ ĐỌC',
-  team: 'đơn thuộc team HRM của marketer (bảng ghép dim_person_map → mã NV → HRM_Core.dim_employee) — team HIỆN TẠI của marketer, chưa theo ngày đơn',
+  team: 'đơn thuộc team HRM của marketer (bảng ghép dim_person_map → mã NV → HRM_Core.dim_employee) — team của marketer VÀO NGÀY ĐƠN (HRM_Core.fact_employee_team_history); thiếu lịch sử phủ ngày thì team hiện tại, đếm riêng',
   tien: 'COD của đơn giao thành công, theo TỪNG tiền tệ shop (cột cod ÷ currency_divisor) — không quy đổi, không cộng khác tệ',
 });
 

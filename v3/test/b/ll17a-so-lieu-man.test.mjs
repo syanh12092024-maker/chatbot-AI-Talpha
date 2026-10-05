@@ -21,7 +21,9 @@ const HRM = { luc: 0, ghep: [], nhanVien: [
   { emp_code: 'NV2', team_code: 'PIALPHA_GCC', ho_ten: 'Bình', status: 'nghi' },
   { emp_code: 'NV3', team_code: 'PIALPHA_EU', ho_ten: 'Chi', status: 'active' },
 ] };
-const D = (ngay, maNv, trangThai, soDon, cod = 0, tienTe = 'SAR', chia = 100) => ({ ngay, shop: 's1', tienTe, chia, maNv, trangThai, soDon, cod });
+const TEAM_NV = { NV1: 'PIALPHA_GCC', NV2: 'PIALPHA_GCC', NV3: 'PIALPHA_EU' };   // LL17d: bộ đọc trả team theo ngày đơn
+const D = (ngay, maNv, trangThai, soDon, cod = 0, tienTe = 'SAR', chia = 100) => ({ ngay, shop: 's1', tienTe, chia, maNv,
+  teamNgay: maNv ? TEAM_NV[maNv] : null, trangThai, soDon, cod });
 const DON = { luc: 0, homNay: '2026-10-02', dongBo: '2026-10-02T07:30:04', tuongLai: 1, dong: [
   D('2026-10-02', 'NV1', 'GIAO_THANH_CONG', 3, 30000), D('2026-09-30', 'NV1', 'DON_HOAN', 1),
   D('2026-09-26', 'NV1', 'GIAO_THANH_CONG', 2, 500, 'TWD', 1), D('2026-09-25', 'NV2', 'HUY', 4),
@@ -102,4 +104,13 @@ test('L4 · chưa nối (vắng V3_BQ_KHOA) ⇒ nói thiếu biến, không số
   const mh = await hong.man(await hong.ve('qt@x.vn'));
   assert.match(chu(mh.$('#donPos')), /Đọc đơn POS từ BigQuery hỏng.*một trang chỉ 1/);
   assert.ok(m.$('#chiSo'), 'khối chỉ số chính vẫn có chỗ');
+});
+
+test('L5 · LL17d: đơn mà HRM chưa có lịch sử team phủ ngày đơn ⇒ tính theo team hiện tại và câu cả công ty NÓI RA; đủ lịch sử ⇒ không câu đó', async (t) => {
+  const thieu = { ...DON, dong: [...DON.dong, { ...D('2026-09-29', 'NV1', 'HUY', 2), teamNgay: null }] };
+  const o = await dungThu(t, { docDonPos: async () => thieu });
+  const m = await o.man(await o.ve('qt@x.vn'));
+  assert.equal(chu(m.$('[data-theo-hien-tai]')), '2 đơn tính theo team HIỆN TẠI của marketer (HRM chưa có lịch sử team phủ ngày đơn)');
+  const du = await dungThu(t);
+  assert.equal((await du.man(await du.ve('qt@x.vn'))).$('[data-theo-hien-tai]'), null);
 });
