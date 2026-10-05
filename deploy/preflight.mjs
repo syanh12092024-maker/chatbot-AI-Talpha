@@ -130,10 +130,8 @@ export async function main() {
   try {
     const db = await inspectDatabase(process.env, root);
     console.log(JSON.stringify(db, null, 2));
-    if (
-      db.missingPages.length ||
-      (process.argv.includes("--ready") && db.pending.length)
-    )
+    // GL1: `missingPages` đã gỡ ở MB2/MB4 (đọc nó = TypeError ⇒ exit 1 mọi lượt). `pagesBotBat` chỉ IN, chưa chặn (trần page là GL2).
+    if (process.argv.includes("--ready") && db.pending.length)
       process.exitCode = 1;
   } catch (e) {
     console.error(
