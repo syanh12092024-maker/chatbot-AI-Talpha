@@ -1,6 +1,6 @@
 # PHIẾU TT1 — Đơn vị tiền tệ của shop ngoài GCC (EUR · RON · AUD · TWD · JPY) + bảng thị trường → tiền tệ
 
-**Base:** `ĐẶT-LÚC-PHÁT` · **Làn:** 🟥 (bảng hệ số mà cửa tiền `cua2Tien`, lưu giá `saveProduct`, ráp prompt, bản chép bot cùng đọc)
+**Base:** `da50df6` · **Làn:** 🟥 (bảng hệ số mà cửa tiền `cua2Tien`, lưu giá `saveProduct`, ráp prompt, bản chép bot cùng đọc)
 **Nguồn:** người quyết 05/10 («Theo giá như đơn trên POS chứ cần gì quy đổi?» → «làm trọn vẹn») · nợ N-TIEN-TE-NGOAI-GCC (sổ §9) · H7/H13 (`docs/thi-cong/nhat-ky/h7-chuyen-team-20261005.md`) · sổ §5i
 **Đụng bộ não:** không (KHÔNG sửa `src/fast-lane.js`, `src/kb.js` — mặc định `'AED'` ở đó là của luồng cũ, ghi nợ nếu thấy cần).
 **Skill thợ nạp:** `tho-thi-cong` · `viet-thuoc`; xong thì `/code-review` (đường tiền).
@@ -15,14 +15,18 @@ món đó. `TIEN_TE_THI_TRUONG` (`src/products/chuyen-ban-sao.js:292`) chỉ 6 n
 
 Số hệ số lấy từ NGUỒN ĐÃ CÓ, không đoán: BigQuery `levelup-465304.PIALPHA_ALL_Dataset.dim_shop_project.currency_divisor` (đo 05/10):
 EUR 100 · RON 100 · AUD 100 · USD 100 · TWD **1** · JPY **1** (ghi chú bảng: «TWD không xu, divisor 1»; «JPY không xu, divisor 1»).
-Đo đơn thật 60 ngày (05/10): COD đơn TWD dạng `990`/`1290`…, EUR/RON dạng `xx00` — khớp hệ số trên.
+Đo đơn thật 60 ngày (05/10): COD đơn TWD dạng `990`/`1290`…, EUR/RON dạng `xx00` — khớp hệ số trên. Review (a) đối chiếu lại: TWD 1 ·
+EUR/RON/USD/AUD 100 · JPY 1 đúng (AUD/JPY kiểm bằng đơn cũ hơn 60 ngày); KWD ×100 vẫn đúng (1.199/1.200 đơn COD chia hết 10). **Hệ số là
+theo CÁCH POS LƯU, không theo ISO** (ISO cho TWD 2 số lẻ, KWD 3) — ghi câu này vào chú thích `HE_SO_TE`.
 
 ## ② Hợp đồng vào / ra
 
 **Vào:** `HE_SO_TE` đóng băng 7 tệ, mọi tệ ×100. Nơi đọc (đo `grep -rln "HE_SO_TE\|TIEN_TE_THI_TRUONG" src v3/src`): `src/pos/tao-don.js`
 · `src/pos/index.js` · `src/pos/doc-danh-muc.js` · `src/orders/hang-cho.js` · `src/admin-v3/operations.js` · `src/chat/rap-prompt.js` ·
 `src/products/ban-chep-bot.js` · `src/products/nap-tu-kb.js` · `src/products/san-pham-goc.js` · `src/products/chuyen-ban-sao.js` ·
-`v3/src/ui/mot-page/kho-mot-page.js` · `v3/src/ui/van-hanh/router.js` · `v3/src/ui/van-hanh/don-cho.js` · `v3/src/noi-day/kho-san-pham-v3.js`.
+`v3/src/ui/mot-page/kho-mot-page.js` · `v3/src/ui/van-hanh/router.js` · `v3/src/ui/van-hanh/don-cho.js` · `v3/src/noi-day/kho-san-pham-v3.js` ·
+và nơi đọc GIÁN TIẾP qua `currencyFactors` gửi xuống trình duyệt: `v3/src/ui/hop-thu/trang/hop-thu-ui.js:70` · `v3/src/ui/van-hanh/trang/van-hanh.js:423`
+(review (a) TT1 N1).
 
 **Ra:**
 1. `HE_SO_TE` thêm `EUR: 100 · RON: 100 · AUD: 100 · TWD: 1 · JPY: 1` (giữ nguyên 7 tệ cũ; chú thích nguồn `dim_shop_project`).
@@ -50,6 +54,8 @@ v3/src/ui/van-hanh/router.js
 v3/src/ui/van-hanh/don-cho.js
 v3/src/noi-day/kho-san-pham-v3.js
 v3/src/ui/san-pham/trang/san-pham.html
+v3/src/ui/hop-thu/trang/hop-thu-ui.js
+v3/src/ui/van-hanh/trang/van-hanh.js
 test/tt1-*.test.mjs
 ops/bin/nghiem-thu/tt1.sh
 ```
@@ -75,7 +81,9 @@ phiếu này CHỈ cho phần quy đổi đơn vị (`saveProduct` đang kiểm 
 
 ## ⑥ Ngoài phạm vi ⇒ §9 sổ nợ
 
-Điền giá từ đơn POS (GP1) · mặc định `'AED'` ở `src/kb.js` / `src/fast-lane.js` (bộ não, luồng cũ) · shop Japan (chưa kết nối) · tỷ giá /
+**`src/outbound-guard.js:78` (BỘ NÃO) chỉ nhận tệ GCC + PHP/USD** ⇒ luật 4 «tổng tiền khớp đúng một gói» IM LẶNG với EUR · RON · AUD ·
+TWD · JPY — tổng ghi nợ N-GUARD-TIEN-TE-MOI, PHẢI đóng trước khi bật page EU/AUUS (phiếu riêng khai «Đụng bộ não») · ô tiền tệ của bậc giá gõ
+tay (nên mặc định theo shop) · Điền giá từ đơn POS (GP1) · mặc định `'AED'` ở `src/kb.js` / `src/fast-lane.js` (bộ não, luồng cũ) · shop Japan (chưa kết nối) · tỷ giá /
 quy đổi giữa các tệ (KHÔNG làm — người quyết: giá theo đúng tệ của đơn).
 
 ## ⑦ ĐÃ TRA CHƯA

@@ -380,8 +380,8 @@ TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` 
 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
-| TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | ⬜ |
-| GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | ⬜ |
+| TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | 🔨 phát 05/10 · review (a) ĐẠT |
+| GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | ⬜ review (a) SỬA-PHIẾU → đã sửa (G1 giá gần đây) |
 
 ## §8 · VIỆC NGƯỜI (H1..Hn — chỉ người/B làm được; tổng chỉ nhắc, không tự làm)
 
@@ -1559,6 +1559,9 @@ TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` 
   - **N-TIEN-TE-NGOAI-GCC** (H7 05/10) `HE_SO_TE` (`src/pos/tao-don.js:130`) thiếu EUR · RON · AUD · TWD · JPY; `TIEN_TE_THI_TRUONG`
     (`src/products/chuyen-ban-sao.js:292`) chỉ 6 nước GCC ⇒ chưa đặt giá / đối soát được món ở Europe · Romania · Slovakia · Australia ·
     Taiwan (USA thiếu ở bảng thị trường). Phiếu đường tiền 🟥 trước khi EU/AUUS đặt giá các shop đó.
+  - **N-GUARD-TIEN-TE-MOI** (review (a) TT1 05/10) `src/outbound-guard.js:78` (BỘ NÃO) chỉ nhận tệ GCC + PHP/USD ⇒ luật 4 «tổng tiền khớp đúng
+    một gói» IM LẶNG với EUR · RON · AUD · TWD · JPY. PHẢI đóng trước khi bật bất kỳ page EU/AUUS nào (phiếu riêng khai «Đụng bộ não» +
+    `do-duong-ban` + ba lượt model).
   - **N-GSP1-CHU-CU** câu chữ còn trỏ lối đã bỏ: `03-MAN-HINH.md:13` · `v3/src/ui/san-sang/kho-san-sang.js:67` · câu trống màn Sản phẩm.
 
 - 02/10 · GSP1 (thợ) — **N-GSP-TAOGOC** `v3/src/ui/san-pham/kho-goc.js#taoGoc` hết cửa HTTP gọi (router bỏ `POST /api/san-pham/goc`) nhưng `v3/src/ui/san-pham/index.js:17` còn re-export ⇒ không gỡ được trong pathspec GSP1 (index.js ngoài ③; gỡ riêng kho-goc thì boot chết). Gỡ `taoGoc` + dòng export ở một phiếu có `index.js`. Cùng lúc: `GET /api/san-pham/goc` còn trả `cho`/`khongCoSoHieu` (không màn nào cần ngoài điều kiện ô lưu ý `san-pham.html:105`) — GSP2 đổi ô lưu ý thành bộ đếm thì gỡ luôn hai trường + chỗ đọc.

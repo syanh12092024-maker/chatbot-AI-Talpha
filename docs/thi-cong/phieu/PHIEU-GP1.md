@@ -17,18 +17,23 @@ shop × SKU × số lượng): 269 bộ có MỘT mức COD ≥80% số đơn ·
 ## ② Hợp đồng vào / ra
 
 **Vào:** khách BigQuery CHỈ ĐỌC của dự án `src/hrm/bigquery.js#taoKhachBigQuery` (phạm vi `bigquery.readonly`, khoá `V3_BQ_KHOA` — đã có
-trên prod, LL17) · ghép marketer → team như LL17d (`dim_person_map` → `HRM_Core.dim_employee.team_code`, team HIỆN TẠI — luật người quyết
-05/10 «marketer thuộc team nào thì phân team đó») · cửa lưu giá ĐÃ CÓ (`khoSanPhamGoc.luuGia` → `saveProduct` CHỈ-GIÁ + bước đẩy bản
+trên prod, LL17) · ghép marketer → team **VÀO NGÀY ĐƠN** đúng luật 01 §1 (CR-28-09c) như LL17d (`dim_person_map` → `HRM_Core.fact_employee_team_history`,
+thiếu lịch sử ⇒ team hiện tại; không ghép được ⇒ `khong_ghep_team` — review (a) GP1 N2) · cửa lưu giá ĐÃ CÓ (`khoSanPhamGoc.luuGia` → `saveProduct` CHỈ-GIÁ + bước đẩy bản
 chép) — DÙNG LẠI, cấm đường ghi giá thứ hai · `HE_SO_TE` / `TIEN_TE_THI_TRUONG` sau TT1.
 
 **Ra:**
 1. **Tầng A** `src/products/gia-tu-don-pos.js`:
    - `SQL_GIA_DON` — đơn `vw_sale_order_team` trong N ngày (mặc định 60), CHỈ đơn có ĐÚNG MỘT dòng món, `cod > 0`, trạng thái khác huỷ,
      số lượng 1–10; trả `(team_code hiện tại của marketer, shop_id, variation_id, so_luong, tien_te = order_currency, cod, so_don)`.
-   - `tinhBac(dong, { toiThieu = 3, nguong = 0.8 })` THUẦN: mỗi (team, shop, biến thể) → bậc theo số lượng: lấy mức COD phổ biến nhất
-     nếu `so_don ≥ toiThieu` và chiếm `≥ nguong`; bỏ món nếu bậc KHÔNG tăng dần theo số lượng (giá mua nhiều < giá mua ít); bỏ SKU thử
-     (`sp test`, `test` — so bằng `chuanSku`); mỗi món bỏ đi ghi LÝ DO (`it_don` · `phan_tan` · `khong_tang` · `sku_thu` · `lech_tien_te` ·
-     `da_co_gia` · `khong_co_mon`).
+   - `tinhBac(dong, { toiThieu = 3, nguong = 0.8, ganDay = 10 })` THUẦN: mỗi (team, shop, biến thể) → bậc theo số lượng: lấy mức COD phổ
+     biến nhất trên **`ganDay` ĐƠN GẦN NHẤT** (theo ngày đơn) nếu `so_don ≥ toiThieu` và chiếm `≥ nguong`; **mức gần đây ≠ mức phổ biến của cả
+     cửa sổ 60 ngày ⇒ KHÔNG đề xuất, lý do `doi_gia_gan_day`** (review (a) GP1 G1 — CHẶN: đo thật Europe SKU 211 mua 1: 172 đơn 29 EUR
+     10–31/08, mọi đơn từ 07/09 là 37 EUR ⇒ mức 60 ngày ra 29 EUR 90% — bot báo hụt 22%; UAE SKU 227 109 → 99 AED từ 28/09); bỏ món nếu bậc KHÔNG tăng dần theo số lượng (giá mua nhiều < giá mua ít); bỏ SKU thử
+     (`sp test`, `test` — so bằng `chuanSku`); món mà đơn POS CÓ giá món > 0 (`items[].retail_price`/`total_price` khác 0 — v3 tạo đơn đặt giá
+     vào `shipping_fee`, món có giá trên POS sẽ bị thu HAI lần) ⇒ `pos_co_gia_mon`; mỗi món bỏ đi ghi LÝ DO (`it_don` · `phan_tan` ·
+     `doi_gia_gan_day` · `khong_tang` · `sku_thu` · `pos_co_gia_mon` · `lech_tien_te` · `khong_ghep_team` · `da_co_gia` · `khong_co_mon`).
+   - **Bậc = COD TRỌN GÓI** khách trả cho `so_luong` món (đã gồm ship — khớp `cua2Tien` + cửa tạo đơn đặt cả vào `shipping_fee`, ca VA-R2
+     R2-3); `phi_ship`/`mien_ship` của bậc để trống (chưa khai), không bịa.
    - `xemTruoc(pool, teamId, bq)` — ghép bậc với món POS của team (`san_pham.ma = <shop>:<variation_id>`, `nguon='pos'`); tiền tệ đơn phải
      ≡ `TIEN_TE_THI_TRUONG[market của kết nối team–shop]`; CHỈ món có **0 dòng `goi_gia`** (kể cả bậc tắt) được đề xuất — KHÔNG ghi đè.
      Trả danh sách đề xuất + đếm theo lý do. KHÔNG ghi gì.
@@ -38,7 +43,8 @@ chép) — DÙNG LẠI, cấm đường ghi giá thứ hai · `HE_SO_TE` / `TIEN
    TRONG tiến trình `aicloser-v3` (bản chép `kb-overrides.json` do chính tiến trình ghi — không script rời trên prod).
 3. **Nhật ký** hành động mới (vd `DIEN_GIA_TU_DON_POS`) ở sản phẩm cho mỗi món: bậc ghi · số đơn · tỷ lệ · khoảng ngày. `saveProduct` đã chụp
    `truoc/sau` — đường lùi = xoá bậc của món (món trước đó RỖNG giá).
-4. **Màn** Sản phẩm (quản trị): khối «Điền giá từ đơn POS (60 ngày)» — bảng xem trước (SKU · tên · shop · bậc · số đơn · tỷ lệ), đếm món bỏ
+4. **Màn** Sản phẩm (quản trị): khối «Điền giá từ đơn POS (60 ngày)» — bảng xem trước (SKU · tên · shop · bậc · số đơn · tỷ lệ · **giá đơn gần
+   nhất · ngày**), đếm món bỏ
    theo lý do, nút «Áp dụng N món». Câu nói rõ: chỉ điền món CHƯA có giá; giá sau đó sửa ở Theo thị trường; page có bản sao giá khác sẽ
    hiện LỆCH ở bước đối soát (GSP3) để người chọn.
 5. Không đụng món đã có giá, không đụng bản sao, không đụng đơn, không gọi POS.
@@ -62,7 +68,8 @@ KHÔNG sửa `src/admin-v3/operations.js` · `src/hrm/bigquery.js` · `src/produ
 
 ## ④ Nghiệm thu (viết trước — `ops/bin/nghiem-thu/gp1.sh`, rc=0 khi đạt; BigQuery GIẢ trong ca — KHÔNG gọi mạng; đảo-vá trên BẢN SAO tạm; `grep -E` không `rg`; nạp `.env` nếu thiếu `DATABASE_URL_V3`)
 
-1. `tinhBac` thuần: (a) 10 đơn 99 SAR + 1 đơn 89 ⇒ bậc 1 = 9900; (b) 2 đơn ⇒ `it_don`; (c) 5/5/4 đơn ba mức ⇒ `phan_tan`; (d) mua 2 rẻ hơn
+1. `tinhBac` thuần: (a) 10 đơn 99 SAR + 1 đơn 89 ⇒ bậc 1 = 9900; (a′) 172 đơn cũ 29 EUR + 12 đơn MỚI NHẤT 37 EUR ⇒ `doi_gia_gan_day`, 0 đề xuất;
+   (a″) đơn có giá món > 0 ⇒ `pos_co_gia_mon`; (b) 2 đơn ⇒ `it_don`; (c) 5/5/4 đơn ba mức ⇒ `phan_tan`; (d) mua 2 rẻ hơn
    mua 1 ⇒ `khong_tang`; (e) SKU «sp test» ⇒ `sku_thu`; (f) TWD 990 ⇒ 990 (TT1).
 2. Postgres hộp cát: team T có món A (0 giá), B (đã có bậc), C (không có trong đơn); BQ giả cho A, B ⇒ `xemTruoc` đề xuất CHỈ A, B bị
    `da_co_gia`, đơn của món không có trong team ⇒ `khong_co_mon`; 0 dòng ghi.
@@ -71,7 +78,7 @@ KHÔNG sửa `src/admin-v3/operations.js` · `src/hrm/bigquery.js` · `src/produ
 4. Dấu xem trước lệch (một món có giá giữa lúc xem và lúc áp) ⇒ 409, 0 ghi.
 5. Đơn của marketer team khác ⇒ không vào bậc của team T. Tiền tệ đơn ≠ tiền tệ thị trường shop ⇒ `lech_tien_te`.
 6. Marketer ⇒ 403. Team khác ⇒ không thấy món của T.
-7. Đảo-vá: bỏ điều kiện «0 dòng `goi_gia`» ⇒ phép 3 đỏ (B bị đè); bỏ kiểm tăng dần ⇒ 1d đỏ; bỏ dấu ⇒ phép 4 đỏ; bỏ lọc team ⇒ phép 5 đỏ.
+7. Đảo-vá: lấy mức của cả cửa sổ thay vì `ganDay` đơn gần nhất ⇒ 1a′ đỏ; bỏ điều kiện «0 dòng `goi_gia`» ⇒ phép 3 đỏ (B bị đè); bỏ kiểm tăng dần ⇒ 1d đỏ; bỏ dấu ⇒ phép 4 đỏ; bỏ lọc team ⇒ phép 5 đỏ.
 8. Bộ ca LL15d riêng xanh; cổng cũ xanh (rc tách dòng): `gsp2.sh` · `gsp3.sh` · `gsp3b.sh` · `tt1.sh`. `npm test` không thêm ca đỏ.
 
 ## ⑤ Test chạm nhánh nào
