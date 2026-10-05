@@ -1,14 +1,15 @@
 // GSP3b · BỘ ĐỌC TRANG PAGE + CHỐT BẢN SAO CỦA PAGE ĐÃ GẮN — tầng A (`src/products/chuyen-ban-sao.js`) trên Postgres THẬT (hộp cát riêng).
 // Đo: (1) `docSanPhamTrangPage` = đúng thứ `catalog.js#docSanPhamGoiGia` trả cho bot khi có `trang` (page đã gắn ⇒ món POS; chưa gắn ⇒ bản
 // sao như cũ); (2) `chanBanSaoDaChuyen` chặn ĐÚNG bản sao (`nguon <> 'pos'`) của page đã gắn (409 `ban_sao_da_chuyen` + lối sang), cho
-// qua bản sao page chưa gắn · món POS (kể cả món RF-15 mang `page_id`) · id lạ.
+// qua bản sao page chưa gắn · món POS (kể cả món RF-15 mang `page_id`) · id lạ; (3) vòng 2 · F1 — `chanMonPosCuaDayDu` chặn món POS
+// (`page_id` NULL hoặc page đã gắn) ở hai cửa lưu ĐẦY ĐỦ, cho qua món RF-15 của page CHƯA gắn, khoá dòng page trước (chờ lượt gắn dở).
 // Nhánh KHÔNG chạm ở tệp này: nối dây `v3/chay-that.js` (cần cả hệ — cổng `gsp3b.sh` canh đúng một dòng nối) · các cửa HTTP + trang page +
 // màn Prompt (ở `v3/test/b/gsp3b-cua-luu.test.mjs` · `v3/test/b/gsp3b-trang-page.test.mjs`).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dungSandbox } from '../db/sandbox.js';
 import { maHoa } from '../db/khoa.js';
-import { docSanPhamTrangPage, chanBanSaoDaChuyen, cauDaChuyen, idSo } from '../src/products/chuyen-ban-sao.js';
+import { docSanPhamTrangPage, chanBanSaoDaChuyen, chanMonPosCuaDayDu, cauDaChuyen, idSo } from '../src/products/chuyen-ban-sao.js';
 import { docSanPhamGoiGia } from '../src/products/catalog.js';
 import { gopMonThanhGoc, ganPageVaoGoc } from '../src/products/san-pham-goc.js';
 
@@ -136,6 +137,61 @@ test('GSP3b · bộ đọc trang page + chốt bản sao, trên Postgres thật'
         await k.query('COMMIT');
         const e = await p;
         assert.equal(e?.ma, 'ban_sao_da_chuyen', `chốt thấy page cũ: ${e?.message || e}`);
+      } finally {
+        await c.query('ROLLBACK').catch(() => {}); c.release();
+        await k.query('ROLLBACK').catch(() => {}); k.release();
+        await q('UPDATE page SET san_pham_goc_ma=NULL, pos_shop_id=NULL WHERE id=$1', [B]);
+      }
+    });
+
+    // ── Vòng 2 · F1 (đối kháng GSP3b, tổng nâng CHẶN): món POS ở hai cửa lưu ĐẦY ĐỦ ──
+    const yId = String((await mot("INSERT INTO san_pham(team_id,ma,ten,nguon) VALUES($1,'111:y','Món y chưa gộp','pos') RETURNING id", [T])).id);
+    await t.test('H10 · chốt món POS: page_id NULL · page_id trỏ page ĐÃ GẮN · RF-15 đã gộp gốc mà page đã gắn bán ⇒ 409 `mon_pos_sua_o_san_pham`; RF-15 không ai đã gắn đọc · bản sao · vắng ⇒ qua', async () => {
+      const e = await loiCua(() => chanMonPosCuaDayDu(pool, T, xId));
+      assert.deepEqual([e.status, e.ma], [409, 'mon_pos_sua_o_san_pham']);
+      assert.deepEqual([e.duLieu.sanPhamId, e.duLieu.ma, e.duLieu.gocId, e.duLieu.tenGoc, e.duLieu.pageId], [xId, '111:x', String(G.id), 'Gold Ring', null]);
+      assert.equal(e.duLieu.duongSua, `/san-pham?sp=${G.id}&tab=thi-truong`);
+      assert.match(e.message, /món POS của sản phẩm «Gold Ring» — cửa này lưu ĐẦY ĐỦ/);
+      assert.match(e.message, /Sản phẩm › «Gold Ring» › Theo thị trường\. Chưa ghi gì\./);
+      const w = await loiCua(() => chanMonPosCuaDayDu(pool, T, wId));          // RF-15 trước lúc gắn — page A nay đã gắn
+      assert.deepEqual([w.ma, w.duLieu.pageId], ['mon_pos_sua_o_san_pham', A]);
+      const y = await loiCua(() => chanMonPosCuaDayDu(pool, T, yId));          // chưa gộp vào gốc nào ⇒ lối về /san-pham
+      assert.deepEqual([y.ma, y.duLieu.gocId, y.duLieu.duongSua], ['mon_pos_sua_o_san_pham', null, '/san-pham']);
+      // (c) món RF-15 của page CHƯA gắn mà ĐÃ GỘP vào gốc, có page đã gắn gốc ở đúng shop (A: gold × 111) ⇒ đường tiền của A ⇒ chặn
+      // (/code-review vòng 2 #1); cùng gốc nhưng shop 222 (A bán shop 111, C gắn gold chưa shop) ⇒ không page đã gắn nào đọc ⇒ qua.
+      const gId = String((await mot("INSERT INTO san_pham(team_id,page_id,ma,ten,nguon,ma_goc) VALUES($1,$2,'111:g','Món g','pos','gold') RETURNING id", [T, B])).id);
+      const hId = String((await mot("INSERT INTO san_pham(team_id,page_id,ma,ten,nguon,ma_goc) VALUES($1,$2,'222:h','Món h','pos','gold') RETURNING id", [T, B])).id);
+      try {
+        const g = await loiCua(() => chanMonPosCuaDayDu(pool, T, gId));
+        assert.deepEqual([g.ma, g.duLieu.pageId, g.duLieu.docBoiPage, g.duLieu.duongSua], ['mon_pos_sua_o_san_pham', B, 'fbA', `/san-pham?sp=${G.id}&tab=thi-truong`]);
+        assert.match(g.message, /\(page «Gold Saudi A» đang bán nó\)/);
+        assert.equal(await chanMonPosCuaDayDu(pool, T, hId), null, 'món gộp gốc ở shop không page đã gắn nào bán bị chặn oan');
+      } finally {
+        await q('DELETE FROM san_pham WHERE id = ANY($1::bigint[])', [[gId, hId]]);
+      }
+      for (const [ten, id, team] of [['món RF-15 111:z của page CHƯA gắn', zId, T], ['bản sao A', bsA, T], ['bản sao B', bsB, T],
+        ['món 111:x ở team khác', xId, KHAC], ['rỗng', '', T], ['null', null, T], ['không có', '999999', T]]) {
+        assert.equal(await chanMonPosCuaDayDu(pool, team, id), null, ten);
+      }
+      const la = await loiCua(() => chanMonPosCuaDayDu(pool, T, `0${xId}`));
+      assert.deepEqual([la.status, la.ma], [400, 'ma_khong_hop_le']);
+    });
+
+    // Thứ tự khoá page → san_pham (vòng 2 · F2) ở nhánh món RF-15: lượt gắn đang dở giữ khoá dòng page ⇒ chốt CHỜ rồi thấy page đã gắn.
+    await t.test('H11 · chốt món POS trong giao dịch khoá dòng page (FOR SHARE): gắn dở dang ⇒ chờ, rồi 409 (món RF-15 hết là «page chưa gắn»)', async () => {
+      const k = await pool.connect(); const c = await pool.connect();
+      try {
+        await k.query('BEGIN');
+        await k.query('SELECT id FROM page WHERE id=$1 FOR UPDATE', [B]);
+        await c.query('BEGIN');
+        let xong = false;
+        const p = chanMonPosCuaDayDu(c, T, zId).then((x) => { xong = true; return x; }, (e) => { xong = true; return e; });
+        await new Promise((r) => setTimeout(r, 200));
+        assert.equal(xong, false, 'chốt món POS không chờ lượt gắn đang giữ khoá dòng page');
+        await k.query("UPDATE page SET san_pham_goc_ma='gold', pos_shop_id='111' WHERE id=$1", [B]);
+        await k.query('COMMIT');
+        const e = await p;
+        assert.equal(e?.ma, 'mon_pos_sua_o_san_pham', `chốt thấy page cũ: ${e?.message || e}`);
       } finally {
         await c.query('ROLLBACK').catch(() => {}); c.release();
         await k.query('ROLLBACK').catch(() => {}); k.release();

@@ -2,7 +2,11 @@
 # CỔNG NGHIỆM THU PHIẾU GSP3b — «TRANG PAGE ĐỌC ĐÚNG THỨ BOT ĐỌC; KHOÁ SỬA BẢN SAO CỦA PAGE ĐÃ GẮN» (CR-02-10b mục 2 lớp 4 · 5e · G2-N1).
 # Chạy: ops/bin/nghiem-thu/gsp3b.sh      (rc=0 là đạt) · GIU_TAM=1 giữ thư mục đảo-vá · CHAY_NPM_TEST=1 chạy thêm `npm test` (④8 — mặc định
 # HOÃN vì luật 6: hai lượt `npm test` không chạy song song; chạy khi chắc không ai đang đo).
-# Tầm đo: lưới HỒI QUY do chính thợ viết (luật 32) — ba tệp ca tự dựng Postgres HỘP CÁT riêng (`db/sandbox.js`, tên `_p<pid>`), router +
+# VÒNG 2 (05/10 · đối kháng F1 + F2, tổng nâng CHẶN): hai cửa lưu ĐẦY ĐỦ từ chối món POS ngoài RF-15 (409 `mon_pos_sua_o_san_pham` — H10 H11
+# D15–D18) · chốt chạy ở ĐẦU giao dịch của `saveProduct` (`poolChotDauGiaoDich`) ⇒ khoá page trước `san_pham`, hết 40P01 với lượt gắn /
+# «Không chuyển» (K1–K4, tệp ca thứ tư) · cửa ra xin khoá page `NOWAIT` ⇒ đường nào thứ tự ngược gặp 409 «thử lại» thay vì 40P01 (K5 = R4/R4b
+# nguyên văn) · món RF-15 đã gộp vào gốc mà page đã gắn bán ⇒ chặn (D19, /code-review vòng 2). Đột biến vòng 2: f1_* · f2_* trong bảng ④.
+# Tầm đo: lưới HỒI QUY do chính thợ viết (luật 32) — bốn tệp ca tự dựng Postgres HỘP CÁT riêng (`db/sandbox.js`, tên `_p<pid>`), router +
 # tầng sản phẩm THẬT, `day` bản chép GIẢ đếm lời gọi, trang page chạy script THẬT trên DOM giả. Không đo prod, không gửi tin.
 # Đảo-vá trên BẢN SAO TẠM (luật cổng GSP1 — không bao giờ sửa cây làm việc chung); mỗi đột biến là MỘT tiến trình node mới, và phải làm
 # ĐÚNG tập ca đã khai đỏ (không thừa, không thiếu) — «bỏ chốt ở một cửa ⇒ đỏ đúng cửa đó» (④6).
@@ -17,6 +21,7 @@ BASE=aa43268
 CA_A=test/gsp3b-chot-ban-sao.test.mjs
 CA_C=v3/test/b/gsp3b-cua-luu.test.mjs
 CA_P=v3/test/b/gsp3b-trang-page.test.mjs
+CA_K=v3/test/b/gsp3b-khoa-cho.test.mjs
 
 if [ -z "${DATABASE_URL_V3:-}" ] && [ -f .env ]; then
   DATABASE_URL_V3="$(grep -E '^DATABASE_URL_V3=' .env | head -1 | cut -d= -f2- | sed 's/^"//;s/"$//')"; export DATABASE_URL_V3
@@ -26,15 +31,16 @@ noi=$(node -e 'const u=new URL(process.env.DATABASE_URL_V3);console.log(`${u.hos
 echo "── môi trường: máy dev · hộp cát Postgres trên $noi (CSDL aicloser_v3_test_gsp3b*_p<pid>, tự dựng tự dọn) · cây $GOC"
 
 # ① bộ ca GSP3b — thước SÀN (fail=0 và pass ≥ sàn), không neo số tuyệt đối
-out=$(chay "$CA_A" "$CA_C" "$CA_P"); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
+out=$(chay "$CA_A" "$CA_C" "$CA_P" "$CA_K"); p=$(so "$out" pass); f=$(so "$out" fail); p=${p:-0}; f=${f:-1}
 [ "$f" -ne 0 ] && echo "$out" | grep -E "^\s*✖ " | sort -u | head -8 | sed 's/^/   ↳ /'
-[ "$f" -eq 0 ] && [ "$p" -ge 32 ]; ket "①bộ-ca-gsp3b" $? "pass=$p fail=$f (sàn ≥32)"
+[ "$f" -eq 0 ] && [ "$p" -ge 45 ]; ket "①bộ-ca-gsp3b" $? "pass=$p fail=$f (sàn ≥45)"
 
 # ② mỗi phép của ④ có ca XANH riêng (bảng đếm thấy/đòi). ④1 = H1 H2 H3 T1 T2 · ④2 = H4 H5b H6 H9 D1–D8 D11–D14 · ④3 = H5 H7 D9 D10 ·
-#   ④5 = T3 T4 T5 T6 (T5 · T6 + D12–D14 · H5b · H9 thêm sau /code-review).
+#   ④5 = T3 T4 T5 T6 (T5 · T6 + D12–D14 · H5b · H9 thêm sau /code-review). Vòng 2: ④4 = H10 H11 D15–D19 (F1) · K1–K5 (F2).
 thay=0; doi=0; thieu=""
 for tag in 'H1 ·' 'H2 ·' 'H3 ·' 'H4 ·' 'H5 ·' 'H5b ·' 'H6 ·' 'H7 ·' 'H8 ·' 'H9 ·' 'D1 ·' 'D2 ·' 'D3 ·' 'D4 ·' 'D5 ·' 'D6 ·' 'D7 ·' 'D8 ·' \
-           'D9 ·' 'D10 ·' 'D11 ·' 'D12 ·' 'D13 ·' 'D14 ·' 'T1 ·' 'T2 ·' 'T3 ·' 'T4 ·' 'T5 ·' 'T6 ·'; do
+           'D9 ·' 'D10 ·' 'D11 ·' 'D12 ·' 'D13 ·' 'D14 ·' 'T1 ·' 'T2 ·' 'T3 ·' 'T4 ·' 'T5 ·' 'T6 ·' \
+           'H10 ·' 'H11 ·' 'D15 ·' 'D16 ·' 'D17 ·' 'D18 ·' 'D19 ·' 'K1 ·' 'K2 ·' 'K3 ·' 'K4 ·' 'K5 ·'; do
   doi=$((doi+1))
   if echo "$out" | grep -qF -- "✔ $tag"; then thay=$((thay+1)); else thieu="$thieu [$tag]"; fi
 done
@@ -46,10 +52,11 @@ n_moi=$(grep -cE '^\s*sanPham: \(teamId, pageRowId\) => chuyenBanSao\.docSanPham
 n_cu=$(grep -cE 'docSanPhamGoiGia\(pool, teamId, pageRowId\)' v3/chay-that.js)
 [ "$n_moi" -eq 1 ] && [ "$n_cu" -eq 0 ]; ket "③nối-dây-chay-that" $? "dòng nối mới=$n_moi (đòi 1) · lời gọi thiếu trang=$n_cu (đòi 0)"
 
-# ③b TIỀN ĐỀ của quyết định ② 4 (không chặn món POS ở hai cửa ĐẦY ĐỦ): còn màn gọi cửa đầy đủ với id lấy từ bộ đọc nhánh `page_id`
-#     (trang page — nhánh này trả cả món POS RF-15, ca D10). Về 0 ⇒ tiền đề hết, phải xét lại ② 4 với tổng.
+# ③b TIỀN ĐỀ của ngoại lệ RF-15 trong ② 4 (vòng 2 chặn HẸP: món POS `page_id` NULL hoặc page đã gắn ⇒ 409; món RF-15 của page CHƯA gắn
+#     vẫn qua): còn màn gọi cửa đầy đủ với id lấy từ bộ đọc nhánh `page_id` (trang page — nhánh này trả cả món RF-15, ca D10). Về 0 ⇒
+#     ngoại lệ hết lý do, chặn trọn `nguon='pos'` (phiếu ② 4 nguyên chữ) — xét với tổng.
 n_man=$(grep -rlE 'anh-san-pham/san-pham/|/api/van-hanh/products/' v3/src/ui --include='*.html' --include='*.js' | grep -vE '/router(-anh)?\.js$' | grep -c .)
-[ "$n_man" -ge 1 ]; ket "③b-tiền-đề-②4-còn-màn-gọi-cửa-đầy-đủ" $? "số màn=$n_man (mot-page.html: id từ bộ đọc page_id, gồm món POS RF-15)"
+[ "$n_man" -ge 1 ]; ket "③b-tiền-đề-ngoại-lệ-RF-15-còn-màn-gọi-cửa-đầy-đủ" $? "số màn=$n_man (mot-page.html: id từ bộ đọc page_id, gồm món POS RF-15)"
 
 # ③c tệp phiếu không được đụng (② 5: cửa lưu giá chỉ-giá · bộ đọc chung · bản chép · kho ảnh · nối POS · màn Prompt) + GSP2/GSP3 trong
 #     chuyen-ban-sao.js CHỈ THÊM (0 dòng cũ bị sửa/xoá)
@@ -69,40 +76,53 @@ DS_TEP_DOT='src/products/chuyen-ban-sao.js v3/src/ui/van-hanh/router-anh.js v3/s
 for f in $DS_TEP_DOT; do cp "$TAM/$f" "$TAM/$f.goc"; done
 bam_cay() { (for f in $DS_TEP_DOT; do cat "$GOC/$f"; done) | shasum | cut -d' ' -f1; }
 BAM_TRUOC=$(bam_cay)
-tep_ca() { case "$1" in A) echo "$CA_A";; C) echo "$CA_C";; P) echo "$CA_P";; esac; }
+tep_ca() { case "$1" in A) echo "$CA_A";; C) echo "$CA_C";; P) echo "$CA_P";; K) echo "$CA_K";; esac; }
 chay_tam() { local o="" c; for c in $(echo "$1" | grep -oE '.'); do o="$o
 $(cd "$TAM" && node --import ./test/_an-toan.mjs --experimental-test-module-mocks --test "$(tep_ca "$c")" 2>&1)"; done; echo "$o"; }
 chuan_tap() { tr ';' '\n' | grep . | LC_ALL=C sort -u | tr '\n' ';' | sed 's/;$//'; }
 do_cua() { echo "$1" | grep -oE "✖ [A-Z][0-9]+[a-z]? ·" | sed 's/^✖ //' | tr '\n' ';' | chuan_tap; }
-oc=$(chay_tam ACP); fc=$(echo "$oc" | grep -oE "^ℹ fail [0-9]+" | grep -oE '[0-9]+' | paste -sd+ - | bc); pc=$(echo "$oc" | grep -oE "^ℹ pass [0-9]+" | grep -oE '[0-9]+' | paste -sd+ - | bc)
-[ "${fc:-1}" -eq 0 ] && [ "${pc:-0}" -ge 32 ]; ket "④0-lượt-chứng-bản-sao-tạm-xanh" $? "pass=${pc:-0} fail=${fc:-?}"
+oc=$(chay_tam ACPK); fc=$(echo "$oc" | grep -oE "^ℹ fail [0-9]+" | grep -oE '[0-9]+' | paste -sd+ - | bc); pc=$(echo "$oc" | grep -oE "^ℹ pass [0-9]+" | grep -oE '[0-9]+' | paste -sd+ - | bc)
+[ "${fc:-1}" -eq 0 ] && [ "${pc:-0}" -ge 45 ]; ket "④0-lượt-chứng-bản-sao-tạm-xanh" $? "pass=${pc:-0} fail=${fc:-?}"
 # tên | tệp đột biến | tệp ca (A/C/P) | tập ca PHẢI đỏ, ĐÚNG BẰNG (cách bằng ;, so sau khi xếp)
 DS_DOT_BIEN='
 bo_trang|src/products/chuyen-ban-sao.js|AP|H1 ·;H3 ·;T1 ·;T2 ·
 chot_bo_dieu_kien_gan|src/products/chuyen-ban-sao.js|A|H5 ·;H7 ·
 chot_ca_mon_pos|src/products/chuyen-ban-sao.js|A|H5 ·
 chot_luon_cho_qua|src/products/chuyen-ban-sao.js|A|H4 ·;H6 ·;H9 ·
-id_la_cho_qua|src/products/chuyen-ban-sao.js|AC|H5b ·;D14 ·
-bo_for_share|src/products/chuyen-ban-sao.js|AC|H9 ·;D12 ·
-bo_cua_ra|v3/src/ui/van-hanh/router.js|C|D11 ·;D12 ·;D13 ·
-tp_bo_chot_truoc|v3/src/ui/van-hanh/router-anh.js|C|D1 ·
-vh_bo_chot_truoc|v3/src/ui/van-hanh/router.js|C|D2 ·
+id_la_cho_qua|src/products/chuyen-ban-sao.js|AC|H5b ·;H10 ·;D14 ·
+bo_for_share|src/products/chuyen-ban-sao.js|ACK|H9 ·;D12 ·;K5 ·
+bo_cua_ra|v3/src/ui/van-hanh/router.js|CK|D13 ·;K5 ·
+tp_bo_chot_truoc|v3/src/ui/van-hanh/router-anh.js|C|D1 ·;D16 ·
+vh_bo_chot_truoc|v3/src/ui/van-hanh/router.js|C|D2 ·;D16 ·
 bo_chot_tai_len|v3/src/ui/van-hanh/router-anh.js|C|D3 ·;D14 ·
 bo_chot_link|v3/src/ui/van-hanh/router-anh.js|C|D4 ·;D14 ·
 bo_chot_sua_nhan|v3/src/ui/van-hanh/router-anh.js|C|D5 ·;D14 ·
 bo_chot_bo_anh|v3/src/ui/van-hanh/router-anh.js|C|D14 ·
 bo_chot_xep_anh|v3/src/ui/van-hanh/router-anh.js|C|D7 ·
 bo_chot_noi_pos|v3/src/ui/van-hanh/router-anh.js|C|D8 ·;D14 ·
-anh_bo_ma_409|v3/src/ui/van-hanh/router-anh.js|C|D1 ·;D3 ·;D4 ·;D5 ·;D6 ·;D7 ·;D8 ·;D11 ·;D12 ·;D14 ·
-vh_bo_ma_409|v3/src/ui/van-hanh/router.js|C|D2 ·;D11 ·
+anh_bo_ma_409|v3/src/ui/van-hanh/router-anh.js|C|D1 ·;D3 ·;D4 ·;D5 ·;D6 ·;D7 ·;D8 ·;D11 ·;D12 ·;D14 ·;D15 ·;D16 ·;D18 ·;D19 ·
+vh_bo_ma_409|v3/src/ui/van-hanh/router.js|C|D2 ·;D11 ·;D16 ·;D18 ·
 kho_bo_chuyen|v3/src/ui/mot-page/kho-mot-page.js|P|T1 ·;T3 ·;T5 ·;T6 ·
 man_bo_chi_xem|v3/src/ui/mot-page/trang/mot-page.html|P|T3 ·;T5 ·
 man_bo_cau|v3/src/ui/mot-page/trang/mot-page.html|P|T3 ·;T5 ·;T6 ·
 man_chi_xem_moi_page|v3/src/ui/mot-page/trang/mot-page.html|P|T4 ·;T5 ·
 man_khong_khoa_sau_409|v3/src/ui/mot-page/trang/mot-page.html|P|T5 ·
 man_chua_shop_hai_cau|v3/src/ui/mot-page/trang/mot-page.html|P|T6 ·
+f1_luon_cho_qua|src/products/chuyen-ban-sao.js|AC|H10 ·;H11 ·;D15 ·;D16 ·;D18 ·;D19 ·
+f1_chan_ca_rf15|src/products/chuyen-ban-sao.js|AC|H10 ·;D10 ·;D18 ·
+f1_bo_nhanh_page_null|src/products/chuyen-ban-sao.js|AC|H10 ·;D15 ·;D16 ·
+f1_bo_for_share|src/products/chuyen-ban-sao.js|A|H11 ·
+f1_bo_duong_tien_page_khac|src/products/chuyen-ban-sao.js|AC|H10 ·;D19 ·
+f1_cua_chi_chot_ban_sao|src/products/chuyen-ban-sao.js|C|D15 ·;D16 ·;D18 ·;D19 ·
+f2_dao_thu_tu_khoa|v3/src/ui/van-hanh/router.js|CK|D12 ·;D18 ·;K1 ·;K2 ·;K3 ·;K4 ·
+f2_tp_bo_boc|v3/src/ui/van-hanh/router-anh.js|CK|D12 ·;D18 ·;K1 ·;K2 ·
+f2_vh_bo_boc|v3/src/ui/van-hanh/router.js|CK|D18 ·;K3 ·
+f2_boc_bo_kiem_begin|v3/src/ui/van-hanh/router.js|K|K4 ·
+f2_cua_ra_cho|v3/src/ui/van-hanh/router.js|CK|K5 ·|40P01
+f2_bo_ma_55p03|v3/src/ui/van-hanh/router.js|K|K5 ·
+f2_dao_thu_tu_khong_belt|v3/src/ui/van-hanh/router.js|CK|D18 ·;K1 ·;K2 ·;K3 ·;K4 ·;K5 ·|khoá chết (40P01)
 '
-while IFS='|' read -r ten tep ca dong; do
+while IFS='|' read -r ten tep ca dong chu; do
   [ -z "$ten" ] && continue
   cp "$TAM/$tep.goc" "$TAM/$tep"
   if ! python3 - "$TAM/$tep" "$ten" <<'PY'
@@ -115,10 +135,12 @@ old, new = {
   'chot_ca_mon_pos': ("WHERE s.team_id = $1 AND s.id = $2 AND s.nguon <> 'pos'\n", "WHERE s.team_id = $1 AND s.id = $2\n"),
   'chot_luon_cho_qua': ('  if (!r || !r.san_pham_goc_ma) return null;\n', '  if (true) return null;\n'),
   'id_la_cho_qua': ('if (!/^[1-9]\\d*$/.test(s)) throw new', 'if (!/^[1-9]\\d*$/.test(s)) return null; if (false) throw new'),
-  'bo_for_share': ('\n        FOR SHARE OF p`,', '`,'),
-  'bo_cua_ra': ('    await chanBanSaoDaChuyen(c, bc.teamId, id);\n    try {', '    try {'),
-  'tp_bo_chot_truoc': ('    await chanBanSaoDaChuyen(pool, q.boiCanh.teamId, q.params.spId);\n    s.json(', '    s.json('),
-  'vh_bo_chot_truoc': ('      await chanBanSaoDaChuyen(pool, q.boiCanh.teamId, q.params.id);\n', ''),
+  'bo_for_share': ('\n        FOR SHARE OF p${khongCho ? " NOWAIT" : ""}`,', '`,'),
+  'bo_cua_ra': ('      await chanBanSaoDaChuyen(c, bc.teamId, id, { khongCho: true });\n', ''),
+  'tp_bo_chot_truoc': ('    await chot(pool);\n    const kq = await saveProduct(poolChotDauGiaoDich(pool, chot), q.boiCanh, q.params.spId',
+                       '    const kq = await saveProduct(poolChotDauGiaoDich(pool, chot), q.boiCanh, q.params.spId'),
+  'vh_bo_chot_truoc': ('      await chot(pool);\n      const kq = await saveProduct(poolChotDauGiaoDich(pool, chot), q.boiCanh, q.params.id',
+                       '      const kq = await saveProduct(poolChotDauGiaoDich(pool, chot), q.boiCanh, q.params.id'),
   'bo_chot_tai_len': ('          await chanBanSaoDaChuyen(c, q.boiCanh.teamId, spId);   // GSP3b — trước khi ghi (tệp vừa ghi bị xoá ở catch)\n', ''),
   'bo_chot_link': ('      await chanBanSaoDaChuyen(c, q.boiCanh.teamId, q.params.spId);   // GSP3b\n      const a = await themAnh(', '      const a = await themAnh('),
   'bo_chot_sua_nhan': None,
@@ -134,8 +156,32 @@ old, new = {
   'man_chi_xem_moi_page': ('const CHI_XEM = () => !!(daDocNoiDung && daDocNoiDung.chuyen);', 'const CHI_XEM = () => true;'),
   'man_khong_khoa_sau_409': ("  if (!e || e.ma !== 'ban_sao_da_chuyen') return;", '  return;'),
   'man_chua_shop_hai_cau': ('  if (!cuaBot.length && CHI_XEM()) {', '  if (false) {'),
+  # ── vòng 2 · F1 (món POS ở hai cửa lưu đầy đủ) ──
+  'f1_luon_cho_qua': ('  if (!s) return null;\n  let p = null;\n', '  if (true) return null;\n  let p = null;\n'),
+  'f1_chan_ca_rf15': ('      if (!docBoi) return null;   // RF-15', '      if (false) return null;   // RF-15'),
+  'f1_bo_duong_tien_page_khac': ('      if (!docBoi) return null;   // RF-15', '      return null;   // RF-15'),
+  'f1_bo_nhanh_page_null': ('(nhánh c)\n  if (s.page_id != null) {\n', '(nhánh c)\n  if (s.page_id == null) return null;\n  {\n'),
+  'f1_bo_for_share': ('san_pham_goc_ma FROM page WHERE team_id = $1 AND id = $2 FOR SHARE",', 'san_pham_goc_ma FROM page WHERE team_id = $1 AND id = $2",'),
+  'f1_cua_chi_chot_ban_sao': ('  await chanMonPosCuaDayDu(db, teamId, sanPhamId);\n  return null;', '  return null;'),
+  # ── vòng 2 · F2 (thứ tự khoá page → san_pham) — «đảo lại thứ tự» = chốt không chạy đầu giao dịch, page chỉ bị khoá ở cửa ra SAU san_pham ──
+  'f2_dao_thu_tu_khoa': ('          await chot(c);\n', ''),
+  'f2_tp_bo_boc': ('saveProduct(poolChotDauGiaoDich(pool, chot), q.boiCanh, q.params.spId,', 'saveProduct(pool, q.boiCanh, q.params.spId,'),
+  'f2_vh_bo_boc': ('saveProduct(poolChotDauGiaoDich(pool, chot), q.boiCanh, q.params.id,', 'saveProduct(pool, q.boiCanh, q.params.id,'),
+  'f2_boc_bo_kiem_begin': ('          if (!/^\\s*(BEGIN|START', '          if (false && !/^\\s*(BEGIN|START'),
+  'f2_cua_ra_cho': ('{ khongCho: true }', '{ khongCho: false }'),
+  'f2_bo_ma_55p03': ('      if (e?.code === "55P03") {', '      if (false) {'),
+  'f2_dao_thu_tu_khong_belt': None,
 }[ten] or (None, None)
-if ten == 'bo_chot_sua_nhan':
+# đột biến NHIỀU chỗ (mỗi chỗ phải khớp đúng một lần): «đảo lại thứ tự» trọn vẹn = bỏ chốt đầu giao dịch VÀ bỏ NOWAIT ở cửa ra ⇒ 40P01
+NHIEU = {
+  'f2_dao_thu_tu_khong_belt': [('          await chot(c);\n', ''), ('{ khongCho: true }', '{ khongCho: false }')],
+}
+if ten in NHIEU:
+    for o, n in NHIEU[ten]:
+        assert s.count(o) == 1, (ten, o[:60])
+        s = s.replace(o, n)
+    p.write_text(s, encoding='utf-8')
+elif ten == 'bo_chot_sua_nhan':
     # chốt của cửa sửa nhãn = dòng `await chanBanSaoDaChuyen(… spCuaAnh …)` NGAY TRƯỚC `suaNhanAnh` (dòng y hệt đứng trước `boAnh` —
     # nên cắt theo VỊ TRÍ, không replace chuỗi)
     k = '      await chanBanSaoDaChuyen(c, q.boiCanh.teamId, await spCuaAnh(c, q.boiCanh.teamId, q.params.id));   // GSP3b\n      const a = await suaNhanAnh('
@@ -150,9 +196,11 @@ PY
   o=$(chay_tam "$ca")
   cp "$TAM/$tep.goc" "$TAM/$tep"
   that=$(do_cua "$o"); cho=$(echo "$dong" | chuan_tap)
-  [ "$that" = "$cho" ]; ket "④đảo-vá-${ten} ⇒ đỏ đúng «${dong}»" $? "thật: ${that:-(không ca nào đỏ)}"
+  # cột 5 (tuỳ chọn): chữ PHẢI có trong log — vd. «40P01»: đột biến thứ tự khoá phải đỏ VÌ khoá chết, không vì lý do khác
+  [ "$that" = "$cho" ] && { [ -z "${chu:-}" ] || echo "$o" | grep -qF -- "$chu"; }
+  ket "④đảo-vá-${ten} ⇒ đỏ đúng «${dong}»${chu:+ + log có «${chu}»}" $? "thật: ${that:-(không ca nào đỏ)}"
 done <<< "$DS_DOT_BIEN"
-oh=$(chay_tam ACP); fh=$(echo "$oh" | grep -oE "^ℹ fail [0-9]+" | grep -oE '[0-9]+' | paste -sd+ - | bc)
+oh=$(chay_tam ACPK); fh=$(echo "$oh" | grep -oE "^ℹ fail [0-9]+" | grep -oE '[0-9]+' | paste -sd+ - | bc)
 [ "${fh:-1}" -eq 0 ]; ket "④z-khôi-phục-bản-sao-xanh-lại" $? "fail=${fh:-?}"
 [ "$(bam_cay)" = "$BAM_TRUOC" ] && [ -z "$(git status --porcelain -- '*.goc')" ]
 ket "④cây-chung-không-dính-đột-biến" $? "băm 5 tệp bị đột biến trong cây chung trước = sau · 0 tệp .goc lạc"
@@ -213,7 +261,7 @@ for g in ll15d gsp1 gsp2 gsp3 ve2 ve2b ve8b va-r2; do
   fi
 done
 
-# ⑦ npm test (④8) — chỉ khi CHAY_NPM_TEST=1 (luật 6). Thước: fail=0 (mốc base aa43268/6c2f8ef: 2384 ca · 0 đỏ).
+# ⑦ npm test (④8) — chỉ khi CHAY_NPM_TEST=1 (luật 6). Thước: fail=0 (mốc base aa43268/6c2f8ef: 2384 ca · 0 đỏ; vòng 1: 2416 · 0 đỏ).
 if [ "${CHAY_NPM_TEST:-}" = 1 ]; then
   o=$(npm test 2>&1); nt=$(so "$o" tests); nf=$(so "$o" fail)
   [ "${nf:-1}" -eq 0 ]; ket "⑦npm-test" $? "tests=${nt:-?} fail=${nf:-?}"

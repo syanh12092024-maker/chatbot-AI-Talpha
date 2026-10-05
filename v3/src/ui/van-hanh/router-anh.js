@@ -13,7 +13,8 @@
 // Mọi cửa GHI ở đây (lưu sản phẩm · năm cửa ảnh · nối món POS) gọi `chanBanSaoDaChuyen` TRƯỚC khi ghi (lưới sớm, đúng mã trước mọi
 // kiểm thân): bản sao (`nguon <> 'pos'`) của page đã gắn gốc ⇒ 409 `ban_sao_da_chuyen` (+ lối sang Sản phẩm › Theo thị trường), 0 dòng
 // đổi, 0 lời gọi đẩy. Cửa ra chung `taoBuocDayBot` chốt lần nữa trong giao dịch (khoá dòng page). Id dạng lạ («0<id>») ⇒ 400.
-// Món POS và bản sao của page CHƯA gắn đi qua như cũ.
+// Món POS và bản sao của page CHƯA gắn đi qua như cũ — trừ cửa lưu ĐẦY ĐỦ (vòng 2 · F1): món POS mà `page_id` NULL hoặc page của nó đã
+// gắn ⇒ 409 `mon_pos_sua_o_san_pham` (giá món chỉ sửa chỉ-giá ở Sản phẩm › Theo thị trường); món RF-15 của page CHƯA gắn vẫn qua.
 //
 // ─── AI SỬA ĐƯỢC: QUẢN TRỊ + MARKETER (người quyết 28/09) ─────────────────────────────
 // Marketer là người viết kịch bản và dựng page — người quyết chốt họ sửa được cả sản phẩm, giá,
@@ -44,10 +45,10 @@ import { ghiNhatKy } from "../../../../src/db/index.js";
 import {
   themAnh, suaNhanAnh, boAnh, xepAnh, LoiAnhSanPham,
 } from "../../../../src/products/anh-san-pham.js";
-import { taoBuocDayBot } from "./router.js";
+import { taoBuocDayBot, poolChotDauGiaoDich } from "./router.js";
 import { luuKhoiChung, docKhoiChung, batBuocGiuKhoiChung, LoiKhoiChung } from "../../../../src/products/khoi-chung.js";
 import { dsMonPos, noiMonPos, LoiNoiPos } from "../../../../src/products/noi-pos.js";
-import { chanBanSaoDaChuyen, idSo } from "../../../../src/products/chuyen-ban-sao.js";
+import { chanBanSaoDaChuyen, chanCuaLuuDayDu, idSo } from "../../../../src/products/chuyen-ban-sao.js";
 import { LoiSanPhamGoc } from "../../../../src/products/san-pham-goc.js";
 
 export const DUOI_THEO_KIEU = Object.freeze({
@@ -160,11 +161,15 @@ export function taoRouterAnhSanPham({ pool, env = process.env, daySanPhamLenBot 
 
   // Lưu MỘT sản phẩm từ trang page — chính `saveProduct` (kiểm phiên bản · nhật ký giá trước/sau)
   // + bước đẩy bot trong cùng giao dịch. Nhật ký ghi đúng người (quản trị hay marketer).
-  // GSP3b: chốt TRƯỚC `saveProduct` (0 dòng đổi, 0 lời gọi đẩy, đúng mã trước mọi kiểm thân); page được gắn sau chốt này thì cửa ra
-  // `taoBuocDayBot` (= `dayBot`) chặn trong giao dịch ⇒ ROLLBACK, không đẩy món POS của gốc thay cho bản sao vừa lưu.
+  // GSP3b: chốt TRƯỚC `saveProduct` (0 dòng đổi, 0 lời gọi đẩy, đúng mã trước mọi kiểm thân). Vòng 2 · F1: món POS ngoài đường RF-15
+  // (`page_id` NULL hoặc page đã gắn) ⇒ 409 `mon_pos_sua_o_san_pham` — marketer lẫn quản trị; món RF-15 của page CHƯA gắn vẫn qua (D10).
+  // Vòng 2 · F2: cùng chốt chạy lại ở ĐẦU giao dịch của `saveProduct` (`poolChotDauGiaoDich`) — khoá page trước `san_pham` (không còn
+  // vòng chờ với lượt gắn / «Không chuyển»), page được gắn giữa hai lượt ⇒ 409, ROLLBACK, không đẩy món POS thay bản sao vừa lưu.
   r.post("/api/anh-san-pham/san-pham/:spId", wrap(async (q, s) => {
-    await chanBanSaoDaChuyen(pool, q.boiCanh.teamId, q.params.spId);
-    s.json({ ok: true, ...(await saveProduct(pool, q.boiCanh, q.params.spId, q.body || {}, { sauKhiLuu: dayBot })) });
+    const chot = (db) => chanCuaLuuDayDu(db, q.boiCanh.teamId, q.params.spId);
+    await chot(pool);
+    const kq = await saveProduct(poolChotDauGiaoDich(pool, chot), q.boiCanh, q.params.spId, q.body || {}, { sauKhiLuu: dayBot });
+    s.json({ ok: true, ...kq });
   }));
 
   // NỐI MÓN POS (MN8) — danh sách món cùng shop của page, và nối/gỡ. Nối xong hết hàng theo POS

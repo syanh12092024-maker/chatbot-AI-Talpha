@@ -1,8 +1,10 @@
 // GSP3b · MỌI CỬA LƯU sản phẩm/ảnh mở từ trang page TỪ CHỐI bản sao của page ĐÃ GẮN — HTTP THẬT (express + router thật) trên Postgres
 // hộp cát. Mỗi cửa một ca (đảo-vá «bỏ chốt ở một cửa» phải làm ĐÚNG ca đó đỏ): 409 `ban_sao_da_chuyen` + lối sang, CSDL của bản sao lẫn
 // món POS trước = sau (băm trọn hàng san_pham · goi_gia · anh_san_pham), `day` (bản chép sang bot) 0 lời gọi, thư mục ảnh không thêm tệp.
-// Chiều CHO-QUA: page chưa gắn lưu được như cũ (`day` gọi đúng page) · món POS mang `page_id` (RF-15) qua cửa trang page vẫn lưu được
-// (mục ② 4 KHÔNG áp — có màn gọi, xem nhật ký) · page bị gắn GIỮA lượt chốt trước và lượt ghi ⇒ chốt trong giao dịch ROLLBACK.
+// Chiều CHO-QUA: page chưa gắn lưu được như cũ (`day` gọi đúng page) · món POS mang `page_id` của page CHƯA gắn (RF-15) qua cửa trang page
+// vẫn lưu được (D10) · page bị gắn GIỮA lượt chốt trước và lượt ghi ⇒ chốt trong giao dịch ROLLBACK.
+// Vòng 2 · F1 (D15–D18): hai cửa lưu ĐẦY ĐỦ từ chối món POS mà `page_id` NULL hoặc page đã gắn (409 `mon_pos_sua_o_san_pham`) — marketer
+// lẫn quản trị; giá món vẫn sửa được bằng chỉ-giá (khuôn `luuGia` của chay-that.js). Khoá chết (F2) đo ở `gsp3b-khoa-cho.test.mjs`.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -15,6 +17,7 @@ import { maHoa } from '../../../db/khoa.js';
 import { gopMonThanhGoc, ganPageVaoGoc } from '../../../src/products/san-pham-goc.js';
 import { taoRouterAnhSanPham } from '../../src/ui/van-hanh/router-anh.js';
 import { taoRouterVanHanh, taoBuocDayBot } from '../../src/ui/van-hanh/router.js';
+import { saveProduct } from '../../../src/admin-v3/operations.js';
 
 const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da6360000002000154a24f5d0000000049454e44ae426082', 'hex');
 
@@ -52,17 +55,21 @@ test('GSP3b · cửa lưu sản phẩm/ảnh từ trang page — HTTP thật, Po
     await q("INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te) VALUES($1,$2,1,5000,'SAR')", [T, zId]);
     const D = await trang('fbD', 'Gold Saudi D', '111');                           // chưa gắn — dùng cho ca gắn GIỮA lượt
     const bsD = await banSao(D, 'kb:fbD:SP01', 6600);
+    // Món POS mang `page_id` của page ĐÃ GẮN (RF-15 trước lúc gắn) — vòng 2 · F1: không còn là «món RF-15 của page chưa gắn» ⇒ chặn.
+    const wId = String((await mot("INSERT INTO san_pham(team_id,page_id,ma,ten,mo_ta,nguon) VALUES($1,$2,'111:w','Món w','','pos') RETURNING id", [T, A])).id);
+    await q("INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te) VALUES($1,$2,1,4400,'SAR')", [T, wId]);
 
     // `day` GIẢ đếm lời gọi theo page; pool của router đi qua Proxy để ca «gắn giữa lượt» chen một lượt gắn ngay trước giao dịch ghi.
     const day = []; const dayFn = async (pid, products) => { day.push({ pid, products }); };
     let chen = null;
+    let VAI = ['quan-tri'];
     const poolCua = new Proxy(pool, { get(o, k) {
       if (k === 'connect' && chen) { const h = chen; chen = null; return async (...a) => { await h(); return o.connect(...a); }; }
       const v = o[k]; return typeof v === 'function' ? v.bind(o) : v;
     } });
     const app = express();
     app.use(express.json());
-    app.use((req, _res, next) => { req.boiCanh = { teamId: T, nguoiDungId: null, vai: ['quan-tri'] }; next(); });
+    app.use((req, _res, next) => { req.boiCanh = { teamId: T, nguoiDungId: null, vai: VAI }; next(); });
     app.use(taoRouterAnhSanPham({ pool: poolCua, env: {}, thuMucAnh: THU_MUC, daySanPhamLenBot: dayFn }));
     app.use(taoRouterVanHanh({ pool: poolCua, env: {}, daySanPhamLenBot: dayFn }));
     sv = http.createServer(app); await new Promise((r) => sv.listen(0, '127.0.0.1', r));
@@ -151,13 +158,13 @@ test('GSP3b · cửa lưu sản phẩm/ảnh từ trang page — HTTP thật, Po
       assert.equal(Number((await mot("SELECT gia FROM goi_gia WHERE san_pham_id=$1", [bsB])).gia), 7800);
     });
 
-    await t.test('D10 · món POS mang page_id của page chưa gắn (RF-15) qua cửa trang page ⇒ vẫn lưu được (② 4 không áp)', async () => {
+    await t.test('D10 · món POS mang page_id của page chưa gắn (RF-15) qua cửa trang page ⇒ vẫn lưu được (② 4 áp HẸP — RF-15 qua tới GSP4)', async () => {
       const r = await goi(`/api/anh-san-pham/san-pham/${zId}`, { body: await thanLuu(zId, 55) });
       assert.equal(r.status, 200, JSON.stringify(r.j));
       assert.equal(Number((await mot('SELECT gia FROM goi_gia WHERE san_pham_id=$1', [zId])).gia), 5500);
     });
 
-    await t.test('D11 · page bị gắn GIỮA lượt chốt đầu cửa và giao dịch ghi ⇒ cửa ra (bước đẩy) ROLLBACK: 409, 0 đổi, 0 đẩy (cả hai cửa)', async () => {
+    await t.test('D11 · page bị gắn GIỮA lượt chốt đầu cửa và giao dịch ghi ⇒ chốt trong giao dịch (đầu giao dịch · cửa ra) ROLLBACK: 409, 0 đổi, 0 đẩy (cả hai cửa)', async () => {
       try {
         for (const [ten, duong] of [['trang page', `/api/anh-san-pham/san-pham/${bsD}`], ['Vận hành', `/api/van-hanh/products/${bsD}`]]) {
           await q('UPDATE page SET san_pham_goc_ma=NULL WHERE id=$1', [D]);
@@ -177,27 +184,34 @@ test('GSP3b · cửa lưu sản phẩm/ảnh từ trang page — HTTP thật, Po
       }
     });
 
-    await t.test('D12 · lượt gắn ĐANG DỞ (giữ khoá dòng page) khi giao dịch lưu đã qua chốt đầu cửa ⇒ cửa ra CHỜ, thấy page đã gắn ⇒ 409, 0 đẩy', async () => {
+    await t.test('D12 · lượt gắn ĐANG DỞ (giữ khoá dòng page) khi giao dịch lưu đã qua chốt đầu cửa ⇒ chốt trong giao dịch CHỜ, thấy page đã gắn ⇒ 409, 0 đẩy', async () => {
       await q('UPDATE page SET san_pham_goc_ma=NULL WHERE id=$1', [D]);
       const truoc = await bam([bsD, xId]); const d0 = day.length;
       const than = await thanLuu(bsD, 98);
-      let k = null;
+      let k = null; let xongGan = Promise.resolve();
       chen = async () => {   // ngay trước giao dịch ghi: một phiên khác bắt đầu gắn page D và giữ khoá dòng page 200ms rồi mới commit
         k = await pool.connect();
         await k.query('BEGIN');
         await k.query('SELECT id FROM page WHERE id=$1 FOR UPDATE', [D]);
-        setTimeout(async () => {
-          await k.query("UPDATE page SET san_pham_goc_ma='gold' WHERE id=$1", [D]);
-          await k.query('COMMIT'); k.release();
-        }, 200);
+        xongGan = new Promise((xong) => setTimeout(async () => {
+          try {
+            await k.query("UPDATE page SET san_pham_goc_ma='gold' WHERE id=$1", [D]);
+            await k.query('COMMIT');
+          } finally { k.release(); xong(); }
+        }, 200));
       };
-      const r = await goi(`/api/anh-san-pham/san-pham/${bsD}`, { body: than });
-      assert.equal(chen, null, 'lượt chen không chạy');
-      assert.equal(r.status, 409, JSON.stringify(r.j));
-      assert.equal(r.j?.ma, 'ban_sao_da_chuyen');
-      assert.equal(await bam([bsD, xId]), truoc, 'giao dịch không lùi');
-      assert.equal(day.length, d0, 'đã đẩy món POS thay bản sao');
-      await q('UPDATE page SET san_pham_goc_ma=NULL WHERE id=$1', [D]);
+      try {
+        const r = await goi(`/api/anh-san-pham/san-pham/${bsD}`, { body: than });
+        assert.equal(chen, null, 'lượt chen không chạy');
+        assert.equal(r.status, 409, JSON.stringify(r.j));
+        assert.equal(r.j?.ma, 'ban_sao_da_chuyen');
+        assert.equal(await bam([bsD, xId]), truoc, 'giao dịch không lùi');
+        assert.equal(day.length, d0, 'đã đẩy món POS thay bản sao');
+      } finally {   // vòng 2: ca đỏ giữa chừng để page D gắn ⇒ D17 đỏ dây chuyền (gặp ở đột biến anh_bo_ma_409) — dọn ở finally như D11
+        chen = null;
+        await xongGan;   // lượt gắn chen phải COMMIT xong trước khi dọn (không hẹn giờ — /code-review vòng 2 #5)
+        await q('UPDATE page SET san_pham_goc_ma=NULL WHERE id=$1', [D]);
+      }
     });
 
     await t.test('D13 · cửa ra: bước đẩy chung `taoBuocDayBot` từ chối bản sao của page đã gắn — mọi cửa (kể cả cửa mai thêm) đi qua nó', async () => {
@@ -225,6 +239,79 @@ test('GSP3b · cửa lưu sản phẩm/ảnh từ trang page — HTTP thật, Po
         assert.equal(await bam([bsA, xId]), truoc, `${ten}: CSDL đổi`);
         assert.equal(day.length, d0, `${ten}: đã đẩy`);
         assert.equal(tep(), f0, `${ten}: tệp mồ côi`);
+      }
+    });
+
+    // ── Vòng 2 · F1 — món POS ở hai cửa lưu ĐẦY ĐỦ (đối kháng GSP3b R3; tổng nâng CHẶN 05/10) ──
+    /** Lưu ĐẦY ĐỦ một món POS ⇒ 409 `mon_pos_sua_o_san_pham` + lối sang, CSDL món (tên · mô tả · hết hàng · cau_hinh_tay · goi_gia) trước = sau, 0 đẩy. */
+    const chanMon = async (ten, id, lam, duongSua = `/san-pham?sp=${G.id}&tab=thi-truong`) => {
+      const truoc = await bam([id, xId]); const d0 = day.length;
+      const r = await lam();
+      assert.equal(r.status, 409, `${ten}: ${JSON.stringify(r.j)}`);
+      assert.equal(r.j?.ma, 'mon_pos_sua_o_san_pham', ten);
+      assert.equal(r.j?.duLieu?.duongSua, duongSua, ten);
+      assert.match(r.j?.thongDiep || '', /là món POS .*Theo thị trường\. Chưa ghi gì\./, ten);
+      assert.equal(await bam([id, xId]), truoc, `${ten}: CSDL đổi`);
+      assert.equal(day.length, d0, `${ten}: đã đẩy bản chép sang bot`);
+    };
+    await t.test('D15 · (R3) MARKETER lưu ĐẦY ĐỦ món POS của gốc qua cửa trang page ⇒ 409, giá · tên · cau_hinh_tay trước = sau, 0 đẩy', async () => {
+      const c0 = (await mot('SELECT ten, cau_hinh_tay FROM san_pham WHERE id=$1', [xId]));
+      VAI = ['marketer'];
+      try {
+        await chanMon('marketer · trang page · món 111:x', xId, async () => goi(`/api/anh-san-pham/san-pham/${xId}`, { body: {
+          version: await version(xId), ten: 'Tên marketer đặt', mo_ta: 'x', het_hang: false, offers: [{ so_luong: 1, price: 1, tien_te: 'SAR', nhan: '1 hộp' }] } }));
+      } finally { VAI = ['quan-tri']; }
+      const c1 = (await mot('SELECT ten, cau_hinh_tay FROM san_pham WHERE id=$1', [xId]));
+      assert.deepEqual(c1, c0, 'tên / cau_hinh_tay của món POS bị đổi');
+      assert.deepEqual((await q('SELECT gia FROM goi_gia WHERE san_pham_id=$1 ORDER BY so_luong', [xId])).rows.map((g) => Number(g.gia)), [19900, 29900]);
+    });
+    await t.test('D16 · QUẢN TRỊ cũng 409 ở HAI cửa: món của gốc (page_id NULL) · món page_id trỏ page ĐÃ GẮN — thân đúng lẫn thân sai (chốt trước mọi kiểm)', async () => {
+      for (const [tenCua, duong] of [['trang page', '/api/anh-san-pham/san-pham/'], ['Vận hành', '/api/van-hanh/products/']]) {
+        // 111:w chưa gộp vào gốc nào (`ma_goc` NULL) ⇒ lối về /san-pham (không trỏ gốc của page — sửa gốc đó không chạm món này)
+        for (const [tenMon, id, lo] of [['món 111:x', xId, undefined], ['món 111:w (page A đã gắn)', wId, '/san-pham']]) {
+          await chanMon(`${tenCua} · ${tenMon}`, id, async () => goi(duong + id, { body: await thanLuu(id, 2) }), lo);
+          await chanMon(`${tenCua} · ${tenMon} · thân sai`, id, async () => goi(duong + id, { body: { version: '1' } }), lo);
+        }
+      }
+    });
+    await t.test('D17 · giá món vẫn sửa được bằng CHỈ-GIÁ (khuôn `luuGia` chay-that.js: saveProduct chiGia + taoBuocDayBot) ⇒ thành, bot page A nhận giá mới', async () => {
+      const d0 = day.length;
+      const kq = await saveProduct(pool, { teamId: T, nguoiDungId: null, vai: ['quan-tri'] }, xId,
+        { version: await version(xId), offers: [{ so_luong: 1, price: 211, tien_te: 'SAR' }, { so_luong: 2, price: 311, tien_te: 'SAR' }] },
+        { chiGia: true, sauKhiLuu: taoBuocDayBot({ day: dayFn, env: {} }) });
+      assert.equal(kq.saved, true);
+      assert.deepEqual((await q('SELECT gia FROM goi_gia WHERE san_pham_id=$1 ORDER BY so_luong', [xId])).rows.map((g) => Number(g.gia)), [21100, 31100]);
+      assert.deepEqual(day.slice(d0).map((x) => x.pid), ['fbA']);
+      assert.deepEqual(day.at(-1).products.flatMap((sp) => sp.tiers.map((x) => x.price)), [211, 311]);
+    });
+    await t.test('D18 · món RF-15 của page CHƯA gắn — page bị gắn GIỮA chốt đầu cửa và giao dịch ⇒ chốt đầu giao dịch 409 `mon_pos_sua_o_san_pham`, 0 đổi, 0 đẩy (cả hai cửa)', async () => {
+      try {
+        for (const [ten, duong] of [['trang page', `/api/anh-san-pham/san-pham/${zId}`], ['Vận hành', `/api/van-hanh/products/${zId}`]]) {
+          await q('UPDATE page SET san_pham_goc_ma=NULL WHERE id=$1', [B]);
+          const than = await thanLuu(zId, 66);
+          const truoc = await bam([zId]); const d0 = day.length;
+          chen = async () => { await q("UPDATE page SET san_pham_goc_ma='gold' WHERE id=$1", [B]); };
+          const r = await goi(duong, { body: than });
+          assert.equal(chen, null, `${ten}: lượt chen không chạy — ca không đo được gì`);
+          assert.equal(r.status, 409, `${ten}: ${JSON.stringify(r.j)}`);
+          assert.equal(r.j?.ma, 'mon_pos_sua_o_san_pham', ten);
+          assert.equal(await bam([zId]), truoc, `${ten}: giao dịch không lùi`);
+          assert.equal(day.length, d0, `${ten}: đã đẩy`);
+        }
+      } finally {
+        chen = null;
+        await q('UPDATE page SET san_pham_goc_ma=NULL WHERE id=$1', [B]);
+      }
+    });
+    await t.test('D19 · (/code-review vòng 2 #1) MARKETER lưu ĐẦY ĐỦ món RF-15 của page CHƯA gắn mà ĐÃ GỘP vào gốc page A đang bán ⇒ 409, 0 đổi, 0 đẩy', async () => {
+      const gId = String((await mot("INSERT INTO san_pham(team_id,page_id,ma,ten,mo_ta,nguon,ma_goc) VALUES($1,$2,'111:g','Món g','','pos','gold') RETURNING id", [T, B])).id);
+      await q("INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te) VALUES($1,$2,1,19900,'SAR')", [T, gId]);
+      VAI = ['marketer'];
+      try {
+        await chanMon('marketer · trang page · món RF-15 111:g đã gộp gold', gId, async () => goi(`/api/anh-san-pham/san-pham/${gId}`, { body: await thanLuu(gId, 1) }));
+      } finally {
+        VAI = ['quan-tri'];
+        await q('DELETE FROM goi_gia WHERE san_pham_id=$1', [gId]); await q('DELETE FROM san_pham WHERE id=$1', [gId]);
       }
     });
   } finally {

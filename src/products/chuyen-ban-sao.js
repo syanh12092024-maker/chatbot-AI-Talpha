@@ -736,9 +736,14 @@ export function idSo(x, ten = "mã") {
  * kiểm khác) và CỬA RA chung `taoBuocDayBot` (v3/src/ui/van-hanh/router.js) ngay trước lời gọi đẩy, trong giao dịch ghi.
  * Trong giao dịch, câu đọc KHOÁ dòng page (`FOR SHARE`) ⇒ tuần tự với lượt gắn (`ganPageVaoGoc` khoá `FOR UPDATE`): gắn đang dở thì chốt
  * chờ rồi thấy page đã gắn; chốt qua rồi thì lượt gắn chờ giao dịch lưu xong (/code-review CR2).
+ * THỨ TỰ KHOÁ (vòng 2 · F2): trong một giao dịch, gọi chốt này TRƯỚC khi khoá dòng `san_pham` — `ganPageVaoGoc` · `boQuaPage` khoá page
+ * rồi mới UPDATE `san_pham` của page; giao dịch giữ khoá `san_pham` rồi mới xin khoá page là vòng chờ 40P01. Cửa lưu ĐẦY ĐỦ dùng
+ * `saveProduct` (khoá `san_pham` trước `sauKhiLuu`) nên chạy chốt ở đầu giao dịch qua `poolChotDauGiaoDich` (v3/src/ui/van-hanh/router.js).
+ * `khongCho: true` (CỬA RA `taoBuocDayBot`): `FOR SHARE … NOWAIT` — mọi đường đúng đã giữ khoá page từ đầu giao dịch nên xin lại không
+ * chờ; đường nào tới cửa ra mà CHƯA khoá page (thứ tự ngược) gặp page đang bị khoá ⇒ 55P03 ngay, thay vì vòng chờ 40P01.
  * Vắng id / không có dòng / dòng `nguon='pos'` / page chưa gắn ⇒ `null`, đi qua như cũ. Id dạng lạ ⇒ 400 (`idSo`).
  */
-export async function chanBanSaoDaChuyen(db, teamId, sanPhamId) {
+export async function chanBanSaoDaChuyen(db, teamId, sanPhamId, { khongCho = false } = {}) {
   const id = idSo(sanPhamId, "mã sản phẩm");
   if (!id) return null;
   const r = (await db.query(
@@ -748,7 +753,7 @@ export async function chanBanSaoDaChuyen(db, teamId, sanPhamId) {
        JOIN page p ON p.team_id = s.team_id AND p.id = s.page_id
        LEFT JOIN san_pham_goc g ON g.team_id = p.team_id AND g.ma_goc = p.san_pham_goc_ma
       WHERE s.team_id = $1 AND s.id = $2 AND s.nguon <> 'pos'
-        FOR SHARE OF p`,
+        FOR SHARE OF p${khongCho ? " NOWAIT" : ""}`,
     [teamId, id],
   )).rows[0];
   if (!r || !r.san_pham_goc_ma) return null;
@@ -758,4 +763,76 @@ export async function chanBanSaoDaChuyen(db, teamId, sanPhamId) {
     "ban_sao_da_chuyen",
     { ...c, sanPhamId: String(r.id), pageId: String(r.page_row), pageFb: r.page_fb },
   );
+}
+
+/* ═══ GSP3b vòng 2 · F1 — MÓN POS KHÔNG LƯU ĐẦY ĐỦ QUA HAI CỬA (trang page · Vận hành) — đối kháng GSP3b F1, tổng nâng CHẶN 05/10 ═══
+ * Hai cửa lưu ĐẦY ĐỦ (`POST /api/anh-san-pham/san-pham/:spId` · `POST /api/van-hanh/products/:id`) gọi `saveProduct` không `chiGia`: đè
+ * tên · mô tả của POS, đặt `cau_hinh_tay = true` (lượt kéo POS thôi cập nhật hết hàng — `src/pos/doc-danh-muc.js`) và thay `goi_gia` của
+ * món. Món nằm trên ĐƯỜNG TIỀN của một page đã gắn (bot · cửa tiền · cổng bật đọc `catalog.js#docSanPhamGoiGia`: `ma_goc` = gốc của page
+ * VÀ `ma` bắt đầu bằng «<shop của page>:», không lọc `page_id`) thì lưu ở đây là đổi giá đường tiền — trong khi cửa giá DUY NHẤT của món
+ * (Sản phẩm › Theo thị trường, chỉ-giá VE8b) từ chối marketer. Từ chối khi `nguon = 'pos'` VÀ một trong:
+ *   (a) `page_id` NULL · (b) page của nó đã gắn gốc (hoặc không đọc được trong team) · (c) món đã gộp vào gốc mà có page ĐÃ GẮN gốc đó ở
+ *   đúng shop của món (/code-review vòng 2 #1: món RF-15 gộp vào gốc vẫn lọt nếu chỉ xét page của món).
+ * Còn qua: món RF-15 (`page_id` trỏ page CHƯA gắn) mà không page đã gắn nào đọc — bộ đọc nhánh `page_id` của trang page trả nó (ca D10),
+ * tới GSP4.
+ */
+
+/**
+ * CHỐT món POS ở hai cửa lưu ĐẦY ĐỦ ⇒ 409 `mon_pos_sua_o_san_pham` (+ lối sang Sản phẩm › «G» › Theo thị trường — dựng bằng `cauDaChuyen`,
+ * cùng khuôn với 409 `ban_sao_da_chuyen`). Dòng không phải món POS / vắng id / không có dòng ⇒ `null` (chốt bản sao lo phần đó). Id dạng
+ * lạ ⇒ 400 (`idSo`). Món mang `page_id` thì khoá dòng page của nó (`FOR SHARE`) — cùng thứ tự page → `san_pham` với `chanBanSaoDaChuyen`:
+ * lượt gắn page đó đang dở ⇒ chờ rồi thấy page đã gắn ⇒ 409. Nhánh (c) đọc page khác KHÔNG khoá (khoá được gì khi lượt gắn page khác chưa
+ * commit thì câu đọc không thấy nó) — cửa sổ mili-giây với lượt gắn page khác chạy chồng, ghi ở nhật ký vòng 2.
+ */
+export async function chanMonPosCuaDayDu(db, teamId, sanPhamId) {
+  const id = idSo(sanPhamId, "mã sản phẩm");
+  if (!id) return null;
+  const s = (await db.query(
+    `SELECT s.id, s.ma, s.ten, s.page_id, s.ma_goc, split_part(s.ma, ':', 1) AS shop, g.id AS goc_id, g.ten AS goc_ten
+       FROM san_pham s
+       LEFT JOIN san_pham_goc g ON g.team_id = s.team_id AND g.ma_goc = s.ma_goc
+      WHERE s.team_id = $1 AND s.id = $2 AND s.nguon = 'pos'`,
+    [teamId, id],
+  )).rows[0];
+  if (!s) return null;
+  let p = null;
+  let docBoi = null;   // page ĐÃ GẮN đang đọc món này (nhánh c)
+  if (s.page_id != null) {
+    p = (await db.query(
+      "SELECT id, page_id, ten, san_pham_goc_ma FROM page WHERE team_id = $1 AND id = $2 FOR SHARE",
+      [teamId, String(s.page_id)],
+    )).rows[0] ?? null;
+    if (p && !p.san_pham_goc_ma) {
+      docBoi = s.ma_goc ? (await db.query(
+        `SELECT page_id, ten FROM page
+          WHERE team_id = $1 AND san_pham_goc_ma = $2 AND pos_shop_id IS NOT NULL AND left($3, length(pos_shop_id) + 1) = pos_shop_id || ':'
+          ORDER BY id LIMIT 1`,
+        [teamId, s.ma_goc, s.ma],
+      )).rows[0] ?? null : null;
+      if (!docBoi) return null;   // RF-15 của page CHƯA gắn, không page đã gắn nào đọc — đường trang page cũ (ca D10), tới GSP4
+    }
+  }
+  const c = cauDaChuyen({ maGoc: s.ma_goc, tenGoc: s.goc_ten, gocId: s.goc_id, shopId: s.shop });
+  const tenGoc = s.ma_goc ? c.tenGoc : "";
+  throw loi409(
+    `«${gon(s.ten) || s.ma}» là món POS${tenGoc ? ` của sản phẩm «${tenGoc}»` : ""}`
+      + `${docBoi ? ` (page «${docBoi.ten || docBoi.page_id}» đang bán nó)` : ""} — cửa này lưu ĐẦY ĐỦ: đè tên · mô tả của POS, bật cấu `
+      + "hình tay (POS thôi cập nhật hết hàng) và đổi giá cho MỌI page bán món này. Giá món sửa ở Sản phẩm"
+      + `${tenGoc ? ` › «${tenGoc}»` : ""} › Theo thị trường. Chưa ghi gì.`,
+    "mon_pos_sua_o_san_pham",
+    { sanPhamId: String(s.id), ma: s.ma, maGoc: gon(s.ma_goc) || null, tenGoc: tenGoc || null, gocId: c.gocId,
+      pageId: p ? String(p.id) : (s.page_id == null ? null : String(s.page_id)), docBoiPage: docBoi ? docBoi.page_id : null,
+      duongSua: c.duongSua },
+  );
+}
+
+/**
+ * CHỐT của hai cửa lưu ĐẦY ĐỦ: bản sao của page đã gắn (409 `ban_sao_da_chuyen`) + món POS ngoài đường RF-15 (409 `mon_pos_sua_o_san_pham`).
+ * Gọi hai chỗ: trước `saveProduct` (lưới sớm — đúng mã trước mọi kiểm thân) và ĐẦU giao dịch của `saveProduct` (`poolChotDauGiaoDich` —
+ * khoá page trước `san_pham`, và bắt page được gắn giữa hai lượt).
+ */
+export async function chanCuaLuuDayDu(db, teamId, sanPhamId) {
+  await chanBanSaoDaChuyen(db, teamId, sanPhamId);
+  await chanMonPosCuaDayDu(db, teamId, sanPhamId);
+  return null;
 }
