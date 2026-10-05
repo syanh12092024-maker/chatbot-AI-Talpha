@@ -2979,3 +2979,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 05/10 · LL17d → ✅ — đơn POS thuộc team của marketer VÀO NGÀY ĐƠN (lịch sử team HRM, suy trong BigQuery); thiếu lịch sử ⇒ team hiện tại + màn nói ra
   đo dev chỉ đếm: 628 đơn (1 marketer GCC → EU, 07/08–31/08) về đúng GCC · 3 đơn theo team hiện tại · 2,2 giây một trang; khoá prod đọc được bảng lịch sử (SSH chỉ đọc); đảo-vá 9/9 · cổng ll17d.sh 4/4 · npm test 2.342/0 đỏ
   · commit 6c24be4 · nhật ký docs/thi-cong/nhat-ky/phieu-LL17d.md
+- 05/10 · MỞ VAN LL17b · LL15e · LL17d → ✅ GIỮ — prod `b4e7b6d → 60ab7ed`, 0 migration, chỉ restart aicloser-v3 lúc 04:11:58 CEST; mốc +0′/+6′/+15′ lỗi 0 · cat_phien 0 (khoá 0/23); đọc thật 30 ngày GCC 6.870 · EU 4.868 · AUUS 606 đơn, ba luồng tách
+  cửa vào 60 xanh / 13 đỏ = 12 nợ cũ + ll15e chập chờn (vai-b-noi-day; chạy lại 10/10 · 311 vòng 0 đỏ — nợ N-VBND-CHAP-CHON) · l1-m1 nay xanh · LL17c người quyết chọn «để nguyên»
+  · commit 60ab7ed · nhật ký docs/thi-cong/nhat-ky/phat-hanh-20261005-ll17b-ll15e-ll17d.md

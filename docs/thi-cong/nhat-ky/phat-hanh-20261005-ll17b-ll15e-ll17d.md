@@ -1,6 +1,6 @@
 # MỞ VAN — LL17b · LL15e · LL17d: Số liệu đọc số đơn thật · khoá tài khoản cắt phiên · đơn theo team vào ngày đơn (CR-28-09c)
 
-> **TRẠNG THÁI: 🔨 ĐANG MỞ** — người quyết gật «Deploy luôn» 05/10 (câu hỏi lô LL17b · LL15e · LL17d + sửa cổng l1-m1) · 0 migration.
+> **TRẠNG THÁI: ✅ GIỮ** — người quyết gật «Deploy luôn» 05/10 (câu hỏi lô LL17b · LL15e · LL17d + sửa cổng l1-m1) · 0 migration · restart `aicloser-v3` 04:11:58 CEST · mốc +0′/+6′/+15′ sạch.
 > Phiếu: `phieu-LL17b.md` · `phieu-LL15e.md` · `phieu-LL17d.md`. Lượt trước: LL17a (prod `b4e7b6d`). LL17c (rủi ro hoàn từ BigQuery):
 > người quyết chọn «để nguyên» — giữ số chấm 28/08, chờ LL17 đầy đủ.
 
@@ -42,3 +42,25 @@ team mỗi 30 giây. Ra ngoài: máy chủ gọi BigQuery ĐỌC ba câu SELECT 
 
 Lùi mã: `cd /opt/aicloser && git checkout -f -B vao-ui-v3-17-09 b4e7b6d && systemctl restart aicloser-v3` (< 1 phút) — không lược đồ,
 không dữ liệu (lô không ghi gì vào CSDL ngoài dòng nhật ký `cat_phien`).
+
+## 8 · Lệnh đã gõ
+
+1. cửa vào (worktree `so-lieu-bq`): 60 xanh / 13 đỏ — xem §3 · `npm test` 2.338 đạt 0 đỏ · `ll15e.sh` chạy lại 10/10 + 311 vòng `vai-b-noi-day` 0 đỏ
+2. CHANGELOG + hồ sơ + §9 `60ab7ed` · đẩy `fd05a0c..60ab7ed` (chỉ commit của phiên này; commit GSP chưa đẩy của phiên khác để phiên ấy tự rebase)
+3. mốc lùi `/var/backups/aicloser/truoc-ll17b-ll15e-ll17d-20261005T021151Z/` — `commit.txt` = `b4e7b6d` · `env.bak` (600)
+4. prod `checkout -f -B vao-ui-v3-17-09 origin/vao-ui-v3-17-09` → `60ab7ed` · 0 tệp sửa tại chỗ · migration áp mới 0 · tổng 31
+5. `systemctl restart aicloser-v3` lúc **04:11:58 CEST** — chỉ dịch vụ này
+
+## 9 · Số đo từng mốc
+
+| Mốc | Giờ (CEST) | Kết quả |
+|---|---|---|
+| +0′ | 04:12:10 | `aicloser-v3` Started 1 · lỗi 0 · worker y nguyên (02/10 09:03:39) · khởi động «đơn POS» 1 · «chưa nối: docDonPos» 0 · cửa Số liệu 401 · vé rác 401 (không 500) · `/dang-nhap` 200 · đối chứng 404 · `cat_phien` 0 · khoá 0/23 · **đọc thật từ prod: 2,6 giây · 5.307 dòng · 739 dòng theo page · 30 ngày GCC 6.870 (Messenger 6.822 · trang bán hàng 48) · EU 4.868 (248 · 4.620) · AUUS 606 (565 · 41) · không suy được 0 · theo team hiện tại 3 (cả công ty)** |
+| +6′ | 04:18:06 | y như trên — lỗi 0 · `cat_phien` 0 · đăng nhập hỏng 0 |
+| +15′ | 04:27:03 | y như trên — lỗi 0 · `cat_phien` 0 · worker y nguyên · đọc thật 3,5 giây · 5.312 dòng · lượt đồng bộ HRM tự động (5′ sau khởi động) ra toàn 0 |
+
+## 10 · Kết
+
+**GIỮ.** Ba mốc sạch; số đơn của Số liệu đọc thật từ prod; lớp đọc vé mới không cắt nhầm ai (0 dòng `cat_phien` khi 0 tài khoản bị
+khoá). Chưa đo được trên prod: một lượt cắt phiên THẬT (cần một tài khoản bị khoá trong lúc đang đăng nhập) — đã đo trên Postgres hộp
+cát bằng đúng câu khoá của đồng bộ HRM (K7). Nợ: N-VBND-CHAP-CHON (§9).
