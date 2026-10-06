@@ -165,6 +165,15 @@ export function gomCumTinKhach(msgs, pageId) {
 // ghi nhớ (v1 ghi '' rồi lần sau `'' === ''` là bỏ qua vĩnh viễn hội thoại đó).
 const mocDaXu = new Map(); // `${pageId}:${convId}` -> mốc đã nạp xong
 
+// ── ĐỌC LỊCH SỬ LỖI — LÙI THEO HỘI THOẠI (PHIẾU GL3b) ─────────────────────────────────
+// Cửa `docTin` NÉM `LoiDocLichSu` khi Pancake không trả lịch sử (bản trước trả `[]` ⇒ «tin cuối là của page» ⇒ ghi mốc
+// ⇒ tin khách KHÔNG BAO GIỜ vào hàng). Nay: bỏ ĐÚNG hội thoại đó ở vòng này, KHÔNG ghi mốc, ghi sổ bỏ-qua `doc_tin_loi`,
+// và lùi riêng hội thoại đó 30 s·2ⁿ (trần 5′) — không lùi thì Pancake chậm làm mỗi lượt đọc lại tốn 15 s × số token,
+// vòng nạp tuần tự của page đứng nhiều phút. Đọc được thì xoá. Bộ nhớ thuần, mất khi khởi động lại (= đọc lại ngay).
+const luiDocTin = new Map(); // `${pageId}:${convId}` -> { lan, toi, loi }
+const LUI_DOC_TIN_MS = 30_000;
+const LUI_DOC_TIN_TRAN_MS = 5 * 60_000;
+
 // ── LỌC TỪ DANH SÁCH — trả lời đúng thứ ĐANG CẦN trả lời ────────────────────────────
 //
 // `GET /conversations` trả sẵn ba tín hiệu mà trước nay bị bỏ không dùng: `last_sent_by`,
@@ -299,15 +308,15 @@ export function pageNoiCuoi(conv, pageId) {
 
 /** Dọn bộ đệm mốc — chống phình RAM sau nhiều tuần chạy (cùng ngưỡng `pancake-poll.js`). */
 function donMoc() {
-  for (const m of [mocDaXu, choGoXong]) {
+  for (const m of [mocDaXu, choGoXong, luiDocTin]) {
     if (m.size <= 8000) continue;
     let n = m.size - 6000;
     for (const k of m.keys()) { m.delete(k); if (--n <= 0) break; }
   }
 }
 
-/** Xoá bộ đệm mốc. Chỉ dùng cho bộ ca — để ca này không ăn mốc của ca trước. */
-export function quenMoc() { mocDaXu.clear(); }
+/** Xoá bộ đệm mốc (kèm sổ lùi đọc-tin-lỗi). Chỉ dùng cho bộ ca — để ca này không ăn mốc của ca trước. */
+export function quenMoc() { mocDaXu.clear(); luiDocTin.clear(); }
 
 /**
  * Nạp tin mới của MỘT page vào hàng đợi.
@@ -371,6 +380,7 @@ export async function napTuPoll(pool, { pageId }, deps = {}) {
   const ket = {
     mo: true, lyDo: "", hoiThoai: 0, them: 0, trung: 0, boQua: 0,
     boQuaMoc: 0, boQuaPageNoiCuoi: 0, boQuaDaDoc: 0, dangChoGo: 0, boQuaThe: 0,
+    docTinLoi: 0,   // GL3b: số hội thoại vòng này KHÔNG đọc được lịch sử (lỗi vừa gặp + đang lùi)
   };
   if (!nguonDangMo()) {
     return { ...ket, mo: false, lyDo: lyDoNguonDong() };
@@ -463,8 +473,18 @@ export async function napTuPoll(pool, { pageId }, deps = {}) {
       continue;
     }
 
+    // GL3b · ĐANG LÙI vì đọc lịch sử lỗi ⇒ chưa đọc lại (đứng TRƯỚC chờ-gõ-xong: không làm dòng sổ nhảy qua lại).
+    const lui = luiDocTin.get(khoaMoc);
+    if (lui && dongHo() < lui.toi) {
+      ket.docTinLoi += 1;
+      boQuaDs.push({ convId, psid, lyDo: "doc_tin_loi",
+        chuThich: `lùi lần ${lui.lan}, đọc lại sau ${Math.ceil((lui.toi - dongHo()) / 1000)} s: ${lui.loi}` });
+      continue;
+    }
+
     // ③ CHỜ KHÁCH GÕ XONG. Thấy mốc MỚI thì ghi giờ server rồi ĐỂ ĐÓ; vòng sau mới xét
     //    đã đủ lâu chưa. Chưa đủ ⇒ chưa nạp, để cụm còn gom tiếp được.
+    let choDaQua = null;   // GL3b: đọc lỗi thì trả lại mục này ⇒ hết lùi không phải chờ gõ xong LẦN NỮA
     {
       const cho = choGoXong.get(khoaMoc);
       const doi = doiGoXong(c?.snippet || "");
@@ -477,6 +497,7 @@ export async function napTuPoll(pool, { pageId }, deps = {}) {
         boQuaDs.push({ convId, psid, lyDo: "cho_go_xong", chuThich: doi.reason });
         continue;
       }
+      choDaQua = { moc, thayLuc };
       choGoXong.delete(khoaMoc);
     }
 
@@ -485,8 +506,24 @@ export async function napTuPoll(pool, { pageId }, deps = {}) {
     // MỚI, tức bot câm với chính khách nhắn lần đầu.
     await baoDamHoiThoai(pool, { teamId, pageRowId, psid });
 
-    const msgs =
-      (await docT(pool, ctx, { pageId, psid, convId, custId }, depsPk)) || [];
+    let msgs;
+    try {
+      msgs = (await docT(pool, ctx, { pageId, psid, convId, custId }, depsPk)) || [];
+    } catch (e) {
+      if (e?.name !== "LoiDocLichSu") throw e;   // lỗi khác giữ đường cũ (cả page lỗi, chay-worker đếm)
+      // KHÔNG ghi mốc ⇒ hết lùi là đọc lại; một hội thoại lỗi không bỏ cả page (vòng lặp đi tiếp).
+      // Trả lại mục chờ-gõ đã qua (cùng mốc) ⇒ hết lùi đọc NGAY, đúng lịch 30 s·2ⁿ (mốc đổi ⇒ cụm mới, chờ gõ như thường).
+      if (choDaQua) choGoXong.set(khoaMoc, choDaQua);
+      // Lần lùi trước đã hết từ lâu (hội thoại rời đi qua thẻ / page nói cuối / mốc cũ rồi quay lại) ⇒ sự cố MỚI, lùi lại
+      // từ 30 s — không mang `lan` cao của sự cố cũ.
+      const lan = lui && dongHo() - lui.toi < LUI_DOC_TIN_TRAN_MS ? lui.lan + 1 : 1;
+      const loi = String(e.message || "").slice(0, 160);
+      luiDocTin.set(khoaMoc, { lan, toi: dongHo() + Math.min(LUI_DOC_TIN_TRAN_MS, LUI_DOC_TIN_MS * 2 ** (lan - 1)), loi });
+      ket.docTinLoi += 1;
+      boQuaDs.push({ convId, psid, lyDo: "doc_tin_loi", chuThich: loi });
+      continue;
+    }
+    luiDocTin.delete(khoaMoc);
     await nhanDienSale(pool, { teamId, pageId, psid, messages: msgs });
     const cum = gomCumTinKhach(msgs, pageId);
     if (!cum) {

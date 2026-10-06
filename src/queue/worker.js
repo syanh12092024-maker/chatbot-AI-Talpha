@@ -9,6 +9,7 @@ import { nhanDienSale } from '../chat/human.js';
 //   xong                | xong           | không
 //   chan_guard          | chan_guard     | ⛔ KHÔNG BAO GIỜ (N6)
 //   ném lỗi             | cho / loi      | có, tới trần TRAN_THU
+//   đọc lịch sử lỗi     | cho / xong     | có, lùi 15 s · 30 s; hết lượt ⇒ giao sale + dòng việc (GL3b)
 //
 // ⛔ VÌ SAO `chan_guard` KHÔNG ĐƯỢC THỬ LẠI (N6): cửa đóng là một QUYẾT ĐỊNH của môi
 // trường (`V3_PANCAKE_GUI` chưa đặt, hoặc `PANCAKE_READONLY=1`), không phải sự cố thoáng
@@ -24,7 +25,10 @@ import * as cuaMessenger from "../channels/messenger/index.js";
 import { daBatDauGui, bocCuaGuiBen, dangDienTap, LoiCanDoiChieuGui } from "./lan-gui.js";
 import { gomCumTinKhach } from "./nap.js";
 import { ghiSoAi, LOAI as LOAI_SO_AI, KHONG_GOI_MODEL } from "../chat/so-ai.js";
+import { PHUT_HAN_VIEC } from "../admin-v3/operations.js";
 
+// Bàn giao khi lượt xử lý CÓ THỂ ĐÃ GỬI (lỗi sau HTTP, chưa rõ kết quả) ⇒ người đối chiếu. KHÔNG dùng cho đọc lịch
+// sử lỗi (GL3b — xem `banGiaoDocLoi`): ở đó chắc chắn chưa gửi gì, và sale cần một DÒNG VIỆC chứ không phải đối chiếu.
 async function banGiaoLoi(db, tin) {
   await db.query(`UPDATE hoi_thoai h SET chu_so_huu='SALE',trang_thai='HANDOFF',
           ly_do_cuoi='loi_xu_ly_can_doi_chieu',nguoi_that_luc=now(),sua_luc=now()
@@ -35,6 +39,52 @@ async function banGiaoLoi(db, tin) {
 
 /** Trần số lượt RÚT một tin. Chạm trần ⇒ `loi` vĩnh viễn, không quay lại `cho` nữa. */
 export const TRAN_THU = 3;
+
+// ── ĐỌC LỊCH SỬ PANCAKE LỖI (PHIẾU GL3b) ────────────────────────────────────────────
+// Lùi DÀI theo tiền lệ `LoiChoMappingPancake.treMs`: lượt 1 → 15 s, lượt 2 → 30 s — ba lượt phủ ≥ 45 s cộng thời gian
+// đọc, cùng chiều người quyết chốt cho GL4 «tin tồn giữ ở chờ». Lùi 1 s/2 s mặc định thì Pancake chập vài giây là bàn
+// giao. Phần tử thứ n = độ lùi sau lượt RÚT thứ n+1 thất bại.
+export const TRE_DOC_LICH_SU_MS = Object.freeze([15_000, 30_000]);
+const LY_DO_VIEC_DOC_LOI = "Pancake không trả lịch sử — bot CHƯA trả lời, CHƯA gửi gì";
+
+/**
+ * Hết lượt đọc lịch sử ⇒ giao sale TRONG CÙNG giao dịch (client `khach` của phiên rút) + MỘT dòng việc. Chỉ khi bot
+ * LẼ RA phải trả lời (UPDATE đổi ĐÚNG 1 dòng) — cùng điều kiện cửa đầu của handler (`handler-v3.js`: `bot_ai_bat` ·
+ * `aiDuocTraLoi` · nguồn khớp): sale đang giữ / CLOSING / POST_SALE / page đã tắt bot / page đổi nguồn thì dù đọc
+ * được bot cũng im, đẻ việc «bot CHƯA trả lời» là nhiễu (và lật SALE một hội thoại bot vốn không giữ). Chèn việc theo
+ * đúng khuôn `admin-v3/operations.js#handoffConversation` (NOT EXISTS việc chưa đóng cùng hội thoại, hạn
+ * `PHUT_HAN_VIEC`), ghi nhật ký như các nhánh khác của worker. Ném khi SQL lỗi — nơi gọi về đường cũ (`loi` +
+ * `banGiaoLoi`), KHÔNG chốt `xong`.
+ * @returns {Promise<{banGiao: boolean, viecMoi: boolean}>}
+ */
+async function banGiaoDocLoi(db, tin, lyDo) {
+  const ht = await db.query(`UPDATE hoi_thoai h SET chu_so_huu='SALE',trang_thai='HANDOFF',
+          ly_do_cuoi='doc_lich_su_loi',nguoi_that_luc=now(),sua_luc=now()
+          FROM page p WHERE h.page_id=p.id AND h.team_id=$1 AND p.page_id=$2 AND h.psid=$3
+            AND p.bot_ai_bat = true AND ($4 = '' OR p.nguon_tin = $4)
+            AND h.chu_so_huu='AI' AND h.trang_thai IN ('GREET','QUALIFY','SELLING')
+          RETURNING h.id`,
+          [tin.team_id, tin.page_id, tin.psid, String(tin.nguon || "")]);
+  if (ht.rowCount !== 1) return { banGiao: false, viecMoi: false };
+  const viec = await db.query(
+    `INSERT INTO viec_can_xu_ly (team_id, loai, hoi_thoai_id, ly_do_day, han_luc)
+       SELECT $1, 'hoi_thoai', $2, $3, now() + ($4 || ' minutes')::interval
+       WHERE NOT EXISTS (
+         SELECT 1 FROM viec_can_xu_ly
+          WHERE team_id = $1 AND loai = 'hoi_thoai' AND hoi_thoai_id = $2 AND dong_luc IS NULL
+       )
+     RETURNING id`,
+    [tin.team_id, ht.rows[0].id, LY_DO_VIEC_DOC_LOI, String(PHUT_HAN_VIEC)],
+  );
+  await ghiNhatKyHangDoi(db, {
+    teamId: tin.team_id,
+    hanhDong: "tin_doc_loi_ban_giao",
+    tinId: tin.id,
+    ghiChu: String(lyDo).slice(0, 400),
+    sau: { hoi_thoai_id: String(ht.rows[0].id), chu_so_huu: "SALE", viec_moi: viec.rowCount > 0 },
+  });
+  return { banGiao: true, viecMoi: viec.rowCount > 0 };
+}
 
 /**
  * Chạy ĐÚNG MỘT vòng: rút 1 tin (nếu có) → xử lý → chốt trạng thái.
@@ -49,6 +99,7 @@ export async function chayMotVong(pool, deps = {}) {
 
   const { tin, khach } = phien;
   const poolGui = deps.poolGui || pool;
+  let batchIds = [];   // ngoài `try`: nhánh đọc-lịch-sử-lỗi trong `catch` chốt cả cụm gom theo tin chính
   try {
     // Dấu gửi sống qua crash/rollback. Không chạy lại model để tạo câu trả lời khác.
     if (await daBatDauGui(poolGui, tin)) throw new LoiCanDoiChieuGui();
@@ -82,7 +133,6 @@ export async function chayMotVong(pool, deps = {}) {
       };
     }
     let tinXuLy = tin;
-    let batchIds = [];
     if (tin.nguon === 'webhook') {
       const page = (await khach.query('SELECT nguon_tin FROM page WHERE team_id=$1 AND page_id=$2',
         [tin.team_id, tin.page_id])).rows[0];
@@ -121,7 +171,9 @@ export async function chayMotVong(pool, deps = {}) {
       tinXuLy = { ...tinXuLy, noi_dung: [tin.noi_dung, ...selected.map(r => r.noi_dung)].join('\n') };
     }
     // Không trả lời mù khi API lịch sử lỗi: có thể sale đã tiếp quản hoặc khách
-    // đã sửa thông tin. Retry có backoff trước khi tốn token.
+    // đã sửa thông tin. GL3b: cửa `docTin` NÉM `LoiDocLichSu` khi Pancake không trả lịch
+    // sử (bản trước trả `[]` ⇒ lời khai này sai) ⇒ `catch` dưới: lùi DÀI (15 s · 30 s),
+    // không gọi model, không gửi; hết lượt ⇒ giao sale CÓ dòng việc.
     let lichSu = [];
     if (deps.docLichSu !== false) {
       const docT = deps.docTin || cuaDocTin;
@@ -144,8 +196,8 @@ export async function chayMotVong(pool, deps = {}) {
     // page — cùng một phép của bộ nạp, nên hai nơi không thể kết luận khác nhau.
     //
     // ⚠️ Chỉ chặn khi CHẮC CHẮN đọc được lịch sử. `docLichSu === false` (bộ ca truyền vào)
-    //    hay API lỗi trả mảng rỗng thì KHÔNG suy ra "page đã nói" — đoán sai ở đây là bot
-    //    câm với khách thật.
+    //    hay lịch sử rỗng THẬT thì KHÔNG suy ra "page đã nói" — đoán sai ở đây là bot câm
+    //    với khách thật. (API lỗi thì từ GL3b cửa NÉM `LoiDocLichSu`, không tới được đây.)
     if (deps.docLichSu !== false && lichSu.length && !gomCumTinKhach(lichSu, tin.page_id)) {
       // VÀO SỔ AI. Lượt nhường KHÔNG tốn đồng nào, và đó CHÍNH LÀ con số đáng biết: màn
       // chi phí phải đếm được "đã nhường bao nhiêu lượt" bên cạnh "đã tiêu bao nhiêu".
@@ -205,6 +257,33 @@ export async function chayMotVong(pool, deps = {}) {
     const trangThai = hetLuot ? TRANG_THAI.LOI : THU_LAI;
     const lyDo = `${e?.name || "Error"}: ${e?.message || ""}`;
     try {
+      // ── GL3b · ĐỌC LỊCH SỬ LỖI — nhánh RIÊNG, tách khỏi `banGiaoLoi` (dành cho «có thể đã gửi») ──
+      // `daBatDauGui` đứng đầu `try` nên tới đây chắc chắn chưa gửi gì (`!daGui` là lưới thứ hai). SQL nào trong nhánh
+      // này lỗi ⇒ ném ⇒ catch lồng dưới về ĐƯỜNG CŨ với `trangThai` gốc (`loi` + `banGiaoLoi` khi hết lượt) — `xong` chỉ
+      // được chốt SAU KHI việc đã chèn thành.
+      if (e?.name === "LoiDocLichSu" && !daGui) {
+        const lan = Number(tin.so_lan_thu);
+        if (lan < TRAN_THU) {
+          const tre = TRE_DOC_LICH_SU_MS[Math.min(lan, TRE_DOC_LICH_SU_MS.length) - 1];
+          await phien.ketThuc(THU_LAI, lyDo, tre);
+          return { tinId: tin.id, ketQua: "thu_lai", lyDo, dem: {}, soLanThu: lan };
+        }
+        const bg = await banGiaoDocLoi(khach, tin, lyDo);
+        const lyDoTin = bg.banGiao ? "doc_loi:ban_giao" : "doc_loi:khong_thuoc_ai";
+        // Cụm tin gom theo (webhook) chung số phận tin chính — để `cho` thì tới lượt gặp SALE ⇒ `chan_guard` ⇒ chặn
+        // «trả AI» của sale (`reconcile.js#resumeConversation` coi `chan_guard` là còn tồn).
+        if (batchIds.length) await khach.query(`UPDATE tin_cho_xu_ly SET trang_thai='xong',
+          ly_do=$3,sua_luc=now() WHERE team_id=$1 AND id=ANY($2::bigint[])`,
+          [tin.team_id, batchIds, `gom_vao_tin:${tin.id}`]);
+        await phien.ketThuc(TRANG_THAI.XONG, lyDoTin);
+        return {
+          tinId: tin.id,
+          ketQua: bg.banGiao ? "doc_loi_ban_giao" : "doc_loi_khong_thuoc_ai",
+          lyDo: `${lyDoTin} · ${lyDo}`,
+          dem: {},
+          soLanThu: lan,
+        };
+      }
       if (hetLuot) await banGiaoLoi(khach, tin);
       await phien.ketThuc(trangThai, lyDo, e.treMs || Math.min(30000, 1000 * 2 ** (Number(tin.so_lan_thu) - 1)));
     } catch {

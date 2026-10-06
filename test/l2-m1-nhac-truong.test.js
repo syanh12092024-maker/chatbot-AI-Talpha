@@ -136,6 +136,7 @@ before(async () => {
       },
       pkGetConversations: async () => [],
       pkGetMessages: async () => [],
+      pkDocTin: async () => ({ ok: true, messages: [] }),   // GL3b: cửa `docTin` đọc qua pkDocTin
       pkToggleTag: async () => ({ ok: true }),
       pkTagId: async () => null,
       pkMarkUnread: async () => ({ ok: true }),

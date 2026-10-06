@@ -228,16 +228,23 @@ async function pkFetchPage(pageId, buildUrl, init) {
     try {
       j = await goiPancake(buildUrl(toks[i]), init, hanMs);
     } catch (e) {
-      const loi = { error_code: -1, message: thongDiepLoi(e), phaLoi: phaCuaLoi(e), ...(e?.quaHan ? { quaHan: true } : {}) };
+      const loi = { error_code: -1, message: thongDiepLoi(e), phaLoi: phaCuaLoi(e), ...(e?.quaHan ? { quaHan: true } : {}),
+        ...(laBiCongChan(e) ? { biChan: true } : {}) };   // GL3b F2: cổng ghi chặn = CHẮC CHẮN chưa ghi ⇒ pkAddNote không báo ok
       // ⛔ GHI (POST/PUT/PATCH/DELETE): lỗi mạng / quá hạn / thân không phải JSON ⇒ TRẢ NGAY, KHÔNG xoay
       // token. Gói có thể đã tới Pancake mà mất phản hồi — gửi lại bằng token khác là khách nhận HAI tin, và
       // sổ `lan_gui` không chặn được vì cả hai lần nằm trong cùng một bước gửi. Lỗi pha kết nối cũng không
       // xoay (giữ an toàn, chỉ ghi đúng loại). Chỉ xoay khi Pancake TRẢ LỜI RÕ là lỗi quyền (permErr).
       // Cổng HTTP ghi chặn (van đóng) thì CHẮC CHẮN chưa gửi ⇒ không mang dấu «không rõ».
       if (!doc) return laBiCongChan(e) ? loi : { ...loi, khongRo: true };
-      if (e?.thanHong) j = {}; // ĐỌC: thân không phải JSON ⇒ `{}` như bản cũ (không xoay)
+      // ĐỌC: thân không phải JSON ⇒ trả NGAY, không xoay (như bản cũ). GL3b: mang dấu `thanHong` + câu lỗi (có mã HTTP)
+      // để `pkDocTin` nói «Pancake lỗi (HTTP 502)» thay vì gộp với «hết token»; nơi đọc `j.conversations`/`j.messages`
+      // vẫn thấy rỗng y như `{}` cũ.
+      if (e?.thanHong) j = { thanHong: true, message: loi.message };
       else { last = loi; continue; } // ĐỌC: lỗi mạng / quá hạn → thử token kế (đọc lại không hại ai)
     }
+    // GL3b F3: lượt GHI mà Pancake xác nhận `success:true` là ĐÃ NHẬN — kể cả khi thân mang kèm `error_code` (vd 121).
+    // Xét `permErr` trước thì xoay sang token kế ⇒ GỬI LẦN HAI ⇒ khách nhận hai tin.
+    if (!doc && j?.success === true) { _pageTokIdx.set(String(pageId), i); return j; }
     if (!permErr(j)) {
       if (i !== start) console.log(`[token] page ${pageId} → chuyển sang token #${i + 1}`);
       _pageTokIdx.set(String(pageId), i);
@@ -322,12 +329,28 @@ export async function pkGetConversations(pageId) {
 // Như `pkGetMessages` nhưng KHÔNG nuốt lỗi — cho màn ĐỌC (bàn hội thoại v3, UI-HT1) nói được
 // VÌ SAO không đọc được. Đo 28/09: Pancake trả `{success:false, message:"Không tìm thấy gói
 // cước…"}` hay «Thiếu mã khách hàng», mà `pkGetMessages` biến cả hai thành `[]`. Chỉ GET.
+// GL3b: từ nay cũng là đường đọc lịch sử của CỬA Messenger (`channels/messenger#docTin` — worker + bộ nạp) và của
+// màn Vận hành: `ok:false` ở đó ⇒ không trả lời mù, không ghi mốc.
 export async function pkDocTin(pageId, convId, custId) {
   const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}&customer_id=${custId}`);
   if (Array.isArray(j?.messages)) return { ok: true, messages: j.messages };
-  const loi = String(j?.message || j?.error || '').trim();
-  return { ok: false, loi: loi || (Object.keys(j || {}).length ? 'Pancake trả lời không có danh sách tin' : 'không có token Pancake nào còn hạn') };
+  return { ok: false, loi: lyDoDocLoi(j) };
 }
+// GL3b ② 2 — câu lỗi nói ĐÚNG lý do. Trước đây `{}` do thân không phải JSON (502/504 HTML của cổng) và `{}` do hết token
+// cùng ra «không có token Pancake nào còn hạn» — người vận hành đi thay token trong khi Pancake đang sập. Câu quá hạn
+// GIỮ nguyên chuỗi «quá hạn <N> ms …» của `goiPancake` (ca GL3 so bằng regex). Không câu nào chứa token.
+function lyDoDocLoi(j) {
+  if (j?.thanHong) return `Pancake lỗi (${/HTTP [^)]*/.exec(String(j.message))?.[0] || 'HTTP ?'}) — thân trả về không phải JSON`;
+  if (j?.quaHan) return `Pancake quá hạn — ${j.message}`;
+  if (Number(j?.error_code) === -1) return `Pancake lỗi mạng — ${j.message}`;
+  const cau = String(j?.message || j?.error || '').trim();
+  if (cau) return cau;
+  if (j?.error_code != null) return `Pancake từ chối (mã ${j.error_code})`;
+  if (j && typeof j === 'object' && Object.keys(j).length) return 'Pancake trả lời không có danh sách tin';
+  return allToks().length ? 'Pancake trả thân rỗng (không có danh sách tin)' : 'không có token Pancake nào còn hạn';
+}
+// NUỐT lỗi thành `[]` — GL3b: đường trả lời khách (cửa `docTin`) và màn Vận hành KHÔNG dùng hàm này nữa; chỉ còn công cụ
+// đo/giả lập ở `ops/bin/` (giữ nguyên chữ ký).
 export async function pkGetMessages(pageId, convId, custId) {
   const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}&customer_id=${custId}`);
   return j.messages || [];
@@ -343,20 +366,33 @@ export async function pkToggleTag(pageId, convId, tagId, on = true) {
 }
 // Bảng thẻ của page (từ /settings) — map TÊN (không phân biệt hoa thường) → tag_id, cache 10 phút.
 const _tagCache = new Map(); // pageId -> { t, map }
+// GL3b (/code-review #2): đọc lỗi KHÔNG cache 10′, nhưng GIỮ lỗi `THE_LOI_GIU_MS` cho cùng page — các lượt gọi dồn dập ngay
+// sau (mỗi tên thẻ một lượt) cùng trả null thay vì mỗi lượt một /settings. Không giữ thì `page-registry.js#verifyTags`
+// (3 tên liền nhau, quy ước «cả 3 cùng null = CHƯA BIẾT») gặp tên 1 lỗi · tên 2 đọc được ⇒ kết luận «thiếu tên 1» ⇒ CHẶN
+// AI. Ngắn hơn nhịp vòng nạp 6 s (`chay-worker.js#NHIP_MS`) ⇒ vòng nạp sau vẫn đọc lại.
+const THE_LOI_GIU_MS = 5_000;
+const _tagLoi = new Map(); // pageId -> lúc đọc lỗi gần nhất
 export async function pkTagId(pageId, name) {
   const k = String(pageId);
   let e = _tagCache.get(k);
+  if ((!e || Date.now() - e.t > 10 * 60e3) && Date.now() - (_tagLoi.get(k) ?? -Infinity) < THE_LOI_GIU_MS) return null;
   if (!e || Date.now() - e.t > 10 * 60e3) {
     const map = new Map();
+    let docDuoc = false;
     try {
       const j = await pkFetchPage(pageId, (tk) => `${PK_BASE}/pages/${pageId}/settings?access_token=${tk}`);
+      // GL3b (trả nợ N-GL3-THE-RONG-10P): chỉ ĐỌC ĐƯỢC khi Pancake trả `settings`. Lỗi / quá hạn / thân hỏng ra `{}` hay
+      // khung lỗi — cache bảng RỖNG 10′ thì cửa thẻ chặn của bộ nạp mù 10′ ⇒ hội thoại mang thẻ «Đã gửi» bị nạp và bot
+      // trả lời khách đã chốt.
+      docDuoc = !!j?.settings && typeof j.settings === 'object';
       for (const t of (j?.settings?.tags || [])) {
         const nm = String(t.text || '').trim().toLowerCase();
         if (nm && !map.has(nm)) map.set(nm, t.id); // trùng tên (bot/BOT/Bot) → lấy thẻ đầu tiên
       }
-    } catch { /* lỗi mạng → map rỗng, thử lại sau */ }
+    } catch { /* lỗi lạ → như đọc lỗi: không cache */ }
     e = { t: Date.now(), map };
-    _tagCache.set(k, e);
+    if (docDuoc) _tagCache.set(k, e);   // đọc lỗi ⇒ KHÔNG cache, lượt gọi sau đọc lại
+    if (docDuoc) _tagLoi.delete(k); else _tagLoi.set(k, Date.now());
   }
   const id = e.map.get(String(name).trim().toLowerCase());
   return id == null ? null : id;
@@ -402,8 +438,13 @@ export async function pkAddNote(pageId, custId, message) {
     // nên lọt thành công — sale tưởng đã có ghi chú bàn giao). Thân RỖNG (`{}` — không còn token nào, hoặc
     // Pancake trả `{}`) cũng không phải bằng chứng đã ghi.
     const rong = !j || typeof j !== 'object' || !Object.keys(j).length;
-    return j?.success === false || j?.khongRo || rong
-      ? { ok: false, error: j?.message || (rong ? 'Pancake không trả gì (hết token còn hạn?)' : 'lỗi'), ...dauLoiMang(j) }
+    // GL3b F2: thân KHÔNG xác nhận `success:true` mà mang dấu lỗi ⇒ thất bại. Thêm: lỗi quyền ở MỌI token (`{error_code:105}`
+    // không kèm `success:false` — trước lọt thành ok) · cổng ghi chặn (`biChan`, van đóng, chắc chắn chưa ghi) · mã lỗi khác
+    // -1. `{data:{id:1}}` (không success, không lỗi) vẫn ok như cũ (GL3 R7d); `success:true` kèm error_code (F3) vẫn ok.
+    const thatBai = j?.success !== true && (j?.success === false || j?.khongRo || rong || permErr(j) || j?.biChan
+      || (j?.error_code != null && Number(j.error_code) !== -1));
+    return thatBai
+      ? { ok: false, error: j?.message || (rong ? 'Pancake không trả gì (hết token còn hạn?)' : j?.error_code != null ? `Pancake từ chối (mã ${j.error_code})` : 'lỗi'), ...dauLoiMang(j) }
       : { ok: true };
   } catch (e) { return { ok: false, error: e.message }; }
 }

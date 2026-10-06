@@ -84,7 +84,7 @@ export function lyDoChuaChoPageNao() {
 export async function motLuot(pool, deps = {}) {
   const ket = {
     nap: { mo: nguonDangMo(), them: 0, trung: 0, page: 0, loi: 0,
-      boQuaPageNoiCuoi: 0, boQuaMoc: 0, boQuaDaDoc: 0, boQuaThe: 0 },
+      boQuaPageNoiCuoi: 0, boQuaMoc: 0, boQuaDaDoc: 0, boQuaThe: 0, docTinLoi: 0 },
     xu: null,
   };
   // MỘT LƯỢT ĐỌC CHO CẢ VÒNG. Nguồn có thể là CSDL (024), nên hỏi hai lần trong một vòng
@@ -121,6 +121,8 @@ export async function motLuot(pool, deps = {}) {
         ket.nap.boQuaMoc += r.boQuaMoc || 0;
         ket.nap.boQuaDaDoc += r.boQuaDaDoc || 0;
         ket.nap.boQuaThe += r.boQuaThe || 0;
+        // GL3b: hội thoại Pancake không trả lịch sử (lỗi vừa gặp + đang lùi) — bot CHƯA trả lời họ.
+        ket.nap.docTinLoi += r.docTinLoi || 0;
       } catch (e) {
         // Một page hỏng KHÔNG được dừng cả vòng — nhưng phải ĐẾM, không nuốt im.
         ket.nap.loi += 1;
@@ -137,7 +139,8 @@ export async function motLuot(pool, deps = {}) {
   return ket;
 }
 
-function inLuot(ket) {
+/** MỘT dòng log cho cả lượt (export cho bộ ca GL3b ④4b đo dòng log thật). */
+export function inLuot(ket) {
   const n = ket.nap;
   const x = ket.xu || {};
   const loc = [
@@ -145,6 +148,7 @@ function inLuot(ket) {
     n.boQuaPageNoiCuoi ? `${n.boQuaPageNoiCuoi} page-nói-cuối` : "",
     n.boQuaMoc ? `${n.boQuaMoc} mốc-cũ` : "",
     n.boQuaDaDoc ? `${n.boQuaDaDoc} ĐÃ-ĐỌC(bỏ)` : "",
+    n.docTinLoi ? `${n.docTinLoi} đọc-tin-lỗi` : "",
   ].filter(Boolean).join(" · ");
   const dong = n.mo
     ? `nạp: ${n.them} mới · ${n.trung} trùng · ${n.page} page${loc ? ` · lọc: ${loc}` : ""}`

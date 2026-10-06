@@ -25,10 +25,11 @@
 //
 // KHUÔN LỖI: mọi chặn (định tuyến team, N5, guard) NÉM lỗi có tên — KHÔNG trả sentinel
 // {ok:false}, khác với lỗi MẠNG/API thật của pancake.js (những cái đó vẫn trả nguyên
-// {ok:false,error} như cũ, đi thẳng qua tầng này không đổi hình dạng).
+// {ok:false,error} như cũ, đi thẳng qua tầng này không đổi hình dạng). NGOẠI LỆ (GL3b):
+// `docTin` đọc lịch sử không được thì NÉM `LoiDocLichSu` — xem ghi chú ở hàm.
 import {
   pkGetConversations,
-  pkGetMessages,
+  pkDocTin,
   pkSendReply,
   pkSendImage,
   pkAddNote,
@@ -39,9 +40,10 @@ import {
   LoiPageKhongThuocTeam,
   LoiHoiThoaiKhongThuocPage,
   LoiCuaGuiDong,
+  LoiDocLichSu,
 } from "./loi.js";
 
-export { LoiPageKhongThuocTeam, LoiHoiThoaiKhongThuocPage, LoiCuaGuiDong };
+export { LoiPageKhongThuocTeam, LoiHoiThoaiKhongThuocPage, LoiCuaGuiDong, LoiDocLichSu };
 
 // ── N1: GUARD TẠI CỬA — FAIL-CLOSED ĐÚNG CHIỀU ──────────────────────────────────────
 // Đọc process.env TƯƠI mỗi lượt gọi (không cache ở module-scope) — test đổi biến giữa
@@ -155,14 +157,23 @@ export async function docHoiThoai(pool, ctx, { pageId }, deps = {}) {
   return getConversations(pageId);
 }
 
-/** Đọc tin nhắn của MỘT hội thoại (tối đa 25 tin/lần, theo TONG-QUAN §4.2). */
+/**
+ * Đọc tin nhắn của MỘT hội thoại (tối đa 25 tin/lần, theo TONG-QUAN §4.2).
+ *
+ * PHIẾU GL3b — ĐỌC KHÔNG ĐƯỢC THÌ NÉM, KHÔNG TRẢ `[]`. Bản trước gọi `pkGetMessages`, hàm đó nuốt MỌI lỗi
+ * thành `[]`: Pancake chậm hơn hạn đọc 15 s (GL3), 502, lỗi quyền… đều thành «lịch sử rỗng» ⇒ worker bỏ qua
+ * cửa nhường page (`queue/worker.js`, cần `lichSu.length`) ⇒ trả lời MÙ đè sale/Botcake; bộ nạp ghi mốc ⇒
+ * tin khách không bao giờ vào hàng. Nay đi `pkDocTin` (không nuốt lỗi): `ok:false` ⇒ ném `LoiDocLichSu` mang
+ * câu lỗi đọc được. «Rỗng thật» (`ok:true, messages:[]`) vẫn trả `[]` hợp lệ.
+ * Tham số tiêm `getMessages` GIỮ NGUYÊN hợp đồng cũ: hàm tiêm trả MẢNG = đọc được (bộ ca harness tiêm nó).
+ */
 export async function docTin(
   pool,
   ctx,
   { pageId, psid, convId, custId },
   deps = {},
 ) {
-  const { getMessages = pkGetMessages } = deps;
+  const { getMessages = null } = deps;
   const { teamId, pageRowId, ctxHieuLuc } = await trangPageTheoTeam(
     pool,
     ctx,
@@ -176,7 +187,10 @@ export async function docTin(
     psid,
     pageId,
   );
-  return getMessages(pageId, convId, custId);
+  if (getMessages) return getMessages(pageId, convId, custId);
+  const kq = await pkDocTin(pageId, convId, custId);
+  if (kq?.ok === true && Array.isArray(kq.messages)) return kq.messages;
+  throw new LoiDocLichSu(`Pancake không trả lịch sử: ${kq?.loi || "không rõ lý do"}`);
 }
 
 // ══ GỬI/GHI — dưới guard N1 (V3_PANCAKE_GUI==='1' VÀ PANCAKE_READONLY!=='1') ═════════

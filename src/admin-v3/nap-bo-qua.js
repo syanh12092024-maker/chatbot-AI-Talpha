@@ -33,6 +33,11 @@ export const LY_DO = Object.freeze({
     chu: "Thiếu định danh", ngo: true,
     vi: "Hội thoại Pancake trả về thiếu `from_psid`. Không nhắn lại được cho ai — cần soi thủ công.",
   },
+  // GL3b (migration 033 nới CHECK): cửa đọc lịch sử ném `LoiDocLichSu` — bộ nạp bỏ hội thoại ở vòng đó, không ghi mốc, lùi.
+  doc_tin_loi: {
+    chu: "Đọc lịch sử lỗi", ngo: true,
+    vi: "Pancake không trả lịch sử — bot chưa trả lời khách này. Bộ nạp đọc lại sau 30 s, lùi gấp đôi tới 5 phút; Pancake lành thì tin vào hàng như thường. Kéo dài ⇒ soi token/gói của page (câu lỗi ở cột ghi chú).",
+  },
 });
 
 /** Bao lâu thì một dòng «đang chờ gõ» là BẤT THƯỜNG (nó phải tan trong vài giây). */

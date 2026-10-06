@@ -18,6 +18,7 @@ import {
   LoiPageKhongThuocTeam,
   LoiHoiThoaiKhongThuocPage,
   LoiCuaGuiDong,
+  LoiDocLichSu,          // GL3b — docTin không đọc được lịch sử
 } from "../../channels/messenger/index.js"; // (sửa lại số cấp `../` theo vị trí file gọi)
 ```
 
@@ -32,7 +33,7 @@ DUY NHẤT** trong `src/db|pos|channels|chat|orders|queue` gọi xuống nó (đ
 
 ```ts
 docHoiThoai(pool, ctx, { pageId });                                       // → mảng conversations (Pancake)
-docTin(pool, ctx, { pageId, psid, convId, custId });                      // → mảng messages (Pancake, tối đa 25)
+docTin(pool, ctx, { pageId, psid, convId, custId });                      // → mảng messages (Pancake, tối đa 25) | NÉM LoiDocLichSu (GL3b)
 guiTin(pool, ctx, { pageId, psid, convId, custId, text });                // → { ok, id } | { ok:false, error }
 guiAnh(pool, ctx, { pageId, psid, convId, custId, url, caption? });       // → { ok, id } | { ok:false, error }
 ghiNote(pool, ctx, { pageId, custId, message });                         // → { ok } | { ok:false, error }
@@ -48,8 +49,20 @@ gatThe(pool, ctx, { pageId, psid, convId, name, on? = true });            // →
   `getMessages`, `send`, `sendImage`, `addNote`, `tagByName`). Cùng khuôn
   `send = pkSendReply` đã có sẵn ở `src/scheduler-followup.js:277`.
 - Mọi chặn (định tuyến team, N5, guard) **NÉM lỗi có tên** — không trả `{ok:false}`.
-  Chỉ lỗi MẠNG/API thật của Pancake mới trả `{ok:false,error}` (nguyên hình dạng cũ,
-  đi thẳng qua cửa không đổi).
+  Lỗi MẠNG/API thật của Pancake ở nhóm GỬI/GHI vẫn trả `{ok:false,error}` (nguyên hình
+  dạng cũ, đi thẳng qua cửa không đổi).
+- **`docTin` (PHIẾU GL3b, 07/10/2026):** đọc lịch sử KHÔNG được ⇒ **NÉM `LoiDocLichSu`**
+  (export từ cửa, khuôn ở `loi.js`) mang câu lỗi đọc được của `pancake.js#pkDocTin` —
+  quá hạn («Pancake quá hạn — quá hạn N ms …»), HTTP 5xx / thân không phải JSON
+  («Pancake lỗi (HTTP 502) …»), lỗi mạng, lỗi quyền ở mọi token, thân không có danh sách
+  tin, hết token. Bản trước trả `[]` cho mọi trường hợp đó (đi `pkGetMessages`, hàm nuốt
+  lỗi) ⇒ worker coi là «lịch sử rỗng», bỏ qua cửa nhường page và trả lời MÙ; bộ nạp ghi
+  mốc và tin khách không bao giờ vào hàng. «Rỗng thật» (Pancake trả `messages: []`) vẫn
+  trả `[]`. Tham số tiêm `getMessages` giữ hợp đồng cũ: hàm tiêm trả MẢNG = đọc được.
+  Ai gọi `docTin` phải bắt `LoiDocLichSu`: worker (`queue/worker.js` — lùi 15 s · 30 s,
+  hết lượt giao sale CÓ dòng việc) và bộ nạp (`queue/nap.js` — bỏ hội thoại đó ở vòng
+  này, không ghi mốc, lùi theo hội thoại, sổ bỏ-qua `doc_tin_loi`). Đây là sửa MÃ cho
+  khớp ý đồ có sẵn (README nguyên tắc 10 «đọc lịch sử trước khi trả lời»), không đổi ý đồ.
 
 ## 2 · ⚠️ `psid` ≠ `convId` của Pancake — ĐỌC KỸ TRƯỚC KHI GỌI
 

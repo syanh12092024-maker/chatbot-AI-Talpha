@@ -369,8 +369,12 @@ export function taoRouterVanHanh({ pool, env = process.env, orderDeps = {}, dayS
       if (!moc) lichSuLoi = "chưa có tin nào của hội thoại này đi qua hàng đợi v3, nên không biết mã hội thoại bên Pancake";
       else {
         try {
-          const { pkGetMessages } = await import("../../../../src/pancake.js");
-          const ds = await pkGetMessages(h.page_text, moc.conv_id, moc.cust_id);
+          // GL3b: `pkDocTin` (không nuốt lỗi) thay `pkGetMessages` — bản cũ biến lỗi Pancake thành «0 tin» đúng lúc
+          // người vận hành mở màn này để đối chiếu.
+          const { pkDocTin } = await import("../../../../src/pancake.js");
+          const kq = await pkDocTin(h.page_text, moc.conv_id, moc.cust_id);
+          if (!kq?.ok) throw new Error(kq?.loi || "Pancake không trả lịch sử");
+          const ds = kq.messages;
           lichSu = (Array.isArray(ds) ? ds : []).slice(-60).map((m) => ({
             luc: m.inserted_at || null,
             laPage: String(m?.from?.id) === String(h.page_text),
