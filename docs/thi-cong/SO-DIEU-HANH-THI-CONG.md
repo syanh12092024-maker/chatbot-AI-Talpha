@@ -1667,6 +1667,35 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
     vị trí MODULE, không theo env) ⇒ ca nào thêm token thành công / sinh page token sẽ ghi vào gốc repo. GL3 né bằng bản sao tạm của module.
   - **N-GL3-ANH-THU-LAI** `src/tools.js#sendImageWithRetry` (tệp não) thử lại `pkSendImage` với MỌI `ok:false` — nay kết quả có `khongRo`
     mà vẫn bị gửi lại. Hiện mã chết (`flushPendingImages` không còn nơi gọi, handler-v3 gửi ảnh qua cửa); dựng lại thì phải tôn trọng `khongRo`.
+- 07/10 · GSP3c (thợ) — tám nợ quanh «đổi món ⇒ bỏ dấu đối soát» + «kéo danh mục», ngoài ③ / ngoài hợp đồng phiếu; chi tiết + kịch bản:
+  `docs/thi-cong/nhat-ky/phieu-gsp3c.md` mục /code-review + Nợ:
+  - **N-GSP3C-DAY-HET-HANG** (review (a) G2 · /code-review GSP3c #1) page ĐÃ gắn không còn đường tự động đẩy hết hàng sang bot sau lượt
+    kéo: `dongBoTuPos` nay chỉ đẩy page chưa gắn (② Ra 2), `v3/chay-that.js:326-332` không gọi gì khác ⇒ món POS đổi `het_hang` có trong
+    CSDL nhưng `kb-overrides.json` (prod chat đọc) không ⇒ bot chào món đã hết. Sau GSP4 thành MỌI page. Vá: đẩy page đã gắn VÀ `xong`
+    khi món của gốc × shop đổi `het_hang` trong lượt kéo. Chặn trước GSP4 / mở van.
+  - **N-GSP3C-GO-KHONG-BEN** (review (a) C1-K2 · /code-review #4, có từ VE8/CR-15/09) «Gỡ» một món mà SKU trùng SKU gốc ⇒ lượt kéo kế
+    tiếp bù `ma_goc` về lại gốc (nhánh `thieuGoc`) — gỡ của người bị máy lật lại; GSP3c chỉ thêm bỏ dấu (page lại về chờ đối soát). Vá:
+    nhớ «người đã gỡ» (cột / bảng loại trừ) hoặc chỉ bù món CHƯA từng được người gỡ.
+  - **N-GSP3C-NOI-RA** (review (a) N2 · /code-review #5) màn chưa nói: (a) màn Sản phẩm bấm «Gỡ» / «Thêm thị trường» / «Nối món vào G
+    rồi gắn» đẩy N page về «chờ đối soát» mà không hiện dòng nào (API đã trả `boDauDoiSoat`, nhật ký đã ghi); (b) lượt «Kéo danh mục» bỏ
+    dấu không cộng vào kết quả (`docDanhMuc` không trả số, `keo-danh-muc.js` không cộng, màn Kết nối im).
+  - **N-GSP3C-COT032** (/code-review #7) câu dò cột 032 có BỐN bản: `san-pham-goc.js` `boSanPhamGoc` · `ganPageVaoGoc` · `coCotDoiSoat`
+    (GSP3c) + `chuyen-ban-sao.js#coCot032` (không export). Đổi cột dấu mà sót một bản ⇒ cửa đó lặng lẽ bỏ dọn dấu. Gộp về một hàm export.
+  - **N-GSP3C-VAN-TAY** (/code-review #8 · review (a) C1 hướng 3) bỏ dấu rải ở BA cửa ghi `san_pham.ma_goc`; cửa thứ tư (SQL tay,
+    `ops/bin/goi-y-gop-san-pham.mjs --sql`, chuyển team, gốc xoá khi CSDL chưa áp 032 rồi gộp lại cùng mã) vẫn lọt vì `daQuyet` chỉ so CHỮ
+    gốc × shop. Gốc rễ: lưu vân tay tập món cùng dấu (`daQuyet` so) hoặc trigger trên đổi `ma_goc` của món POS (migration — đi `mo-van`).
+  - **N-GSP3C-DUA-DOI-SOAT** (thợ GSP3c, đọc mã) `chuyen-ban-sao.js#doiSoatDonVi` kiểm dấu đơn vị ở ĐẦU lượt, đánh dấu ở CUỐI (sau các
+    lượt lưu giá riêng giao dịch) ⇒ gắn/gỡ/kéo chen vào giữa: bỏ dấu chạy TRƯỚC khi có dấu (0 dòng), rồi câu đánh dấu ghi `chep` trên tập
+    món cũ; `demDauCu` cũng không thấy (`doi_soat_luc` mới hơn `sua_luc` món). Vá ở `chuyen-ban-sao.js` (tệp TT1/GP1 giữ): câu đánh dấu
+    kiểm lại tập món (cùng câu / khoá dòng món), lệch ⇒ 409 `don_vi_da_doi`.
+  - **N-GSP3C-CHUYEN-TEAM** (review (a) G1) `src/db/chuyen-team.js:187-202` chuyển bản sao KÈM dấu; page giữ `san_pham_goc_ma`/
+    `pos_shop_id` của team cũ ⇒ ở team mới page vẫn «xong» (gốc không có ⇒ bot không bán gì, hoặc gốc trùng mã ở shop dùng chung với giá
+    chưa ai so). Vá: bỏ dấu khi chuyển team + bất biến cổng GSP4 «page xong ⇒ gốc cùng team và gốc × shop có ≥1 món cùng team».
+  - **N-GSP3C-GIA-POS-DE** (review (a) G3) `doc-danh-muc.js` (bậc 1) ghi đè giá POS lên món chưa `gia_tay` sau «giữ giá món» — đang ngủ
+    (POS trả `retail_price` 0, GP1 ①); thức dậy khi POS bắt đầu gửi giá.
+  - **N-GSP3C-CONG-MO-COI** (thợ GSP3c, đo) khuôn `chay_con` của cổng gsp3/gsp3b (`kill -KILL -- -pid`) không với tới cháu nằm ở nhóm
+    tiến trình khác (cổng con tự `set -m`) ⇒ quá trần thì để lại MỒ CÔI treo dưới PID 1 (đo 07/10: gsp3b → gsp3 → ll15b treo 51′, cwd
+    worktree đối chứng tạm, worktree không được gỡ). `gsp3c.sh` đã thêm `giet_cay` (con trước, cha sau); gsp3.sh/gsp3b.sh còn khuôn cũ.
 
 - 07/10 · tổng (đối kháng TT1 `refute-tt1.verdict.yaml`) — nâng mức / gộp nợ TT1:
   - **N-TT1-TE-LECH-THI-TRUONG** NÂNG: không chỉ «lưu được» — bot lấy tệ đơn từ chính bậc (`draft.js:34`) nên `cua2Tien` KHÔNG BAO GIỜ đóng; POS
@@ -3352,3 +3381,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · GL2 → ✅ (tổng nghiệm thu vòng 1) — trần page bật TOÀN HỆ `V3_TRAN_PAGE_BAT` (vắng = 0): `setPage` 409 dưới khoá tư vấn · worker vượt ⇒ dừng hẳn (hàm riêng) · đèn đỏ mọi team · preflight/setup.sh chặn TRƯỚC khi dừng dịch vụ
   `_chan1` 8/8 (lượt 1 đỏ ④ vì tổng ghi 3 tệp nới ở văn xuôi — đã đưa vào khối ③) · `gl2.sh` 35/35 · 24 đảo-vá · npm test 2538/0 · review (b) ĐẠT: SQL tay / backup / song song / `page_id` trùng / `page_id=''` đều bị chặn
   · N1 NÊN ⇒ GL2 vòng 2 trước pilot (đèn liệt kê MỌI page bật toàn hệ kèm team + ghi «đổi biến phải restart cả hai unit») · nợ N-GL2-HAI-UNIT-DOC-TRAN · N-GL2-DAI-TRANG-THAI nâng
+- 07/10 · GSP3c → 🔎 chờ nghiệm thu — MỘT hàm `boDauDoiSoatGocShop` (kẹp team, chỉ chep/giu_gia_mon, lưới 032) gọi ở gắn món (trừ daCo) · gỡ món (nay một giao dịch) · cuối lượt «Kéo danh mục» khi món đổi `ma_goc` ⇒ page về chờ đối soát, bộ đếm GSP4 thật; `dongBoTuPos` chỉ ghi/đẩy page chưa gắn (COALESCE '' như catalog) + cửa ra FOR SHARE; `demDauCu` quét lùi chỉ-đọc (cận trên); nhật ký gắn/gỡ nói số bản sao bỏ dấu
+  `gsp3c.sh` ①–⑤ ĐỎ 0/XANH 36 (14 ca × 2 múi giờ · 16 đảo-vá đỏ đúng · 11 bộ ca cũ) · ⑥ hai lượt đầy đủ mỗi lượt 1 dòng đỏ chập chờn KHÁC nhau, chạy riêng xanh · npm test 2489→2503 / 0 đỏ · /code-review 9: sửa #2 (40P01 kéo↔gắn) #3 #6 #9 · nợ 9 mục §9 N-GSP3C-* · nới ③ ca GSP3 ④9c F1 (tổng duyệt)
+  · commit b4f07f1 · 9165fa5 · nhật ký docs/thi-cong/nhat-ky/phieu-gsp3c.md
