@@ -144,3 +144,162 @@ N-GL2-MAY-KET-KHI-VUOT (chi tiết ở §9 sổ). Phiếu ⑥ «hai mẫu unit w
 ## Ghi cho người quyết
 «Dừng» = worker chạy không tải và TỰ chạy lại khi số page bật ≤ trần (tiến trình không thoát). Page poll không được nạp trong lúc dừng — Pancake v1 chỉ
 trả 60 hội thoại mới nhất (bộ nhớ dự án), dừng lâu có thể sót khách.
+
+---
+
+## Vòng 2 (07/10/2026 · thợ GL2 vòng 2) — N1 + N2 phần rẻ của review (b)
+
+**Base:** HEAD lúc nhận `4b64937`. Trong lúc làm, GL3b commit `55a81d7` · `c36b80c` · `0e98ecd` (không đụng tệp vòng 2). **Commit mã:** `65120b5`.
+**Môi trường đo:** MÁY DEV · hộp cát Postgres 127.0.0.1:5432 (`aicloser_v3_test_gl2_v2_*_p<pid>` + các hộp cát của cổng, tự dựng/dọn) · `.env` giữ
+`PANCAKE_READONLY=1` · không gọi mạng (ca N1: `fetch` là bẫy ném; ca HTTP: `fetch` chỉ cho 127.0.0.1 của máy chủ ca) · env đặt trong tiến trình ca.
+Không đo prod, không đo `aicloser_v3`.
+
+### Đã làm
+1. **Mục 1 (N1) · `v3/src/ui/suc-khoe/kho-suc-khoe.js`**: khi VƯỢT TRẦN, đèn «Page đang bật bot» nói **tổng toàn hệ** ở câu đầu («Worker đang DỪNG vì vượt
+   trần: toàn hệ đang bật 2/1 page — trần …»). Câu sau kể page theo team (`keTheoTeam`):
+   - team người xem **là thành viên** (`teamCuaNguoi`, đã loại team kỹ thuật, cộng thêm team của vé): kể **tên page + tên team**. Team của vé ghi
+     «(team đang xem)», team khác của chính người xem ghi «(team khác của bạn — đổi team ở màn Chọn team rồi tắt ở màn Page & Bot)»;
+   - team **không thuộc**: chỉ **số page + tên team**, kèm «(bạn không thuộc team này)», không tên page, không id page;
+   - team **kỹ thuật**: số + tên team + đường xử. Ai có vai kéo được (`VAI_CHUYEN_DUOC` = quản trị) thì thấy thêm tên + id để gõ vào ô lọc kho (lệch V2-L1);
+   - câu cảnh báo: «Tắt một page thì worker chạy lại các page còn lại — kiểm page nào là page pilot trước khi tắt; page ở team khác: báo quản trị team
+     đó». Nút đi tiếp vẫn `/page-bot`, chữ đổi thành «Kiểm page pilot rồi tắt bớt…». Đèn «Máy chạy bot» khi vượt nhắc đọc đèn «Page đang bật bot» trước khi tắt;
+   - cổng danh tính hỏng ⇒ chỉ coi team của vé là của mình (thu hẹp, không đoán rộng ra) và đèn **nói** «không đọc được danh sách team của bạn (…)».
+2. **Nới ③ (tổng gật «A» 07/10)** · `v3/src/noi-day/van-hanh-v3.js`: dòng v3 của bộ đọc cửa kiểm thêm `teamId: String(p.team_id)` và `ten: p.ten || ""`.
+   Hai trường này có sẵn trong `SELECT *`.
+3. **Mục 2 (N2 phần rẻ)** · `docs/v3/ban-giao/bien-moi-truong-v3.md` dòng `V3_TRAN_PAGE_BAT` ghi thêm: «Đổi/xoá biến này phải restart CẢ HAI unit
+   `aicloser-v3` và `aicloser-worker-v3`». Lý do: mỗi unit nạp `.env` một lần lúc khởi động (`deploy/setup.sh:89` `--env-file`), nên worker giữ giá trị đọc
+   lúc khởi động; restart một unit thì đèn và 409 nói khác worker (ví dụ 1→2). Không sửa mã worker.
+4. **Thước:** hai tệp ca mới `v3/test/b/gl2-vong2-den.test.mjs` (N1a–N1e) và `v3/test/b/gl2-vong2-http.test.mjs` (H1 K1). `gl2.sh` thêm ③b ③c ④d ⑤y1–⑤y13 ⑤0b.
+   Neo vòng 1 giữ nguyên, không đổi chuỗi gốc nào của ⑤a–⑤x.
+
+### Nới ③ — điều kiện của tổng
+**(1) Mọi nơi tiêu thụ bộ đọc.** Lệnh tổng: `grep -rnE "noiVanHanhV3|docSanSangV3|_docSanSang" v3/src src`. Dò thêm tên nối `docCuaKiem`/`cuaKiemMotPage` ở `vai-b.js`, vì grep của tổng không bắt được hai tên này.
+Máy thật tiêm `noiVanHanhV3(pool)` (`v3/chay-that.js:169-170,299`) → `vai-b.js:293` `docCuaKiem` → sáu chỗ nối `:294 :333 :335 :336 :337 :408`:
+
+| Nơi dùng | Dùng dòng thế nào | Có đưa dòng team khác ra trình duyệt? |
+| --- | --- | --- |
+| `san-sang/kho-san-sang.js:236,247-249` | `Map` theo pageId, rồi duyệt `pageTeam` (cổng kẹp team) và chỉ lấy trường của page team mình | KHÔNG |
+| `trang-chu/kho-trang-chu.js:239,250` | lọc theo `cuaTeam` (page của team), rồi chỉ đếm | KHÔNG |
+| `len-chay/kho-len-chay.js:122-123` | page team khác bị chặn 404 ở `:108-109` trước khi đọc; `find` đúng một pageId; c5/c6 chỉ đọc `blockers`/`aiEnabled` | KHÔNG |
+| `page-bot/kho-page.js:162,179,249` | `Map`; `danhSachPage` chỉ `doc.get(page team mình)` → `gonCuaKiem` (gọn mức); `cuaKiemMotPage` trả MỘT dòng cho `kho-mot-page.js:147`, mà page ở đó đã qua `motPage` kẹp team và chỉ đọc `blockers/warnings/aiAllowed/readiness` | KHÔNG |
+| `chung/trang-thai.js:101-105` | chỉ đếm `aiBat`/`tong` (đường lui khi chưa có team; có team thì `_demTeam` → `manSanSang` kẹp team, `vai-b.js:341-344`) | KHÔNG |
+| `suc-khoe/kho-suc-khoe.js` (`docTranToanHe` → `keTheoTeam`) | nhóm theo team; chỉ in tên page của team mình là thành viên | KHÔNG (ca N1 + H1) |
+| `v3/xem-thu.js:347` | bộ đọc GIẢ của máy xem thử, dòng không có `teamId` ⇒ đèn tự lùi về page của team | — |
+
+Không nơi nào gửi nguyên mảng ra client.
+**(2) Ca HTTP H1.** Người CHỈ thuộc team X (quản trị) đăng nhập thật rồi gọi `/api/suc-khoe` `/api/trang-chu` `/api/page-bot/danh-sach` `/api/len-chay`
+`/api/len-chay/<A|B|K>` `/api/san-sang` `/api/trang-thai-bot` `/api/page-ds` `/api/page/<A|B|K>`. Chạy với ba cách bật: A+B+K, A+B, chỉ B. Thân phản hồi không được chứa
+tên hay id Facebook của page team Y. Id nằm sẵn trong đường dẫn người gọi gõ thì câu 404 được phép nhắc lại. Page team kỹ thuật cũng vậy, trừ ở `/api/suc-khoe`,
+nơi chủ ý hiện cho quản trị (V2-L1, đo cả hai vai ở N1c). Kèm phần CHO-QUA: lúc vượt, đèn qua HTTP có page A, có tên team Y, có «toàn hệ đang bật 2/1».
+**(3) Đảo-vá «đèn lộ tên page team B».** ⑤y1 (coi mọi team là của mình) và ⑤y10 (trả nguyên dòng toàn hệ ra thân) đều làm H1 + N1a đỏ.
+
+### Danh sách ca (viết trước mã; chạy trên base `4b64937`: 7 ca · 5 đỏ)
+`gl2-vong2-den`: N1a vượt, người xem chỉ thuộc một team (chạy hai chiều u1@X, u3@Y): có tổng, có tên page + tên team của mình, có «1 page bật ở team khác» + TÊN
+team kia, đủ 3 vế cảnh báo, thân `bangDen` không chứa tên/id page team kia · N1b người xem thuộc cả hai team: thấy cả hai tên, không có «team khác», có
+«team khác của bạn — đổi team…» · N1c page bật ở team kỹ thuật: số + tên team + đường xử; quản trị thấy tên + id, marketer chỉ thấy số · N1d cổng danh tính
+hỏng: nói mù, không lộ, đèn vẫn đỏ · N1e trong trần: xanh như cũ, không có cảnh báo.
+`gl2-vong2-http`: H1 (như trên) · K1 phép đo page team kỹ thuật (dưới).
+Trên base: N1a N1b N1c N1d ĐỎ. H1 đỏ ở phần CHO-QUA («đèn phải kể page A + tên team Y»); phần không-lộ XANH trên base, đúng vì base chưa lộ gì, và phần này canh
+chính bản nới. N1e XANH (hồi quy). K1 XANH (đo hành vi CÓ SẴN). Lượt base đầu, H1 đỏ oan ở `/api/len-chay/<id B>` vì câu 404 nhắc lại id do người gọi gõ.
+Đó là thước sai, không phải lộ, nên đã sửa thước (bỏ kiểm id nằm trong đường dẫn).
+Sau sửa: 7/7 xanh, ở cả hai múi giờ `PGTZ=TZ=UTC` và `Pacific/Kiritimati`.
+
+### Kết quả đo — page bật ở team kỹ thuật «chưa phân» (đọc mã + hộp cát, MÁY DEV)
+- Đọc mã: công tắc có ĐÚNG MỘT cửa, `POST /api/page-bot/:id/bot` (`van-hanh/router.js:174-189` trả 409 `sai_cua` cho `enabled`). Cửa này đi
+  `motPage` kẹp team → `noiVanHanhV3` công tắc (`SELECT … WHERE team_id=$1 AND id=$2`) → `setPage` (`operations.js:121` cũng kẹp team), tức ba lớp kẹp.
+  Không vé nào mang team kỹ thuật: `teamCuaNguoi` loại team ấy (`kho-nguoi-dung.js:169`), lược đồ cấm gán thành viên (trigger `chan_tv_team_ky_thuat`),
+  tầng truy vấn ném khi gặp ctx kỹ thuật. `chuyen-team.js` cấm ctx kỹ thuật và cấm đích kỹ thuật, nhưng cho ctx đứng ở team ĐÍCH kéo page về.
+- Hộp cát (ca K1, `[gl2] K1 …`): `công tắc=404` (cột giữ `{team: K, bật}`) · màn Page & Bot của X không thấy page · `chọn team=403` · kho «chưa
+  phân» (`GET /api/team/gan-page?nguon=chua-phan`) thấy page với `botAiBat=true`, lọc theo id ra đúng một dòng · `kéo về soXong=1` (bot VẪN bật sau kéo)
+  · `tắt sau kéo=200`, cột thành `{team: X, tắt}`.
+- **Kết luận (máy dev):** KHÔNG màn nào tắt thẳng được page bật ở team kỹ thuật. Đường xử có sẵn, không mở quyền mới: quản trị một team vào Cài đặt ›
+  Người và team (`/cau-hinh-team`) › «Chuyển page sang team khác» › nút «Kho chưa phân team», kéo page về team mình, rồi tắt ở Page & Bot. Đèn nói đúng câu này.
+  Kho cắt ở 200 dòng xếp theo tên (`pageChuaPhan` `gioiHan=200`, route không truyền) ⇒ quản trị cần id để lọc (/code-review #2 → V2-L1).
+
+### Cổng `ops/bin/nghiem-thu/gl2.sh` — output máy, bản SAU /code-review (cây chung, trước commit `65120b5` cùng nội dung; rc=0)
+```
+── môi trường: máy dev · hộp cát Postgres trên 127.0.0.1:5432 (aicloser_v3_test_gl2*_p<pid>, tự dựng tự dọn) · cây …/AI Chatbot · 0e98ecd
+✅ ⓪ · ①16/16 · ②3/3 · ③7/7 (vòng 1, như cũ)
+✅ ③b-vòng-2-N1-đèn-vượt-kể-page-theo-team-(cách-ly-team) pass=5 fail=0 · xanh: N1a N1b N1c N1d N1e
+✅ ③c-vòng-2-H1-không-lộ-qua-HTTP-6-màn-+-K1-page-team-kỹ-thuật pass=2 fail=0 · xanh: H1 K1
+✅ ④a ④b ④c (như cũ) · ④d-vòng-2-N2-dòng-biến-dặn-restart-CẢ-HAI-unit khớp 4/4 cụm
+✅ ⑤a…⑤x 24/24 đỏ đúng (neo vòng 1 không đổi)
+✅ ⑤y1-đèn-coi-MỌI-team-là-của-mình-⇒-lộ-tên-page-team-khác đỏ: H1 N1a N1c N1d  (đòi đỏ: N1a N1c H1)
+✅ ⑤y2-cổng-danh-tính-hỏng-⇒-nới-RỘNG-(coi-mọi-team-là-của-mình) đỏ: N1d
+✅ ⑤y3-không-đọc-thành-viên-(chỉ-team-của-vé) đỏ: N1b
+✅ ⑤y4-bỏ-câu-cảnh-báo-tắt-nhầm đỏ: N1a N1b
+✅ ⑤y5-team-khác-không-nói-TÊN-team đỏ: H1 N1a
+✅ ⑤y6-team-kỹ-thuật-không-nói-đường-xử đỏ: N1c
+✅ ⑤y7-đèn-nói-số-của-TEAM-thay-TỔNG-toàn-hệ đỏ: H1 N1a N1c  (đòi đỏ: N1a)
+✅ ⑤y8-bộ-đọc-bỏ-teamId-(nới-③-hỏng)-⇒-không-biết-team đỏ: H1 N1a N1b N1c
+✅ ⑤y9-bộ-đọc-bỏ-ten-⇒-kể-id-thay-tên đỏ: H1 N1a N1b N1c N1d
+✅ ⑤y10-màn-Sức-khoẻ-trả-nguyên-dòng-toàn-hệ-ra-thân-⇒-lộ đỏ: H1 N1a N1c N1d
+✅ ⑤y11-page-ở-team-khác-CỦA-người-xem-không-dặn-đổi-team đỏ: N1b
+✅ ⑤y12-tên/id-page-kho-tạm-hiện-cho-MỌI-vai đỏ: N1c
+✅ ⑤y13-quản-trị-không-được-id-page-kho-tạm-(không-lọc-được-kho-200-dòng) đỏ: N1c
+✅ ⑤0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ) pass=26 fail=0
+✅ ⑤0b-bản-sao-nguyên-vẹn-vòng-2-xanh pass=7 fail=0
+✅ ⑥mb.sh rc=0 · ═══ 18/18 phép đạt ═══
+✅ ⑥ll3.sh rc=0 · == ĐỎ 0 / XANH 7
+✅ ⑥gl1.sh rc=0 · == ĐỎ 0 / XANH 7
+⏸ ⑦npm-test hoãn (CHAY_NPM_TEST=1)
+== ĐỎ 0 / XANH 52        (vòng 1: 35)
+```
+Lượt cổng trước /code-review: ĐỎ 0 / XANH 49, rc=0 (⑤y1–⑤y10).
+**Đột biến nào KHÔNG đỏ / không đo:** K1 là phép đo hành vi có sẵn, chặn bằng ba lớp kẹp team. Không đặt đột biến một lớp nào, vì đột biến một lớp sẽ không làm K1 đỏ:
+hai lớp còn lại vẫn chặn. Đó là chủ ý phòng thủ nhiều lớp, không phải thước hỏng. H1 chỉ canh danh sách API hôm nay (nợ N-GL2-BO-DOC-MANG-TEN). Nhánh `id === ''`
+(dòng không có `teamId` và không thuộc team này ⇒ «N page chưa rõ team») và nhánh vé máy (`nguoiDungId` rỗng) chưa có ca.
+
+### Bộ ca cũ · npm test
+- `v3/test/b/suc-khoe.test.mjs` + `test/frontend-v3-e2e.test.js` + `v3/test/b/gd1-mot-nguon.test.mjs`: 44/44 xanh. `gl2-den-suc-khoe` 7/7 xanh, D5a không đổi assert.
+- `npm test` (cây chung): **trước** (lúc nhận, `4b64937` + việc GL3b chưa commit) tests 2542 · pass 2538 · fail 0 · skip 4. **Sau** (HEAD `0e98ecd` + vòng 2,
+  bản sau /code-review) tests 2563 · pass 2559 · **fail 0** · skip 4. Phần chênh +21 = +14 ca GSP3c cherry-pick (GL3b commit giữa chừng) + **7 ca vòng 2**.
+  Bản sao sạch `git archive 0e98ecd`: tests 2556 · fail 0 · skip 22. Bản sao skip nhiều hơn vì thiếu các tệp ngoài git; số tests 2556 + 7 = 2563 khớp.
+
+### /code-review (high, 10 phát hiện) — xử lý (mỗi claim dựng lại hoặc bác bằng lệnh)
+1. Người xem thuộc cả X lẫn Y đang đứng ở X: page B (Y) bị xếp «của mình», nút dẫn về /page-bot X ⇒ tắt nhầm A, đúng kịch bản N1 — **SỬA**: nhãn «(team khác của
+   bạn — đổi team ở màn Chọn team rồi tắt ở màn Page & Bot)». Có ca N1b, đảo ⑤y11.
+2. Đường xử team kỹ thuật không làm theo được khi kho > 200 page, vì danh sách cắt 200 dòng xếp theo tên mà đèn giấu tên/id (đo: `pageChuaPhan` `gioiHan=200`,
+   route không truyền; kho từng có 305 page) — **SỬA**: vai kéo được thấy tên + id kèm «gõ id vào ô lọc của kho», vai khác chỉ thấy số. Có ca N1c (hai vai),
+   K1 (lọc theo id ra đúng 1 dòng), đảo ⑤y12 ⑤y13 (→ V2-L1).
+3. Dòng cũ `old.pages` có `aiEnabled=true` làm đếm dư hoặc ghi «chưa rõ team» — **KHÔNG SỬA, không dựng lại được**: `src/readiness.js:100` luôn trả `aiEnabled: false`
+   (CR-02-10), nên dòng cũ không bao giờ vào `dsBat`. Phép đếm dòng cũ đã có đảo ⑤t canh.
+4. Nới bộ đọc chung (thêm `teamId`/`ten`) ⇒ cách ly dựa vào từng màn tự lọc — **NỢ** N-GL2-BO-DOC-MANG-TEN. Đây là phương án A tổng đã chọn; H1 canh các API
+   hôm nay. Trước vòng 2, một màn trả nguyên mảng thì đã lộ id Facebook rồi; nay lộ thêm tên.
+5. Kể tên page của mọi team có dòng thành viên, bất kể vai — **KHÔNG SỬA**: đề vòng 2 ghi «team NGƯỜI XEM LÀ THÀNH VIÊN». Thành viên team (kể cả sale)
+   vốn làm việc trên hội thoại của page team mình.
+6. N+1 đọc tên team — **KHÔNG SỬA**: chỉ chạy khi VƯỢT. Số lượt đọc = `teamCuaNguoi` (3 câu) + một `teamTheoId` cho mỗi team không thuộc; team của vé lấy tên
+   từ `teamCuaNguoi`.
+7. Lọc `aiEnabled` hai lần — **KHÔNG SỬA**: cố ý giữ nguyên dòng `toanHe = …` để neo đảo-vá ⑤t của vòng 1 không đổi (tổng dặn giữ neo cũ). Giá: hai phép lọc
+   có thể lệch nhau nếu sau này sửa một bên.
+8. `teamCuaNguoi` trả `tenTeam = teamId` khi thiếu dòng team — **KHÔNG SỬA, không dựng lại được**: `thanh_vien_team.team_id REFERENCES team(id) ON DELETE CASCADE`
+   (`001_nen.up.sql:45`).
+9. `teamId` dòng cũ là slug — **KHÔNG SỬA, không dựng lại được**: dòng `readiness.js` không có trường `teamId` (`:96-102`).
+10. Đèn nói số toàn hệ hai lần, hai mức chắc chắn — **SỬA**: chỉ còn một con số ở câu đầu, «toàn hệ (ít nhất — <lý do>) đang bật x/y». Câu kể đổi thành «Page
+    đang bật theo team — …». Đảo ⑤y7 đổi neo theo.
+Bẫy 26: mọi chỗ vừa vá đều có đột biến chạy trên bản SAU vá (⑤y7 ⑤y11 ⑤y12 ⑤y13) và đều đỏ đúng.
+
+### Lệch (nói thẳng)
+- **V2-L1 · page team kỹ thuật: người kéo được thấy tên + id** (chữ đề: team khác «chỉ SỐ + TÊN team»). Chọn vậy vì đường xử phải làm theo được (kho cắt 200
+  dòng). Không lộ thêm gì: kho «chưa phân» là kho dùng chung, không phải dữ liệu của team nào (`gan-page.js:67-83`), và `GET /api/team/gan-page?nguon=chua-phan`
+  đã trả tên + id cho vai `quan-tri`/`quan-ly`. Đèn chỉ hiện cho `VAI_CHUYEN_DUOC` = `quan-tri`, là tập con. Giá phải trả: lệch chữ đề. Tổng không nhận thì
+  đổi `keTen` thành `''` (đảo ⑤y13 đỏ đúng chỗ ấy; ca N1c phải đổi theo).
+- **V2-L2 · import, không sửa tệp**: `teamCuaNguoi`/`teamTheoId` (`auth/kho-nguoi-dung.js`, có tiền lệ ở `chung/router-dieu-huong.js:16` và `bao-cao/kho-don-pos.js:6`,
+  dù đầu tệp ấy ghi «chỉ tầng đăng nhập gọi») và `VAI_CHUYEN_DUOC` (`team/gan-page.js`, để giữ một nguồn với cửa ghi).
+- **V2-L3 · câu đầu của đèn đổi** «Worker đang DỪNG vì vượt trần: **toàn hệ** đang bật …» (/code-review #10). D5a không đổi assert, vẫn xanh.
+- **V2-L4 · `gl2.sh` thêm tệp ca và đảo-vá** vào bản sao tạm. Không đổi chuỗi gốc nào của ⑤a–⑤x.
+
+### ⑦ ĐÃ TRA CHƯA
+`awk '/^## §9 /,/^## §9b/' SO-DIEU-HANH-THI-CONG.md | grep -n -i "team kỹ thuật\|chua-phan\|chưa phân"` ⇒ 5 dòng, đều về di trú/kéo danh mục/POS
+(N-MN8a, N-GSP-TEAM-KT, nợ B-Y3). Không dòng nào về đèn kể page theo team. Nợ GL2 hiện có: `N-GL2-DAI-TRANG-THAI DEN-QUA-CUA-KIEM HAI-UNIT-DOC-TRAN
+INLUOT-LY-DO MAY-KET-KHI-VUOT PILOT-TRAN-1 TIN-TON-SAU-DUNG TRAN-THEO-TEAM`. Vòng 2 làm phần rẻ của N-GL2-HAI-UNIT-DOC-TRAN (dòng biến). Phần bền
+(worker tự báo trần, GL6) còn nguyên.
+
+### Nợ mới (§9)
+N-GL2-BO-DOC-MANG-TEN (chi tiết ở §9 sổ).
+
+### Ghi cho tổng
+- `.claude/skills/mo-van/SKILL.md` §5 («xoá dòng biến khỏi `.env` rồi restart», review (b) N2 trỏ dòng 91) **chưa** ghi «restart CẢ HAI unit». Tệp ngoài
+  pathspec, tôi không sửa. Nên ghép vào lượt tổng chưng cất skill, hoặc vào sổ phát hành pilot.
+- Câu đèn khi vượt nay dài (một câu cho mỗi team). Ở pilot trần 1 thì vượt nghĩa là ≥ 2 page, nên chịu được. Chưa kiểm hiển thị trên trình duyệt (trang dùng
+  `text(d.vi)`, không đổi tệp html).

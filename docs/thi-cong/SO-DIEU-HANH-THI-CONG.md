@@ -1766,6 +1766,11 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
     thật khi mở van; nếu gặp thì cân nhắc nối «(token khác: …)» vào câu.
   - **N-GL3B-HANG-LOI-CHUNG** thứ hạng lỗi chỉ ở `pkDocTin`; `pkGetConversations` (nuốt ⇒ `[]`, N-GL3B-CONV-NUOT-LOI) và `pkTagId` (`/settings` ⇒ `null`) vẫn
     nhận lỗi token cuối — hôm nay không câu nào hiện ra người vận hành; làm cùng lượt cho hai đường đó nói lỗi (GL6).
+- 07/10 · GL2 vòng 2 (thợ) — nợ từ /code-review vòng 2 #4; chi tiết: `docs/thi-cong/nhat-ky/phieu-gl2.md` § Vòng 2:
+  - **N-GL2-BO-DOC-MANG-TEN** bộ đọc cửa kiểm TOÀN HỆ (`v3/src/noi-day/van-hanh-v3.js#noiVanHanhV3`) nay mang `teamId` + `ten` của MỌI page bật (nới ③ «A»).
+    Cách ly team dựa vào việc từng màn tự chọn dòng theo page team mình (hoặc chỉ đếm) — sáu nơi dùng hôm nay đều vậy, ca `v3/test/b/gl2-vong2-http.test.mjs`
+    H1 canh ĐÚNG danh sách API hôm nay. Màn mới dùng bộ đọc mà trả nguyên mảng ⇒ lộ tên + id page team khác. Hướng: thêm API mới vào H1, hoặc tách bộ đọc
+    riêng cho đèn Sức khoẻ (đếm theo team qua cửa hệ thống — cần `vai-b.js` + `chay-that.js`, gộp được với N-GL2-DEN-QUA-CUA-KIEM).
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3398,3 +3403,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · GL3b vòng 2 → 🔎 chờ nghiệm thu — F1 page poll: lượt 3 giao sale CÓ việc chốt luôn tin `cho` cùng (team, page, psid) id lớn hơn (`doc_loi:ban_giao:theo_tin:<id>` + nhật ký `tin_doc_loi_chot_theo`; `khong_thuoc_ai` không chốt) ⇒ «trả AI» THÀNH, 0 chan_guard, 1 việc · F2 `pkDocTin` cạn token nói lỗi «thật» nhất quá hạn > mạng > 103 > 121 > 105 (giá trị trả · thứ tự token · `_pageTokIdx` · GHI không đổi)
   4 ca mới (V2a V2c V2d đỏ trên base 924732c, V2b canh lựa chọn) + 1 cặp V5 · `gl3b.sh` ĐỎ 0/XANH 49 (14 đảo-vá vòng 2 + 18 vòng 1 đỏ đúng) · `gl3.sh` 25/25 · 9 bộ ca ⑥ xanh · npm test 2538→2556 / 0 (+4 vòng 2, +14 GSP3c cherry-pick) · /code-review 9: sửa #3 #5 #6 #8 + ca V2b · nợ 3 §9 (N-GL3B-TRA-AI-CHAN-GUARD · HANG-LOI-TAM-THOI · HANG-LOI-CHUNG)
   · commit 55a81d7 · nhật ký docs/thi-cong/nhat-ky/phieu-gl3b.md § Vòng 2
+- 07/10 · GL2 vòng 2 → 🔎 chờ nghiệm thu — N1: đèn vượt trần nói «toàn hệ đang bật x/y», kể page theo team (team mình là thành viên: tên page + team, team khác của chính mình «đổi team rồi tắt»; team không thuộc: chỉ số + tên team; team kỹ thuật: đường xử Người và team › Kho chưa phân team › kéo về › tắt — quản trị thấy tên+id để lọc kho, lệch V2-L1) + câu cảnh báo tắt nhầm page pilot · N2 rẻ: dòng biến dặn restart CẢ HAI unit · nới ③ `van-hanh-v3.js` (+teamId +ten, 6 màn soát)
+  7 ca mới (5 đỏ trên base 4b64937: N1a–d + H1 CHO-QUA; K1 đo: page team kỹ thuật KHÔNG màn nào tắt thẳng — công tắc 404, chọn team 403, kéo về rồi tắt 200) · `gl2.sh` ĐỎ 0/XANH 52 (13 đảo-vá vòng 2 + 24 vòng 1 đỏ đúng) · mb/ll3/gl1 rc=0 · npm test 2542→2563 / 0 (+7 vòng 2, +14 GSP3c cherry-pick) · /code-review 10: sửa 3 (#1 #2 #10) · nợ 1 · bác 6 có lệnh
+  · commit 65120b5 · nhật ký docs/thi-cong/nhat-ky/phieu-gl2.md § Vòng 2
