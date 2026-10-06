@@ -43,7 +43,7 @@ restart về 0. `deploy/setup.sh:22-29` chế độ pilot chỉ kiểm ba cờ; 
 src/admin-v3/operations.js
 src/queue/page-routing.js
 src/queue/chay-worker.js
-test/va-p7-chay-worker.test.mjs
+test/va-p7-chay-worker.test.js
 test/mb2-mot-cong-tac.test.mjs
 v3/src/ui/suc-khoe/kho-suc-khoe.js
 deploy/preflight.mjs
@@ -55,6 +55,10 @@ ops/bin/nghiem-thu/gl2.sh
 ```
 `operations.js`: CHỈ `setPage` (+ hàm phụ đọc trần). Ca cũ dựng page bật bot (`test/mb2-mot-cong-tac.test.mjs`, ca handler, cổng dựng page bật
 công tắc) sẽ cần trần ≥ số page chúng bật — đặt biến trong ca/fixture, KHÔNG nới luật; nếu tệp ca nằm ngoài ③ ⇒ dừng, báo tổng kèm danh sách.
+**Nới 07/10 (thợ xin, tổng duyệt — đặt trần trong fixture, KHÔNG đổi assert):** sửa đuôi `test/va-p7-chay-worker.test.js` (phiếu ghi nhầm `.mjs`) —
+`V3_TRAN_PAGE_BAT:"2"` ở `voiEnv` 3 ca · `test/frontend-v3-e2e.test.js` — `V3_TRAN_PAGE_BAT:"1"` ở env + process.env fixture · `v3/test/b/suc-khoe.test.mjs`
+— 1 dòng `process.env.V3_TRAN_PAGE_BAT ||= '5'` · `ops/bin/nghiem-thu/gl1.sh` — chép `src/queue/page-routing.js` (+ import tĩnh của nó) vào bản sao
+đảo-vá (preflight nay đọc trần ở MỘT chỗ). Lệch chấp nhận: đèn Sức khoẻ đếm toàn hệ qua cửa tiêm `_docSanSang` có sẵn (③ không có `vai-b.js`/`chay-that.js`).
 
 ## ④ Nghiệm thu (viết trước — `ops/bin/nghiem-thu/gl2.sh`, rc=0 khi đạt; hộp cát `DB="aicloser_v3_nt_gl2_p$$"`; `grep -E` không `rg`; nạp `.env` nếu thiếu; đảo-vá trên BẢN SAO tạm)
 
