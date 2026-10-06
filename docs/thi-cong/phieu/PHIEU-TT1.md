@@ -60,6 +60,7 @@ test/tt1-*.test.mjs
 test/he-so-te-doi-chieu-don-that.test.js
 test/gsp3-doi-soat.test.mjs
 ops/bin/nghiem-thu/gsp3.sh
+ops/bin/nghiem-thu/gsp3b.sh
 ops/bin/nghiem-thu/tt1.sh
 ```
 **Nới 05/10 (thợ xin, tổng duyệt — thước neo luật cũ):** `test/he-so-te-doi-chieu-don-that.test.js` ca H4 («mọi tệ = 100») đổi thành «mọi tệ
@@ -68,6 +69,9 @@ ops/bin/nghiem-thu/tt1.sh
 kết nối) — chỉ đổi ví dụ, giữ khẳng định. Không sửa gì khác trong ba tệp này.
 Chỉ sửa ở tệp nào soát ra lỗi thật với hệ 1 / tệ mới — mỗi chỗ sửa ghi lý do vào nhật ký. `src/admin-v3/operations.js` được phép ở
 phiếu này CHỈ cho phần quy đổi đơn vị (`saveProduct` đang kiểm `HE_SO_TE[g.tien_te]`).
+**Nới đợt 2 06/10 (thợ xin, tổng duyệt):** `ops/bin/nghiem-thu/gsp3.sh` phép ③ + `ops/bin/nghiem-thu/gsp3b.sh` ③c/③d so phạm vi trong ĐÚNG khoảng
+commit mã của phiếu cũ (`b0b82d7..0f2c4bf` · `aa43268..d688a3d`) thay vì tới cây hiện tại — vì TT1 (và GSP3c) hợp lệ sửa `operations.js` /
+`TIEN_TE_THI_TRUONG`. Giá phải trả: GSP3/GSP3b mở vòng 3 thì phải dời hash (ghi trong chú thích hai cổng).
 
 ## ④ Nghiệm thu (viết trước — `ops/bin/nghiem-thu/tt1.sh`, rc=0 khi đạt; đảo-vá trên BẢN SAO tạm; nạp `.env` nếu thiếu `DATABASE_URL_V3`; KHÔNG `rg`)
 

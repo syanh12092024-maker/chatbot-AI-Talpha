@@ -380,19 +380,20 @@ TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` 
 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
-| TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | 🔨 phát 05/10 · review (a) ĐẠT |
+| TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | 🔎 07/10 · mã `bc190f5` · nhật ký `f2e1ac1` · `tt1.sh` 27/1 (1 đỏ = chuỗi cũ gsp3b chập chờn, chạy riêng xanh) · npm test 2486/0 · /code-review 10 (4 sửa) · 6 nợ N-TT1-* · chờ chặng 2 đối kháng + `_chan1 tt1` (≈1,5 h, chạy khi cây rảnh) |
 | GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | ⬜ review (a) SỬA-PHIẾU → đã sửa (G1 giá gần đây) |
 
 ## §5j · ĐIỀU KIỆN GO-LIVE (GL1–GL8) — người quyết «triển khai» 05/10
 
 Nghiên cứu (agent chỉ đọc) + quyết định người quyết 05/10 ghi ở §10 05/10 «ĐIỀU KIỆN GO-LIVE (GL)». Tối thiểu cho pilot 1 page có người ngồi
-canh: GL1 + GL2 + GL3 + H-GL. Trước page thứ hai: GL4 + GL6. HTTPS (GL5) SAU pilot. Trước khi bật page EU/AUUS: N-GUARD-TIEN-TE-MOI.
+canh: GL1 + GL2 + GL3 + GL3b + H-GL. Trước page thứ hai: GL4 (tính cả lỗi ĐỌC `LoiDocLichSu`) + GL6. HTTPS (GL5) SAU pilot. Trước khi bật page EU/AUUS: N-GUARD-TIEN-TE-MOI.
 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
 | GL1 | `deploy/preflight.mjs` thôi luôn exit 1 + ca chạy CLI thật | — | 🟩 | ✅ 06/10 · `75665af` · `_chan1` 8/8 · `gl1.sh` 7/7 · chưa deploy |
 | GL2 | Trần số page bật TOÀN HỆ (biến mới; vắng = 0; vượt ⇒ worker dừng hẳn + đèn đỏ); cổng `setPage` có khoá | GL1 · sau TT1 (cùng `operations.js`) | 🟨 | ⬜ review (a) SỬA-PHIẾU → đã sửa (C1 hàm riêng cho worker · C2 đèn đếm toàn hệ) · phát sau TT1 |
-| GL3 | Hạn chờ request Pancake (đọc 15 s · gửi 30 s); POST lỗi mạng / quá hạn KHÔNG xoay token (đang có nguy cơ tin đúp) | — | 🟥 | 🔨 phát 06/10 · review (a) ĐẠT + 5 NÊN đã vào phiếu |
+| GL3 | Hạn chờ request Pancake (đọc 15 s · gửi 30 s); POST lỗi mạng / quá hạn KHÔNG xoay token (đang có nguy cơ tin đúp) | — | 🟥 | ✅ 07/10 · `908c439` · nhật ký `08ff546` · `gl3.sh` 25/25 · npm test 2485/0 · đối kháng ĐẠT (F1 nặng → GL3b; F2 F3 → GL3b; F4–F7 nợ) · chưa deploy |
+| GL3b | Đọc lịch sử Pancake lỗi/chậm: KHÔNG trả lời mù (F1 đối kháng GL3) · lùi 15/30 s rồi giao sale CÓ dòng `viec_can_xu_ly` · bộ nạp lùi theo hội thoại + `doc_tin_loi` (migration 033) · `pkTagId` không cache rỗng · F2/F3 | GL3 | 🟥 | 🔨 phát 07/10 · phiếu `2c72688` · review (a) 2 vòng (vòng 1: 2 CHẶN · vòng 2: 2 CHẶN thi công — đã vào phiếu) |
 | GL4 | Ngắt cả page khi 2 lần gửi lỗi liên tiếp → 30′, tự mở; tin tồn giữ ở chờ; lưu nguyên nhân lỗi; đèn đỏ | GL3 | 🟥 | ⬜ |
 | GL5 | HTTPS (trust proxy · đóng 3102 · `PUBLIC_URL` https · nginx) — SAU pilot | tên miền | 🟨 | ⬜ |
 | GL6 | Nhịp tim worker · độ trễ + tỉ lệ lỗi · bộ dò đẩy cảnh báo Telegram | GL4 · bot + chat id | 🟨 | ⬜ |
@@ -3267,3 +3268,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · TT1 → 🔎 chờ nghiệm thu — `HE_SO_TE` + EUR/RON/AUD ×100 · TWD/JPY ×1 (theo cách POS lưu) · `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan · `quyDonViNho` một luật cho saveProduct (giá · giá gốc · ship) / tổng bot / legacy — lẻ ⇒ từ chối rõ, không làm tròn ngầm; trả nợ N-TIEN-TE-NGOAI-GCC
   `tt1.sh` PHÉP=27 LỖI=1 (8 phép ④ + 7 đảo-vá đỏ đúng; lỗi = gsp3b chập chờn chuỗi con, chạy riêng xanh · gsp3b riêng 54/1 = ve7b tổng giết, riêng 8/8 cả HEAD lẫn 2e11bf9) · npm test 2452→2486 / 0 đỏ · /code-review 10: sửa #3 #7 #9 #10 · nợ 6 mục §9 N-TT1-* · nới ③ 4 tệp thước (tổng duyệt) · `_chan1` chưa chạy (nhường cây GL3b)
   · commit bc190f5 · nhật ký docs/thi-cong/nhat-ky/phieu-tt1.md
+- 07/10 · GL3 → ✅ (tổng nghiệm thu) · GL3b 🔨 phát — đối kháng GL3 ĐẠT; F1 (Pancake chậm ⇒ `pkGetMessages` nuốt lỗi ⇒ worker trả lời MÙ đè sale) + F2 + F3 gom phiếu GL3b 🟥, xếp vào nhóm TỐI THIỂU pilot; F4–F7 vào ⑥ GL3b
+  GL3b review (a) 2 vòng: vòng 1 TRẢ VỀ (C1 CHECK `nap_bo_qua` nuốt cả vòng · C2 `banGiaoLoi` không đẻ việc ⇒ câm vĩnh viễn) · vòng 2 TRẢ VỀ (công thức F2 che đảo-vá gl3.sh · l1-m2.sh đỏ sẵn từ base) — đã vào phiếu
+  · tổng dừng tay test treo `ve7b-ket-noi` (36′, 0% CPU, không kết nối) trong chuỗi gsp3b của TT1 — riêng 8/8 cả HEAD lẫn 2e11bf9 · phiếu 2c72688 · TT1 nới ③ đợt 2 ghi vào phiếu
