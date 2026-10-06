@@ -381,13 +381,13 @@ TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
 | TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | 🔎 07/10 · mã `bc190f5` · nhật ký `f2e1ac1` · `tt1.sh` 27/1 (1 đỏ = chuỗi cũ gsp3b chập chờn, chạy riêng xanh) · npm test 2486/0 · chặng 2 đối kháng ĐẠT (lõi không phá được: khứ hồi EUR/TWD/RON 0 sai · 7 tệ cũ khớp 100%) — F1 NEN → TT1b · F2 F3 gộp nợ · chờ `_chan1 tt1` (≈1,5 h, cây rảnh) |
-| TT1b | Ràng tệ bậc giá (món POS) + tệ đơn (`taoDon` cửa b) với tệ thị trường shop — chặn POS thu sai ×100/×0,01 (đối kháng TT1 F1) · dời `TIEN_TE_THI_TRUONG` cạnh `HE_SO_TE` | TT1 | 🟥 | ⬜ phiếu viết 07/10 · chờ review (a) · trước page EU/AUUS (GCC: lỗ có từ trước) |
+| TT1b | Ràng tệ bậc giá (món POS) + tệ đơn (`taoDon` cửa b) với tệ thị trường shop — chặn POS thu sai ×100/×0,01 (đối kháng TT1 F1) · dời `TIEN_TE_THI_TRUONG` cạnh `HE_SO_TE` | TT1 | 🟥 | ⬜ review (a) SỬA-PHIẾU (2 CHẶN thi công · 5 NÊN) → đã sửa · NHÓM TỐI THIỂU PILOT (F1 chạm cả GCC: shop Kuwait gõ SAR ⇒ POS thu KWD ≈ ×12) · phát sau TT1 ✅ |
 | GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | ⬜ review (a) SỬA-PHIẾU → đã sửa (G1 giá gần đây) |
 
 ## §5j · ĐIỀU KIỆN GO-LIVE (GL1–GL8) — người quyết «triển khai» 05/10
 
 Nghiên cứu (agent chỉ đọc) + quyết định người quyết 05/10 ghi ở §10 05/10 «ĐIỀU KIỆN GO-LIVE (GL)». Tối thiểu cho pilot 1 page có người ngồi
-canh: GL1 + GL2 + GL3 + GL3b + H-GL. Trước page thứ hai: GL4 (tính cả lỗi ĐỌC `LoiDocLichSu`) + GL6. HTTPS (GL5) SAU pilot. Trước khi bật page EU/AUUS: N-GUARD-TIEN-TE-MOI + TT1b.
+canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL4 (tính cả lỗi ĐỌC `LoiDocLichSu`) + GL6. HTTPS (GL5) SAU pilot. Trước khi bật page gắn shop NGOÀI 6 tệ GCC (Taiwan · Europe · Romania · Slovakia · USA · Australia — theo TỆ SHOP, không theo team): N-GUARD-TIEN-TE-MOI.
 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
@@ -3282,3 +3282,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · TT1 chặng 2 đối kháng ĐẠT · TT1b ⬜ phiếu — lõi TT1 không phá được (khứ hồi theo đường bot EUR/TWD 1..2e7 + RON 2e6 mẫu tới 1e11 sai 0 · luật nhận giá 7 tệ cũ khớp 100% base · 7 bộ ca lưới gần xanh trên bản sao)
   F1 NEN CONFIRMED: tệ bậc không ràng tệ shop ⇒ POS thu sai ×100 (có từ trước) / ×0,01 (TT1 mở) ⇒ phiếu TT1b 🟥 (chặn ở saveProduct món POS + taoDon cửa b) · đo prod: 24 kết nối đều trong bảng, 154 bậc đều món kb ⇒ chặn mới không vướng dữ liệu cũ
   · GSP3c xin nới ③ `test/gsp3-doi-soat.test.mjs` CHỈ ca ④9c F1 (thước cũ dựng trạng thái bằng cửa gỡ mà GSP3c nay tự bỏ dấu) — tổng duyệt · TT1 còn chờ `_chan1` (cây rảnh)
+- 07/10 · TT1b review (a) TRẢ VỀ → phiếu đã sửa · TT1b vào NHÓM TỐI THIỂU PILOT — C1 luật fail-closed làm đỏ 23 ca ở 6 tệp ca ngoài ③ (fixture market giả `GiaLapDuyet`/`E2E`…, mã `kb:` thiếu `nguon` mang DEFAULT 'pos') · C2 dời bảng giết đột biến neo `doan_japan` (gsp3.sh) / `bo_romania` (tt1.sh) ⇒ cả hai vào ③ với ràng buộc chỉ đổi fixture/neo
+  N1: F1 chạm GCC (Kuwait gõ SAR ⇒ POS thu KWD ≈ ×12; team GCC có shop Taiwan; đơn COD đầu tiên của v3 bắt buộc đi đường món pos × shop) ⇒ tổng đưa TT1b vào nhóm pilot · điều kiện tệ mới đổi sang «page gắn shop ngoài 6 tệ GCC» (N-GUARD-TIEN-TE-MOI đọc theo câu này)
+  · N2 không lọc `bat` · N3 chặn sau `shop_lech` · N4 đếm POST /orders + ca HTTP duyệt · N5 đo prod lúc mở van (⑦b) · base đặt sau TT1 ✅
