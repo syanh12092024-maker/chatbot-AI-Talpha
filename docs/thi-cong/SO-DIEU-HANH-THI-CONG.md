@@ -387,15 +387,16 @@ TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` 
 ## §5j · ĐIỀU KIỆN GO-LIVE (GL1–GL8) — người quyết «triển khai» 05/10
 
 Nghiên cứu (agent chỉ đọc) + quyết định người quyết 05/10 ghi ở §10 05/10 «ĐIỀU KIỆN GO-LIVE (GL)». Tối thiểu cho pilot 1 page có người ngồi
-canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL4 (tính cả lỗi ĐỌC `LoiDocLichSu`) + GL6. HTTPS (GL5) SAU pilot. Trước khi bật page gắn shop NGOÀI 6 tệ GCC (Taiwan · Europe · Romania · Slovakia · USA · Australia — theo TỆ SHOP, không theo team): N-GUARD-TIEN-TE-MOI.
+canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 (tính cả lỗi ĐỌC `LoiDocLichSu`) + GL6. Page pilot phải `nguon_tin=poll` (đo 07/10: 582/582). HTTPS (GL5) SAU pilot. Trước khi bật page gắn shop NGOÀI 6 tệ GCC (Taiwan · Europe · Romania · Slovakia · USA · Australia — theo TỆ SHOP, không theo team): N-GUARD-TIEN-TE-MOI.
 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
 | GL1 | `deploy/preflight.mjs` thôi luôn exit 1 + ca chạy CLI thật | — | 🟩 | ✅ 06/10 · `75665af` · `_chan1` 8/8 · `gl1.sh` 7/7 · chưa deploy |
 | GL2 | Trần số page bật TOÀN HỆ (biến mới; vắng = 0; vượt ⇒ worker dừng hẳn + đèn đỏ); cổng `setPage` có khoá | GL1 · sau TT1 (cùng `operations.js`) | 🟨 | ⬜ review (a) SỬA-PHIẾU → đã sửa (C1 hàm riêng cho worker · C2 đèn đếm toàn hệ) · phát sau TT1 |
 | GL3 | Hạn chờ request Pancake (đọc 15 s · gửi 30 s); POST lỗi mạng / quá hạn KHÔNG xoay token (đang có nguy cơ tin đúp) | — | 🟥 | ✅ 07/10 · `908c439` · nhật ký `08ff546` · `gl3.sh` 25/25 · npm test 2485/0 · đối kháng ĐẠT (F1 nặng → GL3b; F2 F3 → GL3b; F4–F7 nợ) · chưa deploy |
-| GL3b | Đọc lịch sử Pancake lỗi/chậm: KHÔNG trả lời mù (F1 đối kháng GL3) · lùi 15/30 s rồi giao sale CÓ dòng `viec_can_xu_ly` · bộ nạp lùi theo hội thoại + `doc_tin_loi` (migration 033) · `pkTagId` không cache rỗng · F2/F3 | GL3 | 🟥 | 🔨 phát 07/10 · phiếu `2c72688` · review (a) 2 vòng (vòng 1: 2 CHẶN · vòng 2: 2 CHẶN thi công — đã vào phiếu) |
+| GL3b | Đọc lịch sử Pancake lỗi/chậm: KHÔNG trả lời mù (F1 đối kháng GL3) · lùi 15/30 s rồi giao sale CÓ dòng `viec_can_xu_ly` · bộ nạp lùi theo hội thoại + `doc_tin_loi` (migration 033) · `pkTagId` không cache rỗng · F2/F3 | GL3 | 🟥 | 🔎 07/10 · mã `7065e41` · nhật ký `3d7bdda` · `gl3b.sh` 35/35 (18/18 đảo-vá đỏ đúng) · npm test 2489→2512/0 · /code-review 8 (sửa 4) · 13 nợ N-GL3B-* · ⑦ gsp3b so-base chưa có lượt sạch (chạy chồng — đỏ chạy riêng đều xanh) · chờ `_chan1` + chặng 2 đối kháng |
 | GL4 | Ngắt cả page khi 2 lần gửi lỗi liên tiếp → 30′, tự mở; tin tồn giữ ở chờ; lưu nguyên nhân lỗi; đèn đỏ | GL3 | 🟥 | ⬜ |
+| GL3c | Đọc lịch sử lỗi BỀN không được thành «câm im lặng» (nguyên tắc 13): bộ nạp lùi tới trần thì vẫn xếp tin ⇒ worker đi nhánh GL3b giao sale CÓ việc (N-GL3B-NAP-LOI-BEN) · page webhook: `docHoiThoai` nói lỗi (N-GL3B-WEBHOOK-MAPPING) | GL3b | 🟥 | ⬜ chưa viết phiếu · trước page thứ hai (pilot: 582/582 page prod là `poll` ⇒ webhook không chạm; người trực thấy tin chưa đọc trong Pancake) |
 | GL5 | HTTPS (trust proxy · đóng 3102 · `PUBLIC_URL` https · nginx) — SAU pilot | tên miền | 🟨 | ⬜ |
 | GL6 | Nhịp tim worker · độ trễ + tỉ lệ lỗi · bộ dò đẩy cảnh báo Telegram | GL4 · bot + chat id | 🟨 | ⬜ |
 | GL7 | Đồng bộ tài liệu + rào cũ (`deploy/README.md` · `README.md:95` · unit mẫu cũ · hook `canh-file-cam.sh` · phép ⑤ `_chan1.sh`) | GL1–GL5 | 🟩 | ⬜ |
@@ -3316,3 +3317,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · GL3b → 🔎 chờ nghiệm thu — cửa `docTin` đọc lịch sử lỗi ⇒ NÉM `LoiDocLichSu` (hết trả lời mù repro r2); worker lùi 15 s·30 s, 0 model 0 gửi, hết lượt ⇒ SALE/HANDOFF `doc_lich_su_loi` + 1 dòng việc (chỉ khi bot đang giữ + page bật bot + nguồn khớp), trả AI được; bộ nạp bỏ đúng hội thoại lỗi, không ghi mốc, lùi 30 s·2ⁿ, sổ `doc_tin_loi` (033, down xoá dòng trước); màn Vận hành nói lỗi; pkTagId không cache lỗi (giữ 5 s); F2/F3
   `gl3b.sh` ĐỎ 0/XANH 35 (23 ca · 18 đảo-vá đỏ đúng · gl3.sh 25/25 · 9 bộ ca cũ xanh) · ⑦ so base: l1-m2 0 đỏ mới · ll2 xanh · gsp3b 🔴 chập chờn chạy chồng (ll18-khung / vai-b-noi-day — riêng đều xanh, chưa có một lượt sạch) · npm test 2489→2512 / 0 đỏ · /code-review 8: sửa #2 #5 #6 #7 · #1 #3 #4 #8 vào nợ — 13 nợ §9 N-GL3B-* (nặng: WEBHOOK-MAPPING · NAP-LOI-BEN)
   · commit 7065e41 · nhật ký docs/thi-cong/nhat-ky/phieu-gl3b.md
+- 07/10 · GL3b → 🔎 (tổng nhận báo cáo thợ) · GL3c ⬜ mở — `gl3b.sh` 35/35 · 18/18 đảo-vá · npm test 2512/0 · ④10 tuyệt đối 10/10 rc=0 · so-base: l1-m2 0 đỏ mới, ll2 xanh hai bên, gsp3b đỏ khi chạy chồng (gốc ll18-khung / vai-b-noi-day chập chờn — chạy riêng xanh)
+  hai nợ nặng: N-GL3B-WEBHOOK-MAPPING (page webhook + Pancake sập ⇒ đường bàn giao cũ không việc) — đo prod 582/582 page `poll` ⇒ không chạm pilot, điều kiện «page pilot `poll`» vào §5j · N-GL3B-NAP-LOI-BEN (poll lỗi bền ⇒ bộ nạp lùi mãi, không việc) ⇒ GL3c trước page thứ hai
+  · lệch phiếu thợ khai (Q1 Q2 Q7 Q9) chấm ở chặng 2 · GSP3c đang thi công ở worktree · `_chan1 tt1` chạy lại khi máy yên
