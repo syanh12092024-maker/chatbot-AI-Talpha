@@ -226,6 +226,9 @@ test("GL3b V5 · màn Vận hành: tin có conv_id/cust_id + Pancake lỗi ⇒ `
     for (const [nhan, loi, mau] of [
       ["Pancake báo lỗi", async () => tl({ success: false, message: "Không tìm thấy gói cước của trang" }), /Không tìm thấy gói cước của trang/],
       ["502 HTML", html502, /Pancake lỗi \(HTTP 502\)/],
+      // vòng 2 (đối kháng F2): token đúng chân TREO, token kia 105 ⇒ màn nói «Pancake quá hạn», không «không có quyền» của token cuối
+      ["A quá hạn · B 105", (u, init) => (u.searchParams.get("access_token") === "tokA" ? treo(u, init)
+        : tl({ success: false, error_code: 105, message: "Bạn không có quyền với trang này" })), /^Pancake quá hạn — quá hạn 150 ms/],
     ]) {
       moi(loi);
       const r = await layJson(base, `/api/van-hanh/conversations/${ht.id}`);

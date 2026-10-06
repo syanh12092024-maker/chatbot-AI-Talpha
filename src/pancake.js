@@ -203,9 +203,11 @@ async function goiPancake(url, init, hanMs) {
 // page nào (_pageTokIdx); dính lỗi hết phiên (103) / quyền (105) / gói cước (121) → tự thử token kế tiếp.
 const _pageTokIdx = new Map(); // pageId -> index token đang chạy được
 const PERM_ERRS = new Set([103, 105, 121]);
+// Mọi mã lỗi Pancake trong một thân (`error_code` + `errors[].error_code`) — MỘT chỗ đọc cho `permErr` (xoay token) và
+// `hangLoiDoc` (câu lỗi đọc), để hai nơi không thể hiểu khác nhau khi Pancake đổi hình thân lỗi.
+const maLoiPancake = (j) => [j?.error_code, ...(Array.isArray(j?.errors) ? j.errors.map((e) => e?.error_code) : [])].map(Number);
 function permErr(j) {
-  const codes = [j?.error_code, ...(Array.isArray(j?.errors) ? j.errors.map((e) => e?.error_code) : [])];
-  return codes.some((c) => PERM_ERRS.has(Number(c)));
+  return maLoiPancake(j).some((c) => PERM_ERRS.has(c));
 }
 // Dấu lỗi mạng mang lên kết quả của hàm GHI: `khongRo` («KHÔNG RÕ đã tới khách chưa») · `phaLoi` · `quaHan`.
 // `lan-gui.js#bocCuaGuiBen` đã chuyển mọi `ok !== true` thành `lan_gui='khong_ro'` + LoiCanDoiChieuGui (không
@@ -215,7 +217,10 @@ const dauLoiMang = (j) => ({
   ...(j?.phaLoi ? { phaLoi: j.phaLoi } : {}),
   ...(j?.quaHan ? { quaHan: true } : {}),
 });
-async function pkFetchPage(pageId, buildUrl, init) {
+// `soLoi` (tuỳ chọn, chỉ `pkDocTin` truyền `{ ds: [], hetToken: false }`): ghi lỗi của TỪNG token trong vòng xoay + cờ «vòng xoay
+// CẠN token» — để câu lỗi chọn được lỗi «thật» nhất thay vì lỗi của token cuối (GL3b vòng 2 · F2). Không đổi giá trị trả, thứ tự
+// token, `_pageTokIdx`, hành vi GHI.
+async function pkFetchPage(pageId, buildUrl, init, soLoi = null) {
   const toks = allToks();
   if (!toks.length) return {};
   const doc = laMethodDoc(init?.method);
@@ -240,7 +245,7 @@ async function pkFetchPage(pageId, buildUrl, init) {
       // để `pkDocTin` nói «Pancake lỗi (HTTP 502)» thay vì gộp với «hết token»; nơi đọc `j.conversations`/`j.messages`
       // vẫn thấy rỗng y như `{}` cũ.
       if (e?.thanHong) j = { thanHong: true, message: loi.message };
-      else { last = loi; continue; } // ĐỌC: lỗi mạng / quá hạn → thử token kế (đọc lại không hại ai)
+      else { last = loi; soLoi?.ds.push(loi); continue; } // ĐỌC: lỗi mạng / quá hạn → thử token kế (đọc lại không hại ai)
     }
     // GL3b F3: lượt GHI mà Pancake xác nhận `success:true` là ĐÃ NHẬN — kể cả khi thân mang kèm `error_code` (vd 121).
     // Xét `permErr` trước thì xoay sang token kế ⇒ GỬI LẦN HAI ⇒ khách nhận hai tin.
@@ -251,7 +256,9 @@ async function pkFetchPage(pageId, buildUrl, init) {
       return j;
     }
     last = j;
+    soLoi?.ds.push(j);
   }
+  if (soLoi) soLoi.hetToken = true;
   return last; // hết token vẫn lỗi quyền → trả lỗi cuối để caller xử lý
 }
 
@@ -332,10 +339,26 @@ export async function pkGetConversations(pageId) {
 // GL3b: từ nay cũng là đường đọc lịch sử của CỬA Messenger (`channels/messenger#docTin` — worker + bộ nạp) và của
 // màn Vận hành: `ok:false` ở đó ⇒ không trả lời mù, không ghi mốc.
 export async function pkDocTin(pageId, convId, custId) {
-  const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}&customer_id=${custId}`);
+  const soLoi = { ds: [], hetToken: false };
+  const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}&customer_id=${custId}`, undefined, soLoi);
   if (Array.isArray(j?.messages)) return { ok: true, messages: j.messages };
-  return { ok: false, loi: lyDoDocLoi(j) };
+  // Vòng xoay CẠN token (mọi token lỗi quyền / mạng / quá hạn) ⇒ nói lỗi «thật» nhất. Ngược lại vòng xoay đã dừng sớm ở một câu
+  // trả lời KHÔNG phải lỗi quyền (thân hỏng 502 · câu riêng của Pancake) ⇒ câu đó đứng.
+  return { ok: false, loi: lyDoDocLoi(soLoi.hetToken ? loiThatNhat(soLoi.ds) : j) };
 }
+// GL3b vòng 2 (đối kháng F2) — mỗi tài khoản Pancake chỉ có quyền trên MỘT nhóm page, nên token «sai chân» trả 105 là chuyện
+// THƯỜNG; lỗi của token cuối vòng xoay vì thế hay là 105 và che lỗi thật của token đúng chân (Pancake quá hạn, lỗi mạng, page
+// tài khoản không ghế gói 121, token hết phiên 103) ⇒ người vận hành đi soát quyền token trong khi Pancake đang chậm. Thứ hạng
+// (nhỏ = nói trước): quá hạn · lỗi mạng · 103 · 121 · còn lại (105 …). 103 trên 121: 121 là lỗi CẤP TÀI KHOẢN (đo prod 02/10 —
+// gặp cả khi page còn gói), tài khoản thấy page mà không có ghế trả 121 thường xuyên như 105 — để 121 trên 103 thì token đúng
+// chân hết phiên bị che bởi «không có ghế» của token khác. Cùng hạng ⇒ lấy lỗi SAU (giữ hành vi cũ khi mọi token lỗi giống nhau).
+function hangLoiDoc(x) {
+  if (x?.quaHan) return 0;
+  if (Number(x?.error_code) === -1) return 1;
+  const ma = maLoiPancake(x);
+  return ma.includes(103) ? 2 : ma.includes(121) ? 3 : 4;
+}
+const loiThatNhat = (ds) => ds.reduce((tot, x) => (hangLoiDoc(x) <= hangLoiDoc(tot) ? x : tot));
 // GL3b ② 2 — câu lỗi nói ĐÚNG lý do. Trước đây `{}` do thân không phải JSON (502/504 HTML của cổng) và `{}` do hết token
 // cùng ra «không có token Pancake nào còn hạn» — người vận hành đi thay token trong khi Pancake đang sập. Câu quá hạn
 // GIỮ nguyên chuỗi «quá hạn <N> ms …» của `goiPancake` (ca GL3 so bằng regex). Không câu nào chứa token.

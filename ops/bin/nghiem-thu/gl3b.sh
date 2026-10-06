@@ -7,6 +7,9 @@
 # Tầm đo: lưới HỒI QUY (luật 32) do chính thợ viết, trên máy dev; hộp cát Postgres riêng mỗi tệp ca (`db/sandbox.js`, hậu tố
 # `_p<pid>`, migration 033 áp trong hộp cát). Đảo-vá trên BẢN SAO TẠM (src · db · v3/src · ca), mỗi đột biến một tiến trình node
 # mới (bẫy 15) — không bao giờ sửa cây làm việc chung. Chỉ `grep -E` (máy dev: `rg` là hàm zsh).
+# VÒNG 2 (đối kháng chặng 2 · verdict refute-gl3b.verdict.yaml): ④c F1 page POLL — tin khách nhắn thêm lúc tin trước đang lùi chốt
+# theo khi lượt 3 giao sale (không chan_guard, «trả AI» thành) · F2 câu lỗi `pkDocTin` khi các token lỗi KHÁC loại nói lỗi «thật»
+# nhất (quá hạn > mạng > 103 > 121 > 105), không lấy lỗi token cuối · đảo-vá ⑤r–⑤x4.
 # Cờ: GIU_TAM=1 giữ bản sao đảo-vá · CHAY_SO_BASE=1 chạy ⑦ (ba cổng cũ «so với base» trên worktree tạm ở $BASE — DÀI: gsp3b
 # kéo cả chuỗi cổng cũ) · CHAY_NPM_TEST=1 chạy ⑧. Hai cờ sau mặc định HOÃN (luật 6: không chạy song song lượt đo khác).
 set -uo pipefail
@@ -28,6 +31,7 @@ echo "── môi trường: máy dev · hộp cát Postgres trên $noi (CSDL ai
 CA_W=test/gl3b-worker-doc-loi.test.mjs
 CA_N=test/gl3b-nap-doc-loi.test.mjs
 CA_P=test/gl3b-pancake-van-hanh.test.mjs
+CA_V2=test/gl3b-vong2.test.mjs
 
 # ⓪ luật 1 §0a: máy này vẫn CHỈ ĐỌC (ca mở van trong tiến trình ca, không đụng .env)
 ro=$(grep -E '^PANCAKE_READONLY=' .env 2>/dev/null | tail -1 | cut -d= -f2)
@@ -45,6 +49,7 @@ bo_ca() { # bo_ca <nhãn> <tệp ca> <các tên phải xanh>
 bo_ca "①phép-1–4-worker-cửa-thật" "$CA_W" "P0 P1a P1b P1c P1d P1e P1f P2 P3a P3b P4"
 bo_ca "②phép-4b-bộ-nạp-+-migration-033" "$CA_N" "N1 N2 N3 N4 N5 N6 N7"
 bo_ca "③phép-②2·5·6·7-pancake-+-màn-Vận-hành" "$CA_P" "D1 T6 F2 F3 V5"
+bo_ca "④c-vòng-2-F1-poll-tin-theo-·-F2-câu-lỗi-token-khác-loại" "$CA_V2" "V2a V2b V2c V2d"
 
 # ④ phép 8 — đường trả lời khách + màn Vận hành không còn gọi `pkGetMessages` (bỏ dòng chú thích `//` · ` *`)
 n8=$(grep -nE "pkGetMessages" src/channels/messenger/index.js src/queue/*.js v3/src/ui/van-hanh/router.js | grep -vE '^[^:]+:[0-9]+:\s*(//|\*)' | grep -c .)
@@ -57,7 +62,7 @@ n_goi=$(grep -vE '^\s*//' src/pancake.js | grep -cE 'goiPancake\(')
 # ⑤ phép 9 — ĐẢO-VÁ trên bản sao tạm (mỗi đột biến một tiến trình mới). Luật đọc: các ca khai PHẢI nằm trong tập đỏ.
 T=$(mktemp -d "${TMPDIR:-/tmp}/gl3b.XXXXXX"); [ "${GIU_TAM:-0}" = 1 ] || trap 'rm -rf "$T"' EXIT
 mkdir -p "$T/test" "$T/v3"
-cp -R src "$T/src"; cp -R db "$T/db"; cp -R v3/src "$T/v3/src"; cp test/_an-toan.mjs "$CA_W" "$CA_N" "$CA_P" "$T/test/"
+cp -R src "$T/src"; cp -R db "$T/db"; cp -R v3/src "$T/v3/src"; cp test/_an-toan.mjs "$CA_W" "$CA_N" "$CA_P" "$CA_V2" "$T/test/"
 cp package.json "$T/"; ln -s "$GOC/node_modules" "$T/node_modules"; [ -f .env ] && ln -s "$GOC/.env" "$T/.env"
 dot() { (cd "$T" && node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimental-test-module-mocks --test --test-force-exit "$@" 2>&1); }
 khoi_phuc() { rm -rf "$T/src" "$T/db" "$T/v3/src"; cp -R src "$T/src"; cp -R db "$T/db"; cp -R v3/src "$T/v3/src"; }
@@ -131,8 +136,41 @@ dao "⑤p-bỏ-giữ-lỗi-5 s-của-pkTagId-⇒-T6-đỏ-(verifyTags-kết-lu�
   '  if ((!e || Date.now() - e.t > 10 * 60e3) && Date.now() - (_tagLoi.get(k) ?? -Infinity) < THE_LOI_GIU_MS) return null;' ''
 dao "⑤q-bỏ-điều-kiện-page-bật-bot/nguồn-khi-giao-sale-⇒-P1f-đỏ" "P1f" "$CA_W" "GL3b P1f ·" src/queue/worker.js \
   "AND p.bot_ai_bat = true AND (\$4 = '' OR p.nguon_tin = \$4)" "AND (\$4 = '' OR true)"
-khoi_phuc; o=$(dot "test/$(basename "$CA_W")" "test/$(basename "$CA_N")" "test/$(basename "$CA_P")"); f=$(so "$o" fail); p=$(so "$o" pass)
-[ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge 23 ]; ket "⑤0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ)" $? "pass=${p:-?} fail=${f:-?}"
+# vòng 2 (đối kháng F1 · F2) — bản vá cũng là code mới (bẫy 26): mỗi điều kiện của câu chốt tin theo + mỗi bậc thứ hạng một đột biến
+dao "⑤r-bỏ-chốt-tin-theo-(F1)-⇒-V2a-đỏ-(tin-2-thành-chan_guard,-trả-AI-bị-chặn)" "V2a" "$CA_V2" "GL3b V2[ab] ·" src/queue/worker.js \
+  "        const theo = bg.banGiao ? await khach.query(\`UPDATE tin_cho_xu_ly SET trang_thai='xong', ly_do=\$5" \
+  "        const theo = false ? await khach.query(\`UPDATE tin_cho_xu_ly SET trang_thai='xong', ly_do=\$5"
+dao "⑤r2-bỏ-nhật-ký-tin-chốt-theo-⇒-V2a-đỏ-(tin-khách-biến-mất-im-lặng)" "V2a" "$CA_V2" "GL3b V2a ·" src/queue/worker.js \
+  '        if (theo?.rowCount) await ghiNhatKyHangDoi(khach, {' '        if (false) await ghiNhatKyHangDoi(khach, {'
+dao "⑤s-chốt-tin-theo-cả-nhánh-khong_thuoc_ai-⇒-V2b-đỏ" "V2b" "$CA_V2" "GL3b V2[ab] ·" src/queue/worker.js \
+  "        const theo = bg.banGiao ? await khach.query(\`UPDATE tin_cho_xu_ly SET trang_thai='xong', ly_do=\$5" \
+  "        const theo = true ? await khach.query(\`UPDATE tin_cho_xu_ly SET trang_thai='xong', ly_do=\$5"
+dao "⑤t-chốt-tin-theo-bỏ-điều-kiện-psid-⇒-V2a-đỏ-(khách-khác-bị-chốt)" "V2a" "$CA_V2" "GL3b V2a ·" src/queue/worker.js \
+  "WHERE team_id=\$1 AND page_id=\$2 AND psid=\$3 AND id>\$4 AND trang_thai='cho'" \
+  "WHERE team_id=\$1 AND page_id=\$2 AND (\$3::text IS NOT NULL) AND id>\$4 AND trang_thai='cho'"
+dao "⑤u-chốt-tin-theo-bỏ-điều-kiện-page-⇒-V2a-đỏ-(cùng-psid-page-khác-bị-chốt)" "V2a" "$CA_V2" "GL3b V2a ·" src/queue/worker.js \
+  "WHERE team_id=\$1 AND page_id=\$2 AND psid=\$3 AND id>\$4 AND trang_thai='cho'" \
+  "WHERE team_id=\$1 AND (\$2::text IS NOT NULL) AND psid=\$3 AND id>\$4 AND trang_thai='cho'"
+dao "⑤v-pkDocTin-về-lỗi-token-CUỐI-(F2)-⇒-V2c-V2d-đỏ" "V2c V2d" "$CA_V2" "GL3b V2[cd] ·" src/pancake.js \
+  '  return { ok: false, loi: lyDoDocLoi(soLoi.hetToken ? loiThatNhat(soLoi.ds) : j) };' \
+  '  return { ok: false, loi: lyDoDocLoi(j) };'
+dao "⑤v2-như-trên-ở-màn-Vận-hành-⇒-V5-đỏ" "V5" "$CA_P" "GL3b V5 ·" src/pancake.js \
+  '  return { ok: false, loi: lyDoDocLoi(soLoi.hetToken ? loiThatNhat(soLoi.ds) : j) };' \
+  '  return { ok: false, loi: lyDoDocLoi(j) };'
+dao "⑤w-dừng-sớm-(thân-hỏng)-cũng-chọn-theo-hạng-⇒-V2c-đỏ-(câu-502-phải-đứng)" "V2c" "$CA_V2" "GL3b V2c ·" src/pancake.js \
+  'soLoi.hetToken ? loiThatNhat(soLoi.ds) : j' 'soLoi.ds.length ? loiThatNhat(soLoi.ds) : j'
+dao "⑤v3-pkFetchPage-không-dựng-cờ-cạn-token-⇒-V2c-V2d-đỏ" "V2c V2d" "$CA_V2" "GL3b V2[cd] ·" src/pancake.js \
+  '  if (soLoi) soLoi.hetToken = true;' ''
+dao "⑤x1-quá-hạn-ngang-hạng-mạng-⇒-V2c-đỏ" "V2c" "$CA_V2" "GL3b V2c ·" src/pancake.js \
+  '  if (x?.quaHan) return 0;' '  if (x?.quaHan) return 1;'
+dao "⑤x2-mạng-ngang-hạng-105-⇒-V2c-đỏ" "V2c" "$CA_V2" "GL3b V2c ·" src/pancake.js \
+  '  if (Number(x?.error_code) === -1) return 1;' '  if (Number(x?.error_code) === -1) return 4;'
+dao "⑤x3-103/121-ngang-hạng-105-⇒-V2c-đỏ" "V2c" "$CA_V2" "GL3b V2c ·" src/pancake.js \
+  '  return ma.includes(103) ? 2 : ma.includes(121) ? 3 : 4;' '  return 4;'
+dao "⑤x4-121-trên-103-(bản-đầu-vòng-2,-/code-review-#3)-⇒-V2c-đỏ" "V2c" "$CA_V2" "GL3b V2c ·" src/pancake.js \
+  '  return ma.includes(103) ? 2 : ma.includes(121) ? 3 : 4;' '  return ma.includes(121) ? 2 : ma.includes(103) ? 3 : 4;'
+khoi_phuc; o=$(dot "test/$(basename "$CA_W")" "test/$(basename "$CA_N")" "test/$(basename "$CA_P")" "test/$(basename "$CA_V2")"); f=$(so "$o" fail); p=$(so "$o" pass)
+[ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge 27 ]; ket "⑤0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ)" $? "pass=${p:-?} fail=${f:-?}"
 
 # ⑥ phép 10 — XANH TUYỆT ĐỐI, rc tách dòng: cổng GL3 + chín bộ ca chạm đường đọc/gửi/hàng đợi/lược đồ
 o=$(bash ops/bin/nghiem-thu/gl3.sh 2>&1); r=$?

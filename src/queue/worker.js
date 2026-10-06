@@ -275,6 +275,19 @@ export async function chayMotVong(pool, deps = {}) {
         if (batchIds.length) await khach.query(`UPDATE tin_cho_xu_ly SET trang_thai='xong',
           ly_do=$3,sua_luc=now() WHERE team_id=$1 AND id=ANY($2::bigint[])`,
           [tin.team_id, batchIds, `gom_vao_tin:${tin.id}`]);
+        // GL3b vòng 2 (đối kháng F1) · page POLL: tin khách nhắn THÊM trong lúc tin này lùi (15 s · 30 s) là HÀNG RIÊNG (gom
+        // cụm ở trên chỉ chạy cho webhook) — để `cho` thì tới lượt gặp SALE ⇒ `chan_guard` ⇒ «trả AI» bị từ chối. Chúng thuộc
+        // dòng việc sale vừa nhận ⇒ chốt theo, cùng giao dịch, chỉ đúng (team, page, psid) này, id lớn hơn (FIFO: id nhỏ hơn
+        // không thể còn `cho`). Chỉ nhánh giao sale CÓ việc: `khong_thuoc_ai` không có việc mới ⇒ tin theo đi đường thường.
+        // Ghi nhật ký danh sách tin đã chốt theo — tin khách bot không trả lời không được biến mất im lặng.
+        const theo = bg.banGiao ? await khach.query(`UPDATE tin_cho_xu_ly SET trang_thai='xong', ly_do=$5, sua_luc=now()
+          WHERE team_id=$1 AND page_id=$2 AND psid=$3 AND id>$4 AND trang_thai='cho' RETURNING id`,
+          [tin.team_id, tin.page_id, tin.psid, tin.id, `${lyDoTin}:theo_tin:${tin.id}`]) : null;
+        if (theo?.rowCount) await ghiNhatKyHangDoi(khach, {
+          teamId: tin.team_id, hanhDong: "tin_doc_loi_chot_theo", tinId: tin.id,
+          ghiChu: `${theo.rowCount} tin khách nhắn thêm lúc tin ${tin.id} đang lùi — chốt theo dòng việc bàn giao, bot không trả lời`,
+          sau: { tin_theo: theo.rows.map((x) => String(x.id)) },
+        });
         await phien.ketThuc(TRANG_THAI.XONG, lyDoTin);
         return {
           tinId: tin.id,
