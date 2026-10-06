@@ -1674,6 +1674,34 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL4 (tính 
   - Gộp vào **N-TT1-LUOC-DO-HE-SO**: `src/pos/doc-don.js:365` còn khai «TWD ×100, KWD ×1000» · `ops/bin/nap-page-de-do.mjs:47` bản chép bảng hệ số
     thứ ba thiếu 5 tệ mới (hôm nay vô hại). Gộp vào nợ /code-review TT1 #6: `quyDonViNho` nhận mọi thứ `Number()` nhận (`"  "` ⇒ 0 ⇒ bot dặn «ship 0»;
     `"0x7BC"` ⇒ 1980) — qua API, màn hình không lọt; có từ trước TT1.
+
+- 07/10 · GL3b (thợ) — mười ba nợ ngoài hợp đồng phiếu (③ · ② 4 · ⑥); chi tiết + kịch bản: `docs/thi-cong/nhat-ky/phieu-gl3b.md` mục Nợ:
+  - **N-GL3B-WEBHOOK-MAPPING** (/code-review GL3b #1, đọc mã) page WEBHOOK: worker tra mapping qua `docHoiThoai` → `pkGetConversations` (nuốt lỗi ⇒ [])
+    TRƯỚC khi đọc lịch sử ⇒ Pancake sập thật thì ném `LoiChoMappingPancake` (lùi 5 s × 3, `worker.js:134-142`) ⇒ `banGiaoLoi` cũ: tin `loi`,
+    `loi_xu_ly_can_doi_chieu`, KHÔNG dòng việc, «trả AI» bị chặn (`reconcile.js:54`). Nhánh GL3b chỉ chạy khi mapping đọc được mà lịch sử lỗi. Sửa cần
+    `docHoiThoai` nói lỗi (đổi hợp đồng cửa). NẶNG nếu page pilot nhận tin qua webhook.
+  - **N-GL3B-NAP-LOI-BEN** (/code-review #3) page POLL: đọc lịch sử lỗi BỀN (121 không ghế gói · «Thiếu mã khách hàng» · Pancake sập lâu) ⇒ bộ nạp lùi
+    mãi (trần 5′), không xếp tin ⇒ worker không thấy ⇒ KHÔNG dòng việc; chỉ có dòng `doc_tin_loi` (đáng ngờ) ở «Tin bị lọc». Cần người quyết: trần số
+    lần lùi rồi xếp tin (worker giao sale như nhánh GL3b) hay bộ nạp tự đẻ việc.
+  - **N-GL3B-CONV-NUOT-LOI** (phiếu ⑥ · review (a) G2) `pkGetConversations` nuốt lỗi ⇒ vòng nạp «0 hội thoại» y như không ai nhắn — cần bộ đếm (GL6).
+  - **N-GL3B-BANGIAOLOI-PANCAKE** (phiếu ⑥ · review (a) G1) `banGiaoLoi` (và `banGiaoDocLoi`) không thẻ/ghi chú Pancake, không trần 1 lần/24h (README 13
+    ⑥ — GL6); đường `banGiaoLoi` không có việc ⇒ màn hội thoại hiện mã thô `ly_do_cuoi` (`ban-hoi-thoai.html:234`; có việc thì hiện câu của việc).
+  - **N-GL3-DOC-NHAN-TOKEN** NÂNG (phiếu ⑥ F4 + /code-review #4): ghim nhầm token ⇒ mọi lượt đọc của page lỗi ⇒ nay mọi tin của page giao sale sau ~45 s;
+    Pancake quá hạn ⇒ `/settings` (thẻ chặn) tốn 15 s × số token MỖI vòng nạp (giữ lỗi 5 s chỉ gộp các lượt trong một vòng).
+  - **N-GL3B-THAN-NOTES** (phiếu ⑥ F5) thân thật `POST /notes` chưa đo — công thức F2 coi `{error_code:0}` không `success` là THẤT BẠI; nếu Pancake trả
+    kiểu đó cho ghi thành công thì mọi ghi chú bàn giao v3 thành `khong_ro`. Đo một lượt thật khi mở van.
+  - **N-GL3B-PHA-KET-NOI** (phiếu ⑥ F6) `phaLoi:'ket_noi'` không phải bằng chứng «chưa gửi byte nào» (GL4 đừng dựa vào nó để gửi lại).
+  - **N-GL3B-HAN-ANH** (phiếu ⑥ F7) hạn gửi 30 s có thể cắt lượt gửi ảnh lớn (Pancake tải `content_url` đồng bộ).
+  - **N-GL3B-THE-FAIL-OPEN** (phiếu ② 7 · ⑥) `pkTagId` đọc lỗi trong vòng ⇒ bộ nạp chỉ còn thẻ hệ thống (fail-open «thà quét thừa», `nap.js#idTheChan`)
+    ⇒ hội thoại «Đã gửi» có thể được nạp trong lúc Pancake lỗi (nay chỉ trong lúc lỗi, không còn 10′). Đổi fail-closed cần người quyết.
+  - **N-GL3B-GL4-DOC-LOI** (phiếu ⑥ · review (a) N3) GL4 «2 lỗi gửi liên tiếp ⇒ ngắt page 30′, tin tồn giữ ở chờ» phải tính cả `LoiDocLichSu`: đọc chạy
+    TRƯỚC gửi — Pancake sập thì tin chết ở bước đọc (giao sale sau ~45 s) trước khi GL4 thấy lỗi gửi nào.
+  - **N-GL3B-033-TRUOC-MA** (phiếu ⑥ · review (a) G5) migration 033 phải áp trên VPS TRƯỚC khi chạy mã GL3b (mo-van §5) — không thì CHECK cũ từ chối cả
+    câu INSERT gộp của `ghiBoQua` ⇒ dấu vết bỏ-qua của page mất âm thầm mỗi vòng có đọc lỗi.
+  - **N-GL3B-DEM-DOC-LOI** (phiếu ⑥ · review (a) R2-G1) tin đọc lỗi chốt `xong` ⇒ không còn trong đếm «tin lỗi» Vận hành (`tom-tat.js:17-23` chỉ `loi` /
+    `chan_guard`); log vòng worker có `"doc_loi_ban_giao":N` + bộ nạp in `N đọc-tin-lỗi` nhưng chưa màn/đèn nào đọc — GL6.
+  - **N-GL3B-KHUON-VIEC-HAI-BAN** (/code-review #8) câu chèn `viec_can_xu_ly` có hai bản (`operations.js#handoffConversation` · `worker.js#banGiaoDocLoi`),
+    UPDATE `gom_vao_tin` ba bản trong `chayMotVong`, worker import hằng từ `admin-v3/` — gộp helper trung lập khi có phiếu được đụng `operations.js`.
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3285,3 +3313,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · TT1b review (a) TRẢ VỀ → phiếu đã sửa · TT1b vào NHÓM TỐI THIỂU PILOT — C1 luật fail-closed làm đỏ 23 ca ở 6 tệp ca ngoài ③ (fixture market giả `GiaLapDuyet`/`E2E`…, mã `kb:` thiếu `nguon` mang DEFAULT 'pos') · C2 dời bảng giết đột biến neo `doan_japan` (gsp3.sh) / `bo_romania` (tt1.sh) ⇒ cả hai vào ③ với ràng buộc chỉ đổi fixture/neo
   N1: F1 chạm GCC (Kuwait gõ SAR ⇒ POS thu KWD ≈ ×12; team GCC có shop Taiwan; đơn COD đầu tiên của v3 bắt buộc đi đường món pos × shop) ⇒ tổng đưa TT1b vào nhóm pilot · điều kiện tệ mới đổi sang «page gắn shop ngoài 6 tệ GCC» (N-GUARD-TIEN-TE-MOI đọc theo câu này)
   · N2 không lọc `bat` · N3 chặn sau `shop_lech` · N4 đếm POST /orders + ca HTTP duyệt · N5 đo prod lúc mở van (⑦b) · base đặt sau TT1 ✅
+- 07/10 · GL3b → 🔎 chờ nghiệm thu — cửa `docTin` đọc lịch sử lỗi ⇒ NÉM `LoiDocLichSu` (hết trả lời mù repro r2); worker lùi 15 s·30 s, 0 model 0 gửi, hết lượt ⇒ SALE/HANDOFF `doc_lich_su_loi` + 1 dòng việc (chỉ khi bot đang giữ + page bật bot + nguồn khớp), trả AI được; bộ nạp bỏ đúng hội thoại lỗi, không ghi mốc, lùi 30 s·2ⁿ, sổ `doc_tin_loi` (033, down xoá dòng trước); màn Vận hành nói lỗi; pkTagId không cache lỗi (giữ 5 s); F2/F3
+  `gl3b.sh` ĐỎ 0/XANH 35 (23 ca · 18 đảo-vá đỏ đúng · gl3.sh 25/25 · 9 bộ ca cũ xanh) · ⑦ so base: l1-m2 0 đỏ mới · ll2 xanh · gsp3b 🔴 chập chờn chạy chồng (ll18-khung / vai-b-noi-day — riêng đều xanh, chưa có một lượt sạch) · npm test 2489→2512 / 0 đỏ · /code-review 8: sửa #2 #5 #6 #7 · #1 #3 #4 #8 vào nợ — 13 nợ §9 N-GL3B-* (nặng: WEBHOOK-MAPPING · NAP-LOI-BEN)
+  · commit 7065e41 · nhật ký docs/thi-cong/nhat-ky/phieu-gl3b.md
