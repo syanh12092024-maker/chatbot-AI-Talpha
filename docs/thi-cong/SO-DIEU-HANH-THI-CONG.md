@@ -1703,6 +1703,22 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
     `chan_guard`); log vòng worker có `"doc_loi_ban_giao":N` + bộ nạp in `N đọc-tin-lỗi` nhưng chưa màn/đèn nào đọc — GL6.
   - **N-GL3B-KHUON-VIEC-HAI-BAN** (/code-review #8) câu chèn `viec_can_xu_ly` có hai bản (`operations.js#handoffConversation` · `worker.js#banGiaoDocLoi`),
     UPDATE `gom_vao_tin` ba bản trong `chayMotVong`, worker import hằng từ `admin-v3/` — gộp helper trung lập khi có phiếu được đụng `operations.js`.
+- 07/10 · GL2 (thợ) — bảy nợ ngoài phạm vi (phiếu ⑥ · review (a) G1/G2/N4 · /code-review #5 #8); chi tiết: `docs/thi-cong/nhat-ky/phieu-gl2.md`:
+  - **N-GL2-DAI-TRANG-THAI** dải trạng thái mọi trang (`v3/src/ui/chung/trang-thai.js` qua `nhip-may-bot.js`) khi VƯỢT trần vẫn nói «máy chạy bot đang
+    đứng … khởi động lại» — chỉ đèn ③b màn Sức khoẻ được dạy «dừng vì vượt trần» (hai tệp ngoài ③). Dẫn người đi restart vô ích ngay trên mọi trang.
+  - **N-GL2-DEN-QUA-CUA-KIEM** (/code-review #8 · lệch L3 tổng chấp nhận) đèn đếm toàn hệ qua `_docSanSang` (= `noiVanHanhV3`: bảng sẵn sàng cũ +
+    `pageStatus` từng page bật) ⇒ ~3N truy vấn mỗi lượt vẽ khi N page bật; tiến trình nào tiêm bộ đọc cũ (`dungPhanB` mặc định `sanSangToanHe`) thì đèn chỉ
+    còn chặn dưới của team mà KHÔNG nói ra. Thay bằng cửa tiêm một câu đếm (`page-routing.js#trangThaiTran(pool)`) khi phiếu được đụng `vai-b.js`/`chay-that.js`.
+  - **N-GL2-TIN-TON-SAU-DUNG** (/code-review #5 · review (a) G2) vượt trần lâu: page poll không được nạp (Pancake v1 chỉ 60 hội thoại mới nhất ⇒ có thể
+    sót khách) · page webhook vẫn xếp tin ⇒ chạy lại là trả lời tồn đọng muộn hàng giờ · page bị tắt giữ tin `cho` mãi (chặn đổi nguồn «Còn tin chờ/lỗi»).
+    Cần người quyết: chạy lại sau dừng thì giao sale / bỏ tin quá N phút.
+  - **N-GL2-PILOT-TRAN-1** (review (a) G1) `setup.sh` pilot đòi đúng `V3_TRAN_PAGE_BAT=1`; mở page thứ hai không còn chế độ deploy nào vừa mở van vừa cho
+    trần > 1 (`configure` ép `PANCAKE_READONLY=1`) — làm cùng lượt mở rộng.
+  - **N-GL2-TRAN-THEO-TEAM** (phiếu ⑥) trần chỉ TOÀN HỆ; chưa có trần theo team.
+  - **N-GL2-INLUOT-LY-DO** (review (a) N4 phần còn lại) dòng vòng 6 giây `inLuot` khi nguồn MỞ chỉ in «0 page», không in lý do (vượt trần nằm ở cảnh báo
+    ≤ 1/5′ · `ket.nap.lyDo` · dòng khởi động) — cùng khuyết với «chưa page nào bật» có từ trước.
+  - **N-GL2-MAY-KET-KHI-VUOT** khi vượt, đèn «Máy chạy bot» thay câu của luật nhịp (VÀNG «dừng vì vượt trần») ⇒ tin kẹt `dang_xu` (máy chết giữa chừng
+    THẬT) bị che tới khi về trong trần (số đo hàng đợi vẫn in trong câu).
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3323,3 +3339,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · GL3b chặng 1 `_chan1` 7/8 (⑤ rào cũ) · chặng 2 đối kháng ĐẠT 0 CHẶN — không còn đường trả lời mù với lỗi đã gặp (quá hạn · 502 · mạng · 105/121 · thân không danh sách); việc không trùng; lùi mã giữ schema an toàn
   NÊN (vòng 2 GL3b, trước pilot): F1 page poll — khách nhắn thêm trong 45 s chờ ⇒ tin `chan_guard` chặn «trả AI» (chốt luôn tin `cho` cùng khách ở lượt 3) · F2 câu lỗi «không có quyền» của token cuối che «Pancake quá hạn/121»
   · nợ đề nghị: N-GL3B-RONG-GIA (thân lỗi kèm `messages:[]` ⇒ coi rỗng thật) · N-GL3-DOC-NHAN-TOKEN nâng (prod ~12′ mới tới sale, vòng nạp đứng) · N-GL3B-TRA-AI-KHONG-DONG-VIEC · verdict scratchpad refute-gl3b.verdict.yaml
+- 07/10 · GL2 → 🔎 — trần số page bật bot TOÀN HỆ `V3_TRAN_PAGE_BAT` (vắng = 0): setPage 409 dưới khoá tư vấn (đếm không kẹp team) · worker vượt ⇒ [] + cảnh
+  báo ≤1/5′ (hàm riêng, nguồn 6 màn giữ nguyên) · đèn Sức khoẻ đỏ mọi team · preflight --ready/--tran · setup.sh pilot =1 · `gl2.sh` 35/35 (26 ca · 24 đảo-vá đỏ đúng)
+  · mb/ll3/gl1 rc=0 · npm test 2512→2538 / 0 · nới ③ 4 tệp thước (gật) · /code-review 10: sửa 4 · nợ 2 · 7 nợ N-GL2-* · commit 2d0d335 · nhật ký docs/thi-cong/nhat-ky/phieu-gl2.md
