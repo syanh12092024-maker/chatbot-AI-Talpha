@@ -26,8 +26,9 @@ th=0; for t in '(a)' '(b)' '(c)' '(d)'; do echo "$out" | grep -qF -- "✔ GL1 $t
 
 # ② đảo-vá trên bản sao tạm
 T=$(mktemp -d "${TMPDIR:-/tmp}/gl1.XXXXXX"); [ "${GIU_TAM:-0}" = 1 ] || trap 'rm -rf "$T"' EXIT
-mkdir -p "$T/deploy" "$T/test" "$T/db"
+mkdir -p "$T/deploy" "$T/test" "$T/db" "$T/src/queue"
 cp -R db/. "$T/db/"; cp deploy/preflight.mjs "$T/deploy/"; cp "$CA" "$T/test/"; cp package.json "$T/"
+cp src/queue/page-routing.js "$T/src/queue/"   # GL2: preflight import hàm trần chung (tệp này không import tĩnh gì thêm)
 ln -s "$GOC/node_modules" "$T/node_modules"; [ -f .env ] && cp .env "$T/.env"
 dot() { (cd "$T" && node --env-file-if-exists=.env --test "test/gl1-preflight-cli-that.test.mjs" 2>&1); }
 nho() { echo "$1" | grep -E "^\s*✖ GL1 \(" | sed -E 's/^\s*✖ GL1 (\([a-d]\)).*/\1/' | sort -u | tr '\n' ' '; }

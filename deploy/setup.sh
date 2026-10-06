@@ -12,7 +12,9 @@ cd "$APP_DIR"
 NODE_BIN="$(command -v node)"
 for bin in npm pg_dump pg_restore systemctl flock curl; do command -v "$bin" >/dev/null || { echo "Thiếu công cụ: $bin"; exit 1; }; done
 [[ -f .env && -f package-lock.json ]] || { echo 'Thiếu .env hoặc package-lock.json'; exit 1; }
-"$NODE_BIN" --env-file=.env deploy/preflight.mjs
+# GL2: --tran = vượt trần page bật bot (V3_TRAN_PAGE_BAT) thì dừng NGAY ở bước đọc-thuần này, khi dịch vụ còn chạy —
+# để lỡ sau bước dừng dịch vụ thì màn «Công tắc từng page» cũng tắt theo, không ai tắt bớt page được.
+"$NODE_BIN" --env-file=.env deploy/preflight.mjs --tran
 # Existing drop-ins may override ExecStart or re-open sending after this script
 # writes a closed-mode unit. Require them to be reviewed instead of ignoring them.
 for service in aicloser-v3 aicloser-worker-v3; do
@@ -25,6 +27,11 @@ if [[ "$DEPLOY_MODE" == pilot ]]; then
     // danh sách page trong .env — pilot chỉ đòi van gửi + cách ghép lời mới đã mở.
     if(process.env.V3_PANCAKE_GUI!=="1" || process.env.PANCAKE_READONLY==="1" || process.env.V3_RAP_PROMPT_BAT!=="1") {
       console.error("Pilot cần V3_PANCAKE_GUI=1, V3_RAP_PROMPT_BAT=1 và PANCAKE_READONLY khác 1");process.exit(1);
+    }
+    // GL2: pilot = ĐÚNG MỘT page — trần page bật bot toàn hệ phải là 1 (đọc qua hàm chung, vắng/sai = 0).
+    const { tranPageBat, moTaTranPageBat } = await import(process.cwd() + "/src/queue/page-routing.js");
+    if(tranPageBat(process.env)!==1) {
+      console.error("Pilot cần V3_TRAN_PAGE_BAT=1 (trần page bật bot toàn hệ — pilot đúng một page); đọc được: " + moTaTranPageBat(process.env));process.exit(1);
     }'
 fi
 if [[ "$MODE" == --check ]]; then

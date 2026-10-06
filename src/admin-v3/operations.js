@@ -1,6 +1,8 @@
 // Application services shared by the V3 operator UI. All identifiers are team scoped.
 import { ghiNhatKy } from "../db/index.js";
-import { botDangTraLoi } from "../queue/page-routing.js";
+import {
+  botDangTraLoi, dsPageBotTraLoi, tranPageBat, vuotTran, cauSoTran, KHOA_TRAN_PAGE_BAT,
+} from "../queue/page-routing.js";
 import { docSanPhamGoiGia } from "../products/catalog.js";
 import { layModel } from "../chat/model.js";
 import { HE_SO_TE, quyDonViNho } from "../pos/index.js";
@@ -79,6 +81,28 @@ export async function pageStatus(pool, p, env = process.env) {
     note: "Kiểm tra cấu hình; chưa xác nhận worker đang sống hoặc kết nối bên ngoài.",
   };
 }
+/**
+ * GL2 — TRẦN SỐ PAGE BẬT BOT TOÀN HỆ (`V3_TRAN_PAGE_BAT`, vắng = 0). Chạy TRONG giao dịch của `setPage`, SAU `pageStatus`
+ * (lỗi cấu hình nói trước lỗi trần) và chỉ ở chiều BẬT — tắt không bao giờ bị trần chặn.
+ *
+ * Khoá tư vấn TOÀN HỆ trước khi đếm: hai lượt bật song song (hai page, hai team) xếp hàng ở đây; lượt sau đếm SAU khi lượt
+ * trước COMMIT — đúng vì `transaction()` chạy READ COMMITTED (mỗi câu một ảnh chụp mới; REPEATABLE READ sẽ đếm bằng ảnh chụp
+ * cũ và cả hai cùng lọt). Khoá dòng page lấy trước, khoá tư vấn chỉ một ⇒ không có vòng chờ.
+ * Đếm bằng ĐÚNG hàm nguồn của worker (`dsPageBotTraLoi`, không kẹp team); page này đã bật thì không tính chính nó.
+ */
+async function kiemTranPageBat(c, p, env) {
+  await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [KHOA_TRAN_PAGE_BAT]);
+  const dangBat = await dsPageBotTraLoi(c);
+  const khac = dangBat.filter((pid) => pid !== String(p.page_id)).length;
+  if (vuotTran(khac + 1, tranPageBat(env))) {
+    // Câu nói số THẬT đang bật (kể cả chính page này nếu nó đã bật — gạt lại khi đang vượt cũng bị chặn, và phải nói đúng số).
+    throw fault(
+      `Vượt trần page bật bot TOÀN HỆ: ${cauSoTran(dangBat.length, env)}. Tắt bớt một page đang bật `
+        + "(có thể ở team khác) hoặc nhờ quản trị hệ thống nâng trần, rồi bật lại.",
+      409,
+    );
+  }
+}
 export async function setPage(pool, bc, id, input, env = process.env) {
   idOf(id);
   if (
@@ -118,6 +142,7 @@ export async function setPage(pool, bc, id, input, env = process.env) {
         env,
       );
       if (!status.ready) throw fault(status.blockers.join("; "), 409);
+      await kiemTranPageBat(c, p, env);
     }
     const r = await c.query(
       `UPDATE page SET bot_ai_bat=COALESCE($3,bot_ai_bat),nguon_tin=COALESCE($4,nguon_tin),sua_luc=now()

@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 
 process.env.V3_KHOA_VE ||= crypto.randomBytes(32).toString('base64');
 process.env.V3_KHOA_CHU ||= crypto.randomBytes(32).toString('base64');
+process.env.V3_TRAN_PAGE_BAT ||= '5';
 
 const { dungCongGia } = await import('../../testkit/db-gia.js');
 const { taoBoiCanh, VAI } = await import('../../src/auth/boi-canh.js');

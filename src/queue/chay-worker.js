@@ -26,7 +26,7 @@
 // `chan_guard` mà không một byte nào ra khách. In ra số đếm để thấy nó đang đứng ở đâu.
 import { napTuPoll, nguonDangMo, lyDoNguonDong } from "./nap.js";
 import { chayToiKhiHet } from "./worker.js";
-import { dsPageBotTraLoi, lyDoRong } from "./page-routing.js";
+import { dsPageBotTraLoiCoTran, choPhepTheoTran, lyDoRong, trangThaiTran, lyDoVuotTran, cauSoTran } from "./page-routing.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { taoPool } from "../../db/ket-noi.js";
@@ -70,8 +70,11 @@ export async function dsPageDeNap(pool, { gioiHan = 500 } = {}) {
 /**
  * Danh sách page worker được phép nạp và xử — MỘT BẢN (CR-02-10 · MB2): đúng những page có
  * `page.bot_ai_bat = true`. Chỗ quyết định nằm ở `page-routing.js`; hai nơi đọc là hai luật.
+ *
+ * GL2: qua TRẦN toàn hệ (`V3_TRAN_PAGE_BAT`, vắng = 0) — số page bật > trần ⇒ `[]`, worker không trả lời page nào
+ * (`page-routing.js#dsPageBotTraLoiCoTran`). Cố ý KHÔNG đổi `dsPageBotTraLoi` — nó còn là nguồn của 6 màn.
  */
-export const dsPageChoPhep = (pool) => dsPageBotTraLoi(pool);
+export const dsPageChoPhep = (pool, env = process.env) => dsPageBotTraLoiCoTran(pool, env);
 
 export function lyDoChuaChoPageNao() {
   return lyDoRong();
@@ -90,7 +93,9 @@ export async function motLuot(pool, deps = {}) {
   // MỘT LƯỢT ĐỌC CHO CẢ VÒNG. Nguồn có thể là CSDL (024), nên hỏi hai lần trong một vòng
   // vừa tốn một lời gọi vừa mở đường cho hai nửa của cùng một vòng chạy trên hai danh sách
   // khác nhau — người vừa giao một page giữa chừng là thấy ngay.
-  const choPhep = await (deps.dsChoPhep ? deps.dsChoPhep() : dsPageChoPhep(pool));
+  // GL2: danh sách và lý do «vượt trần» lấy từ CÙNG một lượt đọc trạng thái trần (`page-routing.js#trangThaiTran`).
+  const tt = deps.dsChoPhep ? null : await trangThaiTran(pool);
+  const choPhep = deps.dsChoPhep ? await deps.dsChoPhep() : choPhepTheoTran(tt);
 
   if (!ket.nap.mo) {
     ket.nap.lyDo = lyDoNguonDong();
@@ -104,7 +109,9 @@ export async function motLuot(pool, deps = {}) {
     ket.nap.nguonChoPhep = 'csdl';
     const pages = trongBang.filter((p) => choPhep.includes(p));
     ket.nap.page = pages.length;
-    if (!choPhep.length) ket.nap.lyDo = lyDoChuaChoPageNao();
+    // GL2: rỗng vì VƯỢT TRẦN thì nói đúng lý do đó, không phải «chưa page nào bật bot».
+    if (tt?.vuot) ket.nap.lyDo = lyDoVuotTran(tt.soBat);
+    else if (!choPhep.length) ket.nap.lyDo = lyDoChuaChoPageNao();
     else if (!pages.length) {
       ket.nap.lyDo =
         `Danh sách cho phép có ${choPhep.length} id nhưng KHÔNG id nào có trong bảng ` +
@@ -176,11 +183,13 @@ async function main() {
   // `undefined` ⇒ dòng log nói «KHÔNG CÓ page nào» trong khi vòng lặp vẫn chạy page — đo được
   // trên bản dev khi kéo hội thoại Minty. Và TỆ HƠN: nguồn là CSDL (nay luôn là cột
   // `page.bot_ai_bat`) ⇒ thiếu `pool` là `pool.query` trên `undefined` ⇒ tiến trình SẬP lúc khởi động.
-  const choPhep = await dsPageChoPhep(pool);
+  const tran = await trangThaiTran(pool);   // GL2: dòng khởi động nói trần + số bật, và nói đúng lý do khi rỗng
+  const choPhep = choPhepTheoTran(tran);
   console.log(
     `[worker-v3] khởi động · nhịp ${NHIP_MS}ms · trần ${TRAN_MOI_LUOT} tin/lượt · ` +
       `nguồn ${nguonDangMo() ? "MỞ" : "ĐÓNG"} · V3_PANCAKE_GUI=${JSON.stringify(process.env.V3_PANCAKE_GUI)} · ` +
-      `page được phép: ${choPhep.length ? choPhep.join(",") : "KHÔNG CÓ (chưa page nào bật bot — cột page.bot_ai_bat)"}`,
+      `${cauSoTran(tran.soBat)} · page được phép: ${choPhep.length ? choPhep.join(",")
+        : tran.vuot ? `KHÔNG CÓ (${lyDoVuotTran(tran.soBat)})` : "KHÔNG CÓ (chưa page nào bật bot — cột page.bot_ai_bat)"}`,
   );
   let dung = false;
   for (const tin of ["SIGINT", "SIGTERM"]) {

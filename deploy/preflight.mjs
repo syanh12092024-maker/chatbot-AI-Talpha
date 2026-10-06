@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+// GL2: trần số page bật bot TOÀN HỆ — cùng hàm đọc biến, cùng phép đếm, cùng câu số đo với worker và cổng bật.
+import { tranPageBat, vuotTran, cauSoTran, dsPageBotTraLoi } from "../src/queue/page-routing.js";
 
 export function checkConfig(env, version = process.versions.node) {
   const errors = [];
@@ -95,9 +97,8 @@ export async function inspectDatabase(env, root) {
         "SELECT to_regclass('public.page') IS NOT NULL AS present",
       )
     ).rows[0].present;
-    const botBat = pageTable
-      ? Number((await pool.query("SELECT count(*) AS n FROM page WHERE bot_ai_bat")).rows[0].n)
-      : 0;
+    // GL2: đếm bằng ĐÚNG hàm nguồn của worker (`page_id <> ''`) — preflight và worker không được ra hai con số.
+    const botBat = pageTable ? (await dsPageBotTraLoi(pool)).length : 0;
     return {
       ...info,
       applied: applied.length,
@@ -116,6 +117,7 @@ export async function main() {
       {
         node: process.versions.node,
         uiPort: report.uiPort,
+        tranPageBat: tranPageBat(process.env),
         errors: report.errors,
       },
       null,
@@ -130,9 +132,19 @@ export async function main() {
   try {
     const db = await inspectDatabase(process.env, root);
     console.log(JSON.stringify(db, null, 2));
-    // GL1: `missingPages` đã gỡ ở MB2/MB4 (đọc nó = TypeError ⇒ exit 1 mọi lượt). `pagesBotBat` chỉ IN, chưa chặn (trần page là GL2).
+    // GL1: `missingPages` đã gỡ ở MB2/MB4 (đọc nó = TypeError ⇒ exit 1 mọi lượt).
     if (process.argv.includes("--ready") && db.pending.length)
       process.exitCode = 1;
+    // GL2: --ready (hoặc --tran: CHỈ kiểm trần, cho bước đọc-thuần đầu `setup.sh` — trước khi dừng dịch vụ) + số page bật
+    // > trần (`V3_TRAN_PAGE_BAT`, vắng = 0) ⇒ exit 1 — worker sẽ DỪNG hẳn ngay khi lên.
+    const kiemTran = process.argv.includes("--ready") || process.argv.includes("--tran");
+    if (kiemTran && vuotTran(db.pagesBotBat, tranPageBat(process.env))) {
+      console.error(
+        `Vượt trần page bật bot toàn hệ: ${cauSoTran(db.pagesBotBat)} — worker sẽ không trả lời page nào. ` +
+          "Tắt bớt page (hoặc đặt đúng trần trong .env) rồi deploy lại.",
+      );
+      process.exitCode = 1;
+    }
   } catch (e) {
     console.error(
       e.safe

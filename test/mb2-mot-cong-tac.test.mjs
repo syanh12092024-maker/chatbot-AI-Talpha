@@ -1,7 +1,7 @@
 // MB2 · CR-02-10 — MỘT CÔNG TẮC «bot mình trả lời page này»: cột `page.bot_ai_bat`.
 //
 // Đo trên CSDL sandbox thật (không giả), bốn lời hứa của phiếu:
-//   ① worker nạp ĐÚNG page bật cột — không cần biến môi trường nào;
+//   ① worker nạp ĐÚNG page bật cột — không cần biến DANH SÁCH page nào (trần `V3_TRAN_PAGE_BAT` của GL2 là luật khác — ca đặt đủ rộng);
 //   ② cổng của bot (`setPage` → `pageStatus`) CHẶN bật khi van gửi đóng, cột giữ nguyên; TẮT luôn đi;
 //   ③ lượt «Kéo dữ liệu về» KHÔNG chép `ai-enabled.json` đè cột (đảo-vá: khôi phục `napCongTacAi` ⇒ ③ đỏ);
 //   ④ đường trả lời đọc lại cột trước khi gửi — tắt giữa chừng thì dừng.
@@ -37,11 +37,14 @@ test('① worker nạp ĐÚNG page bật cột — biến cũ đặt hay vắng 
   assert.deepEqual(await dsPageChoPhep(pool), [], 'mặc định cột = false ⇒ worker không nạp page nào');
   await pool.query('UPDATE page SET bot_ai_bat = true WHERE page_id = $1', ['980000000001']);
   const cu = process.env.V3_PAGE_XU_LY;
+  const cuTran = process.env.V3_TRAN_PAGE_BAT;
   process.env.V3_PAGE_XU_LY = '980000000002';
+  process.env.V3_TRAN_PAGE_BAT = '2';   // GL2: vắng trần = 0 ⇒ worker dừng; ca này đo CỘT, nên đặt trần đủ rộng
   try {
     assert.deepEqual(await dsPageChoPhep(pool), ['980000000001'], 'chỉ cột quyết — biến cũ không thêm page');
   } finally {
     if (cu === undefined) delete process.env.V3_PAGE_XU_LY; else process.env.V3_PAGE_XU_LY = cu;
+    if (cuTran === undefined) delete process.env.V3_TRAN_PAGE_BAT; else process.env.V3_TRAN_PAGE_BAT = cuTran;
     await pool.query('UPDATE page SET bot_ai_bat = false');
   }
 });

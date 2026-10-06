@@ -21,6 +21,8 @@ import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 // Luật xét «máy chạy bot còn sống không» — CHUNG với dải trạng thái. Viết lại ở đây là hẹn
 // ngày hai chỗ nói hai điều khác nhau về cùng một máy.
 import { docNhipMayBot } from '../chung/nhip-may-bot.js';
+// GL2: trần số page bật bot TOÀN HỆ — luật (`vuotTran`) + câu số đo (`cauSoTran`) dùng CHUNG với worker và cổng bật.
+import { tranPageBat, vuotTran, cauSoTran } from '../../../../src/queue/page-routing.js';
 // Cầu dao «giao page bằng giao diện» (024) — đèn ⑪ chỉ có nghĩa khi biết nguồn nào đang dùng.
 
 export const MUC = Object.freeze({
@@ -48,13 +50,10 @@ export class LoiSucKhoe extends Error {
 let _taoTruyVan = null;
 let _docKhoToken = null;
 /**
- * Bộ đọc CỬA KIỂM của tiến trình bot (`sanSangToanHe`) — nguồn THẬT của công tắc AI.
- *
- * Cột `page.bot_ai_bat` chỉ là BẢN SAO và đã lệch một lần đo được: CSDL v3 ghi 50 page bật
- * bot trong khi `ai-enabled.json` là `[]` (0 page) — 50 page bị tắt qua dashboard v1, v3
- * không biết. Hai đèn ⑤ và ⑥ của màn này dựng trên đúng cột đó, nên chưa nối cửa thì chúng
- * đếm bằng bản sao; nay nối được thì đọc nguồn thật, và dù đứng ở nguồn nào cũng phải NÓI
- * RA (`nguonBotBat`), không im lặng đổi nguồn số.
+ * Bộ đọc CỬA KIỂM (TOÀN HỆ, không theo team). Lịch sử: trước CR-02-10 · MB2 nó là «nguồn thật của công tắc AI» (cột
+ * `bot_ai_bat` khi ấy chỉ là bản sao của `ai-enabled.json`); từ MB2 cột LÀ sự thật và đèn ⑤ ⑥ đếm cột của team.
+ * GL2 (07/10): dùng lại bộ đọc này cho MỘT việc — đếm số page bật TOÀN HỆ so với trần (`docTranToanHe` ở dưới), vì
+ * cổng truy vấn của màn kẹp team. Máy thật tiêm `noiVanHanhV3(pool)` (`v3/chay-that.js:299`).
  */
 let _docSanSang = null;
 let _trangThaiCauBot = null;
@@ -115,7 +114,7 @@ export const NGUONG = Object.freeze({
   hoiThoaiIm: 24 * 3600 * 1000,   // 24 giờ không có hội thoại mới = đáng ngờ
 });
 
-export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
+export async function bangDen(boiCanh, { bay = Date.now(), env = process.env } = {}) {
   const bc = batBuocBoiCanh(boiCanh);
   const db = congTruyVan(bc);
 
@@ -136,6 +135,8 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
     lech: null,
   };
   const coKichBan = new Set(kichBan.map((k) => String(k.page_id)));
+  // GL2: trần là TOÀN HỆ còn cổng truy vấn ở trên KẸP TEAM ⇒ đếm riêng, không dùng `botBat.length` (review (a) C2).
+  const tran = await docTranToanHe(botBat, env);
   const ds = [];
 
   /* ① MODEL AI — đèn của sự cố 06/08 và 23/08 */
@@ -173,25 +174,36 @@ export async function bangDen(boiCanh, { bay = Date.now() } = {}) {
   /* ③b MÁY CHẠY BOT — thứ thật sự trả lời khách (worker v3).
      Đèn ③ nói về CỬA GHI vào lõi bot; đèn này nói về máy xử tin. Hai thứ khác nhau, và trước
      25/09 không đèn nào canh cái thứ hai. */
-  ds.push(denMayChayBot(await docNhipMayBot({ boiCanh: bc })));
+  ds.push(denMayChayBot(await docNhipMayBot({ boiCanh: bc }), tran));
 
   /* ④ TOKEN PANCAKE */
   ds.push(await denToken(bay));
 
-  /* ⑤ CÔNG TẮC BOT */
-  ds.push(botBat.length
+  /* ⑤ CÔNG TẮC BOT — và TRẦN TOÀN HỆ (GL2): vượt ⇒ worker DỪNG hẳn ⇒ đèn ĐỎ ở MỌI team */
+  const veTran = ` Toàn hệ ${tran.doDuoc ? '' : `(ít nhất — ${tran.viSaoMu}) `}${cauSoTran(tran.soBat, env)}.`;
+  ds.push(tran.vuot
     ? den({
-      ma: 'bot_bat', ten: 'Page đang bật bot', muc: MUC.XANH,
-      vi: `${botBat.length}/${pages.length} page đang để bot tự trả lời khách.`,
-      so: `${botBat.length} page`,
+      ma: 'bot_bat', ten: 'Page đang bật bot', muc: MUC.DO,
+      vi: `Worker đang DỪNG vì vượt trần: ${cauSoTran(tran.soBat, env)} — bot KHÔNG trả lời page NÀO, kể cả page `
+        + 'trong trần, cho tới khi số page bật ≤ trần. '
+        + (botBat.length ? `Team này đang bật ${botBat.length}: ${botBat.map((p) => p.ten || p.page_id).join(', ')}.` : 'Team này không bật page nào.')
+        + (tran.soBat > botBat.length ? ` Còn ${tran.soBat - botBat.length} page bật ở team khác.` : ''),
+      diTiep: { chu: 'Tắt bớt page ở màn Page & Bot (hoặc nhờ quản trị hệ thống nâng trần)', duong: '/page-bot' },
+      so: `${tran.soBat}/${tran.tran} page — vượt trần`,
     })
-    : den({
-      ma: 'bot_bat', ten: 'Page đang bật bot', muc: MUC.VANG,
-      vi: `Không page nào đang bật bot — hệ thống có ${pages.length} page nhưng không page nào `
-        + 'để bot trả lời. Nếu đó là chủ ý thì bỏ qua; nếu không thì đây là lý do không có lượt chat nào.',
-      diTiep: { chu: 'Sang màn Page & Bot', duong: '/page-bot' },
-      so: `0/${pages.length} page`,
-    }));
+    : botBat.length
+      ? den({
+        ma: 'bot_bat', ten: 'Page đang bật bot', muc: MUC.XANH,
+        vi: `${botBat.length}/${pages.length} page đang để bot tự trả lời khách.${veTran}`,
+        so: `${botBat.length} page`,
+      })
+      : den({
+        ma: 'bot_bat', ten: 'Page đang bật bot', muc: MUC.VANG,
+        vi: `Không page nào đang bật bot — hệ thống có ${pages.length} page nhưng không page nào `
+          + `để bot trả lời. Nếu đó là chủ ý thì bỏ qua; nếu không thì đây là lý do không có lượt chat nào.${veTran}`,
+        diTiep: { chu: 'Sang màn Page & Bot', duong: '/page-bot' },
+        so: `0/${pages.length} page`,
+      }));
 
   /* ⑥ KỊCH BẢN CHO PAGE ĐANG BẬT BOT — chỗ nguy nhất, và dễ bị bỏ qua nhất */
   const batMaKhongKichBan = botBat.filter((p) => !coKichBan.has(String(p.id)));
@@ -296,13 +308,56 @@ function denHaiBot(_pages, _nguonBotBat, botBat) {
 }
 
 /**
+ * Số page bật bot TOÀN HỆ so với trần (GL2 · review (a) C2).
+ *
+ * Cổng truy vấn của màn KẸP TEAM, nên không đếm được toàn hệ. Đếm qua bộ đọc cửa kiểm `_docSanSang`: tiến trình giao diện
+ * tiêm `noiVanHanhV3(pool)` (`v3/chay-that.js:170,299` → `vai-b.js#datDocSanSangSucKhoe`), mà bộ đọc ấy dựng danh sách page
+ * bật từ `src/queue/page-routing.js#dsPageBotTraLoi(pool)` — CÙNG hàm, cùng phạm vi toàn hệ worker đếm trần
+ * (`van-hanh-v3.js:72`). Ca `v3/test/b/gl2-den-suc-khoe.test.mjs` D5a đo trên chuỗi thật đó, hai page ở hai team.
+ * Số bật của team là CHẶN DƯỚI chắc chắn ⇒ lấy max. Bộ đọc vắng/ném ⇒ chỉ còn chặn dưới, và câu đèn NÓI RA điều đó.
+ */
+async function docTranToanHe(botBat, env) {
+  let toanHe = null;
+  let viSaoMu = null;
+  if (!_docSanSang) viSaoMu = 'chưa nối bộ đọc toàn hệ, chỉ đếm được team này';
+  else {
+    try {
+      const kq = await _docSanSang();
+      toanHe = (kq?.pages || []).filter((p) => p?.aiEnabled === true).length;
+    } catch (e) {
+      viSaoMu = `đọc toàn hệ lỗi (${e?.message || e}), chỉ đếm được team này`;
+    }
+  }
+  const tran = tranPageBat(env);
+  // Chặn dưới đếm ĐÚNG như worker: page không có id Facebook (`page_id = ''`) worker không đếm, đèn cũng không.
+  const cuaTeam = botBat.filter((p) => String(p.page_id ?? '') !== '').length;
+  const soBat = Math.max(toanHe ?? 0, cuaTeam);
+  return { tran, soBat, vuot: vuotTran(soBat, tran), doDuoc: toanHe != null, viSaoMu };
+}
+
+/**
  * Máy chạy bot của bot mới, đo bằng hàng đợi tin. Luật xét nằm ở `chung/nhip-may-bot.js` —
  * ở đây chỉ dịch kết quả sang hình dạng một cái đèn.
  *
  * `diTiep` không có đường dẫn: chưa màn nào khởi động lại được máy chạy bot, và bịa một
  * đường dẫn tới màn không làm được việc ấy còn tệ hơn là nói thẳng «nhờ người quản trị».
+ *
+ * GL2: đang VƯỢT TRẦN thì worker cố ý không rút tin ⇒ tin chờ dồn ⇒ luật nhịp sẽ nói «máy đứng» và dẫn người đi khởi động
+ * lại — vô ích. Khi đó đèn nói «dừng vì vượt trần» (VÀNG — máy không hỏng; đèn ĐỎ là đèn «Page đang bật bot»).
  */
-function denMayChayBot(x) {
+function denMayChayBot(x, tran = null) {
+  if (tran?.vuot) {
+    return den({
+      ma: 'may_chay_bot',
+      ten: 'Máy chạy bot',
+      muc: MUC.VANG,
+      vi: `Máy chạy bot đang dừng vì vượt trần page bật bot (${tran.soBat}/${tran.tran}) — cố ý không trả lời page nào, `
+        + 'máy KHÔNG hỏng: khởi động lại không giúp gì. Tắt bớt page cho số page bật ≤ trần thì máy tự chạy lại. '
+        + `Số đo hàng đợi lúc này: ${x.so || 'chưa có'}.`,
+      so: `dừng — vượt trần${x.so ? ` · ${x.so}` : ''}`,
+      diTiep: { chu: 'Tắt bớt page ở màn Page & Bot', duong: '/page-bot' },
+    });
+  }
   return den({
     ma: 'may_chay_bot',
     ten: 'Máy chạy bot',

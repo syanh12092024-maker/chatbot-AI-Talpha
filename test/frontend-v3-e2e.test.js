@@ -21,6 +21,7 @@ import { vaoHangCho } from "../src/orders/hang-cho.js";
 test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", async (t) => {
   process.env.V3_KHOA_VE = "e2e-only-signing-key-".repeat(3);
   process.env.V3_KHOA_MA_HOA = "c".repeat(64);
+  process.env.V3_TRAN_PAGE_BAT = "1";
   const sb = await dungSandbox("frontend_v3");
   const pool = sb.pool;
   let server, browser;
@@ -71,6 +72,7 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
       ANTHROPIC_API_KEY: "fake-only",
       V3_POS_GHI: "1",
       V3_KHOA_MA_HOA: process.env.V3_KHOA_MA_HOA,
+      V3_TRAN_PAGE_BAT: "1",
     };
     let posPosts = 0;
     const nap = async (_url, opts = {}) => {

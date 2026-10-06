@@ -87,7 +87,7 @@ test("P7-1b · CHƯA page nào bật bot ⇒ KHÔNG nạp page nào, và nói l�
 test("P7-1c · chỉ page BẬT bot mới được nạp — page tắt bị bỏ qua", async () => {
   await batBot(["970000000001"]);
   const ket = await voiEnv(
-    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1" },
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_TRAN_PAGE_BAT: "2" },
     () => motLuot(pool, { depsNap: { docHoiThoai: async () => [] } }),
   );
   assert.equal(ket.nap.choPhep, 1, "một page bật");
@@ -121,7 +121,7 @@ test("P7-2 · van NGUỒN đóng (máy READONLY) ⇒ KHÔNG gọi cửa Pancake 
 test("P7-3 · van nguồn MỞ (harness) ⇒ nạp theo TỪNG page và cộng đúng số", async () => {
   await batBot(["970000000001", "970000000002"]);
   const ket = await voiEnv(
-    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1" }, () =>
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_TRAN_PAGE_BAT: "2" }, () =>
     motLuot(pool, {
       depsNap: {
         // Ca này đo van bậc phơi + phép cộng theo page, KHÔNG đo cửa chờ-khách-gõ-xong
@@ -162,7 +162,7 @@ test("P7-4 · MỘT page hỏng KHÔNG dừng cả vòng, nhưng phải ĐẾM r
   await batBot(["970000000001", "970000000002"]);
   let lan = 0;
   const ket = await voiEnv(
-    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1" }, () =>
+    { PANCAKE_READONLY: "1", V3_NAP_DEV: "1", V3_TRAN_PAGE_BAT: "2" }, () =>
     motLuot(pool, {
       depsNap: {
         docHoiThoai: async () => {
