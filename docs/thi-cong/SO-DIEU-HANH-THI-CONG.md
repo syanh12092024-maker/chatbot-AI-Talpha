@@ -392,7 +392,7 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
 | GL1 | `deploy/preflight.mjs` thôi luôn exit 1 + ca chạy CLI thật | — | 🟩 | ✅ 06/10 · `75665af` · `_chan1` 8/8 · `gl1.sh` 7/7 · chưa deploy |
-| GL2 | Trần số page bật TOÀN HỆ (biến mới; vắng = 0; vượt ⇒ worker dừng hẳn + đèn đỏ); cổng `setPage` có khoá | GL1 · sau TT1 (cùng `operations.js`) | 🟨 | 🔎 07/10 · mã `2d0d335` · nhật ký `ca66fda` · `gl2.sh` 35/35 (24 đảo-vá đỏ đúng) · mb/ll3/gl1 rc=0 · npm test 2538/0 · nới ③ 4 tệp thước (tổng gật) · 7 nợ N-GL2-* · chờ `_chan1` + chặng 2 |
+| GL2 | Trần số page bật TOÀN HỆ (biến mới; vắng = 0; vượt ⇒ worker dừng hẳn + đèn đỏ); cổng `setPage` có khoá | GL1 · sau TT1 (cùng `operations.js`) | 🟨 | ✅ 07/10 (vòng 1) · `2d0d335` · nhật ký `ca66fda` · `_chan1` 8/8 · `gl2.sh` 35/35 · review (b) ĐẠT 0 CHẶN · N1 (đèn chỉ kể page của team đang xem ⇒ tắt nhầm page pilot, page lạc chạy lại) ⇒ vòng 2 nhỏ trước pilot · N2 N3 G1 G2 nợ · chưa deploy |
 | GL3 | Hạn chờ request Pancake (đọc 15 s · gửi 30 s); POST lỗi mạng / quá hạn KHÔNG xoay token (đang có nguy cơ tin đúp) | — | 🟥 | ✅ 07/10 · `908c439` · nhật ký `08ff546` · `gl3.sh` 25/25 · npm test 2485/0 · đối kháng ĐẠT (F1 nặng → GL3b; F2 F3 → GL3b; F4–F7 nợ) · chưa deploy |
 | GL3b | Đọc lịch sử Pancake lỗi/chậm: KHÔNG trả lời mù (F1 đối kháng GL3) · lùi 15/30 s rồi giao sale CÓ dòng `viec_can_xu_ly` · bộ nạp lùi theo hội thoại + `doc_tin_loi` (migration 033) · `pkTagId` không cache rỗng · F2/F3 | GL3 | 🟥 | 🔎 07/10 · mã `7065e41` · nhật ký `3d7bdda` · `gl3b.sh` 35/35 · `_chan1` 7/8 (đỏ ⑤ = rào cũ src/pancake.js — GL7) · chặng 2 đối kháng ĐẠT (0 CHẶN) · F1 F2 NÊN ⇒ vòng 2 nhỏ trước pilot · F3–F5 nợ · còn ⑦ so-base lượt sạch |
 | GL4 | Ngắt cả page khi 2 lần gửi lỗi liên tiếp → 30′, tự mở; tin tồn giữ ở chờ; lưu nguyên nhân lỗi; đèn đỏ | GL3 | 🟥 | ⬜ |
@@ -1719,6 +1719,13 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
     ≤ 1/5′ · `ket.nap.lyDo` · dòng khởi động) — cùng khuyết với «chưa page nào bật» có từ trước.
   - **N-GL2-MAY-KET-KHI-VUOT** khi vượt, đèn «Máy chạy bot» thay câu của luật nhịp (VÀNG «dừng vì vượt trần») ⇒ tin kẹt `dang_xu` (máy chết giữa chừng
     THẬT) bị che tới khi về trong trần (số đo hàng đợi vẫn in trong câu).
+- 07/10 · tổng (review (b) GL2 `review-b-gl2.md`) — nợ:
+  - **N-GL2-HAI-UNIT-DOC-TRAN** đèn + cổng bật đọc trần ở `aicloser-v3`, worker giữ giá trị lúc khởi động ⇒ sửa `.env` mà chỉ restart một unit: worker dừng
+    page pilot trong khi đèn XANH «2/2», hoặc đèn ĐỎ «Worker DỪNG» trong khi worker vẫn trả lời (đã chạy thử). Rẻ: ghi «đổi biến phải restart CẢ HAI unit»
+    (vòng 2 GL2 + sổ phát hành pilot); bền: worker tự báo trạng thái trần (GL6).
+  - **N-GL2-DAI-TRANG-THAI** NÂNG: vượt trần + hàng đợi rỗng ⇒ dải trạng thái mọi trang + màn Lên chạy hiện XANH «Bot chạy 2/2 page» (không chỉ vế «máy đứng») — trước page thứ hai.
+  - Gộp N-GL2-DEN-QUA-CUA-KIEM: bộ đọc toàn hệ lỗi ⇒ đèn vẫn XANH kèm «ít nhất …» (trái luật «không đo được thì xám»), chưa có ca · biến vắng mà đang có page
+    bật ⇒ đèn khuyên «tắt bớt page» nhưng làm theo vẫn câm 0/0 (deploy đã chặn; còn ca sửa `.env` tay).
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3342,3 +3349,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · GL2 → 🔎 — trần số page bật bot TOÀN HỆ `V3_TRAN_PAGE_BAT` (vắng = 0): setPage 409 dưới khoá tư vấn (đếm không kẹp team) · worker vượt ⇒ [] + cảnh
   báo ≤1/5′ (hàm riêng, nguồn 6 màn giữ nguyên) · đèn Sức khoẻ đỏ mọi team · preflight --ready/--tran · setup.sh pilot =1 · `gl2.sh` 35/35 (26 ca · 24 đảo-vá đỏ đúng)
   · mb/ll3/gl1 rc=0 · npm test 2512→2538 / 0 · nới ③ 4 tệp thước (gật) · /code-review 10: sửa 4 · nợ 2 · 7 nợ N-GL2-* · commit 2d0d335 · nhật ký docs/thi-cong/nhat-ky/phieu-gl2.md
+- 07/10 · GL2 → ✅ (tổng nghiệm thu vòng 1) — trần page bật TOÀN HỆ `V3_TRAN_PAGE_BAT` (vắng = 0): `setPage` 409 dưới khoá tư vấn · worker vượt ⇒ dừng hẳn (hàm riêng) · đèn đỏ mọi team · preflight/setup.sh chặn TRƯỚC khi dừng dịch vụ
+  `_chan1` 8/8 (lượt 1 đỏ ④ vì tổng ghi 3 tệp nới ở văn xuôi — đã đưa vào khối ③) · `gl2.sh` 35/35 · 24 đảo-vá · npm test 2538/0 · review (b) ĐẠT: SQL tay / backup / song song / `page_id` trùng / `page_id=''` đều bị chặn
+  · N1 NÊN ⇒ GL2 vòng 2 trước pilot (đèn liệt kê MỌI page bật toàn hệ kèm team + ghi «đổi biến phải restart cả hai unit») · nợ N-GL2-HAI-UNIT-DOC-TRAN · N-GL2-DAI-TRANG-THAI nâng
