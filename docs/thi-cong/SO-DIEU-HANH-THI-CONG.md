@@ -380,13 +380,14 @@ TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` 
 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
-| TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | 🔎 07/10 · mã `bc190f5` · nhật ký `f2e1ac1` · `tt1.sh` 27/1 (1 đỏ = chuỗi cũ gsp3b chập chờn, chạy riêng xanh) · npm test 2486/0 · /code-review 10 (4 sửa) · 6 nợ N-TT1-* · chờ chặng 2 đối kháng + `_chan1 tt1` (≈1,5 h, chạy khi cây rảnh) |
+| TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | 🔎 07/10 · mã `bc190f5` · nhật ký `f2e1ac1` · `tt1.sh` 27/1 (1 đỏ = chuỗi cũ gsp3b chập chờn, chạy riêng xanh) · npm test 2486/0 · chặng 2 đối kháng ĐẠT (lõi không phá được: khứ hồi EUR/TWD/RON 0 sai · 7 tệ cũ khớp 100%) — F1 NEN → TT1b · F2 F3 gộp nợ · chờ `_chan1 tt1` (≈1,5 h, cây rảnh) |
+| TT1b | Ràng tệ bậc giá (món POS) + tệ đơn (`taoDon` cửa b) với tệ thị trường shop — chặn POS thu sai ×100/×0,01 (đối kháng TT1 F1) · dời `TIEN_TE_THI_TRUONG` cạnh `HE_SO_TE` | TT1 | 🟥 | ⬜ phiếu viết 07/10 · chờ review (a) · trước page EU/AUUS (GCC: lỗ có từ trước) |
 | GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | ⬜ review (a) SỬA-PHIẾU → đã sửa (G1 giá gần đây) |
 
 ## §5j · ĐIỀU KIỆN GO-LIVE (GL1–GL8) — người quyết «triển khai» 05/10
 
 Nghiên cứu (agent chỉ đọc) + quyết định người quyết 05/10 ghi ở §10 05/10 «ĐIỀU KIỆN GO-LIVE (GL)». Tối thiểu cho pilot 1 page có người ngồi
-canh: GL1 + GL2 + GL3 + GL3b + H-GL. Trước page thứ hai: GL4 (tính cả lỗi ĐỌC `LoiDocLichSu`) + GL6. HTTPS (GL5) SAU pilot. Trước khi bật page EU/AUUS: N-GUARD-TIEN-TE-MOI.
+canh: GL1 + GL2 + GL3 + GL3b + H-GL. Trước page thứ hai: GL4 (tính cả lỗi ĐỌC `LoiDocLichSu`) + GL6. HTTPS (GL5) SAU pilot. Trước khi bật page EU/AUUS: N-GUARD-TIEN-TE-MOI + TT1b.
 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
@@ -1666,6 +1667,13 @@ canh: GL1 + GL2 + GL3 + GL3b + H-GL. Trước page thứ hai: GL4 (tính cả l�
   - **N-GL3-ANH-THU-LAI** `src/tools.js#sendImageWithRetry` (tệp não) thử lại `pkSendImage` với MỌI `ok:false` — nay kết quả có `khongRo`
     mà vẫn bị gửi lại. Hiện mã chết (`flushPendingImages` không còn nơi gọi, handler-v3 gửi ảnh qua cửa); dựng lại thì phải tôn trọng `khongRo`.
 
+- 07/10 · tổng (đối kháng TT1 `refute-tt1.verdict.yaml`) — nâng mức / gộp nợ TT1:
+  - **N-TT1-TE-LECH-THI-TRUONG** NÂNG: không chỉ «lưu được» — bot lấy tệ đơn từ chính bậc (`draft.js:34`) nên `cua2Tien` KHÔNG BAO GIỜ đóng; POS
+    nhận sai tiền: Taiwan bậc «USD» 990 ⇒ `shipping_fee=99000` (×100, có từ trước) · Europe bậc «TWD» 49 ⇒ 0,49 EUR (×0,01 — TT1 mở hướng này).
+    Lời khai ca T6 sai. ⇒ phiếu **TT1b** (điều kiện trước page EU/AUUS).
+  - Gộp vào **N-TT1-LUOC-DO-HE-SO**: `src/pos/doc-don.js:365` còn khai «TWD ×100, KWD ×1000» · `ops/bin/nap-page-de-do.mjs:47` bản chép bảng hệ số
+    thứ ba thiếu 5 tệ mới (hôm nay vô hại). Gộp vào nợ /code-review TT1 #6: `quyDonViNho` nhận mọi thứ `Number()` nhận (`"  "` ⇒ 0 ⇒ bot dặn «ship 0»;
+    `"0x7BC"` ⇒ 1980) — qua API, màn hình không lọt; có từ trước TT1.
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3271,3 +3279,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · GL3 → ✅ (tổng nghiệm thu) · GL3b 🔨 phát — đối kháng GL3 ĐẠT; F1 (Pancake chậm ⇒ `pkGetMessages` nuốt lỗi ⇒ worker trả lời MÙ đè sale) + F2 + F3 gom phiếu GL3b 🟥, xếp vào nhóm TỐI THIỂU pilot; F4–F7 vào ⑥ GL3b
   GL3b review (a) 2 vòng: vòng 1 TRẢ VỀ (C1 CHECK `nap_bo_qua` nuốt cả vòng · C2 `banGiaoLoi` không đẻ việc ⇒ câm vĩnh viễn) · vòng 2 TRẢ VỀ (công thức F2 che đảo-vá gl3.sh · l1-m2.sh đỏ sẵn từ base) — đã vào phiếu
   · tổng dừng tay test treo `ve7b-ket-noi` (36′, 0% CPU, không kết nối) trong chuỗi gsp3b của TT1 — riêng 8/8 cả HEAD lẫn 2e11bf9 · phiếu 2c72688 · TT1 nới ③ đợt 2 ghi vào phiếu
+- 07/10 · TT1 chặng 2 đối kháng ĐẠT · TT1b ⬜ phiếu — lõi TT1 không phá được (khứ hồi theo đường bot EUR/TWD 1..2e7 + RON 2e6 mẫu tới 1e11 sai 0 · luật nhận giá 7 tệ cũ khớp 100% base · 7 bộ ca lưới gần xanh trên bản sao)
+  F1 NEN CONFIRMED: tệ bậc không ràng tệ shop ⇒ POS thu sai ×100 (có từ trước) / ×0,01 (TT1 mở) ⇒ phiếu TT1b 🟥 (chặn ở saveProduct món POS + taoDon cửa b) · đo prod: 24 kết nối đều trong bảng, 154 bậc đều món kb ⇒ chặn mới không vướng dữ liệu cũ
+  · GSP3c xin nới ③ `test/gsp3-doi-soat.test.mjs` CHỈ ca ④9c F1 (thước cũ dựng trạng thái bằng cửa gỡ mà GSP3c nay tự bỏ dấu) — tổng duyệt · TT1 còn chờ `_chan1` (cây rảnh)
