@@ -178,13 +178,16 @@ if [ "${CHAY_CONG_CU:-1}" = 1 ]; then
   PATH_CON="$PATH"; command -v rg >/dev/null 2>&1 || { PATH_CON="$SHIM:$PATH"; echo "   (máy này không có rg trong bash — cổng con nhận shim grep -E · nợ N-GSP-CONG-RG-ENV)"; }
   chuan_do() { grep -E "✘|🔴" | sed -E 's/[0-9]{4,}//g; s/p[0-9]+//g; s/\([0-9.]+ms\)//g' | sort; }
   TRAN_CON="${TRAN_CON:-3600}"
+  # Giết TRỌN cây con (con trước, cha sau): cổng con lồng nhau tự `set -m` ⇒ cháu nằm ở nhóm tiến trình KHÁC, `kill -- -pid` không với
+  # tới ⇒ mồ côi treo mãi (đo 07/10 lượt 2: gsp3b → gsp3 → ll15b treo 51′ dưới PID 1, cwd worktree đối chứng tạm).
+  giet_cay() { local c; for c in $(pgrep -P "$1" 2>/dev/null); do giet_cay "$c"; done; kill -KILL "$1" 2>/dev/null; }
   chay_con() {   # chay_con <tệp cổng> — in log của cổng con; rc=124 khi quá TRAN_CON giây
     local tep=$1 out; out=$(mktemp)
     set -m; PATH="$PATH_CON" bash "$tep" > "$out" 2>&1 & local pid=$!; set +m
     local t=0
     while kill -0 "$pid" 2>/dev/null; do
       sleep 5; t=$((t+5))
-      if [ "$t" -ge "$TRAN_CON" ]; then kill -KILL -- "-$pid" 2>/dev/null; wait "$pid" 2>/dev/null; cat "$out"; rm -f "$out"; return 124; fi
+      if [ "$t" -ge "$TRAN_CON" ]; then giet_cay "$pid"; kill -KILL -- "-$pid" 2>/dev/null; wait "$pid" 2>/dev/null; cat "$out"; rm -f "$out"; return 124; fi
     done
     wait "$pid"; local rc=$?; cat "$out"; rm -f "$out"; return "$rc"
   }
