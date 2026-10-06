@@ -52,6 +52,9 @@ docs/v3/ban-giao/bien-moi-truong-v3.md
 test/gl2-*.test.mjs
 v3/test/b/gl2-*.test.mjs
 ops/bin/nghiem-thu/gl2.sh
+test/frontend-v3-e2e.test.js
+v3/test/b/suc-khoe.test.mjs
+ops/bin/nghiem-thu/gl1.sh
 ```
 `operations.js`: CHỈ `setPage` (+ hàm phụ đọc trần). Ca cũ dựng page bật bot (`test/mb2-mot-cong-tac.test.mjs`, ca handler, cổng dựng page bật
 công tắc) sẽ cần trần ≥ số page chúng bật — đặt biến trong ca/fixture, KHÔNG nới luật; nếu tệp ca nằm ngoài ③ ⇒ dừng, báo tổng kèm danh sách.
