@@ -54,7 +54,9 @@ src/pos/doc-danh-muc.js
 v3/src/ui/san-pham/kho-goc.js
 test/gsp3c-*.test.mjs
 ops/bin/nghiem-thu/gsp3c.sh
+test/gsp3-doi-soat.test.mjs
 ```
+**Nới 07/10 (thợ xin, tổng duyệt):** `test/gsp3-doi-soat.test.mjs` CHỈ ca ④9c F1 — dựng «món rời gốc» bằng SQL tay thay cho `goMonPosKhoiGoc` (cửa gỡ từ GSP3c tự bỏ dấu ⇒ thước cũ hết dựng được trạng thái); assert giữ nguyên.
 `san-pham-goc.js`: CHỈ `ganMonPosVaoGoc` + `goMonPosKhoiGoc` + hàm bỏ dấu dùng chung + `demDauCu`. `doc-danh-muc.js`: CHỈ gọi hàm bỏ dấu ở
 nhánh món đổi `ma_goc`. `kho-goc.js`: CHỈ thêm «số bản sao bị bỏ dấu» vào câu nhật ký gắn/gỡ món (review N2). KHÔNG sửa `chuyen-ban-sao.js` (phiếu TT1/GP1 đang
 giữ tệp đó) — cần đổi ⇒ dừng, báo tổng.

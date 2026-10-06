@@ -43,7 +43,7 @@ Không có `N-GSP3C*` cũ; G1/G2/G3 của review (a) chưa vào §9 ⇒ ghi ở 
 - Phép ③ của `gsp3.sh` so trong khoảng commit cũ `b0b82d7..0f2c4bf` ⇒ không đổi (xanh, mục ⑥). Cổng `gsp3c.sh` thêm phép ③c: tệp
   đó chỉ được mất đúng một dòng — lời gọi gỡ e1 của ④9c F1.
 
-## Thay đổi (commit mã `b4f07f1` + cổng `9165fa5`) — mỗi chỗ một lý do
+## Thay đổi (commit mã `bf71c6e` + cổng `2940c00`) — mỗi chỗ một lý do
 - `src/products/san-pham-goc.js`
   - `boDauDoiSoatGocShop(db, teamId, maGoc, shop)` — MỘT hàm dùng chung (② Ra 3): NULL bốn cột dấu của bản sao `nguon<>'pos'`,
     `doi_soat IN ('chep','giu_gia_mon')`, `doi_soat_goc`=gốc, `doi_soat_shop`=shop, **kẹp `team_id`** (N3); `bo_qua` không đụng; không chạm
@@ -105,7 +105,7 @@ $ node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimental-tes
 Hai múi giờ (trong cổng): `@UTC pass=14 fail=0 · TimeZone phiên CSDL=UTC` · `@Pacific/Kiritimati pass=14 fail=0 · TimeZone phiên CSDL=Pacific/Kiritimati`.
 
 ### Cổng `ops/bin/nghiem-thu/gsp3c.sh`
-**Lượt cuối trên HEAD `9165fa5` (①–⑤, `CHAY_CONG_CU=0`, 49 s): `== ĐỎ 0 / XANH 36 · rc=0`.**
+**Lượt cuối trên HEAD `2940c00` (①–⑤, `CHAY_CONG_CU=0`, 49 s): `== ĐỎ 0 / XANH 36 · rc=0`.**
 ```
 ✅ ①bộ-ca-gsp3c@UTC pass=14 fail=0 (sàn ≥14) · TimeZone phiên CSDL=UTC
 ✅ ①bộ-ca-gsp3c@Pacific/Kiritimati pass=14 fail=0 (sàn ≥14) · TimeZone phiên CSDL=Pacific/Kiritimati
@@ -118,7 +118,7 @@ Hai múi giờ (trong cổng): `@UTC pass=14 fail=0 · TimeZone phiên CSDL=UTC`
 ✅ ④z-khôi-phục-bản-sao-xanh-lại fail=0 · ✅ ④cây-làm-việc-không-dính-đột-biến
 ✅ ⑤ca-cũ ×11 (ll13 8 · mn8 5 · ve8a 6 · keo-danh-muc 4 · l1-m1 12 · gsp2 10 · gsp3 28 · gsp3b 13 · ll13-màn 7 · gsp1 5 · ll15d 5) fail=0
 ```
-**Hai lượt ĐẦY ĐỦ (kèm ⑥ cổng cũ, trên `b4f07f1` — mã giống HEAD, chỉ khác cổng):** mỗi lượt `ĐỎ 1 / XANH 40`, và dòng đỏ là MỘT dòng
+**Hai lượt ĐẦY ĐỦ (kèm ⑥ cổng cũ, trên `bf71c6e` — mã giống HEAD, chỉ khác cổng):** mỗi lượt `ĐỎ 1 / XANH 40`, và dòng đỏ là MỘT dòng
 con lồng sâu, KHÁC nhau mỗi lượt, chạy riêng đều xanh (máy đang có thợ GL2 chạy cổng ở cây chung — tranh CPU/Postgres):
 
 | ⑥ cổng cũ | lượt 1 (2439 s) | lượt 2 (5976 s) | chạy riêng |
@@ -133,7 +133,7 @@ Các tệp ca đỏ chập chờn (ve2b-page-gop · ll18-khung · H8 · ve8b-man
 không có dòng đỏ nào do GSP3c; chuỗi cổng cũ dài chập chờn như đã biết (N-VAI-B-NOI-DAY-CHAP-CHON). Lượt 2 còn để lại MỒ CÔI (gsp3 →
 ll15b treo 51′ dưới PID 1, cwd worktree đối chứng tạm `gsp3b-base.zcD949`) ⇒ tôi đã giết 10 tiến trình + gỡ worktree đó (chỉ của chuỗi
 tôi — xác minh qua symlink `.env` trỏ về `gsp3c-base.*`); hai worktree `gsp3-base.*` khác (của repo chính / wt-chan1-tt1) để nguyên.
-Vá khuôn: `gsp3c.sh` thêm `giet_cay` (commit `9165fa5`; thử riêng: chỉ kill nhóm còn 2 tiến trình, giet_cay còn 0) · nợ N-GSP3C-CONG-MO-COI.
+Vá khuôn: `gsp3c.sh` thêm `giet_cay` (commit `2940c00`; thử riêng: chỉ kill nhóm còn 2 tiến trình, giet_cay còn 0) · nợ N-GSP3C-CONG-MO-COI.
 
 ### `npm test` (worktree)
 - TRƯỚC (cây `64a13a9`, chưa sửa): `tests 2489 · pass 2467 · fail 0 · skipped 22` (25 s).
@@ -167,8 +167,8 @@ N-GSP3C-CHUYEN-TEAM (review (a) G1) · N-GSP3C-GIA-POS-DE (review (a) G3) · N-G
 chi tiết ở §9.
 
 ## Commit (theo thứ tự) · chặng 1
-- `b4f07f1` fix(san-pham): GSP3c — mã + bộ ca + cổng + nới ③ một dòng ca GSP3.
-- `9165fa5` fix(nghiem-thu): GSP3c — cổng giết trọn cây cổng con khi quá trần.
+- `bf71c6e` fix(san-pham): GSP3c — mã + bộ ca + cổng + nới ③ một dòng ca GSP3.
+- `2940c00` fix(nghiem-thu): GSP3c — cổng giết trọn cây cổng con khi quá trần.
 - commit nhật ký này + §9 (9 nợ) + §10 (3 dòng).
 - `_chan1.sh gsp3c` CHƯA chạy: ④ của nó đọc khối ③ trong tệp phiếu — `test/gsp3-doi-soat.test.mjs` (nới ③ qua tin nhắn tổng) chưa có
   trong phiếu ⇒ sẽ đỏ đúng chỗ đó cho tới khi tổng ghi nới ③ vào phiếu; ⑦ của nó chạy lại cổng đầy đủ (~40–100′ trên máy đang tải).
