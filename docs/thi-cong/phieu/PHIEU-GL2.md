@@ -1,6 +1,6 @@
 # PHIẾU GL2 — Trần số page bật bot TOÀN HỆ (pilot = 1): vắng biến = 0 page · vượt trần = worker dừng hẳn
 
-**Base:** `ĐẶT-LÚC-PHÁT` · **Làn:** 🟨 (cổng bật bot + nguồn page của worker — quyết định bot trả lời page nào; nghiêng 🟥 khi nghi)
+**Base:** `bb9e9ce` · **Làn:** 🟨 (cổng bật bot + nguồn page của worker — quyết định bot trả lời page nào; nghiêng 🟥 khi nghi)
 **Nguồn:** người quyết 05/10 — GL2 «Vắng = 0 · vượt = dừng» (sổ §10 05/10 «ĐIỀU KIỆN GO-LIVE (GL)») · báo cáo `docs/golive-audit-2026-10-02.md` mục 4
 «Pilot không giới hạn một page» · sổ §5j
 **Đụng bộ não:** không.
