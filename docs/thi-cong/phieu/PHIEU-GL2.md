@@ -92,3 +92,19 @@ $ awk '/^## §9 /,/^## §9b/' SO-DIEU-HANH-THI-CONG.md | grep -n -i "pilot\|tr�
 (N-MB-HAI-BO-DIEU-KIEN) hai bộ điều kiện sẵn sàng ... · trần bật 5/10′ (cong-tac.js) chỉ hãm tốc độ
 ```
 Quan hệ: **mới** (báo cáo go-live mục 4; người quyết chốt luật 05/10).
+
+## Vòng 2 (07/10 — review (b) N1 + N2 phần rẻ)
+
+Đèn Sức khoẻ khi vượt trần: tổng số page bật toàn hệ; tên page của team người xem là thành viên; team khác chỉ SỐ page + TÊN team (không lộ tên/id
+page team khác); câu cảnh báo «tắt một page thì worker chạy lại các page còn lại»; page ở team kỹ thuật: nói đúng đường xử (không mở quyền mới).
+`bien-moi-truong-v3.md`: đổi/xoá `V3_TRAN_PAGE_BAT` phải restart CẢ HAI unit.
+```
+v3/src/ui/suc-khoe/kho-suc-khoe.js
+v3/src/noi-day/van-hanh-v3.js
+v3/test/b/gl2-*.test.mjs
+ops/bin/nghiem-thu/gl2.sh
+docs/v3/ban-giao/bien-moi-truong-v3.md
+```
+`van-hanh-v3.js` (nới 07/10, thợ xin — tổng chọn phương án A): CHỈ thêm `teamId` + `ten` vào dòng v3; thợ chứng minh không nơi tiêu thụ nào đưa dòng
+team khác ra trình duyệt + ca «người team A không thấy tên/id page team B» trên mọi màn dùng bộ đọc.
+
