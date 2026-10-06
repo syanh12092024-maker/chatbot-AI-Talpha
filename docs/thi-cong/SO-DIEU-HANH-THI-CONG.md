@@ -1631,6 +1631,26 @@ canh: GL1 + GL2 + GL3 + H-GL. Trước page thứ hai: GL4 + GL6. HTTPS (GL5) SA
     Khuôn `transaction()` đổi ⇒ lượt lưu 500 (đóng khi nghi, không ghi; ca D9–D12 · D18 · K1–K3 đỏ). Gốc rễ: `saveProduct` nhận bước «trước
     khi khoá» (`truocKhiKhoa(c)`) hoặc client của nơi gọi — phiếu có `operations.js` thì gỡ pool bọc. Cùng gốc với N-GSP3-DAU-TOCTOU (cửa lưu
     giá cần nhận giao dịch ngoài).
+- 06/10 · TT1 (thợ) — sáu nợ, ngoài pathspec / ngoài «quy đơn vị» (chi tiết + lệnh đo: `docs/thi-cong/nhat-ky/phieu-tt1.md` mục Nợ):
+  - **N-TT1-GIA-KICH-BAN-TE** `v3/src/ui/mot-page/gia-kich-ban.js:21` `TIEN_TE = 'SAR|SR|AED|KWD|QAR|OMR|BHD|USD'` — không có EUR · RON ·
+    AUD · TWD · JPY ⇒ «giá gõ cứng trong kịch bản» không bắt giá EUR/TWD gõ tay ở page EU/AUUS (im lặng = «không có giá gõ cứng»).
+  - **N-TT1-TONG-TIEN-HIEN-DON-VI-NHO** (đọc mã, chưa đo màn) hộp thư · bàn hội thoại · hồ sơ khách hiện `tong_tien` THÔ (đơn vị nhỏ,
+    migration 007) cạnh mã tệ, không chia `HE_SO_TE`: `kho-ban-hoi-thoai.js:193,207` · `boi-canh-hoi-thoai.js:99,160` → `hop-thu-ui.js:44
+    tien()` · `ho-so-khach.html:52` ⇒ nghi hiện «9.900 SAR» cho đơn 99 SAR (chỉ TWD/JPY ×1 hiện đúng). Có từ trước TT1, mọi tệ ×100.
+  - **N-VE1-GIA-BAN-SAO-DON-VI-NHO** `chiTietSanPhamGoc` `thiTruong[].gia` (`san-pham-goc.js:346`, bậc BẢN SAO) trả `goi_gia.gia` thô →
+    `san-pham.html:288` hiện `so(b.gia) tienTe` ⇒ 9.900 SAR; `test/ve1-san-pham.test.mjs:30-37` nạp `gia` 89 SAR (đơn vị LỚN) nên ca xanh
+    giả. Có từ VE1, không riêng tệ mới; `san-pham-goc.js` đang có thợ GSP3c sửa ⇒ TT1 không đụng.
+  - **N-TT1-TE-LECH-THI-TRUONG** (/code-review TT1 #2) `saveProduct` chỉ kiểm tệ ∈ `HE_SO_TE`, không đối chiếu tệ thị trường của shop
+    (`TIEN_TE_THI_TRUONG`) ⇒ bậc EUR lưu được cho món shop Romania/Taiwan; chỉ `cua2Tien` ĐÓNG về sau (`lech_bang_gia`). Cùng gốc với
+    N-TIEN-TE-MAC-DINH (ô tiền tệ gõ tay) — sửa chung: ô tệ mặc định + khoá theo shop ở màn «Theo thị trường».
+  - **N-TT1-TONG-RONG-THANH-0** (/code-review TT1 #4, đo trên base `da50df6` cũng ra 0) `chuanHoaHoSo({currency:'SAR'})` (không tổng) ⇒
+    `tong_tien = 0` (`Number(null)=0`), không null ⇒ `duyet()` sale bổ sung `total_price` qua `boSung` KHÔNG quy lại (`quyTongTienNho` thoát
+    vì `tong_tien != null`) ⇒ cửa ① báo thiếu tổng mãi. Có từ trước TT1, mọi tệ.
+  - **N-TT1-NAP-KB-LAM-TRON** (/code-review TT1 #5) `src/products/nap-tu-kb.js:91-94` (bộ nạp một lần MN2, gọi từ `ops/bin/nap-mot-nguon.mjs`)
+    vẫn `Math.round` + cảnh báo; `HE_SO_TE` rộng ra ⇒ chạy lại sẽ NẠP món TWD/EUR trước đây bị bỏ, giá lẻ bị làm tròn. Đổi sang
+    `quyDonViNho` (lẻ ⇒ bỏ bậc + cảnh báo). · Kèm: **N-TT1-LUOC-DO-HE-SO** `docs/v3/ban-giao/luoc-do-v1.md:254` + COMMENT migration 007 còn
+    khai «×100 vs ×1000» (đúng nay: ×100, TWD/JPY ×1) · `gia_goc`/`phi_ship` của `saveProduct` chưa kiểm dấu/trần (âm lưu được, 1e11 ⇒ 500
+    tràn numeric(14,2) — có từ trước TT1, /code-review #6).
 - 06/10 · GL3 (thợ) — năm nợ quanh `src/pancake.js`, ngoài hợp đồng phiếu (② giữ xoay token khi ĐỌC + giữ `_pageTokIdx`); chi tiết +
   kịch bản: `docs/thi-cong/nhat-ky/phieu-gl3.md` mục Nợ:
   - **N-GL3-DOC-NHAN-TOKEN** (/code-review GL3 #4 #5) hạn tính theo TỪNG token: ĐỌC quá hạn ⇒ xoay ⇒ một page treo chặn vòng poll tuần tự tới
@@ -3244,3 +3264,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 06/10 · GL3 → 🔎 chờ nghiệm thu — `src/pancake.js`: mọi lượt gọi Pancake có hạn (đọc 15 s · gửi 30 s, `V3_PANCAKE_HAN_DOC_MS`/`_GUI_MS`, sai ⇒ mặc định + cảnh báo 1 lần; phủ cả đọc thân); GHI lỗi mạng/quá hạn/thân hỏng ⇒ trả ngay `khongRo`+`phaLoi`, KHÔNG xoay token (hết đường tin đúp bằng token khác); bốn fetch trần 15 s; `pkAddNote` lỗi ⇒ thất bại
   `gl3.sh` ĐỎ 0/XANH 25 (22 ca GL3 · 13 đảo-vá đỏ đúng · 4 bộ ca cũ xanh) · npm test 2463→2485 pass / 0 đỏ · /code-review 10 phát hiện: sửa #1 #2 #3 #8 #9 · #4–#7 vào nợ · #10 ngoài pathspec — tổng 5 nợ §9 N-GL3-* · `_chan1` ⑤ đỏ cho src/pancake.js = rào cũ (GL7)
   · commit 908c439 · nhật ký docs/thi-cong/nhat-ky/phieu-gl3.md
+- 07/10 · TT1 → 🔎 chờ nghiệm thu — `HE_SO_TE` + EUR/RON/AUD ×100 · TWD/JPY ×1 (theo cách POS lưu) · `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan · `quyDonViNho` một luật cho saveProduct (giá · giá gốc · ship) / tổng bot / legacy — lẻ ⇒ từ chối rõ, không làm tròn ngầm; trả nợ N-TIEN-TE-NGOAI-GCC
+  `tt1.sh` PHÉP=27 LỖI=1 (8 phép ④ + 7 đảo-vá đỏ đúng; lỗi = gsp3b chập chờn chuỗi con, chạy riêng xanh · gsp3b riêng 54/1 = ve7b tổng giết, riêng 8/8 cả HEAD lẫn 2e11bf9) · npm test 2452→2486 / 0 đỏ · /code-review 10: sửa #3 #7 #9 #10 · nợ 6 mục §9 N-TT1-* · nới ③ 4 tệp thước (tổng duyệt) · `_chan1` chưa chạy (nhường cây GL3b)
+  · commit bc190f5 · nhật ký docs/thi-cong/nhat-ky/phieu-tt1.md
