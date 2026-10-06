@@ -5,6 +5,8 @@
 # `_p<pid>`, tự dựng tự dọn) — không đo prod, không đo `aicloser_v3`. Không gọi mạng (fetch là bẫy ném trong ca). Env đặt trong
 # tiến trình ca, KHÔNG sửa `.env`. Đảo-vá trên BẢN SAO TẠM (src · db · v3/src · deploy · ca), mỗi đột biến một tiến trình node
 # mới (bẫy 15). Chỉ `grep -E` (máy dev: `rg` là hàm zsh). Cờ: GIU_TAM=1 giữ bản sao · CHAY_NPM_TEST=1 chạy ⑦ (mặc định HOÃN, luật 6).
+# VÒNG 2 (07/10 · review (b) N1 + N2 phần rẻ): ③b ③c ④d ⑤y1–⑤y13 ⑤0b — đèn vượt trần kể page theo team (cách ly team), không lộ qua
+# 6 màn dùng bộ đọc cửa kiểm (HTTP), đo page team kỹ thuật; dòng biến dặn restart CẢ HAI unit. Neo vòng 1 giữ nguyên.
 set -uo pipefail
 GOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"; cd "$GOC" || exit 2
 do=0; xanh=0
@@ -23,6 +25,8 @@ echo "── môi trường: máy dev · hộp cát Postgres trên $noi (aiclose
 CA_T=test/gl2-tran-page-bat.test.mjs
 CA_D=test/gl2-deploy.test.mjs
 CA_S=v3/test/b/gl2-den-suc-khoe.test.mjs
+CA_V2D=v3/test/b/gl2-vong2-den.test.mjs     # vòng 2 · N1: đèn kể page theo team, team khác chỉ số + tên team
+CA_V2H=v3/test/b/gl2-vong2-http.test.mjs    # vòng 2 · H1: không lộ qua HTTP 6 màn · K1: đo page bật ở team kỹ thuật
 
 # ⓪ luật 1 §0a: máy này vẫn CHỈ ĐỌC
 ro=$(grep -E '^PANCAKE_READONLY=' .env 2>/dev/null | tail -1 | cut -d= -f2)
@@ -40,6 +44,8 @@ bo_ca() { # bo_ca <nhãn> <tệp ca> <các tên phải xanh>
 bo_ca "①phép-1·2·3·4·4b-trần·setPage·song-song·worker" "$CA_T" "T1 B2a B2b B2c B2d B2e B2f B2g B2h S3a S3b W4a W4b W4c W4d W4e"
 bo_ca "②phép-6-preflight-+-setup.sh-pilot" "$CA_D" "P6a P6b P6c"
 bo_ca "③phép-5-đèn-Sức-khoẻ-+-cửa-công-tắc-+-màn-Page" "$CA_S" "D5a D5b D5c D5d D5e C5e M4f"
+bo_ca "③b-vòng-2-N1-đèn-vượt-kể-page-theo-team-(cách-ly-team)" "$CA_V2D" "N1a N1b N1c N1d N1e"
+bo_ca "③c-vòng-2-H1-không-lộ-qua-HTTP-6-màn-+-K1-page-team-kỹ-thuật" "$CA_V2H" "H1 K1"
 
 # ④ tĩnh — bẫy mb.sh:65 (đếm grep phải đúng 1) · biến khai cùng commit · đọc biến ở MỘT chỗ (hàm thuần)
 n65=$(grep -c 'WHERE bot_ai_bat = true' src/queue/page-routing.js)
@@ -49,12 +55,16 @@ nk=$(grep -cE '^\| `V3_TRAN_PAGE_BAT`' docs/v3/ban-giao/bien-moi-truong-v3.md)
 nd=$(grep -rnE "env(\?\.)?(\.V3_TRAN_PAGE_BAT|\[['\"]V3_TRAN_PAGE_BAT)" src v3/src deploy 2>/dev/null | grep -vE '^[^:]+:[0-9]+:\s*(//|\*|#)' | grep -c .)
 nb=$(grep -cE "^export const BIEN_TRAN_PAGE_BAT = 'V3_TRAN_PAGE_BAT';" src/queue/page-routing.js)
 [ "$nd" -eq 0 ] && [ "$nb" -eq 1 ]; ket "④c-đọc-biến-một-chỗ-(tranPageBat)" $? "đọc thẳng env ngoài hàm = $nd (đòi 0) · hằng tên biến = $nb (đòi 1)"
+dbien=$(grep -E '^\| `V3_TRAN_PAGE_BAT`' docs/v3/ban-giao/bien-moi-truong-v3.md); nr=0
+for c in 'restart CẢ HAI unit' '`aicloser-v3`' '`aicloser-worker-v3`' 'worker giữ giá trị đọc lúc khởi động'; do echo "$dbien" | grep -qF "$c" && nr=$((nr+1)); done
+[ "$nr" -eq 4 ]; ket "④d-vòng-2-N2-dòng-biến-dặn-restart-CẢ-HAI-unit" $? "khớp $nr/4 cụm (restart CẢ HAI · hai tên unit · worker giữ giá trị lúc khởi động)"
 
 # ⑤ ĐẢO-VÁ (④7) trên BẢN SAO TẠM — mỗi đột biến một tiến trình node mới. Luật đọc: các ca khai PHẢI nằm trong tập đỏ.
 T=$(mktemp -d "${TMPDIR:-/tmp}/gl2.XXXXXX"); [ "${GIU_TAM:-0}" = 1 ] || trap 'rm -rf "$T"' EXIT
 mkdir -p "$T/test" "$T/v3/test/b"
 chep() { rm -rf "$T/src" "$T/db" "$T/v3/src" "$T/deploy"; cp -R src "$T/src"; cp -R db "$T/db"; cp -R v3/src "$T/v3/src"; cp -R deploy "$T/deploy"; }
 chep; cp test/_an-toan.mjs "$CA_T" "$CA_D" "$T/test/"; cp "$CA_S" "$T/v3/test/b/"
+cp "$CA_V2D" "$CA_V2H" "$T/v3/test/b/"
 cp package.json "$T/"; ln -s "$GOC/node_modules" "$T/node_modules"; [ -f .env ] && ln -s "$GOC/.env" "$T/.env"
 dot() { (cd "$T" && node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimental-test-module-mocks --test --test-force-exit "$@" 2>&1); }
 dot_bien() { # dot_bien <tệp> <gốc1> <đột-biến1> [<gốc2> <đột-biến2> …] — mỗi chuỗi gốc phải khớp ĐÚNG MỘT lần
@@ -130,8 +140,39 @@ dao "⑤w-409-nói-số-thiếu-chính-page-⇒-B2h-đỏ" "B2h" "test/gl2-tran-
   'cauSoTran(dangBat.length, env)' 'cauSoTran(khac, env)'
 dao "⑤x-preflight-bỏ-qua---tran-⇒-P6a-đỏ" "P6a" "test/gl2-deploy.test.mjs" deploy/preflight.mjs \
   '    const kiemTran = process.argv.includes("--ready") || process.argv.includes("--tran");' '    const kiemTran = process.argv.includes("--ready");'
+# vòng 2 (N1 · nới ③ `van-hanh-v3.js`) — bẫy 26: đảo-vá đo bản SAU vá. Luật đọc như trên: các ca khai PHẢI nằm trong tập đỏ.
+VH=v3/src/noi-day/van-hanh-v3.js; V2="$CA_V2D $CA_V2H"
+dao "⑤y1-đèn-coi-MỌI-team-là-của-mình-⇒-lộ-tên-page-team-khác" "N1a N1c H1" "$V2" "$SK" \
+  '    if (cuaToi.has(id)) {' '    if (true) {'
+dao "⑤y2-cổng-danh-tính-hỏng-⇒-nới-RỘNG-(coi-mọi-team-là-của-mình)" "N1d" "$V2" "$SK" \
+  '      muTeam = `không đọc được' '      for (const k of theoTeam.keys()) cuaToi.set(k, null); muTeam = `không đọc được'
+dao "⑤y3-không-đọc-thành-viên-(chỉ-team-của-vé)" "N1b" "$V2" "$SK" \
+  '      for (const t of await teamCuaNguoi(bc.nguoiDungId)) cuaToi.set(String(t.teamId), t.tenTeam || null);' '      await teamCuaNguoi(bc.nguoiDungId);'
+dao "⑤y4-bỏ-câu-cảnh-báo-tắt-nhầm" "N1a N1b" "$V2" "$SK" \
+  '${keVuot} ${CAU_TAT_NHAM}`' '${keVuot}`'
+dao "⑤y5-team-khác-không-nói-TÊN-team" "N1a H1" "$V2" "$SK" \
+  $'${t.ten ? `team ${t.ten}` : \'một team chưa đọc được tên\'}' $'\'một team khác\''
+dao "⑤y6-team-kỹ-thuật-không-nói-đường-xử" "N1c" "$V2" "$SK" \
+  '      khac.push(t.laKyThuat' '      khac.push(false'
+dao "⑤y7-đèn-nói-số-của-TEAM-thay-TỔNG-toàn-hệ" "N1a" "$V2" "$SK" \
+  '${cauSoTran(tran.soBat, env)} — bot KHÔNG' '${cauSoTran(botBat.length, env)} — bot KHÔNG'
+dao "⑤y8-bộ-đọc-bỏ-teamId-(nới-③-hỏng)-⇒-không-biết-team" "N1a H1" "$V2" "$VH" \
+  '        teamId: String(p.team_id),' ''
+dao "⑤y9-bộ-đọc-bỏ-ten-⇒-kể-id-thay-tên" "N1a N1b" "$V2" "$VH" \
+  '        ten: p.ten || "",' ''
+dao "⑤y10-màn-Sức-khoẻ-trả-nguyên-dòng-toàn-hệ-ra-thân-⇒-lộ" "N1a H1" "$V2" "$SK" \
+  $'    nguonBotBat,\n' $'    nguonBotBat, dsBat: tran.dsBat,\n'
+# sau /code-review vòng 2 (#1 #2) — bẫy 26: mỗi chỗ vừa vá một đột biến
+dao "⑤y11-page-ở-team-khác-CỦA-người-xem-không-dặn-đổi-team" "N1b" "$V2" "$SK" \
+  "(\${id === teamVe ? 'team đang xem' : NHAN_TEAM_KHAC_CUA_BAN})" "(\${id === teamVe ? 'team đang xem' : 'team của bạn'})"
+dao "⑤y12-tên/id-page-kho-tạm-hiện-cho-MỌI-vai" "N1c" "$V2" "$SK" \
+  '      const keTen = t.laKyThuat && coVai(bc, ...VAI_CHUYEN_DUOC)' '      const keTen = t.laKyThuat'
+dao "⑤y13-quản-trị-không-được-id-page-kho-tạm-(không-lọc-được-kho-200-dòng)" "N1c" "$V2" "$SK" \
+  '      const keTen = t.laKyThuat && coVai(bc, ...VAI_CHUYEN_DUOC)' '      const keTen = false'
 chep; o=$(dot test/gl2-tran-page-bat.test.mjs test/gl2-deploy.test.mjs v3/test/b/gl2-den-suc-khoe.test.mjs); f=$(so "$o" fail); p=$(so "$o" pass)
 [ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge 26 ]; ket "⑤0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ)" $? "pass=${p:-?} fail=${f:-?}"
+chep; o=$(dot $V2); f=$(so "$o" fail); p=$(so "$o" pass)
+[ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge 7 ]; ket "⑤0b-bản-sao-nguyên-vẹn-vòng-2-xanh" $? "pass=${p:-?} fail=${f:-?}"
 
 # ⑥ cổng cũ XANH, rc tách dòng (④8): mb.sh · ll3.sh · gl1.sh
 for g in mb ll3 gl1; do

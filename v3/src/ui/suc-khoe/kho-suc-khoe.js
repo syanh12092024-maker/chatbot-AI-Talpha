@@ -17,12 +17,17 @@
 //    Đây là chỗ dễ sai nhất của mọi bảng sức khoẻ: không đo được mà tô xanh thì người ta
 //    yên tâm về đúng thứ mình đang mù. Xám = «chưa đo được», và nói rõ vì sao chưa đo được.
 
-import { batBuocBoiCanh } from '../../auth/boi-canh.js';
+import { batBuocBoiCanh, coVai } from '../../auth/boi-canh.js';
 // Luật xét «máy chạy bot còn sống không» — CHUNG với dải trạng thái. Viết lại ở đây là hẹn
 // ngày hai chỗ nói hai điều khác nhau về cùng một máy.
 import { docNhipMayBot } from '../chung/nhip-may-bot.js';
 // GL2: trần số page bật bot TOÀN HỆ — luật (`vuotTran`) + câu số đo (`cauSoTran`) dùng CHUNG với worker và cổng bật.
 import { tranPageBat, vuotTran, cauSoTran } from '../../../../src/queue/page-routing.js';
+// GL2 vòng 2 (N1): khi vượt trần, đèn kể page theo team — team người xem LÀ THÀNH VIÊN (cổng danh tính, đã loại team kỹ thuật)
+// và TÊN team của page ở team khác. Cùng hai hàm các màn khác đã dùng (`chung/router-dieu-huong.js`, `bao-cao/kho-don-pos.js`).
+import { teamCuaNguoi, teamTheoId } from '../../auth/kho-nguoi-dung.js';
+// Vai KÉO được page từ kho «chưa phân» về team (một nguồn với cửa ghi `chuyenNhieuPage`) — chỉ họ được đèn kể tên/id page kho tạm.
+import { VAI_CHUYEN_DUOC } from '../team/gan-page.js';
 // Cầu dao «giao page bằng giao diện» (024) — đèn ⑪ chỉ có nghĩa khi biết nguồn nào đang dùng.
 
 export const MUC = Object.freeze({
@@ -181,14 +186,14 @@ export async function bangDen(boiCanh, { bay = Date.now(), env = process.env } =
 
   /* ⑤ CÔNG TẮC BOT — và TRẦN TOÀN HỆ (GL2): vượt ⇒ worker DỪNG hẳn ⇒ đèn ĐỎ ở MỌI team */
   const veTran = ` Toàn hệ ${tran.doDuoc ? '' : `(ít nhất — ${tran.viSaoMu}) `}${cauSoTran(tran.soBat, env)}.`;
+  // GL2 vòng 2 (N1): vượt ⇒ kể page bật toàn hệ theo team (cách ly team: team khác chỉ số + tên team) + câu cảnh báo tắt nhầm.
+  const keVuot = tran.vuot ? await keTheoTeam(bc, tran, botBat) : '';
   ds.push(tran.vuot
     ? den({
       ma: 'bot_bat', ten: 'Page đang bật bot', muc: MUC.DO,
-      vi: `Worker đang DỪNG vì vượt trần: ${cauSoTran(tran.soBat, env)} — bot KHÔNG trả lời page NÀO, kể cả page `
-        + 'trong trần, cho tới khi số page bật ≤ trần. '
-        + (botBat.length ? `Team này đang bật ${botBat.length}: ${botBat.map((p) => p.ten || p.page_id).join(', ')}.` : 'Team này không bật page nào.')
-        + (tran.soBat > botBat.length ? ` Còn ${tran.soBat - botBat.length} page bật ở team khác.` : ''),
-      diTiep: { chu: 'Tắt bớt page ở màn Page & Bot (hoặc nhờ quản trị hệ thống nâng trần)', duong: '/page-bot' },
+      vi: `Worker đang DỪNG vì vượt trần: toàn hệ ${tran.doDuoc ? '' : `(ít nhất — ${tran.viSaoMu}) `}${cauSoTran(tran.soBat, env)} — bot KHÔNG trả lời page NÀO, kể cả page `
+        + `trong trần, cho tới khi số page bật ≤ trần. ${keVuot} ${CAU_TAT_NHAM}`,
+      diTiep: { chu: 'Kiểm page pilot rồi tắt bớt page ở màn Page & Bot (hoặc nhờ quản trị hệ thống nâng trần)', duong: '/page-bot' },
       so: `${tran.soBat}/${tran.tran} page — vượt trần`,
     })
     : botBat.length
@@ -315,15 +320,21 @@ function denHaiBot(_pages, _nguonBotBat, botBat) {
  * bật từ `src/queue/page-routing.js#dsPageBotTraLoi(pool)` — CÙNG hàm, cùng phạm vi toàn hệ worker đếm trần
  * (`van-hanh-v3.js:72`). Ca `v3/test/b/gl2-den-suc-khoe.test.mjs` D5a đo trên chuỗi thật đó, hai page ở hai team.
  * Số bật của team là CHẶN DƯỚI chắc chắn ⇒ lấy max. Bộ đọc vắng/ném ⇒ chỉ còn chặn dưới, và câu đèn NÓI RA điều đó.
+ * GL2 vòng 2: trả kèm `dsBat` — các dòng bật toàn hệ `{ pageId, teamId, ten }` (bộ đọc mang `teamId`/`ten` từ vòng 2) — CHỈ để
+ * `keTheoTeam` nhóm theo team; không đi thẳng ra thân phản hồi.
  */
 async function docTranToanHe(botBat, env) {
   let toanHe = null;
+  let dsBat = null;
   let viSaoMu = null;
   if (!_docSanSang) viSaoMu = 'chưa nối bộ đọc toàn hệ, chỉ đếm được team này';
   else {
     try {
       const kq = await _docSanSang();
       toanHe = (kq?.pages || []).filter((p) => p?.aiEnabled === true).length;
+      dsBat = (kq?.pages || []).filter((p) => p?.aiEnabled === true).map((p) => ({
+        pageId: String(p.pageId ?? ''), teamId: p.teamId == null ? null : String(p.teamId), ten: String(p.ten ?? ''),
+      }));
     } catch (e) {
       viSaoMu = `đọc toàn hệ lỗi (${e?.message || e}), chỉ đếm được team này`;
     }
@@ -332,7 +343,86 @@ async function docTranToanHe(botBat, env) {
   // Chặn dưới đếm ĐÚNG như worker: page không có id Facebook (`page_id = ''`) worker không đếm, đèn cũng không.
   const cuaTeam = botBat.filter((p) => String(p.page_id ?? '') !== '').length;
   const soBat = Math.max(toanHe ?? 0, cuaTeam);
-  return { tran, soBat, vuot: vuotTran(soBat, tran), doDuoc: toanHe != null, viSaoMu };
+  return { tran, soBat, vuot: vuotTran(soBat, tran), doDuoc: toanHe != null, viSaoMu, dsBat };
+}
+
+/** Câu cảnh báo khi vượt — kịch bản review (b) N1: tắt nhầm page pilot ⇒ worker chạy lại trên page lạc ⇒ khách nhận HAI câu. */
+const CAU_TAT_NHAM = 'Tắt một page thì worker chạy lại các page còn lại — kiểm page nào là page pilot trước khi tắt; '
+  + 'page ở team khác: báo quản trị team đó.';
+
+/** Đường xử page bật ở team KỸ THUẬT — đo ở ca `gl2-vong2-http` K1: công tắc 404, màn Page & Bot không thấy, không chọn được team. */
+const DUONG_TEAM_KY_THUAT = 'không màn nào tắt thẳng được: quản trị một team vào Cài đặt › Người và team (/cau-hinh-team) › '
+  + '«Chuyển page sang team khác» › nút «Kho chưa phân team», kéo page về team mình rồi tắt ở màn Page & Bot';
+/** Team khác mà người xem CŨNG là thành viên — công tắc kẹp team đang mở, nên phải đổi team trước (review vòng 2 #1). */
+const NHAN_TEAM_KHAC_CUA_BAN = 'team khác của bạn — đổi team ở màn Chọn team rồi tắt ở màn Page & Bot';
+
+/**
+ * GL2 vòng 2 (N1 · review (b)): khi VƯỢT TRẦN, kể page bật TOÀN HỆ theo team để người tắt biết page nào nằm ở đâu.
+ *
+ * CÁCH LY TEAM: page của team người xem LÀ THÀNH VIÊN thì kể TÊN (kèm tên team); team khác chỉ SỐ page + TÊN team — không tên,
+ * không id page. Ngoại lệ có chủ ý: team KỸ THUẬT (kho dùng chung, không ai là thành viên) — người có vai kéo page về được thấy
+ * tên + id (đúng thứ họ đã thấy ở kho «chưa phân»), vai khác chỉ thấy số. Thành viên đọc qua cổng danh tính (`teamCuaNguoi`, đã loại team kỹ thuật); team của VÉ luôn là của mình (vé
+ * cấp theo thành viên). Đọc thành viên hỏng ⇒ chỉ coi team của vé là của mình (HẸP lại, không đoán rộng) và NÓI RA.
+ */
+async function keTheoTeam(bc, tran, botBat) {
+  const teamVe = String(bc.teamId);
+  const idTeamNay = new Set(botBat.map((p) => String(p.page_id ?? '')));
+  // Bộ đọc toàn hệ không đọc được ⇒ chỉ còn page của team này (đúng phép đếm của worker: bỏ page không có id Facebook).
+  const ds = tran.dsBat
+    ? tran.dsBat.map((p) => ({ ...p, teamId: p.teamId ?? (idTeamNay.has(p.pageId) ? teamVe : null) }))
+    : botBat.filter((p) => String(p.page_id ?? '') !== '')
+      .map((p) => ({ pageId: String(p.page_id), teamId: teamVe, ten: String(p.ten ?? '') }));
+  const theoTeam = new Map();
+  for (const p of ds) {
+    const k = p.teamId ?? '';
+    if (!theoTeam.has(k)) theoTeam.set(k, []);
+    theoTeam.get(k).push(p);
+  }
+
+  const cuaToi = new Map([[teamVe, null]]);   // teamId → tên team (null = chưa biết tên)
+  let muTeam = null;
+  if (bc.nguoiDungId) {                        // vé máy không có người ⇒ chỉ team của vé
+    try {
+      for (const t of await teamCuaNguoi(bc.nguoiDungId)) cuaToi.set(String(t.teamId), t.tenTeam || null);
+    } catch (e) {
+      muTeam = `không đọc được danh sách team của bạn (${e?.message || e}) — chỉ kể tên page của team đang xem`;
+    }
+  }
+  const tenTeam = async (id) => {
+    if (cuaToi.get(id)) return { ten: cuaToi.get(id), laKyThuat: false };
+    try {
+      const t = await teamTheoId(id);
+      return { ten: t?.ten || null, laKyThuat: t?.laKyThuat === true };
+    } catch { return { ten: null, laKyThuat: false }; }
+  };
+
+  const cuaMinh = [];
+  const khac = [];
+  let soKhac = 0;
+  // Team của vé đứng đầu — kể cả khi nó không bật page nào (người đọc cần biết «tắt ở team mình không giúp gì»).
+  const thuTu = [teamVe, ...[...theoTeam.keys()].filter((k) => k !== teamVe)];
+  for (const id of thuTu) {
+    const pages = theoTeam.get(id) || [];
+    if (id === '') { soKhac += pages.length; khac.push(`${pages.length} page chưa rõ team`); continue; }
+    const t = await tenTeam(id);
+    if (cuaToi.has(id)) {
+      const nhan = `${t.ten || 'team'} (${id === teamVe ? 'team đang xem' : NHAN_TEAM_KHAC_CUA_BAN})`;
+      cuaMinh.push(pages.length ? `${nhan}: ${pages.map((p) => p.ten || p.pageId).join(', ')}` : `${nhan}: không bật page nào`);
+    } else {
+      soKhac += pages.length;
+      // Kho «chưa phân» không phải dữ liệu của team nào và đã hiện tên/id cho quản trị ở màn Người và team (`pageChuaPhan`);
+      // danh sách ấy cắt ở 200 dòng xếp theo tên ⇒ người kéo được cần id để gõ vào ô lọc. Vai khác: chỉ số (review vòng 2 #2).
+      const keTen = t.laKyThuat && coVai(bc, ...VAI_CHUYEN_DUOC)
+        ? ` (${pages.map((p) => `${p.ten || 'chưa có tên'} — id ${p.pageId}`).join(', ')}; gõ id vào ô lọc của kho)`
+        : '';
+      khac.push(t.laKyThuat
+        ? `${pages.length} page ở «${t.ten || 'team kỹ thuật'}»${keTen} — team kỹ thuật, ${DUONG_TEAM_KY_THUAT}`
+        : `${pages.length} page ở ${t.ten ? `team ${t.ten}` : 'một team chưa đọc được tên'} (bạn không thuộc team này)`);
+    }
+  }
+  return `Page đang bật theo team — ${cuaMinh.join(' · ')}.`
+    + (soKhac ? ` Còn ${soKhac} page bật ở team khác: ${khac.join(' · ')}.` : '')
+    + (muTeam ? ` (${muTeam}.)` : '');
 }
 
 /**
@@ -352,7 +442,8 @@ function denMayChayBot(x, tran = null) {
       ten: 'Máy chạy bot',
       muc: MUC.VANG,
       vi: `Máy chạy bot đang dừng vì vượt trần page bật bot (${tran.soBat}/${tran.tran}) — cố ý không trả lời page nào, `
-        + 'máy KHÔNG hỏng: khởi động lại không giúp gì. Tắt bớt page cho số page bật ≤ trần thì máy tự chạy lại. '
+        + 'máy KHÔNG hỏng: khởi động lại không giúp gì. Tắt bớt page cho số page bật ≤ trần thì máy tự chạy lại — trước khi tắt, '
+        + 'đọc đèn «Page đang bật bot»: nó kể page nào đang bật ở team nào. '
         + `Số đo hàng đợi lúc này: ${x.so || 'chưa có'}.`,
       so: `dừng — vượt trần${x.so ? ` · ${x.so}` : ''}`,
       diTiep: { chu: 'Tắt bớt page ở màn Page & Bot', duong: '/page-bot' },

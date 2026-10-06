@@ -78,6 +78,11 @@ export function noiVanHanhV3(
       const state = await pageStatus(pool, p, env);
       v3.push({
         pageId: p.page_id,
+        // GL2 vòng 2 (N1): đèn Sức khoẻ khi vượt trần nhóm page bật TOÀN HỆ theo team. Bộ đọc này TOÀN HỆ — mọi nơi
+        // dùng nó phải chọn dòng theo page của team mình (hoặc chỉ đếm), không đưa nguyên mảng ra trình duyệt
+        // (ca `v3/test/b/gl2-vong2-http.test.mjs` H1 canh đủ các màn đang dùng).
+        teamId: String(p.team_id),
+        ten: p.ten || "",
         aiEnabled: state.enabled,
         aiAllowed: state.ready,
         readiness: state.ready ? "READY" : "BLOCKED",
