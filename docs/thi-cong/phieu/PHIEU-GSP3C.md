@@ -1,6 +1,6 @@
 # PHIẾU GSP3c — Đóng hai lỗ làm bộ đếm «page chưa chuyển xong» về 0 sớm (điều kiện trước GSP4)
 
-**Base:** `ĐẶT-LÚC-PHÁT` (phát SAU TT1 — cùng chạm `src/products/chuyen-ban-sao.js`/`san-pham-goc.js` vùng lân cận) · **Làn:** 🟥 (ghi dấu đối soát + đường đẩy bản chép bot đọc; bộ đếm này là cổng phát GSP4 — cắt đường đọc giá)
+**Base:** `e68a62e` (phát SAU TT1 `bc190f5` — cùng chạm `src/products/chuyen-ban-sao.js`/`san-pham-goc.js` vùng lân cận) · **Làn:** 🟥 (ghi dấu đối soát + đường đẩy bản chép bot đọc; bộ đếm này là cổng phát GSP4 — cắt đường đọc giá)
 **Nguồn:** sổ §5h «Trước khi phát GSP4 phải đóng» · nợ **N-GSP3-DOI-MON** (+ F6 đối kháng GSP3) · **N-GSP3B-NEN F4** (đối kháng GSP3b) ·
 CR-02-10b mục 5e · người quyết 05/10 «triển khai» thứ tự TT1 → GP1 → H-GSP → GSP4 → go-live
 **Đụng bộ não:** không.
