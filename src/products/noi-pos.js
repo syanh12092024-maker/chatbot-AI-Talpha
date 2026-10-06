@@ -76,16 +76,28 @@ export async function noiMonPos(c, teamId, sanPhamId, posMa) {
   return { sanPhamId: String(s.id), posMa: ma, truoc: s.pos_ma, tenPos: m.ten, tenKhach: tenKhachCuaPos(m.ten), hetHang: !!m.het_hang };
 }
 
+// «Page đã gắn sản phẩm gốc» — cùng luật `catalog.js#docSanPhamGoiGia` (chuỗi rỗng = chưa gắn).
+const daGanGoc = (trang) => String(trang?.san_pham_goc_ma ?? "") !== "";
+
 /**
  * Sau mỗi lượt kéo danh mục: sản phẩm page đã nối mà `het_hang` khác món POS ⇒ sửa và ĐẨY lại bản
  * chép — MỘT GIAO DỊCH MỖI PAGE: bot không nhận thì page ấy ROLLBACK (CSDL và bot không lệch),
  * các page khác vẫn đi tiếp; page hỏng trả ra cho màn gọi tên.
+ *
+ * GSP3c (nợ N-GSP3B-NEN F4): CHỈ bản sao của page CHƯA gắn sản phẩm gốc — đường cũ, sống tới GSP4. «Đã gắn» = `page.san_pham_goc_ma`
+ * có chữ, ĐÚNG luật `catalog.js#docSanPhamGoiGia` (chuỗi rỗng = chưa gắn — review (a) N4). Page đã gắn: bot đọc MÓN POS của gốc × shop,
+ * bản sao chỉ là LƯU TRỮ ⇒ không ghi `het_hang` vào bản sao, không đẩy từ đường này (đẩy ở đây là đẩy món POS — có thể chưa giá — ra
+ * ngoài mọi chốt GSP3b). Dòng không page (`page_id` NULL) / page team khác giữ như cũ: đổi `het_hang`, không đẩy (LEFT JOIN).
+ * Hai lớp: lọc ở câu chọn, và CỬA RA — trong giao dịch của từng page, đọc lại page `FOR SHARE` (cùng thứ tự khoá page → san_pham của
+ * GSP3b; lượt gắn page giữ `FOR UPDATE` thì chờ nó xong) và bỏ qua page vừa được gắn sau câu chọn (`pageDaGanBoQua` — nói ra, không im).
  */
 export async function dongBoTuPos(pool, teamId, day) {
   const r = await pool.query(
     `SELECT s.id, s.page_id, p.het_hang AS pos_het
        FROM san_pham s JOIN san_pham p ON p.team_id = s.team_id AND p.ma = s.pos_ma AND p.nguon = 'pos'
-      WHERE s.team_id = $1 AND s.pos_ma IS NOT NULL AND s.het_hang IS DISTINCT FROM p.het_hang`,
+       LEFT JOIN page pg ON pg.id = s.page_id AND pg.team_id = s.team_id
+      WHERE s.team_id = $1 AND s.pos_ma IS NOT NULL AND s.het_hang IS DISTINCT FROM p.het_hang
+        AND COALESCE(pg.san_pham_goc_ma, '') = ''`,
     [teamId],
   );
   const theoPage = new Map();
@@ -94,16 +106,21 @@ export async function dongBoTuPos(pool, teamId, day) {
     if (!theoPage.has(k)) theoPage.set(k, []);
     theoPage.get(k).push(x);
   }
-  const kq = { doi: 0, page: 0, hong: [] };
+  const kq = { doi: 0, page: 0, hong: [], pageDaGanBoQua: 0 };
   for (const [pageRowId, ds] of theoPage) {
     const c = await pool.connect();
     try {
       await c.query("BEGIN");
+      const trang = pageRowId
+        ? (await c.query("SELECT * FROM page WHERE team_id = $1 AND id = $2 FOR SHARE", [teamId, pageRowId])).rows[0] : null;
+      if (daGanGoc(trang)) {   // cửa ra: page được gắn giữa câu chọn và giao dịch này ⇒ không ghi, không đẩy
+        await c.query("ROLLBACK");
+        kq.pageDaGanBoQua += 1;
+        continue;
+      }
       for (const x of ds) {
         await c.query("UPDATE san_pham SET het_hang = $3, sua_luc = now() WHERE team_id = $1 AND id = $2", [teamId, x.id, !!x.pos_het]);
       }
-      const trang = pageRowId
-        ? (await c.query("SELECT * FROM page WHERE team_id = $1 AND id = $2", [teamId, pageRowId])).rows[0] : null;
       if (trang) await dayPageSangBot(c, teamId, trang, day);
       await c.query("COMMIT");
       kq.doi += ds.length;

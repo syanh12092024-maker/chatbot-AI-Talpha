@@ -407,8 +407,12 @@ export async function ganMonPosVaoGoc(pool, teamId, id, posMa) {
       throw new LoiSanPhamGoc(`món này đang thuộc sản phẩm «${m.ma_goc}» — gỡ ở đó trước`, "mon_thuoc_goc_khac", 409);
     }
     await khach.query("UPDATE san_pham SET ma_goc = $3, sua_luc = now() WHERE team_id = $1 AND id = $2", [teamId, m.id, g.ma_goc]);
+    const daCo = m.ma_goc === g.ma_goc;
+    // GSP3c: món THẬT SỰ vào gốc (NULL → G) ⇒ quyết định đối soát cũ của G × shop hết hiệu lực, cùng giao dịch. Gắn lại món vốn đã
+    // thuộc G (`daCo`) không đổi tập món ⇒ không bỏ dấu (review (a) N3).
+    const boDau = daCo ? 0 : await boDauDoiSoatGocShop(khach, teamId, g.ma_goc, shopCua(ma));
     await khach.query("COMMIT");
-    return { maGoc: g.ma_goc, posMa: ma, shopId: shopCua(ma), daCo: m.ma_goc === g.ma_goc };
+    return { maGoc: g.ma_goc, posMa: ma, shopId: shopCua(ma), daCo, boDauDoiSoat: boDau };
   } catch (e) {
     await khach.query("ROLLBACK").catch(() => {});
     throw e;
@@ -417,18 +421,107 @@ export async function ganMonPosVaoGoc(pool, teamId, id, posMa) {
   }
 }
 
-/** GỠ một món POS khỏi sản phẩm gốc. Món không thuộc gốc này ⇒ 404 (không gỡ nhầm món của gốc khác). */
+/**
+ * GỠ một món POS khỏi sản phẩm gốc. Món không thuộc gốc này ⇒ 404 (không gỡ nhầm món của gốc khác).
+ * GSP3c: gỡ + bỏ dấu đối soát của gốc × shop (mã gốc CŨ — `RETURNING g.ma_goc`) trong MỘT giao dịch.
+ */
 export async function goMonPosKhoiGoc(pool, teamId, id, posMa) {
   const ma = gon(posMa);
-  const r = await pool.query(
-    `UPDATE san_pham s SET ma_goc = NULL, sua_luc = now()
-       FROM san_pham_goc g
-      WHERE s.team_id = $1 AND g.team_id = $1 AND g.id = $2 AND s.ma = $3 AND s.nguon = 'pos' AND s.ma_goc = g.ma_goc
-      RETURNING g.ma_goc`,
-    [teamId, id, ma],
+  const khach = await pool.connect();
+  try {
+    await khach.query("BEGIN");
+    const r = await khach.query(
+      `UPDATE san_pham s SET ma_goc = NULL, sua_luc = now()
+         FROM san_pham_goc g
+        WHERE s.team_id = $1 AND g.team_id = $1 AND g.id = $2 AND s.ma = $3 AND s.nguon = 'pos' AND s.ma_goc = g.ma_goc
+        RETURNING g.ma_goc`,
+      [teamId, id, ma],
+    );
+    if (!r.rowCount) throw new LoiSanPhamGoc("món này không thuộc sản phẩm gốc này", "khong_thuoc", 404);
+    const boDau = await boDauDoiSoatGocShop(khach, teamId, r.rows[0].ma_goc, shopCua(ma));
+    await khach.query("COMMIT");
+    return { maGoc: r.rows[0].ma_goc, posMa: ma, shopId: shopCua(ma), boDauDoiSoat: boDau };
+  } catch (e) {
+    await khach.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    khach.release();
+  }
+}
+
+/* ═══ GSP3c · ĐỔI MÓN ⇒ QUYẾT ĐỊNH ĐỐI SOÁT CŨ HẾT HIỆU LỰC (nợ N-GSP3-DOI-MON + F6 · review (a) C1 · N1 · N3 · N5) ═══════════════
+ * Dấu `chep`/`giu_gia_mon` (migration 032, ghi ở `chuyen-ban-sao.js#doiSoatDonVi`) là quyết định của NGƯỜI trên ĐÚNG tập món của
+ * gốc × shop lúc quyết. Vị từ `daQuyet` chỉ so CHỮ gốc × shop ⇒ tập món đổi mà dấu còn ⇒ page tính «xong» dù chưa ai so giá với món
+ * mới (gỡ x rồi gắn y chưa giá; hoặc thêm món ĐÃ CÓ GIÁ ⇒ cửa tiền MỞ ở giá đó) và bộ đếm `chuaXong` — cổng phát GSP4 — về 0 sớm.
+ * Ba cửa đổi tập món của gốc × shop gọi CHUNG hàm dưới đây, trong giao dịch của chính chúng: `ganMonPosVaoGoc` · `goMonPosKhoiGoc` ·
+ * `src/pos/doc-danh-muc.js` (lượt «Kéo danh mục» tự nối món theo SKU/số hiệu: món mới mang gốc, hoặc `ma_goc` NULL → gốc).
+ */
+
+// Lưới migration 032 — cùng khuôn `chuyen-ban-sao.js#coCot032` (hàm đó không export; tệp đó phiếu khác giữ).
+async function coCotDoiSoat(db) {
+  const r = await db.query(
+    `SELECT count(*)::int AS n FROM information_schema.columns
+      WHERE table_schema = current_schema() AND table_name = 'san_pham'
+        AND column_name IN ('doi_soat', 'doi_soat_luc', 'doi_soat_goc', 'doi_soat_shop')`,
   );
-  if (!r.rowCount) throw new LoiSanPhamGoc("món này không thuộc sản phẩm gốc này", "khong_thuoc", 404);
-  return { maGoc: r.rows[0].ma_goc, posMa: ma, shopId: shopCua(ma) };
+  return r.rows[0]?.n === 4;
+}
+
+/**
+ * BỎ DẤU đối soát của MỌI bản sao (trong team) mang dấu `chep`/`giu_gia_mon` của đúng gốc × shop ⇒ page của chúng về `cho_doi_soat`
+ * (bộ đếm tăng đúng số page đang gắn gốc × shop đó). Trả số bản sao bị bỏ dấu. CSDL chưa áp 032 ⇒ 0, không ném (gắn/gỡ/kéo chạy trên prod).
+ *   · Kẹp `team_id`: `ma_goc` chỉ duy nhất TRONG team, còn shop dùng chung nhiều team được (review N3).
+ *   · Dấu `bo_qua` KHÔNG đụng — nó chỉ hiệu lực khi page chưa gắn (`daQuyet`), không gắn với tập món nào.
+ *   · Bản sao giữ nguyên ngoài bốn cột dấu (không chạm `sua_luc` — cùng luật lượt đánh dấu của đối soát).
+ *   · KHÔNG gọi khi SỬA GIÁ món (Theo thị trường · GP1 điền giá): giá thuộc món × shop — MỘT bảng; đối soát đã quyết chọn bảng, còn sửa
+ *     giá ở chỗ ghi duy nhất là một quyết định MỚI của người trên nguồn thật. Bỏ dấu mỗi lần sửa giá thì bộ đếm không bao giờ về 0 và
+ *     kéo người quay lại so với bản sao mà CR-02-10b đã tuyên là lưu trữ (review N5). Xoá hết bậc ⇒ món không giá ⇒ cửa tiền ĐÓNG.
+ */
+export async function boDauDoiSoatGocShop(db, teamId, maGoc, shop) {
+  if (!maGoc || !shop) return 0;
+  if (!(await coCotDoiSoat(db))) return 0;
+  const r = await db.query(
+    `UPDATE san_pham SET doi_soat = NULL, doi_soat_luc = NULL, doi_soat_goc = NULL, doi_soat_shop = NULL
+      WHERE team_id = $1 AND nguon <> 'pos' AND doi_soat IN ('chep', 'giu_gia_mon') AND doi_soat_goc = $2 AND doi_soat_shop = $3`,
+    [teamId, String(maGoc), String(shop)],
+  );
+  return r.rowCount;
+}
+
+/**
+ * QUÉT LÙI một lần (CHỈ ĐỌC, toàn hệ — mọi team): dấu `chep`/`giu_gia_mon` có thể đã cũ vì ghi trong quãng GSP3 lên prod → GSP3c lên
+ * prod (bỏ dấu ở trên chỉ bắt sự kiện SAU deploy). «Cũ» theo đúng định nghĩa phiếu GSP3c ② Ra 6: gốc × shop của dấu HIỆN có món POS
+ * (cùng team) mà `san_pham.sua_luc` > `doi_soat_luc`. Trả `{ co032, so, ds }` — `ds` mỗi bản sao một dòng, kèm các món đổi sau dấu,
+ * để người soát từng dòng trước khi bỏ dấu (theo gật của người quyết).
+ * ⚠️ Đây là CẬN TRÊN, không phải số đúng: `sua_luc` của món POS còn nhảy khi lượt kéo đổi tồn kho/tên/SKU (`doc-danh-muc.js` —
+ *    `suaTheoIdPos` ghi `sua_luc`), khi sửa giá món (`operations.js` chế độ chỉ-giá) và khi gắn lại món đã thuộc gốc — những việc đó
+ *    KHÔNG đổi tập món. Và nó KHÔNG thấy món đã GỠ khỏi gốc (món không còn ở gốc × shop) — gỡ thuần không mở giá mới nào, còn gỡ rồi
+ *    gắn/kéo về thì món mới/món kéo về có `sua_luc` mới nên vẫn đếm.
+ * Chạy (tổng, trên máy chủ, từ gốc repo — chỉ đọc; `db/ket-noi.js` tự đọc `DATABASE_URL_V3` ở `.env` gốc repo; đã thử trên hộp cát):
+ *   node -e "import('./db/ket-noi.js').then(async ({ voiPool }) => { const { demDauCu } = await
+ *     import('./src/products/san-pham-goc.js'); console.log(JSON.stringify(await voiPool((p) => demDauCu(p)), null, 1)); })"
+ */
+export async function demDauCu(db) {
+  if (!(await coCotDoiSoat(db))) return { co032: false, so: 0, ds: [] };
+  const r = await db.query(
+    `SELECT b.id, b.team_id, b.page_id, b.doi_soat, b.doi_soat_goc, b.doi_soat_shop, b.doi_soat_luc,
+            array_agg(m.ma ORDER BY m.ma) AS mon_doi, max(m.sua_luc) AS mon_doi_luc
+       FROM san_pham b
+       JOIN san_pham m ON m.team_id = b.team_id AND m.nguon = 'pos' AND m.ma_goc = b.doi_soat_goc
+                      AND split_part(m.ma, ':', 1) = b.doi_soat_shop AND m.sua_luc > b.doi_soat_luc
+      WHERE b.nguon <> 'pos' AND b.doi_soat IN ('chep', 'giu_gia_mon')
+      GROUP BY b.id
+      ORDER BY b.team_id, b.page_id, b.id`,
+  );
+  return {
+    co032: true,
+    so: r.rowCount,
+    ds: r.rows.map((d) => ({
+      banSaoId: String(d.id), teamId: String(d.team_id), pageId: d.page_id == null ? null : String(d.page_id),
+      doiSoat: d.doi_soat, maGoc: d.doi_soat_goc, shopId: d.doi_soat_shop,
+      doiSoatLuc: new Date(d.doi_soat_luc).toISOString(), monDoi: d.mon_doi, monDoiLuc: new Date(d.mon_doi_luc).toISOString(),
+    })),
+  };
 }
 
 /* ═══ LL11 · KIẾN THỨC SẢN PHẨM (021) — nhà mới của «kỹ năng» (CR-28-09c) ══════════════════════════════════

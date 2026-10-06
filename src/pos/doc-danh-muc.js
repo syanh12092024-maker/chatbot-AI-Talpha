@@ -23,6 +23,7 @@ import { tachSoHieu, chuanSku } from "./ten-goc.js";
 import { xacDinhTeam, suaTheoIdPos } from "./kho.js";
 import { layKetNoi } from "./ket-noi.js";
 import { guiDocBienThe } from "./api.js";
+import { boDauDoiSoatGocShop } from "../products/san-pham-goc.js";
 
 /** Tên hiển thị của một biến thể: tên sản phẩm + phần phân biệt (size/thuộc tính). */
 export function tenBienThe(v) {
@@ -104,6 +105,7 @@ export async function docDanhMuc(
     khongCoSoHieu: [],           // mã POS không mang số hiệu → người phải gán tay
     noiMaGoc: 0,                 // số biến thể nối được `ma_goc`
   };
+  const gocDoiMon = new Set();   // GSP3c: gốc có món ĐỔI `ma_goc` trong lượt này (món mới mang gốc · NULL → gốc) — bỏ dấu ở cuối lượt
 
   for (let trang = 1; trang <= soTrangToiDa; trang++) {
     const lo = await guiDocBienThe(ketNoi, { trang, coTrang }, { nap });
@@ -181,6 +183,7 @@ export async function docDanhMuc(
         });
         spId = moi.id;
         kq.them++;
+        if (maGoc) gocDoiMon.add(maGoc);   // GSP3c: món MỚI vào gốc × shop ⇒ bỏ dấu đối soát (cuối lượt — xem `gocDoiMon`)
       } else {
         const cu = daCo[0];
         spId = cu.id;
@@ -218,6 +221,8 @@ export async function docDanhMuc(
           });
           kq.capNhat++;
           if (thieuGoc) kq.noiMaGoc++;   // đếm cả lượt nối muộn, không chỉ lượt nối lúc tạo
+          // GSP3c: món `ma_goc` NULL → gốc (kể cả món vừa bị GỠ khỏi gốc mà SKU vẫn trùng) ⇒ bỏ dấu gốc × shop (cuối lượt).
+          if (thieuGoc) gocDoiMon.add(maGoc);
         }
       }
 
@@ -257,6 +262,12 @@ export async function docDanhMuc(
     }
     if (lo.bienThe.length < coTrang) break;
   }
+  // GSP3c (review (a) C1 · /code-review GSP3c #2): lượt kéo là cửa THỨ BA đổi tập món của gốc × shop (tự nối theo SKU/số hiệu) ⇒ bỏ
+  // dấu đối soát của gốc × shop đó bằng CHÍNH hàm của gắn/gỡ món, trong giao dịch khoá danh mục của lượt này. Gọi ở CUỐI lượt, không
+  // ngay tại nhánh: lượt kéo khoá dòng món suốt lượt, còn gắn/gỡ khoá dòng món rồi mới ghi bản sao — bỏ dấu giữa lượt là khoá bản
+  // sao TRƯỚC một món chưa tới ⇒ thứ tự khoá ngược với gắn/gỡ ⇒ 40P01 có thể huỷ trọn lượt kéo. Cuối lượt: mọi đường cùng một thứ tự
+  // (dòng món → dòng bản sao), và mỗi gốc chỉ một câu.
+  for (const g of gocDoiMon) await boDauDoiSoatGocShop(pool, team.teamId, g, String(ketNoi.shopId));
   // `Set` không tuần tự hoá được qua JSON — đổi sang mảng ở CỬA RA, đúng một chỗ.
   kq.chuaCoSanPhamGoc = [...kq.chuaCoSanPhamGoc].sort((a, b) => Number(a) - Number(b));
   return kq;

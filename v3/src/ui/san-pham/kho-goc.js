@@ -228,11 +228,16 @@ export async function ganMonPos(boiCanh, id, posMa) {
   const kq = await cua().gan(bc, id, posMa);
   await ghi(bc, {
     hanhDong: HANH_DONG.GAN_MON_POS_GOC, doiTuongLoai: BANG, doiTuongId: String(id),
-    sau: { maGoc: kq.maGoc, posMa: kq.posMa, shopId: kq.shopId },
-    ghiChu: `gắn món POS ${kq.posMa} (shop ${kq.shopId}) vào sản phẩm "${kq.maGoc}"${kq.daCo ? ' — đã gắn từ trước' : ''}`,
+    sau: { maGoc: kq.maGoc, posMa: kq.posMa, shopId: kq.shopId, boDauDoiSoat: kq.boDauDoiSoat ?? 0 },
+    ghiChu: `gắn món POS ${kq.posMa} (shop ${kq.shopId}) vào sản phẩm "${kq.maGoc}"${kq.daCo ? ' — đã gắn từ trước' : ''}`
+      + cauBoDau(kq),
   });
   return kq;
 }
+
+// GSP3c: đổi món của gốc × shop bỏ dấu đối soát của bản sao gốc × shop đó (tầng A) ⇒ nhật ký NÓI RA bao nhiêu bản sao bị bỏ dấu.
+const cauBoDau = (kq) => (kq.boDauDoiSoat
+  ? ` · bỏ dấu đối soát ${kq.boDauDoiSoat} bản sao (gốc × shop ${kq.shopId}) — page của chúng về «chờ đối soát»` : '');
 
 /** Gỡ một món POS khỏi sản phẩm gốc. Quản trị, có nhật ký. */
 export async function goMonPos(boiCanh, id, posMa) {
@@ -242,7 +247,8 @@ export async function goMonPos(boiCanh, id, posMa) {
   await ghi(bc, {
     hanhDong: HANH_DONG.GO_MON_POS_GOC, doiTuongLoai: BANG, doiTuongId: String(id),
     truoc: { maGoc: kq.maGoc, posMa: kq.posMa, shopId: kq.shopId },
-    ghiChu: `gỡ món POS ${kq.posMa} (shop ${kq.shopId}) khỏi sản phẩm "${kq.maGoc}"`,
+    sau: { boDauDoiSoat: kq.boDauDoiSoat ?? 0 },
+    ghiChu: `gỡ món POS ${kq.posMa} (shop ${kq.shopId}) khỏi sản phẩm "${kq.maGoc}"${cauBoDau(kq)}`,
   });
   return kq;
 }

@@ -315,7 +315,9 @@ test('GSP3 · đối soát giá + ảnh theo đơn vị gốc × shop, trên Pos
       await doiSoat({ gocId: E0.id, shopId: '111' });
       assert.equal((await dau(be)).doi_soat, 'chep');
       await goPageKhoiGoc(pool, T, E0.id, E);
-      await goMonPosKhoiGoc(pool, T, E0.id, '111:e1');
+      // GSP3c (tổng nới ③ 07/10): món rời gốc NGOÀI cửa gỡ (SQL tay) — cửa gỡ `goMonPosKhoiGoc` từ GSP3c tự bỏ dấu gốc × shop, nên đi
+      // cửa đó thì dấu đã NULL trước khi bỏ gốc; ca này canh LỚP DỌN của chính `boSanPhamGoc`.
+      await q("UPDATE san_pham SET ma_goc=NULL WHERE team_id=$1 AND ma='111:e1'", [T]);
       await boSanPhamGoc(pool, T, E0.id);
       assert.deepEqual(await dau(be), { doi_soat: null, doi_soat_goc: null, doi_soat_shop: null }, 'bỏ gốc ⇒ dọn dấu của mã đó');
       const E1 = await gop('egg', '702', ['111:e2']);
