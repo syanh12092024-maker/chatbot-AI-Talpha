@@ -1,6 +1,6 @@
 # PHIẾU TT1b — Ràng tệ của bậc giá và của đơn với tệ của thị trường shop (đơn POS không được thu sai ×100 / ×0,01)
 
-**Base:** `ĐẶT-LÚC-PHÁT` (sau TT1 ✅ — `tt1.sh` là cổng cũ) · **Làn:** 🟥 (đường TIỀN: bậc giá bot báo khách · tiền đơn đẩy lên POS)
+**Base:** `b04d0dc` (TT1 chặng 2 ĐẠT; `_chan1 tt1` chạy song song — `tt1.sh` là cổng cũ) · **Làn:** 🟥 (đường TIỀN: bậc giá bot báo khách · tiền đơn đẩy lên POS)
 **Nguồn:** đối kháng TT1 07/10 (verdict `refute-tt1.verdict.yaml`) **F1 NEN CONFIRMED** · review (a) 07/10 TRẢ VỀ (2 CHẶN thi công · 5 NÊN — đã
 vào phiếu, mục «Sửa sau review (a)» cuối ②) · nợ N-TT1-TE-LECH-THI-TRUONG (+ N-TIEN-TE-MAC-DINH phần mã) · `01-QUYET-DINH.md` §8 «Một nguồn».
 **Xếp lịch:** nhóm TỐI THIỂU pilot (review (a) N1 — F1 chạm cả GCC: shop Kuwait gõ «SAR 109» ⇒ khách nghe 109 SAR, POS thu 109 KWD ≈ ×12; team

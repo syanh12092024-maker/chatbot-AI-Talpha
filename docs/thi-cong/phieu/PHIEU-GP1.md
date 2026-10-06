@@ -1,6 +1,6 @@
 # PHIẾU GP1 — Điền sẵn bậc giá cho món POS chưa có giá, lấy từ giá thật trong đơn POS
 
-**Base:** `ĐẶT-LÚC-PHÁT` · **Làn:** 🟥 (ghi `goi_gia` — bảng cửa tiền đọc; đẩy bản chép bot đọc)
+**Base:** `b04d0dc` · **Làn:** 🟥 (ghi `goi_gia` — bảng cửa tiền đọc; đẩy bản chép bot đọc)
 **Nguồn:** người quyết 05/10 («Theo giá như đơn trên POS chứ cần gì quy đổi?» → «làm trọn vẹn») · `01-QUYET-DINH.md` §8 «Một nguồn» (POS là
 đường KÉO VÀO, mọi sửa giá vẫn ở giao diện v3) + «Page phải gắn sản phẩm» (không giá riêng theo page) · sổ §5i
 **Đụng bộ não:** không.

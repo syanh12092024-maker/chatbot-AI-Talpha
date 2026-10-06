@@ -381,8 +381,8 @@ TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
 | TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | 🔎 07/10 · mã `bc190f5` · nhật ký `f2e1ac1` · `tt1.sh` 27/1 (1 đỏ = chuỗi cũ gsp3b chập chờn, chạy riêng xanh) · npm test 2486/0 · chặng 2 đối kháng ĐẠT (lõi không phá được: khứ hồi EUR/TWD/RON 0 sai · 7 tệ cũ khớp 100%) — F1 NEN → TT1b · F2 F3 gộp nợ · chờ `_chan1 tt1` (≈1,5 h, cây rảnh) |
-| TT1b | Ràng tệ bậc giá (món POS) + tệ đơn (`taoDon` cửa b) với tệ thị trường shop — chặn POS thu sai ×100/×0,01 (đối kháng TT1 F1) · dời `TIEN_TE_THI_TRUONG` cạnh `HE_SO_TE` | TT1 | 🟥 | ⬜ review (a) SỬA-PHIẾU (2 CHẶN thi công · 5 NÊN) → đã sửa · NHÓM TỐI THIỂU PILOT (F1 chạm cả GCC: shop Kuwait gõ SAR ⇒ POS thu KWD ≈ ×12) · phát sau TT1 ✅ |
-| GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | ⬜ review (a) SỬA-PHIẾU → đã sửa (G1 giá gần đây) |
+| TT1b | Ràng tệ bậc giá (món POS) + tệ đơn (`taoDon` cửa b) với tệ thị trường shop — chặn POS thu sai ×100/×0,01 (đối kháng TT1 F1) · dời `TIEN_TE_THI_TRUONG` cạnh `HE_SO_TE` | TT1 | 🟥 | 🔨 phát 07/10 · base `b04d0dc` · worktree riêng (cổng cũ gsp3/tt1 kéo gsp1 sửa cây) · nhóm tối thiểu pilot |
+| GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | 🔨 phát 07/10 · base `b04d0dc` · worktree riêng · song song TT1b (TT1b sửa `saveProduct` thêm chặn tệ ≠ thị trường shop — GP1 ghi bậc theo tệ thị trường) |
 
 ## §5j · ĐIỀU KIỆN GO-LIVE (GL1–GL8) — người quyết «triển khai» 05/10
 
