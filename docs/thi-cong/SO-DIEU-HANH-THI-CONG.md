@@ -1755,6 +1755,17 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
   - **N-GL2-DAI-TRANG-THAI** NÂNG: vượt trần + hàng đợi rỗng ⇒ dải trạng thái mọi trang + màn Lên chạy hiện XANH «Bot chạy 2/2 page» (không chỉ vế «máy đứng») — trước page thứ hai.
   - Gộp N-GL2-DEN-QUA-CUA-KIEM: bộ đọc toàn hệ lỗi ⇒ đèn vẫn XANH kèm «ít nhất …» (trái luật «không đo được thì xám»), chưa có ca · biến vắng mà đang có page
     bật ⇒ đèn khuyên «tắt bớt page» nhưng làm theo vẫn câm 0/0 (deploy đã chặn; còn ca sửa `.env` tay).
+- 07/10 · GL3b vòng 2 (thợ) — ba nợ ngoài pathspec vòng 2 (đối kháng F1 phần «nhắn sau bàn giao» · /code-review vòng 2 #1 #2 #4 #7); chi tiết: `docs/thi-cong/nhat-ky/phieu-gl3b.md` § Vòng 2:
+  - **N-GL3B-TRA-AI-CHAN-GUARD** `resumeConversation` (`src/queue/reconcile.js:53-57`) coi `chan_guard` của tin khách nhắn LÚC sale đang giữ là «còn tồn» ⇒ tin
+    tới SAU khi lượt 3 commit bàn giao (khách nhắn «??» chờ sale) và tin theo ở nhánh `doc_loi:khong_thuoc_ai` (sale giữ từ trước) vẫn thành `chan_guard` ⇒
+    «trả AI» bị từ chối tới khi đối chiếu tay TỪNG tin. Thiết kế chung của mọi bàn giao (có trước GL3b; vòng 2 chỉ chốt tin `cho` có sẵn lúc bàn giao).
+    Hướng: worker chốt tin của hội thoại sale giữ bằng lý do riêng không chặn «trả AI», hoặc resume bỏ qua `chan_guard` lý do `hoi_thoai_khong_thuoc_ai` —
+    cần người quyết (luật «trả AI» hiện bắt sale đọc hết tin tồn).
+  - **N-GL3B-HANG-LOI-TAM-THOI** thứ hạng câu lỗi `pkDocTin` (đề vòng 2: quá hạn > mạng > 103 > 121 > 105): lỗi TẠM của một token chưa rõ chân (quá hạn /
+    mạng) đứng trên lỗi BỀN của token khác (103 hết phiên) ⇒ Pancake chập chờn thì token đúng chân hết phiên bị che bởi «Pancake quá hạn». Đo tần suất 103
+    thật khi mở van; nếu gặp thì cân nhắc nối «(token khác: …)» vào câu.
+  - **N-GL3B-HANG-LOI-CHUNG** thứ hạng lỗi chỉ ở `pkDocTin`; `pkGetConversations` (nuốt ⇒ `[]`, N-GL3B-CONV-NUOT-LOI) và `pkTagId` (`/settings` ⇒ `null`) vẫn
+    nhận lỗi token cuối — hôm nay không câu nào hiện ra người vận hành; làm cùng lượt cho hai đường đó nói lỗi (GL6).
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3384,3 +3395,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · GSP3c → 🔎 chờ nghiệm thu — MỘT hàm `boDauDoiSoatGocShop` (kẹp team, chỉ chep/giu_gia_mon, lưới 032) gọi ở gắn món (trừ daCo) · gỡ món (nay một giao dịch) · cuối lượt «Kéo danh mục» khi món đổi `ma_goc` ⇒ page về chờ đối soát, bộ đếm GSP4 thật; `dongBoTuPos` chỉ ghi/đẩy page chưa gắn (COALESCE '' như catalog) + cửa ra FOR SHARE; `demDauCu` quét lùi chỉ-đọc (cận trên); nhật ký gắn/gỡ nói số bản sao bỏ dấu
   `gsp3c.sh` ①–⑤ ĐỎ 0/XANH 36 (14 ca × 2 múi giờ · 16 đảo-vá đỏ đúng · 11 bộ ca cũ) · ⑥ hai lượt đầy đủ mỗi lượt 1 dòng đỏ chập chờn KHÁC nhau, chạy riêng xanh · npm test 2489→2503 / 0 đỏ · /code-review 9: sửa #2 (40P01 kéo↔gắn) #3 #6 #9 · nợ 9 mục §9 N-GSP3C-* · nới ③ ca GSP3 ④9c F1 (tổng duyệt)
   · commit bf71c6e · 2940c00 · nhật ký docs/thi-cong/nhat-ky/phieu-gsp3c.md
+- 07/10 · GL3b vòng 2 → 🔎 chờ nghiệm thu — F1 page poll: lượt 3 giao sale CÓ việc chốt luôn tin `cho` cùng (team, page, psid) id lớn hơn (`doc_loi:ban_giao:theo_tin:<id>` + nhật ký `tin_doc_loi_chot_theo`; `khong_thuoc_ai` không chốt) ⇒ «trả AI» THÀNH, 0 chan_guard, 1 việc · F2 `pkDocTin` cạn token nói lỗi «thật» nhất quá hạn > mạng > 103 > 121 > 105 (giá trị trả · thứ tự token · `_pageTokIdx` · GHI không đổi)
+  4 ca mới (V2a V2c V2d đỏ trên base 924732c, V2b canh lựa chọn) + 1 cặp V5 · `gl3b.sh` ĐỎ 0/XANH 49 (14 đảo-vá vòng 2 + 18 vòng 1 đỏ đúng) · `gl3.sh` 25/25 · 9 bộ ca ⑥ xanh · npm test 2538→2556 / 0 (+4 vòng 2, +14 GSP3c cherry-pick) · /code-review 9: sửa #3 #5 #6 #8 + ca V2b · nợ 3 §9 (N-GL3B-TRA-AI-CHAN-GUARD · HANG-LOI-TAM-THOI · HANG-LOI-CHUNG)
+  · commit 55a81d7 · nhật ký docs/thi-cong/nhat-ky/phieu-gl3b.md § Vòng 2

@@ -218,3 +218,147 @@ Lượt đầy đủ `CHAY_SO_BASE=1 CHAY_NPM_TEST=1` (02:16→03:27) — `ĐỎ
 - **Chuỗi cổng lồng khuếch đại MỘT ca chập chờn thành năm dòng đỏ** (`ll18-khung` 1 fail ⇒ ve6c ⇒ ve2b ⇒ … ⇒ ll15d ⇒ gsp3b ⑥). So danh sách đỏ với
   base phải lần tới GỐC chung trước khi đếm «5 dòng mới»; chạy riêng gốc (16/0) và cổng con (11/0 · 21/0) mới kết luận.
 - **Bản vá review cũng là code mới (bẫy 26):** bốn chỗ vá sau /code-review đều có ca + đột biến riêng (⑤n–⑤q) — không dựa đảo-vá của lượt trước.
+
+## Vòng 2 — đối kháng chặng 2: F1 (page poll, tin khách nhắn lúc chờ chặn «trả AI») · F2 (câu lỗi token khác loại) — 07/10/2026
+
+**Môi trường đo:** máy dev, cây chung `vao-ui-v3-17-09`, hộp cát Postgres 127.0.0.1:5432 (`aicloser_v3_test_gl3b_*_p<pid>`, tự dựng/dọn), fetch GIẢ
+(host ≠ pages.fm ⇒ ném), 2 token giả, van gửi mở chỉ trong tiến trình ca, `.env` giữ `PANCAKE_READONLY=1`. Base vòng 2 **`924732c`** (= `1e0f00c` + 1 commit
+docs). Trong lượt, tổng nối thêm vào nhánh `4b64937 · 05e3acf` (docs GL2) và cherry-pick GSP3c `bf71c6e · 2940c00 · 98c0fe9 · c3479e7` — không tệp nào
+trùng tệp mã của vòng này (đo `git diff --name-only 924732c HEAD`: chỉ trùng sổ điều hành). Commit mã: **`55a81d7`** (5 tệp, đúng pathspec vòng 2).
+Verdict: `<scratchpad tổng>/refute-gl3b.verdict.yaml` (F1, F2 — NÊN, CONFIRMED); repro `<scratchpad tổng>/gl3b-refute/test/zz-refute-gl3b.test.mjs` (R1+R2 · R3 · R3b).
+
+### ⑦ ĐÃ TRA CHƯA (output máy)
+```
+$ awk '/^## §9 /,/^## §9b/' SO-DIEU-HANH-THI-CONG.md | grep -nE "TRA-AI|HANG-LOI|N-GL3B-RONG"     → (rỗng)
+```
+Nợ đề nghị của người phản biện (N-GL3B-RONG-GIA · N-GL3B-TRA-AI-KHONG-DONG-VIEC · nâng N-GL3-DOC-NHAN-TOKEN) tổng ghi ở §10 — không phải việc vòng 2.
+
+### Bước 3 — đo lại nguyên liệu đề bài (ở `924732c`)
+`git show 924732c:<tệp> | grep -n` — đúng như verdict: `worker.js:136/156 if (tin.nguon === 'webhook')` (gom cụm CHỈ webhook) · `:277` lượt 3 chỉ chốt
+`batchIds` (`gom_vao_tin`) · `pancake.js:243 else { last = loi; continue; }` · `:253 last = j;` (lỗi quyền token sau đè) · `:342 lyDoDocLoi(j)` chỉ đọc `last`
+· `reconcile.js:53-57` coi `chan_guard` là còn tồn. Kịch bản phá dựng lại được bằng ca mới trên base (đỏ dưới).
+
+### Đã làm (commit `55a81d7`)
+- **F1** `src/queue/worker.js` — nhánh hết lượt đọc lịch sử, SAU chốt cụm gom webhook: khi `bg.banGiao` (UPDATE hội thoại đổi đúng 1 dòng ⇒ đã có việc mở
+  cho sale) chốt `xong` mọi tin `cho` cùng (team, page, psid) có id > tin chính, `ly_do = 'doc_loi:ban_giao:theo_tin:<id tin chính>'`, CÙNG giao dịch
+  (`khach`); có tin bị chốt ⇒ MỘT dòng nhật ký `tin_doc_loi_chot_theo` (`sau.tin_theo = [id…]`). Nhánh `doc_loi:khong_thuoc_ai` KHÔNG chốt. SQL lỗi ⇒ catch
+  lồng về đường cũ (rollback cả bàn giao) như vòng 1.
+- **F2** `src/pancake.js` — `pkFetchPage(…, soLoi)` (tham số thứ tư tuỳ chọn, chỉ `pkDocTin` truyền `{ ds: [], hetToken: false }`): ghi lỗi TỪNG token của
+  vòng xoay ĐỌC + cờ «cạn token» ngay trước `return last`. Giá trị trả, thứ tự token, `_pageTokIdx`, hành vi GHI không đổi. `pkDocTin`: cạn token ⇒
+  `lyDoDocLoi(loiThatNhat(soLoi.ds))` theo hạng quá hạn 0 · mạng 1 · 103 2 · 121 3 · còn lại 4 (cùng hạng ⇒ lỗi SAU); vòng xoay dừng sớm (thân hỏng 502 · câu
+  riêng không phải lỗi quyền của Pancake) ⇒ câu đó đứng như vòng 1. Gom mã lỗi `[error_code, …errors[].error_code]` vào MỘT helper `maLoiPancake` dùng
+  chung cho `permErr` (ngữ nghĩa y hệt — ca GL3 R4 `errors:[{error_code:121}]` canh) và `hangLoiDoc`. Câu `lyDoDocLoi` không đổi chữ ⇒ chuỗi con
+  `quá hạn <N> ms` giữ (GL3 M1/R1/R7b xanh), mọi neo `gl3.sh`/`gl3b.sh` vòng 1 còn khớp `count == 1`.
+- Ca: `test/gl3b-vong2.test.mjs` (V2a–V2d, cửa thật cả hai đầu như repro) · thêm một cặp «A quá hạn · B 105» vào vòng lặp ca V5 (màn Vận hành qua HTTP thật)
+  của `test/gl3b-pancake-van-hanh.test.mjs`. Cổng `ops/bin/nghiem-thu/gl3b.sh`: bộ ca ④c + 14 đảo-vá ⑤r–⑤x4, ⑤0 đòi pass ≥ 27.
+
+### Quyết định · giả định (luật 11/13)
+- **Q10** `ly_do` tin theo = `doc_loi:ban_giao:theo_tin:<id>` — đề vòng 2 «lý do bàn giao (như tin chính)»; tôi giữ tiền tố `doc_loi:ban_giao` của tin chính và
+  nối id tin chính (như `gom_vao_tin:<id>`) để truy được tin nào kéo nó theo. Giá: bộ đếm tương lai đếm `LIKE 'doc_loi:ban_giao%'` sẽ đếm cả tin theo (hôm nay
+  0 nơi đọc: `grep -rnE 'gom_vao_tin|doc_loi:' src v3/src db ops` chỉ ra worker.js + ca).
+- **Q11** Nhánh `doc_loi:khong_thuoc_ai` KHÔNG chốt tin theo. Đề vòng 2 cho chốt «nếu chính vòng 1 đã làm vậy cho tin chính»: vòng 1 chốt tin chính `xong`
+  và chốt cụm gom WEBHOOK (`batchIds`) ở CẢ HAI nhánh — nhưng cụm gom đã ghép vào `noi_dung` của lượt đó (là một phần nội dung tin chính), còn tin theo poll
+  là hàng RIÊNG chưa ai xử. Không có việc mới ⇒ tin theo không «thuộc dòng việc sale vừa nhận» ⇒ để đi đường thường (đọc được ⇒ handler xét chủ — hôm nay ra
+  `chan_guard` như mọi tin tới lúc sale giữ, có từ trước GL3b; Pancake còn lỗi ⇒ tự đi nhánh GL3b). Giữ nguyên hành vi vòng 1 cho cụm gom webhook. Giá:
+  sale đã giữ sẵn + khách nhắn thêm ⇒ «trả AI» vẫn bị chặn (đúng thiết kế chung — nợ **N-GL3B-TRA-AI-CHAN-GUARD**). Ca V2b + đột biến ⑤s canh.
+- **Q12** «CÓ việc» = `bg.banGiao` (UPDATE hội thoại đổi đúng 1 dòng — cùng điều kiện tin chính `doc_loi:ban_giao`), kể cả khi `NOT EXISTS` gặp việc mở CŨ
+  (`viecMoi=false`, cảnh F5): sale vẫn có MỘT việc mở cho cả hội thoại.
+- **Q13** F2 chọn **thứ hạng**, không gom «token 1: …; token 2: …». Lý do: giữ khuôn đầu câu «Pancake quá hạn…/Pancake lỗi mạng…» mà ca D1/P1a và chuỗi con GL3
+  đang so; câu vào `ly_do` (cắt 500), nhật ký (cắt 400), `chu_thich` sổ bỏ-qua (cắt 160) — prod ~8 token gom lại sẽ bị cắt mất phần đáng đọc; số thứ tự token
+  đổi theo page (`_pageTokIdx` xoay chân khởi đầu) nên «token 1» không chỉ được tài khoản nào. Giá: mất dấu «các token khác trả 105» trong câu.
+- **Q14** Thứ hạng giữa các lỗi CẤP TOKEN: đề vòng 2 chỉ chốt «121 > quyền». Bản đầu tôi xếp 121 > 103; /code-review #3 chỉ ra 121 là lỗi cấp TÀI KHOẢN —
+  bộ nhớ đo prod 02/10: «121 xảy ra cả khi page có `has_active_subscription=true` ⇒ tài khoản không có ghế» ⇒ tài khoản thấy page mà không ghế trả 121
+  thường xuyên như 105 ⇒ che token đúng chân hết phiên (103). Đổi thành **103 > 121 > 105** (không trái thứ tự đề đã chốt). Ca «A 103 · B 121»,
+  «A 121 · B 103» + đột biến ⑤x4 (thứ tự bản đầu) canh.
+- **Q15** Vòng xoay dừng sớm (thân hỏng 502 sau một token quá hạn) giữ câu 502 — đó là câu trả lời của token đầu tiên không từ chối quyền, vẫn đúng lớp
+  «Pancake trục trặc». Ca V2c «A quá hạn · B 502 HTML» + đột biến ⑤w canh.
+- **Q16** Không đổi giá trị TRẢ của `pkFetchPage` (phương án «trả luôn lỗi xếp hạng» mà /code-review #6 gợi ý): GET nào cũng đọc `j.messages`/`j.conversations`
+  — trả lỗi 121 kèm `messages: []` của token trước thay cho 105 của token cuối sẽ biến «lỗi» thành «rỗng thật» ⇒ trả lời mù (nặng thêm N-GL3B-RONG-GIA). Sổ
+  lỗi riêng + cờ `hetToken` chỉ đổi CÂU, không đổi đường đi.
+- **Q17** Nhật ký `tin_doc_loi_chot_theo` (sau /code-review #5) — tin khách bot không trả lời không được biến mất im lặng; MỘT dòng cho mỗi lượt chốt.
+
+### Danh sách ca (vòng 2)
+| ca | nhóm | đo gì |
+|---|---|---|
+| V2a | HÀNH VI trọn đường · CHO-QUA · CHẶN | page POLL, bộ nạp thật + worker thật: tin 1 502 → khách nhắn «??» lúc tin 1 lùi (bộ nạp đọc lúc lành ⇒ tin 2 hàng riêng) → lượt 2, lượt 3 ⇒ tin 2 `xong doc_loi:ban_giao:theo_tin:<id1>` · 1 việc mở · nhật ký `tin_doc_loi_chot_theo` đúng `[id2]` · khách KHÁC cùng page + CÙNG psid ở page KHÁC (id lớn hơn, hoãn 1 h) vẫn `cho` · Pancake lành ⇒ worker không rút gì (0 `chan_guard`) · `resumeConversation` THÀNH · khách nhắn tiếp ⇒ bot 1 POST |
+| V2b | BIÊN (lựa chọn Q11) | sale ĐANG giữ: lượt 3 `doc_loi_khong_thuoc_ai` ⇒ tin 2 vẫn `cho`, 0 việc, 0 nhật ký chốt theo; Pancake lành ⇒ tin 2 rút riêng, 0 lượt não, 0 POST (không neo kết quả cụ thể của đường thường) |
+| V2c | đơn vị · BIÊN thứ hạng | 13 cặp [tokA, tokB]: quá hạn·105 · mạng·105 · 121·105 · 103·105 · 103·121 · 121·103 · quá hạn·mạng · mạng·121 (6 cặp đầu-không-kể-103·121/121·103 đỏ ĐO ĐƯỢC ở base; hai cặp 103 thêm sau review) + CHO-QUA 105·quá hạn · 105·121 · 105·105 · quá hạn·quá hạn · quá hạn·502 HTML; mỗi cặp GET đúng [tokA, tokB]; page đã ghim tokB ⇒ lượt lỗi sau vẫn khởi đầu tokB (`_pageTokIdx` không đụng) |
+| V2d | HÀNH VI trọn đường | page POLL, A treo · B 105: sổ bỏ-qua `doc_tin_loi` · `ly_do` tin lượt 1–2 · nhật ký `tin_doc_loi_ban_giao` lượt 3 đều «Pancake quá hạn — quá hạn 150 ms», không «quyền» |
+| V5 (+1 cặp) | HÀNH VI qua HTTP | màn Vận hành: A treo · B 105 ⇒ `lichSuLoi` «Pancake quá hạn — quá hạn 150 ms …» |
+
+### Bằng chứng ĐỎ trên base (ca mới, mã `924732c` chưa sửa)
+```
+✖ GL3b V2a   [gl3b] V2a lượt 3: doc_loi_ban_giao · tin=[["m-ps-v2a-1","xong","doc_loi:ban_giao"],["m-ps-v2a-2","cho",""]] … việc mở=1
+             AssertionError: tin 2 (khách nhắn lúc tin 1 lùi) chốt theo … actual: 'cho' · expected: 'xong'
+✔ GL3b V2b   (canh lựa chọn Q11 — base vốn không chốt)
+✖ GL3b V2c   ✗ A quá hạn · B 105 → «Bạn không có quyền với trang này» · ✗ A lỗi mạng · B 105 → «Bạn không có quyền…» · ✗ A 121 · B 105 → «Bạn không có
+             quyền…» · ✗ A 103 · B 105 → «Bạn không có quyền…» · ✗ A quá hạn · B mạng → «Pancake lỗi mạng…» · ✗ A mạng · B 121 → «Tài khoản không có ghế…»
+             · ✓ 5 cặp CHO-QUA · ghim tokB · A 105 · B quá hạn → «Bạn không có quyền…» [tokB,tokA]
+✖ GL3b V2d   nap_bo_qua={"ly_do":"doc_tin_loi","chu_thich":"Pancake không trả lịch sử: Bạn không có quyền với trang này"}
+ℹ tests 4 · pass 1 · fail 3
+```
+(Hai cặp 103·121 / 121·103 thêm sau /code-review #3 — đỏ dưới đột biến ⑤x4 = thứ hạng của bản đầu; cặp V5 đỏ dưới ⑤v2 = câu token cuối của base.)
+
+### Đảo-vá (`gl3b.sh` ⑤, đo bản SAU /code-review) — 14/14 vòng 2 đỏ đúng + 18/18 vòng 1 vẫn đỏ đúng
+| đột biến | ca phải đỏ | đỏ thật |
+|---|---|---|
+| ⑤r bỏ chốt tin theo (`bg.banGiao ?` → `false ?`) | V2a | V2a |
+| ⑤r2 bỏ nhật ký tin chốt theo | V2a | V2a |
+| ⑤s chốt cả nhánh `khong_thuoc_ai` (`→ true ?`) | V2b | V2b |
+| ⑤t bỏ điều kiện psid | V2a | V2a |
+| ⑤u bỏ điều kiện page | V2a | V2a |
+| ⑤v / ⑤v2 `pkDocTin` về `lyDoDocLoi(j)` (câu token cuối) | V2c V2d / V5 | V2c V2d / V5 |
+| ⑤v3 `pkFetchPage` không dựng cờ cạn token | V2c V2d | V2c V2d |
+| ⑤w dừng sớm (thân hỏng) cũng chọn theo hạng | V2c | V2c |
+| ⑤x1 quá hạn ngang hạng mạng · ⑤x2 mạng ngang 105 · ⑤x3 103/121 ngang 105 · ⑤x4 121 trên 103 | V2c | V2c ×4 |
+| ⑤0 bản sao nguyên vẹn | (xanh) | pass=27 fail=0 |
+**Đột biến nào KHÔNG đỏ** (đo riêng trên bản sao tạm, mỗi đột biến một tiến trình): (1) bỏ `AND trang_thai='cho'` và (2) bỏ `id>$4` trong câu chốt tin theo —
+pass 15/0: vô hại theo bất biến FIFO của câu rút (`kho.js:88` `truoc.id<c.id AND truoc.trang_thai IN ('cho','dang_xu')` ⇒ khi tin chính đang `dang_xu`, tin
+id lớn hơn của cùng khách chỉ có thể là `cho`, tin id nhỏ hơn không thể là `cho`). (3) hoà hạng lấy lỗi ĐẦU thay lỗi SAU — pass 9/0: hai lỗi cùng hạng
+cho cùng loại câu (cùng đường dẫn, cùng hạn). (4) `permErr` bỏ `errors[]` — không đỏ ở ca vòng 2 nhưng ĐỎ GL3 R4 (`gl3.sh` ⑥ canh).
+
+### /code-review (high) vòng 2 — 9 phát hiện, kiểm chứng trước khi sửa
+| # | phát hiện | kiểm chứng | xử lý |
+|---|---|---|---|
+| 1 | nhánh `khong_thuoc_ai` không chốt ⇒ sale đã giữ + khách nhắn ⇒ `chan_guard` chặn «trả AI»; V2b neo `chan_guard` | ĐÚNG (đọc mã) | GIỮ lựa chọn Q11 (đề vòng 2 «KHÔNG chốt khi khong_thuoc_ai») · SỬA ca V2b: bỏ neo `chan_guard` của đường thường, chỉ đòi rút riêng + 0 não + 0 POST · nợ **N-GL3B-TRA-AI-CHAN-GUARD** |
+| 2 | chỉ quét tin có tại lúc bàn giao; tin tới SAU commit vẫn `chan_guard` (gốc ở `reconcile.js:54`) | ĐÚNG | ngoài pathspec (`reconcile.js` + luật «trả AI») ⇒ cùng nợ **N-GL3B-TRA-AI-CHAN-GUARD** |
+| 3 | 121 (cấp tài khoản) trên 103 che token hết phiên | ĐÚNG (bộ nhớ đo prod 02/10) | SỬA (Q14) · 2 cặp ca · ⑤x4 |
+| 4 | lỗi tạm thời (quá hạn/mạng) của token chưa rõ chân che lỗi bền 103/121 | ĐÚNG về mặt lý | GIỮ — đề vòng 2 chốt «quá hạn > mạng > …» (chặn đúng cảnh ② 2 sinh ra) · nợ **N-GL3B-HANG-LOI-TAM-THOI** |
+| 5 | tin theo chốt `xong` im lặng, không nhật ký | ĐÚNG | SỬA (Q17) · ca V2a đòi nhật ký · ⑤r2 |
+| 6 | so danh tính `cacLoi.at(-1) === j` dễ gãy khi ai bọc `last` | ĐÚNG | SỬA: sổ `{ds, hetToken}` + cờ đặt ngay trước `return last` · ⑤v3; KHÔNG theo gợi ý «trả lỗi xếp hạng» (Q16) |
+| 7 | thứ hạng chỉ ở `pkDocTin`; `pkGetConversations`/`pkTagId` vẫn lỗi token cuối | ĐÚNG — nhưng hai đường đó không hiện câu lỗi nào (nuốt ⇒ `[]`/`null`) | GIỮ (ngoài đề F2) · nợ **N-GL3B-HANG-LOI-CHUNG** |
+| 8 | `hangLoiDoc` chép lại cách đọc mã lỗi của `permErr` | ĐÚNG | SỬA: helper `maLoiPancake` dùng chung (ngữ nghĩa y hệt, GL3 R4 canh) |
+| 9 | hoà hạng phụ thuộc chân ghim ⇒ câu đổi theo thời gian | ĐÚNG về lý; cùng hạng = cùng loại câu | GIỮ (đảo-vá «không đỏ» (3) ghi trên) |
+
+### Cổng · bộ ca · npm test (bản SAU /code-review)
+```
+$ bash ops/bin/nghiem-thu/gl3b.sh            (không cờ — 1:39)
+✅ ④c-vòng-2-F1-poll-tin-theo-·-F2-câu-lỗi-token-khác-loại pass=4 fail=0 · xanh: V2a V2b V2c V2d
+✅ ①②③ 11/0 · 7/0 · 5/0 (vòng 1 giữ) · ④ ④b · ⑤a–⑤q 18/18 · ⑤r–⑤x4 14/14 · ⑤0 pass=27 fail=0
+✅ ⑥gl3.sh rc=0 · == ĐỎ 0 / XANH 25
+✅ ⑥l1-m2-cua 17/0 · va-r1-van-gui 6/0 · phase0-webhook-delivery 15/0 · l2-m1-nhac-truong 12/0 · phase1-chat-flow 12/0
+✅ ⑥l2-m1-hang-doi 28/0 · va-p7-chay-worker 7/0 · gl3-han-cho-pancake 18/0 · l0-m1-luoc-do 13/0
+⏸ ⑦ / ⑧ hoãn (cờ)
+== ĐỎ 0 / XANH 49   rc=0
+$ bash ops/bin/nghiem-thu/gl3.sh             (riêng)  == ĐỎ 0 / XANH 25   rc=0
+$ TZ=$tz PGTZ=$tz node --test test/gl3b-vong2.test.mjs   (tz = UTC · Pacific/Kiritimati · America/Adak) → 4/0 · 4/0 · 4/0
+$ npm test   BASE 924732c (trước khi chép tệp nào):  tests 2538 · pass 2534 · fail 0 · skipped 4
+$ npm test   SAU (cây có thêm GSP3c tổng cherry-pick, +14 ca gsp3c-doi-mon):  tests 2556 · pass 2552 · fail 0 · skipped 4   (2538 + 4 vòng 2 + 14 GSP3c)
+```
+⑦ «so với base» (l1-m2 · ll2 · gsp3b) KHÔNG chạy ở vòng 2 — máy có lượt đo khác chạy song song (gsp3b/gsp3/ve7b của cây GSP3c), luật 6; vòng 2 không
+đụng tệp nào ngoài đường đọc Pancake + worker (gl3.sh + chín bộ ca ⑥ xanh).
+
+### Lệch
+- Đề vòng 2 «tổng là thợ duy nhất trong cây chung»: giữa lượt, `v3/test/b/gl2-vong2-den.test.mjs` (chưa theo dõi, của GL2 vòng 2) xuất hiện trong cây — tôi
+  không đụng; `npm test` SAU chạy lúc tệp này chưa góp ca (2556 = 2538 + 4 + 14).
+
+### Nợ (vòng 2) — đã APPEND §9 sổ
+  - **N-GL3B-TRA-AI-CHAN-GUARD** · **N-GL3B-HANG-LOI-TAM-THOI** · **N-GL3B-HANG-LOI-CHUNG** (nguyên văn ở §9, khối «07/10 · GL3b vòng 2 (thợ)»).
+
+### 🧭 Bài học cho thước
+- **Ca đối kháng KHẲNG ĐỊNH điều phá được thì đổi chiều khi chép vào bộ ca**: repro R1+R2 của người phản biện `assert.equal(ds[1].trang_thai, "chan_guard")`
+  — chép nguyên là neo đúng cái lỗi. Ca V2a viết lại theo hợp đồng mới (đỏ trên base đúng chỗ đó).
+- **Đừng neo kết quả của một luật KHÁC trong ca biên** (/code-review #1): V2b bản đầu neo `chan_guard` của «đường thường» — phiếu nào sửa nợ
+  N-GL3B-TRA-AI-CHAN-GUARD sẽ thấy V2b đỏ y như code sai. Ca biên chỉ đòi bất biến của CHÍNH luật mình (không chốt) + bất biến an toàn (0 não, 0 gửi).
+- **Ca nối tiếp trong một tệp**: ca trước đỏ giữa chừng để lại tin `cho` rút được ⇒ ca sau rút nhầm và đỏ giả (lượt đầu trên base: V2b đỏ vì rút tin của V2a).
+  Thêm `donCaTruoc(psid)` ở đầu mỗi ca trọn đường để mỗi ca đỏ đúng lý do của nó.
