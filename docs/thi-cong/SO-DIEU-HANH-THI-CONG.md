@@ -368,7 +368,8 @@ món chưa giá cho page đã gắn mà chưa đối soát). Sửa sau review (a
 | H-GSP | Người: shop cho 11 page chưa có shop · xác nhận gắn 74 page · chọn giá khi lệch · 2 page có 2 bản sao | GSP2 lên prod | — | 🔔 MỞ 05/10 — GSP1–GSP3b đã lên prod: 76 page chưa chuyển (GCC 74 · kỹ thuật 2), 51 có gợi ý sẵn |
 | GSP3 | Đối soát giá + ảnh theo GỐC × SHOP: lệch giữa page ⇒ 409, người chọn · chép đủ cột bậc · ảnh `nguon='kb'` khử trùng · luôn đẩy bản chép · dùng lại cửa lưu giá VE8b | GSP2 (cùng tệp màn) | 🟥 | ✅ 05/10 · `e5e5f48` + vòng 2 `0f2c4bf` (F1 dấu đơn vị · F4 tiền tệ bảng thắng) · ca 37/37 · `gsp3.sh` 43/43, 29 đột biến · đối kháng 1 vòng + verify · LÊN PROD 05/10 `8dc9bcd` |
 | GSP3b | Trang page: bộ đọc `chay-that.js:408` truyền `trang` · cửa lưu SP/ảnh từ trang page từ chối bản sao của page đã gắn (409) · câu chữ «sửa ở đây là sửa mọi page cùng gốc × shop» | GSP3 · cùng đợt deploy GSP1–GSP3 | 🟥 | ✅ 05/10 · `1956b1e` `bcc86ab` + vòng 2 `d688a3d` (F1 cửa đầy đủ từ chối món POS · F2 một thứ tự khoá) · ca 45/45 · `gsp3b.sh` 55/55, 36 đột biến · đối kháng 1 vòng + verify · LÊN PROD 05/10 `8dc9bcd` |
-| GSP3c | Đóng hai lỗ bộ đếm trước GSP4: đổi món của gốc ở shop ⇒ bỏ dấu đối soát của bản sao gốc × shop đó (N-GSP3-DOI-MON + F6) · «Kéo danh mục» không ghi / không đẩy cho bản sao của page ĐÃ gắn (N-GSP3B-NEN F4) | GSP3b · không chờ H-GSP | 🟥 | 🔎 07/10 · mã `bf71c6e` · cổng `2940c00` · nhật ký `98c0fe9` (cherry-pick từ worktree) · `gsp3c.sh` ①–⑤ 36/0 · 16 đảo-vá · ⑥ chập chờn chạy riêng xanh · npm test 2503/0 · 9 nợ N-GSP3C-* (N-GSP3C-DAY-HET-HANG trước GSP4) · chờ `_chan1` + chặng 2 đối kháng |
+| GSP3c | Đóng hai lỗ bộ đếm trước GSP4: đổi món của gốc ở shop ⇒ bỏ dấu đối soát của bản sao gốc × shop đó (N-GSP3-DOI-MON + F6) · «Kéo danh mục» không ghi / không đẩy cho bản sao của page ĐÃ gắn (N-GSP3B-NEN F4) | GSP3b · không chờ H-GSP | 🟥 | ✅ 07/10 · mã `bf71c6e` · cổng `2940c00` · nhật ký `98c0fe9` · `_chan1` 6/8 (④⑤ đỏ = diff base..HEAD gom commit GL3b/GL2 do cherry-pick — 9 tệp riêng GSP3c đều trong ③) · đối kháng ĐẠT 0 CHẶN · F1 F2 F3 ⇒ GSP3d (trước GSP4) |
+| GSP3d | Trước GSP4: `demDauCu` so với biên an toàn (`sua_luc` = giờ BẮT ĐẦU giao dịch ⇒ đếm thiếu — F1) · câu đánh dấu đối soát khoá dòng món + kiểm lại tập món, lệch ⇒ 409 (đua kéo × đối soát — F2, `chuyen-ban-sao.js`) · «Kéo danh mục» không đè lượt gắn đang chạy (`ma_goc IS NULL` — F3, `doc-danh-muc.js`) · đẩy hết hàng cho page đã gắn (N-GSP3C-DAY-HET-HANG) | GSP3c · TT1b (cùng `chuyen-ban-sao.js`) | 🟥 | ⬜ chưa viết phiếu · KHÔNG thuộc nhóm pilot |
 | GSP4 | Một đường: bỏ nhánh `page_id` ở `catalog.js` · `kho-san-pham-v3.js` · `ban-chep-bot.js` · «Page đang bán» · `doc-danh-muc.js` RF-15; chốt ở `handler-v3.js` trước KB; 35 ca đổi fixture + 4 ca luật mới; deploy theo `mo-van` | GSP3 trên prod · bộ đếm = 0 | 🟥 | ⬜ |
 | GSP5 | Dọn: bỏ màn «Bản sao theo page» + ô lưu ý + `GET /api/san-pham`; tab «SP & giá» trang page nói giá sửa ở Sản phẩm › Theo thị trường; `03-MAN-HINH.md`; ĐÓNG CR | GSP4                | 🟨  | ⬜ |
 
@@ -1771,6 +1772,13 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
     Cách ly team dựa vào việc từng màn tự chọn dòng theo page team mình (hoặc chỉ đếm) — sáu nơi dùng hôm nay đều vậy, ca `v3/test/b/gl2-vong2-http.test.mjs`
     H1 canh ĐÚNG danh sách API hôm nay. Màn mới dùng bộ đọc mà trả nguyên mảng ⇒ lộ tên + id page team khác. Hướng: thêm API mới vào H1, hoặc tách bộ đọc
     riêng cho đèn Sức khoẻ (đếm theo team qua cửa hệ thống — cần `vai-b.js` + `chay-that.js`, gộp được với N-GL2-DEN-QUA-CUA-KIEM).
+- 07/10 · tổng (đối kháng GSP3c `refute-gsp3c.verdict.yaml`) — nâng / thêm nợ:
+  - **N-GSP3C-DUA-DOI-SOAT** NÂNG ⇒ CHẶN GSP4: không cần may rủi — lượt kéo giữ khoá dòng món x, bước chép giá của đối soát chờ tới SAU câu bỏ dấu cuối lượt,
+    rồi câu đánh dấu ghi `chep` trên tập món CŨ ⇒ món mới chưa ai so, page «xong», `demDauCu`=0 (ca R2b). Vá ở `chuyen-ban-sao.js` (⇒ GSP3d).
+  - **N-GSP3C-KEO-DE-GAN** (mới, có từ VE8) «Kéo danh mục» nhánh `thieuGoc` đọc không khoá rồi UPDATE theo id không kèm `ma_goc IS NULL` ⇒ người gắn z vào
+    silver, cửa báo thành công + nhật ký «silver», z cuối cùng ở gold (`src/pos/doc-danh-muc.js:164-218`, ca R3). Bộ đếm không thấp hơn thật.
+  - `demDauCu` KHÔNG phải cận trên (F1 NÊN — lời khai JSDoc sai): `sua_luc` = `now()` lúc BẮT ĐẦU giao dịch kéo dài ⇒ món đổi trong lúc đối soát chạy bị bỏ sót
+    (`san-pham-goc.js:496-511`) ⇒ GSP3d. Cổng GSP4 «chuaXong = 0 + demDauCu» chưa đủ tin tới khi GSP3d xong.
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3409,3 +3417,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · GL2 → ✅ (vòng 2 xong) · GL3b vòng 2 xong (55a81d7) — GL2 vòng 2: đèn vượt trần nói «toàn hệ đang bật x/y», tên page team người xem thuộc, team khác chỉ số + tên team; ca HTTP 7 API / 6 màn: người team X không thấy tên/id page team Y
   V2-L1 tổng NHẬN: page team kỹ thuật hiện tên + id cho vai kéo được (kho «chưa phân» vốn đã hiện cho quản trị/quản lý; kho cắt 200 dòng — cần id để lọc) · đo: page team kỹ thuật không màn nào tắt thẳng — Người và team › Kho chưa phân › kéo về › tắt
   · mo-van §5 «lùi một cờ» thêm restart CẢ HAI unit · nợ N-GL2-BO-DOC-MANG-TEN (màn mới trả nguyên mảng bộ đọc sẽ lộ tên page)
+- 07/10 · GSP3c → ✅ (tổng nghiệm thu) · GSP3d ⬜ mở — đối kháng ĐẠT 0 CHẶN: không phá được hợp đồng chính (bỏ dấu ở gắn/gỡ/kéo, không ghi/đẩy cho page đã gắn, không 40P01, không bỏ dấu oan, kẹp team đúng)
+  phá được ngoài/giáp ③: F1 `demDauCu` đếm thiếu (không phải cận trên) · F2 đua kéo × đối soát ⇒ «xong» sớm có khoá ép thứ tự (N-GSP3C-DUA-DOI-SOAT nâng chặn GSP4) · F3 kéo đè lượt gắn (N-GSP3C-KEO-DE-GAN)
+  · gom F1 F2 F3 + N-GSP3C-DAY-HET-HANG ⇒ GSP3d trước GSP4 (sau TT1b — cùng chuyen-ban-sao.js) · `_chan1` gsp3c ④⑤ đỏ do cherry-pick gom commit khác (đã soát tệp riêng)
