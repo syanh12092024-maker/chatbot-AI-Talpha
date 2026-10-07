@@ -382,7 +382,7 @@ TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
 | TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | ✅ 07/10 · mã `bc190f5` · nhật ký `f2e1ac1` · đối kháng ĐẠT (F1 → TT1b) · chặng 1: ④ 11/11 tệp riêng TT1 ⊆ ③ (soát tay — `_chan1` ④⑤ đỏ do HEAD trôi, N-CHAN1-HEAD-TROI) · ⑤ không đụng tệp phẳng · ⑦ `tt1.sh` 27/1 của thợ (1 đỏ chập chờn, chạy riêng xanh) — lượt `_chan1` 1,5 h bị ngắt khi phiên tắt; `tt1.sh` chạy lại làm cổng cũ trong `tt1b.sh` |
-| TT1b | Ràng tệ bậc giá (món POS) + tệ đơn (`taoDon` cửa b) với tệ thị trường shop — chặn POS thu sai ×100/×0,01 (đối kháng TT1 F1) · dời `TIEN_TE_THI_TRUONG` cạnh `HE_SO_TE` | TT1 | 🟥 | 🔨 phát 07/10 · base `b04d0dc` · worktree riêng (cổng cũ gsp3/tt1 kéo gsp1 sửa cây) · nhóm tối thiểu pilot |
+| TT1b | Ràng tệ bậc giá (món POS) + tệ đơn (`taoDon` cửa b) với tệ thị trường shop — chặn POS thu sai ×100/×0,01 (đối kháng TT1 F1) · dời `TIEN_TE_THI_TRUONG` cạnh `HE_SO_TE` | TT1 | 🟥 | 🔎 07/10 · mã `100d47b` · nhật ký `476c02b` (cherry-pick từ worktree) · `tt1b.sh` ①–⑥ 13/13 · 11/11 đảo-vá · cổng cũ: gsp3/ll2 rc=0, tt1 riêng rc=0, l3-m4/va-r2 đỏ sẵn 0 dòng mới · npm test 2585/0 · tổng soát ④ 18/18 tệp ⊆ ③ + 80/80 ca giao GL2×TT1b trên nhánh chính · chờ chặng 2 đối kháng |
 | GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | 🔨 phát 07/10 · base `b04d0dc` · worktree riêng · song song TT1b (TT1b sửa `saveProduct` thêm chặn tệ ≠ thị trường shop — GP1 ghi bậc theo tệ thị trường) |
 
 ## §5j · ĐIỀU KIỆN GO-LIVE (GL1–GL8) — người quyết «triển khai» 05/10
@@ -1819,7 +1819,7 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
   nói «GL4 không ngắt page nào». Lời khai «down 034 an toàn với mã mới đang chạy» (`034…down.sql:1`, nhật ký `:11`) SAI. Không chạm prod theo mo-van §5 (migrate down
   KHÔNG phải đường lùi trên CSDL thật) — vá 1–3 dòng khi có phiếu chạm `ngat-page.js` (42703 ⇒ xoá bộ nhớ, hoặc lọc bỏ page quá hạn vài phút) + sửa lời khai.
 - 07/10 · TT1b (thợ) — trả một nợ + sáu nợ ngoài hợp đồng phiếu (⑥ phiếu + /code-review TT1b #5–#8 bác có lệnh tổng); chi tiết: `docs/thi-cong/nhat-ky/phieu-tt1b.md`:
-  - **N-TT1-TE-LECH-THI-TRUONG** TRẢ (`79df30c`): `saveProduct` món POS đối chiếu tệ MỌI bậc với tệ thị trường của (team, shop) — không lọc `bat`;
+  - **N-TT1-TE-LECH-THI-TRUONG** TRẢ (`100d47b`): `saveProduct` món POS đối chiếu tệ MỌI bậc với tệ thị trường của (team, shop) — không lọc `bat`;
     `taoDon` cửa (b) chặn đơn tệ ≠ tệ thị trường / thị trường ngoài bảng (0 POST, nhật ký cửa b). Phần GIAO DIỆN của N-TIEN-TE-MAC-DINH (ô tệ mặc
     định + khoá theo shop ở «Theo thị trường») CÒN.
   - **N-TT1B-LY-DO-CHAN-ROLLBACK** (/code-review #5 · review (a) G1) chặn lệch tệ ở `taoDon` là ngoại lệ ⇒ `duyet` ROLLBACK ⇒ lý do không vào
@@ -3498,4 +3498,4 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   · `LUOT_LOI_GIAO_SALE = 3` (≈ 90 s, lỗi dữ liệu bền) do tổng đặt, gần mốc ~45 s của GL3b
 - 07/10 · TT1b → 🔎 chờ nghiệm thu — tệ bậc giá / tệ đơn = tệ thị trường shop: `saveProduct` (đầy đủ + chỉ-giá) món POS tra `ket_noi_pos` theo (team, shop), không lọc bat ⇒ 400 «Bậc giá dùng X nhưng shop M bán bằng Y» / thiếu kết nối / ngoài bảng (offers rỗng cho qua — lệch nhẹ ② 3, tổng duyệt); `taoDon` cửa (b) SAU shop_lech chặn lệch tệ + ngoài bảng (0 POST, nhật ký cửa b, câu dặn «báo marketer sửa bậc»); `TIEN_TE_THI_TRUONG` + `teCuaThiTruong` (gọt như GSP3) một bảng ở tao-don.js, chuyen-ban-sao re-export
   `tt1b.sh` ①–⑥ đạt (13 phép · 11/11 đảo-vá đỏ đúng) · ⑦ gsp3 ✔ · ll2 ✔ · l3-m4/va-r2 đỏ sẵn 0 mới · tt1 TREO trong lượt lồng → chạy riêng rc=0 (27/27) · bộ ca 22 + sáu tệp ca 95/0 (assert không đổi) · npm test 2563→2585 / 0 · nới ③ repro refute-tong-the-1 (MARKET→UAE, tổng duyệt) · /code-review 8: sửa 4 · bác 4 kèm nợ §9 N-TT1B-*
-  · commit 79df30c · nhật ký docs/thi-cong/nhat-ky/phieu-tt1b.md
+  · commit 100d47b · nhật ký docs/thi-cong/nhat-ky/phieu-tt1b.md

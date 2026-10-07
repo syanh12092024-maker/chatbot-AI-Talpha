@@ -86,7 +86,7 @@ Quan hệ với nợ cũ:
   - P5 `cung_doi_tuong=0`.
   - CHO-QUA P1b/P1d/P2c/P2d/P3 xanh, nghĩa là thước không «chặn tất».
 
-## Thay đổi (commit `79df30c`) — mỗi chỗ một lý do
+## Thay đổi (commit `100d47b`) — mỗi chỗ một lý do
 
 - **`src/pos/tao-don.js`**
   - `TIEN_TE_THI_TRUONG` dời về đây, cạnh `HE_SO_TE`. Nội dung giữ nguyên từng ký tự, nên các neo đột biến của `gsp3.sh`/`tt1.sh` vẫn khớp đúng 1 lần.
@@ -198,9 +198,9 @@ Kết quả đo bản sau vá: **11/11 đỏ đúng**, phép khác lệch theo =
 
 Lượt cổng nhanh đầu tiên, thước đỏ vì `ban_bang` đếm cả `*.goc` trong bản sao tạm (P5 «lệch theo» ở mọi đột biến). Đây là lỗi của THƯỚC, không phải của mã. Đã sửa bằng `--exclude='*.goc'`, và chú thích ghi rõ lý do.
 
-## Cổng — kết quả cuối (máy dev, worktree `79df30c`)
+## Cổng — kết quả cuối (máy dev, worktree `100d47b`)
 
-Lượt cuối `tt1b.sh` (CHAY_NPM_TEST=1, `cong-day-du-3`, HEAD `79df30c`, 11:05→12:04): **PHÉP=42 LỖI=1 · rc=1**. Lỗi duy nhất là `tt1` TREO
+Lượt cuối `tt1b.sh` (CHAY_NPM_TEST=1, `cong-day-du-3`, HEAD `100d47b`, 11:05→12:04): **PHÉP=42 LỖI=1 · rc=1**. Lỗi duy nhất là `tt1` TREO
 2700 s trong lượt lồng (tt1 → gsp3b → gsp3 → …) — chạy riêng ở dưới: **rc=0**.
 
 ```
@@ -225,7 +225,7 @@ Lượt cuối `tt1b.sh` (CHAY_NPM_TEST=1, `cong-day-du-3`, HEAD `79df30c`, 11:0
 | | tests | pass | fail | skip |
 | --- | --- | --- | --- | --- |
 | base `6e9f373` (bản sao) | 2563 | 2541 | 0 | 22 |
-| sau `79df30c` | 2585 | 2563 | 0 | 22 |
+| sau `100d47b` | 2585 | 2563 | 0 | 22 |
 
 Chênh +22 ca, đúng bằng 22 ca của tệp mới; không thêm ca đỏ.
 
