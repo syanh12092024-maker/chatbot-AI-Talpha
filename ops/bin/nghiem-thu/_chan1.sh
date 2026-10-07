@@ -46,28 +46,31 @@ while IFS= read -r f; do
 done <<< "$danh_sach"
 [ -z "$ngoai" ]; ket "④pathspec-⊆-③" $? "${ngoai:+NGOÀI PHẠM VI: }$(echo "$ngoai" | tr '\n' ' ')"
 
-# ⑤ không đụng vùng cấm: file phẳng ngay dưới src/ (bản đang chạy) + 5 file não
-# ⑤ vùng cấm = file phẳng ngay dưới src/ (bản đang chạy).
-#    SỬA 16/09 (§0a luật 4 mới): NĂM file bộ não chung sửa ĐƯỢC — nhưng chỉ khi phiếu KHAI
-#    thẳng ra bằng dòng `**Đụng bộ não:**`. Khai thì đi qua, không khai thì đỏ y như cũ.
-#    Mục đích của rào này không phải chặn việc sửa, mà là chặn việc sửa LẶNG LẼ: phiếu là
-#    thứ người quyết đọc, nên cái gì chạm 51 page khách thật phải nằm trên mặt phiếu.
+# ⑤ bộ não phải khai — LUẬT sổ §0a luật 4, bản «SỬA 02/10 — CR-02-10» (GL7a 07/10):
+#    · file phẳng `src/*.js` DÙNG CHUNG với v3 (`pancake` `kb` `config` `ai-log`…) sửa được như
+#      code v3 thường ⇒ phép này KHÔNG canh chúng nữa (trước GL7a: mọi file phẳng đều đỏ — đỏ giả
+#      cho `src/pancake.js` ở GL3 · GL3b — nhật ký GL3 dòng 172 · `_chan1 gl3b` đo 07/10 — người quen bỏ qua dòng đỏ);
+#    · chỉ tệp BỘ NÃO (NAO dưới — danh sách giữ nguyên từ BH1 16/09) phải nằm trên mặt phiếu bằng dòng
+#      cột 0 `**Đụng bộ não:** <danh sách tệp> — <lý do một câu>` (ba rào 16/09 giữ nguyên).
+#    · dòng khai mở đầu bằng «không» (vd `**Đụng bộ não:** không.`) hoặc để trống = CHƯA khai.
+#      Trước GL7a, `grep -c` đếm cả dòng «không» là đã khai — lỗ: phiếu nói «không» vẫn sửa được não.
+#    · dời/xoá tệp não cũng là đụng: danh sách lấy `--no-renames` để thấy cả đường CŨ của tệp bị dời.
+#    Mục đích của rào không phải chặn việc sửa, mà là chặn việc sửa LẶNG LẼ: phiếu là thứ người
+#    quyết đọc, nên cái gì chạm cách bot nói phải nằm trên mặt phiếu.
+#    Biên đã biết: phép KHÔNG đối chiếu tên tệp trong dòng khai với tệp bị chạm (khai `tools.js`
+#    mà sửa `prompts.js` vẫn qua) — phiếu GL7a ②1 chỉ đòi «có khai»; xem nhật ký GL7a.
 NAO='src/prompts.js src/closer.js src/tools.js src/fast-lane.js src/outbound-guard.js src/context.js src/lead-score.js'
-khai_nao=$(grep -c '^\*\*Đụng bộ não:\*\*' "$phieu")
-cam=""
+dong_khai=$(grep '^\*\*Đụng bộ não:\*\*' "$phieu" | sed 's/^\*\*Đụng bộ não:\*\*//; s/^[[:space:]*_]*//')
+khai_nao=$(printf '%s\n' "$dong_khai" | grep -cvE '^$|^([Kk]hông|KHÔNG|[Kk]hong|KHONG)')
+cam=""; qua=""
 while IFS= read -r f; do
   [ -z "$f" ] && continue
-  case "$f" in
-    src/*/*) continue;;                       # thư mục con = đất v3, không phải vùng cấm
-    src/*.js) ;;
-    *) continue;;
-  esac
   la_nao=0
   for n in $NAO; do [ "$f" = "$n" ] && la_nao=1 && break; done
-  if [ $la_nao -eq 1 ] && [ "$khai_nao" -ge 1 ]; then continue; fi
-  cam="$cam$f "
-done <<< "$danh_sach"
-[ -z "$cam" ]; ket "⑤vùng-cấm-src-phẳng" $? "${cam:+ĐỤNG (chưa khai «Đụng bộ não» trong phiếu): }$cam"
+  [ $la_nao -eq 1 ] || continue               # tệp phẳng dùng chung · thư mục con · ngoài src/ = qua
+  if [ "$khai_nao" -ge 1 ]; then qua="$qua$f "; else cam="$cam$f "; fi
+done <<< "$(git diff --name-only --no-renames "$base"..HEAD)"
+[ -z "$cam" ]; ket "⑤bộ-não-phải-khai" $? "${cam:+ĐỤNG BỘ NÃO mà phiếu chưa khai (cần dòng \`**Đụng bộ não:** <tệp> — <lý do>\`; dòng «không» hoặc trống không tính): }$cam${qua:+(chạm bộ não ĐÃ khai: $qua)}"
 
 # ⑥ hết marker NEEDS CLARIFICATION trong diff (loại chính file phiếu — khuôn phiếu có chữ đó)
 # grep -c trả rc=1 khi đếm ra 0 — KHÔNG nối `|| echo 0` (ra hai dòng "0\n0", vỡ phép cộng)
