@@ -1,6 +1,6 @@
 # PHIẾU GL4 — Ngắt cả page 30′ khi kênh Pancake lỗi 2 lần liên tiếp (gửi HOẶC đọc), tự mở; tin tồn giữ ở chờ; đèn đỏ có lý do
 
-**Base:** `ĐẶT-LÚC-PHÁT` · **Làn:** 🟥 (quyết định worker có phục vụ page nào — sai một chiều là bot bắn tiếp vào page đang bị Meta phạt, sai chiều kia
+**Base:** `a0cc56a` · **Làn:** 🟥 (quyết định worker có phục vụ page nào — sai một chiều là bot bắn tiếp vào page đang bị Meta phạt, sai chiều kia
 là page câm 30′ mà không ai biết)
 **Nguồn:** người quyết 05/10 GL4 «2 lỗi → ngắt 30′, tự mở; tin tồn giữ ở chờ» (sổ §10 05/10 «ĐIỀU KIỆN GO-LIVE (GL)») · nợ **N-MB-NGAT-PAGE**
 (README nguyên tắc 9; v1 ngắt cả page 30′ sau 2 lần GỬI lỗi — Meta #2022; v1 chỉ reset khi GỬI OK, kiểm ngay trước lượt gửi — `pancake-poll.js` cũ
