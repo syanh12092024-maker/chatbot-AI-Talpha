@@ -1844,6 +1844,25 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL + **NGUỒN GIÁ CỦA PAGE PILOT** (
     «mỗi shop_id đúng một tệ trên mọi team»; xác nhận tệ thật 5 shop EU/AUUS trước khi bật page ngoài GCC.
   - **N-TT1B-THU-TU-MO-COI** chặn lệch tệ ở `taoDon` đứng TRƯỚC lớp «POST mồ côi / đã nhận» (`tao-don.js:501` vs `:540`/`:560`) ⇒ hàng chờ đã POST mà lệch tệ nhận lời
     «báo marketer sửa bậc» thay vì «mở POS xem đơn đã vào chưa». Chỉ với POST trước deploy / kết nối đổi tên; prod 0 page bật ⇒ 0 ca. ⑦b đo hàng chờ có dấu POST = 0.
+- 07/10 · GP1 (thợ) — nợ ngoài pathspec / ngoài phạm vi; chi tiết: `docs/thi-cong/nhat-ky/phieu-gp1.md` § Nợ:
+  - **N-GP1-SQL-TEAM-HAI-BAN** (/code-review #8) CTE «marketer → mã NV → team theo ngày đơn» chép từ `src/hrm/don-pos.js#SQL_DON_POS` sang
+    `src/products/gia-tu-don-pos.js#sqlGiaDon` — đổi luật ghép một chỗ thì Số liệu và Điền giá chia team theo hai luật. Tách mảnh SQL dùng chung
+    (cần sửa `don-pos.js`).
+  - **N-GP1-CHOT-QUA-BOC-POOL** (/code-review #9) chốt «0 dòng goi_gia» chạy qua `poolChotDauGiaoDich` (bắt câu BEGIN) — gốc đúng là tuỳ chọn
+    `saveProduct` (vd. `chiKhiRong` ⇒ 409 khi `giaCu` ≠ ∅); gộp N-GSP3B-HOOK-SAVEPRODUCT (operations.js cấm).
+  - **N-GP1-MON-CHUA-GOP** món POS chưa gộp sản phẩm (không `ma_goc`) KHÔNG điền được (cửa lưu giá cần gốc; không màn nào sửa/lùi giá món
+    không gốc) — màn đếm `chua_gop_goc`; gộp trước rồi điền. Chưa đo số món này trên prod.
+  - **N-GP1-BQ-MOT-TRANG** câu đọc gộp theo ngày cho vừa MỘT trang REST (`bigquery.js` từ chối nhiều trang ⇒ 502 `bq_hong` nói rõ); kích thước
+    thật chưa đo (cấm gọi BigQuery trong phiếu) — đo ở lượt xem trước đầu tiên trên prod.
+  - **N-GP1-GIA-MON-CA-CUA-SO** `pos_co_gia_mon` xét MỌI đơn của món trong cửa sổ (kể cả đơn sale gõ giá vào `total_price`) — bảo thủ, có thể
+    chặn oan món POS đã thôi giá món; nới khi đo được.
+  - **N-GP1-BIEN-THE-ANH-EM** (review (a) G5) biến thể ít đơn không được giá dù biến thể cùng SKU có giá ổn định — màn chưa gợi ý (không tự lan).
+  - **N-GP1-NHIEU-BIEN-THE-CUNG-BAC** (review (a) G6) gốc nhiều biến thể cùng bậc ⇒ `cua2Tien` `nhieu_goi_cung_khop` khi đơn thiếu `san_pham_ma`
+    (an toàn — ĐÓNG, sale chọn món); GP1 làm cảnh này phổ biến hơn.
+  - **N-GP1-NGOAI-PHAM-VI** (phiếu ⑥) ghi đè giá đã có bằng giá đơn · điền giá định kỳ tự động · đơn nhiều món / quà tặng.
+  - **N-CONG-GSP1-SUA-TAI-CHO** `gsp1.sh` đảo-vá bằng cách sửa TẠI CHỖ `v3/src/ui/san-pham/router.js` + `trang/san-pham.html` của cây rồi `mv`
+    bản lưu về — hai chuỗi cổng cùng cây chạy chồng = bản lưu đè nhau; ai sửa tay hai tệp đó khi chuỗi chạy = mất sửa (gặp 07/10, GP1 dừng
+    kịp). Kèm: `tt1.sh` `trap … EXIT INT TERM` không `exit` ⇒ TERM không dừng cổng (phải KILL cả cây) — cùng bệnh gsp3b đã sửa 05/10.
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3514,3 +3533,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   · trình tự mở van dự kiến (mỗi bước MỘT biến, mỗi bước người gật): ① deploy mã + migration 033/034 + `V3_TRAN_PAGE_BAT=1`, restart cả hai unit (0 page bật ⇒ khách không thấy) ② chạy GP1 «Điền giá» trên prod + H-GSP page pilot ③ `V3_RAP_PROMPT_BAT=1` + giả lập ④ `V3_PANCAKE_GUI=1` + bật page pilot
 - 07/10 · TT1b → ✅ (tổng nghiệm thu) — NHÓM CODE TỐI THIỂU PILOT ĐỦ: GL1 · GL2 · GL3 · GL3b · TT1b đều ✅ (chưa deploy). Đối kháng TT1b ĐẠT: 132/132 cặp lệch tệ bị chặn ở cả lưu giá lẫn tạo đơn, GP1 đi qua chặn
   F1 tên thị trường tự do theo team × shop (đo prod: khớp, chưa dính) ⇒ ⑦b(iii) · F2 thứ tự chặn vs POST mồ côi ⇒ nợ · còn lại cho pilot: deploy (bước ①) · GP1 xong + «Điền giá» trên prod (②) · H-GSP page pilot · cờ đọc CSDL (③) · van gửi + bật page (④) · H-GL
+- 07/10 · GP1 → 🔎 chờ nghiệm thu — «Điền giá từ đơn POS (60 ngày)» (quản trị): món POS 0 dòng giá đã gộp sản phẩm ← COD đơn POS một món (BigQuery chỉ đọc đệm 1 giờ · team marketer VÀO NGÀY ĐƠN · tệ đơn ≡ tệ thị trường shop · mức ≥80% trong 10 đơn gần nhất và trùng mức cả cửa sổ; bậc đủ đơn đổi giá/phân tán ⇒ bỏ cả món) · xem trước + dấu (lệch ⇒ 409 kèm bảng mới) · áp ≤50 món/lượt qua `luuGiaMonGoc` chỉ-giá, chốt «0 dòng giá» trong giao dịch · nhật ký `dien_gia_tu_don_pos`
+  `gp1.sh` 45/45 (40 ca × UTC/UTC+14 · 25 đảo-vá đỏ đúng · đỏ trên base 25 lỗi) · cổng cũ gsp2 0 · gsp3 0 · gsp3b 1 (chỉ «gsp1 TREO» chuỗi lồng — gsp1 riêng 0, 14/14) · tt1 1 (26/27 — chỉ chuỗi lồng gsp3b→…→ll2; ll2 riêng 0) · npm test 2563→2603 / 0 · /code-review 10: sửa 8 · nợ 2 · lệch phiếu: `chua_gop_goc` · trần 50/lượt · team ngày đơn (② thắng ①)
+  · commit 0ef3225 · nhật ký docs/thi-cong/nhat-ky/phieu-gp1.md
