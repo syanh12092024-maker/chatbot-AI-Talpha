@@ -108,11 +108,12 @@ v3/src/ui/page-bot/trang/page-bot.html
 v3/test/b/suc-khoe.test.mjs
 ops/bin/nghiem-thu/gl3b.sh
 test/l2-m1-nhac-truong.test.js
+test/gl3b-nap-doc-loi.test.mjs
 test/gl4-*.test.mjs
 v3/test/b/gl4-*.test.mjs
 ops/bin/nghiem-thu/gl4.sh
 ```
-`suc-khoe.test.mjs`: CHỈ đổi số đèn 11 → 12 (`:173-174`). `gl3b.sh`: CHỈ đổi chuỗi neo nếu buộc phải sửa dòng `pancake.js:347`, giữ ý đột biến. `pancake.js` /
+`gl3b-nap-doc-loi.test.mjs` (nới 07/10, thợ xin — tổng duyệt): CHỈ ca N5 — gỡ lùi tới khi 033 rời `_migrations` thay vì neo «033 là bản mới nhất» (bẫy viet-thuoc luật 6), giữ ý; đảo-vá ⑤c `gl3b.sh` còn đỏ. `suc-khoe.test.mjs`: CHỈ đổi số đèn 11 → 12 (`:173-174`). `gl3b.sh`: CHỈ đổi chuỗi neo nếu buộc phải sửa dòng `pancake.js:347`, giữ ý đột biến. `pancake.js` /
 `index.js` / `loi.js`: CHỈ phần phân loại lỗi đọc. Ca cũ đỏ ngoài danh sách ⇒ DỪNG, báo tổng.
 
 ## ④ Nghiệm thu (viết trước — `ops/bin/nghiem-thu/gl4.sh`, rc=0 khi đạt; hộp cát `DB="aicloser_v3_nt_gl4_p$$"`; fetch giả, KHÔNG mạng; ≥2 token; mở van gửi CHỈ trong env tiến trình ca; `grep -E` không `rg`; nạp `.env` nếu thiếu `DATABASE_URL_V3`; đảo-vá trên BẢN SAO tạm)
