@@ -9,7 +9,7 @@ Môi trường mọi số đo dưới đây: **máy dev**, Postgres hộp cát `
 ## Dựng worktree
 - HEAD lúc nhận là `0c6c1ed` (16/09), cây sạch ⇒ `git reset --hard 6e9f373` (chứa base `b04d0dc`).
 - `node_modules` = symlink sang repo chính · `.env` chép từ repo chính (gitignore — không in, không commit).
-- Phiên thợ bị ngắt hai lần (phiên tắt · hết hạn mức API) SAU commit mã `0ef3225`, giữa lượt cổng cũ. Mỗi lần nhận lại: `git status` sạch,
+- Phiên thợ bị ngắt hai lần (phiên tắt · hết hạn mức API) SAU commit mã `cb3c953`, giữa lượt cổng cũ. Mỗi lần nhận lại: `git status` sạch,
   `ps` + `lsof -a -p <pid> -d cwd` — dừng tiến trình cổng của mình còn sót, chờ chuỗi của worktree khác xong rồi mới chạy chuỗi của mình.
 
 ## ⑦ ĐÃ TRA CHƯA (output máy)
@@ -58,7 +58,7 @@ GP1 ghi qua `saveProduct` chỉ-giá ⇒ `gia_tay = true` ⇒ lượt kéo POS k
 - Nhánh KHÔNG chạm: nối dây `v3/chay-that.js` (cần cả hệ — ca dựng lại ĐÚNG khuôn ở `deps`, cổng ③ đối chiếu hình dạng) · câu đọc BigQuery
   thật (cấm mạng) · nhánh khoá danh mục bận (`danh_muc_dang_ghi`) · nhánh nhật ký hỏng sau khi giá đã lưu (`nhatKyLoi`).
 
-## Thay đổi (commit mã `0ef3225`) — mỗi chỗ một lý do
+## Thay đổi (commit mã `cb3c953`) — mỗi chỗ một lý do
 - `src/products/gia-tu-don-pos.js` (mới) — tầng A:
   - `sqlGiaDon(soNgay)` / `SQL_GIA_DON` — đơn MỘT dòng món, `cod > 0`, khác `HUY`, SL 1–10, `soNgay` ngày tới hôm nay (đơn ngày tương lai
     loại như LL17a); team theo ngày đơn (`fact_employee_team_history`, nhiều dòng phủ ⇒ bắt đầu muộn nhất — như LL17d) → thiếu ⇒
@@ -119,7 +119,7 @@ GP1 ghi qua `saveProduct` chỉ-giá ⇒ `gia_tay = true` ⇒ lượt kéo POS k
 ## Nghiệm thu — output máy
 - **Đỏ trên base:** ba tệp ca trên cây chưa vá ⇒ `ERR_MODULE_NOT_FOUND … gia-tu-don-pos.js` (3/3 tệp đỏ). `gp1.sh` chạy trên worktree tạm ở
   `b04d0dc` (chép ca + cổng vào): `rc=1` · `PHÉP=37 LỖI=25` (xanh còn lại chỉ là lưới gần ⑤ + tệp cấm).
-- **`gp1.sh` trên commit `0ef3225`** (lượt đầy đủ 07:56): ① `pass=40 fail=0` ở **UTC** và **Pacific/Kiritimati (UTC+14)** · ② ca xanh **32/32** ·
+- **`gp1.sh` trên commit `cb3c953`** (lượt đầy đủ 07:56): ① `pass=40 fail=0` ở **UTC** và **Pacific/Kiritimati (UTC+14)** · ② ca xanh **32/32** ·
   ③ nối dây chay-that 1·1·1·1 · tầng A 0 câu ghi · router dòng 217 < 226 · commit GP1 chạm tệp cấm 0 · sửa dở 0 · ④ lượt CHỨNG
   `pass=40 fail=0` · **25/25 đột biến đỏ đúng** · khôi phục `fail 0` · băm cây trước = sau · ⑤ 10 bộ ca gần xanh (ll15d ×2 · gsp3 ×2 · ve8b ×2 ·
   phan-quyen-nam-vai · tt1 · ll17d · san-pham). Lượt `BO_CONG_CU=1` cùng mã: `rc=0` · **`PHÉP=45 LỖI=0`**.
@@ -143,8 +143,8 @@ GP1 ghi qua `saveProduct` chỉ-giá ⇒ `gia_tay = true` ⇒ lượt kéo POS k
   BigQuery thật (đúng cột/kiểu chỉ chứng được bằng chạy thật) · nhánh khoá danh mục bận · nhánh nhật ký hỏng sau khi giá lưu · `docLuc`.
 - **Cổng cũ ④8 (rc tách dòng):**
   ```
-  gsp2.sh   rc=0 · 30 s            (lượt gp1.sh đầy đủ trên 0ef3225)
-  gsp3.sh   rc=0 · 826 s           (lượt gp1.sh đầy đủ trên 0ef3225; cũng ✅ trong gsp3b và ✔ trong tt1 dưới đây)
+  gsp2.sh   rc=0 · 30 s            (lượt gp1.sh đầy đủ trên cb3c953)
+  gsp3.sh   rc=0 · 826 s           (lượt gp1.sh đầy đủ trên cb3c953; cũng ✅ trong gsp3b và ✔ trong tt1 dưới đây)
   gsp3b.sh  rc=1 · 3835 s · ĐỎ 1 / XANH 54 — dòng đỏ DUY NHẤT: «⑥cổng-cũ-gsp1 TREO quá 2700s» (chuỗi lồng gsp1 → ve1 → ll18 → ll1 …)
             ⇒ chạy riêng gsp1.sh lần 2 (0 tiến trình cổng khác): rc=0 · ĐỎ 0 / XANH 14  (lượt riêng lần 1: rc=1 · 399 s, đỏ lồng
             ve1 → ll18 → «⑤cổng-trước ll3» ⇒ ve1.sh riêng rc=0 6/6 · ll3.sh riêng rc=0 7/7)
@@ -154,7 +154,7 @@ GP1 ghi qua `saveProduct` chỉ-giá ⇒ `gia_tay = true` ⇒ lượt kéo POS k
   Kết luận (máy dev): mọi dòng đỏ của cổng cũ nằm ở chuỗi cổng lồng sâu khi máy có chuỗi khác chạy song song (thợ TT1b, một cổng GL4); chạy
   riêng cổng con đều xanh. Lượt gsp3b đầu (chạy chồng chuỗi TT1b) đỏ «①②VE2b pass=16 fail=1» — `ve2b-page-gop.test.mjs` riêng 17/17. Không
   dòng đỏ nào chạm tệp GP1. Chưa có MỘT lượt gsp3b/tt1 trọn vẹn rc=0 — nợ chập chờn cũ N-VAI-B-NOI-DAY-CHAP-CHON.
-- **`npm test`:** TRƯỚC (cây `6e9f373`) `tests 2563 · pass 2541 · fail 0 · skip 22` → SAU (`0ef3225`) `tests 2603 · pass 2581 · fail 0 · skip 22`
+- **`npm test`:** TRƯỚC (cây `6e9f373`) `tests 2563 · pass 2541 · fail 0 · skip 22` → SAU (`cb3c953`) `tests 2603 · pass 2581 · fail 0 · skip 22`
   (+40 = đúng 40 ca GP1).
 
 ## /code-review high — 10 phát hiện (đã dựng lại từng cái trước khi sửa)
