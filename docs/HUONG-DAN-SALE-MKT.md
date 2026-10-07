@@ -1,5 +1,7 @@
 # 📘 HƯỚNG DẪN SỬ DỤNG AI CLOSER — CHO SALE & MARKETING
 
+> 📘 **Cẩm nang mới cho bản đang chạy (05/10/2026):** mở `docs/userguide/userguide.html` — 65 trang, chia theo vai Sale · Marketer · Quản trị. Tệp dưới đây chỉ còn giá trị lưu trữ.
+
 > ⚠️ **VIẾT CHO MÀN `/admin` CỦA BOT v1 (11/08/2026) — màn đó đã gỡ ngày 02/10/2026 (CR-02-10 · MB4).** Hệ hiện tại là v3:
 > đăng nhập ở cổng 3102 (`/dang-nhap`), các màn Trang chủ · Bàn hội thoại · Công tắc · Sản phẩm · Kịch bản… Phần nghiệp vụ dưới
 > đây (khi nào bot bàn giao, sale làm gì với hội thoại) phần lớn còn đúng; phần «bấm vào đâu» thì KHÔNG. Viết lại cho v3: nợ

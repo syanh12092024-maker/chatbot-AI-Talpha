@@ -66,3 +66,6 @@ tin-khach*.json
 # Bộ nhớ tạm của công cụ cục bộ — không phải mã dự án
 .1devtool/
 .ua/
+
+# cây làm việc tạm của agent (EnterWorktree) — không đưa vào git
+.claude/worktrees/

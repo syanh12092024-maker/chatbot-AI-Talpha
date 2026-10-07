@@ -1,0 +1,722 @@
+[
+ {
+  "trang": "anh-gui-khach",
+  "anh": "anh-gui-khach",
+  "vai": "quan-tri",
+  "duong": "/page-bot",
+  "cho": "«Tất cả page»",
+  "thao_tac": "bấm tên một page chưa gắn sản phẩm · bấm «Ảnh»",
+  "trang_thai": "page chưa gắn sản phẩm, có ít nhất hai ảnh; dòng «Thêm ảnh» với ô nhãn, ô chọn tệp, nút «Tải ảnh lên» và «Thêm link» đang hiện",
+  "danh_dau": "(1) «Ảnh bot gửi khách» · (2) «Ảnh sản phẩm» · (3) «Tải ảnh lên»"
+ },
+ {
+  "trang": "anh-gui-khach",
+  "anh": "anh-gui-khach-2",
+  "vai": "marketer",
+  "duong": "/page",
+  "cho": "«Chọn một page ở cột trái»",
+  "thao_tac": "bấm dòng đầu tiên của «Danh sách page» · bấm «Ảnh»",
+  "trang_thai": "page đã gắn sản phẩm của marketer; hộp «Chỉ xem» hiện đầu tab, ô nhãn dưới ảnh bị khoá",
+  "danh_dau": "(1) «Chỉ xem — giá và ảnh của page này sửa ở màn Sản phẩm» · (2) «Theo thị trường →»"
+ },
+ {
+  "trang": "ban-do-giao-dien",
+  "anh": "ban-do-giao-dien",
+  "vai": "quan-tri",
+  "duong": "/cai-dat-team",
+  "cho": "«Hệ còn sống»",
+  "thao_tac": "",
+  "trang_thai": "thanh trên cùng đủ logo, chip team, năm đích (đích «Cài đặt» đang tô), dải trạng thái bot đã đọc xong; hàng thứ hai hiện các tab của Cài đặt",
+  "danh_dau": "(1) «Cài đặt» · (2) «Hệ còn sống» · (3) «Bot» (dải trạng thái bot, chữ bắt đầu bằng «Bot»)"
+ },
+ {
+  "trang": "bat-dau-nhanh-marketer",
+  "anh": "bat-dau-nhanh-marketer",
+  "vai": "marketer",
+  "duong": "/page",
+  "cho": "«Chọn một page ở cột trái»",
+  "thao_tac": "bấm dòng đầu tiên của «Danh sách page» · bấm «Lời bot»",
+  "trang_thai": "trang một page đang mở tab «Lời bot», ô «Câu chào mở đầu» có chữ, cột phải hiện khung «AI đang đọc gì trên page này» đã mở",
+  "danh_dau": "(1) «Bật được chưa» · (2) «Lưu — bot dùng ngay» · (3) «AI đang đọc gì trên page này»"
+ },
+ {
+  "trang": "bat-dau-nhanh-marketer",
+  "anh": "bat-dau-nhanh-marketer-2",
+  "vai": "marketer",
+  "duong": "/page",
+  "cho": "«AI đang đọc gì trên page này»",
+  "thao_tac": "bấm dòng đầu tiên của «Danh sách page» · bấm «Xem nguyên văn đoạn chữ gửi AI» · cuộn tới «Kịch bản của page»",
+  "trang_thai": "màn «Đoạn chữ gửi cho AI» đã chọn sẵn page, khối «Kịch bản của page» có nội dung và dòng «v… · LIVE»",
+  "danh_dau": "(1) «Chọn page» · (2) «Kịch bản của page»"
+ },
+ {
+  "trang": "bat-dau-nhanh-quan-tri",
+  "anh": "bat-dau-nhanh-quan-tri",
+  "vai": "quan-tri",
+  "duong": "/cai-dat-team",
+  "cho": "«Năm việc làm trên màn»",
+  "thao_tac": "",
+  "trang_thai": "khung tóm tắt ghi «Xong …/5 việc.» và «Việc tiếp theo: …» có nút; khối năm việc có ít nhất một dòng «Chưa làm» kèm nút đi làm",
+  "danh_dau": "(1) «Việc tiếp theo» · (2) «Năm việc làm trên màn» · (3) «Việc phải nhờ người quản trị hệ thống»"
+ },
+ {
+  "trang": "bat-dau-nhanh-quan-tri",
+  "anh": "bat-dau-nhanh-quan-tri-2",
+  "vai": "quan-tri",
+  "duong": "/cai-dat-team",
+  "cho": "«Kiểm lại»",
+  "thao_tac": "cuộn tới «Việc phải nhờ người quản trị hệ thống»",
+  "trang_thai": "hai dòng «Cho bot gửi tin cho khách» và «Bật cách ghép lời mới», mỗi dòng có nhãn «Đang mở» hoặc «Đang đóng»; dưới cùng có nút «Kiểm lại»",
+  "danh_dau": "(1) «Cho bot gửi tin cho khách» · (2) «Bật cách ghép lời mới» · (3) «Kiểm lại»"
+ },
+ {
+  "trang": "bat-dau-nhanh-sale",
+  "anh": "bat-dau-nhanh-sale",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai",
+  "cho": "«Cần bạn»",
+  "thao_tac": "",
+  "trang_thai": "tab «Cần bạn» đang sáng, cột trái có vài dòng hội thoại kèm đồng hồ và nhãn «Chờ người»; khung giữa còn trống «Chọn một hội thoại bên trái»",
+  "danh_dau": "(1) «Cần bạn» · (2) «Chờ người» · (3) «Mọi hội thoại gần đây»"
+ },
+ {
+  "trang": "bat-dau-nhanh-sale",
+  "anh": "bat-dau-nhanh-sale-2",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai?ht=1",
+  "cho": "«Bot đã làm gì»",
+  "thao_tac": "bấm «Nhận · đóng việc ▾»",
+  "trang_thai": "khung chat đã có tin; cột phải có ba khối; khung «Đánh dấu đã xử» mở lên từ thanh dưới, thấy nút «Nhận việc» và hàng nút kết quả",
+  "danh_dau": "(1) «Bot đã làm gì» · (2) «Nhận việc» · (3) «Trả lời trên Pancake»"
+ },
+ {
+  "trang": "bat-tat-bot",
+  "anh": "bat-tat-bot",
+  "vai": "quan-tri",
+  "duong": "/page-bot?loc=bot_tat",
+  "cho": "«Bot đang tắt»",
+  "thao_tac": "bấm «(tên page ở dòng đầu bảng)»",
+  "trang_thai": "trang một page đang tắt bot, đầu trang có nhãn «Đang tắt» và nút «Bật bot cho page này», khối «Bật được chưa» hiện ngay dưới",
+  "danh_dau": "(1) «Đang tắt» · (2) «Bật bot cho page này» · (3) «Bật được chưa»"
+ },
+ {
+  "trang": "bon-tang-cau-tra-loi",
+  "anh": "bon-tang-cau-tra-loi",
+  "vai": "quan-tri",
+  "duong": "/san-pham",
+  "cho": "«① Luật chung»",
+  "thao_tac": "bấm dòng sản phẩm đầu tiên trong danh sách sản phẩm ở cột trái",
+  "trang_thai": "một sản phẩm đang mở, tab «Chung» đang chọn, dải bốn tầng hiện đủ bốn ô ngay dưới tên sản phẩm",
+  "danh_dau": "(1) «① Luật chung» · (2) «② Sản phẩm · chung» · (3) «④ Page»"
+ },
+ {
+  "trang": "cac-loai-don-cho",
+  "anh": "cac-loai-don-cho",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai",
+  "cho": "«Đơn chờ»",
+  "thao_tac": "bấm «Đơn chờ»",
+  "trang_thai": "tab «Đơn chờ» đang sáng; cột trái hiện đủ ba khối «Messenger chờ duyệt», «Đơn không gắn hội thoại», «Ladi chờ xác nhận WhatsApp», mỗi khối có số đếm (khối trống hiện câu «Không có…» / «Chưa có đơn nào…»)",
+  "danh_dau": "(1) «Messenger chờ duyệt» · (2) «Đơn không gắn hội thoại» · (3) «Ladi chờ xác nhận WhatsApp»"
+ },
+ {
+  "trang": "cau-tra-loi-san",
+  "anh": "cau-tra-loi-san",
+  "vai": "marketer",
+  "duong": "/lop-0-dong",
+  "cho": "«Mẫu trả lời»",
+  "thao_tac": "",
+  "trang_thai": "bảng có ít nhất hai mẫu, một mẫu mang nhãn «ngoài bộ đếm» nếu dữ liệu có; nút «Thêm mẫu» đang hiện",
+  "danh_dau": "(1) «Mẫu trả lời» · (2) «Thêm mẫu» · (3) «Đã khớp»"
+ },
+ {
+  "trang": "cau-tra-loi-san",
+  "anh": "cau-tra-loi-san-2",
+  "vai": "marketer",
+  "duong": "/lop-0-dong",
+  "cho": "«Thêm mẫu»",
+  "thao_tac": "bấm «Thêm mẫu»",
+  "trang_thai": "hộp «Thêm mẫu trả lời sẵn» đang mở, các ô còn trống, dòng gợi ý dưới «Mã mẫu» đang hiện",
+  "danh_dau": "(1) «Từ khoá» · (2) «Câu bot sẽ trả lời» · (3) «Lưu mẫu»"
+ },
+ {
+  "trang": "chinh-sach-faq-phan-doi",
+  "anh": "chinh-sach-faq-phan-doi",
+  "vai": "marketer",
+  "duong": "/khoi-chung",
+  "cho": "«Câu hỏi thường gặp»",
+  "thao_tac": "",
+  "trang_thai": "team đang giữ bộ khối nên các ô sửa được; mỗi bảng có ít nhất một dòng; nút lưu cuối màn đang hiện",
+  "danh_dau": "(1) «Chính sách» · (2) «+ Thêm dòng» · (3) «Lưu — mọi page dùng ngay»"
+ },
+ {
+  "trang": "chon-model-ai",
+  "anh": "chon-model-ai",
+  "vai": "quan-tri",
+  "duong": "/model-ai",
+  "cho": "«Trả lời khách»",
+  "thao_tac": "",
+  "trang_thai": "thấy hai thẻ «Trả lời khách» (nhãn «Đang dùng») và «Dự phòng» (nhãn «Chưa nối»); mỗi thẻ có ô «Model», ô «Khoá API · …»; thẻ đầu có thanh «Độ ngẫu nhiên» và nút «Thay khoá và thử một lượt»; bên dưới là nút «Lưu cấu hình»",
+  "danh_dau": "(1) «Trả lời khách» · (2) «Thay khoá và thử một lượt» · (3) «Lưu cấu hình»"
+ },
+ {
+  "trang": "chuyen-page-cu",
+  "anh": "chuyen-page-cu",
+  "vai": "quan-tri",
+  "duong": "/san-pham?xem=chuyen&trangThai=chua_gan",
+  "cho": "«Chuyển page sang sản phẩm»",
+  "thao_tac": "",
+  "trang_thai": "hàng số bốn ô ở đầu, thẻ page đầu tiên ở trạng thái «Chưa gắn» có ô «Shop POS của page» đã chọn, ô «Gợi ý theo tên page» có ít nhất một gợi ý, thấy nút chính và nút «Không chuyển»",
+  "danh_dau": "(1) «Tổng chưa xong» · (2) «Gợi ý theo tên page» · (3) «Không chuyển»"
+ },
+ {
+  "trang": "chuyen-page-sang-team",
+  "anh": "chuyen-page-sang-team",
+  "vai": "quan-tri",
+  "duong": "/cau-hinh-team#chuyen-page",
+  "cho": "«Page của team này»",
+  "thao_tac": "tích ô của hai dòng page đầu tiên",
+  "trang_thai": "khung chuyển đang mở; nút nguồn «Page của team này» sáng; hai page được tích; chân bảng ghi «Đã chọn 2 page», ô «Chuyển sang» có team đích, nút «Chuyển page đã chọn» sáng",
+  "danh_dau": "(1) «Kho chưa phân team» · (2) «Đã chọn» · (3) «Chuyển page đã chọn»"
+ },
+ {
+  "trang": "dang-nhap-chon-team",
+  "anh": "dang-nhap-chon-team",
+  "vai": "quan-tri",
+  "duong": "/dang-nhap",
+  "cho": "«Đăng nhập»",
+  "thao_tac": "",
+  "trang_thai": "chưa đăng nhập (xoá phiên trước khi chụp); hai ô trống; chưa có hộp lỗi",
+  "danh_dau": "(1) «Email» · (2) «Mật khẩu» · (3) «Đăng nhập»"
+ },
+ {
+  "trang": "dang-nhap-chon-team",
+  "anh": "dang-nhap-chon-team-2",
+  "vai": "quan-tri",
+  "duong": "/chon-team",
+  "cho": "«Chọn team»",
+  "thao_tac": "",
+  "trang_thai": "tài khoản quản trị thuộc nhiều team, đã vào một team rồi mới mở /chon-team; lưới thẻ team đã hiện, một thẻ ghi «Đang ở team này»",
+  "danh_dau": "(1) «Chọn team» · (2) «Đang ở team này» · (3) «Đăng xuất»"
+ },
+ {
+  "trang": "dang-nhap-chon-team",
+  "anh": "dang-nhap-chon-team-3",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai",
+  "cho": "«Hộp thư»",
+  "thao_tac": "bấm chip tên team có dấu ▾ ở cạnh logo «AI Closer»",
+  "trang_thai": "tài khoản sale thuộc nhiều team; menu nhỏ «Đổi sang team» đang mở dưới chip, liệt kê các team khác",
+  "danh_dau": "(1) «AI Closer» · (2) «Đổi sang team» · (3) «Hộp thư»"
+ },
+ {
+  "trang": "doc-don-ti-le-chot",
+  "anh": "doc-don-ti-le-chot",
+  "vai": "quan-tri",
+  "duong": "/bao-cao",
+  "cho": "«Đơn POS của team — theo marketer»",
+  "thao_tac": "",
+  "trang_thai": "bốn ô số đã có giá trị hoặc «—» kèm lý do; khối «Đơn POS của team — theo marketer» đã tải xong (bảng hoặc hộp báo)",
+  "danh_dau": "(1) «Đơn theo luồng — không gộp» · (2) «Đơn POS của team — theo marketer» · (3) «Tỉ lệ giao thành công»"
+ },
+ {
+  "trang": "doc-don-ti-le-chot",
+  "anh": "doc-don-ti-le-chot-2",
+  "vai": "quan-tri",
+  "duong": "/bao-cao",
+  "cho": "«Ba thước đơn Messenger — đo ba thứ khác nhau, KHÔNG cộng»",
+  "thao_tac": "cuộn tới «Luồng Messenger»",
+  "trang_thai": "phễu Messenger và ba thước hiện đủ; đầu khối «Luồng trang bán hàng» thấy được ở mép dưới",
+  "danh_dau": "(1) «Luồng Messenger» · (2) «Ba thước đơn Messenger — đo ba thứ khác nhau, KHÔNG cộng» · (3) «Luồng trang bán hàng»"
+ },
+ {
+  "trang": "doc-don-ti-le-chot",
+  "anh": "doc-don-ti-le-chot-3",
+  "vai": "quan-tri",
+  "duong": "/bao-cao",
+  "cho": "«Theo page»",
+  "thao_tac": "cuộn tới «Theo page»",
+  "trang_thai": "bảng «Theo page» có ít nhất vài dòng page và câu chú thích về «Chốt» và «Hoàn» bên dưới",
+  "danh_dau": "(1) «Theo page» · (2) «AI / đơn» · (3) «Hoàn»"
+ },
+ {
+  "trang": "doc-hoi-thoai-boi-canh",
+  "anh": "doc-hoi-thoai-boi-canh",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai?ht=1",
+  "cho": "«Bot đã làm gì»",
+  "thao_tac": "",
+  "trang_thai": "khung chat có đủ tin khách và tin page với các nhãn «Bot AI», «Tự động», «Page»; cột phải hiện khối «Khách» có huy hiệu rủi ro hoàn, khối «Bot đã làm gì», khối «Page này bán gì», khối «Đơn đang bàn»",
+  "danh_dau": "(1) «Bot AI» · (2) «Rủi ro hoàn» · (3) «Bot đã làm gì»"
+ },
+ {
+  "trang": "doc-hoi-thoai-boi-canh",
+  "anh": "doc-hoi-thoai-boi-canh-2",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai",
+  "cho": "«Mọi hội thoại gần đây»",
+  "thao_tac": "bấm «Mọi hội thoại gần đây»",
+  "trang_thai": "cột trái liệt kê mọi hội thoại 7 ngày qua, có cả dòng có đồng hồ và dòng nhãn «Bot đang trả lời»; không tab nào đang sáng",
+  "danh_dau": "(1) «Số điện thoại (mọi kênh) hoặc mã khách…» · (2) «Tìm khách cũ — xem đủ các kênh →» · (3) «Mọi hội thoại gần đây»"
+ },
+ {
+  "trang": "doi-chieu-tin-loi",
+  "anh": "doi-chieu-tin-loi",
+  "vai": "quan-tri",
+  "duong": "/van-hanh-v3?tab=conversations",
+  "cho": "«Mở hội thoại»",
+  "thao_tac": "bấm «Mở hội thoại»",
+  "trang_thai": "hộp «Hội thoại #…» đang mở; thấy ô «Lý do tiếp tục / đối soát / bàn giao…», hai nút «Chuyển nhân viên xử lý» và «Cho AI tiếp tục», khối «Dòng hội thoại» có ít nhất một dòng nhãn «tin lỗi · …» kèm nút «Đã đối chiếu, bàn giao sale»",
+  "danh_dau": "(1) «Lý do tiếp tục / đối soát / bàn giao» · (2) «Dòng hội thoại» · (3) «Đã đối chiếu, bàn giao sale»"
+ },
+ {
+  "trang": "doi-soat-gia-anh",
+  "anh": "doi-soat-gia-anh",
+  "vai": "quan-tri",
+  "duong": "/san-pham?xem=chuyen&trangThai=cho_doi_soat",
+  "cho": "«Chờ đối soát»",
+  "thao_tac": "bấm nút «Đối soát giá + ảnh cho» ở thẻ page đầu tiên · cuộn tới «Chọn bảng giá»",
+  "trang_thai": "khung đối soát của một sản phẩm × thị trường có ít nhất hai bản sao mang bảng khác nhau, ô «Bảng giá cho …» đang mở, thấy mục «Ảnh gom về món» và nút đối soát",
+  "danh_dau": "(1) «Bản sao chờ đối soát» · (2) «Chọn bảng giá» · (3) «← Danh sách chuyển»"
+ },
+ {
+  "trang": "duyet-don-messenger",
+  "anh": "duyet-don-messenger",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai",
+  "cho": "«Bot chốt đơn — chờ bạn duyệt»",
+  "thao_tac": "bấm «Bot chốt đơn — chờ bạn duyệt»",
+  "trang_thai": "hội thoại mở, thẻ «Đơn bot chốt · Messenger» nhãn «Chờ duyệt» nằm dưới tin nhắn, thấy ba ô «Hàng» · «Tiền» · «Giao tới» và ba nút; nếu có, thấy một hộp cảnh báo hoàn hàng. Bản xem thử cần có ít nhất một đơn Messenger đang chờ duyệt",
+  "danh_dau": "(1) «Đơn bot chốt · Messenger» · (2) «Giao tới» · (3) «Duyệt → Chờ in»"
+ },
+ {
+  "trang": "duyet-don-messenger",
+  "anh": "duyet-don-messenger-2",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai",
+  "cho": "«Bot chốt đơn — chờ bạn duyệt»",
+  "thao_tac": "bấm «Bot chốt đơn — chờ bạn duyệt» · bấm «Duyệt → Chờ in»",
+  "trang_thai": "form mở dưới thẻ, con trỏ đang ở ô «Tôi đã kiểm tra thông tin đã lưu»; thấy các ô thông tin khách, dòng «Giá cả gói…», mục «Kiểm tra gần nhất», các nút «Lưu thông tin» · «Duyệt — tạo đơn POS» · «Loại đơn»",
+  "danh_dau": "(1) «Lưu thông tin» · (2) «Tôi đã kiểm tra thông tin đã lưu» · (3) «Duyệt — tạo đơn POS»"
+ },
+ {
+  "trang": "duyet-goi-y-ai",
+  "anh": "duyet-goi-y-ai",
+  "vai": "quan-tri",
+  "duong": "/ai-de-xuat",
+  "cho": "«Đang chờ duyệt»",
+  "thao_tac": "",
+  "trang_thai": "bảng «Đang chờ duyệt» có ít nhất một bản nhãn «Chờ duyệt» với nút «Duyệt»; bên dưới thấy khung «Nhận một đề xuất»",
+  "danh_dau": "(1) «Đang chờ duyệt» · (2) «Duyệt» · (3) «Nhận một đề xuất»"
+ },
+ {
+  "trang": "gan-marketer",
+  "anh": "gan-marketer",
+  "vai": "quan-tri",
+  "duong": "/san-pham",
+  "cho": "«Marketer phụ trách»",
+  "thao_tac": "",
+  "trang_thai": "sản phẩm đầu tiên mở ở tab «Chung», ô chọn marketer có ít nhất hai người, dòng gợi ý có tên người và nút «Dùng gợi ý»",
+  "danh_dau": "(1) «Marketer phụ trách» · (2) «Dùng gợi ý» · (3) «Lưu marketer»"
+ },
+ {
+  "trang": "gan-page-vao-san-pham",
+  "anh": "gan-page-vao-san-pham",
+  "vai": "quan-tri",
+  "duong": "/san-pham",
+  "cho": "«Page đang bán»",
+  "thao_tac": "bấm «Page đang bán» · bấm «+ Gắn page» · bấm page đầu tiên ở «① Page» · bấm viên thị trường đầu tiên ở «② Thị trường (shop POS của sản phẩm)»",
+  "trang_thai": "khung gắn page mở đủ ba bước, một page và một thị trường đang được chọn, bước ③ hiện tên marketer, nút «Gắn page» sáng",
+  "danh_dau": "(1) «① Page» · (2) «② Thị trường (shop POS của sản phẩm)» · (3) «Gắn page»"
+ },
+ {
+  "trang": "gop-mon-pos",
+  "anh": "gop-mon-pos",
+  "vai": "quan-tri",
+  "duong": "/san-pham?xem=gop",
+  "cho": "«Gợi ý: có thể là cùng một sản phẩm»",
+  "thao_tac": "cuộn tới «Gợi ý: có thể là cùng một sản phẩm»",
+  "trang_thai": "thẻ nhóm đầu tiên là nhóm loại mới (có ô «Tên sản phẩm», «Mã gốc», «Marketer»), bảng món có ít nhất hai cửa hàng, mọi ô chọn đang bật",
+  "danh_dau": "(1) «Gợi ý: có thể là cùng một sản phẩm» · (2) «Mã gốc» · (3) «Gộp thành 1 sản phẩm»"
+ },
+ {
+  "trang": "ket-noi-pancake",
+  "anh": "ket-noi-pancake",
+  "vai": "quan-tri",
+  "duong": "/ket-noi",
+  "cho": "«Pancake · đọc tin, gửi tin»",
+  "thao_tac": "",
+  "trang_thai": "bảng tài khoản có ít nhất hai dòng, dòng đầu mang nhãn «Chính», cột «Hạn» có nhãn màu; bên dưới thấy khung «Thêm token» với nút «Thử và thêm tài khoản»",
+  "danh_dau": "(1) «Chính» · (2) «Hạn» · (3) «Thử và thêm tài khoản»"
+ },
+ {
+  "trang": "khi-nao-bot-tra-loi",
+  "anh": "khi-nao-bot-tra-loi",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai",
+  "cho": "«Mọi hội thoại gần đây»",
+  "thao_tac": "bấm «Mọi hội thoại gần đây» · bấm hội thoại đầu tiên trong danh sách · bấm «Khách» (nếu cột bối cảnh đang ẩn)",
+  "trang_thai": "một hội thoại đang mở; cột phải hiện khối «Bot đã làm gì» với các dòng «Giai đoạn», «Người giữ», «Vì sao chuyển»",
+  "danh_dau": "(1) «Giai đoạn» · (2) «Người giữ» · (3) «Vì sao chuyển»"
+ },
+ {
+  "trang": "kiem-tra-bat-duoc-chua",
+  "anh": "kiem-tra-bat-duoc-chua",
+  "vai": "marketer",
+  "duong": "/page",
+  "cho": "«Chọn một page ở cột trái»",
+  "thao_tac": "chọn «Còn điều kiện chặn» ở ô «Lọc page» · bấm dòng đầu tiên của «Danh sách page»",
+  "trang_thai": "khối «Bật được chưa» có ít nhất một dòng «Đang chặn» và một dòng «Nên làm», mỗi dòng có nút đi sửa",
+  "danh_dau": "(1) «Bật được chưa» · (2) «Đang chặn» · (3) «Nên làm»"
+ },
+ {
+  "trang": "kiem-tra-he-con-song",
+  "anh": "kiem-tra-he-con-song",
+  "vai": "quan-tri",
+  "duong": "/suc-khoe",
+  "cho": "«Đang hỏng»",
+  "thao_tac": "",
+  "trang_thai": "hộp tóm tắt đầu màn có câu theo mức; hàng bốn con số «Đang hỏng», «Cần để ý», «Chưa đo được», «Đang ổn»; danh sách đèn với đèn đỏ hoặc vàng ở trên, có nút «Sang màn …»",
+  "danh_dau": "(1) «Đang hỏng» · (2) «Máy chạy bot» · (3) «Đo lúc»"
+ },
+ {
+  "trang": "kiem-tra-he-con-song",
+  "anh": "kiem-tra-he-con-song-2",
+  "vai": "quan-tri",
+  "duong": "/suc-khoe",
+  "cho": "«Việc vận hành»",
+  "thao_tac": "cuộn tới «Việc vận hành»",
+  "trang_thai": "khối «Việc vận hành» có ba dòng «Tin cần đối chiếu», «Tin bị bộ lọc loại», «Diễn tập», mỗi dòng có con số lớn và một nút",
+  "danh_dau": "(1) «Đối chiếu» · (2) «Xem theo cửa» · (3) «Xem lượt diễn tập»"
+ },
+ {
+  "trang": "lay-nguoi-tu-hrm",
+  "anh": "lay-nguoi-tu-hrm",
+  "vai": "quan-tri",
+  "duong": "/cau-hinh-team",
+  "cho": "«Lấy người từ HRM (BigQuery)»",
+  "thao_tac": "bấm «Lấy người từ HRM (BigQuery)»",
+  "trang_thai": "hộp «Lấy người từ HRM» đang mở; dòng «Đọc HRM lúc …»; ít nhất hai nhóm như «Tạo tài khoản», «Cấp vai» kèm số; nút «Áp dụng» sáng. Nếu máy chủ xem thử chưa nối HRM thì nút mờ — chụp dòng chữ cạnh nút",
+  "danh_dau": "(1) «Lấy người từ HRM (BigQuery)» · (2) «Đọc HRM lúc» · (3) «Áp dụng»"
+ },
+ {
+  "trang": "lich-su-loi-bot",
+  "anh": "lich-su-loi-bot",
+  "vai": "marketer",
+  "duong": "/page",
+  "cho": "«Chọn một page ở cột trái»",
+  "thao_tac": "bấm dòng đầu tiên của «Danh sách page» · bấm «Lịch sử» · bấm «Xem nội dung»",
+  "trang_thai": "page có ít nhất hai bản lời bot: một bản «Đang chạy» và một bản «Cũ»; một bản đang mở «Xem nội dung»",
+  "danh_dau": "(1) «Đang chạy» · (2) «Xem nội dung» · (3) «Chạy lại bản này»"
+ },
+ {
+  "trang": "loc-page-bat-bot-hang-loat",
+  "anh": "loc-page-bat-bot-hang-loat",
+  "vai": "quan-tri",
+  "duong": "/page-bot?loc=san_sang",
+  "cho": "«Đủ điều kiện»",
+  "thao_tac": "đánh dấu ô chọn ở ba dòng đầu bảng",
+  "trang_thai": "viên «Đủ điều kiện» đang chọn, thanh «Đã chọn 3 page» hiện với ô chọn sản phẩm, nút «Gắn vào sản phẩm» và nút «Bật bot (tối đa 10 · có xác nhận)»",
+  "danh_dau": "(1) «Đủ điều kiện» · (2) «Đã chọn» · (3) «Bật bot (tối đa 10 · có xác nhận)»"
+ },
+ {
+  "trang": "nhan-thay-bot",
+  "anh": "nhan-thay-bot",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai",
+  "cho": "«Bot đang xử»",
+  "thao_tac": "bấm «Bot đang xử» · bấm «Hessa Al Amri»",
+  "trang_thai": "tab «Bot đang xử» đang sáng, một dòng nhãn «Bot đang trả lời» được chọn; khung giữa đã có tin; thanh dưới có nút «Nhận thay bot»",
+  "danh_dau": "(1) «Bot đang xử» · (2) «Bot đang trả lời» · (3) «Nhận thay bot»"
+ },
+ {
+  "trang": "nhan-va-dong-viec",
+  "anh": "nhan-va-dong-viec",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai?ht=1",
+  "cho": "«Nhận · đóng việc ▾»",
+  "thao_tac": "bấm «Nhận · đóng việc ▾» · bấm «Khách từ chối»",
+  "trang_thai": "khung «Đánh dấu đã xử» mở lên từ thanh dưới; nút «Khách từ chối» đang sáng; ô «Lý do» (danh sách chọn) và ô «Ghi chú» đã hiện; nút «Đóng việc» còn mờ vì chưa chọn lý do",
+  "danh_dau": "(1) «Nhận việc» · (2) «Khách từ chối» · (3) «Đóng việc»"
+ },
+ {
+  "trang": "nhan-va-dong-viec",
+  "anh": "nhan-va-dong-viec-2",
+  "vai": "sale",
+  "duong": "/dieu-phoi",
+  "cho": "«Còn lại»",
+  "thao_tac": "",
+  "trang_thai": "bảng hàng đợi có vài dòng, có dòng đồng hồ đỏ dạng «+m:ss» và dòng có tên người ở cột «Đang xử»; dòng tóm tắt dưới tiêu đề hiện số việc",
+  "danh_dau": "(1) «Tất cả» · (2) «Còn lại» · (3) «Đang xử»"
+ },
+ {
+  "trang": "nhan-va-dong-viec",
+  "anh": "nhan-va-dong-viec-3",
+  "vai": "sale",
+  "duong": "/dieu-phoi",
+  "cho": "«Còn lại»",
+  "thao_tac": "bấm «Khách khiếu nại — hàng bị lỗi»",
+  "trang_thai": "ngăn «Xem nhanh» mở bên phải, có hồ sơ khách, hai nút «Mở Pancake» · «Mở việc đầy đủ» và khung «Đánh dấu đã xử»",
+  "danh_dau": "(1) «Mở Pancake» · (2) «Mở việc đầy đủ» · (3) «Đánh dấu đã xử»"
+ },
+ {
+  "trang": "nhap-loi-bot-tu-pancake",
+  "anh": "nhap-loi-bot-tu-pancake",
+  "vai": "marketer",
+  "duong": "/page",
+  "cho": "«Chọn một page ở cột trái»",
+  "thao_tac": "bấm dòng đầu tiên của «Danh sách page» · bấm «Lời bot»",
+  "trang_thai": "tab «Lời bot» đang mở, chưa nhập file nào, hai nút dưới ô soạn đang hiện",
+  "danh_dau": "(1) «Nhập từ file Pancake» · (2) «Câu chào mở đầu» · (3) «Lưu — bot dùng ngay»"
+ },
+ {
+  "trang": "sua-bang-gia",
+  "anh": "sua-bang-gia",
+  "vai": "quan-tri",
+  "duong": "/san-pham",
+  "cho": "«Theo thị trường»",
+  "thao_tac": "bấm «Theo thị trường» · cuộn tới «Giá ở»",
+  "trang_thai": "thị trường đầu tiên đang mở, bảng giá có ít nhất hai bậc với ô sửa được, thấy hai nút «+ Thêm bậc» và «Lưu giá»",
+  "danh_dau": "(1) «Giá ở» · (2) «+ Thêm bậc» · (3) «Lưu giá»"
+ },
+ {
+  "trang": "sua-kien-thuc-san-pham",
+  "anh": "sua-kien-thuc-san-pham",
+  "vai": "marketer",
+  "duong": "/san-pham",
+  "cho": "«Hỏi size trước khi chốt»",
+  "thao_tac": "",
+  "trang_thai": "sản phẩm đầu tiên của marketer đang mở ở tab «Chung», các ô kiến thức bấm sửa được",
+  "danh_dau": "(1) «Công dụng» · (2) «Hỏi size trước khi chốt» · (3) «Lưu»"
+ },
+ {
+  "trang": "sua-quy-tac-chung",
+  "anh": "sua-quy-tac-chung",
+  "vai": "quan-tri",
+  "duong": "/bo-luat",
+  "cho": "«Các phiên bản»",
+  "thao_tac": "bấm «So sánh» ở dòng đầu bảng «Các phiên bản»",
+  "trang_thai": "ngăn kéo «So sánh» đang mở, thấy nhãn số dòng thêm/bỏ, các dòng khác nhau và nút áp ở chân ngăn kéo; phía sau là hàng số «Page dùng bộ quy tắc này»",
+  "danh_dau": "(1) «Page dùng bộ quy tắc này» · (2) «So sánh» · (3) «Áp bản»"
+ },
+ {
+  "trang": "tao-nguoi-dung",
+  "anh": "tao-nguoi-dung",
+  "vai": "quan-tri",
+  "duong": "/cau-hinh-team",
+  "cho": "«Tạo người dùng»",
+  "thao_tac": "bấm «Tạo người dùng»",
+  "trang_thai": "hộp «Tạo người dùng mới» đang mở, thấy bốn ô «Email đăng nhập», «Tên hiển thị», «Vai trong team đang mở», «Mật khẩu đầu tiên» và nút «Tạo tài khoản»",
+  "danh_dau": "(1) «Email đăng nhập» · (2) «Vai trong team đang mở» · (3) «Tạo tài khoản»"
+ },
+ {
+  "trang": "tao-nguoi-dung",
+  "anh": "tao-nguoi-dung-2",
+  "vai": "quan-tri",
+  "duong": "/cau-hinh-team",
+  "cho": "«Người trong team»",
+  "thao_tac": "cuộn tới «Người trong team»",
+  "trang_thai": "bảng có vài người; cột «Vai trong team» có các ô vai kèm dấu ×; cột «Tài khoản» có nhãn «Hoạt động»; chân bảng có hai ô chọn và nút «Cấp vai»",
+  "danh_dau": "(1) «Vai trong team» · (2) «Tài khoản» · (3) «Cấp vai»"
+ },
+ {
+  "trang": "them-kho-hang-keo-du-lieu",
+  "anh": "them-kho-hang-keo-du-lieu",
+  "vai": "quan-tri",
+  "duong": "/ket-noi",
+  "cho": "«Kéo dữ liệu»",
+  "thao_tac": "cuộn tới «Kéo dữ liệu» · bấm «Thêm kho POS»",
+  "trang_thai": "hộp «Thêm kết nối POS» đang mở với ba ô «Thị trường», «Mã cửa hàng trên Pancake», «Khoá API của shop» và nút «Lưu kết nối»",
+  "danh_dau": "(1) «Thị trường» · (2) «Khoá API của shop» · (3) «Lưu kết nối»"
+ },
+ {
+  "trang": "them-kho-hang-keo-du-lieu",
+  "anh": "them-kho-hang-keo-du-lieu-2",
+  "vai": "quan-tri",
+  "duong": "/ket-noi",
+  "cho": "«Quét Pancake tìm page mới»",
+  "thao_tac": "cuộn tới «Kéo dữ liệu»",
+  "trang_thai": "phần «Kéo dữ liệu» thấy đủ các nút «Thêm kho POS», «Kéo danh mục và giá từ POS», «Quét Pancake tìm page mới», «Kéo lại dữ liệu cũ (nạp lại)»",
+  "danh_dau": "(1) «Kéo danh mục và giá từ POS» · (2) «Quét Pancake tìm page mới» · (3) «Kéo lại dữ liệu cũ (nạp lại)»"
+ },
+ {
+  "trang": "them-thi-truong",
+  "anh": "them-thi-truong",
+  "vai": "quan-tri",
+  "duong": "/san-pham",
+  "cho": "«Theo thị trường»",
+  "thao_tac": "bấm «Theo thị trường» · bấm «+ Thêm thị trường = chọn shop POS + 1 món» · bấm viên cửa hàng đầu tiên ở «① Shop POS = thị trường» · bấm món đầu tiên ở «② Món trên POS»",
+  "trang_thai": "khung «Thêm thị trường» mở đủ ba bước, một cửa hàng và một món đang được chọn, nút «Thêm thị trường» sáng",
+  "danh_dau": "(1) «① Shop POS = thị trường» · (2) «② Món trên POS» · (3) «Thêm thị trường»"
+ },
+ {
+  "trang": "tim-khach",
+  "anh": "tim-khach",
+  "vai": "sale",
+  "duong": "/ho-so-khach?q=96891234567",
+  "cho": "«Mọi đơn của khách · cả hai luồng · mới nhất trước»",
+  "thao_tac": "",
+  "trang_thai": "đã tra theo số, cột trái có một khách được chọn; khung phải hiện tên khách, huy hiệu rủi ro hoàn, ba thẻ «Messenger» · «Trang bán hàng (Ladi)» · «WhatsApp», và bảng đơn. Bản xem thử cần nối dữ liệu đơn và hội thoại thì hồ sơ mới hiện",
+  "danh_dau": "(1) «Số điện thoại · mã khách Messenger · tên…» · (2) «Trang bán hàng (Ladi)» · (3) «Mọi đơn của khách · cả hai luồng · mới nhất trước»"
+ },
+ {
+  "trang": "tim-khach",
+  "anh": "tim-khach-2",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai",
+  "cho": "«Tìm khách cũ — xem đủ các kênh →»",
+  "thao_tac": "",
+  "trang_thai": "Hộp thư ở tab «Cần bạn», thấy ô tìm và lối «Tìm khách cũ — xem đủ các kênh →» ngay dưới",
+  "danh_dau": "(1) «Số điện thoại (mọi kênh) hoặc mã khách…» · (2) «Tìm khách cũ — xem đủ các kênh →»"
+ },
+ {
+  "trang": "tim-page-ton-tien-ai",
+  "anh": "tim-page-ton-tien-ai",
+  "vai": "quan-tri",
+  "duong": "/chi-phi",
+  "cho": "«Chi phí theo page»",
+  "thao_tac": "",
+  "trang_thai": "tab «Theo page» đang mở; bốn ô số và bảng «Chi phí theo page» đã có dòng",
+  "danh_dau": "(1) «Mỗi đơn ra được» · (2) «Chi phí theo page» · (3) «Đo thật»"
+ },
+ {
+  "trang": "tim-page-ton-tien-ai",
+  "anh": "tim-page-ton-tien-ai-2",
+  "vai": "quan-tri",
+  "duong": "/chi-phi?tab=tin",
+  "cho": "«Từng tin»",
+  "thao_tac": "",
+  "trang_thai": "tab «Từng tin» đang mở; bảng có dòng hoặc khung trống «Sổ chi phí của v3 chưa ghi lượt nào»; liên kết sang Vận hành thấy ở dưới",
+  "danh_dau": "(1) «Từng tin» · (2) «Tiền» · (3) «Lọc theo page · khách · khoảng, gom theo khách / page / thị trường — ở Vận hành →»"
+ },
+ {
+  "trang": "tim-san-pham-phu-trach",
+  "anh": "tim-san-pham-phu-trach",
+  "vai": "marketer",
+  "duong": "/san-pham",
+  "cho": "«Sản phẩm của team»",
+  "thao_tac": "",
+  "trang_thai": "marketer có ít nhất một sản phẩm; sản phẩm đầu tiên đang mở ở tab «Chung»; dòng phạm vi «Chỉ hiện … sản phẩm bạn phụ trách» đang hiện",
+  "danh_dau": "(1) «sản phẩm bạn phụ trách» · (2) «① Luật chung» · (3) «Theo thị trường»"
+ },
+ {
+  "trang": "tra-loi-tren-pancake",
+  "anh": "tra-loi-tren-pancake",
+  "vai": "sale",
+  "duong": "/ban-hoi-thoai?ht=1",
+  "cho": "«Trả lời trên Pancake»",
+  "thao_tac": "",
+  "trang_thai": "khung chat đã đọc xong, có một tin nhãn «Page»; nút «Trả lời trên Pancake» ở thanh dưới đã chuyển sang dạng nút chính (sáng); cột phải thấy dòng «Người giữ»",
+  "danh_dau": "(1) «Trả lời trên Pancake» · (2) «Page» · (3) «Người giữ»"
+ },
+ {
+  "trang": "tra-nhat-ky",
+  "anh": "tra-nhat-ky",
+  "vai": "quan-tri",
+  "duong": "/nhat-ky",
+  "cho": "«Việc người làm»",
+  "thao_tac": "",
+  "trang_thai": "tab «Việc người làm» đang chọn, các tab có số đếm; ô «Mọi hành động»; bảng có cột «Lúc», «Ai», «Việc», vài dòng có nút «Xem»",
+  "danh_dau": "(1) «Việc người làm» · (2) «Mọi hành động» · (3) «Xem»"
+ },
+ {
+  "trang": "viec-cua-toi",
+  "anh": "viec-cua-toi",
+  "vai": "marketer",
+  "duong": "/trang-chu",
+  "cho": "«Việc của tôi»",
+  "thao_tac": "",
+  "trang_thai": "có ít nhất một việc trong nhóm «Cần xử lý», ghi chú cuối màn về việc của vai khác đang hiện",
+  "danh_dau": "(1) «Cần xử lý» · (2) «Sản phẩm hết hàng» · (3) «việc thuộc vai khác không hiện ở đây»"
+ },
+ {
+  "trang": "viet-loi-bot",
+  "anh": "viet-loi-bot",
+  "vai": "marketer",
+  "duong": "/page",
+  "cho": "«Chọn một page ở cột trái»",
+  "thao_tac": "bấm dòng đầu tiên của «Danh sách page» · bấm «Lời bot» · bấm «Trả lời nhanh»",
+  "trang_thai": "tab «Lời bot» đang mở, ba ô chính có chữ, nhóm «Trả lời nhanh» đã mở",
+  "danh_dau": "(1) «Câu chào mở đầu» · (2) «Trả lời nhanh» · (3) «Lưu — bot dùng ngay»"
+ },
+ {
+  "trang": "xem-chay-thu",
+  "anh": "xem-chay-thu",
+  "vai": "quan-tri",
+  "duong": "/van-hanh-v3?tab=dien-tap",
+  "cho": "«Bot ĐỊNH trả lời»",
+  "thao_tac": "",
+  "trang_thai": "tab «Diễn tập (không gửi)» đang chọn; hộp đầu bảng nói chế độ đang bật hay tắt kèm số lượt; bảng có cột «Khách nói», «Bot ĐỊNH trả lời», «Độ trễ» với vài dòng",
+  "danh_dau": "(1) «Diễn tập (không gửi)» · (2) «Bot ĐỊNH trả lời» · (3) «Độ trễ»"
+ },
+ {
+  "trang": "xem-doan-chu-ai-doc",
+  "anh": "xem-doan-chu-ai-doc",
+  "vai": "marketer",
+  "duong": "/page",
+  "cho": "«Chọn một page ở cột trái»",
+  "thao_tac": "bấm dòng đầu tiên của «Danh sách page»",
+  "trang_thai": "trang một page đã mở, cột phải hiện khung «AI đang đọc gì trên page này» với ba dòng «Luật chung», «Lời bot», «Sản phẩm»",
+  "danh_dau": "(1) «AI đang đọc gì trên page này» · (2) «Xem nguyên văn đoạn chữ gửi AI»"
+ },
+ {
+  "trang": "xem-doan-chu-ai-doc",
+  "anh": "xem-doan-chu-ai-doc-2",
+  "vai": "marketer",
+  "duong": "/prompt-page",
+  "cho": "«Năm khối của prompt»",
+  "thao_tac": "cuộn tới «Kịch bản của page»",
+  "trang_thai": "đã chọn một page có lời bot đang chạy; các khối hiện nội dung, khối «Kịch bản của page» có dòng «v… · LIVE»",
+  "danh_dau": "(1) «Năm khối của prompt» · (2) «Kịch bản của page» · (3) «So với thiết kế»"
+ },
+ {
+  "trang": "xem-gia-ton-kho",
+  "anh": "xem-gia-ton-kho",
+  "vai": "marketer",
+  "duong": "/san-pham",
+  "cho": "«Theo thị trường»",
+  "thao_tac": "bấm «Theo thị trường»",
+  "trang_thai": "sản phẩm có ít nhất một thị trường, bảng giá có ít nhất hai bậc (ô khoá), có mục «Giá riêng của page (bản sao cũ)» nếu dữ liệu có",
+  "danh_dau": "(1) «Món POS» · (2) «Giá ở» · (3) «Giá riêng của page (bản sao cũ)»"
+ },
+ {
+  "trang": "xem-khach-roi-rui-ro-hoan",
+  "anh": "xem-khach-roi-rui-ro-hoan",
+  "vai": "quan-tri",
+  "duong": "/nguon-khach",
+  "cho": "«Hội thoại đang đứng ở đâu»",
+  "thao_tac": "",
+  "trang_thai": "khối «Hội thoại đang đứng ở đâu» có các thanh; khối «Rủi ro hoàn — bốn tầng» đã hiện với bốn ô và liên kết «Xem đủ →»",
+  "danh_dau": "(1) «Hội thoại đang đứng ở đâu» · (2) «Rủi ro hoàn — bốn tầng» · (3) «Xem đủ →»"
+ },
+ {
+  "trang": "xem-khach-roi-rui-ro-hoan",
+  "anh": "xem-khach-roi-rui-ro-hoan-2",
+  "vai": "quan-tri",
+  "duong": "/nguon-khach",
+  "cho": "«Khách vào từ trang bán hàng — rơi ở đâu»",
+  "thao_tac": "cuộn tới «Khách vào từ Messenger — rơi ở đâu»",
+  "trang_thai": "thấy đủ hai khối «rơi ở đâu» và đầu khối «Hai luồng chạy song song»",
+  "danh_dau": "(1) «Khách vào từ Messenger — rơi ở đâu» · (2) «Khách vào từ trang bán hàng — rơi ở đâu» · (3) «Hai luồng chạy song song»"
+ },
+ {
+  "trang": "xem-khach-roi-rui-ro-hoan",
+  "anh": "xem-khach-roi-rui-ro-hoan-3",
+  "vai": "quan-tri",
+  "duong": "/rui-ro-hoan",
+  "cho": "«Tỉ lệ hoàn theo tầng»",
+  "thao_tac": "",
+  "trang_thai": "hộp «Chưa có chính sách nào được áp» ở đầu màn; bảng «Tỉ lệ hoàn theo tầng» có năm hàng hoặc khung trống kèm lý do; tiêu đề «Cùng tỉ lệ, khác số đơn» thấy được",
+  "danh_dau": "(1) «Chưa có chính sách nào được áp» · (2) «Tỉ lệ hoàn theo tầng» · (3) «Cùng tỉ lệ, khác số đơn»"
+ },
+ {
+  "trang": "xem-tin-bi-loc",
+  "anh": "xem-tin-bi-loc",
+  "vai": "quan-tri",
+  "duong": "/van-hanh-v3?tab=bo-qua",
+  "cho": "«Vì sao KHÔNG trả lời»",
+  "thao_tac": "",
+  "trang_thai": "tab «Tin bị lọc» đang chọn; dòng tóm tắt «Đang bỏ qua … hội thoại …» và các dòng theo lý do; bảng có cột «Hội thoại», «Vì sao KHÔNG trả lời», «Kéo dài», ít nhất một nhãn đỏ",
+  "danh_dau": "(1) «Tin bị lọc» · (2) «Đang bỏ qua» · (3) «Vì sao KHÔNG trả lời»"
+ }
+]
