@@ -273,6 +273,7 @@ function veBang(d) {
                  ${p.botAiBat ? 'checked' : ''} ${khoaBotDong ? 'disabled' : ''}>
           <span>${p.botAiBat ? 'Đang chạy' : 'Tắt'}</span>
         </label>
+        ${p.ngatKenh ? `<div title="${esc(p.ngatKenh.lyDo)}">${statusBadge('blocked', { label: p.ngatKenh.nhan })}</div>` : ''}
       </td>
       <td class="c-dem">${veCuaKiem(p.cuaKiem)}</td>
       <td data-nhan="Sản phẩm gốc">${veSanPhamGoc(p)}</td>

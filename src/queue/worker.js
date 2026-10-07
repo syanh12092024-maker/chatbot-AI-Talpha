@@ -26,6 +26,7 @@ import { daBatDauGui, bocCuaGuiBen, dangDienTap, LoiCanDoiChieuGui } from "./lan
 import { gomCumTinKhach } from "./nap.js";
 import { ghiSoAi, LOAI as LOAI_SO_AI, KHONG_GOI_MODEL } from "../chat/so-ai.js";
 import { PHUT_HAN_VIEC } from "../admin-v3/operations.js";
+import { ghiLoiKenh, ghiDocTot, ghiGuiTot, locPageNgat, cauLyDoDoc, cauLyDoGui, LY_DO_VIEC_GUI_LOI } from "./ngat-page.js";
 
 // Bàn giao khi lượt xử lý CÓ THỂ ĐÃ GỬI (lỗi sau HTTP, chưa rõ kết quả) ⇒ người đối chiếu. KHÔNG dùng cho đọc lịch
 // sử lỗi (GL3b — xem `banGiaoDocLoi`): ở đó chắc chắn chưa gửi gì, và sale cần một DÒNG VIỆC chứ không phải đối chiếu.
@@ -66,6 +67,23 @@ async function banGiaoDocLoi(db, tin, lyDo) {
           RETURNING h.id`,
           [tin.team_id, tin.page_id, tin.psid, String(tin.nguon || "")]);
   if (ht.rowCount !== 1) return { banGiao: false, viecMoi: false };
+  const viecMoi = await chenViec(db, tin.team_id, ht.rows[0].id, LY_DO_VIEC_DOC_LOI);
+  await ghiNhatKyHangDoi(db, {
+    teamId: tin.team_id,
+    hanhDong: "tin_doc_loi_ban_giao",
+    tinId: tin.id,
+    ghiChu: String(lyDo).slice(0, 400),
+    sau: { hoi_thoai_id: String(ht.rows[0].id), chu_so_huu: "SALE", viec_moi: viecMoi },
+  });
+  return { banGiao: true, viecMoi };
+}
+
+/**
+ * MỘT câu chèn việc cho mọi nhánh bàn giao của worker (đọc lỗi GL3b · gửi lỗi GL4) — khuôn
+ * `admin-v3/operations.js#handoffConversation`: NOT EXISTS việc chưa đóng cùng hội thoại, hạn `PHUT_HAN_VIEC`.
+ * @returns {Promise<boolean>} có chèn việc MỚI không.
+ */
+async function chenViec(db, teamId, hoiThoaiId, lyDo) {
   const viec = await db.query(
     `INSERT INTO viec_can_xu_ly (team_id, loai, hoi_thoai_id, ly_do_day, han_luc)
        SELECT $1, 'hoi_thoai', $2, $3, now() + ($4 || ' minutes')::interval
@@ -74,16 +92,42 @@ async function banGiaoDocLoi(db, tin, lyDo) {
           WHERE team_id = $1 AND loai = 'hoi_thoai' AND hoi_thoai_id = $2 AND dong_luc IS NULL
        )
      RETURNING id`,
-    [tin.team_id, ht.rows[0].id, LY_DO_VIEC_DOC_LOI, String(PHUT_HAN_VIEC)],
+    [teamId, hoiThoaiId, lyDo, String(PHUT_HAN_VIEC)],
   );
-  await ghiNhatKyHangDoi(db, {
-    teamId: tin.team_id,
-    hanhDong: "tin_doc_loi_ban_giao",
-    tinId: tin.id,
-    ghiChu: String(lyDo).slice(0, 400),
-    sau: { hoi_thoai_id: String(ht.rows[0].id), chu_so_huu: "SALE", viec_moi: viec.rowCount > 0 },
-  });
-  return { banGiao: true, viecMoi: viec.rowCount > 0 };
+  return viec.rowCount > 0;
+}
+
+/**
+ * PHIẾU GL4 ② 6 — tin GỬI lỗi (sổ gửi có lượt tin/ảnh KHÔNG RÕ đã tới khách — `soGuiTin`) ⇒ MỘT dòng việc cho sale, BẤT KỂ `banGiaoLoi` đổi bao
+ * nhiêu dòng (R2-N4): handler đã lưu CLOSING/HANDOFF trước khi ném (`handler-v3.js` catch → `luuLai`) — đúng cảnh «đơn vừa chốt mà
+ * tin xác nhận gửi hỏng», sale phải biết nhất. Trước GL4 nhánh này `banGiaoLoi` trơn, không việc (N-GL3B-BANGIAOLOI-PANCAKE); ngắt
+ * page biến nó thành lặp mỗi chu kỳ 30′.
+ */
+async function viecGuiLoi(db, tin) {
+  const ht = await db.query(
+    `SELECT h.id FROM hoi_thoai h JOIN page p ON p.id = h.page_id
+      WHERE h.team_id = $1 AND p.page_id = $2 AND h.psid = $3`,
+    [tin.team_id, tin.page_id, tin.psid]);
+  if (ht.rowCount) await chenViec(db, tin.team_id, ht.rows[0].id, LY_DO_VIEC_GUI_LOI);
+}
+
+/**
+ * GL4 — sổ gửi TIN/ẢNH của một tin sau khi lượt hỏng: đã có lượt Pancake XÁC NHẬN (`da_gui` ⇒ kênh gửi chạy, xoá chuỗi gửi dù bước
+ * sau — thẻ/ghi chú/ảnh không url — hỏng) · có lượt KHÔNG RÕ (`dang_gui`/`khong_ro` ⇒ việc «Gửi không rõ…»). Chỉ thẻ/ghi chú hỏng
+ * thì tin của khách đã tới chắc chắn — không đẻ việc «gửi không rõ» (/code-review #4 #5). Đọc hỏng ⇒ chiều an toàn: không xoá chuỗi,
+ * vẫn đẻ việc.
+ */
+async function soGuiTin(db, tin) {
+  try {
+    const r = await db.query(
+      `SELECT coalesce(bool_or(trang_thai = 'da_gui'), false) AS da_gui,
+              coalesce(bool_or(trang_thai IN ('dang_gui', 'khong_ro')), false) AS khong_ro
+         FROM lan_gui WHERE team_id = $1 AND tin_id = $2 AND loai IN ('guiTin', 'guiAnh')`,
+      [tin.team_id, tin.id]);
+    return { daGuiThat: r.rows[0]?.da_gui === true, khongRo: r.rows[0]?.khong_ro === true };
+  } catch {
+    return { daGuiThat: false, khongRo: true };
+  }
 }
 
 /**
@@ -93,11 +137,34 @@ async function banGiaoDocLoi(db, tin, lyDo) {
  *          còn tin đang bị worker khác giữ khoá).
  */
 export async function chayMotVong(pool, deps = {}) {
+  // GL4 ② 4 — lọc page NGẮT KÊNH ngay trước MỖI lượt rút (bộ nhớ chung của tiến trình: `ghiLoiKenh` ghi vào NGAY khi ngắt,
+  // `motLuot` đọc lại CSDL mỗi vòng) ⇒ tin 3..50 của cùng vòng `chayToiKhiHet` và cả ba vòng xử thấy ngay; tin của page ngắt
+  // giữ `cho`. `pageIds = null` (chỉ bộ ca gọi trần — tiến trình thật luôn truyền mảng) không lọc được: câu rút không có vế «trừ».
+  const kenh = {};
+  const r = await xuMotVong(pool, { ...deps, pageIds: locPageNgat(deps.pageIds ?? null) }, kenh);
+  await ghiKenhSauLuot(deps.poolGui || pool, kenh);
+  return r;
+}
+
+/**
+ * GL4 ② 2 — ghi bộ đếm kênh SAU KHI phiên rút đã chốt, trên pool RIÊNG (ngoài giao dịch tin; mọi hàm nuốt lỗi): gửi THẬT
+ * SỰ OK ⇒ xoá cả hai chuỗi; đọc OK ⇒ chỉ chuỗi đọc; lỗi kênh ⇒ đếm (đọc OK chạy TRƯỚC — không bao giờ xoá chuỗi gửi).
+ */
+async function ghiKenhSauLuot(p, k) {
+  if (!k.tin) return;
+  const dinh = { teamId: k.tin.team_id, pageId: k.tin.page_id };
+  if (k.guiOk) await ghiGuiTot(p, dinh);
+  else if (k.docOk) await ghiDocTot(p, dinh);
+  if (k.loi) await ghiLoiKenh(p, { ...dinh, tinId: k.tin.id, ...k.loi });
+}
+
+async function xuMotVong(pool, deps, kenh) {
   const khoaWorker = deps.khoaWorker || `w-${process.pid}`;
   const phien = await moPhienRut(pool, { khoaWorker, pageIds: deps.pageIds ?? null });
   if (!phien) return null;
 
   const { tin, khach } = phien;
+  kenh.tin = tin;
   const poolGui = deps.poolGui || pool;
   let batchIds = [];   // ngoài `try`: nhánh đọc-lịch-sử-lỗi trong `catch` chốt cả cụm gom theo tin chính
   try {
@@ -180,6 +247,7 @@ export async function chayMotVong(pool, deps = {}) {
       lichSu = (await docT(khach, ctxHeThong(), {
         pageId: tin.page_id, psid: tin.psid, convId: tinXuLy.conv_id, custId: tinXuLy.cust_id,
       }, deps.depsPancake || {})) || [];
+      kenh.docOk = true;
     }
 
     await nhanDienSale(khach, { teamId: tin.team_id, pageId: tin.page_id, psid: tin.psid, messages: lichSu });
@@ -248,6 +316,9 @@ export async function chayMotVong(pool, deps = {}) {
       ly_do=$3,sua_luc=now() WHERE team_id=$1 AND id=ANY($2::bigint[])`,
       [tin.team_id, batchIds, `gom_vao_tin:${tin.id}`]);
     await phien.ketThuc(TRANG_THAI.XONG, kq.lyDo);
+    // GL4 (R2-N3): chỉ lượt THẬT SỰ gửi tin/ảnh mới xoá chuỗi gửi — nhường page / `khong_gui` / cửa ra chặn cũng là XONG mà không
+    // gửi gì; diễn tập ghi sổ rồi dừng, không tới Pancake.
+    kenh.guiOk = !dangDienTap() && (Number(kq.dem?.guiTin) || 0) + (Number(kq.dem?.guiAnh) || 0) > 0;
     return { tinId: tin.id, ...kq, soLanThu: tin.so_lan_thu };
   } catch (e) {
     // Lỗi SQL sau HTTP cũng không được tự gửi lại. Mất kết nối với sổ gửi = chưa rõ.
@@ -256,6 +327,14 @@ export async function chayMotVong(pool, deps = {}) {
     const hetLuot = daGui || e?.khongThuLai === true || [400,401,403,404,422].includes(Number(e?.status)) || Number(tin.so_lan_thu) >= TRAN_THU;
     const trangThai = hetLuot ? TRANG_THAI.LOI : THU_LAI;
     const lyDo = `${e?.name || "Error"}: ${e?.message || ""}`;
+    // GL4 ② 3 — lỗi KÊNH (đếm vào ngắt page), theo CẤU TRÚC: đọc ⇒ `LoiDocLichSu.capKenh` (phân loại của `pkDocTin`); gửi ⇒
+    // `cause.kenh` do `lan-gui.js#bocCuaGuiBen` gắn khi cửa ĐÃ gọi Pancake cho tin/ảnh. Lượt rút lại sau crash (`LoiCanDoiChieuGui`
+    // trần ở đầu `try`, 0 lượt Pancake) · thiếu thẻ · ghi chú · cổng ghi chặn: không dấu ⇒ không đếm.
+    if (e?.name === "LoiDocLichSu" && e.capKenh === true) kenh.loi = { kieu: "doc", lyDo: cauLyDoDoc(e.message) };
+    else if (e?.cause?.kenh === true) kenh.loi = { kieu: "gui", lyDo: cauLyDoGui(e.cause.chiTiet) };
+    // Lượt đã gửi được tin/ảnh rồi mới hỏng ở bước sau ⇒ kênh gửi CHẠY (xoá chuỗi gửi TRƯỚC khi đếm lỗi của chính lượt này).
+    const so = daGui ? await soGuiTin(poolGui, tin) : { daGuiThat: false, khongRo: false };
+    if (so.daGuiThat) kenh.guiOk = true;
     try {
       // ── GL3b · ĐỌC LỊCH SỬ LỖI — nhánh RIÊNG, tách khỏi `banGiaoLoi` (dành cho «có thể đã gửi») ──
       // `daBatDauGui` đứng đầu `try` nên tới đây chắc chắn chưa gửi gì (`!daGui` là lưới thứ hai). SQL nào trong nhánh
@@ -298,6 +377,7 @@ export async function chayMotVong(pool, deps = {}) {
         };
       }
       if (hetLuot) await banGiaoLoi(khach, tin);
+      if (so.khongRo) await viecGuiLoi(khach, tin);   // GL4 ② 6 — tin/ảnh gửi KHÔNG RÕ ⇒ việc, bất kể banGiaoLoi đổi mấy dòng
       await phien.ketThuc(trangThai, lyDo, e.treMs || Math.min(30000, 1000 * 2 ** (Number(tin.so_lan_thu) - 1)));
     } catch {
       // Giao dịch SQL đã abort: rollback trước, rồi lưu attempt ngoài giao dịch
@@ -312,6 +392,7 @@ export async function chayMotVong(pool, deps = {}) {
         [tin.id, tin.team_id, trangThai, Number(tin.so_lan_thu), lyDo.slice(0, 500)],
       ).catch(() => null);
       if (hetLuot && recovered?.rowCount) await banGiaoLoi(pool, tin).catch(() => {});
+      if (so.khongRo && recovered?.rowCount) await viecGuiLoi(pool, tin).catch(() => {});   // GL4 ② 6 · R2-N4 (a): cả đường cứu
     }
     return {
       tinId: tin.id,

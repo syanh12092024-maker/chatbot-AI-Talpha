@@ -26,6 +26,7 @@
 // `chan_guard` mà không một byte nào ra khách. In ra số đếm để thấy nó đang đứng ở đâu.
 import { napTuPoll, nguonDangMo, lyDoNguonDong } from "./nap.js";
 import { chayToiKhiHet } from "./worker.js";
+import { lamMoiNgat, pageDangNgat } from "./ngat-page.js";
 import { dsPageBotTraLoiCoTran, choPhepTheoTran, lyDoRong, trangThaiTran, lyDoVuotTran, cauSoTran } from "./page-routing.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -96,6 +97,14 @@ export async function motLuot(pool, deps = {}) {
   // GL2: danh sách và lý do «vượt trần» lấy từ CÙNG một lượt đọc trạng thái trần (`page-routing.js#trangThaiTran`).
   const tt = deps.dsChoPhep ? null : await trangThaiTran(pool);
   const choPhep = deps.dsChoPhep ? await deps.dsChoPhep() : choPhepTheoTran(tt);
+  // GL4 ② 4: đọc lại trạng thái ngắt vào bộ nhớ chung của tiến trình (đồng hồ CSDL) và mở lại page đã hết hạn (đúng một lần —
+  // UPDATE có điều kiện). Worker lọc page ngắt trước MỖI lượt rút (`worker.js#chayMotVong`). Ngắt vì ĐỌC ⇒ bỏ nạp page đó
+  // (đọc lại tốn 15 s × số token mỗi hội thoại, đứng cả vòng nạp tuần tự); ngắt vì GỬI ⇒ VẪN nạp (đọc còn tốt — Pancake v1 chỉ
+  // trả 60 hội thoại mới nhất, bỏ nạp 30′ là mất tin rơi khỏi cửa sổ), tin vào `cho` chờ mở. Page ngắt vẫn tính «bật» khi đếm trần.
+  await lamMoiNgat(pool);
+  const ngat = pageDangNgat();
+  ket.ngat = { so: ngat.length, doc: ngat.filter((x) => x.vi === "doc").length, gui: ngat.filter((x) => x.vi === "gui").length };
+  const boNap = new Set(ngat.filter((x) => x.vi === "doc").map((x) => x.pageId));
 
   if (!ket.nap.mo) {
     ket.nap.lyDo = lyDoNguonDong();
@@ -107,7 +116,7 @@ export async function motLuot(pool, deps = {}) {
     // nói page nào bot ĐANG TRẢ LỜI. Thiếu một trong hai thì page ấy không được nạp.
     ket.nap.choPhep = choPhep.length;
     ket.nap.nguonChoPhep = 'csdl';
-    const pages = trongBang.filter((p) => choPhep.includes(p));
+    const pages = trongBang.filter((p) => choPhep.includes(p) && !boNap.has(p));
     ket.nap.page = pages.length;
     // GL2: rỗng vì VƯỢT TRẦN thì nói đúng lý do đó, không phải «chưa page nào bật bot».
     if (tt?.vuot) ket.nap.lyDo = lyDoVuotTran(tt.soBat);
@@ -157,10 +166,12 @@ export function inLuot(ket) {
     n.boQuaDaDoc ? `${n.boQuaDaDoc} ĐÃ-ĐỌC(bỏ)` : "",
     n.docTinLoi ? `${n.docTinLoi} đọc-tin-lỗi` : "",
   ].filter(Boolean).join(" · ");
-  const dong = n.mo
+  const dong = (n.mo
     ? `nạp: ${n.them} mới · ${n.trung} trùng · ${n.page} page${loc ? ` · lọc: ${loc}` : ""}`
       + `${n.loi ? ` · ${n.loi} page LỖI (${n.loiCuoi})` : ""}`
-    : `nạp: ĐÓNG — ${n.lyDo}`;
+    : `nạp: ĐÓNG — ${n.lyDo}`)
+    // GL4: số page đang ngắt kênh — MỘT cụm trong dòng tổng, không cảnh báo riêng mỗi vòng.
+    + (ket.ngat?.so ? ` · ngắt kênh: ${ket.ngat.so} page (đọc ${ket.ngat.doc} · gửi ${ket.ngat.gui})` : "");
   console.log(`[worker-v3] ${dong} | xử: ${JSON.stringify(x)}`);
 }
 

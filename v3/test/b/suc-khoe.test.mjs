@@ -1,4 +1,4 @@
-// MÀN «SỨC KHOẺ HỆ THỐNG» (G2-E4) — mười một đèn, và luật của một cái đèn.
+// MÀN «SỨC KHOẺ HỆ THỐNG» (G2-E4) — mười hai đèn, và luật của một cái đèn.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -167,11 +167,11 @@ test('đèn token · bộ đọc NÉM thì XÁM kèm lý do, không nuốt thàn
 
 /* ═══════════ chung ═══════════ */
 
-test('bảng đèn · đủ MƯỜI MỘT đèn, mã không trùng, đèn nào cũng có tên và lý do', async () => {
+test('bảng đèn · đủ MƯỜI HAI đèn, mã không trùng, đèn nào cũng có tên và lý do', async () => {
   dungKho();
   const b = await sk.bangDen(bcQt());
-  assert.equal(b.den.length, 11);
-  assert.equal(new Set(b.den.map((d) => d.ma)).size, 11);
+  assert.equal(b.den.length, 12);
+  assert.equal(new Set(b.den.map((d) => d.ma)).size, 12);
   for (const d of b.den) {
     assert.ok(d.ten && d.vi, `đèn ${d.ma} thiếu tên hoặc lý do`);
     // Luật độ dài chỉ áp cho đèn CẦN HÀNH ĐỘNG. Đèn xanh thì «Mọi page đều có marketer» là
@@ -181,7 +181,7 @@ test('bảng đèn · đủ MƯỜI MỘT đèn, mã không trùng, đèn nào c
         `đèn ${d.ma} đang ${d.muc} mà lý do quá ngắn — người đọc không biết làm gì tiếp`);
     }
   }
-  assert.equal(b.dem.xanh + b.dem.vang + b.dem.do + b.dem.xam, 11, 'đếm phải khớp tổng');
+  assert.equal(b.dem.xanh + b.dem.vang + b.dem.do + b.dem.xam, 12, 'đếm phải khớp tổng');
 });
 
 test('thiếu bối cảnh thì NÉM', async () => {

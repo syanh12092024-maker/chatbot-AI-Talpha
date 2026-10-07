@@ -17,6 +17,7 @@
 // sạch trong một lượt `npm run di-tru` mà không ai được báo.
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
+import { gioVN } from '../../../../src/queue/ngat-page.js';
 
 export const BANG = 'page';
 
@@ -369,6 +370,16 @@ export function gonPage(p) {
     trongDiem: co(p.trong_diem),
     sanPhamGocMa: p.san_pham_goc_ma || null,   // 015 — page khai nó bán gì
     matDau: co(p.mat_dau),
+    // GL4 (034) — page đang NGẮT KÊNH Pancake: worker không rút tin của page tới `ngat_den`. Chỉ có khóa khi đang ngắt (CSDL chưa
+    // áp 034 ⇒ dòng không có cột ⇒ không khóa). Quá giờ mà chưa mở = máy chạy bot không chạy ⇒ nhãn nói thế (/code-review #10).
+    ...(String(p.ngat_ly_do ?? '') !== '' ? {
+      ngatKenh: {
+        den: p.ngat_den, vi: p.ngat_vi, lyDo: p.ngat_ly_do,
+        nhan: new Date(p.ngat_den).getTime() > Date.now()
+          ? `Ngắt kênh tới ${gioVN(p.ngat_den)}`
+          : `Quá giờ mở kênh (${gioVN(p.ngat_den)}) — máy chạy bot chưa mở lại`,
+      },
+    } : {}),
   };
 }
 

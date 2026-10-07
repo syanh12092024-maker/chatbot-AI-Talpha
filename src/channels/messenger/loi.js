@@ -26,6 +26,9 @@
 //     qua cửa nhường page ⇒ trả lời MÙ đè sale/Botcake; bộ nạp ghi mốc ⇒ tin khách không bao giờ
 //     vào hàng. «Rỗng thật» (Pancake trả `messages: []`) KHÔNG phải lỗi này. Thông điệp mang câu
 //     lỗi đọc được (`pancake.js#pkDocTin`), không chứa token.
+//     PHIẾU GL4: mang `capKenh` — `true` khi lỗi ở CẤP KÊNH (hết token / quyền ở mọi token / quá hạn / mạng / thân hỏng / 121
+//     không mã «gói cước») ⇒ worker đếm vào ngắt cả page; `false` khi là lỗi của MỘT hội thoại («Thiếu mã khách hàng», thân
+//     không danh sách) ⇒ không đếm. Phân loại ở `pkDocTin` theo CẤU TRÚC, không theo câu chữ.
 export class LoiPageKhongThuocTeam extends Error {
   constructor(thongDiep) {
     super(thongDiep);
@@ -48,8 +51,9 @@ export class LoiCuaGuiDong extends Error {
 }
 
 export class LoiDocLichSu extends Error {
-  constructor(thongDiep) {
+  constructor(thongDiep, { capKenh = false } = {}) {
     super(thongDiep);
     this.name = "LoiDocLichSu";
+    this.capKenh = capKenh === true;
   }
 }

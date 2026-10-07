@@ -202,7 +202,15 @@ test("GL3b N5 · migration 033: hộp cát có dòng `doc_tin_loi` ⇒ `down` TH
     "INSERT INTO nap_bo_qua(team_id,page_id,conv_id,psid,ly_do) VALUES($1,$2,'c-mig','ps-mig','doc_tin_loi')",
     [team, PAGE],
   );
-  const go = await xuong(sb.pool, { im: true });
+  // Gỡ LÙI tới khi 033 rời `_migrations` — trần = số bản đã áp. Bản đầu gỡ ĐÚNG MỘT lần (neo «033 là bản chót») ⇒ GL4 thêm 034
+  // là ca đỏ oan vì thước ngắn (cùng bài học cr1509-luoi-migration · l2-m1-hang-doi).
+  const tran = Number((await sb.pool.query("SELECT count(*)::int n FROM _migrations")).rows[0].n);
+  const go = [];
+  for (let i = 0; i < tran && !go.includes("033_nap_bo_qua_doc_tin_loi"); i++) {
+    const g = await xuong(sb.pool, { im: true });
+    if (!g.length) break;
+    go.push(...g);
+  }
   const conLai = Number((await sb.pool.query("SELECT count(*) n FROM nap_bo_qua WHERE ly_do='doc_tin_loi'")).rows[0].n);
   let tuChoi = "";
   try {
@@ -216,9 +224,9 @@ test("GL3b N5 · migration 033: hộp cát có dòng `doc_tin_loi` ⇒ `down` TH
     await sb.pool.query("INSERT INTO nap_bo_qua(team_id,page_id,conv_id,ly_do) VALUES($1,$2,'c-mig4','ly_do_la')", [team, PAGE]);
   } catch (e) { la = e.constraint || e.message; }
   console.log(`   [gl3b] N5 gỡ=${go} · còn doc_tin_loi sau gỡ=${conLai} · CHECK cũ từ chối=${tuChoi} · áp=${ap} · lý do lạ bị từ chối=${la}`);
-  assert.deepEqual(go, ["033_nap_bo_qua_doc_tin_loi"]);
+  assert.ok(go.includes("033_nap_bo_qua_doc_tin_loi"), `phải gỡ được 033 (đã gỡ: ${go.join(", ") || "không"})`);
   assert.equal(conLai, 0);
   assert.equal(tuChoi, "nap_bo_qua_ly_do_check", "sau down: CHECK cũ (6 mã) đã dựng lại");
-  assert.deepEqual(ap, ["033_nap_bo_qua_doc_tin_loi"]);
+  assert.ok(ap.includes("033_nap_bo_qua_doc_tin_loi"), `up lại phải áp 033 (đã áp: ${ap.join(", ") || "không"})`);
   assert.equal(la, "nap_bo_qua_ly_do_check", "sau up: CHECK vẫn chặn mã lạ (nới đúng một mã)");
 });

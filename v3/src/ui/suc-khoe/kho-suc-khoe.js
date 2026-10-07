@@ -23,6 +23,8 @@ import { batBuocBoiCanh, coVai } from '../../auth/boi-canh.js';
 import { docNhipMayBot } from '../chung/nhip-may-bot.js';
 // GL2: trần số page bật bot TOÀN HỆ — luật (`vuotTran`) + câu số đo (`cauSoTran`) dùng CHUNG với worker và cổng bật.
 import { tranPageBat, vuotTran, cauSoTran } from '../../../../src/queue/page-routing.js';
+// GL4: giờ VN của hạn ngắt + chuỗi lý do của dòng việc «gửi không rõ» — MỘT nguồn với worker (`ngat-page.js`).
+import { gioVN, LY_DO_VIEC_GUI_LOI } from '../../../../src/queue/ngat-page.js';
 // GL2 vòng 2 (N1): khi vượt trần, đèn kể page theo team — team người xem LÀ THÀNH VIÊN (cổng danh tính, đã loại team kỹ thuật)
 // và TÊN team của page ở team khác. Cùng hai hàm các màn khác đã dùng (`chung/router-dieu-huong.js`, `bao-cao/kho-don-pos.js`).
 import { teamCuaNguoi, teamTheoId } from '../../auth/kho-nguoi-dung.js';
@@ -142,6 +144,9 @@ export async function bangDen(boiCanh, { bay = Date.now(), env = process.env } =
   const coKichBan = new Set(kichBan.map((k) => String(k.page_id)));
   // GL2: trần là TOÀN HỆ còn cổng truy vấn ở trên KẸP TEAM ⇒ đếm riêng, không dùng `botBat.length` (review (a) C2).
   const tran = await docTranToanHe(botBat, env);
+  // GL4: page của TEAM đang ngắt kênh Pancake (cột 034, đọc kẹp team qua cổng truy vấn ⇒ page team khác không lộ).
+  const ngatKenh = docNgatKenh(pages, bay);
+  const nhipMay = await docNhipMayBot({ boiCanh: bc });
   const ds = [];
 
   /* ① MODEL AI — đèn của sự cố 06/08 và 23/08 */
@@ -179,7 +184,7 @@ export async function bangDen(boiCanh, { bay = Date.now(), env = process.env } =
   /* ③b MÁY CHẠY BOT — thứ thật sự trả lời khách (worker v3).
      Đèn ③ nói về CỬA GHI vào lõi bot; đèn này nói về máy xử tin. Hai thứ khác nhau, và trước
      25/09 không đèn nào canh cái thứ hai. */
-  ds.push(denMayChayBot(await docNhipMayBot({ boiCanh: bc }), tran));
+  ds.push(denMayChayBot(nhipMay, tran, ngatKenh, botBat));
 
   /* ④ TOKEN PANCAKE */
   ds.push(await denToken(bay));
@@ -209,6 +214,9 @@ export async function bangDen(boiCanh, { bay = Date.now(), env = process.env } =
         diTiep: { chu: 'Sang màn Page & Bot', duong: '/page-bot' },
         so: `0/${pages.length} page`,
       }));
+
+  /* ⑤b NGẮT KÊNH PANCAKE (GL4) — page worker ngắt 30′ vì kênh Pancake lỗi 2 lần liên tiếp */
+  ds.push(denNgatKenh(ngatKenh, nhipMay, viec));
 
   /* ⑥ KỊCH BẢN CHO PAGE ĐANG BẬT BOT — chỗ nguy nhất, và dễ bị bỏ qua nhất */
   const batMaKhongKichBan = botBat.filter((p) => !coKichBan.has(String(p.id)));
@@ -435,7 +443,7 @@ async function keTheoTeam(bc, tran, botBat) {
  * GL2: đang VƯỢT TRẦN thì worker cố ý không rút tin ⇒ tin chờ dồn ⇒ luật nhịp sẽ nói «máy đứng» và dẫn người đi khởi động
  * lại — vô ích. Khi đó đèn nói «dừng vì vượt trần» (VÀNG — máy không hỏng; đèn ĐỎ là đèn «Page đang bật bot»).
  */
-function denMayChayBot(x, tran = null) {
+function denMayChayBot(x, tran = null, ngat = null, botBat = []) {
   if (tran?.vuot) {
     return den({
       ma: 'may_chay_bot',
@@ -449,6 +457,26 @@ function denMayChayBot(x, tran = null) {
       diTiep: { chu: 'Tắt bớt page ở màn Page & Bot', duong: '/page-bot' },
     });
   }
+  // GL4: tin của page NGẮT KÊNH cố ý giữ ở chờ ⇒ luật nhịp nói «máy đứng — khởi động lại» — vô ích (trạng thái ngắt nằm trong CSDL,
+  // restart đọc lại y nguyên). Chỉ che khi tin dồn GIẢI THÍCH ĐƯỢC bằng ngắt: ngắt CÒN hạn (đồng hồ máy giao diện — hết giờ mà chưa mở
+  // = máy chạy bot không chạy) VÀ mọi page bật bot của team đều đang ngắt (còn page bật mà không ngắt thì tin của nó lẽ ra phải được
+  // xử — dồn là máy có chuyện, /code-review #1). Tin kẹt `dang_xu` (máy chết giữa chừng) không phải do ngắt ⇒ không che.
+  // Giới hạn còn lại: máy chết TRONG lúc mọi page của team đang ngắt thì không phân biệt được tới hết giờ ngắt (khi đó nhánh tự tắt).
+  const giu = (ngat?.ds || []).filter((p) => p.conHieuLuc);
+  const tenGiu = new Set(giu.map((p) => p.pageId));
+  const conPageChay = botBat.some((p) => String(p.page_id ?? '') !== '' && !tenGiu.has(String(p.page_id)));
+  if (giu.length && !conPageChay && (x.muc === MUC.DO || x.muc === MUC.VANG) && /tin chờ/.test(String(x.so || ''))) {
+    return den({
+      ma: 'may_chay_bot',
+      ten: 'Máy chạy bot',
+      muc: MUC.VANG,
+      vi: `Máy chạy bot đang giữ tin vì ${giu.map((p) => `page ${p.ten} ngắt kênh tới ${gioVN(p.den)}`).join(', ')} (giờ VN) — `
+        + 'máy KHÔNG hỏng, đừng khởi động lại: trạng thái ngắt nằm trong CSDL, bot tự thử lại khi hết giờ. Đọc đèn «Ngắt kênh '
+        + `Pancake». Số đo hàng đợi lúc này: ${x.so}.`,
+      so: `giữ tin — ngắt kênh · ${x.so}`,
+      diTiep: { chu: 'Đọc đèn «Ngắt kênh Pancake»; khách gấp thì trả lời tay trong Pancake', duong: null },
+    });
+  }
   return den({
     ma: 'may_chay_bot',
     ten: 'Máy chạy bot',
@@ -456,6 +484,67 @@ function denMayChayBot(x, tran = null) {
     vi: x.cau,
     so: x.so,
     diTiep: x.viec ? { chu: x.viec, duong: null } : null,
+  });
+}
+
+/**
+ * Page của TEAM đang ngắt kênh (GL4 · cột 034). «Đang ngắt» = `ngat_ly_do <> ''` — worker đặt/xoá bằng đồng hồ CSDL; `conHieuLuc`
+ * (hạn còn theo đồng hồ máy giao diện) chỉ để nói «đã tới giờ tự mở mà chưa mở». Dòng `page` không có cột ⇒ CSDL chưa áp 034.
+ */
+function docNgatKenh(pages, bay) {
+  const doDuoc = !pages.length || pages.some((p) => Object.prototype.hasOwnProperty.call(p, 'ngat_ly_do'));
+  const ds = pages.filter((p) => String(p.ngat_ly_do ?? '') !== '').map((p) => {
+    const t = new Date(p.ngat_den).getTime();
+    return {
+      pageId: String(p.page_id ?? ''), ten: p.ten || p.page_id || 'chưa có tên', vi: p.ngat_vi, den: p.ngat_den, lyDo: p.ngat_ly_do,
+      conHieuLuc: Number.isFinite(t) && t > bay,
+    };
+  });
+  return { doDuoc, ds };
+}
+
+/**
+ * Số tin CHỜ của hàng đợi TEAM (R2-N6 — gồm cả tin của page không ngắt, nên câu nói «hàng đợi của team», không gán hết cho ngắt;
+ * /code-review #9), đọc từ câu số đo của luật nhịp (`nhip-may-bot.js#xetNhip` — «N tin chờ …»): bộ đọc nhịp chỉ trả kết quả đã xét,
+ * không trả số thô. Ca `v3/test/b/gl4-den-don-vi` D5 đi `xetNhip` thật canh định dạng này.
+ */
+function soTinGiu(x) {
+  const m = /(\d+) tin chờ/.exec(String(x?.so ?? ''));
+  if (m) return `hàng đợi của team đang có ${m[1]} tin chờ (tin của page ngắt giữ ở đó tới khi mở)`;
+  if (x?.so == null || /kẹt/.test(String(x.so))) return `chưa đếm được số tin chờ của team (${x?.nhan || 'không đọc được hàng đợi'})`;
+  return 'hàng đợi của team đang có 0 tin chờ';
+}
+
+/**
+ * ⑤b NGẮT KÊNH PANCAKE (GL4 ② 7): ĐỎ khi có page của team đang ngắt — nói page nào, ngắt đọc hay gửi, tới mấy giờ (giờ VN), vì
+ * sao, bot tự thử lại lúc đó, bao nhiêu tin đang giữ, bao nhiêu tin gửi lỗi cần đối chiếu (việc «Gửi không rõ…» MỞ của team).
+ * ⚠️ Đèn KHÔNG phủ Pancake sập ở bước NẠP (`pkGetConversations` nuốt lỗi — N-GL3B-CONV-NUOT-LOI): xanh ≠ kênh lành.
+ */
+function denNgatKenh(ngat, x, viec) {
+  const ten = 'Ngắt kênh Pancake';
+  if (!ngat.doDuoc) {
+    return den({
+      ma: 'ngat_kenh', ten, muc: MUC.XAM,
+      vi: 'Chưa đo được: CSDL chưa có cột ngắt kênh (migration 034) — worker GL4 cũng chưa ngắt page nào.',
+      diTiep: { chu: 'Nhờ người quản trị hệ thống áp migration 034', duong: null },
+    });
+  }
+  const canDoiChieu = viec.filter((v) => v.dong_luc == null && v.ly_do_day === LY_DO_VIEC_GUI_LOI).length;
+  if (!ngat.ds.length) {
+    return den({
+      ma: 'ngat_kenh', ten, muc: MUC.XANH,
+      vi: `Không page nào của team đang ngắt kênh Pancake (không phủ lỗi ở bước nạp tin).${canDoiChieu ? ` ${canDoiChieu} tin gửi lỗi đang chờ đối chiếu ở màn Vận hành.` : ''}`,
+      so: '0 page',
+    });
+  }
+  const ke = ngat.ds.map((p) => (p.conHieuLuc
+    ? `Page ${p.ten} ngắt ${p.vi === 'gui' ? 'gửi' : 'đọc'} tới ${gioVN(p.den)} (giờ VN) — ${p.lyDo}; bot tự thử lại lúc đó`
+    : `Page ${p.ten} đã tới giờ tự mở (${gioVN(p.den)} giờ VN) mà máy chạy bot CHƯA mở lại — ${p.lyDo}; xem đèn «Máy chạy bot»`));
+  return den({
+    ma: 'ngat_kenh', ten, muc: MUC.DO,
+    vi: `${ke.join(' · ')}; ${soTinGiu(x)}; ${canDoiChieu} tin gửi lỗi cần đối chiếu — màn Vận hành.`,
+    diTiep: { chu: 'Khách gấp: trả lời tay trong Pancake · đối chiếu tin gửi lỗi ở màn Vận hành', duong: '/van-hanh-v3?tab=conversations' },
+    so: `${ngat.ds.length} page ngắt`,
   });
 }
 

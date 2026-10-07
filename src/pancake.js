@@ -217,6 +217,16 @@ const dauLoiMang = (j) => ({
   ...(j?.phaLoi ? { phaLoi: j.phaLoi } : {}),
   ...(j?.quaHan ? { quaHan: true } : {}),
 });
+// GL4 (R2-N1) — CHỈ cho hai hàm GỬI TIN/ẢNH (ghi chú/thẻ giữ nguyên hình dạng kết quả GL3): `biChan` (cổng ghi chặn — CHẮC CHẮN
+// chưa gọi) · `daGoi` (đã gọi Pancake: có thân trả lời hoặc lỗi mạng; thân RỖNG `{}` là chưa có token nào, không phải lời Pancake)
+// · `ma` (mã lỗi Pancake — lý do ngắt nói được «mã 105»). `lan-gui.js` chỉ đếm lỗi KÊNH khi `daGoi`: «thiếu url ảnh» / hết token /
+// cổng chặn không phải Pancake từ chối.
+const dauLoiGui = (j) => ({
+  ...dauLoiMang(j),
+  ...(j?.biChan ? { biChan: true } : {}),
+  ...(j && typeof j === 'object' && Object.keys(j).length && !j.biChan
+    ? { daGoi: true, ma: maLoiPancake(j).filter(Number.isFinite) } : {}),
+});
 // `soLoi` (tuỳ chọn, chỉ `pkDocTin` truyền `{ ds: [], hetToken: false }`): ghi lỗi của TỪNG token trong vòng xoay + cờ «vòng xoay
 // CẠN token» — để câu lỗi chọn được lỗi «thật» nhất thay vì lỗi của token cuối (GL3b vòng 2 · F2). Không đổi giá trị trả, thứ tự
 // token, `_pageTokIdx`, hành vi GHI.
@@ -338,10 +348,17 @@ export async function pkGetConversations(pageId) {
 // cước…"}` hay «Thiếu mã khách hàng», mà `pkGetMessages` biến cả hai thành `[]`. Chỉ GET.
 // GL3b: từ nay cũng là đường đọc lịch sử của CỬA Messenger (`channels/messenger#docTin` — worker + bộ nạp) và của
 // màn Vận hành: `ok:false` ở đó ⇒ không trả lời mù, không ghi mốc.
+// GL4 ② 3: `ok:false` mang thêm `capKenh` — lỗi CẤP KÊNH (đếm vào ngắt cả page) hay lỗi của MỘT hội thoại. Thân đọc tách sang
+// `docTinMotLuot` để dòng câu lỗi (neo `gl3b.sh` ⑤v/⑤w) đứng nguyên mà nơi gọi vẫn lấy được phân loại.
 export async function pkDocTin(pageId, convId, custId) {
-  const soLoi = { ds: [], hetToken: false };
+  const soLoi = { ds: [], hetToken: false, capKenh: false };
+  const kq = await docTinMotLuot(pageId, convId, custId, soLoi);
+  return kq.ok ? kq : { ...kq, capKenh: soLoi.capKenh };
+}
+async function docTinMotLuot(pageId, convId, custId, soLoi) {
   const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations/${convId}/messages?access_token=${t}&customer_id=${custId}`, undefined, soLoi);
   if (Array.isArray(j?.messages)) return { ok: true, messages: j.messages };
+  soLoi.capKenh = laLoiKenhDoc(soLoi, j);
   // Vòng xoay CẠN token (mọi token lỗi quyền / mạng / quá hạn) ⇒ nói lỗi «thật» nhất. Ngược lại vòng xoay đã dừng sớm ở một câu
   // trả lời KHÔNG phải lỗi quyền (thân hỏng 502 · câu riêng của Pancake) ⇒ câu đó đứng.
   return { ok: false, loi: lyDoDocLoi(soLoi.hetToken ? loiThatNhat(soLoi.ds) : j) };
@@ -359,6 +376,16 @@ function hangLoiDoc(x) {
   return ma.includes(103) ? 2 : ma.includes(121) ? 3 : 4;
 }
 const loiThatNhat = (ds) => ds.reduce((tot, x) => (hangLoiDoc(x) <= hangLoiDoc(tot) ? x : tot));
+// GL4 ② 3 — lỗi đọc CẤP KÊNH, phân loại theo CẤU TRÚC (không theo câu chữ: 103/105/121 sau mọi token ra câu RIÊNG của Pancake,
+// giống hệt «Thiếu mã khách hàng»): vòng xoay CẠN token (quyền ở mọi token · mạng · quá hạn) · không còn token nào · thân hỏng
+// (502/504 HTML). NGOẠI LỆ DUY NHẤT khớp chữ: 121 dạng KHÔNG mã `{success:false, message:"Không tìm thấy gói cước…"}` (đo 28/09) —
+// `permErr` không bắt nên vòng xoay dừng sớm, mà đó là lỗi CẤP TÀI KHOẢN; không có trường nào khác để nhận ra nó. Còn lại (thân
+// không danh sách, câu riêng một hội thoại) ⇒ lỗi dữ liệu, KHÔNG đếm. Giới hạn: HTTP 5xx mà thân là JSON không nhận ra được
+// (`goiPancake` không đưa mã HTTP ra cho thân JSON).
+function laLoiKenhDoc(soLoi, j) {
+  if (soLoi.hetToken || !allToks().length || j?.thanHong === true) return true;
+  return j?.success === false && j?.error_code == null && /gói cước/i.test(String(j?.message || ''));
+}
 // GL3b ② 2 — câu lỗi nói ĐÚNG lý do. Trước đây `{}` do thân không phải JSON (502/504 HTML của cổng) và `{}` do hết token
 // cùng ra «không có token Pancake nào còn hạn» — người vận hành đi thay token trong khi Pancake đang sập. Câu quá hạn
 // GIỮ nguyên chuỗi «quá hạn <N> ms …» của `goiPancake` (ca GL3 so bằng regex). Không câu nào chứa token.
@@ -433,7 +460,7 @@ export async function pkSendReply(pageId, convId, custId, text) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'reply_inbox', message: text, customer_id: custId }),
   });
-  return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 120), ...dauLoiMang(j) };
+  return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 120), ...dauLoiGui(j) };
 }
 
 // Gửi ẢNH qua Pancake (cùng endpoint reply_inbox, dùng content_url = link ảnh CÔNG KHAI).
@@ -445,7 +472,7 @@ export async function pkSendImage(pageId, convId, custId, url, caption = '') {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'reply_inbox', message: caption || '', content_url: url, customer_id: custId }),
   });
-  return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 140), ...dauLoiMang(j) };
+  return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 140), ...dauLoiGui(j) };
 }
 
 // Ghi GHI CHÚ vào hồ sơ khách trong Pancake (sale mở chat là thấy ở panel "Ghi chú").

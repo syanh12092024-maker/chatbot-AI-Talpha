@@ -63,6 +63,16 @@ gatThe(pool, ctx, { pageId, psid, convId, name, on? = true });            // →
   hết lượt giao sale CÓ dòng việc) và bộ nạp (`queue/nap.js` — bỏ hội thoại đó ở vòng
   này, không ghi mốc, lùi theo hội thoại, sổ bỏ-qua `doc_tin_loi`). Đây là sửa MÃ cho
   khớp ý đồ có sẵn (README nguyên tắc 10 «đọc lịch sử trước khi trả lời»), không đổi ý đồ.
+- **`LoiDocLichSu.capKenh` (PHIẾU GL4, 07/10/2026):** lỗi mang thêm cờ phân loại — `true` = lỗi
+  CẤP KÊNH (vòng xoay cạn token: quyền 103/105/121 · mạng · quá hạn ở MỌI token; không còn token
+  nào; thân hỏng 502/504; 121 dạng KHÔNG mã «Không tìm thấy gói cước»), `false` = lỗi của MỘT
+  hội thoại («Thiếu mã khách hàng», thân không danh sách). Phân loại ở `pancake.js#pkDocTin`
+  theo CẤU TRÚC (`ok:false` trả kèm `capKenh`), không theo câu chữ. Worker đếm `capKenh:true`
+  vào «ngắt cả page 30′» (`queue/ngat-page.js`); bộ nạp KHÔNG đếm (lỗi ở bước nạp ngoài GL4).
+  Thêm dấu cho lỗi có sẵn, không đổi ý đồ (án lệ GL3b N7). Kết quả `{ok:false}` của `guiTin` /
+  `guiAnh` (`pkSendReply`/`pkSendImage`, đi thẳng qua cửa) mang thêm `biChan` · `daGoi` · `ma`
+  (`pancake.js#dauLoiGui`; `ghiNote`/`gatThe` giữ hình dạng cũ) để `queue/lan-gui.js` gắn dấu lỗi
+  KÊNH (`kenh`, `chiTiet`) cho lượt tin/ảnh đã gọi Pancake mà hỏng.
 
 ## 2 · ⚠️ `psid` ≠ `convId` của Pancake — ĐỌC KỸ TRƯỚC KHI GỌI
 

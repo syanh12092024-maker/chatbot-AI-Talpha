@@ -190,7 +190,8 @@ export async function docTin(
   if (getMessages) return getMessages(pageId, convId, custId);
   const kq = await pkDocTin(pageId, convId, custId);
   if (kq?.ok === true && Array.isArray(kq.messages)) return kq.messages;
-  throw new LoiDocLichSu(`Pancake không trả lịch sử: ${kq?.loi || "không rõ lý do"}`);
+  // GL4: phân loại kênh/dữ liệu của `pkDocTin` đi theo lỗi tới worker (đếm vào ngắt cả page).
+  throw new LoiDocLichSu(`Pancake không trả lịch sử: ${kq?.loi || "không rõ lý do"}`, { capKenh: kq?.capKenh === true });
 }
 
 // ══ GỬI/GHI — dưới guard N1 (V3_PANCAKE_GUI==='1' VÀ PANCAKE_READONLY!=='1') ═════════

@@ -1,9 +1,33 @@
 export class LoiCanDoiChieuGui extends Error {
-  constructor() {
+  /** `dau` (GL4) — `{ loai, kenh, chiTiet }` khi ném SAU KHI đã gọi cửa; vắng ở lượt rút lại sau crash và lúc đụng UNIQUE. */
+  constructor(dau = null) {
     super('Lượt đã bắt đầu gửi; cần đối chiếu kênh trước khi xử lý lại');
     this.name = 'LoiCanDoiChieuGui';
     this.khongThuLai = true;
+    if (dau) Object.assign(this, dau);
   }
+}
+
+/* ═══ DẤU LỖI KÊNH (PHIẾU GL4 ② 3 · R2-N1) ═════════════════════════════════════════════
+ *
+ * Worker đếm lỗi GỬI vào «ngắt cả page» qua `e.cause.kenh` (handler bọc lỗi này trong `LoiGuiChuaXacNhan`, giữ `cause`).
+ * ĐẾM (`kenh: true`) đúng tập v1 đếm: lượt TIN/ẢNH mà cửa ĐÃ gọi Pancake (`daGoi` của `pancake.js#dauLoiGui`) và Pancake/mạng
+ * không xác nhận — quá hạn / mạng / thân hỏng (`khongRo`), quyền 103/105/121 ở mọi token, `success:false` của POST `/messages`.
+ * KHÔNG ĐẾM: ghi chú / thẻ (phụ phẩm bàn giao — thiếu thẻ «AI back Sale» là lỗi cấu hình page) · cửa TỰ NÉM (định tuyến team,
+ * N5, guard đóng — cửa thật không ném sau khi đã gọi Pancake: `pkFetchPage` nuốt mọi lỗi mạng thành kết quả trả về) · lỗi không
+ * HTTP («thiếu url ảnh», hết token ⇒ thân rỗng) · cổng ghi chặn (`biChan`) · lỗi ghi sổ SAU khi cửa đã trả `ok:true`.
+ * `chiTiet` mang nguyên nhân lên để lý do ngắt nói được «mã 105» / «quá hạn 30000 ms» (trước GL4 nguyên nhân bị vứt ở đây).
+ */
+const LOAI_KENH = new Set(['guiTin', 'guiAnh']);
+function dauKenh(loai, { result, cuaNem }) {
+  if (result?.ok === true) return null;
+  if (cuaNem) return { loai, kenh: false, chiTiet: { error: String(cuaNem?.name || 'Error') } };
+  const r = result || {};
+  return {
+    loai,
+    kenh: LOAI_KENH.has(loai) && r.daGoi === true && r.biChan !== true,
+    chiTiet: { error: r.error ?? null, khongRo: r.khongRo === true, phaLoi: r.phaLoi ?? null, quaHan: r.quaHan === true, ma: Array.isArray(r.ma) ? r.ma : [] },
+  };
 }
 
 export async function daBatDauGui(pool, tin) {
@@ -69,8 +93,10 @@ export function bocCuaGuiBen(pool, tin, cua, { env = process.env, danhDauChuaDoc
       const id = r.rows[0].id;
       // DỪNG ĐÚNG Ở ĐÂY. Nội dung đã nằm trong sổ, và không hàm nào của `cua` được gọi.
       if (dienTap) return { ok: true, id: null, dienTap: true };
+      let result;
+      let cuaNem = null;
       try {
-        const result = await cua[loai](...args);
+        try { result = await cua[loai](...args); } catch (e) { cuaNem = e; throw e; }
         if (result?.ok !== true) throw new LoiCanDoiChieuGui();
         await pool.query("UPDATE lan_gui SET trang_thai='da_gui',provider_id=$2,sua_luc=now() WHERE id=$1 AND team_id=$3",
           [id, result.id == null ? null : String(result.id), tin.team_id]);
@@ -86,7 +112,7 @@ export function bocCuaGuiBen(pool, tin, cua, { env = process.env, danhDauChuaDoc
       } catch (cause) {
         await pool.query("UPDATE lan_gui SET trang_thai='khong_ro',sua_luc=now() WHERE id=$1 AND team_id=$2",
           [id, tin.team_id]).catch(() => {});
-        throw new LoiCanDoiChieuGui();
+        throw new LoiCanDoiChieuGui(dauKenh(loai, { result, cuaNem }));
       }
     },
   ]));
