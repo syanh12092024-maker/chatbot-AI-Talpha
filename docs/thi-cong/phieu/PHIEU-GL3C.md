@@ -3,7 +3,7 @@
 **Base:** `ĐẶT-LÚC-PHÁT` · **Làn:** 🟥 (đường bot trả lời khách + bàn giao sale; sai một chiều là khách bị bỏ không ai biết, sai chiều kia là ngập việc / ngắt oan)
 **Nguồn:** README nguyên tắc 9 · 13 · nợ **N-GL3B-NAP-LOI-BEN** · **N-GL3B-CONV-NUOT-LOI** · **N-GL4-NAP-KHONG-DEM** · **N-GL3B-WEBHOOK-MAPPING** (sổ §9) ·
 review (a) 07/10 TRẢ VỀ (2 CHẶN · 6 NÊN — bản này viết lại theo, mục «Sửa sau review (a)» cuối ②) · sổ §5j (GL3c trước page thứ hai)
-**Con số chờ người quyết (tổng đặt tạm, hằng có tên — đổi một dòng):** `T_NGAT_DS = 2′` (danh sách hội thoại lỗi LIÊN TỤC bao lâu thì ngắt page) ·
+**Con số người quyết chốt 07/10 («ok 2 phút»):** `T_NGAT_DS = 2′` (danh sách hội thoại lỗi LIÊN TỤC bao lâu thì ngắt page) · tổng đặt (hằng có tên):
 `LUOT_LOI_GIAO_SALE = 3` (hội thoại lỗi DỮ LIỆU bền: lượt lỗi thứ 3 ≈ giây 90 — gần mốc ~45 s của GL3b).
 **Đụng bộ não:** không.
 **Đổi hợp đồng cửa đã bàn giao:** CÓ (nhẹ) — `docHoiThoai` nói được lỗi qua tham số ra (không đổi giá trị trả mảng); `LoiDocLichSu` ở tra mapping webhook mang
