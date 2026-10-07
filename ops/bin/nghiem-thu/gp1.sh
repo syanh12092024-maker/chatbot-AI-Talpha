@@ -3,6 +3,9 @@
 # Chạy: ops/bin/nghiem-thu/gp1.sh   (rc=0 là đạt) · GIU_TAM=1 giữ thư mục đảo-vá · BO_CONG_CU=1 bỏ ⑥ cổng cũ (lượt sửa nhanh — KHÔNG phải
 # lượt nghiệm thu) · CHAY_NPM_TEST=1 chạy thêm `npm test` (④8 «không thêm ca đỏ» — mặc định HOÃN, luật 6: không chạy song song lượt khác).
 # Thi hành ĐÚNG 8 phép của ④ trong docs/thi-cong/phieu/PHIEU-GP1.md. Mỗi phép in MỘT số đo / một bảng đếm.
+# VÒNG 2 (07/10 — đối kháng `refute-gp1.verdict.yaml` F1–F4 + người quyết «Miễn ship»): thêm ca A19 A20 (F1 thuần) · X10 (F1 trọn đường) ·
+# X11 (F2 đường lùi bền) · X12 (miễn ship → prompt bot thật) · M9 M11 (F3 sau áp / sau «Thử lại») · M10 (F4) · M4 sửa theo luật F3 · đột biến
+# vòng 2 ở ④ (bản vá cũng là code mới — luật 26).
 # Tầm đo: lưới HỒI QUY do chính thợ viết (luật 32) — ba tệp ca: tầng A thuần (đáp án từ đề bài + số đo review (a) G1), Postgres HỘP CÁT riêng
 # (`db/sandbox.js`, tên `aicloser_v3_test_gp1_p<pid>`, tự dựng tự dọn) với BigQuery GIẢ, router + màn thật trên DOM giả. KHÔNG gọi BigQuery
 # thật, KHÔNG khoá thật, KHÔNG đo `aicloser_v3` dev, KHÔNG đo prod, không gửi tin, không gọi POS.
@@ -40,7 +43,7 @@ for tz in UTC Pacific/Kiritimati; do
   o=$(TZ=$tz PGTZ=$tz chay_ca "$GOC" "$CA_A" "$CA_P" "$CA_C"); p=$(dem "$o" pass); f=$(dem "$o" fail); p=${p:-0}; f=${f:-1}
   [ "$f" -ne 0 ] && echo "$o" | grep -E "^\s*✖ " | sort -u | head -8 | sed 's/^/   ↳ /'
   so "TZ=$tz" "pass=$p fail=$f"
-  [ "$f" -eq 0 ] && [ "$p" -ge 40 ] && dat "bộ ca GP1 ($tz) pass=$p fail=0 (sàn ≥40)" || truot "bộ ca GP1 ($tz) pass=$p fail=$f"
+  [ "$f" -eq 0 ] && [ "$p" -ge 52 ] && dat "bộ ca GP1 ($tz) pass=$p fail=0 (sàn ≥52)" || truot "bộ ca GP1 ($tz) pass=$p fail=$f"
   [ "$tz" = UTC ] && OUT="$o"
 done
 
@@ -48,9 +51,11 @@ done
 #   ④1 (a)=A1 (a′)=A2 (a″)=A3 (b)=A4 (c)=A5 (d)=A6 (e)=A7 (f)=A8 · ④2=X1 · ④3=X5 · ④4=X4 · ④5=X2 X3 · ④6=X8 H1 H2
 #   ngoài ④ (đỡ ④): chốt trong giao dịch X6 · chọn món + trần mỗi lượt X7 · BQ chưa nối/hỏng X9 · 409 H3 · chưa nối H4 · màn M1–M8 ·
 #   biên A9–A15 · /code-review: bậc phân tán bỏ cả món A16 · thứ tự toàn phần A17 · đệm BigQuery A18 · trần M6 · vẽ đè M7 · đếm page M8
+#   vòng 2: F1 A19 A20 X10 · F2 X11 · miễn ship A8 X5 X12 M2 · F3 M4 M9 M11 · F4 M10 · /code-review vòng 2: A21 X13 M12 M13
 muc "② mỗi phép ④1–④6 có ca XANH riêng"
 thay=0; doi=0; thieu=""
-for tag in A1 A2 A3 A4 A5 A6 A7 A8 X1 X5 X4 X2 X3 X8 H1 H2 X6 X7 X9 H3 H4 M1 M2 M3 M4 M5 A16 A17 A18 M6 M7 M8; do
+for tag in A1 A2 A3 A4 A5 A6 A7 A8 X1 X5 X4 X2 X3 X8 H1 H2 X6 X7 X9 H3 H4 M1 M2 M3 M4 M5 A16 A17 A18 M6 M7 M8 \
+  A19 A20 A21 X10 X11 X12 X13 M9 M10 M11 M12 M13; do
   doi=$((doi+1))
   if echo "$OUT" | grep -qE "✔ $tag ·"; then thay=$((thay+1)); else thieu="$thieu $tag"; fi
 done
@@ -101,7 +106,7 @@ bam_cay() { (for f in $DS_TEP_DOT; do cat "$GOC/$f"; done) | shasum | cut -d' ' 
 BAM_TRUOC=$(bam_cay)
 o0=$(chay_ca "$TAM" "$CA_A" "$CA_P" "$CA_C"); f0=$(dem "$o0" fail); p0=$(dem "$o0" pass)
 so "lượt CHỨNG (bản sao chưa đột biến)" "pass=${p0:-0} fail=${f0:-?}"
-[ "${f0:-1}" -eq 0 ] && [ "${p0:-0}" -ge 40 ] && dat "bản sao tạm xanh trước đột biến" || truot "bản sao tạm KHÔNG xanh trước đột biến — đảo-vá vô nghĩa"
+[ "${f0:-1}" -eq 0 ] && [ "${p0:-0}" -ge 52 ] && dat "bản sao tạm xanh trước đột biến" || truot "bản sao tạm KHÔNG xanh trước đột biến — đảo-vá vô nghĩa"
 # tên | tệp đột biến | ca PHẢI đỏ (tập con của tập đỏ thật, cách bằng dấu cách)
 DS_DOT_BIEN='
 gan_day_ca_cua_so|src/products/gia-tu-don-pos.js|A2
@@ -120,7 +125,7 @@ offers_chia_100|src/products/gia-tu-don-pos.js|A8 X5
 bo_vai|v3/src/ui/san-pham/kho-goc.js|H1 X8
 nhat_ky_sai_ma|v3/src/ui/san-pham/kho-goc.js|H2 X5
 man_bo_dau|v3/src/ui/san-pham/trang/san-pham.html|M3
-man_giu_chon_sau_409|v3/src/ui/san-pham/trang/san-pham.html|M4
+man_409_khong_tinh_lai|v3/src/ui/san-pham/trang/san-pham.html|M10
 phan_tan_chi_bac|src/products/gia-tu-don-pos.js|A10 A16
 bo_thu_tu_toan_phan|src/products/gia-tu-don-pos.js|A17
 ngoai_he_thanh_khong_ghep|src/products/gia-tu-don-pos.js|X3
@@ -129,6 +134,27 @@ dem_khong_gioi_han|src/products/gia-tu-don-pos.js|A18
 man_ve_de|v3/src/ui/san-pham/trang/san-pham.html|M7
 man_dem_page_trung|v3/src/ui/san-pham/trang/san-pham.html|M8
 man_chon_ca_vuot_tran|v3/src/ui/san-pham/trang/san-pham.html|M6
+bo_khong_ro_team|src/products/gia-tu-don-pos.js|A19 X10
+khong_ro_bo_nguong|src/products/gia-tu-don-pos.js|A19
+khong_ro_khac_te|src/products/gia-tu-don-pos.js|A20
+gan_nhat_chi_team|src/products/gia-tu-don-pos.js|A20 X10
+bo_gia_tay_xoa|src/products/gia-tu-don-pos.js|X11
+bo_mien_ship|src/products/gia-tu-don-pos.js|A8 X5 X12
+nhat_ky_mien_ship|v3/src/ui/san-pham/kho-goc.js|X5
+man_quen_nguoi_bo|v3/src/ui/san-pham/trang/san-pham.html|M4 M9 M11
+man_409_quen_nguoi_bo|v3/src/ui/san-pham/trang/san-pham.html|M4
+man_tai_lai_quen_nguoi_bo|v3/src/ui/san-pham/trang/san-pham.html|M9
+man_bo_chon_khong_nho|v3/src/ui/san-pham/trang/san-pham.html|M4 M9
+man_thu_lai_mat_bo|v3/src/ui/san-pham/trang/san-pham.html|M11
+man_chon_san_lech|v3/src/ui/san-pham/trang/san-pham.html|M10
+man_khong_to_lech|v3/src/ui/san-pham/trang/san-pham.html|M10
+man_chu_mien_ship|v3/src/ui/san-pham/trang/san-pham.html|M2
+man_tu_choi_moi_lan_bo|v3/src/ui/san-pham/trang/san-pham.html|M12
+man_doi_y_mat_tu_choi|v3/src/ui/san-pham/trang/san-pham.html|M13
+man_thu_lai_mat_ket_qua|v3/src/ui/san-pham/trang/san-pham.html|M11
+man_ti_le_giau_khong_ro|v3/src/ui/san-pham/trang/san-pham.html|M2
+ti_le_chi_team|src/products/gia-tu-don-pos.js|A20 A21 X10
+dau_bo_lech|src/products/gia-tu-don-pos.js|X13
 '
 while IFS='|' read -r ten tep doi_do; do
   [ -z "$ten" ] && continue
@@ -163,7 +189,8 @@ old, new = {
   'bo_vai': ("  batBuocVai(bc, ...VAI_SUA_DUOC);\n  return hamGiaTuDon('xemGiaTuDon')(bc, { soNgay });", "  return hamGiaTuDon('xemGiaTuDon')(bc, { soNgay });"),
   'nhat_ky_sai_ma': ('        hanhDong: HANH_DONG.DIEN_GIA_TU_DON_POS, doiTuongLoai: BANG,', '        hanhDong: HANH_DONG.DOI_SOAT_BAN_SAO, doiTuongLoai: BANG,'),
   'man_bo_dau': ('body: JSON.stringify({ dauXemTruoc: du.dauXemTruoc, monIds, soNgay: du.soNgay })', 'body: JSON.stringify({ monIds, soNgay: du.soNgay })'),
-  'man_giu_chon_sau_409': ('      g.du = j.duLieu.xemTruoc; g.boChon = chonSanGtd(g.du);', '      g.du = j.duLieu.xemTruoc;'),
+  # (vòng 2 thay `man_giu_chon_sau_409`): 409 mà không tính lại tập chọn ⇒ lựa chọn TAY trên dòng lệch mang sang bảng người chưa thấy
+  'man_409_khong_tinh_lai': ('      g.du = j.duLieu.xemTruoc; tinhChonGtd(g);', '      g.du = j.duLieu.xemTruoc;'),
   # ── bản vá sau /code-review (luật 26: bản vá cũng là code mới — đảo-vá đo bản SAU vá) ──
   'phan_tan_chi_bac': ('  if (tan.length) {', '  if (false) {'),
   'bo_thu_tu_toan_phan': (': (a.cod - b.cod) || (a.soDon - b.soDon));', ': 0);'),
@@ -173,7 +200,33 @@ old, new = {
   'man_ve_de': ("const dangXemGtd = (g) => GTD === g && new URL(location.href).searchParams.get('xem') === 'gia-tu-don';", 'const dangXemGtd = () => true;'),
   'man_dem_page_trung': ('new Set(kq.ghi.flatMap((m) => (m.dongBo && Array.isArray(m.dongBo.page) ? m.dongBo.page : []).map((p) => String(p.pageId)))).size',
                          'kq.ghi.flatMap((m) => (m.dongBo && Array.isArray(m.dongBo.page) ? m.dongBo.page : [])).length'),
-  'man_chon_ca_vuot_tran': ('const chonSanGtd = (du) => new Set(du.deXuat.slice(du.tranMotLuot || du.deXuat.length).map((d) => d.monId));', 'const chonSanGtd = () => new Set();'),
+  'man_chon_ca_vuot_tran': ('    if (nguoiBo.has(d.monId) || lechGanNhat(d) || n >= tran) bo.add(d.monId); else n += 1;',
+                            '    if (nguoiBo.has(d.monId) || lechGanNhat(d)) bo.add(d.monId); else n += 1;'),
+  # ── vòng 2 (đối kháng F1–F4 + «Miễn ship») — bản vá cũng là code mới (luật 26) ──
+  'bo_khong_ro_team': ("  if (lechKr.length) return bo('khac_gia_khong_ro_team'", "  if (false) return bo('khac_gia_khong_ro_team'"),
+  'khong_ro_bo_nguong': ('    if (muc.cod !== b.gia || muc.n / lay < ts.nguong) {', '    if (muc.cod !== b.gia) {'),
+  'khong_ro_khac_te': ("  if (teKr.length) {\n    return bo('lech_tien_te'", "  if (false) {\n    return bo('lech_tien_te'"),
+  'gan_nhat_chi_team': ('    if (gop[0].team == null) b.ganNhat = { gia: gop[0].cod, ngay: gop[0].ngay, khongRoTeam: true };\n', ''),
+  'bo_gia_tay_xoa': ("    if (m.gia_tay) { boMon(g, m, 'nguoi_da_xoa_gia', CHI_TIET_XOA_GIA); continue; }\n", ''),
+  'bo_mien_ship': ('tien_te: tienTe, mien_ship: true }));', 'tien_te: tienTe }));'),
+  'nhat_ky_mien_ship': ("      + (m.mienShip ? ' · bậc đã gồm ship · miễn ship' : '');", "      + '';"),
+  'man_quen_nguoi_bo': ('    if (nguoiBo.has(d.monId) || lechGanNhat(d) || n >= tran) bo.add(d.monId); else n += 1;',
+                        '    if (lechGanNhat(d) || n >= tran) bo.add(d.monId); else n += 1;'),
+  'man_409_quen_nguoi_bo': ('      g.du = j.duLieu.xemTruoc; tinhChonGtd(g);', '      g.du = j.duLieu.xemTruoc; g.nguoiBo = new Set(); tinhChonGtd(g);'),
+  'man_tai_lai_quen_nguoi_bo': ("g.loiDoc = ''; tinhChonGtd(g); }", "g.loiDoc = ''; g.nguoiBo = new Set(); tinhChonGtd(g); }"),
+  'man_bo_chon_khong_nho': ('if (g.macDinh.has(id) || g.daTuChoi.has(id)) { g.nguoiBo.add(id); g.daTuChoi.add(id); }', ''),
+  # ── sau /code-review vòng 2 (luật 26: đảo-vá đo bản SAU vá) ──
+  'man_tu_choi_moi_lan_bo': ('if (g.macDinh.has(id) || g.daTuChoi.has(id)) { g.nguoiBo.add(id); g.daTuChoi.add(id); }', '{ g.nguoiBo.add(id); g.daTuChoi.add(id); }'),
+  'man_doi_y_mat_tu_choi': ('if (g.macDinh.has(id) || g.daTuChoi.has(id)) {', 'if (g.macDinh.has(id)) {'),
+  'man_thu_lai_mat_ket_qua': ('ketQua: cu ? cu.ketQua : null', 'ketQua: null'),
+  'man_ti_le_giau_khong_ro': ("${b.soDonKhongRo ? ` (gồm ${so(b.soDonKhongRo)} đơn chưa ghép team)` : ''}", ''),
+  'ti_le_chi_team': ('      Object.assign(b, { soDonMuc: muc.n, soDonGanDay: lay, tiLe: muc.n / lay, soDonKhongRo: layKhongRo });', '      Object.assign(b, {});'),
+  'dau_bo_lech': ('b.ganNhat && b.ganNhat.gia !== b.gia ? 1 : 0])', '0])'),
+  'man_thu_lai_mat_bo': ("    $('#thuGiaTuDon').onclick = () => veGiaTuDon(g); return;", "    $('#thuGiaTuDon').onclick = () => veGiaTuDon(); return;"),
+  'man_chon_san_lech': ('    if (nguoiBo.has(d.monId) || lechGanNhat(d) || n >= tran) bo.add(d.monId); else n += 1;',
+                        '    if (nguoiBo.has(d.monId) || n >= tran) bo.add(d.monId); else n += 1;'),
+  'man_khong_to_lech': ("${lechGanNhat(d) ? ' data-muc=\"warning\"' : ''}>", '>'),
+  'man_chu_mien_ship': ('      Đã gồm ship · miễn ship (bậc ghi', '      Đã gồm ship (bậc ghi'),
 }[ten]
 assert s.count(old) == 1, (ten, old[:60])
 p.write_text(s.replace(old, new), encoding='utf-8')
@@ -195,7 +248,7 @@ so "lượt khôi phục bản sao ⇒ fail" "${f1:-?}"
 muc "⑤ bộ ca LL15d riêng + lưới hồi quy gần"
 for t in test/ll15d-marketer-san-pham.test.mjs v3/test/b/ll15d-marketer-man.test.mjs test/gsp3-doi-soat.test.mjs v3/test/b/gsp3-doi-soat-man.test.mjs \
   test/ve8b-gia-page.test.mjs v3/test/b/ve8b-man.test.mjs v3/test/b/phan-quyen-nam-vai.test.mjs test/tt1-tien-te-ngoai-gcc.test.mjs \
-  test/ll17d-team-theo-ngay.test.mjs v3/test/b/san-pham.test.mjs; do
+  test/ll17d-team-theo-ngay.test.mjs v3/test/b/san-pham.test.mjs test/tt1b-te-thi-truong.test.mjs test/l2-m3-rap-prompt.test.js; do
   [ -f "$t" ] || { truot "lưới gần $t: tệp không còn"; continue; }
   o=$(chay_ca "$GOC" "$t"); p=$(dem "$o" pass); f=$(dem "$o" fail); p=${p:-0}; f=${f:-1}
   [ "$f" -ne 0 ] && echo "$o" | grep -E "^\s*✖ " | sort -u | head -3 | sed 's/^/   ↳ /'

@@ -11,13 +11,18 @@ import { datKhoGoc, datPheuNhatKyGoc } from '../../src/ui/san-pham/kho-goc.js';
 import { LoiSanPhamGoc } from '../../../src/products/san-pham-goc.js';
 import { CHU_LY_DO } from '../../../src/products/gia-tu-don-pos.js';
 
-const bac = (soLuong, gia, te, { gn = gia, ...o } = {}) => ({ soLuong, gia, giaLon: te === 'TWD' ? gia : gia / 100, tong: 11, soDonGanDay: 10,
-  soDonMuc: 9, tiLe: 0.9, ganNhat: { gia: gn, giaLon: te === 'TWD' ? gn : gn / 100, ngay: '2026-09-20' }, tu: '2026-09-01', den: '2026-09-20', ...o });
-const monA = { monId: '41', posMa: '111:va', ten: '264 - Gold A', sku: '264', shopId: '111', market: 'Saudi', tienTe: 'SAR', gocId: '9', maGoc: 'ga',
-  tenGoc: 'Gold A', bac: [bac(1, 9900, 'SAR', { gn: 8900 }), bac(2, 15900, 'SAR', { tong: 5, soDonGanDay: 5, soDonMuc: 5, tiLe: 1 })],
-  boBac: [{ soLuong: 3, lyDo: 'it_don', tong: 1 }], soDon: 17, tu: '2026-09-01', den: '2026-09-20' };
+const bac = (soLuong, gia, te, { gn = gia, gnKr = false, ...o } = {}) => ({ soLuong, gia, giaLon: te === 'TWD' ? gia : gia / 100, tong: 11, soDonGanDay: 10,
+  soDonMuc: 9, tiLe: 0.9, ganNhat: { gia: gn, giaLon: te === 'TWD' ? gn : gn / 100, ngay: '2026-09-20', ...(gnKr ? { khongRoTeam: true } : {}) },
+  tu: '2026-09-01', den: '2026-09-20', ...o });
+// Vòng 2 · F4: dòng có «giá đơn gần nhất» ≠ giá bậc bị TÔ và KHÔNG chọn sẵn ⇒ món A mặc định khớp (gn = giá bậc); `lech` dựng dòng lệch
+// (bậc 99 SAR, đơn gần nhất 89 SAR — đúng dòng fixture M2 vòng 1 mà đối kháng F4 chỉ ra «vẫn chọn sẵn»).
+const taoMonA = (lech = false) => ({ monId: '41', posMa: '111:va', ten: '264 - Gold A', sku: '264', shopId: '111', market: 'Saudi', tienTe: 'SAR', gocId: '9', maGoc: 'ga',
+  tenGoc: 'Gold A', bac: [bac(1, 9900, 'SAR', lech ? { gn: 8900 } : {}), bac(2, 15900, 'SAR', { tong: 5, soDonGanDay: 5, soDonMuc: 5, tiLe: 1 })],
+  boBac: [{ soLuong: 3, lyDo: 'it_don', tong: 1 }], soDon: 17, tu: '2026-09-01', den: '2026-09-20' });
+const monA = taoMonA();
 const monTw = { monId: '42', posMa: '219:vt', ten: '264 - Gold A', sku: '264', shopId: '219', market: 'Taiwan', tienTe: 'TWD', gocId: '9', maGoc: 'ga',
-  tenGoc: 'Gold A', bac: [bac(1, 990, 'TWD')], boBac: [], soDon: 11, tu: '2026-09-01', den: '2026-09-20' };
+  // F1 vòng 2: cửa sổ gần của TW có 2 đơn marketer chưa ghép team (cùng mức) — đơn mới nhất là một trong số đó
+  tenGoc: 'Gold A', bac: [bac(1, 990, 'TWD', { gnKr: true, soDonKhongRo: 2 })], boBac: [], soDon: 11, tu: '2026-09-01', den: '2026-09-20' };
 const xemTruocGia = (o = {}) => ({
   soNgay: 60, ganDay: 10, toiThieu: 3, nguong: 0.8, deXuat: [monA, monTw],
   bo: [{ posMa: '111:vb', monId: '43', ten: '265 - B', sku: '265', shopId: '111', lyDo: 'da_co_gia', chiTiet: 'đã có 2 bậc' },
@@ -27,9 +32,11 @@ const xemTruocGia = (o = {}) => ({
   shopKhongDon: [{ shopId: '222', market: 'Kuwait' }], dauXemTruoc: 'dau-1', ...o,
 });
 
-async function dung(t, { boXem = false, boPheu = false, doiGiua = false, hongMot = false, tran, chamAp = false } = {}) {
+async function dung(t, { boXem = false, boPheu = false, doiGiua = false, hongMot = false, tran, chamAp = false, lech = false, hongXemSauAp = 0, them = [] } = {}) {
   const goi = []; const audit = [];
-  let xt = xemTruocGia(tran ? { tranMotLuot: tran } : {});
+  let daAp = false; let conHongXem = hongXemSauAp;   // hongXemSauAp: N lượt xem trước ĐẦU TIÊN sau một lượt áp thành công ném 502 (BigQuery hỏng)
+  const mA = lech ? taoMonA(true) : monA;
+  let xt = xemTruocGia({ deXuat: [mA, monTw, ...them], ...(tran ? { tranMotLuot: tran } : {}) });
   let moCua = null;   // chamAp: lượt áp đứng chờ tới khi ca mở cửa (dựng «người bấm sang màn khác trong lúc chờ»)
   const cua = chamAp ? new Promise((r) => { moCua = r; }) : null;
   const noop = async () => ({});
@@ -37,12 +44,16 @@ async function dung(t, { boXem = false, boPheu = false, doiGiua = false, hongMot
     ...Object.fromEntries(['cho', 'tao', 'sua', 'bo', 'chiTiet', 'monChuaGan', 'gan', 'go', 'kienThuc', 'goiYGop', 'gop', 'luuGia', 'ganPage', 'goPage'].map((x) => [x, noop])),
     ds: async () => [], dem: async () => ({}), dsChuyen: async () => ({ viec: [], dem: { chuaGan: 0, choDoiSoat: 0, boQua: 0, chuaXong: 0 }, shopCuaTeam: [], gocCuaTeam: [] }),
     ...(boXem ? {} : {
-      xemGiaTuDon: async (bc, x) => { goi.push(['xem', bc.teamId, x]); return xt; },
+      xemGiaTuDon: async (bc, x) => {
+        goi.push(['xem', bc.teamId, x]);
+        if (daAp && conHongXem > 0) { conHongXem -= 1; throw new LoiSanPhamGoc('đọc đơn POS từ BigQuery hỏng: hết giờ', 'bq_hong', 502); }
+        return xt;
+      },
       apGiaTuDon: async (bc, x) => {
         goi.push(['ap', bc.teamId, JSON.parse(JSON.stringify(x))]);
         if (cua) await cua;
         if (doiGiua && x.dauXemTruoc === 'dau-1') {   // một món có giá giữa lúc xem và lúc áp ⇒ máy chủ tính lại, dấu mới đi kèm 409
-          xt = xemTruocGia({ deXuat: [monA], dem: { da_co_gia: 3, doi_gia_gan_day: 1 }, dauXemTruoc: 'dau-2' });
+          xt = xemTruocGia({ deXuat: [mA], dem: { da_co_gia: 3, doi_gia_gan_day: 1 }, dauXemTruoc: 'dau-2', ...(tran ? { tranMotLuot: tran } : {}) });
           throw Object.assign(new LoiSanPhamGoc('bảng xem trước đã đổi từ lúc bạn xem — xem lại rồi áp', 'xem_truoc_da_doi', 409), { duLieu: { xemTruoc: xt } });
         }
         const chon = (x.monIds || xt.deXuat.map((d) => d.monId)).map((id) => xt.deXuat.find((d) => d.monId === id));
@@ -54,6 +65,9 @@ async function dung(t, { boXem = false, boPheu = false, doiGiua = false, hongMot
             // bước đẩy bản chép của cửa lưu giá: bình thường `{ ok, page[] }`; cửa ghi bot khoá ⇒ `{ ok: false, ghiChu }` (giá ĐÃ lưu)
             dongBo: hongMot ? { ok: false, ghiChu: 'cửa ghi kho bot đang đóng' } : { ok: true, page: [{ pageId: 'p1' }, { pageId: 'p2' }] } });
         }
+        // Như máy chủ thật: món đã ghi rời bảng (thành da_co_gia), bảng còn lại mang dấu MỚI — màn tải lại sau áp đọc bảng này.
+        const da = new Set(ghi.map((m) => m.monId)); daAp = true;
+        xt = { ...xt, deXuat: xt.deXuat.filter((d) => !da.has(d.monId)), dauXemTruoc: `dau-sau-${goi.length}` };
         return { soNgay: xt.soNgay, ghi, hong };
       },
     }),
@@ -145,11 +159,15 @@ test('M2 · màn xem trước: bảng SKU · tên · shop · bậc · số đơn
   const hang = m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-mon]');
   assert.deepEqual(hang.map((h) => h.dataset.gtdMon), ['41', '42']);
   const a = hang[0].textContent;
-  for (const x of ['264', '264 - Gold A', 'Saudi', '111', '1 = 99 SAR', '2 = 159 SAR', '11', '9/10', '89 SAR', '2026-09-20']) assert.ok(a.includes(x), `dòng A thiếu «${x}»: ${a}`);
+  for (const x of ['264', '264 - Gold A', 'Saudi', '111', '1 = 99 SAR', '2 = 159 SAR', '11', '9/10', '99 SAR · 2026-09-20', '159 SAR · 2026-09-20']) assert.ok(a.includes(x), `dòng A thiếu «${x}»: ${a}`);
   assert.match(hang[1].textContent, /1 = 990 TWD/, 'TWD không xu — màn không chia');
+  assert.match(hang[1].textContent, /9\/10 \(gồm 2 đơn chưa ghép team\)/, 'tỷ lệ của tập gộp nói số đơn chưa ghép team (/code-review vòng 2 #2)');
+  assert.match(hang[1].textContent, /990 TWD · 2026-09-20 \(đơn chưa ghép team\)/, 'đơn gần nhất không rõ team — nói ra');
+  assert.equal(hang[1].getAttribute('data-muc'), null, 'cùng mức ⇒ không tô');
   assert.match(m.$('#demBoGiaTuDon').textContent, new RegExp(`${CHU_LY_DO.da_co_gia.replace(/[()]/g, '.')}.*2`));
   assert.match(m.$('#demBoGiaTuDon').textContent, /211 - Ring.*10 đơn gần nhất 37 EUR · cả cửa sổ 29 EUR/, 'món bỏ vì đổi giá nói cả hai mức');
   assert.match(phai, /chỉ điền món CHƯA có giá/i);
+  assert.match(phai, /Đã gồm ship · miễn ship/, 'vòng 2 (người quyết 07/10): bậc ghi mien_ship = true — màn nói đúng thứ sẽ ghi');
   assert.match(phai, /Theo thị trường/);
   assert.match(phai, /LỆCH ở bước đối soát/);
   assert.match(phai, /Kuwait \(222\)/, 'shop không có đơn trong cửa sổ — nói ra, kẻo người tưởng hỏng');
@@ -170,20 +188,113 @@ test('M3 · màn: bỏ chọn một món ⇒ «Áp dụng 1 món»; bấm ⇒ g�
   assert.match(m.$('#phai').textContent, /Đẩy bản chép sang 2 page/);
 });
 
-test('M4 · màn: 409 «xem trước đã đổi» ⇒ vẽ bảng MỚI máy chủ gửi kèm, nói rõ, chọn lại từ đầu; bấm lại mang dấu mới', async (t) => {
+test('M4 · màn: 409 «xem trước đã đổi» ⇒ vẽ bảng MỚI máy chủ gửi kèm, nói rõ; món người đã BỎ CHỌN vẫn bỏ chọn (F3 vòng 2); chọn lại ⇒ mang dấu mới', async (t) => {
   const d = await dung(t, { doiGiua: true });
   const m = await d.mo('qt', '/san-pham?xem=gia-tu-don');
-  // Bỏ chọn A rồi áp (chỉ TW) — bảng mới chỉ còn A: lựa chọn cũ («bỏ A») làm trên bảng người chưa thấy ⇒ phải XOÁ, A về «chọn».
+  // Bỏ chọn A (nghi giá) rồi áp (chỉ TW) ⇒ 409, bảng mới chỉ còn A. Luật vòng 2 (đối kháng F3): quyết định «KHÔNG áp A» của người GIỮ
+  // qua 409 — vòng 1 xoá nó và chọn sẵn lại A (thước cũ khẳng định đúng hành vi đó — đã sửa theo luật mới).
   const oA = m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]').find((x) => x.dataset.gtdChon === '41');
   oA.checked = false; await oA.onchange();
   await m.$('[data-ap-gtd]').click(); await m.cho();
   assert.match(m.$('#phai').textContent, /đã đổi từ lúc bạn xem/);
   assert.deepEqual(m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-mon]').map((h) => h.dataset.gtdMon), ['41']);
-  assert.ok(m.$('#bangGiaTuDon').querySelector('[data-gtd-chon]').checked, 'lựa chọn cũ bị xoá — món của bảng mới mặc định được chọn');
+  const oA2 = m.$('#bangGiaTuDon').querySelector('[data-gtd-chon]');
+  assert.equal(oA2.checked, false, 'A người đã bỏ chọn KHÔNG được chọn sẵn lại sau 409');
+  assert.match(m.$('[data-ap-gtd]').textContent, /Áp dụng 0 món/);
+  assert.ok(m.$('[data-ap-gtd]').disabled, 'không món nào chọn ⇒ nút tắt — bấm vội không ghi A');
+  oA2.checked = true; await oA2.onchange();   // người soát lại và CHỌN A
   assert.match(m.$('[data-ap-gtd]').textContent, /Áp dụng 1 món/);
   await m.$('[data-ap-gtd]').click(); await m.cho();
   assert.deepEqual(m.goi.filter((x) => x.phuongThuc === 'POST').map((x) => [x.than.dauXemTruoc, x.than.monIds]), [['dau-1', ['42']], ['dau-2', ['41']]]);
   assert.match(m.$('#phai').textContent, /Đã điền giá 1 món/);
+});
+
+test('M9 · F3 (vòng 2) màn GIỮ món người đã bỏ chọn qua lượt tải lại SAU ÁP (bước «áp tiếp»); món mới của lượt kế vẫn chọn sẵn theo trần', async (t) => {
+  const d = await dung(t);
+  const m = await d.mo('qt', '/san-pham?xem=gia-tu-don');
+  const o = (id) => m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]').find((x) => x.dataset.gtdChon === id);
+  const oA = o('41'); oA.checked = false; await oA.onchange();   // repro RM1 đối kháng: A nghi giá ⇒ bỏ chọn, áp phần còn lại
+  { const x = o('41'); x.checked = true; await x.onchange(); }                  // đổi ý: chọn lại A …
+  { const x = o('41'); x.checked = false; await x.onchange(); }                 // … rồi lại bỏ — vẫn là «từ chối»
+  await m.$('[data-ap-gtd]').click(); await m.cho();
+  assert.match(m.$('#phai').textContent, /Đã điền giá 1 món/);
+  assert.ok(o('41'), 'A còn trong bảng tải lại');
+  assert.equal(o('41').checked, false, 'A KHÔNG được chọn sẵn lại sau lượt áp');
+  assert.ok(m.$('[data-ap-gtd]').disabled);
+  await m.$('[data-ap-gtd]').click(); await m.cho();
+  assert.deepEqual(d.goi.filter((x) => x[0] === 'ap').map((x) => x[2].monIds), [['42']], 'bấm lại nút tắt không gửi A');
+  // «áp tiếp» khi quá trần: lượt 1 áp A (trần 1) ⇒ bảng tải lại chọn sẵn món kế (TW) — giữ lựa chọn không làm chết bước áp tiếp
+  const d2 = await dung(t, { tran: 1 });
+  const m2 = await d2.mo('qt', '/san-pham?xem=gia-tu-don');
+  await m2.$('[data-ap-gtd]').click(); await m2.cho();
+  const o2 = m2.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]');
+  assert.deepEqual(o2.map((x) => [x.dataset.gtdChon, x.checked]), [['42', true]]);
+  assert.match(m2.$('[data-ap-gtd]').textContent, /Áp dụng 1 món/);
+});
+
+test('M11 · F3 (vòng 2) bảng tải lại sau áp HỎNG (BigQuery 502) ⇒ «Thử lại» vẫn giữ món người đã bỏ chọn', async (t) => {
+  const d = await dung(t, { hongXemSauAp: 1 });
+  const m = await d.mo('qt', '/san-pham?xem=gia-tu-don');
+  const oA = m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]').find((x) => x.dataset.gtdChon === '41');
+  oA.checked = false; await oA.onchange();
+  await m.$('[data-ap-gtd]').click(); await m.cho();
+  assert.match(m.$('#phai').textContent, /Đã điền giá 1 món/, 'kết quả lượt áp vẫn hiện');
+  assert.match(m.$('#phai').textContent, /Chưa đọc được đơn POS để điền giá/);
+  await m.$('#thuGiaTuDon').click(); await m.cho();
+  assert.match(m.$('#phai').textContent, /Đã điền giá 1 món/, '«Thử lại» không xoá kết quả lượt áp vừa xong (/code-review vòng 2 #6)');
+  const o = m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]');
+  assert.deepEqual(o.map((x) => [x.dataset.gtdChon, x.checked]), [['41', false]], 'A người đã bỏ chọn vẫn bỏ chọn sau «Thử lại»');
+  assert.ok(m.$('[data-ap-gtd]').disabled);
+});
+
+test('M12 · (/code-review vòng 2 #4) tích rồi bỏ tích một món KHÔNG chọn sẵn (vượt trần) là «đổi ý», không phải «từ chối» ⇒ lượt áp tiếp vẫn chọn sẵn nó', async (t) => {
+  const d = await dung(t, { tran: 1 });
+  const m = await d.mo('qt', '/san-pham?xem=gia-tu-don');
+  const o = (id) => m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]').find((x) => x.dataset.gtdChon === id);
+  assert.equal(o('42').checked, false, 'TW vượt trần — không chọn sẵn');
+  const a = o('42'); a.checked = true; await a.onchange();
+  const b = o('42'); b.checked = false; await b.onchange();
+  assert.match(m.$('[data-ap-gtd]').textContent, /Áp dụng 1 món/);
+  await m.$('[data-ap-gtd]').click(); await m.cho();          // áp A
+  assert.deepEqual(m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]').map((x) => [x.dataset.gtdChon, x.checked]), [['42', true]],
+    'TW được chọn sẵn ở lượt kế — người chưa từng từ chối nó');
+});
+
+test('M13 · (/code-review vòng 2 #4) món người đã từ chối, ở bảng tải lại người tích rồi bỏ tích (đổi ý hai lần) ⇒ vẫn là từ chối qua lượt tải lại kế', async (t) => {
+  const monX = { monId: '46', posMa: '111:vx', ten: '266 - X', sku: '266', shopId: '111', market: 'Saudi', tienTe: 'SAR', gocId: '10', maGoc: 'gx',
+    tenGoc: 'X', bac: [bac(1, 8900, 'SAR')], boBac: [], soDon: 11, tu: '2026-09-01', den: '2026-09-20' };
+  const d = await dung(t, { tran: 1, them: [monX] });
+  const m = await d.mo('qt', '/san-pham?xem=gia-tu-don');
+  const o = (id) => m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]').find((x) => x.dataset.gtdChon === id);
+  const bam = async (id, v) => { const x = o(id); x.checked = v; await x.onchange(); };
+  await bam('41', false);                                       // từ chối A (đang chọn sẵn)
+  await bam('42', true);                                        // chọn TW thay
+  await m.$('[data-ap-gtd]').click(); await m.cho();            // áp TW ⇒ bảng [A, X]: A bỏ chọn, X chọn sẵn
+  assert.deepEqual(m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]').map((x) => [x.dataset.gtdChon, x.checked]), [['41', false], ['46', true]]);
+  await bam('41', true); await bam('41', false);                // đổi ý trên bảng mới: tích A rồi bỏ lại
+  await m.$('[data-ap-gtd]').click(); await m.cho();            // áp X ⇒ bảng [A]
+  assert.deepEqual(m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]').map((x) => [x.dataset.gtdChon, x.checked]), [['41', false]],
+    'A vẫn là món người từ chối — không được chọn sẵn');
+  assert.deepEqual(d.goi.filter((x) => x[0] === 'ap').map((x) => x[2].monIds), [['42'], ['46']]);
+});
+
+test('M10 · F4 (vòng 2) giá đơn gần nhất ≠ giá bậc ⇒ dòng TÔ + chữ «khác bậc» + KHÔNG chọn sẵn; người chọn tay được; 409 ⇒ phải chọn lại', async (t) => {
+  const d = await dung(t, { lech: true, doiGiua: true });
+  const m = await d.mo('qt', '/san-pham?xem=gia-tu-don');
+  const hang = (id) => m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-mon]').find((h) => h.dataset.gtdMon === id);
+  const o = (id) => m.$('#bangGiaTuDon').querySelectorAll('[data-gtd-chon]').find((x) => x.dataset.gtdChon === id);
+  assert.equal(hang('41').getAttribute('data-muc'), 'warning', 'dòng A (bậc 99 · đơn gần nhất 89) được tô');
+  assert.equal(hang('42').getAttribute('data-muc'), null, 'dòng khớp không tô');
+  assert.match(hang('41').textContent, /89 SAR · 2026-09-20 — khác bậc/);
+  assert.equal(o('41').checked, false, 'dòng lệch KHÔNG chọn sẵn');
+  assert.equal(o('42').checked, true);
+  assert.match(m.$('[data-ap-gtd]').textContent, /Áp dụng 1 món/);
+  assert.match(m.$('#phai').textContent, /tô vạch cảnh báo[\s\S]*không chọn sẵn/);
+  const oA = o('41'); oA.checked = true; await oA.onchange();   // người soát và chọn tay
+  assert.match(m.$('[data-ap-gtd]').textContent, /Áp dụng 2 món/);
+  await m.$('[data-ap-gtd]').click(); await m.cho();          // 409 ⇒ bảng mới chỉ còn A (vẫn lệch)
+  assert.deepEqual(d.goi.filter((x) => x[0] === 'ap').map((x) => x[2].monIds), [['41', '42']]);
+  assert.equal(o('41').checked, false, 'bảng mới sau 409: dòng lệch phải được chọn LẠI trên bảng mới (không mang lựa chọn tay qua bảng chưa thấy)');
 });
 
 test('M5 · màn: món hỏng giữa lượt ⇒ báo rõ món nào, vì sao; món khác vẫn báo đã điền; bỏ chọn hết ⇒ nút tắt', async (t) => {

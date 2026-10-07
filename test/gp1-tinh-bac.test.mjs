@@ -91,12 +91,13 @@ test('A7 · (e) SKU «sp test» (so bằng chuanSku: hoa/thường, khoảng tr�
     'SKU chỉ CHỨA chữ test không phải SKU thử');
 });
 
-test('A8 · (f) TWD 990 ⇒ bậc 990 (TT1: POS không xu) · offers đơn vị LỚN: TWD 990 · SAR 99 · EUR 37 / 49,99', () => {
+test('A8 · (f) TWD 990 ⇒ bậc 990 (TT1: POS không xu) · offers đơn vị LỚN: TWD 990 · SAR 99 · EUR 37 / 49,99 · mien_ship = true (người quyết 07/10)', () => {
   const g = motNhom(Array.from({ length: 5 }, (_, i) => dong(1, 990, ngayThu('2026-09-01', i), { tien_te: 'TWD', shop_id: '219' })));
   assert.deepEqual(g.bac.map((b) => b.gia), [990]);
-  assert.deepEqual(offersTuBac(g.bac, 'TWD'), [{ so_luong: 1, price: 990, tien_te: 'TWD' }]);
+  // Vòng 2 (người quyết 07/10 «Miễn ship»): bậc = COD TRỌN GÓI đã gồm ship ⇒ mỗi bậc mang `mien_ship: true` — thước đổi theo luật mới.
+  assert.deepEqual(offersTuBac(g.bac, 'TWD'), [{ so_luong: 1, price: 990, tien_te: 'TWD', mien_ship: true }]);
   assert.deepEqual(offersTuBac([{ soLuong: 1, gia: 9900 }, { soLuong: 2, gia: 15900 }], 'SAR'),
-    [{ so_luong: 1, price: 99, tien_te: 'SAR' }, { so_luong: 2, price: 159, tien_te: 'SAR' }]);
+    [{ so_luong: 1, price: 99, tien_te: 'SAR', mien_ship: true }, { so_luong: 2, price: 159, tien_te: 'SAR', mien_ship: true }]);
   assert.deepEqual(offersTuBac([{ soLuong: 1, gia: 3700 }, { soLuong: 2, gia: 4999 }], 'EUR').map((o) => o.price), [37, 49.99]);
   assert.throws(() => offersTuBac([{ soLuong: 1, gia: 100 }], 'GBP'), /GBP/, 'tệ lạ ⇒ ném, không đoán hệ số');
 });
@@ -138,6 +139,65 @@ test('A17 · (/code-review #7) hai dòng cùng ngày cùng giờ, khác mức: t
   const a = dong(9, 8900, '2026-09-25'); const b = dong(9, 9900, '2026-09-25');   // cùng `luc` 10:00 — đồng hạng
   assert.deepEqual(motNhom([...cu, a, b]), motNhom([...cu, b, a]));
   assert.deepEqual(motNhom([b, ...cu, a]), motNhom([a, ...cu.slice().reverse(), b]));
+});
+
+test('A19 · F1 (vòng 2) đơn MỚI của marketer chưa ghép team khác mức ⇒ nhóm của team KHÔNG đề xuất giá cũ «10/10» — khac_gia_khong_ro_team, nói cả hai mức', () => {
+  const e = { tien_te: 'EUR', sku: '211' };
+  const team = Array.from({ length: 10 }, (_, i) => dong(1, 2900, ngayThu('2026-09-01', i), e));                            // 01–10/09
+  const khongRo = Array.from({ length: 8 }, (_, i) => dong(1, 3700, ngayThu('2026-09-20', i), { ...e, team_code: null }));   // 20–27/09
+  const kq = tinhBac([...team, ...khongRo]);
+  const g = kq.find((x) => x.team === 'tieu-alpha');
+  assert.equal(g.lyDo, 'khac_gia_khong_ro_team');
+  assert.equal(g.bac.length, 0, 'không đề xuất 29 EUR «10/10 đơn gần nhất» khi 8 đơn mới hơn đều 37 EUR');
+  assert.match(g.chiTiet, /bậc 1: 10 đơn gần nhất \(gồm 8 đơn của marketer chưa ghép team \/ sale dùng chung\) mức nhiều nhất 37 EUR 8\/10 · đơn của team 29 EUR/);
+  assert.equal(kq.find((x) => x.team === null).lyDo, 'khong_ghep_team', 'nhóm không rõ team vẫn là nhóm riêng, không thành giá của team');
+  // ít đơn không rõ team (3 mới hơn, khác mức) ⇒ 7/10 gộp < 0,8 ⇒ cũng không đề xuất (cùng luật «3 đơn khác mức ⇒ không chắc»)
+  const ba = tinhBac([...team, ...khongRo.slice(0, 3)]).find((x) => x.team === 'tieu-alpha');
+  assert.equal(ba.lyDo, 'khac_gia_khong_ro_team');
+  // bậc 2 sạch không cứu bậc 1: bỏ CẢ món (không nửa bảng)
+  const hai = tinhBac([...team, ...khongRo, ...Array.from({ length: 5 }, (_, i) => dong(1, 5000, ngayThu('2026-09-01', i), { ...e, so_luong: 2 }))])
+    .find((x) => x.team === 'tieu-alpha');
+  assert.equal(hai.lyDo, 'khac_gia_khong_ro_team');
+  assert.equal(hai.bac.length, 0);
+});
+
+test('A20 · F1 biên: đơn không rõ team CÙNG mức ⇒ vẫn đề xuất · khác mức nhưng CŨ (ngoài 10 đơn gần nhất) ⇒ không chặn · team KHÁC đã ghép không chen · «giá đơn gần nhất» xét cả đơn không rõ team (F4)', () => {
+  const team = Array.from({ length: 10 }, (_, i) => dong(1, 2900, ngayThu('2026-09-01', i)));
+  const cuaTeam = (ds) => tinhBac(ds).find((x) => x.team === 'tieu-alpha');
+  let g = cuaTeam([...team, dong(3, 2900, '2026-09-20', { team_code: null })]);
+  assert.equal(g.lyDo, null, 'cùng mức ⇒ không chặn oan');
+  // /code-review vòng 2 #2: có đơn không rõ team trong cửa sổ ⇒ tỷ lệ trên màn là của TẬP GỘP, kèm số đơn không rõ team (nói ra)
+  assert.deepEqual(g.bac.map((b) => [b.gia, b.soDonMuc, b.soDonGanDay, b.soDonKhongRo]), [[2900, 10, 10, 3]]);
+  assert.deepEqual(g.bac[0].ganNhat, { gia: 2900, ngay: '2026-09-20', khongRoTeam: true });
+  g = cuaTeam([...team, ...Array.from({ length: 5 }, (_, i) => dong(1, 3700, ngayThu('2026-08-01', i), { team_code: null }))]);
+  assert.equal(g.lyDo, null, 'đơn không rõ team cũ hơn 10 đơn gần nhất ⇒ ngoài cửa sổ gần');
+  assert.deepEqual(g.bac[0].ganNhat, { gia: 2900, ngay: '2026-09-10' });
+  // MỘT đơn không rõ team mới nhất khác mức: 9/10 gộp vẫn 29 ⇒ đề xuất theo luật 80%, nhưng «giá đơn gần nhất» = 37 ⇒ màn tô + không chọn sẵn
+  g = cuaTeam([...team, dong(1, 3700, '2026-09-25', { team_code: null })]);
+  assert.equal(g.lyDo, null);
+  assert.deepEqual(g.bac[0].ganNhat, { gia: 3700, ngay: '2026-09-25', khongRoTeam: true });
+  assert.deepEqual([g.bac[0].soDonMuc, g.bac[0].soDonGanDay, g.bac[0].soDonKhongRo], [9, 10, 1]);
+  // đơn của team KHÁC (đã ghép) mới hơn, khác mức ⇒ không phải bằng chứng của team này (④5)
+  g = cuaTeam([...team, ...Array.from({ length: 8 }, (_, i) => dong(1, 3700, ngayThu('2026-09-20', i), { team_code: 'pialpha-eu' }))]);
+  assert.equal(g.lyDo, null);
+  assert.deepEqual(g.bac[0].ganNhat, { gia: 2900, ngay: '2026-09-10' });
+  // đơn không rõ team ở SỐ LƯỢNG khác (team không có bậc đó) ⇒ không chặn bậc của team
+  g = cuaTeam([...team, ...Array.from({ length: 8 }, (_, i) => dong(1, 9900, ngayThu('2026-09-20', i), { team_code: null, so_luong: 3 }))]);
+  assert.equal(g.lyDo, null);
+  // đơn không rõ team KHÁC TỆ cùng món (AED trên shop của nhóm SAR) — /code-review vòng 2 #7: bất thường về tệ ⇒ CHẶN, nói ra (lech_tien_te),
+  // cùng luật nhóm hai tệ của chính team (bản đầu vòng 2 bỏ qua im — đã sửa)
+  g = cuaTeam([...team, ...Array.from({ length: 2 }, (_, i) => dong(1, 3700, ngayThu('2026-08-01', i), { team_code: null, tien_te: 'AED' }))]);
+  assert.equal(g.lyDo, 'lech_tien_te');
+  assert.match(g.chiTiet, /chưa ghép team.*AED.*SAR/);
+});
+
+test('A21 · (/code-review vòng 2 #2) đơn không rõ team KHÁC mức nằm GIỮA cửa sổ (không phải đơn mới nhất), tập gộp vẫn đạt 8/10 ⇒ đề xuất nhưng tỷ lệ trên màn = 8/10 (gồm 2 đơn chưa ghép team), không «10/10»', () => {
+  const team = Array.from({ length: 10 }, (_, i) => dong(1, 2900, ngayThu('2026-09-01', i)));                      // 01–10/09
+  const giua = [dong(1, 3700, '2026-09-05', { team_code: null }), dong(1, 3700, '2026-09-06', { team_code: null })];
+  const g = tinhBac([...team, ...giua]).find((x) => x.team === 'tieu-alpha');
+  assert.equal(g.lyDo, null, '8/10 = 0,8 ⇒ đạt ngưỡng (cùng luật biên A5)');
+  assert.deepEqual([g.bac[0].gia, g.bac[0].soDonMuc, g.bac[0].soDonGanDay, g.bac[0].tiLe, g.bac[0].soDonKhongRo], [2900, 8, 10, 0.8, 2]);
+  assert.deepEqual(g.bac[0].ganNhat, { gia: 2900, ngay: '2026-09-10' }, 'đơn mới nhất là của team ⇒ không tô; tỷ lệ 8/10 mới là tín hiệu');
 });
 
 test('A11 · nhóm không ghép được team (team_code null) ⇒ khong_ghep_team · hai tệ trong một nhóm ⇒ lech_tien_te', () => {
@@ -210,9 +270,9 @@ test('A18 · nguồn BigQuery có đệm: cùng câu trong hạn ⇒ MỘT lư�
   assert.deepEqual(goi.at(-1), 'C', 'hết hạn ⇒ đọc lại');
 });
 
-test('A15 · danh mục lý do: đủ mười lý do của phiếu + chua_gop_goc, mỗi lý do có chữ tiếng Việt', () => {
+test('A15 · danh mục lý do: đủ mười lý do của phiếu + chua_gop_goc + (vòng 2) khac_gia_khong_ro_team · nguoi_da_xoa_gia, mỗi lý do có chữ tiếng Việt', () => {
   for (const k of ['it_don', 'phan_tan', 'doi_gia_gan_day', 'khong_tang', 'sku_thu', 'pos_co_gia_mon', 'lech_tien_te', 'khong_ghep_team',
-    'da_co_gia', 'khong_co_mon', 'chua_gop_goc']) {
+    'da_co_gia', 'khong_co_mon', 'chua_gop_goc', 'khac_gia_khong_ro_team', 'nguoi_da_xoa_gia']) {
     assert.ok(LY_DO.includes(k), k);
     assert.ok(CHU_LY_DO[k] && CHU_LY_DO[k].length > 5, `chữ của ${k}`);
   }

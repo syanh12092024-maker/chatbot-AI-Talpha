@@ -984,10 +984,15 @@ async function luuDoiSoat() {
 
 /* ── PHẢI · ĐIỀN GIÁ TỪ ĐƠN POS (GP1) ─────────────────────────────────────────────────
  * Máy chủ tính bảng đề xuất (COD đơn POS một món, theo số lượng) + dấu; màn chỉ VẼ và gửi lại dấu + món chọn. Số tiền đi lên màn ở đơn vị
- * LỚN (`giaLon`) — màn không chia. 409 «xem trước đã đổi» mang bảng MỚI: vẽ lại, bỏ lựa chọn cũ (chọn trên bảng người chưa thấy là sai). */
-async function veGiaTuDon() {
+ * LỚN (`giaLon`) — màn không chia. 409 «xem trước đã đổi» mang bảng MỚI: vẽ lại. Vòng 2 (đối kháng F3): món người đã BỎ CHỌN (`nguoiBo`)
+ * vẫn bỏ chọn qua mọi lượt tải lại của khung — sau áp, sau 409, sau «Thử lại»; lựa chọn TAY trên dòng không chọn sẵn thì không mang qua
+ * bảng mới (bảng người chưa thấy). `cu` = khung trước (Thử lại) — giữ `nguoiBo`. */
+async function veGiaTuDon(cu = null) {
   CHON = null; giu(null, null, 'gia-tu-don'); veTrai();
-  const g = GTD = { du: null, boChon: new Set(), dangGui: false, tb: '', loi: null, ketQua: null, loiDoc: '' };
+  // `nguoiBo` = món người đang từ chối (không chọn sẵn) · `daTuChoi` = món người từng từ chối trong khung (đổi ý rồi bỏ lại vẫn là từ chối) ·
+  // `macDinh` = món được chọn sẵn ở lượt tính gần nhất. «Thử lại» giữ cả kết quả lượt áp vừa xong (/code-review vòng 2 #6).
+  const g = GTD = { du: null, boChon: new Set(), macDinh: new Set(), nguoiBo: cu ? cu.nguoiBo : new Set(), daTuChoi: cu ? cu.daTuChoi : new Set(),
+    dangGui: false, tb: '', loi: null, ketQua: cu ? cu.ketQua : null, loiDoc: '' };
   $('#phai').innerHTML = '<div class="empty-state"><span class="skeleton"></span></div>';
   await taiGiaTuDon(g);
   if (dangXemGtd(g)) veBangGiaTuDon();
@@ -995,10 +1000,23 @@ async function veGiaTuDon() {
 // Khung còn là khung đang mở? Người bấm sang sản phẩm / gộp / chuyển trong lúc chờ máy chủ ⇒ `xem` đổi (giu) hoặc GTD đã là lượt mới —
 // kết quả về muộn KHÔNG vẽ đè lên màn khác (/code-review GP1 #3).
 const dangXemGtd = (g) => GTD === g && new URL(location.href).searchParams.get('xem') === 'gia-tu-don';
-// Mỗi lượt áp tối đa `tranMotLuot` món (máy chủ chặn 400 quá trần) ⇒ chọn sẵn đúng từng ấy món đầu bảng; áp xong bảng tải lại, chọn tiếp.
-const chonSanGtd = (du) => new Set(du.deXuat.slice(du.tranMotLuot || du.deXuat.length).map((d) => d.monId));
+// Vòng 2 · F4 (đối kháng): giá đơn gần nhất (kể cả đơn marketer chưa ghép team — tầng A) khác giá bậc ⇒ dòng TÔ + KHÔNG chọn sẵn.
+const lechGanNhat = (d) => d.bac.some((b) => b.ganNhat && b.ganNhat.gia !== b.gia);
+// Trả tập món KHÔNG chọn: món người đã bỏ chọn (F3) · dòng lệch (F4) · món vượt trần `tranMotLuot` (máy chủ chặn 400 quá trần) — còn lại
+// chọn sẵn theo thứ tự bảng tới trần; áp xong bảng tải lại, chọn sẵn lượt kế.
+function chonSanGtd(du, nguoiBo) {
+  const tran = du.tranMotLuot || du.deXuat.length; const bo = new Set(); let n = 0;
+  for (const d of du.deXuat) {
+    if (nguoiBo.has(d.monId) || lechGanNhat(d) || n >= tran) bo.add(d.monId); else n += 1;
+  }
+  return bo;
+}
+function tinhChonGtd(g) {
+  g.boChon = chonSanGtd(g.du, g.nguoiBo);
+  g.macDinh = new Set(g.du.deXuat.map((d) => d.monId).filter((id) => !g.boChon.has(id)));
+}
 async function taiGiaTuDon(g) {
-  try { g.du = await goi('/api/san-pham/gia-tu-don'); g.loiDoc = ''; g.boChon = chonSanGtd(g.du); }
+  try { g.du = await goi('/api/san-pham/gia-tu-don'); g.loiDoc = ''; tinhChonGtd(g); }
   catch (e) { g.du = null; g.loiDoc = e.message; }
 }
 const tienGtd = (giaLon, te) => `${so(giaLon)} ${te}`;
@@ -1007,15 +1025,16 @@ function hangGiaTuDon(d, g, chu) {
   const bac = (f) => d.bac.map(f).join('<br>');
   const bo = (d.boBac || []).length
     ? `<br><span class="field-hint">bỏ: ${d.boBac.map((b) => `bậc ${so(b.soLuong)} (${esc(chu[b.lyDo] || b.lyDo)})`).join(', ')}</span>` : '';
-  return `<tr data-gtd-mon="${esc(d.monId)}">
+  return `<tr data-gtd-mon="${esc(d.monId)}"${lechGanNhat(d) ? ' data-muc="warning"' : ''}>
     <td><input type="checkbox" data-gtd-chon="${esc(d.monId)}" aria-label="Chọn ${esc(d.posMa)}"${g.boChon.has(d.monId) ? '' : ' checked'}${g.dangGui ? ' disabled' : ''}></td>
     <td>${esc(d.sku || '—')}</td>
     <td>${esc(d.ten || d.posMa)}<br><span class="field-hint">${esc(d.posMa)} · ${esc(d.tenGoc || d.maGoc)}</span></td>
     <td>${esc(d.market || '')} · ${esc(d.shopId)}</td>
     <td>${bac((b) => `${so(b.soLuong)} = ${esc(tienGtd(b.giaLon, d.tienTe))}`)}${bo}</td>
     <td class="num">${bac((b) => `${so(b.tong)} đơn`)}</td>
-    <td class="num">${bac((b) => `${so(b.soDonMuc)}/${so(b.soDonGanDay)}`)}</td>
-    <td>${bac((b) => `${esc(tienGtd(b.ganNhat.giaLon, d.tienTe))} · ${esc(b.ganNhat.ngay)}`)}</td></tr>`;
+    <td class="num">${bac((b) => `${so(b.soDonMuc)}/${so(b.soDonGanDay)}${b.soDonKhongRo ? ` (gồm ${so(b.soDonKhongRo)} đơn chưa ghép team)` : ''}`)}</td>
+    <td>${bac((b) => `${esc(tienGtd(b.ganNhat.giaLon, d.tienTe))} · ${esc(b.ganNhat.ngay)}${b.ganNhat.khongRoTeam ? ' (đơn chưa ghép team)' : ''}`
+      + (b.ganNhat.gia !== b.gia ? ' — <b>khác bậc</b>' : ''))}</td></tr>`;
 }
 function veBangGiaTuDon() {
   const g = GTD; if (!g) return;
@@ -1033,7 +1052,7 @@ function veBangGiaTuDon() {
   if (!g.du) {   // kể cả khi đọc lại SAU một lượt áp hỏng: kết quả lượt áp vẫn hiện, không mất
     $('#phai').innerHTML = ketQua + emptyState({ icon: 'circle-alert', title: 'Chưa đọc được đơn POS để điền giá', body: g.loiDoc || '',
       actionsHtml: button('Thử lại', { id: 'thuGiaTuDon' }) });
-    $('#thuGiaTuDon').onclick = () => veGiaTuDon(); return;
+    $('#thuGiaTuDon').onclick = () => veGiaTuDon(g); return;
   }
   const du = g.du; const chu = du.chuLyDo || {};
   const chon = du.deXuat.filter((d) => !g.boChon.has(d.monId));
@@ -1048,12 +1067,14 @@ function veBangGiaTuDon() {
     ${ketQua}${loi}
     <p class="field-hint">Giá = tiền khách trả (COD) của đơn POS chỉ MỘT món, theo số lượng: mức chiếm ≥ ${so(Math.round(du.nguong * 100))}% trong
       ${so(du.ganDay)} đơn gần nhất (≥ ${so(du.toiThieu)} đơn) và trùng mức phổ biến của cả ${so(du.soNgay)} ngày — giá vừa đổi thì không đề xuất.
-      Đã gồm ship. Chỉ điền món CHƯA có giá — không ghi đè; giá sau đó sửa ở Theo thị trường của sản phẩm. Page còn bản sao giá khác sẽ hiện
-      LỆCH ở bước đối soát để người chọn.</p>
+      Đã gồm ship · miễn ship (bậc ghi «miễn ship» — bot không hẹn phí ship riêng). Chỉ điền món CHƯA có giá — không ghi đè; món người đã xoá
+      giá cũng không điền lại; giá sau đó sửa ở Theo thị trường của sản phẩm. Page còn bản sao giá khác sẽ hiện LỆCH ở bước đối soát để người chọn.</p>
+    ${du.deXuat.some(lechGanNhat) ? `<p class="field-hint" data-gtd-lech>Dòng tô vạch cảnh báo: giá đơn gần nhất khác bậc đề xuất (cột cuối ghi
+      «khác bậc») — không chọn sẵn; soát rồi tự chọn nếu đúng.</p>` : ''}
     ${metricRow([{ label: 'Đề xuất', value: so(du.deXuat.length) }, { label: 'Đang chọn', value: so(chon.length) }, { label: 'Món bỏ qua', value: so(tongBo) }])}
     ${(du.shopKhongDon || []).length ? `<p class="field-hint" data-shop-khong-don>Shop không có đơn một món nào trong ${so(du.soNgay)} ngày — chưa điền được:
       ${du.shopKhongDon.map((s) => `${esc(s.market || 'shop')} (${esc(s.shopId)})`).join(', ')}.</p>` : ''}
-    ${du.deXuat.length ? `<div class="table-wrap"><table class="data-table" id="bangGiaTuDon" aria-label="Đề xuất giá từ đơn POS"><thead><tr>
+    ${du.deXuat.length ? `<div class="table-wrap"><table class="data-table" data-kieu="hang-doi" id="bangGiaTuDon" aria-label="Đề xuất giá từ đơn POS"><thead><tr>
       <th scope="col"><span class="sr-only">Chọn</span></th><th scope="col">SKU</th><th scope="col">Tên</th><th scope="col">Shop</th>
       <th scope="col">Bậc (SL = giá)</th><th scope="col" class="num">Số đơn</th><th scope="col" class="num">Tỷ lệ gần đây</th>
       <th scope="col">Giá đơn gần nhất · ngày</th></tr></thead><tbody>${du.deXuat.map((d) => hangGiaTuDon(d, g, chu)).join('')}</tbody></table></div>`
@@ -1065,7 +1086,13 @@ function veBangGiaTuDon() {
       <ul id="demBoGiaTuDon">${dsBo || '<li>Không món nào bị bỏ.</li>'}</ul></section>`;
   $('#phai').querySelectorAll('[data-gtd-chon]').forEach((o) => {
     const id = o.dataset.gtdChon;
-    o.onchange = () => { if (o.checked) g.boChon.delete(id); else g.boChon.add(id); g.ketQua = null; veBangGiaTuDon(); };
+    o.onchange = () => {
+      // Bỏ tích = TỪ CHỐI chỉ khi món đang được chọn sẵn hoặc người từng từ chối nó; tích rồi bỏ một món vốn không chọn sẵn (vượt trần,
+      // dòng lệch) là đổi ý — không nhớ thành từ chối, lượt áp tiếp vẫn chọn sẵn nó (/code-review vòng 2 #4).
+      if (o.checked) { g.boChon.delete(id); g.nguoiBo.delete(id); }
+      else { g.boChon.add(id); if (g.macDinh.has(id) || g.daTuChoi.has(id)) { g.nguoiBo.add(id); g.daTuChoi.add(id); } }
+      g.ketQua = null; veBangGiaTuDon();
+    };
   });
   $('[data-ap-gtd]').onclick = () => apGiaTuDonMan();
 }
@@ -1084,7 +1111,7 @@ async function apGiaTuDonMan() {
   if (!r.ok || !j || j.ok === false) {
     const ma = (j && j.ma) || '';
     if (laDoiXemTruoc(ma) && j.duLieu && j.duLieu.xemTruoc) {
-      g.du = j.duLieu.xemTruoc; g.boChon = chonSanGtd(g.du);
+      g.du = j.duLieu.xemTruoc; tinhChonGtd(g);
       g.loi = { ma, thongDiep: 'Giá món hoặc đơn POS đã đổi từ lúc bạn xem — bảng dưới đây là bảng MỚI, chưa ghi gì: xem lại rồi bấm Áp dụng.' };
     } else {
       g.loi = { ma, thongDiep: (j && j.thongDiep) || (r.loiMang ? 'Mất kết nối máy chủ.' : 'Máy chủ trả ' + r.status + '.') };

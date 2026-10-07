@@ -15,6 +15,7 @@ import { saveProduct } from '../src/admin-v3/operations.js';
 import { taoBuocDayBot, poolChotDauGiaoDich } from '../v3/src/ui/van-hanh/router.js';
 import { datKhoGoc, datPheuNhatKyGoc, xemGiaTuDon, apGiaTuDon } from '../v3/src/ui/san-pham/kho-goc.js';
 import { LoiThieuVai } from '../v3/src/auth/boi-canh.js';
+import { rapKb } from '../src/chat/rap-prompt.js';
 
 // Một dòng câu đọc BigQuery (khuôn `sqlGiaDon`): `n` đơn cùng ngày, cùng mức COD.
 const dong = (team, posMa, n, cod, ngay, o = {}) => {
@@ -179,11 +180,13 @@ test('GP1 · xem trước + áp trên Postgres thật (BigQuery giả)', async (
       assert.equal(dayGoi.length, dayTruoc); assert.equal(nhatKy.length, nkTruoc);
       const e2 = await loiCua(() => apGiaTuDon(bcQt, {}));
       assert.equal(e2.status, 409); assert.equal(e2.ma, 'thieu_dau_xem_truoc');
-      // dọn: TW về rỗng giá (đường lùi = xoá bậc) cho các ca sau
+      // dọn: TW về TRẠNG THÁI ĐẦU (0 dòng giá, chưa ai đặt giá tay) cho các ca sau. Vòng 2: lượt lưu giá ở trên đặt `gia_tay = true`;
+      // chỉ xoá dòng thì TW thành «người đã xoá giá» (F2 — ca X11) và không còn được đề xuất ⇒ trả cả `gia_tay` (thước sửa theo luật mới).
       await q('DELETE FROM goi_gia WHERE san_pham_id=$1', [ID.TW]);
+      await q('UPDATE san_pham SET gia_tay = false WHERE id=$1', [ID.TW]);
     });
 
-    await t.test('X5 · ④3 áp: A + TW có đúng bậc (gia_tay, tệ thị trường, ship để trống), B nguyên vẹn, đẩy mọi page bán món, nhật ký có số đơn + tỷ lệ', async () => {
+    await t.test('X5 · ④3 áp: A + TW có đúng bậc (gia_tay, tệ thị trường, miễn ship · phí ship để trống), B nguyên vẹn, đẩy mọi page bán món, nhật ký có số đơn + tỷ lệ', async () => {
       const bamB = await bam(ID.B);
       const xt = await xemGiaTuDon(bcQt);
       dayGoi.length = 0; nhatKy.length = 0;
@@ -191,9 +194,10 @@ test('GP1 · xem trước + áp trên Postgres thật (BigQuery giả)', async (
       assert.deepEqual(kq.ghi.map((m) => m.monId), [ID.A, ID.TW]);
       assert.deepEqual(kq.hong, []);
       assert.deepEqual(kq.ghi.map((m) => [m.dongBo?.ok, m.dongBo?.page?.length]), [[true, 2], [true, 1]], 'kết quả bước đẩy bản chép đi lên màn');
+      // Vòng 2 (người quyết 07/10 «Miễn ship»): bậc = COD trọn gói đã gồm ship ⇒ `mien_ship = true`; phí ship / giá gốc vẫn trống.
       assert.deepEqual(await bacCua(ID.A), [
-        { so_luong: 1, gia: 9900, tien_te: 'SAR', gia_goc: null, phi_ship: null, mien_ship: null, khuyen_mai: '', bat: true },
-        { so_luong: 2, gia: 15900, tien_te: 'SAR', gia_goc: null, phi_ship: null, mien_ship: null, khuyen_mai: '', bat: true }]);
+        { so_luong: 1, gia: 9900, tien_te: 'SAR', gia_goc: null, phi_ship: null, mien_ship: true, khuyen_mai: '', bat: true },
+        { so_luong: 2, gia: 15900, tien_te: 'SAR', gia_goc: null, phi_ship: null, mien_ship: true, khuyen_mai: '', bat: true }]);
       assert.deepEqual((await bacCua(ID.TW)).map((b) => [b.so_luong, b.gia, b.tien_te]), [[1, 990, 'TWD'], [2, 1690, 'TWD']]);
       assert.equal((await mot('SELECT gia_tay FROM san_pham WHERE id=$1', [ID.A])).gia_tay, true);
       // TT1b (song song): tệ của bậc PHẢI là tệ thị trường của (team, shop) — đọc lại từ ket_noi_pos, không từ code bị đo.
@@ -211,12 +215,28 @@ test('GP1 · xem trước + áp trên Postgres thật (BigQuery giả)', async (
       assert.match(nk.ghiChu, /111:va/);
       assert.match(nk.ghiChu, /1 = 99 SAR · 10\/10 đơn gần nhất/);
       assert.match(nk.ghiChu, /2026-09-01…2026-09-10/);
+      assert.match(nk.ghiChu, /đã gồm ship · miễn ship/, 'nhật ký nói đúng thứ đã ghi');
       // saveProduct đã chụp truoc/sau ⇒ đường lùi = xoá bậc (món trước đó RỖNG giá).
       const v3 = await mot("SELECT truoc, sau FROM nhat_ky WHERE hanh_dong='v3_sua_san_pham' AND doi_tuong_id=$1 ORDER BY id DESC LIMIT 1", [ID.A]);
       assert.deepEqual(v3.truoc.goi_gia, []);
       assert.equal(v3.sau.goi_gia.length, 2);
       const lai = await xemGiaTuDon(bcQt);
       assert.equal(lai.deXuat.length, 0, 'áp xong: không còn đề xuất (A, TW giờ là da_co_gia)');
+    });
+
+    await t.test('X12 · (vòng 2) «Miễn ship»: bậc GP1 đã áp ⇒ prompt bot đi rapKb → catalog → xayVanBanSanPham THẬT nói «miễn ship», không còn «phí ship CHƯA khai»', async () => {
+      assert.deepEqual((await bacCua(ID.A)).map((b) => b.mien_ship), [true, true]);
+      const cu = process.env.V3_RAP_PROMPT_BAT;
+      process.env.V3_RAP_PROMPT_BAT = '1';   // ca tự bật cửa ráp prompt từ CSDL (luật 2 viet-thuoc) — pilot bật cờ này
+      try {
+        const kb = await rapKb(pool, { teamId: T, pageIdText: 'fbA1' });
+        assert.equal(kb.nguon, 'db');
+        assert.match(kb.text, /\[111:va\][^\n]*\n\s+Giá — Buy 1: 99 SAR \(miễn ship\) \| Buy 2: 159 SAR \(miễn ship\)/);
+        assert.doesNotMatch(kb.text, /phí ship CHƯA khai/, 'bot không còn đẩy khách sang sale để hỏi phí ship');
+        assert.deepEqual(kb.products[0].tiers.map((x) => [x.qty, x.price, x.mienShip, x.phiShip]), [[1, 99, true, null], [2, 159, true, null]]);
+      } finally {
+        if (cu === undefined) delete process.env.V3_RAP_PROMPT_BAT; else process.env.V3_RAP_PROMPT_BAT = cu;
+      }
     });
 
     await t.test('X6 · chốt TRONG giao dịch: món có giá chen vào giữa lúc tính lại và lúc ghi (lượt kéo POS) ⇒ món đó hỏng da_co_gia, KHÔNG ghi đè', async () => {
@@ -277,6 +297,75 @@ test('GP1 · xem trước + áp trên Postgres thật (BigQuery giả)', async (
       const bcMk = { teamId: T, nguoiDungId: u, vai: ['marketer'] };
       await assert.rejects(() => xemGiaTuDon(bcMk), LoiThieuVai);
       await assert.rejects(() => apGiaTuDon(bcMk, { dauXemTruoc: 'x' }), LoiThieuVai);
+    });
+
+    await t.test('X13 · (/code-review vòng 2 #5) đơn MỚI làm một dòng thành «lệch» (F4) giữa lúc xem và lúc áp ⇒ dấu đổi ⇒ 409 kèm bảng mới (dòng tô), 0 ghi', async () => {
+      const xt = await xemGiaTuDon(bcQt);
+      const k = xt.deXuat.find((d) => d.monId === ID.K);
+      assert.ok(k && k.bac.every((b) => b.ganNhat.gia === b.gia), 'K lúc xem: giá đơn gần nhất = giá bậc (chọn sẵn)');
+      // đệm BigQuery làm mới: MỘT đơn mới của marketer chưa ghép team 109 SAR — tập gộp 5/6 vẫn 99 SAR ⇒ K vẫn đề xuất, nhưng LỆCH
+      dongBq = [...dongBq, dong(null, '111:vk', 1, 10900, '2026-09-28', { sku: '272' })];
+      const truoc = await demGhi();
+      const e = await loiCua(() => apGiaTuDon(bcQt, { dauXemTruoc: xt.dauXemTruoc, monIds: [ID.K] }));
+      assert.equal(e.status, 409, 'người chưa thấy cảnh báo «khác bậc» ⇒ không ghi');
+      assert.equal(e.ma, 'xem_truoc_da_doi');
+      const k2 = e.duLieu.xemTruoc.deXuat.find((d) => d.monId === ID.K);
+      assert.deepEqual(k2.bac[0].ganNhat, { gia: 10900, giaLon: 109, ngay: '2026-09-28', khongRoTeam: true });
+      assert.deepEqual(await demGhi(), truoc, '0 ghi');
+      // đơn mới CÙNG mức không đổi dấu (không 409 giả — đối kháng vòng 1 đã thử)
+      const xt2 = await xemGiaTuDon(bcQt);
+      dongBq = [...dongBq, dong(GCC, '111:vk', 1, 9900, '2026-09-27', { sku: '272' })];
+      assert.equal((await xemGiaTuDon(bcQt)).dauXemTruoc, xt2.dauXemTruoc);
+    });
+
+    await t.test('X10 · F1 (vòng 2) đơn MỚI của marketer chưa ghép HRM / sale dùng chung mang giá khác ⇒ món KHÔNG được đề xuất giá cũ — lý do khac_gia_khong_ro_team; cùng mức ⇒ vẫn đề xuất', async () => {
+      for (const [k, ma, sku] of [['N', '111:vn', '281'], ['S', '111:vs', '282'], ['Q', '111:vq', '283']]) {
+        await mon(k, ma, sku);
+        GOC[k.toLowerCase()] = await gopMonThanhGoc(pool, T, { maGoc: `g${k.toLowerCase()}`, ten: `Gốc ${k}`, sku, posMa: [ma] });
+      }
+      dongBq = [...dongBq,
+        // N: marketer ĐÃ ghép (team GCC) bán 99 SAR tới 10/09; từ 20/09 đơn của marketer CHƯA ghép HRM đều 109 SAR (repro R2 đối kháng).
+        ...chuoi(GCC, '111:vn', 10, 9900, '2026-09-01', { sku: '281' }), ...chuoi(null, '111:vn', 8, 10900, '2026-09-20', { sku: '281' }),
+        // S: cùng cảnh, đơn mới do tài khoản sale dùng chung (TEAM_HRM slug '*').
+        ...chuoi(GCC, '111:vs', 10, 9900, '2026-09-01', { sku: '282' }), ...chuoi('PIALPHA_SALE_ONLINE', '111:vs', 8, 10900, '2026-09-20', { sku: '282' }),
+        // Q: CHO-QUA — đơn không rõ team mới hơn CÙNG mức ⇒ vẫn đề xuất; «giá đơn gần nhất» là đơn không rõ team (nói ra).
+        ...chuoi(GCC, '111:vq', 10, 9900, '2026-09-01', { sku: '283' }), ...chuoi(null, '111:vq', 3, 9900, '2026-09-20', { sku: '283' }),
+      ];
+      const xt = await xemGiaTuDon(bcQt);
+      const bo = Object.fromEntries(xt.bo.map((x) => [x.posMa, x]));
+      for (const ma of ['111:vn', '111:vs']) {
+        assert.ok(!xt.deXuat.some((d) => d.posMa === ma), `${ma}: không được đề xuất 99 SAR «10/10» khi 8 đơn mới hơn đều 109 SAR`);
+        assert.equal(bo[ma]?.lyDo, 'khac_gia_khong_ro_team', `${ma}: lý do rõ trên màn`);
+        assert.match(bo[ma].chiTiet, /109 SAR 8\/10 · đơn của team 99 SAR \(mới nhất 2026-09-10\)/);
+      }
+      assert.equal(xt.dem.khac_gia_khong_ro_team, 2);
+      const q = xt.deXuat.find((d) => d.posMa === '111:vq');
+      assert.ok(q, 'đơn không rõ team cùng mức không chặn oan');
+      assert.deepEqual(q.bac[0].ganNhat, { gia: 9900, giaLon: 99, ngay: '2026-09-22', khongRoTeam: true });
+      assert.deepEqual([q.bac[0].soDonMuc, q.bac[0].soDonGanDay, q.bac[0].soDonKhongRo], [10, 10, 3], 'tỷ lệ của tập gộp, nói số đơn chưa ghép team');
+    });
+
+    await t.test('X11 · F2 (vòng 2) đường lùi «xoá bậc» BỀN: món gia_tay + 0 dòng giá ⇒ không đề xuất lại (nguoi_da_xoa_gia); dấu cũ phát lại ⇒ 409; «áp tất cả» không ghi lại', async () => {
+      let xt = await xemGiaTuDon(bcQt);
+      const dauCoQ = xt.dauXemTruoc;   // bảng còn Q
+      await apGiaTuDon(bcQt, { dauXemTruoc: dauCoQ, monIds: [ID.Q] });
+      assert.deepEqual((await bacCua(ID.Q)).map((b) => b.gia), [9900]);
+      // Người thấy 99 SAR sai ⇒ lùi đúng đường nhật ký vòng 1 chỉ: xoá bậc ở «Theo thị trường» (cửa lưu giá chỉ-giá, offers = []).
+      const v = (await mot('SELECT xmin::text AS v FROM san_pham WHERE id=$1', [ID.Q])).v;
+      await saveProduct(pool, bcQt, ID.Q, { offers: [], version: v }, { chiGia: true });
+      assert.deepEqual(await bacCua(ID.Q), []);
+      assert.equal((await mot('SELECT gia_tay FROM san_pham WHERE id=$1', [ID.Q])).gia_tay, true, 'xoá bậc ⇒ gia_tay = true, 0 dòng');
+      xt = await xemGiaTuDon(bcQt);
+      assert.ok(!xt.deXuat.some((d) => d.monId === ID.Q), 'món người vừa gỡ giá KHÔNG hiện lại trong đề xuất');
+      assert.equal(xt.bo.find((x) => x.monId === ID.Q)?.lyDo, 'nguoi_da_xoa_gia');
+      assert.ok(xt.deXuat.some((d) => d.monId === ID.K), 'CHO-QUA: món 0 dòng giá CHƯA ai đặt giá tay (K) vẫn được đề xuất');
+      const truoc = await demGhi();
+      const e = await loiCua(() => apGiaTuDon(bcQt, { dauXemTruoc: dauCoQ, monIds: [ID.Q] }));
+      assert.equal(e.status, 409, 'dấu cũ (bảng còn Q) phát lại sau khi lùi ⇒ 409, không hợp lệ trở lại');
+      assert.deepEqual(await demGhi(), truoc, '0 ghi');
+      const kq = await apGiaTuDon(bcQt, { dauXemTruoc: xt.dauXemTruoc });
+      assert.ok(!kq.ghi.some((m) => m.monId === ID.Q));
+      assert.deepEqual(await bacCua(ID.Q), [], 'giá người đã gỡ không quay lại');
     });
 
     await t.test('X9 · BigQuery chưa nối ⇒ 503 nói rõ (không trả rỗng trông như «không có đề xuất»); BigQuery hỏng ⇒ 502', async () => {

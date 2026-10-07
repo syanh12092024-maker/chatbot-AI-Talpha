@@ -443,7 +443,9 @@ export async function apGiaTuDon(boiCanh, than = {}) {
   const kq = await ham(bc, { dauXemTruoc: than.dauXemTruoc, monIds: than.monIds, soNgay: than.soNgay });
   for (const m of kq.ghi) {
     const chu = `điền giá từ đơn POS ${kq.soNgay} ngày · ${m.posMa} (${m.ten || m.sku || ''}) · ${m.market || 'shop ' + m.shopId}: `
-      + m.bac.map((b) => chuBacGia(b, m.tienTe, kq.soNgay)).join('; ') + ` · đơn ${m.tu}…${m.den}`;
+      + m.bac.map((b) => chuBacGia(b, m.tienTe, kq.soNgay)).join('; ') + ` · đơn ${m.tu}…${m.den}`
+      // Vòng 2 (người quyết 07/10): tầng A báo bậc đã ghi `mien_ship = true` (COD trọn gói) — nhật ký nói đúng thứ đã ghi.
+      + (m.mienShip ? ' · bậc đã gồm ship · miễn ship' : '');
     try {
       await ghi(bc, {
         hanhDong: HANH_DONG.DIEN_GIA_TU_DON_POS, doiTuongLoai: BANG, doiTuongId: String(m.gocId),
