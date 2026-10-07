@@ -1881,6 +1881,19 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + H-GL + **NGUỒN GIÁ CỦA PAGE PIL
   - Còn ở phiếu ⑥ (giữ): page ngắt lặp mãi (GL6 + người quyết) · webhook «đọc được mà không mapping duy nhất» `banGiaoLoi` không việc · lỗi dữ liệu toàn hệ ⇒
     mọi khách ra việc, không tín hiệu cấp page · tin tới sau khi bộ nạp đã giao chặn «trả AI» (N-GL3B-TRA-AI-CHAN-GUARD) · «Thiếu mã khách hàng» + `custId`
     rỗng thì giao ngay lượt 1 (đo khi mở van) · `luiDocTin`/`dsLoiTu` RAM (restart đếm lại).
+- 07/10 · GP1 vòng 2 (thợ) — trả đối kháng F1–F4 + người quyết «Miễn ship» (commit 631852b). Nợ (chi tiết: `docs/thi-cong/nhat-ky/phieu-gp1.md` § Vòng 2):
+  - **N-GP1-GIA-MON-MOI-TEAM** (đối kháng F5) `pos_co_gia_mon` chỉ xét đơn của team: đơn team KHÁC (đã ghép) cùng biến thể mang giá món POS > 0 không chặn
+    đề xuất của team này ⇒ v3 tạo đơn (giá ở `shipping_fee`) bị POS cộng giá món — thu hai lần (chỉ khi lượt kéo POS chưa điền giá món, hoặc món `gia_tay`).
+    Đơn KHÔNG RÕ team mang giá món nay bị chặn với lý do «khác giá» (vòng 2 F1 — chiều an toàn, chữ chưa đúng nguyên nhân). Vá: xét giá món trên MỌI đơn
+    của (shop, biến thể) bất kể team; gộp N-GP1-GIA-MON-CA-CUA-SO.
+  - **N-GP1-XOA-GIA-DAU-HIEU** (/code-review vòng 2 #1 · #10) F2 nhận «người đã xoá giá» qua `gia_tay` (chỉ `saveProduct` chỉ-giá đặt, `operations.js:324`) —
+    xoá giá qua cửa lưu ĐẦY ĐỦ (Vận hành · trang page; chỉ còn mở cho món RF-15 chưa page gắn nào đọc, tới GSP4) đặt `cau_hinh_tay` ⇒ lượt «Điền giá» sau
+    đề xuất lại. Gốc đúng: dấu «đã gỡ giá có chủ ý» tường minh do `saveProduct` đặt ở mọi nhánh khi bảng mới rỗng (operations.js — tệp cấm của GP1).
+  - **N-GP1-MAN-HINH-DOC** `docs/v3/03-MAN-HINH.md` (dòng Sản phẩm · đoạn GP1) còn ghi «bậc = COD trọn gói (ship để trống)» và thiếu luật vòng 2 (đơn chưa
+    ghép team chỉ chặn · người đã xoá giá · giữ món bỏ chọn · tô dòng lệch · miễn ship) — tệp ngoài pathspec vòng 2, thợ đã hỏi tổng.
+  - **N-GP1-CHON-THEO-KHUNG** lựa chọn «không áp» chỉ nhớ trong khung đang mở (qua áp / 409 / «Thử lại»); F5 trình duyệt hay mở lại khung ⇒ bảng mặc định.
+  - **N-GP1-VACH-CANH-BAO-CHUNG** (/code-review vòng 2 #9) bảng GP1 mượn `data-kieu="hang-doi"` chỉ để có vạch `tr[data-muc]` — tách luật vạch thành luật
+    chung của `.data-table` (`v3/src/ui/chung/kieu.css`, ngoài pathspec).
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3566,3 +3579,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · tổng KHÔI PHỤC `HUMAN_TAKEOVER=0` ở `.env` prod + dev — lượt dọn env xếp nhầm vào nhóm «chết» (đồ thị tĩnh); `src/conv-owner.js:27` đọc `!== '0'` ⇒ VẮNG = BẬT nhận diện người thật (prod đặt `=0` có chủ ý: «M05 nhận nhầm người thật 30,2%»). Lộ ra nhờ thợ GL3c thấy ca bh1 G5b đỏ
   prod chưa restart từ lúc xoá ⇒ chưa đổi hành vi · bh1 28/0 lại · soát lại 24 biến đã xoá: không biến nào «vắng là BẬT» (`AUTO_CREATE_ORDER` đọc `=== '1'`; `IMG_RETRY`/`IMG_GAP_MS` mặc định = giá trị cũ; còn lại không đọc env) · prod 23 biến · dev 21
   · NGƯỜI QUYẾT GP1 «Miễn ship»: bậc GP1 điền (COD đã gồm ship) đặt `mien_ship = true` — vào GP1 vòng 2 · GL3c 🔎 · RP1 trả về (C1 ảnh hỏng hỏng cả lượt — có cả ở đường cũ; C2 nhãn bậc giá) · N4 nguồn khối luật CORE chờ người quyết
+- 07/10 · GP1 vòng 2 → 🔎 chờ nghiệm thu — đối kháng F1–F4 + «Miễn ship»: đơn marketer chưa ghép team / sale dùng chung chỉ CHẶN (cửa sổ 10 đơn gần nhất trên tập gộp ≠ giá bậc hoặc < 80% ⇒ `khac_gia_khong_ro_team`; khác tệ ⇒ `lech_tien_te`; tỷ lệ màn là của tập gộp) · món `gia_tay` + 0 bậc ⇒ `nguoi_da_xoa_gia` (đường lùi bền, dấu cũ ⇒ 409) · màn giữ món bỏ chọn qua áp/409/«Thử lại» · giá đơn gần nhất ≠ bậc ⇒ tô + không chọn sẵn + cờ vào dấu · bậc `mien_ship = true` qua saveProduct chỉ-giá có sẵn (operations.js không đụng), prompt bot thật «miễn ship»
+  `gp1.sh` 68/68 (BO_CONG_CU=1 · 52 ca × UTC/UTC+14 · 47 đảo-vá đỏ đúng) · đỏ trên base 16/52 ca · gsp3 riêng rc=0 (lượt 2, 43/43; lượt 1 rc=1 chỉ ve2b lồng trong ll15d — ll15d riêng 21/21) · tt1b rc=1 (40/41 — chỉ «tt1 TREO» chuỗi lồng; tt1 riêng 25/27: gsp3 TREO lồng + ll18-khung chập chờn N-THUOC-CHAP-CHON, riêng đều xanh) · npm test 2694→2706 / 0 · /code-review 10: sửa 5 · bác 5 (3 kèm nợ) · nợ N-GP1-GIA-MON-MOI-TEAM (F5) + 4 · 03-MAN-HINH ngoài pathspec — hỏi tổng
+  · commit 631852b · nhật ký docs/thi-cong/nhat-ky/phieu-gp1.md
