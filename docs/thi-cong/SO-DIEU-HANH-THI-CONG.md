@@ -1790,6 +1790,29 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
   - **N-CHAN1-HEAD-TROI** `_chan1.sh` đo `base..HEAD` ⇒ chạy lại cho phiếu ĐÃ xong sau khi có commit khác thì ④ (và ⑤ khi phiếu sau khai não
     hợp lệ) đỏ theo LỊCH chứ không theo mã — đo 07/10 trên cây thật: `_chan1 gl3b` ④ đỏ 25 tệp của GL2 · GSP3c · … (cùng gốc «④⑤ đỏ do cherry-pick»
     của GSP3c). Đề nghị: phiếu ghi commit xong, `_chan1` nhận mốc trên (`base..<xong>`). GL7a ④7 né bằng clone chỉ-đọc mốc `aef9fb6`.
+- 07/10 · GL4 (thợ) — nợ ngoài hợp đồng phiếu (⑥ + /code-review + bước 3); chi tiết: `docs/thi-cong/nhat-ky/phieu-gl4.md` mục Nợ · /code-review:
+  - **N-GL4-034-VPS** migration 034 phải ÁP TRÊN VPS TRƯỚC mã GL4 (mã trên CSDL chưa 034 ⇒ không ngắt page nào, cảnh báo một lần — lượt xử vẫn đúng,
+    ca `gl4-chua-034` M7a; down 034 an toàn với mã mới). Thứ tự mo-van.
+  - **N-GL4-NGUOI-NHAN** lỗi Meta theo NGƯỜI NHẬN (#551, #10 ngoài 24h) và `success:false` do NỘI DUNG (ảnh URL hỏng) vẫn đếm như v1 ⇒ hai khách liên
+    tiếp là ngắt oan 30′ (phiếu ⑥ · /code-review #2). Đo dạng `original_error` thật khi mở van rồi quyết loại ra.
+  - **N-GL4-NAP-KHONG-DEM** GL4 KHÔNG đếm lỗi ở bước NẠP (`pkGetConversations` nuốt lỗi · `LoiDocLichSu` của bộ nạp chỉ lùi) ⇒ «ngắt vì đọc ⇒ bỏ nạp»
+    chỉ kích hoạt từ tin ĐÃ vào hàng; Pancake sập lúc nạp thì bộ nạp vẫn đọc lại mọi hội thoại mỗi vòng; đèn xanh ≠ kênh lành (nối N-GL3B-CONV-NUOT-LOI,
+    GL3c/GL6 · /code-review #3).
+  - **N-GL4-VIEC-MOT-MO** `worker.js#chenViec` NOT EXISTS MỌI việc mở của hội thoại (khuôn GL3b/operations, hợp đồng phiếu) ⇒ hội thoại đang có việc
+    «đọc lỗi» mở thì tin gửi lỗi sau không thêm việc «Gửi không rõ…», sale chỉ thấy việc cũ «bot CHƯA gửi gì», đèn ⑤b đếm thiếu M (/code-review #6).
+    Cần quyết: một việc mở/hội thoại hay theo lý do.
+  - **N-GL4-NHIP-SO-THO** đèn `ngat_kenh` đọc số tin chờ của team từ CHUỖI `so` của `nhip-may-bot.js#xetNhip` («N tin chờ …») vì bộ đọc nhịp không trả số
+    thô (tệp ngoài ③); ca `v3/test/b/gl4-den-don-vi` D5 canh định dạng. Nên thêm trường `dangCho` vào kết quả xét.
+  - **N-GL4-MAY-CHET-KHI-NGAT** nhánh «máy KHÔNG hỏng» của đèn «Máy chạy bot» (chỉ khi MỌI page bật của team đang ngắt còn hạn) không phân biệt được máy
+    chạy bot CHẾT trong lúc ngắt (pilot 1 page) — tới hết giờ ngắt nhánh mới tự tắt. Cần nhịp tim worker riêng (cùng gốc nhánh vượt trần GL2).
+  - **N-GL4-5XX-JSON** HTTP 5xx mà thân là JSON không được tính lỗi kênh khi ĐỌC (`goiPancake` không đưa mã HTTP ra) — chỉ 502/504 HTML (thân hỏng).
+  - **N-GL4-MO-TAY** không có «mở lại ngay» (phiếu ② 8); xoá tay `ngat_ly_do` trong CSDL thì worker đang chạy vẫn lọc page tới `ngat_den` (bộ nhớ chung chỉ
+    bỏ mục khi hết hạn theo đồng hồ CSDL hoặc khi chính nó mở) — làm nút thì phải báo bộ nhớ (hoặc restart worker).
+  - **N-GL3B-KHUON-VIEC-HAI-BAN** (cập nhật GL4) worker.js đã gộp MỘT hàm `chenViec` (đọc lỗi + gửi lỗi); bản `admin-v3/operations.js#handoffConversation`
+    ngoài ③ — nợ còn.
+  - **N-GL3B-BANGIAOLOI-PANCAKE** (cập nhật GL4) phần «không việc» đã trả cho tin/ảnh gửi KHÔNG RÕ (việc «Gửi không rõ đã tới khách…»); lỗi CHỈ ở thẻ/ghi
+    chú bàn giao (tin khách đã tới) vẫn `banGiaoLoi` không việc — cố ý; cần quyết có việc «bàn giao Pancake hỏng» không. Phần thẻ/ghi chú/trần 24h còn.
+  - Còn ở phiếu ⑥ (không đổi): Telegram (GL6 đọc `nhat_ky page_ngat_kenh`) · dải trạng thái mọi trang (N-GL2-DAI-TRANG-THAI) · `README.md:95` (GL7).
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -3441,3 +3464,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · GL7a → ✅ (tổng nghiệm thu 🟩) · GL4 review (a) TRẢ VỀ → phiếu viết lại — GL7a: phép ⑤ chỉ canh tệp bộ não (7 tệp `NAO`), dòng «Đụng bộ não: không…» = chưa khai; `_chan1 gl3b` ⑤ hết đỏ giả
   GL4 vòng 1 review (a): C1 đọc OK xoá bộ đếm ⇒ Meta chặn gửi không bao giờ ngắt (đo RV-G1) · C2 kiểm theo vòng ⇒ 4/4 tin tồn bị rút · C3 worker chỉ thấy `LoiGuiChuaXacNhan` một câu, rút lại sau crash + thiếu thẻ bị đếm oan
   · phiếu mới: hai bộ đếm đọc/gửi, đếm theo TIN khác nhau, lọc trước MỖI lượt rút, `lan-gui.js` mang `cause.kenh`, ngắt vì gửi vẫn nạp, tin gửi lỗi đẻ việc, nửa mở: tổng chốt «đủ 2 lỗi mới ngắt lại»
+- 07/10 · GL4 → 🔎 chờ nghiệm thu — ngắt cả page 30′ khi kênh Pancake lỗi 2 lần liên tiếp (gửi HOẶC đọc, tin khác nhau, hai bộ đếm), lọc trước MỖI lượt rút (bộ nhớ chung), mở lại đúng một lần, ngắt vì gửi vẫn nạp, tin/ảnh gửi không rõ đẻ việc, đèn ⑤b `ngat_kenh` + «máy KHÔNG hỏng» · migration 034 ÁP VPS TRƯỚC MÃ
+  `gl4.sh` ĐỎ 0 / XANH 60 rc=0 (base 29/29 ca đỏ → 31/31 xanh, 2 múi giờ · 31 đảo-vá đỏ đúng · gl3b 49/0 · gl3 25/0 · gl2 52/0 · 12 bộ ca cũ xanh) · npm test 2581/0 đỏ → 2612/0 đỏ · /code-review 10: 7 vá + đảo-vá, 3 là nợ ⑥/hợp đồng · nới ③ gl3b-nap-doc-loi N5 (tổng gật)
+  · commit f572434 · nhật ký docs/thi-cong/nhat-ky/phieu-gl4.md · 8 nợ §9 N-GL4-034-VPS · N-GL4-NGUOI-NHAN · N-GL4-NAP-KHONG-DEM · N-GL4-VIEC-MOT-MO · N-GL4-NHIP-SO-THO · N-GL4-MAY-CHET-KHI-NGAT · N-GL4-5XX-JSON · N-GL4-MO-TAY
