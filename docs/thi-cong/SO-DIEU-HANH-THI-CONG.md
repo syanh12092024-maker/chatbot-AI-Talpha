@@ -1780,6 +1780,17 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
     silver, cửa báo thành công + nhật ký «silver», z cuối cùng ở gold (`src/pos/doc-danh-muc.js:164-218`, ca R3). Bộ đếm không thấp hơn thật.
   - `demDauCu` KHÔNG phải cận trên (F1 NÊN — lời khai JSDoc sai): `sua_luc` = `now()` lúc BẮT ĐẦU giao dịch kéo dài ⇒ món đổi trong lúc đối soát chạy bị bỏ sót
     (`san-pham-goc.js:496-511`) ⇒ GSP3d. Cổng GSP4 «chuaXong = 0 + demDauCu» chưa đủ tin tới khi GSP3d xong.
+- 07/10 · GL7a (thợ) — ba nợ ngoài hợp đồng phiếu (② 1 · bước 3 đo lại · ④7); chi tiết: `docs/thi-cong/nhat-ky/phieu-gl7a.md` mục Nợ:
+  - **N-GL7A-KHAI-THEO-TEP** `_chan1.sh` ⑤ chỉ hỏi «phiếu CÓ khai không», không đối chiếu tên tệp trong dòng khai với tệp não bị chạm
+    (khai `src/tools.js` rồi sửa thêm `src/prompts.js` vẫn ✅ — đúng chữ phiếu GL7a ②1). Muốn chặn cả lượt sửa lặng lẽ tệp não THỨ HAI thì
+    đối chiếu từng tệp; 7/7 phiếu đã khai (BH1–BH8 trừ BH5) đều ghi tên tệp trên dòng khai ⇒ đổi luật không đỏ oan lịch sử.
+  - **N-GL7A-NAM-HAY-BAY** sổ §0a luật 4 + CR-02-10 nói «NĂM file bộ não» (`prompts` `closer` `tools` `fast-lane` `outbound-guard`) nhưng
+    `_chan1.sh` NAO và hook `canh-file-cam.sh` canh BẢY (thêm `context.js` `lead-score.js` từ BH1 `22561be`; BH2 · BH4 · BH7 · BH8 khai hai tệp đó).
+    GL7a giữ nguyên 7 (phiếu ②1). Người quyết chốt một con số, sổ §0a sửa chữ cho khớp (GL7).
+  - **N-CHAN1-HEAD-TROI** `_chan1.sh` đo `base..HEAD` ⇒ chạy lại cho phiếu ĐÃ xong sau khi có commit khác thì ④ (và ⑤ khi phiếu sau khai não
+    hợp lệ) đỏ theo LỊCH chứ không theo mã — đo 07/10 trên cây thật: `_chan1 gl3b` ④ đỏ 25 tệp của GL2 · GSP3c · … (cùng gốc «④⑤ đỏ do cherry-pick»
+    của GSP3c). Đề nghị: phiếu ghi commit xong, `_chan1` nhận mốc trên (`base..<xong>`). GL7a ④7 né bằng clone chỉ-đọc mốc `aef9fb6`.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3424,3 +3435,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · GL3b → ✅ (tổng nghiệm thu) — ⑦ so-base trên HEAD `6e9f373` (worktree riêng, máy có 2 thợ TT1b/GP1 chạy chuỗi cổng): l1-m2 0 dòng đỏ mới · ll2 xanh hai bên · gsp3b 8 dòng mới, MỘT gốc `ll18-khung` fail=1 lan qua ve6c→ve2b→ve7a/b→ll3→ll15d + ve2 1 dòng
   chạy riêng trên HEAD: `ll18-khung` 16/0 hai lần · `ve2.sh` 8/0 (89 s) ⇒ chập chờn do tranh tài nguyên (cùng gốc N-VAI-B/ll18 đã thấy ở TT1, GSP3c) — không tệp GL3b nào chạm
   · nợ quy trình: chuỗi cổng cũ lồng nhau (gsp3b kéo ~20 cổng) đỏ giả khi máy chạy ≥2 chuỗi — đề nghị khoá chạy một chuỗi/lúc (GL7 hoặc phiếu rào riêng)
+- 07/10 · GL7a → 🔎 chờ nghiệm thu — `_chan1.sh` ⑤ nay là «⑤bộ-não-phải-khai»: tệp phẳng dùng chung (`src/pancake.js` `kb` `config`…) thôi đỏ giả; tệp bộ não (NAO giữ 7) chạm mà phiếu không khai — hoặc khai «không…»/trống — ⇒ đỏ nêu tên tệp; dời tệp não cũng là đụng
+  `gl7a.sh` ĐẠT 22/22 rc=0 (đo bản base: 12/22 lỗi rc=1) · bộ ca 18/18 (9 ca × 2 locale; base 14/18 đỏ) · đảo-vá 5 bản sao trong cổng + 4 đột biến phụ đều đỏ, 1 đột biến không đỏ (hậu tố từ-biên ⇒ gỡ) · `_chan1 gl3b` cây thật ⑤ 🔴 `src/pancake.js` → ✅ (④ còn đỏ: HEAD trôi, nợ N-CHAN1-HEAD-TROI)
+  · commit 2db6f07 · nhật ký docs/thi-cong/nhat-ky/phieu-gl7a.md · 3 nợ §9 (N-GL7A-KHAI-THEO-TEP · N-GL7A-NAM-HAY-BAY · N-CHAN1-HEAD-TROI)
