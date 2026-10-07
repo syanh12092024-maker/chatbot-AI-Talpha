@@ -1,43 +1,52 @@
-# PHIẾU GL3c — Pancake lỗi KÉO DÀI không được thành «bot câm im lặng»: danh sách hội thoại nói lỗi + đếm vào ngắt page · hội thoại đọc lỗi bền ⇒ giao sale CÓ việc
+# PHIẾU GL3c — Pancake lỗi KÉO DÀI không được thành «bot câm im lặng»: danh sách hội thoại lỗi liên tục ⇒ ngắt page · lỗi kênh khi đọc lịch sử ở bộ nạp đếm vào GL4 · hội thoại lỗi DỮ LIỆU bền ⇒ giao sale CÓ việc
 
 **Base:** `ĐẶT-LÚC-PHÁT` · **Làn:** 🟥 (đường bot trả lời khách + bàn giao sale; sai một chiều là khách bị bỏ không ai biết, sai chiều kia là ngập việc / ngắt oan)
-**Nguồn:** README nguyên tắc 13 («MỌI điểm AI dừng phục vụ đều đổ về hàng chờ … không khách nào rơi vào khoảng trống "AI im mà người chưa biết"») ·
-nợ **N-GL3B-NAP-LOI-BEN** · **N-GL3B-CONV-NUOT-LOI** · **N-GL4-NAP-KHONG-DEM** · **N-GL3B-WEBHOOK-MAPPING** (sổ §9) · sổ §5j (GL3c trước page thứ hai)
+**Nguồn:** README nguyên tắc 9 · 13 · nợ **N-GL3B-NAP-LOI-BEN** · **N-GL3B-CONV-NUOT-LOI** · **N-GL4-NAP-KHONG-DEM** · **N-GL3B-WEBHOOK-MAPPING** (sổ §9) ·
+review (a) 07/10 TRẢ VỀ (2 CHẶN · 6 NÊN — bản này viết lại theo, mục «Sửa sau review (a)» cuối ②) · sổ §5j (GL3c trước page thứ hai)
+**Con số chờ người quyết (tổng đặt tạm, hằng có tên — đổi một dòng):** `T_NGAT_DS = 2′` (danh sách hội thoại lỗi LIÊN TỤC bao lâu thì ngắt page) ·
+`LUOT_LOI_GIAO_SALE = 3` (hội thoại lỗi DỮ LIỆU bền: lượt lỗi thứ 3 ≈ giây 90 — gần mốc ~45 s của GL3b).
 **Đụng bộ não:** không.
-**Đổi hợp đồng cửa đã bàn giao:** CÓ — `docHoiThoai` của cửa Messenger đổi từ «trả mảng, lỗi nuốt thành `[]`» sang «ném `LoiDocHoiThoai`» (cùng kiểu GL3b
-với `docTin`; sửa mã cho khớp ý đồ có sẵn — nguyên tắc 13; sửa `docs/v3/ban-giao/cua-messenger-v1.md` cùng commit).
+**Đổi hợp đồng cửa đã bàn giao:** CÓ (nhẹ) — `docHoiThoai` nói được lỗi qua tham số ra (không đổi giá trị trả mảng); `LoiDocLichSu` ở tra mapping webhook mang
+câu riêng. Sửa `docs/v3/ban-giao/cua-messenger-v1.md` cùng commit (sửa mã cho khớp ý đồ có sẵn — nguyên tắc 13; không CR).
 **Skill thợ nạp:** `tho-thi-cong` · `viet-thuoc`; xong thì `/code-review`.
 
 ## ① Thi hành đoạn nào
 
-1. **Danh sách hội thoại nuốt lỗi.** `src/pancake.js#pkGetConversations` (`:342-345`) trả `j.conversations || []` ⇒ Pancake sập / quá hạn / 121 ⇒ bộ nạp
-   (`src/queue/nap.js:389` `docHT = deps.docHoiThoai || cuaDocHoiThoai` → `messenger/index.js:154-158#docHoiThoai`) thấy «0 hội thoại» y như không ai nhắn;
-   GL4 không đếm (N-GL4-NAP-KHONG-DEM — 582/582 page prod là `poll`, nên Pancake sập lúc nạp thì đèn GL4 KHÔNG BAO GIỜ đỏ: `kho-suc-khoe.js:521` tự khai).
-2. **Hội thoại đọc lỗi BỀN.** GL3b cho bộ nạp lùi theo hội thoại (`nap.js:173` `luiDocTin`, `:477-526`; 30 s·2ⁿ, trần 5′) — lùi MÃI, không bao giờ thành
-   việc cho sale (N-GL3B-NAP-LOI-BEN: «Thiếu mã khách hàng», 121 không ghế, Pancake sập lâu). Chỉ còn dòng `doc_tin_loi` ở «Tin bị lọc».
-3. **Page webhook.** Worker tra mapping qua `docHoiThoai` (`worker.js:211`) — nuốt lỗi ⇒ `LoiChoMappingPancake` (lùi 5 s × 3) ⇒ `banGiaoLoi` cũ (tin `loi`,
-   không việc, «trả AI» bị chặn). Prod 0 page webhook (đo 07/10) — vá cùng lượt vì cùng một cửa.
+1. **Danh sách hội thoại nuốt lỗi.** `pancake.js#pkGetConversations` (`:342-345`) trả `j.conversations || []` ⇒ Pancake sập / quá hạn / 121 ⇒ bộ nạp
+   (`nap.js:389` → `messenger/index.js:154-158#docHoiThoai`) thấy «0 hội thoại» như không ai nhắn; đèn GL4 không bao giờ đỏ (`kho-suc-khoe.js:519-521,536` tự khai).
+2. **Lỗi KÊNH khi đọc lịch sử ở bộ nạp không đếm.** Danh sách đọc được mà `/messages` lỗi kênh ⇒ bộ nạp chỉ lùi (`nap.js:511-526`), không gọi GL4 — đo review
+   RV6: page không ngắt, 3/3 hội thoại cùng leo lùi. Bộ ca GL4 chạy nạp rồi xử TUẦN TỰ nên không thấy (prod: 1 vòng nạp + 3 vòng xử xen nhau).
+3. **Hội thoại lỗi DỮ LIỆU bền** («Thiếu mã khách hàng» …): bộ nạp lùi mãi (30 s·2ⁿ, trần 5′), không bao giờ thành việc. `lan` còn bị đặt lại về 1 sau mỗi quãng
+   ≥ 5′ không đọc (`nap.js:519`) — page ngắt 30′ là về 1 ⇒ không bao giờ tới mốc giao.
+4. **Page webhook**: tra mapping qua `docHoiThoai` (`worker.js:211`) nuốt lỗi ⇒ `LoiChoMappingPancake` ⇒ `banGiaoLoi` cũ không việc. Prod 0 page webhook (07/10).
 
 ## ② Hợp đồng vào / ra
 
-1. **Cửa danh sách hội thoại nói lỗi**: `pancake.js` thêm `pkDocHoiThoai(pageId)` (khuôn `pkDocTin`: `{ ok:true, conversations } | { ok:false, loi, capKenh }` —
-   phân loại kênh theo CẤU TRÚC như GL4 ② 3: hết token / mọi token lỗi quyền / quá hạn / mạng / thân hỏng / 121 không mã ⇒ `capKenh:true`). `pkGetConversations`
-   GIỮ NGUYÊN chữ ký (còn `src/orders/legacy.js:23` dùng). `messenger/index.js#docHoiThoai` đường mặc định gọi `pkDocHoiThoai`; `ok:false` ⇒ ném `LoiDocHoiThoai`
-   (khuôn ở `loi.js`, mang `capKenh`). Giữ tham số tiêm `getConversations`: hàm tiêm trả MẢNG = đọc được.
-2. **Bộ nạp** (`napTuPoll`): bắt `LoiDocHoiThoai` ở mức PAGE ⇒ không ghi mốc nào, trả kết quả có `docHoiThoaiLoi: 1` + câu lỗi; `chay-worker.js` cộng + in trong
-   `inLuot` (MỘT dòng tổng). `capKenh` ⇒ gọi `ngat-page.js#ghiLoiKenh(kieu:'doc')` với khoá «mỗi VÒNG nạp là một lần» (hàm GL4 hiện đếm theo `tinId` khác nhau —
-   thêm cách đếm cho sự kiện không có tin, vd `tinId = null` ⇒ luôn tính là lần mới; KHÔNG làm lệch luật «hai lượt thử của cùng một tin là MỘT lỗi»). Hai vòng nạp
-   liên tiếp lỗi kênh ⇒ page ngắt vì ĐỌC 30′ (bỏ nạp theo GL4) ⇒ đèn `ngat_kenh` ĐỎ. Vòng nạp OK ⇒ `ghiDocTot`.
-3. **Hội thoại đọc lỗi bền ⇒ giao sale CÓ việc**: ở `luiDocTin`, khi `lan >= LAN_GIAO_SALE` (hằng có tên — đề nghị 4: 30 s + 60 s + 120 s + 240 s ≈ 7,5′ lỗi
-   liên tục) ⇒ bộ nạp (trong MỘT giao dịch, client riêng) đổi `hoi_thoai` → `SALE/HANDOFF`, `ly_do_cuoi='doc_lich_su_loi_ben'` (CHỈ khi đang `AI` + GREET/QUALIFY/
-   SELLING + page `bot_ai_bat`), chèn ĐÚNG MỘT `viec_can_xu_ly` bằng hàm chèn việc DÙNG CHUNG của GL3b/GL4 (`NOT EXISTS` việc mở; `ly_do_day` «Pancake không trả
-   lịch sử hội thoại này ~7′ — bot CHƯA trả lời, CHƯA gửi gì: <câu lỗi>»), ghi `nhat_ky`; rồi ghi mốc hội thoại (hết đọc lại) và xoá khỏi `luiDocTin`. UPDATE đổi
-   0 dòng (sale đã giữ / CLOSING …) ⇒ chỉ ghi mốc, không việc. Page đang NGẮT vì đọc (GL4) thì không đọc ⇒ không tăng `lan` (không giao sale hàng loạt khi Pancake
-   sập cả page — GL4 lo). `luiDocTin` nằm trong RAM — restart đặt lại đếm (ghi rõ, chấp nhận).
-4. **Worker page webhook**: `docHoiThoai` ném `LoiDocHoiThoai` ở bước tra mapping ⇒ xử như `LoiDocLichSu` (nhánh GL3b: lùi 15 s · 30 s, hết lượt ⇒ giao sale CÓ
-   việc, tin `xong` không chặn «trả AI»), KHÔNG đi `LoiChoMappingPancake`/`banGiaoLoi`. `LoiChoMappingPancake` giữ cho đúng ca «đọc được mà không có mapping duy nhất».
-   Đếm GL4: theo `capKenh` như lỗi đọc lịch sử.
-5. Không đổi: `pkGetConversations`, cửa sổ 60 hội thoại, mốc nạp khi đọc OK, luật GL4 cho tin.
+1. **Cửa danh sách nói lỗi — KHÔNG thêm export mới** (export mới làm đỏ `gl4.sh` ④b + mock `l2-m1-nhac-truong`): `pkGetConversations(pageId, soLoi = null)` GIỮ
+   NGUYÊN giá trị trả (mảng), khi có `soLoi` thì điền `soLoi.{ ok, loi, capKenh }` (lỗi = mọi trường hợp không có mảng `conversations`). `messenger/index.js#docHoiThoai`
+   truyền `soLoi`; `ok:false` ⇒ ném `LoiDocHoiThoai` (khuôn `loi.js`, mang `loi`, `capKenh`). Với DANH SÁCH, MỌI `ok:false` là lỗi cấp page (`capKenh` chỉ để chọn câu).
+   Tham số tiêm `getConversations` trả MẢNG = đọc được. `src/orders/legacy.js` gọi không `soLoi` ⇒ như cũ.
+2. **Ngắt theo THỜI GIAN lỗi danh sách liên tục** (thay «2 vòng»): bộ nạp giữ trong RAM theo page `dsLoiTu` (lúc bắt đầu chuỗi lỗi, đồng hồ `dongHo` của bộ nạp).
+   Danh sách OK ⇒ xoá `dsLoiTu` (KHÔNG gọi `ghiDocTot` — đọc được danh sách không chứng minh đường lịch sử chạy). Lỗi liên tục ≥ `T_NGAT_DS` ⇒ hàm MỚI
+   `ngat-page.js#ngatPage(pool, { teamId, pageId, kieu:'doc', lyDo })` (UPDATE có điều kiện «chưa ngắt», ghi `nhat_ky page_ngat_kenh`, cập nhật bộ nhớ chung) — KHÔNG
+   đụng `ghiLoiKenh` và neo `ngat-page.js:59` (`gl4.sh` ⑤c). Chập < `T_NGAT_DS` ⇒ chỉ in log «N page lỗi danh sách» (MỘT dòng tổng mỗi vòng, `inLuot`).
+3. **Bộ nạp đếm lỗi KÊNH khi đọc lịch sử**: `LoiDocLichSu` có `capKenh:true` ở bộ nạp ⇒ `ghiLoiKenh(kieu:'doc')` với khoá theo HỘI THOẠI khác nhau, không trùng không
+   gian id tin (vd `tinId = -hoi_thoai.id`); chạy ngoài giao dịch (pool riêng, như GL4). Lỗi kênh KHÔNG leo tới mốc giao sale (việc của GL4).
+4. **Hội thoại lỗi DỮ LIỆU bền ⇒ giao sale CÓ việc**: chỉ `capKenh:false` mới đếm `luot` trong `luiDocTin` (thêm trường `tu` = lần lỗi đầu). Lượt lỗi thứ
+   `LUOT_LOI_GIAO_SALE` ⇒ (client riêng, MỘT giao dịch) `hoi_thoai` → `SALE/HANDOFF` `ly_do_cuoi='doc_lich_su_loi_ben'` CHỈ khi `AI` + GREET/QUALIFY/SELLING + page
+   `bot_ai_bat`; chèn ĐÚNG 1 `viec_can_xu_ly` qua hàm chèn việc của worker (export `chenViec` tại `worker.js`, `nap.js` dùng `await import("./worker.js")` — tránh vòng
+   import tĩnh, giữ neo `gl3b.sh` ⑤b); `ly_do_day` nói thời gian THẬT đã lỗi (từ `tu`), câu lỗi, và mốc THÔ «khách nhắn lần cuối» (`last_customer_interactive_at`,
+   không parse); `nhat_ky`; ghi mốc, xoá khỏi `luiDocTin`. UPDATE 0 dòng ⇒ chỉ ghi mốc. **Không đặt lại `luot`/`tu` vì quãng page bị NGẮT**: chỉ đặt lại khi hội thoại
+   đọc OK hoặc rời đi (thẻ chặn / page nói cuối). Dòng `nap.js:519` là neo `gl3b.sh` ⑤d/⑤o — viết điều kiện ở dòng khác; buộc phải đụng thì đổi chuỗi neo (③), giữ ý.
+   `luiDocTin` trong RAM — restart đặt lại (chấp nhận, ghi rõ; mốc thô trong `ly_do_day` giúp sale nhận ra tin cũ).
+5. **Worker page webhook**: khối tra mapping bắt `LoiDocHoiThoai` rồi NÉM LẠI `LoiDocLichSu` (giữ `capKenh`, câu «Pancake không trả danh sách hội thoại …») ⇒ đi nhánh
+   GL3b (lùi 15/30 s, hết lượt giao sale CÓ việc, tin `xong`) + đếm GL4 theo `capKenh` như cũ — KHÔNG sửa dòng neo `worker.js:333` (`gl4.sh` ⑤q). Đọc được mà không mapping
+   duy nhất ⇒ vẫn `LoiChoMappingPancake`.
+6. **Đèn**: sửa câu `kho-suc-khoe.js:519-521,536` («không phủ lỗi ở bước nạp» ⇒ nói đúng phần đã phủ: danh sách lỗi liên tục ≥ T ⇒ ngắt; lỗi kênh khi đọc lịch sử ⇒ đếm).
+   CHỈ đổi câu.
+
+**Sửa sau review (a) 07/10:** C1 → ② 2 (theo thời gian liên tục, hàm `ngatPage` riêng, bỏ `ghiDocTot` ở nạp) · C2 → ② 3/4 (đếm lỗi kênh ở bộ nạp theo hội thoại; chỉ lỗi dữ
+liệu leo tới giao) · N1 → `LUOT_LOI_GIAO_SALE` + `tu` · N2 → ② 4 (không đặt lại vì quãng ngắt) · N3 → ② 4 (mốc thô) · N4 → ② 1/4/5/6 + ③ · N5 → ④ · N6 → ② 1.
 
 ## ③ File được đụng
 
@@ -50,40 +59,46 @@ src/queue/nap.js
 src/queue/chay-worker.js
 src/queue/worker.js
 src/queue/ngat-page.js
+v3/src/ui/suc-khoe/kho-suc-khoe.js
+ops/bin/nghiem-thu/gl3b.sh
 test/gl3c-*.test.mjs
 ops/bin/nghiem-thu/gl3c.sh
 ```
-Neo đảo-vá của `gl3b.sh` / `gl4.sh` (chuỗi nguyên văn + `count == 1`) trong `pancake.js` / `nap.js` / `worker.js` / `ngat-page.js`: KHÔNG sửa dòng neo; buộc phải sửa ⇒
-DỪNG báo tổng (có thể cho cổng vào ③ với ràng buộc «chỉ đổi chuỗi neo»). Mock `pancake.js` trong `test/l2-m1-nhac-truong.test.js` có danh sách export cố định —
-export mới mà nơi khác nạp tĩnh ⇒ ca đó đỏ ⇒ DỪNG báo tổng (tiền lệ GL3b N1: cho tệp vào ③ chỉ để thêm tên vào mock). Ca cũ đỏ ngoài ③ ⇒ DỪNG, báo tổng.
+`kho-suc-khoe.js`: CHỈ câu ② 6. `gl3b.sh`: CHỈ đổi chuỗi neo nếu buộc phải sửa dòng neo, giữ ý đột biến. Neo `gl4.sh` (⑤c `ngat-page.js:59`, ⑤q `worker.js:333`,
+④b danh sách export) KHÔNG được đụng — buộc phải ⇒ DỪNG báo tổng. Ca cũ đỏ ngoài ③ ⇒ DỪNG, báo tổng.
 
 ## ④ Nghiệm thu (viết trước — `ops/bin/nghiem-thu/gl3c.sh`, rc=0 khi đạt; hộp cát `DB="aicloser_v3_nt_gl3c_p$$"`; fetch giả, KHÔNG mạng; ≥2 token; mở van gửi CHỈ trong env tiến trình ca; `grep -E` không `rg`; nạp `.env` nếu thiếu `DATABASE_URL_V3`; đảo-vá trên BẢN SAO tạm)
 
-⚠️ Đi CỬA THẬT (`motLuot` → `napTuPoll` → `docHoiThoai` thật → `pkDocHoiThoai` → `pkFetchPage` → fetch giả). Cấm tiêm `docHoiThoai`/`docTin` ở phép 1–4. Đồng hồ
-lùi dùng tham số `dongHo` sẵn có của bộ nạp; giờ ngắt dùng đồng hồ CSDL (khuôn GL4). Phép phủ định kèm vế «đã chạm» (fetch giả nhận đúng URL, `ket.nap.mo === true`).
+⚠️ Cửa thật (`napTuPoll` → `docHoiThoai` → `pkGetConversations` → `pkFetchPage` → fetch giả; worker `chayMotVong` thật). Cấm tiêm `docHoiThoai`/`docTin`. Phải có phép
+CHẠY XEN (gọi `chayMotVong` và `napTuPoll` đan nhau như prod), không chỉ `motLuot` tuần tự. Mọi phép phủ định kèm «đã chạm»: đếm đúng số GET `…/conversations` /
+`…/messages` cho đúng page/hội thoại; `ket.nap.mo === true`. Đối chứng dương: page Q (danh sách OK) được fetch trong CÙNG vòng P bị bỏ.
 
-1. `/conversations` quá hạn ở mọi token 2 vòng nạp liên tiếp ⇒ `docHoiThoaiLoi` đếm + in trong log vòng; page ngắt vì ĐỌC (`ngat_vi='doc'`); đèn `ngat_kenh` ĐỎ; vòng sau
-   0 lượt fetch cho page; không mốc nào bị ghi.
-2. `/conversations` lỗi 1 vòng rồi OK ⇒ KHÔNG ngắt; tin khách vào hàng bình thường.
-3. Hội thoại X đọc lịch sử lỗi «Thiếu mã khách hàng» liên tục (dữ liệu, `capKenh:false`), các hội thoại khác OK ⇒ page KHÔNG ngắt; tới lần lùi thứ 4 ⇒ X:
-   `SALE/HANDOFF` `doc_lich_su_loi_ben`, ĐÚNG 1 việc, `nhat_ky` 1 dòng, mốc ghi, không đọc X nữa; `resumeConversation` (trả AI) THÀNH. Lần lùi 1–3 ⇒ chưa giao.
-4. Như 3 nhưng X đang do SALE giữ ⇒ không việc mới, mốc ghi.
-5. Page webhook (hộp cát): `docHoiThoai` lỗi ở bước tra mapping ⇒ lùi 15 s · 30 s, hết lượt ⇒ giao sale CÓ việc, «trả AI» THÀNH; KHÔNG `banGiaoLoi`. Đọc được mà không
-   mapping duy nhất ⇒ vẫn `LoiChoMappingPancake` như cũ.
-6. `pkGetConversations` giữ nguyên hành vi (ca `legacy.js` / ca cũ xanh).
-7. Đảo-vá: cửa trả về nuốt lỗi ⇒ phép 1 đỏ; bỏ đếm GL4 ở nạp ⇒ phép 1 (ngắt) đỏ; đếm vòng lỗi đơn lẻ là ngắt ⇒ phép 2 đỏ; bỏ giao sale lỗi bền ⇒ phép 3 đỏ; giao sale ở lần
-   lùi 1 ⇒ phép 3 (vế chưa giao) đỏ; giao khi sale đã giữ ⇒ phép 4 đỏ; webhook về `banGiaoLoi` ⇒ phép 5 đỏ.
-8. Cổng cũ xanh (rc tách dòng): `gl4.sh` · `gl3b.sh` · `gl3.sh` · bộ ca `test/l1-m2-cua.test.js` · `test/l2-m1-hang-doi.test.js` · `test/l2-m1-nhac-truong.test.js` ·
-   `test/va-p7-chay-worker.test.js` · `test/phase1-chat-flow.test.js` · `test/gl3b-*.test.mjs` · `test/gl4-*.test.mjs`. `npm test` không thêm ca đỏ.
+1. Danh sách lỗi liên tục ≥ `T_NGAT_DS` (đồng hồ `dongHo`) ⇒ page ngắt `doc`, đèn `ngat_kenh` ĐỎ, vòng sau 0 fetch cho P, Q vẫn fetch; không mốc nào ghi.
+1b. Danh sách lỗi 2 vòng liền (12 s) rồi lành ⇒ KHÔNG ngắt; tin vào hàng bình thường; log có «1 page lỗi danh sách».
+1c. Xen: worker tin T lỗi kênh → `napTuPoll` danh sách lỗi → worker T lỗi lần nữa (cùng tin) ⇒ KHÔNG ngắt (cùng tin = 1 lỗi; danh sách lỗi không đếm theo vòng).
+2. `/conversations` OK + `/messages` lỗi KÊNH ở 2 hội thoại ⇒ ngắt `doc`, 0 việc, không hội thoại nào leo lượt giao.
+2b. Xen: worker A lỗi kênh → `napTuPoll` (danh sách OK) → worker B lỗi kênh ⇒ NGẮT (danh sách OK không xoá chuỗi lỗi đọc).
+3. Hội thoại X lỗi DỮ LIỆU liên tục, hội thoại khác OK ⇒ page KHÔNG ngắt; lượt 1–2 chưa giao; lượt 3 ⇒ X `SALE/HANDOFF` `doc_lich_su_loi_ben`, ĐÚNG 1 việc, `ly_do_day`
+   nói đúng thời gian đã lỗi + mốc thô khách nhắn lần cuối; `nhat_ky` 1 dòng; mốc ghi; không đọc X nữa (GET `/messages` của X dừng đúng ở lượt 3); «trả AI» THÀNH.
+3b. X lỗi dữ liệu tới lượt 2 → page ngắt 30′ (bởi hội thoại khác) → mở → X lỗi tiếp ⇒ được giao ở lượt 3 (đếm gộp qua quãng ngắt).
+4. Như 3 nhưng X do SALE giữ ⇒ không việc mới, mốc ghi.
+5. Webhook: `docHoiThoai` lỗi ở tra mapping ⇒ lùi 15/30 s, hết lượt giao sale CÓ việc, «trả AI» THÀNH, không `banGiaoLoi`; đọc được mà không mapping duy nhất ⇒ `LoiChoMappingPancake`.
+6. `pkGetConversations` gọi không `soLoi` (đường `legacy.js`) ⇒ hành vi cũ.
+7. Đảo-vá: cửa nuốt lỗi ⇒ 1 đỏ · đếm mỗi vòng ⇒ 1b/1c đỏ · danh sách OK gọi `ghiDocTot` ⇒ 2b đỏ · không đếm lỗi kênh ở nạp ⇒ 2 đỏ · giao cả lỗi kênh ⇒ 2 đỏ · bỏ giao lỗi bền ⇒
+   3 đỏ · giao ở lượt 1 ⇒ 3 (vế chưa giao) đỏ · đặt lại `luot` sau quãng ngắt ⇒ 3b đỏ · giao khi sale giữ ⇒ 4 đỏ · webhook về `banGiaoLoi` ⇒ 5 đỏ.
+8. Cổng cũ xanh (rc tách dòng): `gl4.sh` · `gl3b.sh` (đảo-vá ⑤d/⑤o/⑤b còn đỏ đúng) · `gl3.sh` · bộ ca `test/l1-m2-cua.test.js` · `test/l2-m1-hang-doi.test.js` ·
+   `test/l2-m1-nhac-truong.test.js` · `test/va-p7-chay-worker.test.js` · `test/phase1-chat-flow.test.js` · `test/gl3b-*.test.mjs` · `test/gl4-*.test.mjs` ·
+   `v3/test/b/suc-khoe.test.mjs`. `npm test` không thêm ca đỏ.
 
 ## ⑤ Test chạm nhánh nào
 
-`test/gl3c-*.test.mjs` (danh sách hội thoại lỗi kênh 2 vòng / 1 vòng · hội thoại lỗi bền dữ liệu ⇒ giao sale lần 4 · sale đã giữ · webhook mapping lỗi · pkGetConversations giữ nguyên).
+`test/gl3c-*.test.mjs` (danh sách lỗi theo thời gian · xen nạp/xử · lỗi kênh ở nạp đếm GL4 · lỗi dữ liệu bền giao ở lượt 3 + qua quãng ngắt · sale đã giữ · webhook · legacy).
 
 ## ⑥ Ngoài phạm vi ⇒ §9 sổ nợ
 
-`luiDocTin` trong RAM (restart đặt lại đếm lỗi bền) · `src/orders/legacy.js` vẫn dùng `pkGetConversations` nuốt lỗi (đường đơn cũ) · thẻ/ghi chú Pancake khi giao sale
-(N-GL3B-BANGIAOLOI-PANCAKE — GL6) · cảnh báo Telegram (GL6).
+Page ngắt lặp mãi (Pancake sập dài / ghim token thiếu ghế 121) ⇒ không khách nào được giao — GL6 cảnh báo + người quyết · webhook «đọc được mà không mapping duy nhất» vẫn
+`banGiaoLoi` không việc (0 page webhook) · lỗi dữ liệu toàn hệ (Pancake đổi hình dữ liệu) ⇒ mọi khách ra việc, không tín hiệu cấp page · tin tới sau khi bộ nạp đã giao chặn
+«trả AI» (N-GL3B-TRA-AI-CHAN-GUARD) · «Thiếu mã khách hàng» đi cùng `custId` rỗng thì giao ngay lượt 1 (đo khi mở van) · `luiDocTin` trong RAM.
 
 ## ⑦ ĐÃ TRA CHƯA
 
