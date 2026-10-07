@@ -518,7 +518,9 @@ function soTinGiu(x) {
 /**
  * ⑤b NGẮT KÊNH PANCAKE (GL4 ② 7): ĐỎ khi có page của team đang ngắt — nói page nào, ngắt đọc hay gửi, tới mấy giờ (giờ VN), vì
  * sao, bot tự thử lại lúc đó, bao nhiêu tin đang giữ, bao nhiêu tin gửi lỗi cần đối chiếu (việc «Gửi không rõ…» MỞ của team).
- * ⚠️ Đèn KHÔNG phủ Pancake sập ở bước NẠP (`pkGetConversations` nuốt lỗi — N-GL3B-CONV-NUOT-LOI): xanh ≠ kênh lành.
+ * Phủ (GL3c): gửi/đọc lỗi ở worker (GL4) · DANH SÁCH hội thoại lỗi liên tục ≥ 2′ ở bước NẠP ⇒ ngắt đọc · lịch sử lỗi KÊNH khi bộ nạp
+ * đọc ⇒ đếm như worker. ⚠️ Không phủ: Pancake chập dưới 2′ ở bước nạp (chỉ dòng log của worker) · lỗi của MỘT hội thoại (giao sale ở
+ * lượt 3, không ngắt page): xanh ≠ chưa có lần chập nào.
  */
 function denNgatKenh(ngat, x, viec) {
   const ten = 'Ngắt kênh Pancake';
@@ -533,7 +535,7 @@ function denNgatKenh(ngat, x, viec) {
   if (!ngat.ds.length) {
     return den({
       ma: 'ngat_kenh', ten, muc: MUC.XANH,
-      vi: `Không page nào của team đang ngắt kênh Pancake (không phủ lỗi ở bước nạp tin).${canDoiChieu ? ` ${canDoiChieu} tin gửi lỗi đang chờ đối chiếu ở màn Vận hành.` : ''}`,
+      vi: `Không page nào của team đang ngắt kênh Pancake (Pancake chập dưới 2′ hoặc lỗi ở một hội thoại không ngắt page).${canDoiChieu ? ` ${canDoiChieu} tin gửi lỗi đang chờ đối chiếu ở màn Vận hành.` : ''}`,
       so: '0 page',
     });
   }

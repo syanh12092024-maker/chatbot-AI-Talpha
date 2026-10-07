@@ -1,6 +1,6 @@
 // Lỗi CÓ TÊN của CỬA Pancake Messenger v3 (PHIẾU L1-M2 ②) — bắt bằng `err.name` hoặc
 // `instanceof`, cùng khuôn với `src/db/loi.js` (LoiThieuBoiCanhTeam/LoiXuyenTeam), nhưng
-// đây là BỐN lỗi RIÊNG của tầng CỬA (channel; GL3b thêm `LoiDocLichSu`), không phải của tầng truy vấn — dù bên dưới
+// đây là các lỗi RIÊNG của tầng CỬA (channel; GL3b thêm `LoiDocLichSu`, GL3c thêm `LoiDocHoiThoai`), không phải của tầng truy vấn — dù bên dưới
 // có tái dùng layNhieu/ghiNhatKy để thi hành.
 //
 //   LoiPageKhongThuocTeam — page_id (Facebook) không tồn tại trong bảng `page`, HOẶC tồn
@@ -29,6 +29,11 @@
 //     PHIẾU GL4: mang `capKenh` — `true` khi lỗi ở CẤP KÊNH (hết token / quyền ở mọi token / quá hạn / mạng / thân hỏng / 121
 //     không mã «gói cước») ⇒ worker đếm vào ngắt cả page; `false` khi là lỗi của MỘT hội thoại («Thiếu mã khách hàng», thân
 //     không danh sách) ⇒ không đếm. Phân loại ở `pkDocTin` theo CẤU TRÚC, không theo câu chữ.
+//
+//   LoiDocHoiThoai — (PHIẾU GL3c) `docHoiThoai` KHÔNG đọc được DANH SÁCH hội thoại của page (Pancake sập / quá hạn / 502 / quyền
+//     ở mọi token / 121 / thân không có mảng `conversations`). Trước GL3c cửa trả `[]` ⇒ bộ nạp thấy «0 hội thoại» y như không ai
+//     nhắn, đèn GL4 không bao giờ đỏ (N-GL3B-CONV-NUOT-LOI). Bộ nạp poll coi MỌI lỗi danh sách là lỗi cấp page; `capKenh` (cùng luật cấu
+//     trúc của `pkDocTin`) chỉ để chọn câu / để worker webhook đếm GL4 khi ném lại thành `LoiDocLichSu`.
 export class LoiPageKhongThuocTeam extends Error {
   constructor(thongDiep) {
     super(thongDiep);
@@ -54,6 +59,14 @@ export class LoiDocLichSu extends Error {
   constructor(thongDiep, { capKenh = false } = {}) {
     super(thongDiep);
     this.name = "LoiDocLichSu";
+    this.capKenh = capKenh === true;
+  }
+}
+
+export class LoiDocHoiThoai extends Error {
+  constructor(thongDiep, { capKenh = false } = {}) {
+    super(thongDiep);
+    this.name = "LoiDocHoiThoai";
     this.capKenh = capKenh === true;
   }
 }

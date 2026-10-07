@@ -339,8 +339,18 @@ export async function refreshPancakePages() {
   return _pkPages.size;
 }
 
-export async function pkGetConversations(pageId) {
-  const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations?access_token=${t}&page_number=1`);
+// GL3c ② 1 — `soLoi` (tuỳ chọn, tham số RA): điền `{ ok, loi, capKenh }` để cửa `docHoiThoai` nói được lỗi thay vì «0 hội thoại».
+// Giá trị trả KHÔNG đổi (mảng; lỗi ⇒ `[]`) — `src/orders/legacy.js` gọi không `soLoi` vẫn như cũ. Lỗi = MỌI trường hợp không có mảng
+// `conversations` (danh sách không có «lỗi của một hội thoại» — review (a) N6); `capKenh` theo cùng luật cấu trúc của `pkDocTin` — bộ nạp
+// poll chỉ dùng nó để chọn câu, worker page webhook dùng nó để đếm GL4 (ném lại `LoiDocLichSu`). Không export mới (neo `gl4.sh` ④b).
+export async function pkGetConversations(pageId, soLoi = null) {
+  const vx = { ds: [], hetToken: false };   // vòng xoay token của lượt này — cùng khuôn `pkDocTin` (câu lỗi «thật» nhất)
+  const j = await pkFetchPage(pageId, (t) => `${PK_BASE}/pages/${pageId}/conversations?access_token=${t}&page_number=1`, undefined, vx);
+  if (soLoi) {
+    const ok = Array.isArray(j?.conversations);
+    const cau = ok ? '' : lyDoDocLoi(vx.hetToken ? loiThatNhat(vx.ds) : j).replace(/danh sách tin/g, 'danh sách hội thoại');
+    Object.assign(soLoi, { ok, loi: cau, capKenh: !ok && laLoiKenhDoc(vx, j) });
+  }
   return j.conversations || [];
 }
 // Như `pkGetMessages` nhưng KHÔNG nuốt lỗi — cho màn ĐỌC (bàn hội thoại v3, UI-HT1) nói được

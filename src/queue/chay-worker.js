@@ -24,7 +24,7 @@
 //   ③ cổng HTTP ghi trên `globalThis.fetch` (handler-v3) — lớp cuối, chặn POST ra pages.fm.
 // Vì vậy chạy file này trên máy dev là AN TOÀN theo luật 1: nó sẽ quay, đọc, và chốt
 // `chan_guard` mà không một byte nào ra khách. In ra số đếm để thấy nó đang đứng ở đâu.
-import { napTuPoll, nguonDangMo, lyDoNguonDong } from "./nap.js";
+import { napTuPoll, nguonDangMo, lyDoNguonDong, giuLoiDanhSach } from "./nap.js";
 import { chayToiKhiHet } from "./worker.js";
 import { lamMoiNgat, pageDangNgat } from "./ngat-page.js";
 import { dsPageBotTraLoiCoTran, choPhepTheoTran, lyDoRong, trangThaiTran, lyDoVuotTran, cauSoTran } from "./page-routing.js";
@@ -88,7 +88,7 @@ export function lyDoChuaChoPageNao() {
 export async function motLuot(pool, deps = {}) {
   const ket = {
     nap: { mo: nguonDangMo(), them: 0, trung: 0, page: 0, loi: 0,
-      boQuaPageNoiCuoi: 0, boQuaMoc: 0, boQuaDaDoc: 0, boQuaThe: 0, docTinLoi: 0 },
+      boQuaPageNoiCuoi: 0, boQuaMoc: 0, boQuaDaDoc: 0, boQuaThe: 0, docTinLoi: 0, dsLoi: 0 },
     xu: null,
   };
   // MỘT LƯỢT ĐỌC CHO CẢ VÒNG. Nguồn có thể là CSDL (024), nên hỏi hai lần trong một vòng
@@ -105,6 +105,7 @@ export async function motLuot(pool, deps = {}) {
   const ngat = pageDangNgat();
   ket.ngat = { so: ngat.length, doc: ngat.filter((x) => x.vi === "doc").length, gui: ngat.filter((x) => x.vi === "gui").length };
   const boNap = new Set(ngat.filter((x) => x.vi === "doc").map((x) => x.pageId));
+  const loiDsVong = [];   // GL3c: page vòng nạp này THẤY danh sách hội thoại lỗi
 
   if (!ket.nap.mo) {
     ket.nap.lyDo = lyDoNguonDong();
@@ -139,6 +140,8 @@ export async function motLuot(pool, deps = {}) {
         ket.nap.boQuaThe += r.boQuaThe || 0;
         // GL3b: hội thoại Pancake không trả lịch sử (lỗi vừa gặp + đang lùi) — bot CHƯA trả lời họ.
         ket.nap.docTinLoi += r.docTinLoi || 0;
+        // GL3c: page Pancake không trả DANH SÁCH hội thoại ở vòng này (chưa tới T_NGAT_DS thì chỉ có dòng log này).
+        if (r.dsLoi) { ket.nap.dsLoi += 1; ket.nap.dsLoiCuoi = `${pageId}: ${r.lyDo}`; loiDsVong.push(pageId); }
       } catch (e) {
         // Một page hỏng KHÔNG được dừng cả vòng — nhưng phải ĐẾM, không nuốt im.
         ket.nap.loi += 1;
@@ -146,6 +149,11 @@ export async function motLuot(pool, deps = {}) {
       }
     }
   }
+  // GL3c R2-N1 (+ /code-review #2): mốc «danh sách lỗi liên tục» chỉ sống cho page vòng nạp NÀY thấy lỗi danh sách. Page không được nạp
+  // (ngắt đọc — bất kỳ đường nào ngắt · tắt bot · vượt trần · nguồn đóng) hoặc nạp mà không tới bước đọc danh sách (đổi sang webhook ·
+  // không có trong sổ · lỗi khác) ⇒ bỏ mốc: lỗi trước quãng KHÔNG quan sát đó không nối với lỗi sau thành «liên tục»; mở lại phải đủ
+  // T_NGAT_DS lỗi liên tục mới ngắt lại. Page ngắt vì GỬI vẫn nạp: `nap.js` không nối chuỗi khi page đang ngắt. Vòng xử (boQuaNap) không đụng.
+  if (!deps.boQuaNap) giuLoiDanhSach(loiDsVong);
   if (deps.boQuaXu) return ket;
   ket.xu = await chayToiKhiHet(pool, {
     toiDa: TRAN_MOI_LUOT,
@@ -169,6 +177,8 @@ export function inLuot(ket) {
   const dong = (n.mo
     ? `nạp: ${n.them} mới · ${n.trung} trùng · ${n.page} page${loc ? ` · lọc: ${loc}` : ""}`
       + `${n.loi ? ` · ${n.loi} page LỖI (${n.loiCuoi})` : ""}`
+      // GL3c: MỘT cụm tổng mỗi vòng — Pancake chập ngắn (< T_NGAT_DS) chỉ hiện ở đây, không ngắt.
+      + `${n.dsLoi ? ` · ${n.dsLoi} page lỗi danh sách (${String(n.dsLoiCuoi).slice(0, 160)})` : ""}`
     : `nạp: ĐÓNG — ${n.lyDo}`)
     // GL4: số page đang ngắt kênh — MỘT cụm trong dòng tổng, không cảnh báo riêng mỗi vòng.
     + (ket.ngat?.so ? ` · ngắt kênh: ${ket.ngat.so} page (đọc ${ket.ngat.doc} · gửi ${ket.ngat.gui})` : "");

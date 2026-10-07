@@ -19,6 +19,7 @@ import {
   LoiHoiThoaiKhongThuocPage,
   LoiCuaGuiDong,
   LoiDocLichSu,          // GL3b — docTin không đọc được lịch sử
+  LoiDocHoiThoai,        // GL3c — docHoiThoai không đọc được danh sách hội thoại
 } from "../../channels/messenger/index.js"; // (sửa lại số cấp `../` theo vị trí file gọi)
 ```
 
@@ -32,7 +33,7 @@ DUY NHẤT** trong `src/db|pos|channels|chat|orders|queue` gọi xuống nó (đ
 ## 1 · Sáu hàm — chữ ký
 
 ```ts
-docHoiThoai(pool, ctx, { pageId });                                       // → mảng conversations (Pancake)
+docHoiThoai(pool, ctx, { pageId });                                       // → mảng conversations (Pancake) | NÉM LoiDocHoiThoai (GL3c)
 docTin(pool, ctx, { pageId, psid, convId, custId });                      // → mảng messages (Pancake, tối đa 25) | NÉM LoiDocLichSu (GL3b)
 guiTin(pool, ctx, { pageId, psid, convId, custId, text });                // → { ok, id } | { ok:false, error }
 guiAnh(pool, ctx, { pageId, psid, convId, custId, url, caption? });       // → { ok, id } | { ok:false, error }
@@ -68,11 +69,26 @@ gatThe(pool, ctx, { pageId, psid, convId, name, on? = true });            // →
   nào; thân hỏng 502/504; 121 dạng KHÔNG mã «Không tìm thấy gói cước»), `false` = lỗi của MỘT
   hội thoại («Thiếu mã khách hàng», thân không danh sách). Phân loại ở `pancake.js#pkDocTin`
   theo CẤU TRÚC (`ok:false` trả kèm `capKenh`), không theo câu chữ. Worker đếm `capKenh:true`
-  vào «ngắt cả page 30′» (`queue/ngat-page.js`); bộ nạp KHÔNG đếm (lỗi ở bước nạp ngoài GL4).
+  vào «ngắt cả page 30′» (`queue/ngat-page.js`); bộ nạp KHÔNG đếm (lỗi ở bước nạp ngoài GL4) — **GL3c sửa: bộ nạp
+  CÓ đếm** (xem gạch dưới).
   Thêm dấu cho lỗi có sẵn, không đổi ý đồ (án lệ GL3b N7). Kết quả `{ok:false}` của `guiTin` /
   `guiAnh` (`pkSendReply`/`pkSendImage`, đi thẳng qua cửa) mang thêm `biChan` · `daGoi` · `ma`
   (`pancake.js#dauLoiGui`; `ghiNote`/`gatThe` giữ hình dạng cũ) để `queue/lan-gui.js` gắn dấu lỗi
   KÊNH (`kenh`, `chiTiet`) cho lượt tin/ảnh đã gọi Pancake mà hỏng.
+- **`docHoiThoai` (PHIẾU GL3c, 07/10/2026):** đọc DANH SÁCH hội thoại KHÔNG được ⇒ **NÉM `LoiDocHoiThoai`**
+  (`loi.js`, mang `capKenh`) với câu «Pancake không trả danh sách hội thoại: <lý do>» (không token/URL). Trước GL3c cửa trả
+  thẳng `pkGetConversations` — hàm đó nuốt mọi lỗi thành `[]` ⇒ bộ nạp thấy «0 hội thoại» như không ai nhắn, đèn ngắt kênh
+  không bao giờ đỏ; worker webhook thấy «chưa có mapping» ⇒ `banGiaoLoi` không việc. Cơ chế: `pkGetConversations(pageId,
+  soLoi)` GIỮ NGUYÊN giá trị trả (mảng; lỗi ⇒ `[]` — `src/orders/legacy.js` gọi không `soLoi` vẫn như cũ) và điền tham số RA
+  `soLoi.{ ok, loi, capKenh }`; cửa CHỈ ném khi `soLoi.ok === false` ⇒ hàm tiêm `getConversations` trả MẢNG mà không điền
+  `soLoi` (mock bộ ca) vẫn là đọc được. Với danh sách, MỌI trường hợp không có mảng `conversations` là lỗi (kể cả thân 200 không
+  mảng) — bộ nạp poll coi MỌI lỗi danh sách là lỗi cấp page (`capKenh` chỉ để chọn câu); worker page webhook dùng `capKenh` để
+  đếm GL4 như một lỗi đọc lịch sử (phiếu ② 5). Ai gọi phải bắt: bộ nạp (`queue/nap.js` — lỗi LIÊN TỤC ≥ `T_NGAT_DS_MS` = 2′ thì ngắt page
+  đọc 30′, ngắn hơn chỉ in log «N page lỗi danh sách») và worker page webhook (`queue/worker.js` — ném lại `LoiDocLichSu` giữ
+  `capKenh` ⇒ nhánh GL3b: lùi 15 s · 30 s, hết lượt giao sale CÓ việc). Cùng phiếu: bộ nạp gặp `LoiDocLichSu` có
+  `capKenh:true` ⇒ đếm vào ngắt (`ngat-page.js#ghiLoiKenh`) theo HỘI THOẠI (khoá `-hoi_thoai.id` — worker đếm lỗi ĐỌC bằng
+  CÙNG khoá); `capKenh:false` (lỗi dữ liệu) tới lượt thứ 3 ⇒ bộ nạp giao sale CÓ việc (`ly_do_cuoi='doc_lich_su_loi_ben'`).
+  Sửa mã cho khớp ý đồ có sẵn (README nguyên tắc 9 · 13), không đổi ý đồ.
 
 ## 2 · ⚠️ `psid` ≠ `convId` của Pancake — ĐỌC KỸ TRƯỚC KHI GỌI
 

@@ -26,7 +26,8 @@
 // KHUÔN LỖI: mọi chặn (định tuyến team, N5, guard) NÉM lỗi có tên — KHÔNG trả sentinel
 // {ok:false}, khác với lỗi MẠNG/API thật của pancake.js (những cái đó vẫn trả nguyên
 // {ok:false,error} như cũ, đi thẳng qua tầng này không đổi hình dạng). NGOẠI LỆ (GL3b):
-// `docTin` đọc lịch sử không được thì NÉM `LoiDocLichSu` — xem ghi chú ở hàm.
+// `docTin` đọc lịch sử không được thì NÉM `LoiDocLichSu` — xem ghi chú ở hàm. GL3c: `docHoiThoai`
+// đọc danh sách không được thì NÉM `LoiDocHoiThoai`.
 import {
   pkGetConversations,
   pkDocTin,
@@ -41,9 +42,10 @@ import {
   LoiHoiThoaiKhongThuocPage,
   LoiCuaGuiDong,
   LoiDocLichSu,
+  LoiDocHoiThoai,
 } from "./loi.js";
 
-export { LoiPageKhongThuocTeam, LoiHoiThoaiKhongThuocPage, LoiCuaGuiDong, LoiDocLichSu };
+export { LoiPageKhongThuocTeam, LoiHoiThoaiKhongThuocPage, LoiCuaGuiDong, LoiDocLichSu, LoiDocHoiThoai };
 
 // ── N1: GUARD TẠI CỬA — FAIL-CLOSED ĐÚNG CHIỀU ──────────────────────────────────────
 // Đọc process.env TƯƠI mỗi lượt gọi (không cache ở module-scope) — test đổi biến giữa
@@ -150,11 +152,23 @@ async function xacNhanHoiThoaiThuocPage(
 
 // ══ ĐỌC — không bị guard N1 chặn (chỉ định tuyến team) ══════════════════════════════
 
-/** Đọc danh sách hội thoại có tin mới của MỘT page (vòng poll). */
+/**
+ * Đọc danh sách hội thoại có tin mới của MỘT page (vòng poll · tra mapping webhook).
+ *
+ * PHIẾU GL3c — ĐỌC KHÔNG ĐƯỢC THÌ NÉM `LoiDocHoiThoai`, KHÔNG trả `[]`. Bản trước trả nguyên `pkGetConversations` (nuốt mọi lỗi thành
+ * `[]`): Pancake sập / quá hạn / 121 ⇒ bộ nạp thấy «0 hội thoại» như không ai nhắn, đèn GL4 không bao giờ đỏ; worker webhook thấy «chưa
+ * có mapping» ⇒ `banGiaoLoi` không việc. Nay truyền tham số RA `soLoi` — CHỈ ném khi `soLoi.ok === false`: hàm tiêm trả MẢNG mà không
+ * điền `soLoi` (mock bộ ca) vẫn là đọc được (R2-N3). «Rỗng thật» (Pancake trả `conversations: []`) vẫn trả `[]`.
+ */
 export async function docHoiThoai(pool, ctx, { pageId }, deps = {}) {
   const { getConversations = pkGetConversations } = deps;
   await trangPageTheoTeam(pool, ctx, pageId);
-  return getConversations(pageId);
+  const soLoi = {};
+  const ds = await getConversations(pageId, soLoi);
+  if (soLoi.ok === false) {
+    throw new LoiDocHoiThoai(`Pancake không trả danh sách hội thoại: ${soLoi.loi || "không rõ lý do"}`, { capKenh: soLoi.capKenh === true });
+  }
+  return ds;
 }
 
 /**

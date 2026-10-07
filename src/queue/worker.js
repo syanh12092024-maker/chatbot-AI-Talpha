@@ -19,7 +19,7 @@ import { nhanDienSale } from '../chat/human.js';
 // UPDATE tay đám `chan_guard` về `cho` — có chủ đích, không tự động.
 import { moPhienRut, TRANG_THAI, THU_LAI, ghiNhatKyHangDoi } from "./kho.js";
 import { xuLyMotTin, KET_QUA, vanGuiDangMo } from "../chat/handler-v3.js";
-import { docTin as cuaDocTin } from "../channels/messenger/index.js";
+import { docTin as cuaDocTin, LoiDocLichSu } from "../channels/messenger/index.js";
 import { ctxHeThong } from "../db/index.js";
 import * as cuaMessenger from "../channels/messenger/index.js";
 import { daBatDauGui, bocCuaGuiBen, dangDienTap, LoiCanDoiChieuGui } from "./lan-gui.js";
@@ -79,11 +79,12 @@ async function banGiaoDocLoi(db, tin, lyDo) {
 }
 
 /**
- * MỘT câu chèn việc cho mọi nhánh bàn giao của worker (đọc lỗi GL3b · gửi lỗi GL4) — khuôn
- * `admin-v3/operations.js#handoffConversation`: NOT EXISTS việc chưa đóng cùng hội thoại, hạn `PHUT_HAN_VIEC`.
+ * MỘT câu chèn việc cho mọi nhánh bàn giao của worker (đọc lỗi GL3b · gửi lỗi GL4) VÀ của bộ nạp (lỗi dữ liệu bền GL3c — `nap.js`
+ * nạp ĐỘNG vì file này nạp tĩnh `nap.js`) — khuôn `admin-v3/operations.js#handoffConversation`: NOT EXISTS việc chưa đóng cùng hội
+ * thoại, hạn `PHUT_HAN_VIEC`.
  * @returns {Promise<boolean>} có chèn việc MỚI không.
  */
-async function chenViec(db, teamId, hoiThoaiId, lyDo) {
+export async function chenViec(db, teamId, hoiThoaiId, lyDo) {
   const viec = await db.query(
     `INSERT INTO viec_can_xu_ly (team_id, loai, hoi_thoai_id, ly_do_day, han_luc)
        SELECT $1, 'hoi_thoai', $2, $3, now() + ($4 || ' minutes')::interval
@@ -104,11 +105,17 @@ async function chenViec(db, teamId, hoiThoaiId, lyDo) {
  * page biến nó thành lặp mỗi chu kỳ 30′.
  */
 async function viecGuiLoi(db, tin) {
+  const htId = await idHoiThoaiCuaTin(db, tin);
+  if (htId != null) await chenViec(db, tin.team_id, htId, LY_DO_VIEC_GUI_LOI);
+}
+
+/** id `hoi_thoai` của khách của một tin (team · page id Facebook · psid) — một câu tra cho việc gửi lỗi (GL4) và khoá đếm lỗi đọc (GL3c). */
+async function idHoiThoaiCuaTin(db, tin) {
   const ht = await db.query(
     `SELECT h.id FROM hoi_thoai h JOIN page p ON p.id = h.page_id
       WHERE h.team_id = $1 AND p.page_id = $2 AND h.psid = $3`,
     [tin.team_id, tin.page_id, tin.psid]);
-  if (ht.rowCount) await chenViec(db, tin.team_id, ht.rows[0].id, LY_DO_VIEC_GUI_LOI);
+  return ht.rowCount ? ht.rows[0].id : null;
 }
 
 /**
@@ -155,7 +162,21 @@ async function ghiKenhSauLuot(p, k) {
   const dinh = { teamId: k.tin.team_id, pageId: k.tin.page_id };
   if (k.guiOk) await ghiGuiTot(p, dinh);
   else if (k.docOk) await ghiDocTot(p, dinh);
-  if (k.loi) await ghiLoiKenh(p, { ...dinh, tinId: k.tin.id, ...k.loi });
+  if (k.loi) await ghiLoiKenh(p, { ...dinh, tinId: k.loi.kieu === "doc" ? await khoaDocTheoHoiThoai(p, k.tin) : k.tin.id, ...k.loi });
+}
+
+/**
+ * GL3c R2-N2 — lỗi ĐỌC đếm theo HỘI THOẠI, CÙNG khoá bộ nạp dùng (`-hoi_thoai.id`): khách X đang nhắn dở mà Pancake chập (worker đọc
+ * tin T lỗi + bộ nạp đọc lại X lỗi) là MỘT lỗi, không phải hai. Lỗi GỬI giữ theo tin. Tra hỏng / chưa có dòng ⇒ về khoá theo tin (như
+ * trước GL3c) — không làm hỏng lượt ghi bộ đếm.
+ */
+async function khoaDocTheoHoiThoai(p, tin) {
+  try {
+    const htId = await idHoiThoaiCuaTin(p, tin);
+    return htId != null ? `-${htId}` : tin.id;
+  } catch {
+    return tin.id;
+  }
 }
 
 async function xuMotVong(pool, deps, kenh) {
@@ -208,8 +229,17 @@ async function xuMotVong(pool, deps, kenh) {
         return { tinId: tin.id, ketQua: KET_QUA.CHAN_GUARD, lyDo: 'nguon_da_doi', dem: {}, soLanThu: tin.so_lan_thu };
       }
       // Không đoán conv_id = psid: chỉ dùng mapping mà Pancake xác nhận.
-      const ds = await (deps.docHoiThoai || cuaMessenger.docHoiThoai)(khach,
-        ctxHeThong(), { pageId: tin.page_id }, deps.depsPancake || {});
+      // GL3c ② 5: cửa đọc danh sách KHÔNG được thì NÉM `LoiDocHoiThoai` ⇒ ném lại `LoiDocLichSu` (giữ `capKenh`) ⇒ nhánh GL3b ở
+      // `catch` dưới (lùi 15 s · 30 s, hết lượt giao sale CÓ việc, tin `xong`) + đếm GL4 theo `capKenh` — không còn «chưa có mapping»
+      // ⇒ `banGiaoLoi` không việc. Đọc được mà không mapping duy nhất ⇒ vẫn `LoiChoMappingPancake` (đường cũ).
+      let ds;
+      try {
+        ds = await (deps.docHoiThoai || cuaMessenger.docHoiThoai)(khach,
+          ctxHeThong(), { pageId: tin.page_id }, deps.depsPancake || {});
+      } catch (eDs) {
+        if (eDs?.name !== "LoiDocHoiThoai") throw eDs;
+        throw new LoiDocLichSu(eDs.message, { capKenh: eDs.capKenh === true });
+      }
       const matches = (ds || []).filter(c => String(c.from_psid) === String(tin.psid));
       const c = matches.length === 1 ? matches[0] : null;
       if (!c?.id || !c.customers?.[0]?.id) {

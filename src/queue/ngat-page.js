@@ -6,12 +6,16 @@
 // LUẬT (người quyết 05/10 + review (a) hai vòng):
 //   · HAI bộ đếm trên dòng `page` (migration 034): đọc OK chỉ xoá chuỗi ĐỌC; gửi THẬT SỰ OK xoá CẢ HAI. Mỗi tin đọc TRƯỚC rồi
 //     mới gửi — một bộ đếm chung thì lượt đọc OK xoá chuỗi gửi trước mỗi lần gửi hỏng ⇒ không bao giờ chạm 2 (C1).
-//   · Đếm theo TIN KHÁC NHAU: hai lượt thử của cùng một tin là MỘT lỗi (`loi_<kiểu>_tin_cuoi`).
+//   · Đếm theo THỨ KHÁC NHAU (`loi_<kiểu>_tin_cuoi` giữ khoá của lỗi trước): lỗi GỬI theo TIN; lỗi ĐỌC theo HỘI THOẠI (khoá
+//     `-hoi_thoai.id`, GL3c R2-N2) — CÙNG khoá ở worker lẫn bộ nạp, nên một khách đang nhắn dở mà Pancake chập (worker đọc tin T lỗi
+//     + bộ nạp đọc lại chính khách đó lỗi) vẫn là MỘT lỗi; hai lượt thử của cùng một tin cũng là MỘT lỗi.
 //   · Chạm `NGUONG_LOI_KENH` ⇒ ngắt `PHUT_NGAT` phút (đồng hồ CSDL), ghi lý do đọc được, về 0 cả hai bộ đếm, MỘT dòng
 //     `nhat_ky page_ngat_kenh`. Đang ngắt thì KHÔNG đếm thêm, KHÔNG ngắt chồng (tin đang bay của vòng xử khác không được làm
 //     «mở xong 1 lỗi là ngắt lại» — R2-N3).
 //   · Hết hạn ⇒ mở lại ĐÚNG MỘT lần (UPDATE có điều kiện; 4 vòng của tiến trình cùng thấy hết hạn vẫn chỉ một dòng
 //     `page_mo_lai_kenh`). Sau khi mở phải đủ 2 lỗi (tin khác nhau) mới ngắt lại.
+//   · GL3c: DANH SÁCH hội thoại lỗi LIÊN TỤC ≥ `T_NGAT_DS` (bộ nạp đo, `nap.js`) ⇒ `ngatPage` — ngắt thẳng, KHÔNG đi bộ đếm theo
+//     khoá ở trên (một vòng nạp 6 s không phải «một thứ khác nhau»: chập 12 s mà đếm theo vòng là mọi page im 30′ — review (a) C1).
 //
 // MỌI hàm ghi nhận `pool` RIÊNG (worker truyền `poolGui`) và chạy NGOÀI giao dịch tin: thiếu cột (mã chạy trước 034, hay `down`
 // lúc mã mới đang chạy) mà ghi bằng client giao dịch thì giao dịch abort ⇒ lượt ĐÃ GỬI bị lật thành `loi` + HANDOFF (review N2).
@@ -23,7 +27,7 @@
 // lượt mở lại trả về dòng đó — lát đọc cũ không được xoá một ngắt vừa ghi (R2-N2).
 import { ghiNhatKy } from "../db/index.js";
 
-/** Số lỗi kênh liên tiếp (tin khác nhau) thì ngắt — chữ người quyết «2 lỗi». */
+/** Số lỗi kênh liên tiếp (tin / hội thoại khác nhau) thì ngắt — chữ người quyết «2 lỗi». */
 export const NGUONG_LOI_KENH = 2;
 /** Ngắt bao lâu — chữ người quyết «30′». */
 export const PHUT_NGAT = 30;
@@ -49,7 +53,8 @@ function nuot(e, viec) {
 const den = (x) => (x == null ? null : new Date(x).getTime());
 
 /**
- * Ghi MỘT lỗi kênh của một tin (② 2). Một câu UPDATE nguyên tử: chỉ tăng bộ đếm `kieu` khi `tinId` khác tin của lỗi trước;
+ * Ghi MỘT lỗi kênh (② 2). `tinId` là KHOÁ «thứ khác nhau»: id tin cho lỗi gửi, `-hoi_thoai.id` cho lỗi đọc (GL3c R2-N2 — worker và
+ * bộ nạp cùng khoá). Một câu UPDATE nguyên tử: chỉ tăng bộ đếm `kieu` khi khoá khác khoá của lỗi trước;
  * chạm ngưỡng ⇒ ngắt. Biểu thức SET đọc chính dòng (bản mới nhất khi hai vòng cùng ghi) — không đọc-rồi-ghi.
  * @returns {Promise<null|{pageId:string, vi:string, den:number, lyDo:string}>} page vừa ngắt, hoặc null.
  */
@@ -88,7 +93,38 @@ export async function ghiLoiKenh(pool, { teamId, pageId, tinId, kieu, lyDo }) {
   }
 }
 
-/** Đọc OK ⇒ CHỈ xoá chuỗi ĐỌC. Không sinh lượt ghi khi đã sạch (worker gọi mỗi tin). */
+/**
+ * NGẮT THẲNG một page (GL3c ② 2 — danh sách hội thoại lỗi liên tục ≥ `T_NGAT_DS`): không qua bộ đếm theo khoá. UPDATE có điều kiện
+ * «chưa ngắt» (page đang ngắt vì đường khác ⇒ không ghi đè lý do/hạn, không nhật ký), hạn theo đồng hồ CSDL, MỘT dòng nhật ký
+ * `page_ngat_kenh`, bộ nhớ chung cập nhật NGAY (ba vòng xử lọc page trước lượt rút kế). Bộ đếm để nguyên — lượt mở lại đặt về 0.
+ * Lỗi ⇒ nuốt + cảnh báo một lần (như mọi hàm ghi ở đây), trả null.
+ * @returns {Promise<null|{pageId:string, vi:string, den:number, lyDo:string}>}
+ */
+export async function ngatPage(pool, { teamId, pageId, kieu, lyDo }) {
+  const vi = kieu === "gui" ? "gui" : "doc";
+  try {
+    const r = await pool.query(
+      `UPDATE page SET ngat_den = now() + ($3::int * interval '1 minute'), ngat_vi = $4, ngat_ly_do = $5
+        WHERE ngat_ly_do = '' AND team_id = $1 AND page_id = $2
+        RETURNING team_id, page_id, ten, ngat_vi, ngat_den, ngat_ly_do`,
+      [teamId, String(pageId), PHUT_NGAT, vi, `${boUrl(lyDo).slice(0, 280) || "lỗi kênh Pancake"} (${vi === "gui" ? "gửi" : "đọc"})`]);
+    const dong = r.rows[0];
+    if (!dong) return null;
+    const ra = { pageId: String(dong.page_id), vi: dong.ngat_vi, den: den(dong.ngat_den), lyDo: dong.ngat_ly_do };
+    _ngat.set(ra.pageId, { vi: ra.vi, den: ra.den, lyDo: ra.lyDo });
+    await ghiNhatKy(pool, {
+      teamId: dong.team_id, tacNhan: TAC_NHAN, hanhDong: "page_ngat_kenh", doiTuong: "page", doiTuongId: ra.pageId,
+      sau: { ngat_vi: ra.vi, ngat_den: new Date(ra.den).toISOString(), nguon: "danh_sach_hoi_thoai" },
+      ghiChu: `Page «${dong.ten || ra.pageId}» ngắt ${ra.vi === "gui" ? "gửi" : "đọc"} ${PHUT_NGAT}′ — ${ra.lyDo}`.slice(0, 400),
+    }).catch((e) => nuot(e, "ghi nhật ký ngắt"));
+    return ra;
+  } catch (e) {
+    nuot(e, "ngắt page");
+    return null;
+  }
+}
+
+/** Đọc OK ⇒ CHỈ xoá chuỗi ĐỌC. Không sinh lượt ghi khi đã sạch (worker · bộ nạp gọi mỗi lượt đọc lịch sử OK). */
 export async function ghiDocTot(pool, { teamId, pageId }) {
   try {
     await pool.query(
