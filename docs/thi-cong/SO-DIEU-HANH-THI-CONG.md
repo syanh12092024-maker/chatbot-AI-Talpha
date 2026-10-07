@@ -1864,6 +1864,23 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + H-GL + **NGUỒN GIÁ CỦA PAGE PIL
   - **N-CONG-GSP1-SUA-TAI-CHO** `gsp1.sh` đảo-vá bằng cách sửa TẠI CHỖ `v3/src/ui/san-pham/router.js` + `trang/san-pham.html` của cây rồi `mv`
     bản lưu về — hai chuỗi cổng cùng cây chạy chồng = bản lưu đè nhau; ai sửa tay hai tệp đó khi chuỗi chạy = mất sửa (gặp 07/10, GP1 dừng
     kịp). Kèm: `tt1.sh` `trap … EXIT INT TERM` không `exit` ⇒ TERM không dừng cổng (phải KILL cả cây) — cùng bệnh gsp3b đã sửa 05/10.
+- 07/10 · GL3c (thợ) — trả N-GL3B-NAP-LOI-BEN · N-GL3B-CONV-NUOT-LOI · N-GL4-NAP-KHONG-DEM · N-GL3B-WEBHOOK-MAPPING (phần danh sách đọc lỗi; «đọc được mà
+  không mapping duy nhất» còn = G2) · một phần N-GL3B-HANG-LOI-CHUNG (`pkGetConversations` chọn lỗi «thật» nhất; `pkTagId` còn) · commit `aedee92`. Nợ mới
+  (chi tiết + kịch bản: `docs/thi-cong/nhat-ky/phieu-gl3c.md` mục Nợ):
+  - **N-GL3C-WEBHOOK-DS-DEM-GL4** (/code-review #1 · #4, bác theo phiếu ② 5) page WEBHOOK: lỗi danh sách cấp kênh ném lại `LoiDocLichSu` đếm GL4 theo khoá
+    hội thoại ⇒ 2 khách trong MỘT lần chập ⇒ ngắt 30′ (page poll cần 2′ liên tục); lỗi danh sách `capKenh:false` ⇒ giao sale từng khách, không đèn. Prod 0 page webhook.
+  - **N-GL3C-NAP-HAI-HOI-THOAI-MOT-CHAP** (/code-review #3, bác theo ② 3 · ④2) bộ nạp đọc lịch sử tuần tự (cách nhau ms) ⇒ một lần Pancake chập vài giây trúng 2
+    hội thoại cùng vòng là ngắt 30′ — luật «2 thứ khác nhau» GL4 ở worker cách nhau theo nhịp khách; người quyết: có cần ngưỡng thời gian cho lỗi kênh ở nạp.
+  - **N-GL3C-BAN-GIAO-HAI-BAN** (/code-review #6) `nap.js#giaoSaleLoiBen` và `worker.js#banGiaoDocLoi` hai bản câu bàn giao; gộp đụng neo gl3b ⑤l/⑤q.
+  - **N-GL3C-DOT-BIEN-SONG** đảo-vá không đỏ: `bot_ai_bat`/`nguon_tin` trong `giaoSaleLoiBen` (chỉ có tác dụng khi tranh chấp) · nhánh ROLLBACK · fallback
+    `khoaDocTheoHoiThoai` · `roiDi` riêng ở nhánh thẻ chặn · câu `lyDo` khi page đang ngắt · `luiDocTin.delete` ở nhánh đọc OK.
+  - **N-GL3C-NPM-TEST-TREO** `npm test` trần TREO: con `v3/test/b/ll15a-hrm-man.test.mjs` không thoát (riêng 6/6 trong 3,5 s) ⇒ đo bằng `npm test -- --test-force-exit`.
+  - **N-THUOC-HUMAN-TAKEOVER** `test/bh1-gia-va-cua-chot.test.js` G5b mượn `HUMAN_TAKEOVER` từ `.env` (vắng = BẬT, `src/conv-owner.js:27`) ⇒ đỏ sau `d9ba7b9`
+    (dọn .env dev); `HUMAN_TAKEOVER=0` trong env tiến trình ⇒ 28/0. Soát .env prod có bỏ `HUMAN_TAKEOVER=0` không (đường v1 conv-owner đổi hành vi).
+  - **N-GL4-DOWN-GIU-PAGE** (cập nhật) `ngat-page.js#ngatPage` cũng ghi bộ nhớ chung — cùng lỗ khi `down` 034; chưa vá (ngoài ② GL3c).
+  - Còn ở phiếu ⑥ (giữ): page ngắt lặp mãi (GL6 + người quyết) · webhook «đọc được mà không mapping duy nhất» `banGiaoLoi` không việc · lỗi dữ liệu toàn hệ ⇒
+    mọi khách ra việc, không tín hiệu cấp page · tin tới sau khi bộ nạp đã giao chặn «trả AI» (N-GL3B-TRA-AI-CHAN-GUARD) · «Thiếu mã khách hàng» + `custId`
+    rỗng thì giao ngay lượt 1 (đo khi mở van) · `luiDocTin`/`dsLoiTu` RAM (restart đếm lại).
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3543,3 +3560,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · tổng — phát hiện chạm pilot khi soát env: **P2 bật `V3_RAP_PROMPT_BAT=1` thì bot KHÔNG gửi được ảnh sản phẩm** (đọc mã: `rap-prompt.js:303-315` dựng `products` không có `images` dù `catalog.js` đọc `anh_san_pham` vào `s.anh`; `tools.js:199-202` báo «chưa có ảnh»; `fast-lane.js:142` tin chào không ảnh) ⇒ phiếu RP1 trước bước ③
   P4 `aicloser-v3-xemthu` (WorkingDirectory=/opt/aicloser) nạp `.env` gián tiếp qua `src/config.js` `dotenv/config` SAU cổng «có DATABASE_URL_V3 thì từ chối» ⇒ tiến trình xem thử mang đủ bí mật, `legacy.js` có thể nối CSDL thật — nợ N-XEMTHU-NAP-ENV · `.env` prod quyền 644 (nên 600) — nợ
   · P5 `assertConfig()` không được gọi trong đồ thị (thiếu khoá model không chặn khởi động; chỉ preflight chặn)
+- 07/10 · GL3c → 🔎 chờ nghiệm thu — danh sách hội thoại lỗi LIÊN TỤC ≥ 2′ ⇒ ngắt page đọc (chập ngắn chỉ log «N page lỗi danh sách») · lỗi kênh khi bộ nạp đọc lịch sử đếm GL4 theo hội thoại (khoá `-hoi_thoai.id` CẢ worker lẫn nạp — R2-N2 phương án ưu tiên) · lỗi dữ liệu bền lượt 3 giao sale CÓ việc (gộp qua quãng ngắt) · webhook đi nhánh GL3b
+  `gl3c.sh` 52/52 rc=0 (20 ca × 2 múi giờ · 26 đảo-vá đỏ đúng · ④8 gl4 44/44 · gl3b 49/49 (⑤d⑤o⑤b ✅) · gl3 25/25 · 12 bộ ca rc=0) · gl2.sh 52/52 · đỏ trên base 18/20 (P2b · P5b lưới hồi quy) · npm test (`-- --test-force-exit`, trần TREO ở ll15a) 2674→2694 / 1 đỏ SẴN (bh1 G5b — HUMAN_TAKEOVER vắng .env sau d9ba7b9) · /code-review 8: vá 4 · bác 4 kèm nợ §9 N-GL3C-*
+  · commit aedee92 · nhật ký docs/thi-cong/nhat-ky/phieu-gl3c.md
