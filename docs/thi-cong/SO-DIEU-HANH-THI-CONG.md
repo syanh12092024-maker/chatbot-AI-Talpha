@@ -1818,6 +1818,25 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
   MÃI tới khi restart (`docNgat` gặp 42703 trả về mà không xoá bộ nhớ — `ngat-page.js:151-153`; `locPageNgat` không xét hạn — `:179-181`), trong khi cảnh báo + đèn ⑤b
   nói «GL4 không ngắt page nào». Lời khai «down 034 an toàn với mã mới đang chạy» (`034…down.sql:1`, nhật ký `:11`) SAI. Không chạm prod theo mo-van §5 (migrate down
   KHÔNG phải đường lùi trên CSDL thật) — vá 1–3 dòng khi có phiếu chạm `ngat-page.js` (42703 ⇒ xoá bộ nhớ, hoặc lọc bỏ page quá hạn vài phút) + sửa lời khai.
+- 07/10 · TT1b (thợ) — trả một nợ + sáu nợ ngoài hợp đồng phiếu (⑥ phiếu + /code-review TT1b #5–#8 bác có lệnh tổng); chi tiết: `docs/thi-cong/nhat-ky/phieu-tt1b.md`:
+  - **N-TT1-TE-LECH-THI-TRUONG** TRẢ (`79df30c`): `saveProduct` món POS đối chiếu tệ MỌI bậc với tệ thị trường của (team, shop) — không lọc `bat`;
+    `taoDon` cửa (b) chặn đơn tệ ≠ tệ thị trường / thị trường ngoài bảng (0 POST, nhật ký cửa b). Phần GIAO DIỆN của N-TIEN-TE-MAC-DINH (ô tệ mặc
+    định + khoá theo shop ở «Theo thị trường») CÒN.
+  - **N-TT1B-LY-DO-CHAN-ROLLBACK** (/code-review #5 · review (a) G1) chặn lệch tệ ở `taoDon` là ngoại lệ ⇒ `duyet` ROLLBACK ⇒ lý do không vào
+    `cua_kiem`; sale thấy một dòng 400, mở lại đơn không thấy vì sao, bấm lại gặp lại (nhật ký `pos_tao_don_bi_chan` có). Vá: vế `chan_vi`
+    `cua2:lech_te_thi_truong` ở `chayNamCua` (`hang-cho.js` — đã có `market`, gọi `teCuaThiTruong`) ⇒ lý do lưu, hiện ở khung «Chưa tạo đơn».
+  - **N-TT1B-BAN-SAO-KB-TE** (/code-review #6) bản sao `kb` theo page KHÔNG soát tệ (② 3 phiếu: kb giữ nguyên tới GSP4) ⇒ page chưa gắn gốc có bậc
+    «SAR» trên shop Kuwait vẫn lưu được và bot báo khách sai tệ (đơn không tới POS — mã kb chặn ở `san_pham_ma`; chỉ khách nghe sai). Shop suy
+    được từ `page.pos_shop_id`. ⑦b lúc mở van nên đo thêm bậc kb của page sắp bật.
+  - **N-TT1B-DOC-KET-NOI-THANG** (/code-review #7) `saveProduct` đọc thẳng `ket_noi_pos` (chỉ cột `market`) — nơi thứ tư sau `traMarketCuaPage` ·
+    `chuyen-ban-sao.js#docDonViTho` · `san-pham-goc.js`; `db/schema.sql:431-435` muốn bảng này có bộ đọc riêng. Gom `layThiTruongCuaShop(pool,
+    teamId, shopId)` vào `src/pos/ket-noi.js`.
+  - **N-TT1B-KET-NOI-TEN-TU-DO** (/code-review #8 · review (a) G3) `themKetNoi` nhận tên thị trường chữ tự do, không đối chiếu bảng ⇒ kết nối
+    «Japan»/«KSA» khoá cả shop (lưu giá 400, tạo đơn chặn) mà chỉ lộ lúc dùng. Vá: màn Kết nối kiểm `teCuaThiTruong(market)` lúc thêm.
+  - **N-TT1B-DUONG-GHI-GIA-THU-HAI** (review (a) G2) `src/pos/doc-danh-muc.js:225-255` ghi `goi_gia` món POS thẳng khi có `tienTe`, không qua
+    `saveProduct` — hôm nay không chạy (`keo-danh-muc` không truyền `tienTe`). Ai nối nhánh này phải lấy tệ từ `teCuaThiTruong` hoặc đi qua `saveProduct`.
+  - **N-TT1B-DOC-BAN-GIAO-CUA-B** `docs/v3/ban-giao/may-trang-thai-don-v1.md:443` mô tả cửa (b) «thiếu san_pham_ma/kho_hang/hệ-số-tệ» — chưa có vế
+    «tệ đơn ≠ tệ thị trường shop / thị trường ngoài bảng» (tệp ngoài ③ TT1b).
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3477,3 +3496,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · NGƯỜI QUYẾT chốt GL3c `T_NGAT_DS = 2′` — «ok 2 phút»: danh sách hội thoại Pancake lỗi LIÊN TỤC ≥ 2′ thì ngắt page (đọc) 30′ theo GL4; chập < 2′ chỉ in log
   lý do (review (a) GL3c C1): vòng nạp 6 s, lỗi 502/mạng hỏng trong 1 ms ⇒ «2 vòng» = Pancake chập 6–12 s là mọi page ngắt 30′; người quyết đếm «2 lỗi» theo lượt gửi cho khách, không theo nhịp đồng hồ
   · `LUOT_LOI_GIAO_SALE = 3` (≈ 90 s, lỗi dữ liệu bền) do tổng đặt, gần mốc ~45 s của GL3b
+- 07/10 · TT1b → 🔎 chờ nghiệm thu — tệ bậc giá / tệ đơn = tệ thị trường shop: `saveProduct` (đầy đủ + chỉ-giá) món POS tra `ket_noi_pos` theo (team, shop), không lọc bat ⇒ 400 «Bậc giá dùng X nhưng shop M bán bằng Y» / thiếu kết nối / ngoài bảng (offers rỗng cho qua — lệch nhẹ ② 3, tổng duyệt); `taoDon` cửa (b) SAU shop_lech chặn lệch tệ + ngoài bảng (0 POST, nhật ký cửa b, câu dặn «báo marketer sửa bậc»); `TIEN_TE_THI_TRUONG` + `teCuaThiTruong` (gọt như GSP3) một bảng ở tao-don.js, chuyen-ban-sao re-export
+  `tt1b.sh` ①–⑥ đạt (13 phép · 11/11 đảo-vá đỏ đúng) · ⑦ gsp3 ✔ · ll2 ✔ · l3-m4/va-r2 đỏ sẵn 0 mới · tt1 TREO trong lượt lồng → chạy riêng rc=0 (27/27) · bộ ca 22 + sáu tệp ca 95/0 (assert không đổi) · npm test 2563→2585 / 0 · nới ③ repro refute-tong-the-1 (MARKET→UAE, tổng duyệt) · /code-review 8: sửa 4 · bác 4 kèm nợ §9 N-TT1B-*
+  · commit 79df30c · nhật ký docs/thi-cong/nhat-ky/phieu-tt1b.md
