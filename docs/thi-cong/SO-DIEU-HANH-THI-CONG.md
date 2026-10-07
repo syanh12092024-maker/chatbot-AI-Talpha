@@ -382,7 +382,7 @@ TWD/JPY không xu). Đo BigQuery 05/10: giá đơn POS nằm ở `shipping_fee` 
 | Mã  | Việc | Phụ thuộc | Làn | Trạng thái |
 | --- | --- | --- | --- | --- |
 | TT1 | `HE_SO_TE` + EUR 100 · RON 100 · AUD 100 · TWD 1 · JPY 1 (nguồn `dim_shop_project.currency_divisor`); `TIEN_TE_THI_TRUONG` + Europe · Romania · Slovakia · USA · Australia · Taiwan; soát mọi nơi đọc giả định ×100 | — | 🟥 | ✅ 07/10 · mã `bc190f5` · nhật ký `f2e1ac1` · đối kháng ĐẠT (F1 → TT1b) · chặng 1: ④ 11/11 tệp riêng TT1 ⊆ ③ (soát tay — `_chan1` ④⑤ đỏ do HEAD trôi, N-CHAN1-HEAD-TROI) · ⑤ không đụng tệp phẳng · ⑦ `tt1.sh` 27/1 của thợ (1 đỏ chập chờn, chạy riêng xanh) — lượt `_chan1` 1,5 h bị ngắt khi phiên tắt; `tt1.sh` chạy lại làm cổng cũ trong `tt1b.sh` |
-| TT1b | Ràng tệ bậc giá (món POS) + tệ đơn (`taoDon` cửa b) với tệ thị trường shop — chặn POS thu sai ×100/×0,01 (đối kháng TT1 F1) · dời `TIEN_TE_THI_TRUONG` cạnh `HE_SO_TE` | TT1 | 🟥 | 🔎 07/10 · mã `100d47b` · nhật ký `476c02b` (cherry-pick từ worktree) · `tt1b.sh` ①–⑥ 13/13 · 11/11 đảo-vá · cổng cũ: gsp3/ll2 rc=0, tt1 riêng rc=0, l3-m4/va-r2 đỏ sẵn 0 dòng mới · npm test 2585/0 · tổng soát ④ 18/18 tệp ⊆ ③ + 80/80 ca giao GL2×TT1b trên nhánh chính · chờ chặng 2 đối kháng |
+| TT1b | Ràng tệ bậc giá (món POS) + tệ đơn (`taoDon` cửa b) với tệ thị trường shop — chặn POS thu sai ×100/×0,01 (đối kháng TT1 F1) · dời `TIEN_TE_THI_TRUONG` cạnh `HE_SO_TE` | TT1 | 🟥 | ✅ 07/10 · mã `100d47b` · nhật ký `476c02b` · đối kháng ĐẠT 0 CHẶN (ma trận 12 thị trường × 12 tệ: 12 qua · 132 chặn · 0 sai; mọi đường ghi giá món POS qua `saveProduct`, kể cả GP1; chỉ `taoDon` gửi POS) · F1 → ⑦b(iii) + nâng nợ · F2 → nợ N-TT1B-THU-TU-MO-COI · chưa deploy |
 | GP1 | Điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn một món (60 ngày, ≥3 đơn, ≥80%, tăng dần, theo team hiện tại của marketer) — trong tiến trình v3, xem trước + dấu + áp, qua cửa lưu giá chỉ-giá | TT1 | 🟥 | 🔨 phát 07/10 · base `b04d0dc` · worktree riêng · song song TT1b (TT1b sửa `saveProduct` thêm chặn tệ ≠ thị trường shop — GP1 ghi bậc theo tệ thị trường) |
 
 ## §5j · ĐIỀU KIỆN GO-LIVE (GL1–GL8) — người quyết «triển khai» 05/10
@@ -1837,6 +1837,13 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL + **NGUỒN GIÁ CỦA PAGE PILOT** (
     `saveProduct` — hôm nay không chạy (`keo-danh-muc` không truyền `tienTe`). Ai nối nhánh này phải lấy tệ từ `teCuaThiTruong` hoặc đi qua `saveProduct`.
   - **N-TT1B-DOC-BAN-GIAO-CUA-B** `docs/v3/ban-giao/may-trang-thai-don-v1.md:443` mô tả cửa (b) «thiếu san_pham_ma/kho_hang/hệ-số-tệ» — chưa có vế
     «tệ đơn ≠ tệ thị trường shop / thị trường ngoài bảng» (tệp ngoài ③ TT1b).
+- 07/10 · tổng (đối kháng TT1b `refute-tt1b.verdict.yaml`) — nợ:
+  - **N-TT1B-KET-NOI-TEN-TU-DO** NÂNG: tên thị trường của kết nối (gõ tự do, tra theo team × shop) nay là nguồn DUY NHẤT quyết định tệ — team B đặt «Saudi» cho shop Taiwan
+    ⇒ 990 TWD bị chặn, 99 SAR lưu được ⇒ POS thu 9.900 TWD (≈ ×12). `operations.js:214` khai «thị trường là thuộc tính của shop» nhưng tra theo cặp. Đo prod 07/10:
+    mỗi `shop_id` ra ĐÚNG một market trên mọi team (Taiwan 1328343252 ở team 1/2/4 · Kuwait/Qatar/Saudi/UAE ở 1/3/4 — khớp) ⇒ chưa dính. ⑦b mở van thêm (iii)
+    «mỗi shop_id đúng một tệ trên mọi team»; xác nhận tệ thật 5 shop EU/AUUS trước khi bật page ngoài GCC.
+  - **N-TT1B-THU-TU-MO-COI** chặn lệch tệ ở `taoDon` đứng TRƯỚC lớp «POST mồ côi / đã nhận» (`tao-don.js:501` vs `:540`/`:560`) ⇒ hàng chờ đã POST mà lệch tệ nhận lời
+    «báo marketer sửa bậc» thay vì «mở POS xem đơn đã vào chưa». Chỉ với POST trước deploy / kết nối đổi tên; prod 0 page bật ⇒ 0 ca. ⑦b đo hàng chờ có dấu POST = 0.
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3505,3 +3512,5 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 07/10 · NGƯỜI QUYẾT (AskUserQuestion): nguồn giá pilot «Bật cờ đọc từ CSDL» · POS «Giữ POS đóng» — pilot bật `V3_RAP_PROMPT_BAT=1` (bot đọc gốc × shop + `goi_gia`, khớp cửa tiền), GSP4 dời sang trước page thứ hai
   `V3_POS_GHI` giữ vắng: đơn bot chốt vào hàng chờ, sale duyệt rồi tạo tay trên POS (audit 02/10: nghiệm thu POS riêng trước khi mở)
   · trình tự mở van dự kiến (mỗi bước MỘT biến, mỗi bước người gật): ① deploy mã + migration 033/034 + `V3_TRAN_PAGE_BAT=1`, restart cả hai unit (0 page bật ⇒ khách không thấy) ② chạy GP1 «Điền giá» trên prod + H-GSP page pilot ③ `V3_RAP_PROMPT_BAT=1` + giả lập ④ `V3_PANCAKE_GUI=1` + bật page pilot
+- 07/10 · TT1b → ✅ (tổng nghiệm thu) — NHÓM CODE TỐI THIỂU PILOT ĐỦ: GL1 · GL2 · GL3 · GL3b · TT1b đều ✅ (chưa deploy). Đối kháng TT1b ĐẠT: 132/132 cặp lệch tệ bị chặn ở cả lưu giá lẫn tạo đơn, GP1 đi qua chặn
+  F1 tên thị trường tự do theo team × shop (đo prod: khớp, chưa dính) ⇒ ⑦b(iii) · F2 thứ tự chặn vs POST mồ côi ⇒ nợ · còn lại cho pilot: deploy (bước ①) · GP1 xong + «Điền giá» trên prod (②) · H-GSP page pilot · cờ đọc CSDL (③) · van gửi + bật page (④) · H-GL
