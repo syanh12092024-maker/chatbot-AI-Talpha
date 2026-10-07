@@ -20,6 +20,8 @@
 //      đứng sai trạng thái VÀ lệch `donMessengerDaTao` (máy trạng thái ghi
 //      `trang_thai_pos='12'`/`day_cho_in`, POS lại đang ở 0 — hai sổ nói hai chuyện).
 //      Thiếu tham chiếu sản phẩm/kho ⇒ ném, KHÔNG đoán (xem `LoiThieuThamChieuSanPham`).
+//      TT1b (07/10): sau kiểm nhầm shop, tệ của đơn phải là tệ thị trường của shop
+//      (`TIEN_TE_THI_TRUONG`); lệch tệ hoặc thị trường ngoài bảng ⇒ ném, 0 lượt POST.
 //
 //  (c) IDEMPOTENT THEO `hangChoId` — **CƠ CHẾ THẬT, không phải cái tên**. Ba lớp:
 //        ① dòng hàng chờ đã mang `don_hang_id` ⇒ ném ngay, 0 lượt gọi API;
@@ -154,6 +156,32 @@ export const HE_SO_TE = Object.freeze({
   TWD: 1,
   JPY: 1,
 });
+
+/**
+ * THỊ TRƯỜNG (`ket_noi_pos.market`) → TIỀN TỆ của shop. 01 §8: «1 shop POS = 1 thị trường» ⇒ shop bán bằng ĐÚNG MỘT tệ, và POS
+ * ghi `shipping_fee` theo tệ đó — gửi số của một tệ khác là thu sai tiền (Taiwan nhận 99000 cho «990 USD» = 99.000 TWD ×100;
+ * Europe nhận 49 cho «49 TWD» = 0,49 EUR ×0,01 — đối kháng TT1 F1). Ngoài bảng ⇒ fail-CLOSED ở mọi nơi đọc, không đoán.
+ *
+ * TT1b (07/10): MỘT bảng, ở đây cạnh `HE_SO_TE`, cho cả ba nơi đọc — đối soát GSP3 (`src/products/chuyen-ban-sao.js` re-export
+ * đúng tên cũ), lưu giá món POS (`src/admin-v3/operations.js#saveProduct`) và tạo đơn (`taoDon` cửa b dưới đây). Chiều import chỉ
+ * một: chuyen-ban-sao → tao-don (tệp này không import ngược — vòng). Nguồn tên thị trường: kết nối EU/AUUS trên prod (H7/H13 —
+ * `docs/thi-cong/nhat-ky/h7-chuyen-team-20261005.md`); mỗi tệ ở đây PHẢI có trong `HE_SO_TE` (ca T0b `test/tt1-tien-te-ngoai-gcc`
+ * + B1 `test/tt1b-te-thi-truong`). Japan cố ý vắng: chưa có kết nối.
+ */
+export const TIEN_TE_THI_TRUONG = Object.freeze({
+  Saudi: "SAR", UAE: "AED", Kuwait: "KWD", Qatar: "QAR", Oman: "OMR", Bahrain: "BHD",
+  Europe: "EUR", Romania: "RON", Slovakia: "EUR", USA: "USD", Australia: "AUD", Taiwan: "TWD",
+});
+
+/**
+ * MỘT luật tra bảng trên: tên thị trường bỏ khoảng trắng hai đầu (CÙNG luật đối soát GSP3 — `chuyen-ban-sao.js` tra
+ * `TIEN_TE_THI_TRUONG[String(market).trim()]`), khoá RIÊNG của bảng (`Object.hasOwn` — «toString» không lọt), không gập chữ hoa/thường.
+ * Ngoài bảng ⇒ `null` (nơi gọi chặn — fail-CLOSED). Lưu giá món POS (`saveProduct`) và `taoDon` cửa (b) đọc qua hàm này.
+ */
+export function teCuaThiTruong(market) {
+  const m = String(market ?? "").trim();
+  return Object.hasOwn(TIEN_TE_THI_TRUONG, m) ? TIEN_TE_THI_TRUONG[m] : null;
+}
 
 /**
  * MỘT LUẬT quy đơn vị LỚN → NHỎ cho mọi cửa nhận giá do người/bot nêu (lưu giá `saveProduct`,
@@ -467,6 +495,32 @@ export async function taoDon(
       `taoDon: mã biến thể thuộc shop ${bienThe.shopId} nhưng kết nối POS của thị ` +
         `trường "${market}" là shop ${ketNoi.shopId} — gửi đi là tạo đơn NHẦM SHOP.`,
       { thieu: ["shop_lech"] },
+    );
+  }
+
+  // ── CỬA (b) · TT1b — tệ của ĐƠN phải là tệ của THỊ TRƯỜNG shop ─────────────
+  // Bot lấy tệ đơn từ CHÍNH bậc giá (`src/orders/draft.js` currency = tệ bậc) nên cửa ② (`cua2Tien`: tệ đơn ↔ tệ bậc) luôn khớp —
+  // không lớp nào trước đây hỏi «shop này bán bằng tệ gì». Đặt SAU kiểm `shop_lech`: chỉ từ đây `market` mới chắc là thị trường của
+  // shop món (market đến từ page — `hang-cho.js` `traMarketCuaPage`), nên món nhầm shop vẫn báo «nhầm shop», không báo «lệch tệ».
+  // Đặt TRƯỚC `dungPayload`: chặn thì không dựng payload. Chặn đi đường ngoại lệ ⇒ `duyet` ROLLBACK, hàng chờ vẫn `cho_duyet`; dòng
+  // nhật ký đi trên pool gốc (`soNhatKy`) nên còn lại.
+  const teThiTruong = teCuaThiTruong(market);
+  const teDon = String(don.tienTe ?? "").toUpperCase(); // đã qua `phiVanChuyenMinor` ở trên ⇒ là một khoá của HE_SO_TE
+  if (teDon !== teThiTruong) {
+    await ghiChan(soNhatKy, {
+      teamId: team.teamId,
+      cua: "b",
+      hangChoId,
+      chiTiet: `lech_te_thi_truong: đơn ${teDon} ≠ ${market} ${teThiTruong ?? "(ngoài bảng)"}`,
+    });
+    throw new LoiThieuThamChieuSanPham(
+      teThiTruong
+        ? `taoDon: đơn tính bằng ${teDon} nhưng shop ${bienThe.shopId} (thị trường "${market}") bán bằng ${teThiTruong} — CHẶN, ` +
+            `không gửi POS: POS ghi số tiền theo tệ của shop, gửi đi là thu sai tiền. Sale không sửa được tệ của đơn (tệ lấy từ ` +
+            `bậc giá) — báo marketer sửa bậc giá ở Sản phẩm › Theo thị trường sang ${teThiTruong}, rồi duyệt lại.`
+        : `taoDon: thị trường "${market}" (shop ${bienThe.shopId}) chưa có trong bảng tiền tệ của hệ — không biết shop bán bằng ` +
+            `tệ nào; đơn ${teDon} bị CHẶN, không gửi POS. Báo kỹ thuật thêm thị trường này vào bảng TIEN_TE_THI_TRUONG.`,
+      { thieu: ["lech_te_thi_truong"] },
     );
   }
 

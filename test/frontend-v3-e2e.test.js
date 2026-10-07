@@ -63,7 +63,7 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
       [team, product.id],
     );
     await pool.query(
-      "INSERT INTO ket_noi_pos(team_id,market,shop_id,api_key_ma) VALUES($1,'E2E','9995001',$2)",
+      "INSERT INTO ket_noi_pos(team_id,market,shop_id,api_key_ma) VALUES($1,'UAE','9995001',$2)",
       [team, maHoa("fake-pos-key")],
     );
     const env = {
@@ -244,7 +244,7 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
         await docDanhMuc(
           pool,
           { teamId: team },
-          { shop: "E2E", tienTe: "AED" },
+          { shop: "UAE", tienTe: "AED" },
           {
             env,
             nap: async () => ({

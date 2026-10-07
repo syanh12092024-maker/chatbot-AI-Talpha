@@ -27,6 +27,8 @@ export {
   MA_CHO_IN,
   GHI_CHU_DON,
   HE_SO_TE,
+  TIEN_TE_THI_TRUONG,
+  teCuaThiTruong,
   LoiThieuThamChieuSanPham,
   LoiDonDaTao,
 } from "./tao-don.js";

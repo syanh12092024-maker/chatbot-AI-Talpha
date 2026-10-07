@@ -95,7 +95,7 @@ so "bảng hang_cho_tao_don có mặt sau migrate" "${CO_BANG}"
 #    tham số hoá; hằng SQL dùng $$…$$.
 HELPER='
 const SHOP = "9996001";
-const MARKET = "GiaLapGate";
+const MARKET = "UAE";
 const UUID_BT = "3e272c3b-ea70-4d10-981e-e9049090322b";
 const BIEN_THE = SHOP + ":" + UUID_BT;
 const KHOA = { V3_KHOA_MA_HOA: "d".repeat(64) };

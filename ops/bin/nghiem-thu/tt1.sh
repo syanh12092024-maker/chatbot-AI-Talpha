@@ -171,7 +171,7 @@ BAM_TRUOC=$(cat src/pos/tao-don.js src/products/chuyen-ban-sao.js src/admin-v3/o
 # hành vi ⇒ KHÔNG tính là bắt được — /code-review TT1 #3). Cột phép trống = chỉ bộ ca bắt (số lớn có xu — phép P không có).
 DS_DOT_BIEN='
 twd_ve_100|src/pos/tao-don.js|P2a,P2b,P3
-bo_romania|src/products/chuyen-ban-sao.js|P4
+bo_romania|src/pos/tao-don.js|P4
 bo_eur|src/pos/tao-don.js|P1,P3
 lam_tron_ngam|src/pos/tao-don.js|P2b,P3
 gia_goc_round|src/admin-v3/operations.js|P2b

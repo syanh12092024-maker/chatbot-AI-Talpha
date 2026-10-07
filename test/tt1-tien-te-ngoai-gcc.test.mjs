@@ -229,8 +229,10 @@ test('TT1 · lưu · đọc · lời bot · màn · cửa tiền · đối soát
       await assert.rejects(() => saveProduct(pool, bc, id, { offers: [{ so_luong: 1, price: 49, tien_te: 'aud' }], version: vA }, { chiGia: true }),
         (e) => e.status === 400, 'mã tệ phải đúng chữ hoa như bảng — như cũ');
       assert.deepEqual(await demGhi(), d0);
-      // Australia lưu được AUD (×100). ⚠️ `saveProduct` KHÔNG đối chiếu tệ với thị trường của shop (nợ N-TT1-TE-LECH-THI-TRUONG) —
-      // bậc sai tệ lưu được, chỉ cửa tiền ĐÓNG khi tệ đơn ≠ tệ bậc (ca T3: 990 EUR trên page Taiwan).
+      // Australia lưu được AUD (×100). TT1b (07/10): bậc sai tệ thị trường KHÔNG còn lưu được cho món POS — `saveProduct` đối chiếu tệ
+      // mọi bậc với tệ thị trường của shop món (tra `ket_noi_pos` theo team × shop); `taoDon` cửa (b) chặn đơn tệ ≠ tệ thị trường trước khi
+      // POST. Lời cũ «chỉ cửa tiền ĐÓNG khi tệ đơn ≠ tệ bậc» SAI: bot lấy tệ đơn từ chính bậc nên `cua2Tien` luôn khớp (đối kháng TT1 F1).
+      // Ca: `test/tt1b-te-thi-truong.test.mjs` S1–S7 · T1–T5.
       await luuGia('Australia', [{ so_luong: 1, price: 59.95, tien_te: 'AUD' }]);
       assert.deepEqual((await giaTho('Australia')).map((x) => [x.gia, x.tien_te]), [[5995, 'AUD']]);
       const k = await cuaTien('Australia', 59.95, 'AUD');

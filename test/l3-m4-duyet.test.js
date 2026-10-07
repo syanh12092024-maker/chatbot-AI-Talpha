@@ -36,7 +36,7 @@ const KHOA = { V3_KHOA_MA_HOA: "c".repeat(64) }; // KHÔNG đụng .env thật
 const MO = { ...KHOA, V3_POS_GHI: "1" };
 const DONG = { ...KHOA }; // van VẮNG = đóng (đúng hiện trạng máy dev, đo 23/08)
 const SHOP = "9995001";
-const MARKET = "GiaLapDuyet";
+const MARKET = "UAE";
 // ⚠️ variation_id THẬT của POS là UUID (đo 23/08: 137/137 `san_pham.ma`, 4.581/4.581
 //    phần tử `don_hang.san_pham_ma`) — bộ ca phải dùng ĐÚNG hình dạng đó, không phải
 //    một số cho dễ viết, kẻo cổng xanh trên một thế giới không có thật (án lệ #1).

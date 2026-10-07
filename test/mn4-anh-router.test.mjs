@@ -28,7 +28,7 @@ before(async () => {
   pool = sb.pool;
   team = (await pool.query("INSERT INTO team(slug,ten) VALUES('mn4','MN4') RETURNING id")).rows[0].id;
   trang = (await pool.query("INSERT INTO page(team_id,page_id,ten) VALUES($1,'4001','Page ảnh') RETURNING *", [team])).rows[0];
-  sp = (await pool.query("INSERT INTO san_pham(team_id,page_id,ma,ten,mo_ta) VALUES($1,$2,'kb:4001:SP01','','Vòng') RETURNING id", [team, trang.id])).rows[0].id;
+  sp = (await pool.query("INSERT INTO san_pham(team_id,page_id,ma,ten,mo_ta,nguon) VALUES($1,$2,'kb:4001:SP01','','Vòng','kb') RETURNING id", [team, trang.id])).rows[0].id;
   await pool.query("INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te,nhan) VALUES($1,$2,1,19900,'AED','1 set')", [team, sp]);
   const app = express();
   app.use(express.json());

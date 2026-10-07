@@ -38,7 +38,7 @@ test('LL2 · Hộp thư: sale duyệt/loại đơn Messenger, nhận thay bot, t
     const ma = '9995002:4f1c0a52-7b1e-4a53-9b2f-0c1d2e3f4a5b';
     const sp = await one("INSERT INTO san_pham(team_id,page_id,ma,ten,mo_ta) VALUES($1,$2,$3,'Sản phẩm LL2','') RETURNING *", [team, page.id, ma]);
     await pool.query("INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te) VALUES($1,$2,2,19900,'AED'),($1,$2,3,27900,'AED')", [team, sp.id]);
-    await pool.query("INSERT INTO ket_noi_pos(team_id,market,shop_id,api_key_ma) VALUES($1,'LL2','9995002',$2)", [team, maHoa('fake-pos-key')]);
+    await pool.query("INSERT INTO ket_noi_pos(team_id,market,shop_id,api_key_ma) VALUES($1,'UAE','9995002',$2)", [team, maHoa('fake-pos-key')]);
 
     const env = { V3_POS_GHI: '1', V3_KHOA_MA_HOA: process.env.V3_KHOA_MA_HOA };
     let posPosts = 0;

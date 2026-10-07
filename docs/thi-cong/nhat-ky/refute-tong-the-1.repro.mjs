@@ -30,7 +30,7 @@ import { LoiSaiNguonDon } from "../../../src/channels/whatsapp/index.js";
 const KHOA = { V3_KHOA_MA_HOA: "c".repeat(64) };
 const MO = { ...KHOA, V3_POS_GHI: "1" }; // van MỞ chỉ trong object env tiêm
 const SHOP = "9995001";
-const MARKET = "GiaLapRefute1";
+const MARKET = "UAE";
 const ctx = () => ctxHeThong();
 
 const sb = await dungSandbox("refute_tongthe1");

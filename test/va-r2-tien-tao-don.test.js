@@ -33,7 +33,7 @@ import {
 const KHOA = { V3_KHOA_MA_HOA: "d".repeat(64) };
 const MO = { ...KHOA, V3_POS_GHI: "1" };
 const SHOP = "9995002";
-const MARKET = "GiaLapVaR2";
+const MARKET = "UAE";
 const ctx = () => ctxHeThong();
 
 let sb, pool, TEAM, pageId;

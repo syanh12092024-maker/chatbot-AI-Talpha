@@ -12,7 +12,7 @@ import { createHash } from "node:crypto";
 import { tachSoHieu, chuanHoaTen, chuanSku } from "../pos/ten-goc.js";
 import { LoiSanPhamGoc } from "./san-pham-goc.js";
 import { themAnh, boAnh } from "./anh-san-pham.js";
-import { HE_SO_TE } from "../pos/tao-don.js";
+import { HE_SO_TE, TIEN_TE_THI_TRUONG } from "../pos/tao-don.js";
 import { docSanPhamGoiGia } from "./catalog.js";   // GSP3b — bộ đọc CHUNG của bot (rap-prompt.js re-export chính hàm này)
 
 // goi_gia lưu đơn vị NHỎ (×HE_SO_TE — nap-tu-kb.js); màn và người đối soát đọc đơn vị LỚN (99 SAR). Quy đổi MỘT chỗ, ở đây —
@@ -287,14 +287,10 @@ export async function huyBoQua(pool, teamId, pageId) {
  *     `don_vi_da_doi` (F1). Tiền tệ chỉ chặn bảng SẼ GHI; bản sao thua mang tệ sai vẫn đối soát được (F4).
  */
 
-// Thị trường (`ket_noi_pos.market`) → tiền tệ. Hằng RIÊNG của đối soát: ngoài bảng ⇒ `thi_truong_la`, dừng, không đoán.
-// TT1 (05/10): thêm đúng tên thị trường của các kết nối EU/AUUS trên prod (H7/H13 — `docs/thi-cong/nhat-ky/h7-chuyen-team-20261005.md`:
-// Europe 20 · Romania 21 · Slovakia 22 · USA 23 · Australia 24 · Taiwan 19). Mỗi tệ ở đây PHẢI có trong `HE_SO_TE` (tao-don.js) —
-// không thì `saveProduct` từ chối bậc của nó (ca `test/tt1-tien-te-ngoai-gcc.test.mjs` T0b đối chiếu). Japan cố ý vắng: chưa có kết nối.
-export const TIEN_TE_THI_TRUONG = Object.freeze({
-  Saudi: "SAR", UAE: "AED", Kuwait: "KWD", Qatar: "QAR", Oman: "OMR", Bahrain: "BHD",
-  Europe: "EUR", Romania: "RON", Slovakia: "EUR", USA: "USD", Australia: "AUD", Taiwan: "TWD",
-});
+// Thị trường (`ket_noi_pos.market`) → tiền tệ: ngoài bảng ⇒ `thi_truong_la`, dừng, không đoán. TT1b (07/10): bảng DỜI về
+// `src/pos/tao-don.js` cạnh `HE_SO_TE` — MỘT bảng cho đối soát (ở đây), lưu giá món POS (`saveProduct`) và tạo đơn (`taoDon` cửa b).
+// Tệp này re-export đúng tên cũ (nơi gọi cũ không đổi); chiều import chỉ một: chuyen-ban-sao → tao-don (ngược lại là vòng).
+export { TIEN_TE_THI_TRUONG };
 
 // Chín cột bậc giá `saveProduct` ghi được (`src/admin-v3/operations.js` INSERT goi_gia — ca A0 đối chiếu với lược đồ thật). Phép
 // SO dùng trọn hàng nên cột mới của `goi_gia` tự vào phép so; phép CHÉP chỉ chép được chín cột này ⇒ bảng thắng mang cột lạ có

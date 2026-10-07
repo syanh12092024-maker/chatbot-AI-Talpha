@@ -107,7 +107,7 @@ before(async () => {
   pool = sb.pool;
   team = (await q("INSERT INTO team(slug,ten) VALUES('mn3','MN3') RETURNING id")).rows[0].id;
   trang = (await q("INSERT INTO page(team_id,page_id,ten) VALUES($1,'111','Page') RETURNING *", [team])).rows[0];
-  sp = (await q("INSERT INTO san_pham(team_id,page_id,ma,ten,mo_ta) VALUES($1,$2,'kb:111:SP01','','cũ') RETURNING id", [team, trang.id])).rows[0].id;
+  sp = (await q("INSERT INTO san_pham(team_id,page_id,ma,ten,mo_ta,nguon) VALUES($1,$2,'kb:111:SP01','','cũ','kb') RETURNING id", [team, trang.id])).rows[0].id;
   await q(`INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te,nhan)
            VALUES($1,$2,2,29900,'AED','Buy 1 Get 1 FREE (Total 2 Products)')`, [team, sp]);
 });

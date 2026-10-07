@@ -56,8 +56,8 @@ don() { [ "${GIU_TAM:-}" = 1 ] && echo "   (giữ $TAM)" || rm -rf "$TAM"; rm -r
 trap don EXIT INT TERM
 cp -R src v3 test db package.json "$TAM/"; ln -s "$GOC/node_modules" "$TAM/node_modules"
 for f in src/products/chuyen-ban-sao.js src/products/san-pham-goc.js v3/src/ui/san-pham/kho-goc.js v3/src/ui/san-pham/router.js \
-         v3/src/ui/san-pham/trang/san-pham.html; do cp "$TAM/$f" "$TAM/$f.goc"; done
-DS_TEP_DOT='src/products/chuyen-ban-sao.js src/products/san-pham-goc.js v3/src/ui/san-pham/kho-goc.js v3/src/ui/san-pham/router.js v3/src/ui/san-pham/trang/san-pham.html'
+         v3/src/ui/san-pham/trang/san-pham.html src/pos/tao-don.js; do cp "$TAM/$f" "$TAM/$f.goc"; done
+DS_TEP_DOT='src/products/chuyen-ban-sao.js src/products/san-pham-goc.js v3/src/ui/san-pham/kho-goc.js v3/src/ui/san-pham/router.js v3/src/ui/san-pham/trang/san-pham.html src/pos/tao-don.js'
 bam_cay() { (for f in $DS_TEP_DOT; do cat "$GOC/$f"; done) | shasum | cut -d' ' -f1; }
 BAM_TRUOC=$(bam_cay)
 chay_tam() { (cd "$TAM" && node --import ./test/_an-toan.mjs --experimental-test-module-mocks --test "$1" 2>&1); }
@@ -73,7 +73,7 @@ bo_go_anh_khi_hong|src/products/chuyen-ban-sao.js|A|④8 ·
 dau_theo_page_bam|src/products/chuyen-ban-sao.js|A|④2 ·
 bo_chia_don_vi|src/products/chuyen-ban-sao.js|A|A9b ·
 bo_kiem_tien_te|src/products/chuyen-ban-sao.js|A|④7 ·
-doan_japan|src/products/chuyen-ban-sao.js|A|④7 ·
+doan_japan|src/pos/tao-don.js|A|④7 ·
 bo_luoi_032|src/products/chuyen-ban-sao.js|A|④9 · CSDL
 bo_don_dau_bo_goc|src/products/san-pham-goc.js|A|④9c F1 ·
 bo_don_bo_qua_khi_gan|src/products/san-pham-goc.js|A|④9c F2 ·

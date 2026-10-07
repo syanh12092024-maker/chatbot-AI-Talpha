@@ -5,7 +5,7 @@ import {
 } from "../queue/page-routing.js";
 import { docSanPhamGoiGia } from "../products/catalog.js";
 import { layModel } from "../chat/model.js";
-import { HE_SO_TE, quyDonViNho } from "../pos/index.js";
+import { HE_SO_TE, quyDonViNho, teCuaThiTruong } from "../pos/index.js";
 
 export const fault = (message, status = 400) =>
   Object.assign(new Error(message), { status });
@@ -202,6 +202,39 @@ export async function handoffConversation(pool, bc, id, { lyDo = "" } = {}) {
   });
 }
 /**
+ * TT1b (đối kháng TT1 F1): bậc giá của MÓN POS phải mang đúng tệ thị trường của shop món. 01 §8 «1 shop POS = 1 thị trường»; POS ghi
+ * `shipping_fee` theo tệ của shop, và bot lấy tệ ĐƠN từ chính bậc (`src/orders/draft.js` currency = tệ bậc) nên không cửa nào sau
+ * chỗ này còn hỏi «shop bán bằng tệ gì» ngoài `taoDon` cửa (b) — tức lúc khách đã nghe giá sai. Với MÓN POS, chặn ở đây là chặn TRƯỚC
+ * khi bot nói (bản sao `kb` theo page KHÔNG được soát — xem cuối khối).
+ * · `offers` rỗng (xoá hết bậc) ⇒ không có tệ nào để sai ⇒ cho qua — kể cả khi shop mất kết nối: đó là đường DUY NHẤT gỡ bậc sai
+ *   của một món như vậy (/code-review TT1b #3);
+ * · shop = phần trước dấu `:` đầu tiên của `san_pham.ma` (`<shop_id>:<biến thể>` — đúng `split_part(ma, ':', 1)` của
+ *   san-pham-goc.js / chuyen-ban-sao.js); mã không có `:` hoặc phần trước rỗng ⇒ 400 «không mang mã shop»;
+ * · tra `ket_noi_pos` theo CẶP (team của món, shop) — `UNIQUE(team_id, shop_id)` cho đúng một dòng; KHÔNG `shop_id` trơn (shop dùng
+ *   chung nhiều team) và KHÔNG lọc `bat`: thị trường là thuộc tính của shop, kết nối tạm tắt không được khoá việc sửa giá (cùng câu
+ *   tra của đối soát GSP3 `chuyen-ban-sao.js#docDonViTho`);
+ * · không có kết nối / thị trường ngoài `TIEN_TE_THI_TRUONG` (tra qua `teCuaThiTruong` — một luật với `taoDon`) ⇒ 400 nói rõ
+ *   (fail-closed, không đoán tệ);
+ * · MỌI bậc gửi lên được soát; lời từ chối chỉ in mã tệ đã qua `HE_SO_TE` (vòng kiểm trên) và tên thị trường đã qua bảng.
+ * Món `nguon='kb'` (bản sao theo page) KHÔNG qua hàm này — đường đó bị cắt ở GSP4.
+ */
+async function kiemTeThiTruong(c, teamId, p, offers) {
+  if (!offers.length) return;
+  const ma = String(p.ma ?? "");
+  const shop = ma.includes(":") ? ma.slice(0, ma.indexOf(":")) : "";
+  if (!shop)
+    throw fault(`Món POS #${p.id} không mang mã shop («<shop>:<biến thể>») — không biết shop bán bằng tiền tệ nào, chưa lưu được giá`);
+  const kn = (await c.query("SELECT market FROM ket_noi_pos WHERE team_id = $1 AND shop_id = $2", [teamId, shop])).rows[0];
+  if (!kn)
+    throw fault(`Món POS của shop ${shop} chưa có kết nối POS trong team này — không biết shop bán bằng tiền tệ nào, chưa lưu được giá (thêm kết nối ở màn Kết nối)`);
+  const te = teCuaThiTruong(kn.market);
+  if (!te)
+    throw fault(`Shop ${shop} nối thị trường ${JSON.stringify(String(kn.market).slice(0, 40))} chưa có trong bảng tiền tệ của hệ — chưa lưu được giá (báo kỹ thuật thêm thị trường)`);
+  const sai = offers.find((g) => g.tien_te !== te);
+  if (sai)
+    throw fault(`Bậc giá dùng ${sai.tien_te} nhưng shop ${String(kn.market).trim()} bán bằng ${te} — nhập giá bằng ${te} (hệ không quy đổi tiền tệ)`);
+}
+/**
  * Lưu MỘT sản phẩm + toàn bộ bậc giá.
  *
  * CR-28-09b (luật một nguồn): `sauKhiLuu(c, bc, id)` chạy TRONG giao dịch, sau khi đã ghi —
@@ -284,6 +317,8 @@ export async function saveProduct(pool, bc, id, input, { sauKhiLuu = null, chiGi
     if (!p) throw fault("Không tìm thấy sản phẩm", 404);
     if (p.version !== input.version)
       throw fault("Sản phẩm đã đổi; tải lại trước khi lưu", 409);
+    // TT1b: món POS — tệ của MỌI bậc = tệ thị trường shop (cả đường đầy đủ lẫn chỉ-giá); ném TRƯỚC mọi câu ghi ⇒ 0 ghi.
+    if (p.nguon === "pos") await kiemTeThiTruong(c, bc.teamId, p, input.offers);
     const bienThe = chiGia || input.bien_the === undefined ? p.bien_the ?? "" : input.bien_the.trim();
     if (chiGia) {
       await c.query("UPDATE san_pham SET gia_tay=true,sua_luc=now() WHERE team_id=$1 AND id=$2", [bc.teamId, id]);
