@@ -53,6 +53,7 @@ let TAB = 'chung';
 let CT = null;       // chi tiết sản phẩm đang mở
 let TT = null;       // shopId thị trường đang xem ở tab «Theo thị trường»
 let THEM = null;     // khung «Thêm thị trường»: { shop, mon }
+let GTD = null;      // GP1 · «Điền giá từ đơn POS»: { du, boChon: Set(monId), dangGui, tb, loi, ketQua }
 
 async function goi(d) {
   const r = await fetch(d, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
@@ -102,13 +103,16 @@ function veTrai() {
   $('#dsGoc').querySelectorAll('[data-goc]').forEach((b) => { b.onclick = () => moSanPham(b.dataset.goc); });
 
   const con = CHUYEN && CHUYEN.dem.chuaXong;
-  $('#oDuLieu').innerHTML = !GOC.suaDuoc ? '' : LOI_CHUYEN
+  $('#oDuLieu').innerHTML = (!GOC.suaDuoc ? '' : LOI_CHUYEN
     ? `<div class="o-luu-y">Chưa đọc được việc chuyển: ${esc(LOI_CHUYEN)} <button type="button" class="nut-dam" id="moBanSao">Thử lại →</button></div>`
     : con ? `<div class="o-luu-y"><b>${so(con)} page chưa chuyển xong</b> sang sản phẩm.
       <br><button type="button" class="nut-dam" id="moBanSao">Chuyển page sang sản phẩm →</button>
-      <button type="button" class="nut-dam" id="moGop">Gộp món POS thành sản phẩm →</button></div>` : '';
+      <button type="button" class="nut-dam" id="moGop">Gộp món POS thành sản phẩm →</button></div>` : '')
+    // GP1: món POS chưa có giá ← COD đơn POS một món (quản trị). Lối vào luôn hiện — kho POS không gửi giá nên món mới nào cũng rỗng giá.
+    + (GOC.suaDuoc ? '<p class="field-hint"><button type="button" class="nut-dam" id="moGiaTuDon">Điền giá từ đơn POS →</button></p>' : '');
   if ($('#moBanSao')) $('#moBanSao').onclick = () => veBanSao();
   if ($('#moGop')) $('#moGop').onclick = () => veGop();
+  if ($('#moGiaTuDon')) $('#moGiaTuDon').onclick = () => veGiaTuDon();
 }
 
 /* ── PHẢI · MỘT SẢN PHẨM ──────────────────────────────────────────────────────────── */
@@ -978,6 +982,124 @@ async function luuDoiSoat() {
   $('#phai').insertAdjacentHTML('afterbegin', canhBao({ level: 'success', title: 'Đã đối soát', body: xong }));
 }
 
+/* ── PHẢI · ĐIỀN GIÁ TỪ ĐƠN POS (GP1) ─────────────────────────────────────────────────
+ * Máy chủ tính bảng đề xuất (COD đơn POS một món, theo số lượng) + dấu; màn chỉ VẼ và gửi lại dấu + món chọn. Số tiền đi lên màn ở đơn vị
+ * LỚN (`giaLon`) — màn không chia. 409 «xem trước đã đổi» mang bảng MỚI: vẽ lại, bỏ lựa chọn cũ (chọn trên bảng người chưa thấy là sai). */
+async function veGiaTuDon() {
+  CHON = null; giu(null, null, 'gia-tu-don'); veTrai();
+  const g = GTD = { du: null, boChon: new Set(), dangGui: false, tb: '', loi: null, ketQua: null, loiDoc: '' };
+  $('#phai').innerHTML = '<div class="empty-state"><span class="skeleton"></span></div>';
+  await taiGiaTuDon(g);
+  if (dangXemGtd(g)) veBangGiaTuDon();
+}
+// Khung còn là khung đang mở? Người bấm sang sản phẩm / gộp / chuyển trong lúc chờ máy chủ ⇒ `xem` đổi (giu) hoặc GTD đã là lượt mới —
+// kết quả về muộn KHÔNG vẽ đè lên màn khác (/code-review GP1 #3).
+const dangXemGtd = (g) => GTD === g && new URL(location.href).searchParams.get('xem') === 'gia-tu-don';
+// Mỗi lượt áp tối đa `tranMotLuot` món (máy chủ chặn 400 quá trần) ⇒ chọn sẵn đúng từng ấy món đầu bảng; áp xong bảng tải lại, chọn tiếp.
+const chonSanGtd = (du) => new Set(du.deXuat.slice(du.tranMotLuot || du.deXuat.length).map((d) => d.monId));
+async function taiGiaTuDon(g) {
+  try { g.du = await goi('/api/san-pham/gia-tu-don'); g.loiDoc = ''; g.boChon = chonSanGtd(g.du); }
+  catch (e) { g.du = null; g.loiDoc = e.message; }
+}
+const tienGtd = (giaLon, te) => `${so(giaLon)} ${te}`;
+const laDoiXemTruoc = (ma) => ma === 'xem_truoc_da_doi' || ma === 'thieu_dau_xem_truoc';
+function hangGiaTuDon(d, g, chu) {
+  const bac = (f) => d.bac.map(f).join('<br>');
+  const bo = (d.boBac || []).length
+    ? `<br><span class="field-hint">bỏ: ${d.boBac.map((b) => `bậc ${so(b.soLuong)} (${esc(chu[b.lyDo] || b.lyDo)})`).join(', ')}</span>` : '';
+  return `<tr data-gtd-mon="${esc(d.monId)}">
+    <td><input type="checkbox" data-gtd-chon="${esc(d.monId)}" aria-label="Chọn ${esc(d.posMa)}"${g.boChon.has(d.monId) ? '' : ' checked'}${g.dangGui ? ' disabled' : ''}></td>
+    <td>${esc(d.sku || '—')}</td>
+    <td>${esc(d.ten || d.posMa)}<br><span class="field-hint">${esc(d.posMa)} · ${esc(d.tenGoc || d.maGoc)}</span></td>
+    <td>${esc(d.market || '')} · ${esc(d.shopId)}</td>
+    <td>${bac((b) => `${so(b.soLuong)} = ${esc(tienGtd(b.giaLon, d.tienTe))}`)}${bo}</td>
+    <td class="num">${bac((b) => `${so(b.tong)} đơn`)}</td>
+    <td class="num">${bac((b) => `${so(b.soDonMuc)}/${so(b.soDonGanDay)}`)}</td>
+    <td>${bac((b) => `${esc(tienGtd(b.ganNhat.giaLon, d.tienTe))} · ${esc(b.ganNhat.ngay)}`)}</td></tr>`;
+}
+function veBangGiaTuDon() {
+  const g = GTD; if (!g) return;
+  const kq = g.ketQua;
+  // `dongBo` = kết quả bước đẩy bản chép của cửa lưu giá (như VE8b): `{ ok, page[] }`, hoặc `{ ok: false, ghiChu }` khi cửa ghi bot đang
+  // khoá mà máy ráp prompt từ CSDL (giá ĐÃ lưu, bản chép chưa đẩy) — nói ra, không gộp vào «đã điền» cho êm.
+  const chuaDay = !kq ? [] : kq.ghi.filter((m) => m.dongBo && m.dongBo.ok === false);
+  // Page bán NHIỀU món được đẩy một lần cho mỗi món — đếm page KHÁC NHAU, không cộng lượt đẩy (/code-review GP1 #5).
+  const soPage = !kq ? 0 : new Set(kq.ghi.flatMap((m) => (m.dongBo && Array.isArray(m.dongBo.page) ? m.dongBo.page : []).map((p) => String(p.pageId)))).size;
+  const ketQua = !kq ? '' : canhBao({ level: kq.hong.length || chuaDay.length ? 'warning' : 'success', title: `Đã điền giá ${so(kq.ghi.length)} món`,
+    body: (kq.ghi.length ? `Đẩy bản chép sang ${so(soPage)} page bán các món này. ` : '')
+      + (chuaDay.length ? `${so(chuaDay.length)} món đã lưu giá nhưng CHƯA đẩy được bản chép sang bot: ${chuaDay.map((m) => `${m.posMa} — ${m.dongBo.ghiChu || ''}`).join('; ')}. ` : '')
+      + (kq.ghi.some((m) => m.nhatKyLoi) ? 'Có món ghi nhật ký hỏng (giá vẫn đã lưu — xem log máy chủ). ' : '')
+      + (kq.hong.length ? `${so(kq.hong.length)} món chưa điền: ${kq.hong.map((h) => `${h.posMa} (${h.ten || ''}) — ${h.thongDiep}`).join('; ')}` : '') });
+  if (!g.du) {   // kể cả khi đọc lại SAU một lượt áp hỏng: kết quả lượt áp vẫn hiện, không mất
+    $('#phai').innerHTML = ketQua + emptyState({ icon: 'circle-alert', title: 'Chưa đọc được đơn POS để điền giá', body: g.loiDoc || '',
+      actionsHtml: button('Thử lại', { id: 'thuGiaTuDon' }) });
+    $('#thuGiaTuDon').onclick = () => veGiaTuDon(); return;
+  }
+  const du = g.du; const chu = du.chuLyDo || {};
+  const chon = du.deXuat.filter((d) => !g.boChon.has(d.monId));
+  const tran = du.tranMotLuot || du.deXuat.length;
+  const quaTran = chon.length > tran;
+  const loi = !g.loi ? '' : canhBao({ level: laDoiXemTruoc(g.loi.ma) ? 'warning' : 'error',
+    title: laDoiXemTruoc(g.loi.ma) ? 'Bảng đã đổi từ lúc bạn xem' : 'Chưa điền được', body: g.loi.thongDiep });
+  const tongBo = Object.values(du.dem || {}).reduce((n, x) => n + x, 0);
+  const dsBo = Object.entries(du.dem || {}).map(([k, n]) => `<li><b>${esc(chu[k] || k)}: ${so(n)}</b>${(du.bo || []).filter((b) => b.lyDo === k)
+    .slice(0, 30).map((b) => ` · ${esc(b.ten || b.posMa)}${b.chiTiet ? ` — ${esc(b.chiTiet)}` : ''}`).join('')}</li>`).join('');
+  $('#phai').innerHTML = `<h2 class="tieu-de-lon">Điền giá từ đơn POS (${so(du.soNgay)} ngày)</h2>
+    ${ketQua}${loi}
+    <p class="field-hint">Giá = tiền khách trả (COD) của đơn POS chỉ MỘT món, theo số lượng: mức chiếm ≥ ${so(Math.round(du.nguong * 100))}% trong
+      ${so(du.ganDay)} đơn gần nhất (≥ ${so(du.toiThieu)} đơn) và trùng mức phổ biến của cả ${so(du.soNgay)} ngày — giá vừa đổi thì không đề xuất.
+      Đã gồm ship. Chỉ điền món CHƯA có giá — không ghi đè; giá sau đó sửa ở Theo thị trường của sản phẩm. Page còn bản sao giá khác sẽ hiện
+      LỆCH ở bước đối soát để người chọn.</p>
+    ${metricRow([{ label: 'Đề xuất', value: so(du.deXuat.length) }, { label: 'Đang chọn', value: so(chon.length) }, { label: 'Món bỏ qua', value: so(tongBo) }])}
+    ${(du.shopKhongDon || []).length ? `<p class="field-hint" data-shop-khong-don>Shop không có đơn một món nào trong ${so(du.soNgay)} ngày — chưa điền được:
+      ${du.shopKhongDon.map((s) => `${esc(s.market || 'shop')} (${esc(s.shopId)})`).join(', ')}.</p>` : ''}
+    ${du.deXuat.length ? `<div class="table-wrap"><table class="data-table" id="bangGiaTuDon" aria-label="Đề xuất giá từ đơn POS"><thead><tr>
+      <th scope="col"><span class="sr-only">Chọn</span></th><th scope="col">SKU</th><th scope="col">Tên</th><th scope="col">Shop</th>
+      <th scope="col">Bậc (SL = giá)</th><th scope="col" class="num">Số đơn</th><th scope="col" class="num">Tỷ lệ gần đây</th>
+      <th scope="col">Giá đơn gần nhất · ngày</th></tr></thead><tbody>${du.deXuat.map((d) => hangGiaTuDon(d, g, chu)).join('')}</tbody></table></div>`
+      : `<div id="bangGiaTuDon">${emptyState({ icon: 'check', title: 'Không còn món nào để điền', body: 'Món chưa có giá đều thiếu bằng chứng ổn định — xem lý do bên dưới.' })}</div>`}
+    <div class="hanh-dong tren-4"><button type="button" class="nut-dam" data-ap-gtd${chon.length && !quaTran && !g.dangGui ? '' : ' disabled'}>Áp dụng ${so(chon.length)} món</button>
+      <span class="field-hint" aria-live="polite" data-tb-gtd>${esc(g.tb || (quaTran ? `Một lượt tối đa ${so(tran)} món — bỏ chọn bớt ${so(chon.length - tran)} món.`
+        : du.deXuat.length > tran ? `Mỗi lượt tối đa ${so(tran)} món — áp xong, bảng tải lại để áp tiếp.` : ''))}</span></div>
+    <section class="tren-4" aria-label="Món bỏ qua"><h3>Món bỏ qua theo lý do</h3>
+      <ul id="demBoGiaTuDon">${dsBo || '<li>Không món nào bị bỏ.</li>'}</ul></section>`;
+  $('#phai').querySelectorAll('[data-gtd-chon]').forEach((o) => {
+    const id = o.dataset.gtdChon;
+    o.onchange = () => { if (o.checked) g.boChon.delete(id); else g.boChon.add(id); g.ketQua = null; veBangGiaTuDon(); };
+  });
+  $('[data-ap-gtd]').onclick = () => apGiaTuDonMan();
+}
+async function apGiaTuDonMan() {
+  const g = GTD; if (!g || g.dangGui || !g.du) return;
+  const du = g.du;
+  const monIds = du.deXuat.map((d) => d.monId).filter((id) => !g.boChon.has(id));
+  if (!monIds.length || monIds.length > (du.tranMotLuot || monIds.length)) return;
+  g.dangGui = true; g.loi = null; g.ketQua = null; g.tb = `Đang điền giá ${monIds.length} món…`; veBangGiaTuDon();
+  // Không dùng `goiGhi`: 409 mang bảng xem trước MỚI — phải đọc được thân lỗi.
+  const r = await fetch('/api/san-pham/gia-tu-don', { method: 'POST', credentials: 'same-origin',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dauXemTruoc: du.dauXemTruoc, monIds, soNgay: du.soNgay }) }).catch((e) => ({ ok: false, loiMang: e }));
+  const j = r.loiMang ? null : await r.json().catch(() => null);
+  g.dangGui = false; g.tb = '';
+  if (!r.ok || !j || j.ok === false) {
+    const ma = (j && j.ma) || '';
+    if (laDoiXemTruoc(ma) && j.duLieu && j.duLieu.xemTruoc) {
+      g.du = j.duLieu.xemTruoc; g.boChon = chonSanGtd(g.du);
+      g.loi = { ma, thongDiep: 'Giá món hoặc đơn POS đã đổi từ lúc bạn xem — bảng dưới đây là bảng MỚI, chưa ghi gì: xem lại rồi bấm Áp dụng.' };
+    } else {
+      g.loi = { ma, thongDiep: (j && j.thongDiep) || (r.loiMang ? 'Mất kết nối máy chủ.' : 'Máy chủ trả ' + r.status + '.') };
+    }
+    if (dangXemGtd(g)) veBangGiaTuDon(); else window.UI.toast(`Điền giá từ đơn POS: chưa ghi — ${g.loi.thongDiep}`);
+    return;
+  }
+  g.ketQua = j;
+  // Người đã rời khung trong lúc chờ: giá ĐÃ lưu — báo bằng một dòng nổi, không vẽ đè lên màn đang mở.
+  if (!dangXemGtd(g)) { window.UI.toast(`Đã điền giá ${j.ghi.length} món từ đơn POS${j.hong.length ? ` · ${j.hong.length} món chưa điền` : ''}.`); return; }
+  await taiGiaTuDon(g);
+  try { GOC = await goi('/api/san-pham/goc'); veTrai(); } catch { /* danh mục trái giữ bản cũ — bảng giá vẫn đúng */ }
+  if (dangXemGtd(g)) veBangGiaTuDon();
+}
+
 async function boGoc(id, nut) {
   nut.disabled = true;
   try { await goiGhi('/api/san-pham/goc/' + encodeURIComponent(id), { method: 'DELETE' }); CHON = null; await taiGoc(); moDau(); }
@@ -992,6 +1114,7 @@ async function taiGoc() {
 function moDau() {
   const u = new URL(location.href);
   if (u.searchParams.get('xem') === 'gop') return veGop();
+  if (u.searchParams.get('xem') === 'gia-tu-don') return veGiaTuDon();
   if (u.searchParams.get('xem') === 'chuyen') { LOC_CHUYEN = u.searchParams.get('trangThai') || ''; return veBanSao(); }
   const sp = u.searchParams.get('sp');
   if (GOC && sp && GOC.goc.some((g) => g.id === sp)) return moSanPham(sp, u.searchParams.get('tab') || 'chung');

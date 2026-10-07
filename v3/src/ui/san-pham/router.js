@@ -16,7 +16,7 @@ import { muonTrang, locTiep, escHtml } from '../chung/http.js';
 import { manSanPham, sanPhamCuaMotPage, VAI_VAO_DUOC, VI_RONG, LoiSanPham } from './kho-san-pham.js';
 import { manSanPhamGoc, suaGoc, boGoc, VAI_SUA_DUOC, chiTietGoc, ganMonPos, goMonPos, suaKienThucGoc, lichSuGoc,
   goiYGop, gopMonThanhGoc, luuGiaMon, ganPageSanPham, goPageSanPham, viecChuyen, boQuaChuyenPage, huyBoQuaChuyenPage,
-  xemDoiSoat, doiSoatDonVi } from './kho-goc.js';
+  xemDoiSoat, doiSoatDonVi, xemGiaTuDon, apGiaTuDon } from './kho-goc.js';
 
 /**
  * Vai GHI của màn — khai TƯỜNG MINH ở router dù nó chỉ chuyển tiếp từ `kho-goc.js`.
@@ -210,6 +210,17 @@ a{color:#0e7c86;text-decoration:none;font-weight:600}</style>
   }));
   r.post('/api/san-pham/chuyen/:pageId/huy-bo-qua', canDangNhap, canVai, boc(async (req, res) => {
     res.json({ ok: true, page: await huyBoQuaChuyenPage(cuaBoiCanh(req), req.params.pageId) });
+  }));
+
+  // GP1 · điền giá món POS chưa có giá từ COD đơn POS một món (BigQuery, chỉ đọc). Quản trị; marketer ⇒ 403. Xem trước (GET) không ghi; áp
+  // (POST) mang dấu của bảng đã xem — tầng A tính lại trong lượt, lệch ⇒ 409 kèm bảng mới. Đứng TRƯỚC `/api/san-pham/:id`.
+  r.get('/api/san-pham/gia-tu-don', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await xemGiaTuDon(cuaBoiCanh(req), req.query?.soNgay)) });
+  }));
+  r.post('/api/san-pham/gia-tu-don', canDangNhap, canVai, boc(async (req, res) => {
+    res.json({ ok: true, ...(await apGiaTuDon(cuaBoiCanh(req), {
+      dauXemTruoc: req.body?.dauXemTruoc, monIds: req.body?.monIds, soNgay: req.body?.soNgay,
+    })) });
   }));
 
   r.get('/api/san-pham/:id', canDangNhap, canVai, boc(async (req, res) => {

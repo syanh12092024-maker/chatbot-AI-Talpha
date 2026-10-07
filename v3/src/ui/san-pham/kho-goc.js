@@ -331,9 +331,9 @@ export async function goPageSanPham(boiCanh, id, pageId) {
  * Ba hàm của tầng A (`src/products/chuyen-ban-sao.js`) là hàm TUỲ CHỌN của `datKhoGoc` — KHÔNG thêm vào danh sách bắt buộc
  * (thêm là 5 tệp ca fake ll13 · ve8a · ve8b · ll15d · vai-b-noi-day đỏ). Chưa nối ⇒ 500 `chua_noi` nói rõ, không trả rỗng.
  * Vai: quản trị (`VAI_SUA_DUOC`). Marketer ⇒ 403: page chưa gắn nằm ngoài phạm vi marketer (LL15d). */
-function hamChuyen(ten) {
+function hamChuyen(ten, viec = 'danh sách việc chuyển') {
   const f = cua()[ten];
-  if (typeof f !== 'function') throw new LoiSanPham(`máy chủ chưa nối «${ten}» của danh sách việc chuyển`, 'chua_noi', 500);
+  if (typeof f !== 'function') throw new LoiSanPham(`máy chủ chưa nối «${ten}» của ${viec}`, 'chua_noi', 500);
   return f;
 }
 
@@ -415,6 +415,48 @@ export async function doiSoatDonVi(boiCanh, than = {}) {
   await ghi(bc, { hanhDong: HANH_DONG.DOI_SOAT_BAN_SAO, doiTuongLoai: BANG, doiTuongId: kq.gocId, sau, ghiChu: chu });
   for (const p of kq.pageDonVi) {
     await ghi(bc, { hanhDong: HANH_DONG.DOI_SOAT_BAN_SAO, doiTuongLoai: 'page', doiTuongId: p.pageId, sau, ghiChu: chu });
+  }
+  return kq;
+}
+
+/* ═══ GP1 · ĐIỀN GIÁ TỪ ĐƠN POS (07/10) — món POS CHƯA có giá ← COD đơn POS một món (BigQuery, chỉ đọc) ═══
+ * Hai hàm TUỲ CHỌN của `datKhoGoc` (`xemGiaTuDon` · `apGiaTuDon`) — như GSP2/GSP3, KHÔNG vào danh sách bắt buộc. Quản trị (marketer ⇒ 403:
+ * bảng xem trước là giá của mọi sản phẩm của team, ngoài phạm vi LL15d). Tầng A (`src/products/gia-tu-don-pos.js`) tính lại xem trước
+ * TRONG lượt áp và ghi qua cửa lưu giá có sẵn (saveProduct chỉ-giá tự ghi `v3_sua_san_pham` truoc/sau ở `san_pham`); ở đây ghi THÊM một
+ * dòng `dien_gia_tu_don_pos` ở sản phẩm cho MỖI món đã ghi: bậc · số đơn · tỷ lệ · khoảng ngày. */
+const hamGiaTuDon = (ten) => hamChuyen(ten, '«Điền giá từ đơn POS»');
+
+export async function xemGiaTuDon(boiCanh, soNgay) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  return hamGiaTuDon('xemGiaTuDon')(bc, { soNgay });
+}
+
+const chuBacGia = (b, te, soNgay) => `${b.soLuong} = ${b.giaLon} ${te} · ${b.soDonMuc}/${b.soDonGanDay} đơn gần nhất · ${b.tong} đơn ${soNgay} ngày`;
+
+export async function apGiaTuDon(boiCanh, than = {}) {
+  const bc = batBuocBoiCanh(boiCanh);
+  batBuocVai(bc, ...VAI_SUA_DUOC);
+  // Không ghi được nhật ký thì KHÔNG ghi giá: kiểm phễu TRƯỚC khi tầng A chạm `goi_gia` (sau đó mỗi món đã commit riêng).
+  if (!_pheuNhatKy) throw new LoiSanPham('chưa nối phễu nhật ký — từ chối điền giá', 'chua_noi', 500);
+  const ham = hamGiaTuDon('apGiaTuDon');
+  const kq = await ham(bc, { dauXemTruoc: than.dauXemTruoc, monIds: than.monIds, soNgay: than.soNgay });
+  for (const m of kq.ghi) {
+    const chu = `điền giá từ đơn POS ${kq.soNgay} ngày · ${m.posMa} (${m.ten || m.sku || ''}) · ${m.market || 'shop ' + m.shopId}: `
+      + m.bac.map((b) => chuBacGia(b, m.tienTe, kq.soNgay)).join('; ') + ` · đơn ${m.tu}…${m.den}`;
+    try {
+      await ghi(bc, {
+        hanhDong: HANH_DONG.DIEN_GIA_TU_DON_POS, doiTuongLoai: BANG, doiTuongId: String(m.gocId),
+        sau: { monId: m.monId, posMa: m.posMa, shopId: m.shopId, market: m.market, tienTe: m.tienTe, soNgay: kq.soNgay, tu: m.tu, den: m.den,
+          soDon: m.soDon, bac: m.bac.map((b) => ({ soLuong: b.soLuong, gia: b.gia, tong: b.tong, soDonGanDay: b.soDonGanDay, soDonMuc: b.soDonMuc,
+            tiLe: b.tiLe, tu: b.tu, den: b.den })) },
+        ghiChu: chu,
+      });
+    } catch (e) {
+      // Giá ĐÃ commit (saveProduct chụp truoc/sau ở `san_pham`) — nói ra ở kết quả, không giấu.
+      m.nhatKyLoi = String(e?.message || e).slice(0, 160);
+      console.error(`[san-pham] ghi nhật ký điền giá ${m.posMa} hỏng:`, m.nhatKyLoi);
+    }
   }
   return kq;
 }

@@ -113,6 +113,9 @@ export const HANH_DONG = Object.freeze({
   // GSP3 (05/10): đối soát giá + ảnh của bản sao theo đơn vị gốc × shop — chép một bảng giá lên món POS (đổi giá bot + cửa tiền ở
   // MỌI page cùng gốc × shop) và gom ảnh. Phải trả lời được: bảng của page nào thắng, bảng cũ là gì, page nào đổi giá, ai chọn.
   DOI_SOAT_BAN_SAO: 'doi_soat_ban_sao',
+  // GP1 (07/10): điền sẵn bậc giá cho món POS CHƯA có giá từ COD đơn POS một món (BigQuery) — đổi giá bot + cửa tiền ở mọi page bán món.
+  // Phải trả lời được: bậc nào, từ bao nhiêu đơn, tỷ lệ bao nhiêu, khoảng ngày nào, ai áp. `saveProduct` chụp thêm truoc/sau ở `san_pham`.
+  DIEN_GIA_TU_DON_POS: 'dien_gia_tu_don_pos',
 
   // Quét Pancake bằng kho token rồi upsert bảng `page` (17/09). Đây là đường DUY NHẤT đưa
   // page vào hệ mà không cần tệp `pages.json` của tiến trình bot v1 — nên nó cũng là chỗ
@@ -170,6 +173,7 @@ export const NHOM = Object.freeze({
     HANH_DONG.TAO_SAN_PHAM_GOC, HANH_DONG.SUA_SAN_PHAM_GOC, HANH_DONG.BO_SAN_PHAM_GOC,
     HANH_DONG.GAN_MON_POS_GOC, HANH_DONG.GO_MON_POS_GOC, HANH_DONG.SUA_KIEN_THUC_SAN_PHAM,
     HANH_DONG.BO_QUA_CHUYEN_PAGE, HANH_DONG.HUY_BO_QUA_CHUYEN_PAGE, HANH_DONG.DOI_SOAT_BAN_SAO,
+    HANH_DONG.DIEN_GIA_TU_DON_POS,
   ]),
   bo_luat: Object.freeze([HANH_DONG.LUU_BAN_NHAP_BO_LUAT, HANH_DONG.AP_BO_LUAT]),
   ky_nang: Object.freeze([HANH_DONG.BAT_TAT_KY_NANG, HANH_DONG.DAT_NHOM_KY_NANG]),
@@ -300,6 +304,7 @@ const MO_TA = Object.freeze({
   [HANH_DONG.BO_QUA_CHUYEN_PAGE]: 'Không chuyển page sang sản phẩm gốc',
   [HANH_DONG.HUY_BO_QUA_CHUYEN_PAGE]: 'Bỏ quyết định không chuyển page',
   [HANH_DONG.DOI_SOAT_BAN_SAO]: 'Đối soát giá + ảnh bản sao sang món POS',
+  [HANH_DONG.DIEN_GIA_TU_DON_POS]: 'Điền giá món POS từ đơn POS',
   // VE7e · 01/10: mã tầng A GHI THẲNG vào `nhat_ky` (không qua `ghiNhatKy` của v3, nên KHÔNG phải mã hợp lệ để v3 ghi) —
   // có ở đây chỉ để màn Nhật ký ra chữ thay vì mã trần. Nghĩa đọc từ nơi ghi: `src/db/truy-van.js#ghiNhatKyHeThong`
   // (doc/them/sua qua ctxHeThong) · `src/pos/doc-danh-muc.js` · `src/chat/ho-so-khach.js` · `src/chat/kho.js` ·
