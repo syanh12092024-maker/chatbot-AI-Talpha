@@ -74,6 +74,20 @@ mang `cause.kenh` + `chiTiet`; không đếm ghi chú/thẻ/không-HTTP/rút l�
 nhau, không hoàn lượt) · N4 → ② 4 (gửi: vẫn nạp; đọc: bỏ nạp) · N5 → ② 3 (cấu trúc + 121 không mã) · N6 → ② 7 · N7 → ④ · N8 → ② 2 · G3 (nửa mở) → tổng chốt
 «đủ 2 lỗi mới ngắt lại» (đúng chữ người quyết) · G5 → ② 6.
 
+**Sửa sau review (a) VÒNG 2 07/10 (kết luận PHÁT — 6 NÊN, chép bắt buộc):**
+- R2-N1: `pancake.js#dauLoiMang` (`:215-219`) mang thêm `ma` + `biChan` để lý do gửi có «mã 105»; luật `kenh` ở ② 3 CHỈ gắn khi cửa ĐÃ gọi Pancake — lỗi cửa tự
+  ném và lỗi ghi sổ SAU khi đã gửi OK KHÔNG phải lỗi kênh.
+- R2-N2: lượt làm mới RAM không được ghi đè trạng thái ngắt vừa ghi (hợp nhất: ngắt trong RAM còn hạn thì giữ); ④1b đi qua `motLuot` (có `pageIds`); câu ② 5 sửa
+  «tối đa 2 tin thăm dò» thành «≤ 4 (2 tin làm ngắt + tin đang bay ở hai vòng xử khác), mỗi tin có việc».
+- R2-N3: `ghiGuiTot` CHỈ khi tin thật sự GỬI (không phải mọi lần chốt XONG — nhường page / không gửi); reset và mở lại xoá cả `loi_*_tin_cuoi`; đang ngắt thì
+  KHÔNG đếm thêm (④8: mở xong 1 lỗi KHÔNG ngắt lại).
+- R2-N4: lỗi GỬI ⇒ chèn việc BẤT KỂ UPDATE `hoi_thoai` đổi bao nhiêu dòng (handler đã lưu CLOSING/HANDOFF trước khi ném — `handler-v3.js:954` — cảnh «đơn
+  vừa chốt mà tin xác nhận gửi hỏng»), cả ở đường cứu SQL `worker.js:314`; vẫn `NOT EXISTS` việc mở.
+- R2-N5: neo `gl3b.sh` ⑤b/⑤l trong `worker.js` — được đổi chuỗi neo (③), giữ ý đột biến; CẤM thêm export mới vào `pancake.js` mà nơi khác nạp tĩnh, hoặc nếu
+  buộc phải thêm thì `test/l2-m1-nhac-truong.test.js` CHỈ thêm tên vào danh sách mock (`:119-138`).
+- R2-N6: nguồn số của đèn — M (tin gửi lỗi cần đối chiếu) đếm từ việc «Gửi không rõ…» của team; N (tin đang giữ) từ nhịp hàng đợi CỦA TEAM; đèn chỉ đọc trong
+  team người xem (bỏ vế «team khác chỉ số + tên team» và đảo-vá tương ứng — không dựng được trong ③).
+
 ## ③ File được đụng
 
 ```
@@ -93,6 +107,7 @@ v3/src/ui/page-bot/kho-page.js
 v3/src/ui/page-bot/trang/page-bot.html
 v3/test/b/suc-khoe.test.mjs
 ops/bin/nghiem-thu/gl3b.sh
+test/l2-m1-nhac-truong.test.js
 test/gl4-*.test.mjs
 v3/test/b/gl4-*.test.mjs
 ops/bin/nghiem-thu/gl4.sh
