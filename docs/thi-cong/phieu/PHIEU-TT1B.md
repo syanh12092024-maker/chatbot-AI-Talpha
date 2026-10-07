@@ -63,7 +63,9 @@ ops/bin/nghiem-thu/gsp3.sh
 ops/bin/nghiem-thu/tt1.sh
 test/tt1b-*.test.mjs
 ops/bin/nghiem-thu/tt1b.sh
+docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs
 ```
+**Nới 07/10 (thợ xin, tổng duyệt):** `docs/thi-cong/nhat-ky/refute-tong-the-1.repro.mjs` CHỈ đổi `MARKET` `"GiaLapRefute1"` → `"UAE"` (cùng tệ AED) — repro do `va-r2.sh` chạy, chết ở F3b khi `taoDon` chặn thị trường ngoài bảng. Lệch nhẹ ② 3 (tổng nhận): `offers` rỗng (xoá hết bậc) cho qua — không bậc thì không lệch tệ.
 `chuyen-ban-sao.js`: CHỈ thay khối khai `TIEN_TE_THI_TRUONG` (`:290-297`) bằng import + re-export. `test/tt1-tien-te-ngoai-gcc.test.mjs`: CHỈ chú thích
 T6. **Sáu tệp ca cũ + `l3-m4.sh`** (đo review (a): bản vá tối thiểu làm đỏ 23 ca — base 875/0 → 852/23): CHỈ đổi tên thị trường giả sang tên THẬT cùng
 tệ fixture đang dùng (`GiaLapDuyet`/`GiaLapVaR2`/`LL2`/`E2E` + AED ⇒ `'UAE'`, …) và thêm `nguon='kb'` cho dòng mã `kb:…` (đúng bản chất bản sao, như
