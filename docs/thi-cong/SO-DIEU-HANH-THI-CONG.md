@@ -400,6 +400,7 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + H-GL. Trước page thứ hai: GL3c + GL4 
 | GL3c | Đọc lịch sử lỗi BỀN không được thành «câm im lặng» (nguyên tắc 13): bộ nạp lùi tới trần thì vẫn xếp tin ⇒ worker đi nhánh GL3b giao sale CÓ việc (N-GL3B-NAP-LOI-BEN) · page webhook: `docHoiThoai` nói lỗi (N-GL3B-WEBHOOK-MAPPING) | GL3b | 🟥 | ⬜ chưa viết phiếu · trước page thứ hai (pilot: 582/582 page prod là `poll` ⇒ webhook không chạm; người trực thấy tin chưa đọc trong Pancake) |
 | GL5 | HTTPS (trust proxy · đóng 3102 · `PUBLIC_URL` https · nginx) — SAU pilot | tên miền | 🟨 | ⬜ |
 | GL6 | Nhịp tim worker · độ trễ + tỉ lệ lỗi · bộ dò đẩy cảnh báo Telegram | GL4 · bot + chat id | 🟨 | ⬜ |
+| GL7a | Phép ⑤ `_chan1.sh` theo luật file phẳng CR-02-10: chỉ năm tệp bộ não phải khai; dòng «Đụng bộ não: không.» không được tính là đã khai | — | 🟩 | 🔨 phát 07/10 · cây chung |
 | GL7 | Đồng bộ tài liệu + rào cũ (`deploy/README.md` · `README.md:95` · unit mẫu cũ · hook `canh-file-cam.sh` · phép ⑤ `_chan1.sh`) | GL1–GL5 | 🟩 | ⬜ |
 | H-GL | Người: chọn page pilot · tắt ai_sale + Botcake trên page đó · người trực · tạo Telegram bot + chat id | — | — | ⬜ |
 
