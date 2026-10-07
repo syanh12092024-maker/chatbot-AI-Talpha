@@ -1,6 +1,6 @@
 # PHIẾU GL3c — Pancake lỗi KÉO DÀI không được thành «bot câm im lặng»: danh sách hội thoại lỗi liên tục ⇒ ngắt page · lỗi kênh khi đọc lịch sử ở bộ nạp đếm vào GL4 · hội thoại lỗi DỮ LIỆU bền ⇒ giao sale CÓ việc
 
-**Base:** `ĐẶT-LÚC-PHÁT` · **Làn:** 🟥 (đường bot trả lời khách + bàn giao sale; sai một chiều là khách bị bỏ không ai biết, sai chiều kia là ngập việc / ngắt oan)
+**Base:** `ff3526a` · **Làn:** 🟥 (đường bot trả lời khách + bàn giao sale; sai một chiều là khách bị bỏ không ai biết, sai chiều kia là ngập việc / ngắt oan)
 **Nguồn:** README nguyên tắc 9 · 13 · nợ **N-GL3B-NAP-LOI-BEN** · **N-GL3B-CONV-NUOT-LOI** · **N-GL4-NAP-KHONG-DEM** · **N-GL3B-WEBHOOK-MAPPING** (sổ §9) ·
 review (a) 07/10 TRẢ VỀ (2 CHẶN · 6 NÊN — bản này viết lại theo, mục «Sửa sau review (a)» cuối ②) · sổ §5j (GL3c trước page thứ hai)
 **Con số người quyết chốt 07/10 («ok 2 phút»):** `T_NGAT_DS = 2′` (danh sách hội thoại lỗi LIÊN TỤC bao lâu thì ngắt page) · tổng đặt (hằng có tên):
@@ -47,6 +47,16 @@ câu riêng. Sửa `docs/v3/ban-giao/cua-messenger-v1.md` cùng commit (sửa m�
 
 **Sửa sau review (a) 07/10:** C1 → ② 2 (theo thời gian liên tục, hàm `ngatPage` riêng, bỏ `ghiDocTot` ở nạp) · C2 → ② 3/4 (đếm lỗi kênh ở bộ nạp theo hội thoại; chỉ lỗi dữ
 liệu leo tới giao) · N1 → `LUOT_LOI_GIAO_SALE` + `tu` · N2 → ② 4 (không đặt lại vì quãng ngắt) · N3 → ② 4 (mốc thô) · N4 → ② 1/4/5/6 + ③ · N5 → ④ · N6 → ② 1.
+
+**Sửa sau review (a) VÒNG 2 07/10 (kết luận PHÁT — 4 NÊN, chép bắt buộc):**
+- R2-N1: page vào ngắt (bất kỳ nguồn nào) ⇒ XOÁ `dsLoiTu` của page đó; mở lại phải đủ `T_NGAT_DS` lỗi liên tục mới ngắt lại (luật GL4 «mở rồi phải đủ ngưỡng»). `quenMoc` xoá cả `dsLoiTu`.
+- R2-N2: «một khách, hai khoá» (worker đếm theo `tinId`, bộ nạp theo `-hoi_thoai.id`) ⇒ khách đang nhắn dở + Pancake chập 15–30 s là page ngắt. ƯU TIÊN: lỗi ĐỌC đếm theo
+  HỘI THOẠI ở CẢ worker lẫn bộ nạp (khoá `-hoi_thoai.id`; lỗi GỬI giữ theo tin) — nếu đụng neo `gl4.sh` thì DỪNG báo tổng; cách thay thế: giữ hai khoá, ghi rõ chấp nhận +
+  phép ④1e đo đúng cảnh đó. Bộ nạp đọc lịch sử OK ⇒ gọi `ghiDocTot` (đọc lịch sử thật chạy) — ghi rõ trong nhật ký.
+- R2-N3: KHÔNG chép nguyên văn khuôn `ghiLoiKenh` / `pkDocTin` (làm neo `gl4.sh` ⑤b/⑤n trong `ngat-page.js` và `gl3b.sh` ⑤v/⑤w trong `pancake.js` xuất hiện 2 lần ⇒ cổng đỏ).
+  `docHoiThoai` chỉ ném khi `soLoi.ok === false` (mock trả `[]` không điền `soLoi` vẫn là đọc được).
+- R2-N4: ④ «qua 30′» làm bằng đồng hồ CSDL (`UPDATE page SET ngat_den = now() - interval '1 second'`) rồi chạy mở lại THẬT (phép 3b); mỗi lần gọi `napTuPoll` trực tiếp
+  khẳng định `r.mo === true` (chống xanh giả khi van/nguồn đóng). Thêm ④1d (mở lại + 1 vòng lỗi ⇒ KHÔNG ngắt lại).
 
 ## ③ File được đụng
 
