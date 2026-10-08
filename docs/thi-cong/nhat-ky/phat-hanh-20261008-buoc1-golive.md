@@ -1,6 +1,6 @@
 # MỞ VAN — Go-live bước ① (mã điều kiện pilot lên prod, 0 page bật) · 08/10/2026
 
-> **TRẠNG THÁI: 📝 NHÁP — CHƯA GẬT.** Chờ: RP1 vòng 2 + RP2 đối kháng xong · cửa vào `ops/bin/phat-hanh.sh` · người quyết gật «push + deploy bước ①».
+> **TRẠNG THÁI: ⏳ CHỜ GẬT.** RP1 ✅ · RP2 ✅ · cửa vào đo xong (mục 3) · chờ người quyết gật «push + deploy bước ①».
 
 ## 1 · Mở cái gì
 
@@ -19,13 +19,13 @@ từ đơn POS»), đèn Sức khoẻ mới (trần page, ngắt kênh), màn Pa
 
 | # | Phép | Số đo |
 |---|---|---|
-| ① | cây sạch | |
-| ② | so origin | |
-| ③ | `npm test -- --test-force-exit` | |
-| ④ | cổng (rc tách dòng; nợ cũ đúng tên) | |
-| ⑤ | biến khai (`V3_TRAN_PAGE_BAT` · `V3_LUAT_CHUNG_CSDL` · `V3_PANCAKE_HAN_*` trong `bien-moi-truong-v3.md`) | |
-| ⑥ | máy dev không gửi (`PANCAKE_READONLY=1`) | |
-| ⑦ | prod sống trước khi đụng | |
+| ① | cây sạch | 0 tệp chưa commit (`ops/bin/phat-hanh.sh` 08/10 12:21 trên `c61ff2b`) |
+| ② | so origin | 0 commit remote chưa lấy về · nhánh đi trước origin ~80 commit |
+| ③ | `npm test` | lượt cửa vào: 2796 xanh / 1 đỏ (chập chờn) · chạy lại `npm test -- --test-force-exit`: **2797 xanh / 0 đỏ** / 4 bỏ qua |
+| ④ | cổng (rc tách dòng) | 71 xanh / 17 đỏ = **12 nợ cũ** (b-y3 1 · bh1 3 · bh7 1 · g2-a3 2 · l0-m1 7 · l1-m2 1 · l2-m1 3 · l2-m2 1 · l2-m3 2 · va-r1 2 · va-r2 1 · l3-m4 33 đỏ + 4 hoãn — chạy `l3-m4.sh` trên `8dc9bcd` ra ĐÚNG 33 + 4, 0 dòng chỉ có ở HEAD) + **2 thước** (`l0-m1` +1 / `l0-m2`: chạy `test/*.test.mjs` không `--import ./test/_an-toan.mjs` ⇒ `rp1-duong-csdl` tự từ chối chạy — cố ý, chạy đúng cách 34/0 ×2) + **4 chuỗi lồng chập chờn** (`gp1` · `gsp3b` · `gsp3c` · `tt1` — đỏ lan từ cổng con lồng sâu / treo; chạy RIÊNG: ll2 11/0 · ll3 7/0 · ll5 6/0 · ll6 7/0 · ll13 7/0 · ll15d 21/0 · gsp3 43/0 · vai-b-noi-day 5/0) |
+| ⑤ | biến khai | 3 biến giá model `V3_GIA_*` chưa khai (cảnh báo, có từ trước) · `V3_TRAN_PAGE_BAT` · `V3_LUAT_CHUNG_CSDL` · `V3_PANCAKE_HAN_*` đã khai |
+| ⑥ | máy dev không gửi | `PANCAKE_READONLY=1` |
+| ⑦ | prod sống trước khi đụng (08/10, chỉ đọc) | `aicloser-v3` active · `aicloser-worker-v3` active · `/dang-nhap` 200 · HEAD `8dc9bcd` · page bật **0/582** · `_migrations` 32 · `V3_TRAN_PAGE_BAT` chưa có |
 
 ## 4 · Ngưỡng + mốc quan sát (viết trước)
 
