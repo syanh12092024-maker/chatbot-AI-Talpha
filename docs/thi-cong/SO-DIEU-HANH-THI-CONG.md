@@ -1914,6 +1914,30 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + RP2 + GL3c (vòng 2 — hồi quy ch
   - nối **N-GL3C-NAP-HAI-HOI-THOAI-MOT-CHAP**: F3 mở rộng lớp lỗi kênh (5xx JSON · câu lạ) ⇒ một lần chập 5xx trúng hai hội thoại cùng vòng nạp nay là ngắt
     30′ (tin giữ) — trước vòng 2 là lỗi dữ liệu, chập ≥ 90 s là giao sale hàng loạt.
 
+- 08/10 · RP1 (thợ) — đường đọc CSDL đủ cho pilot (commit b666da9). Nợ (chi tiết: `docs/thi-cong/nhat-ky/phieu-rp1.md` § Nợ · /code-review):
+  - **N-RP1-MAN-BO-LUAT** (phiếu ⑥ vòng 2) màn «Bộ luật» (`v3/src/ui/bo-luat/kho-bo-luat.js:324,340`) vẫn nói «bản đang áp … THAY CORE» trong khi
+    `V3_LUAT_CHUNG_CSDL` vắng ⇒ bot dùng CORE trong mã — màn nói sai; dặn người trực pilot tới khi sửa câu màn.
+  - **N-RP1-MAN-PROMPT-SAN-PHAM** màn «Prompt của page» dựng khối sản phẩm RIÊNG (`v3/src/ui/prompt-page/kho-prompt.js#moTaSanPham`: «N cái: <giá đơn
+    vị nhỏ>», tên POS nguyên số hiệu, không ảnh, không lọc hết hàng) ⇒ không phải thứ bot đọc sau RP1 (nhãn «Tên bậc» · ảnh · tên bỏ số hiệu · lọc).
+  - **N-RP1-DOC-DUONG-TIN** `docs/v3/ban-giao/duong-tin-v1.md` §13 (13.2 «bo_luat_chung CHƯA điều khiển model» lỗi thời từ cutover 01/09; không nói
+    ảnh / «Tên bậc» / lọc hết hàng / `V3_LUAT_CHUNG_CSDL`) + bảng `so_ai` dòng `image` (`du_lieu.n`) chưa có `anh_hong`/`anh_hong_loai` — ngoài ③ RP1.
+  - **N-RP1-CHON-GOI-THEO-QTY** (/code-review #1, gốc) `core/gia.js#chonGoi` bước ③ chỉ khớp số ĐẦU nhãn và `kb.js#productTiers` bỏ `qty` ⇒ nhãn tự do
+    («Best Value») không chọn được theo qty. RP1 chỉ vá ở `draft.js` khi model KHÔNG nêu gói; model nêu variant lạ mà qty khớp đúng một bậc ⇒ vẫn
+    «chưa xác định được gói giá» (đóng, không lỗ tiền). Vá gốc: `bangGia` mang qty, `chonGoi` khớp `qty === so_luong` trước bước ③.
+  - **N-RP1-ANH-5XX-JSON** (/code-review #2) Pancake trả HTTP 5xx/408 KÈM thân JSON `success:false` ⇒ `pancake.js` không gắn `khongRo` ⇒ handler
+    coi «từ chối», thử lại 1 ⇒ có thể đúp ảnh nếu thật ra đã giao (ngang v1). Vá ở `pancake.js#goiPancake/dauLoiGui` (gắn khongRo theo mã HTTP ≥ 500).
+  - **N-RP1-ANH-HONG-HE-THONG** (/code-review #5) ảnh hỏng có hệ thống (PUBLIC_URL sai · FB không tải) chỉ nằm ở `so_ai.du_lieu.anh_hong`; chữ đi nên
+    GL4 không đếm (phiếu R2-N2 chốt) ⇒ không đèn, không ai biết khách không còn thấy ảnh. Cần đèn/tỉ lệ ảnh hỏng theo page (GL6).
+  - **N-RP1-ANH-KHONG-RO-KHONG-VIEC** ảnh «không rõ» bị bỏ (có thể đã tới khách): lượt `xong`, dòng `lan_gui='khong_ro'` nằm lại nhưng KHÔNG có việc
+    «Gửi không rõ…» (GL4 ② 6 chỉ chạy ở nhánh ném). Ảnh — không phải tiền; ghi để người đối chiếu biết dòng `khong_ro` không kèm việc.
+  - **N-RP1-CHUAN-NHAN-HAI-BAN** (/code-review #8) `src/orders/draft.js#soMuaDauNhan` (NFKC) ≠ `core/gia.js#chuan` (bảng đổi chữ đậm) — hai bản chuẩn
+    hoá nhãn; export một helper từ `core/gia.js` rồi dùng chung.
+  - **N-RP1-PERM-ERRS-HAI-BAN** (/code-review #9) `src/chat/handler-v3.js#MA_LOI_QUYEN` chép tay `pancake.js#PERM_ERRS` (không export — tệp GL3c đang
+    sửa) — export `PERM_ERRS`/`laLoiQuyen` rồi xoá bản chép.
+  - Phiếu ⑥ (giữ): `variant`/«(phân loại)» trống ở món POS · dòng «Thị trường · Ngành hàng» không có ở đường CSDL · `introImages` không ghép
+    `PUBLIC_URL` (cả hai đường — ảnh tương đối chỉ đi qua tool) · ảnh lớn quá hạn 30 s (N-GL3B-HAN-ANH — nay ảnh đó + các tấm sau bị BỎ, chữ vẫn
+    đi) · 5 ảnh `*.trycloudflare.com` (đường hầm tạm) trên page 1263228703530758.
+  - **N-SOHIEU-CUOI** (NÂNG) từ RP1 tên món POS tới KHÁCH ở page gắn gốc qua `tachSoHieu` — số hiệu ở CUỐI tên («Tummiva Gel - 176») vẫn lọt.
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3617,3 +3641,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 08/10 · tổng TRÌNH LẠI 2 quyết định RP2 (review (a) vòng 1 chỉ ra tổng đưa thiếu dữ kiện): «30,2% nhận nhầm» là số v2 trước deploy — đo 22/09 trên mã v3 4/56 khoá đều là sale thật; tắt ⇒ bot nói đè sale (trái 01 §10) · `AM_THRESHOLD=1` đơn thuần KHÔNG tới khách khi Botcake trả giá (câu giá không được chấm — RV-N1)
   NGƯỜI QUYẾT chọn lại: tiếp quản «GIỮ BẬT như hiện tại» (bỏ khối 2; ghi chú `HUMAN_TAKEOVER` chỉ tác dụng mã cũ) · ngân sách «Chấm điểm cả tin đã nhường Botcake» (+ ngưỡng ấm 1)
   · RP2 viết lại: khối chung đọc theo team (`khoi_dung_chung`) · chấm điểm cả tin nhường + mốc chống chấm lặp · đo chi phí trên mẫu 719 (đụng bộ não) · H-GL thêm đọc lại 11 mục `/khoi-chung`
+- 08/10 · RP1 → 🔎 chờ nghiệm thu — đường đọc CSDL đủ cho pilot: `products[].images` + dòng «Ảnh có sẵn» (chỉ ảnh tool gửi được) · ảnh hỏng KHÔNG chặn chữ (từ chối ⇒ thử lại 1 rồi bỏ · không rõ ⇒ bỏ cả tấm sau · lỗi quyền 103/105/121 / cổng chặn / không HTTP ⇒ ném như cũ — lệch phiếu tổng nhận, giữ P3d/⑤aa) · «Tên bậc» + «(N items)» · draft.js qty có điều kiện + chọn bậc theo qty khi không nêu gói · tên bỏ số hiệu giữ đuôi · lọc hết hàng · CORE trong mã trừ khi `V3_LUAT_CHUNG_CSDL=1`
+  `rp1.sh` 55/55 rc=0 (39 ca × UTC/UTC+14 · 24 đảo-vá đỏ đúng · gl4/gl3b/gl3 rc=0 · 18 bộ ca cũ rc=0) · đỏ trên base 31/39 · tt1b.sh rc=1 riêng (tt1 TREO lồng ve8a 0% CPU — riêng 24/0 · l3-m4 33 / va-r2 12 dòng đỏ giống hệt base 83f5f6f) · bộ ca tt1b 22/0 · npm test 2706→2745 / 0 · /code-review 10: sửa 5 · bác 5 (4 kèm nợ) · nợ §9 N-RP1-* (9) + ⑥
+  · commit b666da9 · nhật ký docs/thi-cong/nhat-ky/phieu-rp1.md
