@@ -1961,6 +1961,28 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + RP2 + GL3c (vòng 2 — hồi quy ch
   - Phiếu ⑥ (giữ): công tắc nhận diện sale / nhường Botcake THEO PAGE (`botcake_tat` chưa đọc) · màn sửa sổ mẫu máy Botcake · «khách lạnh có N lượt»
     trên màn Page & Bot · dòng «Thị trường · Ngành hàng» + tách vai OFW/Tagalog khỏi CORE · cổng bật page đòi kịch bản LIVE + thẻ «AI back Sale» +
     kiến thức SP · lớp 0 đồng không gửi · kỹ năng sửa nội dung · cửa lưu khối chung từ chối team 2/3 · `V3_SHEET_CHI_DANH_BA` có thể vắng trên worker.
+- 08/10 · RP1 vòng 2 (thợ) — trả về của đối kháng refute-rp1 (commit e56b1fb). Chi tiết: `docs/thi-cong/nhat-ky/phieu-rp1.md` § Vòng 2:
+  - **TRẢ N-RP1-ANH-5XX-JSON** — `pancake.js#pkSendImage`: HTTP ≥ 500 kèm thân JSON `success:false` ⇒ `khongRo` (không thử lại ⇒ không đúp ảnh +
+    caption). Ca R2k/R2l. Chỉ đo trên Pancake giả — Pancake thật có nhận rồi trả 5xx không vẫn chưa ai đo.
+  - **N-RP1-ANH-TU-CHOI-SO-KHONG-RO** (đối kháng F4 — lệnh vòng 2: ngoài phạm vi) ảnh bị Pancake TỪ CHỐI dứt khoát vẫn được
+    `queue/lan-gui.js#bocCuaGuiBen` ghi `lan_gui='khong_ro'` (kể cả khi lượt thử lại đã giao) ⇒ nếu bước sau chữ hỏng (ghi chú bàn giao) thì
+    `worker#soGuiTin` thấy khong_ro ⇒ việc «Gửi không rõ đã tới khách…» GIẢ (ca đối chứng không ảnh từ chối: 0 việc). Vá: dòng ảnh từ chối dứt khoát
+    mang trạng thái riêng (vd `that_bai`), `soGuiTin` không đếm.
+  - **N-RP1-NAP-SO-LUONG-BOGO** (đối kháng F1, gốc) bộ nạp MN2 `nap-tu-kb.js#soLuongTuNhan` đặt so_luong = SỐ ĐẦU nhãn cho bậc khuyến mãi không
+    «Total» («Buy 1 Get 1 – lamang» ⇒ 1). Vòng 2 chỉ chặn LỜI NÓI sai («(1 item)»); ĐƠN vẫn theo so_luong: model nêu gói + qty 1 ⇒ hàng chờ so_luong 1
+    @99 cho gói mua 1 tặng 1. Trước pilot: ⑦b soát so_luong MỌI bậc page pilot so với số món nhãn hứa (kể cả bậc không có «Total») + sửa trên màn.
+  - **N-RP1-TONG-LA-NEU-GOI** (/code-review vòng 2 #3 — bác theo chữ lệnh tổng) model nêu `total_price` đúng giá của bậc mà server đoán theo số đầu
+    nhãn ⇒ coi là «đã chọn gói» ⇒ «2» + 159 thành đơn 5 món. Tổng phán: giữ (tổng = lời cam kết giá gói, cửa ra chỉ cho giá bậc tới khách) hay đòi
+    cả variant; đo ở pilot tỉ lệ đơn có tổng, không variant, qty ≠ so_luong.
+  - **N-RP1-ANH-TRON-KHONG-CAPTION** (/code-review vòng 2 #2) model không truyền caption mà chữ không đi (cửa ra giết / model câm) ⇒ ảnh vẫn đi trơ
+    (có sẵn, v1 cũng vậy). `tools.js:245` (bộ não) nói với model «bạn KHÔNG viết chữ thì ảnh cũng KHÔNG được gửi» — trái hành vi khi caption sạch.
+  - **N-RP1-NHAN-KHUYEN-MAI-DA-NGU** (/code-review vòng 2 #5) `rap-prompt.js#NHAN_TU_NOI_SO_MON` chỉ đọc chữ tiếng Anh (buy/get/take/free/pcs) —
+    nhãn «Bili 1 Libre 1» / Ả Rập nạp MN2 vẫn bị nối «(1 item)». Bản chụp 28/09: 0/156 bậc khuyến mãi không phải tiếng Anh (biên của kết luận).
+  - **N-RP1-5XX-REPLY-PHAN-LOAI** (/code-review vòng 2 #6 #7 #8) luật «HTTP ≥ 500 ⇒ khongRo» chỉ ở `pkSendImage`: `pkSendReply` chưa có (v3 không
+    thử lại chữ ⇒ không đúp, chỉ lệch phân loại) · `ngat-page.js#cauLyDoGui` gọi khongRo là «lỗi mạng khi gửi» (lỗi ảnh 5xx bị `xaAnh` nuốt nên chưa
+    hiện) · `pkFetchPage` xoay token gửi lại khi thân ghi mang mã quyền dù HTTP ≥ 500 (GL3b F3, chưa đo dáng đó). Một chỗ: `dauLoiGui`.
+  - nối **N-RP1-DOC-DUONG-TIN**: dòng `so_ai` `image` thêm `caption_bi_chan` (luật cửa ra chặn caption) + `anh_hong_loai` «bo_cua_ra»; caption ảnh
+    nay qua cửa ra — `duong-tin-v1.md` chưa nói.
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3670,3 +3692,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 08/10 · RP2 → 🔎 chờ nghiệm thu — khối Chính sách · FAQ · Phản đối vào đường CSDL (cờ RAP bật) đọc THEO TEAM `khoi_dung_chung` mỗi lượt, dựng bằng hàm đường cũ (trùng từng ký tự) · handler chấm điểm trên tin KHÁCH của lịch sử kể từ mốc (cả câu Botcake đã trả lời; MỘT scoreTurn, bỏ chữ page, 24 giờ theo giờ tin, mốc `diem_lead.moc`) · `AM_THRESHOLD` 2 → 1 · A' worker thật: cả hai lượt được trả lời (base: `ngan_sach_het:LANH`)
   `rp2.sh` 59/59 rc=0 (28 ca × UTC/UTC+14 · 24 đảo-vá đỏ đúng · rp1/gl3b/gl4 rc=0 · bh7 rc=1 = base · 20 bộ ca cũ fail=0) · đỏ trên base 21/28 · npm test 2758→2786 / 0 · đo chi phí mẫu 719 (có nhường Botcake): lượt model 989 → 1195 (+20,8%) · bàn giao hết ngân sách 152 → 78 · /code-review 10: sửa 6 · bác 3 · 1 nợ · lệch phiếu: nhật ký § Lệch phiếu · nợ §9 N-RP2-* (9)
   · commit 76399c3 · nhật ký docs/thi-cong/nhat-ky/phieu-rp2.md
+- 08/10 · RP1 vòng 2 → 🔎 chờ nghiệm thu — trả về của đối kháng: draft.js ngoại lệ «qty = số mua đầu nhãn» CHỈ khi model đã chọn gói (nêu tổng / variant khớp nhãn qua bước ①② chonGoi — variant lạ không tính) ⇒ «2» + «Total 3/5» không còn thành đơn 5 món @159 (F3) · nhãn tự nói số món (Buy X Get/Take Y · Take N · N FREE · N pcs) không nối «(N items)» (F1) · caption ảnh qua cùng cửa ra với chữ — chặn ⇒ ảnh không caption khi còn chữ, không chữ ⇒ không ảnh trơ + bàn giao, caption sạch giữ luật v1 (F6) · pkSendImage HTTP ≥ 500 kèm JSON ⇒ không rõ, không thử lại (F2)
+  `rp1.sh` 72/72 rc=0 (54 ca × UTC/UTC+14 · 40 đảo-vá đỏ đúng (16 mới) · gl4/gl3b/gl3/gl3c rc=0 · 18 bộ ca cũ rc=0) · đỏ trên base vòng 2 19/54 · ca đối kháng trên mã mới: F1 F2 F3 không còn tái lập · quét bản chụp 28/09: F1 26→0 bậc · F3 17→0 ca · npm test 2758→2773 / 0 · /code-review 8: sửa 3 · bác 5 kèm nợ · nợ §9 (6 mới · trả N-RP1-ANH-5XX-JSON)
+  · commit e56b1fb · nhật ký docs/thi-cong/nhat-ky/phieu-rp1.md § Vòng 2

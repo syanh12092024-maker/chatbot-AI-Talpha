@@ -195,3 +195,163 @@ PUBLIC_URL · N-GL3B-HAN-ANH · 5 ảnh trycloudflare) · N-SOHIEU-CUOI (nâng).
 - «Tên bậc» các bậc của page pilot: nhãn có «Total N» khác so_luong (6/72 bản chụp 28/09) ⇒ bot đọc nhãn y nguyên — soát trước khi bật.
 - `V3_LUAT_CHUNG_CSDL` để VẮNG (CORE trong mã) — màn «Bộ luật» sẽ nói «bản đang áp»: dặn người trực (N-RP1-MAN-BO-LUAT).
 - `FASTLANE_TEMPLATES`/`FASTLANE_INTRO` prod = 0 (người quyết giữ Botcake chào) ⇒ ảnh đi qua tool `send_product_image` của model, không qua tin chào.
+
+---
+
+# Vòng 2 — trả về của đối kháng (refute-rp1 · TRA_VE: F3 CHẶN · F1 NÊN nặng · F6 NÊN · F2 đưa lên trước pilot)
+
+Thợ: Claude Opus 5.5 (worktree riêng `.claude/worktrees/agent-a7aa205476c2a8fd6`, nhánh `worktree-agent-a7aa205476c2a8fd6`) · base vòng 2
+`5ff70a7` (= mã `1392b57` + doc của tổng; HEAD lúc nhận `ff3526a`, cây sạch ⇒ `git reset --hard 5ff70a7`) · skill `tho-thi-cong` + `viet-thuoc`,
+xong `/code-review high`. Môi trường mọi số đo: **máy dev**, Postgres hộp cát `aicloser_v3_test_rp1_p<pid>` / `aicloser_v3_test_rf1_p<pid>`
+trên `127.0.0.1:5432` (từ `DATABASE_URL_V3` của `.env` chép sang worktree), Pancake **GIẢ**; ca in tệp đo + cwd = worktree. Không đụng repo chính
+(thợ RP2 đang sửa `rap-prompt.js` khối chung + `handler-v3.js` chấm điểm lead ở đó) — sửa của vòng 2 chỉ trong `nhanGoiGia` (+ hằng
+`NHAN_TU_NOI_SO_MON` ngay dưới), `xaAnh` (+ `duLieuAnh`, chỗ gọi nhánh model), `pkSendImage`, `chuanBiDon`. Lượt «base vòng 2» chạy trên bản
+sao `scratchpad/rp1v2/base` (`git archive 5ff70a7`).
+
+## Đề bài vòng 2 — đo lại trước khi code (bẫy #4)
+Ca tái lập của đối kháng (`scratchpad/rp1-refute-ca/zz-refute-rp1.test.mjs`) chạy lại trên base vòng 2 (`rp1v2/refute-base-v2.log`): 9/9
+khẳng định lỗi ĐÚNG — F1 «Buy 1 Get 1 – lamang (1 item) — 99 SAR» tới khách · F2 Pancake nhận A1 hai lần, cả hai kèm caption · F3 hàng chờ
+`{so_luong:5, tong_tien:15900, cua2:true}` · F6 ảnh + caption «Promo today only 55 SAR» đi khi chữ bị giết · F6b caption «2 sets = 198 SAR» đi.
+Quét bản chụp 28/09 trên base vòng 2 (`rp1v2/quet-base.log`): F1 26/156 bậc · 14 page · F3 17 ca «nói N ⇒ đơn khác N» · 14 page — khớp verdict.
+Đọc mã: `goiPancake` đã gắn `maHttp` (GL3c vòng 2, `0c65380` có trong base) · `flushPendingImages`/`sendImageWithRetry` của `tools.js` không còn
+nơi nào trong `src/` gọi (grep) · v1 cũ (`git show 357795a^:src/pancake-poll.js:500-520`) xả ảnh cả khi chữ rỗng «vì caption đã đi kèm ảnh».
+
+## Danh sách ca vòng 2 (viết trước — CHO-QUA · CHẶN · BIÊN · HÀNH VI)
+- F3 (tầng thuần `rp1-nhan-qty`): **Q10** CHẶN — bậc nạp THẬT (`keHoachPage`) «Total 3/Total 5», qty 2 không gói không tổng ⇒ TỪ CHỐI «chưa xác
+  định được gói giá»; cùng lớp BOGO qty 1 · **Q10b** CHẶN — variant LẠ («2 pieces» / «promo po») vẫn là server đoán ⇒ TỪ CHỐI · **Q10c** CHO-QUA —
+  variant khớp nhãn ⇒ đơn 5 @159 · **Q10d** CHO-QUA — nêu tổng 159 ⇒ nhận; tổng 109 lệch gói đoán ⇒ TỪ CHỐI. Đường thật (hộp cát): **R3d** —
+  page nạp bằng BỘ NẠP MN2 THẬT (`ghiKeHoach`) + «chép»; tool TỪ CHỐI, 0 hàng chờ; nêu gói ⇒ hàng chờ 5 · 15900 · cửa ② QUA.
+- F1: **N6** nhãn tự nói số món (Buy X Get/Take Y · Take N · N FREE «1+1 FREE» · N pcs) không nối, mọi so_luong · **N7** bộ nạp MN2 THẬT
+  (`keHoachPage` — tiền đề so_luong = số đầu nhãn được khẳng định trong ca) ⇒ «Buy 1 Get 1 – lamang» không «(1 item)»; nhãn thường vẫn nối ·
+  **N2** (sửa) nhãn không tự nói số món vẫn nối, kể cả «Family Pack - Free Delivery» / «Take Home Pack» (CHO-QUA) · **N3** (thêm) «Family Set
+  (Total 4 Products)» — luật Total tự đứng. Đường thật: **R3c** page nạp MN2 THẬT ⇒ khối KB + tin fast-lane tới khách không «(N item)».
+- F2: **R2k** đường thật — Pancake nhận A1 rồi trả 502 JSON ⇒ [ảnh A1, chữ], caption tới Pancake đúng 1 lần, sổ `["khong_ro","bo_sau_khong_ro"]` ·
+  **R2l** BIÊN `pkSendImage` — 500/502/504 ⇒ khongRo · 499 / 200 ⇒ không · 502 kèm `success:true` ⇒ ok · `daGoi` mọi lượt.
+- F6 (hộp cát, nhánh model + fast-lane): **R8a** caption «218 SAR» + chữ đúng ⇒ ảnh không caption + chữ, sổ `caption_bi_chan` · **R8b** chữ + caption
+  cùng giá bịa ⇒ 0 POST, HANDOFF, sổ `bo_cua_ra` ×2 · **R8c** CHO-QUA (luật v1) chữ bị giết, caption sạch ⇒ ảnh + caption vẫn đi · **R8d** chữ rỗng
+  + caption bịa ⇒ 0 POST + HANDOFF (sau /code-review #1) · **R8f** caption fast-lane bịa ⇒ ảnh không caption + chữ.
+- Nhánh KHÔNG chạm: Pancake thật (5xx kèm JSON chỉ đo trên Pancake giả — Pancake thật có nhận rồi trả 5xx không thì chưa ai đo) · caption sửa tại
+  chỗ (TOO_LONG/CHECKLIST — `quaCuaRa` dùng chung, không ca riêng) · caption DUPLICATE với tin trước · nhãn khuyến mãi tiếng Tagalog/Ả Rập.
+- Múi giờ: không logic ngày/giờ; cổng ① vẫn chạy UTC + UTC+14.
+
+## Quyết định + giả định (nói thẳng)
+(a) **F3 — «model đã nêu gói»** = nêu `total_price`, HOẶC `variant` mà `chonGoi` bước ①/② (KHÔNG đưa qty) trả đúng bậc đó. Rộng hơn đề nghị
+    của đối kháng (`!order.variant && total == null`): variant lạ («2 pieces») rơi xuống bước ③ = server đoán ⇒ không tính (ca Q10b — đề nghị
+    gốc để lọt). Giá phải trả: sản phẩm MỘT bậc ⇒ bước ① nhận mọi variant khác rỗng (chỉ một gói để chọn). Mã từ chối khi chưa nêu gói: «chưa
+    xác định được gói giá; hỏi lại khách…» (như base `9f2755c`), không phải «số lượng không khớp gói giá» — để model hỏi lại gói.
+(b) **F1 — rộng hơn bản vá thử** (đối kháng: chỉ khi X = so_luong): KHÔNG nối cho MỌI nhãn tự nói số món, kể cả khi so_luong khớp — «Buy 1 Get 1
+    FREE» so_luong 2 nay đọc «Buy 1 Get 1 FREE», không «(2 items)» (chữ marketer đã nói gói; đường cũ `kb_cu` cũng nói vậy). Thêm «N pcs» (lớp
+    «1 Set (4 pcs) (1 item)» đối kháng nêu). «Take»/«FREE» chỉ tính khi liền MỘT SỐ (sau /code-review #4). Luật «Total N» giữ riêng (dòng cũ).
+    Đổi thước theo luật mới: R1d R1e R3a N2 Q1 Q2 Q4 Q9 (nhãn khuyến mãi không còn «(2 items)»). Quét: 26 → 0; còn nối 57 bậc / 23 dạng — mọi
+    «(N items)» còn lại BẰNG số đầu nhãn («2 Sets (2 items)», «Combo 2 (2 items)») — không mâu thuẫn (`rp1v2/f1b-sau.log`).
+(c) **F6 — chọn theo luật v1**: caption qua `quaCuaRa` cùng ngữ cảnh lượt chữ (sửa tại chỗ được thì gửi bản sửa) · caption bị chặn ⇒ ảnh đi
+    KHÔNG caption khi còn chữ · caption bị chặn VÀ chữ không đi (cửa ra giết / model câm) ⇒ không gửi tấm nào + bàn giao · caption SẠCH mà chữ bị
+    giết ⇒ ảnh + caption vẫn đi (v1 `pancake-poll.js` xả ảnh khi chữ rỗng «vì caption là lời đi kèm» — giữ đúng hành vi đó). Không chọn «chữ bị
+    giết ⇒ bỏ mọi ảnh» (đề nghị verdict) vì v1 không làm vậy và caption sạch không phải ảnh trơ. Áp mọi đường (đường cũ `kb_cu` dùng chung
+    `xaAnh`): F6c của đối kháng (cờ TẮT) nay 0 POST.
+(d) `handler-v3.js`: ngoài thân `xaAnh` còn sửa `duLieuAnh` (hàm phụ — thêm `caption_bi_chan`) và chỗ gọi nhánh model `xaAnh(!!guarded)`; `xaAnh`
+    tự nâng `state.handoff` khi bỏ ảnh vì caption + không chữ (khối bàn giao cuối nhánh model đọc cờ đó). Cổng ③ cho phép đúng ba dòng xoá đó.
+(e) Sổ ảnh: `anh_hong_loai` thêm «bo_cua_ra» — nghĩa của `anh_hong` rộng thành «ảnh không tới khách» (không chỉ ảnh hỏng kênh).
+(f) F2 đúng một chỗ: dòng `return` của `pkSendImage` (`Number(j?.maHttp) >= 500 ⇒ khongRo`); `pkSendReply`/`dauLoiGui` không đổi (lệnh: «sửa một
+    dòng»). Neo `gl3.sh`/`gl3b.sh`/`gl4.sh`/`gl3c.sh` không chuỗi nào trỏ dòng này (grep) — bốn cổng rc=0.
+
+## Đỏ trên base vòng 2 → xanh sau (bằng chứng máy)
+```
+# base vòng 2 (bản sao 5ff70a7), hai tệp ca BẢN CUỐI (sau /code-review) — rp1v2/ca-base-cuoi.log (lượt trước code: ca-base.log, cùng 19 đỏ)
+ℹ tests 54 · ℹ pass 35 · ℹ fail 19
+✖ mới đỏ đúng lý do: Q10 Q10b (NHẬN qty 5 / qty 2 BOGO) · R3d (tool NHẬN) · N6 N7 R3c («(1 item)») · R2k (A1 POST 2 lần) · R2l (khongRo
+  undefined) · R8a R8b R8d R8f (caption giá bịa được POST / ảnh trơ)
+✖ thước đổi theo luật mới: N2 Q1 Q4 Q9 R1d R1e R3a (nhãn còn «(2 items)»)
+✔ lưới «như cũ» xanh cả base: Q10c Q10d R8c + 32 ca vòng 1
+# sau (f0f28c6 ≡ e56b1fb, cùng cây) — cổng ①
+TZ=UTC pass=54 fail=0 · TZ=Pacific/Kiritimati pass=54 fail=0 · ca xanh 54/54
+```
+
+## Ca tái lập của đối kháng — chạy lại trên mã mới (`rp1v2/refute-cuoi.log`, cây e56b1fb)
+Ca của đối kháng KHẲNG ĐỊNH lỗi ⇒ trên mã mới 3 khẳng định ĐỎ = lỗi không còn tái lập:
+- F1 ✖: khối KB «Giá — Buy 1 Get 1 – lamang: 99 SAR | Buy 2 Get 2 – lamang: 149 SAR» · tin tới khách «🎁 Buy 1 Get 1 – lamang — 99 SAR…».
+- F2 ✖: POST [ảnh a1, chữ] · Pancake nhận `["a1.png+caption"]` (một lần) · `lan_gui` [1 guiAnh khong_ro, 2 guiTin da_gui].
+- F3 ✖: tool «TỪ CHỐI tạo đơn: chưa xác định được gói giá…» · hàng chờ null.
+- F6 (chỉ in): 0 POST, bàn giao «cửa ra chặn: PRICE_MISMATCH» · F6b: [ảnh(), ảnh(), chữ 99 SAR] · F6c (cờ TẮT): 0 POST.
+- F4 · F5 không đổi (F4 ngoài phạm vi ⇒ nợ N-RP1-ANH-TU-CHOI-SO-KHONG-RO).
+Quét bản chụp 28/09 (`rp1v2/quet-sau.log`): F1 26 → **0** bậc · F3 17 → **0** ca · qty-biên: «nói 2, chỉ có bậc 1 & Buy 2 Get 1 (3), không gói
+không tổng» NHẬN qty 3 → TỪ CHỐI; sáu dòng còn lại như cũ (nêu gói/tổng ⇒ nhận đúng; 2 gói nhét giá 1 gói ⇒ TỪ CHỐI).
+
+## Cổng `rp1.sh` — lượt nghiệm thu vòng 2 (cây f0f28c6 ≡ e56b1fb, `CHAY_NPM_TEST=1`, `rp1v2/cong-nghiem-thu.log`)
+```
+① UTC pass=54 fail=0 · Pacific/Kiritimati pass=54 fail=0 (sàn ≥54)
+② ca xanh thấy / đòi 54/54
+③ biến khai 1·1 · commit RP1: 3 · chạm bộ não 0 · chạm neo cổng cũ 0 · tệp ngoài ③ 0 · sửa dở 0 ·
+  l4-prompt 0 · handler-v3 dòng XOÁ ngoài xaAnh/ghi sổ ảnh 0 · pancake.js dòng mã ngoài return pkSendImage 0
+④ lượt CHỨNG 54/0 · 40/40 đột biến đỏ đúng tập khai (24 cũ + 16 vòng 2) · khôi phục fail=0 · băm 4 tệp trước = sau
+⑤ 18 bộ ca cũ rc tách dòng, tất cả fail=0 (bh1 28 · gl4-ngat-page 23 · l3-m4-duyet 19 · l3-m4-hang-cho 25 · l4-prompt 24 · mn3 10 ·
+  tt1b-te-thi-truong 22 …)
+⑥ gl4.sh rc=0 (361s) · gl3b.sh rc=0 (171s) · gl3.sh rc=0 (95s) · gl3c.sh rc=0 (291s) · npm test tests=2773 fail=0
+PHÉP=72 LỖI=0 · rc=0
+```
+Lượt nháp (trước /code-review, `BO_CONG_CU=1`, `rp1v2/cong-nhap1.log`): PHÉP=64 LỖI=1 — đột biến cũ `noi_ca_khi_co_total` SỐNG: luật khuyến
+mãi mới phủ luôn mọi ca «Total» cũ (nhãn nào có Total cũng có «Buy X Get» / «Take») ⇒ luật Total không còn ca riêng đo. Sửa THƯỚC (luật 27):
+thêm vào N3 «Family Set (Total 4 Products)» (Total không kèm chữ khuyến mãi), tập đòi đỏ N3 R3a → N3. Lượt nghiệm thu: đỏ đúng N3.
+
+## Đảo-vá vòng 2 — bảng «đột biến nào KHÔNG đỏ» (luật 26: đo bản SAU vá, kể cả chỗ /code-review vừa vá)
+| Đột biến | Đỏ thật | Đòi |
+| --- | --- | --- |
+| draft: bỏ điều kiện «model đã chọn gói» | Q10 Q10b R3d | Q10 Q10b R3d |
+| draft: variant khác rỗng là đủ (đề nghị gốc) | Q10b | Q10b |
+| draft: bỏ vế «nêu tổng» | Q1 Q10d | Q1 Q10d |
+| nhãn: nối cả khi khuyến mãi | N2 N6 N7 Q1 Q4 Q9 R1d R1e R3a R3c | N6 N7 R1d R3a R3c |
+| nhãn: bỏ vế «N pcs» | N6 | N6 |
+| nhãn: «Free»/«Take» trơ không cần số (bản trước /code-review #4) | N2 | N2 |
+| nhãn: bỏ vế «N FREE» («1+1 FREE») | N6 | N6 |
+| xaAnh: bỏ bàn giao khi bỏ ảnh (bản trước /code-review #1) | R8d | R8d |
+| xaAnh: caption không qua cửa ra | R8a R8b R8d R8f | R8a R8b R8d R8f |
+| xaAnh: caption chặn + không chữ vẫn gửi ảnh trơ | R8b R8d | R8b R8d |
+| xaAnh: bỏ ảnh cả khi caption sạch (đề nghị verdict) | R8b R8c R8d | R8c |
+| chỗ gọi nhánh model không truyền `coChu` | R8b R8d | R8b R8d |
+| caption chặn không ghi sổ | R8a R8b R8d R8f | R8a R8b R8f |
+| pkSendImage: 5xx vẫn «từ chối» | R2k R2l | R2k R2l |
+| pkSendImage: ngưỡng > 500 | R2l | R2l |
+| pkSendImage: ngưỡng ≥ 499 | R2l | R2l |
+| (cũ, sửa thước) nối «items» cả khi có Total | N3 | N3 |
+
+**Đột biến KHÔNG đỏ: không có** trong 40 đột biến. Giới hạn đã biết: (i) caption sửa tại chỗ (TOO_LONG) không có ca riêng — đột biến «bỏ bản
+sửa, chỉ nhận caption qua ngay» sẽ không đỏ; (ii) ngữ cảnh `orderCreated`/`isOrderSummary` của caption không có ca (caption kèm mã đơn ở lượt
+chốt) — đổi thành `false` không đỏ.
+
+## /code-review high (vòng 2) — 8 phát hiện: sửa 3 · bác 5 (kèm nợ)
+1. **SỬA** (#1) chữ model rỗng + caption bị chặn ⇒ bỏ ảnh mà không bàn giao: khách nhắn không nhận gì, sale không biết (trái luật «KHÁCH NHẮN
+   MÀ KHÔNG NHẬN ĐƯỢC CHỮ NÀO thì SALE PHẢI BIẾT» cùng tệp). Dựng lại: R8d bản trước sửa — hội thoại không HANDOFF. Vá: `xaAnh` nâng
+   `state.handoff` («cửa ra chặn: <luật caption>») khi bỏ ảnh. R8d khẳng định HANDOFF + đột biến «bỏ bàn giao» đỏ R8d. Giá: chữ bị giết với
+   luật KHÁC luật caption ⇒ lý do bàn giao ghi luật của caption (`ly_do` của tin vẫn ghi luật chữ).
+2. **SỬA câu + nợ** (#2) caption RỖNG + chữ không đi ⇒ ảnh trơ vẫn đi, trái câu chú thích mới. Đúng: hành vi có sẵn (v1 cũng vậy), ngoài F6 ⇒ sửa
+   chú thích cho đúng tầm («caption bị chặn VÀ chữ không đi»), ghi «KHÔNG đổi …», nợ N-RP1-ANH-TRON-KHONG-CAPTION.
+3. **BÁC + nợ** (#3) model nêu `total_price` đúng giá bậc server đoán theo số đầu nhãn ⇒ vẫn nhận (đơn 5 @159). Đúng chữ lệnh tổng («ngoại lệ CHỈ
+   khi model đã nêu gói HOẶC nêu tổng») + đề nghị của verdict; tổng là lời model cam kết một giá gói (cửa ra chỉ cho giá bậc tới khách, sale
+   duyệt thấy tổng). Nợ N-RP1-TONG-LA-NEU-GOI để tổng phán + đo ở pilot.
+4. **SỬA** (#4) `\bfree\b`/`\btake\b` bắt cả «Family Pack - Free Delivery» ⇒ mất «(4 items)». Dựng lại bằng N2 bản mới (đỏ trước sửa). Vá: chỉ
+   tính khi liền một số. Bản chụp 28/09 không đổi (26 → 0 giữ nguyên — mọi nhãn khuyến mãi có «Buy N Get/Take»).
+5. **BÁC + nợ** (#5) nhãn khuyến mãi Tagalog/Ả Rập («Bili 1 Libre 1») vẫn «(1 item)». Biên dữ liệu: bản chụp 28/09 0/156 bậc khuyến mãi không
+   phải tiếng Anh (f1b liệt kê đủ nhãn còn nối) — luật 23: kết luận chỉ đúng trong biên đó. Nợ N-RP1-NHAN-KHUYEN-MAI-DA-NGU.
+6. **BÁC + nợ** (#6) `pkSendReply` cùng dáng 5xx JSON; v1 `sendImageWithRetry` vẫn thử lại. Lệnh vòng 2: sửa MỘT dòng ở `pkSendImage`; v3 không
+   thử lại chữ (`guiDaXacNhan` ⇒ `khongThuLai`) nên chữ không đúp; `flushPendingImages`/`sendImageWithRetry` không còn ai gọi trong `src/` (grep).
+   Nợ N-RP1-5XX-REPLY-PHAN-LOAI (dời luật vào `dauLoiGui` khi cần một chỗ).
+7. **BÁC** (#7) `ngat-page.js#cauLyDoGui` gọi 502 là «lỗi mạng khi gửi». Đọc mã: lỗi ảnh `khongRo` bị `xaAnh` nuốt (`loaiLoiAnh` ⇒ 'khong_ro'),
+   không ném, không tới đếm GL4 ⇒ câu đó không hiện cho lỗi ảnh 5xx; ghép vào nợ #6.
+8. **BÁC** (#8) 5xx kèm mã quyền 103/105/121 ⇒ `pkFetchPage` xoay token gửi lại. Hành vi có sẵn (GL3b F3 — chỉ `success:true` mới dừng xoay),
+   ngoài phạm vi; thân «5xx kèm mã quyền» chưa từng đo. Ghép vào nợ N-RP1-5XX-REPLY-PHAN-LOAI (ý phụ).
+Bản vá sau review có đảo-vá đo bản SAU vá (hai dòng «bản trước /code-review» trong bảng). Không chạy vòng /code-review thứ hai.
+
+## npm test (trước/sau)
+- TRƯỚC (base vòng 2 `5ff70a7`, bản sao): tests 2758 · pass 2736 · fail 0 · skipped 22 (`rp1v2/npm-truoc.log`).
+- SAU (f0f28c6 ≡ e56b1fb, trong cổng ⑥): tests 2773 · fail 0 (+15 ca vòng 2).
+
+## Nợ vòng 2 (§9)
+N-RP1-ANH-TU-CHOI-SO-KHONG-RO (F4, lệnh: ngoài phạm vi) · N-RP1-ANH-TRON-KHONG-CAPTION · N-RP1-TONG-LA-NEU-GOI · N-RP1-NHAN-KHUYEN-MAI-DA-NGU ·
+N-RP1-5XX-REPLY-PHAN-LOAI · N-RP1-NAP-SO-LUONG-BOGO · nối N-RP1-DOC-DUONG-TIN (`so_ai` dòng `image` thêm `caption_bi_chan`, «bo_cua_ra») ·
+**trả** N-RP1-ANH-5XX-JSON (vá ở `pkSendImage`).
+
+## Ghi cho bước ③ pilot (⑦b — vòng 2)
+- **so_luong của bậc khuyến mãi page pilot phải là SỐ MÓN** (verdict F1): bậc «Buy 1 Get 1 …» nạp MN2 mang so_luong 1 (số mua). Nhãn nay không
+  còn nói sai, nhưng ĐƠN: model nêu gói + qty 1 ⇒ hàng chờ so_luong 1 @99 cho gói mua 1 tặng 1 — sửa so_luong ở Sản phẩm › Theo thị trường trước
+  khi bật (N-RP1-NAP-SO-LUONG-BOGO). ⑦b soát MỌI bậc, kể cả bậc không có «Total».
+- Khách nói số mà model không nêu gói/tổng ⇒ tool từ chối «chưa xác định được gói giá» (đúng ý) — theo dõi tỉ lệ ở pilot.
