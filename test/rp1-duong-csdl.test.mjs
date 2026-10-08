@@ -8,6 +8,8 @@
 // `bocCuaGuiBen` → cửa Messenger thật → `pkSendImage`/`pkSendReply` → fetch GIẢ. Ca model chỉ tiêm `layModel`/`chayCloser`/`phanLoai`
 // (và `lanNhanh` trả «không nhận» để đi nhánh model); bên trong `chayCloser` gọi `executeTool` THẬT.
 // Nhánh KHÔNG chạm: Pancake thật · ảnh lớn quá hạn 30 s (N-GL3B-HAN-ANH) · nhãn tiếng Việt bị cửa ra chặn · màn «Prompt của page».
+// VÒNG 2 (đối kháng refute-rp1): R3c/R3d trên hai page nạp bằng BỘ NẠP MN2 THẬT (`keHoachPage` + `ghiKeHoach` — so_luong = số đầu nhãn /
+// «Total N», KHÔNG INSERT tay) rồi «chép» THẬT · R2k/R2l Pancake trả HTTP 5xx kèm JSON (F2) · R8* caption ảnh qua cửa ra (F6).
 import "./_bat-cua-de-do.mjs";   // PHẢI đứng đầu: fast-lane đọc FASTLANE_INTRO/TEMPLATES lúc nạp module
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -19,7 +21,7 @@ import * as cw from "../src/queue/chay-worker.js";
 import { xepTin } from "../src/queue/kho.js";
 import { baoDamHoiThoai } from "../src/chat/kho.js";
 import { config } from "../src/config.js";
-import { datKhoTokenDb, lamMoiTokenDb } from "../src/pancake.js";
+import { datKhoTokenDb, lamMoiTokenDb, pkSendImage } from "../src/pancake.js";
 import { congHttpGhi } from "../src/chat/handler-v3.js";
 import { rapKb } from "../src/chat/rap-prompt.js";
 import { executeTool } from "../src/tools.js";
@@ -32,6 +34,7 @@ import { gopMonThanhGoc, ganPageVaoGoc, monCuaGoc } from "../src/products/san-ph
 import { saveProduct } from "../src/admin-v3/operations.js";
 import { taoBuocDayBot } from "../v3/src/ui/van-hanh/router.js";
 import { seedBoLuatChung } from "../db/di-tru/bo-luat-va-ky-nang.js";
+import { keHoachPage, ghiKeHoach } from "../src/products/nap-tu-kb.js";
 
 const PUB = "http://pub.thu:3102";
 const A1 = "https://content.pancake.vn/rp1/a1.jpg";
@@ -44,11 +47,11 @@ const ENV = {
 };
 const envCu = {}; const cu = {};
 const goi = [];                 // { method, loai, psid, body, ra }
-const CHE_ANH = new Map();      // psid → (url, lanThuMay) => "ok" | "tuChoi" | "quyen" | "mang" | "cong"
+const CHE_ANH = new Map();      // psid → (url, lanThuMay) => "ok" | "tuChoi" | "quyen" | "mang" | "cong" | "h<mã HTTP>[ok]"
 const day = [];                 // bản chép sang bot v1 (GIẢ) — đối soát đẩy qua đây
 let sb; let T; let bc; let chan0 = 0;
 const P = {};                   // page_id text → page.id
-const tl = (j) => ({ status: 200, json: async () => j });
+const tl = (j, status = 200) => ({ status, json: async () => j });
 const q = (sql, a = []) => sb.pool.query(sql, a);
 const mot = async (sql, a = []) => (await q(sql, a)).rows[0];
 
@@ -84,6 +87,9 @@ before(async () => {
       if (g.ra === "mang") throw new TypeError("fetch failed");
       // Dáng CỔNG HTTP GHI của handler-v3: chặn TRƯỚC khi tới mạng, ném `LoiCuaGuiDong` (pancake.js gắn `biChan`, không `daGoi`).
       if (g.ra === "cong") throw new LoiCuaGuiDong("CỔNG HTTP GHI chặn POST pages.fm — dáng ca RP1");
+      // VÒNG 2 (F2): Pancake ĐÃ nhận ảnh nhưng trả mã HTTP <mã> kèm thân JSON (`h502` = success:false «Bad Gateway» · `h502ok` = success:true).
+      const mh = /^h(\d{3})(ok)?$/.exec(g.ra);
+      if (mh) return tl(mh[2] ? { success: true, id: `anh-${goi.length}` } : { success: false, message: "Bad Gateway" }, Number(mh[1]));
       return tl({ success: true, id: `anh-${goi.length}` });
     }
     if (method === "POST" && loai === "messages") return tl({ success: true, id: `bot-${goi.length}` });
@@ -138,6 +144,26 @@ before(async () => {
   const b1 = String((await mot("INSERT INTO san_pham(team_id,page_id,ma,ten,sku,nguon) VALUES($1,$2,'111:b1','130 - Gold Ring — Gold','130','pos') RETURNING id",
     [T, P["rp1-pb"]])).id);
   await q("INSERT INTO goi_gia(team_id,san_pham_id,so_luong,gia,tien_te,nhan) VALUES($1,$2,1,19900,'SAR','')", [T, b1]);
+
+  // VÒNG 2 — page gắn gốc mà bản sao nạp bằng BỘ NẠP MN2 THẬT (`keHoachPage` + `ghiKeHoach`) từ sản phẩm v1 THẬT (bản chụp 28/09), rồi
+  // «chép» THẬT sang món POS (khuôn ca đối kháng refute-rp1) — so_luong do bộ nạp đặt (số ĐẦU nhãn / «Total N»), không INSERT tay.
+  const dungPageMN2 = async ({ pid, ten, posMa, tenPos, sku, maGoc, v1 }) => {
+    await monPos(posMa, tenPos, sku);
+    const G = await gopMonThanhGoc(sb.pool, T, { maGoc, ten, sku, posMa: [posMa] });
+    const pageRow = await trang(pid, ten);
+    await ganPageVaoGoc(sb.pool, T, G.id, { pageId: pageRow, shopId: "111" });
+    await ghiKeHoach(sb.pool, T, { id: pageRow }, keHoachPage(pid, [v1]));
+    const banSao = String((await mot("SELECT id FROM san_pham WHERE team_id=$1 AND page_id=$2 AND nguon='kb'", [T, pageRow])).id);
+    const dvx = await donViDoiSoat(sb.pool, T, G.id, "111");
+    await doiSoatDonVi(sb.pool, T, { gocId: G.id, shopId: "111", cap: [{ banSaoId: banSao, posMa }], dauDonVi: dvx.dauDonVi }, deps(G.id));
+  };
+  // page 1220547807799752 (khách Philippines) — F1.
+  await dungPageMN2({ pid: "rp1-pd", ten: "Lamang PH", posMa: "111:d1", tenPos: "150 - Lamang gel — 50ml", sku: "150", maGoc: "lamang",
+    v1: { id: "SP01", name: "Lamang gel", currency: "SAR", tiers: [{ label: "Buy 1 Get 1 – lamang", price: 99 }, { label: "Buy 2 Get 2 – lamang", price: 149 }] } });
+  // page 1200082103184799 («Total N») — F3.
+  await dungPageMN2({ pid: "rp1-pe", ten: "Fitgum KSA", posMa: "111:e1", tenPos: "160 - Fitgum Acai — 30pcs", sku: "160", maGoc: "fitgum",
+    v1: { id: "SP01", name: "Fitgum", currency: "SAR",
+      tiers: [{ label: "Buy 1 Get 2 FREE (Total 3 Products)", price: 109 }, { label: "Buy 2 Get 3 FREE (Total 5 Products)", price: 159 }] } });
 });
 after(async () => {
   for (const [k, v] of Object.entries(envCu)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
@@ -221,7 +247,8 @@ test("R1d · buildIntro (tin chào, món có bậc giá) ⇒ 2 ảnh tuyệt đ�
   const it = buildIntro(await kbPA(), "en");
   assert.deepEqual(it.images.map((x) => x.url), [A1, A2]);
   assert.equal(it.caption, CAPTION);
-  assert.match(it.text, /🎁 Buy 1 Get 1 FREE \(2 items\) — 109 SAR\n🎁 Buy 2 Get 2 FREE \(Total 4 Products\) — 159 SAR/);
+  // vòng 2 (F1): nhãn khuyến mãi tự nói số món ⇒ không nối «(2 items)».
+  assert.match(it.text, /🎁 Buy 1 Get 1 FREE — 109 SAR\n🎁 Buy 2 Get 2 FREE \(Total 4 Products\) — 159 SAR/);
 });
 
 test("R1e · trọn đường fast-lane: worker → cửa thật → Pancake giả: ảnh A1 (caption) → ảnh A2 → chữ; tin xong", async () => {
@@ -232,7 +259,7 @@ test("R1e · trọn đường fast-lane: worker → cửa thật → Pancake gi�
   const p = postCua(g0, "r1e");
   assert.equal(p[0].body.message, CAPTION, "caption kèm tấm ĐẦU");
   assert.equal(p[1].body.message, "", "tấm sau không lặp caption");
-  assert.match(p[2].body.message, /🎁 Buy 1 Get 1 FREE \(2 items\) — 109 SAR/);
+  assert.match(p[2].body.message, /🎁 Buy 1 Get 1 FREE — 109 SAR/);
   assert.match(p[2].body.message, /🎁 Buy 2 Get 2 FREE \(Total 4 Products\) — 159 SAR/);
   assert.equal(p[2].body.message, buildIntro(await kbPA(), "en").text, "chữ gửi = đúng tin chữ của tin chào");
   assert.equal((await tin(id)).trang_thai, "xong");
@@ -383,11 +410,11 @@ test("R2i · ảnh bị LỖI QUYỀN cấp page (mã 105 — chữ cũng sẽ h
 
 /* ═══════════ ④3 — TÊN BẬC + qty (đường thật) ═══════════ */
 
-test("R3a · prompt (khối KB) đọc «Tên bậc» marketer đặt: nhãn + «(2 items)»; nhãn có «Total» không nối", async () => {
+test("R3a · prompt (khối KB) đọc «Tên bậc» marketer đặt: nhãn khuyến mãi / có «Total» giữ nguyên chữ, không nối số món (vòng 2 F1)", async () => {
   const kb = await kbPA();
-  assert.match(kb.text, /Giá — Buy 1 Get 1 FREE \(2 items\): 109 SAR \| Buy 2 Get 2 FREE \(Total 4 Products\): 159 SAR/);
+  assert.match(kb.text, /Giá — Buy 1 Get 1 FREE: 109 SAR \| Buy 2 Get 2 FREE \(Total 4 Products\): 159 SAR/);
   assert.deepEqual(kb.products[0].tiers.map((t) => [t.label, t.qty, t.price]),
-    [["Buy 1 Get 1 FREE (2 items)", 2, 109], ["Buy 2 Get 2 FREE (Total 4 Products)", 4, 159]]);
+    [["Buy 1 Get 1 FREE", 2, 109], ["Buy 2 Get 2 FREE (Total 4 Products)", 4, 159]]);
 });
 
 test("R3b · trọn đường đơn: model chốt BOGO qty=1 ⇒ hàng chờ so_luong 2 · tổng 109 SAR · cửa ② QUA; qty=3 ⇒ tool TỪ CHỐI, 0 dòng hàng chờ", async () => {
@@ -415,6 +442,141 @@ test("R3b · trọn đường đơn: model chốt BOGO qty=1 ⇒ hàng chờ so_
   }));
   assert.equal(am?.isError, true); assert.match(am.content, /số lượng không khớp gói giá/);
   assert.equal(Number((await mot(`SELECT count(*)::int n FROM hang_cho_tao_don h JOIN hoi_thoai t ON t.id=h.hoi_thoai_id WHERE t.psid='r3b-am'`)).n), 0);
+});
+
+test("R3c · VÒNG 2 (F1) · bản sao nạp bằng BỘ NẠP MN2 THẬT «Buy 1 Get 1 – lamang» (so_luong 1 = số đầu nhãn) ⇒ khối KB + tin gửi khách KHÔNG nói «(1 item)»", async () => {
+  const kb = await rapKb(sb.pool, { teamId: T, pageIdText: "rp1-pd" });
+  assert.deepEqual(kb.products[0].tiers.map((t) => [t.label, t.qty, t.price]), [["Buy 1 Get 1 – lamang", 1, 99], ["Buy 2 Get 2 – lamang", 2, 149]]);
+  assert.match(kb.text, /Giá — Buy 1 Get 1 – lamang: 99 SAR \| Buy 2 Get 2 – lamang: 149 SAR/);
+  const g0 = goi.length;
+  const id = await xep("r3c", "rp1-pd");
+  await luot();
+  const chu = postCua(g0, "r3c").filter((g) => !g.body?.content_url).map((g) => g.body.message);
+  assert.equal(chu.length, 1, JSON.stringify(chu));
+  assert.match(chu[0], /🎁 Buy 1 Get 1 – lamang — 99 SAR\n🎁 Buy 2 Get 2 – lamang — 149 SAR/);
+  assert.doesNotMatch(chu[0], /\(\d+ items?\)/);
+  assert.equal((await tin(id)).trang_thai, "xong");
+});
+
+test("R3d · VÒNG 2 (F3) · bậc nạp THẬT «Total 3 / Total 5»: model chốt qty=2 KHÔNG gói, KHÔNG tổng ⇒ tool TỪ CHỐI, 0 hàng chờ; nêu đúng gói ⇒ hàng chờ so_luong 5 · 15900 · cửa ② QUA", async () => {
+  const kb = await rapKb(sb.pool, { teamId: T, pageIdText: "rp1-pe" });
+  assert.deepEqual(kb.products[0].tiers.map((t) => [t.qty, t.price]), [[3, 109], [5, 159]], "tiền đề: bộ nạp MN2 đặt so_luong theo «Total N»");
+  const hoSo = { name: "Amina", phone: "0551234567", address: "King Fahd Road, building 12", city: "Riyadh", cod_confirmed: true,
+    product_id: kb.products[0].id };
+  let am = null;
+  const idAm = await xep("r3d-am", "rp1-pe", "I want 2 pieces po");
+  await luot(quaModel(async (c) => {
+    am = await executeTool("create_draft_order", { ...hoSo, qty: 2 }, c);
+    return "Which package would you like po? 😊";
+  }));
+  assert.equal(am?.isError, true, `tool: ${am?.content}`); assert.match(am.content, /chưa xác định được gói giá/);
+  assert.equal((await tin(idAm)).trang_thai, "xong");
+  assert.equal(Number((await mot(`SELECT count(*)::int n FROM hang_cho_tao_don h JOIN hoi_thoai t ON t.id=h.hoi_thoai_id WHERE t.psid='r3d-am'`)).n), 0);
+  let ok = null;
+  await xep("r3d", "rp1-pe", "ok the buy 2 get 3 po");
+  await luot(quaModel(async (c) => {
+    ok = await executeTool("create_draft_order", { ...hoSo, qty: 2, variant: "Buy 2 Get 3 FREE" }, c);
+    return "Thank you po! Our team will confirm shortly 😊";
+  }));
+  assert.ok(!ok?.isError, `tool: ${ok?.content}`);
+  const hc = await mot(`SELECT du_lieu_don, cua_kiem FROM hang_cho_tao_don h JOIN hoi_thoai t ON t.id=h.hoi_thoai_id WHERE t.psid='r3d'`);
+  assert.equal(Number(hc.du_lieu_don.so_luong), 5);
+  assert.equal(Number(hc.du_lieu_don.tong_tien), 15900);
+  assert.equal(hc.cua_kiem.cong["2_tien"].qua, true, JSON.stringify(hc.cua_kiem.cong["2_tien"]));
+});
+
+/* ═══════════ VÒNG 2 · F2 — PANCAKE NHẬN ẢNH RỒI TRẢ HTTP 5xx KÈM JSON ═══════════ */
+
+test("R2k · VÒNG 2 (F2): Pancake NHẬN ảnh 1 rồi trả HTTP 502 kèm JSON success:false ⇒ «không rõ»: KHÔNG POST lại (không đúp ảnh + caption), bỏ tấm sau, chữ vẫn đi", async () => {
+  const g0 = goi.length;
+  CHE_ANH.set("r2k", (u) => (u === A1 ? "h502" : "ok"));
+  const id = await xep("r2k");
+  await luot();
+  assert.deepEqual(dong(g0, "r2k"), [`anh:${A1}`, "chu"]);
+  assert.equal(postCua(g0, "r2k").filter((g) => g.body?.message === CAPTION).length, 1, "caption tới Pancake đúng 1 lần");
+  assert.equal((await tin(id)).trang_thai, "xong");
+  assert.deepEqual((await soAnh(id)).du_lieu.anh_hong_loai, ["khong_ro", "bo_sau_khong_ro"]);
+  khongChan();
+});
+
+test("R2l · VÒNG 2 (F2) BIÊN pkSendImage: HTTP ≥ 500 kèm success:false ⇒ khongRo · 499 / 200 kèm success:false ⇒ không (từ chối) · 5xx kèm success:true ⇒ ok", async () => {
+  const thu = async (che) => { CHE_ANH.set("r2l", () => che); return pkSendImage("rp1-pa", "conv-r2l", "cust-r2l", A1, "cap"); };
+  for (const [che, khongRo] of [["h500", true], ["h502", true], ["h504", true], ["h499", undefined], ["h200", undefined]]) {
+    const r = await thu(che);
+    assert.equal(r.ok, false, che);
+    assert.equal(r.khongRo, khongRo, `${che}: khongRo`);
+    assert.equal(r.daGoi, true, `${che}: daGoi (Pancake đã được gọi)`);
+  }
+  assert.equal((await thu("h502ok")).ok, true, "success:true thắng mã HTTP (GL3b F3)");
+});
+
+/* ═══════════ VÒNG 2 · F6 — CAPTION ẢNH QUA CÙNG CỬA RA VỚI CHỮ ═══════════ */
+const anhChu = (tu, psid) => postCua(tu, psid).map((g) => (g.body?.content_url ? `anh(${g.body.message || ""})` : `chu(${g.body.message})`));
+
+test("R8a · F6b: caption model nói giá GẤP ĐÔI («2 sets = 218 SAR») — chữ đúng giá ⇒ ảnh đi KHÔNG caption, chữ đi; sổ ảnh ghi luật chặn caption", async () => {
+  const g0 = goi.length;
+  const id = await xep("r8a", "rp1-pa", "how much for 2 sets po?");
+  await luot(quaModel(async (c) => {
+    await executeTool("send_product_image", { caption: "2 sets = 218 SAR po 😊" }, c);
+    return "Buy 1 Get 1 FREE is 109 SAR po 😊 How many would you like?";
+  }));
+  assert.deepEqual(anhChu(g0, "r8a"), ["anh()", "anh()", "chu(Buy 1 Get 1 FREE is 109 SAR po 😊 How many would you like?)"]);
+  assert.equal((await tin(id)).trang_thai, "xong");
+  const s = await soAnh(id);
+  assert.equal(s.du_lieu.n, 2); assert.equal(s.du_lieu.caption_bi_chan, "PRICE_MISMATCH");
+  khongChan();
+});
+
+test("R8b · F6: cửa ra GIẾT chữ (giá bịa) VÀ caption cũng giá bịa ⇒ KHÔNG gửi ảnh trơ (0 POST tin/ảnh) · bàn giao như cũ · sổ ghi ảnh bỏ vì cửa ra", async () => {
+  const g0 = goi.length;
+  const id = await xep("r8b", "rp1-pa", "how much po?");
+  await luot(quaModel(async (c) => {
+    await executeTool("send_product_image", { caption: "Promo today only 55 SAR po 😊" }, c);
+    return "Today only 55 SAR po, order now!";
+  }));
+  assert.deepEqual(anhChu(g0, "r8b"), []);
+  const t = await tin(id);
+  assert.equal(t.trang_thai, "xong"); assert.equal(t.ly_do, "guard_noi_dung:PRICE_MISMATCH");
+  assert.equal((await hoiThoai("r8b")).trang_thai, "HANDOFF");
+  const s = await soAnh(id);
+  assert.equal(s.du_lieu.n, 0); assert.equal(s.du_lieu.caption_bi_chan, "PRICE_MISMATCH");
+  assert.deepEqual(s.du_lieu.anh_hong_loai, ["bo_cua_ra", "bo_cua_ra"]);
+});
+
+test("R8c · CHO-QUA (luật v1): cửa ra giết chữ nhưng caption SẠCH ⇒ ảnh + caption vẫn đi (caption là lời đi kèm — không phải ảnh trơ)", async () => {
+  const g0 = goi.length;
+  const id = await xep("r8c", "rp1-pa", "how much po?");
+  await luot(quaModel(async (c) => {
+    await executeTool("send_product_image", { caption: "Here are the real photos po 😊" }, c);
+    return "Today only 55 SAR po, order now!";
+  }));
+  assert.deepEqual(anhChu(g0, "r8c"), ["anh(Here are the real photos po 😊)", "anh()"]);
+  assert.equal((await tin(id)).ly_do, "guard_noi_dung:PRICE_MISMATCH");
+  assert.equal((await soAnh(id)).du_lieu.caption_bi_chan, undefined);
+});
+
+test("R8d · F6 nhánh MODEL, chữ model RỖNG + caption giá bịa ⇒ không gửi ảnh trơ (0 POST) · khách không nhận gì ⇒ BÀN GIAO sale (/code-review vòng 2 #1)", async () => {
+  const g0 = goi.length;
+  const id = await xep("r8d", "rp1-pa", "how much po?");
+  await luot(quaModel(async (c) => {
+    await executeTool("send_product_image", { caption: "Only 55 SAR po" }, c);
+    return "";
+  }));
+  assert.deepEqual(anhChu(g0, "r8d"), []);
+  assert.equal((await tin(id)).trang_thai, "xong");
+  assert.equal((await hoiThoai("r8d")).trang_thai, "HANDOFF", "khách nhắn mà không nhận được gì ⇒ sale phải biết");
+  const s = await soAnh(id);
+  assert.equal(s.du_lieu.caption_bi_chan, "PRICE_MISMATCH"); assert.deepEqual(s.du_lieu.anh_hong_loai, ["bo_cua_ra", "bo_cua_ra"]);
+});
+
+test("R8f · F6 nhánh FAST-LANE: caption lớp nhanh nói giá bịa ⇒ ảnh đi KHÔNG caption, chữ (đã qua cửa ra) đi", async () => {
+  const g0 = goi.length;
+  const id = await xep("r8f");
+  await luot({ ...nhanhThat, lanNhanh: () => ({ handled: true, reply: "Price is 109 SAR po 😊", lane: "ca_rp1",
+    images: [{ url: A1, label: "Ảnh sản phẩm" }], caption: "Only 55 SAR today po" }) });
+  assert.deepEqual(anhChu(g0, "r8f"), ["anh()", "chu(Price is 109 SAR po 😊)"]);
+  assert.equal((await tin(id)).trang_thai, "xong");
+  assert.equal((await soAnh(id)).du_lieu.caption_bi_chan, "PRICE_MISMATCH");
 });
 
 /* ═══════════ ④4 — TÊN SẢN PHẨM ═══════════ */

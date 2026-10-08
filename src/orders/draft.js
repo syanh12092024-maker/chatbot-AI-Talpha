@@ -1,4 +1,4 @@
-import { tinhTong } from '../core/gia.js';
+import { chonGoi, tinhTong } from '../core/gia.js';
 
 /** Model đề nghị; backend chỉ nhận các trường hợp lệ và giá của đúng sản phẩm. */
 export function chuanBiDon(kb, input) {
@@ -36,13 +36,21 @@ export function chuanBiDon(kb, input) {
   const explicit = (product.tiers || []).find(t => t.label === price.goi.nhan && Number(t.price) === price.tong);
   let qty = order.qty;
   if (explicit?.qty != null && Number(explicit.qty) !== order.qty) {
-    // RP1 ② 3 (review (a) vòng 2 R2-C1) — nhãn bậc nay là «Tên bậc» marketer đặt («Buy 1 Get 1 FREE (2 items)», so_luong 2), và
+    // RP1 ② 3 (review (a) vòng 2 R2-C1) — nhãn bậc nay là «Tên bậc» marketer đặt («Buy 1 Get 1 FREE», so_luong 2), và
     // model hay truyền số «MUA» trong nhãn (1) thay vì số món (2). Nhận đúng MỘT ngoại lệ: `qty` = số «mua» ở ĐẦU nhãn VÀ không bậc
-    // nào khác của sản phẩm có so_luong bằng số đó ⇒ ghi đơn với qty = so_luong của bậc. Mọi trường hợp khác TỪ CHỐI như cũ — ép
-    // qty vô điều kiện là gỡ lưới này: khách muốn 3 cái thành đơn 2 cái, «2» chọn nhầm bậc 4 món thành đơn 159, hai gói nhét vào
-    // giá một gói — và `cua2Tien` không bắt lại được vì nó so so_luong đơn với chính so_luong đã bị ép ở đây.
+    // nào khác của sản phẩm có so_luong bằng số đó VÀ model đã chọn gói (vòng 2, dưới) ⇒ ghi đơn với qty = so_luong của bậc.
+    // Mọi trường hợp khác TỪ CHỐI như cũ — ép qty vô điều kiện là gỡ lưới này: khách muốn 3 cái thành đơn 2 cái, «2» chọn nhầm
+    // bậc 4 món thành đơn 159, hai gói nhét vào giá một gói — và `cua2Tien` không bắt lại được vì nó so so_luong đơn với chính
+    // so_luong đã bị ép ở đây.
     const coBacKhac = (product.tiers || []).some(t => t !== explicit && Number(t.qty) === order.qty);
     if (soMuaDauNhan(explicit.label) !== order.qty || coBacKhac) fail('số lượng không khớp gói giá');
+    // RP1 vòng 2 (đối kháng F3): ngoại lệ chỉ khi MODEL đã chọn gói — nêu tổng, hoặc nêu variant khớp nhãn bậc này (bước ①/② của
+    // `chonGoi`, KHÔNG đưa qty). Gói do chính server đoán từ qty (bước ③: số ĐẦU nhãn) thì không: «2» + «Buy 1 Get 2 (Total 3)» /
+    // «Buy 2 Get 3 (Total 5)» thành đơn 5 món @159 mà cửa ② không bắt lại — đúng ca chú thích trên nói phải chặn. Variant lạ («2
+    // pieces») cũng rơi vào bước ③ nên cũng không tính. Một bậc duy nhất: bước ① nhận mọi variant khác rỗng (chỉ một gói để chọn).
+    const goiModel = input.total_price != null || (order.variant !== '' &&
+      chonGoi({ kb: { products: [product] }, variant: order.variant })?.nhan === price.goi.nhan);
+    if (!goiModel) fail('chưa xác định được gói giá; hỏi lại khách hoặc chuyển nhân viên');
     qty = Number(explicit.qty);
   }
   return { ...order, qty, product_id: product.id, product_name: product.name || '',

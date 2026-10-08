@@ -132,7 +132,8 @@ export { docSanPhamGoiGia } from "../products/catalog.js";
  *  · SỐ MÓN NHÚNG VÀO NHÃN «(<so_luong> items)» — vì fast-lane (bộ não) và `core/gia.js` chỉ đọc `label`, nên đây là chỗ duy nhất
  *    để khách thấy gói có mấy món. Không nối khi nhãn CHÍNH LÀ «Buy <so_luong>» (so sau NFKC + bỏ hoa/thường + gộp khoảng trắng,
  *    «𝐁𝐮𝐲 𝟐» cũng là «Buy 2») và khi nhãn đã nêu «Total <số>» (6/72 sản phẩm bản chụp 28/09 có Total ≠ so_luong — nối thêm sẽ ra
- *    «(Total 2 Products) (1 item)»). `so_luong` 1 ⇒ «(1 item)» (số ít — lệch chữ phiếu «items», ghi nhật ký RP1).
+ *    «(Total 2 Products) (1 item)»), và (vòng 2) khi nhãn tự nói số món — khuyến mãi «Buy X Get Y»/«Take»/«FREE»/«N pcs»
+ *    (`NHAN_TU_NOI_SO_MON` dưới). `so_luong` 1 ⇒ «(1 item)» (số ít — lệch chữ phiếu «items», ghi nhật ký RP1).
  *  `draft.js` đọc số «mua» ở ĐẦU nhãn này để nhận `qty` model truyền theo nhãn (luật có điều kiện — xem `chuanBiDon`). */
 function nhanGoiGia(g) {
   const sl = Number(g.so_luong);
@@ -140,8 +141,15 @@ function nhanGoiGia(g) {
   if (!nhan) return `Buy ${sl}`;
   const chuan = nhan.normalize("NFKC").toLowerCase().replace(/\s+/g, " ");
   if (chuan === `buy ${sl}` || /\btotal\s*:?\s*\d/.test(chuan)) return nhan;
+  if (NHAN_TU_NOI_SO_MON.test(chuan)) return nhan;
   return `${nhan} (${sl} ${sl === 1 ? "item" : "items"})`;
 }
+/** RP1 vòng 2 (đối kháng F1) — nhãn TỰ NÓI số món: khuyến mãi «Buy X Get/Take Y» · «Take N» · «N FREE» («1+1 FREE») · «N pcs/pieces».
+ *  Số món nhãn hứa (X+Y · N pcs) mâu thuẫn `so_luong` khi bậc đi từ bộ nạp MN2 (`nap-tu-kb.js#soLuongTuNhan` lấy SỐ ĐẦU nhãn ⇒ «Buy 1
+ *  Get 1» so_luong 1): bản chụp 28/09 có 26/156 bậc bot sẽ nói «Buy 1 Get 1 – lamang (1 item)». Không nối là không nói sai — chữ
+ *  marketer gõ đã nói gói. «Take»/«FREE» chỉ tính khi đi liền MỘT SỐ (/code-review vòng 2 #4): «Family Pack - Free Delivery» không nói
+ *  số món ⇒ vẫn nối. Chỉ chữ tiếng Anh — bản chụp 28/09: 0/156 bậc khuyến mãi bằng tiếng khác (nợ N-RP1-NHAN-KHUYEN-MAI-DA-NGU). */
+const NHAN_TU_NOI_SO_MON = /\bbuy ?\d+ ?(?:get|take)\b|\b(?:take|free) ?\d|\d ?(?:take|free)\b|\d+ ?(?:pcs?|pieces?)\b/;
 
 /** TÊN MÓN KHÁCH ĐỌC (RP1 ② 4). Page GẮN gốc đọc món POS, tên POS mang SỐ HIỆU nội bộ đầu tên («125 - Tummiva Care gel — 50ml»,
  *  `pos/doc-danh-muc.js`) — số đó không được tới khách (khối KB · caption fast-lane). Bỏ bằng `tachSoHieu` và GIỮ đuôi biến thể

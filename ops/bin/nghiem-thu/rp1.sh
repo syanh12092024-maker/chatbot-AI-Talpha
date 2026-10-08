@@ -5,6 +5,9 @@
 # phải lượt nghiệm thu) · CHAY_TT1B_SH=1 chạy thêm cổng tt1b.sh ở ⑥ (mặc định đo bằng bộ ca test/tt1b-* ở ⑤ — phiếu ④9 cho phép) ·
 # CHAY_NPM_TEST=1 chạy thêm `npm test -- --test-force-exit` (④9 «không thêm ca đỏ» — mặc định HOÃN: luật 6, không chạy song song lượt khác).
 # Thi hành ĐÚNG 9 phép của ④ trong docs/thi-cong/phieu/PHIEU-RP1.md. Mỗi phép in MỘT số đo / một bảng đếm.
+# VÒNG 2 (đối kháng refute-rp1 TRẢ VỀ): F3 ngoại lệ qty chỉ khi model đã chọn gói (draft.js) · F1 nhãn tự nói số món không nối «(N items)»
+# (rap-prompt.js#nhanGoiGia) · F6 caption ảnh qua cùng cửa ra (handler-v3.js#xaAnh) · F2 HTTP ≥ 500 kèm JSON ⇒ «không rõ» (pancake.js#pkSendImage).
+# Ca vòng 2: N6 N7 Q10 Q10b Q10c Q10d (thuần) · R3c R3d R2k R2l R8a R8b R8c R8d R8f (hộp cát) — đột biến vòng 2 ở cuối bảng ④ (luật 26).
 # Tầm đo: lưới HỒI QUY do chính thợ viết (luật 32 — bắt tái phạm đã biết, không phải bằng chứng «kín»). Hai tệp ca: tầng thuần (nhãn +
 # luật qty) và Postgres HỘP CÁT riêng (`db/sandbox.js`, tên `aicloser_v3_test_rp1_p<pid>`, tự dựng tự dọn) đi đường thật tới fetch GIẢ.
 # KHÔNG mạng, KHÔNG đo `aicloser_v3` dev, KHÔNG prod; `V3_RAP_PROMPT_BAT=1` + van gửi chỉ mở trong env tiến trình ca.
@@ -15,7 +18,7 @@ set -uo pipefail
 GOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"; cd "$GOC" || exit 2
 BASE=9f2755c
 CA="test/rp1-nhan-qty.test.mjs test/rp1-duong-csdl.test.mjs"
-SAN=39
+SAN=54
 LOI=0; PHEP=0
 muc()   { printf '\n── %s\n' "$1"; }
 so()    { printf '   %-62s %s\n' "$1" "$2"; }
@@ -49,9 +52,11 @@ done
 # ═══ ② MỖI PHÉP ④1–④7 CÓ CA XANH RIÊNG (bảng đếm thấy/đòi) ══════════════════════════════════════════════════════════════════════
 #   ④1 R1a–R1f · ④2 R2a–R2j (R2i: lệch phiếu tổng nhận — lỗi quyền ném như cũ · R2j: /code-review #3 #4) · ④3 N1–N5 Q1–Q9 R3a R3b
 #   (Q9: /code-review #1) · ④4 R4a R4b · ④5 R5a R5b · ④6 R6a R6b (R6b: /code-review #6) · ④7 R7a
+#   vòng 2: F1 N6 N7 R3c · F3 Q10 Q10b Q10c Q10d R3d · F2 R2k R2l · F6 R8a R8b R8c R8d R8f
 muc "② mỗi phép ④1–④7 có ca XANH riêng"
 thay=0; doi=0; thieu=""
-for tag in R1a R1b R1c R1d R1e R1f R2a R2b R2c R2d R2e R2f R2g R2h R2i R2j N1 N2 N3 N4 N5 Q1 Q2 Q3 Q4 Q5 Q6 Q7 Q8 Q9 R3a R3b R4a R4b R5a R5b R6a R6b R7a; do
+for tag in R1a R1b R1c R1d R1e R1f R2a R2b R2c R2d R2e R2f R2g R2h R2i R2j N1 N2 N3 N4 N5 Q1 Q2 Q3 Q4 Q5 Q6 Q7 Q8 Q9 R3a R3b R4a R4b R5a R5b R6a R6b R7a \
+  N6 N7 Q10 Q10b Q10c Q10d R3c R3d R2k R2l R8a R8b R8c R8d R8f; do
   doi=$((doi+1))
   if echo "$OUT" | grep -qE "✔ $tag ·"; then thay=$((thay+1)); else thieu="$thieu $tag"; fi
 done
@@ -71,7 +76,7 @@ so "biến V3_LUAT_CHUNG_CSDL: dòng bảng khai · chỗ đọc (vắng = ĐÓN
 NAO='src/prompts.js src/closer.js src/tools.js src/fast-lane.js src/outbound-guard.js'
 NEO='ops/bin/nghiem-thu/gl3.sh ops/bin/nghiem-thu/gl3b.sh ops/bin/nghiem-thu/gl4.sh ops/bin/nghiem-thu/gl3c.sh test/gl4-ngat-page.test.mjs'
 n_nao=0; n_neo=0; n_ngoai=0; ngoai=""
-PHAM_VI='^(src/chat/rap-prompt\.js|src/chat/handler-v3\.js|src/orders/draft\.js|docs/v3/ban-giao/bien-moi-truong-v3\.md|test/l4-prompt\.test\.mjs|test/rp1-[^/]+\.test\.mjs|v3/test/b/rp1-[^/]+\.test\.mjs|ops/bin/nghiem-thu/rp1\.sh|docs/thi-cong/nhat-ky/phieu-rp1\.md|docs/thi-cong/SO-DIEU-HANH-THI-CONG\.md)$'
+PHAM_VI='^(src/chat/rap-prompt\.js|src/chat/handler-v3\.js|src/orders/draft\.js|src/pancake\.js|docs/v3/ban-giao/bien-moi-truong-v3\.md|test/l4-prompt\.test\.mjs|test/rp1-[^/]+\.test\.mjs|v3/test/b/rp1-[^/]+\.test\.mjs|ops/bin/nghiem-thu/rp1\.sh|docs/thi-cong/nhat-ky/phieu-rp1\.md|docs/thi-cong/SO-DIEU-HANH-THI-CONG\.md)$'
 for c in $DS_RP1; do
   for f in $(git show --name-only --format= "$c"); do
     case " $NAO " in *" $f "*) n_nao=$((n_nao+1));; esac
@@ -86,15 +91,19 @@ so "sửa dở trên bộ não / neo cổng cũ" "$n_do (đòi 0)"
 [ "$n_nao" -eq 0 ] && [ "$n_neo" -eq 0 ] && [ "$n_ngoai" -eq 0 ] && [ "$n_do" -eq 0 ] && dat "đúng pathspec ③ · không đụng 5 tệp bộ não · không đụng neo gl3/gl3b/gl4/gl3c" \
   || truot "lệch phạm vi (bộ não=$n_nao · neo=$n_neo · ngoài ③=$n_ngoai · dở=$n_do)"
 # l4-prompt: CHỈ dòng `boLuatChung` (③). handler-v3: CHỈ `xaAnh` + hàm phụ + hai chỗ ghi sổ ảnh — dòng XOÁ (không phải chú thích) phải
-# nằm trong thân `xaAnh` cũ / hai chỗ `if (nAnh)` (lưới hình dạng).
-n_l4=0; n_h=0
+# nằm trong thân `xaAnh` cũ / hai chỗ `if (nAnh)` (lưới hình dạng). Vòng 2: + chữ ký `xaAnh(coChu)` · `duLieuAnh` · chỗ gọi nhánh model.
+# pancake.js (vòng 2): CHỈ dòng `return` của `pkSendImage` — mọi dòng mã thêm/xoá khác ⇒ đỏ.
+n_l4=0; n_h=0; n_pk=0
 for c in $DS_RP1; do
+  k=$(git show -U0 "$c" -- src/pancake.js | grep -E '^[-+][^-+]' | grep -vE '^[-+]\s*(//|\*|/\*\*)' \
+    | grep -vcE 'return j\.success \? \{ ok: true, id: j\.id \} : \{ ok: false, error: j\.original_error \|\| JSON\.stringify\(j\)\.slice\(0, 140\), \.\.\.dauLoiGui\(j\)|^\+\s+\.\.\.\(Number\(j\?\.maHttp\) >= 500 \? \{ khongRo: true \} : \{\}\) \};$'); n_pk=$((n_pk+k))
   a=$(git show -U0 "$c" -- test/l4-prompt.test.mjs | grep -E '^[-+][^-+]' | grep -vcE 'boLuatChung|V3_LUAT_CHUNG_CSDL'); n_l4=$((n_l4+a))
   b=$(git show -U0 "$c" -- src/chat/handler-v3.js | grep -E '^-[^-]' | grep -vE '^-\s*(//|\*|/\*\*)' \
-    | grep -vcE 'for \(const im of hang\) \{|await assertCanAct\(\);|await guiDaXacNhan\(\(\) => d\.cua\.guiAnh\(|^-\s+(pool|ctx),$|\{ \.\.\.diaChi, url: im\.url, caption \},|d\.depsPancake,|^-\s+\)\);$|if \(nAnh\) \{|duLieu: \{ n: nAnh \},'); n_h=$((n_h+b))
+    | grep -vcE 'for \(const im of hang\) \{|await assertCanAct\(\);|await guiDaXacNhan\(\(\) => d\.cua\.guiAnh\(|^-\s+(pool|ctx),$|\{ \.\.\.diaChi, url: im\.url, caption \},|d\.depsPancake,|^-\s+\)\);$|if \(nAnh\) \{|duLieu: \{ n: nAnh \},|const xaAnh = async \(\) => \{|const duLieuAnh = \(n\) => \(\{ n, |const nAnh = await xaAnh\(\);'); n_h=$((n_h+b))
 done
-so "l4-prompt: dòng đổi ngoài boLuatChung · handler-v3: dòng mã XOÁ ngoài xaAnh/ghi sổ ảnh" "$n_l4 · $n_h (đòi 0 · 0)"
-[ "$n_l4" -eq 0 ] && [ "$n_h" -eq 0 ] && dat "l4-prompt chỉ dòng boLuatChung · handler-v3 chỉ xaAnh + hàm phụ" || truot "sửa ngoài ràng buộc ③ (l4=$n_l4 · handler=$n_h)"
+so "l4-prompt: dòng đổi ngoài boLuatChung · handler-v3: dòng mã XOÁ ngoài xaAnh/ghi sổ ảnh · pancake.js: dòng mã ngoài return pkSendImage" "$n_l4 · $n_h · $n_pk (đòi 0 · 0 · 0)"
+[ "$n_l4" -eq 0 ] && [ "$n_h" -eq 0 ] && [ "$n_pk" -eq 0 ] && dat "l4-prompt chỉ dòng boLuatChung · handler-v3 chỉ xaAnh + hàm phụ · pancake.js chỉ return pkSendImage" \
+  || truot "sửa ngoài ràng buộc ③ (l4=$n_l4 · handler=$n_h · pancake=$n_pk)"
 
 # ═══ ④ ĐẢO-VÁ trên BẢN SAO TẠM (④8 + đột biến thêm) ═════════════════════════════════════════════════════════════════════════════
 muc "④ đảo-vá (④8 + đột biến thêm) — bản sao tạm, cây làm việc không bao giờ bị sửa"
@@ -106,12 +115,13 @@ don() {
 }
 trap don EXIT; trap 'exit 130' INT TERM
 cp -R src v3 test db package.json "$TAM/"; ln -s "$GOC/node_modules" "$TAM/node_modules"
-DS_TEP_DOT='src/chat/rap-prompt.js src/chat/handler-v3.js src/orders/draft.js'
+DS_TEP_DOT='src/chat/rap-prompt.js src/chat/handler-v3.js src/orders/draft.js src/pancake.js'
 for f in $DS_TEP_DOT; do cp "$TAM/$f" "$TAM/$f.goc"; done
 bam_cay() { (for f in $DS_TEP_DOT; do cat "$GOC/$f"; done) | shasum | cut -d' ' -f1; }
 BAM_TRUOC=$(bam_cay)
 o0=$(chay_ca "$TAM" $CA); f0=$(dem "$o0" fail); p0=$(dem "$o0" pass)
 so "lượt CHỨNG (bản sao chưa đột biến)" "pass=${p0:-0} fail=${f0:-?}"
+# (băm cây đo 4 tệp đột biến — kể cả src/pancake.js của vòng 2)
 [ "${f0:-1}" -eq 0 ] && [ "${p0:-0}" -ge "$SAN" ] && dat "bản sao tạm xanh trước đột biến" || truot "bản sao tạm KHÔNG xanh trước đột biến — đảo-vá vô nghĩa"
 # tên | tệp đột biến | ca PHẢI đỏ (tập con của tập đỏ thật)
 DS_DOT_BIEN='
@@ -132,13 +142,29 @@ caption_khong_doi|src/chat/handler-v3.js|R2f
 bo_so_anh_hong|src/chat/handler-v3.js|R2a R2c R2g
 so_anh_hong_bo_nhanh_model|src/chat/handler-v3.js|R2h
 bo_dong_anh_co_san|src/chat/rap-prompt.js|R1b
-noi_ca_khi_co_total|src/chat/rap-prompt.js|N3 R3a
+noi_ca_khi_co_total|src/chat/rap-prompt.js|N3
 draft_bo_bac_khac|src/orders/draft.js|Q4 Q7
 page_chua_gan_cung_bo_so|src/chat/rap-prompt.js|R4b
 draft_bo_chon_theo_qty|src/orders/draft.js|Q9
 khong_ro_van_gui_tiep|src/chat/handler-v3.js|R2j
 cau_khai_luat_chi_theo_bien|src/chat/rap-prompt.js|R6b
 dong_anh_ke_ca_anh_khong_gui_duoc|src/chat/rap-prompt.js|R1b
+v2_draft_ngoai_le_khong_xet_ai_chon_goi|src/orders/draft.js|Q10 Q10b R3d
+v2_draft_variant_la_cung_tinh_la_neu_goi|src/orders/draft.js|Q10b
+v2_draft_bo_ve_neu_tong|src/orders/draft.js|Q1 Q10d
+v2_nhan_noi_ca_khi_khuyen_mai|src/chat/rap-prompt.js|N6 N7 R1d R3a R3c
+v2_nhan_bo_ve_pcs|src/chat/rap-prompt.js|N6
+v2_nhan_free_take_khong_can_so|src/chat/rap-prompt.js|N2
+v2_nhan_bo_ve_so_free|src/chat/rap-prompt.js|N6
+v2_bo_ban_giao_khi_bo_anh|src/chat/handler-v3.js|R8d
+v2_caption_khong_qua_cua_ra|src/chat/handler-v3.js|R8a R8b R8d R8f
+v2_caption_chan_van_gui_anh_tron|src/chat/handler-v3.js|R8b R8d
+v2_bo_anh_ca_khi_caption_sach|src/chat/handler-v3.js|R8c
+v2_cho_goi_model_khong_truyen_co_chu|src/chat/handler-v3.js|R8b R8d
+v2_caption_chan_khong_ghi_so|src/chat/handler-v3.js|R8a R8b R8f
+v2_pk_5xx_van_la_tu_choi|src/pancake.js|R2k R2l
+v2_pk_nguong_tren_500|src/pancake.js|R2l
+v2_pk_nguong_duoi_500|src/pancake.js|R2l
 '
 while IFS='|' read -r ten tep doi_do; do
   [ -z "$ten" ] && continue
@@ -189,6 +215,26 @@ old, new = {
   'khong_ro_van_gui_tiep': ('        for (let k = i + 1; k < hang.length; k += 1) anhHong.push("bo_sau_khong_ro");\n        break;', '        continue;'),
   'cau_khai_luat_chi_theo_bien': ('    xayVanBanBoLuatChung(luat, luatCsdlDangAp),', '    xayVanBanBoLuatChung(luat, !!luat && luatChungTuCsdl()),'),
   'dong_anh_ke_ca_anh_khong_gui_duoc': ('      .filter((im) => /^https?:\/\//.test(im.url)).map((im) => im.label || "Ảnh SP");', '      .map((im) => im.label || "Ảnh SP");'),
+  # ── VÒNG 2 (đối kháng refute-rp1 · luật 26: bản vá cũng là code mới) ──
+  'v2_draft_ngoai_le_khong_xet_ai_chon_goi': ("    if (!goiModel) fail('chưa xác định được gói giá; hỏi lại khách hoặc chuyển nhân viên');\n", ''),
+  'v2_draft_variant_la_cung_tinh_la_neu_goi': ("    const goiModel = input.total_price != null || (order.variant !== '' &&\n      chonGoi({ kb: { products: [product] }, variant: order.variant })?.nhan === price.goi.nhan);",
+                                               "    const goiModel = input.total_price != null || order.variant !== '';"),
+  'v2_draft_bo_ve_neu_tong': ("    const goiModel = input.total_price != null || (order.variant !== '' &&", "    const goiModel = (order.variant !== '' &&"),
+  'v2_nhan_noi_ca_khi_khuyen_mai': ('  if (NHAN_TU_NOI_SO_MON.test(chuan)) return nhan;\n', ''),
+  'v2_nhan_bo_ve_pcs': ('|\\d ?(?:take|free)\\b|\\d+ ?(?:pcs?|pieces?)\\b/;', '|\\d ?(?:take|free)\\b/;'),
+  'v2_nhan_free_take_khong_can_so': ('|\\b(?:take|free) ?\\d|\\d ?(?:take|free)\\b|', '|\\btake\\b|\\bfree\\b|'),
+  'v2_nhan_bo_ve_so_free': ('|\\d ?(?:take|free)\\b|\\d+ ?(?:pcs?', '|\\d+ ?(?:pcs?'),
+  'v2_bo_ban_giao_khi_bo_anh': ('          if (!state.handoff) { state.handoff = true; state.handoffReason = `cửa ra chặn: ${captionChan}`; }\n', ''),
+  'v2_caption_khong_qua_cua_ra': ('    if (caption) {\n      const cua = quaCuaRa(caption,', '    if (false) {\n      const cua = quaCuaRa(caption,'),
+  'v2_caption_chan_van_gui_anh_tron': ('        if (!coChu) {\n          anhHong.push(...hang.map(() => "bo_cua_ra"));\n',
+                                       '        if (false) {\n          anhHong.push(...hang.map(() => "bo_cua_ra"));\n'),
+  'v2_bo_anh_ca_khi_caption_sach': ('    if (caption) {\n      const cua = quaCuaRa(caption,',
+                                    '    if (!coChu) { anhHong.push(...hang.map(() => "bo_cua_ra")); return 0; }\n    if (caption) {\n      const cua = quaCuaRa(caption,'),
+  'v2_cho_goi_model_khong_truyen_co_chu': ('    const nAnh = await xaAnh(!!guarded);', '    const nAnh = await xaAnh();'),
+  'v2_caption_chan_khong_ghi_so': ('        captionChan = cua.v.rule || "?";\n', ''),
+  'v2_pk_5xx_van_la_tu_choi': ('    ...(Number(j?.maHttp) >= 500 ? { khongRo: true } : {}) };', '    };'),
+  'v2_pk_nguong_tren_500': ('    ...(Number(j?.maHttp) >= 500 ? { khongRo: true } : {}) };', '    ...(Number(j?.maHttp) > 500 ? { khongRo: true } : {}) };'),
+  'v2_pk_nguong_duoi_500': ('    ...(Number(j?.maHttp) >= 500 ? { khongRo: true } : {}) };', '    ...(Number(j?.maHttp) >= 499 ? { khongRo: true } : {}) };'),
 }[ten]
 assert s.count(old) == 1, (ten, old[:70])
 p.write_text(s.replace(old, new), encoding='utf-8')
@@ -204,7 +250,7 @@ done <<< "$DS_DOT_BIEN"
 o1=$(chay_ca "$TAM" $CA); f1=$(dem "$o1" fail)
 so "lượt khôi phục bản sao ⇒ fail" "${f1:-?}"
 [ "${f1:-1}" -eq 0 ] && dat "khôi phục ⇒ xanh lại (thước không tự đỏ)" || truot "khôi phục mà vẫn đỏ (fail=${f1:-?}) — thước hỏng"
-[ "$BAM_TRUOC" = "$(bam_cay)" ] && dat "cây làm việc không dính đột biến (băm 3 tệp đột biến trước = sau)" || truot "cây làm việc BỊ ĐỔI trong lượt đảo-vá"
+[ "$BAM_TRUOC" = "$(bam_cay)" ] && dat "cây làm việc không dính đột biến (băm 4 tệp đột biến trước = sau)" || truot "cây làm việc BỊ ĐỔI trong lượt đảo-vá"
 
 # ═══ ⑤ BỘ CA CŨ ④9 (rc tách dòng) ═══════════════════════════════════════════════════════════════════════════════════════════════
 muc "⑤ bộ ca cũ ④9 — mỗi tệp một tiến trình (rc tách dòng)"
@@ -217,7 +263,7 @@ for t in $DS_CU; do
   [ "$f" -eq 0 ] && [ "$p" -ge 1 ] && dat "$t pass=$p fail=0" || truot "$t pass=$p fail=$f"
 done
 
-# ═══ ⑥ CỔNG CŨ ④9 (rc TÁCH DÒNG): gl4 · gl3b · gl3 (+ tt1b khi CHAY_TT1B_SH=1) ════════════════════════════════════════════════════
+# ═══ ⑥ CỔNG CŨ ④9 (rc TÁCH DÒNG): gl4 · gl3b · gl3 · gl3c (vòng 2 — sửa pancake.js) (+ tt1b khi CHAY_TT1B_SH=1) ═════════════════
 # Cổng cũ ĐỎ ⇒ ĐỐI CHỨNG cùng thước: chạy CHÍNH cổng đó trên worktree tạm ở $BASE, so DANH SÁCH dòng đỏ (chuẩn hoá id/pid). Giống hệt ⇒
 # đỏ SẴN trước phiếu (nợ cũ), 0 dòng mới ⇒ đạt; khác ⇒ đỏ. Trần thời gian mỗi cổng con (`TRAN_CON` giây) — quá ⇒ giết cả nhóm ⇒ «TREO».
 muc "⑥ cổng cũ (rc tách dòng)"
@@ -238,7 +284,7 @@ else
     done
     wait "$pid"; local rc=$?; cat "$out"; rm -f "$out"; return "$rc"
   }
-  DS_CONG="gl4 gl3b gl3"; [ "${CHAY_TT1B_SH:-0}" = 1 ] && DS_CONG="$DS_CONG tt1b"
+  DS_CONG="gl4 gl3b gl3 gl3c"; [ "${CHAY_TT1B_SH:-0}" = 1 ] && DS_CONG="$DS_CONG tt1b"
   for g in $DS_CONG; do
     t0=$(date +%s); _o=$(chay_con "ops/bin/nghiem-thu/$g.sh"); _r=$?; t1=$(date +%s)
     so "cổng cũ $g.sh" "rc=$_r · $((t1 - t0))s"

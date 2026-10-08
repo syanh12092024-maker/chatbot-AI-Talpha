@@ -502,7 +502,10 @@ export async function pkSendImage(pageId, convId, custId, url, caption = '') {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'reply_inbox', message: caption || '', content_url: url, customer_id: custId }),
   });
-  return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 140), ...dauLoiGui(j) };
+  // RP1 vòng 2 (đối kháng F2 · N-RP1-ANH-5XX-JSON): HTTP ≥ 500 kèm thân JSON `success:false` ⇒ Pancake CÓ THỂ đã nhận và giao ảnh (đo trên
+  // Pancake giả: nhận rồi trả 502) ⇒ «không rõ», KHÔNG phải «từ chối» — handler không thử lại, khách không nhận đúp ảnh + caption.
+  return j.success ? { ok: true, id: j.id } : { ok: false, error: j.original_error || JSON.stringify(j).slice(0, 140), ...dauLoiGui(j),
+    ...(Number(j?.maHttp) >= 500 ? { khongRo: true } : {}) };
 }
 
 // Ghi GHI CHÚ vào hồ sơ khách trong Pancake (sale mở chat là thấy ở panel "Ghi chú").

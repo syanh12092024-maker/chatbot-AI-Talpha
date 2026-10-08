@@ -499,13 +499,36 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
   // Nay nuốt lỗi của MỘT ảnh, phân loại theo CẤU TRÚC lỗi cửa gửi đã gắn (`loaiLoiAnh`), không dò chuỗi. Ảnh bị bỏ ⇒ chữ vẫn
   // đi; caption dời sang tấm gửi được đầu tiên; không tấm nào được ⇒ BỎ caption (như v1 — chữ đã qua cửa ra + đã ghi sổ, không
   // ghép thêm). Số ảnh hỏng vào sổ AI dòng `image` (`duLieuAnh`). GL4: lượt gửi được chữ ⇒ worker xoá chuỗi (README:95).
+  //
+  // RP1 vòng 2 (đối kháng F6) — CAPTION QUA CÙNG CỬA RA VỚI CHỮ. Caption tới khách y như chữ (model tự viết qua send_product_image,
+  // hoặc câu móc của fast-lane) nhưng trước đây không qua `quaCuaRa` ⇒ chữ bị giết vì giá bịa mà caption giá bịa vẫn đi. Nay caption
+  // qua `quaCuaRa` với CÙNG ngữ cảnh lượt chữ (sửa tại chỗ được thì gửi bản sửa). Caption bị chặn ⇒ bỏ caption; ảnh vẫn đi KHÔNG
+  // caption khi còn chữ đi kèm (`coChu`). Caption bị chặn VÀ chữ cũng không đi (cửa ra giết / model câm) ⇒ KHÔNG gửi tấm nào — theo
+  // luật v1 «ảnh không bao giờ gửi trơ»: v1 vẫn xả ảnh khi chữ rỗng vì «caption đã đi kèm ảnh nên khách vẫn có lời» (`pancake-poll.js`
+  // trước MB4); caption sạch thì giữ đúng hành vi đó, caption bị chặn thì không còn lời nào đi kèm — và khách không nhận được gì nên
+  // bàn giao sale (cùng luật chữ bị cửa ra giết — /code-review vòng 2 #1). KHÔNG đổi: model không truyền caption mà chữ không đi ⇒ ảnh
+  // vẫn đi trơ như trước (v1 cũng vậy — nợ N-RP1-ANH-TRON-KHONG-CAPTION). Sổ ảnh: `caption_bi_chan` (luật) + `anh_hong_loai` «bo_cua_ra».
   const anhHong = [];
-  const xaAnh = async () => {
+  let captionChan = "";
+  const xaAnh = async (coChu = true) => {
     const hang = state.pendingImages || [];
     if (!hang.length) return 0;
     state.pendingImages = [];
     let caption = String(state.pendingCaption || "").trim();
     state.pendingCaption = "";
+    if (caption) {
+      const cua = quaCuaRa(caption, { kb, pageId: state.pageId, custName: state.custName, lastAiText: state.lastAiText,
+        orderCreated: !!state.orderResult?.pos_created, isOrderSummary: !!state.orderCreatedThisTurn });
+      caption = cua.text;
+      if (!caption) {
+        captionChan = cua.v.rule || "?";
+        if (!coChu) {
+          anhHong.push(...hang.map(() => "bo_cua_ra"));
+          if (!state.handoff) { state.handoff = true; state.handoffReason = `cửa ra chặn: ${captionChan}`; }
+          return 0;
+        }
+      }
+    }
     let gui = 0;
     for (const [i, im] of hang.entries()) {
       const kq = await guiMotAnh(im.url, caption);
@@ -553,7 +576,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     }
   };
   // Phần `du_lieu` của dòng sổ `image`: số ảnh tới khách + số ảnh đã bỏ (chỉ khi có — dòng cũ giữ đúng hình `{n}`).
-  const duLieuAnh = (n) => ({ n, ...(anhHong.length ? { anh_hong: anhHong.length, anh_hong_loai: [...anhHong] } : {}) });
+  const duLieuAnh = (n) => ({ n, ...(anhHong.length ? { anh_hong: anhHong.length, anh_hong_loai: [...anhHong] } : {}),
+    ...(captionChan ? { caption_bi_chan: captionChan } : {}) });
 
   // Bàn giao sale QUA CỬA: thẻ + ghi chú. Xem khối đầu file về ghi chú TRÙNG ở VPS.
   const banGiaoSale = async (lyDo) => {
@@ -928,7 +952,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     }
 
     // ── 10 · ẢNH TRƯỚC, CHỮ SAU — cả hai QUA CỬA ─────────────────────────────────
-    const nAnh = await xaAnh();
+    const nAnh = await xaAnh(!!guarded);
     if (nAnh || anhHong.length) {
       await ghi(LOAI.IMAGE, {
         maModel: model.maModel,
