@@ -53,7 +53,14 @@ export const HARD_MAX_TURNS = 12;
 // lượt dành cho khách NÓNG gần như không suy chuyển (3.450 so với 3.473 của bảng gốc, −0,7%).
 // Các phương án siết sâu hơn đều phải cắt vào nhóm nóng: hạ trần nhóm NÓNG 6→5 tuy đạt 32,0%
 // nhưng mất 44% lượt của chính nhóm sinh ra đơn — siết như vậy là siết nhầm chỗ.
-export const AM_THRESHOLD = 2;
+//
+// ⚠️ ĐỔI LẠI 2 → 1 ngày 08/10/2026 (người quyết, phiếu RP2). Lý do của ngưỡng 2 hết đúng ở hai chỗ:
+//   · «Fast Lane đã trả lời sẵn bằng template 0 token» — mẫu giá/ship của Fast Lane TẮT từ 11/08 (`FASTLANE_TEMPLATES=0`,
+//     trùng từ khoá Botcake, chủ dự án quyết — đọc ở `src/fast-lane.js` `templates:`), nên câu hỏi giá giờ là Botcake trả lời;
+//   · ngưỡng 2 + LẠNH 1 lượt ⇒ «How much?» rồi «What is it for?» là bàn giao sale ngay lượt thứ hai.
+// Từ RP2 điểm cũng tính cả tin khách ĐÃ NHƯỜNG Botcake (`src/chat/ngan-sach-luot.js#chamTheoLichSu`). Giá phải trả là
+// nhiều lượt model hơn — số đo trước/sau trên mẫu 719 hội thoại: `node ops/bin/do-ngan-sach-luot.mjs` (nhật ký RP2).
+export const AM_THRESHOLD = 1;
 
 // Bù lượt khi khách nêu phản đối: ladder 3 bước (gỡ lý do → hạ rủi ro COD → chốt bằng
 // lựa chọn) cần 3 lượt mà hiện chưa bao giờ chạy hết vì trần 4 lượt đã tiêu vào phần chào hỏi.
@@ -212,7 +219,7 @@ export function turnBudget(lead = {}) {
   } else if (score >= AM_THRESHOLD) {
     base = 3; tier = 'AM';
   } else {
-    base = 1; tier = 'LANH';                        // Fast Lane lo phần lớn nhóm này
+    base = 1; tier = 'LANH';                        // dưới ngưỡng ẤM: từ 08/10 (RP2) là khách ≤ 0 điểm — chào / «ok», chưa hỏi gì
   }
 
   const bonus = OBJECTION_SIGNALS.some((k) => sig.has(k)) ? OBJECTION_BONUS_TURNS : 0;

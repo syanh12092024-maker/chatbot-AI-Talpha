@@ -14,7 +14,8 @@
 // `rapKb` CHỈ truyền bản CSDL khi `V3_LUAT_CHUNG_CSDL=1`; vắng ⇒ `boLuatChung: ""` ⇒ CORE trong mã, kể cả khi
 // `V3_RAP_PROMPT_BAT=1`. `kb.text` luôn mang một MẨU ~300 ký tự của bản CSDL (khai rõ bản nào đang áp — xem
 // `xayVanBanBoLuatChung`). Ba khối còn lại (kỹ năng/kịch bản/sản phẩm) CÓ hiệu lực thật khi cờ bật: kịch bản →
-// `kb.config`, kỹ năng + sản phẩm → `kb.text` (khối "# KNOWLEDGE BASE"), sản phẩm/giá/ảnh → `kb.products`.
+// `kb.config`, kỹ năng + sản phẩm → `kb.text` (khối "# KNOWLEDGE BASE"), sản phẩm/giá/ảnh → `kb.products`. Từ RP2 `kb.text` mang
+// thêm ba khối dùng chung Chính sách · FAQ · Phản đối của TEAM (bảng `khoi_dung_chung`, sau khối sản phẩm — xem `rapKb`).
 //
 // CỜ FALLBACK — `V3_RAP_PROMPT_BAT` (bien-moi-truong-v3.md, luật "vắng = ĐÓNG"): VẮNG
 // (mặc định) ⇒ dùng NGUYÊN đường `kb.js#getKBForPage` cũ, KHÔNG đụng DB — không gãy 51
@@ -33,8 +34,9 @@ import {
 // có 1557 dòng và 100% là rác đó, trong khi bảng cấm xoá. Tắt ghi cho ĐỌC (B-Y5); mọi lệnh
 // GHI của file này (nếu có sau này) vẫn để lại dấu vết như thường.
 const CTX_DOC = ctxHeThong({ ghiNhatKy: false });
-import { getKBForPage, productImages } from "../kb.js";
+import { getKBForPage, productImages, vanBanKhoiChung } from "../kb.js";
 import { docSanPhamGoiGia } from "../products/catalog.js";
+import { docKhoiChung } from "../products/khoi-chung.js";
 import { HE_SO_TE } from "../pos/tao-don.js";
 import { tachSoHieu } from "../pos/ten-goc.js";
 import { khoiBoLuat } from "../prompts.js";   // CHỈ ĐỌC (bộ não): khối luật đầu prompt chọn bản nào — câu khai ở khối KB phải khớp
@@ -316,10 +318,17 @@ export async function rapKb(pool, { teamId, pageIdText }) {
 
   const sp = await docSanPhamGoiGia(pool, teamId, trang.id, trang);
   const dsMaSp = sp.map((s) => s.ma);
-  const [luat, kyNang, kichBan] = await Promise.all([
+  // RP2 ② 1 — BA KHỐI DÙNG CHUNG (Chính sách · FAQ · Phản đối) THEO TEAM: bảng `khoi_dung_chung` (cùng nguồn màn `/khoi-chung` ghi,
+  // `khoi-chung.js#luuKhoiChung`), đọc MỖI LƯỢT như ba khối kia — không nhớ RAM, nên tiến trình giao diện lưu xong là lượt kế của
+  // worker thấy. Trước RP2 khối này chỉ tới bot ở cờ TẮT (`kb.js#sharedTuTep` — tệp `kb-chung.json` toàn hệ). Không thêm vào
+  // `nguon_thieu` (neo l2-m3 ghim mảng bốn khối). CSDL chưa áp 026: `docKhoiChung` bắt 42P01 và trả ba khối rỗng — nhưng trên client
+  // của GIAO DỊCH worker (`layKb` nhận `khach`) Postgres đã huỷ giao dịch ⇒ cả lượt hỏng (cùng giới hạn `catalog.js#docAnhTheoSanPham`;
+  // prod đã áp 026 — nợ N-RP2-42P01-GIAO-DICH, /code-review RP2 #5).
+  const [luat, kyNang, kichBan, khoiChung] = await Promise.all([
     docBoLuatChung(pool, teamId),
     docKyNang(pool, teamId, dsMaSp),
     docKichBanLive(pool, teamId, trang.id),
+    docKhoiChung(pool, teamId),
   ]);
 
   const nguonThieu = [];
@@ -339,6 +348,9 @@ export async function rapKb(pool, { teamId, pageIdText }) {
   const text = [
     xayVanBanBoLuatChung(luat, luatCsdlDangAp),
     xayVanBanSanPham(spBan, { ganGoc }),
+    // RP2: dựng bằng ĐÚNG hàm đường cũ (`kb.js#vanBanKhoiChung` → `buildShared`; dữ liệu đã qua `sachKhoiChung` trong `docKhoiChung`)
+    // ⇒ cùng nội dung ra cùng đoạn chữ từng ký tự · vị trí như đường cũ (sau sản phẩm — `kb.js#pageText`) · team chưa có ⇒ '' (bị lọc).
+    vanBanKhoiChung(khoiChung.noiDung),
     xayVanBanKyNang(kyNang),
   ]
     .filter(Boolean)

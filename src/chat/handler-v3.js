@@ -32,7 +32,7 @@ import { suaHoiThoai, docHoiThoaiTheoPageText } from "./kho.js";
 import { lopTuKhoa, LANE as LANE_TU_KHOA } from "./lop-tu-khoa.js";
 import { rapKb as rapKbMacDinh } from "./rap-prompt.js";
 import {
-  chamVaTinhNganSach as chamVaTinhNganSachMacDinh,
+  chamTheoLichSu as chamTheoLichSuMacDinh,
   conNganSach as conNganSachMacDinh,
 } from "./ngan-sach-luot.js";
 import { vaoHangCho as vaoHangChoMacDinh } from "../orders/hang-cho.js";
@@ -265,7 +265,7 @@ function depsMacDinh(deps = {}) {
     suaDuocTaiCho: deps.suaDuocTaiCho || canFixLocally,
     suaTaiCho: deps.suaTaiCho || localFix,
     // L2-M3 ②.2: ngân sách lượt theo độ nóng, thay trần 4 lượt cứng.
-    chamVaTinhNganSach: deps.chamVaTinhNganSach || chamVaTinhNganSachMacDinh,
+    chamTheoLichSu: deps.chamTheoLichSu || chamTheoLichSuMacDinh,
     conNganSach: deps.conNganSach || conNganSachMacDinh,
     cua: {
       guiTin: deps.cua?.guiTin || cuaGuiTin,
@@ -433,7 +433,9 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     hoiThoai.diem_lead && Object.keys(hoiThoai.diem_lead).length
       ? hoiThoai.diem_lead
       : {};
-  const { lead, budget } = d.chamVaTinhNganSach(text, prevLead);
+  // RP2 ② 2: chấm cụm CỘNG tin KHÁCH của lịch sử kể từ mốc chấm trước (cả câu Botcake đã trả lời — câu đó không bao giờ thành cụm
+  // của một lượt bot), MỘT lần `scoreTurn`, mốc gắn lại vào `lead.moc` (`ngan-sach-luot.js#chamTheoLichSu`). Lịch sử rỗng ⇒ như cũ.
+  const { lead, budget } = d.chamTheoLichSu(text, prevLead, { lichSu: d.lichSu, tin });
 
   // Tham số cửa dùng lại nguyên bộ cho mọi lượt gửi — `convId` để gọi API, `psid` để
   // cửa tra quyền sở hữu (hai giá trị KHÁC NHAU, xem cua-messenger-v1.md §2).

@@ -87,13 +87,15 @@ test('L8 · khách quay lại sau khi nguội → +2', () => {
 // Đây là ĐỔI SPEC theo quyết định của chủ dự án, không phải nới test cho vừa code: bảng gốc
 // của spec chỉ giảm 14,8% tổng lượt AI trong khi nghiệm thu đòi ≥30%. Xem lý do đầy đủ ở
 // hằng số AM_THRESHOLD trong src/lead-score.js.
-test('B1 · bảng ngân sách (1 / 3 / 6 / 10 / 12, ngưỡng ẤM = 2 điểm)', () => {
+// ⚠️ ĐỔI LẠI 2 → 1 (08/10/2026, người quyết — phiếu RP2): mẫu giá/ship Fast Lane đã tắt, Botcake trả lời câu giá, điểm tính cả tin
+// khách đã nhường Botcake. Ca này CHỈ đổi kỳ vọng theo ngưỡng mới (phiếu RP2 ③).
+test('B1 · bảng ngân sách (1 / 3 / 6 / 10 / 12, ngưỡng ẤM = 1 điểm)', () => {
   assert.equal(turnBudget({ score: 0, signals: [] }).max, 1);
   assert.equal(turnBudget({ score: -3, signals: [] }).max, 1);
-  // Chỉ hỏi giá (+1) → VẪN LẠNH: đúng câu Fast Lane trả lời sẵn bằng template 0 token.
-  assert.equal(turnBudget({ score: 1, signals: ['price'] }).max, 1);
-  assert.equal(turnBudget({ score: 1, signals: ['price'] }).tier, 'LANH');
-  // Hai tín hiệu nhỏ (hỏi giá + hỏi ship) mới đủ lên ẤM.
+  // Chỉ hỏi giá (+1) → ẤM từ 08/10 (trước đó LẠNH).
+  assert.equal(turnBudget({ score: 1, signals: ['price'] }).max, 3);
+  assert.equal(turnBudget({ score: 1, signals: ['price'] }).tier, 'AM');
+  // Hai tín hiệu nhỏ (hỏi giá + hỏi ship) vẫn ẤM.
   assert.equal(turnBudget({ score: 2, signals: ['price', 'ship'] }).max, 3);
   assert.equal(turnBudget({ score: 4, signals: ['buy', 'price'] }).max, 6);
   assert.equal(turnBudget({ score: 7, signals: ['phone', 'buy'] }).max, 10);

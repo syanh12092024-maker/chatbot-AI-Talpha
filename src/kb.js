@@ -399,11 +399,16 @@ function docTepKhoiChung() {
   try { return fs.existsSync(KHOI_CHUNG_FILE) ? sachKhoiChung(JSON.parse(fs.readFileSync(KHOI_CHUNG_FILE, 'utf8'))) : null; }
   catch { return null; }
 }
-/** Đoạn chữ ba khối từ tệp v3. Tệp vắng hoặc cả ba khối rỗng ⇒ '' (không để lại tiêu đề trơ). */
-function sharedTuTep() {
-  const d = docTepKhoiChung();
+/** Đoạn chữ ba khối từ dữ liệu ĐÃ làm sạch (`sachKhoiChung`). Vắng hoặc cả ba khối rỗng ⇒ '' (không để lại tiêu đề trơ).
+ *  Một luật dựng cho HAI đường: tệp v3 (`sharedTuTep`, cờ `V3_RAP_PROMPT_BAT` tắt) và bảng `khoi_dung_chung` theo team
+ *  (`chat/rap-prompt.js#rapKb`, cờ bật — RP2) ⇒ cùng nội dung ra cùng đoạn chữ từng ký tự. */
+export function vanBanKhoiChung(d) {
   if (!d || (!d.policies.length && !d.faqs.length && !d.objections.length)) return '';
   return buildShared(d.policies, d.faqs, d.objections);
+}
+/** Đoạn chữ ba khối từ tệp v3. */
+function sharedTuTep() {
+  return vanBanKhoiChung(docTepKhoiChung());
 }
 /** v3 ghi ba khối. Ghi hỏng thì NÉM (cửa gọi sang huỷ lượt lưu). Cờ bật ⇒ có hiệu lực ngay trong RAM. */
 export function datKhoiChung(d) {
