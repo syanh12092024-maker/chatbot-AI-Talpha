@@ -171,7 +171,7 @@ const mocDaXu = new Map(); // `${pageId}:${convId}` -> mốc đã nạp xong
 // ⇒ tin khách KHÔNG BAO GIỜ vào hàng). Nay: bỏ ĐÚNG hội thoại đó ở vòng này, KHÔNG ghi mốc, ghi sổ bỏ-qua `doc_tin_loi`,
 // và lùi riêng hội thoại đó 30 s·2ⁿ (trần 5′) — không lùi thì Pancake chậm làm mỗi lượt đọc lại tốn 15 s × số token,
 // vòng nạp tuần tự của page đứng nhiều phút. Đọc được thì xoá. Bộ nhớ thuần, mất khi khởi động lại (= đọc lại ngay).
-const luiDocTin = new Map(); // `${pageId}:${convId}` -> { lan, toi, loi, luot, tu }
+const luiDocTin = new Map(); // `${pageId}:${convId}` -> { lan, toi, loi, luot, tu, luotKenh, tuKenh }
 const LUI_DOC_TIN_MS = 30_000;
 const LUI_DOC_TIN_TRAN_MS = 5 * 60_000;
 
@@ -185,8 +185,14 @@ const LUI_DOC_TIN_TRAN_MS = 5 * 60_000;
 //   hoặc không tới bước đọc danh sách) ⇒ bỏ mốc (`giuLoiDanhSach`) — mở lại phải đủ `T_NGAT_DS_MS` lỗi liên tục mới ngắt lại (luật GL4
 //   «đang ngắt không đếm, mở xong phải đủ ngưỡng», R2-N1).
 // ② LỊCH SỬ lỗi KÊNH (`LoiDocLichSu.capKenh`) ở bộ nạp ⇒ đếm vào ngắt GL4 theo HỘI THOẠI (khoá `-hoi_thoai.id`, CÙNG khoá worker dùng —
-//   R2-N2), pool ngoài giao dịch; page vừa ngắt ⇒ dừng nạp page đó ở vòng này. Đọc lịch sử OK ⇒ `ghiDocTot`. Lỗi kênh KHÔNG leo tới
-//   mốc giao sale (GL4 lo: tin giữ, không giao hàng loạt).
+//   R2-N2), pool ngoài giao dịch, CHỈ ở lượt lỗi KÊNH ĐẦU của một sự cố (`luotKenh === 1` — vòng 2, đối kháng F2: đếm lại mỗi lượt lùi
+//   thì một hội thoại hỏng bền giữ bộ đếm = 1 thường trực sau mỗi lượt đọc OK của khách khác ⇒ MỘT lượt chập đơn lẻ của khách khác là
+//   ngắt 30′); page vừa ngắt ⇒ dừng nạp page đó ở vòng này. Đọc lịch sử OK ⇒ `ghiDocTot`. Lối ra của lỗi kênh ở RIÊNG một hội thoại
+//   (vòng 2, đối kháng F1): đếm `luotKenh` theo SỰ CỐ — sự cố mới (`lan` về 1, kể cả sau quãng ngắt ĐỌC ≥ 30′) ⇒ đếm lại từ 1; page
+//   ĐANG ngắt (đọc hay gửi — bộ đếm GL4 đứng yên lúc ngắt) ⇒ không tích (về 0), mở lại thì lượt đầu đếm GL4 lại; tới
+//   `LUOT_LOI_KENH_GIAO_SALE` lượt ⇒ giao sale CÓ việc qua CÙNG `giaoSaleLoiBen`. Không giao hàng loạt CHỈ khi hai hội thoại lỗi kênh
+//   ở lượt đầu sự cố mà giữa không có lượt đọc OK nào (GL4 ngắt page trước); có lượt đọc OK của khách khác chen giữa ⇒ page không ngắt
+//   và mỗi hội thoại hỏng được giao riêng ở lượt 5 (Pancake hỏng một phần — nợ N-GL3C-KENH-GIAO-XEN-DOC-OK).
 // ③ LỊCH SỬ lỗi DỮ LIỆU bền («Thiếu mã khách hàng» …) ⇒ đếm `luot` (+ `tu` = lần lỗi đầu) trong `luiDocTin`; lượt thứ
 //   `LUOT_LOI_GIAO_SALE` ⇒ giao sale CÓ việc (`giaoSaleLoiBen`). `luot`/`tu` CHỈ đặt lại khi hội thoại đọc OK hoặc rời đi (thẻ chặn /
 //   page nói cuối) — KHÔNG vì quãng page bị ngắt (khác `lan` của lịch lùi, về 1 sau ≥ 5′ không đọc). RAM: restart ⇒ đếm lại (chấp nhận;
@@ -195,6 +201,8 @@ const LUI_DOC_TIN_TRAN_MS = 5 * 60_000;
 export const T_NGAT_DS_MS = 2 * 60_000;
 /** Lượt đọc lịch sử lỗi DỮ LIỆU thứ mấy thì giao sale — tổng đặt (≈ giây 90 theo lịch lùi 30 s·2ⁿ: lỗi ở 0 · 30 · 90 s). */
 export const LUOT_LOI_GIAO_SALE = 3;
+/** Lượt đọc lịch sử lỗi KÊNH thứ mấy (của MỘT sự cố, page không ngắt) thì giao sale — phiếu vòng 2 (≈ 7,5′: lỗi ở 0 · 30 · 90 · 210 · 450 s). */
+export const LUOT_LOI_KENH_GIAO_SALE = 5;
 const dsLoiTu = new Map(); // page_id -> mốc (đồng hồ `dongHo` của bộ nạp) lần lỗi ĐẦU của chuỗi lỗi danh sách đang diễn ra
 
 // ── LỌC TỪ DANH SÁCH — trả lời đúng thứ ĐANG CẦN trả lời ────────────────────────────
@@ -351,10 +359,10 @@ export function giuLoiDanhSach(pageIds) {
   for (const pid of [...dsLoiTu.keys()]) if (!giu.has(pid)) dsLoiTu.delete(pid);
 }
 
-/** Hội thoại rời đi (thẻ chặn / page nói cuối) ⇒ đặt lại đếm lỗi dữ liệu bền; GIỮ `lan`/`toi` của lịch lùi (neo `gl3b.sh` ⑤o · N7). */
+/** Hội thoại rời đi (thẻ chặn / page nói cuối) ⇒ đặt lại đếm lỗi dữ liệu bền + đếm lỗi kênh; GIỮ `lan`/`toi` của lịch lùi (neo `gl3b.sh` ⑤o · N7). */
 function roiDi(khoaMoc) {
   const lu = luiDocTin.get(khoaMoc);
-  if (lu) { lu.luot = 0; lu.tu = null; }
+  if (lu) { lu.luot = 0; lu.tu = null; lu.luotKenh = 0; lu.tuKenh = null; }
 }
 
 const thoiLuong = (ms) => {
@@ -387,12 +395,13 @@ async function loiDanhSach(pool, { teamId, pageId, e, bay, ket }) {
 }
 
 /**
- * GL3c ② 4 — hội thoại lỗi DỮ LIỆU bền tới lượt `LUOT_LOI_GIAO_SALE` ⇒ giao sale CÓ việc. Client RIÊNG, MỘT giao dịch, không gọi
+ * GL3c ② 4 — hội thoại lỗi DỮ LIỆU bền tới lượt `LUOT_LOI_GIAO_SALE` (vòng 2: hoặc lỗi KÊNH ở riêng nó tới `LUOT_LOI_KENH_GIAO_SALE`, page
+ * không ngắt) ⇒ giao sale CÓ việc. Client RIÊNG, MỘT giao dịch, không gọi
  * Pancake bên trong, không khoá tư vấn. CHỈ khi bot LẼ RA phải trả lời (AI + GREET/QUALIFY/SELLING + page bật bot + page vẫn poll); 0 dòng ⇒ không
  * việc, không nhật ký. Việc chèn qua MỘT hàm chèn việc của worker (`worker.js#chenViec` — nạp ĐỘNG: `worker.js` nạp tĩnh file này).
  * @returns {Promise<null|{banGiao: boolean, viecMoi: boolean}>} null = SQL lỗi (đã ROLLBACK) — nơi gọi lùi như thường, không ghi mốc.
  */
-async function giaoSaleLoiBen(pool, { teamId, htId, convId, lyDoDay, luot }) {
+async function giaoSaleLoiBen(pool, { teamId, htId, convId, lyDoDay, luot, kenh = false }) {
   const { chenViec } = await import("./worker.js");
   const kh = await pool.connect();
   try {
@@ -410,7 +419,7 @@ async function giaoSaleLoiBen(pool, { teamId, htId, convId, lyDoDay, luot }) {
       viecMoi = await chenViec(kh, teamId, htId, lyDoDay);
       await ghiNhatKy(kh, {
         teamId, tacNhan: "may:l2-nap", hanhDong: "hoi_thoai_doc_loi_ben_ban_giao", doiTuong: "hoi_thoai", doiTuongId: String(htId),
-        ghiChu: String(lyDoDay).slice(0, 400), sau: { chu_so_huu: "SALE", viec_moi: viecMoi, luot, conv_id: String(convId) },
+        ghiChu: String(lyDoDay).slice(0, 400), sau: { chu_so_huu: "SALE", viec_moi: viecMoi, luot, loi_kenh: kenh, conv_id: String(convId) },
       });
     }
     await kh.query("COMMIT");
@@ -637,12 +646,23 @@ export async function napTuPoll(pool, { pageId }, deps = {}) {
       const duLieu = e.capKenh !== true;
       const luot = (lui?.luot || 0) + (duLieu ? 1 : 0);
       const tu = lui?.tu ?? (duLieu ? dongHo() : null);
-      luiDocTin.set(khoaMoc, { lan, toi: dongHo() + Math.min(LUI_DOC_TIN_TRAN_MS, LUI_DOC_TIN_MS * 2 ** (lan - 1)), loi, luot, tu });
-      if (duLieu && luot >= LUOT_LOI_GIAO_SALE && ht?.id != null) {
-        const lyDoDay = `Pancake không trả lịch sử hội thoại này: ${luot} lượt lỗi trong ${thoiLuong(dongHo() - tu)} `
-          + `(lỗi đầu ${gioVN(tu)} giờ VN): ${loi.replace(/^Pancake không trả lịch sử:\s*/, "")} — bot CHƯA trả lời, CHƯA gửi gì · `
+      // Vòng 2 (đối kháng F1) — lỗi KÊNH đếm theo SỰ CỐ: `lan` về 1 (sự cố mới — gồm cả sau quãng page ngắt ĐỌC ≥ 30′) ⇒ đếm lại từ 1.
+      // Page ĐANG ngắt (đọc hay gửi — ngắt gửi vẫn nạp) ⇒ KHÔNG tích lượt giao (về 0): lúc ngắt, bộ đếm GL4 đứng yên, nên tích tiếp thì
+      // Pancake sập trong quãng ngắt gửi ⇒ mở lại là mọi khách lỗi kênh giao sale cùng lúc (/code-review #8). Mở rồi ⇒ lượt đầu đếm GL4 lại.
+      const pageNgat = locPageNgat([String(pageId)]).length === 0;
+      const kenhCu = lan === 1 || pageNgat ? null : lui;
+      const luotKenh = pageNgat ? 0 : (kenhCu?.luotKenh || 0) + (duLieu ? 0 : 1);
+      const tuKenh = pageNgat ? null : kenhCu?.tuKenh ?? (duLieu ? null : dongHo());
+      luiDocTin.set(khoaMoc, { lan, toi: dongHo() + Math.min(LUI_DOC_TIN_TRAN_MS, LUI_DOC_TIN_MS * 2 ** (lan - 1)), loi, luot, tu, luotKenh, tuKenh });
+      // Lỗi kênh ở RIÊNG hội thoại này đủ lượt mà page KHÔNG ngắt (đang ngắt thì `luotKenh` = 0 ở trên).
+      const giaoKenh = !duLieu && luotKenh >= LUOT_LOI_KENH_GIAO_SALE;
+      if (((duLieu && luot >= LUOT_LOI_GIAO_SALE) || giaoKenh) && ht?.id != null) {
+        const [soLuot, tuLuc] = giaoKenh ? [luotKenh, tuKenh] : [luot, tu];
+        const lyDoDay = `${giaoKenh ? "Pancake lỗi kênh ở riêng hội thoại này (page KHÔNG ngắt)" : "Pancake không trả lịch sử hội thoại này"}: `
+          + `${soLuot} lượt lỗi trong ${thoiLuong(dongHo() - tuLuc)} `
+          + `(lỗi đầu ${gioVN(tuLuc)} giờ VN): ${loi.replace(/^Pancake không trả lịch sử:\s*/, "")} — bot CHƯA trả lời, CHƯA gửi gì · `
           + `khách nhắn lần cuối (mốc Pancake, chưa quy múi giờ): ${c?.last_customer_interactive_at || c?.updated_at || "không rõ"}`;
-        const giao = await giaoSaleLoiBen(pool, { teamId, htId: ht.id, convId, lyDoDay, luot });
+        const giao = await giaoSaleLoiBen(pool, { teamId, htId: ht.id, convId, lyDoDay, luot: soLuot, kenh: giaoKenh });
         if (giao) {
           // Đã giao (hoặc bot vốn không giữ hội thoại này — 0 dòng: không việc, không nhật ký) ⇒ ghi mốc: không đọc lại tới khi khách nhắn
           // mới; và xoá đếm (/code-review #5): tin MỚI của khách là sự cố mới, đủ LUOT_LOI_GIAO_SALE lượt nữa mới giao — kể cả khi sale đã
@@ -650,13 +670,15 @@ export async function napTuPoll(pool, { pageId }, deps = {}) {
           if (moc) mocDaXu.set(khoaMoc, moc);
           luiDocTin.delete(khoaMoc);
           ket.giaoLoiBen = (ket.giaoLoiBen || 0) + (giao.banGiao ? 1 : 0);
-          boQuaDs.push({ convId, psid, lyDo: "doc_tin_loi", chuThich: `${giao.banGiao ? "đã giao sale" : "không giao (bot không giữ)"} sau ${luot} lượt: ${loi}` });
+          boQuaDs.push({ convId, psid, lyDo: "doc_tin_loi", chuThich: `${giao.banGiao ? "đã giao sale" : "không giao (bot không giữ)"} sau ${soLuot} lượt: ${loi}` });
           continue;
         }
       }
       ket.docTinLoi += 1;
       boQuaDs.push({ convId, psid, lyDo: "doc_tin_loi", chuThich: loi });
-      if (!duLieu && ht?.id != null) {
+      // Vòng 2 (đối kháng F2): CHỈ lượt lỗi KÊNH ĐẦU của sự cố đếm vào GL4 (`luotKenh === 1` — về 1 khi `lan` về 1 hoặc page vừa hết ngắt;
+      // /code-review #6: sự cố bắt đầu bằng lỗi DỮ LIỆU rồi Pancake sập thì lỗi kênh đầu vẫn đếm) — lượt đọc lại không nạp lại bộ đếm.
+      if (!duLieu && luotKenh === 1 && ht?.id != null) {
         const n = await ghiLoiKenh(pool, { teamId, pageId, tinId: `-${ht.id}`, kieu: "doc", lyDo: cauLyDoDoc(e.message) });
         if (n) { ket.ngatDoc = 1; break; }   // page vừa ngắt vì đọc ⇒ dừng nạp page này ở vòng này (GL4: ngắt đọc ⇒ bỏ nạp)
       }

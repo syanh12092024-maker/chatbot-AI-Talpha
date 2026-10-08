@@ -27,13 +27,14 @@
 //     vào hàng. «Rỗng thật» (Pancake trả `messages: []`) KHÔNG phải lỗi này. Thông điệp mang câu
 //     lỗi đọc được (`pancake.js#pkDocTin`), không chứa token.
 //     PHIẾU GL4: mang `capKenh` — `true` khi lỗi ở CẤP KÊNH (hết token / quyền ở mọi token / quá hạn / mạng / thân hỏng / 121
-//     không mã «gói cước») ⇒ worker đếm vào ngắt cả page; `false` khi là lỗi của MỘT hội thoại («Thiếu mã khách hàng», thân
-//     không danh sách) ⇒ không đếm. Phân loại ở `pkDocTin` theo CẤU TRÚC, không theo câu chữ.
+//     không mã «gói cước»; GL3c vòng 2: + HTTP ≥ 500 · 408 · 429 kể cả thân JSON, + thân/câu KHÔNG nhận ra được) ⇒ worker đếm vào
+//     ngắt cả page; `false` CHỈ khi là lỗi ĐÃ BIẾT của MỘT hội thoại («Thiếu mã khách hàng» với HTTP không phải 5xx/408/429, thân 2xx
+//     không lỗi mà thiếu danh sách tin) ⇒ không đếm. Phân loại ở `pancake.js#laLoiKenhDoc` (cấu trúc + mã HTTP + danh sách câu đã biết).
 //
 //   LoiDocHoiThoai — (PHIẾU GL3c) `docHoiThoai` KHÔNG đọc được DANH SÁCH hội thoại của page (Pancake sập / quá hạn / 502 / quyền
 //     ở mọi token / 121 / thân không có mảng `conversations`). Trước GL3c cửa trả `[]` ⇒ bộ nạp thấy «0 hội thoại» y như không ai
-//     nhắn, đèn GL4 không bao giờ đỏ (N-GL3B-CONV-NUOT-LOI). Bộ nạp poll coi MỌI lỗi danh sách là lỗi cấp page; `capKenh` (cùng luật cấu
-//     trúc của `pkDocTin`) chỉ để chọn câu / để worker webhook đếm GL4 khi ném lại thành `LoiDocLichSu`.
+//     nhắn, đèn GL4 không bao giờ đỏ (N-GL3B-CONV-NUOT-LOI). Bộ nạp poll coi MỌI lỗi danh sách là lỗi cấp page; `capKenh` (cùng luật
+//     `laLoiKenhDoc` của `pkDocTin`) chỉ để chọn câu / để worker webhook đếm GL4 khi ném lại thành `LoiDocLichSu`.
 export class LoiPageKhongThuocTeam extends Error {
   constructor(thongDiep) {
     super(thongDiep);

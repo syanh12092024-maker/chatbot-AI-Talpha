@@ -189,6 +189,9 @@ async function goiPancake(url, init, hanMs) {
       e.thanHong = true;
       throw e;
     }
+    // GL3c vòng 2 (đối kháng F3): mã HTTP của thân JSON cho phân loại lỗi ĐỌC (`laLoiKenhDoc`) — thuộc tính KHÔNG liệt kê: `JSON.stringify`,
+    // `Object.keys(j).length` (`dauLoiGui` · `lyDoDocLoi`) và mọi nơi trải `...j` thấy thân y như cũ.
+    if (j && typeof j === 'object' && Object.isExtensible(j)) Object.defineProperty(j, 'maHttp', { value: Number(res?.status) || null, configurable: true });
     return j;
   } catch (e) {
     if (quaHan) throw ac.signal.reason;   // mọi lỗi sau khi hết hạn là QUÁ HẠN, kể cả AbortError của undici
@@ -341,7 +344,7 @@ export async function refreshPancakePages() {
 
 // GL3c ② 1 — `soLoi` (tuỳ chọn, tham số RA): điền `{ ok, loi, capKenh }` để cửa `docHoiThoai` nói được lỗi thay vì «0 hội thoại».
 // Giá trị trả KHÔNG đổi (mảng; lỗi ⇒ `[]`) — `src/orders/legacy.js` gọi không `soLoi` vẫn như cũ. Lỗi = MỌI trường hợp không có mảng
-// `conversations` (danh sách không có «lỗi của một hội thoại» — review (a) N6); `capKenh` theo cùng luật cấu trúc của `pkDocTin` — bộ nạp
+// `conversations` (danh sách không có «lỗi của một hội thoại» — review (a) N6); `capKenh` theo cùng luật `laLoiKenhDoc` của `pkDocTin` — bộ nạp
 // poll chỉ dùng nó để chọn câu, worker page webhook dùng nó để đếm GL4 (ném lại `LoiDocLichSu`). Không export mới (neo `gl4.sh` ④b).
 export async function pkGetConversations(pageId, soLoi = null) {
   const vx = { ds: [], hetToken: false };   // vòng xoay token của lượt này — cùng khuôn `pkDocTin` (câu lỗi «thật» nhất)
@@ -351,7 +354,7 @@ export async function pkGetConversations(pageId, soLoi = null) {
     const cau = ok ? '' : lyDoDocLoi(vx.hetToken ? loiThatNhat(vx.ds) : j).replace(/danh sách tin/g, 'danh sách hội thoại');
     Object.assign(soLoi, { ok, loi: cau, capKenh: !ok && laLoiKenhDoc(vx, j) });
   }
-  return j.conversations || [];
+  return j?.conversations || [];   // GL3c vòng 2 (/code-review #3): thân JSON `null` ⇒ lỗi danh sách (soLoi.ok=false), không TypeError
 }
 // Như `pkGetMessages` nhưng KHÔNG nuốt lỗi — cho màn ĐỌC (bàn hội thoại v3, UI-HT1) nói được
 // VÌ SAO không đọc được. Đo 28/09: Pancake trả `{success:false, message:"Không tìm thấy gói
@@ -386,14 +389,30 @@ function hangLoiDoc(x) {
   return ma.includes(103) ? 2 : ma.includes(121) ? 3 : 4;
 }
 const loiThatNhat = (ds) => ds.reduce((tot, x) => (hangLoiDoc(x) <= hangLoiDoc(tot) ? x : tot));
-// GL4 ② 3 — lỗi đọc CẤP KÊNH, phân loại theo CẤU TRÚC (không theo câu chữ: 103/105/121 sau mọi token ra câu RIÊNG của Pancake,
-// giống hệt «Thiếu mã khách hàng»): vòng xoay CẠN token (quyền ở mọi token · mạng · quá hạn) · không còn token nào · thân hỏng
-// (502/504 HTML). NGOẠI LỆ DUY NHẤT khớp chữ: 121 dạng KHÔNG mã `{success:false, message:"Không tìm thấy gói cước…"}` (đo 28/09) —
-// `permErr` không bắt nên vòng xoay dừng sớm, mà đó là lỗi CẤP TÀI KHOẢN; không có trường nào khác để nhận ra nó. Còn lại (thân
-// không danh sách, câu riêng một hội thoại) ⇒ lỗi dữ liệu, KHÔNG đếm. Giới hạn: HTTP 5xx mà thân là JSON không nhận ra được
-// (`goiPancake` không đưa mã HTTP ra cho thân JSON).
+// GL4 ② 3 — lỗi đọc CẤP KÊNH: vòng xoay CẠN token (quyền ở mọi token · mạng · quá hạn) · không còn token nào · thân hỏng (502/504
+// HTML). GL3c vòng 2 (đối kháng F3 — Pancake chập trả HTTP 500 thân JSON `{success:false}` không mã từng bị xếp lỗi DỮ LIỆU ⇒ chập ≥ 90 s là
+// mọi khách thành SALE): thêm HTTP ≥ 500 · 408 · 429 (mã gắn ở `goiPancake`) và thân KHÔNG nhận ra được ⇒ KÊNH. Lỗi DỮ LIỆU (của MỘT hội
+// thoại — bộ nạp giao sale ở lượt 3) CHỈ còn: câu Pancake ĐÃ BIẾT là của một hội thoại («Thiếu mã khách hàng») và thân 2xx không lỗi mà
+// thiếu danh sách tin (Pancake đổi hình dữ liệu — phiếu ⑥ G3). Câu lạ ⇒ KÊNH: sai chiều này là page ngắt 30′ (tin giữ, đèn đỏ) hoặc
+// giao ở lượt kênh thứ 5 — rẻ hơn sai chiều kia (giao sale hàng loạt, Pancake lành rồi khách vẫn nằm ở sale). Câu ĐÃ BIẾT xét ở dòng cuối:
+// 121 dạng KHÔNG mã «gói cước» (đo 28/09 — `permErr` không bắt nên vòng xoay dừng sớm, mà đó là lỗi CẤP TÀI KHOẢN) ⇒ KÊNH; còn lại ⇒ dữ liệu.
+const laMaHttpKenh = (m) => Number(m) >= 500 || Number(m) === 408 || Number(m) === 429;
+const CAU_DU_LIEU_DA_BIET = [/Thiếu mã khách hàng/i];   // câu Pancake ĐÃ BIẾT là lỗi của MỘT hội thoại
+function thanDocNhanRa(j) {
+  if (!j || typeof j !== 'object' || Array.isArray(j)) return false;
+  if (permErr(j)) return true;   // mã quyền 103/105/121: vòng xoay token đã phân xử (cạn token ⇒ dòng đầu `laLoiKenhDoc`)
+  const cau = String(j.message || j.error || '');
+  // Thân BÁO LỖI: `success:false` · có mã · có câu mà không `success:true` (/code-review #7: `{success:true, message:'OK'}` thiếu danh sách tin
+  // là thân KHÔNG lỗi — G3, dữ liệu).
+  if (!(j.success === false || j.error_code != null || (j.success !== true && cau))) return Object.keys(j).length > 0;   // `{}` ⇒ không nhận ra
+  // Nhận ra CHỈ hai hình: 121 KHÔNG mã đúng hình đã đo 28/09 (/code-review #2: «gói cước» lệch hình — thiếu `success:false`, kèm mã lạ — là
+  // thân lạ ⇒ KÊNH ở dòng trên; hình này phải GIỐNG HỆT dòng cuối `laLoiKenhDoc`, ca V3b canh cả hai) · câu dữ liệu đã biết.
+  return (j.success === false && j.error_code == null && /gói cước/i.test(String(j.message || '')))
+    || CAU_DU_LIEU_DA_BIET.some((m) => m.test(cau));
+}
 function laLoiKenhDoc(soLoi, j) {
   if (soLoi.hetToken || !allToks().length || j?.thanHong === true) return true;
+  if (laMaHttpKenh(j?.maHttp) || !thanDocNhanRa(j)) return true;
   return j?.success === false && j?.error_code == null && /gói cước/i.test(String(j?.message || ''));
 }
 // GL3b ② 2 — câu lỗi nói ĐÚNG lý do. Trước đây `{}` do thân không phải JSON (502/504 HTML của cổng) và `{}` do hết token
@@ -404,6 +423,7 @@ function lyDoDocLoi(j) {
   if (j?.quaHan) return `Pancake quá hạn — ${j.message}`;
   if (Number(j?.error_code) === -1) return `Pancake lỗi mạng — ${j.message}`;
   const cau = String(j?.message || j?.error || '').trim();
+  if (laMaHttpKenh(j?.maHttp)) return `Pancake lỗi (HTTP ${j.maHttp})${cau ? ` — ${cau}` : ''}`;   // GL3c vòng 2 (F3)
   if (cau) return cau;
   if (j?.error_code != null) return `Pancake từ chối (mã ${j.error_code})`;
   if (j && typeof j === 'object' && Object.keys(j).length) return 'Pancake trả lời không có danh sách tin';

@@ -84,8 +84,24 @@ export function lyDoChuaChoPageNao() {
 /**
  * MỘT lượt: nạp tin mới của mọi page rồi xử hết hàng đợi.
  * Trả bảng đếm — cấm trả `void`, vì cái duy nhất chứng minh vòng lặp đang làm việc là số.
+ *
+ * GL3c R2-N1 (+ /code-review #2 · vòng 2, đối kháng F4): mốc «danh sách lỗi liên tục» chỉ sống cho page mà vòng nạp NÀY thấy lỗi danh
+ * sách — `giuLoiDanhSach` chạy trong `finally`, nên kể cả khi vòng NÉM trước/giữa bước nạp (CSDL chập ở `trangThaiTran` / `dsPageDeNap`)
+ * thì mọi page khác vẫn bỏ mốc. Page không được nạp (ngắt đọc — bất kỳ đường nào ngắt · tắt bot · vượt trần · nguồn đóng · vòng ném) hoặc
+ * nạp mà không tới bước đọc danh sách (đổi sang webhook · không có trong sổ · lỗi khác) ⇒ lỗi trước quãng KHÔNG quan sát đó không nối với
+ * lỗi sau thành «liên tục»; mở lại phải đủ T_NGAT_DS lỗi liên tục mới ngắt lại. Page ngắt vì GỬI vẫn nạp: `nap.js` không nối chuỗi khi
+ * page đang ngắt. Vòng xử (boQuaNap) — kể cả khi ném — không đụng mốc.
  */
 export async function motLuot(pool, deps = {}) {
+  const loiDsVong = [];   // GL3c: page vòng nạp này THẤY danh sách hội thoại lỗi
+  try {
+    return await motLuotTrong(pool, deps, loiDsVong);
+  } finally {
+    if (!deps.boQuaNap) giuLoiDanhSach(loiDsVong);
+  }
+}
+
+async function motLuotTrong(pool, deps, loiDsVong) {
   const ket = {
     nap: { mo: nguonDangMo(), them: 0, trung: 0, page: 0, loi: 0,
       boQuaPageNoiCuoi: 0, boQuaMoc: 0, boQuaDaDoc: 0, boQuaThe: 0, docTinLoi: 0, dsLoi: 0 },
@@ -105,7 +121,6 @@ export async function motLuot(pool, deps = {}) {
   const ngat = pageDangNgat();
   ket.ngat = { so: ngat.length, doc: ngat.filter((x) => x.vi === "doc").length, gui: ngat.filter((x) => x.vi === "gui").length };
   const boNap = new Set(ngat.filter((x) => x.vi === "doc").map((x) => x.pageId));
-  const loiDsVong = [];   // GL3c: page vòng nạp này THẤY danh sách hội thoại lỗi
 
   if (!ket.nap.mo) {
     ket.nap.lyDo = lyDoNguonDong();
@@ -149,11 +164,7 @@ export async function motLuot(pool, deps = {}) {
       }
     }
   }
-  // GL3c R2-N1 (+ /code-review #2): mốc «danh sách lỗi liên tục» chỉ sống cho page vòng nạp NÀY thấy lỗi danh sách. Page không được nạp
-  // (ngắt đọc — bất kỳ đường nào ngắt · tắt bot · vượt trần · nguồn đóng) hoặc nạp mà không tới bước đọc danh sách (đổi sang webhook ·
-  // không có trong sổ · lỗi khác) ⇒ bỏ mốc: lỗi trước quãng KHÔNG quan sát đó không nối với lỗi sau thành «liên tục»; mở lại phải đủ
-  // T_NGAT_DS lỗi liên tục mới ngắt lại. Page ngắt vì GỬI vẫn nạp: `nap.js` không nối chuỗi khi page đang ngắt. Vòng xử (boQuaNap) không đụng.
-  if (!deps.boQuaNap) giuLoiDanhSach(loiDsVong);
+  // (mốc «danh sách lỗi liên tục» được tỉa ở `finally` của `motLuot` — cả khi vòng ném; xem chú thích ở đó)
   if (deps.boQuaXu) return ket;
   ket.xu = await chayToiKhiHet(pool, {
     toiDa: TRAN_MOI_LUOT,

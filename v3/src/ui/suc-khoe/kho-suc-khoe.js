@@ -519,8 +519,9 @@ function soTinGiu(x) {
  * ⑤b NGẮT KÊNH PANCAKE (GL4 ② 7): ĐỎ khi có page của team đang ngắt — nói page nào, ngắt đọc hay gửi, tới mấy giờ (giờ VN), vì
  * sao, bot tự thử lại lúc đó, bao nhiêu tin đang giữ, bao nhiêu tin gửi lỗi cần đối chiếu (việc «Gửi không rõ…» MỞ của team).
  * Phủ (GL3c): gửi/đọc lỗi ở worker (GL4) · DANH SÁCH hội thoại lỗi liên tục ≥ 2′ ở bước NẠP ⇒ ngắt đọc · lịch sử lỗi KÊNH khi bộ nạp
- * đọc ⇒ đếm như worker. ⚠️ Không phủ: Pancake chập dưới 2′ ở bước nạp (chỉ dòng log của worker) · lỗi của MỘT hội thoại (giao sale ở
- * lượt 3, không ngắt page): xanh ≠ chưa có lần chập nào.
+ * đọc ⇒ đếm như worker (ở lượt lỗi ĐẦU của mỗi sự cố). ⚠️ Không phủ: Pancake chập dưới 2′ ở bước nạp (chỉ dòng log của worker) · lỗi của
+ * MỘT hội thoại — không ngắt page, đèn vẫn xanh; khách đó đi đường giao sale CÓ việc: lỗi dữ liệu ở lượt 3 (≈ 90 s), lỗi kênh ở riêng nó
+ * ở lượt 5 (≈ 7,5′, chỉ khi page không ngắt): xanh ≠ chưa có lần chập nào.
  */
 function denNgatKenh(ngat, x, viec) {
   const ten = 'Ngắt kênh Pancake';

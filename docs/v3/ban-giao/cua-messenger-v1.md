@@ -66,9 +66,11 @@ gatThe(pool, ctx, { pageId, psid, convId, name, on? = true });            // →
   khớp ý đồ có sẵn (README nguyên tắc 10 «đọc lịch sử trước khi trả lời»), không đổi ý đồ.
 - **`LoiDocLichSu.capKenh` (PHIẾU GL4, 07/10/2026):** lỗi mang thêm cờ phân loại — `true` = lỗi
   CẤP KÊNH (vòng xoay cạn token: quyền 103/105/121 · mạng · quá hạn ở MỌI token; không còn token
-  nào; thân hỏng 502/504; 121 dạng KHÔNG mã «Không tìm thấy gói cước»), `false` = lỗi của MỘT
-  hội thoại («Thiếu mã khách hàng», thân không danh sách). Phân loại ở `pancake.js#pkDocTin`
-  theo CẤU TRÚC (`ok:false` trả kèm `capKenh`), không theo câu chữ. Worker đếm `capKenh:true`
+  nào; thân hỏng 502/504; 121 dạng KHÔNG mã «Không tìm thấy gói cước»; **GL3c vòng 2 (08/10):** HTTP ≥ 500 · 408 · 429
+  kể cả khi thân là JSON, và thân/câu KHÔNG nhận ra được — câu lạ, `{}`, `null`, `{success:false}` trơn), `false` CHỈ khi là
+  lỗi ĐÃ BIẾT của MỘT hội thoại («Thiếu mã khách hàng» với HTTP không phải 5xx/408/429; thân 2xx không lỗi mà thiếu danh sách
+  tin). Phân loại ở `pancake.js#laLoiKenhDoc` (cấu trúc + mã HTTP `goiPancake` gắn vào thân JSON dưới dạng thuộc tính không
+  liệt kê + danh sách câu đã biết); `pkDocTin` trả `ok:false` kèm `capKenh`. Worker đếm `capKenh:true`
   vào «ngắt cả page 30′» (`queue/ngat-page.js`); bộ nạp KHÔNG đếm (lỗi ở bước nạp ngoài GL4) — **GL3c sửa: bộ nạp
   CÓ đếm** (xem gạch dưới).
   Thêm dấu cho lỗi có sẵn, không đổi ý đồ (án lệ GL3b N7). Kết quả `{ok:false}` của `guiTin` /
@@ -87,7 +89,9 @@ gatThe(pool, ctx, { pageId, psid, convId, name, on? = true });            // →
   đọc 30′, ngắn hơn chỉ in log «N page lỗi danh sách») và worker page webhook (`queue/worker.js` — ném lại `LoiDocLichSu` giữ
   `capKenh` ⇒ nhánh GL3b: lùi 15 s · 30 s, hết lượt giao sale CÓ việc). Cùng phiếu: bộ nạp gặp `LoiDocLichSu` có
   `capKenh:true` ⇒ đếm vào ngắt (`ngat-page.js#ghiLoiKenh`) theo HỘI THOẠI (khoá `-hoi_thoai.id` — worker đếm lỗi ĐỌC bằng
-  CÙNG khoá); `capKenh:false` (lỗi dữ liệu) tới lượt thứ 3 ⇒ bộ nạp giao sale CÓ việc (`ly_do_cuoi='doc_lich_su_loi_ben'`).
+  CÙNG khoá) CHỈ ở lượt lỗi ĐẦU của một sự cố (GL3c vòng 2: lượt đọc lại của cùng sự cố không đếm lại); lỗi kênh ở RIÊNG một
+  hội thoại tới lượt thứ 5 của sự cố (≈ 7,5′) mà page KHÔNG ngắt ⇒ bộ nạp giao sale CÓ việc (cùng hàm, cùng điều kiện); `capKenh:false`
+  (lỗi dữ liệu) tới lượt thứ 3 ⇒ bộ nạp giao sale CÓ việc (`ly_do_cuoi='doc_lich_su_loi_ben'` cho cả hai, `ly_do_day` nói loại lỗi).
   Sửa mã cho khớp ý đồ có sẵn (README nguyên tắc 9 · 13), không đổi ý đồ.
 
 ## 2 · ⚠️ `psid` ≠ `convId` của Pancake — ĐỌC KỸ TRƯỚC KHI GỌI
