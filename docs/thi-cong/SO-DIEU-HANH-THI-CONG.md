@@ -1895,6 +1895,25 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + RP2 + GL3c (vòng 2 — hồi quy ch
   - **N-GP1-CHON-THEO-KHUNG** lựa chọn «không áp» chỉ nhớ trong khung đang mở (qua áp / 409 / «Thử lại»); F5 trình duyệt hay mở lại khung ⇒ bảng mặc định.
   - **N-GP1-VACH-CANH-BAO-CHUNG** (/code-review vòng 2 #9) bảng GP1 mượn `data-kieu="hang-doi"` chỉ để có vạch `tr[data-muc]` — tách luật vạch thành luật
     chung của `.data-table` (`v3/src/ui/chung/kieu.css`, ngoài pathspec).
+- 08/10 · GL3c vòng 2 (thợ) — trả đủ N-GL3B-NAP-LOI-BEN (phần kênh: F1) · trả N-GL4-5XX-JSON (F3) · commit `0c65380`. Nợ mới (chi tiết + kịch bản:
+  `docs/thi-cong/nhat-ky/phieu-gl3c.md` § Vòng 2 · Nợ vòng 2):
+  - **N-GL3C-CAU-LA-NGAT-LAP** (/code-review vòng 2 #1) F3 xếp câu/thân LẠ là lỗi KÊNH: hai hội thoại cùng page mà Pancake trả câu lỗi riêng chưa biết ⇒ lượt
+    kênh đầu hai sự cố liền nhau ⇒ ngắt 30′, mở lại ngắt tiếp (G1 — page câm theo chu kỳ, đèn đỏ, hai khách không được giao); một hội thoại thì giao ở lượt
+    kênh 5 (≈ 7,5′) thay vì lượt 3. Cần đo prod thân lỗi /messages (mã HTTP + câu) để lấp `CAU_DU_LIEU_DA_BIET`; người quyết: có xếp 4xx có câu là dữ liệu.
+  - **N-GL3C-KENH-NGAT-GUI-LAP** (/code-review soát lại) page ngắt GỬI lặp nhiều giờ (Meta phạt) ⇒ hội thoại lỗi kênh bền không tới lượt 5 (lúc ngắt đếm về 0
+    — chặn giao hàng loạt khi mở) ⇒ không giao; đèn ngắt kênh đỏ suốt quãng. Hướng: (a) ngắt gửi vẫn giao nếu cùng vòng có lượt đọc OK của khách khác ·
+    (b) đóng băng đếm, lượt đầu sau mở chỉ đếm GL4 (không cứu khung mở < 5′).
+  - **N-GL3C-KENH-GIAO-XEN-DOC-OK** (/code-review vòng 2 #5) Pancake hỏng MỘT PHẦN (nhóm hội thoại lỗi kênh bền, khách khác đọc OK chen giữa) ⇒ GL4 không ngắt
+    (chỉ lượt kênh đầu đếm), cả nhóm giao riêng ở lượt 5 — đúng ý F1 nhưng chưa có trần số hội thoại giao vì kênh mỗi page.
+  - **N-GL3C-SU-CO-THEO-LICH-LUI** (/code-review vòng 2 #4) «sự cố» suy từ `lan` của lịch lùi (về 1 khi đọc lại trễ ≥ 5′) ⇒ vòng nạp > 5′ (nhiều page + Pancake
+    chậm) thì mọi lượt là sự cố mới: F2 «giữ thường trực» quay lại, lượt kênh không lên 5. Pilot 1 page không chạm. Vá đúng: định danh sự cố tách lịch lùi.
+  - **N-GL3C-KENH-ROI-DI-20P** khách rời đi rồi quay lại / page hết ngắt gửi: đếm kênh đặt lại, lịch lùi giữ (neo gl3b ⑤o) ⇒ 5 lượt cách 5′ ⇒ giao ≈ 20′.
+  - **N-GL3C-DONG-CHI-CHO-DOT-BIEN** `pancake.js#thanDocNhanRa`: vế `permErr(j)` và hình 121 không mã chỉ chạm được khi bỏ vế khác (giữ để đảo-vá gl4 ⑤s/⑤r
+    còn đo vế cạn-token / 121); hình 121 viết hai chỗ (ca V3b canh). Gọn lại cần đổi neo gl4.sh.
+  - **N-GL3C-DOT-BIEN-SONG** (cập nhật vòng 2) thêm: hai vế trên (S2 · S8) · `Array.isArray`/`Object.isExtensible` trong phân loại · `loi_kenh` nhật ký giao.
+  - nối **N-GL3C-NAP-HAI-HOI-THOAI-MOT-CHAP**: F3 mở rộng lớp lỗi kênh (5xx JSON · câu lạ) ⇒ một lần chập 5xx trúng hai hội thoại cùng vòng nạp nay là ngắt
+    30′ (tin giữ) — trước vòng 2 là lỗi dữ liệu, chập ≥ 90 s là giao sale hàng loạt.
+
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3589,3 +3608,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 08/10 · SOÁT «CẤU HÌNH NGẦM» (người quyết hỏi «cái gì config để AI chat chính xác mà chưa có trên giao diện, đang bật ngầm») — `scratchpad/cau-hinh-ngam.md`: 8 🔴 chạm pilot (ngân sách lượt khách lạnh 1/24h viết cứng · lớp im nhường Botcake toàn hệ, cột `botcake_tat` không được đọc · nhận diện sale luôn bật ở v3 · mất Chính sách/FAQ/Phản đối khi bật cờ CSDL · kiến thức sản phẩm 0/227 · vai OFW/Tagalog viết cứng · thẻ «AI back Sale» viết cứng · luật CSDL cũ) + 9 🟡 nên đưa lên giao diện
   NGƯỜI QUYẾT (AskUserQuestion): ngân sách «Hạ ngưỡng lên "ấm"» (AM_THRESHOLD 2→1) · tiếp quản «Tắt ở v3 theo biến cũ» (`HUMAN_TAKEOVER=0` có hiệu lực ở v3) · chính sách «Nối vào trước pilot» ⇒ phiếu RP2 🟥 (Đụng bộ não `lead-score.js`)
   · H-GL viết lại: GIỮ Botcake chào (chỉ tắt ai_sale) + checklist chọn page (khách Philippines GCC · poll · kịch bản LIVE · 2 thẻ · kiến thức SP · Botcake bắt «hi») · 🟡 còn lại vào ⑥ RP2 / §9 (đưa lên giao diện sau pilot)
+- 08/10 · GL3c vòng 2 → 🔎 chờ nghiệm thu — đối kháng F1–F4: bộ nạp đếm lỗi kênh vào GL4 chỉ ở lượt kênh ĐẦU của sự cố (F2 «giữ thường trực») · lỗi kênh ở riêng một hội thoại lượt 5 (≈ 7,5′) mà page không ngắt ⇒ giao sale CÓ việc, page đang ngắt (cả ngắt gửi) không tích lượt — mở lại không giao hàng loạt (F1) · HTTP ≥ 500/408/429 hoặc thân lạ ⇒ KÊNH, chỉ «Thiếu mã khách hàng» + thân 2xx thiếu danh sách tin là DỮ LIỆU (F3) · motLuot tỉa mốc lỗi danh sách trong finally (F4)
+  `gl3c.sh` 76/76 rc=0 (33 ca × 2 múi giờ · 49 đảo-vá đỏ đúng · gl4 44/44 · gl3b 49/49 (⑤d⑤o⑤b ✅) · gl3 25/25 · 12 bộ ca rc=0) · đỏ trên base vòng 2 9/13 (V1e V2b V2c V4b lưới chống vá quá tay) · ca đối kháng trên mã cuối 7/8 ở 2 múi giờ (RF1d đỏ ĐÚNG luật GL4 — tổng gật) · npm test 2706→2719 / 0 đỏ · /code-review 9 + soát lại 1: vá 5 (#2 #3 #6 #7 · #8 theo chiều chặn giao hàng loạt) · bác 5 kèm nợ §9 N-GL3C-*
+  · commit 0c65380 · nhật ký docs/thi-cong/nhat-ky/phieu-gl3c.md § Vòng 2

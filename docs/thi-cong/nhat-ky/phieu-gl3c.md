@@ -330,3 +330,265 @@ Bản vá review cũng là code mới (bẫy 26): đảo-vá ③w và ③x đo �
   - G4 tin tới sau khi bộ nạp đã giao chặn «trả AI» (N-GL3B-TRA-AI-CHAN-GUARD);
   - «Thiếu mã khách hàng» đi cùng `custId` rỗng thì giao ngay ở lượt 1 (đo khi mở van);
   - `luiDocTin` và `dsLoiTu` ở RAM nên restart là đếm lại.
+
+---
+
+# VÒNG 2 — đối kháng refute-gl3c F1–F4 (08/10/2026 · thợ GL3c vòng 2)
+
+**Môi trường đo:** máy dev (Node v24, macOS), cùng khung như vòng 1: `fetch` GIẢ trong mọi ca (host khác `pages.fm` thì ném), 2 token giả, hộp cát
+Postgres 127.0.0.1:5432 (`aicloser_v3_test_gl3c_{nap,wh,v2}_p<pid>`, tự dựng/dọn). Không lượt mạng thật, không đo prod, không đo `aicloser_v3`.
+`.env` giữ nguyên (`PANCAKE_READONLY=1`, `HUMAN_TAKEOVER=0`). **Base vòng 2 = `27dd9d0`.** Giữa lượt, tổng thêm 3 commit tài liệu (`9f2755c` ·
+`1ff44c6` · `83f5f6f`: phiếu RP1 + sổ), không đụng tệp của tôi. Tôi là thợ duy nhất trong cây chung. Pathspec vòng 2 + `docs/v3/ban-giao/cua-messenger-v1.md`
+(tổng gật 08/10, CHỈ các câu :67-71 · :88-90).
+**Commit mã: `0c65380`** · verdict `scratchpad/refute-gl3c.verdict.yaml`.
+
+## ⑦ ĐÃ TRA CHƯA (output máy)
+```
+$ awk '/^## §9 /,/^## §9b/' SO-DIEU-HANH-THI-CONG.md | grep -nE "N-GL3C-NAP-KENH-MOT-HOI-THOAI|N-GL3C-HOI-THOAI-HONG-NAP-DEM|N-GL3C-JSON5XX-GIAO-HANG-LOAT|N-GL4-5XX-JSON|N-GL3B-NAP-LOI-BEN|N-GL3C-NAP-HAI-HOI-THOAI-MOT-CHAP"
+1291:  - **N-GL3B-NAP-LOI-BEN** (/code-review #3) page POLL: đọc lịch sử lỗi BỀN (121 không ghế gói · «Thiếu mã khách hàng» · Pancake sập lâu) ⇒ bộ nạp lùi
+1384:  - **N-GL4-5XX-JSON** HTTP 5xx mà thân là JSON không được tính lỗi kênh khi ĐỌC (`goiPancake` không đưa mã HTTP ra) — chỉ 502/504 HTML (thân hỏng).
+1442:- 07/10 · GL3c (thợ) — trả N-GL3B-NAP-LOI-BEN · N-GL3B-CONV-NUOT-LOI · N-GL4-NAP-KHONG-DEM · N-GL3B-WEBHOOK-MAPPING (phần danh sách đọc lỗi; …
+1447:  - **N-GL3C-NAP-HAI-HOI-THOAI-MOT-CHAP** (/code-review #3, bác theo ② 3 · ④2) bộ nạp đọc lịch sử tuần tự (cách nhau ms) ⇒ …
+```
+Ba neo đề nghị của verdict (N-GL3C-NAP-KENH-MOT-HOI-THOAI · N-GL3C-HOI-THOAI-HONG-NAP-DEM · N-GL3C-JSON5XX-GIAO-HANG-LOAT) chưa có trong sổ. Vòng 2 vá
+nên không ghi chúng. Quan hệ: **trả đủ** N-GL3B-NAP-LOI-BEN (vòng 1 chỉ trả phần dữ liệu, phần kênh trả ở F1) · **trả** N-GL4-5XX-JSON (F3).
+
+## Bước 3 — đo lại nguyên liệu đề bài (ở base vòng 2)
+- `nap.js:659-662` là `if (!duLieu && ht?.id != null) { ghiLoiKenh … }`, chạy ở MỌI lượt lỗi kênh. `nap.js:637-641` là `duLieu = e.capKenh !== true`. Cả hai đúng.
+- `pancake.js:395-398` `laLoiKenhDoc` tự khai giới hạn «HTTP 5xx mà thân là JSON». `goiPancake` (`:182-192`) trả JSON bất kể `res.status` ⇒ muốn xét mã HTTP thì
+  phải mang mã ra từ đây (không thêm lời gọi `goiPancake(`, giữ neo gl3/gl4/gl3b «6 lần»).
+- `chay-worker.js:156` `giuLoiDanhSach` nằm ngoài mọi `finally`. Các điểm ném trước nó: `:98` trangThaiTran · `:99` dsChoPhep · `:115` dsPageDeNap. Đúng.
+- `kho-suc-khoe.js:522` khai «lỗi của MỘT hội thoại (giao sale ở lượt 3…)», sai với lỗi kênh. Đúng.
+- **RF1d nguyên văn** (lỗi ĐẦU của X ở bộ nạp, NGAY sau đó Z chập một lượt ở worker, giữa hai lỗi không có lượt đọc OK nào) là luật GL4 «2 khoá khác nhau liền nhau». Bản vá
+  `lan === 1` không đổi được ca này, và cũng không được đổi: P2 · P2b canh đúng luật đó. Đã báo tổng, tổng gật 08/10 «ngắt là ĐÚNG». Phần hồi quy F2 tôi sửa là biến
+  thể **«giữ thường trực»**: X hỏng bền tự nạp lại đếm sau mỗi `ghiDocTot` của khách khác. Ca riêng V2a canh biến thể này, ca V2b canh luật RF1d.
+- Neo phải giữ nguyên (đếm lại SAU mã mới, mỗi chuỗi đúng 1 lần): gl3b ⑤d · ⑤e · ⑤n · ⑤o (nap.js) · gl4 ⑤j · ⑤z (chay-worker.js) · gl4 ⑤r · ⑤s · gl3b ⑤m ⑤v ⑤w ⑤x* ·
+  gl3 ④* (pancake.js) · `fetch(` = 1 · `goiPancake(` = 6 · không export mới. Cả ba cổng lồng xanh (dưới).
+
+## Danh sách ca (viết TRƯỚC mã — `test/gl3c-vong2.test.mjs`)
+| ca | nhóm | kịch bản |
+|---|---|---|
+| V1a | HÀNH VI trọn đường · BIÊN | MỘT khách X, /messages 502 bền, page không ngắt: lượt 1–4 (0·30·90·210 s) chưa giao, GL4 = 1; lượt 5 (450 s) ⇒ SALE/HANDOFF, đúng 1 việc «lỗi kênh ở riêng hội thoại này · 5 lượt · 8′ · mốc thô», không đọc X nữa, «trả AI» THÀNH |
+| V1b | CHẶN | page đang ngắt GỬI (vẫn nạp): 6 lượt không tích lượt giao, GL4 đứng yên; mở thật ⇒ lượt đầu sau mở đếm GL4 (khoá -X); lượt 5 SAU MỞ mới giao (20′) |
+| V1c | BIÊN (khác lỗi dữ liệu P3b) | X lượt 1–4 → page ngắt ĐỌC (Z cùng vòng) → mở thật ⇒ sự cố mới: GL4 lại 1, lượt 1–4 mới không giao, lượt 5 mới giao (8′) |
+| V1d | BIÊN | X lượt 1–4 → page nói cuối (rời đi) → khách nhắn lại ⇒ đếm kênh lại từ 1 (như P3c); lịch lùi giữ (5′/lượt) ⇒ giao ở lượt 5 mới (20′) |
+| V1e | CHẶN (không giao hàng loạt) | X, Y lỗi kênh suốt quãng ngắt gửi → mở ⇒ vòng kế page NGẮT ĐỌC, 0 việc |
+| V2a | CHẶN (hồi quy F2) | X lượt 1 đếm 1 → W đọc OK (0) → X lượt 2 KHÔNG nạp lại → Z chập 1 lượt ⇒ không ngắt (đếm 1); Z đọc lại OK ⇒ xong |
+| V2b | CHO-QUA luật GL4 (RF1d nguyên văn) | X lỗi đầu + Z chập ngay, không đọc OK chen giữa ⇒ NGẮT |
+| V2c | BIÊN (/code-review #6) | X lỗi dữ liệu lượt 1 rồi lỗi kênh lượt 2 (lan 2) ⇒ lỗi kênh đầu vẫn đếm GL4 |
+| V3a | HÀNH VI trọn đường (RF2) | X, Y, Z HTTP 500 JSON 100 s rồi lành ⇒ ngắt đọc «HTTP 500», không ai SALE, 0 việc; mở ⇒ cả ba vào hàng, bot trả lời |
+| V3b | bảng phân loại (đơn vị, cửa thật) | 500/503/429/408 · 502 HTML · «Thiếu mã» ở 500/429/408 · câu lạ · `{}` · `null` · `{success:false}` · 121 · «gói cước» lệch hình ⇒ KÊNH; «Thiếu mã» (200/404) · `{success:true}` · `{success:true,message}` ⇒ DỮ LIỆU; danh sách 500 JSON · `null` ⇒ lỗi danh sách KÊNH |
+| V3c | HÀNH VI ở worker | tin A, B đọc HTTP 500 JSON ⇒ GL4 ngắt đọc (trước vòng 2: lỗi dữ liệu, không đếm) |
+| V4a | CHẶN · CHO-QUA (RF3) | danh sách lỗi t0 → 10′ motLuot NÉM (xen dsPage · dsChoPhep) → 1 lỗi ⇒ không ngắt; đủ 2′ sau đó ⇒ ngắt |
+| V4b | BIÊN | vòng XỬ (boQuaNap) ném giữa hai vòng nạp không cắt chuỗi ⇒ t0 + 2′ ⇒ ngắt |
+
+Nhánh ca không chạm (khai): nhánh ROLLBACK của `giaoSaleLoiBen` khi giao vì kênh (chung hàm, như vòng 1) · `Object.isExtensible` (thân đóng băng, không có ở Pancake thật).
+
+## Ca ĐỎ trên base vòng 2 → XANH
+Tệp `test/gl3c-vong2.test.mjs` chạy trên bản sao base vòng 2 (`git archive 27dd9d0` + tệp dữ liệu gitignore), máy dev, hộp cát riêng:
+
+| ca | base | sau | trên base đỏ vì |
+|---|---|---|---|
+| V1a | ✖ | ✔ | lượt 5 vẫn AI/GREET, 0 việc |
+| V1b | ✖ | ✔ | không bao giờ giao |
+| V1c | ✖ | ✔ | lượt 5 của sự cố mới không giao |
+| V1d | ✖ | ✔ | không bao giờ giao |
+| V1e | ✔ | ✔ | (lưới cho bản vá — đỏ dưới đảo-vá ③z4 «tích lượt lúc page ngắt») |
+| V2a | ✖ | ✔ | sau X lượt 2: `đếm=1 khoá=-23` ⇒ Z chập 1 lượt ⇒ ngắt |
+| V2b | ✔ | ✔ | (luật GL4, RF1d nguyên văn — đỏ dưới ③d) |
+| V2c | ✔ | ✔ | (lưới cho bản vá — đỏ dưới ③y3 «cổng theo lan») |
+| V3a | ✖ | ✔ | «Internal Server Error» ⇒ DỮ LIỆU ⇒ không ngắt, lượt 3 giao |
+| V3b | ✖ | ✔ | `json500: phải là KÊNH — câu «Internal Server Error»` |
+| V3c | ✖ | ✔ | worker không đếm 5xx JSON ⇒ không ngắt |
+| V4a | ✖ | ✔ | ngắt «Pancake không trả danh sách hội thoại 10′ liên tục …» |
+| V4b | ✔ | ✔ | (lưới cho bản vá — đỏ dưới ③F4b) |
+
+Đỏ trên base 9/13. Bốn ca xanh trên base là lưới chống vá-quá-tay / vá-sai-chiều; mỗi ca có một đảo-vá đỏ đúng nó (dưới).
+
+## Đã làm (commit `0c65380`)
+1. `src/queue/nap.js` (F1 · F2): `luiDocTin` thêm `luotKenh`/`tuKenh`; hằng có tên `LUOT_LOI_KENH_GIAO_SALE = 5` (export). Lỗi kênh tích `luotKenh`
+   theo sự cố (`lan` về 1 ⇒ đếm lại; page đang ngắt — đọc hay gửi — ⇒ về 0). `luotKenh ≥ 5` ⇒ CÙNG `giaoSaleLoiBen` (cùng điều kiện AI + GREET/QUALIFY/
+   SELLING + page bật + không webhook), `ly_do_day` «Pancake lỗi kênh ở riêng hội thoại này (page KHÔNG ngắt): N lượt lỗi trong T (lỗi đầu HH:MM giờ VN):
+   <câu> — bot CHƯA trả lời, CHƯA gửi gì · khách nhắn lần cuối …», nhật ký `sau.loi_kenh`. `ghiLoiKenh` ở bộ nạp chỉ khi `luotKenh === 1`. `roiDi` đặt
+   lại cả đếm kênh. Chú thích khối GL3c ② viết lại cho đúng phạm vi.
+2. `src/pancake.js` (F3): `goiPancake` gắn `maHttp` (thuộc tính KHÔNG liệt kê) vào thân JSON. `laLoiKenhDoc` thêm MỘT dòng «HTTP ≥ 500/408/429 hoặc
+   thân không nhận ra ⇒ kênh», đặt GIỮA hai dòng neo gl4 ⑤s/⑤r (cả hai nguyên văn). `thanDocNhanRa` coi là «nhận ra»: mã quyền (vòng xoay đã phân xử),
+   thân 2xx không báo lỗi (kể cả `success:true` có câu), 121 không mã đúng hình đã đo, «Thiếu mã khách hàng». `lyDoDocLoi` nói «Pancake lỗi (HTTP N) —
+   câu» cho mã kênh. `pkGetConversations` đọc `j?.conversations` (thân `null` không ném TypeError).
+3. `src/queue/chay-worker.js` (F4): `motLuot` thành vỏ `try { return motLuotTrong(…) } finally { if (!boQuaNap) giuLoiDanhSach(loiDsVong) }`. Thân giữ
+   nguyên thụt lề (neo gl4 ⑤j ⑤z · gl3c ③x ③u không đổi một byte).
+4. Chỉ đổi câu: `kho-suc-khoe.js` (chú thích đèn — ②c: 0 dòng ngoài câu) · `messenger/loi.js` (khối `LoiDocLichSu`/`LoiDocHoiThoai`) ·
+   `docs/v3/ban-giao/cua-messenger-v1.md` :67-71 · :88-90 (tổng gật).
+5. Thước: `test/gl3c-vong2.test.mjs` (13 ca; khung chép nguyên vòng 1) · `gl3c.sh`: ①v2 · ①c thêm tệp mới (sàn 33) · neo ③d ③e ③f ③v theo mã mới
+   (giữ ý đột biến) · 23 đảo-vá vòng 2.
+`messenger/index.js` và `ngat-page.js` không phải đổi. `gl3b.sh` · `gl4.sh` không đổi (②d).
+
+## Quyết định (luật 11 · 13 — ghi tại chỗ quyết)
+1. **F3: chọn danh sách câu ĐÃ BIẾT** (đúng chữ phiếu) thay vì phân loại thuần cấu trúc. Giá phải trả: câu lỗi riêng một hội thoại mà ta chưa biết nay là
+   KÊNH. Một hội thoại như vậy được giao ở lượt 5 (≈ 7,5′) thay vì lượt 3. Hai hội thoại cùng lúc thì page ngắt 30′ và ngắt lặp (G1) — nợ
+   N-GL3C-CAU-LA-NGAT-LAP.
+2. **F3: giữ nguyên văn hai dòng neo gl4** (⑤s vế cạn-token · ⑤r 121 không mã) và giữ cho ⑤s/⑤r còn đo được. Muốn vậy `thanDocNhanRa` phải coi mã quyền
+   và hình 121 là «đã nhận ra», để dòng cuối phân xử. Hai vế đó chỉ chạm được khi bỏ một vế khác, nên trong bộ ca chúng là đột biến sống (S2 · S8) và
+   chỉ đảo-vá gl4 đo được chúng — nợ N-GL3C-DONG-CHI-CHO-DOT-BIEN. Hình 121 viết ở hai chỗ; ca V3b canh cả hai hướng lệch hình.
+3. **F3: mã HTTP thắng câu đã biết** («Thiếu mã khách hàng» ở 500/429/408 ⇒ kênh): 5xx là Pancake hỏng, câu đi kèm không đáng tin.
+4. **F3: phân loại dùng chung**, nên worker cũng đổi theo: 5xx JSON / thân lạ ở worker nay đếm GL4 (V3c). Trước đó là lỗi dữ liệu, giao sau 3 lượt. Cùng
+   chiều F3.
+5. **F2: cổng đếm GL4 là `luotKenh === 1`** (lỗi kênh ĐẦU của sự cố), không phải `lan === 1` theo chữ phiếu (/code-review #6). Lý do: sự cố mở bằng lỗi dữ
+   liệu rồi Pancake sập thì `lan === 1` bỏ mất lần đếm. Với sự cố toàn kênh, hai cách cho cùng kết quả.
+6. **F1: «sự cố» = `lan`** (về 1 sau ≥ 5′ không đọc, gồm cả quãng ngắt ĐỌC 30′). Vì vậy quãng ngắt đọc đặt lại đếm kênh — khác lỗi dữ liệu, vốn đếm gộp
+   (P3b). Làm vậy để chuỗi ngắt-mở-lỗi lặp lại không biến thành giao (P2 3 chu kỳ 0 việc vẫn giữ). Giới hạn: vòng nạp > 5′ — nợ N-GL3C-SU-CO-THEO-LICH-LUI.
+7. **F1: page ĐANG ngắt (đọc hay gửi) ⇒ `luotKenh` về 0**, mở lại đếm từ 1 và lượt đầu đếm GL4. Lý do: lúc ngắt bộ đếm GL4 đứng yên; nếu vẫn tích lượt
+   thì Pancake sập trong quãng ngắt gửi ⇒ mở ra là mọi khách lỗi kênh giao cùng lúc (V1e). Giá phải trả: page bị ngắt gửi lặp (Meta phạt dài) ⇒ X không
+   tới lượt 5 (/code-review soát lại) — nợ N-GL3C-KENH-NGAT-GUI-LAP. Chọn chặn giao hàng loạt, vì phiếu ghi «page KHÔNG ngắt mới giao».
+8. **F1: `roiDi` đặt lại đếm kênh** như đếm dữ liệu (P3c): khách quay lại là sự cố mới. Lịch lùi vẫn giữ (neo gl3b ⑤o), nên phải đủ 5 lượt cách nhau 5′,
+   tức ≈ 20′ (V1d).
+9. **F1: `ly_do_cuoi` giữ `doc_lich_su_loi_ben` cho cả hai loại** (cùng hàm, không thêm giá trị mới cho màn/đếm). `ly_do_day` nói loại lỗi; nhật ký có
+   `sau.loi_kenh`.
+10. **F4: vỏ `try/finally` thay vì bọc riêng khối nạp**, vì bọc riêng thì phải thụt lề các dòng đang là neo gl4.sh ⑤j/⑤z (/code-review #9). Giá phải trả: ở
+    chế độ một lượt (nạp + xử), việc tỉa mốc chạy sau pha xử. Pha xử không đọc/ghi `dsLoiTu` nên kết quả không đổi (V4a · V4b · ③F4a · ③F4b).
+11. **`lyDoDocLoi` nói mã HTTP:** page nay ngắt vì 5xx JSON thì lý do ngắt và đèn phải nói vì sao (V3a: «Pancake lỗi (HTTP 500) — Internal Server Error
+    (đọc)»).
+12. **`pkGetConversations` đọc `j?.conversations`** (/code-review #3): sửa 1 ký tự, nằm trong ý F3 «thân lạ ⇒ lỗi», nhưng ngoài chữ bốn mục — khai ở Lệch.
+
+## Cổng `ops/bin/nghiem-thu/gl3c.sh` — lượt cuối
+```
+$ bash ops/bin/nghiem-thu/gl3c.sh        # 08:49:06 → 08:53:31 (4′26″) · máy dev · hộp cát 127.0.0.1:5432 · cây chính, nội dung = 0c65380
+✅ ⓪.env-PANCAKE_READONLY=1
+✅ ①a … pass=17 fail=0 · ✅ ①b … pass=3 · ✅ ①v2-vòng-2 pass=13 fail=0 · xanh: V1a V1b V1c V1d V1e V2a V2b V2c V3a V3b V3c V4a V4b
+✅ ①c-cả-bộ-ở-TZ=UTC-PGTZ=UTC pass=33 fail=0
+✅ ①c-cả-bộ-ở-TZ=America/Los_Angeles-PGTZ=Asia/Tokyo pass=33 fail=0
+✅ ②a không export mới · ✅ ②b fetch( 1 · goiPancake( 6 · ✅ ②c kho-suc-khoe 0 dòng ngoài câu · ✅ ②d gl4.sh · gl3b.sh không đổi
+✅ ③ 49/49 đảo-vá đỏ đúng ca khai · ✅ ③0 bản sao nguyên vẹn pass=33 fail=0
+✅ ④gl4.sh rc=0 · == ĐỎ 0 / XANH 44        (BO_CONG_CU=1 — ⑥ lồng của nó chạy riêng ngay dưới)
+✅ ④gl3b.sh rc=0 · == ĐỎ 0 / XANH 49 · ✅ ④b-gl3b-đảo-vá-⑤d·⑤o·⑤b-còn-đỏ-đúng ✅ 3/3
+✅ ④gl3.sh rc=0 · == ĐỎ 0 / XANH 25
+✅ ④ l1-m2-cua 17 · l2-m1-hang-doi 28 · l2-m1-nhac-truong 12 · va-p7-chay-worker 7 · phase1-chat-flow 12 · gl3b-worker-doc-loi 11 ·
+     gl3b-nap-doc-loi 7 · gl3b-pancake-van-hanh 5 · gl3b-vong2 4 · gl4-ngat-page 23 · gl4-chua-034 2 · suc-khoe 25   (mỗi tệp rc=0 fail=0)
+== ĐỎ 0 / XANH 76
+rc=0
+```
+Lượt 1 (trước khi vá theo /code-review) ra 72/72 rc=0. Lượt cuối chạy lại toàn bộ sau vá. Chuỗi gốc của cả 49 đảo-vá được kiểm bằng máy trước lượt
+cuối: mỗi chuỗi khớp đúng 1 lần.
+
+## Đảo-vá vòng 2 (bản sao tạm, mỗi đột biến một tiến trình node mới)
+Neo cũ theo mã mới (giữ ý): ③d `!duLieu && luotKenh === 1` → `false` (đòi P2 + V2b) · ③e · ③f (nhánh dữ liệu tắt ⇒ P3) · ③v (dòng `roiDi` mới).
+Mới, mỗi điều kiện vừa thêm một đột biến (bẫy 26) — tất cả ĐỎ ĐÚNG ca khai:
+
+| đột biến | đỏ |
+|---|---|
+| ③y1 F2 đếm lại mỗi lượt lùi | V2a |
+| ③y2 F2 vá quá tay (`!lui` — sự cố mới sau quãng ngắt không đếm lại) | P2 V1c |
+| ③y3 cổng theo `lan` thay lượt kênh đầu (/code-review #6) | V2c |
+| ③z1 bỏ giao lỗi kênh riêng một hội thoại | V1a V1b V1c V1d |
+| ③z2 biên `>=` → `>` | V1a V1c |
+| ③z3 giao kênh ở lượt 3 | V1a |
+| ③z4 tích lượt cả lúc page ngắt (/code-review #8) | V1b V1e |
+| ③z5 không đặt lại đếm kênh ở sự cố mới | V1c |
+| ③z6 rời đi không đặt lại đếm kênh | V1d |
+| ③F3a bỏ luật mã HTTP | V3b |
+| ③F3b bỏ luật thân lạ | V3b |
+| ③F3b2 bỏ cả hai (bản vòng 1) | V3a V3b V3c |
+| ③F3c goiPancake không gắn mã HTTP | V3a V3b V3c |
+| ③F3d mã HTTP là thuộc tính LIỆT KÊ | V3b |
+| ③F3e bỏ 408/429 | V3b |
+| ③F3f «Thiếu mã khách hàng» ra khỏi câu đã biết | P3 V3b |
+| ③F3g thân 2xx thiếu danh sách tin thành kênh | V3b |
+| ③F3i `success:true` có câu thành «báo lỗi» (/code-review #7) | V3b |
+| ③F3j «gói cước» mọi hình là câu đã biết (/code-review #2) | V3b |
+| ③F3k danh sách thân null ném TypeError (/code-review #3) | V3b |
+| ③F3h câu lỗi 5xx không nói mã HTTP | V3a V3b |
+| ③F4a tỉa mốc không nằm trong finally | V4a |
+| ③F4b vòng xử ném cũng tỉa mốc | V4b |
+
+**Đột biến nào KHÔNG đỏ** (chạy riêng trên bản sao, bộ gl3c-nap-loi + gl3c-webhook-legacy + gl3c-vong2 + gl4-ngat-page, mã cuối):
+- S2 bỏ vế `permErr(j)` trong `thanDocNhanRa` — sống. Chỉ đảo-vá gl4 ⑤s đo được (vế này chỉ chạm được khi bỏ vế cạn-token).
+- S8 bỏ hình 121 trong `thanDocNhanRa` — sống. Cả hai đường đều ra KÊNH; chỉ đảo-vá gl4 ⑤r đo được.
+- S3 bỏ kiểm `Array.isArray` · S4 bỏ `Object.isExtensible` — sống (Pancake không trả thân mảng / đóng băng; thuộc tính phòng thủ).
+- S6 nhật ký `loi_kenh` luôn false — sống (không ca nào đọc trường đó).
+Đã chết sau vá review: S1 lỗi dữ liệu cộng vào đếm kênh (V2c) · S5 đảo nhãn kênh/dữ liệu (V1a) · S7 bỏ nhánh câu (V3b) · S9 `tuKenh` không đặt lại khi
+page ngắt (V1b V1c).
+
+## Kịch bản phá của đối kháng chạy lại trên mã mới (tệp ca của đối kháng, không sửa)
+`scratchpad/gl3c-refute/test/refute-gl3c.test.mjs` chạy trên bản sao mã cuối (src · db · v3/src chép từ cây), hai múi giờ:
+```
+TZ=UTC PGTZ=UTC                         rc=1: ✔ RF1a ✔ RF1b ✔ RF1c ✖ RF1d ✔ RF1d0 ✔ RF2 ✔ RF3 ✔ RF4
+TZ=America/Los_Angeles PGTZ=Asia/Tokyo  rc=1: ✔ RF1a ✔ RF1b ✔ RF1c ✖ RF1d ✔ RF1d0 ✔ RF2 ✔ RF3 ✔ RF4
+[rf3c] RF1a sau 60′: GET X=5 · ngắt=«» đếm=1 khoá=-1 · X SALE/HANDOFF · việc=1 · tin trong hàng=0 · đèn=xanh …
+[rf3c] RF1b sau 60′: GET X=5 · tin khác đã xử=12 · ngắt=«» đếm=0 · X SALE · việc X=1
+[rf3c] RF1d X bền + Z chập 1 lượt: ngắt vi=«doc» «Pancake lỗi (HTTP 502) — thân trả về không phải JSON (đọc)» · tin Z=cho
+[rf3c] RF2 chập 100 s JSON 500 rồi lành: rf2-x:AI//việc=0 · rf2-y:AI//việc=0 · rf2-z:(chưa đọc)/việc=0 · ngắt=«Pancake lỗi (HTTP 500) — Internal Server Error (đọc)» · đèn=do
+[rf3c] RF3 sau 10′ vòng nạp NÉM + 1 lỗi: ngắt vi=«» «» · log «… 1 page lỗi danh sách (rf-3: danh sách hội thoại lỗi liên tục 0 s: …)»
+[rf3c] RF4 dáng thật: 5 khách SALE/doc_lich_su_loi, mỗi người việc=1, tin=xong · tổng việc=5 · ngắt=«»
+```
+- F1: RF1a · RF1b xanh. Trước vòng 2: 15 GET, 0 việc, đèn xanh. Nay X được giao ở lượt 5.
+- F2: RF1d ĐỎ, đúng luật GL4, tổng gật 08/10. Biến thể hồi quy «giữ thường trực» là V2a, xanh. RF1d0 (luật «một khách chập một lượt») xanh.
+- F3: RF2 xanh. Không ai SALE; page ngắt đọc 30′, giữ tin.
+- F4: RF3 xanh.
+- RF4 (dáng tiến trình thật) xanh: mỗi khách đúng 1 việc.
+
+## npm test (luật 6 — chạy khi không cổng nào sống)
+```
+trước (bản sao base 27dd9d0 + tệp dữ liệu gitignore, cùng máy):  ℹ tests 2706 · pass 2702 · fail 0 · skipped 4   rc=0
+sau   (cây chính, nội dung 0c65380):                            ℹ tests 2719 · pass 2715 · fail 0 · skipped 4   rc=0
+```
+Cả hai lượt skip cùng 4 ca: AI_LOG_FIXTURE · L8_MSG_FIXTURE · D7 · D9. Thêm 13 = 13 ca V*. Chạy bằng `npm test -- --test-force-exit` (N-GL3C-NPM-TEST-TREO).
+Lượt «trước» đầu tiên chạy trên bản `git archive` trần, ra 2684 pass / 22 skip. Lý do: thiếu tệp gitignore (`pages.json` …) nên các ca Y4-* · DV2 tự
+skip. Chép thêm tệp đó rồi chạy lại thì còn 4 skip, đúng như cây chính. Không lùi cây chung để đo «trước».
+
+## /code-review (high) — 9 phát hiện, kiểm chứng từng cái
+| # | phát hiện | xử lý |
+|---|---|---|
+| 1 | hai hội thoại «hỏng bền» lỗi kênh (F3 xếp câu lạ là kênh) ⇒ page ngắt lặp 30′, hai khách không được giao | BÁC theo phiếu («từ 2 hội thoại lỗi page ngắt trước — không giao hàng loạt»; G1 đã nhận). Ghi nợ N-GL3C-CAU-LA-NGAT-LAP (F3 mở rộng lớp kênh ⇒ G1 dễ chạm hơn) |
+| 2 | «gói cước» lệch hình (thiếu `success:false`, mã lạ) bị coi đã biết rồi rơi về DỮ LIỆU | VÁ: chỉ nhận ra đúng hình đã đo; lệch hình là thân lạ ⇒ KÊNH. V3b + ③F3j |
+| 3 | danh sách thân JSON `null` ⇒ TypeError, không thành `LoiDocHoiThoai` | VÁ `j?.conversations`. V3b + ③F3k |
+| 4 | «sự cố» suy từ `lan` — vòng nạp > 5′ thì mọi lượt là sự cố mới (F2 quay lại, F1 không tới 5) | BÁC (phiếu chỉ định `lan`; pilot 1 page không chạm; vá đúng cần định danh sự cố riêng + hằng mới — tổng quyết). Nợ N-GL3C-SU-CO-THEO-LICH-LUI |
+| 5 | Pancake hỏng MỘT PHẦN, có đọc OK của khách khác xen giữa ⇒ không ngắt, cả nhóm giao riêng ở lượt 5 | BÁC (đúng mục đích F1: kênh còn chạy cho khách khác ⇒ giao riêng là đúng). Sửa chú thích `nap.js` cho đúng phạm vi câu «không giao hàng loạt». Nợ N-GL3C-KENH-GIAO-XEN-DOC-OK (chưa có trần số người giao vì kênh mỗi page) |
+| 6 | sự cố mở bằng lỗi DỮ LIỆU rồi Pancake sập ⇒ lỗi kênh đầu (lan 2) không đếm GL4 | VÁ: cổng `luotKenh === 1` (quyết định 5). V2c + ③y3 |
+| 7 | `{success:true, message:'OK'}` thiếu danh sách tin bị coi «báo lỗi lạ» ⇒ KÊNH | VÁ: chỉ xét câu khi không `success:true`. V3b + ③F3i |
+| 8 | ngắt GỬI chặn giao tới 30′ dù sale trả lời được | VÁ THEO CHIỀU NGƯỢC: khi lần theo phát hiện này tôi thấy lỗ nặng hơn — lúc ngắt, bộ đếm GL4 đứng yên mà `luotKenh` vẫn tích ⇒ mở lại là giao hàng loạt. Nay page ngắt ⇒ không tích; mở lại lượt đầu đếm GL4 (quyết định 7). V1b viết lại · V1e · ③z4. Phần «giao sớm khi ngắt gửi» BÁC (sẽ mở lại giao hàng loạt) |
+| 9 | tỉa mốc dời vào `finally` của cả lượt (chạy sau pha xử) | BÁC: bọc riêng khối nạp phải thụt lề các dòng đang là neo gl4.sh ⑤j/⑤z; pha xử không đụng `dsLoiTu` (quyết định 10) |
+
+**Soát lại sau vá** (bẫy 26; cùng agent `code-review`, chỉ phần vá): (a) #2/#7 · (b) #3 · (c) #6 đúng, không lỗi; dòng `tuKenh` đúng thứ tự toán tử; chuỗi gốc
+đột biến trong `gl3c.sh` theo kịp mã. Thêm 1 phát hiện về (d): page bị ngắt gửi lặp nhiều giờ (Meta phạt — mở 30′, gửi hỏng 2 tin, ngắt tiếp) ⇒ X lỗi kênh
+bền không bao giờ tới lượt 5. Hướng reviewer đề nghị (đóng băng thay vì về 0) cũng không cứu được kịch bản đó, trừ khi cho giao ngay lượt đầu sau khi mở,
+mà làm vậy thì giao hàng loạt quay lại. BÁC theo chữ phiếu («page KHÔNG ngắt mới giao»), ghi nợ N-GL3C-KENH-NGAT-GUI-LAP kèm hai hướng cho tổng chọn.
+
+## Lệch phiếu vòng 2 — nói thẳng
+1. **F2:** cổng đếm GL4 là `luotKenh === 1` thay vì `lan === 1` như chữ phiếu (quyết định 5 · /code-review #6). Sự cố toàn kênh thì hai cách trùng nhau.
+2. **RF1d nguyên văn vẫn ĐỎ:** đúng luật GL4 «2 khoá khác nhau liền nhau», tổng gật 08/10. Phần hồi quy đã sửa là biến thể «giữ thường trực»; ca riêng V2a
+   canh nó.
+3. **Pathspec** có thêm `docs/v3/ban-giao/cua-messenger-v1.md` (tổng gật, chỉ hai đoạn :67-71 · :88-90).
+4. **`pkGetConversations` thân `null`** (1 ký tự, /code-review #3) nằm ngoài chữ bốn mục; tôi xếp nó vào ý F3 «thân lạ ⇒ lỗi».
+5. **`lyDoDocLoi` thêm mã HTTP vào câu** (quyết định 11) — phiếu không kể.
+6. **Lời phiếu «Từ 2 hội thoại lỗi trở lên page đã ngắt trước — không giao hàng loạt»** chỉ đúng khi lượt kênh đầu của hai hội thoại liền nhau, không có lượt
+   đọc OK chen giữa (/code-review #5). Chú thích `nap.js` nay nói đúng phạm vi đó; phần còn lại ghi nợ.
+7. **F1 «page KHÔNG ngắt»:** tôi hiểu là mọi loại ngắt (cả ngắt gửi, lúc page vẫn được nạp). Page ngắt thì không tích lượt, mở lại đếm từ 1 (quyết định 7).
+8. **`npm test` «trước»** đo trên bản sao base kèm tệp gitignore, không lùi cây chung.
+9. **`gl2.sh` không chạy:** vòng 2 không đụng trần / page-routing (vòng 1 đã chạy 52/52). `gl4.sh` chạy với `BO_CONG_CU=1` trong ④, vì gl3b và gl3 đã chạy
+   riêng, rc tách dòng.
+
+## Nợ vòng 2 (đã ghi §9 sổ)
+- **N-GL3C-CAU-LA-NGAT-LAP** (/code-review vòng 2 #1): F3 xếp câu/thân LẠ là lỗi KÊNH.
+  - Hai hội thoại cùng page mà Pancake trả câu lỗi riêng ta chưa biết (vd «Conversation not found») ⇒ lượt kênh đầu của hai sự cố liền nhau ⇒ ngắt 30′.
+    Mở lại thì ngắt tiếp (G1): page câm theo chu kỳ, đèn đỏ, hai khách không được giao.
+  - Chỉ một hội thoại thì giao ở lượt kênh 5 (≈ 7,5′) thay vì lượt 3.
+  - Cần đo prod thân lỗi /messages (mã HTTP + câu) để lấp `CAU_DU_LIEU_DA_BIET`. Người quyết xem có xếp 4xx có câu là dữ liệu không.
+- **N-GL3C-KENH-NGAT-GUI-LAP** (/code-review soát lại): page bị ngắt GỬI lặp nhiều giờ (Meta phạt) ⇒ hội thoại lỗi kênh bền không bao giờ tới lượt 5 (lúc
+  ngắt, đếm về 0) ⇒ không giao. Suốt quãng đó đèn ngắt kênh ĐỎ. Hai hướng cho tổng chọn:
+  - (a) lúc ngắt GỬI cho giao nếu cùng vòng có lượt đọc OK của khách khác — bằng chứng kênh đọc còn chạy;
+  - (b) đóng băng đếm, lượt đầu sau khi mở chỉ đếm GL4, lượt kế mới giao — không cứu được khung mở ngắn hơn lịch lùi 5′.
+- **N-GL3C-KENH-GIAO-XEN-DOC-OK** (/code-review vòng 2 #5): Pancake hỏng MỘT PHẦN — một nhóm hội thoại lỗi kênh bền, khách khác đọc OK chen giữa ⇒ GL4 không
+  ngắt (chỉ lượt kênh đầu đếm), cả nhóm được giao riêng ở lượt 5. Đúng mục đích F1, nhưng chưa có trần số hội thoại giao vì kênh mỗi page.
+- **N-GL3C-SU-CO-THEO-LICH-LUI** (/code-review vòng 2 #4): «sự cố» suy từ `lan` của lịch lùi (về 1 khi đọc lại trễ ≥ 5′ so với hạn lùi). Vòng nạp > 5′ (nhiều
+  page + Pancake chậm) thì mọi lượt là sự cố mới: F2 «giữ thường trực» quay lại, và lượt kênh không lên tới 5. Pilot 1 page không chạm. Vá đúng cần định
+  danh sự cố tách khỏi lịch lùi (hằng mới — tổng quyết).
+- **N-GL3C-KENH-ROI-DI-20P:** khách rời đi rồi quay lại, hoặc page hết ngắt gửi: đếm kênh đặt lại nhưng lịch lùi vẫn giữ (neo gl3b ⑤o) ⇒ 5 lượt cách nhau 5′
+  ⇒ giao sau ≈ 20′ (V1b · V1d).
+- **N-GL3C-DONG-CHI-CHO-DOT-BIEN:** hai vế trong `pancake.js#thanDocNhanRa` chỉ chạm được khi bỏ một vế khác:
+  - `permErr(j)` — thân mã quyền chỉ tới đây khi cạn token, mà khi đó dòng đầu đã bắt;
+  - hình 121 không mã — trùng dòng cuối, viết ở hai chỗ.
+  Giữ để đảo-vá gl4 ⑤s/⑤r còn đo được. Muốn gọn lại thì phải đổi neo gl4.sh.
+- **N-GL3C-DOT-BIEN-SONG** (cập nhật vòng 2): S2 · S8 (trên) · `Array.isArray` / `Object.isExtensible` trong phân loại · trường `loi_kenh` của nhật ký giao.
+- Nối **N-GL3C-NAP-HAI-HOI-THOAI-MOT-CHAP:** F3 mở rộng lớp lỗi kênh (5xx JSON · câu lạ). Một lần Pancake chập 5xx trúng hai hội thoại cùng vòng nạp nay là
+  ngắt 30′, tin giữ. Trước vòng 2, đó là lỗi dữ liệu, và chập ≥ 90 s là giao sale hàng loạt.
+- **Trả:** N-GL3B-NAP-LOI-BEN (đủ — phần kênh ở F1) · N-GL4-5XX-JSON (F3).
