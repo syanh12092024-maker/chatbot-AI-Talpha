@@ -1938,6 +1938,29 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + RP2 + GL3c (vòng 2 — hồi quy ch
     `PUBLIC_URL` (cả hai đường — ảnh tương đối chỉ đi qua tool) · ảnh lớn quá hạn 30 s (N-GL3B-HAN-ANH — nay ảnh đó + các tấm sau bị BỎ, chữ vẫn
     đi) · 5 ảnh `*.trycloudflare.com` (đường hầm tạm) trên page 1263228703530758.
   - **N-SOHIEU-CUOI** (NÂNG) từ RP1 tên món POS tới KHÁCH ở page gắn gốc qua `tachSoHieu` — số hiệu ở CUỐI tên («Tummiva Gel - 176») vẫn lọt.
+
+- 08/10 · RP2 (thợ) — khối chung theo team + chấm điểm trên lịch sử + `AM_THRESHOLD` 1 (commit 76399c3). Nợ (chi tiết: `docs/thi-cong/nhat-ky/phieu-rp2.md`):
+  - **N-RP2-NOI-XUYEN-TIN** (/code-review #2 phần còn) tin nhường + cụm chấm bằng MỘT `scoreTurn` trên chuỗi nối «\n·\n» ⇒ `hasAddress` (khu vực ở tin
+    này + chữ số ở tin khác) và dòng 2–4 chữ của tin khác bị coi là dòng TÊN khi chuỗi có SĐT vẫn khớp xuyên tin. Đo mẫu 719: 14/260 lượt có tin
+    nhường (name 12 · address 2 · phone 0 sau khi chặn). Vá gốc cần quét tín hiệu TỪNG tin — đổi `lead-score.js` ngoài hằng (phiếu riêng).
+  - **N-RP2-MOC-WEBHOOK-LO** (/code-review #4) worker gộp lô webhook: `msg_id` là tin ĐẦU ⇒ mốc không phủ tin nối thêm ⇒ lượt sau chấm lại (tín hiệu
+    không đổi, chuỗi cụt có thể về 0). Phần lớn đã về nhánh «không thấy tin đang xử ⇒ chỉ chấm cụm» (mid Meta ≠ id Pancake). Page pilot `poll`.
+  - **N-RP2-42P01-GIAO-DICH** (/code-review #5) `docKhoiChung` (và `catalog.js#docAnhTheoSanPham`) bắt 42P01 trên client GIAO DỊCH worker ⇒ Postgres
+    đã huỷ giao dịch, cả lượt hỏng (không «thiếu khối im lặng»). Prod đã áp 026; vá: kiểm `to_regclass` một lần lúc khởi động hoặc SAVEPOINT.
+  - **N-RP2-MOC-CUNG-GIAY** (/code-review #7) giờ tin khách Pancake tới GIÂY ⇒ tin gõ sau tin đang xử CÙNG giây (Botcake trả lời) không bao giờ được
+    chấm (so chặt `> mốc`); mốc lưu theo giờ MÁY (Pancake không múi) ⇒ đổi TZ worker giữa hai lượt lệch mốc bằng độ lệch múi.
+  - **N-RP2-KHOI-CHUNG-VANG-IM** (/code-review #6, bác sửa — đúng phiếu) cờ RAP bật + page thuộc team chưa có dòng `khoi_dung_chung` (team 2/3, team
+    kỹ thuật) ⇒ bot không có Chính sách/FAQ/Phản đối, không màn/sổ nào báo (phiếu cấm `nguon_thieu`). Cần đèn khi mở page ngoài team 1.
+  - **N-RP2-LUOT-DAU-SAU-DEPLOY** hội thoại có `diem_lead` cũ (không mốc) ⇒ lượt đầu sau deploy quét lại 24 giờ: tín hiệu không đổi, chuỗi cụt có thể
+    về 0 một lần.
+  - **N-RP2-PHAT-TIN-CUT** (review (a) G7) ngưỡng 1 + phạt tin cụt: hỏi giá rồi ba lượt «ok» liên tiếp ⇒ điểm về 0 ⇒ LẠNH ⇒ bàn giao — dặn người trực.
+  - **N-RP2-MAN-PROMPT-KHOI-CHUNG** (review (a) G4) màn «Prompt của page» (`v3/src/ui/prompt-page/kho-prompt.js`, không gọi `rapKb`) không hiện
+    khối chung model nhận thật.
+  - **N-RP2-DOC-DUONG-TIN** ngoài ③: `docs/v3/ban-giao/duong-tin-v1.md` §13.4 còn tả `chamVaTinhNganSach` trên cụm · `luoc-do-v1.md` §13 «bot đọc
+    bản chép kb-chung.json» (cờ RAP bật nay đọc bảng theo team).
+  - Phiếu ⑥ (giữ): công tắc nhận diện sale / nhường Botcake THEO PAGE (`botcake_tat` chưa đọc) · màn sửa sổ mẫu máy Botcake · «khách lạnh có N lượt»
+    trên màn Page & Bot · dòng «Thị trường · Ngành hàng» + tách vai OFW/Tagalog khỏi CORE · cổng bật page đòi kịch bản LIVE + thẻ «AI back Sale» +
+    kiến thức SP · lớp 0 đồng không gửi · kỹ năng sửa nội dung · cửa lưu khối chung từ chối team 2/3 · `V3_SHEET_CHI_DANH_BA` có thể vắng trên worker.
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
 Kết quả 5 mảng: team ✅ · tiền-hẹp(L1-M1/VA-P1/VA-Q12) ✅ · cửa-gửi ✅(dev thường) ·
@@ -3644,3 +3667,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 08/10 · RP1 → 🔎 chờ nghiệm thu — đường đọc CSDL đủ cho pilot: `products[].images` + dòng «Ảnh có sẵn» (chỉ ảnh tool gửi được) · ảnh hỏng KHÔNG chặn chữ (từ chối ⇒ thử lại 1 rồi bỏ · không rõ ⇒ bỏ cả tấm sau · lỗi quyền 103/105/121 / cổng chặn / không HTTP ⇒ ném như cũ — lệch phiếu tổng nhận, giữ P3d/⑤aa) · «Tên bậc» + «(N items)» · draft.js qty có điều kiện + chọn bậc theo qty khi không nêu gói · tên bỏ số hiệu giữ đuôi · lọc hết hàng · CORE trong mã trừ khi `V3_LUAT_CHUNG_CSDL=1`
   `rp1.sh` 55/55 rc=0 (39 ca × UTC/UTC+14 · 24 đảo-vá đỏ đúng · gl4/gl3b/gl3 rc=0 · 18 bộ ca cũ rc=0) · đỏ trên base 31/39 · tt1b.sh rc=1 riêng (tt1 TREO lồng ve8a 0% CPU — riêng 24/0 · l3-m4 33 / va-r2 12 dòng đỏ giống hệt base 83f5f6f) · bộ ca tt1b 22/0 · npm test 2706→2745 / 0 · /code-review 10: sửa 5 · bác 5 (4 kèm nợ) · nợ §9 N-RP1-* (9) + ⑥
   · commit 1392b57 · nhật ký docs/thi-cong/nhat-ky/phieu-rp1.md
+- 08/10 · RP2 → 🔎 chờ nghiệm thu — khối Chính sách · FAQ · Phản đối vào đường CSDL (cờ RAP bật) đọc THEO TEAM `khoi_dung_chung` mỗi lượt, dựng bằng hàm đường cũ (trùng từng ký tự) · handler chấm điểm trên tin KHÁCH của lịch sử kể từ mốc (cả câu Botcake đã trả lời; MỘT scoreTurn, bỏ chữ page, 24 giờ theo giờ tin, mốc `diem_lead.moc`) · `AM_THRESHOLD` 2 → 1 · A' worker thật: cả hai lượt được trả lời (base: `ngan_sach_het:LANH`)
+  `rp2.sh` 59/59 rc=0 (28 ca × UTC/UTC+14 · 24 đảo-vá đỏ đúng · rp1/gl3b/gl4 rc=0 · bh7 rc=1 = base · 20 bộ ca cũ fail=0) · đỏ trên base 21/28 · npm test 2758→2786 / 0 · đo chi phí mẫu 719 (có nhường Botcake): lượt model 989 → 1195 (+20,8%) · bàn giao hết ngân sách 152 → 78 · /code-review 10: sửa 6 · bác 3 · 1 nợ · lệch phiếu: nhật ký § Lệch phiếu · nợ §9 N-RP2-* (9)
+  · commit 76399c3 · nhật ký docs/thi-cong/nhat-ky/phieu-rp2.md
