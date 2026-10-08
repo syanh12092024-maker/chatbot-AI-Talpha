@@ -8,17 +8,13 @@
 //   kich_ban       team_id+page_id  — bản LIVE, trường `noi_dung_nguoi` (6 field marketer)
 //   san_pham/goi_gia  team_id+page_id — danh mục + bảng giá (nguồn POS, L1-M1 đổ)
 //
-// ⚠️ GIỚI HẠN THẬT — ĐỌC TRƯỚC KHI TIN (án lệ #32 skill tho-thi-cong, cùng khuôn cảnh báo
-// "model DI" ở duong-tin-v1.md §6): `buildSystem(kb)` trong `src/prompts.js` (CẤM SỬA,
-// luật 4 §0a sổ điều hành) HARDCODE hằng `CORE` — nó KHÔNG đọc bất kỳ trường `kb.*` nào
-// cho khối "bộ luật chung". Nghĩa là bo_luat_chung đọc được từ DB ở đây, seed đúng dữ liệu
-// đúng hợp đồng OR-IS-NULL, NHƯNG CHƯA THẬT SỰ là khối đang ĐIỀU KHIỂN model — CORE cứng
-// trong prompts.js vẫn là thứ duy nhất có hiệu lực cho "bộ luật chung". Đây là SEED
-// MỒI + hợp đồng dữ liệu cho giai đoạn 2 (dashboard), không phải cutover prompt sống.
-// Đo lại: `grep -c "CORE" src/prompts.js` — hằng vẫn đứng nguyên, không đường nào đọc
-// `kb.boLuatChung`/`kb.blocks.boLuatChung` để THAY nó. Ba khối còn lại (kỹ năng/kịch
-// bản/sản phẩm) CÓ hiệu lực thật: kịch bản → `kb.config` (buildSystem đọc trực tiếp),
-// kỹ năng + sản phẩm → `kb.text` (buildSystem đọc trực tiếp, khối "# KNOWLEDGE BASE").
+// ⚠️ BỘ LUẬT CHUNG — ĐỌC TRƯỚC KHI TIN (án lệ #32 skill tho-thi-cong): khối luật model đọc ĐẦU prompt do
+// `prompts.js#khoiBoLuat(kb)` chọn — `kb.boLuatChung` (bản CSDL mang đoạn «THẨM QUYỀN») thay hằng `CORE`, rỗng ⇒ `CORE`
+// (cutover 01/09; đo lại: `grep -n "boLuatChung" src/prompts.js`). RP1 (người quyết 08/10 «giữ luật lõi trong mã»):
+// `rapKb` CHỈ truyền bản CSDL khi `V3_LUAT_CHUNG_CSDL=1`; vắng ⇒ `boLuatChung: ""` ⇒ CORE trong mã, kể cả khi
+// `V3_RAP_PROMPT_BAT=1`. `kb.text` luôn mang một MẨU ~300 ký tự của bản CSDL (khai rõ bản nào đang áp — xem
+// `xayVanBanBoLuatChung`). Ba khối còn lại (kỹ năng/kịch bản/sản phẩm) CÓ hiệu lực thật khi cờ bật: kịch bản →
+// `kb.config`, kỹ năng + sản phẩm → `kb.text` (khối "# KNOWLEDGE BASE"), sản phẩm/giá/ảnh → `kb.products`.
 //
 // CỜ FALLBACK — `V3_RAP_PROMPT_BAT` (bien-moi-truong-v3.md, luật "vắng = ĐÓNG"): VẮNG
 // (mặc định) ⇒ dùng NGUYÊN đường `kb.js#getKBForPage` cũ, KHÔNG đụng DB — không gãy 51
@@ -37,9 +33,11 @@ import {
 // có 1557 dòng và 100% là rác đó, trong khi bảng cấm xoá. Tắt ghi cho ĐỌC (B-Y5); mọi lệnh
 // GHI của file này (nếu có sau này) vẫn để lại dấu vết như thường.
 const CTX_DOC = ctxHeThong({ ghiNhatKy: false });
-import { getKBForPage } from "../kb.js";
+import { getKBForPage, productImages } from "../kb.js";
 import { docSanPhamGoiGia } from "../products/catalog.js";
 import { HE_SO_TE } from "../pos/tao-don.js";
+import { tachSoHieu } from "../pos/ten-goc.js";
+import { khoiBoLuat } from "../prompts.js";   // CHỈ ĐỌC (bộ não): khối luật đầu prompt chọn bản nào — câu khai ở khối KB phải khớp
 
 /** Bốn tên khối — dùng để khai `nguon_thieu` (mù-có-nói-ra, không im — luật án lệ #7). */
 export const KHOI = Object.freeze({
@@ -67,7 +65,7 @@ export async function docBoLuatChung(pool, teamId) {
   });
   if (!rows.length) return null;
   // Nhiều dòng dang_dung=true (không có UNIQUE ràng ở tầng CSDL, xem seed) → lấy
-  // phien_ban cao nhất; lệch chỗ này chỉ ảnh hưởng khối THAM KHẢO (xem giới hạn đầu file).
+  // phien_ban cao nhất; lệch chỗ này ảnh hưởng mẩu THAM KHẢO, và khối luật đầu prompt khi V3_LUAT_CHUNG_CSDL=1 (xem đầu file).
   rows.sort((a, b) => Number(b.phien_ban) - Number(a.phien_ban));
   return rows[0];
 }
@@ -122,12 +120,42 @@ export { docKichBanChoPage };
  *  SP") nên vòng lặp không phải N+1 thật sự. */
 export { docSanPhamGoiGia } from "../products/catalog.js";
 
-/** NHÃN PHẢI LÀ TIẾNG ANH — bài học kb.js đã trả giá (comment kb.js dòng 282-284: nhãn
- *  tiếng Việt cứng từng gửi "Mua 1 cái — 99 AED" cho khách Trung Đông, sửa 11/08/2026).
- *  `goi_gia` không có cột nhãn tự do như `kich_ban`/kb-overrides `tiers[].label` — dựng
- *  nhãn "Buy N" từ `so_luong`, cùng khuôn `productTiers()` fallback của kb.js. */
-function nhanGoiGia(soLuong) {
-  return `Buy ${soLuong}`;
+/** NHÃN BẬC GIÁ KHÁCH ĐỌC (RP1 ② 3 · người quyết 08/10 «Tên bậc» có trên giao diện).
+ *
+ *  Nguồn: `goi_gia.nhan` (migration 025) — ô «Tên bậc» marketer gõ ở Sản phẩm › Theo thị trường (đối soát «chép» mang nó từ
+ *  bản sao sang món, `chuyen-ban-sao.js#COT_BAC_CHEP`). Trước RP1 hàm này luôn dựng «Buy <so_luong>» với lý do «goi_gia không
+ *  có cột nhãn tự do» — sai từ 025, và page BOGO thật nói «Buy 2 — 109 SAR» cho gói «Buy 1 Get 1 FREE».
+ *  · Nhãn trống ⇒ «Buy <so_luong>» như cũ (cùng khuôn `kb.js#productTiers` · `ban-chep-bot.js:43` — NHÃN TIẾNG ANH, bài học
+ *    «Mua 1 cái — 99 AED» 11/08). Nhãn có chữ ⇒ GIỮ NGUYÊN chữ marketer gõ (không dịch, không đổi hoa/thường).
+ *  · SỐ MÓN NHÚNG VÀO NHÃN «(<so_luong> items)» — vì fast-lane (bộ não) và `core/gia.js` chỉ đọc `label`, nên đây là chỗ duy nhất
+ *    để khách thấy gói có mấy món. Không nối khi nhãn CHÍNH LÀ «Buy <so_luong>» (so sau NFKC + bỏ hoa/thường + gộp khoảng trắng,
+ *    «𝐁𝐮𝐲 𝟐» cũng là «Buy 2») và khi nhãn đã nêu «Total <số>» (6/72 sản phẩm bản chụp 28/09 có Total ≠ so_luong — nối thêm sẽ ra
+ *    «(Total 2 Products) (1 item)»). `so_luong` 1 ⇒ «(1 item)» (số ít — lệch chữ phiếu «items», ghi nhật ký RP1).
+ *  `draft.js` đọc số «mua» ở ĐẦU nhãn này để nhận `qty` model truyền theo nhãn (luật có điều kiện — xem `chuanBiDon`). */
+function nhanGoiGia(g) {
+  const sl = Number(g.so_luong);
+  const nhan = String(g.nhan ?? "").trim();
+  if (!nhan) return `Buy ${sl}`;
+  const chuan = nhan.normalize("NFKC").toLowerCase().replace(/\s+/g, " ");
+  if (chuan === `buy ${sl}` || /\btotal\s*:?\s*\d/.test(chuan)) return nhan;
+  return `${nhan} (${sl} ${sl === 1 ? "item" : "items"})`;
+}
+
+/** TÊN MÓN KHÁCH ĐỌC (RP1 ② 4). Page GẮN gốc đọc món POS, tên POS mang SỐ HIỆU nội bộ đầu tên («125 - Tummiva Care gel — 50ml»,
+ *  `pos/doc-danh-muc.js`) — số đó không được tới khách (khối KB · caption fast-lane). Bỏ bằng `tachSoHieu` và GIỮ đuôi biến thể
+ *  («— 50ml»): dùng thẳng tên gốc thì mọi món cùng gốc trùng một tên, model không phân biệt được biến thể và giá. Tên chỉ có số ⇒
+ *  về tên gốc, rồi tên POS. Page CHƯA gắn (món RF-15 / bản sao) giữ tên như cũ. ⚠️ `tachSoHieu` chỉ bóc số ĐẦU tên — số ở CUỐI
+ *  («Tummiva Gel - 176») vẫn lọt (nợ N-SOHIEU-CUOI, §9). */
+function tenChoKhach(sp, ganGoc) {
+  if (!ganGoc) return sp.ten;
+  const ten = String(sp.ten || "").trim();
+  return tachSoHieu(ten).ten || String(sp.tenGoc || "").trim() || ten;
+}
+
+/** RP1 ② 6 · người quyết 08/10 «GIỮ LUẬT LÕI TRONG MÃ»: cờ `V3_RAP_PROMPT_BAT` chỉ đổi nguồn sản phẩm/giá/ảnh/kịch bản. Bản
+ *  `bo_luat_chung` CSDL chỉ THAY `CORE` khi bật riêng `V3_LUAT_CHUNG_CSDL=1` (vắng = ĐÓNG = CORE trong `prompts.js`). */
+function luatChungTuCsdl() {
+  return process.env.V3_LUAT_CHUNG_CSDL === "1";
 }
 
 export function goiGiaChoChat(g) {
@@ -144,7 +172,7 @@ export function goiGiaChoChat(g) {
   // ⚠️ `mienShip`/`phiShip` giữ nguyên `null` khi chưa khai — nơi gọi PHẢI phân biệt
   //    «chưa khai» với «không miễn». Quy null thành false ở đây là bịa một lời hứa.
   const soTien = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v) / factor);
-  return { label: nhanGoiGia(g.so_luong), qty: Number(g.so_luong),
+  return { label: nhanGoiGia(g), qty: Number(g.so_luong),
     price: Number(g.gia) / factor, currency,
     giaGoc: soTien(g.gia_goc),
     khuyenMai: String(g.khuyen_mai || "").trim(),
@@ -153,8 +181,8 @@ export function goiGiaChoChat(g) {
 }
 
 /** Xuất để BỘ CA đọc thẳng — khối này là thứ khách sẽ nghe lại qua lời bot, nên nó phải
- *  kiểm được mà không cần dựng cả CSDL. */
-export function xayVanBanSanPham(dsSp) {
+ *  kiểm được mà không cần dựng cả CSDL. `ganGoc` (RP1 ② 4): page gắn gốc ⇒ tên món bỏ số hiệu, như `products[].name`. */
+export function xayVanBanSanPham(dsSp, { ganGoc = false } = {}) {
   const out = [
     "# SẢN PHẨM & GIÁ (nguồn: san_pham/goi_gia · đồng bộ từ POS, không bịa)",
   ];
@@ -163,7 +191,8 @@ export function xayVanBanSanPham(dsSp) {
     return out.join("\n");
   }
   for (const sp of dsSp) {
-    const dong = [`- [${sp.ma}]${sp.ten || sp.tenGoc ? " " + (sp.ten || sp.tenGoc) : ""}`];
+    const ten = tenChoKhach(sp, ganGoc) || sp.tenGoc;
+    const dong = [`- [${sp.ma}]${ten ? " " + ten : ""}`];
     if (sp.mo_ta) dong.push(`— ${sp.mo_ta}`);
     out.push(dong.join(" "));
 
@@ -191,6 +220,12 @@ export function xayVanBanSanPham(dsSp) {
         out.push("    (phí ship CHƯA khai trong bảng giá — KHÔNG hứa miễn ship, mời khách hỏi sale)");
       }
     }
+    // RP1 ② 1 (N1): model phải biết page CÓ ảnh loại nào — cùng câu chữ `kb.js#buildProductText`, nhãn trống ⇒ «Ảnh SP». Chỉ kể
+    // ảnh tool GỬI ĐƯỢC (/code-review #7): cùng phép lọc của `tools.js#send_product_image` (`productImages` ghép PUBLIC_URL rồi
+    // đòi http(s)) — ảnh tương đối khi thiếu PUBLIC_URL không được hứa với model.
+    const nhanAnh = productImages({ images: (Array.isArray(sp.anh) ? sp.anh : []).map((a) => ({ url: a.duong, label: a.nhan })) })
+      .filter((im) => /^https?:\/\//.test(im.url)).map((im) => im.label || "Ảnh SP");
+    if (nhanAnh.length) out.push(`    Ảnh có sẵn (dùng tool send_product_image để gửi): ${[...new Set(nhanAnh)].join(", ")}`);
     if (sp.goiGiaTat) out.push(`    (${sp.goiGiaTat} bậc giá đang TẮT — không chào)`);
     if (sp.het_hang) out.push(`    (⚠️ hết hàng — cửa POS đánh dấu het_hang)`);
   }
@@ -216,18 +251,20 @@ function xayVanBanKyNang(dsKyNang) {
   return out.join("\n");
 }
 
-/** Mẩu ĐO ĐƯỢC của bo_luat_chung — KHÔNG dán nguyên văn (xem "GIỚI HẠN THẬT" đầu file):
+/** Mẩu ĐO ĐƯỢC của bo_luat_chung — KHÔNG dán nguyên văn (xem «BỘ LUẬT CHUNG» đầu file):
  *  dán trọn ~2.256 token là gửi lặp một bộ quy tắc gần giống CORE hai lần cho model mỗi
  *  lượt (tốn token thật, và có thể gây rối khi hai bản "cùng thẩm quyền" lệch câu chữ).
  *  Giữ một đoạn trích THẬT (không phải nhãn bịa) để: (a) hợp đồng đọc DB được nghiệm thu
  *  bằng grep, (b) tương lai dashboard/kiểm phiên bản đọc thẳng field này. */
-function xayVanBanBoLuatChung(row) {
+function xayVanBanBoLuatChung(row, dangAp = false) {
   if (!row) return "";
   const trich = String(row.noi_dung || "").slice(0, 300);
-  return (
-    `# BỘ LUẬT CHUNG (bo_luat_chung v${row.phien_ban}, nguồn DB — bản THAM KHẢO/phiên bản;` +
-    ` quy tắc ĐANG ÁP DỤNG thật vẫn là CORE cứng trong prompts.js, xem duong-tin-v1.md §ráp-prompt)\n${trich}`
-  );
+  // Câu khai phải ĐÚNG với khối đầu prompt (RP1 ② 6 · /code-review #6): `dangAp` = `prompts.js#khoiBoLuat` THẬT SỰ chọn bản CSDL
+  // (biến `V3_LUAT_CHUNG_CSDL=1` VÀ bản mang đoạn THẨM QUYỀN). Không ⇒ CORE trong mã đang áp (giữ nguyên câu cũ).
+  const ap = dangAp
+    ? " bản này ĐANG ÁP DỤNG ở khối luật đầu prompt (thay CORE — V3_LUAT_CHUNG_CSDL=1))"
+    : " quy tắc ĐANG ÁP DỤNG thật vẫn là CORE cứng trong prompts.js, xem duong-tin-v1.md §ráp-prompt)";
+  return `# BỘ LUẬT CHUNG (bo_luat_chung v${row.phien_ban}, nguồn DB — bản THAM KHẢO/phiên bản;${ap}\n${trich}`;
 }
 
 /**
@@ -292,17 +329,24 @@ export async function rapKb(pool, { teamId, pageIdText }) {
   if (!sp.length) nguonThieu.push(KHOI.SAN_PHAM);
 
   const config = kichBan?.noi_dung_nguoi || {};
+  // RP1 ② 5 (G3): món HẾT HÀNG không vào thứ bot đọc — như đường cũ (`ban-chep-bot.js#dungSanPhamChoBot` bỏ món `het_hang` khỏi
+  // bản chép, nên `kb.js` không bao giờ thấy nó; không có dòng «hết hàng» nào trong khối KB cũ ⇒ bỏ hẳn). Không lọc thì fast-lane
+  // / tool lấy `products[0]` là chào giá + ảnh món đã hết, rồi `draft.js` từ chối. Mọi món hết ⇒ `noData` (cùng ngưỡng đường cũ:
+  // bản chép rỗng ⇒ `getKBForPage` noData ⇒ handler bàn giao). Kỹ năng + `nguon_thieu` + `blocks` vẫn tính trên CẢ danh sách.
+  const spBan = sp.filter((s) => !s.het_hang);
+  const ganGoc = !!trang.san_pham_goc_ma;
+  const luatCsdlDangAp = !!luat && luatChungTuCsdl() && khoiBoLuat({ boLuatChung: String(luat.noi_dung || "") }).nguon === "csdl";
   const text = [
-    xayVanBanBoLuatChung(luat),
-    xayVanBanSanPham(sp),
+    xayVanBanBoLuatChung(luat, luatCsdlDangAp),
+    xayVanBanSanPham(spBan, { ganGoc }),
     xayVanBanKyNang(kyNang),
   ]
     .filter(Boolean)
     .join("\n\n");
 
-  const products = sp.map((s) => ({
+  const products = spBan.map((s) => ({
     id: s.ma,
-    name: s.ten,
+    name: tenChoKhach(s, ganGoc),
     desc: s.mo_ta,
     stock: s.ton_kho,
     hetHang: s.het_hang,
@@ -312,6 +356,9 @@ export async function rapKb(pool, { teamId, pageIdText }) {
       return [...currencies][0] || "";
     })(),
     tiers: s.goiGia.map(goiGiaChoChat),
+    // RP1 ② 1: ảnh của món (`catalog.js` đọc `anh_san_pham` theo `thu_tu`) — đúng khuôn bản chép bot v1 (`ban-chep-bot.js:45`).
+    // URL giữ THÔ: `kb.js#productImages` (tool) tự ghép `PUBLIC_URL` cho ảnh tương đối; fast-lane chỉ lấy ảnh tuyệt đối.
+    images: (Array.isArray(s.anh) ? s.anh : []).map((a) => ({ url: a.duong, label: a.nhan })),
   }));
 
   return {
@@ -322,15 +369,13 @@ export async function rapKb(pool, { teamId, pageIdText }) {
     kichBanMay: laBanMayEn(kichBan?.noi_dung_may) ? String(kichBan.noi_dung_may) : "",
     text,
     products,
-    // CUTOVER 01/09 — khối BỘ LUẬT CHUNG đi thẳng vào `buildSystem` thay hằng `CORE`.
-    // Trước đó bản này chỉ nằm trong `text` (khối KNOWLEDGE BASE ở CUỐI) nên nó BỔ SUNG
-    // chứ không THAY được luật cứng; tiêu chí G2 ① («sửa trên màn → lượt chat kế tiếp dùng
-    // bản mới, không deploy») vì thế mới đạt một nửa. `prompts.js#khoiBoLuat` tự lùi về
-    // CORE khi trường này rỗng hoặc khi bản đó thiếu đoạn THẨM QUYỀN — nên page chưa có
-    // bản trong CSDL vẫn chạy y như cũ.
-    boLuatChung: luat ? String(luat.noi_dung || "") : "",
-    // Cùng khuôn kb.js#getKBForPage: KHÔNG sản phẩm ⇒ noData (handler bàn giao, không bịa).
-    noData: !sp.length,
+    // CUTOVER 01/09 — khối BỘ LUẬT CHUNG đi thẳng vào `buildSystem` thay hằng `CORE`
+    // (`prompts.js#khoiBoLuat` lùi về CORE khi trường này rỗng hoặc bản thiếu đoạn THẨM QUYỀN).
+    // RP1 ② 6 (người quyết 08/10 «giữ luật lõi trong mã»): CHỈ khi `V3_LUAT_CHUNG_CSDL=1`. Vắng ⇒ "" ⇒ CORE trong mã,
+    // dù CSDL có bản hợp lệ — bản prod seed 24/08 ≠ CORE hiện tại, tiếng Việt ~2× token bản EN (đo của tổng: sổ §10 08/10).
+    boLuatChung: luat && luatChungTuCsdl() ? String(luat.noi_dung || "") : "",
+    // Cùng khuôn kb.js#getKBForPage: KHÔNG sản phẩm BÁN ĐƯỢC ⇒ noData (handler bàn giao, không bịa).
+    noData: !spBan.length,
     trongDiem,
     nguon_thieu: nguonThieu,
     nguon: "db",

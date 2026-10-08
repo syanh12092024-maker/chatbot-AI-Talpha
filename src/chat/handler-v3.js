@@ -156,6 +156,30 @@ export async function guiDaXacNhan(gui) {
   }
 }
 
+/** RP1 ② 2 — nghỉ trước lượt thử lại DUY NHẤT của một ảnh bị Pancake từ chối (khuôn v1 `tools.js#sendImageWithRetry`). */
+const TRE_THU_LAI_ANH_MS = 1200;
+
+/**
+ * RP1 ② 2 · review (a) vòng 2 R2-N1 — lỗi gửi MỘT ảnh có được nuốt (bỏ ảnh, vẫn gửi chữ) không, đọc theo CẤU TRÚC:
+ *   · `'tu_choi'`  — Pancake ĐÃ được gọi và trả lời KHÔNG cho ảnh này (`success:false` · `invalid_upload_fb_attachments_result`
+ *                    chập chờn — tools.js:100-101) ⇒ thử lại 1;
+ *   · `'khong_ro'` — đã gọi mà không biết kết quả (quá hạn / mạng / thân hỏng — `chiTiet.khongRo` của `pancake.js`) ⇒ không thử lại;
+ *   · `null`       — mọi lỗi khác ⇒ NÉM như trước RP1: cửa đóng · cổng ghi chặn (`biChan`) · định tuyến team · lỗi không HTTP
+ *                    («thiếu url ảnh», hết token ⇒ thân rỗng) · đụng UNIQUE sổ gửi · cửa tiêm trần không qua `bocCuaGuiBen` ·
+ *                    LỖI QUYỀN cấp page (mã 103/105/121 trong `chiTiet.ma` — `pkFetchPage` đã xoay hết token; chữ gửi sau cũng
+ *                    hỏng, nuốt ở ảnh chỉ thêm một lượt thử vô ích và để lỗi không-HTTP phía sau che mất lỗi kênh GL4 phải đếm —
+ *                    đo: ca GL4 P3d đỏ khi nuốt cả lỗi quyền, nhật ký RP1).
+ * Dấu `cause.kenh === true` do `queue/lan-gui.js#bocCuaGuiBen` gắn khi cửa ĐÃ gọi Pancake cho tin/ảnh (`daGoi` && !`biChan`) —
+ * cùng dấu GL4 dùng để đếm lỗi kênh: lỗi KHÔNG nuốt ở đây vẫn đi đúng đường đếm cũ.
+ */
+const MA_LOI_QUYEN = new Set([103, 105, 121]);   // cùng tập `pancake.js#PERM_ERRS` (không export) — đổi ở đó thì đổi ở đây
+function loaiLoiAnh(e) {
+  const c = e?.name === "LoiGuiChuaXacNhan" ? e.cause : null;
+  if (c?.name !== "LoiCanDoiChieuGui" || c.kenh !== true || c.loai !== "guiAnh") return null;
+  if ((Array.isArray(c.chiTiet?.ma) ? c.chiTiet.ma : []).some((m) => MA_LOI_QUYEN.has(Number(m)))) return null;
+  return c.chiTiet?.khongRo === true ? "khong_ro" : "tu_choi";
+}
+
 export const KET_QUA = Object.freeze({
   XONG: "xong",
   CHAN_GUARD: "chan_guard",
@@ -467,6 +491,13 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
   // Xả hàng đợi ảnh QUA CỬA — KHÔNG dùng `flushPendingImages` của tools.js (nó gọi thẳng
   // pkSendImage/sendImage, tức là chính đường mà phiếu này đi bịt). Ảnh đi TRƯỚC tin chữ,
   // đúng nguyên tắc #2 của bản cũ ("khách không bao giờ nhận ảnh trơ").
+  //
+  // RP1 ② 2 — ẢNH HỎNG KHÔNG CHẶN CHỮ. Trước RP1 mọi ảnh hỏng ném cả lượt: ảnh 2 bị Pancake từ chối (`invalid_upload_fb_
+  // attachments_result`, chập chờn — tools.js:100-101) ⇒ 0 POST chữ, khách nhận ảnh trơ, hội thoại sang sale, GL4 đếm 1.
+  // Nay nuốt lỗi của MỘT ảnh, phân loại theo CẤU TRÚC lỗi cửa gửi đã gắn (`loaiLoiAnh`), không dò chuỗi. Ảnh bị bỏ ⇒ chữ vẫn
+  // đi; caption dời sang tấm gửi được đầu tiên; không tấm nào được ⇒ BỎ caption (như v1 — chữ đã qua cửa ra + đã ghi sổ, không
+  // ghép thêm). Số ảnh hỏng vào sổ AI dòng `image` (`duLieuAnh`). GL4: lượt gửi được chữ ⇒ worker xoá chuỗi (README:95).
+  const anhHong = [];
   const xaAnh = async () => {
     const hang = state.pendingImages || [];
     if (!hang.length) return 0;
@@ -474,14 +505,16 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     let caption = String(state.pendingCaption || "").trim();
     state.pendingCaption = "";
     let gui = 0;
-    for (const im of hang) {
-      await assertCanAct();
-      await guiDaXacNhan(() => d.cua.guiAnh(
-        pool,
-        ctx,
-        { ...diaChi, url: im.url, caption },
-        d.depsPancake,
-      ));
+    for (const [i, im] of hang.entries()) {
+      const kq = await guiMotAnh(im.url, caption);
+      // Bị từ chối dứt khoát ⇒ tấm đó chắc chắn chưa tới ⇒ caption dời sang tấm gửi được kế tiếp.
+      if (kq === "tu_choi") continue;
+      if (kq === "khong_ro") {
+        // KHÔNG RÕ (quá hạn / mạng) ⇒ kênh đang chập và tấm đó CÓ THỂ đã tới khách kèm caption (/code-review #3 #4): bỏ luôn các tấm
+        // còn lại — mỗi tấm sẽ lại chờ trọn hạn gửi trong giao dịch tin đang mở, và dời caption sang tấm sau là lặp lời dẫn — rồi đi chữ.
+        for (let k = i + 1; k < hang.length; k += 1) anhHong.push("bo_sau_khong_ro");
+        break;
+      }
       state.sentImages.add(im.url);
       const cat = String(im.cat || "sản phẩm");
       if (!prof.imagesSent.includes(cat)) prof.imagesSent.push(cat);
@@ -491,6 +524,34 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     }
     return gui;
   };
+  // Một ảnh: `'ok'` = tới khách · `'tu_choi'` / `'khong_ro'` = đã bỏ (ghi `anhHong`) · NÉM = lỗi không phải của kênh (như trước RP1).
+  // Bị từ chối dứt khoát ⇒ thử lại ĐÚNG 1 lần sau `TRE_THU_LAI_ANH_MS` (khuôn v1 `tools.js#sendImageWithRetry`: IMG_RETRY=1,
+  // nghỉ 1200 ms); KHÔNG RÕ (quá hạn / mạng — có thể đã tới khách) ⇒ không thử lại (luật GL3: không gửi đúp).
+  const guiMotAnh = async (url, caption) => {
+    for (let lan = 0; ; lan += 1) {
+      await assertCanAct();
+      try {
+        await guiDaXacNhan(() => d.cua.guiAnh(
+          pool,
+          ctx,
+          { ...diaChi, url, caption },
+          d.depsPancake,
+        ));
+        return "ok";
+      } catch (e) {
+        const loai = loaiLoiAnh(e);
+        if (!loai) throw e;
+        if (loai === "tu_choi" && lan === 0) {
+          await new Promise((r) => setTimeout(r, TRE_THU_LAI_ANH_MS));
+          continue;
+        }
+        anhHong.push(loai);
+        return loai;
+      }
+    }
+  };
+  // Phần `du_lieu` của dòng sổ `image`: số ảnh tới khách + số ảnh đã bỏ (chỉ khi có — dòng cũ giữ đúng hình `{n}`).
+  const duLieuAnh = (n) => ({ n, ...(anhHong.length ? { anh_hong: anhHong.length, anh_hong_loai: [...anhHong] } : {}) });
 
   // Bàn giao sale QUA CỬA: thẻ + ghi chú. Xem khối đầu file về ghi chú TRÙNG ở VPS.
   const banGiaoSale = async (lyDo) => {
@@ -641,11 +702,11 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         state.pendingCaption = fl.caption || "";
       }
       const nAnh = await xaAnh();
-      if (nAnh) {
+      if (nAnh || anhHong.length) {
         await ghi(LOAI.IMAGE, {
           maModel: KHONG_GOI_MODEL,
           lane: fl.lane,
-          duLieu: { n: nAnh },
+          duLieu: duLieuAnh(nAnh),
         });
       }
       await guiChu(cua.text);
@@ -866,11 +927,11 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
 
     // ── 10 · ẢNH TRƯỚC, CHỮ SAU — cả hai QUA CỬA ─────────────────────────────────
     const nAnh = await xaAnh();
-    if (nAnh) {
+    if (nAnh || anhHong.length) {
       await ghi(LOAI.IMAGE, {
         maModel: model.maModel,
         lane: "AI",
-        duLieu: { n: nAnh },
+        duLieu: duLieuAnh(nAnh),
       });
     }
     if (guarded) {

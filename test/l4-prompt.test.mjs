@@ -324,6 +324,6 @@ test('⑤ `rap-prompt.js` CÓ truyền `boLuatChung` xuống — khai mà không
   // Khớp CHÍNH XÁC dòng truyền NỘI DUNG. `rapKb` còn một `boLuatChung:` thứ hai trong
   // `blocks` (chỉ mang phiên bản và độ dài, để màn Prompt hiện) — regex lỏng khớp nhầm
   // dòng đó thì bỏ dòng thật đi bài test vẫn xanh (đo bằng đảo-vá 01/09).
-  assert.match(src, /boLuatChung:\s*luat\s*\?\s*String\(luat\.noi_dung/,
-    'rapKb phải truyền NỘI DUNG bộ luật xuống kb.boLuatChung, không thì buildSystem mãi lùi về CORE');
+  assert.match(src, /boLuatChung:\s*luat\s*&&\s*luatChungTuCsdl\(\)\s*\?\s*String\(luat\.noi_dung/,
+    'rapKb phải truyền NỘI DUNG bộ luật xuống kb.boLuatChung khi V3_LUAT_CHUNG_CSDL=1 (RP1 ② 6), không thì buildSystem mãi lùi về CORE');
 });

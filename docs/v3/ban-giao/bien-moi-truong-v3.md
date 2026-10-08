@@ -19,7 +19,8 @@
 | `PUBLIC_URL` | Gốc URL công khai để Facebook tải ảnh sản phẩm: ảnh tải lên lưu TƯƠNG ĐỐI `/uploads/…`, lúc gửi ghép `PUBLIC_URL` vào (`src/kb.js`). Phải trỏ đúng tiến trình đang phục vụ `/uploads` — từ MB3 là `aicloser-v3` (`CHAYTHAT_CONG`, 3102); trỏ 3100 (v1 đã tắt) là ảnh không tải được, đo 02/10: ngoài vào `:3100/uploads` = 000, `:3102/uploads` = 200 | vắng (ảnh gửi bằng URL tương đối = hỏng; dev không gửi) | `http://<IP>:3102` (đổi từ `:3100` ở MB4, 02/10) | CR-02-10 · MB4 |
 | `V3_NAP_THE_CHAN` | Tên thẻ Pancake khiến bộ NẠP bỏ qua hội thoại (nhiều tên ngăn bằng dấu phẩy). Tra tên → id qua `/settings`, cache 10 phút nên không thêm lời gọi API. Đo 21/09 page 1220547807799752: thẻ `"Đã gửi"` (id 3) trên 11/60 hội thoại. Thẻ HỆ THỐNG (`-1 -2 -3 -11 -12 -20`, trạng thái đơn) luôn chặn, không cần khai. Tra thẻ hỏng ⇒ vẫn quét (fail-open) | vắng = `Đã gửi` | để mặc định; thêm tên nếu page dùng thẻ khác | L2-M1 |
 | `V3_LAN_CHOT_MODEL` | Danh sách lane/rule của lớp 0 đồng KHÔNG được trả lời, phải nhường model (ngăn bằng dấu phẩy). Đo 23/09 trên 84 lượt khách thật page 1220547807799752: 33 lượt do lớp 0 đồng trả, **28 đúng chỗ** (giá 19 · chào 5 · ship 4 — câu trả lời cố định). 4 lượt còn lại là khoảnh khắc CHỐT ĐƠN, và mẫu cứng hỏng ở ba chỗ: không gọi được tên khách (0/33 lượt mẫu có tên, model 22%), **bỏ qua câu hỏi số lượng** ⇒ thu đủ tên/SĐT/địa chỉ rồi vẫn chưa tạo được đơn, và một chuỗi cho mọi tình huống. Giá: ~4 lượt × 87đ ≈ 350đ/84 lượt. Chặn ở `handler-v3`, KHÔNG sửa `fast-lane.js` (tệp CẤM SỬA). `paano_gap` CỐ Ý không nằm trong mặc định — phiếu L2-M2 đã chốt câu đó trả 0 token, đổi thì phải đi lối `doi-y-do`. Rỗng = tắt hẳn | vắng = `muon_dat,tpl_howto` | để mặc định | L2-M2 · BH |
-| `V3_RAP_PROMPT_BAT` | Bật `rap-prompt.js` ráp `kb` từ 4 bảng DB (bo_luat_chung/ky_nang/kich_ban/san_pham); vắng ⇒ lùi nguyên `kb.js#getKBForPage` cũ | vắng = dùng kb.js cũ                         | `1` khi cutover từng phần đã kiểm 4 khối khớp dữ liệu thật    | L2-M3                    |
+| `V3_RAP_PROMPT_BAT` | Bật `rap-prompt.js` ráp `kb` từ 4 bảng DB (bo_luat_chung/ky_nang/kich_ban/san_pham); vắng ⇒ lùi nguyên `kb.js#getKBForPage` cũ. Từ RP1 (08/10) đường DB đủ cho pilot: `products[].images` từ `anh_san_pham` (+ dòng «Ảnh có sẵn» trong khối KB) · nhãn bậc = «Tên bậc» (`goi_gia.nhan`, nối «(N items)» khi nhãn khác «Buy N» và không có «Total <số>»; trống ⇒ «Buy N») · page gắn gốc: tên món bỏ số hiệu POS, giữ đuôi biến thể · món hết hàng bị lọc (mọi món hết ⇒ `noData`). Bật cờ này KHÔNG đổi khối luật lõi — xem `V3_LUAT_CHUNG_CSDL` | vắng = dùng kb.js cũ                         | `1` khi cutover từng phần đã kiểm 4 khối khớp dữ liệu thật (pilot: người quyết 07/10 «bật cờ đọc từ CSDL»)    | L2-M3 · RP1              |
+| `V3_LUAT_CHUNG_CSDL` | Khi `V3_RAP_PROMPT_BAT=1`: cho bản `bo_luat_chung` trong CSDL (mang đoạn «THẨM QUYỀN») THAY hằng `CORE` ở khối luật đầu prompt (`rap-prompt.js` truyền `kb.boLuatChung` → `prompts.js#khoiBoLuat`). Vắng ⇒ `kb.boLuatChung` rỗng ⇒ bot dùng CORE trong mã dù CSDL có bản hợp lệ — người quyết 08/10 «giữ luật lõi trong mã» (bản prod seed 24/08 ≠ CORE hiện tại, tiếng Việt ~2× token bản EN của BH8). Khối KB vẫn mang mẩu ~300 ký tự của bản CSDL, câu khai đổi theo biến này. ⚠️ Màn «Bộ luật» vẫn nói «bản đang áp» khi biến vắng (nợ N-RP1-MAN-BO-LUAT) | vắng = CORE trong mã | vắng (CORE) — chỉ đặt `1` khi người quyết chọn dùng bản CSDL và đã soát băm bản đó với CORE | RP1 |
 
 | `V3_DIEN_TAP`       | **CHẾ ĐỘ DIỄN TẬP.** `=1` ⇒ bot đọc tin thật, gọi model, soạn xong câu trả lời rồi GHI VÀO `lan_gui` với trạng thái `dien_tap` và DỪNG — không một lượt gọi mạng nào tới Pancake. Dùng để đo hiểu-hội-thoại · chất-lượng-tư-vấn · độ-trễ trước khi mở van. THẮNG mọi cờ khác: bật nó thì dù `V3_PANCAKE_GUI=1` cũng không gửi. Cổng HTTP ghi của `handler-v3` VẪN chặn POST tới pages.fm — lưới cuối không gỡ | đặt `1` khi đang đo | KHÔNG đặt (trừ lượt đo có người canh) | 020 · 17/09 |
 | `V3_KHOA_VE`        | Khoá 32 byte (base64) KÝ VÉ ĐĂNG NHẬP (`v3/src/auth/ve.js`). **Thiếu = `v3/chay-that.js` TỪ CHỐI CHẠY** (`exit 1`, dòng 18) — không phải cửa đóng câm mà là dịch vụ không lên | đã đặt (đo 15/09)                            | **BẮT BUỘC, khoá RIÊNG** — dùng lại khoá dev = ai có khoá dev ký được vé prod | L0-M3(B) |
@@ -78,15 +79,12 @@ Ba luật khi thêm biến:
 
 ---
 
-> **⚠️ Giới hạn của `V3_RAP_PROMPT_BAT` — đọc trước khi hứa với ai (đo 01/09):**
+> **⚠️ Giới hạn của `V3_RAP_PROMPT_BAT` — đọc trước khi hứa với ai (đo 01/09 · sửa RP1 08/10):**
 > Bật cờ làm ba khối **kỹ năng · kịch bản · sản phẩm** có hiệu lực thật trên đường chat
-> (`buildSystem` đọc thẳng `kb.config` và `kb.text`). Nhưng khối **bộ luật chung KHÔNG thay
-> được hằng `CORE`** cứng trong `src/prompts.js` (file cấm sửa, luật 4 §0a) — bản trong CSDL
-> đi vào khối `# KNOWLEDGE BASE` ở CUỐI prompt, tức **bổ sung, không thay thế**. Vì vậy tiêu
-> chí `07-KE-HOACH-GD2.md` G2 nghiệm thu ① («sửa bộ luật trên màn → lượt chat kế tiếp dùng
-> bản mới, không deploy») mới **đạt một nửa**: nội dung tới được model, nhưng CORE vẫn đứng
-> đầu và tự tuyên bố thẩm quyền. Đóng nốt nửa còn lại = cutover `prompts.js` cho
-> `buildSystem` đọc `kb.boLuatChung` — việc chạm FILE CẤM, phải xin chủ dự án.
+> (`buildSystem` đọc thẳng `kb.config` và `kb.text`; tool/fast-lane đọc `kb.products`). Khối **bộ luật chung**: từ cutover
+> 01/09 `prompts.js#khoiBoLuat` đọc `kb.boLuatChung` và cho bản CSDL (mang đoạn «THẨM QUYỀN») THAY `CORE` — nhưng từ RP1
+> `rap-prompt.js` CHỈ truyền bản đó khi `V3_LUAT_CHUNG_CSDL=1`. Biến đó vắng (mặc định, người quyết 08/10) ⇒ bật
+> `V3_RAP_PROMPT_BAT` KHÔNG đổi luật lõi: khối đầu prompt vẫn là `CORE` trong mã; bản CSDL chỉ có mẩu ~300 ký tự ở khối
+> `# KNOWLEDGE BASE` kèm câu khai «quy tắc đang áp dụng vẫn là CORE». Đo lại: `grep -n "luatChungTuCsdl" src/chat/rap-prompt.js`.
 > Màn «Prompt của page» nay hiện đủ NĂM khối (CORE + bốn khối CSDL) và nói rõ khối nào đang
 > điều khiển; chưa nối bộ đọc hiệu lực thì nó nói «chưa biết», không đoán là đang bật.
-
