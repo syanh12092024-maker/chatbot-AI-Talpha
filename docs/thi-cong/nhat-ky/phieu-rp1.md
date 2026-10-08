@@ -72,13 +72,13 @@ review (a) C1/C2.
 ✔ (lưới «như cũ»): N1 N5 Q6 Q8 R2e R4b R6b R7a
 ✖ còn lại 31 ca — đỏ đúng lý do: products[0]=111:a0 (hết hàng) · không images · «Buy 2: 109 SAR» · tên «125 - …» · 0 POST ảnh ·
   boLuatChung từ CSDL khi biến vắng · Q3/Q4/Q5/Q7 base từ chối SAI lý do («chưa xác định được gói giá» — không đọc được nhãn)
-# sau (b666da9) — cổng ①
+# sau (1392b57) — cổng ①
 TZ=UTC pass=39 fail=0 · TZ=Pacific/Kiritimati pass=39 fail=0 · ca xanh 39/39
 ```
 Ca âm qty (Q3 Q4 Q5 Q7, R3b phần âm) xanh sau; base đỏ vì base không đọc được «Tên bậc» (nhãn «Buy N») nên từ chối với lý do khác — ca đòi
 đúng mã «số lượng không khớp gói giá». Đột biến «ép qty vô điều kiện» làm đỏ đúng 4 ca âm (bảng đảo-vá).
 
-## Cổng `ops/bin/nghiem-thu/rp1.sh` — lượt nghiệm thu (b666da9, `CHAY_NPM_TEST=1`)
+## Cổng `ops/bin/nghiem-thu/rp1.sh` — lượt nghiệm thu (1392b57, `CHAY_NPM_TEST=1`)
 ```
 ① bộ ca RP1 UTC pass=39 fail=0 · Pacific/Kiritimati pass=39 fail=0 (sàn ≥39)
 ② ca xanh thấy / đòi 39/39
@@ -91,7 +91,7 @@ PHÉP=55 LỖI=0 · rc=0
 ```
 
 ## Đảo-vá — bảng «đột biến nào KHÔNG đỏ» (bản sao tạm, mỗi đột biến một tiến trình node)
-| Đột biến | Đỏ thật (lượt nghiệm thu b666da9) | Đòi |
+| Đột biến | Đỏ thật (lượt nghiệm thu 1392b57) | Đòi |
 | --- | --- | --- |
 | bỏ `images` (④8) | R1a R1c R1d R1e R1f R2a R2b R2c R2d R2f R2g R2h R2i R2j | R1a R1c R1d R1e R1f |
 | bỏ catch ảnh (④8) | R2a R2b R2c R2f R2g R2h R2i R2j R3b | R2a R2c |
@@ -126,19 +126,19 @@ riêng — R6a khẳng định câu `bản này ĐANG ÁP DỤNG` nên nó đỏ
   l0-m2-boi-canh 22/0 · l0-m2-kich-ban 20/0 · l0-m2-noi-dung 18/0 · l2-m3-ngan-sach-luot 8/0 · l2-m3-rap-prompt 6/0 · l3-m4-duyet 19/0 ·
   l3-m4-hang-cho 25/0 · l4-prompt 24/0 · ll11-kien-thuc 3/0 · mn3-ban-chep-bot 10/0 · phase0-chat-safety 9/0 · tt1-tien-te-ngoai-gcc 11/0 ·
   tt1b-te-thi-truong 22/0.
-- ⑥: `gl4.sh` rc=0 · `gl3b.sh` rc=0 · `gl3.sh` rc=0 (lượt cổng rp1 ở b666da9). Lượt gl4.sh riêng trước commit (bản trước /code-review) cũng rc=0.
-- `tt1b.sh` (chạy riêng một lượt ở b666da9, 4307 s): rc=1 · PHÉP=41 LỖI=4 — ①–⑥ của TT1b 27/27 ✔ · ⑦ bộ ca TT1b 22/0 + 8 lưới gần (gồm
+- ⑥: `gl4.sh` rc=0 · `gl3b.sh` rc=0 · `gl3.sh` rc=0 (lượt cổng rp1 ở 1392b57). Lượt gl4.sh riêng trước commit (bản trước /code-review) cũng rc=0.
+- `tt1b.sh` (chạy riêng một lượt ở 1392b57, 4307 s): rc=1 · PHÉP=41 LỖI=4 — ①–⑥ của TT1b 27/27 ✔ · ⑦ bộ ca TT1b 22/0 + 8 lưới gần (gồm
   `gsp3-doi-soat` 28/0 · `l3-m4-duyet` 19/0 · `mn3` 10/0) ✔ · cổng con: `ll2` rc=0; 4 dòng đỏ đều KHÔNG do RP1:
   - `tt1` TREO quá 2700 s (chuỗi lồng tt1 → gsp3 → gsp1 → ll15d → ve8a: `v3/test/b/ve8a-gop.test.mjs` đứng 20′18″ ở 0% CPU, 0,88 s CPU, KHÔNG
     phiên Postgres nào trên CSDL ca — thợ dừng đúng tiến trình node đó theo luật «treo > 20′ ở 0% CPU»); `gsp3` rc=1 vì chính lượt dừng đó
     (ll15d đỏ) + `ve2b-page-gop` fail=1 lồng. Chạy RIÊNG `ve8a-gop` + `ve2b-page-gop`: 24/0. Khớp án lệ N-THUOC-CHAP-CHON (GP1: «tt1b 40/41 chỉ
     tt1 TREO lồng»). Không chạy lại `tt1.sh`/`gsp3.sh` riêng (chuỗi lồng sâu ~45′, không tệp nào RP1 sửa nằm trên đường của chúng).
   - `l3-m4` rc=1 «33 dòng đỏ MỚI so với b04d0dc» và `va-r2` rc=1 «12 dòng đỏ MỚI so với b04d0dc» — tt1b so với base CỦA NÓ (b04d0dc). Chạy riêng
-    hai cổng trên base RP1 `83f5f6f` và trên `b666da9`, so danh sách dòng đỏ (chuẩn hoá id/pid): l3-m4 33 = 33, 0 mới · 0 hết; va-r2 12 = 12,
+    hai cổng trên base RP1 `83f5f6f` và trên `1392b57`, so danh sách dòng đỏ (chuẩn hoá id/pid): l3-m4 33 = 33, 0 mới · 0 hết; va-r2 12 = 12,
     0 mới · 0 hết ⇒ đỏ SẴN trước RP1 (l3-m4 ⑤ dựng kịch bản 3 s rồi «thật=0/0»; va-r2 thước neo «pass=8» trong khi bộ ca có 11 — neo số tuyệt
     đối). Ca của hai cổng xanh: l3-m4 «⑦a ca xanh / đỏ 178 / 0».
   - Phiếu ④9 cho phép đo bằng bộ ca `test/tt1b-*` thay cổng — bộ ca xanh ở mọi lượt (22/0).
-- `npm test -- --test-force-exit`: TRƯỚC (base 83f5f6f) tests 2706 · pass 2684 · fail 0 → SAU (b666da9) tests 2745 · fail 0 (+39 ca RP1;
+- `npm test -- --test-force-exit`: TRƯỚC (base 83f5f6f) tests 2706 · pass 2684 · fail 0 → SAU (1392b57) tests 2745 · fail 0 (+39 ca RP1;
   lượt sau trước /code-review: 2742 · pass 2720 · fail 0).
 
 ## /code-review high — 10 phát hiện: sửa 5 · bác 5 (4 kèm nợ)

@@ -402,7 +402,7 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + RP2 + GL3c (vòng 2 — hồi quy ch
 | GL6 | Nhịp tim worker · độ trễ + tỉ lệ lỗi · bộ dò đẩy cảnh báo Telegram | GL4 · bot + chat id | 🟨 | ⬜ |
 | GL7a | Phép ⑤ `_chan1.sh` theo luật file phẳng CR-02-10: chỉ năm tệp bộ não phải khai; dòng «Đụng bộ não: không.» không được tính là đã khai | — | 🟩 | ✅ 07/10 · `2db6f07` · nhật ký `284afe1` · `gl7a.sh` 22/22 · `_chan1 gl7a` 8/8 · `_chan1 gl3b` ⑤ đỏ → xanh · lệch: dòng khai MỞ ĐẦU bằng «không» = chưa khai; giữ 7 tệp bộ não (N-GL7A-NAM-HAY-BAY chờ người quyết) · làn 🟩 ⇒ không chặng 2 |
 | GL7 | Đồng bộ tài liệu + rào cũ (`deploy/README.md` · `README.md:95` · unit mẫu cũ · hook `canh-file-cam.sh` · phép ⑤ `_chan1.sh`) | GL1–GL5 | 🟩 | ⬜ |
-| RP1 | Đường đọc CSDL đủ cho pilot: ảnh sản phẩm · ảnh hỏng không chặn chữ · «Tên bậc» giao diện (+ qty theo bậc ở `draft.js`) · tên sản phẩm gốc · lọc hết hàng · luật lõi giữ trong mã (`V3_LUAT_CHUNG_CSDL` vắng = CORE) | — | 🟥 | 🔨 phát 08/10 · base `9f2755c` · review (a) 2 vòng (vòng 2: R2-C1 luật qty có điều kiện + 7 NÊN đã vào phiếu) · worktree riêng · trước bước ③ |
+| RP1 | Đường đọc CSDL đủ cho pilot: ảnh sản phẩm · ảnh hỏng không chặn chữ · «Tên bậc» giao diện (+ qty theo bậc ở `draft.js`) · tên sản phẩm gốc · lọc hết hàng · luật lõi giữ trong mã (`V3_LUAT_CHUNG_CSDL` vắng = CORE) | — | 🟥 | 🔎 08/10 · mã `1392b57` · nhật ký `b7a9a2c` (cherry-pick từ worktree) · `rp1.sh` 55/55 · 39 ca × 2 múi giờ · 24 đảo-vá · npm test 2745/0 · lệch (a) lỗi quyền ảnh vẫn ném (tổng nhận) · chờ chặng 2 đối kháng |
 | RP2 | Hai núm ẩn chạm pilot: khối Chính sách · FAQ · Phản đối vào đường CSDL (theo team, bảng `khoi_dung_chung`) · chấm điểm lead cả tin khách đã nhường Botcake + `AM_THRESHOLD` 2→1 (Đụng bộ não `lead-score.js`) | RP1 (cùng `rap-prompt.js`) | 🟥 | ⬜ review (a) 2 vòng (vòng 2: R2-C1 chấm trong handler trên lịch sử + 6 NÊN đã vào phiếu) · sẵn phát SAU RP1 · page pilot phải thuộc team 1 |
 | H-GL | Người: chọn page pilot (khách Philippines ở GCC — vai bot viết cứng; `nguon_tin=poll`; có kịch bản LIVE + greeting/salesPrompt; thẻ «AI back Sale» + «Đã gửi» có trên page; kiến thức/mô tả sản phẩm gốc đã điền; Botcake thật sự chào + bắt «hi») · tắt ai_sale trên page đó (GIỮ Botcake chào — người quyết 08/10) · H-GSP page pilot (gắn gốc, đối soát «chép» để có ảnh) · người trực · tạo Telegram bot + chat id · đọc lại 11 mục `/khoi-chung` (lời hứa giao/hoàn/đổi trả thành lời bot nói) | — | — | ⬜ |
 
@@ -1914,7 +1914,7 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + RP2 + GL3c (vòng 2 — hồi quy ch
   - nối **N-GL3C-NAP-HAI-HOI-THOAI-MOT-CHAP**: F3 mở rộng lớp lỗi kênh (5xx JSON · câu lạ) ⇒ một lần chập 5xx trúng hai hội thoại cùng vòng nạp nay là ngắt
     30′ (tin giữ) — trước vòng 2 là lỗi dữ liệu, chập ≥ 90 s là giao sale hàng loạt.
 
-- 08/10 · RP1 (thợ) — đường đọc CSDL đủ cho pilot (commit b666da9). Nợ (chi tiết: `docs/thi-cong/nhat-ky/phieu-rp1.md` § Nợ · /code-review):
+- 08/10 · RP1 (thợ) — đường đọc CSDL đủ cho pilot (commit 1392b57). Nợ (chi tiết: `docs/thi-cong/nhat-ky/phieu-rp1.md` § Nợ · /code-review):
   - **N-RP1-MAN-BO-LUAT** (phiếu ⑥ vòng 2) màn «Bộ luật» (`v3/src/ui/bo-luat/kho-bo-luat.js:324,340`) vẫn nói «bản đang áp … THAY CORE» trong khi
     `V3_LUAT_CHUNG_CSDL` vắng ⇒ bot dùng CORE trong mã — màn nói sai; dặn người trực pilot tới khi sửa câu màn.
   - **N-RP1-MAN-PROMPT-SAN-PHAM** màn «Prompt của page» dựng khối sản phẩm RIÊNG (`v3/src/ui/prompt-page/kho-prompt.js#moTaSanPham`: «N cái: <giá đơn
@@ -3643,4 +3643,4 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
   · RP2 viết lại: khối chung đọc theo team (`khoi_dung_chung`) · chấm điểm cả tin nhường + mốc chống chấm lặp · đo chi phí trên mẫu 719 (đụng bộ não) · H-GL thêm đọc lại 11 mục `/khoi-chung`
 - 08/10 · RP1 → 🔎 chờ nghiệm thu — đường đọc CSDL đủ cho pilot: `products[].images` + dòng «Ảnh có sẵn» (chỉ ảnh tool gửi được) · ảnh hỏng KHÔNG chặn chữ (từ chối ⇒ thử lại 1 rồi bỏ · không rõ ⇒ bỏ cả tấm sau · lỗi quyền 103/105/121 / cổng chặn / không HTTP ⇒ ném như cũ — lệch phiếu tổng nhận, giữ P3d/⑤aa) · «Tên bậc» + «(N items)» · draft.js qty có điều kiện + chọn bậc theo qty khi không nêu gói · tên bỏ số hiệu giữ đuôi · lọc hết hàng · CORE trong mã trừ khi `V3_LUAT_CHUNG_CSDL=1`
   `rp1.sh` 55/55 rc=0 (39 ca × UTC/UTC+14 · 24 đảo-vá đỏ đúng · gl4/gl3b/gl3 rc=0 · 18 bộ ca cũ rc=0) · đỏ trên base 31/39 · tt1b.sh rc=1 riêng (tt1 TREO lồng ve8a 0% CPU — riêng 24/0 · l3-m4 33 / va-r2 12 dòng đỏ giống hệt base 83f5f6f) · bộ ca tt1b 22/0 · npm test 2706→2745 / 0 · /code-review 10: sửa 5 · bác 5 (4 kèm nợ) · nợ §9 N-RP1-* (9) + ⑥
-  · commit b666da9 · nhật ký docs/thi-cong/nhat-ky/phieu-rp1.md
+  · commit 1392b57 · nhật ký docs/thi-cong/nhat-ky/phieu-rp1.md
