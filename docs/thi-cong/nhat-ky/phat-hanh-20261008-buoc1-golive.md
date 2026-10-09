@@ -1,6 +1,6 @@
 # MỞ VAN — Go-live bước ① (mã điều kiện pilot lên prod, 0 page bật) · 08/10/2026
 
-> **TRẠNG THÁI: ⏳ CHỜ GẬT.** RP1 ✅ · RP2 ✅ · cửa vào đo xong (mục 3) · chờ người quyết gật «push + deploy bước ①».
+> **TRẠNG THÁI: ✅ GIỮ** — người quyết gật trực tiếp ở phiên này 08/10 («Gật — push + deploy bước ①»). Prod `8dc9bcd → fcb0c19` · migration 033 + 034 (tổng 34) · `V3_TRAN_PAGE_BAT=1` · restart CẢ HAI unit 16:04:20 CEST · +1′/+5′/+15′ và +13,5 h: 0 lỗi, mỗi unit khởi động 1 lần, 0 page bật, 0 `lan_gui`.
 
 ## 1 · Mở cái gì
 
@@ -54,9 +54,26 @@ không đọc). Không mất dữ liệu: đợt này không xoá dòng nào. Sa
 7. Prod: `systemctl restart aicloser-v3 aicloser-worker-v3` (CẢ HAI — worker đổi mã; biến trần đọc lúc khởi động).
 8. Mốc +1′ / +5′ / +15′.
 
-## 7 · Số đo tại từng mốc — điền khi chạy
+## 7 · Số đo tại từng mốc (prod, giờ CEST)
+
+Lệnh đã gõ: push `ff3526a..fcb0c19` (remote đi trước 0) · prod `checkout -f -B vao-ui-v3-17-09 origin/vao-ui-v3-17-09` → `fcb0c19`, 0 tệp sửa tại chỗ, `src/wa.js` còn ·
+`node --env-file=.env db/migrate.js` → **ÁP 033_nap_bo_qua_doc_tin_loi · ÁP 034_page_ngat_kenh · áp mới 2 · tổng 34** · `package.json` không đổi (không `npm` gì) · sao lưu
+`/var/backups/aicloser/.env.bak-20261008-160410-truoc-buoc1` · thêm `V3_TRAN_PAGE_BAT=1` · `preflight.mjs --tran` rc=0 (`tranPageBat 1` · `pagesBotBat 0`) ·
+`systemctl restart aicloser-v3 aicloser-worker-v3` 16:04:20.
+
+| Mốc | Số đo |
+|---|---|
+| trước | active · active · `/dang-nhap` 200 · `8dc9bcd` · page bật 0/582 · `_migrations` 32 |
+| +1′ | active · active · `/dang-nhap` 200 · `Started` v3=1 worker=1 · worker log «nạp: ĐÓNG — PANCAKE_READONLY=1» (đúng — van gửi chưa mở) |
+| +5′ (16:09) | active · active · `Started` 1/1 · dòng lỗi `error\|throw\|ECONN` = **0** |
+| +15′ | lượt đo nền bị cắt khi phiên chuyển ngày — đo bù ở mốc dưới |
+| +13,5 h (09/10 05:39) | active · active · `Started` 1/1 (không vòng restart) · `/dang-nhap` 200 · lỗi = **0** · vượt trần/ngắt kênh = 0 · page bật 0 · đang ngắt 0/582 · `lan_gui` từ restart = 0 · `_migrations` 34 |
+
 
 ## 8 · Kết — giữ / lùi / mở bậc sau
+
+**GIỮ.** Bước kế: ② «Điền giá» trên prod + H-GSP page pilot (người) · ③ `V3_RAP_PROMPT_BAT=1` + giả lập model thật · ④ sửa unit (bỏ `PANCAKE_READONLY=1`, `V3_PANCAKE_GUI=1`, gỡ `V3_PAGE_XU_LY`) + bật page pilot — mỗi bước người quyết gật riêng.
+
 
 ## 9 · Nợ phát sinh
 
@@ -65,3 +82,5 @@ không đọc). Không mất dữ liệu: đợt này không xoá dòng nào. Sa
 - `V3_PAGE_XU_LY` (chết) ghim ở unit worker — gỡ ở lượt sửa unit kế (bước ④ sửa unit để mở van gửi).
 
 ## 10 · Ai gật, lúc mấy giờ
+
+Người quyết, phiên tổng 08/10 (AskUserQuestion «Gật — push + deploy bước ①»), trước lệnh push. CHANGELOG viết SAU khi mở (lệch mo-van §6 — tổng nhận lỗi quy trình).

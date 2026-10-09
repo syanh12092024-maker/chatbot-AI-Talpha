@@ -19,6 +19,19 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 08/10/2026 — 🔴 Điều kiện go-live lên prod (chưa bật page nào): tiền tệ theo shop · Điền giá từ đơn POS · trần số page bật · bot không trả lời mù / không câm khi Pancake lỗi · tự ngắt page khi kênh lỗi · đường đọc CSDL có ảnh + chính sách (TT1 · TT1b · GP1 · GSP3c · GL1–GL4 · GL3b · GL3c · GL7a · RP1 · RP2)
+
+> Lên prod 08/10 16:04 (CEST) — `8dc9bcd → fcb0c19`, migration 033 + 034, `V3_TRAN_PAGE_BAT=1`; 0/582 page bật, van gửi / POS / cờ đọc CSDL vẫn TẮT ⇒ khách chưa thấy gì.
+> Nhật ký mở van: `docs/thi-cong/nhat-ky/phat-hanh-20261008-buoc1-golive.md`. ⚠️ Mục này viết SAU khi mở (lệch mo-van §6 — ghi trước khi mở).
+
+- 🔴 **Tiền tệ theo shop**: giá EUR/RON/AUD/TWD/JPY lưu đúng đơn vị POS; bậc giá và đơn POS phải đúng tệ thị trường của shop — gõ nhầm tệ bị từ chối, POS không thu sai ×100 / ×0,01 / ×12 (`bc190f5` · `100d47b`).
+- **Sản phẩm › «Điền giá từ đơn POS»**: điền sẵn bậc giá cho món POS chưa có giá từ COD đơn POS một món (60 ngày), xem trước rồi áp; bậc ghi «miễn ship» (COD đã gồm ship) (`cb3c953` · `3f78e06`).
+- **Trần số page bật bot toàn hệ** (`V3_TRAN_PAGE_BAT`, pilot = 1): vượt trần thì worker dừng hẳn, đèn Sức khoẻ đỏ nói đúng lý do và kể page đang bật (`2d0d335` · `65120b5`).
+- 🔴 **Pancake chậm / lỗi**: mọi lượt gọi có hạn chờ; gửi lỗi mạng không gửi lại (chống tin đúp); đọc lịch sử lỗi thì bot KHÔNG trả lời mù — chờ rồi giao sale CÓ dòng việc; danh sách hội thoại lỗi liên tục ≥ 2′ thì ngắt page (`908c439` · `7065e41` · `55a81d7` · `aedee92` · `0c65380`).
+- 🔴 **Tự ngắt page 30′ khi kênh lỗi 2 lần liên tiếp** (gửi hoặc đọc, theo khách khác nhau), tự mở lại; tin của khách giữ ở chờ; tin gửi lỗi có việc cho sale; đèn «Ngắt kênh tới HH:MM» (`f572434`).
+- 🔴 **Đường đọc CSDL (dùng khi bật cờ ở pilot)**: bot có ảnh sản phẩm; ảnh hỏng không chặn tin chữ; đọc «Tên bậc» marketer đặt; bỏ số hiệu nội bộ khỏi tên; không chào món hết hàng; đọc khối Chính sách · FAQ · Phản đối theo team; luật lõi giữ trong mã; khách hỏi giá mà Botcake đã trả lời vẫn được tính điểm (khách lạnh không bị chuyển sale quá sớm) (`1392b57` · `70216ef` · `76399c3`).
+- Đối soát sản phẩm: đổi món của gốc thì bỏ dấu đối soát; «Kéo danh mục» không ghi đè page đã gắn (`bf71c6e`) · preflight deploy thôi luôn báo lỗi (`75665af`) · rào kiểm tra bộ não đúng luật mới (`2db6f07`).
+
 ### 05/10/2026 — 🔴 Page bán sản phẩm qua sản phẩm gốc: danh sách chuyển page · đối soát giá + ảnh · sản phẩm gốc chỉ sinh từ gộp SKU · trang page chỉ xem giá (CR-02-10b · GSP1 · GSP1b · GSP2 · GSP3 · GSP3b)
 
 Không đổi chữ bot nói. Không bật page nào. **Migration 032** (chỉ thêm 4 cột `san_pham.doi_soat*`) · 0 gói · 0 tệp bộ não · 0 biến mới.

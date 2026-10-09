@@ -3699,3 +3699,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 08/10 · RP1 ✅ (vòng 2) · RP2 ✅ — TOÀN BỘ MÃ ĐIỀU KIỆN PILOT ĐỦ: GL1 GL2 GL3 GL3b GL3c GL4 GL7a · TT1 TT1b · GP1 · GSP3c · RP1 RP2 (tất cả ✅, chưa deploy; prod `8dc9bcd`)
   RP2 đối kháng ĐẠT: fuzz 17.635 lượt × 4 múi giờ 0 lượt tệ hơn cách cũ; khối chung đúng team; nhận diện sale giữ nguyên · nợ N-RP2-REGEX-TIN-NHUONG (câu soạn sẵn QC ⇒ NÓNG)
   · kế tiếp: cửa vào `ops/bin/phat-hanh.sh` (máy yên) ⇒ trình người quyết bước ① (`docs/thi-cong/nhat-ky/phat-hanh-20261008-buoc1-golive.md`)
+- 08/10 · MỞ VAN go-live BƯỚC ① → ✅ GIỮ — người quyết gật «push + deploy bước ①»: prod `8dc9bcd → fcb0c19` · migration 033 + 034 (tổng 34) · `V3_TRAN_PAGE_BAT=1` · restart cả hai unit 16:04:20 CEST · 0 page bật, van gửi/POS/cờ CSDL vẫn tắt
+  +1′ / +5′ / +13,5 h: active · active · mỗi unit khởi động 1 lần · lỗi 0 · `lan_gui` 0 · page bật 0/582 · đường lùi `checkout 8dc9bcd` + restart (giữ lược đồ) chưa cần dùng
+  · nhật ký `docs/thi-cong/nhat-ky/phat-hanh-20261008-buoc1-golive.md` · CHANGELOG viết sau khi mở (lệch §6 — ghi nhận) · kế: ② Điền giá + H-GSP page pilot · ③ cờ CSDL + giả lập · ④ mở van gửi + bật page (mỗi bước gật riêng)
