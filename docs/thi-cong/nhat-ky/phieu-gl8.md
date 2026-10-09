@@ -175,7 +175,7 @@ ngoài; không có liên kết ngược vào mã repo — đo `find -maxdepth 2 
 - **F4** — sửa LỜI `src/text.js` (khối trên `boNuaCapLe`): «xoá» là cách của ĐƯỜNG BOT, không phải của cả repo; ghi rõ hai công cụ dữ liệu cố ý
   thay bằng U+FFFD — `db/di-tru/nguon.js:38` (regex; thay ở :44, có đếm) · `ops/bin/dong-bo-kich-ban.mjs:30`. Hai tệp đó không đổi. Nhãn ⑤f của
   cổng đổi theo («một regex xoá nửa cặp cho đường bot»).
-- **Đổi tên ca** «Annabelle» → «Annabelle» (cùng 9 chữ ⇒ mọi phép cắt theo n giữ nguyên) ở 3 tệp ca; repo công khai. Phiếu GL8 (tệp của tổng)
+- **Đổi tên ca** (tên khách thật) → «Annabelle» (cùng 9 chữ ⇒ mọi phép cắt theo n giữ nguyên) ở 3 tệp ca; repo công khai. Phiếu GL8 (tệp của tổng)
   vẫn trích câu thật có tên đó — thợ không sửa phiếu.
 - **Số đo sau đối kháng** (máy dev, hộp cát, HEAD `6874875`): cổng `gl8.sh` **ĐỎ 0 / XANH 32** (② pass=8 gồm W6 · 21 đảo-vá đỏ đúng · ⑥0
   pass=26) · `npm test` **2827 ca · 2805 pass · 0 fail · 22 skipped** (rc=0; +1 so với 2826 = W6) · `_chan1.sh gl8` chạy sau commit nhật ký này
