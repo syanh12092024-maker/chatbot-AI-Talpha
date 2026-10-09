@@ -160,3 +160,23 @@ Mọi số trên: **máy dev**, worktree `…/.claude/worktrees/agent-acada247d1
 hộp cát `aicloser_v3_test_gl8w_p<pid>` / `aicloser_v3_test_gl8l_p<pid>` trên Postgres `127.0.0.1:5432` (tự dựng tự dọn) — KHÔNG đo `aicloser_v3`,
 KHÔNG đo prod. `.env` worktree chép từ `.env` dev (gitignore), `PANCAKE_READONLY=1` (⓪). `node_modules` là symlink sang cây chính (chỉ gói
 ngoài; không có liên kết ngược vào mã repo — đo `find -maxdepth 2 -type l`: chỉ `.bin/*`).
+
+## Sau đối kháng chặng 2 (ĐẠT — tổng giao thêm F1 · F4 · đổi tên ca) — commit `6874875`
+
+- **F1 — ca W6** (`test/gl8-luot-emoji.test.mjs`): hồ sơ cắt ở BỘ NÃO đi worker thật — `chayCloser` tiêm đẩy `tool_use create_draft_order` +
+  `tool_result {ok, order}` với `name`/`city`/`variant` = 39 đơn vị + emoji ⇒ `absorbToolUses` (`context.js:232-236`, KHÔNG sửa) cắt `slice(0, 40)`
+  để lại nửa đầu ở cả ba trường ⇒ chạm CẢ BA cửa jsonb (`so_ai(order).du_lieu.ho_so` · `du_lieu_don` · `hoi_thoai.ho_so`). Helper `chay` nay
+  chạy tới `vongToiDa` vòng, đặt lại `thu_lai_luc` giữa các vòng (W6 dùng 4) — bản lỗi lộ đủ số lượt gọi model.
+  - **Base** (bản sao tạm, 5 tệp `src` lấy từ `5c0e3aa`): `kqs ["thu_lai","thu_lai","loi"] · tin loi · HANDOFF/SALE/loi_xu_ly_can_doi_chieu ·
+    so [] · hc 0 · model 3 · post 0` ⇒ W6 ĐỎ — khớp mô tả của người đối kháng (RF-D).
+  - **Bản vá**: `kqs ["xong:tra_loi"] · so ["order/AI","reply/AI"] · hc 1 · model 1 · post 1`; `ho_so` = `["M"×39, "D"×39, "V"×39]` lành.
+  - Đảo-vá mới — gỡ TỪNG lưới riêng lẻ: ⑥j chỉ bỏ lưới `so-ai.js` ⇒ W6 đỏ · ⑥k chỉ bỏ lưới `kho.js` ⇒ W6 đỏ · ⑥l chỉ bỏ lưới hàng chờ ⇒ W6 đỏ
+    ⇒ đóng mục «đột biến KHÔNG đỏ» số 2 ở trên (lưới `kho.js` trước đây chỉ canh bằng ca gọi thẳng L4b; nay có ca worker canh).
+- **F4** — sửa LỜI `src/text.js` (khối trên `boNuaCapLe`): «xoá» là cách của ĐƯỜNG BOT, không phải của cả repo; ghi rõ hai công cụ dữ liệu cố ý
+  thay bằng U+FFFD — `db/di-tru/nguon.js:38` (regex; thay ở :44, có đếm) · `ops/bin/dong-bo-kich-ban.mjs:30`. Hai tệp đó không đổi. Nhãn ⑤f của
+  cổng đổi theo («một regex xoá nửa cặp cho đường bot»).
+- **Đổi tên ca** «Annabelle» → «Annabelle» (cùng 9 chữ ⇒ mọi phép cắt theo n giữ nguyên) ở 3 tệp ca; repo công khai. Phiếu GL8 (tệp của tổng)
+  vẫn trích câu thật có tên đó — thợ không sửa phiếu.
+- **Số đo sau đối kháng** (máy dev, hộp cát, HEAD `6874875`): cổng `gl8.sh` **ĐỎ 0 / XANH 32** (② pass=8 gồm W6 · 21 đảo-vá đỏ đúng · ⑥0
+  pass=26) · `npm test` **2827 ca · 2805 pass · 0 fail · 22 skipped** (rc=0; +1 so với 2826 = W6) · `_chan1.sh gl8` chạy sau commit nhật ký này
+  (kết quả báo tổng trong câu trả lời).
