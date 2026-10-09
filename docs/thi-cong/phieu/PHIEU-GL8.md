@@ -12,7 +12,7 @@
 UTF-16: câu trả lời 201 đơn vị mà đơn vị thứ 200 là nửa đầu của 📦 (`\ud83d`) ⇒ chuỗi mang nửa cặp thay thế ⇒ `JSON.stringify` giữ `\ud83d` ⇒
 Postgres jsonb từ chối «invalid input syntax for type json». Bước ghi này chạy **sau** `guiChu(guarded)` ⇒ worker (`src/queue/worker.js` nhánh
 `catch`: `daGui` ⇒ `hetLuot` ⇒ `banGiaoLoi`) đánh lượt `loi` và **giao khách cho sale** dù bot vừa trả lời đúng; `so_ai` mất dòng (tiền tàng hình),
-hồ sơ/điểm lead của lượt không lưu. Không gửi đúp (rào `daBatDauGui` đúng). Câu thật đo được (giả lập): «Yes po Annabelle, free delivery po! 🚚 …
+hồ sơ/điểm lead của lượt không lưu. Không gửi đúp (rào `daBatDauGui` đúng). Câu thật đo được (giả lập): «Yes po <tên khách>, free delivery po! 🚚 …
 details for booking. 📦» — 201 đơn vị. Bot viết Tagalog nhiều emoji, câu ~200 ký tự là thường ⇒ chắc chắn gặp ở pilot.
 Cùng khuôn (soát (a) đã liệt kê): `handler-v3.js:647` · `:717` (`.slice(0, 600)` câu mẫu → `so_ai`) · `:668` · `:744` (`cua.text.slice(0, 200)`) ·
 **`:906` `guarded0.slice(0, 600)`** (chữ model → `so_ai`, TRƯỚC khi gửi ⇒ tin `thu_lai`, model bị gọi lại tới 3 lần — tiền — rồi vẫn giao sale) ·
