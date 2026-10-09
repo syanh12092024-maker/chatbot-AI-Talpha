@@ -14,6 +14,7 @@
 // GET-only sang Pancake; đừng gõ tay một danh sách "tin mẫu" — nó sẽ đo trí tưởng tượng
 // của người gõ chứ không đo page.
 import fs from 'node:fs';
+import { parseEnv } from 'node:util';
 import pg from 'pg';
 import { rapKb } from '../../src/chat/rap-prompt.js';
 import { fastLane } from '../../src/fast-lane.js';
@@ -26,10 +27,9 @@ if (!tepTin || !pageIdFb) {
 }
 if (!process.env.DEVENV) { console.error('Thiếu DEVENV — trỏ tới tệp .env của bản đang đo.'); process.exit(2); }
 
-const env = Object.fromEntries(fs.readFileSync(process.env.DEVENV, 'utf8').split('\n')
-  .filter((l) => /^[A-Z0-9_]+=/.test(l)).map((l) => {
-    const i = l.indexOf('='); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, '')];
-  }));
+// GL8: đọc y như `node --env-file` của prod (`util.parseEnv`). Khối tự viết cũ giữ chú thích đuôi: `FASTLANE_TEMPLATES=0   # TAT…`
+// ⇒ "0   # TAT…" ⇒ mọi cờ đọc kiểu `!== '0'` thành BẬT trong khi prod TẮT.
+const env = parseEnv(fs.readFileSync(process.env.DEVENV, 'utf8'));
 // Chỉ đo trên máy mình. Bộ đo này đọc cả bảng giá lẫn kịch bản LIVE.
 if (!/@(127\.0\.0\.1|localhost|\[::1\])[:/]/.test(env.DATABASE_URL_V3 || '')) {
   console.error('Chỉ chạy trên PostgreSQL local.'); process.exit(2);

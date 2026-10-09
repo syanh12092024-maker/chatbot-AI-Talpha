@@ -22,7 +22,9 @@ import {
   buildContextMessages,
   shipVuotMau,
 } from "../context.js";
-import { cleanText } from "../text.js";
+// GL8: `catChu` cho mọi chữ cắt để ghi vào `so_ai.du_lieu` (jsonb — `slice` chém đôi emoji ⇒ cả dòng bị từ chối; `so-ai.js` có lưới
+// `jsonLanh` phía sau). `so_ai.ly_do` là cột text — pg tự thay nửa cặp bằng U+FFFD, không vỡ. Chữ GỬI KHÁCH không đi qua hàm này.
+import { cleanText, catChu } from "../text.js";
 import { config } from "../config.js";
 import { layModel as layModelMacDinh } from "./model.js";
 import { ghiSoAi, LOAI, KHONG_GOI_MODEL } from "./so-ai.js";
@@ -644,7 +646,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
           lyDo: `guard_noi_dung:${cua.v.rule}`,
           // GIỮ CÂU BỊ CHẶN. Không giữ thì không ai phán được cửa bắt ĐÚNG hay bắt NHẦM —
           // đo 21/09: 5 dòng `spent_no_send` chỉ có `llm_ms`/`provider`, câu chữ mất sạch.
-          duLieu: { text_bi_chan: String(tk.reply).slice(0, 600), guard_ly_do: cua.v.reason || "" },
+          duLieu: { text_bi_chan: catChu(tk.reply, 600), guard_ly_do: cua.v.reason || "" },
         });
         await banGiaoViCuaRa(cua.v.rule, KHONG_GOI_MODEL, LANE_TU_KHOA);
         await luuLai({ daGoiModel: false, daGuiText: false });
@@ -658,14 +660,14 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       try {
         dem0Dong = await d.demChan0Dong(pool, { teamId, ma: tk.rule });
       } catch (e) {
-        dem0Dong = `loi:${e?.message || e}`.slice(0, 120);
+        dem0Dong = catChu(`loi:${e?.message || e}`, 120);
       }
       await ghi(LOAI.REPLY, {
         maModel: KHONG_GOI_MODEL, // lớp từ khoá KHÔNG gọi model — xem so-ai.js
         lane: LANE_TU_KHOA,
         trangThai: hoiThoai.trang_thai,
         lyDo: tk.lyDo,
-        duLieu: { text: cua.text.slice(0, 200), rule: tk.rule, dem_0_dong: dem0Dong,
+        duLieu: { text: catChu(cua.text, 200), rule: tk.rule, dem_0_dong: dem0Dong,
           ...(cua.daSua ? { sua_tai_cho: cua.daSua } : {}) },
       });
       state.fastLanesUsed.add(`keyword:${tk.rule}`);
@@ -714,7 +716,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
           maModel: KHONG_GOI_MODEL,
           lane: fl.lane,
           lyDo: `guard_noi_dung:${cua.v.rule}`,
-          duLieu: { text_bi_chan: String(fl.reply).slice(0, 600), guard_ly_do: cua.v.reason || "" },
+          duLieu: { text_bi_chan: catChu(fl.reply, 600), guard_ly_do: cua.v.reason || "" },
         });
         await banGiaoViCuaRa(cua.v.rule, KHONG_GOI_MODEL, fl.lane);
         await luuLai({ daGoiModel: false, daGuiText: false });
@@ -741,7 +743,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         lane: fl.lane,
         trangThai: hoiThoai.trang_thai,
         lyDo: fl.reason || "",
-        duLieu: { text: cua.text.slice(0, 200), ...(cua.daSua ? { sua_tai_cho: cua.daSua } : {}) },
+        duLieu: { text: catChu(cua.text, 200), ...(cua.daSua ? { sua_tai_cho: cua.daSua } : {}) },
       });
       state.lastAiText = cua.text;
       await luuLai({ daGoiModel: false, daGuiText: true, textDaGui: cua.text });
@@ -903,7 +905,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
           dung,
           // Câu model đã viết — ĐÃ TRẢ TIỀN cho nó, phải giữ lại mới soi được cửa bắt
           // đúng hay nhầm. Cắt 200 ký tự như nhánh REPLY.
-          duLieu: { text_bi_chan: guarded0.slice(0, 600), guard_ly_do: cua.v.reason || "" },
+          duLieu: { text_bi_chan: catChu(guarded0, 600), guard_ly_do: cua.v.reason || "" },
         });
       }
     }
@@ -968,7 +970,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         trangThai: hoiThoai.trang_thai,
         dung,
         duLieu: {
-          text: guarded.slice(0, 200), nguon_model: model.nguon,
+          text: catChu(guarded, 200), nguon_model: model.nguon,
           ...(cuaRaSua ? { sua_tai_cho: cuaRaSua } : {}),
           tre_nao_ms: treNaoMs,                 // riêng lượt bộ não (model + vòng tool)
           tre_luot_ms: Date.now() - mocLuot,    // cả lượt: đọc lịch sử → soạn → qua cửa

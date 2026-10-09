@@ -15,6 +15,7 @@
 //
 // Chạy:  DEVENV=<.env> node ops/bin/bao-cao-24h.mjs --page <id> [--gio 24] [--tat-ca]
 import fs from "node:fs";
+import { parseEnv } from "node:util";
 import pg from "pg";
 
 const arg = (t, md) => { const i = process.argv.indexOf(t); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : md; };
@@ -25,8 +26,9 @@ if (!pageIdFb || !process.env.DEVENV) {
   console.error("Dùng: DEVENV=<.env> node ops/bin/bao-cao-24h.mjs --page <id> [--gio 24] [--tat-ca]");
   process.exit(2);
 }
-const env = Object.fromEntries(fs.readFileSync(process.env.DEVENV, "utf8").split("\n")
-  .filter((l) => /^[A-Z0-9_]+=/.test(l)).map((l) => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, "")]; }));
+// GL8: đọc y như `node --env-file` của prod (`util.parseEnv`). Khối tự viết cũ giữ chú thích đuôi: `FASTLANE_TEMPLATES=0   # TAT…`
+// ⇒ "0   # TAT…" ⇒ mọi cờ đọc kiểu `!== '0'` thành BẬT trong khi prod TẮT.
+const env = parseEnv(fs.readFileSync(process.env.DEVENV, "utf8"));
 for (const [k, v] of Object.entries(env)) if (process.env[k] === undefined) process.env[k] = v;
 if (!/@(127\.0\.0\.1|localhost|\[::1\])[:/]/.test(env.DATABASE_URL_V3 || "")) {
   console.error("Chỉ chạy trên PostgreSQL local."); process.exit(2);

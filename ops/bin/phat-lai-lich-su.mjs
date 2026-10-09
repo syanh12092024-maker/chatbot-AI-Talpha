@@ -27,6 +27,7 @@
 //   DEVENV=<.env> node ops/bin/phat-lai-lich-su.mjs --page <id> --so 30
 //   thêm --that để THỰC SỰ gọi model (mặc định chỉ in dự toán rồi dừng)
 import fs from "node:fs";
+import { parseEnv } from "node:util";
 import pg from "pg";
 
 const arg = (t, md) => { const i = process.argv.indexOf(t); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : md; };
@@ -37,8 +38,9 @@ if (!pageIdFb || !process.env.DEVENV) {
   console.error("Dùng: DEVENV=<.env> node ops/bin/phat-lai-lich-su.mjs --page <id> [--so 30] [--that]");
   process.exit(2);
 }
-const env = Object.fromEntries(fs.readFileSync(process.env.DEVENV, "utf8").split("\n")
-  .filter((l) => /^[A-Z0-9_]+=/.test(l)).map((l) => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, "")]; }));
+// GL8: đọc y như `node --env-file` của prod (`util.parseEnv`). Khối tự viết cũ giữ chú thích đuôi: `FASTLANE_TEMPLATES=0   # TAT…`
+// ⇒ "0   # TAT…" ⇒ mọi cờ đọc kiểu `!== '0'` thành BẬT trong khi prod TẮT.
+const env = parseEnv(fs.readFileSync(process.env.DEVENV, "utf8"));
 for (const [k, v] of Object.entries(env)) if (process.env[k] === undefined) process.env[k] = v;
 
 if (process.env.V3_DIEN_TAP !== "1") {

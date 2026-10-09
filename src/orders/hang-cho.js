@@ -36,6 +36,7 @@ import { docSanPhamGoiGia } from "../products/catalog.js";
 import { ghiNhatKy, LoiThieuBoiCanhTeam } from "../db/index.js";
 import { kiemTrung } from "./loc-trung.js";
 import { MA_HOAN } from "./ti-le-hoan.js";
+import { catChu, jsonLanh } from "../text.js";
 import { donMessengerDaTao } from "./may-trang-thai.js";
 import { taoDon as taoDonPos, layKetNoi, quyDonViNho } from "../pos/index.js";
 // ⛔ import SÂU có chủ ý, cùng án lệ `src/orders/cua-pos.js:18`: `src/pos/index.js`
@@ -476,7 +477,8 @@ export async function nguonD_fbCommerce(
     ket: dinh ? KET_NGUON.DUONG : KET_NGUON.SACH,
     so_tin: tin.length,
     chi_tiet: dinh
-      ? `hội thoại có dấu hiệu đơn ngoài: "${dinh.replace(/\s+/g, " ").trim().slice(0, 60)}"`
+      // GL8: `catChu` thay `slice` — chữ khách cắt 60 đơn vị đúng giữa emoji ⇒ `cua_kiem` (jsonb) bị từ chối ⇒ lượt chốt mất dòng hàng chờ.
+      ? `hội thoại có dấu hiệu đơn ngoài: "${catChu(dinh.replace(/\s+/g, " ").trim(), 60)}"`
       : `đã soi ${tin.length} tin, không có dấu hiệu đơn FB Commerce`,
   };
 }
@@ -704,20 +706,22 @@ export async function vaoHangCho(
     deps,
   );
 
+  // LƯỚI GL8 (`jsonLanh`): hồ sơ khách + chi tiết năm cửa mang chữ khách/lỗi ném ra — một nửa emoji ở đâu đó là jsonb từ chối cả
+  // dòng, và lượt chốt đơn mất dòng hàng chờ (cả giao dịch lùi).
   const r = await pool.query(
     `INSERT INTO hang_cho_tao_don (team_id, hoi_thoai_id, du_lieu_don, cua_kiem)
      VALUES ($1, $2, $3, $4) RETURNING *`,
     [
       team,
       ht.id,
-      JSON.stringify({
+      jsonLanh({
         ...duLieu,
         conv_id: conv,
         tin_id: tinId == null ? null : String(tinId),
         market,
         page_id_text: ht.ptext,
       }),
-      JSON.stringify(cuaKiem),
+      jsonLanh(cuaKiem),
     ],
   );
   const dong = r.rows[0];

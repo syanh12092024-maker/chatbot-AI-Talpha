@@ -9,14 +9,16 @@
 //
 //   DEVENV=<.env> node ops/bin/dem-token-kimi.mjs --page <page_id Facebook> [--toi-da 6]
 import fs from "node:fs";
+import { parseEnv } from "node:util";
 import pg from "pg";
 
 const arg = (t, md) => { const i = process.argv.indexOf(t); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : md; };
 const pageIdFb = arg("--page", "");
 const toiDa = Number(arg("--toi-da", "6"));
 if (!pageIdFb || !process.env.DEVENV) { console.error("Dùng: DEVENV=<.env> node ops/bin/dem-token-kimi.mjs --page <id>"); process.exit(2); }
-const env = Object.fromEntries(fs.readFileSync(process.env.DEVENV, "utf8").split("\n")
-  .filter((l) => /^[A-Z0-9_]+=/.test(l)).map((l) => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, "")]; }));
+// GL8: đọc y như `node --env-file` của prod (`util.parseEnv`). Khối tự viết cũ giữ chú thích đuôi: `FASTLANE_TEMPLATES=0   # TAT…`
+// ⇒ "0   # TAT…" ⇒ mọi cờ đọc kiểu `!== '0'` thành BẬT trong khi prod TẮT.
+const env = parseEnv(fs.readFileSync(process.env.DEVENV, "utf8"));
 for (const [k, v] of Object.entries(env)) if (process.env[k] === undefined) process.env[k] = v;
 
 const pool = new pg.Pool({ connectionString: env.DATABASE_URL_V3, max: 2 });

@@ -26,6 +26,7 @@
 //                         lượt chạy lại là một tập hội thoại khác và không so được.
 //   ... --ra  <tệp.json>  xuất kết quả có cấu trúc (để dựng màn hình đối chiếu).
 import fs from "node:fs";
+import { parseEnv } from "node:util";
 import pg from "pg";
 
 const arg = (t, md) => { const i = process.argv.indexOf(t); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : md; };
@@ -58,9 +59,14 @@ if (!pageIdFb || !process.env.DEVENV) {
   console.error("Dùng: DEVENV=<.env> node ops/bin/gia-lap-mot-minh.mjs --page <id> [--so 40] [--that]");
   process.exit(2);
 }
-const env = Object.fromEntries(fs.readFileSync(process.env.DEVENV, "utf8").split("\n")
-  .filter((l) => /^[A-Z0-9_]+=/.test(l)).map((l) => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, "")]; }));
+// GL8: đọc y như `node --env-file` của prod (`util.parseEnv`). Khối tự viết cũ giữ chú thích đuôi: `FASTLANE_TEMPLATES=0   # TAT…`
+// ⇒ "0   # TAT…" ⇒ mọi cờ đọc kiểu `!== '0'` thành BẬT trong khi prod TẮT.
+const env = parseEnv(fs.readFileSync(process.env.DEVENV, "utf8"));
 for (const [k, v] of Object.entries(env)) if (process.env[k] === undefined) process.env[k] = v;
+// GL8 ②4: in cờ ĐÃ ĐỌC (giá trị thật trong tiến trình, sau khi trộn `.env`) TRƯỚC mọi việc — người đọc kết quả giả lập phải thấy
+// được lượt này chạy với câu mẫu/lời chào/tiếp quản bật hay tắt, khỏi so tay với prod.
+console.log(`  cờ đã đọc         : ${["FASTLANE", "FASTLANE_TEMPLATES", "FASTLANE_INTRO", "HUMAN_TAKEOVER", "V3_RAP_PROMPT_BAT",
+  "PANCAKE_READONLY", "V3_PANCAKE_GUI", "V3_POS_GHI"].map((k) => `${k}=${process.env[k] === undefined ? "vắng" : JSON.stringify(process.env[k])}`).join(" · ")}`);
 if (process.env.V3_DIEN_TAP !== "1") { console.error("⛔ TỪ CHỐI: cần V3_DIEN_TAP=1."); process.exit(2); }
 if (!/@(127\.0\.0\.1|localhost|\[::1\])[:/]/.test(env.DATABASE_URL_V3 || "")) { console.error("Chỉ chạy trên PostgreSQL local."); process.exit(2); }
 

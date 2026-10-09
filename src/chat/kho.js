@@ -24,6 +24,7 @@
 // tầng chung không diễn đạt được nâng-hoặc-chèn. `docHoiThoaiTheoPageText` ở lại vì nó
 // tra theo id FACEBOOK (JOIN sang `page`), tầng chung không có JOIN.
 import { ghiNhatKy, suaTheoId, ctxHeThong } from "../db/index.js";
+import { jsonLanh } from "../text.js";
 
 /** Đúng những cột mà một lượt chat được phép đổi. Thêm cột = sửa Ở ĐÂY, có chủ đích. */
 const COT_CHO_PHEP = new Set([
@@ -81,10 +82,13 @@ export async function suaHoiThoai(
   //    `moc_luot_llm: [mốc, mốc]` đi thẳng vào `suaTheoId` là «invalid input syntax for
   //    type json». Stringify ở đây rồi để Postgres tự ép unknown→jsonb thì đúng
   //    (`jsonb_typeof` = `array`, `jsonb_array_length` = 2).
+  //
+  // LƯỚI GL8: `jsonLanh` = stringify mà làm lành từng chuỗi TRƯỚC khi mã hoá. `ho_so` mang chữ khách đã bị cắt ở bộ não
+  // (`context.js` — tệp cấm sửa); một nửa emoji ở chỗ cắt là jsonb từ chối cả câu UPDATE của lượt.
   const duLieu = {};
   for (const c of cot) {
     duLieu[c] = COT_JSONB.has(c)
-      ? JSON.stringify(giaTri[c] ?? null)
+      ? jsonLanh(giaTri[c] ?? null)
       : giaTri[c];
   }
 

@@ -23,6 +23,7 @@
 //    Ở nhịp ~19.000 hội thoại đang có thì trần này ở rất xa, nhưng nó CÓ THẬT: hàng đợi
 //    chạm trần sẽ ném lỗi ghi sổ, không im lặng. Ghi ra đây để người sau không phải đoán.
 import { TRANG_THAI } from "../queue/kho.js";
+import { jsonLanh } from "../text.js";
 
 /** Bảy loại của CHECK trong `so_ai` (001_nen). Năm loại đầu là bắt buộc của phiếu này. */
 export const LOAI = Object.freeze({
@@ -105,7 +106,8 @@ export async function ghiSoAi(
       dung.cread ?? null,
       dung.cwrite ?? null,
       dung.calls ?? null,
-      JSON.stringify(duLieu ?? {}),
+      // LƯỚI GL8: chữ khách/bot cắt ở đâu đó mang nửa emoji ⇒ jsonb từ chối cả dòng — và dòng này thường ghi SAU khi đã gửi.
+      jsonLanh(duLieu ?? {}),
       `tin_cho_xu_ly:${loai}`,
       Number(tinId),
     ],

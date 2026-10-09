@@ -23,12 +23,34 @@ export function stripHtml(str) {
     .replace(/[ \t]{2,}/g, ' ');
 }
 
+// XOÁ nửa cặp thay thế mồ côi (nửa emoji). MỘT cách xử lý nửa cặp lẻ cho cả repo — `cleanText`, `catChu`, `jsonLanh` đều đi qua
+// đây. Cố ý KHÔNG dùng `toWellFormed()` (thay bằng U+FFFD «�»): hai cách cho một bệnh là hai thứ để người sau phải đoán (GL8 ②1).
+export function boNuaCapLe(str) {
+  return String(str == null ? '' : str)
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+}
+
 // Xoá mã surrogate mồ côi (nửa emoji) + bóc thẻ HTML. Cắt trước, dọn sau — đúng thứ tự này mới an toàn.
 export function cleanText(str, max) {
   let s = String(str == null ? '' : str);
   if (max) s = s.slice(0, max);
-  s = s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
-  return stripHtml(s);
+  return stripHtml(boNuaCapLe(s));
+}
+
+// CẮT CHỮ ĐỂ GHI SỔ (GL8). `slice(0, N)` cắt theo đơn vị UTF-16: đơn vị thứ N là nửa đầu của 📦 thì chuỗi mang nửa cặp, và
+// `JSON.stringify` giữ nguyên nó thành chữ ASCII `\ud83d` ⇒ Postgres jsonb từ chối CẢ câu INSERT. Đo 09/10 (giả lập pilot): câu bot
+// 201 đơn vị ghi `so_ai.du_lieu.text = slice(0, 200)` SAU khi đã gửi ⇒ worker đánh lượt `loi` và giao khách cho sale dù bot vừa trả
+// lời đúng. Hàm này cắt tối đa `max` đơn vị rồi xoá nửa cặp lẻ (nửa đầu bị chém ở cuối = cắt lùi một đơn vị). Chuỗi lành ⇒ y hệt
+// `slice`. Chỉ dùng cho chữ GHI SỔ — chữ GỬI KHÁCH không bao giờ đi qua đây.
+export function catChu(str, max) {
+  return boNuaCapLe(String(str == null ? '' : str).slice(0, max));
+}
+
+// LƯỚI CỬA GHI JSONB (GL8 ②2): `JSON.stringify` mà làm lành TỪNG CHUỖI giá trị TRƯỚC khi mã hoá (qua `replacer`). Dọn SAU stringify
+// là vô tác dụng — lúc đó nửa cặp đã thành sáu chữ ASCII `\ud83d`. Tên khoá không đi qua replacer: khoá là hằng của mã, không phải
+// chữ khách. Dữ liệu lành ⇒ ra y hệt `JSON.stringify`.
+export function jsonLanh(giaTri) {
+  return JSON.stringify(giaTri, (_k, v) => (typeof v === 'string' ? boNuaCapLe(v) : v));
 }
 
 // Có nửa emoji trong chuỗi không? (dùng để log cảnh báo khi lớp chặn cuối phải ra tay)
