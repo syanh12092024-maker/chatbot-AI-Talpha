@@ -35,8 +35,9 @@ const CAU_201 = cauCat(200);   // câu thật đo 09/10 cùng hình: 201 đơn v
 const CAU_601 = cauCat(600);
 const CHAN = () => ({ ok: false, action: "block", rule: "GL8_CHAN", reason: "ca GL8 giết câu" });
 
-/** Mỗi ca một page + một hội thoại + một tin; chạy MỘT vòng worker rồi đọc lại sổ thật. */
-async function chay(ten, { noiDung = "how much po?", kb = {}, lanNhanh, chayCloser, kiemTinRa } = {}) {
+/** Mỗi ca một page + một hội thoại + một tin; chạy tới `vongToiDa` vòng worker (đặt lại `thu_lai_luc` giữa các vòng — tin `thu_lai`
+ *  được rút lại NGAY, nên bản lỗi lộ ra đủ số lượt gọi model của nó) rồi đọc lại sổ thật. */
+async function chay(ten, { noiDung = "how much po?", kb = {}, lanNhanh, chayCloser, kiemTinRa, vongToiDa = 2 } = {}) {
   const page = `gl8w-${ten}`;
   const p = (await sb.pool.query("INSERT INTO page (bot_ai_bat, team_id, page_id, ten) VALUES (true,$1,$2,'GL8') RETURNING id", [teamId, page])).rows[0].id;
   const htId = (await sb.pool.query("INSERT INTO hoi_thoai (team_id,page_id,psid,trang_thai,chu_so_huu) VALUES ($1,$2,'KH','QUALIFY','AI') RETURNING id", [teamId, p])).rows[0].id;
@@ -55,13 +56,19 @@ async function chay(ten, { noiDung = "how much po?", kb = {}, lanNhanh, chayClos
       guiAnh: async () => ({ ok: true, id: "x" }), ghiNote: async () => ({ ok: true }), gatThe: async () => ({ ok: true, tags: [] }),
     },
   };
-  const kq = await chayMotVong(sb.pool, deps);
-  const kq2 = await chayMotVong(sb.pool, deps);   // vòng thứ hai: tin đã chốt thì không còn gì để rút (không gọi model lần nữa)
+  // Vòng thứ hai trở đi: tin đã chốt thì không còn gì để rút (không gọi model lần nữa).
+  const kqs = [];
+  for (let i = 0; i < vongToiDa; i++) {
+    const k = await chayMotVong(sb.pool, deps);
+    if (!k) break;
+    kqs.push(`${k.ketQua}:${String(k.lyDo || "").slice(0, 80)}`);
+    await sb.pool.query("UPDATE tin_cho_xu_ly SET thu_lai_luc=now() WHERE team_id=$1 AND page_id=$2 AND trang_thai='cho'", [teamId, page]);
+  }
   const tin = (await sb.pool.query("SELECT trang_thai, left(ly_do,160) ly_do FROM tin_cho_xu_ly WHERE team_id=$1 AND page_id=$2", [teamId, page])).rows;
   const ht = (await sb.pool.query("SELECT trang_thai, chu_so_huu, ly_do_cuoi FROM hoi_thoai WHERE id=$1", [htId])).rows[0];
   const so = (await sb.pool.query("SELECT loai, lane, du_lieu FROM so_ai WHERE team_id=$1 AND page_id=$2 ORDER BY id", [teamId, page])).rows;
   const hc = (await sb.pool.query("SELECT id, du_lieu_don, cua_kiem FROM hang_cho_tao_don WHERE team_id=$1 AND hoi_thoai_id=$2", [teamId, htId])).rows;
-  const ra = { ketQua: kq?.ketQua, lyDo: String(kq?.lyDo || "").slice(0, 160), vong2: kq2 ? kq2.ketQua : null, tin, ht, so, hc, ...dem };
+  const ra = { kqs, tin, ht, so, hc, ...dem };
   console.log(`   [gl8w] ${ten}: ${JSON.stringify({ ...ra, so: so.map((x) => `${x.loai}/${x.lane}`), hc: hc.length, gui: dem.gui.map((g) => g.length) })}`);
   return ra;
 }
@@ -75,7 +82,7 @@ const khongNuaCap = (v) => {
 function tinXong(r) {
   assert.equal(r.tin.length, 1);
   assert.equal(r.tin[0].trang_thai, "xong", `tin phải 'xong' — thật: ${r.tin[0].trang_thai} · ${r.tin[0].ly_do}`);
-  assert.equal(r.vong2, null, "vòng thứ hai còn rút được tin ⇒ tin chưa chốt");
+  assert.equal(r.kqs.length, 1, `vòng sau còn rút được tin ⇒ tin chưa chốt: ${JSON.stringify(r.kqs)}`);
   assert.notEqual(r.ht.ly_do_cuoi, "loi_xu_ly_can_doi_chieu", "worker đã giao khách cho sale vì lỗi ghi sổ (banGiaoLoi)");
 }
 
@@ -164,4 +171,35 @@ test("GL8 W5 · lượt CHỐT ĐƠN, tin khách có dấu hiệu đơn ngoài v
   assert.match(d.chi_tiet, /Your order has been confirmed/);
   assert.equal(r.so.filter((x) => x.loai === "order").length, 1);
   assert.equal(r.post, 1);
+});
+
+test("GL8 W6 · hồ sơ đi qua BỘ NÃO: kết quả tool tạo đơn có tên/thành phố/biến thể 39 đơn vị + emoji ở chỗ cắt 40 của `context.js:232-236` ⇒ tin xong · model 1 lần · hàng chờ 1 dòng · ho_so lành", async () => {
+  // `absorbToolUses` (tệp bộ não, không sửa) cắt `slice(0, 40)` ⇒ ba trường mang nửa đầu lẻ ⇒ đi vào CẢ BA cửa ghi jsonb của lượt:
+  // `so_ai(order).du_lieu.ho_so` · `hang_cho_tao_don.du_lieu_don` · `hoi_thoai.ho_so`. Trên base: mỗi vòng ném trước khi gửi ⇒ model gọi lại
+  // tới trần thử, rồi tin `loi` + giao SALE, 0 dòng so_ai, 0 dòng hàng chờ.
+  const don = { name: "M".repeat(39) + "😀z", phone: "0501234567", address: "Al Barsha villa 9", city: "D".repeat(39) + "🇦🇪",
+    variant: "V".repeat(39) + "🎁", qty: 1 };
+  for (const k of ["name", "city", "variant"]) assert.ok(!don[k].slice(0, 40).isWellFormed(), `tiền đề: ${k} cắt 40 phải chém đôi emoji`);
+  const r = await chay("tool-don-232", {
+    noiDung: "sige po order na",
+    vongToiDa: 4,
+    chayCloser: ({ state }) => {
+      state.messages.push({ role: "assistant", content: [{ type: "tool_use", id: "tu1", name: "create_draft_order", input: {} }] });
+      state.messages.push({ role: "user", content: [{ type: "tool_result", tool_use_id: "tu1", content: JSON.stringify({ ok: true, order: don }) }] });
+      state.orderCreatedThisTurn = true;
+      return "Salamat po! Your order is noted. 🙏";
+    },
+  });
+  tinXong(r);
+  assert.equal(r.model, 1, `model bị gọi ${r.model} lần`);
+  assert.equal(r.post, 1);
+  assert.equal(r.hc.length, 1, "lượt chốt đơn mất dòng hang_cho_tao_don");
+  assert.ok(khongNuaCap(r.hc[0].du_lieu_don));
+  assert.deepEqual([r.hc[0].du_lieu_don.ten, r.hc[0].du_lieu_don.thanh_pho], ["M".repeat(39), "D".repeat(39)]);
+  const order = r.so.filter((x) => x.loai === "order");
+  assert.equal(order.length, 1, `so_ai: ${r.so.map((x) => x.loai).join(",")}`);
+  assert.ok(khongNuaCap(order[0].du_lieu));
+  const hs = (await sb.pool.query("SELECT h.ho_so FROM hoi_thoai h JOIN page p ON p.id=h.page_id WHERE p.page_id='gl8w-tool-don-232'")).rows[0].ho_so;
+  assert.ok(khongNuaCap(hs), "hoi_thoai.ho_so còn nửa cặp");
+  assert.deepEqual([hs.name, hs.city, hs.tier], ["M".repeat(39), "D".repeat(39), "V".repeat(39)]);
 });

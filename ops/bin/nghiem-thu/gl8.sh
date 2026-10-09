@@ -44,7 +44,7 @@ bo_ca() { # bo_ca <nhãn> <các tên phải xanh> <tệp ca…>
   echo "$o" | grep -E "^\s*\[gl8[wl]\] " | sed 's/^ */   · /' | cut -c1-240
 }
 bo_ca "①phép-1-hàm-cắt-+-lưới-JSON-(thuần)" "C1 C2 C3 J1" "$CA_C"
-bo_ca "②phép-2·3-worker-thật:-model-971·từ-khoá-668/647·Fast-Lane-744/717·cửa-ra-906·chốt-đơn-479" "W2 W3a W3b W3c W3d W3e W5" "$CA_W"
+bo_ca "②phép-2·3-worker-thật:-model-971·từ-khoá-668/647·Fast-Lane-744/717·cửa-ra-906·chốt-đơn-479·hồ-sơ-qua-bộ-não" "W2 W3a W3b W3c W3d W3e W5 W6" "$CA_W"
 bo_ca "③phép-4-lưới-ba-cửa-ghi-jsonb-(so_ai·hoi_thoai·hang_cho_tao_don)" "L4a L4b L4c" "$CA_L"
 bo_ca "④phép-5-chín-công-cụ-đọc-env-như-node---env-file-+-dòng-«cờ-đã-đọc»" "E1 E2a E2b E2c E2d E2e E2f E2g E2h E2i E3" "$CA_E"
 
@@ -62,7 +62,7 @@ cu=0; for t in gia-lap-mot-minh bao-cao-24h dich-ban-may dien-tap-hoi-thoai do-l
 done
 [ "$cu" -eq 0 ]; ket "⑤e-không-công-cụ-nào-còn-khối-đọc-env-tự-viết" $? "còn=$cu/9"
 n_re=$(grep -cF '[\uD800-\uDBFF](?![\uDC00-\uDFFF])' src/text.js)
-[ "$n_re" -eq 1 ]; ket "⑤f-text.js-MỘT-cách-xoá-nửa-cặp-(②1)" $? "regex xoá nửa đầu lẻ xuất hiện $n_re lần (đòi 1)"
+[ "$n_re" -eq 1 ]; ket "⑤f-text.js-một-regex-xoá-nửa-cặp-cho-đường-bot-(②1)" $? "regex xoá nửa đầu lẻ xuất hiện $n_re lần (đòi 1)"
 
 # ⑥ ĐẢO-VÁ (④6) trên BẢN SAO TẠM — mỗi đột biến một tiến trình node mới. Luật đọc: các ca khai PHẢI nằm trong tập đỏ.
 if [ "${BO_DAO_VA:-0}" != 1 ]; then
@@ -101,6 +101,9 @@ BANG = {
   "luoi-sau-stringify": [(TX, "  return JSON.stringify(giaTri, (_k, v) => (typeof v === 'string' ? boNuaCapLe(v) : v));",
                           "  const j = JSON.stringify(giaTri); return j === undefined ? j : boNuaCapLe(j).toWellFormed();")],
   "bo-dong-co": [("ops/bin/gia-lap-mot-minh.mjs", "console.log(`  cờ đã đọc         : ", "void (`  cờ đã đọc         : ")],
+  "bo-luoi-so": [BO_LUOI_SO],
+  "bo-luoi-kho": [BO_LUOI_KHO],
+  "bo-luoi-hc": BO_LUOI_HC,
 }
 if ten.startswith("env:"):
     tep = f"ops/bin/{ten[4:]}.mjs"
@@ -135,8 +138,12 @@ dao "⑥f-hang-cho.js:479-về-slice-+-bỏ-lưới-hàng-chờ-⇒-W5-(chốt-�
 dao "⑥g-catChu-thành-slice-trần-+-bỏ-lưới-⇒-C1·W2-đỏ" "C1 W2" "GL8 (C1|W2) ·" "ham-slice-tran" "test/$(basename "$CA_C")" "test/$(basename "$CA_W")"
 dao "⑥h-lưới-dọn-SAU-stringify-(bẫy-②2)-⇒-J1·L4a·L4b·L4c-đỏ" "J1 L4a L4b L4c" "GL8 (J1|L4[abc]) ·" "luoi-sau-stringify" "test/$(basename "$CA_C")" "test/$(basename "$CA_L")"
 dao "⑥i-bỏ-dòng-«cờ-đã-đọc»-⇒-E3-đỏ" "E3" "GL8 E3 ·" "bo-dong-co" "test/$(basename "$CA_E")"
+# — sau đối kháng chặng 2 (F1): hồ sơ cắt ở BỘ NÃO (`context.js:232-236`) đi qua worker — MỖI lưới gỡ riêng lẻ phải làm W6 đỏ —
+dao "⑥j-chỉ-bỏ-lưới-so_ai-⇒-W6-(so_ai-order-ho_so)-đỏ" "W6" "GL8 W6 ·" "bo-luoi-so" "test/$(basename "$CA_W")"
+dao "⑥k-chỉ-bỏ-lưới-kho.js-⇒-W6-(hoi_thoai.ho_so)-đỏ" "W6" "GL8 W6 ·" "bo-luoi-kho" "test/$(basename "$CA_W")"
+dao "⑥l-chỉ-bỏ-lưới-hàng-chờ-⇒-W6-(du_lieu_don)-đỏ" "W6" "GL8 W6 ·" "bo-luoi-hc" "test/$(basename "$CA_W")"
 chep; o=$(dot "test/$(basename "$CA_C")" "test/$(basename "$CA_W")" "test/$(basename "$CA_L")" "test/$(basename "$CA_E")"); f=$(so "$o" fail); p=$(so "$o" pass)
-[ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge 25 ]; ket "⑥0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ)" $? "pass=${p:-?} fail=${f:-?}"
+[ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge 26 ]; ket "⑥0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ)" $? "pass=${p:-?} fail=${f:-?}"
 else
   echo "⏸ ⑥đảo-vá HOÃN (BO_DAO_VA=1)"
 fi

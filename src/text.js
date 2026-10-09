@@ -23,8 +23,10 @@ export function stripHtml(str) {
     .replace(/[ \t]{2,}/g, ' ');
 }
 
-// XOÁ nửa cặp thay thế mồ côi (nửa emoji). MỘT cách xử lý nửa cặp lẻ cho cả repo — `cleanText`, `catChu`, `jsonLanh` đều đi qua
-// đây. Cố ý KHÔNG dùng `toWellFormed()` (thay bằng U+FFFD «�»): hai cách cho một bệnh là hai thứ để người sau phải đoán (GL8 ②1).
+// XOÁ nửa cặp thay thế mồ côi (nửa emoji). Cách xử lý nửa cặp lẻ của ĐƯỜNG BOT (chữ gửi model + chữ ghi sổ): `cleanText`, `catChu`,
+// `jsonLanh` đều đi qua đây; không dùng `toWellFormed()` (thay bằng U+FFFD «�») để đường bot chỉ có MỘT cách (GL8 ②1).
+// KHÔNG phải cách duy nhất của repo: hai công cụ DỮ LIỆU cố ý thay bằng U+FFFD — `db/di-tru/nguon.js:38` (di trú, có đếm số lần vá)
+// và `ops/bin/dong-bo-kich-ban.mjs:30` (đồng bộ kịch bản) — vì ở đó chữ là tài sản của marketer, xoá im lặng là sửa mà không nói.
 export function boNuaCapLe(str) {
   return String(str == null ? '' : str)
     .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
