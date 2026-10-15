@@ -1,5 +1,9 @@
 # SỔ ĐIỀU HÀNH THI CÔNG — AI Closer v3 · phần việc NGƯỜI A (trục chính)
 
+> 💓 **NHỊP TIM (14/10 — TIẾP QUẢN):** mã điều kiện pilot ✅ hết (GL1–GL4 · GL3b/c · GL7a · GL8 · RP1 · RP2 · TT1/TT1b · GP1); GL8 gộp, **chưa push/deploy**
+> (12 commit trước `origin/vao-ui-v3-17-09`). Prod `fcb0c19` bước ① GIỮ, 0/582 page. **Treo:** phiếu BH9 (sửa bộ não theo 5 lỗi giả lập 09/10) chưa viết ·
+> N-POOL-KHONG-BAT-LOI · GL5/GL6/GL7 ⬜ · H-GL + N-PILOT-CHINH-SACH/KIMI-TRAN/AI-BACK-SALE/HET-HANG chờ người quyết. Đo: `nhat-ky/tiep-quan-20261014.md`.
+
 > **Nhịp tiếp tục 02/10 — GSP2/GSP1b:** đã hoàn tất code local và kiểm thử trên PostgreSQL tạm; 2342 đạt, 0 lỗi, 4 bỏ qua vì dữ liệu lịch sử. Chưa deploy hoặc đổi dữ liệu thật. Tiếp theo là nghiệm thu GSP3/GSP3b và H-GSP; chưa cắt đường bản sao ở GSP4. Nhật ký: `nhat-ky/phieu-gsp2.md` · `nhat-ky/phieu-gsp1b.md`.
 
 > 💓 **NHỊP TIM TỔNG (16/09 — MỞ SÓNG BÁN HÀNG):** audit toàn hệ xong + quét **719 hội thoại
@@ -1997,6 +2001,10 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + RP2 + GL3c (vòng 2 — hồi quy ch
   · N-GL8-LUOI-DUYET — `hang-cho.js` đường duyệt/loại/sự kiện (`:869-870` `:970-971` `:1080` `:1128`) còn stringify trần.
   · N-GL8-LAN-GUI-JSONB — `lan-gui.js:91` chưa lưới: model sinh nửa emoji lẻ ⇒ ghi sổ gửi hỏng TRƯỚC khi gửi ⇒ tin `loi` vòng 1, giao SALE, khách nhận 0 tin (đối kháng RF-H; thợ ghi sai hệ quả).
   · N-GL8-RECONCILE-HO-SO (`reconcile.js:31`) · N-GL8-NHAT-KY-JSONB (`nhat-ky.js:42-43`) · N-GL8-PROMPT-NUA-CAP (hồ sơ có nửa emoji vào prompt không qua `cleanText` — bộ não, PLAUSIBLE).
+- 14/10 · tiếp quản (đo máy, chỉ đọc prod) — chi tiết `docs/thi-cong/nhat-ky/tiep-quan-20261014.md`:
+  · **N-POOL-KHONG-BAT-LOI** — `db/ket-noi.js:44` `taoPool` không gắn `pool.on('error')`. 10/10 06:53:16 CEST `unattended-upgrade` dừng `postgresql@16-main` ⇒ pg `57P01` trên client RỖI ⇒ `Unhandled 'error' event` ⇒ `aicloser-worker-v3` thoát 1, systemd dựng lại sau 3 s (`NRestarts=1`). Hôm đó 0 page bật nên vô hại; khi pilot chạy là sập giữa lượt. Unit web không sập (nhịp thưa, client rỗi đã hết hạn). Vá 🟩 + cân nhắc tắt tự nâng cấp Postgres trên VPS (người quyết).
+  · **N-THUOC-G6-MILI-GIAY** — `test/l0-m2-gop-cua-hep.test.js:162` `sau > giua` so hai mốc `Date` mili-giây: đỏ 1/2827 trong `npm test` đầy đủ, chạy riêng 3/3 xanh ⇒ thước chập chờn, không phải mã.
+  · nhắc lại (bộ nhớ «cổng bash đỏ giả»): `gsp2.sh:37` gọi `rg` — máy dev chỉ có hàm zsh ⇒ `gsp2` và mọi cổng lồng nó (gp1…) đỏ giả «không in dòng đỏ»; có `rg` trên PATH ⇒ rc=0, 8/8 đột biến bị bắt.
 
 ## §9b · TỔNG KẾT REFUTE — 10 CHẶN gom 4 CỤM VÁ (chờ lệnh CEO mở sóng)
 
@@ -3719,3 +3727,9 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 09/10 · PILOT bước ② (người quyết «cấu hình sẵn toàn bộ» + chọn 4 page đo) — prod: gắn gốc × shop · Điền giá · tên bậc · đối soát «giữ giá món» cho 275 · 276 · 335 · 340 (bot vẫn 0/582)
   giả lập trên bản chép cấu hình (dev, Kimi thật, van đóng): UAE 109 lượt — 0 sai giá · giữ giá · lỗi: bịa trạng thái đơn · chốt hụt 3/4 · trích tên sai 5; Saudi 83 lượt — khách sau bán bị bán lại · tự hứa · tên sai 7
   · Kimi chạm trần 1,5M token/ngày ⇒ Fitgum/Oxyelle chờ mở trần (mẫu 60 lượt — người quyết) · GL8 phiếu → soát (a) → thợ → đối kháng ĐẠT → gộp (chưa deploy) · kế: phiếu BH9 sửa bộ não (người quyết «ra phiếu ngay»)
+- 14/10 · TIẾP QUẢN (sổ nghỉ 5 ngày; không commit nào trên mọi nhánh từ 09/10) — người quyết hỏi «fix xong hết chưa, còn treo gì»
+  đo: `npm test` 2827 / 2822 đạt / 1 đỏ chập chờn (G6, riêng xanh) / 4 bỏ qua · cổng gl8 32/0 · rp2 58/0 · rp1 72/0 · gl2 52/0 · bh1 3 đỏ = nợ cũ · gp1 3 lỗi = cổng lồng (gsp2 đỏ giả `rg` ⇒ riêng rc=0; gsp3b/tt1 treo khi lồng) ⇒ 0 đỏ vì mã · prod `fcb0c19` · 34/34 migration · 0/582 page · `lan_gui` 0 · worker sập 1 lần 10/10 (N-POOL-KHONG-BAT-LOI)
+  · treo: phiếu BH9 (người quyết «ra phiếu ngay» 09/10) CHƯA viết · GL8 12 commit chưa push/deploy · GL5/GL6/GL7 ⬜ · H-GL + N-PILOT-* chờ người quyết · kế đề nghị: soạn phiếu BH9
+- 15/10 · NGƯỜI QUYẾT «làm giúp tôi đi — miễn chưa gửi thật cho khách; cấu hình đầy đủ sẵn sàng, chỉ việc gạt bot» ⇒ tổng: phiếu BH9 + vá nợ chạm pilot + deploy + cấu hình prod, DỪNG trước «gạt bot» (0/582 page)
+  chốt N-PILOT-CHINH-SACH (AskUserQuestion): giao hàng «2–5 ngày làm việc» · đổi trả «chỉ đổi khi lỗi trong 7 ngày» (BỎ «30-day money-back»; đòi hoàn ⇒ giao sale) · kiểm hàng «được kiểm rồi trả» (giữ) · «FDA approved» ĐƯỢC nói
+  · khối chung team 1 prod hiện là bản máy nạp 28/09 (`may:nap-khoi-chung`) — sửa theo 4 câu trên qua cửa ghi `/khoi-chung` · agent nghiên cứu BH9 (ca lỗi giả lập) + agent soát «gạt bot» đang chạy
