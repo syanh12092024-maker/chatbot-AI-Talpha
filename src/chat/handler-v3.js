@@ -21,7 +21,8 @@ import {
   absorbToolUses,
   buildContextMessages,
   shipVuotMau,
-  bocDonTuLichSu,
+  tinhDonDaCo,
+  nguonDonChu,
   laCauSauBan,
   dauHieuYTe,
   codNgam,
@@ -295,6 +296,20 @@ function depsMacDinh(deps = {}) {
 }
 
 /**
+ * CHỮ CỦA CHÍNH BOT v3 đã gửi cho khách này (BH9 vòng 2 · đối kháng F2) — để «đơn đã có» không bao giờ lấy từ lời bot tự viết:
+ * `hoi_thoai.ai_noi_gi` + hai câu cố định BH9 + `lan_gui` (tin/ảnh, mọi trạng thái — tin `khong_ro` có thể đã tới khách; 200 dòng gần
+ * nhất — ngân sách lượt ≤ 12/24 h nên phủ cả lịch sử Pancake đọc được) cùng psid. Khuôn câu SQL của `chat/human.js#nhanDienSale` (tệp đó
+ * ngoài pathspec phiếu — không gộp thành một helper; nợ N-BH9-OURS-HAI-BAN).
+ */
+async function chuBotDaGui(pool, { teamId, tin, lastAiText }) {
+  const r = await pool.query(`SELECT g.noi_dung FROM lan_gui g JOIN tin_cho_xu_ly t
+    ON t.id=g.tin_id AND t.team_id=g.team_id WHERE t.team_id=$1 AND t.page_id=$2 AND t.psid=$3
+    AND g.loai IN ('guiTin','guiAnh') ORDER BY g.id DESC LIMIT 200`, [teamId, String(tin.page_id), String(tin.psid)]);
+  return [lastAiText, CAU_NHAN_BAN_GIAO.en, CAU_NHAN_BAN_GIAO.ar, CAU_Y_TE.en, CAU_Y_TE.ar,
+    ...r.rows.flatMap((x) => [x.noi_dung?.text, x.noi_dung?.caption])].filter(Boolean);
+}
+
+/**
  * Xử lý ĐÚNG MỘT tin của hàng đợi. Không tự đọc/ghi bảng `tin_cho_xu_ly` — worker làm
  * việc đó (nó là chủ giao dịch + chủ khoá hội thoại).
  *
@@ -431,10 +446,12 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
   const history = historyBeforeMessage(d.lichSu, tin);
   if (!prof.hydratedAt && history.length) hydrateProfile(history, tin.page_id, prof);
   // BH9 ② 9b: truyền câu bot vừa nói — «yes» đáp câu bot HỎI COD là đồng ý COD.
-  extractFromText(text, prof, { lastAi: state.lastAiText });
-  // BH9 ② 2c: «đơn đang trong cuộc» bóc từ lịch sử page MỌI lượt (cùng một luật với `cleanHistory`), để cổng sau bán 4a thấy
-  // `donDaCo` TRƯỚC mọi cửa 0 đồng — trước BH9 tin page chỉ được dò ở bước 7 (dựng ngữ cảnh), sau lớp từ khoá/Fast Lane.
-  bocDonTuLichSu(history, tin.page_id, prof);
+  extractFromText(text, prof, { lastAi: state.lastAiText, luc: bayGio });
+  // BH9 ② 2c + vòng 2 (đối kháng F1 F2 · nghiệp vụ N1 N2 câu 5–6): «khách đã có đơn» TÍNH LẠI MỖI LƯỢT, chỉ từ BẰNG CHỨNG còn hạn
+  // (`context.js#tinhDonDaCo`): bản ghi chốt đơn của chính v3 · tin page POS/sale về đơn — LOẠI chữ của chính bot (`lan_gui` +
+  // `ai_noi_gi` + câu cố định) · khách nói rõ về đơn của mình. Đặt TRƯỚC mọi cửa 0 đồng để cổng sau bán 4a thấy nó.
+  prof.donDaCo = tinhDonDaCo({ prof, msgs: history, pageId: tin.page_id, text, bayGio,
+    ours: await chuBotDaGui(pool, { teamId, tin, lastAiText: state.lastAiText }), chotDonLuc: hoiThoai.chot_don_luc });
   // BH9 ② 9c: COD NGẦM (người quyết 15/10) — khách gửi SĐT/địa chỉ sau khi bot/page đã nêu điều kiện COD ⇒ không hỏi lại COD.
   if (codNgam({ prof, text, msgs: history, pageId: tin.page_id, lastAi: state.lastAiText })) {
     prof.cod = true;
@@ -688,8 +705,9 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     const sauBan = laCauSauBan(text, prof);
     if (sauBan.la && !yTe) {
       const don = prof.donDaCo;
+      // Vòng 2 (nghiệp vụ câu 4 · N3): ghi chú in ĐÚNG nguồn + ngày của tín hiệu đơn (POS · sale · v3 đã chốt · lời khách), không gộp «(page)».
       const lyDo = `SAU BÁN · khách: «${catChu(text.replace(/\s+/g, " ").trim(), 120)}» · đơn: `
-        + (don ? `${don.trangThai} (${don.nguon})` : `${sauBan.lyDo} (bot)`);
+        + (don ? `${don.trangThai} (${nguonDonChu(don)})` : `${sauBan.lyDo} (lời khách)`);
       await guiCauCoDinh({ cau: cauCoDinh(CAU_NHAN_BAN_GIAO), lyDo, ma: "sau_ban" });
       if (!state.handoffNotified) await banGiaoSale(lyDo);
       await ghi(LOAI.HANDOFF, { maModel: KHONG_GOI_MODEL, lane: "cau_co_dinh", lyDo, duLieu: { nguon: "sau_ban" } });
@@ -913,6 +931,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         kb,
         // BH9 ② 7: dòng ⚕️ «câu ĐẦU: khuyên ngừng dùng và đi khám…» (rỗng ⇒ không dòng).
         yTe,
+        // BH9 vòng 2: `donDaCo` của lượt ĐÃ tính ở bước 3 — `cleanHistory` không bóc lại (bóc lại thiếu `ours` ⇒ đọc chữ bot thành đơn).
+        donDaTinh: true,
       },
     });
     state.messages = messages;
@@ -930,7 +950,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         await assertCanAct();
         // BH9 ② 4 — thi hành CORE §5 («confirmed by the backend, or placed via Facebook Commerce»): khách đang có đơn do PAGE nói
         // (POS/sale/vận đơn) ⇒ không đẻ đơn thứ hai. [S1] CHỈ nguồn page — nguồn `khach` là suy từ lời khách, bắt nhầm thì khoá tạo
-        // đơn vĩnh viễn (`donDaCo` không hết hạn); nháp nguồn khách vẫn vào hàng chờ, sale + cửa ③ chống trùng canh.
+        // đơn (vòng 2: tín hiệu nay có hạn 14 ngày — `tinhDonDaCo`; nguồn page đã loại chữ của chính bot); nháp nguồn khách / nguồn v3
+        // vẫn vào hàng chờ, sale + cửa ③ chống trùng canh.
         if (prof.donDaCo?.nguon === "page") {
           throw new Error(`Khách đang có đơn (${prof.donDaCo.trangThai}) — không tạo đơn mới; gọi handoff_human`);
         }
@@ -963,7 +984,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
 
     // ── 8 · HÚT HỒ SƠ (M07) ──────────────────────────────────────────────────────
     absorbToolUses(state.messages, prof);
-    extractFromText(text, prof, { lastAi: state.lastAiText });
+    extractFromText(text, prof, { lastAi: state.lastAiText, luc: bayGio });
     if (state.closed) prof.ordered = true;
 
     const dung = state.lastUsage || {};

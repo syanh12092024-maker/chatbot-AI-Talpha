@@ -118,12 +118,17 @@ const TU_THUONG = new Set(`waiting here there working finished done ready busy f
   is it this that what how when where why who my your our his her their me him them we they
   egyptian sudanese jordanian lebanese syrian yemeni emirati kuwaiti qatari omani bahraini bangladeshi indonesian sri lankan kenyan
   ugandan ethiopian nigerian ghanaian moroccan tunisian iraqi iranian afghan muslim christian catholic ofw nurse driver teacher
-  housewife housemaid maid worker engineer student mother father mom dad wife husband sister brother customer client new old`.split(/\s+/).filter(Boolean));
+  housewife housemaid maid worker engineer student mother father mom dad wife husband sister brother customer client new old
+  filipina hindi ko alam`.split(/\s+/).filter(Boolean));
 // Dấu «:» sau nhãn RÕ («My name is: Maria Santos») — /code-review BH9 #14.
 const NHAN_RO = /(?:\bmy\s+name\s+is|\bmy\s+name['’]s|\bhere['’]?s\s+my\s+name|\bname\s*[:=-]|\bpangalan\s*[:=-]|\bpangalan\s+ko(?:\s+po)?(?:\s+ay)?|\bako\s+(?:po\s+)?si|اسمي|الاسم\s*[:=-])\s*[:=-]?\s*/iu;
 const NHAN_MO_HO = /\b(?:i\s+am|i['’]?m|this\s+is)\b\s+/giu;
 const CHU_TEN = /^[\p{L}][\p{L}.'’-]*$/u;
-const DIA_DANH = /\b(?:island|community|city|district|uae|emirates?|saudi|arabia|ksa|philippines)\b/i;
+// BH9 vòng 2 (đối kháng F8 · nghiệp vụ N4, tổng F): + MỐC/KHU trong khối địa chỉ («Deira Fish Market» · «Al Olaya» · «Al Dana») —
+// tên sai thì `tenKhach` khác rỗng ⇒ đơn nháp MẤT cờ «Tên lấy từ Facebook». Dòng mở đầu bằng mạo từ Ả Rập «Al/El» là tên khu (lệch một
+// chiều: tên người «Al …» bị bỏ ⇒ '' ⇒ dùng tên Facebook + cờ — đúng hướng an toàn). Tên khu không mạo từ («Mussafah Shabiya») còn lọt —
+// danh sách khu là tập mở, ghi nợ.
+const DIA_DANH = /\b(?:island|community|city|district|uae|emirates?|saudi|arabia|ksa|philippines|market|mall|hypermarket|supermarket|souq|souk|bank|mosque|masjid|hospital|clinic|school|hotel|plaza|cent(?:er|re)|park|station|metro|bridge|roundabout|signal|camp|industrial|area)\b|^\s*(?:al|el)[\s-]+\p{L}/iu;
 // Từ địa chỉ: dùng lại đúng bộ của `hasAddress` (cùng tệp) — một nguồn cho «đây là địa chỉ».
 const laDiaChi = (s) => AREA_LATIN.test(s) || ADDR_DETAIL.test(s) || AREA_AR.test(s) || ADDR_DETAIL_AR.test(s) || DIA_DANH.test(s);
 const sachDuoi = (w) => w.replace(/^[.'’-]+|[.'’-]+$/g, '');

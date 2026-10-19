@@ -339,16 +339,27 @@ function sauDieuKien(t, idx) {
   for (const k of DAU_VE) dau = Math.max(dau, t.lastIndexOf(k, idx - 1) + 1);
   return DIEU_KIEN_SAU.test(t.slice(dau, idx));
 }
+// BH9 vòng 2 (đối kháng F4 · nghiệp vụ N2): v3 KHÔNG có trạng thái đơn đã xác minh (không tool tra đơn) ⇒ mọi câu khẳng định trạng thái
+// đều là bịa. Vòng 1 chỉ biết chủ ngữ «order» + năm động từ ⇒ câu Kimi THẬT giả lập Saudi #141 «your order is already with the courier
+// po» · «Your parcel is out for delivery» · «Na-ship na po» · «تم توصيل طلبك» QUA cửa. Nay: chủ ngữ order|parcel|package|item|shipment +
+// «with the/our courier/rider» · «being shipped/delivered» · «ready for dispatch» · «in transit» · «rescheduled» · «scheduled for
+// delivery» · «returned»; bản Taglish (na-ship/na-deliver/naipadala na · papunta na ang rider · nasa rider na · wala pang order) và Ả Rập
+// (تم توصيل/شحن/إرسال · مع المندوب · لا يوجد طلب).
 const KHANG_DINH_DON = [
   /\bno\s+(?:active\s+|existing\s+|current\s+)?orders?\b(?!\s+(?:minimum|min|fee|limit|needed|required))/i,
   /\b(?:notice|message|notification)\b[^.!?\n]{0,40}\bsent\s+by\s+mistake\b/i,
-  /\b(?:your\s+)?order\s+(?:is|has\s+been|was)\s+(?:already\s+)?(?:on\s+(?:its|the)\s+way|out\s+for\s+delivery|shipped|dispatched|delivered|cancel(?:l)?ed)\b/i,
+  /\b(?:your\s+)?(?:order|parcel|package|item|shipment)\s+(?:is|has\s+been|was)\s+(?:already\s+|now\s+)?(?:on\s+(?:its|the)\s+way|out\s+for\s+delivery|shipped|dispatched|delivered|cancel(?:l)?ed|returned|rescheduled|in\s+transit|scheduled\s+for\s+delivery|being\s+(?:shipped|delivered)|ready\s+for\s+(?:dispatch|delivery|shipping|pickup)|with\s+(?:the|our)\s+(?:courier|rider|driver|delivery))\b/i,
+  /\b(?:already|now)\s+with\s+(?:the|our)\s+(?:courier|rider|driver)\b/i,
   /\bon\s+(?:its|the)\s+way\b/i,
   /\b(?:cancel(?:l)?ed|nakansela|na-cancel)\s+na\b/i,
-  /تم\s+(?:إلغاء|الغاء)|في\s+الطريق|تم\s+شحن/u,
+  /\b(?:na-?ship|nai-?ship|naipadala|na-?deliver|nai-?deliver|na-?dispatch)\s+na\b|\bpapunta\s+na\s+(?:po\s+)?(?:ang|yung|si)\s+(?:rider|courier|driver)\b|\bnasa\s+(?:rider|courier)\s+na\b|\bwala\s+(?:pa\s+)?(?:pong|pang|po\s+ng|ng)\s+order\b/i,
+  // «مع المندوب» TRƠN là câu COD trước bán («الدفع نقداً مع المندوب» — trả tiền mặt cho người giao) ⇒ chỉ «طلبك مع المندوب».
+  /تم\s+(?:إلغاء|الغاء)|في\s+الطريق|تم\s+شحن|تم\s+توصيل\s+(?:ال)?طلب|طلبك\s+(?:الآن\s+|الان\s+)?(?:مع|عند)\s+(?:ال)?مندوب|لا\s+(?:يوجد|توجد)\s+(?:أي\s+|اي\s+)?(?:طلب|طلبات)/u,
 ];
-// [S8] «confirmed / placed / received» được nói ở lượt TÓM TẮT đơn (lượt vừa `create_draft_order`).
-const XAC_NHAN_DON = /\b(?:your\s+)?order\s+(?:is|has\s+been|was)\s+(?:already\s+)?(?:confirmed|placed|received)\b/i;
+// [S8] «confirmed / placed / received» được nói ở lượt TÓM TẮT đơn (lượt vừa `create_draft_order`). (+ vòng 2: «being processed» ·
+// «confirmed na po ang order» · «تم تأكيد/إرسال الطلب» · «there's (already) an order in the system» (câu bot thật Saudi #46, so_ai 62) —
+// cùng nghĩa «đã có/đã nhận đơn»: đúng ở lượt tóm tắt (đơn nháp vừa vào hàng chờ — /code-review vòng 2), bịa ở lượt khác.)
+const XAC_NHAN_DON = /\b(?:your\s+)?order\s+(?:is|has\s+been|was)\s+(?:already\s+)?(?:confirmed|placed|received|being\s+processed)\b|\bconfirmed\s+na\s+(?:po\s+)?(?:ang|yung)\s+order\b|\b(?:there['’]s|there\s+is|you\s+(?:already\s+)?have)\s+(?:already\s+)?(?:an?\s+)?(?:existing\s+|active\s+)?order\s+(?:(?:now\s+)?in\s+(?:the|our)\s+system|under\s+your\s+name)\b|تم\s+(?:تأكيد|تاكيد|إرسال|ارسال)\s+(?:ال)?طلب/iu;
 // Thứ (EN · Tagalog · Ả Rập — chữ Ả Rập rào `(?<!\p{L})…(?!\p{L})`, `\b` không biết chữ Ả Rập) hoặc giờ «10 AM», trong 30 ký tự quanh
 // động từ/người giao. Regex `DELIVERY_PROMISE_RE` cũ (cặp «giao + bukas/tomorrow/today») KHÔNG sửa — luật này bắt phần nó bỏ sót.
 // «linggo» BỎ: tiếng Tagalog vừa là Chủ nhật vừa là TUẦN («within 1-2 linggo» = khung được phép nói — /code-review BH9 #10).
@@ -401,8 +412,9 @@ function luatBH9(t, ctx, kbText) {
       }
     }
   }
-  // c · TU_HUA
-  const hua = khopKhongMien(HUA_MOC, t, kbText, { chung: true }) || khopKhongMien(HUA_BAO_COURIER, t, kbText)
+  // c · TU_HUA — vòng 2 (đối kháng F7c, tổng F): lượt TÓM TẮT đơn nhắc lại mốc giờ KHÁCH xin («Noted: delivery after 5 PM. Our staff
+  // will contact you to confirm») là chép yêu cầu vào đơn để sale xác nhận, không phải bot tự hứa ⇒ miễn `HUA_MOC` ở lượt đó.
+  const hua = (!ctx.isOrderSummary && khopKhongMien(HUA_MOC, t, kbText, { chung: true })) || khopKhongMien(HUA_BAO_COURIER, t, kbText)
     || (!ctx.daBanGiao && !ctx.isOrderSummary && (khopKhongMien(HUA_TEAM_CO, t, kbText, { dieuKien: true })
       || khopKhongMien(HUA_TEAM_SE, t, kbText, { dieuKien: true })));
   if (hua) return { rule: 'TU_HUA', reason: `Tự hứa thay bộ phận giao hàng/sale («${hua}») — chuyển sale` };
