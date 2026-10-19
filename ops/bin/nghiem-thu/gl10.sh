@@ -63,12 +63,22 @@ bo_ca "V2(vòng-2-đối-kháng)-F1-diễn-tập-không-ghi-khoá·F2/F2b/F2c/F2
 
 # tĩnh (PHỤ — hành vi đã đo ở trên; các phép này canh phạm vi + lời khai)
 NAO="src/prompts.js src/closer.js src/tools.js src/fast-lane.js src/outbound-guard.js src/context.js src/lead-score.js src/conv-owner.js src/chat/handler-v3.js"
-# shellcheck disable=SC2086
-git diff --quiet "$BASE" -- $NAO; ket "Ta-bộ-não-+-handler-v3.js-không-đổi-từ-base-$BASE-(BH9-song-song)" $? "$(git diff --stat "$BASE" -- $NAO | tail -1)"
-n_rt=$(grep -c 'WHERE bot_ai_bat = true' src/queue/page-routing.js)
-git diff --quiet "$BASE" -- src/queue/page-routing.js && [ "$n_rt" -eq 1 ]; ket "Tb-page-routing.js-không-đổi-(neo-mb.sh:65)" $? "WHERE bot_ai_bat = true =$n_rt (đòi 1)"
+# Ta/Tb/Tc đo PHẦN DO CHÍNH CÁC COMMIT GL10 ĐƯA VÀO (tìm theo tiêu đề `test|fix|feat(gl10)`), không so cả cây
+# với `$BASE`: sau khi gộp, GL9 (docEnvTuyetDoi) và BH9 (bộ não) đổi các vùng này hợp lệ — tổng chỉnh 19/10 lúc gộp.
+CMT_GL10=$(git log --format=%H -E --grep='^(test|fix|feat)\(gl10\)' HEAD)
+[ -n "$CMT_GL10" ]; ket "T0-tìm-được-commit-GL10-trên-HEAD" $? "$(echo "$CMT_GL10" | grep -c .) commit"
+dung_nao=""; dung_rt=""; dung_env=""
 khoi() { sed -n '/^export function docEnvTuyetDoi/,/^}/p'; }
-[ "$(git show "$BASE:src/queue/nap.js" | khoi)" = "$(khoi < src/queue/nap.js)" ]; ket "Tc-nap.js#docEnvTuyetDoi-không-đổi-(GL9-sửa-vùng-này)" $?
+for c in $CMT_GL10; do
+  # shellcheck disable=SC2086
+  git diff --quiet "$c^" "$c" -- $NAO || dung_nao="$dung_nao ${c:0:7}"
+  git diff --quiet "$c^" "$c" -- src/queue/page-routing.js || dung_rt="$dung_rt ${c:0:7}"
+  [ "$(git show "$c^:src/queue/nap.js" 2>/dev/null | khoi)" = "$(git show "$c:src/queue/nap.js" 2>/dev/null | khoi)" ] || dung_env="$dung_env ${c:0:7}"
+done
+[ -z "$dung_nao" ]; ket "Ta-commit-GL10-không-đụng-bộ-não-+-handler-v3.js-(BH9-song-song)" $? "${dung_nao:+đụng:$dung_nao}"
+n_rt=$(grep -c 'WHERE bot_ai_bat = true' src/queue/page-routing.js)
+[ -z "$dung_rt" ] && [ "$n_rt" -eq 1 ]; ket "Tb-page-routing.js-không-đổi-(neo-mb.sh:65)" $? "WHERE bot_ai_bat = true =$n_rt (đòi 1)${dung_rt:+ · đụng:$dung_rt}"
+[ -z "$dung_env" ]; ket "Tc-commit-GL10-không-đổi-nap.js#docEnvTuyetDoi-(GL9-sửa-vùng-này)" $? "${dung_env:+đụng:$dung_env}"
 node -e 'import("./db/migrate.js").then(({sinhSchema})=>{process.exit(require("fs").readFileSync("db/schema.sql","utf8")===sinhSchema()?0:1)})'
 ket "Td-schema.sql-sinh-từ-migrate/-(có-035)" $? "$(grep -c '035_page_ai_sale_nhuong' db/schema.sql) lần nhắc 035"
 grep -qF 'ÁP TRÊN VPS TRƯỚC KHI CHẠY MÃ GL10' db/migrate/035_page_ai_sale_nhuong.up.sql; ket "Te-035-khai-thứ-tự-«áp-VPS-trước-mã»" $?
