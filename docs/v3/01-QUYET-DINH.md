@@ -44,6 +44,12 @@ Page đang bật AI: **51** trên 315 page có trong dữ liệu.
 
 **Vì sao Messenger không cần:** khách đã chat với bot, đã đưa đủ tên, số, địa chỉ và nói đồng ý trả tiền khi nhận. Nhắn WhatsApp hỏi lại là làm phiền và làm chậm.
 
+> ⚠️ **SỬA 15/10/2026 — người quyết** (sổ §10 15/10, giả lập pilot 09/10: 6 hội thoại đủ SĐT + địa chỉ, bot chốt được 1 vì hỏi lại):
+> **COD ngầm** — khách gửi đủ SĐT + địa chỉ SAU KHI bot/page đã nêu điều kiện COD (tin của bot/page, không tính tin khách tự hỏi;
+> tin nêu COD kèm phủ định không tính) ⇒ coi là đồng ý trả tiền khi nhận, lên đơn nháp. **Tên người nhận** — khách không cho tên ⇒
+> dùng tên Facebook làm tên trên đơn nháp, bot thôi hỏi tên. Cả hai mang CỜ trên đơn nháp («COD ngầm» · «tên lấy từ Facebook,
+> chưa xác nhận») hiện cho người duyệt; đơn Messenger vẫn chỉ vào POS khi sale duyệt. Thi hành: phiếu BH9.
+
 **Hệ quả cho code:** máy trạng thái đơn phải **phân nhánh theo nguồn ngay từ đầu**, và bảng `don_hang` phải có cột nguồn. Lọc trùng phải **kiểm chéo cả hai luồng** — cùng một khách vào được bằng hai đường.
 
 **Số liệu:** 37,4% khách bấm BUY NOW rồi **không** bấm gửi WhatsApp. Đây là lỗ lớn nhất bot sinh ra để bịt.
