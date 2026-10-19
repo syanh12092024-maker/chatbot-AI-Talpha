@@ -185,6 +185,9 @@ const KHACH_AM = [
   // /code-review BH9 #2: câu KHẲNG ĐỊNH đang muốn mua (hai nhánh cũ bắt từ base)
   'I want the package that is 159 SAR', 'the order is for my sister', "5 days delivery is fine, I'll order", 'you deliver to Abha',
   'if u deliver tomorrow i will take 2',
+  // vòng 2: sở hữu + trạng thái nhưng là người ĐANG MUA (chỉ bộ loại «I want to order…» che được — đảo-vá ⑩cr2)
+  'I want to order 2 sets, when will my order arrive?',
+  'When can I place my order?', 'my delivery address is Al Nahda Riyadh, when will it arrive?',
 ];
 test('BH9 DK · donTuTinKhach DƯƠNG: sáu câu khách thật ① lỗi 1 + «tell him to deliver 4pm» + C39', () => {
   const hut = KHACH_DUONG.filter((t) => !C.donTuTinKhach(t));
@@ -198,13 +201,15 @@ test('BH9 DN · donTuTinKhach ÂM (C39 · mua lại · hỏi trước bán [S1])
   const la = KHACH_AM.filter((t) => C.laCauSauBan(t, C.emptyProfile()).la);
   assert.deepEqual(la, [], `cổng sau bán bắt người đang muốn mua: ${la.join(' | ')}`);
 });
-test('BH9 LS · laCauSauBan: hồ sơ có đơn + câu giao hàng ⇒ la · câu sản phẩm ⇒ không · hồ sơ rỗng ⇒ không · ordered + thứ trong tuần ⇒ la', () => {
+test('BH9 LS · laCauSauBan: hồ sơ có đơn + câu giao hàng ⇒ la · câu sản phẩm ⇒ không · hồ sơ rỗng ⇒ không · v3 đã chốt + thứ trong tuần ⇒ la', () => {
   assert.equal(typeof C.laCauSauBan, 'function');
   const coDon = { ...C.emptyProfile(), donDaCo: { trangThai: 'đang giao', cau: 'x', nguon: 'page' } };
   assert.equal(C.laCauSauBan('Deliver today / If no ok tomorrow deliver at 10am ok', coDon).la, true);
   assert.equal(C.laCauSauBan('Is it the gel for varicose', coDon).la, false);
   assert.equal(C.laCauSauBan('can you deliver tomorrow?', C.emptyProfile()).la, false);
-  assert.equal(C.laCauSauBan('Poyde sa next Wednesday edeliver po', { ...C.emptyProfile(), ordered: true }).la, true);
+  // Vòng 2: bản ghi chốt của v3 vào `donDaCo` nguồn 'v3' (có hạn — `tinhDonDaCo`); cờ `ordered` (lưu vĩnh viễn, không mốc) KHÔNG còn mở cổng.
+  assert.equal(C.laCauSauBan('Poyde sa next Wednesday edeliver po', { ...C.emptyProfile(), donDaCo: { trangThai: 'đã tạo', cau: 'x', nguon: 'v3' } }).la, true);
+  assert.equal(C.laCauSauBan('Poyde sa next Wednesday edeliver po', { ...C.emptyProfile(), ordered: true }).la, false);
   // câu tự nói về đơn đã có ⇒ la kể cả hồ sơ rỗng
   const r = C.laCauSauBan('i received that already, same company', C.emptyProfile());
   assert.equal(r.la, true);
@@ -231,6 +236,152 @@ test('BH9 DB · bocDonTuLichSu cho CÙNG donDaCo với cleanHistory trên cùng 
   const than = src.slice(src.indexOf('export function cleanHistory'), src.indexOf('export function tenFbTu'));
   assert.match(than, /bocDonTuLichSu\(/);
   assert.doesNotMatch(than, /donTuTinPage\(/, 'cleanHistory còn vòng dò page riêng — hai bản luật');
+});
+
+// ═══ VÒNG 2 (sau đối kháng — tổng chốt 19/10) · «KHÁCH ĐÃ CÓ ĐƠN» CHỈ TỪ BẰNG CHỨNG · CÓ HẠN · ĐÚNG NGUỒN ═══════════════════════════
+// Ca chuyển thể từ ca phá `scratchpad/refute-bh9/` (r1 r2 r4 r5 r6 r7 r8 r10) — câu dựng/ẩn danh, không chữ khách thật.
+const VF1_TRUOC_BAN = [   // F1 · người ĐANG MUA nói ĐIỀU KIỆN giao/gói — 14/14 bị cổng 4a nuốt ở vòng 1
+  '2-5 days delivery is ok po', '5 days delivery ok', 'ok po 3 days delivery no problem', '5 days delivery ok po, buy 2 get 2',
+  'The order is 2 sets po', 'the order is buy 2 get 2', 'The package is 159 SAR right', 'the package is good for my hemorrhoids',
+  'the delivery is today or tomorrow', 'The courier is aramex or smsa', 'Ok sir u deliver tomorrow morning. Villa 12 Marina 0501234567',
+  'pls u deliver after 5pm because I am at work', 'the rider has to call me first before coming', 'I received that, how much 2 sets',
+  'i received it, the picture is clear. 2 sets please', 'Ok sir u deliver tomorrow morning. Maria Santos 0551234567 Al Nahda district Building 5 Riyadh',
+  // /code-review vòng 2: «my order» của người đang mua — câu hỏi mở đầu bằng trợ động từ · hỏi COD/trả tiền · nói số lượng rồi phẩy hỏi giao
+  'When my order arrives can I pay cash?', 'Will my order arrive in 2 days?', 'My order is 2 sets, when will it arrive?',
+];
+test('BH9 VF1 · [F1·N1] người đang mua nói điều kiện giao/gói ⇒ donTuTinKhach null · laCauSauBan(hồ sơ rỗng) la:false', () => {
+  const nham = VF1_TRUOC_BAN.filter((t) => C.donTuTinKhach(t) || C.laCauSauBan(t, C.emptyProfile()).la);
+  assert.deepEqual(nham, [], `bắt NHẦM người đang mua: ${nham.join(' | ')}`);
+});
+const VA3_KHACH_CO_DON = [   // A3 · khách nói rõ về ĐƠN CỦA MÌNH (EN · Taglish · Ả Rập) — hồ sơ RỖNG (đơn có thể từ LadiPage/ai_sale)
+  'where is my order?', 'what is the status of my order', 'my parcel has not arrived yet', 'I already ordered yesterday, when will it arrive?',
+  'I received it already', 'cancel my order please', 'Kailan po darating yung order ko?', 'Hindi pa dumating yung order ko',
+  'Natanggap ko na po yung parcel', 'Wala pa po yung parcel ko', 'Bakit di pa dumadating? 1 week na', 'nasaan na po yung order ko?',
+  'متى يوصل طلبي؟', 'أين طلبي؟', 'ما وصلني الطلب', 'استلمت الطلب', 'ألغيت الطلب', 'I already paid the courier',
+  // /code-review vòng 2: khiếu nại THẬT có chữ «how much/how long/set» — bộ loại người-đang-mua không được nuốt
+  'I have been waiting for 15 days for my order, how much longer?', 'How long until my order arrives? I ordered last week',
+  'I received the parcel but one set is missing',
+];
+test('BH9 VA3 · [F4·N2·A3] khách nói rõ về đơn của mình ⇒ donTuTinKhach khác null · laCauSauBan(hồ sơ RỖNG) la', () => {
+  const hut = VA3_KHACH_CO_DON.filter((t) => !C.donTuTinKhach(t) || !C.laCauSauBan(t, C.emptyProfile()).la);
+  assert.deepEqual(hut, [], `bắt hụt: ${hut.join(' | ')}`);
+  // khách CŨ mua lại («…ordered before…») và câu đặt điều kiện («if I order…») không phải đơn đang trong cuộc
+  for (const t of ['I already ordered before, 2 more sets po', 'when will my order arrive if I order today?', 'My order is 2 sets. When will it arrive?']) {
+    assert.equal(C.donTuTinKhach(t), null, t);
+  }
+});
+test('BH9 VC · [F4·N2] hồ sơ ĐÃ có đơn (POS) + câu hỏi đơn phổ biến ⇒ la · câu sản phẩm thuần ⇒ không', () => {
+  const coDon = { ...C.emptyProfile(), donDaCo: { trangThai: 'đang giao', cau: 'Your order is scheduled for delivery today', nguon: 'page', ai: 'POS' } };
+  const hut = ['where is my order?', 'any update po?', 'what is the status of my order', 'hello po, my order?', 'nasaan na po yung order ko?',
+    'أين طلبي؟', 'still nothing', 'When will I get it?'].filter((t) => !C.laCauSauBan(t, coDon).la);
+  assert.deepEqual(hut, [], `hụt khi hồ sơ đã có đơn: ${hut.join(' | ')}`);
+  assert.equal(C.laCauSauBan('Is it the gel for varicose', coDon).la, false);
+  assert.equal(C.laCauSauBan('where can I see the colors?', coDon).la, false, '«where» trơn (hỏi sản phẩm) không phải hỏi đơn');
+});
+const KB_BOT = 'Sure po 😊 Our team will inform the courier to call you before delivery. May I have your complete address?';
+const BOT_TOM_TAT = 'Your order is confirmed po ✅ — 109 SAR, cash on delivery.';
+test('BH9 VF2 · [F2] chữ CỦA CHÍNH BOT không bao giờ thành «đơn đã có»: câu hứa trước bán ⇒ donTuTinPage null · câu bot trong `ours` ⇒ tinhDonDaCo bỏ qua', () => {
+  assert.equal(typeof C.tinhDonDaCo, 'function', 'context.js chưa export tinhDonDaCo');
+  for (const t of [KB_BOT, 'Noted po, our staff will inform the delivery person to call you first. Which set po?', 'We will inform the courier once you confirm']) {
+    assert.equal(C.donTuTinPage(t), null, t);
+  }
+  // câu tóm tắt đơn của chính bot (lượt chốt được nói «confirmed» — [S8]) có khuôn đơn page ⇒ chỉ chặn được bằng `ours`
+  const lich = [{ from: { id: 'KH' }, message: 'ok po' }, { from: { id: 'PG', admin_name: 'Public API' }, message: BOT_TOM_TAT }];
+  assert.ok(C.donTuTinPage(BOT_TOM_TAT), 'tiền đề: câu tóm tắt của bot khớp khuôn page');
+  assert.equal(C.tinhDonDaCo({ msgs: lich, pageId: 'PG', text: 'ok', bayGio: Date.now(), ours: [BOT_TOM_TAT] }), null);
+  assert.equal(C.tinhDonDaCo({ msgs: lich, pageId: 'PG', text: 'ok', bayGio: Date.now(), ours: [] })?.nguon, 'page', 'đối chứng: không có ours ⇒ bị đọc thành đơn');
+  // câu bot NGẮN trong `ours` không nuốt tin sale cùng đầu chữ (bằng chứng thật)
+  const sale = [{ from: { id: 'PG', admin_name: 'Trang Sale' }, message: 'Noted po, your order has been cancelled.' }];
+  assert.equal(C.tinhDonDaCo({ msgs: sale, pageId: 'PG', bayGio: Date.now(), ours: ['Noted po 🙏'] })?.trangThai, 'đã huỷ');
+  // câu cố định của code mình (HOLDING…) cũng bị loại dù `ours` rỗng
+  assert.equal(C.tinhDonDaCo({ msgs: [{ from: { id: 'PG' }, message: O.HOLDING_MESSAGES[0] }], pageId: 'PG', bayGio: Date.now() }), null);
+});
+const NGAY = 24 * 3600_000;
+const iso = (ms) => new Date(ms).toISOString().replace('Z', '000');   // giờ Pancake: UTC không múi
+test('BH9 VB · [N5·N6] tín hiệu CÓ HẠN 14 ngày: tin POS/khách/bản ghi v3/hồ sơ lưu — trong hạn ⇒ đơn · quá hạn hoặc không mốc lưu ⇒ không', () => {
+  assert.equal(C.HAN_DON_MS, 14 * NGAY);
+  const bay = Date.parse('2026-10-19T12:00:00Z');
+  const pos = (ngay) => [{ from: { id: 'PG', admin_name: 'POS' }, message: PAGE_DUONG[0], inserted_at: iso(bay - ngay * NGAY) }];
+  assert.equal(C.tinhDonDaCo({ msgs: pos(13), pageId: 'PG', bayGio: bay })?.ai, 'POS');
+  assert.equal(C.tinhDonDaCo({ msgs: pos(15), pageId: 'PG', bayGio: bay }), null, 'tin POS 15 ngày trước vẫn khoá');
+  const kh = (ngay) => [{ from: { id: 'KH' }, message: 'where is my order?', inserted_at: iso(bay - ngay * NGAY) }];
+  assert.equal(C.tinhDonDaCo({ msgs: kh(3), pageId: 'PG', bayGio: bay })?.nguon, 'khach');
+  assert.equal(C.tinhDonDaCo({ msgs: kh(20), pageId: 'PG', bayGio: bay }), null);
+  assert.equal(C.tinhDonDaCo({ pageId: 'PG', bayGio: bay, chotDonLuc: new Date(bay - 3 * NGAY) })?.nguon, 'v3');
+  assert.equal(C.tinhDonDaCo({ pageId: 'PG', bayGio: bay, chotDonLuc: new Date(bay - 20 * NGAY) }), null);
+  const luu = (ngay) => ({ ...C.emptyProfile(), donDaCo: { trangThai: 'đang giao', cau: 'x', nguon: 'page', ai: 'POS', ...(ngay == null ? {} : { luc: new Date(bay - ngay * NGAY).toISOString() }) } });
+  assert.equal(C.tinhDonDaCo({ prof: luu(2), pageId: 'PG', bayGio: bay })?.cau, 'x', 'tín hiệu đã lưu còn hạn (tin cũ trôi khỏi lịch sử) phải giữ');
+  assert.equal(C.tinhDonDaCo({ prof: luu(20), pageId: 'PG', bayGio: bay }), null);
+  assert.equal(C.tinhDonDaCo({ prof: luu(null), pageId: 'PG', bayGio: bay }), null, 'hồ sơ lưu KHÔNG mốc (bản cũ) ⇒ bỏ, tính lại từ lịch sử');
+  // ưu tiên nguồn page > v3 > khách (C41: lời khách không đè sự thật page); tin lượt này mang mốc của lượt
+  const tron = C.tinhDonDaCo({ msgs: pos(5), pageId: 'PG', text: 'where is my order?', bayGio: bay, chotDonLuc: new Date(bay - NGAY) });
+  assert.equal(tron.nguon, 'page');
+  assert.equal(C.tinhDonDaCo({ pageId: 'PG', text: 'where is my order?', bayGio: bay }).luc, new Date(bay).toISOString());
+  // mốc Pancake không múi = UTC (không để giờ máy dịch mốc)
+  assert.equal(C.mocTin({ inserted_at: '2026-10-19T03:00:00.000000' }), Date.parse('2026-10-19T03:00:00Z'));
+});
+test('BH9 VE · [N3·câu 4] nhãn nguồn tín hiệu đơn cho ghi chú bàn giao: POS · sale · v3 đã chốt · lời khách · không rõ — kèm ngày', () => {
+  assert.equal(typeof C.nguonDonChu, 'function', 'context.js chưa export nguonDonChu');
+  const luc = '2026-10-18T09:00:00.000Z';
+  assert.equal(C.nguonDonChu({ nguon: 'page', ai: 'POS', luc }), 'POS · 18/10');
+  assert.equal(C.nguonDonChu({ nguon: 'page', ai: 'sale', luc }), 'sale · 18/10');
+  assert.equal(C.nguonDonChu({ nguon: 'v3', luc }), 'v3 đã chốt · 18/10');
+  assert.equal(C.nguonDonChu({ nguon: 'khach', luc }), 'lời khách · 18/10');
+  assert.equal(C.nguonDonChu({ nguon: 'page', ai: 'không rõ' }), 'tin page không rõ người gửi');
+  const lich = [{ from: { id: 'PG', admin_name: 'Trang Sale' }, message: 'But the order is in transit, could you please receive it for me?', inserted_at: '2026-10-18T09:00:00.000000' }];
+  assert.equal(C.tinhDonDaCo({ msgs: lich, pageId: 'PG', bayGio: Date.parse('2026-10-19T00:00:00Z') }).ai, 'sale');
+  for (const n of ['page', 'khach', 'v3']) assert.doesNotMatch(C.nguonDonChu({ nguon: n, ai: n === 'page' ? 'POS' : undefined }), /^\(?page\)?$/);
+});
+const BIA_THAT = [   // F4 · câu Kimi THẬT giả lập Saudi #141 (so_ai 138, tên đã thay) + biến thể EN · Taglish · Ả Rập
+  "Maria, your order is already with the courier po. Since it's in Riyadh, delivery is usually quick.",
+  'Your parcel is out for delivery po 😊', 'Your package has been shipped po, please keep your phone open.',
+  'I checked po, your order is with our courier now.', 'Your order is being processed po and is ready for dispatch.',
+  'Your order has been rescheduled to Thursday po.', "Hi Maria! Got it, Riyadh po. Since there's already an order in the system, can you share your area?",
+  'Na-deliver na po ang order nyo kahapon 😊', 'Na-ship na po ang order nyo.', 'Naipadala na po ang order ninyo.', 'Papunta na po ang rider sa inyo.',
+  'Wala pa pong order sa pangalan nyo po.', 'Confirmed na po ang order nyo, salamat!',
+  'تم تأكيد طلبك وسيصلك قريباً', 'تم توصيل طلبك أمس', 'لا يوجد طلب باسمك', 'طلبك الآن مع المندوب',
+];
+test('BH9 VG · [F4·N2 cửa ra] câu khẳng định trạng thái đơn (v3 không có trạng thái đã xác minh) ⇒ BIA_TRANG_THAI_DON — có/không có đơn trong hồ sơ', () => {
+  const lot = [];
+  for (const t of BIA_THAT) for (const donDaCo of [false, true]) {
+    const v = G.guardOutbound(t, ctxCua({ donDaCo }));
+    if (v.rule !== 'BIA_TRANG_THAI_DON' && !(v.rule === 'DELIVERY_PROMISE')) lot.push(`${donDaCo ? 'có' : 'không'} đơn · ${v.rule || 'QUA'}: ${t}`);
+  }
+  assert.deepEqual(lot, []);
+  // câu COD trước bán tiếng Ả Rập có «مع المندوب» (trả tiền mặt cho người giao) KHÔNG phải trạng thái đơn
+  assert.equal(G.guardOutbound('الدفع نقداً مع المندوب عند الاستلام 😊', ctxCua({})).ok, true);
+  // lượt TÓM TẮT: «being processed» · «confirmed na po ang order» · «تم تأكيد الطلب» được nói (cùng nhóm [S8])
+  for (const t of ['Your order is being processed po, our staff will contact you to confirm.', 'Confirmed na po ang order nyo, salamat!', 'تم تأكيد طلبك، سيتواصل معك فريقنا',
+    // /code-review vòng 2: «đã gửi đơn cho đội» · «bạn đã có đơn trong hệ thống» là lời THẬT ở lượt tóm tắt (đơn nháp vừa vào hàng chờ)
+    'تم إرسال طلبك إلى فريقنا، سيتواصل معك قريباً', 'You have an order in our system now, our staff will call you']) {
+    assert.equal(G.guardOutbound(t, ctxCua({ isOrderSummary: true })).ok, true, t);
+    assert.equal(G.guardOutbound(t, ctxCua({})).rule, 'BIA_TRANG_THAI_DON', `lượt thường: ${t}`);
+  }
+});
+test('BH9 VT · [F7c·tổng F] lượt TÓM TẮT đơn nhắc lại mốc giờ khách xin ⇒ QUA (chép yêu cầu, sale xác nhận) · lượt thường ⇒ vẫn TU_HUA', () => {
+  const cau = "We've received your details po ✅ Buy 2 Get 2 FREE — 159 SAR, cash on delivery. Noted: delivery after 5 PM. Our staff will contact you to confirm.";
+  assert.equal(G.guardOutbound(cau, ctxCua({ isOrderSummary: true })).ok, true);
+  assert.equal(G.guardOutbound('Got it po, 6 PM delivery noted.', ctxCua({})).ok, false);
+  assert.equal(G.guardOutbound('Delivery takes 2-5 working days po, our staff will contact you to confirm.', ctxCua({ isOrderSummary: true })).ok, true);
+});
+test("BH9 VD · [F3·F5] y tế theo CỤM: «Dragon's Blood» / «blood circulation» / «دم الأخوين» ⇒ ÂM · nagdurugo · ينزف · rashes · ngứa SAU khi dùng ⇒ DƯƠNG", () => {
+  for (const t of ["What is Dragon's Blood po?", "What is Dragon's Blood po? is it safe?", 'the gel has dragon blood resin right?', 'هل فيه دم الأخوين؟',
+    'Is it good for blood circulation? I have varicose', 'Dragon blood po ba yan?', 'itching', 'nangangati po ako']) {
+    assert.equal(C.dauHieuYTe(t), '', `KHÔNG được bắt: ${t}`);
+  }
+  for (const t of ['nagdurugo pa rin po kahit nilagyan ko na', 'dinudugo po ako tuwing umaga', 'duguan po yung tissue', 'ينزف بعد الاستخدام', 'في نزف',
+    'طلع دماء', 'I got rashes after applying it', 'nagka-rashes ako after ko gamitin', 'nangangati after using it po', 'there is blood on the tissue po',
+    'may blood po after ko gamitin', 'I have bleeding', 'فيه دم']) {
+    assert.ok(C.dauHieuYTe(t), `phải bắt: ${t}`);
+  }
+});
+test('BH9 VN · [F8·N4 tổng F] tên khu/mốc trong khối địa chỉ («Al Olaya» · «Deira Fish Market» · «Al Dana») + «Filipina» · «Hindi ko alam» KHÔNG thành tên ⇒ đơn nháp giữ cờ tên Facebook', () => {
+  for (const t of ['0551234567\nKing Fahd Road\nAl Olaya', 'Deira Fish Market\n0501234567', '0501234567\nBlue Building\nAl Dana',
+    'I am Filipina, 0501234567', 'Hindi ko alam\n0501234567', '0501234567\nNear Lulu Hypermarket\nAl Nahda Sharjah']) {
+    assert.equal(L.tachTen(t), '', t.replace(/\n/g, '⏎'));
+  }
+  assert.equal(L.tachTen("I'm Grace Joy 0501234567"), 'Grace Joy');
+  assert.equal(L.tachTen('Maria Santos\n0501234567\nAl Olaya Riyadh'), 'Maria Santos');
 });
 
 // ═══ ④3 · COD + GÓI ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════

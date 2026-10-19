@@ -31,9 +31,12 @@ const P340 = { db: 'aicloser_gialap_2', pageRow: 340, pageId: '1140029535862514'
 const UAE_ID = (n) => n + 175;
 // Lượt lỗi đã biết (PHIEU-BH9 ① + ngưỡng «Đo bằng model»).
 const BIET_UAE = new Set([47, 48, 65, 82, 83, 84, 85, 90, 100, 102, 105].map(UAE_ID));
-const BIET_KSA = new Set([3, 4, 5, 23, 28, 34, 35, 37, 43, 44, 47, 54]);
+// Vòng 2 (đối kháng F4 · tổng chốt 19/10): + Saudi #141 (so_ai 138 «your order is already with the courier po» — câu Kimi THẬT bịa trạng
+// thái đơn, vòng 1 không nằm trong danh sách đòi nên M6 không thấy nó QUA) và #46 (so_ai 62 «Since there's already an order in the
+// system…» — khẳng định CÓ đơn + xin lại khu vực) — cả hai là lỗi BỊA đã biết, nay ĐÒI bị chặn.
+const BIET_KSA = new Set([3, 4, 5, 23, 28, 34, 35, 37, 43, 44, 46, 47, 54, 141]);
 const DOI_UAE = [82, 83, 84, 85, 100, 65].map(UAE_ID);
-const DOI_KSA = [4, 5, 23, 28, 35, 37, 54];
+const DOI_KSA = [4, 5, 23, 28, 35, 37, 46, 54, 141];
 const TEN_SAI = ['finished', 'working for fails', 'Yass island', 'e now', 'Abudhabi city', 'here in Dammam', 'waiting',
   'e arrived my order', 'e is', 'SAUDI ARABIA', 'yesterday', 'waiting for delivery I send already the'];
 const soChu = (t) => `${String(t).split(/\s+/).length} chữ`;
@@ -119,10 +122,15 @@ async function chuBot() {
   }
   return out;
 }
-/** `donDaCo` phỏng dựng cho lượt `id` — xem đầu tệp. */
+/** `donDaCo` phỏng dựng cho lượt `id` — xem đầu tệp. Vòng 2: định nghĩa «có đơn» đổi (chỉ BẰNG CHỨNG) ⇒ tín hiệu của hồ sơ cuối (do bộ
+ *  dò CŨ ghi) phải QUA LẠI bộ dò MỚI trên chính câu đã lưu (`cau`, cắt 120 ký tự): nguồn page ⇒ `donTuTinPage`, nguồn khách ⇒
+ *  `donTuTinKhach`. Hạn 14 ngày không loại gì ở đây (mỗi lần chạy giả lập gói trong một ngày). Không kiểm được «chữ của chính bot» trên
+ *  câu đã lưu (lịch sử Pancake đã mất) — phiếu ⑦ đo: 13 tín hiệu page đều là mẫu POS thật. */
 function donTheoLuot(hoSo, mocChot, id) {
   const d = hoSo?.donDaCo;
   if (!d) return false;
+  if (d.nguon === 'page' && !C.donTuTinPage(d.cau || '')) return false;
+  if (d.nguon === 'khach' && !C.donTuTinKhach(d.cau || '')) return false;
   if (d.trangThai === 'đã tạo' && mocChot != null && id <= mocChot) return false;
   return true;
 }

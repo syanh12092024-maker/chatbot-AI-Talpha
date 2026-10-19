@@ -46,18 +46,20 @@ nhom() { # nhom <nhãn> <output> <các tên phải xanh>
   [ -z "$thieu" ]; ket "$1" $? "xanh $((doi - thieu_n))/$doi đòi${thieu:+ · THIẾU: $thieu}"
 }
 tep "tệp-ca-hàm-thuần" "$O_T"; tep "tệp-ca-worker" "$O_W"; tep "tệp-ca-hàng-chờ-màn" "$O_M"; tep "tệp-ca-phát-lại" "$O_R"; tep "test/context.test.mjs" "$O_C"
-nhom "①tên-(tachTen·name·hasName-một-bảng)" "$O_T" "T01 T02 T03 T04 T05 T06 T07 T08 T09 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 TH TS"
+nhom "①tên-(tachTen·name·hasName-một-bảng)" "$O_T" "T01 T02 T03 T04 T05 T06 T07 T08 T09 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 TH TS VN"
 echo "$O_T" | grep -E "^\s*✔ BH9 T[0-9]+ ·" | wc -l | sed 's/^ */   · số dòng bảng tên xanh: /'
 nhom "②bộ-dò-đơn-page·khách·laCauSauBan·bocDonTuLichSu" "$O_T" "DP DA DO DQ DR DK DN LS DB"
+nhom "②v2-«đơn-đã-có»-chỉ-bằng-chứng·có-hạn·đúng-nguồn-(F1·F2·F4·N1·N2·B·E)" "$O_T" "VF1 VA3 VC VF2 VB VE"
 nhom "③COD·lastAi·codNgam·[S10]·gói" "$O_T" "K1 K2 K3 K4 K5 K6"
-nhom "④cửa-ra-bốn-luật-mới-+-bảo-toàn-luật-cũ-so-base" "$O_T" "G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G20 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32 G33 G34 G35 G36 G37 G38 G39 G40 G41 G42 G43 G44 G45 G46 G47 G48 GL GS GC GF GK"
+nhom "④cửa-ra-bốn-luật-mới-+-bảo-toàn-luật-cũ-so-base" "$O_T" "G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18 G19 G20 G21 G22 G23 G24 G25 G26 G27 G28 G29 G30 G31 G32 G33 G34 G35 G36 G37 G38 G39 G40 G41 G42 G43 G44 G45 G46 G47 G48 GL GS GC GF GK VG VT"
 echo "$O_T" | grep -E "\[bh9t\] GC:" | sed 's/^ */   · /'
-nhom "⑤y-tế" "$O_T" "Y1 Y2 Y3"
+nhom "⑤y-tế" "$O_T" "Y1 Y2 Y3 VD"
 nhom "⑥khối-hồ-sơ-(+bản-chụp-không-kích-hoạt-giống-base)" "$O_T" "H1 H2 H3 H4 H5"
 c_co=" $(echo "$O_C" | grep -E "^\s*✔ C[0-9]+ ·" | sed -E 's/^\s*✔ (C[0-9]+) ·.*/\1/' | tr '\n' ' ') "; thieu=""
 for t in C11 C30 C31 C39; do echo "$c_co" | grep -qF " $t " || thieu="$thieu$t "; done
 [ -z "$thieu" ]; ket "⑥b-context.test-C11·C30·C31·C39-xanh" $? "${thieu:+THIẾU: $thieu}"
 nhom "⑦handler-qua-chayMotVong-(4a·câu-cố-định·captureOrder·y-tế·COD-ngầm·≤1·luật-2·[S4])" "$O_W" "Wa Wa2 Wa3 Wb Wc Wd1 Wd2 Wd3 We Wf1 Wf2 Wg1 Wg2 Wg3 Wg4 Wg5 Wh1 Wh2 Wi Wj Wk"
+nhom "⑦v2-worker-ca-phá-đối-kháng-(F1a·F1b·F2·F2b·F3·F4·F4b·F4c·hạn·nguồn)" "$O_W" "WF1a WF1b WF2 WF2b WF3 WF4 WF4b WF4c WB WE"
 nhom "⑧hàng-chờ·luuDonCho·Hộp-thư·Vận-hành" "$O_M" "M1 M2 M3 M4 M5"
 nhom "⑨M6-phát-lại-trên-giả-lập" "$O_R" "Ra Rb Rc Rd Re Rf"
 k=$(so "$O_R" skipped); [ "${k:-1}" -eq 0 ]; ket "⑨b-M6-CHẠY-THẬT-(không-HOÃN)" $? "skipped=${k:-?} (máy không có CSDL giả lập ⇒ đỏ ở cổng, HOÃN ở npm test)"
@@ -73,16 +75,16 @@ chep() { rm -rf "$T/src" "$T/db" "$T/v3"; mkdir -p "$T/v3"; cp -R src "$T/src"; 
 chep; cp test/_an-toan.mjs test/_bat-cua-de-do.mjs "$CA_T" "$CA_W" "$CA_M" "$CA_R" test/context.test.mjs \
   test/guard-fastlane.test.mjs test/guard-localfix.test.mjs test/cua-ra-sua-tai-cho.test.js "$T/test/"
 cp package.json "$T/"; ln -s "$GOC/node_modules" "$T/node_modules"; [ -f .env ] && ln -s "$GOC/.env" "$T/.env"
-dot() { (cd "$T" && node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimental-test-module-mocks --test --test-force-exit "$@" 2>&1); }
+dot() { (cd "$T" && ${DAO_TZ:+env TZ=$DAO_TZ} node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimental-test-module-mocks --test --test-force-exit "$@" 2>&1); }
 dot_bien() { # dot_bien <tên đột biến> — mỗi chuỗi gốc phải khớp ĐÚNG MỘT lần
   python3 - "$T" "$1" <<'PY'
 import os, sys
 T, ten = sys.argv[1], sys.argv[2]
 LS, CX, OG, OM, H, HC, HT = "src/lead-score.js", "src/context.js", "src/outbound-guard.js", "src/our-messages.js", "src/chat/handler-v3.js", "src/orders/hang-cho.js", "v3/src/ui/hop-thu/trang/hop-thu-ui.js"
 KHACH_CU = """const KHACH_NOI_VE_DON = [
-  ['khách KHÔNG muốn nhận nữa', /\\b(?:i\\s+d(?:o\\s+not|on'?t)\\s+want|don'?t\\s+want)\\b[^.\\n]{0,24}\\b(?:this\\s+)?(?:order|item|product|delivery|parcel)\\b|\\bcancel\\s+(?:my|the)\\s+order\\b|\\bhindi\\s+ko\\s+na\\s+kukunin\\b/i],
-  ['khách đang hỏi về chuyến giao', /\\bthe\\s+(?:delivery|order|parcel|package|courier|rider)\\b[^.\\n]{0,40}\\b(?:was|is|has|scheduled|today|tomorrow|call(?:ed)?|came|arriv\\w*)\\b|\\bdelivery\\s+(?:boy|guy|man|person|staff)\\b/i],
-  ['khách nói ĐƠN CŨ chưa xong', /\\b(?:my|the)\\s+order\\b[^.\\n]{0,30}\\b(?:not|haven'?t|hasn'?t|still|delay\\w*|late)\\b|\\bwala\\s+pa\\b[^.\\n]{0,20}\\border\\b|\\b(?:fifteen|[0-9]{1,2})\\s+days?\\b[^.\\n]{0,24}\\b(?:order|deliver\\w*|waiting)\\b/i],
+  ['khách KHÔNG muốn nhận nữa', (t) => /\\b(?:i\\s+d(?:o\\s+not|on'?t)\\s+want|don'?t\\s+want)\\b[^.\\n]{0,24}\\b(?:this\\s+)?(?:order|item|product|delivery|parcel)\\b|\\bcancel\\s+(?:my|the)\\s+order\\b|\\bhindi\\s+ko\\s+na\\s+kukunin\\b/i.test(t)],
+  ['khách đang hỏi về chuyến giao', (t) => /\\bthe\\s+(?:delivery|order|parcel|package|courier|rider)\\b[^.\\n]{0,40}\\b(?:was|is|has|scheduled|today|tomorrow|call(?:ed)?|came|arriv\\w*)\\b|\\bdelivery\\s+(?:boy|guy|man|person|staff)\\b/i.test(t)],
+  ['khách nói ĐƠN CŨ chưa xong', (t) => /\\b(?:my|the)\\s+order\\b[^.\\n]{0,30}\\b(?:not|haven'?t|hasn'?t|still|delay\\w*|late)\\b|\\bwala\\s+pa\\b[^.\\n]{0,20}\\border\\b|\\b(?:fifteen|[0-9]{1,2})\\s+days?\\b[^.\\n]{0,24}\\b(?:order|deliver\\w*|waiting)\\b/i.test(t)],
 ];"""
 GATE_4A = ("    // ── 4a · CỔNG SAU BÁN", "    // ── 4b · LỚP TỪ-KHOÁ", "    // ── 6 · PHÂN LOẠI")
 KHOI_BH9 = """  if (ctx.luatBH9 === true) {
@@ -97,9 +99,9 @@ BANG = {
   "bo-tach-duoi": [(LS, "    if (m && laDongTen(m[1])) return m[1].trim().replace(/\\s+/g, ' ');", "")],
   "hasname-rieng": [(LS, "  return !!tachTen(text);", "  return /(?:my name is|i am|i'?m|this is|ako si)\\s*[\\p{L}]/iu.test(String(text || '')) || !!tachTen(text);")],
   "don-cu": [(CX, "const KHUON_MOI = [", "const KHUON_MOI = [];\nconst KHUON_MOI_TAT = ["), ("re", CX, r"const KHACH_NOI_VE_DON = \[[\s\S]*?\n\];", KHACH_CU)],
-  "suy-ordernoted": [(CX, "    const d = donTuTinPage(raw);\n    if (d) prof.donDaCo = d;\n  }\n  return prof;",
-                      "    const d = donTuTinPage(raw);\n    if (d) prof.donDaCo = d;\n  }\n  if (!prof.donDaCo && prof.otherBot?.orderNoted) prof.donDaCo = { trangThai: 'đã tạo', cau: '', nguon: 'page' };\n  return prof;")],
-  "hai-ban-luat": [(CX, "  if (prof) bocDonTuLichSu(msgs, pageId, prof);\n", "")],
+  "suy-ordernoted": [(CX, "  const d = donTuLichSuPage(msgs, pageId, opts);\n  if (d) prof.donDaCo = d;\n  return prof;",
+                      "  const d = donTuLichSuPage(msgs, pageId, opts);\n  if (d) prof.donDaCo = d;\n  if (!prof.donDaCo && prof.otherBot?.orderNoted) prof.donDaCo = { trangThai: 'đã tạo', cau: '', nguon: 'page' };\n  return prof;")],
+  "hai-ban-luat": [(CX, "  if (prof && bocDon) bocDonTuLichSu(msgs, pageId, prof);\n", "")],
   "bo-cong-4a": [(H, "    if (sauBan.la && !yTe) {", "    if (false && sauBan.la && !yTe) {")],
   "cong-sau-fast-lane": [("move", H) + GATE_4A],
   "bo-chan-capture": [(H, '        if (prof.donDaCo?.nguon === "page") {', "        if (false) {")],
@@ -116,11 +118,11 @@ BANG = {
   "bo-cod-ngam": [(CX, "  if (prof.cod || prof.codTuChoi || !prof.phone || !prof.address) return false;", "  return false;")],
   "cod-tin-khach": [(CX, ".some((m) => String(m?.from?.id) === String(pageId)\n", ".some((m) => true\n")],
   "bo-phu-dinh-yte": [(CX, "      if (PHU_DINH_YTE.test(truoc)) continue;", "      void 0;")],
-  "bo-b-rash": [(CX, "new RegExp(`\\\\brash\\\\b|", "new RegExp(`rash|")],
+  "bo-b-rash": [(CX, "new RegExp(`\\\\brash(?:es)?\\\\b|", "new RegExp(`rash(?:es)?|")],
   "bo-co-ten-fb": [(HC, "    else if (tuTen.every((w) => tuFb.has(w))) d.ten_tu_facebook = true;\n", "")],
-  "giu-nhanh-cu": [(CX, "    if (re.test(t)) return laHoiTruocBan(t, trangThai) ? null :", "    if (re.test(t)) return false ? null :")],
+  "giu-nhanh-cu": [(CX, "const TRUOC_BAN = /", "const TRUOC_BAN = /(?!)/;\nconst TRUOC_BAN_TAT = /")],
   "bo-s2": [(CX, "        if (sauDieuKien(t, m.index, moi)) continue;\n", ""), (CX, "        if (moi && quyTrinhSau(t, m.index + m[0].length)) continue;\n", ""),
-            (CX, "        if (moi && trangThai === 'đã tạo' && (!VE_DA_CHOT.test(t) || CON_CHAO_MUA.test(t))) continue;   // (iii)\n", ""),
+            (CX, "        if (moi && trangThai === 'đã tạo' && /\\bis\\s+\\d/i.test(m[0]) && (!VE_DA_CHOT.test(t) || CON_CHAO_MUA.test(t))) continue;   // (iii)\n", ""),
             (CX, "\\btracking\\s*(?:number|no\\.?|#)?\\s*[:#]?\\s*\\d{4,}", "\\btracking\\s*(?:number|no\\.?|#)?")],
   "capture-ca-khach": [(H, '        if (prof.donDaCo?.nguon === "page") {', "        if (prof.donDaCo) {")],
   "vao-fixed": [(OM, "const fixed = new Set([...HOLDING_MESSAGES,", "const fixed = new Set([CAU_NHAN_BAN_GIAO.en, CAU_Y_TE.en, ...HOLDING_MESSAGES,")],
@@ -139,7 +141,7 @@ BANG = {
   # — chỗ /code-review BH9 vừa sửa (bẫy 26) —
   "cr1-cau-y-te-theo-luat": [(H, "guarded = cauCoDinh(yTe ? CAU_Y_TE : CAU_NHAN_BAN_GIAO);", "guarded = cauCoDinh(cuaRaChan.rule === \"Y_TE\" ? CAU_Y_TE : CAU_NHAN_BAN_GIAO);")],
   "cr1-yte-ban-giao-sau-cua": [(H, "    if (yTe && !state.handoff) {\n      state.handoff = true;\n      state.handoffReason = `Y TẾ · khách báo ${yTe}`;\n    }\n    const guarded0", "    const guarded0")],
-  "cr2-bo-cau-dang-mua": [(CX, "  /\\bi\\s+(?:want|wanna|would\\s+like)\\b|", "  /\\bi_khong_khop_\\b|")],
+  "cr2-bo-cau-dang-mua": [(CX, r"|i\s+want\s+to|", "|")],
   "cr3-hoi-xin-dia-chi": [(OG, "const HUA_TEAM_CO = /(?<!\\b(?:can|could|may|would|shall|do|did)\\s+)", "const HUA_TEAM_CO = /")],
   "cr4-handoff-truoc-gui": [(H, "    boHangAnh();\n    await guiChu(cau);\n    state.handoff = true;\n    state.handoffReason = lyDo;\n", "    boHangAnh();\n    state.handoff = true;\n    state.handoffReason = lyDo;\n    await guiChu(cau);\n")],
   "cr5-bia-cu": [(OG, "|will|would|usually|normally|typically|can|could|should|send|provide)\\b/i;", ")\\b/i;"),
@@ -153,10 +155,41 @@ BANG = {
                           "const COD_KHONG = /(?:no|not|don't|dont|hindi|ayaw|không).{0,35}\\bcod\\b|\\bcod\\b.{0,25}(?:not|cancel|không)/i;")],
   "cr12-ar-khong-tien-to": [(CX, "const AR = (s) => `(?<!\\\\p{L})(?:ال|بال|وال|لل|و|ب)?(?:${s})(?!\\\\p{L})`;", "const AR = (s) => `(?<!\\\\p{L})(?:${s})(?!\\\\p{L})`;"),
                             (OG, "(?<!\\p{L})(?:ال|بال|وال|لل|و|ب)?(?:طبيب|مستشفى|توقف|توقفي)(?!\\p{L})", "(?<!\\p{L})(?:طبيب|مستشفى|توقف|توقفي)(?!\\p{L})")],
-  "cr13-bo-yet": [(CX, "|didn'?t|yet\\s+to)(?:\\s+yet)?\\s+)", "|didn'?t|yet\\s+to)\\s+)")],
+  "cr13-bo-yet": [(CX, r"|didn'?t|yet\s+to)(?:\s+yet)?\s+)\b(?:i\s+)?(?:already\s+)?received\s+(?:it|that)\b/i;", r"|didn'?t|yet\s+to)\s+)\b(?:i\s+)?(?:already\s+)?received\s+(?:it|that)\b/i;")],
   "cr14-ten-hai-cham": [(LS, "الاسم\\s*[:=-])\\s*[:=-]?\\s*/iu;", "الاسم\\s*[:=-])\\s*/iu;"),
                         (LS, " && !/^\\p{Lu}{2,5}$/u.test(w)", "")],
   "caption-bh9-van-gui-anh": [(H, "        if (LUAT_BH9.has(captionChan)) {", "        if (false) {")],
+  # — VÒNG 2 (sau đối kháng — tổng chốt 19/10): «đơn đã có» chỉ từ BẰNG CHỨNG · CÓ HẠN · ĐÚNG NGUỒN · y tế theo cụm · BIA mở rộng —
+  "v2-nhanh-rong": [(CX, "const CHUYEN_GIAO = /", r"const CHUYEN_GIAO = /\bthe\s+(?:delivery|order|parcel|package|courier|rider)\b[^.\n]{0,40}\b(?:was|is|has|scheduled|today|tomorrow|call(?:ed)?|came|arriv\w*)\b|\b(?:you|u)\s+deliver(?:ed)?\b|\b(?:fifteen|[0-9]{1,2})\s+days?\b[^.\n]{0,24}\b(?:order|deliver\w*|waiting)\b|")],
+  "v2-bo-loai-chu-bot": [(CX, "    if (!raw || laChuBot(raw, oursN)) continue;", "    if (!raw) continue;")],
+  "v2-inform-tuong-lai": [(CX, r"\b(?:(?:have|has|had|already)\s+)?(?:informed|contacted|notified)\s+the\s+", r"\binform(?:ed)?\s+the\s+")],
+  "v2-cleanhistory-boc-lai": [(CX, "{ bocDon: meta.donDaTinh !== true }", "{ bocDon: true }")],
+  "v2-bo-han": [(CX, "    if (!d || (luc && bayGio - luc > HAN_DON_MS)) return;", "    if (!d) return;"), (CX, "    if (bayGio && luc && bayGio - luc > HAN_DON_MS) continue;\n", "")],
+  "v2-giu-ho-so-khong-moc": [(CX, "  if (cu && UU_TIEN_NGUON[cu.nguon] && lucCu) them(cu, lucCu);", "  if (cu && UU_TIEN_NGUON[cu.nguon]) them(cu, lucCu);")],
+  "v2-ordered-mo-cong": [(CX, "  if (prof?.donDaCo && NOI_VE_GIAO.test(t)) {", "  if ((prof?.donDaCo || prof?.ordered) && NOI_VE_GIAO.test(t)) {")],
+  "v2-bo-so-huu": [(CX, "  ['khách hỏi về ĐƠN CỦA MÌNH', (t) => cungCau(t, SO_HUU_DON, TRANG_THAI_DON) && !TRUOC_BAN.test(t)],\n", "")],
+  "v2-noi-ve-giao-cu": [(CX, r"|\border\b|\bpackage\b|\bitem\b|\bupdate\b|\bstatus\b|\bwhere\s*(?:is|are|['’]s|na|ba)\b|nasaan|\basan\b|kailan|balita|\bget\s+it\b|still\s+nothing|أين|وين|متى|طلب/i;", "/i;")],
+  "v2-bia-cu": [(OG, "const KHANG_DINH_DON = [", "const KHANG_CU = [\n"
+                + r"  /\bno\s+(?:active\s+|existing\s+|current\s+)?orders?\b(?!\s+(?:minimum|min|fee|limit|needed|required))/i," + "\n"
+                + r"  /\b(?:notice|message|notification)\b[^.!?\n]{0,40}\bsent\s+by\s+mistake\b/i," + "\n"
+                + r"  /\b(?:your\s+)?order\s+(?:is|has\s+been|was)\s+(?:already\s+)?(?:on\s+(?:its|the)\s+way|out\s+for\s+delivery|shipped|dispatched|delivered|cancel(?:l)?ed)\b/i," + "\n"
+                + r"  /\bon\s+(?:its|the)\s+way\b/i," + "\n" + r"  /\b(?:cancel(?:l)?ed|nakansela|na-cancel)\s+na\b/i," + "\n"
+                + r"  /تم\s+(?:إلغاء|الغاء)|في\s+الطريق|تم\s+شحن/u," + "\n];\nconst KHANG_DINH_DON = KHANG_CU;\nconst KHANG_MOI_TAT = [")],
+  "v2-nguon-page-tron": [(H, "${don.trangThai} (${nguonDonChu(don)})", "${don.trangThai} (${don.nguon})")],
+  "v2-blood-tron": [(CX, r"`\\bbleed\\w*|", r"`\\bblood\\b|\\bbleed\\w*|")],   # tệp JS: chuỗi template ⇒ hai gạch
+  "v2-dragon-ar": [(CX, r"دم(?!\\s+(?:ال)?[أا]خوين)", "دم")],
+  "v2-mien-moc-tom-tat": [(OG, "(!ctx.isOrderSummary && khopKhongMien(HUA_MOC, t, kbText, { chung: true }))", "(khopKhongMien(HUA_MOC, t, kbText, { chung: true }))")],
+  "v2-ten-al": [(LS, r"|^\s*(?:al|el)[\s-]+\p{L}/iu;", "/iu;")],
+  "v2-ten-moc": [(LS, "|market|mall|hypermarket|supermarket|souq|souk|bank|mosque|masjid|hospital|clinic|school|hotel|plaza|cent(?:er|re)|park|station|metro|bridge|roundabout|signal|camp|industrial|area", "")],
+  "v2-chu-bot-ngan": [(CX, "  return oursN.some((n) => n.length >= 20 && (t.startsWith(n.slice(0, 60))", "  return oursN.some((n) => n.length >= 8 && (t.startsWith(n.slice(0, 60))")],
+  # — chỗ /code-review vòng 2 vừa sửa (bẫy 26) —
+  "v2-ve-dang-mua": [(CX, " && !VE_DANG_MUA.test(c));", ");")],
+  "v2-cung-cau-phay": [(CX, r"t.split(/[.!?؟\n,;،]+/)", r"t.split(/[.!?؟\n]+/)")],
+  "v2-nhan-ro-bi-loai": [(CX, "(DA_NHAN.test(t) || (DA_NHAN_MO.test(t) && !NHAN_TRUOC_BAN.test(t))) && !TRUOC_BAN.test(t)", "(DA_NHAN.test(t) || DA_NHAN_MO.test(t)) && !NHAN_TRUOC_BAN.test(t) && !TRUOC_BAN.test(t)")],
+  "v2-how-longer": [(CX, r"\bhow\s+(?:long|many|much)\b(?!\s+(?:longer|more|until|till|still|pa)\b)|", r"\bhow\s+(?:long|many|much)\b|")],
+  "v2-where-tron": [(CX, r"|\bwhere\s*(?:is|are|['’]s|na|ba)\b|nasaan|", r"|\bwhere\b|nasaan|")],
+  "v2-gui-don-ar-khang": [(OG, r"|تم\s+شحن|تم\s+توصيل\s+(?:ال)?طلب|", r"|تم\s+شحن|تم\s+(?:توصيل|إرسال|ارسال)\s+(?:ال)?طلب|")],
+  "v2-moc-gio-may": [(CX, "  return Date.parse(/(?:z|[+-]\\d{2}:?\\d{2})$/i.test(s) ? s : `${s}Z`) || 0;", "  return Date.parse(s) || 0;")],
   "cr15-co-don-da-duyet": [(HT, "    if (choDuyet && canhCoDon(du)) canh.push(canhCoDon(du));", "    if (canhCoDon(du)) canh.push(canhCoDon(du));")],
 }
 import re as _re
@@ -248,10 +281,37 @@ dao "⑩cr13-bỏ-«yet»-trong-lookbehind" "DR" "BH9 DR ·" "cr13-bo-yet" "$tT"
 dao "⑩cr14-nhãn-«:»-+-viết-tắt" "T21 T22 T25" "BH9 T2[1245] ·" "cr14-ten-hai-cham" "$tT"
 dao "⑩cr15-cờ-hiện-cả-đơn-đã-duyệt" "M5" "BH9 M5 ·" "cr15-co-don-da-duyet" "$tM"
 dao "⑩I-caption-model-phạm-luật-mới-vẫn-gửi-ảnh" "Wd3" "BH9 Wd3 ·" "caption-bh9-van-gui-anh" "$tW"
+# — VÒNG 2 (sau đối kháng: F1 F2 F3 F4 = N1 N2 · B hạn · E nguồn · F7c · F8) — mỗi điểm vá có ca ĐỎ khi bỏ vá —
+dao "⑩v2a-trả-nhánh-rộng-«the-X-is»·«u-deliver»·«N-days»-[F1]" "VF1 WF1a WF1b" "BH9 (VF1|WF1[ab]) ·" "v2-nhanh-rong" "$tT" "$tW"
+dao "⑩v2b-bỏ-loại-chữ-bot-(lan_gui·ai_noi_gi)-[F2]" "VF2 WF2b" "BH9 (VF2|WF2b) ·" "v2-bo-loai-chu-bot" "$tT" "$tW"
+dao "⑩v2c-«inform-the-courier»-thì-tương-lai-[F2]" "VF2" "BH9 VF2 ·" "v2-inform-tuong-lai" "$tT"
+dao "⑩v2d-cleanHistory-bóc-lại-đơn-(không-ours)-[F2]" "WF2b" "BH9 WF2b ·" "v2-cleanhistory-boc-lai" "$tW"
+dao "⑩v2e-bỏ-hạn-14-ngày-[N5·N6]" "VB WB" "BH9 (VB|WB) ·" "v2-bo-han" "$tT" "$tW"
+dao "⑩v2f-giữ-hồ-sơ-lưu-không-mốc-[N5]" "VB" "BH9 VB ·" "v2-giu-ho-so-khong-moc" "$tT"
+dao "⑩v2g-«ordered»-vĩnh-viễn-mở-cổng-[B]" "LS" "BH9 LS ·" "v2-ordered-mo-cong" "$tT"
+dao "⑩v2h-bỏ-«sở-hữu-+-trạng-thái»-[F4·A3]" "VA3 WF4" "BH9 (VA3|WF4) ·" "v2-bo-so-huu" "$tT" "$tW"
+dao "⑩v2i-NOI_VE_GIAO-cũ-(thiếu-order/where/status)-[F4·N2]" "VC" "BH9 VC ·" "v2-noi-ve-giao-cu" "$tT"
+dao "⑩v2j-KHANG_DINH_DON-cũ-(#141·Taglish·Ả-Rập-lọt)-[F4]" "VG WF4c" "BH9 (VG|WF4c) ·" "v2-bia-cu" "$tT" "$tW"
+dao "⑩v2k-ghi-chú-in-«(page)»-thay-nguồn-thật-[câu-4]" "WF4 WF4b WE" "BH9 (WF4b?|WE) ·" "v2-nguon-page-tron" "$tW"
+dao "⑩v2l-trả-«blood»-trơn-[F3]" "VD WF3" "BH9 (VD|WF3) ·" "v2-blood-tron" "$tT" "$tW"
+dao "⑩v2m-bỏ-loại-«دم-الأخوين»-[F3]" "VD" "BH9 VD ·" "v2-dragon-ar" "$tT"
+dao "⑩v2n-bỏ-miễn-mốc-giờ-ở-lượt-tóm-tắt-[F7c]" "VT" "BH9 VT ·" "v2-mien-moc-tom-tat" "$tT"
+dao "⑩v2o-bỏ-lọc-«Al/El-…»-[F8]" "VN" "BH9 VN ·" "v2-ten-al" "$tT"
+dao "⑩v2p-bỏ-lọc-từ-mốc-(market·mall…)-[F8]" "VN" "BH9 VN ·" "v2-ten-moc" "$tT"
+dao "⑩v2r-câu-bot-NGẮN-nuốt-tin-sale-cùng-đầu-chữ-[F2]" "VF2" "BH9 VF2 ·" "v2-chu-bot-ngan" "$tT"
+# — chỗ /code-review vòng 2 vừa sửa (bẫy 26: bản vá cũng là code mới) —
+dao "⑩v2s-bỏ-loại-vế-trợ-động-từ/hỏi-COD" "VF1" "BH9 VF1 ·" "v2-ve-dang-mua" "$tT"
+dao "⑩v2t-sở-hữu+trạng-thái-không-tách-dấu-phẩy" "VF1" "BH9 VF1 ·" "v2-cung-cau-phay" "$tT"
+dao "⑩v2u-«received-the-parcel»-bị-loại-vì-«set»" "VA3" "BH9 VA3 ·" "v2-nhan-ro-bi-loai" "$tT"
+dao "⑩v2v-«how-much-longer»-bị-coi-người-đang-mua" "VA3" "BH9 VA3 ·" "v2-how-longer" "$tT"
+dao "⑩v2w-«where»-trơn-mở-cổng-sau-bán" "VC" "BH9 VC ·" "v2-where-tron" "$tT"
+dao "⑩v2x-«تم-إرسال-الطلب»-bị-chặn-ở-lượt-tóm-tắt" "VG" "BH9 VG ·" "v2-gui-don-ar-khang" "$tT"
+# mốc Pancake không múi đọc theo GIỜ MÁY: chỉ đỏ khi máy ≠ UTC ⇒ ép TZ của lượt đo (bẫy 1/21: thước phụ thuộc đồng hồ phải ép đồng hồ)
+DAO_TZ=Asia/Ho_Chi_Minh dao "⑩v2q-mốc-Pancake-đọc-theo-giờ-máy-(TZ=+07)" "VB" "BH9 VB ·" "v2-moc-gio-may" "$tT"
 # Mỗi tệp MỘT tiến trình, sàn RIÊNG từng tệp: đo 19/10 chạy chung 5 tệp trong một lượt `node --test` lúc máy bận (thợ song song) có
 # lượt RỤNG 18–31 ca mà fail=0 (tests 145/158 thay vì 176) — chỉ thước SÀN bắt được; sàn tổng 150 thì không biết tệp nào rụng.
 chep; d0=""; d0_loi=0
-for cap in "$tT:100" "$tW:20" "$tM:5" "$tR:6" "test/context.test.mjs:41"; do
+for cap in "$tT:113" "$tW:31" "$tM:5" "$tR:6" "test/context.test.mjs:41"; do
   tep0="${cap%:*}"; san="${cap##*:}"; o=$(dot "$tep0"); f=$(so "$o" fail); p=$(so "$o" pass)
   d0="$d0 $(basename "$tep0" .test.mjs)=${p:-?}/${f:-?}(sàn $san)"
   { [ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge "$san" ]; } || d0_loi=1

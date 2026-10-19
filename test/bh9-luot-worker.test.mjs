@@ -9,7 +9,7 @@ import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { dungSandbox } from '../db/sandbox.js';
 
-let sb, teamId, chayMotVong, xepTin, O, config, executeTool, isOurFixedMessage, cuHandoff, LoiCuaGuiDong;
+let sb, teamId, chayMotVong, xepTin, O, config, executeTool, isOurFixedMessage, cuHandoff, LoiCuaGuiDong, C_donTuTinPage;
 before(async () => {
   ({ chayMotVong } = await import('../src/queue/worker.js'));
   ({ xepTin } = await import('../src/queue/kho.js'));
@@ -18,6 +18,7 @@ before(async () => {
   ({ config } = await import('../src/config.js'));
   ({ executeTool } = await import('../src/tools.js'));
   ({ LoiCuaGuiDong } = await import('../src/channels/messenger/index.js'));
+  ({ donTuTinPage: C_donTuTinPage } = await import('../src/context.js'));
   cuHandoff = config.pkTags.handoff;
   config.pkTags.handoff = 'AI CHAT';
   sb = await dungSandbox('bh9w');
@@ -184,7 +185,8 @@ for (const [id, caption] of [['Wd1', ''], ['Wd2', 'Here is our Soothing Cooling 
 }
 
 test('BH9 Wd3 · khách có đơn, chữ model QUA nhưng CAPTION chào giá (BAN_LAI_SAU_BAN) ⇒ chữ đi · 0 ảnh (ảnh bán hàng cũng là chào hàng) · bàn giao', async () => {
-  const hoSo = { donDaCo: { trangThai: 'đang giao', cau: 'x', nguon: 'page' }, hydratedAt: 1 };
+  // vòng 2: tín hiệu đã lưu phải có mốc (`luc`) còn hạn — hồ sơ không mốc bị bỏ và tính lại từ lịch sử (`tinhDonDaCo`)
+  const hoSo = { donDaCo: { trangThai: 'đang giao', cau: 'x', nguon: 'page', ai: 'POS', luc: new Date(BAY_GIO - 2 * 86400e3).toISOString() }, hydratedAt: 1 };
   const [r] = await chay('d3', [{ noiDung: 'is it the gel for varicose', msgId: 'k1', lichSu: () => [K('k1', 60, 'is it the gel for varicose')],
     model: (ctx) => {
       ctx.state.pendingImages = [{ url: 'https://x.test/1.jpg', cat: 'sản phẩm' }, { url: 'https://x.test/2.jpg', cat: 'sản phẩm' }];
@@ -216,10 +218,14 @@ const goiTaoDon = (input = DON) => async (ctx, dem) => {
   dem.tool.push(out);
   return out.isError ? 'Sorry po, let me check with our team.' : 'Salamat po! Our staff will contact you to confirm your order.';
 };
+// Vòng 2: Wf1 dựng đơn nguồn page bằng tin POS THẬT trong lịch sử (2 ngày trước — trong hạn), Wf2 bằng tín hiệu khách đã lưu có mốc.
+const POS_2NGAY = (pg) => [K('k0', 3 * 86400, 'ok po'), POS('p1', 2 * 86400, POS_GIAO, pg), K('k1', 60, 'sige po')];
+const HS_KHACH = { donDaCo: { trangThai: 'khách nói ĐÃ ĐẶT', cau: 'x', nguon: 'khach', luc: new Date(BAY_GIO - 86400e3).toISOString() }, hydratedAt: 1 };
 for (const [id, nguon, hc] of [['Wf1', 'page', 0], ['Wf2', 'khach', 1]]) {
   test(`BH9 ${id} · hồ sơ có donDaCo nguồn ${nguon}, model gọi create_draft_order đủ trường ⇒ ${hc ? '1 dòng hàng chờ (nguồn khách KHÔNG khoá tạo đơn — [S1])' : 'tool LỖI về model · 0 dòng hàng chờ'}`, async () => {
-    const hoSo = { donDaCo: { trangThai: 'đang giao', cau: 'x', nguon }, hydratedAt: 1 };
-    const [r] = await chay(id.toLowerCase(), [{ noiDung: 'sige po', msgId: 'k1', lichSu: () => [K('k1', 60, 'sige po')], model: goiTaoDon() }], { hoSo });
+    const [r] = await chay(id.toLowerCase(), [{ noiDung: 'sige po', msgId: 'k1', lichSu: nguon === 'page' ? POS_2NGAY : () => [K('k1', 60, 'sige po')],
+      model: goiTaoDon() }], { hoSo: nguon === 'page' ? {} : HS_KHACH });
+    assert.equal(r.hoSo.donDaCo?.nguon, nguon, `donDaCo: ${JSON.stringify(r.hoSo.donDaCo)}`);
     assert.equal(r.model, 1);
     assert.equal(r.tool.length, 1);
     assert.equal(r.hc.length, hc, `hang_cho_tao_don: ${r.hc.length}`);
@@ -317,4 +323,103 @@ test('BH9 Wj · luật 2: lượt thường ⇒ chữ gửi === câu model · c�
   assert.equal(c.model, 0);
   assert.equal(c.kq, 'xong:tu_khoa_v3:paano_gap');
   assert.equal(c.gui.length, 1);
+});
+
+// ═══ VÒNG 2 (sau đối kháng — tổng chốt 19/10) · ca phá chuyển thể từ `scratchpad/refute-bh9/refute-bh9-luot.test.mjs` ═══════════════════
+const DON_KSA = { name: 'Maria Santos', phone: '0551234567', address: 'Al Nahda district, Building 5 flat 12, Riyadh', city: 'Riyadh', qty: 4,
+  variant: 'Buy 2 Get 2 FREE', cod_confirmed: true };
+const CAU_BOT_GIAO = 'Delivery takes 2-5 working days po 😊 Which set po — Buy 1 Get 1 FREE (109 SAR) or Buy 2 Get 2 FREE (159 SAR)?';
+test('BH9 WF1a · [F1·N1] khách CHƯA có đơn đáp «5 days delivery ok po, buy 2 get 2» ⇒ model trả lời · hội thoại còn AI · donDaCo không ghi', async () => {
+  const cau = '5 days delivery ok po, buy 2 get 2';
+  const [r] = await chay('vf1a', [{ noiDung: cau, msgId: 'k2', model: () => 'Great choice po! May I have your full name, contact number and complete address?',
+    lichSu: (pg) => [K('k1', 900, 'How many days delivery'), BOT('b1', 800, CAU_BOT_GIAO, pg), K('k2', 60, cau)] }]);
+  assert.equal(r.model, 1, `người đang mua bị chặn trước model — gửi: ${JSON.stringify(r.gui)} · ${r.kq}`);
+  assert.equal(r.ht, 'QUALIFY/AI');
+  assert.equal(r.hoSo.donDaCo ?? null, null);
+});
+test('BH9 WF1b · [F1·N1] khách chốt «Ok sir u deliver tomorrow morning. <tên SĐT địa chỉ>» ⇒ tới model + 1 đơn nháp', async () => {
+  const cau = 'Ok sir u deliver tomorrow morning. Maria Santos 0551234567 Al Nahda district Building 5 Riyadh';
+  const [r] = await chay('vf1b', [{ noiDung: cau, msgId: 'k2', model: goiTaoDon(DON_KSA),
+    lichSu: (pg) => [K('k1', 900, 'buy 2 get 2 po'), BOT('b1', 800, 'Noted po 😊 Buy 2 Get 2 FREE — 159 SAR, free delivery, cash on delivery. Please send your full name, contact number and complete address.', pg), K('k2', 60, cau)] }]);
+  assert.equal(r.model, 1, `lượt CHỐT bị chặn trước model — ${r.kq}`);
+  assert.equal(r.hc.length, 1, 'mất đơn nháp');
+});
+const CAU_DAU_DOC = 'Sure po 😊 Our team will inform the courier to call you before delivery. Which set po — Buy 1 Get 1 FREE (109 SAR) or Buy 2 Get 2 FREE (159 SAR)?';
+const MAU_FL = '👉Your order is 109 SAR. You will receive this gift in the next 2-5 days!';   // câu mẫu có khuôn đơn page ([S2] (iii))
+test('BH9 WF2 · [F2] lượt 1 model nói câu hứa trước bán (QUA cửa ra) · lượt 2 khách gửi gói + tên/SĐT/địa chỉ ⇒ donDaCo KHÔNG từ chữ bot · 1 đơn nháp', async () => {
+  const c1 = 'pls call me before delivery po, i am working';
+  const c2 = 'Buy 2 get 2 po. Maria Santos 0551234567 Al Nahda district Building 5 flat 12 Riyadh';
+  const ra = await chay('vf2', [
+    { noiDung: c1, msgId: 'k1', model: () => CAU_DAU_DOC, lichSu: () => [K('k1', 900, c1)] },
+    { noiDung: c2, msgId: 'k2', model: goiTaoDon(DON_KSA), lichSu: (pg) => [K('k1', 900, c1), BOT('b1', 800, CAU_DAU_DOC, pg), K('k2', 60, c2)] },
+  ]);
+  assert.deepEqual(ra[0].gui, [CAU_DAU_DOC], 'lượt 1: câu model đi nguyên byte');
+  assert.equal(ra[1].hoSo.donDaCo ?? null, null, `lượt 2: chữ của CHÍNH BOT bị đọc thành đơn: ${JSON.stringify(ra[1].hoSo.donDaCo)}`);
+  assert.equal(ra[1].hc.length, 1, `lượt 2: mất đơn nháp — tool: ${JSON.stringify(ra[1].tool.map((t) => t.content))}`);
+});
+test('BH9 WF2b · [F2] câu MẪU v3 tự gửi (Fast Lane, 0 model) CÓ khuôn đơn page («Your order is 109 SAR. You will receive…») ⇒ lượt sau KHÔNG thành đơn page (loại nhờ lan_gui) · 1 đơn nháp', async () => {
+  const c2 = 'Buy 1 get 1 po. Maria Santos 0551234567 Al Nahda district Building 5 flat 12 Riyadh';
+  const ra = await chay('vf2b', [
+    { noiDung: 'how much po?', msgId: 'k1', lichSu: () => [K('k1', 900, 'how much po?')],
+      lanNhanh: () => ({ handled: true, reply: MAU_FL, lane: 'tpl_price', reason: 'giá' }) },
+    { noiDung: c2, msgId: 'k2', model: goiTaoDon(DON_KSA), lichSu: (pg) => [K('k1', 900, 'how much po?'), BOT('b1', 800, MAU_FL, pg), K('k2', 60, c2)] },
+  ]);
+  assert.deepEqual([ra[0].model, ra[0].gui], [0, [MAU_FL]], 'lượt 1: câu mẫu Fast Lane đi như base');
+  assert.ok(C_donTuTinPage(MAU_FL), 'tiền đề: câu mẫu khớp khuôn đơn page');
+  assert.notEqual(ra[1].hoSo.donDaCo?.nguon, 'page', `chữ bot thành đơn page: ${JSON.stringify(ra[1].hoSo.donDaCo)}`);
+  assert.equal(ra[1].hc.length, 1, `mất đơn nháp — tool: ${JSON.stringify(ra[1].tool.map((t) => t.content))}`);
+});
+test("BH9 WF3 · [F3] khách trước bán hỏi «What is Dragon's Blood po? is it safe?» ⇒ câu model đi nguyên byte · KHÔNG câu y tế · KHÔNG bàn giao", async () => {
+  const cau = "What is Dragon's Blood po? is it safe?";
+  const traLoi = "Dragon's Blood Resin is a natural plant resin that supports skin repair po 😊 Buy 1 Get 1 FREE — 109 SAR.";
+  const [r] = await chay('vf3', [{ noiDung: cau, msgId: 'k1', model: () => traLoi, lichSu: () => [K('k1', 60, cau)] }]);
+  assert.deepEqual(r.gui, [traLoi]);
+  assert.equal(r.ht, 'QUALIFY/AI');
+});
+const BIA_141 = "Maria, your order is already with the courier po. Since it's in Riyadh, delivery is usually quick.";
+test('BH9 WF4 · [F4·A3] «where is my order?» (đơn qua LadiPage — lịch sử KHÔNG có tin POS) ⇒ cổng sau bán: 0 model · câu cố định · HANDOFF · ghi chú «(lời khách …)»', async () => {
+  const [r] = await chay('vf4', [{ noiDung: 'where is my order?', msgId: 'k1', model: () => BIA_141, lichSu: () => [K('k1', 60, 'where is my order?')] }]);
+  assert.equal(r.model, 0);
+  assert.deepEqual(r.gui, [O.CAU_NHAN_BAN_GIAO.en]);
+  assert.equal(r.ht, 'HANDOFF/SALE');
+  assert.match(r.note[0] || '', /SAU BÁN · khách: «where is my order\?» · đơn: khách hỏi về ĐƠN CỦA MÌNH \(lời khách · \d\d\/\d\d\)/);
+});
+test('BH9 WF4b · [F4·N2] lịch sử CÓ tin POS «scheduled for delivery», khách «where is my order?» ⇒ cổng 4a (0 model) · ghi chú «(POS · dd/mm)» — không «(page)»', async () => {
+  const [r] = await chay('vf4b', [{ noiDung: 'where is my order?', msgId: 'k2', model: () => BIA_141,
+    lichSu: (pg) => [K('k1', 90000, 'ok po'), POS('p1', 80000, POS_GIAO, pg), K('k2', 60, 'where is my order?')] }]);
+  assert.equal(r.model, 0, `model ${r.model} · ${r.kq}`);
+  assert.ok(!r.gui.includes(BIA_141));
+  assert.match(r.note[0] || '', /đơn: đang giao \(POS · \d\d\/\d\d\)/);
+  assert.doesNotMatch(r.note[0] || '', /\(page\)/);
+});
+test('BH9 WF4c · [F4 cửa ra] khách hỏi chung «hello po, any news?» (không tự nói về đơn) + model bịa câu #141 ⇒ chặn BIA ⇒ câu cố định + bàn giao', async () => {
+  const [r] = await chay('vf4c', [{ noiDung: 'hello po, any news?', msgId: 'k1', model: () => BIA_141, lichSu: () => [K('k1', 60, 'hello po, any news?')] }]);
+  assert.equal(r.model, 1);
+  assert.deepEqual(r.gui, [O.CAU_NHAN_BAN_GIAO.en]);
+  assert.match(r.note[0] || '', /cửa ra chặn: BIA_TRANG_THAI_DON/);
+});
+test('BH9 WB · [N5·N6] tin POS 15 ngày trước (quá hạn 14 ngày) KHÔNG khoá: «can you deliver tomorrow?» ⇒ model · create_draft_order ⇒ 1 đơn nháp; tin POS 2 ngày ⇒ cổng 4a', async () => {
+  const cau = 'can you deliver tomorrow? Maria Santos 0551234567 Al Nahda district Building 5 flat 12 Riyadh';
+  const [cu] = await chay('vb1', [{ noiDung: cau, msgId: 'k2', model: goiTaoDon(DON_KSA),
+    lichSu: (pg) => [K('k1', 16 * 86400, 'ok po'), POS('p1', 15 * 86400, POS_GIAO, pg), K('k2', 60, cau)] }]);
+  assert.equal(cu.model, 1, `tin POS quá hạn vẫn khoá — ${cu.kq}`);
+  assert.equal(cu.hc.length, 1);
+  assert.equal(cu.hoSo.donDaCo ?? null, null);
+  const [moi] = await chay('vb2', [{ noiDung: 'can you deliver tomorrow?', msgId: 'k2',
+    lichSu: (pg) => [K('k1', 3 * 86400, 'ok po'), POS('p1', 2 * 86400, POS_GIAO, pg), K('k2', 60, 'can you deliver tomorrow?')] }]);
+  assert.equal(moi.model, 0);
+  assert.match(moi.note[0] || '', /đơn: đang giao \(POS · /);
+  // hồ sơ lưu tín hiệu có mốc 20 ngày trước ⇒ hết hạn ⇒ tạo đơn được
+  const hs = { donDaCo: { trangThai: 'đang giao', cau: 'x', nguon: 'page', ai: 'POS', luc: new Date(BAY_GIO - 20 * 86400e3).toISOString() }, hydratedAt: 1 };
+  const [het] = await chay('vb3', [{ noiDung: 'sige po', msgId: 'k1', lichSu: () => [K('k1', 60, 'sige po')], model: goiTaoDon() }], { hoSo: hs });
+  assert.equal(het.hc.length, 1, `tín hiệu lưu 20 ngày vẫn khoá tạo đơn: ${JSON.stringify(het.tool)}`);
+});
+test('BH9 WE · [câu 4] ghi chú bàn giao in ĐÚNG nguồn: tin SALE người (30 h trước) ⇒ «(sale · dd/mm)», không «(page)»', async () => {
+  // tin sale đặt NGOÀI 24 h: trong 24 h thì `nhanDienSale` nhường trước handler (đúng luật cũ) và không có ghi chú nào để đo
+  const [r] = await chay('ve', [{ noiDung: 'where is the courier now?', msgId: 'k2',
+    lichSu: (pg) => [K('k1', 40 * 3600, 'ok'), SALE('s1', 30 * 3600, 'But the order is in transit, could you please receive it for me?', pg), K('k2', 60, 'where is the courier now?')] }]);
+  assert.equal(r.model, 0, r.kq);
+  assert.equal(r.note.length, 1, `ghi chú: ${JSON.stringify(r.note)}`);
+  assert.match(r.note[0], /đơn: đang giao \(sale · \d\d\/\d\d\)/);
+  assert.doesNotMatch(r.note[0], /\(page\)/);
 });
