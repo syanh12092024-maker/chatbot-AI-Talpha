@@ -9,6 +9,9 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { dungSandbox } from "../db/sandbox.js";
 
 const pr = await import("../src/queue/page-routing.js");
@@ -17,14 +20,19 @@ const cw = await import("../src/queue/chay-worker.js");
 const { xepTin } = await import("../src/queue/kho.js");
 
 const coHam = (ten) => assert.equal(typeof pr[ten], "function", `page-routing.js chưa xuất \`${ten}\` (GL2 ②1/②3)`);
-const ENV_MO = { V3_PANCAKE_GUI: "1", PANCAKE_READONLY: "0", V3_RAP_PROMPT_BAT: "1", ANTHROPIC_API_KEY: "fake-only" };
+// GL10 (phiếu ③ (a)): cổng bật đòi tệp nhường page của ai_sale — tệp TẠM; page bật bằng UPDATE tay đánh dấu «đã nhường» (`daNhuong`).
+const TEP_AI_SALE = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "gl2-ai-sale-")), "page_gan_them.json");
+fs.writeFileSync(TEP_AI_SALE, "{}");
+const ENV_MO = { V3_PANCAKE_GUI: "1", PANCAKE_READONLY: "0", V3_RAP_PROMPT_BAT: "1", ANTHROPIC_API_KEY: "fake-only", V3_AI_SALE_TEP_GAN: TEP_AI_SALE };
 const envTran = (tran) => (tran === undefined ? { ...ENV_MO } : { ...ENV_MO, V3_TRAN_PAGE_BAT: tran });
 
 let sb; let pool; let X; let Y; let ND; const ID = {}; const PID = { A: "972000000001", B: "972000000002", C: "972000000003" };
 let goiFetch = 0;
 const fetchCu = globalThis.fetch;
+const tepCu = process.env.V3_AI_SALE_TEP_GAN;
 
 before(async () => {
+  process.env.V3_AI_SALE_TEP_GAN = TEP_AI_SALE;   // worker đọc process.env
   sb = await dungSandbox("gl2");
   pool = sb.pool;
   console.log(`   [gl2] hộp cát ${sb.ten} · tệp đo ${fileURLToPath(new URL("../src/queue/page-routing.js", import.meta.url))}`);
@@ -41,8 +49,18 @@ before(async () => {
 });
 after(async () => {
   globalThis.fetch = fetchCu;
+  if (tepCu === undefined) delete process.env.V3_AI_SALE_TEP_GAN; else process.env.V3_AI_SALE_TEP_GAN = tepCu;
+  fs.rmSync(path.dirname(TEP_AI_SALE), { recursive: true, force: true });
   if (sb) await sb.don();
 });
+/** GL10: page bật bằng UPDATE tay ⇒ khoá `_v3` trong tệp tạm + «ai_sale đã nhường» (chờ đã qua). `bot_bat_luc` để NULL = không lọc mốc (hành vi cũ). */
+async function daNhuong(...ks) {
+  const d = JSON.parse(fs.readFileSync(TEP_AI_SALE, "utf8"));
+  d._v3 = { ...(d._v3 || {}) };
+  for (const k of ks) d._v3[PID[k]] = "ca GL2";
+  fs.writeFileSync(TEP_AI_SALE, JSON.stringify(d, null, 1));
+  await pool.query("UPDATE page SET ai_sale_cho_den = now() - interval '1 minute', ai_sale_trang_thai = 'da_nhuong' WHERE page_id = ANY($1::text[])", [ks.map((k) => PID[k])]);
+}
 
 const bc = (team) => ({ teamId: String(team), nguoiDungId: String(ND) });
 const TEAM = { A: () => X, B: () => Y, C: () => X };
@@ -204,6 +222,7 @@ test("GL2 W4a · 2 page bật (2 team), trần 1 ⇒ hàm worker trả [] (khôn
 test("GL2 W4b · CẢ VÒNG motLuot khi vượt: 0 lượt nạp · 0 vòng xử · tin vẫn `cho`, so_lan_thu 0 · lyDo nói vượt trần", async () => {
   pr.xoaNhoCanhBaoTran?.();
   await datCot("A", "B");
+  await daNhuong("A", "B");   // GL10: hai page «đã nhường» — để chỉ TRẦN quyết (không để lọc nhường của GL10 che đột biến trần, gl2.sh ⑤d)
   await pool.query("DELETE FROM tin_cho_xu_ly");
   const t = await xepTin(pool, { teamId: X, pageId: PID.A, psid: "gl2-psid", convId: "gl2-conv", msgId: "gl2-m1", noiDung: "how much?" });
   let docHoi = 0; let nao = 0;
@@ -225,6 +244,7 @@ test("GL2 W4b · CẢ VÒNG motLuot khi vượt: 0 lượt nạp · 0 vòng xử
 test("GL2 W4c · CHO-QUA thật: 1 page bật (trần 1) ⇒ hàm worker trả đúng page đó; motLuot nạp + rút tin (tin rời `cho`)", async () => {
   pr.xoaNhoCanhBaoTran?.();
   await datCot("A");
+  await daNhuong("A");
   assert.deepEqual(await pr.dsPageBotTraLoiCoTran(pool, { V3_TRAN_PAGE_BAT: "1" }, { ghi: () => {} }), [PID.A]);
   await pool.query("DELETE FROM tin_cho_xu_ly");
   const t = await xepTin(pool, { teamId: X, pageId: PID.A, psid: "gl2-psid2", convId: "gl2-conv2", msgId: "gl2-m2", noiDung: "how much?" });

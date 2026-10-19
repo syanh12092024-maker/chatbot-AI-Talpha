@@ -13,6 +13,9 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { dungSandbox } from "../db/sandbox.js";
 import * as cw from "../src/queue/chay-worker.js";
 import { xepTin } from "../src/queue/kho.js";
@@ -27,7 +30,11 @@ const ngat = await import("../src/queue/ngat-page.js").catch(() => null);
 
 const HAN_DOC = 150;
 const HAN_GUI = 300;
+// GL10 (phiếu ③ (a)): worker chỉ nạp/rút page ai_sale ĐÃ nhường — tệp nhường TẠM; page tạo bằng INSERT đánh dấu «đã nhường» (`taoPage`).
+const TEP_AI_SALE = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "gl4-ai-sale-")), "page_gan_them.json");
+fs.writeFileSync(TEP_AI_SALE, "{}");
 const ENV = {
+  V3_AI_SALE_TEP_GAN: TEP_AI_SALE,
   V3_PANCAKE_GUI: "1",
   PANCAKE_READONLY: "0",            // chỉ trong tiến trình ca — .env vẫn =1
   V3_PANCAKE_HAN_GUI_MS: String(HAN_GUI),
@@ -124,6 +131,7 @@ after(async () => {
   config.pancakeToken = cauHinhCu.pancakeToken;
   config.pancakeTokensExtra = cauHinhCu.pancakeTokensExtra;
   if ("handoff" in cauHinhCu) config.pkTags.handoff = cauHinhCu.handoff;
+  fs.rmSync(path.dirname(TEP_AI_SALE), { recursive: true, force: true });
   await sb?.don();
 });
 
@@ -134,7 +142,15 @@ async function taoPage(pid, { bat = true } = {}) {
     "INSERT INTO page(team_id,page_id,ten,nguon_tin,bot_ai_bat) VALUES($1,$2,$3,'poll',$4) RETURNING id",
     [team, pid, `Trang ${pid}`, bat]);
   PAGE_ROW.set(pid, r.rows[0].id);
+  await daNhuong(pid);
   return pid;
+}
+/** GL10: khoá `_v3` trong tệp tạm + «ai_sale đã nhường» (chờ đã qua). `bot_bat_luc` để NULL = bộ nạp không lọc mốc (hành vi cũ). */
+async function daNhuong(pid) {
+  const d = JSON.parse(fs.readFileSync(TEP_AI_SALE, "utf8"));
+  d._v3 = { ...(d._v3 || {}), [pid]: "ca GL4" };
+  fs.writeFileSync(TEP_AI_SALE, JSON.stringify(d, null, 1));
+  await sb.pool.query("UPDATE page SET ai_sale_cho_den = now() - interval '1 minute', ai_sale_trang_thai = 'da_nhuong' WHERE page_id=$1", [pid]);
 }
 /** Chỉ đúng các page này bật bot (trần GL2 đếm toàn hệ — page của ca trước phải tắt). */
 const chiBat = (...pids) => sb.pool.query("UPDATE page SET bot_ai_bat = (page_id = ANY($1::text[]))", [pids]);
@@ -528,12 +544,13 @@ test("GL4 P5 · GL2: P đang ngắt vẫn đếm vào trần — trần 1 ⇒ b�
   const Q = await taoPage("gl4-q5", { bat: false });
   const sp = (await sb.pool.query("INSERT INTO san_pham (team_id, page_id, ma, ten) VALUES ($1,$2,'gl4-q5','SP') RETURNING id", [team, PAGE_ROW.get(Q)])).rows[0].id;
   await sb.pool.query("INSERT INTO goi_gia (team_id, san_pham_id, so_luong, gia, tien_te) VALUES ($1,$2,1,19900,'AED')", [team, sp]);
-  const envSet = (tran) => ({ V3_PANCAKE_GUI: "1", PANCAKE_READONLY: "0", V3_RAP_PROMPT_BAT: "1", ANTHROPIC_API_KEY: "fake-only", V3_TRAN_PAGE_BAT: tran });
+  const envSet = (tran) => ({ V3_PANCAKE_GUI: "1", PANCAKE_READONLY: "0", V3_RAP_PROMPT_BAT: "1", ANTHROPIC_API_KEY: "fake-only", V3_TRAN_PAGE_BAT: tran, V3_AI_SALE_TEP_GAN: TEP_AI_SALE });
   const bc = { teamId: String(team), nguoiDungId: String(nd) };
   const e = await setPage(sb.pool, bc, PAGE_ROW.get(Q), { enabled: true }, envSet("1")).then(() => null, (x) => x);
   assert.ok(e, "trần 1, P (đang ngắt) bật ⇒ bật Q phải bị chặn");
   assert.equal(e.status, 409, `mã chặn phải 409, đo ${e.status} · ${e.message}`);
   await setPage(sb.pool, bc, PAGE_ROW.get(Q), { enabled: true }, envSet("2"));
+  await daNhuong(Q);   // GL10: bật qua setPage ⇒ chờ ai_sale nhường 15′ — ca này đo trần GL2, coi như đã qua mốc chờ
   const tQ = await xep(Q, "q5-c");
   const cu = process.env.V3_TRAN_PAGE_BAT; process.env.V3_TRAN_PAGE_BAT = "2";
   try {

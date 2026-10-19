@@ -6,6 +6,9 @@ import {
 import { docSanPhamGoiGia } from "../products/catalog.js";
 import { layModel } from "../chat/model.js";
 import { HE_SO_TE, quyDonViNho, teCuaThiTruong } from "../pos/index.js";
+import {
+  tepGan, docTepGan, docTepCoDem, khoaGanTay, coKhoaV3, ghiKhoa, xoaKhoa, CHO_AI_SALE_MS, KHOA_TU_VAN_TEP, BIEN_LOG, LoiTepAiSale,
+} from "../queue/ai-sale-nhuong.js";
 
 export const fault = (message, status = 400) =>
   Object.assign(new Error(message), { status });
@@ -68,8 +71,29 @@ export async function pageStatus(pool, p, env = process.env) {
   } catch {
     blockers.push("Model hoặc API key chưa hợp lệ");
   }
+  // GL10 ② 1 / ② 3 — bot ai_sale (pancake-tool) phải NHƯỜNG được page này. Câu chặn CỐ ĐỊNH (bảng dịch `MA_CUA_CAU` khớp NGUYÊN câu);
+  // phần động (khoá gắn tay, đường tệp, câu lỗi tệp) đi trong `aiSaleChiTiet`. Đọc tệp qua ĐỆM (ino, mtime, size) — hàm này chạy cho từng
+  // page của các màn (/code-review GL10 #8). `ghiKhoa` (dưới khoá tư vấn) kiểm lại tệp + gắn tay lần nữa lúc bật.
+  const aiSaleChiTiet = {};
+  const tep = tepGan(env);
+  if (!tep) blockers.push("Chưa nối ai_sale (V3_AI_SALE_TEP_GAN vắng) — bật lúc này có thể hai bot cùng trả lời");
+  if (!Object.hasOwn(p, "ai_sale_trang_thai")) blockers.push("CSDL chưa áp migration 035 — chưa có cột chờ ai_sale nhường");
+  if (tep) {
+    aiSaleChiTiet.tep = tep;
+    const t = docTepCoDem(tep);
+    if (!t.ok) {
+      aiSaleChiTiet.loiTep = t.loi;
+      blockers.push("Tệp nhường page của ai_sale (page_gan_them.json) hỏng hoặc vắng — bot v3 không bật được; page đang bật thì bot v3 im");
+    }
+    const ganTay = t.ok ? khoaGanTay(t.d, p.page_id) : [];
+    if (ganTay.length) {
+      aiSaleChiTiet.ganTay = ganTay;
+      blockers.push("Page đang được gắn tay cho ai_sale trong page_gan_them.json — khoá _v3 không đủ để ai_sale nhường; nhờ chủ pancake-tool gỡ");
+    }
+  }
   return {
     ...p,
+    aiSaleChiTiet,
     runtime: "v3",
     enabled: botDangTraLoi(p),
     blockers,
@@ -103,6 +127,48 @@ async function kiemTranPageBat(c, p, env) {
     );
   }
 }
+/** GL10: câu chặn kèm phần động (khoá gắn tay) — câu chặn giữ cố định, chi tiết nối SAU. */
+const chiTietChan = (st) => {
+  const ct = st.aiSaleChiTiet || {};
+  const phan = [ct.ganTay?.length ? `khoá gắn tay: ${ct.ganTay.join(", ")} · tệp ${ct.tep}` : "", ct.loiTep ? `tệp ai_sale: ${ct.loiTep}` : ""].filter(Boolean);
+  return phan.length ? ` (${phan.join(" · ")})` : "";
+};
+const tenKhoa = (pid) => `_v3.${pid}`;
+
+/** GL10 ② 3 — tin `cho` của page lúc BẬT (tin cũ) / TẮT ⇒ `xong` + lý do. KHÔNG đụng `dang_xu` (lượt đang chạy tự dừng ở `assertCanAct`) và `loi`. */
+async function dongTinCho(c, teamId, pageId, lyDo) {
+  const r = await c.query(
+    "UPDATE tin_cho_xu_ly SET trang_thai='xong', ly_do=$3, sua_luc=now() WHERE team_id=$1 AND page_id=$2 AND trang_thai='cho'",
+    [teamId, String(pageId), lyDo]);
+  return r.rowCount;
+}
+
+/**
+ * GL10 ② 4 — BÙ khi đã ghi khoá mà lượt bật không thành (UPDATE/COMMIT lỗi): gỡ khoá vừa ghi dưới khoá tư vấn tệp; CSDL hỏng thì vẫn cố
+ * gỡ không khoá. Chỉ gọi khi khoá CHƯA có trước lượt này (page đang bật gạt lại thì khoá cũ là của nó). Không để page mất cả hai bot.
+ */
+async function buKhoa(pool, tep, pid) {
+  const bao = (e) => console.error(`[setPage] BÙ: gỡ khoá ai_sale ${tenKhoa(pid)} HỎNG — ${e?.message || e}. Gỡ tay khoá đó trong ${tep}.`);
+  try {
+    await transaction(pool, async (c) => {
+      await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [KHOA_TU_VAN_TEP]);
+      xoaKhoa(tep, pid);
+    });
+  } catch (e) {
+    if (e instanceof LoiTepAiSale) { bao(e); return; }
+    try { xoaKhoa(tep, pid); } catch (e2) { bao(e2); }
+  }
+}
+
+/**
+ * Bật/tắt + đổi nguồn của MỘT page. GL10 ② 4:
+ *   BẬT: cổng cũ (`pageStatus` — gồm điều kiện ai_sale/035 — + trần GL2) → khoá tư vấn tệp → `ghiKhoa` (lỗi ⇒ 409, page không bật) →
+ *        UPDATE (bot_ai_bat · bot_bat_luc=now() · chờ 15′ · trạng thái `cho`) → đóng tin `cho` cũ → nhật ký `ai_sale_ghi_khoa` → COMMIT.
+ *        Ghi khoá xong mà UPDATE/COMMIT lỗi ⇒ BÙ (`buKhoa`) rồi ném lại.
+ *   TẮT: giao dịch 1 (UPDATE tắt + đóng tin `cho` + nhật ký) → COMMIT → giao dịch 2 (khoá tư vấn tệp) `xoaKhoa` (`tatXoaKhoa`). Xoá khoá
+ *        SAU khi v3 đã tắt ⇒ không khoảnh khắc nào hai bot; lỗi giữa chừng chỉ để lại «không bot nào». TẮT không bao giờ bị cổng chặn.
+ * @returns {Promise<object>} dòng `page` sau ghi, kèm `aiSale` (bật/tắt) và `canhBao` (tắt mà khoá chưa xoá).
+ */
 export async function setPage(pool, bc, id, input, env = process.env) {
   idOf(id);
   if (
@@ -115,7 +181,12 @@ export async function setPage(pool, bc, id, input, env = process.env) {
     throw fault("Công tắc phải là boolean");
   if (input.source !== undefined && !["poll", "webhook"].includes(input.source))
     throw fault("Nguồn phải là poll hoặc webhook");
-  return transaction(pool, async (c) => {
+  const bat = input.enabled === true;
+  const tat = input.enabled === false;
+  // GL10: trạng thái lượt — `khoaDaGhi` { tep, pid, coTruoc } để BÙ nếu lượt bật không thành · `dangPhucVu` gạt BẬT lại page đang được bot v3
+  // phục vụ ⇒ giữ nguyên phía ai_sale · `truocTat` { pid, teamId, co035, trangThai, ten } cho giao dịch 2 của TẮT.
+  const st = { khoaDaGhi: null, dangPhucVu: false, truocTat: null };
+  const row = await transaction(pool, async (c) => {
     const p = (
       await c.query(
         "SELECT *,xmin::text AS version FROM page WHERE team_id=$1 AND id=$2 FOR UPDATE",
@@ -141,17 +212,132 @@ export async function setPage(pool, bc, id, input, env = process.env) {
         { ...p, nguon_tin: input.source || p.nguon_tin },
         env,
       );
-      if (!status.ready) throw fault(status.blockers.join("; "), 409);
+      if (!status.ready) throw fault(status.blockers.join("; ") + chiTietChan(status), 409);
       await kiemTranPageBat(c, p, env);
     }
+    const co035 = Object.hasOwn(p, "ai_sale_trang_thai");   // CSDL chưa áp 035 ⇒ chỉ TẮT chạy được (bỏ phần cột mới) — bật bị pageStatus chặn
+    if (bat) await ghiKhoaKhiBat(c, p, env, st);
+    if (tat) st.truocTat = { pid: String(p.page_id), teamId: p.team_id, co035, trangThai: co035 ? p.ai_sale_trang_thai : "", ten: p.ten };
+    const moi = bat && !st.dangPhucVu;
+    const lyDoCho = `Đang chờ ai_sale nhường (${CHO_AI_SALE_MS / 60000}′ — ai_sale tra lại danh sách page mỗi 600 s) · `
+      + (String(env?.[BIEN_LOG] ?? "").trim() ? "đang canh log ai_sale" : "chỉ chờ theo giờ — chưa nối log ai_sale");
     const r = await c.query(
-      `UPDATE page SET bot_ai_bat=COALESCE($3,bot_ai_bat),nguon_tin=COALESCE($4,nguon_tin),sua_luc=now()
+      `UPDATE page SET bot_ai_bat=COALESCE($3,bot_ai_bat),nguon_tin=COALESCE($4,nguon_tin),sua_luc=now()${
+        moi ? ",bot_bat_luc=now(),ai_sale_cho_den=now() + ($5::bigint * interval '1 millisecond'),ai_sale_trang_thai='cho',ai_sale_ly_do=$6" : ""}${
+        // TẮT (/code-review GL10 #4): page đã từng ghi khoá (trạng thái ≠ '') ⇒ đánh `xoa_hong` NGAY ở giao dịch 1 — tiến trình chết trước
+        // giao dịch 2 thì màn vẫn hiện «khoá CHƯA xoá» + nút «Thử xoá lại»; gỡ khoá xong (giao dịch 2) mới về ''.
+        tat && co035 ? ",ai_sale_cho_den=NULL,ai_sale_trang_thai=CASE WHEN ai_sale_trang_thai <> '' THEN 'xoa_hong' ELSE '' END,ai_sale_ly_do=CASE WHEN ai_sale_trang_thai <> '' THEN 'Đang gỡ khoá ai_sale (bot v3 đã tắt)' ELSE '' END" : ""}
       WHERE team_id=$1 AND id=$2 RETURNING *,xmin::text AS version`,
-      [bc.teamId, id, input.enabled ?? null, input.source ?? null],
+      [bc.teamId, id, input.enabled ?? null, input.source ?? null, ...(moi ? [CHO_AI_SALE_MS, lyDoCho] : [])],
     );
     await audit(c, bc, "page", id, "v3_cau_hinh_page", Object.keys(input));
+    if (moi || tat) {
+      // Bật: tin `cho` còn lại là tin TRƯỚC mốc bật (bot không trả lời tin cũ). Tắt: tin chưa xử thì bot không xử nữa — sale xử.
+      const dong = await dongTinCho(c, bc.teamId, p.page_id, bat ? "bo_qua:truoc_moc_bat" : "bo_qua:tat_bot");
+      await ghiNhatKy(c, {
+        teamId: bc.teamId, nguoiDungId: bc.nguoiDungId, tacNhan: `nguoi:${bc.nguoiDungId}`,
+        hanhDong: bat ? "ai_sale_ghi_khoa" : "v3_tat_bot_dong_tin", doiTuong: "page", doiTuongId: String(p.page_id),
+        sau: bat
+          ? { khoa: tenKhoa(p.page_id), tep: tepGan(env), co_truoc: !!st.khoaDaGhi?.coTruoc, ai_sale_cho_den: r.rows[0].ai_sale_cho_den, tin_cho_dong: dong }
+          : { tin_cho_dong: dong },
+        ghiChu: bat
+          ? `BẬT «${p.ten || p.page_id}»: ghi khoá ai_sale ${tenKhoa(p.page_id)} · chờ ai_sale nhường ${CHO_AI_SALE_MS / 60000}′ · đóng ${dong} tin chờ cũ (trước mốc bật)`
+          : `TẮT «${p.ten || p.page_id}»: đóng ${dong} tin chờ (bo_qua:tat_bot)`,
+      });
+    }
     return r.rows[0];
+  }).catch(async (e) => {
+    if (st.khoaDaGhi && !st.khoaDaGhi.coTruoc) await buKhoa(pool, st.khoaDaGhi.tep, st.khoaDaGhi.pid);
+    throw e;
   });
+  if (bat) return { ...row, aiSale: { trangThai: row.ai_sale_trang_thai, choDen: row.ai_sale_cho_den, ...(st.dangPhucVu ? { giuNguyen: true } : {}) } };
+  if (tat) return { ...row, ...(await tatXoaKhoa(pool, bc, st.truocTat, env)) };
+  return row;
+}
+
+/**
+ * GL10 — phần ai_sale của lượt BẬT (trong giao dịch, SAU `pageStatus` + trần GL2): khoá tư vấn tệp (mọi lượt ghi tệp của v3 xếp hàng) →
+ * `ghiKhoa` `_v3[page_id]`. Lỗi ⇒ 409 kèm câu lỗi tệp, page không bật. /code-review GL10 #2: page ĐANG bật, trạng thái cho/da_nhuong, khoá
+ * còn, không gắn tay ⇒ gạt BẬT lần nữa KHÔNG ĐỔI GÌ phía ai_sale (đặt lại mốc = đóng tin khách hợp lệ đang chờ + im 15′ trong khi ai_sale đã
+ * nhường); trạng thái khác (mất khoá, chưa nhường…) ⇒ lượt bật đầy đủ — đó là đường «tắt/bật lại» màn chỉ.
+ */
+async function ghiKhoaKhiBat(c, p, env, st) {
+  await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [KHOA_TU_VAN_TEP]);
+  const bay = (await c.query("SELECT now() AS bay")).rows[0].bay;   // = now() của UPDATE sau (cùng giao dịch)
+  const tep = tepGan(env);
+  const t0 = docTepGan(tep);
+  st.dangPhucVu = p.bot_ai_bat === true && ["cho", "da_nhuong"].includes(p.ai_sale_trang_thai)
+    && t0.ok && coKhoaV3(t0.d, p.page_id) && !khoaGanTay(t0.d, p.page_id).length;
+  if (st.dangPhucVu) return;
+  try {
+    const k = ghiKhoa(tep, p.page_id, `v3 pilot — ${p.ten || p.page_id} — bật ${new Date(bay).toISOString()}`);
+    st.khoaDaGhi = { tep, pid: String(p.page_id), coTruoc: k.coTruoc };
+  } catch (e) {
+    if (!(e instanceof LoiTepAiSale)) throw e;
+    if (e.daGhi) st.khoaDaGhi = { tep, pid: String(p.page_id), coTruoc: e.coTruoc };
+    throw fault(`Không ghi được khoá ai_sale — page CHƯA bật: ${e.message}`, 409);
+  }
+}
+
+/**
+ * TẮT — giao dịch 2: gỡ `_v3[page_id]` dưới khoá tư vấn tệp. Lũy đẳng (khoá vắng = thành công; gạt tắt page ĐÃ tắt vẫn thử). Lỗi
+ * (biến vắng · tệp hỏng/vắng · không ghi được) ⇒ v3 VẪN tắt; `xoa_hong` + nhật ký `ai_sale_xoa_khoa_hong` + `canhBao` CHỈ khi có bằng
+ * chứng đã từng ghi khoá: trạng thái trước khi tắt ≠ '' HOẶC đọc được tệp và thấy khoá. Không bằng chứng (bật trước GL10, máy dev, bộ ca
+ * cũ) ⇒ tắt sạch — không báo «khoá CHƯA xoá» cho khoá không tồn tại.
+ */
+async function tatXoaKhoa(pool, bc, t, env) {
+  const tep = tepGan(env);
+  let loi = null;
+  let thayKhoa = false;
+  let batLai = null;
+  try {
+    await transaction(pool, async (c) => {
+      // /code-review GL10 #5: giữa COMMIT giao dịch 1 và đây, một lượt BẬT cùng page có thể đã chạy trọn (khoá còn ⇒ coTruoc) — khoá giờ là
+      // của lượt bật đó, KHÔNG gỡ. Khoá DÒNG trước khoá tệp: cùng thứ tự với BẬT (dòng → trần → tệp) ⇒ không vòng chờ.
+      const dong = (await c.query(
+        `SELECT bot_ai_bat${t.co035 ? ", ai_sale_trang_thai" : ""} FROM page WHERE team_id=$1 AND page_id=$2 FOR UPDATE`, [t.teamId, t.pid])).rows[0];
+      if (dong?.bot_ai_bat === true) { batLai = dong.ai_sale_trang_thai ?? ""; return; }
+      await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [KHOA_TU_VAN_TEP]);
+      if (!tep) throw new LoiTepAiSale("máy chủ thiếu biến V3_AI_SALE_TEP_GAN — không gỡ được khoá");
+      const d = docTepGan(tep);
+      thayKhoa = d.ok && coKhoaV3(d.d, t.pid);
+      const k = xoaKhoa(tep, t.pid);
+      if (t.co035) {
+        await c.query("UPDATE page SET ai_sale_trang_thai='', ai_sale_ly_do='' WHERE team_id=$1 AND page_id=$2 AND bot_ai_bat=false AND ai_sale_trang_thai='xoa_hong'",
+          [t.teamId, t.pid]);
+      }
+      if (k.ghi) {
+        await ghiNhatKy(c, {
+          teamId: t.teamId, nguoiDungId: bc.nguoiDungId, tacNhan: `nguoi:${bc.nguoiDungId}`, hanhDong: "ai_sale_xoa_khoa",
+          doiTuong: "page", doiTuongId: t.pid, sau: { khoa: tenKhoa(t.pid), tep },
+          ghiChu: `TẮT «${t.ten || t.pid}»: gỡ khoá ai_sale ${tenKhoa(t.pid)} — ai_sale trả lời lại page sau lượt tra lại kế (≤ 600 s)`,
+        });
+      }
+    });
+  } catch (e) {
+    loi = e?.message || String(e);
+  }
+  if (batLai !== null) return { aiSale: { trangThai: batLai } };   // page đã được bật lại giữa hai giao dịch — khoá để nguyên cho lượt bật
+  const coBangChung = (t.co035 && t.trangThai !== "") || thayKhoa;
+  if (!loi || !coBangChung) return { aiSale: { trangThai: "" } };
+  const canhBao = `Bot v3 ĐÃ tắt nhưng khoá ai_sale ${tenKhoa(t.pid)} CHƯA xoá (${loi}) — ai_sale chưa trả lời lại page này. `
+    + `Sửa xong bấm «Thử xoá lại», hoặc nhờ chủ pancake-tool gỡ tay khoá ${tenKhoa(t.pid)} trong ${tep || "page_gan_them.json"}.`;
+  try {
+    await transaction(pool, async (c) => {
+      if (t.co035) {
+        await c.query(
+          "UPDATE page SET ai_sale_trang_thai='xoa_hong', ai_sale_ly_do=$3 WHERE team_id=$1 AND page_id=$2 AND bot_ai_bat=false",
+          [t.teamId, t.pid, `Khoá ai_sale CHƯA xoá — ${loi}`.slice(0, 400)]);
+      }
+      await ghiNhatKy(c, {
+        teamId: t.teamId, nguoiDungId: bc.nguoiDungId, tacNhan: `nguoi:${bc.nguoiDungId}`, hanhDong: "ai_sale_xoa_khoa_hong",
+        doiTuong: "page", doiTuongId: t.pid, sau: { khoa: tenKhoa(t.pid), tep, loi: loi.slice(0, 300) }, ghiChu: canhBao.slice(0, 400),
+      });
+    });
+  } catch (e) {
+    console.error(`[setPage] tắt page ${t.pid}: ghi trạng thái xoa_hong lỗi — ${e?.message || e}`);
+  }
+  return { aiSale: { trangThai: t.co035 ? "xoa_hong" : "" }, canhBao };
 }
 /** Mốc 10 phút của bảng điều phối — cùng con số với việc đơn hàng (`dayChoSale`). */
 export const PHUT_HAN_VIEC = 10;

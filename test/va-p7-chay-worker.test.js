@@ -8,6 +8,9 @@
 // van vẫn chặn đúng chiều khi chạy trên máy READONLY.
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { dungSandbox } from "../db/sandbox.js";
 import {
   motLuot,
@@ -17,6 +20,10 @@ import {
 } from "../src/queue/chay-worker.js";
 
 let sb, pool, TEAM;
+// GL10 (phiếu ③ (a)): worker chỉ nạp/rút page ai_sale ĐÃ nhường — tệp nhường TẠM (process.env), page bật tay đánh dấu «đã nhường».
+const TEP_AI_SALE = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "vap7-ai-sale-")), "page_gan_them.json");
+fs.writeFileSync(TEP_AI_SALE, JSON.stringify({ _v3: { "970000000001": "ca P7", "970000000002": "ca P7" } }));
+const tepCu = process.env.V3_AI_SALE_TEP_GAN;
 const q = (s, p) => pool.query(s, p);
 const mot = async (s, p) => (await q(s, p)).rows[0];
 
@@ -39,6 +46,7 @@ async function voiEnv(bo, viec) {
 }
 
 before(async () => {
+  process.env.V3_AI_SALE_TEP_GAN = TEP_AI_SALE;
   sb = await dungSandbox("vap7");
   pool = sb.pool;
   TEAM = (await mot("SELECT id FROM team WHERE slug='tieu-alpha'")).id;
@@ -51,12 +59,16 @@ before(async () => {
   }
 });
 after(async () => {
+  if (tepCu === undefined) delete process.env.V3_AI_SALE_TEP_GAN; else process.env.V3_AI_SALE_TEP_GAN = tepCu;
+  fs.rmSync(path.dirname(TEP_AI_SALE), { recursive: true, force: true });
   if (sb) await sb.don();
 });
 
 // CR-02-10 · MB2: công tắc DUY NHẤT là cột `page.bot_ai_bat` — ca bật đúng page mình cần.
 async function batBot(ids) {
   await q("UPDATE page SET bot_ai_bat = (page_id = ANY($1::text[]))", [ids]);
+  // GL10: page bật tay ⇒ «ai_sale đã nhường» (chờ đã qua); `bot_bat_luc` NULL = bộ nạp không lọc mốc (hành vi cũ).
+  await q("UPDATE page SET ai_sale_cho_den = now() - interval '1 minute', ai_sale_trang_thai = 'da_nhuong' WHERE page_id = ANY($1::text[])", [ids]);
 }
 
 test("P7-1 · đọc danh sách page TỪ BẢNG, không gõ tay (án lệ #22)", async () => {

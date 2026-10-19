@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import { pathToFileURL } from "node:url";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { dungSandbox } from "../db/sandbox.js";
 import { dungPhanB } from "../v3/src/vai-b.js";
 import { taoTruyVanThat } from "../v3/src/noi-day/cong-du-lieu-that.js";
@@ -66,7 +69,12 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
       "INSERT INTO ket_noi_pos(team_id,market,shop_id,api_key_ma) VALUES($1,'UAE','9995001',$2)",
       [team, maHoa("fake-pos-key")],
     );
+    // GL10 (phiếu ③ (a)): cổng bật đòi tệp nhường page của ai_sale — tệp TẠM, dọn ở finally.
+    const tepAiSale = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "e2e-ai-sale-")), "page_gan_them.json");
+    fs.writeFileSync(tepAiSale, "{}");
+    t.after(() => fs.rmSync(path.dirname(tepAiSale), { recursive: true, force: true }));
     const env = {
+      V3_AI_SALE_TEP_GAN: tepAiSale,
       V3_PANCAKE_GUI: "1",
       V3_RAP_PROMPT_BAT: "1",
       ANTHROPIC_API_KEY: "fake-only",
@@ -316,6 +324,10 @@ test("V3 UI → authenticated HTTP → PostgreSQL → chat/order services", asyn
         // GD2 · 25/09: công tắc có ĐÚNG MỘT cửa — `/api/page-bot/:id/bot`. Cửa cũ
         // `/api/van-hanh/pages/:id` nay TỪ CHỐI `enabled` (ca riêng ở dưới canh điều đó).
         assert.equal((await batBot(page.id, true)).ok, true);
+        // GL10: bật ĐÓNG tin chờ CŨ (đến trước mốc bật — bot không trả lời tin cũ). Ca này đo bàn giao/khôi phục với một tin CÒN
+        // CHỜ, nên mở lại đúng tin đó như một tin đến SAU mốc bật.
+        assert.deepEqual((await one("SELECT trang_thai, ly_do FROM tin_cho_xu_ly WHERE id=$1", [tin.id])), { trang_thai: "xong", ly_do: "bo_qua:truoc_moc_bat" });
+        await pool.query("UPDATE tin_cho_xu_ly SET trang_thai='cho', ly_do='' WHERE id=$1", [tin.id]);
         await xuLyMotTin(pool, tin, chatDeps);
         assert.equal(sent, 1);
         assert.equal(

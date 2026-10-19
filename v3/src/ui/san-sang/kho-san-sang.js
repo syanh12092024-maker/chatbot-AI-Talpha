@@ -157,6 +157,30 @@ export const DIEU_KIEN_V3 = Object.freeze({
     di: '/model-ai', nutDi: 'Mở màn Model AI',
     lam: 'Cấu hình model của team đọc lên bị lỗi. Mở màn Model AI, chọn lại model và lưu.',
   },
+  // GL10 — bot ai_sale (pancake-tool, team khác) đang trả lời các page này; v3 chỉ bật khi bảo được ai_sale nhường.
+  BOTMOI_CHUA_NOI_AI_SALE: {
+    chan: true, nhan: 'Nối bot ai_sale', ten: 'Chưa nối tệp nhường page của ai_sale',
+    di: null, nutDi: null,
+    lam: 'Máy chủ chưa khai đường tệp page_gan_them.json của pancake-tool (biến V3_AI_SALE_TEP_GAN). Bật lúc này thì ai_sale không '
+      + 'biết phải nhường — khách nhận hai câu trả lời. Nhờ người quản trị hệ thống khai biến rồi khởi động lại hai dịch vụ.',
+  },
+  BOTMOI_CHUA_AP_035: {
+    chan: true, nhan: 'Cơ sở dữ liệu', ten: 'Cơ sở dữ liệu chưa nâng cấp (035)',
+    di: null, nutDi: null,
+    lam: 'Chưa có cột chờ ai_sale nhường. Nhờ người quản trị hệ thống chạy nâng cấp cơ sở dữ liệu (migration 035).',
+  },
+  BOTMOI_AI_SALE_GAN_TAY: {
+    chan: true, nhan: 'Page gắn tay cho ai_sale', ten: 'Page đang được gắn tay cho ai_sale',
+    di: null, nutDi: null,
+    lam: 'Page nằm ở một khoá thị trường (hoặc trạm landing) trong page_gan_them.json — khoá của v3 không làm ai_sale nhường page '
+      + 'này. Nhờ chủ pancake-tool gỡ page khỏi khoá đó rồi bật lại.',
+  },
+  BOTMOI_AI_SALE_TEP_HONG: {
+    chan: true, nhan: 'Tệp nhường page của ai_sale', ten: 'Tệp nhường page của ai_sale hỏng hoặc vắng',
+    di: null, nutDi: null,
+    lam: 'Tệp page_gan_them.json của pancake-tool đọc không được (hỏng hoặc không có). ai_sale đọc tệp hỏng là trả lời lại MỌI page, nên '
+      + 'bot v3 không bật được và page đang bật thì im. Nhờ chủ pancake-tool sửa tệp.',
+  },
   // ── Hai mã NHẮC: không chặn, nhưng người bật bot phải biết mình đang nhận cái gì ──
   BOTMOI_DIEN_TAP: {
     chan: false, nhan: 'Đang chạy thử', ten: 'Đang chạy thử, không gửi cho khách',

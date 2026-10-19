@@ -28,6 +28,7 @@ import { napTuPoll, nguonDangMo, lyDoNguonDong, giuLoiDanhSach } from "./nap.js"
 import { chayToiKhiHet } from "./worker.js";
 import { lamMoiNgat, pageDangNgat } from "./ngat-page.js";
 import { dsPageBotTraLoiCoTran, choPhepTheoTran, lyDoRong, trangThaiTran, lyDoVuotTran, cauSoTran } from "./page-routing.js";
+import { locNhuongAiSale, lyDoChuaNhuong } from "./ai-sale-nhuong.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { taoPool } from "../../db/ket-noi.js";
@@ -104,7 +105,7 @@ export async function motLuot(pool, deps = {}) {
 async function motLuotTrong(pool, deps, loiDsVong) {
   const ket = {
     nap: { mo: nguonDangMo(), them: 0, trung: 0, page: 0, loi: 0,
-      boQuaPageNoiCuoi: 0, boQuaMoc: 0, boQuaDaDoc: 0, boQuaThe: 0, docTinLoi: 0, dsLoi: 0 },
+      boQuaPageNoiCuoi: 0, boQuaMoc: 0, boQuaDaDoc: 0, boQuaThe: 0, boQuaTruocMoc: 0, docTinLoi: 0, dsLoi: 0 },
     xu: null,
   };
   // MỘT LƯỢT ĐỌC CHO CẢ VÒNG. Nguồn có thể là CSDL (024), nên hỏi hai lần trong một vòng
@@ -112,7 +113,14 @@ async function motLuotTrong(pool, deps, loiDsVong) {
   // khác nhau — người vừa giao một page giữa chừng là thấy ngay.
   // GL2: danh sách và lý do «vượt trần» lấy từ CÙNG một lượt đọc trạng thái trần (`page-routing.js#trangThaiTran`).
   const tt = deps.dsChoPhep ? null : await trangThaiTran(pool);
-  const choPhep = deps.dsChoPhep ? await deps.dsChoPhep() : choPhepTheoTran(tt);
+  const choPhepTran = deps.dsChoPhep ? await deps.dsChoPhep() : choPhepTheoTran(tt);
+  // GL10 ② 2: lọc danh sách GL2 (bật ∩ trần) thành `choPhep` = page ai_sale ĐÃ nhường (khoá `_v3` còn, không gắn tay, qua mốc chờ, log không
+  // thấy ai_sale chạm page) — `ai-sale-nhuong.js#locNhuongAiSale`. Bộ nạp VÀ lượt rút dùng `choPhep`; phép đếm trần GIỮ NGUYÊN (page đang chờ
+  // vẫn tính «bật» — `choPhepTran`). Quét log + chuyển trạng thái CHỈ ở vòng nạp (`!boQuaNap`); vòng xử chỉ lọc. Bộ ca tiêm `dsChoPhep` ⇒ bỏ
+  // qua lọc này như bỏ qua trần GL2.
+  const nhuong = deps.dsChoPhep ? null : await locNhuongAiSale(pool, choPhepTran, { chuyen: !deps.boQuaNap, ...(deps.depsNhuong || {}) });
+  const choPhep = nhuong ? nhuong.sanSang : choPhepTran;
+  if (nhuong) ket.aiSale = nhuong.dem;
   // GL4 ② 4: đọc lại trạng thái ngắt vào bộ nhớ chung của tiến trình (đồng hồ CSDL) và mở lại page đã hết hạn (đúng một lần —
   // UPDATE có điều kiện). Worker lọc page ngắt trước MỖI lượt rút (`worker.js#chayMotVong`). Ngắt vì ĐỌC ⇒ bỏ nạp page đó
   // (đọc lại tốn 15 s × số token mỗi hội thoại, đứng cả vòng nạp tuần tự); ngắt vì GỬI ⇒ VẪN nạp (đọc còn tốt — Pancake v1 chỉ
@@ -130,13 +138,14 @@ async function motLuotTrong(pool, deps, loiDsVong) {
       : await dsPageDeNap(pool);
     // GIAO của hai danh sách: bảng `page` nói page nào CÓ THẬT và nạp được, cột `bot_ai_bat`
     // nói page nào bot ĐANG TRẢ LỜI. Thiếu một trong hai thì page ấy không được nạp.
-    ket.nap.choPhep = choPhep.length;
+    ket.nap.choPhep = choPhepTran.length;   // GL2: số page bật trong trần (kể cả page đang chờ ai_sale nhường)
     ket.nap.nguonChoPhep = 'csdl';
     const pages = trongBang.filter((p) => choPhep.includes(p) && !boNap.has(p));
     ket.nap.page = pages.length;
     // GL2: rỗng vì VƯỢT TRẦN thì nói đúng lý do đó, không phải «chưa page nào bật bot».
     if (tt?.vuot) ket.nap.lyDo = lyDoVuotTran(tt.soBat);
-    else if (!choPhep.length) ket.nap.lyDo = lyDoChuaChoPageNao();
+    else if (!choPhepTran.length) ket.nap.lyDo = lyDoChuaChoPageNao();
+    else if (!choPhep.length) ket.nap.lyDo = lyDoChuaNhuong(nhuong?.dem);
     else if (!pages.length) {
       ket.nap.lyDo =
         `Danh sách cho phép có ${choPhep.length} id nhưng KHÔNG id nào có trong bảng ` +
@@ -153,6 +162,7 @@ async function motLuotTrong(pool, deps, loiDsVong) {
         ket.nap.boQuaMoc += r.boQuaMoc || 0;
         ket.nap.boQuaDaDoc += r.boQuaDaDoc || 0;
         ket.nap.boQuaThe += r.boQuaThe || 0;
+        ket.nap.boQuaTruocMoc += r.boQuaTruocMoc || 0;   // GL10: tin khách đến trước lúc bật bot
         // GL3b: hội thoại Pancake không trả lịch sử (lỗi vừa gặp + đang lùi) — bot CHƯA trả lời họ.
         ket.nap.docTinLoi += r.docTinLoi || 0;
         // GL3c: page Pancake không trả DANH SÁCH hội thoại ở vòng này (chưa tới T_NGAT_DS thì chỉ có dòng log này).
@@ -184,13 +194,18 @@ export function inLuot(ket) {
     n.boQuaMoc ? `${n.boQuaMoc} mốc-cũ` : "",
     n.boQuaDaDoc ? `${n.boQuaDaDoc} ĐÃ-ĐỌC(bỏ)` : "",
     n.docTinLoi ? `${n.docTinLoi} đọc-tin-lỗi` : "",
+    n.boQuaTruocMoc ? `${n.boQuaTruocMoc} trước-mốc-bật` : "",
   ].filter(Boolean).join(" · ");
+  const ai = ket.aiSale;   // GL10: page bật chưa sẵn sàng (chờ ai_sale nhường / bị chặn) — MỘT cụm, chỉ khi có
+  const cumAi = ai && (ai.cho || ai.chan || ai.chua035)
+    ? ` · ai_sale: ${ai.sanSang} sẵn sàng · ${ai.cho} chờ nhường · ${ai.chan} chặn${ai.chua035 ? " (CSDL chưa 035)" : ""}` : "";
   const dong = (n.mo
     ? `nạp: ${n.them} mới · ${n.trung} trùng · ${n.page} page${loc ? ` · lọc: ${loc}` : ""}`
       + `${n.loi ? ` · ${n.loi} page LỖI (${n.loiCuoi})` : ""}`
       // GL3c: MỘT cụm tổng mỗi vòng — Pancake chập ngắn (< T_NGAT_DS) chỉ hiện ở đây, không ngắt.
       + `${n.dsLoi ? ` · ${n.dsLoi} page lỗi danh sách (${String(n.dsLoiCuoi).slice(0, 160)})` : ""}`
     : `nạp: ĐÓNG — ${n.lyDo}`)
+    + cumAi
     // GL4: số page đang ngắt kênh — MỘT cụm trong dòng tổng, không cảnh báo riêng mỗi vòng.
     + (ket.ngat?.so ? ` · ngắt kênh: ${ket.ngat.so} page (đọc ${ket.ngat.doc} · gửi ${ket.ngat.gui})` : "");
   console.log(`[worker-v3] ${dong} | xử: ${JSON.stringify(x)}`);

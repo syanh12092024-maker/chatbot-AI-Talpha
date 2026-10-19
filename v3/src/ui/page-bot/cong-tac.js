@@ -165,11 +165,18 @@ export async function datCongTacBot(boiCanh, id, bat) {
     doiTuongLoai: BANG,
     doiTuongId: String(id),
     truoc: { bot_ai_bat: truoc },
-    sau: { bot_ai_bat: kq.botAiBat },
-    ghiChu: `${kq.botAiBat ? 'BẬT' : 'TẮT'} bot AI cho page ${p.ten || p.pageId} (${p.pageId})`,
+    sau: { bot_ai_bat: kq.botAiBat, ...(kq.aiSale ? { ai_sale_trang_thai: kq.aiSale.trangThai } : {}) },
+    ghiChu: `${kq.botAiBat ? 'BẬT' : 'TẮT'} bot AI cho page ${p.ten || p.pageId} (${p.pageId})`
+      + (kq.botAiBat && kq.aiSale?.trangThai === 'cho' ? ' — chờ ai_sale nhường trước khi bot v3 trả lời' : '')
+      + (kq.canhBao ? ` — ${kq.canhBao}` : ''),
   });
 
-  return { id: String(id), pageId: p.pageId, botAiBat: kq.botAiBat, doi: truoc !== kq.botAiBat };
+  // GL10: bật ⇒ `aiSale` {trangThai:'cho', choDen} — bot v3 CHƯA trả lời tới khi ai_sale nhường; tắt mà khoá ai_sale chưa xoá ⇒ `canhBao`.
+  return {
+    id: String(id), pageId: p.pageId, botAiBat: kq.botAiBat, doi: truoc !== kq.botAiBat,
+    ...(kq.aiSale ? { aiSale: kq.aiSale } : {}),
+    ...(kq.canhBao ? { canhBao: kq.canhBao } : {}),
+  };
 }
 
 /* ────────────────────────── ② gán marketer ────────────────────────── */

@@ -14,6 +14,8 @@ import "./_bat-cua-de-do.mjs";   // PHẢI đứng đầu: fast-lane đọc FAST
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { dungSandbox } from "../db/sandbox.js";
 import { maHoa } from "../db/khoa.js";
@@ -40,7 +42,11 @@ const PUB = "http://pub.thu:3102";
 const A1 = "https://content.pancake.vn/rp1/a1.jpg";
 const A2 = "https://content.pancake.vn/rp1/a2.jpg";
 const FB = "/uploads/rp1-fb1.jpg";
+// GL10 (phiếu ③ (a)): worker chỉ nạp/rút page ai_sale ĐÃ nhường — tệp nhường TẠM; page tạo bằng INSERT đánh dấu «đã nhường» (`trang`).
+const TEP_AI_SALE = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rp1-ai-sale-")), "page_gan_them.json");
+fs.writeFileSync(TEP_AI_SALE, "{}");
 const ENV = {
+  V3_AI_SALE_TEP_GAN: TEP_AI_SALE,
   V3_PANCAKE_GUI: "1", PANCAKE_READONLY: "0", PK_MARK_UNREAD: "0", V3_DIEN_TAP: undefined,
   V3_TRAN_PAGE_BAT: "50", V3_NAP_IM_BOTCAKE_MS: "0", V3_NAP_CHI_CHUA_DOC: "0", V3_NAP_THE_CHAN: "Đã gửi",
   V3_RAP_PROMPT_BAT: "1", V3_LUAT_CHUNG_CSDL: undefined,
@@ -110,6 +116,11 @@ before(async () => {
   const trang = async (pid, ten) => {
     P[pid] = String((await mot("INSERT INTO page(team_id,page_id,ten,nguon_tin,bot_ai_bat,pos_shop_id) VALUES($1,$2,$3,'poll',true,'111') RETURNING id",
       [T, pid, ten])).id);
+    // GL10: khoá `_v3` + «ai_sale đã nhường» (chờ đã qua); `bot_bat_luc` NULL = bộ nạp không lọc mốc (hành vi cũ).
+    const d = JSON.parse(fs.readFileSync(TEP_AI_SALE, "utf8"));
+    d._v3 = { ...(d._v3 || {}), [pid]: "ca RP1" };
+    fs.writeFileSync(TEP_AI_SALE, JSON.stringify(d, null, 1));
+    await q("UPDATE page SET ai_sale_cho_den = now() - interval '1 minute', ai_sale_trang_thai = 'da_nhuong' WHERE id=$1", [P[pid]]);
     return P[pid];
   };
   // Gốc A «tummiva»: a0 HẾT HÀNG (mã nhỏ nhất ⇒ đứng đầu nếu không lọc) · a1 50ml · a2 100ml.
@@ -170,6 +181,7 @@ after(async () => {
   datKhoTokenDb(null);
   config.pancakeToken = cu.tok; config.pancakeTokensExtra = cu.tokX; config.publicUrl = cu.publicUrl;
   if ("handoff" in cu) config.pkTags.handoff = cu.handoff;
+  fs.rmSync(path.dirname(TEP_AI_SALE), { recursive: true, force: true });
   await sb?.don();
 });
 

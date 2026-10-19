@@ -30,6 +30,7 @@ import { ghiLoiKenh, ghiDocTot, ngatPage, locPageNgat, cauLyDoDoc, gioVN } from 
 import { xepTin } from "./kho.js";
 import { debounceFor } from "../turn-complete.js";
 import { docTepEnv } from "../../db/ket-noi.js";
+import { thoiDiemPancake, thoiDiemTin } from "./ai-sale-nhuong.js";
 
 /**
  * Đọc biến env theo ĐƯỜNG TUYỆT ĐỐI: `process.env` trước (có mặt là thắng, KỂ CẢ chuỗi rỗng), vắng thì tra `<GOC>/.env` qua
@@ -114,15 +115,20 @@ const TIN_HE_THONG = /fb-pma:\/\//i;
  *
  * `msgId` vẫn lấy ở tin MỚI NHẤT kể cả khi tin đó bị bỏ: nó là khoá chống trùng, phải
  * tiến đều, nếu không một thông báo hệ thống mới sẽ kéo cả cụm cũ vào lại.
+ *
+ * GL10 — `sauMoc` (epoch ms, TUỲ CHỌN; vắng ⇒ hành vi cũ từng byte — `worker.js` gọi không tham số): chỉ gom tin khách CHỨNG MINH được
+ * là đến SAU mốc bật bot (`thoiDiemTin` — giờ Pancake là UTC không múi; không đọc được ⇒ coi như trước mốc). Tin page vẫn là điểm dừng.
  */
-export function gomCumTinKhach(msgs, pageId) {
+export function gomCumTinKhach(msgs, pageId, { sauMoc } = {}) {
   const arr = Array.isArray(msgs) ? msgs : [];
+  const locMoc = sauMoc != null;
   const cum = [];
   let msgId = "";
   for (let i = arr.length - 1; i >= 0; i--) {
     const m = arr[i];
     if (String(m?.from?.id) === String(pageId)) break;
     if (!msgId) msgId = String(m?.id ?? m?.message_id ?? "");
+    if (locMoc && !(thoiDiemTin(m) > sauMoc)) continue;
     const tho = String(m?.original_message || m?.message || "");
     if (TIN_HE_THONG.test(tho)) continue;
     const tx = tho.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -508,7 +514,7 @@ export async function napTuPoll(pool, { pageId }, deps = {}) {
   // team TRƯỚC KHI có ctx" của `thanh_vien_team` (luoc-do-v1.md §6). Chỉ đọc ĐÚNG một
   // dòng theo khoá tự nhiên, không liệt kê rộng.
   const rp = await pool.query(
-    "SELECT id, team_id, nguon_tin FROM page WHERE page_id = $1",
+    "SELECT id, team_id, nguon_tin, bot_bat_luc FROM page WHERE page_id = $1",
     [String(pageId)],
   );
   if (!rp.rowCount) {
@@ -522,6 +528,10 @@ export async function napTuPoll(pool, { pageId }, deps = {}) {
     return { ...ket, lyDo: 'Page nhận tin qua webhook, không nạp poll' };
   }
   const { id: pageRowId, team_id: teamId } = rp.rows[0];
+  // GL10 — MỐC BẬT: bot chỉ trả lời tin khách đến SAU lúc bật (bật là không trả lời hàng tồn 2–24 giờ tuổi). `bot_bat_luc` NULL ⇒ KHÔNG lọc
+  // mốc (hành vi cũ từng byte). An toàn vì đường thật không tới đây với NULL: page thiếu `ai_sale_cho_den` không vào `sanSang` của worker
+  // (`ai-sale-nhuong.js#locNhuongAiSale`), và đường bật (`operations.js#setPage`) luôn đặt cả hai cột; chỉ bộ ca tiêm `dsChoPhep` gặp NULL.
+  const mocBat = rp.rows[0].bot_bat_luc == null ? null : new Date(rp.rows[0].bot_bat_luc).getTime();
 
   let convs;
   try {
@@ -580,6 +590,14 @@ export async function napTuPoll(pool, { pageId }, deps = {}) {
     // để lời hứa «trả lời trong 1-2 phút» còn đúng khi số page tăng lên.
     const moc = moc0(c);
     const khoaMoc = `${pageId}:${convId}`;
+    // GL10 — khách nói cuối TRƯỚC (hoặc đúng) mốc bật ⇒ tin cũ: bỏ, KHÔNG gọi `GET /messages`, ghi mốc (không đọc lại tới khi mốc đổi).
+    // Đứng trước cửa «mốc cũ» để dòng sổ bỏ-qua giữ đúng lý do `truoc_moc_bat` qua mọi vòng. Giờ không đọc được ⇒ NaN ⇒ bỏ.
+    if (mocBat != null && !(thoiDiemPancake(moc) > mocBat)) {
+      ket.boQuaTruocMoc = (ket.boQuaTruocMoc || 0) + 1;
+      if (moc) mocDaXu.set(khoaMoc, moc);
+      boQuaDs.push({ convId, psid, lyDo: "truoc_moc_bat", chuThich: `khách nói cuối ${moc || "(không rõ giờ)"} (UTC, Pancake) — trước lúc bật bot` });
+      continue;
+    }
     if (moc && mocDaXu.get(khoaMoc) === moc) {
       ket.boQuaMoc += 1;
       boQuaDs.push({ convId, psid, lyDo: "moc_cu", chuThich: `không đổi từ ${moc}` });
@@ -676,11 +694,16 @@ export async function napTuPoll(pool, { pageId }, deps = {}) {
     luiDocTin.delete(khoaMoc);
     await ghiDocTot(pool, { teamId, pageId });   // R2-N2: đọc lịch sử THẬT chạy ⇒ xoá chuỗi lỗi đọc (cùng luật worker)
     await nhanDienSale(pool, { teamId, pageId, psid, messages: msgs });
-    const cum = gomCumTinKhach(msgs, pageId);
+    const cum = mocBat == null ? gomCumTinKhach(msgs, pageId) : gomCumTinKhach(msgs, pageId, { sauMoc: mocBat });
     if (!cum) {
       ket.boQua += 1; // tin cuối là của page (bot/sale vừa nói) → không có việc gì
       if (moc) mocDaXu.set(khoaMoc, moc);
-      boQuaDs.push({ convId, psid, lyDo: "page_noi_cuoi", chuThich: "sau khi đọc tin: tin cuối là của page" });
+      // GL10: có mốc mà cụm rỗng trong khi KHÔNG lọc mốc thì có cụm ⇒ mọi tin khách của cụm đến trước mốc bật.
+      const truocMoc = mocBat != null && !!gomCumTinKhach(msgs, pageId);
+      if (truocMoc) ket.boQuaTruocMoc = (ket.boQuaTruocMoc || 0) + 1;
+      boQuaDs.push(truocMoc
+        ? { convId, psid, lyDo: "truoc_moc_bat", chuThich: "sau khi đọc tin: mọi tin khách của cụm đến trước lúc bật bot" }
+        : { convId, psid, lyDo: "page_noi_cuoi", chuThich: "sau khi đọc tin: tin cuối là của page" });
       continue;
     }
     const r = await xepTin(pool, {

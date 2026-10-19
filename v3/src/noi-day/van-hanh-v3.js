@@ -24,6 +24,11 @@ const MA_CUA_CAU = Object.freeze({
   "Thiếu gói giá hợp lệ": "BOTMOI_THIEU_GIA",
   "Chưa cấu hình model và API key": "BOTMOI_THIEU_MODEL",
   "Model hoặc API key chưa hợp lệ": "BOTMOI_MODEL_HONG",
+  // GL10 — bot ai_sale (pancake-tool) phải nhường được page trước khi v3 bật.
+  "Chưa nối ai_sale (V3_AI_SALE_TEP_GAN vắng) — bật lúc này có thể hai bot cùng trả lời": "BOTMOI_CHUA_NOI_AI_SALE",
+  "CSDL chưa áp migration 035 — chưa có cột chờ ai_sale nhường": "BOTMOI_CHUA_AP_035",
+  "Page đang được gắn tay cho ai_sale trong page_gan_them.json — khoá _v3 không đủ để ai_sale nhường; nhờ chủ pancake-tool gỡ": "BOTMOI_AI_SALE_GAN_TAY",
+  "Tệp nhường page của ai_sale (page_gan_them.json) hỏng hoặc vắng — bot v3 không bật được; page đang bật thì bot v3 im": "BOTMOI_AI_SALE_TEP_HONG",
 });
 
 /** Một điều kiện của bản mới, mang MÃ để màn tra được tên và chỗ sửa. */
@@ -54,6 +59,9 @@ export function noiVanHanhV3(
         pageId: p.page_id,
         botAiBat: row.bot_ai_bat === true,
         doi: (row.bot_ai_bat === true) !== (p.bot_ai_bat === true),
+        // GL10: bật ⇒ {trangThai:'cho', choDen} (bot v3 chờ ai_sale nhường); tắt mà khoá ai_sale chưa xoá ⇒ `canhBao` nêu việc người phải làm.
+        ...(row.aiSale ? { aiSale: row.aiSale } : {}),
+        ...(row.canhBao ? { canhBao: row.canhBao } : {}),
       };
     } catch (e) {
       e.ma = "v3_cau_hinh";

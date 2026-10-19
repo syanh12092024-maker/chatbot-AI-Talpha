@@ -8,6 +8,9 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 process.env.V3_KHOA_VE ||= crypto.randomBytes(32).toString('base64');
 process.env.V3_KHOA_CHU ||= crypto.randomBytes(32).toString('base64');
@@ -22,7 +25,10 @@ const nhip = await import('../../src/ui/chung/nhip-may-bot.js');
 const kp = await import('../../src/ui/page-bot/kho-page.js');
 const ct = await import('../../src/ui/page-bot/cong-tac.js');
 
-const ENV_MO = { V3_PANCAKE_GUI: '1', PANCAKE_READONLY: '0', V3_RAP_PROMPT_BAT: '1', ANTHROPIC_API_KEY: 'fake-only' };
+// GL10 (lệch phiếu GL10 ③ — tệp ca ngoài sáu tệp đã kê): cổng bật đòi tệp nhường page của ai_sale — tệp TẠM (dọn ở after).
+const TEP_AI_SALE = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gl2-den-ai-sale-')), 'page_gan_them.json');
+fs.writeFileSync(TEP_AI_SALE, '{}');
+const ENV_MO = { V3_PANCAKE_GUI: '1', PANCAKE_READONLY: '0', V3_RAP_PROMPT_BAT: '1', ANTHROPIC_API_KEY: 'fake-only', V3_AI_SALE_TEP_GAN: TEP_AI_SALE };
 const envTran = (tran) => (tran === undefined ? { ...ENV_MO } : { ...ENV_MO, V3_TRAN_PAGE_BAT: tran });
 
 let sb; let pool; let X; let Y; let ND; const ID = {};
@@ -43,7 +49,7 @@ before(async () => {
   const t = await xepTin(pool, { teamId: X, pageId: PID.A, psid: 'gl2-den', convId: 'gl2-den-c', msgId: 'gl2-den-m1', noiDung: 'hi' });
   await pool.query("UPDATE tin_cho_xu_ly SET thoi_diem = now() - interval '3 minutes' WHERE id=$1", [t.id]);
 });
-after(async () => { if (sb) await sb.don(); });
+after(async () => { fs.rmSync(path.dirname(TEP_AI_SALE), { recursive: true, force: true }); if (sb) await sb.don(); });
 
 const bcQt = (team) => taoBoiCanh({ nguoiDungId: ND, tenDangNhap: 'qt@gl2.vn', teamId: team, vai: [VAI.QUAN_TRI] });
 const datCot = async (...dsBat) => pool.query('UPDATE page SET bot_ai_bat = (page_id = ANY($1::text[]))', [dsBat.map((k) => PID[k])]);

@@ -38,6 +38,11 @@ export const LY_DO = Object.freeze({
     chu: "Đọc lịch sử lỗi", ngo: true,
     vi: "Pancake không trả lịch sử — bot chưa trả lời khách này. Bộ nạp đọc lại sau 30 s, lùi gấp đôi tới 5 phút; Pancake lành thì tin vào hàng như thường. Kéo dài ⇒ soi token/gói của page (câu lỗi ở cột ghi chú).",
   },
+  // GL10 (migration 035 nới CHECK): bộ nạp chỉ nạp tin khách CHỨNG MINH được là đến SAU lúc bật bot (`page.bot_bat_luc`).
+  truoc_moc_bat: {
+    chu: "Tin khách đến TRƯỚC lúc bật bot — bot không trả lời tin cũ; sale xử", ngo: false,
+    vi: "Khách nhắn lần cuối trước (hoặc đúng) lúc bật bot cho page — bot chỉ trả lời tin đến SAU mốc bật (giờ Pancake là UTC không múi). Khách nhắn tin mới thì dòng này tự mất. Giờ Pancake không đọc được cũng tính là trước mốc.",
+  },
 });
 
 /** Bao lâu thì một dòng «đang chờ gõ» là BẤT THƯỜNG (nó phải tan trong vài giây). */

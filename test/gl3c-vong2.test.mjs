@@ -15,6 +15,9 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { dungSandbox } from "../db/sandbox.js";
 import * as cw from "../src/queue/chay-worker.js";
 import * as nap from "../src/queue/nap.js";
@@ -37,7 +40,12 @@ const nhip = await import("../v3/src/ui/chung/nhip-may-bot.js");
 const T_NGAT_DS_MS = 2 * 60_000;    // chữ người quyết 07/10 «ok 2 phút»
 const PHUT = 60_000;
 const HAN_DOC = 150;
+// GL10 (lệch phiếu GL10 ③ — tệp ca đường thật ngoài sáu tệp đã kê): worker chỉ nạp/rút page ai_sale ĐÃ nhường — tệp nhường TẠM;
+// page tạo bằng INSERT đánh dấu «đã nhường» (`taoPage`), `bot_bat_luc` NULL = bộ nạp không lọc mốc (hành vi cũ).
+const TEP_AI_SALE = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "gl3c-vong2-ai-sale-")), "page_gan_them.json");
+fs.writeFileSync(TEP_AI_SALE, "{}");
 const ENV = {
+  V3_AI_SALE_TEP_GAN: TEP_AI_SALE,
   V3_PANCAKE_GUI: "1",
   PANCAKE_READONLY: "0",            // chỉ trong tiến trình ca — .env vẫn =1
   V3_PANCAKE_HAN_DOC_MS: String(HAN_DOC),
@@ -124,6 +132,7 @@ after(async () => {
   datKhoTokenDb(null);
   config.pancakeToken = cauHinhCu.pancakeToken;
   config.pancakeTokensExtra = cauHinhCu.pancakeTokensExtra;
+  fs.rmSync(path.dirname(TEP_AI_SALE), { recursive: true, force: true });
   await sb?.don();
 });
 
@@ -133,6 +142,10 @@ async function taoPage(pid) {
   const r = await sb.pool.query(
     "INSERT INTO page(team_id,page_id,ten,nguon_tin,bot_ai_bat) VALUES($1,$2,$3,'poll',true) RETURNING id", [team, pid, `Trang ${pid}`]);
   PAGE_ROW.set(pid, r.rows[0].id);
+  const d = JSON.parse(fs.readFileSync(TEP_AI_SALE, "utf8"));   // GL10: khoá `_v3` + «đã nhường»
+  d._v3 = { ...(d._v3 || {}), [pid]: "ca GL3c v2" };
+  fs.writeFileSync(TEP_AI_SALE, JSON.stringify(d, null, 1));
+  await sb.pool.query("UPDATE page SET ai_sale_cho_den = now() - interval '1 minute', ai_sale_trang_thai = 'da_nhuong' WHERE id=$1", [r.rows[0].id]);
   return pid;
 }
 /** Chỉ đúng các page này bật bot (trần GL2 đếm toàn hệ — page của ca trước phải tắt, và vòng nạp chỉ đi page của ca này). */

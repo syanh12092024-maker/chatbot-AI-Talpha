@@ -65,7 +65,9 @@ const boNao = () => ({
   layKb: () => ({ products: [], text: "test" }), layModel: () => ({ maModel: "test" }),
   lanNhanh: () => ({ handled: true, reply: "Giá 109 SAR ạ (bot)", lane: "test" }), kiemTinRa: () => ({ ok: true }),
 });
-const luot = () => cw.motLuot(sb.pool, { depsNap: { doiGoXong: () => ({ ms: 0, reason: "ca" }) }, depsXuLy: boNao() });
+// GL10 (lệch phiếu ③ (b), ghi ở nhật ký GL10): CSDL chưa 034 thì cũng chưa 035 ⇒ lọc «ai_sale đã nhường» của worker trả [] (bắt 42703 —
+// ca `gl10-chua-035`). Ca này đo GL4 trên CSDL thiếu cột NGẮT, nên tiêm `dsChoPhep` (bỏ qua trần GL2 + lọc nhường — như mọi ca tiêm).
+const luot = () => cw.motLuot(sb.pool, { dsChoPhep: async () => [PAGE], depsNap: { doiGoXong: () => ({ ms: 0, reason: "ca" }) }, depsXuLy: boNao() });
 let seq = 0;
 async function xep(psid) {
   await baoDamHoiThoai(sb.pool, { teamId: team, pageRowId: pageRow, psid });
@@ -74,7 +76,10 @@ async function xep(psid) {
 
 test("GL4 M7a · CSDL CHƯA áp 034: lượt GỬI THÀNH CÔNG ⇒ tin xong, sổ AI + hội thoại giữ (giao dịch không hỏng), lan_gui da_gui; lượt gửi LỖI vẫn loi + việc; vòng không sập; cảnh báo MỘT lần", async () => {
   const daApCu = await daAp(sb.pool);
-  assert.equal(daApCu.at(-1), "034_page_ngat_kenh", `bản mới nhất phải là 034, đo ${daApCu.at(-1)}`);
+  // GL10: bản mới nhất là 035 ⇒ gỡ 035 rồi 034.
+  assert.equal(daApCu.at(-1), "035_page_ai_sale_nhuong", `bản mới nhất phải là 035, đo ${daApCu.at(-1)}`);
+  assert.equal(daApCu.at(-2), "034_page_ngat_kenh", `bản liền trước phải là 034, đo ${daApCu.at(-2)}`);
+  await xuong(sb.pool, { im: true });
   await xuong(sb.pool, { im: true });
   assert.equal(await cotCo(), 0, "đã gỡ 034 — page không còn cột ngắt");
   pageRow = (await sb.pool.query("INSERT INTO page(team_id,page_id,ten,nguon_tin,bot_ai_bat) VALUES($1,$2,'GL4 034','poll',true) RETURNING id", [team, PAGE])).rows[0].id;
@@ -117,6 +122,7 @@ test("GL4 M7b · migration 034 up → down → up thành trên hộp cát CÓ d�
   await sb.pool.query(
     "UPDATE page SET ngat_den = now() + interval '30 minutes', ngat_vi = 'gui', ngat_ly_do = 'ca M7b', loi_gui_lien_tiep = 1, loi_gui_tin_cuoi = 1 WHERE page_id=$1",
     [PAGE]);
+  await xuong(sb.pool, { im: true });   // GL10: gỡ 035 trước
   await xuong(sb.pool, { im: true });
   assert.equal(await cotCo(), 0, "down: xoá đúng các cột");
   assert.equal(Number((await sb.pool.query("SELECT count(*) n FROM page WHERE page_id=$1", [PAGE])).rows[0].n), 1, "dữ liệu page còn nguyên");

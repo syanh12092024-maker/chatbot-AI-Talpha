@@ -211,6 +211,10 @@ export const TEN_NGAN = Object.freeze({
   BOTMOI_THIEU_GIA: 'Chưa có giá bán',
   BOTMOI_THIEU_MODEL: 'Chưa có model hoặc khoá',
   BOTMOI_MODEL_HONG: 'Cấu hình model lỗi',
+  BOTMOI_CHUA_NOI_AI_SALE: 'Chưa nối ai_sale',
+  BOTMOI_CHUA_AP_035: 'CSDL chưa áp 035',
+  BOTMOI_AI_SALE_GAN_TAY: 'Gắn tay cho ai_sale',
+  BOTMOI_AI_SALE_TEP_HONG: 'Tệp ai_sale hỏng',
   BOTMOI_DIEN_TAP: 'Đang chạy thử',
   BOTMOI_CHUA_DO_MAY_CHAY_BOT: 'Chưa đo máy chạy bot',
 });
@@ -380,6 +384,39 @@ export function gonPage(p) {
           : `Quá giờ mở kênh (${gioVN(p.ngat_den)}) — máy chạy bot chưa mở lại`,
       },
     } : {}),
+    // GL10 (035) — bot ai_sale (pancake-tool) đã nhường page chưa. Có khoá khi trạng thái ≠ '', HOẶC page đang bật mà trạng thái '' (bật
+    // trước cổng GL10 / bật bằng SQL tay ⇒ worker KHÔNG trả lời — phải nói ra). CSDL chưa áp 035 ⇒ dòng không có cột ⇒ không khoá.
+    // `do` ⇒ màn tô ĐỎ (bot v3 im / khoá chưa xoá).
+    ...(String(p.ai_sale_trang_thai ?? '') !== '' || (p.ai_sale_trang_thai === '' && p.bot_ai_bat === true) ? { aiSale: aiSaleCuaPage(p) } : {}),
+  };
+}
+
+/** Nhãn trạng thái nhường của ai_sale (khuôn `ngatKenh`). Quá `choDen` mà còn `cho` = worker chưa xét ⇒ nói thế. */
+export function aiSaleCuaPage(p, bayGio = Date.now()) {
+  const tt = String(p.ai_sale_trang_thai);
+  const den = p.ai_sale_cho_den == null ? NaN : new Date(p.ai_sale_cho_den).getTime();
+  const conPhut = Number.isFinite(den) ? Math.max(0, Math.ceil((den - bayGio) / 60000)) : null;
+  const quaGio = tt === 'cho' && !(Number.isFinite(den) && den > bayGio);
+  const nhan = {
+    cho: !quaGio
+      ? `Đang chờ ai_sale nhường — còn ${conPhut} phút`
+      : 'Quá giờ chờ — máy chạy bot chưa xét (worker không chạy?)',
+    gan_tay: 'Page bị gắn tay cho ai_sale trong page_gan_them.json — ai_sale trả lời lại; bot v3 im. Nhờ chủ pancake-tool gỡ',
+    da_nhuong: 'ai_sale đã nhường — bot v3 đang trả lời',
+    mat_khoa: 'Khoá ai_sale mất — ai_sale đang trả lời lại; bot v3 im. Tắt rồi bật để ghi lại',
+    loi_tep: 'Tệp ai_sale hỏng — bot v3 im',
+    chua_nhuong: 'ai_sale chưa nhường sau 30′ — bot v3 im',
+    xoa_hong: 'Khoá ai_sale CHƯA xoá — ai_sale chưa trả lời lại page này',
+    '': 'Bật khi chưa có cổng ai_sale — bot v3 im. Tắt rồi bật lại để ghi khoá ai_sale',
+  }[tt] ?? `Trạng thái ai_sale lạ: ${tt}`;
+  return {
+    trangThai: tt,
+    choDen: p.ai_sale_cho_den ?? null,
+    batLuc: p.bot_bat_luc ?? null,
+    conPhut: tt === 'cho' ? conPhut : null,
+    lyDo: String(p.ai_sale_ly_do ?? ''),
+    nhan,
+    do: quaGio || !['cho', 'da_nhuong'].includes(tt),
   };
 }
 
