@@ -45,8 +45,11 @@ export const TRAN_DOC_LOG = 8 * 1024 * 1024;
 const LAN_GHI = 3;
 const TAC_NHAN = "may:l2-worker";
 
-/** Trạng thái trên `page.ai_sale_trang_thai` (CHECK của 035). */
-export const TRANG_THAI = Object.freeze(["", "cho", "da_nhuong", "chua_nhuong", "mat_khoa", "loi_tep", "gan_tay", "xoa_hong"]);
+/**
+ * Trạng thái trên `page.ai_sale_trang_thai` (CHECK của 035). `dien_tap` (vòng 2, đối kháng F1): page bật lúc máy chủ DIỄN TẬP — KHÔNG ghi
+ * khoá (v3 không gửi tin nào, ai_sale trả lời như trước); worker chỉ chạy thử page này khi CHÍNH nó còn diễn tập (`dangDienTap` dưới — cùng luật lan-gui.js).
+ */
+export const TRANG_THAI = Object.freeze(["", "cho", "da_nhuong", "chua_nhuong", "mat_khoa", "loi_tep", "gan_tay", "xoa_hong", "dien_tap"]);
 const DANG_CANH = new Set(["cho", "da_nhuong", "mat_khoa", "loi_tep", "gan_tay"]);   // worker xét · `chua_nhuong` chỉ người gạt lại mới gỡ
 
 /** Lỗi tệp ai_sale — cổng bật trả 409 kèm câu này (câu nêu đường tệp + lỗi). `daGhi` = tệp đích có thể đã đổi (lỗi SAU rename). */
@@ -63,6 +66,15 @@ export class LoiTepAiSale extends Error {
 
 /** Đường tệp từ env (`process.env` — hai unit nạp `.env`). Rỗng / vắng ⇒ `""`. */
 export const tepGan = (env = process.env) => String(env?.[BIEN_TEP_GAN] ?? "").trim();
+/**
+ * Máy chủ đang DIỄN TẬP không — CÙNG LUẬT `src/queue/lan-gui.js#dangDienTap` (`V3_DIEN_TAP === '1'`: diễn tập thắng mọi cờ, v3 không gửi
+ * tin nào). KHÔNG import lan-gui: đó là đường GỬI, mà `v3/test/b/hop-thu.test.mjs` H1 cấm đồ thị import của Hộp thư (đi qua
+ * `operations.js` → mô-đun này) chạm nó. Ca `gl10-vong2` F1 so hai hàm trên cùng đầu vào (vòng 2, đối kháng F1).
+ */
+export const dangDienTap = (env = process.env) => env?.V3_DIEN_TAP === "1";
+/** Câu lỗi tệp khi MÁY CHẠY BOT thiếu biến tệp — màn Page & Bot (`kho-page.js#aiSaleCuaPage`) nhận ra nó trong lý do `loi_tep`: tệp LÀNH,
+ *  ai_sale vẫn nhường ⇒ không bot nào trả lời (khác «tệp hỏng» ⇒ ai_sale trả lời lại mọi page). */
+export const LY_DO_THIEU_BIEN = `máy chạy bot thiếu biến ${BIEN_TEP_GAN}`;
 
 /**
  * Có literal SỐ mà JS không giữ được ngữ nghĩa Python ngoài chuỗi không: số nguyên ≥ 16 chữ số (`JSON.parse` làm tròn số > 2^53) hoặc
@@ -264,6 +276,10 @@ function dsTepLog(tienTo, fsx) {
   try { ten = fsx.readdirSync(dir); } catch { return []; }
   return ten.filter((t) => t.startsWith(dau) && t.endsWith(".log")).sort().map((t) => path.join(dir, t));
 }
+/** Tiến trình này ĐỌC được tệp không (vòng 2, F6 + /code-review: tên khớp mà không đọc được — EACCES — cũng là không canh được). */
+const docDuocTep = (tep, fsx) => { try { fsx.accessSync(tep, fs.constants.R_OK); return true; } catch { return false; } };
+/** Số tệp `*.log` khớp tiền tố `V3_AI_SALE_LOG` VÀ đọc được (vòng 2, đối kháng F6) — 0 ⇒ KHÔNG canh được log, đừng khai «đang canh log». */
+export const demTepLog = (tienTo, fsx = fs) => dsTepLog(String(tienTo ?? "").trim(), fsx).filter((t) => docDuocTep(t, fsx)).length;
 
 // Khối ai_sale in khi tra lại danh sách page (đọc `ai_sale.py` :13875-13878 ngày 19/10): «🚨 BỎ QUA <n> page KHÔNG thuộc shop <mkey> …:» rồi
 // MỘT dòng tên page (tên trống ⇒ in page id) — page `_v3` NẰM TRONG khối này chính vì ai_sale ĐÃ bỏ nó (bằng chứng nhường, không phải chạm).
@@ -285,14 +301,16 @@ function coPid(dong, pid) {
 /**
  * MỘT lượt quét log của vòng nạp. Luôn đẩy offset tới phần mới (để byte TRƯỚC khi page vào cửa sổ không bao giờ bị tính); chỉ ĐỌC khi
  * có page đang trong cửa sổ. Xét theo DÒNG trọn (dòng đang ghi dở để vòng sau). KHÔNG lưu, KHÔNG in dòng log (có tên khách) — chỉ trả
- * tập page id đã thấy.
- * @returns {{thay: Set<string>, daDatLai: boolean}}
+ * tập page id đã thấy. `soTep` = số tệp log khớp tiền tố VÀ đọc được (0 ⇒ biến trỏ sai / không có quyền đọc: không canh được gì —
+ * vòng 2, đối kháng F6).
+ * @returns {{thay: Set<string>, daDatLai: boolean, soTep: number}}
  */
 export function quetLogAiSale(tienTo, pids, deps = {}) {
   const fsx = deps.fs || fs;
   const thay = new Set();
   const daDatLai = !_log.daKhoi;
   const conThay = new Set();
+  let soTep = 0;
   for (const tep of dsTepLog(tienTo, fsx)) {
     let st;
     try { st = fsx.statSync(tep); } catch { continue; }
@@ -302,6 +320,9 @@ export function quetLogAiSale(tienTo, pids, deps = {}) {
     let muc = _log.tep.get(khoa);
     if (!muc) { muc = { off: daDatLai ? size : 0, duoi: "", sauBoQua: false }; _log.tep.set(khoa, muc); }
     if (size < muc.off) { muc.off = 0; muc.duoi = ""; muc.sauBoQua = false; }
+    // không đọc được = không canh được (đẩy offset qua: lúc đọc lại được không đọc ngược log của quãng mù — đã cảnh báo «0 tệp»)
+    if (!docDuocTep(tep, fsx)) { muc.off = size; muc.duoi = ""; muc.sauBoQua = false; continue; }
+    soTep += 1;
     if (size === muc.off) continue;
     if (!pids.length) { muc.off = size; muc.duoi = ""; muc.sauBoQua = false; continue; }
     const n = Math.min(TRAN_DOC_LOG, size - muc.off);
@@ -326,15 +347,18 @@ export function quetLogAiSale(tienTo, pids, deps = {}) {
   }
   for (const k of [..._log.tep.keys()]) if (!conThay.has(k)) _log.tep.delete(k);   // tệp đã xoá
   _log.daKhoi = true;
-  return { thay, daDatLai };
+  return { thay, daDatLai, soTep };
 }
 
 /* ─────────────── worker: lọc page SẴN SÀNG + chuyển trạng thái ─────────────── */
 
 let _canhBao035 = false;
+let _canhBaoLogMu = false;      // vòng 2 (F6): «biến log có mà 0 tệp khớp» — cảnh báo MỘT lần, có tệp lại thì gỡ để lần sau báo tiếp
+let _canhBaoMoCoi = "";         // vòng 2 (F2/F3): câu lỗi canh khoá mồ côi gần nhất — chỉ in khi đổi (không lặp mỗi 6 s)
+let _canhBaoDienTap = "";       // vòng 2 (/code-review): tập page giữ khoá lúc worker diễn tập đã cảnh báo
 const _demTep = { khoa: null, kq: null };
 /** CHỈ bộ ca. */
-export function quenDemAiSale() { _canhBao035 = false; _demTep.khoa = null; _demTep.kq = null; }
+export function quenDemAiSale() { _canhBao035 = false; _canhBaoLogMu = false; _canhBaoMoCoi = ""; _canhBaoDienTap = ""; _demTep.khoa = null; _demTep.kq = null; }
 
 /** Đọc tệp qua ĐỆM theo (ino, mtimeNs, size) — vòng xử quay 250 ms không đọc lại tệp không đổi. */
 export function docTepCoDem(tep, fsx = fs) {
@@ -360,7 +384,7 @@ const SQL_GIA_HAN = `UPDATE page SET ai_sale_ly_do = $2,
      RETURNING id, ai_sale_trang_thai, ai_sale_cho_den, (ai_sale_cho_den <= now()) AS het_cho`;
 
 /** Quyết định của vòng nạp cho MỘT page (thuần — không I/O). `null` = giữ nguyên. */
-export function quyetDinhNhuong(row, { tepOk, loiTep, coKhoa, ganTay, thayLog, gio }) {
+export function quyetDinhNhuong(row, { tepOk, loiTep, coKhoa, ganTay, thayLog, gio, logMu = false }) {
   const cu = row.ai_sale_trang_thai;
   if (!DANG_CANH.has(cu)) return null;
   if (!tepOk) return cu === "loi_tep" ? null : { tt: "loi_tep", lyDo: `Tệp ai_sale đọc không được lúc ${gio} (giờ VN) — ${loiTep}`.slice(0, 400) };
@@ -374,8 +398,69 @@ export function quyetDinhNhuong(row, { tepOk, loiTep, coKhoa, ganTay, thayLog, g
     if (Number(row.tuoi_bat_ms) > TRAN_CHUA_NHUONG_MS) return { tt: "chua_nhuong", lyDo: `ai_sale chưa nhường sau 30′ — còn chạm page lúc ${gio} (giờ VN)` };
     return { giaHan: true, lyDo: `ai_sale còn chạm page lúc ${gio} (giờ VN)` };
   }
-  if (cu === "cho" && row.het_cho === true) return { tt: "da_nhuong", canHetCho: true, lyDo: `Bot cũ đã nhường lúc ${gio} (giờ VN) — bot v3 đang trả lời` };
+  if (cu === "cho" && row.het_cho === true) {
+    return { tt: "da_nhuong", canHetCho: true, lyDo: `Bot cũ đã nhường lúc ${gio} (giờ VN) — bot v3 đang trả lời`
+      + (logMu ? ` · KHÔNG canh được log ai_sale (${BIEN_LOG} có nhưng 0 tệp log khớp) — chỉ theo giờ` : "") };
+  }
   return null;
+}
+
+// Vòng 2 (đối kháng F2 + F3) — KHOÁ MỒ CÔI: `_v3[pid]` còn trong tệp mà KHÔNG dòng page nào của pid đang bật. Hai đường đẻ ra nó: tiến
+// trình admin chết giữa `ghiKhoa` và COMMIT của lượt BẬT (CSDL rollback, khoá ở lại — F2) · lượt `_ghi_gan`/`_go_gan` của pancake-tool
+// đọc tệp TRƯỚC khi lượt TẮT gỡ khoá rồi `os.replace` SAU (khoá sống lại — F3). Cả hai: ai_sale nhường, v3 tắt ⇒ KHÔNG bot nào, màn im.
+// Worker (vòng nạp) đánh `xoa_hong` + lý do «mồ côi» ⇒ màn hiện đỏ + nút «Thử xoá lại» (= gạt tắt — gỡ khoá dưới khoá tư vấn tệp).
+// KHÔNG tự xoá khoá: tệp của team khác, và worker không chắc khoá ấy không phải của một lượt bật đang chạy dở. (`page.page_id` UNIQUE ⇒
+// một pid một dòng.)
+const SQL_MO_COI = `SELECT id FROM page WHERE page_id = ANY($1::text[]) AND bot_ai_bat = false AND ai_sale_trang_thai <> 'xoa_hong'`;
+const SQL_MO_COI_KHOA = `SELECT id, team_id, page_id, ten FROM page
+   WHERE id = ANY($1) AND bot_ai_bat = false AND ai_sale_trang_thai <> 'xoa_hong' ORDER BY id FOR UPDATE`;
+
+/**
+ * Canh khoá mồ côi (chỉ vòng nạp). Lọc trước bằng tệp qua đệm + một câu SELECT (rẻ — 0 ứng viên thì dừng). Có ứng viên ⇒ giao dịch:
+ * KHOÁ DÒNG trước (`FOR UPDATE`, thứ tự id) — lượt BẬT (`setPage`) và giao dịch 2 của TẮT (`tatXoaKhoa`) giữ khoá dòng từ đầu tới COMMIT,
+ * nên worker chờ chúng xong hẳn — RỒI MỚI đọc lại tệp (không đệm), UPDATE có điều kiện + nhật ký chỉ khi có dòng trả về.
+ * KHÔNG lấy khoá tư vấn tệp: lượt BÙ (`operations.js#buKhoa`) giữ khoá tệp rồi mới UPDATE dòng — worker giữ dòng mà chờ khoá tệp là
+ * vòng chờ (deadlock). Thứ tự duy nhất trong hệ: dòng → tệp.
+ * @returns {Promise<number>} số page vừa đánh `xoa_hong`.
+ */
+async function canhKhoaMoCoi(pool, tep, fsx) {
+  const t = docTepCoDem(tep, fsx);
+  if (!t.ok) return 0;
+  const pids = Object.keys(t.d[KHOA_V3] || {});
+  if (!pids.length) return 0;
+  const ung = (await pool.query(SQL_MO_COI, [pids])).rows;
+  if (!ung.length) return 0;
+  const c = await pool.connect();
+  let n = 0;
+  try {
+    await c.query("BEGIN");
+    const khoa = (await c.query(SQL_MO_COI_KHOA, [ung.map((r) => String(r.id))])).rows;
+    const lai = docTepGan(tep, fsx);   // đọc lại SAU khoá dòng — lượt tắt vừa gỡ khoá / lượt bật vừa xong đều đã COMMIT
+    const bay = (await c.query("SELECT now() AS bay")).rows[0].bay;
+    for (const r of khoa) {
+      const pid = String(r.page_id);
+      if (!lai.ok || !coKhoaV3(lai.d, pid)) continue;
+      const lyDo = `Khoá ai_sale MỒ CÔI lúc ${gioVN(bay)} (giờ VN): page đã tắt mà ${KHOA_V3}.${pid} còn trong page_gan_them.json (tiến trình chết `
+        + "giữa lượt bật, hoặc lượt ghi chen của pancake-tool làm khoá sống lại) — ai_sale KHÔNG trả lời page này. Bấm «Thử xoá lại» hoặc nhờ "
+        + "chủ pancake-tool gỡ tay khoá đó";
+      const u = await c.query(
+        "UPDATE page SET ai_sale_trang_thai = 'xoa_hong', ai_sale_ly_do = $2 WHERE id = $1 AND bot_ai_bat = false AND ai_sale_trang_thai <> 'xoa_hong' RETURNING id",
+        [r.id, lyDo.slice(0, 400)]);
+      if (!u.rowCount) continue;
+      n += 1;
+      await ghiNhatKy(c, {
+        teamId: r.team_id, tacNhan: TAC_NHAN, hanhDong: "ai_sale_khoa_mo_coi", doiTuong: "page", doiTuongId: pid,
+        sau: { ai_sale_trang_thai: "xoa_hong", khoa: `${KHOA_V3}.${pid}` }, ghiChu: `Page «${r.ten || pid}»: ${lyDo}`.slice(0, 400),
+      });
+    }
+    await c.query("COMMIT");
+  } catch (e) {
+    await c.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    c.release();
+  }
+  return n;
 }
 
 /**
@@ -384,16 +469,53 @@ export function quyetDinhNhuong(row, { tepOk, loiTep, coKhoa, ganTay, thayLog, g
  * log — mới đưa `cho` qua mốc `ai_sale_cho_den` thành `da_nhuong`) và `now() >= ai_sale_cho_den`.
  *
  * `chuyen` (vòng nạp, `!boQuaNap`): quét log + CHUYỂN trạng thái — UPDATE có điều kiện trạng thái cũ, nhật ký chỉ khi có dòng trả về
- * (bốn vòng worker chạy đồng thời — không ghi đôi). Vòng xử (`chuyen:false`): chỉ lọc theo CSDL + tệp qua đệm, không đọc log.
+ * (bốn vòng worker chạy đồng thời — không ghi đôi) + canh khoá mồ côi (vòng 2 — chạy cả khi không page nào bật/vượt trần). Vòng xử
+ * (`chuyen:false`): chỉ lọc theo CSDL + tệp qua đệm, không đọc log. Page `dien_tap` (vòng 2, F1) đi khi và chỉ khi worker còn diễn tập.
  * CSDL chưa áp 035 (42703) ⇒ `[]` + cảnh báo MỘT lần, không sập.
  * @returns {Promise<{sanSang: string[], dem: object}>}
  */
 export async function locNhuongAiSale(pool, choPhep, { chuyen = false, env = process.env, fs: fsx = fs } = {}) {
-  const dem = { sanSang: 0, cho: 0, chan: 0, chua035: false, logDatLai: false };
+  const dem = { sanSang: 0, cho: 0, chan: 0, chua035: false, logDatLai: false, moCoi: 0, logMu: false };
   const tienToLog = String(env?.[BIEN_LOG] ?? "").trim();
   const ds = (choPhep || []).map(String);
+  const tep = tepGan(env);
+  if (chuyen && tep) {
+    try {
+      dem.moCoi = await canhKhoaMoCoi(pool, tep, fsx);
+    } catch (e) {
+      // CSDL chưa 035 (42703) ⇒ im (câu cảnh báo 035 nói ở dưới); lỗi khác ⇒ nói khi câu lỗi ĐỔI — phép canh phụ không được dừng vòng nạp.
+      const cau = `[ai-sale-nhuong] canh khoá mồ côi lỗi: ${e?.message || e}`;
+      if (e?.code !== "42703" && cau !== _canhBaoMoCoi) { _canhBaoMoCoi = cau; console.warn(cau); }
+    }
+  }
+  const quetLog = (pids) => {
+    const q = quetLogAiSale(tienToLog, pids, { fs: fsx });
+    dem.logDatLai = q.daDatLai;
+    dem.logMu = q.soTep === 0;
+    if (dem.logMu && !_canhBaoLogMu) {
+      _canhBaoLogMu = true;
+      console.warn(`[ai-sale-nhuong] ${BIEN_LOG}=${tienToLog} nhưng 0 tệp *.log khớp — KHÔNG canh được log ai_sale: page chỉ chờ theo giờ `
+        + `(${CHO_AI_SALE_MS / 60000}′), mất phép đo DƯƠNG «ai_sale đã nhường». Kiểm lại biến (prod: /var/log/aisale-chat).`);
+    } else if (!dem.logMu) _canhBaoLogMu = false;
+    return q.thay;
+  };
+  // /code-review vòng 2: cờ diễn tập của CHÍNH worker (env unit worker) — khác env unit giao diện mà cổng bật + nhãn màn đọc. Worker diễn
+  // tập mà page đang giữ khoá (cho/da_nhuong) ⇒ ai_sale nhường, v3 không gửi ⇒ không bot nào; màn không thấy được env worker ⇒ nói ở log,
+  // MỘT lần mỗi lần tập page đổi.
+  const canhDienTap = (rows) => {
+    if (!chuyen) return;   // chỉ vòng nạp nói (vòng xử quay 250 ms)
+    if (!dangDienTap(env)) { _canhBaoDienTap = ""; return; }
+    const giu = rows.filter((r) => r.ai_sale_trang_thai === "cho" || r.ai_sale_trang_thai === "da_nhuong").map((r) => String(r.page_id)).sort();
+    const khoa = giu.join(",");
+    if (giu.length && khoa !== _canhBaoDienTap) {
+      console.warn(`[ai-sale-nhuong] worker đang DIỄN TẬP (V3_DIEN_TAP=1 — không gửi tin nào) mà ${giu.length} page đang giữ khoá ai_sale `
+        + `(${giu.slice(0, 20).join(",")}) — ai_sale nhường nên KHÔNG bot nào trả lời các page đó. Tắt các page đó, hoặc bỏ diễn tập; `
+        + "đổi V3_DIEN_TAP phải khởi động lại CẢ HAI dịch vụ (cổng bật + màn đọc env dịch vụ giao diện).");
+    }
+    _canhBaoDienTap = khoa;
+  };
   if (!ds.length) {
-    if (chuyen && tienToLog) dem.logDatLai = quetLogAiSale(tienToLog, [], { fs: fsx }).daDatLai;
+    if (chuyen && tienToLog) quetLog([]);
     return { sanSang: [], dem };
   }
   let rows;
@@ -412,15 +534,13 @@ export async function locNhuongAiSale(pool, choPhep, { chuyen = false, env = pro
     dem.chua035 = true;
     return { sanSang: [], dem };
   }
-  const tep = tepGan(env);
-  const kqTep = tep ? docTepCoDem(tep, fsx) : { ok: false, loi: `máy chạy bot thiếu biến ${BIEN_TEP_GAN}` };
+  canhDienTap(rows);
+  const kqTep = tep ? docTepCoDem(tep, fsx) : { ok: false, loi: LY_DO_THIEU_BIEN };
   let thay = new Set();
   if (chuyen && tienToLog) {
     const trongCuaSo = rows.filter((r) => (r.ai_sale_trang_thai === "cho" || r.ai_sale_trang_thai === "da_nhuong")
       && r.tuoi_bat_ms != null && Number(r.tuoi_bat_ms) >= MO_CUA_SO_LOG_MS).map((r) => String(r.page_id));
-    const q = quetLogAiSale(tienToLog, trongCuaSo, { fs: fsx });
-    thay = q.thay;
-    dem.logDatLai = q.daDatLai;
+    thay = quetLog(trongCuaSo);
   }
   const sanSang = [];
   for (const row of rows) {
@@ -431,7 +551,7 @@ export async function locNhuongAiSale(pool, choPhep, { chuyen = false, env = pro
     let tt = row.ai_sale_trang_thai;
     let hetCho = row.het_cho === true;
     if (chuyen) {
-      const qd = quyetDinhNhuong(row, { tepOk, loiTep: kqTep.loi, coKhoa, ganTay, thayLog: thay.has(pid), gio: gioVN(row.bay) });
+      const qd = quyetDinhNhuong(row, { tepOk, loiTep: kqTep.loi, coKhoa, ganTay, thayLog: thay.has(pid), gio: gioVN(row.bay), logMu: dem.logMu });
       if (qd?.giaHan) {
         const r = await pool.query(SQL_GIA_HAN, [row.id, qd.lyDo, GIA_HAN_LOG_MS]);
         hetCho = r.rows[0]?.het_cho === true;
@@ -452,7 +572,10 @@ export async function locNhuongAiSale(pool, choPhep, { chuyen = false, env = pro
       }
     }
     const di = tepOk && coKhoa && !ganTay.length && tt === "da_nhuong" && hetCho;
-    if (di) sanSang.push(pid);
+    // Vòng 2 (F1): page bật lúc DIỄN TẬP không giữ khoá — chỉ chạy thử khi CHÍNH worker còn diễn tập (không gửi tin nào). Bỏ diễn tập ⇒
+    // không đi (chưa có khoá ⇒ có thể hai bot) — người tắt rồi bật lại để ghi khoá (màn nói thế).
+    const diDienTap = tt === "dien_tap" && dangDienTap(env);
+    if (di || diDienTap) sanSang.push(pid);
     else if (tt === "cho") dem.cho += 1;
     else dem.chan += 1;
   }
@@ -464,5 +587,5 @@ export async function locNhuongAiSale(pool, choPhep, { chuyen = false, env = pro
 export function lyDoChuaNhuong(dem = {}) {
   if (dem.chua035) return "CSDL chưa áp 035 — bot v3 không trả lời page nào (chưa có cột chờ ai_sale nhường).";
   return `Có page bật nhưng chưa page nào sẵn sàng: ${dem.cho || 0} đang chờ ai_sale nhường · ${dem.chan || 0} bị chặn `
-    + "(mất khoá / tệp ai_sale hỏng / gắn tay / ai_sale chưa nhường / chưa gạt lại sau 035) — xem cột Bot ở màn Page & Bot.";
+    + "(mất khoá / tệp ai_sale hỏng / gắn tay / ai_sale chưa nhường / chưa gạt lại sau 035 / bật lúc diễn tập mà nay bỏ diễn tập) — xem cột Bot ở màn Page & Bot.";
 }

@@ -54,6 +54,8 @@ let goiLa = 0;
 before(async () => {
   for (const k of ["V3_TRAN_PAGE_BAT", "V3_BOT_KHOA", "V3_BOT_GHI", "V3_AI_SALE_TEP_GAN", "V3_AI_SALE_LOG", "V3_NAP_DEV"]) giuEnv[k] = process.env[k];
   delete process.env.V3_BOT_KHOA; delete process.env.V3_BOT_GHI; delete process.env.V3_AI_SALE_LOG;
+  // vòng 2 (F4): nhãn ai_sale của màn đọc trần GL2 từ env TIẾN TRÌNH (như đèn Sức khoẻ) — trần vắng = 0 ⇒ mọi page bật «vượt trần».
+  process.env.V3_TRAN_PAGE_BAT = "20";
   sb = await dungSandbox("gl10c");
   pool = sb.pool;
   console.log(`   [gl10c] hộp cát ${sb.ten} · tệp đo ${fileURLToPath(new URL("../src/admin-v3/operations.js", import.meta.url))} · cwd ${process.cwd()}`);

@@ -47,10 +47,12 @@ export const TRAN_MOI_LUOT = Number(process.env.V3_WORKER_TRAN || 50);
  * ai suy luận hộ team cho một job). Vòng này quét MỌI team, và lớp team nằm ở lượt sau:
  * `napTuPoll` tự tra `page.team_id` rồi mọi lượt ghi đều đi qua ctx của team đó.
  */
-export async function dsPageDeNap(pool, { gioiHan = 500 } = {}) {
+export async function dsPageDeNap(pool) {
+  // GL10 vòng 2 (đối kháng F5): KHÔNG trần số dòng. `LIMIT 500` cũ bỏ sót page xếp sau hạng 500 (prod 582 page ⇒ 82 page) — page đó vẫn
+  // bật được, ghi khoá ai_sale, màn báo «đã nhường», mà bộ nạp không bao giờ nạp ⇒ ai_sale nhường, bot câm. Danh sách chỉ là cột
+  // `page_id` (vài trăm dòng mỗi 6 s); giao với danh sách bật/nhường ở `motLuotTrong` mới quyết page nào được nạp.
   const r = await pool.query(
-    "SELECT page_id FROM page WHERE page_id <> '' ORDER BY page_id LIMIT $1",
-    [gioiHan],
+    "SELECT page_id FROM page WHERE page_id <> '' ORDER BY page_id",
   );
   return r.rows.map((x) => String(x.page_id)).filter(Boolean);
 }

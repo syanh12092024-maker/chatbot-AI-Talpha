@@ -7,7 +7,8 @@ import { docSanPhamGoiGia } from "../products/catalog.js";
 import { layModel } from "../chat/model.js";
 import { HE_SO_TE, quyDonViNho, teCuaThiTruong } from "../pos/index.js";
 import {
-  tepGan, docTepGan, docTepCoDem, khoaGanTay, coKhoaV3, ghiKhoa, xoaKhoa, CHO_AI_SALE_MS, KHOA_TU_VAN_TEP, BIEN_LOG, LoiTepAiSale,
+  tepGan, docTepGan, docTepCoDem, khoaGanTay, coKhoaV3, ghiKhoa, xoaKhoa, CHO_AI_SALE_MS, KHOA_TU_VAN_TEP, BIEN_LOG, LoiTepAiSale, demTepLog,
+  dangDienTap,
 } from "../queue/ai-sale-nhuong.js";
 
 export const fault = (message, status = 400) =>
@@ -146,13 +147,22 @@ async function dongTinCho(c, teamId, pageId, lyDo) {
 /**
  * GL10 ② 4 — BÙ khi đã ghi khoá mà lượt bật không thành (UPDATE/COMMIT lỗi): gỡ khoá vừa ghi dưới khoá tư vấn tệp; CSDL hỏng thì vẫn cố
  * gỡ không khoá. Chỉ gọi khi khoá CHƯA có trước lượt này (page đang bật gạt lại thì khoá cũ là của nó). Không để page mất cả hai bot.
+ * Vòng 2 (/code-review): khoá DÒNG trước khoá tệp — cùng thứ tự «dòng → tệp» với lượt bật, giao dịch 2 của tắt và vòng nạp canh khoá
+ * mồ côi (ngược thứ tự là vòng chờ với lượt bật thứ hai cùng page) — và dòng đã BẬT lại (lượt bật khác vừa thành giữa ROLLBACK và đây)
+ * ⇒ KHÔNG gỡ: khoá giờ là của lượt bật đó.
  */
 async function buKhoa(pool, tep, pid) {
   const bao = (e) => console.error(`[setPage] BÙ: gỡ khoá ai_sale ${tenKhoa(pid)} HỎNG — ${e?.message || e}. Gỡ tay khoá đó trong ${tep}.`);
   try {
     await transaction(pool, async (c) => {
+      const dong = (await c.query("SELECT bot_ai_bat FROM page WHERE page_id=$1 FOR UPDATE", [pid])).rows[0];
+      if (dong?.bot_ai_bat === true) return;
       await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [KHOA_TU_VAN_TEP]);
       xoaKhoa(tep, pid);
+      // Vòng 2 (F2): vòng nạp của worker có thể vừa đánh `xoa_hong` «khoá mồ côi» — nó chờ khoá DÒNG của lượt bật đang chết dở, lượt bật
+      // ROLLBACK xong thì nó thấy dòng tắt + khoá vừa ghi (lượt bù này chưa kịp gỡ). Gỡ xong thì không còn khoá nào ⇒ về ''.
+      await c.query(
+        "UPDATE page SET ai_sale_trang_thai='', ai_sale_ly_do='' WHERE page_id=$1 AND bot_ai_bat=false AND ai_sale_trang_thai='xoa_hong'", [pid]);
     });
   } catch (e) {
     if (e instanceof LoiTepAiSale) { bao(e); return; }
@@ -164,7 +174,8 @@ async function buKhoa(pool, tep, pid) {
  * Bật/tắt + đổi nguồn của MỘT page. GL10 ② 4:
  *   BẬT: cổng cũ (`pageStatus` — gồm điều kiện ai_sale/035 — + trần GL2) → khoá tư vấn tệp → `ghiKhoa` (lỗi ⇒ 409, page không bật) →
  *        UPDATE (bot_ai_bat · bot_bat_luc=now() · chờ 15′ · trạng thái `cho`) → đóng tin `cho` cũ → nhật ký `ai_sale_ghi_khoa` → COMMIT.
- *        Ghi khoá xong mà UPDATE/COMMIT lỗi ⇒ BÙ (`buKhoa`) rồi ném lại.
+ *        Ghi khoá xong mà UPDATE/COMMIT lỗi ⇒ BÙ (`buKhoa`) rồi ném lại. Vòng 2 (F1): máy chủ DIỄN TẬP ⇒ KHÔNG ghi khoá, trạng thái
+ *        `dien_tap` (không mốc chờ) — v3 không gửi nên ai_sale cứ trả lời; page còn giữ khoá ⇒ 409.
  *   TẮT: giao dịch 1 (UPDATE tắt + đóng tin `cho` + nhật ký) → COMMIT → giao dịch 2 (khoá tư vấn tệp) `xoaKhoa` (`tatXoaKhoa`). Xoá khoá
  *        SAU khi v3 đã tắt ⇒ không khoảnh khắc nào hai bot; lỗi giữa chừng chỉ để lại «không bot nào». TẮT không bao giờ bị cổng chặn.
  * @returns {Promise<object>} dòng `page` sau ghi, kèm `aiSale` (bật/tắt) và `canhBao` (tắt mà khoá chưa xoá).
@@ -185,7 +196,7 @@ export async function setPage(pool, bc, id, input, env = process.env) {
   const tat = input.enabled === false;
   // GL10: trạng thái lượt — `khoaDaGhi` { tep, pid, coTruoc } để BÙ nếu lượt bật không thành · `dangPhucVu` gạt BẬT lại page đang được bot v3
   // phục vụ ⇒ giữ nguyên phía ai_sale · `truocTat` { pid, teamId, co035, trangThai, ten } cho giao dịch 2 của TẮT.
-  const st = { khoaDaGhi: null, dangPhucVu: false, truocTat: null };
+  const st = { khoaDaGhi: null, dangPhucVu: false, dienTap: false, truocTat: null };
   const row = await transaction(pool, async (c) => {
     const p = (
       await c.query(
@@ -219,16 +230,27 @@ export async function setPage(pool, bc, id, input, env = process.env) {
     if (bat) await ghiKhoaKhiBat(c, p, env, st);
     if (tat) st.truocTat = { pid: String(p.page_id), teamId: p.team_id, co035, trangThai: co035 ? p.ai_sale_trang_thai : "", ten: p.ten };
     const moi = bat && !st.dangPhucVu;
-    const lyDoCho = `Đang chờ ai_sale nhường (${CHO_AI_SALE_MS / 60000}′ — ai_sale tra lại danh sách page mỗi 600 s) · `
-      + (String(env?.[BIEN_LOG] ?? "").trim() ? "đang canh log ai_sale" : "chỉ chờ theo giờ — chưa nối log ai_sale");
+    // Vòng 2 (F6): biến log có mà 0 tệp khớp tiền tố ⇒ KHÔNG canh được gì — nói thế, đừng khai «đang canh log».
+    const tienToLog = String(env?.[BIEN_LOG] ?? "").trim();
+    const soTepLog = tienToLog ? demTepLog(tienToLog) : 0;
+    const lyDoCho = st.dienTap
+      ? "Diễn tập (V3_DIEN_TAP=1) — KHÔNG ghi khoá ai_sale: ai_sale vẫn trả lời khách như trước; bot v3 chạy thử, không gửi. "
+        + "Bỏ diễn tập thì tắt rồi bật lại để ghi khoá."
+      : `Đang chờ ai_sale nhường (${CHO_AI_SALE_MS / 60000}′ — ai_sale tra lại danh sách page mỗi 600 s) · `
+        + (!tienToLog ? "chỉ chờ theo giờ — chưa nối log ai_sale"
+          : soTepLog ? `đang canh log ai_sale (${soTepLog} tệp)`
+            : `KHÔNG canh được log — ${BIEN_LOG} có nhưng 0 tệp log khớp; chỉ chờ theo giờ`);
     const r = await c.query(
       `UPDATE page SET bot_ai_bat=COALESCE($3,bot_ai_bat),nguon_tin=COALESCE($4,nguon_tin),sua_luc=now()${
-        moi ? ",bot_bat_luc=now(),ai_sale_cho_den=now() + ($5::bigint * interval '1 millisecond'),ai_sale_trang_thai='cho',ai_sale_ly_do=$6" : ""}${
+        // Vòng 2 (F1): bật lúc DIỄN TẬP ⇒ `dien_tap`, không mốc chờ (không ghi khoá ⇒ không có gì để chờ ai_sale nhường).
+        moi ? ",bot_bat_luc=now(),ai_sale_cho_den=CASE WHEN $7::boolean THEN NULL ELSE now() + ($5::bigint * interval '1 millisecond') END,"
+          + "ai_sale_trang_thai=CASE WHEN $7::boolean THEN 'dien_tap' ELSE 'cho' END,ai_sale_ly_do=$6" : ""}${
         // TẮT (/code-review GL10 #4): page đã từng ghi khoá (trạng thái ≠ '') ⇒ đánh `xoa_hong` NGAY ở giao dịch 1 — tiến trình chết trước
         // giao dịch 2 thì màn vẫn hiện «khoá CHƯA xoá» + nút «Thử xoá lại»; gỡ khoá xong (giao dịch 2) mới về ''.
-        tat && co035 ? ",ai_sale_cho_den=NULL,ai_sale_trang_thai=CASE WHEN ai_sale_trang_thai <> '' THEN 'xoa_hong' ELSE '' END,ai_sale_ly_do=CASE WHEN ai_sale_trang_thai <> '' THEN 'Đang gỡ khoá ai_sale (bot v3 đã tắt)' ELSE '' END" : ""}
+        // Vòng 2 (F1): page `dien_tap` không giữ khoá ⇒ tắt như '' (không «khoá CHƯA xoá» cho khoá không tồn tại).
+        tat && co035 ? ",ai_sale_cho_den=NULL,ai_sale_trang_thai=CASE WHEN ai_sale_trang_thai NOT IN ('', 'dien_tap') THEN 'xoa_hong' ELSE '' END,ai_sale_ly_do=CASE WHEN ai_sale_trang_thai NOT IN ('', 'dien_tap') THEN 'Đang gỡ khoá ai_sale (bot v3 đã tắt)' ELSE '' END" : ""}
       WHERE team_id=$1 AND id=$2 RETURNING *,xmin::text AS version`,
-      [bc.teamId, id, input.enabled ?? null, input.source ?? null, ...(moi ? [CHO_AI_SALE_MS, lyDoCho] : [])],
+      [bc.teamId, id, input.enabled ?? null, input.source ?? null, ...(moi ? [CHO_AI_SALE_MS, lyDoCho, st.dienTap] : [])],
     );
     await audit(c, bc, "page", id, "v3_cau_hinh_page", Object.keys(input));
     if (moi || tat) {
@@ -236,13 +258,13 @@ export async function setPage(pool, bc, id, input, env = process.env) {
       const dong = await dongTinCho(c, bc.teamId, p.page_id, bat ? "bo_qua:truoc_moc_bat" : "bo_qua:tat_bot");
       await ghiNhatKy(c, {
         teamId: bc.teamId, nguoiDungId: bc.nguoiDungId, tacNhan: `nguoi:${bc.nguoiDungId}`,
-        hanhDong: bat ? "ai_sale_ghi_khoa" : "v3_tat_bot_dong_tin", doiTuong: "page", doiTuongId: String(p.page_id),
-        sau: bat
-          ? { khoa: tenKhoa(p.page_id), tep: tepGan(env), co_truoc: !!st.khoaDaGhi?.coTruoc, ai_sale_cho_den: r.rows[0].ai_sale_cho_den, tin_cho_dong: dong }
-          : { tin_cho_dong: dong },
-        ghiChu: bat
-          ? `BẬT «${p.ten || p.page_id}»: ghi khoá ai_sale ${tenKhoa(p.page_id)} · chờ ai_sale nhường ${CHO_AI_SALE_MS / 60000}′ · đóng ${dong} tin chờ cũ (trước mốc bật)`
-          : `TẮT «${p.ten || p.page_id}»: đóng ${dong} tin chờ (bo_qua:tat_bot)`,
+        hanhDong: !bat ? "v3_tat_bot_dong_tin" : st.dienTap ? "v3_bat_dien_tap" : "ai_sale_ghi_khoa", doiTuong: "page", doiTuongId: String(p.page_id),
+        sau: !bat ? { tin_cho_dong: dong }
+          : st.dienTap ? { dien_tap: true, khoa: null, tin_cho_dong: dong }
+            : { khoa: tenKhoa(p.page_id), tep: tepGan(env), co_truoc: !!st.khoaDaGhi?.coTruoc, ai_sale_cho_den: r.rows[0].ai_sale_cho_den, tin_cho_dong: dong },
+        ghiChu: !bat ? `TẮT «${p.ten || p.page_id}»: đóng ${dong} tin chờ (bo_qua:tat_bot)`
+          : st.dienTap ? `BẬT DIỄN TẬP «${p.ten || p.page_id}»: KHÔNG ghi khoá ai_sale (v3 không gửi tin nào — ai_sale trả lời như trước) · đóng ${dong} tin chờ cũ (trước mốc bật)`
+            : `BẬT «${p.ten || p.page_id}»: ghi khoá ai_sale ${tenKhoa(p.page_id)} · chờ ai_sale nhường ${CHO_AI_SALE_MS / 60000}′ · đóng ${dong} tin chờ cũ (trước mốc bật)`,
       });
     }
     return r.rows[0];
@@ -269,6 +291,18 @@ async function ghiKhoaKhiBat(c, p, env, st) {
   st.dangPhucVu = p.bot_ai_bat === true && ["cho", "da_nhuong"].includes(p.ai_sale_trang_thai)
     && t0.ok && coKhoaV3(t0.d, p.page_id) && !khoaGanTay(t0.d, p.page_id).length;
   if (st.dangPhucVu) return;
+  // Vòng 2 (đối kháng F1) — DIỄN TẬP (`dangDienTap` — cùng luật `lan-gui.js`: «diễn tập thắng mọi cờ», v3 KHÔNG gửi tin nào) ⇒ KHÔNG ghi khoá: ghi thì
+  // ai_sale nhường mà v3 không gửi ⇒ khách của page đang bán không bot nào trả lời, và bậc ② mo-van («prod, đường ĐỌC — khách chưa thấy
+  // gì») chết. Page vào `dien_tap`: worker chạy thử nó khi CHÍNH worker còn diễn tập; bỏ diễn tập ⇒ worker không phục vụ, màn nói «tắt
+  // rồi bật lại để ghi khoá». Page còn giữ khoá (khoá mồ côi) ⇒ từ chối: page diễn tập không được giữ khoá.
+  if (dangDienTap(env)) {
+    if (t0.ok && coKhoaV3(t0.d, p.page_id)) {
+      throw fault(`Máy chủ đang DIỄN TẬP mà page còn giữ khoá ai_sale ${tenKhoa(p.page_id)} trong tệp — diễn tập không ghi/giữ khoá (ai_sale `
+        + "nhường mà bot v3 không gửi ⇒ không bot nào trả lời). Tắt page (hoặc «Thử xoá lại») để gỡ khoá rồi bật lại.", 409);
+    }
+    st.dienTap = true;
+    return;
+  }
   try {
     const k = ghiKhoa(tep, p.page_id, `v3 pilot — ${p.ten || p.page_id} — bật ${new Date(bay).toISOString()}`);
     st.khoaDaGhi = { tep, pid: String(p.page_id), coTruoc: k.coTruoc };
@@ -318,7 +352,7 @@ async function tatXoaKhoa(pool, bc, t, env) {
     loi = e?.message || String(e);
   }
   if (batLai !== null) return { aiSale: { trangThai: batLai } };   // page đã được bật lại giữa hai giao dịch — khoá để nguyên cho lượt bật
-  const coBangChung = (t.co035 && t.trangThai !== "") || thayKhoa;
+  const coBangChung = (t.co035 && t.trangThai !== "" && t.trangThai !== "dien_tap") || thayKhoa;   // vòng 2 (F1): dien_tap không giữ khoá
   if (!loi || !coBangChung) return { aiSale: { trangThai: "" } };
   const canhBao = `Bot v3 ĐÃ tắt nhưng khoá ai_sale ${tenKhoa(t.pid)} CHƯA xoá (${loi}) — ai_sale chưa trả lời lại page này. `
     + `Sửa xong bấm «Thử xoá lại», hoặc nhờ chủ pancake-tool gỡ tay khoá ${tenKhoa(t.pid)} trong ${tep || "page_gan_them.json"}.`;

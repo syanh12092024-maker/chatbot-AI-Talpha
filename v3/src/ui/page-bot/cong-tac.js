@@ -168,6 +168,7 @@ export async function datCongTacBot(boiCanh, id, bat) {
     sau: { bot_ai_bat: kq.botAiBat, ...(kq.aiSale ? { ai_sale_trang_thai: kq.aiSale.trangThai } : {}) },
     ghiChu: `${kq.botAiBat ? 'BẬT' : 'TẮT'} bot AI cho page ${p.ten || p.pageId} (${p.pageId})`
       + (kq.botAiBat && kq.aiSale?.trangThai === 'cho' ? ' — chờ ai_sale nhường trước khi bot v3 trả lời' : '')
+      + (kq.botAiBat && kq.aiSale?.trangThai === 'dien_tap' ? ' — DIỄN TẬP: không ghi khoá ai_sale, bot v3 chạy thử không gửi' : '')
       + (kq.canhBao ? ` — ${kq.canhBao}` : ''),
   });
 

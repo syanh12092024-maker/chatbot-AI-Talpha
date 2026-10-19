@@ -44,7 +44,7 @@ const ENV = {
 };
 const PID = {
   D: "985000000001", D2: "985000000002", K: "985000000003", K2: "985000000004", N: "985000000005", R: "985000000006",
-  T: "985000000007", L: "985000000008", Z: "999000000009",
+  T: "985000000007", L: "985000000008", Z: "999000000009", W: "985000000010", X: "985000000011",
 };
 const ENV_TIEN_TRINH = { V3_AI_SALE_TEP_GAN: TEP, V3_TRAN_PAGE_BAT: "20", V3_NAP_DEV: "1", V3_NAP_IM_BOTCAKE_MS: "0",
   V3_AI_SALE_LOG: undefined, V3_DIEN_TAP: undefined, V3_BOT_KHOA: undefined, V3_BOT_GHI: undefined };
@@ -149,6 +149,18 @@ const aiSaleTrong = (pid) => {
   const o = JSON.parse(execFileSync("python3", ["-I", "-c", PY_AI_SALE, GOC, `${pid},985000000999`], { encoding: "utf8" }));
   return o.uae.includes(pid) || o.saudi.includes(pid);
 };
+/** Có phiên nào của CSDL hộp cát này đang đứng chờ khoá (khoá dòng / khoá tư vấn) không. */
+const coPhienChoKhoa = async () => Number((await pool.query(
+  "SELECT count(*) n FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'")).rows[0].n) > 0;
+/** Chờ tới khi có MỘT phiên đứng chờ khoá (hoặc `dung()` đúng) — tất định, không trông lịch Node. */
+const doiCoPhienChoKhoa = async (ms = 5000, dung = () => false) => {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms && !dung()) {
+    if (await coPhienChoKhoa()) return true;
+    await new Promise((ok) => setTimeout(ok, 20));
+  }
+  return false;
+};
 const voiEnv = async (them, fn) => {
   const cu = {};
   for (const [k, v] of Object.entries(them)) { cu[k] = ENV[k]; if (v === undefined) delete ENV[k]; else ENV[k] = v; }
@@ -159,6 +171,9 @@ const voiEnv = async (them, fn) => {
 
 test("GL10 F1 · DIỄN TẬP (V3_DIEN_TAP=1, van gửi đóng) bật page ⇒ KHÔNG ghi khoá _v3, ai_sale VẪN trông page, trạng thái dien_tap; worker chạy thử page khi CHÍNH nó diễn tập, bỏ diễn tập ⇒ không phục vụ; màn nói rõ; page còn giữ khoá ⇒ 409", async () => {
   ghiTep(MAU());
+  // `ai-sale-nhuong.js#dangDienTap` chép luật của đường gửi `lan-gui.js#dangDienTap` (không import — hop-thu H1) ⇒ hai hàm phải cùng đáp
+  const { dangDienTap: dtGui } = await import("../src/queue/lan-gui.js");
+  for (const v of ["1", "0", "true", "", undefined]) assert.equal(an.dangDienTap({ V3_DIEN_TAP: v }), dtGui({ V3_DIEN_TAP: v }), `V3_DIEN_TAP=${v}`);
   assert.equal(aiSaleTrong(PID.D), true, "(trước bật ai_sale trông page)");
   process.env.V3_DIEN_TAP = "1";
   try {
@@ -263,39 +278,100 @@ test("GL10 F2 · SIGKILL sau ghiKhoa trước COMMIT ⇒ khoá _v3 mồ côi (pa
   assert.equal((await gat("N", false)).status, 200);
 });
 
-test("GL10 F2b · vòng nạp CHEN vào lúc lượt bật đang chết dở (thấy khoá vừa ghi, page chưa bật) ⇒ có thể đánh xoa_hong; BÙ gỡ khoá xong phải đưa về '' (không để nhãn «khoá CHƯA xoá» cho khoá đã gỡ)", async () => {
+test("GL10 F2b · vòng nạp CHEN vào lúc lượt bật đang chết dở (khoá vừa ghi, dòng còn tắt) và đã đọc lại tệp; lượt BÙ phải ĐỨNG CHỜ khoá dòng của nó (thứ tự dòng → tệp) rồi gỡ khoá + đưa xoa_hong về '' — không nhãn «khoá CHƯA xoá» cho khoá đã gỡ", async () => {
   ghiTep(MAU());
-  const doiKhoaCho = async (ms = 5000) => {
-    const t0 = Date.now();
-    while (Date.now() - t0 < ms) {
-      const n = Number((await pool.query(
-        "SELECT count(*) n FROM pg_locks WHERE locktype='advisory' AND NOT granted AND database=(SELECT oid FROM pg_database WHERE datname=current_database())")).rows[0].n);
-      if (n > 0) return true;
-      await new Promise((ok) => setTimeout(ok, 20));
-    }
-    return false;
+  let pLuot = null; let thayChoBat = false; let thayChoBu = false; let xongSet = false;
+  // pool của WORKER: dừng vòng nạp ngay sau khi nó khoá dòng + đọc lại tệp (trước UPDATE), cho tới khi lượt bù đứng chờ khoá dòng (đúng)
+  // hoặc lượt bật đã xong hẳn (sai: bù đã luồn qua — gỡ khoá + UPDATE thấy ảnh chụp '' — rồi worker mới đánh xoa_hong)
+  const poolWorker = {
+    query: (sql, a) => pool.query(sql, a),
+    connect: async () => {
+      const c = await pool.connect();
+      return { release: () => c.release(), query: async (sql, a) => {
+        const r = await c.query(sql, a);
+        if (pLuot && !thayChoBu && String(sql?.text ?? sql).trim() === "SELECT now() AS bay") thayChoBu = await doiCoPhienChoKhoa(5000, () => xongSet);
+        return r;
+      } };
+    },
   };
-  let pLuot = null; let thayCho = false;
   const chen = {
     query: (sql, a) => pool.query(sql, a),
     connect: async () => {
       const c = await pool.connect();
       return { release: () => c.release(), query: async (sql, a) => {
         if (!pLuot && /^\s*UPDATE page SET bot_ai_bat/.test(String(sql?.text ?? sql))) {
-          pLuot = luot({ boQuaXu: true });   // vòng nạp của worker chạy đúng lúc này (khoá vừa ghi, dòng page còn tắt)
-          thayCho = await doiKhoaCho();      // nó đang xếp hàng chờ khoá tư vấn tệp mà lượt bật giữ
+          pLuot = cw.motLuot(poolWorker, { boQuaXu: true, depsNap: DEPS_NAP });   // vòng nạp chạy đúng lúc này
+          thayChoBat = await doiCoPhienChoKhoa();                                  // nó đứng chờ khoá DÒNG mà lượt bật giữ
           throw Object.assign(new Error("lỗi CSDL tiêm (ca GL10 F2b)"), { code: "XX000" });
         }
         return c.query(sql, a);
       } };
     },
   };
-  await assert.rejects(() => setPage(chen, bc(), ID.K2, { enabled: true }, ENV), /lỗi CSDL tiêm/);
+  const loi = await setPage(chen, bc(), ID.K2, { enabled: true }, ENV).then(() => null, (e) => e).finally(() => { xongSet = true; });
   await pLuot;
-  assert.ok(thayCho, "vòng nạp phải canh khoá mồ côi DƯỚI khoá tư vấn tệp (xếp hàng sau lượt bật)");
+  assert.match(String(loi?.message), /lỗi CSDL tiêm/);
+  assert.ok(thayChoBat, "vòng nạp phải chờ lượt bật xong hẳn (khoá dòng) rồi mới xét khoá mồ côi");
+  assert.ok(thayChoBu, "lượt BÙ phải đứng chờ khoá dòng vòng nạp đang giữ — không luồn qua (thứ tự dòng → tệp)");
+  assert.equal(await nhatKy("ai_sale_khoa_mo_coi", "K2"), 1, "(thứ tự xấu nhất đã xảy ra: worker đánh xoa_hong trước lượt bù)");
   assert.equal(docTep()._v3?.[PID.K2], undefined, "BÙ phải gỡ khoá vừa ghi");
   const k = await dong("K2");
   assert.deepEqual([k.bot_ai_bat, k.tt], [false, ""], `khoá đã gỡ mà nhãn còn «xoa_hong», đo ${k.tt} · ${k.ly_do}`);
+});
+
+test("GL10 F2d · lượt bật #1 hỏng SAU khi ghi khoá; lượt bật #2 cùng page chạy trọn TRƯỚC lượt bù ⇒ bù KHÔNG gỡ khoá (khoá giờ là của #2): page bật + khoá còn", async () => {
+  ghiTep(MAU());
+  let tiem = false; let daBat2 = false;
+  const chen = {
+    query: (sql, a) => pool.query(sql, a),
+    connect: async () => {
+      const c = await pool.connect();
+      return { release: () => c.release(), query: async (sql, a) => {
+        const t = String(sql?.text ?? sql);
+        if (!tiem && /^\s*UPDATE page SET bot_ai_bat/.test(t)) { tiem = true; throw Object.assign(new Error("lỗi CSDL tiêm (ca GL10 F2d)"), { code: "XX000" }); }
+        if (tiem && !daBat2 && /^\s*SELECT bot_ai_bat FROM page WHERE page_id=\$1 FOR UPDATE/.test(t)) {
+          daBat2 = true;
+          await setPage(pool, bc(), ID.X, { enabled: true }, ENV);   // người thứ hai bấm BẬT (tab khác) — thành
+        }
+        return c.query(sql, a);
+      } };
+    },
+  };
+  await assert.rejects(() => setPage(chen, bc(), ID.X, { enabled: true }, ENV), /lỗi CSDL tiêm/);
+  assert.ok(daBat2, "phải chen được lượt bật #2 vào trước lượt bù (bù khoá dòng trước)");
+  const x = await dong("X");
+  assert.deepEqual([x.bot_ai_bat, x.tt], [true, "cho"]);
+  assert.equal(typeof docTep()._v3?.[PID.X], "string", "lượt bù gỡ mất khoá của lượt bật #2 ⇒ page bật mà ai_sale trả lời lại");
+  assert.equal((await gat("X", false)).status, 200);
+});
+
+test("GL10 F2c · khoá mồ côi THẬT (page tắt tay, khoá còn) — vòng nạp xét đúng lúc «Thử xoá lại» đang gỡ (giao dịch 2 giữ khoá dòng) ⇒ worker CHỜ rồi đọc lại tệp ⇒ thấy đã gỡ ⇒ KHÔNG đánh xoa_hong (không nhãn đỏ cho khoá đã gỡ)", async () => {
+  ghiTep({ ...MAU(), _v3: { [PID.W]: "v3 pilot — mồ côi" } });
+  await pool.query("UPDATE page SET bot_ai_bat = false, ai_sale_trang_thai = '' WHERE id=$1", [ID.W]);   // chưa vòng nạp nào xét
+  let pLuot = null; let thayCho = false; let daKhoaDong = false;
+  const chen = {
+    query: (sql, a) => pool.query(sql, a),
+    connect: async () => {
+      const c = await pool.connect();
+      return { release: () => c.release(), query: async (sql, a) => {
+        const t = String(sql?.text ?? sql);
+        if (/^\s*SELECT bot_ai_bat, ai_sale_trang_thai FROM page WHERE team_id=\$1 AND page_id=\$2 FOR UPDATE/.test(t)) daKhoaDong = true;
+        else if (daKhoaDong && !pLuot && /pg_advisory_xact_lock/.test(t)) {
+          pLuot = luot({ boQuaXu: true });     // giao dịch 2 đã khoá dòng, CHƯA gỡ khoá trong tệp
+          thayCho = await doiCoPhienChoKhoa();
+        }
+        return c.query(sql, a);
+      } };
+    },
+  };
+  const r = await setPage(chen, bc(), ID.W, { enabled: false }, ENV);
+  await pLuot;
+  assert.ok(thayCho, "vòng nạp phải chờ giao dịch 2 của lượt tắt (khoá dòng) trước khi đọc lại tệp");
+  assert.equal(r.canhBao, undefined);
+  assert.equal(docTep()._v3, undefined, "«Thử xoá lại» gỡ khoá");
+  const w = await dong("W");
+  assert.equal(w.tt, "", `worker đọc tệp CŨ (trước khi gỡ) rồi đánh xoa_hong cho khoá đã gỡ, đo ${w.tt} · ${w.ly_do}`);
+  assert.equal(await nhatKy("ai_sale_khoa_mo_coi", "W"), 0);
 });
 
 /* ═══════════ F3 (NÊN) · ghi chen NGƯỢC chiều lúc TẮT làm khoá sống lại ═══════════ */
@@ -354,6 +430,8 @@ test("GL10 F4 · page da_nhuong (khoá còn): vượt trần · van gửi đóng
   await voiEnv({ V3_DIEN_TAP: "1", V3_PANCAKE_GUI: "0" }, async () => doDo(await aiMan("T"), /DIỄN TẬP/, "diễn tập"));
   // ④ máy chủ thiếu biến tệp
   await voiEnv({ V3_AI_SALE_TEP_GAN: undefined }, async () => doDo(await aiMan("T"), /thiếu biến V3_AI_SALE_TEP_GAN/, "thiếu biến (máy chủ)"));
+  // ④b model của team chưa cấu hình (cửa kiểm BOTMOI_THIEU_MODEL) — bộ não không chạy được
+  await voiEnv({ ANTHROPIC_API_KEY: undefined, KIMI_API_KEY: undefined }, async () => doDo(await aiMan("T"), /Model AI/, "model"));
   // ⑤ máy chạy bot đứng (tin khách chờ 10′, không tin nào xử xong)
   await hangDoi("dung");
   doDo(await aiMan("T"), /[Mm]áy chạy bot/, "máy chạy bot đứng");
@@ -377,6 +455,14 @@ test("GL10 F4 · page da_nhuong (khoá còn): vượt trần · van gửi đóng
   try { await luot({ boQuaXu: true }); } finally { process.env.V3_AI_SALE_TEP_GAN = TEP; }
   assert.equal((await dong("T")).tt, "loi_tep");
   doDo(await aiMan("T"), /thiếu biến V3_AI_SALE_TEP_GAN/, "thiếu biến (máy chạy bot)");
+  // ⑩ CHỈ worker diễn tập (env hai dịch vụ lệch — màn không thấy env worker) ⇒ worker kêu ở log MỘT lần, nêu page đang giữ khoá
+  await pool.query("UPDATE page SET ai_sale_trang_thai='da_nhuong', ai_sale_cho_den = now() - interval '1 second' WHERE id=$1", [ID.T]);
+  const canh = []; const goc = console.warn; console.warn = (...a) => { canh.push(a.join(" ")); goc(...a); };
+  process.env.V3_DIEN_TAP = "1"; an.quenDemAiSale();
+  try { await luot({ boQuaXu: true }); await luot({ boQuaXu: true }); } finally { console.warn = goc; delete process.env.V3_DIEN_TAP; }
+  const dt = canh.filter((x) => /worker đang DIỄN TẬP/.test(x));
+  assert.equal(dt.length, 1, `worker diễn tập + page giữ khoá ⇒ cảnh báo đúng MỘT lần, đo ${JSON.stringify(canh)}`);
+  assert.ok(dt[0].includes(PID.T) && /KHÔNG bot nào/.test(dt[0]), dt[0]);
   await pool.query("DELETE FROM tin_cho_xu_ly WHERE team_id=$1", [X]);
   assert.equal((await gat("T", false)).status, 200);
 });
@@ -415,6 +501,16 @@ test("GL10 F6 · V3_AI_SALE_LOG trỏ sai (0 tệp khớp) ⇒ lý do bật nói
   assert.equal((await gat("L", false)).status, 200);
   await voiEnv({ V3_AI_SALE_LOG: LOG }, async () => assert.equal((await gat("L", true)).status, 200));
   assert.match((await dong("L")).ly_do, /đang canh log ai_sale \(1 tệp\)/);
+  // tên khớp mà KHÔNG đọc được (quyền) — cũng là không canh được (bỏ qua khi chạy root: root đọc được mọi tệp)
+  const laRoot = process.getuid?.() === 0;
+  if (!laRoot) {
+    fs.chmodSync(`${LOG}.log`, 0o000);
+    try {
+      assert.equal((await gat("L", false)).status, 200);
+      await voiEnv({ V3_AI_SALE_LOG: LOG }, async () => assert.equal((await gat("L", true)).status, 200));
+      assert.match((await dong("L")).ly_do, /KHÔNG canh được log/, "tệp log không đọc được mà vẫn khai «đang canh log»");
+    } finally { fs.chmodSync(`${LOG}.log`, 0o644); }
+  }
   // worker với biến trỏ sai ⇒ cảnh báo MỘT lần qua hai vòng, lý do «đã nhường» nói rõ chỉ theo giờ
   const canh = []; const goc = console.warn; console.warn = (...a) => { canh.push(a.join(" ")); goc(...a); };
   process.env.V3_AI_SALE_LOG = SAI;
@@ -429,5 +525,12 @@ test("GL10 F6 · V3_AI_SALE_LOG trỏ sai (0 tệp khớp) ⇒ lý do bật nói
   assert.match(l2.ly_do, /không canh được log/i, `lý do «đã nhường» phải nói chỉ theo giờ: ${l2.ly_do}`);
   const ve = canh.filter((s) => s.includes("V3_AI_SALE_LOG") && /0 tệp/.test(s));
   assert.equal(ve.length, 1, `cảnh báo đúng MỘT lần, đo ${JSON.stringify(canh)}`);
+  // worker với tệp log khớp tên mà không đọc được ⇒ cũng cảnh báo «0 tệp» (không canh được)
+  if (!laRoot) {
+    const canh2 = []; console.warn = (...a) => { canh2.push(a.join(" ")); goc(...a); };
+    fs.chmodSync(`${LOG}.log`, 0o000); process.env.V3_AI_SALE_LOG = LOG; an.quenDemAiSale(); an.quenLogAiSale();
+    try { await luot({ boQuaXu: true }); } finally { console.warn = goc; delete process.env.V3_AI_SALE_LOG; fs.chmodSync(`${LOG}.log`, 0o644); }
+    assert.equal(canh2.filter((s) => s.includes("V3_AI_SALE_LOG") && /0 tệp/.test(s)).length, 1, `tệp không đọc được ⇒ cảnh báo, đo ${JSON.stringify(canh2)}`);
+  }
   assert.equal((await gat("L", false)).status, 200);
 });

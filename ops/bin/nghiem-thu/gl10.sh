@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # CỔNG NGHIỆM THU PHIẾU GL10 — bot v3 tự bảo ai_sale (pancake-tool) nhường page bằng khoá `_v3` trong `page_gan_them.json` · chỉ trả lời
-# tin khách đến SAU mốc bật. Thi hành 13 phép ④ của docs/thi-cong/phieu/PHIEU-GL10.md. rc=0 là đạt.
+# tin khách đến SAU mốc bật. Thi hành 13 phép ④ của docs/thi-cong/phieu/PHIEU-GL10.md + VÒNG 2 (sau đối kháng refute-gl10.verdict.yaml:
+# F1 diễn tập không ghi khoá · F2/F3 khoá mồ côi · F4 màn không xanh khi v3 không trả lời được page giữ khoá · F5 bỏ LIMIT 500 · F6 biến
+# log 0 tệp). rc=0 là đạt.
 # LUẬT: mỗi phép in MỘT CON SỐ hoặc MỘT BẢNG ĐẾM. Không dòng nào chỉ nói "chạy xong không lỗi".
 #
 # Tầm đo: lưới HỒI QUY (luật 32) do chính thợ viết, trên MÁY DEV — không đo prod, không đo `aicloser_v3`. Hộp cát Postgres riêng mỗi
@@ -31,6 +33,7 @@ CA_C=test/gl10-cong-bat-tat.test.mjs
 CA_W=test/gl10-worker-nhuong.test.mjs
 CA_M=test/gl10-moc-bat.test.mjs
 CA_K=test/gl10-chua-035.test.mjs
+CA_V=test/gl10-vong2.test.mjs
 
 # ⓪ luật 1 §0a: máy này vẫn CHỈ ĐỌC (ca tự mở van trong tiến trình, không đụng .env)
 ro=$(grep -E '^PANCAKE_READONLY=' .env 2>/dev/null | tail -1 | cut -d= -f2 | sed 's/[[:space:]]*#.*$//')
@@ -56,6 +59,7 @@ for tz in Europe/Berlin UTC; do
   echo "$o" | grep -E "^\s*\[gl10m\] " | sed 's/^ */   · /' | cut -c1-160
 done
 bo_ca "⑪CSDL-chưa-áp-035-(bật-409·worker-không-sập-cảnh-báo-1-lần·tắt-chạy)" "K11" "$CA_K"
+bo_ca "V2(vòng-2-đối-kháng)-F1-diễn-tập-không-ghi-khoá·F2/F2b/F2c/F2d/F3-khoá-mồ-côi·F4-màn-không-xanh·F5-bỏ-LIMIT-500·F6-log-0-tệp" "F1 F2 F2b F2c F2d F3 F4 F5 F6" "$CA_V"
 
 # tĩnh (PHỤ — hành vi đã đo ở trên; các phép này canh phạm vi + lời khai)
 NAO="src/prompts.js src/closer.js src/tools.js src/fast-lane.js src/outbound-guard.js src/context.js src/lead-score.js src/conv-owner.js src/chat/handler-v3.js"
@@ -69,10 +73,10 @@ node -e 'import("./db/migrate.js").then(({sinhSchema})=>{process.exit(require("f
 ket "Td-schema.sql-sinh-từ-migrate/-(có-035)" $? "$(grep -c '035_page_ai_sale_nhuong' db/schema.sql) lần nhắc 035"
 grep -qF 'ÁP TRÊN VPS TRƯỚC KHI CHẠY MÃ GL10' db/migrate/035_page_ai_sale_nhuong.up.sql; ket "Te-035-khai-thứ-tự-«áp-VPS-trước-mã»" $?
 n_bien=$(grep -rlE "BIEN_TEP_GAN\]|\.V3_AI_SALE_TEP_GAN" src v3/src --include='*.js' | tr '\n' ' ')
-n_nhap=$(grep -rlE "ai-sale-nhuong\.js\"" src v3/src --include='*.js' | sort | tr '\n' ' ')
+n_nhap=$(grep -rlE "ai-sale-nhuong\.js[\"']" src v3/src --include='*.js' | sort | tr '\n' ' ')
 n_goi=$(for f in $n_nhap; do grep -lE "(ghiKhoa|xoaKhoa)\(" "$f"; done | tr '\n' ' ')
 [ "$n_bien" = "src/queue/ai-sale-nhuong.js " ] && [ "$n_goi" = "src/admin-v3/operations.js " ] \
-  && [ "$n_nhap" = "src/admin-v3/operations.js src/queue/chay-worker.js src/queue/nap.js " ]
+  && [ "$n_nhap" = "src/admin-v3/operations.js src/queue/chay-worker.js src/queue/nap.js v3/src/ui/page-bot/kho-page.js " ]   # kho-page: chỉ hằng LY_DO_THIEU_BIEN (vòng 2 F4)
 ket "Tf-chỗ-DUY-NHẤT-đọc-biến/ghi-tệp-ai_sale-là-ai-sale-nhuong.js-(cổng-bật/tắt-gọi-qua-nó)" $? "đọc biến tệp: ${n_bien:-không} · nạp mô-đun: ${n_nhap:-không} · gọi ghi/xoá khoá: ${n_goi:-không}"
 n_bien=$(grep -cE '^\| `V3_AI_SALE_(TEP_GAN|LOG)`' docs/v3/ban-giao/bien-moi-truong-v3.md)
 [ "$n_bien" -eq 2 ]; ket "Tg-bảng-biến-khai-V3_AI_SALE_TEP_GAN-+-V3_AI_SALE_LOG" $? "dòng=$n_bien (đòi 2)"
@@ -84,7 +88,7 @@ T=$(mktemp -d "${TMPDIR:-/tmp}/gl10.XXXXXX"); [ "${GIU_TAM:-0}" = 1 ] && echo "G
 if [ "${BO_DAO_VA:-0}" != 1 ]; then
 mkdir -p "$T/cay/test"
 chep() { rm -rf "$T/cay/src" "$T/cay/db" "$T/cay/v3"; mkdir -p "$T/cay/v3"; cp -R src "$T/cay/src"; cp -R db "$T/cay/db"; cp -R v3/src "$T/cay/v3/src"; cp -R v3/testkit "$T/cay/v3/testkit"; }
-chep; cp test/_an-toan.mjs "$CA_T" "$CA_C" "$CA_W" "$CA_M" "$CA_K" "$T/cay/test/"
+chep; cp test/_an-toan.mjs "$CA_T" "$CA_C" "$CA_W" "$CA_M" "$CA_K" "$CA_V" "$T/cay/test/"
 cp package.json "$T/cay/"; ln -s "$(node -p 'require.resolve("pg/package.json").replace(/\/pg\/package\.json$/, "")')" "$T/cay/node_modules"; [ -f .env ] && ln -s "$GOC/.env" "$T/cay/.env"
 dot() { (cd "$T/cay" && node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimental-test-module-mocks --test --test-force-exit "$@" 2>&1); }
 dot_bien() { # dot_bien <tên đột biến> — mỗi chuỗi gốc phải khớp ĐÚNG MỘT lần
@@ -92,6 +96,7 @@ dot_bien() { # dot_bien <tên đột biến> — mỗi chuỗi gốc phải kh�
 import os, sys
 T, ten = sys.argv[1], sys.argv[2]
 A, O, W, N = "src/queue/ai-sale-nhuong.js", "src/admin-v3/operations.js", "src/queue/chay-worker.js", "src/queue/nap.js"
+KP = "v3/src/ui/page-bot/kho-page.js"
 DONG = '      const dong = await dongTinCho(c, bc.teamId, p.page_id, bat ? "bo_qua:truoc_moc_bat" : "bo_qua:tat_bot");'
 BANG = {
   "ghi-thang": [(A, '      fd = fsx.openSync(tam, "wx", 0o600);', '      fd = fsx.openSync(tep, "w");')],
@@ -117,7 +122,7 @@ BANG = {
                               "     WHERE id = $1 AND $2::text IS NOT NULL AND bot_ai_bat = true AND ($7::boolean = false OR ai_sale_cho_den <= now())")],
   "vong-xu-cung-chuyen": [(W, "{ chuyen: !deps.boQuaNap, ", "{ chuyen: true, ")],
   "bo-vi": [(A, "    const ganTay = tepOk ? khoaGanTay(kqTep.d, pid) : [];", "    const ganTay = [];")],
-  "xoa-hong-khong-xet": [(O, '  const coBangChung = (t.co035 && t.trangThai !== "") || thayKhoa;', "  const coBangChung = true;")],
+  "xoa-hong-khong-xet": [(O, '  const coBangChung = (t.co035 && t.trangThai !== "" && t.trangThai !== "dien_tap") || thayKhoa;', "  const coBangChung = true;")],
   "cua-so-dong-30": [(A, "Number(r.tuoi_bat_ms) >= MO_CUA_SO_LOG_MS).map(", "Number(r.tuoi_bat_ms) >= MO_CUA_SO_LOG_MS && Number(r.tuoi_bat_ms) <= TRAN_CHUA_NHUONG_MS).map(")],
   "offset-0-restart": [(A, '    if (!muc) { muc = { off: daDatLai ? size : 0, duoi: "", sauBoQua: false }; _log.tep.set(khoa, muc); }',
                          '    if (!muc) { muc = { off: 0, duoi: "", sauBoQua: false }; _log.tep.set(khoa, muc); }')],
@@ -128,13 +133,48 @@ BANG = {
   "log-khop-tho": [(A, "      if (boQua) continue;\n      for (const pid of pids) if (!thay.has(pid) && coPid(dong, pid)) thay.add(pid);",
                     "      void boQua;\n      for (const pid of pids) if (dong.includes(pid)) thay.add(pid);")],
   "log-theo-ten": [(A, "    const khoa = `${st.dev}:${st.ino}`;", "    const khoa = tep;")],
-  "tat-khong-danh-dau": [(O, "ai_sale_trang_thai=CASE WHEN ai_sale_trang_thai <> '' THEN 'xoa_hong' ELSE '' END,", "ai_sale_trang_thai='',")],
+  "tat-khong-danh-dau": [(O, "ai_sale_trang_thai=CASE WHEN ai_sale_trang_thai NOT IN ('', 'dien_tap') THEN 'xoa_hong' ELSE '' END,", "ai_sale_trang_thai='',")],
   "tat-go-khoa-khi-bat-lai": [(O, '      if (dong?.bot_ai_bat === true) { batLai = dong.ai_sale_trang_thai ?? ""; return; }', "      void dong;")],
   "ghi-khong-kiem-gan-tay": [(A, "    if (ganTay.length) throw new LoiTepAiSale(`page đang được gắn tay", "    if (false) throw new LoiTepAiSale(`page đang được gắn tay")],
   "bo-chan-tep-hong": [(O, "    if (!t.ok) {\n      aiSaleChiTiet.loiTep = t.loi;", "    if (false) {\n      aiSaleChiTiet.loiTep = t.loi;")],
   "so-thuc-cho-qua": [(A, "      if (j < s.length && /[.eE]/.test(s[j])) return true;   // số thực (phần lẻ / số mũ)\n", "")],
   "cho-720": [(A, "export const CHO_AI_SALE_MS = 900_000;", "export const CHO_AI_SALE_MS = 720_000;")],
   "giu-v3-rong": [(A, "    if (!Object.keys(d[KHOA_V3]).length) delete d[KHOA_V3];\n", "")],
+  # — vòng 2 (sau đối kháng; mỗi chỗ vừa vá một đột biến — bẫy 26) —
+  "dien-tap-ghi-khoa": [(O, "  if (dangDienTap(env)) {\n    if (t0.ok && coKhoaV3(t0.d, p.page_id)) {", "  if (false) {\n    if (t0.ok && coKhoaV3(t0.d, p.page_id)) {")],
+  "dien-tap-worker-khong-chay": [(A, '    const diDienTap = tt === "dien_tap" && dangDienTap(env);', "    const diDienTap = false;")],
+  "dien-tap-worker-mo": [(A, '    const diDienTap = tt === "dien_tap" && dangDienTap(env);', '    const diDienTap = tt === "dien_tap";')],
+  "dien-tap-tat-bao-khoa": [(O, '(t.co035 && t.trangThai !== "" && t.trangThai !== "dien_tap")', '(t.co035 && t.trangThai !== "")')],
+  "dien-tap-man-khong-do": [(KP, "    else if (!ma.has('BOTMOI_DIEN_TAP')) {", "    else if (false) {")],
+  "dien-tap-giu-khoa-cho-qua": [(O, "    if (t0.ok && coKhoaV3(t0.d, p.page_id)) {\n      throw fault(`Máy chủ đang DIỄN TẬP", "    if (false) {\n      throw fault(`Máy chủ đang DIỄN TẬP")],
+  "bo-canh-mo-coi": [(A, "      dem.moCoi = await canhKhoaMoCoi(pool, tep, fsx);", "      dem.moCoi = 0;")],
+  "mo-coi-tu-xoa": [(A, "      if (!u.rowCount) continue;\n      n += 1;\n", "      if (!u.rowCount) continue;\n      n += 1;\n      xoaKhoa(tep, pid);\n")],
+  "mo-coi-doc-cu": [(A, "    const lai = docTepGan(tep, fsx);   // đọc lại SAU khoá dòng", "    const lai = t;   // đọc lại SAU khoá dòng")],
+  "mo-coi-khong-khoa-dong": [(A, "ORDER BY id FOR UPDATE`;", "ORDER BY id`;")],
+  "mo-coi-danh-page-bat": [(A, "WHERE page_id = ANY($1::text[]) AND bot_ai_bat = false AND ai_sale_trang_thai <> 'xoa_hong'`;", "WHERE page_id = ANY($1::text[]) AND ai_sale_trang_thai <> 'xoa_hong'`;"),
+                           (A, "   WHERE id = ANY($1) AND bot_ai_bat = false AND ai_sale_trang_thai <> 'xoa_hong' ORDER BY id FOR UPDATE`;", "   WHERE id = ANY($1) AND ai_sale_trang_thai <> 'xoa_hong' ORDER BY id FOR UPDATE`;"),
+                           (A, "WHERE id = $1 AND bot_ai_bat = false AND ai_sale_trang_thai <> 'xoa_hong' RETURNING id", "WHERE id = $1 AND ai_sale_trang_thai <> 'xoa_hong' RETURNING id")],
+  "bu-khong-dat-lai": [(O, "      await c.query(\n        \"UPDATE page SET ai_sale_trang_thai='', ai_sale_ly_do='' WHERE page_id=$1 AND bot_ai_bat=false AND ai_sale_trang_thai='xoa_hong'\", [pid]);\n", "")],
+  # — sau /code-review vòng 2 —
+  "bu-khong-khoa-dong": [(O, '      const dong = (await c.query("SELECT bot_ai_bat FROM page WHERE page_id=$1 FOR UPDATE", [pid])).rows[0];\n      if (dong?.bot_ai_bat === true) return;\n', "")],
+  "bu-go-khoa-luot-bat-khac": [(O, "      if (dong?.bot_ai_bat === true) return;\n", "")],
+  "f4-bo-model": [(KP, "  if (ma.has('BOTMOI_THIEU_MODEL') || ma.has('BOTMOI_MODEL_HONG')) {", "  if (false) {")],
+  "f4-khong-canh-dien-tap-worker": [(A, "    if (giu.length && khoa !== _canhBaoDienTap) {", "    if (false) {")],
+  "f4-canh-dien-tap-moi-vong": [(A, "    if (giu.length && khoa !== _canhBaoDienTap) {", "    if (giu.length) {")],
+  "log-dem-ten-khong-dem-doc": [(A, 'dsTepLog(String(tienTo ?? "").trim(), fsx).filter((t) => docDuocTep(t, fsx)).length;', 'dsTepLog(String(tienTo ?? "").trim(), fsx).length;')],
+  "log-worker-khong-xet-doc": [(A, '    if (!docDuocTep(tep, fsx)) { muc.off = size; muc.duoi = ""; muc.sauBoQua = false; continue; }\n', "")],
+  "f4-bo-vuot-tran": [(KP, "  if (may.vuot) return {", "  if (false) return {")],
+  "f4-bo-dien-tap": [(KP, "  if (ma.has('BOTMOI_DIEN_TAP')) return {", "  if (false) return {")],
+  "f4-bo-van-dong": [(KP, "  if (ma.has('BOTMOI_CHUA_MO_GUI')) return {", "  if (false) return {")],
+  "f4-bo-thieu-bien": [(KP, "  if (ma.has('BOTMOI_CHUA_NOI_AI_SALE')) {", "  if (false) {")],
+  "f4-bo-nhip-do": [(KP, "  if (may.nhip?.muc === MUC_NHIP.DO) return", "  if (false) return")],
+  "f4-xam-van-xanh": [(KP, "      xanh = !!ck && (may.nhip?.muc === MUC_NHIP.XANH || may.nhip?.muc === MUC_NHIP.VANG);", "      xanh = true;")],
+  "f4-loi-tep-thieu-bien": [(KP, "  if (tt === 'loi_tep' && lyDo.includes(LY_DO_THIEU_BIEN)) {", "  if (false) {")],
+  "limit-500": [(W, "    \"SELECT page_id FROM page WHERE page_id <> '' ORDER BY page_id\",\n", "    \"SELECT page_id FROM page WHERE page_id <> '' ORDER BY page_id LIMIT 500\",\n")],
+  "log-0-tep-van-canh": [(O, "          : soTepLog ? `đang canh log ai_sale (${soTepLog} tệp)`", "          : true ? `đang canh log ai_sale (${soTepLog} tệp)`")],
+  "log-khong-canh-bao": [(A, "    if (dem.logMu && !_canhBaoLogMu) {", "    if (false) {")],
+  "log-canh-bao-moi-vong": [(A, "    if (dem.logMu && !_canhBaoLogMu) {", "    if (dem.logMu) {")],
+  "log-da-nhuong-khong-noi": [(A, "      + (logMu ? ` · KHÔNG canh được log ai_sale", "      + (false ? ` · KHÔNG canh được log ai_sale")],
 }
 for tep, a, b in BANG[ten]:
     p = os.path.join(T, tep); s = open(p).read()
@@ -190,8 +230,41 @@ dao "⑫y6-TẮT-giao-dịch-2-gỡ-khoá-dù-page-vừa-được-bật-lại-�
 dao "⑫y7-ghiKhoa-không-kiểm-lại-gắn-tay-⇒-G1b" "G1b" "GL10 G1b ·" "ghi-khong-kiem-gan-tay" "$(t_ "$CA_T")"
 dao "⑫y8-pageStatus-im-khi-tệp-hỏng/vắng-⇒-C3a" "C3a" "GL10 C3a ·" "bo-chan-tep-hong" "$(t_ "$CA_C")"
 dao "⑫y9-số-thực-cho-ghi-⇒-G2c" "G2c" "GL10 G2c ·" "so-thuc-cho-qua" "$(t_ "$CA_T")"
-chep; o=$(TZ=Europe/Berlin dot "$(t_ "$CA_T")" "$(t_ "$CA_C")" "$(t_ "$CA_W")" "$(t_ "$CA_M")" "$(t_ "$CA_K")"); f=$(so "$o" fail); p=$(so "$o" pass)
-[ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge 39 ]; ket "⑫0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ)" $? "pass=${p:-?} fail=${f:-?}"
+# — VÒNG 2 sau đối kháng (refute-gl10.verdict.yaml) — mỗi chỗ vừa vá một đột biến đo bản SAU vá (bẫy 26) —
+V2="$(t_ "$CA_V")"
+dao "⑫z1-F1-diễn-tập-VẪN-ghi-khoá-⇒-F1" "F1" "GL10 F1 ·" "dien-tap-ghi-khoa" "$V2"
+dao "⑫z1b-F1-worker-không-chạy-thử-page-diễn-tập-(bậc-②-chết)-⇒-F1" "F1" "GL10 F1 ·" "dien-tap-worker-khong-chay" "$V2"
+dao "⑫z1c-F1-bỏ-diễn-tập-worker-VẪN-nạp-page-chưa-khoá-⇒-F1" "F1" "GL10 F1 ·" "dien-tap-worker-mo" "$V2"
+dao "⑫z1d-F1-tắt-page-diễn-tập-báo-«khoá-CHƯA-xoá»-⇒-F1" "F1" "GL10 F1 ·" "dien-tap-tat-bao-khoa" "$V2"
+dao "⑫z1e-F1-màn-không-đỏ-khi-bỏ-diễn-tập-⇒-F1" "F1" "GL10 F1 ·" "dien-tap-man-khong-do" "$V2"
+dao "⑫z1f-F1-diễn-tập-cho-bật-page-còn-giữ-khoá-⇒-F1" "F1" "GL10 F1 ·" "dien-tap-giu-khoa-cho-qua" "$V2"
+dao "⑫z2-F2/F3-bỏ-canh-khoá-mồ-côi-⇒-F2·F3" "F2 F3" "GL10 (F2|F3) ·" "bo-canh-mo-coi" "$V2"
+dao "⑫z2b-F2-canh-mồ-côi-TỰ-XOÁ-khoá-tệp-người-khác-⇒-F2" "F2" "GL10 F2 ·" "mo-coi-tu-xoa" "$V2"
+dao "⑫z2c-F2c-canh-mồ-côi-dùng-tệp-đọc-TRƯỚC-khoá-dòng-⇒-F2c" "F2c" "GL10 F2c ·" "mo-coi-doc-cu" "$V2"
+dao "⑫z2f-F2c-canh-mồ-côi-không-khoá-dòng-(đọc-tệp-khi-lượt-tắt-đang-gỡ)-⇒-F2c" "F2c" "GL10 F2c ·" "mo-coi-khong-khoa-dong" "$V2"
+dao "⑫z2d-F2-canh-mồ-côi-đánh-cả-page-ĐANG-bật-⇒-F2" "F2" "GL10 F2 ·" "mo-coi-danh-page-bat" "$V2"
+dao "⑫z2e-F2b-BÙ-gỡ-khoá-không-đưa-xoa_hong-về-''-⇒-F2b" "F2b" "GL10 F2b ·" "bu-khong-dat-lai" "$V2"
+dao "⑫z2g-F2b·F2d-BÙ-không-khoá-dòng-trước-(luồn-qua-vòng-nạp)-⇒-F2b·F2d" "F2b F2d" "GL10 (F2b|F2d) ·" "bu-khong-khoa-dong" "$V2"
+dao "⑫z2h-F2d-BÙ-gỡ-khoá-dù-lượt-bật-khác-vừa-thành-⇒-F2d" "F2d" "GL10 F2d ·" "bu-go-khoa-luot-bat-khac" "$V2"
+dao "⑫z4a-F4-vượt-trần-màn-vẫn-xanh-⇒-F4" "F4" "GL10 F4 ·" "f4-bo-vuot-tran" "$V2"
+dao "⑫z4b-F4-diễn-tập-màn-vẫn-xanh-⇒-F4" "F4" "GL10 F4 ·" "f4-bo-dien-tap" "$V2"
+dao "⑫z4c-F4-van-gửi-đóng-màn-vẫn-xanh-⇒-F4" "F4" "GL10 F4 ·" "f4-bo-van-dong" "$V2"
+dao "⑫z4d-F4-máy-chủ-thiếu-biến-màn-vẫn-xanh-⇒-F4" "F4" "GL10 F4 ·" "f4-bo-thieu-bien" "$V2"
+dao "⑫z4e-F4-máy-chạy-bot-đứng-màn-vẫn-xanh-⇒-F4" "F4" "GL10 F4 ·" "f4-bo-nhip-do" "$V2"
+dao "⑫z4f-F4-hàng-đợi-im-(XÁM)-vẫn-xanh-⇒-F4" "F4" "GL10 F4 ·" "f4-xam-van-xanh" "$V2"
+dao "⑫z4g-F4-máy-chạy-bot-thiếu-biến-nói-«tệp-hỏng»-⇒-F4" "F4" "GL10 F4 ·" "f4-loi-tep-thieu-bien" "$V2"
+dao "⑫z4h-F4-model-thiếu/hỏng-màn-vẫn-xanh-⇒-F4" "F4" "GL10 F4 ·" "f4-bo-model" "$V2"
+dao "⑫z4i-F4-worker-diễn-tập-+-page-giữ-khoá-không-kêu-⇒-F4" "F4" "GL10 F4 ·" "f4-khong-canh-dien-tap-worker" "$V2"
+dao "⑫z4j-F4-worker-diễn-tập-kêu-MỖI-vòng-⇒-F4" "F4" "GL10 F4 ·" "f4-canh-dien-tap-moi-vong" "$V2"
+dao "⑫z5-F5-LIMIT-500-trở-lại-⇒-F5" "F5" "GL10 F5 ·" "limit-500" "$V2"
+dao "⑫z6-F6-0-tệp-log-vẫn-khai-«đang-canh-log»-⇒-F6" "F6" "GL10 F6 ·" "log-0-tep-van-canh" "$V2"
+dao "⑫z6b-F6-worker-không-cảnh-báo-log-0-tệp-⇒-F6" "F6" "GL10 F6 ·" "log-khong-canh-bao" "$V2"
+dao "⑫z6c-F6-cảnh-báo-MỖI-vòng-(không-một-lần)-⇒-F6" "F6" "GL10 F6 ·" "log-canh-bao-moi-vong" "$V2"
+dao "⑫z6d-F6-lý-do-«đã-nhường»-không-nói-chỉ-theo-giờ-⇒-F6" "F6" "GL10 F6 ·" "log-da-nhuong-khong-noi" "$V2"
+dao "⑫z6e-F6-lý-do-bật-đếm-TÊN-tệp-(không-đếm-tệp-đọc-được)-⇒-F6" "F6" "GL10 F6 ·" "log-dem-ten-khong-dem-doc" "$V2"
+dao "⑫z6f-F6-worker-không-xét-quyền-đọc-tệp-log-⇒-F6" "F6" "GL10 F6 ·" "log-worker-khong-xet-doc" "$V2"
+chep; o=$(TZ=Europe/Berlin dot "$(t_ "$CA_T")" "$(t_ "$CA_C")" "$(t_ "$CA_W")" "$(t_ "$CA_M")" "$(t_ "$CA_K")" "$V2"); f=$(so "$o" fail); p=$(so "$o" pass)
+[ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge 48 ]; ket "⑫0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ)" $? "pass=${p:-?} fail=${f:-?}"
 else
   echo "⏸ ⑫đảo-vá HOÃN (BO_DAO_VA=1)"
 fi

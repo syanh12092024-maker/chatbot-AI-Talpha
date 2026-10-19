@@ -62,6 +62,7 @@ let TRANG = Math.max(0, Number(qs.get('trang')) || 0);
 let LOC = qs.get('loc') || 'tat_ca';
 let TIM = qs.get('tim') || '';
 let SUA = false, CUA = { mo: false, thieu: [] };
+let DIEN_TAP = false;   // GL10 vòng 2 (F1): máy chủ đang diễn tập — bật = chạy thử, không gửi, không ghi khoá ai_sale
 
 function ghiUrl() {
   const u = new URL(location.href);
@@ -330,12 +331,13 @@ function veBang(d) {
 // «Chủ page: bot cũ / bot mới» và nút «Giao sang bot mới» đã gỡ 02/10 — CR-02-10 · MB2: một bản, một công tắc.
 
 // ── GL10 · bot ai_sale (pancake-tool) đã nhường page chưa — nhãn do máy chủ dựng (`kho-page.js#aiSaleCuaPage`) ──────
-// Đỏ = bot v3 IM (mất khoá / tệp hỏng / gắn tay / ai_sale chưa nhường) hoặc page đã tắt mà khoá ai_sale CHƯA xoá (nút «Thử xoá lại»
-// = gạt tắt lần nữa — lũy đẳng).
+// Đỏ = bot v3 IM (mất khoá / tệp hỏng / gắn tay / ai_sale chưa nhường / vượt trần · van đóng · diễn tập · thiếu biến · máy chạy bot đứng
+// khi page giữ khoá) hoặc page đã tắt mà khoá ai_sale CHƯA xoá (kể cả khoá mồ côi) — nút «Thử xoá lại» = gạt tắt lần nữa (lũy đẳng).
+// Xanh CHỈ khi máy chủ đo được bot v3 đang trả lời (`a.xanh`) — GL10 vòng 2.
 function veAiSale(p) {
   const a = p.aiSale;
   if (!a) return '';
-  const muc = a.do ? 'blocked' : a.trangThai === 'da_nhuong' ? 'ready' : 'needs_attention';
+  const muc = a.do ? 'blocked' : a.xanh ? 'ready' : 'needs_attention';
   const nut = a.trangThai === 'xoa_hong' && SUA
     ? ` <button type="button" class="btn" data-size="sm" data-xoa-lai="${esc(p.id)}">Thử xoá lại</button>` : '';
   return `<div title="${esc(a.lyDo || '')}">${statusBadge(muc, { label: a.nhan })}${nut}</div>`;
@@ -356,9 +358,11 @@ async function gatBot(el) {
   const ten = el.closest('tr').querySelector('.ten').textContent.trim();
   const dongY = await confirmDialog({
     title: `${bat ? 'Bật' : 'Tắt'} bot cho «${ten}»?`,
-    body: bat ? 'Bot sẽ bắt đầu tự trả lời khách thật của page này — sau khi ai_sale (pancake-tool) nhường page, khoảng 15 phút. '
-              + 'Tin khách gửi TRƯỚC lúc bật không được bot trả lời (sale xử).'
-              : 'Bot sẽ ngừng trả lời. Khách của page này phải có người trực.',
+    body: !bat ? 'Bot sẽ ngừng trả lời. Khách của page này phải có người trực.'
+      : DIEN_TAP ? 'Máy chủ đang DIỄN TẬP: bot chạy thử trên tin thật của page này nhưng KHÔNG gửi gì cho khách, và KHÔNG ghi khoá ai_sale — '
+                   + 'ai_sale (pancake-tool) vẫn trả lời khách như trước. Bỏ diễn tập thì tắt rồi bật lại page để ghi khoá.'
+      : 'Bot sẽ bắt đầu tự trả lời khách thật của page này — sau khi ai_sale (pancake-tool) nhường page, khoảng 15 phút. '
+        + 'Tin khách gửi TRƯỚC lúc bật không được bot trả lời (sale xử).',
     confirmLabel: bat ? 'Bật bot' : 'Tắt bot',
     danger: !bat,
   });
@@ -369,7 +373,9 @@ async function gatBot(el) {
       { method: 'POST', body: JSON.stringify({ bat }) });
     // GL10: bật ⇒ bot v3 CHỜ ai_sale nhường (~15′) rồi mới trả lời; tắt mà khoá ai_sale chưa xoá ⇒ nói việc người phải làm.
     if (kq.canhBao) baoLoi(`Đã tắt bot cho «${ten}» — nhưng khoá ai_sale CHƯA xoá`, kq.canhBao);
-    else toast(kq.botAiBat && kq.aiSale?.trangThai === 'cho'
+    else toast(kq.botAiBat && kq.aiSale?.trangThai === 'dien_tap'
+      ? `Đã bật DIỄN TẬP cho «${ten}» — KHÔNG ghi khoá ai_sale: ai_sale vẫn trả lời khách; bot v3 chạy thử, không gửi.`
+      : kq.botAiBat && kq.aiSale?.trangThai === 'cho'
       ? `Đã bật bot cho «${ten}» — chờ ai_sale nhường page ~15 phút rồi bot v3 mới trả lời.`
       : `Đã ${kq.botAiBat ? 'bật' : 'tắt'} bot cho «${ten}».`);
     await nap();
@@ -510,7 +516,7 @@ async function nap() {
   try {
     const d = await goi(`/api/page-bot/danh-sach?loc=${encodeURIComponent(LOC)}&tim=${encodeURIComponent(TIM)}&trang=${TRANG}`);
     if (!d) return;
-    SUA = d.suaDuoc; CUA = d.cuaBot; TRANG = d.trang;
+    SUA = d.suaDuoc; CUA = d.cuaBot; TRANG = d.trang; DIEN_TAP = d.dienTap === true;
     SPG_CHON = d.sanPhamGocChonDuoc || [];
     SPG_AP = d.sanPhamGocApDuoc !== false;
     ghiUrl();

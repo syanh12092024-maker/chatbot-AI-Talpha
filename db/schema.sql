@@ -1872,7 +1872,8 @@ COMMENT ON COLUMN page.ngat_ly_do IS
 -- danh sách page mỗi 600 s) — worker xét trạng thái trên dòng `page` (`src/queue/ai-sale-nhuong.js`, chỗ DUY NHẤT đọc/ghi tệp đó).
 --   · `bot_bat_luc`        — mốc bật lần gần nhất (đồng hồ CSDL). Bộ nạp bỏ hội thoại/tin khách đến TRƯỚC mốc này.
 --   · `ai_sale_cho_den`    — chưa tới giờ này thì page KHÔNG vào danh sách nạp/rút của worker.
---   · `ai_sale_trang_thai` — '' (chưa từng ghi khoá / đã tắt sạch) · cho · da_nhuong · chua_nhuong · mat_khoa · loi_tep · gan_tay · xoa_hong.
+--   · `ai_sale_trang_thai` — '' (chưa từng ghi khoá / đã tắt sạch) · cho · da_nhuong · chua_nhuong · mat_khoa · loi_tep · gan_tay · xoa_hong
+--                          · dien_tap (bật lúc máy chủ DIỄN TẬP — KHÔNG ghi khoá; vòng 2 sau đối kháng F1).
 --   · `ai_sale_ly_do`      — câu đọc được của lần chuyển trạng thái gần nhất (không dòng log ai_sale, không tên khách).
 -- `nap_bo_qua` nhận thêm mã `truoc_moc_bat` (tin khách đến trước lúc bật bot — bot không trả lời tin cũ).
 --
@@ -1886,10 +1887,10 @@ ALTER TABLE page ADD COLUMN bot_bat_luc        timestamptz NULL;
 ALTER TABLE page ADD COLUMN ai_sale_cho_den    timestamptz NULL;
 ALTER TABLE page ADD COLUMN ai_sale_trang_thai text NOT NULL DEFAULT ''
   CONSTRAINT page_ai_sale_trang_thai_check
-  CHECK (ai_sale_trang_thai IN ('', 'cho', 'da_nhuong', 'chua_nhuong', 'mat_khoa', 'loi_tep', 'gan_tay', 'xoa_hong'));
+  CHECK (ai_sale_trang_thai IN ('', 'cho', 'da_nhuong', 'chua_nhuong', 'mat_khoa', 'loi_tep', 'gan_tay', 'xoa_hong', 'dien_tap'));
 ALTER TABLE page ADD COLUMN ai_sale_ly_do      text NOT NULL DEFAULT '';
 COMMENT ON COLUMN page.ai_sale_trang_thai IS
-  'GL10: trạng thái nhường page của bot ai_sale (pancake-tool). Chỉ da_nhuong mới được worker nạp/rút. Ghi ở setPage (bật/tắt) và worker (vòng nạp, UPDATE có điều kiện).';
+  'GL10: trạng thái nhường page của bot ai_sale (pancake-tool). Chỉ da_nhuong mới được worker nạp/rút (dien_tap: chỉ khi worker còn diễn tập — không gửi). Ghi ở setPage (bật/tắt) và worker (vòng nạp, UPDATE có điều kiện).';
 COMMENT ON COLUMN page.bot_bat_luc IS
   'GL10: mốc bật bot lần gần nhất (now() của CSDL). Bộ nạp chỉ nạp tin khách CHỨNG MINH được là đến sau mốc này (giờ Pancake là UTC không múi).';
 

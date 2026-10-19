@@ -18,6 +18,11 @@
 
 import { batBuocBoiCanh } from '../../auth/boi-canh.js';
 import { gioVN } from '../../../../src/queue/ngat-page.js';
+// GL10 vòng 2 (đối kháng F4): nhãn ai_sale đọc bối cảnh máy chạy bot — trần GL2 (luật + câu số đo CHUNG với worker/cổng/đèn), diễn tập
+// (cùng luật `lan-gui.js` — không import đường gửi), câu lỗi «máy chạy bot thiếu biến tệp» của worker, nhịp máy chạy bot (luật dải trạng thái).
+import { tranPageBat, vuotTran, cauSoTran } from '../../../../src/queue/page-routing.js';
+import { LY_DO_THIEU_BIEN, dangDienTap } from '../../../../src/queue/ai-sale-nhuong.js';
+import { docNhipMayBot, MUC as MUC_NHIP } from '../chung/nhip-may-bot.js';
 
 export const BANG = 'page';
 
@@ -294,10 +299,12 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
   const coBangGoc = await coBangSanPhamGoc(db);
   const dsGoc = coBangGoc ? await db.chon('san_pham_goc', {}, { sapXep: 'ten' }) : [];
   const tenGoc = new Map(dsGoc.map((g) => [g.ma_goc, g.ten || g.ma_goc]));
+  // GL10 vòng 2 (F4): bối cảnh máy chạy bot đọc MỘT lần cho cả trang (không mỗi dòng một lượt).
+  const may = await docMayAiSale(bc, doc, tatCa);
 
   return {
     page: cat.map((p) => ({
-      ...gonPage(p),
+      ...gonPage(p, may),
       runtime: p.runtime || 'legacy',
       cuaKiem: doc ? gonCuaKiem(doc.get(String(p.page_id))) : null,
       // 015 — page khai MỘT sản phẩm gốc. Kèm tên để màn không phải tra lần nữa.
@@ -311,6 +318,8 @@ export async function danhSachPage(boiCanh, { loc = LOC.TAT_CA, tim = '', trang 
     // Phân biệt «chưa áp migration» với «chưa ai soát gộp» — hai câu dẫn người đọc đi hai
     // hướng khác nhau, và chỉ một trong hai là việc của họ.
     sanPhamGocApDuoc: coBangGoc,
+    // GL10 vòng 2 (F1): máy chủ đang DIỄN TẬP ⇒ hộp xác nhận bật KHÔNG hứa «bot sẽ trả lời khách» (bot chạy thử, không gửi, không ghi khoá ai_sale).
+    dienTap: dangDienTap(),
     cuaKiemDocDuoc: !!doc,
     cuaKiemViSao: viSao,
     loiBotViSao,
@@ -358,8 +367,40 @@ async function coBangSanPhamGoc(db) {
   return _coBangGoc;
 }
 
-/** Chỉ trả ra thứ màn hình dùng. `page.id` để gọi API, `page_id` là id Facebook để người đọc. */
-export function gonPage(p) {
+/**
+ * GL10 vòng 2 (đối kháng F4) — BỐI CẢNH MÁY CHẠY BOT cho nhãn ai_sale. Page `cho`/`da_nhuong` GIỮ khoá `_v3` (ai_sale nhường/sắp nhường) —
+ * mà bot v3 không trả lời được thì page KHÔNG bot nào, và màn không được nói xanh «bot v3 đang trả lời». Đọc MỘT lần cho cả bảng:
+ *   · trần GL2 TOÀN HỆ — đếm như đèn Sức khoẻ (`kho-suc-khoe.js#docTranToanHe`): page bật của cửa kiểm (toàn hệ) ∨ của team, lấy max;
+ *   · cửa kiểm của chính page (`noiVanHanhV3` → `pageStatus`, cùng env với cột «Còn thiếu gì»): van gửi đóng · diễn tập · thiếu biến tệp;
+ *   · nhịp máy chạy bot (`docNhipMayBot` — cùng luật dải trạng thái: không đo được thì XÁM, không XANH).
+ */
+async function docMayAiSale(bc, doc, tatCa) {
+  const toanHe = doc ? [...doc.values()].filter((x) => x?.aiEnabled === true).length : 0;
+  const cuaTeam = tatCa.filter((p) => p.bot_ai_bat === true && String(p.page_id ?? '') !== '').length;
+  const soBat = Math.max(toanHe, cuaTeam);
+  return { cuaKiem: doc, vuot: vuotTran(soBat, tranPageBat()), cauTran: cauSoTran(soBat), nhip: await docNhipMayBot({ boiCanh: bc }) };
+}
+
+/** Vì sao bot v3 KHÔNG trả lời được page này lúc này (page giữ khoá ⇒ không bot nào). `null` = không thấy lý do nào. */
+function viSaoV3Im(ma, may) {
+  const TAT = 'Tắt page để ai_sale trả lời lại (sau lượt tra lại kế của ai_sale, ~10′)';
+  if (may.vuot) return { cau: `Worker DỪNG vì vượt trần page bật bot (${may.cauTran})`, lam: `${TAT}, hoặc tắt bớt page khác / nhờ quản trị nâng trần.` };
+  if (ma.has('BOTMOI_DIEN_TAP')) return { cau: 'Máy chủ đang DIỄN TẬP (V3_DIEN_TAP=1) — bot v3 không gửi tin nào', lam: `${TAT}, hoặc bỏ diễn tập.` };
+  if (ma.has('BOTMOI_CHUA_MO_GUI')) return { cau: 'Van gửi đang ĐÓNG (phanh tay V3_PANCAKE_GUI / PANCAKE_READONLY) — bot v3 không gửi tin nào', lam: `${TAT}, hoặc mở lại van gửi.` };
+  if (ma.has('BOTMOI_CHUA_NOI_AI_SALE')) {
+    return { cau: 'Máy chủ thiếu biến V3_AI_SALE_TEP_GAN — bot v3 im (không kiểm được khoá ai_sale)',
+      lam: 'Khai lại biến rồi khởi động lại hai dịch vụ — thiếu biến thì tắt page KHÔNG gỡ được khoá (nhờ chủ pancake-tool gỡ tay khoá _v3 của page).' };
+  }
+  // /code-review vòng 2: model của team thiếu/hỏng (cửa kiểm) ⇒ mọi lượt bộ não lỗi ⇒ bot v3 không trả lời dù máy chạy bot có nhịp.
+  if (ma.has('BOTMOI_THIEU_MODEL') || ma.has('BOTMOI_MODEL_HONG')) {
+    return { cau: 'Model AI của team chưa cấu hình hoặc hỏng — bot v3 không soạn được câu trả lời', lam: `Sửa ở màn Model AI, hoặc ${TAT.toLowerCase()}.` };
+  }
+  if (may.nhip?.muc === MUC_NHIP.DO) return { cau: `Máy chạy bot không chạy (${may.nhip.nhan})`, lam: `Khởi động lại máy chạy bot, hoặc ${TAT.toLowerCase()}.` };
+  return null;
+}
+
+/** Chỉ trả ra thứ màn hình dùng. `page.id` để gọi API, `page_id` là id Facebook để người đọc. `may` = bối cảnh máy chạy bot (GL10 vòng 2). */
+export function gonPage(p, may = null) {
   return {
     id: String(p.id),
     pageId: String(p.page_id || ''),
@@ -387,17 +428,21 @@ export function gonPage(p) {
     // GL10 (035) — bot ai_sale (pancake-tool) đã nhường page chưa. Có khoá khi trạng thái ≠ '', HOẶC page đang bật mà trạng thái '' (bật
     // trước cổng GL10 / bật bằng SQL tay ⇒ worker KHÔNG trả lời — phải nói ra). CSDL chưa áp 035 ⇒ dòng không có cột ⇒ không khoá.
     // `do` ⇒ màn tô ĐỎ (bot v3 im / khoá chưa xoá).
-    ...(String(p.ai_sale_trang_thai ?? '') !== '' || (p.ai_sale_trang_thai === '' && p.bot_ai_bat === true) ? { aiSale: aiSaleCuaPage(p) } : {}),
+    ...(String(p.ai_sale_trang_thai ?? '') !== '' || (p.ai_sale_trang_thai === '' && p.bot_ai_bat === true) ? { aiSale: aiSaleCuaPage(p, Date.now(), may) } : {}),
   };
 }
 
-/** Nhãn trạng thái nhường của ai_sale (khuôn `ngatKenh`). Quá `choDen` mà còn `cho` = worker chưa xét ⇒ nói thế. */
-export function aiSaleCuaPage(p, bayGio = Date.now()) {
+/**
+ * Nhãn trạng thái nhường của ai_sale (khuôn `ngatKenh`). Quá `choDen` mà còn `cho` = worker chưa xét ⇒ nói thế. `do` = đỏ · `xanh` = CHỈ
+ * khi đã đo được bot v3 đang trả lời (vòng 2, F4: `da_nhuong` + cửa kiểm đọc được + không lý do im + máy chạy bot có nhịp) — còn lại vàng.
+ * `may` vắng (màn không đọc bối cảnh máy) ⇒ không bao giờ xanh.
+ */
+export function aiSaleCuaPage(p, bayGio = Date.now(), may = null) {
   const tt = String(p.ai_sale_trang_thai);
   const den = p.ai_sale_cho_den == null ? NaN : new Date(p.ai_sale_cho_den).getTime();
   const conPhut = Number.isFinite(den) ? Math.max(0, Math.ceil((den - bayGio) / 60000)) : null;
   const quaGio = tt === 'cho' && !(Number.isFinite(den) && den > bayGio);
-  const nhan = {
+  const nhanGoc = {
     cho: !quaGio
       ? `Đang chờ ai_sale nhường — còn ${conPhut} phút`
       : 'Quá giờ chờ — máy chạy bot chưa xét (worker không chạy?)',
@@ -408,15 +453,51 @@ export function aiSaleCuaPage(p, bayGio = Date.now()) {
     chua_nhuong: 'ai_sale chưa nhường sau 30′ — bot v3 im',
     xoa_hong: 'Khoá ai_sale CHƯA xoá — ai_sale chưa trả lời lại page này',
     '': 'Bật khi chưa có cổng ai_sale — bot v3 im. Tắt rồi bật lại để ghi khoá ai_sale',
+    dien_tap: 'Diễn tập — KHÔNG ghi khoá ai_sale: ai_sale vẫn trả lời khách như trước; bot v3 chạy thử, không gửi',
   }[tt] ?? `Trạng thái ai_sale lạ: ${tt}`;
+  const lyDo = String(p.ai_sale_ly_do ?? '');
+  let nhan = nhanGoc;
+  let doMau = quaGio || !['cho', 'da_nhuong', 'dien_tap'].includes(tt);
+  let xanh = false;
+  // ── GL10 vòng 2 ──
+  const ck = may?.cuaKiem?.get?.(String(p.page_id ?? '')) ?? null;
+  const ma = new Set([...(ck?.blockers || []), ...(ck?.warnings || [])].map((x) => x?.code));
+  // F4: `loi_tep` vì MÁY CHẠY BOT thiếu biến tệp — tệp lành, ai_sale vẫn nhường ⇒ không bot nào (không phải «tệp hỏng»).
+  if (tt === 'loi_tep' && lyDo.includes(LY_DO_THIEU_BIEN)) {
+    nhan = 'Máy chạy bot thiếu biến V3_AI_SALE_TEP_GAN — bot v3 im mà ai_sale vẫn nhường page này (khoá _v3 còn) nên KHÔNG bot nào trả lời. '
+      + 'Khai lại biến rồi khởi động lại máy chạy bot, hoặc tắt page để ai_sale trả lời lại.';
+  }
+  // F1: page bật lúc diễn tập — cửa kiểm không còn báo diễn tập ⇒ worker không phục vụ (chưa có khoá) ⇒ đỏ, nói lối ra.
+  if (tt === 'dien_tap' && may) {
+    if (!ck) nhan = 'Diễn tập — chưa đọc được cửa kiểm: không biết máy chủ còn diễn tập không';
+    else if (!ma.has('BOTMOI_DIEN_TAP')) {
+      nhan = 'Đã bỏ diễn tập — page bật lúc diễn tập, CHƯA ghi khoá ai_sale: bot v3 im (ai_sale vẫn trả lời). Tắt rồi bật lại để ghi khoá';
+      doMau = true;
+    }
+  }
+  // F4: page giữ khoá mà bot v3 không trả lời được ⇒ đỏ + lý do + lối; `da_nhuong` chỉ xanh khi đo được máy chạy bot có nhịp.
+  if ((tt === 'cho' || tt === 'da_nhuong') && may) {
+    const im = viSaoV3Im(ma, may);
+    if (im) {
+      nhan = `${im.cau} — ai_sale ${tt === 'cho' ? 'sắp nhường' : 'đã nhường'} page này (khoá _v3 còn) nên KHÔNG bot nào trả lời. ${im.lam}`;
+      doMau = true;
+    } else if (tt === 'da_nhuong') {
+      xanh = !!ck && (may.nhip?.muc === MUC_NHIP.XANH || may.nhip?.muc === MUC_NHIP.VANG);
+      if (!ck) nhan = 'ai_sale đã nhường — CHƯA XÁC NHẬN bot v3 trả lời: chưa đọc được cửa kiểm';
+      else if (!xanh) nhan = `ai_sale đã nhường — CHƯA XÁC NHẬN bot v3 trả lời: ${may.nhip?.nhan || 'chưa đo được máy chạy bot'}`;
+    }
+  } else if (tt === 'da_nhuong') {
+    nhan = 'ai_sale đã nhường — CHƯA XÁC NHẬN bot v3 trả lời: màn này chưa đo bối cảnh máy chạy bot (xem màn Page & Bot)';
+  }
   return {
     trangThai: tt,
     choDen: p.ai_sale_cho_den ?? null,
     batLuc: p.bot_bat_luc ?? null,
     conPhut: tt === 'cho' ? conPhut : null,
-    lyDo: String(p.ai_sale_ly_do ?? ''),
+    lyDo,
     nhan,
-    do: quaGio || !['cho', 'da_nhuong'].includes(tt),
+    do: doMau,
+    xanh,
   };
 }
 
