@@ -62,9 +62,9 @@ function datEnv(noiDung) {
   return p;
 }
 
-function chay(bieuThuc, envThem = {}) {
+function chay(bieuThuc, envThem = {}, coNode = []) {
   const u = (t) => pathToFileURL(path.join(CAY, t)).href;
-  const r = spawnSync(process.execPath, ["--input-type=module", "-e", KICH_BAN], {
+  const r = spawnSync(process.execPath, [...coNode, "--input-type=module", "-e", KICH_BAN], {
     cwd: RONG, encoding: "utf8", timeout: 60_000,
     env: {
       PATH: process.env.PATH, GL9_KHAC: KHAC, ...envThem,
@@ -102,7 +102,10 @@ test("GL9 E2 · khoá TRÙNG ⇒ dòng CUỐI (như --env-file) · `export K=1` 
 });
 
 test("GL9 E3 · nháy kép HỞ phía trên PANCAKE_READONLY ⇒ NÉM «.env hỏng quanh PANCAKE_READONLY» ở bộ chung, docEnvTuyetDoi và cả hai van", () => {
-  datEnv('A="abc\nPANCAKE_READONLY=1\n# V3_KHOA_MA_HOA=zzz\n');
+  // Đo 19/10 (node 24.19, `--env-file` y hệt): nháy hở CHỈ nuốt khi ở dưới còn một dấu nháy CÙNG LOẠI (`"`, `'`, `` ` ``) — nuốt mọi
+  // dòng tới dấu đó (ở đây tới `B="`). Không có dấu đóng ⇒ giá trị là chữ `"abc` và các dòng sau đọc bình thường (vế cuối ca này).
+  const tep = datEnv('A="abc\nPANCAKE_READONLY=1\n# V3_KHOA_MA_HOA=zzz\nB="x"\n');
+  assert.deepEqual(theoEnvFile(tep, ["PANCAKE_READONLY", "B"]), ["<undefined>", "<undefined>"], "tiền điều kiện: --env-file cũng mất khoá bị nuốt");
   const ra = chay({
     chung: `kn.docTepEnv("PANCAKE_READONLY")`, tuyetDoi: `nap.docEnvTuyetDoi("PANCAKE_READONLY")`,
     vanGui: `hv.vanGuiDangMoTuyetDoi()`, vanNguon: `nap.nguonDangMo()`,
@@ -112,6 +115,10 @@ test("GL9 E3 · nháy kép HỞ phía trên PANCAKE_READONLY ⇒ NÉM «.env h�
     assert.match(ra[k]?.nem || "", /\.env hỏng quanh PANCAKE_READONLY/, `${k}: ${JSON.stringify(ra[k])} — nháy hở phải NÉM (fail-CLOSED), không được trả giá trị/undefined`);
   }
   assert.deepEqual([v(ra.comment), v(ra.vang)], ["<undefined>", "<undefined>"], "dòng chú thích / khoá vắng hẳn không phải «.env hỏng»");
+  const tep2 = datEnv('A="abc\nPANCAKE_READONLY=1\n');   // nháy hở KHÔNG có dấu đóng ⇒ không nuốt (như --env-file)
+  const ra2 = chay({ chung: `kn.docTepEnv("PANCAKE_READONLY")`, a: `kn.docTepEnv("A")` });
+  assert.deepEqual([v(ra2.chung), v(ra2.a)], theoEnvFile(tep2, ["PANCAKE_READONLY", "A"]));
+  assert.deepEqual([v(ra2.chung), v(ra2.a)], ["1", '"abc']);
 });
 
 test("GL9 E4 · tệp VẮNG (ENOENT) ⇒ như cũ: undefined · chuoiNoi ném «Thiếu DATABASE_URL_V3» · docBien \"\" · moiTruongKhoa không thêm khoá", () => {
@@ -137,6 +144,10 @@ test("GL9 E5 · tệp KHÔNG ĐỌC ĐƯỢC (chmod 000) ⇒ NÉM ở bộ chung
       assert.match(ra[k]?.nem || "", /EACCES/, `${k}: ${JSON.stringify(ra[k])} — lỗi đọc tệp phải NÉM nguyên nhân, không thành vắng biến`);
     }
   } finally { fs.chmodSync(p, 0o600); }
+  // `util.parseEnv` vắng (node cũ hơn 20.12 — prod chạy 20.20.2, có) ⇒ NÉM, không rơi về «vắng biến» (van MỞ).
+  const mat = "data:text/javascript," + encodeURIComponent('import util from "node:util"; delete util.parseEnv;');
+  const ra2 = chay({ chung: `kn.docTepEnv("PANCAKE_READONLY")`, vanGui: `hv.vanGuiDangMoTuyetDoi()` }, { V3_PANCAKE_GUI: "1" }, ["--import", mat]);
+  for (const k of ["chung", "vanGui"]) assert.match(ra2[k]?.nem || "", /parseEnv/, `${k}: ${JSON.stringify(ra2[k])}`);
 });
 
 test("GL9 E6 · ba hàm bọc trên bản chép (env sạch): \"1\" · \"postgres://x # y\" · \"abc\" · X ⇒ \"\" — van gửi + van nguồn ĐÓNG", () => {
