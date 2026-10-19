@@ -74,6 +74,8 @@ export async function luuDonCho(pool, bc, id, b) {
     if (!offer)
       throw fault("Không có gói giá hợp lệ cho sản phẩm / số lượng này");
     const d = { ...o.du_lieu_don };
+    // BH9 ② 10: sale ĐỔI tên ⇒ cờ «Tên lấy từ Facebook — chưa xác nhận» hết đúng ⇒ bỏ. Giữ tên ⇒ cờ còn (sale chưa xác nhận gì).
+    if (b.ten !== String(o.du_lieu_don?.ten ?? "")) delete d.ten_tu_facebook;
     for (const k of [
       "ten",
       "sdt",

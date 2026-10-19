@@ -57,6 +57,11 @@
     "4_hang_cho": "Hàng chờ", "5_tao_don": "Tạo đơn POS",
   };
   const TRANG_THAI_DON = { cho_duyet: "Chờ duyệt", da_duyet: "Đã duyệt", tu_choi: "Đã loại" };
+  // BH9 ② 10 [S3] — cờ đơn nháp cho NGƯỜI DUYỆT (người quyết 15/10 · `01-QUYET-DINH.md` §1 «SỬA 15/10»): bot dùng tên Facebook làm tên
+  // người nhận / suy COD ngầm từ SĐT + địa chỉ ⇒ sale phải thấy trước khi duyệt. Khoá do `hang-cho.js#chuanHoaHoSo` đặt (chỉ khi true).
+  const CO_DON = [["ten_tu_facebook", "⚠️ Tên lấy từ Facebook — chưa xác nhận"], ["cod_ngam", "⚠️ COD ngầm — khách chưa nói đồng ý COD"]];
+  const canhCoDon = (du) => CO_DON.filter(([k]) => du && du[k] === true)
+    .map(([, chu]) => UI.alert({ level: "warning", title: chu, body: "Gọi xác nhận hoặc sửa trước khi duyệt." })).join("");
 
   async function moDon(id, noi, { sauKhiGhi, tapTrung } = {}) {
     noi.innerHTML = '<p class="text-muted">Đang tải đơn…</p>';
@@ -85,6 +90,7 @@
         : '<p class="field-hint">Chưa kiểm tra — hệ kiểm lại đủ các cửa khi duyệt.</p>'}
       ${suaDuoc ? `
       <div class="form-actions"><button type="button" class="btn" data-variant="outline" data-size="sm" data-hanh="luu">Lưu thông tin</button></div>
+      ${canhCoDon(du)}
       <div class="field"><label><input type="checkbox" id="hd-xac"> Tôi đã kiểm tra thông tin đã lưu</label>
         <span class="field-hint">Duyệt dùng thông tin ĐÃ LƯU và có thể tạo đơn thật trên POS.</span></div>
       <div class="form-actions"><button type="button" class="btn" data-variant="primary" data-size="sm" data-hanh="duyet">Duyệt — tạo đơn POS</button></div>
@@ -168,6 +174,7 @@
         + (hoan.tiLeHoan == null ? "" : ` — hoàn ${so(hoan.tiLeHoan)}% trên đơn cũ`), body: "Gọi xác nhận trước khi duyệt." }));
     }
     if (trung && trung.qua === false) canh.push(UI.alert({ level: "warning", title: "Nghi trùng đơn", body: trung.ly_do || "" }));
+    if (canhCoDon(du)) canh.push(canhCoDon(du));
     if (choDuyet && d.posGhiMo === false) {
       canh.push(UI.alert({ level: "info", title: "Cửa tạo đơn POS đang ĐÓNG trên máy chủ",
         body: "Duyệt lúc này sẽ không tạo đơn — đơn vẫn ở «Chờ duyệt». Sửa và từ chối vẫn làm được." }));

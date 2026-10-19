@@ -12,7 +12,7 @@
 
 import { cleanText } from './text.js';
 import { isAutomationTemplate } from './bot-registry.js';
-import { hasPhone, hasAddress, scanSignals } from './lead-score.js';
+import { hasPhone, hasAddress, scanSignals, tachTen } from './lead-score.js';
 import { extractMoney, giaDuocNhac } from './outbound-guard.js';
 // DÙNG LẠI luật chào của M05, KHÔNG viết bản thứ hai: `conv-owner.js#isJustGreeting` đã
 // phân biệt "chỉ chào" với "câu hỏi thật" và đã được hiệu chỉnh trên tin thật (nó cố ý
@@ -82,14 +82,17 @@ export const HYDRATE_MAX_MSGS = 20; // chỉ dùng ĐÚNG MỘT LẦN lúc dựn
 export function emptyProfile() {
   return {
     name: '', phone: '', address: '', city: '',
-    // TÊN FACEBOOK — CHỈ để xưng hô, TUYỆT ĐỐI không phải `name` của đơn.
+    // TÊN FACEBOOK — để xưng hô, VÀ (từ 15/10) làm tên người nhận khi khách không cho tên.
     //
     // Đo 25/09: 8/8 tin khách mang sẵn `from.name`, nên lấy được miễn phí ngay trong lịch
-    // sử — không cần đụng bộ nạp, CSDL hay migration. Nhưng KHÔNG được đổ vào `prof.name`:
-    // `name` đi thẳng vào `create_draft_order` (tên người nhận hàng) và vào `missingSteps`.
-    // Tên Facebook thật trên page này gồm "Napagod Na Ako" · "Alas Uno" · "Rich Chie" —
-    // đổ vào `name` là bot thôi hỏi tên thật RỒI đẩy chuỗi đó xuống POS làm tên nhận hàng.
-    // Hai trường, hai việc: `tenFb` để gọi khách, `name` để ghi đơn.
+    // sử — không cần đụng bộ nạp, CSDL hay migration. VẪN KHÔNG đổ vào `prof.name`: `name` là
+    // tên KHÁCH TỰ CHO, còn tên Facebook thật trên page này gồm "Napagod Na Ako" · "Alas Uno" ·
+    // "Rich Chie" — nên khi nó thành tên người nhận thì phải mang CỜ cho sale thấy.
+    // ĐỔI Ý ĐỒ 15/10 (người quyết — `01-QUYET-DINH.md` §1 «SỬA 15/10», giả lập pilot 09/10: đủ SĐT +
+    // địa chỉ mà bot còn xin tên một lượt nữa): khách chưa cho tên ⇒ bot DÙNG `tenFb` làm tên người
+    // nhận, thôi hỏi tên (`missingSteps`); đơn nháp mang `ten_tu_facebook: true` (`hang-cho.js#chuanHoaHoSo`)
+    // ⇒ Hộp thư hiện «Tên lấy từ Facebook — chưa xác nhận». Hai trường, hai việc: `tenFb` để gọi
+    // khách (và làm tên nhận dự phòng có cờ), `name` là tên khách tự gõ.
     tenFb: '',
     tier: '',            // gói/combo khách đang nhắm
     qty: 0,
@@ -149,10 +152,24 @@ export function emptyProfile() {
 }
 
 const PHONE_CAND = /\+?\d[\d\s().-]{5,18}\d/;
-const NAME_LABEL = /(?:my name is|my name's|i am|i'?m|this is|ako si|ako po si|pangalan ko(?: po)?(?: ay)?|name\s*[:=-]|pangalan\s*[:=-]|اسمي|الاسم\s*[:=-])\s*([\p{L}][\p{L}\s.'-]{1,40})/iu;
-const NAME_LINE = /^[\p{L}][\p{L}.'-]+(?:\s+[\p{L}][\p{L}.'-]+){1,3}$/u;
-const TIER_TEXT = /\b(set\s*\d+|combo\s*\d+|buy\s*\d+\s*get\s*\d+|package\s*\d+|\d+\s*(?:pcs|pieces|bottles|boxes))\b/i;
+// BH9 ② 9d: + «Buy 1 take 1» · «B1G1» · «1+1» · «buy one get one» · «Buy 1get 1free» (dính chữ) — giả lập 09/10: khách chọn gói bằng
+// đúng mấy chữ này mà hồ sơ in «chọn gói» ⇒ model hỏi lại gói.
+// Vế đầu GIỮ NGUYÊN bản cũ (khớp cũ ⇒ cùng chuỗi `tier`); vế sau chỉ bắt cái vế đầu bỏ sót (`\b` cuối không qua được «1free»).
+const TIER_TEXT = /\b(set\s*\d+|combo\s*\d+|buy\s*\d+\s*get\s*\d+|package\s*\d+|\d+\s*(?:pcs|pieces|bottles|boxes))\b|\b(buy\s*\d+\s*(?:get|take)\s*\d+|buy\s+one\s+(?:get|take)\s+one|b\d+g\d+|[1-4]\s*\+\s*[1-4])(?!\d)/i;
 const COD_OK = /\b(cod|cash on delivery)\b[^.\n]{0,30}\b(ok|okay|sige|yes|opo|oo|sure|fine|deal|go)\b|\b(ok|okay|sige|yes|opo|oo|sure|fine|deal|go)\b[^.\n]{0,30}\b(cod|cash on delivery)\b|bayad (?:na lang )?pagdating|pay upon delivery|الدفع عند الاستلام/i;
+// BH9 ② 9a — khách TỰ NÓI điều kiện COD như một câu khẳng định: cả tin (hoặc một dòng của tin) chỉ là «Cash on delivery po» / «COD po» /
+// «pay on delivery». Câu HỎI («is it COD?») không khớp vì phải khớp TRỌN dòng. Phủ định vẫn do `COD_KHONG` quyết trước.
+const COD_TU_NOI = /^(?:(?:ok(?:ay)?|yes|sige|opo|oo)[\s,]+)?(?:cash\s+on\s+delivery|c\.?o\.?d\.?|pay\s+(?:up)?on\s+delivery)(?:[\s,]+(?:po|sir|ma'?am|please|pls|lang|na\s+lang|only|ok))*[\s.!🙏👍😊]*$/iu;
+const COD_KHONG = /(?:no|not|don't|dont|hindi|ayaw|không).{0,35}\bcod\b|\bcod\b.{0,25}(?:not|cancel|không)/i;
+// BH9 ② 9b — câu bot vừa HỎI về COD (lượt trước) …
+const HOI_COD = /(?:\bcod\b|cash\s+on\s+delivery|bayad\s+(?:na\s+lang\s+)?pagdating|pay\s+(?:up)?on\s+delivery|الدفع عند الاستلام)[^.!?\n]*[?؟]/i;
+// … và khách đáp đồng ý NGẮN (≤ 4 chữ, không phủ định).
+const DONG_Y_NGAN = /^(?:yes|yeah|yep|ok(?:ay)?|opo|oo|sige|sure|تمام|نعم)(?:[\s,]+(?:po|sir|ma'?am|ok(?:ay)?|na|sure|yes))*[\s.!🙏👍😊]*$/iu;
+// BH9 ② 9c — tin của PAGE/BOT có NÊU điều kiện COD không; câu nêu COD kèm phủ định ([S10]: not available · no COD · prepaid · chỉ
+// chuyển khoản) KHÔNG tính.
+const NEU_COD = /\bcod\b|cash\s+on\s+delivery|pay\s+(?:up)?on\s+delivery|bayad\s+(?:na\s+lang\s+)?pagdating|الدفع عند الاستلام/i;
+const COD_PHU_DINH = /prepaid|bank\s+transfer\s+only|card\s+only|not\s+available|unavailable|no\s+cod\b/i;
+const neuCodThat = (t) => NEU_COD.test(t) && !COD_KHONG.test(t) && !COD_PHU_DINH.test(t);
 
 function firstPhone(text) {
   const m = String(text || '').match(PHONE_CAND);
@@ -168,24 +185,19 @@ function firstAddress(text) {
   return hasAddress(text) ? String(text).trim().slice(0, 1000) : '';
 }
 
-function firstName(text) {
-  const s = String(text || '');
-  const m = s.match(NAME_LABEL);
-  if (m) return m[1].trim().replace(/\s+/g, ' ').slice(0, 40);
-  if (!hasPhone(s)) return '';
-  for (const line of s.split(/[\n,·|]+/)) {
-    const l = line.trim();
-    if (l.length >= 4 && l.length <= 40 && !/\d/.test(l) && NAME_LINE.test(l)) return l;
-  }
-  return '';
-}
+// BH9 ② 8: MỘT luật tên ở `lead-score.js#tachTen` — tệp này không giữ bản regex thứ hai (bản chép cũ bắt 14/14 tên sai ở giả lập).
+const firstName = (text) => tachTen(text);
 
 /**
  * Rút thông tin từ MỘT tin khách vào hồ sơ (regex, 0 token).
  * Chỉ GHI ĐÈ khi trước đó chưa có — thông tin khách cho lần đầu là thông tin đúng;
  * tin sau nhắc lại lem nhem không được phép xoá nó.
+ *
+ * `lastAi` (tuỳ chọn, BH9 ② 9b) — câu bot nói ngay trước: «yes» chỉ là đồng ý COD khi câu đó HỎI về COD. Hàm cũ không biết bot vừa
+ * hỏi gì nên «yes» đáp «Okay na po ba sa'yo ang COD?» thành `cod=false` ⇒ model hỏi COD lần hai (giả lập UAE #9→#10).
+ * Nơi gọi không truyền (`queue/reconcile.js`) ⇒ như cũ.
  */
-export function extractFromText(text, prof = emptyProfile()) {
+export function extractFromText(text, prof = emptyProfile(), { lastAi = '' } = {}) {
   const s = String(text || '');
   if (!s.trim()) return prof;
 
@@ -193,9 +205,11 @@ export function extractFromText(text, prof = emptyProfile()) {
   if (!prof.address) { const a = firstAddress(s); if (a) prof.address = a; }
   if (!prof.name) { const n = firstName(s); if (n) prof.name = n; }
   if (!prof.tier) { const t = s.match(TIER_TEXT); if (t) prof.tier = t[0].trim(); }
-  const codDenied = /(?:no|not|don't|dont|hindi|ayaw|không).{0,35}\bcod\b|\bcod\b.{0,25}(?:not|cancel|không)/i.test(s);
+  const codDenied = COD_KHONG.test(s);
   if (codDenied) prof.cod = false;
-  else if (!prof.cod && COD_OK.test(s)) prof.cod = true;
+  else if (!prof.cod && (COD_OK.test(s)
+    || s.split(/[\n;]+/).some((dong) => COD_TU_NOI.test(dong.trim()))
+    || (HOI_COD.test(String(lastAi || '')) && DONG_Y_NGAN.test(s.trim())))) prof.cod = true;
 
   for (const k of scanSignals(s)) {
     if (k.startsWith('obj_') && !prof.objections.includes(k)) prof.objections.push(k);
@@ -210,6 +224,24 @@ export function extractFromText(text, prof = emptyProfile()) {
   if (khachTuChoi(s)) prof.daTuChoi = true;
   else if (prof.daTuChoi && (TIER_TEXT.test(s) || hasPhone(s) || hasAddress(s))) prof.daTuChoi = false;
   return prof;
+}
+
+/**
+ * COD NGẦM (người quyết 15/10 — `01-QUYET-DINH.md` §1 «SỬA 15/10» · BH9 ② 9c): khách gửi SĐT/địa chỉ SAU KHI bot/page đã nêu điều
+ * kiện COD ⇒ coi là đồng ý trả tiền khi nhận. Giả lập 09/10: 6 hội thoại đủ SĐT + địa chỉ, bot chốt được 1 vì hỏi lại «Okay na po
+ * ba sa'yo ang COD?». Gọi SAU `extractFromText` của lượt (hồ sơ đã có SĐT/địa chỉ lượt này mang vào).
+ *
+ * Tin KHÁCH nhắc COD («is it COD?») KHÔNG tính — chỉ lời của page/bot là «đã nêu điều kiện». Tin page nêu COD kèm phủ định ([S10])
+ * cũng không tính. Đơn nháp mang cờ `cod_ngam` (`hang-cho.js#chuanHoaHoSo`) cho sale thấy khi duyệt.
+ * @returns {boolean}
+ */
+export function codNgam({ prof = emptyProfile(), text = '', msgs = [], pageId, lastAi = '' } = {}) {
+  const s = String(text || '');
+  if (prof.cod || !prof.phone || !prof.address) return false;
+  if (!(hasPhone(s) || hasAddress(s)) || COD_KHONG.test(s)) return false;
+  if (neuCodThat(String(lastAi || ''))) return true;
+  return (Array.isArray(msgs) ? msgs : []).some((m) => String(m?.from?.id) === String(pageId)
+    && neuCodThat(String(m?.original_message || m?.message || '').replace(/<[^>]*>/g, ' ')));
 }
 
 /** Chỉ ghi nhớ dữ liệu đơn đã được backend xác nhận, không tin tham số model. */
@@ -340,39 +372,158 @@ export function shipVuotMau(text) {
 // ── ĐƠN MÀ KÊNH KHÁC ĐÃ XỬ LÝ ───────────────────────────────────────────────────────
 // Thứ tự xét là thứ tự ƯU TIÊN: trạng thái nặng nhất thắng. Lệch một chiều — bắt hụt thì
 // hệ chạy như cũ, bắt nhầm thì bot tưởng khách đã có đơn và thôi bán.
+//
+// BH9 ② 2a: thêm khuôn page THẬT (đo giả lập 09/10 — 10/12 câu page về đơn đều null): POS «scheduled for delivery today» · AI
+// LEADER «set for delivery tomorrow» · vận đơn «delivery was unsuccessful» · sale «in transit» / «haven't delivered the order» /
+// «inform the courier» / «Courier's phone» · «Tracking number: 123…» · mẫu chốt «👉Your order is 109 SAR. You will receive…».
+// [S2] Lịch sử page gồm cả chữ CỦA CHÍNH BOT (v3 · ai_sale · Botcake) và mẫu GIẢI THÍCH trước bán, mà `donDaCo` KHÔNG hết hạn và từ
+// BH9 nó KHOÁ bán (cổng sau bán + `BAN_LAI_SAU_BAN`) — một câu bắt nhầm là khách đó mất bot vĩnh viễn. Nên khuôn MỚI chịu ba điều kiện
+// (`KHUON_MOI` dưới): (i) cụm đứng sau từ điều kiện/tương lai trong cùng câu ⇒ không tính; (ii) «tracking number» chỉ khi kèm SỐ;
+// (iii) «your order is <số> <tiền tệ>» chỉ khi CÙNG tin có vế giao/nhận đã chốt. Bốn khuôn CŨ giữ regex, nhưng cũng chịu (i) — câu
+// [S2] «…tracking number once your order is shipped» khớp chính khuôn cũ «đang giao» (đo `bh9-phat-lai` Rf: trên chữ bot + kịch bản
+// hai CSDL giả lập, bắt thêm 0 câu).
 const DON_TRANG_THAI = [
   ['đã huỷ', /\b(?:order|đơn)[^.\n]{0,24}\b(?:cancel(?:led|ed)?|huỷ|huy)\b|\bcancel(?:led|ed)\b[^.\n]{0,16}\b(?:order|đơn)\b/i],
   ['khách CHƯA nhận được hàng', /\b(?:haven'?t|hasn'?t|not)\s+(?:yet\s+)?receiv\w*[^.\n]{0,16}\border\b|\border\b[^.\n]{0,24}\b(?:not|haven'?t|hasn'?t)\s+(?:yet\s+)?(?:arriv|receiv|deliver)\w*/i],
   ['đang giao', /\byour order (?:is|has been)\s+(?:being\s+)?(?:ship|dispatch|on its way|out for delivery)\w*/i],
   ['đã tạo', /\byour order (?:has been|is)\s+(?:creat|confirm|receiv|plac)\w*|\border number\b|\bplaced an order\b/i],
 ];
+const KHUON_MOI = [
+  ['khách CHƯA nhận được hàng', /\bdelivery\s+(?:was\s+|is\s+|has\s+been\s+)?(?:unsuccessful|failed)\b|\b(?:haven'?t|hasn'?t|have\s+not|has\s+not)\s+(?:yet\s+)?delivered\b(?:\s+(?:the|your)\s+order)?/i],
+  ['đang giao', /\b(?:scheduled|set)\s+for\s+(?:delivery|shipping|dispatch)\b|\bin\s+transit\b|\binform(?:ed)?\s+the\s+(?:courier|shipping\s+company|delivery\s+(?:person|man|guy))\b|\bcourier['’]s\s+(?:phone|number|contact)\b|\btracking\s*(?:number|no\.?|#)?\s*[:#]?\s*\d{4,}/i],
+  ['đã tạo', /\byour\s+order\s+is\s+\d[\d.,]*\s*(?:sar|aed|kwd|qar|omr|bhd|riyal|dirham|ريال|درهم)\b/i],
+];
+const DIEU_KIEN = /\b(?:once|after|when|if|as\s+soon\s+as|will\s+be|kapag|pag)\b/i;
+const VE_DA_CHOT = /\byou\s+will\s+receive\b|\b(?:within|in\s+the\s+next|in)\s+\d+\s*(?:-\s*\d+\s*)?(?:working\s+)?days?\b|\bgift\b/i;
+/** Cụm khớp ở `idx` có đứng sau từ điều kiện/tương lai TRONG CÙNG CÂU không ([S2] (i)). */
+function sauDieuKien(t, idx) {
+  const dau = Math.max(t.lastIndexOf('.', idx - 1), t.lastIndexOf('!', idx - 1), t.lastIndexOf('?', idx - 1), t.lastIndexOf('\n', idx - 1)) + 1;
+  return DIEU_KIEN.test(t.slice(dau, idx));
+}
 
 /** Tin của PAGE có nói về một ĐƠN đã tồn tại không? Trả `{trangThai, cau, nguon}` hoặc null. */
 export function donTuTinPage(text) {
   const t = String(text || '');
   if (!t.trim()) return null;
-  for (const [trangThai, re] of DON_TRANG_THAI) {
-    if (re.test(t)) return { trangThai, cau: t.replace(/\s+/g, ' ').trim().slice(0, 120), nguon: 'page' };
+  const ra = (trangThai) => ({ trangThai, cau: t.replace(/\s+/g, ' ').trim().slice(0, 120), nguon: 'page' });
+  // Thứ tự = ưu tiên (huỷ > chưa nhận > đang giao > đã tạo); trong cùng bậc, khuôn cũ xét trước khuôn mới.
+  for (const bac of ['đã huỷ', 'khách CHƯA nhận được hàng', 'đang giao', 'đã tạo']) {
+    for (const [trangThai, re, moi] of [...DON_TRANG_THAI.map(([k, r]) => [k, r, false]), ...KHUON_MOI.map(([k, r]) => [k, r, true])]) {
+      if (trangThai !== bac) continue;
+      for (const m of t.matchAll(new RegExp(re.source, 'gi'))) {
+        // (i) áp cho CẢ khuôn cũ: «We will send you the tracking number once your order is shipped» khớp khuôn cũ «your order is ship…»
+        if (sauDieuKien(t, m.index)) continue;
+        if (moi && trangThai === 'đã tạo' && !VE_DA_CHOT.test(t)) continue;   // (iii)
+        return ra(trangThai);
+      }
+    }
   }
   return null;
 }
 
 // Phía KHÁCH. Hẹp hơn phía page: chỉ bắt câu nói THẲNG về một đơn/chuyến giao ĐANG CÓ,
 // không bắt câu hỏi mua hàng. Bắt nhầm ở đây là bot thôi bán với người đang muốn mua.
+//
+// BH9 ② 2b: + sáu câu khách thật hụt cả sáu ở giả lập (why did you deliver · u deliver I am waiting · You delivered today at 10 ·
+// i canceled it · i received that already · I received the goods) ⇒ thêm «khách ĐÃ nhận hàng» và «khách báo HUỶ».
+// [S1] Siết CẢ ba nhánh cũ: soát (a) thử 19 câu hỏi TRƯỚC BÁN, HEAD bắt nhầm 17 («Is it 2-5 days delivery?» · «Can the order arrive
+// tomorrow?»). Trước BH9 hệ quả chỉ là một dòng prompt; từ BH9 câu đó ⇒ cổng sau bán (câu cố định + giao sale) và `donDaCo` khoá bán
+// vĩnh viễn. Luật (`laHoiTruocBan`): câu HỎI chính sách mà KHÔNG có dấu đơn đã có ⇒ null; «don't want» kèm lựa chọn thay thế ⇒ null.
 const KHACH_NOI_VE_DON = [
   ['khách KHÔNG muốn nhận nữa', /\b(?:i\s+d(?:o\s+not|on'?t)\s+want|don'?t\s+want)\b[^.\n]{0,24}\b(?:this\s+)?(?:order|item|product|delivery|parcel)\b|\bcancel\s+(?:my|the)\s+order\b|\bhindi\s+ko\s+na\s+kukunin\b/i],
-  ['khách đang hỏi về chuyến giao', /\bthe\s+(?:delivery|order|parcel|package|courier|rider)\b[^.\n]{0,40}\b(?:was|is|has|scheduled|today|tomorrow|call(?:ed)?|came|arriv\w*)\b|\bdelivery\s+(?:boy|guy|man|person|staff)\b/i],
+  ['khách báo HUỶ', /\bi\s+(?:already\s+)?cancel(?:l)?ed\s+(?:it|my\s+order|the\s+order)\b/i],
+  ['khách ĐÃ nhận hàng', /(?<!\b(?:haven'?t|hasn'?t|have\s+not|not|never|didn'?t|yet\s+to)\s+)\b(?:i\s+)?(?:already\s+)?received\s+(?:it|that|the\s+goods|the\s+item|the\s+parcel|my\s+order)\b/i],
+  ['khách đang hỏi về chuyến giao', /\bthe\s+(?:delivery|order|parcel|package|courier|rider)\b[^.\n]{0,40}\b(?:was|is|has|scheduled|today|tomorrow|call(?:ed)?|came|arriv\w*)\b|\bdelivery\s+(?:boy|guy|man|person|staff)\b|\bwhy\s+did\s+you\s+deliver\b|\b(?:you|u)\s+deliver(?:ed)?\b|\bi\s*['’]?\s*a?m\s+waiting\b[^.\n]{0,30}\b(?:deliver\w*|courier|rider|order)\b|\b(?:he|she|courier|rider|driver)\s+call(?:ed|s)?\s+me\b[^.\n]{0,40}\bdeliver/i],
   ['khách nói ĐƠN CŨ chưa xong', /\b(?:my|the)\s+order\b[^.\n]{0,30}\b(?:not|haven'?t|hasn'?t|still|delay\w*|late)\b|\bwala\s+pa\b[^.\n]{0,20}\border\b|\b(?:fifteen|[0-9]{1,2})\s+days?\b[^.\n]{0,24}\b(?:order|deliver\w*|waiting)\b/i],
 ];
+// [S1] dấu hiệu câu HỎI chính sách trước bán … và dấu hiệu «đơn đã có» thắng nó.
+// (+ «do/will/could/would you · does · is it · are you» — ngoài danh sách của phiếu: nhánh «you deliver» MỚI khớp cả câu hỏi không dấu
+// «?» như ca âm C39 «do you deliver to riyadh» · «will you deliver to jeddah»)
+const HOI_CHINH_SACH = /\?|\bhow\s+(?:long|many|much)\b|\bfree\b|\bfee\b|\bcod\b|cash\s+on\s+delivery|\bif\s+(?:i|you)\b|\bi\s+will\s+order\b|\bcan\b|\bwill\s+the\b|\b(?:do|will|could|would)\s+you\b|\bdoes\b|\bis\s+it\b|\bare\s+you\b/i;
+const DAU_DON_DA_CO = /\b(?:was|came|called|arrived|delivered|received|did|didn'?t|haven'?t|hasn'?t|ordered|paid|cancel(?:l)?ed|already)\b/i;
+const LUA_CHON_KHAC = /\b(?:size|color|colour|kulay|instead|only|just)\b|,[^,]{1,40}\bplease\b/i;
+function laHoiTruocBan(t, trangThai) {
+  if (trangThai === 'khách KHÔNG muốn nhận nữa') return LUA_CHON_KHAC.test(t) && !/\bcancel/i.test(t);
+  return HOI_CHINH_SACH.test(t) && !DAU_DON_DA_CO.test(t);
+}
 
 /** Câu của KHÁCH có nói về một ĐƠN đã tồn tại không? Trả `{trangThai, cau, nguon}` hoặc null. */
 export function donTuTinKhach(text) {
   const t = String(text || '');
   if (!t.trim()) return null;
   for (const [trangThai, re] of KHACH_NOI_VE_DON) {
-    if (re.test(t)) return { trangThai, cau: t.replace(/\s+/g, ' ').trim().slice(0, 120), nguon: 'khach' };
+    if (re.test(t)) return laHoiTruocBan(t, trangThai) ? null : { trangThai, cau: t.replace(/\s+/g, ' ').trim().slice(0, 120), nguon: 'khach' };
   }
   return null;
+}
+
+/**
+ * BÓC «ĐƠN ĐANG TRONG CUỘC» TỪ LỊCH SỬ PAGE — MỘT bản luật cho `cleanHistory` (bước dựng ngữ cảnh) và cho handler (BH9 ② 2c: gọi
+ * MỌI lượt, ngay sau `extractFromText`, để cổng sau bán thấy `donDaCo` TRƯỚC mọi cửa 0 đồng — trước BH9 tin page chỉ được dò trong
+ * `cleanHistory`, tức sau lớp từ khoá/Fast Lane). Tin page mới nhất có khuôn thắng (ghi đè — y như vòng dò cũ của `cleanHistory`).
+ * KHÔNG suy từ `otherBot.orderNoted`: `OB_ORDER` khớp cả mẫu trước bán «Your order is free delivery dear».
+ */
+export function bocDonTuLichSu(msgs = [], pageId, prof) {
+  if (!prof) return prof;
+  for (const m of Array.isArray(msgs) ? msgs : []) {
+    if (String(m?.from?.id) !== String(pageId)) continue;
+    const raw = (m?.original_message || m?.message || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const d = donTuTinPage(raw);
+    if (d) prof.donDaCo = d;
+  }
+  return prof;
+}
+
+// Câu của khách đang có đơn mà nói về GIAO/NHẬN/HUỶ/ĐỔI/GIỜ/THỨ/VỊ TRÍ/SỐ LIÊN HỆ (EN · Tagalog · Ả Rập) — không `\b` đầu: «edeliver».
+const NOI_VE_GIAO = /deliver|courier|rider|driver|tracking|\btrack\b|\bship|parcel|arriv|\bdating|darating|dumating|padala|receiv|natanggap|nakuha|location|address|lokasyon|\bnumber\b|contact|whatsapp|cancel|kansel|\bchange\b|palit|\btoday\b|tomorrow|bukas|mamaya|ngayon|\b\d{1,2}\s*(?:am|pm)\b|\b(?:mon|tues|wednes|thurs|fri|satur|sun)day\b|\b(?:lunes|martes|miyerkules|huwebes|biyernes|sabado|linggo)\b|توصيل|التوصيل|مندوب|المندوب|موقع|عنوان|رقم|إلغاء|الغاء|غدا|غداً|اليوم|استلم|الطلب|شحن|يصل/i;
+
+/**
+ * CỔNG SAU BÁN (BH9 ② 2d) — câu này của khách là chuyện SAU BÁN (đơn đã có) chứ không phải người đang muốn mua?
+ *   · câu TỰ nói về một đơn đã có (`donTuTinKhach`) ⇒ la;
+ *   · hồ sơ đang có đơn (`donDaCo` / `ordered`) VÀ câu nói về giao/nhận/huỷ/giờ/vị trí/số liên hệ ⇒ la;
+ *   · còn lại (hỏi sản phẩm thuần của khách có đơn · người chưa có đơn) ⇒ không — model trả lời, cửa ra `BAN_LAI_SAU_BAN` canh.
+ * @returns {{la:boolean, lyDo:string}}
+ */
+export function laCauSauBan(text, prof = emptyProfile()) {
+  const t = String(text || '');
+  if (!t.trim()) return { la: false, lyDo: '' };
+  const d = donTuTinKhach(t);
+  if (d) return { la: true, lyDo: d.trangThai };
+  if ((prof?.donDaCo || prof?.ordered) && NOI_VE_GIAO.test(t)) {
+    return { la: true, lyDo: prof.donDaCo ? `có đơn (${prof.donDaCo.trangThai}) + hỏi giao/nhận` : 'bot đã chốt đơn + hỏi giao/nhận' };
+  }
+  return { la: false, lyDo: '' };
+}
+
+// ── DẤU HIỆU Y TẾ (BH9 ② 7) ─────────────────────────────────────────────────────────────────
+// Giả lập 09/10: khách «I have bleeding» ⇒ bot «…supports irritated skin recovery… which set…» — 0 lời khuyên, chào gói tiếp
+// (`grep doctor|bleed` trên prompts/context/guard = 0 dòng). Người quyết 15/10: chảy máu/kích ứng ⇒ khuyên ngừng dùng/đi khám +
+// chuyển sale. Gel bán CHÍNH cho da kích ứng/trĩ, nên «ngứa · rát · trĩ» là triệu chứng nó lo, KHÔNG phải dấu hiệu y tế.
+// [S9] (i) nhóm KÍCH ỨNG chỉ tính khi cùng tin có dấu SAU KHI DÙNG — «Is it good for irritation?» là câu hỏi trước bán.
+//      (ii) chữ Ả Rập rào bằng `(?<!\p{L})…(?!\p{L})` cờ `u`: JS `\b` không biết chữ Ả Rập (`/\bدم\b/u` không khớp gì), còn chuỗi trơn
+//      «دم» khớp «كيف استخدم» (cách dùng) · «خدمة» · «عدم».
+const AR = (s) => `(?<!\\p{L})(?:${s})(?!\\p{L})`;
+const Y_TE = [
+  ['chảy máu', new RegExp(`\\bbleed\\w*|\\bblood\\b|\\bdugo\\b|\\b(?:dumudugo|nagdudugo|pagdurugo)\\b|${AR('نزيف|دم')}`, 'giu')],
+  ['kích ứng sau khi dùng', new RegExp(`\\brash\\b|\\ballerg\\w*|\\birritat\\w*|\\bpantal\\b|\\bnamumula\\b|\\blalong?\\s+(?:sumakit|nangati|humapdi)\\b|\\b(?:sumakit|nangati|humapdi)\\s+lalo\\b|\\bworse\\s+after\\s+(?:using|applying)\\b|${AR('حساسية')}`, 'giu')],
+  ['sốt', new RegExp(`\\bfever\\b|\\blagnat\\b|${AR('حمى')}`, 'giu')],
+  ['có thai', new RegExp(`\\bpregnant\\b|\\bbuntis\\b|${AR('حامل')}`, 'giu')],
+];
+const SAU_KHI_DUNG = /\bafter\s+(?:i\s+)?(?:using|applying|use|used|applied)\b|\bsince\s+i\s+(?:used|applied|started)\b|\b(?:gamitin|ginamit|gumamit|nilagay|nilagyan)\b|بعد\s+(?:ال)?استخدام/iu;
+const PHU_DINH_YTE = /(?:\b(?:no|not|without|walang|wala|hindi|never|don'?t|didn'?t)\b|(?<!\p{L})(?:لا|بدون|ما\s*في)(?!\p{L}))[\s\p{P}]*(?:\p{L}+[\s\p{P}]+){0,1}$/iu;
+
+/** Khách báo dấu hiệu y tế? Trả loại (`chảy máu` · `kích ứng sau khi dùng` · `sốt` · `có thai`) hoặc ''. */
+export function dauHieuYTe(text) {
+  const t = String(text || '');
+  if (!t.trim()) return '';
+  for (const [loai, re] of Y_TE) {
+    if (loai === 'kích ứng sau khi dùng' && !SAU_KHI_DUNG.test(t)) continue;
+    for (const m of t.matchAll(re)) {
+      const truoc = t.slice(Math.max(0, m.index - 24), m.index);
+      if (!PHU_DINH_YTE.test(truoc)) return loai;              // phủ định cùng mệnh đề («no fever» · «walang dugo») ⇒ bỏ
+    }
+  }
+  return '';
 }
 
 /** Khách đã chào tạm biệt / từ chối chưa? */
@@ -395,6 +546,10 @@ export function ghiChuKenhKhac(raw, ten = '') {
  */
 export function cleanHistory(msgs = [], pageId, prof = null) {
   const out = [];
+  // BÓC TRẠNG THÁI ĐƠN TRƯỚC MỌI NHÁNH KHÁC. `absorbOtherBot` phía dưới chỉ chạy cho tin bị nhận là MẪU MÁY; câu quyết định nhất lại
+  // thường do SALE THẬT gõ ("Your order has been cancelled."), nên nó rơi khỏi mọi đường bóc. BH9: vòng dò nằm ở `bocDonTuLichSu`
+  // (handler gọi chính hàm đó MỌI lượt, trước cổng sau bán) — một bản luật, không chép.
+  if (prof) bocDonTuLichSu(msgs, pageId, prof);
   for (const m of msgs) {
     const isPage = String(m?.from?.id) === String(pageId);
     const raw = (m?.original_message || m?.message || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -402,10 +557,6 @@ export function cleanHistory(msgs = [], pageId, prof = null) {
     if (isPage) {
       // Tin page RỖNG (sticker/ảnh/"...") = 13,7% tin page — không mang thông tin, bỏ.
       if (!raw || /^\.{2,}$/.test(raw)) continue;
-      // BÓC TRẠNG THÁI ĐƠN TRƯỚC MỌI NHÁNH KHÁC. `absorbOtherBot` phía dưới chỉ chạy cho
-      // tin bị nhận là MẪU MÁY; câu quyết định nhất lại thường do SALE THẬT gõ ("Your
-      // order has been cancelled."), nên nó rơi khỏi mọi đường bóc. Xem `donKenhKhac`.
-      if (prof) { const d = donTuTinPage(raw); if (d) prof.donDaCo = d; }
       // Template Botcake/RTO — BÓC DỮ KIỆN (việc 2) rồi GIỮ LẠI dạng GHI CHÚ có nhãn.
       //
       // Sửa 28/09 (phiếu BH7). Bản trước VỨT HẲN, sợ model bắt chước văn mẫu. Đo trên màn
@@ -510,7 +661,8 @@ export const NGAT_MACH_MS = 30 * 60e3;
 /** Bước còn thiếu để chốt đơn COD — suy ra từ checklist, không hỏi model. */
 export function missingSteps(prof) {
   const miss = [];
-  if (!prof.name) miss.push('tên');
+  // BH9 ② 10 (người quyết 15/10): có tên Facebook ⇒ không xin tên — đơn nháp dùng tên Facebook kèm cờ «chưa xác nhận».
+  if (!prof.name && !prof.tenFb) miss.push('tên');
   if (!prof.phone) miss.push('SĐT');
   if (!prof.address) miss.push('địa chỉ');
   if (!prof.tier && !prof.qty) miss.push('chọn gói/số lượng');
@@ -526,10 +678,11 @@ export function missingSteps(prof) {
 export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
   const L = [];
   L.push('[HỒ SƠ KHÁCH — dữ liệu nội bộ, ĐỌC để không hỏi lại thứ khách đã cho]');
-  // Xưng hô ĐỨNG RIÊNG, cách xa khối dữ liệu đơn, và nói rõ nó không phải tên người nhận.
+  // Xưng hô ĐỨNG RIÊNG, cách xa khối dữ liệu đơn. BH9 ② 10 (người quyết 15/10): khách chưa cho tên thật ⇒ tên Facebook làm tên
+  // người nhận, bot thôi hỏi tên — đơn nháp mang cờ «Tên lấy từ Facebook — chưa xác nhận» cho sale (`hang-cho.js#chuanHoaHoSo`).
   if (prof.tenFb) {
-    L.push(`Khách tên Facebook là "${prof.tenFb}" — GỌI TÊN khách cho thân mật (tên riêng thôi). `
-      + `Đây KHÔNG phải tên người nhận hàng: vẫn phải hỏi tên thật để ghi đơn.`);
+    L.push(`Khách tên Facebook là "${prof.tenFb}" — GỌI TÊN khách (tên riêng). `
+      + `Khách CHƯA cho tên thật ⇒ DÙNG tên Facebook này làm tên người nhận khi tạo đơn, KHÔNG hỏi tên.`);
   }
   const idLine = [
     `Tên: ${prof.name || '(chưa có)'}`,
@@ -550,7 +703,11 @@ export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
     ob.orderNoted && 'đã báo đơn đã tạo',
   ].filter(Boolean);
   if (obL.length) L.push(`Kênh khác (Botcake/sale) đã làm: ${obL.join(', ')} — ĐỪNG lặp lại.`);
-  L.push(`COD: ${prof.cod ? 'khách đã xác nhận' : 'chưa xác nhận'}`);
+  L.push(prof.cod && prof.codNgam
+    // BH9 ② 9c — COD ngầm (người quyết 15/10): KHÔNG để «chưa xác nhận» ở đây, CORE §5 bắt hỏi COD trước `create_draft_order`.
+    // Cần CẢ `cod`: khách nói «no COD» sau đó thì `extractFromText` hạ `cod` — dòng phải quay về «chưa xác nhận».
+    ? 'COD: chấp nhận ngầm (khách gửi SĐT + địa chỉ sau khi đã nghe điều kiện COD) — KHÔNG hỏi lại COD, tạo đơn (cod_confirmed=true)'
+    : `COD: ${prof.cod ? 'khách đã xác nhận' : 'chưa xác nhận'}`);
   // GIÁ MÁY KHÁC ĐÃ BÁO — chỉ nói khi nó LỆCH bảng giá. Khớp thì im, đừng làm loãng khối.
   // `giaDuocNhac` chứ KHÔNG phải tập giá bán: Botcake nói "was 199, now 109" là nói ĐÚNG
   // giá gốc trong KB. Dùng tập hẹp thì khối hồ sơ dặn model "ĐÍNH CHÍNH 199" — bắt nó sửa
@@ -575,16 +732,25 @@ export function buildProfileBlock(prof = emptyProfile(), meta = {}) {
     L.push(`🙅 Khách đã chào tạm biệt / từ chối. ĐỪNG chào lại từ đầu, đừng dán lại bảng giá, `
       + `đừng hỏi lại thông tin. Chỉ đáp ngắn và để ngỏ cửa.`);
   }
+  // BH9 ② 7 — dấu hiệu y tế của TIN LƯỢT NÀY (handler truyền `meta.yTe = dauHieuYTe(text)`; không lưu vào hồ sơ — là chuyện của lượt).
+  if (meta.yTe) {
+    L.push(`⚕️ Khách báo ${meta.yTe} — câu ĐẦU: khuyên ngừng dùng và đi khám bác sĩ; nhắc cảnh báo của KB nếu có; KHÔNG hứa chữa; KHÔNG nêu giá/gói ở tin này.`);
+  }
   const miss = missingSteps(prof);
+  // BH9 ② 9e: có SĐT + địa chỉ thì dòng «Bước còn thiếu» nói THẲNG «đã có — cấm hỏi lại» (giả lập: đủ SĐT + địa chỉ mà model dán lại
+  // checklist ⇒ DUPLICATE ⇒ giao sale). [S11] GIỮ tiền tố «Bước còn thiếu: » (ca C11). Thiếu một trong hai ⇒ dòng cũ y nguyên.
+  const daCo = prof.phone && prof.address;
   L.push(prof.ngoaiVung
     ? 'Bước còn thiếu: KHÔNG CÓ — không phục vụ được khách này.'
     : prof.donDaCo
       // Dòng "Bước còn thiếu: tên, SĐT, địa chỉ…" đọc như một mệnh lệnh đi thu thông tin.
       // Với khách đã có đơn ở kênh khác, nó chính là thứ đẩy model đi chào hàng lại.
       ? 'Bước còn thiếu: KHÔNG phải lượt thu thông tin — khách đang nói về ĐƠN ĐÃ CÓ ở trên.'
+      : daCo
+        ? `Bước còn thiếu: ĐÃ CÓ SĐT, địa chỉ — CẤM hỏi lại · ${miss.length ? `CÒN THIẾU ĐÚNG: ${miss.join(', ')}` : 'đủ thông tin — chốt đơn được'}`
       // Suy từ TỪ KHOÁ, không phải từ hiểu câu: «Buy 1 get free» không khớp mẫu gói nên
       // dòng này từng in «chọn gói» cho một khách vừa chọn gói xong. Nói rõ nó là máy đoán.
-      : `Bước còn thiếu: ${miss.length ? `${miss.join(', ')} (máy đoán theo từ khoá — hội thoại cho thấy khách đã nói rồi thì theo hội thoại, đừng hỏi lại)` : 'đủ thông tin — chốt đơn được'}`);
+        : `Bước còn thiếu: ${miss.length ? `${miss.join(', ')} (máy đoán theo từ khoá — hội thoại cho thấy khách đã nói rồi thì theo hội thoại, đừng hỏi lại)` : 'đủ thông tin — chốt đơn được'}`);
   if (meta.max) L.push(`Lượt đã dùng: ${meta.used || 0}/${meta.max}${meta.tier ? ` (khách ${meta.tier})` : ''} · Trạng thái: ${meta.state || 'SELLING'}`);
   // ① CÂU AI NÓI GẦN NHẤT — xem khối ghi chú "MẠCH TƯ VẤN" phía trên.
   // Cắt 200 ký tự và ép về một dòng: đây là gợi nhớ, không phải chép lại cả tin.

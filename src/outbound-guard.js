@@ -283,7 +283,105 @@ export function guardOutbound(text, ctx = {}) {
     return rewrite('TOO_LONG', `Tin quá dài (~${nTok} token, ${nLines} dòng) — quy tắc là 1-3 câu, Messenger mobile phải cuộn là mất khách`);
   }
 
+  // ── BH9 · bốn luật cửa ra mới — SAU mọi luật cũ (luật cũ chặn ⇒ phán quyết y nguyên base) ────────────
+  //   [S7] CHỈ khi `ctx.luatBH9 === true`: handler đặt cờ ở cửa ra chữ MODEL (+ caption) của lượt đã gọi model. Lớp từ khoá ·
+  //   Fast Lane · v1 không đặt ⇒ phán quyết y hệt base (chữ của chúng là văn kịch bản marketer viết, không phải model bịa).
+  //   Chặn ⇒ handler gửi CÂU CỐ ĐỊNH + bàn giao (`our-messages.js`), không phải im.
+  if (ctx.luatBH9 === true) {
+    const v = luatBH9(t, ctx, kbText);
+    if (v) return rewrite(v.rule, v.reason);
+  }
+
   return pass;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BH9 — BỐN LUẬT «BOT KHÔNG ĐƯỢC NÓI THAY BỘ PHẬN GIAO HÀNG» (đo giả lập pilot 09/10: 14/14 câu thật QUA cửa ra cũ)
+//   Y_TE              khách báo dấu hiệu y tế mà câu không khuyên đi khám / vẫn chào giá / hứa chữa
+//   BIA_TRANG_THAI_DON bot khẳng định có/không có đơn, đã giao/đang giao/đã huỷ/đã xác nhận — bot KHÔNG tra được đơn
+//   TU_HUA            hứa thứ/giờ giao · hứa «tôi sẽ báo courier» · «team đã có WhatsApp của bạn / họ sẽ nhắn bạn»
+//   BAN_LAI_SAU_BAN   khách đang có đơn mà câu vẫn chào giá/gói hoặc xin lại tên/SĐT/địa chỉ/COD
+// `action:'rewrite'` để ghi sổ đúng loại, nhưng KHÔNG vào `FIXABLE` (không sửa máy móc được) ⇒ `quaCuaRa` trả chữ rỗng.
+// ─────────────────────────────────────────────────────────────────────────────
+export const LUAT_BH9 = new Set(['Y_TE', 'BIA_TRANG_THAI_DON', 'TU_HUA', 'BAN_LAI_SAU_BAN']);
+
+const KHUYEN_KHAM = /\b(?:doctor|clinic|hospital|consult\w*|magpatingin|doktor|stop\s+using|itigil)\b|(?<!\p{L})(?:طبيب|الطبيب|مستشفى|توقف|توقفي)(?!\p{L})/iu;
+const HUA_CHUA = /\bstops?\s+(?:the\s+)?bleeding\b|\bheal(?:s|ing)?\b|\bcures?\b/i;
+const NEU_GOI = /\b(?:which|what|anong)\s+(?:set|package|bundle|promo|offer)\b/i;
+const DIEU_KIEN_SAU = /\b(?:once|after|when|if|as\s+soon\s+as)\b/i;
+/**
+ * Cụm ở `idx` có từ điều kiện ĐỨNG TRƯỚC trong cùng VẾ CÂU không («Once your order is confirmed, …» không phải khẳng định).
+ * Vế = từ dấu `.!?\n,;—–` gần nhất: «If no order was completed, that delivery notice was likely sent by mistake» — vế sau dấu phẩy
+ * vẫn là KHẲNG ĐỊNH (giả lập UAE #83), chỉ vế «If no order was completed» là điều kiện. (Phía page `context.js` đo theo CÂU — bên
+ * đó bắt nhầm là khoá bán vĩnh viễn nên lệch về phía «không tính».)
+ */
+function sauDieuKien(t, idx) {
+  let dau = 0;
+  for (const k of ['.', '!', '?', '\n', ',', ';', '—', '–']) dau = Math.max(dau, t.lastIndexOf(k, idx - 1) + 1);
+  return DIEU_KIEN_SAU.test(t.slice(dau, idx));
+}
+const KHANG_DINH_DON = [
+  /\bno\s+(?:active\s+|existing\s+|current\s+)?orders?\b/i,
+  /\b(?:notice|message|notification)\b[^.!?\n]{0,40}\bsent\s+by\s+mistake\b/i,
+  /\b(?:your\s+)?order\s+(?:is|has\s+been|was)\s+(?:already\s+)?(?:on\s+(?:its|the)\s+way|out\s+for\s+delivery|shipped|dispatched|delivered|cancel(?:l)?ed)\b/i,
+  /\bon\s+(?:its|the)\s+way\b/i,
+  /\b(?:cancel(?:l)?ed|nakansela|na-cancel)\s+na\b/i,
+  /تم\s+(?:إلغاء|الغاء)|في\s+الطريق|تم\s+شحن/u,
+];
+// [S8] «confirmed / placed / received» được nói ở lượt TÓM TẮT đơn (lượt vừa `create_draft_order`).
+const XAC_NHAN_DON = /\b(?:your\s+)?order\s+(?:is|has\s+been|was)\s+(?:already\s+)?(?:confirmed|placed|received)\b/i;
+// Thứ (EN · Tagalog · Ả Rập — chữ Ả Rập rào `(?<!\p{L})…(?!\p{L})`, `\b` không biết chữ Ả Rập) hoặc giờ «10 AM», trong 30 ký tự quanh
+// động từ/người giao. Regex `DELIVERY_PROMISE_RE` cũ (cặp «giao + bukas/tomorrow/today») KHÔNG sửa — luật này bắt phần nó bỏ sót.
+const MOC = '\\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|lunes|martes|miyerkules|huwebes|biyernes|sabado|linggo)\\b'
+  + '|(?<!\\p{L})(?:الاثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت|الأحد)(?!\\p{L})|\\b\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)\\b';
+const MOC_GIAO = 'deliver\\w*|courier|rider|arriv\\w*|darating|noted';
+const HUA_MOC = new RegExp(`(?:${MOC})[^.!?\\n]{0,30}(?:${MOC_GIAO})|(?:${MOC_GIAO})[^.!?\\n]{0,30}(?:${MOC})`, 'iu');
+const HUA_BAO_COURIER = /\b(?:i['’]ll|i\s+will|let\s+me|we['’]ll|we\s+will)\s+(?:inform|request|ask|tell|notify|coordinate|contact)\s+(?:the\s+)?(?:courier|rider|driver|shipping|delivery|logistics)\b/i;
+// Hai khuôn dưới ĐÚNG ở lượt đã bàn giao (sale sẽ nhắn thật) và lượt tóm tắt đơn (CORE §5 bắt nói «our staff will contact you»).
+const HUA_TEAM_CO = /\b(?:team|staff|we)(?:['’]ve|\s+have|\s+has)?(?:\s+already)?(?:\s+(?:has|have|got))?\s+your\s+(?:whatsapp|number|location|address)\b/i;
+const HUA_TEAM_SE = /\b(?:our\s+)?(?:team|staff|agent|they)(?:\s+will|['’]ll)\s+(?:message|contact|call|text)\s+you\b/i;
+// XIN thông tin = có ĐỘNG TỪ xin («send · give · may I have · what's …») trước tên trường, hoặc nhãn ô của mẫu chốt («full name ·
+// complete address · contact number»), hoặc hỏi COD. «Please keep your phone available» KHÔNG phải xin (đo giả lập Saudi #139).
+const XIN_THONG_TIN = /\b(?:send|give|provide|share|type|need|may\s+i\s+(?:have|get|know)|can\s+i\s+(?:have|get|know)|could\s+you\s+(?:send|give|share|provide)|what(?:['’]s|\s+is))\b[^.!?\n]{0,30}\b(?:name|contact|number|phone|address|location|pangalan|tirahan)\b|\bcomplete\s+address\b|\bfull\s+name\b|\bcontact\s+number\b|\b(?:pangalan|tirahan)\b|(?:\bcod\b|cash\s+on\s+delivery)[^.!?\n]{0,40}\?|العنوان|الاسم|رقم\s+الجوال|رقم\s+الهاتف/iu;
+const GOI_GIA = /\bbuy\s*\d+\s*(?:get|take)\s*\d+|\bb\d+g\d+\b|\bpackages?\b|\bbundles?\b/i;
+
+/** Khớp đầu tiên của `re` không bị miễn: cụm khớp có NGUYÊN VĂN trong kb.text (cùng tinh thần `SCARCITY`). */
+function khopKhongMien(re, t, kbText) {
+  const m = t.match(re);
+  if (!m) return null;
+  return kbText.toLowerCase().includes(m[0].toLowerCase()) ? null : m[0];
+}
+
+function luatBH9(t, ctx, kbText) {
+  // a · Y_TE — chỉ khi khách vừa báo dấu hiệu y tế (handler truyền loại, `context.js#dauHieuYTe`).
+  if (ctx.dauHieuYTe) {
+    const thieu = !KHUYEN_KHAM.test(t), gia = extractMoney(t).length > 0 || NEU_GOI.test(t), hua = HUA_CHUA.test(t);
+    if (thieu || gia || hua) {
+      return { rule: 'Y_TE', reason: `Khách báo ${ctx.dauHieuYTe} — câu ${thieu ? 'không khuyên ngừng dùng/đi khám' : gia ? 'vẫn nêu giá/gói' : 'hứa chữa'}; gửi câu y tế cố định + chuyển sale` };
+    }
+  }
+  // b · BIA_TRANG_THAI_DON — mọi lượt, trừ lượt POS đã tạo đơn thật.
+  if (!ctx.orderCreated) {
+    for (const re of [...KHANG_DINH_DON, ...(ctx.isOrderSummary ? [] : [XAC_NHAN_DON])]) {
+      const m = re.exec(t);
+      if (m && !sauDieuKien(t, m.index)) {
+        return { rule: 'BIA_TRANG_THAI_DON', reason: `Khẳng định trạng thái đơn («${m[0]}») — bot không tra được đơn; chuyển sale` };
+      }
+    }
+  }
+  // c · TU_HUA
+  const hua = khopKhongMien(HUA_MOC, t, kbText) || khopKhongMien(HUA_BAO_COURIER, t, kbText)
+    || (!ctx.daBanGiao && !ctx.isOrderSummary && (khopKhongMien(HUA_TEAM_CO, t, kbText) || khopKhongMien(HUA_TEAM_SE, t, kbText)));
+  if (hua) return { rule: 'TU_HUA', reason: `Tự hứa thay bộ phận giao hàng/sale («${hua}») — chuyển sale` };
+  // d · BAN_LAI_SAU_BAN — khách đang có đơn (`prof.donDaCo`). Miễn lượt TÓM TẮT đơn (cùng lý do [S8]): đơn nguồn KHÁCH vẫn được tạo
+  // (`handler-v3.js#captureOrder` chỉ chặn nguồn page) và câu tóm tắt có giá/gói là đúng — chặn nó là giết lời xác nhận đơn.
+  if (ctx.donDaCo && !ctx.isOrderSummary) {
+    const goi = extractMoney(t).length > 0 || NEU_GOI.test(t) || GOI_GIA.test(t);
+    if (goi || XIN_THONG_TIN.test(t)) {
+      return { rule: 'BAN_LAI_SAU_BAN', reason: `Khách đang có đơn mà câu ${goi ? 'chào giá/gói' : 'xin lại thông tin/COD'} — chuyển sale` };
+    }
+  }
+  return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

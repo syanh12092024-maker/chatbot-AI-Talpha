@@ -47,6 +47,22 @@ export const CLOSER_FALLBACKS = [
   'Em cần hỗ trợ thêm từ đồng nghiệp, anh/chị chờ em chút nhé ạ.',
 ];
 
+// ── CÂU CỐ ĐỊNH BH9 (người quyết 15/10: khi bot KHÔNG được tự trả lời ⇒ câu nhận CỐ ĐỊNH + chuyển sale) ─────────────────────
+// Handler v3 gửi qua `guiChu` (KHÔNG qua model) ở hai chỗ: cổng sau bán (khách nói về đơn đã có) và khi một luật cửa ra BH9 chặn
+// câu model (`outbound-guard.js#LUAT_BH9`). Bản `ar` khi khách viết Ả Rập (`chat/ngon-ngu.js#doanNgonNgu`), còn lại `en`.
+// ⚠️ [S4] KHÔNG đưa vào tập `fixed` dưới: `isOurFixedMessage` so TIỀN TỐ HAI CHIỀU (`f.startsWith(n.slice(0, 40))`, không trần độ
+// dài `n`) ⇒ có hai câu này thì tin sale gõ «Noted» · «Noted po» · «Sorry to hear that» bị coi là tin của bot ⇒ `nhanDienSale` không
+// nhường. v3 nhận chữ của chính mình qua `hoi_thoai.ai_noi_gi` + `lan_gui` (`chat/human.js:12-15`) — câu cố định đi `guiChu` nên có
+// mặt ở cả hai. (Lệ «thêm chuỗi cố định mới thì PHẢI khai ở đây» ở đầu tệp: hai câu này KHAI ở đây, chỉ không vào `fixed`.)
+export const CAU_NHAN_BAN_GIAO = Object.freeze({
+  en: 'Noted po 🙏 Our team will check this and reply to you shortly.',
+  ar: 'تم الاستلام 🙏 سيتحقق فريقنا من طلبك ويرد عليك قريباً.',
+});
+export const CAU_Y_TE = Object.freeze({
+  en: 'Sorry to hear that po 🙏 Please stop using the product and see a doctor, especially if there is bleeding or irritation. Our team will contact you shortly.',
+  ar: 'نأسف لذلك 🙏 يرجى التوقف عن استخدام المنتج ومراجعة الطبيب، خاصة عند وجود نزيف أو تهيج. سيتواصل معك فريقنا قريباً.',
+});
+
 const norm = (s) => cleanText(s || '').toLowerCase().replace(/\s+/g, ' ').replace(/[^\p{L}\p{N} ]/gu, '').trim();
 
 // Chuỗi cố định + các câu mẫu Fast Lane đã dựng (đăng ký lúc chạy).

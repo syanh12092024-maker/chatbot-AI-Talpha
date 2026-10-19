@@ -161,6 +161,7 @@ const KHACH_AM = [
   'I will order 2 sets, the delivery is COD right?', 'How many days the order arrive?', 'Is it 2-5 days delivery?',
   'If the order is not original can I return it?', 'I dont want this product in big size, small one please',
   'If you deliver today I will order 2 sets', 'i dont want the delivery to my office, home address only',
+  'will you deliver to jeddah po',
 ];
 test('BH9 DK · donTuTinKhach DƯƠNG: sáu câu khách thật ① lỗi 1 + «tell him to deliver 4pm» + C39', () => {
   const hut = KHACH_DUONG.filter((t) => !C.donTuTinKhach(t));
@@ -445,6 +446,10 @@ test('BH9 H2 · có SĐT + địa chỉ ⇒ «Bước còn thiếu: ĐÃ CÓ SĐ
 test('BH9 H3 · codNgam ⇒ dòng «COD: chấp nhận ngầm … KHÔNG hỏi lại COD, tạo đơn (cod_confirmed=true)»', () => {
   const p = { ...C.extractFromText(DIA_CHI, C.emptyProfile()), cod: true, codNgam: true };
   assert.match(C.buildProfileBlock(p, {}), /COD: chấp nhận ngầm \(khách gửi SĐT \+ địa chỉ sau khi đã nghe điều kiện COD\) — KHÔNG hỏi lại COD, tạo đơn \(cod_confirmed=true\)/);
+  // khách nói «no COD» SAU đó ⇒ `cod` hạ ⇒ dòng quay về «chưa xác nhận» dù cờ `codNgam` còn trong hồ sơ
+  C.extractFromText('no COD please, card only', p);
+  assert.equal(p.cod, false);
+  assert.match(C.buildProfileBlock(p, {}), /COD: chưa xác nhận/);
 });
 test('BH9 H4 · dấu hiệu y tế ⇒ dòng ⚕️ «câu ĐẦU: khuyên ngừng dùng và đi khám bác sĩ … KHÔNG nêu giá/gói ở tin này»', () => {
   const block = C.buildProfileBlock(C.emptyProfile(), { yTe: 'chảy máu' });

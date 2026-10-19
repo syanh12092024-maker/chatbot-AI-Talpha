@@ -97,20 +97,85 @@ export function hasAddress(text) {
   return false;
 }
 
-// Tên: chỉ bắt khi khách NÓI RÕ là tên, hoặc khi tin đã có SĐT (khối thông tin đơn:
-// "Amy Añoza / 0536064249 / Jeddah") — đoán mò tên từ chữ hoa dễ bắt nhầm tên sản phẩm.
-const NAME_LABEL = /(?:my name is|my name's|i am|i'?m|this is|ako si|ako po si|pangalan ko(?: po)?(?: ay)?|name\s*[:=-]|pangalan\s*[:=-]|اسمي|الاسم\s*[:=-])\s*([\p{L}][\p{L}\s.'-]{1,40})/iu;
-const NAME_LINE = /^[\p{Lu}\p{L}][\p{L}.'-]+(?:\s+[\p{L}][\p{L}.'-]+){1,3}$/u;
+// ─────────────────────────────────────────────────────────────────────────────
+// TÊN — MỘT LUẬT cho cả điểm lead (`hasName`) lẫn hồ sơ đơn (`context.js#firstName`). BH9 ② 8.
+//
+// Trước BH9 có HAI bản regex chép nhau (đây và `context.js:152-153`) và cả hai sai cùng một kiểu: đo trên giả lập pilot 09/10
+// (UAE 52 hội thoại · Saudi 54) MỌI tên do regex rút — 14/14 — đều SAI: «finished» («Later, when this is finished») · «e now»
+// (từ «haven't t-im-e now» — `i'?m` không ranh giới từ) · «waiting» · «here in Dammam» · «Yass island» (dòng địa chỉ) · «SAUDI
+// ARABIA». Tên sai rồi đi thẳng vào `create_draft_order`, và `missingSteps` thôi xin tên thật.
+//
+// Lệch một chiều: KHÔNG CHẮC ⇒ '' (bot hỏi tên một lần nữa, hoặc dùng tên Facebook — người quyết 15/10). Ba đường nhận, chặt dần:
+//   ① nhãn RÕ («my name is» · «here's my name» · «name:» · «pangalan ko» · «ako si» · «اسمي») ⇒ lấy tối đa 4 chữ theo sau;
+//   ② nhãn MƠ HỒ («i am» · «i'm» · «im» · «this is») ⇒ chỉ khi có ranh giới từ hai đầu VÀ 1–3 chữ theo sau đều VIẾT HOA chữ đầu
+//      và không chữ nào là từ thường («I'm Maria» nhận; «I'm here in Dammam» · «This is real gold» · «I am waiting» không);
+//   ③ tin có SĐT ⇒ một dòng/đoạn 2–4 chữ, không số, KHÔNG có địa danh/từ địa chỉ; tách cả đuôi «<SĐT> Tên Họ» cùng dòng.
+// Nguồn chỉ là tin KHÁCH (`context.js#hydrateProfile` bỏ tin page) — không đổi.
+const TU_THUONG = new Set(`waiting here there working finished done ready busy fine ok okay sorry from in at on to for the a an and
+  yesterday today tomorrow now later interested real not just only also still already very so really new old good happy glad sure
+  available single married home back going coming outside inside abroad filipino pinoy indian pakistani nepali arab saudi
+  thank thanks you please po sir maam madam order deliver delivery number phone contact address location cash cod salamat ako
+  is it this that what how when where why who my your our his her their me him them we they`.split(/\s+/).filter(Boolean));
+const NHAN_RO = /(?:\bmy\s+name\s+is|\bmy\s+name['’]s|\bhere['’]?s\s+my\s+name|\bname\s*[:=-]|\bpangalan\s*[:=-]|\bpangalan\s+ko(?:\s+po)?(?:\s+ay)?|\bako\s+(?:po\s+)?si|اسمي|الاسم\s*[:=-])\s*/iu;
+const NHAN_MO_HO = /\b(?:i\s+am|i['’]?m|this\s+is)\b\s+/giu;
+const CHU_TEN = /^[\p{L}][\p{L}.'’-]*$/u;
+const DIA_DANH = /\b(?:island|community|city|district|uae|emirates?|saudi|arabia|ksa|philippines)\b/i;
+// Từ địa chỉ: dùng lại đúng bộ của `hasAddress` (cùng tệp) — một nguồn cho «đây là địa chỉ».
+const laDiaChi = (s) => AREA_LATIN.test(s) || ADDR_DETAIL.test(s) || AREA_AR.test(s) || ADDR_DETAIL_AR.test(s) || DIA_DANH.test(s);
+const sachDuoi = (w) => w.replace(/^[.'’-]+|[.'’-]+$/g, '');
+
+/** Tối đa `max` chữ đầu của `s`, dừng ở dấu câu / chữ số / từ thường. */
+function laySauNhan(s, max) {
+  const out = [];
+  for (const tho of s.split(/\s+/)) {
+    const w = sachDuoi(tho.replace(/[,;:!?()"“”]+$/, ''));
+    if (!w || !CHU_TEN.test(w) || TU_THUONG.has(w.toLowerCase())) break;
+    out.push(w);
+    if (out.length >= max || /[.,;:!?]$/.test(tho)) break;
+  }
+  return out;
+}
+
+/** Một dòng có phải TÊN trong khối thông tin đơn không (2–4 chữ, không số, không địa danh/từ địa chỉ, không từ thường). */
+function laDongTen(l) {
+  const t = l.trim();
+  if (t.length < 4 || t.length > 40 || /\d/.test(t) || laDiaChi(t)) return false;
+  const tu = t.split(/\s+/).map(sachDuoi).filter(Boolean);
+  return tu.length >= 2 && tu.length <= 4 && tu.every((w) => CHU_TEN.test(w) && !TU_THUONG.has(w.toLowerCase()));
+}
+
+/** Tên khách tự cho trong MỘT tin, hoặc '' (= không chắc). */
+export function tachTen(text) {
+  const s = String(text || '');
+  if (!s.trim()) return '';
+  // ① nhãn RÕ
+  const ro = NHAN_RO.exec(s);
+  if (ro) {
+    const tu = laySauNhan(s.slice(ro.index + ro[0].length), 4);
+    if (tu.length) return tu.join(' ').slice(0, 40);
+  }
+  // ② nhãn MƠ HỒ — mọi chữ theo sau phải viết hoa chữ đầu
+  for (const m of s.matchAll(NHAN_MO_HO)) {
+    const sau = s.slice(m.index + m[0].length);
+    const tu = laySauNhan(sau, 3);
+    if (tu.length && tu.every((w) => /^\p{Lu}/u.test(w))) {
+      const tiep = sau.split(/\s+/)[tu.length];   // chữ thứ 4 còn viết hoa ⇒ cả cụm quá dài, không chắc
+      if (!(tiep && /^\p{Lu}\p{Ll}/u.test(tiep) && !TU_THUONG.has(tiep.toLowerCase()))) return tu.join(' ');
+    }
+  }
+  // ③ khối thông tin đơn (có SĐT)
+  if (!hasPhone(s)) return '';
+  for (const doan of s.split(/[\n,·|;]+/)) {
+    const d = doan.trim();
+    if (laDongTen(d)) return d.replace(/\s+/g, ' ');
+    const m = d.match(/\+?\d[\d\s().-]{5,18}\d\s+(.+)$/);   // «… 0501234567 Maria Santos»
+    if (m && laDongTen(m[1])) return m[1].trim().replace(/\s+/g, ' ');
+  }
+  return '';
+}
 
 export function hasName(text) {
-  const s = String(text || '');
-  if (NAME_LABEL.test(s)) return true;
-  if (!hasPhone(s)) return false;
-  // Khối thông tin đơn: có SĐT + một dòng toàn chữ 2–4 từ → dòng đó là tên.
-  return s.split(/[\n,·|]+/).some((line) => {
-    const l = line.trim();
-    return l.length >= 4 && l.length <= 40 && !/\d/.test(l) && NAME_LINE.test(l);
-  });
+  return !!tachTen(text);
 }
 
 const BUY = /\b(order na|order ko|i'?ll take|i will take|i want to (?:order|buy|get)|i'?d like to order|place (?:an|my) order|gusto ko(?:ng)?(?: po)?(?: ito| yan| bumili| mag ?order)?|kukunin ko|kunin ko|kunin na|bibili(?: ako| na)?|bili na|mag ?order (?:na|ako|po)|pa ?order|sige order|sige po order|deal)\b/i;

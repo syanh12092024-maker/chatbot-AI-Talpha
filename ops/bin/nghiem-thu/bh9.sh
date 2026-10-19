@@ -96,7 +96,7 @@ BANG = {
   "bo-loc-dia-danh": [(LS, " || /\\d/.test(t) || laDiaChi(t)) return false;", " || /\\d/.test(t)) return false;")],
   "bo-tach-duoi": [(LS, "    if (m && laDongTen(m[1])) return m[1].trim().replace(/\\s+/g, ' ');", "")],
   "hasname-rieng": [(LS, "  return !!tachTen(text);", "  return /(?:my name is|i am|i'?m|this is|ako si)\\s*[\\p{L}]/iu.test(String(text || '')) || !!tachTen(text);")],
-  "don-cu": [(CX, "const KHUON_MOI = [", "const KHUON_MOI = [] && ["), ("re", CX, r"const KHACH_NOI_VE_DON = \[[\s\S]*?\n\];", KHACH_CU)],
+  "don-cu": [(CX, "const KHUON_MOI = [", "const KHUON_MOI = [];\nconst KHUON_MOI_TAT = ["), ("re", CX, r"const KHACH_NOI_VE_DON = \[[\s\S]*?\n\];", KHACH_CU)],
   "suy-ordernoted": [(CX, "    const d = donTuTinPage(raw);\n    if (d) prof.donDaCo = d;\n  }\n  return prof;",
                       "    const d = donTuTinPage(raw);\n    if (d) prof.donDaCo = d;\n  }\n  if (!prof.donDaCo && prof.otherBot?.orderNoted) prof.donDaCo = { trangThai: 'đã tạo', cau: '', nguon: 'page' };\n  return prof;")],
   "hai-ban-luat": [(CX, "  if (prof) bocDonTuLichSu(msgs, pageId, prof);\n", "")],

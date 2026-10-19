@@ -178,7 +178,7 @@ export function quyTongTienNho(duLieu = {}) {
 export function chuanHoaHoSo(hoSo = {}) {
   const h = hoSo || {};
   const coV3 = h.tong_tien != null && h.tong_tien !== "";
-  return quyTongTienNho({
+  const d = quyTongTienNho({
     ten: chu(h.ten ?? h.name),
     sdt: chu(h.sdt ?? h.phone),
     dia_chi: chu(h.dia_chi ?? h.address),
@@ -190,6 +190,21 @@ export function chuanHoaHoSo(hoSo = {}) {
     san_pham_ma: chu(h.san_pham_ma ?? h.sanPhamMa ?? h.variant_ma),
     kho_hang: chu(h.kho_hang ?? h.khoHang ?? h.warehouse_id),
   });
+  // BH9 ② 10 — CỜ cho người duyệt (người quyết 15/10 · `01-QUYET-DINH.md` §1 «SỬA 15/10»). Chỉ đặt khoá khi TRUE: dòng cũ / nơi gọi
+  // không mang ba khoá này (`tenKhach` · `tenFb` · `codNgam` — handler-v3 truyền ở `captureOrder` và đường dự phòng) giữ nguyên hình.
+  //   · `ten_tu_facebook` — khách KHÔNG tự cho tên (`tenKhach` rỗng) và tên trên đơn rỗng (⇒ điền tên Facebook) hoặc mọi chữ của tên
+  //     nằm trong tên Facebook (model lấy tên Facebook làm tên nhận). Sale đổi tên ở `luuDonCho` ⇒ cờ mất.
+  //   · `cod_ngam` — khách chưa NÓI đồng ý COD, hồ sơ suy ra từ SĐT + địa chỉ gửi sau khi đã nghe điều kiện COD.
+  // Cờ KHÔNG xuống POS: `duyet()` truyền trường tường minh (`ten/sdt/…`), không truyền cả `du_lieu_don`.
+  const tenFb = chu(h.tenFb);
+  if (tenFb && !chu(h.tenKhach)) {
+    const tuFb = new Set(tenFb.toLowerCase().split(/\s+/).filter(Boolean));
+    const tuTen = d.ten.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!tuTen.length) { d.ten = tenFb; d.ten_tu_facebook = true; }
+    else if (tuTen.every((w) => tuFb.has(w))) d.ten_tu_facebook = true;
+  }
+  if (h.codNgam === true) d.cod_ngam = true;
+  return d;
 }
 
 // ═══ CỬA ① — MẪU ĐỦ TRƯỜNG ═══════════════════════════════════════════════════

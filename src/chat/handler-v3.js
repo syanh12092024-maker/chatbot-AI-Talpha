@@ -13,7 +13,7 @@ import {
 import { classify } from "../classifier.js";
 import { fastLane, noteFastLane } from "../fast-lane.js";
 import { runCloser } from "../closer.js";
-import { guardOutbound, canFixLocally, localFix } from "../outbound-guard.js";
+import { guardOutbound, canFixLocally, localFix, LUAT_BH9 } from "../outbound-guard.js";
 import {
   emptyProfile,
   hydrateProfile,
@@ -21,7 +21,12 @@ import {
   absorbToolUses,
   buildContextMessages,
   shipVuotMau,
+  bocDonTuLichSu,
+  laCauSauBan,
+  dauHieuYTe,
+  codNgam,
 } from "../context.js";
+import { CAU_NHAN_BAN_GIAO, CAU_Y_TE } from "../our-messages.js";
 // GL8: `catChu` cho mọi chữ cắt để ghi vào `so_ai.du_lieu` (jsonb — `slice` chém đôi emoji ⇒ cả dòng bị từ chối; `so-ai.js` có lưới
 // `jsonLanh` phía sau). `so_ai.ly_do` là cột text — pg tự thay nửa cặp bằng U+FFFD, không vỡ. Chữ GỬI KHÁCH không đi qua hàm này.
 import { cleanText, catChu } from "../text.js";
@@ -29,7 +34,7 @@ import { config } from "../config.js";
 import { layModel as layModelMacDinh } from "./model.js";
 import { ghiSoAi, LOAI, KHONG_GOI_MODEL } from "./so-ai.js";
 import { aiDuocTraLoi, dungState, ganTuState } from "./trang-thai.js";
-import { ngonNguLech } from "./ngon-ngu.js";
+import { ngonNguLech, doanNgonNgu } from "./ngon-ngu.js";
 import { suaHoiThoai, docHoiThoaiTheoPageText } from "./kho.js";
 import { lopTuKhoa, LANE as LANE_TU_KHOA } from "./lop-tu-khoa.js";
 import { rapKb as rapKbMacDinh } from "./rap-prompt.js";
@@ -361,6 +366,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
   const quaCuaRa = (text, ctxGuard) => {
     const v = d.kiemTinRa(text, ctxGuard);
     if (v.ok) return { text, v, daSua: "" };
+    // BH9 ② 6: luật mới KHÔNG sửa tại chỗ (không trong FIXABLE) — nói thẳng ở đây, đừng trông vào nội dung tập FIXABLE.
+    if (LUAT_BH9.has(v.rule)) return { text: "", v, daSua: "" };
     if (v.action === "block" || !d.suaDuocTaiCho(v.rule)) return { text: "", v, daSua: "" };
     const sua = d.suaTaiCho(text, v.rule);
     if (!sua) return { text: "", v, daSua: "" };
@@ -423,7 +430,18 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
   const text = String(tin.noi_dung || "");
   const history = historyBeforeMessage(d.lichSu, tin);
   if (!prof.hydratedAt && history.length) hydrateProfile(history, tin.page_id, prof);
-  extractFromText(text, prof);
+  // BH9 ② 9b: truyền câu bot vừa nói — «yes» đáp câu bot HỎI COD là đồng ý COD.
+  extractFromText(text, prof, { lastAi: state.lastAiText });
+  // BH9 ② 2c: «đơn đang trong cuộc» bóc từ lịch sử page MỌI lượt (cùng một luật với `cleanHistory`), để cổng sau bán 4a thấy
+  // `donDaCo` TRƯỚC mọi cửa 0 đồng — trước BH9 tin page chỉ được dò ở bước 7 (dựng ngữ cảnh), sau lớp từ khoá/Fast Lane.
+  bocDonTuLichSu(history, tin.page_id, prof);
+  // BH9 ② 9c: COD NGẦM (người quyết 15/10) — khách gửi SĐT/địa chỉ sau khi bot/page đã nêu điều kiện COD ⇒ không hỏi lại COD.
+  if (codNgam({ prof, text, msgs: history, pageId: tin.page_id, lastAi: state.lastAiText })) {
+    prof.cod = true;
+    prof.codNgam = true;
+  }
+  // BH9 ② 7: dấu hiệu y tế của TIN LƯỢT NÀY — lớp 0 đồng nhường model, cửa ra bật luật Y_TE, lượt luôn bàn giao.
+  const yTe = dauHieuYTe(text);
 
   // ── 3b · M11 v3 · CHẤM ĐIỂM LEAD (L2-M3 ②.2) ─────────────────────────────────────
   // SỚM — TRƯỚC lớp từ-khoá/Fast Lane (bước 4b/5), đúng vị trí `updateLead` của
@@ -520,10 +538,19 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     state.pendingCaption = "";
     if (caption) {
       const cua = quaCuaRa(caption, { kb, pageId: state.pageId, custName: state.custName, lastAiText: state.lastAiText,
-        orderCreated: !!state.orderResult?.pos_created, isOrderSummary: !!state.orderCreatedThisTurn });
+        orderCreated: !!state.orderResult?.pos_created, isOrderSummary: !!state.orderCreatedThisTurn,
+        // BH9 ② 5 [S7]: bốn luật mới chỉ cho chữ MODEL — caption Fast Lane (lượt 0 model) không bật.
+        ...ctxBH9() });
       caption = cua.text;
       if (!caption) {
         captionChan = cua.v.rule || "?";
+        // BH9: caption của MODEL phạm luật mới (chào giá với khách có đơn / khách báo y tế…) ⇒ KHÔNG gửi tấm nào (ảnh bán hàng
+        // cũng là chào hàng) + bàn giao. Chữ model (đã qua cửa riêng) vẫn đi — mỗi lượt một tin.
+        if (LUAT_BH9.has(captionChan)) {
+          anhHong.push(...hang.map(() => "bo_cau_co_dinh"));
+          if (!state.handoff) { state.handoff = true; state.handoffReason = `cửa ra chặn: ${captionChan}`; }
+          return 0;
+        }
         if (!coChu) {
           anhHong.push(...hang.map(() => "bo_cua_ra"));
           if (!state.handoff) { state.handoff = true; state.handoffReason = `cửa ra chặn: ${captionChan}`; }
@@ -605,6 +632,33 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     dem.ghiNote += 1;
   };
 
+  // ── BH9 · CÂU CỐ ĐỊNH + BÀN GIAO (người quyết 15/10: khi bot KHÔNG được tự trả lời) ─────────────────────────────────────────
+  // Ngữ cảnh bốn luật cửa ra mới — [S7] `luatBH9` CHỈ khi lượt đã gọi model (chữ model / caption model); lớp từ khoá + Fast Lane
+  // (0 model) giữ phán quyết y hệt base.
+  const ctxBH9 = () => ({ luatBH9: dem.goiModel > 0, donDaCo: !!prof.donDaCo, daBanGiao: !!state.handoff, dauHieuYTe: yTe });
+  const cauCoDinh = (bo) => (doanNgonNgu(text) === "ar" ? bo.ar : bo.en);
+  // [S5] Ảnh model đã xếp cho câu bị thay KHÔNG được đi: BỎ HÀNG (không dùng `xaAnh(false)` — hàm đó chỉ bỏ ảnh khi CAPTION bị chặn;
+  // ảnh không caption / caption sạch vẫn đi). Số tấm bỏ vào dòng sổ `image` (`anh_hong_loai: bo_cau_co_dinh`).
+  const boHangAnh = () => {
+    for (const _ of state.pendingImages || []) anhHong.push("bo_cau_co_dinh");
+    state.pendingImages = [];
+    state.pendingCaption = "";
+  };
+  // Gửi MỘT câu cố định qua cửa (không qua model). `state.handoff` đặt TRƯỚC `guiChu`: lỗi ở `banGiaoSale` sau đó vẫn lưu HANDOFF
+  // qua `luuLai` của nhánh `catch`. Dòng sổ `reply` lane `cau_co_dinh` KHÔNG mang `dung` ([S6] — token của lượt đã nằm ở dòng
+  // `spent_no_send`; để ở cả hai là cộng đôi tiền).
+  const guiCauCoDinh = async ({ cau, lyDo, ma }) => {
+    state.handoff = true;
+    state.handoffReason = lyDo;
+    boHangAnh();
+    await guiChu(cau);
+    await ghi(LOAI.REPLY, {
+      maModel: KHONG_GOI_MODEL, lane: "cau_co_dinh", trangThai: hoiThoai.trang_thai, lyDo,
+      duLieu: { text: catChu(cau, 200), cau_co_dinh: ma },
+    });
+    state.lastAiText = cau;
+  };
+
   try {
     // ── 4 · PAGE CHƯA CÓ KB → bàn giao, không bịa ────────────────────────────────
     if (kb.noData) {
@@ -620,6 +674,23 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       return { ketQua: KET_QUA.XONG, lyDo: "page_no_kb", dem };
     }
 
+    // ── 4a · CỔNG SAU BÁN (BH9 ② 3 — 0 token) ───────────────────────────────────────────────────────────
+    // Khách đã mua mà hỏi giờ giao / báo đã nhận / báo huỷ: bot KHÔNG có dữ liệu đơn (`tools.js` không có tool tra đơn), nên mọi
+    // câu trả lời là đoán — giả lập 09/10: «no active order was placed under your name yet» · «Your order is on its way» · «6 PM
+    // delivery noted» · chào gói lại. Đứng TRƯỚC lớp từ khoá/Fast Lane: mẫu giao hàng cũng là đoán. Y tế thì để model khuyên trước
+    // (cửa ra Y_TE canh) — lượt y tế luôn bàn giao.
+    const sauBan = laCauSauBan(text, prof);
+    if (sauBan.la && !yTe) {
+      const don = prof.donDaCo;
+      const lyDo = `SAU BÁN · khách: «${catChu(text.replace(/\s+/g, " ").trim(), 120)}» · đơn: `
+        + (don ? `${don.trangThai} (${don.nguon})` : `${sauBan.lyDo} (bot)`);
+      await guiCauCoDinh({ cau: cauCoDinh(CAU_NHAN_BAN_GIAO), lyDo, ma: "sau_ban" });
+      if (!state.handoffNotified) await banGiaoSale(lyDo);
+      await ghi(LOAI.HANDOFF, { maModel: KHONG_GOI_MODEL, lane: "cau_co_dinh", lyDo, duLieu: { nguon: "sau_ban" } });
+      await luuLai({ daGoiModel: false, daGuiText: true, textDaGui: state.lastAiText });
+      return { ketQua: KET_QUA.XONG, lyDo: "sau_ban", dem };
+    }
+
     // ── 4b · LỚP TỪ-KHOÁ v3 — 2 luật Botcake chưa phủ + vá `paano mag order` (L2-M2) ──
     // Đứng TRƯỚC Fast Lane/classify (đề bài ① phiếu L2-M2). `lopTuKhoa` là hàm THUẦN,
     // không đọc DB — xem src/chat/lop-tu-khoa.js đầu file để biết vì sao NHƯỜNG (không
@@ -627,7 +698,10 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     // (M09) với Fast Lane/AI — câu trả lời của lớp này KHÔNG được miễn kiểm nội dung.
     const tkTho = lopTuKhoa({ text, kb, profile: prof });
     // Lượt chốt ⇒ coi như lớp từ khoá KHÔNG nhận, tin đi tiếp xuống Fast Lane rồi model.
-    const tk = (laLanChot(tkTho.rule) || shipNhuongModel(tkTho.rule, text))
+    // BH9 ② 7 [S9]: khách báo y tế ⇒ NHƯỜNG model (câu mẫu giá với người chảy máu = 0 lời khuyên, 0 bàn giao).
+    const tk = yTe
+      ? { handled: false, rule: tkTho.rule, reply: "", lyDo: "nhuong_model:y_te" }
+      : (laLanChot(tkTho.rule) || shipNhuongModel(tkTho.rule, text))
       ? { handled: false, rule: tkTho.rule, reply: "", lyDo: `nhuong_model:${tkTho.rule}` }
       : (tkTho.handled && ngonNguLech(text, tkTho.reply))
       ? { handled: false, rule: tkTho.rule, reply: "", lyDo: `nhuong_model:ngon_ngu:${tkTho.rule}` }
@@ -690,7 +764,9 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     }) : { handled: false, reason: safety.reason };
     // Nhường TRƯỚC khi đếm: đếm rồi mới nhường thì bộ đếm lớp 0 đồng báo «đã chặn» trong
     // khi lượt này thực tế vẫn đi lên model — số liệu tự dối.
-    const fl = (laLanChot(flTho.lane) || shipNhuongModel(flTho.lane, text))
+    const fl = yTe
+      ? { handled: false, lane: flTho.lane, reason: "nhuong_model:y_te" }
+      : (laLanChot(flTho.lane) || shipNhuongModel(flTho.lane, text))
       ? { handled: false, lane: flTho.lane, reason: `nhuong_model:${flTho.lane}` }
       // Câu mẫu KHÁC ngôn ngữ khách ⇒ nhường, để model trả lời bằng đúng ngôn ngữ khách dùng.
       // Lane IM LẶNG (không có `reply`) không bị đụng tới: không có chữ thì không có gì lệch.
@@ -829,6 +905,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         // KB để `buildProfileBlock` đối chiếu giá mà KÊNH KHÁC đã báo cho khách với bảng
         // giá đang chạy. Không có nó thì khối hồ sơ chỉ nói "đã báo giá", không nói SAI.
         kb,
+        // BH9 ② 7: dòng ⚕️ «câu ĐẦU: khuyên ngừng dùng và đi khám…» (rỗng ⇒ không dòng).
+        yTe,
       },
     });
     state.messages = messages;
@@ -844,9 +922,17 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     const business = {
       captureOrder: async order => {
         await assertCanAct();
+        // BH9 ② 4 — thi hành CORE §5 («confirmed by the backend, or placed via Facebook Commerce»): khách đang có đơn do PAGE nói
+        // (POS/sale/vận đơn) ⇒ không đẻ đơn thứ hai. [S1] CHỈ nguồn page — nguồn `khach` là suy từ lời khách, bắt nhầm thì khoá tạo
+        // đơn vĩnh viễn (`donDaCo` không hết hạn); nháp nguồn khách vẫn vào hàng chờ, sale + cửa ③ chống trùng canh.
+        if (prof.donDaCo?.nguon === "page") {
+          throw new Error(`Khách đang có đơn (${prof.donDaCo.trangThai}) — không tạo đơn mới; gọi handoff_human`);
+        }
         const saved = await d.vaoHangCho(pool, ctx, {
           hoiThoaiId: hoiThoai.id, teamId, convId: tin.conv_id, tinId: tin.id,
-          hoSo: { ...order, san_pham_ma: String(order.product_id).includes(':') ? order.product_id : '' },
+          // BH9 ② 10: cờ đơn nháp — tên khách TỰ cho (để biết `name` của model có phải tên Facebook) + COD ngầm.
+          hoSo: { ...order, san_pham_ma: String(order.product_id).includes(':') ? order.product_id : '',
+            tenKhach: prof.name, tenFb: prof.tenFb, codNgam: !!(prof.cod && prof.codNgam) },
         }, d.depsHangCho);
         if (!saved?.id) throw new Error('Hàng chờ chưa xác nhận lưu đơn');
         if (saved.daCo && saved.trang_thai !== 'cho_duyet') throw new Error('Thông tin đơn này đã được nhân viên xử lý');
@@ -871,7 +957,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
 
     // ── 8 · HÚT HỒ SƠ (M07) ──────────────────────────────────────────────────────
     absorbToolUses(state.messages, prof);
-    extractFromText(text, prof);
+    extractFromText(text, prof, { lastAi: state.lastAiText });
     if (state.closed) prof.ordered = true;
 
     const dung = state.lastUsage || {};
@@ -893,6 +979,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         // trong khi hệ đã ghi so_ai ORDER + đẩy hàng chờ.
         orderCreated: !!state.orderResult?.pos_created,
         isOrderSummary: !!state.orderCreatedThisTurn,
+        // BH9 ② 6: bốn luật mới (lượt này đã gọi model) + ngữ cảnh của chúng.
+        ...ctxBH9(),
       });
       guarded = cua.text;   // rỗng ⇒ cửa giết thật; v3 KHÔNG xin model viết lại (bậc 3)
       cuaRaSua = cua.daSua;
@@ -908,6 +996,21 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
           duLieu: { text_bi_chan: catChu(guarded0, 600), guard_ly_do: cua.v.reason || "" },
         });
       }
+    }
+
+    // ── 9b · BH9 ② 6 — LUẬT MỚI chặn ⇒ CÂU CỐ ĐỊNH + bàn giao (không im). Luật CŨ chặn ⇒ đường cũ y nguyên (im + bàn giao, dưới).
+    // `spent_no_send` phía trên đã giữ câu model + `dung` (tiền của lượt); dòng `reply` của câu cố định KHÔNG mang `dung` [S6].
+    const cauCoDinhMa = !guarded && cuaRaChan && LUAT_BH9.has(cuaRaChan.rule) ? `cua_ra:${cuaRaChan.rule}` : "";
+    if (cauCoDinhMa) {
+      guarded = cauCoDinh(cuaRaChan.rule === "Y_TE" ? CAU_Y_TE : CAU_NHAN_BAN_GIAO);
+      state.handoff = true;
+      state.handoffReason = `cửa ra chặn: ${cuaRaChan.rule}`;
+      boHangAnh();   // [S5] — trước `xaAnh(!!guarded)`: `guarded` giờ khác rỗng nên ảnh sẽ ĐI nếu còn trong hàng
+    }
+    // BH9 ② 7: lượt khách báo y tế LUÔN bàn giao — câu model qua cửa thì vẫn gửi câu đó, rồi chuyển sale.
+    if (yTe && !state.handoff) {
+      state.handoff = true;
+      state.handoffReason = `Y TẾ · khách báo ${yTe}`;
     }
 
     // ── 11 · CỜ BỘ NÃO ĐỂ LẠI → sổ AI (N5) ──────────────────────────────────────
@@ -945,7 +1048,8 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         {
           hoiThoaiId: hoiThoai.id,
           teamId,
-          hoSo: prof,
+          // BH9 ② 10: cùng ba khoá cờ với `captureOrder` (tên khách tự cho · tên Facebook · COD ngầm).
+          hoSo: { ...prof, tenKhach: prof.name, tenFb: prof.tenFb, codNgam: !!(prof.cod && prof.codNgam) },
           convId: tin.conv_id,
           tinId: tin.id,
         },
@@ -962,7 +1066,15 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         duLieu: duLieuAnh(nAnh),
       });
     }
-    if (guarded) {
+    if (guarded && cauCoDinhMa) {
+      // Câu cố định (không phải chữ model): lane riêng, KHÔNG `dung`, `maModel` vắng mặt — chi phí của lượt ở dòng `spent_no_send`.
+      await guiChu(guarded);
+      await ghi(LOAI.REPLY, {
+        maModel: KHONG_GOI_MODEL, lane: "cau_co_dinh", trangThai: hoiThoai.trang_thai, lyDo: state.handoffReason,
+        duLieu: { text: catChu(guarded, 200), cau_co_dinh: cauCoDinhMa, tre_luot_ms: Date.now() - mocLuot },
+      });
+      state.lastAiText = guarded;
+    } else if (guarded) {
       await guiChu(guarded);
       await ghi(LOAI.REPLY, {
         maModel: model.maModel,
@@ -1014,7 +1126,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       ketQua: KET_QUA.XONG,
       // `khong_gui` chỉ còn nghĩa "model không viết được chữ". Cửa ra chặn thì NÓI RÕ
       // luật nào — đo 21/09: cả 5 lượt `khong_gui` đều là cửa ra, không lượt nào là model câm.
-      lyDo: guarded ? "tra_loi" : cuaRaChan ? `guard_noi_dung:${cuaRaChan.rule}` : "khong_gui",
+      lyDo: cauCoDinhMa ? `cau_co_dinh:${cuaRaChan.rule}` : guarded ? "tra_loi" : cuaRaChan ? `guard_noi_dung:${cuaRaChan.rule}` : "khong_gui",
       dem,
     };
   } catch (e) {

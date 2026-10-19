@@ -11,6 +11,14 @@
 const { esc, statusBadge, button: nutHtml, alert: canhBao, emptyState, formatNumber } = window.UI;
 
 const $ = (s) => document.querySelector(s);
+// BH9 ② 10 — cờ đơn nháp cho người duyệt (người quyết 15/10): tên người nhận lấy từ Facebook / COD suy ngầm. Khoá do
+// `src/orders/hang-cho.js#chuanHoaHoSo` đặt, chỉ khi true. Cùng hai chuỗi với Hộp thư (`hop-thu-ui.js#CO_DON`).
+function canhDonNhap(du) {
+  return [
+    du && du.ten_tu_facebook === true ? "⚠️ Tên lấy từ Facebook — chưa xác nhận" : "",
+    du && du.cod_ngam === true ? "⚠️ COD ngầm — khách chưa nói đồng ý COD" : "",
+  ].filter(Boolean);
+}
 const gio = (ms) => (ms ? new Date(ms).toLocaleString("vi-VN") : "—");
 const el = (tag, text, parent) => {
   const n = document.createElement(tag);
@@ -304,7 +312,8 @@ async function load() {
     if (tab === "pages") renderPage(than, item);
     if (tab === "orders") {
       const o = hang(than, [
-        `<div class="manh">#${esc(item.id)}</div><div class="meta">${esc(item.du_lieu_don.ten || "Thiếu tên")} · ${esc(String(item.du_lieu_don.so_luong || "?"))} sản phẩm</div>`,
+        `<div class="manh">#${esc(item.id)}</div><div class="meta">${esc(item.du_lieu_don.ten || "Thiếu tên")} · ${esc(String(item.du_lieu_don.so_luong || "?"))} sản phẩm</div>`
+          + canhDonNhap(item.du_lieu_don).map((c) => `<div class="meta">${esc(c)}</div>`).join(""),
         esc(item.page_name || ""),
         statusBadge(item.trang_thai === "cho_duyet" ? "pending" : "unknown", { label: item.trang_thai }),
         "",
@@ -400,6 +409,7 @@ async function order(id) {
   el("p", `Trạng thái: ${o.trang_thai}`, c);
   const data = o.du_lieu_don,
     inputs = {};
+  for (const canh of canhDonNhap(data)) el("p", canh, c);
   for (const [key, label] of Object.entries({
     ten: "Tên khách",
     sdt: "Số điện thoại",
