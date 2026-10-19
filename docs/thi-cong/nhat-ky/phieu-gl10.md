@@ -261,3 +261,21 @@ so với bản chép trong `test/gl10-tep-ai-sale.test.mjs`; lệch ⇒ KHÔNG g
 Mọi số trên: **máy dev**, worktree `…/.claude/worktrees/agent-a2b792f2ee00a5373`, Postgres.app `127.0.0.1:5432`, hộp cát theo pid, `.env` chép từ cây
 chính (`PANCAKE_READONLY=1`). Prod chỉ đọc (stat/grep/python3 -I, lúc 19/10 ~09:xx giờ VN). Không gọi model, không gọi Pancake, không đụng tệp
 thật của pancake-tool (mọi ca dùng mkdtemp). Có thợ khác chạy cổng song song (gp1/ll15*) — hộp cát theo pid, không đụng nhau.
+
+## Vòng bổ sung 19/10 — ba việc của tổng (commit `e4d5492`) · Lệch phiếu — tổng gật 19/10
+
+Thay cho mục «cổng cũ: gl3b ⑤c đỏ», lệch phiếu 14 và nợ N-GL10-GL3B-5C ở trên (đã xử, không còn nợ):
+
+1. **`ops/bin/nghiem-thu/gl3b.sh` ⑤c** (Lệch phiếu — tổng gật 19/10): đột biến «gỡ 033» nay đòi đỏ **N5** (vòng 033 down/up) thay cho «N1 N5»,
+   kèm một dòng giải thích trong cổng (035 dựng lại CHECK đủ 8 mã ⇒ N1 hết đỏ). **`ops/bin/nghiem-thu/gl3c.sh` ②d** (Lệch phiếu — tệp NGOÀI danh
+   sách tổng kê, sửa vì hệ quả trực tiếp): phép «gl4.sh · gl3b.sh không đổi từ base» đỏ khi gl3b.sh đổi ⑤c ⇒ nay trừ ĐÚNG hai dòng đó, mọi thay đổi
+   khác của hai tệp vẫn đỏ. `gl10.sh` ⑬ bỏ phần «đếm riêng đỏ đã biết» (so thẳng với nền base).
+   Chạy riêng: `gl3b.sh` rc=0 · ĐỎ 0 / XANH 49 (⑤c «đỏ: N5 (đòi đỏ: N5)») · `gl4.sh` rc=0 · ĐỎ 0 / XANH 60 · `gl3c.sh` rc=0 · ĐỎ 0 / XANH 76 — cả ba
+   bằng base.
+2. **Ca chép mã pancake-tool** (Lệch phiếu — tổng gật 19/10, repo công khai): `test/gl10-tep-ai-sale.test.mjs` + `test/gl10-cong-bat-tat.test.mjs` chỉ
+   giữ LOGIC `_page_gan_them` · `_page_gan_noi_khac` · `_hop_page_shop` (+ `_doc_gan` · `_ghi_gan`) — bỏ docstring/chú thích gốc có tên shop/page/người,
+   mỗi khối một dòng nguồn «chép logic … từ pancake-tool ai_sale.py:<dòng> ngày 19/10». Dấu tên khách giả trong ca log đổi thành `KHACH-BI-MAT-TEN-GIA-GL10`.
+   Quét `git diff 1b16a79..HEAD` (dòng thêm): 0 dòng khớp tên shop/page/khách/người đã biết hay SĐT dạng +971/+966/+974/+965; số ≥ 13 chữ số
+   chỉ là hằng thử (`12345678901234567` · `9007199254740993` · `1792056718000`); email chỉ dạng `@thu.vn`/`@gl10.vn` của ca.
+3. **Đo lại sau commit `e4d5492`**: `bash ops/bin/nghiem-thu/gl10.sh` (đầy đủ, cả ⑬) ⇒ **== ĐỎ 0 / XANH 60 · rc=0** — ⑬: gl2 52/0 · mb 0 · gl4 60/0 ·
+   gl3c 76/0 · gl3b 49/0 · gl1 7/0 · gd1 0 · l2-m1 3 dòng + va-r1 2 dòng GIỐNG HỆT base. `npm test -- --test-force-exit`: tests 2866 · pass 2844 · fail 0.
