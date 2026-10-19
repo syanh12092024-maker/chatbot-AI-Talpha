@@ -1,6 +1,6 @@
 # PHIẾU GL8 — Cắt chữ không làm đứt emoji trước khi ghi jsonb (bot trả lời xong thì tự giao sale) · công cụ giả lập đọc env như `node --env-file`
 
-**Base:** `33c04ac` · **Làn:** 🟥 (A chạm đường ghi sổ SAU khi gửi tin + lưới ở hàng chờ đơn `src/orders/hang-cho.js` — đường tiền; B là công cụ đo) ·
+**Base:** `0f7f9fa` · **Làn:** 🟥 (A chạm đường ghi sổ SAU khi gửi tin + lưới ở hàng chờ đơn `src/orders/hang-cho.js` — đường tiền; B là công cụ đo) ·
 **Soát (a):** 09/10 — SỬA PHIẾU (6 điểm, đã sửa ở bản này): tái hiện trong hộp cát `scratchpad/gl8-repro.mjs` — khách nhận 1 tin · tin `loi` · hội thoại `HANDOFF/SALE` lý do `loi_xu_ly_can_doi_chieu` · `so_ai` 0 dòng · cả giao dịch lùi ⇒ lượt chốt đơn mất cả dòng `hang_cho_tao_don` (ghi ở `handler-v3.js:940`, trước `guiChu` :964).
 **Nguồn:** giả lập pilot 09/10 trên page Soothing Cooling Gel UAE (CSDL giả lập dev, Kimi k2.6 thật, van gửi đóng) — tổng đo, chưa có nhật ký riêng.
 **Đụng bộ não:** không. KHÔNG sửa `src/context.js` (các chỗ cắt :167-168 · :174 · :232-236 · :355 · :373 · :447 vào `prof` — để lưới ② 2 phủ); `src/fast-lane.js` · `src/outbound-guard.js` không cần đụng (`outbound-guard.js:361` cắt mảng trong RAM). Buộc phải sửa tệp bộ não ⇒ DỪNG, báo tổng.

@@ -1,7 +1,7 @@
 phieu: GL10
 vong: 1
 ket_luan: TRA_VE
-ma_tho: "worktree agent-a2b792f2ee00a5373 · HEAD f749a54 (feat 31337e2) · diff 1b16a79..HEAD -- src v3 db"
+ma_tho: "worktree agent-a2b792f2ee00a5373 · HEAD 9d3b855 (feat d890aeb) · diff 7c99f77..HEAD -- src v3 db"
 cach_chay: >
   Ca phá nằm ngoài repo: scratchpad/refute-gl10/refute-gl10.test.mjs (F1–F6) + refute-gl10-dua.test.mjs (đua thật với Python
   chép nguyên văn _ghi_gan). Chạy: cd <worktree> && node --env-file=.env --import ./test/_an-toan.mjs --test <tệp>. Dùng Postgres hộp cát
@@ -111,7 +111,7 @@ da_thu_khong_pha_duoc:
 mu_code_review: []
 mu_nghiep_vu: []
 vong_2:
-  head: "fb6152f (thước c05a0bf · vá adbf23d)"
+  head: "12da650 (thước fd97c66 · vá 0f18207)"
   ket_luan: DAT
   cach_chay: >
     Chạy lại NGUYÊN các ca phá vòng 1 (refute-gl10.test.mjs) trên HEAD mới: F1 F3 F5 F6 giờ đỏ đúng chỗ khẳng định lỗi, tức đã vá.

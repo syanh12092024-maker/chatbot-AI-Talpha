@@ -7,7 +7,7 @@
 # tệp ca (`db/sandbox.js`, hậu tố `_p<pid>`, tự dựng tự dọn). KHÔNG mạng, KHÔNG model: cửa gửi + `chayCloser` TIÊM. ④9 (M6) đọc hai CSDL
 # giả lập dev `aicloser_gialap_pilot` · `aicloser_gialap_2` CHỈ ĐỌC (`default_transaction_read_only=on`) — ngữ cảnh từng lượt PHỎNG DỰNG
 # (lịch sử Pancake đã mất; xem đầu `test/bh9-phat-lai.test.mjs`) ⇒ số của ④9 là số có điều kiện. «Giống base» đo bằng bản base THẬT
-# (`git archive a6f670d src`). Đảo-vá trên BẢN SAO TẠM, mỗi đột biến một tiến trình node mới (bẫy 15). Chỉ `grep -E`.
+# (`git archive e1f1f91 src`). Đảo-vá trên BẢN SAO TẠM, mỗi đột biến một tiến trình node mới (bẫy 15). Chỉ `grep -E`.
 # Cờ: GIU_TAM=1 giữ bản sao · BO_DAO_VA=1 bỏ ⑩ · CHAY_CONG_CU=1 chạy năm cổng cũ ở ⑪ (mặc định HOÃN — dài) · CHAY_NPM_TEST=1 chạy npm test.
 set -uo pipefail
 GOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"; cd "$GOC" || exit 2
@@ -18,7 +18,7 @@ so() { echo "$1" | grep -oE "^ℹ $2 [0-9]+" | grep -oE '[0-9]+' | head -1; }
 xanh_ten() { echo "$1" | grep -E "^\s*✔ BH9 [A-Za-z0-9]+ ·" | sed -E 's/^\s*✔ BH9 ([A-Za-z0-9]+) ·.*/\1/' | sort -u | tr '\n' ' '; }
 do_ten() { echo "$1" | grep -E "^\s*✖ (BH9 )?[A-Za-z0-9]+ ·" | sed -E 's/^\s*✖ (BH9 )?([A-Za-z0-9]+) ·.*/\2/' | sort -u | tr '\n' ' '; }
 do_ten_chung() { echo "$1" | grep -E "^\s*✖ " | grep -v "failing tests" | sed -E 's/^\s*✖ //; s/ \([0-9.]+ms\)$//' | cut -c1-50 | sort -u | tr '\n' '|'; }
-BASE=a6f670d
+BASE=e1f1f91
 DB="aicloser_v3_nt_bh9_p$$"   # khai theo khuôn; mỗi tệp ca tự dựng hộp cát riêng (aicloser_v3_test_bh9{w,m}_p<pid>)
 if [ -z "${DATABASE_URL_V3:-}" ] && [ -f .env ]; then
   DATABASE_URL_V3="$(grep -E '^DATABASE_URL_V3=' .env | head -1 | cut -d= -f2- | sed 's/[[:space:]]*#.*$//;s/^"//;s/"$//')"; export DATABASE_URL_V3

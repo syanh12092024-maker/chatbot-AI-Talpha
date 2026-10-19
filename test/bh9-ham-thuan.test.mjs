@@ -1,7 +1,7 @@
 // BH9 ④1–④6 — HÀM THUẦN của bộ não pilot (0 mạng, 0 model, 0 CSDL): một luật tên · bộ dò «đơn đang trong cuộc» hai phía + cổng sau bán ·
 // COD (khách tự nói · đáp câu hỏi COD · COD ngầm) · bốn luật cửa ra mới · dấu hiệu y tế · khối hồ sơ.
 // Câu ca là câu THẬT đã ẩn danh (giữ khuôn chữ, tên/SĐT/địa chỉ giả) — nguồn «UAE #n / Saudi #n» ở PHIEU-BH9 ①/④.
-// «Giống base» đo bằng BẢN BASE THẬT (`git archive a6f670d src` ra thư mục tạm, hoặc `BH9_BASE_SRC` khi cổng chạy trên bản sao không có .git).
+// «Giống base» đo bằng BẢN BASE THẬT (`git archive e1f1f91 src` ra thư mục tạm, hoặc `BH9_BASE_SRC` khi cổng chạy trên bản sao không có .git).
 // Nhánh KHÔNG chạm ở tệp này: handler/worker (xem `bh9-luot-worker.test.mjs`) · hàng chờ + màn (`bh9-hang-cho-man.test.mjs`) · dữ liệu giả lập (`bh9-phat-lai`).
 import './_bat-cua-de-do.mjs';   // FASTLANE_TEMPLATES=1 cho ca câu mẫu Fast Lane (④4 «Thêm»)
 import test from 'node:test';
@@ -18,7 +18,7 @@ import * as O from '../src/our-messages.js';
 import { fastLane, fastLaneConfig } from '../src/fast-lane.js';
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const BASE = 'a6f670d';
+const BASE = 'e1f1f91';
 console.log(`   [bh9t] tệp đo ${new URL('../src/context.js', import.meta.url).pathname} · cwd ${process.cwd()}`);
 
 /** Bản base của `src/` — một lần cho cả tệp. null ⇒ không dựng được (ca so-base tự BỎ QUA có nói ra). */

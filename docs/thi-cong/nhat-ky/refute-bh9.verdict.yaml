@@ -1,7 +1,7 @@
 phieu: BH9
 vong: 1
 ket_luan: TRA_VE
-ma_tho: "worktree agent-ad1ffea2fa3e0825c · nhánh worktree-agent-ad1ffea2fa3e0825c · HEAD 08c996a (fix b4a507a·821f0a3·e016e1a) · diff a6c017a..HEAD -- src v3"
+ma_tho: "worktree agent-ad1ffea2fa3e0825c · nhánh worktree-agent-ad1ffea2fa3e0825c · HEAD 145af09 (fix 1d50f50·21582da·307de84) · diff a7e8c66..HEAD -- src v3"
 cach_chay: >
   Ca phá nằm ngoài repo, ở scratchpad/refute-bh9/ (thư mục phiên). Chạy tất cả bằng `bash chay.sh`. Gồm 10 tệp hàm thuần r*.mjs (import
   thẳng src của worktree) và refute-bh9-luot.test.mjs, tệp này đi đường WORKER THẬT y khuôn test/bh9-luot-worker.test.mjs của thợ:
@@ -163,7 +163,7 @@ khong_pha_duoc:
   - "Câu chính sách người quyết 15/10 cho nói (2–5 ngày · đổi khi lỗi trong 7 ngày · kiểm rồi trả · FDA approved · rider gọi trước khi tới) QUA cả bốn luật, kể cả khi khách có đơn (`node r9-chinh-sach.mjs`)."
 vong_2:
   ngay: 2026-10-19
-  ma_tho: "cùng worktree · HEAD 17ba67f (03dbed4 test · b076aa6 fix · 115be21 test · 17ba67f nhật ký «Vòng 2»)"
+  ma_tho: "cùng worktree · HEAD 741dcd1 (a09d357 test · d4fda15 fix · c866162 test · 741dcd1 nhật ký «Vòng 2»)"
   pham_vi: "Vòng này CHỈ VERIFY các mã CHAN F1–F4, không mở kịch bản mới. Chạy lại đúng `bash chay.sh` (ca phá vòng 1, không sửa) trên HEAD mới và đọc phần vá tương ứng."
   ket_luan: DAT
   chan:
@@ -191,7 +191,7 @@ vong_2:
         rỗng. `r8`: «where is my order?» ⇒ cổng; 4/4 câu bịa bị BIA chặn. `r2`: Saudi #141 (so_ai 138) và #46 (so_ai 62) bị BIA_TRANG_THAI_DON chặn.
         Worker F4 (không tin POS) và F4b (có tin POS): model 0 lượt · CAU_NHAN_BAN_GIAO.en · HANDOFF/SALE. Ghi chú F4b in
         «đơn: đang giao (POS · dd/mm)». M6 của thợ đã thêm #141 và #46 vào danh sách ĐÒI.
-  doi_chung: "4 tệp ca của thợ trên 17ba67f: 113 + 31 + 5 + 6 = 155/0. Ca phá worker: 6/6 XANH (vòng 1: 6/6 ĐỎ). Hộp cát rfbh9 đã dọn (0 CSDL sót)."
+  doi_chung: "4 tệp ca của thợ trên 741dcd1: 113 + 31 + 5 + 6 = 155/0. Ca phá worker: 6/6 XANH (vòng 1: 6/6 ĐỎ). Hộp cát rfbh9 đã dọn (0 CSDL sót)."
   han_14_ngay: >
     Đọc mã, không dựng kịch bản mới: hạn 14 ngày KHÔNG làm đơn thật mất cổng sớm ở ca chính. Lý do (src/context.js:529, :602-623): hạn đếm
     từ tín hiệu MỚI NHẤT (tin page POS hay sale · chot_don_luc của v3 · lời khách); câu khách TỰ nói về đơn («where is my order» · «chưa

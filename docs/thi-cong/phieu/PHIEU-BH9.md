@@ -1,6 +1,6 @@
 # PHIẾU BH9 — Bộ não pilot: nhận ra khách sau bán ⇒ câu nhận cố định + giao sale · không bịa trạng thái đơn / không tự hứa · chốt đơn không hỏi lại (COD ngầm · tên Facebook) · tên chỉ từ lời khách · dấu hiệu y tế
 
-**Base:** `a6f670d` · **Làn:** 🟥 (đổi thứ bot NÓI + lúc bot thôi bán / giao sale + cổng tạo đơn + dữ liệu đơn nháp sale duyệt; ba tệp bộ não dùng chung v1/v3)
+**Base:** `e1f1f91` · **Làn:** 🟥 (đổi thứ bot NÓI + lúc bot thôi bán / giao sale + cổng tạo đơn + dữ liệu đơn nháp sale duyệt; ba tệp bộ não dùng chung v1/v3)
 **Soát (a):** 19/10 — SỬA PHIẾU (13 điểm: S1 bộ dò khách bắt nhầm người đang mua · S2 khuôn page điều kiện/tương lai · S3 cờ không tới Hộp thư · S4 câu cố định KHÔNG vào `fixed` · S5 ảnh `xaAnh(false)` vẫn gửi · S6 token tính đôi · S7 luật mới chỉ cho chữ model · S8 lượt tóm tắt đơn bị chặn · S9 y tế: kích ứng trước dùng + Ả Rập «دم» · S10 COD trang phủ định · S11 tiền tố «Bước còn thiếu» (C11) · S12 hai bộ ca cũ phải đổi · S13 #n + GL9). Mỗi chỗ sửa đánh dấu `[S<n>]`.
 **Nguồn:** giả lập pilot 09/10 (CSDL giả lập dev `aicloser_gialap_pilot` page 275 UAE 109 lượt · `aicloser_gialap_2` page 276 Saudi 83 lượt; Kimi k2.6 thật, van đóng) — nhật ký `docs/thi-cong/nhat-ky/pilot-cau-hinh-gia-lap-20261009.md`; bản đọc từng lượt + đối chiếu mã: `scratchpad/bh9-nghien-cuu.md` (ngoài git, có dữ liệu khách — KHÔNG commit) — **[S13] ĐÃ MẤT** (máy dev khởi động lại 18/10, `/private/tmp` sạch; `scratchpad/bh9/tra/tra-luat.mjs` cũng mất). Ánh xạ «#n» (soát (a) đo lại): **UAE #n = `row_number() OVER (ORDER BY tin_cho_xu_ly.id)`** của `aicloser_gialap_pilot` (= id − 175; #47 ⇒ ht 43877, #82/#90/#102 ⇒ ht 43779); **Saudi #n = `so_ai.nguon_dong`** của page 1188130791056549 trong `aicloser_gialap_2` (tin đã xoá; #4 #5 #37 #54 khớp đúng câu đã trích). Cùng CSDL còn **60 tin khách page 340 Kreain Nature UAE** (`aicloser_gialap_2.tin_cho_xu_ly`) — kho ca âm thứ hai cho ④9. Người quyết 15/10 (sổ §10): COD ngầm = CÓ · khi bot KHÔNG được tự trả lời ⇒ câu nhận CỐ ĐỊNH + chuyển sale · tên Facebook làm tên người nhận + cờ «chưa xác nhận» · «FDA approved» ĐƯỢC nói · chảy máu/kích ứng ⇒ khuyên ngừng dùng/đi khám + chuyển sale · thẻ bàn giao `PK_TAG_HANDOFF=AI CHAT` (tổng đặt trên prod). BH2/BH3 để sau.
 **Đụng bộ não:** src/context.js src/lead-score.js src/outbound-guard.js — bộ dò «đơn đang trong cuộc» + trích tên/COD + dòng hồ sơ (context.js), một luật tên dùng chung (lead-score.js), bốn luật cửa ra mới chặn câu bịa trạng thái đơn · tự hứa · bán lại khách sau bán · thiếu lời khuyên y tế (outbound-guard.js). KHÔNG đụng `src/prompts.js` (CORE còn 65/159 ký tự tới trần `test/l4-prompt.test.mjs:129,133`) · `tools.js` · `closer.js` · `fast-lane.js` · `conv-owner.js`; buộc phải đụng ⇒ DỪNG, báo tổng.
@@ -289,7 +289,7 @@ Khuôn cổng nhà (`gl8.sh`): mỗi phép in MỘT con số hoặc MỘT bảng
    | **[S7]** mọi câu của bảng này với ctx KHÔNG có `luatBH9` | như hàng gốc | phán quyết GIỐNG HỆT base |
 
    Thêm: mọi câu mẫu `fastLane*` của kịch bản page 275/276 (chép văn bản kịch bản vào ca — không có dữ liệu khách) QUA bốn luật mới; bốn câu cố định ② 1 QUA
-   `guardOutbound(c, { daBanGiao: true })`; câu bị luật CŨ chặn ⇒ phán quyết (rule + action) GIỐNG HỆT base (so với `git show a6f670d:src/outbound-guard.js`
+   `guardOutbound(c, { daBanGiao: true })`; câu bị luật CŨ chặn ⇒ phán quyết (rule + action) GIỐNG HỆT base (so với `git show e1f1f91:src/outbound-guard.js`
    nạp từ tệp tạm) trên toàn bộ câu của bảng + ca guard cũ.
 5. **Y tế** — `dauHieuYTe` DƯƠNG: «I have bleeding» · «may dugo po» · «…pangangati pagdurugo…» · «nangati lalo after ko gamitin» · «I got a rash after
    applying it» · «I'm pregnant, can I use it?» · «فيه دم»; ÂM: «itching» · «makati» · «hapdi» · «burning» · «bukol» · «almuranas» · «halo-halo» · «I am 30.
@@ -297,7 +297,7 @@ Khuôn cổng nhà (`gl8.sh`): mỗi phép in MỘT con số hoặc MỘT bảng
    «كيف استخدم» · «خدمة التوصيل» · «عدم».
 6. **Khối hồ sơ** — tenFb ⇒ dòng mới ② 10 (C30/C31 sửa); có SĐT + địa chỉ ⇒ «ĐÃ CÓ… CẤM hỏi lại · CÒN THIẾU ĐÚNG»; `codNgam` ⇒ dòng COD ngầm; `dauHieuYTe`
    ⇒ dòng ⚕️; hồ sơ KHÔNG tenFb, không SĐT/địa chỉ, không kích hoạt ⇒ chuỗi khối GIỐNG base từng ký tự (so với `buildProfileBlock` của
-   `git show a6f670d:src/context.js`); C31 token ≤ 200.
+   `git show e1f1f91:src/context.js`); C31 token ≤ 200.
 7. **Handler qua `chayMotVong`** (khuôn hộp cát `test/rp2-worker-a-phay.test.mjs:35-55`: `chayCloser` giả đếm lượt gọi, cửa gửi tiêm, `config.pkTags.handoff`
    đặt «AI CHAT»; **KHÔNG tiêm `kiemTinRa`** — khuôn RP2 tiêm `() => ({ ok: true })` `:47`, giữ thì bốn luật mới không bao giờ chạy và d/e/g/j xanh giả; tin
    POS trong lịch sử mang `from.admin_name: 'POS'` (máy — `conv-owner.js:85`) để `nhanDienSale` không nhường trước khi tới handler):
@@ -340,7 +340,7 @@ Khuôn cổng nhà (`gl8.sh`): mỗi phép in MỘT con số hoặc MỘT bảng
    d. **Tên trên dữ liệu thật**: `tachTen` trên 109 tin UAE ⇒ 0 tên thuộc tập 12 chuỗi sai ở ① lỗi 3; in số tin có tên (nhật ký liệt kê tên đã che dạng
       «M… M.» để người kiểm).
    e. **Số câu cố định thêm** = (9a câu bị luật mới) + (9b tin bị đánh dấu) — in con số; đạt khi ≤ số lượt lỗi đã biết + 3.
-   f. **[S2] Khuôn page mới không bắt thêm trên chữ của CHÍNH BOT + kịch bản**: `donTuTinPage` mới vs `git show a6f670d:src/context.js` trên mọi câu của
+   f. **[S2] Khuôn page mới không bắt thêm trên chữ của CHÍNH BOT + kịch bản**: `donTuTinPage` mới vs `git show e1f1f91:src/context.js` trên mọi câu của
       `lan_gui.noi_dung->>'text'` + `so_ai` `text`/`text_bi_chan` (hai CSDL, 407 dòng) + `kich_ban.noi_dung_may`/`noi_dung_nguoi` (75 dòng × 2 cột mỗi CSDL, tách câu) ⇒
       số câu khớp mới = số câu khớp base (bot v3/ai_sale nằm trong lịch sử page; câu nào thêm là `donDaCo` tự đầu độc). Soát (a) đo bằng khuôn xấp xỉ: 0 câu thêm.
 10. **Đảo-vá** (bản sao tạm, mỗi đột biến một tiến trình): trả `NAME_LABEL`/`NAME_LINE` cũ ⇒ ④1 #1 #3 #4 #6–#10 #12 #14 đỏ · bỏ lọc địa danh ⇒ #2 #5 #11 đỏ ·
@@ -443,7 +443,7 @@ $ psql (CHỈ ĐỌC) aicloser_gialap_pilot / aicloser_gialap_2
   ho_so.name khác rỗng: UAE 6 (5 sai + 1 đúng từ create_draft_order) · Saudi 276: 9/9 sai · hang_cho_tao_don 2 dòng (cả hai ht 43893) / 0
   don_hang 0 / 0 · tin khách UAE còn 109 (conv_id + cust_id + msg_id) · tin khách Saudi 276 đã bị xoá (còn so_ai 151 + ho_so 54)
   UAE tin có từ khoá sau bán: chỉ ht 43779 (3 tin) + ht 43805/43893 «how to order» (âm) · từ khoá y tế: ht 43877 «bleeding» · ht 43882 «no fever» · ht 43893 «RASHED»
-# Soát (a) 19/10 — tệp `tra-luat.mjs` đã mất; tái lập bằng hàm thuần trên HEAD (src không đổi từ a6f670d — `git diff --stat a6f670d..HEAD -- src test v3 ops` rỗng)
+# Soát (a) 19/10 — tệp `tra-luat.mjs` đã mất; tái lập bằng hàm thuần trên HEAD (src không đổi từ e1f1f91 — `git diff --stat e1f1f91..HEAD -- src test v3 ops` rỗng)
   TÊN 12/12 + «…UAE 0501234567 Maria Santos» ⇒ '' · COD/GÓI 7/7 · donTuTinPage 8 câu mới đều null, «has been created»/«out for delivery» khớp · donTuTinKhach 6/6 null
   · guardOutbound 11/11 câu bịa/hứa ⇒ QUA — khớp ⑦ trên.
   donTuTinKhach (HEAD) trên 19 câu hỏi trước bán soát (a) tự viết: 17 BẮT (nhánh 1/2/3) ⇒ [S1]; trên 169 tin khách thật (UAE 109 + page 340 60): 0 bắt

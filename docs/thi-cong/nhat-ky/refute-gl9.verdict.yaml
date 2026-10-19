@@ -1,7 +1,7 @@
 phieu: GL9
 vong: 1
 ket_luan: DAT
-# Đo trên worktree agent-adf1f250694cc4e73 @ 61ac860 (mã 4dfa289) · base a6f670d · máy dev macOS · Node 24.19.0 + Node 20.20.2 (tarball
+# Đo trên worktree agent-adf1f250694cc4e73 @ 43462a4 (mã 0c61fda) · base e1f1f91 · máy dev macOS · Node 24.19.0 + Node 20.20.2 (tarball
 # chính thức, đúng bản của prod) · Postgres.app, CHỈ hộp cát aicloser_v3_test_rfg9s*_p<pid> của tiến trình đo, giết lọc theo
 # datname + application_name (không đụng kết nối người khác) · 0 mạng thật (cửa gửi tiêm, PK_MARK_UNREAD=0, bẫy fetch/https).
 # Ca phá: /private/tmp/claude-501/-Users-macminim416256-Downloads-Work-AI-Chatbot/9d9827c8-3f95-4f2d-be22-e1657a8690aa/scratchpad/refute-gl9/
@@ -19,7 +19,7 @@ findings:
       (hoặc chép số đo Node 20 vào đầu `db/ket-noi.js`).
     kich_ban: >-
       cd <scratch>/refute-gl9 && ./do-van.sh node20/node-v20.20.2-darwin-arm64/bin/node $PWD/cay-moi 'A=0\nPANCAKE_READONLY=1\t\n'
-      ⇒ «đọc="1\t" · van gửi MỞ»; cùng tệp trên cay-cu (a6f670d) ⇒ «đọc="1" · van gửi ĐÓNG»; cùng tệp với node 24 trên cay-moi ⇒ «"1" · ĐÓNG».
+      ⇒ «đọc="1\t" · van gửi MỞ»; cùng tệp trên cay-cu (e1f1f91) ⇒ «đọc="1" · van gửi ĐÓNG»; cùng tệp với node 24 trên cay-moi ⇒ «"1" · ĐÓNG».
       Dòng `PANCAKE_READONLY=1\t# chặn gửi`: v20/mới «"1\t" MỞ» · v24/mới «"1" ĐÓNG». (do-van.sh: env -i PATH V3_PANCAKE_GUI=1, cwd rỗng,
       gọi nap.docEnvTuyetDoi + handler-v3.vanGuiDangMoTuyetDoi trên bản chép `git archive` của cây.) Thước: trong worktree chạy
       `<node20> --import ./test/_an-toan.mjs --test test/gl9-doc-env.test.mjs` ⇒ fail 1 (E2: «.env hỏng quanh F», mong "q # r").

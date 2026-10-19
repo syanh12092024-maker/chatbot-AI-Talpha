@@ -1,7 +1,7 @@
 # NHẬT KÝ PHIẾU GL8 — cắt chữ ghi sổ không đứt emoji · lưới jsonb · công cụ ops đọc env như `node --env-file`
 
 **Thợ:** agent thi công (worktree riêng `agent-acada247d1dc24218`, nhánh `worktree-agent-acada247d1dc24218`) · **Ngày:** 09/10/2026 ·
-**Base phiếu:** `33c04ac` (phiếu sau soát (a) ở `5c0e3aa` — worktree reset về đó trước khi làm) · **Làn:** 🟥 · **Đụng bộ não:** không.
+**Base phiếu:** `0f7f9fa` (phiếu sau soát (a) ở `95aec33` — worktree reset về đó trước khi làm) · **Làn:** 🟥 · **Đụng bộ não:** không.
 
 ## Commit
 
@@ -65,7 +65,7 @@ lưới `so-ai.js` phủ). Không ca hai múi giờ: không ca nào đụng ngà
 
 **Bộ ca trên base** (thước mới, mã cũ): `tests 25 · pass 1 · fail 24` — xanh duy nhất E1 (tham chiếu Node, không đo mã).
 
-**Cổng trên base** (`BO_DAO_VA=1 ./ops/bin/nghiem-thu/gl8.sh`, HEAD `5c0e3aa` + thước):
+**Cổng trên base** (`BO_DAO_VA=1 ./ops/bin/nghiem-thu/gl8.sh`, HEAD `95aec33` + thước):
 ```
 🔴 ①phép-1 … pass=0 fail=4        🔴 ②phép-2·3 … pass=0 fail=7      🔴 ③phép-4 … pass=0 fail=3
 🔴 ④phép-5 … pass=1 fail=10 (xanh: E1)   🔴 ⑤c slice còn=6 · catChu(=0   🔴 ⑤d =0   🔴 ⑤e còn=9/9
@@ -79,7 +79,7 @@ lưới `so-ai.js` phủ). Không ca hai múi giờ: không ca nào đụng ngà
 ✅ ②phép-2·3 pass=7 fail=0 · xanh: W2 W3a W3b W3c W3d W3e W5
 ✅ ③phép-4 pass=3 fail=0 · xanh: L4a L4b L4c
 ✅ ④phép-5 pass=11 fail=0 · xanh: E1 E2a E2b E2c E2d E2e E2f E2g E2h E2i E3
-✅ ⑤a bộ não không đổi từ 33c04ac · ✅ ⑤b worker.js không đổi · ✅ ⑤c slice còn=0 · catChu( =7 · ✅ ⑤d =1 · ✅ ⑤e còn=0/9 · ✅ ⑤f 1 regex
+✅ ⑤a bộ não không đổi từ 0f7f9fa · ✅ ⑤b worker.js không đổi · ✅ ⑤c slice còn=0 · catChu( =7 · ✅ ⑤d =1 · ✅ ⑤e còn=0/9 · ✅ ⑤f 1 regex
 ✅ ⑥a…⑥i (18 đảo-vá, bảng dưới) · ✅ ⑥0 bản sao nguyên vẹn pass=25 fail=0
 == ĐỎ 0 / XANH 29
 ```
@@ -90,7 +90,7 @@ Dòng lượt thật sau vá (trích): `model-971: tin xong · ht QUALIFY/AI · 
 - TRƯỚC (mã base, KHÔNG có `test/gl8-*`): `tests 2801 · pass 2779 · fail 0 · skipped 22` · rc=0 · 32,7 s
 - SAU (`1847062`): `tests 2826 · pass 2804 · fail 0 · skipped 22` · rc=0 · 33,4 s (+25 = đúng 25 ca GL8; 0 ca cũ đổi màu)
 
-**`_chan1.sh gl8`** (sau commit nhật ký, HEAD `a7ee226` trước khi bổ sung dòng này): `✅ ①phiếu ✅ ②Base=33c04ac ✅ ④pathspec-⊆-③ (21 tệp) ✅ ⑤bộ-não ✅ ⑥marker=0 ✅ ⑦gl8.sh rc=0 (ĐỎ 0/XANH 29) ✅ ⑧a ✅ ⑧b` ⇒ **== ĐỎ 0 / XANH 8**. ⚠️ ⑧b xanh nhờ dòng §10 ngày 05/10 có chữ «GL8» (đề xuất ĐIỀU KIỆN GO-LIVE) — chưa có dòng nộp phiếu GL8; tổng ghi §10 (thợ không sửa sổ theo lệnh giao việc).
+**`_chan1.sh gl8`** (sau commit nhật ký, HEAD `a7ee226` trước khi bổ sung dòng này): `✅ ①phiếu ✅ ②Base=0f7f9fa ✅ ④pathspec-⊆-③ (21 tệp) ✅ ⑤bộ-não ✅ ⑥marker=0 ✅ ⑦gl8.sh rc=0 (ĐỎ 0/XANH 29) ✅ ⑧a ✅ ⑧b` ⇒ **== ĐỎ 0 / XANH 8**. ⚠️ ⑧b xanh nhờ dòng §10 ngày 05/10 có chữ «GL8» (đề xuất ĐIỀU KIỆN GO-LIVE) — chưa có dòng nộp phiếu GL8; tổng ghi §10 (thợ không sửa sổ theo lệnh giao việc).
 
 ## Đảo-vá (④6 + thêm) — mỗi đột biến một tiến trình node mới trên bản sao tạm
 
@@ -167,7 +167,7 @@ ngoài; không có liên kết ngược vào mã repo — đo `find -maxdepth 2 
   `tool_result {ok, order}` với `name`/`city`/`variant` = 39 đơn vị + emoji ⇒ `absorbToolUses` (`context.js:232-236`, KHÔNG sửa) cắt `slice(0, 40)`
   để lại nửa đầu ở cả ba trường ⇒ chạm CẢ BA cửa jsonb (`so_ai(order).du_lieu.ho_so` · `du_lieu_don` · `hoi_thoai.ho_so`). Helper `chay` nay
   chạy tới `vongToiDa` vòng, đặt lại `thu_lai_luc` giữa các vòng (W6 dùng 4) — bản lỗi lộ đủ số lượt gọi model.
-  - **Base** (bản sao tạm, 5 tệp `src` lấy từ `5c0e3aa`): `kqs ["thu_lai","thu_lai","loi"] · tin loi · HANDOFF/SALE/loi_xu_ly_can_doi_chieu ·
+  - **Base** (bản sao tạm, 5 tệp `src` lấy từ `95aec33`): `kqs ["thu_lai","thu_lai","loi"] · tin loi · HANDOFF/SALE/loi_xu_ly_can_doi_chieu ·
     so [] · hc 0 · model 3 · post 0` ⇒ W6 ĐỎ — khớp mô tả của người đối kháng (RF-D).
   - **Bản vá**: `kqs ["xong:tra_loi"] · so ["order/AI","reply/AI"] · hc 1 · model 1 · post 1`; `ho_so` = `["M"×39, "D"×39, "V"×39]` lành.
   - Đảo-vá mới — gỡ TỪNG lưới riêng lẻ: ⑥j chỉ bỏ lưới `so-ai.js` ⇒ W6 đỏ · ⑥k chỉ bỏ lưới `kho.js` ⇒ W6 đỏ · ⑥l chỉ bỏ lưới hàng chờ ⇒ W6 đỏ

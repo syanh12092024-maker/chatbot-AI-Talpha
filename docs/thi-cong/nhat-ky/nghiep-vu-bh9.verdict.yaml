@@ -5,7 +5,7 @@ nguon_y_do: >
   `docs/v3/01-QUYET-DINH.md` §1, khối «SỬA 15/10» (COD ngầm · tên Facebook có cờ · đơn Messenger chỉ vào POS khi sale duyệt), và từ sổ
   điều hành §10, các dòng 15/10. Các dòng đó chốt: giao 2–5 ngày · chỉ đổi khi lỗi trong 7 ngày · kiểm rồi trả · được nói FDA ·
   COD ngầm. Khi bot KHÔNG được tự trả lời (khách sau bán hỏi đơn · câu bị luật mới chặn) thì gửi câu nhận CỐ ĐỊNH và chuyển sale, ≤ 1 lần
-  mỗi lượt bàn giao. Tên Facebook làm tên người nhận, kèm cờ «chưa xác nhận». Sau đó mới đọc phiếu ①②④ rồi tới diff a6c017a..HEAD.
+  mỗi lượt bàn giao. Tên Facebook làm tên người nhận, kèm cờ «chưa xác nhận». Sau đó mới đọc phiếu ①②④ rồi tới diff a7e8c66..HEAD.
 cau:
   - so: 2
     dap: CO
@@ -70,7 +70,7 @@ findings:
       01-QUYET-DINH.md và sổ §10. Design-pack §M07/§M09 chưa cập nhật theo BH9 (thợ đã ghi N-BH9-DESIGN-PACK).
 vong_2:
   ngay: 2026-10-19
-  ma_tho: "worktree agent-ad1ffea2fa3e0825c · HEAD 17ba67f"
+  ma_tho: "worktree agent-ad1ffea2fa3e0825c · HEAD 741dcd1"
   pham_vi: "Vòng này CHỈ VERIFY CHAN N1 · N2 và các câu đã KHÔNG đạt (4 · 5 · 6), không mở kịch bản mới."
   ket_luan: DAT
   chan:

@@ -1,8 +1,8 @@
 # NHẬT KÝ PHIẾU GL9 — pool CSDL sống qua client rỗi/đang mượn bị giết · MỘT bộ đọc `.env` · lưới jsonb sáu cửa
 
 - **Thợ:** agent worktree `worktree-agent-adf1f250694cc4e73` (cây `…/.claude/worktrees/agent-adf1f250694cc4e73`) · 15/10 nhận → bị ngắt (giới hạn API, 0 thay đổi) → làm lại trọn 19/10.
-- **Base:** `01a4e89` (worktree mở ở `ff3526a` cũ ⇒ `git merge --ff-only a6f670d` = base + phiếu GL9 sau soát (a) + sổ; không mã nào khác).
-- **Commit:** `4edfbea` test(gl9) thước trước · `e195fd2` test(gl9) sửa thước sau đo lại · `4dfa289` fix(gl9) · (nhật ký: commit này).
+- **Base:** `da7908e` (worktree mở ở `ff3526a` cũ ⇒ `git merge --ff-only e1f1f91` = base + phiếu GL9 sau soát (a) + sổ; không mã nào khác).
+- **Commit:** `7b754d0` test(gl9) thước trước · `c5183a9` test(gl9) sửa thước sau đo lại · `0c61fda` fix(gl9) · (nhật ký: commit này).
 - **Môi trường đo:** MÁY DEV (macOS, node v24.19.0, pg 8.23 · pg-pool 3.14 lấy từ `node_modules` của cây chính qua symlink), Postgres.app
   18.6 `127.0.0.1:5432`, mọi phép trên HỘP CÁT `aicloser_v3_test_gl9{p,w,j}_p<pid>` (tự dựng tự dọn) — KHÔNG đo `aicloser_v3`, KHÔNG prod,
   0 gọi model/Pancake/POS thật (POS + cửa gửi tiêm; worker thật chạy với bẫy `fetch`/`https` — 0 lượt bị chặn vì env tối thiểu không có token).
@@ -47,7 +47,7 @@ Ba hàm bọc giữ nguyên ưu tiên: `docEnvTuyetDoi` (`process.env[ten] != nu
 nháy có đuôi · `export` · `\n` trong nháy kép · (a) trùng khoá lấy dòng CUỐI · (b) nháy hở nuốt tới dấu cùng loại ⇒ NÉM).
 **C — `jsonLanh` tại chỗ ở sáu cửa:** `lan-gui.js:95` · `hang-cho.js:869/870` (duyệt chặn) · `:970/971` (duyệt tạo đơn) · `:1080`
 (`ghiSuKienTaoDon`, giữ tại chỗ — không sang `ghiSoAi`) · `:1128` (`loai`) · `reconcile.js:32` · `nhat-ky.js:46-47`. `args` gửi cửa giữ nguyên
-(J1 so `===` + đảo-vá ⑤k). Không đổi gì khác (thứ tự gửi, trạng thái tin, luật giao sale): `git diff 01a4e89 -- src/queue/worker.js src/chat` = 0.
+(J1 so `===` + đảo-vá ⑤k). Không đổi gì khác (thứ tự gửi, trạng thái tin, luật giao sale): `git diff da7908e -- src/queue/worker.js src/chat` = 0.
 Bộ não không đổi (④a cổng). Design-pack `docs/v3/ban-giao/*` không khai chi tiết bộ đọc/pool (grep `docEnv|docBien|pool.on` = 0) ⇒ không cần sửa.
 
 ## Danh sách ca (viết trước ca chi tiết)
@@ -65,13 +65,13 @@ của `query()`, phiếu nói rõ) · duyệt có lỗi POS sau tạo (ngoài ph
 
 ## Kết quả — base đỏ → sau vá xanh
 ```
-BASE (4edfbea = base + thước, chưa vá) — BO_DAO_VA=1 bash ops/bin/nghiem-thu/gl9.sh
+BASE (7b754d0 = base + thước, chưa vá) — BO_DAO_VA=1 bash ops/bin/nghiem-thu/gl9.sh
 🔴 ① pass=1 fail=3 · xanh: P0 · THIẾU P1a P1b P1c   (P1a rc=1 BoundPool · P1b rc=1 Client · P1c exitCode=1, dòng lượt 2→2)
 🔴 ② pass=1 fail=7 · xanh: E8                        (E6: '1   # chú thích' · 'postgres://x # y"   # đuôi' · 'abc#def')
 🔴 ③ pass=0 fail=6                                   (cả 6: invalid input syntax for type json)
 🔴 ④d 3 chỗ đọc .env · 🔴 ④e JSON.stringify( còn=10   ⇒ == ĐỎ 5 / XANH 4
 
-SAU VÁ (4dfa289) — bash ops/bin/nghiem-thu/gl9.sh  rc=0 · 38s
+SAU VÁ (0c61fda) — bash ops/bin/nghiem-thu/gl9.sh  rc=0 · 38s
 ✅ ① pass=4 fail=0 (P1a rc=0 · 2 dòng 57P01 · P1b rc=0 · TRUY_VAN_KE=REJECT … not queryable · P1c giết 4 kết nối · exitCode=null · dòng lượt 2→8)
 ✅ ② pass=8 fail=0 · ✅ ③ pass=6 fail=0 · ✅ ④a–④e (chỗ đọc .env: 1 db/ket-noi.js · stringify trần 0 · jsonLanh( 12)
 ✅ ⑤a–⑤t 20 đảo-vá đỏ đúng · ✅ ⑤0 bản sao nguyên vẹn pass=18 fail=0      ⇒ == ĐỎ 0 / XANH 30
@@ -135,7 +135,7 @@ không vào commit). Sau hai việc: gl8 32/0. Bẫy 27 — «thước đỏ gi�
 
 ## Chặng 1 máy — `ops/bin/nghiem-thu/_chan1.sh gl9` (chạy TRƯỚC khi ghi tệp này)
 ```
-✅ ①phiếu-tồn-tại · ✅ ②có-Base 01a4e89 · ✅ ④pathspec-⊆-③ · ✅ ⑤bộ-não-phải-khai · ✅ ⑥hết-marker đếm=0
+✅ ①phiếu-tồn-tại · ✅ ②có-Base da7908e · ✅ ④pathspec-⊆-③ · ✅ ⑤bộ-não-phải-khai · ✅ ⑥hết-marker đếm=0
 ✅ ⑦script-nghiệm-thu gl9.sh rc=0 · 🔴 ⑧a-nhật-ký (tệp này chưa có lúc chạy) · ✅ ⑧b-§10-sổ   == ĐỎ 1 / XANH 7
 ```
 ⑧a xanh khi tệp này vào commit (chạy lại sau commit — số ở câu trả lời cho tổng). §10 sổ KHÔNG append (luật của lượt: tổng ghi sổ).
@@ -148,7 +148,7 @@ không vào commit). Sau hai việc: gl8 32/0. Bẫy 27 — «thước đỏ gi�
    (mọi kết nối của cả `pool` lẫn `poolGui` đều mang PGAPPNAME). Giá: không đo «tiến trình khác cùng CSDL bị giết» — không thuộc hợp đồng.
 3. **Cổng cũ ⑥ của gl9.sh mặc định HOÃN** (`CHAY_CONG_CU=1` mới chạy gl8 · gl3c · gp1): lồng cổng là án lệ treo (đúng: tt1 treo trong gp1 lượt
    này). Số ④5 ghi ở mục «Cổng cũ» trên, chạy riêng.
-4. **E3 sửa SAU commit thước trước** (`e195fd2`): bản đầu dùng nháy hở không có dấu đóng — `parseEnv` không nuốt ⇒ ca sai nguyên liệu, không phải
+4. **E3 sửa SAU commit thước trước** (`c5183a9`): bản đầu dùng nháy hở không có dấu đóng — `parseEnv` không nuốt ⇒ ca sai nguyên liệu, không phải
    code sai (đo `nhay-ho.sh`). Base vẫn đỏ ca mới (đảo-vá ⑤d/⑤h).
 5. Không sửa tệp nào ngoài pathspec ③ (`_chan1` ④ xanh). Symlink `node_modules`, `.env` trong worktree là môi trường, gitignore.
 

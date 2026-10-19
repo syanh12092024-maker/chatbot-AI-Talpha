@@ -1,15 +1,15 @@
 # NHẬT KÝ PHIẾU GL10 — bot v3 tự bảo ai_sale nhường page (khoá `_v3` trong `page_gan_them.json`) · chỉ trả lời tin khách đến SAU mốc bật
 
 **Thợ:** agent thi công (worktree `agent-a2b792f2ee00a5373`, nhánh `worktree-agent-a2b792f2ee00a5373`) · **Ngày:** 19/10/2026 ·
-**Base phiếu:** `a6f670d` (worktree khởi ở `ff3526a` — CHƯA có phiếu ⇒ `git merge --ff-only vao-ui-v3-17-09` lên `1b16a79` «GL10 sau soát (a)»; từ
-`a6f670d` tới `1b16a79` chỉ có commit tài liệu của tổng) · **Làn:** 🟥 · **Đụng bộ não:** không (handler-v3.js + tám tệp não không đổi — cổng Ta).
+**Base phiếu:** `e1f1f91` (worktree khởi ở `ff3526a` — CHƯA có phiếu ⇒ `git merge --ff-only vao-ui-v3-17-09` lên `7c99f77` «GL10 sau soát (a)»; từ
+`e1f1f91` tới `7c99f77` chỉ có commit tài liệu của tổng) · **Làn:** 🟥 · **Đụng bộ não:** không (handler-v3.js + tám tệp não không đổi — cổng Ta).
 
 ## Commit
 
 | hash | nội dung |
 | --- | --- |
-| `9e38d4c` | `test(gl10)` — THƯỚC TRƯỚC: `ops/bin/nghiem-thu/gl10.sh` + 5 tệp ca `test/gl10-*.test.mjs` (39 ca; trên base 32/32 ca đỏ — đo trước khi có 7 ca sau /code-review) |
-| `31337e2` | `feat(gl10)` — `src/queue/ai-sale-nhuong.js` mới · migration 035 + schema · bộ nạp lọc mốc · worker lọc `sanSang` · cổng bật/tắt · màn · bảng biến · 9 tệp ca cũ chỉnh dựng ca |
+| `e5421e7` | `test(gl10)` — THƯỚC TRƯỚC: `ops/bin/nghiem-thu/gl10.sh` + 5 tệp ca `test/gl10-*.test.mjs` (39 ca; trên base 32/32 ca đỏ — đo trước khi có 7 ca sau /code-review) |
+| `d890aeb` | `feat(gl10)` — `src/queue/ai-sale-nhuong.js` mới · migration 035 + schema · bộ nạp lọc mốc · worker lọc `sanSang` · cổng bật/tắt · màn · bảng biến · 9 tệp ca cũ chỉnh dựng ca |
 | (commit này) | `docs(nhat-ky)` — nhật ký này |
 
 ## ⑦ Đã tra chưa (đầu lượt)
@@ -77,7 +77,7 @@ Nhánh KHÔNG chạm: Pancake thật (deps/fetch giả) · ai_sale thật (bản
 Mọi ca in `tệp đo …/agent-a2b792f2ee00a5373/src/…` (cây phụ, không cây chính); `node_modules` của worktree là symlink tới cây chính (tệp phụ
 thuộc, không phải mã — `gl3-han-cho-pancake` chép `src` sang tmp + symlink `GOC/node_modules`, thiếu là 18 ca đỏ giả).
 
-**Thước trên base** (bản sao `1b16a79` = mã `a6f670d`, 32 ca thước đầu, TZ=Europe/Berlin): `tests 32 · pass 0 · fail 32`. Phần lớn đỏ vì
+**Thước trên base** (bản sao `7c99f77` = mã `e1f1f91`, 32 ca thước đầu, TZ=Europe/Berlin): `tests 32 · pass 0 · fail 32`. Phần lớn đỏ vì
 mô-đun/cột chưa có (base không có tính năng); B5b đỏ ở bước dựng ca (INSERT cột `bot_bat_luc`), không phải ở phép đo hành vi.
 
 **Cổng sau vá** (`BO_CONG_CU=1 bash ops/bin/nghiem-thu/gl10.sh`, lượt sau /code-review):
@@ -88,21 +88,21 @@ mô-đun/cột chưa có (base không có tính năng); B5b đỏ ở bước d�
 ✅ ④⑧⑩(worker-thật) pass=13 fail=0 · xanh: W10a W10b W10c W10d W10e W10f W10g W10h W4a W4b W4c W8 W8b
 ✅ ⑤mốc-bật-dưới-TZ=Europe/Berlin pass=2 fail=0 · xanh: B5 B5b   ✅ ⑤mốc-bật-dưới-TZ=UTC pass=2 fail=0 · xanh: B5 B5b
 ✅ ⑪CSDL-chưa-áp-035 pass=1 fail=0 · xanh: K11
-✅ Ta bộ não + handler-v3.js không đổi từ a6f670d · ✅ Tb page-routing.js không đổi (WHERE bot_ai_bat = true =1) · ✅ Tc nap.js#docEnvTuyetDoi không đổi
+✅ Ta bộ não + handler-v3.js không đổi từ e1f1f91 · ✅ Tb page-routing.js không đổi (WHERE bot_ai_bat = true =1) · ✅ Tc nap.js#docEnvTuyetDoi không đổi
 ✅ Td schema.sql sinh từ migrate/ (2 lần nhắc 035) · ✅ Te 035 khai «áp VPS trước mã» · ✅ Tf đọc biến tệp chỉ ở ai-sale-nhuong.js; gọi ghi/xoá khoá chỉ ở operations.js
 ✅ Tg bảng biến có 2 dòng V3_AI_SALE_* · ✅ Th CHO_AI_SALE_MS = 900_000 là hằng
 ✅ ⑫a … ⑫y9 (35 đảo-vá, bảng dưới) · ✅ ⑫0 bản sao nguyên vẹn pass=39 fail=0
 ```
-Lượt ĐẦY ĐỦ (cả ⑬ cổng cũ) sau commit `31337e2`: `bash ops/bin/nghiem-thu/gl10.sh` ⇒ **== ĐỎ 0 / XANH 60 · rc=0**.
+Lượt ĐẦY ĐỦ (cả ⑬ cổng cũ) sau commit `d890aeb`: `bash ops/bin/nghiem-thu/gl10.sh` ⇒ **== ĐỎ 0 / XANH 60 · rc=0**.
 
 **npm test** (`npm test -- --test-force-exit`, cùng máy):
-- TRƯỚC (bản sao base `1b16a79`, không `test/gl10-*`): `tests 2827 · pass 2805 · fail 0 · skipped 22` · rc=0 · 34,6 s
+- TRƯỚC (bản sao base `7c99f77`, không `test/gl10-*`): `tests 2827 · pass 2805 · fail 0 · skipped 22` · rc=0 · 34,6 s
 - SAU (cây sửa, trước commit): `tests 2866 · pass 2844 · fail 0 · skipped 22` · rc=0 · 32,9 s (+39 = đúng 39 ca GL10; 0 ca cũ đổi màu)
 - Lượt giữa (trước /code-review, trước sửa 3 tệp ca ngoài ③ + symlink node_modules): 2858 · 39 đỏ = 18 `gl3-han-cho-pancake` (môi trường
   worktree) + 20 `gl3c-*` + 1 `gl2-den-suc-khoe C5e` (cổng mới chặn — xem lệch phiếu 1).
 
 **Cổng cũ ④13** (mỗi cổng chạy riêng, `rg` = shim grep -E; nền đo trên bản sao base cùng ngày):
-| cổng | base (bản sao `1b16a79`) | sau (`31337e2`, lượt đầy đủ gl10.sh ⑬) |
+| cổng | base (bản sao `7c99f77`) | sau (`d890aeb`, lượt đầy đủ gl10.sh ⑬) |
 | --- | --- | --- |
 | gl2.sh (đòi rc=0) | rc=0 · ĐỎ 0 / XANH 52 | rc=0 · ĐỎ 0 / XANH 52 |
 | mb.sh | rc=0 · 0 dòng đỏ | rc=0 · 0 |
@@ -123,10 +123,10 @@ Hai dòng đỏ ở lượt giữa đã vá phía GL10: gl2 ⑤l/⑤m + gl4 ⑤z
 (`if (input.enabled === true) { … await kiemTranPageBat(c, p, env);\n    }`) và tên `choPhep` cho danh sách nạp/rút; gl2 ⑤d (W4b không đỏ vì lọc
 nhường GL10 che đột biến trần) ⇒ W4b đánh «đã nhường» A, B để chỉ trần quyết.
 
-**`_chan1.sh gl10`** (HEAD `31337e2` + tệp nhật ký này chưa commit; `BO_CONG_CU=1` vì ⑬ đã chạy đủ ở lượt trên — chạy lồng vượt trần 10′ của
-công cụ): `✅ ①phiếu ✅ ②Base=a6f670d 🔴 ④pathspec-⊆-③ NGOÀI PHẠM VI: docs/v3/01-QUYET-DINH.md test/gl3c-nap-loi.test.mjs test/gl3c-vong2.test.mjs
+**`_chan1.sh gl10`** (HEAD `d890aeb` + tệp nhật ký này chưa commit; `BO_CONG_CU=1` vì ⑬ đã chạy đủ ở lượt trên — chạy lồng vượt trần 10′ của
+công cụ): `✅ ①phiếu ✅ ②Base=e1f1f91 🔴 ④pathspec-⊆-③ NGOÀI PHẠM VI: docs/v3/01-QUYET-DINH.md test/gl3c-nap-loi.test.mjs test/gl3c-vong2.test.mjs
 v3/test/b/gl2-den-suc-khoe.test.mjs ✅ ⑤bộ-não ✅ ⑥marker=0 ✅ ⑦gl10.sh rc=0 (ĐỎ 0/XANH 51) ✅ ⑧a ✅ ⑧b` ⇒ **== ĐỎ 1 / XANH 7**. ④: ba tệp ca =
-lệch phiếu 1 (báo tổng); `01-QUYET-DINH.md` là commit `1b16a79` của TỔNG sau base `a6f670d` (ghi quyết định 15/10), không phải của thợ. ⑧b xanh
+lệch phiếu 1 (báo tổng); `01-QUYET-DINH.md` là commit `7c99f77` của TỔNG sau base `e1f1f91` (ghi quyết định 15/10), không phải của thợ. ⑧b xanh
 nhờ dòng §10 19/10 của tổng có chữ «GL10» — thợ KHÔNG ghi §10 (lệnh giao việc).
 
 ## Đảo-vá (④12 + soát (a) + thêm) — 35 đột biến, mỗi đột biến một tiến trình node mới trên bản sao tạm, TZ=Europe/Berlin
@@ -262,7 +262,7 @@ Mọi số trên: **máy dev**, worktree `…/.claude/worktrees/agent-a2b792f2ee
 chính (`PANCAKE_READONLY=1`). Prod chỉ đọc (stat/grep/python3 -I, lúc 19/10 ~09:xx giờ VN). Không gọi model, không gọi Pancake, không đụng tệp
 thật của pancake-tool (mọi ca dùng mkdtemp). Có thợ khác chạy cổng song song (gp1/ll15*) — hộp cát theo pid, không đụng nhau.
 
-## Vòng bổ sung 19/10 — ba việc của tổng (commit `e4d5492`) · Lệch phiếu — tổng gật 19/10
+## Vòng bổ sung 19/10 — ba việc của tổng (commit `f899fb5`) · Lệch phiếu — tổng gật 19/10
 
 Thay cho mục «cổng cũ: gl3b ⑤c đỏ», lệch phiếu 14 và nợ N-GL10-GL3B-5C ở trên (đã xử, không còn nợ):
 
@@ -275,23 +275,23 @@ Thay cho mục «cổng cũ: gl3b ⑤c đỏ», lệch phiếu 14 và nợ N-GL1
 2. **Ca chép mã pancake-tool** (Lệch phiếu — tổng gật 19/10, repo công khai): `test/gl10-tep-ai-sale.test.mjs` + `test/gl10-cong-bat-tat.test.mjs` chỉ
    giữ LOGIC `_page_gan_them` · `_page_gan_noi_khac` · `_hop_page_shop` (+ `_doc_gan` · `_ghi_gan`) — bỏ docstring/chú thích gốc có tên shop/page/người,
    mỗi khối một dòng nguồn «chép logic … từ pancake-tool ai_sale.py:<dòng> ngày 19/10». Dấu tên khách giả trong ca log đổi thành `KHACH-BI-MAT-TEN-GIA-GL10`.
-   Quét `git diff 1b16a79..HEAD` (dòng thêm): 0 dòng khớp tên shop/page/khách/người đã biết hay SĐT dạng +971/+966/+974/+965; số ≥ 13 chữ số
+   Quét `git diff 7c99f77..HEAD` (dòng thêm): 0 dòng khớp tên shop/page/khách/người đã biết hay SĐT dạng +971/+966/+974/+965; số ≥ 13 chữ số
    chỉ là hằng thử (`12345678901234567` · `9007199254740993` · `1792056718000`); email chỉ dạng `@thu.vn`/`@gl10.vn` của ca.
-3. **Đo lại sau commit `e4d5492`**: `bash ops/bin/nghiem-thu/gl10.sh` (đầy đủ, cả ⑬) ⇒ **== ĐỎ 0 / XANH 60 · rc=0** — ⑬: gl2 52/0 · mb 0 · gl4 60/0 ·
+3. **Đo lại sau commit `f899fb5`**: `bash ops/bin/nghiem-thu/gl10.sh` (đầy đủ, cả ⑬) ⇒ **== ĐỎ 0 / XANH 60 · rc=0** — ⑬: gl2 52/0 · mb 0 · gl4 60/0 ·
    gl3c 76/0 · gl3b 49/0 · gl1 7/0 · gd1 0 · l2-m1 3 dòng + va-r1 2 dòng GIỐNG HỆT base. `npm test -- --test-force-exit`: tests 2866 · pass 2844 · fail 0.
 
 ## Vòng 2 (sau đối kháng) — 19/10 · thợ vòng 2 (cùng worktree)
 
 **Đầu vào:** verdict `refute-gl10.verdict.yaml` (TRẢ VỀ — F1 CHẶN · F2–F6 NÊN · G1 GHI-NỢ; 6/6 ca phá CONFIRMED) + ca phá
-`scratchpad/refute-gl10/` + diff `1b16a79..HEAD`. **Commit:** `c05a0bf` test(gl10) thước trước · `adbf23d` fix(gl10) · (commit này) nhật ký.
+`scratchpad/refute-gl10/` + diff `7c99f77..HEAD`. **Commit:** `fd97c66` test(gl10) thước trước · `0f18207` fix(gl10) · (commit này) nhật ký.
 Mọi tệp đổi nằm trong ③ — không «Lệch phiếu» về tệp.
 
-### Thước TRƯỚC (đỏ trên HEAD `dbe95d2`) — `test/gl10-vong2.test.mjs`
+### Thước TRƯỚC (đỏ trên HEAD `71761c1`) — `test/gl10-vong2.test.mjs`
 
 Chuyển thể ca phá của đối kháng sang ĐƯỜNG THẬT: cổng bật/tắt qua HTTP (Express + vé + `dungPhanB` → `noiVanHanhV3` → `setPage`),
 worker `motLuot` thật (không tiêm `dsChoPhep`), màn qua `/api/page-bot/danh-sach`, hộp cát `aicloser_v3_test_gl10v_p<pid>`, tệp tạm.
 ```
-(HEAD dbe95d2, TZ=Europe/Berlin) tests 7 · pass 0 · fail 7 — mỗi ca đỏ ĐÚNG chỗ khẳng định:
+(HEAD 71761c1, TZ=Europe/Berlin) tests 7 · pass 0 · fail 7 — mỗi ca đỏ ĐÚNG chỗ khẳng định:
 F1  đáp phải mang trạng thái dien_tap, đo {"trangThai":"cho",…}          (diễn tập vẫn ghi khoá)
 F2  vòng nạp phải canh khoá mồ côi, đo ''                                  (SIGKILL giữa ghiKhoa và COMMIT)
 F2b vòng nạp phải chờ lượt bật xong hẳn rồi mới xét khoá mồ côi            (chưa có phép canh)
@@ -316,7 +316,7 @@ Sau /code-review thêm F2c · F2d và viết lại F2b (xem dưới) ⇒ tệp c
 ### /code-review vòng 2
 
 Lượt 1 (`/code-review high` qua Skill) chạy ở cwd CÂY CHÍNH và soát nhầm diff GL8 (`origin/vao-ui-v3-17-09...HEAD`) — bỏ, không dùng.
-Lượt 2: agent reviewer trỏ đúng `git -C <worktree> diff dbe95d2`. Trước khi reviewer trả, thợ tự thấy `canhKhoaMoCoi` bản đầu lấy khoá
+Lượt 2: agent reviewer trỏ đúng `git -C <worktree> diff 71761c1`. Trước khi reviewer trả, thợ tự thấy `canhKhoaMoCoi` bản đầu lấy khoá
 tư vấn tệp rồi mới khoá dòng (ngược thứ tự lượt bật/tắt ⇒ deadlock) — đã đổi sang «khoá dòng → đọc lại tệp, không khoá tệp» + ca F2c
 (reviewer xác nhận lỗi đó và bản sửa). Kiểm chứng từng điểm trước khi sửa (đọc mã + lập luận khoá Postgres READ COMMITTED; điểm 3 dựng
 lại bằng ca F2b viết lại — đỏ trên bản chưa sửa):
@@ -334,7 +334,7 @@ Ngoài review — `npm test` lượt 1 đỏ `v3/test/b/hop-thu.test.mjs` H1: `o
 `dangDienTap` ⇒ đồ thị import của Hộp thư (`hop-thu/router.js → operations.js → ai-sale-nhuong.js`, đo bằng duyệt import) chạm đường gửi.
 Sửa: chép luật một dòng `V3_DIEN_TAP === '1'` thành `ai-sale-nhuong.js#dangDienTap` (không import lan-gui), ca F1 so hai hàm trên 5 đầu vào.
 
-### Số đo cuối (máy dev · Postgres.app 127.0.0.1:5432 · hộp cát theo pid · worktree · node v24.19.0) — HEAD `adbf23d`
+### Số đo cuối (máy dev · Postgres.app 127.0.0.1:5432 · hộp cát theo pid · worktree · node v24.19.0) — HEAD `0f18207`
 
 ```
 bash ops/bin/nghiem-thu/gl10.sh   (đầy đủ, cả ⑬)                                      == ĐỎ 0 / XANH 92 · rc=0
@@ -383,5 +383,5 @@ gỡ cờ cảnh báo log khi tệp có lại · cảnh báo diễn tập của 
 - **mo-van / đường lùi** (skill ngoài ③ — tổng): ghi rõ «kéo phanh tay (đóng van gửi / bật diễn tập) khi page đang giữ khoá ⇒ không bot
   nào trả lời — gạt TẮT page v3 để ai_sale trả lời lại; đổi `V3_DIEN_TAP` phải restart CẢ HAI unit».
 
-Repo công khai: quét dòng thêm của `git diff dbe95d2` — 0 SĐT +97x/+96x, 0 email thật, số ≥ 13 chữ số chỉ là hằng thử. Không ssh prod,
+Repo công khai: quét dòng thêm của `git diff 71761c1` — 0 SĐT +97x/+96x, 0 email thật, số ≥ 13 chữ số chỉ là hằng thử. Không ssh prod,
 không gọi model/Pancake, không đụng tệp thật của pancake-tool (mọi ca mkdtemp).

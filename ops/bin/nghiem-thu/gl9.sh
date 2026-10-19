@@ -18,7 +18,7 @@ chay() { node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimen
 so() { echo "$1" | grep -oE "^ℹ $2 [0-9]+" | grep -oE '[0-9]+' | head -1; }
 do_ten() { echo "$1" | grep -E "^\s*✖ GL9 [A-Za-z0-9]+ ·" | sed -E 's/^\s*✖ GL9 ([A-Za-z0-9]+) ·.*/\1/' | sort -u | tr '\n' ' '; }
 xanh_ten() { echo "$1" | grep -E "^\s*✔ GL9 [A-Za-z0-9]+ ·" | sed -E 's/^\s*✔ GL9 ([A-Za-z0-9]+) ·.*/\1/' | sort -u | tr '\n' ' '; }
-BASE=01a4e89
+BASE=da7908e
 DB="aicloser_v3_nt_gl9_p$$"   # khai theo khuôn; mỗi tệp ca tự dựng hộp cát riêng (aicloser_v3_test_gl9{p,w,j}_p<pid>) — không ghi vào tên này
 if [ -z "${DATABASE_URL_V3:-}" ] && [ -f .env ]; then
   DATABASE_URL_V3="$(node -e 'console.log(require("util").parseEnv(require("fs").readFileSync(".env","utf8")).DATABASE_URL_V3||"")')"; export DATABASE_URL_V3

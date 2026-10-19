@@ -3,7 +3,7 @@
 // CSDL có dữ liệu khách THẬT: tệp này KHÔNG in chữ khách/tên/SĐT — chỉ id + luật + số đếm (tên trích ra chỉ in SỐ CHỮ — kể cả chữ cái đầu cũng không, repo công khai).
 // Máy không có hai CSDL này (CI, máy khác) ⇒ cả tệp HOÃN có nói ra (skip), không đỏ oan — cổng bh9.sh đòi tệp này CHẠY THẬT.
 // Ánh xạ «#n» (PHIEU-BH9 dòng Nguồn [S13]): UAE #n = row_number() OVER (ORDER BY tin_cho_xu_ly.id) (= id − 175) · Saudi #n = so_ai.nguon_dong
-// của page 1188130791056549. Bản base (a6f670d) dựng như `bh9-ham-thuan.test.mjs`.
+// của page 1188130791056549. Bản base (e1f1f91) dựng như `bh9-ham-thuan.test.mjs`.
 // NGỮ CẢNH TỪNG LƯỢT (Ra) là PHỎNG DỰNG — lịch sử Pancake của lượt chạy không còn (chỉ còn tin khách UAE + chữ bot):
 //   · `lastAiText` = chữ bot ĐÃ GỬI gần nhất cùng psid (UAE: lan_gui; Saudi: so_ai `reply` — `spent_no_send` không gửi nên không tính);
 //   · `donDaCo` = hồ sơ CUỐI có đơn — trừ khi đơn đó là «đã tạo» của CHÍNH lượt bot chốt (hội thoại có dòng so_ai `order`) thì chỉ tính
@@ -24,7 +24,7 @@ import * as G from '../src/outbound-guard.js';
 import { rapKb } from '../src/chat/rap-prompt.js';
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const BASE = 'a6f670d';
+const BASE = 'e1f1f91';
 const UAE = { db: 'aicloser_gialap_pilot', pageRow: 275, pageId: '1157980804067455' };
 const KSA = { db: 'aicloser_gialap_2', pageRow: 276, pageId: '1188130791056549' };
 const P340 = { db: 'aicloser_gialap_2', pageRow: 340, pageId: '1140029535862514' };

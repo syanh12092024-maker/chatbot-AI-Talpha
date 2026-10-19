@@ -16,7 +16,7 @@ chay() { node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimen
 so() { echo "$1" | grep -oE "^ℹ $2 [0-9]+" | grep -oE '[0-9]+' | head -1; }
 do_ten() { echo "$1" | grep -E "^\s*✖ GL8 [A-Za-z0-9]+ ·" | sed -E 's/^\s*✖ GL8 ([A-Za-z0-9]+) ·.*/\1/' | sort -u | tr '\n' ' '; }
 xanh_ten() { echo "$1" | grep -E "^\s*✔ GL8 [A-Za-z0-9]+ ·" | sed -E 's/^\s*✔ GL8 ([A-Za-z0-9]+) ·.*/\1/' | sort -u | tr '\n' ' '; }
-BASE=33c04ac
+BASE=0f7f9fa
 DB="aicloser_v3_nt_gl8_p$$"   # khai theo khuôn; mỗi tệp ca tự dựng hộp cát riêng (aicloser_v3_test_gl8{w,l}_p<pid>) — không ghi vào tên này
 if [ -z "${DATABASE_URL_V3:-}" ] && [ -f .env ]; then
   DATABASE_URL_V3="$(grep -E '^DATABASE_URL_V3=' .env | head -1 | cut -d= -f2- | sed 's/[[:space:]]*#.*$//;s/^"//;s/"$//')"; export DATABASE_URL_V3
@@ -49,7 +49,7 @@ bo_ca "③phép-4-lưới-ba-cửa-ghi-jsonb-(so_ai·hoi_thoai·hang_cho_tao_don
 bo_ca "④phép-5-chín-công-cụ-đọc-env-như-node---env-file-+-dòng-«cờ-đã-đọc»" "E1 E2a E2b E2c E2d E2e E2f E2g E2h E2i E3" "$CA_E"
 
 # ⑤ tĩnh (PHỤ — hành vi đã đo ở ①–④; các phép này chỉ canh phạm vi + lời khai)
-# ⑤a/⑤c SỬA 19/10 (lệch phiếu GL8 — tổng gật, đi cùng BH9): bản cũ canh HÌNH DẠNG («bộ não không đổi từ 33c04ac» · «catChu( đúng 7»)
+# ⑤a/⑤c SỬA 19/10 (lệch phiếu GL8 — tổng gật, đi cùng BH9): bản cũ canh HÌNH DẠNG («bộ não không đổi từ 0f7f9fa» · «catChu( đúng 7»)
 # nên đỏ với mọi phiếu sau đổi bộ não có khai (BH9) dù lời hứa GL8 vẫn giữ. Nay đo LỜI HỨA: chữ bộ não cắt (kèm một nửa cặp tự dựng —
 # không trông vào cách bộ não cắt) qua HAI cửa ghi jsonb THẬT (`so-ai.js#ghiSoAi` · `kho.js#suaHoiThoai`, pool giả bắt tham số) ra JSON
 # lành, giữ đủ phần chữ trước chỗ cắt; `catChu` cắt ở biên emoji ra chuỗi lành là tiền tố; handler-v3 không còn chỗ cắt TRẦN. Bỏ lưới ở một

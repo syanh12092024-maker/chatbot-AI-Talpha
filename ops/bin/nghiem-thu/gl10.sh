@@ -19,7 +19,7 @@ chay() { node --env-file-if-exists=.env --import ./test/_an-toan.mjs --experimen
 so() { echo "$1" | grep -oE "^ℹ $2 [0-9]+" | grep -oE '[0-9]+' | head -1; }
 do_ten() { echo "$1" | grep -E "^\s*✖ GL10 [A-Za-z0-9]+ ·" | sed -E 's/^\s*✖ GL10 ([A-Za-z0-9]+) ·.*/\1/' | sort -u | tr '\n' ' '; }
 xanh_ten() { echo "$1" | grep -E "^\s*✔ GL10 [A-Za-z0-9]+ ·" | sed -E 's/^\s*✔ GL10 ([A-Za-z0-9]+) ·.*/\1/' | sort -u | tr '\n' ' '; }
-BASE=a6f670d
+BASE=e1f1f91
 DB="aicloser_v3_nt_gl10_p$$"   # khai theo khuôn; mỗi tệp ca tự dựng hộp cát riêng (aicloser_v3_test_gl10{c,w,m,k}_p<pid>)
 if [ -z "${DATABASE_URL_V3:-}" ] && [ -f .env ]; then
   DATABASE_URL_V3="$(grep -E '^DATABASE_URL_V3=' .env | head -1 | cut -d= -f2- | sed 's/[[:space:]]*#.*$//;s/^"//;s/"$//')"; export DATABASE_URL_V3
@@ -286,7 +286,7 @@ if [ "${BO_CONG_CU:-0}" != 1 ]; then
     mkdir -p "$T/shim"; printf '%s\n' '#!/bin/bash' 'q=; args=(); for a in "$@"; do case $a in -q) q=1;; *) args+=("$a");; esac; done' \
       'if [ -n "$q" ]; then exec grep -Eq "${args[@]}"; else exec grep -E "${args[@]}"; fi' > "$T/shim/rg"; chmod +x "$T/shim/rg"; export PATH="$T/shim:$PATH"
   fi
-  # số dòng đỏ trên base (bản sao 1b16a79 = mã a6f670d) — đo 19/10; xem nhật ký GL10 mục «cổng cũ»
+  # số dòng đỏ trên base (bản sao 7c99f77 = mã e1f1f91) — đo 19/10; xem nhật ký GL10 mục «cổng cũ»
   nen() { case "$1" in l2-m1) echo 3;; va-r1) echo 2;; *) echo 0;; esac; }   # bash 3.2 của macOS: không mảng kết hợp
   for g in gl2 mb gl4 gl3c gl3b l2-m1 va-r1 gl1 gd1; do
     o=$(bash "ops/bin/nghiem-thu/$g.sh" 2>&1); rc=$?; d=$(echo "$o" | grep -cE "^(🔴|   ✘)"); n=$(nen "$g")

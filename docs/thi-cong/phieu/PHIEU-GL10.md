@@ -1,6 +1,6 @@
 # PHIẾU GL10 — Gạt bot v3 tự bảo ai_sale nhường page (ghi khoá `_v3` vào tệp của pancake-tool) · chỉ trả lời tin khách đến SAU mốc bật
 
-**Base:** `a6f670d` · **Làn:** 🟥 (cổng bật page = chỗ DUY NHẤT chạm khách thật; ghi tệp cấu hình của team khác đang phục vụ ~268 page; bộ nạp + hàng đợi tin)
+**Base:** `e1f1f91` · **Làn:** 🟥 (cổng bật page = chỗ DUY NHẤT chạm khách thật; ghi tệp cấu hình của team khác đang phục vụ ~268 page; bộ nạp + hàng đợi tin)
 **Soát (a):** 19/10 — SỬA PHIẾU (9 điểm) — đã sửa vào phiếu: ③ + ④13 ca cũ đỏ chắc chắn vì fail-closed (CHẶN — thêm tệp ca cũ + luật tiêm `dsChoPhep` + `bot_bat_luc` NULL) ·
 ② 2 chờ 12′ → 15′ (đo lượt xử Saudi p99 93 s) · ② 2 log ai_sale BẮT BUỘC ở prod + canh suốt thời gian bật · ② 1/② 2 worker kiểm lại vế «gắn tay» mỗi lần tệp đổi (`gan_tay`) ·
 ② 1 kiểm (ino, mtime, size) trước `rename` (đè mất ghi của `tu_gan_page_ngoai`) · ② 2 bốn vòng worker chạy song song ⇒ chuyển trạng thái có điều kiện, log chỉ ở vòng nạp,
@@ -336,7 +336,7 @@ Hộp cát Postgres (khuôn `db/sandbox.js`) + Pancake giả qua `deps`. Tệp `
       «đã từng ghi khoá» ⇒ 6 (ca chưa từng ghi) · cửa sổ log đóng sau 30′ ⇒ 10 («chạm lại») · offset 0 sau restart ⇒ 10 (giả restart) · `CHO_AI_SALE_MS` về 720 000 ⇒ 4.
 13. **Cổng cũ.**
     - `gl2.sh` rc=0 (đòi buộc).
-    - `mb.sh` · `gl4.sh` · `gl3c.sh` · `gl3b.sh` · `l2-m1.sh` · `va-r1.sh` · `gl1.sh` · `gd1.sh` KHÔNG thêm dòng đỏ so với chính chúng chạy trên base `a6f670d` (nợ cũ đã
+    - `mb.sh` · `gl4.sh` · `gl3c.sh` · `gl3b.sh` · `l2-m1.sh` · `va-r1.sh` · `gl1.sh` · `gd1.sh` KHÔNG thêm dòng đỏ so với chính chúng chạy trên base `e1f1f91` (nợ cũ đã
       biết: `l2-m1` 3 · `va-r1` 2). Cổng lồng treo ⇒ chạy riêng (N-THUOC-CHAP-CHON); `rg` phải có trên PATH.
     - `npm test` không tụt (mốc 2827; đỏ chập chờn đã biết `l0-m2-gop-cua-hep` G6).
     - `_chan1.sh gl10` xanh.

@@ -1,6 +1,6 @@
 # PHIẾU GL9 — Phần còn lại của GL8 chạm pilot: pool CSDL không chết vì client rỗi/đang mượn bị giết · một bộ đọc `.env` (không fail-OPEN van) · lưới jsonb ở sáu cửa ghi còn trần
 
-**Base:** `01a4e89` · **Làn:** 🟥 (A: tiến trình worker chết giữa lượt; B: lớp chặn cuối của van gửi `PANCAKE_READONLY`; C: sổ gửi `lan_gui` + duyệt hàng chờ đơn — đường tin/tiền)
+**Base:** `da7908e` · **Làn:** 🟥 (A: tiến trình worker chết giữa lượt; B: lớp chặn cuối của van gửi `PANCAKE_READONLY`; C: sổ gửi `lan_gui` + duyệt hàng chờ đơn — đường tin/tiền)
 **Soát (a):** 15/10 — SỬA PHIẾU (8 điểm) — đã sửa vào phiếu: ① A client ĐANG MƯỢN · ② 1 hai người nghe · ② 2 chữ ký/ENOENT/trùng khoá/nháy hở · ② 3 bỏ lối `ghiSoAi` · ④ 1b · ④ 2 dòng URL + `env -i` + GOC tạm · ④ 3 `:1080` qua `duyet` · ⑥ nợ `don-cho.js:91`. Đo thử ở scratchpad `gl9/pool-thu.mjs`.
 **Nguồn:** tiếp quản 14/10 (`docs/thi-cong/nhat-ky/tiep-quan-20261014.md`) + nợ GL8 §9 09/10 (N-GL8-DOC-ENV-TUYET-DOI · N-GL8-LUOI-DUYET · N-GL8-LAN-GUI-JSONB · N-GL8-RECONCILE-HO-SO · N-GL8-NHAT-KY-JSONB). Người quyết 15/10: «làm giúp tôi — cấu hình đầy đủ, chỉ việc gạt bot».
 **Đụng bộ não:** không. Buộc phải sửa tệp bộ não (`src/prompts.js` `closer.js` `tools.js` `fast-lane.js` `outbound-guard.js` `context.js` `lead-score.js` `conv-owner.js`) ⇒ DỪNG, báo tổng.

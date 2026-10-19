@@ -1,7 +1,7 @@
 # Nhật ký phiếu BH9 — bộ não pilot (sau bán ⇒ câu nhận cố định + giao sale · không bịa đơn/tự hứa · COD ngầm + tên Facebook · tên chỉ từ lời khách · y tế)
 
-- **Thợ:** agent worktree · nhánh `worktree-agent-ad1ffea2fa3e0825c` (tách từ `a6c017a` — phiếu sau soát (a); `src/` y hệt Base `a6f670d`) · 19/10/2026
-- **Commit:** `8c1fb02` test(bh9) thước trước · `b4a507a` fix(bh9) thi công · `821f0a3` fix(bh9) sửa theo /code-review · `e016e1a` fix(bh9) mốc rp1 + ca Wd3 · (commit nhật ký này)
+- **Thợ:** agent worktree · nhánh `worktree-agent-ad1ffea2fa3e0825c` (tách từ `a7e8c66` — phiếu sau soát (a); `src/` y hệt Base `e1f1f91`) · 19/10/2026
+- **Commit:** `9e8243e` test(bh9) thước trước · `1d50f50` fix(bh9) thi công · `21582da` fix(bh9) sửa theo /code-review · `307de84` fix(bh9) mốc rp1 + ca Wd3 · (commit nhật ký này)
 - **Trạng thái đề nghị:** 🔎 chờ review nghiệp vụ (b) + đối kháng `phan-bien-refute` (làn 🟥) · cổng `ops/bin/nghiem-thu/bh9.sh` **ĐỎ 0 / XANH 86** · `npm test` 2827 → **2962 / 0 đỏ**
 - §10 sổ: **KHÔNG append** (lệnh tổng: tổng ghi sổ) ⇒ `_chan1.sh bh9` ⑧b đỏ đúng dự kiến (dưới).
 
@@ -49,7 +49,7 @@ Nhánh KHÔNG chạm: bộ nạp thật (`xepTin` tay) · cửa Messenger thật
 
 ## Base đỏ → sau vá xanh
 
-Cổng trên BẢN BASE (src a6c017a + thước BH9, `BO_DAO_VA=1`): **ĐỎ 17 / XANH 11** — hàm thuần 20✔/63✖ · worker 5/12 · hàng chờ 0/4 · phát lại 1/4 (+1 hoãn) · context.test 39/2 (C30 C31) · lan-chot 8/1 (⑤). Các ca xanh trên base là ca ÂM/«giống base» (G12 G14 G16 … GS GC GF · Wc We Wf2 Wj Wk · Rf).
+Cổng trên BẢN BASE (src a7e8c66 + thước BH9, `BO_DAO_VA=1`): **ĐỎ 17 / XANH 11** — hàm thuần 20✔/63✖ · worker 5/12 · hàng chờ 0/4 · phát lại 1/4 (+1 hoãn) · context.test 39/2 (C30 C31) · lan-chot 8/1 (⑤). Các ca xanh trên base là ca ÂM/«giống base» (G12 G14 G16 … GS GC GF · Wc We Wf2 Wj Wk · Rf).
 Cổng sau vá (cây worktree, đủ đảo-vá): **ĐỎ 0 / XANH 86** — hàm thuần 103/0 · worker 21/0 · hàng chờ 5/0 · phát lại 6/0 (skipped 0) · context.test 41/0 · 11 tệp ca cũ ④11 đều 0 đỏ.
 
 ## Đảo-vá (bản sao tạm, mỗi đột biến một tiến trình node)
@@ -74,14 +74,14 @@ Cổng sau vá (cây worktree, đủ đảo-vá): **ĐỎ 0 / XANH 86** — hàm
 ## npm test · cổng cũ
 
 ```
-base (bản archive a6c017a)   ℹ tests 2827  pass 2805  fail 0  skipped 22   (36,3 s)
+base (bản archive a7e8c66)   ℹ tests 2827  pass 2805  fail 0  skipped 22   (36,3 s)
 lượt giữa (sau fix 1)        ℹ tests 2936  pass 2913  fail 1  — ll15a H3: treo 11′ khi máy bận, giết tiến trình con; chạy riêng 6/6
-sau cùng (e016e1a)           ℹ tests 2962  pass 2940  fail 0  skipped 22   (36,5 s)
+sau cùng (307de84)           ℹ tests 2962  pass 2940  fail 0  skipped 22   (36,5 s)
 ```
 Đỏ chập chờn đã biết `l0-m2-gop-cua-hep` G6 không xuất hiện.
 Cổng cũ ④11 (chạy riêng, `CHAY_CONG_CU` của bh9.sh mặc định HOÃN — dài; log ở scratchpad):
-- `gl8.sh` rc=1 **ĐỎ 2 / XANH 30**: ⑤a «bộ não không đổi từ 33c04ac» và ⑤c «catChu( = 8 (đòi 7)» — thước TĨNH của GL8 neo hình dạng bộ não lúc GL8; BH9 đổi bộ não có khai + thêm ĐÚNG một chỗ cắt chữ khách vào lý do bàn giao (đúng luật GL8: `catChu`). Không phải hồi quy; tệp ngoài ③ ⇒ nợ N-BH9-GL8-THUOC-TINH. Lượt đầu ⑥a còn «đột biến không áp được» (chuỗi `text: catChu(guarded, 200),` thành 2 lần) — đã sửa phía BH9 (câu cố định ghi `text` không cắt), ⑥a đỏ đúng.
-- `rp2.sh` rc=0 PHÉP=59 LỖI=0 (cổng lồng: rp1 rc=0 · gl3b rc=0 · bh7 «ĐỎ SẴN ở 5ff70a7, 0 dòng đỏ mới»). Lượt đầu rp1 lồng «MỚI: đảo-vá v2_bo_ban_giao_khi_bo_anh không áp được» — dòng đặt cờ caption của BH9 trùng nguyên văn chuỗi neo của rp1; viết lại khác (commit `e016e1a`) ⇒ rc=0.
+- `gl8.sh` rc=1 **ĐỎ 2 / XANH 30**: ⑤a «bộ não không đổi từ 0f7f9fa» và ⑤c «catChu( = 8 (đòi 7)» — thước TĨNH của GL8 neo hình dạng bộ não lúc GL8; BH9 đổi bộ não có khai + thêm ĐÚNG một chỗ cắt chữ khách vào lý do bàn giao (đúng luật GL8: `catChu`). Không phải hồi quy; tệp ngoài ③ ⇒ nợ N-BH9-GL8-THUOC-TINH. Lượt đầu ⑥a còn «đột biến không áp được» (chuỗi `text: catChu(guarded, 200),` thành 2 lần) — đã sửa phía BH9 (câu cố định ghi `text` không cắt), ⑥a đỏ đúng.
+- `rp2.sh` rc=0 PHÉP=59 LỖI=0 (cổng lồng: rp1 rc=0 · gl3b rc=0 · bh7 «ĐỎ SẴN ở 5ff70a7, 0 dòng đỏ mới»). Lượt đầu rp1 lồng «MỚI: đảo-vá v2_bo_ban_giao_khi_bo_anh không áp được» — dòng đặt cờ caption của BH9 trùng nguyên văn chuỗi neo của rp1; viết lại khác (commit `307de84`) ⇒ rc=0.
 - `rp1.sh` rc=0 · `bh8.sh` rc=0 ĐỎ 0 / XANH 12 · `bh7.sh` rc=1 ĐỎ 1 / XANH 8 — ④ «luật tin ngắn trong CORE»: đỏ SẴN từ base (rp2 so 5ff70a7: giống hệt base), BH9 không chạm `prompts.js`.
 - Các cổng khác ngoài năm cổng phiếu nêu (l2-m2 · va-r* · gl3c · l3-m4 …) có thể neo chuỗi trong sáu tệp BH9 đổi — CHƯA chạy (nợ N-BH9-CONG-CU-KHAC; ghi để tổng chạy ở gate).
 
@@ -123,11 +123,11 @@ Tự soát thêm (ngoài review): khối hồ sơ in «COD ngầm» khi khách �
 12. **Design-pack** (`docs/v2/02-TANG-LUONG-CHAT.md` §M07 hồ sơ · §M09 cửa ra) chưa cập nhật — ngoài pathspec ③ (luật 5 §0 đòi cùng commit) ⇒ nợ N-BH9-DESIGN-PACK cho tổng.
 13. **gl8.sh ⑤a ⑤c đỏ** do BH9 đổi bộ não (thước tĩnh GL8, ngoài ③) ⇒ nợ N-BH9-GL8-THUOC-TINH.
 14. **§10 sổ không append** (lệnh tổng) ⇒ `_chan1.sh bh9` ⑧b đỏ.
-15. **Lệch phiếu — tổng gật 19/10: sửa `ops/bin/nghiem-thu/gl8.sh` ⑤a/⑤c** (ngoài ③). ⑤a «bộ não không đổi từ 33c04ac» → chữ bộ não cắt (+ một nửa cặp tự dựng) qua HAI cửa ghi jsonb thật (`ghiSoAi` · `suaHoiThoai`, pool giả bắt tham số) ra JSON lành, giữ đủ chữ trước chỗ cắt; ⑤c «catChu( đúng 7» → không còn chỗ cắt TRẦN trong handler-v3 + `catChu` lành/tiền tố ở 3 biên emoji. Đảo-vá tay (thư mục tạm, mỗi đột biến một tiến trình): gốc «3 0 2 · 3 · 0» xanh; bỏ lưới so-ai ⇒ ⑤a hỏng=1; bỏ lưới kho ⇒ ⑤a hỏng=1; catChu về slice trần ⇒ ⑤c 0/3; handler `text: guarded.slice(0, 200)` ⇒ slice trần=1 — cả bốn đỏ. `gl8.sh` chạy riêng (đủ ⑥ đảo-vá GL8): **rc=0 · ĐỎ 0 / XANH 32**. Nợ N-BH9-GL8-THUOC-TINH: ĐÓNG.
+15. **Lệch phiếu — tổng gật 19/10: sửa `ops/bin/nghiem-thu/gl8.sh` ⑤a/⑤c** (ngoài ③). ⑤a «bộ não không đổi từ 0f7f9fa» → chữ bộ não cắt (+ một nửa cặp tự dựng) qua HAI cửa ghi jsonb thật (`ghiSoAi` · `suaHoiThoai`, pool giả bắt tham số) ra JSON lành, giữ đủ chữ trước chỗ cắt; ⑤c «catChu( đúng 7» → không còn chỗ cắt TRẦN trong handler-v3 + `catChu` lành/tiền tố ở 3 biên emoji. Đảo-vá tay (thư mục tạm, mỗi đột biến một tiến trình): gốc «3 0 2 · 3 · 0» xanh; bỏ lưới so-ai ⇒ ⑤a hỏng=1; bỏ lưới kho ⇒ ⑤a hỏng=1; catChu về slice trần ⇒ ⑤c 0/3; handler `text: guarded.slice(0, 200)` ⇒ slice trần=1 — cả bốn đỏ. `gl8.sh` chạy riêng (đủ ⑥ đảo-vá GL8): **rc=0 · ĐỎ 0 / XANH 32**. Nợ N-BH9-GL8-THUOC-TINH: ĐÓNG.
 
 ## `_chan1.sh bh9`
 
-Lượt đo (trước commit nhật ký): ① ② ⑤ (bộ não ĐÃ khai: context · lead-score · outbound-guard) ⑥ (0 marker) ⑧a ⑧b ✅ · **④ đỏ**: `docs/v3/01-QUYET-DINH.md` nằm trong diff `a6f670d..HEAD` vì commit `a6c017a` của TỔNG (CR COD ngầm + tên Facebook) đứng sau Base của phiếu — không phải tệp thợ đụng · **⑦ đỏ** ở lượt đó vì ⑩0 rụng ca (trên) ⇒ sửa thước ⑩0, cổng chạy lại ĐỎ 0 / XANH 86. ⑧b xanh nhờ dòng «soát (a) BH9» tổng đã ghi §10 (thợ không append).
+Lượt đo (trước commit nhật ký): ① ② ⑤ (bộ não ĐÃ khai: context · lead-score · outbound-guard) ⑥ (0 marker) ⑧a ⑧b ✅ · **④ đỏ**: `docs/v3/01-QUYET-DINH.md` nằm trong diff `e1f1f91..HEAD` vì commit `a7e8c66` của TỔNG (CR COD ngầm + tên Facebook) đứng sau Base của phiếu — không phải tệp thợ đụng · **⑦ đỏ** ở lượt đó vì ⑩0 rụng ca (trên) ⇒ sửa thước ⑩0, cổng chạy lại ĐỎ 0 / XANH 86. ⑧b xanh nhờ dòng «soát (a) BH9» tổng đã ghi §10 (thợ không append).
 
 ## Nợ đề nghị §9 (tổng ghi sổ)
 
@@ -136,7 +136,7 @@ Lượt đo (trước commit nhật ký): ① ② ⑤ (bộ não ĐÃ khai: cont
 - **N-BH9-GOI-DOI** (phiếu ⑥) — gói khách đổi sau không đè `prof.tier`.
 - **N-BH9-KHO-GIA-LAP** (phiếu ⑥) — tệp `--kho/--ra` ngoài `/tmp`; + lưu LỊCH SỬ PANCAKE của từng lượt giả lập (M6 phải phỏng dựng ngữ cảnh vì thiếu nó).
 - **N-BH9-FIXED-TIEN-TO** — `our-messages.js#isOurFixedMessage` (và `conv-owner.js#isOurs`) so tiền tố HAI CHIỀU không trần độ dài: «Sorry» do sale gõ đã là «tin bot» từ base; sau khi bot gửi câu cố định, sale gõ «Noted po» sẽ khớp `isOurs` (chỉ khi hội thoại được trả lại AI).
-- **N-BH9-GL8-THUOC-TINH** — `gl8.sh` ⑤a (bộ não không đổi từ 33c04ac) · ⑤c (catChu đúng 7) neo hình dạng code; đề nghị ⑤c thành liệt kê/≥.
+- **N-BH9-GL8-THUOC-TINH** — `gl8.sh` ⑤a (bộ não không đổi từ 0f7f9fa) · ⑤c (catChu đúng 7) neo hình dạng code; đề nghị ⑤c thành liệt kê/≥.
 - **N-BH9-DESIGN-PACK** — cập nhật §M07/§M09 design-pack theo BH9.
 - **N-BH9-LUU-DON-JSON** ([S13]) — `v3/src/ui/van-hanh/don-cho.js` `luuDonCho` `JSON.stringify` trần chữ sale gõ (không lưới `jsonLanh`); BH9 không đổi lưới.
 - **N-BH9-YTE-LUAT-CU-IM** — lượt y tế mà câu model bị luật CŨ chặn ⇒ khách không nhận lời khuyên (im + bàn giao theo luật 2); đề nghị câu y tế cố định ở nhánh này (đổi luật 2 ⇒ người quyết).
@@ -150,13 +150,13 @@ Chỉ `chuanHoaHoSo` ở `src/orders/hang-cho.js` (khác hàm GL9) ⇒ rebase SA
 
 ## Vòng 2 (sau đối kháng) — 19/10
 
-- **Commit:** `03dbed4` test(bh9) thước trước · `b076aa6` fix(bh9) vá + sửa theo /code-review · `115be21` test(bh9) WE (giờ máy) · (commit nhật ký này)
-- **Đầu vào (đọc trọn):** phiếu · `refute-bh9.verdict.yaml` (TRẢ VỀ — CHẶN F1–F4 · NÊN F5–F9 · GHI-NO G1) · `nghiep-vu-bh9.verdict.yaml` (điểm b, TRẢ VỀ — CHẶN N1 N2 · NÊN N3 N4 · GHI-NO N5; câu 4 · 5 · 6 không đạt) · ca phá `scratchpad/refute-bh9/` · diff `a6c017a..18e7dd3` · nhật ký vòng 1. Hướng sửa A–F do TỔNG chốt.
+- **Commit:** `a09d357` test(bh9) thước trước · `d4fda15` fix(bh9) vá + sửa theo /code-review · `c866162` test(bh9) WE (giờ máy) · (commit nhật ký này)
+- **Đầu vào (đọc trọn):** phiếu · `refute-bh9.verdict.yaml` (TRẢ VỀ — CHẶN F1–F4 · NÊN F5–F9 · GHI-NO G1) · `nghiep-vu-bh9.verdict.yaml` (điểm b, TRẢ VỀ — CHẶN N1 N2 · NÊN N3 N4 · GHI-NO N5; câu 4 · 5 · 6 không đạt) · ca phá `scratchpad/refute-bh9/` · diff `a7e8c66..0057677` · nhật ký vòng 1. Hướng sửa A–F do TỔNG chốt.
 - **Trạng thái đề nghị:** 🔎 chờ đối kháng + nghiệp vụ (b) vòng 2 · `bh9.sh` **ĐỎ 0 / XANH 112** (vòng 1: 86; +24 đảo-vá ⑩v2a–⑩v2x, +2 nhóm ca) · `npm test` 2962 → **2982 / 0 đỏ** (+20 ca: hàm thuần 103→113 · worker 21→31).
 
 ### Tái lập ca phá (`bash chay.sh`, worktree, CSDL giả lập CHỈ ĐỌC)
-HEAD `18e7dd3`: worker **6/6 ĐỎ** (F1a F1b F2 F3 F4 F4b) · r1 14/14 câu trước bán ⇒ SAU_BAN · r4 4 câu «Dragon's Blood / blood circulation / دم الأخوين» ⇒ «chảy máu», 8 câu chảy máu/kích ứng SÓT · r7 12/12 · r10 8/8 HỤT · r2/r6/r8 câu bịa (gồm #141 thật) QUA. Sau vá (`b076aa6`): worker **6/6 XANH** · r1 0/14 · r4 0 nhầm (trừ «Is it safe for pregnant women?» — nợ, dưới) · 0 sót · r7 12/12 bắt · r10 8/8 bắt · r6 8/10 chặn (2 câu HỨA tiếng Ả Rập — nợ) · r8 4/4 câu bịa chặn.
-Bộ ca mới chạy trên bản sao `git archive 18e7dd3` + tệp ca mới: hàm thuần **11 ĐỎ** (VF1 VA3 VC VF2 VB VE VG VT VD VN + LS) · worker **10 ĐỎ** (WF1a WF1b WF2 WF2b WF3 WF4 WF4b WF4c WB WE); Wd3/Wf1/Wf2 (dữ liệu dựng đổi) vẫn xanh trên HEAD.
+HEAD `0057677`: worker **6/6 ĐỎ** (F1a F1b F2 F3 F4 F4b) · r1 14/14 câu trước bán ⇒ SAU_BAN · r4 4 câu «Dragon's Blood / blood circulation / دم الأخوين» ⇒ «chảy máu», 8 câu chảy máu/kích ứng SÓT · r7 12/12 · r10 8/8 HỤT · r2/r6/r8 câu bịa (gồm #141 thật) QUA. Sau vá (`d4fda15`): worker **6/6 XANH** · r1 0/14 · r4 0 nhầm (trừ «Is it safe for pregnant women?» — nợ, dưới) · 0 sót · r7 12/12 bắt · r10 8/8 bắt · r6 8/10 chặn (2 câu HỨA tiếng Ả Rập — nợ) · r8 4/4 câu bịa chặn.
+Bộ ca mới chạy trên bản sao `git archive 0057677` + tệp ca mới: hàm thuần **11 ĐỎ** (VF1 VA3 VC VF2 VB VE VG VT VD VN + LS) · worker **10 ĐỎ** (WF1a WF1b WF2 WF2b WF3 WF4 WF4b WF4c WB WE); Wd3/Wf1/Wf2 (dữ liệu dựng đổi) vẫn xanh trên HEAD.
 
 ### Mỗi CHẶN: ca · vá · đảo-vá
 
@@ -184,8 +184,8 @@ Ra 148 câu bot · luật cũ base = mới (PII_ECHO 5 · DUPLICATE 8 · PRICE_M
 7. **WE** đặt tin sale 40 h (không 30 h): `history.js#messageTime` đọc giờ Pancake không múi theo GIỜ MÁY ⇒ ở `TZ=Etc/GMT+12` tin 30 h thành «trong 24 h» và `nhanDienSale` nhường trước handler (đo: đỏ ở −12, xanh ở UTC/+14). Ca worker 31/0 ở UTC · +14 · −12 · +07; hàm thuần 113/0 ở UTC · +14 · −12.
 8. **Giả định ghi rõ (bẫy 11):** hồ sơ lưu `donDaCo` KHÔNG mốc (mọi hồ sơ trước vòng 2) bị BỎ rồi tính lại từ lịch sử Pancake đọc được — chọn bỏ thay giữ vì giữ là khoá vĩnh viễn (đúng lỗi câu 5–6); giá: tin POS đã trôi khỏi lịch sử ⇒ mất tín hiệu một lần. Theo sổ ghi nhớ v3 bật 0 page tới 02/10 ⇒ prod chưa có hồ sơ v3 cần giữ — **tổng kiểm trước mở van** (SQL đếm `hoi_thoai.ho_so->'donDaCo'` không có `luc` trên page sẽ bật).
 
-### Cổng cũ · npm test (trên `b076aa6`, một lượt `CHAY_CONG_CU=1 CHAY_NPM_TEST=1 bh9.sh`)
-`gl8.sh` rc=0 ĐỎ 0 / XANH 33 · `rp2.sh` rc=0 · `rp1.sh` rc=0 · `bh8.sh` rc=0 ĐỎ 0 / XANH 12 · `bh7.sh` rc=1 ĐỎ 1 / XANH 8 — chỉ ④ «luật tin ngắn trong CORE» (đỏ SẴN từ base, BH9 không chạm `prompts.js`) · `npm test` 2982 / 0. Lượt đó ①–⑥ của bh9 đỏ 3 nhóm vì RỤNG 19 ca hàm thuần với fail=0 (94/113 — máy bận: cổng gl10 của worktree khác chạy song song; ⑩0 cùng lượt 113/0) — đúng án lệ N-THUOC-CHAP-CHON, thước nhóm bắt được. Chạy lại `bh9.sh` riêng hai lần (`b076aa6`, `115be21`): **ĐỎ 0 / XANH 112**. `npm test` trên `115be21`: 2982 / 0 (skipped 22). Lượt `rp1.sh` đầu (cây CHƯA commit) đỏ ③ «sửa dở trên bộ não» — đúng luật cổng, sau commit rc=0.
+### Cổng cũ · npm test (trên `d4fda15`, một lượt `CHAY_CONG_CU=1 CHAY_NPM_TEST=1 bh9.sh`)
+`gl8.sh` rc=0 ĐỎ 0 / XANH 33 · `rp2.sh` rc=0 · `rp1.sh` rc=0 · `bh8.sh` rc=0 ĐỎ 0 / XANH 12 · `bh7.sh` rc=1 ĐỎ 1 / XANH 8 — chỉ ④ «luật tin ngắn trong CORE» (đỏ SẴN từ base, BH9 không chạm `prompts.js`) · `npm test` 2982 / 0. Lượt đó ①–⑥ của bh9 đỏ 3 nhóm vì RỤNG 19 ca hàm thuần với fail=0 (94/113 — máy bận: cổng gl10 của worktree khác chạy song song; ⑩0 cùng lượt 113/0) — đúng án lệ N-THUOC-CHAP-CHON, thước nhóm bắt được. Chạy lại `bh9.sh` riêng hai lần (`d4fda15`, `c866162`): **ĐỎ 0 / XANH 112**. `npm test` trên `c866162`: 2982 / 0 (skipped 22). Lượt `rp1.sh` đầu (cây CHƯA commit) đỏ ③ «sửa dở trên bộ não» — đúng luật cổng, sau commit rc=0.
 
 ### /code-review vòng 2 (lượt 1 soát nhầm phạm vi — diff GL8/GL9 của cây chính `@{upstream}`, không thuộc phiếu, KHÔNG xử lý; lượt 2 trên diff worktree: 10 điểm — sửa 7, ghi nợ 3)
 
