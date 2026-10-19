@@ -1,0 +1,112 @@
+phieu: GL10
+vong: 1
+ket_luan: TRA_VE
+ma_tho: "worktree agent-a2b792f2ee00a5373 · HEAD f749a54 (feat 31337e2) · diff 1b16a79..HEAD -- src v3 db"
+cach_chay: >
+  Ca phá nằm ngoài repo: scratchpad/refute-gl10/refute-gl10.test.mjs (F1–F6) + refute-gl10-dua.test.mjs (đua thật với Python
+  chép nguyên văn _ghi_gan). Chạy: cd <worktree> && node --env-file=.env --import ./test/_an-toan.mjs --test <tệp>. Dùng Postgres hộp cát
+  (dungSandbox) và page_gan_them.json GIẢ (mkdtemp). Chép nguyên văn 3 hàm ai_sale (_page_gan_them · _page_gan_noi_khac · _hop_page_shop,
+  đọc prod 19/10) để biết ai_sale còn trông page hay không. Kết quả: 6/6 ca CONFIRMED.
+  Prod chỉ ĐỌC (ssh, không ghi tệp): log ai_sale (9 tệp, python3 -u, không logrotate), mã BỎ QUA :13606/:13875, tu_gan_page_ngoai.py
+  :48-78, hạng page_id (582 page, 82 page sau hạng 500, 4 page pilot ở hạng 177–267), cờ .env (V3_TRAN_PAGE_BAT=1; V3_DIEN_TAP,
+  V3_PANCAKE_GUI và V3_AI_SALE_* đều vắng).
+findings:
+  - ma: F1
+    muc: CHAN
+    mo_ta: >
+      Ở chế độ DIỄN TẬP (V3_DIEN_TAP=1, van gửi đóng), cổng vẫn cho bật vì pageStatus chỉ ghi diễn tập vào luuY, không chặn. Lượt bật
+      vẫn ghi khoá _v3, nên ai_sale nhường page, trong khi v3 diễn tập không gửi tin nào (lan-gui.js:39-56 «diễn tập thắng mọi cờ»).
+      Kết quả: khách thật của page đang bán không nhận câu trả lời của bot nào suốt thời gian chạy thử. Bậc phơi ② của mo-van
+      («prod, đường ĐỌC — khách chưa thấy gì») không làm được nữa nếu không tắt ai_sale. Lỗi này vi phạm ② 6 «Không đổi hành vi nào
+      khác», và hộp xác nhận vẫn hứa «Bot sẽ bắt đầu tự trả lời…».
+    kich_ban: >
+      refute-gl10.test.mjs «F1»: env = ENV_BAT + V3_DIEN_TAP=1 + V3_PANCAKE_GUI=0 ⇒ pageStatus.ready=true (luuY «Chế độ DIỄN TẬP…»);
+      setPage(enabled:true) ⇒ 200, tệp có _v3[P]; bản chép _hop_page_shop ⇒ P không còn trong uae lẫn saudi. Page 340 trên prod có
+      148 lượt ai_sale trả lời trong 4 ngày ⇒ chạy thử một ngày ≈ 37 khách không bot nào trả lời.
+    file_line: "src/admin-v3/operations.js:50-55 (diễn tập = luuY, không chặn) · src/admin-v3/operations.js:219 (ghiKhoaKhiBat chạy cả khi diễn tập)"
+    goi_y_va: >
+      Tổng quyết một trong hai: (a) pageStatus chặn bật khi van gửi đóng hoặc diễn tập, kèm câu cố định + mã MA_CUA_CAU; (b) diễn tập
+      KHÔNG ghi khoá và không chờ, worker cho page diễn tập đi mà không cần _v3 (v3 không gửi nên song song ai_sale vô hại), đồng thời
+      bảo đảm khi bỏ diễn tập thì page phải gạt lại để ghi khoá (trạng thái '' không nằm trong DANG_CANH ⇒ đã fail-closed sẵn).
+  - ma: F2
+    muc: NEN
+    mo_ta: >
+      Tiến trình admin chết (SIGKILL/OOM/restart lúc deploy) trong quãng giữa ghiKhoa và COMMIT ⇒ CSDL rollback (bot_ai_bat=false,
+      trạng thái '') nhưng khoá _v3 ở lại trong tệp. Kết quả: ai_sale nhường, v3 tắt, không bot nào trả lời. Màn Page & Bot không có
+      nhãn (gonPage chỉ hiện khi trạng thái ≠ '' hoặc page đang bật). Worker chỉ xét dòng bot_ai_bat=true nên không ai phát hiện.
+      Lời hứa ② 4 «Không để page mất cả hai bot» không giữ ở nhánh chết. Quãng hở chỉ vài ms nên xác suất thấp.
+    kich_ban: >
+      refute-gl10.test.mjs «F2»: tiến trình con gọi setPage(enabled:true) với pool bọc tự SIGKILL ở câu «UPDATE page SET bot_ai_bat»
+      (đúng sau ghiKhoa) ⇒ con chết SIGKILL; dòng page bot_ai_bat=false, ai_sale_trang_thai=''; tệp còn _v3[K]; bản chép ai_sale bỏ K;
+      gonPage(p).aiSale = undefined; motLuot không xét K.
+    file_line: "src/admin-v3/operations.js:219-228 (ghi tệp trong giao dịch, trước UPDATE/COMMIT) · v3/src/ui/page-bot/kho-page.js:390"
+    goi_y_va: >
+      Gộp với F3 thành một phép canh rẻ: vòng nạp của worker đọc _v3 (đã có đệm tệp). pid nào có dòng page bot_ai_bat=false (hoặc
+      không có dòng) mà trạng thái ≠ 'xoa_hong' ⇒ đánh 'xoa_hong' + ly_do «khoá mồ côi» (nhãn đỏ + nút «Thử xoá lại» đã có sẵn).
+  - ma: F3
+    muc: NEN
+    mo_ta: >
+      Ghi chen NGƯỢC chiều lúc TẮT: tu_gan_page_ngoai._ghi_gan/_go_gan đọc tệp TRƯỚC khi v3 xoá khoá rồi os.replace SAU ⇒ _v3[P] của page
+      ĐÃ tắt sống lại. Lượt đọc lại sau ghi của v3 đã chạy trước os.replace nên v3 vẫn tưởng tắt sạch (trạng thái ''). Kết quả: ai_sale
+      nhường mãi, không bot nào trả lời, không đèn. Phiếu ② 1 khai «v3 PHÁT HIỆN được (② 2)», nhưng chỉ đúng cho page ĐANG bật.
+      Xác suất trên prod thấp: tệp đứng yên từ 15/10, cửa sổ đọc→replace chỉ vài ms.
+    kich_ban: >
+      (1) refute-gl10.test.mjs «F3» (tất định): bật R → chụp tệp (bản _doc_gan) → tắt R (200, khoá mất) → ghi lại bản chụp + uae.X
+      bằng tệp tạm + rename (= _ghi_gan) ⇒ R tắt, trạng thái '', tệp có _v3[R], ai_sale bỏ R, motLuot giữ '', màn không nhãn.
+      (2) refute-gl10-dua.test.mjs (đua thật): Python chép nguyên văn _ghi_gan chạy vòng 12 s (1566 lượt) trong lúc 80 lượt bật/tắt (có
+      song song) ⇒ 32/160 lượt đo «page tắt + khoá còn + trạng thái ≠ xoa_hong»; cùng ca KHÔNG có Python ⇒ 0 vi phạm, 0 lỗi 409.
+    file_line: "src/admin-v3/operations.js:288-340 (tatXoaKhoa: đọc lại một lần rồi về '') · src/queue/ai-sale-nhuong.js:405 (worker chỉ xét bot_ai_bat=true)"
+    goi_y_va: "Cùng phép canh khoá mồ côi của F2."
+  - ma: F4
+    muc: NEN
+    mo_ta: >
+      Mọi đường v3 ngừng trả lời mà khoá _v3 ở lại đều thành «không bot nào»: vượt trần GL2, van gửi đóng (page-routing.js:13-15 gọi đây
+      là «phanh tay lúc sự cố»), worker dừng, biến V3_AI_SALE_TEP_GAN vắng (⇒ loi_tep). Trước GL10 các phanh này để ai_sale trả lời
+      tiếp; nay ai_sale vẫn nhường. Màn còn nói sai: trạng thái da_nhuong vẫn hiện xanh «ai_sale đã nhường — bot v3 đang trả lời», còn
+      biến vắng thì nhãn ghi «Tệp ai_sale hỏng» dù tệp lành.
+    kich_ban: >
+      refute-gl10.test.mjs «F4»: bật T, qua mốc ⇒ da_nhuong; đối chứng: T được nạp. Sau đó V3_TRAN_PAGE_BAT=0 ⇒ motLuot «DỪNG vì vượt
+      trần», T không được nạp; tệp còn _v3[T]; ai_sale bỏ T; nhãn màn = «ai_sale đã nhường — bot v3 đang trả lời».
+    file_line: "v3/src/ui/page-bot/kho-page.js:405 · src/queue/chay-worker.js:116-123 · src/queue/page-routing.js:13-15"
+    goi_y_va: >
+      Nhãn da_nhuong đọc thêm trạng thái trần và nhịp máy bot (đã có docNhipMayBot). mo-van/đường lùi ghi rõ: kéo phanh tay ⇒ phải
+      gạt TẮT các page v3 thì ai_sale mới trả lời lại.
+  - ma: F5
+    muc: NEN
+    mo_ta: >
+      dsPageDeNap chỉ lấy LIMIT 500 (ORDER BY page_id). Prod có 582 page ⇒ 82 page xếp sau hạng 500. Page loại này vẫn bật được: khoá ghi,
+      trạng thái da_nhuong hiện «bot v3 đang trả lời», nhưng bộ nạp KHÔNG BAO GIỜ nạp nó. Kết quả: ai_sale nhường, bot câm, màn báo xanh.
+      Trước GL10 nợ ⑥ này vô hại (ai_sale vẫn trả lời); GL10 biến nó thành câm. 4 page pilot ở hạng 177–267 nên hôm nay chưa dính.
+    kich_ban: >
+      refute-gl10.test.mjs «F5»: chèn 501 page có page_id xếp trước Z; bật Z, qua mốc ⇒ da_nhuong; 3 lượt motLuot ⇒ 0 lời gọi
+      docHoiThoai cho Z; ai_sale bỏ Z. Đối chứng: xoá 501 page đệm ⇒ Z được nạp ngay ở lượt sau.
+    file_line: "src/queue/chay-worker.js:50-55 (LIMIT 500) · src/admin-v3/operations.js:219 (ghi khoá không xét page có nạp được không)"
+    goi_y_va: "pageStatus chặn page ngoài tập nạp được, hoặc đẩy nợ ⑥ (dsPageDeNap LIMIT 500) lên trước bậc phơi ④/khi trần > 4."
+  - ma: F6
+    muc: NEN
+    mo_ta: >
+      V3_AI_SALE_LOG trỏ sai (0 tệp khớp) thì dsTepLog trả [] mà không báo gì. Lý do chờ vẫn ghi «đang canh log ai_sale» (lyDoCho chỉ xét
+      biến có đặt hay không), nên «phép đo DƯƠNG duy nhất» BẮT BUỘC ở prod (② 2) tắt mà không ai biết, page sang da_nhuong chỉ theo giờ.
+      Prod hôm nay tên tệp khớp /var/log/aisale-chat* (9 tệp).
+    kich_ban: >
+      refute-gl10.test.mjs «F6»: setPage với V3_AI_SALE_LOG=/var/log/aisale-chatX ⇒ ai_sale_ly_do «… · đang canh log ai_sale»;
+      worker cùng biến ⇒ qua mốc là da_nhuong, không cảnh báo nào.
+    file_line: "src/queue/ai-sale-nhuong.js:260-266 (dsTepLog im khi rỗng) · src/admin-v3/operations.js:223"
+    goi_y_va: "Có biến mà 0 tệp khớp ⇒ cảnh báo một lần + lý do/nhãn ghi «biến log có nhưng 0 tệp khớp — chỉ chờ theo giờ»."
+  - ma: G1
+    muc: GHI-NO
+    mo_ta: >
+      Mất khoá khi đang da_nhuong: vòng xử bỏ page sau ≤ 250 ms, nhưng lượt dang_xu đang chạy vẫn gửi (assertCanAct chỉ đọc lại
+      bot_ai_bat, không đọc trạng thái ai_sale). Nếu ai_sale đã trả lời lại thì khách nhận tin đúp. Sửa phải đụng handler-v3.js, mà
+      phiếu cấm ⇒ ghi sổ nợ.
+    kich_ban: "PLAUSIBLE (chưa chạy): tin dang_xu lúc tệp mất _v3[P] ⇒ v3 vẫn gửi; ai_sale tra lại ngay sau tu_gan_page_ngoai.quet."
+    file_line: "src/chat/handler-v3.js:401-410 (ngoài phạm vi)"
+da_thu_khong_pha_duoc:
+  - "Múi giờ/DST: thoiDiemPancake dưới TZ=Europe/Berlin, mốc qua 25/10: lệch đúng 3600000 ms, chuỗi 6 chữ số lẻ đọc đúng UTC; bot_bat_luc là timestamptz tuyệt đối."
+  - "BOM ⇒ cả JS và Python đều hỏng parse (v3 loi_tep, ai_sale trả lời mọi page ⇒ không đúp). Khoá trùng ⇒ JS/Python cùng giữ bản cuối, cùng vị trí."
+  - "Bật/tắt nhanh + song song cùng page (80 lượt) khi không có người ghi lạ ⇒ 0 vi phạm bất biến, 0 lỗi 409 (batLai + khoá dòng→tệp đúng)."
+  - "Log trên prod: khối «BỎ QUA … KHÔNG thuộc shop» in 1 dòng tên + 1 dòng chú (mã :13875-13878), bộ quét bỏ đúng 2 dòng; dòng 🏷 nằm trong đường trả lời (:579-604). Mô phỏng bộ quét trên 20 MB cuối của 9 log: dương tính giả chỉ thuộc log cũ (22–23/09)."
+  - "Lỗ «BỎ QUA bước lọc» (_pages_cua_shop None): lần cuối xảy ra 18/09 (trước khi có bản lưu ≤24 giờ ngày 19/09)."
+  - "python3 -u ⇒ log không đệm; không có logrotate; quyền tệp giữ 644 root:root (thợ có ca 2b)."
+mu_code_review: []
+mu_nghiep_vu: []
