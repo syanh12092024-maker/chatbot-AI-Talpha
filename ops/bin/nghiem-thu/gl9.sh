@@ -50,8 +50,12 @@ bo_ca "③phép-3-sáu-cửa-jsonb:-lan_gui·duyệt-chặn·duyệt-tạo-đơn
 
 # ④ tĩnh (PHỤ — hành vi đã đo ở ①–③; các phép này chỉ canh phạm vi + lời khai của phiếu)
 NAO="src/prompts.js src/closer.js src/tools.js src/fast-lane.js src/outbound-guard.js src/context.js src/lead-score.js src/conv-owner.js"
+# ④a đo PHẦN DO CHÍNH CÁC COMMIT GL9 ĐƯA VÀO (tìm theo tiêu đề `test|fix(gl9)`), không so cả cây với `$BASE`:
+# sau khi gộp, BH9 đổi bộ não hợp lệ (có khai «Đụng bộ não») — tổng chỉnh 19/10 lúc gộp.
+CMT_GL9=$(git log --format=%H -E --grep='^(test|fix|feat)\(gl9\)' HEAD); dung_nao=""
 # shellcheck disable=SC2086
-git diff --quiet "$BASE" -- $NAO; ket "④a-bộ-não-không-đổi-từ-base-$BASE" $? "$(git diff --stat "$BASE" -- $NAO | tail -1)"
+for c in $CMT_GL9; do git diff --quiet "$c^" "$c" -- $NAO || dung_nao="$dung_nao ${c:0:7}"; done
+[ -n "$CMT_GL9" ] && [ -z "$dung_nao" ]; ket "④a-commit-GL9-không-đụng-bộ-não" $? "$(echo "$CMT_GL9" | grep -c .) commit GL9${dung_nao:+ · đụng:$dung_nao}"
 tao=$(grep -rnE "new pg\.Pool|new Pool\(" src db v3/src | grep -vE "^db/sandbox\.js:" | sed 's/:.*//' | sort | uniq -c | tr -s ' ' | tr '\n' ';')
 [ "$tao" = " 1 db/ket-noi.js;" ]; ket "④b-mọi-pool-mã-prod-qua-taoPool-(ngoài-db/sandbox.js-chỉ-test)" $? "chỗ tự new Pool: ${tao:-0} (đòi: 1 db/ket-noi.js)"
 n_dung=$(grep -cE "taoPool\(" src/queue/chay-worker.js v3/chay-that.js | tr '\n' ' ')

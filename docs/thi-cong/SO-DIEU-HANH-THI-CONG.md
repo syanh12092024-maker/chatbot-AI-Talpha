@@ -3765,3 +3765,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 19/10 · BH9 → ✅ (vòng 2 ĐẠT cả hai mũ) · gộp `vao-ui-v3-17-09` bằng cherry-pick 11 commit, 0 xung đột (thử trước trên nhánh `thu-gop-bh9` — cây trùng khớp)
   nợ (đối kháng vòng 2 NÊN, thợ đề nghị 11 mục trong `phieu-bh9.md`): N-BH9-HUA-ARAP (2 câu hứa Ả Rập lọt) · N-BH9-CHAN-QUA-TAY (cửa ra còn chặn quá tay vài câu trước bán) · N-BH9-TEN-KHU (tên khu không «Al» như «Mussafah Shabiya» thành tên) · N-BH9-Y-TE-NGAN-SACH (lượt y tế khi hết ngân sách/khiếu nại ⇒ im) · N-BH9-CO-THAI (luôn bàn giao) · N-BH9-DON-HET-HAN (đã có hạn 14 ngày — lề: >14 ngày im lặng)
   · gate gộp đang chạy trên nhánh thử (npm test ×2 + gl8 gl9 gl10 bh9 rp1 rp2)
+- 19/10 · GATE GỘP (GL9 + GL10 + BH9 trên `vao-ui-v3-17-09`, máy dev, Postgres.app, hộp cát theo pid) — `npm test` 2 lượt TUẦN TỰ: 3048 ca · 3026 đạt · **0 đỏ** · 22 bỏ qua (cả hai lượt) · gl8 32/0 · gl9 30/0 · gl10 93/0 · bh9 112/0 · rp1 73/0 · rp2 59/0
+  hai phép phạm vi đỏ SAU gộp vì so cả cây với BASE (gl10 Ta/Tb/Tc · gl9 ④a) ⇒ tổng chỉnh đo phần do chính commit của phiếu đưa vào (tìm theo tiêu đề `test|fix|feat(<mã>)`) — bền qua gộp và qua viết lại lịch sử
+  · đang chạy: đo model thật (Kimi, van đóng) trên giả lập page 275 với mã đã gộp · kế: viết lại lịch sử đoạn chưa push (bỏ tên khách) → push → deploy
