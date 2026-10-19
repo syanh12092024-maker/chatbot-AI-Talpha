@@ -1,3 +1,5 @@
+import { jsonLanh } from '../text.js';
+
 export class LoiCanDoiChieuGui extends Error {
   /** `dau` (GL4) — `{ loai, kenh, chiTiet }` khi ném SAU KHI đã gọi cửa; vắng ở lượt rút lại sau crash và lúc đụng UNIQUE. */
   constructor(dau = null) {
@@ -85,10 +87,12 @@ export function bocCuaGuiBen(pool, tin, cua, { env = process.env, danhDauChuaDoc
   });
   return Object.fromEntries(['guiTin', 'guiAnh', 'ghiNote', 'gatThe'].map(loai => [loai,
     async (...args) => {
+      // LƯỚI GL9 (`jsonLanh`): sổ ghi TRƯỚC khi gửi — model trả nửa emoji lẻ mà ghi trần thì jsonb từ chối cả INSERT ⇒ khách nhận 0 tin.
+      // Lưới chỉ làm lành BẢN GHI SỔ; `args` gửi cho cửa giữ nguyên từng byte (jsonLanh không đụng object đầu vào — ca GL9 J1).
       const r = await pool.query(
         `INSERT INTO lan_gui(team_id,tin_id,buoc,loai,noi_dung,trang_thai)
          VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING RETURNING id`,
-        [tin.team_id, tin.id, ++buoc, loai, JSON.stringify(args[2]), dienTap ? 'dien_tap' : 'dang_gui']);
+        [tin.team_id, tin.id, ++buoc, loai, jsonLanh(args[2]), dienTap ? 'dien_tap' : 'dang_gui']);
       if (!r.rowCount) throw new LoiCanDoiChieuGui();
       const id = r.rows[0].id;
       // DỪNG ĐÚNG Ở ĐÂY. Nội dung đã nằm trong sổ, và không hàm nào của `cua` được gọi.

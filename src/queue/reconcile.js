@@ -2,6 +2,7 @@ import { ghiNhatKy } from '../db/index.js';
 // Thao tác quản trị cục bộ: đối chiếu lượt lỗi, không tự gửi lại HTTP chưa rõ kết quả.
 import { ghiNhatKyHangDoi } from './kho.js';
 import { extractFromText, emptyProfile } from '../context.js';
+import { jsonLanh } from '../text.js';
 
 const check = ({ teamId, id, reason }) => {
   if (!/^\d+$/.test(String(teamId)) || !/^\d+$/.test(String(id)) ||
@@ -28,7 +29,7 @@ export async function handoffFailedMessage(pool, { teamId, id, reason, nguoiDung
     await c.query(`UPDATE hoi_thoai SET chu_so_huu='SALE',
       trang_thai=CASE WHEN trang_thai IN ('CLOSING','POST_SALE') THEN trang_thai ELSE 'HANDOFF' END,
       nguoi_that_luc=now(),ly_do_cuoi='doi_chieu_tin_loi',ho_so=$3,sua_luc=now()
-      WHERE team_id=$1 AND id=$2`, [teamId, ht.id, JSON.stringify(profile)]);
+      WHERE team_id=$1 AND id=$2`, [teamId, ht.id, jsonLanh(profile)]);   // LƯỚI GL9: `context.js` cắt chữ khách (slice) có thể chém đôi emoji
     // xong nghĩa là đã xử lý bằng bàn giao, KHÔNG khẳng định đã gửi thành công.
     await c.query(`UPDATE tin_cho_xu_ly SET trang_thai='xong',ly_do='doi_chieu:ban_giao_sale',sua_luc=now()
       WHERE team_id=$1 AND id=$2`, [teamId, id]);

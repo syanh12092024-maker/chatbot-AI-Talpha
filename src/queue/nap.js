@@ -29,30 +29,19 @@ import { baoDamHoiThoai } from "../chat/kho.js";
 import { ghiLoiKenh, ghiDocTot, ngatPage, locPageNgat, cauLyDoDoc, gioVN } from "./ngat-page.js";
 import { xepTin } from "./kho.js";
 import { debounceFor } from "../turn-complete.js";
-import fs from "node:fs";
-import path from "node:path";
-import { GOC } from "../../db/ket-noi.js";
+import { docTepEnv } from "../../db/ket-noi.js";
 
 /**
- * Đọc biến env theo ĐƯỜNG TUYỆT ĐỐI: `process.env` trước, vắng thì tra `<GOC>/.env`
- * (cùng nguồn `db/ket-noi.js#docEnv` dùng để nối CSDL — chép 8 dòng vì hàm đó không
- * export, nợ §9). Refute F2 biến thể 2: `cd <nơi khác> && node <repo>/src/queue/...` ⇒
- * dotenv không nạp `.env` (tra theo cwd) ⇒ `PANCAKE_READONLY` vắng ⇒ mọi van đọc
- * `process.env` trần đều MỞ, trong khi đường tới CSDL thật vẫn nối được. Van phải đọc
- * cùng nguồn với đường tới dữ liệu. `handler-v3.js` (cổng HTTP ghi) cũng dùng hàm này.
+ * Đọc biến env theo ĐƯỜNG TUYỆT ĐỐI: `process.env` trước (có mặt là thắng, KỂ CẢ chuỗi rỗng), vắng thì tra `<GOC>/.env` qua
+ * bộ đọc CHUNG `db/ket-noi.js#docTepEnv` (GL9 — cùng nguồn `docEnv` dùng để nối CSDL; `util.parseEnv` ⇒ cùng giá trị
+ * `node --env-file`, bỏ chú thích đuôi; tệp hỏng/không đọc được ⇒ NÉM, xem đầu `db/ket-noi.js`). Refute F2 biến thể 2:
+ * `cd <nơi khác> && node <repo>/src/queue/...` ⇒ dotenv không nạp `.env` (tra theo cwd) ⇒ `PANCAKE_READONLY` vắng ⇒ mọi van
+ * đọc `process.env` trần đều MỞ, trong khi đường tới CSDL thật vẫn nối được. Van phải đọc cùng nguồn với đường tới dữ liệu.
+ * `handler-v3.js` (cổng HTTP ghi) cũng dùng hàm này.
  */
 export function docEnvTuyetDoi(ten) {
   if (process.env[ten] != null) return process.env[ten];
-  try {
-    const raw = fs.readFileSync(path.join(GOC, ".env"), "utf8");
-    for (const dong of raw.split("\n")) {
-      const m = dong.match(/^\s*([A-Za-z_0-9]+)\s*=\s*(.*)$/);
-      if (m && m[1] === ten) return m[2].trim().replace(/^["']|["']$/g, "");
-    }
-  } catch {
-    /* không có .env ⇒ coi như thiếu biến */
-  }
-  return undefined;
+  return docTepEnv(ten);
 }
 
 /**

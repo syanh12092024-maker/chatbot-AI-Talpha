@@ -9,6 +9,10 @@
 // truy vấn (truy-van.js) dùng 'nguoi:<nguoiDungId>' thay vì email — ctx CHỈ mang
 // nguoiDungId (hình dạng đã chốt ở boi-canh.js), tra thêm email sẽ tốn một round-trip
 // ngoài phạm vi phiếu này; B có thể đổi quy ước khi ctx có thêm trường email.
+import { jsonLanh } from "../text.js";
+
+// LƯỚI GL9: `truoc`/`sau` mang chữ người/khách/lỗi (lý do loại, mã POS, …) — một nửa emoji lẻ là jsonb từ chối cả dòng audit,
+// kéo đổ giao dịch nghiệp vụ đang gọi. `jsonLanh` làm lành từng chuỗi TRƯỚC khi mã hoá; dữ liệu lành ra y hệt `JSON.stringify`.
 export async function ghiNhatKy(
   pool,
   {
@@ -39,8 +43,8 @@ export async function ghiNhatKy(
       hanhDong,
       doiTuong,
       doiTuongId,
-      truoc != null ? JSON.stringify(truoc) : null,
-      sau != null ? JSON.stringify(sau) : null,
+      truoc != null ? jsonLanh(truoc) : null,
+      sau != null ? jsonLanh(sau) : null,
       ghiChu,
     ],
   );

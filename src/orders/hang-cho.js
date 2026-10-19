@@ -866,8 +866,8 @@ export async function duyet(
       await client.query(
         "UPDATE hang_cho_tao_don SET du_lieu_don = $1, cua_kiem = $2 WHERE team_id = $3 AND id = $4",
         [
-          JSON.stringify({ ...duLieu, market }),
-          JSON.stringify(cuaKiem),
+          jsonLanh({ ...duLieu, market }),   // LƯỚI GL9: `boSung` sale gõ
+          jsonLanh(cuaKiem),   // LƯỚI GL9: `e.message` trong cửa ③ có thể mang nửa cặp
           team,
           hangChoId,
         ],
@@ -967,8 +967,8 @@ export async function duyet(
       [
         don.id,
         nguoiDuyetId,
-        JSON.stringify({ ...duLieu, market, ma_pos: kqPos.maPos }),
-        JSON.stringify({
+        jsonLanh({ ...duLieu, market, ma_pos: kqPos.maPos }),   // LƯỚI GL9: mã POS là chữ ngoài
+        jsonLanh({   // LƯỚI GL9: mã + nhãn trạng thái POS
           ...cuaKiem,
           cong: {
             ...cuaKiem.cong,
@@ -1077,7 +1077,7 @@ async function ghiSuKienTaoDon(
       teamId,
       String(pageIdText ?? ""),
       String(psid ?? ""),
-      JSON.stringify({
+      jsonLanh({   // LƯỚI GL9 tại chỗ — KHÔNG đổi sang `ghiSoAi` (neo `tin_cho_xu_ly:<loại>` đụng dòng tin thật cùng số)
         hang_cho_id: String(hangChoId),
         don_hang_id: String(donId),
         ma_pos: maPos,
@@ -1125,7 +1125,7 @@ export async function loai(
     `UPDATE hang_cho_tao_don
         SET trang_thai = 'tu_choi', nguoi_duyet_id = $1, duyet_luc = now(), cua_kiem = $2
       WHERE team_id = $3 AND id = $4 AND trang_thai = 'cho_duyet' RETURNING *`,
-    [nguoiDuyetId, JSON.stringify(cuaKiem), team, hangChoId],
+    [nguoiDuyetId, jsonLanh(cuaKiem), team, hangChoId],   // LƯỚI GL9: lý do sale gõ
   );
   await ghiNhatKy(pool, {
     teamId: team,

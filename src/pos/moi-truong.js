@@ -5,28 +5,18 @@
 // `docEnv` làm đúng việc này nhưng KHÔNG export. Đo 22/08: `npm run di-tru` chết ngay
 // dòng đầu («Thiếu V3_KHOA_MA_HOA») dù `.env` có đủ biến ở dòng 83.
 //
-// Phiếu L1-M1 ③ cấm sửa `db/ket-noi.js` (ngoài pathspec), nên lượt này chép 12 dòng
-// thay vì export lại hàm có sẵn — HAI bản đọc `.env` trong một repo là một khớp dễ trôi,
-// đã ghi §9 sổ để phiếu sau gộp về một.
+// L1-M1 chép 12 dòng đọc tay vì `db/ket-noi.js` khi đó ngoài pathspec; GL9 gộp về MỘT bộ đọc: `db/ket-noi.js#docTepEnv`
+// (`util.parseEnv` ⇒ cùng giá trị `node --env-file`; chú thích đuôi `V3_KHOA_MA_HOA=abc   # …` không còn dính vào khoá;
+// tệp hỏng/không đọc được ⇒ NÉM — xem đầu `db/ket-noi.js`).
 //
 // ⛔ KHÔNG nạp `.env` vào `process.env` của cả tiến trình: bộ ca dựng CSDL sandbox bằng
 //    biến môi trường, đè lên là test đo nhầm CSDL (cùng lý do `db/ket-noi.js` ghi ra).
-import fs from "node:fs";
-import path from "node:path";
-import { GOC } from "../../db/ket-noi.js";
+import { GOC, docTepEnv } from "../../db/ket-noi.js";
 
+/** `env[ten]` (THAM SỐ, mặc định `process.env`) có giá trị (truthy) thì thắng; rỗng/vắng ⇒ tra `<goc>/.env`; không có ⇒ `""`. */
 export function docBien(ten, env = process.env, goc = GOC) {
   if (env[ten]) return env[ten];
-  try {
-    const raw = fs.readFileSync(path.join(goc, ".env"), "utf8");
-    for (const dong of raw.split("\n")) {
-      const m = dong.match(/^\s*([A-Za-z_0-9]+)\s*=\s*(.*)$/);
-      if (m && m[1] === ten) return m[2].trim().replace(/^["']|["']$/g, "");
-    }
-  } catch {
-    /* không có .env thì coi như thiếu biến */
-  }
-  return "";
+  return docTepEnv(ten, goc) ?? "";
 }
 
 /**
