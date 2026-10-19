@@ -1,0 +1,70 @@
+phieu: GL9
+vong: 1
+ket_luan: DAT
+# Đo trên worktree agent-adf1f250694cc4e73 @ 61ac860 (mã 4dfa289) · base a6f670d · máy dev macOS · Node 24.19.0 + Node 20.20.2 (tarball
+# chính thức, đúng bản của prod) · Postgres.app, CHỈ hộp cát aicloser_v3_test_rfg9s*_p<pid> của tiến trình đo, giết lọc theo
+# datname + application_name (không đụng kết nối người khác) · 0 mạng thật (cửa gửi tiêm, PK_MARK_UNREAD=0, bẫy fetch/https).
+# Ca phá: /private/tmp/claude-501/-Users-macminim416256-Downloads-Work-AI-Chatbot/9d9827c8-3f95-4f2d-be22-e1657a8690aa/scratchpad/refute-gl9/
+findings:
+  - ma: F1
+    muc: NEN
+    mo_ta: >-
+      B khai «util.parseEnv ⇒ cùng giá trị node --env-file, bỏ chú thích đuôi» nhưng mọi số đo và cả thước đều chạy Node 24.19; prod chạy
+      Node 20.20.2, mà util.parseEnv của 20.20.2 KHÔNG cắt TAB. Hệ quả: `PANCAKE_READONLY=1<TAB>` đọc thành "1\t" ⇒ van gửi MỞ (bộ đọc cũ
+      có trim ⇒ ĐÓNG — tức hồi quy fail-OPEN). `PANCAKE_READONLY=1<TAB># chú thích` vẫn đọc thành "1\t" ⇒ MỞ, nghĩa là chính đích của B
+      không đạt trên Node của prod. `export␠␠F=…` thì NÉM. Ca của thợ `test/gl9-doc-env.test.mjs` E2 ĐỎ trên Node 20.20.2 (7/8), XANH
+      trên Node 24 (8/8). Chưa lên CHAN vì máy Node 20 duy nhất là prod, mà theo thiết kế prod không đặt PANCAKE_READONLY (unit
+      configure ép `Environment=PANCAKE_READONLY=1` đúng chữ ⇒ không đọc tệp); lỗi chỉ lộ ở script chạy tay hoặc ở một máy Node 20
+      buộc phải ĐÓNG van. Sửa gợi ý: chuẩn hoá giá trị khoá van trước khi so (trim ASCII + tab), và chạy ca B trên cả Node 20.20.2
+      (hoặc chép số đo Node 20 vào đầu `db/ket-noi.js`).
+    kich_ban: >-
+      cd <scratch>/refute-gl9 && ./do-van.sh node20/node-v20.20.2-darwin-arm64/bin/node $PWD/cay-moi 'A=0\nPANCAKE_READONLY=1\t\n'
+      ⇒ «đọc="1\t" · van gửi MỞ»; cùng tệp trên cay-cu (a6f670d) ⇒ «đọc="1" · van gửi ĐÓNG»; cùng tệp với node 24 trên cay-moi ⇒ «"1" · ĐÓNG».
+      Dòng `PANCAKE_READONLY=1\t# chặn gửi`: v20/mới «"1\t" MỞ» · v24/mới «"1" ĐÓNG». (do-van.sh: env -i PATH V3_PANCAKE_GUI=1, cwd rỗng,
+      gọi nap.docEnvTuyetDoi + handler-v3.vanGuiDangMoTuyetDoi trên bản chép `git archive` của cây.) Thước: trong worktree chạy
+      `<node20> --import ./test/_an-toan.mjs --test test/gl9-doc-env.test.mjs` ⇒ fail 1 (E2: «.env hỏng quanh F», mong "q # r").
+    file_line: db/ket-noi.js:52 (util.parseEnv(raw)) · src/chat/handler-v3.js:65 (so `!== "1"`)
+  - ma: F2
+    muc: NEN
+    mo_ta: >-
+      Lưới phát hiện của B (coDongKhai) chỉ bắt trường hợp «khoá BIẾN MẤT» (bị nháy hở nuốt), không bắt «giá trị BIẾN DẠNG». Những biến
+      dạng mà bộ đọc cũ dung thứ (gỡ nháy lẻ, trim theo Unicode) nay đọc thành ≠ "1" ⇒ van gửi MỞ, trên cả Node 20 lẫn 24. Cụ thể:
+      `PANCAKE_READONLY=1"` ⇒ `1"` · `PANCAKE_READONLY="1` (quên nháy đóng) ⇒ `"1` · `PANCAKE_READONLY=1<NBSP>` ⇒ "1 " · BOM ở dòng 1
+      (`﻿PANCAKE_READONLY=1`) ⇒ undefined, vì regex `^[ \t]*` không nuốt BOM. Trong khi đó cổng máy
+      `grep -qE '^PANCAKE_READONLY=1'` (ops/bin/phat-hanh.sh:108, mo-van ⑥) vẫn XANH với `1"`, NBSP, TAB ⇒ máy khai van đóng nhưng mã chạy
+      van mở. Chưa lên CHAN vì cần ba điều cùng lúc: gõ sai trong .env + `V3_PANCAKE_GUI=1` có trong process.env + tiến trình không nạp env
+      (với --env-file/dotenv thì env cũng mang giá trị hỏng, tức lỗi có sẵn từ trước). Sửa gợi ý: với PANCAKE_READONLY, giá trị đọc được
+      ngoài {"", "0", "1"} (sau trim) ⇒ NÉM / coi là ĐÓNG.
+    kich_ban: >-
+      ./do-van.sh node $PWD/cay-moi 'A=0\nPANCAKE_READONLY=1"\n' ⇒ «đọc="1\"" · van gửi MỞ» · cay-cu ⇒ «"1" · ĐÓNG»;
+      'A=0\nPANCAKE_READONLY="1\nB=2\n' ⇒ mới «"\"1" MỞ» / cũ «"1" ĐÓNG»; 'A=0\nPANCAKE_READONLY=1\xc2\xa0\n' ⇒ mới «"1 " MỞ» / cũ ĐÓNG;
+      '\xef\xbb\xbfPANCAKE_READONLY=1\nB=2\n' ⇒ mới «undefined MỞ» / cũ ĐÓNG (kết quả giống nhau trên node20 và node24).
+      `printf 'A=0\nPANCAKE_READONLY=1"\n' > f; grep -qE '^PANCAKE_READONLY=1' f` ⇒ cổng XANH.
+    file_line: db/ket-noi.js:35-37 (coDongKhai) · db/ket-noi.js:53 · ops/bin/phat-hanh.sh:108
+  - ma: F3
+    muc: GHI-NO
+    mo_ta: >-
+      Ngoài phạm vi «nửa cặp lẻ» của phiếu. jsonLanh không xử lý U+0000: JSON.stringify sinh `\u0000`, và jsonb từ chối (22P05). Nếu chữ
+      gửi khách có NUL thì INSERT lan_gui (ghi TRƯỚC khi gửi) vỡ ⇒ khách nhận 0 tin — đúng triệu chứng C muốn bịt, chỉ khác ký tự. Nguồn
+      NUL hiếm (model/Pancake/sale gõ) ⇒ đề nghị nợ N-GL9-JSONB-NUL: làm lành luôn `\u0000` trong replacer của jsonLanh.
+    kich_ban: >-
+      node <scratch>/refute-gl9/s5-nul-lan-gui.mjs <worktree> ⇒ «nua-cap: ghi sổ + GỬI» · «nul: NÉM 22P05 unsupported Unicode escape
+      sequence · cửa gửi được gọi tổng=1» (cửa KHÔNG được gọi cho tin NUL). psql: SELECT '"a\u0000b"'::jsonb ⇒ ERROR.
+    file_line: src/text.js:54 (jsonLanh) · src/queue/lan-gui.js:95
+# Đã thử thật mà KHÔNG phá được (A + C) — mỗi dòng là một lệnh đã chạy:
+da_thu_khong_pha:
+  - "S1 s1-restart-giua-luot.mjs: giết MỌI kết nối (pool + poolGui) lúc worker đang chờ model 2.5 s với client ĐANG MƯỢN + BEGIN.
+     Có workLoop thứ hai: B rút lại tin sau rollback ⇒ GỬI 1 · model 2 · tin xong · hội thoại vẫn AI · lan_gui 1 dòng da_gui; A ⇒ loi
+     «not queryable», CAS không đè. Không có B: A thu_lai, GỬI 0, tin về cho. Lý do không gửi đúp: assertCanAct (handler-v3.js:401)
+     chạy trên client giao dịch TRƯỚC mọi lượt gửi ⇒ lượt có giao dịch đã chết không gửi được; UNIQUE(team_id,tin_id,buoc) là lưới thứ hai."
+  - "S2 s2-worker-mat-pg.mjs: chay-worker.js THẬT, PG «dừng» 8 s (ALLOW_CONNECTIONS false + giết 4 kết nối) ⇒ exit=null suốt cửa sổ
+     trống, PG lên lại ⇒ dòng lượt 2→12 (tự hồi, không treo im)."
+  - "S3 s3-restart-lien-tiep.mjs: 3 workLoop × 8 hội thoại, model 1.5 s, 3 lần restart cách 700 ms ⇒ 8 gửi / 8 tin, 0 ĐÚP, 0 mất, mọi
+     hội thoại vẫn AI, pool total 3 idle 3 waiting 0, SELECT 1 trả trong 0 ms (pool không cạn)."
+  - "S4 s4-ro-nguoi-nghe.mjs: 300 lượt mượn/trả ⇒ mỗi client giữ đúng 1 người nghe 'error' lúc mượn, pool 1/1 (không rò)."
+  - "Mọi chỗ pool.connect() trong src/db/v3/src (44 chỗ) đều release trong finally — client hỏng luôn về pool rồi bị _remove."
+  - "C lan-gui: sổ lành ≠ args thô chỉ khi có nửa cặp; bộ đọc sổ nhanDienSale/isOurs (conv-owner.js:47 norm bỏ mọi ký tự không phải
+     chữ/số) ⇒ không làm lệch nhận diện sale."
+  - "Thước GL9 trên Node 20.20.2: pool + jsonb 10/10 XANH (A, C không phụ thuộc phiên bản Node); doc-env 7/8 (xem F1)."
+mu_code_review: []
+mu_nghiep_vu: []
