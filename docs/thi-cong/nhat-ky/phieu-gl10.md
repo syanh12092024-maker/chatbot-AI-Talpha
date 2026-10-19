@@ -279,3 +279,109 @@ Thay cho mục «cổng cũ: gl3b ⑤c đỏ», lệch phiếu 14 và nợ N-GL1
    chỉ là hằng thử (`12345678901234567` · `9007199254740993` · `1792056718000`); email chỉ dạng `@thu.vn`/`@gl10.vn` của ca.
 3. **Đo lại sau commit `e4d5492`**: `bash ops/bin/nghiem-thu/gl10.sh` (đầy đủ, cả ⑬) ⇒ **== ĐỎ 0 / XANH 60 · rc=0** — ⑬: gl2 52/0 · mb 0 · gl4 60/0 ·
    gl3c 76/0 · gl3b 49/0 · gl1 7/0 · gd1 0 · l2-m1 3 dòng + va-r1 2 dòng GIỐNG HỆT base. `npm test -- --test-force-exit`: tests 2866 · pass 2844 · fail 0.
+
+## Vòng 2 (sau đối kháng) — 19/10 · thợ vòng 2 (cùng worktree)
+
+**Đầu vào:** verdict `refute-gl10.verdict.yaml` (TRẢ VỀ — F1 CHẶN · F2–F6 NÊN · G1 GHI-NỢ; 6/6 ca phá CONFIRMED) + ca phá
+`scratchpad/refute-gl10/` + diff `1b16a79..HEAD`. **Commit:** `c05a0bf` test(gl10) thước trước · `adbf23d` fix(gl10) · (commit này) nhật ký.
+Mọi tệp đổi nằm trong ③ — không «Lệch phiếu» về tệp.
+
+### Thước TRƯỚC (đỏ trên HEAD `dbe95d2`) — `test/gl10-vong2.test.mjs`
+
+Chuyển thể ca phá của đối kháng sang ĐƯỜNG THẬT: cổng bật/tắt qua HTTP (Express + vé + `dungPhanB` → `noiVanHanhV3` → `setPage`),
+worker `motLuot` thật (không tiêm `dsChoPhep`), màn qua `/api/page-bot/danh-sach`, hộp cát `aicloser_v3_test_gl10v_p<pid>`, tệp tạm.
+```
+(HEAD dbe95d2, TZ=Europe/Berlin) tests 7 · pass 0 · fail 7 — mỗi ca đỏ ĐÚNG chỗ khẳng định:
+F1  đáp phải mang trạng thái dien_tap, đo {"trangThai":"cho",…}          (diễn tập vẫn ghi khoá)
+F2  vòng nạp phải canh khoá mồ côi, đo ''                                  (SIGKILL giữa ghiKhoa và COMMIT)
+F2b vòng nạp phải chờ lượt bật xong hẳn rồi mới xét khoá mồ côi            (chưa có phép canh)
+F3  khoá sống lại không ai phát hiện, đo ''                                (_ghi_gan cũ + os.replace sau lượt tắt)
+F4  vượt trần: màn phải ĐỎ, đo {"trangThai":"da_nhuong",…,"nhan":"ai_sale đã nhường — bot v3 đang trả lời","do":false}
+F5  page bật xếp sau hạng 500 KHÔNG BAO GIỜ được nạp
+F6  0 tệp log khớp mà vẫn khai «đang canh log»: … · đang canh log ai_sale
+```
+Sau /code-review thêm F2c · F2d và viết lại F2b (xem dưới) ⇒ tệp có 9 ca.
+
+### Từng finding — ca · vá · đảo-vá
+
+| # | vá | ca xanh | đảo-vá (mỗi đột biến một tiến trình, bản sao tạm) |
+| --- | --- | --- | --- |
+| **F1** CHẶN | Chọn (b) để GIỮ bậc ② mo-van («prod, đường ĐỌC — khách chưa thấy gì»): bật lúc `V3_DIEN_TAP=1` ⇒ KHÔNG ghi khoá, trạng thái mới `dien_tap` (CHECK 035 thêm mã), không mốc chờ, nhật ký `v3_bat_dien_tap`; worker chỉ chạy thử page `dien_tap` khi CHÍNH worker còn diễn tập; bỏ diễn tập ⇒ không phục vụ (fail-closed), màn ĐỎ «Đã bỏ diễn tập… Tắt rồi bật lại để ghi khoá»; page còn giữ khoá mà bật diễn tập ⇒ 409; tắt page `dien_tap` không báo «khoá CHƯA xoá». Màn: nhãn «Diễn tập — KHÔNG ghi khoá ai_sale: ai_sale vẫn trả lời khách như trước; bot v3 chạy thử, không gửi», danh sách mang `dienTap` ⇒ hộp xác nhận bật KHÔNG hứa «bot sẽ trả lời khách», toast riêng | F1 (bản chép ai_sale vẫn trông page · worker diễn tập nạp page · bỏ diễn tập 0 nạp · 409 · bật lại thường ⇒ `cho` + khoá) | ⑫z1 vẫn ghi khoá · z1b worker không chạy thử · z1c bỏ diễn tập vẫn nạp · z1d tắt báo khoá · z1e màn không đỏ · z1f cho bật page giữ khoá — 6/6 đỏ F1 |
+| **F2+F3** NÊN | Vòng nạp (`canhKhoaMoCoi`, chạy cả khi 0 page bật/vượt trần): `_v3[pid]` còn mà dòng page tắt, chưa `xoa_hong` ⇒ khoá DÒNG (`FOR UPDATE`, thứ tự id) → ĐỌC LẠI tệp → UPDATE có điều kiện `xoa_hong` + lý do «MỒ CÔI» + nhật ký `ai_sale_khoa_mo_coi` (một lần). KHÔNG tự xoá tệp. Màn đã có nhãn đỏ + nút «Thử xoá lại» cho `xoa_hong` | F2 (SIGKILL thật ở tiến trình con) · F3 (ghi chen tất định) · F2b/F2c/F2d (đua — dưới) | ⑫z2 bỏ canh ⇒ F2 F3 · z2b tự xoá tệp ⇒ F2 · z2c đọc tệp cũ ⇒ F2c · z2f bỏ khoá dòng ⇒ F2c · z2d đánh cả page đang bật ⇒ F2 · z2e bù không đưa về '' ⇒ F2b · z2g bù không khoá dòng ⇒ F2b F2d · z2h bù gỡ khoá lượt bật khác ⇒ F2d |
+| **F4** NÊN | `kho-page.js#docMayAiSale` đọc MỘT lần cho cả bảng: trần GL2 toàn hệ (đếm như đèn Sức khoẻ) · cửa kiểm của chính page (van đóng / diễn tập / thiếu biến / model) · nhịp máy chạy bot. Page `cho`/`da_nhuong` (giữ khoá) mà một lý do trên ⇒ ĐỎ «<lý do> — ai_sale … nhường page này (khoá _v3 còn) nên KHÔNG bot nào trả lời. <lối>»; `da_nhuong` chỉ XANH (`aiSale.xanh`) khi cửa kiểm đọc được + máy chạy bot có nhịp (XANH/VÀNG); hàng đợi im (XÁM) ⇒ vàng «CHƯA XÁC NHẬN bot v3 trả lời». `loi_tep` vì MÁY CHẠY BOT thiếu biến (tệp lành) ⇒ không còn nói «tệp hỏng». Worker CHÍNH nó diễn tập mà page giữ khoá ⇒ kêu ở log một lần | F4 (10 bước: vượt trần · van · diễn tập · thiếu biến máy chủ · model · máy đứng · hàng im · CHO-QUA xanh · `cho`+vượt trần · thiếu biến máy chạy bot · worker diễn tập) | ⑫z4a–z4j (10 đột biến) đỏ F4 |
+| **F5** NÊN | `dsPageDeNap` bỏ `LIMIT 500` (chỉ cột `page_id`, giao với danh sách bật/nhường ở `motLuotTrong` mới quyết) | F5 (501 page đệm xếp trước) | ⑫z5 LIMIT 500 trở lại ⇒ F5 |
+| **F6** NÊN | Đếm tệp log khớp tiền tố VÀ đọc được (`accessSync R_OK`): 0 ⇒ lý do bật «KHÔNG canh được log — V3_AI_SALE_LOG có nhưng 0 tệp log khớp; chỉ chờ theo giờ» (có tệp ⇒ «đang canh log ai_sale (N tệp)»); worker cảnh báo MỘT lần (gỡ khi có tệp lại); lý do «đã nhường» ghi «chỉ theo giờ» | F6 (tiền tố sai · có tệp · tệp chmod 000 ở cả lý do bật lẫn worker; bỏ phần quyền khi chạy root) | ⑫z6 · z6b · z6c (mỗi vòng) · z6d · z6e (đếm tên) · z6f (worker không xét quyền) đỏ F6 |
+| **G1** GHI-NỢ | KHÔNG sửa `handler-v3.js` (phiếu cấm) — nợ đề nghị **N-GL10-ASSERT-AI-SALE** dưới | — | — |
+
+### /code-review vòng 2
+
+Lượt 1 (`/code-review high` qua Skill) chạy ở cwd CÂY CHÍNH và soát nhầm diff GL8 (`origin/vao-ui-v3-17-09...HEAD`) — bỏ, không dùng.
+Lượt 2: agent reviewer trỏ đúng `git -C <worktree> diff dbe95d2`. Trước khi reviewer trả, thợ tự thấy `canhKhoaMoCoi` bản đầu lấy khoá
+tư vấn tệp rồi mới khoá dòng (ngược thứ tự lượt bật/tắt ⇒ deadlock) — đã đổi sang «khoá dòng → đọc lại tệp, không khoá tệp» + ca F2c
+(reviewer xác nhận lỗi đó và bản sửa). Kiểm chứng từng điểm trước khi sửa (đọc mã + lập luận khoá Postgres READ COMMITTED; điểm 3 dựng
+lại bằng ca F2b viết lại — đỏ trên bản chưa sửa):
+
+| # | điểm reviewer | mức | xử |
+| --- | --- | --- | --- |
+| 1 | `da_nhuong` xanh dù bộ não lỗi mọi tin: nhịp đếm `loi`/`chan_guard` là «đã xử»; mã cửa kiểm model bị bỏ qua | NÊN | SỬA phần mã cửa kiểm `BOTMOI_THIEU_MODEL`/`BOTMOI_MODEL_HONG` ⇒ đỏ (F4 ④b, ⑫z4h). Phần «tin `loi` tính là nhịp» (khoá model chết 401 — cửa kiểm không thấy) ⇒ nợ **N-GL10-NHIP-LOI** |
+| 2 | F1/F4 đọc env unit giao diện, việc gửi đọc env worker — chỉ restart worker với `V3_DIEN_TAP=1` ⇒ bật vẫn ghi khoá, màn xanh | NÊN | SỬA phần trong tầm: worker kêu ở log khi CHÍNH nó diễn tập mà page giữ khoá (F4 ⑩, ⑫z4i/z4j) + bảng biến ghi «đổi `V3_DIEN_TAP` phải khởi động lại CẢ HAI unit». Màn thấy env worker ⇒ nợ **N-GL10-ENV-HAI-UNIT** |
+| 3 | `buKhoa` khoá tệp rồi mới UPDATE dòng: (a) UPDATE thấy ảnh chụp '' ⇒ 0 dòng, worker COMMIT `xoa_hong` sau ⇒ đỏ oan; (b) vòng chờ với lượt bật #2 cùng page, nạn nhân là bù ⇒ nhánh catch gỡ không khoá có thể gỡ mất khoá #2 | NHỎ | SỬA: bù khoá DÒNG trước (`SELECT … FOR UPDATE`), dòng đã bật lại ⇒ KHÔNG gỡ. F2b viết lại đo đúng thứ tự xấu (worker dừng sau đọc lại tệp, bù phải ĐỨNG CHỜ khoá dòng) + F2d mới (bật #2 chen trước bù) — ⑫z2g · z2h |
+| 4 | page `dien_tap` đang bật mà khoá sống lại (ghi chen) ⇒ không ai canh, màn vàng «ai_sale vẫn trả lời» | NHỎ | Nợ **N-GL10-DIEN-TAP-KHOA-SONG-LAI** (cần trạng thái/đường riêng cho page ĐANG bật giữ khoá ngoài chủ ý — ngoài 6 finding) |
+| 5 | nhịp tính cho cả team, không trừ page ngắt kênh (GL4): page ngắt GỬI làm đỏ oan page khác; page ngắt ĐỌC vẫn có thể xanh | NHỎ | Nợ **N-GL10-NHIP-TEAM-NGAT** (pilot trần = 1 chỉ chạm chính page ngắt) |
+| 6 | F6 đếm TÊN tệp, không đếm tệp đọc được (EACCES bỏ qua im) | NHỎ | SỬA (`accessSync R_OK` ở cả `demTepLog` lẫn `quetLogAiSale`; F6 thêm bước chmod 000; ⑫z6e · z6f) |
+
+Ngoài review — `npm test` lượt 1 đỏ `v3/test/b/hop-thu.test.mjs` H1: `operations.js` import `src/queue/lan-gui.js` (đường GỬI) để lấy
+`dangDienTap` ⇒ đồ thị import của Hộp thư (`hop-thu/router.js → operations.js → ai-sale-nhuong.js`, đo bằng duyệt import) chạm đường gửi.
+Sửa: chép luật một dòng `V3_DIEN_TAP === '1'` thành `ai-sale-nhuong.js#dangDienTap` (không import lan-gui), ca F1 so hai hàm trên 5 đầu vào.
+
+### Số đo cuối (máy dev · Postgres.app 127.0.0.1:5432 · hộp cát theo pid · worktree · node v24.19.0) — HEAD `adbf23d`
+
+```
+bash ops/bin/nghiem-thu/gl10.sh   (đầy đủ, cả ⑬)                                      == ĐỎ 0 / XANH 92 · rc=0
+  V2 (vòng 2) pass=9 fail=0 · xanh: F1 F2 F2b F2c F2d F3 F4 F5 F6
+  ⑫ 66 đột biến (35 vòng 1 + 31 vòng 2) — tất cả đỏ đúng ca đòi · ⑫0 bản sao nguyên vẹn pass=48 fail=0
+  ⑬ gl2 52/0 · mb 0 · gl4 60/0 · gl3c 76/0 · gl3b 49/0 · gl1 7/0 · gd1 0 · l2-m1 3 dòng + va-r1 2 dòng = nền base
+test/gl10-vong2.test.mjs dưới TZ=Europe/Berlin và TZ=UTC (PGTZ cùng)                    9/9 · 9/9
+npm test -- --test-force-exit                     tests 2875 · pass 2853 · fail 0 · skipped 22 (mốc 2866 → +9 ca vòng 2)
+```
+Tf (chỗ duy nhất đọc biến tệp/ghi khoá) đổi danh sách nhập: thêm `v3/src/ui/page-bot/kho-page.js` (chỉ hằng `LY_DO_THIEU_BIEN` +
+`dangDienTap`), regex nhập chịu cả nháy đơn — `n_goi` (gọi ghiKhoa/xoaKhoa) vẫn chỉ `operations.js`.
+
+**Đột biến nào KHÔNG đỏ / nhánh không ca chạm (khai thật):** nhịp VÀNG («quá tải») tính là xanh — không ca riêng · nhãn khi `may`
+vắng (màn «Một page» — không vẽ `aiSale`) · `dien_tap` + cửa kiểm không đọc được · nhánh cảnh báo lỗi của `canhKhoaMoCoi` (catch) ·
+gỡ cờ cảnh báo log khi tệp có lại · cảnh báo diễn tập của worker khi 0 page bật (đường `ds` rỗng không xét).
+
+### Lệch phiếu / giả định (vòng 2)
+
+1. **Sửa migration 035** (CHECK thêm `dien_tap`, chú thích) + sinh lại `db/schema.sql`: 035 chưa áp nơi nào ngoài hộp cát — đo
+   `_migrations` của `aicloser_v3` dev: bản cuối `034_page_ngat_kenh` (08/10); nhánh chưa push/deploy. Trạng thái mới = mở rộng bảng ② 2 / ③.
+2. **Nhãn `da_nhuong` không còn xanh khi hàng đợi im** (XÁM ⇒ vàng) — đổi bảng nhãn ② 2 theo luật dải trạng thái «không đo được thì
+   xám, không xanh». Giá: page pilot đêm ít khách sẽ hiện vàng.
+3. **409 mới**: bật lúc diễn tập mà page còn giữ khoá (khoá mồ côi) — gỡ khoá trước.
+4. `test/gl10-cong-bat-tat.test.mjs` before: đặt `process.env.V3_TRAN_PAGE_BAT=20` — nhãn màn nay đọc trần từ env TIẾN TRÌNH (như đèn
+   Sức khoẻ); thiếu là mọi page bật «vượt trần».
+5. Lý do `cho` thêm số tệp «đang canh log ai_sale (N tệp)». Tệp log biến mất SAU lúc bật ⇒ lý do `cho` vẫn câu cũ tới lượt chuyển kế
+   (worker cảnh báo MỘT lần + lý do «đã nhường» nói chỉ theo giờ).
+6. `pageStatus` vẫn chặn biến vắng/tệp hỏng/gắn tay cả khi diễn tập (dù diễn tập không ghi khoá) — giữ fail-closed, không mở rộng phiếu;
+   giá: bậc ② không chạy được trên page gắn tay.
+
+### Nợ đề nghị §9 (tổng ghi — thợ không sửa sổ)
+
+- **N-GL10-ASSERT-AI-SALE** (G1 đối kháng): mất khoá khi đang `da_nhuong` — lượt `dang_xu` đang chạy vẫn gửi vì `assertCanAct`
+  (`src/chat/handler-v3.js:401-410`) chỉ đọc lại `bot_ai_bat`, không đọc trạng thái ai_sale ⇒ ai_sale đã trả lời lại thì khách nhận tin
+  đúp. Đề nghị: `assertCanAct` đòi thêm `ai_sale_trang_thai IN ('da_nhuong','dien_tap')` khi cột có (phiếu sau, sau BH9).
+- **N-GL10-NHIP-LOI**: nhịp máy chạy bot (`kho.js#nhipMayBot`) tính `loi`/`chan_guard` là «đã xử» ⇒ khoá model chết (401) mà cấu hình
+  còn ⇒ màn vẫn xanh. Cần phép đo «lượt gần nhất có gửi được» theo page.
+- **N-GL10-NHIP-WORKER**: nhịp đo bằng hàng đợi — chế độ poll + worker chết ⇒ không tin nào vào hàng ⇒ XÁM (vàng), không ĐỎ. Nhịp tim
+  thật của worker cần bảng riêng.
+- **N-GL10-ENV-HAI-UNIT**: cổng bật + nhãn màn đọc env unit giao diện; việc gửi/diễn tập/trần của worker đọc env worker — lệch thì màn
+  không thấy (worker chỉ kêu ở log). Đề nghị worker ghi trạng thái env của nó vào CSDL (một dòng) cho màn đọc.
+- **N-GL10-DIEN-TAP-KHOA-SONG-LAI**: page `dien_tap` (đang bật) mà `_v3` sống lại do ghi chen ⇒ không ai canh (phép canh mồ côi chỉ xét
+  page tắt). Cùng loại: page bật trạng thái '' có khoá (màn đã đỏ sẵn).
+- **N-GL10-NHIP-TEAM-NGAT**: nhịp tính cho cả team, không trừ page ngắt kênh GL4.
+- **N-GL10-MO-COI-KHONG-DONG**: `_v3.<pid>` của pid không có dòng `page` nào ⇒ worker không có dòng để đánh — chỉ gỡ tay.
+- **mo-van / đường lùi** (skill ngoài ③ — tổng): ghi rõ «kéo phanh tay (đóng van gửi / bật diễn tập) khi page đang giữ khoá ⇒ không bot
+  nào trả lời — gạt TẮT page v3 để ai_sale trả lời lại; đổi `V3_DIEN_TAP` phải restart CẢ HAI unit».
+
+Repo công khai: quét dòng thêm của `git diff dbe95d2` — 0 SĐT +97x/+96x, 0 email thật, số ≥ 13 chữ số chỉ là hằng thử. Không ssh prod,
+không gọi model/Pancake, không đụng tệp thật của pancake-tool (mọi ca mkdtemp).
