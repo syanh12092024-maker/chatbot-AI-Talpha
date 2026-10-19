@@ -95,7 +95,8 @@ dao "⑤a-cửa-về-pkGetMessages-(lỗi⇒[])-⇒-phép-1/3-đỏ" "P1a P1b P3
   const kq = await pkDocTin(pageId, convId, custId);'
 dao "⑤b-bỏ-chèn-viec_can_xu_ly-⇒-phép-1-đỏ" "P1a P1b" "$CA_W" "GL3b P(1a|1b) ·" src/queue/worker.js \
   'WHERE NOT EXISTS (' 'WHERE false AND NOT EXISTS ('
-dao "⑤c-bỏ-migration-033-⇒-4b-đỏ-(dòng-doc_tin_loi-+-the_chan)" "N1 N5" "$CA_N" "GL3b N[1-7] ·" ":bo-033"
+# GL10 (tổng gật 19/10): từ 035 (CHECK nap_bo_qua dựng lại ĐỦ 8 mã, gồm doc_tin_loi) gỡ 033 KHÔNG còn làm N1 đỏ — chỉ N5 (vòng 033 down/up) phá.
+dao "⑤c-bỏ-migration-033-⇒-4b-đỏ-(vòng-033-down/up)" "N5" "$CA_N" "GL3b N[1-7] ·" ":bo-033"
 dao "⑤d-nạp-ghi-mốc-khi-đọc-lỗi-⇒-4b-đỏ-(tin-mất)" "N2 N3 N4" "$CA_N" "GL3b N[1-7] ·" src/queue/nap.js \
   '      const lan = lui && dongHo() - lui.toi < LUI_DOC_TIN_TRAN_MS ? lui.lan + 1 : 1;' \
   '      if (moc) mocDaXu.set(khoaMoc, moc); const lan = lui && dongHo() - lui.toi < LUI_DOC_TIN_TRAN_MS ? lui.lan + 1 : 1;'

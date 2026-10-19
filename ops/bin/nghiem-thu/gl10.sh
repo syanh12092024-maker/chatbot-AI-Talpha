@@ -5,7 +5,7 @@
 #
 # Tầm đo: lưới HỒI QUY (luật 32) do chính thợ viết, trên MÁY DEV — không đo prod, không đo `aicloser_v3`. Hộp cát Postgres riêng mỗi
 # tệp ca (`db/sandbox.js`, hậu tố `_p<pid>`, tự dựng tự dọn). ⛔ `page_gan_them.json` + log ai_sale là tệp TẠM (mkdtemp) — cổng KHÔNG
-# đọc/ghi `/opt/pancake-tool` hay `/var/log`. Ngữ nghĩa ai_sale đo bằng BẢN CHÉP NGUYÊN VĂN ba hàm `ai_sale.py` (đọc chỉ-đọc 19/10) chạy
+# đọc/ghi `/opt/pancake-tool` hay `/var/log`. Ngữ nghĩa ai_sale đo bằng bản chép LOGIC ba hàm `ai_sale.py` (đọc chỉ-đọc 19/10) chạy
 # `python3 -I` — mã ai_sale đổi gần như hằng ngày: bước mở van ② 5 phải đối chiếu lại thân ba hàm trên prod trước lần gạt đầu.
 # Đảo-vá trên BẢN SAO TẠM (src · db · v3/src · v3/testkit · tệp ca), mỗi đột biến một tiến trình node mới (bẫy 15). Chỉ `grep -E`.
 # Cờ: GIU_TAM=1 giữ bản sao · BO_DAO_VA=1 bỏ ⑫ · BO_CONG_CU=1 bỏ ⑬ cổng cũ · CHAY_NPM_TEST=1 chạy npm test ở ⑬.
@@ -46,7 +46,7 @@ bo_ca() { # bo_ca <nhãn> <các tên phải xanh> <tệp ca…>
   ket "$nhan" $? "pass=$p fail=$f · xanh: ${co:-không}(đòi: $can)${thieu:+ THIẾU: $thieu}"
   echo "$o" | grep -E "^\s*\[gl10[tcwmk]\] " | sed 's/^ */   · /' | cut -c1-200
 }
-bo_ca "①②③(mô-đun)-đọc·gắn-tay·ghi-giữ-khoá-lạ+bản-chép-ai_sale·nguyên-tử·quyền·số-lớn·ghi-chen·tệp-vắng·giờ-Pancake" "D1 D2 G1 G1b G2a G2b G2c G2d G2e M1" "$CA_T"
+bo_ca "①②③(mô-đun)-đọc·gắn-tay·ghi-giữ-khoá-lạ+bản-chép-logic-ai_sale·nguyên-tử·quyền·số-lớn·ghi-chen·tệp-vắng·giờ-Pancake" "D1 D2 G1 G1b G2a G2b G2c G2d G2e M1" "$CA_T"
 bo_ca "①③④⑥⑦⑨(HTTP-thật)-bật/tắt-qua-cửa-công-tắc·409-tệp-hỏng/vắng/biến-vắng/gắn-tay·màn-aiSale·tắt(+chết-giữa·bật-chen)·tin-cũ·bù·bật-lại-giữ-nguyên" "C1 C3a C3b C3c C6a C6b C6c C6d C6e C6f C7 C9 C10" "$CA_C"
 bo_ca "④⑧⑩(worker-thật)-chờ-không-nạp/xử·4-vòng-song-song·2-vòng-nạp·mất-khoá/hỏng/gắn-tay(+mốc-đặt-lại)·log-ai_sale(+ranh-giới·khối-BỎ-QUA·đổi-tên)" "W4a W4b W4c W8 W8b W10a W10b W10c W10d W10e W10f W10g W10h" "$CA_W"
 for tz in Europe/Berlin UTC; do
@@ -205,16 +205,11 @@ if [ "${BO_CONG_CU:-0}" != 1 ]; then
   fi
   # số dòng đỏ trên base (bản sao 1b16a79 = mã a6f670d) — đo 19/10; xem nhật ký GL10 mục «cổng cũ»
   nen() { case "$1" in l2-m1) echo 3;; va-r1) echo 2;; *) echo 0;; esac; }   # bash 3.2 của macOS: không mảng kết hợp
-  # ĐỎ ĐÃ BIẾT do chính GL10 làm thước cũ già (KHÔNG phải mã sai — nhật ký GL10, nợ đề nghị N-GL10-GL3B-5C): đột biến `gl3b.sh ⑤c` gỡ tệp
-  # 033 để CHECK `nap_bo_qua` mất mã `doc_tin_loi` — 035 dựng lại CHECK đủ 8 mã nên N1 hết đỏ (chỉ N5 đỏ). Đếm RIÊNG, in ra, không nuốt:
-  # đúng dòng đó + dòng lồng «gl3b.sh rc=1 · == ĐỎ 1 /» (gl4 ⑥ · gl3c ④). gl3b có thêm dòng đỏ nào khác ⇒ dòng lồng thành «ĐỎ 2» ⇒ vẫn đếm.
-  BIET='⑤c-bỏ-migration-033-⇒-4b-đỏ-\(dòng-doc_tin_loi-\+-the_chan\) đỏ: N5  \(đòi đỏ: N1 N5\)|gl3b\.sh rc=1 · == ĐỎ 1 / '
   for g in gl2 mb gl4 gl3c gl3b l2-m1 va-r1 gl1 gd1; do
-    o=$(bash "ops/bin/nghiem-thu/$g.sh" 2>&1); rc=$?; n=$(nen "$g")
-    d=$(echo "$o" | grep -E "^(🔴|   ✘)" | grep -cvE "$BIET"); b=$(echo "$o" | grep -E "^(🔴|   ✘)" | grep -cE "$BIET")
+    o=$(bash "ops/bin/nghiem-thu/$g.sh" 2>&1); rc=$?; d=$(echo "$o" | grep -cE "^(🔴|   ✘)"); n=$(nen "$g")
     if [ "$g" = gl2 ]; then [ "$rc" -eq 0 ]; else [ "$d" -le "$n" ]; fi
-    ket "⑬cổng-cũ-$g.sh" $? "rc=$rc · dòng đỏ=$d (nền base=$n)$([ "$b" -gt 0 ] && echo " · đỏ đã biết (gl3b ⑤c ↔ 035)=$b") · $(echo "$o" | grep -E "ĐỎ [0-9]+|PHÉP=" | tail -1 | cut -c1-80)"
-    [ "$d" -gt "$n" ] && echo "$o" | grep -E "^(🔴|   ✘)" | grep -vE "$BIET" | head -5 | sed 's/^/   ↳ /'
+    ket "⑬cổng-cũ-$g.sh" $? "rc=$rc · dòng đỏ=$d (nền base=$n) · $(echo "$o" | grep -E "ĐỎ [0-9]+|PHÉP=" | tail -1 | cut -c1-80)"
+    [ "$d" -gt "$n" ] && echo "$o" | grep -E "^(🔴|   ✘)" | head -5 | sed 's/^/   ↳ /'
   done
 else
   echo "⏸ ⑬cổng-cũ HOÃN (BO_CONG_CU=1)"

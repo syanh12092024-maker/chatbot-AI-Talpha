@@ -1,10 +1,10 @@
 // PHIẾU GL10 ④1 ④2 (+ ② 1 đọc/gắn tay, ② 3 giờ Pancake) — mô-đun `src/queue/ai-sale-nhuong.js`, chỗ DUY NHẤT đọc/ghi
 // `page_gan_them.json` của pancake-tool. KHÔNG CSDL, KHÔNG mạng. ⛔ Mọi tệp là tệp TẠM (mkdtemp) — CẤM đụng `/opt/pancake-tool`.
 //
-// Thước ĐỐI CHIẾU NGỮ NGHĨA ai_sale: `python3 -I -c` chạy BẢN CHÉP NGUYÊN VĂN ba hàm `_page_gan_them` · `_page_gan_noi_khac` ·
-// `_hop_page_shop` (`/opt/pancake-tool/ai_sale.py` :13530–13559, đọc chỉ-đọc 19/10, tệp sửa 18/10 17:24) và `_doc_gan` · `_ghi_gan`
-// (`tu_gan_page_ngoai.py` :48–64) — chỉ đổi `SCRIPT_DIR` / `F_GAN` sang thư mục tạm. Mã ai_sale đổi gần như hằng ngày (498 bản .bak):
-// bước mở van ② 5 đối chiếu lại thân ba hàm trên prod với bản chép này trước lần gạt đầu.
+// Thước ĐỐI CHIẾU NGỮ NGHĨA ai_sale: `python3 -I -c` chạy bản chép LOGIC ba hàm `_page_gan_them` · `_page_gan_noi_khac` · `_hop_page_shop`
+// (pancake-tool ai_sale.py :13530–13559, đọc chỉ-đọc 19/10) và `_doc_gan` · `_ghi_gan` (tu_gan_page_ngoai.py :48–64) — chỉ giữ thân lệnh
+// (repo công khai: bỏ chú thích/docstring gốc), `SCRIPT_DIR` / `F_GAN` trỏ thư mục tạm. Mã ai_sale đổi gần như hằng ngày: bước mở van ② 5
+// đối chiếu lại thân ba hàm trên prod với bản chép này trước lần gạt đầu.
 import test, { after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -40,40 +40,31 @@ const MAU = () => ({
 const docJson = (tep) => JSON.parse(fs.readFileSync(tep, "utf8"));
 const conTam = (tep) => fs.readdirSync(path.dirname(tep)).filter((t) => t.includes(".v3-") || t.endsWith(".tmp"));
 
-/* ─────────── bản chép NGUYÊN VĂN mã pancake-tool (đọc 19/10) ─────────── */
+/* ─────────── bản chép LOGIC mã pancake-tool (đọc 19/10) ─────────── */
 const PY_AI_SALE = String.raw`
 import json, os, sys
 SCRIPT_DIR = sys.argv[1]
 
+# chép logic _page_gan_them (:13530) · _page_gan_noi_khac (:13545) · _hop_page_shop (:13557) từ pancake-tool ai_sale.py ngày 19/10
 def _page_gan_them(mkey):
-    """19/09 (chủ shop: "rõ ràng tôi bảo theo đơn vị tiền tệ mà gắn rồi còn gì"): page còn gói nhưng thuộc shop POS
-    RIÊNG (không có trong markets.json) → gắn vào thị trường theo tiền tệ page báo giá (AED→uae, NT$/TWD→taiwan…).
-    Nguồn: state/chung/page_gan_them.json {tt: {pid: ghi chú}}. Đọc lại mỗi lần gọi → sửa file không cần restart
-    (vòng dò tra lại danh sách page 10 phút/lần). Hỏng/thiếu file → không gắn thêm gì."""
     try:
         d = json.load(open(os.path.join(SCRIPT_DIR, "state", "chung", "page_gan_them.json"), encoding="utf-8"))
-        # TRAM_LANDING_2409: + page trạm landing có nước này trong "nuoc" (mỗi hội thoại vẫn chỉ 1 AI xử — tram_bo_qua)
         return ({str(p) for p in (d.get(mkey) or {})}
                 | {str(p) for p, v in (d.get("tram_landing") or {}).items()
                    if isinstance(v, dict) and mkey in [v.get("nha")] + list(v.get("nuoc") or [])})
-    except Exception:                                    # noqa: BLE001
+    except Exception:
         return set()
 
 
 def _page_gan_noi_khac(mkey):
-    """23/09 (chủ shop: "giá bán thị trường nào tư vấn theo thị trường đó" — ca Gold Avenue Taiwan: page nằm trong shop
-    POS Mỹ nhưng kịch bản báo 1290/1790 TWD): page đã được gắn cho thị trường KHÁC trong page_gan_them.json thì
-    thị trường của shop POS phải BỎ nó ra, không thì hai AI cùng rep (AI Mỹ nói giá đô + xác nhận nhà + cọc $50
-    với khách Đài). Cùng file với _page_gan_them, đọc lại mỗi lần gọi; hỏng/thiếu file → không bỏ gì."""
     try:
         d = json.load(open(os.path.join(SCRIPT_DIR, "state", "chung", "page_gan_them.json"), encoding="utf-8"))
         return {str(p) for k, o in d.items() if k != mkey and isinstance(o, dict) for p in o}
-    except Exception:                                    # noqa: BLE001
+    except Exception:
         return set()
 
 
 def _hop_page_shop(mkey, ids):
-    """Tập page AI <mkey> trông = page của shop POS − page đã gắn cho nước khác (theo tiền tệ) + page gắn thêm cho nước này."""
     return (set(ids) - _page_gan_noi_khac(mkey)) | _page_gan_them(mkey)
 
 ids = [x for x in sys.argv[2].split(",") if x]
@@ -84,15 +75,15 @@ import json, os, sys
 F_GAN = sys.argv[1]
 
 
+# chép logic _doc_gan (:48) · _ghi_gan (:55) từ pancake-tool tu_gan_page_ngoai.py ngày 19/10
 def _doc_gan():
     try:
         return json.load(open(F_GAN, encoding="utf-8"))
-    except Exception:                                    # noqa: BLE001
+    except Exception:
         return {}
 
 
 def _ghi_gan(them):
-    """Đọc LẠI rồi ghi bằng os.replace — AI Sale đọc file này mỗi lần tra danh sách page."""
     d = _doc_gan()
     for mkey, o in them.items():
         d.setdefault(mkey, {}).update(o)
@@ -104,7 +95,7 @@ def _ghi_gan(them):
 
 _ghi_gan(json.loads(sys.argv[2]))
 `;
-/** Tập page ai_sale thị trường `mkey` trông, theo BẢN CHÉP nguyên văn — `ids` = page của shop POS. */
+/** Tập page ai_sale thị trường `mkey` trông, theo bản chép logic — `ids` = page của shop POS. */
 const hopPageShop = (goc, ids, mkeys = ["uae", "saudi"]) =>
   JSON.parse(execFileSync("python3", ["-I", "-c", PY_AI_SALE, goc, ids.join(","), mkeys.join(",")], { encoding: "utf8" }));
 const ghiGanPy = (tep, them) => execFileSync("python3", ["-I", "-c", PY_GHI_GAN, tep, JSON.stringify(them)], { encoding: "utf8" });

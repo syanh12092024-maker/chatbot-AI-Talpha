@@ -23,7 +23,7 @@ const LOG = path.join(GOC, "log", "aisale-chat");   // tiền tố ⇒ aisale-ch
 const MAU = { _ghi_chu: "ghi chú", uae: { "983000000101": "AED" }, tram_landing: { "983000000301": { nha: "saudi", nuoc: [] } } };
 const ghiTep = (d) => { fs.mkdirSync(path.dirname(TEP), { recursive: true }); fs.writeFileSync(TEP, typeof d === "string" ? d : JSON.stringify(d, null, 1)); };
 const docTep = () => JSON.parse(fs.readFileSync(TEP, "utf8"));
-const BI_MAT = "KHACH-BI-MAT-Nguyen-Van-Gl10";   // tên khách trong dòng log giả — KHÔNG được lọt ra stdout/nhật ký
+const BI_MAT = "KHACH-BI-MAT-TEN-GIA-GL10";   // tên khách trong dòng log giả — KHÔNG được lọt ra stdout/nhật ký
 const ghiLog = (ten, dong) => { fs.mkdirSync(path.dirname(LOG), { recursive: true }); fs.appendFileSync(`${LOG}${ten}.log`, `${dong}\n`); };
 const ENV_BAT = { V3_PANCAKE_GUI: "1", PANCAKE_READONLY: "0", V3_RAP_PROMPT_BAT: "1", ANTHROPIC_API_KEY: "fake-only", V3_TRAN_PAGE_BAT: "20", V3_AI_SALE_TEP_GAN: TEP };
 const PID = { A: "983000000001", B: "983000000002", C: "983000000003", D: "983000000004", E: "983000000005", F: "983000000006", G: "983000000007", H: "983000000008",

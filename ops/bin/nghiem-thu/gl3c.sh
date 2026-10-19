@@ -68,7 +68,10 @@ n_goi=$(grep -vE '^\s*//' src/pancake.js | grep -cE 'goiPancake\(')
 SK=v3/src/ui/suc-khoe/kho-suc-khoe.js
 khac=$(git diff -U0 "$BASE" -- "$SK" | grep -E '^[-+][^-+]' | grep -vE '^[-+]\s*\*' | grep -vcE "vi: \`Không page nào của team đang ngắt kênh Pancake \(")
 [ "$khac" -eq 0 ]; ket "②c-kho-suc-khoe.js-CHỈ-đổi-câu-(②6)" $? "dòng đổi ngoài chú thích / câu đèn xanh: $khac (đòi 0)"
-git diff --quiet "$BASE" -- ops/bin/nghiem-thu/gl4.sh ops/bin/nghiem-thu/gl3b.sh; ket "②d-gl4.sh-·-gl3b.sh-không-đổi-(neo-giữ-nguyên)" $? "$(git diff --stat "$BASE" -- ops/bin/nghiem-thu/gl4.sh ops/bin/nghiem-thu/gl3b.sh | tail -1)"
+# GL10 (tổng gật 19/10): gl3b.sh ⑤c đổi «đòi đỏ» theo 035 — ngoài đúng hai dòng đó, gl4.sh · gl3b.sh vẫn phải nguyên.
+khac_neo=$(git diff -U0 "$BASE" -- ops/bin/nghiem-thu/gl4.sh ops/bin/nghiem-thu/gl3b.sh | grep -E '^[-+][^-+]' \
+  | grep -vE '^[-+](dao "⑤c-bỏ-migration-033-⇒-4b-đỏ-|# GL10 \(tổng gật 19/10\): từ 035)' | wc -l | tr -d ' ')
+[ "$khac_neo" -eq 0 ]; ket "②d-gl4.sh-·-gl3b.sh-không-đổi-(neo-giữ-nguyên;-trừ-gl3b-⑤c-GL10)" $? "$(git diff --stat "$BASE" -- ops/bin/nghiem-thu/gl4.sh ops/bin/nghiem-thu/gl3b.sh | tail -1)"
 
 # ③ ĐẢO-VÁ (④7) trên BẢN SAO TẠM — mỗi đột biến một tiến trình node mới. Luật đọc: các ca khai PHẢI nằm trong tập đỏ.
 T=$(mktemp -d "${TMPDIR:-/tmp}/gl3c.XXXXXX"); [ "${GIU_TAM:-0}" = 1 ] || trap 'rm -rf "$T"' EXIT

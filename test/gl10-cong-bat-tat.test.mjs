@@ -1,7 +1,7 @@
 // PHIẾU GL10 ④1 ④3 ④4(màn) ④6 ④7 ④9 — CỔNG BẬT/TẮT qua ĐƯỜNG HTTP THẬT (Express + vé đăng nhập + `dungPhanB` → `cong-tac.js` →
 // `noiVanHanhV3` → `operations.js#setPage`) trên Postgres HỘP CÁT (`aicloser_v3_test_gl10c_p<pid>`, tự dựng tự dọn).
 // ⛔ Tệp `page_gan_them.json` là tệp TẠM (mkdtemp, dáng pancake-tool `state/chung/`) — CẤM đụng `/opt/pancake-tool`. Không mạng: fetch
-// chỉ cho 127.0.0.1 của chính máy chủ ca. Bản chép NGUYÊN VĂN ba hàm ai_sale (đọc 19/10 — xem `gl10-tep-ai-sale.test.mjs`) đo NGỮ NGHĨA.
+// chỉ cho 127.0.0.1 của chính máy chủ ca. Bản chép logic ba hàm ai_sale (đọc 19/10 — như `gl10-tep-ai-sale.test.mjs`) đo NGỮ NGHĨA.
 // Ca tiêm lỗi CSDL (④6 giao dịch 1 · ④9) gọi `setPage` thẳng với pool bọc — cùng hàm mà cửa HTTP gọi.
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -114,14 +114,14 @@ const PY_AI_SALE = String.raw`
 import json, os, sys
 SCRIPT_DIR = sys.argv[1]
 
+# chép logic _page_gan_them (:13530) · _page_gan_noi_khac (:13545) · _hop_page_shop (:13557) từ pancake-tool ai_sale.py ngày 19/10
 def _page_gan_them(mkey):
     try:
         d = json.load(open(os.path.join(SCRIPT_DIR, "state", "chung", "page_gan_them.json"), encoding="utf-8"))
-        # TRAM_LANDING_2409: + page trạm landing có nước này trong "nuoc" (mỗi hội thoại vẫn chỉ 1 AI xử — tram_bo_qua)
         return ({str(p) for p in (d.get(mkey) or {})}
                 | {str(p) for p, v in (d.get("tram_landing") or {}).items()
                    if isinstance(v, dict) and mkey in [v.get("nha")] + list(v.get("nuoc") or [])})
-    except Exception:                                    # noqa: BLE001
+    except Exception:
         return set()
 
 
@@ -129,7 +129,7 @@ def _page_gan_noi_khac(mkey):
     try:
         d = json.load(open(os.path.join(SCRIPT_DIR, "state", "chung", "page_gan_them.json"), encoding="utf-8"))
         return {str(p) for k, o in d.items() if k != mkey and isinstance(o, dict) for p in o}
-    except Exception:                                    # noqa: BLE001
+    except Exception:
         return set()
 
 
@@ -138,7 +138,6 @@ def _hop_page_shop(mkey, ids):
 
 print(json.dumps({mkey: sorted(_hop_page_shop(mkey, sys.argv[2].split(","))) for mkey in ("uae", "saudi")}))
 `;
-// (thân ba hàm NGUYÊN VĂN `ai_sale.py` 19/10 — chỉ bỏ docstring; bản đủ docstring + so khớp ở `gl10-tep-ai-sale.test.mjs`)
 const aiSaleTrong = (pid) => JSON.parse(execFileSync("python3", ["-I", "-c", PY_AI_SALE, GOC, `${pid},982000000999`], { encoding: "utf8" }));
 
 /** Pool bọc: câu khớp `mau` NÉM (tiêm lỗi CSDL ở đúng một câu). */
