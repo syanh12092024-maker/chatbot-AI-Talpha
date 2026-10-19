@@ -644,17 +644,19 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     state.pendingImages = [];
     state.pendingCaption = "";
   };
-  // Gửi MỘT câu cố định qua cửa (không qua model). `state.handoff` đặt TRƯỚC `guiChu`: lỗi ở `banGiaoSale` sau đó vẫn lưu HANDOFF
-  // qua `luuLai` của nhánh `catch`. Dòng sổ `reply` lane `cau_co_dinh` KHÔNG mang `dung` ([S6] — token của lượt đã nằm ở dòng
-  // `spent_no_send`; để ở cả hai là cộng đôi tiền).
+  // Gửi MỘT câu cố định qua cửa (không qua model). `state.handoff` đặt NGAY SAU khi `guiChu` thành công, TRƯỚC `banGiaoSale`: lỗi ở
+  // `banGiaoSale` vẫn lưu HANDOFF qua `luuLai` của nhánh `catch` (đúng mục đích phiếu ② 1). LỆCH CHỮ phiếu («đặt TRƯỚC guiChu») có chủ
+  // ý — /code-review BH9 #4: van GỬI đóng ⇒ `guiChu` ném `LoiCuaGuiDong` TRƯỚC khi gửi được gì; đặt trước thì nhánh catch vẫn ghi
+  // HANDOFF/SALE cho hội thoại mà KHÔNG câu nào tới khách và KHÔNG thẻ/ghi chú nào tới sale (mất ACK ⇒ worker `banGiaoLoi` lo).
+  // Dòng sổ `reply` lane `cau_co_dinh` KHÔNG mang `dung` ([S6]); `text` không cắt — câu cố định là hằng < 200 ký tự (ca GK).
   const guiCauCoDinh = async ({ cau, lyDo, ma }) => {
-    state.handoff = true;
-    state.handoffReason = lyDo;
     boHangAnh();
     await guiChu(cau);
+    state.handoff = true;
+    state.handoffReason = lyDo;
     await ghi(LOAI.REPLY, {
       maModel: KHONG_GOI_MODEL, lane: "cau_co_dinh", trangThai: hoiThoai.trang_thai, lyDo,
-      duLieu: { text: catChu(cau, 200), cau_co_dinh: ma },
+      duLieu: { text: cau, cau_co_dinh: ma },
     });
     state.lastAiText = cau;
   };
@@ -963,6 +965,12 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     const dung = state.lastUsage || {};
 
     // ── 9 · CỬA CUỐI TRƯỚC KHÁCH (outbound-guard, M09) ───────────────────────────
+    // BH9 ② 7: lượt khách báo y tế LUÔN bàn giao — đặt cờ TRƯỚC cửa ra (/code-review BH9 #1) để `daBanGiao` đúng sự thật lúc soi:
+    // «…see a doctor. Our team will message you shortly» là lời thật (sale sẽ nhắn), không phải tự hứa.
+    if (yTe && !state.handoff) {
+      state.handoff = true;
+      state.handoffReason = `Y TẾ · khách báo ${yTe}`;
+    }
     const guarded0 = String(text2 || ""); // bản GỐC của model, giữ để ghi sổ khi bị chặn
     let guarded = guarded0;
     let cuaRaChan = null;   // phán quyết đã GIẾT câu — để ghi lý do đúng ở đường thoát
@@ -1002,15 +1010,11 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
     // `spent_no_send` phía trên đã giữ câu model + `dung` (tiền của lượt); dòng `reply` của câu cố định KHÔNG mang `dung` [S6].
     const cauCoDinhMa = !guarded && cuaRaChan && LUAT_BH9.has(cuaRaChan.rule) ? `cua_ra:${cuaRaChan.rule}` : "";
     if (cauCoDinhMa) {
-      guarded = cauCoDinh(cuaRaChan.rule === "Y_TE" ? CAU_Y_TE : CAU_NHAN_BAN_GIAO);
+      // Lượt Y TẾ ⇒ luôn câu y tế (lời khuyên đi khám), bất kể luật mới nào bắn — /code-review BH9 #1.
+      guarded = cauCoDinh(yTe ? CAU_Y_TE : CAU_NHAN_BAN_GIAO);
       state.handoff = true;
-      state.handoffReason = `cửa ra chặn: ${cuaRaChan.rule}`;
+      state.handoffReason = `cửa ra chặn: ${cuaRaChan.rule}${yTe ? ` · Y TẾ (${yTe})` : ""}`;
       boHangAnh();   // [S5] — trước `xaAnh(!!guarded)`: `guarded` giờ khác rỗng nên ảnh sẽ ĐI nếu còn trong hàng
-    }
-    // BH9 ② 7: lượt khách báo y tế LUÔN bàn giao — câu model qua cửa thì vẫn gửi câu đó, rồi chuyển sale.
-    if (yTe && !state.handoff) {
-      state.handoff = true;
-      state.handoffReason = `Y TẾ · khách báo ${yTe}`;
     }
 
     // ── 11 · CỜ BỘ NÃO ĐỂ LẠI → sổ AI (N5) ──────────────────────────────────────
@@ -1071,7 +1075,7 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
       await guiChu(guarded);
       await ghi(LOAI.REPLY, {
         maModel: KHONG_GOI_MODEL, lane: "cau_co_dinh", trangThai: hoiThoai.trang_thai, lyDo: state.handoffReason,
-        duLieu: { text: catChu(guarded, 200), cau_co_dinh: cauCoDinhMa, tre_luot_ms: Date.now() - mocLuot },
+        duLieu: { text: guarded, cau_co_dinh: cauCoDinhMa, tre_luot_ms: Date.now() - mocLuot },
       });
       state.lastAiText = guarded;
     } else if (guarded) {

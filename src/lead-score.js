@@ -115,8 +115,12 @@ const TU_THUONG = new Set(`waiting here there working finished done ready busy f
   yesterday today tomorrow now later interested real not just only also still already very so really new old good happy glad sure
   available single married home back going coming outside inside abroad filipino pinoy indian pakistani nepali arab saudi
   thank thanks you please po sir maam madam order deliver delivery number phone contact address location cash cod salamat ako
-  is it this that what how when where why who my your our his her their me him them we they`.split(/\s+/).filter(Boolean));
-const NHAN_RO = /(?:\bmy\s+name\s+is|\bmy\s+name['’]s|\bhere['’]?s\s+my\s+name|\bname\s*[:=-]|\bpangalan\s*[:=-]|\bpangalan\s+ko(?:\s+po)?(?:\s+ay)?|\bako\s+(?:po\s+)?si|اسمي|الاسم\s*[:=-])\s*/iu;
+  is it this that what how when where why who my your our his her their me him them we they
+  egyptian sudanese jordanian lebanese syrian yemeni emirati kuwaiti qatari omani bahraini bangladeshi indonesian sri lankan kenyan
+  ugandan ethiopian nigerian ghanaian moroccan tunisian iraqi iranian afghan muslim christian catholic ofw nurse driver teacher
+  housewife housemaid maid worker engineer student mother father mom dad wife husband sister brother customer client new old`.split(/\s+/).filter(Boolean));
+// Dấu «:» sau nhãn RÕ («My name is: Maria Santos») — /code-review BH9 #14.
+const NHAN_RO = /(?:\bmy\s+name\s+is|\bmy\s+name['’]s|\bhere['’]?s\s+my\s+name|\bname\s*[:=-]|\bpangalan\s*[:=-]|\bpangalan\s+ko(?:\s+po)?(?:\s+ay)?|\bako\s+(?:po\s+)?si|اسمي|الاسم\s*[:=-])\s*[:=-]?\s*/iu;
 const NHAN_MO_HO = /\b(?:i\s+am|i['’]?m|this\s+is)\b\s+/giu;
 const CHU_TEN = /^[\p{L}][\p{L}.'’-]*$/u;
 const DIA_DANH = /\b(?:island|community|city|district|uae|emirates?|saudi|arabia|ksa|philippines)\b/i;
@@ -158,7 +162,8 @@ export function tachTen(text) {
   for (const m of s.matchAll(NHAN_MO_HO)) {
     const sau = s.slice(m.index + m[0].length);
     const tu = laySauNhan(sau, 3);
-    if (tu.length && tu.every((w) => /^\p{Lu}/u.test(w))) {
+    // + từ VIẾT HOA TOÀN BỘ ≤ 5 chữ là viết tắt («I'm OFW here»), không phải tên — /code-review BH9 #14.
+    if (tu.length && tu.every((w) => /^\p{Lu}/u.test(w) && !/^\p{Lu}{2,5}$/u.test(w))) {
       const tiep = sau.split(/\s+/)[tu.length];   // chữ thứ 4 còn viết hoa ⇒ cả cụm quá dài, không chắc
       if (!(tiep && /^\p{Lu}\p{Ll}/u.test(tiep) && !TU_THUONG.has(tiep.toLowerCase()))) return tu.join(' ');
     }

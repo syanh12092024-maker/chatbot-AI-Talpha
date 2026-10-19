@@ -305,10 +305,29 @@ export function guardOutbound(text, ctx = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 export const LUAT_BH9 = new Set(['Y_TE', 'BIA_TRANG_THAI_DON', 'TU_HUA', 'BAN_LAI_SAU_BAN']);
 
-const KHUYEN_KHAM = /\b(?:doctor|clinic|hospital|consult\w*|magpatingin|doktor|stop\s+using|itigil)\b|(?<!\p{L})(?:طبيب|الطبيب|مستشفى|توقف|توقفي)(?!\p{L})/iu;
+// Ả Rập: + tiền tố dính liền «ال · بال · وال · لل · و · ب» («للطبيب» — /code-review BH9 #12).
+const KHUYEN_KHAM = /\b(?:doctor|clinic|hospital|consult\w*|magpatingin|doktor|stop\s+using|itigil)\b|(?<!\p{L})(?:ال|بال|وال|لل|و|ب)?(?:طبيب|مستشفى|توقف|توقفي)(?!\p{L})/iu;
 const HUA_CHUA = /\bstops?\s+(?:the\s+)?bleeding\b|\bheal(?:s|ing)?\b|\bcures?\b/i;
 const NEU_GOI = /\b(?:which|what|anong)\s+(?:set|package|bundle|promo|offer)\b/i;
-const DIEU_KIEN_SAU = /\b(?:once|after|when|if|as\s+soon\s+as)\b/i;
+// + tương lai/quy trình/mời chốt (/code-review BH9 #5): «Your order WILL be on its way…» · «usually» · «Just SEND your details and your
+// order is confirmed!» — không phải khẳng định một đơn đang có.
+const DIEU_KIEN_SAU = /\b(?:once|after|when|if|as\s+soon\s+as|will|would|usually|normally|typically|can|could|should|send|provide)\b/i;
+// Vế ĐỨNG SAU cụm khớp mô tả quy trình («Your order is shipped within 24 hours after confirmation»).
+const QUY_TRINH_SAU = /\b(?:within|after\s+(?:confirmation|you|ordering)|once|in\s+\d+\s*(?:-\s*\d+\s*)?(?:working\s+)?(?:hours?|days?))\b/i;
+const DAU_VE = ['.', '!', '?', '\n', ',', ';', '—', '–'];
+function quyTrinhSau(t, het) {
+  let cuoi = t.length;
+  for (const k of DAU_VE) { const i = t.indexOf(k, het); if (i >= 0 && i < cuoi) cuoi = i; }
+  return QUY_TRINH_SAU.test(t.slice(het, cuoi));
+}
+// Câu chung/chính sách («we deliver on Friday TOO», «every day») — không phải hứa với khách này (/code-review BH9 #10).
+const CAU_CHUNG = /\b(?:too|also|as\s+well|every|everyday|daily|all\s+days)\b|\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)s\b/i;
+const dauCau = (t, idx) => ['.', '!', '?', '\n'].reduce((d, k) => Math.max(d, t.lastIndexOf(k, idx - 1) + 1), 0);
+const cauChua = (t, idx) => {
+  let cuoi = t.length;
+  for (const k of ['.', '!', '?', '\n']) { const i = t.indexOf(k, idx); if (i >= 0 && i < cuoi) cuoi = i; }
+  return t.slice(dauCau(t, idx), cuoi);
+};
 /**
  * Cụm ở `idx` có từ điều kiện ĐỨNG TRƯỚC trong cùng VẾ CÂU không («Once your order is confirmed, …» không phải khẳng định).
  * Vế = từ dấu `.!?\n,;—–` gần nhất: «If no order was completed, that delivery notice was likely sent by mistake» — vế sau dấu phẩy
@@ -317,11 +336,11 @@ const DIEU_KIEN_SAU = /\b(?:once|after|when|if|as\s+soon\s+as)\b/i;
  */
 function sauDieuKien(t, idx) {
   let dau = 0;
-  for (const k of ['.', '!', '?', '\n', ',', ';', '—', '–']) dau = Math.max(dau, t.lastIndexOf(k, idx - 1) + 1);
+  for (const k of DAU_VE) dau = Math.max(dau, t.lastIndexOf(k, idx - 1) + 1);
   return DIEU_KIEN_SAU.test(t.slice(dau, idx));
 }
 const KHANG_DINH_DON = [
-  /\bno\s+(?:active\s+|existing\s+|current\s+)?orders?\b/i,
+  /\bno\s+(?:active\s+|existing\s+|current\s+)?orders?\b(?!\s+(?:minimum|min|fee|limit|needed|required))/i,
   /\b(?:notice|message|notification)\b[^.!?\n]{0,40}\bsent\s+by\s+mistake\b/i,
   /\b(?:your\s+)?order\s+(?:is|has\s+been|was)\s+(?:already\s+)?(?:on\s+(?:its|the)\s+way|out\s+for\s+delivery|shipped|dispatched|delivered|cancel(?:l)?ed)\b/i,
   /\bon\s+(?:its|the)\s+way\b/i,
@@ -332,24 +351,37 @@ const KHANG_DINH_DON = [
 const XAC_NHAN_DON = /\b(?:your\s+)?order\s+(?:is|has\s+been|was)\s+(?:already\s+)?(?:confirmed|placed|received)\b/i;
 // Thứ (EN · Tagalog · Ả Rập — chữ Ả Rập rào `(?<!\p{L})…(?!\p{L})`, `\b` không biết chữ Ả Rập) hoặc giờ «10 AM», trong 30 ký tự quanh
 // động từ/người giao. Regex `DELIVERY_PROMISE_RE` cũ (cặp «giao + bukas/tomorrow/today») KHÔNG sửa — luật này bắt phần nó bỏ sót.
-const MOC = '\\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|lunes|martes|miyerkules|huwebes|biyernes|sabado|linggo)\\b'
+// «linggo» BỎ: tiếng Tagalog vừa là Chủ nhật vừa là TUẦN («within 1-2 linggo» = khung được phép nói — /code-review BH9 #10).
+// «noted» chỉ tính khi mốc giờ/thứ trong 15 ký tự («Noted po ma'am, 10 AM tomorrow»), không 30 («Noted po, our office is open until 10 PM»).
+const MOC = '\\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|lunes|martes|miyerkules|huwebes|biyernes|sabado)\\b'
   + '|(?<!\\p{L})(?:الاثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت|الأحد)(?!\\p{L})|\\b\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)\\b';
-const MOC_GIAO = 'deliver\\w*|courier|rider|arriv\\w*|darating|noted';
-const HUA_MOC = new RegExp(`(?:${MOC})[^.!?\\n]{0,30}(?:${MOC_GIAO})|(?:${MOC_GIAO})[^.!?\\n]{0,30}(?:${MOC})`, 'iu');
-const HUA_BAO_COURIER = /\b(?:i['’]ll|i\s+will|let\s+me|we['’]ll|we\s+will)\s+(?:inform|request|ask|tell|notify|coordinate|contact)\s+(?:the\s+)?(?:courier|rider|driver|shipping|delivery|logistics)\b/i;
+const MOC_GIAO = 'deliver\\w*|courier|rider|arriv\\w*|darating';
+const HUA_MOC = new RegExp(`(?:${MOC})[^.!?\\n]{0,30}(?:${MOC_GIAO})|(?:${MOC_GIAO})[^.!?\\n]{0,30}(?:${MOC})`
+  + `|(?:${MOC})[^.!?\\n]{0,15}\\bnoted\\b|\\bnoted\\b[^.!?\\n]{0,15}(?:${MOC})`, 'giu');
+const HUA_BAO_COURIER = /\b(?:i['’]ll|i\s+will|let\s+me|we['’]ll|we\s+will)\s+(?:inform|request|ask|tell|notify|coordinate|contact)\s+(?:the\s+)?(?:courier|rider|driver|shipping|delivery|logistics)\b/gi;
 // Hai khuôn dưới ĐÚNG ở lượt đã bàn giao (sale sẽ nhắn thật) và lượt tóm tắt đơn (CORE §5 bắt nói «our staff will contact you»).
-const HUA_TEAM_CO = /\b(?:team|staff|we)(?:['’]ve|\s+have|\s+has)?(?:\s+already)?(?:\s+(?:has|have|got))?\s+your\s+(?:whatsapp|number|location|address)\b/i;
-const HUA_TEAM_SE = /\b(?:our\s+)?(?:team|staff|agent|they)(?:\s+will|['’]ll)\s+(?:message|contact|call|text)\s+you\b/i;
+// Không tính câu HỎI xin thông tin («Can we have your address po?» — /code-review BH9 #3).
+const HUA_TEAM_CO = /(?<!\b(?:can|could|may|would|shall|do|did)\s+)\b(?:team|staff|we)(?:['’]ve|\s+have|\s+has)?(?:\s+already)?(?:\s+(?:has|have|got))?\s+your\s+(?:whatsapp|number|location|address)\b(?![^.!\n]*\?)/gi;
+const HUA_TEAM_SE = /\b(?:our\s+)?(?:team|staff|agent|they)(?:\s+will|['’]ll)\s+(?:message|contact|call|text)\s+you\b/gi;
 // XIN thông tin = có ĐỘNG TỪ xin («send · give · may I have · what's …») trước tên trường, hoặc nhãn ô của mẫu chốt («full name ·
 // complete address · contact number»), hoặc hỏi COD. «Please keep your phone available» KHÔNG phải xin (đo giả lập Saudi #139).
 const XIN_THONG_TIN = /\b(?:send|give|provide|share|type|need|may\s+i\s+(?:have|get|know)|can\s+i\s+(?:have|get|know)|could\s+you\s+(?:send|give|share|provide)|what(?:['’]s|\s+is))\b[^.!?\n]{0,30}\b(?:name|contact|number|phone|address|location|pangalan|tirahan)\b|\bcomplete\s+address\b|\bfull\s+name\b|\bcontact\s+number\b|\b(?:pangalan|tirahan)\b|(?:\bcod\b|cash\s+on\s+delivery)[^.!?\n]{0,40}\?|العنوان|الاسم|رقم\s+الجوال|رقم\s+الهاتف/iu;
 const GOI_GIA = /\bbuy\s*\d+\s*(?:get|take)\s*\d+|\bb\d+g\d+\b|\bpackages?\b|\bbundles?\b/i;
 
-/** Khớp đầu tiên của `re` không bị miễn: cụm khớp có NGUYÊN VĂN trong kb.text (cùng tinh thần `SCARCITY`). */
-function khopKhongMien(re, t, kbText) {
-  const m = t.match(re);
-  if (!m) return null;
-  return kbText.toLowerCase().includes(m[0].toLowerCase()) ? null : m[0];
+/**
+ * Khớp ĐẦU TIÊN không bị miễn của `re` (cờ g — xét MỌI lần khớp, không chỉ lần đầu): miễn khi cụm khớp có NGUYÊN VĂN trong kb.text
+ * (cùng tinh thần `SCARCITY`); `dieuKien` ⇒ miễn cả khi trong CÂU có từ điều kiện đứng trước («After you order, our staff will call
+ * you…» — /code-review BH9 #10); `chung` ⇒ miễn câu chính sách chung («we deliver on Friday too»).
+ */
+function khopKhongMien(re, t, kbText, { dieuKien = false, chung = false } = {}) {
+  const kb = kbText.toLowerCase();
+  for (const m of t.matchAll(re)) {
+    if (kb.includes(m[0].toLowerCase())) continue;
+    if (dieuKien && /\b(?:once|after|when|if|as\s+soon\s+as)\b/i.test(t.slice(dauCau(t, m.index), m.index))) continue;
+    if (chung && CAU_CHUNG.test(cauChua(t, m.index))) continue;
+    return m[0];
+  }
+  return null;
 }
 
 function luatBH9(t, ctx, kbText) {
@@ -363,15 +395,16 @@ function luatBH9(t, ctx, kbText) {
   // b · BIA_TRANG_THAI_DON — mọi lượt, trừ lượt POS đã tạo đơn thật.
   if (!ctx.orderCreated) {
     for (const re of [...KHANG_DINH_DON, ...(ctx.isOrderSummary ? [] : [XAC_NHAN_DON])]) {
-      const m = re.exec(t);
-      if (m && !sauDieuKien(t, m.index)) {
+      for (const m of t.matchAll(new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`))) {
+        if (sauDieuKien(t, m.index) || quyTrinhSau(t, m.index + m[0].length)) continue;
         return { rule: 'BIA_TRANG_THAI_DON', reason: `Khẳng định trạng thái đơn («${m[0]}») — bot không tra được đơn; chuyển sale` };
       }
     }
   }
   // c · TU_HUA
-  const hua = khopKhongMien(HUA_MOC, t, kbText) || khopKhongMien(HUA_BAO_COURIER, t, kbText)
-    || (!ctx.daBanGiao && !ctx.isOrderSummary && (khopKhongMien(HUA_TEAM_CO, t, kbText) || khopKhongMien(HUA_TEAM_SE, t, kbText)));
+  const hua = khopKhongMien(HUA_MOC, t, kbText, { chung: true }) || khopKhongMien(HUA_BAO_COURIER, t, kbText)
+    || (!ctx.daBanGiao && !ctx.isOrderSummary && (khopKhongMien(HUA_TEAM_CO, t, kbText, { dieuKien: true })
+      || khopKhongMien(HUA_TEAM_SE, t, kbText, { dieuKien: true })));
   if (hua) return { rule: 'TU_HUA', reason: `Tự hứa thay bộ phận giao hàng/sale («${hua}») — chuyển sale` };
   // d · BAN_LAI_SAU_BAN — khách đang có đơn (`prof.donDaCo`). Miễn lượt TÓM TẮT đơn (cùng lý do [S8]): đơn nguồn KHÁCH vẫn được tạo
   // (`handler-v3.js#captureOrder` chỉ chặn nguồn page) và câu tóm tắt có giá/gói là đúng — chặn nó là giết lời xác nhận đơn.

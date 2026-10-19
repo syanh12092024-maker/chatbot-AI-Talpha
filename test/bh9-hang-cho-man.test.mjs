@@ -113,6 +113,18 @@ test('BH9 M3 · Hộp thư [S3]: thẻ đơn `theDon` + form `moDon` hiện «T�
   }
 });
 
+test('BH9 M5 · /code-review #15: đơn ĐÃ xử lý ⇒ thẻ không hiện cờ · form mở NGAY trong thẻ (`anCoDon`) không in cờ lần hai', async () => {
+  const daDuyet = { ...DON_CO, trang_thai: 'da_duyet' };
+  const { HopThu, noi } = dungHopThu(daDuyet);
+  const a = noi(); await HopThu.theDon({ id: '7', tongTien: 10900, tienTe: 'SAR' }, a, {});
+  assert.equal(a.innerHTML.includes(CO_TEN), false, 'đơn đã duyệt vẫn hiện cờ «sửa trước khi duyệt»');
+  const h2 = dungHopThu(DON_CO);
+  const b = h2.noi(); await h2.HopThu.moDon('7', b, { anCoDon: true });
+  assert.equal(b.innerHTML.includes(CO_TEN), false, 'form trong thẻ in cờ lần hai');
+  const src = fs.readFileSync(new URL('../v3/src/ui/hop-thu/trang/hop-thu-ui.js', import.meta.url), 'utf8');
+  assert.match(src, /moDon\(o\.id, form, \{ tapTrung: b\.dataset\.mo,[\s\S]{0,120}?anCoDon: true \}\)/, 'thẻ phải mở form với anCoDon');
+});
+
 // ═══ M4 · màn Vận hành — danh sách + hộp «Đơn #id» ═══════════════════════════════════════════════════════════════════════════════
 test('BH9 M4 · màn Vận hành: `canhDonNhap(du)` trả hai chuỗi khi cờ, rỗng khi vắng · được gọi ở CẢ danh sách lẫn hộp «Đơn #id»', () => {
   const js = fs.readFileSync(new URL('../v3/src/ui/van-hanh/trang/van-hanh.js', import.meta.url), 'utf8');

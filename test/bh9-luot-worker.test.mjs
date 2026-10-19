@@ -9,7 +9,7 @@ import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { dungSandbox } from '../db/sandbox.js';
 
-let sb, teamId, chayMotVong, xepTin, O, config, executeTool, isOurFixedMessage, cuHandoff;
+let sb, teamId, chayMotVong, xepTin, O, config, executeTool, isOurFixedMessage, cuHandoff, LoiCuaGuiDong;
 before(async () => {
   ({ chayMotVong } = await import('../src/queue/worker.js'));
   ({ xepTin } = await import('../src/queue/kho.js'));
@@ -17,6 +17,7 @@ before(async () => {
   ({ isOurFixedMessage } = O);
   ({ config } = await import('../src/config.js'));
   ({ executeTool } = await import('../src/tools.js'));
+  ({ LoiCuaGuiDong } = await import('../src/channels/messenger/index.js'));
   cuHandoff = config.pkTags.handoff;
   config.pkTags.handoff = 'AI CHAT';
   sb = await dungSandbox('bh9w');
@@ -109,6 +110,29 @@ test('BH9 Wa2 · như a nhưng Fast Lane CÓ câu mẫu khớp ⇒ cổng sau b�
   assert.equal(r.model, 0);
   assert.deepEqual(r.gui, [O.CAU_NHAN_BAN_GIAO.en]);
   assert.equal(r.ht, 'HANDOFF/SALE');
+});
+
+// Wa3 gọi HANDLER trực tiếp: qua worker, `queue/lan-gui.js#bocCuaGuiBen` bọc mọi lỗi cửa thành LoiGuiChuaXacNhan và worker `banGiaoLoi`
+// lo (đường cũ của mọi lớp 0 đồng) — nhánh `LoiCuaGuiDong` của handler chỉ tới được khi cửa ném thẳng.
+test('BH9 Wa3 · /code-review #4: cửa ném LoiCuaGuiDong ở cổng sau bán ⇒ handler KHÔNG ghi HANDOFF câm (chưa câu nào tới khách, chưa thẻ/ghi chú)', async () => {
+  const { xuLyMotTin } = await import('../src/chat/handler-v3.js');
+  const { docTinTheoId } = await import('../src/queue/kho.js');
+  const page = 'bh9w-a3';
+  const p = (await sb.pool.query("INSERT INTO page (bot_ai_bat, team_id, page_id, ten) VALUES (true,$1,$2,'BH9') RETURNING id", [teamId, page])).rows[0].id;
+  const htId = (await sb.pool.query("INSERT INTO hoi_thoai (team_id,page_id,psid,trang_thai,chu_so_huu) VALUES ($1,$2,'KH','QUALIFY','AI') RETURNING id", [teamId, p])).rows[0].id;
+  const t = await xepTin(sb.pool, { teamId, pageId: page, psid: 'KH', convId: `c-${page}`, custId: 'cu', msgId: 'k2', noiDung: 'You delivered today at 10 right sir', hoanMs: 0 });
+  const tin = await docTinTheoId(sb.pool, t.id, teamId);
+  const dem = { the: 0, note: 0 };
+  const kq = await xuLyMotTin(sb.pool, tin, {
+    layKb: () => KB, lichSu: sauBanA(page),
+    cua: { guiTin: async () => { throw new LoiCuaGuiDong('van đóng (ca BH9 Wa3)'); }, guiAnh: async () => ({ ok: true, id: 'a' }),
+      ghiNote: async () => { dem.note += 1; return { ok: true }; }, gatThe: async () => { dem.the += 1; return { ok: true, tags: [] }; } },
+  });
+  const ht = (await sb.pool.query('SELECT trang_thai, chu_so_huu FROM hoi_thoai WHERE id=$1', [htId])).rows[0];
+  console.log(`   [bh9w] a3: ${JSON.stringify({ kq: kq.ketQua, lyDo: String(kq.lyDo).slice(0, 40), ht, dem })}`);
+  assert.equal(kq.ketQua, 'chan_guard');
+  assert.equal(`${ht.trang_thai}/${ht.chu_so_huu}`, 'QUALIFY/AI', 'chưa gửi được gì thì không được chuyển hội thoại sang SALE câm');
+  assert.deepEqual([dem.the, dem.note], [0, 0]);
 });
 
 test('BH9 Wb · như a, khách viết Ả Rập ⇒ chữ = CAU_NHAN_BAN_GIAO.ar', async () => {
@@ -208,6 +232,19 @@ test('BH9 Wg2 · khách «I have bleeding», model khuyên ngừng dùng + đi k
   assert.deepEqual(r.gui, [cau]);
   assert.equal(r.ht, 'HANDOFF/SALE', 'lượt y tế LUÔN bàn giao');
   assert.deepEqual(r.the, ['AI CHAT']);
+});
+test('BH9 Wg4 · /code-review #1: lượt y tế, model khuyên đi khám + «Our team will message you shortly» ⇒ câu model ĐI (lượt đã bàn giao — lời thật)', async () => {
+  const cau = 'So sorry po! Please stop using it and consult a doctor. Our team will message you shortly.';
+  const [r] = await chay('g4', [{ noiDung: 'I have bleeding after using it', msgId: 'k1', lichSu: () => [K('k1', 60, 'I have bleeding after using it')], model: () => cau }]);
+  assert.deepEqual(r.gui, [cau]);
+  assert.equal(r.ht, 'HANDOFF/SALE');
+});
+test('BH9 Wg5 · /code-review #1: lượt y tế, câu model bị luật mới KHÁC Y_TE chặn ⇒ VẪN câu y tế cố định (không «Noted po…»)', async () => {
+  assert.ok(O.CAU_Y_TE);
+  const [r] = await chay('g5', [{ noiDung: 'I have bleeding', msgId: 'k1', lichSu: () => [K('k1', 60, 'I have bleeding')],
+    model: () => 'Please see a doctor po. Your order is on its way.' }]);
+  assert.deepEqual(r.gui, [O.CAU_Y_TE.en]);
+  assert.equal(r.ht, 'HANDOFF/SALE');
 });
 test('BH9 Wg3 · [S9] «bleeding po, magkano?» với Fast Lane TRẢ câu mẫu giá ⇒ Fast Lane NHƯỜNG model (1 lượt), 0 chữ «MẪU CỨNG»', async () => {
   const [r] = await chay('g3', [{ noiDung: 'bleeding po, magkano?', msgId: 'k1', lichSu: () => [K('k1', 60, 'bleeding po, magkano?')],

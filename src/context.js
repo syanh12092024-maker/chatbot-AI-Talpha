@@ -160,7 +160,9 @@ const COD_OK = /\b(cod|cash on delivery)\b[^.\n]{0,30}\b(ok|okay|sige|yes|opo|oo
 // BH9 ② 9a — khách TỰ NÓI điều kiện COD như một câu khẳng định: cả tin (hoặc một dòng của tin) chỉ là «Cash on delivery po» / «COD po» /
 // «pay on delivery». Câu HỎI («is it COD?») không khớp vì phải khớp TRỌN dòng. Phủ định vẫn do `COD_KHONG` quyết trước.
 const COD_TU_NOI = /^(?:(?:ok(?:ay)?|yes|sige|opo|oo)[\s,]+)?(?:cash\s+on\s+delivery|c\.?o\.?d\.?|pay\s+(?:up)?on\s+delivery)(?:[\s,]+(?:po|sir|ma'?am|please|pls|lang|na\s+lang|only|ok))*[\s.!🙏👍😊]*$/iu;
-const COD_KHONG = /(?:no|not|don't|dont|hindi|ayaw|không).{0,35}\bcod\b|\bcod\b.{0,25}(?:not|cancel|không)/i;
+// Ranh giới từ hai đầu (/code-review BH9 #11): bản cũ (`:196` base) không có ⇒ «Okay noted, COD po» · «Order now, COD available» bị đọc
+// là TỪ CHỐI COD («no» trong «noted»/«now»). Từ BH9 regex này còn quyết `codNgam` và lọc tin page nêu COD.
+const COD_KHONG = /(?<!\p{L})(?:no|not|don'?t|dont|hindi|ayaw|không)(?![\p{L}']).{0,35}\bcod\b|\bcod\b.{0,25}(?<!\p{L})(?:not|cancel|không)/iu;
 // BH9 ② 9b — câu bot vừa HỎI về COD (lượt trước) …
 const HOI_COD = /(?:\bcod\b|cash\s+on\s+delivery|bayad\s+(?:na\s+lang\s+)?pagdating|pay\s+(?:up)?on\s+delivery|الدفع عند الاستلام)[^.!?\n]*[?؟]/i;
 // … và khách đáp đồng ý NGẮN (≤ 4 chữ, không phủ định).
@@ -206,10 +208,20 @@ export function extractFromText(text, prof = emptyProfile(), { lastAi = '' } = {
   if (!prof.name) { const n = firstName(s); if (n) prof.name = n; }
   if (!prof.tier) { const t = s.match(TIER_TEXT); if (t) prof.tier = t[0].trim(); }
   const codDenied = COD_KHONG.test(s);
-  if (codDenied) prof.cod = false;
-  else if (!prof.cod && (COD_OK.test(s)
+  const dongYCod = COD_OK.test(s)
     || s.split(/[\n;]+/).some((dong) => COD_TU_NOI.test(dong.trim()))
-    || (HOI_COD.test(String(lastAi || '')) && DONG_Y_NGAN.test(s.trim())))) prof.cod = true;
+    || (HOI_COD.test(String(lastAi || '')) && DONG_Y_NGAN.test(s.trim()));
+  // `codTuChoi` / `codNgam` chỉ được ĐẶT khi có chuyện (hồ sơ cũ giữ hình): khách TỪ CHỐI thì COD ngầm không được ghi đè lời từ chối
+  // về sau; khách NÓI đồng ý thì cờ «ngầm» hết đúng (/code-review BH9 #8).
+  if (codDenied) {
+    prof.cod = false;
+    prof.codTuChoi = true;
+    if (prof.codNgam) prof.codNgam = false;
+  } else if (dongYCod) {
+    prof.cod = true;
+    if (prof.codTuChoi) prof.codTuChoi = false;
+    if (prof.codNgam) prof.codNgam = false;
+  }
 
   for (const k of scanSignals(s)) {
     if (k.startsWith('obj_') && !prof.objections.includes(k)) prof.objections.push(k);
@@ -237,7 +249,7 @@ export function extractFromText(text, prof = emptyProfile(), { lastAi = '' } = {
  */
 export function codNgam({ prof = emptyProfile(), text = '', msgs = [], pageId, lastAi = '' } = {}) {
   const s = String(text || '');
-  if (prof.cod || !prof.phone || !prof.address) return false;
+  if (prof.cod || prof.codTuChoi || !prof.phone || !prof.address) return false;
   if (!(hasPhone(s) || hasAddress(s)) || COD_KHONG.test(s)) return false;
   if (neuCodThat(String(lastAi || ''))) return true;
   return (Array.isArray(msgs) ? msgs : []).some((m) => String(m?.from?.id) === String(pageId)
@@ -390,15 +402,32 @@ const DON_TRANG_THAI = [
 ];
 const KHUON_MOI = [
   ['khách CHƯA nhận được hàng', /\bdelivery\s+(?:was\s+|is\s+|has\s+been\s+)?(?:unsuccessful|failed)\b|\b(?:haven'?t|hasn'?t|have\s+not|has\s+not)\s+(?:yet\s+)?delivered\b(?:\s+(?:the|your)\s+order)?/i],
-  ['đang giao', /\b(?:scheduled|set)\s+for\s+(?:delivery|shipping|dispatch)\b|\bin\s+transit\b|\binform(?:ed)?\s+the\s+(?:courier|shipping\s+company|delivery\s+(?:person|man|guy))\b|\bcourier['’]s\s+(?:phone|number|contact)\b|\btracking\s*(?:number|no\.?|#)?\s*[:#]?\s*\d{4,}/i],
+  // «scheduled/set for delivery» · «in transit» phải có CHỦ NGỮ là đơn của khách — «Orders placed today are scheduled for delivery the
+  // next day» là câu QUY TRÌNH của mẫu page (/code-review BH9 #6).
+  ['đang giao', /\byour\s+(?:order|parcel|package|item)\b[^.!?\n]{0,40}?\b(?:is|was|has\s+been)\s+(?:now\s+)?(?:scheduled|set)\s+for\s+(?:delivery|shipping|dispatch)\b|\b(?:order|parcel|package|item|it)\s+(?:is|was)\s+(?:still\s+|now\s+)?in\s+transit\b|\binform(?:ed)?\s+the\s+(?:courier|shipping\s+company|delivery\s+(?:person|man|guy))\b|\bcourier['’]s\s+(?:phone|number|contact)\b|\btracking\s*(?:number|no\.?|#)?\s*[:#]?\s*\d{4,}/i],
   ['đã tạo', /\byour\s+order\s+is\s+\d[\d.,]*\s*(?:sar|aed|kwd|qar|omr|bhd|riyal|dirham|ريال|درهم)\b/i],
 ];
-const DIEU_KIEN = /\b(?:once|after|when|if|as\s+soon\s+as|will\s+be|kapag|pag)\b/i;
+// (i) chia hai bậc (/code-review BH9 #7): từ điều kiện MẠNH (once · if · as soon as · will be · kapag · pag) xét trong cả CÂU với khuôn
+// mới; «after · when» chỉ xét trong VẾ (tới dấu phẩy) — «After checking the system, your order has been cancelled» vẫn là câu báo huỷ
+// (base bắt được, bản đầu của BH9 làm hụt). Khuôn cũ: chỉ xét trong vế.
+const DK_MANH = /\b(?:once|if|as\s+soon\s+as|will\s+be|kapag|pag)\b/i;
+const DK_YEU = /\b(?:after|when)\b/i;
+// … và vế ĐỨNG SAU cụm khớp mô tả quy trình («We inform the courier after confirmation»).
+const QUY_TRINH_SAU = /\b(?:once|after\s+(?:you|confirmation|ordering|order)|when\s+you|if\s+you)\b/i;
 const VE_DA_CHOT = /\byou\s+will\s+receive\b|\b(?:within|in\s+the\s+next|in)\s+\d+\s*(?:-\s*\d+\s*)?(?:working\s+)?days?\b|\bgift\b/i;
-/** Cụm khớp ở `idx` có đứng sau từ điều kiện/tương lai TRONG CÙNG CÂU không ([S2] (i)). */
-function sauDieuKien(t, idx) {
-  const dau = Math.max(t.lastIndexOf('.', idx - 1), t.lastIndexOf('!', idx - 1), t.lastIndexOf('?', idx - 1), t.lastIndexOf('\n', idx - 1)) + 1;
-  return DIEU_KIEN.test(t.slice(dau, idx));
+// (iii) tin vẫn đang CHÀO MUA («Do you want to order?») thì «your order is 109 SAR … within 3-5 days» là báo giá, không phải đơn.
+const CON_CHAO_MUA = /\b(?:do\s+you\s+want|would\s+you\s+like|want\s+to\s+order|shall\s+i|which\s+(?:set|package|one)|order\s+now)\b/i;
+const dauDoan = (t, idx, dau) => dau.reduce((d, k) => Math.max(d, t.lastIndexOf(k, idx - 1) + 1), 0);
+/** Cụm khớp ở `idx` có đứng sau từ điều kiện/tương lai không ([S2] (i)) — `moi`: khuôn mới (xét cả câu với từ mạnh). */
+function sauDieuKien(t, idx, moi) {
+  const ve = t.slice(dauDoan(t, idx, ['.', '!', '?', '\n', ',', ';']), idx);
+  if (DK_MANH.test(ve) || DK_YEU.test(ve)) return true;
+  return moi && DK_MANH.test(t.slice(dauDoan(t, idx, ['.', '!', '?', '\n']), idx));
+}
+/** Phần câu SAU cụm khớp nói quy trình/điều kiện không. */
+function quyTrinhSau(t, het) {
+  const cuoi = t.slice(het).search(/[.!?\n]/);
+  return QUY_TRINH_SAU.test(t.slice(het, cuoi < 0 ? t.length : het + cuoi));
 }
 
 /** Tin của PAGE có nói về một ĐƠN đã tồn tại không? Trả `{trangThai, cau, nguon}` hoặc null. */
@@ -412,8 +441,9 @@ export function donTuTinPage(text) {
       if (trangThai !== bac) continue;
       for (const m of t.matchAll(new RegExp(re.source, 'gi'))) {
         // (i) áp cho CẢ khuôn cũ: «We will send you the tracking number once your order is shipped» khớp khuôn cũ «your order is ship…»
-        if (sauDieuKien(t, m.index)) continue;
-        if (moi && trangThai === 'đã tạo' && !VE_DA_CHOT.test(t)) continue;   // (iii)
+        if (sauDieuKien(t, m.index, moi)) continue;
+        if (moi && quyTrinhSau(t, m.index + m[0].length)) continue;
+        if (moi && trangThai === 'đã tạo' && (!VE_DA_CHOT.test(t) || CON_CHAO_MUA.test(t))) continue;   // (iii)
         return ra(trangThai);
       }
     }
@@ -432,14 +462,21 @@ export function donTuTinPage(text) {
 const KHACH_NOI_VE_DON = [
   ['khách KHÔNG muốn nhận nữa', /\b(?:i\s+d(?:o\s+not|on'?t)\s+want|don'?t\s+want)\b[^.\n]{0,24}\b(?:this\s+)?(?:order|item|product|delivery|parcel)\b|\bcancel\s+(?:my|the)\s+order\b|\bhindi\s+ko\s+na\s+kukunin\b/i],
   ['khách báo HUỶ', /\bi\s+(?:already\s+)?cancel(?:l)?ed\s+(?:it|my\s+order|the\s+order)\b/i],
-  ['khách ĐÃ nhận hàng', /(?<!\b(?:haven'?t|hasn'?t|have\s+not|not|never|didn'?t|yet\s+to)\s+)\b(?:i\s+)?(?:already\s+)?received\s+(?:it|that|the\s+goods|the\s+item|the\s+parcel|my\s+order)\b/i],
+  ['khách ĐÃ nhận hàng', /(?<!\b(?:haven'?t|hasn'?t|have\s+not|has\s+not|not|never|didn'?t|yet\s+to)(?:\s+yet)?\s+)\b(?:i\s+)?(?:already\s+)?received\s+(?:it|that|the\s+goods|the\s+item|the\s+parcel|my\s+order)\b/i],
   ['khách đang hỏi về chuyến giao', /\bthe\s+(?:delivery|order|parcel|package|courier|rider)\b[^.\n]{0,40}\b(?:was|is|has|scheduled|today|tomorrow|call(?:ed)?|came|arriv\w*)\b|\bdelivery\s+(?:boy|guy|man|person|staff)\b|\bwhy\s+did\s+you\s+deliver\b|\b(?:you|u)\s+deliver(?:ed)?\b|\bi\s*['’]?\s*a?m\s+waiting\b[^.\n]{0,30}\b(?:deliver\w*|courier|rider|order)\b|\b(?:he|she|courier|rider|driver)\s+call(?:ed|s)?\s+me\b[^.\n]{0,40}\bdeliver/i],
   ['khách nói ĐƠN CŨ chưa xong', /\b(?:my|the)\s+order\b[^.\n]{0,30}\b(?:not|haven'?t|hasn'?t|still|delay\w*|late)\b|\bwala\s+pa\b[^.\n]{0,20}\border\b|\b(?:fifteen|[0-9]{1,2})\s+days?\b[^.\n]{0,24}\b(?:order|deliver\w*|waiting)\b/i],
 ];
 // [S1] dấu hiệu câu HỎI chính sách trước bán … và dấu hiệu «đơn đã có» thắng nó.
 // (+ «do/will/could/would you · does · is it · are you» — ngoài danh sách của phiếu: nhánh «you deliver» MỚI khớp cả câu hỏi không dấu
-// «?» như ca âm C39 «do you deliver to riyadh» · «will you deliver to jeddah»)
-const HOI_CHINH_SACH = /\?|\bhow\s+(?:long|many|much)\b|\bfree\b|\bfee\b|\bcod\b|cash\s+on\s+delivery|\bif\s+(?:i|you)\b|\bi\s+will\s+order\b|\bcan\b|\bwill\s+the\b|\b(?:do|will|could|would)\s+you\b|\bdoes\b|\bis\s+it\b|\bare\s+you\b/i;
+// «?» như ca âm C39 «do you deliver to riyadh» · «will you deliver to jeddah».)
+// (+ câu KHẲNG ĐỊNH đang muốn mua — /code-review BH9 #2: «I want the package that is 159 SAR» · «the order is for my sister» · «5 days
+// delivery is fine, I'll order» · «you deliver to Abha» · «if u deliver tomorrow i will take 2» — hai nhánh cũ đã bắt chúng từ base, nhưng
+// từ BH9 bắt nhầm = câu cố định + giao sale + khoá bán.)
+const HOI_CHINH_SACH = new RegExp([
+  /\?|\bhow\s+(?:long|many|much)\b|\bfree\b|\bfee\b|\bcod\b|cash\s+on\s+delivery|\bif\s+(?:i|you|u)\b|\bi\s+will\s+order\b|\bcan\b|\bwill\s+the\b/.source,
+  /\b(?:do|will|could|would)\s+you\b|\bdoes\b|\bis\s+it\b|\bare\s+you\b|\b(?:you|u)\s+deliver\s+(?:to|in|at)\b/.source,
+  /\bi\s+(?:want|wanna|would\s+like)\b|\bi['’]?ll\s+(?:order|take|buy)\b|\bi\s+will\s+(?:take|buy)\b|\bfor\s+my\s+(?:sister|brother|mother|mom|father|wife|husband|friend|daughter|son)\b/.source,
+].join('|'), 'i');
 const DAU_DON_DA_CO = /\b(?:was|came|called|arrived|delivered|received|did|didn'?t|haven'?t|hasn'?t|ordered|paid|cancel(?:l)?ed|already)\b/i;
 const LUA_CHON_KHAC = /\b(?:size|color|colour|kulay|instead|only|just)\b|,[^,]{1,40}\bplease\b/i;
 function laHoiTruocBan(t, trangThai) {
@@ -502,14 +539,18 @@ export function laCauSauBan(text, prof = emptyProfile()) {
 // [S9] (i) nhóm KÍCH ỨNG chỉ tính khi cùng tin có dấu SAU KHI DÙNG — «Is it good for irritation?» là câu hỏi trước bán.
 //      (ii) chữ Ả Rập rào bằng `(?<!\p{L})…(?!\p{L})` cờ `u`: JS `\b` không biết chữ Ả Rập (`/\bدم\b/u` không khớp gì), còn chuỗi trơn
 //      «دم» khớp «كيف استخدم» (cách dùng) · «خدمة» · «عدم».
-const AR = (s) => `(?<!\\p{L})(?:${s})(?!\\p{L})`;
+// + tiền tố dính liền «ال · بال · وال · لل · و · ب» (/code-review BH9 #12: «خروج الدم» — «máu» có mạo từ — bị rào chặn mất).
+const AR = (s) => `(?<!\\p{L})(?:ال|بال|وال|لل|و|ب)?(?:${s})(?!\\p{L})`;
 const Y_TE = [
   ['chảy máu', new RegExp(`\\bbleed\\w*|\\bblood\\b|\\bdugo\\b|\\b(?:dumudugo|nagdudugo|pagdurugo)\\b|${AR('نزيف|دم')}`, 'giu')],
   ['kích ứng sau khi dùng', new RegExp(`\\brash\\b|\\ballerg\\w*|\\birritat\\w*|\\bpantal\\b|\\bnamumula\\b|\\blalong?\\s+(?:sumakit|nangati|humapdi)\\b|\\b(?:sumakit|nangati|humapdi)\\s+lalo\\b|\\bworse\\s+after\\s+(?:using|applying)\\b|${AR('حساسية')}`, 'giu')],
   ['sốt', new RegExp(`\\bfever\\b|\\blagnat\\b|${AR('حمى')}`, 'giu')],
   ['có thai', new RegExp(`\\bpregnant\\b|\\bbuntis\\b|${AR('حامل')}`, 'giu')],
 ];
-const SAU_KHI_DUNG = /\bafter\s+(?:i\s+)?(?:using|applying|use|used|applied)\b|\bsince\s+i\s+(?:used|applied|started)\b|\b(?:gamitin|ginamit|gumamit|nilagay|nilagyan)\b|بعد\s+(?:ال)?استخدام/iu;
+// «gamitin» TRƠN là nguyên mẫu («Pwede ba gamitin sa irritation?» — câu hỏi trước bán, /code-review BH9 #9) ⇒ chỉ tính sau «after (ko)».
+const SAU_KHI_DUNG = /\bafter\s+(?:i\s+)?(?:using|applying|use|used|applied)\b|\bsince\s+i\s+(?:used|applied|started)\b|\bafter\s+(?:ko\s+)?(?:gamitin|ilagay)\b|\b(?:ginamit|gumamit|nilagay|nilagyan)\b|بعد\s+(?:ال)?استخدام/iu;
+// Câu chứa dấu kích ứng mở đầu bằng trợ động từ hỏi ⇒ câu HỎI trước bán («Will the rash go away after using it?»).
+const CAU_HOI_DAU = /^\s*(?:will|would|can|could|does|do|is|are|pwede|puwede|pede|okay\s+ba|ok\s+ba)\b/i;
 const PHU_DINH_YTE = /(?:\b(?:no|not|without|walang|wala|hindi|never|don'?t|didn'?t)\b|(?<!\p{L})(?:لا|بدون|ما\s*في)(?!\p{L}))[\s\p{P}]*(?:\p{L}+[\s\p{P}]+){0,1}$/iu;
 
 /** Khách báo dấu hiệu y tế? Trả loại (`chảy máu` · `kích ứng sau khi dùng` · `sốt` · `có thai`) hoặc ''. */
@@ -520,7 +561,9 @@ export function dauHieuYTe(text) {
     if (loai === 'kích ứng sau khi dùng' && !SAU_KHI_DUNG.test(t)) continue;
     for (const m of t.matchAll(re)) {
       const truoc = t.slice(Math.max(0, m.index - 24), m.index);
-      if (!PHU_DINH_YTE.test(truoc)) return loai;              // phủ định cùng mệnh đề («no fever» · «walang dugo») ⇒ bỏ
+      if (PHU_DINH_YTE.test(truoc)) continue;                  // phủ định cùng mệnh đề («no fever» · «walang dugo») ⇒ bỏ
+      if (loai === 'kích ứng sau khi dùng' && CAU_HOI_DAU.test(t.slice(dauDoan(t, m.index, ['.', '!', '?', '\n'])))) continue;
+      return loai;
     }
   }
   return '';

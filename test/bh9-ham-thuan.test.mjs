@@ -68,6 +68,12 @@ const BANG_TEN = [
   ['T18', "I'm Maria", 'Maria'],
   ['T19', 'Name: Maria Santos', 'Maria Santos'],
   ['T20', 'اسمي محمد', 'محمد'],
+  // /code-review BH9 #14: dấu «:» sau nhãn RÕ · quốc tịch / viết tắt sau nhãn MƠ HỒ
+  ['T21', 'My name is: Maria Santos', 'Maria Santos'],
+  ['T22', "Here's my name: Maria Santos", 'Maria Santos'],
+  ['T23', 'I am Egyptian', ''],
+  ['T24', "I'm OFW here", ''],
+  ['T25', 'I am OWWA.', ''],   // viết tắt KHÔNG có trong danh sách từ thường — chỉ luật «viết hoa toàn bộ ≤ 5 chữ» che được
 ];
 // 12 chuỗi sai đã thấy ở giả lập (① lỗi 3) — không chuỗi nào được thành tên nữa.
 const TEN_SAI = ['finished', 'working for fails', 'Yass island', 'e now', 'Abudhabi city', 'here in Dammam', 'waiting',
@@ -118,6 +124,9 @@ const PAGE_AM = [
   'Once you order, we will inform the courier to call you before delivery',
   'Your order will be scheduled for delivery within 2-5 days after confirmation',
   'Your order is 109 SAR po — shall I confirm?',
+  // /code-review BH9 #6: câu QUY TRÌNH của mẫu page · báo giá còn đang chào mua
+  'Orders placed today are scheduled for delivery the next day.',
+  '👉Your order is 109 SAR. Free delivery within 3-5 days, cash on delivery. Do you want to order?',
   // C35 · C36 · C41 (âm cũ)
   'How many sets would you like?', '🎉 SPECIAL PROMOTION – UP TO 70% OFF!', 'Buy 1 Get 1 FREE — 109 SAR', '',
 ];
@@ -131,6 +140,17 @@ test('BH9 DP · donTuTinPage DƯƠNG: tám khuôn page thật (POS · AI LEADER 
 test('BH9 DA · donTuTinPage ÂM: năm câu ② 2a + bốn câu [S2] + C35', () => {
   const nham = PAGE_AM.filter((t) => C.donTuTinPage(t));
   assert.deepEqual(nham, [], `bắt NHẦM ${nham.length}: ${nham.join(' | ')}`);
+});
+test('BH9 DQ · /code-review #7: câu báo huỷ/giao mở đầu «After/When …,» (vế điều kiện TÁCH bằng dấu phẩy) VẪN là đơn — base bắt, không được hụt', () => {
+  assert.equal(C.donTuTinPage('After checking the system, your order has been cancelled because the number is off')?.trangThai, 'đã huỷ');
+  assert.equal(C.donTuTinPage('When the courier called you, the order was cancelled')?.trangThai, 'đã huỷ');
+  assert.equal(C.donTuTinPage('after checking, your order is out for delivery today')?.trangThai, 'đang giao');
+});
+test('BH9 DR · /code-review #13: «I have not yet received it» KHÔNG được gắn nhãn «khách ĐÃ nhận hàng»', () => {
+  for (const t of ['I have not yet received it', "I haven't yet received it", 'I have not received the parcel']) {
+    assert.notEqual(C.donTuTinKhach(t)?.trangThai, 'khách ĐÃ nhận hàng', t);
+  }
+  assert.equal(C.donTuTinKhach('I already received it')?.trangThai, 'khách ĐÃ nhận hàng');
 });
 test('BH9 DO · KHÔNG suy donDaCo từ otherBot.orderNoted — «Your order is free delivery dear» khớp OB_ORDER nhưng không là đơn', () => {
   const p = C.emptyProfile();
@@ -162,6 +182,9 @@ const KHACH_AM = [
   'If the order is not original can I return it?', 'I dont want this product in big size, small one please',
   'If you deliver today I will order 2 sets', 'i dont want the delivery to my office, home address only',
   'will you deliver to jeddah po',
+  // /code-review BH9 #2: câu KHẲNG ĐỊNH đang muốn mua (hai nhánh cũ bắt từ base)
+  'I want the package that is 159 SAR', 'the order is for my sister', "5 days delivery is fine, I'll order", 'you deliver to Abha',
+  'if u deliver tomorrow i will take 2',
 ];
 test('BH9 DK · donTuTinKhach DƯƠNG: sáu câu khách thật ① lỗi 1 + «tell him to deliver 4pm» + C39', () => {
   const hut = KHACH_DUONG.filter((t) => !C.donTuTinKhach(t));
@@ -218,6 +241,7 @@ test('BH9 K1 · khách tự nói «Cash on delivery po» / «COD po» ⇒ cod ·
   assert.equal(cod('COD po'), true);
   assert.equal(cod('no COD please'), false);
   assert.equal(cod('is it COD?'), false, 'câu HỎI không phải đồng ý');
+  assert.equal(cod('Okay noted, COD po'), true, '«no» trong «noted» không phải phủ định (/code-review #11)');
   const p = C.extractFromText('SET 2 po, ok COD', C.emptyProfile());
   assert.equal(p.cod, true);
 });
@@ -249,6 +273,18 @@ test('BH9 K3 · codNgam: page đã nêu «bayad pagdating» + lượt này SĐT/
   assert.equal(C.codNgam({ prof: hoSoSau(DIA_CHI), text: DIA_CHI, msgs: [], pageId: PG, lastAi: 'Free delivery po, cash on delivery 😊 Send your address po.' }), true);
   // đã cod ⇒ không còn «ngầm»
   assert.equal(C.codNgam({ prof: { ...hoSoSau(DIA_CHI), cod: true }, text: DIA_CHI, msgs, pageId: PG, lastAi: '' }), false);
+  // câu quảng cáo phổ biến nhất «Order now, COD available» (/code-review #11 — «no» trong «now»)
+  assert.equal(C.codNgam({ prof: hoSoSau(DIA_CHI), text: DIA_CHI, msgs: [tinPage('Order now, COD available 😊'), tinKhach(DIA_CHI)], pageId: PG, lastAi: '' }), true);
+});
+test('BH9 K6 · /code-review #8: khách đã TỪ CHỐI COD ⇒ COD ngầm không ghi đè · khách NÓI đồng ý sau COD ngầm ⇒ cờ «ngầm» mất', () => {
+  const p = C.extractFromText('no COD please I will pay online', C.emptyProfile());
+  assert.equal(p.cod, false);
+  C.extractFromText(DIA_CHI, p);
+  assert.equal(C.codNgam({ prof: p, text: DIA_CHI, msgs: [tinPage('Free delivery, cash on delivery')], pageId: PG, lastAi: '' }), false);
+  const q = { ...C.extractFromText(DIA_CHI, C.emptyProfile()), cod: true, codNgam: true };
+  C.extractFromText('ok COD po', q);
+  assert.equal(q.codNgam, false);
+  assert.equal(q.cod, true);
 });
 test('BH9 K4 · [S10] tin page DUY NHẤT nêu COD là câu PHỦ ĐỊNH («not available… prepaid only») ⇒ codNgam false', () => {
   assert.equal(typeof C.codNgam, 'function');
@@ -311,6 +347,20 @@ const BANG_CUA = [
   ['G34', 'Your order: Buy 1 Get 1 FREE — 109 SAR, cash on delivery. Our staff will contact you to confirm.', { donDaCo: true, isOrderSummary: true }, ''],
   ['G35', 'Our staff will contact you shortly to sort this out with the courier po. Please keep your phone available 📞', { donDaCo: true, daBanGiao: true }, ''],
   ['G36', 'I understand po. If no order was completed, that delivery notice was likely sent by mistake — sorry for the confusion.', {}, 'BIA_TRANG_THAI_DON'],
+  // /code-review BH9: lời khuyên Ả Rập có tiền tố (#12) · câu HỎI xin địa chỉ (#3) · tương lai/quy trình/mời chốt (#5) · «linggo»=tuần,
+  // «noted» xa giờ, điều kiện «After you order», câu chính sách chung (#10)
+  ['G37', 'نأسف لذلك، يرجى الذهاب للطبيب.', YT, ''],
+  ['G38', 'Can we have your address po?', {}, ''],
+  ['G48', 'Can we have your address po, so our staff can book it.', {}, ''],   // không «?» — chỉ lookbehind «can we» che được
+  ['G39', 'Your order will be on its way within 2-3 days', {}, ''],
+  ['G40', 'Your order will be on its way within 2-3 days', { isOrderSummary: true }, ''],
+  ['G41', 'Your order is shipped within 24 hours after confirmation.', {}, ''],
+  ['G42', 'There is no order minimum po', {}, ''],
+  ['G43', 'Just send your details and your order is confirmed!', {}, ''],
+  ['G44', 'Darating po ang parcel within 1-2 linggo.', {}, ''],
+  ['G45', 'Noted po, our office is open until 10 PM.', {}, ''],
+  ['G46', 'After you order, our staff will call you to confirm the delivery.', {}, ''],
+  ['G47', 'Yes po, we deliver on Friday too!', {}, ''],
 ];
 const ctxCua = (them) => ({ kb: KB, lastAiText: '', ...them, luatBH9: true });
 for (const [id, cau, them, cho] of BANG_CUA) {
@@ -402,7 +452,8 @@ test('BH9 GK · bốn câu cố định (CAU_NHAN_BAN_GIAO · CAU_Y_TE × en/ar)
 test('BH9 Y1 · dauHieuYTe DƯƠNG: chảy máu (EN · Tagalog · Ả Rập) · kích ứng SAU khi dùng · có thai', () => {
   assert.equal(typeof C.dauHieuYTe, 'function', 'context.js chưa export dauHieuYTe');
   for (const t of ['I have bleeding', 'may dugo po', 'meron pong pangangati pagdurugo sa puwet', 'nangati lalo after ko gamitin',
-    'I got a rash after applying it', "I'm pregnant, can I use it?", 'فيه دم']) {
+    'I got a rash after applying it', "I'm pregnant, can I use it?", 'فيه دم',
+    'I got a rash after using it, what should I do?', 'خروج الدم']) {
     assert.ok(C.dauHieuYTe(t), `phải bắt: ${t}`);
   }
   assert.equal(C.dauHieuYTe('I have bleeding'), 'chảy máu');
@@ -418,7 +469,10 @@ test('BH9 Y2 · dauHieuYTe ÂM: triệu chứng gel lo (ngứa/rát/trĩ) · ph�
 });
 test('BH9 Y3 · [S9] câu HỎI trước bán về kích ứng + Ả Rập rào ranh giới (كيف استخدم · خدمة التوصيل · عدم) ⇒ ÂM', () => {
   assert.equal(typeof C.dauHieuYTe, 'function');
-  for (const t of ['Is it good for irritation?', 'effective po ba sa rashes?', 'Does it cause allergy?', 'كيف استخدم', 'خدمة التوصيل', 'عدم']) {
+  for (const t of ['Is it good for irritation?', 'effective po ba sa rashes?', 'Does it cause allergy?', 'كيف استخدم', 'خدمة التوصيل', 'عدم',
+    'Pwede ba gamitin sa irritation?', 'Will the rash go away after using it?',
+    // câu KHẲNG ĐỊNH trước bán (không mở đầu bằng trợ động từ hỏi) — chỉ luật «sau khi dùng» che được; «gamitin» trơn là nguyên mẫu
+    'My skin has irritation po, is it good for that?', 'Gusto ko gamitin sa irritation ko po']) {
     assert.equal(C.dauHieuYTe(t), '', `KHÔNG được bắt: ${t}`);
   }
 });
