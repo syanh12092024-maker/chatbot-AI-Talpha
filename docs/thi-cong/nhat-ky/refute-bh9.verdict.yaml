@@ -1,0 +1,163 @@
+phieu: BH9
+vong: 1
+ket_luan: TRA_VE
+ma_tho: "worktree agent-ad1ffea2fa3e0825c · nhánh worktree-agent-ad1ffea2fa3e0825c · HEAD 08c996a (fix b4a507a·821f0a3·e016e1a) · diff a6c017a..HEAD -- src v3"
+cach_chay: >
+  Ca phá nằm ngoài repo, ở scratchpad/refute-bh9/ (thư mục phiên). Chạy tất cả bằng `bash chay.sh`. Gồm 10 tệp hàm thuần r*.mjs (import
+  thẳng src của worktree) và refute-bh9-luot.test.mjs, tệp này đi đường WORKER THẬT y khuôn test/bh9-luot-worker.test.mjs của thợ:
+  chayMotVong → nhanDienSale → xuLyMotTin. Ca chạy trên Postgres hộp cát aicloser_v3_test_rfbh9_p<pid>, cửa gửi được TIÊM, chayCloser là
+  model GIẢ, KHÔNG tiêm kiemTinRa (cửa ra thật), create_draft_order đi executeTool thật.
+  Lệnh: cd <worktree> && node --env-file-if-exists=.env --import ./test/_an-toan.mjs --test --test-force-exit <tệp>.
+  Không gọi mạng, không gọi model thật hay Pancake thật (.env có PANCAKE_READONLY=1). CSDL giả lập aicloser_gialap_pilot / aicloser_gialap_2
+  chỉ được SELECT, và không tệp nào chứa chữ, tên hay SĐT của khách thật. Tên và số trong ca đều giả («Maria Santos» · 0551234567).
+  Kết quả: 6/6 ca worker ĐỎ đúng như dự đoán (F1a F1b F2 F3 F4 F4b). Đối chứng: 4 tệp ca của thợ chạy lại trên cùng cây đều xanh
+  (103 + 21 + 5 + 6 = 135/0).
+findings:
+  - ma: F1
+    muc: CHAN
+    mo_ta: >
+      Người ĐANG MUỐN MUA bị coi là khách sau bán, nhận câu cố định, bị chuyển sale, rồi bị ghi donDaCo (không hết hạn) nên mất luôn lượt chốt.
+      Bộ lọc [S1] `laHoiTruocBan` chỉ tha câu HỎI chính sách hoặc câu có mấy cụm «đang muốn mua» liệt kê sẵn. Câu khẳng định hoặc câu ngắn
+      kiểu Taglish thì vẫn khớp ba nhánh dò khách. Hai nhánh cũ còn nguyên: «the (order|package|delivery|courier|rider) … is/has» và
+      «N days … deliver». Nhánh mới «(you|u) deliver» cũng vậy.
+      Đo 14/14 câu trước bán bị bắt: «5 days delivery ok po» · «2-5 days delivery is ok po» · «The order is 2 sets po» · «the order is buy 2 get 2»
+      · «The package is 159 SAR right» · «the package is good for my hemorrhoids» · «the delivery is today or tomorrow» · «Ok sir u deliver
+      tomorrow morning. <tên> <SĐT> <địa chỉ>» · «pls u deliver after 5pm…» · «I received that, how much 2 sets»…
+      Khách thật đã nhắn đúng khuôn «How many days delivery» (tin 262 của UAE). Câu đáp tự nhiên sau khi bot nói «2-5 working days» là
+      «5 days delivery ok po», và câu đó bị cổng 4a nuốt.
+      Đây là đúng hệ quả mà [S1] của phiếu tự cảnh báo («khách đang muốn mua nhận câu cố định + bị giao sale, và donDaCo khoá bán vĩnh viễn»).
+      Luật [S1] chỉ bàn tới câu HỎI nên chính phiếu đã hụt chỗ này.
+    kich_ban: >
+      `node r1-truoc-ban.mjs`: laCauSauBan(câu, hồ sơ rỗng).la = true với cả 14/14 câu.
+      refute-bh9-luot.test.mjs F1a: lịch sử [khách «How many days delivery», bot «Delivery takes 2-5 working days po… Which set po…?»],
+      khách «5 days delivery ok po, buy 2 get 2» ⇒ model 0 lượt · gửi CAU_NHAN_BAN_GIAO.en · HANDOFF/SALE · ho_so.donDaCo = «khách nói
+      ĐƠN CŨ chưa xong/khach». Phiếu ② 2d đòi la:false, tức là model phải được gọi.
+      F1b: khách gửi đủ tên + SĐT + địa chỉ kèm «Ok sir u deliver tomorrow morning» ⇒ model 0 lượt · hang_cho_tao_don 0 dòng · HANDOFF/SALE.
+    file_line: "src/context.js:466-467 (hai nhánh cũ còn nguyên) · src/context.js:475-485 (HOI_CHINH_SACH/laHoiTruocBan chỉ tha câu hỏi) · src/context.js:235 (donDaCo nguồn khách ghi vĩnh viễn) · src/chat/handler-v3.js:688 (cổng 4a)"
+    goi_y_va: >
+      Lật chiều của nhánh dò khách. Chỉ coi là «đơn đã có» khi câu có dấu QUÁ KHỨ/ĐÃ XẢY RA (why did you deliver · you delivered ·
+      received · cancelled · haven't arrived · called me…). Bỏ hẳn hai nhánh rộng «the X is/has» và «N days deliver» khỏi cổng 4a, hoặc chỉ
+      dùng chúng khi hồ sơ đã có donDaCo nguồn page. Thêm ca âm cho 14 câu trên vào ④2 kèm laCauSauBan(hồ sơ rỗng).
+  - ma: F2
+    muc: CHAN
+    mo_ta: >
+      Bot TỰ ĐẦU ĐỘC chính nó, đúng loại [S2] cảnh báo. Câu trước bán do chính model viết, ví dụ «Our team will inform the courier to call you
+      before delivery», QUA cả bốn luật mới: HUA_BAO_COURIER chỉ bắt khi ngay trước là i'll/we will, không bắt «our team will».
+      Câu này được gửi đi. Lượt sau, `bocDonTuLichSu` đọc lại tin page đó qua khuôn mới «inform the courier». Không có từ điều kiện nào
+      chặn, nên nó thành donDaCo {đang giao, nguồn page}.
+      Hệ quả vĩnh viễn: captureOrder ném «Khách đang có đơn» nên đơn của người vừa gửi đủ tên, SĐT, địa chỉ bị mất. Mọi tin có address,
+      number, today… rơi vào cổng 4a, và mọi câu chào giá bị BAN_LAI_SAU_BAN chặn. Ghi chú bàn giao in «đơn: đang giao (page)» cho một
+      đơn không hề tồn tại.
+    kich_ban: >
+      `node r2-cua-ra.mjs`, khối «đầu độc»: guardOutbound(câu, {luatBH9:true}) ⇒ QUA, và donTuTinPage(câu) ⇒ «đang giao» (2/2 câu).
+      refute-bh9-luot.test.mjs F2: lượt 1, khách «pls call me before delivery po, i am working», model trả câu trên ⇒ gửi nguyên byte,
+      QUALIFY/AI. Lượt 2, lịch sử có tin bot đó, khách «Buy 2 get 2 po. <tên> <SĐT> <địa chỉ>», model gọi create_draft_order đủ trường
+      ⇒ tool lỗi «Khách đang có đơn (đang giao) — không tạo đơn mới» · hang_cho_tao_don 0 dòng · ho_so.donDaCo = đang giao/page.
+    file_line: "src/context.js:407 (khuôn mới «inform the courier» · «courier's number» không đòi chủ ngữ là đơn) · src/context.js:503-511 (bocDonTuLichSu đọc mọi tin page, kể cả chữ CHÍNH bot v3) · src/chat/handler-v3.js:437 · src/chat/handler-v3.js:934"
+    goi_y_va: >
+      Bóc donDaCo nguồn page chỉ từ tin của MÁY đơn/POS/vận đơn hoặc sale NGƯỜI. Bỏ qua tin có trong ai_noi_gi/lan_gui của chính v3
+      (human.js đã có sẵn tập «ours»), tin Public API của v3 và tin ai_sale. Khuôn «inform the courier» phải đòi vế quá khứ (informed /
+      already informed). Thêm ④9f trên chữ model dựng có «our team/staff will inform the courier».
+  - ma: F3
+    muc: CHAN
+    mo_ta: >
+      Câu hỏi trước bán về THÀNH PHẦN của sản phẩm pilot bị bắt thành dấu hiệu y tế «chảy máu». Kịch bản page 275/276 (Soothing Cooling Gel,
+      hai page pilot) ghi «🌿 Dragon's Blood Resin – Supports skin repair and recovery». `\bblood\b` khớp vô điều kiện, và
+      «دم الأخوين» (tên Ả Rập của Dragon's Blood) cũng khớp.
+      Hệ quả: lớp từ khoá và Fast Lane nhường, khối hồ sơ in «⚕️ Khách báo chảy máu — câu ĐẦU: khuyên ngừng dùng và đi khám…», lượt LUÔN bàn
+      giao. Câu trả lời thường của model bị Y_TE chặn rồi thay bằng CAU_Y_TE («Please stop using the product and see a doctor, especially if
+      there is bleeding…»). Người chưa mua chỉ hỏi «Dragon's Blood là gì» nhận lời khuyên đi khám, bot thôi bán.
+      «Is it good for blood circulation?» cũng dính, cùng gốc.
+    kich_ban: >
+      `node r4-y-te.mjs`: dauHieuYTe ⇒ «chảy máu» cho «What is Dragon's Blood po? is it safe?» · «the gel has dragon blood resin right?» ·
+      «هل فيه دم الأخوين؟» · «Is it good for blood circulation? I have varicose». Câu kịch bản lấy từ `aicloser_gialap_pilot.kich_ban`
+      page 275 và 276 (SELECT).
+      refute-bh9-luot.test.mjs F3: khách «What is Dragon's Blood po? is it safe?», model trả «Dragon's Blood Resin is a natural plant resin that
+      supports skin repair po 😊 Buy 1 Get 1 FREE — 109 SAR.» ⇒ gửi CAU_Y_TE.en · HANDOFF/SALE · lyDo cau_co_dinh:Y_TE · ghi chú «Y TẾ (chảy máu)».
+    file_line: "src/context.js:544-548 (Y_TE nhóm «chảy máu»: \\bblood\\b và دم vô điều kiện)"
+    goi_y_va: >
+      Bỏ «blood» trơn. Chỉ nhận chảy máu ở dạng động từ/trạng thái (bleed\w* · may dugo · dumudugo/nagdurugo · نزيف/ينزف). Loại «dragon('s)
+      blood» · «blood circulation/pressure» · «دم الأخوين». Thêm các câu này vào ÂM bắt buộc của ④5.
+  - ma: F4
+    muc: CHAN
+    mo_ta: >
+      Câu sau bán phổ biến nhất không vào cổng 4a, KỂ CẢ khi hệ đã biết khách có đơn. Câu bịa trạng thái đơn THẬT của giả lập vẫn qua cửa ra.
+      «where is my order?» · «any update po?» · «what is the status of my order» · «nasaan na po yung order ko?» · «أين طلبي؟» đều la:false
+      dù donDaCo nguồn page đã có. Lý do: NOI_VE_GIAO không có «order», «where», «status» hay «update», còn donTuTinKhach không có nhánh nào
+      cho chúng.
+      Model được gọi. Câu Kimi thật ở giả lập Saudi #141 (so_ai id 138): «…your order is already with the courier po. Since it's in Riyadh,
+      delivery is usually quick.» QUA cả 4 luật mới vì KHANG_DINH_DON chỉ biết on its way / shipped / out for delivery… Các câu «Your parcel
+      is out for delivery» · «Your package has been shipped» · «your order is with our courier now» cũng QUA, vì khuôn đòi chữ «order» ngay
+      trước is/has been.
+      Lỗi 1 của chính phiếu, «bịa trạng thái đơn với khách sau bán», vẫn nguyên ở câu hỏi số một. Saudi #141 lại không nằm trong danh sách
+      ĐÒI của ④9a, nên M6 không thấy.
+    kich_ban: >
+      `node r10-co-don-van-hut.mjs` (hồ sơ có donDaCo page): 8/8 câu HỤT. `node r8-where-is-my-order.mjs`: 4/4 câu bịa và 1 câu bán lại QUA.
+      refute-bh9-luot.test.mjs F4 (lịch sử không có tin POS, ví dụ đơn đặt qua Ladi): khách «where is my order?», model trả câu #141
+      ⇒ câu bịa tới khách nguyên byte, QUALIFY/AI.
+      F4b: lịch sử CÓ tin POS «Your order is scheduled for delivery today…», donDaCo = đang giao/page ⇒ vẫn model 1 lượt, câu #141 tới khách, 0 bàn giao.
+    file_line: "src/context.js:515 (NOI_VE_GIAO thiếu order/where/status/update) · src/context.js:524-534 (laCauSauBan) · src/outbound-guard.js:342-349 (KHANG_DINH_DON đòi chữ «order» + đúng 5 động từ)"
+    goi_y_va: >
+      Khi hồ sơ có donDaCo hoặc ordered, MỌI câu có «order/parcel/package/item» hay «update/status/where» đều vào cổng 4a. Thêm nhánh khách
+      «where is my order / status of my order / any update» (dạng hỏi đơn CỦA MÌNH). KHANG_DINH_DON nhận chủ ngữ order|parcel|package|item
+      và các vị ngữ «with the courier / with our rider / being processed / ready for dispatch». Thêm Saudi #141 vào danh sách ĐÒI của ④9a.
+  - ma: F5
+    muc: NEN
+    mo_ta: >
+      Dấu hiệu y tế bị SÓT ở hai ngôn ngữ chính của khách. Tagalog: «nagdurugo» là dạng phổ biến nhất (phiếu ghi «nagdudugo»), còn «dinudugo»
+      · «duguan» cũng sót. Ả Rập: «ينزف» · «نزف» · «دماء» sót. Kích ứng: «rashes» số nhiều sót, vì `\brash\b` không khớp.
+      Khách người Philippines đang chảy máu sau khi dùng gel vẫn bị chào gói: không dòng ⚕️, không chạy Y_TE, không bàn giao.
+    kich_ban: "`node r4-y-te.mjs`: 8 câu SÓT ⇒ '' («nagdurugo pa rin po kahit nilagyan ko na» · «ينزف بعد الاستخدام» · «I got rashes after applying it» …)"
+    file_line: "src/context.js:544-548"
+  - ma: F6
+    muc: NEN
+    mo_ta: >
+      Phần Taglish và Ả Rập thủng cả hai đầu. (1) Câu bịa và câu hứa QUA cửa ra khi khách có đơn: «Na-deliver na po ang order nyo kahapon» ·
+      «Confirmed na po ang order nyo» · «Naipadala na po…» · «Papunta na po ang rider» · «تم تأكيد طلبك» · «تم توصيل طلبك أمس» ·
+      «لا يوجد طلب باسمك» · «سيصلك الطلب يوم الخميس» · «المندوب سيتصل بك الساعة 10 صباحاً». MOC_GIAO chỉ có chữ La-tinh. (2) Câu khách sau bán
+      viết Taglish hoặc Ả Rập không vào cổng khi hồ sơ rỗng: «Kailan po darating yung order ko?» · «Hindi pa dumating yung order ko» ·
+      «Natanggap ko na po yung parcel» · «ما وصلني الطلب» · «استلمت الطلب» · «ألغيت الطلب». Mọi nhánh của donTuTinKhach đều tiếng Anh.
+    kich_ban: "`node r6-taglish-ar.mjs` (9/10 QUA) · `node r7-sau-ban-hut.mjs` (12/12 HỤT)"
+    file_line: "src/outbound-guard.js:342-349 · src/outbound-guard.js:358-359 · src/context.js:462-468"
+  - ma: F7
+    muc: NEN
+    mo_ta: >
+      Luật mới chặn quá tay câu bình thường, rồi thay bằng câu cố định và chuyển sale. Ba ca: (a) trước bán, «Don't worry po, no order will be
+      placed until you confirm» bị BIA_TRANG_THAI_DON chặn, vì khuôn «no order» không có ngoại lệ tương lai «will be placed»; (b) trước bán,
+      câu chính sách «Our couriers deliver between 9 AM and 9 PM po» bị TU_HUA chặn; (c) đúng lượt TÓM TẮT đơn (isOrderSummary), câu xác nhận
+      nhắc lại giờ khách xin «Noted: delivery after 5 PM» bị TU_HUA chặn. HUA_MOC không miễn lượt tóm tắt, nên khách mất lời xác nhận đơn và
+      nhận «Noted po 🙏 Our team will check this…».
+    kich_ban: "`node r2-cua-ra.mjs`: các dòng (d) ⇒ CHẶN BIA_TRANG_THAI_DON / TU_HUA / TU_HUA (isOrderSummary:true)"
+    file_line: "src/outbound-guard.js:342-344 · src/outbound-guard.js:359-361 · src/outbound-guard.js:387-417"
+  - ma: F8
+    muc: NEN
+    mo_ta: >
+      Tên trích sai vẫn còn, và cờ «Tên lấy từ Facebook» bị lách. Trong khối thông tin đơn có SĐT, dòng tên khu, toà nhà hay mốc ngoài danh
+      sách AREA được nhận làm tên: «Mussafah Shabiya» · «Al Olaya» · «Deira Fish Market» · «Al Dana» · «Hindi ko alam». «I am Filipina» cho
+      ra «Filipina», vì TU_THUONG có filipino nhưng không có filipina.
+      Hệ quả: prof.name sai, missingSteps thôi xin tên, chuanHoaHoSo thấy tenKhach khác rỗng nên KHÔNG đặt ten_tu_facebook. Tên sai lên đơn
+      nháp mà sale không thấy cờ nào.
+    kich_ban: "`node r5-ten.mjs`: 6/14 dòng ra tên sai, kèm «cờ ten_tu_facebook=false»"
+    file_line: "src/lead-score.js:144-150 (laDongTen) · src/lead-score.js:114 (TU_THUONG) · src/orders/hang-cho.js:199-205"
+  - ma: F9
+    muc: NEN
+    mo_ta: >
+      «Is it safe for pregnant women?» là câu hỏi chung trước bán, nhưng nhóm «có thai» khớp vô điều kiện nên lượt LUÔN bàn giao và bot
+      thôi bán. Phiếu ② 7 tự thêm «có thai» vô điều kiện, còn quyết định 15/10 chỉ nói chảy máu và kích ứng. Thợ đã bác điểm review này, viện
+      dẫn phiếu. Người quyết nên chốt có dừng bán với người hỏi hộ hay không.
+    kich_ban: "`node r4-y-te.mjs`: «Is it safe for pregnant women?» ⇒ «có thai»"
+    file_line: "src/context.js:547"
+  - ma: G1
+    muc: GHI-NO
+    mo_ta: >
+      Lượt y tế nhưng ngân sách lượt đã hết (6b) hoặc classifier ra complaint (6): bot im và bàn giao, khách không nhận lời khuyên đi khám.
+      Cùng họ với nợ thợ đã ghi N-BH9-YTE-LUAT-CU-IM. Đề nghị gộp thành một nợ: «mọi đường thoát im của lượt y tế phải gửi CAU_Y_TE».
+    kich_ban: "đọc mã: src/chat/handler-v3.js nhánh `cls.intent === \"complaint\"` và `!nganSach.ok` đứng sau nhường y tế, trả về trước khi gửi gì"
+    file_line: "src/chat/handler-v3.js:841-852 (complaint) · src/chat/handler-v3.js:855-878 (ngân sách hết)"
+mu_code_review: []
+mu_nghiep_vu: "xem docs/thi-cong/nhat-ky/nghiep-vu-bh9.verdict.yaml (mũ phụ, điểm (b) trên DIFF — ghi riêng)"
+khong_pha_duoc:
+  - "(c) câu cố định sai lúc: worker nhường trước handler khi page hoặc Botcake nói cuối, khi sale người nhắn (nhanDienSale) và khi page ngắt (locPageNgat); ≤ 1 câu cố định mỗi lượt; lượt sau HANDOFF im (ca Wi của thợ). Không dựng được ca hỏng."
+  - "(e) COD ngầm: tin page nêu COD kèm phủ định không tính; khách từ chối thì codTuChoi chặn; đồng ý rõ thì cờ ngầm tắt; cờ cod_ngam và ten_tu_facebook tới hàng chờ, Hộp thư và màn Vận hành. Lỗ duy nhất là F8 (tên sai thì không cờ)."
+  - "(h) luật cửa ra CŨ giữ nguyên: bốn luật mới đứng sau return pass cũ và chỉ chạy khi luatBH9; lớp từ khoá và Fast Lane không bật."
+  - "Câu chính sách người quyết 15/10 cho nói (2–5 ngày · đổi khi lỗi trong 7 ngày · kiểm rồi trả · FDA approved · rider gọi trước khi tới) QUA cả bốn luật, kể cả khi khách có đơn (`node r9-chinh-sach.mjs`)."

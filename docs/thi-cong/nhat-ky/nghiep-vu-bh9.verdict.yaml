@@ -1,0 +1,70 @@
+phieu: BH9
+diem: b
+nguon_y_do: >
+  Đọc ý đồ trước, rồi mới đọc mã. Tệp `docs/thi-cong/Y-DO-CEO-7-LUONG.md` mà skill trỏ tới KHÔNG có trong repo này. Ý đồ được lấy từ
+  `docs/v3/01-QUYET-DINH.md` §1, khối «SỬA 15/10» (COD ngầm · tên Facebook có cờ · đơn Messenger chỉ vào POS khi sale duyệt), và từ sổ
+  điều hành §10, các dòng 15/10. Các dòng đó chốt: giao 2–5 ngày · chỉ đổi khi lỗi trong 7 ngày · kiểm rồi trả · được nói FDA ·
+  COD ngầm. Khi bot KHÔNG được tự trả lời (khách sau bán hỏi đơn · câu bị luật mới chặn) thì gửi câu nhận CỐ ĐỊNH và chuyển sale, ≤ 1 lần
+  mỗi lượt bàn giao. Tên Facebook làm tên người nhận, kèm cờ «chưa xác nhận». Sau đó mới đọc phiếu ①②④ rồi tới diff a6c017a..HEAD.
+cau:
+  - so: 2
+    dap: CO
+    bang_chung: >
+      Đường đi chạy thật trên đường WORKER thật, không chỉ hàm thuần. Chuỗi gọi là chayMotVong → nhanDienSale → xuLyMotTin → cổng 4a / cửa
+      ra thật / captureOrder → so_ai / hang_cho_tao_don, chạy trên Postgres hộp cát. Chạy lại 4 tệp ca của thợ trên worktree:
+      bh9-ham-thuan 103/0 · bh9-luot-worker 21/0 · bh9-hang-cho-man 5/0 · bh9-phat-lai 6/0. Màn Hộp thư chạy thật trong vm (M3).
+      Chưa chạy với model thật và Pancake thật, đúng như phiếu định (tổng đo sau khi gộp). M6 có khai rõ là ngữ cảnh phỏng dựng.
+  - so: 4
+    dap: CO
+    bang_chung: >
+      CÓ một chỗ khai nguồn SAI trên ghi chú tới sale. Ghi chú bàn giao «SAU BÁN · … · đơn: <trạng thái> (page)» gộp sáu nguồn khác nhau
+      vào chung nhãn «page»: POS, vận đơn, sale người, ai_sale, Botcake và CHÍNH chữ bot v3. Ca refute F2
+      (scratchpad/refute-bh9/refute-bh9-luot.test.mjs) cho thấy câu trước bán của chính model «Our team will inform the courier…» thành
+      donDaCo «đang giao/page». Sale đọc «đơn: đang giao (page)» sẽ đi tìm một đơn không tồn tại. Hai cờ trên Hộp thư và màn Vận hành thì
+      có nguồn rõ (du_lieu_don.ten_tu_facebook / cod_ngam do chuanHoaHoSo đặt).
+  - so: 5
+    dap: KHONG
+    bang_chung: >
+      Trạng thái CŨ bị im lặng. donDaCo chỉ có ba trường {trangThai, cau, nguon}, không có mốc thời gian (`donTuTinPage` ở
+      src/context.js:434-460) và không hết hạn. Một đơn đã giao xong từ 3 tháng trước vẫn in «đơn: đã tạo (page)» trên ghi chú bàn giao,
+      y hệt một đơn hôm nay, và vẫn khoá tạo đơn. M6 của thợ có ca thật: Saudi #19 #20, khách mua lại bị chặn. Trạng thái RỖNG (kb.noData)
+      và LỖI (van đóng: Wa3 · mất ACK: banGiaoLoi) thì có nói ra.
+  - so: 6
+    dap: KHONG
+    bang_chung: >
+      Lệch grain. Chỉ MỘT câu của MỘT tin page bất kỳ, kể cả chữ của chính bot, đã quyết trạng thái «có đơn» cho CẢ hội thoại, VĨNH VIỄN.
+      Trạng thái đó khoá captureOrder, cổng 4a và BAN_LAI_SAU_BAN. Grain đúng phải là đơn (có mốc, có nguồn máy). Ca refute F2: lượt 2 mất
+      đơn nháp vì câu lượt 1 của chính bot. Ngược lại, câu khách đang hỏi đơn đã biết («where is my order?», ca F4b) lại không được xét
+      theo grain hội thoại đó. Dấu hiệu y tế xét theo tin của lượt là đúng grain.
+ket_luan: TRA_VE
+findings:
+  - ma: N1
+    muc: CHAN
+    mo_ta: >
+      Ý đồ 15/10 nói câu cố định và chuyển sale CHỈ dành cho lúc «bot không được tự trả lời (sau bán hỏi đơn · câu bị luật mới chặn)». Thực
+      tế nó bắn cả vào người ĐANG MUA, nên phiếu không làm được việc chính của pilot là «chốt đơn không hỏi lại». Lượt khách gửi đủ tên, SĐT,
+      địa chỉ kèm «u deliver tomorrow» bị cổng 4a nuốt: 0 lượt model, 0 đơn nháp, HANDOFF. «5 days delivery ok po» cũng bị nuốt và bị ghi
+      donDaCo vĩnh viễn. Câu hỏi về thành phần «Dragon's Blood» của sản phẩm pilot nhận câu y tế rồi bị bàn giao. Bằng chứng: các ca refute
+      F1a, F1b, F3 và F2.
+  - ma: N2
+    muc: CHAN
+    mo_ta: >
+      Ý đồ «khách sau bán ⇒ câu nhận cố định + chuyển sale, không bịa trạng thái đơn» không được thi hành cho câu hỏi số một. Khách đã có đơn
+      (tin POS «scheduled for delivery» nằm trong lịch sử) hỏi «where is my order?» thì không vào cổng. Câu Kimi thật của giả lập Saudi #141
+      «your order is already with the courier po» vẫn tới khách. Bằng chứng: ca refute F4b, cùng r10-co-don-van-hut.mjs.
+  - ma: N3
+    muc: NEN
+    mo_ta: >
+      Ghi chú bàn giao nên ghi rõ nguồn máy của trạng thái đơn (POS / vận đơn / sale / bot) và ngày của tin page đã khớp, để sale biết đơn nào,
+      cũ hay mới. Hiện tất cả chỉ là «(page)» và không có ngày (câu 4 và câu 5).
+  - ma: N4
+    muc: NEN
+    mo_ta: >
+      Quyết định «tên Facebook có cờ để sale sửa khi duyệt» bị lách khi regex nhận nhầm tên. Tên khu hay mốc trong khối địa chỉ («Al Olaya» ·
+      «Mussafah Shabiya» · «Deira Fish Market»), hoặc «Filipina», bị lấy làm prof.name. tenKhach khác rỗng nên đơn nháp KHÔNG mang cờ nào,
+      và sale duyệt mà không biết tên chưa được xác nhận. Ca refute F8 (r5-ten.mjs).
+  - ma: N5
+    muc: GHI-NO
+    mo_ta: >
+      Skill review-nghiep-vu trỏ tới `docs/thi-cong/Y-DO-CEO-7-LUONG.md`, tệp không có trong repo AI Closer. Ý đồ thật nằm ở
+      01-QUYET-DINH.md và sổ §10. Design-pack §M07/§M09 chưa cập nhật theo BH9 (thợ đã ghi N-BH9-DESIGN-PACK).
