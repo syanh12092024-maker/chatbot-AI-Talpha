@@ -341,7 +341,7 @@ v1 nghỉ hưu: phía mình chỉ còn `aicloser-v3` + `aicloser-worker-v3`. M�
 trình bot v1 (cầu HTTP `v3/src/noi-day/cau-bot-v1.js`) chạy ngay trong tiến trình v3; một công tắc
 «page này bot mình trả lời» trong CSDL; `aicloser.service` tắt. Phiếu CR:
 `docs/thi-cong/doi-y-do/CR-02-10-mot-ban-v3.md`. **Không đụng** `pancake-tool`/`ai_sale` (team khác)
-và năm file bộ não. **Thứ tự cứng: dời trước (MB1–MB2), tắt sau (MB3), gỡ cuối cùng (MB4).**
+và năm file bộ não. *(SỬA 15/10 — người quyết: v3 được GHI khoá `_v3` vào tệp trạng thái `page_gan_them.json` của pancake-tool để ai_sale nhường page đã bật — phiếu GL10; mã pancake-tool vẫn không đụng.)* **Thứ tự cứng: dời trước (MB1–MB2), tắt sau (MB3), gỡ cuối cùng (MB4).**
 
 | Mã  | Việc                                                                                          | Phụ thuộc           | Làn | Trạng thái |
 | --- | --------------------------------------------------------------------------------------------- | ------------------- | --- | ---------- |
@@ -3739,3 +3739,6 @@ l0-m1 · l0-m2 · l1-m1), trong đó g2-a5-a6 và l0-m2 đỏ CHỈ vì dãy S n
 - 19/10 · tổng — 15/10 cả 3 agent (thợ GL9 · viết phiếu BH9 · viết phiếu GL10) bị ngắt vì GIỚI HẠN API tuần (mở lại 17/10); thợ GL9 chưa ghi gì vào worktree `agent-adf1f250694cc4e73` ⇒ cho cả ba chạy tiếp
   prod (chỉ đọc): MÁY KHỞI ĐỘNG LẠI 18/10 16:52 CEST (nhân 6.8.0-147) — `aicloser-v3` + `aicloser-worker-v3` tự lên, NRestarts 0 · `/dang-nhap` 200 · `fcb0c19` · page bật 0/582 · `lan_gui` 0 · khối chung team 1 vẫn bản 1 `may:nap-khoi-chung` · worker sập lần 2 ghi nhận 15/10 06:49:22 (N-POOL)
   · trước push: lịch sử 6 commit GL8 chưa push (33c04ac…fed24c8) còn TÊN KHÁCH THẬT trong ca/nhật ký (cây cuối đã sạch) ⇒ viết lại lịch sử đoạn chưa push trước khi đẩy (repo công khai)
+- 19/10 · soát (a) GL10 → SỬA PHIẾU 9 điểm (1 CHẶN: 6 tệp test cũ chắc đỏ vì cổng chặn mặc định ⇒ thêm vào ③ có giới hạn) · chờ 12′ → 15′ (p99 lượt Saudi 93 s + 600 s chu kỳ) · log ai_sale BẮT BUỘC trên prod và canh suốt (POS hỏng >24 h ⇒ ai_sale bỏ lọc `:13606`, khoá `_v3` mất tác dụng) · trạng thái `gan_tay` · kiểm lại tệp trước rename · đường lùi gỡ `_v3` trước lùi mã
+  ghi quyết định 15/10 vào `docs/v3/01-QUYET-DINH.md` (mục MB «không đổi … ai_sale») + câu §5g sổ · nợ mới **N-AI-CARE-DON**: `pancake-tool/ai_care_don.py` (timer `ai-care-don`, «chăm đơn ĐANG GIAO») là bot thứ ba nhắn khách trên Messenger, KHÔNG đọc `_v3` — đo 19/10 timer không có lượt kế; trước page pilot thứ hai phải biết nó còn chạy không
+  · scratchpad phiên bị dọn khi khởi động lại (mất `bh9-nghien-cuu.md` · `gat-bot-san-sang.md` · shim `rg`) — nội dung đã vào phiếu BH9/GL10 · thợ GL9: gl9 30/0 · gl8 32/0 · gl3c 76/0, chờ gp1

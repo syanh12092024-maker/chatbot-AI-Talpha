@@ -367,5 +367,10 @@ trả lời page này», chữ «bot cũ / bot mới» trên màn.
 của pancake-tool (team khác — page nào chuyển sang v3 thì người quyết báo bên đó tắt page đó trước).
 Song song từ nay là **với ai_sale, theo từng page**, không phải với v1.
 
+⚠️ **SỬA 15/10/2026 — người quyết chọn «Nút v3 tự ghi khoá ai_sale»** (sổ §10 15/10): bật bot một page ở màn
+Page & Bot ⇒ v3 TỰ ghi khoá `_v3` cho page đó vào tệp trạng thái `pancake-tool/state/chung/page_gan_them.json`
+(không sửa MÃ pancake-tool), chờ ai_sale nhường rồi mới trả lời; tắt ⇒ v3 xoá khoá. Thay cho «người quyết báo bên
+đó tắt page trước». Thi hành: phiếu GL10.
+
 **Đã thi hành 02/10/2026** (MB1–MB4, CR ĐÓNG): prod chỉ còn `aicloser-v3` + `aicloser-worker-v3`; mã, unit và cron của
 bot v1 đã gỡ (tag mốc `truoc-mot-ban`). Ngoại lệ có chủ đích: `src/wa.js` ở lại vì pancake-tool (team khác) dùng chung trên máy chủ.
