@@ -123,6 +123,7 @@ Tự soát thêm (ngoài review): khối hồ sơ in «COD ngầm» khi khách �
 12. **Design-pack** (`docs/v2/02-TANG-LUONG-CHAT.md` §M07 hồ sơ · §M09 cửa ra) chưa cập nhật — ngoài pathspec ③ (luật 5 §0 đòi cùng commit) ⇒ nợ N-BH9-DESIGN-PACK cho tổng.
 13. **gl8.sh ⑤a ⑤c đỏ** do BH9 đổi bộ não (thước tĩnh GL8, ngoài ③) ⇒ nợ N-BH9-GL8-THUOC-TINH.
 14. **§10 sổ không append** (lệnh tổng) ⇒ `_chan1.sh bh9` ⑧b đỏ.
+15. **Lệch phiếu — tổng gật 19/10: sửa `ops/bin/nghiem-thu/gl8.sh` ⑤a/⑤c** (ngoài ③). ⑤a «bộ não không đổi từ 33c04ac» → chữ bộ não cắt (+ một nửa cặp tự dựng) qua HAI cửa ghi jsonb thật (`ghiSoAi` · `suaHoiThoai`, pool giả bắt tham số) ra JSON lành, giữ đủ chữ trước chỗ cắt; ⑤c «catChu( đúng 7» → không còn chỗ cắt TRẦN trong handler-v3 + `catChu` lành/tiền tố ở 3 biên emoji. Đảo-vá tay (thư mục tạm, mỗi đột biến một tiến trình): gốc «3 0 2 · 3 · 0» xanh; bỏ lưới so-ai ⇒ ⑤a hỏng=1; bỏ lưới kho ⇒ ⑤a hỏng=1; catChu về slice trần ⇒ ⑤c 0/3; handler `text: guarded.slice(0, 200)` ⇒ slice trần=1 — cả bốn đỏ. `gl8.sh` chạy riêng (đủ ⑥ đảo-vá GL8): **rc=0 · ĐỎ 0 / XANH 32**. Nợ N-BH9-GL8-THUOC-TINH: ĐÓNG.
 
 ## `_chan1.sh bh9`
 

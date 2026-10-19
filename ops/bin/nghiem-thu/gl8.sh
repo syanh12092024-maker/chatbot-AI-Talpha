@@ -49,12 +49,40 @@ bo_ca "③phép-4-lưới-ba-cửa-ghi-jsonb-(so_ai·hoi_thoai·hang_cho_tao_don
 bo_ca "④phép-5-chín-công-cụ-đọc-env-như-node---env-file-+-dòng-«cờ-đã-đọc»" "E1 E2a E2b E2c E2d E2e E2f E2g E2h E2i E3" "$CA_E"
 
 # ⑤ tĩnh (PHỤ — hành vi đã đo ở ①–④; các phép này chỉ canh phạm vi + lời khai)
-NAO="src/prompts.js src/closer.js src/tools.js src/fast-lane.js src/outbound-guard.js src/context.js src/lead-score.js"
-# shellcheck disable=SC2086
-git diff --quiet "$BASE" -- $NAO; ket "⑤a-bộ-não-không-đổi-từ-base-$BASE" $? "$(git diff --stat "$BASE" -- $NAO | tail -1)"
+# ⑤a/⑤c SỬA 19/10 (lệch phiếu GL8 — tổng gật, đi cùng BH9): bản cũ canh HÌNH DẠNG («bộ não không đổi từ 33c04ac» · «catChu( đúng 7»)
+# nên đỏ với mọi phiếu sau đổi bộ não có khai (BH9) dù lời hứa GL8 vẫn giữ. Nay đo LỜI HỨA: chữ bộ não cắt (kèm một nửa cặp tự dựng —
+# không trông vào cách bộ não cắt) qua HAI cửa ghi jsonb THẬT (`so-ai.js#ghiSoAi` · `kho.js#suaHoiThoai`, pool giả bắt tham số) ra JSON
+# lành, giữ đủ phần chữ trước chỗ cắt; `catChu` cắt ở biên emoji ra chuỗi lành là tiền tố; handler-v3 không còn chỗ cắt TRẦN. Bỏ lưới ở một
+# cửa (⑥j/⑥k) hay trả `catChu` về slice trần (⑥g) ⇒ phép này đỏ cùng ca W6/C1.
+do_hua=$(node --input-type=module -e '
+import { absorbToolUses, emptyProfile } from "./src/context.js";
+import { ghiSoAi } from "./src/chat/so-ai.js";
+import { suaHoiThoai } from "./src/chat/kho.js";
+const don = { name: "M".repeat(39) + "😀z", city: "D".repeat(39) + "🇦🇪", variant: "V".repeat(39) + "🎁", phone: "0501234567", address: "Al Barsha villa 9", qty: 1 };
+const prof = emptyProfile();
+absorbToolUses([{ role: "assistant", content: [{ type: "tool_use", id: "t", name: "create_draft_order", input: {} }] },
+  { role: "user", content: [{ type: "tool_result", tool_use_id: "t", content: JSON.stringify({ ok: true, order: don }) }] }], prof);
+prof.nuaCapTuDung = "x".repeat(5) + "\ud83d";
+const bat = [];
+const pool = { query: async (_s, p = []) => { for (const x of p) if (typeof x === "string") bat.push(x); return { rowCount: 1, rows: [{ id: "1" }] }; } };
+await ghiSoAi(pool, { teamId: 1, tinId: 1, loai: "order", maModel: "x", duLieu: { ho_so: prof } });
+await suaHoiThoai(pool, { teamId: 1, id: 1, giaTri: { ho_so: prof } });
+const loNua = /\\ud[89ab][0-9a-f]{2}(?!\\ud[c-f][0-9a-f]{2})|(?<!\\ud[89ab][0-9a-f]{2})\\ud[c-f][0-9a-f]{2}/i;
+const json = bat.filter((x) => x.startsWith("{"));
+const hong = json.filter((x) => !x.isWellFormed() || loNua.test(x)).length;
+const giu = json.filter((x) => x.includes("M".repeat(39)) && x.includes("x".repeat(5))).length;
+console.log(`${json.length} ${hong} ${giu}`);
+' 2>&1 | tail -1)
+set -- $do_hua
+[ "${1:-0}" -ge 2 ] && [ "${2:-1}" -eq 0 ] && [ "${3:-0}" -ge 2 ]; ket "⑤a-chữ-bộ-não-cắt-qua-hai-cửa-jsonb-ra-JSON-lành" $? "cửa bắt được=${1:-?} (đòi ≥2) · JSON còn nửa cặp=${2:-?} (đòi 0) · giữ đủ chữ trước chỗ cắt=${3:-?} (đòi ≥2) · ${do_hua}"
 git diff --quiet "$BASE" -- src/queue/worker.js; ket "⑤b-worker.js-không-đổi-(luật-«lỗi-sau-gửi-⇒-giao-sale»-ngoài-phạm-vi)" $? "$(git diff --stat "$BASE" -- src/queue/worker.js | tail -1)"
-n_slice=$(grep -cE "\.slice\(0, (60|200|600)\)" src/chat/handler-v3.js); n_cat=$(grep -cE "catChu\(" src/chat/handler-v3.js)
-[ "$n_slice" -eq 0 ] && [ "$n_cat" -eq 7 ]; ket "⑤c-handler-v3:-chỗ-cắt-ghi-so_ai-đi-catChu" $? "slice(0,60|200|600) còn=$n_slice (đòi 0) · catChu( =$n_cat (đòi 7: 647·663·668·717·744·906·971)"
+n_slice=$(grep -cE "\.slice\(0, (60|200|600)\)" src/chat/handler-v3.js)
+cat_lanh=$(node --input-type=module -e '
+import { catChu } from "./src/text.js";
+const ca = [["a".repeat(199) + "📦b", 200], ["b".repeat(599) + "🎁c", 600], ["c".repeat(59) + "😀d", 60]];
+console.log(ca.filter(([s, n]) => { const r = catChu(s, n); return r.isWellFormed() && s.startsWith(r) && r.length >= n - 1; }).length);
+' 2>&1 | tail -1)
+[ "$n_slice" -eq 0 ] && [ "$cat_lanh" = "3" ]; ket "⑤c-handler-v3-không-còn-chỗ-cắt-TRẦN-+-catChu-lành-ở-biên-emoji" $? "slice(0,60|200|600) còn=$n_slice (đòi 0) · catChu lành+tiền tố ở 3 biên (200·600·60)=${cat_lanh} (đòi 3)"
 n_hc=$(grep -cE 'catChu\(dinh' src/orders/hang-cho.js)
 [ "$n_hc" -eq 1 ]; ket "⑤d-hang-cho.js:479-đi-catChu" $? "catChu(dinh… =$n_hc (đòi 1)"
 cu=0; for t in gia-lap-mot-minh bao-cao-24h dich-ban-may dien-tap-hoi-thoai do-lop-0-dong dem-token-kimi phat-lai-lich-su nap-khoa-nha gia-lap-dong-thoi-gian; do
