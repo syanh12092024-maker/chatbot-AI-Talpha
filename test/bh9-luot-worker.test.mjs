@@ -414,10 +414,12 @@ test('BH9 WB · [N5·N6] tin POS 15 ngày trước (quá hạn 14 ngày) KHÔNG 
   const [het] = await chay('vb3', [{ noiDung: 'sige po', msgId: 'k1', lichSu: () => [K('k1', 60, 'sige po')], model: goiTaoDon() }], { hoSo: hs });
   assert.equal(het.hc.length, 1, `tín hiệu lưu 20 ngày vẫn khoá tạo đơn: ${JSON.stringify(het.tool)}`);
 });
-test('BH9 WE · [câu 4] ghi chú bàn giao in ĐÚNG nguồn: tin SALE người (30 h trước) ⇒ «(sale · dd/mm)», không «(page)»', async () => {
-  // tin sale đặt NGOÀI 24 h: trong 24 h thì `nhanDienSale` nhường trước handler (đúng luật cũ) và không có ghi chú nào để đo
+test('BH9 WE · [câu 4] ghi chú bàn giao in ĐÚNG nguồn: tin SALE người (40 h trước) ⇒ «(sale · dd/mm)», không «(page)»', async () => {
+  // tin sale đặt NGOÀI 24 h: trong 24 h thì `nhanDienSale` nhường trước handler (đúng luật cũ) và không có ghi chú nào để đo.
+  // 40 h chứ không 30 h: `chat/history.js#messageTime` đọc giờ Pancake KHÔNG múi theo GIỜ MÁY ⇒ ở TZ=Etc/GMT+12 mốc lệch 12 h và tin 30 h
+  // thành «trong 24 h» (đo 19/10 — ca đỏ ở GMT+12, xanh ở UTC/+14). 40 h − 14 h vẫn > 24 h ở mọi múi. Nợ N-BH9-GIO-PANCAKE-MAY.
   const [r] = await chay('ve', [{ noiDung: 'where is the courier now?', msgId: 'k2',
-    lichSu: (pg) => [K('k1', 40 * 3600, 'ok'), SALE('s1', 30 * 3600, 'But the order is in transit, could you please receive it for me?', pg), K('k2', 60, 'where is the courier now?')] }]);
+    lichSu: (pg) => [K('k1', 50 * 3600, 'ok'), SALE('s1', 40 * 3600, 'But the order is in transit, could you please receive it for me?', pg), K('k2', 60, 'where is the courier now?')] }]);
   assert.equal(r.model, 0, r.kq);
   assert.equal(r.note.length, 1, `ghi chú: ${JSON.stringify(r.note)}`);
   assert.match(r.note[0], /đơn: đang giao \(sale · \d\d\/\d\d\)/);
