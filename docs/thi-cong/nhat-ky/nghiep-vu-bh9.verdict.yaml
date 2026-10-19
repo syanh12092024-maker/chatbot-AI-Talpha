@@ -68,3 +68,43 @@ findings:
     mo_ta: >
       Skill review-nghiep-vu trỏ tới `docs/thi-cong/Y-DO-CEO-7-LUONG.md`, tệp không có trong repo AI Closer. Ý đồ thật nằm ở
       01-QUYET-DINH.md và sổ §10. Design-pack §M07/§M09 chưa cập nhật theo BH9 (thợ đã ghi N-BH9-DESIGN-PACK).
+vong_2:
+  ngay: 2026-10-19
+  ma_tho: "worktree agent-ad1ffea2fa3e0825c · HEAD 17ba67f"
+  pham_vi: "Vòng này CHỈ VERIFY CHAN N1 · N2 và các câu đã KHÔNG đạt (4 · 5 · 6), không mở kịch bản mới."
+  ket_luan: DAT
+  chan:
+    - ma: N1
+      ket_qua: DONG
+      bang_chung: >
+        Người đang mua không còn bị chuyển sale. Ca refute F1a (model 1 lượt, QUALIFY/AI), F1b (lượt chốt có đơn nháp, CLOSING/SALE), F2 (lượt 2
+        có đơn nháp, chữ của bot không thành «có đơn») và F3 (câu hỏi Dragon's Blood được model trả lời, không câu y tế) đều XANH.
+        `r1-truoc-ban.mjs` 0/14 câu bị bắt.
+    - ma: N2
+      ket_qua: DONG
+      bang_chung: >
+        Khách sau bán hỏi «where is my order?» nay nhận câu nhận cố định và được chuyển sale, cả khi có lẫn khi không có tin POS (F4 · F4b XANH,
+        model 0 lượt). Câu bịa thật Saudi #141 bị BIA_TRANG_THAI_DON chặn (`r2-cua-ra.mjs`). `r10` 8/8 · `r7` 12/12 câu hỏi đơn vào cổng.
+  cau_lai:
+    - so: 4
+      dap: KHONG
+      bang_chung: >
+        Không còn chỗ khai nguồn sai. Ghi chú bàn giao in đúng nguồn kèm ngày qua `nguonDonChu`: POS · AI LEADER · sale · máy <tên> · v3 đã
+        chốt · lời khách, dạng «dd/mm». Worker F4b ghi «đơn: đang giao (POS · dd/mm)», F4 ghi «khách hỏi về ĐƠN CỦA MÌNH (lời khách · …)».
+        Chữ của chính bot không còn được tính làm nguồn (F2).
+    - so: 5
+      dap: CO
+      bang_chung: >
+        Trạng thái CŨ đã được nói ra. Mọi tín hiệu đơn mang `luc` (ISO) và hết hạn sau HAN_DON_MS = 14 ngày (src/context.js:529).
+        Ghi chú bàn giao in ngày. Ca của thợ VB và WB: tin POS 15 ngày trước không khoá, tin 2 ngày thì vào cổng 4a.
+        Hồ sơ cũ không mốc bị bỏ, thợ có khai rõ (giả định 8).
+    - so: 6
+      dap: CO
+      bang_chung: >
+        Grain đã đúng hơn. «Có đơn» được TÍNH LẠI mỗi lượt từ bằng chứng còn hạn (tinhDonDaCo), không còn một câu page nào khoá cả hội thoại
+        vĩnh viễn. prof.ordered (không mốc) thôi mở cổng 4a (ca LS). Chữ của bot bị loại (F2 XANH).
+  han_14_ngay: >
+    Hạn 14 ngày không làm đơn thật mất cổng sớm ở ca chính. Hạn đếm từ tín hiệu mới nhất, và câu khách tự nói về đơn luôn mở cổng (xem
+    refute-bh9.verdict.yaml vong_2.han_14_ngay). Lề: sau hơn 14 ngày không có tin nào về đơn, câu sau bán không nhắc đơn thì đi model, cửa ra
+    vẫn canh. Khung 14 ngày bám chính sách người quyết 15/10 (giao 2–5 ngày + đổi khi lỗi trong 7 ngày).
+  con_lai: "N4 phần còn (tên khu không mạo từ) → nợ N-BH9-TEN-KHU (NEN). N5 vẫn là GHI-NO."

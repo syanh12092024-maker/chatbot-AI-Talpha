@@ -161,3 +161,45 @@ khong_pha_duoc:
   - "(e) COD ngầm: tin page nêu COD kèm phủ định không tính; khách từ chối thì codTuChoi chặn; đồng ý rõ thì cờ ngầm tắt; cờ cod_ngam và ten_tu_facebook tới hàng chờ, Hộp thư và màn Vận hành. Lỗ duy nhất là F8 (tên sai thì không cờ)."
   - "(h) luật cửa ra CŨ giữ nguyên: bốn luật mới đứng sau return pass cũ và chỉ chạy khi luatBH9; lớp từ khoá và Fast Lane không bật."
   - "Câu chính sách người quyết 15/10 cho nói (2–5 ngày · đổi khi lỗi trong 7 ngày · kiểm rồi trả · FDA approved · rider gọi trước khi tới) QUA cả bốn luật, kể cả khi khách có đơn (`node r9-chinh-sach.mjs`)."
+vong_2:
+  ngay: 2026-10-19
+  ma_tho: "cùng worktree · HEAD 17ba67f (03dbed4 test · b076aa6 fix · 115be21 test · 17ba67f nhật ký «Vòng 2»)"
+  pham_vi: "Vòng này CHỈ VERIFY các mã CHAN F1–F4, không mở kịch bản mới. Chạy lại đúng `bash chay.sh` (ca phá vòng 1, không sửa) trên HEAD mới và đọc phần vá tương ứng."
+  ket_luan: DAT
+  chan:
+    - ma: F1
+      ket_qua: DONG
+      bang_chung: >
+        `r1-truoc-ban.mjs`: 0/14 câu trước bán còn bị coi là sau bán (vòng 1: 14/14). Worker F1a: model 1 lượt · QUALIFY/AI · donDaCo null.
+        F1b: model 1 lượt · hang_cho_tao_don 1 dòng. Vá: phía khách lật chiều, chỉ nhận dấu ĐÃ XẢY RA hoặc SỞ HỮU, và bỏ ba nhánh rộng
+        (src/context.js, khối KHACH_NOI_VE_DON mới). `r1b-du-lieu-that.mjs` trên tin thật: vẫn đúng 3 tin sau bán của ht 43779, 0 tin ngoài.
+    - ma: F2
+      ket_qua: DONG
+      bang_chung: >
+        Khối «đầu độc» của `r2-cua-ra.mjs`: donTuTinPage(câu bot) ⇒ null, 2/2 câu. Worker F2 lượt 2: donDaCo null · tool create_draft_order
+        ok · hang_cho 1 dòng. Vá có hai lớp: tinhDonDaCo LOẠI chữ của chính bot (`handler-v3.js#chuBotDaGui`: 200 dòng lan_gui + ai_noi_gi +
+        câu cố định; `context.js#laChuBot`), và «inform the courier» chỉ nhận ở thì đã làm. cleanHistory không bóc lại (donDaTinh).
+    - ma: F3
+      ket_qua: DONG
+      bang_chung: >
+        `r4-y-te.mjs`: «Dragon's Blood» · «dragon blood resin» · «دم الأخوين» · «blood circulation» ⇒ '' (vòng 1: «chảy máu»).
+        Worker F3: câu model đi nguyên byte · QUALIFY/AI · không bàn giao. Đi kèm, 8 câu SÓT của F5 (nagdurugo · ينزف · rashes…) nay đều bắt.
+    - ma: F4
+      ket_qua: DONG
+      bang_chung: >
+        `r10-co-don-van-hut.mjs`: 8/8 câu hỏi đơn (hồ sơ có đơn POS) vào cổng 4a (vòng 1: 8/8 HỤT). `r7-sau-ban-hut.mjs`: 12/12 bắt với hồ sơ
+        rỗng. `r8`: «where is my order?» ⇒ cổng; 4/4 câu bịa bị BIA chặn. `r2`: Saudi #141 (so_ai 138) và #46 (so_ai 62) bị BIA_TRANG_THAI_DON chặn.
+        Worker F4 (không tin POS) và F4b (có tin POS): model 0 lượt · CAU_NHAN_BAN_GIAO.en · HANDOFF/SALE. Ghi chú F4b in
+        «đơn: đang giao (POS · dd/mm)». M6 của thợ đã thêm #141 và #46 vào danh sách ĐÒI.
+  doi_chung: "4 tệp ca của thợ trên 17ba67f: 113 + 31 + 5 + 6 = 155/0. Ca phá worker: 6/6 XANH (vòng 1: 6/6 ĐỎ). Hộp cát rfbh9 đã dọn (0 CSDL sót)."
+  han_14_ngay: >
+    Đọc mã, không dựng kịch bản mới: hạn 14 ngày KHÔNG làm đơn thật mất cổng sớm ở ca chính. Lý do (src/context.js:529, :602-623): hạn đếm
+    từ tín hiệu MỚI NHẤT (tin page POS hay sale · chot_don_luc của v3 · lời khách); câu khách TỰ nói về đơn («where is my order» · «chưa
+    nhận» · «đợi 15 ngày»…) mở cổng 4a qua donTuTinKhach(text), không phụ thuộc hạn; mỗi câu như vậy còn tạo tín hiệu mới có luc = bayGio.
+    Mốc Pancake không múi được đọc là UTC (mocTin). Lề còn lại: sau hơn 14 ngày không có tin page hay lời khách nào về đơn, câu sau bán
+    KHÔNG tự nhắc đơn (chỉ «deliver tomorrow 10am») thì không vào cổng, đi model, cửa ra BIA/TU_HUA cũ vẫn canh. Lề hẹp, không đủ CHAN.
+    Thợ đã tự khai giá của việc bỏ hồ sơ donDaCo không mốc (giả định 8, tổng kiểm trước mở van).
+  con_lai_ngoai_chan: >
+    NEN vòng 1 thợ đã vá thêm: F5 · F6 phần bịa (8/10 chặn) · F7c (lượt tóm tắt QUA) · F8 phần lớn (còn «Mussafah Shabiya»).
+    Phần còn lại (F6 hai câu hứa Ả Rập · F7a/b · F8 tên khu không mạo từ · F9 · G1) thợ đã đề nghị nợ §9: N-BH9-TUHUA-AR ·
+    N-BH9-CUA-RA-QUA-TAY · N-BH9-TEN-KHU · N-BH9-YTE-LUAT-CU-IM. Không phát hiện chặn mới vì vòng 2 không mở kịch bản.
