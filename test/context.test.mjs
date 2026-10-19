@@ -397,23 +397,24 @@ const PG = 'page-tenfb';
 const tinPage = (t) => ({ from: { id: PG, name: 'Minty Fresh Smile KSA' }, original_message: t });
 const tinKhach = (t, ten) => ({ from: { id: 'cust-9', name: ten }, original_message: t });
 
-test('C30 · ⭐⭐ tên Facebook KHÔNG được chảy vào tên người nhận hàng', () => {
+test('C30 · ⭐⭐ tên Facebook KHÔNG chảy vào `prof.name` — nhưng bot THÔI hỏi tên khi đã có tên Facebook (đổi ý đồ 15/10, BH9 ② 10)', () => {
   // Tên Facebook THẬT trên page này: "Napagod Na Ako" · "Alas Uno" · "Rich Chie".
-  // Đổ vào `prof.name` là bot thôi hỏi tên thật RỒI đẩy chuỗi đó xuống POS làm tên nhận
-  // hàng. Hai trường, hai việc — ca này là hàng rào giữa chúng.
+  // GIỮ: `prof.name` vẫn CHỈ là tên khách tự cho — tên Facebook không đổ vào đó.
+  // ĐỔI (người quyết 15/10 — `01-QUYET-DINH.md` §1 «SỬA 15/10»): khách không cho tên ⇒ đơn nháp dùng tên Facebook làm tên người
+  // nhận, mang cờ «Tên lấy từ Facebook — chưa xác nhận» cho sale duyệt (`hang-cho.js#chuanHoaHoSo`) ⇒ bot không xin tên nữa.
   const p = emptyProfile();
   const msgs = [tinPage('promo'), tinKhach('Place an order', 'Napagod Na Ako')];
   buildContextMessages({ prof: p, msgs, pageId: PG });
   assert.equal(p.tenFb, 'Napagod Na Ako');
-  assert.equal(p.name, '', 'tên đơn PHẢI còn rỗng');
-  assert.ok(missingSteps(p).includes('tên'), 'vẫn phải hỏi tên thật để ghi đơn');
+  assert.equal(p.name, '', 'tên đơn PHẢI còn rỗng — tên Facebook chỉ tới đơn nháp qua cờ «chưa xác nhận»');
+  assert.equal(missingSteps(p).includes('tên'), false, 'có tên Facebook ⇒ không xin tên');
 });
 
-test('C31 · khối hồ sơ nói rõ đây là tên để GỌI, không phải tên ghi đơn', () => {
+test('C31 · khối hồ sơ: tên để GỌI + DÙNG làm tên người nhận khi khách chưa cho tên thật (BH9 ② 10)', () => {
   const p = emptyProfile(); p.tenFb = 'Mustafizur Rahman';
   const block = buildProfileBlock(p, {});
   assert.match(block, /GỌI TÊN khách/);
-  assert.match(block, /KHÔNG phải tên người nhận hàng/);
+  assert.match(block, /DÙNG tên Facebook này làm tên người nhận khi tạo đơn, KHÔNG hỏi tên/);
   assert.ok(estimateTokens(block) <= 200, `đang ${estimateTokens(block)} token`);
 });
 

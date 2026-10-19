@@ -149,13 +149,20 @@ test("⑤ hỏi giao tới ĐỊA ĐIỂM ⇒ nhường model, không bắn mẫ
   assert.equal(r.gui[0].includes("MẪU CỨNG"), false);
 });
 
-test("⑤ hỏi về ĐƠN ĐÃ CÓ ⇒ nhường model", async () => {
+// ĐỔI Ý ĐỒ 15/10 (người quyết · PHIEU-BH9 ② 3 [S12]): khách nói về ĐƠN ĐÃ CÓ thì bot KHÔNG được tự trả lời nữa — không mẫu cứng,
+// cũng không model (bot không tra được đơn — câu trả lời nào cũng là đoán) ⇒ câu nhận CỐ ĐỊNH + chuyển sale, 0 token.
+test("⑤ hỏi về ĐƠN ĐÃ CÓ ⇒ câu nhận cố định + bàn giao (0 model), không mẫu cứng", async () => {
+  const { CAU_NHAN_BAN_GIAO } = await import("../src/our-messages.js");
   const r = await motLuot({
     noiDung: "The delivery was scheduled for today.",
     lanNhanh: () => ({ handled: true, reply: "MẪU CỨNG ship", lane: "tpl_ship", reason: "hỏi giao hàng" }),
   });
-  assert.equal(r.goiModel, 1);
-  assert.equal(r.gui[0].includes("MẪU CỨNG"), false);
+  assert.equal(r.goiModel, 0, "câu sau bán KHÔNG lên model");
+  assert.deepEqual(r.gui, [CAU_NHAN_BAN_GIAO?.en]);
+  assert.equal(r.kq.lyDo, "sau_ban", "phải bàn giao qua cổng sau bán");
+  const ht = (await sb.pool.query("SELECT trang_thai, chu_so_huu FROM hoi_thoai WHERE team_id=$1 AND psid=$2", [teamId, `psid-chot-${seq}`])).rows[0];
+  assert.deepEqual([ht?.trang_thai, ht?.chu_so_huu], ["HANDOFF", "SALE"], "bàn giao sale");
+  assert.equal(r.gui[0]?.includes("MẪU CỨNG"), false);
 });
 
 test("⑤ hỏi SỐ NGÀY thuần ⇒ GIỮ mẫu 0 đồng — đừng đổi thứ đang đúng", async () => {

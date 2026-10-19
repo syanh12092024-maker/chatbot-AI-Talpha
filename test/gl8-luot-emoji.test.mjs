@@ -37,10 +37,15 @@ const CHAN = () => ({ ok: false, action: "block", rule: "GL8_CHAN", reason: "ca 
 
 /** Mỗi ca một page + một hội thoại + một tin; chạy tới `vongToiDa` vòng worker (đặt lại `thu_lai_luc` giữa các vòng — tin `thu_lai`
  *  được rút lại NGAY, nên bản lỗi lộ ra đủ số lượt gọi model của nó) rồi đọc lại sổ thật. */
-async function chay(ten, { noiDung = "how much po?", kb = {}, lanNhanh, chayCloser, kiemTinRa, vongToiDa = 2 } = {}) {
+async function chay(ten, { noiDung = "how much po?", kb = {}, lanNhanh, chayCloser, kiemTinRa, vongToiDa = 2, tinTruoc = "" } = {}) {
   const page = `gl8w-${ten}`;
   const p = (await sb.pool.query("INSERT INTO page (bot_ai_bat, team_id, page_id, ten) VALUES (true,$1,$2,'GL8') RETURNING id", [teamId, page])).rows[0].id;
   const htId = (await sb.pool.query("INSERT INTO hoi_thoai (team_id,page_id,psid,trang_thai,chu_so_huu) VALUES ($1,$2,'KH','QUALIFY','AI') RETURNING id", [teamId, p])).rows[0].id;
+  // BH9 [S12]: một tin khách TRƯỚC, đã `xong` — nguồn (d) `hang-cho.js` đọc mọi tin của psid trong `tin_cho_xu_ly`.
+  if (tinTruoc) {
+    await xepTin(sb.pool, { teamId, pageId: page, psid: "KH", convId: `c-${page}`, custId: "cu", msgId: `m0-${page}`, noiDung: tinTruoc, hoanMs: 0 });
+    await sb.pool.query("UPDATE tin_cho_xu_ly SET trang_thai='xong' WHERE team_id=$1 AND page_id=$2 AND msg_id=$3", [teamId, page, `m0-${page}`]);
+  }
   await xepTin(sb.pool, { teamId, pageId: page, psid: "KH", convId: `c-${page}`, custId: "cu", msgId: `m-${page}`, noiDung, hoanMs: 0 });
   const dem = { model: 0, post: 0, gui: [] };
   const deps = {
@@ -64,7 +69,7 @@ async function chay(ten, { noiDung = "how much po?", kb = {}, lanNhanh, chayClos
     kqs.push(`${k.ketQua}:${String(k.lyDo || "").slice(0, 80)}`);
     await sb.pool.query("UPDATE tin_cho_xu_ly SET thu_lai_luc=now() WHERE team_id=$1 AND page_id=$2 AND trang_thai='cho'", [teamId, page]);
   }
-  const tin = (await sb.pool.query("SELECT trang_thai, left(ly_do,160) ly_do FROM tin_cho_xu_ly WHERE team_id=$1 AND page_id=$2", [teamId, page])).rows;
+  const tin = (await sb.pool.query("SELECT trang_thai, left(ly_do,160) ly_do FROM tin_cho_xu_ly WHERE team_id=$1 AND page_id=$2 AND msg_id <> $3", [teamId, page, `m0-${page}`])).rows;
   const ht = (await sb.pool.query("SELECT trang_thai, chu_so_huu, ly_do_cuoi FROM hoi_thoai WHERE id=$1", [htId])).rows[0];
   const so = (await sb.pool.query("SELECT loai, lane, du_lieu FROM so_ai WHERE team_id=$1 AND page_id=$2 ORDER BY id", [teamId, page])).rows;
   const hc = (await sb.pool.query("SELECT id, du_lieu_don, cua_kiem FROM hang_cho_tao_don WHERE team_id=$1 AND hoi_thoai_id=$2", [teamId, htId])).rows;
@@ -157,10 +162,13 @@ test("GL8 W3e · lớp từ khoá bị cửa ra chặn (`:647`, câu KB 601 đơ
 
 test("GL8 W5 · lượt CHỐT ĐƠN, tin khách có dấu hiệu đơn ngoài với emoji ở chỗ cắt 60 (`hang-cho.js:479`) ⇒ dòng hang_cho_tao_don CÒN", async () => {
   // Chuẩn hoá khoảng trắng của nguồn (d) rồi cắt 60 ⇒ đơn vị 60 là nửa đầu 📦. >12 từ ⇒ lớp từ khoá nhường; không chữ số ⇒ không «có SĐT».
-  const noiDung = cauCat(60, "Your order has been confirmed, thank you for ", " po ") + " the rider will call you tomorrow morning po";
-  assert.ok(noiDung.replace(/\s+/g, " ").trim().slice(0, 60).isWellFormed() === false, "tiền đề: cắt 60 phải chém đôi 📦");
+  // BH9 [S12] (người quyết 15/10): câu khách nói về đơn đã có ⇒ cổng sau bán (câu cố định + giao sale, 0 model). Câu dấu hiệu đơn
+  // ngoài nay nằm ở một tin khách TRƯỚC (đã `xong` — nguồn (d) vẫn đọc nó); tin lượt này là câu chốt thường. Mục đích giữ nguyên.
+  const tinTruoc = cauCat(60, "Your order has been confirmed, thank you for ", " po ") + " the rider will call you tomorrow morning po";
+  assert.ok(tinTruoc.replace(/\s+/g, " ").trim().slice(0, 60).isWellFormed() === false, "tiền đề: cắt 60 phải chém đôi 📦");
   const r = await chay("chot-don-479", {
-    noiDung,
+    tinTruoc,
+    noiDung: "Sige po, order na ako — Buy 1 Get 1 po, cash on delivery 😊 salamat po sa inyo",
     chayCloser: ({ state }) => { state.orderCreatedThisTurn = true; return "Salamat po! Your order is noted, our team will confirm shortly. 🙏"; },
   });
   tinXong(r);
