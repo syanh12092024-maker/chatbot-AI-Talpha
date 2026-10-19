@@ -1,6 +1,6 @@
 // BH9 ④9 — M6 · PHÁT LẠI TRÊN LỊCH SỬ GIẢ LẬP 09/10 (CHỈ ĐỌC — `default_transaction_read_only=on`) trên MÁY DEV:
 // `aicloser_gialap_pilot` (page 275 UAE · 109 tin khách · 64 lượt guiTin) + `aicloser_gialap_2` (page 276 Saudi — so_ai · page 340 — 60 tin khách).
-// CSDL có dữ liệu khách THẬT: tệp này KHÔNG in chữ khách/tên/SĐT — chỉ id + luật + số đếm (tên trích ra in dạng che «M… S.»).
+// CSDL có dữ liệu khách THẬT: tệp này KHÔNG in chữ khách/tên/SĐT — chỉ id + luật + số đếm (tên trích ra chỉ in SỐ CHỮ — kể cả chữ cái đầu cũng không, repo công khai).
 // Máy không có hai CSDL này (CI, máy khác) ⇒ cả tệp HOÃN có nói ra (skip), không đỏ oan — cổng bh9.sh đòi tệp này CHẠY THẬT.
 // Ánh xạ «#n» (PHIEU-BH9 dòng Nguồn [S13]): UAE #n = row_number() OVER (ORDER BY tin_cho_xu_ly.id) (= id − 175) · Saudi #n = so_ai.nguon_dong
 // của page 1188130791056549. Bản base (a6f670d) dựng như `bh9-ham-thuan.test.mjs`.
@@ -36,7 +36,7 @@ const DOI_UAE = [82, 83, 84, 85, 100, 65].map(UAE_ID);
 const DOI_KSA = [4, 5, 23, 28, 35, 37, 54];
 const TEN_SAI = ['finished', 'working for fails', 'Yass island', 'e now', 'Abudhabi city', 'here in Dammam', 'waiting',
   'e arrived my order', 'e is', 'SAUDI ARABIA', 'yesterday', 'waiting for delivery I send already the'];
-const che = (t) => String(t).split(/\s+/).map((w) => `${[...w][0] || ''}…`).join(' ');
+const soChu = (t) => `${String(t).split(/\s+/).length} chữ`;
 
 let _base;
 async function base() {
@@ -211,7 +211,7 @@ test('BH9 Rd · tên trên tin khách THẬT: 0 tên thuộc 12 chuỗi sai đã
   if (!u) return t.skip('HOÃN — thiếu CSDL giả lập');
   assert.equal(typeof L.tachTen, 'function');
   const ten = u.map((x) => [x, L.tachTen(x.noi_dung)]).filter(([, n]) => n);
-  console.log(`   [bh9r] Rd: ${ten.length} tin có tên: ${ten.map(([x, n]) => `#${x.id - 175}:${che(n)}`).join(' · ')}`);
+  console.log(`   [bh9r] Rd: ${ten.length} tin có tên: ${ten.map(([x, n]) => `#${x.id - 175}:${soChu(n)}`).join(' · ')}`);
   assert.deepEqual(ten.filter(([, n]) => TEN_SAI.includes(n)).map(([x]) => x.id - 175), []);
 });
 test('BH9 Re · số câu cố định thêm = (Ra câu bị luật mới) + (Rb tin bị đánh dấu) ≤ số lượt lỗi đã biết + 3', (t) => {

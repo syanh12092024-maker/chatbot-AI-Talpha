@@ -248,8 +248,15 @@ dao "⑩cr13-bỏ-«yet»-trong-lookbehind" "DR" "BH9 DR ·" "cr13-bo-yet" "$tT"
 dao "⑩cr14-nhãn-«:»-+-viết-tắt" "T21 T22 T25" "BH9 T2[1245] ·" "cr14-ten-hai-cham" "$tT"
 dao "⑩cr15-cờ-hiện-cả-đơn-đã-duyệt" "M5" "BH9 M5 ·" "cr15-co-don-da-duyet" "$tM"
 dao "⑩I-caption-model-phạm-luật-mới-vẫn-gửi-ảnh" "Wd3" "BH9 Wd3 ·" "caption-bh9-van-gui-anh" "$tW"
-chep; o=$(dot "$tT" "$tW" "$tM" "$tR" test/context.test.mjs); f=$(so "$o" fail); p=$(so "$o" pass)
-[ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge 150 ]; ket "⑩0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ)" $? "pass=${p:-?} fail=${f:-?}"
+# Mỗi tệp MỘT tiến trình, sàn RIÊNG từng tệp: đo 19/10 chạy chung 5 tệp trong một lượt `node --test` lúc máy bận (thợ song song) có
+# lượt RỤNG 18–31 ca mà fail=0 (tests 145/158 thay vì 176) — chỉ thước SÀN bắt được; sàn tổng 150 thì không biết tệp nào rụng.
+chep; d0=""; d0_loi=0
+for cap in "$tT:100" "$tW:20" "$tM:5" "$tR:6" "test/context.test.mjs:41"; do
+  tep0="${cap%:*}"; san="${cap##*:}"; o=$(dot "$tep0"); f=$(so "$o" fail); p=$(so "$o" pass)
+  d0="$d0 $(basename "$tep0" .test.mjs)=${p:-?}/${f:-?}(sàn $san)"
+  { [ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge "$san" ]; } || d0_loi=1
+done
+[ "$d0_loi" -eq 0 ]; ket "⑩0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ)" $? "pass/fail:$d0"
 else
   echo "⏸ ⑩đảo-vá HOÃN (BO_DAO_VA=1)"
 fi
