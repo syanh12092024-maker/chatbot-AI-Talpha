@@ -57,7 +57,7 @@ nhom "⑥khối-hồ-sơ-(+bản-chụp-không-kích-hoạt-giống-base)" "$O_T
 c_co=" $(echo "$O_C" | grep -E "^\s*✔ C[0-9]+ ·" | sed -E 's/^\s*✔ (C[0-9]+) ·.*/\1/' | tr '\n' ' ') "; thieu=""
 for t in C11 C30 C31 C39; do echo "$c_co" | grep -qF " $t " || thieu="$thieu$t "; done
 [ -z "$thieu" ]; ket "⑥b-context.test-C11·C30·C31·C39-xanh" $? "${thieu:+THIẾU: $thieu}"
-nhom "⑦handler-qua-chayMotVong-(4a·câu-cố-định·captureOrder·y-tế·COD-ngầm·≤1·luật-2·[S4])" "$O_W" "Wa Wa2 Wa3 Wb Wc Wd1 Wd2 We Wf1 Wf2 Wg1 Wg2 Wg3 Wg4 Wg5 Wh1 Wh2 Wi Wj Wk"
+nhom "⑦handler-qua-chayMotVong-(4a·câu-cố-định·captureOrder·y-tế·COD-ngầm·≤1·luật-2·[S4])" "$O_W" "Wa Wa2 Wa3 Wb Wc Wd1 Wd2 Wd3 We Wf1 Wf2 Wg1 Wg2 Wg3 Wg4 Wg5 Wh1 Wh2 Wi Wj Wk"
 nhom "⑧hàng-chờ·luuDonCho·Hộp-thư·Vận-hành" "$O_M" "M1 M2 M3 M4 M5"
 nhom "⑨M6-phát-lại-trên-giả-lập" "$O_R" "Ra Rb Rc Rd Re Rf"
 k=$(so "$O_R" skipped); [ "${k:-1}" -eq 0 ]; ket "⑨b-M6-CHẠY-THẬT-(không-HOÃN)" $? "skipped=${k:-?} (máy không có CSDL giả lập ⇒ đỏ ở cổng, HOÃN ở npm test)"
@@ -156,6 +156,7 @@ BANG = {
   "cr13-bo-yet": [(CX, "|didn'?t|yet\\s+to)(?:\\s+yet)?\\s+)", "|didn'?t|yet\\s+to)\\s+)")],
   "cr14-ten-hai-cham": [(LS, "الاسم\\s*[:=-])\\s*[:=-]?\\s*/iu;", "الاسم\\s*[:=-])\\s*/iu;"),
                         (LS, " && !/^\\p{Lu}{2,5}$/u.test(w)", "")],
+  "caption-bh9-van-gui-anh": [(H, "        if (LUAT_BH9.has(captionChan)) {", "        if (false) {")],
   "cr15-co-don-da-duyet": [(HT, "    if (choDuyet && canhCoDon(du)) canh.push(canhCoDon(du));", "    if (canhCoDon(du)) canh.push(canhCoDon(du));")],
 }
 import re as _re
@@ -246,6 +247,7 @@ dao "⑩cr12-Ả-Rập-không-tiền-tố-ال" "Y1 G37" "BH9 (Y1|G37) ·" "cr12
 dao "⑩cr13-bỏ-«yet»-trong-lookbehind" "DR" "BH9 DR ·" "cr13-bo-yet" "$tT"
 dao "⑩cr14-nhãn-«:»-+-viết-tắt" "T21 T22 T25" "BH9 T2[1245] ·" "cr14-ten-hai-cham" "$tT"
 dao "⑩cr15-cờ-hiện-cả-đơn-đã-duyệt" "M5" "BH9 M5 ·" "cr15-co-don-da-duyet" "$tM"
+dao "⑩I-caption-model-phạm-luật-mới-vẫn-gửi-ảnh" "Wd3" "BH9 Wd3 ·" "caption-bh9-van-gui-anh" "$tW"
 chep; o=$(dot "$tT" "$tW" "$tM" "$tR" test/context.test.mjs); f=$(so "$o" fail); p=$(so "$o" pass)
 [ "${f:-1}" -eq 0 ] && [ "${p:-0}" -ge 150 ]; ket "⑩0-bản-sao-nguyên-vẹn-xanh-(thước-không-tự-đỏ)" $? "pass=${p:-?} fail=${f:-?}"
 else

@@ -183,6 +183,21 @@ for (const [id, caption] of [['Wd1', ''], ['Wd2', 'Here is our Soothing Cooling 
   });
 }
 
+test('BH9 Wd3 · khách có đơn, chữ model QUA nhưng CAPTION chào giá (BAN_LAI_SAU_BAN) ⇒ chữ đi · 0 ảnh (ảnh bán hàng cũng là chào hàng) · bàn giao', async () => {
+  const hoSo = { donDaCo: { trangThai: 'đang giao', cau: 'x', nguon: 'page' }, hydratedAt: 1 };
+  const [r] = await chay('d3', [{ noiDung: 'is it the gel for varicose', msgId: 'k1', lichSu: () => [K('k1', 60, 'is it the gel for varicose')],
+    model: (ctx) => {
+      ctx.state.pendingImages = [{ url: 'https://x.test/1.jpg', cat: 'sản phẩm' }, { url: 'https://x.test/2.jpg', cat: 'sản phẩm' }];
+      ctx.state.pendingCaption = 'Buy 1 Get 1 FREE — 109 SAR po';
+      return 'Yes po, it helps soothe the area 😊';
+    } }], { hoSo });
+  assert.equal(r.model, 1);
+  assert.deepEqual(r.gui, ['Yes po, it helps soothe the area 😊']);
+  assert.equal(r.anh.length, 0);
+  assert.equal(r.ht, 'HANDOFF/SALE');
+  assert.match(r.note[0] || '', /cửa ra chặn: BAN_LAI_SAU_BAN · caption/);
+});
+
 test('BH9 We · luật CŨ (PII_ECHO) chặn ⇒ đường cũ: 0 tin · ghi chú «cửa ra chặn: PII_ECHO» — giống base', async () => {
   const [r] = await chay('e', [{ noiDung: 'ok po', msgId: 'k1', lichSu: () => [K('k1', 60, 'ok po')],
     model: () => 'Noted po, your number 0501234567 is saved 😊' }]);

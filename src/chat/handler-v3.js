@@ -546,9 +546,13 @@ export async function xuLyMotTin(pool, tin, deps = {}) {
         captionChan = cua.v.rule || "?";
         // BH9: caption của MODEL phạm luật mới (chào giá với khách có đơn / khách báo y tế…) ⇒ KHÔNG gửi tấm nào (ảnh bán hàng
         // cũng là chào hàng) + bàn giao. Chữ model (đã qua cửa riêng) vẫn đi — mỗi lượt một tin.
+        // (Dòng đặt cờ viết KHÁC dòng của nhánh `!coChu` dưới — thước đảo-vá `rp1.sh` neo đúng một lần chuỗi đó.)
         if (LUAT_BH9.has(captionChan)) {
           anhHong.push(...hang.map(() => "bo_cau_co_dinh"));
-          if (!state.handoff) { state.handoff = true; state.handoffReason = `cửa ra chặn: ${captionChan}`; }
+          if (!state.handoff) {
+            state.handoff = true;
+            state.handoffReason = `cửa ra chặn: ${captionChan} · caption`;
+          }
           return 0;
         }
         if (!coChu) {
