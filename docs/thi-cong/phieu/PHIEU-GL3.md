@@ -1,7 +1,7 @@
 # PHIẾU GL3 — Hạn chờ cho mọi lượt gọi Pancake + gửi lỗi mạng KHÔNG gửi lại bằng token khác
 
 **Base:** `195d9c9` · **Làn:** 🟥 (đường GỬI tin cho khách — nguy cơ tin đúp)
-**Nguồn:** báo cáo `docs/golive-audit-2026-10-02.md` mục «Timeout và ngắt page» · nghiên cứu go-live 05/10 (sổ §10 «ĐIỀU KIỆN GO-LIVE (GL)») ·
+**Nguồn:** báo cáo `docs/luu-tru/golive-audit-2026-10-02.md` mục «Timeout và ngắt page» · nghiên cứu go-live 05/10 (sổ §10 «ĐIỀU KIỆN GO-LIVE (GL)») ·
 người quyết 05/10 «triển khai»; hạn mặc định tổng đề nghị (người quyết không bác): đọc 15 s · gửi 30 s · sổ §5j
 **Đụng bộ não:** không. (`src/pancake.js` là file phẳng DÙNG CHUNG — sổ §0a sau CR-02-10: «sửa được như code v3 thường»; chỉ năm file bộ não
 giữ ba rào. Hook cũ `.claude/hooks/canh-file-cam.sh` và phép ⑤ của `_chan1.sh` chưa cập nhật luật này — nếu chúng báo đỏ cho

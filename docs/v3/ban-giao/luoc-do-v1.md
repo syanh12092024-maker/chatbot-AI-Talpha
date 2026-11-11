@@ -219,7 +219,7 @@ mã nào ra hai nhãn khác nhau.
 | 6   | `canceled`           | 20  | `ordered`                                                                |
 | 7   | `removed`            | 13  | **chưa xác minh** — có trong `status_history` nhưng 0 đơn đang đứng ở đó |
 
-⚠️ **`docs/TONG-QUAN-HE-THONG.md` §7.5 và `src/pancake-orders.js:13` khai SAI**: nhóm
+⚠️ **`docs/luu-tru/TONG-QUAN-HE-THONG.md` §7.5 và `src/pancake-orders.js:13` khai SAI**: nhóm
 hủy/hoàn ở đó là `{4,5,6,7,8}`, nhưng **8 = `packing` (đang đóng gói)**, một bước TIẾN.
 Bằng chứng — `status_history` đơn 47397 (UAE): `0 → 1 → 12 → 8`; đồ thị chuyển đo trên
 1.400 đơn: `12→8` = 986 lượt, `8→9` = 537, `8→2` = 394. Nhóm đúng là **{4,5,6,7}**.

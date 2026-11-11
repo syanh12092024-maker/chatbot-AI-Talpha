@@ -6,7 +6,7 @@ lan: 🟥 GHI RA NGOÀI nặng nhất — duyệt là TẠO ĐƠN THẬT trên P
 nguon_da_doc:
   - docs/v3/01-QUYET-DINH.md §1 (ô «Kết thúc / Messenger») · §7.2 «cấm bịa tổng tiền»
   - docs/v3/02-KE-HOACH-CODE.md §L3 · §L4 nghiệm thu «vào POS đúng thông tin, không phải gõ lại»
-  - docs/TONG-QUAN-HE-THONG.md §7.1–7.4 (NĂM CỬA gốc, đối chiếu từng nguồn)
+  - docs/luu-tru/TONG-QUAN-HE-THONG.md §7.1–7.4 (NĂM CỬA gốc, đối chiếu từng nguồn)
   - docs/v3/ban-giao/may-trang-thai-don-v1.md §7.1 (`kiemTrung`) · §7 nợ `khach_id` 0/26
   - docs/thi-cong/SO-DIEU-HANH-THI-CONG.md §9 (nợ Q1/Q2 · goi_gia 0 dòng) · §7b
   - src/pancake-orders.js:154-190 (`createPancakeOrder` — payload thật)

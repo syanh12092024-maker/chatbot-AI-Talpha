@@ -1,7 +1,7 @@
 # PHIẾU GL1 — `deploy/preflight.mjs` thôi luôn thoát lỗi + ca chạy CLI thật
 
 **Base:** `1fb61de` · **Làn:** 🟩 (kịch bản deploy + bộ ca; không chạm đường bot / tiền)
-**Nguồn:** nợ N-PREFLIGHT-MISSINGPAGES (sổ §9) · báo cáo `docs/golive-audit-2026-10-02.md` mục 1 · người quyết 05/10 «triển khai» nhóm điều kiện go-live · sổ §10 05/10 «ĐIỀU KIỆN GO-LIVE (GL)»
+**Nguồn:** nợ N-PREFLIGHT-MISSINGPAGES (sổ §9) · báo cáo `docs/luu-tru/golive-audit-2026-10-02.md` mục 1 · người quyết 05/10 «triển khai» nhóm điều kiện go-live · sổ §10 05/10 «ĐIỀU KIỆN GO-LIVE (GL)»
 **Đụng bộ não:** không.
 **Skill thợ nạp:** `tho-thi-cong` · `viet-thuoc`.
 

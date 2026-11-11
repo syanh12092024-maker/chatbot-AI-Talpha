@@ -1167,7 +1167,7 @@ subscribe-pages.js · approve-templates.js · fix-tier-labels.js · fix-dup-prod
 | File | Nội dung |
 |---|---|
 | `README.md` | Kiến trúc + **14 nguyên tắc AI chat với khách** (bản đầy đủ, có lịch sử vì sao) |
-| `docs/BAN-GIAO-DEV.md` | Deploy · danh sách file không có trên git · checklist dev mới |
+| `docs/luu-tru/BAN-GIAO-DEV.md` | Deploy · danh sách file không có trên git · checklist dev mới |
 | `docs/HUONG-DAN-SALE-MKT.md` | Hướng dẫn dùng dashboard cho sale & marketing |
 | `docs/v2/00-TONG-QUAN.md` | Thiết kế v2: 4 trục, 20 module, máy trạng thái, mô hình dữ liệu |
 | `docs/v2/01→05-TANG-*.md` | Spec chi tiết từng tầng |

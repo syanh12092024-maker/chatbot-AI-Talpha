@@ -45,4 +45,4 @@ Hành vi AI nằm ở khối `CORE` đầu `src/prompts.js` — khối này tự
 
 ## Sau khi sửa hành vi AI
 
-Cập nhật `README.md` (14 nguyên tắc) trong **cùng commit**. README là tài liệu chuẩn cho người dùng cuối; prompt sửa mà README không sửa thì lần sau không ai biết vì sao AI hành xử vậy.
+Cập nhật `docs/v3/NGUYEN-TAC-AI.md` (14 nguyên tắc) trong **cùng commit**. Tệp đó là tài liệu chuẩn cho người dùng cuối; prompt sửa mà tệp đó không sửa thì lần sau không ai biết vì sao AI hành xử vậy.

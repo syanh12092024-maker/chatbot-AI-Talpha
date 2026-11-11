@@ -31,7 +31,7 @@
 //   19  (API trả nhãn null — 1 đơn duy nhất, shop Bahrain đơn 378)
 //   20  ordered         Đã đặt hàng
 //
-// ⚠️ LỆCH SO VỚI TÀI LIỆU — `docs/TONG-QUAN-HE-THONG.md` §7.5 và `src/pancake-orders.js`
+// ⚠️ LỆCH SO VỚI TÀI LIỆU — `docs/luu-tru/TONG-QUAN-HE-THONG.md` §7.5 và `src/pancake-orders.js`
 //    dòng 13 đều khai «hủy/hoàn = {4,5,6,7,8}». ĐO RA THÌ 8 = `packing`, và
 //    `status_history` của đơn thật chứng minh nó là bước TIẾN, không phải bước hủy:
 //       đơn 47397 (UAE): 0@05:41 → 1@05:45 → 12@05:45 → 8@06:04

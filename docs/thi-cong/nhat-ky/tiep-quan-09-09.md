@@ -64,7 +64,7 @@ $ curl -s -o /dev/null -w "%{http_code}" http://169.58.33.8:3100/admin/api/pages
 ```
 
 `v3/chay-that.js:144` → `CHAYTHAT_CONG || 3102`. Tức 3100 = v1 (`/admin`), 3102 = v3
-(`/dieu-phoi`). `docs/TONG-QUAN-HE-THONG.md §3.2` chỉ khai bốn app: 3000 · 3001 · 3002 · 3100.
+(`/dieu-phoi`). `docs/luu-tru/TONG-QUAN-HE-THONG.md §3.2` chỉ khai bốn app: 3000 · 3001 · 3002 · 3100.
 
 Giá phải trả: nửa buổi tưởng mất mã nguồn, vì lệnh gọi `/admin/api/*` chạy ở tab 3102 ra 404.
 

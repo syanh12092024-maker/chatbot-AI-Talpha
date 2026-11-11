@@ -6,7 +6,7 @@ lan: 🟥 (chạm outbound + bộ não) · phiếu NHẬN nợ N2 của L1-M2
 nguon_da_doc:
   - docs/v3/01-QUYET-DINH.md (§1 · §3 · §6 · §7)
   - docs/v3/02-KE-HOACH-CODE.md (§L1 lớp model · §L2 dùng-lại/viết-lại + nghiệm thu)
-  - docs/TONG-QUAN-HE-THONG.md §7.3–7.4 · §11.2 (7 loại sự kiện Sổ AI)
+  - docs/luu-tru/TONG-QUAN-HE-THONG.md §7.3–7.4 · §11.2 (7 loại sự kiện Sổ AI)
   - docs/thi-cong/SO-DIEU-HANH-THI-CONG.md §0a (luật 4) · §7b (T4 · T6) · §9 nợ N2 · nhịp tim
   - docs/v3/ban-giao/luoc-do-v1.md (`hoi_thoai.moc_luot_llm` · `so_ai` · `hang_cho_tao_don`)
   - docs/thi-cong/phieu/PHIEU-L2-M1.md

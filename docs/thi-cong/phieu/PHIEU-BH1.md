@@ -12,9 +12,9 @@ trong hai file này, không có đường nào khác để vá (§0a luật 4 b�
 
 - Báo cáo audit 16/09 — ba lỗi Critical: C1 giá do model điền · C2 `CLOSING` không khoá ·
   C3 `PANCAKE_READONLY` đi vòng được.
-- `docs/TONG-QUAN-HE-THONG.md` §7.2–§7.3 — «cấm bịa tổng tiền», «THÀ KHÔNG TẠO CÒN HƠN
+- `docs/luu-tru/TONG-QUAN-HE-THONG.md` §7.2–§7.3 — «cấm bịa tổng tiền», «THÀ KHÔNG TẠO CÒN HƠN
   TẠO NHẦM», 5 cửa trước khi một đơn thật được tạo.
-- `docs/TONG-QUAN-HE-THONG.md` §6.3 bảng quyền nói — `CLOSING` khai «AI ⛔» nhưng chưa
+- `docs/luu-tru/TONG-QUAN-HE-THONG.md` §6.3 bảng quyền nói — `CLOSING` khai «AI ⛔» nhưng chưa
   dòng code nào thi hành.
 - `README.md` nguyên tắc 3 và 5 (chốt đúng trình tự · mỗi khách 1 đơn).
 

@@ -182,7 +182,7 @@ Có một người thứ hai (người B) làm quản trị, phân quyền, báo
 3. docs/v3/ban-giao/luoc-do-v1.md — lược đồ thật, nhất là kich_ban / bo_luat_chung / ky_nang
 4. docs/thi-cong/SO-DIEU-HANH-THI-CONG.md §9 — sổ nợ giai đoạn 1, có việc thuộc phần bạn
 5. docs/v3/03-MAN-HINH.md nhóm 4, 5, 6 — kèm link bản vẽ tương tác
-6. README.md — 14 nguyên tắc AI chat với khách. LUẬT HÀNH VI, không phải tài liệu kỹ thuật.
+6. docs/v3/NGUYEN-TAC-AI.md — 14 nguyên tắc AI chat với khách. LUẬT HÀNH VI, không phải tài liệu kỹ thuật.
 
 ═══ VIỆC CỦA BẠN — 11 MÀN, 15 NGÀY CÔNG ═══
 

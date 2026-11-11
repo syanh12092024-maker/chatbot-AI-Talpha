@@ -33,7 +33,7 @@ Sau MB3 tiến trình `aicloser` (v1) đã tắt trên prod nhưng MÃ của nó
    của v1 → «Sổ AI cũ (ghi tới 28/08)».
 8. **Tài liệu sống:** `README.md` (kiến trúc + bảng 14 nguyên tắc trỏ đúng tệp v3; nguyên tắc 9 nói thật phần v3 còn thiếu) ·
    `.env.example` · `docs/local-dev.md` · `deploy/README.md` · skill `chatbot` (SKILL + 5 tham chiếu) · biển cảnh báo đầu
-   `docs/TONG-QUAN-HE-THONG.md` (ảnh chụp v1) · `bien-moi-truong-v3.md` (dòng `PUBLIC_URL`).
+   `docs/luu-tru/TONG-QUAN-HE-THONG.md` (ảnh chụp v1) · `bien-moi-truong-v3.md` (dòng `PUBLIC_URL`).
 9. **Cổng mới** `ops/bin/nghiem-thu/mb.sh` — 18 phép, bảy chỗ trôi về được (xem đầu tệp).
 10. **GIỮ `src/wa.js`** (khôi phục sau khi đo prod 02/10): pancake-tool (team khác) có `src/gui-canh-bao.js` — tệp KHÔNG nằm trong
     repo, đặt thẳng trên prod — `import './wa.js'`; ba timer của họ chạy nó: `canh-bao-tien` (5′, nhắn trước khi AI Sale hết

@@ -182,7 +182,7 @@ export function decideConv({ pageId, conv, msgs, custId, aiTexts }) {
   // việc khác nhau trên cùng một khối ②, không loại trừ nhau — giữ cả hai. TTL chỉ áp cho
   // HANDOFF; hậu bán vẫn khoá theo ngân sách lượt riêng, không dính TTL.
   // ── ②b · BH1 · ĐÃ CHỐT ĐƠN (CLOSING) → AI im, sale tiếp quản ─────────────────
-  // `docs/TONG-QUAN-HE-THONG.md` §6.3 khai bảng quyền nói: ở `CLOSING` thì Botcake ⛔,
+  // `docs/luu-tru/TONG-QUAN-HE-THONG.md` §6.3 khai bảng quyền nói: ở `CLOSING` thì Botcake ⛔,
   // Fast Lane ⛔, AI ⛔, chỉ SALE được nói. `markClosing()` đã đặt trạng thái đó từ lâu
   // (tools.js, ngay sau khi chốt) — nhưng **không dòng nào thi hành nó**: `decideConv`
   // chỉ xét `HANDOFF` và `POST_SALE`. Đo 16/09 trên conv-state thật: 20 hội thoại đang

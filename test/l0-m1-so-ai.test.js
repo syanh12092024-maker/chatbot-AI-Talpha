@@ -1,5 +1,5 @@
 // L0-M1 · SỔ AI — nhánh KHÔNG chạm được ở local: `ai-messages.jsonl` chỉ sống trên VPS.
-// Ca này chạy trên MẪU TRÍCH đúng khuôn thật (docs/TONG-QUAN-HE-THONG.md §11.2 +
+// Ca này chạy trên MẪU TRÍCH đúng khuôn thật (docs/luu-tru/TONG-QUAN-HE-THONG.md §11.2 +
 // `src/ai-log.js:logAi`), ghi rõ đây là mẫu trích chứ không phải sổ thật.
 // Lượt nạp thật + phép đối chiếu số dòng chạy trên VPS ở đợt cutover (nợ §9 sổ điều hành).
 import test, { before, after } from "node:test";

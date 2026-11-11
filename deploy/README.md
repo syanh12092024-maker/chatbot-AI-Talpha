@@ -82,4 +82,4 @@ Kết quả cuối lượt này: **407 passed, 0 failed, 0 skipped**, có chạy
 
 `test/deploy-v3.test.mjs`: kiểm tra config không lộ secrets, --check không ghi, backup trước migration, ba unit dùng chung env, ghi ngoài đóng mặc định, deploy lần đầu chưa có worker, thất bại không restart bot, và backup PostgreSQL tạm thật.
 
-Chạy cùng bộ hồi quy bằng `sh ops/bin/test-phase0.sh`. Đặt BROWSER_DRIVER khi muốn chạy thêm E2E trình duyệt như `docs/frontend-v3-progress.md`.
+Chạy cùng bộ hồi quy bằng `sh ops/bin/test-phase0.sh`. Đặt BROWSER_DRIVER khi muốn chạy thêm E2E trình duyệt như `docs/luu-tru/frontend-v3-progress.md`.

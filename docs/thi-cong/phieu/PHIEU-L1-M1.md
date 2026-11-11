@@ -16,7 +16,7 @@ sai là hỏng đơn khách) · thợ **opus** (1 trong 4 phiếu khó theo rout
   nháp 2 chiều POS ghi nhận đúng.
 - `docs/v3/01-QUYET-DINH.md` §1 (luồng trang bán hàng: Chờ xác nhận → Chờ in) · §8 ("mỗi
   team có **kết nối POS riêng**") · §12 (chỗ hở: sản phẩm suy ngược từ 25 đơn, tên SP trống).
-- `docs/TONG-QUAN-HE-THONG.md` §7.5 — mỗi thị trường một shop (`pancake-shops.json`:
+- `docs/luu-tru/TONG-QUAN-HE-THONG.md` §7.5 — mỗi thị trường một shop (`pancake-shops.json`:
   `{market, shop_id, api_key}`) · trạng thái hủy/hoàn = `4,5,6,7,8` · mốc ngày UTC=07:00 VN.
 - `docs/v3/ban-giao/luoc-do-v1.md` + `tang-truy-van-v1.md` — dùng tầng truy vấn L0-M2
   (ctx bắt buộc), KHÔNG query thẳng.

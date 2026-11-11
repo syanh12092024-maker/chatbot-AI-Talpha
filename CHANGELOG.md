@@ -107,7 +107,7 @@ nào được bật và không tin nào ra khách.
   nay chạy giao diện v3.
 - **Giữ nguyên cho pancake-tool** (`2a02656`): `src/wa.js`, các gói WhatsApp trong `node_modules` và phiên `wa-auth/` — ba lịch
   cảnh báo của team đó (có cảnh báo AI Sale sắp hết tiền) đang dùng chung.
-- Tài liệu (`6d4186f`): README, skill `chatbot`, `.env.example`, `docs/local-dev.md` nói về MỘT bản; `docs/TONG-QUAN-HE-THONG.md`
+- Tài liệu (`6d4186f`): README, skill `chatbot`, `.env.example`, `docs/local-dev.md` nói về MỘT bản; `docs/luu-tru/TONG-QUAN-HE-THONG.md`
   gắn biển «ảnh chụp bot v1».
 
 ### 02/10/2026 — 🔴 Marketer chỉ thấy sản phẩm mình phụ trách · chọn marketer từ HRM · sale vào thẳng team (LL15c · LL15d · CR-28-09c)
@@ -514,4 +514,4 @@ nay phải SSH vào máy chủ rồi gõ SQL tay mới làm được.
 
 Bot Messenger + Pancake phục vụ khách thật từ 27/06/2026: phân loại tin bằng bộ luật (0 token) →
 tư vấn và chốt đơn có tool use → lọc đơn COD → tạo đơn Pancake. Lịch sử thiết kế và số đo thật
-nằm ở `docs/v2/`; cách vận hành ở `docs/TONG-QUAN-HE-THONG.md`.
+nằm ở `docs/v2/`; cách vận hành ở `docs/luu-tru/TONG-QUAN-HE-THONG.md`.

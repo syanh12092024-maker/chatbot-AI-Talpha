@@ -377,7 +377,7 @@ xác nhận `aicloser_v3` còn 0 dòng `lich_nhac` sau khi chạy.
 ## §hàng-chờ · HÀNG CHỜ TẠO ĐƠN MESSENGER — NĂM cửa + `duyet()` = TẠO ĐƠN POS THẬT (phiếu L3-M4, 23/08)
 
 `donMessengerDaTao` ở §2 nay có người GỌI: `src/orders/hang-cho.js#duyet`. Đây là đường
-**DUY NHẤT** của v3 đẻ ra một đơn POS mới. Nguyên tắc gốc §7.3 `TONG-QUAN-HE-THONG.md`:
+**DUY NHẤT** của v3 đẻ ra một đơn POS mới. Nguyên tắc gốc §7.3 `docs/luu-tru/TONG-QUAN-HE-THONG.md`:
 **«THÀ KHÔNG TẠO CÒN HƠN TẠO NHẦM»** — mọi nguồn `unknown` đều đọc là **ĐÓNG**.
 
 ```js

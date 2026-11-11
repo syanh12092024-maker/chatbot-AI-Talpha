@@ -1,7 +1,7 @@
 // ⚠️ TẠO ĐƠN THẬT TRÊN POS — lệnh GHI RA NGOÀI **nặng nhất** của v3 (làn 🟥).
 // Ghi ngược trạng thái (`ghi-nguoc.js`) làm hỏng MỘT đơn đã có; hàm này ĐẺ RA một kiện
 // COD gửi tới nhà khách, và luật 2 §0a sổ điều hành CẤM xoá đơn POS ở mọi trạng thái —
-// nên một lượt tạo nhầm là KHÔNG GỠ ĐƯỢC. Nguyên tắc gốc §7.3 TONG-QUAN-HE-THONG.md:
+// nên một lượt tạo nhầm là KHÔNG GỠ ĐƯỢC. Nguyên tắc gốc §7.3 docs/luu-tru/TONG-QUAN-HE-THONG.md:
 //
 //                      «THÀ KHÔNG TẠO CÒN HƠN TẠO NHẦM»
 //

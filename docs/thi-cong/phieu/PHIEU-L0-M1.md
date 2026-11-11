@@ -17,7 +17,7 @@ dữ liệu khách thật — nghiêng làn cao khi nghi)
   luật cứng: điều kiện team ở tầng truy vấn) · §9 (5 vai, nhật ký không sửa không xoá).
 - `docs/v3/05-PHAN-VIEC.md` — L0-M1 thuộc người A; điểm bàn giao 1 & 3 (lược đồ + hình dạng
   `viec_can_xu_ly` công bố cho B).
-- `docs/TONG-QUAN-HE-THONG.md` §11.1–11.2 — cấu trúc các file JSON nguồn di trú.
+- `docs/luu-tru/TONG-QUAN-HE-THONG.md` §11.1–11.2 — cấu trúc các file JSON nguồn di trú.
 
 ## ② Hợp đồng vào/ra
 
@@ -144,7 +144,7 @@ Mỗi phép in MỘT CON SỐ hoặc MỘT DIFF DANH SÁCH — cấm "chạy xon
 Nhánh THẬT: di trú chạy trên chính các file JSON thật ở gốc repo (không fixture bịa).
 Nhánh không chạm được ở local (khai vào nhật ký, không giả lập): nạp `ai-messages.jsonl`
 (file chỉ có trên VPS) — test bộ nạp `so_ai` bằng 5–10 dòng JSONL mẫu trích ĐÚNG khuôn thật
-từ `docs/TONG-QUAN-HE-THONG.md` §11.2, ghi rõ đó là mẫu trích.
+từ `docs/luu-tru/TONG-QUAN-HE-THONG.md` §11.2, ghi rõ đó là mẫu trích.
 
 ## ⑥ Ngoài phạm vi
 

@@ -31,7 +31,7 @@ cho sale. Hai người không được sửa chung file.
                                     mục 11 (việc đã quyết KHÔNG làm), mục 12 (chỗ còn hở)
 3. docs/v3/02-KE-HOACH-CODE.md    — kế hoạch, 18 bảng dữ liệu, tiêu chí nghiệm thu
 4. docs/v3/05-PHAN-VIEC.md        — phần việc của bạn và ranh giới file
-5. docs/TONG-QUAN-HE-THONG.md     — bản đang chạy hoạt động ra sao (đọc mục 5 và 6)
+5. docs/luu-tru/TONG-QUAN-HE-THONG.md     — bản đang chạy hoạt động ra sao (đọc mục 5 và 6)
 
 ═══ VIỆC CỦA BẠN — 12 MODULE, 24 NGÀY CÔNG ═══
 L0-M1  Lược đồ cơ sở dữ liệu + di trú dữ liệu thật          2 ngày  ← LÀM TRƯỚC TIÊN

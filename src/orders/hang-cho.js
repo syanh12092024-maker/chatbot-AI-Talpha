@@ -6,7 +6,7 @@ import { docSanPhamGoiGia } from "../products/catalog.js";
 // xác nhận rồi, hỏi lại là làm phiền hoặc bom hàng). File này giữ hai đầu của đoạn đó:
 // `vaoHangCho()` (bot chốt xong) và `duyet()`/`loai()` (sale quyết).
 //
-// ═══ NĂM CỬA CỦA §7.3 TONG-QUAN-HE-THONG.md — PORT NGUYÊN TẮC, ĐỔI NGUỒN ════════
+// ═══ NĂM CỬA CỦA §7.3 docs/luu-tru/TONG-QUAN-HE-THONG.md — PORT NGUYÊN TẮC, ĐỔI NGUỒN ════════
 //   ① MẪU ĐỦ TRƯỜNG   tên · SĐT · địa chỉ · SL · tổng — thiếu thì VẪN vào hàng chờ
 //                     (gắn `thieu_truong`), sale bổ sung; rơi im lặng mới là mất đơn.
 //   ② CỬA TIỀN        tổng khớp ĐÚNG MỘT `goi_gia` của page (bản cũ: bảng giá KB).

@@ -21,7 +21,7 @@ Bot làm ba việc: **trả lời khách và chốt đơn qua Messenger** · **n
 | Nằm ở đâu | `src/` — 13.304 dòng | Tài liệu trong `docs/v3/` |
 | Lưu dữ liệu | 15 file JSON | PostgreSQL |
 | Team | Không có khái niệm team | 3 team tách hẳn |
-| Tài liệu | `docs/TONG-QUAN-HE-THONG.md` | `docs/v3/02-KE-HOACH-CODE.md` |
+| Tài liệu | `docs/luu-tru/TONG-QUAN-HE-THONG.md` | `docs/v3/02-KE-HOACH-CODE.md` |
 
 **Bản đang chạy vẫn phải sống bình thường trong lúc làm v3.** Không được để gián đoạn — nó đang có khách thật.
 
@@ -52,9 +52,9 @@ Bot làm ba việc: **trả lời khách và chốt đơn qua Messenger** · **n
 
 | # | File | Nội dung |
 |---|---|---|
-| 4 | [`../TONG-QUAN-HE-THONG.md`](../TONG-QUAN-HE-THONG.md) | Bản đang chạy hoạt động ra sao — 14 phần, đọc kỹ phần 5 và 6 |
-| 5 | [`../BAN-GIAO-DEV.md`](../BAN-GIAO-DEV.md) | Deploy, máy chủ, các file không có trên git |
-| 6 | [`../../README.md`](../../README.md) | 14 nguyên tắc AI chat với khách — **luật hành vi, không phải tài liệu kỹ thuật** |
+| 4 | [`../../README.md`](../../README.md) | Kiến trúc đang chạy, cấu trúc thư mục, chạy/test, CSDL, deploy |
+| 5 | [`NGUYEN-TAC-AI.md`](NGUYEN-TAC-AI.md) | 14 nguyên tắc AI chat với khách — **luật hành vi, không phải tài liệu kỹ thuật** |
+| 6 | [`ban-giao/`](ban-giao/) | Hợp đồng giữa các module · lược đồ CSDL · bảng biến môi trường |
 | 7 | [`03-MAN-HINH.md`](03-MAN-HINH.md) | 37 màn hình v3, kèm link bản vẽ |
 
 ### Người làm nội dung, sale, marketing
@@ -69,6 +69,7 @@ Bot làm ba việc: **trả lời khách và chốt đơn qua Messenger** · **n
 | File | Khi nào cần |
 |---|---|
 | `docs/v2/` | Muốn hiểu vì sao bản đang chạy được thiết kế như vậy — có số đo thật từ 10/08/2026 |
+| [`../luu-tru/`](../luu-tru/) | Tài liệu bot v1 (đã gỡ ở MB4) và báo cáo tiến độ cũ — chỉ để tra lịch sử quyết định |
 | `90-phu-luc-bang-hoi-ky-thuat.md` | Hồ sơ: bảng hỏi kỹ thuật đã dùng để chốt nghiệp vụ |
 | `91-phu-luc-bang-hoi-nghiep-vu.md` | Hồ sơ: bảng hỏi bằng tiếng thường, 62 câu đã trả lời xong |
 
@@ -90,7 +91,7 @@ Danh sách màn hình dạng chữ nằm ở [`03-MAN-HINH.md`](03-MAN-HINH.md).
 
 ```bash
 npm install
-cp .env.example .env      # rồi điền giá trị thật — xin ở BAN-GIAO-DEV.md mục 5; GIỮ PANCAKE_READONLY=1
+cp .env.example .env      # tên biến: docs/v3/ban-giao/bien-moi-truong-v3.md; giá trị xin người bàn giao; GIỮ PANCAKE_READONLY=1
 npm run local:start       # bản dev sạch: http://127.0.0.1:3202/dang-nhap — xem docs/local-dev.md
 ```
 

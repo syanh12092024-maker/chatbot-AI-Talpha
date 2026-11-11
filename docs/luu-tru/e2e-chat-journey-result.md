@@ -3,7 +3,7 @@
 Đã chạy `sh ops/bin/test-phase0.sh`: **470 passed, 0 failed, 0 skipped**.
 Thời gian bộ kiểm tra do Node báo: khoảng 5,56 giây; đây không phải độ trễ tư vấn thực tế.
 
-Ca mới: [journey-chat-e2e.test.js](../test/journey-chat-e2e.test.js).
+Ca mới: [journey-chat-e2e.test.js](../../test/journey-chat-e2e.test.js).
 Ca này đã được thêm vào script để chạy lại cùng bộ regression.
 
 ## Luồng đã chạy liền mạch

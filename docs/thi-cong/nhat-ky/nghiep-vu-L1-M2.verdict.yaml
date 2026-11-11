@@ -7,7 +7,7 @@ nguon_da_doc:
   - docs/v3/01-QUYET-DINH.md (§1 · §2 · §8 · §10)
   - docs/v3/02-KE-HOACH-CODE.md (§L1 cửa Messenger · §L2 danh sách dùng-lại/viết-lại)
   - docs/v3/05-PHAN-VIEC.md (L1-M2 = A · 2 ngày · ranh giới `src/channels/messenger/*`)
-  - docs/TONG-QUAN-HE-THONG.md §7.3–7.4 · §8 (lịch nền, FOLLOWUP)
+  - docs/luu-tru/TONG-QUAN-HE-THONG.md §7.3–7.4 · §8 (lịch nền, FOLLOWUP)
   - docs/thi-cong/SO-DIEU-HANH-THI-CONG.md §0a (luật 1 + luật 4 danh sách CẤM SỬA) · §3 · §9
   - docs/thi-cong/phieu/PHIEU-L1-M2.md
   - src/pancake.js · src/tools.js · src/handler.js · src/scheduler-followup.js · .env (đo lại)

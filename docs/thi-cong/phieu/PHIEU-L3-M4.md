@@ -15,7 +15,7 @@ nguồn POS yếu thành gương · status khuôn cũ =0 sai «Chờ in» · rac
   KHÔNG WhatsApp.
 - `docs/v3/02-KE-HOACH-CODE.md` §L3 «Hàng chờ tạo đơn — luồng Messenger» + §L4 nghiệm
   thu «Đơn duyệt từ hàng chờ vào POS đúng thông tin, không phải gõ lại».
-- `docs/TONG-QUAN-HE-THONG.md` §7.3 — NĂM CỬA của bản cũ (mẫu đủ trường · cửa tiền ·
+- `docs/luu-tru/TONG-QUAN-HE-THONG.md` §7.3 — NĂM CỬA của bản cũ (mẫu đủ trường · cửa tiền ·
   chống trùng 4 nguồn với `unknown-cửa-vẫn-đóng` · hàng chờ · tạo-đơn-chạy-lại-đủ-cửa).
   V3 PORT nguyên tắc, đổi nguồn: Sổ AI JSONL → bảng `so_ai` · ai-order-queue.json →
   bảng `hang_cho_tao_don` · thêm nguồn kiemTrung CHÉO của L3-M2 (bản cũ chưa có).

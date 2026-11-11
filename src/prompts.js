@@ -8,7 +8,7 @@
 //
 // Trước 11/08/2026 có hai khối tĩnh `BASE_SYSTEM` (1.804 tok) + `HARD_RULES` (1.512 tok)
 // kẹp kịch bản page ở giữa. Gộp lại còn MỘT khối, không mất nguyên tắc nào
-// (đối chiếu 14 nguyên tắc: README.md §14 — mỗi nguyên tắc chỉ ra đúng mục trong CORE).
+// (đối chiếu 14 nguyên tắc: docs/v3/NGUYEN-TAC-AI.md — mỗi nguyên tắc chỉ ra đúng mục trong CORE).
 //
 // ⚠️ ĐÍNH CHÍNH SỐ LIỆU NỀN (đo 11/08/2026, tiktoken o200k_base hiệu chuẩn về đơn vị docs):
 // `docs/v2/02-TANG-LUONG-CHAT.md` §M08 và `L4-PROMPT.md` nói "trong 3.290 token tĩnh ~1.400

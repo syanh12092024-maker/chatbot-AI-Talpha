@@ -21,7 +21,7 @@ import { toolDefs } from '../src/tools.js';
 const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', 'src');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ① ĐỐI CHIẾU 14 NGUYÊN TẮC (nguồn chuẩn: README.md §14)
+// ① ĐỐI CHIẾU 14 NGUYÊN TẮC (nguồn chuẩn: docs/v3/NGUYEN-TAC-AI.md)
 // Mỗi nguyên tắc → một mẩu chữ BẮT BUỘC phải còn trong CORE. Cố tình bắt theo cụm
 // ngắn, đặc trưng: sửa văn phong thoải mái, nhưng XOÁ MẤT quy tắc là test đỏ ngay.
 // Nguyên tắc 6/8/9/10/13 nằm ở CODE (handler, pancake-poll, config, ai-log) chứ không

@@ -116,9 +116,9 @@ Mỗi luồng trong kế hoạch có tiêu chí đo được. "Chạy được" 
 |---|---|
 | Bắt đầu một luồng mới | `docs/v3/02-KE-HOACH-CODE.md` mục luồng đó + `references/spec-mau.md` |
 | Biết vì sao đã quyết như vậy | `docs/v3/01-QUYET-DINH.md` |
-| Hiểu bản đang chạy | `docs/TONG-QUAN-HE-THONG.md` |
+| Hiểu bản đang chạy | `docs/luu-tru/TONG-QUAN-HE-THONG.md` |
 | Dựng màn hình | `docs/v3/03-MAN-HINH.md` + bản vẽ tương tác |
-| Deploy hoặc xem log máy chủ | `docs/BAN-GIAO-DEV.md` + skill `chatbot` |
-| Biết hành vi AI với khách | `README.md` — 14 nguyên tắc |
+| Deploy hoặc xem log máy chủ | `docs/luu-tru/BAN-GIAO-DEV.md` + skill `chatbot` |
+| Biết hành vi AI với khách | `docs/v3/NGUYEN-TAC-AI.md` — 14 nguyên tắc |
 
 Skill `chatbot` lo phần **vận hành bản đang chạy**. Skill này lo phần **viết bản mới**. Đừng lẫn hai việc.

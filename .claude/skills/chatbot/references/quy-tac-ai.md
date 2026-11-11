@@ -12,7 +12,7 @@ KB nằm ở khối riêng có `cache_control: ephemeral` (prompt caching). Sử
 
 Sửa xong: restart service, rồi **nghiệm thu bằng cách tái hiện kịch bản thật trên VPS** (`van-hanh.md`), và cập nhật README cùng commit.
 
-## 14 nguyên tắc (nguồn chuẩn: README.md)
+## 14 nguyên tắc (nguồn chuẩn: docs/v3/NGUYEN-TAC-AI.md)
 
 1. **Ngôn ngữ** — mặc định Tagalog/English; khách dùng ngôn ngữ khác (Ả Rập, Urdu, Hindi...) thì AI **tự trả lời bằng đúng ngôn ngữ đó**, không bàn giao. Tuyệt đối không tiếng Việt với khách. Giọng Philippines ("po"/"opo"), 1–3 câu/tin, né tôn giáo–chính trị.
 2. **Trung thực thông tin** — giá/chính sách chỉ từ KB hoặc tool `get_price`. Mỗi page 1 sản phẩm. Luôn coi còn hàng. Chủ động gửi ảnh khi hợp cảnh. **Ảnh luôn đi kèm chữ** (`caption` bắt buộc + lượt khép bằng tin chữ).

@@ -74,7 +74,7 @@ hàng, 12 module). Người B (phần rìa: auth, audit, model, màn sale) làm 
 
 **Nguồn sự thật đọc theo thứ tự:** `docs/v3/01-QUYET-DINH.md` (ý đồ — thắng mọi thứ khi
 mâu thuẫn) → `docs/v3/02-KE-HOACH-CODE.md` (kế hoạch + 18 bảng + nghiệm thu) →
-`docs/v3/05-PHAN-VIEC.md` (ranh giới file) → `docs/TONG-QUAN-HE-THONG.md` (bản đang chạy).
+`docs/v3/05-PHAN-VIEC.md` (ranh giới file) → `docs/luu-tru/TONG-QUAN-HE-THONG.md` (bản đang chạy).
 
 **Môi trường dev:** Postgres 16 container `talpha-pg` cổng **5433**, chuỗi nối ở `.env`
 biến `DATABASE_URL_V3`. Node: máy A đo 15/09 = **v24.19.0** (sổ cũ ghi v25; ba cổng `a7-*` nhận khuôn Node 25). Dữ liệu thật để di trú nằm ở gốc repo (`pages.json`
@@ -953,7 +953,7 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + RP2 + GL3c (vòng 2 — hồi quy ch
   Nhật ký: `docs/thi-cong/nhat-ky/tiep-quan-09-09.md` §3a.
 
 - 11/09 · TIẾP QUẢN — 🔴 **MÁY CHỦ CHẠY HAI APP, TÀI LIỆU CHỈ KHAI MỘT.**
-  `docs/TONG-QUAN-HE-THONG.md §3.2` liệt kê bốn app dùng chung VPS: 3000 · 3001 · 3002 ·
+  `docs/luu-tru/TONG-QUAN-HE-THONG.md §3.2` liệt kê bốn app dùng chung VPS: 3000 · 3001 · 3002 ·
   3100. Thực tế còn **cổng 3102 = bản v3** (`v3/chay-that.js:144`, `CHAYTHAT_CONG || 3102`),
   phục vụ `/dieu-phoi`, `/page-bot`, `/kich-ban`… Đo: `GET http://169.58.33.8:3102/` → 302
   tới `/dieu-phoi`; `GET :3100/admin/api/pages` → 401 «Cần đăng nhập.» (nguyên văn
@@ -2143,7 +2143,7 @@ chayMotVong` KHÔNG đọc; `V3_NAP_DEV=1` hoặc đổi cwd (dotenv theo cwd, `
   `tools.js`). Chi tiết: `docs/v3/ban-giao/cua-messenger-v1.md` §5.
 
 - 22/08 · thợ L1-M1 (nợ N1 — ⚠️ ĐƯỜNG TIỀN/ĐƠN): `src/pancake-orders.js:13` và
-  `docs/TONG-QUAN-HE-THONG.md` §7.5 khai nhóm hủy/hoàn = `{4,5,6,7,8}`. ĐO 22/08 trên
+  `docs/luu-tru/TONG-QUAN-HE-THONG.md` §7.5 khai nhóm hủy/hoàn = `{4,5,6,7,8}`. ĐO 22/08 trên
   3.546 đơn thật / 7 shop bằng chính `status_name` của API: **8 = `packing` (đang đóng
   gói)**, một bước TIẾN — `status_history` đơn 47397 (UAE) là `0→1→12→8`, đồ thị chuyển
   trên 1.400 đơn có `12→8` 986 lượt · `8→9` 537 · `8→2` 394. Hệ quả: bản ĐANG CHẠY trừ
