@@ -22,22 +22,22 @@ const fromCust = (text, attachments) => ({ from: { id: 'cust1' }, message: text,
 
 test('C1 · ⭐ khối thông tin đơn thật → lấy đủ tên + SĐT + địa chỉ', () => {
   // Nguyên văn dạng khách KSA hay gõ (tên / số / địa chỉ mỗi thứ một dòng).
-  const p = extractFromText('Amy Añoza\n0536064249\nAlrawdah Jeddah, District 1 House #118', emptyProfile());
-  assert.equal(p.name, 'Amy Añoza');
-  assert.equal(p.phone.replace(/\D/g, ''), '0536064249');
+  const p = extractFromText('Ana Peñas\n0531234567\nAlrawdah Jeddah, District 1 House #12', emptyProfile());
+  assert.equal(p.name, 'Ana Peñas');
+  assert.equal(p.phone.replace(/\D/g, ''), '0531234567');
   assert.match(p.address, /Jeddah/);
 });
 
-test('C2 · SĐT 8 số (ca SilentBoo) vẫn bắt được, giá tiền thì không', () => {
-  assert.equal(extractFromText('71566943', emptyProfile()).phone.replace(/\D/g, ''), '71566943');
+test('C2 · SĐT 8 số (ca QuietBee) vẫn bắt được, giá tiền thì không', () => {
+  assert.equal(extractFromText('71200008', emptyProfile()).phone.replace(/\D/g, ''), '71200008');
   assert.equal(extractFromText('109 SAR po ba?', emptyProfile()).phone, '', 'giá tiền không phải SĐT');
 });
 
 test('C3 · thông tin cho LẦN ĐẦU không bị tin sau ghi đè', () => {
-  const p = extractFromText('my name is Amy, 0536064249', emptyProfile());
+  const p = extractFromText('my name is Ana, 0531234567', emptyProfile());
   extractFromText('ay mali po, 099', p);           // khách gõ lem nhem sau đó
-  assert.equal(p.phone.replace(/\D/g, ''), '0536064249');
-  assert.equal(p.name, 'Amy');
+  assert.equal(p.phone.replace(/\D/g, ''), '0531234567');
+  assert.equal(p.name, 'Ana');
 });
 
 test('C4 · gói + COD + phản đối vào hồ sơ', () => {
@@ -49,7 +49,7 @@ test('C4 · gói + COD + phản đối vào hồ sơ', () => {
 });
 
 test('C5 · chỉ ghi nhớ đơn đã được backend xác nhận, dùng giá backend', () => {
-  const order = { name: 'Amy Añoza', phone: '0536064249', address: 'District 1', city: 'Jeddah', variant: 'Buy 1 Get 1', qty: 2, total_price: 109, cod_confirmed: true };
+  const order = { name: 'Ana Peñas', phone: '0531234567', address: 'District 1', city: 'Jeddah', variant: 'Buy 1 Get 1', qty: 2, total_price: 109, cod_confirmed: true };
   const request = { role: 'assistant', content: [
     { type: 'tool_use', id: 'order1', name: 'create_draft_order', input: { ...order, total_price: 1 } },
     { type: 'tool_use', id: 'image1', name: 'send_product_image', input: { category: 'feedback' } },
@@ -64,7 +64,7 @@ test('C5 · chỉ ghi nhớ đơn đã được backend xác nhận, dùng giá 
   const p = emptyProfile();
   absorbToolUses([request, { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'order1', content: JSON.stringify({ ok: true, order }) }] }], p);
   assert.equal(p.total, '109');
-  assert.equal(p.name, 'Amy Añoza');
+  assert.equal(p.name, 'Ana Peñas');
   assert.equal(p.cod, true);
   assert.deepEqual(missingSteps(p), []);
 });
@@ -114,17 +114,17 @@ test('C10 · ⭐ hydrate lần đầu chỉ đọc tin KHÁCH, đánh dấu đã
   const p = hydrateProfile([
     fromPage('my name is Botcake, 0999999999'),   // tin page KHÔNG được vào hồ sơ
     fromCust('ako si Maria Santos'),
-    fromCust('0536064249'),
+    fromCust('0531234567'),
   ], PAGE);
   assert.equal(p.name, 'Maria Santos');
-  assert.equal(p.phone.replace(/\D/g, ''), '0536064249');
+  assert.equal(p.phone.replace(/\D/g, ''), '0531234567');
   assert.ok(p.hydratedAt > 0, 'phải đánh dấu đã hydrate để lượt sau không nạp lại 20 tin');
 });
 
 test('C11 · khối hồ sơ nêu đủ việc cần + cấm đọc lại PII cho khách', () => {
-  const p = extractFromText('Amy Añoza\n0536064249\nJeddah District 1', emptyProfile());
+  const p = extractFromText('Ana Peñas\n0531234567\nJeddah District 1', emptyProfile());
   const block = buildProfileBlock(p, { state: 'SELLING', used: 3, max: 10, tier: 'đang chốt' });
-  assert.match(block, /Amy Añoza/);
+  assert.match(block, /Ana Peñas/);
   assert.match(block, /Bước còn thiếu:.*(gói|COD)/);
   assert.match(block, /3\/10/);
   assert.match(block, /không đọc lại cho khách/, 'phải có rào PII — model có sẵn SĐT trong tay');
@@ -156,7 +156,7 @@ test('C13 · ⭐⭐ NGƯỠNG 1.400 TOKEN — hội thoại 30 tin dài vẫn ph
     msgs.push(fromCust(`Hello po, tanong ko lang po kung magkano ang isa at kung may free delivery ba dito sa amin ${i}. ${'a'.repeat(120)}`));
     msgs.push(fromPage(`Please provide the information below for the shipping. ${'b'.repeat(200)}`));
   }
-  const prof = extractFromText('Amy Añoza\n0536064249\nAlrawdah Jeddah District 1', emptyProfile());
+  const prof = extractFromText('Ana Peñas\n0531234567\nAlrawdah Jeddah District 1', emptyProfile());
   const { messages } = buildContextMessages({ prof, msgs, pageId: PAGE, meta: { state: 'SELLING', used: 3, max: 10, tier: 'đang chốt' } });
   const tok = estimateTokens(messages.map((m) => m.content).join('\n'));
   assert.ok(tok <= 1400, `ngữ cảnh phải ≤1.400 token, đang ${tok}`);
@@ -164,15 +164,15 @@ test('C13 · ⭐⭐ NGƯỠNG 1.400 TOKEN — hội thoại 30 tin dài vẫn ph
 
 test('C14 · ⭐ hồ sơ sống sót qua restart → AI KHÔNG chào lại từ đầu', () => {
   // Vòng 1: server đang chạy, dựng hồ sơ từ lịch sử Pancake.
-  const msgs = [fromCust('ako si Amy'), fromCust('0536064249'), fromCust('Jeddah District 1 house 118')];
+  const msgs = [fromCust('ako si Ana'), fromCust('0531234567'), fromCust('Jeddah District 1 house 12')];
   const before = hydrateProfile(msgs, PAGE);
 
   // Vòng 2: server restart — hồ sơ nạp lại từ conv-state.json (mô phỏng bằng JSON round-trip),
   // KHÔNG nạp lại 20 tin thô.
   const after = JSON.parse(JSON.stringify(before));
   const block = buildContextMessages({ prof: after, msgs: [], pageId: PAGE }).messages[0].content;
-  assert.match(block, /Amy/);
-  assert.match(block, /0536064249/);
+  assert.match(block, /Ana/);
+  assert.match(block, /0531234567/);
   assert.match(block, /Jeddah/);
   assert.ok(after.hydratedAt > 0, 'đã hydrate rồi thì không được hydrate lại');
 });
@@ -220,7 +220,7 @@ test('C16 · ⭐ im lâu thì NÓI THẲNG tiếp nối; liền mạch thì khô
 
 test('C17 · ⭐⭐ hai dòng mới KHÔNG được phá ngưỡng token', () => {
   // Ngưỡng khối hồ sơ của C11 là 250; ca tệ nhất (có cả hai dòng) phải vẫn lọt 320.
-  const p = extractFromText('Amy Añoza\n0536064249\nAlrawdah Jeddah District 1 house 118', emptyProfile());
+  const p = extractFromText('Ana Peñas\n0531234567\nAlrawdah Jeddah District 1 house 12', emptyProfile());
   p.tier = 'Buy 2 Get 2'; p.qty = 2; p.objections = ['obj_price', 'obj_trust'];
   p.imagesSent = ['feedback', 'chung_nhan']; p.otherBot.quotedPrice = true; p.otherBot.greeted = true;
   const block = buildProfileBlock(p, {
@@ -375,7 +375,7 @@ test('C28 · ⭐ đã chào tạm biệt ⇒ cấm chào lại; nhưng đổi ý
 });
 
 test('C29 · ba dữ kiện mới KHÔNG phá ngưỡng token của khối hồ sơ', () => {
-  const p = extractFromText('Amy Añoza\n0536064249\nJeddah\nim in bangladesh now bye', emptyProfile());
+  const p = extractFromText('Ana Peñas\n0531234567\nJeddah\nim in bangladesh now bye', emptyProfile());
   _ab('Only 99 SAR · 149 SAR', false, p);
   p.tier = 'Buy 2 Get 2'; p.objections = ['obj_price', 'obj_trust'];
   const block = buildProfileBlock(p, { kb: KB_GIA, state: 'SELLING', used: 3, max: 10,

@@ -5,7 +5,7 @@
 -- Cả BẢY shop POS đều nằm ở team 1, mỗi shop một nước. Nên khoá cũ nói:
 -- «trong một team, một số điện thoại là MỘT người» — mà một team ở đây là bảy nước.
 --
--- ① POS LƯU SĐT KHÔNG CÓ MÃ NƯỚC. Đo: Kuwait `66410373` · Qatar `55534997` ·
+-- ① POS LƯU SĐT KHÔNG CÓ MÃ NƯỚC. Đo: Kuwait `66100001` · Qatar `55100004` ·
 --    Saudi/UAE `5xxxxxxxx`. Tức `chuanHoaSdt` chạy trên dữ liệu POS là **no-op** —
 --    nó cắt tiền tố, mà POS không có tiền tố nào để cắt. Nước KHÔNG nằm trong số;
 --    nó chỉ nằm ở «đơn này đến từ shop nào». Đây là gốc của RF-23, không phải

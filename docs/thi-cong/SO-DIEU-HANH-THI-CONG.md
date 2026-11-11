@@ -770,7 +770,7 @@ canh: GL1 + GL2 + GL3 + GL3b + TT1b + RP1 + RP2 + GL3c (vòng 2 — hồi quy ch
   `538440108` `386685425`) trên mẫu 3.000 đơn/shop, và đó là nhóm chiếm **82% đơn**. Bài học
   đúng khuôn án lệ #4: nếu tôi thiết kế theo chữ của sổ thì đã đi vá nhóm không hỏng và để
   nguyên nhóm hỏng. Gốc cũng khác lời khai: **POS lưu SĐT không có mã nước** (Kuwait
-  `66410373`, Saudi/UAE `5xxxxxxxx`) ⇒ `chuanHoaSdt` là no-op trên dữ liệu POS; nước chỉ nằm
+  `66100001`, Saudi/UAE `5xxxxxxxx`) ⇒ `chuanHoaSdt` là no-op trên dữ liệu POS; nước chỉ nằm
   ở «đơn đến từ shop nào», không nằm trong con số. Đã đóng bằng migration 013.
 
 - 26/08 · A7-1 — 🔴 **MỌI SỐ DẪN XUẤT TỪ MỐC «5.144 ĐƠN» ĐANG ĐỨNG TRÊN 4,2% DỮ LIỆU.** Đo

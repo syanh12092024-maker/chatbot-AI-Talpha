@@ -91,7 +91,7 @@ TẤT CẢ phải đúng:
 | Hỏi ship rồi im | Nhấn free delivery + 2–5 ngày | — |
 | **Đã cho SĐT/tên mà chưa chốt** | **Không nhắn — đẩy thẳng sale gọi** | 🔴 ưu tiên cao nhất |
 
-Ca thật minh hoạ nhóm cuối: khách *SilentBoo* đã đưa tên **Celieta Boca** + số **71566943**,
+Ca thật minh hoạ nhóm cuối: khách *QuietBee* đã đưa tên **Celia Bona** + số **71200008**,
 tự nói *"3 ngày rồi tôi thương lượng mà các anh không thèm bán"* — AI đáp "thanks madam" rồi mất.
 
 ## Ràng buộc cứng
@@ -172,8 +172,8 @@ AI thu đủ Tên + SĐT + Địa chỉ + Gói + COD
 Ghi chú Pancake theo MẪU CHUẨN (máy đọc được):
    ┌───────────────────────────────────────┐
    │ 🛒 AI ĐÃ CHỐT — CHỜ TẠO ĐƠN           │
-   │ Tên:      Amy Añoza                   │
-   │ SĐT:      0536064249                  │
+   │ Tên:      Ana Peñas                   │
+   │ SĐT:      0531234567                  │
    │ Địa chỉ:  Alrawdah Jeddah, District 1 │
    │ Gói:      Buy 1 Get 1 FREE            │
    │ Tổng:     109 SAR  (đã đối chiếu KB)  │

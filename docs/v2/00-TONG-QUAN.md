@@ -233,7 +233,7 @@ bỏ hẳn `classifier.js` (gộp vào M06 + để closer tự gọi `handoff_hu
     "score": 6,                       // điểm nóng (M11)
     "budget": { "used": 3, "max": 10 },
     "profile": {                      // hồ sơ nén (M07)
-      "name": "Amy", "phone": true, "address": "Jeddah, District 1",
+      "name": "Ana", "phone": true, "address": "Jeddah, District 1",
       "tier": "Buy1Get1 109 SAR", "imagesSent": ["san pham", "feedback"],
       "objections": ["gia"], "lastIntent": "cho_xac_nhan_cod"
     },

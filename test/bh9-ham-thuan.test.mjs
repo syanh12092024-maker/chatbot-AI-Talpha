@@ -62,8 +62,8 @@ const BANG_TEN = [
   ['T13', 'Office No.: 12, Entrance 4 Terminal 1 Cargo Village, Dubai, UAE 0501234567 Maria Santos', 'Maria Santos'],
   ['T14', 'This is real gold', ''],
   // đối chứng (C1 · C3 · C10 của test/context.test.mjs + ba nhãn RÕ/MƠ HỒ)
-  ['T15', 'Amy Añoza\n0536064249\nAlrawdah Jeddah, District 1 House #118', 'Amy Añoza'],
-  ['T16', 'my name is Amy, 0536064249', 'Amy'],
+  ['T15', 'Ana Peñas\n0531234567\nAlrawdah Jeddah, District 1 House #12', 'Ana Peñas'],
+  ['T16', 'my name is Ana, 0531234567', 'Ana'],
   ['T17', 'ako si Maria Santos', 'Maria Santos'],
   ['T18', "I'm Maria", 'Maria'],
   ['T19', 'Name: Maria Santos', 'Maria Santos'],
@@ -641,7 +641,7 @@ test('BH9 H1 · tenFb ⇒ dòng mới «DÙNG tên Facebook này làm tên ngư�
   assert.ok(C.estimateTokens(block) <= 200, `đang ${C.estimateTokens(block)} token`);
 });
 test('BH9 H2 · có SĐT + địa chỉ ⇒ «Bước còn thiếu: ĐÃ CÓ SĐT, địa chỉ — CẤM hỏi lại · CÒN THIẾU ĐÚNG: …» (giữ tiền tố — C11)', () => {
-  const p = C.extractFromText('Amy Añoza\n0536064249\nJeddah District 1', C.emptyProfile());
+  const p = C.extractFromText('Ana Peñas\n0531234567\nJeddah District 1', C.emptyProfile());
   const block = C.buildProfileBlock(p, {});
   assert.match(block, /Bước còn thiếu: ĐÃ CÓ SĐT, địa chỉ — CẤM hỏi lại · CÒN THIẾU ĐÚNG: .*(gói|COD)/);
   assert.match(block, /Bước còn thiếu:.*(gói|COD)/, 'ca C11 phải còn khớp');
@@ -665,7 +665,7 @@ test('BH9 H5 · hồ sơ KHÔNG tenFb, không đủ SĐT+địa chỉ, không k�
   if (!b) return t.skip('không dựng được bản base');
   const hoSo = [
     C.emptyProfile(),
-    C.extractFromText('0536064249', C.emptyProfile()),
+    C.extractFromText('0531234567', C.emptyProfile()),
     C.extractFromText('Jeddah District 1 House 5', C.emptyProfile()),
     { ...C.emptyProfile(), tier: 'SET 2', objections: ['obj_price'], cod: true },
     C.extractFromText('The delivery was scheduled for today.', C.emptyProfile()),

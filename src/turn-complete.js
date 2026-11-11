@@ -50,7 +50,7 @@ const COMPLETE_INTENT = /^(how much|magkano|price|presyo|how to order|paano.*ord
 const GREETING_ONLY = /^(hi+|hello+|helo+|hey+|hai|kumusta|kamusta|musta|salam|assalamualaikum|good (?:morning|afternoon|evening|day)|start|مرحبا|السلام عليكم|اهلا)([\s,.!]*(po|poh|ho|sir|maam|ma'?am))*[\s.!]*$/i;
 
 // ② MẨU THÔNG TIN ĐƠN — khách gửi tên / SĐT / địa chỉ thành NHIỀU TIN RỜI.
-//    Ca thật sót: "71566943" → 9s sau là "Celieta Boca".
+//    Ca thật sót: "71200008" → 9s sau là "Celia Bona".
 //    Đây là khúc ĐẮT NHẤT của hội thoại (khách đang cho thông tin để chốt COD),
 //    chen ngang ở đây là AI tạo đơn thiếu dữ liệu → phải chờ.
 const ORDER_FRAGMENT = /^[\p{Lu}][\p{L}'-]+(\s+[\p{Lu}][\p{L}'-]+){0,3}$/u; // tên riêng 1–4 từ viết hoa

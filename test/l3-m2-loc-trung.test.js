@@ -69,14 +69,14 @@ test("A1 · chuanHoaSdt là hàm THUẦN, gom đúng 8+ định dạng lệch Đ
   // Tám ca đầu là TÁM ĐỊNH DẠNG THẬT đo 23/08/2026 trên 5.144 đơn/7 shop; ba ca cuối
   // là rác phải trả null thay vì ném.
   const bang = [
-    ["0583077980", "583077980", "Saudi · 0 đầu (1.068 ca thật)"],
-    ["+966583077980", "583077980", "Saudi · +E164 (270 ca thật)"],
-    ["00966583077980", "583077980", "Saudi · tiền tố 00 (25 ca thật)"],
-    ["583077980", "583077980", "Saudi · số trần (1.966 ca thật)"],
-    [" 583 077-980 ", "583077980", "có khoảng trắng + gạch nối"],
+    ["0581234567", "581234567", "Saudi · 0 đầu (1.068 ca thật)"],
+    ["+966581234567", "581234567", "Saudi · +E164 (270 ca thật)"],
+    ["00966581234567", "581234567", "Saudi · tiền tố 00 (25 ca thật)"],
+    ["581234567", "581234567", "Saudi · số trần (1.966 ca thật)"],
+    [" 581 234-567 ", "581234567", "có khoảng trắng + gạch nối"],
     ["+971568249989", "568249989", "UAE · +E164"],
-    ["+96556572241", "56572241", "Kuwait · +E164 (nội địa 8 chữ số)"],
-    ["0056572241", "56572241", "Kuwait · tiền tố 00 rồi số nội địa"],
+    ["+96556100007", "56100007", "Kuwait · +E164 (nội địa 8 chữ số)"],
+    ["0056100007", "56100007", "Kuwait · tiền tố 00 rồi số nội địa"],
     ["+886912345678", "912345678", "Taiwan · +E164 (nội địa 9 chữ số)"],
     ["abc", null, "không còn chữ số nào"],
     [null, null, "NULL"],
@@ -93,16 +93,16 @@ test("A2 · cắt mã quốc gia là DENY-BY-DEFAULT — độ dài không khớ
   // Rác 12 chữ số mở đầu 123/256/990 (đo được vài chục ca) không khớp mã nào ⇒ giữ.
   assert.equal(chuanHoaSdt("123456789012"), "123456789012");
   // Số nội địa Kuwait 8 chữ số không bao giờ bị hiểu là số quốc tế.
-  assert.equal(chuanHoaSdt("56572241"), "56572241");
+  assert.equal(chuanHoaSdt("56100007"), "56100007");
 });
 
 test("A3 · duoiBay bao RỘNG HƠN chuanHoaSdt một chiều — không bao giờ đánh rơi cặp trùng", () => {
   // Bất biến: hai số bằng nhau sau chuẩn hoá thì bảy chữ số cuối cũng bằng nhau
   // (chuẩn hoá chỉ CẮT TIỀN TỐ). Đây là điều làm vế lọc-bằng-index an toàn.
   const cap = [
-    ["0583077980", "+966583077980"],
-    ["0056572241", "+96556572241"],
-    [" 583 077-980 ", "583077980"],
+    ["0581234567", "+966581234567"],
+    ["0056100007", "+96556100007"],
+    [" 581 234-567 ", "581234567"],
   ];
   for (const [a, b] of cap) {
     assert.equal(chuanHoaSdt(a), chuanHoaSdt(b));

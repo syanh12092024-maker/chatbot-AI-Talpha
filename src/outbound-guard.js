@@ -133,11 +133,11 @@ const DELIVERY_PROMISE_RE = new RegExp(
 const SCARCITY = /(today only|last day|huling araw|paubos na|limited (?:promo|stock|slots?)|only \d+ (?:left|slots?|pcs? left)|natitira na lang|hurry|ngayon lang|آخر يوم|عرض محدود)/i;
 
 // Checklist XIN thông tin (nguyên tắc 4) — dán lại nhiều dòng ✔ làm khách bỏ đơn.
-//   ⚠️ Phải phân biệt với TÓM TẮT ĐƠN (hợp lệ): "- **Name:** Grace Pranom".
+//   ⚠️ Phải phân biệt với TÓM TẮT ĐƠN (hợp lệ): "- **Name:** Grace Pinto".
 //   Khác nhau ở chỗ ô có GIÁ TRỊ hay không:
 //        "✔️Contact number:"        → ô TRỐNG = đang xin  → chặn
 //        "✔️Your full name"          → nhãn trơ = đang xin  → chặn
-//        "- **Name:** Grace Pranom"  → có giá trị = tóm tắt → cho qua
+//        "- **Name:** Grace Pinto"  → có giá trị = tóm tắt → cho qua
 //   `✔️` là ✔ + biến thể U+FE0F nên phải cho phép ký tự đó, và khoảng trắng sau
 //   dấu đầu dòng là TÙY CHỌN (template thật viết dính liền: "✔️Your full name").
 const BULLET_LINE = /^\s*(?:[✔✓✅•·\-*–—]️?|\d+[.)])\s*\S/u;

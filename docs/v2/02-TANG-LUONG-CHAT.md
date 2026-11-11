@@ -206,7 +206,7 @@ v1 nạp 20 tin thô mỗi lượt → thông tin quan trọng nằm rải rác,
 ## Đầu ra đưa vào LLM
 ```
 [HỒ SƠ KHÁCH]                                        ~150 token
-Tên: Amy · SĐT: đã có · Địa chỉ: Jeddah, District 1, House #118
+Tên: Ana · SĐT: đã có · Địa chỉ: Jeddah, District 1, House #12
 Gói quan tâm: Buy 1 Get 1 — 109 SAR
 Đã xem ảnh: sản phẩm, feedback
 Phản đối đã nêu: giá (đã gỡ bằng COD)

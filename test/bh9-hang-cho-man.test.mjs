@@ -44,7 +44,7 @@ test('BH9 M1 · chuanHoaHoSo: cờ chỉ khi TRUE (vắng ⇒ không khoá) · t
   const e = chuanHoaHoSo({ ...coDon, name: 'Ana Cruz', tenKhach: '', tenFb: 'Maria Santos' });
   assert.equal('ten_tu_facebook' in e, false, 'tên KHÔNG nằm trong tên Facebook ⇒ không cờ');
   // khuôn cũ (không mang tenFb/codNgam) ⇒ đúng các khoá cũ — dòng cũ giữ hình
-  const cu = chuanHoaHoSo({ ...coDon, name: 'Amy', total_price: 109, currency: 'SAR' });
+  const cu = chuanHoaHoSo({ ...coDon, name: 'Ana', total_price: 109, currency: 'SAR' });
   assert.deepEqual(Object.keys(cu).sort(), ['dia_chi', 'kho_hang', 'san_pham_ma', 'sdt', 'so_luong', 'ten', 'thanh_pho', 'tien_te', 'tong_tien', 'tong_tien_lon']);
 });
 

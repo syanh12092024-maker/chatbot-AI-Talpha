@@ -14,7 +14,7 @@ const sig = (t) => [...scanSignals(t)].sort();
 // ═══════════════════════════════════════════════════════════════════════════
 
 test('L1 · SĐT thật (KSA/PH/quốc tế) → bắt đúng', () => {
-  for (const t of ['0536064249', '71566943', '+966 50 123 4567', 'number ko po 09171234567']) {
+  for (const t of ['0531234567', '71200008', '+966 50 123 4567', 'number ko po 09171234567']) {
     assert.equal(hasPhone(t), true, `phải thấy SĐT: ${t}`);
   }
 });
@@ -26,7 +26,7 @@ test('L2 · ⚠️ GIÁ TIỀN không được nhận nhầm là SĐT (nếu sai
 });
 
 test('L3 · địa chỉ = khu vực + ≥1 chi tiết', () => {
-  assert.equal(hasAddress('Alrawdah Jeddah, District 1, House #118'), true);
+  assert.equal(hasAddress('Alrawdah Jeddah, District 1, House #12'), true);
   assert.equal(hasAddress('جدة شارع 5'), true);
   assert.equal(hasAddress('Jeddah'), false, 'chỉ tên khu — chưa đủ chi tiết');
   assert.equal(hasAddress('magkano po'), false);
@@ -125,13 +125,13 @@ test('B3 · ⛔ KHÔNG khách nào vượt 12 lượt/24h (chống lỗi vòng l
 // Chạy lại trên hội thoại thật
 // ═══════════════════════════════════════════════════════════════════════════
 
-test('B4 · ⭐ ca SilentBoo (đã cho tên + SĐT mà AI bỏ rơi) → nhóm sát đơn, 12 lượt', () => {
+test('B4 · ⭐ ca QuietBee (đã cho tên + SĐT mà AI bỏ rơi) → nhóm sát đơn, 12 lượt', () => {
   // Khách tự nói "3 ngày rồi tôi thương lượng mà các anh không thèm bán" — v1 cho 4 lượt.
   const r = scoreConversation([
     'hello',
     'how much po',
     'mahal naman',
-    'Celieta Boca 71566943 Salmiya block 5 street 12',
+    'Celia Bona 71200008 Salmiya block 5 street 12',
   ]);
   assert.equal(r.budget.tier, 'SAT_DON');
   assert.equal(r.budget.max, 12);

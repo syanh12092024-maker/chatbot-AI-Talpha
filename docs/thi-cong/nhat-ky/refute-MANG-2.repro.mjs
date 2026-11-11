@@ -83,7 +83,7 @@ P("\n═══ S2 · guard chặn CHỮ, ảnh có bay? ═══");
 // ══ S3 · outbound-guard thiếu ctx (F3) — thuần hàm, không cần DB ═════════════
 P("\n═══ S3 · handler-v3 gọi guard THIẾU orderCreated/isOrderSummary ═══");
 {
-  const tom = "Confirming your order: Name: Grace Pranom, Contact: 0917 555 1234, Address: Cebu City.";
+  const tom = "Confirming your order: Name: Grace Pinto, Contact: 0917 555 1234, Address: Cebu City.";
   P(`   tóm tắt đơn, ctx như v3  → ${JSON.stringify(guardOutbound(tom, { kb: kbMau })).slice(0, 70)}…`);
   P(`   thêm isOrderSummary:true → ${guardOutbound(tom, { kb: kbMau, isOrderSummary: true }).action}`);
   const mad = "Your order number will be sent by our staff shortly.";

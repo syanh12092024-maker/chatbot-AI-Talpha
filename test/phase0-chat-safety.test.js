@@ -47,10 +47,10 @@ test('sale, Botcake, handoff và đơn đã chốt: không đọc KB, gọi mode
 });
 
 test('template vẫn lưu SĐT; gửi thất bại không tăng lượt hoặc ghi reply thành công', async () => {
-  const tin = await incoming('AI', 'SELLING', '0536064249');
+  const tin = await incoming('AI', 'SELLING', '0531234567');
   await xuLyMotTin(sb.pool, tin, deps());
   const row = await conversation(tin);
-  assert.equal(row.ho_so.phone, '0536064249');
+  assert.equal(row.ho_so.phone, '0531234567');
   assert.equal(row.luot_ai, 1);
   await sb.pool.query("UPDATE tin_cho_xu_ly SET trang_thai='xong' WHERE id=$1", [tin.id]);
   const failed = await incoming();

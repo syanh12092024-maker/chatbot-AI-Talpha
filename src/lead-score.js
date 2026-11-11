@@ -72,7 +72,7 @@ export const OBJECTION_BONUS_TURNS = 3;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // SĐT: chuỗi 8–15 chữ số (KSA 05xxxxxxxx · PH 09xxxxxxxxx · +966/+971...). Ngưỡng 8 lấy từ
-// ca thật SilentBoo ("71566943" — 8 số). Dưới 8 số thì gần như chắc chắn là giá tiền/số lượng.
+// ca thật QuietBee ("71200008" — 8 số). Dưới 8 số thì gần như chắc chắn là giá tiền/số lượng.
 const PHONE_CAND = /\+?\d[\d\s().-]{5,18}\d/g;
 export function hasPhone(text) {
   const m = String(text || '').match(PHONE_CAND);

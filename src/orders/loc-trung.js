@@ -17,7 +17,7 @@
 //    đầu thì hệ đếm ra 4.558 «khách»; cắt thêm mã quốc gia còn 4.500 — tức **58 khách
 //    bị tách đôi** chỉ vì hai luồng khai số khác định dạng, và số cặp trùng chéo bắt
 //    được tăng 48→56 khách / 13→16 khách-cùng-sản-phẩm. Bảng định dạng thật đo được:
-//      `0-dau` 1.068 (vd 0583077980) · `so-tran` 1.966 (545769903) ·
+//      `0-dau` 1.068 (vd 0581234567) · `so-tran` 1.966 (541234567) ·
 //      `+E164` 270 (+966540575011) · `00xx` 25 (00966545454774) · NULL 15.
 // ② CỬA SỔ NGÀY MẶC ĐỊNH = 7. Bắt 17/20 cặp trùng chéo đo được (85%), trong khi p75
 //    của khoảng cách giữa hai đơn liên tiếp CÙNG MỘT KHÁCH là 12,16 ngày ⇒ cửa sổ 7
@@ -120,7 +120,7 @@ export function chuanHoaSdt(tho) {
  * KHOÁ ĐỊNH DANH MỘT KHÁCH — «hai đơn này là cùng một người hay không».
  *
  * Vì sao không phải chỉ mỗi SĐT: POS lưu số Ở DẠNG NỘI ĐỊA, KHÔNG mã nước (đo 26/08 —
- * Kuwait `66410373`, Qatar `55534997`, Saudi/UAE `5xxxxxxxx`). Nên `chuanHoaSdt` chạy
+ * Kuwait `66100001`, Qatar `55100004`, Saudi/UAE `5xxxxxxxx`). Nên `chuanHoaSdt` chạy
  * trên dữ liệu POS là no-op: nó cắt tiền tố mà POS không có tiền tố nào. Nước KHÔNG
  * nằm trong con số — nó nằm ở «đơn đến từ shop nào». Bảy shop đều ở team 1, nên gộp
  * chỉ theo (team, số) là gộp bảy nước làm một. Đo trên mẫu 3.000 đơn/shop: Saudi ∩ UAE

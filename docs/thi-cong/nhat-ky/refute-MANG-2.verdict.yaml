@@ -44,7 +44,7 @@ findings:
       v3 lại coi `rewrite` = câm (`if (!v.ok) guarded = ""`), nên khách KHÔNG
       nhận gì — trong khi hệ vẫn ghi so_ai ORDER và đẩy đơn vào hang_cho_tao_don.
     kich_ban: >-
-      node -e "import('./src/outbound-guard.js').then(m=>console.log(m.guardOutbound('Confirming your order: Name: Grace Pranom, Contact: 0917 555 1234, Address: Cebu City.',{kb:{products:[{name:'X',price:109}],text:''}})))"
+      node -e "import('./src/outbound-guard.js').then(m=>console.log(m.guardOutbound('Confirming your order: Name: Grace Pinto, Contact: 0917 555 1234, Address: Cebu City.',{kb:{products:[{name:'X',price:109}],text:''}})))"
       → rewrite/PII_ECHO. Thêm `isOrderSummary:true` → pass. Tương tự
       FAKE_ORDER_ID với/không `orderCreated:true`. So chiếu src/handler.js:436-437
       (v2 truyền cả hai từ state.orderCreatedThisTurn).

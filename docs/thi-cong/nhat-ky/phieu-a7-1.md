@@ -83,8 +83,8 @@ ra 0. Ngược lại nhóm 9 số mà RF-23 không nêu thì có 6. Nếu code t
 ### ③ Gốc thật: POS không lưu mã nước
 
 ```
-Kuwait: 66410373 · 50493865 · 66413744      (8 số, không +965)
-Qatar : 55534997 · 70738273 · 55805658      (8 số, không +974)
+Kuwait: 66100001 · 50100002 · 66100003      (8 số, không +965)
+Qatar : 55100004 · 70100005 · 55100006      (8 số, không +974)
 Saudi/UAE: 5xxxxxxxx                         (9 số, không +966/+971)
 ```
 

@@ -57,7 +57,7 @@
 // ⑥ KHOÁ ĐỊNH DANH KHÁCH LÀ (NƯỚC, SỐ), không phải chỉ SỐ — A7-1, migration 013.
 //    Quyết định ⑤ ở trên nói «một SĐT chỉ có ĐÚNG MỘT khach», và câu đó ĐÚNG TRONG
 //    MỘT NƯỚC nhưng SAI khi bảy shop POS cùng nằm ở team 1. Đo 26/08: POS lưu số ở
-//    dạng NỘI ĐỊA, không mã nước (Kuwait `66410373`, Saudi/UAE `5xxxxxxxx`) ⇒
+//    dạng NỘI ĐỊA, không mã nước (Kuwait `66100001`, Saudi/UAE `5xxxxxxxx`) ⇒
 //    `chuanHoaSdt` là no-op trên dữ liệu POS, và Saudi ∩ UAE có **6** số trùng khít
 //    trên mẫu 3.000 đơn/shop. Sáu cặp đó là sáu người bị nhập làm một, mang theo cả
 //    địa chỉ và tỉ lệ hoàn của nhau. Nước lấy từ tham số `shop` (= `ket_noi_pos.market`),

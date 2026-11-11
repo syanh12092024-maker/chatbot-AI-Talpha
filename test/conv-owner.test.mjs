@@ -67,8 +67,8 @@ test('H3 · ⚠️ tin của CHÍNH BOT MÌNH → KHÔNG phải người (nếu 
   const aiTexts = ['Hello po! 😊 SET 1 (3 pcs) — 99 AED po. Ilan po ang gusto niyo?'];
   assert.equal(looksHuman('Hello po! 😊 SET 1 (3 pcs) — 99 AED po. Ilan po ang gusto niyo?', aiTexts), false);
   // Sổ AI chỉ lưu 80 ký tự đầu — tin đầy đủ dài hơn vẫn phải khớp
-  const truncated = ['Yay! Order received na po, Amy! 🎉💕 ✅ Combo: Buy 1 Get 1 FREE — 109 SAR ✅ Addr'];
-  assert.equal(looksHuman('Yay! Order received na po, Amy! 🎉💕 ✅ Combo: Buy 1 Get 1 FREE — 109 SAR ✅ Address: Jeddah', truncated), false);
+  const truncated = ['Yay! Order received na po, Ana! 🎉💕 ✅ Combo: Buy 1 Get 1 FREE — 109 SAR ✅ Addr'];
+  assert.equal(looksHuman('Yay! Order received na po, Ana! 🎉💕 ✅ Combo: Buy 1 Get 1 FREE — 109 SAR ✅ Address: Jeddah', truncated), false);
 });
 
 test('H4 · tin dài lạ → coi là MÁY (thận trọng: thà để AI chạy tiếp còn hơn im oan)', () => {

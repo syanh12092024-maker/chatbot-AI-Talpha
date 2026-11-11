@@ -586,7 +586,7 @@ nước va chạm** mà A7-1 vừa tách. Làm A7-2 trước A7-1 thì 94% dữ 
 
 **A7-1 · vì sao khoá cũ sai, đo 26/08 trên POS thật.** `UNIQUE (team_id, so_dien_thoai)` +
 bảy shop POS cùng ở team 1 = «một số điện thoại là một người, xuyên bảy nước». POS lưu SĐT
-ở dạng **nội địa, không mã nước** (Kuwait `66410373` · Saudi/UAE `5xxxxxxxx`) ⇒ `chuanHoaSdt`
+ở dạng **nội địa, không mã nước** (Kuwait `66100001` · Saudi/UAE `5xxxxxxxx`) ⇒ `chuanHoaSdt`
 là **no-op** trên dữ liệu POS; nước chỉ nằm ở «đơn đến từ shop nào». Đo va chạm:
 
 | nhóm | dân số đo | va chạm THẬT |

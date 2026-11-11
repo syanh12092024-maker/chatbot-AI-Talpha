@@ -9,8 +9,8 @@ const done = (t) => assert.equal(isCompleteThought(t).complete, true, `phải co
 
 test('T1 · ba mẫu sót có quy luật (tìm ra khi chạy lại trên tin thật)', () => {
   ['hello poh', 'hi po', 'Start'].forEach(more);          // chào rồi mới vào việc
-  ['71566943', '0536064249', '109'].forEach(more);        // mẩu SĐT/số của đơn
-  ['Celieta Boca', 'Grace Pranom'].forEach(more);         // tên riêng — mẩu thông tin đơn
+  ['71200008', '0531234567', '109'].forEach(more);        // mẩu SĐT/số của đơn
+  ['Celia Bona', 'Grace Pinto'].forEach(more);         // tên riêng — mẩu thông tin đơn
   ['Yes', 'Ok. Mam', 'opo', 'sige po'].forEach(more);     // gật đầu ngắn
   more('');                                                // sticker/ảnh
 });

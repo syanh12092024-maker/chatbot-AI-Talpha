@@ -281,7 +281,7 @@ test("R1-5 · RF-2: nguonDangMo — V3_NAP_DEV=1 chỉ mở khi CSDL là sandbox
 
 test("R1-6 · RF-3 (S3): lượt bot chốt đơn ⇒ guard nhận orderCreated+isOrderSummary, tóm tắt đơn KHÔNG bị PII_ECHO chặn", async () => {
   const tom =
-    "Confirming your order: Name: Grace Pranom, Contact: 0917 555 1234, Address: Cebu City.";
+    "Confirming your order: Name: Grace Pinto, Contact: 0917 555 1234, Address: Cebu City.";
   assert.equal(
     guardOutbound(tom, { kb: kbMau }).ok,
     false,

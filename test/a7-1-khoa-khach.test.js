@@ -133,8 +133,8 @@ test("Q6 · hàm JS `khoaKhach` và CHỈ MỤC SQL ra CÙNG một phán quyết
   // Không đọc hai bản rồi so bằng mắt (án lệ #3). Cho CSDL tự trả lời: với mỗi cặp,
   // khoá JS bằng nhau  ⇔  CSDL từ chối dòng thứ hai.
   const cap = [
-    [["Kuwait", "66410373"], ["Kuwait", "66410373"], true],
-    [["Kuwait", "66410373"], ["Qatar", "66410373"], false],
+    [["Kuwait", "66100001"], ["Kuwait", "66100001"], true],
+    [["Kuwait", "66100001"], ["Qatar", "66100001"], false],
     [["Saudi", "0501234567"], ["Saudi", "+966501234567"], true], // chuẩn hoá rồi mới so
     [[null, "504444444"], ["", "504444444"], true], // null và rỗng cùng nghĩa
     [["UAE", "505555555"], [null, "505555555"], false],

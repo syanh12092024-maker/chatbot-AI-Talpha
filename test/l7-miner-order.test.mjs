@@ -70,7 +70,7 @@ function fakePage({ n = 25, withPii = true } = {}) {
     msgs.set(c.id, [
       { from: { id: 'cust' }, original_message: 'how much po?', inserted_at: new Date(T0 - 7200e3).toISOString() },
       { from: { id: 'P1' }, original_message: 'It is 109 SAR po, free delivery, COD.', inserted_at: new Date(T0 - 7100e3).toISOString() },
-      { from: { id: 'cust' }, original_message: withPii ? `ok, Khach ${i} here, 0536064${String(100 + i)}, Villa 12 Al Wasl Road Dubai` : 'ang mahal naman', inserted_at: new Date(T0 - 7000e3).toISOString() },
+      { from: { id: 'cust' }, original_message: withPii ? `ok, Khach ${i} here, 0531234${String(100 + i)}, Villa 12 Al Wasl Road Dubai` : 'ang mahal naman', inserted_at: new Date(T0 - 7000e3).toISOString() },
       { from: { id: 'P1' }, original_message: 'let me know po if interested', inserted_at: new Date(T0 - 6900e3).toISOString() },
     ]);
   }
@@ -111,7 +111,7 @@ function bundle(pageId, spec) {
 
 const KB = { products: [{ id: 'p1', currency: 'SAR', price1: 109, combo2: 199, combo3: 279 }] };
 const INPUT = {
-  name: 'Amy Añoza', phone: '0536064249', address: 'Alrawdah Jeddah, District 1', city: 'Jeddah',
+  name: 'Ana Peñas', phone: '0531234567', address: 'Alrawdah Jeddah, District 1', city: 'Jeddah',
   variant: 'Buy 1 Get 1 FREE', qty: 1, total_price: 109, currency: 'SAR', cod_confirmed: true,
 };
 
@@ -123,8 +123,8 @@ test('ghi chú chuẩn · dựng đúng mẫu spec và ĐỌC NGƯỢC ra đủ 
   assert.ok(note.includes('đã đối chiếu KB'));
 
   const back = parseOrderNote(note);
-  assert.equal(back.name, 'Amy Añoza');
-  assert.equal(back.phone, '0536064249');
+  assert.equal(back.name, 'Ana Peñas');
+  assert.equal(back.phone, '0531234567');
   assert.equal(back.address, 'Alrawdah Jeddah, District 1, Jeddah');
   assert.equal(back.qty, 1);
   assert.equal(back.total_price, 109);

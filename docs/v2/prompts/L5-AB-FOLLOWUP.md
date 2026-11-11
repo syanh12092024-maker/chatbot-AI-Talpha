@@ -23,9 +23,9 @@ biết nó tăng đơn hay chỉ làm phiền khách. Đừng làm ngược.
 ## Số liệu nền
 - **52% khách (3.991 người) được AI trả lời rồi im luôn** — không ai đuổi theo. Đây là
   nhóm lớn nhất trong toàn hệ thống, lớn hơn cả nhóm chốt đơn (2,0%) 26 lần.
-- Ca thật: khách *SilentBoo Yeaahmute* tự nhắn *"Interesado poh akong umorder pero mukhang
+- Ca thật: khách *QuietBee Mute* tự nhắn *"Interesado poh akong umorder pero mukhang
   kayo poh ang hindi interesado magpa order… 3 days na akong nakikipag negotiate… ok lang
-  kung cancel nalang"*, **đã đưa tên Celieta Boca + số 71566943** — AI đáp "thanks madam"
+  kung cancel nalang"*, **đã đưa tên Celia Bona + số 71200008** — AI đáp "thanks madam"
   rồi mất trắng.
 - Nghiên cứu ngành: theo sát trong 1 giờ → khả năng qualify cao gấp **7 lần**.
 
@@ -47,7 +47,7 @@ biết nó tăng đơn hay chỉ làm phiền khách. Đừng làm ngược.
 - Cron 15 phút. Điều kiện chọn khách ở spec §M12 — đọc đủ 7 điều kiện, không bỏ cái nào
 - Chọn góc theo lý do dừng (bảng ở spec)
 - **Nhóm ưu tiên cao nhất: khách ĐÃ cho SĐT/tên mà chưa chốt → KHÔNG nhắn, đẩy thẳng
-  sale gọi.** Đây là ca SilentBoo ở trên
+  sale gọi.** Đây là ca QuietBee ở trên
 - **Ràng buộc cứng:** tối đa **1 tin/khách/hội thoại**, không có lần 2 · không nhắn
   22:00–08:00 giờ địa phương của thị trường page · qua M09 Outbound Guard như mọi tin khác
   · công tắc tắt toàn cục + tắt theo page · ghi Sổ AI với `lane: "FOLLOWUP"`

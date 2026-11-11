@@ -136,7 +136,7 @@ test('G3b · KHÔNG bắt nhầm "order now" thành mã đơn', () => {
 });
 
 test('G11 · chặn đọc lại SĐT khách ngoài lượt tóm tắt đơn', () => {
-  const t = 'Noted po ang number niyo 0536064249, salamat! 😊';
+  const t = 'Noted po ang number niyo 0531234567, salamat! 😊';
   assert.equal(guardOutbound(t, { kb: KB, isOrderSummary: false }).rule, 'PII_ECHO');
   // lượt tóm tắt xác nhận đơn thì được đọc lại đúng 1 lần
   assert.equal(guardOutbound(t, { kb: KB, isOrderSummary: true }).ok, true);
@@ -226,7 +226,7 @@ test('F3e · ⚠️ khách TỪ CHỐI → luôn leo lên AI (nguyên tắc 14, 
 });
 
 test('G6b · KHÔNG chặn tóm tắt đơn có giá trị (khác hẳn checklist xin thông tin)', () => {
-  const t = 'Thank you po, Grace! 🌸\n- **Name:** Grace Pranom\n- **Address:** Riyadh, District 1\n- **Package:** SET 1 — 99 AED';
+  const t = 'Thank you po, Grace! 🌸\n- **Name:** Grace Pinto\n- **Address:** Riyadh, District 1\n- **Package:** SET 1 — 99 AED';
   const v = guardOutbound(t, { kb: KB, isOrderSummary: true, orderCreated: true });
   assert.equal(v.ok, true, `tóm tắt đơn bị chặn nhầm bởi ${v.rule}`);
 });
@@ -261,12 +261,12 @@ test('F6 · thiếu chính sách ship thì không tự hứa; cách đặt vẫn
 
 test('F7 · TÍN HIỆU NÓNG luôn leo lên AI, không bao giờ template', () => {
   const hot = [
-    '0536064249',                                  // số điện thoại
+    '0531234567',                                  // số điện thoại
     'ang mahal naman po',                          // phản đối giá
     'iisipin ko muna po',                          // do dự
     'peke ba ito?',                                // nghi ngờ chất lượng
     'gusto ko po mag order',                       // ý định mua
-    'Amy Añoza, 0536064249, Alrawdah Jeddah',      // thông tin đơn
+    'Ana Peñas, 0531234567, Alrawdah Jeddah',      // thông tin đơn
   ];
   for (const t of hot) assert.equal(FL(t).handled, false, `phải leo lên AI: ${t}`);
 });
