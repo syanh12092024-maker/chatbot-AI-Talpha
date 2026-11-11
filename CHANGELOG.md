@@ -19,6 +19,16 @@ mở thêm một cửa, `PATCH` cho vá.
 
 ## [Chưa phát hành]
 
+### 19/10/2026 — 🔴 Sẵn sàng «gạt bot» cho pilot: bot không bịa trạng thái đơn · khách sau bán được chuyển sale · gạt bot tự bảo ai_sale nhường · worker không sập khi CSDL khởi động lại
+
+> Lên prod 19/10 theo `docs/thi-cong/nhat-ky/phat-hanh-20261019-san-sang-gat-bot.md` — mã + cấu hình + mở van gửi khi **0/582 page bật** ⇒ khách chưa thấy gì cho tới khi quản trị gạt bot một page.
+
+- 🔴 **Khách đã có đơn** (khách hỏi «đơn tôi đâu», tin POS/sale nói đơn đang giao, bot đã chốt — trong 14 ngày): bot không tự trả lời nữa — gửi MỘT câu nhận cố định (Anh/Taglish hoặc Ả Rập) rồi gắn thẻ chuyển sale kèm ghi chú nguồn + ngày. Bot không bịa trạng thái đơn, không chào bán lại, không tự hứa ngày/giờ giao; câu model vi phạm bị chặn thành câu nhận cố định + chuyển sale. Người đang muốn mua không bị coi là khách sau bán (`1d50f50` · `21582da` · `307de84` · `d4fda15`).
+- 🔴 **Chốt đơn không hỏi lại**: khách gửi đủ SĐT + địa chỉ sau khi bot đã nêu COD ⇒ lên đơn nháp (cờ «COD ngầm»); khách không cho tên ⇒ dùng tên Facebook (cờ «tên lấy từ Facebook, chưa xác nhận») — hai cờ hiện ở Hộp thư cho sale khi duyệt. Tên chỉ lấy từ lời khách, không lấy từ địa chỉ/chữ máy (`1d50f50` · `d4fda15`).
+- 🔴 **Dấu hiệu y tế**: khách báo chảy máu / kích ứng sau khi dùng ⇒ bot khuyên ngừng dùng và đi khám, rồi chuyển sale (`1d50f50` · `d4fda15`).
+- 🔴 **Gạt bot ở Page & Bot tự bảo bot cũ ai_sale nhường page** (ghi khoá `_v3` vào tệp trạng thái của pancake-tool, không sửa mã của họ), chờ ai_sale nhường (15′ + đọc log ai_sale) rồi mới trả lời; tắt ⇒ xoá khoá, ai_sale trả lời lại. Bot chỉ trả lời tin khách đến SAU lúc gạt. Diễn tập không ghi khoá. Khoá mồ côi / v3 không trả lời được ⇒ màn hiện ĐỎ có lý do (`d890aeb` · `0f18207`).
+- **Worker không sập khi Postgres dừng/khởi động lại** (prod sập 10/10 và 15/10 vì máy tự nâng cấp); `.env` đọc như `node --env-file` (van gửi không còn đọc nhầm thành MỞ vì chú thích cuối dòng); sổ gửi/hàng chờ không vỡ vì emoji lẻ (`0c61fda` · `a0a0625`).
+
 ### 08/10/2026 — 🔴 Điều kiện go-live lên prod (chưa bật page nào): tiền tệ theo shop · Điền giá từ đơn POS · trần số page bật · bot không trả lời mù / không câm khi Pancake lỗi · tự ngắt page khi kênh lỗi · đường đọc CSDL có ảnh + chính sách (TT1 · TT1b · GP1 · GSP3c · GL1–GL4 · GL3b · GL3c · GL7a · RP1 · RP2)
 
 > Lên prod 08/10 16:04 (CEST) — `8dc9bcd → fcb0c19`, migration 033 + 034, `V3_TRAN_PAGE_BAT=1`; 0/582 page bật, van gửi / POS / cờ đọc CSDL vẫn TẮT ⇒ khách chưa thấy gì.
